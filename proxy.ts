@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const SADECE_PM_PREFIXLER = ["/senaryolar/api/senaryolar/"];
 
-export default async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
