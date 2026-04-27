@@ -25,7 +25,7 @@ export async function GET(
 
     const { data: kullanicilar, error } = await adminSupabase
       .from("kullanicilar")
-      .select("kullanici_id, ad, soyad, eposta, rol, firma_id, takim_id, bolge_id, aktif_mi, created_at")
+      .select("kullanici_id, ad, soyad, eposta, rol, firma_id, takim_id, bolge_id, aktif_mi, yetki_kullanici_yonetim, yetki_aktif_pasif, created_at")
       .eq("firma_id", firma_id)
       .order("ad", { ascending: true });
 
@@ -88,7 +88,7 @@ export async function POST(
     if (firmaError) return hataYaniti("Firma sorgulanırken hata oluştu.", "firmalar tablosu SELECT", firmaError, 404);
 
     const body = await request.json();
-    const { ad, soyad, eposta, sifre, rol, takim_adi, bolge_adi, takim_id: bodyTakimId, bolge_id: bodyBolgeId } = body;
+    const { ad, soyad, eposta, sifre, rol, takim_adi, bolge_adi, takim_id: bodyTakimId, bolge_id: bodyBolgeId, yetki_kullanici_yonetim, yetki_aktif_pasif } = body;
 
     if (!ad || typeof ad !== "string" || ad.trim().length === 0) return validasyonHatasi("Ad zorunludur.", ["ad"]);
     if (!soyad || typeof soyad !== "string" || soyad.trim().length === 0) return validasyonHatasi("Soyad zorunludur.", ["soyad"]);
@@ -114,7 +114,6 @@ export async function POST(
     let bolge_id: string | null = null;
 
     if (["pm", "jr_pm", "kd_pm", "tm"].includes(rolTemiz)) {
-      // Önce ID ile dene, yoksa isimle ara
       if (bodyTakimId) {
         const { data: takim, error: takimError } = await adminSupabase
           .from("takimlar")
@@ -185,6 +184,8 @@ export async function POST(
         takim_id,
         bolge_id,
         aktif_mi: true,
+        yetki_kullanici_yonetim: yetki_kullanici_yonetim === true,
+        yetki_aktif_pasif: yetki_aktif_pasif === true,
       });
 
     if (insertError) {
@@ -196,5 +197,118 @@ export async function POST(
 
   } catch (err) {
     return sunucuHatasi(err, "POST /admin/api/firmalar/[firma_id]/kullanicilar");
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ firma_id: string }> }
+) {
+  try {
+    const { firma_id } = await params;
+    if (!firma_id) return validasyonHatasi("firma_id zorunludur.", ["firma_id"]);
+
+    const adminSupabase = createAdminClient();
+    const body = await request.json();
+    const { kullanici_id, rol, aktif_mi, yetki_kullanici_yonetim, yetki_aktif_pasif } = body;
+
+    if (!kullanici_id) return validasyonHatasi("kullanici_id zorunludur.", ["kullanici_id"]);
+    if (rol === undefined && aktif_mi === undefined && yetki_kullanici_yonetim === undefined && yetki_aktif_pasif === undefined)
+      return validasyonHatasi("Güncellenecek alan zorunludur.", ["rol", "aktif_mi", "yetki_kullanici_yonetim", "yetki_aktif_pasif"]);
+
+    const { data: kullanici, error: kullaniciError } = await adminSupabase
+      .from("kullanicilar")
+      .select("kullanici_id")
+      .eq("kullanici_id", kullanici_id)
+      .eq("firma_id", firma_id)
+      .single();
+
+    const kullaniciKontrol = veriKontrol(kullanici, "kullanicilar tablosu SELECT — kullanici_id kontrolü", "Kullanıcı bulunamadı.");
+    if (!kullaniciKontrol.gecerli) return kullaniciKontrol.yanit;
+    if (kullaniciError) return hataYaniti("Kullanıcı sorgulanırken hata oluştu.", "kullanicilar tablosu SELECT", kullaniciError, 404);
+
+    if (rol !== undefined) {
+      const gecerliRoller = ["pm", "jr_pm", "kd_pm", "iu", "tm", "bm", "utt", "kd_utt", "gm", "gm_yrd", "drk", "paz_md", "blm_md", "med_md", "grp_pm", "sm", "egt_md", "egt_yrd_md", "egt_yon", "egt_uz"];
+      const rolTemiz = rol.trim().toLowerCase();
+      if (!gecerliRoller.includes(rolTemiz)) return validasyonHatasi("Geçersiz rol.", ["rol"]);
+    }
+
+    const guncellenecek: Record<string, unknown> = {};
+    if (rol !== undefined) guncellenecek.rol = rol.trim().toLowerCase();
+    if (aktif_mi !== undefined) guncellenecek.aktif_mi = aktif_mi;
+    if (yetki_kullanici_yonetim !== undefined) guncellenecek.yetki_kullanici_yonetim = yetki_kullanici_yonetim;
+    if (yetki_aktif_pasif !== undefined) guncellenecek.yetki_aktif_pasif = yetki_aktif_pasif;
+
+    const { error: updateError } = await adminSupabase
+      .from("kullanicilar")
+      .update(guncellenecek)
+      .eq("kullanici_id", kullanici_id)
+      .eq("firma_id", firma_id);
+
+    if (updateError) return hataYaniti("Kullanıcı güncellenemedi.", "kullanicilar tablosu UPDATE", updateError);
+
+    return NextResponse.json({ mesaj: "Kullanıcı başarıyla güncellendi." }, { status: 200 });
+
+  } catch (err) {
+    return sunucuHatasi(err, "PUT /admin/api/firmalar/[firma_id]/kullanicilar");
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ firma_id: string }> }
+) {
+  try {
+    const { firma_id } = await params;
+    if (!firma_id) return validasyonHatasi("firma_id zorunludur.", ["firma_id"]);
+
+    const adminSupabase = createAdminClient();
+    const body = await request.json();
+    const { kullanici_id } = body;
+
+    if (!kullanici_id) return validasyonHatasi("kullanici_id zorunludur.", ["kullanici_id"]);
+
+    const { data: kullanici, error: kullaniciError } = await adminSupabase
+      .from("kullanicilar")
+      .select("kullanici_id, ad, soyad, eposta, rol, firma_id, takim_id, bolge_id")
+      .eq("kullanici_id", kullanici_id)
+      .eq("firma_id", firma_id)
+      .single();
+
+    const kullaniciKontrol = veriKontrol(kullanici, "kullanicilar tablosu SELECT — silme öncesi kontrol", "Kullanıcı bulunamadı.");
+    if (!kullaniciKontrol.gecerli) return kullaniciKontrol.yanit;
+    if (kullaniciError) return hataYaniti("Kullanıcı sorgulanırken hata oluştu.", "kullanicilar tablosu SELECT", kullaniciError, 404);
+
+    const { error: arsivError } = await adminSupabase
+      .from("silinmis_kullanicilar")
+      .insert({
+        kullanici_id: kullanici.kullanici_id,
+        ad: kullanici.ad,
+        soyad: kullanici.soyad,
+        eposta: kullanici.eposta,
+        rol: kullanici.rol,
+        firma_id: kullanici.firma_id,
+        takim_id: kullanici.takim_id,
+        bolge_id: kullanici.bolge_id,
+        silinme_tarihi: new Date().toISOString(),
+      });
+
+    if (arsivError) return hataYaniti("Kullanıcı arşivlenemedi, silme iptal edildi.", "silinmis_kullanicilar tablosu INSERT", arsivError);
+
+    const { error: deleteError } = await adminSupabase
+      .from("kullanicilar")
+      .delete()
+      .eq("kullanici_id", kullanici_id)
+      .eq("firma_id", firma_id);
+
+    if (deleteError) return hataYaniti("Kullanıcı tablodan silinemedi.", "kullanicilar tablosu DELETE", deleteError);
+
+    const { error: authError } = await adminSupabase.auth.admin.deleteUser(kullanici_id);
+    if (authError) console.error("[UYARI] Kullanıcı Auth'tan silinemedi:", { kullanici_id, hata: authError.message });
+
+    return NextResponse.json({ mesaj: "Kullanıcı başarıyla silindi." }, { status: 200 });
+
+  } catch (err) {
+    return sunucuHatasi(err, "DELETE /admin/api/firmalar/[firma_id]/kullanicilar");
   }
 }

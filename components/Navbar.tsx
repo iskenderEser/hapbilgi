@@ -1,4 +1,3 @@
-// components/Navbar.tsx
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
@@ -23,6 +22,8 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
   const ureticiRoller = ["pm", "jr_pm", "kd_pm", "iu"];
   const yonlendiriciRoller = ["tm", "bm"];
   const tuketiciRoller = ["utt", "kd_utt"];
+  const yoneticiRoller = ["gm", "gm_yrd", "drk", "paz_md", "blm_md", "med_md", "grp_pm", "sm", "egt_md", "egt_yrd_md", "egt_yon", "egt_uz"];
+  const analizRoller = ["bm", "tm", "pm", "jr_pm", "kd_pm", "gm", "gm_yrd", "drk", "paz_md", "blm_md", "med_md", "grp_pm", "sm", "egt_md", "egt_yrd_md", "egt_yon", "egt_uz"];
 
   const rolKucu = rol.toLowerCase();
   const isPM = ["pm", "jr_pm", "kd_pm"].includes(rolKucu);
@@ -65,8 +66,23 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
     } catch {}
   };
 
+  const raporaGit = () => {
+    if (isIU) return;
+    if (tuketiciRoller.includes(rolKucu)) {
+      router.push("/raporlar/utt");
+    } else if (rolKucu === "bm") {
+      router.push("/raporlar/bm");
+    } else if (rolKucu === "tm") {
+      router.push("/raporlar/tm");
+    } else if (isPM) {
+      router.push("/raporlar/pm");
+    } else {
+      router.push("/raporlar/yonetici");
+    }
+  };
+
   const pillStyle = (key: string, path: string): React.CSSProperties => {
-    const aktif = isAktif(path);
+    const aktif = isAktif(path) || (key === "raporlar" && pathname.startsWith("/raporlar")) || (key === "analiz" && pathname.startsWith("/analiz"));
     const isHover = hover === key;
     return {
       position: "relative",
@@ -124,7 +140,7 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
   return (
     <nav style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderBottom: "0.5px solid #e5e7eb", padding: "10px 24px" }}>
       <div style={{ maxWidth: "1200px", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
           <img
             src="/logo.png"
             alt="hapbilgi"
@@ -233,6 +249,30 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
                 <Badge sayi={badge["oneri"] ?? 0} />
               </button>
             </>
+          )}
+
+          {/* Raporlar — IU hariç tüm roller */}
+          {!isIU && (
+            <button
+              onClick={raporaGit}
+              onMouseEnter={() => setHover("raporlar")}
+              onMouseLeave={() => setHover(null)}
+              style={pillStyle("raporlar", "/raporlar")}
+            >
+              Raporlar
+            </button>
+          )}
+
+          {/* Analiz — BM, TM, PM ve yönetici roller */}
+          {analizRoller.includes(rolKucu) && (
+            <button
+              onClick={() => router.push("/analiz")}
+              onMouseEnter={() => setHover("analiz")}
+              onMouseLeave={() => setHover(null)}
+              style={pillStyle("analiz", "/analiz")}
+            >
+              Analiz
+            </button>
           )}
 
           {/* HBLigi — tüm roller */}

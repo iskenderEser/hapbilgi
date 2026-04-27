@@ -17,6 +17,8 @@ interface Kullanici {
   eposta: string;
   rol: string;
   aktif_mi: boolean;
+  yetki_kullanici_yonetim: boolean;
+  yetki_aktif_pasif: boolean;
   takim_adi?: string;
   bolge_adi?: string;
 }
@@ -50,7 +52,7 @@ interface Takim {
   bolgeler: Bolge[];
 }
 
-type GirisSecimi = "tekil" | "toplu" | "ekip";
+type GirisSecimi = "tekil" | "toplu" | "ekip" | "urun";
 
 const ROLLER = ["pm", "jr_pm", "kd_pm", "iu", "tm", "bm", "utt", "kd_utt", "gm", "gm_yrd", "drk", "paz_md", "blm_md", "med_md", "grp_pm", "sm", "egt_md", "egt_yrd_md", "egt_yon", "egt_uz"];
 
@@ -75,6 +77,8 @@ export default function AdminPage() {
   const [tekilTakimAdi, setTekilTakimAdi] = useState("");
   const [tekilBolgeId, setTekilBolgeId] = useState("");
   const [tekilBolgeAdi, setTekilBolgeAdi] = useState("");
+  const [tekilYetkiKullanici, setTekilYetkiKullanici] = useState(false);
+  const [tekilYetkiAktifPasif, setTekilYetkiAktifPasif] = useState(false);
   const [tekilLoading, setTekilLoading] = useState(false);
 
   // Takım/Bölge dropdown
@@ -94,6 +98,17 @@ export default function AdminPage() {
   ]);
   const [ekipKaydetLoading, setEkipKaydetLoading] = useState(false);
 
+  // Ürün & Teknik form
+  const [urunler, setUrunler] = useState<{ urun_id: string; urun_adi: string; takim_id: string }[]>([]);
+  const [teknikler, setTeknikler] = useState<{ teknik_id: string; teknik_adi: string }[]>([]);
+  const [yeniUrunAdi, setYeniUrunAdi] = useState("");
+  const [yeniUrunTakimId, setYeniUrunTakimId] = useState("");
+  const [yeniTeknikAdi, setYeniTeknikAdi] = useState("");
+  const [urunEkleLoading, setUrunEkleLoading] = useState(false);
+  const [teknikEkleLoading, setTeknikEkleLoading] = useState(false);
+  const [urunSilLoading, setUrunSilLoading] = useState<string | null>(null);
+  const [teknikSilLoading, setTeknikSilLoading] = useState<string | null>(null);
+
   // Filtre ve arama
   const [aramaMetni, setAramaMetni] = useState("");
   const [filtrRol, setFiltrRol] = useState("");
@@ -101,19 +116,27 @@ export default function AdminPage() {
   const [filtrBolge, setFiltrBolge] = useState("");
   const [filtrDurum, setFiltrDurum] = useState("");
 
+  // İşlem state'leri
+  const [acikRolId, setAcikRolId] = useState<string | null>(null);
+  const [rolDegistirLoading, setRolDegistirLoading] = useState<string | null>(null);
+  const [aktifToggleLoading, setAktifToggleLoading] = useState<string | null>(null);
+  const [silOnayId, setSilOnayId] = useState<string | null>(null);
+  const [silLoading, setSilLoading] = useState<string | null>(null);
+  const [seciliKullanicilar, setSeciliKullanicilar] = useState<Set<string>>(new Set());
+  const [topluSilOnay, setTopluSilOnay] = useState(false);
+  const [topluIslemLoading, setTopluIslemLoading] = useState(false);
+  const [yetkiLoading, setYetkiLoading] = useState<string | null>(null);
+
   const { mesajlar, hata, basari } = useHataMesaji();
 
-  // Benzersiz değerler filtre dropdown'ları için
   const benzersizTakimlar = useMemo(() => Array.from(new Set(kullanicilar.map(k => k.takim_adi).filter(Boolean))) as string[], [kullanicilar]);
   const benzersizBolgeler = useMemo(() => Array.from(new Set(kullanicilar.map(k => k.bolge_adi).filter(Boolean))) as string[], [kullanicilar]);
   const benzersizRoller = useMemo(() => Array.from(new Set(kullanicilar.map(k => k.rol).filter(Boolean))) as string[], [kullanicilar]);
 
-  // Filtrelenmiş kullanıcılar
   const filtrelenmisKullanicilar = useMemo(() => {
     return kullanicilar.filter(k => {
       const aramaUyumu = aramaMetni === "" || [k.ad, k.soyad, k.eposta, k.rol, k.takim_adi, k.bolge_adi]
-        .filter(Boolean)
-        .some(v => v!.toLowerCase().includes(aramaMetni.toLowerCase()));
+        .filter(Boolean).some(v => v!.toLowerCase().includes(aramaMetni.toLowerCase()));
       const rolUyumu = filtrRol === "" || k.rol === filtrRol;
       const takimUyumu = filtrTakim === "" || k.takim_adi === filtrTakim;
       const bolgeUyumu = filtrBolge === "" || k.bolge_adi === filtrBolge;
@@ -122,14 +145,12 @@ export default function AdminPage() {
     });
   }, [kullanicilar, aramaMetni, filtrRol, filtrTakim, filtrBolge, filtrDurum]);
 
+  const tumSeciliMi = filtrelenmisKullanicilar.length > 0 && filtrelenmisKullanicilar.every(k => seciliKullanicilar.has(k.kullanici_id));
+
   const handleGiris = async (e: React.FormEvent) => {
     e.preventDefault();
     setGirisLoading(true);
-    const res = await fetch("/admin/api/giris", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sifre }),
-    });
+    const res = await fetch("/admin/api/giris", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sifre }) });
     const data = await res.json();
     if (!res.ok) { hata(data.hata ?? "Şifre hatalı.", data.adim, data.detay); setGirisLoading(false); return; }
     setGirisYapildi(true);
@@ -185,14 +206,10 @@ export default function AdminPage() {
   const handleFirmaEkle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!yeniFirmaAdi.trim()) return;
-    const res = await fetch("/admin/api/firmalar", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ firma_adi: yeniFirmaAdi.trim() }),
-    });
+    const res = await fetch("/admin/api/firmalar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ firma_adi: yeniFirmaAdi.trim() }) });
     const data = await res.json();
     if (!res.ok) { hata(data.hata ?? "Firma eklenemedi.", data.adim, data.detay); }
-    else { basari("Firma eklendi."); setYeniFirmaAdi(""); firmalariCek(); }
+    else { basari("Ekleme başarılı."); setYeniFirmaAdi(""); firmalariCek(); }
   };
 
   const handleFirmaSecildi = (f: Firma) => {
@@ -203,9 +220,82 @@ export default function AdminPage() {
     sifirlaTekilForm();
     sifirlaEkipForm();
     sifirlaFiltreler();
+    sifirlaIslemler();
     kullanicilariCek(f.firma_id);
     takimlariCek(f.firma_id);
+    urunleriCek(f.firma_id);
+    teknikleriCek(f.firma_id);
   };
+
+  const urunleriCek = async (firma_id: string) => {
+    const res = await fetch(`/admin/api/firmalar/${firma_id}/urunler`);
+    const data = await res.json();
+    if (!res.ok) { hata(data.hata ?? "Ürünler yüklenemedi.", data.adim, data.detay); }
+    else { setUrunler(data.urunler ?? []); }
+  };
+
+  const teknikleriCek = async (firma_id: string) => {
+    const res = await fetch(`/admin/api/firmalar/${firma_id}/teknikler`);
+    const data = await res.json();
+    if (!res.ok) { hata(data.hata ?? "Teknikler yüklenemedi.", data.adim, data.detay); }
+    else { setTeknikler(data.teknikler ?? []); }
+  };
+
+  const handleUrunEkle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!seciliFirma || !yeniUrunAdi.trim() || !yeniUrunTakimId) return;
+    setUrunEkleLoading(true);
+    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/urunler`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ urun_adi: yeniUrunAdi.trim(), takim_id: yeniUrunTakimId }),
+    });
+    const data = await res.json();
+    if (!res.ok) { hata(data.hata ?? "Ürün eklenemedi.", data.adim, data.detay); }
+    else { basari("Ürün eklendi."); setYeniUrunAdi(""); urunleriCek(seciliFirma.firma_id); }
+    setUrunEkleLoading(false);
+  };
+
+  const handleTeknikEkle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!seciliFirma || !yeniTeknikAdi.trim()) return;
+    setTeknikEkleLoading(true);
+    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/teknikler`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ teknik_adi: yeniTeknikAdi.trim() }),
+    });
+    const data = await res.json();
+    if (!res.ok) { hata(data.hata ?? "Teknik eklenemedi.", data.adim, data.detay); }
+    else { basari("Teknik eklendi."); setYeniTeknikAdi(""); teknikleriCek(seciliFirma.firma_id); }
+    setTeknikEkleLoading(false);
+  };
+
+  const handleUrunSil = async (urun_id: string) => {
+    if (!seciliFirma) return;
+    setUrunSilLoading(urun_id);
+    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/urunler`, {
+      method: "DELETE", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ urun_id }),
+    });
+    const data = await res.json();
+    if (!res.ok) { hata(data.hata ?? "Ürün silinemedi.", data.adim, data.detay); }
+    else { basari("Ürün silindi."); urunleriCek(seciliFirma.firma_id); }
+    setUrunSilLoading(null);
+  };
+
+  const handleTeknikSil = async (teknik_id: string) => {
+    if (!seciliFirma) return;
+    setTeknikSilLoading(teknik_id);
+    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/teknikler`, {
+      method: "DELETE", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ teknik_id }),
+    });
+    const data = await res.json();
+    if (!res.ok) { hata(data.hata ?? "Teknik silinemedi.", data.adim, data.detay); }
+    else { basari("Teknik silindi."); teknikleriCek(seciliFirma.firma_id); }
+    setTeknikSilLoading(null);
+  };
+
+  const takimAdi = (takim_id: string) => takimlar.find(t => t.takim_id === takim_id)?.takim_adi ?? "-";
 
   const sifirlaTekilForm = () => {
     setTekilAd(""); setTekilSoyad(""); setTekilRol("");
@@ -213,21 +303,20 @@ export default function AdminPage() {
     setTekilTakimId(""); setTekilTakimAdi("");
     setTekilBolgeId(""); setTekilBolgeAdi("");
     setSeciliTakimBolgeleri([]);
+    setTekilYetkiKullanici(false);
+    setTekilYetkiAktifPasif(false);
   };
 
   const sifirlaEkipForm = () => {
-    setEkipBloklar([
-      { id: 1, takim_adi: "", bolgeler: [""] },
-      { id: 2, takim_adi: "", bolgeler: [""] },
-    ]);
+    setEkipBloklar([{ id: 1, takim_adi: "", bolgeler: [""] }, { id: 2, takim_adi: "", bolgeler: [""] }]);
   };
 
   const sifirlaFiltreler = () => {
-    setAramaMetni("");
-    setFiltrRol("");
-    setFiltrTakim("");
-    setFiltrBolge("");
-    setFiltrDurum("");
+    setAramaMetni(""); setFiltrRol(""); setFiltrTakim(""); setFiltrBolge(""); setFiltrDurum("");
+  };
+
+  const sifirlaIslemler = () => {
+    setAcikRolId(null); setSilOnayId(null); setSeciliKullanicilar(new Set()); setTopluSilOnay(false);
   };
 
   const handleTekilKaydet = async (e: React.FormEvent) => {
@@ -236,18 +325,119 @@ export default function AdminPage() {
     if (!tekilEposta.includes("@")) { hata("Geçerli bir e-posta adresi giriniz.", "e-posta kontrolü", undefined); return; }
     setTekilLoading(true);
     const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ad: tekilAd, soyad: tekilSoyad, rol: tekilRol, eposta: tekilEposta, sifre: tekilSifre,
         takim_id: tekilTakimId || undefined, takim_adi: tekilTakimAdi || undefined,
         bolge_id: tekilBolgeId || undefined, bolge_adi: tekilBolgeAdi || undefined,
+        yetki_kullanici_yonetim: tekilYetkiKullanici,
+        yetki_aktif_pasif: tekilYetkiAktifPasif,
       }),
     });
     const data = await res.json();
     if (!res.ok) { hata(data.hata ?? "Kullanıcı eklenemedi.", data.adim, data.detay); }
-    else { basari("Kullanıcı başarıyla eklendi."); sifirlaTekilForm(); kullanicilariCek(seciliFirma.firma_id); }
+    else { basari("Ekleme başarılı."); sifirlaTekilForm(); kullanicilariCek(seciliFirma.firma_id); }
     setTekilLoading(false);
+  };
+
+  const handleRolDegistir = async (kullanici_id: string, yeniRol: string) => {
+    if (!seciliFirma) return;
+    setAcikRolId(null);
+    setRolDegistirLoading(kullanici_id);
+    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kullanici_id, rol: yeniRol }),
+    });
+    const data = await res.json();
+    if (!res.ok) { hata(data.hata ?? "Rol güncellenemedi.", data.adim, data.detay); }
+    else { basari("Rol güncellendi."); kullanicilariCek(seciliFirma.firma_id); }
+    setRolDegistirLoading(null);
+  };
+
+  const handleAktifToggle = async (kullanici_id: string, mevcutDurum: boolean) => {
+    if (!seciliFirma) return;
+    setAktifToggleLoading(kullanici_id);
+    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kullanici_id, aktif_mi: !mevcutDurum }),
+    });
+    const data = await res.json();
+    if (!res.ok) { hata(data.hata ?? "Durum güncellenemedi.", data.adim, data.detay); }
+    else { basari(mevcutDurum ? "Pasife alındı." : "Aktif edildi."); kullanicilariCek(seciliFirma.firma_id); }
+    setAktifToggleLoading(null);
+  };
+
+  const handleYetkiDegistir = async (kullanici_id: string, alan: "yetki_kullanici_yonetim" | "yetki_aktif_pasif", mevcutDeger: boolean) => {
+    if (!seciliFirma) return;
+    setYetkiLoading(kullanici_id + alan);
+    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kullanici_id, [alan]: !mevcutDeger }),
+    });
+    const data = await res.json();
+    if (!res.ok) { hata(data.hata ?? "Yetki güncellenemedi.", data.adim, data.detay); }
+    else { basari(mevcutDeger ? "Yetki kaldırıldı." : "Yetki tanımlandı."); kullanicilariCek(seciliFirma.firma_id); }
+    setYetkiLoading(null);
+  };
+
+  const handleSil = async (kullanici_id: string) => {
+    if (!seciliFirma) return;
+    setSilLoading(kullanici_id);
+    setSilOnayId(null);
+    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+      method: "DELETE", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kullanici_id }),
+    });
+    const data = await res.json();
+    if (!res.ok) { hata(data.hata ?? "Kullanıcı silinemedi.", data.adim, data.detay); }
+    else { basari("Silme işlemi başarılı."); kullanicilariCek(seciliFirma.firma_id); }
+    setSilLoading(null);
+  };
+
+  const handleTopluPasif = async () => {
+    if (!seciliFirma || seciliKullanicilar.size === 0) return;
+    setTopluIslemLoading(true);
+    for (const kullanici_id of Array.from(seciliKullanicilar)) {
+      const k = kullanicilar.find(x => x.kullanici_id === kullanici_id);
+      if (!k || !k.aktif_mi) continue;
+      await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kullanici_id, aktif_mi: false }),
+      });
+    }
+    basari("Pasife alındı.");
+    setSeciliKullanicilar(new Set());
+    setTopluSilOnay(false);
+    kullanicilariCek(seciliFirma.firma_id);
+    setTopluIslemLoading(false);
+  };
+
+  const handleTopluSil = async () => {
+    if (!seciliFirma || seciliKullanicilar.size === 0) return;
+    setTopluIslemLoading(true);
+    for (const kullanici_id of Array.from(seciliKullanicilar)) {
+      await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+        method: "DELETE", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kullanici_id }),
+      });
+    }
+    basari("Silme işlemi başarılı.");
+    setSeciliKullanicilar(new Set());
+    setTopluSilOnay(false);
+    kullanicilariCek(seciliFirma.firma_id);
+    setTopluIslemLoading(false);
+  };
+
+  const toggleSecim = (kullanici_id: string, secildi: boolean) => {
+    const yeni = new Set(seciliKullanicilar);
+    secildi ? yeni.add(kullanici_id) : yeni.delete(kullanici_id);
+    setSeciliKullanicilar(yeni);
+  };
+
+  const toggleTumSecim = (secildi: boolean) => {
+    const yeni = new Set(seciliKullanicilar);
+    filtrelenmisKullanicilar.forEach(k => secildi ? yeni.add(k.kullanici_id) : yeni.delete(k.kullanici_id));
+    setSeciliKullanicilar(yeni);
   };
 
   const handleDosyaSec = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -274,7 +464,7 @@ export default function AdminPage() {
     const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/toplu-yukle`, { method: "POST", body: formData });
     const data = await res.json();
     if (!res.ok) { hata(data.hata ?? "Toplu yükleme başarısız.", data.adim, data.detay); }
-    else { basari(`${data.basarili} kullanıcı kaydedildi.`); setTopluDosya(null); setOnizlemeSatirlari(null); kullanicilariCek(seciliFirma.firma_id); }
+    else { basari("Ekleme başarılı."); setTopluDosya(null); setOnizlemeSatirlari(null); kullanicilariCek(seciliFirma.firma_id); }
     setTopluKaydetLoading(false);
   };
 
@@ -302,27 +492,21 @@ export default function AdminPage() {
   const handleEkipKaydet = async () => {
     if (!seciliFirma) return;
     setEkipKaydetLoading(true);
-    let basariliSayisi = 0;
     for (const blok of ekipBloklar) {
       if (blok.takim_adi.trim().length < 3) continue;
-      const takimRes = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/takimlar`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ takim_adi: blok.takim_adi.trim() }),
-      });
+      const takimRes = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/takimlar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ takim_adi: blok.takim_adi.trim() }) });
       const takimData = await takimRes.json();
       if (!takimRes.ok) { hata(takimData.hata ?? `"${blok.takim_adi}" eklenemedi.`, takimData.adim, takimData.detay); continue; }
       const takim_id = takimData.takim.takim_id;
-      basariliSayisi++;
       for (const bolge_adi of blok.bolgeler.filter((b: string) => b.trim().length > 0)) {
-        const bolgeRes = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/takimlar/${takim_id}/bolgeler`, {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ bolge_adi: bolge_adi.trim() }),
-        });
+        const bolgeRes = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/takimlar/${takim_id}/bolgeler`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bolge_adi: bolge_adi.trim() }) });
         const bolgeData = await bolgeRes.json();
         if (!bolgeRes.ok) { hata(bolgeData.hata ?? `"${bolge_adi}" bölgesi eklenemedi.`, bolgeData.adim, bolgeData.detay); }
       }
     }
-    if (basariliSayisi > 0) { basari(`${basariliSayisi} ekip başarıyla oluşturuldu.`); sifirlaEkipForm(); if (seciliFirma) takimlariCek(seciliFirma.firma_id); }
+    basari("Ekleme başarılı.");
+    sifirlaEkipForm();
+    if (seciliFirma) takimlariCek(seciliFirma.firma_id);
     setEkipKaydetLoading(false);
   };
 
@@ -366,7 +550,7 @@ export default function AdminPage() {
         <button onClick={() => setGirisYapildi(false)} style={{ fontSize: "12px", color: "#737373", background: "none", border: "none", cursor: "pointer" }}>Çıkış</button>
       </div>
 
-      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "24px", display: "flex", gap: "20px" }}>
+      <div style={{ maxWidth: "1300px", margin: "0 auto", padding: "24px", display: "flex", gap: "20px" }}>
 
         {/* Sol panel */}
         <div style={{ width: "220px", flexShrink: 0 }}>
@@ -386,7 +570,7 @@ export default function AdminPage() {
         </div>
 
         {/* Sağ panel */}
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           {!seciliFirma ? (
             <div style={{ background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", padding: "40px", textAlign: "center", color: "#9ca3af", fontSize: "13px" }}>
               Sol panelden bir firma seçin.
@@ -401,11 +585,12 @@ export default function AdminPage() {
 
               {/* Sekmeler */}
               <div style={{ display: "flex", gap: "10px" }}>
-                {(["tekil", "toplu", "ekip"] as GirisSecimi[]).map(sekme => (
+                {(["tekil", "toplu", "ekip", "urun"] as GirisSecimi[]).map(sekme => (
                   <button key={sekme} onClick={() => { setGirisSecimi(sekme); if (sekme !== "toplu") { setOnizlemeSatirlari(null); setTopluDosya(null); } if (sekme !== "tekil") sifirlaTekilForm(); }} style={{ ...btnBase, background: girisSecimi === sekme ? "#56aeff" : "white", color: girisSecimi === sekme ? "white" : "#737373", borderColor: girisSecimi === sekme ? "#56aeff" : "#e5e7eb" }}>
                     {sekme === "tekil" && <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Tekil Giriş</>}
                     {sekme === "toplu" && <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Toplu Giriş</>}
                     {sekme === "ekip" && <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="17.5" x2="20" y2="17.5"/><line x1="17" y1="14.5" x2="17" y2="20.5"/></svg>Ekip / Bölge Oluştur</>}
+                    {sekme === "urun" && <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Ürün & Teknik</>}
                   </button>
                 ))}
               </div>
@@ -434,7 +619,18 @@ export default function AdminPage() {
                         {seciliTakimBolgeleri.map(b => <option key={b.bolge_id} value={b.bolge_id}>{b.bolge_adi}</option>)}
                       </select>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
+                    <div style={{ marginTop: "12px", marginBottom: "16px", padding: "12px 14px", background: "#f9fafb", borderRadius: "8px", border: "0.5px solid #e5e7eb" }}>
+                      <div style={{ fontSize: "11px", fontWeight: 600, color: "#737373", marginBottom: "10px" }}>YETKİLER</div>
+                      <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", marginBottom: "8px" }}>
+                        <input type="checkbox" checked={tekilYetkiKullanici} onChange={e => setTekilYetkiKullanici(e.target.checked)} style={{ cursor: "pointer", width: "14px", height: "14px" }} />
+                        <span style={{ fontSize: "12px", color: "#374151" }}>Kullanıcı ekleme / silme</span>
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                        <input type="checkbox" checked={tekilYetkiAktifPasif} onChange={e => setTekilYetkiAktifPasif(e.target.checked)} style={{ cursor: "pointer", width: "14px", height: "14px" }} />
+                        <span style={{ fontSize: "12px", color: "#374151" }}>Kullanıcı aktif / pasif yapma</span>
+                      </label>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
                       <button type="submit" disabled={tekilLoading} style={{ background: "#56aeff", color: "white", border: "none", borderRadius: "8px", padding: "10px 24px", fontSize: "13px", fontWeight: 600, cursor: "pointer", fontFamily: "'Nunito', sans-serif", opacity: tekilLoading ? 0.6 : 1 }}>
                         {tekilLoading ? "Kaydediliyor..." : "Kaydet"}
                       </button>
@@ -509,6 +705,95 @@ export default function AdminPage() {
                 </div>
               )}
 
+              {/* Ürün & Teknik */}
+              {girisSecimi === "urun" && (
+                <div style={{ display: "flex", gap: "16px" }}>
+
+                  {/* Ürünler */}
+                  <div style={{ flex: 1, background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
+                    <div style={{ padding: "14px 20px", borderBottom: "0.5px solid #e5e7eb", fontSize: "13px", fontWeight: 600, color: "#111" }}>Ürünler</div>
+                    <div style={{ padding: "16px 20px" }}>
+                      <form onSubmit={handleUrunEkle} style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "16px" }}>
+                        <div style={rowStyle}>
+                          <div style={labelStyle}>Takım</div>
+                          <select style={{ ...inputStyle, cursor: "pointer" }} value={yeniUrunTakimId} onChange={e => setYeniUrunTakimId(e.target.value)} required>
+                            <option value="">Takım seçin...</option>
+                            {takimlar.map(t => <option key={t.takim_id} value={t.takim_id}>{t.takim_adi}</option>)}
+                          </select>
+                        </div>
+                        <div style={rowStyle}>
+                          <div style={labelStyle}>Ürün adı</div>
+                          <input style={inputStyle} value={yeniUrunAdi} onChange={e => setYeniUrunAdi(e.target.value)} placeholder="Ürün adı..." required />
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                          <button type="submit" disabled={urunEkleLoading} style={{ background: "#56aeff", color: "white", border: "none", borderRadius: "8px", padding: "8px 20px", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "'Nunito', sans-serif", opacity: urunEkleLoading ? 0.6 : 1 }}>
+                            {urunEkleLoading ? "Ekleniyor..." : "+ Ekle"}
+                          </button>
+                        </div>
+                      </form>
+                      {urunler.length === 0 ? (
+                        <div style={{ textAlign: "center", padding: "20px", fontSize: "12px", color: "#9ca3af" }}>Henüz ürün yok.</div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          {urunler.map(u => (
+                            <div key={u.urun_id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", background: "#f9fafb", borderRadius: "8px", border: "0.5px solid #e5e7eb" }}>
+                              <div>
+                                <div style={{ fontSize: "13px", color: "#111", fontWeight: 500 }}>{u.urun_adi}</div>
+                                <div style={{ fontSize: "11px", color: "#737373", marginTop: "2px" }}>{takimAdi(u.takim_id)}</div>
+                              </div>
+                              <button
+                                onClick={() => handleUrunSil(u.urun_id)}
+                                disabled={urunSilLoading === u.urun_id}
+                                style={{ fontSize: "10px", padding: "3px 10px", borderRadius: "5px", border: "0.5px solid #fecaca", background: "#fef2f2", color: "#bc2d0d", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}
+                              >
+                                {urunSilLoading === u.urun_id ? "..." : "Sil"}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Teknikler */}
+                  <div style={{ flex: 1, background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
+                    <div style={{ padding: "14px 20px", borderBottom: "0.5px solid #e5e7eb", fontSize: "13px", fontWeight: 600, color: "#111" }}>Teknikler</div>
+                    <div style={{ padding: "16px 20px" }}>
+                      <form onSubmit={handleTeknikEkle} style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "16px" }}>
+                        <div style={rowStyle}>
+                          <div style={labelStyle}>Teknik adı</div>
+                          <input style={inputStyle} value={yeniTeknikAdi} onChange={e => setYeniTeknikAdi(e.target.value)} placeholder="Teknik adı..." required />
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                          <button type="submit" disabled={teknikEkleLoading} style={{ background: "#56aeff", color: "white", border: "none", borderRadius: "8px", padding: "8px 20px", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "'Nunito', sans-serif", opacity: teknikEkleLoading ? 0.6 : 1 }}>
+                            {teknikEkleLoading ? "Ekleniyor..." : "+ Ekle"}
+                          </button>
+                        </div>
+                      </form>
+                      {teknikler.length === 0 ? (
+                        <div style={{ textAlign: "center", padding: "20px", fontSize: "12px", color: "#9ca3af" }}>Henüz teknik yok.</div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          {teknikler.map(t => (
+                            <div key={t.teknik_id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", background: "#f9fafb", borderRadius: "8px", border: "0.5px solid #e5e7eb" }}>
+                              <div style={{ fontSize: "13px", color: "#111", fontWeight: 500 }}>{t.teknik_adi}</div>
+                              <button
+                                onClick={() => handleTeknikSil(t.teknik_id)}
+                                disabled={teknikSilLoading === t.teknik_id}
+                                style={{ fontSize: "10px", padding: "3px 10px", borderRadius: "5px", border: "0.5px solid #fecaca", background: "#fef2f2", color: "#bc2d0d", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}
+                              >
+                                {teknikSilLoading === t.teknik_id ? "..." : "Sil"}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
               {/* Ekip / Bölge Oluştur */}
               {girisSecimi === "ekip" && (
                 <div style={{ background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
@@ -548,36 +833,21 @@ export default function AdminPage() {
               {/* Kullanıcı listesi */}
               <div style={{ background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
 
-                {/* Başlık + arama */}
-                <div style={{ padding: "12px 16px", borderBottom: "0.5px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+                {/* Başlık + filtreler — iki ayrı satır */}
+                <div style={{ padding: "12px 16px", borderBottom: "0.5px solid #e5e7eb", display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {/* Üst satır: başlık */}
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <span style={{ fontSize: "12px", fontWeight: 600, color: "#111" }}>Kullanıcılar</span>
                     <span style={{ fontSize: "11px", color: "#737373" }}>
                       {filtrelenmisKullanicilar.length === kullanicilar.length ? `${kullanicilar.length} kayıt` : `${filtrelenmisKullanicilar.length} / ${kullanicilar.length}`}
                     </span>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                  {/* Alt satır: arama + temizle */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                     <div style={{ position: "relative" }}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" style={{ position: "absolute", left: "8px", top: "50%", transform: "translateY(-50%)" }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                       <input value={aramaMetni} onChange={e => setAramaMetni(e.target.value)} placeholder="Ara..." style={{ border: "0.5px solid #e5e7eb", borderRadius: "6px", padding: "5px 8px 5px 26px", fontSize: "11px", fontFamily: "'Nunito', sans-serif", outline: "none", width: "140px" }} />
                     </div>
-                    <select value={filtrRol} onChange={e => setFiltrRol(e.target.value)} style={filterSelectStyle}>
-                      <option value="">Tüm Roller</option>
-                      {benzersizRoller.map(r => <option key={r} value={r}>{r}</option>)}
-                    </select>
-                    <select value={filtrTakim} onChange={e => setFiltrTakim(e.target.value)} style={filterSelectStyle}>
-                      <option value="">Tüm Takımlar</option>
-                      {benzersizTakimlar.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                    <select value={filtrBolge} onChange={e => setFiltrBolge(e.target.value)} style={filterSelectStyle}>
-                      <option value="">Tüm Bölgeler</option>
-                      {benzersizBolgeler.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
-                    <select value={filtrDurum} onChange={e => setFiltrDurum(e.target.value)} style={filterSelectStyle}>
-                      <option value="">Tüm Durumlar</option>
-                      <option value="aktif">Aktif</option>
-                      <option value="pasif">Pasif</option>
-                    </select>
                     {(aramaMetni || filtrRol || filtrTakim || filtrBolge || filtrDurum) && (
                       <button onClick={sifirlaFiltreler} style={{ fontSize: "10px", color: "#bc2d0d", background: "none", border: "0.5px solid #fecaca", borderRadius: "6px", padding: "4px 8px", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>Temizle</button>
                     )}
@@ -589,27 +859,118 @@ export default function AdminPage() {
                 ) : filtrelenmisKullanicilar.length === 0 ? (
                   <div style={{ padding: "40px", textAlign: "center", fontSize: "12px", color: "#9ca3af" }}>Filtreyle eşleşen kullanıcı bulunamadı.</div>
                 ) : (
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                    <thead>
-                      <tr style={{ borderBottom: "0.5px solid #e5e7eb", background: "#fafafa" }}>
-                        {["Ad Soyad", "E-posta", "Rol", "Takım", "Bölge", "Durum"].map(h => (
-                          <th key={h} style={{ textAlign: "left", padding: "8px 16px", color: "#9ca3af", fontWeight: 500, fontSize: "11px" }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filtrelenmisKullanicilar.map(k => (
-                        <tr key={k.kullanici_id} style={{ borderBottom: "0.5px solid #f3f4f6" }}>
-                          <td style={{ padding: "10px 16px", color: "#111", fontWeight: 500 }}>{k.ad} {k.soyad}</td>
-                          <td style={{ padding: "10px 16px", color: "#737373", fontSize: "11px" }}>{k.eposta}</td>
-                          <td style={{ padding: "10px 16px" }}><span style={{ fontSize: "10px", padding: "2px 8px", borderRadius: "20px", background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe" }}>{k.rol}</span></td>
-                          <td style={{ padding: "10px 16px", color: "#737373", fontSize: "11px" }}>{k.takim_adi || "—"}</td>
-                          <td style={{ padding: "10px 16px", color: "#737373", fontSize: "11px" }}>{k.bolge_adi || "—"}</td>
-                          <td style={{ padding: "10px 16px" }}><span style={{ fontSize: "10px", padding: "2px 8px", borderRadius: "20px", background: k.aktif_mi ? "#f0fdf4" : "#fef2f2", color: k.aktif_mi ? "#16a34a" : "#bc2d0d", border: `0.5px solid ${k.aktif_mi ? "#bbf7d0" : "#fecaca"}` }}>{k.aktif_mi ? "Aktif" : "Pasif"}</span></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <>
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
+                        <thead>
+                          <tr style={{ borderBottom: "0.5px solid #e5e7eb", background: "#fafafa" }}>
+                            <th style={{ padding: "8px 16px", width: "36px" }}>
+                              <input type="checkbox" checked={tumSeciliMi} onChange={e => toggleTumSecim(e.target.checked)} style={{ cursor: "pointer" }} />
+                            </th>
+                            {["Ad Soyad", "E-posta"].map(h => (
+                              <th key={h} style={{ textAlign: "left", padding: "8px 12px", color: "#9ca3af", fontWeight: 500, fontSize: "11px", whiteSpace: "nowrap" }}>{h}</th>
+                            ))}
+                            <th style={{ textAlign: "left", padding: "8px 12px", whiteSpace: "nowrap" }}>
+                              <select value={filtrRol} onChange={e => setFiltrRol(e.target.value)} style={{ ...filterSelectStyle, fontWeight: filtrRol ? 600 : 500, color: filtrRol ? "#111" : "#9ca3af" }}><option value="">Roller</option>{benzersizRoller.map(r => <option key={r} value={r}>{r}</option>)}</select>
+                            </th>
+                            <th style={{ textAlign: "left", padding: "8px 12px", whiteSpace: "nowrap" }}>
+                              <select value={filtrTakim} onChange={e => setFiltrTakim(e.target.value)} style={{ ...filterSelectStyle, fontWeight: filtrTakim ? 600 : 500, color: filtrTakim ? "#111" : "#9ca3af" }}><option value="">Takımlar</option>{benzersizTakimlar.map(t => <option key={t} value={t}>{t}</option>)}</select>
+                            </th>
+                            <th style={{ textAlign: "left", padding: "8px 12px", whiteSpace: "nowrap" }}>
+                              <select value={filtrBolge} onChange={e => setFiltrBolge(e.target.value)} style={{ ...filterSelectStyle, fontWeight: filtrBolge ? 600 : 500, color: filtrBolge ? "#111" : "#9ca3af" }}><option value="">Bölgeler</option>{benzersizBolgeler.map(b => <option key={b} value={b}>{b}</option>)}</select>
+                            </th>
+                            <th style={{ textAlign: "left", padding: "8px 12px", whiteSpace: "nowrap" }}>
+                              <select value={filtrDurum} onChange={e => setFiltrDurum(e.target.value)} style={{ ...filterSelectStyle, fontWeight: filtrDurum ? 600 : 500, color: filtrDurum ? "#111" : "#9ca3af" }}><option value="">Durumlar</option><option value="aktif">Aktif</option><option value="pasif">Pasif</option></select>
+                            </th>
+                            {["Kull. Yön.", "Akt/Pas", "İşlemler"].map(h => (
+                              <th key={h} style={{ textAlign: "left", padding: "8px 12px", color: "#9ca3af", fontWeight: 500, fontSize: "11px", whiteSpace: "nowrap" }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filtrelenmisKullanicilar.map(k => (
+                            <tr key={k.kullanici_id} style={{ borderBottom: "0.5px solid #f3f4f6", background: silOnayId === k.kullanici_id ? "#fef2f2" : seciliKullanicilar.has(k.kullanici_id) ? "#f9fafb" : "white" }}>
+                              <td style={{ padding: "10px 16px" }}>
+                                <input type="checkbox" checked={seciliKullanicilar.has(k.kullanici_id)} onChange={e => toggleSecim(k.kullanici_id, e.target.checked)} style={{ cursor: "pointer" }} />
+                              </td>
+                              <td style={{ padding: "10px 12px", color: "#111", fontWeight: 500, whiteSpace: "nowrap" }}>{k.ad} {k.soyad}</td>
+                              <td style={{ padding: "10px 12px", color: "#737373", fontSize: "11px" }}>{k.eposta}</td>
+                              <td style={{ padding: "10px 12px" }}>
+                                {rolDegistirLoading === k.kullanici_id ? (
+                                  <span style={{ fontSize: "10px", color: "#737373" }}>...</span>
+                                ) : acikRolId === k.kullanici_id ? (
+                                  <select autoFocus defaultValue={k.rol} onBlur={() => setAcikRolId(null)} onChange={e => handleRolDegistir(k.kullanici_id, e.target.value)} style={{ fontSize: "11px", border: "0.5px solid #56aeff", borderRadius: "6px", padding: "3px 6px", fontFamily: "'Nunito', sans-serif", outline: "none", background: "white", cursor: "pointer" }}>
+                                    {ROLLER.map(r => <option key={r} value={r}>{r}</option>)}
+                                  </select>
+                                ) : (
+                                  <span onClick={() => { setAcikRolId(k.kullanici_id); setSilOnayId(null); }} title="Değiştirmek için tıklayın" style={{ fontSize: "10px", padding: "2px 8px", borderRadius: "20px", background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe", cursor: "pointer", userSelect: "none" }}>
+                                    {k.rol} ▾
+                                  </span>
+                                )}
+                              </td>
+                              <td style={{ padding: "10px 12px", color: "#737373", fontSize: "11px", whiteSpace: "nowrap" }}>{k.takim_adi || "—"}</td>
+                              <td style={{ padding: "10px 12px", color: "#737373", fontSize: "11px", whiteSpace: "nowrap" }}>{k.bolge_adi || "—"}</td>
+                              <td style={{ padding: "10px 12px" }}>
+                                {aktifToggleLoading === k.kullanici_id ? (
+                                  <span style={{ fontSize: "10px", color: "#737373" }}>...</span>
+                                ) : (
+                                  <span onClick={() => handleAktifToggle(k.kullanici_id, k.aktif_mi)} title={k.aktif_mi ? "Pasife almak için tıklayın" : "Aktif etmek için tıklayın"} style={{ fontSize: "10px", padding: "2px 8px", borderRadius: "20px", background: k.aktif_mi ? "#f0fdf4" : "#fef2f2", color: k.aktif_mi ? "#16a34a" : "#bc2d0d", border: `0.5px solid ${k.aktif_mi ? "#bbf7d0" : "#fecaca"}`, cursor: "pointer", userSelect: "none" }}>
+                                    {k.aktif_mi ? "Aktif" : "Pasif"}
+                                  </span>
+                                )}
+                              </td>
+                              <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                                <input type="checkbox" checked={k.yetki_kullanici_yonetim} disabled={yetkiLoading === k.kullanici_id + "yetki_kullanici_yonetim"} onChange={() => handleYetkiDegistir(k.kullanici_id, "yetki_kullanici_yonetim", k.yetki_kullanici_yonetim)} style={{ cursor: "pointer", width: "14px", height: "14px" }} />
+                              </td>
+                              <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                                <input type="checkbox" checked={k.yetki_aktif_pasif} disabled={yetkiLoading === k.kullanici_id + "yetki_aktif_pasif"} onChange={() => handleYetkiDegistir(k.kullanici_id, "yetki_aktif_pasif", k.yetki_aktif_pasif)} style={{ cursor: "pointer", width: "14px", height: "14px" }} />
+                              </td>
+                              <td style={{ padding: "10px 12px" }}>
+                                {silOnayId === k.kullanici_id ? (
+                                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                    <span style={{ fontSize: "10px", color: "#bc2d0d", fontWeight: 600 }}>Emin misin?</span>
+                                    <button onClick={() => handleSil(k.kullanici_id)} disabled={silLoading === k.kullanici_id} style={{ fontSize: "10px", background: "#bc2d0d", color: "white", border: "none", borderRadius: "5px", padding: "3px 8px", cursor: "pointer", fontFamily: "'Nunito', sans-serif", fontWeight: 600 }}>
+                                      {silLoading === k.kullanici_id ? "..." : "Evet"}
+                                    </button>
+                                    <button onClick={() => setSilOnayId(null)} style={{ fontSize: "10px", background: "none", color: "#737373", border: "0.5px solid #e5e7eb", borderRadius: "5px", padding: "3px 8px", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>İptal</button>
+                                  </div>
+                                ) : (
+                                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                    <button onClick={() => handleAktifToggle(k.kullanici_id, k.aktif_mi)} disabled={aktifToggleLoading === k.kullanici_id} style={{ fontSize: "10px", padding: "3px 10px", borderRadius: "5px", border: "0.5px solid #e5e7eb", background: k.aktif_mi ? "#fef2f2" : "#f0fdf4", color: k.aktif_mi ? "#bc2d0d" : "#16a34a", cursor: "pointer", fontFamily: "'Nunito', sans-serif", whiteSpace: "nowrap" }}>
+                                      {k.aktif_mi ? "Pasife Al" : "Aktif Et"}
+                                    </button>
+                                    <button onClick={() => { setSilOnayId(k.kullanici_id); setAcikRolId(null); }} style={{ fontSize: "10px", padding: "3px 10px", borderRadius: "5px", border: "0.5px solid #e5e7eb", background: "#f9fafb", color: "#737373", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>Sil</button>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {seciliKullanicilar.size > 0 && (
+                      <div style={{ padding: "10px 16px", borderTop: "0.5px solid #e5e7eb", background: "#f9fafb", display: "flex", alignItems: "center", gap: "10px" }}>
+                        <span style={{ fontSize: "11px", color: "#737373" }}>{seciliKullanicilar.size} kullanıcı seçili</span>
+                        {topluSilOnay ? (
+                          <>
+                            <span style={{ fontSize: "11px", color: "#bc2d0d", fontWeight: 600 }}>Emin misin?</span>
+                            <button onClick={handleTopluSil} disabled={topluIslemLoading} style={{ fontSize: "10px", padding: "3px 12px", borderRadius: "5px", border: "none", background: "#bc2d0d", color: "white", cursor: "pointer", fontFamily: "'Nunito', sans-serif", fontWeight: 600 }}>
+                              {topluIslemLoading ? "..." : "Evet, Sil"}
+                            </button>
+                            <button onClick={() => setTopluSilOnay(false)} style={{ fontSize: "10px", padding: "3px 12px", borderRadius: "5px", border: "0.5px solid #e5e7eb", background: "white", color: "#737373", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>İptal</button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => setTopluSilOnay(true)} style={{ fontSize: "10px", padding: "3px 12px", borderRadius: "5px", border: "0.5px solid #fecaca", background: "#fef2f2", color: "#bc2d0d", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>Seçilenleri Sil</button>
+                            <button onClick={handleTopluPasif} disabled={topluIslemLoading} style={{ fontSize: "10px", padding: "3px 12px", borderRadius: "5px", border: "0.5px solid #e5e7eb", background: "white", color: "#737373", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+                              {topluIslemLoading ? "..." : "Seçilenleri Pasife Al"}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
