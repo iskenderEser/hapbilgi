@@ -187,6 +187,25 @@ export async function GET(request: Request) {
     kayiplar: takimSayisi > 0 ? Math.round((takimListesi || []).reduce((s, t) => s + Math.abs((t.ileri_sarma_kaybi || 0) + (t.yanlis_cevap_kaybi || 0) + (t.oneri_kaybi || 0)), 0) / takimSayisi) : 0,
   };
 
+
+  // Beğeni/favori listesi — firma geneli top 5
+  const { data: begeniRaw } = await supabase
+    .from('v_rapor_begeni_favori')
+    .select('yayin_id, urun_adi, teknik_adi, begeni_sayisi')
+    .eq('firma_id', kullanici.firma_id)
+    .order('begeni_sayisi', { ascending: false })
+    .limit(5);
+
+  const { data: favoriRaw } = await supabase
+    .from('v_rapor_begeni_favori')
+    .select('yayin_id, urun_adi, teknik_adi, favori_sayisi')
+    .eq('firma_id', kullanici.firma_id)
+    .order('favori_sayisi', { ascending: false })
+    .limit(5);
+
+  const begeniListesi = begeniRaw ?? [];
+  const favoriListesi = favoriRaw ?? [];
+
   return NextResponse.json({
     success: true,
     data: {
@@ -251,6 +270,8 @@ export async function GET(request: Request) {
         yanlis_cevap_kaybi: sirketRapor?.yanlis_cevap_kaybi || 0,
         oneri_kaybi: sirketRapor?.oneri_kaybi || 0,
       },
+      begeni_listesi: begeniListesi,
+      favori_listesi: favoriListesi,
     },
   });
 }

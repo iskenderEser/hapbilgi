@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
+import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
 
 interface RaporData {
   kullanici: {
@@ -61,6 +62,8 @@ interface RaporData {
     tarih: string;
     durum: string;
   }>;
+  begeni_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; begeni_sayisi: number; benim_begenim: boolean }>;
+  favori_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; favori_sayisi: number; benim_favorim: boolean }>;
 }
 
 type Periyot = 'bu_ay' | 'gecen_ay' | 'bu_hafta';
@@ -401,6 +404,12 @@ export default function UttRaporPage() {
           ))}
         </div>
       </div>
+
+      <BegeniFavoriListesi
+        begeniListesi={data.begeni_listesi ?? []}
+        favoriListesi={data.favori_listesi ?? []}
+        isUtt={true}
+      />
 
     </div>
     </div>

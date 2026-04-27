@@ -151,6 +151,25 @@ export async function GET(request: Request) {
     if (item.teknik_adi) teknikSayilari[item.teknik_adi] = (teknikSayilari[item.teknik_adi] || 0) + (item.izlenme_sayisi || 1);
   }
 
+
+  // Beğeni/favori listesi
+  const { data: begeniRaw } = await supabase
+    .from('v_rapor_begeni_favori')
+    .select('yayin_id, urun_adi, teknik_adi, begeni_sayisi')
+    .eq('takim_id', kullanici.takim_id)
+    .order('begeni_sayisi', { ascending: false })
+    .limit(5);
+
+  const { data: favoriRaw } = await supabase
+    .from('v_rapor_begeni_favori')
+    .select('yayin_id, urun_adi, teknik_adi, favori_sayisi')
+    .eq('takim_id', kullanici.takim_id)
+    .order('favori_sayisi', { ascending: false })
+    .limit(5);
+
+  const begeniListesi = begeniRaw ?? [];
+  const favoriListesi = favoriRaw ?? [];
+
   return NextResponse.json({
     success: true,
     data: {
@@ -223,6 +242,8 @@ export async function GET(request: Request) {
       teknik_bazli_dagilim: Object.entries(teknikSayilari)
         .map(([teknik_adi, izlenme_sayisi]) => ({ teknik_adi, izlenme_sayisi }))
         .sort((a, b) => b.izlenme_sayisi - a.izlenme_sayisi),
+      begeni_listesi: begeniListesi,
+      favori_listesi: favoriListesi,
     },
   });
 }

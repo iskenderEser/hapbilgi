@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
+import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -67,6 +68,8 @@ interface RaporData {
   ortalama_bolge: OrtalamaBolge;
   urun_bazli_dagilim: Array<{ urun_adi: string; izlenme_sayisi: number }>;
   teknik_bazli_dagilim: Array<{ teknik_adi: string; izlenme_sayisi: number }>;
+  begeni_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; begeni_sayisi: number }>;
+  favori_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; favori_sayisi: number }>;
 }
 
 type Periyot = 'bu_ay' | 'gecen_ay' | 'bu_hafta';
@@ -420,6 +423,11 @@ export default function TmRaporPage() {
           ))}
         </div>
       </div>
+
+      <BegeniFavoriListesi
+        begeniListesi={data.begeni_listesi ?? []}
+        favoriListesi={data.favori_listesi ?? []}
+      />
 
     </div>
     </div>

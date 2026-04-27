@@ -141,7 +141,7 @@ export async function GET(request: Request) {
   // 8. Bölge ve takım adı
   const { data: bolge } = await supabase
     .from('bolgeler')
-    .select('bolge_adi')
+    .select('bolge_adi, takim_id')
     .eq('bolge_id', kullanici.bolge_id)
     .maybeSingle();
 
@@ -191,6 +191,45 @@ export async function GET(request: Request) {
   const alinanOneri = (oneriler || []).length;
   const tamamlananOneri = (oneriler || []).filter(o => o.izlendi_mi).length;
   const bekleyenOneri = alinanOneri - tamamlananOneri;
+
+  // Beğeni/favori listesi — takım geneli top 5
+  const { data: begeniRaw } = await supabase
+    .from('v_rapor_begeni_favori')
+    .select('yayin_id, urun_adi, teknik_adi, begeni_sayisi')
+    .eq('takim_id', bolge?.takim_id || '')
+    .order('begeni_sayisi', { ascending: false })
+    .limit(5);
+
+  const { data: favoriRaw } = await supabase
+    .from('v_rapor_begeni_favori')
+    .select('yayin_id, urun_adi, teknik_adi, favori_sayisi')
+    .eq('takim_id', bolge?.takim_id || '')
+    .order('favori_sayisi', { ascending: false })
+    .limit(5);
+
+  // Kullanıcının kendi beğeni ve favorileri
+  const { data: benimBegenim } = await supabase
+    .from('video_begeniler')
+    .select('yayin_id')
+    .eq('kullanici_id', kullanici.kullanici_id);
+
+  const { data: benimFavorim } = await supabase
+    .from('video_favoriler')
+    .select('yayin_id')
+    .eq('kullanici_id', kullanici.kullanici_id);
+
+  const benimBegeniSet = new Set((benimBegenim || []).map(b => b.yayin_id));
+  const benimFavoriSet = new Set((benimFavorim || []).map(f => f.yayin_id));
+
+  const begeniListesi = (begeniRaw || []).map(v => ({
+    ...v,
+    benim_begenim: benimBegeniSet.has(v.yayin_id),
+  }));
+
+  const favoriListesi = (favoriRaw || []).map(v => ({
+    ...v,
+    benim_favorim: benimFavoriSet.has(v.yayin_id),
+  }));
 
   return NextResponse.json({
     success: true,
@@ -247,6 +286,8 @@ export async function GET(request: Request) {
         tarih: o.created_at,
         durum: o.izlendi_mi ? 'Tamamlandı' : 'Bekliyor',
       })),
+      begeni_listesi: begeniListesi,
+      favori_listesi: favoriListesi,
     },
   });
 }
