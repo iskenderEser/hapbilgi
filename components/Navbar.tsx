@@ -82,7 +82,7 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
   };
 
   const pillStyle = (key: string, path: string): React.CSSProperties => {
-    const aktif = isAktif(path) || (key === "raporlar" && pathname.startsWith("/raporlar")) || (key === "analiz" && pathname.startsWith("/analiz"));
+    const aktif = isAktif(path) || (key === "raporlar" && pathname.startsWith("/raporlar")) || (key === "analiz" && pathname.startsWith("/analiz")) || (key === "bm-egitim" && pathname.startsWith("/bm-egitim")) || (key === "challenge-club" && pathname.startsWith("/challenge-club"));
     const isHover = hover === key;
     return {
       position: "relative",
@@ -284,6 +284,40 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
           >
             HBLigi
           </button>
+
+          {/* BM'ye özel — Eğitim ve Challenge Club */}
+          {rolKucu === "bm" && (
+            <>
+              <div style={{ width: "0.5px", height: "20px", background: "#e5e7eb", margin: "0 4px", flexShrink: 0 }} />
+              <button
+                onClick={() => router.push("/bm-egitim/izle")}
+                onMouseEnter={() => setHover("bm-egitim")}
+                onMouseLeave={() => setHover(null)}
+                style={{
+                  ...pillStyle("bm-egitim", "/bm-egitim"),
+                  color: pathname.startsWith("/bm-egitim") ? "#56aeff" : "#56aeff",
+                  background: pathname.startsWith("/bm-egitim") ? "rgba(86,174,255,0.12)" : hover === "bm-egitim" ? "rgba(86,174,255,0.08)" : "rgba(86,174,255,0.05)",
+                  boxShadow: "inset 0 0 0 0.5px rgba(86,174,255,0.35)",
+                }}
+              >
+                Eğitim
+              </button>
+              <button
+                onClick={() => router.push("/challenge-club")}
+                onMouseEnter={() => setHover("challenge-club")}
+                onMouseLeave={() => setHover(null)}
+                style={{
+                  ...pillStyle("challenge-club", "/challenge-club"),
+                  color: "#56aeff",
+                  background: pathname.startsWith("/challenge-club") ? "rgba(86,174,255,0.12)" : hover === "challenge-club" ? "rgba(86,174,255,0.08)" : "rgba(86,174,255,0.05)",
+                  boxShadow: "inset 0 0 0 0.5px rgba(86,174,255,0.35)",
+                }}
+              >
+                Challenge Club
+              </button>
+            </>
+          )}
+
         </div>
 
         {/* Sağ taraf */}
