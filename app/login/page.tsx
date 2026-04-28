@@ -4,6 +4,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useEkran } from "@/styles/responsive";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [hata, setHata] = useState("");
   const router = useRouter();
+  const ekran = useEkran();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,23 +28,44 @@ export default function LoginPage() {
     router.push("/ana-sayfa");
   };
 
+  const isMobile = ekran === 'mobile';
+  const isTablet = ekran === 'tablet';
+
   return (
     <div style={{ minHeight: "100vh", background: "white", fontFamily: "'Nunito', sans-serif", display: "flex", flexDirection: "column" }}>
 
-      {/* Navbar - logo ortada */}
-      <nav style={{ background: "white", borderBottom: "1px solid #e5e7eb", height: "175px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <img src="/logo.png" alt="hapbilgi" style={{ height: "165px", objectFit: "contain" }} />
+      {/* Navbar - logo */}
+      <nav style={{ background: "white", borderBottom: "1px solid #e5e7eb", height: isMobile ? "100px" : "175px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <img src="/logo.png" alt="hapbilgi" style={{ height: isMobile ? "80px" : "165px", objectFit: "contain" }} />
       </nav>
 
-      {/* İçerik - sol metin + sağ form */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "80px", padding: "40px 80px" }}>
-        <div style={{ maxWidth: "420px" }}>
-          <div style={{ fontSize: "40px", fontWeight: 700, color: "#bc2d0d", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "16px" }}>Eğitimin V Hali</div>
-          <div style={{ fontSize: "27px", fontWeight: 800, color: "#111827", lineHeight: 1.3, marginBottom: "16px" }}>İzleyin - Kazanın - Uygulayın</div>
-          <div style={{ fontSize: "16px", color: "#737373", lineHeight: 1.8 }}>HapBilgi, ilaç sektörü profesyonelleri için tasarlanmış video tabanlı kurumsal eğitim platformudur.</div>
-        </div>
+      {/* İçerik */}
+      <div style={{
+        flex: 1,
+        display: "flex",
+        flexDirection: isMobile ? "column" : "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: isMobile ? "24px" : isTablet ? "40px" : "80px",
+        padding: isMobile ? "24px 20px" : isTablet ? "32px 40px" : "40px 80px",
+      }}>
+        {/* Sol metin — mobilede gizle */}
+        {!isMobile && (
+          <div style={{ maxWidth: "420px" }}>
+            <div style={{ fontSize: isTablet ? "28px" : "40px", fontWeight: 700, color: "#bc2d0d", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "16px" }}>Eğitimin V Hali</div>
+            <div style={{ fontSize: isTablet ? "20px" : "27px", fontWeight: 800, color: "#111827", lineHeight: 1.3, marginBottom: "16px" }}>İzleyin - Kazanın - Uygulayın</div>
+            <div style={{ fontSize: "15px", color: "#737373", lineHeight: 1.8 }}>HapBilgi, ilaç sektörü profesyonelleri için tasarlanmış video tabanlı kurumsal eğitim platformudur.</div>
+          </div>
+        )}
 
-        <div style={{ width: "320px", flexShrink: 0 }}>
+        {/* Form */}
+        <div style={{ width: isMobile ? "100%" : "320px", flexShrink: 0 }}>
+          {isMobile && (
+            <div style={{ textAlign: "center", marginBottom: "20px" }}>
+              <div style={{ fontSize: "22px", fontWeight: 700, color: "#bc2d0d", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>Eğitimin V Hali</div>
+              <div style={{ fontSize: "14px", color: "#737373" }}>İzleyin · Kazanın · Uygulayın</div>
+            </div>
+          )}
           <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             <div>
               <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#737373", marginBottom: "6px" }}>E-posta</label>
@@ -52,7 +75,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="ornek@sirket.com"
-                style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: "10px", padding: "8px 12px", fontSize: "13px", background: "#f9fafb", color: "#111827", fontFamily: "'Nunito', sans-serif", outline: "none", boxSizing: "border-box" }}
+                style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: "10px", padding: "10px 12px", fontSize: "14px", background: "#f9fafb", color: "#111827", fontFamily: "'Nunito', sans-serif", outline: "none", boxSizing: "border-box" }}
               />
             </div>
 
@@ -64,7 +87,7 @@ export default function LoginPage() {
                 onChange={(e) => setSifre(e.target.value)}
                 required
                 placeholder="••••••••"
-                style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: "10px", padding: "8px 12px", fontSize: "13px", background: "#f9fafb", color: "#111827", fontFamily: "'Nunito', sans-serif", outline: "none", boxSizing: "border-box" }}
+                style={{ width: "100%", border: "1px solid #e5e7eb", borderRadius: "10px", padding: "10px 12px", fontSize: "14px", background: "#f9fafb", color: "#111827", fontFamily: "'Nunito', sans-serif", outline: "none", boxSizing: "border-box" }}
               />
             </div>
 
@@ -89,7 +112,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                style={{ width: "50%", background: "#bc2d0d", color: "white", fontWeight: 700, borderRadius: "10px", padding: "9px 0", fontSize: "13px", border: "none", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1, fontFamily: "'Nunito', sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                style={{ width: isMobile ? "100%" : "50%", background: "#bc2d0d", color: "white", fontWeight: 700, borderRadius: "10px", padding: "11px 0", fontSize: "14px", border: "none", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1, fontFamily: "'Nunito', sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
               >
                 {loading ? (
                   <>
@@ -107,17 +130,17 @@ export default function LoginPage() {
       </div>
 
       {/* Özellikler */}
-      <div style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb", padding: "20px 32px" }}>
-        <div style={{ maxWidth: "900px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "40px", textAlign: "center" }}>
+      <div style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb", padding: isMobile ? "20px 20px" : "20px 32px" }}>
+        <div style={{ maxWidth: "900px", margin: "0 auto", display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(3, 1fr)", gap: isMobile ? "16px" : "40px", textAlign: "center" }}>
           {[
             { ikon: "🎬", baslik: "İzleyin", aciklama: "Öğrenmenin devamlılığını sağlayın." },
             { ikon: "📊", baslik: "Kazanın", aciklama: "İzledikçe yıldızınızı parlatın." },
             { ikon: "🎯", baslik: "Uygulayın", aciklama: "Kazandıkça daha çok kazanın." },
           ].map((k, i) => (
             <div key={i}>
-              <div style={{ fontSize: "32px", marginBottom: "12px" }}>{k.ikon}</div>
-              <div style={{ fontSize: "16px", fontWeight: 700, color: "#111827", marginBottom: "8px" }}>{k.baslik}</div>
-              <div style={{ fontSize: "13px", color: "#737373", lineHeight: 1.7 }}>{k.aciklama}</div>
+              <div style={{ fontSize: isMobile ? "22px" : "32px", marginBottom: "6px" }}>{k.ikon}</div>
+              <div style={{ fontSize: isMobile ? "12px" : "16px", fontWeight: 700, color: "#111827", marginBottom: "4px" }}>{k.baslik}</div>
+              {!isMobile && <div style={{ fontSize: "13px", color: "#737373", lineHeight: 1.7 }}>{k.aciklama}</div>}
             </div>
           ))}
         </div>
