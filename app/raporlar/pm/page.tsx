@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
+import { useEkran } from '@/styles/responsive';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -58,6 +59,7 @@ function barGenislik(deger: number, max: number): number {
 
 export default function PmRaporPage() {
   const router = useRouter();
+  const ekran = useEkran();
   const [user, setUser] = useState<any>(null);
   const [rol, setRol] = useState('');
   const [adSoyad, setAdSoyad] = useState('');
@@ -117,7 +119,7 @@ export default function PmRaporPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={user?.email ?? ''} rol={rol} adSoyad={adSoyad} onCikis={handleCikis} />
-      <div className="max-w-4xl mx-auto px-4 py-6 font-[Nunito]">
+      <div className="max-w-4xl mx-auto font-[Nunito]" style={{ padding: ekran === 'mobile' ? '12px 14px' : '16px' }}>
         <button
           onClick={() => router.push('/ana-sayfa')}
           className="flex items-center gap-1.5 text-xs mb-4"
@@ -182,7 +184,7 @@ export default function PmRaporPage() {
       {/* Bekleyen Aşamalar */}
       <div className="mb-5">
         <div className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: GRI_METIN }}>bekleyen aşamalar</div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid" style={{ gridTemplateColumns: ekran === 'mobile' ? '1fr' : 'repeat(3,1fr)' }}>
           {[
             { label: 'Senaryo onayı bekliyor', value: data.bekleyen_asamalar.senaryo_onayi, sub: 'IU\'dan geldi, incelenmedi' },
             { label: 'Video onayı bekliyor', value: data.bekleyen_asamalar.video_onayi, sub: 'URL girildi, incelenmedi' },
@@ -226,7 +228,7 @@ export default function PmRaporPage() {
       {/* Yayın Performansı */}
       <div className="mb-5">
         <div className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: GRI_METIN }}>yayın performansı</div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid" style={{ gridTemplateColumns: ekran === 'mobile' ? '1fr' : 'repeat(3,1fr)' }}>
           {[
             { label: 'Toplam izlenme', value: data.yayin_performansi.toplam_izlenme.toLocaleString('tr-TR'), sub: `${data.yayin_performansi.toplam_yayin} video · ${data.yayin_performansi.toplam_utt} UTT`, accent: true },
             { label: 'Kalan izlenme', value: data.yayin_performansi.kalan_izlenme.toLocaleString('tr-TR') },
@@ -281,7 +283,7 @@ export default function PmRaporPage() {
       {/* Takım Puan Özeti */}
       <div className="mb-5">
         <div className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: GRI_METIN }}>takım puan özeti</div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid" style={{ gridTemplateColumns: ekran === 'mobile' ? '1fr' : 'repeat(3,1fr)' }}>
           {[
             { label: 'Takım toplam puan', value: data.takim_puan_ozet.takim_toplam_puan.toLocaleString('tr-TR'), accent: true },
             { label: 'Ortalama puan / UTT', value: data.takim_puan_ozet.ortalama_puan_utt.toLocaleString('tr-TR'), sub: `En yüksek: ${data.takim_puan_ozet.en_yuksek_puan.toLocaleString('tr-TR')}` },
@@ -297,7 +299,7 @@ export default function PmRaporPage() {
       </div>
 
       {/* Ürün & Teknik Dağılımı */}
-      <div className="grid grid-cols-2 gap-3 mb-5">
+      <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: ekran === 'mobile' ? 'repeat(2,1fr)' : 'repeat(4,1fr)' }}>
         <div className="border rounded-xl p-4" style={{ borderColor: '#e5e7eb' }}>
           <div className="text-sm font-medium mb-3" style={{ color: KOYU_METIN }}>Ürün bazlı izlenme sayıları</div>
           {data.urun_bazli_dagilim.map(item => (
@@ -327,7 +329,7 @@ export default function PmRaporPage() {
       {/* Kayıp Özeti */}
       <div>
         <div className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: GRI_METIN }}>takım geneli kayıp özeti</div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid" style={{ gridTemplateColumns: ekran === 'mobile' ? '1fr' : 'repeat(3,1fr)' }}>
           {[
             { label: 'İleri sarma kaybı', value: data.kayip_ozeti.ileri_sarma_kaybi, sub: 'Takım geneli toplam' },
             { label: 'Yanlış cevap kaybı', value: data.kayip_ozeti.yanlis_cevap_kaybi, sub: 'Takım geneli toplam' },

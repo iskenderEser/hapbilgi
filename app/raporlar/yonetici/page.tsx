@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
+import { useEkran } from '@/styles/responsive';
 
 interface TakimItem {
   sira: number;
@@ -82,6 +83,7 @@ function barGenislik(deger: number, max: number): number {
 
 export default function YoneticiRaporPage() {
   const router = useRouter();
+  const ekran = useEkran();
   const [user, setUser] = useState<any>(null);
   const [rol, setRol] = useState('');
   const [adSoyad, setAdSoyad] = useState('');
@@ -142,7 +144,7 @@ export default function YoneticiRaporPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={user?.email ?? ''} rol={rol} adSoyad={adSoyad} onCikis={handleCikis} />
-      <div className="max-w-4xl mx-auto px-4 py-6 font-[Nunito]">
+      <div className="max-w-4xl mx-auto font-[Nunito]" style={{ padding: ekran === 'mobile' ? '12px 14px' : '16px' }}>
         <button
           onClick={() => router.push('/ana-sayfa')}
           className="flex items-center gap-1.5 text-xs mb-4"
@@ -197,7 +199,7 @@ export default function YoneticiRaporPage() {
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      <div className="grid mb-5" style={{ gridTemplateColumns: ekran === 'mobile' ? '1fr' : 'repeat(3,1fr)' }}>
         {[
           { label: 'Toplam izlenme', value: data.izlenme_ozet.toplam_izlenme.toLocaleString('tr-TR'), sub: `${data.izlenme_ozet.potansiyel_toplam.toLocaleString('tr-TR')} potansiyelden`, accent: true },
           { label: 'Kalan izlenme', value: data.izlenme_ozet.kalan_izlenme.toLocaleString('tr-TR') },
@@ -232,7 +234,7 @@ export default function YoneticiRaporPage() {
       {/* Bekleyen Aşamalar */}
       <div className="mb-5">
         <div className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: GRI_METIN }}>bekleyen aşamalar</div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid" style={{ gridTemplateColumns: ekran === 'mobile' ? '1fr' : 'repeat(3,1fr)' }}>
           {[
             { label: 'Senaryo onayı bekliyor', value: data.bekleyen_asamalar.senaryo_onayi, sub: 'Tüm takımlarda' },
             { label: 'Video onayı bekliyor', value: data.bekleyen_asamalar.video_onayi, sub: 'Tüm takımlarda' },
@@ -370,7 +372,7 @@ export default function YoneticiRaporPage() {
       {/* Öneri Etkinliği */}
       <div className="mb-5">
         <div className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: GRI_METIN }}>öneri etkinliği — şirket geneli</div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid" style={{ gridTemplateColumns: ekran === 'mobile' ? '1fr' : 'repeat(3,1fr)' }}>
           {[
             { label: 'Gönderilen öneri', value: data.oneri_etkinligi.gonderilen, renk: KOYU_METIN },
             { label: `Tamamlanan · %${data.oneri_etkinligi.tamamlanma_orani}`, value: data.oneri_etkinligi.tamamlanan, renk: '#3B6D11' },
@@ -385,7 +387,7 @@ export default function YoneticiRaporPage() {
       </div>
 
       {/* Ürün & Teknik Dağılımı */}
-      <div className="grid grid-cols-2 gap-3 mb-5">
+      <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: ekran === 'mobile' ? 'repeat(2,1fr)' : 'repeat(4,1fr)' }}>
         <div className="border rounded-xl p-4" style={{ borderColor: '#e5e7eb' }}>
           <div className="text-sm font-medium mb-3" style={{ color: KOYU_METIN }}>Ürün bazlı izlenme sayıları</div>
           {data.urun_bazli_dagilim.map(item => (
@@ -415,7 +417,7 @@ export default function YoneticiRaporPage() {
       {/* Kayıp Özeti */}
       <div>
         <div className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: GRI_METIN }}>şirket geneli kayıp özeti</div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid" style={{ gridTemplateColumns: ekran === 'mobile' ? '1fr' : 'repeat(3,1fr)' }}>
           {[
             { label: 'İleri sarma kaybı', value: data.kayip_ozeti.ileri_sarma_kaybi, sub: 'Şirket geneli toplam' },
             { label: 'Yanlış cevap kaybı', value: data.kayip_ozeti.yanlis_cevap_kaybi, sub: 'Şirket geneli toplam' },

@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useHataMesaji } from "@/components/HataMesaji";
+import { useEkran } from "@/styles/responsive";
 
 interface Video {
   yayin_id: string;
@@ -44,6 +45,7 @@ const GRADYANLAR = [
 
 export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
   const router = useRouter();
+  const ekran = useEkran();
   const [uttVeri, setUttVeri] = useState<UttVeri | null>(null);
   const [loading, setLoading] = useState(true);
   const [aktifFiltre, setAktifFiltre] = useState<string>("yeni");
@@ -77,6 +79,10 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
 
   const istat = uttVeri?.istatistikler ?? { yeni: 0, devam: 0, tamamlanan: 0, hafta_puani: 0, toplam_puan: 0 };
   const ad = adSoyad.split(" ")[0] || "Temsilci";
+  const padding = ekran === 'mobile' ? '16px 14px' : ekran === 'tablet' ? '20px 24px' : '28px 32px';
+  const statGrid = ekran === 'mobile' ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)';
+  const videoGrid = ekran === 'mobile' ? 'repeat(2, 1fr)' : ekran === 'tablet' ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)';
+  const paddingBottom = ekran === 'mobile' ? '80px' : undefined;
 
   const aktifVideolar = aktifFiltre === "yeni"
     ? (uttVeri?.yeni_videolar ?? [])
@@ -85,23 +91,23 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
     : (uttVeri?.tamamlananlar ?? []);
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "28px 32px" }}>
+    <div style={{ maxWidth: "1200px", margin: "0 auto", padding, paddingBottom }}>
 
       {/* Karşılama */}
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "24px" }}>
+      <div style={{ display: "flex", flexDirection: ekran === 'mobile' ? 'column' : 'row', alignItems: ekran === 'mobile' ? 'flex-start' : 'flex-end', justifyContent: "space-between", gap: 8, marginBottom: "24px" }}>
         <div>
-          <h1 style={{ fontSize: "20px", fontWeight: 800, color: "#111827", margin: 0 }}>Merhaba, {ad} 👋</h1>
-          <p style={{ fontSize: "13px", color: "#737373", marginTop: "4px" }}>
-            {rol.toUpperCase()}
-          </p>
+          <h1 style={{ fontSize: ekran === 'mobile' ? "18px" : "20px", fontWeight: 800, color: "#111827", margin: 0 }}>Merhaba, {ad} 👋</h1>
+          <p style={{ fontSize: "13px", color: "#737373", marginTop: "4px" }}>{rol.toUpperCase()}</p>
         </div>
-        <span style={{ fontSize: "12px", color: "#737373", background: "white", border: "1px solid #e5e7eb", borderRadius: "20px", padding: "5px 14px", whiteSpace: "nowrap" }}>
-          {bugunTarih()}
-        </span>
+        {ekran !== 'mobile' && (
+          <span style={{ fontSize: "12px", color: "#737373", background: "white", border: "1px solid #e5e7eb", borderRadius: "20px", padding: "5px 14px", whiteSpace: "nowrap" }}>
+            {bugunTarih()}
+          </span>
+        )}
       </div>
 
       {/* Stat kartlar */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "28px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: statGrid, gap: "10px", marginBottom: "20px" }}>
         {[
           { label: "Yeni Videolar", value: istat.yeni, sub: "Henüz izlenmedi", renk: "#bc2d0d", filtre: "yeni" },
           { label: "Devam Eden", value: istat.devam, sub: "Yarıda bırakılan", renk: "#f59e0b", filtre: "devam" },
@@ -116,30 +122,25 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
               border: "1px solid #e5e7eb",
               borderLeft: `3px solid ${k.renk}`,
               borderRadius: "12px",
-              padding: "20px 22px",
+              padding: ekran === 'mobile' ? "14px 14px" : "20px 22px",
               cursor: k.filtre ? "pointer" : "default",
               boxShadow: k.filtre && aktifFiltre === k.filtre ? `0 0 0 2px ${k.renk}33` : "none",
               transition: "box-shadow 0.15s",
             }}
-            onMouseEnter={e => { if (k.filtre && aktifFiltre !== k.filtre) (e.currentTarget as HTMLDivElement).style.boxShadow = "0 2px 12px rgba(0,0,0,0.07)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.boxShadow = k.filtre && aktifFiltre === k.filtre ? `0 0 0 2px ${k.renk}33` : "none"; }}
           >
-            <div style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.4px", textTransform: "uppercase", marginBottom: "10px" }}>{k.label}</div>
-            <div style={{ fontSize: "28px", fontWeight: 800, color: "#111827", lineHeight: 1 }}>{k.value.toLocaleString("tr-TR")}</div>
-            <div style={{ fontSize: "12px", color: "#737373", marginTop: "6px" }}>{k.sub}</div>
+            <div style={{ fontSize: "10px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.4px", textTransform: "uppercase", marginBottom: "8px" }}>{k.label}</div>
+            <div style={{ fontSize: ekran === 'mobile' ? "22px" : "28px", fontWeight: 800, color: "#111827", lineHeight: 1 }}>{k.value.toLocaleString("tr-TR")}</div>
+            {ekran !== 'mobile' && <div style={{ fontSize: "12px", color: "#737373", marginTop: "6px" }}>{k.sub}</div>}
           </div>
         ))}
       </div>
 
-      {/* Video grid */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+      {/* Video grid başlık */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
         <span style={{ fontSize: "14px", fontWeight: 700, color: "#111827" }}>
           {aktifFiltre === "yeni" ? "Yeni Videolar" : aktifFiltre === "devam" ? "Devam Eden" : "Tamamlanan"}
         </span>
-        <span
-          style={{ fontSize: "11px", color: "#56aeff", cursor: "pointer" }}
-          onClick={() => router.push("/izle")}
-        >
+        <span style={{ fontSize: "11px", color: "#56aeff", cursor: "pointer" }} onClick={() => router.push("/izle")}>
           Tümünü gör
         </span>
       </div>
@@ -149,14 +150,12 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
           Bu kategoride video bulunmuyor.
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px" }}>
-          {aktifVideolar.slice(0, 8).map(v => (
+        <div style={{ display: "grid", gridTemplateColumns: videoGrid, gap: "10px" }}>
+          {aktifVideolar.slice(0, ekran === 'mobile' ? 6 : 8).map(v => (
             <div
               key={v.yayin_id}
               onClick={() => router.push("/izle")}
-              style={{ background: "white", borderRadius: "10px", border: "0.5px solid #e5e7eb", overflow: "hidden", cursor: "pointer", transition: "box-shadow 0.15s" }}
-              onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 16px rgba(0,0,0,0.08)"}
-              onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.boxShadow = "none"}
+              style={{ background: "white", borderRadius: "10px", border: "0.5px solid #e5e7eb", overflow: "hidden", cursor: "pointer" }}
             >
               <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", overflow: "hidden" }}>
                 {v.thumbnail_url

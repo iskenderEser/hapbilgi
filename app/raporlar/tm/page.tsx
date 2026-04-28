@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
+import { useEkran } from '@/styles/responsive';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -93,6 +94,7 @@ function barGenislik(deger: number, max: number): number {
 
 export default function TmRaporPage() {
   const router = useRouter();
+  const ekran = useEkran();
   const [user, setUser] = useState<any>(null);
   const [rol, setRol] = useState('');
   const [adSoyad, setAdSoyad] = useState('');
@@ -153,7 +155,7 @@ export default function TmRaporPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={user?.email ?? ''} rol={rol} adSoyad={adSoyad} onCikis={handleCikis} />
-      <div className="max-w-4xl mx-auto px-4 py-6 font-[Nunito]">
+      <div className="max-w-4xl mx-auto font-[Nunito]" style={{ padding: ekran === 'mobile' ? '12px 14px' : '16px' }}>
         <button
           onClick={() => router.push('/ana-sayfa')}
           className="flex items-center gap-1.5 text-xs mb-4"
@@ -214,7 +216,7 @@ export default function TmRaporPage() {
       </div>
 
       {/* Özet Stat Kartları */}
-      <div className="grid grid-cols-3 gap-3 mb-3">
+      <div className="grid mb-3" style={{ gridTemplateColumns: ekran === 'mobile' ? '1fr' : 'repeat(3,1fr)' }}>
         {[
           { label: 'Takım toplam puan', value: data.takim_ozet.toplam_puan.toLocaleString('tr-TR'), accent: true },
           { label: 'Ortalama puan / bölge', value: data.takim_ozet.ortalama_puan_bolge.toLocaleString('tr-TR'), sub: `En yüksek: ${data.takim_ozet.en_yuksek_puan.toLocaleString('tr-TR')}` },
@@ -227,7 +229,7 @@ export default function TmRaporPage() {
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      <div className="grid mb-5" style={{ gridTemplateColumns: ekran === 'mobile' ? '1fr' : 'repeat(3,1fr)' }}>
         {[
           { label: 'Aktif UTT', value: `${data.takim_ozet.aktif_utt} / ${data.takim_ozet.toplam_utt}`, sub: `${data.takim_ozet.hic_izlemeyen_utt} hiç izlememiş` },
           { label: 'Takım lig sırası', value: `${data.lig.takim_sirasi || '-'} / ${data.lig.toplam_takim_sayisi}`, accent: true, sub: 'Şirket içinde' },
@@ -244,7 +246,7 @@ export default function TmRaporPage() {
       {/* Öneri Etkinliği */}
       <div className="mb-5">
         <div className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: GRI_METIN }}>öneri etkinliği — takım geneli</div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid" style={{ gridTemplateColumns: ekran === 'mobile' ? '1fr' : 'repeat(3,1fr)' }}>
           {[
             { label: 'Gönderilen öneri', value: data.oneri_etkinligi.gonderilen, renk: KOYU_METIN },
             { label: `Tamamlanan · %${data.oneri_etkinligi.tamamlanma_orani}`, value: data.oneri_etkinligi.tamamlanan, renk: '#3B6D11' },
@@ -397,7 +399,7 @@ export default function TmRaporPage() {
       </div>
 
       {/* Ürün & Teknik Dağılımı */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid" style={{ gridTemplateColumns: ekran === 'mobile' ? '1fr' : 'repeat(2,1fr)' }}>
         <div className="border rounded-xl p-4" style={{ borderColor: '#e5e7eb' }}>
           <div className="text-sm font-medium mb-3" style={{ color: KOYU_METIN }}>Ürün bazlı izlenme sayıları</div>
           {data.urun_bazli_dagilim.map(item => (

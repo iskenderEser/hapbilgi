@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
+import { useEkran } from '@/styles/responsive';
 
 interface UttItem {
   sira: number;
@@ -94,6 +95,7 @@ function barGenislik(deger: number, max: number): number {
 
 export default function BmRaporPage() {
   const router = useRouter();
+  const ekran = useEkran();
   const [user, setUser] = useState<any>(null);
   const [rol, setRol] = useState('');
   const [adSoyad, setAdSoyad] = useState('');
@@ -153,7 +155,7 @@ export default function BmRaporPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={user?.email ?? ''} rol={rol} adSoyad={adSoyad} onCikis={handleCikis} />
-      <div className="max-w-4xl mx-auto px-4 py-6 font-[Nunito]">
+      <div className="max-w-4xl mx-auto font-[Nunito]" style={{ padding: ekran === 'mobile' ? '12px 14px' : '16px', paddingBottom: ekran === 'mobile' ? '80px' : undefined }}>
         <button
           onClick={() => router.push('/ana-sayfa')}
           className="flex items-center gap-1.5 text-xs mb-4"
@@ -194,7 +196,7 @@ export default function BmRaporPage() {
       </div>
 
       {/* Katkı Kartları */}
-      <div className="grid grid-cols-2 gap-3 mb-5">
+      <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: ekran === 'mobile' ? 'repeat(2,1fr)' : 'repeat(4,1fr)' }}>
         {[
           { label: 'Takım katkısı', yuzde: data.katki.takim_katki_yuzdesi, mevcut: data.katki.bolge_toplam_puan, toplam: data.katki.takim_toplam_puan },
           { label: 'Şirket katkısı', yuzde: data.katki.sirket_katki_yuzdesi, mevcut: data.katki.bolge_toplam_puan, toplam: data.katki.sirket_toplam_puan },
@@ -219,7 +221,7 @@ export default function BmRaporPage() {
       </div>
 
       {/* Özet Stat Kartları */}
-      <div className="grid grid-cols-3 gap-3 mb-3">
+      <div className="grid gap-3 mb-3" style={{ gridTemplateColumns: ekran === 'mobile' ? '1fr' : 'repeat(3,1fr)' }}>
         {[
           { label: 'Bölge toplam puan', value: data.bolge_ozet.toplam_puan.toLocaleString('tr-TR'), accent: true },
           { label: 'Ortalama puan / UTT', value: data.bolge_ozet.ortalama_puan.toLocaleString('tr-TR'), sub: `En yüksek: ${data.bolge_ozet.en_yuksek_puan.toLocaleString('tr-TR')}` },
@@ -232,7 +234,7 @@ export default function BmRaporPage() {
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: ekran === 'mobile' ? '1fr' : 'repeat(3,1fr)' }}>
         {[
           { label: 'Aktif UTT', value: `${data.bolge_ozet.aktif_utt} / ${data.bolge_ozet.toplam_utt}`, sub: `${data.bolge_ozet.hic_izlemeyen_utt} hiç izlememiş` },
           { label: 'Bölge lig sırası', value: `${data.lig.bolge_sirasi || '-'} / ${data.lig.toplam_bolge_sayisi}`, accent: true },
@@ -266,7 +268,7 @@ export default function BmRaporPage() {
       {/* Öneri Etkinliği */}
       <div className="mb-5">
         <div className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: GRI_METIN }}>öneri etkinliği</div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid gap-3" style={{ gridTemplateColumns: ekran === 'mobile' ? '1fr' : 'repeat(3,1fr)' }}>
           {[
             { label: 'Gönderilen öneri', value: data.oneri_etkinligi.gonderilen, renk: KOYU_METIN },
             { label: `Tamamlanan · %${data.oneri_etkinligi.tamamlanma_orani}`, value: data.oneri_etkinligi.tamamlanan, renk: '#3B6D11' },
@@ -427,7 +429,7 @@ export default function BmRaporPage() {
       </div>
 
       {/* Ürün & Teknik Dağılımı */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-3" style={{ gridTemplateColumns: ekran === 'mobile' ? '1fr' : 'repeat(2,1fr)' }}>
         <div className="border rounded-xl p-4" style={{ borderColor: '#e5e7eb' }}>
           <div className="text-sm font-medium mb-3" style={{ color: KOYU_METIN }}>Ürün bazlı izlenme sayıları</div>
           {data.urun_bazli_dagilim.map(item => (

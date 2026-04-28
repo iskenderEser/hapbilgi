@@ -4,40 +4,58 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
+import { useEkran } from '@/styles/responsive';
 
 const BORDO = '#bc2d0d';
+const MAVI = '#56aeff';
+const YESIL = '#16a34a';
 const GRI_METIN = '#737373';
 const KOYU_METIN = '#111827';
 const GRI_ZEMIN = '#f9fafb';
 
-interface Yayin {
-  yayin_id: string;
-  kapsam: string;
-  ileri_sarma_acik: boolean;
-  extra_puan: number;
-  urun_adi: string;
-  teknik_adi: string;
-  video_url: string;
-  thumbnail_url: string;
-  izlendi_mi: boolean;
-  izleme_turu?: string;
+type Periyot = 'bu_ay' | 'gecen_ay' | 'bu_hafta';
+
+interface RaporData {
+  kullanici: { ad: string; soyad: string; rol: string };
+  periyot: string;
+  puan_ozeti: {
+    toplam_puan: number;
+    izleme_puani: number;
+    cevaplama_puani: number;
+    extra_puani: number;
+    challenge_gonderme_puani: number;
+    challenge_izleme_puani: number;
+  };
+  izleme_ozeti: {
+    izlenen_video_sayisi: number;
+    extra_izleme_sayisi: number;
+    challenge_izleme_sayisi: number;
+  };
+  soru_ozeti: {
+    dogru_cevap_sayisi: number;
+    yanlis_cevap_sayisi: number;
+    toplam_cevap: number;
+  };
+  challenge_ozeti: {
+    gonderilen_challenge_sayisi: number;
+    izlenen_challenge_sayisi: number;
+    alinan_challenge_sayisi: number;
+    tamamlanan_challenge_sayisi: number;
+    challenge_club_puani: number;
+  };
 }
 
-export default function BmEgitimIzlePage() {
+export default function BmEgitimRaporPage() {
   const router = useRouter();
+  const ekran = useEkran();
   const [user, setUser] = useState<any>(null);
   const [rol, setRol] = useState('');
   const [adSoyad, setAdSoyad] = useState('');
   const [loading, setLoading] = useState(true);
-  const [yayinlar, setYayinlar] = useState<Yayin[]>([]);
-  const [bekleyenChallengeler, setBekleyenChallengeler] = useState<any[]>([]);
-  const [aktifYayin, setAktifYayin] = useState<Yayin | null>(null);
-  const [izlemeId, setIzlemeId] = useState<string | null>(null);
-  const [sorular, setSorular] = useState<any[]>([]);
-  const [cevaplar, setCevaplar] = useState<Record<number, string>>({});
-  const [sonuclar, setSonuclar] = useState<any[]>([]);
-  const [asama, setAsama] = useState<'liste' | 'izle' | 'sorular' | 'sonuc'>('liste');
-  const [filtre, setFiltre] = useState<'tumu' | 'normal' | 'challenge'>('tumu');
+  const [data, setData] = useState<RaporData | null>(null);
+  const [periyot, setPeriyot] = useState<Periyot>('bu_ay');
+  const [top3, setTop3] = useState<any[]>([]);
+  const [kendiPuani, setKendiPuani] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
@@ -55,23 +73,24 @@ export default function BmEgitimIzlePage() {
 
   useEffect(() => {
     if (!rol) return;
-    yayinlariCek();
-    challengeleriCek();
+    raporCek();
+    challengeTop3Cek();
     setLoading(false);
-  }, [rol]);
+  }, [rol, periyot]);
 
-  const yayinlariCek = async () => {
-    const res = await fetch('/bm-egitim/api/yayin');
+  const raporCek = async () => {
+    const res = await fetch(`/bm-egitim/api/rapor?periyot=${periyot}`);
     if (!res.ok) return;
-    const data = await res.json();
-    setYayinlar(data.yayinlar ?? []);
+    const d = await res.json();
+    setData(d.data);
   };
 
-  const challengeleriCek = async () => {
-    const res = await fetch('/challenge-club/api?tip=bekleyen');
+  const challengeTop3Cek = async () => {
+    const res = await fetch('/challenge-club/api?tip=aylik_top3');
     if (!res.ok) return;
-    const data = await res.json();
-    setBekleyenChallengeler(data.challengeler ?? []);
+    const d = await res.json();
+    setTop3(d.top3 ?? []);
+    setKendiPuani(d.kendi_puani ?? 0);
   };
 
   const handleCikis = async () => {
@@ -80,71 +99,13 @@ export default function BmEgitimIzlePage() {
     router.push('/login');
   };
 
-  const videoBaslat = async (yayin: Yayin, izleme_turu = 'normal') => {
-    const res = await fetch('/bm-egitim/api/izle/baslat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ yayin_id: yayin.yayin_id, izleme_turu }),
-    });
-    const data = await res.json();
-    if (!res.ok) { alert(data.hata || 'İzleme başlatılamadı.'); return; }
-    setIzlemeId(data.izleme_id);
-    setAktifYayin({ ...yayin, izleme_turu });
-    setAsama('izle');
+  const periyotLabel: Record<Periyot, string> = {
+    bu_ay: 'Bu Ay',
+    gecen_ay: 'Geçen Ay',
+    bu_hafta: 'Bu Hafta',
   };
 
-  const videoBitir = async (ileriSarilanSure = 0) => {
-    if (!izlemeId) return;
-    const res = await fetch('/bm-egitim/api/izle/bitir', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ izleme_id: izlemeId, ileri_sarilan_sure: ileriSarilanSure }),
-    });
-    const data = await res.json();
-    if (!res.ok) { alert(data.hata || 'İzleme tamamlanamadı.'); return; }
-    if (data.soru_gosterilecek && aktifYayin) {
-      await soruGetir();
-      setAsama('sorular');
-    } else {
-      setAsama('sonuc');
-      setSonuclar([]);
-      yayinlariCek();
-    }
-  };
-
-  const soruGetir = async () => {
-    if (!aktifYayin) return;
-    const res = await fetch(`/bm-egitim/api/soru-setleri?yayin_id=${aktifYayin.yayin_id}`);
-    if (!res.ok) return;
-    const data = await res.json();
-    setSorular(data.sorular ?? []);
-  };
-
-  const cevapGonder = async () => {
-    if (!izlemeId) return;
-    const cevapListesi = Object.entries(cevaplar).map(([soru_index, verilen_cevap]) => ({
-      soru_index: parseInt(soru_index),
-      verilen_cevap,
-    }));
-    const res = await fetch('/bm-egitim/api/izle/cevap', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ izleme_id: izlemeId, cevaplar: cevapListesi }),
-    });
-    const data = await res.json();
-    if (!res.ok) { alert(data.hata || 'Cevaplar gönderilemedi.'); return; }
-    setSonuclar(data.sonuclar ?? []);
-    setAsama('sonuc');
-    yayinlariCek();
-  };
-
-  const filtreliYayinlar = yayinlar.filter(y => {
-    if (filtre === 'normal') return !bekleyenChallengeler.some(c => c.yayin_id === y.yayin_id);
-    if (filtre === 'challenge') return bekleyenChallengeler.some(c => c.yayin_id === y.yayin_id);
-    return true;
-  });
-
-  if (loading || !user) return (
+  if (loading || !user || !data) return (
     <div style={{ minHeight: '100vh', background: GRI_ZEMIN, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <svg className="animate-spin" style={{ width: 24, height: 24, color: GRI_METIN }} fill="none" viewBox="0 0 24 24">
         <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -153,10 +114,14 @@ export default function BmEgitimIzlePage() {
     </div>
   );
 
+  const dogru_oran = data.soru_ozeti.toplam_cevap > 0
+    ? Math.round(data.soru_ozeti.dogru_cevap_sayisi / data.soru_ozeti.toplam_cevap * 100)
+    : 0;
+
   return (
     <div style={{ minHeight: '100vh', background: GRI_ZEMIN, fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={user?.email ?? ''} rol={rol} adSoyad={adSoyad} onCikis={handleCikis} />
-      <div style={{ maxWidth: 860, margin: '0 auto', padding: '24px 16px' }}>
+      <div style={{ maxWidth: 860, margin: '0 auto', padding: ekran === 'mobile' ? '12px 14px' : '24px 16px', paddingBottom: ekran === 'mobile' ? '80px' : undefined }}>
 
         <button
           onClick={() => router.push('/ana-sayfa')}
@@ -168,162 +133,116 @@ export default function BmEgitimIzlePage() {
           Ana Sayfa
         </button>
 
-        {/* Liste aşaması */}
-        {asama === 'liste' && (
-          <>
-            {/* Bekleyen challenge bildirimi */}
-            {bekleyenChallengeler.length > 0 && (
-              <div style={{ background: '#FAECE7', border: `0.5px solid ${BORDO}`, borderRadius: 12, padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 13, color: BORDO, fontWeight: 500 }}>
-                  {bekleyenChallengeler.length} bekleyen challenge var
-                </span>
-                <button
-                  onClick={() => setFiltre('challenge')}
-                  style={{ fontSize: 12, color: BORDO, background: 'none', border: `0.5px solid ${BORDO}`, borderRadius: 20, padding: '4px 12px', cursor: 'pointer', fontFamily: "'Nunito', sans-serif" }}
-                >
-                  Göster
-                </button>
-              </div>
-            )}
-
-            {/* Filtre */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-              {(['tumu', 'normal', 'challenge'] as const).map(f => (
-                <button
-                  key={f}
-                  onClick={() => setFiltre(f)}
-                  style={{
-                    padding: '5px 14px', borderRadius: 20, fontSize: 12, cursor: 'pointer',
-                    fontFamily: "'Nunito', sans-serif",
-                    background: filtre === f ? BORDO : 'white',
-                    color: filtre === f ? 'white' : KOYU_METIN,
-                    border: `0.5px solid ${filtre === f ? BORDO : '#e5e7eb'}`,
-                  }}
-                >
-                  {f === 'tumu' ? 'Tümü' : f === 'normal' ? 'Eğitimler' : 'Challenge'}
-                </button>
-              ))}
-            </div>
-
-            {/* Video listesi */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {filtreliYayinlar.length === 0 ? (
-                <div style={{ background: 'white', border: '0.5px solid #e5e7eb', borderRadius: 12, padding: 40, textAlign: 'center', fontSize: 13, color: GRI_METIN }}>
-                  İçerik bulunamadı.
-                </div>
-              ) : filtreliYayinlar.map(y => {
-                const isChallenge = bekleyenChallengeler.some(c => c.yayin_id === y.yayin_id);
-                const challenge = bekleyenChallengeler.find(c => c.yayin_id === y.yayin_id);
-                return (
-                  <div key={y.yayin_id} style={{ background: 'white', border: `0.5px solid ${isChallenge ? BORDO : '#e5e7eb'}`, borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
-                    {y.thumbnail_url && (
-                      <img src={y.thumbnail_url} alt="" style={{ width: 80, height: 52, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
-                    )}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: KOYU_METIN }}>{y.urun_adi}</div>
-                      <div style={{ fontSize: 12, color: GRI_METIN }}>{y.teknik_adi}</div>
-                      {isChallenge && challenge && (
-                        <div style={{ fontSize: 11, color: BORDO, marginTop: 4 }}>
-                          Challenge — {challenge.gonderen?.ad} {challenge.gonderen?.soyad} · Son: {new Date(challenge.son_tarih).toLocaleDateString('tr-TR')}
-                        </div>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => videoBaslat(y, isChallenge ? 'challenge' : 'normal')}
-                      style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: BORDO, color: 'white', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: "'Nunito', sans-serif", flexShrink: 0 }}
-                    >
-                      İzle
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-
-        {/* İzleme aşaması */}
-        {asama === 'izle' && aktifYayin && (
-          <div style={{ background: 'white', border: '0.5px solid #e5e7eb', borderRadius: 12, padding: '1.25rem' }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: KOYU_METIN, marginBottom: 12 }}>
-              {aktifYayin.urun_adi} · {aktifYayin.teknik_adi}
-            </div>
-            <div style={{ borderRadius: 8, overflow: 'hidden', marginBottom: 16, background: '#000', aspectRatio: '16/9' }}>
-              <iframe
-                src={aktifYayin.video_url}
-                style={{ width: '100%', height: '100%', border: 'none' }}
-                allowFullScreen
-              />
-            </div>
-            <button
-              onClick={() => videoBitir()}
-              style={{ width: '100%', padding: 11, borderRadius: 8, border: 'none', background: BORDO, color: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: "'Nunito', sans-serif" }}
-            >
-              İzlemeyi Tamamla
-            </button>
+        {/* Başlık + Periyot */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: KOYU_METIN }}>Eğitim Raporun</div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {(['bu_hafta', 'bu_ay', 'gecen_ay'] as Periyot[]).map(p => (
+              <button
+                key={p}
+                onClick={() => setPeriyot(p)}
+                style={{
+                  padding: '5px 12px', borderRadius: 20, fontSize: 11, cursor: 'pointer',
+                  fontFamily: "'Nunito', sans-serif",
+                  background: periyot === p ? BORDO : 'white',
+                  color: periyot === p ? 'white' : KOYU_METIN,
+                  border: `0.5px solid ${periyot === p ? BORDO : '#e5e7eb'}`,
+                }}
+              >
+                {periyotLabel[p]}
+              </button>
+            ))}
           </div>
-        )}
+        </div>
 
-        {/* Sorular aşaması */}
-        {asama === 'sorular' && (
-          <div style={{ background: 'white', border: '0.5px solid #e5e7eb', borderRadius: 12, padding: '1.25rem' }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: KOYU_METIN, marginBottom: 16 }}>Sorular</div>
-            {sorular.map((soru, i) => (
-              <div key={i} style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 13, color: KOYU_METIN, marginBottom: 10 }}>{i + 1}. {soru.soru_metni}</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {soru.secenekler?.map((s: any) => (
-                    <button
-                      key={s.harf}
-                      onClick={() => setCevaplar(prev => ({ ...prev, [i]: s.harf }))}
-                      style={{
-                        padding: '8px 14px', borderRadius: 8, textAlign: 'left', cursor: 'pointer',
-                        fontFamily: "'Nunito', sans-serif", fontSize: 13,
-                        background: cevaplar[i] === s.harf ? BORDO : 'white',
-                        color: cevaplar[i] === s.harf ? 'white' : KOYU_METIN,
-                        border: `0.5px solid ${cevaplar[i] === s.harf ? BORDO : '#e5e7eb'}`,
-                      }}
-                    >
-                      {s.harf}) {s.metin}
-                    </button>
-                  ))}
-                </div>
+        {/* Toplam puan kartı */}
+        <div style={{ background: BORDO, borderRadius: 12, padding: '20px 24px', marginBottom: 16, color: 'white' }}>
+          <div style={{ fontSize: 11, opacity: 0.8, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>Toplam Puan</div>
+          <div style={{ fontSize: 36, fontWeight: 700 }}>{data.puan_ozeti.toplam_puan.toLocaleString('tr-TR')}</div>
+          <div style={{ display: 'flex', gap: 20, marginTop: 12, flexWrap: 'wrap' as const }}>
+            {[
+              { label: 'İzleme', value: data.puan_ozeti.izleme_puani },
+              { label: 'Cevaplama', value: data.puan_ozeti.cevaplama_puani },
+              { label: 'Extra', value: data.puan_ozeti.extra_puani },
+              { label: 'Challenge', value: data.puan_ozeti.challenge_gonderme_puani + data.puan_ozeti.challenge_izleme_puani },
+            ].map(item => (
+              <div key={item.label}>
+                <div style={{ fontSize: 10, opacity: 0.7 }}>{item.label}</div>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>{item.value}</div>
               </div>
             ))}
-            <button
-              onClick={cevapGonder}
-              disabled={Object.keys(cevaplar).length < sorular.length}
-              style={{
-                width: '100%', padding: 11, borderRadius: 8, border: 'none',
-                background: Object.keys(cevaplar).length >= sorular.length ? BORDO : '#e5e7eb',
-                color: Object.keys(cevaplar).length >= sorular.length ? 'white' : GRI_METIN,
-                fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: "'Nunito', sans-serif",
-              }}
-            >
-              Cevapları Gönder
-            </button>
           </div>
-        )}
+        </div>
 
-        {/* Sonuç aşaması */}
-        {asama === 'sonuc' && (
-          <div style={{ background: 'white', border: '0.5px solid #e5e7eb', borderRadius: 12, padding: '1.25rem', textAlign: 'center' }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>🎉</div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: KOYU_METIN, marginBottom: 8 }}>Tamamlandı!</div>
-            {sonuclar.length > 0 && (
-              <div style={{ fontSize: 13, color: GRI_METIN, marginBottom: 16 }}>
-                {sonuclar.filter(s => s.dogru_mu).length} / {sonuclar.length} doğru
-              </div>
-            )}
-            <button
-              onClick={() => { setAsama('liste'); setAktifYayin(null); setIzlemeId(null); setSorular([]); setCevaplar({}); setSonuclar([]); }}
-              style={{ padding: '9px 24px', borderRadius: 8, border: 'none', background: BORDO, color: 'white', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: "'Nunito', sans-serif" }}
-            >
-              Listeye Dön
-            </button>
+        {/* İzleme + Soru kartları */}
+        <div style={{ display: 'grid', gridTemplateColumns: ekran === 'mobile' ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 12 }}>
+          <div style={{ background: 'white', border: '0.5px solid #e5e7eb', borderRadius: 12, padding: '16px' }}>
+            <div style={{ fontSize: 11, color: GRI_METIN, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 12 }}>İzleme</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <StatSatir label="İzlenen Video" value={data.izleme_ozeti.izlenen_video_sayisi} renk={MAVI} />
+              <StatSatir label="Extra İzleme" value={data.izleme_ozeti.extra_izleme_sayisi} renk={YESIL} />
+              <StatSatir label="Challenge İzleme" value={data.izleme_ozeti.challenge_izleme_sayisi} renk={BORDO} />
+            </div>
+          </div>
+          <div style={{ background: 'white', border: '0.5px solid #e5e7eb', borderRadius: 12, padding: '16px' }}>
+            <div style={{ fontSize: 11, color: GRI_METIN, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 12 }}>Soru Performansı</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <StatSatir label="Doğru Cevap" value={data.soru_ozeti.dogru_cevap_sayisi} renk={YESIL} />
+              <StatSatir label="Yanlış Cevap" value={data.soru_ozeti.yanlis_cevap_sayisi} renk="#E24B4A" />
+              <StatSatir label="Başarı Oranı" value={`%${dogru_oran}`} renk={BORDO} />
+            </div>
+          </div>
+        </div>
+
+        {/* Challenge özeti */}
+        <div style={{ background: 'white', border: '0.5px solid #e5e7eb', borderRadius: 12, padding: '16px', marginBottom: 12 }}>
+          <div style={{ fontSize: 11, color: GRI_METIN, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 12 }}>Challenge Club</div>
+          <div style={{ display: 'grid', gridTemplateColumns: ekran === 'mobile' ? '1fr' : '1fr 1fr', gap: 10 }}>
+            <StatSatir label="Gönderilen Challenge" value={data.challenge_ozeti.gonderilen_challenge_sayisi} renk={BORDO} />
+            <StatSatir label="Kabul Edilen" value={data.challenge_ozeti.izlenen_challenge_sayisi} renk={YESIL} />
+            <StatSatir label="Alınan Challenge" value={data.challenge_ozeti.alinan_challenge_sayisi} renk={MAVI} />
+            <StatSatir label="Tamamlanan" value={data.challenge_ozeti.tamamlanan_challenge_sayisi} renk={YESIL} />
+          </div>
+          <div style={{ marginTop: 12, padding: '10px 14px', background: '#FAECE7', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 12, color: BORDO, fontWeight: 500 }}>Bu Ayki Challenge Puanın</span>
+            <span style={{ fontSize: 18, fontWeight: 700, color: BORDO }}>{kendiPuani}</span>
+          </div>
+        </div>
+
+        {/* Ayın Top 3 */}
+        {top3.length > 0 && (
+          <div style={{ background: 'white', border: '0.5px solid #e5e7eb', borderRadius: 12, padding: '16px' }}>
+            <div style={{ fontSize: 11, color: GRI_METIN, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 12 }}>Bu Ayın Top 3 Challenger'ı</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {top3.map((t) => (
+                <div key={t.sira} style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px',
+                  background: t.benim ? '#FAECE7' : GRI_ZEMIN, borderRadius: 8,
+                  border: t.benim ? `0.5px solid ${BORDO}` : '0.5px solid #e5e7eb',
+                }}>
+                  <span style={{ fontSize: 16, width: 28, textAlign: 'center' }}>
+                    {t.sira === 1 ? '🥇' : t.sira === 2 ? '🥈' : '🥉'}
+                  </span>
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: t.benim ? 600 : 400, color: KOYU_METIN }}>
+                    {t.ad} {t.benim && <span style={{ fontSize: 11, color: BORDO }}>(Sen)</span>}
+                  </span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: BORDO }}>{t.puan}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
       </div>
+    </div>
+  );
+}
+
+function StatSatir({ label, value, renk }: { label: string; value: number | string; renk: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <span style={{ fontSize: 12, color: '#737373' }}>{label}</span>
+      <span style={{ fontSize: 14, fontWeight: 600, color: renk }}>{value}</span>
     </div>
   );
 }

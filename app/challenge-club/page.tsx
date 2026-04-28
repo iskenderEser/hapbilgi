@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
+import { useEkran } from '@/styles/responsive';
 
 const BORDO = '#bc2d0d';
 const GRI_METIN = '#737373';
@@ -32,6 +33,7 @@ interface Top3Item {
 
 export default function ChallengeClubPage() {
   const router = useRouter();
+  const ekran = useEkran();
   const [user, setUser] = useState<any>(null);
   const [rol, setRol] = useState('');
   const [adSoyad, setAdSoyad] = useState('');
@@ -113,7 +115,7 @@ export default function ChallengeClubPage() {
   return (
     <div style={{ minHeight: '100vh', background: GRI_ZEMIN, fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={user?.email ?? ''} rol={rol} adSoyad={adSoyad} onCikis={handleCikis} />
-      <div style={{ maxWidth: 860, margin: '0 auto', padding: '24px 16px' }}>
+      <div style={{ maxWidth: 860, margin: '0 auto', padding: ekran === 'mobile' ? '12px 14px' : '24px 16px', paddingBottom: ekran === 'mobile' ? '80px' : undefined }}>
 
         <button
           onClick={() => router.push('/ana-sayfa')}

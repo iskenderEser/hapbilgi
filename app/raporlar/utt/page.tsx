@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
+import { useEkran } from '@/styles/responsive';
 
 interface RaporData {
   kullanici: {
@@ -70,6 +71,7 @@ type Periyot = 'bu_ay' | 'gecen_ay' | 'bu_hafta';
 
 export default function UttRaporPage() {
   const router = useRouter();
+  const ekran = useEkran();
   const [user, setUser] = useState<any>(null);
   const [rol, setRol] = useState('');
   const [adSoyad, setAdSoyad] = useState('');
@@ -152,7 +154,7 @@ export default function UttRaporPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#f9fafb', fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={user?.email ?? ''} rol={rol} adSoyad={adSoyad} onCikis={handleCikis} />
-      <div className="max-w-4xl mx-auto px-4 py-6 font-[Nunito]">
+      <div className="max-w-4xl mx-auto font-[Nunito]" style={{ padding: ekran === 'mobile' ? '12px 14px' : '16px', paddingBottom: ekran === 'mobile' ? '80px' : undefined }}>
         <button
           onClick={() => router.push('/ana-sayfa')}
           className="flex items-center gap-1.5 text-xs mb-4"
@@ -193,7 +195,7 @@ export default function UttRaporPage() {
       </div>
 
       {/* Katkı Kartları */}
-      <div className="grid grid-cols-2 gap-3 mb-5">
+      <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: ekran === 'mobile' ? 'repeat(2,1fr)' : 'repeat(4,1fr)' }}>
         {[
           { label: 'Bölge katkısı', yuzde: data.katki.bolge_katki_yuzdesi, mevcut: data.katki.bolge_mevcut_puan, toplam: data.katki.bolge_toplam_puan },
           { label: 'Takım katkısı', yuzde: data.katki.takim_katki_yuzdesi, mevcut: data.katki.bolge_mevcut_puan, toplam: data.katki.takim_toplam_puan },
@@ -315,7 +317,7 @@ export default function UttRaporPage() {
         <div className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: '#737373' }}>
           kayıp detayı
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid gap-3" style={{ gridTemplateColumns: ekran === 'mobile' ? '1fr' : 'repeat(3,1fr)' }}>
           {[
             { label: 'İleri sarma kaybı', value: data.istatistikler.ileri_sarma_kaybi },
             { label: 'Yanlış cevap kaybı', value: data.istatistikler.yanlis_cevap_kaybi },
@@ -332,7 +334,7 @@ export default function UttRaporPage() {
       </div>
 
       {/* Ürün & Teknik Dağılımı */}
-      <div className="grid grid-cols-2 gap-3 mb-5">
+      <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: ekran === 'mobile' ? '1fr' : 'repeat(2,1fr)' }}>
         <div className="border rounded-xl p-4" style={{ borderColor: '#e5e7eb' }}>
           <div className="text-sm font-medium mb-3" style={{ color: '#111827' }}>Ürün bazlı izlenme sayıları</div>
           {data.urun_bazli_dagilim.map(u => (

@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useHataMesaji } from "@/components/HataMesaji";
+import { useEkran } from "@/styles/responsive";
 
 interface BmSatiri {
   kullanici_id: string;
@@ -32,6 +33,7 @@ interface Props {
 
 export default function TmAnaSayfa({ user, adSoyad }: Props) {
   const router = useRouter();
+  const ekran = useEkran();
   const [tmVeri, setTmVeri] = useState<TmVeri | null>(null);
   const [loading, setLoading] = useState(true);
   const { hata } = useHataMesaji();
@@ -65,23 +67,27 @@ export default function TmAnaSayfa({ user, adSoyad }: Props) {
   const istat = tmVeri?.istatistikler ?? { bm_sayisi: 0, hafta_aktif_bm: 0, toplam_bekleyen: 0, toplam_tamamlanan: 0 };
   const satirlar = tmVeri?.bm_satirlari ?? [];
   const ad = adSoyad.split(" ")[0] || "TM";
+  const padding = ekran === 'mobile' ? '16px 14px' : ekran === 'tablet' ? '20px 24px' : '28px 32px';
+  const statGrid = ekran === 'mobile' ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)';
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "28px 32px" }}>
+    <div style={{ maxWidth: "1200px", margin: "0 auto", padding }}>
 
       {/* Karşılama */}
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "24px" }}>
+      <div style={{ display: "flex", flexDirection: ekran === 'mobile' ? 'column' : 'row', alignItems: ekran === 'mobile' ? 'flex-start' : 'flex-end', justifyContent: "space-between", gap: 8, marginBottom: "24px" }}>
         <div>
-          <h1 style={{ fontSize: "20px", fontWeight: 800, color: "#111827", margin: 0 }}>Merhaba, {ad} 👋</h1>
+          <h1 style={{ fontSize: ekran === 'mobile' ? "18px" : "20px", fontWeight: 800, color: "#111827", margin: 0 }}>Merhaba, {ad} 👋</h1>
           <p style={{ fontSize: "13px", color: "#737373", marginTop: "4px" }}>TM</p>
         </div>
-        <span style={{ fontSize: "12px", color: "#737373", background: "white", border: "1px solid #e5e7eb", borderRadius: "20px", padding: "5px 14px", whiteSpace: "nowrap" }}>
-          {bugunTarih()}
-        </span>
+        {ekran !== 'mobile' && (
+          <span style={{ fontSize: "12px", color: "#737373", background: "white", border: "1px solid #e5e7eb", borderRadius: "20px", padding: "5px 14px", whiteSpace: "nowrap" }}>
+            {bugunTarih()}
+          </span>
+        )}
       </div>
 
       {/* Stat kartlar */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "28px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: statGrid, gap: "10px", marginBottom: "20px" }}>
         {[
           { label: "Takımdaki BM", value: istat.bm_sayisi, sub: "Aktif bölge müdürü", renk: "#56aeff" },
           { label: "Bu Hafta Aktif BM", value: istat.hafta_aktif_bm, sub: "Öneri gönderen", renk: "#16a34a" },
@@ -95,12 +101,12 @@ export default function TmAnaSayfa({ user, adSoyad }: Props) {
               border: "1px solid #e5e7eb",
               borderLeft: `3px solid ${k.renk}`,
               borderRadius: "12px",
-              padding: "20px 22px",
+              padding: ekran === 'mobile' ? "14px 14px" : "20px 22px",
             }}
           >
-            <div style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.4px", textTransform: "uppercase", marginBottom: "10px" }}>{k.label}</div>
-            <div style={{ fontSize: "28px", fontWeight: 800, color: "#111827", lineHeight: 1 }}>{k.value}</div>
-            <div style={{ fontSize: "12px", color: "#737373", marginTop: "6px" }}>{k.sub}</div>
+            <div style={{ fontSize: "10px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.4px", textTransform: "uppercase", marginBottom: "8px" }}>{k.label}</div>
+            <div style={{ fontSize: ekran === 'mobile' ? "22px" : "28px", fontWeight: 800, color: "#111827", lineHeight: 1 }}>{k.value}</div>
+            {ekran !== 'mobile' && <div style={{ fontSize: "12px", color: "#737373", marginTop: "6px" }}>{k.sub}</div>}
           </div>
         ))}
       </div>
@@ -111,47 +117,62 @@ export default function TmAnaSayfa({ user, adSoyad }: Props) {
       </div>
 
       <div style={{ background: "white", border: "1px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1.2fr 1fr 1fr 1fr 20px", gap: "12px", padding: "10px 20px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-          {["BM", "BÖLGE", "BU HAFTA", "BEKLEYEN", "TAMAMLANAN", ""].map((h, i) => (
-            <div key={i} style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.4px", textTransform: "uppercase" }}>{h}</div>
-          ))}
-        </div>
-
-        {satirlar.length === 0 ? (
-          <div style={{ padding: "40px", textAlign: "center", fontSize: "13px", color: "#9ca3af" }}>
-            Takımda BM bulunmuyor.
-          </div>
-        ) : (
-          satirlar.map((s, i) => (
-            <div
-              key={s.kullanici_id}
-              onClick={() => router.push("/oneriler")}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1.6fr 1.2fr 1fr 1fr 1fr 20px",
-                gap: "12px",
-                padding: "13px 20px",
-                borderBottom: i < satirlar.length - 1 ? "1px solid #f3f4f6" : "none",
-                alignItems: "center",
-                cursor: "pointer",
-                background: "white",
-                transition: "background 0.12s",
-              }}
-              onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = "#f9fafb"}
-              onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = "white"}
-            >
-              <div style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{s.bm_adi}</div>
-              <div style={{ fontSize: "12px", color: "#737373" }}>{s.bolge_adi}</div>
-              <div>
-                <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "20px", background: s.hafta_oneri > 0 ? "#f0fdf4" : "#f3f4f6", color: s.hafta_oneri > 0 ? "#166534" : "#9ca3af", display: "inline-block" }}>
-                  {s.hafta_oneri} öneri
-                </span>
+        {ekran === 'mobile' ? (
+          satirlar.length === 0 ? (
+            <div style={{ padding: "40px", textAlign: "center", fontSize: "13px", color: "#9ca3af" }}>Takımda BM bulunmuyor.</div>
+          ) : (
+            satirlar.map((s, i) => (
+              <div
+                key={s.kullanici_id}
+                onClick={() => router.push("/oneriler")}
+                style={{ padding: "14px 16px", borderBottom: i < satirlar.length - 1 ? "1px solid #f3f4f6" : "none", cursor: "pointer" }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                  <div style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{s.bm_adi}</div>
+                  <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "20px", background: s.hafta_oneri > 0 ? "#f0fdf4" : "#f3f4f6", color: s.hafta_oneri > 0 ? "#166534" : "#9ca3af" }}>
+                    {s.hafta_oneri} öneri
+                  </span>
+                </div>
+                <div style={{ fontSize: "12px", color: "#737373" }}>{s.bolge_adi}</div>
+                <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
+                  <span style={{ fontSize: "11px", color: s.bekleyen > 0 ? "#bc2d0d" : "#9ca3af" }}>Bekleyen: {s.bekleyen}</span>
+                  <span style={{ fontSize: "11px", color: "#16a34a" }}>Tamamlanan: {s.tamamlanan}</span>
+                </div>
               </div>
-              <div style={{ fontSize: "13px", fontWeight: 700, color: s.bekleyen > 0 ? "#bc2d0d" : "#9ca3af" }}>{s.bekleyen}</div>
-              <div style={{ fontSize: "13px", fontWeight: 700, color: "#16a34a" }}>{s.tamamlanan}</div>
-              <span style={{ color: "#d1d5db", fontSize: "16px" }}>›</span>
+            ))
+          )
+        ) : (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1.2fr 1fr 1fr 1fr 20px", gap: "12px", padding: "10px 20px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+              {["BM", "BÖLGE", "BU HAFTA", "BEKLEYEN", "TAMAMLANAN", ""].map((h, i) => (
+                <div key={i} style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.4px", textTransform: "uppercase" }}>{h}</div>
+              ))}
             </div>
-          ))
+            {satirlar.length === 0 ? (
+              <div style={{ padding: "40px", textAlign: "center", fontSize: "13px", color: "#9ca3af" }}>Takımda BM bulunmuyor.</div>
+            ) : (
+              satirlar.map((s, i) => (
+                <div
+                  key={s.kullanici_id}
+                  onClick={() => router.push("/oneriler")}
+                  style={{ display: "grid", gridTemplateColumns: "1.6fr 1.2fr 1fr 1fr 1fr 20px", gap: "12px", padding: "13px 20px", borderBottom: i < satirlar.length - 1 ? "1px solid #f3f4f6" : "none", alignItems: "center", cursor: "pointer", background: "white", transition: "background 0.12s" }}
+                  onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = "#f9fafb"}
+                  onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = "white"}
+                >
+                  <div style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{s.bm_adi}</div>
+                  <div style={{ fontSize: "12px", color: "#737373" }}>{s.bolge_adi}</div>
+                  <div>
+                    <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "20px", background: s.hafta_oneri > 0 ? "#f0fdf4" : "#f3f4f6", color: s.hafta_oneri > 0 ? "#166534" : "#9ca3af", display: "inline-block" }}>
+                      {s.hafta_oneri} öneri
+                    </span>
+                  </div>
+                  <div style={{ fontSize: "13px", fontWeight: 700, color: s.bekleyen > 0 ? "#bc2d0d" : "#9ca3af" }}>{s.bekleyen}</div>
+                  <div style={{ fontSize: "13px", fontWeight: 700, color: "#16a34a" }}>{s.tamamlanan}</div>
+                  <span style={{ color: "#d1d5db", fontSize: "16px" }}>›</span>
+                </div>
+              ))
+            )}
+          </>
         )}
       </div>
     </div>

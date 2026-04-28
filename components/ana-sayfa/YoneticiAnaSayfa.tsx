@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useHataMesaji } from "@/components/HataMesaji";
+import { useEkran } from "@/styles/responsive";
 
 interface Video {
   yayin_id: string;
@@ -50,6 +51,7 @@ const GRADYANLAR = [
 
 export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
   const router = useRouter();
+  const ekran = useEkran();
   const [veri, setVeri] = useState<YoneticiVeri | null>(null);
   const [loading, setLoading] = useState(true);
   const { hata } = useHataMesaji();
@@ -90,23 +92,28 @@ export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
 
   const istat = veri?.istatistikler ?? { yayin_sayisi: 0, hafta_izlenme: 0, utt_sayisi: 0, tamamlanma_orani: 0 };
   const ad = adSoyad.split(" ")[0] || "Yönetici";
+  const padding = ekran === 'mobile' ? '16px 14px' : ekran === 'tablet' ? '20px 24px' : '28px 32px';
+  const statGrid = ekran === 'mobile' ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)';
+  const altGrid = ekran === 'mobile' ? '1fr' : '1fr 1fr';
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "28px 32px" }}>
+    <div style={{ maxWidth: "1200px", margin: "0 auto", padding }}>
 
       {/* Karşılama */}
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: "24px" }}>
+      <div style={{ display: "flex", flexDirection: ekran === 'mobile' ? 'column' : 'row', alignItems: ekran === 'mobile' ? 'flex-start' : 'flex-end', justifyContent: "space-between", gap: 8, marginBottom: "24px" }}>
         <div>
-          <h1 style={{ fontSize: "20px", fontWeight: 800, color: "#111827", margin: 0 }}>Merhaba, {ad} 👋</h1>
+          <h1 style={{ fontSize: ekran === 'mobile' ? "18px" : "20px", fontWeight: 800, color: "#111827", margin: 0 }}>Merhaba, {ad} 👋</h1>
           <p style={{ fontSize: "13px", color: "#737373", marginTop: "4px" }}>{rol.toUpperCase()}</p>
         </div>
-        <span style={{ fontSize: "12px", color: "#737373", background: "white", border: "1px solid #e5e7eb", borderRadius: "20px", padding: "5px 14px", whiteSpace: "nowrap" }}>
-          {bugunTarih()}
-        </span>
+        {ekran !== 'mobile' && (
+          <span style={{ fontSize: "12px", color: "#737373", background: "white", border: "1px solid #e5e7eb", borderRadius: "20px", padding: "5px 14px", whiteSpace: "nowrap" }}>
+            {bugunTarih()}
+          </span>
+        )}
       </div>
 
       {/* Stat kartlar */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "28px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: statGrid, gap: "10px", marginBottom: "20px" }}>
         {[
           { label: "Yayındaki Video", value: istat.yayin_sayisi, sub: "Aktif içerik", renk: "#16a34a" },
           { label: "Bu Hafta İzlenme", value: istat.hafta_izlenme, sub: "Toplam izlenme sayısı", renk: "#56aeff" },
@@ -116,21 +123,19 @@ export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
           <div
             key={idx}
             style={{
-              background: "white",
-              border: "1px solid #e5e7eb",
-              borderLeft: `3px solid ${k.renk}`,
-              borderRadius: "12px",
-              padding: "20px 22px",
+              background: "white", border: "1px solid #e5e7eb", borderLeft: `3px solid ${k.renk}`,
+              borderRadius: "12px", padding: ekran === 'mobile' ? "14px" : "20px 22px",
             }}
           >
-            <div style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.4px", textTransform: "uppercase", marginBottom: "10px" }}>{k.label}</div>
-            <div style={{ fontSize: "28px", fontWeight: 800, color: "#111827", lineHeight: 1 }}>{k.value}</div>
-            <div style={{ fontSize: "12px", color: "#737373", marginTop: "6px" }}>{k.sub}</div>
+            <div style={{ fontSize: "10px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.4px", textTransform: "uppercase", marginBottom: "8px" }}>{k.label}</div>
+            <div style={{ fontSize: ekran === 'mobile' ? "22px" : "28px", fontWeight: 800, color: "#111827", lineHeight: 1 }}>{k.value}</div>
+            {ekran !== 'mobile' && <div style={{ fontSize: "12px", color: "#737373", marginTop: "6px" }}>{k.sub}</div>}
           </div>
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+      {/* Alt grid */}
+      <div style={{ display: "grid", gridTemplateColumns: altGrid, gap: "20px" }}>
 
         {/* En Çok İzlenenler */}
         <div>
