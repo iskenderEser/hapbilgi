@@ -35,8 +35,8 @@ export default function LoginPage() {
     <div style={{ minHeight: "100vh", background: "white", fontFamily: "'Nunito', sans-serif", display: "flex", flexDirection: "column" }}>
 
       {/* Navbar - logo */}
-      <nav style={{ background: "white", borderBottom: "1px solid #e5e7eb", height: isMobile ? "100px" : "175px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <img src="/logo.png" alt="hapbilgi" style={{ height: isMobile ? "80px" : "165px", objectFit: "contain" }} />
+      <nav style={{ background: "white", borderBottom: "1px solid #e5e7eb", padding: isMobile ? "12px 0" : "0", height: isMobile ? undefined : isTablet ? "130px" : "175px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <img src="/logo.png" alt="hapbilgi" style={{ height: isMobile ? "72px" : isTablet ? "120px" : "165px", objectFit: "contain" }} />
       </nav>
 
       {/* İçerik */}
@@ -49,23 +49,24 @@ export default function LoginPage() {
         gap: isMobile ? "24px" : isTablet ? "40px" : "80px",
         padding: isMobile ? "24px 20px" : isTablet ? "32px 40px" : "40px 80px",
       }}>
-        {/* Sol metin — mobilede gizle */}
-        {!isMobile && (
-          <div style={{ maxWidth: "420px" }}>
+
+        {/* Sol metin */}
+        {isMobile ? (
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: "22px", fontWeight: 700, color: "#bc2d0d", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>Eğitimin V Hali</div>
+            <div style={{ fontSize: "16px", fontWeight: 800, color: "#111827", marginBottom: "8px" }}>İzleyin - Kazanın - Uygulayın</div>
+            <div style={{ fontSize: "13px", color: "#737373", lineHeight: 1.7 }}>HapBilgi, ilaç sektörü profesyonelleri için tasarlanmış video tabanlı kurumsal eğitim platformudur.</div>
+          </div>
+        ) : (
+          <div style={{ maxWidth: isTablet ? "340px" : "420px" }}>
             <div style={{ fontSize: isTablet ? "28px" : "40px", fontWeight: 700, color: "#bc2d0d", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "16px" }}>Eğitimin V Hali</div>
             <div style={{ fontSize: isTablet ? "20px" : "27px", fontWeight: 800, color: "#111827", lineHeight: 1.3, marginBottom: "16px" }}>İzleyin - Kazanın - Uygulayın</div>
-            <div style={{ fontSize: "15px", color: "#737373", lineHeight: 1.8 }}>HapBilgi, ilaç sektörü profesyonelleri için tasarlanmış video tabanlı kurumsal eğitim platformudur.</div>
+            <div style={{ fontSize: isTablet ? "14px" : "16px", color: "#737373", lineHeight: 1.8 }}>HapBilgi, ilaç sektörü profesyonelleri için tasarlanmış video tabanlı kurumsal eğitim platformudur.</div>
           </div>
         )}
 
         {/* Form */}
         <div style={{ width: isMobile ? "100%" : "320px", flexShrink: 0 }}>
-          {isMobile && (
-            <div style={{ textAlign: "center", marginBottom: "20px" }}>
-              <div style={{ fontSize: "22px", fontWeight: 700, color: "#bc2d0d", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "6px" }}>Eğitimin V Hali</div>
-              <div style={{ fontSize: "14px", color: "#737373" }}>İzleyin · Kazanın · Uygulayın</div>
-            </div>
-          )}
           <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
             <div>
               <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#737373", marginBottom: "6px" }}>E-posta</label>
@@ -130,17 +131,17 @@ export default function LoginPage() {
       </div>
 
       {/* Özellikler */}
-      <div style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb", padding: isMobile ? "20px 20px" : "20px 32px" }}>
-        <div style={{ maxWidth: "900px", margin: "0 auto", display: "grid", gridTemplateColumns: isMobile ? "repeat(3, 1fr)" : "repeat(3, 1fr)", gap: isMobile ? "16px" : "40px", textAlign: "center" }}>
+      <div style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb", padding: isMobile ? "20px" : "20px 32px" }}>
+        <div style={{ maxWidth: "900px", margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: isMobile ? "16px" : "40px", textAlign: "center" }}>
           {[
             { ikon: "🎬", baslik: "İzleyin", aciklama: "Öğrenmenin devamlılığını sağlayın." },
             { ikon: "📊", baslik: "Kazanın", aciklama: "İzledikçe yıldızınızı parlatın." },
             { ikon: "🎯", baslik: "Uygulayın", aciklama: "Kazandıkça daha çok kazanın." },
           ].map((k, i) => (
             <div key={i}>
-              <div style={{ fontSize: isMobile ? "22px" : "32px", marginBottom: "6px" }}>{k.ikon}</div>
-              <div style={{ fontSize: isMobile ? "12px" : "16px", fontWeight: 700, color: "#111827", marginBottom: "4px" }}>{k.baslik}</div>
-              {!isMobile && <div style={{ fontSize: "13px", color: "#737373", lineHeight: 1.7 }}>{k.aciklama}</div>}
+              <div style={{ fontSize: isMobile ? "22px" : "32px", marginBottom: isMobile ? "4px" : "12px" }}>{k.ikon}</div>
+              <div style={{ fontSize: isMobile ? "12px" : "16px", fontWeight: 700, color: "#111827", marginBottom: isMobile ? "2px" : "8px" }}>{k.baslik}</div>
+              <div style={{ fontSize: isMobile ? "11px" : "13px", color: "#737373", lineHeight: 1.7 }}>{k.aciklama}</div>
             </div>
           ))}
         </div>
