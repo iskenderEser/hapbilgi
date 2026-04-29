@@ -60,32 +60,18 @@ export default function OnerilerPage() {
 
   const handleBegeni = async (e: React.MouseEvent, yayin_id: string) => {
     e.stopPropagation();
-    const res = await fetch("/izle/api/begeni", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ yayin_id }),
-    });
+    const res = await fetch("/izle/api/begeni", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id }) });
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "Beğeni işlemi başarısız.", d.adim, d.detay); return; }
-    setOneriler(prev => prev.map(o => o.yayin_id === yayin_id
-      ? { ...o, begeni_mi: d.begeni_mi, begeni_sayisi: d.begeni_mi ? o.begeni_sayisi + 1 : o.begeni_sayisi - 1 }
-      : o
-    ));
+    setOneriler(prev => prev.map(o => o.yayin_id === yayin_id ? { ...o, begeni_mi: d.begeni_mi, begeni_sayisi: d.begeni_mi ? o.begeni_sayisi + 1 : o.begeni_sayisi - 1 } : o));
   };
 
   const handleFavori = async (e: React.MouseEvent, yayin_id: string) => {
     e.stopPropagation();
-    const res = await fetch("/izle/api/favori", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ yayin_id }),
-    });
+    const res = await fetch("/izle/api/favori", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id }) });
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "Favori işlemi başarısız.", d.adim, d.detay); return; }
-    setOneriler(prev => prev.map(o => o.yayin_id === yayin_id
-      ? { ...o, favori_mi: d.favori_mi, favori_sayisi: d.favori_mi ? o.favori_sayisi + 1 : o.favori_sayisi - 1 }
-      : o
-    ));
+    setOneriler(prev => prev.map(o => o.yayin_id === yayin_id ? { ...o, favori_mi: d.favori_mi, favori_sayisi: d.favori_mi ? o.favori_sayisi + 1 : o.favori_sayisi - 1 } : o));
   };
 
   useEffect(() => {
@@ -106,7 +92,6 @@ export default function OnerilerPage() {
   const veriCek = async () => {
     setLoading(true);
     const supabase = createClient();
-
     const res = await fetch("/oneriler/api");
     const data = await res.json();
     if (!res.ok) { hata(data.hata ?? "Öneriler yüklenemedi.", data.adim, data.detay); }
@@ -120,22 +105,15 @@ export default function OnerilerPage() {
       else { setYayinlar(yData.videolar ?? []); }
 
       const { data: kullanicilarData, error: kError } = await supabase
-        .from("kullanicilar")
-        .select("kullanici_id, ad, soyad, rol")
-        .in("rol", ["utt", "kd_utt"])
-        .eq("aktif_mi", true)
-        .order("ad", { ascending: true });
-
+        .from("kullanicilar").select("kullanici_id, ad, soyad, rol")
+        .in("rol", ["utt", "kd_utt"]).eq("aktif_mi", true).order("ad", { ascending: true });
       if (kError) { hata("Kullanıcılar yüklenemedi.", "kullanicilar tablosu SELECT", kError.message); }
       else { setKullanicilar(kullanicilarData ?? []); }
     }
-
     setLoading(false);
   };
 
-  useEffect(() => {
-    if (user) veriCek();
-  }, [user]);
+  useEffect(() => { if (user) veriCek(); }, [user]);
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -174,26 +152,17 @@ export default function OnerilerPage() {
     setGonderLoading(true);
 
     const onerilerListesi = secilenYayinlar.map(yayin_id => ({
-      yayin_id,
-      kullanici_id: secilenKullanici,
+      yayin_id, kullanici_id: secilenKullanici,
       oneri_baslangic: new Date(oneriBaslangic).toISOString(),
       oneri_bitis: new Date(oneriBitis).toISOString(),
     }));
 
-    const res = await fetch("/oneriler/api", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ oneriler: onerilerListesi }),
-    });
-
+    const res = await fetch("/oneriler/api", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oneriler: onerilerListesi }) });
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "Öneri gönderilemedi.", d.adim, d.detay); }
     else {
       basari(`${d.oneriler?.length ?? 0} öneri başarıyla gönderildi.`);
-      setSecilenYayinlar([]);
-      setSecilenKullanici("");
-      setOneriBaslangic("");
-      setOneriBitis("");
+      setSecilenYayinlar([]); setSecilenKullanici(""); setOneriBaslangic(""); setOneriBitis("");
       await veriCek();
     }
     setGonderLoading(false);
@@ -201,8 +170,8 @@ export default function OnerilerPage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <svg className="animate-spin" style={{ width: 24, height: 24, color: "#737373" }} fill="none" viewBox="0 0 24 24">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
           <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
@@ -211,59 +180,71 @@ export default function OnerilerPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f9fafb", fontFamily: "'Nunito', sans-serif" }}>
+    <div className="min-h-screen bg-gray-50 pb-20 md:pb-0" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={user?.email ?? ""} rol={rol} onCikis={handleCikis} />
 
-      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
+      <div className="max-w-5xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-5">
 
         {/* BM/TM — Yeni Öneri Formu */}
         {isBMTM && (
-          <div style={{ background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
-            <div style={{ padding: "14px 20px", borderBottom: "0.5px solid #e5e7eb" }}>
-              <span style={{ fontSize: "13px", fontWeight: 600, color: "#111" }}>Yeni Öneri</span>
-              <span style={{ fontSize: "11px", color: "#737373", marginLeft: "8px" }}>Max 3 video, tek seferde</span>
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div className="px-4 md:px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
+              <span className="text-sm font-semibold text-gray-900">Yeni Öneri</span>
+              <span className="text-xs text-gray-500">Max 3 video, tek seferde</span>
             </div>
 
-            <form onSubmit={handleOneriGonder} style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: "14px" }}>
+            <form onSubmit={handleOneriGonder} className="px-4 md:px-5 py-4 flex flex-col gap-3.5">
+              {/* Kişi seçimi */}
               <div>
-                <label style={{ fontSize: "11px", color: "#737373", display: "block", marginBottom: "4px" }}>Kişi</label>
-                <select value={secilenKullanici} onChange={(e) => setSecilenKullanici(e.target.value)} required style={{ width: "100%", border: "0.5px solid #e5e7eb", borderRadius: "8px", padding: "8px 12px", fontSize: "13px", fontFamily: "'Nunito', sans-serif", color: "#111", background: "white" }}>
+                <label className="text-xs text-gray-500 block mb-1">Kişi</label>
+                <select value={secilenKullanici} onChange={(e) => setSecilenKullanici(e.target.value)} required
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white"
+                  style={{ fontFamily: "'Nunito', sans-serif" }}>
                   <option value="">Seçiniz</option>
                   {kullanicilar.map(k => <option key={k.kullanici_id} value={k.kullanici_id}>{k.ad} {k.soyad} ({k.rol})</option>)}
                 </select>
               </div>
 
-              <div style={{ display: "flex", gap: "12px" }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: "11px", color: "#737373", display: "block", marginBottom: "4px" }}>İzlenme Başlangıcı</label>
-                  <input type="datetime-local" value={oneriBaslangic} onChange={(e) => handleBaslangicDegis(e.target.value)} required style={{ width: "100%", border: "0.5px solid #e5e7eb", borderRadius: "8px", padding: "8px 12px", fontSize: "13px", fontFamily: "'Nunito', sans-serif" }} />
+              {/* Tarih aralığı */}
+              <div className="flex flex-col md:flex-row gap-3">
+                <div className="flex-1">
+                  <label className="text-xs text-gray-500 block mb-1">İzlenme Başlangıcı</label>
+                  <input type="datetime-local" value={oneriBaslangic} onChange={(e) => handleBaslangicDegis(e.target.value)} required
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                    style={{ fontFamily: "'Nunito', sans-serif" }} />
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: "11px", color: "#737373", display: "block", marginBottom: "4px" }}>İzlenme Bitişi</label>
-                  <input type="datetime-local" value={oneriBitis} onChange={(e) => setOneriBitis(e.target.value)} required min={oneriBaslangic} style={{ width: "100%", border: "0.5px solid #e5e7eb", borderRadius: "8px", padding: "8px 12px", fontSize: "13px", fontFamily: "'Nunito', sans-serif" }} />
+                <div className="flex-1">
+                  <label className="text-xs text-gray-500 block mb-1">İzlenme Bitişi</label>
+                  <input type="datetime-local" value={oneriBitis} onChange={(e) => setOneriBitis(e.target.value)} required min={oneriBaslangic}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                    style={{ fontFamily: "'Nunito', sans-serif" }} />
                 </div>
               </div>
 
+              {/* Video seçimi */}
               <div>
-                <label style={{ fontSize: "11px", color: "#737373", display: "block", marginBottom: "8px" }}>
+                <label className="text-xs text-gray-500 block mb-2">
                   Videolar — {secilenYayinlar.length} / 3 seçildi
                 </label>
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <div className="flex flex-col gap-1.5">
                   {yayinlar.length === 0 ? (
-                    <p style={{ fontSize: "12px", color: "#9ca3af" }}>Yayında video bulunmuyor.</p>
+                    <p className="text-xs text-gray-400">Yayında video bulunmuyor.</p>
                   ) : (
                     yayinlar.map((y) => {
                       const secili = secilenYayinlar.includes(y.yayin_id);
                       return (
-                        <div key={y.yayin_id} onClick={() => handleYayinSec(y.yayin_id)} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 12px", borderRadius: "8px", border: secili ? "1.5px solid #56aeff" : "0.5px solid #e5e7eb", background: secili ? "#e6f1fb" : "white", cursor: "pointer" }}>
-                          <div style={{ width: "48px", height: "28px", borderRadius: "4px", overflow: "hidden", flexShrink: 0, background: "#e5e7eb" }}>
-                            {y.thumbnail_url ? <img src={y.thumbnail_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", background: "#b5d4f4" }} />}
+                        <div key={y.yayin_id} onClick={() => handleYayinSec(y.yayin_id)}
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer border transition-colors"
+                          style={{ border: secili ? "1.5px solid #56aeff" : "0.5px solid #e5e7eb", background: secili ? "#e6f1fb" : "white" }}>
+                          <div className="w-12 h-7 rounded flex-shrink-0 overflow-hidden bg-gray-200">
+                            {y.thumbnail_url ? <img src={y.thumbnail_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full" style={{ background: "#b5d4f4" }} />}
                           </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: "12px", fontWeight: 600, color: secili ? "#56aeff" : "#111" }}>{y.urun_adi}</div>
-                            <div style={{ fontSize: "11px", color: "#737373" }}>{y.teknik_adi}</div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-semibold truncate" style={{ color: secili ? "#56aeff" : "#111" }}>{y.urun_adi}</div>
+                            <div className="text-xs text-gray-500">{y.teknik_adi}</div>
                           </div>
-                          <div style={{ width: "16px", height: "16px", borderRadius: "50%", border: secili ? "none" : "0.5px solid #e5e7eb", background: secili ? "#56aeff" : "white", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
+                            style={{ border: secili ? "none" : "0.5px solid #e5e7eb", background: secili ? "#56aeff" : "white" }}>
                             {secili && <svg width="8" height="8" viewBox="0 0 10 8" fill="white"><path d="M1 4l3 3 5-6" stroke="white" strokeWidth="1.5" fill="none" /></svg>}
                           </div>
                         </div>
@@ -273,8 +254,10 @@ export default function OnerilerPage() {
                 </div>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <button type="submit" disabled={gonderLoading || secilenYayinlar.length === 0 || !secilenKullanici} style={{ background: "#56aeff", color: "white", border: "none", borderRadius: "8px", padding: "10px 20px", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "'Nunito', sans-serif", opacity: secilenYayinlar.length === 0 || !secilenKullanici ? 0.5 : 1 }}>
+              <div className="flex justify-end">
+                <button type="submit" disabled={gonderLoading || secilenYayinlar.length === 0 || !secilenKullanici}
+                  className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer"
+                  style={{ background: "#56aeff", opacity: secilenYayinlar.length === 0 || !secilenKullanici ? 0.5 : 1, fontFamily: "'Nunito', sans-serif" }}>
                   {gonderLoading ? "Gönderiliyor..." : `${secilenYayinlar.length} Öneri Gönder`}
                 </button>
               </div>
@@ -284,30 +267,31 @@ export default function OnerilerPage() {
 
         {/* BM/TM — Gönderilen Öneriler Listesi */}
         {isBMTM && (
-          <div style={{ background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
-            <div style={{ padding: "14px 20px", borderBottom: "0.5px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "13px", fontWeight: 600, color: "#111" }}>Gönderilen Öneriler</span>
-              <span style={{ fontSize: "11px", color: "#737373" }}>{oneriler.length} kayıt</span>
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            <div className="px-4 md:px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+              <span className="text-sm font-semibold text-gray-900">Gönderilen Öneriler</span>
+              <span className="text-xs text-gray-500">{oneriler.length} kayıt</span>
             </div>
             {oneriler.length === 0 ? (
-              <div style={{ padding: "40px", textAlign: "center", color: "#9ca3af", fontSize: "13px" }}>Henüz öneri gönderilmedi.</div>
+              <div className="p-10 text-center text-sm text-gray-400">Henüz öneri gönderilmedi.</div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column" }}>
+              <div className="flex flex-col">
                 {oneriler.map((o) => (
-                  <div key={o.oneri_id} style={{ display: "flex", alignItems: "center", gap: "14px", padding: "12px 20px", borderBottom: "0.5px solid #f3f4f6" }}>
-                    <div style={{ width: "60px", height: "34px", borderRadius: "5px", overflow: "hidden", flexShrink: 0, background: "#e5e7eb" }}>
-                      {o.thumbnail_url ? <img src={o.thumbnail_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", background: "#b5d4f4" }} />}
+                  <div key={o.oneri_id} className="flex items-center gap-3 px-4 md:px-5 py-3 border-b border-gray-50">
+                    <div className="w-14 h-8 rounded flex-shrink-0 overflow-hidden bg-gray-200">
+                      {o.thumbnail_url ? <img src={o.thumbnail_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full" style={{ background: "#b5d4f4" }} />}
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "12px", fontWeight: 600, color: "#111" }}>{o.urun_adi}</div>
-                      <div style={{ fontSize: "11px", color: "#737373" }}>{o.teknik_adi}</div>
-                      <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "2px" }}>{o.kullanici_adi}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-gray-900 truncate">{o.urun_adi}</div>
+                      <div className="text-xs text-gray-500">{o.teknik_adi}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{o.kullanici_adi}</div>
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px" }}>
-                      <span style={{ fontSize: "10px", padding: "2px 8px", borderRadius: "20px", background: o.izlendi_mi ? "#e6f1fb" : "#f9fafb", color: o.izlendi_mi ? "#56aeff" : "#737373", border: `0.5px solid ${o.izlendi_mi ? "#56aeff" : "#e5e7eb"}` }}>
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <span className="text-xs px-2 py-0.5 rounded-full"
+                        style={{ background: o.izlendi_mi ? "#e6f1fb" : "#f9fafb", color: o.izlendi_mi ? "#56aeff" : "#737373", border: `0.5px solid ${o.izlendi_mi ? "#56aeff" : "#e5e7eb"}` }}>
                         {o.izlendi_mi ? "İzlendi" : "Bekliyor"}
                       </span>
-                      <span style={{ fontSize: "10px", color: "#9ca3af" }}>{formatTarih(o.oneri_bitis)}'e kadar</span>
+                      <span className="text-xs text-gray-400">{formatTarih(o.oneri_bitis)}'e kadar</span>
                     </div>
                   </div>
                 ))}
@@ -319,72 +303,76 @@ export default function OnerilerPage() {
         {/* UTT — Kart Görünümü */}
         {isUTT && (
           <>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "14px", fontWeight: 600, color: "#111" }}>Gelen Öneriler</span>
-              <span style={{ fontSize: "12px", color: "#737373" }}>{oneriler.length} öneri</span>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-gray-900">Gelen Öneriler</span>
+              <span className="text-xs text-gray-500">{oneriler.length} öneri</span>
             </div>
 
             {oneriler.length === 0 ? (
-              <div style={{ background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", padding: "40px", textAlign: "center", color: "#9ca3af", fontSize: "13px" }}>
+              <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">
                 Henüz öneri gelmedi.
               </div>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {oneriler.map((o) => {
                   const { renk, etiket, soluk } = kartDurumu(o);
                   return (
-                    <div
-                      key={o.oneri_id}
-                      style={{ background: "white", border: `1.5px solid ${renk}`, borderRadius: "12px", overflow: "hidden", opacity: soluk ? 0.6 : 1, cursor: soluk ? "default" : "pointer", transition: "box-shadow 0.15s" }}
+                    <div key={o.oneri_id}
+                      className="bg-white rounded-xl overflow-hidden transition-shadow duration-150"
+                      style={{ border: `1.5px solid ${renk}`, opacity: soluk ? 0.6 : 1, cursor: soluk ? "default" : "pointer" }}
                       onMouseEnter={e => { if (!soluk) (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 16px rgba(0,0,0,0.08)"; }}
-                      onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.boxShadow = "none"}
-                    >
-                      <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", background: "#b5d4f4", overflow: "hidden" }}>
+                      onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.boxShadow = "none"}>
+
+                      {/* Thumbnail */}
+                      <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16/9", background: "#b5d4f4" }}>
                         {o.thumbnail_url
-                          ? <img src={o.thumbnail_url} alt="thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                          : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #b5d4f4, #56aeff)" }} />
+                          ? <img src={o.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
+                          : <div className="w-full h-full" style={{ background: "linear-gradient(135deg, #b5d4f4, #56aeff)" }} />
                         }
-                        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <div style={{ width: "36px", height: "36px", background: "rgba(0,0,0,0.5)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
                             <svg width="10" height="12" viewBox="0 0 10 12" fill="white"><path d="M0 0l10 6-10 6z" /></svg>
                           </div>
                         </div>
-                        <div style={{ position: "absolute", top: "8px", left: "8px" }}>
-                          <span style={{ background: renk, color: "white", borderRadius: "20px", padding: "2px 8px", fontSize: "10px", fontWeight: 600 }}>{etiket}</span>
+                        <div className="absolute top-2 left-2">
+                          <span className="text-white rounded-full px-2 py-0.5 text-xs font-semibold" style={{ background: renk, fontSize: 10 }}>{etiket}</span>
                         </div>
                       </div>
 
-                      <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: "6px" }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
-                          <div style={{ fontSize: "13px", fontWeight: 600, color: "#111", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.urun_adi}</div>
-                          <div style={{ fontSize: "11px", color: "#737373", whiteSpace: "nowrap", flexShrink: 0 }}>{o.teknik_adi}</div>
+                      {/* Bilgi */}
+                      <div className="px-3 py-2.5 flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-xs font-semibold text-gray-900 truncate">{o.urun_adi}</div>
+                          <div className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">{o.teknik_adi}</div>
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
-                          <div style={{ fontSize: "11px", color: "#737373", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                            <span style={{ color: "#9ca3af" }}>Öneren:</span> {o.kullanici_adi}
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-xs text-gray-500 truncate">
+                            <span className="text-gray-400">Öneren:</span> {o.kullanici_adi}
                           </div>
-                          <div style={{ fontSize: "10px", color: "#9ca3af", flexShrink: 0 }}>{formatTarihKisa(o.oneri_bitis)}'e kadar</div>
+                          <div className="text-xs text-gray-400 flex-shrink-0">{formatTarihKisa(o.oneri_bitis)}'e kadar</div>
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "2px" }}>
+                        <div className="flex items-center justify-between mt-0.5">
                           {o.video_puani != null ? (
-                            <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "#f9fafb", border: "0.5px solid #e5e7eb", borderRadius: "6px", padding: "3px 8px", fontSize: "11px", color: "#737373" }}>
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#56aeff" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-                              Video <span style={{ fontWeight: 600, color: "#111", marginLeft: "2px" }}>{o.video_puani}</span>
+                            <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-0.5 text-xs text-gray-500">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#56aeff" strokeWidth="2">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                              </svg>
+                              Video <span className="font-semibold text-gray-900 ml-0.5">{o.video_puani}</span>
                             </div>
                           ) : <div />}
-                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "3px", cursor: "pointer" }} onClick={(e) => handleBegeni(e, o.yayin_id)}>
+                          <div className="flex items-center gap-2.5">
+                            <div className="flex items-center gap-1 cursor-pointer" onClick={(e) => handleBegeni(e, o.yayin_id)}>
                               <svg width="14" height="14" viewBox="0 0 24 24" fill={o.begeni_mi ? "#bc2d0d" : "none"} stroke="#bc2d0d" strokeWidth="2">
                                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                               </svg>
-                              <span style={{ fontSize: "11px", color: o.begeni_mi ? "#bc2d0d" : "#737373", fontWeight: o.begeni_mi ? 600 : 400 }}>{o.begeni_sayisi}</span>
+                              <span className="text-xs" style={{ color: o.begeni_mi ? "#bc2d0d" : "#737373", fontWeight: o.begeni_mi ? 600 : 400 }}>{o.begeni_sayisi}</span>
                             </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: "3px", cursor: "pointer" }} onClick={(e) => handleFavori(e, o.yayin_id)}>
+                            <div className="flex items-center gap-1 cursor-pointer" onClick={(e) => handleFavori(e, o.yayin_id)}>
                               <svg width="14" height="14" viewBox="0 0 24 24" fill={o.favori_mi ? "#56aeff" : "none"} stroke={o.favori_mi ? "#56aeff" : "#737373"} strokeWidth="2">
                                 <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
                                 <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
                               </svg>
-                              <span style={{ fontSize: "11px", color: o.favori_mi ? "#56aeff" : "#737373", fontWeight: o.favori_mi ? 600 : 400 }}>{o.favori_sayisi}</span>
+                              <span className="text-xs" style={{ color: o.favori_mi ? "#56aeff" : "#737373", fontWeight: o.favori_mi ? 600 : 400 }}>{o.favori_sayisi}</span>
                             </div>
                           </div>
                         </div>
@@ -396,7 +384,6 @@ export default function OnerilerPage() {
             )}
           </>
         )}
-
       </div>
 
       <HataMesajiContainer mesajlar={mesajlar} />

@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
-import { useEkran } from '@/styles/responsive';
 
 const BORDO = '#bc2d0d';
 const MAVI = '#56aeff';
@@ -45,9 +44,17 @@ interface RaporData {
   };
 }
 
+function StatSatir({ label, value, renk }: { label: string; value: number | string; renk: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-xs" style={{ color: GRI_METIN }}>{label}</span>
+      <span className="text-sm font-semibold" style={{ color: renk }}>{value}</span>
+    </div>
+  );
+}
+
 export default function BmEgitimRaporPage() {
   const router = useRouter();
-  const ekran = useEkran();
   const [user, setUser] = useState<any>(null);
   const [rol, setRol] = useState('');
   const [adSoyad, setAdSoyad] = useState('');
@@ -106,8 +113,8 @@ export default function BmEgitimRaporPage() {
   };
 
   if (loading || !user || !data) return (
-    <div style={{ minHeight: '100vh', background: GRI_ZEMIN, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <svg className="animate-spin" style={{ width: 24, height: 24, color: GRI_METIN }} fill="none" viewBox="0 0 24 24">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: GRI_ZEMIN }}>
+      <svg className="animate-spin w-6 h-6" style={{ color: GRI_METIN }} fill="none" viewBox="0 0 24 24">
         <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
         <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
       </svg>
@@ -119,13 +126,14 @@ export default function BmEgitimRaporPage() {
     : 0;
 
   return (
-    <div style={{ minHeight: '100vh', background: GRI_ZEMIN, fontFamily: "'Nunito', sans-serif" }}>
+    <div className="min-h-screen pb-20 md:pb-0" style={{ background: GRI_ZEMIN, fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={user?.email ?? ''} rol={rol} adSoyad={adSoyad} onCikis={handleCikis} />
-      <div style={{ maxWidth: 860, margin: '0 auto', padding: ekran === 'mobile' ? '12px 14px' : '24px 16px', paddingBottom: ekran === 'mobile' ? '80px' : undefined }}>
+      <div className="max-w-3xl mx-auto px-3 py-3 md:px-4 md:py-6">
 
         <button
           onClick={() => router.push('/ana-sayfa')}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: GRI_METIN, background: 'none', border: 'none', cursor: 'pointer', marginBottom: 20, fontFamily: "'Nunito', sans-serif" }}
+          className="flex items-center gap-1.5 text-xs mb-5 bg-transparent border-none cursor-pointer"
+          style={{ color: GRI_METIN, fontFamily: "'Nunito', sans-serif" }}
         >
           <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -134,19 +142,19 @@ export default function BmEgitimRaporPage() {
         </button>
 
         {/* Başlık + Periyot */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: KOYU_METIN }}>Eğitim Raporun</div>
-          <div style={{ display: 'flex', gap: 6 }}>
+        <div className="flex items-center justify-between mb-5">
+          <div className="text-sm font-bold" style={{ color: KOYU_METIN }}>Eğitim Raporun</div>
+          <div className="flex gap-1.5">
             {(['bu_hafta', 'bu_ay', 'gecen_ay'] as Periyot[]).map(p => (
               <button
                 key={p}
                 onClick={() => setPeriyot(p)}
+                className="px-3 py-1 rounded-full text-xs cursor-pointer border"
                 style={{
-                  padding: '5px 12px', borderRadius: 20, fontSize: 11, cursor: 'pointer',
                   fontFamily: "'Nunito', sans-serif",
                   background: periyot === p ? BORDO : 'white',
                   color: periyot === p ? 'white' : KOYU_METIN,
-                  border: `0.5px solid ${periyot === p ? BORDO : '#e5e7eb'}`,
+                  borderColor: periyot === p ? BORDO : '#e5e7eb',
                 }}
               >
                 {periyotLabel[p]}
@@ -156,10 +164,10 @@ export default function BmEgitimRaporPage() {
         </div>
 
         {/* Toplam puan kartı */}
-        <div style={{ background: BORDO, borderRadius: 12, padding: '20px 24px', marginBottom: 16, color: 'white' }}>
-          <div style={{ fontSize: 11, opacity: 0.8, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>Toplam Puan</div>
-          <div style={{ fontSize: 36, fontWeight: 700 }}>{data.puan_ozeti.toplam_puan.toLocaleString('tr-TR')}</div>
-          <div style={{ display: 'flex', gap: 20, marginTop: 12, flexWrap: 'wrap' as const }}>
+        <div className="rounded-xl px-6 py-5 mb-4 text-white" style={{ background: BORDO }}>
+          <div className="text-xs uppercase tracking-wider mb-1.5" style={{ opacity: 0.8 }}>Toplam Puan</div>
+          <div className="text-4xl font-bold">{data.puan_ozeti.toplam_puan.toLocaleString('tr-TR')}</div>
+          <div className="flex gap-5 mt-3 flex-wrap">
             {[
               { label: 'İzleme', value: data.puan_ozeti.izleme_puani },
               { label: 'Cevaplama', value: data.puan_ozeti.cevaplama_puani },
@@ -167,26 +175,26 @@ export default function BmEgitimRaporPage() {
               { label: 'Challenge', value: data.puan_ozeti.challenge_gonderme_puani + data.puan_ozeti.challenge_izleme_puani },
             ].map(item => (
               <div key={item.label}>
-                <div style={{ fontSize: 10, opacity: 0.7 }}>{item.label}</div>
-                <div style={{ fontSize: 15, fontWeight: 600 }}>{item.value}</div>
+                <div className="text-xs" style={{ opacity: 0.7 }}>{item.label}</div>
+                <div className="text-base font-semibold">{item.value}</div>
               </div>
             ))}
           </div>
         </div>
 
         {/* İzleme + Soru kartları */}
-        <div style={{ display: 'grid', gridTemplateColumns: ekran === 'mobile' ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 12 }}>
-          <div style={{ background: 'white', border: '0.5px solid #e5e7eb', borderRadius: 12, padding: '16px' }}>
-            <div style={{ fontSize: 11, color: GRI_METIN, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 12 }}>İzleme</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+          <div className="bg-white border border-gray-200 rounded-xl p-4">
+            <div className="text-xs uppercase tracking-wider mb-3" style={{ color: GRI_METIN }}>İzleme</div>
+            <div className="flex flex-col gap-2.5">
               <StatSatir label="İzlenen Video" value={data.izleme_ozeti.izlenen_video_sayisi} renk={MAVI} />
               <StatSatir label="Extra İzleme" value={data.izleme_ozeti.extra_izleme_sayisi} renk={YESIL} />
               <StatSatir label="Challenge İzleme" value={data.izleme_ozeti.challenge_izleme_sayisi} renk={BORDO} />
             </div>
           </div>
-          <div style={{ background: 'white', border: '0.5px solid #e5e7eb', borderRadius: 12, padding: '16px' }}>
-            <div style={{ fontSize: 11, color: GRI_METIN, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 12 }}>Soru Performansı</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="bg-white border border-gray-200 rounded-xl p-4">
+            <div className="text-xs uppercase tracking-wider mb-3" style={{ color: GRI_METIN }}>Soru Performansı</div>
+            <div className="flex flex-col gap-2.5">
               <StatSatir label="Doğru Cevap" value={data.soru_ozeti.dogru_cevap_sayisi} renk={YESIL} />
               <StatSatir label="Yanlış Cevap" value={data.soru_ozeti.yanlis_cevap_sayisi} renk="#E24B4A" />
               <StatSatir label="Başarı Oranı" value={`%${dogru_oran}`} renk={BORDO} />
@@ -195,38 +203,41 @@ export default function BmEgitimRaporPage() {
         </div>
 
         {/* Challenge özeti */}
-        <div style={{ background: 'white', border: '0.5px solid #e5e7eb', borderRadius: 12, padding: '16px', marginBottom: 12 }}>
-          <div style={{ fontSize: 11, color: GRI_METIN, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 12 }}>Challenge Club</div>
-          <div style={{ display: 'grid', gridTemplateColumns: ekran === 'mobile' ? '1fr' : '1fr 1fr', gap: 10 }}>
+        <div className="bg-white border border-gray-200 rounded-xl p-4 mb-3">
+          <div className="text-xs uppercase tracking-wider mb-3" style={{ color: GRI_METIN }}>Challenge Club</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
             <StatSatir label="Gönderilen Challenge" value={data.challenge_ozeti.gonderilen_challenge_sayisi} renk={BORDO} />
             <StatSatir label="Kabul Edilen" value={data.challenge_ozeti.izlenen_challenge_sayisi} renk={YESIL} />
             <StatSatir label="Alınan Challenge" value={data.challenge_ozeti.alinan_challenge_sayisi} renk={MAVI} />
             <StatSatir label="Tamamlanan" value={data.challenge_ozeti.tamamlanan_challenge_sayisi} renk={YESIL} />
           </div>
-          <div style={{ marginTop: 12, padding: '10px 14px', background: '#FAECE7', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 12, color: BORDO, fontWeight: 500 }}>Bu Ayki Challenge Puanın</span>
-            <span style={{ fontSize: 18, fontWeight: 700, color: BORDO }}>{kendiPuani}</span>
+          <div className="flex items-center justify-between mt-3 px-3 py-2.5 rounded-lg" style={{ background: '#FAECE7' }}>
+            <span className="text-xs font-medium" style={{ color: BORDO }}>Bu Ayki Challenge Puanın</span>
+            <span className="text-lg font-bold" style={{ color: BORDO }}>{kendiPuani}</span>
           </div>
         </div>
 
         {/* Ayın Top 3 */}
         {top3.length > 0 && (
-          <div style={{ background: 'white', border: '0.5px solid #e5e7eb', borderRadius: 12, padding: '16px' }}>
-            <div style={{ fontSize: 11, color: GRI_METIN, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 12 }}>Bu Ayın Top 3 Challenger'ı</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="bg-white border border-gray-200 rounded-xl p-4">
+            <div className="text-xs uppercase tracking-wider mb-3" style={{ color: GRI_METIN }}>Bu Ayın Top 3 Challenger'ı</div>
+            <div className="flex flex-col gap-2">
               {top3.map((t) => (
-                <div key={t.sira} style={{
-                  display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px',
-                  background: t.benim ? '#FAECE7' : GRI_ZEMIN, borderRadius: 8,
-                  border: t.benim ? `0.5px solid ${BORDO}` : '0.5px solid #e5e7eb',
-                }}>
-                  <span style={{ fontSize: 16, width: 28, textAlign: 'center' }}>
+                <div
+                  key={t.sira}
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg border"
+                  style={{
+                    background: t.benim ? '#FAECE7' : GRI_ZEMIN,
+                    borderColor: t.benim ? BORDO : '#e5e7eb',
+                  }}
+                >
+                  <span className="text-base w-7 text-center">
                     {t.sira === 1 ? '🥇' : t.sira === 2 ? '🥈' : '🥉'}
                   </span>
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: t.benim ? 600 : 400, color: KOYU_METIN }}>
-                    {t.ad} {t.benim && <span style={{ fontSize: 11, color: BORDO }}>(Sen)</span>}
+                  <span className="flex-1 text-sm" style={{ fontWeight: t.benim ? 600 : 400, color: KOYU_METIN }}>
+                    {t.ad} {t.benim && <span className="text-xs" style={{ color: BORDO }}>(Sen)</span>}
                   </span>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: BORDO }}>{t.puan}</span>
+                  <span className="text-sm font-semibold" style={{ color: BORDO }}>{t.puan}</span>
                 </div>
               ))}
             </div>
@@ -234,15 +245,6 @@ export default function BmEgitimRaporPage() {
         )}
 
       </div>
-    </div>
-  );
-}
-
-function StatSatir({ label, value, renk }: { label: string; value: number | string; renk: string }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <span style={{ fontSize: 12, color: '#737373' }}>{label}</span>
-      <span style={{ fontSize: 14, fontWeight: 600, color: renk }}>{value}</span>
     </div>
   );
 }

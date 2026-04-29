@@ -47,65 +47,31 @@ export default function SoruSetleriListePage() {
     const supabase = createClient();
 
     const { data: videoDurumlari, error: vdError } = await supabase
-      .from("video_durumu")
-      .select("video_durum_id, video_id")
+      .from("video_durumu").select("video_durum_id, video_id")
       .order("created_at", { ascending: false });
 
-    if (vdError) {
-      hata("Soru setleri yüklenemedi.", "video_durumu tablosu SELECT", vdError.message);
-      setLoading(false);
-      return;
-    }
+    if (vdError) { hata("Soru setleri yüklenemedi.", "video_durumu tablosu SELECT", vdError.message); setLoading(false); return; }
 
     const sonuc = await Promise.all(
       (videoDurumlari ?? []).map(async (vd) => {
         const { data: soruSetleri } = await supabase
-          .from("soru_setleri")
-          .select("soru_seti_id, sorular, created_at")
-          .eq("video_durum_id", vd.video_durum_id)
-          .order("created_at", { ascending: false })
-          .limit(1);
-
+          .from("soru_setleri").select("soru_seti_id, sorular, created_at")
+          .eq("video_durum_id", vd.video_durum_id).order("created_at", { ascending: false }).limit(1);
         const sonSoruSeti = soruSetleri?.[0];
         if (!sonSoruSeti) return null;
 
         const { data: durumlar } = await supabase
-          .from("soru_seti_durumu")
-          .select("durum, created_at")
-          .eq("soru_seti_id", sonSoruSeti.soru_seti_id)
-          .order("created_at", { ascending: false })
-          .limit(1);
+          .from("soru_seti_durumu").select("durum, created_at")
+          .eq("soru_seti_id", sonSoruSeti.soru_seti_id).order("created_at", { ascending: false }).limit(1);
 
-        let urun_adi = "-";
-        let teknik_adi = "-";
-
-        const { data: video } = await supabase
-          .from("videolar")
-          .select("senaryo_durum_id")
-          .eq("video_id", vd.video_id)
-          .single();
-
+        let urun_adi = "-", teknik_adi = "-";
+        const { data: video } = await supabase.from("videolar").select("senaryo_durum_id").eq("video_id", vd.video_id).single();
         if (video?.senaryo_durum_id) {
-          const { data: senaryoDurum } = await supabase
-            .from("senaryo_durumu")
-            .select("senaryo_id")
-            .eq("senaryo_durum_id", video.senaryo_durum_id)
-            .single();
-
+          const { data: senaryoDurum } = await supabase.from("senaryo_durumu").select("senaryo_id").eq("senaryo_durum_id", video.senaryo_durum_id).single();
           if (senaryoDurum?.senaryo_id) {
-            const { data: senaryo } = await supabase
-              .from("senaryolar")
-              .select("talep_id")
-              .eq("senaryo_id", senaryoDurum.senaryo_id)
-              .single();
-
+            const { data: senaryo } = await supabase.from("senaryolar").select("talep_id").eq("senaryo_id", senaryoDurum.senaryo_id).single();
             if (senaryo?.talep_id) {
-              const { data: talep } = await supabase
-                .from("talepler")
-                .select(`urunler(urun_adi), teknikler(teknik_adi)`)
-                .eq("talep_id", senaryo.talep_id)
-                .single();
-
+              const { data: talep } = await supabase.from("talepler").select(`urunler(urun_adi), teknikler(teknik_adi)`).eq("talep_id", senaryo.talep_id).single();
               urun_adi = (talep as any)?.urunler?.urun_adi ?? "-";
               teknik_adi = (talep as any)?.teknikler?.teknik_adi ?? "-";
             }
@@ -113,9 +79,7 @@ export default function SoruSetleriListePage() {
         }
 
         return {
-          video_durum_id: vd.video_durum_id,
-          urun_adi,
-          teknik_adi,
+          video_durum_id: vd.video_durum_id, urun_adi, teknik_adi,
           soru_sayisi: sonSoruSeti.sorular?.length ?? 0,
           son_durum: durumlar?.[0]?.durum ?? null,
           son_tarih: durumlar?.[0]?.created_at ?? sonSoruSeti.created_at,
@@ -127,15 +91,12 @@ export default function SoruSetleriListePage() {
     setLoading(false);
   };
 
-  useEffect(() => {
-    if (user) veriCek();
-  }, [user]);
+  useEffect(() => { if (user) veriCek(); }, [user]);
 
   const toggleFiltre = (durum: FiltreDurum) => {
     setFiltreler(prev => {
       const yeni = new Set(prev);
-      if (yeni.has(durum)) { yeni.delete(durum); }
-      else { yeni.add(durum); }
+      if (yeni.has(durum)) { yeni.delete(durum); } else { yeni.add(durum); }
       return yeni;
     });
   };
@@ -165,8 +126,8 @@ export default function SoruSetleriListePage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <svg className="animate-spin" style={{ width: 24, height: 24, color: "#737373" }} fill="none" viewBox="0 0 24 24">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
           <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
@@ -175,71 +136,103 @@ export default function SoruSetleriListePage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f9fafb", fontFamily: "'Nunito', sans-serif" }}>
+    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={user?.email ?? ""} rol={rol} onCikis={handleCikis} />
 
-      <div style={{ maxWidth: "900px", margin: "0 auto", padding: "24px" }}>
-        <div style={{ background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
-          <div style={{ padding: "14px 20px", borderBottom: "0.5px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-              <span style={{ fontSize: "14px", fontWeight: 600, color: "#111" }}>Soru Setleri</span>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6">
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+
+          {/* Başlık + filtreler */}
+          <div className="px-4 md:px-5 py-3.5 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+              <span className="text-sm font-semibold text-gray-900">Soru Setleri</span>
+              <div className="flex flex-wrap items-center gap-3">
                 {filtreSec.map(f => (
-                  <label key={f.durum} style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer", fontSize: "12px", color: filtreler.has(f.durum) ? "#111" : "#737373", fontWeight: filtreler.has(f.durum) ? 600 : 400 }}>
-                    <input
-                      type="checkbox"
-                      checked={filtreler.has(f.durum)}
-                      onChange={() => toggleFiltre(f.durum)}
-                      style={{ accentColor: "#bc2d0d", width: "13px", height: "13px", cursor: "pointer" }}
-                    />
+                  <label key={f.durum} className="flex items-center gap-1 cursor-pointer text-xs"
+                    style={{ color: filtreler.has(f.durum) ? "#111" : "#737373", fontWeight: filtreler.has(f.durum) ? 600 : 400 }}>
+                    <input type="checkbox" checked={filtreler.has(f.durum)} onChange={() => toggleFiltre(f.durum)}
+                      className="cursor-pointer w-3 h-3" style={{ accentColor: "#bc2d0d" }} />
                     {f.etiket}
                   </label>
                 ))}
               </div>
             </div>
-            <span style={{ fontSize: "12px", color: "#737373" }}>{filtreliSatirlar.length} kayıt</span>
+            <span className="text-xs text-gray-500">{filtreliSatirlar.length} kayıt</span>
           </div>
 
           {filtreliSatirlar.length === 0 ? (
-            <div style={{ padding: "40px", textAlign: "center", color: "#9ca3af", fontSize: "13px" }}>
+            <div className="p-10 text-center text-sm text-gray-400">
               {filtreler.size > 0 ? "Seçilen filtreye uygun soru seti bulunamadı." : "Henüz soru seti bulunmuyor."}
             </div>
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-              <thead>
-                <tr style={{ borderBottom: "0.5px solid #e5e7eb", background: "#fafafa" }}>
-                  <th style={{ textAlign: "left", padding: "10px 20px", color: "#9ca3af", fontWeight: 500, fontSize: "11px", textTransform: "uppercase" }}>Ürün</th>
-                  <th style={{ textAlign: "left", padding: "10px 12px", color: "#9ca3af", fontWeight: 500, fontSize: "11px", textTransform: "uppercase" }}>Teknik</th>
-                  <th style={{ textAlign: "left", padding: "10px 12px", color: "#9ca3af", fontWeight: 500, fontSize: "11px", textTransform: "uppercase" }}>Soru</th>
-                  <th style={{ textAlign: "left", padding: "10px 12px", color: "#9ca3af", fontWeight: 500, fontSize: "11px", textTransform: "uppercase" }}>Son Durum</th>
-                  <th style={{ textAlign: "left", padding: "10px 12px", color: "#9ca3af", fontWeight: 500, fontSize: "11px", textTransform: "uppercase" }}>Tarih</th>
-                  <th style={{ padding: "10px 20px" }}></th>
-                </tr>
-              </thead>
-              <tbody>
+            <>
+              {/* Mobile: kart görünümü */}
+              <div className="md:hidden">
                 {filtreliSatirlar.map((ss) => {
                   const renk = durumRenk(ss.son_durum ?? "");
                   return (
-                    <tr key={ss.video_durum_id} onClick={() => router.push(`/soru-setleri/${ss.video_durum_id}`)} style={{ borderBottom: "0.5px solid #f3f4f6", cursor: "pointer" }}>
-                      <td style={{ padding: "12px 20px", color: "#111", fontWeight: 500 }}>{ss.urun_adi}</td>
-                      <td style={{ padding: "12px", color: "#737373" }}>{ss.teknik_adi}</td>
-                      <td style={{ padding: "12px", color: "#737373" }}>{ss.soru_sayisi} soru</td>
-                      <td style={{ padding: "12px" }}>
+                    <div key={ss.video_durum_id} onClick={() => router.push(`/soru-setleri/${ss.video_durum_id}`)}
+                      className="px-4 py-3 border-b border-gray-50 cursor-pointer">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="text-sm font-semibold text-gray-900">{ss.urun_adi}</span>
                         {ss.son_durum && (
-                          <span style={{ fontSize: "11px", padding: "2px 10px", borderRadius: "20px", background: renk.bg, color: renk.text, border: `0.5px solid ${renk.border}` }}>
+                          <span className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap"
+                            style={{ background: renk.bg, color: renk.text, border: `0.5px solid ${renk.border}`, fontSize: 11 }}>
                             {ss.son_durum}
                           </span>
                         )}
-                      </td>
-                      <td style={{ padding: "12px", color: "#737373", fontSize: "12px" }}>{formatTarih(ss.son_tarih)}</td>
-                      <td style={{ padding: "12px 20px" }}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" width="16" height="16"><path d="M9 5l7 7-7 7"/></svg>
-                      </td>
-                    </tr>
+                      </div>
+                      <div className="text-xs text-gray-500">{ss.teknik_adi}</div>
+                      <div className="flex gap-3 mt-0.5">
+                        <span className="text-xs text-gray-400">{ss.soru_sayisi} soru</span>
+                        <span className="text-xs text-gray-400">{formatTarih(ss.son_tarih)}</span>
+                      </div>
+                    </div>
                   );
                 })}
-              </tbody>
-            </table>
+              </div>
+
+              {/* Desktop: tablo görünümü */}
+              <div className="hidden md:block">
+                <table className="w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100 bg-gray-50">
+                      <th className="text-left px-5 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün</th>
+                      <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Teknik</th>
+                      <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Soru</th>
+                      <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Son Durum</th>
+                      <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Tarih</th>
+                      <th className="px-5 py-2.5"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtreliSatirlar.map((ss) => {
+                      const renk = durumRenk(ss.son_durum ?? "");
+                      return (
+                        <tr key={ss.video_durum_id} onClick={() => router.push(`/soru-setleri/${ss.video_durum_id}`)}
+                          className="border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors duration-100">
+                          <td className="px-5 py-3 text-gray-900 font-medium">{ss.urun_adi}</td>
+                          <td className="px-3 py-3 text-gray-500">{ss.teknik_adi}</td>
+                          <td className="px-3 py-3 text-gray-500">{ss.soru_sayisi} soru</td>
+                          <td className="px-3 py-3">
+                            {ss.son_durum && (
+                              <span className="text-xs px-2.5 py-0.5 rounded-full"
+                                style={{ background: renk.bg, color: renk.text, border: `0.5px solid ${renk.border}` }}>
+                                {ss.son_durum}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-3 py-3 text-gray-500 text-xs">{formatTarih(ss.son_tarih)}</td>
+                          <td className="px-5 py-3">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" width="16" height="16"><path d="M9 5l7 7-7 7"/></svg>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </div>

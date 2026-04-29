@@ -4,7 +4,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useHataMesaji } from "@/components/HataMesaji";
-import { useEkran } from "@/styles/responsive";
 
 interface TakipSatiri {
   talep_id: string;
@@ -41,7 +40,6 @@ interface Props {
 
 export default function EgitimciAnaSayfa({ user, rol, adSoyad }: Props) {
   const router = useRouter();
-  const ekran = useEkran();
   const [veri, setVeri] = useState<EgitimciVeri | null>(null);
   const [loading, setLoading] = useState(true);
   const [aktifFiltre, setAktifFiltre] = useState<string>("tumu");
@@ -86,8 +84,8 @@ export default function EgitimciAnaSayfa({ user, rol, adSoyad }: Props) {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px" }}>
-        <svg className="animate-spin" style={{ width: 24, height: 24, color: "#737373" }} fill="none" viewBox="0 0 24 24">
+      <div className="flex items-center justify-center p-20">
+        <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
           <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
@@ -101,29 +99,27 @@ export default function EgitimciAnaSayfa({ user, rol, adSoyad }: Props) {
   const bmIstat = veri?.bm_istatistikler ?? { bm_sayisi: 0, hafta_aktif_bm: 0, toplam_bekleyen: 0, toplam_tamamlanan: 0 };
   const filtrelenmis = aktifFiltre === "tumu" ? satirlar : satirlar.filter(s => s.kategori === aktifFiltre);
   const ad = adSoyad.split(" ")[0] || "Eğitimci";
-  const padding = ekran === 'mobile' ? '16px 14px' : ekran === 'tablet' ? '20px 24px' : '28px 32px';
-  const statGrid = ekran === 'mobile' ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)';
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", padding, display: "flex", flexDirection: "column", gap: "24px" }}>
+    <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7 flex flex-col gap-6">
 
       {/* Karşılama */}
-      <div style={{ display: "flex", flexDirection: ekran === 'mobile' ? 'column' : 'row', alignItems: ekran === 'mobile' ? 'flex-start' : 'flex-end', justifyContent: "space-between", gap: 8 }}>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-2">
         <div>
-          <h1 style={{ fontSize: ekran === 'mobile' ? "18px" : "20px", fontWeight: 800, color: "#111827", margin: 0 }}>Merhaba, {ad} 👋</h1>
-          <p style={{ fontSize: "13px", color: "#737373", marginTop: "4px" }}>{rol.toUpperCase()}</p>
+          <h1 className="text-lg md:text-xl font-extrabold text-gray-900 m-0">Merhaba, {ad} 👋</h1>
+          <p className="text-sm text-gray-500 mt-1">{rol.toUpperCase()}</p>
         </div>
-        {ekran !== 'mobile' && (
-          <span style={{ fontSize: "12px", color: "#737373", background: "white", border: "1px solid #e5e7eb", borderRadius: "20px", padding: "5px 14px", whiteSpace: "nowrap" }}>
-            {bugunTarih()}
-          </span>
-        )}
+        <span className="hidden md:inline text-xs text-gray-500 bg-white border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap">
+          {bugunTarih()}
+        </span>
       </div>
 
       {/* İçerik Takibi */}
       <div>
-        <div style={{ fontSize: "13px", fontWeight: 700, color: "#56aeff", textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: "12px" }}>İçerik Takibi</div>
-        <div style={{ display: "grid", gridTemplateColumns: statGrid, gap: "10px", marginBottom: "16px" }}>
+        <div className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#56aeff" }}>İçerik Takibi</div>
+
+        {/* Stat kartlar */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
           {[
             { label: "İnceleme Bekleniyor", value: istat.inceleme_bekleyen, renk: "#bc2d0d", filtre: "inceleme" },
             { label: "Yayın Bekleyenler", value: istat.yayin_bekleyen, renk: "#f59e0b", filtre: "yayin-bekleyen" },
@@ -133,155 +129,193 @@ export default function EgitimciAnaSayfa({ user, rol, adSoyad }: Props) {
             <div
               key={k.filtre}
               onClick={() => setAktifFiltre(aktifFiltre === k.filtre ? "tumu" : k.filtre)}
+              className="bg-white border border-gray-200 rounded-xl p-3 md:p-5 cursor-pointer transition-shadow duration-150"
               style={{
-                background: "white", border: "1px solid #e5e7eb", borderLeft: `3px solid ${k.renk}`,
-                borderRadius: "12px", padding: ekran === 'mobile' ? "14px" : "20px 22px",
-                cursor: "pointer", boxShadow: aktifFiltre === k.filtre ? `0 0 0 2px ${k.renk}33` : "none", transition: "box-shadow 0.15s",
+                borderLeft: `3px solid ${k.renk}`,
+                boxShadow: aktifFiltre === k.filtre ? `0 0 0 2px ${k.renk}33` : "none",
               }}
             >
-              <div style={{ fontSize: "10px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.4px", textTransform: "uppercase", marginBottom: "8px" }}>{k.label}</div>
-              <div style={{ fontSize: ekran === 'mobile' ? "22px" : "28px", fontWeight: 800, color: "#111827", lineHeight: 1 }}>{k.value}</div>
+              <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">{k.label}</div>
+              <div className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-none">{k.value}</div>
             </div>
           ))}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-          <span style={{ fontSize: "14px", fontWeight: 700, color: "#111827" }}>İçerik Listesi</span>
+        {/* Liste başlık */}
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-bold text-gray-900">İçerik Listesi</span>
           {aktifFiltre !== "tumu" && (
-            <button onClick={() => setAktifFiltre("tumu")} style={{ fontSize: "12px", color: "#737373", background: "none", border: "0.5px solid #e5e7eb", borderRadius: "20px", padding: "4px 12px", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+            <button
+              onClick={() => setAktifFiltre("tumu")}
+              className="text-xs text-gray-500 bg-transparent border border-gray-200 rounded-full px-3 py-1 cursor-pointer"
+              style={{ fontFamily: "'Nunito', sans-serif" }}
+            >
               Filtreyi Kaldır
             </button>
           )}
         </div>
 
-        <div style={{ background: "white", border: "1px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
-          {ekran === 'mobile' ? (
-            filtrelenmis.length === 0 ? (
-              <div style={{ padding: "32px", textAlign: "center", fontSize: "13px", color: "#9ca3af" }}>Bu kategoride içerik bulunmuyor.</div>
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          {/* Mobile */}
+          <div className="md:hidden">
+            {filtrelenmis.length === 0 ? (
+              <div className="p-8 text-center text-sm text-gray-400">Bu kategoride içerik bulunmuyor.</div>
             ) : (
               filtrelenmis.map((s, i) => {
                 const asamaR = asamaRenk(s.asama);
                 const durumR = durumRenk(s.durum);
                 return (
-                  <div key={`${s.talep_id}-${i}`} onClick={() => router.push(s.yol)}
-                    style={{ padding: "14px 16px", borderBottom: i < filtrelenmis.length - 1 ? "1px solid #f3f4f6" : "none", cursor: "pointer" }}
+                  <div
+                    key={`${s.talep_id}-${i}`}
+                    onClick={() => router.push(s.yol)}
+                    className="px-4 py-3 cursor-pointer"
+                    style={{ borderBottom: i < filtrelenmis.length - 1 ? "1px solid #f3f4f6" : "none" }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                      <div style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{s.urun_adi}</div>
-                      <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "20px", background: durumR.bg, color: durumR.text }}>{s.durum}</span>
+                    <div className="flex justify-between items-start mb-1.5">
+                      <div className="text-sm font-bold text-gray-900">{s.urun_adi}</div>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: durumR.bg, color: durumR.text }}>{s.durum}</span>
                     </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 6px", borderRadius: "20px", background: asamaR.bg, color: asamaR.text }}>{s.asama}</span>
-                      <span style={{ fontSize: "11px", color: "#737373" }}>{s.teknik_adi}</span>
+                    <div className="flex gap-2 items-center">
+                      <span className="text-xs font-bold px-1.5 py-0.5 rounded-full" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span>
+                      <span className="text-xs text-gray-500">{s.teknik_adi}</span>
                     </div>
-                    <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: 4 }}>{formatTarih(s.tarih)}</div>
+                    <div className="text-xs text-gray-400 mt-1">{formatTarih(s.tarih)}</div>
                   </div>
                 );
               })
-            )
-          ) : (
-            <>
-              <div style={{ display: "grid", gridTemplateColumns: "1.8fr 1.4fr 1.1fr 1.4fr 1fr 20px", gap: "12px", padding: "10px 20px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-                {["ÜRÜN", "TEKNİK", "AŞAMA", "DURUM", "TARİH", ""].map((h, i) => (
-                  <div key={i} style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.4px", textTransform: "uppercase" }}>{h}</div>
-                ))}
-              </div>
-              {filtrelenmis.length === 0 ? (
-                <div style={{ padding: "32px", textAlign: "center", fontSize: "13px", color: "#9ca3af" }}>Bu kategoride içerik bulunmuyor.</div>
-              ) : (
-                filtrelenmis.map((s, i) => {
-                  const asamaR = asamaRenk(s.asama);
-                  const durumR = durumRenk(s.durum);
-                  return (
-                    <div key={`${s.talep_id}-${i}`} onClick={() => router.push(s.yol)}
-                      style={{ display: "grid", gridTemplateColumns: "1.8fr 1.4fr 1.1fr 1.4fr 1fr 20px", gap: "12px", padding: "13px 20px", borderBottom: i < filtrelenmis.length - 1 ? "1px solid #f3f4f6" : "none", alignItems: "center", cursor: "pointer", background: "white", transition: "background 0.12s" }}
-                      onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = "#f9fafb"}
-                      onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = "white"}
-                    >
-                      <div style={{ fontSize: "13px", fontWeight: 700, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.urun_adi}</div>
-                      <div style={{ fontSize: "12px", color: "#737373", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.teknik_adi}</div>
-                      <div><span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "20px", background: asamaR.bg, color: asamaR.text, display: "inline-block", whiteSpace: "nowrap" }}>{s.asama}</span></div>
-                      <div><span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "20px", background: durumR.bg, color: durumR.text, display: "inline-block", whiteSpace: "nowrap" }}>{s.durum}</span></div>
-                      <span style={{ fontSize: "12px", color: "#9ca3af", whiteSpace: "nowrap" }}>{formatTarih(s.tarih)}</span>
-                      <span style={{ color: "#d1d5db", fontSize: "16px" }}>›</span>
-                    </div>
-                  );
-                })
-              )}
-            </>
-          )}
+            )}
+          </div>
+          {/* Desktop */}
+          <div className="hidden md:block">
+            <div className="grid gap-3 px-5 py-2.5 bg-gray-50 border-b border-gray-200" style={{ gridTemplateColumns: "1.8fr 1.4fr 1.1fr 1.4fr 1fr 20px" }}>
+              {["ÜRÜN", "TEKNİK", "AŞAMA", "DURUM", "TARİH", ""].map((h, i) => (
+                <div key={i} className="text-xs font-bold text-gray-400 uppercase tracking-wide">{h}</div>
+              ))}
+            </div>
+            {filtrelenmis.length === 0 ? (
+              <div className="p-8 text-center text-sm text-gray-400">Bu kategoride içerik bulunmuyor.</div>
+            ) : (
+              filtrelenmis.map((s, i) => {
+                const asamaR = asamaRenk(s.asama);
+                const durumR = durumRenk(s.durum);
+                return (
+                  <div
+                    key={`${s.talep_id}-${i}`}
+                    onClick={() => router.push(s.yol)}
+                    className="grid gap-3 px-5 py-3 items-center cursor-pointer bg-white hover:bg-gray-50 transition-colors duration-100"
+                    style={{
+                      gridTemplateColumns: "1.8fr 1.4fr 1.1fr 1.4fr 1fr 20px",
+                      borderBottom: i < filtrelenmis.length - 1 ? "1px solid #f3f4f6" : "none",
+                    }}
+                  >
+                    <div className="text-sm font-bold text-gray-900 truncate">{s.urun_adi}</div>
+                    <div className="text-xs text-gray-500 truncate">{s.teknik_adi}</div>
+                    <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block whitespace-nowrap" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span></div>
+                    <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block whitespace-nowrap" style={{ background: durumR.bg, color: durumR.text }}>{s.durum}</span></div>
+                    <span className="text-xs text-gray-400 whitespace-nowrap">{formatTarih(s.tarih)}</span>
+                    <span className="text-gray-300 text-base">›</span>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       </div>
 
       {/* BM Aktivite Takibi */}
       <div>
-        <div style={{ fontSize: "13px", fontWeight: 700, color: "#56aeff", textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: "12px" }}>BM Aktivite Takibi</div>
-        <div style={{ display: "grid", gridTemplateColumns: statGrid, gap: "10px", marginBottom: "16px" }}>
+        <div className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: "#56aeff" }}>BM Aktivite Takibi</div>
+
+        {/* Stat kartlar */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
           {[
             { label: "Takımdaki BM", value: bmIstat.bm_sayisi, renk: "#56aeff" },
             { label: "Bu Hafta Aktif", value: bmIstat.hafta_aktif_bm, renk: "#16a34a" },
             { label: "Bekleyen Öneriler", value: bmIstat.toplam_bekleyen, renk: "#bc2d0d" },
             { label: "Tamamlanan", value: bmIstat.toplam_tamamlanan, renk: "#f59e0b" },
           ].map((k, idx) => (
-            <div key={idx} style={{ background: "white", border: "1px solid #e5e7eb", borderLeft: `3px solid ${k.renk}`, borderRadius: "12px", padding: ekran === 'mobile' ? "14px" : "20px 22px" }}>
-              <div style={{ fontSize: "10px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.4px", textTransform: "uppercase", marginBottom: "8px" }}>{k.label}</div>
-              <div style={{ fontSize: ekran === 'mobile' ? "22px" : "28px", fontWeight: 800, color: "#111827", lineHeight: 1 }}>{k.value}</div>
+            <div
+              key={idx}
+              className="bg-white border border-gray-200 rounded-xl p-3 md:p-5"
+              style={{ borderLeft: `3px solid ${k.renk}` }}
+            >
+              <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">{k.label}</div>
+              <div className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-none">{k.value}</div>
             </div>
           ))}
         </div>
 
-        <div style={{ background: "white", border: "1px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
-          {ekran === 'mobile' ? (
-            bmSatirlari.length === 0 ? (
-              <div style={{ padding: "32px", textAlign: "center", fontSize: "13px", color: "#9ca3af" }}>Takımda BM bulunmuyor.</div>
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          {/* Mobile */}
+          <div className="md:hidden">
+            {bmSatirlari.length === 0 ? (
+              <div className="p-8 text-center text-sm text-gray-400">Takımda BM bulunmuyor.</div>
             ) : (
               bmSatirlari.map((s, i) => (
-                <div key={s.kullanici_id} onClick={() => router.push("/oneriler")}
-                  style={{ padding: "14px 16px", borderBottom: i < bmSatirlari.length - 1 ? "1px solid #f3f4f6" : "none", cursor: "pointer" }}
+                <div
+                  key={s.kullanici_id}
+                  onClick={() => router.push("/oneriler")}
+                  className="px-4 py-3 cursor-pointer"
+                  style={{ borderBottom: i < bmSatirlari.length - 1 ? "1px solid #f3f4f6" : "none" }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                    <div style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{s.bm_adi}</div>
-                    <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "20px", background: s.hafta_oneri > 0 ? "#f0fdf4" : "#f3f4f6", color: s.hafta_oneri > 0 ? "#166534" : "#9ca3af" }}>
+                  <div className="flex justify-between items-start mb-1.5">
+                    <div className="text-sm font-bold text-gray-900">{s.bm_adi}</div>
+                    <span
+                      className="text-xs font-bold px-2 py-0.5 rounded-full"
+                      style={{ background: s.hafta_oneri > 0 ? "#f0fdf4" : "#f3f4f6", color: s.hafta_oneri > 0 ? "#166534" : "#9ca3af" }}
+                    >
                       {s.hafta_oneri} öneri
                     </span>
                   </div>
-                  <div style={{ fontSize: "12px", color: "#737373" }}>{s.bolge_adi}</div>
-                  <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
-                    <span style={{ fontSize: "11px", color: s.bekleyen > 0 ? "#bc2d0d" : "#9ca3af" }}>Bekleyen: {s.bekleyen}</span>
-                    <span style={{ fontSize: "11px", color: "#16a34a" }}>Tamamlanan: {s.tamamlanan}</span>
+                  <div className="text-xs text-gray-500">{s.bolge_adi}</div>
+                  <div className="flex gap-3 mt-1">
+                    <span className="text-xs" style={{ color: s.bekleyen > 0 ? "#bc2d0d" : "#9ca3af" }}>Bekleyen: {s.bekleyen}</span>
+                    <span className="text-xs text-green-700">Tamamlanan: {s.tamamlanan}</span>
                   </div>
                 </div>
               ))
-            )
-          ) : (
-            <>
-              <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1.2fr 1fr 1fr 1fr 20px", gap: "12px", padding: "10px 20px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-                {["BM", "BÖLGE", "BU HAFTA", "BEKLEYEN", "TAMAMLANAN", ""].map((h, i) => (
-                  <div key={i} style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.4px", textTransform: "uppercase" }}>{h}</div>
-                ))}
-              </div>
-              {bmSatirlari.length === 0 ? (
-                <div style={{ padding: "32px", textAlign: "center", fontSize: "13px", color: "#9ca3af" }}>Takımda BM bulunmuyor.</div>
-              ) : (
-                bmSatirlari.map((s, i) => (
-                  <div key={s.kullanici_id} onClick={() => router.push("/oneriler")}
-                    style={{ display: "grid", gridTemplateColumns: "1.6fr 1.2fr 1fr 1fr 1fr 20px", gap: "12px", padding: "13px 20px", borderBottom: i < bmSatirlari.length - 1 ? "1px solid #f3f4f6" : "none", alignItems: "center", cursor: "pointer", background: "white", transition: "background 0.12s" }}
-                    onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = "#f9fafb"}
-                    onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = "white"}
-                  >
-                    <div style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{s.bm_adi}</div>
-                    <div style={{ fontSize: "12px", color: "#737373" }}>{s.bolge_adi}</div>
-                    <div><span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "20px", background: s.hafta_oneri > 0 ? "#f0fdf4" : "#f3f4f6", color: s.hafta_oneri > 0 ? "#166534" : "#9ca3af", display: "inline-block" }}>{s.hafta_oneri} öneri</span></div>
-                    <div style={{ fontSize: "13px", fontWeight: 700, color: s.bekleyen > 0 ? "#bc2d0d" : "#9ca3af" }}>{s.bekleyen}</div>
-                    <div style={{ fontSize: "13px", fontWeight: 700, color: "#16a34a" }}>{s.tamamlanan}</div>
-                    <span style={{ color: "#d1d5db", fontSize: "16px" }}>›</span>
+            )}
+          </div>
+          {/* Desktop */}
+          <div className="hidden md:block">
+            <div className="grid gap-3 px-5 py-2.5 bg-gray-50 border-b border-gray-200" style={{ gridTemplateColumns: "1.6fr 1.2fr 1fr 1fr 1fr 20px" }}>
+              {["BM", "BÖLGE", "BU HAFTA", "BEKLEYEN", "TAMAMLANAN", ""].map((h, i) => (
+                <div key={i} className="text-xs font-bold text-gray-400 uppercase tracking-wide">{h}</div>
+              ))}
+            </div>
+            {bmSatirlari.length === 0 ? (
+              <div className="p-8 text-center text-sm text-gray-400">Takımda BM bulunmuyor.</div>
+            ) : (
+              bmSatirlari.map((s, i) => (
+                <div
+                  key={s.kullanici_id}
+                  onClick={() => router.push("/oneriler")}
+                  className="grid gap-3 px-5 py-3 items-center cursor-pointer bg-white hover:bg-gray-50 transition-colors duration-100"
+                  style={{
+                    gridTemplateColumns: "1.6fr 1.2fr 1fr 1fr 1fr 20px",
+                    borderBottom: i < bmSatirlari.length - 1 ? "1px solid #f3f4f6" : "none",
+                  }}
+                >
+                  <div className="text-sm font-bold text-gray-900">{s.bm_adi}</div>
+                  <div className="text-xs text-gray-500">{s.bolge_adi}</div>
+                  <div>
+                    <span
+                      className="text-xs font-bold px-2 py-0.5 rounded-full inline-block"
+                      style={{ background: s.hafta_oneri > 0 ? "#f0fdf4" : "#f3f4f6", color: s.hafta_oneri > 0 ? "#166534" : "#9ca3af" }}
+                    >
+                      {s.hafta_oneri} öneri
+                    </span>
                   </div>
-                ))
-              )}
-            </>
-          )}
+                  <div className="text-sm font-bold" style={{ color: s.bekleyen > 0 ? "#bc2d0d" : "#9ca3af" }}>{s.bekleyen}</div>
+                  <div className="text-sm font-bold text-green-700">{s.tamamlanan}</div>
+                  <span className="text-gray-300 text-base">›</span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
+
     </div>
   );
 }

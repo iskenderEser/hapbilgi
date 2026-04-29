@@ -46,12 +46,7 @@ const KAYIPLAR = [
   { id: 'kaybedilen_izlenmemis_video_puani', label: 'Kaybedilen İzlenmemiş Video Puanı' },
 ];
 
-interface KapsamSecenegi {
-  value: string;
-  label: string;
-  grup?: string;
-}
-
+interface KapsamSecenegi { value: string; label: string; grup?: string; }
 interface AnalizSonuc {
   veri: any[];
   kimlik_kolonu: string;
@@ -60,6 +55,46 @@ interface AnalizSonuc {
   zaman: { baslangic: string; bitis: string; label: string };
   yorum: string;
   aksiyonlar: string[];
+}
+
+function PillKart({ baslik, liste, secilen, onToggle, tip }: {
+  baslik: string;
+  liste: { id: string; label: string }[];
+  secilen: string[];
+  onToggle: (id: string) => void;
+  tip: 'deger' | 'kazanc' | 'kayip';
+}) {
+  const renk = tip === 'kayip' ? KIRMIZI : BORDO;
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl px-4 md:px-5 py-4 mb-3">
+      <div className="text-xs font-medium uppercase tracking-wider mb-2.5" style={{ color: GRI_METIN }}>{baslik}</div>
+      <div className="flex flex-wrap gap-1.5">
+        {liste.map(d => {
+          const isSelected = secilen.includes(d.id);
+          return (
+            <div key={d.id} onClick={() => onToggle(d.id)}
+              className="px-3 py-1 rounded-full text-xs cursor-pointer select-none transition-all duration-150"
+              style={{
+                border: isSelected ? `0.5px solid ${renk}` : '0.5px solid #e5e7eb',
+                background: isSelected ? renk : 'white',
+                color: isSelected ? 'white' : KOYU_METIN,
+              }}>
+              {d.label}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SelectWrap({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex-1 flex flex-col gap-1">
+      <div className="text-xs font-medium uppercase tracking-wider" style={{ color: GRI_METIN }}>{label}</div>
+      {children}
+    </div>
+  );
 }
 
 export default function AnalizPage() {
@@ -90,17 +125,13 @@ export default function AnalizPage() {
       const ad = data.user.user_metadata?.ad ?? '';
       const soyad = data.user.user_metadata?.soyad ?? '';
       setAdSoyad(`${ad} ${soyad}`.trim());
-      if (!ANALIZ_ROLLERI.includes(r.toLowerCase())) {
-        router.push('/ana-sayfa');
-      }
+      if (!ANALIZ_ROLLERI.includes(r.toLowerCase())) router.push('/ana-sayfa');
     });
   }, []);
 
   useEffect(() => {
     if (!rol) return;
-    kapsamCek();
-    urunCek();
-    setLoading(false);
+    kapsamCek(); urunCek(); setLoading(false);
   }, [rol]);
 
   const kapsamCek = async () => {
@@ -118,16 +149,11 @@ export default function AnalizPage() {
     const firma_id = profData.profil?.firma_id;
     const takim_id = profData.profil?.takim_id;
     if (!firma_id) return;
-    const url = takim_id
-      ? `/admin/api/firmalar/${firma_id}/urunler?takim_id=${takim_id}`
-      : `/admin/api/firmalar/${firma_id}/urunler`;
+    const url = takim_id ? `/admin/api/firmalar/${firma_id}/urunler?takim_id=${takim_id}` : `/admin/api/firmalar/${firma_id}/urunler`;
     const res = await fetch(url);
     if (!res.ok) return;
     const data = await res.json();
-    setUrunSecenekleri([
-      { value: '', label: 'Tüm Ürünler' },
-      ...(data.urunler ?? []).map((u: any) => ({ value: u.urun_id, label: u.urun_adi })),
-    ]);
+    setUrunSecenekleri([{ value: '', label: 'Tüm Ürünler' }, ...(data.urunler ?? []).map((u: any) => ({ value: u.urun_id, label: u.urun_adi }))]);
   };
 
   const handleCikis = async () => {
@@ -144,41 +170,23 @@ export default function AnalizPage() {
     });
   };
 
-  const removeFromHavuz = (id: string) => {
-    setSecilen(prev => prev.filter(s => s !== id));
-  };
+  const removeFromHavuz = (id: string) => setSecilen(prev => prev.filter(s => s !== id));
 
-  const pillLabel = (id: string) => {
-    return [...DEGERLER, ...KAZANCLAR, ...KAYIPLAR].find(d => d.id === id)?.label ?? id;
-  };
+  const pillLabel = (id: string) => [...DEGERLER, ...KAZANCLAR, ...KAYIPLAR].find(d => d.id === id)?.label ?? id;
 
   const runAnaliz = async () => {
     if (secilen.length < 2 || !kapsam || !zaman) return;
-    setAnalizing(true);
-    setHata(null);
-    setSonuc(null);
+    setAnalizing(true); setHata(null); setSonuc(null);
     try {
       const res = await fetch('/analiz/api', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          degiskenler: secilen,
-          kapsam,
-          urun_filtre: urunFiltre || null,
-          zaman,
-        }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ degiskenler: secilen, kapsam, urun_filtre: urunFiltre || null, zaman }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) {
-        setHata(data.hata ?? 'Analiz yapılamadı.');
-      } else {
-        setSonuc(data);
-      }
-    } catch {
-      setHata('Bağlantı hatası.');
-    } finally {
-      setAnalizing(false);
-    }
+      if (!res.ok || !data.success) { setHata(data.hata ?? 'Analiz yapılamadı.'); }
+      else { setSonuc(data); }
+    } catch { setHata('Bağlantı hatası.'); }
+    finally { setAnalizing(false); }
   };
 
   const canRun = secilen.length >= 2 && !!kapsam && !!zaman;
@@ -189,8 +197,8 @@ export default function AnalizPage() {
   })) : 0;
 
   if (loading || !user) return (
-    <div style={{ minHeight: '100vh', background: GRI_ZEMIN, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <svg className="animate-spin" style={{ width: 24, height: 24, color: GRI_METIN }} fill="none" viewBox="0 0 24 24">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: GRI_ZEMIN }}>
+      <svg className="animate-spin w-6 h-6" style={{ color: GRI_METIN }} fill="none" viewBox="0 0 24 24">
         <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
         <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
       </svg>
@@ -198,89 +206,72 @@ export default function AnalizPage() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: GRI_ZEMIN, fontFamily: "'Nunito', sans-serif" }}>
+    <div className="min-h-screen" style={{ background: GRI_ZEMIN, fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={user?.email ?? ''} rol={rol} adSoyad={adSoyad} onCikis={handleCikis} />
 
-      <div style={{ maxWidth: 860, margin: '0 auto', padding: '24px 16px' }}>
-        <button
-          onClick={() => router.push('/ana-sayfa')}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: GRI_METIN, background: 'none', border: 'none', cursor: 'pointer', marginBottom: 20, fontFamily: "'Nunito', sans-serif" }}
-        >
+      <div className="max-w-3xl mx-auto px-3 py-4 md:px-4 md:py-6">
+        <button onClick={() => router.push('/ana-sayfa')}
+          className="flex items-center gap-1.5 text-xs mb-5 bg-transparent border-none cursor-pointer"
+          style={{ color: GRI_METIN, fontFamily: "'Nunito', sans-serif" }}>
           <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Ana Sayfa
         </button>
 
-        {/* Değerler */}
         <PillKart baslik="Değerler" liste={DEGERLER} secilen={secilen} onToggle={toggle} tip="deger" />
-
-        {/* Kazanç Değişkenleri */}
         <PillKart baslik="Kazanç Değişkenleri" liste={KAZANCLAR} secilen={secilen} onToggle={toggle} tip="kazanc" />
-
-        {/* Kayıp Değişkenleri */}
         <PillKart baslik="Kayıp Değişkenleri" liste={KAYIPLAR} secilen={secilen} onToggle={toggle} tip="kayip" />
 
-        {/* Havuz */}
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 500, color: GRI_METIN, textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 8 }}>Seçilenler</div>
-          <div style={{
-            minHeight: 72,
-            border: secilen.length > 0 ? `0.5px solid ${BORDO}` : '0.5px dashed #d1d5db',
-            borderRadius: 12,
-            padding: '12px 14px',
-            display: 'flex',
-            alignItems: 'center',
-            flexWrap: 'wrap' as const,
-            gap: 8,
-            background: secilen.length > 0 ? '#FAECE7' : 'white',
-            transition: 'all .2s',
-          }}>
+        {/* Seçilenler havuzu */}
+        <div className="mb-3">
+          <div className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: GRI_METIN }}>Seçilenler</div>
+          <div className="min-h-16 rounded-xl px-3 py-3 flex items-center flex-wrap gap-2 transition-all duration-200"
+            style={{
+              border: secilen.length > 0 ? `0.5px solid ${BORDO}` : '0.5px dashed #d1d5db',
+              background: secilen.length > 0 ? '#FAECE7' : 'white',
+            }}>
             {secilen.length === 0 ? (
-              <span style={{ fontSize: 12, color: '#9ca3af', fontStyle: 'italic' }}>Pill'lere tıklayın, buraya düşsün</span>
+              <span className="text-xs italic text-gray-400">Pill'lere tıklayın, buraya düşsün</span>
             ) : (
               <>
                 {secilen.map(id => (
-                  <span key={id} style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    padding: '6px 12px', borderRadius: 20,
-                    background: 'white', border: `0.5px solid ${BORDO}`,
-                    color: BORDO, fontSize: 12, fontWeight: 500,
-                  }}>
+                  <span key={id} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium"
+                    style={{ background: 'white', border: `0.5px solid ${BORDO}`, color: BORDO }}>
                     {pillLabel(id)}
-                    <button onClick={() => removeFromHavuz(id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: BORDO, fontSize: 14, lineHeight: 1, padding: 0 }}>×</button>
+                    <button onClick={() => removeFromHavuz(id)}
+                      className="bg-transparent border-none cursor-pointer text-sm leading-none p-0"
+                      style={{ color: BORDO }}>×</button>
                   </span>
                 ))}
                 {secilen.length < MAX && (
-                  <span style={{ fontSize: 11, color: BORDO, opacity: .6 }}>{MAX - secilen.length} tane daha ekleyebilirsiniz</span>
+                  <span className="text-xs" style={{ color: BORDO, opacity: 0.6 }}>{MAX - secilen.length} tane daha ekleyebilirsiniz</span>
                 )}
               </>
             )}
           </div>
         </div>
 
-        {/* Bottom row */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginBottom: 24 }}>
+        {/* Kapsam / Ürün / Zaman / Analiz Et */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-end gap-2 mb-6">
           <SelectWrap label="Kapsam">
-            <select
-              value={kapsam}
-              onChange={e => setKapsam(e.target.value)}
-              style={selectStyle}
-            >
-              {kapsamSecenekleri.map(s => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
+            <select value={kapsam} onChange={e => setKapsam(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white outline-none cursor-pointer"
+              style={{ fontFamily: "'Nunito', sans-serif", color: KOYU_METIN }}>
+              {kapsamSecenekleri.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
           </SelectWrap>
           <SelectWrap label="Ürün">
-            <select value={urunFiltre} onChange={e => setUrunFiltre(e.target.value)} style={selectStyle}>
-              {urunSecenekleri.map(u => (
-                <option key={u.value} value={u.value}>{u.label}</option>
-              ))}
+            <select value={urunFiltre} onChange={e => setUrunFiltre(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white outline-none cursor-pointer"
+              style={{ fontFamily: "'Nunito', sans-serif", color: KOYU_METIN }}>
+              {urunSecenekleri.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
             </select>
           </SelectWrap>
           <SelectWrap label="Zaman">
-            <select value={zaman} onChange={e => setZaman(e.target.value)} style={selectStyle}>
+            <select value={zaman} onChange={e => setZaman(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white outline-none cursor-pointer"
+              style={{ fontFamily: "'Nunito', sans-serif", color: KOYU_METIN }}>
               <option value="bu_gun">Günlük</option>
               <option value="bu_hafta">Haftalık</option>
               <option value="bu_ay">Aylık</option>
@@ -288,37 +279,35 @@ export default function AnalizPage() {
               <option value="bu_yil">Yıllık</option>
             </select>
           </SelectWrap>
-          <button
-            onClick={runAnaliz}
-            disabled={!canRun || analizing}
+          <button onClick={runAnaliz} disabled={!canRun || analizing}
+            className="md:flex-none px-6 py-2 rounded-lg border-none text-xs font-medium"
             style={{
-              flex: 2, padding: '10px 0', borderRadius: 8, border: 'none',
               background: canRun ? BORDO : '#e5e7eb',
               color: canRun ? 'white' : GRI_METIN,
-              fontSize: 13, fontWeight: 500, cursor: canRun ? 'pointer' : 'not-allowed',
+              cursor: canRun ? 'pointer' : 'not-allowed',
               fontFamily: "'Nunito', sans-serif",
-            }}
-          >
+            }}>
             {analizing ? 'Analiz ediliyor...' : 'Analiz Et'}
           </button>
         </div>
 
         {/* Hata */}
         {hata && (
-          <div style={{ background: '#FEF2F2', border: `0.5px solid #FECACA`, borderRadius: 8, padding: '10px 14px', fontSize: 12, color: KIRMIZI, marginBottom: 16 }}>
+          <div className="rounded-lg px-3 py-2.5 text-xs mb-4" style={{ background: '#FEF2F2', border: '0.5px solid #FECACA', color: KIRMIZI }}>
             {hata}
           </div>
         )}
 
         {/* Sonuç */}
         {sonuc && sonuc.veri.length > 0 && (
-          <div style={{ background: 'white', border: '0.5px solid #e5e7eb', borderRadius: 12, padding: '1.25rem', marginBottom: '1rem' }}>
-            <div style={{ fontSize: 13, fontWeight: 500, color: KOYU_METIN, marginBottom: 16 }}>
+          <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-5 mb-4">
+            <div className="text-sm font-medium mb-4" style={{ color: KOYU_METIN }}>
               {secilen.map(s => pillLabel(s)).join(' × ')} — {sonuc.zaman.label}
             </div>
 
             {/* Grafik */}
-            <div style={{ height: 160, border: '0.5px solid #e5e7eb', borderRadius: 8, background: GRI_ZEMIN, marginBottom: 12, overflow: 'hidden', padding: '12px 12px 0', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', gap: 4 }}>
+            <div className="border border-gray-200 rounded-lg overflow-hidden mb-3 px-3 pt-3 flex items-end justify-around gap-1"
+              style={{ height: 160, background: GRI_ZEMIN }}>
               {sonuc.veri.map((d: any, i: number) => {
                 const ilkSayisal = sonuc.degiskenler.find(k => typeof d[k] === 'number');
                 const deger = ilkSayisal ? (d[ilkSayisal] ?? 0) : 0;
@@ -326,31 +315,31 @@ export default function AnalizPage() {
                 const isim = d[sonuc.kimlik_adi] ?? d['ad'] ?? `#${i + 1}`;
                 const soyad = d['soyad'] ? ` ${d['soyad'][0]}.` : '';
                 return (
-                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, flex: 1 }}>
-                    <span style={{ fontSize: 9, fontWeight: 600, color: BORDO }}>{deger.toLocaleString('tr-TR')}</span>
-                    <div style={{ width: '65%', borderRadius: '3px 3px 0 0', background: BORDO, height: `${oran}%` }} />
-                    <span style={{ fontSize: 9, color: GRI_METIN, textAlign: 'center', lineHeight: 1.3 }}>{isim}{soyad}</span>
+                  <div key={i} className="flex flex-col items-center gap-0.5 flex-1">
+                    <span className="font-semibold" style={{ fontSize: 9, color: BORDO }}>{deger.toLocaleString('tr-TR')}</span>
+                    <div className="w-4/5 rounded-t" style={{ background: BORDO, height: `${oran}%` }} />
+                    <span className="text-center leading-snug" style={{ fontSize: 9, color: GRI_METIN }}>{isim}{soyad}</span>
                   </div>
                 );
               })}
             </div>
 
             {/* AI Yorumu */}
-            <div style={{ background: GRI_ZEMIN, border: '0.5px solid #e5e7eb', borderRadius: 8, padding: '12px 14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <div style={{ width: 20, height: 20, borderRadius: '50%', background: BORDO, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            <div className="rounded-lg px-3 py-3 border border-gray-200" style={{ background: GRI_ZEMIN }}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: BORDO }}>
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+                  </svg>
                 </div>
-                <span style={{ fontSize: 12, fontWeight: 500, color: KOYU_METIN }}>AI Yorumu</span>
+                <span className="text-xs font-medium" style={{ color: KOYU_METIN }}>AI Yorumu</span>
               </div>
-              <p style={{ fontSize: 12, color: GRI_METIN, lineHeight: 1.6, margin: 0 }}>{sonuc.yorum}</p>
+              <p className="text-xs leading-relaxed m-0" style={{ color: GRI_METIN }}>{sonuc.yorum}</p>
               {sonuc.aksiyonlar.length > 0 && (
-                <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' as const }}>
+                <div className="flex gap-1.5 mt-2.5 flex-wrap">
                   {sonuc.aksiyonlar.map((a, i) => (
-                    <button
-                      key={i}
-                      style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, border: `0.5px solid ${BORDO}`, background: 'none', color: BORDO, cursor: 'pointer', fontFamily: "'Nunito', sans-serif" }}
-                    >
+                    <button key={i} className="text-xs px-2.5 py-1 rounded-full bg-transparent cursor-pointer"
+                      style={{ border: `0.5px solid ${BORDO}`, color: BORDO, fontFamily: "'Nunito', sans-serif" }}>
                       {a} ↗
                     </button>
                   ))}
@@ -361,67 +350,10 @@ export default function AnalizPage() {
         )}
 
         {sonuc && sonuc.veri.length === 0 && (
-          <div style={{ background: 'white', border: '0.5px solid #e5e7eb', borderRadius: 12, padding: '40px', textAlign: 'center', fontSize: 13, color: GRI_METIN }}>
+          <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm" style={{ color: GRI_METIN }}>
             Seçilen kapsam ve zaman aralığında veri bulunamadı.
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-const selectStyle: React.CSSProperties = {
-  width: '100%', padding: '9px 12px',
-  borderRadius: 8, border: '0.5px solid #e5e7eb',
-  background: 'white', fontSize: 12,
-  fontFamily: "'Nunito', sans-serif", color: '#111827',
-  outline: 'none', cursor: 'pointer',
-};
-
-function SelectWrap({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <div style={{ fontSize: 10, fontWeight: 500, color: '#737373', textTransform: 'uppercase', letterSpacing: '.06em' }}>{label}</div>
-      {children}
-    </div>
-  );
-}
-
-function PillKart({ baslik, liste, secilen, onToggle, tip }: {
-  baslik: string;
-  liste: { id: string; label: string }[];
-  secilen: string[];
-  onToggle: (id: string) => void;
-  tip: 'deger' | 'kazanc' | 'kayip';
-}) {
-  const BORDO = '#bc2d0d';
-  const KIRMIZI = '#E24B4A';
-  const renk = tip === 'kayip' ? KIRMIZI : BORDO;
-
-  return (
-    <div style={{ background: 'white', border: '0.5px solid #e5e7eb', borderRadius: 12, padding: '1rem 1.25rem', marginBottom: '.75rem' }}>
-      <div style={{ fontSize: 11, fontWeight: 500, color: '#737373', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 10 }}>{baslik}</div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-        {liste.map(d => {
-          const isSelected = secilen.includes(d.id);
-          return (
-            <div
-              key={d.id}
-              onClick={() => onToggle(d.id)}
-              style={{
-                padding: '5px 12px', borderRadius: 20,
-                border: isSelected ? `0.5px solid ${renk}` : '0.5px solid #e5e7eb',
-                background: isSelected ? renk : 'white',
-                fontSize: 12,
-                color: isSelected ? 'white' : '#111827',
-                cursor: 'pointer', userSelect: 'none',
-                transition: 'all .15s',
-              }}
-            >
-              {d.label}
-            </div>
-          );
-        })}
       </div>
     </div>
   );

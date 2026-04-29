@@ -4,7 +4,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useHataMesaji } from "@/components/HataMesaji";
-import { useEkran } from "@/styles/responsive";
 
 interface BmSatiri {
   kullanici_id: string;
@@ -33,7 +32,6 @@ interface Props {
 
 export default function TmAnaSayfa({ user, adSoyad }: Props) {
   const router = useRouter();
-  const ekran = useEkran();
   const [tmVeri, setTmVeri] = useState<TmVeri | null>(null);
   const [loading, setLoading] = useState(true);
   const { hata } = useHataMesaji();
@@ -55,8 +53,8 @@ export default function TmAnaSayfa({ user, adSoyad }: Props) {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px" }}>
-        <svg className="animate-spin" style={{ width: 24, height: 24, color: "#737373" }} fill="none" viewBox="0 0 24 24">
+      <div className="flex items-center justify-center p-20">
+        <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
           <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
@@ -67,27 +65,23 @@ export default function TmAnaSayfa({ user, adSoyad }: Props) {
   const istat = tmVeri?.istatistikler ?? { bm_sayisi: 0, hafta_aktif_bm: 0, toplam_bekleyen: 0, toplam_tamamlanan: 0 };
   const satirlar = tmVeri?.bm_satirlari ?? [];
   const ad = adSoyad.split(" ")[0] || "TM";
-  const padding = ekran === 'mobile' ? '16px 14px' : ekran === 'tablet' ? '20px 24px' : '28px 32px';
-  const statGrid = ekran === 'mobile' ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)';
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", padding }}>
+    <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
 
       {/* Karşılama */}
-      <div style={{ display: "flex", flexDirection: ekran === 'mobile' ? 'column' : 'row', alignItems: ekran === 'mobile' ? 'flex-start' : 'flex-end', justifyContent: "space-between", gap: 8, marginBottom: "24px" }}>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-2 mb-6">
         <div>
-          <h1 style={{ fontSize: ekran === 'mobile' ? "18px" : "20px", fontWeight: 800, color: "#111827", margin: 0 }}>Merhaba, {ad} 👋</h1>
-          <p style={{ fontSize: "13px", color: "#737373", marginTop: "4px" }}>TM</p>
+          <h1 className="text-lg md:text-xl font-extrabold text-gray-900 m-0">Merhaba, {ad} 👋</h1>
+          <p className="text-sm text-gray-500 mt-1">TM</p>
         </div>
-        {ekran !== 'mobile' && (
-          <span style={{ fontSize: "12px", color: "#737373", background: "white", border: "1px solid #e5e7eb", borderRadius: "20px", padding: "5px 14px", whiteSpace: "nowrap" }}>
-            {bugunTarih()}
-          </span>
-        )}
+        <span className="hidden md:inline text-xs text-gray-500 bg-white border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap">
+          {bugunTarih()}
+        </span>
       </div>
 
       {/* Stat kartlar */}
-      <div style={{ display: "grid", gridTemplateColumns: statGrid, gap: "10px", marginBottom: "20px" }}>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
         {[
           { label: "Takımdaki BM", value: istat.bm_sayisi, sub: "Aktif bölge müdürü", renk: "#56aeff" },
           { label: "Bu Hafta Aktif BM", value: istat.hafta_aktif_bm, sub: "Öneri gönderen", renk: "#16a34a" },
@@ -96,84 +90,92 @@ export default function TmAnaSayfa({ user, adSoyad }: Props) {
         ].map((k, idx) => (
           <div
             key={idx}
-            style={{
-              background: "white",
-              border: "1px solid #e5e7eb",
-              borderLeft: `3px solid ${k.renk}`,
-              borderRadius: "12px",
-              padding: ekran === 'mobile' ? "14px 14px" : "20px 22px",
-            }}
+            className="bg-white border border-gray-200 rounded-xl p-3 md:p-5"
+            style={{ borderLeft: `3px solid ${k.renk}` }}
           >
-            <div style={{ fontSize: "10px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.4px", textTransform: "uppercase", marginBottom: "8px" }}>{k.label}</div>
-            <div style={{ fontSize: ekran === 'mobile' ? "22px" : "28px", fontWeight: 800, color: "#111827", lineHeight: 1 }}>{k.value}</div>
-            {ekran !== 'mobile' && <div style={{ fontSize: "12px", color: "#737373", marginTop: "6px" }}>{k.sub}</div>}
+            <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">{k.label}</div>
+            <div className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-none">{k.value}</div>
+            <div className="hidden md:block text-xs text-gray-500 mt-1.5">{k.sub}</div>
           </div>
         ))}
       </div>
 
-      {/* BM tablosu */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-        <span style={{ fontSize: "14px", fontWeight: 700, color: "#111827" }}>BM Aktivite Takibi</span>
+      {/* BM tablosu başlık */}
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm font-bold text-gray-900">BM Aktivite Takibi</span>
       </div>
 
-      <div style={{ background: "white", border: "1px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
-        {ekran === 'mobile' ? (
-          satirlar.length === 0 ? (
-            <div style={{ padding: "40px", textAlign: "center", fontSize: "13px", color: "#9ca3af" }}>Takımda BM bulunmuyor.</div>
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+
+        {/* Mobile: kart görünümü */}
+        <div className="md:hidden">
+          {satirlar.length === 0 ? (
+            <div className="p-10 text-center text-sm text-gray-400">Takımda BM bulunmuyor.</div>
           ) : (
             satirlar.map((s, i) => (
               <div
                 key={s.kullanici_id}
                 onClick={() => router.push("/oneriler")}
-                style={{ padding: "14px 16px", borderBottom: i < satirlar.length - 1 ? "1px solid #f3f4f6" : "none", cursor: "pointer" }}
+                className="px-4 py-3 cursor-pointer"
+                style={{ borderBottom: i < satirlar.length - 1 ? "1px solid #f3f4f6" : "none" }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                  <div style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{s.bm_adi}</div>
-                  <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "20px", background: s.hafta_oneri > 0 ? "#f0fdf4" : "#f3f4f6", color: s.hafta_oneri > 0 ? "#166534" : "#9ca3af" }}>
+                <div className="flex justify-between items-start mb-1.5">
+                  <div className="text-sm font-bold text-gray-900">{s.bm_adi}</div>
+                  <span
+                    className="text-xs font-bold px-2 py-0.5 rounded-full"
+                    style={{ background: s.hafta_oneri > 0 ? "#f0fdf4" : "#f3f4f6", color: s.hafta_oneri > 0 ? "#166534" : "#9ca3af" }}
+                  >
                     {s.hafta_oneri} öneri
                   </span>
                 </div>
-                <div style={{ fontSize: "12px", color: "#737373" }}>{s.bolge_adi}</div>
-                <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
-                  <span style={{ fontSize: "11px", color: s.bekleyen > 0 ? "#bc2d0d" : "#9ca3af" }}>Bekleyen: {s.bekleyen}</span>
-                  <span style={{ fontSize: "11px", color: "#16a34a" }}>Tamamlanan: {s.tamamlanan}</span>
+                <div className="text-xs text-gray-500">{s.bolge_adi}</div>
+                <div className="flex gap-3 mt-1.5">
+                  <span className="text-xs" style={{ color: s.bekleyen > 0 ? "#bc2d0d" : "#9ca3af" }}>Bekleyen: {s.bekleyen}</span>
+                  <span className="text-xs text-green-700">Tamamlanan: {s.tamamlanan}</span>
                 </div>
               </div>
             ))
-          )
-        ) : (
-          <>
-            <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1.2fr 1fr 1fr 1fr 20px", gap: "12px", padding: "10px 20px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-              {["BM", "BÖLGE", "BU HAFTA", "BEKLEYEN", "TAMAMLANAN", ""].map((h, i) => (
-                <div key={i} style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.4px", textTransform: "uppercase" }}>{h}</div>
-              ))}
-            </div>
-            {satirlar.length === 0 ? (
-              <div style={{ padding: "40px", textAlign: "center", fontSize: "13px", color: "#9ca3af" }}>Takımda BM bulunmuyor.</div>
-            ) : (
-              satirlar.map((s, i) => (
-                <div
-                  key={s.kullanici_id}
-                  onClick={() => router.push("/oneriler")}
-                  style={{ display: "grid", gridTemplateColumns: "1.6fr 1.2fr 1fr 1fr 1fr 20px", gap: "12px", padding: "13px 20px", borderBottom: i < satirlar.length - 1 ? "1px solid #f3f4f6" : "none", alignItems: "center", cursor: "pointer", background: "white", transition: "background 0.12s" }}
-                  onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = "#f9fafb"}
-                  onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = "white"}
-                >
-                  <div style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{s.bm_adi}</div>
-                  <div style={{ fontSize: "12px", color: "#737373" }}>{s.bolge_adi}</div>
-                  <div>
-                    <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "20px", background: s.hafta_oneri > 0 ? "#f0fdf4" : "#f3f4f6", color: s.hafta_oneri > 0 ? "#166534" : "#9ca3af", display: "inline-block" }}>
-                      {s.hafta_oneri} öneri
-                    </span>
-                  </div>
-                  <div style={{ fontSize: "13px", fontWeight: 700, color: s.bekleyen > 0 ? "#bc2d0d" : "#9ca3af" }}>{s.bekleyen}</div>
-                  <div style={{ fontSize: "13px", fontWeight: 700, color: "#16a34a" }}>{s.tamamlanan}</div>
-                  <span style={{ color: "#d1d5db", fontSize: "16px" }}>›</span>
+          )}
+        </div>
+
+        {/* Desktop: tablo görünümü */}
+        <div className="hidden md:block">
+          <div className="grid gap-3 px-5 py-2.5 bg-gray-50 border-b border-gray-200" style={{ gridTemplateColumns: "1.6fr 1.2fr 1fr 1fr 1fr 20px" }}>
+            {["BM", "BÖLGE", "BU HAFTA", "BEKLEYEN", "TAMAMLANAN", ""].map((h, i) => (
+              <div key={i} className="text-xs font-bold text-gray-400 uppercase tracking-wide">{h}</div>
+            ))}
+          </div>
+          {satirlar.length === 0 ? (
+            <div className="p-10 text-center text-sm text-gray-400">Takımda BM bulunmuyor.</div>
+          ) : (
+            satirlar.map((s, i) => (
+              <div
+                key={s.kullanici_id}
+                onClick={() => router.push("/oneriler")}
+                className="grid gap-3 px-5 py-3 items-center cursor-pointer bg-white hover:bg-gray-50 transition-colors duration-100"
+                style={{
+                  gridTemplateColumns: "1.6fr 1.2fr 1fr 1fr 1fr 20px",
+                  borderBottom: i < satirlar.length - 1 ? "1px solid #f3f4f6" : "none",
+                }}
+              >
+                <div className="text-sm font-bold text-gray-900">{s.bm_adi}</div>
+                <div className="text-xs text-gray-500">{s.bolge_adi}</div>
+                <div>
+                  <span
+                    className="text-xs font-bold px-2 py-0.5 rounded-full inline-block"
+                    style={{ background: s.hafta_oneri > 0 ? "#f0fdf4" : "#f3f4f6", color: s.hafta_oneri > 0 ? "#166534" : "#9ca3af" }}
+                  >
+                    {s.hafta_oneri} öneri
+                  </span>
                 </div>
-              ))
-            )}
-          </>
-        )}
+                <div className="text-sm font-bold" style={{ color: s.bekleyen > 0 ? "#bc2d0d" : "#9ca3af" }}>{s.bekleyen}</div>
+                <div className="text-sm font-bold text-green-700">{s.tamamlanan}</div>
+                <span className="text-gray-300 text-base">›</span>
+              </div>
+            ))
+          )}
+        </div>
+
       </div>
     </div>
   );

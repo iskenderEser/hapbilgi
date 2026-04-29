@@ -64,56 +64,37 @@ export default function VideoAkisPage() {
     const supabase = createClient();
 
     const { data: senaryoDurum, error: sdError } = await supabase
-      .from("senaryo_durumu")
-      .select("senaryo_id")
-      .eq("senaryo_durum_id", senaryo_durum_id)
-      .single();
+      .from("senaryo_durumu").select("senaryo_id")
+      .eq("senaryo_durum_id", senaryo_durum_id).single();
 
     if (sdError || !senaryoDurum) {
       hata("Senaryo durumu bulunamadı.", "senaryo_durumu tablosu SELECT — senaryo_durum_id", sdError?.message);
     } else {
       const { data: senaryoData, error: senaryoError } = await supabase
-        .from("senaryolar")
-        .select("senaryo_id, talep_id, senaryo_metni")
-        .eq("senaryo_id", senaryoDurum.senaryo_id)
-        .single();
+        .from("senaryolar").select("senaryo_id, talep_id, senaryo_metni")
+        .eq("senaryo_id", senaryoDurum.senaryo_id).single();
 
       if (senaryoError || !senaryoData) {
         hata("Senaryo bulunamadı.", "senaryolar tablosu SELECT — senaryo_id", senaryoError?.message);
       } else {
         const { data: talep } = await supabase
-          .from("talepler")
-          .select(`urunler(urun_adi), teknikler(teknik_adi)`)
-          .eq("talep_id", senaryoData.talep_id)
-          .single();
-
-        setSenaryo({
-          ...senaryoData,
-          urun_adi: (talep as any)?.urunler?.urun_adi ?? "-",
-          teknik_adi: (talep as any)?.teknikler?.teknik_adi ?? "-",
-        });
+          .from("talepler").select(`urunler(urun_adi), teknikler(teknik_adi)`)
+          .eq("talep_id", senaryoData.talep_id).single();
+        setSenaryo({ ...senaryoData, urun_adi: (talep as any)?.urunler?.urun_adi ?? "-", teknik_adi: (talep as any)?.teknikler?.teknik_adi ?? "-" });
       }
     }
 
     const { data: videolarData, error: videoError } = await supabase
-      .from("videolar")
-      .select("video_id, senaryo_durum_id, iu_id, video_url, thumbnail_url, created_at")
-      .eq("senaryo_durum_id", senaryo_durum_id)
-      .order("created_at", { ascending: true });
+      .from("videolar").select("video_id, senaryo_durum_id, iu_id, video_url, thumbnail_url, created_at")
+      .eq("senaryo_durum_id", senaryo_durum_id).order("created_at", { ascending: true });
 
-    if (videoError) {
-      hata("Videolar yüklenemedi.", "videolar tablosu SELECT — senaryo_durum_id", videoError.message);
-    }
+    if (videoError) hata("Videolar yüklenemedi.", "videolar tablosu SELECT — senaryo_durum_id", videoError.message);
 
     const videolarWithDurum = await Promise.all(
       (videolarData ?? []).map(async (v) => {
         const { data: durumlar } = await supabase
-          .from("video_durumu")
-          .select("durum, notlar")
-          .eq("video_id", v.video_id)
-          .order("created_at", { ascending: false })
-          .limit(1);
-
+          .from("video_durumu").select("durum, notlar")
+          .eq("video_id", v.video_id).order("created_at", { ascending: false }).limit(1);
         return { ...v, son_durum: durumlar?.[0]?.durum ?? null, son_durum_notlar: durumlar?.[0]?.notlar ?? null };
       })
     );
@@ -122,9 +103,7 @@ export default function VideoAkisPage() {
     setLoading(false);
   };
 
-  useEffect(() => {
-    if (user && senaryo_durum_id) veriCek();
-  }, [user, senaryo_durum_id]);
+  useEffect(() => { if (user && senaryo_durum_id) veriCek(); }, [user, senaryo_durum_id]);
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -140,26 +119,19 @@ export default function VideoAkisPage() {
   const handleIuGonder = async () => {
     if (!videoUrl.trim() || !sonVideo) return;
     setGonderLoading(true);
-
     const res = await fetch("/videolar/api", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      method: "PUT", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ video_id: sonVideo.video_id, video_url: videoUrl.trim(), thumbnail_url: thumbnailUrl.trim() || null }),
     });
-
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "Video URL kaydedilemedi.", d.adim, d.detay); setGonderLoading(false); return; }
-
     const res2 = await fetch("/videolar/api/durum", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ video_id: sonVideo.video_id, durum: "Inceleme Bekleniyor" }),
     });
-
     const d2 = await res2.json();
     if (!res2.ok) { hata(d2.hata ?? "Durum kaydedilemedi.", d2.adim, d2.detay); }
     else basari("Video PM'e gönderildi.");
-
     setVideoUrl(""); setThumbnailUrl("");
     await veriCek();
     setGonderLoading(false);
@@ -169,16 +141,14 @@ export default function VideoAkisPage() {
     if (!sonVideo) return;
     setGonderLoading(true);
     const res = await fetch("/videolar/api/durum", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ video_id: sonVideo.video_id, durum, notlar }),
     });
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "İşlem gerçekleştirilemedi.", d.adim, d.detay); }
     else {
       basari(durum === "Onaylandi" ? "Video onaylandı." : durum === "Revizyon Bekleniyor" ? "Revizyon talebi gönderildi." : "Video iptal edildi.");
-      setAktifRevizyon(false); setRevizyonNotu("");
-      await veriCek();
+      setAktifRevizyon(false); setRevizyonNotu(""); await veriCek();
     }
     setGonderLoading(false);
   };
@@ -195,8 +165,8 @@ export default function VideoAkisPage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <svg className="animate-spin" style={{ width: 24, height: 24, color: "#737373" }} fill="none" viewBox="0 0 24 24">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
           <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
@@ -205,62 +175,82 @@ export default function VideoAkisPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f9fafb", fontFamily: "'Nunito', sans-serif" }}>
+    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={user?.email ?? ""} rol={rol} onCikis={handleCikis} />
 
-      <div style={{ maxWidth: "800px", margin: "0 auto", padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
-        <button onClick={() => router.push("/videolar")} style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", cursor: "pointer", color: "#737373", fontSize: "13px", padding: 0, width: "fit-content" }}>
+      <div className="max-w-3xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
+
+        <button onClick={() => router.push("/videolar")}
+          className="flex items-center gap-1.5 bg-transparent border-none cursor-pointer text-gray-500 text-sm p-0 w-fit">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M15 19l-7-7 7-7"/></svg>
           Videolar
         </button>
 
+        {/* Senaryo bilgisi */}
         {senaryo && (
-          <div style={{ background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", padding: "16px 20px" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: "10px" }}>
-              <span style={{ fontSize: "15px", fontWeight: 600, color: "#111" }}>{senaryo.urun_adi}</span>
-              <span style={{ fontSize: "12px", color: "#737373" }}>{senaryo.teknik_adi}</span>
+          <div className="bg-white border border-gray-200 rounded-xl px-4 md:px-5 py-4">
+            <div className="flex flex-col gap-1 mb-2.5">
+              <span className="text-base font-semibold text-gray-900">{senaryo.urun_adi}</span>
+              <span className="text-xs text-gray-500">{senaryo.teknik_adi}</span>
             </div>
-            <p style={{ fontSize: "13px", color: "#374151", lineHeight: 1.6, margin: 0, whiteSpace: "pre-wrap" }}>{senaryo.senaryo_metni}</p>
+            <p className="text-sm text-gray-700 leading-relaxed m-0 whitespace-pre-wrap">{senaryo.senaryo_metni}</p>
           </div>
         )}
 
-        <div style={{ background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
-          <div style={{ padding: "14px 20px", borderBottom: "0.5px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: "13px", fontWeight: 600, color: "#111" }}>Video Akışı</span>
-            <span style={{ fontSize: "11px", color: "#737373" }}>Revizyon: {revizyonSayisi} / 2</span>
+        {/* Video akışı */}
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="px-4 md:px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+            <span className="text-sm font-semibold text-gray-900">Video Akışı</span>
+            <span className="text-xs text-gray-500">Revizyon: {revizyonSayisi} / 2</span>
           </div>
 
-          <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: "16px" }}>
-            {videolar.length === 0 && <p style={{ fontSize: "13px", color: "#9ca3af", textAlign: "center", padding: "20px 0" }}>Henüz video yüklenmedi.</p>}
+          <div className="px-4 md:px-5 py-4 flex flex-col gap-4">
+            {videolar.length === 0 && (
+              <p className="text-sm text-gray-400 text-center py-5">Henüz video yüklenmedi.</p>
+            )}
 
             {videolar.map((v, i) => {
               const renk = durumRenk(v.son_durum ?? "");
               return (
-                <div key={v.video_id} style={{ border: "0.5px solid #e5e7eb", borderRadius: "10px", overflow: "hidden" }}>
-                  <div style={{ padding: "10px 14px", background: "#fafafa", borderBottom: "0.5px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <span style={{ fontSize: "11px", color: "#737373" }}>Versiyon {i + 1}</span>
-                      <span style={{ fontSize: "11px", color: "#9ca3af" }}>{formatTarih(v.created_at)}</span>
+                <div key={v.video_id} className="border border-gray-200 rounded-xl overflow-hidden">
+                  {/* Versiyon başlık */}
+                  <div className="px-3 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">Versiyon {i + 1}</span>
+                      <span className="text-xs text-gray-400">{formatTarih(v.created_at)}</span>
                     </div>
-                    {v.son_durum && <span style={{ fontSize: "11px", padding: "2px 10px", borderRadius: "20px", background: renk.bg, color: renk.text, border: `0.5px solid ${renk.border}` }}>{v.son_durum}</span>}
+                    {v.son_durum && (
+                      <span className="text-xs px-2.5 py-0.5 rounded-full"
+                        style={{ background: renk.bg, color: renk.text, border: `0.5px solid ${renk.border}` }}>
+                        {v.son_durum}
+                      </span>
+                    )}
                   </div>
 
+                  {/* Thumbnail + URL */}
                   {v.video_url && (
-                    <div style={{ padding: "14px" }}>
-                      <div style={{ borderRadius: "8px", overflow: "hidden", marginBottom: "8px", cursor: "pointer" }} onClick={() => setAcikVideo(v.video_url)}>
+                    <div className="p-3">
+                      <div className="rounded-lg overflow-hidden mb-2 cursor-pointer" onClick={() => setAcikVideo(v.video_url)}>
                         {v.thumbnail_url
-                          ? <img src={v.thumbnail_url} alt="thumbnail" style={{ width: "100%", height: "180px", objectFit: "cover" }} />
-                          : <div style={{ width: "100%", height: "180px", background: "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center" }}><svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" width="32" height="32"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8z"/></svg></div>
+                          ? <img src={v.thumbnail_url} alt="thumbnail" className="w-full object-cover" style={{ height: 180 }} />
+                          : (
+                            <div className="w-full bg-gray-200 flex items-center justify-center" style={{ height: 180 }}>
+                              <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" width="32" height="32">
+                                <circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8z"/>
+                              </svg>
+                            </div>
+                          )
                         }
                       </div>
-                      <p style={{ fontSize: "11px", color: "#9ca3af", margin: 0, wordBreak: "break-all" }}>{v.video_url}</p>
+                      <p className="text-xs text-gray-400 m-0 break-all">{v.video_url}</p>
                     </div>
                   )}
 
+                  {/* Revizyon notu */}
                   {v.son_durum === "Revizyon Bekleniyor" && v.son_durum_notlar && (
-                    <div style={{ padding: "10px 14px", background: "#fefce8", borderTop: "0.5px solid #fde68a" }}>
-                      <span style={{ fontSize: "11px", color: "#854d0e", fontWeight: 600 }}>Revizyon Notu: </span>
-                      <span style={{ fontSize: "12px", color: "#854d0e" }}>{v.son_durum_notlar}</span>
+                    <div className="px-3 py-2.5 bg-yellow-50 border-t border-yellow-200">
+                      <span className="text-xs font-semibold text-yellow-800">Revizyon Notu: </span>
+                      <span className="text-xs text-yellow-800">{v.son_durum_notlar}</span>
                     </div>
                   )}
                 </div>
@@ -268,32 +258,73 @@ export default function VideoAkisPage() {
             })}
           </div>
 
+          {/* PM karar alanı */}
           {isPM && sonVideo?.son_durum === "Inceleme Bekleniyor" && (
-            <div style={{ borderTop: "0.5px solid #e5e7eb", padding: "14px 20px", background: "#fafafa" }}>
+            <div className="border-t border-gray-100 px-4 md:px-5 py-3.5 bg-gray-50">
               {aktifRevizyon ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <textarea value={revizyonNotu} onChange={(e) => setRevizyonNotu(e.target.value)} placeholder="Revizyon notunu yazın..." rows={3} style={{ width: "100%", border: "0.5px solid #fde68a", borderRadius: "8px", padding: "8px 12px", fontSize: "12px", fontFamily: "'Nunito', sans-serif", resize: "vertical" }} />
-                  <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-                    <button onClick={() => { setAktifRevizyon(false); setRevizyonNotu(""); }} style={{ padding: "7px 14px", borderRadius: "6px", border: "0.5px solid #e5e7eb", background: "transparent", color: "#737373", fontSize: "11px", cursor: "pointer" }}>İptal</button>
-                    <button onClick={() => handlePMKarar("Revizyon Bekleniyor", revizyonNotu)} disabled={!revizyonNotu.trim() || gonderLoading} style={{ padding: "7px 14px", borderRadius: "6px", border: "none", background: "#f59e0b", color: "white", fontSize: "11px", fontWeight: 600, cursor: "pointer", opacity: !revizyonNotu.trim() ? 0.5 : 1 }}>Revizyon Gönder</button>
+                <div className="flex flex-col gap-2">
+                  <textarea
+                    value={revizyonNotu}
+                    onChange={(e) => setRevizyonNotu(e.target.value)}
+                    placeholder="Revizyon notunu yazın..."
+                    rows={3}
+                    className="w-full border border-yellow-200 rounded-lg px-3 py-2 text-xs resize-y"
+                    style={{ fontFamily: "'Nunito', sans-serif" }}
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <button onClick={() => { setAktifRevizyon(false); setRevizyonNotu(""); }}
+                      className="px-3 py-1.5 rounded-lg border border-gray-200 bg-transparent text-gray-500 text-xs cursor-pointer">
+                      İptal
+                    </button>
+                    <button onClick={() => handlePMKarar("Revizyon Bekleniyor", revizyonNotu)}
+                      disabled={!revizyonNotu.trim() || gonderLoading}
+                      className="px-3 py-1.5 rounded-lg border-none bg-amber-500 text-white text-xs font-semibold cursor-pointer"
+                      style={{ opacity: !revizyonNotu.trim() ? 0.5 : 1 }}>
+                      Revizyon Gönder
+                    </button>
                   </div>
                 </div>
               ) : (
-                <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-                  <button onClick={() => handlePMKarar("Onaylandi")} disabled={gonderLoading} style={{ padding: "7px 14px", borderRadius: "6px", border: "none", background: "#16a34a", color: "white", fontSize: "11px", fontWeight: 600, cursor: "pointer" }}>Onayla</button>
-                  {revizyonSayisi < 2 && <button onClick={() => setAktifRevizyon(true)} disabled={gonderLoading} style={{ padding: "7px 14px", borderRadius: "6px", border: "none", background: "#f59e0b", color: "white", fontSize: "11px", fontWeight: 600, cursor: "pointer" }}>Revizyon İste</button>}
-                  <button onClick={() => handlePMKarar("Iptal Edildi")} disabled={gonderLoading} style={{ padding: "7px 14px", borderRadius: "6px", border: "0.5px solid #fecaca", background: "transparent", color: "#bc2d0d", fontSize: "11px", fontWeight: 600, cursor: "pointer" }}>İptal Et</button>
+                <div className="flex gap-2 justify-end flex-wrap">
+                  <button onClick={() => handlePMKarar("Onaylandi")} disabled={gonderLoading}
+                    className="px-3 py-1.5 rounded-lg border-none bg-green-700 text-white text-xs font-semibold cursor-pointer">
+                    Onayla
+                  </button>
+                  {revizyonSayisi < 2 && (
+                    <button onClick={() => setAktifRevizyon(true)} disabled={gonderLoading}
+                      className="px-3 py-1.5 rounded-lg border-none bg-amber-500 text-white text-xs font-semibold cursor-pointer">
+                      Revizyon İste
+                    </button>
+                  )}
+                  <button onClick={() => handlePMKarar("Iptal Edildi")} disabled={gonderLoading}
+                    className="px-3 py-1.5 rounded-lg bg-transparent text-xs font-semibold cursor-pointer"
+                    style={{ border: "0.5px solid #fecaca", color: "#bc2d0d" }}>
+                    İptal Et
+                  </button>
                 </div>
               )}
             </div>
           )}
 
+          {/* IU URL girişi */}
           {iuGonderebilir && (
-            <div style={{ borderTop: "0.5px solid #e5e7eb", padding: "14px 20px", background: "#fafafa" }}>
-              <input type="text" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="Bunny.net video URL..." style={{ width: "100%", border: "0.5px solid #e5e7eb", borderRadius: "8px", padding: "8px 12px", fontSize: "13px", fontFamily: "'Nunito', sans-serif", marginBottom: "8px" }} />
-              <input type="text" value={thumbnailUrl} onChange={(e) => setThumbnailUrl(e.target.value)} placeholder="Thumbnail URL (opsiyonel)..." style={{ width: "100%", border: "0.5px solid #e5e7eb", borderRadius: "8px", padding: "8px 12px", fontSize: "13px", fontFamily: "'Nunito', sans-serif", marginBottom: "10px" }} />
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <button onClick={handleIuGonder} disabled={!videoUrl.trim() || gonderLoading} style={{ background: "#56aeff", color: "white", border: "none", borderRadius: "8px", padding: "10px 20px", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "'Nunito', sans-serif", opacity: !videoUrl.trim() ? 0.5 : 1 }}>
+            <div className="border-t border-gray-100 px-4 md:px-5 py-4 bg-gray-50">
+              <input
+                type="text" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="Bunny.net video URL..."
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-2"
+                style={{ fontFamily: "'Nunito', sans-serif" }}
+              />
+              <input
+                type="text" value={thumbnailUrl} onChange={(e) => setThumbnailUrl(e.target.value)}
+                placeholder="Thumbnail URL (opsiyonel)..."
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-2.5"
+                style={{ fontFamily: "'Nunito', sans-serif" }}
+              />
+              <div className="flex justify-end">
+                <button onClick={handleIuGonder} disabled={!videoUrl.trim() || gonderLoading}
+                  className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer"
+                  style={{ background: "#56aeff", opacity: !videoUrl.trim() ? 0.5 : 1, fontFamily: "'Nunito', sans-serif" }}>
                   {gonderLoading ? "Gönderiliyor..." : "Gönder"}
                 </button>
               </div>
@@ -302,12 +333,16 @@ export default function VideoAkisPage() {
         </div>
       </div>
 
+      {/* Video modal */}
       {acikVideo && (
-        <div onClick={() => setAcikVideo(null)} style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "12px", overflow: "hidden", width: "80%", maxWidth: "800px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "0.5px solid #e5e7eb" }}>
-              <span style={{ fontSize: "13px", fontWeight: 600, color: "#111" }}>Video Önizleme</span>
-              <button onClick={() => setAcikVideo(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#737373", fontSize: "18px" }}>✕</button>
+        <div onClick={() => setAcikVideo(null)}
+          className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+          <div onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-xl overflow-hidden w-11/12 md:w-4/5 max-w-3xl">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+              <span className="text-sm font-semibold text-gray-900">Video Önizleme</span>
+              <button onClick={() => setAcikVideo(null)}
+                className="bg-transparent border-none cursor-pointer text-gray-500 text-lg">✕</button>
             </div>
             <iframe src={acikVideo} width="100%" height="450" frameBorder="0" allowFullScreen />
           </div>

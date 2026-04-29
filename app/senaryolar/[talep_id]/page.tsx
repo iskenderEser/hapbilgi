@@ -63,11 +63,7 @@ export default function SenaryolarPage() {
 
     const { data: talepData, error: talepError } = await supabase
       .from("talepler")
-      .select(`
-        talep_id, aciklama,
-        urunler(urun_adi),
-        teknikler(teknik_adi)
-      `)
+      .select(`talep_id, aciklama, urunler(urun_adi), teknikler(teknik_adi)`)
       .eq("talep_id", talep_id)
       .single();
 
@@ -85,32 +81,18 @@ export default function SenaryolarPage() {
     });
 
     const { data: senaryolarData, error: senaryoError } = await supabase
-      .from("senaryolar")
-      .select("senaryo_id, talep_id, iu_id, senaryo_metni, created_at")
-      .eq("talep_id", talep_id)
-      .order("created_at", { ascending: true });
+      .from("senaryolar").select("senaryo_id, talep_id, iu_id, senaryo_metni, created_at")
+      .eq("talep_id", talep_id).order("created_at", { ascending: true });
 
-    if (senaryoError) {
-      hata("Senaryolar yüklenemedi.", "senaryolar tablosu SELECT — talep_id", senaryoError.message);
-    }
+    if (senaryoError) hata("Senaryolar yüklenemedi.", "senaryolar tablosu SELECT — talep_id", senaryoError.message);
 
     const senaryolarWithDurum = await Promise.all(
       (senaryolarData ?? []).map(async (s) => {
         const { data: durumlar } = await supabase
-          .from("senaryo_durumu")
-          .select("senaryo_durum_id, durum, notlar, created_at")
-          .eq("senaryo_id", s.senaryo_id)
-          .order("created_at", { ascending: false })
-          .limit(1);
-
+          .from("senaryo_durumu").select("senaryo_durum_id, durum, notlar, created_at")
+          .eq("senaryo_id", s.senaryo_id).order("created_at", { ascending: false }).limit(1);
         const sonDurum = durumlar?.[0];
-        return {
-          ...s,
-          son_durum: sonDurum?.durum ?? null,
-          son_durum_tarihi: sonDurum?.created_at ?? null,
-          son_durum_notlar: sonDurum?.notlar ?? null,
-          senaryo_durum_id: sonDurum?.senaryo_durum_id ?? null,
-        };
+        return { ...s, son_durum: sonDurum?.durum ?? null, son_durum_tarihi: sonDurum?.created_at ?? null, son_durum_notlar: sonDurum?.notlar ?? null, senaryo_durum_id: sonDurum?.senaryo_durum_id ?? null };
       })
     );
 
@@ -118,9 +100,7 @@ export default function SenaryolarPage() {
     setLoading(false);
   };
 
-  useEffect(() => {
-    if (user && talep_id) veriCek();
-  }, [user, talep_id]);
+  useEffect(() => { if (user && talep_id) veriCek(); }, [user, talep_id]);
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -132,37 +112,18 @@ export default function SenaryolarPage() {
   const handleSenaryoGonder = async () => {
     if (!senaryoMetni.trim()) return;
     setGonderLoading(true);
-
     const res = await fetch("/senaryolar/api", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ talep_id, senaryo_metni: senaryoMetni.trim() }),
     });
-
     const d = await res.json();
-    if (!res.ok) {
-      hata(d.hata ?? "Senaryo oluşturulamadı.", d.adim, d.detay);
-      setGonderLoading(false);
-      return;
-    }
-
+    if (!res.ok) { hata(d.hata ?? "Senaryo oluşturulamadı.", d.adim, d.detay); setGonderLoading(false); return; }
     const { senaryo } = d;
-
-    const d1 = await fetch("/senaryolar/api/durum", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ senaryo_id: senaryo.senaryo_id, durum: "Senaryo Yaziliyor" }),
-    });
+    const d1 = await fetch("/senaryolar/api/durum", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ senaryo_id: senaryo.senaryo_id, durum: "Senaryo Yaziliyor" }) });
     if (!d1.ok) { const e = await d1.json(); hata(e.hata ?? "Durum kaydedilemedi.", e.adim, e.detay); }
-
-    const d2 = await fetch("/senaryolar/api/durum", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ senaryo_id: senaryo.senaryo_id, durum: "Inceleme Bekleniyor" }),
-    });
+    const d2 = await fetch("/senaryolar/api/durum", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ senaryo_id: senaryo.senaryo_id, durum: "Inceleme Bekleniyor" }) });
     if (!d2.ok) { const e = await d2.json(); hata(e.hata ?? "Durum kaydedilemedi.", e.adim, e.detay); }
     else basari("Senaryo PM'e gönderildi.");
-
     setSenaryoMetni("");
     await veriCek();
     setGonderLoading(false);
@@ -171,18 +132,14 @@ export default function SenaryolarPage() {
   const handlePMKarar = async (senaryo_id: string, durum: string, notlar?: string) => {
     setGonderLoading(true);
     const res = await fetch("/senaryolar/api/durum", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ senaryo_id, durum, notlar }),
     });
     const d = await res.json();
-    if (!res.ok) {
-      hata(d.hata ?? "İşlem gerçekleştirilemedi.", d.adim, d.detay);
-    } else {
+    if (!res.ok) { hata(d.hata ?? "İşlem gerçekleştirilemedi.", d.adim, d.detay); }
+    else {
       basari(durum === "Onaylandi" ? "Senaryo onaylandı." : durum === "Revizyon Bekleniyor" ? "Revizyon talebi gönderildi." : "Senaryo iptal edildi.");
-      setAktifRevizyon(null);
-      setRevizyonNotu("");
-      await veriCek();
+      setAktifRevizyon(null); setRevizyonNotu(""); await veriCek();
     }
     setGonderLoading(false);
   };
@@ -199,8 +156,8 @@ export default function SenaryolarPage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <svg className="animate-spin" style={{ width: 24, height: 24, color: "#737373" }} fill="none" viewBox="0 0 24 24">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
           <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
@@ -212,33 +169,37 @@ export default function SenaryolarPage() {
   const iuYazabilir = isIU && (!sonSenaryo || sonSenaryo.son_durum === "Revizyon Bekleniyor" || sonSenaryo.son_durum === null);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f9fafb", fontFamily: "'Nunito', sans-serif" }}>
+    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={user?.email ?? ""} rol={rol} onCikis={handleCikis} />
 
-      <div style={{ maxWidth: "800px", margin: "0 auto", padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
-        <button onClick={() => router.push("/talepler")} style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", cursor: "pointer", color: "#737373", fontSize: "13px", padding: 0, width: "fit-content" }}>
+      <div className="max-w-3xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
+
+        <button onClick={() => router.push("/talepler")}
+          className="flex items-center gap-1.5 bg-transparent border-none cursor-pointer text-gray-500 text-sm p-0 w-fit">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M15 19l-7-7 7-7"/></svg>
           Talepler
         </button>
 
+        {/* Talep bilgisi */}
         {talep && (
-          <div style={{ background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", padding: "16px 20px" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              <span style={{ fontSize: "15px", fontWeight: 600, color: "#111" }}>{talep.urun_adi}</span>
-              <span style={{ fontSize: "12px", color: "#737373" }}>{talep.teknik_adi}</span>
-              {talep.aciklama && <p style={{ fontSize: "13px", color: "#374151", margin: "8px 0 0", lineHeight: 1.6 }}>{talep.aciklama}</p>}
+          <div className="bg-white border border-gray-200 rounded-xl px-4 md:px-5 py-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-base font-semibold text-gray-900">{talep.urun_adi}</span>
+              <span className="text-xs text-gray-500">{talep.teknik_adi}</span>
+              {talep.aciklama && <p className="text-sm text-gray-700 mt-2 leading-relaxed">{talep.aciklama}</p>}
             </div>
           </div>
         )}
 
-        <div style={{ background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
-          <div style={{ padding: "14px 20px", borderBottom: "0.5px solid #e5e7eb" }}>
-            <span style={{ fontSize: "13px", fontWeight: 600, color: "#111" }}>Senaryo Akışı</span>
+        {/* Senaryo akışı */}
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="px-4 md:px-5 py-3.5 border-b border-gray-100">
+            <span className="text-sm font-semibold text-gray-900">Senaryo Akışı</span>
           </div>
 
-          <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div className="px-4 md:px-5 py-4 flex flex-col gap-4">
             {senaryolar.length === 0 && (
-              <p style={{ fontSize: "13px", color: "#9ca3af", textAlign: "center", padding: "20px 0" }}>Henüz senaryo yazılmadı.</p>
+              <p className="text-sm text-gray-400 text-center py-5">Henüz senaryo yazılmadı.</p>
             )}
 
             {senaryolar.map((s, i) => {
@@ -247,47 +208,77 @@ export default function SenaryolarPage() {
               const isPMKararverilebilir = isPM && s.son_durum === "Inceleme Bekleniyor" && i === senaryolar.length - 1;
 
               return (
-                <div key={s.senaryo_id} style={{ border: "0.5px solid #e5e7eb", borderRadius: "10px", overflow: "hidden" }}>
-                  <div style={{ padding: "10px 14px", background: "#fafafa", borderBottom: "0.5px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <span style={{ fontSize: "11px", color: "#737373" }}>Versiyon {i + 1}</span>
-                      <span style={{ fontSize: "11px", color: "#9ca3af" }}>{formatTarih(s.created_at)}</span>
+                <div key={s.senaryo_id} className="border border-gray-200 rounded-xl overflow-hidden">
+                  {/* Versiyon başlık */}
+                  <div className="px-3 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">Versiyon {i + 1}</span>
+                      <span className="text-xs text-gray-400">{formatTarih(s.created_at)}</span>
                     </div>
                     {s.son_durum && (
-                      <span style={{ fontSize: "11px", padding: "2px 10px", borderRadius: "20px", background: renk.bg, color: renk.text, border: `0.5px solid ${renk.border}` }}>
+                      <span className="text-xs px-2.5 py-0.5 rounded-full"
+                        style={{ background: renk.bg, color: renk.text, border: `0.5px solid ${renk.border}` }}>
                         {s.son_durum}
                       </span>
                     )}
                   </div>
 
-                  <div style={{ padding: "14px", fontSize: "13px", color: "#374151", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+                  {/* Senaryo metni */}
+                  <div className="px-3 py-3.5 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
                     {s.senaryo_metni}
                   </div>
 
+                  {/* Revizyon notu */}
                   {s.son_durum === "Revizyon Bekleniyor" && s.son_durum_notlar && (
-                    <div style={{ padding: "10px 14px", background: "#fefce8", borderTop: "0.5px solid #fde68a" }}>
-                      <span style={{ fontSize: "11px", color: "#854d0e", fontWeight: 600 }}>Revizyon Notu: </span>
-                      <span style={{ fontSize: "12px", color: "#854d0e" }}>{s.son_durum_notlar}</span>
+                    <div className="px-3 py-2.5 bg-yellow-50 border-t border-yellow-200">
+                      <span className="text-xs font-semibold text-yellow-800">Revizyon Notu: </span>
+                      <span className="text-xs text-yellow-800">{s.son_durum_notlar}</span>
                     </div>
                   )}
 
+                  {/* PM karar alanı */}
                   {isPMKararverilebilir && (
-                    <div style={{ padding: "12px 14px", borderTop: "0.5px solid #e5e7eb", background: "#fafafa" }}>
+                    <div className="px-3 py-3 border-t border-gray-100 bg-gray-50">
                       {aktifRevizyon === s.senaryo_id ? (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                          <textarea value={revizyonNotu} onChange={(e) => setRevizyonNotu(e.target.value)} placeholder="Revizyon notunu yazın..." rows={3} style={{ width: "100%", border: "0.5px solid #fde68a", borderRadius: "8px", padding: "8px 12px", fontSize: "12px", fontFamily: "'Nunito', sans-serif", resize: "vertical" }} />
-                          <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-                            <button onClick={() => { setAktifRevizyon(null); setRevizyonNotu(""); }} style={{ padding: "7px 14px", borderRadius: "6px", border: "0.5px solid #e5e7eb", background: "transparent", color: "#737373", fontSize: "11px", cursor: "pointer" }}>İptal</button>
-                            <button onClick={() => handlePMKarar(s.senaryo_id, "Revizyon Bekleniyor", revizyonNotu)} disabled={!revizyonNotu.trim() || gonderLoading} style={{ padding: "7px 14px", borderRadius: "6px", border: "none", background: "#f59e0b", color: "white", fontSize: "11px", fontWeight: 600, cursor: "pointer", opacity: !revizyonNotu.trim() ? 0.5 : 1 }}>Revizyon Gönder</button>
+                        <div className="flex flex-col gap-2">
+                          <textarea
+                            value={revizyonNotu}
+                            onChange={(e) => setRevizyonNotu(e.target.value)}
+                            placeholder="Revizyon notunu yazın..."
+                            rows={3}
+                            className="w-full border border-yellow-200 rounded-lg px-3 py-2 text-xs resize-y"
+                            style={{ fontFamily: "'Nunito', sans-serif" }}
+                          />
+                          <div className="flex gap-2 justify-end">
+                            <button onClick={() => { setAktifRevizyon(null); setRevizyonNotu(""); }}
+                              className="px-3 py-1.5 rounded-lg border border-gray-200 bg-transparent text-gray-500 text-xs cursor-pointer">
+                              İptal
+                            </button>
+                            <button onClick={() => handlePMKarar(s.senaryo_id, "Revizyon Bekleniyor", revizyonNotu)}
+                              disabled={!revizyonNotu.trim() || gonderLoading}
+                              className="px-3 py-1.5 rounded-lg border-none bg-amber-500 text-white text-xs font-semibold cursor-pointer"
+                              style={{ opacity: !revizyonNotu.trim() ? 0.5 : 1 }}>
+                              Revizyon Gönder
+                            </button>
                           </div>
                         </div>
                       ) : (
-                        <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
-                          <button onClick={() => handlePMKarar(s.senaryo_id, "Onaylandi")} disabled={gonderLoading} style={{ padding: "7px 14px", borderRadius: "6px", border: "none", background: "#16a34a", color: "white", fontSize: "11px", fontWeight: 600, cursor: "pointer" }}>Onayla</button>
+                        <div className="flex gap-2 justify-end flex-wrap">
+                          <button onClick={() => handlePMKarar(s.senaryo_id, "Onaylandi")} disabled={gonderLoading}
+                            className="px-3 py-1.5 rounded-lg border-none bg-green-700 text-white text-xs font-semibold cursor-pointer">
+                            Onayla
+                          </button>
                           {revSayisi < 2 && (
-                            <button onClick={() => setAktifRevizyon(s.senaryo_id)} disabled={gonderLoading} style={{ padding: "7px 14px", borderRadius: "6px", border: "none", background: "#f59e0b", color: "white", fontSize: "11px", fontWeight: 600, cursor: "pointer" }}>Revizyon İste</button>
+                            <button onClick={() => setAktifRevizyon(s.senaryo_id)} disabled={gonderLoading}
+                              className="px-3 py-1.5 rounded-lg border-none bg-amber-500 text-white text-xs font-semibold cursor-pointer">
+                              Revizyon İste
+                            </button>
                           )}
-                          <button onClick={() => handlePMKarar(s.senaryo_id, "Iptal Edildi")} disabled={gonderLoading} style={{ padding: "7px 14px", borderRadius: "6px", border: "0.5px solid #fecaca", background: "transparent", color: "#bc2d0d", fontSize: "11px", fontWeight: 600, cursor: "pointer" }}>İptal Et</button>
+                          <button onClick={() => handlePMKarar(s.senaryo_id, "Iptal Edildi")} disabled={gonderLoading}
+                            className="px-3 py-1.5 rounded-lg bg-transparent text-xs font-semibold cursor-pointer"
+                            style={{ border: "0.5px solid #fecaca", color: "#bc2d0d" }}>
+                            İptal Et
+                          </button>
                         </div>
                       )}
                     </div>
@@ -297,11 +288,21 @@ export default function SenaryolarPage() {
             })}
           </div>
 
+          {/* IU yazım alanı */}
           {iuYazabilir && (
-            <div style={{ borderTop: "0.5px solid #e5e7eb", padding: "16px 20px", background: "#fafafa" }}>
-              <textarea value={senaryoMetni} onChange={(e) => setSenaryoMetni(e.target.value)} placeholder="Senaryo metnini yazın..." rows={6} style={{ width: "100%", border: "0.5px solid #e5e7eb", borderRadius: "8px", padding: "10px 14px", fontSize: "13px", fontFamily: "'Nunito', sans-serif", color: "#111", background: "white", resize: "vertical", marginBottom: "10px" }} />
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <button onClick={handleSenaryoGonder} disabled={!senaryoMetni.trim() || gonderLoading} style={{ background: "#56aeff", color: "white", border: "none", borderRadius: "8px", padding: "10px 20px", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "'Nunito', sans-serif", opacity: !senaryoMetni.trim() ? 0.5 : 1 }}>
+            <div className="border-t border-gray-100 px-4 md:px-5 py-4 bg-gray-50">
+              <textarea
+                value={senaryoMetni}
+                onChange={(e) => setSenaryoMetni(e.target.value)}
+                placeholder="Senaryo metnini yazın..."
+                rows={6}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 bg-white resize-y mb-2.5"
+                style={{ fontFamily: "'Nunito', sans-serif" }}
+              />
+              <div className="flex justify-end">
+                <button onClick={handleSenaryoGonder} disabled={!senaryoMetni.trim() || gonderLoading}
+                  className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer"
+                  style={{ background: "#56aeff", opacity: !senaryoMetni.trim() ? 0.5 : 1, fontFamily: "'Nunito', sans-serif" }}>
                   {gonderLoading ? "Gönderiliyor..." : "Gönder"}
                 </button>
               </div>

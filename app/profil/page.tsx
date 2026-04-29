@@ -116,9 +116,7 @@ export default function ProfilPage() {
     setFotografLoading(true);
     const supabase = createClient();
     const dosyaAdi = profil.fotograf_url.split("/").pop();
-    if (dosyaAdi) {
-      await supabase.storage.from("profil-fotograflari").remove([dosyaAdi]);
-    }
+    if (dosyaAdi) await supabase.storage.from("profil-fotograflari").remove([dosyaAdi]);
     const res = await fetch("/profil/api", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -148,39 +146,10 @@ export default function ProfilPage() {
 
   const isUTT = ["utt", "kd_utt"].includes(rol.toLowerCase());
 
-  const rowStyle: React.CSSProperties = {
-    display: "flex",
-    border: "0.5px solid #e5e7eb",
-    borderRadius: "8px",
-    overflow: "hidden",
-  };
-  const labelStyle: React.CSSProperties = {
-    background: "#eff6ff",
-    color: "#1d4ed8",
-    fontSize: "11px",
-    fontWeight: 600,
-    padding: "10px",
-    minWidth: "100px",
-    display: "flex",
-    alignItems: "center",
-    borderRight: "0.5px solid #e5e7eb",
-    flexShrink: 0,
-    fontFamily: "'Nunito', sans-serif",
-  };
-  const inputStyle: React.CSSProperties = {
-    flex: 1,
-    border: "none",
-    outline: "none",
-    padding: "10px",
-    fontSize: "11px",
-    fontFamily: "'Nunito', sans-serif",
-    background: "white",
-  };
-
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <svg className="animate-spin" style={{ width: 24, height: 24, color: "#737373" }} fill="none" viewBox="0 0 24 24">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
           <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
@@ -188,185 +157,229 @@ export default function ProfilPage() {
     );
   }
 
-  return (
-    <div style={{ minHeight: "100vh", background: "#f9fafb", fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={user?.email ?? ""} rol={rol} onCikis={handleCikis} />
+  const SolPanel = () => (
+    <div className="w-full md:w-72 flex-shrink-0 p-6 flex flex-col border-b md:border-b-0 border-gray-100">
+      <div className="text-sm font-semibold text-gray-900 mb-5">Profil Ayarları</div>
 
-      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "24px" }}>
-        <div style={{ background: "white", borderRadius: "12px", border: "0.5px solid #e5e7eb", overflow: "hidden", display: "flex", minHeight: "600px" }}>
-
-          {/* Sol panel: Profil Ayarları */}
-          <div style={{ width: "300px", flexShrink: 0, padding: "24px", display: "flex", flexDirection: "column" }}>
-
-            <div style={{ fontSize: "13px", fontWeight: 600, color: "#111", marginBottom: "20px" }}>Profil Ayarları</div>
-
-            {/* Fotoğraf + bilgiler */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", marginBottom: "24px" }}>
-              <div style={{ position: "relative" }}>
-                {profil?.fotograf_url ? (
-                  <img src={profil.fotograf_url} alt="profil" style={{ width: "80px", height: "80px", borderRadius: "50%", objectFit: "cover", border: "3px solid #56aeff" }} />
-                ) : (
-                  <div style={{ width: "80px", height: "80px", borderRadius: "50%", background: "#b5d4f4", border: "3px solid #56aeff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px", fontWeight: 700, color: "#1d4ed8" }}>
-                    {profil?.ad?.[0]}{profil?.soyad?.[0]}
-                  </div>
-                )}
-                <div
-                  onClick={() => dosyaInputRef.current?.click()}
-                  style={{ position: "absolute", bottom: 0, right: 0, background: fotografLoading ? "#9ca3af" : "#56aeff", borderRadius: "50%", width: "22px", height: "22px", display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid white", cursor: fotografLoading ? "wait" : "pointer" }}
-                >
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                </div>
-                <input ref={dosyaInputRef} type="file" accept=".jpg,.jpeg,.png" onChange={handleFotografSec} style={{ display: "none" }} />
-              </div>
-              {profil?.fotograf_url && (
-                <div
-                  onClick={handleFotografSil}
-                  style={{ fontSize: "11px", color: "#bc2d0d", cursor: "pointer", textDecoration: "underline" }}
-                >
-                  Fotoğrafı sil
-                </div>
-              )}
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: "14px", fontWeight: 600, color: "#111" }}>{profil?.ad} {profil?.soyad}</div>
-                <div style={{ fontSize: "11px", color: "#737373", marginTop: "2px" }}>{profil?.eposta}</div>
-              </div>
-              <div style={{ fontSize: "10px", padding: "2px 10px", background: "rgba(188,45,13,0.08)", color: "#bc2d0d", borderRadius: "20px", border: "0.5px solid rgba(188,45,13,0.25)" }}>{profil?.rol}</div>
-              <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>
-                {profil?.firma_adi && (
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: "11px", color: "#737373" }}>Firma</span>
-                    <span style={{ fontSize: "11px", fontWeight: 600, color: "#111" }}>{profil.firma_adi}</span>
-                  </div>
-                )}
-                {profil?.takim_adi && (
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: "11px", color: "#737373" }}>Takım</span>
-                    <span style={{ fontSize: "11px", fontWeight: 600, color: "#111" }}>{profil.takim_adi}</span>
-                  </div>
-                )}
-                {profil?.bolge_adi && (
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: "11px", color: "#737373" }}>Bölge</span>
-                    <span style={{ fontSize: "11px", fontWeight: 600, color: "#111" }}>{profil.bolge_adi}</span>
-                  </div>
-                )}
-              </div>
+      {/* Fotoğraf + bilgiler */}
+      <div className="flex flex-col items-center gap-2 mb-6">
+        <div className="relative">
+          {profil?.fotograf_url ? (
+            <img
+              src={profil.fotograf_url}
+              alt="profil"
+              className="w-20 h-20 rounded-full object-cover"
+              style={{ border: "3px solid #56aeff" }}
+            />
+          ) : (
+            <div
+              className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold"
+              style={{ background: "#b5d4f4", border: "3px solid #56aeff", color: "#1d4ed8" }}
+            >
+              {profil?.ad?.[0]}{profil?.soyad?.[0]}
             </div>
+          )}
+          <div
+            onClick={() => dosyaInputRef.current?.click()}
+            className="absolute bottom-0 right-0 w-6 h-6 rounded-full flex items-center justify-center border-2 border-white"
+            style={{
+              background: fotografLoading ? "#9ca3af" : "#56aeff",
+              cursor: fotografLoading ? "wait" : "pointer",
+            }}
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <input ref={dosyaInputRef} type="file" accept=".jpg,.jpeg,.png" onChange={handleFotografSec} className="hidden" />
+        </div>
 
-            {/* Fotoğraf kuralları */}
-            <div style={{ borderTop: "0.5px solid #f3f4f6", paddingTop: "20px", marginBottom: "24px" }}>
-              <div style={{ fontSize: "11px", fontWeight: 600, color: "#111", marginBottom: "10px" }}>Fotoğraf kuralları</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                {["300×300 piksel veya üzeri", "Beyaz veya şeffaf arka plan", "Maksimum 2 MB", "JPG veya PNG formatı", "Yüz net görünmeli"].map(k => (
-                  <div key={k} style={{ fontSize: "11px", color: "#737373" }}>• {k}</div>
+        {profil?.fotograf_url && (
+          <div
+            onClick={handleFotografSil}
+            className="text-xs underline cursor-pointer"
+            style={{ color: "#bc2d0d" }}
+          >
+            Fotoğrafı sil
+          </div>
+        )}
+
+        <div className="text-center">
+          <div className="text-sm font-semibold text-gray-900">{profil?.ad} {profil?.soyad}</div>
+          <div className="text-xs text-gray-500 mt-0.5">{profil?.eposta}</div>
+        </div>
+
+        <div
+          className="text-xs px-3 py-0.5 rounded-full"
+          style={{ background: "rgba(188,45,13,0.08)", color: "#bc2d0d", border: "0.5px solid rgba(188,45,13,0.25)" }}
+        >
+          {profil?.rol}
+        </div>
+
+        <div className="w-full flex flex-col gap-2 mt-1">
+          {profil?.firma_adi && (
+            <div className="flex justify-between">
+              <span className="text-xs text-gray-500">Firma</span>
+              <span className="text-xs font-semibold text-gray-900">{profil.firma_adi}</span>
+            </div>
+          )}
+          {profil?.takim_adi && (
+            <div className="flex justify-between">
+              <span className="text-xs text-gray-500">Takım</span>
+              <span className="text-xs font-semibold text-gray-900">{profil.takim_adi}</span>
+            </div>
+          )}
+          {profil?.bolge_adi && (
+            <div className="flex justify-between">
+              <span className="text-xs text-gray-500">Bölge</span>
+              <span className="text-xs font-semibold text-gray-900">{profil.bolge_adi}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Fotoğraf kuralları */}
+      <div className="border-t border-gray-100 pt-5 mb-6">
+        <div className="text-xs font-semibold text-gray-900 mb-2">Fotoğraf kuralları</div>
+        <div className="flex flex-col gap-1">
+          {["300×300 piksel veya üzeri", "Beyaz veya şeffaf arka plan", "Maksimum 2 MB", "JPG veya PNG formatı", "Yüz net görünmeli"].map(k => (
+            <div key={k} className="text-xs text-gray-500">• {k}</div>
+          ))}
+        </div>
+      </div>
+
+      {/* Şifre değiştir */}
+      <div className="border-t border-gray-100 pt-5 flex-1 flex flex-col">
+        <div className="text-xs font-semibold text-gray-900 mb-3">Şifre Değiştir</div>
+        <form onSubmit={handleSifreDegistir} className="flex flex-col gap-2 flex-1">
+          {[
+            { label: "Mevcut şifre", value: mevcutSifre, onChange: setMevcutSifre },
+            { label: "Yeni şifre", value: yeniSifre, onChange: setYeniSifre },
+            { label: "Şifre tekrar", value: yeniSifreTekrar, onChange: setYeniSifreTekrar },
+          ].map(({ label, value, onChange }) => (
+            <div key={label} className="flex border border-gray-200 rounded-lg overflow-hidden">
+              <div
+                className="text-xs font-semibold flex items-center px-2 flex-shrink-0 border-r border-gray-200"
+                style={{ background: "#eff6ff", color: "#1d4ed8", minWidth: "100px", fontFamily: "'Nunito', sans-serif" }}
+              >
+                {label}
+              </div>
+              <input
+                type="password"
+                value={value}
+                onChange={e => onChange(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="flex-1 border-none outline-none px-2 py-2 text-xs bg-white"
+                style={{ fontFamily: "'Nunito', sans-serif" }}
+              />
+            </div>
+          ))}
+          <div className="flex-1" />
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={sifreLoading}
+              className="text-white border-none rounded-lg px-4 py-2 text-xs font-semibold"
+              style={{
+                background: "#56aeff",
+                cursor: "pointer",
+                opacity: sifreLoading ? 0.6 : 1,
+                fontFamily: "'Nunito', sans-serif",
+              }}
+            >
+              {sifreLoading ? "Kaydediliyor..." : "Kaydet"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+
+  const SagPanel = () => (
+    <div className="flex-1 p-6 flex flex-col">
+      <div className="text-sm font-semibold text-gray-900 mb-5">HB Performansım</div>
+
+      {isUTT && izleme ? (
+        <>
+          {/* İzleme sayıları */}
+          <div className="mb-6">
+            <div className="text-xs text-gray-400 font-light mb-2">İzleme sayıları</div>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { baslik: "Haftalık", deger: izleme.haftalik },
+                { baslik: "Aylık", deger: izleme.aylik },
+                { baslik: "YTD", deger: izleme.ytd },
+              ].map(({ baslik, deger }) => (
+                <div key={baslik} className="bg-gray-50 rounded-xl p-3 md:p-5">
+                  <div className="text-xs text-gray-500 mb-2">{baslik}</div>
+                  <div className="text-2xl md:text-3xl font-semibold text-gray-900">{deger}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Puan dağılımı */}
+          {puanDagilimi && (
+            <div className="border-t border-gray-100 pt-6 mb-6">
+              <div className="text-xs text-gray-400 font-light mb-2">Puan Dağılımı</div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {[
+                  { baslik: "∑ İzleme", deger: puanDagilimi.izleme_puani },
+                  { baslik: "∑ Cevaplama", deger: puanDagilimi.cevaplama_puani },
+                  { baslik: "∑ Öneri", deger: puanDagilimi.oneri_puani },
+                  { baslik: "∑ Extra", deger: puanDagilimi.extra_puani },
+                ].map(({ baslik, deger }) => (
+                  <div key={baslik} className="bg-gray-50 rounded-xl p-3 md:p-5">
+                    <div className="text-xs text-gray-500 mb-2">{baslik}</div>
+                    <div className="text-xl md:text-2xl font-semibold" style={{ color: "#56aeff" }}>{deger}</div>
+                  </div>
                 ))}
               </div>
             </div>
+          )}
 
-            {/* Şifre değiştir */}
-            <div style={{ borderTop: "0.5px solid #f3f4f6", paddingTop: "20px", flex: 1, display: "flex", flexDirection: "column" }}>
-              <div style={{ fontSize: "11px", fontWeight: 600, color: "#111", marginBottom: "12px" }}>Şifre Değiştir</div>
-              <form onSubmit={handleSifreDegistir} style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
-                <div style={rowStyle}>
-                  <div style={labelStyle}>Mevcut şifre</div>
-                  <input type="password" value={mevcutSifre} onChange={e => setMevcutSifre(e.target.value)} placeholder="••••••••" required style={inputStyle} />
-                </div>
-                <div style={rowStyle}>
-                  <div style={labelStyle}>Yeni şifre</div>
-                  <input type="password" value={yeniSifre} onChange={e => setYeniSifre(e.target.value)} placeholder="••••••••" required style={inputStyle} />
-                </div>
-                <div style={rowStyle}>
-                  <div style={labelStyle}>Şifre tekrar</div>
-                  <input type="password" value={yeniSifreTekrar} onChange={e => setYeniSifreTekrar(e.target.value)} placeholder="••••••••" required style={inputStyle} />
-                </div>
-                <div style={{ flex: 1 }} />
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <button type="submit" disabled={sifreLoading} style={{ background: "#56aeff", color: "white", border: "none", borderRadius: "8px", padding: "9px 18px", fontSize: "11px", fontWeight: 600, cursor: "pointer", fontFamily: "'Nunito', sans-serif", opacity: sifreLoading ? 0.6 : 1 }}>
-                    {sifreLoading ? "Kaydediliyor..." : "Kaydet"}
-                  </button>
-                </div>
-              </form>
-            </div>
-
-          </div>
-
-          {/* Dikey ince çizgi */}
-          <div style={{ width: "0.5px", background: "#f3f4f6", flexShrink: 0 }} />
-
-          {/* Sağ panel: HB Performansım */}
-          <div style={{ flex: 1, padding: "24px", display: "flex", flexDirection: "column" }}>
-
-            <div style={{ fontSize: "13px", fontWeight: 600, color: "#111", marginBottom: "20px" }}>HB Performansım</div>
-
-            {isUTT && izleme ? (
-              <>
-                {/* İzleme sayıları */}
-                <div style={{ marginBottom: "24px" }}>
-                  <div style={{ fontSize: "11px", color: "#9ca3af", fontWeight: 300, marginBottom: "10px" }}>İzleme sayıları</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
-                    {[
-                      { baslik: "Haftalık", deger: izleme.haftalik },
-                      { baslik: "Aylık", deger: izleme.aylik },
-                      { baslik: "YTD", deger: izleme.ytd },
-                    ].map(({ baslik, deger }) => (
-                      <div key={baslik} style={{ background: "#f9fafb", borderRadius: "10px", padding: "20px 16px" }}>
-                        <div style={{ fontSize: "11px", color: "#737373", marginBottom: "8px" }}>{baslik}</div>
-                        <div style={{ fontSize: "28px", fontWeight: 600, color: "#111" }}>{deger}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Puan dağılımı */}
-                {puanDagilimi && (
-                  <div style={{ borderTop: "0.5px solid #f3f4f6", paddingTop: "24px", marginBottom: "24px" }}>
-                    <div style={{ fontSize: "11px", color: "#9ca3af", fontWeight: 300, marginBottom: "10px" }}>Puan Dağılımı</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
-                      {[
-                        { baslik: "∑ İzleme", deger: puanDagilimi.izleme_puani },
-                        { baslik: "∑ Cevaplama", deger: puanDagilimi.cevaplama_puani },
-                        { baslik: "∑ Öneri", deger: puanDagilimi.oneri_puani },
-                        { baslik: "∑ Extra", deger: puanDagilimi.extra_puani },
-                      ].map(({ baslik, deger }) => (
-                        <div key={baslik} style={{ background: "#f9fafb", borderRadius: "10px", padding: "20px 16px" }}>
-                          <div style={{ fontSize: "11px", color: "#737373", marginBottom: "8px" }}>{baslik}</div>
-                          <div style={{ fontSize: "24px", fontWeight: 600, color: "#56aeff" }}>{deger}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Sıralamam */}
-                {siralama && (
-                  <div style={{ borderTop: "0.5px solid #f3f4f6", paddingTop: "24px", flex: 1, display: "flex", flexDirection: "column" }}>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginBottom: "16px" }}>
-                      <span style={{ fontSize: "11px", fontWeight: 600, color: "#111" }}>Sıralamam</span>
-                      <span style={{ fontSize: "11px", fontWeight: 300, fontStyle: "italic", color: "#9ca3af" }}>toplam izleme puanına göre sıralamadır</span>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "10px", flex: 1 }}>
-                      {[
-                        { baslik: "Firma sırası", deger: siralama.firma_sirasi },
-                        { baslik: "Takım sırası", deger: siralama.takim_sirasi },
-                        { baslik: "Bölge sırası", deger: siralama.bolge_sirasi },
-                      ].map(({ baslik, deger }) => (
-                        <div key={baslik} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "#f9fafb", borderRadius: "10px", flex: 1 }}>
-                          <span style={{ fontSize: "12px", color: "#737373" }}>{baslik}</span>
-                          <span style={{ fontSize: "16px", fontWeight: 600, color: "#56aeff" }}>{deger ? `#${deger}` : "—"}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af", fontSize: "13px" }}>
-                Performans verisi sadece UTT rolü için görüntülenir.
+          {/* Sıralamam */}
+          {siralama && (
+            <div className="border-t border-gray-100 pt-6 flex-1 flex flex-col">
+              <div className="flex items-baseline gap-2 mb-4">
+                <span className="text-xs font-semibold text-gray-900">Sıralamam</span>
+                <span className="hidden md:inline text-xs font-light italic text-gray-400">toplam izleme puanına göre sıralamadır</span>
               </div>
-            )}
+              <div className="flex flex-col gap-2 flex-1">
+                {[
+                  { baslik: "Firma sırası", deger: siralama.firma_sirasi },
+                  { baslik: "Takım sırası", deger: siralama.takim_sirasi },
+                  { baslik: "Bölge sırası", deger: siralama.bolge_sirasi },
+                ].map(({ baslik, deger }) => (
+                  <div key={baslik} className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl">
+                    <span className="text-xs text-gray-500">{baslik}</span>
+                    <span className="text-base font-semibold" style={{ color: "#56aeff" }}>{deger ? `#${deger}` : "—"}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="flex-1 flex items-center justify-center text-sm text-gray-400">
+          Performans verisi sadece UTT rolü için görüntülenir.
+        </div>
+      )}
+    </div>
+  );
 
-          </div>
+  return (
+    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
+      <Navbar email={user?.email ?? ""} rol={rol} onCikis={handleCikis} />
 
+      <div className="max-w-5xl mx-auto px-3 py-3 pb-20 md:px-6 md:py-6 md:pb-6">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col md:flex-row md:min-h-[600px]">
+          <SolPanel />
+          <div className="hidden md:block w-px bg-gray-100 flex-shrink-0" />
+          <SagPanel />
         </div>
       </div>
 

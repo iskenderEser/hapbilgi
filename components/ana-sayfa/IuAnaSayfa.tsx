@@ -4,7 +4,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useHataMesaji } from "@/components/HataMesaji";
-import { useEkran } from "@/styles/responsive";
 
 interface IsSatiri {
   talep_id: string;
@@ -34,7 +33,6 @@ interface Props {
 
 export default function IuAnaSayfa({ user, adSoyad }: Props) {
   const router = useRouter();
-  const ekran = useEkran();
   const [iuVeri, setIuVeri] = useState<IUVeri | null>(null);
   const [loading, setLoading] = useState(true);
   const [aktifFiltre, setAktifFiltre] = useState<string>("tumu");
@@ -78,8 +76,8 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px" }}>
-        <svg className="animate-spin" style={{ width: 24, height: 24, color: "#737373" }} fill="none" viewBox="0 0 24 24">
+      <div className="flex items-center justify-center p-20">
+        <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
           <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
@@ -91,29 +89,25 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
   const istat = iuVeri?.istatistikler ?? { bekleyen: 0, revizyon: 0, devam: 0, tamamlanan: 0 };
   const filtrelenmis = aktifFiltre === "tumu" ? satirlar : satirlar.filter(s => s.kategori === aktifFiltre);
   const ad = adSoyad.split(" ")[0] || "IU";
-  const padding = ekran === 'mobile' ? '16px 14px' : ekran === 'tablet' ? '20px 24px' : '28px 32px';
-  const statGrid = ekran === 'mobile' ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)';
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", padding }}>
+    <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
 
       {/* Karşılama */}
-      <div style={{ display: "flex", flexDirection: ekran === 'mobile' ? 'column' : 'row', alignItems: ekran === 'mobile' ? 'flex-start' : 'flex-end', justifyContent: "space-between", gap: 8, marginBottom: "24px" }}>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-2 mb-6">
         <div>
-          <h1 style={{ fontSize: ekran === 'mobile' ? "18px" : "20px", fontWeight: 800, color: "#111827", margin: 0 }}>Merhaba, {ad} 👋</h1>
-          <p style={{ fontSize: "13px", color: "#737373", marginTop: "4px" }}>
+          <h1 className="text-lg md:text-xl font-extrabold text-gray-900 m-0">Merhaba, {ad} 👋</h1>
+          <p className="text-sm text-gray-500 mt-1">
             <strong style={{ color: "#56aeff", fontWeight: 700 }}>HapBilgi · </strong>IU
           </p>
         </div>
-        {ekran !== 'mobile' && (
-          <span style={{ fontSize: "12px", color: "#737373", background: "white", border: "1px solid #e5e7eb", borderRadius: "20px", padding: "5px 14px", whiteSpace: "nowrap" }}>
-            {bugunTarih()}
-          </span>
-        )}
+        <span className="hidden md:inline text-xs text-gray-500 bg-white border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap">
+          {bugunTarih()}
+        </span>
       </div>
 
       {/* Stat kartlar */}
-      <div style={{ display: "grid", gridTemplateColumns: statGrid, gap: "10px", marginBottom: "20px" }}>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
         {[
           { label: "Bekleyen İşler", value: istat.bekleyen, sub: "Senaryo veya içerik bekleniyor", renk: "#bc2d0d", filtre: "bekleyen" },
           { label: "Revizyon Bekleniyor", value: istat.revizyon, sub: "PM'den revizyon talebi geldi", renk: "#f59e0b", filtre: "revizyon" },
@@ -123,85 +117,100 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
           <div
             key={k.filtre}
             onClick={() => setAktifFiltre(aktifFiltre === k.filtre ? "tumu" : k.filtre)}
+            className="bg-white border border-gray-200 rounded-xl p-3 md:p-5 cursor-pointer transition-shadow duration-150"
             style={{
-              background: "white", border: "1px solid #e5e7eb", borderLeft: `3px solid ${k.renk}`,
-              borderRadius: "12px", padding: ekran === 'mobile' ? "14px 14px" : "20px 22px",
-              cursor: "pointer", boxShadow: aktifFiltre === k.filtre ? `0 0 0 2px ${k.renk}33` : "none", transition: "box-shadow 0.15s",
+              borderLeft: `3px solid ${k.renk}`,
+              boxShadow: aktifFiltre === k.filtre ? `0 0 0 2px ${k.renk}33` : "none",
             }}
           >
-            <div style={{ fontSize: "10px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.4px", textTransform: "uppercase", marginBottom: "8px" }}>{k.label}</div>
-            <div style={{ fontSize: ekran === 'mobile' ? "22px" : "28px", fontWeight: 800, color: "#111827", lineHeight: 1 }}>{k.value}</div>
-            {ekran !== 'mobile' && <div style={{ fontSize: "12px", color: "#737373", marginTop: "6px" }}>{k.sub}</div>}
+            <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">{k.label}</div>
+            <div className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-none">{k.value}</div>
+            <div className="hidden md:block text-xs text-gray-500 mt-1.5">{k.sub}</div>
           </div>
         ))}
       </div>
 
       {/* İş takibi başlık */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-        <span style={{ fontSize: "14px", fontWeight: 700, color: "#111827" }}>İş Takibi</span>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm font-bold text-gray-900">İş Takibi</span>
         {aktifFiltre !== "tumu" && (
-          <button onClick={() => setAktifFiltre("tumu")} style={{ fontSize: "12px", color: "#737373", background: "none", border: "0.5px solid #e5e7eb", borderRadius: "20px", padding: "4px 12px", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+          <button
+            onClick={() => setAktifFiltre("tumu")}
+            className="text-xs text-gray-500 bg-transparent border border-gray-200 rounded-full px-3 py-1 cursor-pointer"
+            style={{ fontFamily: "'Nunito', sans-serif" }}
+          >
             Filtreyi Kaldır
           </button>
         )}
       </div>
 
-      <div style={{ background: "white", border: "1px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
-        {ekran === 'mobile' ? (
-          filtrelenmis.length === 0 ? (
-            <div style={{ padding: "40px", textAlign: "center", fontSize: "13px", color: "#9ca3af" }}>Bu kategoride iş bulunmuyor.</div>
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+
+        {/* Mobile: kart görünümü */}
+        <div className="md:hidden">
+          {filtrelenmis.length === 0 ? (
+            <div className="p-10 text-center text-sm text-gray-400">Bu kategoride iş bulunmuyor.</div>
           ) : (
             filtrelenmis.map((s, i) => {
               const asamaR = asamaRenk(s.asama);
               const durumR = durumRenk(s.durum);
               return (
-                <div key={`${s.talep_id}-${i}`} onClick={() => router.push(s.yol)}
-                  style={{ padding: "14px 16px", borderBottom: i < filtrelenmis.length - 1 ? "1px solid #f3f4f6" : "none", cursor: "pointer" }}
+                <div
+                  key={`${s.talep_id}-${i}`}
+                  onClick={() => router.push(s.yol)}
+                  className="px-4 py-3 cursor-pointer"
+                  style={{ borderBottom: i < filtrelenmis.length - 1 ? "1px solid #f3f4f6" : "none" }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                    <div style={{ fontSize: "13px", fontWeight: 700, color: "#111827" }}>{s.urun_adi}</div>
-                    <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "20px", background: durumR.bg, color: durumR.text, whiteSpace: "nowrap" }}>{s.durum}</span>
+                  <div className="flex justify-between items-start mb-1.5">
+                    <div className="text-sm font-bold text-gray-900">{s.urun_adi}</div>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: durumR.bg, color: durumR.text }}>{s.durum}</span>
                   </div>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                    <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 6px", borderRadius: "20px", background: asamaR.bg, color: asamaR.text }}>{s.asama}</span>
-                    <span style={{ fontSize: "11px", color: "#737373" }}>{s.teknik_adi}</span>
+                  <div className="flex gap-2 items-center">
+                    <span className="text-xs font-bold px-1.5 py-0.5 rounded-full" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span>
+                    <span className="text-xs text-gray-500">{s.teknik_adi}</span>
                   </div>
-                  <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: 4 }}>{formatTarih(s.tarih)}</div>
+                  <div className="text-xs text-gray-400 mt-1">{formatTarih(s.tarih)}</div>
                 </div>
               );
             })
-          )
-        ) : (
-          <>
-            <div style={{ display: "grid", gridTemplateColumns: "1.8fr 1.4fr 1.1fr 1.4fr 1fr 20px", gap: "12px", padding: "10px 20px", background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-              {["ÜRÜN", "TEKNİK", "AŞAMA", "DURUM", "TARİH", ""].map((h, i) => (
-                <div key={i} style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.4px", textTransform: "uppercase" }}>{h}</div>
-              ))}
-            </div>
-            {filtrelenmis.length === 0 ? (
-              <div style={{ padding: "40px", textAlign: "center", fontSize: "13px", color: "#9ca3af" }}>Bu kategoride iş bulunmuyor.</div>
-            ) : (
-              filtrelenmis.map((s, i) => {
-                const asamaR = asamaRenk(s.asama);
-                const durumR = durumRenk(s.durum);
-                return (
-                  <div key={`${s.talep_id}-${i}`} onClick={() => router.push(s.yol)}
-                    style={{ display: "grid", gridTemplateColumns: "1.8fr 1.4fr 1.1fr 1.4fr 1fr 20px", gap: "12px", padding: "13px 20px", borderBottom: i < filtrelenmis.length - 1 ? "1px solid #f3f4f6" : "none", alignItems: "center", cursor: "pointer", background: "white", transition: "background 0.12s" }}
-                    onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = "#f9fafb"}
-                    onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = "white"}
-                  >
-                    <div style={{ fontSize: "13px", fontWeight: 700, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.urun_adi}</div>
-                    <div style={{ fontSize: "12px", color: "#737373", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.teknik_adi}</div>
-                    <div><span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "20px", background: asamaR.bg, color: asamaR.text, display: "inline-block", whiteSpace: "nowrap" }}>{s.asama}</span></div>
-                    <div><span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "20px", background: durumR.bg, color: durumR.text, display: "inline-block", whiteSpace: "nowrap" }}>{s.durum}</span></div>
-                    <span style={{ fontSize: "12px", color: "#9ca3af", whiteSpace: "nowrap" }}>{formatTarih(s.tarih)}</span>
-                    <span style={{ color: "#d1d5db", fontSize: "16px" }}>›</span>
-                  </div>
-                );
-              })
-            )}
-          </>
-        )}
+          )}
+        </div>
+
+        {/* Desktop: tablo görünümü */}
+        <div className="hidden md:block">
+          <div className="grid gap-3 px-5 py-2.5 bg-gray-50 border-b border-gray-200" style={{ gridTemplateColumns: "1.8fr 1.4fr 1.1fr 1.4fr 1fr 20px" }}>
+            {["ÜRÜN", "TEKNİK", "AŞAMA", "DURUM", "TARİH", ""].map((h, i) => (
+              <div key={i} className="text-xs font-bold text-gray-400 uppercase tracking-wide">{h}</div>
+            ))}
+          </div>
+          {filtrelenmis.length === 0 ? (
+            <div className="p-10 text-center text-sm text-gray-400">Bu kategoride iş bulunmuyor.</div>
+          ) : (
+            filtrelenmis.map((s, i) => {
+              const asamaR = asamaRenk(s.asama);
+              const durumR = durumRenk(s.durum);
+              return (
+                <div
+                  key={`${s.talep_id}-${i}`}
+                  onClick={() => router.push(s.yol)}
+                  className="grid gap-3 px-5 py-3 items-center cursor-pointer bg-white hover:bg-gray-50 transition-colors duration-100"
+                  style={{
+                    gridTemplateColumns: "1.8fr 1.4fr 1.1fr 1.4fr 1fr 20px",
+                    borderBottom: i < filtrelenmis.length - 1 ? "1px solid #f3f4f6" : "none",
+                  }}
+                >
+                  <div className="text-sm font-bold text-gray-900 truncate">{s.urun_adi}</div>
+                  <div className="text-xs text-gray-500 truncate">{s.teknik_adi}</div>
+                  <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block whitespace-nowrap" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span></div>
+                  <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block whitespace-nowrap" style={{ background: durumR.bg, color: durumR.text }}>{s.durum}</span></div>
+                  <span className="text-xs text-gray-400 whitespace-nowrap">{formatTarih(s.tarih)}</span>
+                  <span className="text-gray-300 text-base">›</span>
+                </div>
+              );
+            })
+          )}
+        </div>
+
       </div>
     </div>
   );

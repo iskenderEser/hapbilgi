@@ -4,7 +4,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useHataMesaji } from "@/components/HataMesaji";
-import { useEkran } from "@/styles/responsive";
 
 interface Video {
   yayin_id: string;
@@ -51,7 +50,6 @@ const GRADYANLAR = [
 
 export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
   const router = useRouter();
-  const ekran = useEkran();
   const [veri, setVeri] = useState<YoneticiVeri | null>(null);
   const [loading, setLoading] = useState(true);
   const { hata } = useHataMesaji();
@@ -81,8 +79,8 @@ export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "80px" }}>
-        <svg className="animate-spin" style={{ width: 24, height: 24, color: "#737373" }} fill="none" viewBox="0 0 24 24">
+      <div className="flex items-center justify-center p-20">
+        <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
           <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
@@ -92,28 +90,25 @@ export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
 
   const istat = veri?.istatistikler ?? { yayin_sayisi: 0, hafta_izlenme: 0, utt_sayisi: 0, tamamlanma_orani: 0 };
   const ad = adSoyad.split(" ")[0] || "Yönetici";
-  const padding = ekran === 'mobile' ? '16px 14px' : ekran === 'tablet' ? '20px 24px' : '28px 32px';
-  const statGrid = ekran === 'mobile' ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)';
-  const altGrid = ekran === 'mobile' ? '1fr' : '1fr 1fr';
+  const enCokIzlenenler = veri?.en_cok_izlenenler ?? [];
+  const haftaninEnleri = veri?.haftanin_enleri ?? [];
 
   return (
-    <div style={{ maxWidth: "1200px", margin: "0 auto", padding }}>
+    <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
 
       {/* Karşılama */}
-      <div style={{ display: "flex", flexDirection: ekran === 'mobile' ? 'column' : 'row', alignItems: ekran === 'mobile' ? 'flex-start' : 'flex-end', justifyContent: "space-between", gap: 8, marginBottom: "24px" }}>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-2 mb-6">
         <div>
-          <h1 style={{ fontSize: ekran === 'mobile' ? "18px" : "20px", fontWeight: 800, color: "#111827", margin: 0 }}>Merhaba, {ad} 👋</h1>
-          <p style={{ fontSize: "13px", color: "#737373", marginTop: "4px" }}>{rol.toUpperCase()}</p>
+          <h1 className="text-lg md:text-xl font-extrabold text-gray-900 m-0">Merhaba, {ad} 👋</h1>
+          <p className="text-sm text-gray-500 mt-1">{rol.toUpperCase()}</p>
         </div>
-        {ekran !== 'mobile' && (
-          <span style={{ fontSize: "12px", color: "#737373", background: "white", border: "1px solid #e5e7eb", borderRadius: "20px", padding: "5px 14px", whiteSpace: "nowrap" }}>
-            {bugunTarih()}
-          </span>
-        )}
+        <span className="hidden md:inline text-xs text-gray-500 bg-white border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap">
+          {bugunTarih()}
+        </span>
       </div>
 
       {/* Stat kartlar */}
-      <div style={{ display: "grid", gridTemplateColumns: statGrid, gap: "10px", marginBottom: "20px" }}>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
         {[
           { label: "Yayındaki Video", value: istat.yayin_sayisi, sub: "Aktif içerik", renk: "#16a34a" },
           { label: "Bu Hafta İzlenme", value: istat.hafta_izlenme, sub: "Toplam izlenme sayısı", renk: "#56aeff" },
@@ -122,45 +117,45 @@ export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
         ].map((k, idx) => (
           <div
             key={idx}
-            style={{
-              background: "white", border: "1px solid #e5e7eb", borderLeft: `3px solid ${k.renk}`,
-              borderRadius: "12px", padding: ekran === 'mobile' ? "14px" : "20px 22px",
-            }}
+            className="bg-white border border-gray-200 rounded-xl p-3 md:p-5"
+            style={{ borderLeft: `3px solid ${k.renk}` }}
           >
-            <div style={{ fontSize: "10px", fontWeight: 700, color: "#9ca3af", letterSpacing: "0.4px", textTransform: "uppercase", marginBottom: "8px" }}>{k.label}</div>
-            <div style={{ fontSize: ekran === 'mobile' ? "22px" : "28px", fontWeight: 800, color: "#111827", lineHeight: 1 }}>{k.value}</div>
-            {ekran !== 'mobile' && <div style={{ fontSize: "12px", color: "#737373", marginTop: "6px" }}>{k.sub}</div>}
+            <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">{k.label}</div>
+            <div className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-none">{k.value}</div>
+            <div className="hidden md:block text-xs text-gray-500 mt-1.5">{k.sub}</div>
           </div>
         ))}
       </div>
 
-      {/* Alt grid */}
-      <div style={{ display: "grid", gridTemplateColumns: altGrid, gap: "20px" }}>
+      {/* Alt grid: En Çok İzlenenler + Haftanın En'leri */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
         {/* En Çok İzlenenler */}
         <div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-            <span style={{ fontSize: "14px", fontWeight: 700, color: "#111827" }}>En Çok İzlenenler</span>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-bold text-gray-900">En Çok İzlenenler</span>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {(veri?.en_cok_izlenenler ?? []).length === 0 ? (
-              <div style={{ background: "white", border: "1px solid #e5e7eb", borderRadius: "12px", padding: "32px", textAlign: "center", fontSize: "13px", color: "#9ca3af" }}>
+          <div className="flex flex-col gap-2">
+            {enCokIzlenenler.length === 0 ? (
+              <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-sm text-gray-400">
                 Henüz izlenme yok.
               </div>
             ) : (
-              (veri?.en_cok_izlenenler ?? []).map((v, i) => (
-                <div key={v.yayin_id} style={{ background: "white", border: "1px solid #e5e7eb", borderRadius: "10px", padding: "12px 14px", display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ width: "36px", height: "36px", borderRadius: "8px", overflow: "hidden", flexShrink: 0 }}>
+              enCokIzlenenler.map((v, i) => (
+                <div key={v.yayin_id} className="bg-white border border-gray-200 rounded-xl px-3 py-3 flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0">
                     {v.thumbnail_url
-                      ? <img src={v.thumbnail_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      : <div style={{ width: "100%", height: "100%", background: GRADYANLAR[i % GRADYANLAR.length] }} />
+                      ? <img src={v.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                      : <div className="w-full h-full" style={{ background: GRADYANLAR[i % GRADYANLAR.length] }} />
                     }
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: "12px", fontWeight: 700, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.urun_adi}</div>
-                    <div style={{ fontSize: "11px", color: "#737373", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.teknik_adi}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-bold text-gray-900 truncate">{v.urun_adi}</div>
+                    <div className="text-xs text-gray-500 truncate">{v.teknik_adi}</div>
                   </div>
-                  <div style={{ fontSize: "12px", fontWeight: 700, color: "#56aeff", flexShrink: 0 }}>{v.izlenme_sayisi} izlenme</div>
+                  <div className="text-xs font-bold flex-shrink-0" style={{ color: "#56aeff" }}>
+                    {v.izlenme_sayisi} izlenme
+                  </div>
                 </div>
               ))
             )}
@@ -169,30 +164,40 @@ export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
 
         {/* Haftanın En'leri */}
         <div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-            <span style={{ fontSize: "14px", fontWeight: 700, color: "#111827" }}>Haftanın En'leri</span>
-            <span style={{ fontSize: "10px", color: "#9ca3af" }}>{haftaTarihi()}</span>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-bold text-gray-900">Haftanın En'leri</span>
+            <span className="text-xs text-gray-400">{haftaTarihi()}</span>
           </div>
-          <div style={{ background: "white", border: "1px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
-            {(veri?.haftanin_enleri ?? []).length === 0 ? (
-              <div style={{ padding: "32px", textAlign: "center", fontSize: "13px", color: "#9ca3af" }}>
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+            {haftaninEnleri.length === 0 ? (
+              <div className="p-8 text-center text-sm text-gray-400">
                 Bu hafta henüz puan kazanılmadı.
               </div>
             ) : (
-              (veri?.haftanin_enleri ?? []).map((utt, i) => (
-                <div key={utt.kullanici_id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px 16px", borderBottom: i < (veri?.haftanin_enleri ?? []).length - 1 ? "1px solid #f3f4f6" : "none" }}>
-                  <div style={{ width: "20px", fontSize: "12px", fontWeight: 700, color: i === 0 ? "#56aeff" : "#9ca3af", textAlign: "center" }}>{i + 1}</div>
+              haftaninEnleri.map((utt, i) => (
+                <div
+                  key={utt.kullanici_id}
+                  className="flex items-center gap-3 px-4 py-3"
+                  style={{ borderBottom: i < haftaninEnleri.length - 1 ? "1px solid #f3f4f6" : "none" }}
+                >
+                  <div className="w-5 text-xs font-bold text-center" style={{ color: i === 0 ? "#56aeff" : "#9ca3af" }}>{i + 1}</div>
                   {utt.fotograf_url ? (
-                    <img src={utt.fotograf_url} alt={utt.ad} style={{ width: "32px", height: "32px", borderRadius: "50%", objectFit: "cover" }} />
+                    <img src={utt.fotograf_url} alt={utt.ad} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
                   ) : (
-                    <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: i === 0 ? "#b5d4f4" : "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 700, color: i === 0 ? "#1d4ed8" : "#374151", flexShrink: 0 }}>
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                      style={{
+                        background: i === 0 ? "#b5d4f4" : "#e5e7eb",
+                        color: i === 0 ? "#1d4ed8" : "#374151",
+                      }}
+                    >
                       {utt.ad[0]}{utt.soyad[0]}
                     </div>
                   )}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: "12px", fontWeight: 600, color: "#111827" }}>{utt.ad} {utt.soyad}</div>
+                  <div className="flex-1">
+                    <div className="text-xs font-semibold text-gray-900">{utt.ad} {utt.soyad}</div>
                   </div>
-                  <div style={{ fontSize: "13px", fontWeight: 700, color: i === 0 ? "#56aeff" : "#737373" }}>
+                  <div className="text-sm font-bold" style={{ color: i === 0 ? "#56aeff" : "#737373" }}>
                     {utt.toplam_puan.toLocaleString("tr-TR")} p
                   </div>
                 </div>
@@ -200,6 +205,7 @@ export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
             )}
           </div>
         </div>
+
       </div>
     </div>
   );

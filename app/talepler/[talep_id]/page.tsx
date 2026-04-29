@@ -36,15 +36,13 @@ const dosyaTipiRenk = (dosya_adi: string): { etiket: string; bg: string; renk: s
   if (["xlsx", "xls"].includes(ext)) return { etiket: "XLS", bg: "#f0fdf4", renk: "#15803d" };
   if (ext === "txt") return { etiket: "TXT", bg: "#f9fafb", renk: "#374151" };
   if (["png", "jpg", "jpeg"].includes(ext)) return { etiket: "IMG", bg: "#fdf4ff", renk: "#7e22ce" };
-  if (["mp4", "mov", "webm"].includes(ext)) return { etiket: "VID", bg: "#f0fdf4", renk: "#16a34a" };
-  if (["avi", "mkv"].includes(ext)) return { etiket: "VID", bg: "#f0fdf4", renk: "#16a34a" };
+  if (["mp4", "mov", "webm", "avi", "mkv"].includes(ext)) return { etiket: "VID", bg: "#f0fdf4", renk: "#16a34a" };
   return { etiket: ext.toUpperCase(), bg: "#f9fafb", renk: "#737373" };
 };
 
 const goruntuleUrl = (dosya: DosyaItem): string => {
   const ext = dosya.dosya_adi.split(".").pop()?.toLowerCase() ?? "";
-  if (["pdf", "txt", "png", "jpg", "jpeg"].includes(ext)) return dosya.url;
-  if (["mp4", "mov", "webm", "avi", "mkv"].includes(ext)) return dosya.url;
+  if (["pdf", "txt", "png", "jpg", "jpeg", "mp4", "mov", "webm", "avi", "mkv"].includes(ext)) return dosya.url;
   return `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(dosya.url)}`;
 };
 
@@ -85,12 +83,7 @@ export default function TalepDetayPage() {
     const supabase = createClient();
     supabase
       .from("talepler")
-      .select(`
-        talep_id, pm_id, aciklama, created_at, dosya_urls, hazir_video, hazir_video_url,
-        urun_id, teknik_id,
-        urunler(urun_adi),
-        teknikler(teknik_adi)
-      `)
+      .select(`talep_id, pm_id, aciklama, created_at, dosya_urls, hazir_video, hazir_video_url, urun_id, teknik_id, urunler(urun_adi), teknikler(teknik_adi)`)
       .eq("talep_id", talep_id)
       .single()
       .then(({ data, error }) => {
@@ -117,17 +110,11 @@ export default function TalepDetayPage() {
     if (dosyalar.length === 0) return;
     setDosyaYukleniyor(true);
     const supabase = createClient();
-
     for (const dosya of dosyalar) {
       const dosyaYolu = `${talep_id}/${Date.now()}_${dosya.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from("talep-dosyalari")
-        .upload(dosyaYolu, dosya);
-
+      const { error: uploadError } = await supabase.storage.from("talep-dosyalari").upload(dosyaYolu, dosya);
       if (uploadError) { hata(`${dosya.name} yüklenemedi.`, "storage upload", uploadError.message); continue; }
-
       const { data: urlData } = supabase.storage.from("talep-dosyalari").getPublicUrl(dosyaYolu);
-
       const res = await fetch("/talepler/api/dosyalar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -138,7 +125,6 @@ export default function TalepDetayPage() {
       setTalep(prev => prev ? { ...prev, dosya_urls: d.dosyalar } : prev);
       basari(`${dosya.name} yüklendi.`);
     }
-
     if (dosyaInputRef.current) dosyaInputRef.current.value = "";
     setDosyaYukleniyor(false);
   };
@@ -156,10 +142,6 @@ export default function TalepDetayPage() {
     setSiliniyor(null);
   };
 
-  const handleGoruntule = (dosya: DosyaItem) => {
-    window.open(goruntuleUrl(dosya), "_blank");
-  };
-
   const handleHazirVideoUrlKaydet = async () => {
     if (!hazirVideoUrl.trim()) return;
     setUrlKaydediliyor(true);
@@ -170,10 +152,7 @@ export default function TalepDetayPage() {
     });
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "URL kaydedilemedi.", d.adim, d.detay); }
-    else {
-      setTalep(prev => prev ? { ...prev, hazir_video_url: hazirVideoUrl.trim() } : prev);
-      basari("Video URL kaydedildi. PM onayı bekleniyor.");
-    }
+    else { setTalep(prev => prev ? { ...prev, hazir_video_url: hazirVideoUrl.trim() } : prev); basari("Video URL kaydedildi. PM onayı bekleniyor."); }
     setUrlKaydediliyor(false);
   };
 
@@ -188,10 +167,7 @@ export default function TalepDetayPage() {
     if (!res.ok) { hata(d.hata ?? "İşlem gerçekleştirilemedi.", d.adim, d.detay); }
     else {
       if (karar === "onayla") basari("Video onaylandı. Soru seti yazım süreci başlayabilir.");
-      else {
-        basari("Video reddedildi. IU yeni URL girebilir.");
-        setTalep(prev => prev ? { ...prev, hazir_video_url: null } : prev);
-      }
+      else { basari("Video reddedildi. IU yeni URL girebilir."); setTalep(prev => prev ? { ...prev, hazir_video_url: null } : prev); }
     }
     setKararLoading(null);
   };
@@ -202,8 +178,8 @@ export default function TalepDetayPage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <svg className="animate-spin" style={{ width: 24, height: 24, color: "#737373" }} fill="none" viewBox="0 0 24 24">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
           <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
@@ -216,17 +192,22 @@ export default function TalepDetayPage() {
   const DosyaChip = ({ dosya }: { dosya: DosyaItem }) => {
     const { etiket, bg, renk } = dosyaTipiRenk(dosya.dosya_adi);
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: "5px", background: "#f9fafb", border: "0.5px solid #e5e7eb", borderRadius: "20px", padding: "4px 10px 4px 8px" }}>
-        <div style={{ width: "18px", height: "18px", background: bg, borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <span style={{ fontSize: "7px", fontWeight: 700, color: renk }}>{etiket}</span>
+      <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-full py-1 pl-2 pr-2.5">
+        <div className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
+          <span style={{ fontSize: 7, fontWeight: 700, color: renk }}>{etiket}</span>
         </div>
-        <span style={{ fontSize: "11px", color: "#374151", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{dosya.dosya_adi}</span>
-        <span onClick={() => handleGoruntule(dosya)} style={{ fontSize: "10px", color: "#56aeff", fontWeight: 600, cursor: "pointer", marginLeft: "2px", whiteSpace: "nowrap" }}>Görüntüle</span>
+        <span className="text-xs text-gray-700 max-w-28 truncate">{dosya.dosya_adi}</span>
+        <span onClick={() => window.open(goruntuleUrl(dosya), "_blank")}
+          className="text-xs font-semibold cursor-pointer ml-0.5 whitespace-nowrap" style={{ color: "#56aeff" }}>
+          Görüntüle
+        </span>
         {isPM && (
           siliniyor === dosya.url ? (
-            <span style={{ fontSize: "10px", color: "#9ca3af", marginLeft: "2px" }}>...</span>
+            <span className="text-xs text-gray-400 ml-0.5">...</span>
           ) : (
-            <svg onClick={() => handleDosyaSil(dosya.url)} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" style={{ cursor: "pointer", flexShrink: 0, marginLeft: "2px" }}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <svg onClick={() => handleDosyaSil(dosya.url)} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" className="cursor-pointer flex-shrink-0 ml-0.5">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
           )
         )}
       </div>
@@ -234,36 +215,44 @@ export default function TalepDetayPage() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f9fafb", fontFamily: "'Nunito', sans-serif" }}>
+    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={user?.email ?? ""} rol={rol} onCikis={handleCikis} />
 
-      <div style={{ maxWidth: "800px", margin: "0 auto", padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
-        <button onClick={() => router.push("/talepler")} style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", cursor: "pointer", color: "#737373", fontSize: "13px", padding: 0, width: "fit-content" }}>
+      <div className="max-w-3xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
+
+        <button onClick={() => router.push("/talepler")}
+          className="flex items-center gap-1.5 bg-transparent border-none cursor-pointer text-gray-500 text-sm p-0 w-fit">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M15 19l-7-7 7-7"/></svg>
           Talepler
         </button>
 
-        <div style={{ background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+
           {/* Başlık */}
-          <div style={{ padding: "16px 20px", borderBottom: "0.5px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ fontSize: "16px", fontWeight: 600, color: "#111" }}>{talep.urun_adi}</span>
+          <div className="px-4 md:px-5 py-4 border-b border-gray-100 flex items-start justify-between gap-3">
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-base font-semibold text-gray-900">{talep.urun_adi}</span>
                 {talep.hazir_video && (
-                  <span style={{ fontSize: "9px", fontWeight: 700, padding: "2px 8px", borderRadius: "20px", background: "#fff7ed", color: "#c2410c", border: "0.5px solid #fed7aa" }}>Hazır Video</span>
+                  <span className="font-bold px-2 py-0.5 rounded-full" style={{ fontSize: 9, background: "#fff7ed", color: "#c2410c", border: "0.5px solid #fed7aa" }}>
+                    Hazır Video
+                  </span>
                 )}
               </div>
-              <span style={{ fontSize: "12px", color: "#737373" }}>{talep.teknik_adi}</span>
+              <span className="text-xs text-gray-500">{talep.teknik_adi}</span>
             </div>
-            <span style={{ fontSize: "11px", color: "#9ca3af" }}>{formatTarih(talep.created_at)}</span>
+            <span className="text-xs text-gray-400 whitespace-nowrap">{formatTarih(talep.created_at)}</span>
           </div>
 
           {/* Hazır video uyarı kutusu */}
           {talep.hazir_video && (
-            <div style={{ padding: "12px 20px", borderBottom: "0.5px solid #e5e7eb", background: "#fffbeb" }}>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#92400e" strokeWidth="2" style={{ flexShrink: 0, marginTop: "1px" }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                <span style={{ fontSize: "11px", color: "#92400e", lineHeight: 1.6 }}>
+            <div className="px-4 md:px-5 py-3 border-b border-gray-100 bg-amber-50">
+              <div className="flex items-start gap-2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#92400e" strokeWidth="2" className="flex-shrink-0 mt-0.5">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <span className="text-xs text-amber-800 leading-relaxed">
                   {isPM && !talep.hazir_video_url && "PM tarafından hazır video talebi oluşturulmuştur. IU videoyu Bunny.net'e yükleyip URL iletecektir."}
                   {isPM && talep.hazir_video_url && "IU videoyu Bunny.net'e yükledi. Lütfen videoyu izleyerek onaylayın."}
                   {isIU && !talep.hazir_video_url && <span>Bu talep için <strong>senaryo aşaması atlanmıştır</strong>. PM hazır videoyu talebe eklemiştir. Videoyu Bunny.net'e yükleyip URL'i giriniz.</span>}
@@ -274,24 +263,25 @@ export default function TalepDetayPage() {
           )}
 
           {/* Açıklama + dosyalar */}
-          <div style={{ padding: "16px 20px", borderBottom: "0.5px solid #e5e7eb" }}>
+          <div className="px-4 md:px-5 py-4 border-b border-gray-100">
             {talep.aciklama && (
-              <p style={{ fontSize: "13px", color: "#374151", lineHeight: 1.6, margin: "0 0 12px 0" }}>{talep.aciklama}</p>
+              <p className="text-sm text-gray-700 leading-relaxed mb-3">{talep.aciklama}</p>
             )}
             {(talep.dosya_urls.length > 0 || isPM) && (
               <div>
                 {talep.dosya_urls.length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: isPM ? "10px" : "0" }}>
-                    {talep.dosya_urls.map((dosya, i) => (
-                      <DosyaChip key={i} dosya={dosya} />
-                    ))}
+                  <div className="flex flex-wrap gap-1.5 mb-2.5">
+                    {talep.dosya_urls.map((dosya, i) => <DosyaChip key={i} dosya={dosya} />)}
                   </div>
                 )}
                 {isPM && (
-                  <label style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "white", border: "0.5px solid #e5e7eb", borderRadius: "8px", padding: "5px 10px", fontSize: "11px", fontWeight: 600, color: "#374151", cursor: dosyaYukleniyor ? "wait" : "pointer", opacity: dosyaYukleniyor ? 0.6 : 1 }}>
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <label className="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-gray-700 cursor-pointer"
+                    style={{ opacity: dosyaYukleniyor ? 0.6 : 1, cursor: dosyaYukleniyor ? "wait" : "pointer" }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
                     {dosyaYukleniyor ? "Yükleniyor..." : "Dosya Ekle"}
-                    <input ref={dosyaInputRef} type="file" multiple accept={DESTEKLENEN_FORMATLAR} onChange={handleDosyaSec} disabled={dosyaYukleniyor} style={{ display: "none" }} />
+                    <input ref={dosyaInputRef} type="file" multiple accept={DESTEKLENEN_FORMATLAR} onChange={handleDosyaSec} disabled={dosyaYukleniyor} className="hidden" />
                   </label>
                 )}
               </div>
@@ -300,22 +290,30 @@ export default function TalepDetayPage() {
 
           {/* IU — Bunny.net URL girişi */}
           {isIU && talep.hazir_video && (
-            <div style={{ padding: "16px 20px", borderBottom: "0.5px solid #e5e7eb" }}>
-              <div style={{ fontSize: "12px", fontWeight: 600, color: "#111", marginBottom: "10px" }}>Bunny.net Video URL</div>
+            <div className="px-4 md:px-5 py-4 border-b border-gray-100">
+              <div className="text-xs font-semibold text-gray-900 mb-2.5">Bunny.net Video URL</div>
               {!talep.hazir_video_url ? (
                 <>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <input value={hazirVideoUrl} onChange={(e) => setHazirVideoUrl(e.target.value)} placeholder="https://iframe.mediadelivery.net/embed/..." style={{ flex: 1, border: "0.5px solid #e5e7eb", borderRadius: "8px", padding: "8px 12px", fontSize: "12px", fontFamily: "'Nunito', sans-serif", outline: "none" }} />
-                    <button onClick={handleHazirVideoUrlKaydet} disabled={!hazirVideoUrl.trim() || urlKaydediliyor} style={{ background: "#56aeff", color: "white", border: "none", borderRadius: "8px", padding: "8px 16px", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "'Nunito', sans-serif", opacity: !hazirVideoUrl.trim() || urlKaydediliyor ? 0.6 : 1, whiteSpace: "nowrap" }}>
+                  <div className="flex flex-col md:flex-row gap-2">
+                    <input
+                      value={hazirVideoUrl}
+                      onChange={(e) => setHazirVideoUrl(e.target.value)}
+                      placeholder="https://iframe.mediadelivery.net/embed/..."
+                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none"
+                      style={{ fontFamily: "'Nunito', sans-serif" }}
+                    />
+                    <button onClick={handleHazirVideoUrlKaydet} disabled={!hazirVideoUrl.trim() || urlKaydediliyor}
+                      className="text-white border-none rounded-lg px-4 py-2 text-xs font-semibold cursor-pointer whitespace-nowrap"
+                      style={{ background: "#56aeff", opacity: !hazirVideoUrl.trim() || urlKaydediliyor ? 0.6 : 1, fontFamily: "'Nunito', sans-serif" }}>
                       {urlKaydediliyor ? "..." : "URL Kaydet"}
                     </button>
                   </div>
-                  <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "6px" }}>Videoyu Bunny.net'e yükledikten sonra embed URL'ini buraya girin.</div>
+                  <div className="text-xs text-gray-400 mt-1.5">Videoyu Bunny.net'e yükledikten sonra embed URL'ini buraya girin.</div>
                 </>
               ) : (
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#f59e0b", flexShrink: 0 }} />
-                  <span style={{ fontSize: "12px", color: "#737373" }}>PM onayı bekleniyor...</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
+                  <span className="text-xs text-gray-500">PM onayı bekleniyor...</span>
                 </div>
               )}
             </div>
@@ -323,39 +321,51 @@ export default function TalepDetayPage() {
 
           {/* PM — Video önizleme ve onay */}
           {isPM && talep.hazir_video && talep.hazir_video_url && (
-            <div style={{ padding: "16px 20px", borderBottom: "0.5px solid #e5e7eb" }}>
-              <div style={{ fontSize: "12px", fontWeight: 600, color: "#111", marginBottom: "10px" }}>Video Önizleme</div>
-              <iframe src={talep.hazir_video_url} width="100%" height="360" frameBorder="0" allowFullScreen style={{ borderRadius: "8px", border: "0.5px solid #e5e7eb" }} />
+            <div className="px-4 md:px-5 py-4 border-b border-gray-100">
+              <div className="text-xs font-semibold text-gray-900 mb-2.5">Video Önizleme</div>
+              <iframe src={talep.hazir_video_url} width="100%" height="360" frameBorder="0" allowFullScreen
+                className="rounded-lg border border-gray-200" />
             </div>
           )}
 
-          <div style={{ padding: "16px 20px", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+          {/* Aksiyon butonları */}
+          <div className="px-4 md:px-5 py-4 flex justify-end gap-2 flex-wrap">
             {isIU && !talep.hazir_video && (
-              <button onClick={() => router.push(`/senaryolar/${talep_id}`)} style={{ background: "#56aeff", color: "white", border: "none", borderRadius: "8px", padding: "10px 20px", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+              <button onClick={() => router.push(`/senaryolar/${talep_id}`)}
+                className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer"
+                style={{ background: "#56aeff", fontFamily: "'Nunito', sans-serif" }}>
                 Senaryo Yaz
               </button>
             )}
             {isIU && talep.hazir_video && (
-              <button disabled style={{ background: "#f3f4f6", color: "#9ca3af", border: "none", borderRadius: "8px", padding: "10px 20px", fontSize: "12px", fontWeight: 600, cursor: "not-allowed", fontFamily: "'Nunito', sans-serif" }}>
+              <button disabled className="bg-gray-100 text-gray-400 border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-not-allowed"
+                style={{ fontFamily: "'Nunito', sans-serif" }}>
                 Soru Seti Yaz
               </button>
             )}
             {isPM && !talep.hazir_video && (
-              <button onClick={() => router.push(`/senaryolar/${talep_id}`)} style={{ background: "#56aeff", color: "white", border: "none", borderRadius: "8px", padding: "10px 20px", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+              <button onClick={() => router.push(`/senaryolar/${talep_id}`)}
+                className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer"
+                style={{ background: "#56aeff", fontFamily: "'Nunito', sans-serif" }}>
                 Senaryolar
               </button>
             )}
             {isPM && talep.hazir_video && !talep.hazir_video_url && (
-              <button disabled style={{ background: "#f3f4f6", color: "#9ca3af", border: "none", borderRadius: "8px", padding: "10px 20px", fontSize: "12px", fontWeight: 600, cursor: "not-allowed", fontFamily: "'Nunito', sans-serif" }}>
+              <button disabled className="bg-gray-100 text-gray-400 border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-not-allowed"
+                style={{ fontFamily: "'Nunito', sans-serif" }}>
                 IU URL Bekliyor...
               </button>
             )}
             {isPM && talep.hazir_video && talep.hazir_video_url && (
               <>
-                <button onClick={() => handleHazirVideoKarar("reddet")} disabled={kararLoading !== null} style={{ background: "transparent", color: "#bc2d0d", border: "0.5px solid #fecaca", borderRadius: "8px", padding: "10px 20px", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "'Nunito', sans-serif", opacity: kararLoading !== null ? 0.6 : 1 }}>
+                <button onClick={() => handleHazirVideoKarar("reddet")} disabled={kararLoading !== null}
+                  className="bg-transparent rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer"
+                  style={{ color: "#bc2d0d", border: "0.5px solid #fecaca", opacity: kararLoading !== null ? 0.6 : 1, fontFamily: "'Nunito', sans-serif" }}>
                   {kararLoading === "reddet" ? "..." : "Reddet"}
                 </button>
-                <button onClick={() => handleHazirVideoKarar("onayla")} disabled={kararLoading !== null} style={{ background: "#16a34a", color: "white", border: "none", borderRadius: "8px", padding: "10px 20px", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "'Nunito', sans-serif", opacity: kararLoading !== null ? 0.6 : 1 }}>
+                <button onClick={() => handleHazirVideoKarar("onayla")} disabled={kararLoading !== null}
+                  className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer bg-green-700"
+                  style={{ opacity: kararLoading !== null ? 0.6 : 1, fontFamily: "'Nunito', sans-serif" }}>
                   {kararLoading === "onayla" ? "..." : "Onayla"}
                 </button>
               </>

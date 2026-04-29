@@ -39,9 +39,7 @@ interface CevapSonucu {
 }
 
 declare global {
-  interface Window {
-    playerjs: any;
-  }
+  interface Window { playerjs: any; }
 }
 
 export default function IzlePage() {
@@ -70,32 +68,18 @@ export default function IzlePage() {
 
   const handleBegeni = async (e: React.MouseEvent, yayin_id: string) => {
     e.stopPropagation();
-    const res = await fetch("/izle/api/begeni", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ yayin_id }),
-    });
+    const res = await fetch("/izle/api/begeni", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id }) });
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "Beğeni işlemi başarısız.", d.adim, d.detay); return; }
-    setVideolar(prev => prev.map(v => v.yayin_id === yayin_id
-      ? { ...v, begeni_mi: d.begeni_mi, begeni_sayisi: d.begeni_mi ? v.begeni_sayisi + 1 : v.begeni_sayisi - 1 }
-      : v
-    ));
+    setVideolar(prev => prev.map(v => v.yayin_id === yayin_id ? { ...v, begeni_mi: d.begeni_mi, begeni_sayisi: d.begeni_mi ? v.begeni_sayisi + 1 : v.begeni_sayisi - 1 } : v));
   };
 
   const handleFavori = async (e: React.MouseEvent, yayin_id: string) => {
     e.stopPropagation();
-    const res = await fetch("/izle/api/favori", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ yayin_id }),
-    });
+    const res = await fetch("/izle/api/favori", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id }) });
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "Favori işlemi başarısız.", d.adim, d.detay); return; }
-    setVideolar(prev => prev.map(v => v.yayin_id === yayin_id
-      ? { ...v, favori_mi: d.favori_mi, favori_sayisi: d.favori_mi ? v.favori_sayisi + 1 : v.favori_sayisi - 1 }
-      : v
-    ));
+    setVideolar(prev => prev.map(v => v.yayin_id === yayin_id ? { ...v, favori_mi: d.favori_mi, favori_sayisi: d.favori_mi ? v.favori_sayisi + 1 : v.favori_sayisi - 1 } : v));
   };
 
   useEffect(() => {
@@ -122,11 +106,8 @@ export default function IzlePage() {
     setLoading(false);
   };
 
-  useEffect(() => {
-    if (user) veriCek();
-  }, [user]);
+  useEffect(() => { if (user) veriCek(); }, [user]);
 
-  // player.js yükle
   useEffect(() => {
     if (typeof window !== "undefined" && !window.playerjs) {
       const script = document.createElement("script");
@@ -136,48 +117,25 @@ export default function IzlePage() {
     }
   }, []);
 
-  // player.js entegrasyonu — izleme başladığında
   useEffect(() => {
     if (!izlemeBasladi || !iframeRef.current || !aktifVideo?.ileri_sarma_acik) return;
-
     const baglanti = () => {
       if (!window.playerjs || !iframeRef.current) return;
-      maxIzlenenRef.current = 0;
-      ileriSarilanToplamRef.current = 0;
-
+      maxIzlenenRef.current = 0; ileriSarilanToplamRef.current = 0;
       const player = new window.playerjs.Player(iframeRef.current);
       playerRef.current = player;
-
       player.on("ready", () => {
-        player.on("timeupdate", (data: { seconds: number }) => {
-          if (data.seconds > maxIzlenenRef.current) {
-            maxIzlenenRef.current = data.seconds;
-          }
-        });
-
+        player.on("timeupdate", (data: { seconds: number }) => { if (data.seconds > maxIzlenenRef.current) maxIzlenenRef.current = data.seconds; });
         player.on("seeked", () => {
           player.getCurrentTime((current: number) => {
-            if (current > maxIzlenenRef.current + 1) {
-              // İleri sarma tespit edildi
-              setBekleyenSeekBitis(current);
-              setIleriSarmaModal(true);
-              // Geri sar
-              player.setCurrentTime(maxIzlenenRef.current);
-            }
+            if (current > maxIzlenenRef.current + 1) { setBekleyenSeekBitis(current); setIleriSarmaModal(true); player.setCurrentTime(maxIzlenenRef.current); }
           });
         });
       });
     };
-
-    if (window.playerjs) {
-      baglanti();
-    } else {
-      const interval = setInterval(() => {
-        if (window.playerjs) {
-          clearInterval(interval);
-          baglanti();
-        }
-      }, 200);
+    if (window.playerjs) { baglanti(); }
+    else {
+      const interval = setInterval(() => { if (window.playerjs) { clearInterval(interval); baglanti(); } }, 200);
       return () => clearInterval(interval);
     }
   }, [izlemeBasladi, aktifVideo]);
@@ -185,95 +143,48 @@ export default function IzlePage() {
   const handleIleriSarmaOnayla = async () => {
     if (!aktifVideo || !izlemeId || bekleyenSeekBitis === null) return;
     setIleriSarmaModal(false);
-
     const atlanan = bekleyenSeekBitis - maxIzlenenRef.current;
     const saniyeBasiPuan = (aktifVideo.video_puani ?? 0) > 0 ? (aktifVideo.video_puani! / 60) : 0;
     const kaybedilenPuan = Math.round(saniyeBasiPuan * atlanan);
-
     ileriSarilanToplamRef.current += atlanan;
-
-    // İleri sarma log kaydı
     await fetch("/izle/api/ileri-sarma", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        yayin_id: aktifVideo.yayin_id,
-        izleme_id: izlemeId,
-        atlama_baslangic: Math.round(maxIzlenenRef.current),
-        atlama_bitis: Math.round(bekleyenSeekBitis),
-        atlanan_sure: Math.round(atlanan),
-        kaybedilen_puan: kaybedilenPuan,
-      }),
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ yayin_id: aktifVideo.yayin_id, izleme_id: izlemeId, atlama_baslangic: Math.round(maxIzlenenRef.current), atlama_bitis: Math.round(bekleyenSeekBitis), atlanan_sure: Math.round(atlanan), kaybedilen_puan: kaybedilenPuan }),
     });
-
-    // Player'ı ileri sar
-    if (playerRef.current) {
-      playerRef.current.setCurrentTime(bekleyenSeekBitis);
-      maxIzlenenRef.current = bekleyenSeekBitis;
-    }
+    if (playerRef.current) { playerRef.current.setCurrentTime(bekleyenSeekBitis); maxIzlenenRef.current = bekleyenSeekBitis; }
     setBekleyenSeekBitis(null);
   };
 
-  const handleIleriSarmaReddet = () => {
-    setIleriSarmaModal(false);
-    setBekleyenSeekBitis(null);
-    // Player zaten geri sarıldı
-  };
+  const handleIleriSarmaReddet = () => { setIleriSarmaModal(false); setBekleyenSeekBitis(null); };
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
 
   const handleVideoAc = (video: Video) => {
-    setAktifVideo(video);
-    setIzlemeBasladi(false);
-    setIzlemeTamamlandi(false);
-    setSorular([]);
-    setSoruGosterilecek(false);
-    setCevaplar({});
-    setCevapSonuclari([]);
-    setKazanilanPuan(null);
-    setIzlemeId(null);
-    maxIzlenenRef.current = 0;
-    ileriSarilanToplamRef.current = 0;
-    playerRef.current = null;
+    setAktifVideo(video); setIzlemeBasladi(false); setIzlemeTamamlandi(false);
+    setSorular([]); setSoruGosterilecek(false); setCevaplar({});
+    setCevapSonuclari([]); setKazanilanPuan(null); setIzlemeId(null);
+    maxIzlenenRef.current = 0; ileriSarilanToplamRef.current = 0; playerRef.current = null;
   };
 
   const handleIzlemeBaslat = async () => {
     if (!aktifVideo) return;
     setIslemLoading(true);
-    const res = await fetch("/izle/api/baslat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ yayin_id: aktifVideo.yayin_id, izleme_turu: "kendi_kendine" }),
-    });
+    const res = await fetch("/izle/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id: aktifVideo.yayin_id, izleme_turu: "kendi_kendine" }) });
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "İzleme başlatılamadı.", d.adim, d.detay); setIslemLoading(false); return; }
-    setIzlemeId(d.izleme.izleme_id);
-    setIzlemeBasladi(true);
-    setIslemLoading(false);
+    setIzlemeId(d.izleme.izleme_id); setIzlemeBasladi(true); setIslemLoading(false);
   };
 
   const handleIzlemeBitir = async () => {
     if (!izlemeId) return;
     setIslemLoading(true);
-    const res = await fetch("/izle/api/bitir", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        izleme_id: izlemeId,
-        ileri_sarilan_sure: ileriSarilanToplamRef.current,
-      }),
-    });
+    const res = await fetch("/izle/api/bitir", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ izleme_id: izlemeId, ileri_sarilan_sure: ileriSarilanToplamRef.current }) });
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "İzleme tamamlanamadı.", d.adim, d.detay); setIslemLoading(false); return; }
-    setIzlemeTamamlandi(true);
-    setSoruGosterilecek(d.soru_gosterilecek);
-    if (!d.puan_kazanildi && !d.soru_gosterilecek) {
-      uyari(d.mesaj ?? "Puan kazanma saatleri dışında izlendi.");
-    }
-    if (d.ileri_sarildi) {
-      uyari("Video ileri sarıldığı için sorular gösterilmeyecek.");
-    }
+    setIzlemeTamamlandi(true); setSoruGosterilecek(d.soru_gosterilecek);
+    if (!d.puan_kazanildi && !d.soru_gosterilecek) uyari(d.mesaj ?? "Puan kazanma saatleri dışında izlendi.");
+    if (d.ileri_sarildi) uyari("Video ileri sarıldığı için sorular gösterilmeyecek.");
     if (d.soru_gosterilecek) {
       const sRes = await fetch(`/izle/api/sorular?izleme_id=${izlemeId}`);
       const sData = await sRes.json();
@@ -291,24 +202,18 @@ export default function IzlePage() {
     if (!izlemeId || Object.keys(cevaplar).length < sorular.length) return;
     setIslemLoading(true);
     const cevapListesi = sorular.map(s => ({ soru_index: s.soru_index, verilen_cevap: cevaplar[s.soru_index] }));
-    const res = await fetch("/izle/api/cevap", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ izleme_id: izlemeId, cevaplar: cevapListesi }),
-    });
+    const res = await fetch("/izle/api/cevap", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ izleme_id: izlemeId, cevaplar: cevapListesi }) });
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "Cevaplar gönderilemedi.", d.adim, d.detay); setIslemLoading(false); return; }
-    setCevapSonuclari(d.sonuclar);
-    setKazanilanPuan(d.kazanilan_puan);
+    setCevapSonuclari(d.sonuclar); setKazanilanPuan(d.kazanilan_puan);
     if (d.kazanilan_puan > 0) basari(`+${d.kazanilan_puan} puan kazandınız!`);
-    setIslemLoading(false);
-    await veriCek();
+    setIslemLoading(false); await veriCek();
   };
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <svg className="animate-spin" style={{ width: 24, height: 24, color: "#737373" }} fill="none" viewBox="0 0 24 24">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
           <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
@@ -317,90 +222,93 @@ export default function IzlePage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f9fafb", fontFamily: "'Nunito', sans-serif" }}>
+    <div className="min-h-screen bg-gray-50 pb-20 md:pb-0" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={user?.email ?? ""} rol={rol} onCikis={handleCikis} />
 
-      <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "24px" }}>
+      <div className="max-w-5xl mx-auto px-3 py-4 md:px-6 md:py-6">
 
+        {/* Video listesi */}
         {!aktifVideo && (
           <>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-              <span style={{ fontSize: "14px", fontWeight: 600, color: "#111" }}>Videolar</span>
-              <span style={{ fontSize: "12px", color: "#737373" }}>{videolar.length} video</span>
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-semibold text-gray-900">Videolar</span>
+              <span className="text-xs text-gray-500">{videolar.length} video</span>
             </div>
 
             {videolar.length === 0 ? (
-              <div style={{ background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", padding: "40px", textAlign: "center", color: "#9ca3af", fontSize: "13px" }}>
+              <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">
                 Yayında video bulunmuyor.
               </div>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {videolar.map((v) => (
-                  <div
-                    key={v.yayin_id}
-                    onClick={() => handleVideoAc(v)}
-                    style={{ background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", overflow: "hidden", cursor: "pointer", transition: "box-shadow 0.15s" }}
+                  <div key={v.yayin_id} onClick={() => handleVideoAc(v)}
+                    className="bg-white border border-gray-200 rounded-xl overflow-hidden cursor-pointer transition-shadow duration-150"
                     onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 16px rgba(0,0,0,0.08)"}
-                    onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.boxShadow = "none"}
-                  >
-                    <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", background: "#b5d4f4", overflow: "hidden" }}>
+                    onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.boxShadow = "none"}>
+
+                    {/* Thumbnail */}
+                    <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16/9", background: "#b5d4f4" }}>
                       {v.thumbnail_url
-                        ? <img src={v.thumbnail_url} alt="thumbnail" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        : <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, #b5d4f4, #56aeff)" }} />
+                        ? <img src={v.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
+                        : <div className="w-full h-full" style={{ background: "linear-gradient(135deg, #b5d4f4, #56aeff)" }} />
                       }
-                      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <div style={{ width: "36px", height: "36px", background: "rgba(0,0,0,0.5)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
                           <svg width="10" height="12" viewBox="0 0 10 12" fill="white"><path d="M0 0l10 6-10 6z" /></svg>
                         </div>
                       </div>
-                      <div style={{ position: "absolute", top: "8px", left: "8px", display: "flex", gap: "4px" }}>
+                      <div className="absolute top-2 left-2 flex gap-1">
                         {v.daha_once_izledi ? (
-                          <span style={{ background: "#f0fdf4", color: "#16a34a", border: "0.5px solid #bbf7d0", borderRadius: "20px", padding: "2px 8px", fontSize: "10px", fontWeight: 600 }}>İzlendi</span>
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: "#f0fdf4", color: "#16a34a", border: "0.5px solid #bbf7d0", fontSize: 10 }}>İzlendi</span>
                         ) : (
-                          <span style={{ background: "#56aeff", color: "white", borderRadius: "20px", padding: "2px 8px", fontSize: "10px", fontWeight: 600 }}>Yeni</span>
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-white" style={{ background: "#56aeff", fontSize: 10 }}>Yeni</span>
                         )}
                         {v.ileri_sarma_acik && (
-                          <span style={{ background: "rgba(0,0,0,0.6)", color: "white", borderRadius: "20px", padding: "2px 7px", fontSize: "10px", display: "flex", alignItems: "center", gap: "3px" }}>
+                          <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-white" style={{ background: "rgba(0,0,0,0.6)", fontSize: 10 }}>
                             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: "6px" }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
-                        <div style={{ fontSize: "13px", fontWeight: 600, color: "#111", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.urun_adi}</div>
-                        <div style={{ fontSize: "11px", color: "#737373", whiteSpace: "nowrap", flexShrink: 0 }}>{v.teknik_adi}</div>
+                    {/* Bilgi */}
+                    <div className="px-3 py-2.5 flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-xs font-semibold text-gray-900 truncate">{v.urun_adi}</div>
+                        <div className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">{v.teknik_adi}</div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div className="flex items-center justify-between">
                         {v.video_puani !== null ? (
-                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "#f9fafb", border: "0.5px solid #e5e7eb", borderRadius: "6px", padding: "3px 8px", fontSize: "11px", color: "#737373" }}>
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#56aeff" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-                              Video <span style={{ fontWeight: 600, color: "#111", marginLeft: "2px" }}>{v.video_puani}</span>
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-0.5 text-xs text-gray-500">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#56aeff" strokeWidth="2">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                              </svg>
+                              Video <span className="font-semibold text-gray-900 ml-0.5">{v.video_puani}</span>
                             </div>
                             {v.extra_puan > 0 && (
-                              <div style={{ display: "flex", alignItems: "center", gap: "4px", background: "#f0fdf4", border: "0.5px solid #bbf7d0", borderRadius: "6px", padding: "3px 8px", fontSize: "11px", color: "#15803d" }}>
-                                +<span style={{ fontWeight: 600 }}>{v.extra_puan}</span> extra
+                              <div className="flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs" style={{ background: "#f0fdf4", border: "0.5px solid #bbf7d0", color: "#15803d" }}>
+                                +<span className="font-semibold">{v.extra_puan}</span> extra
                               </div>
                             )}
                           </div>
                         ) : <div />}
-                        <div style={{ fontSize: "10px", color: "#9ca3af", flexShrink: 0 }}>{formatTarih(v.yayin_tarihi)}</div>
+                        <div className="text-xs text-gray-400 flex-shrink-0">{formatTarih(v.yayin_tarihi)}</div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "2px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "3px", cursor: "pointer" }} onClick={(e) => handleBegeni(e, v.yayin_id)}>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <div className="flex items-center gap-1 cursor-pointer" onClick={(e) => handleBegeni(e, v.yayin_id)}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill={v.begeni_mi ? "#bc2d0d" : "none"} stroke="#bc2d0d" strokeWidth="2">
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                           </svg>
-                          <span style={{ fontSize: "11px", color: v.begeni_mi ? "#bc2d0d" : "#737373", fontWeight: v.begeni_mi ? 600 : 400 }}>{v.begeni_sayisi}</span>
+                          <span className="text-xs" style={{ color: v.begeni_mi ? "#bc2d0d" : "#737373", fontWeight: v.begeni_mi ? 600 : 400 }}>{v.begeni_sayisi}</span>
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "3px", cursor: "pointer" }} onClick={(e) => handleFavori(e, v.yayin_id)}>
+                        <div className="flex items-center gap-1 cursor-pointer" onClick={(e) => handleFavori(e, v.yayin_id)}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill={v.favori_mi ? "#56aeff" : "none"} stroke={v.favori_mi ? "#56aeff" : "#737373"} strokeWidth="2">
                             <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
                             <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
                           </svg>
-                          <span style={{ fontSize: "11px", color: v.favori_mi ? "#56aeff" : "#737373", fontWeight: v.favori_mi ? 600 : 400 }}>{v.favori_sayisi}</span>
+                          <span className="text-xs" style={{ color: v.favori_mi ? "#56aeff" : "#737373", fontWeight: v.favori_mi ? 600 : 400 }}>{v.favori_sayisi}</span>
                         </div>
                       </div>
                     </div>
@@ -411,103 +319,127 @@ export default function IzlePage() {
           </>
         )}
 
+        {/* Aktif video detayı */}
         {aktifVideo && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <button onClick={() => setAktifVideo(null)} style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", cursor: "pointer", color: "#737373", fontSize: "13px", padding: 0, width: "fit-content" }}>
+          <div className="flex flex-col gap-4">
+            <button onClick={() => setAktifVideo(null)}
+              className="flex items-center gap-1.5 bg-transparent border-none cursor-pointer text-gray-500 text-sm p-0 w-fit">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M15 19l-7-7 7-7" /></svg>
               Videolar
             </button>
 
-            <div style={{ background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
-              <div style={{ padding: "14px 20px", borderBottom: "0.5px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+              {/* Başlık */}
+              <div className="px-4 md:px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
                 <div>
-                  <div style={{ fontSize: "15px", fontWeight: 600, color: "#111" }}>{aktifVideo.urun_adi}</div>
-                  <div style={{ fontSize: "12px", color: "#737373", marginTop: "4px" }}>{aktifVideo.teknik_adi}</div>
+                  <div className="text-base font-semibold text-gray-900">{aktifVideo.urun_adi}</div>
+                  <div className="text-xs text-gray-500 mt-1">{aktifVideo.teknik_adi}</div>
                 </div>
                 {aktifVideo.ileri_sarma_acik && (
-                  <span style={{ fontSize: "11px", color: "#bc2d0d", background: "rgba(188,45,13,0.08)", border: "0.5px solid rgba(188,45,13,0.25)", borderRadius: "20px", padding: "3px 10px", display: "flex", alignItems: "center", gap: "4px" }}>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#bc2d0d" strokeWidth="2.5"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+                  <span className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
+                    style={{ color: "#bc2d0d", background: "rgba(188,45,13,0.08)", border: "0.5px solid rgba(188,45,13,0.25)" }}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#bc2d0d" strokeWidth="2.5">
+                      <polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/>
+                    </svg>
                     İleri sarma açık
                   </span>
                 )}
               </div>
 
+              {/* Video */}
               {aktifVideo.video_url && (
-                <div style={{ borderBottom: "0.5px solid #e5e7eb" }}>
-                  <iframe
-                    ref={iframeRef}
-                    src={aktifVideo.video_url}
-                    width="100%"
-                    height="400"
-                    frameBorder="0"
-                    allowFullScreen
-                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                  />
+                <div className="border-b border-gray-100">
+                  <iframe ref={iframeRef} src={aktifVideo.video_url} width="100%" height="400"
+                    frameBorder="0" allowFullScreen
+                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;" />
                 </div>
               )}
 
-              <div style={{ padding: "16px 20px" }}>
+              {/* Aksiyon alanı */}
+              <div className="px-4 md:px-5 py-4">
+
+                {/* İzlemeye başla */}
                 {!izlemeBasladi && !izlemeTamamlandi && (
-                  <div style={{ display: "flex", justifyContent: "center" }}>
-                    <button onClick={handleIzlemeBaslat} disabled={islemLoading} style={{ background: "#56aeff", color: "white", border: "none", borderRadius: "8px", padding: "12px 32px", fontSize: "13px", fontWeight: 600, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+                  <div className="flex justify-center">
+                    <button onClick={handleIzlemeBaslat} disabled={islemLoading}
+                      className="text-white border-none rounded-lg px-8 py-3 text-sm font-semibold cursor-pointer"
+                      style={{ background: "#56aeff", fontFamily: "'Nunito', sans-serif" }}>
                       {islemLoading ? "..." : "İzlemeye Başla"}
                     </button>
                   </div>
                 )}
 
+                {/* İzlemeyi tamamla */}
                 {izlemeBasladi && !izlemeTamamlandi && (
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
-                    <span style={{ fontSize: "12px", color: "#737373" }}>Video izleniyor...</span>
-                    <button onClick={handleIzlemeBitir} disabled={islemLoading} style={{ background: "#16a34a", color: "white", border: "none", borderRadius: "8px", padding: "12px 32px", fontSize: "13px", fontWeight: 600, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+                  <div className="flex flex-col items-center gap-3">
+                    <span className="text-xs text-gray-500">Video izleniyor...</span>
+                    <button onClick={handleIzlemeBitir} disabled={islemLoading}
+                      className="text-white border-none rounded-lg px-8 py-3 text-sm font-semibold cursor-pointer bg-green-700"
+                      style={{ fontFamily: "'Nunito', sans-serif" }}>
                       {islemLoading ? "..." : "İzlemeyi Tamamla"}
                     </button>
                   </div>
                 )}
 
+                {/* Sorular */}
                 {izlemeTamamlandi && soruGosterilecek && sorular.length > 0 && cevapSonuclari.length === 0 && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    <div style={{ fontSize: "13px", fontWeight: 600, color: "#111" }}>Soruları Cevapla</div>
+                  <div className="flex flex-col gap-4">
+                    <div className="text-sm font-semibold text-gray-900">Soruları Cevapla</div>
                     {sorular.map((soru) => (
-                      <div key={soru.soru_index} style={{ padding: "14px", background: "#f9fafb", borderRadius: "10px", border: "0.5px solid #e5e7eb" }}>
-                        <p style={{ fontSize: "13px", color: "#374151", fontWeight: 600, marginBottom: "12px" }}>{soru.soru_index + 1}. {soru.soru_metni}</p>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <div key={soru.soru_index} className="px-3 py-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                        <p className="text-sm text-gray-700 font-semibold mb-3">{soru.soru_index + 1}. {soru.soru_metni}</p>
+                        <div className="flex flex-col gap-2">
                           {soru.secenekler.map((s) => (
-                            <button key={s.harf} onClick={() => setCevaplar(prev => ({ ...prev, [soru.soru_index]: s.harf }))} style={{ padding: "10px 14px", borderRadius: "8px", border: cevaplar[soru.soru_index] === s.harf ? "1.5px solid #56aeff" : "0.5px solid #e5e7eb", background: cevaplar[soru.soru_index] === s.harf ? "#e6f1fb" : "white", color: cevaplar[soru.soru_index] === s.harf ? "#56aeff" : "#374151", fontSize: "12px", fontWeight: cevaplar[soru.soru_index] === s.harf ? 600 : 400, cursor: "pointer", textAlign: "left", fontFamily: "'Nunito', sans-serif" }}>
+                            <button key={s.harf} onClick={() => setCevaplar(prev => ({ ...prev, [soru.soru_index]: s.harf }))}
+                              className="px-3 py-2.5 rounded-lg text-sm text-left cursor-pointer border transition-colors"
+                              style={{
+                                border: cevaplar[soru.soru_index] === s.harf ? "1.5px solid #56aeff" : "0.5px solid #e5e7eb",
+                                background: cevaplar[soru.soru_index] === s.harf ? "#e6f1fb" : "white",
+                                color: cevaplar[soru.soru_index] === s.harf ? "#56aeff" : "#374151",
+                                fontWeight: cevaplar[soru.soru_index] === s.harf ? 600 : 400,
+                                fontFamily: "'Nunito', sans-serif",
+                              }}>
                               {s.harf}. {s.metin}
                             </button>
                           ))}
                         </div>
                       </div>
                     ))}
-                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                      <button onClick={handleCevapGonder} disabled={Object.keys(cevaplar).length < sorular.length || islemLoading} style={{ background: "#56aeff", color: "white", border: "none", borderRadius: "8px", padding: "10px 24px", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "'Nunito', sans-serif", opacity: Object.keys(cevaplar).length < sorular.length ? 0.5 : 1 }}>
+                    <div className="flex justify-end">
+                      <button onClick={handleCevapGonder}
+                        disabled={Object.keys(cevaplar).length < sorular.length || islemLoading}
+                        className="text-white border-none rounded-lg px-6 py-2.5 text-xs font-semibold cursor-pointer"
+                        style={{ background: "#56aeff", opacity: Object.keys(cevaplar).length < sorular.length ? 0.5 : 1, fontFamily: "'Nunito', sans-serif" }}>
                         {islemLoading ? "..." : "Cevapla"}
                       </button>
                     </div>
                   </div>
                 )}
 
+                {/* Cevap sonuçları */}
                 {cevapSonuclari.length > 0 && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    <div style={{ fontSize: "13px", fontWeight: 600, color: "#111" }}>Sonuçlar</div>
+                  <div className="flex flex-col gap-3">
+                    <div className="text-sm font-semibold text-gray-900">Sonuçlar</div>
                     {cevapSonuclari.map((s) => (
-                      <div key={s.soru_index} style={{ padding: "12px 14px", borderRadius: "8px", background: s.dogru_mu ? "#f0fdf4" : "#fef2f2", border: `0.5px solid ${s.dogru_mu ? "#bbf7d0" : "#fecaca"}` }}>
-                        <span style={{ fontSize: "12px", fontWeight: 600, color: s.dogru_mu ? "#16a34a" : "#bc2d0d" }}>
+                      <div key={s.soru_index} className="px-3 py-2.5 rounded-lg border"
+                        style={{ background: s.dogru_mu ? "#f0fdf4" : "#fef2f2", border: `0.5px solid ${s.dogru_mu ? "#bbf7d0" : "#fecaca"}` }}>
+                        <span className="text-xs font-semibold" style={{ color: s.dogru_mu ? "#16a34a" : "#bc2d0d" }}>
                           {s.dogru_mu ? "✓ Doğru" : `✗ Yanlış — Doğru cevap: ${s.dogru_cevap}`}
                         </span>
                       </div>
                     ))}
                     {kazanilanPuan !== null && kazanilanPuan > 0 && (
-                      <div style={{ padding: "14px", background: "#eff6ff", borderRadius: "10px", border: "0.5px solid #bfdbfe", textAlign: "center" }}>
-                        <span style={{ fontSize: "14px", fontWeight: 700, color: "#1d4ed8" }}>+{kazanilanPuan} puan kazandınız!</span>
+                      <div className="px-4 py-3.5 bg-blue-50 rounded-xl border border-blue-200 text-center">
+                        <span className="text-sm font-bold text-blue-700">+{kazanilanPuan} puan kazandınız!</span>
                       </div>
                     )}
                   </div>
                 )}
 
-                {izlemeTamamlandi && !soruGosterilecek && kazanilanPuan !== null && cevapSonuclari.length === 0 && kazanilanPuan > 0 && (
-                  <div style={{ padding: "14px", background: "#eff6ff", borderRadius: "10px", border: "0.5px solid #bfdbfe", textAlign: "center" }}>
-                    <span style={{ fontSize: "14px", fontWeight: 700, color: "#1d4ed8" }}>+{kazanilanPuan} puan kazandınız!</span>
+                {/* Soru yok ama puan var */}
+                {izlemeTamamlandi && !soruGosterilecek && kazanilanPuan !== null && kazanilanPuan > 0 && cevapSonuclari.length === 0 && (
+                  <div className="px-4 py-3.5 bg-blue-50 rounded-xl border border-blue-200 text-center">
+                    <span className="text-sm font-bold text-blue-700">+{kazanilanPuan} puan kazandınız!</span>
                   </div>
                 )}
               </div>
@@ -518,15 +450,19 @@ export default function IzlePage() {
 
       {/* İleri sarma uyarı modal */}
       {ileriSarmaModal && aktifVideo && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div style={{ background: "white", borderRadius: "12px", border: "0.5px solid #e5e7eb", padding: "24px", maxWidth: "420px", width: "90%" }}>
-            <div style={{ fontSize: "14px", fontWeight: 600, color: "#111", marginBottom: "12px" }}>İleri sarmak istiyor musunuz?</div>
-            <div style={{ fontSize: "13px", color: "#737373", lineHeight: 1.7, marginBottom: "20px", background: "#fff7ed", border: "0.5px solid #fed7aa", borderRadius: "8px", padding: "12px 14px" }}>
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: "rgba(0,0,0,0.4)" }}>
+          <div className="bg-white rounded-xl border border-gray-200 p-6 w-11/12 max-w-md">
+            <div className="text-sm font-semibold text-gray-900 mb-3">İleri sarmak istiyor musunuz?</div>
+            <div className="text-sm text-gray-500 leading-relaxed mb-5 bg-amber-50 border border-amber-200 rounded-lg px-3 py-3">
               Bu videonun her saniyesi puan değer taşır. İleri sarılan süre kadar <strong style={{ color: "#bc2d0d" }}>puan kaybedeceksiniz</strong>. İleri sarılan videolarda sorular gösterilmez.
             </div>
-            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
-              <button onClick={handleIleriSarmaReddet} style={{ padding: "8px 16px", borderRadius: "6px", border: "0.5px solid #e5e7eb", background: "transparent", color: "#737373", fontSize: "12px", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>İptal</button>
-              <button onClick={handleIleriSarmaOnayla} style={{ padding: "8px 16px", borderRadius: "6px", border: "none", background: "#bc2d0d", color: "white", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>Anladım, İleri Sar</button>
+            <div className="flex gap-2.5 justify-end">
+              <button onClick={handleIleriSarmaReddet}
+                className="px-4 py-2 rounded-lg border border-gray-200 bg-transparent text-gray-500 text-xs cursor-pointer"
+                style={{ fontFamily: "'Nunito', sans-serif" }}>İptal</button>
+              <button onClick={handleIleriSarmaOnayla}
+                className="px-4 py-2 rounded-lg border-none text-white text-xs font-semibold cursor-pointer"
+                style={{ background: "#bc2d0d", fontFamily: "'Nunito', sans-serif" }}>Anladım, İleri Sar</button>
             </div>
           </div>
         </div>
