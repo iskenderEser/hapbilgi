@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
+import { PM_ROLLERI } from "@/lib/utils/roller";
 
 interface Video {
   video_id: string;
@@ -109,7 +110,7 @@ export default function VideoAkisPage() {
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
   const rolKucu = rol.toLowerCase();
-  const isPM = ["pm", "jr_pm", "kd_pm"].includes(rolKucu);
+  const isPM = PM_ROLLERI.includes(rolKucu);
   const isIU = rolKucu === "iu";
 
   const sonVideo = videolar[videolar.length - 1];

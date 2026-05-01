@@ -11,6 +11,7 @@ interface SoruSetiSatir {
   video_durum_id: string;
   urun_adi: string;
   teknik_adi: string;
+  kategori_adi: string | null;
   soru_sayisi: number;
   son_durum: string | null;
   son_tarih: string;
@@ -25,6 +26,7 @@ export default function SoruSetleriListePage() {
   const [satirlar, setSatirlar] = useState<SoruSetiSatir[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtreler, setFiltreler] = useState<Set<FiltreDurum>>(new Set());
+  const [kategoriFiltre, setKategoriFiltre] = useState<string>("");
   const { mesajlar, hata } = useHataMesaji();
 
   useEffect(() => {
@@ -64,22 +66,23 @@ export default function SoruSetleriListePage() {
           .from("soru_seti_durumu").select("durum, created_at")
           .eq("soru_seti_id", sonSoruSeti.soru_seti_id).order("created_at", { ascending: false }).limit(1);
 
-        let urun_adi = "-", teknik_adi = "-";
+        let urun_adi = "-", teknik_adi = "-", kategori_adi: string | null = null;
         const { data: video } = await supabase.from("videolar").select("senaryo_durum_id").eq("video_id", vd.video_id).single();
         if (video?.senaryo_durum_id) {
           const { data: senaryoDurum } = await supabase.from("senaryo_durumu").select("senaryo_id").eq("senaryo_durum_id", video.senaryo_durum_id).single();
           if (senaryoDurum?.senaryo_id) {
             const { data: senaryo } = await supabase.from("senaryolar").select("talep_id").eq("senaryo_id", senaryoDurum.senaryo_id).single();
             if (senaryo?.talep_id) {
-              const { data: talep } = await supabase.from("talepler").select(`urunler(urun_adi), teknikler(teknik_adi)`).eq("talep_id", senaryo.talep_id).single();
+              const { data: talep } = await supabase.from("talepler").select(`urunler(urun_adi), teknikler(teknik_adi), kategoriler(kategori_adi)`).eq("talep_id", senaryo.talep_id).single();
               urun_adi = (talep as any)?.urunler?.urun_adi ?? "-";
               teknik_adi = (talep as any)?.teknikler?.teknik_adi ?? "-";
+              kategori_adi = (talep as any)?.kategoriler?.kategori_adi ?? null;
             }
           }
         }
 
         return {
-          video_durum_id: vd.video_durum_id, urun_adi, teknik_adi,
+          video_durum_id: vd.video_durum_id, urun_adi, teknik_adi, kategori_adi,
           soru_sayisi: sonSoruSeti.sorular?.length ?? 0,
           son_durum: durumlar?.[0]?.durum ?? null,
           son_tarih: durumlar?.[0]?.created_at ?? sonSoruSeti.created_at,
@@ -101,9 +104,14 @@ export default function SoruSetleriListePage() {
     });
   };
 
-  const filtreliSatirlar = filtreler.size === 0
-    ? satirlar
-    : satirlar.filter(s => s.son_durum && filtreler.has(s.son_durum as FiltreDurum));
+  // Benzersiz kategoriler
+  const kategoriler = Array.from(new Set(satirlar.map(s => s.kategori_adi).filter(Boolean))) as string[];
+
+  const filtreliSatirlar = satirlar.filter(s => {
+    const durumUyumu = filtreler.size === 0 || (s.son_durum && filtreler.has(s.son_durum as FiltreDurum));
+    const kategoriUyumu = !kategoriFiltre || s.kategori_adi === kategoriFiltre;
+    return durumUyumu && kategoriUyumu;
+  });
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
@@ -155,6 +163,18 @@ export default function SoruSetleriListePage() {
                     {f.etiket}
                   </label>
                 ))}
+                {/* Kategori dropdown — yalnızca listede kategori varsa göster */}
+                {kategoriler.length > 0 && (
+                  <select
+                    value={kategoriFiltre}
+                    onChange={e => setKategoriFiltre(e.target.value)}
+                    className="border border-gray-200 rounded-lg px-2 py-1 text-xs bg-white cursor-pointer"
+                    style={{ fontFamily: "'Nunito', sans-serif", color: kategoriFiltre ? "#111" : "#737373" }}
+                  >
+                    <option value="">Tüm Kategoriler</option>
+                    {kategoriler.map(k => <option key={k} value={k}>{k}</option>)}
+                  </select>
+                )}
               </div>
             </div>
             <span className="text-xs text-gray-500">{filtreliSatirlar.length} kayıt</span>
@@ -162,7 +182,7 @@ export default function SoruSetleriListePage() {
 
           {filtreliSatirlar.length === 0 ? (
             <div className="p-10 text-center text-sm text-gray-400">
-              {filtreler.size > 0 ? "Seçilen filtreye uygun soru seti bulunamadı." : "Henüz soru seti bulunmuyor."}
+              {filtreler.size > 0 || kategoriFiltre ? "Seçilen filtreye uygun soru seti bulunamadı." : "Henüz soru seti bulunmuyor."}
             </div>
           ) : (
             <>
@@ -183,6 +203,12 @@ export default function SoruSetleriListePage() {
                         )}
                       </div>
                       <div className="text-xs text-gray-500">{ss.teknik_adi}</div>
+                      {ss.kategori_adi && (
+                        <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full"
+                          style={{ background: "#f0fdf4", color: "#15803d", border: "0.5px solid #bbf7d0", fontSize: 10 }}>
+                          {ss.kategori_adi}
+                        </span>
+                      )}
                       <div className="flex gap-3 mt-0.5">
                         <span className="text-xs text-gray-400">{ss.soru_sayisi} soru</span>
                         <span className="text-xs text-gray-400">{formatTarih(ss.son_tarih)}</span>
@@ -199,6 +225,7 @@ export default function SoruSetleriListePage() {
                     <tr className="border-b border-gray-100 bg-gray-50">
                       <th className="text-left px-5 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Teknik</th>
+                      <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Kategori</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Soru</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Son Durum</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Tarih</th>
@@ -213,6 +240,16 @@ export default function SoruSetleriListePage() {
                           className="border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors duration-100">
                           <td className="px-5 py-3 text-gray-900 font-medium">{ss.urun_adi}</td>
                           <td className="px-3 py-3 text-gray-500">{ss.teknik_adi}</td>
+                          <td className="px-3 py-3">
+                            {ss.kategori_adi ? (
+                              <span className="text-xs px-2 py-0.5 rounded-full"
+                                style={{ background: "#f0fdf4", color: "#15803d", border: "0.5px solid #bbf7d0" }}>
+                                {ss.kategori_adi}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-gray-400">—</span>
+                            )}
+                          </td>
                           <td className="px-3 py-3 text-gray-500">{ss.soru_sayisi} soru</td>
                           <td className="px-3 py-3">
                             {ss.son_durum && (

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
+import { PM_ROLLERI } from "@/lib/utils/roller";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    if (!["pm", "jr_pm", "kd_pm"].includes(rol)) return rolHatasi("Sadece PM video puanı tanımlayabilir.");
+    if (!PM_ROLLERI.includes(rol)) return rolHatasi("Sadece yetkili roller video puanı tanımlayabilir.");
 
     const body = await request.json();
     const { video_durum_id, video_puani } = body;
@@ -90,7 +91,6 @@ export async function POST(request: NextRequest) {
       .insert({ video_durum_id, video_puani });
 
     if (insertError) return hataYaniti("Video puanı kaydedilemedi.", "video_puanlari tablosu INSERT", insertError);
-
     return NextResponse.json({ mesaj: "Video puanı kaydedildi.", video_puani }, { status: 201 });
 
   } catch (err) {

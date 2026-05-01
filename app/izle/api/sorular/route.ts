@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     if (ocError) return hataYaniti("Önceki cevaplar kontrol edilemedi.", "soru_cevaplari tablosu SELECT — izleme_id kontrolü", ocError);
     if ((oncekiCevap ?? []).length > 0) return isKuraluHatasi("Bu izleme için sorular zaten cevaplandı.");
 
-    // Yayın → soru seti → sorular zinciri
+    // Yayın → soru seti zinciri
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("yayin_yonetimi")
       .select("soru_seti_durum_id")
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 
     const { data: soruSeti, error: ssError } = await adminSupabase
       .from("soru_setleri")
-      .select("sorular")
+      .select("sorular, video_durum_id")
       .eq("soru_seti_id", soruSetiDurum.soru_seti_id)
       .single();
 
@@ -73,13 +73,65 @@ export async function GET(request: NextRequest) {
     if (!ssKontrol.gecerli) return ssKontrol.yanit;
     if (ssError) return hataYaniti("Soru seti sorgulanırken hata oluştu.", "soru_setleri tablosu SELECT", ssError, 404);
 
-    if (!soruSeti.sorular || soruSeti.sorular.length < 2) {
-      return hataYaniti("Soru setinde yeterli soru bulunamadı.", "soru_setleri — sorular kontrolü", null, 404);
+    // video_durum_id üzerinden talebin video_basi_soru_sayisi değerini bul
+    let videoBasiSoruSayisi = 2; // varsayılan
+
+    if (soruSeti.video_durum_id) {
+      const { data: videoDurum } = await adminSupabase
+        .from("video_durumu")
+        .select("video_id")
+        .eq("video_durum_id", soruSeti.video_durum_id)
+        .single();
+
+      if (videoDurum?.video_id) {
+        const { data: video } = await adminSupabase
+          .from("videolar")
+          .select("senaryo_durum_id")
+          .eq("video_id", videoDurum.video_id)
+          .single();
+
+        if (video?.senaryo_durum_id) {
+          const { data: senaryoDurum } = await adminSupabase
+            .from("senaryo_durumu")
+            .select("senaryo_id")
+            .eq("senaryo_durum_id", video.senaryo_durum_id)
+            .single();
+
+          if (senaryoDurum?.senaryo_id) {
+            const { data: senaryo } = await adminSupabase
+              .from("senaryolar")
+              .select("talep_id")
+              .eq("senaryo_id", senaryoDurum.senaryo_id)
+              .single();
+
+            if (senaryo?.talep_id) {
+              const { data: talep } = await adminSupabase
+                .from("talepler")
+                .select("video_basi_soru_sayisi")
+                .eq("talep_id", senaryo.talep_id)
+                .single();
+
+              if (talep?.video_basi_soru_sayisi) {
+                videoBasiSoruSayisi = talep.video_basi_soru_sayisi;
+              }
+            }
+          }
+        }
+      }
     }
 
-    // Randomize 2 soru seç
+    if (!soruSeti.sorular || soruSeti.sorular.length < videoBasiSoruSayisi) {
+      return hataYaniti(
+        `Soru setinde yeterli soru bulunamadı. Gerekli: ${videoBasiSoruSayisi}, mevcut: ${soruSeti.sorular?.length ?? 0}`,
+        "soru_setleri — sorular kontrolü",
+        null,
+        404
+      );
+    }
+
+    // Randomize soru seç — video_basi_soru_sayisi kadar
     const karisik = [...soruSeti.sorular].sort(() => Math.random() - 0.5);
-    const secilenSorular = karisik.slice(0, 2).map((s: any, i: number) => ({
+    const secilenSorular = karisik.slice(0, videoBasiSoruSayisi).map((s: any, i: number) => ({
       soru_index: i,
       soru_metni: s.soru_metni,
       secenekler: s.secenekler.map((se: any) => ({

@@ -61,7 +61,7 @@ interface RaporData {
   favori_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; favori_sayisi: number }>;
 }
 
-type Periyot = 'bu_ay' | 'gecen_ay' | 'bu_hafta';
+type Periyot = 'bu_gun' | 'bu_hafta' | 'bu_ay' | 'bu_donem' | 'bu_yil';
 
 const BORDO = '#bc2d0d';
 const MAVI = '#56aeff';
@@ -134,9 +134,11 @@ export default function YoneticiRaporPage() {
   const maxTakimPuan = Math.max(...data.takim_siralamasi.map(t => t.puan), 1);
 
   const periyotlar: { key: Periyot; label: string }[] = [
-    { key: 'bu_ay', label: 'Bu ay' },
-    { key: 'gecen_ay', label: 'Geçen ay' },
-    { key: 'bu_hafta', label: 'Bu hafta' },
+    { key: 'bu_gun', label: 'Günlük' },
+    { key: 'bu_hafta', label: 'Haftalık' },
+    { key: 'bu_ay', label: 'Aylık' },
+    { key: 'bu_donem', label: 'Dönemlik' },
+    { key: 'bu_yil', label: 'Yıllık' },
   ];
 
   return (
@@ -144,11 +146,7 @@ export default function YoneticiRaporPage() {
       <Navbar email={user?.email ?? ''} rol={rol} adSoyad={adSoyad} onCikis={handleCikis} />
       <div className="max-w-4xl mx-auto px-3 py-3 md:px-4 md:py-4">
 
-        <button
-          onClick={() => router.push('/ana-sayfa')}
-          className="flex items-center gap-1.5 text-xs mb-4"
-          style={{ color: GRI_METIN }}
-        >
+        <button onClick={() => router.push('/ana-sayfa')} className="flex items-center gap-1.5 text-xs mb-4" style={{ color: GRI_METIN }}>
           <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -158,25 +156,13 @@ export default function YoneticiRaporPage() {
         {/* Başlık */}
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h1 className="text-xl font-semibold" style={{ color: KOYU_METIN }}>
-              {data.kullanici.ad} {data.kullanici.soyad}
-            </h1>
-            <p className="text-sm mt-0.5" style={{ color: GRI_METIN }}>
-              {data.kullanici.rol.toUpperCase()} · {data.kullanici.firma_adi}
-            </p>
+            <h1 className="text-xl font-semibold" style={{ color: KOYU_METIN }}>{data.kullanici.ad} {data.kullanici.soyad}</h1>
+            <p className="text-sm mt-0.5" style={{ color: GRI_METIN }}>{data.kullanici.rol.toUpperCase()} · {data.kullanici.firma_adi}</p>
           </div>
           <div className="flex gap-1.5">
             {periyotlar.map(p => (
-              <button
-                key={p.key}
-                onClick={() => setPeriyot(p.key)}
-                className="px-3 py-1 rounded-full text-xs border transition-colors"
-                style={{
-                  background: periyot === p.key ? BORDO : 'transparent',
-                  color: periyot === p.key ? '#fff' : GRI_METIN,
-                  borderColor: periyot === p.key ? BORDO : '#e5e7eb',
-                }}
-              >
+              <button key={p.key} onClick={() => setPeriyot(p.key)} className="px-3 py-1 rounded-full text-xs border transition-colors"
+                style={{ background: periyot === p.key ? BORDO : 'transparent', color: periyot === p.key ? '#fff' : GRI_METIN, borderColor: periyot === p.key ? BORDO : '#e5e7eb' }}>
                 {p.label}
               </button>
             ))}
@@ -191,7 +177,7 @@ export default function YoneticiRaporPage() {
             { label: 'Aktif UTT', value: `${data.sirket_ozet.aktif_utt} / ${data.sirket_ozet.toplam_utt}`, sub: `${data.sirket_ozet.hic_izlemeyen_utt} hiç izlememiş` },
             { label: 'Toplam yayın', value: data.sirket_ozet.toplam_yayin.toLocaleString('tr-TR'), sub: 'Tüm takımlar' },
           ].map(k => (
-            <div key={k.label} className="rounded-lg p-3" style={{ background: GRI_ZEMIN }}>
+            <div key={k.label} className="rounded-lg p-3 border" style={{ background: 'white', borderColor: '#e5e7eb' }}>
               <div className="text-xs mb-1" style={{ color: GRI_METIN }}>{k.label}</div>
               <div className="text-xl font-semibold" style={{ color: k.accent ? BORDO : KOYU_METIN }}>{k.value}</div>
               {k.sub && <div className="text-xs mt-0.5" style={{ color: GRI_METIN }}>{k.sub}</div>}
@@ -204,7 +190,7 @@ export default function YoneticiRaporPage() {
             { label: 'Kalan izlenme', value: data.izlenme_ozet.kalan_izlenme.toLocaleString('tr-TR') },
             { label: 'İzlenme oranı', value: `%${data.izlenme_ozet.izlenme_orani}` },
           ].map(k => (
-            <div key={k.label} className="rounded-lg p-3" style={{ background: GRI_ZEMIN }}>
+            <div key={k.label} className="rounded-lg p-3 border" style={{ background: 'white', borderColor: '#e5e7eb' }}>
               <div className="text-xs mb-1" style={{ color: GRI_METIN }}>{k.label}</div>
               <div className="text-xl font-semibold" style={{ color: k.accent ? BORDO : KOYU_METIN }}>{k.value}</div>
               {k.sub && <div className="text-xs mt-0.5" style={{ color: GRI_METIN }}>{k.sub}</div>}
@@ -267,9 +253,7 @@ export default function YoneticiRaporPage() {
             ))}
             <div className="flex justify-between items-center pt-2">
               <span className="text-sm" style={{ color: GRI_METIN }}>Ortalama talep → yayın süresi</span>
-              <span className="text-sm font-medium" style={{ color: KOYU_METIN }}>
-                {data.revizyon_oranlari.ortalama_talep_yayin_suresi} gün
-              </span>
+              <span className="text-sm font-medium" style={{ color: KOYU_METIN }}>{data.revizyon_oranlari.ortalama_talep_yayin_suresi} gün</span>
             </div>
           </div>
         </div>
@@ -283,10 +267,7 @@ export default function YoneticiRaporPage() {
             </div>
             {data.takim_siralamasi.map((t, idx) => {
               const renk = takimRengi(t.puan, data.sirket_ozet.ortalama_puan_takim);
-              const ortalamaEkle = idx > 0 &&
-                data.takim_siralamasi[idx - 1].puan >= data.sirket_ozet.ortalama_puan_takim &&
-                t.puan < data.sirket_ozet.ortalama_puan_takim;
-
+              const ortalamaEkle = idx > 0 && data.takim_siralamasi[idx - 1].puan >= data.sirket_ozet.ortalama_puan_takim && t.puan < data.sirket_ozet.ortalama_puan_takim;
               return (
                 <div key={t.takim_id}>
                   {ortalamaEkle && (
@@ -330,10 +311,7 @@ export default function YoneticiRaporPage() {
               <tbody>
                 {data.takim_siralamasi.map((t, idx) => {
                   const renk = takimRengi(t.puan, data.sirket_ozet.ortalama_puan_takim);
-                  const ortalamaEkle = idx > 0 &&
-                    data.takim_siralamasi[idx - 1].puan >= data.sirket_ozet.ortalama_puan_takim &&
-                    t.puan < data.sirket_ozet.ortalama_puan_takim;
-
+                  const ortalamaEkle = idx > 0 && data.takim_siralamasi[idx - 1].puan >= data.sirket_ozet.ortalama_puan_takim && t.puan < data.sirket_ozet.ortalama_puan_takim;
                   return (
                     <>
                       {ortalamaEkle && (
@@ -377,7 +355,7 @@ export default function YoneticiRaporPage() {
               { label: `Tamamlanan · %${data.oneri_etkinligi.tamamlanma_orani}`, value: data.oneri_etkinligi.tamamlanan, renk: '#3B6D11' },
               { label: `Bekleyen · %${100 - data.oneri_etkinligi.tamamlanma_orani}`, value: data.oneri_etkinligi.bekleyen, renk: '#854F0B' },
             ].map(k => (
-              <div key={k.label} className="text-center rounded-lg p-3" style={{ background: GRI_ZEMIN }}>
+              <div key={k.label} className="text-center rounded-lg p-3 border" style={{ background: 'white', borderColor: '#e5e7eb' }}>
                 <div className="text-2xl font-semibold mb-1" style={{ color: k.renk }}>{k.value}</div>
                 <div className="text-xs" style={{ color: k.renk }}>{k.label}</div>
               </div>
@@ -423,9 +401,7 @@ export default function YoneticiRaporPage() {
               { label: 'Öneri kaybı', value: data.kayip_ozeti.oneri_kaybi, sub: 'Şirket geneli toplam' },
             ].map(k => (
               <div key={k.label} className="border rounded-xl p-3" style={{ borderColor: '#e5e7eb' }}>
-                <div className="text-xl font-semibold mb-1" style={{ color: KIRMIZI }}>
-                  − {Math.abs(k.value).toLocaleString('tr-TR')}
-                </div>
+                <div className="text-xl font-semibold mb-1" style={{ color: KIRMIZI }}>− {Math.abs(k.value).toLocaleString('tr-TR')}</div>
                 <div className="text-xs mb-1" style={{ color: GRI_METIN }}>{k.label}</div>
                 <div className="text-xs" style={{ color: GRI_METIN }}>{k.sub}</div>
               </div>

@@ -19,6 +19,8 @@ interface Bekleyen {
   soru_puan_map: Record<number, { soru_seti_puan_id: string; soru_puani: number }>;
   urun_adi: string;
   teknik_adi: string;
+  soru_seti_buyuklugu: number | null;
+  video_basi_soru_sayisi: number | null;
   onay_tarihi: string;
 }
 
@@ -246,7 +248,6 @@ export default function YayinYonetimiPage() {
     );
   }
 
-  // Toggle component
   const Toggle = ({ acik, onClick }: { acik: boolean; onClick: () => void }) => (
     <div onClick={onClick} className="relative cursor-pointer flex-shrink-0 rounded-full transition-colors duration-200"
       style={{ width: 32, height: 18, background: acik ? "#56aeff" : "#e5e7eb" }}>
@@ -262,7 +263,6 @@ export default function YayinYonetimiPage() {
     </span>
   ) : null;
 
-  // Thumbnail bileşeni
   const VideoThumb = ({ video_url, thumbnail_url }: { video_url: string | null; thumbnail_url: string | null }) => (
     <div onClick={() => video_url && setAcikVideo(video_url)}
       className="relative flex items-center justify-center rounded-lg overflow-hidden flex-shrink-0"
@@ -279,7 +279,6 @@ export default function YayinYonetimiPage() {
     </div>
   );
 
-  // Soru listesi
   const SoruListesi = ({ sorular, soru_seti_durum_id, bekleyen }: { sorular: any[]; soru_seti_durum_id: string; bekleyen?: Bekleyen | false }) => (
     <div className="border-t border-gray-100 px-4 py-3">
       {bekleyen && (
@@ -330,7 +329,6 @@ export default function YayinYonetimiPage() {
     </div>
   );
 
-  // Bekleyen satır
   const BekleyenSatir = ({ b }: { b: Bekleyen }) => {
     const acik = bekleyenIleriSarma[b.soru_seti_durum_id] ?? false;
     const hazir = tumPuanlarAtandiMi(b);
@@ -338,16 +336,29 @@ export default function YayinYonetimiPage() {
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-2">
         <div className="flex flex-col md:grid md:items-center md:gap-3 p-4 md:p-3.5"
           style={{ gridTemplateColumns: "1fr 120px 140px auto" }}>
-          {/* Ürün bilgisi */}
           <div className="flex flex-col gap-1 mb-3 md:mb-0 min-w-0">
             <span className="text-sm font-semibold text-gray-900 truncate">{b.urun_adi}</span>
             <span className="text-xs text-gray-500 line-clamp-2">{b.teknik_adi}</span>
+            {(b.soru_seti_buyuklugu || b.video_basi_soru_sayisi) && (
+              <div className="flex gap-2 mt-0.5">
+                {b.soru_seti_buyuklugu && (
+                  <span className="text-xs px-2 py-0.5 rounded-full"
+                    style={{ background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe" }}>
+                    {b.soru_seti_buyuklugu} soru
+                  </span>
+                )}
+                {b.video_basi_soru_sayisi && (
+                  <span className="text-xs px-2 py-0.5 rounded-full"
+                    style={{ background: "#f0fdf4", color: "#15803d", border: "0.5px solid #bbf7d0" }}>
+                    Video başı {b.video_basi_soru_sayisi}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
-          {/* Thumbnail */}
           <div className="mb-3 md:mb-0 flex justify-start md:justify-center">
             <VideoThumb video_url={b.video_url} thumbnail_url={b.thumbnail_url} />
           </div>
-          {/* Puan ayarları */}
           <div className="flex flex-col gap-2 mb-3 md:mb-0">
             <div>
               <span className="text-xs text-gray-400 block mb-1">Video puanı</span>
@@ -374,7 +385,6 @@ export default function YayinYonetimiPage() {
               <Toggle acik={acik} onClick={() => handleBekleyenIleriSarmaToggle(b.soru_seti_durum_id, b.urun_adi)} />
             </div>
           </div>
-          {/* Butonlar */}
           <div className="flex items-center gap-2 justify-end">
             {b.sorular?.length > 0 && (
               <button onClick={() => setAcikAkordiyon(acikAkordiyon === b.soru_seti_durum_id ? null : b.soru_seti_durum_id)}
@@ -401,7 +411,6 @@ export default function YayinYonetimiPage() {
     );
   };
 
-  // Yayın satırı
   const YayinSatir = ({ y }: { y: Yayin }) => (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-2">
       <div className="flex flex-col md:grid md:items-center md:gap-3 p-4 md:p-3.5"
@@ -458,7 +467,6 @@ export default function YayinYonetimiPage() {
 
       <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6">
 
-        {/* Sekme bar */}
         <div className="flex gap-1 bg-white border border-gray-200 rounded-xl p-1 w-fit mb-5 overflow-x-auto">
           {(["bekleyen", "yayinda", "durdurulan"] as const).map((sekme) => (
             <button key={sekme} onClick={() => setAktifSekme(sekme)}
@@ -469,21 +477,18 @@ export default function YayinYonetimiPage() {
           ))}
         </div>
 
-        {/* Bekleyen */}
         {aktifSekme === "bekleyen" && (
           bekleyenler.length === 0
             ? <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">Bekleyen video yok.</div>
             : bekleyenler.map(b => <BekleyenSatir key={b.soru_seti_durum_id} b={b} />)
         )}
 
-        {/* Yayında */}
         {aktifSekme === "yayinda" && (
           yayindakiler.length === 0
             ? <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">Yayında video yok.</div>
             : yayindakiler.map(y => <YayinSatir key={y.yayin_id} y={y} />)
         )}
 
-        {/* Durdurulan */}
         {aktifSekme === "durdurulan" && (
           durdurulular.length === 0
             ? <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">Durdurulan video yok.</div>
@@ -491,7 +496,6 @@ export default function YayinYonetimiPage() {
         )}
       </div>
 
-      {/* Video modal */}
       {acikVideo && (
         <div onClick={() => setAcikVideo(null)} className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
           <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-xl overflow-hidden w-11/12 md:w-4/5 max-w-3xl">
@@ -504,7 +508,6 @@ export default function YayinYonetimiPage() {
         </div>
       )}
 
-      {/* Yayın onay modal */}
       {onayModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: "rgba(0,0,0,0.4)" }}>
           <div className="bg-white rounded-xl border border-gray-200 p-6 w-11/12 max-w-sm">
@@ -524,7 +527,6 @@ export default function YayinYonetimiPage() {
         </div>
       )}
 
-      {/* İleri sarma onay modal */}
       {ileriSarmaOnayModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: "rgba(0,0,0,0.4)" }}>
           <div className="bg-white rounded-xl border border-gray-200 p-6 w-11/12 max-w-md">

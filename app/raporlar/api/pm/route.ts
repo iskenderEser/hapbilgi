@@ -1,32 +1,12 @@
-import { createClient } from '@/lib/supabase/server';
+// app/raporlar/api/pm/route.ts
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { hataYaniti, yetkiHatasi } from '@/lib/utils/hataIsle';
-
-function tarihAraligi(periyot: string): { baslangic: string; bitis: string } {
-  const simdi = new Date();
-  const bitis = simdi.toISOString();
-
-  if (periyot === 'bu_hafta') {
-    const gun = simdi.getDay();
-    const fark = gun === 0 ? 6 : gun - 1;
-    const pazartesi = new Date(simdi);
-    pazartesi.setDate(simdi.getDate() - fark);
-    pazartesi.setHours(0, 0, 0, 0);
-    return { baslangic: pazartesi.toISOString(), bitis };
-  }
-
-  if (periyot === 'gecen_ay') {
-    const baslangic = new Date(simdi.getFullYear(), simdi.getMonth() - 1, 1);
-    const bitis2 = new Date(simdi.getFullYear(), simdi.getMonth(), 0, 23, 59, 59);
-    return { baslangic: baslangic.toISOString(), bitis: bitis2.toISOString() };
-  }
-
-  const baslangic = new Date(simdi.getFullYear(), simdi.getMonth(), 1);
-  return { baslangic: baslangic.toISOString(), bitis };
-}
+import { tarihAraligi } from '@/lib/utils/tarihAraligi';
 
 export async function GET(request: Request) {
   const supabase = await createClient();
+  const adminSupabase = createAdminClient();
   const { searchParams } = new URL(request.url);
   const periyot = searchParams.get('periyot') || 'bu_ay';
   const { baslangic, bitis } = tarihAraligi(periyot);
@@ -34,7 +14,7 @@ export async function GET(request: Request) {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return yetkiHatasi('Oturum açılmamış');
 
-  const { data: kullanici, error: kullaniciError } = await supabase
+  const { data: kullanici, error: kullaniciError } = await adminSupabase
     .from('kullanicilar')
     .select('kullanici_id, ad, soyad, rol, takim_id, firma_id')
     .eq('eposta', user.email)
@@ -49,14 +29,14 @@ export async function GET(request: Request) {
   }
 
   // 1. Takım adı
-  const { data: takim } = await supabase
+  const { data: takim } = await adminSupabase
     .from('takimlar')
     .select('takim_adi')
     .eq('takim_id', kullanici.takim_id)
     .maybeSingle();
 
-  // 2. Üretim raporu (periyot bağımsız — tüm zamanlar)
-  const { data: uretimRapor } = await supabase
+  // 2. Üretim raporu — periyot bağımsız, tüm zamanlar
+  const { data: uretimRapor } = await adminSupabase
     .from('v_rapor_pm_uretim')
     .select('toplam_talep, yayindaki_talep, durdurulan_talep, senaryo_bekleyen, video_bekleyen, soru_seti_bekleyen, senaryo_revizyon, video_revizyon, soru_seti_revizyon, ortalama_talep_yayin_suresi')
     .eq('pm_id', kullanici.kullanici_id)
@@ -67,15 +47,20 @@ export async function GET(request: Request) {
   const durdurulan = uretimRapor?.durdurulan_talep || 0;
   const devamEden = Math.max(0, toplamTalep - yayinda - durdurulan);
 
-  // 3. Takımdaki UTT'lerin puan ve izleme verileri
-  const { data: uttListesi } = await supabase
-    .from('v_rapor_utt')
-    .select('kullanici_id, ad, soyad, tamamlanan_izleme, toplam_puan, ileri_sarma_kaybi, yanlis_cevap_kaybi, oneri_kaybi')
-    .eq('takim_id', kullanici.takim_id)
-    .order('toplam_puan', { ascending: false });
+  // 3. Takımdaki UTT'lerin puan ve izleme verileri — periyot filtreli RPC
+  const { data: uttRpcData, error: uttRpcError } = await adminSupabase.rpc('get_analiz_utt', {
+    p_baslangic: baslangic,
+    p_bitis: bitis,
+    p_bolge_id: null,
+    p_kullanici_id: null,
+  });
 
-  // 4. Yayındaki video sayısı
-  const { data: yayinlar } = await supabase
+  if (uttRpcError) return hataYaniti('UTT verisi çekilemedi.', 'get_analiz_utt RPC', uttRpcError);
+
+  const uttListesi = (uttRpcData ?? []).filter((u: any) => u.takim_id === kullanici.takim_id);
+
+  // 4. Yayındaki video sayısı — periyot bağımsız, anlık durum
+  const { data: yayinlar } = await adminSupabase
     .from('yayin_yonetimi')
     .select('yayin_id')
     .eq('durum', 'yayinda');
@@ -84,41 +69,41 @@ export async function GET(request: Request) {
   const uttSayisi = uttListesi?.length || 0;
 
   // 5. UTT izleme durumu
-  const uttIzlemeDurumu = (uttListesi || []).map(u => ({
+  const uttIzlemeDurumu = (uttListesi || []).map((u: any) => ({
     kullanici_id: u.kullanici_id,
     ad: u.ad,
     soyad: u.soyad,
-    izlenen: u.tamamlanan_izleme || 0,
+    izlenen: u.izlenen_video_sayisi || 0,
     toplam: toplamYayin,
-    kalan: Math.max(0, toplamYayin - (u.tamamlanan_izleme || 0)),
-    puan: u.toplam_puan || 0,
-    durum: (u.tamamlanan_izleme || 0) === 0
+    kalan: Math.max(0, toplamYayin - (u.izlenen_video_sayisi || 0)),
+    puan: (u.kazanilan_izleme_puani || 0) + (u.kazanilan_cevaplama_puani || 0) + (u.kazanilan_oneri_puani || 0) + (u.kazanilan_extra_puani || 0),
+    durum: (u.izlenen_video_sayisi || 0) === 0
       ? 'Hiç izlememiş'
-      : (u.tamamlanan_izleme || 0) >= toplamYayin
+      : (u.izlenen_video_sayisi || 0) >= toplamYayin
         ? 'Tamamlandı'
         : 'Devam Ediyor',
   }));
 
-  const hicIzlemeyenUtt = uttIzlemeDurumu.filter(u => u.izlenen === 0).length;
+  const hicIzlemeyenUtt = uttIzlemeDurumu.filter((u: any) => u.izlenen === 0).length;
 
   // 6. Takım puan istatistikleri
-  const takimToplamPuan = (uttListesi || []).reduce((s, u) => s + (u.toplam_puan || 0), 0);
+  const takimToplamPuan = uttIzlemeDurumu.reduce((s: number, u: any) => s + (u.puan || 0), 0);
   const ortalamaPuan = uttSayisi > 0 ? Math.round(takimToplamPuan / uttSayisi) : 0;
-  const enYuksekPuan = uttSayisi > 0 ? Math.max(...(uttListesi || []).map(u => u.toplam_puan || 0)) : 0;
+  const enYuksekPuan = uttSayisi > 0 ? Math.max(...uttIzlemeDurumu.map((u: any) => u.puan || 0)) : 0;
 
   // 7. İzlenme istatistikleri
-  const toplamIzlenme = (uttListesi || []).reduce((s, u) => s + (u.tamamlanan_izleme || 0), 0);
+  const toplamIzlenme = uttIzlemeDurumu.reduce((s: number, u: any) => s + (u.izlenen || 0), 0);
   const toplamIzlenmePotansiyeli = toplamYayin * uttSayisi;
   const izlenmeOrani = toplamIzlenmePotansiyeli > 0 ? Math.round((toplamIzlenme / toplamIzlenmePotansiyeli) * 100) : 0;
   const kalanIzlenme = Math.max(0, toplamIzlenmePotansiyeli - toplamIzlenme);
 
   // 8. Kayıp özeti
-  const toplamIleriSarmaKaybi = (uttListesi || []).reduce((s, u) => s + (u.ileri_sarma_kaybi || 0), 0);
-  const toplamYanlisCevapKaybi = (uttListesi || []).reduce((s, u) => s + (u.yanlis_cevap_kaybi || 0), 0);
-  const toplamOneriKaybi = (uttListesi || []).reduce((s, u) => s + (u.oneri_kaybi || 0), 0);
+  const toplamIleriSarmaKaybi = uttListesi.reduce((s: number, u: any) => s + (u.kaybedilen_ileri_sarma_puani || 0), 0);
+  const toplamYanlisCevapKaybi = uttListesi.reduce((s: number, u: any) => s + (u.kaybedilen_yanlis_cevap_puani || 0), 0);
+  const toplamOneriKaybi = uttListesi.reduce((s: number, u: any) => s + Math.abs(u.kazanilan_oneri_puani < 0 ? u.kazanilan_oneri_puani : 0), 0);
 
-  // 9. Ürün & teknik dağılımı (v_rapor_urun_izlenme — takım geneli)
-  const { data: urunIzleme } = await supabase
+  // 9. Ürün & teknik dağılımı — periyot filtreli
+  const { data: urunIzleme } = await adminSupabase
     .from('v_rapor_urun_izlenme')
     .select('urun_adi, teknik_adi, izlenme_sayisi')
     .eq('utt_takim_id', kullanici.takim_id);
@@ -131,24 +116,20 @@ export async function GET(request: Request) {
     if (item.teknik_adi) teknikSayilari[item.teknik_adi] = (teknikSayilari[item.teknik_adi] || 0) + (item.izlenme_sayisi || 1);
   }
 
-
-  // Beğeni/favori listesi
-  const { data: begeniRaw } = await supabase
+  // 10. Beğeni/favori listesi — periyot bağımsız
+  const { data: begeniRaw } = await adminSupabase
     .from('v_rapor_begeni_favori')
     .select('yayin_id, urun_adi, teknik_adi, begeni_sayisi')
     .eq('takim_id', kullanici.takim_id)
     .order('begeni_sayisi', { ascending: false })
     .limit(5);
 
-  const { data: favoriRaw } = await supabase
+  const { data: favoriRaw } = await adminSupabase
     .from('v_rapor_begeni_favori')
     .select('yayin_id, urun_adi, teknik_adi, favori_sayisi')
     .eq('takim_id', kullanici.takim_id)
     .order('favori_sayisi', { ascending: false })
     .limit(5);
-
-  const begeniListesi = begeniRaw ?? [];
-  const favoriListesi = favoriRaw ?? [];
 
   return NextResponse.json({
     success: true,
@@ -204,8 +185,8 @@ export async function GET(request: Request) {
         yanlis_cevap_kaybi: toplamYanlisCevapKaybi,
         oneri_kaybi: toplamOneriKaybi,
       },
-      begeni_listesi: begeniListesi,
-      favori_listesi: favoriListesi,
+      begeni_listesi: begeniRaw ?? [],
+      favori_listesi: favoriRaw ?? [],
     },
   });
 }

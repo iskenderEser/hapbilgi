@@ -1,9 +1,7 @@
 'use client';
-
 import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -33,37 +31,18 @@ interface OrtalamaBolge {
 
 interface RaporData {
   kullanici: { ad: string; soyad: string; rol: string; takim_adi: string; firma_adi: string };
-  katki: {
-    sirket_katki_yuzdesi: number;
-    takim_toplam_puan: number;
-    sirket_toplam_puan: number;
-  };
+  katki: { sirket_katki_yuzdesi: number; takim_toplam_puan: number; sirket_toplam_puan: number };
   takim_ozet: {
-    toplam_bolge: number;
-    toplam_utt: number;
-    aktif_utt: number;
-    hic_izlemeyen_utt: number;
-    toplam_puan: number;
-    ortalama_puan_bolge: number;
-    en_yuksek_puan: number;
-    izlenme_orani: number;
-    toplam_izlenme: number;
-    kalan_izlenme: number;
-    toplam_yayin: number;
+    toplam_bolge: number; toplam_utt: number; aktif_utt: number; hic_izlemeyen_utt: number;
+    toplam_puan: number; ortalama_puan_bolge: number; en_yuksek_puan: number;
+    izlenme_orani: number; toplam_izlenme: number; kalan_izlenme: number; toplam_yayin: number;
   };
   lig: {
-    takim_sirasi: number | null;
-    toplam_takim_sayisi: number;
-    bir_ust_puan_farki: number | null;
-    takipci_farki: number | null;
+    takim_sirasi: number | null; toplam_takim_sayisi: number;
+    bir_ust_puan_farki: number | null; takipci_farki: number | null;
     firma_siralamasi: Array<{ sira: number; takim_adi: string; puan: number; kendisi_mi: boolean }>;
   };
-  oneri_etkinligi: {
-    gonderilen: number;
-    tamamlanan: number;
-    tamamlanma_orani: number;
-    bekleyen: number;
-  };
+  oneri_etkinligi: { gonderilen: number; tamamlanan: number; tamamlanma_orani: number; bekleyen: number };
   bolge_listesi: BolgeItem[];
   ortalama_bolge: OrtalamaBolge;
   urun_bazli_dagilim: Array<{ urun_adi: string; izlenme_sayisi: number }>;
@@ -72,7 +51,7 @@ interface RaporData {
   favori_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; favori_sayisi: number }>;
 }
 
-type Periyot = 'bu_ay' | 'gecen_ay' | 'bu_hafta';
+type Periyot = 'bu_gun' | 'bu_hafta' | 'bu_ay' | 'bu_donem' | 'bu_yil';
 
 const BORDO = '#bc2d0d';
 const MAVI = '#56aeff';
@@ -145,9 +124,11 @@ export default function TmRaporPage() {
   const maxBolgePuan = Math.max(...data.bolge_listesi.map(b => b.puan), 1);
 
   const periyotlar: { key: Periyot; label: string }[] = [
-    { key: 'bu_ay', label: 'Bu ay' },
-    { key: 'gecen_ay', label: 'Geçen ay' },
-    { key: 'bu_hafta', label: 'Bu hafta' },
+    { key: 'bu_gun', label: 'Günlük' },
+    { key: 'bu_hafta', label: 'Haftalık' },
+    { key: 'bu_ay', label: 'Aylık' },
+    { key: 'bu_donem', label: 'Dönemlik' },
+    { key: 'bu_yil', label: 'Yıllık' },
   ];
 
   return (
@@ -155,11 +136,7 @@ export default function TmRaporPage() {
       <Navbar email={user?.email ?? ''} rol={rol} adSoyad={adSoyad} onCikis={handleCikis} />
       <div className="max-w-4xl mx-auto px-3 py-3 md:px-4 md:py-4">
 
-        <button
-          onClick={() => router.push('/ana-sayfa')}
-          className="flex items-center gap-1.5 text-xs mb-4"
-          style={{ color: GRI_METIN }}
-        >
+        <button onClick={() => router.push('/ana-sayfa')} className="flex items-center gap-1.5 text-xs mb-4" style={{ color: GRI_METIN }}>
           <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -169,25 +146,13 @@ export default function TmRaporPage() {
         {/* Başlık */}
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h1 className="text-xl font-semibold" style={{ color: KOYU_METIN }}>
-              {data.kullanici.ad} {data.kullanici.soyad}
-            </h1>
-            <p className="text-sm mt-0.5" style={{ color: GRI_METIN }}>
-              TM · {data.kullanici.takim_adi} · {data.kullanici.firma_adi}
-            </p>
+            <h1 className="text-xl font-semibold" style={{ color: KOYU_METIN }}>{data.kullanici.ad} {data.kullanici.soyad}</h1>
+            <p className="text-sm mt-0.5" style={{ color: GRI_METIN }}>TM · {data.kullanici.takim_adi} · {data.kullanici.firma_adi}</p>
           </div>
           <div className="flex gap-1.5">
             {periyotlar.map(p => (
-              <button
-                key={p.key}
-                onClick={() => setPeriyot(p.key)}
-                className="px-3 py-1 rounded-full text-xs border transition-colors"
-                style={{
-                  background: periyot === p.key ? BORDO : 'transparent',
-                  color: periyot === p.key ? '#fff' : GRI_METIN,
-                  borderColor: periyot === p.key ? BORDO : '#e5e7eb',
-                }}
-              >
+              <button key={p.key} onClick={() => setPeriyot(p.key)} className="px-3 py-1 rounded-full text-xs border transition-colors"
+                style={{ background: periyot === p.key ? BORDO : 'transparent', color: periyot === p.key ? '#fff' : GRI_METIN, borderColor: periyot === p.key ? BORDO : '#e5e7eb' }}>
                 {p.label}
               </button>
             ))}
@@ -199,13 +164,9 @@ export default function TmRaporPage() {
           <div className="text-xs mb-2" style={{ color: GRI_METIN }}>Şirkete katkı</div>
           <div className="text-2xl font-semibold mb-2" style={{ color: BORDO }}>%{data.katki.sirket_katki_yuzdesi}</div>
           <div className="h-6 rounded-md relative overflow-hidden" style={{ background: GRI_ZEMIN }}>
-            <div
-              className="absolute left-0 top-0 h-full rounded-md flex items-center justify-end pr-2"
-              style={{ width: `${Math.min(data.katki.sirket_katki_yuzdesi, 100)}%`, background: BORDO }}
-            >
-              {data.katki.sirket_katki_yuzdesi >= 10 && (
-                <span className="text-white text-xs font-medium">%{data.katki.sirket_katki_yuzdesi}</span>
-              )}
+            <div className="absolute left-0 top-0 h-full rounded-md flex items-center justify-end pr-2"
+              style={{ width: `${Math.min(data.katki.sirket_katki_yuzdesi, 100)}%`, background: BORDO }}>
+              {data.katki.sirket_katki_yuzdesi >= 10 && <span className="text-white text-xs font-medium">%{data.katki.sirket_katki_yuzdesi}</span>}
             </div>
           </div>
           <div className="flex justify-between text-xs mt-1.5" style={{ color: GRI_METIN }}>
@@ -221,7 +182,7 @@ export default function TmRaporPage() {
             { label: 'Ortalama puan / bölge', value: data.takim_ozet.ortalama_puan_bolge.toLocaleString('tr-TR'), sub: `En yüksek: ${data.takim_ozet.en_yuksek_puan.toLocaleString('tr-TR')}` },
             { label: 'İzlenme oranı', value: `%${data.takim_ozet.izlenme_orani}`, sub: `${data.takim_ozet.toplam_izlenme.toLocaleString('tr-TR')} izlendi · ${data.takim_ozet.kalan_izlenme.toLocaleString('tr-TR')} kaldı` },
           ].map(k => (
-            <div key={k.label} className="rounded-lg p-3" style={{ background: GRI_ZEMIN }}>
+            <div key={k.label} className="rounded-lg p-3 border" style={{ background: 'white', borderColor: '#e5e7eb' }}>
               <div className="text-xs mb-1" style={{ color: GRI_METIN }}>{k.label}</div>
               <div className="text-xl font-semibold" style={{ color: k.accent ? BORDO : KOYU_METIN }}>{k.value}</div>
               {k.sub && <div className="text-xs mt-0.5" style={{ color: GRI_METIN }}>{k.sub}</div>}
@@ -234,7 +195,7 @@ export default function TmRaporPage() {
             { label: 'Takım lig sırası', value: `${data.lig.takim_sirasi || '-'} / ${data.lig.toplam_takim_sayisi}`, accent: true, sub: 'Şirket içinde' },
             { label: 'Toplam yayın', value: data.takim_ozet.toplam_yayin.toLocaleString('tr-TR') },
           ].map(k => (
-            <div key={k.label} className="rounded-lg p-3" style={{ background: GRI_ZEMIN }}>
+            <div key={k.label} className="rounded-lg p-3 border" style={{ background: 'white', borderColor: '#e5e7eb' }}>
               <div className="text-xs mb-1" style={{ color: GRI_METIN }}>{k.label}</div>
               <div className="text-xl font-semibold" style={{ color: (k as any).accent ? BORDO : KOYU_METIN }}>{k.value}</div>
               {k.sub && <div className="text-xs mt-0.5" style={{ color: GRI_METIN }}>{k.sub}</div>}
@@ -251,7 +212,7 @@ export default function TmRaporPage() {
               { label: `Tamamlanan · %${data.oneri_etkinligi.tamamlanma_orani}`, value: data.oneri_etkinligi.tamamlanan, renk: '#3B6D11' },
               { label: `Bekleyen · %${100 - data.oneri_etkinligi.tamamlanma_orani}`, value: data.oneri_etkinligi.bekleyen, renk: '#854F0B' },
             ].map(k => (
-              <div key={k.label} className="text-center rounded-lg p-3" style={{ background: GRI_ZEMIN }}>
+              <div key={k.label} className="text-center rounded-lg p-3 border" style={{ background: 'white', borderColor: '#e5e7eb' }}>
                 <div className="text-2xl font-semibold mb-1" style={{ color: k.renk }}>{k.value}</div>
                 <div className="text-xs" style={{ color: k.renk }}>{k.label}</div>
               </div>
@@ -275,14 +236,8 @@ export default function TmRaporPage() {
               ))}
             </div>
             {data.lig.firma_siralamasi.map(t => (
-              <div
-                key={t.sira}
-                className="flex items-center justify-between py-2"
-                style={{
-                  borderBottom: t.kendisi_mi ? 'none' : '0.5px solid #e5e7eb',
-                  ...(t.kendisi_mi ? { background: '#FAECE7', borderRadius: 6, padding: '7px 10px', margin: '3px -4px' } : {}),
-                }}
-              >
+              <div key={t.sira} className="flex items-center justify-between py-2"
+                style={{ borderBottom: t.kendisi_mi ? 'none' : '0.5px solid #e5e7eb', ...(t.kendisi_mi ? { background: '#FAECE7', borderRadius: 6, padding: '7px 10px', margin: '3px -4px' } : {}) }}>
                 <div className="flex items-center gap-3">
                   <span className="w-5 text-center text-sm font-medium" style={{ color: t.sira <= 3 ? BORDO : GRI_METIN }}>{t.sira}</span>
                   <span className="text-sm" style={{ color: KOYU_METIN }}>{t.takim_adi}{t.kendisi_mi && ' (sen)'}</span>
@@ -302,10 +257,7 @@ export default function TmRaporPage() {
             </div>
             {data.bolge_listesi.map((b, idx) => {
               const renk = bolgeRengi(b.puan, data.takim_ozet.ortalama_puan_bolge);
-              const ortalamaEkle = idx > 0 &&
-                data.bolge_listesi[idx - 1].puan >= data.takim_ozet.ortalama_puan_bolge &&
-                b.puan < data.takim_ozet.ortalama_puan_bolge;
-
+              const ortalamaEkle = idx > 0 && data.bolge_listesi[idx - 1].puan >= data.takim_ozet.ortalama_puan_bolge && b.puan < data.takim_ozet.ortalama_puan_bolge;
               return (
                 <div key={b.bolge_id}>
                   {ortalamaEkle && (
@@ -349,10 +301,7 @@ export default function TmRaporPage() {
               <tbody>
                 {data.bolge_listesi.map((b, idx) => {
                   const renk = bolgeRengi(b.puan, data.takim_ozet.ortalama_puan_bolge);
-                  const ortalamaEkle = idx > 0 &&
-                    data.bolge_listesi[idx - 1].puan >= data.takim_ozet.ortalama_puan_bolge &&
-                    b.puan < data.takim_ozet.ortalama_puan_bolge;
-
+                  const ortalamaEkle = idx > 0 && data.bolge_listesi[idx - 1].puan >= data.takim_ozet.ortalama_puan_bolge && b.puan < data.takim_ozet.ortalama_puan_bolge;
                   return (
                     <>
                       {ortalamaEkle && (
@@ -379,13 +328,9 @@ export default function TmRaporPage() {
                         </td>
                         <td className="px-2 py-2">
                           {b.bekleyen_oneri > 0 ? (
-                            <span className="text-xs px-2 py-1 rounded-full font-medium" style={{ background: '#FAEEDA', color: '#854F0B' }}>
-                              {b.bekleyen_oneri} bekliyor
-                            </span>
+                            <span className="text-xs px-2 py-1 rounded-full font-medium" style={{ background: '#FAEEDA', color: '#854F0B' }}>{b.bekleyen_oneri} bekliyor</span>
                           ) : (
-                            <span className="text-xs px-2 py-1 rounded-full font-medium" style={{ background: '#EAF3DE', color: '#3B6D11' }}>
-                              Tamamlandı
-                            </span>
+                            <span className="text-xs px-2 py-1 rounded-full font-medium" style={{ background: '#EAF3DE', color: '#3B6D11' }}>Tamamlandı</span>
                           )}
                         </td>
                       </tr>

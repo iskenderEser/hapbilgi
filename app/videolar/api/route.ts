@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
+import { PM_ROLLERI } from "@/lib/utils/roller";
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    if (!["pm", "jr_pm", "kd_pm", "iu"].includes(rol)) return rolHatasi("Sadece PM ve IU videolara erişebilir.");
+    if (![...PM_ROLLERI, "iu"].includes(rol)) return rolHatasi("Sadece yetkili roller ve IU videolara erişebilir.");
 
     const { searchParams } = new URL(request.url);
     const senaryo_durum_id = searchParams.get("senaryo_durum_id");
@@ -24,8 +25,7 @@ export async function GET(request: NextRequest) {
 
     if (senaryo_durum_id) {
       query = query.eq("senaryo_durum_id", senaryo_durum_id);
-    } else if (["pm", "jr_pm", "kd_pm"].includes(rol)) {
-      // PM kendi taleplerinin zincirini takip eder
+    } else if (PM_ROLLERI.includes(rol)) {
       const { data: talepler, error: talepError } = await adminSupabase
         .from("talepler")
         .select("talep_id")
@@ -87,7 +87,6 @@ export async function PUT(request: NextRequest) {
     if (!video_id) return validasyonHatasi("video_id zorunludur.", ["video_id"]);
     if (!video_url || video_url.trim() === "") return validasyonHatasi("video_url zorunludur.", ["video_url"]);
 
-    // Video var mı kontrol et
     const { data: mevcutVideo, error: videoGetError } = await adminSupabase
       .from("videolar")
       .select("video_id")

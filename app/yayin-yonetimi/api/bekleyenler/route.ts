@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
+import { PM_ROLLERI } from "@/lib/utils/roller";
 
 export async function GET() {
   try {
@@ -12,7 +13,7 @@ export async function GET() {
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    if (!["pm", "jr_pm", "kd_pm"].includes(rol)) return rolHatasi("Sadece PM bekleyen videoları görebilir.");
+    if (!PM_ROLLERI.includes(rol)) return rolHatasi("Sadece yetkili roller bekleyen videoları görebilir.");
 
     const { data: yayinlar, error: yayinError } = await adminSupabase
       .from("yayin_yonetimi")
@@ -49,7 +50,6 @@ export async function GET() {
           return null;
         }
 
-        // Video puanı
         const { data: videoPuan, error: vPuanError } = await adminSupabase
           .from("video_puanlari")
           .select("video_puan_id, video_puani")
@@ -60,7 +60,6 @@ export async function GET() {
           console.error("[UYARI] Video puanı çekilemedi:", { video_durum_id: soruSeti.video_durum_id, hata: vPuanError?.message });
         }
 
-        // Soru bazlı puanları çek
         const { data: soruPuanlari, error: sPuanError } = await adminSupabase
           .from("soru_seti_puanlari")
           .select("soru_seti_puan_id, soru_index, soru_puani")
@@ -76,11 +75,12 @@ export async function GET() {
           soruPuanMap[sp.soru_index] = { soru_seti_puan_id: sp.soru_seti_puan_id, soru_puani: sp.soru_puani };
         }
 
-        // Video zinciri
         let urun_adi = "-";
         let teknik_adi = "-";
         let video_url = null;
         let thumbnail_url = null;
+        let soru_seti_buyuklugu: number | null = null;
+        let video_basi_soru_sayisi: number | null = null;
 
         const { data: videoDurum, error: vdError } = await adminSupabase
           .from("video_durumu")
@@ -119,12 +119,14 @@ export async function GET() {
               if (senaryo?.talep_id) {
                 const { data: talep } = await adminSupabase
                   .from("talepler")
-                  .select(`urunler(urun_adi), teknikler(teknik_adi)`)
+                  .select(`urunler(urun_adi), teknikler(teknik_adi), soru_seti_buyuklugu, video_basi_soru_sayisi`)
                   .eq("talep_id", senaryo.talep_id)
                   .single();
 
                 urun_adi = (talep as any)?.urunler?.urun_adi ?? "-";
                 teknik_adi = (talep as any)?.teknikler?.teknik_adi ?? "-";
+                soru_seti_buyuklugu = (talep as any)?.soru_seti_buyuklugu ?? null;
+                video_basi_soru_sayisi = (talep as any)?.video_basi_soru_sayisi ?? null;
               }
             }
           }
@@ -142,6 +144,8 @@ export async function GET() {
           soru_puan_map: soruPuanMap,
           urun_adi,
           teknik_adi,
+          soru_seti_buyuklugu,
+          video_basi_soru_sayisi,
           onay_tarihi: ss.created_at,
         };
       })

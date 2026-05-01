@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
+import { PM_ROLLERI } from "@/lib/utils/roller";
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    if (!["pm", "jr_pm", "kd_pm", "iu"].includes(rol)) return rolHatasi("Sadece PM ve IU soru setlerine erişebilir.");
+    if (![...PM_ROLLERI, "iu"].includes(rol)) return rolHatasi("Sadece yetkili roller ve IU soru setlerine erişebilir.");
 
     const { searchParams } = new URL(request.url);
     const video_durum_id = searchParams.get("video_durum_id");
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     if (video_durum_id) {
       query = query.eq("video_durum_id", video_durum_id);
-    } else if (["pm", "jr_pm", "kd_pm"].includes(rol)) {
+    } else if (PM_ROLLERI.includes(rol)) {
       const { data: talepler, error: talepError } = await adminSupabase
         .from("talepler")
         .select("talep_id")
@@ -106,28 +107,74 @@ export async function PUT(request: NextRequest) {
 
     if (!soru_seti_id) return validasyonHatasi("soru_seti_id zorunludur.", ["soru_seti_id"]);
     if (!sorular || !Array.isArray(sorular)) return validasyonHatasi("sorular bir dizi olmalıdır.", ["sorular"]);
-    if (sorular.length < 15 || sorular.length > 25) {
-      return validasyonHatasi(`Soru sayısı 15-25 arasında olmalıdır. Mevcut: ${sorular.length}`, ["sorular"]);
-    }
 
-    // Her sorunun 2 seçeneği var mı kontrol et
-    for (let i = 0; i < sorular.length; i++) {
-      const soru = sorular[i];
-      if (!soru.soru_metni || !soru.secenekler || soru.secenekler.length !== 2) {
-        return validasyonHatasi(`${i + 1}. sorunun metni ve tam 2 seçeneği olmalıdır.`, [`sorular[${i}]`]);
-      }
-    }
-
-    // Soru seti var mı kontrol et
+    // Soru seti kaydını bul
     const { data: mevcutSet, error: setGetError } = await adminSupabase
       .from("soru_setleri")
-      .select("soru_seti_id")
+      .select("soru_seti_id, video_durum_id")
       .eq("soru_seti_id", soru_seti_id)
       .single();
 
     const setKontrol = veriKontrol(mevcutSet, "soru_setleri tablosu SELECT — soru_seti_id kontrolü", "Soru seti bulunamadı.");
     if (!setKontrol.gecerli) return setKontrol.yanit;
     if (setGetError) return hataYaniti("Soru seti sorgulanırken hata oluştu.", "soru_setleri tablosu SELECT", setGetError, 404);
+
+    // video_durum_id üzerinden talebin soru_seti_buyuklugu değerini bul
+    const { data: videoDurum } = await adminSupabase
+      .from("video_durumu")
+      .select("video_id")
+      .eq("video_durum_id", mevcutSet.video_durum_id)
+      .single();
+
+    let soruSetiBuyuklugu = 25; // varsayılan
+
+    if (videoDurum?.video_id) {
+      const { data: video } = await adminSupabase
+        .from("videolar")
+        .select("senaryo_durum_id")
+        .eq("video_id", videoDurum.video_id)
+        .single();
+
+      if (video?.senaryo_durum_id) {
+        const { data: senaryoDurum } = await adminSupabase
+          .from("senaryo_durumu")
+          .select("senaryo_id")
+          .eq("senaryo_durum_id", video.senaryo_durum_id)
+          .single();
+
+        if (senaryoDurum?.senaryo_id) {
+          const { data: senaryo } = await adminSupabase
+            .from("senaryolar")
+            .select("talep_id")
+            .eq("senaryo_id", senaryoDurum.senaryo_id)
+            .single();
+
+          if (senaryo?.talep_id) {
+            const { data: talep } = await adminSupabase
+              .from("talepler")
+              .select("soru_seti_buyuklugu")
+              .eq("talep_id", senaryo.talep_id)
+              .single();
+
+            if (talep?.soru_seti_buyuklugu) {
+              soruSetiBuyuklugu = talep.soru_seti_buyuklugu;
+            }
+          }
+        }
+      }
+    }
+
+    // Soru sayısı kontrolü — talebin soru_seti_buyuklugu değerine göre
+    if (sorular.length !== soruSetiBuyuklugu) {
+      return validasyonHatasi(`Soru sayısı ${soruSetiBuyuklugu} olmalıdır. Mevcut: ${sorular.length}`, ["sorular"]);
+    }
+
+    for (let i = 0; i < sorular.length; i++) {
+      const soru = sorular[i];
+      if (!soru.soru_metni || !soru.secenekler || soru.secenekler.length !== 2) {
+        return validasyonHatasi(`${i + 1}. sorunun metni ve tam 2 seçeneği olmalıdır.`, [`sorular[${i}]`]);
+      }
+    }
 
     const { data: guncellenenSet, error } = await adminSupabase
       .from("soru_setleri")

@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
+import { PM_ROLLERI } from "@/lib/utils/roller";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,12 +13,10 @@ export async function POST(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    if (!["pm", "jr_pm", "kd_pm"].includes(rol)) return rolHatasi("Sadece PM soru puanı tanımlayabilir.");
+    if (!PM_ROLLERI.includes(rol)) return rolHatasi("Sadece yetkili roller soru puanı tanımlayabilir.");
 
     const body = await request.json();
     const { soru_seti_durum_id, puanlar } = body;
-
-    // puanlar: [{ soru_index: 0, soru_puani: 5 }, { soru_index: 1, soru_puani: 3 }, ...]
 
     if (!soru_seti_durum_id) return validasyonHatasi("soru_seti_durum_id zorunludur.", ["soru_seti_durum_id"]);
     if (!puanlar || !Array.isArray(puanlar) || puanlar.length === 0) {
@@ -64,13 +63,11 @@ export async function POST(request: NextRequest) {
           .from("soru_seti_puanlari")
           .update({ soru_puani: p.soru_puani })
           .eq("soru_seti_puan_id", mevcutPuan.soru_seti_puan_id);
-
         if (updateError) return hataYaniti(`soru_index ${p.soru_index} puanı güncellenemedi.`, "soru_seti_puanlari tablosu UPDATE", updateError);
       } else {
         const { error: insertError } = await adminSupabase
           .from("soru_seti_puanlari")
           .insert({ soru_seti_durum_id, soru_index: p.soru_index, soru_puani: p.soru_puani });
-
         if (insertError) return hataYaniti(`soru_index ${p.soru_index} puanı kaydedilemedi.`, "soru_seti_puanlari tablosu INSERT", insertError);
       }
     }

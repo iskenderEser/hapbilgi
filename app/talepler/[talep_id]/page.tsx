@@ -6,6 +6,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
+import { PM_ROLLERI } from "@/lib/utils/roller";
 
 interface Talep {
   talep_id: string;
@@ -17,6 +18,8 @@ interface Talep {
   dosya_urls: DosyaItem[];
   hazir_video: boolean;
   hazir_video_url: string | null;
+  hazir_soru_seti: boolean;
+  hazir_soru_seti_verisi: any[] | null;
 }
 
 interface DosyaItem {
@@ -60,6 +63,8 @@ export default function TalepDetayPage() {
   const [hazirVideoUrl, setHazirVideoUrl] = useState("");
   const [urlKaydediliyor, setUrlKaydediliyor] = useState(false);
   const [kararLoading, setKararLoading] = useState<"onayla" | "reddet" | null>(null);
+  const [soruSetiIsleLoading, setSoruSetiIsleLoading] = useState(false);
+  const [soruSetiAcik, setSoruSetiAcik] = useState(false);
   const dosyaInputRef = useRef<HTMLInputElement>(null);
   const { mesajlar, hata, basari } = useHataMesaji();
 
@@ -83,7 +88,7 @@ export default function TalepDetayPage() {
     const supabase = createClient();
     supabase
       .from("talepler")
-      .select(`talep_id, pm_id, aciklama, created_at, dosya_urls, hazir_video, hazir_video_url, urun_id, teknik_id, urunler(urun_adi), teknikler(teknik_adi)`)
+      .select(`talep_id, pm_id, aciklama, created_at, dosya_urls, hazir_video, hazir_video_url, hazir_soru_seti, hazir_soru_seti_verisi, urun_id, teknik_id, urunler(urun_adi), teknikler(teknik_adi)`)
       .eq("talep_id", talep_id)
       .single()
       .then(({ data, error }) => {
@@ -97,6 +102,8 @@ export default function TalepDetayPage() {
           urun_adi: (data as any).urunler?.urun_adi ?? "-",
           teknik_adi: (data as any).teknikler?.teknik_adi ?? "-",
           dosya_urls: data.dosya_urls ?? [],
+          hazir_soru_seti: data.hazir_soru_seti ?? false,
+          hazir_soru_seti_verisi: data.hazir_soru_seti_verisi ?? null,
         });
         setLoading(false);
       });
@@ -172,8 +179,46 @@ export default function TalepDetayPage() {
     setKararLoading(null);
   };
 
+  const handleSoruSetiIsle = async (video_durum_id: string) => {
+    if (!talep?.hazir_soru_seti_verisi?.length) return;
+    setSoruSetiIsleLoading(true);
+
+    // Önce mevcut soru setini bul
+    const supabase = createClient();
+    const { data: soruSetleri } = await supabase
+      .from("soru_setleri")
+      .select("soru_seti_id")
+      .eq("video_durum_id", video_durum_id)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    const soruSetiId = soruSetleri?.[0]?.soru_seti_id;
+    if (!soruSetiId) { hata("Soru seti kaydı bulunamadı.", "soru_setleri tablosu SELECT", undefined); setSoruSetiIsleLoading(false); return; }
+
+    // Soru setini güncelle
+    const res = await fetch("/soru-setleri/api", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ soru_seti_id: soruSetiId, sorular: talep.hazir_soru_seti_verisi }),
+    });
+    const d = await res.json();
+    if (!res.ok) { hata(d.hata ?? "Soru seti işlenemedi.", d.adim, d.detay); setSoruSetiIsleLoading(false); return; }
+
+    // Durumu güncelle
+    const res2 = await fetch("/soru-setleri/api/durum", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ soru_seti_id: soruSetiId, durum: "Inceleme Bekleniyor" }),
+    });
+    const d2 = await res2.json();
+    if (!res2.ok) { hata(d2.hata ?? "Durum güncellenemedi.", d2.adim, d2.detay); }
+    else { basari("PM'in soru seti sisteme işlendi. PM onayı bekleniyor."); }
+
+    setSoruSetiIsleLoading(false);
+  };
+
   const rolKucu = rol.toLowerCase();
-  const isPM = ["pm", "jr_pm", "kd_pm"].includes(rolKucu);
+  const isPM = PM_ROLLERI.includes(rolKucu);
   const isIU = rolKucu === "iu";
 
   if (loading) {
@@ -238,6 +283,11 @@ export default function TalepDetayPage() {
                     Hazır Video
                   </span>
                 )}
+                {talep.hazir_soru_seti && (
+                  <span className="font-bold px-2 py-0.5 rounded-full" style={{ fontSize: 9, background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe" }}>
+                    Hazır Soru Seti
+                  </span>
+                )}
               </div>
               <span className="text-xs text-gray-500">{talep.teknik_adi}</span>
             </div>
@@ -259,6 +309,52 @@ export default function TalepDetayPage() {
                   {isIU && talep.hazir_video_url && <span>Bu talep için <strong>senaryo aşaması atlanmıştır</strong>. Video URL kaydedildi, PM onayı bekleniyor.</span>}
                 </span>
               </div>
+            </div>
+          )}
+
+          {/* Hazır soru seti bilgi kutusu */}
+          {talep.hazir_soru_seti && talep.hazir_soru_seti_verisi && (
+            <div className="px-4 md:px-5 py-3 border-b border-gray-100 bg-blue-50">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" className="flex-shrink-0 mt-0.5">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  <span className="text-xs text-blue-800 leading-relaxed">
+                    {isPM && `Bu talep için hazır soru seti yüklenmiştir. ${talep.hazir_soru_seti_verisi.length} soru mevcut — IU soru seti aşamasında bu seti sisteme işleyecektir.`}
+                    {isIU && `PM bu talep için hazır soru seti yüklemiştir. ${talep.hazir_soru_seti_verisi.length} soru mevcut — soru seti aşamasında "Soru Setini Sisteme İşle" butonunu kullanabilirsiniz.`}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setSoruSetiAcik(prev => !prev)}
+                  className="flex-shrink-0 text-xs px-2.5 py-1 rounded-lg border border-blue-200 bg-white text-blue-700 cursor-pointer whitespace-nowrap"
+                  style={{ fontFamily: "'Nunito', sans-serif" }}>
+                  {soruSetiAcik ? "Gizle" : "Soruları Gör"}
+                </button>
+              </div>
+
+              {/* Soru önizleme */}
+              {soruSetiAcik && (
+                <div className="mt-3 max-h-72 overflow-auto flex flex-col gap-2">
+                  {talep.hazir_soru_seti_verisi.map((soru: any, i: number) => (
+                    <div key={i} className="px-3 py-2.5 bg-white rounded-lg border border-blue-100">
+                      <p className="text-xs text-gray-700 font-semibold m-0 mb-1.5">{i + 1}. {soru.soru_metni}</p>
+                      <div className="flex flex-col gap-1">
+                        {soru.secenekler?.map((s: any, j: number) => (
+                          <span key={j} className="text-xs px-2 py-0.5 rounded-full inline-block w-fit"
+                            style={{
+                              border: s.dogru ? "0.5px solid #56aeff" : "0.5px solid #e5e7eb",
+                              color: s.dogru ? "#56aeff" : "#737373",
+                              background: s.dogru ? "#e6f1fb" : "white",
+                            }}>
+                            {s.harf}. {s.metin}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -337,7 +433,33 @@ export default function TalepDetayPage() {
                 Senaryo Yaz
               </button>
             )}
-            {isIU && talep.hazir_video && (
+            {isIU && talep.hazir_video && talep.hazir_soru_seti && talep.hazir_soru_seti_verisi && (
+              <button
+                onClick={async () => {
+                  // video_durum_id'yi bul
+                  const supabase = createClient();
+                  const { data: videolar } = await supabase
+                    .from("videolar")
+                    .select("video_id")
+                    .eq("senaryo_durum_id", talep_id)
+                    .limit(1);
+                  if (!videolar?.[0]) { hata("Video kaydı bulunamadı.", "videolar tablosu SELECT", undefined); return; }
+                  const { data: vd } = await supabase
+                    .from("video_durumu")
+                    .select("video_durum_id")
+                    .eq("video_id", videolar[0].video_id)
+                    .order("created_at", { ascending: false })
+                    .limit(1);
+                  if (!vd?.[0]) { hata("Video durumu bulunamadı.", "video_durumu tablosu SELECT", undefined); return; }
+                  await handleSoruSetiIsle(vd[0].video_durum_id);
+                }}
+                disabled={soruSetiIsleLoading}
+                className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer"
+                style={{ background: "#56aeff", opacity: soruSetiIsleLoading ? 0.6 : 1, fontFamily: "'Nunito', sans-serif" }}>
+                {soruSetiIsleLoading ? "İşleniyor..." : "Soru Setini Sisteme İşle"}
+              </button>
+            )}
+            {isIU && talep.hazir_video && !talep.hazir_soru_seti && (
               <button disabled className="bg-gray-100 text-gray-400 border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-not-allowed"
                 style={{ fontFamily: "'Nunito', sans-serif" }}>
                 Soru Seti Yaz

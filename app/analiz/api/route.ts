@@ -2,44 +2,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { hataYaniti, yetkiHatasi, rolHatasi, validasyonHatasi, sunucuHatasi } from '@/lib/utils/hataIsle';
+import { tarihAraligi } from '@/lib/utils/tarihAraligi';
+import { aiYorumAl } from '@/lib/utils/aiIstemci';
 
 const ANALIZ_ROLLERI = ['bm', 'tm', 'pm', 'jr_pm', 'kd_pm', 'gm', 'gm_yrd', 'drk', 'paz_md', 'blm_md', 'med_md', 'grp_pm', 'sm', 'egt_md', 'egt_yrd_md', 'egt_yon', 'egt_uz'];
 
-function tarihAraligi(zaman: string): { baslangic: string; bitis: string } {
-  const simdi = new Date();
-  const bitis = simdi.toISOString();
-
-  if (zaman === 'bu_hafta') {
-    const gun = simdi.getDay();
-    const fark = gun === 0 ? 6 : gun - 1;
-    const pazartesi = new Date(simdi);
-    pazartesi.setDate(simdi.getDate() - fark);
-    pazartesi.setHours(0, 0, 0, 0);
-    return { baslangic: pazartesi.toISOString(), bitis };
-  }
-
-  if (zaman === 'bu_ay') {
-    const baslangic = new Date(simdi.getFullYear(), simdi.getMonth(), 1);
-    return { baslangic: baslangic.toISOString(), bitis };
-  }
-
-  if (zaman === 'bu_donem') {
-    const ay = simdi.getMonth();
-    const ceyrekBaslangicAy = Math.floor(ay / 3) * 3;
-    const baslangic = new Date(simdi.getFullYear(), ceyrekBaslangicAy, 1);
-    return { baslangic: baslangic.toISOString(), bitis };
-  }
-
-  if (zaman === 'bu_yil') {
-    const baslangic = new Date(simdi.getFullYear(), 0, 1);
-    return { baslangic: baslangic.toISOString(), bitis };
-  }
-
-  // bu_gun
-  const bugun = new Date(simdi);
-  bugun.setHours(0, 0, 0, 0);
-  return { baslangic: bugun.toISOString(), bitis };
-}
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function kolonAdi(degisken: string): string | null {
   const MAP: Record<string, string> = {
@@ -71,6 +39,20 @@ function kolonAdi(degisken: string): string | null {
   return MAP[degisken] ?? null;
 }
 
+function kapsamTipi(kapsam: string, rol: string): 'takim' | 'bolge' | 'utt' | 'bilinmiyor' {
+  if (kapsam === 'takim' || kapsam.startsWith('takim_')) return 'takim';
+  if (kapsam === 'bolge' || kapsam.startsWith('bolge_')) return 'bolge';
+  if (kapsam === 'utt' || kapsam.startsWith('utt_')) return 'utt';
+
+  if (UUID_REGEX.test(kapsam)) {
+    if (rol === 'bm') return 'utt';
+    if (rol === 'tm') return 'bolge';
+    return 'takim';
+  }
+
+  return 'bilinmiyor';
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -96,72 +78,118 @@ export async function POST(request: NextRequest) {
     if (!zaman) return validasyonHatasi('Zaman seçimi zorunludur.', ['zaman']);
 
     const { baslangic, bitis } = tarihAraligi(zaman);
+    const tip = kapsamTipi(kapsam, kullanici.rol);
 
-    // Kapsam kontrolü — BM sadece UTT görebilir
-    if (kullanici.rol === 'bm' && kapsam !== 'utt') {
+    if (kullanici.rol === 'bm' && tip !== 'utt') {
       return rolHatasi('BM yalnızca UTT kapsamında analiz yapabilir.');
     }
-    if (kullanici.rol === 'tm' && kapsam === 'utt') {
+    if (kullanici.rol === 'tm' && tip === 'utt') {
       return rolHatasi('TM UTT kapsamında analiz yapamaz.');
     }
 
-    // Seçilen kolonları belirle
     const kolonlar = degiskenler.map((d: string) => kolonAdi(d)).filter(Boolean);
     if (kolonlar.length === 0) return validasyonHatasi('Geçersiz değişken seçimi.', ['degiskenler']);
 
-    // View seç ve sorgu at
     let veri: any[] = [];
     let kimlikKolonu = '';
     let kimlikAdi = '';
 
-    if (kapsam === 'takim' || kapsam.startsWith('takim_')) {
+    if (tip === 'takim') {
       kimlikKolonu = 'takim_id';
       kimlikAdi = 'takim_adi';
-      let query = adminSupabase
-        .from('v_analiz_takim')
-        .select(`takim_id, takim_adi, ${kolonlar.join(', ')}`)
-        .eq('firma_id', kullanici.firma_id);
 
-      if (kapsam !== 'takim') query = query.eq('takim_id', kapsam);
-      else if (kullanici.rol === 'tm') query = query.eq('takim_id', kullanici.takim_id);
-      else if (['pm', 'jr_pm', 'kd_pm'].includes(kullanici.rol)) query = query.eq('takim_id', kullanici.takim_id);
+      const params: Record<string, any> = {
+        p_baslangic: baslangic,
+        p_bitis: bitis,
+        p_firma_id: kullanici.firma_id,
+        p_takim_id: null,
+      };
 
-      if (urun_filtre) query = query.eq('urun_id', urun_filtre);
+      if (kapsam !== 'takim') params.p_takim_id = kapsam;
+      else if (['tm', 'pm', 'jr_pm', 'kd_pm'].includes(kullanici.rol)) params.p_takim_id = kullanici.takim_id;
 
-      const { data, error } = await query;
-      if (error) return hataYaniti('Analiz verisi çekilemedi.', 'v_analiz_takim SELECT', error);
-      veri = data ?? [];
+      const { data, error } = await adminSupabase.rpc('get_analiz_takim', params);
+      if (error) return hataYaniti('Analiz verisi çekilemedi.', 'get_analiz_takim RPC', error);
 
-    } else if (kapsam === 'bolge' || kapsam.startsWith('bolge_')) {
+      veri = (data ?? []).map((row: any) => {
+        const filtered: Record<string, any> = { takim_id: row.takim_id, takim_adi: row.takim_adi };
+        kolonlar.forEach((k: string) => { filtered[k] = row[k]; });
+        return filtered;
+      });
+
+      if (veri.length === 0 && UUID_REGEX.test(kapsam) && ['pm', 'jr_pm', 'kd_pm', 'gm', 'gm_yrd', 'drk', 'paz_md', 'blm_md', 'med_md', 'grp_pm', 'sm', 'egt_md', 'egt_yrd_md', 'egt_yon', 'egt_uz'].includes(kullanici.rol)) {
+        const bolgeParams: Record<string, any> = {
+          p_baslangic: baslangic,
+          p_bitis: bitis,
+          p_firma_id: null,
+          p_takim_id: null,
+          p_bolge_id: kapsam,
+        };
+        const { data: bolgeData, error: bolgeError } = await adminSupabase.rpc('get_analiz_bolge', bolgeParams);
+        if (!bolgeError && bolgeData && bolgeData.length > 0) {
+          kimlikKolonu = 'bolge_id';
+          kimlikAdi = 'bolge_adi';
+          veri = (bolgeData ?? []).map((row: any) => {
+            const filtered: Record<string, any> = { bolge_id: row.bolge_id, bolge_adi: row.bolge_adi, takim_adi: row.takim_adi };
+            kolonlar.forEach((k: string) => { filtered[k] = row[k]; });
+            return filtered;
+          });
+        }
+      }
+
+      if (urun_filtre) veri = veri.filter((row: any) => row.urun_id === urun_filtre);
+
+    } else if (tip === 'bolge') {
       kimlikKolonu = 'bolge_id';
       kimlikAdi = 'bolge_adi';
-      let query = adminSupabase
-        .from('v_analiz_bolge')
-        .select(`bolge_id, bolge_adi, takim_adi, ${kolonlar.join(', ')}`);
 
-      if (kapsam !== 'bolge') query = query.eq('bolge_id', kapsam);
-      else if (kullanici.rol === 'tm') query = query.eq('takim_id', kullanici.takim_id);
-      else if (['pm', 'jr_pm', 'kd_pm'].includes(kullanici.rol)) query = query.eq('takim_id', kullanici.takim_id);
-      else query = query.eq('firma_id', kullanici.firma_id);
+      const params: Record<string, any> = {
+        p_baslangic: baslangic,
+        p_bitis: bitis,
+        p_firma_id: null,
+        p_takim_id: null,
+        p_bolge_id: null,
+      };
 
-      const { data, error } = await query;
-      if (error) return hataYaniti('Analiz verisi çekilemedi.', 'v_analiz_bolge SELECT', error);
-      veri = data ?? [];
+      if (kapsam !== 'bolge') params.p_bolge_id = kapsam;
+      else if (kullanici.rol === 'tm') params.p_takim_id = kullanici.takim_id;
+      else if (['pm', 'jr_pm', 'kd_pm'].includes(kullanici.rol)) params.p_takim_id = kullanici.takim_id;
+      else params.p_firma_id = kullanici.firma_id;
 
-    } else if (kapsam === 'utt' || kapsam.startsWith('utt_')) {
+      const { data, error } = await adminSupabase.rpc('get_analiz_bolge', params);
+      if (error) return hataYaniti('Analiz verisi çekilemedi.', 'get_analiz_bolge RPC', error);
+
+      veri = (data ?? []).map((row: any) => {
+        const filtered: Record<string, any> = { bolge_id: row.bolge_id, bolge_adi: row.bolge_adi, takim_adi: row.takim_adi };
+        kolonlar.forEach((k: string) => { filtered[k] = row[k]; });
+        return filtered;
+      });
+
+    } else if (tip === 'utt') {
       if (kullanici.rol !== 'bm') return rolHatasi('UTT kapsamı yalnızca BM için geçerlidir.');
       kimlikKolonu = 'kullanici_id';
       kimlikAdi = 'ad';
-      let query = adminSupabase
-        .from('v_analiz_utt')
-        .select(`kullanici_id, ad, soyad, ${kolonlar.join(', ')}`)
-        .eq('bolge_id', kullanici.bolge_id);
 
-      if (kapsam !== 'utt') query = query.eq('kullanici_id', kapsam);
+      const params: Record<string, any> = {
+        p_baslangic: baslangic,
+        p_bitis: bitis,
+        p_bolge_id: kullanici.bolge_id,
+        p_kullanici_id: null,
+      };
 
-      const { data, error } = await query;
-      if (error) return hataYaniti('Analiz verisi çekilemedi.', 'v_analiz_utt SELECT', error);
-      veri = data ?? [];
+      if (kapsam !== 'utt') params.p_kullanici_id = kapsam;
+
+      const { data, error } = await adminSupabase.rpc('get_analiz_utt', params);
+      if (error) return hataYaniti('Analiz verisi çekilemedi.', 'get_analiz_utt RPC', error);
+
+      veri = (data ?? []).map((row: any) => {
+        const filtered: Record<string, any> = { kullanici_id: row.kullanici_id, ad: row.ad, soyad: row.soyad };
+        kolonlar.forEach((k: string) => { filtered[k] = row[k]; });
+        return filtered;
+      });
+
+    } else {
+      return validasyonHatasi('Geçersiz kapsam seçimi.', ['kapsam']);
     }
 
     if (veri.length === 0) {
@@ -173,9 +201,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Claude API'ye gönder
-    const veriMetni = JSON.stringify(veri, null, 2);
-    const degiskenListesi = degiskenler.join(', ');
     const zamanLabel: Record<string, string> = {
       bu_gun: 'bugün',
       bu_hafta: 'bu hafta',
@@ -183,6 +208,9 @@ export async function POST(request: NextRequest) {
       bu_donem: 'bu dönem',
       bu_yil: 'bu yıl',
     };
+
+    const degiskenListesi = degiskenler.join(', ');
+    const veriMetni = JSON.stringify(veri, null, 2);
 
     const prompt = `Sen HapBilgi ilaç sektörü eğitim platformunun analiz asistanısın. 
 Aşağıdaki veriler ${zamanLabel[zaman] ?? zaman} dönemine ait ${kapsam} bazlı analiz sonuçlarıdır.
@@ -203,30 +231,17 @@ Yanıtını JSON formatında ver:
   "aksiyonlar": ["aksiyon 1", "aksiyon 2", "aksiyon 3"]
 }`;
 
-    const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
-
     let yorum = 'AI yorumu alınamadı.';
     let aksiyonlar: string[] = [];
 
-    if (aiRes.ok) {
-      const aiData = await aiRes.json();
-      const content = aiData.content?.[0]?.text ?? '';
-      try {
-        const clean = content.replace(/```json|```/g, '').trim();
-        const parsed = JSON.parse(clean);
-        yorum = parsed.yorum ?? yorum;
-        aksiyonlar = parsed.aksiyonlar ?? [];
-      } catch {
-        yorum = content;
-      }
+    try {
+      const aiMetin = await aiYorumAl(prompt);
+      const clean = aiMetin.replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(clean);
+      yorum = parsed.yorum ?? yorum;
+      aksiyonlar = parsed.aksiyonlar ?? [];
+    } catch (aiHata) {
+      console.error('[UYARI] AI yorumu alınamadı:', aiHata);
     }
 
     return NextResponse.json({

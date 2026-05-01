@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { bildirimOlustur } from "@/lib/utils/bildirimOlustur";
+import { PM_ROLLERI } from "@/lib/utils/roller";
 
 const GECERLI_DURUMLAR = [
   "Inceleme Bekleniyor",
@@ -23,10 +24,10 @@ export async function POST(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    const isPM = ["pm", "jr_pm", "kd_pm"].includes(rol);
+    const isPM = PM_ROLLERI.includes(rol);
     const isIU = rol === "iu";
 
-    if (!isPM && !isIU) return rolHatasi("Sadece PM ve IU video durumu güncelleyebilir.");
+    if (!isPM && !isIU) return rolHatasi("Sadece yetkili roller ve IU video durumu güncelleyebilir.");
 
     const body = await request.json();
     const { video_id, durum, notlar } = body;

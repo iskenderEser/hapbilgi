@@ -44,7 +44,7 @@ interface RaporData {
   favori_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; favori_sayisi: number }>;
 }
 
-type Periyot = 'bu_ay' | 'gecen_ay' | 'bu_hafta';
+type Periyot = 'bu_gun' | 'bu_hafta' | 'bu_ay' | 'bu_donem' | 'bu_yil';
 
 const BORDO = '#bc2d0d';
 const KIRMIZI = '#E24B4A';
@@ -109,9 +109,11 @@ export default function PmRaporPage() {
   const maxTeknik = Math.max(...data.teknik_bazli_dagilim.map(t => t.izlenme_sayisi), 1);
 
   const periyotlar: { key: Periyot; label: string }[] = [
-    { key: 'bu_ay', label: 'Bu ay' },
-    { key: 'gecen_ay', label: 'Geçen ay' },
-    { key: 'bu_hafta', label: 'Bu hafta' },
+    { key: 'bu_gun', label: 'Günlük' },
+    { key: 'bu_hafta', label: 'Haftalık' },
+    { key: 'bu_ay', label: 'Aylık' },
+    { key: 'bu_donem', label: 'Dönemlik' },
+    { key: 'bu_yil', label: 'Yıllık' },
   ];
 
   return (
@@ -229,7 +231,7 @@ export default function PmRaporPage() {
               { label: 'Kalan izlenme', value: data.yayin_performansi.kalan_izlenme.toLocaleString('tr-TR') },
               { label: 'İzlenme oranı', value: `%${data.yayin_performansi.izlenme_orani}` },
             ].map(k => (
-              <div key={k.label} className="rounded-lg p-3" style={{ background: GRI_ZEMIN }}>
+              <div key={k.label} className="rounded-lg p-3 border" style={{ background: 'white', borderColor: '#e5e7eb' }}>
                 <div className="text-xs mb-1" style={{ color: GRI_METIN }}>{k.label}</div>
                 <div className="text-xl font-semibold" style={{ color: k.accent ? BORDO : KOYU_METIN }}>{k.value}</div>
                 {k.sub && <div className="text-xs mt-0.5" style={{ color: GRI_METIN }}>{k.sub}</div>}
@@ -284,7 +286,7 @@ export default function PmRaporPage() {
               { label: 'Ortalama puan / UTT', value: data.takim_puan_ozet.ortalama_puan_utt.toLocaleString('tr-TR'), sub: `En yüksek: ${data.takim_puan_ozet.en_yuksek_puan.toLocaleString('tr-TR')}` },
               { label: 'Hiç izlememiş UTT', value: data.takim_puan_ozet.hic_izlemeyen_utt.toString(), sub: `${data.yayin_performansi.toplam_utt} UTT'den`, kirmizi: true },
             ].map(k => (
-              <div key={k.label} className="rounded-lg p-3" style={{ background: GRI_ZEMIN }}>
+              <div key={k.label} className="rounded-lg p-3 border" style={{ background: 'white', borderColor: '#e5e7eb' }}>
                 <div className="text-xs mb-1" style={{ color: GRI_METIN }}>{k.label}</div>
                 <div className="text-xl font-semibold" style={{ color: k.accent ? BORDO : k.kirmizi ? KIRMIZI : KOYU_METIN }}>{k.value}</div>
                 {k.sub && <div className="text-xs mt-0.5" style={{ color: GRI_METIN }}>{k.sub}</div>}

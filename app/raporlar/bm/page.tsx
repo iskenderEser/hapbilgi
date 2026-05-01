@@ -73,7 +73,7 @@ interface RaporData {
   favori_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; favori_sayisi: number }>;
 }
 
-type Periyot = 'bu_ay' | 'gecen_ay' | 'bu_hafta';
+type Periyot = 'bu_gun' | 'bu_hafta' | 'bu_ay' | 'bu_donem' | 'bu_yil';
 
 const BORDO = '#bc2d0d';
 const MAVI = '#56aeff';
@@ -144,10 +144,13 @@ export default function BmRaporPage() {
   const maxUrun = Math.max(...data.urun_bazli_dagilim.map(u => u.izlenme_sayisi), 1);
   const maxTeknik = Math.max(...data.teknik_bazli_dagilim.map(t => t.izlenme_sayisi), 1);
   const maxUttPuan = Math.max(...data.utt_listesi.map(u => u.puan), 1);
+
   const periyotlar: { key: Periyot; label: string }[] = [
-    { key: 'bu_ay', label: 'Bu ay' },
-    { key: 'gecen_ay', label: 'Geçen ay' },
-    { key: 'bu_hafta', label: 'Bu hafta' },
+    { key: 'bu_gun', label: 'Günlük' },
+    { key: 'bu_hafta', label: 'Haftalık' },
+    { key: 'bu_ay', label: 'Aylık' },
+    { key: 'bu_donem', label: 'Dönemlik' },
+    { key: 'bu_yil', label: 'Yıllık' },
   ];
 
   return (
@@ -226,7 +229,7 @@ export default function BmRaporPage() {
             { label: 'Ortalama puan / UTT', value: data.bolge_ozet.ortalama_puan.toLocaleString('tr-TR'), sub: `En yüksek: ${data.bolge_ozet.en_yuksek_puan.toLocaleString('tr-TR')}` },
             { label: 'İzlenme oranı', value: `%${data.bolge_ozet.izlenme_orani}`, sub: `${data.bolge_ozet.toplam_izlenme} izlendi · ${data.bolge_ozet.kalan_izlenme} kaldı` },
           ].map(k => (
-            <div key={k.label} className="rounded-lg p-3" style={{ background: GRI_ZEMIN }}>
+            <div key={k.label} className="rounded-lg p-3 border" style={{ background: 'white', borderColor: '#e5e7eb' }}>
               <div className="text-xs mb-1" style={{ color: GRI_METIN }}>{k.label}</div>
               <div className="text-xl font-semibold" style={{ color: k.accent ? BORDO : KOYU_METIN }}>{k.value}</div>
               {k.sub && <div className="text-xs mt-0.5" style={{ color: GRI_METIN }}>{k.sub}</div>}
@@ -239,7 +242,7 @@ export default function BmRaporPage() {
             { label: 'Bölge lig sırası', value: `${data.lig.bolge_sirasi || '-'} / ${data.lig.toplam_bolge_sayisi}`, accent: true },
             { label: 'Toplam yayın', value: data.bolge_ozet.toplam_yayin.toLocaleString('tr-TR') },
           ].map(k => (
-            <div key={k.label} className="rounded-lg p-3" style={{ background: GRI_ZEMIN }}>
+            <div key={k.label} className="rounded-lg p-3 border" style={{ background: 'white', borderColor: '#e5e7eb' }}>
               <div className="text-xs mb-1" style={{ color: GRI_METIN }}>{k.label}</div>
               <div className="text-xl font-semibold" style={{ color: k.accent ? BORDO : KOYU_METIN }}>{k.value}</div>
               {k.sub && <div className="text-xs mt-0.5" style={{ color: GRI_METIN }}>{k.sub}</div>}
@@ -273,7 +276,7 @@ export default function BmRaporPage() {
               { label: `Tamamlanan · %${data.oneri_etkinligi.tamamlanma_orani}`, value: data.oneri_etkinligi.tamamlanan, renk: '#3B6D11' },
               { label: `Bekleyen · %${100 - data.oneri_etkinligi.tamamlanma_orani}`, value: data.oneri_etkinligi.bekleyen, renk: '#854F0B' },
             ].map(k => (
-              <div key={k.label} className="text-center rounded-lg p-3" style={{ background: GRI_ZEMIN }}>
+              <div key={k.label} className="text-center rounded-lg p-3 border" style={{ background: 'white', borderColor: '#e5e7eb' }}>
                 <div className="text-2xl font-semibold mb-1" style={{ color: k.renk }}>{k.value}</div>
                 <div className="text-xs" style={{ color: k.renk }}>{k.label}</div>
               </div>

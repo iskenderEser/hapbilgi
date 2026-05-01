@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { cokluBildirimOlustur } from "@/lib/utils/bildirimOlustur";
+import { PM_ROLLERI } from "@/lib/utils/roller";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    if (!["pm", "jr_pm", "kd_pm"].includes(rol)) return rolHatasi("Sadece PM yayına alabilir.");
+    if (!PM_ROLLERI.includes(rol)) return rolHatasi("Sadece yetkili roller yayına alabilir.");
 
     const body = await request.json();
     const { soru_seti_durum_id, ileri_sarma_acik, extra_puan } = body;
@@ -103,7 +104,6 @@ export async function POST(request: NextRequest) {
     if (!yayinKontrol.gecerli) return yayinKontrol.yanit;
 
     // İlgili UTT'lere bildirim gönder
-    // Zincir: soru_seti → video_durum → video → senaryo_durum → senaryo → talep → takim_id → bolgeler → utt kullanıcıları
     try {
       const { data: videoDurum } = await adminSupabase
         .from("video_durumu")
@@ -142,7 +142,6 @@ export async function POST(request: NextRequest) {
               const urun_adi = (talep as any)?.urunler?.urun_adi ?? "-";
 
               if (talep?.takim_id) {
-                // Takıma bağlı bölgeleri bul
                 const { data: bolgeler } = await adminSupabase
                   .from("bolgeler")
                   .select("bolge_id")
@@ -151,7 +150,6 @@ export async function POST(request: NextRequest) {
                 const bolgeIdler = (bolgeler ?? []).map((b: any) => b.bolge_id);
 
                 if (bolgeIdler.length > 0) {
-                  // O bölgelerdeki UTT kullanıcılarını bul
                   const { data: uttler } = await adminSupabase
                     .from("kullanicilar")
                     .select("kullanici_id")

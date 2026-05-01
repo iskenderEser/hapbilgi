@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
+import { PM_ROLLERI } from "@/lib/utils/roller";
 
 export async function PUT(
   request: NextRequest,
@@ -18,7 +19,7 @@ export async function PUT(
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    if (!["pm", "jr_pm", "kd_pm"].includes(rol)) return rolHatasi("Sadece PM yayın durumunu değiştirebilir.");
+    if (!PM_ROLLERI.includes(rol)) return rolHatasi("Sadece yetkili roller yayın durumunu değiştirebilir.");
 
     // Yayını bul
     const { data: yayin, error: yayinError } = await adminSupabase
@@ -38,7 +39,6 @@ export async function PUT(
         .from("yayin_yonetimi")
         .update({ durum: "Durduruldu", durdurma_tarihi: simdi })
         .eq("yayin_id", yayin_id);
-
       if (updateError) return hataYaniti("Yayın durdurulamadı.", "yayin_yonetimi tablosu UPDATE — Durduruldu", updateError);
       return NextResponse.json({ mesaj: "Yayın durduruldu." }, { status: 200 });
     }
@@ -48,7 +48,6 @@ export async function PUT(
         .from("yayin_yonetimi")
         .update({ durum: "Yayinda", durdurma_tarihi: null, yayin_tarihi: simdi })
         .eq("yayin_id", yayin_id);
-
       if (updateError) return hataYaniti("Yayın yeniden başlatılamadı.", "yayin_yonetimi tablosu UPDATE — Yayinda", updateError);
       return NextResponse.json({ mesaj: "Yayın yeniden başlatıldı." }, { status: 200 });
     }

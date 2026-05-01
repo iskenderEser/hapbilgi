@@ -3,6 +3,7 @@
 
 import { useState, useMemo } from "react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
+import { ROL_ADLARI } from "@/lib/utils/roller";
 
 interface Firma {
   firma_id: string;
@@ -52,9 +53,17 @@ interface Takim {
   bolgeler: Bolge[];
 }
 
-type GirisSecimi = "tekil" | "toplu" | "ekip" | "urun";
+interface Kategori {
+  kategori_id: string;
+  kategori_adi: string;
+  firma_id: string;
+  aktif_mi: boolean;
+  created_at: string;
+}
 
-const ROLLER = ["pm", "jr_pm", "kd_pm", "iu", "tm", "bm", "utt", "kd_utt", "gm", "gm_yrd", "drk", "paz_md", "blm_md", "med_md", "grp_pm", "sm", "egt_md", "egt_yrd_md", "egt_yon", "egt_uz"];
+type GirisSecimi = "tekil" | "toplu" | "ekip" | "urun" | "kategori";
+
+const ROLLER = ["pm", "jr_pm", "kd_pm", "iu", "tm", "bm", "utt", "kd_utt", "gm", "gm_yrd", "drk", "paz_md", "blm_md", "med_md", "grp_pm", "sm", "egt_md", "egt_yrd_md", "egt_yon", "egt_uz", "ik_drk", "ik_md", "ik_yrd_md", "ik_uz", "ik_per"];
 
 export default function AdminPage() {
   const [girisYapildi, setGirisYapildi] = useState(false);
@@ -108,6 +117,12 @@ export default function AdminPage() {
   const [teknikEkleLoading, setTeknikEkleLoading] = useState(false);
   const [urunSilLoading, setUrunSilLoading] = useState<string | null>(null);
   const [teknikSilLoading, setTeknikSilLoading] = useState<string | null>(null);
+
+  // Kategori form
+  const [kategoriler, setKategoriler] = useState<Kategori[]>([]);
+  const [yeniKategoriAdi, setYeniKategoriAdi] = useState("");
+  const [kategoriEkleLoading, setKategoriEkleLoading] = useState(false);
+  const [kategoriToggleLoading, setKategoriToggleLoading] = useState<string | null>(null);
 
   // Filtre ve arama
   const [aramaMetni, setAramaMetni] = useState("");
@@ -188,6 +203,13 @@ export default function AdminPage() {
     setTakimlar(takimListesi);
   };
 
+  const kategorileriCek = async (firma_id: string) => {
+    const res = await fetch(`/kategoriler/api?firma_id=${firma_id}`);
+    const data = await res.json();
+    if (!res.ok) { hata(data.hata ?? "Kategoriler yüklenemedi.", data.adim, data.detay); }
+    else { setKategoriler(data.kategoriler ?? []); }
+  };
+
   const handleTakimSec = (takim_id: string) => {
     const secilen = takimlar.find(t => t.takim_id === takim_id);
     setTekilTakimId(takim_id);
@@ -225,6 +247,7 @@ export default function AdminPage() {
     takimlariCek(f.firma_id);
     urunleriCek(f.firma_id);
     teknikleriCek(f.firma_id);
+    kategorileriCek(f.firma_id);
   };
 
   const urunleriCek = async (firma_id: string) => {
@@ -293,6 +316,33 @@ export default function AdminPage() {
     if (!res.ok) { hata(data.hata ?? "Teknik silinemedi.", data.adim, data.detay); }
     else { basari("Teknik silindi."); teknikleriCek(seciliFirma.firma_id); }
     setTeknikSilLoading(null);
+  };
+
+  const handleKategoriEkle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!seciliFirma || !yeniKategoriAdi.trim()) return;
+    setKategoriEkleLoading(true);
+    const res = await fetch("/kategoriler/api", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ firma_id: seciliFirma.firma_id, kategori_adi: yeniKategoriAdi.trim() }),
+    });
+    const data = await res.json();
+    if (!res.ok) { hata(data.hata ?? "Kategori eklenemedi.", data.adim, data.detay); }
+    else { basari("Kategori eklendi."); setYeniKategoriAdi(""); kategorileriCek(seciliFirma.firma_id); }
+    setKategoriEkleLoading(false);
+  };
+
+  const handleKategoriToggle = async (kategori_id: string, mevcutAktifMi: boolean) => {
+    if (!seciliFirma) return;
+    setKategoriToggleLoading(kategori_id);
+    const res = await fetch("/kategoriler/api", {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kategori_id, aktif_mi: !mevcutAktifMi }),
+    });
+    const data = await res.json();
+    if (!res.ok) { hata(data.hata ?? "Kategori güncellenemedi.", data.adim, data.detay); }
+    else { basari(mevcutAktifMi ? "Kategori pasife alındı." : "Kategori aktif edildi."); kategorileriCek(seciliFirma.firma_id); }
+    setKategoriToggleLoading(null);
   };
 
   const takimAdi = (takim_id: string) => takimlar.find(t => t.takim_id === takim_id)?.takim_adi ?? "-";
@@ -584,13 +634,14 @@ export default function AdminPage() {
               </div>
 
               {/* Sekmeler */}
-              <div style={{ display: "flex", gap: "10px" }}>
-                {(["tekil", "toplu", "ekip", "urun"] as GirisSecimi[]).map(sekme => (
+              <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                {(["tekil", "toplu", "ekip", "urun", "kategori"] as GirisSecimi[]).map(sekme => (
                   <button key={sekme} onClick={() => { setGirisSecimi(sekme); if (sekme !== "toplu") { setOnizlemeSatirlari(null); setTopluDosya(null); } if (sekme !== "tekil") sifirlaTekilForm(); }} style={{ ...btnBase, background: girisSecimi === sekme ? "#56aeff" : "white", color: girisSecimi === sekme ? "white" : "#737373", borderColor: girisSecimi === sekme ? "#56aeff" : "#e5e7eb" }}>
                     {sekme === "tekil" && <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Tekil Giriş</>}
                     {sekme === "toplu" && <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Toplu Giriş</>}
                     {sekme === "ekip" && <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="17.5" x2="20" y2="17.5"/><line x1="17" y1="14.5" x2="17" y2="20.5"/></svg>Ekip / Bölge Oluştur</>}
                     {sekme === "urun" && <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Ürün & Teknik</>}
+                    {sekme === "kategori" && <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 10h16M4 14h10M4 18h6"/></svg>Kategoriler</>}
                   </button>
                 ))}
               </div>
@@ -601,7 +652,7 @@ export default function AdminPage() {
                   <form onSubmit={handleTekilKaydet} style={{ maxWidth: "520px" }}>
                     <div style={rowStyle}><div style={labelStyle}>Ad</div><input style={inputStyle} value={tekilAd} onChange={e => setTekilAd(e.target.value)} placeholder="Adı..." maxLength={200} required /></div>
                     <div style={rowStyle}><div style={labelStyle}>Soyad</div><input style={inputStyle} value={tekilSoyad} onChange={e => setTekilSoyad(e.target.value)} placeholder="Soyadı..." maxLength={200} required /></div>
-                    <div style={rowStyle}><div style={labelStyle}>Rol</div><select style={{ ...inputStyle, cursor: "pointer" }} value={tekilRol} onChange={e => setTekilRol(e.target.value)} required><option value="">Rol seçin...</option>{ROLLER.map(r => <option key={r} value={r}>{r}</option>)}</select></div>
+                    <div style={rowStyle}><div style={labelStyle}>Rol</div><select style={{ ...inputStyle, cursor: "pointer" }} value={tekilRol} onChange={e => setTekilRol(e.target.value)} required><option value="">Rol seçin...</option>{ROLLER.map(r => <option key={r} value={r}>{ROL_ADLARI[r] ?? r}</option>)}</select></div>
                     <div style={rowStyle}><div style={labelStyle}>E-posta</div><input style={inputStyle} value={tekilEposta} onChange={e => setTekilEposta(e.target.value)} placeholder="eposta@firma.com" type="email" maxLength={200} required /></div>
                     <div style={rowStyle}><div style={labelStyle}>Şifre</div><input style={inputStyle} value={tekilSifre} onChange={e => setTekilSifre(e.target.value)} placeholder="Şifre..." type="password" maxLength={200} required /></div>
                     <div style={rowStyle}><div style={labelStyle}>Firma adı</div><input style={readonlyInputStyle} value={seciliFirma.firma_adi} readOnly /></div>
@@ -741,11 +792,7 @@ export default function AdminPage() {
                                 <div style={{ fontSize: "13px", color: "#111", fontWeight: 500 }}>{u.urun_adi}</div>
                                 <div style={{ fontSize: "11px", color: "#737373", marginTop: "2px" }}>{takimAdi(u.takim_id)}</div>
                               </div>
-                              <button
-                                onClick={() => handleUrunSil(u.urun_id)}
-                                disabled={urunSilLoading === u.urun_id}
-                                style={{ fontSize: "10px", padding: "3px 10px", borderRadius: "5px", border: "0.5px solid #fecaca", background: "#fef2f2", color: "#bc2d0d", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}
-                              >
+                              <button onClick={() => handleUrunSil(u.urun_id)} disabled={urunSilLoading === u.urun_id} style={{ fontSize: "10px", padding: "3px 10px", borderRadius: "5px", border: "0.5px solid #fecaca", background: "#fef2f2", color: "#bc2d0d", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
                                 {urunSilLoading === u.urun_id ? "..." : "Sil"}
                               </button>
                             </div>
@@ -777,11 +824,7 @@ export default function AdminPage() {
                           {teknikler.map(t => (
                             <div key={t.teknik_id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", background: "#f9fafb", borderRadius: "8px", border: "0.5px solid #e5e7eb" }}>
                               <div style={{ fontSize: "13px", color: "#111", fontWeight: 500 }}>{t.teknik_adi}</div>
-                              <button
-                                onClick={() => handleTeknikSil(t.teknik_id)}
-                                disabled={teknikSilLoading === t.teknik_id}
-                                style={{ fontSize: "10px", padding: "3px 10px", borderRadius: "5px", border: "0.5px solid #fecaca", background: "#fef2f2", color: "#bc2d0d", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}
-                              >
+                              <button onClick={() => handleTeknikSil(t.teknik_id)} disabled={teknikSilLoading === t.teknik_id} style={{ fontSize: "10px", padding: "3px 10px", borderRadius: "5px", border: "0.5px solid #fecaca", background: "#fef2f2", color: "#bc2d0d", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
                                 {teknikSilLoading === t.teknik_id ? "..." : "Sil"}
                               </button>
                             </div>
@@ -791,6 +834,49 @@ export default function AdminPage() {
                     </div>
                   </div>
 
+                </div>
+              )}
+
+              {/* Kategoriler */}
+              {girisSecimi === "kategori" && (
+                <div style={{ background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
+                  <div style={{ padding: "14px 20px", borderBottom: "0.5px solid #e5e7eb", fontSize: "13px", fontWeight: 600, color: "#111" }}>Kategoriler</div>
+                  <div style={{ padding: "16px 20px" }}>
+                    <form onSubmit={handleKategoriEkle} style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "20px", maxWidth: "400px" }}>
+                      <div style={rowStyle}>
+                        <div style={labelStyle}>Kategori adı</div>
+                        <input style={inputStyle} value={yeniKategoriAdi} onChange={e => setYeniKategoriAdi(e.target.value)} placeholder="Kategori adı..." required />
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                        <button type="submit" disabled={kategoriEkleLoading} style={{ background: "#56aeff", color: "white", border: "none", borderRadius: "8px", padding: "8px 20px", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "'Nunito', sans-serif", opacity: kategoriEkleLoading ? 0.6 : 1 }}>
+                          {kategoriEkleLoading ? "Ekleniyor..." : "+ Ekle"}
+                        </button>
+                      </div>
+                    </form>
+                    {kategoriler.length === 0 ? (
+                      <div style={{ textAlign: "center", padding: "20px", fontSize: "12px", color: "#9ca3af" }}>Henüz kategori yok.</div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        {kategoriler.map(k => (
+                          <div key={k.kategori_id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "#f9fafb", borderRadius: "8px", border: "0.5px solid #e5e7eb" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                              <div style={{ fontSize: "13px", color: "#111", fontWeight: 500 }}>{k.kategori_adi}</div>
+                              <span style={{ fontSize: "10px", padding: "2px 8px", borderRadius: "20px", background: k.aktif_mi ? "#f0fdf4" : "#fef2f2", color: k.aktif_mi ? "#16a34a" : "#bc2d0d", border: `0.5px solid ${k.aktif_mi ? "#bbf7d0" : "#fecaca"}` }}>
+                                {k.aktif_mi ? "Aktif" : "Pasif"}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => handleKategoriToggle(k.kategori_id, k.aktif_mi)}
+                              disabled={kategoriToggleLoading === k.kategori_id}
+                              style={{ fontSize: "10px", padding: "3px 10px", borderRadius: "5px", border: "0.5px solid #e5e7eb", background: k.aktif_mi ? "#fef2f2" : "#f0fdf4", color: k.aktif_mi ? "#bc2d0d" : "#16a34a", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}
+                            >
+                              {kategoriToggleLoading === k.kategori_id ? "..." : k.aktif_mi ? "Pasife Al" : "Aktif Et"}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -833,16 +919,13 @@ export default function AdminPage() {
               {/* Kullanıcı listesi */}
               <div style={{ background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
 
-                {/* Başlık + filtreler — iki ayrı satır */}
                 <div style={{ padding: "12px 16px", borderBottom: "0.5px solid #e5e7eb", display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {/* Üst satır: başlık */}
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <span style={{ fontSize: "12px", fontWeight: 600, color: "#111" }}>Kullanıcılar</span>
                     <span style={{ fontSize: "11px", color: "#737373" }}>
                       {filtrelenmisKullanicilar.length === kullanicilar.length ? `${kullanicilar.length} kayıt` : `${filtrelenmisKullanicilar.length} / ${kullanicilar.length}`}
                     </span>
                   </div>
-                  {/* Alt satır: arama + temizle */}
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                     <div style={{ position: "relative" }}>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" style={{ position: "absolute", left: "8px", top: "50%", transform: "translateY(-50%)" }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -900,11 +983,11 @@ export default function AdminPage() {
                                   <span style={{ fontSize: "10px", color: "#737373" }}>...</span>
                                 ) : acikRolId === k.kullanici_id ? (
                                   <select autoFocus defaultValue={k.rol} onBlur={() => setAcikRolId(null)} onChange={e => handleRolDegistir(k.kullanici_id, e.target.value)} style={{ fontSize: "11px", border: "0.5px solid #56aeff", borderRadius: "6px", padding: "3px 6px", fontFamily: "'Nunito', sans-serif", outline: "none", background: "white", cursor: "pointer" }}>
-                                    {ROLLER.map(r => <option key={r} value={r}>{r}</option>)}
+                                    {ROLLER.map(r => <option key={r} value={r}>{ROL_ADLARI[r] ?? r}</option>)}
                                   </select>
                                 ) : (
                                   <span onClick={() => { setAcikRolId(k.kullanici_id); setSilOnayId(null); }} title="Değiştirmek için tıklayın" style={{ fontSize: "10px", padding: "2px 8px", borderRadius: "20px", background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe", cursor: "pointer", userSelect: "none" }}>
-                                    {k.rol} ▾
+                                    {ROL_ADLARI[k.rol] ?? k.rol} ▾
                                   </span>
                                 )}
                               </td>
