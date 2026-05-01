@@ -986,7 +986,7 @@ export default function AdminPage() {
                                     {ROLLER.map(r => <option key={r} value={r}>{ROL_ADLARI[r] ?? r}</option>)}
                                   </select>
                                 ) : (
-                                  <span onClick={() => { setAcikRolId(k.kullanici_id); setSilOnayId(null); }} title="Değiştirmek için tıklayın" style={{ fontSize: "10px", padding: "2px 8px", borderRadius: "20px", background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe", cursor: "pointer", userSelect: "none" }}>
+                                  <span onClick={() => { setAcikRolId(k.kullanici_id); setSilOnayId(null); }} title="Değiştirmek için tıklayın" style={{ fontSize: "10px", padding: "2px 8px", borderRadius: "20px", background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe", cursor: "pointer", userSelect: "none", display: "block", maxWidth: "130px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                     {ROL_ADLARI[k.rol] ?? k.rol} ▾
                                   </span>
                                 )}

@@ -20,7 +20,7 @@ export async function GET() {
       .from("talepler")
       .select(`
         talep_id, pm_id, takim_id, aciklama, hazir_video, hazir_video_url, dosya_urls, created_at,
-        urun_id, teknik_id, kategori_id,
+        urun_id, teknik_id, kategori_id, egitim_turu,
         hazir_soru_seti, hazir_soru_seti_verisi,
         soru_seti_buyuklugu, video_basi_soru_sayisi,
         urunler(urun_adi),
@@ -43,6 +43,7 @@ export async function GET() {
       urun_id: t.urun_id,
       teknik_id: t.teknik_id,
       kategori_id: t.kategori_id ?? null,
+      egitim_turu: t.egitim_turu ?? "urun_egitimi",
       urun_adi: t.urunler?.urun_adi ?? t.urun_adi ?? "-",
       teknik_adi: t.teknikler?.teknik_adi ?? t.teknik_adi ?? "-",
       kategori_adi: t.kategoriler?.kategori_adi ?? null,
@@ -88,14 +89,27 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const {
+      egitim_turu,
       urun_id, teknik_id, kategori_id, aciklama,
       hazir_video, hazir_soru_seti, hazir_soru_seti_verisi,
       soru_seti_buyuklugu, video_basi_soru_sayisi,
     } = body;
 
-    if (!urun_id) return validasyonHatasi("Ürün seçimi zorunludur.", ["urun_id"]);
-    if (!teknik_id) return validasyonHatasi("Teknik seçimi zorunludur.", ["teknik_id"]);
-    if (hazir_soru_seti && !hazir_soru_seti_verisi) return validasyonHatasi("Hazır soru seti verisi zorunludur.", ["hazir_soru_seti_verisi"]);
+    // egitim_turu validasyonu
+    const egitimTuru = egitim_turu ?? "urun_egitimi";
+    if (!["urun_egitimi", "genel_egitim"].includes(egitimTuru)) {
+      return validasyonHatasi("Eğitim türü geçersiz.", ["egitim_turu"]);
+    }
+
+    // Ürün ve teknik yalnızca urun_egitimi için zorunlu
+    if (egitimTuru === "urun_egitimi") {
+      if (!urun_id) return validasyonHatasi("Ürün seçimi zorunludur.", ["urun_id"]);
+      if (!teknik_id) return validasyonHatasi("Teknik seçimi zorunludur.", ["teknik_id"]);
+    }
+
+    if (hazir_soru_seti && !hazir_soru_seti_verisi) {
+      return validasyonHatasi("Hazır soru seti verisi zorunludur.", ["hazir_soru_seti_verisi"]);
+    }
 
     const soruSetiBuyuklugu = soru_seti_buyuklugu ?? 25;
     const videoBasisSoruSayisi = video_basi_soru_sayisi ?? 2;
@@ -108,8 +122,9 @@ export async function POST(request: NextRequest) {
       .insert({
         pm_id: user.id,
         takim_id: pmKullanici.takim_id,
-        urun_id,
-        teknik_id,
+        egitim_turu: egitimTuru,
+        urun_id: egitimTuru === "urun_egitimi" ? urun_id : null,
+        teknik_id: egitimTuru === "urun_egitimi" ? teknik_id : null,
         kategori_id: kategori_id ?? null,
         aciklama: aciklama?.trim() ?? null,
         hazir_video: hazir_video ?? false,
@@ -120,7 +135,7 @@ export async function POST(request: NextRequest) {
       })
       .select(`
         talep_id, takim_id, hazir_video, created_at,
-        urun_id, teknik_id, kategori_id,
+        urun_id, teknik_id, kategori_id, egitim_turu,
         hazir_soru_seti, hazir_soru_seti_verisi,
         soru_seti_buyuklugu, video_basi_soru_sayisi,
         urunler(urun_adi),
@@ -131,7 +146,9 @@ export async function POST(request: NextRequest) {
 
     if (error) return hataYaniti("Talep oluşturulamadı.", "talepler tablosu INSERT", error);
 
-    const urun_adi = (yeniTalep as any).urunler?.urun_adi ?? "-";
+    const urun_adi = egitimTuru === "urun_egitimi"
+      ? ((yeniTalep as any).urunler?.urun_adi ?? "-")
+      : "Genel Eğitim";
 
     // Tüm IU kullanıcılarına bildirim gönder
     const { data: iuKullanicilar } = await adminSupabase
@@ -155,8 +172,11 @@ export async function POST(request: NextRequest) {
       mesaj: "Talep oluşturuldu.",
       talep: {
         ...yeniTalep,
+        egitim_turu: egitimTuru,
         urun_adi,
-        teknik_adi: (yeniTalep as any).teknikler?.teknik_adi ?? "-",
+        teknik_adi: egitimTuru === "urun_egitimi"
+          ? ((yeniTalep as any).teknikler?.teknik_adi ?? "-")
+          : "-",
         kategori_adi: (yeniTalep as any).kategoriler?.kategori_adi ?? null,
       }
     }, { status: 201 });

@@ -17,6 +17,7 @@ interface Talep {
   urun_adi: string;
   teknik_adi: string;
   kategori_adi: string | null;
+  egitim_turu: "urun_egitimi" | "genel_egitim";
   aciklama: string;
   created_at: string;
   hazir_video: boolean;
@@ -118,6 +119,9 @@ export default function TaleplerPage() {
   const [talepler, setTalepler] = useState<Talep[]>([]);
   const [loading, setLoading] = useState(true);
   const [formLoading, setFormLoading] = useState(false);
+
+  // Eğitim türü
+  const [egitimTuru, setEgitimTuru] = useState<"urun_egitimi" | "genel_egitim">("urun_egitimi");
 
   const [urunler, setUrunler] = useState<Urun[]>([]);
   const [seciliUrunId, setSeciliUrunId] = useState("");
@@ -222,6 +226,19 @@ export default function TaleplerPage() {
     }
   }, [soruSetiBuyuklugu]);
 
+  // Eğitim türü değişince ürün/teknik alanlarını sıfırla
+  const handleEgitimTuruDegis = (tur: "urun_egitimi" | "genel_egitim") => {
+    setEgitimTuru(tur);
+    if (tur === "genel_egitim") {
+      setSeciliUrunId("");
+      setSeciliTeknikId("");
+      setYeniUrunGoster(false);
+      setYeniTeknikGoster(false);
+      setYeniUrunAdi("");
+      setYeniTeknikAdi("");
+    }
+  };
+
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
@@ -312,20 +329,27 @@ export default function TaleplerPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!seciliUrunId) { hata("Ürün seçimi zorunludur.", "form kontrolü", undefined); return; }
-    if (!seciliTeknikId) { hata("Teknik seçimi zorunludur.", "form kontrolü", undefined); return; }
+
+    // Ürün eğitiminde ürün + teknik zorunlu
+    if (egitimTuru === "urun_egitimi") {
+      if (!seciliUrunId) { hata("Ürün seçimi zorunludur.", "form kontrolü", undefined); return; }
+      if (!seciliTeknikId) { hata("Teknik seçimi zorunludur.", "form kontrolü", undefined); return; }
+    }
+
     if (kategoriler.length > 0 && !seciliKategoriId) { hata("Kategori seçimi zorunludur.", "form kontrolü", undefined); return; }
     if (hazirVideo && !bekleyenVideo) { hata("Hazır video talebi için video dosyası zorunludur.", "video dosyası kontrolü", undefined); return; }
     if (hazirSoruSeti && soruSetiOnizleme.length === 0) { hata("Hazır soru seti için önce önizleme yapmalısınız.", "soru seti kontrolü", undefined); return; }
     if (videoBasiSoruSayisi > soruSetiBuyuklugu) { hata(`Video başı soru sayısı soru seti büyüklüğünü (${soruSetiBuyuklugu}) geçemez.`, "form kontrolü", undefined); return; }
+
     setFormLoading(true);
 
     const res = await fetch("/talepler/api", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        urun_id: seciliUrunId,
-        teknik_id: seciliTeknikId,
+        egitim_turu: egitimTuru,
+        urun_id: egitimTuru === "urun_egitimi" ? seciliUrunId : null,
+        teknik_id: egitimTuru === "urun_egitimi" ? seciliTeknikId : null,
         kategori_id: seciliKategoriId || null,
         aciklama,
         hazir_video: hazirVideo,
@@ -365,6 +389,7 @@ export default function TaleplerPage() {
     }
 
     basari("Talep başarıyla oluşturuldu.");
+    setEgitimTuru("urun_egitimi");
     setSeciliUrunId(""); setSeciliTeknikId(""); setSeciliKategoriId(""); setAciklama("");
     setBekleyenDosyalar([]); setBekleyenVideo(null); setHazirVideo(false);
     setHazirSoruSeti(false); setSoruSetiMetni(""); setSoruSetiOnizleme([]); setSoruSetiParseHata("");
@@ -376,6 +401,7 @@ export default function TaleplerPage() {
 
   const rolKucu = rol.toLowerCase();
   const isPM = PM_ROLLERI.includes(rolKucu);
+  const isUrunEgitimi = egitimTuru === "urun_egitimi";
 
   if (loading) {
     return (
@@ -433,6 +459,38 @@ export default function TaleplerPage() {
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
 
+              {/* Eğitim türü seçimi */}
+              <div className="flex gap-2 mb-1">
+                {[
+                  { deger: "urun_egitimi", etiket: "Ürün Eğitimi", aciklama: "Ürün ve teknik bilgisi videosu" },
+                  { deger: "genel_egitim", etiket: "Genel Eğitim", aciklama: "KVKK, medikal, politika vb." },
+                ].map(({ deger, etiket, aciklama: tur_aciklama }) => {
+                  const secili = egitimTuru === deger;
+                  return (
+                    <div
+                      key={deger}
+                      onClick={() => handleEgitimTuruDegis(deger as "urun_egitimi" | "genel_egitim")}
+                      className="flex-1 flex flex-col gap-0.5 px-3 py-2.5 rounded-xl border cursor-pointer transition-all duration-150"
+                      style={{
+                        border: secili ? "1.5px solid #56aeff" : "1px solid #e5e7eb",
+                        background: secili ? "#f0f7ff" : "white",
+                      }}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <div
+                          className="w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+                          style={{ borderColor: secili ? "#56aeff" : "#d1d5db" }}
+                        >
+                          {secili && <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#56aeff" }} />}
+                        </div>
+                        <span className="text-xs font-bold" style={{ color: secili ? "#56aeff" : "#374151" }}>{etiket}</span>
+                      </div>
+                      <span className="text-xs text-gray-400 pl-5">{tur_aciklama}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
               {/* Bilgi kutuları */}
               {(hazirVideo || hazirSoruSeti) && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800 leading-relaxed">
@@ -442,76 +500,78 @@ export default function TaleplerPage() {
                 </div>
               )}
 
-              {/* Ürün + Teknik */}
-              <div className="flex flex-col md:flex-row gap-3">
-                {/* Ürün seçimi */}
-                <div className="flex-1">
-                  <label className="text-xs text-gray-500 block mb-1">Ürün Adı</label>
-                  <select
-                    value={yeniUrunGoster ? "yeni" : seciliUrunId}
-                    onChange={e => handleUrunSec(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white cursor-pointer box-border"
-                    style={{ fontFamily: "'Nunito', sans-serif", color: seciliUrunId || yeniUrunGoster ? "#111" : "#9ca3af" }}
-                  >
-                    <option value="">Ürün seçin...</option>
-                    {urunler.map(u => <option key={u.urun_id} value={u.urun_id}>{u.urun_adi}</option>)}
-                    <option value="yeni">+ Yeni Ürün Ekle</option>
-                  </select>
-                  {yeniUrunGoster && (
-                    <div className="flex gap-1.5 mt-1.5">
-                      <input
-                        value={yeniUrunAdi}
-                        onChange={e => setYeniUrunAdi(e.target.value)}
-                        placeholder="Yeni ürün adı..."
-                        className="flex-1 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs outline-none"
-                        style={{ borderColor: "#56aeff", fontFamily: "'Nunito', sans-serif" }}
-                      />
-                      <button type="button" onClick={handleYeniUrunEkle} disabled={!yeniUrunAdi.trim() || urunEkleniyor}
-                        className="text-white border-none rounded-lg px-3 py-1.5 text-xs font-semibold cursor-pointer whitespace-nowrap"
-                        style={{ background: "#56aeff", opacity: !yeniUrunAdi.trim() || urunEkleniyor ? 0.6 : 1, fontFamily: "'Nunito', sans-serif" }}>
-                        {urunEkleniyor ? "..." : "Ekle"}
-                      </button>
-                      <button type="button" onClick={() => { setYeniUrunGoster(false); setYeniUrunAdi(""); }}
-                        className="bg-transparent border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-500 cursor-pointer"
-                        style={{ fontFamily: "'Nunito', sans-serif" }}>İptal</button>
-                    </div>
-                  )}
-                </div>
+              {/* Ürün + Teknik — yalnızca ürün eğitiminde göster */}
+              {isUrunEgitimi && (
+                <div className="flex flex-col md:flex-row gap-3">
+                  {/* Ürün seçimi */}
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500 block mb-1">Ürün Adı</label>
+                    <select
+                      value={yeniUrunGoster ? "yeni" : seciliUrunId}
+                      onChange={e => handleUrunSec(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white cursor-pointer box-border"
+                      style={{ fontFamily: "'Nunito', sans-serif", color: seciliUrunId || yeniUrunGoster ? "#111" : "#9ca3af" }}
+                    >
+                      <option value="">Ürün seçin...</option>
+                      {urunler.map(u => <option key={u.urun_id} value={u.urun_id}>{u.urun_adi}</option>)}
+                      <option value="yeni">+ Yeni Ürün Ekle</option>
+                    </select>
+                    {yeniUrunGoster && (
+                      <div className="flex gap-1.5 mt-1.5">
+                        <input
+                          value={yeniUrunAdi}
+                          onChange={e => setYeniUrunAdi(e.target.value)}
+                          placeholder="Yeni ürün adı..."
+                          className="flex-1 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs outline-none"
+                          style={{ borderColor: "#56aeff", fontFamily: "'Nunito', sans-serif" }}
+                        />
+                        <button type="button" onClick={handleYeniUrunEkle} disabled={!yeniUrunAdi.trim() || urunEkleniyor}
+                          className="text-white border-none rounded-lg px-3 py-1.5 text-xs font-semibold cursor-pointer whitespace-nowrap"
+                          style={{ background: "#56aeff", opacity: !yeniUrunAdi.trim() || urunEkleniyor ? 0.6 : 1, fontFamily: "'Nunito', sans-serif" }}>
+                          {urunEkleniyor ? "..." : "Ekle"}
+                        </button>
+                        <button type="button" onClick={() => { setYeniUrunGoster(false); setYeniUrunAdi(""); }}
+                          className="bg-transparent border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-500 cursor-pointer"
+                          style={{ fontFamily: "'Nunito', sans-serif" }}>İptal</button>
+                      </div>
+                    )}
+                  </div>
 
-                {/* Teknik seçimi */}
-                <div className="flex-1">
-                  <label className="text-xs text-gray-500 block mb-1">Teknik Adı</label>
-                  <select
-                    value={yeniTeknikGoster ? "yeni" : seciliTeknikId}
-                    onChange={e => handleTeknikSec(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white cursor-pointer box-border"
-                    style={{ fontFamily: "'Nunito', sans-serif", color: seciliTeknikId || yeniTeknikGoster ? "#111" : "#9ca3af" }}
-                  >
-                    <option value="">Teknik seçin...</option>
-                    {teknikler.map(t => <option key={t.teknik_id} value={t.teknik_id}>{t.teknik_adi}</option>)}
-                    <option value="yeni">+ Yeni Teknik Ekle</option>
-                  </select>
-                  {yeniTeknikGoster && (
-                    <div className="flex gap-1.5 mt-1.5">
-                      <input
-                        value={yeniTeknikAdi}
-                        onChange={e => setYeniTeknikAdi(e.target.value)}
-                        placeholder="Yeni teknik adı..."
-                        className="flex-1 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs outline-none"
-                        style={{ borderColor: "#56aeff", fontFamily: "'Nunito', sans-serif" }}
-                      />
-                      <button type="button" onClick={handleYeniTeknikEkle} disabled={!yeniTeknikAdi.trim() || teknikEkleniyor}
-                        className="text-white border-none rounded-lg px-3 py-1.5 text-xs font-semibold cursor-pointer whitespace-nowrap"
-                        style={{ background: "#56aeff", opacity: !yeniTeknikAdi.trim() || teknikEkleniyor ? 0.6 : 1, fontFamily: "'Nunito', sans-serif" }}>
-                        {teknikEkleniyor ? "..." : "Ekle"}
-                      </button>
-                      <button type="button" onClick={() => { setYeniTeknikGoster(false); setYeniTeknikAdi(""); }}
-                        className="bg-transparent border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-500 cursor-pointer"
-                        style={{ fontFamily: "'Nunito', sans-serif" }}>İptal</button>
-                    </div>
-                  )}
+                  {/* Teknik seçimi */}
+                  <div className="flex-1">
+                    <label className="text-xs text-gray-500 block mb-1">Teknik Adı</label>
+                    <select
+                      value={yeniTeknikGoster ? "yeni" : seciliTeknikId}
+                      onChange={e => handleTeknikSec(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white cursor-pointer box-border"
+                      style={{ fontFamily: "'Nunito', sans-serif", color: seciliTeknikId || yeniTeknikGoster ? "#111" : "#9ca3af" }}
+                    >
+                      <option value="">Teknik seçin...</option>
+                      {teknikler.map(t => <option key={t.teknik_id} value={t.teknik_id}>{t.teknik_adi}</option>)}
+                      <option value="yeni">+ Yeni Teknik Ekle</option>
+                    </select>
+                    {yeniTeknikGoster && (
+                      <div className="flex gap-1.5 mt-1.5">
+                        <input
+                          value={yeniTeknikAdi}
+                          onChange={e => setYeniTeknikAdi(e.target.value)}
+                          placeholder="Yeni teknik adı..."
+                          className="flex-1 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs outline-none"
+                          style={{ borderColor: "#56aeff", fontFamily: "'Nunito', sans-serif" }}
+                        />
+                        <button type="button" onClick={handleYeniTeknikEkle} disabled={!yeniTeknikAdi.trim() || teknikEkleniyor}
+                          className="text-white border-none rounded-lg px-3 py-1.5 text-xs font-semibold cursor-pointer whitespace-nowrap"
+                          style={{ background: "#56aeff", opacity: !yeniTeknikAdi.trim() || teknikEkleniyor ? 0.6 : 1, fontFamily: "'Nunito', sans-serif" }}>
+                          {teknikEkleniyor ? "..." : "Ekle"}
+                        </button>
+                        <button type="button" onClick={() => { setYeniTeknikGoster(false); setYeniTeknikAdi(""); }}
+                          className="bg-transparent border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-500 cursor-pointer"
+                          style={{ fontFamily: "'Nunito', sans-serif" }}>İptal</button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Kategori seçimi */}
               {kategoriler.length > 0 && (
@@ -738,7 +798,15 @@ export default function TaleplerPage() {
                     className="px-4 py-3 border-b border-gray-50 cursor-pointer">
                     <div className="flex justify-between items-start mb-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-sm font-semibold text-gray-900">{t.urun_adi}</span>
+                        <span className="text-sm font-semibold text-gray-900">
+                          {t.egitim_turu === "genel_egitim" ? "Genel Eğitim" : t.urun_adi}
+                        </span>
+                        {t.egitim_turu === "genel_egitim" && (
+                          <span className="text-xs font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
+                            style={{ background: "#fdf4ff", color: "#7e22ce", border: "0.5px solid #e9d5ff", fontSize: 9 }}>
+                            Genel Eğitim
+                          </span>
+                        )}
                         {t.hazir_video && (
                           <span className="text-xs font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
                             style={{ background: "#fff7ed", color: "#c2410c", border: "0.5px solid #fed7aa", fontSize: 9 }}>
@@ -754,7 +822,9 @@ export default function TaleplerPage() {
                       </div>
                       <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" width="14" height="14"><path d="M9 5l7 7-7 7"/></svg>
                     </div>
-                    <div className="text-xs text-gray-500">{t.teknik_adi}</div>
+                    {t.egitim_turu !== "genel_egitim" && (
+                      <div className="text-xs text-gray-500">{t.teknik_adi}</div>
+                    )}
                     {t.kategori_adi && (
                       <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full"
                         style={{ background: "#f0fdf4", color: "#15803d", border: "0.5px solid #bbf7d0", fontSize: 10 }}>
@@ -771,7 +841,7 @@ export default function TaleplerPage() {
                 <table className="w-full border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 bg-gray-50">
-                      <th className="text-left px-5 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün Adı</th>
+                      <th className="text-left px-5 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün / Tür</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Teknik Adı</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Kategori</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Soru Seti</th>
@@ -785,7 +855,13 @@ export default function TaleplerPage() {
                         className="border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors duration-100">
                         <td className="px-5 py-3 text-gray-900 font-medium">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            {t.urun_adi}
+                            {t.egitim_turu === "genel_egitim" ? "Genel Eğitim" : t.urun_adi}
+                            {t.egitim_turu === "genel_egitim" && (
+                              <span className="font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
+                                style={{ fontSize: 9, background: "#fdf4ff", color: "#7e22ce", border: "0.5px solid #e9d5ff" }}>
+                                Genel Eğitim
+                              </span>
+                            )}
                             {t.hazir_video && (
                               <span className="font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
                                 style={{ fontSize: 9, background: "#fff7ed", color: "#c2410c", border: "0.5px solid #fed7aa" }}>
@@ -800,7 +876,9 @@ export default function TaleplerPage() {
                             )}
                           </div>
                         </td>
-                        <td className="px-3 py-3 text-gray-500">{t.teknik_adi}</td>
+                        <td className="px-3 py-3 text-gray-500">
+                          {t.egitim_turu === "genel_egitim" ? <span className="text-gray-300">—</span> : t.teknik_adi}
+                        </td>
                         <td className="px-3 py-3">
                           {t.kategori_adi ? (
                             <span className="text-xs px-2 py-0.5 rounded-full"
