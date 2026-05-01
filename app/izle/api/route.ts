@@ -2,6 +2,10 @@
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
+import { PM_ROLLERI } from "@/lib/utils/roller";
+
+// İzleme sayfasına erişebilecek tüm roller
+const IZLEME_ROLLERI = ["utt", "kd_utt", "bm", "tm", ...PM_ROLLERI];
 
 export async function GET() {
   try {
@@ -12,51 +16,70 @@ export async function GET() {
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    if (!["utt", "kd_utt"].includes(rol)) return rolHatasi("Sadece utt ve kd_utt erişebilir.");
+    if (!IZLEME_ROLLERI.includes(rol)) return rolHatasi("Bu sayfaya erişim yetkiniz bulunmamaktadır.");
 
     const { data: kullanici, error: kullaniciError } = await adminSupabase
       .from("kullanicilar")
-      .select("bolge_id")
+      .select("bolge_id, takim_id")
       .eq("kullanici_id", user.id)
       .single();
 
     if (kullaniciError || !kullanici) return hataYaniti("Kullanıcı bilgisi alınamadı.", "kullanicilar tablosu SELECT — kullanici_id filtresi", kullaniciError);
-    if (!kullanici.bolge_id) return hataYaniti("Kullanıcıya bölge atanmamış.", "kullanicilar tablosu SELECT — bolge_id kontrolü", null);
 
-    const { data: bolge, error: bolgeError } = await adminSupabase
-      .from("bolgeler")
-      .select("takim_id")
-      .eq("bolge_id", kullanici.bolge_id)
-      .single();
+    // takim_id'yi belirle: UTT/KD_UTT bölge üzerinden, diğerleri doğrudan
+    let takim_id = kullanici.takim_id ?? null;
 
-    if (bolgeError || !bolge) return hataYaniti("Bölge bilgisi alınamadı.", "bolgeler tablosu SELECT — bolge_id filtresi", bolgeError);
-    if (!bolge.takim_id) return hataYaniti("Bölgeye takım atanmamış.", "bolgeler tablosu SELECT — takim_id kontrolü", null);
+    if (["utt", "kd_utt"].includes(rol)) {
+      if (!kullanici.bolge_id) return hataYaniti("Kullanıcıya bölge atanmamış.", "kullanicilar tablosu SELECT — bolge_id kontrolü", null);
+      const { data: bolge, error: bolgeError } = await adminSupabase
+        .from("bolgeler")
+        .select("takim_id")
+        .eq("bolge_id", kullanici.bolge_id)
+        .single();
+      if (bolgeError || !bolge) return hataYaniti("Bölge bilgisi alınamadı.", "bolgeler tablosu SELECT — bolge_id filtresi", bolgeError);
+      if (!bolge.takim_id) return hataYaniti("Bölgeye takım atanmamış.", "bolgeler tablosu SELECT — takim_id kontrolü", null);
+      takim_id = bolge.takim_id;
+    }
 
+    if (!takim_id) return hataYaniti("Kullanıcıya takım ataması bulunamadı.", "takim_id kontrolü", null);
+
+    // hedef_roller filtresi: yayın bu kullanıcının rolünü kapsıyor mu?
     const { data: yayinlar, error: yayinError } = await adminSupabase
       .from("v_yayin_detay")
       .select("yayin_id, soru_seti_durum_id, durum, yayin_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani")
       .eq("durum", "Yayinda")
-      .eq("takim_id", bolge.takim_id)
+      .eq("takim_id", takim_id)
       .order("yayin_tarihi", { ascending: false });
 
     if (yayinError) return hataYaniti("Yayınlar çekilemedi.", "v_yayin_detay view SELECT — Yayinda + takim_id filtresi", yayinError);
     if (!yayinlar || yayinlar.length === 0) return NextResponse.json({ videolar: [] }, { status: 200 });
 
-    // ileri_sarma_acik ve extra_puan bilgisini yayin_yonetimi tablosundan çek
+    // yayin_yonetimi'nden hedef_roller, ileri_sarma_acik, extra_puan çek
     const { data: yayinBilgileri } = await adminSupabase
       .from("yayin_yonetimi")
-      .select("yayin_id, ileri_sarma_acik, extra_puan")
+      .select("yayin_id, ileri_sarma_acik, extra_puan, hedef_roller")
       .in("yayin_id", yayinlar.map((y: any) => y.yayin_id));
 
     const ileriSarmaMap: Record<string, boolean> = {};
     const extraPuanMap: Record<string, number> = {};
+    const hedefRollerMap: Record<string, string[]> = {};
+
     for (const yb of yayinBilgileri ?? []) {
       ileriSarmaMap[yb.yayin_id] = yb.ileri_sarma_acik ?? false;
       extraPuanMap[yb.yayin_id] = yb.extra_puan ?? 0;
+      hedefRollerMap[yb.yayin_id] = yb.hedef_roller ?? ["utt"];
     }
 
+    // Yalnızca bu kullanıcının rolünü kapsayan yayınları filtrele
+    const rolFiltreli = yayinlar.filter((y: any) => {
+      const hedefler = hedefRollerMap[y.yayin_id] ?? ["utt"];
+      return hedefler.includes(rol);
+    });
+
+    if (rolFiltreli.length === 0) return NextResponse.json({ videolar: [] }, { status: 200 });
+
     const sonuc = await Promise.all(
-      yayinlar.map(async (y: any) => {
+      rolFiltreli.map(async (y: any) => {
         const { data: izleme } = await adminSupabase
           .from("izleme_kayitlari")
           .select("izleme_id")
@@ -105,6 +128,7 @@ export async function GET() {
           favori_mi: !!kullaniciFavori,
           ileri_sarma_acik: ileriSarmaMap[y.yayin_id] ?? false,
           extra_puan: extraPuanMap[y.yayin_id] ?? 0,
+          hedef_roller: hedefRollerMap[y.yayin_id] ?? ["utt"],
         };
       })
     );

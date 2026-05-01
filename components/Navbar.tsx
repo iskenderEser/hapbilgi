@@ -84,15 +84,9 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
     const aktif = isAktif(path)
       || (key === "raporlar" && pathname.startsWith("/raporlar"))
       || (key === "analiz" && pathname.startsWith("/analiz"))
-      || (key === "bm-egitim" && pathname.startsWith("/bm-egitim"))
       || (key === "challenge-club" && pathname.startsWith("/challenge-club"));
 
     const base = "relative inline-flex items-center justify-center px-3 md:px-4 py-1 rounded-full border-none cursor-pointer text-xs md:text-sm font-medium transition-all duration-200 whitespace-nowrap";
-
-    if (mavi) {
-      return `${base} ${aktif ? "font-semibold" : ""}`;
-    }
-
     return `${base} ${aktif ? "font-semibold" : ""}`;
   };
 
@@ -100,7 +94,6 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
     const aktif = isAktif(path)
       || (key === "raporlar" && pathname.startsWith("/raporlar"))
       || (key === "analiz" && pathname.startsWith("/analiz"))
-      || (key === "bm-egitim" && pathname.startsWith("/bm-egitim"))
       || (key === "challenge-club" && pathname.startsWith("/challenge-club"));
     const isHover = hover === key;
 
@@ -232,7 +225,6 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
               {rolKucu === "bm" && (
                 <>
                   <div className="w-px h-5 bg-gray-200 mx-1 flex-shrink-0" />
-                  <button onClick={() => router.push("/bm-egitim/izle")} onMouseEnter={() => setHover("bm-egitim")} onMouseLeave={() => setHover(null)} className={pillClass("bm-egitim", "/bm-egitim", true)} style={pillStyle("bm-egitim", "/bm-egitim", true)}>Eğitim</button>
                   <button onClick={() => router.push("/challenge-club")} onMouseEnter={() => setHover("challenge-club")} onMouseLeave={() => setHover(null)} className={pillClass("challenge-club", "/challenge-club", true)} style={pillStyle("challenge-club", "/challenge-club", true)}>Challenge Club</button>
                 </>
               )}
@@ -324,7 +316,6 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
           {rolKucu === "bm" && (
             <>
               <div className="h-px bg-gray-100 my-1.5" />
-              <MenuItem label="Eğitim" path="/bm-egitim/izle" mavi />
               <MenuItem label="Challenge Club" path="/challenge-club" mavi />
             </>
           )}

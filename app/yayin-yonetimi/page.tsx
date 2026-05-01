@@ -38,10 +38,19 @@ interface Yayin {
   soru_puani: number | null;
   sorular: any[];
   ileri_sarma_acik: boolean;
+  hedef_roller: string[];
 }
 
 const VIDEO_PUAN_SECENEKLERI = [40, 45, 50, 55, 60, 65, 70];
 const SORU_PUAN_SECENEKLERI = [3, 4, 5, 6, 7];
+
+// Hedef kitle seçenekleri
+const HEDEF_ROL_SECENEKLERI = [
+  { deger: "utt", etiket: "UTT" },
+  { deger: "kd_utt", etiket: "KD UTT" },
+  { deger: "bm", etiket: "BM" },
+  { deger: "tm", etiket: "TM" },
+];
 
 export default function YayinYonetimiPage() {
   const router = useRouter();
@@ -61,6 +70,8 @@ export default function YayinYonetimiPage() {
   const [bekleyenIleriSarma, setBekleyenIleriSarma] = useState<Record<string, boolean>>({});
   const [ileriSarmaAcik, setIleriSarmaAcik] = useState<Record<string, boolean>>({});
   const [extraPuanlar, setExtraPuanlar] = useState<Record<string, number>>({});
+  // Hedef roller state: her bekleyen için seçili roller dizisi
+  const [hedefRollerMap, setHedefRollerMap] = useState<Record<string, string[]>>({});
   const { mesajlar, hata, basari } = useHataMesaji();
 
   useEffect(() => {
@@ -97,6 +108,16 @@ export default function YayinYonetimiPage() {
         }
       }
       setSoruPuanlari(yeniSoruPuanlari);
+      // Yeni bekleyenler için varsayılan hedef rol: ["utt"]
+      setHedefRollerMap(prev => {
+        const guncellenen = { ...prev };
+        for (const b of bekleyenlerData) {
+          if (!guncellenen[b.soru_seti_durum_id]) {
+            guncellenen[b.soru_seti_durum_id] = ["utt"];
+          }
+        }
+        return guncellenen;
+      });
     }
 
     const { data: yayinlarData, error: yayinError } = await supabase
@@ -108,13 +129,21 @@ export default function YayinYonetimiPage() {
 
     if ((yayinlarData ?? []).length > 0) {
       const { data: yayinBilgileri } = await supabase
-        .from("yayin_yonetimi").select("yayin_id, ileri_sarma_acik")
+        .from("yayin_yonetimi").select("yayin_id, ileri_sarma_acik, hedef_roller")
         .in("yayin_id", yayinlarData!.map(y => y.yayin_id));
 
-      const ileriSarmaMap: Record<string, boolean> = {};
-      for (const yb of yayinBilgileri ?? []) { ileriSarmaMap[yb.yayin_id] = yb.ileri_sarma_acik ?? false; }
-      setIleriSarmaAcik(ileriSarmaMap);
-      setYayinlar((yayinlarData ?? []).map(y => ({ ...y, ileri_sarma_acik: ileriSarmaMap[y.yayin_id] ?? false })));
+      const ileriSarmaMapLocal: Record<string, boolean> = {};
+      const hedefRollerMapLocal: Record<string, string[]> = {};
+      for (const yb of yayinBilgileri ?? []) {
+        ileriSarmaMapLocal[yb.yayin_id] = yb.ileri_sarma_acik ?? false;
+        hedefRollerMapLocal[yb.yayin_id] = yb.hedef_roller ?? ["utt"];
+      }
+      setIleriSarmaAcik(ileriSarmaMapLocal);
+      setYayinlar((yayinlarData ?? []).map(y => ({
+        ...y,
+        ileri_sarma_acik: ileriSarmaMapLocal[y.yayin_id] ?? false,
+        hedef_roller: hedefRollerMapLocal[y.yayin_id] ?? ["utt"],
+      })));
 
       const { data: tumSoruPuanlari, error: spError } = await supabase
         .from("soru_seti_puanlari").select("soru_seti_durum_id, soru_index, soru_puani")
@@ -155,10 +184,24 @@ export default function YayinYonetimiPage() {
     setSoruPuanlari(prev => ({ ...prev, [soru_seti_durum_id]: yeni }));
   };
 
+  const hedefRolToggle = (soru_seti_durum_id: string, rolDeger: string) => {
+    setHedefRollerMap(prev => {
+      const mevcutlar = prev[soru_seti_durum_id] ?? ["utt"];
+      const yeni = mevcutlar.includes(rolDeger)
+        ? mevcutlar.filter(r => r !== rolDeger)
+        : [...mevcutlar, rolDeger];
+      // En az bir rol seçili olmalı
+      if (yeni.length === 0) return prev;
+      return { ...prev, [soru_seti_durum_id]: yeni };
+    });
+  };
+
   const tumPuanlarAtandiMi = (b: Bekleyen): boolean => {
     const vp = videoPuanlari[b.soru_seti_durum_id] ?? b.video_puani;
     if (!vp) return false;
     if (!extraPuanlar[b.soru_seti_durum_id]) return false;
+    const seciliRoller = hedefRollerMap[b.soru_seti_durum_id] ?? [];
+    if (seciliRoller.length === 0) return false;
     for (let i = 0; i < b.sorular.length; i++) {
       if (!soruPuanlari[b.soru_seti_durum_id]?.[i]) return false;
     }
@@ -217,7 +260,12 @@ export default function YayinYonetimiPage() {
 
     const res = await fetch("/yayin-yonetimi/api/yayinlar", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ soru_seti_durum_id: b.soru_seti_durum_id, ileri_sarma_acik: bekleyenIleriSarma[b.soru_seti_durum_id] ?? false, extra_puan: extraPuanlar[b.soru_seti_durum_id] ?? null }),
+      body: JSON.stringify({
+        soru_seti_durum_id: b.soru_seti_durum_id,
+        ileri_sarma_acik: bekleyenIleriSarma[b.soru_seti_durum_id] ?? false,
+        extra_puan: extraPuanlar[b.soru_seti_durum_id] ?? null,
+        hedef_roller: hedefRollerMap[b.soru_seti_durum_id] ?? ["utt"],
+      }),
     });
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "Yayına alınamadı.", d.adim, d.detay); }
@@ -262,6 +310,21 @@ export default function YayinYonetimiPage() {
       İleri sarma açık
     </span>
   ) : null;
+
+  // Hedef roller pill gösterimi (yayında/durduruldu sekmeleri için)
+  const HedefRollerPill = ({ roller }: { roller: string[] }) => (
+    <div className="flex flex-wrap gap-1 mt-1">
+      {roller.map(r => {
+        const sec = HEDEF_ROL_SECENEKLERI.find(s => s.deger === r);
+        return (
+          <span key={r} className="text-xs px-2 py-0.5 rounded-full"
+            style={{ background: "#f0f9ff", color: "#0369a1", border: "0.5px solid #bae6fd" }}>
+            {sec?.etiket ?? r.toUpperCase()}
+          </span>
+        );
+      })}
+    </div>
+  );
 
   const VideoThumb = ({ video_url, thumbnail_url }: { video_url: string | null; thumbnail_url: string | null }) => (
     <div onClick={() => video_url && setAcikVideo(video_url)}
@@ -332,10 +395,11 @@ export default function YayinYonetimiPage() {
   const BekleyenSatir = ({ b }: { b: Bekleyen }) => {
     const acik = bekleyenIleriSarma[b.soru_seti_durum_id] ?? false;
     const hazir = tumPuanlarAtandiMi(b);
+    const seciliRoller = hedefRollerMap[b.soru_seti_durum_id] ?? ["utt"];
     return (
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-2">
-        <div className="flex flex-col md:grid md:items-center md:gap-3 p-4 md:p-3.5"
-          style={{ gridTemplateColumns: "1fr 120px 140px auto" }}>
+        <div className="flex flex-col md:grid md:items-start md:gap-3 p-4 md:p-3.5"
+          style={{ gridTemplateColumns: "1fr 120px 180px auto" }}>
           <div className="flex flex-col gap-1 mb-3 md:mb-0 min-w-0">
             <span className="text-sm font-semibold text-gray-900 truncate">{b.urun_adi}</span>
             <span className="text-xs text-gray-500 line-clamp-2">{b.teknik_adi}</span>
@@ -384,8 +448,32 @@ export default function YayinYonetimiPage() {
               <span className="text-xs text-gray-400">İleri sarma</span>
               <Toggle acik={acik} onClick={() => handleBekleyenIleriSarmaToggle(b.soru_seti_durum_id, b.urun_adi)} />
             </div>
+            {/* Hedef kitle seçimi */}
+            <div>
+              <span className="text-xs text-gray-400 block mb-1">Hedef kitle</span>
+              <div className="flex flex-wrap gap-1.5">
+                {HEDEF_ROL_SECENEKLERI.map(({ deger, etiket }) => {
+                  const secili = seciliRoller.includes(deger);
+                  return (
+                    <button
+                      key={deger}
+                      onClick={() => hedefRolToggle(b.soru_seti_durum_id, deger)}
+                      className="text-xs px-2.5 py-1 rounded-full border cursor-pointer"
+                      style={{
+                        fontFamily: "'Nunito', sans-serif",
+                        background: secili ? "#56aeff" : "white",
+                        color: secili ? "white" : "#737373",
+                        border: secili ? "0.5px solid #56aeff" : "0.5px solid #e5e7eb",
+                        fontWeight: secili ? 700 : 400,
+                      }}>
+                      {etiket}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2 justify-end">
+          <div className="flex items-start gap-2 justify-end pt-0.5">
             {b.sorular?.length > 0 && (
               <button onClick={() => setAcikAkordiyon(acikAkordiyon === b.soru_seti_durum_id ? null : b.soru_seti_durum_id)}
                 className="flex items-center gap-1 px-2 py-1 rounded-lg border border-gray-200 bg-gray-50 text-xs font-semibold text-gray-700 cursor-pointer"
@@ -418,6 +506,7 @@ export default function YayinYonetimiPage() {
         <div className="flex flex-col gap-1 mb-3 md:mb-0 min-w-0">
           <span className="text-sm font-semibold text-gray-900 truncate">{y.urun_adi}</span>
           <span className="text-xs text-gray-500 line-clamp-2">{y.teknik_adi}</span>
+          {y.hedef_roller?.length > 0 && <HedefRollerPill roller={y.hedef_roller} />}
         </div>
         <div className="mb-3 md:mb-0 flex justify-start md:justify-center">
           <VideoThumb video_url={y.video_url} thumbnail_url={y.thumbnail_url} />
@@ -512,8 +601,20 @@ export default function YayinYonetimiPage() {
         <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: "rgba(0,0,0,0.4)" }}>
           <div className="bg-white rounded-xl border border-gray-200 p-6 w-11/12 max-w-sm">
             <div className="text-sm font-semibold text-gray-900 mb-2.5">Yayın onayı</div>
-            <div className="text-sm text-gray-500 leading-relaxed mb-5">
-              <strong>{onayModal.urun_adi}</strong> ürünü yayınlanacaktır. Onaylıyor musunuz?
+            <div className="text-sm text-gray-500 leading-relaxed mb-2">
+              <strong>{onayModal.urun_adi}</strong> ürünü yayınlanacaktır.
+            </div>
+            <div className="flex flex-wrap gap-1 mb-5">
+              {(hedefRollerMap[onayModal.soru_seti_durum_id] ?? ["utt"]).map(r => {
+                const sec = HEDEF_ROL_SECENEKLERI.find(s => s.deger === r);
+                return (
+                  <span key={r} className="text-xs px-2 py-0.5 rounded-full"
+                    style={{ background: "#e6f1fb", color: "#56aeff", border: "0.5px solid #56aeff" }}>
+                    {sec?.etiket ?? r.toUpperCase()}
+                  </span>
+                );
+              })}
+              <span className="text-xs text-gray-400 self-center ml-1">hedef kitleye yayınlanacak.</span>
             </div>
             <div className="flex gap-2.5 justify-end">
               <button onClick={() => setOnayModal(null)}

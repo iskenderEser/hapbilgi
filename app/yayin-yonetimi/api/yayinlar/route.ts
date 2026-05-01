@@ -17,10 +17,13 @@ export async function POST(request: NextRequest) {
     if (!PM_ROLLERI.includes(rol)) return rolHatasi("Sadece yetkili roller yayına alabilir.");
 
     const body = await request.json();
-    const { soru_seti_durum_id, ileri_sarma_acik, extra_puan } = body;
+    const { soru_seti_durum_id, ileri_sarma_acik, extra_puan, hedef_roller } = body;
 
     if (!soru_seti_durum_id) return validasyonHatasi("soru_seti_durum_id zorunludur.", ["soru_seti_durum_id"]);
     if (!extra_puan || extra_puan < 5 || extra_puan > 10) return validasyonHatasi("Extra puan 5-10 arasında olmalıdır.", ["extra_puan"]);
+    if (!hedef_roller || !Array.isArray(hedef_roller) || hedef_roller.length === 0) {
+      return validasyonHatasi("En az bir hedef rol seçilmelidir.", ["hedef_roller"]);
+    }
 
     const { data: soruSetiDurum, error: ssError } = await adminSupabase
       .from("soru_seti_durumu")
@@ -94,6 +97,7 @@ export async function POST(request: NextRequest) {
         yayin_tarihi: simdi,
         ileri_sarma_acik: ileri_sarma_acik ?? false,
         extra_puan,
+        hedef_roller,
       })
       .select("yayin_id, durum, yayin_tarihi")
       .single();
@@ -103,7 +107,7 @@ export async function POST(request: NextRequest) {
     const yayinKontrol = veriKontrol(yeniYayin, "yayin_yonetimi tablosu INSERT — dönen veri", "Yayın oluşturuldu ancak veri döndürülemedi.");
     if (!yayinKontrol.gecerli) return yayinKontrol.yanit;
 
-    // İlgili UTT'lere bildirim gönder
+    // Hedef rollerdeki kullanıcılara bildirim gönder
     try {
       const { data: videoDurum } = await adminSupabase
         .from("video_durumu")
@@ -150,18 +154,18 @@ export async function POST(request: NextRequest) {
                 const bolgeIdler = (bolgeler ?? []).map((b: any) => b.bolge_id);
 
                 if (bolgeIdler.length > 0) {
-                  const { data: uttler } = await adminSupabase
+                  const { data: hedefKullanicilar } = await adminSupabase
                     .from("kullanicilar")
                     .select("kullanici_id")
                     .in("bolge_id", bolgeIdler)
-                    .in("rol", ["utt", "kd_utt"])
+                    .in("rol", hedef_roller)
                     .eq("aktif_mi", true);
 
-                  const uttIdler = (uttler ?? []).map((k: any) => k.kullanici_id);
+                  const hedefIdler = (hedefKullanicilar ?? []).map((k: any) => k.kullanici_id);
 
                   await cokluBildirimOlustur({
                     adminSupabase,
-                    alici_idler: uttIdler,
+                    alici_idler: hedefIdler,
                     gonderen_id: user.id,
                     kayit_turu: "yayin",
                     kayit_id: (yeniYayin as any).yayin_id,
