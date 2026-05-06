@@ -1,15 +1,14 @@
 // app/talepler/api/hazir-video/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 
 // PUT: IU video URL kaydeder
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
@@ -47,10 +46,9 @@ export async function PUT(request: NextRequest) {
 // POST: PM onayla veya reddet
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
@@ -74,7 +72,6 @@ export async function POST(request: NextRequest) {
     if (!talep.hazir_video_url) return isKuraluHatasi("IU henüz video URL'i girmemiş.");
 
     if (karar === "reddet") {
-      // URL'i temizle, IU tekrar yükleyebilsin
       const { error: resetError } = await adminSupabase
         .from("talepler")
         .update({ hazir_video_url: null })
@@ -85,7 +82,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Onaylama — zinciri otomatik oluştur
-    // 1. senaryolar — boş senaryo
+    // 1. senaryolar
     const { data: senaryo, error: senaryoError } = await adminSupabase
       .from("senaryolar")
       .insert({
@@ -98,7 +95,7 @@ export async function POST(request: NextRequest) {
 
     if (senaryoError || !senaryo) return hataYaniti("Senaryo oluşturulamadı.", "senaryolar tablosu INSERT", senaryoError);
 
-    // 2. senaryo_durumu — Onaylandi
+    // 2. senaryo_durumu
     const { data: senaryoDurum, error: sdError } = await adminSupabase
       .from("senaryo_durumu")
       .insert({
@@ -126,7 +123,7 @@ export async function POST(request: NextRequest) {
 
     if (videoError || !video) return hataYaniti("Video oluşturulamadı.", "videolar tablosu INSERT", videoError);
 
-    // 4. video_durumu — Onaylandi
+    // 4. video_durumu
     const { data: videoDurum, error: vdError } = await adminSupabase
       .from("video_durumu")
       .insert({
@@ -140,7 +137,7 @@ export async function POST(request: NextRequest) {
 
     if (vdError || !videoDurum) return hataYaniti("Video durumu oluşturulamadı.", "video_durumu tablosu INSERT", vdError);
 
-    // 5. soru_setleri — boş sorular
+    // 5. soru_setleri
     const { data: soruSeti, error: ssError } = await adminSupabase
       .from("soru_setleri")
       .insert({

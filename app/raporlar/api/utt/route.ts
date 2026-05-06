@@ -3,6 +3,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { hataYaniti, yetkiHatasi } from '@/lib/utils/hataIsle';
 import { tarihAraligi } from '@/lib/utils/tarihAraligi';
+import { getUttData } from '@/lib/rapor/utt/getUttData';
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -11,9 +12,11 @@ export async function GET(request: Request) {
   const periyot = searchParams.get('periyot') || 'bu_ay';
   const { baslangic, bitis } = tarihAraligi(periyot);
 
+  // Auth
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return yetkiHatasi('Oturum açılmamış');
 
+  // Kullanıcı
   const { data: kullanici, error: kullaniciError } = await adminSupabase
     .from('kullanicilar')
     .select('kullanici_id, ad, soyad, rol, bolge_id, takim_id, firma_id')
@@ -24,189 +27,125 @@ export async function GET(request: Request) {
     return hataYaniti('Kullanıcı bulunamadı', 'kullanici_bulamadi', kullaniciError);
   }
 
-  if (!['utt', 'kd_utt'].includes(kullanici.rol)) {
+  const rol = (kullanici.rol ?? '').toLowerCase();
+  if (!['utt', 'kd_utt'].includes(rol)) {
+  
     return yetkiHatasi('Bu rapora erişim yetkiniz yok');
   }
 
-  // 1. Kişisel puan özeti — periyot filtreli
-  const { data: puanlar } = await adminSupabase
-    .from('kazanilan_puanlar')
-    .select('puan, puan_turu, created_at')
-    .eq('kullanici_id', kullanici.kullanici_id)
-    .gte('created_at', baslangic)
-    .lte('created_at', bitis);
+  // Veri
+  const d = await getUttData(adminSupabase, kullanici, baslangic, bitis);
+
+  // ─── İstatistikler ────────────────────────────────────────────────────────
 
   const istatistikler = {
-    video_puani: 0,
-    soru_puani: 0,
-    oneri_puani: 0,
+    izleme_puani: 0,
     extra_puan: 0,
+    oneri_puani: 0,
+    cevaplama_puani: 0,
+    toplam_kazanim: 0,
     ileri_sarma_kaybi: 0,
     yanlis_cevap_kaybi: 0,
-    oneri_kaybi: 0,
-    toplam_puan: 0,
+    toplam_net_puan: 0,
+    tamamlanan_izleme: d.tamamlananIzlemeSayisi,
+    alinan_oneri: 0,
+    tamamlanan_oneri: 0,
+    bekleyen_oneri: 0,
   };
 
-  for (const p of puanlar || []) {
-    if (p.puan_turu === 'video') istatistikler.video_puani += p.puan;
-    else if (p.puan_turu === 'soru') istatistikler.soru_puani += p.puan;
-    else if (p.puan_turu === 'oneri') istatistikler.oneri_puani += p.puan;
+  for (const p of d.puanlar) {
+    if (p.puan_turu === 'izleme') istatistikler.izleme_puani += p.puan;
     else if (p.puan_turu === 'extra') istatistikler.extra_puan += p.puan;
-    else if (p.puan_turu === 'ileri_sarma') istatistikler.ileri_sarma_kaybi += p.puan;
-    else if (p.puan_turu === 'yanlis_cevap') istatistikler.yanlis_cevap_kaybi += p.puan;
-    else if (p.puan_turu === 'oneri_kayip') istatistikler.oneri_kaybi += p.puan;
+    else if (p.puan_turu === 'oneri') istatistikler.oneri_puani += p.puan;
+    else if (p.puan_turu === 'cevaplama') istatistikler.cevaplama_puani += p.puan;
   }
 
-  istatistikler.toplam_puan =
-    istatistikler.video_puani +
-    istatistikler.soru_puani +
-    istatistikler.oneri_puani +
+  istatistikler.toplam_kazanim =
+    istatistikler.izleme_puani +
     istatistikler.extra_puan +
-    istatistikler.ileri_sarma_kaybi +
-    istatistikler.yanlis_cevap_kaybi +
-    istatistikler.oneri_kaybi;
+    istatistikler.oneri_puani +
+    istatistikler.cevaplama_puani;
 
-  // 2. İzleme özeti — periyot filtreli, created_at üzerinden
-  const { data: izlemeler } = await adminSupabase
-    .from('izleme_kayitlari')
-    .select('izleme_id, tamamlandi_mi, created_at')
-    .eq('kullanici_id', kullanici.kullanici_id)
-    .gte('created_at', baslangic)
-    .lte('created_at', bitis);
+  istatistikler.ileri_sarma_kaybi = d.ileriSarmaKayitlari.reduce(
+    (acc, k) => acc + (k.kaybedilen_puan ?? 0), 0
+  );
 
-  const tamamlananIzleme = (izlemeler || []).filter(i => i.tamamlandi_mi).length;
+  // Yanlış cevap kaybı: her yanlış cevap için ilgili yayının soru_puani toplanır
+  // izleme_id → izleme_kayitlari → yayin_id → soru_seti_puanlari join zinciriyle gelir
+  const yanlisCevapSayisi = d.soruCevaplari.length;
+  istatistikler.yanlis_cevap_kaybi = d.soruCevaplari.reduce((acc: number, c: any) => {
+    const soru_puani = c.izleme?.yayin?.soru_seti_puanlari?.soru_puani ?? 0;
+    return acc + soru_puani;
+  }, 0);
 
-  // 3. HBLigi — kişisel sıra — periyot bağımsız
-  const { data: lig } = await adminSupabase
-    .from('v_hbligi_sirali')
-    .select('bolge_sirasi, takim_sirasi, toplam_puan')
-    .eq('kullanici_id', kullanici.kullanici_id)
-    .maybeSingle();
+  istatistikler.toplam_net_puan =
+    istatistikler.toplam_kazanim -
+    istatistikler.ileri_sarma_kaybi -
+    istatistikler.yanlis_cevap_kaybi;
 
-  // 4. Bölge sıralaması — periyot bağımsız
-  const { data: bolgeLig } = await adminSupabase
-    .from('v_hbligi_sirali')
-    .select('kullanici_id, ad, soyad, toplam_puan, bolge_sirasi')
-    .eq('bolge_id', kullanici.bolge_id)
-    .in('rol', ['utt', 'kd_utt'])
-    .order('toplam_puan', { ascending: false })
-    .limit(10);
+  // ─── Öneri özeti ─────────────────────────────────────────────────────────
 
-  const toplamBolgeUtt = bolgeLig?.length || 1;
-  const toplamBolgePuan = (bolgeLig || []).reduce((acc, u) => acc + (u.toplam_puan || 0), 0);
+  istatistikler.alinan_oneri = d.oneriler.length;
+  istatistikler.tamamlanan_oneri = d.oneriler.filter((o: any) => o.izlendi_mi).length;
+  istatistikler.bekleyen_oneri = istatistikler.alinan_oneri - istatistikler.tamamlanan_oneri;
 
-  // 5. Takım puan toplamı — periyot bağımsız
-  const { data: takimLig } = await adminSupabase
-    .from('v_hbligi_sirali')
-    .select('toplam_puan')
-    .eq('takim_id', kullanici.takim_id)
-    .in('rol', ['utt', 'kd_utt']);
+  // ─── HBLigi ──────────────────────────────────────────────────────────────
 
-  const toplamTakimPuan = (takimLig || []).reduce((acc, u) => acc + (u.toplam_puan || 0), 0);
+  const kisiselPuan = d.lig?.toplam_puan ?? 0;
+  const toplamBolgePuan = d.bolgeLig.reduce((acc, u) => acc + (u.toplam_puan ?? 0), 0);
+  const toplamTakimPuan = d.takimLig.reduce((acc, u) => acc + (u.toplam_puan ?? 0), 0);
+  const toplamBolgeUtt = d.bolgeLig.length || 1;
 
-  // 6. Katkı hesaplama
-  const kisiselPuan = lig?.toplam_puan || 0;
   const bolgePuanMax = toplamBolgePuan > 0 ? kisiselPuan / toplamBolgePuan * 100 : 0;
   const takimPuanMax = toplamTakimPuan > 0 ? kisiselPuan / toplamTakimPuan * 100 : 0;
 
-  // 7. Bir üst sıra farkı
-  let birUstPuanFarki: number | null = null;
-  const kendiSirasi = (bolgeLig || []).findIndex(u => u.kullanici_id === kullanici.kullanici_id);
-  if (kendiSirasi > 0) {
-    birUstPuanFarki = (bolgeLig![kendiSirasi - 1].toplam_puan || 0) - kisiselPuan;
-  }
+  const kendiSirasi = d.bolgeLig.findIndex((u) => u.kullanici_id === kullanici.kullanici_id);
+  const birUstPuanFarki = kendiSirasi > 0
+    ? ((d.bolgeLig[kendiSirasi - 1]?.toplam_puan ?? 0) - kisiselPuan)
+    : null;
 
-  // 8. Bölge ve takım adı
-  const { data: bolge } = await adminSupabase
-    .from('bolgeler')
-    .select('bolge_adi, takim_id')
-    .eq('bolge_id', kullanici.bolge_id)
-    .maybeSingle();
+  // ─── Beklemede ───────────────────────────────────────────────────────────
 
-  const { data: takim } = await adminSupabase
-    .from('takimlar')
-    .select('takim_adi')
-    .eq('takim_id', kullanici.takim_id)
-    .maybeSingle();
+  const toplamYayinSayisi = d.yayinlar.length;
+  const izlenmemisVideoSayisi = Math.max(0, toplamYayinSayisi - d.tamamlananIzlemeSayisi);
 
-  // 9. Yayındaki toplam video sayısı — periyot bağımsız, anlık durum
-  const { data: yayinlar } = await adminSupabase
-    .from('yayin_yonetimi')
-    .select('yayin_id')
-    .eq('durum', 'yayinda');
+  // Tahmini puan: tüm yayınların video_puani toplamından izlenenlerin payı düşülür.
+  // getUttData'dan gelen yayinlar: her yayın için video_puani join ile geldi.
+  // izleme_kayitlari periyot filtreli olduğundan burada tüm yayınlar toplanır,
+  // UTT'nin daha önce izledikleri dahil — "kalan potansiyel" olarak gösterilir.
+  const tumYayinlarToplamPuan = d.yayinlar.reduce((acc: number, y: any) => {
+    const video_puani =
+      y.soru_seti_durumu?.soru_setleri?.videolar?.video_puanlari?.video_puani ?? 0;
+    return acc + video_puani;
+  }, 0);
+  const tahminiPuan = tumYayinlarToplamPuan > 0 ? tumYayinlarToplamPuan : 0;
 
-  const toplamYayinSayisi = yayinlar?.length || 0;
-  const izlenmemisVideoSayisi = Math.max(0, toplamYayinSayisi - tamamlananIzleme);
-  const tahminiPuan = izlenmemisVideoSayisi * 80;
-
-  // 10. Ürün & teknik dağılımı — periyot bağımsız
-  const { data: urunIzleme } = await adminSupabase
-    .from('v_rapor_urun_izlenme')
-    .select('urun_adi, teknik_adi, izlenme_sayisi')
-    .eq('kullanici_id', kullanici.kullanici_id);
+  // ─── Ürün & teknik dağılımı ──────────────────────────────────────────────
 
   const urunDagilim: Record<string, number> = {};
   const teknikDagilim: Record<string, number> = {};
 
-  for (const item of urunIzleme || []) {
-    if (item.urun_adi) urunDagilim[item.urun_adi] = (urunDagilim[item.urun_adi] || 0) + (item.izlenme_sayisi || 1);
-    if (item.teknik_adi) teknikDagilim[item.teknik_adi] = (teknikDagilim[item.teknik_adi] || 0) + (item.izlenme_sayisi || 1);
+  for (const item of d.urunIzleme) {
+    if (item.urun_adi) urunDagilim[item.urun_adi] = (urunDagilim[item.urun_adi] ?? 0) + (item.izlenme_sayisi ?? 0);
+    if (item.teknik_adi) teknikDagilim[item.teknik_adi] = (teknikDagilim[item.teknik_adi] ?? 0) + (item.izlenme_sayisi ?? 0);
   }
 
-  // 11. Öneriler — periyot bağımsız
-  const { data: oneriler } = await adminSupabase
-    .from('oneri_kayitlari')
-    .select(`
-      oneri_id,
-      izlendi_mi,
-      created_at,
-      gonderen:oneren_id (ad, soyad)
-    `)
-    .eq('kullanici_id', kullanici.kullanici_id)
-    .order('created_at', { ascending: false })
-    .limit(10);
+  // ─── Beğeni / Favori ─────────────────────────────────────────────────────
 
-  const alinanOneri = (oneriler || []).length;
-  const tamamlananOneri = (oneriler || []).filter(o => o.izlendi_mi).length;
-  const bekleyenOneri = alinanOneri - tamamlananOneri;
+  const benimBegeniSet = new Set(d.benimBegenim.map((b) => b.yayin_id));
+  const benimFavoriSet = new Set(d.benimFavorim.map((f) => f.yayin_id));
 
-  // 12. Beğeni/favori listesi — periyot bağımsız
-  const { data: begeniRaw } = await adminSupabase
-    .from('v_rapor_begeni_favori')
-    .select('yayin_id, urun_adi, teknik_adi, begeni_sayisi')
-    .eq('takim_id', bolge?.takim_id || '')
-    .order('begeni_sayisi', { ascending: false })
-    .limit(5);
-
-  const { data: favoriRaw } = await adminSupabase
-    .from('v_rapor_begeni_favori')
-    .select('yayin_id, urun_adi, teknik_adi, favori_sayisi')
-    .eq('takim_id', bolge?.takim_id || '')
-    .order('favori_sayisi', { ascending: false })
-    .limit(5);
-
-  const { data: benimBegenim } = await adminSupabase
-    .from('video_begeniler')
-    .select('yayin_id')
-    .eq('kullanici_id', kullanici.kullanici_id);
-
-  const { data: benimFavorim } = await adminSupabase
-    .from('video_favoriler')
-    .select('yayin_id')
-    .eq('kullanici_id', kullanici.kullanici_id);
-
-  const benimBegeniSet = new Set((benimBegenim || []).map(b => b.yayin_id));
-  const benimFavoriSet = new Set((benimFavorim || []).map(f => f.yayin_id));
-
-  const begeniListesi = (begeniRaw || []).map(v => ({
+  const begeniListesi = d.begeniRaw.map((v) => ({
     ...v,
     benim_begenim: benimBegeniSet.has(v.yayin_id),
   }));
 
-  const favoriListesi = (favoriRaw || []).map(v => ({
+  const favoriListesi = d.favoriRaw.map((v) => ({
     ...v,
     benim_favorim: benimFavoriSet.has(v.yayin_id),
   }));
+
+  // ─── Response ────────────────────────────────────────────────────────────
 
   return NextResponse.json({
     success: true,
@@ -215,8 +154,8 @@ export async function GET(request: Request) {
         ad: kullanici.ad,
         soyad: kullanici.soyad,
         rol: kullanici.rol,
-        bolge_adi: bolge?.bolge_adi || '-',
-        takim_adi: takim?.takim_adi || '-',
+        bolge_adi: d.bolge?.bolge_adi ?? '-',
+        takim_adi: d.takim?.takim_adi ?? '-',
       },
       katki: {
         bolge_katki_yuzdesi: parseFloat(bolgePuanMax.toFixed(1)),
@@ -227,28 +166,24 @@ export async function GET(request: Request) {
       },
       istatistikler: {
         ...istatistikler,
-        tamamlanan_izleme: tamamlananIzleme,
-        alinan_oneri: alinanOneri,
-        tamamlanan_oneri: tamamlananOneri,
-        bekleyen_oneri: bekleyenOneri,
       },
       lig: {
-        bolge_sirasi: lig?.bolge_sirasi || null,
-        takim_sirasi: lig?.takim_sirasi || null,
+        bolge_sirasi: d.lig?.bolge_sirasi ?? null,
+        takim_sirasi: d.lig?.takim_sirasi ?? null,
         toplam_bolge_utt: toplamBolgeUtt,
         bir_ust_puan_farki: birUstPuanFarki,
-        bolge_siralamasi: (bolgeLig || []).map((u, idx) => ({
+        bolge_siralamasi: d.bolgeLig.map((u, idx) => ({
           sira: idx + 1,
           ad: u.ad,
           soyad: u.soyad,
-          puan: u.toplam_puan || 0,
+          puan: u.toplam_puan ?? 0,
           kendisi_mi: u.kullanici_id === kullanici.kullanici_id,
         })),
       },
       beklemede: {
         izlenmemis_video_sayisi: izlenmemisVideoSayisi,
         tahmini_kazanilacak_puan: tahminiPuan,
-        bekleyen_oneri_sayisi: bekleyenOneri,
+        bekleyen_oneri_sayisi: istatistikler.bekleyen_oneri,
       },
       urun_bazli_dagilim: Object.entries(urunDagilim)
         .map(([urun_adi, izlenme_sayisi]) => ({ urun_adi, izlenme_sayisi }))
@@ -256,7 +191,7 @@ export async function GET(request: Request) {
       teknik_bazli_dagilim: Object.entries(teknikDagilim)
         .map(([teknik_adi, izlenme_sayisi]) => ({ teknik_adi, izlenme_sayisi }))
         .sort((a, b) => b.izlenme_sayisi - a.izlenme_sayisi),
-      oneriler: (oneriler || []).map((o: any) => ({
+      oneriler: d.oneriler.map((o: any) => ({
         oneri_id: o.oneri_id,
         tamamlandi_mi: o.izlendi_mi,
         gonderen: o.gonderen ? `${o.gonderen.ad} ${o.gonderen.soyad}` : '-',

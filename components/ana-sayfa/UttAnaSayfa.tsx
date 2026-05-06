@@ -13,6 +13,13 @@ interface Video {
   thumbnail_url: string | null;
   video_puani: number | null;
   yayin_tarihi: string;
+  extra_puan: number;
+  ileri_sarma_acik: boolean;
+  begeni_sayisi: number;
+  favori_sayisi: number;
+  begeni_mi: boolean;
+  favori_mi: boolean;
+  daha_once_izledi: boolean;
 }
 
 interface UttVeri {
@@ -52,7 +59,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
   useEffect(() => {
     const veriCek = async () => {
       setLoading(true);
-      const res = await fetch("/ana-sayfa/api/utt");
+      const res = await fetch("/ana-sayfa/api");
       const data = await res.json();
       if (!res.ok) { hata(data.hata ?? "Veriler yüklenemedi.", data.adim, data.detay); }
       else { setUttVeri(data); }
@@ -61,8 +68,39 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
     veriCek();
   }, [user]);
 
+  const handleBegeni = async (e: React.MouseEvent, yayin_id: string) => {
+    e.stopPropagation();
+    const res = await fetch("/izle/api/begeni", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id }) });
+    const d = await res.json();
+    if (!res.ok) return;
+    setUttVeri(prev => {
+      if (!prev) return prev;
+      const guncelle = (liste: Video[]) => liste.map(v => v.yayin_id === yayin_id
+        ? { ...v, begeni_mi: d.begeni_mi, begeni_sayisi: d.begeni_mi ? v.begeni_sayisi + 1 : v.begeni_sayisi - 1 }
+        : v);
+      return { ...prev, yeni_videolar: guncelle(prev.yeni_videolar), devam_edenler: guncelle(prev.devam_edenler), tamamlananlar: guncelle(prev.tamamlananlar) };
+    });
+  };
+
+  const handleFavori = async (e: React.MouseEvent, yayin_id: string) => {
+    e.stopPropagation();
+    const res = await fetch("/izle/api/favori", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id }) });
+    const d = await res.json();
+    if (!res.ok) return;
+    setUttVeri(prev => {
+      if (!prev) return prev;
+      const guncelle = (liste: Video[]) => liste.map(v => v.yayin_id === yayin_id
+        ? { ...v, favori_mi: d.favori_mi, favori_sayisi: d.favori_mi ? v.favori_sayisi + 1 : v.favori_sayisi - 1 }
+        : v);
+      return { ...prev, yeni_videolar: guncelle(prev.yeni_videolar), devam_edenler: guncelle(prev.devam_edenler), tamamlananlar: guncelle(prev.tamamlananlar) };
+    });
+  };
+
   const bugunTarih = () =>
     new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
+
+  const formatTarih = (tarih: string) =>
+    new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
 
   if (loading) {
     return (
@@ -128,11 +166,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
         <span className="text-sm font-bold text-gray-900">
           {aktifFiltre === "yeni" ? "Yeni Videolar" : aktifFiltre === "devam" ? "Devam Eden" : "Tamamlanan"}
         </span>
-        <span
-          className="text-xs cursor-pointer"
-          style={{ color: "#56aeff" }}
-          onClick={() => router.push("/izle")}
-        >
+        <span className="text-xs cursor-pointer" style={{ color: "#56aeff" }} onClick={() => router.push("/izle")}>
           Tümünü gör
         </span>
       </div>
@@ -142,13 +176,15 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
           Bu kategoride video bulunmuyor.
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
           {aktifVideolar.slice(0, 8).map(v => (
             <div
               key={v.yayin_id}
-              onClick={() => router.push("/izle")}
-              className="bg-white rounded-xl overflow-hidden cursor-pointer"
+              onClick={() => router.push(`/izle?yayin_id=${v.yayin_id}`)}
+              className="bg-white rounded-xl overflow-hidden cursor-pointer transition-shadow duration-150"
               style={{ border: "0.5px solid #e5e7eb" }}
+              onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 16px rgba(0,0,0,0.08)"}
+              onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.boxShadow = "none"}
             >
               {/* Thumbnail */}
               <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16/9" }}>
@@ -156,24 +192,64 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
                   ? <img src={v.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
                   : <div className="w-full h-full" style={{ background: GRADYANLAR[Math.abs(v.yayin_id.charCodeAt(0)) % GRADYANLAR.length] }} />
                 }
-                {/* Play butonu */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
                     <svg width="9" height="11" viewBox="0 0 10 12" fill="white"><path d="M0 0l10 6-10 6z" /></svg>
                   </div>
                 </div>
-                {/* Badge */}
-                {aktifFiltre === "yeni" && (
-                  <div className="absolute bottom-1.5 right-1.5 text-white rounded-full px-1.5 py-px" style={{ background: "#bc2d0d", fontSize: "9px", fontWeight: 600 }}>Yeni</div>
-                )}
-                {aktifFiltre === "tamamlanan" && (
-                  <div className="absolute bottom-1.5 right-1.5 text-white rounded-full px-1.5 py-px" style={{ background: "#16a34a", fontSize: "9px", fontWeight: 600 }}>✓</div>
-                )}
+                <div className="absolute top-2 left-2 flex gap-1">
+                  {v.daha_once_izledi ? (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: "#f0fdf4", color: "#16a34a", border: "0.5px solid #bbf7d0", fontSize: 10 }}>İzlendi</span>
+                  ) : (
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-white" style={{ background: "#56aeff", fontSize: 10 }}>Yeni</span>
+                  )}
+                  {v.ileri_sarma_acik && (
+                    <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-white" style={{ background: "rgba(0,0,0,0.6)", fontSize: 10 }}>
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+                    </span>
+                  )}
+                </div>
               </div>
+
               {/* Bilgi */}
-              <div className="px-2.5 py-2">
-                <div className="text-xs font-bold text-gray-900 truncate">{v.urun_adi}</div>
-                <div className="text-xs text-gray-500 mt-0.5 truncate">{v.teknik_adi}</div>
+              <div className="px-2.5 py-2 flex flex-col gap-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-xs font-bold text-gray-900 truncate">{v.urun_adi}</div>
+                  <div className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">{v.teknik_adi}</div>
+                </div>
+                <div className="flex items-center justify-between">
+                  {v.video_puani !== null ? (
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-0.5 text-xs text-gray-500">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#56aeff" strokeWidth="2">
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                        </svg>
+                        Video <span className="font-semibold text-gray-900 ml-0.5">{v.video_puani}</span>
+                      </div>
+                      {v.extra_puan > 0 && (
+                        <div className="flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs" style={{ background: "#f0fdf4", border: "0.5px solid #bbf7d0", color: "#15803d" }}>
+                          +<span className="font-semibold">{v.extra_puan}</span> extra
+                        </div>
+                      )}
+                    </div>
+                  ) : <div />}
+                  <div className="text-xs text-gray-400 flex-shrink-0">{formatTarih(v.yayin_tarihi)}</div>
+                </div>
+                <div className="flex items-center justify-between mt-0.5">
+                  <div className="flex items-center gap-1 cursor-pointer" onClick={(e) => handleBegeni(e, v.yayin_id)}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill={v.begeni_mi ? "#bc2d0d" : "none"} stroke="#bc2d0d" strokeWidth="2">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </svg>
+                    <span className="text-xs" style={{ color: v.begeni_mi ? "#bc2d0d" : "#737373", fontWeight: v.begeni_mi ? 600 : 400 }}>{v.begeni_sayisi}</span>
+                  </div>
+                  <div className="flex items-center gap-1 cursor-pointer" onClick={(e) => handleFavori(e, v.yayin_id)}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill={v.favori_mi ? "#56aeff" : "none"} stroke={v.favori_mi ? "#56aeff" : "#737373"} strokeWidth="2">
+                      <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
+                      <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+                    </svg>
+                    <span className="text-xs" style={{ color: v.favori_mi ? "#56aeff" : "#737373", fontWeight: v.favori_mi ? 600 : 400 }}>{v.favori_sayisi}</span>
+                  </div>
+                </div>
               </div>
             </div>
           ))}

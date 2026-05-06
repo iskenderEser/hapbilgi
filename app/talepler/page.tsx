@@ -2,7 +2,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
@@ -39,6 +39,7 @@ interface Teknik {
 interface Kategori {
   kategori_id: string;
   kategori_adi: string;
+  aktif_mi: boolean;
 }
 
 interface DosyaItem {
@@ -51,6 +52,11 @@ interface DosyaItem {
 interface Soru {
   soru_metni: string;
   secenekler: { harf: string; metin: string; dogru: boolean }[];
+}
+
+interface KullaniciBilgi {
+  firma_id: string;
+  takim_id: string | null;
 }
 
 const DESTEKLENEN_FORMATLAR = ".pdf,.docx,.pptx,.xlsx,.txt,.png,.jpg,.jpeg,.mp4,.mov,.avi,.mkv,.webm";
@@ -66,43 +72,43 @@ const dosyaTipiRenk = (dosya_adi: string): { etiket: string; bg: string; renk: s
   if (["xlsx", "xls"].includes(ext)) return { etiket: "XLS", bg: "#f0fdf4", renk: "#15803d" };
   if (ext === "txt") return { etiket: "TXT", bg: "#f9fafb", renk: "#374151" };
   if (["png", "jpg", "jpeg"].includes(ext)) return { etiket: "IMG", bg: "#fdf4ff", renk: "#7e22ce" };
-  if (["mp4", "mov", "webm"].includes(ext)) return { etiket: "VID", bg: "#f0fdf4", renk: "#16a34a" };
-  if (["avi", "mkv"].includes(ext)) return { etiket: "VID", bg: "#f0fdf4", renk: "#16a34a" };
+  if (["mp4", "mov", "webm", "avi", "mkv"].includes(ext)) return { etiket: "VID", bg: "#f0fdf4", renk: "#16a34a" };
   return { etiket: ext.toUpperCase(), bg: "#f9fafb", renk: "#737373" };
 };
 
 const parseSoruSeti = (metin: string, maxSoru: number): { sorular: Soru[]; hata: string } => {
-  const satirlar = metin.split("\n").map(s => s.trim());
+  const bloklar = metin.split(/\n\s*\n/).filter(b => b.trim());
   const sorular: Soru[] = [];
-  let mevcutSoru: Partial<Soru> | null = null;
 
-  for (let i = 0; i < satirlar.length; i++) {
-    const satir = satirlar[i];
-    if (!satir) {
-      if (mevcutSoru?.soru_metni && mevcutSoru.secenekler?.length === 2) {
-        const dogruVar = mevcutSoru.secenekler.some(s => s.dogru);
-        if (dogruVar) sorular.push(mevcutSoru as Soru);
-        else return { sorular: [], hata: `${sorular.length + 1}. soruda "Doğru:" satırı eksik veya hatalı.` };
-      }
-      mevcutSoru = null; continue;
-    }
-    const soruMatch = satir.match(/^\d+[\.\)]\s*(.+)/);
-    if (soruMatch) { mevcutSoru = { soru_metni: soruMatch[1].trim(), secenekler: [] }; continue; }
-    const aMatch = satir.match(/^A[\)\.]\s*(.+)/i);
-    if (aMatch && mevcutSoru) { mevcutSoru.secenekler = mevcutSoru.secenekler ?? []; mevcutSoru.secenekler.push({ harf: "A", metin: aMatch[1].trim(), dogru: false }); continue; }
-    const bMatch = satir.match(/^B[\)\.]\s*(.+)/i);
-    if (bMatch && mevcutSoru) { mevcutSoru.secenekler = mevcutSoru.secenekler ?? []; mevcutSoru.secenekler.push({ harf: "B", metin: bMatch[1].trim(), dogru: false }); continue; }
-    const dogruMatch = satir.match(/^Doğru:\s*([AB])/i);
-    if (dogruMatch && mevcutSoru?.secenekler) {
-      const dogruHarf = dogruMatch[1].toUpperCase();
-      mevcutSoru.secenekler = mevcutSoru.secenekler.map(s => ({ ...s, dogru: s.harf === dogruHarf }));
-    }
-  }
+  for (const blok of bloklar) {
+    const lines = blok.split("\n").map(l => l.trim()).filter(l => l);
+    if (lines.length < 4) continue;
 
-  if (mevcutSoru?.soru_metni && mevcutSoru.secenekler?.length === 2) {
-    const dogruVar = mevcutSoru.secenekler.some(s => s.dogru);
-    if (dogruVar) sorular.push(mevcutSoru as Soru);
-    else return { sorular: [], hata: `${sorular.length + 1}. soruda "Doğru:" satırı eksik veya hatalı.` };
+    const soruLine = lines.find(l => /^\d+[\.\)]/.test(l));
+    if (!soruLine) return { sorular: [], hata: "Soru metni bulunamadı." };
+    
+    const soruMetni = soruLine.replace(/^\d+[\.\)]\s*/, "");
+    
+    const aLine = lines.find(l => /^A[\)\.]/i.test(l));
+    const bLine = lines.find(l => /^B[\)\.]/i.test(l));
+    if (!aLine || !bLine) return { sorular: [], hata: "A ve B seçenekleri bulunamadı." };
+
+    const secenekA = aLine.replace(/^A[\)\.]\s*/i, "");
+    const secenekB = bLine.replace(/^B[\)\.]\s*/i, "");
+    
+    const dogruLine = lines.find(l => /^Doğru:/i.test(l));
+    if (!dogruLine) return { sorular: [], hata: "Doğru cevap satırı bulunamadı." };
+    
+    const dogruHarf = dogruLine.match(/[AB]/i)?.[0]?.toUpperCase();
+    if (dogruHarf !== "A" && dogruHarf !== "B") return { sorular: [], hata: "Doğru cevap A veya B olmalıdır." };
+
+    sorular.push({
+      soru_metni: soruMetni,
+      secenekler: [
+        { harf: "A", metin: secenekA, dogru: dogruHarf === "A" },
+        { harf: "B", metin: secenekB, dogru: dogruHarf === "B" },
+      ],
+    });
   }
 
   if (sorular.length !== maxSoru) {
@@ -120,7 +126,6 @@ export default function TaleplerPage() {
   const [loading, setLoading] = useState(true);
   const [formLoading, setFormLoading] = useState(false);
 
-  // Eğitim türü
   const [egitimTuru, setEgitimTuru] = useState<"urun_egitimi" | "genel_egitim">("urun_egitimi");
 
   const [urunler, setUrunler] = useState<Urun[]>([]);
@@ -171,32 +176,39 @@ export default function TaleplerPage() {
     router.push("/login");
   };
 
-  const veriCek = async () => {
+  const veriCek = useCallback(async () => {
     setLoading(true);
     const res = await fetch("/talepler/api");
     const data = await res.json();
     if (!res.ok) { hata(data.hata ?? "Talepler yüklenemedi.", data.adim, data.detay); }
     else { setTalepler(data.talepler ?? []); }
     setLoading(false);
-  };
+  }, [hata]);
 
-  const urunleriCek = async (firma_id: string, takim_id: string) => {
-    const res = await fetch(`/urunler/api?firma_id=${firma_id}&takim_id=${takim_id}`);
-    const data = await res.json();
-    if (res.ok) setUrunler(data.urunler ?? []);
-  };
+  const fetchKullaniciBilgi = useCallback(async (supabase: any): Promise<KullaniciBilgi | null> => {
+    const { data } = await supabase
+      .from("kullanicilar")
+      .select("firma_id, takim_id")
+      .eq("kullanici_id", user.id)
+      .single();
+    return data;
+  }, [user?.id]);
 
-  const teknikleriCek = async (firma_id: string) => {
-    const res = await fetch(`/teknikler/api?firma_id=${firma_id}`);
-    const data = await res.json();
-    if (res.ok) setTeknikler(data.teknikler ?? []);
-  };
-
-  const kategorileriCek = async (firma_id: string) => {
-    const res = await fetch(`/kategoriler/api?firma_id=${firma_id}`);
-    const data = await res.json();
-    if (res.ok) setKategoriler((data.kategoriler ?? []).filter((k: Kategori & { aktif_mi: boolean }) => k.aktif_mi));
-  };
+  const fetchUrunTeknikKategori = useCallback(async (firma_id: string, takim_id: string | null) => {
+    const [urunRes, teknikRes, kategoriRes] = await Promise.all([
+      fetch(`/urunler/api?firma_id=${firma_id}&takim_id=${takim_id}`),
+      fetch(`/teknikler/api?firma_id=${firma_id}`),
+      fetch(`/kategoriler/api?firma_id=${firma_id}`),
+    ]);
+    
+    const urunData = await urunRes.json();
+    const teknikData = await teknikRes.json();
+    const kategoriData = await kategoriRes.json();
+    
+    if (urunRes.ok) setUrunler(urunData.urunler ?? []);
+    if (teknikRes.ok) setTeknikler(teknikData.teknikler ?? []);
+    if (kategoriRes.ok) setKategoriler((kategoriData.kategoriler ?? []).filter((k: Kategori) => k.aktif_mi));
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -205,28 +217,20 @@ export default function TaleplerPage() {
     veriCek();
     if (isPM) {
       const supabase = createClient();
-      supabase.from("kullanicilar")
-        .select("firma_id, takim_id")
-        .eq("kullanici_id", user.id)
-        .single()
-        .then(({ data }) => {
-          if (data?.firma_id) {
-            urunleriCek(data.firma_id, data.takim_id);
-            teknikleriCek(data.firma_id);
-            kategorileriCek(data.firma_id);
-          }
-        });
+      fetchKullaniciBilgi(supabase).then((data) => {
+        if (data?.firma_id) {
+          fetchUrunTeknikKategori(data.firma_id, data.takim_id ?? null);
+        }
+      });
     }
-  }, [user]);
+  }, [user, veriCek, fetchKullaniciBilgi, fetchUrunTeknikKategori]);
 
-  // video_basi_soru_sayisi, soru_seti_buyuklugu'nu geçemez
   useEffect(() => {
     if (videoBasiSoruSayisi > soruSetiBuyuklugu) {
       setVideoBasiSoruSayisi(soruSetiBuyuklugu);
     }
   }, [soruSetiBuyuklugu]);
 
-  // Eğitim türü değişince ürün/teknik alanlarını sıfırla
   const handleEgitimTuruDegis = (tur: "urun_egitimi" | "genel_egitim") => {
     setEgitimTuru(tur);
     if (tur === "genel_egitim") {
@@ -239,8 +243,9 @@ export default function TaleplerPage() {
     }
   };
 
-  const formatTarih = (tarih: string) =>
-    new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const formatTarih = useCallback((tarih: string) => {
+    return new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  }, []);
 
   const handleUrunSec = (deger: string) => {
     if (deger === "yeni") { setYeniUrunGoster(true); setSeciliUrunId(""); }
@@ -256,7 +261,7 @@ export default function TaleplerPage() {
     if (!yeniUrunAdi.trim()) return;
     setUrunEkleniyor(true);
     const supabase = createClient();
-    const { data: kullanici } = await supabase.from("kullanicilar").select("firma_id, takim_id").eq("kullanici_id", user.id).single();
+    const kullanici = await fetchKullaniciBilgi(supabase);
     if (!kullanici?.firma_id) { hata("Firma bilgisi alınamadı.", "kullanicilar SELECT", undefined); setUrunEkleniyor(false); return; }
     const res = await fetch("/urunler/api", {
       method: "POST",
@@ -267,7 +272,7 @@ export default function TaleplerPage() {
     if (!res.ok) { hata(d.hata ?? "Ürün eklenemedi.", d.adim, d.detay); }
     else {
       basari(`"${yeniUrunAdi.trim()}" ürünü eklendi.`);
-      await urunleriCek(kullanici.firma_id, kullanici.takim_id);
+      await fetchUrunTeknikKategori(kullanici.firma_id, kullanici.takim_id ?? null);
       setSeciliUrunId(d.urun.urun_id);
       setYeniUrunGoster(false);
       setYeniUrunAdi("");
@@ -279,7 +284,7 @@ export default function TaleplerPage() {
     if (!yeniTeknikAdi.trim()) return;
     setTeknikEkleniyor(true);
     const supabase = createClient();
-    const { data: kullanici } = await supabase.from("kullanicilar").select("firma_id").eq("kullanici_id", user.id).single();
+    const kullanici = await fetchKullaniciBilgi(supabase);
     if (!kullanici?.firma_id) { hata("Firma bilgisi alınamadı.", "kullanicilar SELECT", undefined); setTeknikEkleniyor(false); return; }
     const res = await fetch("/teknikler/api", {
       method: "POST",
@@ -290,7 +295,7 @@ export default function TaleplerPage() {
     if (!res.ok) { hata(d.hata ?? "Teknik eklenemedi.", d.adim, d.detay); }
     else {
       basari(`"${yeniTeknikAdi.trim()}" tekniği eklendi.`);
-      await teknikleriCek(kullanici.firma_id);
+      await fetchUrunTeknikKategori(kullanici.firma_id, kullanici.takim_id ?? null);
       setSeciliTeknikId(d.teknik.teknik_id);
       setYeniTeknikGoster(false);
       setYeniTeknikAdi("");
@@ -330,7 +335,6 @@ export default function TaleplerPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Ürün eğitiminde ürün + teknik zorunlu
     if (egitimTuru === "urun_egitimi") {
       if (!seciliUrunId) { hata("Ürün seçimi zorunludur.", "form kontrolü", undefined); return; }
       if (!seciliTeknikId) { hata("Teknik seçimi zorunludur.", "form kontrolü", undefined); return; }
@@ -406,10 +410,10 @@ export default function TaleplerPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
-          <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
+        <div className="animate-pulse flex flex-col items-center gap-2">
+          <div className="w-8 h-8 border-2 border-gray-200 border-t-[#56aeff] rounded-full animate-spin" />
+          <div className="h-2 w-24 bg-gray-200 rounded" />
+        </div>
       </div>
     );
   }
@@ -420,13 +424,11 @@ export default function TaleplerPage() {
 
       <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-5">
 
-        {/* Yeni Talep Formu — sadece talepçi roller */}
         {isPM && (
           <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-5">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <h2 className="text-sm font-semibold text-gray-900 m-0">Yeni Talep</h2>
               <div className="flex items-center gap-4">
-                {/* Hazır Videom Var toggle */}
                 <label className="flex items-center gap-1.5 cursor-pointer">
                   <div
                     onClick={() => { setHazirVideo(prev => !prev); setBekleyenVideo(null); }}
@@ -440,7 +442,6 @@ export default function TaleplerPage() {
                   </div>
                   <span className="text-xs font-semibold text-gray-700">Hazır Videom Var</span>
                 </label>
-                {/* Hazır Soru Setim Var toggle */}
                 <label className="flex items-center gap-1.5 cursor-pointer">
                   <div
                     onClick={() => { setHazirSoruSeti(prev => !prev); setSoruSetiMetni(""); setSoruSetiOnizleme([]); setSoruSetiParseHata(""); }}
@@ -459,7 +460,6 @@ export default function TaleplerPage() {
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
 
-              {/* Eğitim türü seçimi */}
               <div className="flex gap-2 mb-1">
                 {[
                   { deger: "urun_egitimi", etiket: "Ürün Eğitimi", aciklama: "Ürün ve teknik bilgisi videosu" },
@@ -491,7 +491,6 @@ export default function TaleplerPage() {
                 })}
               </div>
 
-              {/* Bilgi kutuları */}
               {(hazirVideo || hazirSoruSeti) && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800 leading-relaxed">
                   {hazirVideo && hazirSoruSeti && "Hazır video ve soru seti talebi oluşturuyorsunuz. Senaryo aşaması atlanacak — IU videoyu Bunny.net'e yükleyecek, ardından sizin yüklediğiniz soru setini sisteme işleyecektir."}
@@ -500,10 +499,8 @@ export default function TaleplerPage() {
                 </div>
               )}
 
-              {/* Ürün + Teknik — yalnızca ürün eğitiminde göster */}
               {isUrunEgitimi && (
                 <div className="flex flex-col md:flex-row gap-3">
-                  {/* Ürün seçimi */}
                   <div className="flex-1">
                     <label className="text-xs text-gray-500 block mb-1">Ürün Adı</label>
                     <select
@@ -537,7 +534,6 @@ export default function TaleplerPage() {
                     )}
                   </div>
 
-                  {/* Teknik seçimi */}
                   <div className="flex-1">
                     <label className="text-xs text-gray-500 block mb-1">Teknik Adı</label>
                     <select
@@ -573,7 +569,6 @@ export default function TaleplerPage() {
                 </div>
               )}
 
-              {/* Kategori seçimi */}
               {kategoriler.length > 0 && (
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">Kategori</label>
@@ -590,7 +585,6 @@ export default function TaleplerPage() {
                 </div>
               )}
 
-              {/* Soru seti büyüklüğü + Video başı soru sayısı */}
               <div className="flex flex-col md:flex-row gap-3">
                 <div className="flex-1">
                   <label className="text-xs text-gray-500 block mb-1">Soru seti büyüklüğü</label>
@@ -623,7 +617,6 @@ export default function TaleplerPage() {
                 </div>
               </div>
 
-              {/* Açıklama */}
               <div>
                 <label className="text-xs text-gray-500 block mb-1">Açıklama</label>
                 <textarea
@@ -636,7 +629,6 @@ export default function TaleplerPage() {
                 />
               </div>
 
-              {/* Hazır video dosyası */}
               {hazirVideo && (
                 <div>
                   <label className="text-xs text-gray-500 block mb-1.5">
@@ -666,7 +658,6 @@ export default function TaleplerPage() {
                 </div>
               )}
 
-              {/* Hazır soru seti alanı */}
               {hazirSoruSeti && (
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
                   <div className="px-3 py-2.5 bg-gray-50 border-b border-gray-100">
@@ -674,7 +665,7 @@ export default function TaleplerPage() {
                     <span className="text-xs text-gray-400 ml-2">(IU bu soru setini sisteme işleyecek — tam {soruSetiBuyuklugu} soru girilmeli)</span>
                   </div>
                   <div className="p-3">
-                    <div className="bg-gray-100 rounded-lg px-3 py-2 mb-2.5 text-xs text-gray-500 leading-relaxed" style={{ fontFamily: "monospace" }}>
+                    <div className="bg-gray-100 rounded-lg px-3 py-2 mb-2.5 text-xs text-gray-500 leading-relaxed font-mono">
                       1. Soru metni buraya yazılır<br />
                       A) Birinci seçenek<br />
                       B) İkinci seçenek<br />
@@ -731,7 +722,6 @@ export default function TaleplerPage() {
                 </div>
               )}
 
-              {/* Ek dosyalar */}
               <div>
                 <label className="text-xs text-gray-500 block mb-1.5">
                   Ek Dosyalar <span className="text-gray-400 font-normal">(isteğe bağlı)</span>
@@ -778,7 +768,6 @@ export default function TaleplerPage() {
           </div>
         )}
 
-        {/* Talep Listesi */}
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <span className="text-sm font-semibold text-gray-900">{isPM ? "Taleplerim" : "Tüm Talepler"}</span>
@@ -791,7 +780,6 @@ export default function TaleplerPage() {
             </div>
           ) : (
             <>
-              {/* Mobile: kart görünümü */}
               <div className="md:hidden">
                 {talepler.map((t) => (
                   <div key={t.talep_id} onClick={() => router.push(`/talepler/${t.talep_id}`)}
@@ -836,7 +824,6 @@ export default function TaleplerPage() {
                 ))}
               </div>
 
-              {/* Desktop: tablo görünümü */}
               <div className="hidden md:block">
                 <table className="w-full border-collapse text-sm">
                   <thead>

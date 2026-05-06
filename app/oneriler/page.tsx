@@ -2,7 +2,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
@@ -89,7 +89,7 @@ export default function OnerilerPage() {
     router.push("/login");
   };
 
-  const veriCek = async () => {
+  const veriCek = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
     const res = await fetch("/oneriler/api");
@@ -111,15 +111,18 @@ export default function OnerilerPage() {
       else { setKullanicilar(kullanicilarData ?? []); }
     }
     setLoading(false);
-  };
+  }, [user?.user_metadata?.rol]);
 
-  useEffect(() => { if (user) veriCek(); }, [user]);
+  useEffect(() => { if (user) veriCek(); }, [user, veriCek]);
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
-  const formatTarihKisa = (tarih: string) =>
-    new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "short" });
+  const formatTarihKisa = (tarih: string) => {
+    const date = new Date(tarih);
+    if (isNaN(date.getTime())) return "Geçersiz tarih";
+    return date.toLocaleDateString("tr-TR", { day: "2-digit", month: "short" });
+  };
 
   const rolKucu = rol.toLowerCase();
   const isBMTM = ["tm", "bm"].includes(rolKucu);
@@ -194,7 +197,6 @@ export default function OnerilerPage() {
             </div>
 
             <form onSubmit={handleOneriGonder} className="px-4 md:px-5 py-4 flex flex-col gap-3.5">
-              {/* Kişi seçimi */}
               <div>
                 <label className="text-xs text-gray-500 block mb-1">Kişi</label>
                 <select value={secilenKullanici} onChange={(e) => setSecilenKullanici(e.target.value)} required
@@ -205,11 +207,11 @@ export default function OnerilerPage() {
                 </select>
               </div>
 
-              {/* Tarih aralığı */}
               <div className="flex flex-col md:flex-row gap-3">
                 <div className="flex-1">
                   <label className="text-xs text-gray-500 block mb-1">İzlenme Başlangıcı</label>
                   <input type="datetime-local" value={oneriBaslangic} onChange={(e) => handleBaslangicDegis(e.target.value)} required
+                    min={new Date().toISOString().slice(0, 16)}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                     style={{ fontFamily: "'Nunito', sans-serif" }} />
                 </div>
@@ -221,7 +223,6 @@ export default function OnerilerPage() {
                 </div>
               </div>
 
-              {/* Video seçimi */}
               <div>
                 <label className="text-xs text-gray-500 block mb-2">
                   Videolar — {secilenYayinlar.length} / 3 seçildi
@@ -320,13 +321,22 @@ export default function OnerilerPage() {
                     <div key={o.oneri_id}
                       className="bg-white rounded-xl overflow-hidden transition-shadow duration-150"
                       style={{ border: `1.5px solid ${renk}`, opacity: soluk ? 0.6 : 1, cursor: soluk ? "default" : "pointer" }}
+                      onClick={() => { if (!soluk) router.push(`/izle/${o.yayin_id}`); }}
                       onMouseEnter={e => { if (!soluk) (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 16px rgba(0,0,0,0.08)"; }}
                       onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.boxShadow = "none"}>
 
                       {/* Thumbnail */}
                       <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16/9", background: "#b5d4f4" }}>
                         {o.thumbnail_url
-                          ? <img src={o.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
+                          ? <>
+                              <img src={o.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" onError={(e) => {
+                                const img = e.currentTarget as HTMLImageElement;
+                                img.style.display = 'none';
+                                const fallback = img.parentElement?.querySelector('.thumbnail-fallback') as HTMLElement | null;
+                                if (fallback) fallback.style.display = 'block';
+                              }} />
+                              <div className="thumbnail-fallback w-full h-full absolute inset-0" style={{ display: 'none', background: "linear-gradient(135deg, #b5d4f4, #56aeff)" }} />
+                            </>
                           : <div className="w-full h-full" style={{ background: "linear-gradient(135deg, #b5d4f4, #56aeff)" }} />
                         }
                         <div className="absolute inset-0 flex items-center justify-center">

@@ -1,6 +1,6 @@
 // app/oneriler/api/[oneri_id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 
 export async function PUT(
@@ -11,16 +11,14 @@ export async function PUT(
     const { oneri_id } = await params;
     if (!oneri_id) return validasyonHatasi("oneri_id zorunludur.", ["oneri_id"]);
 
-    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
     if (!["tm", "bm"].includes(rol)) return rolHatasi("Sadece tm ve bm öneri güncelleyebilir.");
 
-    // Öneriyi bul
     const { data: oneri, error: oneriError } = await adminSupabase
       .from("oneri_kayitlari")
       .select("oneri_id, oneren_id, izlendi_mi")

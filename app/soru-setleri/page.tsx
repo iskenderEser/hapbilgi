@@ -2,7 +2,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
@@ -18,6 +18,22 @@ interface SoruSetiSatir {
 }
 
 type FiltreDurum = "Inceleme Bekleniyor" | "Onaylandi" | "Iptal Edildi";
+
+interface VideoDurumJoin {
+  video_durum_id: string;
+  video_id: string;
+  videolar: {
+    senaryo_durumu: {
+      senaryolar: {
+        talepler: {
+          urunler: { urun_adi: string } | null;
+          teknikler: { teknik_adi: string } | null;
+          kategoriler: { kategori_adi: string } | null;
+        } | null;
+      } | null;
+    } | null;
+  } | null;
+}
 
 export default function SoruSetleriListePage() {
   const router = useRouter();
@@ -44,57 +60,100 @@ export default function SoruSetleriListePage() {
     router.push("/login");
   };
 
-  const veriCek = async () => {
+  const veriCek = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
 
+    // Tek sorgu ile tüm video_durumları ve ilişkili verileri çek
     const { data: videoDurumlari, error: vdError } = await supabase
-      .from("video_durumu").select("video_durum_id, video_id")
+      .from("video_durumu")
+      .select(`
+        video_durum_id,
+        video_id,
+        videolar!inner (
+          senaryo_durumu!inner (
+            senaryolar!inner (
+              talepler!inner (
+                urunler (urun_adi),
+                teknikler (teknik_adi),
+                kategoriler (kategori_adi)
+              )
+            )
+          )
+        )
+      `)
       .order("created_at", { ascending: false });
 
-    if (vdError) { hata("Soru setleri yüklenemedi.", "video_durumu tablosu SELECT", vdError.message); setLoading(false); return; }
+    if (vdError || !videoDurumlari) {
+      hata("Soru setleri yüklenemedi.", "video_durumu tablosu SELECT", vdError?.message);
+      setLoading(false);
+      return;
+    }
 
-    const sonuc = await Promise.all(
-      (videoDurumlari ?? []).map(async (vd) => {
-        const { data: soruSetleri } = await supabase
-          .from("soru_setleri").select("soru_seti_id, sorular, created_at")
-          .eq("video_durum_id", vd.video_durum_id).order("created_at", { ascending: false }).limit(1);
-        const sonSoruSeti = soruSetleri?.[0];
-        if (!sonSoruSeti) return null;
+    // Tüm video_durum_id'leri topla
+    const videoDurumIds = videoDurumlari.map((vd: any) => vd.video_durum_id);
 
-        const { data: durumlar } = await supabase
-          .from("soru_seti_durumu").select("durum, created_at")
-          .eq("soru_seti_id", sonSoruSeti.soru_seti_id).order("created_at", { ascending: false }).limit(1);
+    // Tek sorgu ile tüm soru setlerini ve durumlarını çek
+    const { data: tumSoruSetleri } = await supabase
+      .from("soru_setleri")
+      .select("soru_seti_id, video_durum_id, sorular, created_at")
+      .in("video_durum_id", videoDurumIds)
+      .order("created_at", { ascending: false });
 
-        let urun_adi = "-", teknik_adi = "-", kategori_adi: string | null = null;
-        const { data: video } = await supabase.from("videolar").select("senaryo_durum_id").eq("video_id", vd.video_id).single();
-        if (video?.senaryo_durum_id) {
-          const { data: senaryoDurum } = await supabase.from("senaryo_durumu").select("senaryo_id").eq("senaryo_durum_id", video.senaryo_durum_id).single();
-          if (senaryoDurum?.senaryo_id) {
-            const { data: senaryo } = await supabase.from("senaryolar").select("talep_id").eq("senaryo_id", senaryoDurum.senaryo_id).single();
-            if (senaryo?.talep_id) {
-              const { data: talep } = await supabase.from("talepler").select(`urunler(urun_adi), teknikler(teknik_adi), kategoriler(kategori_adi)`).eq("talep_id", senaryo.talep_id).single();
-              urun_adi = (talep as any)?.urunler?.urun_adi ?? "-";
-              teknik_adi = (talep as any)?.teknikler?.teknik_adi ?? "-";
-              kategori_adi = (talep as any)?.kategoriler?.kategori_adi ?? null;
-            }
-          }
-        }
+    // Her video_durum için en son soru setini bul
+    const sonSoruSetiMap = new Map();
+    tumSoruSetleri?.forEach((ss: any) => {
+      const mevcut = sonSoruSetiMap.get(ss.video_durum_id);
+      if (!mevcut || new Date(ss.created_at) > new Date(mevcut.created_at)) {
+        sonSoruSetiMap.set(ss.video_durum_id, ss);
+      }
+    });
 
-        return {
-          video_durum_id: vd.video_durum_id, urun_adi, teknik_adi, kategori_adi,
-          soru_sayisi: sonSoruSeti.sorular?.length ?? 0,
-          son_durum: durumlar?.[0]?.durum ?? null,
-          son_tarih: durumlar?.[0]?.created_at ?? sonSoruSeti.created_at,
-        };
-      })
-    );
+    const sonSoruSetiIds = Array.from(sonSoruSetiMap.values()).map((ss: any) => ss.soru_seti_id);
 
-    setSatirlar(sonuc.filter(Boolean) as SoruSetiSatir[]);
+    // Tek sorgu ile tüm durumları çek
+    const { data: tumDurumlar } = await supabase
+      .from("soru_seti_durumu")
+      .select("soru_seti_id, durum, created_at")
+      .in("soru_seti_id", sonSoruSetiIds)
+      .order("created_at", { ascending: false });
+
+    // Her soru seti için en son durumu bul
+    const sonDurumMap = new Map();
+    tumDurumlar?.forEach((d: any) => {
+      if (!sonDurumMap.has(d.soru_seti_id)) {
+        sonDurumMap.set(d.soru_seti_id, d);
+      }
+    });
+
+    // Sonuçları birleştir
+    const sonuc: SoruSetiSatir[] = [];
+
+    for (const vd of videoDurumlari) {
+      const sonSoruSeti = sonSoruSetiMap.get(vd.video_durum_id);
+      if (!sonSoruSeti) continue;
+
+      const sonDurum = sonDurumMap.get(sonSoruSeti.soru_seti_id);
+      
+      const typedVd = vd as unknown as VideoDurumJoin;
+      const talep = typedVd.videolar?.senaryo_durumu?.senaryolar?.talepler;
+      
+      sonuc.push({
+        video_durum_id: vd.video_durum_id,
+        urun_adi: talep?.urunler?.urun_adi ?? "-",
+        teknik_adi: talep?.teknikler?.teknik_adi ?? "-",
+        kategori_adi: talep?.kategoriler?.kategori_adi ?? null,
+        soru_sayisi: sonSoruSeti.sorular?.length ?? 0,
+        son_durum: sonDurum?.durum ?? null,
+        son_tarih: sonDurum?.created_at ?? sonSoruSeti.created_at,
+      });
+    }
+
+    setSatirlar(sonuc);
     setLoading(false);
-  };
+  }, [hata]);
 
-  useEffect(() => { if (user) veriCek(); }, [user]);
+  useEffect(() => { if (user) veriCek(); }, [user, veriCek]);
 
   const toggleFiltre = (durum: FiltreDurum) => {
     setFiltreler(prev => {
@@ -104,7 +163,6 @@ export default function SoruSetleriListePage() {
     });
   };
 
-  // Benzersiz kategoriler
   const kategoriler = Array.from(new Set(satirlar.map(s => s.kategori_adi).filter(Boolean))) as string[];
 
   const filtreliSatirlar = satirlar.filter(s => {
@@ -135,10 +193,10 @@ export default function SoruSetleriListePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
-          <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
+        <div className="animate-pulse flex flex-col items-center gap-2">
+          <div className="w-8 h-8 border-2 border-gray-200 border-t-[#56aeff] rounded-full animate-spin" />
+          <div className="h-2 w-24 bg-gray-200 rounded" />
+        </div>
       </div>
     );
   }
@@ -150,7 +208,6 @@ export default function SoruSetleriListePage() {
       <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6">
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
 
-          {/* Başlık + filtreler */}
           <div className="px-4 md:px-5 py-3.5 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
               <span className="text-sm font-semibold text-gray-900">Soru Setleri</span>
@@ -163,12 +220,11 @@ export default function SoruSetleriListePage() {
                     {f.etiket}
                   </label>
                 ))}
-                {/* Kategori dropdown — yalnızca listede kategori varsa göster */}
                 {kategoriler.length > 0 && (
                   <select
                     value={kategoriFiltre}
                     onChange={e => setKategoriFiltre(e.target.value)}
-                    className="border border-gray-200 rounded-lg px-2 py-1 text-xs bg-white cursor-pointer"
+                    className="border border-gray-200 rounded-lg px-2 py-1 text-xs bg-white cursor-pointer focus:outline-none focus:border-[#56aeff]"
                     style={{ fontFamily: "'Nunito', sans-serif", color: kategoriFiltre ? "#111" : "#737373" }}
                   >
                     <option value="">Tüm Kategoriler</option>
@@ -186,13 +242,12 @@ export default function SoruSetleriListePage() {
             </div>
           ) : (
             <>
-              {/* Mobile: kart görünümü */}
               <div className="md:hidden">
                 {filtreliSatirlar.map((ss) => {
                   const renk = durumRenk(ss.son_durum ?? "");
                   return (
                     <div key={ss.video_durum_id} onClick={() => router.push(`/soru-setleri/${ss.video_durum_id}`)}
-                      className="px-4 py-3 border-b border-gray-50 cursor-pointer">
+                      className="px-4 py-3 border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors">
                       <div className="flex justify-between items-start mb-1">
                         <span className="text-sm font-semibold text-gray-900">{ss.urun_adi}</span>
                         {ss.son_durum && (
@@ -218,7 +273,6 @@ export default function SoruSetleriListePage() {
                 })}
               </div>
 
-              {/* Desktop: tablo görünümü */}
               <div className="hidden md:block">
                 <table className="w-full border-collapse text-sm">
                   <thead>

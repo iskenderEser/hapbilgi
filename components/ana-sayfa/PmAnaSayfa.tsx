@@ -50,7 +50,7 @@ export default function PmAnaSayfa({ user, rol, adSoyad }: Props) {
         const { data: takim } = await supabase.from("takimlar").select("takim_adi").eq("takim_id", kullanici.takim_id).single();
         setTakimAdi(takim?.takim_adi ?? "");
       }
-      const res = await fetch("/ana-sayfa/api/pm");
+      const res = await fetch("/ana-sayfa/api");
       const data = await res.json();
       if (!res.ok) { hata(data.hata ?? "Veriler yüklenemedi.", data.adim, data.detay); }
       else { setPmVeri(data); }

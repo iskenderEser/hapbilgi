@@ -53,6 +53,16 @@ export async function POST(
       return validasyonHatasi("takim_id zorunludur.", ["takim_id"]);
     }
 
+    // takim_id bu firmaya ait mi kontrol et
+    const { data: takim, error: takimError } = await adminSupabase
+      .from("takimlar")
+      .select("takim_id")
+      .eq("takim_id", takim_id)
+      .eq("firma_id", firma_id)
+      .single();
+
+    if (takimError || !takim) return hataYaniti("Takım bu firmaya ait değil.", "takimlar tablosu SELECT — takim_id + firma_id kontrolü", takimError, 404);
+
     const { data: mevcut, error: kontrolError } = await adminSupabase
       .from("urunler")
       .select("urun_id")

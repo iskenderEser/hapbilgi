@@ -12,6 +12,10 @@
   --font-mono: var(--font-geist-mono);
   --color-bordo: #bc2d0d;
   --color-mavi: #56aeff;
+  --color-kirmizi: #E24B4A;
+  --color-gri-metin: #737373;
+  --color-koyu-metin: #111827;
+  --color-gri-zemin: #f9fafb;
 }
 
 @media (prefers-color-scheme: dark) {

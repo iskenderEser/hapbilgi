@@ -169,7 +169,7 @@ export default function YayinYonetimiPage() {
   useEffect(() => { if (user) veriCek(); }, [user]);
 
   const formatTarih = (tarih: string) =>
-    new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
   const getSoruPuani = (soru_seti_durum_id: string, soru_index: number): number | "" =>
     soruPuanlari[soru_seti_durum_id]?.[soru_index] ?? "";

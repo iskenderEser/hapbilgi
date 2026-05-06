@@ -15,6 +15,7 @@ export async function GET() {
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
     if (!PM_ROLLERI.includes(rol)) return rolHatasi("Sadece yetkili roller bekleyen videoları görebilir.");
 
+    // Zaten yayında olan soru_seti_durum_id'leri çek
     const { data: yayinlar, error: yayinError } = await adminSupabase
       .from("yayin_yonetimi")
       .select("soru_seti_durum_id");
@@ -23,135 +24,126 @@ export async function GET() {
 
     const yayindakiIds = new Set((yayinlar ?? []).map((y: any) => y.soru_seti_durum_id));
 
+    // Tek join query ile tüm zinciri çek:
+    // soru_seti_durumu → soru_setleri → video_durumu → videolar → senaryo_durumu → senaryolar → talepler → urunler/teknikler
+    // + video_puanlari (video_durum_id üzerinden)
     const { data: onaylananlar, error: onayError } = await adminSupabase
       .from("soru_seti_durumu")
-      .select("soru_seti_durum_id, soru_seti_id, created_at")
+      .select(`
+        soru_seti_durum_id,
+        soru_seti_id,
+        created_at,
+        soru_setleri (
+          soru_seti_id,
+          video_durum_id,
+          sorular,
+          video_durumu (
+            video_durum_id,
+            video_id,
+            videolar (
+              video_id,
+              video_url,
+              thumbnail_url,
+              senaryo_durum_id,
+              senaryo_durumu (
+                senaryo_durum_id,
+                senaryo_id,
+                senaryolar (
+                  senaryo_id,
+                  talep_id,
+                  talepler (
+                    talep_id,
+                    soru_seti_buyuklugu,
+                    video_basi_soru_sayisi,
+                    egitim_turu,
+                    urunler ( urun_adi ),
+                    teknikler ( teknik_adi )
+                  )
+                )
+              )
+            )
+          ),
+          video_puanlari (
+            video_puan_id,
+            video_puani
+          )
+        )
+      `)
       .eq("durum", "Onaylandi");
 
-    if (onayError) return hataYaniti("Onaylanan soru seti durumları çekilemedi.", "soru_seti_durumu tablosu SELECT — Onaylandi filtresi", onayError);
+    if (onayError) return hataYaniti("Onaylanan soru seti durumları çekilemedi.", "soru_seti_durumu join SELECT", onayError);
 
-    const bekleyenIds = (onaylananlar ?? []).filter(
+    // Henüz yayına alınmayanları filtrele
+    const bekleyenler = (onaylananlar ?? []).filter(
       (ss: any) => !yayindakiIds.has(ss.soru_seti_durum_id)
     );
 
-    if (bekleyenIds.length === 0) return NextResponse.json({ bekleyenler: [] }, { status: 200 });
+    if (bekleyenler.length === 0) return NextResponse.json({ bekleyenler: [] }, { status: 200 });
 
-    const sonuc = await Promise.all(
-      bekleyenIds.map(async (ss: any) => {
+    // Soru puanlarını tek sorguda çek
+    const bekleyenDurumIdler = bekleyenler.map((ss: any) => ss.soru_seti_durum_id);
 
-        const { data: soruSeti, error: ssError } = await adminSupabase
-          .from("soru_setleri")
-          .select("soru_seti_id, video_durum_id, sorular")
-          .eq("soru_seti_id", ss.soru_seti_id)
-          .single();
+    const { data: tumSoruPuanlari, error: spError } = await adminSupabase
+      .from("soru_seti_puanlari")
+      .select("soru_seti_durum_id, soru_seti_puan_id, soru_index, soru_puani")
+      .in("soru_seti_durum_id", bekleyenDurumIdler)
+      .order("soru_index", { ascending: true });
 
-        if (ssError || !soruSeti) {
-          console.error("[UYARI] Soru seti çekilemedi:", { soru_seti_id: ss.soru_seti_id, hata: ssError?.message });
+    if (spError) {
+      console.error("[UYARI] Soru puanları çekilemedi:", spError.message);
+    }
+
+    // Soru puanlarını soru_seti_durum_id'ye göre grupla
+    const soruPuanlarByDurumId: Record<string, Record<number, { soru_seti_puan_id: string; soru_puani: number }>> = {};
+    for (const sp of tumSoruPuanlari ?? []) {
+      if (!soruPuanlarByDurumId[sp.soru_seti_durum_id]) {
+        soruPuanlarByDurumId[sp.soru_seti_durum_id] = {};
+      }
+      soruPuanlarByDurumId[sp.soru_seti_durum_id][sp.soru_index] = {
+        soru_seti_puan_id: sp.soru_seti_puan_id,
+        soru_puani: sp.soru_puani,
+      };
+    }
+
+    // Join sonucundan response yapısını oluştur
+    const sonuc = bekleyenler
+      .map((ss: any) => {
+        const soruSeti = ss.soru_setleri;
+        if (!soruSeti) {
+          console.error("[UYARI] Soru seti join verisi eksik:", { soru_seti_durum_id: ss.soru_seti_durum_id });
           return null;
         }
 
-        const { data: videoPuan, error: vPuanError } = await adminSupabase
-          .from("video_puanlari")
-          .select("video_puan_id, video_puani")
-          .eq("video_durum_id", soruSeti.video_durum_id)
-          .single();
+        const videoDurum = soruSeti.video_durumu;
+        const video = videoDurum?.videolar;
+        const senaryoDurum = video?.senaryo_durumu;
+        const senaryo = senaryoDurum?.senaryolar;
+        const talep = senaryo?.talepler;
+        const videoPuan = soruSeti.video_puanlari;
 
-        if (vPuanError && vPuanError.code !== "PGRST116") {
-          console.error("[UYARI] Video puanı çekilemedi:", { video_durum_id: soruSeti.video_durum_id, hata: vPuanError?.message });
-        }
-
-        const { data: soruPuanlari, error: sPuanError } = await adminSupabase
-          .from("soru_seti_puanlari")
-          .select("soru_seti_puan_id, soru_index, soru_puani")
-          .eq("soru_seti_durum_id", ss.soru_seti_durum_id)
-          .order("soru_index", { ascending: true });
-
-        if (sPuanError) {
-          console.error("[UYARI] Soru puanları çekilemedi:", { soru_seti_durum_id: ss.soru_seti_durum_id, hata: sPuanError?.message });
-        }
-
-        const soruPuanMap: Record<number, { soru_seti_puan_id: string; soru_puani: number }> = {};
-        for (const sp of soruPuanlari ?? []) {
-          soruPuanMap[sp.soru_index] = { soru_seti_puan_id: sp.soru_seti_puan_id, soru_puani: sp.soru_puani };
-        }
-
-        let urun_adi = "-";
-        let teknik_adi = "-";
-        let video_url = null;
-        let thumbnail_url = null;
-        let soru_seti_buyuklugu: number | null = null;
-        let video_basi_soru_sayisi: number | null = null;
-
-        const { data: videoDurum, error: vdError } = await adminSupabase
-          .from("video_durumu")
-          .select("video_id")
-          .eq("video_durum_id", soruSeti.video_durum_id)
-          .single();
-
-        if (vdError || !videoDurum) {
-          console.error("[UYARI] Video durumu çekilemedi:", { video_durum_id: soruSeti.video_durum_id, hata: vdError?.message });
-        } else {
-          const { data: video, error: videoError } = await adminSupabase
-            .from("videolar")
-            .select("senaryo_durum_id, video_url, thumbnail_url")
-            .eq("video_id", videoDurum.video_id)
-            .single();
-
-          if (videoError || !video) {
-            console.error("[UYARI] Video çekilemedi:", { video_id: videoDurum.video_id, hata: videoError?.message });
-          } else {
-            video_url = video.video_url ?? null;
-            thumbnail_url = video.thumbnail_url ?? null;
-
-            const { data: senaryoDurum } = await adminSupabase
-              .from("senaryo_durumu")
-              .select("senaryo_id")
-              .eq("senaryo_durum_id", video.senaryo_durum_id)
-              .single();
-
-            if (senaryoDurum?.senaryo_id) {
-              const { data: senaryo } = await adminSupabase
-                .from("senaryolar")
-                .select("talep_id")
-                .eq("senaryo_id", senaryoDurum.senaryo_id)
-                .single();
-
-              if (senaryo?.talep_id) {
-                const { data: talep } = await adminSupabase
-                  .from("talepler")
-                  .select(`urunler(urun_adi), teknikler(teknik_adi), soru_seti_buyuklugu, video_basi_soru_sayisi`)
-                  .eq("talep_id", senaryo.talep_id)
-                  .single();
-
-                urun_adi = (talep as any)?.urunler?.urun_adi ?? "-";
-                teknik_adi = (talep as any)?.teknikler?.teknik_adi ?? "-";
-                soru_seti_buyuklugu = (talep as any)?.soru_seti_buyuklugu ?? null;
-                video_basi_soru_sayisi = (talep as any)?.video_basi_soru_sayisi ?? null;
-              }
-            }
-          }
-        }
+        const egitimTuru = talep?.egitim_turu ?? "urun_egitimi";
 
         return {
           soru_seti_durum_id: ss.soru_seti_durum_id,
           soru_seti_id: ss.soru_seti_id,
           video_durum_id: soruSeti.video_durum_id,
           sorular: soruSeti.sorular ?? [],
-          video_url,
-          thumbnail_url,
+          video_url: video?.video_url ?? null,
+          thumbnail_url: video?.thumbnail_url ?? null,
           video_puan_id: videoPuan?.video_puan_id ?? null,
           video_puani: videoPuan?.video_puani ?? null,
-          soru_puan_map: soruPuanMap,
-          urun_adi,
-          teknik_adi,
-          soru_seti_buyuklugu,
-          video_basi_soru_sayisi,
+          soru_puan_map: soruPuanlarByDurumId[ss.soru_seti_durum_id] ?? {},
+          urun_adi: egitimTuru === "genel_egitim" ? "Genel Eğitim" : (talep?.urunler?.urun_adi ?? "-"),
+          teknik_adi: egitimTuru === "genel_egitim" ? "-" : (talep?.teknikler?.teknik_adi ?? "-"),
+          egitim_turu: egitimTuru,
+          soru_seti_buyuklugu: talep?.soru_seti_buyuklugu ?? null,
+          video_basi_soru_sayisi: talep?.video_basi_soru_sayisi ?? null,
           onay_tarihi: ss.created_at,
         };
       })
-    );
+      .filter(Boolean);
 
-    return NextResponse.json({ bekleyenler: sonuc.filter(Boolean) }, { status: 200 });
+    return NextResponse.json({ bekleyenler: sonuc }, { status: 200 });
 
   } catch (err) {
     return sunucuHatasi(err, "GET /yayin-yonetimi/api/bekleyenler");

@@ -39,7 +39,7 @@ export default function TmAnaSayfa({ user, adSoyad }: Props) {
   useEffect(() => {
     const veriCek = async () => {
       setLoading(true);
-      const res = await fetch("/ana-sayfa/api/tm");
+      const res = await fetch("/ana-sayfa/api");
       const data = await res.json();
       if (!res.ok) { hata(data.hata ?? "Veriler yüklenemedi.", data.adim, data.detay); }
       else { setTmVeri(data); }

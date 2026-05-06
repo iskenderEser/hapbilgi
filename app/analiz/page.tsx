@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
+import { PM_ROLLERI } from '@/lib/utils/roller';
 
 const BORDO = '#bc2d0d';
 const KIRMIZI = '#E24B4A';
@@ -11,7 +12,7 @@ const GRI_METIN = '#737373';
 const KOYU_METIN = '#111827';
 const GRI_ZEMIN = '#f9fafb';
 
-const ANALIZ_ROLLERI = ['bm', 'tm', 'pm', 'jr_pm', 'kd_pm', 'gm', 'gm_yrd', 'drk', 'paz_md', 'blm_md', 'med_md', 'grp_pm', 'sm', 'egt_md', 'egt_yrd_md', 'egt_yon', 'egt_uz'];
+const ANALIZ_ROLLERI = ['bm', 'tm', ...PM_ROLLERI, 'gm', 'gm_yrd', 'drk', 'paz_md', 'blm_md', 'grp_pm', 'sm'];
 
 const DEGERLER = [
   { id: 'urun_sayisi', label: 'Ürün Sayısı' },
@@ -46,15 +47,42 @@ const KAYIPLAR = [
   { id: 'kaybedilen_izlenmemis_video_puani', label: 'Kaybedilen İzlenmemiş Video Puanı' },
 ];
 
-interface KapsamSecenegi { value: string; label: string; grup?: string; }
+const TUM_DEGISKENLER = [...DEGERLER, ...KAZANCLAR, ...KAYIPLAR];
+
+interface KapsamSecenegi {
+  value: string;
+  label: string;
+  grup: string;
+}
+
 interface AnalizSonuc {
   veri: any[];
-  kimlik_kolonu: string;
-  kimlik_adi: string;
-  degiskenler: string[];
-  zaman: { baslangic: string; bitis: string; label: string };
-  yorum: string;
+  yorum: string | null;
   aksiyonlar: string[];
+  meta: {
+    periyot: string;
+    kapsam: string;
+    kapsam_id: string | null;
+    baslangic: string;
+    bitis: string;
+  };
+}
+
+// kapsam_id'den kapsamı çıkar
+function kapsamBelirle(kapsamSecenegi: string, kapsamSecenekleri: KapsamSecenegi[]): string {
+  const secenek = kapsamSecenekleri.find(s => s.value === kapsamSecenegi);
+  if (!secenek) return 'utt';
+  if (secenek.grup === 'UTT') return 'utt';
+  if (secenek.grup === 'Bölge') return 'bolge';
+  if (secenek.grup === 'Takım') return 'takim';
+  return 'utt';
+}
+
+// Kimlik kolonu — hangi alanda isim var?
+function kimlikKolonu(kapsam: string): { kolon: string; adKolonu?: string; soyadKolonu?: string } {
+  if (kapsam === 'utt') return { kolon: 'ad', adKolonu: 'ad', soyadKolonu: 'soyad' };
+  if (kapsam === 'bolge') return { kolon: 'bolge_adi' };
+  return { kolon: 'takim_adi' };
 }
 
 function PillKart({ baslik, liste, secilen, onToggle, tip }: {
@@ -104,9 +132,9 @@ export default function AnalizPage() {
   const [adSoyad, setAdSoyad] = useState('');
   const [loading, setLoading] = useState(true);
   const [secilen, setSecilen] = useState<string[]>([]);
-  const [kapsam, setKapsam] = useState('');
-  const [urunFiltre, setUrunFiltre] = useState('');
-  const [zaman, setZaman] = useState('bu_ay');
+  const [kapsamSecenegi, setKapsamSecenegi] = useState('');
+  const [urunId, setUrunId] = useState('');
+  const [periyot, setPeriyot] = useState('bu_ay');
   const [kapsamSecenekleri, setKapsamSecenekleri] = useState<KapsamSecenegi[]>([]);
   const [urunSecenekleri, setUrunSecenekleri] = useState<{ value: string; label: string }[]>([]);
   const [analizing, setAnalizing] = useState(false);
@@ -120,18 +148,18 @@ export default function AnalizPage() {
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) { router.push('/login'); return; }
       setUser(data.user);
-      const r = data.user.user_metadata?.rol ?? '';
+      const r = (data.user.user_metadata?.rol ?? '').toLowerCase();
       setRol(r);
       const ad = data.user.user_metadata?.ad ?? '';
       const soyad = data.user.user_metadata?.soyad ?? '';
       setAdSoyad(`${ad} ${soyad}`.trim());
-      if (!ANALIZ_ROLLERI.includes(r.toLowerCase())) router.push('/ana-sayfa');
+      if (!ANALIZ_ROLLERI.includes(r)) router.push('/ana-sayfa');
     });
   }, []);
 
   useEffect(() => {
     if (!rol) return;
-    kapsamCek(); urunCek(); setLoading(false);
+    Promise.all([kapsamCek(), urunCek()]).finally(() => setLoading(false));
   }, [rol]);
 
   const kapsamCek = async () => {
@@ -139,7 +167,7 @@ export default function AnalizPage() {
     if (!res.ok) return;
     const data = await res.json();
     setKapsamSecenekleri(data.secenekler ?? []);
-    if (data.secenekler?.length > 0) setKapsam(data.secenekler[0].value);
+    if (data.secenekler?.length > 0) setKapsamSecenegi(data.secenekler[0].value);
   };
 
   const urunCek = async () => {
@@ -149,11 +177,16 @@ export default function AnalizPage() {
     const firma_id = profData.profil?.firma_id;
     const takim_id = profData.profil?.takim_id;
     if (!firma_id) return;
-    const url = takim_id ? `/admin/api/firmalar/${firma_id}/urunler?takim_id=${takim_id}` : `/admin/api/firmalar/${firma_id}/urunler`;
+    const url = takim_id
+      ? `/admin/api/firmalar/${firma_id}/urunler?takim_id=${takim_id}`
+      : `/admin/api/firmalar/${firma_id}/urunler`;
     const res = await fetch(url);
     if (!res.ok) return;
     const data = await res.json();
-    setUrunSecenekleri([{ value: '', label: 'Tüm Ürünler' }, ...(data.urunler ?? []).map((u: any) => ({ value: u.urun_id, label: u.urun_adi }))]);
+    setUrunSecenekleri([
+      { value: '', label: 'Tüm Ürünler' },
+      ...(data.urunler ?? []).map((u: any) => ({ value: u.urun_id, label: u.urun_adi })),
+    ]);
   };
 
   const handleCikis = async () => {
@@ -172,29 +205,51 @@ export default function AnalizPage() {
 
   const removeFromHavuz = (id: string) => setSecilen(prev => prev.filter(s => s !== id));
 
-  const pillLabel = (id: string) => [...DEGERLER, ...KAZANCLAR, ...KAYIPLAR].find(d => d.id === id)?.label ?? id;
+  const pillLabel = (id: string) => TUM_DEGISKENLER.find(d => d.id === id)?.label ?? id;
 
   const runAnaliz = async () => {
-    if (secilen.length < 2 || !kapsam || !zaman) return;
+    if (secilen.length < 2 || !kapsamSecenegi || !periyot) return;
     setAnalizing(true); setHata(null); setSonuc(null);
+
+    const kapsam = kapsamBelirle(kapsamSecenegi, kapsamSecenekleri);
+    const kapsamId = ['utt', 'bolge', 'takim'].includes(kapsamSecenegi) ? null : kapsamSecenegi;
+
     try {
       const res = await fetch('/analiz/api', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ degiskenler: secilen, kapsam, urun_filtre: urunFiltre || null, zaman }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          periyot,
+          kapsam,
+          kapsam_id: kapsamId,
+          urun_id: urunId || null,
+        }),
       });
       const data = await res.json();
-      if (!res.ok || !data.success) { setHata(data.hata ?? 'Analiz yapılamadı.'); }
-      else { setSonuc(data); }
-    } catch { setHata('Bağlantı hatası.'); }
-    finally { setAnalizing(false); }
+      if (!res.ok) {
+        setHata(data.mesaj ?? 'Analiz yapılamadı.');
+      } else {
+        setSonuc(data);
+      }
+    } catch {
+      setHata('Bağlantı hatası.');
+    } finally {
+      setAnalizing(false);
+    }
   };
 
-  const canRun = secilen.length >= 2 && !!kapsam && !!zaman;
+  const canRun = secilen.length >= 2 && !!kapsamSecenegi && !!periyot;
 
-  const maxDeger = sonuc ? Math.max(...sonuc.veri.map((d: any) => {
-    const kolonlar = sonuc.degiskenler.filter(k => typeof d[k] === 'number');
-    return kolonlar.length > 0 ? Math.max(...kolonlar.map(k => d[k] ?? 0)) : 0;
-  })) : 0;
+  const maxDeger = sonuc ? Math.max(
+    1,
+    ...sonuc.veri.flatMap((d: any) =>
+      secilen.filter(k => typeof d[k] === 'number').map(k => d[k] ?? 0)
+    )
+  ) : 1;
+
+  const { kolon, adKolonu, soyadKolonu } = kapsamBelirle(kapsamSecenegi, kapsamSecenekleri)
+    ? kimlikKolonu(kapsamBelirle(kapsamSecenegi, kapsamSecenekleri))
+    : { kolon: 'ad', adKolonu: 'ad', soyadKolonu: 'soyad' };
 
   if (loading || !user) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: GRI_ZEMIN }}>
@@ -232,7 +287,7 @@ export default function AnalizPage() {
               background: secilen.length > 0 ? '#FAECE7' : 'white',
             }}>
             {secilen.length === 0 ? (
-              <span className="text-xs italic text-gray-400">Pill'lere tıklayın, buraya düşsün</span>
+              <span className="text-xs italic text-gray-400">Pill&apos;lere tıklayın, buraya düşsün</span>
             ) : (
               <>
                 {secilen.map(id => (
@@ -255,21 +310,25 @@ export default function AnalizPage() {
         {/* Kapsam / Ürün / Zaman / Analiz Et */}
         <div className="flex flex-col md:flex-row items-stretch md:items-end gap-2 mb-6">
           <SelectWrap label="Kapsam">
-            <select value={kapsam} onChange={e => setKapsam(e.target.value)}
+            <select value={kapsamSecenegi} onChange={e => setKapsamSecenegi(e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white outline-none cursor-pointer"
               style={{ fontFamily: "'Nunito', sans-serif", color: KOYU_METIN }}>
-              {kapsamSecenekleri.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              {kapsamSecenekleri.map(s => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
             </select>
           </SelectWrap>
           <SelectWrap label="Ürün">
-            <select value={urunFiltre} onChange={e => setUrunFiltre(e.target.value)}
+            <select value={urunId} onChange={e => setUrunId(e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white outline-none cursor-pointer"
               style={{ fontFamily: "'Nunito', sans-serif", color: KOYU_METIN }}>
-              {urunSecenekleri.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
+              {urunSecenekleri.map(u => (
+                <option key={u.value} value={u.value}>{u.label}</option>
+              ))}
             </select>
           </SelectWrap>
           <SelectWrap label="Zaman">
-            <select value={zaman} onChange={e => setZaman(e.target.value)}
+            <select value={periyot} onChange={e => setPeriyot(e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white outline-none cursor-pointer"
               style={{ fontFamily: "'Nunito', sans-serif", color: KOYU_METIN }}>
               <option value="bu_gun">Günlük</option>
@@ -293,7 +352,8 @@ export default function AnalizPage() {
 
         {/* Hata */}
         {hata && (
-          <div className="rounded-lg px-3 py-2.5 text-xs mb-4" style={{ background: '#FEF2F2', border: '0.5px solid #FECACA', color: KIRMIZI }}>
+          <div className="rounded-lg px-3 py-2.5 text-xs mb-4"
+            style={{ background: '#FEF2F2', border: '0.5px solid #FECACA', color: KIRMIZI }}>
             {hata}
           </div>
         )}
@@ -302,55 +362,64 @@ export default function AnalizPage() {
         {sonuc && sonuc.veri.length > 0 && (
           <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-5 mb-4">
             <div className="text-sm font-medium mb-4" style={{ color: KOYU_METIN }}>
-              {secilen.map(s => pillLabel(s)).join(' × ')} — {sonuc.zaman.label}
+              {secilen.map(s => pillLabel(s)).join(' × ')}
             </div>
 
             {/* Grafik */}
             <div className="border border-gray-200 rounded-lg overflow-hidden mb-3 px-3 pt-3 flex items-end justify-around gap-1"
               style={{ height: 160, background: GRI_ZEMIN }}>
               {sonuc.veri.map((d: any, i: number) => {
-                const ilkSayisal = sonuc.degiskenler.find(k => typeof d[k] === 'number');
+                const ilkSayisal = secilen.find(k => typeof d[k] === 'number');
                 const deger = ilkSayisal ? (d[ilkSayisal] ?? 0) : 0;
                 const oran = maxDeger > 0 ? Math.round((deger / maxDeger) * 100) : 0;
-                const isim = d[sonuc.kimlik_adi] ?? d['ad'] ?? `#${i + 1}`;
-                const soyad = d['soyad'] ? ` ${d['soyad'][0]}.` : '';
+                const isim = adKolonu ? (d[adKolonu] ?? `#${i + 1}`) : (d[kolon] ?? `#${i + 1}`);
+                const soyad = soyadKolonu && d[soyadKolonu] ? ` ${d[soyadKolonu][0]}.` : '';
                 return (
                   <div key={i} className="flex flex-col items-center gap-0.5 flex-1">
-                    <span className="font-semibold" style={{ fontSize: 9, color: BORDO }}>{deger.toLocaleString('tr-TR')}</span>
+                    <span className="font-semibold" style={{ fontSize: 9, color: BORDO }}>
+                      {deger.toLocaleString('tr-TR')}
+                    </span>
                     <div className="w-4/5 rounded-t" style={{ background: BORDO, height: `${oran}%` }} />
-                    <span className="text-center leading-snug" style={{ fontSize: 9, color: GRI_METIN }}>{isim}{soyad}</span>
+                    <span className="text-center leading-snug" style={{ fontSize: 9, color: GRI_METIN }}>
+                      {isim}{soyad}
+                    </span>
                   </div>
                 );
               })}
             </div>
 
             {/* AI Yorumu */}
-            <div className="rounded-lg px-3 py-3 border border-gray-200" style={{ background: GRI_ZEMIN }}>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: BORDO }}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-                    <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-                  </svg>
+            {sonuc.yorum && (
+              <div className="rounded-lg px-3 py-3 border border-gray-200" style={{ background: GRI_ZEMIN }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ background: BORDO }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+                      <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
+                    </svg>
+                  </div>
+                  <span className="text-xs font-medium" style={{ color: KOYU_METIN }}>AI Yorumu</span>
                 </div>
-                <span className="text-xs font-medium" style={{ color: KOYU_METIN }}>AI Yorumu</span>
+                <p className="text-xs leading-relaxed m-0" style={{ color: GRI_METIN }}>{sonuc.yorum}</p>
+                {sonuc.aksiyonlar.length > 0 && (
+                  <div className="flex gap-1.5 mt-2.5 flex-wrap">
+                    {sonuc.aksiyonlar.map((a, i) => (
+                      <button key={i}
+                        className="text-xs px-2.5 py-1 rounded-full bg-transparent cursor-pointer"
+                        style={{ border: `0.5px solid ${BORDO}`, color: BORDO, fontFamily: "'Nunito', sans-serif" }}>
+                        {a} ↗
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-              <p className="text-xs leading-relaxed m-0" style={{ color: GRI_METIN }}>{sonuc.yorum}</p>
-              {sonuc.aksiyonlar.length > 0 && (
-                <div className="flex gap-1.5 mt-2.5 flex-wrap">
-                  {sonuc.aksiyonlar.map((a, i) => (
-                    <button key={i} className="text-xs px-2.5 py-1 rounded-full bg-transparent cursor-pointer"
-                      style={{ border: `0.5px solid ${BORDO}`, color: BORDO, fontFamily: "'Nunito', sans-serif" }}>
-                      {a} ↗
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            )}
           </div>
         )}
 
         {sonuc && sonuc.veri.length === 0 && (
-          <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm" style={{ color: GRI_METIN }}>
+          <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm"
+            style={{ color: GRI_METIN }}>
             Seçilen kapsam ve zaman aralığında veri bulunamadı.
           </div>
         )}

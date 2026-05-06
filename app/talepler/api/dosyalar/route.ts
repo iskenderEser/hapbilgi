@@ -1,15 +1,13 @@
 // app/talepler/api/dosyalar/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 
-// POST: dosya URL ekle
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
@@ -47,13 +45,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE: dosya URL sil
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
@@ -73,10 +69,16 @@ export async function DELETE(request: NextRequest) {
     if (talepError || !talep) return hataYaniti("Talep bulunamadı.", "talepler tablosu SELECT — talep_id", talepError);
     if (talep.pm_id !== user.id) return rolHatasi("Bu talepten dosya silme yetkiniz yok.");
 
-    // Storage'dan sil
+    // Storage'dan sil — adminSupabase ile tutarlı
     const dosyaYolu = url.split("/talep-dosyalari/")[1];
     if (dosyaYolu) {
-      await supabase.storage.from("talep-dosyalari").remove([dosyaYolu]);
+      const { error: storageError } = await adminSupabase.storage
+        .from("talep-dosyalari")
+        .remove([dosyaYolu]);
+
+      if (storageError) {
+        return hataYaniti("Dosya storage'dan silinemedi.", "talep-dosyalari storage DELETE", storageError);
+      }
     }
 
     const guncelDosyalar = (talep.dosya_urls ?? []).filter((d: any) => d.url !== url);

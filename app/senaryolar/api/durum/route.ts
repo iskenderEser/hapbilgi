@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { bildirimOlustur } from "@/lib/utils/bildirimOlustur";
 import { PM_ROLLERI } from "@/lib/utils/roller";
+import { talepBilgisiSenaryo } from "@/lib/utils/talepZinciri";
 
 const GECERLI_DURUMLAR = [
   "Senaryo Yaziliyor",
@@ -36,23 +37,20 @@ export async function POST(request: NextRequest) {
     if (isIU && !IU_DURUMLARI.includes(durum)) return rolHatasi(`IU sadece şu durumları set edebilir: ${IU_DURUMLARI.join(", ")}`);
     if (isPM && !PM_DURUMLARI.includes(durum)) return rolHatasi(`PM sadece şu durumları set edebilir: ${PM_DURUMLARI.join(", ")}`);
 
-    // Senaryo + talep bilgisi çek
+    // Senaryo bilgisi çek
     const { data: senaryo, error: senaryoError } = await adminSupabase
       .from("senaryolar")
       .select("senaryo_id, talep_id, iu_id")
       .eq("senaryo_id", senaryo_id)
       .single();
+
     const senaryoKontrol = veriKontrol(senaryo, "senaryolar tablosu SELECT — senaryo_id kontrolü", "Senaryo bulunamadı.");
     if (!senaryoKontrol.gecerli) return senaryoKontrol.yanit;
     if (senaryoError) return hataYaniti("Senaryo sorgulanırken hata oluştu.", "senaryolar tablosu SELECT", senaryoError, 404);
 
-    // Talep bilgisi çek (pm_id ve urun_adi için)
-    const { data: talep } = await adminSupabase
-      .from("talepler")
-      .select(`pm_id, urunler(urun_adi)`)
-      .eq("talep_id", senaryo.talep_id)
-      .single();
-    const urun_adi = (talep as any)?.urunler?.urun_adi ?? "-";
+    // Talep zinciri — tek join sorgusu
+    const talepBilgisi = await talepBilgisiSenaryo(adminSupabase, senaryo_id);
+    const urun_adi = talepBilgisi?.urun_adi ?? "-";
 
     // PM revizyon hakkı kontrolü
     if (isPM && durum === "Revizyon Bekleniyor") {
@@ -76,6 +74,7 @@ export async function POST(request: NextRequest) {
       })
       .select("senaryo_durum_id, senaryo_id, durum, notlar, created_at")
       .single();
+
     if (durumError) return hataYaniti("Durum kaydedilemedi.", "senaryo_durumu tablosu INSERT", durumError);
     const durumKontrol = veriKontrol(yeniDurum, "senaryo_durumu tablosu INSERT — dönen veri", "Durum kaydedildi ancak veri döndürülemedi.");
     if (!durumKontrol.gecerli) return durumKontrol.yanit;
@@ -100,10 +99,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Bildirimler
-    if (isIU && durum === "Inceleme Bekleniyor" && talep?.pm_id) {
+    if (isIU && durum === "Inceleme Bekleniyor" && talepBilgisi?.pm_id) {
       await bildirimOlustur({
         adminSupabase,
-        alici_id: talep.pm_id,
+        alici_id: talepBilgisi.pm_id,
         gonderen_id: user.id,
         kayit_turu: "senaryo",
         kayit_id: senaryo_id,

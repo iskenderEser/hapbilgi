@@ -1,9 +1,11 @@
 // app/admin/page.tsx
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { ROL_ADLARI } from "@/lib/utils/roller";
+import { useAuth } from "@/app/providers/AuthProvider";
+import { useRouter } from "next/navigation";
 
 interface Firma {
   firma_id: string;
@@ -66,9 +68,9 @@ type GirisSecimi = "tekil" | "toplu" | "ekip" | "urun" | "kategori";
 const ROLLER = ["pm", "jr_pm", "kd_pm", "iu", "tm", "bm", "utt", "kd_utt", "gm", "gm_yrd", "drk", "paz_md", "blm_md", "med_md", "grp_pm", "sm", "egt_md", "egt_yrd_md", "egt_yon", "egt_uz", "ik_drk", "ik_md", "ik_yrd_md", "ik_uz", "ik_per"];
 
 export default function AdminPage() {
-  const [girisYapildi, setGirisYapildi] = useState(false);
-  const [sifre, setSifre] = useState("");
-  const [girisLoading, setGirisLoading] = useState(false);
+  const { kullanici, yukleniyor, cikisYap } = useAuth();
+  const router = useRouter();
+
   const [firmalar, setFirmalar] = useState<Firma[]>([]);
   const [seciliFirma, setSeciliFirma] = useState<Firma | null>(null);
   const [kullanicilar, setKullanicilar] = useState<Kullanici[]>([]);
@@ -162,16 +164,12 @@ export default function AdminPage() {
 
   const tumSeciliMi = filtrelenmisKullanicilar.length > 0 && filtrelenmisKullanicilar.every(k => seciliKullanicilar.has(k.kullanici_id));
 
-  const handleGiris = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setGirisLoading(true);
-    const res = await fetch("/admin/api/giris", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sifre }) });
-    const data = await res.json();
-    if (!res.ok) { hata(data.hata ?? "Şifre hatalı.", data.adim, data.detay); setGirisLoading(false); return; }
-    setGirisYapildi(true);
-    setGirisLoading(false);
+  useEffect(() => {
+    if (yukleniyor) return;
+    if (!kullanici) { router.replace("/login"); return; }
+    if (kullanici.rol !== "admin") { router.replace("/ana-sayfa"); return; }
     firmalariCek();
-  };
+  }, [kullanici, yukleniyor]);
 
   const firmalariCek = async () => {
     setLoading(true);
@@ -573,31 +571,15 @@ export default function AdminPage() {
   const btnBase: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 16px", borderRadius: "8px", fontSize: "13px", fontWeight: 600, cursor: "pointer", fontFamily: "'Nunito', sans-serif", border: "0.5px solid #e5e7eb" };
   const filterSelectStyle: React.CSSProperties = { border: "0.5px solid #e5e7eb", borderRadius: "6px", padding: "5px 8px", fontSize: "11px", fontFamily: "'Nunito', sans-serif", color: "#374151", background: "white", cursor: "pointer", outline: "none" };
 
-  if (!girisYapildi) {
-    return (
-      <div style={{ minHeight: "100vh", background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Nunito', sans-serif" }}>
-        <div style={{ background: "white", border: "0.5px solid #e5e7eb", borderRadius: "16px", padding: "40px", width: "340px" }}>
-          <div style={{ textAlign: "center", marginBottom: "28px" }}>
-            <span style={{ fontSize: "24px", fontWeight: 700, color: "#56aeff" }}>HapBilgi</span>
-            <p style={{ fontSize: "13px", color: "#737373", marginTop: "6px" }}>Admin Paneli</p>
-          </div>
-          <form onSubmit={handleGiris} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <input type="password" value={sifre} onChange={(e) => setSifre(e.target.value)} placeholder="Admin şifresi" required style={{ border: "0.5px solid #e5e7eb", borderRadius: "8px", padding: "10px 14px", fontSize: "13px", fontFamily: "'Nunito', sans-serif" }} />
-            <button type="submit" disabled={girisLoading} style={{ background: "#56aeff", color: "white", border: "none", borderRadius: "8px", padding: "12px", fontSize: "13px", fontWeight: 600, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
-              {girisLoading ? "Giriş yapılıyor..." : "Giriş Yap"}
-            </button>
-          </form>
-        </div>
-        <HataMesajiContainer mesajlar={mesajlar} />
-      </div>
-    );
-  }
+  if (yukleniyor) return null;
+
+  if (!kullanici || kullanici.rol !== "admin") return null;
 
   return (
     <div style={{ minHeight: "100vh", background: "#f9fafb", fontFamily: "'Nunito', sans-serif" }}>
       <div style={{ background: "white", borderBottom: "0.5px solid #e5e7eb", padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ fontSize: "16px", fontWeight: 700, color: "#56aeff" }}>HapBilgi Admin</span>
-        <button onClick={() => setGirisYapildi(false)} style={{ fontSize: "12px", color: "#737373", background: "none", border: "none", cursor: "pointer" }}>Çıkış</button>
+        <button onClick={cikisYap} style={{ fontSize: "12px", color: "#737373", background: "none", border: "none", cursor: "pointer" }}>Çıkış</button>
       </div>
 
       <div style={{ maxWidth: "1300px", margin: "0 auto", padding: "24px", display: "flex", gap: "20px" }}>
@@ -759,8 +741,6 @@ export default function AdminPage() {
               {/* Ürün & Teknik */}
               {girisSecimi === "urun" && (
                 <div style={{ display: "flex", gap: "16px" }}>
-
-                  {/* Ürünler */}
                   <div style={{ flex: 1, background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
                     <div style={{ padding: "14px 20px", borderBottom: "0.5px solid #e5e7eb", fontSize: "13px", fontWeight: 600, color: "#111" }}>Ürünler</div>
                     <div style={{ padding: "16px 20px" }}>
@@ -801,8 +781,6 @@ export default function AdminPage() {
                       )}
                     </div>
                   </div>
-
-                  {/* Teknikler */}
                   <div style={{ flex: 1, background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
                     <div style={{ padding: "14px 20px", borderBottom: "0.5px solid #e5e7eb", fontSize: "13px", fontWeight: 600, color: "#111" }}>Teknikler</div>
                     <div style={{ padding: "16px 20px" }}>
@@ -833,7 +811,6 @@ export default function AdminPage() {
                       )}
                     </div>
                   </div>
-
                 </div>
               )}
 
@@ -865,11 +842,7 @@ export default function AdminPage() {
                                 {k.aktif_mi ? "Aktif" : "Pasif"}
                               </span>
                             </div>
-                            <button
-                              onClick={() => handleKategoriToggle(k.kategori_id, k.aktif_mi)}
-                              disabled={kategoriToggleLoading === k.kategori_id}
-                              style={{ fontSize: "10px", padding: "3px 10px", borderRadius: "5px", border: "0.5px solid #e5e7eb", background: k.aktif_mi ? "#fef2f2" : "#f0fdf4", color: k.aktif_mi ? "#bc2d0d" : "#16a34a", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}
-                            >
+                            <button onClick={() => handleKategoriToggle(k.kategori_id, k.aktif_mi)} disabled={kategoriToggleLoading === k.kategori_id} style={{ fontSize: "10px", padding: "3px 10px", borderRadius: "5px", border: "0.5px solid #e5e7eb", background: k.aktif_mi ? "#fef2f2" : "#f0fdf4", color: k.aktif_mi ? "#bc2d0d" : "#16a34a", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
                               {kategoriToggleLoading === k.kategori_id ? "..." : k.aktif_mi ? "Pasife Al" : "Aktif Et"}
                             </button>
                           </div>
@@ -918,7 +891,6 @@ export default function AdminPage() {
 
               {/* Kullanıcı listesi */}
               <div style={{ background: "white", border: "0.5px solid #e5e7eb", borderRadius: "12px", overflow: "hidden" }}>
-
                 <div style={{ padding: "12px 16px", borderBottom: "0.5px solid #e5e7eb", display: "flex", flexDirection: "column", gap: "8px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <span style={{ fontSize: "12px", fontWeight: 600, color: "#111" }}>Kullanıcılar</span>

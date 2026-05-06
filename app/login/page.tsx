@@ -2,8 +2,9 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/providers/AuthProvider";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -11,6 +12,15 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [hata, setHata] = useState("");
   const router = useRouter();
+  const { kullanici, yukleniyor } = useAuth();
+
+  useEffect(() => {
+    if (yukleniyor) return;
+    if (!kullanici) return;
+    if (kullanici.rol === undefined) return;
+
+    router.replace(kullanici.rol === "admin" ? "/admin" : "/ana-sayfa");
+  }, [kullanici, yukleniyor]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +33,7 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
-    router.push("/ana-sayfa");
+    setLoading(false);
   };
 
   return (

@@ -1,15 +1,14 @@
 // app/soru-setleri/api/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { PM_ROLLERI } from "@/lib/utils/roller";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
@@ -26,56 +25,15 @@ export async function GET(request: NextRequest) {
     if (video_durum_id) {
       query = query.eq("video_durum_id", video_durum_id);
     } else if (PM_ROLLERI.includes(rol)) {
-      const { data: talepler, error: talepError } = await adminSupabase
-        .from("talepler")
-        .select("talep_id")
+      // v_yayin_detay ile PM'in talep zinciri tek sorguda çözüldü — 7 sorgu → 1 sorgu
+      const { data: yayinlar, error: yayinError } = await adminSupabase
+        .from("v_yayin_detay")
+        .select("video_durum_id")
         .eq("pm_id", user.id);
 
-      if (talepError) return hataYaniti("PM'in talepleri çekilemedi.", "talepler tablosu SELECT — pm_id filtresi", talepError);
+      if (yayinError) return hataYaniti("PM'in yayınları çekilemedi.", "v_yayin_detay SELECT — pm_id filtresi", yayinError);
 
-      const talepIdler = (talepler ?? []).map((t: any) => t.talep_id);
-      if (talepIdler.length === 0) return NextResponse.json({ soruSetleri: [] }, { status: 200 });
-
-      const { data: senaryolar, error: senaryoError } = await adminSupabase
-        .from("senaryolar")
-        .select("senaryo_id")
-        .in("talep_id", talepIdler);
-
-      if (senaryoError) return hataYaniti("Senaryolar çekilemedi.", "senaryolar tablosu SELECT — talep_id filtresi", senaryoError);
-
-      const senaryoIdler = (senaryolar ?? []).map((s: any) => s.senaryo_id);
-      if (senaryoIdler.length === 0) return NextResponse.json({ soruSetleri: [] }, { status: 200 });
-
-      const { data: senaryoDurumlari, error: sdError } = await adminSupabase
-        .from("senaryo_durumu")
-        .select("senaryo_durum_id")
-        .in("senaryo_id", senaryoIdler)
-        .eq("durum", "Onaylandi");
-
-      if (sdError) return hataYaniti("Senaryo durumları çekilemedi.", "senaryo_durumu tablosu SELECT — Onaylandi filtresi", sdError);
-
-      const senaryoDurumIdler = (senaryoDurumlari ?? []).map((sd: any) => sd.senaryo_durum_id);
-      if (senaryoDurumIdler.length === 0) return NextResponse.json({ soruSetleri: [] }, { status: 200 });
-
-      const { data: videolar, error: videoError } = await adminSupabase
-        .from("videolar")
-        .select("video_id")
-        .in("senaryo_durum_id", senaryoDurumIdler);
-
-      if (videoError) return hataYaniti("Videolar çekilemedi.", "videolar tablosu SELECT — senaryo_durum_id filtresi", videoError);
-
-      const videoIdler = (videolar ?? []).map((v: any) => v.video_id);
-      if (videoIdler.length === 0) return NextResponse.json({ soruSetleri: [] }, { status: 200 });
-
-      const { data: videoDurumlari, error: vdError } = await adminSupabase
-        .from("video_durumu")
-        .select("video_durum_id")
-        .in("video_id", videoIdler)
-        .eq("durum", "Onaylandi");
-
-      if (vdError) return hataYaniti("Video durumları çekilemedi.", "video_durumu tablosu SELECT — Onaylandi filtresi", vdError);
-
-      const videoDurumIdler = (videoDurumlari ?? []).map((vd: any) => vd.video_durum_id);
+      const videoDurumIdler = (yayinlar ?? []).map((y: any) => y.video_durum_id).filter(Boolean);
       if (videoDurumIdler.length === 0) return NextResponse.json({ soruSetleri: [] }, { status: 200 });
 
       query = query.in("video_durum_id", videoDurumIdler);
@@ -93,10 +51,9 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
@@ -119,52 +76,17 @@ export async function PUT(request: NextRequest) {
     if (!setKontrol.gecerli) return setKontrol.yanit;
     if (setGetError) return hataYaniti("Soru seti sorgulanırken hata oluştu.", "soru_setleri tablosu SELECT", setGetError, 404);
 
-    // video_durum_id üzerinden talebin soru_seti_buyuklugu değerini bul
-    const { data: videoDurum } = await adminSupabase
-      .from("video_durumu")
-      .select("video_id")
+    // v_yayin_detay ile soru_seti_buyuklugu tek sorguda — 5 zincir sorgu → 1 sorgu
+    const { data: yayinDetay, error: yayinError } = await adminSupabase
+      .from("v_yayin_detay")
+      .select("soru_seti_buyuklugu")
       .eq("video_durum_id", mevcutSet.video_durum_id)
       .single();
 
-    let soruSetiBuyuklugu = 25; // varsayılan
+    if (yayinError) return hataYaniti("Yayın bilgisi alınamadı.", "v_yayin_detay SELECT — video_durum_id filtresi", yayinError);
 
-    if (videoDurum?.video_id) {
-      const { data: video } = await adminSupabase
-        .from("videolar")
-        .select("senaryo_durum_id")
-        .eq("video_id", videoDurum.video_id)
-        .single();
+    const soruSetiBuyuklugu = yayinDetay?.soru_seti_buyuklugu ?? 25;
 
-      if (video?.senaryo_durum_id) {
-        const { data: senaryoDurum } = await adminSupabase
-          .from("senaryo_durumu")
-          .select("senaryo_id")
-          .eq("senaryo_durum_id", video.senaryo_durum_id)
-          .single();
-
-        if (senaryoDurum?.senaryo_id) {
-          const { data: senaryo } = await adminSupabase
-            .from("senaryolar")
-            .select("talep_id")
-            .eq("senaryo_id", senaryoDurum.senaryo_id)
-            .single();
-
-          if (senaryo?.talep_id) {
-            const { data: talep } = await adminSupabase
-              .from("talepler")
-              .select("soru_seti_buyuklugu")
-              .eq("talep_id", senaryo.talep_id)
-              .single();
-
-            if (talep?.soru_seti_buyuklugu) {
-              soruSetiBuyuklugu = talep.soru_seti_buyuklugu;
-            }
-          }
-        }
-      }
-    }
-
-    // Soru sayısı kontrolü — talebin soru_seti_buyuklugu değerine göre
     if (sorular.length !== soruSetiBuyuklugu) {
       return validasyonHatasi(`Soru sayısı ${soruSetiBuyuklugu} olmalıdır. Mevcut: ${sorular.length}`, ["sorular"]);
     }

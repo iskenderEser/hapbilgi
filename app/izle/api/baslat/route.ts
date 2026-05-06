@@ -1,14 +1,13 @@
 // app/izle/api/baslat/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
@@ -22,7 +21,6 @@ export async function POST(request: NextRequest) {
       return validasyonHatasi("izleme_turu kendi_kendine veya oneri olmalıdır.", ["izleme_turu"]);
     }
 
-    // Yayın aktif mi kontrol et
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("yayin_yonetimi")
       .select("yayin_id, durum")
@@ -34,7 +32,6 @@ export async function POST(request: NextRequest) {
     if (yayinError) return hataYaniti("Yayın sorgulanırken hata oluştu.", "yayin_yonetimi tablosu SELECT", yayinError, 404);
     if (yayin.durum !== "Yayinda") return isKuraluHatasi(`Video şu an yayında değil. Mevcut durum: ${yayin.durum}`);
 
-    // İzleme kaydı oluştur
     const { data: yeniIzleme, error: izlemeError } = await adminSupabase
       .from("izleme_kayitlari")
       .insert({

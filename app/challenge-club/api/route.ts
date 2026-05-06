@@ -1,6 +1,6 @@
 // app/challenge-club/api/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { hataYaniti, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi, sunucuHatasi } from '@/lib/utils/hataIsle';
 
 const CHALLENGE_GONDERME_PUANI = 10;
@@ -21,10 +21,9 @@ function isGunuEkle(tarih: Date, gun: number): Date {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
     if (authError || !user) return yetkiHatasi('Oturum açılmamış');
 
     const rol = (user.user_metadata?.rol ?? '').toLowerCase();
@@ -33,7 +32,7 @@ export async function GET(request: NextRequest) {
     const { data: kullanici } = await adminSupabase
       .from('kullanicilar')
       .select('kullanici_id, ad, soyad, firma_id')
-      .eq('eposta', user.email)
+      .eq('kullanici_id', user.id)
       .single();
 
     if (!kullanici) return hataYaniti('Kullanıcı bulunamadı', 'kullanicilar SELECT', null);
@@ -42,7 +41,6 @@ export async function GET(request: NextRequest) {
     const tip = searchParams.get('tip') || 'bekleyen';
 
     if (tip === 'bekleyen') {
-      // Bekleyen challengelar — bana gönderilmiş, izlenmemiş, süresi dolmamış
       const { data: challengeler } = await adminSupabase
         .from('challenge_kayitlari')
         .select(`
@@ -106,7 +104,6 @@ export async function GET(request: NextRequest) {
     }
 
     if (tip === 'aylik_top3') {
-      // Ayın top 3 challenger'ı — sadece bu ay challenge puanlarına göre
       const simdi = new Date();
       const ayBaslangic = new Date(simdi.getFullYear(), simdi.getMonth(), 1);
 
@@ -115,18 +112,16 @@ export async function GET(request: NextRequest) {
         .select('kullanici_id, puan')
         .in('puan_turu', ['challenge_gonderme', 'challenge_izleme'])
         .gte('created_at', ayBaslangic.toISOString())
-        .eq('kullanici_id', kullanici.kullanici_id);  // sadece kendi puanı
+        .eq('kullanici_id', kullanici.kullanici_id);
 
       const kendi_puani = (puanlar ?? []).reduce((acc, p) => acc + p.puan, 0);
 
-      // Top 3 sadece firma geneli — isimler gösterilir
       const { data: topPuanlar } = await adminSupabase
         .from('bm_kazanilan_puanlar')
         .select('kullanici_id, puan')
         .in('puan_turu', ['challenge_gonderme', 'challenge_izleme'])
         .gte('created_at', ayBaslangic.toISOString());
 
-      // Kullanici bazlı topla
       const kullaniciPuanlari: Record<string, number> = {};
       for (const p of topPuanlar ?? []) {
         kullaniciPuanlari[p.kullanici_id] = (kullaniciPuanlari[p.kullanici_id] || 0) + p.puan;
@@ -170,10 +165,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
     if (authError || !user) return yetkiHatasi('Oturum açılmamış');
 
     const rol = (user.user_metadata?.rol ?? '').toLowerCase();
@@ -182,7 +176,7 @@ export async function POST(request: NextRequest) {
     const { data: kullanici } = await adminSupabase
       .from('kullanicilar')
       .select('kullanici_id, firma_id')
-      .eq('eposta', user.email)
+      .eq('kullanici_id', user.id)
       .single();
 
     if (!kullanici) return hataYaniti('Kullanıcı bulunamadı', 'kullanicilar SELECT', null);
@@ -194,7 +188,6 @@ export async function POST(request: NextRequest) {
     if (!yayin_id) return validasyonHatasi('yayin_id zorunludur.', ['yayin_id']);
     if (alan_id === kullanici.kullanici_id) return isKuraluHatasi('Kendinize challenge gönderemezsiniz.');
 
-    // Alan kişi BM mi?
     const { data: alanKullanici } = await adminSupabase
       .from('kullanicilar')
       .select('kullanici_id, rol, firma_id')
@@ -234,10 +227,9 @@ export async function POST(request: NextRequest) {
       .gte('created_at', ucAyOnce.toISOString());
 
     if ((ucAyCount ?? 0) >= UC_AYLIK_MAX_AYNI_BM) {
-      return isKuraluHatasi(`Aynı BM\'ye 3 ay içinde en fazla ${UC_AYLIK_MAX_AYNI_BM} challenge gönderebilirsiniz.`);
+      return isKuraluHatasi(`Aynı BM'ye 3 ay içinde en fazla ${UC_AYLIK_MAX_AYNI_BM} challenge gönderebilirsiniz.`);
     }
 
-    // Son tarih hesapla (5 iş günü)
     const sonTarih = isGunuEkle(simdi, IS_GUNU_SURE);
 
     // Challenge oluştur
@@ -255,8 +247,8 @@ export async function POST(request: NextRequest) {
 
     if (error) return hataYaniti('Challenge gönderilemedi', 'challenge_kayitlari INSERT', error);
 
-    // Gönderene puan ver
-    await adminSupabase
+    // Gönderene puan ver — başarısız olursa challenge geri alınır
+    const { error: puanError } = await adminSupabase
       .from('bm_kazanilan_puanlar')
       .insert({
         kullanici_id: kullanici.kullanici_id,
@@ -264,6 +256,14 @@ export async function POST(request: NextRequest) {
         puan_turu: 'challenge_gonderme',
         puan: CHALLENGE_GONDERME_PUANI,
       });
+
+    if (puanError) {
+      await adminSupabase
+        .from('challenge_kayitlari')
+        .delete()
+        .eq('challenge_id', challenge.challenge_id);
+      return hataYaniti('Challenge gönderildi ancak puan eklenemedi. İşlem geri alındı.', 'bm_kazanilan_puanlar INSERT', puanError);
+    }
 
     return NextResponse.json({ success: true, challenge }, { status: 201 });
 

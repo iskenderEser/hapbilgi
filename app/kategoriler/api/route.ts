@@ -1,11 +1,31 @@
 // app/kategoriler/api/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
-import { hataYaniti, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
+import { PM_ROLLERI } from "@/lib/utils/roller";
+
+const KATEGORI_GORUNTULEME_ROLLERI = [...PM_ROLLERI, "iu", "admin"];
+
+async function rolGetir(userId: string): Promise<string> {
+  const adminSupabase = createAdminClient();
+  const { data } = await adminSupabase
+    .from("kullanicilar")
+    .select("rol")
+    .eq("kullanici_id", userId)
+    .single();
+  return (data?.rol ?? "").toLowerCase();
+}
 
 export async function GET(request: NextRequest) {
   try {
+    const supabase = await createClient();
     const adminSupabase = createAdminClient();
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return yetkiHatasi();
+
+    const rol = await rolGetir(user.id);
+    if (!KATEGORI_GORUNTULEME_ROLLERI.includes(rol)) return rolHatasi("Bu veriye erişim yetkiniz bulunmamaktadır.");
 
     const { searchParams } = new URL(request.url);
     const firma_id = searchParams.get("firma_id");
@@ -29,7 +49,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
     const adminSupabase = createAdminClient();
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return yetkiHatasi();
+
+    const rol = await rolGetir(user.id);
+    if (!KATEGORI_GORUNTULEME_ROLLERI.includes(rol)) return rolHatasi("Bu veriye erişim yetkiniz bulunmamaktadır.");
 
     const body = await request.json();
     const { firma_id, kategori_adi } = body;
@@ -63,7 +90,14 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const supabase = await createClient();
     const adminSupabase = createAdminClient();
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return yetkiHatasi();
+
+    const rol = await rolGetir(user.id);
+    if (!KATEGORI_GORUNTULEME_ROLLERI.includes(rol)) return rolHatasi("Bu veriye erişim yetkiniz bulunmamaktadır.");
 
     const body = await request.json();
     const { kategori_id, aktif_mi } = body;

@@ -158,7 +158,7 @@ export default function IzlePage() {
   const handleIleriSarmaReddet = () => { setIleriSarmaModal(false); setBekleyenSeekBitis(null); };
 
   const formatTarih = (tarih: string) =>
-    new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
+    new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
 
   const handleVideoAc = (video: Video) => {
     setAktifVideo(video); setIzlemeBasladi(false); setIzlemeTamamlandi(false);
@@ -240,7 +240,7 @@ export default function IzlePage() {
                 Yayında video bulunmuyor.
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {videolar.map((v) => (
                   <div key={v.yayin_id} onClick={() => handleVideoAc(v)}
                     className="bg-white border border-gray-200 rounded-xl overflow-hidden cursor-pointer transition-shadow duration-150"

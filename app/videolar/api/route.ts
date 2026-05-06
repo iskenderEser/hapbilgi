@@ -1,15 +1,14 @@
 // app/videolar/api/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { PM_ROLLERI } from "@/lib/utils/roller";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
@@ -26,35 +25,15 @@ export async function GET(request: NextRequest) {
     if (senaryo_durum_id) {
       query = query.eq("senaryo_durum_id", senaryo_durum_id);
     } else if (PM_ROLLERI.includes(rol)) {
-      const { data: talepler, error: talepError } = await adminSupabase
-        .from("talepler")
-        .select("talep_id")
+      // v_yayin_detay ile PM'in talep zinciri tek sorguda çözüldü
+      const { data: yayinlar, error: yayinError } = await adminSupabase
+        .from("v_yayin_detay")
+        .select("senaryo_durum_id")
         .eq("pm_id", user.id);
 
-      if (talepError) return hataYaniti("PM'in talepleri çekilemedi.", "talepler tablosu SELECT — pm_id filtresi", talepError);
+      if (yayinError) return hataYaniti("PM'in yayınları çekilemedi.", "v_yayin_detay SELECT — pm_id filtresi", yayinError);
 
-      const talepIdler = (talepler ?? []).map((t: any) => t.talep_id);
-      if (talepIdler.length === 0) return NextResponse.json({ videolar: [] }, { status: 200 });
-
-      const { data: senaryolar, error: senaryoError } = await adminSupabase
-        .from("senaryolar")
-        .select("senaryo_id")
-        .in("talep_id", talepIdler);
-
-      if (senaryoError) return hataYaniti("Senaryolar çekilemedi.", "senaryolar tablosu SELECT — talep_id filtresi", senaryoError);
-
-      const senaryoIdler = (senaryolar ?? []).map((s: any) => s.senaryo_id);
-      if (senaryoIdler.length === 0) return NextResponse.json({ videolar: [] }, { status: 200 });
-
-      const { data: senaryoDurumlari, error: sdError } = await adminSupabase
-        .from("senaryo_durumu")
-        .select("senaryo_durum_id")
-        .in("senaryo_id", senaryoIdler)
-        .eq("durum", "Onaylandi");
-
-      if (sdError) return hataYaniti("Senaryo durumları çekilemedi.", "senaryo_durumu tablosu SELECT — Onaylandi filtresi", sdError);
-
-      const senaryoDurumIdler = (senaryoDurumlari ?? []).map((sd: any) => sd.senaryo_durum_id);
+      const senaryoDurumIdler = (yayinlar ?? []).map((y: any) => y.senaryo_durum_id).filter(Boolean);
       if (senaryoDurumIdler.length === 0) return NextResponse.json({ videolar: [] }, { status: 200 });
 
       query = query.in("senaryo_durum_id", senaryoDurumIdler);
@@ -72,10 +51,9 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();

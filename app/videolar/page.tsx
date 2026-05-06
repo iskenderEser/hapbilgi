@@ -2,7 +2,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
@@ -19,6 +19,28 @@ interface VideoSatir {
 }
 
 type FiltreDurum = "Inceleme Bekleniyor" | "Onaylandi" | "Iptal Edildi";
+
+interface SenaryoDurumJoin {
+  senaryo_durum_id: string;
+  senaryo_id: string;
+  videolar: {
+    video_id: string;
+    video_url: string | null;
+    thumbnail_url: string | null;
+    created_at: string;
+    video_durumu: {
+      durum: string;
+      created_at: string;
+    }[];
+  }[];
+  senaryolar: {
+    talepler: {
+      urunler: { urun_adi: string } | null;
+      teknikler: { teknik_adi: string } | null;
+      kategoriler: { kategori_adi: string } | null;
+    } | null;
+  } | null;
+}
 
 export default function VideolarListePage() {
   const router = useRouter();
@@ -45,61 +67,81 @@ export default function VideolarListePage() {
     router.push("/login");
   };
 
-  const veriCek = async () => {
+  const veriCek = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
 
-    const { data: senaryoDurumlari, error: sdError } = await supabase
-      .from("senaryo_durumu").select("senaryo_durum_id, senaryo_id")
-      .eq("durum", "Onaylandi").order("created_at", { ascending: false });
+    // Tek sorgu ile tüm verileri çek
+    const { data, error } = await supabase
+      .from("senaryo_durumu")
+      .select(`
+        senaryo_durum_id,
+        senaryo_id,
+        videolar!inner (
+          video_id,
+          video_url,
+          thumbnail_url,
+          created_at,
+          video_durumu (
+            durum,
+            created_at
+          )
+        ),
+        senaryolar!inner (
+          talepler!inner (
+            urunler (urun_adi),
+            teknikler (teknik_adi),
+            kategoriler (kategori_adi)
+          )
+        )
+      `)
+      .eq("durum", "Onaylandi")
+      .order("created_at", { ascending: false });
 
-    if (sdError) { hata("Videolar yüklenemedi.", "senaryo_durumu tablosu SELECT", sdError.message); setLoading(false); return; }
-
-    const benzersizMap = new Map<string, string>();
-    for (const sd of senaryoDurumlari ?? []) {
-      if (!benzersizMap.has(sd.senaryo_id)) benzersizMap.set(sd.senaryo_id, sd.senaryo_durum_id);
+    if (error || !data) {
+      hata("Videolar yüklenemedi.", "senaryo_durumu tablosu SELECT", error?.message);
+      setLoading(false);
+      return;
     }
 
-    const sonuc = await Promise.all(
-      Array.from(benzersizMap.entries()).map(async ([senaryo_id, senaryo_durum_id]) => {
-        const { data: videolar } = await supabase
-          .from("videolar").select("video_id, video_url, thumbnail_url, created_at")
-          .eq("senaryo_durum_id", senaryo_durum_id).order("created_at", { ascending: false }).limit(1);
-        const sonVideo = videolar?.[0];
-        if (!sonVideo) return null;
+    // Her senaryo için en son videoyu ve en son durumu bul
+    const senaryoMap = new Map<string, VideoSatir>();
 
-        const { data: durumlar } = await supabase
-          .from("video_durumu").select("durum, created_at")
-          .eq("video_id", sonVideo.video_id).order("created_at", { ascending: false }).limit(1);
+    for (const item of data as unknown as SenaryoDurumJoin[]) {
+      const senaryoId = item.senaryo_id;
+      
+      // Aynı senaryo için daha önce işlem yapıldıysa atla
+      if (senaryoMap.has(senaryoId)) continue;
 
-        const { data: senaryo } = await supabase
-          .from("senaryolar").select("talep_id").eq("senaryo_id", senaryo_id).single();
+      const videolar = item.videolar || [];
+      if (videolar.length === 0) continue;
 
-        let urun_adi = "-", teknik_adi = "-", kategori_adi: string | null = null;
-        if (senaryo?.talep_id) {
-          const { data: talep } = await supabase
-            .from("talepler").select(`urunler(urun_adi), teknikler(teknik_adi), kategoriler(kategori_adi)`)
-            .eq("talep_id", senaryo.talep_id).single();
-          urun_adi = (talep as any)?.urunler?.urun_adi ?? "-";
-          teknik_adi = (talep as any)?.teknikler?.teknik_adi ?? "-";
-          kategori_adi = (talep as any)?.kategoriler?.kategori_adi ?? null;
-        }
+      // En son videoyu bul (created_at'e göre sıralı geldiği için ilk olan en yeni)
+      const sonVideo = videolar[0];
+      
+      // En son video durumunu bul
+      const durumlar = sonVideo.video_durumu || [];
+      const sonDurum = durumlar[0] || null;
+      
+      const talep = item.senaryolar?.talepler;
 
-        return {
-          senaryo_durum_id, urun_adi, teknik_adi, kategori_adi,
-          video_url: sonVideo.video_url ?? null,
-          thumbnail_url: sonVideo.thumbnail_url ?? null,
-          son_durum: durumlar?.[0]?.durum ?? null,
-          son_tarih: durumlar?.[0]?.created_at ?? sonVideo.created_at,
-        };
-      })
-    );
+      senaryoMap.set(senaryoId, {
+        senaryo_durum_id: item.senaryo_durum_id,
+        urun_adi: talep?.urunler?.urun_adi ?? "-",
+        teknik_adi: talep?.teknikler?.teknik_adi ?? "-",
+        kategori_adi: talep?.kategoriler?.kategori_adi ?? null,
+        video_url: sonVideo.video_url ?? null,
+        thumbnail_url: sonVideo.thumbnail_url ?? null,
+        son_durum: sonDurum?.durum ?? null,
+        son_tarih: sonDurum?.created_at ?? sonVideo.created_at,
+      });
+    }
 
-    setSatirlar(sonuc.filter(Boolean) as VideoSatir[]);
+    setSatirlar(Array.from(senaryoMap.values()));
     setLoading(false);
-  };
+  }, [hata]);
 
-  useEffect(() => { if (user) veriCek(); }, [user]);
+  useEffect(() => { if (user) veriCek(); }, [user, veriCek]);
 
   const toggleFiltre = (durum: FiltreDurum) => {
     setFiltreler(prev => {
@@ -109,7 +151,6 @@ export default function VideolarListePage() {
     });
   };
 
-  // Benzersiz kategoriler
   const kategoriler = Array.from(new Set(satirlar.map(s => s.kategori_adi).filter(Boolean))) as string[];
 
   const filtreliSatirlar = satirlar.filter(s => {
@@ -118,8 +159,9 @@ export default function VideolarListePage() {
     return durumUyumu && kategoriUyumu;
   });
 
-  const formatTarih = (tarih: string) =>
-    new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
+  const formatTarih = useCallback((tarih: string) => {
+    return new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
+  }, []);
 
   const durumRenk = (durum: string) => {
     switch (durum) {
@@ -140,10 +182,10 @@ export default function VideolarListePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
-          <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
+        <div className="animate-pulse flex flex-col items-center gap-2">
+          <div className="w-8 h-8 border-2 border-gray-200 border-t-[#56aeff] rounded-full animate-spin" />
+          <div className="h-2 w-24 bg-gray-200 rounded" />
+        </div>
       </div>
     );
   }
@@ -155,7 +197,6 @@ export default function VideolarListePage() {
       <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6">
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
 
-          {/* Başlık + filtreler */}
           <div className="px-4 md:px-5 py-3.5 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
               <span className="text-sm font-semibold text-gray-900">Videolar</span>
@@ -168,12 +209,11 @@ export default function VideolarListePage() {
                     {f.etiket}
                   </label>
                 ))}
-                {/* Kategori dropdown — yalnızca listede kategori varsa göster */}
                 {kategoriler.length > 0 && (
                   <select
                     value={kategoriFiltre}
                     onChange={e => setKategoriFiltre(e.target.value)}
-                    className="border border-gray-200 rounded-lg px-2 py-1 text-xs bg-white cursor-pointer"
+                    className="border border-gray-200 rounded-lg px-2 py-1 text-xs bg-white cursor-pointer focus:outline-none focus:border-[#56aeff]"
                     style={{ fontFamily: "'Nunito', sans-serif", color: kategoriFiltre ? "#111" : "#737373" }}
                   >
                     <option value="">Tüm Kategoriler</option>
@@ -191,13 +231,12 @@ export default function VideolarListePage() {
             </div>
           ) : (
             <>
-              {/* Mobile: kart görünümü */}
               <div className="md:hidden">
                 {filtreliSatirlar.map((v) => {
                   const renk = durumRenk(v.son_durum ?? "");
                   return (
                     <div key={v.senaryo_durum_id} onClick={() => router.push(`/videolar/${v.senaryo_durum_id}`)}
-                      className="px-4 py-3 border-b border-gray-50 cursor-pointer">
+                      className="px-4 py-3 border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors">
                       <div className="flex justify-between items-start mb-1">
                         <span className="text-sm font-semibold text-gray-900">{v.urun_adi}</span>
                         {v.son_durum && (
@@ -220,7 +259,6 @@ export default function VideolarListePage() {
                 })}
               </div>
 
-              {/* Desktop: tablo görünümü */}
               <div className="hidden md:block">
                 <table className="w-full border-collapse text-sm">
                   <thead>

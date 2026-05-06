@@ -21,7 +21,7 @@ export async function GET() {
       .select(`
         talep_id, pm_id, takim_id, aciklama, hazir_video, hazir_video_url, dosya_urls, created_at,
         urun_id, teknik_id, kategori_id, egitim_turu,
-        hazir_soru_seti, hazir_soru_seti_verisi,
+        hazir_soru_seti,
         soru_seti_buyuklugu, video_basi_soru_sayisi,
         urunler(urun_adi),
         teknikler(teknik_adi),
@@ -51,7 +51,6 @@ export async function GET() {
       hazir_video: t.hazir_video,
       hazir_video_url: t.hazir_video_url,
       hazir_soru_seti: t.hazir_soru_seti ?? false,
-      hazir_soru_seti_verisi: t.hazir_soru_seti_verisi ?? null,
       soru_seti_buyuklugu: t.soru_seti_buyuklugu ?? 25,
       video_basi_soru_sayisi: t.video_basi_soru_sayisi ?? 2,
       dosya_urls: t.dosya_urls,

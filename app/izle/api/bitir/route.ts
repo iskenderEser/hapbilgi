@@ -1,6 +1,6 @@
 // app/izle/api/bitir/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 
 async function videoDuresiGetir(video_url: string): Promise<number> {
@@ -25,10 +25,9 @@ async function videoDuresiGetir(video_url: string): Promise<number> {
 
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
@@ -41,7 +40,6 @@ export async function PUT(request: NextRequest) {
 
     const ileriSarilanSure = Math.round(ileri_sarilan_sure ?? 0);
 
-    // İzleme kaydını çek
     const { data: izleme, error: izlemeError } = await adminSupabase
       .from("izleme_kayitlari")
       .select("izleme_id, yayin_id, kullanici_id, izleme_turu, tamamlandi_mi, izleme_baslangic")
@@ -57,7 +55,6 @@ export async function PUT(request: NextRequest) {
     const bitisTarihi = new Date();
     const baslangicTarihi = new Date(izleme.izleme_baslangic);
 
-    // İzlemeyi tamamla
     const { error: updateError } = await adminSupabase
       .from("izleme_kayitlari")
       .update({ tamamlandi_mi: true, izleme_bitis: bitisTarihi.toISOString() })
@@ -65,7 +62,6 @@ export async function PUT(request: NextRequest) {
 
     if (updateError) return hataYaniti("İzleme tamamlanamadı.", "izleme_kayitlari tablosu UPDATE — tamamlandi_mi", updateError);
 
-    // Puan kazanma zaman kontrolü
     const gun = baslangicTarihi.getDay();
     const dakikaCinsinden = baslangicTarihi.getHours() * 60 + baslangicTarihi.getMinutes();
     const puanKazanabilir = gun >= 1 && gun <= 5 && dakikaCinsinden >= 420 && dakikaCinsinden <= 1229;
@@ -78,7 +74,6 @@ export async function PUT(request: NextRequest) {
       }, { status: 200 });
     }
 
-    // Yayın bilgisi — ileri_sarma_acik dahil
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("yayin_yonetimi")
       .select("soru_seti_durum_id, ileri_sarma_acik, extra_puan")
@@ -93,7 +88,6 @@ export async function PUT(request: NextRequest) {
     const ileriSarmaAcik = yayin.ileri_sarma_acik ?? false;
     const ileriSarildi = ileriSarmaAcik && ileriSarilanSure > 0;
 
-    // Video puanı zinciri
     const { data: soruSetiDurum, error: ssdError } = await adminSupabase
       .from("soru_seti_durumu")
       .select("soru_seti_id")
@@ -124,10 +118,8 @@ export async function PUT(request: NextRequest) {
 
     const video_puani = vPuan?.video_puani ?? 0;
 
-    // İleri sarma varsa puan hesapla
     let kazanilacakIzlemePuani = video_puani;
     if (ileriSarildi && video_puani > 0) {
-      // Video süresi Bunny.net'ten çek
       const { data: videoKayit } = await adminSupabase
         .from("videolar")
         .select("video_url")
@@ -143,7 +135,6 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // Daha önce bu videodan puan aldı mı?
     const { data: oncekiPuan, error: opError } = await adminSupabase
       .from("kazanilan_puanlar")
       .select("kazanilan_puan_id")
@@ -170,7 +161,6 @@ export async function PUT(request: NextRequest) {
         kazanilanPuanlar.push({ tur: "izleme", puan: kazanilacakIzlemePuani });
       }
     } else if (!ilkIzleme && !ileriSarildi && !ileriSarmaAcik) {
-      // Tekrar izleme, ileri sarma kapalı video — extra puan kontrolü
       const haftaBaslangic = new Date(baslangicTarihi);
       haftaBaslangic.setDate(baslangicTarihi.getDate() - baslangicTarihi.getDay() + 1);
       haftaBaslangic.setHours(0, 0, 0, 0);
@@ -214,7 +204,6 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // Öneri puanı — ileri sarma yoksa
     if (!ileriSarildi && izleme.izleme_turu === "oneri") {
       const { data: oneri, error: oneriError } = await adminSupabase
         .from("oneri_kayitlari")

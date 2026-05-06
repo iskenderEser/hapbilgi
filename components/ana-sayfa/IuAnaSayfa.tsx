@@ -41,7 +41,7 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
   useEffect(() => {
     const veriCek = async () => {
       setLoading(true);
-      const res = await fetch("/ana-sayfa/api/iu");
+      const res = await fetch("/ana-sayfa/api");
       const data = await res.json();
       if (!res.ok) { hata(data.hata ?? "Veriler yüklenemedi.", data.adim, data.detay); }
       else { setIuVeri(data); }

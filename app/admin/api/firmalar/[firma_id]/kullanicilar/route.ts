@@ -23,42 +23,37 @@ export async function GET(
     if (!firmaKontrol.gecerli) return firmaKontrol.yanit;
     if (firmaError) return hataYaniti("Firma sorgulanırken hata oluştu.", "firmalar tablosu SELECT", firmaError, 404);
 
+    // Tek join sorgusu ile takım ve bölge adlarını çek — N+1 giderildi
     const { data: kullanicilar, error } = await adminSupabase
       .from("kullanicilar")
-      .select("kullanici_id, ad, soyad, eposta, rol, firma_id, takim_id, bolge_id, aktif_mi, yetki_kullanici_yonetim, yetki_aktif_pasif, created_at")
+      .select(`
+        kullanici_id, ad, soyad, eposta, rol, firma_id,
+        takim_id, bolge_id, aktif_mi,
+        yetki_kullanici_yonetim, yetki_aktif_pasif, created_at,
+        takimlar ( takim_adi ),
+        bolgeler ( bolge_adi )
+      `)
       .eq("firma_id", firma_id)
       .order("ad", { ascending: true });
 
     if (error) return hataYaniti("Kullanıcılar çekilemedi.", "kullanicilar tablosu SELECT — firma_id filtresi", error);
 
-    const sonuc = await Promise.all(
-      (kullanicilar ?? []).map(async (k) => {
-        let takim_adi = null;
-        let bolge_adi = null;
-
-        if (k.takim_id) {
-          const { data: takim, error: takimError } = await adminSupabase
-            .from("takimlar")
-            .select("takim_adi")
-            .eq("takim_id", k.takim_id)
-            .single();
-          if (takimError) console.error("[UYARI] Takım adı çekilemedi:", { takim_id: k.takim_id, hata: takimError.message });
-          takim_adi = takim?.takim_adi ?? null;
-        }
-
-        if (k.bolge_id) {
-          const { data: bolge, error: bolgeError } = await adminSupabase
-            .from("bolgeler")
-            .select("bolge_adi")
-            .eq("bolge_id", k.bolge_id)
-            .single();
-          if (bolgeError) console.error("[UYARI] Bölge adı çekilemedi:", { bolge_id: k.bolge_id, hata: bolgeError.message });
-          bolge_adi = bolge?.bolge_adi ?? null;
-        }
-
-        return { ...k, takim_adi, bolge_adi };
-      })
-    );
+    const sonuc = (kullanicilar ?? []).map((k: any) => ({
+      kullanici_id: k.kullanici_id,
+      ad: k.ad,
+      soyad: k.soyad,
+      eposta: k.eposta,
+      rol: k.rol,
+      firma_id: k.firma_id,
+      takim_id: k.takim_id,
+      bolge_id: k.bolge_id,
+      aktif_mi: k.aktif_mi,
+      yetki_kullanici_yonetim: k.yetki_kullanici_yonetim,
+      yetki_aktif_pasif: k.yetki_aktif_pasif,
+      created_at: k.created_at,
+      takim_adi: k.takimlar?.takim_adi ?? null,
+      bolge_adi: k.bolgeler?.bolge_adi ?? null,
+    }));
 
     return NextResponse.json({ kullanicilar: sonuc }, { status: 200 });
 
@@ -101,7 +96,7 @@ export async function POST(
     if (eposta.length > 200) return validasyonHatasi("E-posta 200 karakterden uzun olamaz.", ["eposta"]);
     if (sifre.length > 200) return validasyonHatasi("Şifre 200 karakterden uzun olamaz.", ["sifre"]);
 
-    const gecerliRoller = ["pm", "jr_pm", "kd_pm", "iu", "tm", "bm", "utt", "kd_utt", "gm", "gm_yrd", "drk", "paz_md", "blm_md", "med_md", "grp_pm", "sm", "egt_md", "egt_yrd_md", "egt_yon", "egt_uz"];
+    const gecerliRoller = ["pm", "jr_pm", "kd_pm", "iu", "tm", "bm", "utt", "kd_utt", "gm", "gm_yrd", "drk", "paz_md", "blm_md", "med_md", "grp_pm", "sm", "egt_md", "egt_yrd_md", "egt_yon", "egt_uz", "ik_drk", "ik_md", "ik_yrd_md", "ik_uz", "ik_per"];
     const rolTemiz = rol.trim().toLowerCase();
     if (!gecerliRoller.includes(rolTemiz)) return validasyonHatasi("Geçersiz rol.", ["rol"]);
 
@@ -113,7 +108,7 @@ export async function POST(
     let takim_id: string | null = null;
     let bolge_id: string | null = null;
 
-    if (["pm", "jr_pm", "kd_pm", "tm"].includes(rolTemiz)) {
+    if (["pm", "jr_pm", "kd_pm", "tm", "ik_drk", "ik_md", "ik_yrd_md", "ik_uz", "ik_per", "med_md", "egt_md", "egt_yrd_md", "egt_yon", "egt_uz"].includes(rolTemiz)) {
       if (bodyTakimId) {
         const { data: takim, error: takimError } = await adminSupabase
           .from("takimlar")
@@ -228,7 +223,7 @@ export async function PUT(
     if (kullaniciError) return hataYaniti("Kullanıcı sorgulanırken hata oluştu.", "kullanicilar tablosu SELECT", kullaniciError, 404);
 
     if (rol !== undefined) {
-      const gecerliRoller = ["pm", "jr_pm", "kd_pm", "iu", "tm", "bm", "utt", "kd_utt", "gm", "gm_yrd", "drk", "paz_md", "blm_md", "med_md", "grp_pm", "sm", "egt_md", "egt_yrd_md", "egt_yon", "egt_uz"];
+      const gecerliRoller = ["pm", "jr_pm", "kd_pm", "iu", "tm", "bm", "utt", "kd_utt", "gm", "gm_yrd", "drk", "paz_md", "blm_md", "med_md", "grp_pm", "sm", "egt_md", "egt_yrd_md", "egt_yon", "egt_uz", "ik_drk", "ik_md", "ik_yrd_md", "ik_uz", "ik_per"];
       const rolTemiz = rol.trim().toLowerCase();
       if (!gecerliRoller.includes(rolTemiz)) return validasyonHatasi("Geçersiz rol.", ["rol"]);
     }
@@ -279,6 +274,7 @@ export async function DELETE(
     if (!kullaniciKontrol.gecerli) return kullaniciKontrol.yanit;
     if (kullaniciError) return hataYaniti("Kullanıcı sorgulanırken hata oluştu.", "kullanicilar tablosu SELECT", kullaniciError, 404);
 
+    // Arşivle
     const { error: arsivError } = await adminSupabase
       .from("silinmis_kullanicilar")
       .insert({
@@ -295,6 +291,11 @@ export async function DELETE(
 
     if (arsivError) return hataYaniti("Kullanıcı arşivlenemedi, silme iptal edildi.", "silinmis_kullanicilar tablosu INSERT", arsivError);
 
+    // Önce Auth'tan sil — başarısız olursa DB'ye dokunma
+    const { error: authError } = await adminSupabase.auth.admin.deleteUser(kullanici_id);
+    if (authError) return hataYaniti("Kullanıcı Auth'tan silinemedi, işlem iptal edildi.", "auth.admin.deleteUser", authError);
+
+    // Auth başarılıysa DB'den sil
     const { error: deleteError } = await adminSupabase
       .from("kullanicilar")
       .delete()
@@ -302,9 +303,6 @@ export async function DELETE(
       .eq("firma_id", firma_id);
 
     if (deleteError) return hataYaniti("Kullanıcı tablodan silinemedi.", "kullanicilar tablosu DELETE", deleteError);
-
-    const { error: authError } = await adminSupabase.auth.admin.deleteUser(kullanici_id);
-    if (authError) console.error("[UYARI] Kullanıcı Auth'tan silinemedi:", { kullanici_id, hata: authError.message });
 
     return NextResponse.json({ mesaj: "Kullanıcı başarıyla silindi." }, { status: 200 });
 
