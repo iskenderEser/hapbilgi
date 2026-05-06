@@ -45,7 +45,7 @@ export default function LoginPage() {
           src="/logo.png"
           alt="hapbilgi"
           className="object-contain"
-          style={{ height: "72px" }}
+          style={{ height: "135px" }}
         />
       </nav>
 
