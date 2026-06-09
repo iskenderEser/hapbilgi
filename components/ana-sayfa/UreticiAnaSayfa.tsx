@@ -1,10 +1,13 @@
-// components/ana-sayfa/PmAnaSayfa.tsx
+// components/ana-sayfa/UreticiAnaSayfa.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useHataMesaji } from "@/components/HataMesaji";
+import VideoOynatici from "@/components/izle/VideoOynatici";
+import VideoBolumu from "@/components/ana-sayfa/VideoBolumu";
+import { AnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 
 interface TakipSatiri {
   talep_id: string;
@@ -25,6 +28,7 @@ interface PMVeri {
     yayinda: number;
     toplam: number;
   };
+  videolar?: AnaSayfaVideo[];
 }
 
 interface Props {
@@ -33,12 +37,13 @@ interface Props {
   adSoyad: string;
 }
 
-export default function PmAnaSayfa({ user, rol, adSoyad }: Props) {
+export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
   const router = useRouter();
   const [pmVeri, setPmVeri] = useState<PMVeri | null>(null);
   const [takimAdi, setTakimAdi] = useState("");
   const [loading, setLoading] = useState(true);
   const [aktifFiltre, setAktifFiltre] = useState<string>("tumu");
+  const [aktifVideo, setAktifVideo] = useState<AnaSayfaVideo | null>(null);
   const { hata } = useHataMesaji();
 
   useEffect(() => {
@@ -91,6 +96,24 @@ export default function PmAnaSayfa({ user, rol, adSoyad }: Props) {
           <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
+      </div>
+    );
+  }
+
+  // Bir video seçiliyse: dashboard yerine tam sayfa oynatıcı (UTT/TM/BM/Yönetici deseni; navbar üstteki sarmalayıcıdan kalır).
+  if (aktifVideo) {
+    return (
+      <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
+        <VideoOynatici
+          key={aktifVideo.yayin_id}
+          video={aktifVideo}
+          tuketici={false}
+          onKapat={() => setAktifVideo(null)}
+          onVeriYenile={() => {}}
+          hata={() => {}}
+          basari={() => {}}
+          uyari={() => {}}
+        />
       </div>
     );
   }
@@ -222,6 +245,11 @@ export default function PmAnaSayfa({ user, rol, adSoyad }: Props) {
           )}
         </div>
 
+      </div>
+
+      {/* Videolar */}
+      <div className="mt-5">
+        <VideoBolumu videolar={pmVeri?.videolar ?? []} onVideoSec={setAktifVideo} />
       </div>
     </div>
   );

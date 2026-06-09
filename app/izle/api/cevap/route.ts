@@ -1,14 +1,17 @@
 // app/izle/api/cevap/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
+import { kazanilanPuanKaydet, yanlisCevapKaybiKaydet } from "@/lib/puan/kayit";
 
 export async function POST(request: NextRequest) {
   try {
-    const adminSupabase = createAdminClient();
+    const supabase = await createClient();
 
-    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
+
+    const adminSupabase = createAdminClient();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
     if (!["utt", "kd_utt"].includes(rol)) return rolHatasi("Sadece utt ve kd_utt cevap verebilir.");
@@ -72,17 +75,23 @@ export async function POST(request: NextRequest) {
     if (!ssKontrol.gecerli) return ssKontrol.yanit;
     if (ssError) return hataYaniti("Soru seti sorgulanırken hata oluştu.", "soru_setleri tablosu SELECT", ssError, 404);
 
-    const { data: soruPuan, error: spError } = await adminSupabase
+    // Soru bazlı puanları topluca çek — soru_seti_puanlari her soru için ayrı satır tutar
+    // (soru_index 0..N-1). Eski kod burada .single() kullanıyordu, PGRST116 fırlatıyordu (Bug 1).
+    const { data: soruPuanlari, error: spError } = await adminSupabase
       .from("soru_seti_puanlari")
-      .select("soru_puani")
-      .eq("soru_seti_durum_id", yayin.soru_seti_durum_id)
-      .single();
+      .select("soru_index, soru_puani")
+      .eq("soru_seti_durum_id", yayin.soru_seti_durum_id);
 
-    if (spError && spError.code !== "PGRST116") {
-      console.error("[UYARI] Soru puanı çekilemedi:", { soru_seti_durum_id: yayin.soru_seti_durum_id, hata: spError.message });
+    if (spError) {
+      console.error("[UYARI] Soru puanları çekilemedi:", { soru_seti_durum_id: yayin.soru_seti_durum_id, hata: spError.message });
     }
 
-    const soru_puani = soruPuan?.soru_puani ?? 0;
+    const soruPuanMap = new Map<number, number>();
+    for (const sp of soruPuanlari ?? []) {
+      if (typeof sp.soru_index === "number" && typeof sp.soru_puani === "number") {
+        soruPuanMap.set(sp.soru_index, sp.soru_puani);
+      }
+    }
 
     let kazanilanPuan = 0;
     const cevapSonuclari = [];
@@ -118,20 +127,40 @@ export async function POST(request: NextRequest) {
         console.error("[UYARI] Cevap kaydedilemedi:", { soru_index, hata: cevapError.message });
       }
 
-      if (dogru_mu && soru_puani > 0) {
-        kazanilanPuan += soru_puani;
-        const { error: puanError } = await adminSupabase
-          .from("kazanilan_puanlar")
-          .insert({
+      if (dogru_mu) {
+        // Doğru cevap → cevaplama puanı. Bu sorunun kendi puanı (soru_puani).
+        const o_soru_puani = soruPuanMap.get(soru_index) ?? 0;
+
+        if (o_soru_puani > 0) {
+          kazanilanPuan += o_soru_puani;
+          const sonuc = await kazanilanPuanKaydet(adminSupabase, {
             kullanici_id: user.id,
             yayin_id: izleme.yayin_id,
             izleme_id,
             puan_turu: "cevaplama",
-            puan: soru_puani,
+            puan: o_soru_puani,
           });
 
-        if (puanError) {
-          console.error("[UYARI] Cevaplama puanı kaydedilemedi:", { soru_index, hata: puanError.message });
+          if (!sonuc.ok) {
+            console.error("[UYARI] Cevaplama puanı kaydedilemedi:", { soru_index, hata: sonuc.error });
+          }
+        }
+      } else {
+        // Yanlış cevap → kayıt anında ayrı tabloya. Rapor anında sadece SUM okunur.
+        const o_soru_puani = soruPuanMap.get(soru_index) ?? 0;
+
+        if (o_soru_puani > 0) {
+          const sonuc = await yanlisCevapKaybiKaydet(adminSupabase, {
+            kullanici_id: user.id,
+            yayin_id: izleme.yayin_id,
+            izleme_id,
+            soru_index,
+            kaybedilen_puan: o_soru_puani,
+          });
+
+          if (!sonuc.ok) {
+            console.error("[UYARI] Yanlış cevap kaybı kaydedilemedi:", { soru_index, hata: sonuc.error });
+          }
         }
       }
 

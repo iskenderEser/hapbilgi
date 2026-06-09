@@ -2,8 +2,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useHataMesaji } from "@/components/HataMesaji";
+import { useRouter, useSearchParams } from "next/navigation";
+import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
+import VideoOynatici from "@/components/izle/VideoOynatici";
 
 interface Video {
   yayin_id: string;
@@ -51,22 +52,45 @@ const GRADYANLAR = [
 
 export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [uttVeri, setUttVeri] = useState<UttVeri | null>(null);
   const [loading, setLoading] = useState(true);
   const [aktifFiltre, setAktifFiltre] = useState<string>("yeni");
-  const { hata } = useHataMesaji();
+  const [aktifVideo, setAktifVideo] = useState<Video | null>(null);
+  const [aktifOneriId, setAktifOneriId] = useState<string | null>(null);
+  const { mesajlar, hata, basari, uyari } = useHataMesaji();
+
+  // Tamamla/soru sonrası oynatıcıyı kapatmadan sayaçları/durumu tazelemek için
+  // sessiz (loading'siz) yenileme yapabilen tek veri çekme fonksiyonu.
+  const veriCek = async (sessiz = false) => {
+    if (!sessiz) setLoading(true);
+    const res = await fetch("/ana-sayfa/api");
+    const data = await res.json();
+    if (!res.ok) { hata(data.hata ?? "Veriler yüklenemedi.", data.adim, data.detay); }
+    else { setUttVeri(data); }
+    if (!sessiz) setLoading(false);
+  };
 
   useEffect(() => {
-    const veriCek = async () => {
-      setLoading(true);
-      const res = await fetch("/ana-sayfa/api");
-      const data = await res.json();
-      if (!res.ok) { hata(data.hata ?? "Veriler yüklenemedi.", data.adim, data.detay); }
-      else { setUttVeri(data); }
-      setLoading(false);
-    };
     veriCek();
   }, [user]);
+
+  // URL'den yayin_id ve oneri_id okuyup ilgili videoyu otomatik aç
+  useEffect(() => {
+    const yayinId = searchParams.get("yayin_id");
+    const oneriId = searchParams.get("oneri_id");
+    if (!yayinId || !uttVeri) return;
+    const tumVideolar = [
+      ...uttVeri.yeni_videolar,
+      ...uttVeri.devam_edenler,
+      ...uttVeri.tamamlananlar,
+    ];
+    const hedefVideo = tumVideolar.find(v => v.yayin_id === yayinId);
+    if (hedefVideo) {
+      setAktifVideo(hedefVideo);
+      setAktifOneriId(oneriId);
+    }
+  }, [uttVeri, searchParams]);
 
   const handleBegeni = async (e: React.MouseEvent, yayin_id: string) => {
     e.stopPropagation();
@@ -109,6 +133,26 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
           <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
+      </div>
+    );
+  }
+
+  // Bir video seçiliyse: dashboard yerine sayfayı kaplayan oynatıcı (kart → oynatıcı → geri).
+  if (aktifVideo) {
+    return (
+      <div className="max-w-6xl mx-auto px-3 py-4 pb-20 md:px-6 md:py-5 md:pb-5 lg:px-8 lg:py-7">
+        <VideoOynatici
+          key={aktifVideo.yayin_id}
+          video={aktifVideo}
+          tuketici={true}
+          oneri_id={aktifOneriId}
+          onKapat={() => { setAktifVideo(null); setAktifOneriId(null); }}
+          onVeriYenile={() => veriCek(true)}
+          hata={hata}
+          basari={basari}
+          uyari={uyari}
+        />
+        <HataMesajiContainer mesajlar={mesajlar} />
       </div>
     );
   }
@@ -166,7 +210,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
         <span className="text-sm font-bold text-gray-900">
           {aktifFiltre === "yeni" ? "Yeni Videolar" : aktifFiltre === "devam" ? "Devam Eden" : "Tamamlanan"}
         </span>
-        <span className="text-xs cursor-pointer" style={{ color: "#56aeff" }} onClick={() => router.push("/izle")}>
+        <span className="text-xs cursor-pointer" style={{ color: "#56aeff" }} onClick={() => router.push("/ana-sayfa")}>
           Tümünü gör
         </span>
       </div>
@@ -180,7 +224,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
           {aktifVideolar.slice(0, 8).map(v => (
             <div
               key={v.yayin_id}
-              onClick={() => router.push(`/izle?yayin_id=${v.yayin_id}`)}
+              onClick={() => setAktifVideo(v)}
               className="bg-white rounded-xl overflow-hidden cursor-pointer transition-shadow duration-150"
               style={{ border: "0.5px solid #e5e7eb" }}
               onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 16px rgba(0,0,0,0.08)"}
@@ -255,6 +299,8 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
           ))}
         </div>
       )}
+
+      <HataMesajiContainer mesajlar={mesajlar} />
     </div>
   );
 }

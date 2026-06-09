@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
-import { PM_ROLLERI } from "@/lib/utils/roller";
+import { URETICI_ROLLER } from "@/lib/utils/roller";
 
 export async function GET() {
   try {
@@ -13,7 +13,7 @@ export async function GET() {
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    if (!PM_ROLLERI.includes(rol)) return rolHatasi("Sadece yetkili roller bekleyen videoları görebilir.");
+    if (!URETICI_ROLLER.includes(rol)) return rolHatasi("Sadece yetkili roller bekleyen videoları görebilir.");
 
     // Zaten yayında olan soru_seti_durum_id'leri çek
     const { data: yayinlar, error: yayinError } = await adminSupabase
@@ -26,7 +26,7 @@ export async function GET() {
 
     // Tek join query ile tüm zinciri çek:
     // soru_seti_durumu → soru_setleri → video_durumu → videolar → senaryo_durumu → senaryolar → talepler → urunler/teknikler
-    // + video_puanlari (video_durum_id üzerinden)
+    // video_puanlari, video_durumu'na bağlıdır (video_durum_id FK) — bu yüzden video_durumu altında embed edilir.
     const { data: onaylananlar, error: onayError } = await adminSupabase
       .from("soru_seti_durumu")
       .select(`
@@ -40,6 +40,10 @@ export async function GET() {
           video_durumu (
             video_durum_id,
             video_id,
+            video_puanlari (
+              video_puan_id,
+              video_puani
+            ),
             videolar (
               video_id,
               video_url,
@@ -62,10 +66,6 @@ export async function GET() {
                 )
               )
             )
-          ),
-          video_puanlari (
-            video_puan_id,
-            video_puani
           )
         )
       `)
@@ -119,7 +119,7 @@ export async function GET() {
         const senaryoDurum = video?.senaryo_durumu;
         const senaryo = senaryoDurum?.senaryolar;
         const talep = senaryo?.talepler;
-        const videoPuan = soruSeti.video_puanlari;
+        const videoPuan = videoDurum?.video_puanlari;
 
         const egitimTuru = talep?.egitim_turu ?? "urun_egitimi";
 

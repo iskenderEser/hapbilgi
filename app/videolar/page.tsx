@@ -6,9 +6,12 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
+import { useOkunmamisIdler } from "@/hooks/useOkunmamisIdler";
 
 interface VideoSatir {
+  talep_id: string;
   senaryo_durum_id: string;
+  video_id: string;
   urun_adi: string;
   teknik_adi: string;
   kategori_adi: string | null;
@@ -18,26 +21,22 @@ interface VideoSatir {
   son_tarih: string;
 }
 
-type FiltreDurum = "Inceleme Bekleniyor" | "Onaylandi" | "Iptal Edildi";
+type FiltreDurum = "Inceleme Bekleniyor" | "Revizyon Bekleniyor" | "Onaylandi" | "Iptal Edildi";
 
-interface SenaryoDurumJoin {
+interface VideoJoin {
+  video_id: string;
   senaryo_durum_id: string;
-  senaryo_id: string;
-  videolar: {
-    video_id: string;
-    video_url: string | null;
-    thumbnail_url: string | null;
-    created_at: string;
-    video_durumu: {
-      durum: string;
-      created_at: string;
-    }[];
-  }[];
-  senaryolar: {
-    talepler: {
-      urunler: { urun_adi: string } | null;
-      teknikler: { teknik_adi: string } | null;
-      kategoriler: { kategori_adi: string } | null;
+  video_url: string | null;
+  thumbnail_url: string | null;
+  created_at: string;
+  senaryo_durumu: {
+    senaryolar: {
+      talep_id: string;
+      talepler: {
+        urunler: { urun_adi: string } | null;
+        teknikler: { teknik_adi: string } | null;
+        kategoriler: { kategori_adi: string } | null;
+      } | null;
     } | null;
   } | null;
 }
@@ -51,6 +50,8 @@ export default function VideolarListePage() {
   const [filtreler, setFiltreler] = useState<Set<FiltreDurum>>(new Set());
   const [kategoriFiltre, setKategoriFiltre] = useState<string>("");
   const { mesajlar, hata } = useHataMesaji();
+
+  const okunmamisIdler = useOkunmamisIdler("video");
 
   useEffect(() => {
     const supabase = createClient();
@@ -71,73 +72,88 @@ export default function VideolarListePage() {
     setLoading(true);
     const supabase = createClient();
 
-    // Tek sorgu ile tüm verileri çek
-    const { data, error } = await supabase
-      .from("senaryo_durumu")
+    // 1) Videoları senaryo_durumu üzerinden talep + ürün/teknik/kategori ile çek (en yeniden eskiye)
+    const { data: videolar, error: vError } = await supabase
+      .from("videolar")
       .select(`
+        video_id,
         senaryo_durum_id,
-        senaryo_id,
-        videolar!inner (
-          video_id,
-          video_url,
-          thumbnail_url,
-          created_at,
-          video_durumu (
-            durum,
-            created_at
-          )
-        ),
-        senaryolar!inner (
-          talepler!inner (
-            urunler (urun_adi),
-            teknikler (teknik_adi),
-            kategoriler (kategori_adi)
+        video_url,
+        thumbnail_url,
+        created_at,
+        senaryo_durumu!inner (
+          senaryolar!inner (
+            talep_id,
+            talepler!inner (
+              urunler (urun_adi),
+              teknikler (teknik_adi),
+              kategoriler (kategori_adi)
+            )
           )
         )
       `)
-      .eq("durum", "Onaylandi")
       .order("created_at", { ascending: false });
 
-    if (error || !data) {
-      hata("Videolar yüklenemedi.", "senaryo_durumu tablosu SELECT", error?.message);
+    if (vError || !videolar) {
+      hata("Videolar yüklenemedi.", "videolar tablosu SELECT", vError?.message);
       setLoading(false);
       return;
     }
 
-    // Her senaryo için en son videoyu ve en son durumu bul
-    const senaryoMap = new Map<string, VideoSatir>();
+    // 2) Talep bazlı tekilleştir — her talep için sadece en yeni video
+    const talepMap = new Map<string, any>();
+    for (const v of videolar) {
+      const typed = v as unknown as VideoJoin;
+      const talep_id = typed.senaryo_durumu?.senaryolar?.talep_id;
+      if (!talep_id) continue;
+      if (!talepMap.has(talep_id)) {
+        talepMap.set(talep_id, { ...v, _talep_id: talep_id });
+      }
+    }
+    const tekilVideolar = Array.from(talepMap.values());
 
-    for (const item of data as unknown as SenaryoDurumJoin[]) {
-      const senaryoId = item.senaryo_id;
-      
-      // Aynı senaryo için daha önce işlem yapıldıysa atla
-      if (senaryoMap.has(senaryoId)) continue;
+    // 3) Son durumları view'dan toplu çek
+    const videoIds = tekilVideolar.map((v: any) => v.video_id);
+    const sonDurumMap = new Map<string, { durum: string; created_at: string }>();
 
-      const videolar = item.videolar || [];
-      if (videolar.length === 0) continue;
+    if (videoIds.length > 0) {
+      const { data: sonDurumlar, error: sdError } = await supabase
+        .from("v_video_son_durum")
+        .select("video_id, durum, created_at")
+        .in("video_id", videoIds);
 
-      // En son videoyu bul (created_at'e göre sıralı geldiği için ilk olan en yeni)
-      const sonVideo = videolar[0];
-      
-      // En son video durumunu bul
-      const durumlar = sonVideo.video_durumu || [];
-      const sonDurum = durumlar[0] || null;
-      
-      const talep = item.senaryolar?.talepler;
+      if (sdError) {
+        hata("Video son durumları yüklenemedi.", "v_video_son_durum SELECT", sdError.message);
+        setLoading(false);
+        return;
+      }
 
-      senaryoMap.set(senaryoId, {
-        senaryo_durum_id: item.senaryo_durum_id,
-        urun_adi: talep?.urunler?.urun_adi ?? "-",
-        teknik_adi: talep?.teknikler?.teknik_adi ?? "-",
-        kategori_adi: talep?.kategoriler?.kategori_adi ?? null,
-        video_url: sonVideo.video_url ?? null,
-        thumbnail_url: sonVideo.thumbnail_url ?? null,
-        son_durum: sonDurum?.durum ?? null,
-        son_tarih: sonDurum?.created_at ?? sonVideo.created_at,
+      sonDurumlar?.forEach((sd: any) => {
+        sonDurumMap.set(sd.video_id, { durum: sd.durum, created_at: sd.created_at });
       });
     }
 
-    setSatirlar(Array.from(senaryoMap.values()));
+    // 4) Satırları kur — talep bazlı tek satır
+    const sonuc: VideoSatir[] = tekilVideolar.map((v: any) => {
+      const typed = v as unknown as VideoJoin;
+      const talep = typed.senaryo_durumu?.senaryolar?.talepler;
+      const sonDurum = sonDurumMap.get(v.video_id);
+
+      return {
+        talep_id: v._talep_id,
+        senaryo_durum_id: v.senaryo_durum_id,
+        video_id: v.video_id,
+        urun_adi: talep?.urunler?.urun_adi ?? "-",
+        teknik_adi: talep?.teknikler?.teknik_adi ?? "-",
+        kategori_adi: talep?.kategoriler?.kategori_adi ?? null,
+        video_url: v.video_url ?? null,
+        thumbnail_url: v.thumbnail_url ?? null,
+        son_durum: sonDurum?.durum ?? null,
+        son_tarih: sonDurum?.created_at ?? v.created_at,
+      };
+    });
+
+    setSatirlar(sonuc);
     setLoading(false);
   }, [hata]);
 
@@ -175,6 +191,7 @@ export default function VideolarListePage() {
 
   const filtreSec: { durum: FiltreDurum; etiket: string }[] = [
     { durum: "Inceleme Bekleniyor", etiket: "İnceleme Bekleyenler" },
+    { durum: "Revizyon Bekleniyor", etiket: "Revizyon Bekleyenler" },
     { durum: "Onaylandi", etiket: "Onaylananlar" },
     { durum: "Iptal Edildi", etiket: "İptal Edilenler" },
   ];
@@ -234,11 +251,18 @@ export default function VideolarListePage() {
               <div className="md:hidden">
                 {filtreliSatirlar.map((v) => {
                   const renk = durumRenk(v.son_durum ?? "");
+                  const okunmamis = okunmamisIdler.has(v.video_id);
                   return (
-                    <div key={v.senaryo_durum_id} onClick={() => router.push(`/videolar/${v.senaryo_durum_id}`)}
-                      className="px-4 py-3 border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors">
+                    <div key={v.talep_id} onClick={() => router.push(`/videolar/${v.senaryo_durum_id}`)}
+                      className="px-4 py-3 border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors"
+                      style={okunmamis ? { boxShadow: "inset 3px 0 0 0 #bc2d0d" } : undefined}>
                       <div className="flex justify-between items-start mb-1">
-                        <span className="text-sm font-semibold text-gray-900">{v.urun_adi}</span>
+                        <div className="flex items-center gap-1.5">
+                          {okunmamis && (
+                            <span className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#bc2d0d" }} />
+                          )}
+                          <span className="text-sm text-gray-900" style={{ fontWeight: okunmamis ? 700 : 600 }}>{v.urun_adi}</span>
+                        </div>
                         {v.son_durum && (
                           <span className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap"
                             style={{ background: renk.bg, color: renk.text, border: `0.5px solid ${renk.border}`, fontSize: 11 }}>
@@ -274,10 +298,19 @@ export default function VideolarListePage() {
                   <tbody>
                     {filtreliSatirlar.map((v) => {
                       const renk = durumRenk(v.son_durum ?? "");
+                      const okunmamis = okunmamisIdler.has(v.video_id);
                       return (
-                        <tr key={v.senaryo_durum_id} onClick={() => router.push(`/videolar/${v.senaryo_durum_id}`)}
-                          className="border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors duration-100">
-                          <td className="px-5 py-3 text-gray-900 font-medium">{v.urun_adi}</td>
+                        <tr key={v.talep_id} onClick={() => router.push(`/videolar/${v.senaryo_durum_id}`)}
+                          className="border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors duration-100"
+                          style={okunmamis ? { boxShadow: "inset 3px 0 0 0 #bc2d0d" } : undefined}>
+                          <td className="px-5 py-3 text-gray-900">
+                            <div className="flex items-center gap-1.5">
+                              {okunmamis && (
+                                <span className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#bc2d0d" }} />
+                              )}
+                              <span style={{ fontWeight: okunmamis ? 700 : 500 }}>{v.urun_adi}</span>
+                            </div>
+                          </td>
                           <td className="px-3 py-3 text-gray-500">{v.teknik_adi}</td>
                           <td className="px-3 py-3">
                             {v.kategori_adi ? (

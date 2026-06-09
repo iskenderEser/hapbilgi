@@ -2,10 +2,10 @@
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
-import { PM_ROLLERI } from "@/lib/utils/roller";
+import { URETICI_ROLLER } from "@/lib/utils/roller";
 
 // İzleme sayfasına erişebilecek tüm roller
-const IZLEME_ROLLERI = ["utt", "kd_utt", "bm", "tm", ...PM_ROLLERI];
+const IZLEME_ROLLERI = ["utt", "kd_utt", "bm", "tm", ...URETICI_ROLLER];
 
 export async function GET() {
   try {

@@ -8,9 +8,10 @@ import {
   getUttAnaSayfaVeri,
   getTmAnaSayfaVeri,
   getIuAnaSayfaVeri,
-  getPmAnaSayfaVeri,
+  getUreticiAnaSayfaVeri,
   getYoneticiAnaSayfaVeri,
 } from "@/lib/utils/anaSayfaVeri";
+import { getAnaSayfaVideolari } from "@/lib/video/anaSayfaVideolari";
 
 export async function GET() {
   try {
@@ -33,15 +34,21 @@ export async function GET() {
     } else if (rol === "iu") {
       veri = await getIuAnaSayfaVeri(user.id, adminSupabase);
     } else if (URETICI_ROLLER.includes(rol)) {
-      veri = await getPmAnaSayfaVeri(user.id, adminSupabase);
+      veri = await getUreticiAnaSayfaVeri(user.id, adminSupabase);
     } else if (YONETICI_ROLLER.includes(rol)) {
       veri = await getYoneticiAnaSayfaVeri(user.id, adminSupabase);
     } else {
       return rolHatasi("Bu role ait ana sayfa verisi tanımlanmamış.");
     }
 
-    return NextResponse.json(veri, { status: 200 });
+    // Yalnız-izleme rolleri için ana sayfa video listesini ekle.
+    // UTT/KD_UTT kendi video verisini (getUttAnaSayfaVeri) kullanmaya devam eder.
+    // getAnaSayfaVideolari, video görmeyen roller (İK, IU) için boş dizi döndürür → bölüm çıkmaz.
+    if (!["utt", "kd_utt"].includes(rol)) {
+      veri = { ...veri, videolar: await getAnaSayfaVideolari(user.id, rol, adminSupabase) };
+    }
 
+    return NextResponse.json(veri, { status: 200 });
   } catch (err) {
     return sunucuHatasi(err, "GET /ana-sayfa/api");
   }

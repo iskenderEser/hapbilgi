@@ -4,16 +4,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useHataMesaji } from "@/components/HataMesaji";
-
-interface Video {
-  yayin_id: string;
-  urun_adi: string;
-  teknik_adi: string;
-  thumbnail_url: string | null;
-  video_url: string | null;
-  yayin_tarihi: string;
-  izlenme_sayisi: number;
-}
+import VideoOynatici from "@/components/izle/VideoOynatici";
+import VideoBolumu from "@/components/ana-sayfa/VideoBolumu";
+import { AnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 
 interface HaftaninEni {
   kullanici_id: string;
@@ -24,7 +17,6 @@ interface HaftaninEni {
 }
 
 interface YoneticiVeri {
-  en_cok_izlenenler: Video[];
   haftanin_enleri: HaftaninEni[];
   istatistikler: {
     yayin_sayisi: number;
@@ -32,6 +24,7 @@ interface YoneticiVeri {
     utt_sayisi: number;
     tamamlanma_orani: number;
   };
+  videolar?: AnaSayfaVideo[];
 }
 
 interface Props {
@@ -40,18 +33,11 @@ interface Props {
   adSoyad: string;
 }
 
-const GRADYANLAR = [
-  "linear-gradient(135deg, #b5d4f4, #56aeff)",
-  "linear-gradient(135deg, #c0dd97, #639922)",
-  "linear-gradient(135deg, #f5c4b3, #D85A30)",
-  "linear-gradient(135deg, #CECBF6, #534AB7)",
-  "linear-gradient(135deg, #9FE1CB, #1D9E75)",
-];
-
 export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
   const router = useRouter();
   const [veri, setVeri] = useState<YoneticiVeri | null>(null);
   const [loading, setLoading] = useState(true);
+  const [aktifVideo, setAktifVideo] = useState<AnaSayfaVideo | null>(null);
   const { hata } = useHataMesaji();
 
   useEffect(() => {
@@ -88,9 +74,26 @@ export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
     );
   }
 
+  // Bir video seçiliyse: dashboard yerine tam sayfa oynatıcı (UTT/TM/BM deseni; navbar üstteki sarmalayıcıdan kalır).
+  if (aktifVideo) {
+    return (
+      <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
+        <VideoOynatici
+          key={aktifVideo.yayin_id}
+          video={aktifVideo}
+          tuketici={false}
+          onKapat={() => setAktifVideo(null)}
+          onVeriYenile={() => {}}
+          hata={() => {}}
+          basari={() => {}}
+          uyari={() => {}}
+        />
+      </div>
+    );
+  }
+
   const istat = veri?.istatistikler ?? { yayin_sayisi: 0, hafta_izlenme: 0, utt_sayisi: 0, tamamlanma_orani: 0 };
   const ad = adSoyad.split(" ")[0] || "Yönetici";
-  const enCokIzlenenler = veri?.en_cok_izlenenler ?? [];
   const haftaninEnleri = veri?.haftanin_enleri ?? [];
 
   return (
@@ -127,85 +130,53 @@ export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
         ))}
       </div>
 
-      {/* Alt grid: En Çok İzlenenler + Haftanın En'leri */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-        {/* En Çok İzlenenler */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-bold text-gray-900">En Çok İzlenenler</span>
-          </div>
-          <div className="flex flex-col gap-2">
-            {enCokIzlenenler.length === 0 ? (
-              <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-sm text-gray-400">
-                Henüz izlenme yok.
-              </div>
-            ) : (
-              enCokIzlenenler.map((v, i) => (
-                <div key={v.yayin_id} className="bg-white border border-gray-200 rounded-xl px-3 py-3 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0">
-                    {v.thumbnail_url
-                      ? <img src={v.thumbnail_url} alt="" className="w-full h-full object-cover" />
-                      : <div className="w-full h-full" style={{ background: GRADYANLAR[i % GRADYANLAR.length] }} />
-                    }
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs font-bold text-gray-900 truncate">{v.urun_adi}</div>
-                    <div className="text-xs text-gray-500 truncate">{v.teknik_adi}</div>
-                  </div>
-                  <div className="text-xs font-bold flex-shrink-0" style={{ color: "#56aeff" }}>
-                    {v.izlenme_sayisi} izlenme
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+      {/* Haftanın En'leri (full genişlik) */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-bold text-gray-900">Haftanın En'leri</span>
+          <span className="text-xs text-gray-400">{haftaTarihi()}</span>
         </div>
-
-        {/* Haftanın En'leri */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-bold text-gray-900">Haftanın En'leri</span>
-            <span className="text-xs text-gray-400">{haftaTarihi()}</span>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            {haftaninEnleri.length === 0 ? (
-              <div className="p-8 text-center text-sm text-gray-400">
-                Bu hafta henüz puan kazanılmadı.
-              </div>
-            ) : (
-              haftaninEnleri.map((utt, i) => (
-                <div
-                  key={utt.kullanici_id}
-                  className="flex items-center gap-3 px-4 py-3"
-                  style={{ borderBottom: i < haftaninEnleri.length - 1 ? "1px solid #f3f4f6" : "none" }}
-                >
-                  <div className="w-5 text-xs font-bold text-center" style={{ color: i === 0 ? "#56aeff" : "#9ca3af" }}>{i + 1}</div>
-                  {utt.fotograf_url ? (
-                    <img src={utt.fotograf_url} alt={utt.ad} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
-                  ) : (
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                      style={{
-                        background: i === 0 ? "#b5d4f4" : "#e5e7eb",
-                        color: i === 0 ? "#1d4ed8" : "#374151",
-                      }}
-                    >
-                      {utt.ad[0]}{utt.soyad[0]}
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <div className="text-xs font-semibold text-gray-900">{utt.ad} {utt.soyad}</div>
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          {haftaninEnleri.length === 0 ? (
+            <div className="p-8 text-center text-sm text-gray-400">
+              Bu hafta henüz puan kazanılmadı.
+            </div>
+          ) : (
+            haftaninEnleri.map((utt, i) => (
+              <div
+                key={utt.kullanici_id}
+                className="flex items-center gap-3 px-4 py-3"
+                style={{ borderBottom: i < haftaninEnleri.length - 1 ? "1px solid #f3f4f6" : "none" }}
+              >
+                <div className="w-5 text-xs font-bold text-center" style={{ color: i === 0 ? "#56aeff" : "#9ca3af" }}>{i + 1}</div>
+                {utt.fotograf_url ? (
+                  <img src={utt.fotograf_url} alt={utt.ad} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                ) : (
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                    style={{
+                      background: i === 0 ? "#b5d4f4" : "#e5e7eb",
+                      color: i === 0 ? "#1d4ed8" : "#374151",
+                    }}
+                  >
+                    {utt.ad[0]}{utt.soyad[0]}
                   </div>
-                  <div className="text-sm font-bold" style={{ color: i === 0 ? "#56aeff" : "#737373" }}>
-                    {utt.toplam_puan.toLocaleString("tr-TR")} p
-                  </div>
+                )}
+                <div className="flex-1">
+                  <div className="text-xs font-semibold text-gray-900">{utt.ad} {utt.soyad}</div>
                 </div>
-              ))
-            )}
-          </div>
+                <div className="text-sm font-bold" style={{ color: i === 0 ? "#56aeff" : "#737373" }}>
+                  {utt.toplam_puan.toLocaleString("tr-TR")} p
+                </div>
+              </div>
+            ))
+          )}
         </div>
+      </div>
 
+      {/* Videolar */}
+      <div className="mt-5">
+        <VideoBolumu videolar={veri?.videolar ?? []} onVideoSec={setAktifVideo} />
       </div>
     </div>
   );

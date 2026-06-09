@@ -6,39 +6,48 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useRapor } from '@/hooks/useRapor';
-import { BORDO, GRI_METIN, KOYU_METIN, GRI_ZEMIN, barGenislik, formatPuan, PERIYOTLAR, Periyot } from '@/lib/utils/raporUtils';
+import { BORDO, GRI_METIN, KOYU_METIN, GRI_ZEMIN, formatPuan, PERIYOTLAR, Periyot } from '@/lib/utils/raporUtils';
 import Navbar from '@/components/Navbar';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
 import StatCard from '@/components/raporlar/StatCard';
 import StatGrid from '@/components/raporlar/StatGrid';
 import SectionTitle from '@/components/raporlar/SectionTitle';
-import UttListesi from './_components/UttListesi';
-import UttTable from './_components/UttTable';
 
 const DEFAULT_PERIYOT: Periyot = 'bu_ay';
 
-interface UttItem {
-  sira: number;
+interface UttSatir {
   kullanici_id: string;
   ad: string;
   soyad: string;
-  puan: number;
+  izlenme_sayisi: number;
   video_puani: number;
   soru_puani: number;
   oneri_puani: number;
   extra_puan: number;
-  kayiplar: number;
-  tamamlanan_izleme: number;
-  bekleyen_oneri: number;
+  ileri_sarma_kaybi: number;
+  yanlis_cevap_kaybi: number;
+  oneri_kaybi: number;
+  toplam_net_puan: number;
 }
 
-interface OrtalamaUtt {
-  puan: number;
-  video_puani: number;
-  soru_puani: number;
-  oneri_puani: number;
-  extra_puan: number;
-  kayiplar: number;
+interface UrunDagilimiSatir {
+  urun_id: string;
+  urun_adi: string;
+  toplam_izlenme: number;
+  toplam_net_puan: number;
+  utt_listesi: UttSatir[];
+  ortalama: {
+    video_puani: number;
+    soru_puani: number;
+    oneri_puani: number;
+    extra_puan: number;
+    ileri_sarma_kaybi: number;
+    yanlis_cevap_kaybi: number;
+    oneri_kaybi: number;
+    toplam_net_puan: number;
+    utt_sayisi: number;
+  };
+  teknik_dagilimi: Array<{ teknik_adi: string; izlenme_sayisi: number }>;
 }
 
 interface RaporData {
@@ -76,18 +85,18 @@ interface RaporData {
     bekleyen: number;
     bekleyen_oneri_olan_utt_sayisi: number;
   };
-  utt_listesi: UttItem[];
-  ortalama_utt: OrtalamaUtt;
-  urun_bazli_dagilim: Array<{ urun_adi: string; izlenme_sayisi: number }>;
-  teknik_bazli_dagilim: Array<{ teknik_adi: string; izlenme_sayisi: number }>;
+  urun_dagilimi: UrunDagilimiSatir[];
   begeni_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; begeni_sayisi: number }>;
   favori_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; favori_sayisi: number }>;
 }
+
+const KIRMIZI = '#E24B4A';
 
 export default function BmRaporPage() {
   const router = useRouter();
   const { kullanici, yukleniyor, cikisYap } = useAuth();
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
+  const [acikUrunId, setAcikUrunId] = useState<string | null>(null);
 
   const { data, loading, error } = useRapor<RaporData>(
     '/raporlar/api/bm',
@@ -112,9 +121,6 @@ export default function BmRaporPage() {
     </div>
   );
   if (!kullanici || !data) return null;
-
-  const maxUrun = Math.max(1, ...data.urun_bazli_dagilim.map(u => u.izlenme_sayisi));
-  const maxTeknik = Math.max(1, ...data.teknik_bazli_dagilim.map(t => t.izlenme_sayisi));
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
@@ -159,8 +165,8 @@ export default function BmRaporPage() {
         {/* Katkı Kartları */}
         <StatGrid columns={2} className="mb-5">
           {[
-            { label: 'Takım katkısı', yuzde: data.katki.takim_katki_yuzdesi, mevcut: data.katki.bolge_toplam_puan, toplam: data.katki.takim_toplam_puan },
-            { label: 'Şirket katkısı', yuzde: data.katki.sirket_katki_yuzdesi, mevcut: data.katki.bolge_toplam_puan, toplam: data.katki.sirket_toplam_puan },
+            { label: 'Takım Katkısı', yuzde: data.katki.takim_katki_yuzdesi, mevcut: data.katki.bolge_toplam_puan, toplam: data.katki.takim_toplam_puan },
+            { label: 'Şirket Katkısı', yuzde: data.katki.sirket_katki_yuzdesi, mevcut: data.katki.bolge_toplam_puan, toplam: data.katki.sirket_toplam_puan },
           ].map(k => (
             <div key={k.label} className="border rounded-xl p-4" style={{ borderColor: '#e5e7eb' }}>
               <div className="text-xs mb-2" style={{ color: GRI_METIN }}>{k.label}</div>
@@ -183,36 +189,21 @@ export default function BmRaporPage() {
 
         {/* Özet Stat Kartları */}
         <StatGrid columns={3} className="mb-3">
-          <StatCard label="Bölge toplam puan" value={formatPuan(data.bolge_ozet.toplam_puan)} variant="accent" />
-          <StatCard label="Ortalama puan / UTT" value={formatPuan(data.bolge_ozet.ortalama_puan)} sub={`En yüksek: ${formatPuan(data.bolge_ozet.en_yuksek_puan)}`} />
-          <StatCard label="İzlenme oranı" value={`%${data.bolge_ozet.izlenme_orani}`} sub={`${formatPuan(data.bolge_ozet.toplam_izlenme)} izlendi · ${formatPuan(data.bolge_ozet.kalan_izlenme)} kaldı`} />
+          <StatCard label="Bölge Toplam Puan" value={formatPuan(data.bolge_ozet.toplam_puan)} variant="accent" />
+          <StatCard label="Ortalama Puan / UTT" value={formatPuan(data.bolge_ozet.ortalama_puan)} sub={`En yüksek: ${formatPuan(data.bolge_ozet.en_yuksek_puan)}`} />
+          <StatCard label="İlk İzlenme Oranı" value={`%${data.bolge_ozet.izlenme_orani}`} sub={`${formatPuan(data.bolge_ozet.toplam_izlenme)} izlendi · ${formatPuan(data.bolge_ozet.kalan_izlenme)} kaldı`} />
         </StatGrid>
         <StatGrid columns={3} className="mb-5">
           <StatCard label="Aktif UTT" value={`${data.bolge_ozet.aktif_utt} / ${data.bolge_ozet.toplam_utt}`} sub={`${data.bolge_ozet.hic_izlemeyen_utt} hiç izlememiş`} />
-          <StatCard label="Bölge lig sırası" value={`${data.lig.bolge_sirasi || '-'} / ${data.lig.toplam_bolge_sayisi}`} variant="accent" />
-          <StatCard label="Toplam yayın" value={formatPuan(data.bolge_ozet.toplam_yayin)} />
+          <StatCard
+            label="Bölge Lig Sırası"
+            value={data.lig.bolge_sirasi ? `${data.lig.bolge_sirasi}.` : '-'}
+            sub={`Toplam Bölge: ${data.lig.toplam_bolge_sayisi}`}
+            variant="accent"
+            yildiz={data.lig.bolge_sirasi === 1}
+          />
+          <StatCard label="Toplam Yayın" value={formatPuan(data.bolge_ozet.toplam_yayin)} />
         </StatGrid>
-
-        {/* Aksiyon Barı */}
-        {(data.oneri_etkinligi.bekleyen_oneri_olan_utt_sayisi > 0 || data.bolge_ozet.hic_izlemeyen_utt > 0) && (
-          <div className="rounded-xl p-4 mb-5 flex justify-between items-center gap-3" style={{ background: BORDO }}>
-            <div className="text-white text-sm leading-relaxed">
-              {data.oneri_etkinligi.bekleyen_oneri_olan_utt_sayisi > 0 && (
-                <>{data.oneri_etkinligi.bekleyen_oneri_olan_utt_sayisi} UTT&apos;nin bekleyen önerisi var · </>
-              )}
-              {data.bolge_ozet.hic_izlemeyen_utt > 0 && (
-                <>{data.bolge_ozet.hic_izlemeyen_utt} UTT henüz hiç izlememiş</>
-              )}
-            </div>
-            <button
-              disabled
-              className="text-xs font-semibold px-4 py-2 rounded-lg whitespace-nowrap opacity-60 cursor-not-allowed"
-              style={{ background: '#fff', color: BORDO }}
-            >
-              Hatırlat →
-            </button>
-          </div>
-        )}
 
         {/* Öneri Etkinliği */}
         <div className="mb-5">
@@ -230,7 +221,7 @@ export default function BmRaporPage() {
           <div className="border rounded-xl p-4" style={{ borderColor: '#e5e7eb' }}>
             <div className="flex gap-6 pb-3 mb-3" style={{ borderBottom: '0.5px solid #e5e7eb' }}>
               {[
-                { label: 'Bölge sırası', value: `${data.lig.bolge_sirasi || '-'} / ${data.lig.toplam_bolge_sayisi}`, accent: true },
+                { label: 'Bölge sırası', value: data.lig.bolge_sirasi ? `${data.lig.bolge_sirasi}.` : '-', accent: true },
                 { label: 'Bir üst sıra için', value: data.lig.bir_ust_puan_farki ? `− ${formatPuan(data.lig.bir_ust_puan_farki)}` : '—' },
                 { label: 'Takipçiyle farkın', value: data.lig.takipci_farki ? `+ ${formatPuan(data.lig.takipci_farki)}` : '—' },
               ].map(m => (
@@ -259,53 +250,109 @@ export default function BmRaporPage() {
           </div>
         </div>
 
-        {/* UTT Listesi — Puan & Katkı */}
+        {/* ÜRÜN BAZLI AKORDEON — UTT × puan dökümü */}
         <div className="mb-5">
-          <SectionTitle>utt listesi — puan & katkı</SectionTitle>
-          <UttListesi
-            uttListesi={data.utt_listesi}
-            toplamPuan={data.bolge_ozet.toplam_puan}
-            ortalamaPuan={data.bolge_ozet.ortalama_puan}
-            toplamUtt={data.bolge_ozet.toplam_utt}
-          />
-        </div>
+          <SectionTitle>ürün bazlı dağılım</SectionTitle>
+          {data.urun_dagilimi.length === 0 ? (
+            <div className="border rounded-xl p-6 text-center text-sm" style={{ borderColor: '#e5e7eb', color: GRI_METIN }}>
+              Bu periyotta veri bulunmuyor.
+            </div>
+          ) : (
+            <div className="border rounded-xl overflow-hidden" style={{ borderColor: '#e5e7eb' }}>
+              {data.urun_dagilimi.map((urun, idx) => {
+                const acik = acikUrunId === urun.urun_id;
+                return (
+                  <div key={urun.urun_id} style={{ borderBottom: idx < data.urun_dagilimi.length - 1 ? '0.5px solid #e5e7eb' : 'none' }}>
+                    {/* Ürün satırı (tıklanabilir başlık) */}
+                    <div
+                      onClick={() => setAcikUrunId(acik ? null : urun.urun_id)}
+                      className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <svg
+                          width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={BORDO} strokeWidth="2.5"
+                          style={{ transform: acik ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }}
+                        >
+                          <polyline points="9 18 15 12 9 6" />
+                        </svg>
+                        <span className="text-sm font-semibold" style={{ color: KOYU_METIN }}>{urun.urun_adi}</span>
+                        <span className="text-xs" style={{ color: GRI_METIN }}>· {urun.toplam_izlenme} izlenme</span>
+                      </div>
+                      <span className="text-sm font-bold" style={{ color: BORDO }}>{formatPuan(urun.toplam_net_puan)} puan</span>
+                    </div>
 
-        {/* UTT Puan Dökümü & Kayıplar Tablosu */}
-        <div className="mb-5">
-          <SectionTitle>utt bazında puan dökümü & kayıplar</SectionTitle>
-          <UttTable
-            uttListesi={data.utt_listesi}
-            ortalamaUtt={data.ortalama_utt}
-            ortalamaPuan={data.bolge_ozet.ortalama_puan}
-          />
-        </div>
+                    {/* Açılır: UTT tablosu + teknik dağılımı */}
+                    {acik && (
+                      <div className="px-4 pb-4" style={{ background: GRI_ZEMIN }}>
+                        <div className="overflow-x-auto">
+                          <table className="w-full border-collapse text-xs mt-3">
+                            <thead>
+                              <tr style={{ borderBottom: '0.5px solid #e5e7eb' }}>
+                                <th className="text-left py-2 px-2 font-medium" style={{ color: GRI_METIN }}>UTT</th>
+                                <th className="text-center py-2 px-2 font-medium" style={{ color: GRI_METIN }}>Video</th>
+                                <th className="text-center py-2 px-2 font-medium" style={{ color: GRI_METIN }}>Soru</th>
+                                <th className="text-center py-2 px-2 font-medium" style={{ color: GRI_METIN }}>Öneri</th>
+                                <th className="text-center py-2 px-2 font-medium" style={{ color: GRI_METIN }}>Extra</th>
+                                <th className="text-center py-2 px-2 font-medium" style={{ color: KIRMIZI }}>İleri sarma</th>
+                                <th className="text-center py-2 px-2 font-medium" style={{ color: KIRMIZI }}>Yanlış cevap</th>
+                                <th className="text-center py-2 px-2 font-medium" style={{ color: KIRMIZI }}>Öneri kaybı</th>
+                                <th className="text-center py-2 px-2 font-medium" style={{ color: KOYU_METIN }}>Net</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {urun.utt_listesi.map(u => (
+                                <tr key={u.kullanici_id} style={{ borderBottom: '0.5px solid #f3f4f6' }}>
+                                  <td className="py-2 px-2" style={{ color: KOYU_METIN }}>{u.ad} {u.soyad}</td>
+                                  <td className="py-2 px-2 text-center" style={{ color: KOYU_METIN }}>{u.video_puani}</td>
+                                  <td className="py-2 px-2 text-center" style={{ color: KOYU_METIN }}>{u.soru_puani}</td>
+                                  <td className="py-2 px-2 text-center" style={{ color: KOYU_METIN }}>{u.oneri_puani}</td>
+                                  <td className="py-2 px-2 text-center" style={{ color: KOYU_METIN }}>{u.extra_puan}</td>
+                                  <td className="py-2 px-2 text-center" style={{ color: KIRMIZI }}>−{u.ileri_sarma_kaybi}</td>
+                                  <td className="py-2 px-2 text-center" style={{ color: KIRMIZI }}>−{u.yanlis_cevap_kaybi}</td>
+                                  <td className="py-2 px-2 text-center" style={{ color: KIRMIZI }}>−{u.oneri_kaybi}</td>
+                                  <td className="py-2 px-2 text-center font-bold" style={{ color: BORDO }}>{u.toplam_net_puan}</td>
+                                </tr>
+                              ))}
+                              {/* Ortalama satırı */}
+                              <tr style={{ background: '#FAECE7' }}>
+                                <td className="py-2 px-2 italic" style={{ color: GRI_METIN }}>Ortalama</td>
+                                <td className="py-2 px-2 text-center" style={{ color: GRI_METIN }}>{urun.ortalama.video_puani}</td>
+                                <td className="py-2 px-2 text-center" style={{ color: GRI_METIN }}>{urun.ortalama.soru_puani}</td>
+                                <td className="py-2 px-2 text-center" style={{ color: GRI_METIN }}>{urun.ortalama.oneri_puani}</td>
+                                <td className="py-2 px-2 text-center" style={{ color: GRI_METIN }}>{urun.ortalama.extra_puan}</td>
+                                <td className="py-2 px-2 text-center" style={{ color: KIRMIZI }}>−{urun.ortalama.ileri_sarma_kaybi}</td>
+                                <td className="py-2 px-2 text-center" style={{ color: KIRMIZI }}>−{urun.ortalama.yanlis_cevap_kaybi}</td>
+                                <td className="py-2 px-2 text-center" style={{ color: KIRMIZI }}>−{urun.ortalama.oneri_kaybi}</td>
+                                <td className="py-2 px-2 text-center font-bold" style={{ color: BORDO }}>{urun.ortalama.toplam_net_puan}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
 
-        {/* Ürün & Teknik Dağılımı */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
-          <div className="border rounded-xl p-4" style={{ borderColor: '#e5e7eb' }}>
-            <div className="text-sm font-medium mb-3" style={{ color: KOYU_METIN }}>Ürün bazlı izlenme sayıları</div>
-            {data.urun_bazli_dagilim.map(item => (
-              <div key={item.urun_adi} className="flex items-center gap-2 mb-2">
-                <span className="text-xs truncate" style={{ color: GRI_METIN, width: 96 }}>{item.urun_adi}</span>
-                <div className="flex-1 h-1.5 rounded-full" style={{ background: GRI_ZEMIN }}>
-                  <div className="h-full rounded-full" style={{ width: `${barGenislik(item.izlenme_sayisi, maxUrun)}%`, background: BORDO }} />
-                </div>
-                <span className="text-xs text-right" style={{ color: GRI_METIN, width: 28 }}>{item.izlenme_sayisi}</span>
-              </div>
-            ))}
-          </div>
-          <div className="border rounded-xl p-4" style={{ borderColor: '#e5e7eb' }}>
-            <div className="text-sm font-medium mb-3" style={{ color: KOYU_METIN }}>Teknik bazlı izlenme sayıları</div>
-            {data.teknik_bazli_dagilim.map(item => (
-              <div key={item.teknik_adi} className="flex items-center gap-2 mb-2">
-                <span className="text-xs truncate" style={{ color: GRI_METIN, width: 96 }}>{item.teknik_adi}</span>
-                <div className="flex-1 h-1.5 rounded-full" style={{ background: GRI_ZEMIN }}>
-                  <div className="h-full rounded-full" style={{ width: `${barGenislik(item.izlenme_sayisi, maxTeknik)}%`, background: BORDO }} />
-                </div>
-                <span className="text-xs text-right" style={{ color: GRI_METIN, width: 28 }}>{item.izlenme_sayisi}</span>
-              </div>
-            ))}
-          </div>
+                        {/* Teknik dağılımı */}
+                        {urun.teknik_dagilimi.length > 0 && (
+                          <div className="mt-3 pt-3" style={{ borderTop: '0.5px solid #e5e7eb' }}>
+                            <div className="text-xs mb-2" style={{ color: GRI_METIN }}>Teknik dağılımı</div>
+                            <div className="flex flex-wrap gap-2">
+                              {urun.teknik_dagilimi.map(t => (
+                                <span
+                                  key={t.teknik_adi}
+                                  className="text-xs px-2 py-1 rounded-full border"
+                                  style={{ borderColor: '#e5e7eb', background: '#fff', color: KOYU_METIN }}
+                                >
+                                  {t.teknik_adi}: <span style={{ fontWeight: 600 }}>{t.izlenme_sayisi}</span>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <BegeniFavoriListesi

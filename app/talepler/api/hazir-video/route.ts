@@ -1,14 +1,15 @@
 // app/talepler/api/hazir-video/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 
 // PUT: IU video URL kaydeder
 export async function PUT(request: NextRequest) {
   try {
+    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
@@ -46,9 +47,10 @@ export async function PUT(request: NextRequest) {
 // POST: PM onayla veya reddet
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
@@ -62,13 +64,13 @@ export async function POST(request: NextRequest) {
 
     const { data: talep, error: talepError } = await adminSupabase
       .from("talepler")
-      .select("talep_id, pm_id, urun_adi, teknik_adi, hazir_video, hazir_video_url, takim_id")
+      .select("talep_id, uretici_id, urun_adi, teknik_adi, hazir_video, hazir_video_url, takim_id")
       .eq("talep_id", talep_id)
       .single();
 
     if (talepError || !talep) return hataYaniti("Talep bulunamadı.", "talepler tablosu SELECT — talep_id", talepError);
     if (!talep.hazir_video) return isKuraluHatasi("Bu talep hazır video talebi değil.");
-    if (talep.pm_id !== user.id) return rolHatasi("Bu talebi onaylama yetkiniz yok.");
+    if (talep.uretici_id !== user.id) return rolHatasi("Bu talebi onaylama yetkiniz yok.");
     if (!talep.hazir_video_url) return isKuraluHatasi("IU henüz video URL'i girmemiş.");
 
     if (karar === "reddet") {

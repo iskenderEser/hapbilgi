@@ -2,9 +2,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
-import { PM_ROLLERI } from "@/lib/utils/roller";
+import { URETICI_ROLLER } from "@/lib/utils/roller";
 
-const KATEGORI_GORUNTULEME_ROLLERI = [...PM_ROLLERI, "iu", "admin"];
+const KATEGORI_GORUNTULEME_ROLLERI = [...URETICI_ROLLER, "iu", "admin"];
 
 async function rolGetir(userId: string): Promise<string> {
   const adminSupabase = createAdminClient();

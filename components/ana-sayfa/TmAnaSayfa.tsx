@@ -4,6 +4,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useHataMesaji } from "@/components/HataMesaji";
+import VideoOynatici from "@/components/izle/VideoOynatici";
+import VideoBolumu from "@/components/ana-sayfa/VideoBolumu";
+import { AnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 
 interface BmSatiri {
   kullanici_id: string;
@@ -23,6 +26,7 @@ interface TmVeri {
     toplam_bekleyen: number;
     toplam_tamamlanan: number;
   };
+  videolar?: AnaSayfaVideo[];
 }
 
 interface Props {
@@ -34,6 +38,7 @@ export default function TmAnaSayfa({ user, adSoyad }: Props) {
   const router = useRouter();
   const [tmVeri, setTmVeri] = useState<TmVeri | null>(null);
   const [loading, setLoading] = useState(true);
+  const [aktifVideo, setAktifVideo] = useState<AnaSayfaVideo | null>(null);
   const { hata } = useHataMesaji();
 
   useEffect(() => {
@@ -58,6 +63,24 @@ export default function TmAnaSayfa({ user, adSoyad }: Props) {
           <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
         </svg>
+      </div>
+    );
+  }
+
+  // Bir video seçiliyse: dashboard yerine tam sayfa oynatıcı (UTT deseni; navbar üstteki sarmalayıcıdan kalır).
+  if (aktifVideo) {
+    return (
+      <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
+        <VideoOynatici
+          key={aktifVideo.yayin_id}
+          video={aktifVideo}
+          tuketici={false}
+          onKapat={() => setAktifVideo(null)}
+          onVeriYenile={() => {}}
+          hata={() => {}}
+          basari={() => {}}
+          uyari={() => {}}
+        />
       </div>
     );
   }
@@ -176,6 +199,11 @@ export default function TmAnaSayfa({ user, adSoyad }: Props) {
           )}
         </div>
 
+      </div>
+
+      {/* Videolar */}
+      <div className="mt-5">
+        <VideoBolumu videolar={tmVeri?.videolar ?? []} onVideoSec={setAktifVideo} />
       </div>
     </div>
   );

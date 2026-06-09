@@ -3,7 +3,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { cokluBildirimOlustur } from "@/lib/utils/bildirimOlustur";
-import { PM_ROLLERI } from "@/lib/utils/roller";
+import {
+  ureticiYetenegi,
+  TALEP_TURU_KURALLARI,
+  type TalepTuru,
+} from "@/lib/uretici/yetenekler";
+
+// TalepTuru tipinin tüm geçerli değerlerinin runtime listesi —
+// TALEP_TURU_KURALLARI'nın anahtarlarından türetilir, hardcoded liste yok.
+const GECERLI_TALEP_TURLERI = Object.keys(TALEP_TURU_KURALLARI) as TalepTuru[];
 
 export async function GET() {
   try {
@@ -14,13 +22,18 @@ export async function GET() {
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    if (![...PM_ROLLERI, "iu"].includes(rol)) return rolHatasi("Sadece yetkili roller ve IU taleplerine erişebilir.");
+    const isIU = rol === "iu";
+    const yetenek = ureticiYetenegi(rol);
+
+    if (!yetenek && !isIU) {
+      return rolHatasi("Sadece üretici roller ve IU taleplerine erişebilir.");
+    }
 
     let query = adminSupabase
       .from("talepler")
       .select(`
-        talep_id, pm_id, takim_id, aciklama, hazir_video, hazir_video_url, dosya_urls, created_at,
-        urun_id, teknik_id, kategori_id, egitim_turu,
+        talep_id, uretici_id, takim_id, firma_id, aciklama, hazir_video, hazir_video_url, dosya_urls, created_at,
+        urun_id, teknik_id, kategori_id, egitim_turu, icerik_turu,
         hazir_soru_seti,
         soru_seti_buyuklugu, video_basi_soru_sayisi,
         urunler(urun_adi),
@@ -29,8 +42,10 @@ export async function GET() {
       `)
       .order("created_at", { ascending: false });
 
-    if (PM_ROLLERI.includes(rol)) {
-      query = query.eq("pm_id", user.id);
+    // Talep görünürlük kuralı: üretici sadece kendi açtığı talepleri görür.
+    // IU tüm talepleri görür (talebe cevap vermek için tüm taleplere erişimi gerekir).
+    if (yetenek) {
+      query = query.eq("uretici_id", user.id);
     }
 
     const { data: talepler, error } = await query;
@@ -38,12 +53,14 @@ export async function GET() {
 
     const sonuc = (talepler ?? []).map((t: any) => ({
       talep_id: t.talep_id,
-      pm_id: t.pm_id,
+      uretici_id: t.uretici_id,
       takim_id: t.takim_id,
+      firma_id: t.firma_id,
       urun_id: t.urun_id,
       teknik_id: t.teknik_id,
       kategori_id: t.kategori_id ?? null,
       egitim_turu: t.egitim_turu ?? "urun_egitimi",
+      icerik_turu: t.icerik_turu ?? null,
       urun_adi: t.urunler?.urun_adi ?? t.urun_adi ?? "-",
       teknik_adi: t.teknikler?.teknik_adi ?? t.teknik_adi ?? "-",
       kategori_adi: t.kategoriler?.kategori_adi ?? null,
@@ -73,18 +90,34 @@ export async function POST(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    if (!PM_ROLLERI.includes(rol)) return rolHatasi("Sadece yetkili roller talep oluşturabilir.");
 
-    const { data: pmKullanici, error: pmError } = await adminSupabase
+    // Yetenek profili — talep oluşturma yetkisinin ve davranış kurallarının kaynağı.
+    const yetenek = ureticiYetenegi(rol);
+    if (!yetenek) return rolHatasi("Sadece üretici roller talep oluşturabilir.");
+
+    // İçerik türü, üreticinin yetenek profilinden gelir ve talebe yazılıp DONAR
+    // (rol sonradan değişse bile içeriğin türü değişmez).
+    const icerikTuru = yetenek.icerikTuru;
+
+    const { data: kullaniciKaydi, error: kullaniciError } = await adminSupabase
       .from("kullanicilar")
       .select("takim_id, firma_id")
       .eq("kullanici_id", user.id)
       .single();
 
-    const pmKontrol = veriKontrol(pmKullanici, "kullanicilar tablosu SELECT — pm takim_id", "Kullanıcı kaydı bulunamadı.");
-    if (!pmKontrol.gecerli) return pmKontrol.yanit;
-    if (pmError) return hataYaniti("Kullanıcı bilgisi sorgulanırken hata oluştu.", "kullanicilar tablosu SELECT", pmError);
-    if (!pmKullanici.takim_id) return validasyonHatasi("Takım kaydı eksik. Lütfen admin ile iletişime geçin.", ["takim_id"]);
+    const kullaniciKontrol = veriKontrol(kullaniciKaydi, "kullanicilar tablosu SELECT — üretici takim_id/firma_id", "Kullanıcı kaydı bulunamadı.");
+    if (!kullaniciKontrol.gecerli) return kullaniciKontrol.yanit;
+    if (kullaniciError) return hataYaniti("Kullanıcı bilgisi sorgulanırken hata oluştu.", "kullanicilar tablosu SELECT", kullaniciError);
+
+    // firma_id her üretici için zorunlu (talepler.firma_id NOT NULL FK).
+    if (!kullaniciKaydi.firma_id) {
+      return validasyonHatasi("Firma kaydı eksik. Lütfen admin ile iletişime geçin.", ["firma_id"]);
+    }
+
+    // takim_id zorunluluğu yetenek profilinden okunur.
+    if (yetenek.takimZorunlu && !kullaniciKaydi.takim_id) {
+      return validasyonHatasi("Takım kaydı eksik. Lütfen admin ile iletişime geçin.", ["takim_id"]);
+    }
 
     const body = await request.json();
     const {
@@ -94,17 +127,33 @@ export async function POST(request: NextRequest) {
       soru_seti_buyuklugu, video_basi_soru_sayisi,
     } = body;
 
-    // egitim_turu validasyonu
-    const egitimTuru = egitim_turu ?? "urun_egitimi";
-    if (!["urun_egitimi", "genel_egitim"].includes(egitimTuru)) {
+    // egitim_turu validasyonu — tip kontrolü
+    const egitimTuru = egitim_turu as TalepTuru;
+    if (!GECERLI_TALEP_TURLERI.includes(egitimTuru)) {
       return validasyonHatasi("Eğitim türü geçersiz.", ["egitim_turu"]);
     }
 
-    // Ürün ve teknik yalnızca urun_egitimi için zorunlu
-    if (egitimTuru === "urun_egitimi") {
-      if (!urun_id) return validasyonHatasi("Ürün seçimi zorunludur.", ["urun_id"]);
-      if (!teknik_id) return validasyonHatasi("Teknik seçimi zorunludur.", ["teknik_id"]);
+    // Yetenek-bilinçli talep türü validasyonu — rol bu türde talep açabiliyor mu?
+    if (!yetenek.acabilecegiTalepTurleri.includes(egitimTuru)) {
+      return validasyonHatasi(
+        `${rol} rolü "${egitimTuru}" türünde talep açamaz.`,
+        ["egitim_turu"],
+      );
     }
+
+    // Ürün ve teknik zorunluluğu — TALEP_TURU_KURALLARI'ndan okunur.
+    const turKurali = TALEP_TURU_KURALLARI[egitimTuru];
+
+    if (turKurali.urun === "zorunlu" && !urun_id) {
+      return validasyonHatasi("Ürün seçimi zorunludur.", ["urun_id"]);
+    }
+    if (turKurali.teknik === "zorunlu" && !teknik_id) {
+      return validasyonHatasi("Teknik seçimi zorunludur.", ["teknik_id"]);
+    }
+
+    // INSERT'e yazılacak urun_id/teknik_id — kural "yok" ise NULL'a zorla.
+    const insertUrunId = turKurali.urun === "yok" ? null : (urun_id ?? null);
+    const insertTeknikId = turKurali.teknik === "yok" ? null : (teknik_id ?? null);
 
     if (hazir_soru_seti && !hazir_soru_seti_verisi) {
       return validasyonHatasi("Hazır soru seti verisi zorunludur.", ["hazir_soru_seti_verisi"]);
@@ -119,11 +168,13 @@ export async function POST(request: NextRequest) {
     const { data: yeniTalep, error } = await adminSupabase
       .from("talepler")
       .insert({
-        pm_id: user.id,
-        takim_id: pmKullanici.takim_id,
+        uretici_id: user.id,
+        firma_id: kullaniciKaydi.firma_id,
+        takim_id: kullaniciKaydi.takim_id ?? null,
         egitim_turu: egitimTuru,
-        urun_id: egitimTuru === "urun_egitimi" ? urun_id : null,
-        teknik_id: egitimTuru === "urun_egitimi" ? teknik_id : null,
+        icerik_turu: icerikTuru,
+        urun_id: insertUrunId,
+        teknik_id: insertTeknikId,
         kategori_id: kategori_id ?? null,
         aciklama: aciklama?.trim() ?? null,
         hazir_video: hazir_video ?? false,
@@ -133,8 +184,8 @@ export async function POST(request: NextRequest) {
         video_basi_soru_sayisi: videoBasisSoruSayisi,
       })
       .select(`
-        talep_id, takim_id, hazir_video, created_at,
-        urun_id, teknik_id, kategori_id, egitim_turu,
+        talep_id, takim_id, firma_id, hazir_video, created_at,
+        urun_id, teknik_id, kategori_id, egitim_turu, icerik_turu,
         hazir_soru_seti, hazir_soru_seti_verisi,
         soru_seti_buyuklugu, video_basi_soru_sayisi,
         urunler(urun_adi),
@@ -145,9 +196,9 @@ export async function POST(request: NextRequest) {
 
     if (error) return hataYaniti("Talep oluşturulamadı.", "talepler tablosu INSERT", error);
 
-    const urun_adi = egitimTuru === "urun_egitimi"
-      ? ((yeniTalep as any).urunler?.urun_adi ?? "-")
-      : "Genel Eğitim";
+    // Bildirim mesajı — ürünlü talepte ürün adı, ürünsüzde tür adı.
+    const turAdi = TALEP_TURU_KURALLARI[egitimTuru].ad;
+    const bildirimBasligi = (yeniTalep as any).urunler?.urun_adi ?? turAdi;
 
     // Tüm IU kullanıcılarına bildirim gönder
     const { data: iuKullanicilar } = await adminSupabase
@@ -164,7 +215,7 @@ export async function POST(request: NextRequest) {
       gonderen_id: user.id,
       kayit_turu: "talep",
       kayit_id: (yeniTalep as any).talep_id,
-      mesaj: `Yeni talep: ${urun_adi}`,
+      mesaj: `Yeni talep: ${bildirimBasligi}`,
     });
 
     return NextResponse.json({
@@ -172,10 +223,8 @@ export async function POST(request: NextRequest) {
       talep: {
         ...yeniTalep,
         egitim_turu: egitimTuru,
-        urun_adi,
-        teknik_adi: egitimTuru === "urun_egitimi"
-          ? ((yeniTalep as any).teknikler?.teknik_adi ?? "-")
-          : "-",
+        urun_adi: (yeniTalep as any).urunler?.urun_adi ?? "-",
+        teknik_adi: (yeniTalep as any).teknikler?.teknik_adi ?? "-",
         kategori_adi: (yeniTalep as any).kategoriler?.kategori_adi ?? null,
       }
     }, { status: 201 });

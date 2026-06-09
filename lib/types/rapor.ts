@@ -102,17 +102,6 @@ export interface BolgeAgg {
   enYuksek: number;
 }
 
-export interface UttIzlemeDurumu {
-  kullanici_id: string;
-  ad: string;
-  soyad: string;
-  izlenen: number;
-  toplam: number;
-  kalan: number;
-  puan: number;
-  durum: 'Hiç izlememiş' | 'Devam Ediyor' | 'Tamamlandı';
-}
-
 export interface PmUretimRapor {
   toplam_talep: number | null;
   yayindaki_talep: number | null;
@@ -242,7 +231,6 @@ export interface TakimRpcItem {
   kaybedilen_ileri_sarma_puani: number;
   izlenmeyen_oneri_sayisi: number;
   oneri_sayisi: number;
-  kaybedilen_izlenmemis_video_puani: number;
   kaybedilen_yanlis_cevap_puani: number;
   aktif_utt: number;
   hic_izlememis_utt: number;

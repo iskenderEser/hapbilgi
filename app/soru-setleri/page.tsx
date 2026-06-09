@@ -6,9 +6,12 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
+import { useOkunmamisIdler } from "@/hooks/useOkunmamisIdler";
 
 interface SoruSetiSatir {
+  talep_id: string;
   video_durum_id: string;
+  soru_seti_id: string;
   urun_adi: string;
   teknik_adi: string;
   kategori_adi: string | null;
@@ -17,18 +20,23 @@ interface SoruSetiSatir {
   son_tarih: string;
 }
 
-type FiltreDurum = "Inceleme Bekleniyor" | "Onaylandi" | "Iptal Edildi";
+type FiltreDurum = "Inceleme Bekleniyor" | "Revizyon Bekleniyor" | "Onaylandi" | "Iptal Edildi";
 
-interface VideoDurumJoin {
+interface SoruSetiJoin {
+  soru_seti_id: string;
   video_durum_id: string;
-  video_id: string;
-  videolar: {
-    senaryo_durumu: {
-      senaryolar: {
-        talepler: {
-          urunler: { urun_adi: string } | null;
-          teknikler: { teknik_adi: string } | null;
-          kategoriler: { kategori_adi: string } | null;
+  sorular: any[] | null;
+  created_at: string;
+  video_durumu: {
+    videolar: {
+      senaryo_durumu: {
+        senaryolar: {
+          talep_id: string;
+          talepler: {
+            urunler: { urun_adi: string } | null;
+            teknikler: { teknik_adi: string } | null;
+            kategoriler: { kategori_adi: string } | null;
+          } | null;
         } | null;
       } | null;
     } | null;
@@ -44,6 +52,8 @@ export default function SoruSetleriListePage() {
   const [filtreler, setFiltreler] = useState<Set<FiltreDurum>>(new Set());
   const [kategoriFiltre, setKategoriFiltre] = useState<string>("");
   const { mesajlar, hata } = useHataMesaji();
+
+  const okunmamisIdler = useOkunmamisIdler("soru_seti");
 
   useEffect(() => {
     const supabase = createClient();
@@ -64,19 +74,24 @@ export default function SoruSetleriListePage() {
     setLoading(true);
     const supabase = createClient();
 
-    // Tek sorgu ile tüm video_durumları ve ilişkili verileri çek
-    const { data: videoDurumlari, error: vdError } = await supabase
-      .from("video_durumu")
+    // 1) Soru setlerini tüm zincirle çek (en yeniden eskiye)
+    const { data: soruSetleri, error: ssError } = await supabase
+      .from("soru_setleri")
       .select(`
+        soru_seti_id,
         video_durum_id,
-        video_id,
-        videolar!inner (
-          senaryo_durumu!inner (
-            senaryolar!inner (
-              talepler!inner (
-                urunler (urun_adi),
-                teknikler (teknik_adi),
-                kategoriler (kategori_adi)
+        sorular,
+        created_at,
+        video_durumu!inner (
+          videolar!inner (
+            senaryo_durumu!inner (
+              senaryolar!inner (
+                talep_id,
+                talepler!inner (
+                  urunler (urun_adi),
+                  teknikler (teknik_adi),
+                  kategoriler (kategori_adi)
+                )
               )
             )
           )
@@ -84,70 +99,63 @@ export default function SoruSetleriListePage() {
       `)
       .order("created_at", { ascending: false });
 
-    if (vdError || !videoDurumlari) {
-      hata("Soru setleri yüklenemedi.", "video_durumu tablosu SELECT", vdError?.message);
+    if (ssError || !soruSetleri) {
+      hata("Soru setleri yüklenemedi.", "soru_setleri tablosu SELECT", ssError?.message);
       setLoading(false);
       return;
     }
 
-    // Tüm video_durum_id'leri topla
-    const videoDurumIds = videoDurumlari.map((vd: any) => vd.video_durum_id);
-
-    // Tek sorgu ile tüm soru setlerini ve durumlarını çek
-    const { data: tumSoruSetleri } = await supabase
-      .from("soru_setleri")
-      .select("soru_seti_id, video_durum_id, sorular, created_at")
-      .in("video_durum_id", videoDurumIds)
-      .order("created_at", { ascending: false });
-
-    // Her video_durum için en son soru setini bul
-    const sonSoruSetiMap = new Map();
-    tumSoruSetleri?.forEach((ss: any) => {
-      const mevcut = sonSoruSetiMap.get(ss.video_durum_id);
-      if (!mevcut || new Date(ss.created_at) > new Date(mevcut.created_at)) {
-        sonSoruSetiMap.set(ss.video_durum_id, ss);
+    // 2) Talep bazlı tekilleştir — her talep için sadece en yeni soru seti
+    const talepMap = new Map<string, any>();
+    for (const ss of soruSetleri) {
+      const typed = ss as unknown as SoruSetiJoin;
+      const talep_id = typed.video_durumu?.videolar?.senaryo_durumu?.senaryolar?.talep_id;
+      if (!talep_id) continue;
+      if (!talepMap.has(talep_id)) {
+        talepMap.set(talep_id, { ...ss, _talep_id: talep_id });
       }
-    });
+    }
+    const tekilSoruSetleri = Array.from(talepMap.values());
 
-    const sonSoruSetiIds = Array.from(sonSoruSetiMap.values()).map((ss: any) => ss.soru_seti_id);
+    // 3) Son durumları view'dan toplu çek
+    const soruSetiIds = tekilSoruSetleri.map((ss: any) => ss.soru_seti_id);
+    const sonDurumMap = new Map<string, { durum: string; created_at: string }>();
 
-    // Tek sorgu ile tüm durumları çek
-    const { data: tumDurumlar } = await supabase
-      .from("soru_seti_durumu")
-      .select("soru_seti_id, durum, created_at")
-      .in("soru_seti_id", sonSoruSetiIds)
-      .order("created_at", { ascending: false });
+    if (soruSetiIds.length > 0) {
+      const { data: sonDurumlar, error: sdError } = await supabase
+        .from("v_soru_seti_son_durum")
+        .select("soru_seti_id, durum, created_at")
+        .in("soru_seti_id", soruSetiIds);
 
-    // Her soru seti için en son durumu bul
-    const sonDurumMap = new Map();
-    tumDurumlar?.forEach((d: any) => {
-      if (!sonDurumMap.has(d.soru_seti_id)) {
-        sonDurumMap.set(d.soru_seti_id, d);
+      if (sdError) {
+        hata("Soru seti son durumları yüklenemedi.", "v_soru_seti_son_durum SELECT", sdError.message);
+        setLoading(false);
+        return;
       }
-    });
 
-    // Sonuçları birleştir
-    const sonuc: SoruSetiSatir[] = [];
+      sonDurumlar?.forEach((sd: any) => {
+        sonDurumMap.set(sd.soru_seti_id, { durum: sd.durum, created_at: sd.created_at });
+      });
+    }
 
-    for (const vd of videoDurumlari) {
-      const sonSoruSeti = sonSoruSetiMap.get(vd.video_durum_id);
-      if (!sonSoruSeti) continue;
+    // 4) Satırları kur — talep bazlı tek satır
+    const sonuc: SoruSetiSatir[] = tekilSoruSetleri.map((ss: any) => {
+      const typed = ss as unknown as SoruSetiJoin;
+      const talep = typed.video_durumu?.videolar?.senaryo_durumu?.senaryolar?.talepler;
+      const sonDurum = sonDurumMap.get(ss.soru_seti_id);
 
-      const sonDurum = sonDurumMap.get(sonSoruSeti.soru_seti_id);
-      
-      const typedVd = vd as unknown as VideoDurumJoin;
-      const talep = typedVd.videolar?.senaryo_durumu?.senaryolar?.talepler;
-      
-      sonuc.push({
-        video_durum_id: vd.video_durum_id,
+      return {
+        talep_id: ss._talep_id,
+        video_durum_id: ss.video_durum_id,
+        soru_seti_id: ss.soru_seti_id,
         urun_adi: talep?.urunler?.urun_adi ?? "-",
         teknik_adi: talep?.teknikler?.teknik_adi ?? "-",
         kategori_adi: talep?.kategoriler?.kategori_adi ?? null,
-        soru_sayisi: sonSoruSeti.sorular?.length ?? 0,
+        soru_sayisi: Array.isArray(ss.sorular) ? ss.sorular.length : 0,
         son_durum: sonDurum?.durum ?? null,
-        son_tarih: sonDurum?.created_at ?? sonSoruSeti.created_at,
-      });
-    }
+        son_tarih: sonDurum?.created_at ?? ss.created_at,
+      };
+    });
 
     setSatirlar(sonuc);
     setLoading(false);
@@ -186,6 +194,7 @@ export default function SoruSetleriListePage() {
 
   const filtreSec: { durum: FiltreDurum; etiket: string }[] = [
     { durum: "Inceleme Bekleniyor", etiket: "İnceleme Bekleyenler" },
+    { durum: "Revizyon Bekleniyor", etiket: "Revizyon Bekleyenler" },
     { durum: "Onaylandi", etiket: "Onaylananlar" },
     { durum: "Iptal Edildi", etiket: "İptal Edilenler" },
   ];
@@ -245,11 +254,18 @@ export default function SoruSetleriListePage() {
               <div className="md:hidden">
                 {filtreliSatirlar.map((ss) => {
                   const renk = durumRenk(ss.son_durum ?? "");
+                  const okunmamis = okunmamisIdler.has(ss.soru_seti_id);
                   return (
-                    <div key={ss.video_durum_id} onClick={() => router.push(`/soru-setleri/${ss.video_durum_id}`)}
-                      className="px-4 py-3 border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors">
+                    <div key={ss.talep_id} onClick={() => router.push(`/soru-setleri/${ss.video_durum_id}`)}
+                      className="px-4 py-3 border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors"
+                      style={okunmamis ? { boxShadow: "inset 3px 0 0 0 #bc2d0d" } : undefined}>
                       <div className="flex justify-between items-start mb-1">
-                        <span className="text-sm font-semibold text-gray-900">{ss.urun_adi}</span>
+                        <div className="flex items-center gap-1.5">
+                          {okunmamis && (
+                            <span className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#bc2d0d" }} />
+                          )}
+                          <span className="text-sm text-gray-900" style={{ fontWeight: okunmamis ? 700 : 600 }}>{ss.urun_adi}</span>
+                        </div>
                         {ss.son_durum && (
                           <span className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap"
                             style={{ background: renk.bg, color: renk.text, border: `0.5px solid ${renk.border}`, fontSize: 11 }}>
@@ -289,10 +305,19 @@ export default function SoruSetleriListePage() {
                   <tbody>
                     {filtreliSatirlar.map((ss) => {
                       const renk = durumRenk(ss.son_durum ?? "");
+                      const okunmamis = okunmamisIdler.has(ss.soru_seti_id);
                       return (
-                        <tr key={ss.video_durum_id} onClick={() => router.push(`/soru-setleri/${ss.video_durum_id}`)}
-                          className="border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors duration-100">
-                          <td className="px-5 py-3 text-gray-900 font-medium">{ss.urun_adi}</td>
+                        <tr key={ss.talep_id} onClick={() => router.push(`/soru-setleri/${ss.video_durum_id}`)}
+                          className="border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors duration-100"
+                          style={okunmamis ? { boxShadow: "inset 3px 0 0 0 #bc2d0d" } : undefined}>
+                          <td className="px-5 py-3 text-gray-900">
+                            <div className="flex items-center gap-1.5">
+                              {okunmamis && (
+                                <span className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#bc2d0d" }} />
+                              )}
+                              <span style={{ fontWeight: okunmamis ? 700 : 500 }}>{ss.urun_adi}</span>
+                            </div>
+                          </td>
                           <td className="px-3 py-3 text-gray-500">{ss.teknik_adi}</td>
                           <td className="px-3 py-3">
                             {ss.kategori_adi ? (

@@ -8,7 +8,6 @@ import Navbar from "@/components/Navbar";
 
 interface UttSatiri {
   sira: number;
-  lig_id: string;
   kullanici_id: string;
   ad: string;
   rol: string;
@@ -19,7 +18,6 @@ interface UttSatiri {
   oneri_puani: number;
   extra_puani: number;
   toplam_puan: number;
-  guncelleme_tarihi: string;
   benim?: boolean;
 }
 
@@ -98,9 +96,6 @@ export default function HBLigiPage() {
 
   useEffect(() => { if (user) veriCek(); }, [user, secilenBolge, secilenTakim, secilenFirma]);
 
-  const formatTarih = (tarih: string) =>
-    new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
-
   const siraRenk = (sira: number) => {
     if (sira === 1) return "#f59e0b";
     if (sira === 2) return "#9ca3af";
@@ -124,16 +119,12 @@ export default function HBLigiPage() {
   // ─── UTT görünümü ──────────────────────────────────────────────────────────
   if (veri.tip === "utt") {
     const { lig } = veri;
-    const guncelTarih = lig[0]?.guncelleme_tarihi;
     return (
       <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
         <Navbar email={user?.email ?? ""} rol={rol} adSoyad={adSoyad} onCikis={handleCikis} />
         <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900 m-0">HBLigi</h1>
-              {guncelTarih && <p className="text-xs text-gray-400 mt-1 mb-0">Son güncelleme: {formatTarih(guncelTarih)}</p>}
-            </div>
+            <h1 className="text-xl font-bold text-gray-900 m-0">HBLigi</h1>
             <span className="text-xs text-gray-500">{lig.length} kişi — Bölge Sıralaması</span>
           </div>
           <UttTablosu satirlar={lig} userId={user?.id} siraRenk={siraRenk} siraYazi={siraYazi} />
@@ -145,17 +136,11 @@ export default function HBLigiPage() {
   // ─── BM görünümü ───────────────────────────────────────────────────────────
   if (veri.tip === "bm") {
     const { bolge_utt, takim_bolge_siralaması } = veri;
-    const guncelTarih = bolge_utt[0]?.guncelleme_tarihi;
     return (
       <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
         <Navbar email={user?.email ?? ""} rol={rol} adSoyad={adSoyad} onCikis={handleCikis} />
         <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900 m-0">HBLigi</h1>
-              {guncelTarih && <p className="text-xs text-gray-400 mt-1 mb-0">Son güncelleme: {formatTarih(guncelTarih)}</p>}
-            </div>
-          </div>
+          <h1 className="text-xl font-bold text-gray-900 m-0">HBLigi</h1>
 
           {/* Takım bölge sıralaması */}
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
@@ -205,17 +190,11 @@ export default function HBLigiPage() {
   // ─── TM görünümü ───────────────────────────────────────────────────────────
   if (veri.tip === "tm") {
     const { takim_utt, takim_siralamasi } = veri;
-    const guncelTarih = takim_utt[0]?.guncelleme_tarihi;
     return (
       <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
         <Navbar email={user?.email ?? ""} rol={rol} adSoyad={adSoyad} onCikis={handleCikis} />
         <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900 m-0">HBLigi</h1>
-              {guncelTarih && <p className="text-xs text-gray-400 mt-1 mb-0">Son güncelleme: {formatTarih(guncelTarih)}</p>}
-            </div>
-          </div>
+          <h1 className="text-xl font-bold text-gray-900 m-0">HBLigi</h1>
 
           {/* Takım sıralaması */}
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
@@ -263,7 +242,6 @@ export default function HBLigiPage() {
 
   // ─── Genel görünüm (PM, GM, IU vb.) ───────────────────────────────────────
   const { lig, filtreler } = veri;
-  const guncelTarih = lig[0]?.guncelleme_tarihi;
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
@@ -271,10 +249,7 @@ export default function HBLigiPage() {
       <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
 
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900 m-0">HBLigi</h1>
-            {guncelTarih && <p className="text-xs text-gray-400 mt-1 mb-0">Son güncelleme: {formatTarih(guncelTarih)}</p>}
-          </div>
+          <h1 className="text-xl font-bold text-gray-900 m-0">HBLigi</h1>
           <span className="text-xs text-gray-500">{lig.length} kişi</span>
         </div>
 
@@ -350,7 +325,7 @@ function UttTablosu({ satirlar, userId, siraRenk, siraYazi, gostTakim = true, go
       {/* Mobile */}
       <div className="md:hidden">
         {satirlar.map((l) => (
-          <div key={l.lig_id} className="px-4 py-3 border-b border-gray-50"
+          <div key={l.kullanici_id} className="px-4 py-3 border-b border-gray-50"
             style={{ background: l.benim || l.kullanici_id === userId ? "#f0f9ff" : "white" }}>
             <div className="flex items-center gap-3 mb-1">
               <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
@@ -408,7 +383,7 @@ function UttTablosu({ satirlar, userId, siraRenk, siraYazi, gostTakim = true, go
           </thead>
           <tbody>
             {satirlar.map((l) => (
-              <tr key={l.lig_id} className="border-b border-gray-50"
+              <tr key={l.kullanici_id} className="border-b border-gray-50"
                 style={{ background: l.benim || l.kullanici_id === userId ? "#f0f9ff" : "white" }}>
                 <td className="px-3 py-3 text-center">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center mx-auto"

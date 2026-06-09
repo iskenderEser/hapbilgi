@@ -1,6 +1,6 @@
 // lib/rapor/yonetici/getYoneticiData.ts
 import { SupabaseClient, PmUretimItem } from '@/lib/types/rapor';
-import { PM_ROLLERI } from '@/lib/utils/roller';
+import { URETICI_ROLLER } from '@/lib/utils/roller';
 import { NextResponse } from 'next/server';
 
 interface Kullanici {
@@ -50,7 +50,7 @@ export async function getYoneticiData(
       .from('kullanicilar')
       .select('kullanici_id')
       .eq('firma_id', kullanici.firma_id)
-      .in('rol', PM_ROLLERI),
+      .in('rol', URETICI_ROLLER),
 
     // 5. Ürün & teknik dağılımı — periyot bağımsız
     adminSupabase
@@ -75,13 +75,13 @@ export async function getYoneticiData(
       .limit(5),
   ]);
 
-  // PM üretim verileri — pm_id listesi belli olduktan sonra
+  // PM üretim verileri — uretici_id listesi belli olduktan sonra
   const pmIdleri = (pmKullanicilariRes.data ?? []).map((k) => k.kullanici_id);
   const pmUretimRes = pmIdleri.length > 0
     ? await adminSupabase
         .from('v_rapor_pm_uretim')
         .select('toplam_talep, yayindaki_talep, durdurulan_talep, senaryo_bekleyen, video_bekleyen, soru_seti_bekleyen, senaryo_revizyon, video_revizyon, soru_seti_revizyon, ortalama_talep_yayin_suresi')
-        .in('pm_id', pmIdleri)
+        .in('uretici_id', pmIdleri)
     : { data: [] as PmUretimItem[], error: null };
 
   // Unified error handling — tüm sorgular dahil

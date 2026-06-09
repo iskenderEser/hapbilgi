@@ -29,65 +29,52 @@ export async function GET(request: Request) {
 
   const rol = (kullanici.rol ?? '').toLowerCase();
   if (!['utt', 'kd_utt'].includes(rol)) {
-  
     return yetkiHatasi('Bu rapora erişim yetkiniz yok');
   }
 
   // Veri
   const d = await getUttData(adminSupabase, kullanici, baslangic, bitis);
 
-  // ─── İstatistikler ────────────────────────────────────────────────────────
+  // ─── İstatistikler — RPC çıktısından doğrudan ────────────────────────────
+  // get_kullanici_ozet null dönerse (kullanıcı veya kayıt yok) sıfırlı default.
 
-  const istatistikler = {
-    izleme_puani: 0,
-    extra_puan: 0,
+  const ozet = d.ozet ?? {
+    izlenme_sayisi: 0,
+    video_puani: 0,
+    soru_puani: 0,
     oneri_puani: 0,
-    cevaplama_puani: 0,
-    toplam_kazanim: 0,
+    extra_puan: 0,
     ileri_sarma_kaybi: 0,
     yanlis_cevap_kaybi: 0,
+    oneri_kaybi: 0,
     toplam_net_puan: 0,
-    tamamlanan_izleme: d.tamamlananIzlemeSayisi,
-    alinan_oneri: 0,
-    tamamlanan_oneri: 0,
-    bekleyen_oneri: 0,
   };
 
-  for (const p of d.puanlar) {
-    if (p.puan_turu === 'izleme') istatistikler.izleme_puani += p.puan;
-    else if (p.puan_turu === 'extra') istatistikler.extra_puan += p.puan;
-    else if (p.puan_turu === 'oneri') istatistikler.oneri_puani += p.puan;
-    else if (p.puan_turu === 'cevaplama') istatistikler.cevaplama_puani += p.puan;
-  }
+  const toplam_kazanim =
+    (ozet.video_puani ?? 0) +
+    (ozet.soru_puani ?? 0) +
+    (ozet.oneri_puani ?? 0) +
+    (ozet.extra_puan ?? 0);
 
-  istatistikler.toplam_kazanim =
-    istatistikler.izleme_puani +
-    istatistikler.extra_puan +
-    istatistikler.oneri_puani +
-    istatistikler.cevaplama_puani;
+  const alinan_oneri = d.oneriler.length;
+  const tamamlanan_oneri = d.oneriler.filter((o: any) => o.izlendi_mi).length;
+  const bekleyen_oneri = alinan_oneri - tamamlanan_oneri;
 
-  istatistikler.ileri_sarma_kaybi = d.ileriSarmaKayitlari.reduce(
-    (acc, k) => acc + (k.kaybedilen_puan ?? 0), 0
-  );
-
-  // Yanlış cevap kaybı: her yanlış cevap için ilgili yayının soru_puani toplanır
-  // izleme_id → izleme_kayitlari → yayin_id → soru_seti_puanlari join zinciriyle gelir
-  const yanlisCevapSayisi = d.soruCevaplari.length;
-  istatistikler.yanlis_cevap_kaybi = d.soruCevaplari.reduce((acc: number, c: any) => {
-    const soru_puani = c.izleme?.yayin?.soru_seti_puanlari?.soru_puani ?? 0;
-    return acc + soru_puani;
-  }, 0);
-
-  istatistikler.toplam_net_puan =
-    istatistikler.toplam_kazanim -
-    istatistikler.ileri_sarma_kaybi -
-    istatistikler.yanlis_cevap_kaybi;
-
-  // ─── Öneri özeti ─────────────────────────────────────────────────────────
-
-  istatistikler.alinan_oneri = d.oneriler.length;
-  istatistikler.tamamlanan_oneri = d.oneriler.filter((o: any) => o.izlendi_mi).length;
-  istatistikler.bekleyen_oneri = istatistikler.alinan_oneri - istatistikler.tamamlanan_oneri;
+  const istatistikler = {
+    izleme_puani: ozet.video_puani ?? 0,
+    extra_puan: ozet.extra_puan ?? 0,
+    oneri_puani: ozet.oneri_puani ?? 0,
+    cevaplama_puani: ozet.soru_puani ?? 0,
+    toplam_kazanim,
+    ileri_sarma_kaybi: ozet.ileri_sarma_kaybi ?? 0,
+    yanlis_cevap_kaybi: ozet.yanlis_cevap_kaybi ?? 0,
+    oneri_kaybi: ozet.oneri_kaybi ?? 0,
+    toplam_net_puan: ozet.toplam_net_puan ?? 0,
+    tamamlanan_izleme: d.tamamlananIzlemeSayisi,
+    alinan_oneri,
+    tamamlanan_oneri,
+    bekleyen_oneri,
+  };
 
   // ─── HBLigi ──────────────────────────────────────────────────────────────
 
@@ -109,26 +96,12 @@ export async function GET(request: Request) {
   const toplamYayinSayisi = d.yayinlar.length;
   const izlenmemisVideoSayisi = Math.max(0, toplamYayinSayisi - d.tamamlananIzlemeSayisi);
 
-  // Tahmini puan: tüm yayınların video_puani toplamından izlenenlerin payı düşülür.
-  // getUttData'dan gelen yayinlar: her yayın için video_puani join ile geldi.
-  // izleme_kayitlari periyot filtreli olduğundan burada tüm yayınlar toplanır,
-  // UTT'nin daha önce izledikleri dahil — "kalan potansiyel" olarak gösterilir.
   const tumYayinlarToplamPuan = d.yayinlar.reduce((acc: number, y: any) => {
     const video_puani =
       y.soru_seti_durumu?.soru_setleri?.videolar?.video_puanlari?.video_puani ?? 0;
     return acc + video_puani;
   }, 0);
   const tahminiPuan = tumYayinlarToplamPuan > 0 ? tumYayinlarToplamPuan : 0;
-
-  // ─── Ürün & teknik dağılımı ──────────────────────────────────────────────
-
-  const urunDagilim: Record<string, number> = {};
-  const teknikDagilim: Record<string, number> = {};
-
-  for (const item of d.urunIzleme) {
-    if (item.urun_adi) urunDagilim[item.urun_adi] = (urunDagilim[item.urun_adi] ?? 0) + (item.izlenme_sayisi ?? 0);
-    if (item.teknik_adi) teknikDagilim[item.teknik_adi] = (teknikDagilim[item.teknik_adi] ?? 0) + (item.izlenme_sayisi ?? 0);
-  }
 
   // ─── Beğeni / Favori ─────────────────────────────────────────────────────
 
@@ -164,9 +137,7 @@ export async function GET(request: Request) {
         bolge_toplam_puan: toplamBolgePuan,
         takim_toplam_puan: toplamTakimPuan,
       },
-      istatistikler: {
-        ...istatistikler,
-      },
+      istatistikler,
       lig: {
         bolge_sirasi: d.lig?.bolge_sirasi ?? null,
         takim_sirasi: d.lig?.takim_sirasi ?? null,
@@ -185,12 +156,8 @@ export async function GET(request: Request) {
         tahmini_kazanilacak_puan: tahminiPuan,
         bekleyen_oneri_sayisi: istatistikler.bekleyen_oneri,
       },
-      urun_bazli_dagilim: Object.entries(urunDagilim)
-        .map(([urun_adi, izlenme_sayisi]) => ({ urun_adi, izlenme_sayisi }))
-        .sort((a, b) => b.izlenme_sayisi - a.izlenme_sayisi),
-      teknik_bazli_dagilim: Object.entries(teknikDagilim)
-        .map(([teknik_adi, izlenme_sayisi]) => ({ teknik_adi, izlenme_sayisi }))
-        .sort((a, b) => b.izlenme_sayisi - a.izlenme_sayisi),
+      // Ürün bazlı dağılım — RPC'den hazır gelir: her ürün için puan dökümü + teknik dağılımı
+      urun_dagilimi: d.urunDagilimi,
       oneriler: d.oneriler.map((o: any) => ({
         oneri_id: o.oneri_id,
         tamamlandi_mi: o.izlendi_mi,

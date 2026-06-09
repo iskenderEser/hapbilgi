@@ -6,11 +6,11 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
-import { PM_ROLLERI } from "@/lib/utils/roller";
+import { URETICI_ROLLER } from "@/lib/utils/roller";
 
 interface Talep {
   talep_id: string;
-  pm_id: string;
+  uretici_id: string;
   urun_adi: string;
   teknik_adi: string;
   aciklama: string;
@@ -30,6 +30,7 @@ interface DosyaItem {
 }
 
 const DESTEKLENEN_FORMATLAR = ".pdf,.docx,.pptx,.xlsx,.txt,.png,.jpg,.jpeg,.mp4,.mov,.avi,.mkv,.webm";
+const OFFICE_FORMATLAR = ["docx", "doc", "pptx", "ppt", "xlsx", "xls"];
 
 const dosyaTipiRenk = (dosya_adi: string): { etiket: string; bg: string; renk: string } => {
   const ext = dosya_adi.split(".").pop()?.toLowerCase() ?? "";
@@ -43,12 +44,6 @@ const dosyaTipiRenk = (dosya_adi: string): { etiket: string; bg: string; renk: s
   return { etiket: ext.toUpperCase(), bg: "#f9fafb", renk: "#737373" };
 };
 
-const goruntuleUrl = (dosya: DosyaItem): string => {
-  const ext = dosya.dosya_adi.split(".").pop()?.toLowerCase() ?? "";
-  if (["pdf", "txt", "png", "jpg", "jpeg", "mp4", "mov", "webm", "avi", "mkv"].includes(ext)) return dosya.url;
-  return `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(dosya.url)}`;
-};
-
 export default function TalepDetayPage() {
   const router = useRouter();
   const params = useParams();
@@ -60,6 +55,7 @@ export default function TalepDetayPage() {
   const [loading, setLoading] = useState(true);
   const [dosyaYukleniyor, setDosyaYukleniyor] = useState(false);
   const [siliniyor, setSiliniyor] = useState<string | null>(null);
+  const [goruntuleniyorUrl, setGoruntuleniyorUrl] = useState<string | null>(null);
   const [hazirVideoUrl, setHazirVideoUrl] = useState("");
   const [urlKaydediliyor, setUrlKaydediliyor] = useState(false);
   const [kararLoading, setKararLoading] = useState<"onayla" | "reddet" | null>(null);
@@ -88,7 +84,7 @@ export default function TalepDetayPage() {
     const supabase = createClient();
     supabase
       .from("talepler")
-      .select(`talep_id, pm_id, aciklama, created_at, dosya_urls, hazir_video, hazir_video_url, hazir_soru_seti, hazir_soru_seti_verisi, urun_id, teknik_id, urunler(urun_adi), teknikler(teknik_adi)`)
+      .select(`talep_id, uretici_id, aciklama, created_at, dosya_urls, hazir_video, hazir_video_url, hazir_soru_seti, hazir_soru_seti_verisi, urun_id, teknik_id, urunler(urun_adi), teknikler(teknik_adi)`)
       .eq("talep_id", talep_id)
       .single()
       .then(({ data, error }) => {
@@ -111,6 +107,26 @@ export default function TalepDetayPage() {
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+  const handleGoruntule = async (dosya: DosyaItem) => {
+    // URL'den storage yolunu çıkar: ".../talep-dosyalari/<yol>" → "<yol>"
+    const dosyaYolu = dosya.url.split("/talep-dosyalari/")[1];
+    if (!dosyaYolu) { hata("Dosya yolu çözümlenemedi.", "url parse", undefined); return; }
+
+    setGoruntuleniyorUrl(dosya.url);
+    const res = await fetch(`/talepler/api/dosyalar?yol=${encodeURIComponent(dosyaYolu)}`);
+    const d = await res.json();
+    setGoruntuleniyorUrl(null);
+
+    if (!res.ok) { hata(d.hata ?? "Dosya görüntülenemedi.", d.adim, d.detay); return; }
+
+    const ext = dosya.dosya_adi.split(".").pop()?.toLowerCase() ?? "";
+    const acilacakUrl = OFFICE_FORMATLAR.includes(ext)
+      ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(d.signed_url)}`
+      : d.signed_url;
+
+    window.open(acilacakUrl, "_blank");
+  };
 
   const handleDosyaSec = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const dosyalar = Array.from(e.target.files ?? []);
@@ -218,7 +234,7 @@ export default function TalepDetayPage() {
   };
 
   const rolKucu = rol.toLowerCase();
-  const isPM = PM_ROLLERI.includes(rolKucu);
+  const isPM = URETICI_ROLLER.includes(rolKucu);
   const isIU = rolKucu === "iu";
 
   if (loading) {
@@ -236,15 +252,17 @@ export default function TalepDetayPage() {
 
   const DosyaChip = ({ dosya }: { dosya: DosyaItem }) => {
     const { etiket, bg, renk } = dosyaTipiRenk(dosya.dosya_adi);
+    const isGoruntuleniyor = goruntuleniyorUrl === dosya.url;
     return (
       <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-full py-1 pl-2 pr-2.5">
         <div className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
           <span style={{ fontSize: 7, fontWeight: 700, color: renk }}>{etiket}</span>
         </div>
         <span className="text-xs text-gray-700 max-w-28 truncate">{dosya.dosya_adi}</span>
-        <span onClick={() => window.open(goruntuleUrl(dosya), "_blank")}
-          className="text-xs font-semibold cursor-pointer ml-0.5 whitespace-nowrap" style={{ color: "#56aeff" }}>
-          Görüntüle
+        <span onClick={() => !isGoruntuleniyor && handleGoruntule(dosya)}
+          className="text-xs font-semibold cursor-pointer ml-0.5 whitespace-nowrap"
+          style={{ color: "#56aeff", opacity: isGoruntuleniyor ? 0.5 : 1 }}>
+          {isGoruntuleniyor ? "..." : "Görüntüle"}
         </span>
         {isPM && (
           siliniyor === dosya.url ? (

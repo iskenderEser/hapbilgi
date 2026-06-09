@@ -1,13 +1,42 @@
 // app/talepler/api/dosyalar/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
+
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const adminSupabase = createAdminClient();
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return yetkiHatasi();
+
+    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    if (!["pm", "jr_pm", "kd_pm", "iu"].includes(rol)) return rolHatasi("Bu dosyaya erişim yetkiniz yok.");
+
+    const { searchParams } = new URL(request.url);
+    const dosyaYolu = searchParams.get("yol");
+    if (!dosyaYolu) return validasyonHatasi("Dosya yolu zorunludur.", ["yol"]);
+
+    const { data, error } = await adminSupabase.storage
+      .from("talep-dosyalari")
+      .createSignedUrl(dosyaYolu, 3600); // 1 saat geçerli
+
+    if (error || !data) return hataYaniti("İmzalı URL oluşturulamadı.", "talep-dosyalari createSignedUrl", error);
+
+    return NextResponse.json({ signed_url: data.signedUrl }, { status: 200 });
+
+  } catch (err) {
+    return sunucuHatasi(err, "GET /talepler/api/dosyalar");
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
@@ -20,12 +49,12 @@ export async function POST(request: NextRequest) {
 
     const { data: talep, error: talepError } = await adminSupabase
       .from("talepler")
-      .select("talep_id, pm_id, dosya_urls")
+      .select("talep_id, uretici_id, dosya_urls")
       .eq("talep_id", talep_id)
       .single();
 
     if (talepError || !talep) return hataYaniti("Talep bulunamadı.", "talepler tablosu SELECT — talep_id", talepError);
-    if (talep.pm_id !== user.id) return rolHatasi("Bu talebe dosya yükleme yetkiniz yok.");
+    if (talep.uretici_id !== user.id) return rolHatasi("Bu talebe dosya yükleme yetkiniz yok.");
 
     const mevcutDosyalar = talep.dosya_urls ?? [];
     const yeniDosya = { dosya_adi, url, boyut: boyut ?? 0, yuklenme_tarihi: new Date().toISOString() };
@@ -47,9 +76,10 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
@@ -62,14 +92,13 @@ export async function DELETE(request: NextRequest) {
 
     const { data: talep, error: talepError } = await adminSupabase
       .from("talepler")
-      .select("talep_id, pm_id, dosya_urls")
+      .select("talep_id, uretici_id, dosya_urls")
       .eq("talep_id", talep_id)
       .single();
 
     if (talepError || !talep) return hataYaniti("Talep bulunamadı.", "talepler tablosu SELECT — talep_id", talepError);
-    if (talep.pm_id !== user.id) return rolHatasi("Bu talepten dosya silme yetkiniz yok.");
+    if (talep.uretici_id !== user.id) return rolHatasi("Bu talepten dosya silme yetkiniz yok.");
 
-    // Storage'dan sil — adminSupabase ile tutarlı
     const dosyaYolu = url.split("/talep-dosyalari/")[1];
     if (dosyaYolu) {
       const { error: storageError } = await adminSupabase.storage

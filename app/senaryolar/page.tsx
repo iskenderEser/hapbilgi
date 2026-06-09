@@ -2,13 +2,15 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
+import { useOkunmamisIdler } from "@/hooks/useOkunmamisIdler";
 
 interface SenaryoSatir {
   talep_id: string;
+  senaryo_id: string;
   urun_adi: string;
   teknik_adi: string;
   kategori_adi: string | null;
@@ -16,7 +18,18 @@ interface SenaryoSatir {
   son_tarih: string;
 }
 
-type FiltreDurum = "Inceleme Bekleniyor" | "Onaylandi" | "Iptal Edildi";
+type FiltreDurum = "Inceleme Bekleniyor" | "Revizyon Bekleniyor" | "Onaylandi" | "Iptal Edildi";
+
+interface SenaryoJoin {
+  senaryo_id: string;
+  talep_id: string;
+  created_at: string;
+  talepler: {
+    urunler: { urun_adi: string } | null;
+    teknikler: { teknik_adi: string } | null;
+    kategoriler: { kategori_adi: string } | null;
+  } | null;
+}
 
 export default function SenaryolarListePage() {
   const router = useRouter();
@@ -27,6 +40,8 @@ export default function SenaryolarListePage() {
   const [filtreler, setFiltreler] = useState<Set<FiltreDurum>>(new Set());
   const [kategoriFiltre, setKategoriFiltre] = useState<string>("");
   const { mesajlar, hata } = useHataMesaji();
+
+  const okunmamisIdler = useOkunmamisIdler("senaryo");
 
   useEffect(() => {
     const supabase = createClient();
@@ -43,42 +58,83 @@ export default function SenaryolarListePage() {
     router.push("/login");
   };
 
-  const veriCek = async () => {
+  const veriCek = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
-    const { data: talepler, error: talepError } = await supabase
-      .from("talepler")
-      .select(`talep_id, urunler(urun_adi), teknikler(teknik_adi), kategoriler(kategori_adi)`)
+
+    // 1) Senaryoları talep + ürün/teknik/kategori ile çek (en yeniden eskiye)
+    const { data: senaryolar, error: sError } = await supabase
+      .from("senaryolar")
+      .select(`
+        senaryo_id,
+        talep_id,
+        created_at,
+        talepler!inner (
+          urunler (urun_adi),
+          teknikler (teknik_adi),
+          kategoriler (kategori_adi)
+        )
+      `)
       .order("created_at", { ascending: false });
 
-    if (talepError) { hata("Talepler yüklenemedi.", "talepler tablosu SELECT", talepError.message); setLoading(false); return; }
+    if (sError || !senaryolar) {
+      hata("Senaryolar yüklenemedi.", "senaryolar tablosu SELECT", sError?.message);
+      setLoading(false);
+      return;
+    }
 
-    const sonuc = await Promise.all(
-      (talepler ?? []).map(async (t: any) => {
-        const { data: senaryolar } = await supabase
-          .from("senaryolar").select("senaryo_id, created_at")
-          .eq("talep_id", t.talep_id).order("created_at", { ascending: false }).limit(1);
-        const sonSenaryo = senaryolar?.[0];
-        if (!sonSenaryo) return null;
-        const { data: durumlar } = await supabase
-          .from("senaryo_durumu").select("durum, created_at")
-          .eq("senaryo_id", sonSenaryo.senaryo_id).order("created_at", { ascending: false }).limit(1);
-        return {
-          talep_id: t.talep_id,
-          urun_adi: t.urunler?.urun_adi ?? "-",
-          teknik_adi: t.teknikler?.teknik_adi ?? "-",
-          kategori_adi: t.kategoriler?.kategori_adi ?? null,
-          son_durum: durumlar?.[0]?.durum ?? null,
-          son_tarih: durumlar?.[0]?.created_at ?? sonSenaryo.created_at,
-        };
-      })
-    );
+    // 2) Talep bazlı tekilleştir — her talep için sadece en yeni senaryo
+    const talepMap = new Map<string, any>();
+    for (const s of senaryolar) {
+      if (!talepMap.has(s.talep_id)) {
+        talepMap.set(s.talep_id, s);
+      }
+    }
+    const tekilSenaryolar = Array.from(talepMap.values());
 
-    setSatirlar(sonuc.filter(Boolean) as SenaryoSatir[]);
+    // 3) Son durumları view'dan toplu çek
+    const senaryoIds = tekilSenaryolar.map((s: any) => s.senaryo_id);
+    const sonDurumMap = new Map<string, { durum: string; created_at: string }>();
+
+    if (senaryoIds.length > 0) {
+      const { data: sonDurumlar, error: sdError } = await supabase
+        .from("v_senaryo_son_durum")
+        .select("senaryo_id, durum, created_at")
+        .in("senaryo_id", senaryoIds);
+
+      if (sdError) {
+        hata("Senaryo son durumları yüklenemedi.", "v_senaryo_son_durum SELECT", sdError.message);
+        setLoading(false);
+        return;
+      }
+
+      sonDurumlar?.forEach((sd: any) => {
+        sonDurumMap.set(sd.senaryo_id, { durum: sd.durum, created_at: sd.created_at });
+      });
+    }
+
+    // 4) Satırları kur — talep bazlı tek satır
+    const sonuc: SenaryoSatir[] = tekilSenaryolar.map((s: any) => {
+      const typed = s as unknown as SenaryoJoin;
+      const talep = typed.talepler;
+      const sonDurum = sonDurumMap.get(s.senaryo_id);
+
+      return {
+        talep_id: s.talep_id,
+        senaryo_id: s.senaryo_id,
+        urun_adi: talep?.urunler?.urun_adi ?? "-",
+        teknik_adi: talep?.teknikler?.teknik_adi ?? "-",
+        kategori_adi: talep?.kategoriler?.kategori_adi ?? null,
+        son_durum: sonDurum?.durum ?? null,
+        son_tarih: sonDurum?.created_at ?? s.created_at,
+      };
+    });
+
+    setSatirlar(sonuc);
     setLoading(false);
-  };
+  }, [hata]);
 
-  useEffect(() => { if (user) veriCek(); }, [user]);
+  useEffect(() => { if (user) veriCek(); }, [user, veriCek]);
 
   const toggleFiltre = (durum: FiltreDurum) => {
     setFiltreler(prev => {
@@ -88,7 +144,6 @@ export default function SenaryolarListePage() {
     });
   };
 
-  // Benzersiz kategoriler
   const kategoriler = Array.from(new Set(satirlar.map(s => s.kategori_adi).filter(Boolean))) as string[];
 
   const filtreliSatirlar = satirlar.filter(s => {
@@ -112,6 +167,7 @@ export default function SenaryolarListePage() {
 
   const filtreSec: { durum: FiltreDurum; etiket: string }[] = [
     { durum: "Inceleme Bekleniyor", etiket: "İnceleme Bekleyenler" },
+    { durum: "Revizyon Bekleniyor", etiket: "Revizyon Bekleyenler" },
     { durum: "Onaylandi", etiket: "Onaylananlar" },
     { durum: "Iptal Edildi", etiket: "İptal Edilenler" },
   ];
@@ -134,7 +190,6 @@ export default function SenaryolarListePage() {
       <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6">
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
 
-          {/* Başlık + filtreler */}
           <div className="px-4 md:px-5 py-3.5 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
               <span className="text-sm font-semibold text-gray-900">Senaryolar</span>
@@ -152,7 +207,6 @@ export default function SenaryolarListePage() {
                     {f.etiket}
                   </label>
                 ))}
-                {/* Kategori dropdown — yalnızca listede kategori varsa göster */}
                 {kategoriler.length > 0 && (
                   <select
                     value={kategoriFiltre}
@@ -175,15 +229,21 @@ export default function SenaryolarListePage() {
             </div>
           ) : (
             <>
-              {/* Mobile: kart görünümü */}
               <div className="md:hidden">
                 {filtreliSatirlar.map((s) => {
                   const renk = durumRenk(s.son_durum ?? "");
+                  const okunmamis = okunmamisIdler.has(s.senaryo_id);
                   return (
                     <div key={s.talep_id} onClick={() => router.push(`/senaryolar/${s.talep_id}`)}
-                      className="px-4 py-3 border-b border-gray-50 cursor-pointer">
+                      className="px-4 py-3 border-b border-gray-50 cursor-pointer"
+                      style={okunmamis ? { boxShadow: "inset 3px 0 0 0 #bc2d0d" } : undefined}>
                       <div className="flex justify-between items-start mb-1">
-                        <span className="text-sm font-semibold text-gray-900">{s.urun_adi}</span>
+                        <div className="flex items-center gap-1.5">
+                          {okunmamis && (
+                            <span className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#bc2d0d" }} />
+                          )}
+                          <span className="text-sm text-gray-900" style={{ fontWeight: okunmamis ? 700 : 600 }}>{s.urun_adi}</span>
+                        </div>
                         {s.son_durum && (
                           <span className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap"
                             style={{ background: renk.bg, color: renk.text, border: `0.5px solid ${renk.border}`, fontSize: 11 }}>
@@ -204,7 +264,6 @@ export default function SenaryolarListePage() {
                 })}
               </div>
 
-              {/* Desktop: tablo görünümü */}
               <div className="hidden md:block">
                 <table className="w-full border-collapse text-sm">
                   <thead>
@@ -220,10 +279,19 @@ export default function SenaryolarListePage() {
                   <tbody>
                     {filtreliSatirlar.map((s) => {
                       const renk = durumRenk(s.son_durum ?? "");
+                      const okunmamis = okunmamisIdler.has(s.senaryo_id);
                       return (
                         <tr key={s.talep_id} onClick={() => router.push(`/senaryolar/${s.talep_id}`)}
-                          className="border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors duration-100">
-                          <td className="px-5 py-3 text-gray-900 font-medium">{s.urun_adi}</td>
+                          className="border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors duration-100"
+                          style={okunmamis ? { boxShadow: "inset 3px 0 0 0 #bc2d0d" } : undefined}>
+                          <td className="px-5 py-3 text-gray-900">
+                            <div className="flex items-center gap-1.5">
+                              {okunmamis && (
+                                <span className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#bc2d0d" }} />
+                              )}
+                              <span style={{ fontWeight: okunmamis ? 700 : 500 }}>{s.urun_adi}</span>
+                            </div>
+                          </td>
                           <td className="px-3 py-3 text-gray-500">{s.teknik_adi}</td>
                           <td className="px-3 py-3">
                             {s.kategori_adi ? (

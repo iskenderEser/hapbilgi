@@ -1,34 +1,27 @@
 // app/izle/api/bitir/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
+import { kazanilanPuanKaydet } from "@/lib/puan/kayit";
 
-async function videoDuresiGetir(video_url: string): Promise<number> {
-  try {
-    const videoId = video_url.match(/\/([0-9a-f-]{36})\/?(?:\?.*)?$/)?.[1];
-    if (!videoId) return 0;
-
-    const res = await fetch(`https://video.bunnycdn.com/library/${process.env.BUNNY_LIBRARY_ID}/videos/${videoId}`, {
-      headers: {
-        AccessKey: process.env.BUNNY_API_KEY ?? "",
-        accept: "application/json",
-      },
-    });
-
-    if (!res.ok) return 0;
-    const data = await res.json();
-    return data.length ?? 0;
-  } catch {
-    return 0;
-  }
+// İzleme tarihinin ait olduğu haftanın Pazartesi 00:00'ını döndürür
+function haftaninBaslangici(tarih: Date): Date {
+  const sonuc = new Date(tarih);
+  const gun = sonuc.getDay(); // 0=Pazar, 1=Pazartesi, ..., 6=Cumartesi
+  const pazartesiyeFark = gun === 0 ? -6 : 1 - gun;
+  sonuc.setDate(sonuc.getDate() + pazartesiyeFark);
+  sonuc.setHours(0, 0, 0, 0);
+  return sonuc;
 }
 
 export async function PUT(request: NextRequest) {
   try {
-    const adminSupabase = createAdminClient();
+    const supabase = await createClient();
 
-    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
+
+    const adminSupabase = createAdminClient();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
     if (!["utt", "kd_utt"].includes(rol)) return rolHatasi("Sadece utt ve kd_utt izleyebilir.");
@@ -42,7 +35,7 @@ export async function PUT(request: NextRequest) {
 
     const { data: izleme, error: izlemeError } = await adminSupabase
       .from("izleme_kayitlari")
-      .select("izleme_id, yayin_id, kullanici_id, izleme_turu, tamamlandi_mi, izleme_baslangic")
+      .select("izleme_id, yayin_id, kullanici_id, izleme_turu, oneri_id, tamamlandi_mi, izleme_baslangic")
       .eq("izleme_id", izleme_id)
       .single();
 
@@ -118,22 +111,8 @@ export async function PUT(request: NextRequest) {
 
     const video_puani = vPuan?.video_puani ?? 0;
 
-    let kazanilacakIzlemePuani = video_puani;
-    if (ileriSarildi && video_puani > 0) {
-      const { data: videoKayit } = await adminSupabase
-        .from("videolar")
-        .select("video_url")
-        .eq("video_durum_id", soruSeti.video_durum_id)
-        .single();
-
-      const videoSuresi = videoKayit?.video_url ? await videoDuresiGetir(videoKayit.video_url) : 0;
-
-      if (videoSuresi > 0) {
-        const saniyeBasiPuan = video_puani / videoSuresi;
-        const kayipPuan = Math.round(saniyeBasiPuan * ileriSarilanSure);
-        kazanilacakIzlemePuani = Math.max(0, video_puani - kayipPuan);
-      }
-    }
+    // İzleme puanı her zaman TAM yazılır.
+    // İleri sarma kaybı ayrı tabloda (ileri_sarma_kayitlari) tutulur; çift sayım önlenmiş olur.
 
     const { data: oncekiPuan, error: opError } = await adminSupabase
       .from("kazanilan_puanlar")
@@ -150,20 +129,28 @@ export async function PUT(request: NextRequest) {
     const kazanilanPuanlar = [];
     const ilkIzleme = (oncekiPuan ?? []).length === 0;
 
-    if (ilkIzleme && kazanilacakIzlemePuani > 0) {
-      const { error: pError } = await adminSupabase
-        .from("kazanilan_puanlar")
-        .insert({ kullanici_id: user.id, yayin_id: izleme.yayin_id, izleme_id, puan_turu: "izleme", puan: kazanilacakIzlemePuani });
+    if (ilkIzleme && video_puani > 0) {
+      const sonuc = await kazanilanPuanKaydet(adminSupabase, {
+        kullanici_id: user.id,
+        yayin_id: izleme.yayin_id,
+        izleme_id,
+        puan_turu: "izleme",
+        puan: video_puani,
+      });
 
-      if (pError) {
-        console.error("[UYARI] İzleme puanı kaydedilemedi:", { izleme_id, hata: pError.message });
+      if (!sonuc.ok) {
+        console.error("[UYARI] İzleme puanı kaydedilemedi:", { izleme_id, hata: sonuc.error });
       } else {
-        kazanilanPuanlar.push({ tur: "izleme", puan: kazanilacakIzlemePuani });
+        kazanilanPuanlar.push({ tur: "izleme", puan: video_puani });
       }
-    } else if (!ilkIzleme && !ileriSarildi && !ileriSarmaAcik) {
-      const haftaBaslangic = new Date(baslangicTarihi);
-      haftaBaslangic.setDate(baslangicTarihi.getDate() - baslangicTarihi.getDay() + 1);
-      haftaBaslangic.setHours(0, 0, 0, 0);
+    } else if (!ilkIzleme && !ileriSarildi && izleme.izleme_turu === "kendi_kendine") {
+      // İlk izleme değilse ve kendi_kendine türündeyse izleme türünü 'extra' olarak işaretle
+      await adminSupabase
+        .from("izleme_kayitlari")
+        .update({ izleme_turu: "extra" })
+        .eq("izleme_id", izleme_id);
+
+      const haftaBaslangic = haftaninBaslangici(baslangicTarihi);
 
       const { count: haftaIzlemeSayisi, error: hiError } = await adminSupabase
         .from("izleme_kayitlari")
@@ -175,7 +162,8 @@ export async function PUT(request: NextRequest) {
 
       if (hiError) {
         console.error("[UYARI] Haftalık izleme sayısı kontrol edilemedi:", { hata: hiError.message });
-      } else if ((haftaIzlemeSayisi ?? 0) === 3) {
+      } else if ((haftaIzlemeSayisi ?? 0) === 4) {
+        // Bu haftaya ait extra puan kaydı var mı? (mükerrer önleme)
         const { data: extraKayit, error: ekError } = await adminSupabase
           .from("kazanilan_puanlar")
           .select("kazanilan_puan_id")
@@ -190,12 +178,16 @@ export async function PUT(request: NextRequest) {
         } else if ((extraKayit ?? []).length === 0) {
           const extraPuanDegeri = yayin.extra_puan ?? 0;
           if (extraPuanDegeri > 0) {
-            const { error: epError } = await adminSupabase
-              .from("kazanilan_puanlar")
-              .insert({ kullanici_id: user.id, yayin_id: izleme.yayin_id, izleme_id, puan_turu: "extra", puan: extraPuanDegeri });
+            const sonuc = await kazanilanPuanKaydet(adminSupabase, {
+              kullanici_id: user.id,
+              yayin_id: izleme.yayin_id,
+              izleme_id,
+              puan_turu: "extra",
+              puan: extraPuanDegeri,
+            });
 
-            if (epError) {
-              console.error("[UYARI] Extra puan kaydedilemedi:", { izleme_id, hata: epError.message });
+            if (!sonuc.ok) {
+              console.error("[UYARI] Extra puan kaydedilemedi:", { izleme_id, hata: sonuc.error });
             } else {
               kazanilanPuanlar.push({ tur: "extra", puan: extraPuanDegeri });
             }
@@ -204,44 +196,76 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    if (!ileriSarildi && izleme.izleme_turu === "oneri") {
+    // Öneri puanı bloğu — izleme_turu='oneri' ve ileri sarılmamış izlemeler için
+    if (!ileriSarildi && izleme.izleme_turu === "oneri" && izleme.oneri_id) {
       const { data: oneri, error: oneriError } = await adminSupabase
         .from("oneri_kayitlari")
-        .select("oneri_id, oneri_baslangic, oneri_bitis")
-        .eq("yayin_id", izleme.yayin_id)
-        .eq("kullanici_id", user.id)
-        .eq("izlendi_mi", false)
+        .select("oneri_id, oneri_baslangic, oneri_bitis, izlendi_mi")
+        .eq("oneri_id", izleme.oneri_id)
         .single();
 
-      if (oneriError && oneriError.code !== "PGRST116") {
-        console.error("[UYARI] Öneri kaydı sorgulanırken hata:", { hata: oneriError.message });
+      if (oneriError) {
+        console.error("[UYARI] Öneri kaydı sorgulanırken hata:", { oneri_id: izleme.oneri_id, hata: oneriError.message });
       } else if (oneri) {
         const oneriBaslangic = new Date(oneri.oneri_baslangic);
         const oneriBitis = new Date(oneri.oneri_bitis);
 
         if (baslangicTarihi >= oneriBaslangic && baslangicTarihi <= oneriBitis) {
-          const { data: sPuan } = await adminSupabase
-            .from("soru_seti_puanlari")
-            .select("soru_puani")
-            .eq("soru_seti_durum_id", yayin.soru_seti_durum_id)
-            .single();
-
-          const oneriPuani = sPuan?.soru_puani ?? 0;
-
-          const { error: opInsertError } = await adminSupabase
+          // Öneri puanı kontrolü — bu yayın için aynı kullanıcıya daha önce öneri puanı verilmiş mi?
+          const { data: oncekiOneriPuan, error: oopError } = await adminSupabase
             .from("kazanilan_puanlar")
-            .insert({ kullanici_id: user.id, yayin_id: izleme.yayin_id, izleme_id, puan_turu: "oneri", puan: oneriPuani });
+            .select("kazanilan_puan_id")
+            .eq("yayin_id", izleme.yayin_id)
+            .eq("kullanici_id", user.id)
+            .eq("puan_turu", "oneri")
+            .limit(1);
 
-          if (opInsertError) {
-            console.error("[UYARI] Öneri puanı kaydedilemedi:", { izleme_id, hata: opInsertError.message });
-          } else {
-            kazanilanPuanlar.push({ tur: "oneri", puan: oneriPuani });
+          if (oopError) {
+            console.error("[UYARI] Önceki öneri puanı kontrolü yapılamadı:", { hata: oopError.message });
+          } else if ((oncekiOneriPuan ?? []).length === 0) {
+            // Öneri puanı — sistem_ayarlari tablosundan okunuyor
+            const { data: ayar, error: ayarError } = await adminSupabase
+              .from("sistem_ayarlari")
+              .select("deger")
+              .eq("anahtar", "oneri_puani")
+              .single();
+
+            if (ayarError || !ayar) {
+              console.error("[UYARI] sistem_ayarlari'ndan oneri_puani okunamadı:", { hata: ayarError?.message });
+            } else {
+              const oneriPuani = Number(ayar.deger);
+              if (oneriPuani > 0) {
+                const sonuc = await kazanilanPuanKaydet(adminSupabase, {
+                  kullanici_id: user.id,
+                  yayin_id: izleme.yayin_id,
+                  izleme_id,
+                  puan_turu: "oneri",
+                  puan: oneriPuani,
+                });
+
+                if (!sonuc.ok) {
+                  console.error("[UYARI] Öneri puanı kaydedilemedi:", { izleme_id, hata: sonuc.error });
+                } else {
+                  kazanilanPuanlar.push({ tur: "oneri", puan: oneriPuani });
+                }
+              }
+            }
           }
 
+          // Öneri'yi izlendi olarak işaretle
+          if (!oneri.izlendi_mi) {
+            await adminSupabase
+              .from("oneri_kayitlari")
+              .update({ izlendi_mi: true })
+              .eq("oneri_id", oneri.oneri_id);
+          }
+          // İlgili bildirimi okundu işaretle — Öneriler pill badge'inin düşmesi için
           await adminSupabase
-            .from("oneri_kayitlari")
-            .update({ izlendi_mi: true })
-            .eq("oneri_id", oneri.oneri_id);
+            .from("bildirimler")
+            .update({ goruldu_mu: true })
+            .eq("kayit_turu", "oneri")
+            .eq("kayit_id", oneri.oneri_id)
+            .eq("alici_id", user.id);
         }
       }
     }

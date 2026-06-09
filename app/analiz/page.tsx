@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
-import { PM_ROLLERI } from '@/lib/utils/roller';
+import { URETICI_ROLLER } from '@/lib/utils/roller';
 
 const BORDO = '#bc2d0d';
 const KIRMIZI = '#E24B4A';
@@ -12,7 +12,7 @@ const GRI_METIN = '#737373';
 const KOYU_METIN = '#111827';
 const GRI_ZEMIN = '#f9fafb';
 
-const ANALIZ_ROLLERI = ['bm', 'tm', ...PM_ROLLERI, 'gm', 'gm_yrd', 'drk', 'paz_md', 'blm_md', 'grp_pm', 'sm'];
+const ANALIZ_ROLLERI = ['bm', 'tm', ...URETICI_ROLLER, 'gm', 'gm_yrd', 'drk', 'paz_md', 'blm_md', 'grp_pm', 'sm'];
 
 const DEGERLER = [
   { id: 'urun_sayisi', label: 'Ürün Sayısı' },
@@ -44,7 +44,6 @@ const KAYIPLAR = [
   { id: 'kaybedilen_ileri_sarma_puani', label: 'Kaybedilen İleri Sarma Puanı' },
   { id: 'ileri_sarilan_sure', label: 'İleri Sarılan Video Süresi' },
   { id: 'izlenmeyen_oneri_sayisi', label: 'İzlenmeyen Öneri Video Sayısı' },
-  { id: 'kaybedilen_izlenmemis_video_puani', label: 'Kaybedilen İzlenmemiş Video Puanı' },
 ];
 
 const TUM_DEGISKENLER = [...DEGERLER, ...KAZANCLAR, ...KAYIPLAR];

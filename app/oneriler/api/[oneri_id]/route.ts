@@ -1,6 +1,6 @@
 // app/oneriler/api/[oneri_id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 
 export async function PUT(
@@ -11,9 +11,10 @@ export async function PUT(
     const { oneri_id } = await params;
     if (!oneri_id) return validasyonHatasi("oneri_id zorunludur.", ["oneri_id"]);
 
+    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();

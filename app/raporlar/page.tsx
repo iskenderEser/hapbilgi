@@ -4,6 +4,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/providers/AuthProvider';
+import { URETICI_ROLLER, YONETICI_ROLLER, TUKETICI_ROLLER } from '@/lib/utils/roller';
 
 export default function RaporlarPage() {
   const router = useRouter();
@@ -13,21 +14,17 @@ export default function RaporlarPage() {
     if (yukleniyor) return;
     if (!kullanici) { router.replace('/login'); return; }
 
-    const rol = kullanici?.rol;
+    const rol = (kullanici.rol ?? '').toLowerCase();
 
-    if (['utt', 'kd_utt'].includes(rol)) {
+    if (TUKETICI_ROLLER.includes(rol)) {
       router.replace('/raporlar/utt');
     } else if (rol === 'bm') {
       router.replace('/raporlar/bm');
     } else if (rol === 'tm') {
       router.replace('/raporlar/tm');
-    } else if (['pm', 'jr_pm', 'kd_pm'].includes(rol)) {
-      router.replace('/raporlar/pm');
-    } else if ([
-      'gm', 'gm_yrd', 'drk', 'paz_md', 'blm_md',
-      'med_md', 'grp_pm', 'sm', 'egt_md', 'egt_yrd_md',
-      'egt_yon', 'egt_uz'
-    ].includes(rol)) {
+    } else if (URETICI_ROLLER.includes(rol)) {
+      router.replace('/raporlar/uretici');
+    } else if (YONETICI_ROLLER.includes(rol)) {
       router.replace('/raporlar/yonetici');
     } else {
       router.replace('/ana-sayfa');

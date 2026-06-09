@@ -2,8 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
-import { bildirimOlustur } from "@/lib/utils/bildirimOlustur";
-import { PM_ROLLERI } from "@/lib/utils/roller";
+import { bildirimOlustur, gonderenBildirimleriOkunduIsaretle } from "@/lib/utils/bildirimOlustur";
+import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { talepBilgisiSenaryo } from "@/lib/utils/talepZinciri";
 
 const GECERLI_DURUMLAR = [
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    const isPM = PM_ROLLERI.includes(rol);
+    const isPM = URETICI_ROLLER.includes(rol);
     const isIU = rol === "iu";
     if (!isPM && !isIU) return rolHatasi("Sadece yetkili roller ve IU senaryo durumu güncelleyebilir.");
 
@@ -79,15 +79,18 @@ export async function POST(request: NextRequest) {
     const durumKontrol = veriKontrol(yeniDurum, "senaryo_durumu tablosu INSERT — dönen veri", "Durum kaydedildi ancak veri döndürülemedi.");
     if (!durumKontrol.gecerli) return durumKontrol.yanit;
 
-    // Onaylandi ise videolar tablosuna otomatik kayıt oluştur
+    // Onaylandi ise videolar tablosuna otomatik kayıt oluştur ve IU'ya video bildirimi gönder
     if (durum === "Onaylandi") {
-      const { error: videoError } = await adminSupabase
+      const { data: yeniVideo, error: videoError } = await adminSupabase
         .from("videolar")
         .insert({
           senaryo_durum_id: yeniDurum.senaryo_durum_id,
           iu_id: user.id,
           video_url: "",
-        });
+        })
+        .select("video_id")
+        .single();
+
       if (videoError) {
         console.error("[UYARI] Senaryo onaylandı ancak video kaydı oluşturulamadı:", {
           senaryo_durum_id: yeniDurum.senaryo_durum_id,
@@ -96,27 +99,28 @@ export async function POST(request: NextRequest) {
           hint: videoError.hint,
         });
       }
+
+      if (!videoError && yeniVideo?.video_id && senaryo.iu_id) {
+        await bildirimOlustur({
+          adminSupabase,
+          alici_id: senaryo.iu_id,
+          gonderen_id: user.id,
+          kayit_turu: "video",
+          kayit_id: yeniVideo.video_id,
+          mesaj: `Senaryon onaylandı, video yüklemeye hazır: ${urun_adi}`,
+        });
+      }
     }
 
     // Bildirimler
-    if (isIU && durum === "Inceleme Bekleniyor" && talepBilgisi?.pm_id) {
+    if (isIU && durum === "Inceleme Bekleniyor" && talepBilgisi?.uretici_id) {
       await bildirimOlustur({
         adminSupabase,
-        alici_id: talepBilgisi.pm_id,
+        alici_id: talepBilgisi.uretici_id,
         gonderen_id: user.id,
         kayit_turu: "senaryo",
         kayit_id: senaryo_id,
         mesaj: `Senaryo inceleme bekliyor: ${urun_adi}`,
-      });
-    }
-    if (isPM && durum === "Onaylandi" && senaryo.iu_id) {
-      await bildirimOlustur({
-        adminSupabase,
-        alici_id: senaryo.iu_id,
-        gonderen_id: user.id,
-        kayit_turu: "senaryo",
-        kayit_id: senaryo_id,
-        mesaj: `Senaryon onaylandı: ${urun_adi}`,
       });
     }
     if (isPM && durum === "Revizyon Bekleniyor" && senaryo.iu_id) {
@@ -128,6 +132,12 @@ export async function POST(request: NextRequest) {
         kayit_id: senaryo_id,
         mesaj: `Senaryo revizyonu istendi: ${urun_adi}`,
       });
+    }
+
+    // Onaylandi / Iptal Edildi — alıcıya bildirim gitmez, ancak işlemi yapan PM'in
+    // bu zincire bağlı kendi "incele" bildirimleri okundu yapılır (badge kapanır).
+    if (isPM && (durum === "Onaylandi" || durum === "Iptal Edildi")) {
+      await gonderenBildirimleriOkunduIsaretle(adminSupabase, user.id, "senaryo", senaryo_id);
     }
 
     return NextResponse.json({ mesaj: "Durum kaydedildi.", durum: yeniDurum }, { status: 201 });

@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
-import { PM_ROLLERI } from "@/lib/utils/roller";
+import { URETICI_ROLLER } from "@/lib/utils/roller";
 
 export async function PUT(
   request: NextRequest,
@@ -19,7 +19,7 @@ export async function PUT(
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    if (!PM_ROLLERI.includes(rol)) return rolHatasi("Sadece yetkili roller yayın durumunu değiştirebilir.");
+    if (!URETICI_ROLLER.includes(rol)) return rolHatasi("Sadece yetkili roller yayın durumunu değiştirebilir.");
 
     // Yayını bul
     const { data: yayin, error: yayinError } = await adminSupabase

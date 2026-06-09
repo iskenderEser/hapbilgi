@@ -2,7 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
-import { PM_ROLLERI } from "@/lib/utils/roller";
+import { URETICI_ROLLER } from "@/lib/utils/roller";
+import { teknikEkleyebilirMi } from "@/lib/uretici/yetenekler";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    if (![...PM_ROLLERI, "iu"].includes(rol)) return rolHatasi("Sadece yetkili roller ve IU teknik listesine erişebilir.");
+    if (![...URETICI_ROLLER, "iu"].includes(rol)) return rolHatasi("Sadece yetkili roller ve IU teknik listesine erişebilir.");
 
     const { searchParams } = new URL(request.url);
     const firma_id = searchParams.get("firma_id");
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    if (!PM_ROLLERI.includes(rol)) return rolHatasi("Sadece yetkili roller teknik ekleyebilir.");
+    if (!teknikEkleyebilirMi(rol)) return rolHatasi("Sadece yetkili roller teknik ekleyebilir.");
 
     const body = await request.json();
     const { firma_id, teknik_adi } = body;

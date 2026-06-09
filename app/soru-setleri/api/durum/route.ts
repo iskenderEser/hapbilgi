@@ -1,9 +1,9 @@
 // app/soru-setleri/api/durum/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
-import { bildirimOlustur } from "@/lib/utils/bildirimOlustur";
-import { PM_ROLLERI } from "@/lib/utils/roller";
+import { bildirimOlustur, gonderenBildirimleriOkunduIsaretle } from "@/lib/utils/bildirimOlustur";
+import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { talepBilgisiSoruSeti } from "@/lib/utils/talepZinciri";
 
 const GECERLI_DURUMLAR = [
@@ -17,13 +17,14 @@ const PM_DURUMLARI = ["Revizyon Bekleniyor", "Onaylandi", "Iptal Edildi"];
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    const isPM = PM_ROLLERI.includes(rol);
+    const isPM = URETICI_ROLLER.includes(rol);
     const isIU = rol === "iu";
     if (!isPM && !isIU) return rolHatasi("Sadece yetkili roller ve IU soru seti durumu güncelleyebilir.");
 
@@ -47,9 +48,13 @@ export async function POST(request: NextRequest) {
     if (!setKontrol.gecerli) return setKontrol.yanit;
     if (soruSetiError) return hataYaniti("Soru seti sorgulanırken hata oluştu.", "soru_setleri tablosu SELECT", soruSetiError, 404);
 
+    const talepBilgisi = await talepBilgisiSoruSeti(adminSupabase, soru_seti_id);
+    const urun_adi = talepBilgisi?.urun_adi ?? "-";
+
     if (isIU && durum === "Inceleme Bekleniyor") {
-      if (!soruSeti.sorular || soruSeti.sorular.length < 15) {
-        return isKuraluHatasi(`Göndermeden önce soru setini doldurun. Mevcut soru sayısı: ${soruSeti.sorular?.length ?? 0}, minimum: 15.`);
+      const soruSetiBuyuklugu = talepBilgisi?.soru_seti_buyuklugu ?? 15;
+      if (!soruSeti.sorular || soruSeti.sorular.length !== soruSetiBuyuklugu) {
+        return isKuraluHatasi(`Göndermeden önce soru setini doldurun. Mevcut soru sayısı: ${soruSeti.sorular?.length ?? 0}, olması gereken: ${soruSetiBuyuklugu}.`);
       }
     }
 
@@ -62,9 +67,6 @@ export async function POST(request: NextRequest) {
       if (countError) return hataYaniti("Revizyon sayısı kontrol edilemedi.", "soru_seti_durumu tablosu COUNT — revizyon kontrolü", countError);
       if ((count ?? 0) >= 2) return isKuraluHatasi("Maksimum revizyon hakkı (2) kullanıldı. Daha fazla revizyon istenemez.");
     }
-
-    const talepBilgisi = await talepBilgisiSoruSeti(adminSupabase, soru_seti_id);
-    const urun_adi = talepBilgisi?.urun_adi ?? "-";
 
     const { data: yeniDurum, error: durumError } = await adminSupabase
       .from("soru_seti_durumu")
@@ -81,6 +83,7 @@ export async function POST(request: NextRequest) {
     const durumKontrol = veriKontrol(yeniDurum, "soru_seti_durumu tablosu INSERT — dönen veri", "Durum kaydedildi ancak veri döndürülemedi.");
     if (!durumKontrol.gecerli) return durumKontrol.yanit;
 
+    // Onaylandi ise talep dosyalarını temizle — IU'ya bildirim gönderilmez (iş bitti)
     if (isPM && durum === "Onaylandi" && talepBilgisi?.talep_id) {
       try {
         const dosyaUrls = talepBilgisi.dosya_urls ?? [];
@@ -123,24 +126,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (isIU && durum === "Inceleme Bekleniyor" && talepBilgisi?.pm_id) {
+    if (isIU && durum === "Inceleme Bekleniyor" && talepBilgisi?.uretici_id) {
       await bildirimOlustur({
         adminSupabase,
-        alici_id: talepBilgisi.pm_id,
+        alici_id: talepBilgisi.uretici_id,
         gonderen_id: user.id,
         kayit_turu: "soru_seti",
         kayit_id: soru_seti_id,
         mesaj: `Soru seti inceleme bekliyor: ${urun_adi}`,
-      });
-    }
-    if (isPM && durum === "Onaylandi" && soruSeti.iu_id) {
-      await bildirimOlustur({
-        adminSupabase,
-        alici_id: soruSeti.iu_id,
-        gonderen_id: user.id,
-        kayit_turu: "soru_seti",
-        kayit_id: soru_seti_id,
-        mesaj: `Soru setin onaylandı: ${urun_adi}`,
       });
     }
     if (isPM && durum === "Revizyon Bekleniyor" && soruSeti.iu_id) {
@@ -152,6 +145,12 @@ export async function POST(request: NextRequest) {
         kayit_id: soru_seti_id,
         mesaj: `Soru seti revizyonu istendi: ${urun_adi}`,
       });
+    }
+
+    // Onaylandi / Iptal Edildi — alıcıya bildirim gitmez, ancak işlemi yapan PM'in
+    // bu zincire bağlı kendi "incele" bildirimleri okundu yapılır (badge kapanır).
+    if (isPM && (durum === "Onaylandi" || durum === "Iptal Edildi")) {
+      await gonderenBildirimleriOkunduIsaretle(adminSupabase, user.id, "soru_seti", soru_seti_id);
     }
 
     return NextResponse.json({ mesaj: "Durum kaydedildi.", durum: yeniDurum }, { status: 201 });

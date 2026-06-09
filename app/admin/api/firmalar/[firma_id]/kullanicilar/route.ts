@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
+import { TUM_ROLLER, YONLENDIRICI_ROLLER, TUKETICI_ROLLER } from "@/lib/utils/roller";
+import { ureticiYetenegi } from "@/lib/uretici/yetenekler";
 
 export async function GET(
   request: NextRequest,
@@ -96,19 +98,78 @@ export async function POST(
     if (eposta.length > 200) return validasyonHatasi("E-posta 200 karakterden uzun olamaz.", ["eposta"]);
     if (sifre.length > 200) return validasyonHatasi("Şifre 200 karakterden uzun olamaz.", ["sifre"]);
 
-    const gecerliRoller = ["pm", "jr_pm", "kd_pm", "iu", "tm", "bm", "utt", "kd_utt", "gm", "gm_yrd", "drk", "paz_md", "blm_md", "med_md", "grp_pm", "sm", "egt_md", "egt_yrd_md", "egt_yon", "egt_uz", "ik_drk", "ik_md", "ik_yrd_md", "ik_uz", "ik_per"];
     const rolTemiz = rol.trim().toLowerCase();
-    if (!gecerliRoller.includes(rolTemiz)) return validasyonHatasi("Geçersiz rol.", ["rol"]);
+    if (!TUM_ROLLER.includes(rolTemiz)) return validasyonHatasi("Geçersiz rol.", ["rol"]);
 
     const adTemiz = ad.trim();
     const soyadTemiz = soyad.trim();
     const epostaTemiz = eposta.trim().toLowerCase();
     const sifreTemiz = sifre.trim();
 
+    // Takım/bölge atama kuralları:
+    // - Üretici roller: takım zorunluluğu yetenek profilinden okunur (URETICI_YETENEKLERI[rol].takimZorunlu)
+    // - TM: takım zorunlu (yönlendirici)
+    // - BM/UTT/KD_UTT: bölge zorunlu, takım bölgeden türetilir
+    // - Diğer roller (yöneticiler, admin, IU): takım/bölge yok
+
     let takim_id: string | null = null;
     let bolge_id: string | null = null;
 
-    if (["pm", "jr_pm", "kd_pm", "tm", "ik_drk", "ik_md", "ik_yrd_md", "ik_uz", "ik_per", "med_md", "egt_md", "egt_yrd_md", "egt_yon", "egt_uz"].includes(rolTemiz)) {
+    const yetenek = ureticiYetenegi(rolTemiz);
+
+    if (yetenek) {
+      // Üretici rol — takım yetenek profilinden okunur
+      if (yetenek.takimZorunlu) {
+        if (bodyTakimId) {
+          const { data: takim, error: takimError } = await adminSupabase
+            .from("takimlar")
+            .select("takim_id")
+            .eq("takim_id", bodyTakimId)
+            .eq("firma_id", firma_id)
+            .single();
+          if (takimError || !takim) return hataYaniti("Takım bulunamadı.", "takimlar tablosu SELECT — takim_id kontrolü", takimError, 404);
+          takim_id = takim.takim_id;
+        } else if (takim_adi) {
+          const takimAdiTemiz = String(takim_adi).trim();
+          if (!takimAdiTemiz) return validasyonHatasi(`${rolTemiz} rolü için takım adı zorunludur.`, ["takim_adi"]);
+          const { data: takim, error: takimError } = await adminSupabase
+            .from("takimlar")
+            .select("takim_id")
+            .eq("firma_id", firma_id)
+            .ilike("takim_adi", takimAdiTemiz)
+            .single();
+          if (takimError || !takim) return hataYaniti(`"${takimAdiTemiz}" adında takım bulunamadı.`, "takimlar tablosu SELECT — takim_adi kontrolü", takimError, 404);
+          takim_id = takim.takim_id;
+        } else {
+          return validasyonHatasi(`${rolTemiz} rolü için takım zorunludur.`, ["takim_adi"]);
+        }
+      } else {
+        // Takım opsiyonel: gönderilirse doğrula, gönderilmezse NULL (firma seviyesi)
+        if (bodyTakimId) {
+          const { data: takim, error: takimError } = await adminSupabase
+            .from("takimlar")
+            .select("takim_id")
+            .eq("takim_id", bodyTakimId)
+            .eq("firma_id", firma_id)
+            .single();
+          if (takimError || !takim) return hataYaniti("Takım bulunamadı.", "takimlar tablosu SELECT — takim_id kontrolü", takimError, 404);
+          takim_id = takim.takim_id;
+        } else if (takim_adi) {
+          const takimAdiTemiz = String(takim_adi).trim();
+          if (takimAdiTemiz) {
+            const { data: takim, error: takimError } = await adminSupabase
+              .from("takimlar")
+              .select("takim_id")
+              .eq("firma_id", firma_id)
+              .ilike("takim_adi", takimAdiTemiz)
+              .single();
+            if (takimError || !takim) return hataYaniti(`"${takimAdiTemiz}" adında takım bulunamadı.`, "takimlar tablosu SELECT — takim_adi kontrolü", takimError, 404);
+            takim_id = takim.takim_id;
+          }
+        }
+      }
+    } else if (rolTemiz === "tm") {
+      // TM: takım zorunlu (yönlendirici)
       if (bodyTakimId) {
         const { data: takim, error: takimError } = await adminSupabase
           .from("takimlar")
@@ -132,7 +193,8 @@ export async function POST(
       } else {
         return validasyonHatasi(`${rolTemiz} rolü için takım zorunludur.`, ["takim_adi"]);
       }
-    } else if (["bm", "utt", "kd_utt"].includes(rolTemiz)) {
+    } else if (rolTemiz === "bm" || TUKETICI_ROLLER.includes(rolTemiz)) {
+      // BM/UTT/KD_UTT: bölge zorunlu, takım bölgeden türetilir
       if (bodyBolgeId) {
         const { data: bolge, error: bolgeError } = await adminSupabase
           .from("bolgeler")
@@ -157,6 +219,7 @@ export async function POST(
         return validasyonHatasi(`${rolTemiz} rolü için bölge zorunludur.`, ["bolge_adi"]);
       }
     }
+    // Diğer roller (yöneticiler, admin, IU): takım/bölge atanmaz
 
     const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
       email: epostaTemiz,
@@ -223,9 +286,8 @@ export async function PUT(
     if (kullaniciError) return hataYaniti("Kullanıcı sorgulanırken hata oluştu.", "kullanicilar tablosu SELECT", kullaniciError, 404);
 
     if (rol !== undefined) {
-      const gecerliRoller = ["pm", "jr_pm", "kd_pm", "iu", "tm", "bm", "utt", "kd_utt", "gm", "gm_yrd", "drk", "paz_md", "blm_md", "med_md", "grp_pm", "sm", "egt_md", "egt_yrd_md", "egt_yon", "egt_uz", "ik_drk", "ik_md", "ik_yrd_md", "ik_uz", "ik_per"];
       const rolTemiz = rol.trim().toLowerCase();
-      if (!gecerliRoller.includes(rolTemiz)) return validasyonHatasi("Geçersiz rol.", ["rol"]);
+      if (!TUM_ROLLER.includes(rolTemiz)) return validasyonHatasi("Geçersiz rol.", ["rol"]);
     }
 
     const guncellenecek: Record<string, unknown> = {};

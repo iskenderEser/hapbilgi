@@ -1,14 +1,16 @@
 // app/izle/api/begeni/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 
 export async function POST(request: NextRequest) {
   try {
-    const adminSupabase = createAdminClient();
+    const supabase = await createClient();
 
-    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
+
+    const adminSupabase = createAdminClient();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
     if (!["utt", "kd_utt"].includes(rol)) return rolHatasi("Sadece utt ve kd_utt beğeni yapabilir.");

@@ -1,6 +1,6 @@
 // app/challenge-club/api/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { hataYaniti, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi, sunucuHatasi } from '@/lib/utils/hataIsle';
 
 const CHALLENGE_GONDERME_PUANI = 10;
@@ -21,9 +21,10 @@ function isGunuEkle(tarih: Date, gun: number): Date {
 
 export async function GET(request: NextRequest) {
   try {
+    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi('Oturum açılmamış');
 
     const rol = (user.user_metadata?.rol ?? '').toLowerCase();
@@ -165,9 +166,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi('Oturum açılmamış');
 
     const rol = (user.user_metadata?.rol ?? '').toLowerCase();

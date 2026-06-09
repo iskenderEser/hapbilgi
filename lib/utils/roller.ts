@@ -9,9 +9,6 @@ export const URETICI_ROLLER = [
   "ik_drk", "ik_md", "ik_yrd_md", "ik_uz", "ik_per",
 ];
 
-// Geriye dönük uyumluluk için — eski import'ların kırılmaması adına
-export const PM_ROLLERI = URETICI_ROLLER;
-
 // YONETICI_ROLLER: Yönetici raporu ve analiz sayfasına erişim yetkisine sahip roller.
 export const YONETICI_ROLLER = [
   "gm", "gm_yrd", "drk", "paz_md", "blm_md", "grp_pm", "sm",
@@ -20,6 +17,27 @@ export const YONETICI_ROLLER = [
 // ADMIN_ROLLER: Tüm firmalara erişim, /admin paneli ve yönetici raporları yetkisine sahip roller.
 // İleride firma bazlı admin eklenebilir: "firma_admin"
 export const ADMIN_ROLLER = ["admin"];
+
+// YONLENDIRICI_ROLLER: TM ve BM — UTT performansını izleyen ve yönlendiren roller.
+export const YONLENDIRICI_ROLLER = ["tm", "bm"];
+
+// TUKETICI_ROLLER: UTT ve KD_UTT — sahada video tüketen, soruları cevaplayan roller.
+export const TUKETICI_ROLLER = ["utt", "kd_utt"];
+
+// IU_ROLU: İçerik Uzmanı — talebe cevap veren, üretim hattının operasyonel hizmetkârı.
+export const IU_ROLU = "iu";
+
+// TUM_ROLLER: Sistemdeki tüm geçerli rollerin birleşik listesi.
+// Validasyonlarda "geçerli rol mü?" kontrolü için kullanılır.
+// Yeni bir rol eklenirken yukarıdaki uygun gruba eklenmesi yeterlidir — buradan otomatik türetilir.
+export const TUM_ROLLER = [
+  ...URETICI_ROLLER,
+  ...YONETICI_ROLLER,
+  ...ADMIN_ROLLER,
+  ...YONLENDIRICI_ROLLER,
+  ...TUKETICI_ROLLER,
+  IU_ROLU,
+];
 
 // ROL_ADLARI: Rol kısaltmalarının Türkçe karşılıkları.
 // Yalnızca görüntüleme katmanında kullanılır — veritabanında hiçbir şey değişmez.

@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
-import { PM_ROLLERI } from "@/lib/utils/roller";
+import { URETICI_ROLLER } from "@/lib/utils/roller";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    if (!PM_ROLLERI.includes(rol)) return rolHatasi("Sadece yetkili roller video puanı tanımlayabilir.");
+    if (!URETICI_ROLLER.includes(rol)) return rolHatasi("Sadece yetkili roller video puanı tanımlayabilir.");
 
     const body = await request.json();
     const { video_durum_id, video_puani } = body;

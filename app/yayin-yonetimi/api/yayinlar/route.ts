@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { cokluBildirimOlustur } from "@/lib/utils/bildirimOlustur";
-import { PM_ROLLERI } from "@/lib/utils/roller";
+import { URETICI_ROLLER } from "@/lib/utils/roller";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    if (!PM_ROLLERI.includes(rol)) return rolHatasi("Sadece yetkili roller yayına alabilir.");
+    if (!URETICI_ROLLER.includes(rol)) return rolHatasi("Sadece yetkili roller yayına alabilir.");
 
     const body = await request.json();
     const { soru_seti_durum_id, ileri_sarma_acik, extra_puan, hedef_roller } = body;
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       .from("yayin_yonetimi")
       .insert({
         soru_seti_durum_id,
-        pm_id: user.id,
+        uretici_id: user.id,
         durum: "Yayinda",
         yayin_tarihi: simdi,
         ileri_sarma_acik: ileri_sarma_acik ?? false,

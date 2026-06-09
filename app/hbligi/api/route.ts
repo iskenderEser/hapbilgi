@@ -1,13 +1,14 @@
 // app/hbligi/api/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
 
 export async function GET(request: NextRequest) {
   try {
+    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
     if (["utt", "kd_utt"].includes(rol)) {
       const { data: ligData, error: ligError } = await adminSupabase
         .from("v_hbligi_sirali")
-        .select("lig_id, kullanici_id, rol, ad, soyad, bolge_id, bolge_adi, takim_id, takim_adi, firma_id, firma_adi, izleme_puani, cevaplama_puani, oneri_puani, extra_puani, toplam_puan, guncelleme_tarihi, firma_sirasi, bolge_sirasi, takim_sirasi")
+        .select("kullanici_id, rol, ad, soyad, bolge_id, bolge_adi, takim_id, takim_adi, firma_id, firma_adi, izleme_puani, cevaplama_puani, oneri_puani, extra_puani, toplam_puan, firma_sirasi, bolge_sirasi, takim_sirasi")
         .in("rol", ["utt", "kd_utt"])
         .eq("bolge_id", kullanici.bolge_id)
         .order("toplam_puan", { ascending: false });
@@ -34,7 +35,6 @@ export async function GET(request: NextRequest) {
 
       const sonuc = (ligData ?? []).map((l: any) => ({
         sira: l.bolge_sirasi,
-        lig_id: l.lig_id,
         kullanici_id: l.kullanici_id,
         ad: `${l.ad} ${l.soyad}`,
         rol: l.rol,
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
       // Kendi bölgesindeki UTT'ler
       const { data: bolgeUttler, error: uttError } = await adminSupabase
         .from("v_hbligi_sirali")
-        .select("lig_id, kullanici_id, rol, ad, soyad, bolge_id, bolge_adi, toplam_puan, bolge_sirasi, izleme_puani, cevaplama_puani, oneri_puani, extra_puani, guncelleme_tarihi")
+        .select("kullanici_id, rol, ad, soyad, bolge_id, bolge_adi, toplam_puan, bolge_sirasi, izleme_puani, cevaplama_puani, oneri_puani, extra_puani")
         .in("rol", ["utt", "kd_utt"])
         .eq("bolge_id", kullanici.bolge_id)
         .order("toplam_puan", { ascending: false });
@@ -88,7 +88,6 @@ export async function GET(request: NextRequest) {
 
       const uttSonuc = (bolgeUttler ?? []).map((l: any) => ({
         sira: l.bolge_sirasi,
-        lig_id: l.lig_id,
         kullanici_id: l.kullanici_id,
         ad: `${l.ad} ${l.soyad}`,
         rol: l.rol,
@@ -98,7 +97,6 @@ export async function GET(request: NextRequest) {
         oneri_puani: l.oneri_puani,
         extra_puani: l.extra_puani,
         toplam_puan: l.toplam_puan,
-        guncelleme_tarihi: l.guncelleme_tarihi,
       }));
 
       return NextResponse.json({
@@ -113,7 +111,7 @@ export async function GET(request: NextRequest) {
       // Kendi takımındaki tüm UTT'ler ve bölgeler
       const { data: takimUttler, error: takimUttError } = await adminSupabase
         .from("v_hbligi_sirali")
-        .select("lig_id, kullanici_id, rol, ad, soyad, bolge_id, bolge_adi, toplam_puan, takim_sirasi, bolge_sirasi, izleme_puani, cevaplama_puani, oneri_puani, extra_puani, guncelleme_tarihi")
+        .select("kullanici_id, rol, ad, soyad, bolge_id, bolge_adi, toplam_puan, takim_sirasi, bolge_sirasi, izleme_puani, cevaplama_puani, oneri_puani, extra_puani")
         .in("rol", ["utt", "kd_utt"])
         .eq("takim_id", kullanici.takim_id)
         .order("toplam_puan", { ascending: false });
@@ -144,7 +142,6 @@ export async function GET(request: NextRequest) {
 
       const uttSonuc = (takimUttler ?? []).map((l: any) => ({
         sira: l.takim_sirasi,
-        lig_id: l.lig_id,
         kullanici_id: l.kullanici_id,
         ad: `${l.ad} ${l.soyad}`,
         rol: l.rol,
@@ -154,7 +151,6 @@ export async function GET(request: NextRequest) {
         oneri_puani: l.oneri_puani,
         extra_puani: l.extra_puani,
         toplam_puan: l.toplam_puan,
-        guncelleme_tarihi: l.guncelleme_tarihi,
       }));
 
       return NextResponse.json({
@@ -168,7 +164,7 @@ export async function GET(request: NextRequest) {
     const [ligRes, bolgelerRes, takimlarRes, firmalarRes] = await Promise.all([
       adminSupabase
         .from("v_hbligi_sirali")
-        .select("lig_id, kullanici_id, rol, ad, soyad, firma_id, firma_adi, takim_id, takim_adi, bolge_id, bolge_adi, izleme_puani, cevaplama_puani, oneri_puani, extra_puani, toplam_puan, guncelleme_tarihi, firma_sirasi, bolge_sirasi, takim_sirasi")
+        .select("kullanici_id, rol, ad, soyad, firma_id, firma_adi, takim_id, takim_adi, bolge_id, bolge_adi, izleme_puani, cevaplama_puani, oneri_puani, extra_puani, toplam_puan, firma_sirasi, bolge_sirasi, takim_sirasi")
         .in("rol", ["utt", "kd_utt"])
         .order("toplam_puan", { ascending: false }),
       adminSupabase.from("bolgeler").select("bolge_id, bolge_adi").order("bolge_adi"),
@@ -185,7 +181,6 @@ export async function GET(request: NextRequest) {
       sira: l.firma_sirasi,
       bolge_sirasi: l.bolge_sirasi,
       takim_sirasi: l.takim_sirasi,
-      lig_id: l.lig_id,
       kullanici_id: l.kullanici_id,
       ad: `${l.ad} ${l.soyad}`,
       rol: l.rol,
@@ -197,7 +192,6 @@ export async function GET(request: NextRequest) {
       oneri_puani: l.oneri_puani,
       extra_puani: l.extra_puani,
       toplam_puan: l.toplam_puan,
-      guncelleme_tarihi: l.guncelleme_tarihi,
     }));
 
     return NextResponse.json({

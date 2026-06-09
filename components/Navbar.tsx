@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { URETICI_ROLLER } from "@/lib/utils/roller";
 
 interface NavbarProps {
   email: string;
@@ -20,14 +21,14 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
 
   const isAktif = (path: string) => pathname.startsWith(path);
 
-  const ureticiRoller = ["pm", "jr_pm", "kd_pm", "iu"];
   const yonlendiriciRoller = ["tm", "bm"];
   const tuketiciRoller = ["utt", "kd_utt"];
   const analizRoller = ["bm", "tm", "pm", "jr_pm", "kd_pm", "gm", "gm_yrd", "drk", "paz_md", "blm_md", "med_md", "grp_pm", "sm", "egt_md", "egt_yrd_md", "egt_yon", "egt_uz"];
 
   const rolKucu = rol.toLowerCase();
-  const isPM = ["pm", "jr_pm", "kd_pm"].includes(rolKucu);
+  const isUretici = URETICI_ROLLER.includes(rolKucu);
   const isIU = rolKucu === "iu";
+  const uretimHattiGorur = isUretici || isIU;
 
   useEffect(() => {
     if (adSoyad) return;
@@ -51,6 +52,17 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
   useEffect(() => {
     if (!rol) return;
     badgelariCek();
+    const interval = setInterval(badgelariCek, 30000);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        badgelariCek();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [pathname, rol]);
 
   useEffect(() => {
@@ -60,23 +72,12 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
     return () => document.removeEventListener("click", kapat);
   }, [menuAcik]);
 
-  const okunduIsaretle = async (kayit_turu: string) => {
-    try {
-      await fetch("/bildirimler/api", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kayit_turu }),
-      });
-      setBadge(prev => ({ ...prev, [kayit_turu]: 0 }));
-    } catch {}
-  };
-
   const raporaGit = () => {
     if (isIU) return;
     if (tuketiciRoller.includes(rolKucu)) router.push("/raporlar/utt");
     else if (rolKucu === "bm") router.push("/raporlar/bm");
     else if (rolKucu === "tm") router.push("/raporlar/tm");
-    else if (isPM) router.push("/raporlar/pm");
+    else if (isUretici) router.push("/raporlar/uretici");
     else router.push("/raporlar/yonetici");
   };
 
@@ -85,7 +86,6 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
       || (key === "raporlar" && pathname.startsWith("/raporlar"))
       || (key === "analiz" && pathname.startsWith("/analiz"))
       || (key === "challenge-club" && pathname.startsWith("/challenge-club"));
-
     const base = "relative inline-flex items-center justify-center px-3 md:px-4 py-1 rounded-full border-none cursor-pointer text-xs md:text-sm font-medium transition-all duration-200 whitespace-nowrap";
     return `${base} ${aktif ? "font-semibold" : ""}`;
   };
@@ -156,14 +156,11 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
 
   return (
     <>
-      {/* Ana Navbar */}
       <nav
         className="sticky top-0 z-50 border-b border-gray-200 px-3 py-2 md:px-6 md:py-2.5"
         style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderBottomColor: "#e5e7eb" }}
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-
-          {/* Sol: Logo + pill'ler */}
           <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
             <img
               src="/logo.png"
@@ -171,29 +168,27 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
               className="h-10 md:h-14 lg:h-20 cursor-pointer mr-2 flex-shrink-0"
               onClick={() => router.push("/")}
             />
-
-            {/* Pill'ler — sadece tablet/desktop */}
             <div className="hidden md:flex items-center gap-1.5 flex-wrap">
               <button onClick={() => router.push("/ana-sayfa")} onMouseEnter={() => setHover("ana-sayfa")} onMouseLeave={() => setHover(null)} className={pillClass("ana-sayfa", "/ana-sayfa")} style={pillStyle("ana-sayfa", "/ana-sayfa")}>Ana Sayfa</button>
 
-              {ureticiRoller.includes(rolKucu) && (
+              {uretimHattiGorur && (
                 <>
-                  <button onClick={() => { router.push("/talepler"); okunduIsaretle("talep"); }} onMouseEnter={() => setHover("talepler")} onMouseLeave={() => setHover(null)} className={pillClass("talepler", "/talepler")} style={pillStyle("talepler", "/talepler")}>
+                  <button onClick={() => router.push("/talepler")} onMouseEnter={() => setHover("talepler")} onMouseLeave={() => setHover(null)} className={pillClass("talepler", "/talepler")} style={pillStyle("talepler", "/talepler")}>
                     Talepler<Badge sayi={badge["talep"] ?? 0} />
                   </button>
-                  <button onClick={() => { router.push("/senaryolar"); okunduIsaretle("senaryo"); }} onMouseEnter={() => setHover("senaryolar")} onMouseLeave={() => setHover(null)} className={pillClass("senaryolar", "/senaryolar")} style={pillStyle("senaryolar", "/senaryolar")}>
+                  <button onClick={() => router.push("/senaryolar")} onMouseEnter={() => setHover("senaryolar")} onMouseLeave={() => setHover(null)} className={pillClass("senaryolar", "/senaryolar")} style={pillStyle("senaryolar", "/senaryolar")}>
                     Senaryolar<Badge sayi={badge["senaryo"] ?? 0} />
                   </button>
-                  <button onClick={() => { router.push("/videolar"); okunduIsaretle("video"); }} onMouseEnter={() => setHover("videolar")} onMouseLeave={() => setHover(null)} className={pillClass("videolar", "/videolar")} style={pillStyle("videolar", "/videolar")}>
+                  <button onClick={() => router.push("/videolar")} onMouseEnter={() => setHover("videolar")} onMouseLeave={() => setHover(null)} className={pillClass("videolar", "/videolar")} style={pillStyle("videolar", "/videolar")}>
                     Videolar<Badge sayi={badge["video"] ?? 0} />
                   </button>
-                  <button onClick={() => { router.push("/soru-setleri"); okunduIsaretle("soru_seti"); }} onMouseEnter={() => setHover("soru-setleri")} onMouseLeave={() => setHover(null)} className={pillClass("soru-setleri", "/soru-setleri")} style={pillStyle("soru-setleri", "/soru-setleri")}>
+                  <button onClick={() => router.push("/soru-setleri")} onMouseEnter={() => setHover("soru-setleri")} onMouseLeave={() => setHover(null)} className={pillClass("soru-setleri", "/soru-setleri")} style={pillStyle("soru-setleri", "/soru-setleri")}>
                     Soru Setleri<Badge sayi={badge["soru_seti"] ?? 0} />
                   </button>
                 </>
               )}
 
-              {isPM && (
+              {isUretici && (
                 <button onClick={() => router.push("/yayin-yonetimi")} onMouseEnter={() => setHover("yayin-yonetimi")} onMouseLeave={() => setHover(null)} className={pillClass("yayin-yonetimi", "/yayin-yonetimi")} style={pillStyle("yayin-yonetimi", "/yayin-yonetimi")}>Yayın Yönetimi</button>
               )}
 
@@ -202,14 +197,9 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
               )}
 
               {tuketiciRoller.includes(rolKucu) && (
-                <>
-                  <button onClick={() => { router.push("/izle"); okunduIsaretle("yayin"); }} onMouseEnter={() => setHover("izle")} onMouseLeave={() => setHover(null)} className={pillClass("izle", "/izle")} style={pillStyle("izle", "/izle")}>
-                    Videolar<Badge sayi={badge["yayin"] ?? 0} />
-                  </button>
-                  <button onClick={() => { router.push("/oneriler"); okunduIsaretle("oneri"); }} onMouseEnter={() => setHover("oneriler-utt")} onMouseLeave={() => setHover(null)} className={pillClass("oneriler-utt", "/oneriler")} style={pillStyle("oneriler-utt", "/oneriler")}>
-                    Öneriler<Badge sayi={badge["oneri"] ?? 0} />
-                  </button>
-                </>
+                <button onClick={() => router.push("/oneriler")} onMouseEnter={() => setHover("oneriler-utt")} onMouseLeave={() => setHover(null)} className={pillClass("oneriler-utt", "/oneriler")} style={pillStyle("oneriler-utt", "/oneriler")}>
+                  Öneriler<Badge sayi={badge["oneri"] ?? 0} />
+                </button>
               )}
 
               {!isIU && (
@@ -231,10 +221,7 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
             </div>
           </div>
 
-          {/* Sağ: Kullanıcı bilgisi + çıkış (tablet/desktop) + hamburger (mobile) */}
           <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
-
-            {/* Tablet/desktop: ad + avatar + çıkış */}
             <div className="hidden md:flex items-center gap-3">
               {kullaniciAd && <span className="text-xs font-semibold text-gray-700">{kullaniciAd}</span>}
               <div
@@ -258,7 +245,6 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
               </button>
             </div>
 
-            {/* Mobile: avatar + hamburger */}
             <div className="flex md:hidden items-center gap-2">
               <div
                 onClick={() => router.push("/profil")}
@@ -276,12 +262,10 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
                 <span className="block w-4 bg-gray-700" style={{ height: "1.5px" }} />
               </button>
             </div>
-
           </div>
         </div>
       </nav>
 
-      {/* Hamburger dropdown — sadece mobile */}
       {menuAcik && (
         <div
           onClick={e => e.stopPropagation()}
@@ -290,7 +274,7 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
         >
           <MenuItem label="Ana Sayfa" path="/ana-sayfa" />
 
-          {ureticiRoller.includes(rolKucu) && (
+          {uretimHattiGorur && (
             <>
               <MenuItem label="Talepler" path="/talepler" badgeSayi={badge["talep"]} />
               <MenuItem label="Senaryolar" path="/senaryolar" badgeSayi={badge["senaryo"]} />
@@ -299,14 +283,11 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
             </>
           )}
 
-          {isPM && <MenuItem label="Yayın Yönetimi" path="/yayin-yonetimi" />}
+          {isUretici && <MenuItem label="Yayın Yönetimi" path="/yayin-yonetimi" />}
           {yonlendiriciRoller.includes(rolKucu) && <MenuItem label="Öneriler" path="/oneriler" />}
 
           {tuketiciRoller.includes(rolKucu) && (
-            <>
-              <MenuItem label="Videolar" path="/izle" badgeSayi={badge["yayin"]} />
-              <MenuItem label="Öneriler" path="/oneriler" badgeSayi={badge["oneri"]} />
-            </>
+            <MenuItem label="Öneriler" path="/oneriler" badgeSayi={badge["oneri"]} />
           )}
 
           {!isIU && <MenuItem label="Raporlar" onClick={raporaGit} />}
@@ -325,7 +306,6 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
         </div>
       )}
 
-      {/* Alt navigasyon — sadece mobile UTT/KD_UTT */}
       {tuketiciRoller.includes(rolKucu) && (
         <div
           className="fixed bottom-0 left-0 right-0 z-50 flex justify-around pb-3 pt-2 md:hidden"
@@ -333,7 +313,6 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
         >
           {[
             { label: "Ana", path: "/ana-sayfa", badge: 0 },
-            { label: "Video", path: "/izle", badge: badge["yayin"] ?? 0 },
             { label: "Öneri", path: "/oneriler", badge: badge["oneri"] ?? 0 },
             { label: "Profil", path: "/profil", badge: 0 },
           ].map(item => {

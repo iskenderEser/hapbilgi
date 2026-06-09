@@ -1,14 +1,16 @@
 // app/izle/api/sorular/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 
 export async function GET(request: NextRequest) {
   try {
-    const adminSupabase = createAdminClient();
+    const supabase = await createClient();
 
-    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
+
+    const adminSupabase = createAdminClient();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
     if (!["utt", "kd_utt"].includes(rol)) return rolHatasi("Sadece utt ve kd_utt soruları görebilir.");
@@ -61,10 +63,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Randomize soru seç
-    const karisik = [...yayin.sorular].sort(() => Math.random() - 0.5);
-    const secilenSorular = karisik.slice(0, videoBasiSoruSayisi).map((s: any, i: number) => ({
-      soru_index: i,
+    // Orijinal index'i koru, SONRA karıştır — cevap doğrulaması sette doğru soruyu bulsun.
+    // soru_index artık sette gerçek konumu işaret eder; doğru cevap (dogru) yine gizli kalır.
+    const indeksli = (yayin.sorular as any[]).map((s: any, orijinalIndex: number) => ({ ...s, orijinalIndex }));
+    const karisik = indeksli.sort(() => Math.random() - 0.5);
+    const secilenSorular = karisik.slice(0, videoBasiSoruSayisi).map((s: any) => ({
+      soru_index: s.orijinalIndex,
       soru_metni: s.soru_metni,
       secenekler: s.secenekler.map((se: any) => ({
         harf: se.harf,

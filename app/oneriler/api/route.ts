@@ -1,14 +1,15 @@
 // app/oneriler/api/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { bildirimOlustur } from "@/lib/utils/bildirimOlustur";
 
 export async function GET(request: NextRequest) {
   try {
+    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
@@ -113,9 +114,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
@@ -147,6 +149,9 @@ export async function POST(request: NextRequest) {
       return isKuraluHatasi(`Bu hafta ${haftaOneriSayisi} öneri gönderildi. Haftada maksimum 5 öneri gönderilebilir. ${5 - (haftaOneriSayisi ?? 0)} öneri hakkınız kaldı.`);
     }
 
+    // Bugünün tarih string'i (YYYY-MM-DD)
+    const bugunStr = new Date().toISOString().slice(0, 10);
+
     const kaydedilenler = [];
     for (const oneri of oneriler) {
       const { yayin_id, kullanici_id, oneri_baslangic, oneri_bitis } = oneri;
@@ -154,6 +159,21 @@ export async function POST(request: NextRequest) {
       if (!yayin_id || !kullanici_id || !oneri_baslangic || !oneri_bitis) {
         return validasyonHatasi("Her öneri için yayin_id, kullanici_id, oneri_baslangic ve oneri_bitis zorunludur.", ["yayin_id", "kullanici_id", "oneri_baslangic", "oneri_bitis"]);
       }
+
+      // Tarih kuralları: gün string formatında olmalı (YYYY-MM-DD)
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(oneri_baslangic) || !/^\d{4}-\d{2}-\d{2}$/.test(oneri_bitis)) {
+        return validasyonHatasi("oneri_baslangic ve oneri_bitis YYYY-MM-DD formatında olmalıdır.", ["oneri_baslangic", "oneri_bitis"]);
+      }
+      if (oneri_baslangic <= bugunStr) {
+        return isKuraluHatasi("Öneri en erken yarın başlayabilir. Aynı gün veya geçmiş tarihe öneri gönderilemez.");
+      }
+      if (oneri_baslangic >= oneri_bitis) {
+        return isKuraluHatasi("Bitiş günü başlangıçtan en az 1 gün sonra olmalıdır. Aynı gün başlayıp aynı gün biten öneri olmaz.");
+      }
+
+      // Saat suffix'lerini ekle: 07:00 başlangıç, 20:30 bitiş (Türkiye saati)
+      const baslangicTimestamp = `${oneri_baslangic}T07:00:00+03:00`;
+      const bitisTimestamp = `${oneri_bitis}T20:30:00+03:00`;
 
       const { data: yayin, error: yayinError } = await adminSupabase
         .from("v_yayin_detay")
@@ -172,8 +192,8 @@ export async function POST(request: NextRequest) {
           yayin_id,
           oneren_id: user.id,
           kullanici_id,
-          oneri_baslangic,
-          oneri_bitis,
+          oneri_baslangic: baslangicTimestamp,
+          oneri_bitis: bitisTimestamp,
           izlendi_mi: false,
         })
         .select("oneri_id, yayin_id, kullanici_id, oneri_baslangic, oneri_bitis")

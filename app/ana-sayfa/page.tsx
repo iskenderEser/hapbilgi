@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
-import PmAnaSayfa from "@/components/ana-sayfa/PmAnaSayfa";
+import UreticiAnaSayfa from "@/components/ana-sayfa/UreticiAnaSayfa";
 import IuAnaSayfa from "@/components/ana-sayfa/IuAnaSayfa";
 import UttAnaSayfa from "@/components/ana-sayfa/UttAnaSayfa";
 import BmAnaSayfa from "@/components/ana-sayfa/BmAnaSayfa";
@@ -24,7 +24,7 @@ const ROLE_MAP: Record<string, (k: AuthKullanici) => React.ReactNode> = {
 };
 
 URETICI_ROLLER.forEach(r => {
-  ROLE_MAP[r] = (k) => <PmAnaSayfa user={k} rol={k.rol} adSoyad={k.adSoyad} />;
+  ROLE_MAP[r] = (k) => <UreticiAnaSayfa user={k} rol={k.rol} adSoyad={k.adSoyad} />;
 });
 
 YONETICI_ROLLER.forEach(r => {

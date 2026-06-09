@@ -2,7 +2,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
@@ -43,6 +43,14 @@ interface Kullanici {
   rol: string;
 }
 
+type DurumTipi = "izlendi" | "bekliyor" | "sureSiGecti";
+
+const DURUM_BILGI: Record<DurumTipi, { etiket: string; renk: string; bg: string; border: string }> = {
+  izlendi:     { etiket: "İzlendi",      renk: "#56aeff", bg: "#e6f1fb", border: "#56aeff" },
+  bekliyor:    { etiket: "Bekliyor",     renk: "#737373", bg: "#f9fafb", border: "#e5e7eb" },
+  sureSiGecti: { etiket: "Süresi Geçti", renk: "#bc2d0d", bg: "#fce8e3", border: "#bc2d0d" },
+};
+
 export default function OnerilerPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -57,6 +65,14 @@ export default function OnerilerPage() {
   const [oneriBaslangic, setOneriBaslangic] = useState("");
   const [oneriBitis, setOneriBitis] = useState("");
   const { mesajlar, hata, basari } = useHataMesaji();
+
+  // BM/TM tablo filtreleri ve sıralama
+  const [filtreUTT, setFiltreUTT] = useState<string>("");
+  const [filtreUrun, setFiltreUrun] = useState<string>("");
+  const [filtreTeknik, setFiltreTeknik] = useState<string>("");
+  const [filtreDurum, setFiltreDurum] = useState<"" | DurumTipi>("");
+  const [sortKey, setSortKey] = useState<"baslangic" | "bitis" | null>(null);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   const handleBegeni = async (e: React.MouseEvent, yayin_id: string) => {
     e.stopPropagation();
@@ -91,7 +107,6 @@ export default function OnerilerPage() {
 
   const veriCek = useCallback(async () => {
     setLoading(true);
-    const supabase = createClient();
     const res = await fetch("/oneriler/api");
     const data = await res.json();
     if (!res.ok) { hata(data.hata ?? "Öneriler yüklenemedi.", data.adim, data.detay); }
@@ -104,11 +119,10 @@ export default function OnerilerPage() {
       if (!yRes.ok) { hata(yData.hata ?? "Yayınlar yüklenemedi.", yData.adim, yData.detay); }
       else { setYayinlar(yData.videolar ?? []); }
 
-      const { data: kullanicilarData, error: kError } = await supabase
-        .from("kullanicilar").select("kullanici_id, ad, soyad, rol")
-        .in("rol", ["utt", "kd_utt"]).eq("aktif_mi", true).order("ad", { ascending: true });
-      if (kError) { hata("Kullanıcılar yüklenemedi.", "kullanicilar tablosu SELECT", kError.message); }
-      else { setKullanicilar(kullanicilarData ?? []); }
+      const kRes = await fetch(`/kullanicilar/api?kapsamim=true&rol=utt,kd_utt`);
+      const kData = await kRes.json();
+      if (!kRes.ok) { hata(kData.hata ?? "Kullanıcılar yüklenemedi.", kData.adim, kData.detay); }
+      else { setKullanicilar(kData.kullanicilar ?? []); }
     }
     setLoading(false);
   }, [user?.user_metadata?.rol]);
@@ -124,16 +138,77 @@ export default function OnerilerPage() {
     return date.toLocaleDateString("tr-TR", { day: "2-digit", month: "short" });
   };
 
+  const formatTarihTablo = (tarih: string) => {
+    const date = new Date(tarih);
+    if (isNaN(date.getTime())) return "-";
+    return date.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  };
+
   const rolKucu = rol.toLowerCase();
   const isBMTM = ["tm", "bm"].includes(rolKucu);
   const isUTT = ["utt", "kd_utt"].includes(rolKucu);
 
   const sureciGectiMi = (bitis: string) => new Date(bitis) < new Date();
+  const henuzBaslamadiMi = (baslangic: string) => new Date(baslangic) > new Date();
 
   const kartDurumu = (o: Oneri): { renk: string; etiket: string; soluk: boolean } => {
     if (o.izlendi_mi) return { renk: "#56aeff", etiket: "İzlendi", soluk: false };
     if (sureciGectiMi(o.oneri_bitis)) return { renk: "#bc2d0d", etiket: "Süresi Geçti", soluk: true };
+    if (henuzBaslamadiMi(o.oneri_baslangic)) return { renk: "#f59e0b", etiket: `${formatTarihKisa(o.oneri_baslangic)}'da izleyebilirsiniz`, soluk: true };
     return { renk: "#737373", etiket: "İzlenecek", soluk: false };
+  };
+
+  // BM/TM tablo için durum tipi (3 değer)
+  const durumTipi = (o: Oneri): DurumTipi => {
+    if (o.izlendi_mi) return "izlendi";
+    if (sureciGectiMi(o.oneri_bitis)) return "sureSiGecti";
+    return "bekliyor";
+  };
+
+  // Benzersiz değerler (dropdown seçenekleri)
+  const benzersizUTTler = useMemo(
+    () => Array.from(new Set(oneriler.map(o => o.kullanici_adi))).filter(Boolean).sort(),
+    [oneriler]
+  );
+  const benzersizUrunler = useMemo(
+    () => Array.from(new Set(oneriler.map(o => o.urun_adi))).filter(Boolean).sort(),
+    [oneriler]
+  );
+  const benzersizTeknikler = useMemo(
+    () => Array.from(new Set(oneriler.map(o => o.teknik_adi))).filter(Boolean).sort(),
+    [oneriler]
+  );
+
+  // Filtreli ve sıralı liste
+  const filtreliSiraliOneriler = useMemo(() => {
+    let result = oneriler;
+    if (filtreUTT) result = result.filter(o => o.kullanici_adi === filtreUTT);
+    if (filtreUrun) result = result.filter(o => o.urun_adi === filtreUrun);
+    if (filtreTeknik) result = result.filter(o => o.teknik_adi === filtreTeknik);
+    if (filtreDurum) result = result.filter(o => durumTipi(o) === filtreDurum);
+    if (sortKey) {
+      result = [...result].sort((a, b) => {
+        const aVal = sortKey === "baslangic" ? a.oneri_baslangic : a.oneri_bitis;
+        const bVal = sortKey === "baslangic" ? b.oneri_baslangic : b.oneri_bitis;
+        const cmp = new Date(aVal).getTime() - new Date(bVal).getTime();
+        return sortOrder === "asc" ? cmp : -cmp;
+      });
+    }
+    return result;
+  }, [oneriler, filtreUTT, filtreUrun, filtreTeknik, filtreDurum, sortKey, sortOrder]);
+
+  const toggleSort = (key: "baslangic" | "bitis") => {
+    if (sortKey === key) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortOrder("desc");
+    }
+  };
+
+  const sortIcon = (key: "baslangic" | "bitis") => {
+    if (sortKey !== key) return " ↕";
+    return sortOrder === "asc" ? " ↑" : " ↓";
   };
 
   const handleYayinSec = (yayin_id: string) => {
@@ -146,8 +221,13 @@ export default function OnerilerPage() {
 
   const handleBaslangicDegis = (deger: string) => {
     setOneriBaslangic(deger);
-    if (oneriBitis && deger > oneriBitis) setOneriBitis("");
+    if (oneriBitis && deger >= oneriBitis) setOneriBitis("");
   };
+
+  const yarinStr = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const bitisMinStr = oneriBaslangic 
+    ? new Date(new Date(oneriBaslangic).getTime() + 86400000).toISOString().slice(0, 10) 
+    : "";
 
   const handleOneriGonder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,9 +235,10 @@ export default function OnerilerPage() {
     setGonderLoading(true);
 
     const onerilerListesi = secilenYayinlar.map(yayin_id => ({
-      yayin_id, kullanici_id: secilenKullanici,
-      oneri_baslangic: new Date(oneriBaslangic).toISOString(),
-      oneri_bitis: new Date(oneriBitis).toISOString(),
+      yayin_id, 
+      kullanici_id: secilenKullanici,
+      oneri_baslangic: oneriBaslangic,
+      oneri_bitis: oneriBitis,
     }));
 
     const res = await fetch("/oneriler/api", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oneriler: onerilerListesi }) });
@@ -209,15 +290,17 @@ export default function OnerilerPage() {
 
               <div className="flex flex-col md:flex-row gap-3">
                 <div className="flex-1">
-                  <label className="text-xs text-gray-500 block mb-1">İzlenme Başlangıcı</label>
-                  <input type="datetime-local" value={oneriBaslangic} onChange={(e) => handleBaslangicDegis(e.target.value)} required
-                    min={new Date().toISOString().slice(0, 16)}
+                  <label className="text-xs text-gray-500 block mb-1">İzlenme Başlangıç Günü</label>
+                  <input type="date" value={oneriBaslangic} onChange={(e) => handleBaslangicDegis(e.target.value)} required
+                    min={yarinStr}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                     style={{ fontFamily: "'Nunito', sans-serif" }} />
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs text-gray-500 block mb-1">İzlenme Bitişi</label>
-                  <input type="datetime-local" value={oneriBitis} onChange={(e) => setOneriBitis(e.target.value)} required min={oneriBaslangic}
+                  <label className="text-xs text-gray-500 block mb-1">İzlenme Bitiş Günü</label>
+                  <input type="date" value={oneriBitis} onChange={(e) => setOneriBitis(e.target.value)} required 
+                    min={bitisMinStr}
+                    disabled={!oneriBaslangic}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                     style={{ fontFamily: "'Nunito', sans-serif" }} />
                 </div>
@@ -266,36 +349,121 @@ export default function OnerilerPage() {
           </div>
         )}
 
-        {/* BM/TM — Gönderilen Öneriler Listesi */}
+        {/* BM/TM — Gönderilen Öneriler Tablosu */}
         {isBMTM && (
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div className="px-4 md:px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
               <span className="text-sm font-semibold text-gray-900">Gönderilen Öneriler</span>
-              <span className="text-xs text-gray-500">{oneriler.length} kayıt</span>
+              <span className="text-xs text-gray-500">
+                {filtreliSiraliOneriler.length}{filtreliSiraliOneriler.length !== oneriler.length ? ` / ${oneriler.length}` : ""} kayıt
+              </span>
             </div>
+
             {oneriler.length === 0 ? (
               <div className="p-10 text-center text-sm text-gray-400">Henüz öneri gönderilmedi.</div>
             ) : (
-              <div className="flex flex-col">
-                {oneriler.map((o) => (
-                  <div key={o.oneri_id} className="flex items-center gap-3 px-4 md:px-5 py-3 border-b border-gray-50">
-                    <div className="w-14 h-8 rounded flex-shrink-0 overflow-hidden bg-gray-200">
-                      {o.thumbnail_url ? <img src={o.thumbnail_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full" style={{ background: "#b5d4f4" }} />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-semibold text-gray-900 truncate">{o.urun_adi}</div>
-                      <div className="text-xs text-gray-500">{o.teknik_adi}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">{o.kullanici_adi}</div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                      <span className="text-xs px-2 py-0.5 rounded-full"
-                        style={{ background: o.izlendi_mi ? "#e6f1fb" : "#f9fafb", color: o.izlendi_mi ? "#56aeff" : "#737373", border: `0.5px solid ${o.izlendi_mi ? "#56aeff" : "#e5e7eb"}` }}>
-                        {o.izlendi_mi ? "İzlendi" : "Bekliyor"}
-                      </span>
-                      <span className="text-xs text-gray-400">{formatTarih(o.oneri_bitis)}'e kadar</span>
-                    </div>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs" style={{ fontFamily: "'Nunito', sans-serif" }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid #e5e7eb", background: "#f9fafb" }}>
+                      <th className="text-left px-3 py-2.5 font-semibold text-gray-600 whitespace-nowrap">Önerilen Video</th>
+                      <th className="text-left px-3 py-2.5 font-semibold text-gray-600 whitespace-nowrap">
+                        <select
+                          value={filtreUTT}
+                          onChange={(e) => setFiltreUTT(e.target.value)}
+                          className="bg-transparent border-none font-semibold text-gray-600 cursor-pointer outline-none"
+                          style={{ fontFamily: "'Nunito', sans-serif", fontSize: "inherit" }}
+                        >
+                          <option value="">Önerilen UTT/KD_UTT</option>
+                          {benzersizUTTler.map(u => <option key={u} value={u}>{u}</option>)}
+                        </select>
+                      </th>
+                      <th className="text-left px-3 py-2.5 font-semibold text-gray-600 whitespace-nowrap">
+                        <select
+                          value={filtreUrun}
+                          onChange={(e) => setFiltreUrun(e.target.value)}
+                          className="bg-transparent border-none font-semibold text-gray-600 cursor-pointer outline-none"
+                          style={{ fontFamily: "'Nunito', sans-serif", fontSize: "inherit" }}
+                        >
+                          <option value="">Ürün</option>
+                          {benzersizUrunler.map(u => <option key={u} value={u}>{u}</option>)}
+                        </select>
+                      </th>
+                      <th className="text-left px-3 py-2.5 font-semibold text-gray-600 whitespace-nowrap">
+                        <select
+                          value={filtreTeknik}
+                          onChange={(e) => setFiltreTeknik(e.target.value)}
+                          className="bg-transparent border-none font-semibold text-gray-600 cursor-pointer outline-none"
+                          style={{ fontFamily: "'Nunito', sans-serif", fontSize: "inherit" }}
+                        >
+                          <option value="">Teknik</option>
+                          {benzersizTeknikler.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </th>
+                      <th
+                        className="text-left px-3 py-2.5 font-semibold text-gray-600 whitespace-nowrap cursor-pointer select-none"
+                        onClick={() => toggleSort("baslangic")}
+                      >
+                        Başlangıç{sortIcon("baslangic")}
+                      </th>
+                      <th
+                        className="text-left px-3 py-2.5 font-semibold text-gray-600 whitespace-nowrap cursor-pointer select-none"
+                        onClick={() => toggleSort("bitis")}
+                      >
+                        Bitiş{sortIcon("bitis")}
+                      </th>
+                      <th className="text-left px-3 py-2.5 font-semibold text-gray-600 whitespace-nowrap">
+                        <select
+                          value={filtreDurum}
+                          onChange={(e) => setFiltreDurum(e.target.value as "" | DurumTipi)}
+                          className="bg-transparent border-none font-semibold text-gray-600 cursor-pointer outline-none"
+                          style={{ fontFamily: "'Nunito', sans-serif", fontSize: "inherit" }}
+                        >
+                          <option value="">Durum</option>
+                          <option value="izlendi">İzlendi</option>
+                          <option value="bekliyor">Bekliyor</option>
+                          <option value="sureSiGecti">Süresi Geçti</option>
+                        </select>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtreliSiraliOneriler.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="p-10 text-center text-sm text-gray-400">
+                          Filtre ile eşleşen öneri bulunamadı.
+                        </td>
+                      </tr>
+                    ) : (
+                      filtreliSiraliOneriler.map((o) => {
+                        const dt = durumTipi(o);
+                        const dbi = DURUM_BILGI[dt];
+                        return (
+                          <tr key={o.oneri_id} style={{ borderBottom: "1px solid #f3f4f6" }} className="hover:bg-gray-50">
+                            <td className="px-3 py-2.5 whitespace-nowrap">
+                              <div className="w-14 h-8 rounded overflow-hidden bg-gray-200">
+                                {o.thumbnail_url ? <img src={o.thumbnail_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full" style={{ background: "#b5d4f4" }} />}
+                              </div>
+                            </td>
+                            <td className="px-3 py-2.5 text-gray-900 whitespace-nowrap">{o.kullanici_adi}</td>
+                            <td className="px-3 py-2.5 text-gray-900 whitespace-nowrap">{o.urun_adi}</td>
+                            <td className="px-3 py-2.5 text-gray-500 whitespace-nowrap">{o.teknik_adi}</td>
+                            <td className="px-3 py-2.5 text-gray-500 whitespace-nowrap">{formatTarihTablo(o.oneri_baslangic)}</td>
+                            <td className="px-3 py-2.5 text-gray-500 whitespace-nowrap">{formatTarihTablo(o.oneri_bitis)}</td>
+                            <td className="px-3 py-2.5 whitespace-nowrap">
+                              <span
+                                className="text-xs px-2 py-0.5 rounded-full"
+                                style={{ background: dbi.bg, color: dbi.renk, border: `0.5px solid ${dbi.border}` }}
+                              >
+                                {dbi.etiket}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
@@ -321,7 +489,7 @@ export default function OnerilerPage() {
                     <div key={o.oneri_id}
                       className="bg-white rounded-xl overflow-hidden transition-shadow duration-150"
                       style={{ border: `1.5px solid ${renk}`, opacity: soluk ? 0.6 : 1, cursor: soluk ? "default" : "pointer" }}
-                      onClick={() => { if (!soluk) router.push(`/izle/${o.yayin_id}`); }}
+                      onClick={() => { if (!soluk) router.push(`/ana-sayfa?yayin_id=${o.yayin_id}&oneri_id=${o.oneri_id}`); }}
                       onMouseEnter={e => { if (!soluk) (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 16px rgba(0,0,0,0.08)"; }}
                       onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.boxShadow = "none"}>
 
@@ -359,7 +527,7 @@ export default function OnerilerPage() {
                           <div className="text-xs text-gray-500 truncate">
                             <span className="text-gray-400">Öneren:</span> {o.kullanici_adi}
                           </div>
-                          <div className="text-xs text-gray-400 flex-shrink-0">{formatTarihKisa(o.oneri_bitis)}'e kadar</div>
+                          <div className="text-xs flex-shrink-0" style={{ color: "#bc2d0d" }}>{formatTarihKisa(o.oneri_bitis)}'e kadar</div>
                         </div>
                         <div className="flex items-center justify-between mt-0.5">
                           {o.video_puani != null ? (

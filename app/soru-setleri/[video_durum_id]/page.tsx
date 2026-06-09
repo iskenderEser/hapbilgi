@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
-import { PM_ROLLERI } from "@/lib/utils/roller";
+import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { User } from "@supabase/supabase-js";
 
 interface Soru {
@@ -31,6 +31,8 @@ interface VideoDurumJoin {
     senaryo_durumu: {
       senaryolar: {
         talepler: {
+          soru_seti_buyuklugu: number;
+          video_basi_soru_sayisi: number;
           urunler: { urun_adi: string } | null;
           teknikler: { teknik_adi: string } | null;
         } | null;
@@ -49,6 +51,8 @@ export default function SoruSetiAkisPage() {
   const [soruSetleri, setSoruSetleri] = useState<SoruSeti[]>([]);
   const [urunAdi, setUrunAdi] = useState("");
   const [teknikAdi, setTeknikAdi] = useState("");
+  const [soruSetiBuyuklugu, setSoruSetiBuyuklugu] = useState<number>(25);
+  const [videoBasiSoruSayisi, setVideoBasiSoruSayisi] = useState<number>(2);
   const [loading, setLoading] = useState(true);
   const [gonderLoading, setGonderLoading] = useState(false);
   const [yapisTir, setYapisTir] = useState("");
@@ -83,6 +87,8 @@ export default function SoruSetiAkisPage() {
           senaryo_durumu!inner (
             senaryolar!inner (
               talepler!inner (
+                soru_seti_buyuklugu,
+                video_basi_soru_sayisi,
                 urunler (urun_adi),
                 teknikler (teknik_adi)
               )
@@ -99,6 +105,8 @@ export default function SoruSetiAkisPage() {
     const talep = typedData.videolar?.senaryo_durumu?.senaryolar?.talepler;
     setUrunAdi(talep?.urunler?.urun_adi ?? "-");
     setTeknikAdi(talep?.teknikler?.teknik_adi ?? "-");
+    setSoruSetiBuyuklugu(talep?.soru_seti_buyuklugu ?? 25);
+    setVideoBasiSoruSayisi(talep?.video_basi_soru_sayisi ?? 2);
   }, []);
 
   const fetchSoruSetleri = useCallback(async (supabase: any, video_durum_id: string) => {
@@ -147,11 +155,37 @@ export default function SoruSetiAkisPage() {
 
   useEffect(() => { if (user && video_durum_id) veriCek(); }, [user, video_durum_id, veriCek]);
 
+  // Mevcut soruları, parse edilebilir metin formatına çevirir (revizyonda textarea'ya yüklemek için)
+  const sorulariMetneFormatla = (sorular: Soru[]): string => {
+    return sorular
+      .map((soru, i) => {
+        const dogruHarf = soru.secenekler.find(s => s.dogru)?.harf ?? "A";
+        const seceneklerMetni = soru.secenekler
+          .map(s => `${s.harf}) ${s.metin}`)
+          .join("\n");
+        return `${i + 1}. ${soru.soru_metni}\n${seceneklerMetni}\nDoğru: ${dogruHarf}`;
+      })
+      .join("\n\n");
+  };
+
+  // Revizyon talebi gelen soru setinin soruları textarea'ya düzenlenebilir halde yüklenir
+  useEffect(() => {
+    const sonSet = soruSetleri[soruSetleri.length - 1];
+    if (
+      rol.toLowerCase() === "iu" &&
+      sonSet?.son_durum === "Revizyon Bekleniyor" &&
+      sonSet.sorular?.length > 0 &&
+      !yapisTir
+    ) {
+      setYapisTir(sorulariMetneFormatla(sonSet.sorular));
+    }
+  }, [soruSetleri, rol]);
+
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
   const rolKucu = rol.toLowerCase();
-  const isPM = PM_ROLLERI.includes(rolKucu);
+  const isPM = URETICI_ROLLER.includes(rolKucu);
   const isIU = rolKucu === "iu";
 
   const sonSet = soruSetleri[soruSetleri.length - 1];
@@ -193,8 +227,8 @@ export default function SoruSetiAkisPage() {
       });
     }
 
-    if (sorular.length < 15 || sorular.length > 25) {
-      return { sorular: [], hata: `Soru sayısı 15-25 arasında olmalıdır. Şu an: ${sorular.length}` };
+    if (sorular.length !== soruSetiBuyuklugu) {
+      return { sorular: [], hata: `Soru sayısı tam ${soruSetiBuyuklugu} olmalıdır. Şu an: ${sorular.length}` };
     }
     return { sorular, hata: null };
   };
@@ -213,25 +247,37 @@ export default function SoruSetiAkisPage() {
   const handleIuGonder = async () => {
     if (!onizleme.length || !sonSet) return;
     setGonderLoading(true);
-    
+
     try {
+      // 1. Soruları kaydet (PUT — soru_setleri tablosunu günceller)
       const res = await fetch("/soru-setleri/api", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          soru_seti_id: sonSet.soru_seti_id, 
+        body: JSON.stringify({
+          soru_seti_id: sonSet.soru_seti_id,
           sorular: onizleme,
-          durum: "Inceleme Bekleniyor"
         }),
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.hata ?? "Soru seti kaydedilemedi.");
-      
+
+      // 2. Durumu "Inceleme Bekleniyor" yap (POST — durum kaydı INSERT + PM'e bildirim)
+      const res2 = await fetch("/soru-setleri/api/durum", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          soru_seti_id: sonSet.soru_seti_id,
+          durum: "Inceleme Bekleniyor",
+        }),
+      });
+      const d2 = await res2.json();
+      if (!res2.ok) throw new Error(d2.hata ?? "Durum kaydedilemedi.");
+
       basari("Soru seti PM'e gönderildi.");
       setYapisTir(""); setOnizleme([]);
       await veriCek();
     } catch (err: any) {
-      hata(err.message, "soru seti gönderme", err);
+      hata(err.message, "soru seti gönderme", err.message);
     } finally {
       setGonderLoading(false);
     }
@@ -295,6 +341,18 @@ export default function SoruSetiAkisPage() {
         <div className="bg-white border border-gray-200 rounded-xl px-4 md:px-5 py-4">
           <span className="text-base font-semibold text-gray-900">{urunAdi}</span>
           <span className="text-xs text-gray-500 block mt-1">{teknikAdi}</span>
+          {isIU && (
+            <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100">
+              <span className="text-xs px-2.5 py-1 rounded-full"
+                style={{ background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe" }}>
+                Toplam soru: <strong>{soruSetiBuyuklugu}</strong>
+              </span>
+              <span className="text-xs px-2.5 py-1 rounded-full"
+                style={{ background: "#f0fdf4", color: "#15803d", border: "0.5px solid #bbf7d0" }}>
+                Her videoda: <strong>{videoBasiSoruSayisi}</strong> soru gösterilecek
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
@@ -419,7 +477,7 @@ export default function SoruSetiAkisPage() {
               <textarea
                 value={yapisTir}
                 onChange={(e) => { setYapisTir(e.target.value); setOnizleme([]); setParseHata(""); }}
-                placeholder="Soruları buraya yapıştırın... (15-25 soru, sorular arasında boş satır bırakın)"
+                placeholder={`Soruları buraya yapıştırın... (tam ${soruSetiBuyuklugu} soru, sorular arasında boş satır bırakın)`}
                 rows={12}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-xs text-gray-900 bg-white resize-y mb-2 focus:outline-none focus:border-[#56aeff] transition-colors"
                 style={{ fontFamily: "'Nunito', sans-serif" }}
@@ -452,10 +510,14 @@ export default function SoruSetiAkisPage() {
               <div className="flex gap-2 justify-end">
                 {!onizleme.length ? (
                   <button onClick={handleParse} disabled={!yapisTir.trim()}
-                    className="bg-gray-500 text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer hover:bg-gray-600 transition-colors disabled:opacity-50"
-                    style={{ fontFamily: "'Nunito', sans-serif" }}>
+                    className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer transition-colors disabled:opacity-50"
+                    style={{ 
+                      fontFamily: "'Nunito', sans-serif",
+                      background: yapisTir.trim().split(/\n\s*\n/).filter(b => b.trim()).length === soruSetiBuyuklugu ? "#56aeff" : "#6b7280"
+                    }}>
                     Önizle
                   </button>
+
                 ) : (
                   <button onClick={handleIuGonder} disabled={gonderLoading}
                     className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer hover:opacity-90 transition-colors disabled:opacity-50"

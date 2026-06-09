@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
-import { PM_ROLLERI } from "@/lib/utils/roller";
+import { URETICI_ROLLER } from "@/lib/utils/roller";
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    if (![...PM_ROLLERI, "iu"].includes(rol)) return rolHatasi("Sadece yetkili roller ve IU senaryolara erişebilir.");
+    if (![...URETICI_ROLLER, "iu"].includes(rol)) return rolHatasi("Sadece yetkili roller ve IU senaryolara erişebilir.");
 
     const { searchParams } = new URL(request.url);
     const talep_id = searchParams.get("talep_id");
@@ -23,12 +23,12 @@ export async function GET(request: NextRequest) {
 
     if (talep_id) {
       query = query.eq("talep_id", talep_id);
-    } else if (PM_ROLLERI.includes(rol)) {
+    } else if (URETICI_ROLLER.includes(rol)) {
       const { data: talepler, error: talepError } = await adminSupabase
         .from("talepler")
         .select("talep_id")
-        .eq("pm_id", user.id);
-      if (talepError) return hataYaniti("PM'in talepleri çekilemedi.", "talepler tablosu SELECT — pm_id filtresi", talepError);
+        .eq("uretici_id", user.id);
+      if (talepError) return hataYaniti("PM'in talepleri çekilemedi.", "talepler tablosu SELECT — uretici_id filtresi", talepError);
       const talepIdler = (talepler ?? []).map((t: any) => t.talep_id);
       if (talepIdler.length === 0) return NextResponse.json({ senaryolar: [] }, { status: 200 });
       query = query.in("talep_id", talepIdler);

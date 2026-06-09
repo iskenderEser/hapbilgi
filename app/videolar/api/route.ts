@@ -1,18 +1,19 @@
 // app/videolar/api/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
-import { PM_ROLLERI } from "@/lib/utils/roller";
+import { URETICI_ROLLER } from "@/lib/utils/roller";
 
 export async function GET(request: NextRequest) {
   try {
+    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    if (![...PM_ROLLERI, "iu"].includes(rol)) return rolHatasi("Sadece yetkili roller ve IU videolara erişebilir.");
+    if (![...URETICI_ROLLER, "iu"].includes(rol)) return rolHatasi("Sadece yetkili roller ve IU videolara erişebilir.");
 
     const { searchParams } = new URL(request.url);
     const senaryo_durum_id = searchParams.get("senaryo_durum_id");
@@ -24,14 +25,14 @@ export async function GET(request: NextRequest) {
 
     if (senaryo_durum_id) {
       query = query.eq("senaryo_durum_id", senaryo_durum_id);
-    } else if (PM_ROLLERI.includes(rol)) {
+    } else if (URETICI_ROLLER.includes(rol)) {
       // v_yayin_detay ile PM'in talep zinciri tek sorguda çözüldü
       const { data: yayinlar, error: yayinError } = await adminSupabase
         .from("v_yayin_detay")
         .select("senaryo_durum_id")
-        .eq("pm_id", user.id);
+        .eq("uretici_id", user.id);
 
-      if (yayinError) return hataYaniti("PM'in yayınları çekilemedi.", "v_yayin_detay SELECT — pm_id filtresi", yayinError);
+      if (yayinError) return hataYaniti("PM'in yayınları çekilemedi.", "v_yayin_detay SELECT — uretici_id filtresi", yayinError);
 
       const senaryoDurumIdler = (yayinlar ?? []).map((y: any) => y.senaryo_durum_id).filter(Boolean);
       if (senaryoDurumIdler.length === 0) return NextResponse.json({ videolar: [] }, { status: 200 });
@@ -51,9 +52,10 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const { data: { user }, error: authError } = await adminSupabase.auth.getUser();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();

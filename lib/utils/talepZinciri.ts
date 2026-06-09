@@ -7,11 +7,13 @@ import { SupabaseClient } from "@supabase/supabase-js";
 
 export interface TalepBilgisi {
   talep_id: string;
-  pm_id: string | null;
+  uretici_id: string | null;
   urun_adi: string;
   teknik_adi: string;
   egitim_turu: "urun_egitimi" | "genel_egitim";
   dosya_urls: any[] | null;
+  soru_seti_buyuklugu: number;
+  video_basi_soru_sayisi: number;
 }
 
 // senaryolar tablosundan başla: senaryo_id → talepler
@@ -25,9 +27,11 @@ export async function talepBilgisiSenaryo(
       talep_id,
       talepler (
         talep_id,
-        pm_id,
+        uretici_id,
         egitim_turu,
         dosya_urls,
+        soru_seti_buyuklugu,
+        video_basi_soru_sayisi,
         urunler ( urun_adi ),
         teknikler ( teknik_adi )
       )
@@ -42,11 +46,13 @@ export async function talepBilgisiSenaryo(
 
   return {
     talep_id: talep.talep_id,
-    pm_id: talep.pm_id ?? null,
+    uretici_id: talep.uretici_id ?? null,
     urun_adi: egitimTuru === "genel_egitim" ? "Genel Eğitim" : (talep.urunler?.urun_adi ?? "-"),
     teknik_adi: egitimTuru === "genel_egitim" ? "-" : (talep.teknikler?.teknik_adi ?? "-"),
     egitim_turu: egitimTuru,
     dosya_urls: talep.dosya_urls ?? null,
+    soru_seti_buyuklugu: talep.soru_seti_buyuklugu ?? 25,
+    video_basi_soru_sayisi: talep.video_basi_soru_sayisi ?? 2,
   };
 }
 
@@ -65,9 +71,11 @@ export async function talepBilgisiVideo(
           talep_id,
           talepler (
             talep_id,
-            pm_id,
+            uretici_id,
             egitim_turu,
             dosya_urls,
+            soru_seti_buyuklugu,
+            video_basi_soru_sayisi,
             urunler ( urun_adi ),
             teknikler ( teknik_adi )
           )
@@ -87,11 +95,13 @@ export async function talepBilgisiVideo(
 
   return {
     talep_id: talep.talep_id,
-    pm_id: talep.pm_id ?? null,
+    uretici_id: talep.uretici_id ?? null,
     urun_adi: egitimTuru === "genel_egitim" ? "Genel Eğitim" : (talep.urunler?.urun_adi ?? "-"),
     teknik_adi: egitimTuru === "genel_egitim" ? "-" : (talep.teknikler?.teknik_adi ?? "-"),
     egitim_turu: egitimTuru,
     dosya_urls: talep.dosya_urls ?? null,
+    soru_seti_buyuklugu: talep.soru_seti_buyuklugu ?? 25,
+    video_basi_soru_sayisi: talep.video_basi_soru_sayisi ?? 2,
   };
 }
 
@@ -115,9 +125,11 @@ export async function talepBilgisiSoruSeti(
               talep_id,
               talepler (
                 talep_id,
-                pm_id,
+                uretici_id,
                 egitim_turu,
                 dosya_urls,
+                soru_seti_buyuklugu,
+                video_basi_soru_sayisi,
                 urunler ( urun_adi ),
                 teknikler ( teknik_adi )
               )
@@ -128,7 +140,7 @@ export async function talepBilgisiSoruSeti(
     `)
     .eq("soru_seti_id", soru_seti_id)
     .single();
-
+    
   if (!data?.video_durumu) return null;
 
   const video = (data.video_durumu as any)?.videolar;
@@ -140,10 +152,12 @@ export async function talepBilgisiSoruSeti(
 
   return {
     talep_id: talep.talep_id,
-    pm_id: talep.pm_id ?? null,
+    uretici_id: talep.uretici_id ?? null,
     urun_adi: egitimTuru === "genel_egitim" ? "Genel Eğitim" : (talep.urunler?.urun_adi ?? "-"),
     teknik_adi: egitimTuru === "genel_egitim" ? "-" : (talep.teknikler?.teknik_adi ?? "-"),
     egitim_turu: egitimTuru,
     dosya_urls: talep.dosya_urls ?? null,
+    soru_seti_buyuklugu: talep.soru_seti_buyuklugu ?? 25,
+    video_basi_soru_sayisi: talep.video_basi_soru_sayisi ?? 2,
   };
 }

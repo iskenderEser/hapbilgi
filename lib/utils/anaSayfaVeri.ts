@@ -3,6 +3,7 @@
 // Yeni rol eklenince buraya fonksiyon eklenir, başka dosyaya dokunulmaz.
 
 import { SupabaseClient } from "@supabase/supabase-js";
+import { getBmAktiviteVerisi } from "@/lib/utils/anaSayfa/bmAktivite";
 
 // ─── BM ───────────────────────────────────────────────────────────────────────
 
@@ -94,10 +95,21 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
     .eq("bolge_id", kullanici.bolge_id)
     .single();
 
+  // Hafta başlangıcı (Pazartesi 00:00) — get_kullanici_ozet periyodu için kullanılır
+  const haftaBaslangic = new Date();
+  haftaBaslangic.setDate(haftaBaslangic.getDate() - haftaBaslangic.getDay() + 1);
+  haftaBaslangic.setHours(0, 0, 0, 0);
+
+  // Toplam puan için "geçmişten şimdiye" geniş aralık — tek kaynak prensibine uymak için
+  // get_kullanici_ozet kullanıyoruz (4 kazanım − 3 kayıp = net puan).
+  const cokGecmis = new Date(2000, 0, 1).toISOString();
+  const simdi = new Date().toISOString();
+
   const [
     { data: yayinlar, error: yayinError },
     { data: izlemeler },
-    { data: kazanilanPuanlar },
+    { data: toplamOzet },
+    { data: haftaOzet },
   ] = await Promise.all([
     adminSupabase
       .from("v_yayin_detay")
@@ -109,13 +121,19 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
       .from("izleme_kayitlari")
       .select("yayin_id, tamamlandi_mi")
       .eq("kullanici_id", userId),
-    adminSupabase
-      .from("kazanilan_puanlar")
-      .select("puan, created_at")
-      .eq("kullanici_id", userId),
+    adminSupabase.rpc("get_kullanici_ozet", {
+      p_kullanici_id: userId,
+      p_baslangic: cokGecmis,
+      p_bitis: simdi,
+    }),
+    adminSupabase.rpc("get_kullanici_ozet", {
+      p_kullanici_id: userId,
+      p_baslangic: haftaBaslangic.toISOString(),
+      p_bitis: simdi,
+    }),
   ]);
 
-  if (yayinError) throw new Error("Yayınlar çekilemedi.");
+  if (yayinError) throw new Error("Yayınlar çekilemedi.")
 
   const tamamlananMap: Record<string, boolean> = {};
   const devamEdenMap: Record<string, boolean> = {};
@@ -124,14 +142,9 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
     else devamEdenMap[iz.yayin_id] = true;
   }
 
-  const haftaBaslangic = new Date();
-  haftaBaslangic.setDate(haftaBaslangic.getDate() - haftaBaslangic.getDay() + 1);
-  haftaBaslangic.setHours(0, 0, 0, 0);
-
-  const toplam_puan = (kazanilanPuanlar ?? []).reduce((acc: number, p: any) => acc + (p.puan ?? 0), 0);
-  const hafta_puani = (kazanilanPuanlar ?? [])
-    .filter((p: any) => new Date(p.created_at) >= haftaBaslangic)
-    .reduce((acc: number, p: any) => acc + (p.puan ?? 0), 0);
+  // get_kullanici_ozet TABLE döner; ilk satırın toplam_net_puan'ı net puandır
+  const toplam_puan = (toplamOzet && toplamOzet.length > 0) ? (toplamOzet[0].toplam_net_puan ?? 0) : 0;
+  const hafta_puani = (haftaOzet && haftaOzet.length > 0) ? (haftaOzet[0].toplam_net_puan ?? 0) : 0;
 
   // Yayın bilgileri (extra_puan, ileri_sarma_acik) toplu çek
   const yayinIdler = (yayinlar ?? []).map((y: any) => y.yayin_id);
@@ -224,59 +237,12 @@ export async function getTmAnaSayfaVeri(userId: string, adminSupabase: SupabaseC
     .single();
 
   if (kullaniciError || !kullanici) throw new Error("Kullanıcı bilgisi alınamadı.");
+  if (!kullanici.takim_id) throw new Error("TM bir takıma bağlı değil.");
 
-  const { data: bolgeler } = await adminSupabase
-    .from("bolgeler")
-    .select("bolge_id, bolge_adi")
-    .eq("takim_id", kullanici.takim_id);
-
-  const bolgeMap: Record<string, string> = {};
-  for (const b of bolgeler ?? []) {
-    bolgeMap[b.bolge_id] = b.bolge_adi;
-  }
-
-  const { data: bmler } = await adminSupabase
-    .from("kullanicilar")
-    .select("kullanici_id, ad, soyad, bolge_id")
-    .eq("takim_id", kullanici.takim_id)
-    .eq("rol", "bm")
-    .eq("aktif_mi", true);
-
-  const haftaBaslangic = new Date();
-  haftaBaslangic.setDate(haftaBaslangic.getDate() - haftaBaslangic.getDay() + 1);
-  haftaBaslangic.setHours(0, 0, 0, 0);
-
-  const bmIdler = (bmler ?? []).map((b: any) => b.kullanici_id);
-
-  const { data: tumOneriler } = bmIdler.length > 0
-    ? await adminSupabase
-        .from("oneri_kayitlari")
-        .select("oneri_id, oneren_id, izlendi_mi, created_at")
-        .in("oneren_id", bmIdler)
-    : { data: [] };
-
-  const satirlar = (bmler ?? []).map((bm: any) => {
-    const bmOneriler = (tumOneriler ?? []).filter((o: any) => o.oneren_id === bm.kullanici_id);
-    const haftaOneriler = bmOneriler.filter((o: any) => new Date(o.created_at) >= haftaBaslangic);
-    return {
-      kullanici_id: bm.kullanici_id,
-      bm_adi: `${bm.ad} ${bm.soyad}`,
-      bolge_adi: bolgeMap[bm.bolge_id] ?? "-",
-      hafta_oneri: haftaOneriler.length,
-      bekleyen: bmOneriler.filter((o: any) => !o.izlendi_mi).length,
-      tamamlanan: bmOneriler.filter((o: any) => o.izlendi_mi).length,
-    };
-  });
-
-  return {
-    satirlar,
-    istatistikler: {
-      bm_sayisi: (bmler ?? []).length,
-      hafta_aktif_bm: satirlar.filter(s => s.hafta_oneri > 0).length,
-      toplam_bekleyen: satirlar.reduce((acc, s) => acc + s.bekleyen, 0),
-      toplam_tamamlanan: satirlar.reduce((acc, s) => acc + s.tamamlanan, 0),
-    },
-  };
+  return await getBmAktiviteVerisi(
+    { tip: "takim", takim_id: kullanici.takim_id },
+    adminSupabase,
+  );
 }
 
 // ─── IU ───────────────────────────────────────────────────────────────────────
@@ -316,7 +282,7 @@ export async function getIuAnaSayfaVeri(userId: string, adminSupabase: SupabaseC
   };
 }
 
-// ─── PM / PM_ROLLERI ──────────────────────────────────────────────────────────
+// ─── ÜRETİCİ ROLLERİ ANA SAYFA VERİSİ ──────────────────────────────────────────────────────────
 
 interface TakipSatiri {
   talep_id: string;
@@ -329,11 +295,11 @@ interface TakipSatiri {
   kategori: "inceleme" | "yayin-bekleyen" | "yayinda" | "durdurulan" | "devam";
 }
 
-export async function getPmAnaSayfaVeri(userId: string, adminSupabase: SupabaseClient) {
+export async function getUreticiAnaSayfaVeri(userId: string, adminSupabase: SupabaseClient) {
   const { data: talepler, error: talepError } = await adminSupabase
     .from("talepler")
-    .select(`talep_id, created_at, egitim_turu, urunler(urun_adi), teknikler(teknik_adi)`)
-    .eq("pm_id", userId)
+    .select(`talep_id, created_at, urunler(urun_adi), teknikler(teknik_adi)`)
+    .eq("uretici_id", userId)
     .order("created_at", { ascending: false });
 
   if (talepError) throw new Error("Talepler çekilemedi.");
@@ -344,9 +310,8 @@ export async function getPmAnaSayfaVeri(userId: string, adminSupabase: SupabaseC
   let yayinda = 0;
 
   for (const talep of talepler ?? []) {
-    const egitimTuru = (talep as any).egitim_turu ?? "urun_egitimi";
-    const urun_adi = egitimTuru === "genel_egitim" ? "Genel Eğitim" : ((talep as any).urunler?.urun_adi ?? "-");
-    const teknik_adi = egitimTuru === "genel_egitim" ? "-" : ((talep as any).teknikler?.teknik_adi ?? "-");
+    const urun_adi = (talep as any).urunler?.urun_adi ?? "-";
+    const teknik_adi = (talep as any).teknikler?.teknik_adi ?? "-";
 
     const { data: senaryolar } = await adminSupabase
       .from("senaryolar")
@@ -512,20 +477,5 @@ export async function getYoneticiAnaSayfaVeri(userId: string, adminSupabase: Sup
       aktif_yayin: (yayinlar ?? []).length,
       rol_dagilimi: rolSayilari,
     },
-  };
-}
-
-// ─── EĞİTİMCİ (egt_md, egt_yrd_md, egt_yon, egt_uz) ──────────────────────────
-
-export async function getEgitimciAnaSayfaVeri(userId: string, adminSupabase: SupabaseClient) {
-  const [pmVeri, tmVeri] = await Promise.all([
-    getPmAnaSayfaVeri(userId, adminSupabase),
-    getTmAnaSayfaVeri(userId, adminSupabase),
-  ]);
-
-  return {
-    ...pmVeri,
-    bm_satirlari: tmVeri.satirlar,
-    bm_istatistikler: tmVeri.istatistikler,
   };
 }
