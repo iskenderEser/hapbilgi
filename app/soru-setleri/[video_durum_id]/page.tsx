@@ -6,8 +6,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
-import { URETICI_ROLLER } from "@/lib/utils/roller";
-import { User } from "@supabase/supabase-js";
+import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
+import { HedefRolBant } from "@/components/HedefRolBant";
+import { useAuth } from "@/app/providers/AuthProvider";
 
 interface Soru {
   soru_metni: string;
@@ -33,6 +34,7 @@ interface VideoDurumJoin {
         talepler: {
           soru_seti_buyuklugu: number;
           video_basi_soru_sayisi: number;
+          hedef_rol: "utt" | "bm";
           urunler: { urun_adi: string } | null;
           teknikler: { teknik_adi: string } | null;
         } | null;
@@ -46,13 +48,13 @@ export default function SoruSetiAkisPage() {
   const params = useParams();
   const video_durum_id = params.video_durum_id as string;
 
-  const [user, setUser] = useState<User | null>(null);
-  const [rol, setRol] = useState<string>("");
+  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
   const [soruSetleri, setSoruSetleri] = useState<SoruSeti[]>([]);
   const [urunAdi, setUrunAdi] = useState("");
   const [teknikAdi, setTeknikAdi] = useState("");
   const [soruSetiBuyuklugu, setSoruSetiBuyuklugu] = useState<number>(25);
   const [videoBasiSoruSayisi, setVideoBasiSoruSayisi] = useState<number>(2);
+  const [hedefRol, setHedefRol] = useState<"utt" | "bm" | null>(null);
   const [loading, setLoading] = useState(true);
   const [gonderLoading, setGonderLoading] = useState(false);
   const [yapisTir, setYapisTir] = useState("");
@@ -64,17 +66,19 @@ export default function SoruSetiAkisPage() {
   const { mesajlar, hata, basari } = useHataMesaji();
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) { router.push("/login"); return; }
-      setUser(data.user);
-      setRol(data.user.user_metadata?.rol ?? "");
-    });
-  }, []);
+    if (authYukleniyor) return;
+    if (!kullanici) {
+      router.push("/login");
+      return;
+    }
+    if (!URETIM_HATTI_GORENLER.includes(kullanici.rol)) {
+      router.push("/ana-sayfa");
+      return;
+    }
+  }, [kullanici, authYukleniyor, router]);
 
   const handleCikis = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await cikisYap();
     router.push("/login");
   };
 
@@ -89,6 +93,7 @@ export default function SoruSetiAkisPage() {
               talepler!inner (
                 soru_seti_buyuklugu,
                 video_basi_soru_sayisi,
+                hedef_rol,
                 urunler (urun_adi),
                 teknikler (teknik_adi)
               )
@@ -107,6 +112,7 @@ export default function SoruSetiAkisPage() {
     setTeknikAdi(talep?.teknikler?.teknik_adi ?? "-");
     setSoruSetiBuyuklugu(talep?.soru_seti_buyuklugu ?? 25);
     setVideoBasiSoruSayisi(talep?.video_basi_soru_sayisi ?? 2);
+    setHedefRol((talep?.hedef_rol ?? "utt") as "utt" | "bm");
   }, []);
 
   const fetchSoruSetleri = useCallback(async (supabase: any, video_durum_id: string) => {
@@ -153,7 +159,7 @@ export default function SoruSetiAkisPage() {
     setLoading(false);
   }, [video_durum_id, fetchUrunBilgileri, fetchSoruSetleri]);
 
-  useEffect(() => { if (user && video_durum_id) veriCek(); }, [user, video_durum_id, veriCek]);
+  useEffect(() => { if (kullanici && video_durum_id) veriCek(); }, [kullanici, video_durum_id, veriCek]);
 
   // Mevcut soruları, parse edilebilir metin formatına çevirir (revizyonda textarea'ya yüklemek için)
   const sorulariMetneFormatla = (sorular: Soru[]): string => {
@@ -172,25 +178,25 @@ export default function SoruSetiAkisPage() {
   useEffect(() => {
     const sonSet = soruSetleri[soruSetleri.length - 1];
     if (
-      rol.toLowerCase() === "iu" &&
-      sonSet?.son_durum === "Revizyon Bekleniyor" &&
+      (kullanici?.rol ?? "").toLowerCase() === "iu" &&
+      sonSet?.son_durum === "revizyon bekleniyor" &&
       sonSet.sorular?.length > 0 &&
       !yapisTir
     ) {
       setYapisTir(sorulariMetneFormatla(sonSet.sorular));
     }
-  }, [soruSetleri, rol]);
+  }, [soruSetleri, kullanici]);
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
-  const rolKucu = rol.toLowerCase();
+  const rolKucu = (kullanici?.rol ?? "").toLowerCase();
   const isPM = URETICI_ROLLER.includes(rolKucu);
   const isIU = rolKucu === "iu";
 
   const sonSet = soruSetleri[soruSetleri.length - 1];
-  const iuGonderebilir = isIU && (!sonSet || sonSet.son_durum === "Revizyon Bekleniyor" || !sonSet.sorular?.length);
-  const revizyonSayisi = soruSetleri.filter(ss => ss.son_durum === "Revizyon Bekleniyor").length;
+  const iuGonderebilir = isIU && (!sonSet || sonSet.son_durum === "revizyon bekleniyor" || !sonSet.sorular?.length);
+  const revizyonSayisi = soruSetleri.filter(ss => ss.son_durum === "revizyon bekleniyor").length;
 
   const parseSorular = (metin: string): { sorular: Soru[]; hata: string | null } => {
     const bloklar = metin.split(/\n\s*\n/).filter(b => b.trim());
@@ -261,13 +267,13 @@ export default function SoruSetiAkisPage() {
       const d = await res.json();
       if (!res.ok) throw new Error(d.hata ?? "Soru seti kaydedilemedi.");
 
-      // 2. Durumu "Inceleme Bekleniyor" yap (POST — durum kaydı INSERT + PM'e bildirim)
+      // 2. Durumu "inceleme bekleniyor" yap (POST — durum kaydı INSERT + PM'e bildirim)
       const res2 = await fetch("/soru-setleri/api/durum", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           soru_seti_id: sonSet.soru_seti_id,
-          durum: "Inceleme Bekleniyor",
+          durum: "inceleme bekleniyor",
         }),
       });
       const d2 = await res2.json();
@@ -296,7 +302,7 @@ export default function SoruSetiAkisPage() {
       const d = await res.json();
       if (!res.ok) throw new Error(d.hata ?? "İşlem gerçekleştirilemedi.");
       
-      basari(durum === "Onaylandi" ? "Soru seti onaylandı." : durum === "Revizyon Bekleniyor" ? "Revizyon talebi gönderildi." : "Soru seti iptal edildi.");
+      basari(durum === "onaylandi" ? "Soru seti onaylandı." : durum === "revizyon bekleniyor" ? "Revizyon talebi gönderildi." : "Soru seti iptal edildi.");
       setAktifRevizyon(false); setRevizyonNotu(""); await veriCek();
     } catch (err: any) {
       hata(err.message, "PM karar", err);
@@ -307,15 +313,15 @@ export default function SoruSetiAkisPage() {
 
   const durumRenk = (durum: string) => {
     switch (durum) {
-      case "Onaylandi": return { bg: "#f0fdf4", text: "#16a34a", border: "#bbf7d0" };
+      case "onaylandi": return { bg: "#f0fdf4", text: "#16a34a", border: "#bbf7d0" };
       case "Iptal Edildi": return { bg: "#fef2f2", text: "#bc2d0d", border: "#fecaca" };
-      case "Revizyon Bekleniyor": return { bg: "#fefce8", text: "#854d0e", border: "#fde68a" };
-      case "Inceleme Bekleniyor": return { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" };
+      case "revizyon bekleniyor": return { bg: "#fefce8", text: "#854d0e", border: "#fde68a" };
+      case "inceleme bekleniyor": return { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" };
       default: return { bg: "#f9fafb", text: "#737373", border: "#e5e7eb" };
     }
   };
 
-  if (loading) {
+  if (authYukleniyor || !kullanici || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center gap-2">
@@ -328,7 +334,8 @@ export default function SoruSetiAkisPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={user?.email ?? ""} rol={rol} onCikis={handleCikis} />
+      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
+      {hedefRol && <HedefRolBant hedefRol={hedefRol} />}
 
       <div className="max-w-3xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
 
@@ -368,7 +375,7 @@ export default function SoruSetiAkisPage() {
 
             {soruSetleri.map((ss, i) => {
               const renk = durumRenk(ss.son_durum ?? "");
-              const isPMKararverilebilir = isPM && ss.son_durum === "Inceleme Bekleniyor" && i === soruSetleri.length - 1;
+              const isPMKararverilebilir = isPM && ss.son_durum === "inceleme bekleniyor" && i === soruSetleri.length - 1;
 
               return (
                 <div key={ss.soru_seti_id} className="border border-gray-200 rounded-xl overflow-hidden">
@@ -416,7 +423,7 @@ export default function SoruSetiAkisPage() {
                     </div>
                   )}
 
-                  {ss.son_durum === "Revizyon Bekleniyor" && ss.son_durum_notlar && (
+                  {ss.son_durum === "revizyon bekleniyor" && ss.son_durum_notlar && (
                     <div className="px-3 py-2.5 bg-yellow-50 border-t border-yellow-200">
                       <span className="text-xs font-semibold text-yellow-800">Revizyon Notu: </span>
                       <span className="text-xs text-yellow-800">{ss.son_durum_notlar}</span>
@@ -434,7 +441,7 @@ export default function SoruSetiAkisPage() {
                           <div className="flex gap-2 justify-end">
                             <button onClick={() => { setAktifRevizyon(false); setRevizyonNotu(""); }}
                               className="px-3 py-1.5 rounded-lg border border-gray-200 bg-transparent text-gray-500 text-xs cursor-pointer hover:bg-gray-100 transition-colors">İptal</button>
-                            <button onClick={() => handlePMKarar("Revizyon Bekleniyor", revizyonNotu)}
+                            <button onClick={() => handlePMKarar("revizyon bekleniyor", revizyonNotu)}
                               disabled={!revizyonNotu.trim() || gonderLoading}
                               className="px-3 py-1.5 rounded-lg border-none bg-amber-500 text-white text-xs font-semibold cursor-pointer hover:bg-amber-600 transition-colors"
                               style={{ opacity: !revizyonNotu.trim() ? 0.5 : 1 }}>Revizyon Gönder</button>
@@ -442,7 +449,7 @@ export default function SoruSetiAkisPage() {
                         </div>
                       ) : (
                         <div className="flex gap-2 justify-end flex-wrap">
-                          <button onClick={() => handlePMKarar("Onaylandi")} disabled={gonderLoading}
+                          <button onClick={() => handlePMKarar("onaylandi")} disabled={gonderLoading}
                             className="px-3 py-1.5 rounded-lg border-none bg-green-700 text-white text-xs font-semibold cursor-pointer hover:bg-green-800 transition-colors">Onayla</button>
                           {revizyonSayisi < 2 && (
                             <button onClick={() => setAktifRevizyon(true)} disabled={gonderLoading}

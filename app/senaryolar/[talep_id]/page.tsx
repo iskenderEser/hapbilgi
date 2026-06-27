@@ -6,6 +6,9 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
+import { HedefRolBant } from "@/components/HedefRolBant";
+import { useAuth } from "@/app/providers/AuthProvider";
+import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 
 interface Senaryo {
   senaryo_id: string;
@@ -23,6 +26,7 @@ interface Talep {
   talep_id: string;
   urun_adi: string;
   teknik_adi: string;
+  hedef_rol: "utt" | "bm";
   aciklama: string;
 }
 
@@ -31,8 +35,7 @@ export default function SenaryolarPage() {
   const params = useParams();
   const talep_id = params.talep_id as string;
 
-  const [user, setUser] = useState<any>(null);
-  const [rol, setRol] = useState<string>("");
+  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
   const [talep, setTalep] = useState<Talep | null>(null);
   const [senaryolar, setSenaryolar] = useState<Senaryo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,17 +46,19 @@ export default function SenaryolarPage() {
   const { mesajlar, hata, basari } = useHataMesaji();
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) { router.push("/login"); return; }
-      setUser(data.user);
-      setRol(data.user.user_metadata?.rol ?? "");
-    });
-  }, []);
+    if (authYukleniyor) return;
+    if (!kullanici) {
+      router.push("/login");
+      return;
+    }
+    if (!URETIM_HATTI_GORENLER.includes(kullanici.rol)) {
+      router.push("/ana-sayfa");
+      return;
+    }
+  }, [kullanici, authYukleniyor, router]);
 
   const handleCikis = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await cikisYap();
     router.push("/login");
   };
 
@@ -63,7 +68,7 @@ export default function SenaryolarPage() {
 
     const { data: talepData, error: talepError } = await supabase
       .from("talepler")
-      .select(`talep_id, aciklama, urunler(urun_adi), teknikler(teknik_adi)`)
+      .select(`talep_id, hedef_rol, aciklama, urunler(urun_adi), teknikler(teknik_adi)`)
       .eq("talep_id", talep_id)
       .single();
 
@@ -75,6 +80,7 @@ export default function SenaryolarPage() {
 
     setTalep({
       talep_id: talepData.talep_id,
+      hedef_rol: ((talepData as any).hedef_rol ?? "utt") as "utt" | "bm",
       aciklama: talepData.aciklama,
       urun_adi: (talepData as any).urunler?.urun_adi ?? "-",
       teknik_adi: (talepData as any).teknikler?.teknik_adi ?? "-",
@@ -100,13 +106,13 @@ export default function SenaryolarPage() {
     setLoading(false);
   };
 
-  useEffect(() => { if (user && talep_id) veriCek(); }, [user, talep_id]);
+  useEffect(() => { if (kullanici && talep_id) veriCek(); }, [kullanici, talep_id]);
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
-  const rolKucu = rol.toLowerCase();
-  const isPM = ["pm", "jr_pm", "kd_pm"].includes(rolKucu);
+  const rolKucu = (kullanici?.rol ?? "").toLowerCase();
+  const isPM = URETICI_ROLLER.includes(rolKucu);
   const isIU = rolKucu === "iu";
 
   const handleSenaryoGonder = async () => {
@@ -119,9 +125,9 @@ export default function SenaryolarPage() {
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "Senaryo oluşturulamadı.", d.adim, d.detay); setGonderLoading(false); return; }
     const { senaryo } = d;
-    const d1 = await fetch("/senaryolar/api/durum", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ senaryo_id: senaryo.senaryo_id, durum: "Senaryo Yaziliyor" }) });
+    const d1 = await fetch("/senaryolar/api/durum", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ senaryo_id: senaryo.senaryo_id, durum: "senaryo yaziliyor" }) });
     if (!d1.ok) { const e = await d1.json(); hata(e.hata ?? "Durum kaydedilemedi.", e.adim, e.detay); }
-    const d2 = await fetch("/senaryolar/api/durum", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ senaryo_id: senaryo.senaryo_id, durum: "Inceleme Bekleniyor" }) });
+    const d2 = await fetch("/senaryolar/api/durum", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ senaryo_id: senaryo.senaryo_id, durum: "inceleme bekleniyor" }) });
     if (!d2.ok) { const e = await d2.json(); hata(e.hata ?? "Durum kaydedilemedi.", e.adim, e.detay); }
     else basari("Senaryo PM'e gönderildi.");
     setSenaryoMetni("");
@@ -138,7 +144,7 @@ export default function SenaryolarPage() {
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "İşlem gerçekleştirilemedi.", d.adim, d.detay); }
     else {
-      basari(durum === "Onaylandi" ? "Senaryo onaylandı." : durum === "Revizyon Bekleniyor" ? "Revizyon talebi gönderildi." : "Senaryo iptal edildi.");
+      basari(durum === "onaylandi" ? "Senaryo onaylandı." : durum === "revizyon bekleniyor" ? "Revizyon talebi gönderildi." : "Senaryo iptal edildi.");
       setAktifRevizyon(null); setRevizyonNotu(""); await veriCek();
     }
     setGonderLoading(false);
@@ -146,15 +152,15 @@ export default function SenaryolarPage() {
 
   const durumRenk = (durum: string) => {
     switch (durum) {
-      case "Onaylandi": return { bg: "#f0fdf4", text: "#16a34a", border: "#bbf7d0" };
+      case "onaylandi": return { bg: "#f0fdf4", text: "#16a34a", border: "#bbf7d0" };
       case "Iptal Edildi": return { bg: "#fef2f2", text: "#bc2d0d", border: "#fecaca" };
-      case "Revizyon Bekleniyor": return { bg: "#fefce8", text: "#854d0e", border: "#fde68a" };
-      case "Inceleme Bekleniyor": return { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" };
+      case "revizyon bekleniyor": return { bg: "#fefce8", text: "#854d0e", border: "#fde68a" };
+      case "inceleme bekleniyor": return { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" };
       default: return { bg: "#f9fafb", text: "#737373", border: "#e5e7eb" };
     }
   };
 
-  if (loading) {
+  if (authYukleniyor || !kullanici || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
@@ -166,11 +172,12 @@ export default function SenaryolarPage() {
   }
 
   const sonSenaryo = senaryolar[senaryolar.length - 1];
-  const iuYazabilir = isIU && (!sonSenaryo || sonSenaryo.son_durum === "Revizyon Bekleniyor" || sonSenaryo.son_durum === null);
+  const iuYazabilir = isIU && (!sonSenaryo || sonSenaryo.son_durum === "revizyon bekleniyor" || sonSenaryo.son_durum === null);
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={user?.email ?? ""} rol={rol} onCikis={handleCikis} />
+      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
+      {talep && <HedefRolBant hedefRol={talep.hedef_rol} />}
 
       <div className="max-w-3xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
 
@@ -204,8 +211,8 @@ export default function SenaryolarPage() {
 
             {senaryolar.map((s, i) => {
               const renk = durumRenk(s.son_durum ?? "");
-              const revSayisi = senaryolar.filter(x => x.son_durum === "Revizyon Bekleniyor").length;
-              const isPMKararverilebilir = isPM && s.son_durum === "Inceleme Bekleniyor" && i === senaryolar.length - 1;
+              const revSayisi = senaryolar.filter(x => x.son_durum === "revizyon bekleniyor").length;
+              const isPMKararverilebilir = isPM && s.son_durum === "inceleme bekleniyor" && i === senaryolar.length - 1;
 
               return (
                 <div key={s.senaryo_id} className="border border-gray-200 rounded-xl overflow-hidden">
@@ -229,7 +236,7 @@ export default function SenaryolarPage() {
                   </div>
 
                   {/* Revizyon notu */}
-                  {s.son_durum === "Revizyon Bekleniyor" && s.son_durum_notlar && (
+                  {s.son_durum === "revizyon bekleniyor" && s.son_durum_notlar && (
                     <div className="px-3 py-2.5 bg-yellow-50 border-t border-yellow-200">
                       <span className="text-xs font-semibold text-yellow-800">Revizyon Notu: </span>
                       <span className="text-xs text-yellow-800">{s.son_durum_notlar}</span>
@@ -254,7 +261,7 @@ export default function SenaryolarPage() {
                               className="px-3 py-1.5 rounded-lg border border-gray-200 bg-transparent text-gray-500 text-xs cursor-pointer">
                               İptal
                             </button>
-                            <button onClick={() => handlePMKarar(s.senaryo_id, "Revizyon Bekleniyor", revizyonNotu)}
+                            <button onClick={() => handlePMKarar(s.senaryo_id, "revizyon bekleniyor", revizyonNotu)}
                               disabled={!revizyonNotu.trim() || gonderLoading}
                               className="px-3 py-1.5 rounded-lg border-none bg-amber-500 text-white text-xs font-semibold cursor-pointer"
                               style={{ opacity: !revizyonNotu.trim() ? 0.5 : 1 }}>
@@ -264,7 +271,7 @@ export default function SenaryolarPage() {
                         </div>
                       ) : (
                         <div className="flex gap-2 justify-end flex-wrap">
-                          <button onClick={() => handlePMKarar(s.senaryo_id, "Onaylandi")} disabled={gonderLoading}
+                          <button onClick={() => handlePMKarar(s.senaryo_id, "onaylandi")} disabled={gonderLoading}
                             className="px-3 py-1.5 rounded-lg border-none bg-green-700 text-white text-xs font-semibold cursor-pointer">
                             Onayla
                           </button>

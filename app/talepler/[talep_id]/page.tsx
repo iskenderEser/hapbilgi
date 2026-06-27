@@ -6,11 +6,14 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
-import { URETICI_ROLLER } from "@/lib/utils/roller";
+import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
+import { HedefRolBant } from "@/components/HedefRolBant";
+import { useAuth } from "@/app/providers/AuthProvider";
 
 interface Talep {
   talep_id: string;
   uretici_id: string;
+  hedef_rol: "utt" | "bm";
   urun_adi: string;
   teknik_adi: string;
   aciklama: string;
@@ -49,8 +52,7 @@ export default function TalepDetayPage() {
   const params = useParams();
   const talep_id = params.talep_id as string;
 
-  const [user, setUser] = useState<any>(null);
-  const [rol, setRol] = useState<string>("");
+  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
   const [talep, setTalep] = useState<Talep | null>(null);
   const [loading, setLoading] = useState(true);
   const [dosyaYukleniyor, setDosyaYukleniyor] = useState(false);
@@ -65,26 +67,28 @@ export default function TalepDetayPage() {
   const { mesajlar, hata, basari } = useHataMesaji();
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) { router.push("/login"); return; }
-      setUser(data.user);
-      setRol(data.user.user_metadata?.rol ?? "");
-    });
-  }, []);
+    if (authYukleniyor) return;
+    if (!kullanici) {
+      router.push("/login");
+      return;
+    }
+    if (!URETIM_HATTI_GORENLER.includes(kullanici.rol)) {
+      router.push("/ana-sayfa");
+      return;
+    }
+  }, [kullanici, authYukleniyor, router]);
 
   const handleCikis = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await cikisYap();
     router.push("/login");
   };
 
   useEffect(() => {
-    if (!user || !talep_id) return;
+    if (!kullanici || !talep_id) return;
     const supabase = createClient();
     supabase
       .from("talepler")
-      .select(`talep_id, uretici_id, aciklama, created_at, dosya_urls, hazir_video, hazir_video_url, hazir_soru_seti, hazir_soru_seti_verisi, urun_id, teknik_id, urunler(urun_adi), teknikler(teknik_adi)`)
+      .select(`talep_id, uretici_id, hedef_rol, aciklama, created_at, dosya_urls, hazir_video, hazir_video_url, hazir_soru_seti, hazir_soru_seti_verisi, urun_id, teknik_id, urunler(urun_adi), teknikler(teknik_adi)`)
       .eq("talep_id", talep_id)
       .single()
       .then(({ data, error }) => {
@@ -103,7 +107,7 @@ export default function TalepDetayPage() {
         });
         setLoading(false);
       });
-  }, [user, talep_id]);
+  }, [kullanici, talep_id]);
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -224,7 +228,7 @@ export default function TalepDetayPage() {
     const res2 = await fetch("/soru-setleri/api/durum", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ soru_seti_id: soruSetiId, durum: "Inceleme Bekleniyor" }),
+      body: JSON.stringify({ soru_seti_id: soruSetiId, durum: "inceleme bekleniyor" }),
     });
     const d2 = await res2.json();
     if (!res2.ok) { hata(d2.hata ?? "Durum güncellenemedi.", d2.adim, d2.detay); }
@@ -233,11 +237,11 @@ export default function TalepDetayPage() {
     setSoruSetiIsleLoading(false);
   };
 
-  const rolKucu = rol.toLowerCase();
+  const rolKucu = (kullanici?.rol ?? "").toLowerCase();
   const isPM = URETICI_ROLLER.includes(rolKucu);
   const isIU = rolKucu === "iu";
 
-  if (loading) {
+  if (authYukleniyor || !kullanici || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
@@ -279,7 +283,8 @@ export default function TalepDetayPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={user?.email ?? ""} rol={rol} onCikis={handleCikis} />
+      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
+      <HedefRolBant hedefRol={talep.hedef_rol} />
 
       <div className="max-w-3xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
 
@@ -503,7 +508,7 @@ export default function TalepDetayPage() {
                   style={{ color: "#bc2d0d", border: "0.5px solid #fecaca", opacity: kararLoading !== null ? 0.6 : 1, fontFamily: "'Nunito', sans-serif" }}>
                   {kararLoading === "reddet" ? "..." : "Reddet"}
                 </button>
-                <button onClick={() => handleHazirVideoKarar("onayla")} disabled={kararLoading !== null}
+                <button onClick={() => handleHazirVideoKarar("onayla") } disabled={kararLoading !== null}
                   className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer bg-green-700"
                   style={{ opacity: kararLoading !== null ? 0.6 : 1, fontFamily: "'Nunito', sans-serif" }}>
                   {kararLoading === "onayla" ? "..." : "Onayla"}

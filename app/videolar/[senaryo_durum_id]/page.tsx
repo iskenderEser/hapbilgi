@@ -6,7 +6,10 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
-import { URETICI_ROLLER } from "@/lib/utils/roller";
+import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
+import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { HedefRolBant } from "@/components/HedefRolBant";
+import { useAuth } from "@/app/providers/AuthProvider";
 
 interface Video {
   video_id: string;
@@ -25,6 +28,7 @@ interface Senaryo {
   senaryo_metni: string;
   urun_adi?: string;
   teknik_adi?: string;
+  hedef_rol?: "utt" | "bm";
 }
 
 export default function VideoAkisPage() {
@@ -32,8 +36,7 @@ export default function VideoAkisPage() {
   const params = useParams();
   const senaryo_durum_id = params.senaryo_durum_id as string;
 
-  const [user, setUser] = useState<any>(null);
-  const [rol, setRol] = useState<string>("");
+  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
   const [senaryo, setSenaryo] = useState<Senaryo | null>(null);
   const [videolar, setVideolar] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,17 +49,19 @@ export default function VideoAkisPage() {
   const { mesajlar, hata, basari } = useHataMesaji();
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) { router.push("/login"); return; }
-      setUser(data.user);
-      setRol(data.user.user_metadata?.rol ?? "");
-    });
-  }, []);
+    if (authYukleniyor) return;
+    if (!kullanici) {
+      router.push("/login");
+      return;
+    }
+    if (!URETIM_HATTI_GORENLER.includes(kullanici.rol)) {
+      router.push("/ana-sayfa");
+      return;
+    }
+  }, [kullanici, authYukleniyor, router]);
 
   const handleCikis = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await cikisYap();
     router.push("/login");
   };
 
@@ -79,9 +84,14 @@ export default function VideoAkisPage() {
         hata("Senaryo bulunamadı.", "senaryolar tablosu SELECT — senaryo_id", senaryoError?.message);
       } else {
         const { data: talep } = await supabase
-          .from("talepler").select(`urunler(urun_adi), teknikler(teknik_adi)`)
+          .from("talepler").select(`hedef_rol, urunler(urun_adi), teknikler(teknik_adi)`)
           .eq("talep_id", senaryoData.talep_id).single();
-        setSenaryo({ ...senaryoData, urun_adi: (talep as any)?.urunler?.urun_adi ?? "-", teknik_adi: (talep as any)?.teknikler?.teknik_adi ?? "-" });
+        setSenaryo({
+          ...senaryoData,
+          urun_adi: (talep as any)?.urunler?.urun_adi ?? "-",
+          teknik_adi: (talep as any)?.teknikler?.teknik_adi ?? "-",
+          hedef_rol: ((talep as any)?.hedef_rol ?? "utt") as "utt" | "bm",
+        });
       }
     }
 
@@ -104,18 +114,18 @@ export default function VideoAkisPage() {
     setLoading(false);
   };
 
-  useEffect(() => { if (user && senaryo_durum_id) veriCek(); }, [user, senaryo_durum_id]);
+  useEffect(() => { if (kullanici && senaryo_durum_id) veriCek(); }, [kullanici, senaryo_durum_id]);
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
-  const rolKucu = rol.toLowerCase();
+  const rolKucu = (kullanici?.rol ?? "").toLowerCase();
   const isPM = URETICI_ROLLER.includes(rolKucu);
   const isIU = rolKucu === "iu";
 
   const sonVideo = videolar[videolar.length - 1];
-  const iuGonderebilir = isIU && (!sonVideo || sonVideo.son_durum === "Revizyon Bekleniyor" || !sonVideo.video_url);
-  const revizyonSayisi = videolar.filter(v => v.son_durum === "Revizyon Bekleniyor").length;
+  const iuGonderebilir = isIU && (!sonVideo || sonVideo.son_durum === "revizyon bekleniyor" || !sonVideo.video_url);
+  const revizyonSayisi = videolar.filter(v => v.son_durum === "revizyon bekleniyor").length;
 
   const handleIuGonder = async () => {
     if (!videoUrl.trim() || !sonVideo) return;
@@ -128,7 +138,7 @@ export default function VideoAkisPage() {
     if (!res.ok) { hata(d.hata ?? "Video URL kaydedilemedi.", d.adim, d.detay); setGonderLoading(false); return; }
     const res2 = await fetch("/videolar/api/durum", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ video_id: sonVideo.video_id, durum: "Inceleme Bekleniyor" }),
+      body: JSON.stringify({ video_id: sonVideo.video_id, durum: "inceleme bekleniyor" }),
     });
     const d2 = await res2.json();
     if (!res2.ok) { hata(d2.hata ?? "Durum kaydedilemedi.", d2.adim, d2.detay); }
@@ -148,7 +158,7 @@ export default function VideoAkisPage() {
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "İşlem gerçekleştirilemedi.", d.adim, d.detay); }
     else {
-      basari(durum === "Onaylandi" ? "Video onaylandı." : durum === "Revizyon Bekleniyor" ? "Revizyon talebi gönderildi." : "Video iptal edildi.");
+      basari(durum === "onaylandi" ? "Video onaylandı." : durum === "revizyon bekleniyor" ? "Revizyon talebi gönderildi." : "Video iptal edildi.");
       setAktifRevizyon(false); setRevizyonNotu(""); await veriCek();
     }
     setGonderLoading(false);
@@ -156,15 +166,15 @@ export default function VideoAkisPage() {
 
   const durumRenk = (durum: string) => {
     switch (durum) {
-      case "Onaylandi": return { bg: "#f0fdf4", text: "#16a34a", border: "#bbf7d0" };
+      case "onaylandi": return { bg: "#f0fdf4", text: "#16a34a", border: "#bbf7d0" };
       case "Iptal Edildi": return { bg: "#fef2f2", text: "#bc2d0d", border: "#fecaca" };
-      case "Revizyon Bekleniyor": return { bg: "#fefce8", text: "#854d0e", border: "#fde68a" };
-      case "Inceleme Bekleniyor": return { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" };
+      case "revizyon bekleniyor": return { bg: "#fefce8", text: "#854d0e", border: "#fde68a" };
+      case "inceleme bekleniyor": return { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" };
       default: return { bg: "#f9fafb", text: "#737373", border: "#e5e7eb" };
     }
   };
 
-  if (loading) {
+  if (authYukleniyor || !kullanici || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
@@ -177,7 +187,8 @@ export default function VideoAkisPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={user?.email ?? ""} rol={rol} onCikis={handleCikis} />
+      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
+      {senaryo?.hedef_rol && <HedefRolBant hedefRol={senaryo.hedef_rol} />}
 
       <div className="max-w-3xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
 
@@ -212,6 +223,7 @@ export default function VideoAkisPage() {
 
             {videolar.map((v, i) => {
               const renk = durumRenk(v.son_durum ?? "");
+              const thumb = v.thumbnail_url ?? thumbnailUrlUret(v.video_url);
               return (
                 <div key={v.video_id} className="border border-gray-200 rounded-xl overflow-hidden">
                   {/* Versiyon başlık */}
@@ -232,8 +244,8 @@ export default function VideoAkisPage() {
                   {v.video_url && (
                     <div className="p-3">
                       <div className="rounded-lg overflow-hidden mb-2 cursor-pointer" onClick={() => setAcikVideo(v.video_url)}>
-                        {v.thumbnail_url
-                          ? <img src={v.thumbnail_url} alt="thumbnail" className="w-full object-cover" style={{ height: 180 }} />
+                        {thumb
+                          ? <img src={thumb} alt="thumbnail" className="w-full object-cover" style={{ height: 180 }} />
                           : (
                             <div className="w-full bg-gray-200 flex items-center justify-center" style={{ height: 180 }}>
                               <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" width="32" height="32">
@@ -248,7 +260,7 @@ export default function VideoAkisPage() {
                   )}
 
                   {/* Revizyon notu */}
-                  {v.son_durum === "Revizyon Bekleniyor" && v.son_durum_notlar && (
+                  {v.son_durum === "revizyon bekleniyor" && v.son_durum_notlar && (
                     <div className="px-3 py-2.5 bg-yellow-50 border-t border-yellow-200">
                       <span className="text-xs font-semibold text-yellow-800">Revizyon Notu: </span>
                       <span className="text-xs text-yellow-800">{v.son_durum_notlar}</span>
@@ -260,7 +272,7 @@ export default function VideoAkisPage() {
           </div>
 
           {/* PM karar alanı */}
-          {isPM && sonVideo?.son_durum === "Inceleme Bekleniyor" && (
+          {isPM && sonVideo?.son_durum === "inceleme bekleniyor" && (
             <div className="border-t border-gray-100 px-4 md:px-5 py-3.5 bg-gray-50">
               {aktifRevizyon ? (
                 <div className="flex flex-col gap-2">
@@ -277,7 +289,7 @@ export default function VideoAkisPage() {
                       className="px-3 py-1.5 rounded-lg border border-gray-200 bg-transparent text-gray-500 text-xs cursor-pointer">
                       İptal
                     </button>
-                    <button onClick={() => handlePMKarar("Revizyon Bekleniyor", revizyonNotu)}
+                    <button onClick={() => handlePMKarar("revizyon bekleniyor", revizyonNotu)}
                       disabled={!revizyonNotu.trim() || gonderLoading}
                       className="px-3 py-1.5 rounded-lg border-none bg-amber-500 text-white text-xs font-semibold cursor-pointer"
                       style={{ opacity: !revizyonNotu.trim() ? 0.5 : 1 }}>
@@ -287,7 +299,7 @@ export default function VideoAkisPage() {
                 </div>
               ) : (
                 <div className="flex gap-2 justify-end flex-wrap">
-                  <button onClick={() => handlePMKarar("Onaylandi")} disabled={gonderLoading}
+                  <button onClick={() => handlePMKarar("onaylandi")} disabled={gonderLoading}
                     className="px-3 py-1.5 rounded-lg border-none bg-green-700 text-white text-xs font-semibold cursor-pointer">
                     Onayla
                   </button>
