@@ -6,7 +6,7 @@ import {
   talepBilgisiSoruSeti,
 } from "./talepZinciri";
 
-type KayitTuru = "talep" | "senaryo" | "video" | "soru_seti" | "yayin" | "oneri";
+type KayitTuru = "talep" | "senaryo" | "video" | "soru_seti" | "yayin" | "oneri" | "challenge";
 
 interface BildirimParams {
   adminSupabase: SupabaseClient;
@@ -20,7 +20,7 @@ interface BildirimParams {
 /**
  * Verilen kayit_turu + kayit_id'den, bağlı olduğu talep_id'yi bulur.
  * Zincir yürüme işi talepZinciri.ts'e devredilmiştir.
- * 'oneri' ve 'yayin' için talep zinciri kullanılmaz, null döner.
+ * 'oneri', 'yayin' ve 'challenge' için talep zinciri kullanılmaz, null döner.
  */
 async function talepIdBul(
   adminSupabase: SupabaseClient,

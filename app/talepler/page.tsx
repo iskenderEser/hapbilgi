@@ -15,7 +15,7 @@ import { TalepListesi } from "./_components/TalepListesi";
 export default function TaleplerPage() {
   const formu = useTalepFormu();
 
-  if (formu.loading) {
+  if (formu.authYukleniyor || !formu.kullanici || formu.loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center gap-2">
@@ -29,8 +29,9 @@ export default function TaleplerPage() {
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <Navbar
-        email={formu.user?.email ?? ""}
-        rol={formu.rol}
+        email={formu.kullanici.email}
+        rol={formu.kullanici.rol}
+        adSoyad={formu.kullanici.adSoyad}
         onCikis={formu.handleCikis}
       />
 

@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
           .from("soru_seti_durumu")
           .select("soru_seti_durum_id")
           .eq("soru_seti_id", soruSeti.soru_seti_id)
-          .eq("durum", "Onaylandi")
+          .eq("durum", "onaylandi")
           .single();
 
         if (sdError && sdError.code !== "PGRST116") {
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
             .from("yayin_yonetimi")
             .select("yayin_id")
             .eq("soru_seti_durum_id", soruSetiDurum.soru_seti_durum_id)
-            .eq("durum", "Yayinda")
+            .eq("durum", "yayinda")
             .single();
 
           if (yayinError && yayinError.code !== "PGRST116") {

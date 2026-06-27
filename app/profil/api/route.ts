@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
+import { haftaBaslangici, ayBaslangici, yilBaslangici } from "@/lib/zaman/kontrol";
 
 export async function GET() {
   try {
@@ -13,44 +14,25 @@ export async function GET() {
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
 
+    // v_kullanici_detay view'ı firma_adi, takim_adi, bolge_adi'yı join'liyor — 3 ayrı SELECT yerine tek view sorgusu
     const { data: kullanici, error: kullaniciError } = await adminSupabase
-      .from("kullanicilar")
-      .select("kullanici_id, ad, soyad, eposta, rol, firma_id, takim_id, bolge_id, fotograf_url")
+      .from("v_kullanici_detay")
+      .select("kullanici_id, ad, soyad, eposta, rol, firma_id, firma_adi, takim_id, takim_adi, bolge_id, bolge_adi, fotograf_url")
       .eq("kullanici_id", user.id)
       .single();
 
-    if (kullaniciError || !kullanici) return hataYaniti("Kullanıcı bilgisi alınamadı.", "kullanicilar tablosu SELECT", kullaniciError);
+    if (kullaniciError || !kullanici) return hataYaniti("Kullanıcı bilgisi alınamadı.", "v_kullanici_detay SELECT", kullaniciError);
 
-    let firma_adi = null;
-    let takim_adi = null;
-    let bolge_adi = null;
-
-    if (kullanici.firma_id) {
-      const { data: firma } = await adminSupabase.from("firmalar").select("firma_adi").eq("firma_id", kullanici.firma_id).single();
-      firma_adi = firma?.firma_adi ?? null;
-    }
-    if (kullanici.takim_id) {
-      const { data: takim } = await adminSupabase.from("takimlar").select("takim_adi").eq("takim_id", kullanici.takim_id).single();
-      takim_adi = takim?.takim_adi ?? null;
-    }
-    if (kullanici.bolge_id) {
-      const { data: bolge } = await adminSupabase.from("bolgeler").select("bolge_adi").eq("bolge_id", kullanici.bolge_id).single();
-      bolge_adi = bolge?.bolge_adi ?? null;
-    }
-
-    const profilTemel = { ...kullanici, firma_adi, takim_adi, bolge_adi };
+    const profilTemel = kullanici;
 
     if (!["utt", "kd_utt"].includes(rol)) {
       return NextResponse.json({ profil: profilTemel }, { status: 200 });
     }
 
-    // UTT/KD_UTT için ek veriler
-    const simdi = new Date();
-    const yilBaslangic = new Date(simdi.getFullYear(), 0, 1).toISOString();
-    const ayBaslangic = new Date(simdi.getFullYear(), simdi.getMonth(), 1).toISOString();
-    const haftaBaslangic = new Date();
-    haftaBaslangic.setDate(haftaBaslangic.getDate() - haftaBaslangic.getDay() + 1);
-    haftaBaslangic.setHours(0, 0, 0, 0);
+    // UTT/KD_UTT için ek veriler — zaman sınırları lib'den
+    const haftaBasi = haftaBaslangici(new Date()).toISOString();
+    const ayBasi = ayBaslangici().toISOString();
+    const yilBasi = yilBaslangici().toISOString();
 
     // İzleme sayıları
     const { count: haftaIzleme } = await adminSupabase
@@ -58,28 +40,28 @@ export async function GET() {
       .select("izleme_id", { count: "exact", head: true })
       .eq("kullanici_id", user.id)
       .eq("tamamlandi_mi", true)
-      .gte("created_at", haftaBaslangic.toISOString());
+      .gte("created_at", haftaBasi);
 
     const { count: ayIzleme } = await adminSupabase
       .from("izleme_kayitlari")
       .select("izleme_id", { count: "exact", head: true })
       .eq("kullanici_id", user.id)
       .eq("tamamlandi_mi", true)
-      .gte("created_at", ayBaslangic);
+      .gte("created_at", ayBasi);
 
     const { count: ytdIzleme } = await adminSupabase
       .from("izleme_kayitlari")
       .select("izleme_id", { count: "exact", head: true })
       .eq("kullanici_id", user.id)
       .eq("tamamlandi_mi", true)
-      .gte("created_at", yilBaslangic);
+      .gte("created_at", yilBasi);
 
     // Puan dağılımı (YTD)
     const { data: puanlar } = await adminSupabase
       .from("kazanilan_puanlar")
       .select("puan_turu, puan")
       .eq("kullanici_id", user.id)
-      .gte("created_at", yilBaslangic);
+      .gte("created_at", yilBasi);
 
     let izleme_puani = 0;
     let cevaplama_puani = 0;

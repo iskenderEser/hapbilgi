@@ -19,10 +19,12 @@ interface HaftaninEni {
 interface YoneticiVeri {
   haftanin_enleri: HaftaninEni[];
   istatistikler: {
-    yayin_sayisi: number;
-    hafta_izlenme: number;
-    utt_sayisi: number;
-    tamamlanma_orani: number;
+    yayinda_toplam_video: number;
+    toplam_izleme_sayisi: number;
+    en_cok_izlenen_video: string | null;
+    en_cok_izleyen_takim: string | null;
+    en_cok_izleyen_bolge: string | null;
+    en_cok_izleyen_utt: string | null;
   };
   videolar?: AnaSayfaVideo[];
 }
@@ -92,7 +94,14 @@ export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
     );
   }
 
-  const istat = veri?.istatistikler ?? { yayin_sayisi: 0, hafta_izlenme: 0, utt_sayisi: 0, tamamlanma_orani: 0 };
+    const istat = veri?.istatistikler ?? {
+    yayinda_toplam_video: 0,
+    toplam_izleme_sayisi: 0,
+    en_cok_izlenen_video: null,
+    en_cok_izleyen_takim: null,
+    en_cok_izleyen_bolge: null,
+    en_cok_izleyen_utt: null,
+  };
   const ad = adSoyad.split(" ")[0] || "Yönetici";
   const haftaninEnleri = veri?.haftanin_enleri ?? [];
 
@@ -110,13 +119,15 @@ export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
         </span>
       </div>
 
-      {/* Stat kartlar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
+     {/* Stat kartlar — 6 stat (3+3 grid) */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-5">
         {[
-          { label: "Yayındaki Video", value: istat.yayin_sayisi, sub: "Aktif içerik", renk: "#16a34a" },
-          { label: "Bu Hafta İzlenme", value: istat.hafta_izlenme, sub: "Toplam izlenme sayısı", renk: "#56aeff" },
-          { label: "Aktif UTT", value: istat.utt_sayisi, sub: "Platforma kayıtlı", renk: "#f59e0b" },
-          { label: "Tamamlanma Oranı", value: `%${istat.tamamlanma_orani}`, sub: "Başlayan / tamamlayan", renk: "#bc2d0d" },
+          { label: "Yayında Toplam Video", value: istat.yayinda_toplam_video, sub: "Tüm üretici roller", renk: "#16a34a", tip: "sayisal" },
+          { label: "Toplam İzleme", value: istat.toplam_izleme_sayisi, sub: "Kendi + öneri + extra", renk: "#56aeff", tip: "sayisal" },
+          { label: "En Çok İzlenen Video", value: istat.en_cok_izlenen_video ?? "—", sub: "Video adı", renk: "#f59e0b", tip: "metin" },
+          { label: "En Çok İzleyen Takım", value: istat.en_cok_izleyen_takim ?? "—", sub: "Tüm videolar", renk: "#a855f7", tip: "metin" },
+          { label: "En Çok İzleyen Bölge", value: istat.en_cok_izleyen_bolge ?? "—", sub: "Tüm videolar", renk: "#0ea5e9", tip: "metin" },
+          { label: "En Çok İzleyen UTT", value: istat.en_cok_izleyen_utt ?? "—", sub: "Bölge / Takım", renk: "#bc2d0d", tip: "metin" },
         ].map((k, idx) => (
           <div
             key={idx}
@@ -124,7 +135,15 @@ export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
             style={{ borderLeft: `3px solid ${k.renk}` }}
           >
             <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">{k.label}</div>
-            <div className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-none">{k.value}</div>
+            <div
+              className={
+                k.tip === "sayisal"
+                  ? "text-2xl md:text-3xl font-extrabold text-gray-900 leading-none"
+                  : "text-base md:text-lg font-light text-gray-900 leading-tight"
+              }
+            >
+              {k.value}
+            </div>
             <div className="hidden md:block text-xs text-gray-500 mt-1.5">{k.sub}</div>
           </div>
         ))}

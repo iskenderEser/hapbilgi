@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useOkunmamisIdler } from "@/hooks/useOkunmamisIdler";
+import { useAuth } from "@/app/providers/AuthProvider";
+import { URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 
 interface SoruSetiSatir {
   talep_id: string;
@@ -14,13 +16,12 @@ interface SoruSetiSatir {
   soru_seti_id: string;
   urun_adi: string;
   teknik_adi: string;
-  kategori_adi: string | null;
   soru_sayisi: number;
   son_durum: string | null;
   son_tarih: string;
 }
 
-type FiltreDurum = "Inceleme Bekleniyor" | "Revizyon Bekleniyor" | "Onaylandi" | "Iptal Edildi";
+type FiltreDurum = "inceleme bekleniyor" | "revizyon bekleniyor" | "onaylandi" | "Iptal Edildi";
 
 interface SoruSetiJoin {
   soru_seti_id: string;
@@ -35,7 +36,6 @@ interface SoruSetiJoin {
           talepler: {
             urunler: { urun_adi: string } | null;
             teknikler: { teknik_adi: string } | null;
-            kategoriler: { kategori_adi: string } | null;
           } | null;
         } | null;
       } | null;
@@ -45,28 +45,28 @@ interface SoruSetiJoin {
 
 export default function SoruSetleriListePage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [rol, setRol] = useState<string>("");
+  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
   const [satirlar, setSatirlar] = useState<SoruSetiSatir[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtreler, setFiltreler] = useState<Set<FiltreDurum>>(new Set());
-  const [kategoriFiltre, setKategoriFiltre] = useState<string>("");
   const { mesajlar, hata } = useHataMesaji();
 
   const okunmamisIdler = useOkunmamisIdler("soru_seti");
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) { router.push("/login"); return; }
-      setUser(data.user);
-      setRol(data.user.user_metadata?.rol ?? "");
-    });
-  }, []);
+  if (authYukleniyor) return;
+  if (!kullanici) {
+    router.push("/login");
+    return;
+  }
+  if (!URETIM_HATTI_GORENLER.includes(kullanici.rol)) {
+    router.push("/ana-sayfa");
+    return;
+  }
+ }, [kullanici, authYukleniyor, router]);
 
   const handleCikis = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await cikisYap();
     router.push("/login");
   };
 
@@ -89,8 +89,7 @@ export default function SoruSetleriListePage() {
                 talep_id,
                 talepler!inner (
                   urunler (urun_adi),
-                  teknikler (teknik_adi),
-                  kategoriler (kategori_adi)
+                  teknikler (teknik_adi)
                 )
               )
             )
@@ -150,7 +149,6 @@ export default function SoruSetleriListePage() {
         soru_seti_id: ss.soru_seti_id,
         urun_adi: talep?.urunler?.urun_adi ?? "-",
         teknik_adi: talep?.teknikler?.teknik_adi ?? "-",
-        kategori_adi: talep?.kategoriler?.kategori_adi ?? null,
         soru_sayisi: Array.isArray(ss.sorular) ? ss.sorular.length : 0,
         son_durum: sonDurum?.durum ?? null,
         son_tarih: sonDurum?.created_at ?? ss.created_at,
@@ -161,7 +159,7 @@ export default function SoruSetleriListePage() {
     setLoading(false);
   }, [hata]);
 
-  useEffect(() => { if (user) veriCek(); }, [user, veriCek]);
+  useEffect(() => { if (kullanici) veriCek(); }, [kullanici, veriCek]);
 
   const toggleFiltre = (durum: FiltreDurum) => {
     setFiltreler(prev => {
@@ -171,12 +169,9 @@ export default function SoruSetleriListePage() {
     });
   };
 
-  const kategoriler = Array.from(new Set(satirlar.map(s => s.kategori_adi).filter(Boolean))) as string[];
-
   const filtreliSatirlar = satirlar.filter(s => {
     const durumUyumu = filtreler.size === 0 || (s.son_durum && filtreler.has(s.son_durum as FiltreDurum));
-    const kategoriUyumu = !kategoriFiltre || s.kategori_adi === kategoriFiltre;
-    return durumUyumu && kategoriUyumu;
+    return durumUyumu;
   });
 
   const formatTarih = (tarih: string) =>
@@ -184,22 +179,22 @@ export default function SoruSetleriListePage() {
 
   const durumRenk = (durum: string) => {
     switch (durum) {
-      case "Onaylandi": return { bg: "#f0fdf4", text: "#16a34a", border: "#bbf7d0" };
+      case "onaylandi": return { bg: "#f0fdf4", text: "#16a34a", border: "#bbf7d0" };
       case "Iptal Edildi": return { bg: "#fef2f2", text: "#bc2d0d", border: "#fecaca" };
-      case "Revizyon Bekleniyor": return { bg: "#fefce8", text: "#854d0e", border: "#fde68a" };
-      case "Inceleme Bekleniyor": return { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" };
+      case "revizyon bekleniyor": return { bg: "#fefce8", text: "#854d0e", border: "#fde68a" };
+      case "inceleme bekleniyor": return { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" };
       default: return { bg: "#f9fafb", text: "#737373", border: "#e5e7eb" };
     }
   };
 
   const filtreSec: { durum: FiltreDurum; etiket: string }[] = [
-    { durum: "Inceleme Bekleniyor", etiket: "İnceleme Bekleyenler" },
-    { durum: "Revizyon Bekleniyor", etiket: "Revizyon Bekleyenler" },
-    { durum: "Onaylandi", etiket: "Onaylananlar" },
+    { durum: "inceleme bekleniyor", etiket: "İnceleme Bekleyenler" },
+    { durum: "revizyon bekleniyor", etiket: "Revizyon Bekleyenler" },
+    { durum: "onaylandi", etiket: "Onaylananlar" },
     { durum: "Iptal Edildi", etiket: "İptal Edilenler" },
   ];
 
-  if (loading) {
+  if (authYukleniyor || !kullanici || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center gap-2">
@@ -212,7 +207,7 @@ export default function SoruSetleriListePage() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={user?.email ?? ""} rol={rol} onCikis={handleCikis} />
+      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
 
       <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6">
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
@@ -229,17 +224,6 @@ export default function SoruSetleriListePage() {
                     {f.etiket}
                   </label>
                 ))}
-                {kategoriler.length > 0 && (
-                  <select
-                    value={kategoriFiltre}
-                    onChange={e => setKategoriFiltre(e.target.value)}
-                    className="border border-gray-200 rounded-lg px-2 py-1 text-xs bg-white cursor-pointer focus:outline-none focus:border-[#56aeff]"
-                    style={{ fontFamily: "'Nunito', sans-serif", color: kategoriFiltre ? "#111" : "#737373" }}
-                  >
-                    <option value="">Tüm Kategoriler</option>
-                    {kategoriler.map(k => <option key={k} value={k}>{k}</option>)}
-                  </select>
-                )}
               </div>
             </div>
             <span className="text-xs text-gray-500">{filtreliSatirlar.length} kayıt</span>
@@ -247,7 +231,7 @@ export default function SoruSetleriListePage() {
 
           {filtreliSatirlar.length === 0 ? (
             <div className="p-10 text-center text-sm text-gray-400">
-              {filtreler.size > 0 || kategoriFiltre ? "Seçilen filtreye uygun soru seti bulunamadı." : "Henüz soru seti bulunmuyor."}
+              {filtreler.size > 0 ? "Seçilen filtreye uygun soru seti bulunamadı." : "Henüz soru seti bulunmuyor."}
             </div>
           ) : (
             <>
@@ -274,12 +258,6 @@ export default function SoruSetleriListePage() {
                         )}
                       </div>
                       <div className="text-xs text-gray-500">{ss.teknik_adi}</div>
-                      {ss.kategori_adi && (
-                        <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full"
-                          style={{ background: "#f0fdf4", color: "#15803d", border: "0.5px solid #bbf7d0", fontSize: 10 }}>
-                          {ss.kategori_adi}
-                        </span>
-                      )}
                       <div className="flex gap-3 mt-0.5">
                         <span className="text-xs text-gray-400">{ss.soru_sayisi} soru</span>
                         <span className="text-xs text-gray-400">{formatTarih(ss.son_tarih)}</span>
@@ -295,7 +273,6 @@ export default function SoruSetleriListePage() {
                     <tr className="border-b border-gray-100 bg-gray-50">
                       <th className="text-left px-5 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Teknik</th>
-                      <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Kategori</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Soru</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Son Durum</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Tarih</th>
@@ -319,16 +296,6 @@ export default function SoruSetleriListePage() {
                             </div>
                           </td>
                           <td className="px-3 py-3 text-gray-500">{ss.teknik_adi}</td>
-                          <td className="px-3 py-3">
-                            {ss.kategori_adi ? (
-                              <span className="text-xs px-2 py-0.5 rounded-full"
-                                style={{ background: "#f0fdf4", color: "#15803d", border: "0.5px solid #bbf7d0" }}>
-                                {ss.kategori_adi}
-                              </span>
-                            ) : (
-                              <span className="text-xs text-gray-400">—</span>
-                            )}
-                          </td>
                           <td className="px-3 py-3 text-gray-500">{ss.soru_sayisi} soru</td>
                           <td className="px-3 py-3">
                             {ss.son_durum && (

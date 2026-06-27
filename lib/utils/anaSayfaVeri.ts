@@ -113,8 +113,8 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
   ] = await Promise.all([
     adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, urun_adi, teknik_adi, video_puani, yayin_tarihi, thumbnail_url, video_url")
-      .eq("durum", "Yayinda")
+      .select("yayin_id, urun_adi, teknik_adi, video_puani, yayin_tarihi, thumbnail_url, video_url, icerik_turu")
+      .eq("durum", "yayinda")
       .eq("takim_id", bolge?.takim_id)
       .order("yayin_tarihi", { ascending: false }),
     adminSupabase
@@ -154,6 +154,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
     { data: favoriSayilari },
     { data: kullaniciBegeni },
     { data: kullaniciFavori },
+    { data: izlemeSayilari },
   ] = await Promise.all([
     yayinIdler.length > 0
       ? adminSupabase.from("yayin_yonetimi").select("yayin_id, extra_puan, ileri_sarma_acik").in("yayin_id", yayinIdler)
@@ -170,6 +171,9 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
     yayinIdler.length > 0
       ? adminSupabase.from("video_favoriler").select("yayin_id").in("yayin_id", yayinIdler).eq("kullanici_id", userId)
       : { data: [] },
+    yayinIdler.length > 0
+      ? adminSupabase.from("izleme_kayitlari").select("yayin_id").in("yayin_id", yayinIdler).eq("tamamlandi_mi", true)
+      : { data: [] },  
   ]);
 
   const extraPuanMap: Record<string, number> = {};
@@ -189,6 +193,11 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
     favoriSayiMap[f.yayin_id] = (favoriSayiMap[f.yayin_id] ?? 0) + 1;
   }
 
+  const izlenmeSayiMap: Record<string, number> = {};
+  for (const iz of izlemeSayilari ?? []) {
+    izlenmeSayiMap[iz.yayin_id] = (izlenmeSayiMap[iz.yayin_id] ?? 0) + 1;
+  }
+
   const kullaniciBegeniSet = new Set((kullaniciBegeni ?? []).map((b: any) => b.yayin_id));
   const kullaniciFavoriSet = new Set((kullaniciFavori ?? []).map((f: any) => f.yayin_id));
 
@@ -200,10 +209,12 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
     thumbnail_url: y.thumbnail_url ?? null,
     video_puani: y.video_puani ?? null,
     yayin_tarihi: y.yayin_tarihi,
+    icerik_turu: y.icerik_turu ?? null,
     extra_puan: extraPuanMap[y.yayin_id] ?? 0,
     ileri_sarma_acik: ileriSarmaMap[y.yayin_id] ?? false,
     begeni_sayisi: begeniSayiMap[y.yayin_id] ?? 0,
     favori_sayisi: favoriSayiMap[y.yayin_id] ?? 0,
+    izlenme_sayisi: izlenmeSayiMap[y.yayin_id] ?? 0,
     begeni_mi: kullaniciBegeniSet.has(y.yayin_id),
     favori_mi: kullaniciFavoriSet.has(y.yayin_id),
     daha_once_izledi: tamamlananMap[y.yayin_id] ?? false,
@@ -235,14 +246,18 @@ export async function getTmAnaSayfaVeri(userId: string, adminSupabase: SupabaseC
     .select("takim_id")
     .eq("kullanici_id", userId)
     .single();
-
   if (kullaniciError || !kullanici) throw new Error("Kullanıcı bilgisi alınamadı.");
   if (!kullanici.takim_id) throw new Error("TM bir takıma bağlı değil.");
 
-  return await getBmAktiviteVerisi(
+  const veri = await getBmAktiviteVerisi(
     { tip: "takim", takim_id: kullanici.takim_id },
     adminSupabase,
   );
+
+  return {
+    bm_satirlari: veri.satirlar,
+    istatistikler: veri.istatistikler,
+  };
 }
 
 // ─── IU ───────────────────────────────────────────────────────────────────────
@@ -256,17 +271,17 @@ export async function getIuAnaSayfaVeri(userId: string, adminSupabase: SupabaseC
     adminSupabase
       .from("senaryo_durumu")
       .select("senaryo_durum_id, senaryo_id, created_at")
-      .eq("durum", "Senaryo Yaziliyor")
+      .eq("durum", "senaryo yaziliyor")
       .order("created_at", { ascending: true }),
     adminSupabase
       .from("video_durumu")
       .select("video_durum_id, video_id, created_at")
-      .eq("durum", "Inceleme Bekleniyor")
+      .eq("durum", "inceleme bekleniyor")
       .order("created_at", { ascending: true }),
     adminSupabase
       .from("soru_seti_durumu")
       .select("soru_seti_durum_id, soru_seti_id, created_at")
-      .eq("durum", "Inceleme Bekleniyor")
+      .eq("durum", "inceleme bekleniyor")
       .order("created_at", { ascending: true }),
   ]);
 
@@ -288,6 +303,7 @@ interface TakipSatiri {
   talep_id: string;
   urun_adi: string;
   teknik_adi: string;
+  hedef_rol: "utt" | "bm";
   asama: "Senaryo" | "Video" | "Soru Seti" | "Yayın";
   durum: string;
   tarih: string;
@@ -298,7 +314,7 @@ interface TakipSatiri {
 export async function getUreticiAnaSayfaVeri(userId: string, adminSupabase: SupabaseClient) {
   const { data: talepler, error: talepError } = await adminSupabase
     .from("talepler")
-    .select(`talep_id, created_at, urunler(urun_adi), teknikler(teknik_adi)`)
+    .select(`talep_id, hedef_rol, created_at, urunler(urun_adi), teknikler(teknik_adi)`)
     .eq("uretici_id", userId)
     .order("created_at", { ascending: false });
 
@@ -312,6 +328,7 @@ export async function getUreticiAnaSayfaVeri(userId: string, adminSupabase: Supa
   for (const talep of talepler ?? []) {
     const urun_adi = (talep as any).urunler?.urun_adi ?? "-";
     const teknik_adi = (talep as any).teknikler?.teknik_adi ?? "-";
+    const hedef_rol = ((talep as any).hedef_rol ?? "utt") as "utt" | "bm";
 
     const { data: senaryolar } = await adminSupabase
       .from("senaryolar")
@@ -323,7 +340,7 @@ export async function getUreticiAnaSayfaVeri(userId: string, adminSupabase: Supa
     const sonSenaryo = senaryolar?.[0];
 
     if (!sonSenaryo) {
-      satirlar.push({ talep_id: talep.talep_id, urun_adi, teknik_adi, asama: "Senaryo", durum: "Senaryo Bekleniyor", tarih: talep.created_at, yol: `/talepler/${talep.talep_id}`, kategori: "devam" });
+      satirlar.push({ talep_id: talep.talep_id, urun_adi, teknik_adi, hedef_rol, asama: "Senaryo", durum: "Senaryo Bekleniyor", tarih: talep.created_at, yol: `/talepler/${talep.talep_id}`, kategori: "devam" });
       continue;
     }
 
@@ -336,12 +353,12 @@ export async function getUreticiAnaSayfaVeri(userId: string, adminSupabase: Supa
 
     const sonSD = senaryoDurumlar?.[0];
 
-    if (!sonSD || sonSD.durum !== "Onaylandi") {
-      const durum = sonSD?.durum === "Inceleme Bekleniyor" ? "İnceleme Bekliyor" :
-                    sonSD?.durum === "Revizyon Bekleniyor" ? "Revizyon Gönderildi" : "Devam Ediyor";
-      const kategori = sonSD?.durum === "Inceleme Bekleniyor" ? "inceleme" : "devam";
-      if (sonSD?.durum === "Inceleme Bekleniyor") inceleme_bekleyen++;
-      satirlar.push({ talep_id: talep.talep_id, urun_adi, teknik_adi, asama: "Senaryo", durum, tarih: sonSD?.created_at ?? talep.created_at, yol: `/senaryolar/${talep.talep_id}`, kategori });
+    if (!sonSD || sonSD.durum !== "onaylandi") {
+      const durum = sonSD?.durum === "inceleme bekleniyor" ? "İnceleme Bekliyor" :
+                    sonSD?.durum === "revizyon bekleniyor" ? "Revizyon Gönderildi" : "Devam Ediyor";
+      const kategori = sonSD?.durum === "inceleme bekleniyor" ? "inceleme" : "devam";
+      if (sonSD?.durum === "inceleme bekleniyor") inceleme_bekleyen++;
+      satirlar.push({ talep_id: talep.talep_id, urun_adi, teknik_adi, hedef_rol, asama: "Senaryo", durum, tarih: sonSD?.created_at ?? talep.created_at, yol: `/senaryolar/${talep.talep_id}`, kategori });
       continue;
     }
 
@@ -355,7 +372,7 @@ export async function getUreticiAnaSayfaVeri(userId: string, adminSupabase: Supa
     const sonVideo = videolar?.[0];
 
     if (!sonVideo) {
-      satirlar.push({ talep_id: talep.talep_id, urun_adi, teknik_adi, asama: "Video", durum: "Video Bekleniyor", tarih: sonSD.created_at, yol: `/videolar`, kategori: "devam" });
+      satirlar.push({ talep_id: talep.talep_id, urun_adi, teknik_adi, hedef_rol, asama: "Video", durum: "Video Bekleniyor", tarih: sonSD.created_at, yol: `/videolar`, kategori: "devam" });
       continue;
     }
 
@@ -368,12 +385,12 @@ export async function getUreticiAnaSayfaVeri(userId: string, adminSupabase: Supa
 
     const sonVD = videoDurumlar?.[0];
 
-    if (!sonVD || sonVD.durum !== "Onaylandi") {
-      const durum = sonVD?.durum === "Inceleme Bekleniyor" ? "İnceleme Bekliyor" :
-                    sonVD?.durum === "Revizyon Bekleniyor" ? "Revizyon Gönderildi" : "Devam Ediyor";
-      const kategori = sonVD?.durum === "Inceleme Bekleniyor" ? "inceleme" : "devam";
-      if (sonVD?.durum === "Inceleme Bekleniyor") inceleme_bekleyen++;
-      satirlar.push({ talep_id: talep.talep_id, urun_adi, teknik_adi, asama: "Video", durum, tarih: sonVD?.created_at ?? sonSD.created_at, yol: `/videolar`, kategori });
+    if (!sonVD || sonVD.durum !== "onaylandi") {
+      const durum = sonVD?.durum === "inceleme bekleniyor" ? "İnceleme Bekliyor" :
+                    sonVD?.durum === "revizyon bekleniyor" ? "Revizyon Gönderildi" : "Devam Ediyor";
+      const kategori = sonVD?.durum === "inceleme bekleniyor" ? "inceleme" : "devam";
+      if (sonVD?.durum === "inceleme bekleniyor") inceleme_bekleyen++;
+      satirlar.push({ talep_id: talep.talep_id, urun_adi, teknik_adi, hedef_rol, asama: "Video", durum, tarih: sonVD?.created_at ?? sonSD.created_at, yol: `/videolar`, kategori });
       continue;
     }
 
@@ -387,7 +404,7 @@ export async function getUreticiAnaSayfaVeri(userId: string, adminSupabase: Supa
     const sonSoruSeti = soruSetleri?.[0];
 
     if (!sonSoruSeti) {
-      satirlar.push({ talep_id: talep.talep_id, urun_adi, teknik_adi, asama: "Soru Seti", durum: "Soru Seti Bekleniyor", tarih: sonVD.created_at, yol: `/soru-setleri`, kategori: "devam" });
+      satirlar.push({ talep_id: talep.talep_id, urun_adi, teknik_adi, hedef_rol, asama: "Soru Seti", durum: "Soru Seti Bekleniyor", tarih: sonVD.created_at, yol: `/soru-setleri`, kategori: "devam" });
       continue;
     }
 
@@ -400,12 +417,12 @@ export async function getUreticiAnaSayfaVeri(userId: string, adminSupabase: Supa
 
     const sonSSD = soruSetiDurumlar?.[0];
 
-    if (!sonSSD || sonSSD.durum !== "Onaylandi") {
-      const durum = sonSSD?.durum === "Inceleme Bekleniyor" ? "İnceleme Bekliyor" :
-                    sonSSD?.durum === "Revizyon Bekleniyor" ? "Revizyon Gönderildi" : "Devam Ediyor";
-      const kategori = sonSSD?.durum === "Inceleme Bekleniyor" ? "inceleme" : "devam";
-      if (sonSSD?.durum === "Inceleme Bekleniyor") inceleme_bekleyen++;
-      satirlar.push({ talep_id: talep.talep_id, urun_adi, teknik_adi, asama: "Soru Seti", durum, tarih: sonSSD?.created_at ?? sonVD.created_at, yol: `/soru-setleri`, kategori });
+    if (!sonSSD || sonSSD.durum !== "onaylandi") {
+      const durum = sonSSD?.durum === "inceleme bekleniyor" ? "İnceleme Bekliyor" :
+                    sonSSD?.durum === "revizyon bekleniyor" ? "Revizyon Gönderildi" : "Devam Ediyor";
+      const kategori = sonSSD?.durum === "inceleme bekleniyor" ? "inceleme" : "devam";
+      if (sonSSD?.durum === "inceleme bekleniyor") inceleme_bekleyen++;
+      satirlar.push({ talep_id: talep.talep_id, urun_adi, teknik_adi, hedef_rol, asama: "Soru Seti", durum, tarih: sonSSD?.created_at ?? sonVD.created_at, yol: `/soru-setleri`, kategori });
       continue;
     }
 
@@ -417,12 +434,12 @@ export async function getUreticiAnaSayfaVeri(userId: string, adminSupabase: Supa
 
     if (!yayin) {
       yayin_bekleyen++;
-      satirlar.push({ talep_id: talep.talep_id, urun_adi, teknik_adi, asama: "Yayın", durum: "Yayın Bekliyor", tarih: sonSSD.created_at, yol: `/yayin-yonetimi`, kategori: "yayin-bekleyen" });
-    } else if (yayin.durum === "Yayinda") {
+      satirlar.push({ talep_id: talep.talep_id, urun_adi, teknik_adi, hedef_rol, asama: "Yayın", durum: "Yayın Bekliyor", tarih: sonSSD.created_at, yol: `/yayin-yonetimi`, kategori: "yayin-bekleyen" });
+    } else if (yayin.durum === "yayinda") {
       yayinda++;
-      satirlar.push({ talep_id: talep.talep_id, urun_adi, teknik_adi, asama: "Yayın", durum: "Yayında", tarih: yayin.yayin_tarihi, yol: `/yayin-yonetimi`, kategori: "yayinda" });
+      satirlar.push({ talep_id: talep.talep_id, urun_adi, teknik_adi, hedef_rol, asama: "Yayın", durum: "Yayında", tarih: yayin.yayin_tarihi, yol: `/yayin-yonetimi`, kategori: "yayinda" });
     } else {
-      satirlar.push({ talep_id: talep.talep_id, urun_adi, teknik_adi, asama: "Yayın", durum: "Durduruldu", tarih: yayin.yayin_tarihi, yol: `/yayin-yonetimi`, kategori: "durdurulan" });
+      satirlar.push({ talep_id: talep.talep_id, urun_adi, teknik_adi, hedef_rol, asama: "Yayın", durum: "Durduruldu", tarih: yayin.yayin_tarihi, yol: `/yayin-yonetimi`, kategori: "durdurulan" });
     }
   }
 
@@ -448,34 +465,63 @@ export async function getYoneticiAnaSayfaVeri(userId: string, adminSupabase: Sup
 
   if (kullaniciError || !kullanici) throw new Error("Kullanıcı bilgisi alınamadı.");
 
+  // Hafta başlangıcı (Pazartesi 00:00)
+  const haftaBaslangic = new Date();
+  haftaBaslangic.setDate(haftaBaslangic.getDate() - haftaBaslangic.getDay() + 1);
+  haftaBaslangic.setHours(0, 0, 0, 0);
+  const simdi = new Date().toISOString();
+
+  // Paralel: anlık 6 stat + haftalık UTT puanları + UTT listesi (rol/foto için)
   const [
-    { data: yayinlar },
-    { data: kullanicilar },
+    { data: ozet, error: ozetError },
+    { data: haftaUttler },
+    { data: firmaUttler },
   ] = await Promise.all([
-    adminSupabase
-      .from("v_yayin_detay")
-      .select("yayin_id, urun_adi, teknik_adi, durum, yayin_tarihi")
-      .eq("durum", "Yayinda")
-      .order("yayin_tarihi", { ascending: false })
-      .limit(10),
+    adminSupabase.rpc("get_yonetici_ana_sayfa", { p_firma_id: kullanici.firma_id }),
+    adminSupabase.rpc("get_kullanici_ozet", {
+      p_baslangic: haftaBaslangic.toISOString(),
+      p_bitis: simdi,
+      p_firma_id: kullanici.firma_id,
+    }),
     adminSupabase
       .from("kullanicilar")
-      .select("kullanici_id, rol, aktif_mi")
+      .select("kullanici_id, fotograf_url")
       .eq("firma_id", kullanici.firma_id)
+      .in("rol", ["utt", "kd_utt"])
       .eq("aktif_mi", true),
   ]);
 
-  const rolSayilari: Record<string, number> = {};
-  for (const k of kullanicilar ?? []) {
-    rolSayilari[k.rol] = (rolSayilari[k.rol] ?? 0) + 1;
-  }
+  if (ozetError) throw new Error("Ana sayfa verisi alınamadı.");
+
+  const stat = (ozet && ozet.length > 0) ? ozet[0] : null;
+
+  const uttIdSet = new Set((firmaUttler ?? []).map((u: any) => u.kullanici_id));
+  const fotoMap: Record<string, string | null> = {};
+  for (const u of firmaUttler ?? []) fotoMap[u.kullanici_id] = u.fotograf_url;
+
+  // Top 5 UTT (firma içi UTT/KD_UTT + puanı > 0, net puan DESC)
+  const top5 = (haftaUttler ?? [])
+    .filter((u: any) => uttIdSet.has(u.kullanici_id) && (u.toplam_net_puan ?? 0) > 0)
+    .sort((a: any, b: any) => (b.toplam_net_puan ?? 0) - (a.toplam_net_puan ?? 0))
+    .slice(0, 5);
+
+  const haftanin_enleri = top5.map((u: any) => ({
+    kullanici_id: u.kullanici_id,
+    ad: u.ad,
+    soyad: u.soyad,
+    fotograf_url: fotoMap[u.kullanici_id] ?? null,
+    toplam_puan: u.toplam_net_puan ?? 0,
+  }));
 
   return {
-    son_yayinlar: yayinlar ?? [],
     istatistikler: {
-      toplam_kullanici: (kullanicilar ?? []).length,
-      aktif_yayin: (yayinlar ?? []).length,
-      rol_dagilimi: rolSayilari,
+      yayinda_toplam_video: stat?.yayinda_toplam_video ?? 0,
+      toplam_izleme_sayisi: stat?.toplam_izleme_sayisi ?? 0,
+      en_cok_izlenen_video: stat?.en_cok_izlenen_video ?? null,
+      en_cok_izleyen_takim: stat?.en_cok_izleyen_takim ?? null,
+      en_cok_izleyen_bolge: stat?.en_cok_izleyen_bolge ?? null,
+      en_cok_izleyen_utt: stat?.en_cok_izleyen_utt ?? null,
     },
+    haftanin_enleri,
   };
 }

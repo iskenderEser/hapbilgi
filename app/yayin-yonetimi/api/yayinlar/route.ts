@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { cokluBildirimOlustur } from "@/lib/utils/bildirimOlustur";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
+import { talepBilgisiSoruSeti } from "@/lib/utils/talepZinciri";
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,13 +18,10 @@ export async function POST(request: NextRequest) {
     if (!URETICI_ROLLER.includes(rol)) return rolHatasi("Sadece yetkili roller yayına alabilir.");
 
     const body = await request.json();
-    const { soru_seti_durum_id, ileri_sarma_acik, extra_puan, hedef_roller } = body;
+    const { soru_seti_durum_id, ileri_sarma_acik, extra_puan } = body;
 
     if (!soru_seti_durum_id) return validasyonHatasi("soru_seti_durum_id zorunludur.", ["soru_seti_durum_id"]);
     if (!extra_puan || extra_puan < 5 || extra_puan > 10) return validasyonHatasi("Extra puan 5-10 arasında olmalıdır.", ["extra_puan"]);
-    if (!hedef_roller || !Array.isArray(hedef_roller) || hedef_roller.length === 0) {
-      return validasyonHatasi("En az bir hedef rol seçilmelidir.", ["hedef_roller"]);
-    }
 
     const { data: soruSetiDurum, error: ssError } = await adminSupabase
       .from("soru_seti_durumu")
@@ -34,7 +32,7 @@ export async function POST(request: NextRequest) {
     const ssKontrol = veriKontrol(soruSetiDurum, "soru_seti_durumu tablosu SELECT — soru_seti_durum_id kontrolü", "Soru seti durumu bulunamadı.");
     if (!ssKontrol.gecerli) return ssKontrol.yanit;
     if (ssError) return hataYaniti("Soru seti durumu sorgulanırken hata oluştu.", "soru_seti_durumu tablosu SELECT", ssError, 404);
-    if (soruSetiDurum.durum !== "Onaylandi") return isKuraluHatasi(`Soru seti onaylı değil. Mevcut durum: ${soruSetiDurum.durum}`);
+    if (soruSetiDurum.durum !== "onaylandi") return isKuraluHatasi(`Soru seti onaylı değil. Mevcut durum: ${soruSetiDurum.durum}`);
 
     const { data: soruSeti, error: soruSetiError } = await adminSupabase
       .from("soru_setleri")
@@ -45,6 +43,11 @@ export async function POST(request: NextRequest) {
     const soruSetiKontrol = veriKontrol(soruSeti, "soru_setleri tablosu SELECT — soru_seti_id kontrolü", "Soru seti bulunamadı.");
     if (!soruSetiKontrol.gecerli) return soruSetiKontrol.yanit;
     if (soruSetiError) return hataYaniti("Soru seti sorgulanırken hata oluştu.", "soru_setleri tablosu SELECT", soruSetiError, 404);
+
+    // Hedef rolleri talep'ten türet (kullanıcı seçimi yok — Karar 1: hedef rol talep aşamasında belirlenir)
+    const talepBilgisi = await talepBilgisiSoruSeti(adminSupabase, soruSeti.soru_seti_id);
+    if (!talepBilgisi) return hataYaniti("Talep bilgisi bulunamadı, hedef rol türetilemedi.", "talepBilgisiSoruSeti", null);
+    const hedefRoller: string[] = [talepBilgisi.hedef_rol];
 
     const { data: videoPuan, error: vpError } = await adminSupabase
       .from("video_puanlari")
@@ -93,11 +96,11 @@ export async function POST(request: NextRequest) {
       .insert({
         soru_seti_durum_id,
         uretici_id: user.id,
-        durum: "Yayinda",
+        durum: "yayinda",
         yayin_tarihi: simdi,
         ileri_sarma_acik: ileri_sarma_acik ?? false,
         extra_puan,
-        hedef_roller,
+        hedef_roller: hedefRoller,
       })
       .select("yayin_id, durum, yayin_tarihi")
       .single();
@@ -108,73 +111,42 @@ export async function POST(request: NextRequest) {
     if (!yayinKontrol.gecerli) return yayinKontrol.yanit;
 
     // Hedef rollerdeki kullanıcılara bildirim gönder
+    // v_yayin_detay view ile tek sorguda takim_id + urun_adi alınır (eski 5 SELECT zinciri yerine).
     try {
-      const { data: videoDurum } = await adminSupabase
-        .from("video_durumu")
-        .select("video_id")
-        .eq("video_durum_id", soruSeti.video_durum_id)
+      const { data: yayinDetay } = await adminSupabase
+        .from("v_yayin_detay")
+        .select("takim_id, urun_adi")
+        .eq("yayin_id", (yeniYayin as any).yayin_id)
         .single();
 
-      if (videoDurum?.video_id) {
-        const { data: video } = await adminSupabase
-          .from("videolar")
-          .select("senaryo_durum_id")
-          .eq("video_id", videoDurum.video_id)
-          .single();
+      const urun_adi = yayinDetay?.urun_adi ?? "-";
 
-        if (video?.senaryo_durum_id) {
-          const { data: senaryoDurum } = await adminSupabase
-            .from("senaryo_durumu")
-            .select("senaryo_id")
-            .eq("senaryo_durum_id", video.senaryo_durum_id)
-            .single();
+      if (yayinDetay?.takim_id) {
+        const { data: bolgeler } = await adminSupabase
+          .from("bolgeler")
+          .select("bolge_id")
+          .eq("takim_id", yayinDetay.takim_id);
 
-          if (senaryoDurum?.senaryo_id) {
-            const { data: senaryo } = await adminSupabase
-              .from("senaryolar")
-              .select("talep_id")
-              .eq("senaryo_id", senaryoDurum.senaryo_id)
-              .single();
+        const bolgeIdler = (bolgeler ?? []).map((b: any) => b.bolge_id);
 
-            if (senaryo?.talep_id) {
-              const { data: talep } = await adminSupabase
-                .from("talepler")
-                .select(`takim_id, urunler(urun_adi)`)
-                .eq("talep_id", senaryo.talep_id)
-                .single();
+        if (bolgeIdler.length > 0) {
+          const { data: hedefKullanicilar } = await adminSupabase
+            .from("kullanicilar")
+            .select("kullanici_id")
+            .in("bolge_id", bolgeIdler)
+            .in("rol", hedefRoller)
+            .eq("aktif_mi", true);
 
-              const urun_adi = (talep as any)?.urunler?.urun_adi ?? "-";
+          const hedefIdler = (hedefKullanicilar ?? []).map((k: any) => k.kullanici_id);
 
-              if (talep?.takim_id) {
-                const { data: bolgeler } = await adminSupabase
-                  .from("bolgeler")
-                  .select("bolge_id")
-                  .eq("takim_id", talep.takim_id);
-
-                const bolgeIdler = (bolgeler ?? []).map((b: any) => b.bolge_id);
-
-                if (bolgeIdler.length > 0) {
-                  const { data: hedefKullanicilar } = await adminSupabase
-                    .from("kullanicilar")
-                    .select("kullanici_id")
-                    .in("bolge_id", bolgeIdler)
-                    .in("rol", hedef_roller)
-                    .eq("aktif_mi", true);
-
-                  const hedefIdler = (hedefKullanicilar ?? []).map((k: any) => k.kullanici_id);
-
-                  await cokluBildirimOlustur({
-                    adminSupabase,
-                    alici_idler: hedefIdler,
-                    gonderen_id: user.id,
-                    kayit_turu: "yayin",
-                    kayit_id: (yeniYayin as any).yayin_id,
-                    mesaj: `Yeni video yayında: ${urun_adi}`,
-                  });
-                }
-              }
-            }
-          }
+          await cokluBildirimOlustur({
+            adminSupabase,
+            alici_idler: hedefIdler,
+            gonderen_id: user.id,
+            kayit_turu: "yayin",
+            kayit_id: (yeniYayin as any).yayin_id,
+            mesaj: `Yeni video yayında: ${urun_adi}`,
+          });
         }
       }
     } catch (bildirimHatasi) {

@@ -8,10 +8,14 @@ import {
   TALEP_TURU_KURALLARI,
   type TalepTuru,
 } from "@/lib/uretici/yetenekler";
+import type { HedefRol } from "@/app/talepler/_types";
 
 // TalepTuru tipinin tüm geçerli değerlerinin runtime listesi —
 // TALEP_TURU_KURALLARI'nın anahtarlarından türetilir, hardcoded liste yok.
 const GECERLI_TALEP_TURLERI = Object.keys(TALEP_TURU_KURALLARI) as TalepTuru[];
+
+// HedefRol tipinin runtime karşılığı — DB'deki CHECK constraint ile birebir.
+const GECERLI_HEDEF_ROLLER: HedefRol[] = ["utt", "bm"];
 
 export async function GET() {
   try {
@@ -33,12 +37,11 @@ export async function GET() {
       .from("talepler")
       .select(`
         talep_id, uretici_id, takim_id, firma_id, aciklama, hazir_video, hazir_video_url, dosya_urls, created_at,
-        urun_id, teknik_id, kategori_id, egitim_turu, icerik_turu,
+        urun_id, teknik_id, egitim_turu, hedef_rol, icerik_turu,
         hazir_soru_seti,
         soru_seti_buyuklugu, video_basi_soru_sayisi,
         urunler(urun_adi),
-        teknikler(teknik_adi),
-        kategoriler(kategori_adi)
+        teknikler(teknik_adi)
       `)
       .order("created_at", { ascending: false });
 
@@ -58,12 +61,11 @@ export async function GET() {
       firma_id: t.firma_id,
       urun_id: t.urun_id,
       teknik_id: t.teknik_id,
-      kategori_id: t.kategori_id ?? null,
       egitim_turu: t.egitim_turu ?? "urun_egitimi",
+      hedef_rol: t.hedef_rol ?? "utt",
       icerik_turu: t.icerik_turu ?? null,
       urun_adi: t.urunler?.urun_adi ?? t.urun_adi ?? "-",
       teknik_adi: t.teknikler?.teknik_adi ?? t.teknik_adi ?? "-",
-      kategori_adi: t.kategoriler?.kategori_adi ?? null,
       aciklama: t.aciklama,
       hazir_video: t.hazir_video,
       hazir_video_url: t.hazir_video_url,
@@ -122,7 +124,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       egitim_turu,
-      urun_id, teknik_id, kategori_id, aciklama,
+      hedef_rol,
+      urun_id, teknik_id, aciklama,
       hazir_video, hazir_soru_seti, hazir_soru_seti_verisi,
       soru_seti_buyuklugu, video_basi_soru_sayisi,
     } = body;
@@ -131,6 +134,12 @@ export async function POST(request: NextRequest) {
     const egitimTuru = egitim_turu as TalepTuru;
     if (!GECERLI_TALEP_TURLERI.includes(egitimTuru)) {
       return validasyonHatasi("Eğitim türü geçersiz.", ["egitim_turu"]);
+    }
+
+    // hedef_rol validasyonu — UTT veya BM olmalı.
+    const hedefRol = hedef_rol as HedefRol;
+    if (!hedefRol || !GECERLI_HEDEF_ROLLER.includes(hedefRol)) {
+      return validasyonHatasi("Hedef rol seçimi zorunludur (utt veya bm).", ["hedef_rol"]);
     }
 
     // Yetenek-bilinçli talep türü validasyonu — rol bu türde talep açabiliyor mu?
@@ -172,10 +181,10 @@ export async function POST(request: NextRequest) {
         firma_id: kullaniciKaydi.firma_id,
         takim_id: kullaniciKaydi.takim_id ?? null,
         egitim_turu: egitimTuru,
+        hedef_rol: hedefRol,
         icerik_turu: icerikTuru,
         urun_id: insertUrunId,
         teknik_id: insertTeknikId,
-        kategori_id: kategori_id ?? null,
         aciklama: aciklama?.trim() ?? null,
         hazir_video: hazir_video ?? false,
         hazir_soru_seti: hazir_soru_seti ?? false,
@@ -185,12 +194,11 @@ export async function POST(request: NextRequest) {
       })
       .select(`
         talep_id, takim_id, firma_id, hazir_video, created_at,
-        urun_id, teknik_id, kategori_id, egitim_turu, icerik_turu,
+        urun_id, teknik_id, egitim_turu, hedef_rol, icerik_turu,
         hazir_soru_seti, hazir_soru_seti_verisi,
         soru_seti_buyuklugu, video_basi_soru_sayisi,
         urunler(urun_adi),
-        teknikler(teknik_adi),
-        kategoriler(kategori_adi)
+        teknikler(teknik_adi)
       `)
       .single();
 
@@ -223,9 +231,9 @@ export async function POST(request: NextRequest) {
       talep: {
         ...yeniTalep,
         egitim_turu: egitimTuru,
+        hedef_rol: hedefRol,
         urun_adi: (yeniTalep as any).urunler?.urun_adi ?? "-",
         teknik_adi: (yeniTalep as any).teknikler?.teknik_adi ?? "-",
-        kategori_adi: (yeniTalep as any).kategoriler?.kategori_adi ?? null,
       }
     }, { status: 201 });
 

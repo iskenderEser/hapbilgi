@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
+import { oneriPenceresiAcik } from "@/lib/oneri/pencereKontrol";
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,11 +41,11 @@ export async function POST(request: NextRequest) {
       if (oneri.kullanici_id !== user.id) return rolHatasi("Bu öneri size ait değil.");
       if (oneri.yayin_id !== yayin_id) return isKuraluHatasi("Öneri ile yayin_id eşleşmiyor.");
 
-      const simdi = new Date();
-      const baslangic = new Date(oneri.oneri_baslangic);
-      const bitis = new Date(oneri.oneri_bitis);
-      if (simdi < baslangic) return isKuraluHatasi("Önerinin izleme penceresi henüz başlamadı.");
-      if (simdi > bitis) return isKuraluHatasi("Önerinin izleme penceresi sona erdi.");
+      const pencere = oneriPenceresiAcik(oneri.oneri_baslangic, oneri.oneri_bitis);
+      if (!pencere.acik) {
+        if (pencere.sebep === "henuz_baslamadi") return isKuraluHatasi("Önerinin izleme penceresi henüz başlamadı.");
+        return isKuraluHatasi("Önerinin izleme penceresi sona erdi.");
+      }
     }
 
     const { data: yayin, error: yayinError } = await adminSupabase
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
     const yayinKontrol = veriKontrol(yayin, "yayin_yonetimi tablosu SELECT — yayin_id kontrolü", "Yayın bulunamadı.");
     if (!yayinKontrol.gecerli) return yayinKontrol.yanit;
     if (yayinError) return hataYaniti("Yayın sorgulanırken hata oluştu.", "yayin_yonetimi tablosu SELECT", yayinError, 404);
-    if (yayin.durum !== "Yayinda") return isKuraluHatasi(`Video şu an yayında değil. Mevcut durum: ${yayin.durum}`);
+    if (yayin.durum !== "yayinda") return isKuraluHatasi(`Video şu an yayında değil. Mevcut durum: ${yayin.durum}`);
 
     const insertVeri: any = {
       yayin_id,

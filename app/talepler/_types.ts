@@ -9,16 +9,24 @@ import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
 // Tipler
 // ============================================================================
 
+/**
+ * Hedef rol — talebin hangi kitle için olduğunu belirler.
+ * 'utt' → Ürün Tanıtım Temsilcileri (varsayılan UTT akışı)
+ * 'bm'  → Bölge Müdürleri (Challenge Club akışı)
+ *
+ * DB: talepler.hedef_rol kolonu (NOT NULL CHECK).
+ */
+export type HedefRol = "utt" | "bm";
+
 export interface Talep {
   talep_id: string;
   uretici_id: string;
   urun_id: string | null;
   teknik_id: string | null;
-  kategori_id: string | null;
   urun_adi: string;
   teknik_adi: string;
-  kategori_adi: string | null;
   egitim_turu: TalepTuru;
+  hedef_rol: HedefRol;
   aciklama: string;
   created_at: string;
   hazir_video: boolean;
@@ -35,12 +43,6 @@ export interface Urun {
 export interface Teknik {
   teknik_id: string;
   teknik_adi: string;
-}
-
-export interface Kategori {
-  kategori_id: string;
-  kategori_adi: string;
-  aktif_mi: boolean;
 }
 
 // Madde 4 Aşama 2B için — UrunTeknikSecici (Adım 9) içinde takım dropdown'una beslenecek.
@@ -100,6 +102,25 @@ export const TUR_ROZET: Record<TalepTuru, { bg: string; renk: string; border: st
   medikal_egitim: { bg: "#fef2f2", renk: "#bc2d0d", border: "#fecaca", etiket: "Medikal Eğitim" },
   urun_medikal_egitim: { bg: "#fdf4ff", renk: "#7e22ce", border: "#e9d5ff", etiket: "Ürün-Medikal" },
   ik_egitimi: { bg: "#f0fdf4", renk: "#15803d", border: "#bbf7d0", etiket: "İK Eğitimi" },
+};
+
+// Hedef rol görsel tasarımı (bant + pill için ortak renk/etiket sözlüğü).
+// UTT: mavi tonu (sistemin ana mavisi). BM: bordo (Challenge Club rengi).
+export const HEDEF_ROL_TASARIM: Record<HedefRol, { bg: string; renk: string; border: string; tamEtiket: string; kisaEtiket: string }> = {
+  utt: {
+    bg: "#eff6ff",
+    renk: "#1d4ed8",
+    border: "#bfdbfe",
+    tamEtiket: "Ürün Tanıtım Temsilcileri",
+    kisaEtiket: "UTT",
+  },
+  bm: {
+    bg: "#fef2f2",
+    renk: "#bc2d0d",
+    border: "#fecaca",
+    tamEtiket: "Bölge Müdürleri",
+    kisaEtiket: "BM",
+  },
 };
 
 // ============================================================================

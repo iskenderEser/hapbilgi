@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
+import { useAuth } from "@/app/providers/AuthProvider";
 
 interface Kullanici {
   kullanici_id: string;
@@ -33,8 +34,7 @@ const ROLLER = ["pm", "jr_pm", "kd_pm", "iu", "tm", "bm", "utt", "kd_utt", "gm",
 
 export default function KullanicilarPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [rol, setRol] = useState<string>("");
+  const { kullanici: oturumKullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
   const [kullanicilar, setKullanicilar] = useState<Kullanici[]>([]);
   const [hiyerarsi, setHiyerarsi] = useState<Hiyerarsi>({ firmalar: [], takimlar: [], bolgeler: [] });
   const [loading, setLoading] = useState(true);
@@ -50,17 +50,15 @@ export default function KullanicilarPage() {
   const { mesajlar, hata, basari } = useHataMesaji();
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) { router.push("/login"); return; }
-      setUser(data.user);
-      setRol(data.user.user_metadata?.rol ?? "");
-    });
-  }, []);
+    if (authYukleniyor) return;
+    if (!oturumKullanici) {
+      router.push("/login");
+      return;
+    }
+  }, [oturumKullanici, authYukleniyor, router]);
 
   const handleCikis = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await cikisYap();
     router.push("/login");
   };
 
@@ -86,8 +84,8 @@ export default function KullanicilarPage() {
   };
 
   useEffect(() => {
-    if (user) veriCek();
-  }, [user]);
+    if (oturumKullanici) veriCek();
+  }, [oturumKullanici]);
 
   const filtreliTakimlar = hiyerarsi.takimlar.filter(t => !secilenFirma || t.firma_id === secilenFirma);
   const filtreliBolgeler = hiyerarsi.bolgeler.filter(b => !secilenTakim || b.takim_id === secilenTakim);
@@ -131,7 +129,7 @@ export default function KullanicilarPage() {
     else { basari("Kullanıcı pasif yapıldı."); await veriCek(); }
   };
 
-  if (loading) {
+  if (authYukleniyor || !oturumKullanici || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <svg className="animate-spin w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24">
@@ -144,7 +142,7 @@ export default function KullanicilarPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-[Nunito]">
-      <Navbar email={user?.email ?? ""} rol={rol} onCikis={handleCikis} />
+      <Navbar email={oturumKullanici.email} rol={oturumKullanici.rol} adSoyad={oturumKullanici.adSoyad} onCikis={handleCikis} />
 
       <div className="max-w-5xl mx-auto px-4 py-6 flex flex-col gap-5">
 
@@ -271,7 +269,7 @@ export default function KullanicilarPage() {
                               className="px-2.5 py-1 rounded border border-gray-200 bg-transparent text-gray-500 text-xs cursor-pointer font-[Nunito] hover:bg-gray-50">
                               Düzenle
                             </button>
-                            {k.aktif_mi && k.kullanici_id !== user?.id && (
+                            {k.aktif_mi && k.kullanici_id !== oturumKullanici.id && (
                               <button onClick={() => handlePasifYap(k.kullanici_id, `${k.ad} ${k.soyad}`)}
                                 className="px-2.5 py-1 rounded border border-red-100 bg-transparent text-xs cursor-pointer font-[Nunito]"
                                 style={{ color: '#bc2d0d' }}>
@@ -310,7 +308,7 @@ export default function KullanicilarPage() {
                         className="px-3 py-1.5 rounded border border-gray-200 bg-transparent text-gray-500 text-xs cursor-pointer font-[Nunito]">
                         Düzenle
                       </button>
-                      {k.aktif_mi && k.kullanici_id !== user?.id && (
+                      {k.aktif_mi && k.kullanici_id !== oturumKullanici.id && (
                         <button onClick={() => handlePasifYap(k.kullanici_id, `${k.ad} ${k.soyad}`)}
                           className="px-3 py-1.5 rounded border border-red-100 bg-transparent text-xs cursor-pointer font-[Nunito]"
                           style={{ color: '#bc2d0d' }}>

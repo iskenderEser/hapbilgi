@@ -6,6 +6,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
+import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { HedefRolPill } from "@/components/HedefRolBant";
+import type { HedefRol } from "@/app/talepler/_types";
+import { useAuth } from "@/app/providers/AuthProvider";
 
 interface Bekleyen {
   soru_seti_durum_id: string;
@@ -19,6 +23,7 @@ interface Bekleyen {
   soru_puan_map: Record<number, { soru_seti_puan_id: string; soru_puani: number }>;
   urun_adi: string;
   teknik_adi: string;
+  hedef_rol: HedefRol;
   soru_seti_buyuklugu: number | null;
   video_basi_soru_sayisi: number | null;
   onay_tarihi: string;
@@ -38,24 +43,16 @@ interface Yayin {
   soru_puani: number | null;
   sorular: any[];
   ileri_sarma_acik: boolean;
-  hedef_roller: string[];
+  hedef_rol: HedefRol;
 }
 
 const VIDEO_PUAN_SECENEKLERI = [40, 45, 50, 55, 60, 65, 70];
 const SORU_PUAN_SECENEKLERI = [3, 4, 5, 6, 7];
 
-// Hedef kitle seçenekleri
-const HEDEF_ROL_SECENEKLERI = [
-  { deger: "utt", etiket: "UTT" },
-  { deger: "kd_utt", etiket: "KD UTT" },
-  { deger: "bm", etiket: "BM" },
-  { deger: "tm", etiket: "TM" },
-];
-
 export default function YayinYonetimiPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [rol, setRol] = useState<string>("");
+  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const [aktifAnaSekme, setAktifAnaSekme] = useState<HedefRol>("utt");
   const [aktifSekme, setAktifSekme] = useState<"bekleyen" | "yayinda" | "durdurulan">("bekleyen");
   const [bekleyenler, setBekleyenler] = useState<Bekleyen[]>([]);
   const [yayinlar, setYayinlar] = useState<Yayin[]>([]);
@@ -70,22 +67,18 @@ export default function YayinYonetimiPage() {
   const [bekleyenIleriSarma, setBekleyenIleriSarma] = useState<Record<string, boolean>>({});
   const [ileriSarmaAcik, setIleriSarmaAcik] = useState<Record<string, boolean>>({});
   const [extraPuanlar, setExtraPuanlar] = useState<Record<string, number>>({});
-  // Hedef roller state: her bekleyen için seçili roller dizisi
-  const [hedefRollerMap, setHedefRollerMap] = useState<Record<string, string[]>>({});
   const { mesajlar, hata, basari } = useHataMesaji();
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) { router.push("/login"); return; }
-      setUser(data.user);
-      setRol(data.user.user_metadata?.rol ?? "");
-    });
-  }, []);
+    if (authYukleniyor) return;
+    if (!kullanici) {
+      router.push("/login");
+      return;
+    }
+  }, [kullanici, authYukleniyor, router]);
 
   const handleCikis = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await cikisYap();
     router.push("/login");
   };
 
@@ -93,7 +86,8 @@ export default function YayinYonetimiPage() {
     setLoading(true);
     const supabase = createClient();
 
-    const bRes = await fetch("/yayin-yonetimi/api/bekleyenler");
+    // Bekleyenler: ana sekmeye göre filtreli çek
+    const bRes = await fetch(`/yayin-yonetimi/api/bekleyenler?hedef_rol=${aktifAnaSekme}`);
     const bData = await bRes.json();
     if (!bRes.ok) {
       hata(bData.hata ?? "Bekleyenler yüklenemedi.", bData.adim, bData.detay);
@@ -108,41 +102,30 @@ export default function YayinYonetimiPage() {
         }
       }
       setSoruPuanlari(yeniSoruPuanlari);
-      // Yeni bekleyenler için varsayılan hedef rol: ["utt"]
-      setHedefRollerMap(prev => {
-        const guncellenen = { ...prev };
-        for (const b of bekleyenlerData) {
-          if (!guncellenen[b.soru_seti_durum_id]) {
-            guncellenen[b.soru_seti_durum_id] = ["utt"];
-          }
-        }
-        return guncellenen;
-      });
     }
 
+    // Yayınlar: tüm yayınları çekip client-side hedef_rol'e göre filtrele
     const { data: yayinlarData, error: yayinError } = await supabase
       .from("v_yayin_detay")
-      .select("yayin_id, soru_seti_durum_id, durum, yayin_tarihi, durdurma_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, sorular")
+      .select("yayin_id, soru_seti_durum_id, durum, yayin_tarihi, durdurma_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, sorular, hedef_rol")
       .order("yayin_tarihi", { ascending: false });
 
     if (yayinError) { hata("Yayınlar yüklenemedi.", "v_yayin_detay view SELECT", yayinError.message); setLoading(false); return; }
 
     if ((yayinlarData ?? []).length > 0) {
       const { data: yayinBilgileri } = await supabase
-        .from("yayin_yonetimi").select("yayin_id, ileri_sarma_acik, hedef_roller")
+        .from("yayin_yonetimi").select("yayin_id, ileri_sarma_acik")
         .in("yayin_id", yayinlarData!.map(y => y.yayin_id));
 
       const ileriSarmaMapLocal: Record<string, boolean> = {};
-      const hedefRollerMapLocal: Record<string, string[]> = {};
       for (const yb of yayinBilgileri ?? []) {
         ileriSarmaMapLocal[yb.yayin_id] = yb.ileri_sarma_acik ?? false;
-        hedefRollerMapLocal[yb.yayin_id] = yb.hedef_roller ?? ["utt"];
       }
       setIleriSarmaAcik(ileriSarmaMapLocal);
       setYayinlar((yayinlarData ?? []).map(y => ({
         ...y,
+        hedef_rol: (y.hedef_rol ?? "utt") as HedefRol,
         ileri_sarma_acik: ileriSarmaMapLocal[y.yayin_id] ?? false,
-        hedef_roller: hedefRollerMapLocal[y.yayin_id] ?? ["utt"],
       })));
 
       const { data: tumSoruPuanlari, error: spError } = await supabase
@@ -166,7 +149,7 @@ export default function YayinYonetimiPage() {
     setLoading(false);
   };
 
-  useEffect(() => { if (user) veriCek(); }, [user]);
+  useEffect(() => { if (kullanici) veriCek(); }, [kullanici, aktifAnaSekme]);
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -184,24 +167,10 @@ export default function YayinYonetimiPage() {
     setSoruPuanlari(prev => ({ ...prev, [soru_seti_durum_id]: yeni }));
   };
 
-  const hedefRolToggle = (soru_seti_durum_id: string, rolDeger: string) => {
-    setHedefRollerMap(prev => {
-      const mevcutlar = prev[soru_seti_durum_id] ?? ["utt"];
-      const yeni = mevcutlar.includes(rolDeger)
-        ? mevcutlar.filter(r => r !== rolDeger)
-        : [...mevcutlar, rolDeger];
-      // En az bir rol seçili olmalı
-      if (yeni.length === 0) return prev;
-      return { ...prev, [soru_seti_durum_id]: yeni };
-    });
-  };
-
   const tumPuanlarAtandiMi = (b: Bekleyen): boolean => {
     const vp = videoPuanlari[b.soru_seti_durum_id] ?? b.video_puani;
     if (!vp) return false;
     if (!extraPuanlar[b.soru_seti_durum_id]) return false;
-    const seciliRoller = hedefRollerMap[b.soru_seti_durum_id] ?? [];
-    if (seciliRoller.length === 0) return false;
     for (let i = 0; i < b.sorular.length; i++) {
       if (!soruPuanlari[b.soru_seti_durum_id]?.[i]) return false;
     }
@@ -258,13 +227,13 @@ export default function YayinYonetimiPage() {
       if (!res.ok) { const d = await res.json(); hata(d.hata ?? "Soru puanları kaydedilemedi.", d.adim, d.detay); setIslemLoading(null); return; }
     }
 
+    // POST'a artık hedef_roller gönderilmiyor — backend talepler.hedef_rol'den türetiyor.
     const res = await fetch("/yayin-yonetimi/api/yayinlar", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         soru_seti_durum_id: b.soru_seti_durum_id,
         ileri_sarma_acik: bekleyenIleriSarma[b.soru_seti_durum_id] ?? false,
         extra_puan: extraPuanlar[b.soru_seti_durum_id] ?? null,
-        hedef_roller: hedefRollerMap[b.soru_seti_durum_id] ?? ["utt"],
       }),
     });
     const d = await res.json();
@@ -278,14 +247,16 @@ export default function YayinYonetimiPage() {
     const res = await fetch(`/yayin-yonetimi/api/yayinlar/${yayin_id}`, { method: "PUT" });
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "İşlem gerçekleştirilemedi.", d.adim, d.detay); }
-    else { basari(mevcutDurum === "Yayinda" ? "Yayın durduruldu." : "Yayın yeniden başlatıldı."); await veriCek(); }
+    else { basari(mevcutDurum === "yayinda" ? "Yayın durduruldu." : "Yayın yeniden başlatıldı."); await veriCek(); }
     setIslemLoading(null);
   };
 
-  const yayindakiler = yayinlar.filter(y => y.durum === "Yayinda");
-  const durdurulular = yayinlar.filter(y => y.durum === "Durduruldu");
+  // Yayınları hedef_rol'e göre filtrele (client-side)
+  const yayinlarFiltreli = yayinlar.filter(y => y.hedef_rol === aktifAnaSekme);
+  const yayindakiler = yayinlarFiltreli.filter(y => y.durum === "yayinda");
+  const durdurulular = yayinlarFiltreli.filter(y => y.durum === "Durduruldu");
 
-  if (loading) {
+  if (authYukleniyor || !kullanici || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
@@ -311,36 +282,24 @@ export default function YayinYonetimiPage() {
     </span>
   ) : null;
 
-  // Hedef roller pill gösterimi (yayında/durduruldu sekmeleri için)
-  const HedefRollerPill = ({ roller }: { roller: string[] }) => (
-    <div className="flex flex-wrap gap-1 mt-1">
-      {roller.map(r => {
-        const sec = HEDEF_ROL_SECENEKLERI.find(s => s.deger === r);
-        return (
-          <span key={r} className="text-xs px-2 py-0.5 rounded-full"
-            style={{ background: "#f0f9ff", color: "#0369a1", border: "0.5px solid #bae6fd" }}>
-            {sec?.etiket ?? r.toUpperCase()}
-          </span>
-        );
-      })}
-    </div>
-  );
-
-  const VideoThumb = ({ video_url, thumbnail_url }: { video_url: string | null; thumbnail_url: string | null }) => (
-    <div onClick={() => video_url && setAcikVideo(video_url)}
-      className="relative flex items-center justify-center rounded-lg overflow-hidden flex-shrink-0"
-      style={{ width: 110, height: 62, border: "0.5px solid #e5e7eb", background: "#e5e7eb", cursor: video_url ? "pointer" : "default" }}>
-      {thumbnail_url
-        ? <img src={thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
-        : <div className="w-full h-full" style={{ background: "#b5d4f4" }} />
-      }
-      {video_url && (
-        <div className="absolute w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
-          <svg width="10" height="12" viewBox="0 0 10 12" fill="white"><path d="M0 0l10 6-10 6z" /></svg>
-        </div>
-      )}
-    </div>
-  );
+  const VideoThumb = ({ video_url, thumbnail_url }: { video_url: string | null; thumbnail_url: string | null }) => {
+    const thumb = thumbnail_url ?? thumbnailUrlUret(video_url);
+    return (
+      <div onClick={() => video_url && setAcikVideo(video_url)}
+        className="relative flex items-center justify-center rounded-lg overflow-hidden flex-shrink-0"
+        style={{ width: 110, height: 62, border: "0.5px solid #e5e7eb", background: "#e5e7eb", cursor: video_url ? "pointer" : "default" }}>
+        {thumb
+          ? <img src={thumb} alt="thumbnail" className="w-full h-full object-cover" />
+          : <div className="w-full h-full" style={{ background: "#b5d4f4" }} />
+        }
+        {video_url && (
+          <div className="absolute w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
+            <svg width="10" height="12" viewBox="0 0 10 12" fill="white"><path d="M0 0l10 6-10 6z" /></svg>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const SoruListesi = ({ sorular, soru_seti_durum_id, bekleyen }: { sorular: any[]; soru_seti_durum_id: string; bekleyen?: Bekleyen | false }) => (
     <div className="border-t border-gray-100 px-4 py-3">
@@ -395,13 +354,15 @@ export default function YayinYonetimiPage() {
   const BekleyenSatir = ({ b }: { b: Bekleyen }) => {
     const acik = bekleyenIleriSarma[b.soru_seti_durum_id] ?? false;
     const hazir = tumPuanlarAtandiMi(b);
-    const seciliRoller = hedefRollerMap[b.soru_seti_durum_id] ?? ["utt"];
     return (
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-2">
         <div className="flex flex-col md:grid md:items-start md:gap-3 p-4 md:p-3.5"
           style={{ gridTemplateColumns: "1fr 120px 180px auto" }}>
           <div className="flex flex-col gap-1 mb-3 md:mb-0 min-w-0">
-            <span className="text-sm font-semibold text-gray-900 truncate">{b.urun_adi}</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-semibold text-gray-900 truncate">{b.urun_adi}</span>
+              <HedefRolPill hedefRol={b.hedef_rol} />
+            </div>
             <span className="text-xs text-gray-500 line-clamp-2">{b.teknik_adi}</span>
             {(b.soru_seti_buyuklugu || b.video_basi_soru_sayisi) && (
               <div className="flex gap-2 mt-0.5">
@@ -448,30 +409,6 @@ export default function YayinYonetimiPage() {
               <span className="text-xs text-gray-400">İleri sarma</span>
               <Toggle acik={acik} onClick={() => handleBekleyenIleriSarmaToggle(b.soru_seti_durum_id, b.urun_adi)} />
             </div>
-            {/* Hedef kitle seçimi */}
-            <div>
-              <span className="text-xs text-gray-400 block mb-1">Hedef kitle</span>
-              <div className="flex flex-wrap gap-1.5">
-                {HEDEF_ROL_SECENEKLERI.map(({ deger, etiket }) => {
-                  const secili = seciliRoller.includes(deger);
-                  return (
-                    <button
-                      key={deger}
-                      onClick={() => hedefRolToggle(b.soru_seti_durum_id, deger)}
-                      className="text-xs px-2.5 py-1 rounded-full border cursor-pointer"
-                      style={{
-                        fontFamily: "'Nunito', sans-serif",
-                        background: secili ? "#56aeff" : "white",
-                        color: secili ? "white" : "#737373",
-                        border: secili ? "0.5px solid #56aeff" : "0.5px solid #e5e7eb",
-                        fontWeight: secili ? 700 : 400,
-                      }}>
-                      {etiket}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
           </div>
           <div className="flex items-start gap-2 justify-end pt-0.5">
             {b.sorular?.length > 0 && (
@@ -504,9 +441,11 @@ export default function YayinYonetimiPage() {
       <div className="flex flex-col md:grid md:items-center md:gap-3 p-4 md:p-3.5"
         style={{ gridTemplateColumns: "1fr 120px 140px auto" }}>
         <div className="flex flex-col gap-1 mb-3 md:mb-0 min-w-0">
-          <span className="text-sm font-semibold text-gray-900 truncate">{y.urun_adi}</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-semibold text-gray-900 truncate">{y.urun_adi}</span>
+            <HedefRolPill hedefRol={y.hedef_rol} />
+          </div>
           <span className="text-xs text-gray-500 line-clamp-2">{y.teknik_adi}</span>
-          {y.hedef_roller?.length > 0 && <HedefRollerPill roller={y.hedef_roller} />}
         </div>
         <div className="mb-3 md:mb-0 flex justify-start md:justify-center">
           <VideoThumb video_url={y.video_url} thumbnail_url={y.thumbnail_url} />
@@ -529,7 +468,7 @@ export default function YayinYonetimiPage() {
               </svg>
             </button>
           )}
-          {y.durum === "Yayinda" ? (
+          {y.durum === "yayinda" ? (
             <button onClick={() => handleDurumDegistir(y.yayin_id, y.durum)} disabled={islemLoading === y.yayin_id}
               className="px-2.5 py-1 rounded-lg bg-transparent text-xs font-semibold cursor-pointer"
               style={{ border: "0.5px solid #fecaca", color: "#bc2d0d", fontFamily: "'Nunito', sans-serif" }}>
@@ -552,15 +491,32 @@ export default function YayinYonetimiPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={user?.email ?? ""} rol={rol} onCikis={handleCikis} />
+      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
 
       <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6">
 
+        {/* Ana sekmeler: UTT Yayınları / Challenge Club Yayınları */}
+        <div className="flex gap-1 mb-4">
+          {(["utt", "bm"] as const).map((sekme) => (
+            <button key={sekme} onClick={() => setAktifAnaSekme(sekme)}
+              className="px-5 py-2 rounded-lg border cursor-pointer text-sm font-semibold"
+              style={{
+                background: aktifAnaSekme === sekme ? (sekme === "utt" ? "#1d4ed8" : "#bc2d0d") : "white",
+                color: aktifAnaSekme === sekme ? "white" : "#737373",
+                borderColor: aktifAnaSekme === sekme ? (sekme === "utt" ? "#1d4ed8" : "#bc2d0d") : "#e5e7eb",
+                fontFamily: "'Nunito', sans-serif",
+              }}>
+              {sekme === "utt" ? "UTT Yayınları" : "Challenge Club Yayınları"}
+            </button>
+          ))}
+        </div>
+
+        {/* Alt sekmeler: Bekleyen / Yayında / Durdurulan */}
         <div className="flex gap-1 bg-white border border-gray-200 rounded-xl p-1 w-fit mb-5 overflow-x-auto">
           {(["bekleyen", "yayinda", "durdurulan"] as const).map((sekme) => (
             <button key={sekme} onClick={() => setAktifSekme(sekme)}
               className="px-4 py-1.5 rounded-lg border-none cursor-pointer text-xs font-semibold whitespace-nowrap"
-              style={{ background: aktifSekme === sekme ? "#56aeff" : "transparent", color: aktifSekme === sekme ? "white" : "#737373", fontFamily: "'Nunito', sans-serif" }}>
+              style={{ background: aktifSekme === sekme ? (aktifAnaSekme === "utt" ? "#1d4ed8" : "#bc2d0d") : "transparent", color: aktifSekme === sekme ? "white" : "#737373", fontFamily: "'Nunito', sans-serif" }}>
               {sekme === "bekleyen" ? `Bekleyen (${bekleyenler.length})` : sekme === "yayinda" ? `Yayında (${yayindakiler.length})` : `Durdurulan (${durdurulular.length})`}
             </button>
           ))}
@@ -601,20 +557,12 @@ export default function YayinYonetimiPage() {
         <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: "rgba(0,0,0,0.4)" }}>
           <div className="bg-white rounded-xl border border-gray-200 p-6 w-11/12 max-w-sm">
             <div className="text-sm font-semibold text-gray-900 mb-2.5">Yayın onayı</div>
-            <div className="text-sm text-gray-500 leading-relaxed mb-2">
+            <div className="text-sm text-gray-500 leading-relaxed mb-3">
               <strong>{onayModal.urun_adi}</strong> ürünü yayınlanacaktır.
             </div>
-            <div className="flex flex-wrap gap-1 mb-5">
-              {(hedefRollerMap[onayModal.soru_seti_durum_id] ?? ["utt"]).map(r => {
-                const sec = HEDEF_ROL_SECENEKLERI.find(s => s.deger === r);
-                return (
-                  <span key={r} className="text-xs px-2 py-0.5 rounded-full"
-                    style={{ background: "#e6f1fb", color: "#56aeff", border: "0.5px solid #56aeff" }}>
-                    {sec?.etiket ?? r.toUpperCase()}
-                  </span>
-                );
-              })}
-              <span className="text-xs text-gray-400 self-center ml-1">hedef kitleye yayınlanacak.</span>
+            <div className="flex items-center gap-2 mb-5">
+              <HedefRolPill hedefRol={onayModal.hedef_rol} />
+              <span className="text-xs text-gray-400">hedef kitleye yayınlanacak.</span>
             </div>
             <div className="flex gap-2.5 justify-end">
               <button onClick={() => setOnayModal(null)}

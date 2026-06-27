@@ -1,23 +1,28 @@
 // app/challenge-club/api/route.ts
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
-import { hataYaniti, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi, sunucuHatasi } from '@/lib/utils/hataIsle';
+//
+// Challenge Club backend endpoint'i.
+//
+// GET ?tip=izlenecek-videolar  → BM'in henüz tamamlamadığı CC yayınları
+// GET ?tip=bekleyen            → BM'e gelen, izlenmemiş, süresi geçmemiş challenge'lar
+// GET ?tip=gonderdiklerim      → BM'in bu ay gönderdiği challenge'lar
+// GET ?tip=uygun-aliciler&yayin_id=X → Challenge gönderilebilecek BM listesi
+// GET ?tip=quota               → Bu ay kalan challenge kotası
+//
+// POST → Challenge gönder. Body: { yayin_id, alan_id }
+//
+// Lib katmanı maksimum kullanılır: uygunAliciListesi, kotaKontrol (3 fonksiyon),
+// tekrarIzlemeKontrol, kayit.challengeOlustur.
+// Bu route ince orchestration — iş mantığı lib/cc/* içinde.
 
-const CHALLENGE_GONDERME_PUANI = 10;
-const HAFTALIK_MAX_CHALLENGE = 2;
-const UC_AYLIK_MAX_AYNI_BM = 2;
-const IS_GUNU_SURE = 5;
-
-function isGunuEkle(tarih: Date, gun: number): Date {
-  let eklenen = 0;
-  const sonuc = new Date(tarih);
-  while (eklenen < gun) {
-    sonuc.setDate(sonuc.getDate() + 1);
-    const haftaGunu = sonuc.getDay();
-    if (haftaGunu !== 0 && haftaGunu !== 6) eklenen++;
-  }
-  return sonuc;
-}
+import { NextRequest, NextResponse } from "next/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { hataYaniti, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi, sunucuHatasi } from "@/lib/utils/hataIsle";
+import { uygunAliciListesi } from "@/lib/cc/uygunAliciListesi";
+import { aylikKotaKontrol, aliciAylikKontrol, karsiliklilikKilidi } from "@/lib/cc/kotaKontrol";
+import { tekrarIzlemeKontrol } from "@/lib/cc/tekrarIzlemeKontrol";
+import { challengeOlustur } from "@/lib/cc/kayit";
+import { AYLIK_MAX_GONDERIM } from "@/lib/cc/sabitler";
+import { ayBaslangici } from "@/lib/zaman/kontrol";
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,142 +30,181 @@ export async function GET(request: NextRequest) {
     const adminSupabase = createAdminClient();
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return yetkiHatasi('Oturum açılmamış');
+    if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? '').toLowerCase();
-    if (rol !== 'bm') return rolHatasi('Sadece BM ChallengeClub\'a erişebilir.');
+    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    if (rol !== "bm") return rolHatasi("Sadece BM Challenge Club'a erişebilir.");
 
-    const { data: kullanici } = await adminSupabase
-      .from('kullanicilar')
-      .select('kullanici_id, ad, soyad, firma_id')
-      .eq('kullanici_id', user.id)
+    const { data: kullanici, error: kError } = await adminSupabase
+      .from("kullanicilar")
+      .select("kullanici_id, ad, soyad, firma_id")
+      .eq("kullanici_id", user.id)
       .single();
 
-    if (!kullanici) return hataYaniti('Kullanıcı bulunamadı', 'kullanicilar SELECT', null);
+    if (kError || !kullanici) return hataYaniti("Kullanıcı bilgisi alınamadı.", "kullanicilar SELECT", kError);
 
     const { searchParams } = new URL(request.url);
-    const tip = searchParams.get('tip') || 'bekleyen';
+    const tip = searchParams.get("tip") || "izlenecek-videolar";
 
-    if (tip === 'bekleyen') {
-      const { data: challengeler } = await adminSupabase
-        .from('challenge_kayitlari')
-        .select(`
-          challenge_id, yayin_id, son_tarih, created_at, izlendi_mi,
-          gonderen:kullanicilar!gonderen_id(ad, soyad),
-          bm_yayin_yonetimi(
-            soru_seti_durum_id,
-            bm_soru_seti_durumu(
-              bm_soru_setleri(
-                bm_video_durumu(
-                  bm_videolar(video_url, thumbnail_url,
-                    bm_senaryo_durumu(
-                      bm_senaryolar(
-                        bm_talepler(urun_adi, teknik_adi)
-                      )
-                    )
-                  )
-                )
-              )
-            )
-          )
-        `)
-        .eq('alan_id', kullanici.kullanici_id)
-        .eq('izlendi_mi', false)
-        .gte('son_tarih', new Date().toISOString())
-        .order('created_at', { ascending: false });
+    // ─── tip=izlenecek-videolar ────────────────────────────────────────────
+    // BM'in henüz tamamlamadığı CC yayınları. Önce kendisi izleyebilsin.
+    if (tip === "izlenecek-videolar") {
+      const [yayinlarRes, izlemelerRes] = await Promise.all([
+        adminSupabase
+          .from("v_yayin_detay")
+          .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi")
+          .eq("durum", "yayinda")
+          .eq("hedef_rol", "bm")
+          .order("yayin_tarihi", { ascending: false }),
+        adminSupabase
+          .from("cc_izleme_kayitlari")
+          .select("yayin_id")
+          .eq("bm_id", kullanici.kullanici_id)
+          .eq("tamamlandi_mi", true),
+      ]);
 
-      return NextResponse.json({ success: true, challengeler: challengeler ?? [] }, { status: 200 });
+      if (yayinlarRes.error) return hataYaniti("Yayınlar çekilemedi.", "v_yayin_detay SELECT", yayinlarRes.error);
+
+      const tamamlananSet = new Set<string>(
+        (izlemelerRes.data ?? []).map((iz: { yayin_id: string }) => iz.yayin_id)
+      );
+
+      // Önce tamamlanmamışlar, sonra tamamlananlar
+      const tumVideolar = (yayinlarRes.data ?? []).map((y: any) => ({
+        ...y,
+        tamamlandi_mi: tamamlananSet.has(y.yayin_id),
+      }));
+      tumVideolar.sort((a: any, b: any) => Number(a.tamamlandi_mi) - Number(b.tamamlandi_mi));
+
+      return NextResponse.json({ videolar: tumVideolar }, { status: 200 });
     }
 
-    if (tip === 'gonderdiklerim') {
-      const simdi = new Date();
-      const ayBaslangic = new Date(simdi.getFullYear(), simdi.getMonth(), 1);
-
-      const { data: challengeler } = await adminSupabase
-        .from('challenge_kayitlari')
+    // ─── tip=bekleyen ──────────────────────────────────────────────────────
+    // BM'e gelen, izlenmemiş, süresi geçmemiş challenge'lar.
+    if (tip === "bekleyen") {
+      const { data: challengeler, error: cError } = await adminSupabase
+        .from("challenge_kayitlari")
         .select(`
           challenge_id, yayin_id, son_tarih, created_at, izlendi_mi,
-          alan:kullanicilar!alan_id(ad, soyad),
-          bm_yayin_yonetimi(
-            bm_soru_seti_durumu(
-              bm_soru_setleri(
-                bm_video_durumu(
-                  bm_videolar(
-                    bm_senaryo_durumu(
-                      bm_senaryolar(
-                        bm_talepler(urun_adi, teknik_adi)
-                      )
-                    )
-                  )
-                )
-              )
-            )
-          )
+          gonderen:kullanicilar!gonderen_id(ad, soyad)
         `)
-        .eq('gonderen_id', kullanici.kullanici_id)
-        .gte('created_at', ayBaslangic.toISOString())
-        .order('created_at', { ascending: false });
+        .eq("alan_id", kullanici.kullanici_id)
+        .eq("izlendi_mi", false)
+        .gte("son_tarih", new Date().toISOString())
+        .order("created_at", { ascending: false });
 
-      return NextResponse.json({ success: true, challengeler: challengeler ?? [] }, { status: 200 });
-    }
+      if (cError) return hataYaniti("Bekleyen challenge'lar çekilemedi.", "challenge_kayitlari SELECT", cError);
 
-    if (tip === 'aylik_top3') {
-      const simdi = new Date();
-      const ayBaslangic = new Date(simdi.getFullYear(), simdi.getMonth(), 1);
-
-      const { data: puanlar } = await adminSupabase
-        .from('bm_kazanilan_puanlar')
-        .select('kullanici_id, puan')
-        .in('puan_turu', ['challenge_gonderme', 'challenge_izleme'])
-        .gte('created_at', ayBaslangic.toISOString())
-        .eq('kullanici_id', kullanici.kullanici_id);
-
-      const kendi_puani = (puanlar ?? []).reduce((acc, p) => acc + p.puan, 0);
-
-      const { data: topPuanlar } = await adminSupabase
-        .from('bm_kazanilan_puanlar')
-        .select('kullanici_id, puan')
-        .in('puan_turu', ['challenge_gonderme', 'challenge_izleme'])
-        .gte('created_at', ayBaslangic.toISOString());
-
-      const kullaniciPuanlari: Record<string, number> = {};
-      for (const p of topPuanlar ?? []) {
-        kullaniciPuanlari[p.kullanici_id] = (kullaniciPuanlari[p.kullanici_id] || 0) + p.puan;
+      // Yayın bilgilerini ayrıca çek
+      const yayinIdler = [...new Set((challengeler ?? []).map((c: any) => c.yayin_id))];
+      const yayinMap: Record<string, { urun_adi: string; teknik_adi: string; thumbnail_url: string | null }> = {};
+      if (yayinIdler.length > 0) {
+        const { data: yayinlar } = await adminSupabase
+          .from("v_yayin_detay")
+          .select("yayin_id, urun_adi, teknik_adi, thumbnail_url")
+          .in("yayin_id", yayinIdler);
+        for (const y of yayinlar ?? []) {
+          yayinMap[y.yayin_id] = {
+            urun_adi: y.urun_adi ?? "-",
+            teknik_adi: y.teknik_adi ?? "-",
+            thumbnail_url: y.thumbnail_url ?? null,
+          };
+        }
       }
 
-      const sirali = Object.entries(kullaniciPuanlari)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 3);
+      const sonuc = (challengeler ?? []).map((c: any) => ({
+        ...c,
+        urun_adi: yayinMap[c.yayin_id]?.urun_adi ?? "-",
+        teknik_adi: yayinMap[c.yayin_id]?.teknik_adi ?? "-",
+        thumbnail_url: yayinMap[c.yayin_id]?.thumbnail_url ?? null,
+      }));
 
-      const top3KullaniciIds = sirali.map(([id]) => id);
+      return NextResponse.json({ challengeler: sonuc }, { status: 200 });
+    }
 
-      const { data: top3Kullanicilar } = await adminSupabase
-        .from('kullanicilar')
-        .select('kullanici_id, ad, soyad')
-        .in('kullanici_id', top3KullaniciIds);
+    // ─── tip=gonderdiklerim ────────────────────────────────────────────────
+    // BM'in bu ay gönderdiği challenge'lar.
+    if (tip === "gonderdiklerim") {
+      const ayBas = ayBaslangici().toISOString();
 
-      const top3 = sirali.map(([id, puan], index) => {
-        const k = top3Kullanicilar?.find(u => u.kullanici_id === id);
-        return {
-          sira: index + 1,
-          ad: k ? `${k.ad} ${k.soyad}` : 'Bilinmiyor',
-          puan,
-          benim: id === kullanici.kullanici_id,
-        };
-      });
+      const { data: challengeler, error: cError } = await adminSupabase
+        .from("challenge_kayitlari")
+        .select(`
+          challenge_id, yayin_id, son_tarih, created_at, izlendi_mi,
+          alan:kullanicilar!alan_id(ad, soyad)
+        `)
+        .eq("gonderen_id", kullanici.kullanici_id)
+        .gte("created_at", ayBas)
+        .order("created_at", { ascending: false });
 
+      if (cError) return hataYaniti("Gönderdiğin challenge'lar çekilemedi.", "challenge_kayitlari SELECT", cError);
+
+      // Yayın bilgilerini ayrıca çek
+      const yayinIdler = [...new Set((challengeler ?? []).map((c: any) => c.yayin_id))];
+      const yayinMap: Record<string, { urun_adi: string; teknik_adi: string }> = {};
+      if (yayinIdler.length > 0) {
+        const { data: yayinlar } = await adminSupabase
+          .from("v_yayin_detay")
+          .select("yayin_id, urun_adi, teknik_adi")
+          .in("yayin_id", yayinIdler);
+        for (const y of yayinlar ?? []) {
+          yayinMap[y.yayin_id] = {
+            urun_adi: y.urun_adi ?? "-",
+            teknik_adi: y.teknik_adi ?? "-",
+          };
+        }
+      }
+
+      const sonuc = (challengeler ?? []).map((c: any) => ({
+        ...c,
+        urun_adi: yayinMap[c.yayin_id]?.urun_adi ?? "-",
+        teknik_adi: yayinMap[c.yayin_id]?.teknik_adi ?? "-",
+      }));
+
+      return NextResponse.json({ challengeler: sonuc }, { status: 200 });
+    }
+
+    // ─── tip=uygun-aliciler ────────────────────────────────────────────────
+    // Challenge gönderebileceği BM listesi (her biri için engel sebebiyle).
+    if (tip === "uygun-aliciler") {
+      const yayin_id = searchParams.get("yayin_id");
+      if (!yayin_id) return validasyonHatasi("yayin_id parametresi zorunludur.", ["yayin_id"]);
+
+      const aliciList = await uygunAliciListesi(
+        adminSupabase,
+        kullanici.kullanici_id,
+        kullanici.firma_id,
+        yayin_id
+      );
+
+      return NextResponse.json({ aliciler: aliciList }, { status: 200 });
+    }
+
+    // ─── tip=quota ──────────────────────────────────────────────────────────
+    // Bu ay kalan kota. Direkt count alıyoruz çünkü aylikKotaKontrol gecerli/sebep döner.
+    if (tip === "quota") {
+      const ayBas = ayBaslangici().toISOString();
+      const { count, error: countError } = await adminSupabase
+        .from("challenge_kayitlari")
+        .select("challenge_id", { count: "exact", head: true })
+        .eq("gonderen_id", kullanici.kullanici_id)
+        .gte("created_at", ayBas);
+
+      if (countError) return hataYaniti("Kota bilgisi alınamadı.", "challenge_kayitlari COUNT", countError);
+
+      const kullanildi = count ?? 0;
       return NextResponse.json({
-        success: true,
-        top3,
-        kendi_puani,
-        kendi_sirada_mi: top3.some(t => t.benim),
+        kullanildi,
+        limit: AYLIK_MAX_GONDERIM,
+        kalan: Math.max(0, AYLIK_MAX_GONDERIM - kullanildi),
+        dolu_mu: kullanildi >= AYLIK_MAX_GONDERIM,
       }, { status: 200 });
     }
 
-    return NextResponse.json({ success: true, challengeler: [] }, { status: 200 });
+    return validasyonHatasi(`Geçersiz tip parametresi: ${tip}`, ["tip"]);
 
   } catch (err) {
-    return sunucuHatasi(err, 'GET /challenge-club/api');
+    return sunucuHatasi(err, "GET /challenge-club/api");
   }
 }
 
@@ -170,106 +214,112 @@ export async function POST(request: NextRequest) {
     const adminSupabase = createAdminClient();
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return yetkiHatasi('Oturum açılmamış');
+    if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? '').toLowerCase();
-    if (rol !== 'bm') return rolHatasi('Sadece BM challenge gönderebilir.');
+    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    if (rol !== "bm") return rolHatasi("Sadece BM challenge gönderebilir.");
 
-    const { data: kullanici } = await adminSupabase
-      .from('kullanicilar')
-      .select('kullanici_id, firma_id')
-      .eq('kullanici_id', user.id)
+    const { data: kullanici, error: kError } = await adminSupabase
+      .from("kullanicilar")
+      .select("kullanici_id, ad, soyad, firma_id")
+      .eq("kullanici_id", user.id)
       .single();
 
-    if (!kullanici) return hataYaniti('Kullanıcı bulunamadı', 'kullanicilar SELECT', null);
+    if (kError || !kullanici) return hataYaniti("Kullanıcı bilgisi alınamadı.", "kullanicilar SELECT", kError);
 
     const body = await request.json();
-    const { alan_id, yayin_id } = body;
+    const { yayin_id, alan_id } = body;
 
-    if (!alan_id) return validasyonHatasi('alan_id zorunludur.', ['alan_id']);
-    if (!yayin_id) return validasyonHatasi('yayin_id zorunludur.', ['yayin_id']);
-    if (alan_id === kullanici.kullanici_id) return isKuraluHatasi('Kendinize challenge gönderemezsiniz.');
+    if (!yayin_id) return validasyonHatasi("yayin_id zorunludur.", ["yayin_id"]);
+    if (!alan_id) return validasyonHatasi("alan_id zorunludur.", ["alan_id"]);
+    if (alan_id === kullanici.kullanici_id) return isKuraluHatasi("Kendinize challenge gönderemezsiniz.");
 
-    const { data: alanKullanici } = await adminSupabase
-      .from('kullanicilar')
-      .select('kullanici_id, rol, firma_id')
-      .eq('kullanici_id', alan_id)
+    // Alan kullanıcı kontrolü
+    const { data: alanKullanici, error: alanError } = await adminSupabase
+      .from("kullanicilar")
+      .select("kullanici_id, ad, soyad, rol, firma_id, aktif_mi")
+      .eq("kullanici_id", alan_id)
       .single();
 
-    if (!alanKullanici || alanKullanici.rol !== 'bm') return isKuraluHatasi('Challenge sadece BM\'lere gönderilebilir.');
-    if (alanKullanici.firma_id !== kullanici.firma_id) return isKuraluHatasi('Farklı firmadan BM\'ye challenge gönderilemez.');
+    if (alanError || !alanKullanici) return isKuraluHatasi("Alıcı kullanıcı bulunamadı.");
+    if (alanKullanici.rol !== "bm") return isKuraluHatasi("Challenge sadece BM'lere gönderilebilir.");
+    if (!alanKullanici.aktif_mi) return isKuraluHatasi("Alıcı kullanıcı aktif değil.");
+    if (alanKullanici.firma_id !== kullanici.firma_id) return isKuraluHatasi("Farklı firmadan BM'ye challenge gönderilemez.");
 
-    // Haftalık limit kontrolü
-    const simdi = new Date();
-    const haftaBaslangic = new Date(simdi);
-    const gun = simdi.getDay();
-    const fark = gun === 0 ? 6 : gun - 1;
-    haftaBaslangic.setDate(simdi.getDate() - fark);
-    haftaBaslangic.setHours(0, 0, 0, 0);
+    // Yayın kontrolü
+    const { data: yayin, error: yError } = await adminSupabase
+      .from("v_yayin_detay")
+      .select("yayin_id, urun_adi, teknik_adi, durum, hedef_rol")
+      .eq("yayin_id", yayin_id)
+      .single();
 
-    const { count: haftaCount } = await adminSupabase
-      .from('challenge_kayitlari')
-      .select('challenge_id', { count: 'exact', head: true })
-      .eq('gonderen_id', kullanici.kullanici_id)
-      .gte('created_at', haftaBaslangic.toISOString());
+    if (yError || !yayin) return isKuraluHatasi("Yayın bulunamadı.");
+    if (yayin.durum !== "yayinda") return isKuraluHatasi("Yayın aktif değil.");
+    if (yayin.hedef_rol !== "bm") return isKuraluHatasi("Sadece CC yayınları challenge'a alınabilir.");
 
-    if ((haftaCount ?? 0) >= HAFTALIK_MAX_CHALLENGE) {
-      return isKuraluHatasi(`Bu hafta maksimum ${HAFTALIK_MAX_CHALLENGE} challenge gönderebilirsiniz.`);
+    // İş kuralı 1: Aylık kota kontrolü
+    const aylikKota = await aylikKotaKontrol(adminSupabase, kullanici.kullanici_id);
+    if (!aylikKota.gecerli) {
+      return isKuraluHatasi(aylikKota.sebep ?? "Aylık kota kontrolü başarısız.");
     }
 
-    // 3 aylık aynı BM limiti
-    const ucAyOnce = new Date(simdi);
-    ucAyOnce.setMonth(simdi.getMonth() - 3);
-
-    const { count: ucAyCount } = await adminSupabase
-      .from('challenge_kayitlari')
-      .select('challenge_id', { count: 'exact', head: true })
-      .eq('gonderen_id', kullanici.kullanici_id)
-      .eq('alan_id', alan_id)
-      .gte('created_at', ucAyOnce.toISOString());
-
-    if ((ucAyCount ?? 0) >= UC_AYLIK_MAX_AYNI_BM) {
-      return isKuraluHatasi(`Aynı BM'ye 3 ay içinde en fazla ${UC_AYLIK_MAX_AYNI_BM} challenge gönderebilirsiniz.`);
+    // İş kuralı 2: Aynı alıcıya bu ay zaten gönderim yapılmış mı?
+    const aliciKota = await aliciAylikKontrol(adminSupabase, kullanici.kullanici_id, alan_id);
+    if (!aliciKota.gecerli) {
+      return isKuraluHatasi(aliciKota.sebep ?? "Alıcıya aylık kota kontrolü başarısız.");
     }
 
-    const sonTarih = isGunuEkle(simdi, IS_GUNU_SURE);
+    // İş kuralı 3: Karşılıklılık kilidi (alan BM bu ay bana gönderdi mi?)
+    const karsiliklilik = await karsiliklilikKilidi(adminSupabase, kullanici.kullanici_id, alan_id);
+    if (!karsiliklilik.gecerli) {
+      return isKuraluHatasi(karsiliklilik.sebep ?? "Karşılıklılık kontrolü başarısız.");
+    }
 
-    // Challenge oluştur
-    const { data: challenge, error } = await adminSupabase
-      .from('challenge_kayitlari')
-      .insert({
+    // İş kuralı 4: Tekrar izleme kontrolü (alan BM bu videoyu zaten izlemiş mi?)
+    const alanAdi = `${alanKullanici.ad} ${alanKullanici.soyad}`;
+    const tekrar = await tekrarIzlemeKontrol(adminSupabase, alan_id, alanAdi, yayin_id);
+    if (!tekrar.izlenmemis) {
+      return isKuraluHatasi(`${tekrar.izleyenAdi} bu videoyu zaten izlemiş.`);
+    }
+
+    // İş kuralı 5: BM kendisi bu videoyu izlemiş mi? (önce kendisi izlemiş olmalı)
+    const { data: kendiIzleme } = await adminSupabase
+      .from("cc_izleme_kayitlari")
+      .select("izleme_id")
+      .eq("bm_id", kullanici.kullanici_id)
+      .eq("yayin_id", yayin_id)
+      .eq("tamamlandi_mi", true)
+      .limit(1)
+      .maybeSingle();
+
+    if (!kendiIzleme) {
+      return isKuraluHatasi("Bu videoyu önce kendiniz izlemeden challenge'a alamazsınız.");
+    }
+
+    // Tüm kontroller geçti. Challenge oluştur.
+    const gonderenAdi = `${kullanici.ad} ${kullanici.soyad}`;
+    const videoAdi = yayin.urun_adi ?? yayin.teknik_adi ?? "video";
+
+    const sonuc = await challengeOlustur(
+      adminSupabase,
+      {
         gonderen_id: kullanici.kullanici_id,
         alan_id,
         yayin_id,
-        izlendi_mi: false,
-        son_tarih: sonTarih.toISOString(),
-      })
-      .select()
-      .single();
+      },
+      {
+        gonderenAdi,
+        videoAdi,
+      }
+    );
 
-    if (error) return hataYaniti('Challenge gönderilemedi', 'challenge_kayitlari INSERT', error);
-
-    // Gönderene puan ver — başarısız olursa challenge geri alınır
-    const { error: puanError } = await adminSupabase
-      .from('bm_kazanilan_puanlar')
-      .insert({
-        kullanici_id: kullanici.kullanici_id,
-        yayin_id,
-        puan_turu: 'challenge_gonderme',
-        puan: CHALLENGE_GONDERME_PUANI,
-      });
-
-    if (puanError) {
-      await adminSupabase
-        .from('challenge_kayitlari')
-        .delete()
-        .eq('challenge_id', challenge.challenge_id);
-      return hataYaniti('Challenge gönderildi ancak puan eklenemedi. İşlem geri alındı.', 'bm_kazanilan_puanlar INSERT', puanError);
+    if (!sonuc.ok) {
+      return hataYaniti(sonuc.error ?? "Challenge oluşturulamadı.", "challengeOlustur", null);
     }
 
-    return NextResponse.json({ success: true, challenge }, { status: 201 });
+    return NextResponse.json({ mesaj: "Challenge gönderildi." }, { status: 201 });
 
   } catch (err) {
-    return sunucuHatasi(err, 'POST /challenge-club/api');
+    return sunucuHatasi(err, "POST /challenge-club/api");
   }
 }

@@ -1,10 +1,14 @@
 // app/oneriler/api/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
+import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { bildirimOlustur } from "@/lib/utils/bildirimOlustur";
+import { oneriTarihKurali } from "@/lib/oneri/tarihKurali";
+import { haftalikLimitKontrol, aylikKotaKontrol, MAKS_ALICI_HAFTA } from "@/lib/oneri/limitKontrol";
 
-export async function GET(request: NextRequest) {
+const GET_ROLLERI = ["bm", "tm", "utt", "kd_utt"];
+
+export async function GET() {
   try {
     const supabase = await createClient();
     const adminSupabase = createAdminClient();
@@ -13,99 +17,19 @@ export async function GET(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-
-    let query = adminSupabase
-      .from("oneri_kayitlari")
-      .select("oneri_id, yayin_id, oneren_id, kullanici_id, oneri_baslangic, oneri_bitis, izlendi_mi, created_at")
-      .order("created_at", { ascending: false });
-
-    if (["tm", "bm"].includes(rol)) {
-      query = query.eq("oneren_id", user.id);
-    } else if (["utt", "kd_utt"].includes(rol)) {
-      query = query.eq("kullanici_id", user.id);
-    } else {
-      return rolHatasi("Sadece tm, bm, utt ve kd_utt önerilere erişebilir.");
+    if (!GET_ROLLERI.includes(rol)) {
+      return rolHatasi("Sadece bm, utt ve kd_utt önerilere erişebilir.");
     }
 
-    const { data: oneriler, error } = await query;
-    if (error) return hataYaniti("Öneriler çekilemedi.", "oneri_kayitlari tablosu SELECT", error);
+    // Tek RPC ile tüm öneri listesi + yan bilgiler. N+1 sorgu pattern'i kaldırıldı.
+    const { data: oneriler, error } = await adminSupabase.rpc("get_oneri_listesi", {
+      p_kullanici_id: user.id,
+      p_rol: rol,
+    });
 
-    const sonuc = await Promise.all(
-      (oneriler ?? []).map(async (o) => {
-        let urun_adi = "-";
-        let teknik_adi = "-";
-        let video_url = null;
-        let thumbnail_url = null;
-        let video_puani = null;
-        let kullanici_adi = "-";
-        let begeni_sayisi = 0;
-        let favori_sayisi = 0;
-        let begeni_mi = false;
-        let favori_mi = false;
+    if (error) return hataYaniti("Öneriler çekilemedi.", "get_oneri_listesi RPC", error);
 
-        const { data: yayinDetay, error: yayinError } = await adminSupabase
-          .from("v_yayin_detay")
-          .select("urun_adi, teknik_adi, video_url, thumbnail_url, video_puani")
-          .eq("yayin_id", o.yayin_id)
-          .single();
-
-        if (yayinError) {
-          console.error("[UYARI] Yayın detayı çekilemedi:", { yayin_id: o.yayin_id, hata: yayinError.message });
-        } else if (yayinDetay) {
-          urun_adi = yayinDetay.urun_adi ?? "-";
-          teknik_adi = yayinDetay.teknik_adi ?? "-";
-          video_url = yayinDetay.video_url ?? null;
-          thumbnail_url = yayinDetay.thumbnail_url ?? null;
-          video_puani = yayinDetay.video_puani ?? null;
-        }
-
-        const { data: kullaniciDetay, error: kullaniciError } = await adminSupabase
-          .from("v_kullanici_detay")
-          .select("ad, soyad")
-          .eq("kullanici_id", o.kullanici_id)
-          .single();
-
-        if (kullaniciError) {
-          console.error("[UYARI] Kullanıcı bilgisi çekilemedi:", { kullanici_id: o.kullanici_id, hata: kullaniciError.message });
-        } else if (kullaniciDetay) {
-          kullanici_adi = `${kullaniciDetay.ad} ${kullaniciDetay.soyad}`;
-        }
-
-        if (["utt", "kd_utt"].includes(rol)) {
-          const { count: bSayisi } = await adminSupabase
-            .from("video_begeniler")
-            .select("begeni_id", { count: "exact", head: true })
-            .eq("yayin_id", o.yayin_id);
-          begeni_sayisi = bSayisi ?? 0;
-
-          const { count: fSayisi } = await adminSupabase
-            .from("video_favoriler")
-            .select("favori_id", { count: "exact", head: true })
-            .eq("yayin_id", o.yayin_id);
-          favori_sayisi = fSayisi ?? 0;
-
-          const { data: kullaniciBegeni } = await adminSupabase
-            .from("video_begeniler")
-            .select("begeni_id")
-            .eq("yayin_id", o.yayin_id)
-            .eq("kullanici_id", user.id)
-            .single();
-          begeni_mi = !!kullaniciBegeni;
-
-          const { data: kullaniciFavori } = await adminSupabase
-            .from("video_favoriler")
-            .select("favori_id")
-            .eq("yayin_id", o.yayin_id)
-            .eq("kullanici_id", user.id)
-            .single();
-          favori_mi = !!kullaniciFavori;
-        }
-
-        return { ...o, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, kullanici_adi, begeni_sayisi, favori_sayisi, begeni_mi, favori_mi };
-      })
-    );
-
-    return NextResponse.json({ oneriler: sonuc }, { status: 200 });
+    return NextResponse.json({ oneriler: oneriler ?? [] }, { status: 200 });
 
   } catch (err) {
     return sunucuHatasi(err, "GET /oneriler/api");
@@ -121,7 +45,7 @@ export async function POST(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    if (!["tm", "bm"].includes(rol)) return rolHatasi("Sadece tm ve bm öneri oluşturabilir.");
+    if (rol !== "bm") return rolHatasi("Sadece bm öneri oluşturabilir.");
 
     const body = await request.json();
     const { oneriler } = body;
@@ -129,62 +53,125 @@ export async function POST(request: NextRequest) {
     if (!oneriler || !Array.isArray(oneriler) || oneriler.length === 0) {
       return validasyonHatasi("oneriler dizisi zorunludur.", ["oneriler"]);
     }
-    if (oneriler.length > 3) {
-      return isKuraluHatasi(`Tek seferde en fazla 3 öneri gönderilebilir. Gönderilmeye çalışılan: ${oneriler.length}`);
+
+    // Alan zorunluluk kontrolü
+    for (const oneri of oneriler) {
+      const { yayin_id, kullanici_id, oneri_baslangic, oneri_bitis } = oneri;
+      if (!yayin_id || !kullanici_id || !oneri_baslangic || !oneri_bitis) {
+        return validasyonHatasi(
+          "Her öneri için yayin_id, kullanici_id, oneri_baslangic ve oneri_bitis zorunludur.",
+          ["yayin_id", "kullanici_id", "oneri_baslangic", "oneri_bitis"]
+        );
+      }
     }
 
-    const haftaBaslangic = new Date();
-    haftaBaslangic.setDate(haftaBaslangic.getDate() - haftaBaslangic.getDay() + 1);
-    haftaBaslangic.setHours(0, 0, 0, 0);
-
-    const { count: haftaOneriSayisi, error: countError } = await adminSupabase
-      .from("oneri_kayitlari")
-      .select("oneri_id", { count: "exact", head: true })
-      .eq("oneren_id", user.id)
-      .gte("created_at", haftaBaslangic.toISOString());
-
-    if (countError) return hataYaniti("Haftalık öneri sayısı kontrol edilemedi.", "oneri_kayitlari tablosu COUNT — haftalık limit kontrolü", countError);
-
-    if ((haftaOneriSayisi ?? 0) + oneriler.length > 5) {
-      return isKuraluHatasi(`Bu hafta ${haftaOneriSayisi} öneri gönderildi. Haftada maksimum 5 öneri gönderilebilir. ${5 - (haftaOneriSayisi ?? 0)} öneri hakkınız kaldı.`);
+    // Tarih kuralı kontrolü
+    for (const oneri of oneriler) {
+      const sonuc = oneriTarihKurali(oneri.oneri_baslangic, oneri.oneri_bitis);
+      if (!sonuc.gecerli) {
+        if (sonuc.sebep === "format_hatali") {
+          return validasyonHatasi(
+            "oneri_baslangic ve oneri_bitis YYYY-MM-DD formatında olmalıdır.",
+            ["oneri_baslangic", "oneri_bitis"]
+          );
+        }
+        if (sonuc.sebep === "gecmis_tarih") {
+          return isKuraluHatasi(
+            "Öneri en erken yarın başlayabilir. Aynı gün veya geçmiş tarihe öneri gönderilemez."
+          );
+        }
+        if (sonuc.sebep === "yanlis_sira") {
+          return isKuraluHatasi(
+            "Bitiş günü başlangıçtan en az 1 gün sonra olmalıdır. Aynı gün başlayıp aynı gün biten öneri olmaz."
+          );
+        }
+      }
     }
 
-    // Bugünün tarih string'i (YYYY-MM-DD)
-    const bugunStr = new Date().toISOString().slice(0, 10);
+    // BM'nin bölgesini çek (aylık kota için)
+    const { data: bm, error: bmError } = await adminSupabase
+      .from("kullanicilar")
+      .select("bolge_id")
+      .eq("kullanici_id", user.id)
+      .single();
 
+    if (bmError || !bm) {
+      return hataYaniti("BM bilgisi alınamadı.", "kullanicilar SELECT — bm bolge_id", bmError);
+    }
+    if (!bm.bolge_id) {
+      return hataYaniti("BM'ye bölge atanmamış.", "kullanicilar SELECT — bolge_id NULL", null);
+    }
+
+    // Haftalık alıcı limit kontrolü
+    let haftalikSonuc;
+    try {
+      const istek_alicilari = oneriler.map((o: any) => o.kullanici_id);
+      haftalikSonuc = await haftalikLimitKontrol(adminSupabase, user.id, istek_alicilari);
+    } catch (err) {
+      return hataYaniti(
+        "Haftalık öneri sayısı kontrol edilemedi.",
+        "haftalikLimitKontrol",
+        err instanceof Error ? { message: err.message } : { message: String(err) }
+      );
+    }
+
+    if (!haftalikSonuc.hepsi_geciyor) {
+      const detay = haftalikSonuc.asan_aliciler.map((a) =>
+        `Bir UTT için bu hafta ${a.mevcut} öneri zaten var, ${a.istenen} daha gönderiliyor.`
+      ).join(" ");
+      return isKuraluHatasi(`Haftalık öneri limiti aşılıyor (alıcı bazında max ${MAKS_ALICI_HAFTA}). ${detay}`);
+    }
+
+    // Aylık BM kotası kontrolü
+    let aylikSonuc;
+    try {
+      aylikSonuc = await aylikKotaKontrol(adminSupabase, user.id, oneriler.length, bm.bolge_id);
+    } catch (err) {
+      return hataYaniti(
+        "Aylık kota kontrol edilemedi.",
+        "aylikKotaKontrol",
+        err instanceof Error ? { message: err.message } : { message: String(err) }
+      );
+    }
+
+    if (!aylikSonuc.geciyor) {
+      return isKuraluHatasi(
+        `Aylık öneri kotanız doluyor. Bu ay ${aylikSonuc.mevcut} öneri gönderildi, ${aylikSonuc.istenen} daha gönderiliyor. ` +
+        `Kota: ${aylikSonuc.kota} (${aylikSonuc.utt_sayisi} UTT × 12).`
+      );
+    }
+
+    // Yayın geçerliliği kontrolü — toplu IN sorgusu
+    const yayinIds = [...new Set(oneriler.map((o: any) => o.yayin_id))];
+    const { data: yayinlar, error: yayinError } = await adminSupabase
+      .from("v_yayin_detay")
+      .select("yayin_id, durum, urun_adi")
+      .in("yayin_id", yayinIds);
+
+    if (yayinError) return hataYaniti("Yayınlar sorgulanırken hata oluştu.", "v_yayin_detay view SELECT", yayinError);
+
+    const yayinMap = new Map<string, { durum: string; urun_adi: string | null }>();
+    for (const y of yayinlar ?? []) {
+      yayinMap.set(y.yayin_id, { durum: y.durum, urun_adi: y.urun_adi });
+    }
+
+    for (const oneri of oneriler) {
+      const y = yayinMap.get(oneri.yayin_id);
+      if (!y) {
+        return hataYaniti(`yayin_id ${oneri.yayin_id} bulunamadı.`, "v_yayin_detay — yayin_id kontrolü", null, 404);
+      }
+      if (y.durum !== "yayinda") {
+        return isKuraluHatasi(`yayin_id ${oneri.yayin_id} şu an yayında değil. Durum: ${y.durum}`);
+      }
+    }
+
+    // Tüm kontroller geçti — INSERT döngüsü
     const kaydedilenler = [];
     for (const oneri of oneriler) {
       const { yayin_id, kullanici_id, oneri_baslangic, oneri_bitis } = oneri;
 
-      if (!yayin_id || !kullanici_id || !oneri_baslangic || !oneri_bitis) {
-        return validasyonHatasi("Her öneri için yayin_id, kullanici_id, oneri_baslangic ve oneri_bitis zorunludur.", ["yayin_id", "kullanici_id", "oneri_baslangic", "oneri_bitis"]);
-      }
-
-      // Tarih kuralları: gün string formatında olmalı (YYYY-MM-DD)
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(oneri_baslangic) || !/^\d{4}-\d{2}-\d{2}$/.test(oneri_bitis)) {
-        return validasyonHatasi("oneri_baslangic ve oneri_bitis YYYY-MM-DD formatında olmalıdır.", ["oneri_baslangic", "oneri_bitis"]);
-      }
-      if (oneri_baslangic <= bugunStr) {
-        return isKuraluHatasi("Öneri en erken yarın başlayabilir. Aynı gün veya geçmiş tarihe öneri gönderilemez.");
-      }
-      if (oneri_baslangic >= oneri_bitis) {
-        return isKuraluHatasi("Bitiş günü başlangıçtan en az 1 gün sonra olmalıdır. Aynı gün başlayıp aynı gün biten öneri olmaz.");
-      }
-
-      // Saat suffix'lerini ekle: 07:00 başlangıç, 20:30 bitiş (Türkiye saati)
-      const baslangicTimestamp = `${oneri_baslangic}T07:00:00+03:00`;
-      const bitisTimestamp = `${oneri_bitis}T20:30:00+03:00`;
-
-      const { data: yayin, error: yayinError } = await adminSupabase
-        .from("v_yayin_detay")
-        .select("yayin_id, durum, urun_adi")
-        .eq("yayin_id", yayin_id)
-        .single();
-
-      const yayinKontrol = veriKontrol(yayin, "v_yayin_detay view SELECT — yayin_id kontrolü", `yayin_id ${yayin_id} bulunamadı.`);
-      if (!yayinKontrol.gecerli) return yayinKontrol.yanit;
-      if (yayinError) return hataYaniti("Yayın sorgulanırken hata oluştu.", "v_yayin_detay view SELECT", yayinError, 404);
-      if (yayin.durum !== "Yayinda") return isKuraluHatasi(`yayin_id ${yayin_id} şu an yayında değil. Durum: ${yayin.durum}`);
+      const tarih = oneriTarihKurali(oneri_baslangic, oneri_bitis);
+      if (!tarih.gecerli) continue;
 
       const { data: yeniOneri, error: oneriError } = await adminSupabase
         .from("oneri_kayitlari")
@@ -192,8 +179,8 @@ export async function POST(request: NextRequest) {
           yayin_id,
           oneren_id: user.id,
           kullanici_id,
-          oneri_baslangic: baslangicTimestamp,
-          oneri_bitis: bitisTimestamp,
+          oneri_baslangic: tarih.baslangic_timestamp,
+          oneri_bitis: tarih.bitis_timestamp,
           izlendi_mi: false,
         })
         .select("oneri_id, yayin_id, kullanici_id, oneri_baslangic, oneri_bitis")
@@ -206,13 +193,14 @@ export async function POST(request: NextRequest) {
 
       kaydedilenler.push(yeniOneri);
 
+      const urun_adi = yayinMap.get(yayin_id)?.urun_adi ?? "-";
       await bildirimOlustur({
         adminSupabase,
         alici_id: kullanici_id,
         gonderen_id: user.id,
         kayit_turu: "oneri",
         kayit_id: yeniOneri.oneri_id,
-        mesaj: `Yeni izleme öneriniz var: ${yayin.urun_adi ?? "-"}`,
+        mesaj: `Yeni izleme öneriniz var: ${urun_adi}`,
       });
     }
 

@@ -184,7 +184,8 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
     if (!izlemeId || bekleyenSeekBitis === null) return;
     setIleriSarmaModal(false);
     const atlanan = bekleyenSeekBitis - maxIzlenenRef.current;
-    const saniyeBasiPuan = (video.video_puani ?? 0) > 0 ? (video.video_puani! / 60) : 0;
+    const sure = videoSuresiRef.current;
+    const saniyeBasiPuan = (video.video_puani ?? 0) > 0 && sure > 0 ? (video.video_puani! / sure) : 0;
     const kaybedilenPuan = Math.round(saniyeBasiPuan * atlanan);
     ileriSarilanToplamRef.current += atlanan;
     await fetch("/izle/api/ileri-sarma", {

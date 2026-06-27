@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { kazanilanPuanKaydet, yanlisCevapKaybiKaydet } from "@/lib/puan/kayit";
+import { cevapDogruMu } from "@/lib/soru/kontrol";
 
 export async function POST(request: NextRequest) {
   try {
@@ -110,8 +111,8 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const dogruSecenek = soru.secenekler.find((s: any) => s.dogru);
-      const dogru_mu = dogruSecenek?.harf === verilen_cevap;
+      // Doğru cevap kontrolü — lib/soru/kontrol.ts
+      const { dogru_mu, dogru_secenek } = cevapDogruMu(soru, verilen_cevap);
 
       const { error: cevapError } = await adminSupabase
         .from("soru_cevaplari")
@@ -168,7 +169,7 @@ export async function POST(request: NextRequest) {
         soru_index,
         verilen_cevap,
         dogru_mu,
-        dogru_cevap: dogruSecenek?.harf,
+        dogru_cevap: dogru_secenek,
       });
     }
 

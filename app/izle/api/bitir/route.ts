@@ -3,16 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { kazanilanPuanKaydet } from "@/lib/puan/kayit";
-
-// İzleme tarihinin ait olduğu haftanın Pazartesi 00:00'ını döndürür
-function haftaninBaslangici(tarih: Date): Date {
-  const sonuc = new Date(tarih);
-  const gun = sonuc.getDay(); // 0=Pazar, 1=Pazartesi, ..., 6=Cumartesi
-  const pazartesiyeFark = gun === 0 ? -6 : 1 - gun;
-  sonuc.setDate(sonuc.getDate() + pazartesiyeFark);
-  sonuc.setHours(0, 0, 0, 0);
-  return sonuc;
-}
+import { puanKazanilabilirMi, haftaBaslangici } from "@/lib/zaman/kontrol";
+import { izlemeKarariBelirle, extraPuanEsikKarsilandi } from "@/lib/puan/puanturu";
+import { oneriPenceresiAcik } from "@/lib/oneri/pencereKontrol";
 
 export async function PUT(request: NextRequest) {
   try {
@@ -55,11 +48,10 @@ export async function PUT(request: NextRequest) {
 
     if (updateError) return hataYaniti("İzleme tamamlanamadı.", "izleme_kayitlari tablosu UPDATE — tamamlandi_mi", updateError);
 
-    const gun = baslangicTarihi.getDay();
-    const dakikaCinsinden = baslangicTarihi.getHours() * 60 + baslangicTarihi.getMinutes();
-    const puanKazanabilir = gun >= 1 && gun <= 5 && dakikaCinsinden >= 420 && dakikaCinsinden <= 1229;
-
-    if (!puanKazanabilir) {
+    // Puansız zaman kontrolü — izleme başlangıç anına göre.
+    // Cmt-Paz tüm gün + Pzt-Cum 20:30-06:59 puansızdır.
+    // Bu zamanda: puan yok, kayıp yok, extra sayımı yok, soru yok.
+    if (!puanKazanilabilirMi(baslangicTarihi)) {
       return NextResponse.json({
         mesaj: "İzleme tamamlandı. Puan kazanma saatleri (Pzt-Cuma 07:00-20:29) dışında izlendiği için puan verilmedi.",
         puan_kazanildi: false,
@@ -111,9 +103,7 @@ export async function PUT(request: NextRequest) {
 
     const video_puani = vPuan?.video_puani ?? 0;
 
-    // İzleme puanı her zaman TAM yazılır.
-    // İleri sarma kaybı ayrı tabloda (ileri_sarma_kayitlari) tutulur; çift sayım önlenmiş olur.
-
+    // İlk izleme kontrolü — bu yayın için kullanıcının 'izleme' türünde puanı var mı?
     const { data: oncekiPuan, error: opError } = await adminSupabase
       .from("kazanilan_puanlar")
       .select("kazanilan_puan_id")
@@ -126,10 +116,15 @@ export async function PUT(request: NextRequest) {
       console.error("[UYARI] Önceki puan kontrolü yapılamadı:", { yayin_id: izleme.yayin_id, hata: opError.message });
     }
 
-    const kazanilanPuanlar = [];
     const ilkIzleme = (oncekiPuan ?? []).length === 0;
+    const kazanilanPuanlar: { tur: string; puan: number }[] = [];
 
-    if (ilkIzleme && video_puani > 0) {
+    // İzleme karar mantığı — lib/puan/puanTuru.ts içinde
+    const karar = izlemeKarariBelirle(ilkIzleme, ileriSarildi, izleme.izleme_turu);
+
+    if (karar.tur === "ilk_izleme" && video_puani > 0) {
+      // İzleme puanı her zaman TAM yazılır.
+      // İleri sarma kaybı ayrı tabloda (ileri_sarma_kayitlari) tutulur; çift sayım önlenmiş olur.
       const sonuc = await kazanilanPuanKaydet(adminSupabase, {
         kullanici_id: user.id,
         yayin_id: izleme.yayin_id,
@@ -143,14 +138,14 @@ export async function PUT(request: NextRequest) {
       } else {
         kazanilanPuanlar.push({ tur: "izleme", puan: video_puani });
       }
-    } else if (!ilkIzleme && !ileriSarildi && izleme.izleme_turu === "kendi_kendine") {
-      // İlk izleme değilse ve kendi_kendine türündeyse izleme türünü 'extra' olarak işaretle
+    } else if (karar.tur === "extra_aday") {
+      // İlk izleme değil + ileri sarılmamış + kendi_kendine → izleme türünü 'extra' işaretle
       await adminSupabase
         .from("izleme_kayitlari")
         .update({ izleme_turu: "extra" })
         .eq("izleme_id", izleme_id);
 
-      const haftaBaslangic = haftaninBaslangici(baslangicTarihi);
+      const haftaBaslangic = haftaBaslangici(baslangicTarihi);
 
       const { count: haftaIzlemeSayisi, error: hiError } = await adminSupabase
         .from("izleme_kayitlari")
@@ -162,7 +157,7 @@ export async function PUT(request: NextRequest) {
 
       if (hiError) {
         console.error("[UYARI] Haftalık izleme sayısı kontrol edilemedi:", { hata: hiError.message });
-      } else if ((haftaIzlemeSayisi ?? 0) === 4) {
+      } else if (extraPuanEsikKarsilandi(haftaIzlemeSayisi ?? 0)) {
         // Bu haftaya ait extra puan kaydı var mı? (mükerrer önleme)
         const { data: extraKayit, error: ekError } = await adminSupabase
           .from("kazanilan_puanlar")
@@ -207,10 +202,10 @@ export async function PUT(request: NextRequest) {
       if (oneriError) {
         console.error("[UYARI] Öneri kaydı sorgulanırken hata:", { oneri_id: izleme.oneri_id, hata: oneriError.message });
       } else if (oneri) {
-        const oneriBaslangic = new Date(oneri.oneri_baslangic);
-        const oneriBitis = new Date(oneri.oneri_bitis);
+        // Öneri penceresi kontrolü — izleme başlangıç anı öneri penceresinde mi?
+        const pencere = oneriPenceresiAcik(oneri.oneri_baslangic, oneri.oneri_bitis, baslangicTarihi);
 
-        if (baslangicTarihi >= oneriBaslangic && baslangicTarihi <= oneriBitis) {
+        if (pencere.acik) {
           // Öneri puanı kontrolü — bu yayın için aynı kullanıcıya daha önce öneri puanı verilmiş mi?
           const { data: oncekiOneriPuan, error: oopError } = await adminSupabase
             .from("kazanilan_puanlar")

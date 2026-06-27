@@ -2,7 +2,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useHataMesaji } from "@/components/HataMesaji";
 import VideoOynatici from "@/components/izle/VideoOynatici";
 import VideoBolumu from "@/components/ana-sayfa/VideoBolumu";
@@ -29,16 +28,30 @@ interface TmVeri {
   videolar?: AnaSayfaVideo[];
 }
 
+interface OneriSatiri {
+  oneri_id: string;
+  oneren_id: string;
+  kullanici_id: string;
+  kullanici_adi: string;
+  urun_adi: string;
+  teknik_adi: string;
+  oneri_baslangic: string;
+  oneri_bitis: string;
+  izlendi_mi: boolean;
+}
+
 interface Props {
   user: any;
   adSoyad: string;
 }
 
 export default function TmAnaSayfa({ user, adSoyad }: Props) {
-  const router = useRouter();
   const [tmVeri, setTmVeri] = useState<TmVeri | null>(null);
   const [loading, setLoading] = useState(true);
   const [aktifVideo, setAktifVideo] = useState<AnaSayfaVideo | null>(null);
+  const [acikBmId, setAcikBmId] = useState<string | null>(null);
+  const [tumOneriler, setTumOneriler] = useState<OneriSatiri[] | null>(null);
+  const [oneriYukleniyor, setOneriYukleniyor] = useState(false);
   const { hata } = useHataMesaji();
 
   useEffect(() => {
@@ -52,6 +65,27 @@ export default function TmAnaSayfa({ user, adSoyad }: Props) {
     };
     veriCek();
   }, [user]);
+
+  // BM satırına tıklanınca accordion toggle + ilk açılışta öneriler bir kez çekilir
+  const bmTikla = async (bm_id: string) => {
+    if (acikBmId === bm_id) {
+      setAcikBmId(null);
+      return;
+    }
+    setAcikBmId(bm_id);
+    if (tumOneriler === null) {
+      setOneriYukleniyor(true);
+      const res = await fetch("/oneriler/api");
+      const data = await res.json();
+      if (!res.ok) {
+        hata(data.hata ?? "Öneriler çekilemedi.", data.adim, data.detay);
+        setTumOneriler([]);
+      } else {
+        setTumOneriler(data.oneriler ?? []);
+      }
+      setOneriYukleniyor(false);
+    }
+  };
 
   const bugunTarih = () =>
     new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
@@ -67,7 +101,6 @@ export default function TmAnaSayfa({ user, adSoyad }: Props) {
     );
   }
 
-  // Bir video seçiliyse: dashboard yerine tam sayfa oynatıcı (UTT deseni; navbar üstteki sarmalayıcıdan kalır).
   if (aktifVideo) {
     return (
       <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
@@ -88,6 +121,70 @@ export default function TmAnaSayfa({ user, adSoyad }: Props) {
   const istat = tmVeri?.istatistikler ?? { bm_sayisi: 0, hafta_aktif_bm: 0, toplam_bekleyen: 0, toplam_tamamlanan: 0 };
   const satirlar = tmVeri?.bm_satirlari ?? [];
   const ad = adSoyad.split(" ")[0] || "TM";
+
+  // Accordion içinde gösterilecek öneriler (seçili BM'inkiler)
+  const acikBmOnerileri = acikBmId && tumOneriler
+    ? tumOneriler.filter(o => o.oneren_id === acikBmId)
+    : [];
+
+  // Accordion paneli — tek bir component, hem mobile hem desktop'ta kullanılır
+  const AccordionPanel = () => {
+    if (oneriYukleniyor) {
+      return (
+        <div className="p-6 flex items-center justify-center bg-gray-50">
+          <svg className="animate-spin w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24">
+            <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        </div>
+      );
+    }
+    if (acikBmOnerileri.length === 0) {
+      return (
+        <div className="p-5 text-center text-xs text-gray-400 bg-gray-50">
+          Bu BM için öneri kaydı bulunamadı.
+        </div>
+      );
+    }
+    return (
+      <div className="bg-gray-50 p-3 md:p-4">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-gray-400 uppercase tracking-wide">
+              <th className="text-left font-bold py-1.5 px-2">UTT</th>
+              <th className="text-left font-bold py-1.5 px-2">Ürün</th>
+              <th className="text-left font-bold py-1.5 px-2">Video</th>
+              <th className="text-left font-bold py-1.5 px-2">Başlangıç</th>
+              <th className="text-left font-bold py-1.5 px-2">Bitiş</th>
+              <th className="text-center font-bold py-1.5 px-2">Durum</th>
+            </tr>
+          </thead>
+          <tbody>
+            {acikBmOnerileri.map((o, i) => (
+              <tr key={o.oneri_id} style={{ borderTop: i > 0 ? "1px solid #e5e7eb" : "none" }}>
+                <td className="py-1.5 px-2 text-gray-900">{o.kullanici_adi}</td>
+                <td className="py-1.5 px-2 text-gray-900">{o.urun_adi}</td>
+                <td className="py-1.5 px-2 text-gray-900">{o.teknik_adi}</td>
+                <td className="py-1.5 px-2 text-gray-500">{new Date(o.oneri_baslangic).toLocaleDateString("tr-TR")}</td>
+                <td className="py-1.5 px-2 text-gray-500">{new Date(o.oneri_bitis).toLocaleDateString("tr-TR")}</td>
+                <td className="py-1.5 px-2 text-center">
+                  <span
+                    className="inline-block px-2 py-0.5 rounded-full text-xs"
+                    style={{
+                      background: o.izlendi_mi ? "#f0fdf4" : "#fef2f2",
+                      color: o.izlendi_mi ? "#166534" : "#991b1b",
+                    }}
+                  >
+                    {o.izlendi_mi ? "İzlendi" : "İzlenmedi"}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
@@ -136,26 +233,27 @@ export default function TmAnaSayfa({ user, adSoyad }: Props) {
             <div className="p-10 text-center text-sm text-gray-400">Takımda BM bulunmuyor.</div>
           ) : (
             satirlar.map((s, i) => (
-              <div
-                key={s.kullanici_id}
-                onClick={() => router.push("/oneriler")}
-                className="px-4 py-3 cursor-pointer"
-                style={{ borderBottom: i < satirlar.length - 1 ? "1px solid #f3f4f6" : "none" }}
-              >
-                <div className="flex justify-between items-start mb-1.5">
-                  <div className="text-sm font-bold text-gray-900">{s.bm_adi}</div>
-                  <span
-                    className="text-xs font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: s.hafta_oneri > 0 ? "#f0fdf4" : "#f3f4f6", color: s.hafta_oneri > 0 ? "#166534" : "#9ca3af" }}
-                  >
-                    {s.hafta_oneri} öneri
-                  </span>
+              <div key={s.kullanici_id} style={{ borderBottom: i < satirlar.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                <div
+                  onClick={() => bmTikla(s.kullanici_id)}
+                  className="px-4 py-3 cursor-pointer"
+                >
+                  <div className="flex justify-between items-start mb-1.5">
+                    <div className="text-sm font-bold text-gray-900">{s.bm_adi}</div>
+                    <span
+                      className="text-xs font-bold px-2 py-0.5 rounded-full"
+                      style={{ background: s.hafta_oneri > 0 ? "#f0fdf4" : "#f3f4f6", color: s.hafta_oneri > 0 ? "#166534" : "#9ca3af" }}
+                    >
+                      {s.hafta_oneri} öneri
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-500">{s.bolge_adi}</div>
+                  <div className="flex gap-3 mt-1.5">
+                    <span className="text-xs" style={{ color: s.bekleyen > 0 ? "#bc2d0d" : "#9ca3af" }}>Bekleyen: {s.bekleyen}</span>
+                    <span className="text-xs text-green-700">Tamamlanan: {s.tamamlanan}</span>
+                  </div>
                 </div>
-                <div className="text-xs text-gray-500">{s.bolge_adi}</div>
-                <div className="flex gap-3 mt-1.5">
-                  <span className="text-xs" style={{ color: s.bekleyen > 0 ? "#bc2d0d" : "#9ca3af" }}>Bekleyen: {s.bekleyen}</span>
-                  <span className="text-xs text-green-700">Tamamlanan: {s.tamamlanan}</span>
-                </div>
+                {acikBmId === s.kullanici_id && <AccordionPanel />}
               </div>
             ))
           )}
@@ -172,28 +270,27 @@ export default function TmAnaSayfa({ user, adSoyad }: Props) {
             <div className="p-10 text-center text-sm text-gray-400">Takımda BM bulunmuyor.</div>
           ) : (
             satirlar.map((s, i) => (
-              <div
-                key={s.kullanici_id}
-                onClick={() => router.push("/oneriler")}
-                className="grid gap-3 px-5 py-3 items-center cursor-pointer bg-white hover:bg-gray-50 transition-colors duration-100"
-                style={{
-                  gridTemplateColumns: "1.6fr 1.2fr 1fr 1fr 1fr 20px",
-                  borderBottom: i < satirlar.length - 1 ? "1px solid #f3f4f6" : "none",
-                }}
-              >
-                <div className="text-sm font-bold text-gray-900">{s.bm_adi}</div>
-                <div className="text-xs text-gray-500">{s.bolge_adi}</div>
-                <div>
-                  <span
-                    className="text-xs font-bold px-2 py-0.5 rounded-full inline-block"
-                    style={{ background: s.hafta_oneri > 0 ? "#f0fdf4" : "#f3f4f6", color: s.hafta_oneri > 0 ? "#166534" : "#9ca3af" }}
-                  >
-                    {s.hafta_oneri} öneri
-                  </span>
+              <div key={s.kullanici_id} style={{ borderBottom: i < satirlar.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                <div
+                  onClick={() => bmTikla(s.kullanici_id)}
+                  className="grid gap-3 px-5 py-3 items-center cursor-pointer bg-white hover:bg-gray-50 transition-colors duration-100"
+                  style={{ gridTemplateColumns: "1.6fr 1.2fr 1fr 1fr 1fr 20px" }}
+                >
+                  <div className="text-sm font-bold text-gray-900">{s.bm_adi}</div>
+                  <div className="text-xs text-gray-500">{s.bolge_adi}</div>
+                  <div>
+                    <span
+                      className="text-xs font-bold px-2 py-0.5 rounded-full inline-block"
+                      style={{ background: s.hafta_oneri > 0 ? "#f0fdf4" : "#f3f4f6", color: s.hafta_oneri > 0 ? "#166534" : "#9ca3af" }}
+                    >
+                      {s.hafta_oneri} öneri
+                    </span>
+                  </div>
+                  <div className="text-sm font-bold" style={{ color: s.bekleyen > 0 ? "#bc2d0d" : "#9ca3af" }}>{s.bekleyen}</div>
+                  <div className="text-sm font-bold text-green-700">{s.tamamlanan}</div>
+                  <span className="text-gray-300 text-base">{acikBmId === s.kullanici_id ? "˅" : "›"}</span>
                 </div>
-                <div className="text-sm font-bold" style={{ color: s.bekleyen > 0 ? "#bc2d0d" : "#9ca3af" }}>{s.bekleyen}</div>
-                <div className="text-sm font-bold text-green-700">{s.tamamlanan}</div>
-                <span className="text-gray-300 text-base">›</span>
+                {acikBmId === s.kullanici_id && <AccordionPanel />}
               </div>
             ))
           )}

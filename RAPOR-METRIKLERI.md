@@ -1,3 +1,14 @@
+> ⚠️ **ARŞİV — GEÇERSİZ İÇERİK**
+>
+> Bu belge, v32 öncesinde Kuşak 1 RPC'lerine (`get_analiz_utt`, `get_analiz_takim`, `get_analiz_bolge` ve `v_analiz_*` view'ları) dayalı bir metrik doğrulama referansıydı. Bu yapıların tamamı v36'da (Haziran 2026) DROP edildi; kayıt-anı simetrisi prensibine uymadıkları ve yetim oldukları için temizlendiler.
+>
+> Bu belgedeki metrik tanımları, formüller ve veri kaynağı referansları **artık geçerli değildir**. Güncel mimari ve metrik tanımları için analiz sayfasının kendi RPC'lerine (`get_analiz_<rol>_*`) bakılmalıdır.
+>
+> Belge tarihçeyi korumak amacıyla silinmeyip arşivlenmiştir.
+
+---
+
+
 # HapBilgi Rapor Metrikleri Sözlüğü
 
 Bu belge HapBilgi platformundaki rapor sayfalarında gösterilen tüm metriklerin tanımını, formülünü, veri kaynağını ve periyot davranışını içerir. Yeni rol raporları eklendikçe (TM, GM, PM, UTT) bu belge genişletilecek.

@@ -28,7 +28,7 @@ export async function GET(
       .single();
 
     if (yayinError || !yayin) return hataYaniti("Yayın bulunamadı.", "v_yayin_detay SELECT", yayinError, 404);
-    if (yayin.durum !== "Yayinda") return isKuraluHatasi(`Video şu an yayında değil. Mevcut durum: ${yayin.durum}`);
+    if (yayin.durum !== "yayinda") return isKuraluHatasi(`Video şu an yayında değil. Mevcut durum: ${yayin.durum}`);
 
     // Daha önce tamamladı mı
     const { data: izleme } = await adminSupabase

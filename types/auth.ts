@@ -1,5 +1,4 @@
 // types/auth.ts
-
 export interface AuthKullanici {
   id: string;
   email: string;
@@ -7,4 +6,5 @@ export interface AuthKullanici {
   ad: string;
   soyad: string;
   adSoyad: string;
+  firma_id: string;
 }

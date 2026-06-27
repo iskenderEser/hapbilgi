@@ -1,0 +1,224 @@
+// app/admin/_hooks/useKullaniciListesi.ts
+//
+// Kullanıcı listesi sekmesinin state + handler'ları: arama, filtre, rol/aktif/yetki
+// toggle'ları, silme onayı, toplu seçim/silme/pasife alma. useAdminPanel shell'den
+// seciliFirma, kullanicilar, refreshKullanicilar, hata, basari prop'larını alır.
+// seciliFirma değişince filtre + işlem state'leri sıfırlanır.
+
+"use client";
+
+import { useState, useMemo, useEffect } from "react";
+import type { Firma, Kullanici } from "../_types";
+
+interface UseKullaniciListesiProps {
+  seciliFirma: Firma | null;
+  kullanicilar: Kullanici[];
+  refreshKullanicilar: () => void;
+  hata: (mesaj: string, adim?: string, detay?: string) => void;
+  basari: (mesaj: string) => void;
+}
+
+export function useKullaniciListesi({ seciliFirma, kullanicilar, refreshKullanicilar, hata, basari }: UseKullaniciListesiProps) {
+  // Filtre ve arama
+  const [aramaMetni, setAramaMetni] = useState("");
+  const [filtrRol, setFiltrRol] = useState("");
+  const [filtrTakim, setFiltrTakim] = useState("");
+  const [filtrBolge, setFiltrBolge] = useState("");
+  const [filtrDurum, setFiltrDurum] = useState("");
+
+  // İşlem state'leri
+  const [acikRolId, setAcikRolId] = useState<string | null>(null);
+  const [rolDegistirLoading, setRolDegistirLoading] = useState<string | null>(null);
+  const [aktifToggleLoading, setAktifToggleLoading] = useState<string | null>(null);
+  const [silOnayId, setSilOnayId] = useState<string | null>(null);
+  const [silLoading, setSilLoading] = useState<string | null>(null);
+  const [seciliKullanicilar, setSeciliKullanicilar] = useState<Set<string>>(new Set());
+  const [topluSilOnay, setTopluSilOnay] = useState(false);
+  const [topluIslemLoading, setTopluIslemLoading] = useState(false);
+  const [yetkiLoading, setYetkiLoading] = useState<string | null>(null);
+
+  // Türetilmiş listeler (filtre dropdown'larında kullanılır)
+  const benzersizTakimlar = useMemo(
+    () => Array.from(new Set(kullanicilar.map(k => k.takim_adi).filter(Boolean))) as string[],
+    [kullanicilar]
+  );
+  const benzersizBolgeler = useMemo(
+    () => Array.from(new Set(kullanicilar.map(k => k.bolge_adi).filter(Boolean))) as string[],
+    [kullanicilar]
+  );
+  const benzersizRoller = useMemo(
+    () => Array.from(new Set(kullanicilar.map(k => k.rol).filter(Boolean))) as string[],
+    [kullanicilar]
+  );
+
+  // Filtrelenmiş liste
+  const filtrelenmisKullanicilar = useMemo(() => {
+    return kullanicilar.filter(k => {
+      const aramaUyumu = aramaMetni === "" || [k.ad, k.soyad, k.eposta, k.rol, k.takim_adi, k.bolge_adi]
+        .filter(Boolean).some(v => v!.toLowerCase().includes(aramaMetni.toLowerCase()));
+      const rolUyumu = filtrRol === "" || k.rol === filtrRol;
+      const takimUyumu = filtrTakim === "" || k.takim_adi === filtrTakim;
+      const bolgeUyumu = filtrBolge === "" || k.bolge_adi === filtrBolge;
+      const durumUyumu = filtrDurum === "" || (filtrDurum === "aktif" ? k.aktif_mi : !k.aktif_mi);
+      return aramaUyumu && rolUyumu && takimUyumu && bolgeUyumu && durumUyumu;
+    });
+  }, [kullanicilar, aramaMetni, filtrRol, filtrTakim, filtrBolge, filtrDurum]);
+
+  const tumSeciliMi = filtrelenmisKullanicilar.length > 0 &&
+    filtrelenmisKullanicilar.every(k => seciliKullanicilar.has(k.kullanici_id));
+
+  const sifirlaFiltreler = () => {
+    setAramaMetni(""); setFiltrRol(""); setFiltrTakim(""); setFiltrBolge(""); setFiltrDurum("");
+  };
+
+  const sifirlaIslemler = () => {
+    setAcikRolId(null);
+    setSilOnayId(null);
+    setSeciliKullanicilar(new Set());
+    setTopluSilOnay(false);
+  };
+
+  // seciliFirma değişince filtre + işlem state'leri sıfırla
+  useEffect(() => {
+    sifirlaFiltreler();
+    sifirlaIslemler();
+  }, [seciliFirma?.firma_id]);
+
+  const handleRolDegistir = async (kullanici_id: string, yeniRol: string) => {
+    if (!seciliFirma) return;
+    setAcikRolId(null);
+    setRolDegistirLoading(kullanici_id);
+    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kullanici_id, rol: yeniRol }),
+    });
+    const data = await res.json();
+    if (!res.ok) { hata(data.hata ?? "Rol güncellenemedi.", data.adim, data.detay); }
+    else { basari("Rol güncellendi."); refreshKullanicilar(); }
+    setRolDegistirLoading(null);
+  };
+
+  const handleAktifToggle = async (kullanici_id: string, mevcutDurum: boolean) => {
+    if (!seciliFirma) return;
+    setAktifToggleLoading(kullanici_id);
+    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kullanici_id, aktif_mi: !mevcutDurum }),
+    });
+    const data = await res.json();
+    if (!res.ok) { hata(data.hata ?? "Durum güncellenemedi.", data.adim, data.detay); }
+    else { basari(mevcutDurum ? "Pasife alındı." : "Aktif edildi."); refreshKullanicilar(); }
+    setAktifToggleLoading(null);
+  };
+
+  const handleYetkiDegistir = async (kullanici_id: string, alan: "yetki_kullanici_yonetim" | "yetki_aktif_pasif", mevcutDeger: boolean) => {
+    if (!seciliFirma) return;
+    setYetkiLoading(kullanici_id + alan);
+    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kullanici_id, [alan]: !mevcutDeger }),
+    });
+    const data = await res.json();
+    if (!res.ok) { hata(data.hata ?? "Yetki güncellenemedi.", data.adim, data.detay); }
+    else { basari(mevcutDeger ? "Yetki kaldırıldı." : "Yetki tanımlandı."); refreshKullanicilar(); }
+    setYetkiLoading(null);
+  };
+
+  const handleSil = async (kullanici_id: string) => {
+    if (!seciliFirma) return;
+    setSilLoading(kullanici_id);
+    setSilOnayId(null);
+    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+      method: "DELETE", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kullanici_id }),
+    });
+    const data = await res.json();
+    if (!res.ok) { hata(data.hata ?? "Kullanıcı silinemedi.", data.adim, data.detay); }
+    else { basari("Silme işlemi başarılı."); refreshKullanicilar(); }
+    setSilLoading(null);
+  };
+
+  const handleTopluPasif = async () => {
+    if (!seciliFirma || seciliKullanicilar.size === 0) return;
+    setTopluIslemLoading(true);
+    for (const kullanici_id of Array.from(seciliKullanicilar)) {
+      const k = kullanicilar.find(x => x.kullanici_id === kullanici_id);
+      if (!k || !k.aktif_mi) continue;
+      await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kullanici_id, aktif_mi: false }),
+      });
+    }
+    basari("Pasife alındı.");
+    setSeciliKullanicilar(new Set());
+    setTopluSilOnay(false);
+    refreshKullanicilar();
+    setTopluIslemLoading(false);
+  };
+
+  const handleTopluSil = async () => {
+    if (!seciliFirma || seciliKullanicilar.size === 0) return;
+    setTopluIslemLoading(true);
+    for (const kullanici_id of Array.from(seciliKullanicilar)) {
+      await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+        method: "DELETE", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kullanici_id }),
+      });
+    }
+    basari("Silme işlemi başarılı.");
+    setSeciliKullanicilar(new Set());
+    setTopluSilOnay(false);
+    refreshKullanicilar();
+    setTopluIslemLoading(false);
+  };
+
+  const toggleSecim = (kullanici_id: string, secildi: boolean) => {
+    const yeni = new Set(seciliKullanicilar);
+    secildi ? yeni.add(kullanici_id) : yeni.delete(kullanici_id);
+    setSeciliKullanicilar(yeni);
+  };
+
+  const toggleTumSecim = (secildi: boolean) => {
+    const yeni = new Set(seciliKullanicilar);
+    filtrelenmisKullanicilar.forEach(k => secildi ? yeni.add(k.kullanici_id) : yeni.delete(k.kullanici_id));
+    setSeciliKullanicilar(yeni);
+  };
+
+  return {
+    // Filtre/arama
+    aramaMetni, setAramaMetni,
+    filtrRol, setFiltrRol,
+    filtrTakim, setFiltrTakim,
+    filtrBolge, setFiltrBolge,
+    filtrDurum, setFiltrDurum,
+    sifirlaFiltreler,
+
+    // Türetilmiş
+    benzersizTakimlar,
+    benzersizBolgeler,
+    benzersizRoller,
+    filtrelenmisKullanicilar,
+    tumSeciliMi,
+
+    // İşlem state'leri
+    acikRolId, setAcikRolId,
+    rolDegistirLoading,
+    aktifToggleLoading,
+    silOnayId, setSilOnayId,
+    silLoading,
+    seciliKullanicilar,
+    topluSilOnay, setTopluSilOnay,
+    topluIslemLoading,
+    yetkiLoading,
+
+    // Handler'lar
+    handleRolDegistir,
+    handleAktifToggle,
+    handleYetkiDegistir,
+    handleSil,
+    handleTopluPasif,
+    handleTopluSil,
+    toggleSecim,
+    toggleTumSecim,
+  };
+}

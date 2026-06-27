@@ -7,14 +7,14 @@ import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { talepBilgisiSenaryo } from "@/lib/utils/talepZinciri";
 
 const GECERLI_DURUMLAR = [
-  "Senaryo Yaziliyor",
-  "Inceleme Bekleniyor",
-  "Revizyon Bekleniyor",
-  "Onaylandi",
+  "senaryo yaziliyor",
+  "inceleme bekleniyor",
+  "revizyon bekleniyor",
+  "onaylandi",
   "Iptal Edildi",
 ];
-const IU_DURUMLARI = ["Senaryo Yaziliyor", "Inceleme Bekleniyor"];
-const PM_DURUMLARI = ["Revizyon Bekleniyor", "Onaylandi", "Iptal Edildi"];
+const IU_DURUMLARI = ["senaryo yaziliyor", "inceleme bekleniyor"];
+const PM_DURUMLARI = ["revizyon bekleniyor", "onaylandi", "Iptal Edildi"];
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,12 +53,12 @@ export async function POST(request: NextRequest) {
     const urun_adi = talepBilgisi?.urun_adi ?? "-";
 
     // PM revizyon hakkı kontrolü
-    if (isPM && durum === "Revizyon Bekleniyor") {
+    if (isPM && durum === "revizyon bekleniyor") {
       const { count, error: countError } = await adminSupabase
         .from("senaryo_durumu")
         .select("senaryo_durum_id", { count: "exact", head: true })
         .eq("senaryo_id", senaryo_id)
-        .eq("durum", "Revizyon Bekleniyor");
+        .eq("durum", "revizyon bekleniyor");
       if (countError) return hataYaniti("Revizyon sayısı kontrol edilemedi.", "senaryo_durumu tablosu COUNT — revizyon kontrolü", countError);
       if ((count ?? 0) >= 2) return isKuraluHatasi("Maksimum revizyon hakkı (2) kullanıldı. Daha fazla revizyon istenemez.");
     }
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     if (!durumKontrol.gecerli) return durumKontrol.yanit;
 
     // Onaylandi ise videolar tablosuna otomatik kayıt oluştur ve IU'ya video bildirimi gönder
-    if (durum === "Onaylandi") {
+    if (durum === "onaylandi") {
       const { data: yeniVideo, error: videoError } = await adminSupabase
         .from("videolar")
         .insert({
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Bildirimler
-    if (isIU && durum === "Inceleme Bekleniyor" && talepBilgisi?.uretici_id) {
+    if (isIU && durum === "inceleme bekleniyor" && talepBilgisi?.uretici_id) {
       await bildirimOlustur({
         adminSupabase,
         alici_id: talepBilgisi.uretici_id,
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
         mesaj: `Senaryo inceleme bekliyor: ${urun_adi}`,
       });
     }
-    if (isPM && durum === "Revizyon Bekleniyor" && senaryo.iu_id) {
+    if (isPM && durum === "revizyon bekleniyor" && senaryo.iu_id) {
       await bildirimOlustur({
         adminSupabase,
         alici_id: senaryo.iu_id,
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
 
     // Onaylandi / Iptal Edildi — alıcıya bildirim gitmez, ancak işlemi yapan PM'in
     // bu zincire bağlı kendi "incele" bildirimleri okundu yapılır (badge kapanır).
-    if (isPM && (durum === "Onaylandi" || durum === "Iptal Edildi")) {
+    if (isPM && (durum === "onaylandi" || durum === "Iptal Edildi")) {
       await gonderenBildirimleriOkunduIsaretle(adminSupabase, user.id, "senaryo", senaryo_id);
     }
 

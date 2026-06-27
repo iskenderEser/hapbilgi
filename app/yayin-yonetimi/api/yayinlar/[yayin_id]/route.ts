@@ -34,7 +34,7 @@ export async function PUT(
 
     const simdi = new Date().toISOString();
 
-    if (yayin.durum === "Yayinda") {
+    if (yayin.durum === "yayinda") {
       const { error: updateError } = await adminSupabase
         .from("yayin_yonetimi")
         .update({ durum: "Durduruldu", durdurma_tarihi: simdi })
@@ -46,7 +46,7 @@ export async function PUT(
     if (yayin.durum === "Durduruldu") {
       const { error: updateError } = await adminSupabase
         .from("yayin_yonetimi")
-        .update({ durum: "Yayinda", durdurma_tarihi: null, yayin_tarihi: simdi })
+        .update({ durum: "yayinda", durdurma_tarihi: null, yayin_tarihi: simdi })
         .eq("yayin_id", yayin_id);
       if (updateError) return hataYaniti("Yayın yeniden başlatılamadı.", "yayin_yonetimi tablosu UPDATE — Yayinda", updateError);
       return NextResponse.json({ mesaj: "Yayın yeniden başlatıldı." }, { status: 200 });

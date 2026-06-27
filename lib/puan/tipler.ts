@@ -1,8 +1,15 @@
 // lib/puan/tipler.ts
 // Puan kayıt katmanının ortak tipleri.
 // kazanilan_puanlar + 3 kayıp tablosu için parametre yapıları burada tanımlanır.
+// v38 sonrası: cc_gonderme, cc_referral eklendi (Challenge Club entegrasyonu).
 
-export type PuanTuru = 'izleme' | 'extra' | 'oneri' | 'cevaplama';
+export type PuanTuru =
+  | 'izleme'
+  | 'extra'
+  | 'oneri'
+  | 'cevaplama'
+  | 'cc_gonderme'
+  | 'cc_referral';
 
 export interface KazanilanPuanParams {
   kullanici_id: string;

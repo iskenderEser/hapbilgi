@@ -4,13 +4,16 @@
 // Bu sayede durum route'larında tekrar eden 2-6 ardışık sorgu tek yerden yönetilir.
 
 import { SupabaseClient } from "@supabase/supabase-js";
+import type { TalepTuru } from "@/lib/uretici/yetenekler";
+import type { HedefRol } from "@/app/talepler/_types";
 
 export interface TalepBilgisi {
   talep_id: string;
   uretici_id: string | null;
   urun_adi: string;
   teknik_adi: string;
-  egitim_turu: "urun_egitimi" | "genel_egitim";
+  egitim_turu: TalepTuru;
+  hedef_rol: HedefRol;
   dosya_urls: any[] | null;
   soru_seti_buyuklugu: number;
   video_basi_soru_sayisi: number;
@@ -29,6 +32,7 @@ export async function talepBilgisiSenaryo(
         talep_id,
         uretici_id,
         egitim_turu,
+        hedef_rol,
         dosya_urls,
         soru_seti_buyuklugu,
         video_basi_soru_sayisi,
@@ -42,14 +46,14 @@ export async function talepBilgisiSenaryo(
   if (!data?.talepler) return null;
 
   const talep = data.talepler as any;
-  const egitimTuru = talep.egitim_turu ?? "urun_egitimi";
 
   return {
     talep_id: talep.talep_id,
     uretici_id: talep.uretici_id ?? null,
-    urun_adi: egitimTuru === "genel_egitim" ? "Genel Eğitim" : (talep.urunler?.urun_adi ?? "-"),
-    teknik_adi: egitimTuru === "genel_egitim" ? "-" : (talep.teknikler?.teknik_adi ?? "-"),
-    egitim_turu: egitimTuru,
+    urun_adi: talep.urunler?.urun_adi ?? "-",
+    teknik_adi: talep.teknikler?.teknik_adi ?? "-",
+    egitim_turu: (talep.egitim_turu ?? "urun_egitimi") as TalepTuru,
+    hedef_rol: (talep.hedef_rol ?? "utt") as HedefRol,
     dosya_urls: talep.dosya_urls ?? null,
     soru_seti_buyuklugu: talep.soru_seti_buyuklugu ?? 25,
     video_basi_soru_sayisi: talep.video_basi_soru_sayisi ?? 2,
@@ -73,6 +77,7 @@ export async function talepBilgisiVideo(
             talep_id,
             uretici_id,
             egitim_turu,
+            hedef_rol,
             dosya_urls,
             soru_seti_buyuklugu,
             video_basi_soru_sayisi,
@@ -91,14 +96,14 @@ export async function talepBilgisiVideo(
   if (!senaryo?.talepler) return null;
 
   const talep = senaryo.talepler as any;
-  const egitimTuru = talep.egitim_turu ?? "urun_egitimi";
 
   return {
     talep_id: talep.talep_id,
     uretici_id: talep.uretici_id ?? null,
-    urun_adi: egitimTuru === "genel_egitim" ? "Genel Eğitim" : (talep.urunler?.urun_adi ?? "-"),
-    teknik_adi: egitimTuru === "genel_egitim" ? "-" : (talep.teknikler?.teknik_adi ?? "-"),
-    egitim_turu: egitimTuru,
+    urun_adi: talep.urunler?.urun_adi ?? "-",
+    teknik_adi: talep.teknikler?.teknik_adi ?? "-",
+    egitim_turu: (talep.egitim_turu ?? "urun_egitimi") as TalepTuru,
+    hedef_rol: (talep.hedef_rol ?? "utt") as HedefRol,
     dosya_urls: talep.dosya_urls ?? null,
     soru_seti_buyuklugu: talep.soru_seti_buyuklugu ?? 25,
     video_basi_soru_sayisi: talep.video_basi_soru_sayisi ?? 2,
@@ -127,6 +132,7 @@ export async function talepBilgisiSoruSeti(
                 talep_id,
                 uretici_id,
                 egitim_turu,
+                hedef_rol,
                 dosya_urls,
                 soru_seti_buyuklugu,
                 video_basi_soru_sayisi,
@@ -148,14 +154,14 @@ export async function talepBilgisiSoruSeti(
   if (!senaryo?.talepler) return null;
 
   const talep = senaryo.talepler as any;
-  const egitimTuru = talep.egitim_turu ?? "urun_egitimi";
 
   return {
     talep_id: talep.talep_id,
     uretici_id: talep.uretici_id ?? null,
-    urun_adi: egitimTuru === "genel_egitim" ? "Genel Eğitim" : (talep.urunler?.urun_adi ?? "-"),
-    teknik_adi: egitimTuru === "genel_egitim" ? "-" : (talep.teknikler?.teknik_adi ?? "-"),
-    egitim_turu: egitimTuru,
+    urun_adi: talep.urunler?.urun_adi ?? "-",
+    teknik_adi: talep.teknikler?.teknik_adi ?? "-",
+    egitim_turu: (talep.egitim_turu ?? "urun_egitimi") as TalepTuru,
+    hedef_rol: (talep.hedef_rol ?? "utt") as HedefRol,
     dosya_urls: talep.dosya_urls ?? null,
     soru_seti_buyuklugu: talep.soru_seti_buyuklugu ?? 25,
     video_basi_soru_sayisi: talep.video_basi_soru_sayisi ?? 2,

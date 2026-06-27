@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       .from("yayin_yonetimi")
       .select("yayin_id")
       .eq("soru_seti_durum_id", soru_seti_durum_id)
-      .eq("durum", "Yayinda")
+      .eq("durum", "yayinda")
       .single();
 
     if (yayinError && yayinError.code !== "PGRST116") {
@@ -45,31 +45,20 @@ export async function POST(request: NextRequest) {
     }
     if (yayin) return isKuraluHatasi("Video yayında olduğu için soru puanları değiştirilemez. Önce yayını durdurun.");
 
-    // Her soru için upsert yap
-    for (const p of puanlar) {
-      const { data: mevcutPuan, error: mevcutError } = await adminSupabase
-        .from("soru_seti_puanlari")
-        .select("soru_seti_puan_id")
-        .eq("soru_seti_durum_id", soru_seti_durum_id)
-        .eq("soru_index", p.soru_index)
-        .single();
+    // Tüm puanlar tek upsert ile kaydedilir.
+    // UNIQUE constraint: (soru_seti_durum_id, soru_index) — var olanı günceller, olmayanı insert eder.
+    const kayitlar = puanlar.map((p: { soru_index: number; soru_puani: number }) => ({
+      soru_seti_durum_id,
+      soru_index: p.soru_index,
+      soru_puani: p.soru_puani,
+    }));
 
-      if (mevcutError && mevcutError.code !== "PGRST116") {
-        return hataYaniti(`soru_index ${p.soru_index} için mevcut puan sorgulanamadı.`, "soru_seti_puanlari tablosu SELECT", mevcutError);
-      }
+    const { error: upsertError } = await adminSupabase
+      .from("soru_seti_puanlari")
+      .upsert(kayitlar, { onConflict: "soru_seti_durum_id,soru_index" });
 
-      if (mevcutPuan) {
-        const { error: updateError } = await adminSupabase
-          .from("soru_seti_puanlari")
-          .update({ soru_puani: p.soru_puani })
-          .eq("soru_seti_puan_id", mevcutPuan.soru_seti_puan_id);
-        if (updateError) return hataYaniti(`soru_index ${p.soru_index} puanı güncellenemedi.`, "soru_seti_puanlari tablosu UPDATE", updateError);
-      } else {
-        const { error: insertError } = await adminSupabase
-          .from("soru_seti_puanlari")
-          .insert({ soru_seti_durum_id, soru_index: p.soru_index, soru_puani: p.soru_puani });
-        if (insertError) return hataYaniti(`soru_index ${p.soru_index} puanı kaydedilemedi.`, "soru_seti_puanlari tablosu INSERT", insertError);
-      }
+    if (upsertError) {
+      return hataYaniti("Soru puanları kaydedilemedi.", "soru_seti_puanlari tablosu UPSERT", upsertError);
     }
 
     return NextResponse.json({ mesaj: `${puanlar.length} soru puanı kaydedildi.` }, { status: 200 });

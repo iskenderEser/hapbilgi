@@ -6,6 +6,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
+import { useAuth } from "@/app/providers/AuthProvider";
 
 interface Profil {
   kullanici_id: string;
@@ -40,8 +41,7 @@ interface Siralama {
 
 export default function ProfilPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [rol, setRol] = useState<string>("");
+  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
   const [profil, setProfil] = useState<Profil | null>(null);
   const [izleme, setIzleme] = useState<Izleme | null>(null);
   const [puanDagilimi, setPuanDagilimi] = useState<PuanDagilimi | null>(null);
@@ -56,22 +56,20 @@ export default function ProfilPage() {
   const { mesajlar, hata, basari } = useHataMesaji();
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) { router.push("/login"); return; }
-      setUser(data.user);
-      setRol(data.user.user_metadata?.rol ?? "");
-    });
-  }, []);
+    if (authYukleniyor) return;
+    if (!kullanici) {
+      router.push("/login");
+      return;
+    }
+  }, [kullanici, authYukleniyor, router]);
 
   const handleCikis = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await cikisYap();
     router.push("/login");
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (!kullanici) return;
     const veriCek = async () => {
       setLoading(true);
       const res = await fetch("/profil/api");
@@ -86,16 +84,17 @@ export default function ProfilPage() {
       setLoading(false);
     };
     veriCek();
-  }, [user]);
+  }, [kullanici]);
 
   const handleFotografSec = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const dosya = e.target.files?.[0];
     if (!dosya) return;
+    if (!kullanici) return;
     if (dosya.size > 2 * 1024 * 1024) { hata("Fotoğraf 2 MB'dan büyük olamaz.", "dosya boyutu kontrolü", undefined); return; }
     if (!["image/jpeg", "image/png"].includes(dosya.type)) { hata("Sadece JPG veya PNG formatı kabul edilir.", "dosya formatı kontrolü", undefined); return; }
     setFotografLoading(true);
     const supabase = createClient();
-    const dosyaAdi = `${user.id}-${Date.now()}.${dosya.type === "image/jpeg" ? "jpg" : "png"}`;
+    const dosyaAdi = `${kullanici.id}-${Date.now()}.${dosya.type === "image/jpeg" ? "jpg" : "png"}`;
     const { error: uploadError } = await supabase.storage.from("profil-fotograflari").upload(dosyaAdi, dosya, { upsert: true });
     if (uploadError) { hata("Fotoğraf yüklenemedi.", "storage upload", uploadError.message); setFotografLoading(false); return; }
     const { data: urlData } = supabase.storage.from("profil-fotograflari").getPublicUrl(dosyaAdi);
@@ -144,9 +143,9 @@ export default function ProfilPage() {
     setSifreLoading(false);
   };
 
-  const isUTT = ["utt", "kd_utt"].includes(rol.toLowerCase());
+  const isUTT = ["utt", "kd_utt"].includes((kullanici?.rol ?? "").toLowerCase());
 
-  if (loading) {
+  if (authYukleniyor || !kullanici || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
@@ -373,7 +372,7 @@ export default function ProfilPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={user?.email ?? ""} rol={rol} onCikis={handleCikis} />
+      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
 
       <div className="max-w-5xl mx-auto px-3 py-3 pb-20 md:px-6 md:py-6 md:pb-6">
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col md:flex-row md:min-h-[600px]">

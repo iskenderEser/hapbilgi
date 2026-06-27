@@ -5,6 +5,9 @@ import { hataYaniti, yetkiHatasi } from '@/lib/utils/hataIsle';
 import { tarihAraligi } from '@/lib/utils/tarihAraligi';
 import { ureticiYetenegi } from '@/lib/uretici/yetenekler';
 import { getUreticiData } from '@/lib/rapor/uretici/getUreticiData';
+import { uttOzetAgregasyon } from '@/lib/rapor/paylasilan/agregasyon';
+import { katkiYuzdesi, izlenmeOrani, tamamlanmaOrani } from '@/lib/rapor/paylasilan/oran';
+import { ligSiralamasi } from '@/lib/rapor/paylasilan/ligSira';
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -35,54 +38,33 @@ export async function GET(request: Request) {
   const d = await getUreticiData(adminSupabase, kullanici, yetenek, baslangic, bitis);
   if (d.hata) return d.hata;
 
-  const scopeToplamNet = d.uttOzetler.reduce((acc, o) => acc + (o.toplam_net_puan ?? 0), 0);
-  const scopeToplamIzlenme = d.uttOzetler.reduce((acc, o) => acc + (o.izlenme_sayisi ?? 0), 0);
-  const aktifUttSayisi = d.uttOzetler.filter(o => (o.izlenme_sayisi ?? 0) > 0).length;
-  const hicIzlemeyenUtt = Math.max(0, d.toplamUttSayisi - aktifUttSayisi);
-  const enYuksekUttPuan = d.uttOzetler.reduce((acc, o) => Math.max(acc, o.toplam_net_puan ?? 0), 0);
+  // ─── Scope agregasyonu — paylaşılan helper ──────────────────────────────
+  const a = uttOzetAgregasyon(d.uttOzetler, d.toplamUttSayisi);
 
+  // Bölge sayısı + bölge bazlı en yüksek + ortalama
   const bolgeSayisi = d.bolgeBazli.length;
   const enYuksekBolgePuan = d.bolgeBazli.reduce((acc, b) => Math.max(acc, b.toplam_net_puan ?? 0), 0);
-  const ortalamaPuanBolge = bolgeSayisi > 0
-    ? Math.round(scopeToplamNet / bolgeSayisi)
-    : 0;
+  const ortalamaPuanBolge = bolgeSayisi > 0 ? Math.round(a.toplamNet / bolgeSayisi) : 0;
 
-  const toplamIzlenmePotansiyeli = d.scopeOzet.toplam_yayin * d.toplamUttSayisi;
-  const izlenmeOrani = toplamIzlenmePotansiyeli > 0
-    ? Math.round((scopeToplamIzlenme / toplamIzlenmePotansiyeli) * 100)
-    : 0;
-  const kalanIzlenme = Math.max(0, toplamIzlenmePotansiyeli - scopeToplamIzlenme);
+  // ─── İzlenme oranı — paylaşılan helper ──────────────────────────────────
+  const izlenme = izlenmeOrani(a.toplamIzlenme, d.scopeOzet.toplam_yayin, d.toplamUttSayisi);
+  const kalanIzlenme = Math.max(0, d.scopeOzet.toplam_yayin * d.toplamUttSayisi - a.toplamIzlenme);
 
-  const sirketKatki = d.sirketToplamPuan > 0
-    ? parseFloat(((scopeToplamNet / d.sirketToplamPuan) * 100).toFixed(1))
-    : 0;
+  // ─── Şirket katkısı — paylaşılan helper ─────────────────────────────────
+  const sirketKatki = katkiYuzdesi(a.toplamNet, d.sirketToplamPuan);
 
-  const firmaSiralamasi = d.takimSirasi.map((t, idx) => ({
-    sira: idx + 1,
-    takim_adi: t.takim_adi,
-    puan: t.toplam_puan,
-    kendisi_mi: t.takim_id === kullanici.takim_id,
+  // ─── HBLigi — takım sıralaması — paylaşılan helper ──────────────────────
+  const ligGiris = d.takimSirasi.map(t => ({
+    id: t.takim_id,
+    ad: t.takim_adi,
+    toplam_puan: t.toplam_puan,
   }));
+  const lig = ligSiralamasi(ligGiris, kullanici.takim_id ?? '', a.toplamNet);
 
-  const kendiSira = firmaSiralamasi.find(t => t.kendisi_mi)?.sira ?? null;
+  // ─── Öneri etkinliği — paylaşılan helper ────────────────────────────────
+  const oneriOrani = tamamlanmaOrani(d.scopeOzet.tamamlanan_oneri, d.scopeOzet.gonderilen_oneri);
 
-  let birUstPuanFarki: number | null = null;
-  let takipciFarki: number | null = null;
-
-  if (kendiSira && kendiSira > 1) {
-    const ust = d.takimSirasi[kendiSira - 2];
-    birUstPuanFarki = ust ? ust.toplam_puan - scopeToplamNet : null;
-  }
-  if (kendiSira && kendiSira < d.takimSirasi.length) {
-    const alt = d.takimSirasi[kendiSira];
-    takipciFarki = alt ? scopeToplamNet - alt.toplam_puan : null;
-  }
-
-  const oneriTamamlanmaOrani = d.scopeOzet.gonderilen_oneri > 0
-    ? Math.round((d.scopeOzet.tamamlanan_oneri / d.scopeOzet.gonderilen_oneri) * 100)
-    : 0;
-
-  // bolgeListesi — takim_id ve takim_adi RPC'den geliyor, aktarılıyor
+  // ─── Bölge listesi inşası ───────────────────────────────────────────────
   const bolgeListesi = d.bolgeBazli.map(b => ({
     bolge_id: b.bolge_id,
     bolge_adi: b.bolge_adi,
@@ -93,23 +75,14 @@ export async function GET(request: Request) {
     aktif_utt: b.aktif_utt,
     hic_izlemeyen_utt: b.hic_izlemeyen_utt,
     toplam_net_puan: b.toplam_net_puan,
-    katki_yuzdesi: scopeToplamNet > 0
-      ? parseFloat(((b.toplam_net_puan / scopeToplamNet) * 100).toFixed(1))
-      : 0,
-    ortalama_utt_puani: b.toplam_utt > 0
-      ? Math.round(b.toplam_net_puan / b.toplam_utt)
-      : 0,
-  })).sort((a, b) => b.toplam_net_puan - a.toplam_net_puan);
+    katki_yuzdesi: katkiYuzdesi(b.toplam_net_puan, a.toplamNet),
+    ortalama_utt_puani: b.toplam_utt > 0 ? Math.round(b.toplam_net_puan / b.toplam_utt) : 0,
+  })).sort((x, y) => y.toplam_net_puan - x.toplam_net_puan);
 
-  const senaryoYuzde = d.uretimOzet.toplam_talep > 0
-    ? Math.round((d.uretimOzet.senaryo_revizyon / d.uretimOzet.toplam_talep) * 100)
-    : 0;
-  const videoYuzde = d.uretimOzet.toplam_talep > 0
-    ? Math.round((d.uretimOzet.video_revizyon / d.uretimOzet.toplam_talep) * 100)
-    : 0;
-  const soruSetiYuzde = d.uretimOzet.toplam_talep > 0
-    ? Math.round((d.uretimOzet.soru_seti_revizyon / d.uretimOzet.toplam_talep) * 100)
-    : 0;
+  // ─── Üretim revizyon yüzdeleri — paylaşılan helper (tamamlanmaOrani) ────
+  const senaryoYuzde = tamamlanmaOrani(d.uretimOzet.senaryo_revizyon, d.uretimOzet.toplam_talep);
+  const videoYuzde = tamamlanmaOrani(d.uretimOzet.video_revizyon, d.uretimOzet.toplam_talep);
+  const soruSetiYuzde = tamamlanmaOrani(d.uretimOzet.soru_seti_revizyon, d.uretimOzet.toplam_talep);
 
   return NextResponse.json({
     success: true,
@@ -147,34 +120,39 @@ export async function GET(request: Request) {
       },
       katki: {
         sirket_katki_yuzdesi: sirketKatki,
-        scope_toplam_puan: scopeToplamNet,
+        scope_toplam_puan: a.toplamNet,
         sirket_toplam_puan: d.sirketToplamPuan,
       },
       scope_ozet: {
         toplam_bolge: bolgeSayisi,
         toplam_utt: d.toplamUttSayisi,
-        aktif_utt: aktifUttSayisi,
-        hic_izlemeyen_utt: hicIzlemeyenUtt,
-        toplam_puan: scopeToplamNet,
+        aktif_utt: a.aktifUtt,
+        hic_izlemeyen_utt: a.hicIzlemeyenUtt,
+        toplam_puan: a.toplamNet,
         ortalama_puan_bolge: ortalamaPuanBolge,
         en_yuksek_bolge_puan: enYuksekBolgePuan,
-        en_yuksek_utt_puan: enYuksekUttPuan,
-        izlenme_orani: izlenmeOrani,
-        toplam_izlenme: scopeToplamIzlenme,
+        en_yuksek_utt_puan: a.enYuksekUttPuan,
+        izlenme_orani: izlenme,
+        toplam_izlenme: a.toplamIzlenme,
         kalan_izlenme: kalanIzlenme,
         toplam_yayin: d.scopeOzet.toplam_yayin,
       },
       lig: {
-        kendi_sirasi: kendiSira,
+        kendi_sirasi: lig.kendiSira,
         toplam_takim_sayisi: d.takimSirasi.length,
-        bir_ust_puan_farki: birUstPuanFarki,
-        takipci_farki: takipciFarki,
-        firma_siralamasi: firmaSiralamasi,
+        bir_ust_puan_farki: lig.birUstPuanFarki,
+        takipci_farki: lig.takipciFarki,
+        firma_siralamasi: lig.siralama.map(s => ({
+          sira: s.sira,
+          takim_adi: s.ad,
+          puan: s.puan,
+          kendisi_mi: s.kendisi_mi,
+        })),
       },
       oneri_etkinligi: {
         gonderilen: d.scopeOzet.gonderilen_oneri,
         tamamlanan: d.scopeOzet.tamamlanan_oneri,
-        tamamlanma_orani: oneriTamamlanmaOrani,
+        tamamlanma_orani: oneriOrani,
         bekleyen: d.scopeOzet.bekleyen_oneri,
         bekleyen_oneri_olan_utt_sayisi: d.scopeOzet.bekleyen_oneri_olan_utt_sayisi,
       },

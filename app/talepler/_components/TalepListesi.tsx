@@ -120,19 +120,6 @@ export function TalepListesi({
                   {t.teknik_adi !== "-" && (
                     <div className="text-xs text-gray-500">{t.teknik_adi}</div>
                   )}
-                  {t.kategori_adi && (
-                    <span
-                      className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full"
-                      style={{
-                        background: "#f0fdf4",
-                        color: "#15803d",
-                        border: "0.5px solid #bbf7d0",
-                        fontSize: 10,
-                      }}
-                    >
-                      {t.kategori_adi}
-                    </span>
-                  )}
                   <div className="text-xs text-gray-400 mt-0.5">{formatTarih(t.created_at)}</div>
                 </div>
               );
@@ -146,7 +133,6 @@ export function TalepListesi({
                 <tr className="border-b border-gray-100 bg-gray-50">
                   <th className="text-left px-5 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün / Tür</th>
                   <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Teknik Adı</th>
-                  <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Kategori</th>
                   <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Soru Seti</th>
                   <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Tarih</th>
                   <th className="px-5 py-2.5"></th>
@@ -217,22 +203,6 @@ export function TalepListesi({
                           t.teknik_adi
                         ) : (
                           <span className="text-gray-300">—</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-3">
-                        {t.kategori_adi ? (
-                          <span
-                            className="text-xs px-2 py-0.5 rounded-full"
-                            style={{
-                              background: "#f0fdf4",
-                              color: "#15803d",
-                              border: "0.5px solid #bbf7d0",
-                            }}
-                          >
-                            {t.kategori_adi}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-gray-400">—</span>
                         )}
                       </td>
                       <td className="px-3 py-3">

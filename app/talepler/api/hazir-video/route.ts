@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       .from("senaryo_durumu")
       .insert({
         senaryo_id: senaryo.senaryo_id,
-        durum: "Onaylandi",
+        durum: "onaylandi",
         degistiren_id: user.id,
         notlar: "Hazır video talebi — otomatik onay",
       })
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
       .from("video_durumu")
       .insert({
         video_id: video.video_id,
-        durum: "Onaylandi",
+        durum: "onaylandi",
         degistiren_id: user.id,
         notlar: "Hazır video talebi — otomatik onay",
       })

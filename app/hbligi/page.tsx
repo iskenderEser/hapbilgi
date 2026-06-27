@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import { useAuth } from "@/app/providers/AuthProvider";
 
 interface UttSatiri {
   sira: number;
@@ -55,32 +56,45 @@ type HBLigiVeri =
 
 export default function HBLigiPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [rol, setRol] = useState<string>("");
-  const [adSoyad, setAdSoyad] = useState<string>("");
+  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
   const [veri, setVeri] = useState<HBLigiVeri | null>(null);
   const [loading, setLoading] = useState(true);
   const [secilenBolge, setSecilenBolge] = useState("");
   const [secilenTakim, setSecilenTakim] = useState("");
   const [secilenFirma, setSecilenFirma] = useState("");
+  const [bmBolgeId, setBmBolgeId] = useState<string | null>(null);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) { router.push("/login"); return; }
-      setUser(data.user);
-      setRol(data.user.user_metadata?.rol ?? "");
-      const ad = data.user.user_metadata?.ad ?? "";
-      const soyad = data.user.user_metadata?.soyad ?? "";
-      if (ad) setAdSoyad(`${ad} ${soyad}`.trim());
-    });
-  }, []);
+    if (authYukleniyor) return;
+    if (!kullanici) {
+      router.push("/login");
+      return;
+    }
+  }, [kullanici, authYukleniyor, router]);
 
   const handleCikis = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await cikisYap();
     router.push("/login");
   };
+
+  // BM rolündeki kullanıcı için bolge_id'yi kullanicilar tablosundan çek.
+  // Bu sayfada bm bölge highlight'ı için gereklidir.
+  useEffect(() => {
+    if (!kullanici) return;
+    if (kullanici.rol.toLowerCase() !== "bm") {
+      setBmBolgeId(null);
+      return;
+    }
+    const supabase = createClient();
+    supabase
+      .from("kullanicilar")
+      .select("bolge_id")
+      .eq("kullanici_id", kullanici.id)
+      .single()
+      .then(({ data }) => {
+        setBmBolgeId(data?.bolge_id ?? null);
+      });
+  }, [kullanici]);
 
   const veriCek = async () => {
     setLoading(true);
@@ -94,7 +108,7 @@ export default function HBLigiPage() {
     setLoading(false);
   };
 
-  useEffect(() => { if (user) veriCek(); }, [user, secilenBolge, secilenTakim, secilenFirma]);
+  useEffect(() => { if (kullanici) veriCek(); }, [kullanici, secilenBolge, secilenTakim, secilenFirma]);
 
   const siraRenk = (sira: number) => {
     if (sira === 1) return "#f59e0b";
@@ -105,7 +119,7 @@ export default function HBLigiPage() {
 
   const siraYazi = (sira: number) => sira <= 3 ? "white" : "#737373";
 
-  if (loading || !veri) {
+  if (authYukleniyor || !kullanici || loading || !veri) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
@@ -121,13 +135,13 @@ export default function HBLigiPage() {
     const { lig } = veri;
     return (
       <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-        <Navbar email={user?.email ?? ""} rol={rol} adSoyad={adSoyad} onCikis={handleCikis} />
+        <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
         <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold text-gray-900 m-0">HBLigi</h1>
             <span className="text-xs text-gray-500">{lig.length} kişi — Bölge Sıralaması</span>
           </div>
-          <UttTablosu satirlar={lig} userId={user?.id} siraRenk={siraRenk} siraYazi={siraYazi} />
+          <UttTablosu satirlar={lig} userId={kullanici.id} siraRenk={siraRenk} siraYazi={siraYazi} />
         </div>
       </div>
     );
@@ -138,7 +152,7 @@ export default function HBLigiPage() {
     const { bolge_utt, takim_bolge_siralaması } = veri;
     return (
       <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-        <Navbar email={user?.email ?? ""} rol={rol} adSoyad={adSoyad} onCikis={handleCikis} />
+        <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
         <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
           <h1 className="text-xl font-bold text-gray-900 m-0">HBLigi</h1>
 
@@ -158,7 +172,7 @@ export default function HBLigiPage() {
               <tbody>
                 {takim_bolge_siralaması.map((b) => (
                   <tr key={b.bolge_id} className="border-b border-gray-50"
-                    style={{ background: b.bolge_id === user?.bolge_id ? "#f0f9ff" : "white" }}>
+                    style={{ background: b.bolge_id === bmBolgeId ? "#f0f9ff" : "white" }}>
                     <td className="px-3 py-3 text-center">
                       <div className="w-6 h-6 rounded-full flex items-center justify-center mx-auto"
                         style={{ background: siraRenk(b.sira) }}>
@@ -180,7 +194,7 @@ export default function HBLigiPage() {
             <div className="px-4 py-3 border-b border-gray-100">
               <h2 className="text-sm font-bold text-gray-700 m-0">Bölgem — UTT Sıralaması</h2>
             </div>
-            <UttTablosu satirlar={bolge_utt} userId={user?.id} siraRenk={siraRenk} siraYazi={siraYazi} gostTakim={false} />
+            <UttTablosu satirlar={bolge_utt} userId={kullanici.id} siraRenk={siraRenk} siraYazi={siraYazi} gostTakim={false} />
           </div>
         </div>
       </div>
@@ -192,7 +206,7 @@ export default function HBLigiPage() {
     const { takim_utt, takim_siralamasi } = veri;
     return (
       <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-        <Navbar email={user?.email ?? ""} rol={rol} adSoyad={adSoyad} onCikis={handleCikis} />
+        <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
         <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
           <h1 className="text-xl font-bold text-gray-900 m-0">HBLigi</h1>
 
@@ -233,7 +247,7 @@ export default function HBLigiPage() {
             <div className="px-4 py-3 border-b border-gray-100">
               <h2 className="text-sm font-bold text-gray-700 m-0">Takımım — UTT Sıralaması</h2>
             </div>
-            <UttTablosu satirlar={takim_utt} userId={user?.id} siraRenk={siraRenk} siraYazi={siraYazi} />
+            <UttTablosu satirlar={takim_utt} userId={kullanici.id} siraRenk={siraRenk} siraYazi={siraYazi} />
           </div>
         </div>
       </div>
@@ -245,7 +259,7 @@ export default function HBLigiPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={user?.email ?? ""} rol={rol} adSoyad={adSoyad} onCikis={handleCikis} />
+      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
       <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
 
         <div className="flex items-center justify-between">
@@ -296,7 +310,7 @@ export default function HBLigiPage() {
           {lig.length === 0 ? (
             <div className="p-10 text-center text-sm text-gray-400">Henüz lig verisi bulunmuyor.</div>
           ) : (
-            <UttTablosu satirlar={lig} userId={user?.id} siraRenk={siraRenk} siraYazi={siraYazi} gostFirma gostTakim />
+            <UttTablosu satirlar={lig} userId={kullanici.id} siraRenk={siraRenk} siraYazi={siraYazi} gostFirma gostTakim />
           )}
         </div>
       </div>

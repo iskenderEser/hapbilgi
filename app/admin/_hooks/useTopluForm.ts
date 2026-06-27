@@ -1,0 +1,77 @@
+// app/admin/_hooks/useTopluForm.ts
+//
+// Toplu giriş sekmesinin state + handler'ları. useAdminPanel shell'den
+// seciliFirma, refreshKullanicilar, hata, basari prop'larını alır.
+// seciliFirma değişince form ve önizleme otomatik sıfırlanır.
+
+"use client";
+
+import { useState, useEffect } from "react";
+import type { Firma, OnizlemeSatir } from "../_types";
+
+interface UseTopluFormProps {
+  seciliFirma: Firma | null;
+  refreshKullanicilar: () => void;
+  hata: (mesaj: string, adim?: string, detay?: string) => void;
+  basari: (mesaj: string) => void;
+}
+
+export function useTopluForm({ seciliFirma, refreshKullanicilar, hata, basari }: UseTopluFormProps) {
+  const [topluDosya, setTopluDosya] = useState<File | null>(null);
+  const [onizlemesatirlari, setOnizlemeSatirlari] = useState<OnizlemeSatir[] | null>(null);
+  const [onizlemeLoading, setOnizlemeLoading] = useState(false);
+  const [topluKaydetLoading, setTopluKaydetLoading] = useState(false);
+
+  // seciliFirma değişince formu sıfırla
+  useEffect(() => {
+    setTopluDosya(null);
+    setOnizlemeSatirlari(null);
+  }, [seciliFirma?.firma_id]);
+
+  const handleDosyaSec = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const dosya = e.target.files?.[0] ?? null;
+    setTopluDosya(dosya);
+    setOnizlemeSatirlari(null);
+    if (!dosya || !seciliFirma) return;
+    setOnizlemeLoading(true);
+    const formData = new FormData();
+    formData.append("dosya", dosya);
+    formData.append("mod", "onizle");
+    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/toplu-yukle`, { method: "POST", body: formData });
+    const data = await res.json();
+    if (!res.ok) { hata(data.hata ?? "Dosya okunamadı.", data.adim, data.detay); }
+    else { setOnizlemeSatirlari(data.satirlar ?? []); }
+    setOnizlemeLoading(false);
+  };
+
+  const handleTopluKaydet = async () => {
+    if (!topluDosya || !seciliFirma) return;
+    setTopluKaydetLoading(true);
+    const formData = new FormData();
+    formData.append("dosya", topluDosya);
+    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/toplu-yukle`, { method: "POST", body: formData });
+    const data = await res.json();
+    if (!res.ok) { hata(data.hata ?? "Toplu yükleme başarısız.", data.adim, data.detay); }
+    else {
+      basari("Ekleme başarılı.");
+      setTopluDosya(null);
+      setOnizlemeSatirlari(null);
+      refreshKullanicilar();
+    }
+    setTopluKaydetLoading(false);
+  };
+
+  const hazirSayisi = onizlemesatirlari?.filter(s => s.durum === "hazir").length ?? 0;
+  const hataliSayisi = onizlemesatirlari?.filter(s => s.durum === "hatali").length ?? 0;
+
+  return {
+    topluDosya,
+    onizlemesatirlari,
+    onizlemeLoading,
+    topluKaydetLoading,
+    hazirSayisi,
+    hataliSayisi,
+    handleDosyaSec,
+    handleTopluKaydet,
+  };
+}

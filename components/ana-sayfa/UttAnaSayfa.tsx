@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import VideoOynatici from "@/components/izle/VideoOynatici";
+import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { IcerikTuru, TUR_SIRA, TUR_BASLIK } from "@/lib/video/icerikTuru";
 
 interface Video {
   yayin_id: string;
@@ -16,11 +18,13 @@ interface Video {
   yayin_tarihi: string;
   extra_puan: number;
   ileri_sarma_acik: boolean;
+  izlenme_sayisi: number;
   begeni_sayisi: number;
   favori_sayisi: number;
   begeni_mi: boolean;
   favori_mi: boolean;
   daha_once_izledi: boolean;
+  icerik_turu: IcerikTuru | null;
 }
 
 interface UttVeri {
@@ -50,32 +54,142 @@ const GRADYANLAR = [
   "linear-gradient(135deg, #9FE1CB, #1D9E75)",
 ];
 
+// Video kartı render fonksiyonu - %25 küçültüldü
+const VideoKart = ({ 
+  video, 
+  onVideoClick, 
+  onBegeni, 
+  onFavori 
+}: { 
+  video: Video;
+  onVideoClick: (video: Video) => void;
+  onBegeni: (e: React.MouseEvent, yayin_id: string) => void;
+  onFavori: (e: React.MouseEvent, yayin_id: string) => void;
+}) => {
+  const thumbnail = video.thumbnail_url || thumbnailUrlUret(video.video_url || "");
+  const gradyan = GRADYANLAR[parseInt(video.yayin_id, 36) % GRADYANLAR.length];
+  const formatTarih = (tarih: string) =>
+    new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
+
+  return (
+    <div
+      className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
+      onClick={() => onVideoClick(video)}
+    >
+      <div className="relative aspect-video bg-gray-100 overflow-hidden">
+        {thumbnail ? (
+          <img
+            src={thumbnail}
+            alt={video.urun_adi}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center" style={{ background: gradyan }}>
+            <span className="text-white font-bold text-base">{video.urun_adi?.charAt(0) || "V"}</span>
+          </div>
+        )}
+        
+        {/* Yeni etiketi - sadece izlenmemişse göster */}
+        {!video.daha_once_izledi && (
+          <div className="absolute top-1.5 right-1.5 bg-blue-500 text-white text-[10px] px-1.5 py-0.5 rounded-full shadow-sm">
+            Yeni
+          </div>
+        )}
+        
+        {/* İzlendi etiketi - sadece izlenmişse göster */}
+        {video.daha_once_izledi && (
+          <div className="absolute top-1.5 right-1.5 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+            ✓ İzlendi
+          </div>
+        )}
+        
+        {video.icerik_turu && (
+          <div className="absolute bottom-1.5 left-1.5 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded-full">
+            {TUR_BASLIK[video.icerik_turu] || video.icerik_turu}
+          </div>
+        )}
+      </div>
+
+      <div className="p-2.5">
+        <div className="flex items-start justify-between gap-1.5">
+          <h3 className="text-xs font-bold text-gray-900 line-clamp-2 flex-1">
+            {video.urun_adi}
+          </h3>
+          <div className="flex items-center gap-0.5 flex-shrink-0">
+            <button
+              onClick={(e) => onBegeni(e, video.yayin_id)}
+              className={`p-0.5 rounded-full transition-colors ${
+                video.begeni_mi ? "text-red-500" : "text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill={video.begeni_mi ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </button>
+            <span className="text-[10px] text-gray-500">{video.begeni_sayisi}</span>
+            <button
+              onClick={(e) => onFavori(e, video.yayin_id)}
+              className={`p-0.5 rounded-full transition-colors ${
+                video.favori_mi ? "text-yellow-500" : "text-gray-400 hover:text-gray-600"
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill={video.favori_mi ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              </svg>
+            </button>
+            <span className="text-[10px] text-gray-500">{video.favori_sayisi}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mt-1.5 text-[10px] text-gray-500">
+          <span>{formatTarih(video.yayin_tarihi)}</span>
+          <span>{video.izlenme_sayisi} izlenme</span>
+        </div>
+
+        {video.video_puani !== null && (
+          <div className="mt-1.5 flex items-center gap-1">
+            <span className="text-[10px] font-bold text-yellow-600">★ {video.video_puani}</span>
+            {video.extra_puan > 0 && (
+              <span className="text-[10px] text-green-600">+{video.extra_puan} extra</span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [uttVeri, setUttVeri] = useState<UttVeri | null>(null);
   const [loading, setLoading] = useState(true);
-  const [aktifFiltre, setAktifFiltre] = useState<string>("yeni");
   const [aktifVideo, setAktifVideo] = useState<Video | null>(null);
   const [aktifOneriId, setAktifOneriId] = useState<string | null>(null);
   const { mesajlar, hata, basari, uyari } = useHataMesaji();
 
-  // Tamamla/soru sonrası oynatıcıyı kapatmadan sayaçları/durumu tazelemek için
-  // sessiz (loading'siz) yenileme yapabilen tek veri çekme fonksiyonu.
   const veriCek = async (sessiz = false) => {
     if (!sessiz) setLoading(true);
-    const res = await fetch("/ana-sayfa/api");
-    const data = await res.json();
-    if (!res.ok) { hata(data.hata ?? "Veriler yüklenemedi.", data.adim, data.detay); }
-    else { setUttVeri(data); }
-    if (!sessiz) setLoading(false);
+    try {
+      const res = await fetch("/ana-sayfa/api");
+      const data = await res.json();
+      if (!res.ok) { 
+        hata(data.hata ?? "Veriler yüklenemedi.", data.adim, data.detay); 
+      } else { 
+        setUttVeri(data); 
+      }
+    } catch (error) {
+      hata("Veriler yüklenirken bir hata oluştu.");
+    } finally {
+      if (!sessiz) setLoading(false);
+    }
   };
 
   useEffect(() => {
     veriCek();
   }, [user]);
 
-  // URL'den yayin_id ve oneri_id okuyup ilgili videoyu otomatik aç
   useEffect(() => {
     const yayinId = searchParams.get("yayin_id");
     const oneriId = searchParams.get("oneri_id");
@@ -94,37 +208,55 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
 
   const handleBegeni = async (e: React.MouseEvent, yayin_id: string) => {
     e.stopPropagation();
-    const res = await fetch("/izle/api/begeni", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id }) });
-    const d = await res.json();
-    if (!res.ok) return;
-    setUttVeri(prev => {
-      if (!prev) return prev;
-      const guncelle = (liste: Video[]) => liste.map(v => v.yayin_id === yayin_id
-        ? { ...v, begeni_mi: d.begeni_mi, begeni_sayisi: d.begeni_mi ? v.begeni_sayisi + 1 : v.begeni_sayisi - 1 }
-        : v);
-      return { ...prev, yeni_videolar: guncelle(prev.yeni_videolar), devam_edenler: guncelle(prev.devam_edenler), tamamlananlar: guncelle(prev.tamamlananlar) };
-    });
+    try {
+      const res = await fetch("/izle/api/begeni", { 
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify({ yayin_id }) 
+      });
+      const d = await res.json();
+      if (!res.ok) return;
+      setUttVeri(prev => {
+        if (!prev) return prev;
+        const guncelle = (liste: Video[]) => liste.map(v => v.yayin_id === yayin_id
+          ? { ...v, begeni_mi: d.begeni_mi, begeni_sayisi: d.begeni_mi ? v.begeni_sayisi + 1 : v.begeni_sayisi - 1 }
+          : v);
+        return { ...prev, yeni_videolar: guncelle(prev.yeni_videolar), devam_edenler: guncelle(prev.devam_edenler), tamamlananlar: guncelle(prev.tamamlananlar) };
+      });
+    } catch (error) {
+      hata("Beğeni işlemi başarısız.");
+    }
   };
 
   const handleFavori = async (e: React.MouseEvent, yayin_id: string) => {
     e.stopPropagation();
-    const res = await fetch("/izle/api/favori", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id }) });
-    const d = await res.json();
-    if (!res.ok) return;
-    setUttVeri(prev => {
-      if (!prev) return prev;
-      const guncelle = (liste: Video[]) => liste.map(v => v.yayin_id === yayin_id
-        ? { ...v, favori_mi: d.favori_mi, favori_sayisi: d.favori_mi ? v.favori_sayisi + 1 : v.favori_sayisi - 1 }
-        : v);
-      return { ...prev, yeni_videolar: guncelle(prev.yeni_videolar), devam_edenler: guncelle(prev.devam_edenler), tamamlananlar: guncelle(prev.tamamlananlar) };
-    });
+    try {
+      const res = await fetch("/izle/api/favori", { 
+        method: "POST", 
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify({ yayin_id }) 
+      });
+      const d = await res.json();
+      if (!res.ok) return;
+      setUttVeri(prev => {
+        if (!prev) return prev;
+        const guncelle = (liste: Video[]) => liste.map(v => v.yayin_id === yayin_id
+          ? { ...v, favori_mi: d.favori_mi, favori_sayisi: d.favori_mi ? v.favori_sayisi + 1 : v.favori_sayisi - 1 }
+          : v);
+        return { ...prev, yeni_videolar: guncelle(prev.yeni_videolar), devam_edenler: guncelle(prev.devam_edenler), tamamlananlar: guncelle(prev.tamamlananlar) };
+      });
+    } catch (error) {
+      hata("Favori işlemi başarısız.");
+    }
+  };
+
+  const handleVideoClick = (video: Video) => {
+    setAktifVideo(video);
+    setAktifOneriId(null);
   };
 
   const bugunTarih = () =>
     new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
-
-  const formatTarih = (tarih: string) =>
-    new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
 
   if (loading) {
     return (
@@ -137,7 +269,6 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
     );
   }
 
-  // Bir video seçiliyse: dashboard yerine sayfayı kaplayan oynatıcı (kart → oynatıcı → geri).
   if (aktifVideo) {
     return (
       <div className="max-w-6xl mx-auto px-3 py-4 pb-20 md:px-6 md:py-5 md:pb-5 lg:px-8 lg:py-7">
@@ -160,11 +291,27 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
   const istat = uttVeri?.istatistikler ?? { yeni: 0, devam: 0, tamamlanan: 0, hafta_puani: 0, toplam_puan: 0 };
   const ad = adSoyad.split(" ")[0] || "Temsilci";
 
-  const aktifVideolar = aktifFiltre === "yeni"
-    ? (uttVeri?.yeni_videolar ?? [])
-    : aktifFiltre === "devam"
-    ? (uttVeri?.devam_edenler ?? [])
-    : (uttVeri?.tamamlananlar ?? []);
+  const tumVideolar = [
+    ...(uttVeri?.yeni_videolar ?? []),
+    ...(uttVeri?.devam_edenler ?? []),
+    ...(uttVeri?.tamamlananlar ?? []),
+  ];
+
+  // Özel sıralama: En Çok İzlenen, En Çok Beğenilen, sonra TUR_SIRA sırasıyla müdürlükler
+  const enCokIzlenen = [...tumVideolar]
+    .filter(v => v.izlenme_sayisi > 0)
+    .sort((a, b) => b.izlenme_sayisi - a.izlenme_sayisi)
+    .slice(0, 5);
+    
+  const enCokBegenilen = [...tumVideolar]
+    .filter(v => v.begeni_sayisi > 0)
+    .sort((a, b) => b.begeni_sayisi - a.begeni_sayisi)
+    .slice(0, 5);
+
+  // Müdürlük grupları (TUR_SIRA sırasıyla)
+  const turGruplari = TUR_SIRA
+    .map((tur) => ({ tur, videolar: tumVideolar.filter((v) => v.icerik_turu === tur) }))
+    .filter((g) => g.videolar.length > 0);
 
   return (
     <div className="max-w-6xl mx-auto px-3 py-4 pb-20 md:px-6 md:py-5 md:pb-5 lg:px-8 lg:py-7">
@@ -190,13 +337,8 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
         ].map((k, idx) => (
           <div
             key={idx}
-            onClick={() => k.filtre && setAktifFiltre(aktifFiltre === k.filtre ? "yeni" : k.filtre)}
-            className="bg-white border border-gray-200 rounded-xl p-3 md:p-5 transition-shadow duration-150"
-            style={{
-              borderLeft: `3px solid ${k.renk}`,
-              cursor: k.filtre ? "pointer" : "default",
-              boxShadow: k.filtre && aktifFiltre === k.filtre ? `0 0 0 2px ${k.renk}33` : "none",
-            }}
+            className="bg-white border border-gray-200 rounded-xl p-3 md:p-5"
+            style={{ borderLeft: `3px solid ${k.renk}` }}
           >
             <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">{k.label}</div>
             <div className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-none">{k.value.toLocaleString("tr-TR")}</div>
@@ -205,99 +347,66 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
         ))}
       </div>
 
-      {/* Video grid başlık */}
-      <div className="flex items-center justify-between mb-2.5">
-        <span className="text-sm font-bold text-gray-900">
-          {aktifFiltre === "yeni" ? "Yeni Videolar" : aktifFiltre === "devam" ? "Devam Eden" : "Tamamlanan"}
-        </span>
-        <span className="text-xs cursor-pointer" style={{ color: "#56aeff" }} onClick={() => router.push("/ana-sayfa")}>
-          Tümünü gör
-        </span>
-      </div>
+      {/* Sıralı içerik: En Çok İzlenen -> En Çok Beğenilen -> Müdürlükler */}
+      
+      {/* En Çok İzlenen */}
+      {enCokIzlenen.length > 0 && (
+        <div className="mb-6">
+          <div className="text-sm font-bold text-gray-900 mb-2.5">🔥 En Çok İzlenen</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+            {enCokIzlenen.map((video) => (
+              <VideoKart
+                key={video.yayin_id}
+                video={video}
+                onVideoClick={handleVideoClick}
+                onBegeni={handleBegeni}
+                onFavori={handleFavori}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
-      {aktifVideolar.length === 0 ? (
+      {/* En Çok Beğenilen */}
+      {enCokBegenilen.length > 0 && (
+        <div className="mb-6">
+          <div className="text-sm font-bold text-gray-900 mb-2.5">❤️ En Çok Beğenilen</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+            {enCokBegenilen.map((video) => (
+              <VideoKart
+                key={video.yayin_id}
+                video={video}
+                onVideoClick={handleVideoClick}
+                onBegeni={handleBegeni}
+                onFavori={handleFavori}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Müdürlükler (TUR_SIRA sırasıyla) */}
+      {turGruplari.length === 0 ? (
         <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">
-          Bu kategoride video bulunmuyor.
+          Henüz yayınlanmış video bulunmuyor.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
-          {aktifVideolar.slice(0, 8).map(v => (
-            <div
-              key={v.yayin_id}
-              onClick={() => setAktifVideo(v)}
-              className="bg-white rounded-xl overflow-hidden cursor-pointer transition-shadow duration-150"
-              style={{ border: "0.5px solid #e5e7eb" }}
-              onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 16px rgba(0,0,0,0.08)"}
-              onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.boxShadow = "none"}
-            >
-              {/* Thumbnail */}
-              <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16/9" }}>
-                {v.thumbnail_url
-                  ? <img src={v.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" />
-                  : <div className="w-full h-full" style={{ background: GRADYANLAR[Math.abs(v.yayin_id.charCodeAt(0)) % GRADYANLAR.length] }} />
-                }
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
-                    <svg width="9" height="11" viewBox="0 0 10 12" fill="white"><path d="M0 0l10 6-10 6z" /></svg>
-                  </div>
-                </div>
-                <div className="absolute top-2 left-2 flex gap-1">
-                  {v.daha_once_izledi ? (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: "#f0fdf4", color: "#16a34a", border: "0.5px solid #bbf7d0", fontSize: 10 }}>İzlendi</span>
-                  ) : (
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-white" style={{ background: "#56aeff", fontSize: 10 }}>Yeni</span>
-                  )}
-                  {v.ileri_sarma_acik && (
-                    <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-white" style={{ background: "rgba(0,0,0,0.6)", fontSize: 10 }}>
-                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Bilgi */}
-              <div className="px-2.5 py-2 flex flex-col gap-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="text-xs font-bold text-gray-900 truncate">{v.urun_adi}</div>
-                  <div className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">{v.teknik_adi}</div>
-                </div>
-                <div className="flex items-center justify-between">
-                  {v.video_puani !== null ? (
-                    <div className="flex items-center gap-1.5">
-                      <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-0.5 text-xs text-gray-500">
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#56aeff" strokeWidth="2">
-                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                        </svg>
-                        Video <span className="font-semibold text-gray-900 ml-0.5">{v.video_puani}</span>
-                      </div>
-                      {v.extra_puan > 0 && (
-                        <div className="flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs" style={{ background: "#f0fdf4", border: "0.5px solid #bbf7d0", color: "#15803d" }}>
-                          +<span className="font-semibold">{v.extra_puan}</span> extra
-                        </div>
-                      )}
-                    </div>
-                  ) : <div />}
-                  <div className="text-xs text-gray-400 flex-shrink-0">{formatTarih(v.yayin_tarihi)}</div>
-                </div>
-                <div className="flex items-center justify-between mt-0.5">
-                  <div className="flex items-center gap-1 cursor-pointer" onClick={(e) => handleBegeni(e, v.yayin_id)}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill={v.begeni_mi ? "#bc2d0d" : "none"} stroke="#bc2d0d" strokeWidth="2">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                    </svg>
-                    <span className="text-xs" style={{ color: v.begeni_mi ? "#bc2d0d" : "#737373", fontWeight: v.begeni_mi ? 600 : 400 }}>{v.begeni_sayisi}</span>
-                  </div>
-                  <div className="flex items-center gap-1 cursor-pointer" onClick={(e) => handleFavori(e, v.yayin_id)}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill={v.favori_mi ? "#56aeff" : "none"} stroke={v.favori_mi ? "#56aeff" : "#737373"} strokeWidth="2">
-                      <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
-                      <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
-                    </svg>
-                    <span className="text-xs" style={{ color: v.favori_mi ? "#56aeff" : "#737373", fontWeight: v.favori_mi ? 600 : 400 }}>{v.favori_sayisi}</span>
-                  </div>
-                </div>
-              </div>
+        turGruplari.map((g) => (
+          <div key={g.tur} className="mb-6">
+            <div className="text-sm font-bold text-gray-900 mb-2.5">{TUR_BASLIK[g.tur]}</div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+              {g.videolar.map((video) => (
+                <VideoKart
+                  key={video.yayin_id}
+                  video={video}
+                  onVideoClick={handleVideoClick}
+                  onBegeni={handleBegeni}
+                  onFavori={handleFavori}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ))
       )}
 
       <HataMesajiContainer mesajlar={mesajlar} />

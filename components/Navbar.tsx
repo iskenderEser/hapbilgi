@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { URETICI_ROLLER } from "@/lib/utils/roller";
+import { URETICI_ROLLER, CCLIGI_GORENLERLER, STORE_ALABILEN_ROLLER, STORE_GENEL_GOREN_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 
 interface NavbarProps {
   email: string;
@@ -21,14 +21,14 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
 
   const isAktif = (path: string) => pathname.startsWith(path);
 
-  const yonlendiriciRoller = ["tm", "bm"];
+  const yonlendiriciRoller = ["bm"];
   const tuketiciRoller = ["utt", "kd_utt"];
   const analizRoller = ["bm", "tm", "pm", "jr_pm", "kd_pm", "gm", "gm_yrd", "drk", "paz_md", "blm_md", "med_md", "grp_pm", "sm", "egt_md", "egt_yrd_md", "egt_yon", "egt_uz"];
 
   const rolKucu = rol.toLowerCase();
   const isUretici = URETICI_ROLLER.includes(rolKucu);
   const isIU = rolKucu === "iu";
-  const uretimHattiGorur = isUretici || isIU;
+  const uretimHattiGorur = URETIM_HATTI_GORENLER.includes(rol);
 
   useEffect(() => {
     if (adSoyad) return;
@@ -212,6 +212,17 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
 
               <button onClick={() => router.push("/hbligi")} onMouseEnter={() => setHover("hbligi")} onMouseLeave={() => setHover(null)} className={pillClass("hbligi", "/hbligi")} style={pillStyle("hbligi", "/hbligi")}>HBLigi</button>
 
+              {CCLIGI_GORENLERLER.includes(rolKucu) && (
+                <button onClick={() => router.push("/cc-ligi")} onMouseEnter={() => setHover("cc-ligi")} onMouseLeave={() => setHover(null)} className={pillClass("cc-ligi", "/cc-ligi")} style={pillStyle("cc-ligi", "/cc-ligi")}>CC Ligi</button>
+              )}
+
+              {STORE_ALABILEN_ROLLER.includes(rolKucu) && (
+                <button onClick={() => router.push("/store")} onMouseEnter={() => setHover("store")} onMouseLeave={() => setHover(null)} className={pillClass("store", "/store")} style={pillStyle("store", "/store")}>HBStore</button>
+              )}
+              {STORE_GENEL_GOREN_ROLLER.includes(rolKucu) && rolKucu !== "bm" && (
+                <button onClick={() => router.push("/store/siparisler")} onMouseEnter={() => setHover("store-siparisler")} onMouseLeave={() => setHover(null)} className={pillClass("store-siparisler", "/store/siparisler")} style={pillStyle("store-siparisler", "/store/siparisler")}>HBStore Siparişleri</button>
+              )}
+
               {rolKucu === "bm" && (
                 <>
                   <div className="w-px h-5 bg-gray-200 mx-1 flex-shrink-0" />
@@ -293,6 +304,9 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
           {!isIU && <MenuItem label="Raporlar" onClick={raporaGit} />}
           {analizRoller.includes(rolKucu) && <MenuItem label="Analiz" path="/analiz" />}
           <MenuItem label="HBLigi" path="/hbligi" />
+          {CCLIGI_GORENLERLER.includes(rolKucu) && <MenuItem label="CC Ligi" path="/cc-ligi" />}
+          {STORE_ALABILEN_ROLLER.includes(rolKucu) && <MenuItem label="HBStore" path="/store" />}
+          {STORE_GENEL_GOREN_ROLLER.includes(rolKucu) && rolKucu !== "bm" && <MenuItem label="HBStore Siparişleri" path="/store/siparisler" />}
 
           {rolKucu === "bm" && (
             <>

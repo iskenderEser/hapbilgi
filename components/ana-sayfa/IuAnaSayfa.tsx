@@ -66,7 +66,7 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
   };
 
   const durumRenk = (durum: string) => {
-    if (durum === "Revizyon Bekleniyor") return { bg: "#fef3c7", text: "#92400e" };
+    if (durum === "revizyon bekleniyor") return { bg: "#fef3c7", text: "#92400e" };
     if (durum === "İncelemede") return { bg: "#eff6ff", text: "#1d4ed8" };
     if (durum === "Tamamlandı") return { bg: "#f0fdf4", text: "#166534" };
     if (durum === "İptal Edildi") return { bg: "#fef2f2", text: "#bc2d0d" };
@@ -110,7 +110,7 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
         {[
           { label: "Bekleyen İşler", value: istat.bekleyen, sub: "Senaryo veya içerik bekleniyor", renk: "#bc2d0d", filtre: "bekleyen" },
-          { label: "Revizyon Bekleniyor", value: istat.revizyon, sub: "PM'den revizyon talebi geldi", renk: "#f59e0b", filtre: "revizyon" },
+          { label: "revizyon bekleniyor", value: istat.revizyon, sub: "PM'den revizyon talebi geldi", renk: "#f59e0b", filtre: "revizyon" },
           { label: "Devam Eden", value: istat.devam, sub: "Yazılıyor veya incelemede", renk: "#56aeff", filtre: "devam" },
           { label: "Tamamlanan", value: istat.tamamlanan, sub: "Onaylı veya yayında", renk: "#16a34a", filtre: "tamamlanan" },
         ].map(k => (

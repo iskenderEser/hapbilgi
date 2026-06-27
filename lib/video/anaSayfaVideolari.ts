@@ -48,7 +48,7 @@ export async function getAnaSayfaVideolari(
   let query = adminSupabase
     .from("v_yayin_detay")
     .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, icerik_turu, takim_id")
-    .eq("durum", "Yayinda")
+    .eq("durum", "yayinda")
     .in("icerik_turu", turler)
     .order("yayin_tarihi", { ascending: false });
 

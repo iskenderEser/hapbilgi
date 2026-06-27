@@ -7,13 +7,13 @@ import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { talepBilgisiVideo } from "@/lib/utils/talepZinciri";
 
 const GECERLI_DURUMLAR = [
-  "Inceleme Bekleniyor",
-  "Revizyon Bekleniyor",
-  "Onaylandi",
+  "inceleme bekleniyor",
+  "revizyon bekleniyor",
+  "onaylandi",
   "Iptal Edildi",
 ];
-const IU_DURUMLARI = ["Inceleme Bekleniyor"];
-const PM_DURUMLARI = ["Revizyon Bekleniyor", "Onaylandi", "Iptal Edildi"];
+const IU_DURUMLARI = ["inceleme bekleniyor"];
+const PM_DURUMLARI = ["revizyon bekleniyor", "onaylandi", "Iptal Edildi"];
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,18 +48,18 @@ export async function POST(request: NextRequest) {
     if (!videoKontrol.gecerli) return videoKontrol.yanit;
     if (videoError) return hataYaniti("Video sorgulanırken hata oluştu.", "videolar tablosu SELECT", videoError, 404);
 
-    if (isIU && durum === "Inceleme Bekleniyor") {
+    if (isIU && durum === "inceleme bekleniyor") {
       if (!video.video_url || video.video_url.trim() === "") {
         return isKuraluHatasi("Video URL girilmeden incelemeye gönderilemez.");
       }
     }
 
-    if (isPM && durum === "Revizyon Bekleniyor") {
+    if (isPM && durum === "revizyon bekleniyor") {
       const { count, error: countError } = await adminSupabase
         .from("video_durumu")
         .select("video_durum_id", { count: "exact", head: true })
         .eq("video_id", video_id)
-        .eq("durum", "Revizyon Bekleniyor");
+        .eq("durum", "revizyon bekleniyor");
       if (countError) return hataYaniti("Revizyon sayısı kontrol edilemedi.", "video_durumu tablosu COUNT — revizyon kontrolü", countError);
       if ((count ?? 0) >= 2) return isKuraluHatasi("Maksimum revizyon hakkı (2) kullanıldı. Daha fazla revizyon istenemez.");
     }
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     if (!durumKontrol.gecerli) return durumKontrol.yanit;
 
     // Onaylandi ise soru_setleri tablosuna otomatik kayıt oluştur ve IU'ya soru_seti bildirimi gönder
-    if (durum === "Onaylandi") {
+    if (durum === "onaylandi") {
       const { data: yeniSoruSeti, error: soruSetiError } = await adminSupabase
         .from("soru_setleri")
         .insert({
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (isIU && durum === "Inceleme Bekleniyor" && talepBilgisi?.uretici_id) {
+    if (isIU && durum === "inceleme bekleniyor" && talepBilgisi?.uretici_id) {
       await bildirimOlustur({
         adminSupabase,
         alici_id: talepBilgisi.uretici_id,
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
         mesaj: `Video inceleme bekliyor: ${urun_adi}`,
       });
     }
-    if (isPM && durum === "Revizyon Bekleniyor" && video.iu_id) {
+    if (isPM && durum === "revizyon bekleniyor" && video.iu_id) {
       await bildirimOlustur({
         adminSupabase,
         alici_id: video.iu_id,
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
 
     // Onaylandi / Iptal Edildi — alıcıya bildirim gitmez, ancak işlemi yapan PM'in
     // bu zincire bağlı kendi "incele" bildirimleri okundu yapılır (badge kapanır).
-    if (isPM && (durum === "Onaylandi" || durum === "Iptal Edildi")) {
+    if (isPM && (durum === "onaylandi" || durum === "Iptal Edildi")) {
       await gonderenBildirimleriOkunduIsaretle(adminSupabase, user.id, "video", video_id);
     }
 

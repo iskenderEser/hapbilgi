@@ -10,7 +10,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import {
   ureticiYetenegi,
@@ -23,12 +22,14 @@ import type {
   Talep,
   Urun,
   Teknik,
-  Kategori,
   Takim,
   KullaniciBilgi,
   BekleyenDosya,
+  HedefRol,
 } from "../_types";
 import { useSoruSetiParse } from "./useSoruSetiParse";
+import { useAuth } from "@/app/providers/AuthProvider";
+import { URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 
 export function useTalepFormu() {
   const router = useRouter();
@@ -39,8 +40,7 @@ export function useTalepFormu() {
   // ============================================================================
   // Auth + kullanıcı
   // ============================================================================
-  const [user, setUser] = useState<User | null>(null);
-  const [rol, setRol] = useState<string>("");
+  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
   const [kullaniciBilgi, setKullaniciBilgi] = useState<KullaniciBilgi | null>(null);
 
   // ============================================================================
@@ -54,13 +54,12 @@ export function useTalepFormu() {
   // ============================================================================
   // Form state
   // ============================================================================
+  const [hedefRol, setHedefRol] = useState<HedefRol | null>(null);
   const [egitimTuru, setEgitimTuru] = useState<TalepTuru>("urun_egitimi");
   const [urunler, setUrunler] = useState<Urun[]>([]);
   const [seciliUrunId, setSeciliUrunId] = useState("");
   const [teknikler, setTeknikler] = useState<Teknik[]>([]);
   const [seciliTeknikId, setSeciliTeknikId] = useState("");
-  const [kategoriler, setKategoriler] = useState<Kategori[]>([]);
-  const [seciliKategoriId, setSeciliKategoriId] = useState("");
   const [takimlar, setTakimlar] = useState<Takim[]>([]);
   const [soruSetiBuyuklugu, setSoruSetiBuyuklugu] = useState<number>(25);
   const [videoBasiSoruSayisi, setVideoBasiSoruSayisi] = useState<number>(2);
@@ -73,6 +72,7 @@ export function useTalepFormu() {
   // ============================================================================
   // Türetilmiş değerler
   // ============================================================================
+  const rol = kullanici?.rol ?? "";
   const yetenek = useMemo(() => ureticiYetenegi(rol.toLowerCase()), [rol]);
   const isUretici = yetenek !== null;
   const turKurali = TALEP_TURU_KURALLARI[egitimTuru];
@@ -81,19 +81,19 @@ export function useTalepFormu() {
   const kullaniciTakimId = kullaniciBilgi?.takim_id ?? null;
 
   // ============================================================================
-  // Auth — mount'ta bir kez
+  // Auth + rol kontrolü
   // ============================================================================
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        router.push("/login");
-        return;
-      }
-      setUser(data.user);
-      setRol(data.user.user_metadata?.rol ?? "");
-    });
-  }, [router]);
+    if (authYukleniyor) return;
+    if (!kullanici) {
+      router.push("/login");
+      return;
+    }
+    if (!URETIM_HATTI_GORENLER.includes(kullanici.rol)) {
+      router.push("/ana-sayfa");
+      return;
+    }
+  }, [kullanici, authYukleniyor, router]);
 
   // yetenek yüklendiğinde egitimTuru'yu rolün ilk açabildiği türe ayarla.
   // Dependency'e egitimTuru eklenmez — sonsuz döngü olur; sadece yetenek değişiminde tetiklenmeli.
@@ -127,51 +127,47 @@ export function useTalepFormu() {
   // kullaniciBilgi cache'lenir — bir kere fetch, sonra state'ten okunur.
   const fetchKullaniciBilgi = useCallback(async (): Promise<KullaniciBilgi | null> => {
     if (kullaniciBilgi) return kullaniciBilgi;
-    if (!user?.id) return null;
+    if (!kullanici?.id) return null;
     const supabase = createClient();
     const { data } = await supabase
       .from("kullanicilar")
       .select("firma_id, takim_id")
-      .eq("kullanici_id", user.id)
+      .eq("kullanici_id", kullanici.id)
       .single();
     if (data) setKullaniciBilgi(data);
     return data;
-  }, [user?.id, kullaniciBilgi]);
+  }, [kullanici?.id, kullaniciBilgi]);
 
-  // Üretici için tüm form verileri (ürün, teknik, kategori, takım) — Promise.all.
+  // Üretici için ürün, teknik, takım — Promise.all.
   const fetchUreticiVerileri = useCallback(
     async (firma_id: string, takim_id: string | null) => {
-      const [urunRes, teknikRes, kategoriRes, takimRes] = await Promise.all([
+      const [urunRes, teknikRes, takimRes] = await Promise.all([
         fetch(`/urunler/api?firma_id=${firma_id}${takim_id ? `&takim_id=${takim_id}` : ""}`),
         fetch(`/teknikler/api?firma_id=${firma_id}`),
-        fetch(`/kategoriler/api?firma_id=${firma_id}`),
         fetch(`/takimlar/api?firma_id=${firma_id}`),
       ]);
-      const [urunData, teknikData, kategoriData, takimData] = await Promise.all([
+      const [urunData, teknikData, takimData] = await Promise.all([
         urunRes.json(),
         teknikRes.json(),
-        kategoriRes.json(),
         takimRes.json(),
       ]);
       if (urunRes.ok) setUrunler(urunData.urunler ?? []);
       if (teknikRes.ok) setTeknikler(teknikData.teknikler ?? []);
-      if (kategoriRes.ok)
-        setKategoriler((kategoriData.kategoriler ?? []).filter((k: Kategori) => k.aktif_mi));
       if (takimRes.ok) setTakimlar(takimData.takimlar ?? []);
     },
     []
   );
 
-  // Initial fetch — user + isUretici hazır olduğunda.
+  // Initial fetch — kullanici + isUretici hazır olduğunda.
   useEffect(() => {
-    if (!user) return;
+    if (!kullanici) return;
     veriCek();
     if (isUretici) {
       fetchKullaniciBilgi().then((data) => {
         if (data?.firma_id) fetchUreticiVerileri(data.firma_id, data.takim_id ?? null);
       });
     }
-  }, [user, isUretici, veriCek, fetchKullaniciBilgi, fetchUreticiVerileri]);
+  }, [kullanici, isUretici, veriCek, fetchKullaniciBilgi, fetchUreticiVerileri]);
 
   // ============================================================================
   // Yardımcılar
@@ -192,10 +188,9 @@ export function useTalepFormu() {
   );
 
   const handleCikis = useCallback(async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await cikisYap();
     router.push("/login");
-  }, [router]);
+  }, [cikisYap, router]);
 
   // ============================================================================
   // Form handler'ları
@@ -224,15 +219,15 @@ export function useTalepFormu() {
   // Yeni ürün — Madde 4 Aşama 2B: takim_id parametresi.
   const handleYeniUrunEkle = useCallback(
     async (urun_adi: string, takim_id: string | null) => {
-      const kullanici = await fetchKullaniciBilgi();
-      if (!kullanici?.firma_id) {
+      const kullaniciVeri = await fetchKullaniciBilgi();
+      if (!kullaniciVeri?.firma_id) {
         hata("Firma bilgisi alınamadı.", "kullanicilar SELECT", undefined);
         throw new Error("Firma bilgisi alınamadı.");
       }
       const res = await fetch("/urunler/api", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firma_id: kullanici.firma_id, takim_id, urun_adi }),
+        body: JSON.stringify({ firma_id: kullaniciVeri.firma_id, takim_id, urun_adi }),
       });
       const d = await res.json();
       if (!res.ok) {
@@ -240,7 +235,7 @@ export function useTalepFormu() {
         throw new Error(d.hata ?? "Ürün eklenemedi.");
       }
       basari(`"${urun_adi}" ürünü eklendi.`);
-      await fetchUreticiVerileri(kullanici.firma_id, kullanici.takim_id ?? null);
+      await fetchUreticiVerileri(kullaniciVeri.firma_id, kullaniciVeri.takim_id ?? null);
       setSeciliUrunId(d.urun.urun_id);
     },
     [fetchKullaniciBilgi, fetchUreticiVerileri, hata, basari]
@@ -248,15 +243,15 @@ export function useTalepFormu() {
 
   const handleYeniTeknikEkle = useCallback(
     async (teknik_adi: string) => {
-      const kullanici = await fetchKullaniciBilgi();
-      if (!kullanici?.firma_id) {
+      const kullaniciVeri = await fetchKullaniciBilgi();
+      if (!kullaniciVeri?.firma_id) {
         hata("Firma bilgisi alınamadı.", "kullanicilar SELECT", undefined);
         throw new Error("Firma bilgisi alınamadı.");
       }
       const res = await fetch("/teknikler/api", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firma_id: kullanici.firma_id, teknik_adi }),
+        body: JSON.stringify({ firma_id: kullaniciVeri.firma_id, teknik_adi }),
       });
       const d = await res.json();
       if (!res.ok) {
@@ -264,7 +259,7 @@ export function useTalepFormu() {
         throw new Error(d.hata ?? "Teknik eklenemedi.");
       }
       basari(`"${teknik_adi}" tekniği eklendi.`);
-      await fetchUreticiVerileri(kullanici.firma_id, kullanici.takim_id ?? null);
+      await fetchUreticiVerileri(kullaniciVeri.firma_id, kullaniciVeri.takim_id ?? null);
       setSeciliTeknikId(d.teknik.teknik_id);
     },
     [fetchKullaniciBilgi, fetchUreticiVerileri, hata, basari]
@@ -311,16 +306,16 @@ export function useTalepFormu() {
   // Submit pipeline — 5 alt fonksiyon + orchestration
   // ============================================================================
   const validateForm = useCallback((): boolean => {
+    if (!hedefRol) {
+      hata("Hedef rol seçimi zorunludur.", "form kontrolü", undefined);
+      return false;
+    }
     if (turKurali.urun === "zorunlu" && !seciliUrunId) {
       hata("Ürün seçimi zorunludur.", "form kontrolü", undefined);
       return false;
     }
     if (turKurali.teknik === "zorunlu" && !seciliTeknikId) {
       hata("Teknik seçimi zorunludur.", "form kontrolü", undefined);
-      return false;
-    }
-    if (kategoriler.length > 0 && !seciliKategoriId) {
-      hata("Kategori seçimi zorunludur.", "form kontrolü", undefined);
       return false;
     }
     if (hazirVideo && !bekleyenVideo) {
@@ -341,11 +336,10 @@ export function useTalepFormu() {
     }
     return true;
   }, [
+    hedefRol,
     turKurali,
     seciliUrunId,
     seciliTeknikId,
-    kategoriler.length,
-    seciliKategoriId,
     hazirVideo,
     bekleyenVideo,
     hazirSoruSeti,
@@ -361,9 +355,9 @@ export function useTalepFormu() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         egitim_turu: egitimTuru,
+        hedef_rol: hedefRol,
         urun_id: turKurali.urun !== "yok" ? seciliUrunId || null : null,
         teknik_id: turKurali.teknik !== "yok" ? seciliTeknikId || null : null,
-        kategori_id: seciliKategoriId || null,
         aciklama,
         hazir_video: hazirVideo,
         hazir_soru_seti: hazirSoruSeti,
@@ -381,10 +375,10 @@ export function useTalepFormu() {
     return d.talep.talep_id as string;
   }, [
     egitimTuru,
+    hedefRol,
     turKurali,
     seciliUrunId,
     seciliTeknikId,
-    seciliKategoriId,
     aciklama,
     hazirVideo,
     hazirSoruSeti,
@@ -467,10 +461,10 @@ export function useTalepFormu() {
   );
 
   const resetForm = useCallback(() => {
+    setHedefRol(null);
     if (yetenek) setEgitimTuru(yetenek.acabilecegiTalepTurleri[0]);
     setSeciliUrunId("");
     setSeciliTeknikId("");
-    setSeciliKategoriId("");
     setAciklama("");
     setBekleyenDosyalar([]);
     setBekleyenVideo(null);
@@ -520,7 +514,8 @@ export function useTalepFormu() {
   // ============================================================================
   return {
     // auth + kullanıcı
-    user,
+    kullanici,
+    authYukleniyor,
     rol,
     isUretici,
     yetenek,
@@ -533,6 +528,10 @@ export function useTalepFormu() {
     formatTarih,
     handleTalepClick,
 
+    // form: hedef rol (UTT/BM seçimi)
+    hedefRol,
+    setHedefRol,
+
     // form: eğitim türü + türetilmiş
     egitimTuru,
     handleEgitimTuruDegis,
@@ -540,16 +539,13 @@ export function useTalepFormu() {
     urunGosterilsin,
     teknikGosterilsin,
 
-    // form: urun/teknik/kategori/takim
+    // form: urun/teknik/takim
     urunler,
     seciliUrunId,
     setSeciliUrunId,
     teknikler,
     seciliTeknikId,
     setSeciliTeknikId,
-    kategoriler,
-    seciliKategoriId,
-    setSeciliKategoriId,
     takimlar,
     kullaniciTakimId,
     handleYeniUrunEkle,

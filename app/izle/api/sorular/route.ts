@@ -2,6 +2,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
+import { rastgeleSoruSec } from "@/lib/soru/secim";
+
+// Yayında video_basi_soru_sayisi tanımlı değilse kullanılacak varsayılan değer.
+// Platform standardı: video başına 2 soru.
+const VARSAYILAN_SORU_SAYISI = 2;
 
 export async function GET(request: NextRequest) {
   try {
@@ -52,7 +57,7 @@ export async function GET(request: NextRequest) {
 
     if (yayinError || !yayin) return hataYaniti("Yayın bilgisi alınamadı.", "v_yayin_detay SELECT", yayinError, 404);
 
-    const videoBasiSoruSayisi = yayin.video_basi_soru_sayisi ?? 2;
+    const videoBasiSoruSayisi = yayin.video_basi_soru_sayisi ?? VARSAYILAN_SORU_SAYISI;
 
     if (!yayin.sorular || yayin.sorular.length < videoBasiSoruSayisi) {
       return hataYaniti(
@@ -63,11 +68,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Orijinal index'i koru, SONRA karıştır — cevap doğrulaması sette doğru soruyu bulsun.
-    // soru_index artık sette gerçek konumu işaret eder; doğru cevap (dogru) yine gizli kalır.
-    const indeksli = (yayin.sorular as any[]).map((s: any, orijinalIndex: number) => ({ ...s, orijinalIndex }));
-    const karisik = indeksli.sort(() => Math.random() - 0.5);
-    const secilenSorular = karisik.slice(0, videoBasiSoruSayisi).map((s: any) => ({
+    // Rastgele soru seçimi — lib/soru/secim.ts (Fisher-Yates shuffle).
+    // orijinalIndex alanı eklenir; cevap doğrulaması için kullanılır (soru_index = orijinal konum).
+    const secilenler = rastgeleSoruSec(yayin.sorular as any[], videoBasiSoruSayisi);
+
+    // GÜVENLİK: 'dogru' alanı client'a SIZDIRILMAMALI. Aşağıdaki map yalnızca
+    // { harf, metin } alanlarını döndürür; 'dogru' kasıtlı olarak düşürülür.
+    // Bu mantık değiştirilirse doğru cevaplar client'a sızar → cevap endpoint'i devre dışı kalır.
+    const secilenSorular = secilenler.map((s: any) => ({
       soru_index: s.orijinalIndex,
       soru_metni: s.soru_metni,
       secenekler: s.secenekler.map((se: any) => ({

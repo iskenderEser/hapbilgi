@@ -4,6 +4,8 @@ import { NextResponse } from 'next/server';
 import { hataYaniti, yetkiHatasi } from '@/lib/utils/hataIsle';
 import { tarihAraligi } from '@/lib/utils/tarihAraligi';
 import { getUttData } from '@/lib/rapor/utt/getUttData';
+import { katkiYuzdesi } from '@/lib/rapor/paylasilan/oran';
+import { ligSiralamasi } from '@/lib/rapor/paylasilan/ligSira';
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -36,8 +38,6 @@ export async function GET(request: Request) {
   const d = await getUttData(adminSupabase, kullanici, baslangic, bitis);
 
   // ─── İstatistikler — RPC çıktısından doğrudan ────────────────────────────
-  // get_kullanici_ozet null dönerse (kullanıcı veya kayıt yok) sıfırlı default.
-
   const ozet = d.ozet ?? {
     izlenme_sayisi: 0,
     video_puani: 0,
@@ -77,22 +77,23 @@ export async function GET(request: Request) {
   };
 
   // ─── HBLigi ──────────────────────────────────────────────────────────────
-
   const kisiselPuan = d.lig?.toplam_puan ?? 0;
   const toplamBolgePuan = d.bolgeLig.reduce((acc, u) => acc + (u.toplam_puan ?? 0), 0);
   const toplamTakimPuan = d.takimLig.reduce((acc, u) => acc + (u.toplam_puan ?? 0), 0);
   const toplamBolgeUtt = d.bolgeLig.length || 1;
 
-  const bolgePuanMax = toplamBolgePuan > 0 ? kisiselPuan / toplamBolgePuan * 100 : 0;
-  const takimPuanMax = toplamTakimPuan > 0 ? kisiselPuan / toplamTakimPuan * 100 : 0;
+  const bolgePuanMax = katkiYuzdesi(kisiselPuan, toplamBolgePuan);
+  const takimPuanMax = katkiYuzdesi(kisiselPuan, toplamTakimPuan);
 
-  const kendiSirasi = d.bolgeLig.findIndex((u) => u.kullanici_id === kullanici.kullanici_id);
-  const birUstPuanFarki = kendiSirasi > 0
-    ? ((d.bolgeLig[kendiSirasi - 1]?.toplam_puan ?? 0) - kisiselPuan)
-    : null;
+  // Bölge lig sıralaması — paylaşılan helper
+  const bolgeLigSatirlari = d.bolgeLig.map(u => ({
+    id: u.kullanici_id,
+    ad: `${u.ad} ${u.soyad}`,
+    toplam_puan: u.toplam_puan ?? 0,
+  }));
+  const ligSonuc = ligSiralamasi(bolgeLigSatirlari, kullanici.kullanici_id, kisiselPuan);
 
   // ─── Beklemede ───────────────────────────────────────────────────────────
-
   const toplamYayinSayisi = d.yayinlar.length;
   const izlenmemisVideoSayisi = Math.max(0, toplamYayinSayisi - d.tamamlananIzlemeSayisi);
 
@@ -104,7 +105,6 @@ export async function GET(request: Request) {
   const tahminiPuan = tumYayinlarToplamPuan > 0 ? tumYayinlarToplamPuan : 0;
 
   // ─── Beğeni / Favori ─────────────────────────────────────────────────────
-
   const benimBegeniSet = new Set(d.benimBegenim.map((b) => b.yayin_id));
   const benimFavoriSet = new Set(d.benimFavorim.map((f) => f.yayin_id));
 
@@ -119,7 +119,6 @@ export async function GET(request: Request) {
   }));
 
   // ─── Response ────────────────────────────────────────────────────────────
-
   return NextResponse.json({
     success: true,
     data: {
@@ -131,8 +130,8 @@ export async function GET(request: Request) {
         takim_adi: d.takim?.takim_adi ?? '-',
       },
       katki: {
-        bolge_katki_yuzdesi: parseFloat(bolgePuanMax.toFixed(1)),
-        takim_katki_yuzdesi: parseFloat(takimPuanMax.toFixed(1)),
+        bolge_katki_yuzdesi: bolgePuanMax,
+        takim_katki_yuzdesi: takimPuanMax,
         bolge_mevcut_puan: kisiselPuan,
         bolge_toplam_puan: toplamBolgePuan,
         takim_toplam_puan: toplamTakimPuan,
@@ -142,13 +141,13 @@ export async function GET(request: Request) {
         bolge_sirasi: d.lig?.bolge_sirasi ?? null,
         takim_sirasi: d.lig?.takim_sirasi ?? null,
         toplam_bolge_utt: toplamBolgeUtt,
-        bir_ust_puan_farki: birUstPuanFarki,
-        bolge_siralamasi: d.bolgeLig.map((u, idx) => ({
-          sira: idx + 1,
-          ad: u.ad,
-          soyad: u.soyad,
-          puan: u.toplam_puan ?? 0,
-          kendisi_mi: u.kullanici_id === kullanici.kullanici_id,
+        bir_ust_puan_farki: ligSonuc.birUstPuanFarki,
+        bolge_siralamasi: ligSonuc.siralama.map(s => ({
+          sira: s.sira,
+          ad: s.ad.split(' ').slice(0, -1).join(' '),
+          soyad: s.ad.split(' ').slice(-1).join(' '),
+          puan: s.puan,
+          kendisi_mi: s.kendisi_mi,
         })),
       },
       beklemede: {
@@ -156,7 +155,6 @@ export async function GET(request: Request) {
         tahmini_kazanilacak_puan: tahminiPuan,
         bekleyen_oneri_sayisi: istatistikler.bekleyen_oneri,
       },
-      // Ürün bazlı dağılım — RPC'den hazır gelir: her ürün için puan dökümü + teknik dağılımı
       urun_dagilimi: d.urunDagilimi,
       oneriler: d.oneriler.map((o: any) => ({
         oneri_id: o.oneri_id,

@@ -1,10 +1,10 @@
 // app/yayin-yonetimi/api/bekleyenler/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     const adminSupabase = createAdminClient();
@@ -14,6 +14,10 @@ export async function GET() {
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
     if (!URETICI_ROLLER.includes(rol)) return rolHatasi("Sadece yetkili roller bekleyen videoları görebilir.");
+
+    // Opsiyonel filtre: ?hedef_rol=utt veya ?hedef_rol=bm
+    const { searchParams } = new URL(request.url);
+    const hedefRolFiltresi = searchParams.get("hedef_rol");
 
     // Zaten yayında olan soru_seti_durum_id'leri çek
     const { data: yayinlar, error: yayinError } = await adminSupabase
@@ -60,6 +64,7 @@ export async function GET() {
                     soru_seti_buyuklugu,
                     video_basi_soru_sayisi,
                     egitim_turu,
+                    hedef_rol,
                     urunler ( urun_adi ),
                     teknikler ( teknik_adi )
                   )
@@ -69,7 +74,7 @@ export async function GET() {
           )
         )
       `)
-      .eq("durum", "Onaylandi");
+      .eq("durum", "onaylandi");
 
     if (onayError) return hataYaniti("Onaylanan soru seti durumları çekilemedi.", "soru_seti_durumu join SELECT", onayError);
 
@@ -122,6 +127,7 @@ export async function GET() {
         const videoPuan = videoDurum?.video_puanlari;
 
         const egitimTuru = talep?.egitim_turu ?? "urun_egitimi";
+        const hedefRol = (talep?.hedef_rol ?? "utt") as "utt" | "bm";
 
         return {
           soru_seti_durum_id: ss.soru_seti_durum_id,
@@ -133,15 +139,21 @@ export async function GET() {
           video_puan_id: videoPuan?.video_puan_id ?? null,
           video_puani: videoPuan?.video_puani ?? null,
           soru_puan_map: soruPuanlarByDurumId[ss.soru_seti_durum_id] ?? {},
-          urun_adi: egitimTuru === "genel_egitim" ? "Genel Eğitim" : (talep?.urunler?.urun_adi ?? "-"),
-          teknik_adi: egitimTuru === "genel_egitim" ? "-" : (talep?.teknikler?.teknik_adi ?? "-"),
+          urun_adi: talep?.urunler?.urun_adi ?? "-",
+          teknik_adi: talep?.teknikler?.teknik_adi ?? "-",
           egitim_turu: egitimTuru,
+          hedef_rol: hedefRol,
           soru_seti_buyuklugu: talep?.soru_seti_buyuklugu ?? null,
           video_basi_soru_sayisi: talep?.video_basi_soru_sayisi ?? null,
           onay_tarihi: ss.created_at,
         };
       })
       .filter(Boolean);
+
+      // Query parametresine göre filtrele (varsa)
+    const filtrelenmis = hedefRolFiltresi
+      ? sonuc.filter((b: any) => b.hedef_rol === hedefRolFiltresi)
+      : sonuc;
 
     return NextResponse.json({ bekleyenler: sonuc }, { status: 200 });
 

@@ -7,13 +7,13 @@ import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { talepBilgisiSoruSeti } from "@/lib/utils/talepZinciri";
 
 const GECERLI_DURUMLAR = [
-  "Inceleme Bekleniyor",
-  "Revizyon Bekleniyor",
-  "Onaylandi",
+  "inceleme bekleniyor",
+  "revizyon bekleniyor",
+  "onaylandi",
   "Iptal Edildi",
 ];
-const IU_DURUMLARI = ["Inceleme Bekleniyor"];
-const PM_DURUMLARI = ["Revizyon Bekleniyor", "Onaylandi", "Iptal Edildi"];
+const IU_DURUMLARI = ["inceleme bekleniyor"];
+const PM_DURUMLARI = ["revizyon bekleniyor", "onaylandi", "Iptal Edildi"];
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,19 +51,19 @@ export async function POST(request: NextRequest) {
     const talepBilgisi = await talepBilgisiSoruSeti(adminSupabase, soru_seti_id);
     const urun_adi = talepBilgisi?.urun_adi ?? "-";
 
-    if (isIU && durum === "Inceleme Bekleniyor") {
+    if (isIU && durum === "inceleme bekleniyor") {
       const soruSetiBuyuklugu = talepBilgisi?.soru_seti_buyuklugu ?? 15;
       if (!soruSeti.sorular || soruSeti.sorular.length !== soruSetiBuyuklugu) {
         return isKuraluHatasi(`Göndermeden önce soru setini doldurun. Mevcut soru sayısı: ${soruSeti.sorular?.length ?? 0}, olması gereken: ${soruSetiBuyuklugu}.`);
       }
     }
 
-    if (isPM && durum === "Revizyon Bekleniyor") {
+    if (isPM && durum === "revizyon bekleniyor") {
       const { count, error: countError } = await adminSupabase
         .from("soru_seti_durumu")
         .select("soru_seti_durum_id", { count: "exact", head: true })
         .eq("soru_seti_id", soru_seti_id)
-        .eq("durum", "Revizyon Bekleniyor");
+        .eq("durum", "revizyon bekleniyor");
       if (countError) return hataYaniti("Revizyon sayısı kontrol edilemedi.", "soru_seti_durumu tablosu COUNT — revizyon kontrolü", countError);
       if ((count ?? 0) >= 2) return isKuraluHatasi("Maksimum revizyon hakkı (2) kullanıldı. Daha fazla revizyon istenemez.");
     }
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     if (!durumKontrol.gecerli) return durumKontrol.yanit;
 
     // Onaylandi ise talep dosyalarını temizle — IU'ya bildirim gönderilmez (iş bitti)
-    if (isPM && durum === "Onaylandi" && talepBilgisi?.talep_id) {
+    if (isPM && durum === "onaylandi" && talepBilgisi?.talep_id) {
       try {
         const dosyaUrls = talepBilgisi.dosya_urls ?? [];
         if (dosyaUrls.length > 0) {
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (isIU && durum === "Inceleme Bekleniyor" && talepBilgisi?.uretici_id) {
+    if (isIU && durum === "inceleme bekleniyor" && talepBilgisi?.uretici_id) {
       await bildirimOlustur({
         adminSupabase,
         alici_id: talepBilgisi.uretici_id,
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
         mesaj: `Soru seti inceleme bekliyor: ${urun_adi}`,
       });
     }
-    if (isPM && durum === "Revizyon Bekleniyor" && soruSeti.iu_id) {
+    if (isPM && durum === "revizyon bekleniyor" && soruSeti.iu_id) {
       await bildirimOlustur({
         adminSupabase,
         alici_id: soruSeti.iu_id,
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
 
     // Onaylandi / Iptal Edildi — alıcıya bildirim gitmez, ancak işlemi yapan PM'in
     // bu zincire bağlı kendi "incele" bildirimleri okundu yapılır (badge kapanır).
-    if (isPM && (durum === "Onaylandi" || durum === "Iptal Edildi")) {
+    if (isPM && (durum === "onaylandi" || durum === "Iptal Edildi")) {
       await gonderenBildirimleriOkunduIsaretle(adminSupabase, user.id, "soru_seti", soru_seti_id);
     }
 

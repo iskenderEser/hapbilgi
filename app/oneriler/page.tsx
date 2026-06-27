@@ -6,6 +6,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
+import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { useAuth } from "@/app/providers/AuthProvider";
 
 interface Oneri {
   oneri_id: string;
@@ -53,8 +55,7 @@ const DURUM_BILGI: Record<DurumTipi, { etiket: string; renk: string; bg: string;
 
 export default function OnerilerPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [rol, setRol] = useState<string>("");
+  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
   const [oneriler, setOneriler] = useState<Oneri[]>([]);
   const [yayinlar, setYayinlar] = useState<Yayin[]>([]);
   const [kullanicilar, setKullanicilar] = useState<Kullanici[]>([]);
@@ -91,17 +92,15 @@ export default function OnerilerPage() {
   };
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) { router.push("/login"); return; }
-      setUser(data.user);
-      setRol(data.user.user_metadata?.rol ?? "");
-    });
-  }, []);
+    if (authYukleniyor) return;
+    if (!kullanici) {
+      router.push("/login");
+      return;
+    }
+  }, [kullanici, authYukleniyor, router]);
 
   const handleCikis = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await cikisYap();
     router.push("/login");
   };
 
@@ -112,7 +111,7 @@ export default function OnerilerPage() {
     if (!res.ok) { hata(data.hata ?? "Öneriler yüklenemedi.", data.adim, data.detay); }
     else { setOneriler(data.oneriler ?? []); }
 
-    const rolKucu = (user?.user_metadata?.rol ?? "").toLowerCase();
+    const rolKucu = (kullanici?.rol ?? "").toLowerCase();
     if (["tm", "bm"].includes(rolKucu)) {
       const yRes = await fetch("/oneriler/api/yayinlar");
       const yData = await yRes.json();
@@ -125,9 +124,9 @@ export default function OnerilerPage() {
       else { setKullanicilar(kData.kullanicilar ?? []); }
     }
     setLoading(false);
-  }, [user?.user_metadata?.rol]);
+  }, [kullanici?.rol]);
 
-  useEffect(() => { if (user) veriCek(); }, [user, veriCek]);
+  useEffect(() => { if (kullanici) veriCek(); }, [kullanici, veriCek]);
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -144,7 +143,7 @@ export default function OnerilerPage() {
     return date.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
   };
 
-  const rolKucu = rol.toLowerCase();
+  const rolKucu = (kullanici?.rol ?? "").toLowerCase();
   const isBMTM = ["tm", "bm"].includes(rolKucu);
   const isUTT = ["utt", "kd_utt"].includes(rolKucu);
 
@@ -225,8 +224,8 @@ export default function OnerilerPage() {
   };
 
   const yarinStr = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-  const bitisMinStr = oneriBaslangic 
-    ? new Date(new Date(oneriBaslangic).getTime() + 86400000).toISOString().slice(0, 10) 
+  const bitisMinStr = oneriBaslangic
+    ? new Date(new Date(oneriBaslangic).getTime() + 86400000).toISOString().slice(0, 10)
     : "";
 
   const handleOneriGonder = async (e: React.FormEvent) => {
@@ -235,7 +234,7 @@ export default function OnerilerPage() {
     setGonderLoading(true);
 
     const onerilerListesi = secilenYayinlar.map(yayin_id => ({
-      yayin_id, 
+      yayin_id,
       kullanici_id: secilenKullanici,
       oneri_baslangic: oneriBaslangic,
       oneri_bitis: oneriBitis,
@@ -252,7 +251,7 @@ export default function OnerilerPage() {
     setGonderLoading(false);
   };
 
-  if (loading) {
+  if (authYukleniyor || !kullanici || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
@@ -265,7 +264,7 @@ export default function OnerilerPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20 md:pb-0" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={user?.email ?? ""} rol={rol} onCikis={handleCikis} />
+      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
 
       <div className="max-w-5xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-5">
 
@@ -298,7 +297,7 @@ export default function OnerilerPage() {
                 </div>
                 <div className="flex-1">
                   <label className="text-xs text-gray-500 block mb-1">İzlenme Bitiş Günü</label>
-                  <input type="date" value={oneriBitis} onChange={(e) => setOneriBitis(e.target.value)} required 
+                  <input type="date" value={oneriBitis} onChange={(e) => setOneriBitis(e.target.value)} required
                     min={bitisMinStr}
                     disabled={!oneriBaslangic}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -316,12 +315,13 @@ export default function OnerilerPage() {
                   ) : (
                     yayinlar.map((y) => {
                       const secili = secilenYayinlar.includes(y.yayin_id);
+                      const thumb = y.thumbnail_url ?? thumbnailUrlUret(y.video_url);
                       return (
                         <div key={y.yayin_id} onClick={() => handleYayinSec(y.yayin_id)}
                           className="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer border transition-colors"
                           style={{ border: secili ? "1.5px solid #56aeff" : "0.5px solid #e5e7eb", background: secili ? "#e6f1fb" : "white" }}>
                           <div className="w-12 h-7 rounded flex-shrink-0 overflow-hidden bg-gray-200">
-                            {y.thumbnail_url ? <img src={y.thumbnail_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full" style={{ background: "#b5d4f4" }} />}
+                            {thumb ? <img src={thumb} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full" style={{ background: "#b5d4f4" }} />}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-xs font-semibold truncate" style={{ color: secili ? "#56aeff" : "#111" }}>{y.urun_adi}</div>
@@ -438,11 +438,12 @@ export default function OnerilerPage() {
                       filtreliSiraliOneriler.map((o) => {
                         const dt = durumTipi(o);
                         const dbi = DURUM_BILGI[dt];
+                        const thumb = o.thumbnail_url ?? thumbnailUrlUret(o.video_url);
                         return (
                           <tr key={o.oneri_id} style={{ borderBottom: "1px solid #f3f4f6" }} className="hover:bg-gray-50">
                             <td className="px-3 py-2.5 whitespace-nowrap">
                               <div className="w-14 h-8 rounded overflow-hidden bg-gray-200">
-                                {o.thumbnail_url ? <img src={o.thumbnail_url} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full" style={{ background: "#b5d4f4" }} />}
+                                {thumb ? <img src={thumb} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full" style={{ background: "#b5d4f4" }} />}
                               </div>
                             </td>
                             <td className="px-3 py-2.5 text-gray-900 whitespace-nowrap">{o.kullanici_adi}</td>
@@ -485,6 +486,7 @@ export default function OnerilerPage() {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {oneriler.map((o) => {
                   const { renk, etiket, soluk } = kartDurumu(o);
+                  const thumb = o.thumbnail_url ?? thumbnailUrlUret(o.video_url);
                   return (
                     <div key={o.oneri_id}
                       className="bg-white rounded-xl overflow-hidden transition-shadow duration-150"
@@ -495,9 +497,9 @@ export default function OnerilerPage() {
 
                       {/* Thumbnail */}
                       <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16/9", background: "#b5d4f4" }}>
-                        {o.thumbnail_url
+                        {thumb
                           ? <>
-                              <img src={o.thumbnail_url} alt="thumbnail" className="w-full h-full object-cover" onError={(e) => {
+                              <img src={thumb} alt="thumbnail" className="w-full h-full object-cover" onError={(e) => {
                                 const img = e.currentTarget as HTMLImageElement;
                                 img.style.display = 'none';
                                 const fallback = img.parentElement?.querySelector('.thumbnail-fallback') as HTMLElement | null;

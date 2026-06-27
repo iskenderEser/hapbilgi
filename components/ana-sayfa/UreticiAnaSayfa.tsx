@@ -8,11 +8,13 @@ import { useHataMesaji } from "@/components/HataMesaji";
 import VideoOynatici from "@/components/izle/VideoOynatici";
 import VideoBolumu from "@/components/ana-sayfa/VideoBolumu";
 import { AnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
+import { HedefRolPill } from "@/components/HedefRolBant";
 
 interface TakipSatiri {
   talep_id: string;
   urun_adi: string;
   teknik_adi: string;
+  hedef_rol: "utt" | "bm";
   asama: "Senaryo" | "Video" | "Soru Seti" | "Yayın";
   durum: string;
   tarih: string;
@@ -199,8 +201,9 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
                     <div className="text-sm font-bold text-gray-900">{s.urun_adi}</div>
                     <span className="text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: durumR.bg, color: durumR.text }}>{s.durum}</span>
                   </div>
-                  <div className="flex gap-2 items-center">
+                  <div className="flex gap-2 items-center flex-wrap">
                     <span className="text-xs font-bold px-1.5 py-0.5 rounded-full" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span>
+                    <HedefRolPill hedefRol={s.hedef_rol} />
                     <span className="text-xs text-gray-500">{s.teknik_adi}</span>
                   </div>
                   <div className="text-xs text-gray-400 mt-1">{formatTarih(s.tarih)}</div>
@@ -212,8 +215,8 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
 
         {/* Desktop: tablo görünümü */}
         <div className="hidden md:block">
-          <div className="grid gap-3 px-5 py-2.5 bg-gray-50 border-b border-gray-200" style={{ gridTemplateColumns: "1.8fr 1.4fr 1.1fr 1.4fr 1fr 20px" }}>
-            {["ÜRÜN", "TEKNİK", "AŞAMA", "DURUM", "TARİH", ""].map((h, i) => (
+          <div className="grid gap-3 px-5 py-2.5 bg-gray-50 border-b border-gray-200" style={{ gridTemplateColumns: "1.4fr 1.2fr 0.8fr 1.1fr 1.4fr 1fr 20px" }}>
+            {["ÜRÜN", "TEKNİK", "KİME", "AŞAMA", "DURUM", "TARİH", ""].map((h, i) => (
               <div key={i} className="text-xs font-bold text-gray-400 uppercase tracking-wide">{h}</div>
             ))}
           </div>
@@ -229,12 +232,13 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
                   onClick={() => router.push(s.yol)}
                   className="grid gap-3 px-5 py-3 items-center cursor-pointer bg-white hover:bg-gray-50 transition-colors duration-100"
                   style={{
-                    gridTemplateColumns: "1.8fr 1.4fr 1.1fr 1.4fr 1fr 20px",
+                    gridTemplateColumns: "1.4fr 1.2fr 0.8fr 1.1fr 1.4fr 1fr 20px",
                     borderBottom: i < filtrelenmis.length - 1 ? "1px solid #f3f4f6" : "none",
                   }}
                 >
                   <div className="text-sm font-bold text-gray-900 truncate">{s.urun_adi}</div>
                   <div className="text-xs text-gray-500 truncate">{s.teknik_adi}</div>
+                  <div><HedefRolPill hedefRol={s.hedef_rol} /></div>
                   <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block whitespace-nowrap" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span></div>
                   <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block whitespace-nowrap" style={{ background: durumR.bg, color: durumR.text }}>{s.durum}</span></div>
                   <span className="text-xs text-gray-400 whitespace-nowrap">{formatTarih(s.tarih)}</span>

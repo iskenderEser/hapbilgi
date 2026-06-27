@@ -12,12 +12,13 @@ export async function GET() {
     if (authError || !user) return yetkiHatasi();
 
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-    if (!["tm", "bm"].includes(rol)) return rolHatasi("Sadece tm ve bm erişebilir.");
+    if (rol !== "bm") return rolHatasi("Sadece bm erişebilir.");
 
     const { data: yayinlar, error: yayinError } = await adminSupabase
       .from("v_yayin_detay")
       .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url")
-      .eq("durum", "Yayinda")
+      .eq("durum", "yayinda")
+      .eq("hedef_rol", "utt")
       .order("yayin_tarihi", { ascending: false });
 
     if (yayinError) return hataYaniti("Yayınlar çekilemedi.", "v_yayin_detay view SELECT — Yayinda filtresi", yayinError);
