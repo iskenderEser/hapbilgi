@@ -1,7 +1,9 @@
 // app/admin/_components/FirmaSidebar.tsx
 //
 // Admin panel sol paneli: firma listesi + yeni firma ekleme formu.
-// Her firma satırında HBStore mağaza aç/kapa anahtarı bulunur.
+// Her firma bir kart: ad + (Firma aktif/pasif · Mağaza aç/kapa · Sil) +
+// (Dışa aktar · İçe aktar). Dışa/İçe aktar butonları şimdilik devre dışıdır
+// (mantık sonraki aşamada eklenecek). Pasif firma soluk + "Pasif" rozeti.
 
 "use client";
 
@@ -15,7 +17,55 @@ interface FirmaSidebarProps {
   handleFirmaEkle: (e: React.FormEvent) => void | Promise<void>;
   handleFirmaSecildi: (f: Firma) => void;
   handleStoreToggle: (f: Firma) => void | Promise<void>;
+  handleFirmaToggle: (f: Firma) => void | Promise<void>;
+  handleFirmaSil: (f: Firma) => Promise<boolean>;
+  handleExport: (f: Firma) => void | Promise<void>;
   loading: boolean;
+}
+
+// Kaydırmalı switch (toggle) — açık/kapalı görsel durum.
+function Switch({
+  acik,
+  renk,
+  onClick,
+  baslik,
+}: {
+  acik: boolean;
+  renk: string;
+  onClick: () => void;
+  baslik: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={baslik}
+      style={{
+        flexShrink: 0,
+        width: "34px",
+        height: "19px",
+        borderRadius: "999px",
+        border: "none",
+        background: acik ? renk : "#d1d5db",
+        position: "relative",
+        cursor: "pointer",
+        padding: 0,
+        transition: "background 0.15s",
+      }}
+    >
+      <span
+        style={{
+          position: "absolute",
+          top: "2px",
+          left: acik ? "17px" : "2px",
+          width: "15px",
+          height: "15px",
+          borderRadius: "50%",
+          background: "white",
+          transition: "left 0.15s",
+        }}
+      />
+    </button>
+  );
 }
 
 export default function FirmaSidebar({
@@ -26,10 +76,24 @@ export default function FirmaSidebar({
   handleFirmaEkle,
   handleFirmaSecildi,
   handleStoreToggle,
+  handleFirmaToggle,
+  handleFirmaSil,
+  handleExport,
   loading,
 }: FirmaSidebarProps) {
+
+  const silTikla = async (f: Firma) => {
+    // Onay iste (geri alınamaz işlem). API ayrıca export koşulunu kontrol eder;
+    // export edilmemişse hata mesajı döner (kullanıcı bilgilendirilir).
+    const onay = window.confirm(
+      `"${f.firma_adi}" firmasını silmek üzeresiniz. Bu işlem geri alınamaz.\n\nFirmanın verileri dışa aktarılmamışsa silme işlemi engellenir.\n\nDevam edilsin mi?`
+    );
+    if (!onay) return;
+    await handleFirmaSil(f);
+  };
+
   return (
-    <div style={{ width: "280px", borderRight: "0.5px solid #e5e7eb", padding: "20px", flexShrink: 0 }}>
+    <div style={{ width: "300px", borderRight: "0.5px solid #e5e7eb", padding: "20px", flexShrink: 0 }}>
       <h2 style={{ fontSize: "16px", fontWeight: 700, color: "#111", marginBottom: "16px", fontFamily: "'Nunito', sans-serif" }}>
         Firmalar
       </h2>
@@ -75,73 +139,124 @@ export default function FirmaSidebar({
       ) : firmalar.length === 0 ? (
         <p style={{ fontSize: "13px", color: "#737373" }}>Henüz firma yok.</p>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          {firmalar.map(f => {
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          {firmalar.map((f, i) => {
             const secili = seciliFirma?.firma_id === f.firma_id;
+            const pasif = !f.aktif;
+            // Zebra: dönüşümlü arka plan. Seçili firma vurgulanır.
+            const zebraBg = i % 2 === 0 ? "#ffffff" : "#fafafa";
+            const kartBg = secili ? "#eff6ff" : zebraBg;
+            const kartBorder = secili ? "0.5px solid #93c5fd" : "0.5px solid #e5e7eb";
+
             return (
               <div
                 key={f.firma_id}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  padding: "8px 12px",
-                  background: secili ? "#eff6ff" : "transparent",
-                  border: secili ? "0.5px solid #93c5fd" : "0.5px solid transparent",
-                  borderRadius: "6px",
+                  background: kartBg,
+                  border: kartBorder,
+                  borderRadius: "10px",
+                  padding: "12px",
+                  opacity: pasif ? 0.65 : 1,
                 }}
               >
-                {/* Firma adı — seçim butonu */}
-                <button
-                  onClick={() => handleFirmaSecildi(f)}
-                  style={{
-                    flex: 1,
-                    textAlign: "left",
-                    background: "transparent",
-                    border: "none",
-                    padding: 0,
-                    fontSize: "13px",
-                    fontWeight: secili ? 600 : 500,
-                    color: secili ? "#1d4ed8" : "#111",
-                    cursor: "pointer",
-                    fontFamily: "'Nunito', sans-serif",
-                  }}
-                >
-                  {f.firma_adi}
-                </button>
-
-                {/* HBStore aç/kapa anahtarı */}
-                <button
-                  onClick={() => handleStoreToggle(f)}
-                  title={f.hbstore_aktif ? "HBStore açık — kapatmak için tıkla" : "HBStore kapalı — açmak için tıkla"}
-                  style={{
-                    flexShrink: 0,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "5px",
-                    padding: "3px 8px",
-                    background: f.hbstore_aktif ? "#ecfdf5" : "#f3f4f6",
-                    border: `0.5px solid ${f.hbstore_aktif ? "#a7f3d0" : "#e5e7eb"}`,
-                    borderRadius: "999px",
-                    fontSize: "11px",
-                    fontWeight: 600,
-                    color: f.hbstore_aktif ? "#047857" : "#9ca3af",
-                    cursor: "pointer",
-                    fontFamily: "'Nunito', sans-serif",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <span
+                {/* Firma adı (seçim) + pasif rozeti */}
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
+                  <button
+                    onClick={() => handleFirmaSecildi(f)}
                     style={{
-                      width: "7px",
-                      height: "7px",
-                      borderRadius: "999px",
-                      background: f.hbstore_aktif ? "#10b981" : "#d1d5db",
-                      display: "inline-block",
+                      flex: 1,
+                      textAlign: "left",
+                      background: "transparent",
+                      border: "none",
+                      padding: 0,
+                      fontSize: "14px",
+                      fontWeight: secili ? 700 : 500,
+                      color: secili ? "#1d4ed8" : "#111",
+                      cursor: "pointer",
+                      fontFamily: "'Nunito', sans-serif",
                     }}
-                  />
-                  Mağaza
-                </button>
+                  >
+                    {f.firma_adi}
+                  </button>
+                  {pasif && (
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        background: "#fef2f2",
+                        color: "#bc2d0d",
+                        padding: "2px 8px",
+                        borderRadius: "999px",
+                        fontWeight: 600,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Pasif
+                    </span>
+                  )}
+                </div>
+
+                {/* Aksiyon satırı: Firma toggle · Mağaza toggle · Sil */}
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "10px" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "12px", color: "#737373", fontFamily: "'Nunito', sans-serif" }}>
+                    <Switch
+                      acik={f.aktif}
+                      renk="#10b981"
+                      onClick={() => handleFirmaToggle(f)}
+                      baslik={f.aktif ? "Firma aktif — pasifleştirmek için tıkla" : "Firma pasif — aktifleştirmek için tıkla"}
+                    />
+                    Firma
+                  </span>
+
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "12px", color: "#737373", fontFamily: "'Nunito', sans-serif" }}>
+                    <Switch
+                      acik={f.hbstore_aktif}
+                      renk="#1d4ed8"
+                      onClick={() => handleStoreToggle(f)}
+                      baslik={f.hbstore_aktif ? "Mağaza açık — kapatmak için tıkla" : "Mağaza kapalı — açmak için tıkla"}
+                    />
+                    Mağaza
+                  </span>
+
+                  <button
+                    onClick={() => silTikla(f)}
+                    title="Firmayı sil"
+                    style={{
+                      marginLeft: "auto",
+                      flexShrink: 0,
+                      padding: "5px 9px",
+                      background: "transparent",
+                      border: "0.5px solid #fecaca",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      color: "#bc2d0d",
+                      cursor: "pointer",
+                      fontFamily: "'Nunito', sans-serif",
+                    }}
+                  >
+                    Sil
+                  </button>
+                </div>
+
+                {/* Dışa aktar — firmanın verilerini Excel olarak indirir */}
+                <div style={{ display: "flex" }}>
+                  <button
+                    onClick={() => handleExport(f)}
+                    title="Firma verilerini Excel olarak dışa aktar"
+                    style={{
+                      flex: 1,
+                      padding: "6px",
+                      background: "#ffffff",
+                      border: "0.5px solid #1d4ed8",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      color: "#1d4ed8",
+                      cursor: "pointer",
+                      fontFamily: "'Nunito', sans-serif",
+                    }}
+                  >
+                    Dışa aktar
+                  </button>
+                </div>
               </div>
             );
           })}

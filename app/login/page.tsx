@@ -27,12 +27,40 @@ export default function LoginPage() {
     setLoading(true);
     setHata("");
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password: sifre });
+    const { data: girisData, error } = await supabase.auth.signInWithPassword({ email, password: sifre });
     if (error) {
       setHata("E-posta veya şifre hatalı.");
       setLoading(false);
       return;
     }
+
+    // Firma aktif mi kontrol et — firması pasif olan kullanıcı giriş yapamaz.
+    // Admin bu kontrolden muaftır (firma yönetimi için panele erişmesi gerekir).
+    const user = girisData.user;
+    const rol = (user?.user_metadata?.rol ?? "").toLowerCase();
+    if (user && rol !== "admin") {
+      const { data: kullaniciKaydi } = await supabase
+        .from("kullanicilar")
+        .select("firma_id")
+        .eq("kullanici_id", user.id)
+        .single();
+
+      if (kullaniciKaydi?.firma_id) {
+        const { data: firma } = await supabase
+          .from("firmalar")
+          .select("aktif")
+          .eq("firma_id", kullaniciKaydi.firma_id)
+          .single();
+
+        if (firma && firma.aktif === false) {
+          await supabase.auth.signOut();
+          setHata("Firmanızın sisteme erişimi şu anda kapalıdır. Lütfen yöneticinizle görüşün.");
+          setLoading(false);
+          return;
+        }
+      }
+    }
+
     setLoading(false);
   };
 

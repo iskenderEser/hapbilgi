@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 
+const FIRMA_KOLONLARI = "firma_id, firma_adi, hbstore_aktif, aktif, son_export_at, created_at";
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ firma_id: string }> }
@@ -15,7 +17,7 @@ export async function GET(
 
     const { data: firma, error } = await adminSupabase
       .from("firmalar")
-      .select("firma_id, firma_adi, hbstore_aktif, created_at")
+      .select(FIRMA_KOLONLARI)
       .eq("firma_id", firma_id)
       .single();
 
@@ -51,7 +53,7 @@ export async function PUT(
       .from("firmalar")
       .update({ firma_adi: firma_adi.trim() })
       .eq("firma_id", firma_id)
-      .select("firma_id, firma_adi, hbstore_aktif, created_at")
+      .select(FIRMA_KOLONLARI)
       .single();
 
     if (error) return hataYaniti("Firma güncellenemedi.", "firmalar tablosu UPDATE", error);
@@ -66,8 +68,10 @@ export async function PUT(
   }
 }
 
-// PATCH — firmanın HBStore durumunu (mağaza açık/kapalı) günceller.
-// Body: { hbstore_aktif: boolean }
+// PATCH — firmanın durum bayraklarını günceller.
+// Body (en az biri): { hbstore_aktif?: boolean, aktif?: boolean }
+//   - hbstore_aktif: HBStore mağazası açık/kapalı
+//   - aktif: firma sisteme erişimi açık/kapalı (pasif → kullanıcılar giriş yapamaz)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ firma_id: string }> }
@@ -79,28 +83,41 @@ export async function PATCH(
     const adminSupabase = createAdminClient();
 
     const body = await request.json();
-    const { hbstore_aktif } = body;
+    const { hbstore_aktif, aktif } = body;
 
-    if (typeof hbstore_aktif !== "boolean") {
-      return validasyonHatasi("hbstore_aktif (true/false) zorunludur.", ["hbstore_aktif"]);
+    // Güncellenecek alanları topla (yalnızca gönderilenler)
+    const guncelleme: Record<string, boolean> = {};
+    if (typeof hbstore_aktif === "boolean") guncelleme.hbstore_aktif = hbstore_aktif;
+    if (typeof aktif === "boolean") guncelleme.aktif = aktif;
+
+    if (Object.keys(guncelleme).length === 0) {
+      return validasyonHatasi(
+        "Güncellenecek alan yok. hbstore_aktif veya aktif (true/false) gönderin.",
+        ["hbstore_aktif", "aktif"]
+      );
     }
 
     const { data: guncellenen, error } = await adminSupabase
       .from("firmalar")
-      .update({ hbstore_aktif })
+      .update(guncelleme)
       .eq("firma_id", firma_id)
-      .select("firma_id, firma_adi, hbstore_aktif, created_at")
+      .select(FIRMA_KOLONLARI)
       .single();
 
-    if (error) return hataYaniti("Firma mağaza durumu güncellenemedi.", "firmalar tablosu UPDATE — hbstore_aktif", error);
+    if (error) return hataYaniti("Firma durumu güncellenemedi.", "firmalar tablosu UPDATE — durum", error);
 
-    const guncellenenKontrol = veriKontrol(guncellenen, "firmalar tablosu UPDATE — dönen veri", "Mağaza durumu güncellendi ancak veri döndürülemedi.");
+    const guncellenenKontrol = veriKontrol(guncellenen, "firmalar tablosu UPDATE — dönen veri", "Durum güncellendi ancak veri döndürülemedi.");
     if (!guncellenenKontrol.gecerli) return guncellenenKontrol.yanit;
 
-    return NextResponse.json(
-      { mesaj: hbstore_aktif ? "Mağaza açıldı." : "Mağaza kapatıldı.", firma: guncellenen },
-      { status: 200 }
-    );
+    // Uygun mesajı belirle
+    let mesaj = "Firma durumu güncellendi.";
+    if ("aktif" in guncelleme && !("hbstore_aktif" in guncelleme)) {
+      mesaj = guncelleme.aktif ? "Firma aktifleştirildi." : "Firma pasifleştirildi.";
+    } else if ("hbstore_aktif" in guncelleme && !("aktif" in guncelleme)) {
+      mesaj = guncelleme.hbstore_aktif ? "Mağaza açıldı." : "Mağaza kapatıldı.";
+    }
+
+    return NextResponse.json({ mesaj, firma: guncellenen }, { status: 200 });
 
   } catch (err) {
     return sunucuHatasi(err, "PATCH /admin/api/firmalar/[firma_id]");
@@ -116,6 +133,39 @@ export async function DELETE(
     if (!firma_id) return validasyonHatasi("firma_id zorunludur.", ["firma_id"]);
 
     const adminSupabase = createAdminClient();
+
+    // Export koşulu — yalnızca firma talep üretmişse uygulanır.
+    // Mantık: korunacak iş verisi (talep ve ona bağlı üretim zinciri) varsa,
+    // firma silinmeden önce verisi dışa aktarılmış olmalıdır. Hiç talep
+    // üretmemiş (boş) firma için export şartı aranmaz; doğrudan silinebilir.
+    const { count: talepSayisi, error: talepError } = await adminSupabase
+      .from("talepler")
+      .select("firma_id", { count: "exact", head: true })
+      .eq("firma_id", firma_id);
+
+    if (talepError) return hataYaniti("Talep kontrolü yapılamadı.", "talepler tablosu COUNT — firma_id kontrolü", talepError);
+
+    if ((talepSayisi ?? 0) > 0) {
+      // Firma talep üretmiş → export şartı geçerli.
+      const { data: firma, error: firmaError } = await adminSupabase
+        .from("firmalar")
+        .select("son_export_at")
+        .eq("firma_id", firma_id)
+        .single();
+
+      const firmaKontrol = veriKontrol(firma, "firmalar tablosu SELECT — silme öncesi", "Firma bulunamadı.");
+      if (!firmaKontrol.gecerli) return firmaKontrol.yanit;
+      if (firmaError) return hataYaniti("Firma sorgulanamadı.", "firmalar tablosu SELECT — silme öncesi", firmaError);
+
+      if (!firma!.son_export_at) {
+        return hataYaniti(
+          "Bu firma talep üretmiş; verileri henüz dışa aktarılmamış. Silmeden önce firma verilerini dışa aktarın.",
+          "firmalar tablosu DELETE — export koşulu",
+          null,
+          422
+        );
+      }
+    }
 
     // Firmaya bağlı takım var mı kontrol et
     const { count: takimSayisi, error: takimError } = await adminSupabase

@@ -106,6 +106,80 @@ export function useAdminPanel() {
     );
   };
 
+  // Firmanın aktif/pasif durumunu değiştir (PATCH /admin/api/firmalar/[firma_id])
+  // Pasif firma → o firmanın tüm kullanıcıları giriş yapamaz (login kontrolü).
+  const handleFirmaToggle = async (f: Firma) => {
+    const yeniDurum = !f.aktif;
+    const res = await fetch(`/admin/api/firmalar/${f.firma_id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ aktif: yeniDurum }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      hata(data.hata ?? "Firma durumu güncellenemedi.", data.adim, data.detay);
+      return;
+    }
+    basari(yeniDurum ? "Firma aktifleştirildi." : "Firma pasifleştirildi.");
+    setFirmalar(prev =>
+      prev.map(x => (x.firma_id === f.firma_id ? { ...x, aktif: yeniDurum } : x))
+    );
+    setSeciliFirma(prev =>
+      prev && prev.firma_id === f.firma_id ? { ...prev, aktif: yeniDurum } : prev
+    );
+  };
+
+  // Firmanın verilerini Excel olarak dışa aktar.
+  // GET /admin/api/firmalar/[firma_id]/export → .xlsx buffer döner; tarayıcıda indirtilir.
+  // Başarılı export son_export_at'i günceller (silme koşulu için), o yüzden listeyi tazeleriz.
+  const handleExport = async (f: Firma) => {
+    try {
+      const res = await fetch(`/admin/api/firmalar/${f.firma_id}/export`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        hata(data.hata ?? "Dışa aktarma başarısız.", data.adim, data.detay);
+        return;
+      }
+      // Excel buffer'ını dosya olarak indir
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      // Sunucunun verdiği dosya adını Content-Disposition'dan al, yoksa varsayılan
+      const cd = res.headers.get("Content-Disposition") ?? "";
+      const eslesme = cd.match(/filename="(.+?)"/);
+      a.download = eslesme ? eslesme[1] : `${f.firma_adi}_export.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      basari("Firma verileri dışa aktarıldı.");
+      firmalariCek(); // son_export_at güncellendi → listeyi tazele
+    } catch (err) {
+      hata("Dışa aktarma sırasında hata oluştu.", "handleExport", String(err));
+    }
+  };
+
+  // Firmayı sil (DELETE /admin/api/firmalar/[firma_id])
+  // API export koşulunu (son_export_at) ve bağlı takım/kullanıcı kontrolünü uygular.
+  // Başarısızsa (örn. export edilmemiş) hata mesajı gösterilir; çağıran taraf
+  // dönüş değerine göre modal/uyarı yönetebilir.
+  const handleFirmaSil = async (f: Firma): Promise<boolean> => {
+    const res = await fetch(`/admin/api/firmalar/${f.firma_id}`, {
+      method: "DELETE",
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      hata(data.hata ?? "Firma silinemedi.", data.adim, data.detay);
+      return false;
+    }
+    basari("Firma silindi.");
+    setFirmalar(prev => prev.filter(x => x.firma_id !== f.firma_id));
+    setSeciliFirma(prev => (prev && prev.firma_id === f.firma_id ? null : prev));
+    return true;
+  };
+
   // YENİ: firmalar yüklenince admin'in kendi firmasını otomatik seç
   useEffect(() => {
     if (firmalar.length > 0 && !seciliFirma && kullanici?.firma_id) {
@@ -139,6 +213,9 @@ export function useAdminPanel() {
     seciliFirma,
     handleFirmaSecildi,
     handleStoreToggle,
+    handleFirmaToggle,
+    handleFirmaSil,
+    handleExport,
     loading,
     kullanicilar,
     refreshKullanicilar,

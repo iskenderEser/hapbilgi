@@ -4,6 +4,8 @@ export interface Firma {
   firma_id: string;
   firma_adi: string;
   hbstore_aktif: boolean;
+  aktif: boolean;
+  son_export_at: string | null;
   created_at: string;
 }
 

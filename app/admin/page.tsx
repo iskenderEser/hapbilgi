@@ -103,6 +103,9 @@ export default function AdminPanel() {
           handleFirmaEkle={admin.handleFirmaEkle}
           handleFirmaSecildi={admin.handleFirmaSecildi}
           handleStoreToggle={admin.handleStoreToggle}
+          handleFirmaToggle={admin.handleFirmaToggle}
+          handleFirmaSil={admin.handleFirmaSil}
+          handleExport={admin.handleExport}
           loading={admin.loading}
         />
 
