@@ -12,6 +12,8 @@
 //   3. Onaylar → POST /store/api/siparis
 //   4. Başarılıysa /store/siparislerim sayfasına yönlendirilir
 //   5. Hata varsa banner gösterilir
+//
+// Firma guard: useStoreGuard — firmasında hbstore_aktif=false ise /ana-sayfa'ya yönlenir.
 
 "use client";
 
@@ -21,6 +23,7 @@ import Navbar from "@/components/Navbar";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { useStoreGuard } from "@/lib/store/useStoreGuard";
 import { STOK_AZ_ESIK } from "@/lib/store/sabitler";
 import type { Urun, Adres } from "@/lib/store/tipler";
 
@@ -42,6 +45,7 @@ export default function UrunDetayPage() {
   const urun_id = params?.urun_id as string;
 
   const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { storeHazir } = useStoreGuard();
   const [yetkiKontrolEdildi, setYetkiKontrolEdildi] = useState(false);
 
   const [urun, setUrun] = useState<UrunDetay | null>(null);
@@ -117,10 +121,10 @@ export default function UrunDetayPage() {
   };
 
   useEffect(() => {
-    if (!yetkiKontrolEdildi || !urun_id) return;
+    if (!yetkiKontrolEdildi || !storeHazir || !urun_id) return;
     verileriYukle();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [yetkiKontrolEdildi, urun_id]);
+  }, [yetkiKontrolEdildi, storeHazir, urun_id]);
 
   const handleCikis = async () => {
     await cikisYap();
@@ -179,8 +183,8 @@ export default function UrunDetayPage() {
   const toplamPuan = urun ? urun.puan_fiyati * adet : 0;
   const seciliAdres = adresler.find((a) => a.adres_id === seciliAdresId);
 
-  // Loading
-  if (authYukleniyor || !kullanici || !yetkiKontrolEdildi) {
+  // Loading — auth, yetki veya firma guard hazır değilse bekle
+  if (authYukleniyor || !kullanici || !yetkiKontrolEdildi || !storeHazir) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"

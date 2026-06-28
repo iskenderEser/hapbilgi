@@ -15,7 +15,7 @@ export async function GET(
 
     const { data: firma, error } = await adminSupabase
       .from("firmalar")
-      .select("firma_id, firma_adi, created_at")
+      .select("firma_id, firma_adi, hbstore_aktif, created_at")
       .eq("firma_id", firma_id)
       .single();
 
@@ -51,7 +51,7 @@ export async function PUT(
       .from("firmalar")
       .update({ firma_adi: firma_adi.trim() })
       .eq("firma_id", firma_id)
-      .select("firma_id, firma_adi, created_at")
+      .select("firma_id, firma_adi, hbstore_aktif, created_at")
       .single();
 
     if (error) return hataYaniti("Firma güncellenemedi.", "firmalar tablosu UPDATE", error);
@@ -63,6 +63,47 @@ export async function PUT(
 
   } catch (err) {
     return sunucuHatasi(err, "PUT /admin/api/firmalar/[firma_id]");
+  }
+}
+
+// PATCH — firmanın HBStore durumunu (mağaza açık/kapalı) günceller.
+// Body: { hbstore_aktif: boolean }
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ firma_id: string }> }
+) {
+  try {
+    const { firma_id } = await params;
+    if (!firma_id) return validasyonHatasi("firma_id zorunludur.", ["firma_id"]);
+
+    const adminSupabase = createAdminClient();
+
+    const body = await request.json();
+    const { hbstore_aktif } = body;
+
+    if (typeof hbstore_aktif !== "boolean") {
+      return validasyonHatasi("hbstore_aktif (true/false) zorunludur.", ["hbstore_aktif"]);
+    }
+
+    const { data: guncellenen, error } = await adminSupabase
+      .from("firmalar")
+      .update({ hbstore_aktif })
+      .eq("firma_id", firma_id)
+      .select("firma_id, firma_adi, hbstore_aktif, created_at")
+      .single();
+
+    if (error) return hataYaniti("Firma mağaza durumu güncellenemedi.", "firmalar tablosu UPDATE — hbstore_aktif", error);
+
+    const guncellenenKontrol = veriKontrol(guncellenen, "firmalar tablosu UPDATE — dönen veri", "Mağaza durumu güncellendi ancak veri döndürülemedi.");
+    if (!guncellenenKontrol.gecerli) return guncellenenKontrol.yanit;
+
+    return NextResponse.json(
+      { mesaj: hbstore_aktif ? "Mağaza açıldı." : "Mağaza kapatıldı.", firma: guncellenen },
+      { status: 200 }
+    );
+
+  } catch (err) {
+    return sunucuHatasi(err, "PATCH /admin/api/firmalar/[firma_id]");
   }
 }
 

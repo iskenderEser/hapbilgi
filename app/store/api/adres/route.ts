@@ -11,6 +11,9 @@
 // Yetki: STORE_ALABILEN_ROLLER (utt, kd_utt, bm)
 // Her endpoint kullanıcının kendi adresleri üzerinde çalışır;
 // lib/store/adres.ts içinde sahiplik kontrolü yapılır.
+//
+// Firma guard: firmasında hbstore_aktif=false ise tüm işlemler 403
+// (yetkiAl yardımcısı içinde kontrol edilir → dört fonksiyon birden korunur).
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
@@ -30,8 +33,9 @@ import {
   varsayilanYap,
 } from "@/lib/store/adres";
 import type { AdresInput } from "@/lib/store/tipler";
+import { storeFirmaGuard } from "@/lib/store/firmaGuard";
 
-// ─── Yardımcı: rol kontrolü ──────────────────────────────────────────────────
+// ─── Yardımcı: rol kontrolü + firma guard ────────────────────────────────────
 
 async function yetkiAl(request: NextRequest) {
   const supabase = await createClient();
@@ -43,7 +47,13 @@ async function yetkiAl(request: NextRequest) {
     return { hata: rolHatasi("Bu işleme yetkiniz yok.") };
   }
 
-  return { user, rol, adminSupabase: createAdminClient() };
+  const adminSupabase = createAdminClient();
+
+  // Firma guard — firmasında HBStore kapalıysa 403
+  const guard = await storeFirmaGuard(adminSupabase, user.id);
+  if (!guard.acik) return { hata: guard.yanit! };
+
+  return { user, rol, adminSupabase };
 }
 
 // ─── GET ─────────────────────────────────────────────────────────────────────

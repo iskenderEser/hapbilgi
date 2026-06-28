@@ -3,6 +3,7 @@
 export interface Firma {
   firma_id: string;
   firma_adi: string;
+  hbstore_aktif: boolean;
   created_at: string;
 }
 

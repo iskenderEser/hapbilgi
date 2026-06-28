@@ -9,6 +9,8 @@
 //
 // Kart: görsel + ad + HapPuan + stok + "Detay" butonu (ürün detay sayfasına yönlendirir).
 //
+// Firma guard: useStoreGuard — firmasında hbstore_aktif=false ise /ana-sayfa'ya yönlenir.
+//
 // İlgili sayfalar:
 //   - /store/[urun_id] — ürün detay + satın alma akışı
 //   - /store/adreslerim — adres yönetimi
@@ -22,6 +24,7 @@ import Navbar from "@/components/Navbar";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { useStoreGuard } from "@/lib/store/useStoreGuard";
 import type { Urun, Kategori } from "@/lib/store/tipler";
 import { STOK_AZ_ESIK } from "@/lib/store/sabitler";
 
@@ -36,6 +39,7 @@ const SARI_TEXT = "#854d0e";
 export default function StorePage() {
   const router = useRouter();
   const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { storeHazir } = useStoreGuard();
   const [yetkiKontrolEdildi, setYetkiKontrolEdildi] = useState(false);
 
   const [kategoriler, setKategoriler] = useState<Kategori[]>([]);
@@ -66,7 +70,7 @@ export default function StorePage() {
 
   // Başlangıç verileri (kategoriler + bakiye)
   useEffect(() => {
-    if (!yetkiKontrolEdildi) return;
+    if (!yetkiKontrolEdildi || !storeHazir) return;
 
     const baslat = async () => {
       try {
@@ -97,11 +101,11 @@ export default function StorePage() {
 
     baslat();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [yetkiKontrolEdildi]);
+  }, [yetkiKontrolEdildi, storeHazir]);
 
   // Ürünler (kategori değiştikçe yenile)
   useEffect(() => {
-    if (!yetkiKontrolEdildi) return;
+    if (!yetkiKontrolEdildi || !storeHazir) return;
 
     const urunleriYukle = async () => {
       setYukleniyor(true);
@@ -125,7 +129,7 @@ export default function StorePage() {
 
     urunleriYukle();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [yetkiKontrolEdildi, seciliKategori]);
+  }, [yetkiKontrolEdildi, storeHazir, seciliKategori]);
 
   const handleCikis = async () => {
     await cikisYap();
@@ -133,8 +137,8 @@ export default function StorePage() {
   };
 
 
-  // Loading
-  if (authYukleniyor || !kullanici || !yetkiKontrolEdildi) {
+  // Loading — auth, yetki veya firma guard hazır değilse bekle
+  if (authYukleniyor || !kullanici || !yetkiKontrolEdildi || !storeHazir) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"

@@ -9,7 +9,7 @@ export async function GET() {
 
     const { data: firmalar, error } = await adminSupabase
       .from("firmalar")
-      .select("firma_id, firma_adi, created_at")
+      .select("firma_id, firma_adi, hbstore_aktif, created_at")
       .order("firma_adi", { ascending: true });
 
     if (error) return hataYaniti("Firmalar çekilemedi.", "firmalar tablosu SELECT", error);
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     const { data: yeniFirma, error } = await adminSupabase
       .from("firmalar")
       .insert({ firma_adi: firma_adi.trim() })
-      .select("firma_id, firma_adi, created_at")
+      .select("firma_id, firma_adi, hbstore_aktif, created_at")
       .single();
 
     if (error) return hataYaniti("Firma eklenemedi.", "firmalar tablosu INSERT", error);

@@ -1,6 +1,7 @@
 // app/admin/_components/FirmaSidebar.tsx
 //
 // Admin panel sol paneli: firma listesi + yeni firma ekleme formu.
+// Her firma satırında HBStore mağaza aç/kapa anahtarı bulunur.
 
 "use client";
 
@@ -13,6 +14,7 @@ interface FirmaSidebarProps {
   setYeniFirmaAdi: (v: string) => void;
   handleFirmaEkle: (e: React.FormEvent) => void | Promise<void>;
   handleFirmaSecildi: (f: Firma) => void;
+  handleStoreToggle: (f: Firma) => void | Promise<void>;
   loading: boolean;
 }
 
@@ -23,6 +25,7 @@ export default function FirmaSidebar({
   setYeniFirmaAdi,
   handleFirmaEkle,
   handleFirmaSecildi,
+  handleStoreToggle,
   loading,
 }: FirmaSidebarProps) {
   return (
@@ -73,26 +76,75 @@ export default function FirmaSidebar({
         <p style={{ fontSize: "13px", color: "#737373" }}>Henüz firma yok.</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          {firmalar.map(f => (
-            <button
-              key={f.firma_id}
-              onClick={() => handleFirmaSecildi(f)}
-              style={{
-                textAlign: "left",
-                padding: "10px 12px",
-                background: seciliFirma?.firma_id === f.firma_id ? "#eff6ff" : "transparent",
-                border: seciliFirma?.firma_id === f.firma_id ? "0.5px solid #93c5fd" : "0.5px solid transparent",
-                borderRadius: "6px",
-                fontSize: "13px",
-                fontWeight: seciliFirma?.firma_id === f.firma_id ? 600 : 500,
-                color: seciliFirma?.firma_id === f.firma_id ? "#1d4ed8" : "#111",
-                cursor: "pointer",
-                fontFamily: "'Nunito', sans-serif",
-              }}
-            >
-              {f.firma_adi}
-            </button>
-          ))}
+          {firmalar.map(f => {
+            const secili = seciliFirma?.firma_id === f.firma_id;
+            return (
+              <div
+                key={f.firma_id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "8px 12px",
+                  background: secili ? "#eff6ff" : "transparent",
+                  border: secili ? "0.5px solid #93c5fd" : "0.5px solid transparent",
+                  borderRadius: "6px",
+                }}
+              >
+                {/* Firma adı — seçim butonu */}
+                <button
+                  onClick={() => handleFirmaSecildi(f)}
+                  style={{
+                    flex: 1,
+                    textAlign: "left",
+                    background: "transparent",
+                    border: "none",
+                    padding: 0,
+                    fontSize: "13px",
+                    fontWeight: secili ? 600 : 500,
+                    color: secili ? "#1d4ed8" : "#111",
+                    cursor: "pointer",
+                    fontFamily: "'Nunito', sans-serif",
+                  }}
+                >
+                  {f.firma_adi}
+                </button>
+
+                {/* HBStore aç/kapa anahtarı */}
+                <button
+                  onClick={() => handleStoreToggle(f)}
+                  title={f.hbstore_aktif ? "HBStore açık — kapatmak için tıkla" : "HBStore kapalı — açmak için tıkla"}
+                  style={{
+                    flexShrink: 0,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    padding: "3px 8px",
+                    background: f.hbstore_aktif ? "#ecfdf5" : "#f3f4f6",
+                    border: `0.5px solid ${f.hbstore_aktif ? "#a7f3d0" : "#e5e7eb"}`,
+                    borderRadius: "999px",
+                    fontSize: "11px",
+                    fontWeight: 600,
+                    color: f.hbstore_aktif ? "#047857" : "#9ca3af",
+                    cursor: "pointer",
+                    fontFamily: "'Nunito', sans-serif",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: "7px",
+                      height: "7px",
+                      borderRadius: "999px",
+                      background: f.hbstore_aktif ? "#10b981" : "#d1d5db",
+                      display: "inline-block",
+                    }}
+                  />
+                  Mağaza
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

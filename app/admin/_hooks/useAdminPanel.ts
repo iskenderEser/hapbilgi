@@ -83,6 +83,29 @@ export function useAdminPanel() {
     takimlariCek(f.firma_id);
   };
 
+  // Firmanın HBStore mağazasını aç/kapat (PATCH /admin/api/firmalar/[firma_id])
+  const handleStoreToggle = async (f: Firma) => {
+    const yeniDurum = !f.hbstore_aktif;
+    const res = await fetch(`/admin/api/firmalar/${f.firma_id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hbstore_aktif: yeniDurum }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      hata(data.hata ?? "Mağaza durumu güncellenemedi.", data.adim, data.detay);
+      return;
+    }
+    basari(yeniDurum ? "Mağaza açıldı." : "Mağaza kapatıldı.");
+    // Liste + seçili firma state'ini güncelle (anahtar anında yansısın)
+    setFirmalar(prev =>
+      prev.map(x => (x.firma_id === f.firma_id ? { ...x, hbstore_aktif: yeniDurum } : x))
+    );
+    setSeciliFirma(prev =>
+      prev && prev.firma_id === f.firma_id ? { ...prev, hbstore_aktif: yeniDurum } : prev
+    );
+  };
+
   // YENİ: firmalar yüklenince admin'in kendi firmasını otomatik seç
   useEffect(() => {
     if (firmalar.length > 0 && !seciliFirma && kullanici?.firma_id) {
@@ -115,6 +138,7 @@ export function useAdminPanel() {
     handleFirmaEkle,
     seciliFirma,
     handleFirmaSecildi,
+    handleStoreToggle,
     loading,
     kullanicilar,
     refreshKullanicilar,

@@ -102,6 +102,7 @@ export default function AdminPanel() {
           setYeniFirmaAdi={admin.setYeniFirmaAdi}
           handleFirmaEkle={admin.handleFirmaEkle}
           handleFirmaSecildi={admin.handleFirmaSecildi}
+          handleStoreToggle={admin.handleStoreToggle}
           loading={admin.loading}
         />
 

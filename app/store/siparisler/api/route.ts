@@ -9,6 +9,8 @@
 //   durum, tarih_baslangic, tarih_bitis, offset, limit
 //
 // Dönüş: { siparisler: [...], toplam: integer }
+//
+// Firma guard: izleyen kullanıcının firmasında hbstore_aktif=false ise 403.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
@@ -20,6 +22,7 @@ import {
   validasyonHatasi,
 } from "@/lib/utils/hataIsle";
 import { STORE_GENEL_GOREN_ROLLER } from "@/lib/utils/roller";
+import { storeFirmaGuard } from "@/lib/store/firmaGuard";
 
 const VARSAYILAN_LIMIT = 30;
 const MAKS_LIMIT = 100;
@@ -37,6 +40,12 @@ export async function GET(request: NextRequest) {
     if (!STORE_GENEL_GOREN_ROLLER.includes(rol)) {
       return rolHatasi("Bu sayfaya erişim yetkiniz yok.");
     }
+
+    const adminSupabase = createAdminClient();
+
+    // Firma guard — izleyenin firmasında HBStore kapalıysa 403
+    const guard = await storeFirmaGuard(adminSupabase, user.id);
+    if (!guard.acik) return guard.yanit!;
 
     // Query parametrelerini al
     const { searchParams } = new URL(request.url);
@@ -70,7 +79,6 @@ export async function GET(request: NextRequest) {
     }
 
     // RPC çağrısı
-    const adminSupabase = createAdminClient();
     const { data, error } = await adminSupabase.rpc("get_kapsamli_siparisler", {
       p_kullanici_id: user.id,
       p_firma_id: firma_id,

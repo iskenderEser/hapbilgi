@@ -12,6 +12,8 @@
 //       * kargoda → kargo firması + takip linki + "Teslim Aldım"
 //       * teslim_edildi → teslim tarihi
 //       * iptal → iptal sebebi
+//
+// Firma guard: useStoreGuard — firmasında hbstore_aktif=false ise /ana-sayfa'ya yönlenir.
 
 "use client";
 
@@ -21,6 +23,7 @@ import Navbar from "@/components/Navbar";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { useStoreGuard } from "@/lib/store/useStoreGuard";
 import { DURUM_ETIKETLERI, DURUM_RENKLERI, IPTAL_SURE_SAATI } from "@/lib/store/sabitler";
 import { kargoTakipUrl } from "@/lib/store/kargo";
 import type { SiparisGosterim, AdresSnapshot } from "@/lib/store/tipler";
@@ -33,6 +36,7 @@ const GRI_ZEMIN = "#f9fafb";
 export default function SiparislerimPage() {
   const router = useRouter();
   const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { storeHazir } = useStoreGuard();
   const [yetkiKontrolEdildi, setYetkiKontrolEdildi] = useState(false);
 
   const [siparisler, setSiparisler] = useState<SiparisGosterim[]>([]);
@@ -83,10 +87,10 @@ export default function SiparislerimPage() {
   };
 
   useEffect(() => {
-    if (!yetkiKontrolEdildi) return;
+    if (!yetkiKontrolEdildi || !storeHazir) return;
     siparisleriYukle();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [yetkiKontrolEdildi]);
+  }, [yetkiKontrolEdildi, storeHazir]);
 
   const handleCikis = async () => {
     await cikisYap();
@@ -171,8 +175,8 @@ export default function SiparislerimPage() {
     });
   };
 
-  // Loading
-  if (authYukleniyor || !kullanici || !yetkiKontrolEdildi) {
+  // Loading — auth, yetki veya firma guard hazır değilse bekle
+  if (authYukleniyor || !kullanici || !yetkiKontrolEdildi || !storeHazir) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"

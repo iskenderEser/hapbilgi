@@ -11,6 +11,8 @@
 //   - store_siparis_olustur (atomik stok + bakiye + sipariş + harcama)
 //   - store_siparis_iptal (yetki + 12 saat + stok iade + puan iade)
 //   - store_teslim_aldim (durum geçişi onayı)
+//
+// Firma guard: firmasında hbstore_aktif=false ise tüm işlemler (GET/POST/PATCH) 403.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
@@ -28,6 +30,7 @@ import {
   siparisIptal,
   teslimAldim,
 } from "@/lib/store/siparis";
+import { storeFirmaGuard } from "@/lib/store/firmaGuard";
 
 // ─── GET: Kullanıcının kendi siparişleri ─────────────────────────────────────
 
@@ -44,6 +47,10 @@ export async function GET(request: NextRequest) {
     }
 
     const adminSupabase = createAdminClient();
+
+    const guard = await storeFirmaGuard(adminSupabase, user.id);
+    if (!guard.acik) return guard.yanit!;
+
     const { searchParams } = new URL(request.url);
     const durum = searchParams.get("durum");
 
@@ -101,6 +108,10 @@ export async function POST(request: NextRequest) {
     }
 
     const adminSupabase = createAdminClient();
+
+    const guard = await storeFirmaGuard(adminSupabase, user.id);
+    if (!guard.acik) return guard.yanit!;
+
     const body = await request.json();
     const { urun_id, adres_id, adet } = body;
 
@@ -155,6 +166,10 @@ export async function PATCH(request: NextRequest) {
     }
 
     const adminSupabase = createAdminClient();
+
+    const guard = await storeFirmaGuard(adminSupabase, user.id);
+    if (!guard.acik) return guard.yanit!;
+
     const body = await request.json();
     const { siparis_id, action, sebep } = body;
 

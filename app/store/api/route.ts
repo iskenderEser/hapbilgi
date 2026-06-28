@@ -9,6 +9,7 @@
 //
 // Yetki: STORE_ALABILEN_ROLLER (utt, kd_utt, bm)
 // Vitrin sadece alıcılar içindir; diğer roller /store/siparisler sayfasına yönlenir.
+// Firma guard: firmasında hbstore_aktif=false ise erişim 403.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
@@ -22,6 +23,7 @@ import {
 } from "@/lib/utils/hataIsle";
 import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
 import { harcamaBakiyesi } from "@/lib/store/bakiye";
+import { storeFirmaGuard } from "@/lib/store/firmaGuard";
 
 export async function GET(request: NextRequest) {
   try {
@@ -38,6 +40,11 @@ export async function GET(request: NextRequest) {
     }
 
     const adminSupabase = createAdminClient();
+
+    // 3. Firma guard — firmasında HBStore kapalıysa 403
+    const guard = await storeFirmaGuard(adminSupabase, user.id);
+    if (!guard.acik) return guard.yanit!;
+
     const { searchParams } = new URL(request.url);
     const tip = searchParams.get("tip") || "urunler";
 

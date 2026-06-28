@@ -8,6 +8,8 @@
 //   - Düzenle (modal)
 //   - Sil (onaylı)
 //   - Varsayılan yap
+//
+// Firma guard: useStoreGuard — firmasında hbstore_aktif=false ise /ana-sayfa'ya yönlenir.
 
 "use client";
 
@@ -17,6 +19,7 @@ import Navbar from "@/components/Navbar";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { useStoreGuard } from "@/lib/store/useStoreGuard";
 import AdresModal from "@/components/store/AdresModal";
 import type { Adres } from "@/lib/store/tipler";
 
@@ -30,6 +33,7 @@ const YESIL = "#16a34a";
 export default function AdreslerimPage() {
   const router = useRouter();
   const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { storeHazir } = useStoreGuard();
   const [yetkiKontrolEdildi, setYetkiKontrolEdildi] = useState(false);
 
   const [adresler, setAdresler] = useState<Adres[]>([]);
@@ -79,10 +83,10 @@ export default function AdreslerimPage() {
   };
 
   useEffect(() => {
-    if (!yetkiKontrolEdildi) return;
+    if (!yetkiKontrolEdildi || !storeHazir) return;
     adresleriYukle();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [yetkiKontrolEdildi]);
+  }, [yetkiKontrolEdildi, storeHazir]);
 
   const handleCikis = async () => {
     await cikisYap();
@@ -146,8 +150,8 @@ export default function AdreslerimPage() {
     }
   };
 
-  // Loading
-  if (authYukleniyor || !kullanici || !yetkiKontrolEdildi) {
+  // Loading — auth, yetki veya firma guard hazır değilse bekle
+  if (authYukleniyor || !kullanici || !yetkiKontrolEdildi || !storeHazir) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"

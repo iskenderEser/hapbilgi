@@ -3,6 +3,8 @@
 // HBStore genel sipariş listesi sayfası — orchestrator.
 // Auth + STORE_GENEL_GOREN_ROLLER yetki kontrolü, hook'ları bağlar,
 // SiparisFiltreleri + SiparisTablosu bileşenlerini render eder.
+//
+// Firma guard: useStoreGuard — firmasında hbstore_aktif=false ise /ana-sayfa'ya yönlenir.
 
 "use client";
 
@@ -11,6 +13,7 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { useStoreGuard } from "@/lib/store/useStoreGuard";
 import { STORE_GENEL_GOREN_ROLLER } from "@/lib/utils/roller";
 import { useHiyerarsi } from "./_hooks/useHiyerarsi";
 import { useSiparisListe } from "./_hooks/useSiparisListe";
@@ -24,6 +27,7 @@ const GRI_ZEMIN = "#f9fafb";
 export default function SiparislerPage() {
   const router = useRouter();
   const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { storeHazir } = useStoreGuard();
   const [yetkiKontrolEdildi, setYetkiKontrolEdildi] = useState(false);
 
   const { mesajlar, hata, basari } = useHataMesaji();
@@ -55,8 +59,8 @@ export default function SiparislerPage() {
     router.push("/login");
   };
 
-  // Loading
-  if (authYukleniyor || !kullanici || !yetkiKontrolEdildi) {
+  // Loading — auth, yetki veya firma guard hazır değilse bekle
+  if (authYukleniyor || !kullanici || !yetkiKontrolEdildi || !storeHazir) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
