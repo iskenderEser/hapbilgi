@@ -37,6 +37,14 @@ export async function GET(request: Request) {
   // Veri
   const d = await getUttData(adminSupabase, kullanici, baslangic, bitis);
 
+  // ─── Kalan sipariş puanı (harcanabilir bakiye) ───────────────────────────
+  // Periyottan bağımsız: get_harcama_bakiyesi her zaman içinde bulunulan
+  // çeyreğin anlık bakiyesini döner (lig puanı − mağaza harcaması + iade).
+  const { data: bakiyeData } = await adminSupabase.rpc('get_harcama_bakiyesi', {
+    p_kullanici_id: kullanici.kullanici_id,
+  });
+  const kalanSiparisPuani = Number.isFinite(Number(bakiyeData)) ? Number(bakiyeData) : 0;
+
   // ─── İstatistikler — RPC çıktısından doğrudan ────────────────────────────
   const ozet = d.ozet ?? {
     izlenme_sayisi: 0,
@@ -136,6 +144,7 @@ export async function GET(request: Request) {
         bolge_toplam_puan: toplamBolgePuan,
         takim_toplam_puan: toplamTakimPuan,
       },
+      kalan_siparis_puani: kalanSiparisPuani,
       istatistikler,
       lig: {
         bolge_sirasi: d.lig?.bolge_sirasi ?? null,

@@ -59,6 +59,7 @@ interface RaporData {
     takim_toplam_puan: number;
     sirket_toplam_puan: number;
   };
+  kalan_siparis_puani: number;
   bolge_ozet: {
     toplam_utt: number;
     aktif_utt: number;
@@ -191,10 +192,14 @@ export default function BmRaporPage() {
         <StatGrid columns={3} className="mb-3">
           <StatCard label="Bölge Toplam Puan" value={formatPuan(data.bolge_ozet.toplam_puan)} variant="accent" />
           <StatCard label="Ortalama Puan / UTT" value={formatPuan(data.bolge_ozet.ortalama_puan)} sub={`En yüksek: ${formatPuan(data.bolge_ozet.en_yuksek_puan)}`} />
+          <StatCard label="Kalan Sipariş Puanı" value={formatPuan(data.kalan_siparis_puani)} variant="accent" />
+        </StatGrid>
+        <StatGrid columns={3} className="mb-3">
           <StatCard label="İlk İzlenme Oranı" value={`%${data.bolge_ozet.izlenme_orani}`} sub={`${formatPuan(data.bolge_ozet.toplam_izlenme)} izlendi · ${formatPuan(data.bolge_ozet.kalan_izlenme)} kaldı`} />
+          <StatCard label="Aktif UTT" value={`${data.bolge_ozet.aktif_utt} / ${data.bolge_ozet.toplam_utt}`} sub={`${data.bolge_ozet.hic_izlemeyen_utt} hiç izlememiş`} />
+          <StatCard label="Toplam Yayın" value={formatPuan(data.bolge_ozet.toplam_yayin)} />
         </StatGrid>
         <StatGrid columns={3} className="mb-5">
-          <StatCard label="Aktif UTT" value={`${data.bolge_ozet.aktif_utt} / ${data.bolge_ozet.toplam_utt}`} sub={`${data.bolge_ozet.hic_izlemeyen_utt} hiç izlememiş`} />
           <StatCard
             label="Bölge Lig Sırası"
             value={data.lig.bolge_sirasi ? `${data.lig.bolge_sirasi}.` : '-'}
@@ -202,7 +207,6 @@ export default function BmRaporPage() {
             variant="accent"
             yildiz={data.lig.bolge_sirasi === 1}
           />
-          <StatCard label="Toplam Yayın" value={formatPuan(data.bolge_ozet.toplam_yayin)} />
         </StatGrid>
 
         {/* Öneri Etkinliği */}

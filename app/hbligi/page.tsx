@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { aktifDonem } from "@/lib/zaman/kontrol";
+import HbLigiPeriyotSecici, { type Periyot } from "@/components/hbligi/HbLigiPeriyotSecici";
 
 interface UttSatiri {
   sira: number;
@@ -64,6 +66,14 @@ export default function HBLigiPage() {
   const [secilenFirma, setSecilenFirma] = useState("");
   const [bmBolgeId, setBmBolgeId] = useState<string | null>(null);
 
+  // Periyot state (varsayılan: içinde bulunulan çeyrek)
+  const buAn = new Date();
+  const buDonem = aktifDonem(buAn);
+  const [periyot, setPeriyot] = useState<Periyot>("donem");
+  const [yil, setYil] = useState<number>(buDonem.yil);
+  const [ay, setAy] = useState<number>(buAn.getMonth() + 1);
+  const [ceyrek, setCeyrek] = useState<number>(buDonem.ceyrek);
+
   useEffect(() => {
     if (authYukleniyor) return;
     if (!kullanici) {
@@ -102,13 +112,17 @@ export default function HBLigiPage() {
     if (secilenBolge) params.set("bolge_id", secilenBolge);
     if (secilenTakim) params.set("takim_id", secilenTakim);
     if (secilenFirma) params.set("firma_id", secilenFirma);
+    params.set("periyot", periyot);
+    params.set("yil", String(yil));
+    if (periyot === "ay") params.set("ay", String(ay));
+    if (periyot === "donem") params.set("ceyrek", String(ceyrek));
     const res = await fetch(`/hbligi/api?${params.toString()}`);
     const data = await res.json();
     setVeri(data);
     setLoading(false);
   };
 
-  useEffect(() => { if (kullanici) veriCek(); }, [kullanici, secilenBolge, secilenTakim, secilenFirma]);
+  useEffect(() => { if (kullanici) veriCek(); }, [kullanici, secilenBolge, secilenTakim, secilenFirma, periyot, yil, ay, ceyrek]);
 
   const siraRenk = (sira: number) => {
     if (sira === 1) return "#f59e0b";
@@ -118,6 +132,19 @@ export default function HBLigiPage() {
   };
 
   const siraYazi = (sira: number) => sira <= 3 ? "white" : "#737373";
+
+  const periyotSecici = (
+    <HbLigiPeriyotSecici
+      periyot={periyot}
+      yil={yil}
+      ay={ay}
+      ceyrek={ceyrek}
+      onPeriyotChange={setPeriyot}
+      onYilChange={setYil}
+      onAyChange={setAy}
+      onCeyrekChange={setCeyrek}
+    />
+  );
 
   if (authYukleniyor || !kullanici || loading || !veri) {
     return (
@@ -141,6 +168,7 @@ export default function HBLigiPage() {
             <h1 className="text-xl font-bold text-gray-900 m-0">HBLigi</h1>
             <span className="text-xs text-gray-500">{lig.length} kişi — Bölge Sıralaması</span>
           </div>
+          {periyotSecici}
           <UttTablosu satirlar={lig} userId={kullanici.id} siraRenk={siraRenk} siraYazi={siraYazi} />
         </div>
       </div>
@@ -155,6 +183,7 @@ export default function HBLigiPage() {
         <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
         <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
           <h1 className="text-xl font-bold text-gray-900 m-0">HBLigi</h1>
+          {periyotSecici}
 
           {/* Takım bölge sıralaması */}
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
@@ -209,6 +238,7 @@ export default function HBLigiPage() {
         <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
         <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
           <h1 className="text-xl font-bold text-gray-900 m-0">HBLigi</h1>
+          {periyotSecici}
 
           {/* Takım sıralaması */}
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
@@ -266,6 +296,7 @@ export default function HBLigiPage() {
           <h1 className="text-xl font-bold text-gray-900 m-0">HBLigi</h1>
           <span className="text-xs text-gray-500">{lig.length} kişi</span>
         </div>
+        {periyotSecici}
 
         {/* Filtreler */}
         <div className="bg-white border border-gray-200 rounded-xl px-4 md:px-5 py-3.5 flex flex-wrap gap-3 items-end">

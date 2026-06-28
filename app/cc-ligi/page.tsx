@@ -16,6 +16,8 @@
 //
 // Çeyrek lideri (banner) hangi çeyrek için: kullanıcının seçtiği periyota
 // bakılmaz, içinde bulunulan çeyrek gösterilir (yıl seçili olabilir).
+//
+// Çeyrek hesabı tek kaynaktan: lib/zaman/kontrol.ts → aktifDonem().
 
 "use client";
 
@@ -25,6 +27,7 @@ import { createClient } from "@/lib/supabase/client";
 import Navbar from "@/components/Navbar";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { CCLIGI_GORENLERLER } from "@/lib/utils/roller";
+import { aktifDonem } from "@/lib/zaman/kontrol";
 import CcLigiBanner from "@/components/cc-ligi/CcLigiBanner";
 import CcLigiPeriyotSecici, { type Periyot } from "@/components/cc-ligi/CcLigiPeriyotSecici";
 import CcLigiTablosu, { type LigSatiri } from "@/components/cc-ligi/CcLigiTablosu";
@@ -35,11 +38,6 @@ const GRI_METIN = "#737373";
 const KOYU_METIN = "#111827";
 const GRI_ZEMIN = "#f9fafb";
 
-// İçinde bulunduğumuz tarihten çeyrek hesabı (1-4)
-function buCeyrek(d: Date = new Date()): number {
-  return Math.floor(d.getMonth() / 3) + 1;
-}
-
 export default function CcLigiPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -49,10 +47,11 @@ export default function CcLigiPage() {
 
   // Periyot state
   const buAn = new Date();
+  const buDonem = aktifDonem(buAn);
   const [periyot, setPeriyot] = useState<Periyot>("ay");
-  const [yil, setYil] = useState<number>(buAn.getFullYear());
+  const [yil, setYil] = useState<number>(buDonem.yil);
   const [ay, setAy] = useState<number>(buAn.getMonth() + 1); // 1-12
-  const [ceyrek, setCeyrek] = useState<number>(buCeyrek(buAn));
+  const [ceyrek, setCeyrek] = useState<number>(buDonem.ceyrek);
 
   // Lig tablosu state
   const [ligSatirlari, setLigSatirlari] = useState<LigSatiri[]>([]);
@@ -151,7 +150,7 @@ export default function CcLigiPage() {
 
   // Banner için: içinde bulunulan çeyrek (kullanıcı seçimi banner'ı etkilemez)
   // Yıl ise kullanıcının seçtiği yıl ile gider — geçmiş yıllarda da geçmiş lideri gösterir
-  const bannerCeyrek = buCeyrek(buAn);
+  const bannerCeyrek = aktifDonem(buAn).ceyrek;
 
   // Challenge listesi: her zaman içinde bulunulan ay
   const cListYil = buAn.getFullYear();

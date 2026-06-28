@@ -2,9 +2,11 @@
 //
 // TM rolü için HBLigi verisi.
 // Kendi takımındaki UTT sıralaması + tüm takımların toplam puan sıralaması.
+// Dönem: çağıran tarafından geçilen periyot (ay/donem/yil) — ligRpcCagir helper'ı.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { toplamPuanGrupla, sirayaKoy } from "./agregasyonlar";
+import { ligRpcCagir, type LigPeriyot } from "./ligRpcCagir";
 
 export interface TmLigUttSatiri {
   sira: number;
@@ -39,41 +41,25 @@ export interface TmLigSonuc {
  *
  * @param supabase Admin client
  * @param takim_id TM'nin bağlı olduğu takım
+ * @param periyot Periyot + tarih bilgisi (ay/donem/yil)
  */
 export async function getTmLig(
   supabase: SupabaseClient,
-  takim_id: string
+  takim_id: string,
+  periyot: LigPeriyot
 ): Promise<TmLigSonuc> {
-  // Kendi takımındaki UTT'ler
-  const { data: takimUttler, error: takimUttError } = await supabase
-    .from("v_hbligi_sirali")
-    .select(
-      "kullanici_id, rol, ad, soyad, bolge_id, bolge_adi, toplam_puan, takim_sirasi, bolge_sirasi, izleme_puani, cevaplama_puani, oneri_puani, extra_puani"
-    )
-    .in("rol", ["utt", "kd_utt"])
-    .eq("takim_id", takim_id)
-    .order("toplam_puan", { ascending: false });
+  // Tek RPC çağrısı: tüm UTT/KD_UTT lig satırları (seçili periyot)
+  const tumUttler = await ligRpcCagir(supabase, periyot);
 
-  if (takimUttError) {
-    throw new Error(`v_hbligi_sirali SELECT — TM: ${takimUttError.message}`);
-  }
+  // 1) Kendi takımındaki UTT'ler (JS filtresi)
+  const takimUttler = tumUttler.filter((l: any) => l.takim_id === takim_id);
 
-  // Diğer takımların toplam puanları
-  const { data: tumUttler, error: tumError } = await supabase
-    .from("v_hbligi_sirali")
-    .select("takim_id, takim_adi, toplam_puan")
-    .in("rol", ["utt", "kd_utt"]);
-
-  if (tumError) {
-    throw new Error(`v_hbligi_sirali SELECT — TM takımlar: ${tumError.message}`);
-  }
-
-  // Takım toplamlarını hesapla + sıraya koy
-  const takimGrup = toplamPuanGrupla(tumUttler ?? [], "takim_id", "takim_adi");
+  // 2) Takım toplamlarını hesapla + sıraya koy (tüm UTT'lerden)
+  const takimGrup = toplamPuanGrupla(tumUttler, "takim_id", "takim_adi");
   const takim_siralamasi = sirayaKoy(takimGrup, "takim_id", "takim_adi") as TmTakimSiraSatiri[];
 
   // UTT satırlarını formatla
-  const takim_utt: TmLigUttSatiri[] = (takimUttler ?? []).map((l: any) => ({
+  const takim_utt: TmLigUttSatiri[] = takimUttler.map((l: any) => ({
     sira: l.takim_sirasi,
     kullanici_id: l.kullanici_id,
     ad: `${l.ad} ${l.soyad}`,
@@ -86,9 +72,5 @@ export async function getTmLig(
     toplam_puan: l.toplam_puan,
   }));
 
-  return {
-    tip: "tm",
-    takim_utt,
-    takim_siralamasi,
-  };
+  return { tip: "tm", takim_utt, takim_siralamasi };
 }

@@ -112,3 +112,15 @@ export function isGunuEkle(tarih: Date, gun: number): Date {
 
   return sonuc;
 }
+
+/**
+ * İçinde bulunulan takvim çeyreğini döndürür.
+ * Çeyrekler: Q1=Oca-Mar, Q2=Nis-Haz, Q3=Tem-Eyl, Q4=Eki-Ara.
+ * Lig RPC'leri (get_hb_ligi_donemlik / get_cc_ligi_donemlik) için kullanılır.
+ */
+export function aktifDonem(tarih: Date = new Date()): { yil: number; ceyrek: number } {
+  return {
+    yil: tarih.getFullYear(),
+    ceyrek: Math.floor(tarih.getMonth() / 3) + 1,
+  };
+}

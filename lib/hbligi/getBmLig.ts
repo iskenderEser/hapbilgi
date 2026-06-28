@@ -2,9 +2,11 @@
 //
 // BM rolü için HBLigi verisi.
 // Kendi bölgesindeki UTT sıralaması + takımındaki tüm bölgelerin toplam puan sıralaması.
+// Dönem: çağıran tarafından geçilen periyot (ay/donem/yil) — ligRpcCagir helper'ı.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { toplamPuanGrupla, sirayaKoy } from "./agregasyonlar";
+import { ligRpcCagir, type LigPeriyot } from "./ligRpcCagir";
 
 export interface BmLigUttSatiri {
   sira: number;
@@ -40,43 +42,29 @@ export interface BmLigSonuc {
  * @param supabase Admin client
  * @param bolge_id BM'nin bağlı olduğu bölge
  * @param takim_id BM'nin bağlı olduğu takım
+ * @param periyot Periyot + tarih bilgisi (ay/donem/yil)
  */
 export async function getBmLig(
   supabase: SupabaseClient,
   bolge_id: string,
-  takim_id: string
+  takim_id: string,
+  periyot: LigPeriyot
 ): Promise<BmLigSonuc> {
-  // Kendi bölgesindeki UTT'ler
-  const { data: bolgeUttler, error: uttError } = await supabase
-    .from("v_hbligi_sirali")
-    .select(
-      "kullanici_id, rol, ad, soyad, bolge_id, bolge_adi, toplam_puan, bolge_sirasi, izleme_puani, cevaplama_puani, oneri_puani, extra_puani"
-    )
-    .in("rol", ["utt", "kd_utt"])
-    .eq("bolge_id", bolge_id)
-    .order("toplam_puan", { ascending: false });
+  // Tek RPC çağrısı: tüm UTT/KD_UTT lig satırları (seçili periyot)
+  const tumUttler = await ligRpcCagir(supabase, periyot);
 
-  if (uttError) {
-    throw new Error(`v_hbligi_sirali SELECT — BM UTT: ${uttError.message}`);
-  }
+  // 1) Kendi bölgesindeki UTT'ler (JS filtresi)
+  const bolgeUttler = tumUttler.filter((l: any) => l.bolge_id === bolge_id);
 
-  // Takımındaki tüm bölgelerin UTT puanları — bölge toplamı için
-  const { data: takimUttler, error: takimError } = await supabase
-    .from("v_hbligi_sirali")
-    .select("bolge_id, bolge_adi, toplam_puan")
-    .in("rol", ["utt", "kd_utt"])
-    .eq("takim_id", takim_id);
-
-  if (takimError) {
-    throw new Error(`v_hbligi_sirali SELECT — BM takım: ${takimError.message}`);
-  }
+  // 2) Takımındaki tüm bölgelerin UTT'leri — bölge toplamı için (JS filtresi)
+  const takimUttler = tumUttler.filter((l: any) => l.takim_id === takim_id);
 
   // Bölge toplamlarını hesapla + sıraya koy
-  const bolgeGrup = toplamPuanGrupla(takimUttler ?? [], "bolge_id", "bolge_adi");
+  const bolgeGrup = toplamPuanGrupla(takimUttler, "bolge_id", "bolge_adi");
   const takim_bolge_siralaması = sirayaKoy(bolgeGrup, "bolge_id", "bolge_adi") as BmBolgeSiraSatiri[];
 
   // UTT satırlarını formatla
-  const bolge_utt: BmLigUttSatiri[] = (bolgeUttler ?? []).map((l: any) => ({
+  const bolge_utt: BmLigUttSatiri[] = bolgeUttler.map((l: any) => ({
     sira: l.bolge_sirasi,
     kullanici_id: l.kullanici_id,
     ad: `${l.ad} ${l.soyad}`,
@@ -89,9 +77,5 @@ export async function getBmLig(
     toplam_puan: l.toplam_puan,
   }));
 
-  return {
-    tip: "bm",
-    bolge_utt,
-    takim_bolge_siralaması,
-  };
+  return { tip: "bm", bolge_utt, takim_bolge_siralaması };
 }

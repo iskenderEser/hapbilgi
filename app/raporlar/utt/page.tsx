@@ -45,6 +45,7 @@ interface RaporData {
     bolge_toplam_puan: number;
     takim_toplam_puan: number;
   };
+  kalan_siparis_puani: number;
   istatistikler: {
     izleme_puani: number;
     cevaplama_puani: number;
@@ -194,6 +195,7 @@ export default function UttRaporPage() {
                 { label: 'Bölge sırası', value: data.lig.bolge_sirasi ? `${data.lig.bolge_sirasi}.` : '-', accent: true },
                 { label: 'Takım sırası', value: `${data.lig.takim_sirasi || '-'}`, accent: false },
                 { label: 'Bir üst sıra için', value: data.lig.bir_ust_puan_farki ? `− ${formatPuan(data.lig.bir_ust_puan_farki)}` : '—', accent: false },
+                { label: 'Kalan sipariş puanı', value: formatPuan(data.kalan_siparis_puani), accent: true },
               ].map(m => (
                 <div key={m.label}>
                   <div className="text-xs mb-1" style={{ color: GRI_METIN }}>{m.label}</div>

@@ -31,6 +31,14 @@ export async function GET(request: Request) {
   const rol = (kullanici.rol ?? '').toLowerCase();
   if (rol !== 'bm') return yetkiHatasi('Bu rapora erişim yetkiniz yok');
 
+  // ─── Kalan sipariş puanı (harcanabilir bakiye) ───────────────────────────
+  // Periyottan bağımsız: get_harcama_bakiyesi her zaman içinde bulunulan
+  // çeyreğin anlık bakiyesini döner (lig puanı − mağaza harcaması + iade).
+  const { data: bakiyeData } = await adminSupabase.rpc('get_harcama_bakiyesi', {
+    p_kullanici_id: kullanici.kullanici_id,
+  });
+  const kalanSiparisPuani = Number.isFinite(Number(bakiyeData)) ? Number(bakiyeData) : 0;
+
   // Veri katmanı — tek RPC ailesi
   const d = await getBmData(adminSupabase, kullanici, baslangic, bitis);
   if (d.hata) return d.hata;
@@ -75,6 +83,7 @@ export async function GET(request: Request) {
         takim_toplam_puan: d.takimToplamPuan,
         sirket_toplam_puan: d.sirketToplamPuan,
       },
+      kalan_siparis_puani: kalanSiparisPuani,
       bolge_ozet: {
         toplam_utt: d.toplamUttSayisi,
         aktif_utt: a.aktifUtt,

@@ -2,8 +2,10 @@
 //
 // UTT/KD_UTT rolü için HBLigi verisi.
 // Kullanıcının kendi bölgesindeki UTT'leri toplam puana göre sıralı döner.
+// Dönem: çağıran tarafından geçilen periyot (ay/donem/yil) — ligRpcCagir helper'ı.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { ligRpcCagir, type LigPeriyot } from "./ligRpcCagir";
 
 export interface UttLigSatiri {
   sira: number;
@@ -31,27 +33,21 @@ export interface UttLigSonuc {
  * @param supabase Admin client
  * @param kullanici_id Giriş yapan kullanıcının ID'si
  * @param bolge_id Kullanıcının bölgesi
+ * @param periyot Periyot + tarih bilgisi (ay/donem/yil)
  * @throws Hata mesajı string olarak fırlatır; çağıran endpoint hataYaniti ile sarar
  */
 export async function getUttLig(
   supabase: SupabaseClient,
   kullanici_id: string,
-  bolge_id: string
+  bolge_id: string,
+  periyot: LigPeriyot
 ): Promise<UttLigSonuc> {
-  const { data, error } = await supabase
-    .from("v_hbligi_sirali")
-    .select(
-      "kullanici_id, rol, ad, soyad, bolge_id, bolge_adi, takim_id, takim_adi, firma_id, firma_adi, izleme_puani, cevaplama_puani, oneri_puani, extra_puani, toplam_puan, firma_sirasi, bolge_sirasi, takim_sirasi"
-    )
-    .in("rol", ["utt", "kd_utt"])
-    .eq("bolge_id", bolge_id)
-    .order("toplam_puan", { ascending: false });
+  const tumUttler = await ligRpcCagir(supabase, periyot);
 
-  if (error) {
-    throw new Error(`v_hbligi_sirali SELECT — UTT: ${error.message}`);
-  }
+  // RPC tüm bölgeleri döndürür; UTT yalnız kendi bölgesini görür.
+  const filtreli = tumUttler.filter((l: any) => l.bolge_id === bolge_id);
 
-  const lig: UttLigSatiri[] = (data ?? []).map((l: any) => ({
+  const lig: UttLigSatiri[] = filtreli.map((l: any) => ({
     sira: l.bolge_sirasi,
     kullanici_id: l.kullanici_id,
     ad: `${l.ad} ${l.soyad}`,
