@@ -4,7 +4,13 @@
 // Yapısal veri korunur: firmalar, takimlar, bolgeler, kullanicilar,
 // urunler, teknikler, kategoriler, silinmis_kullanicilar.
 //
-// Silme sırası FK ilişkilerine göre yavru → ata olacak şekilde dizilmiştir.
+// Silme sırası FK ilişkilerine göre (information_schema'dan doğrulanarak)
+// çocuk → ebeveyn olacak şekilde dizilmiştir. hb_ligi bir VIEW olduğu için
+// listede yoktur (silinemez; kendi verisi yoktur).
+//
+// Tüm hedef tablolarda created_at kolonu mevcuttur (DB'den doğrulandı);
+// "tüm satırları sil" için created_at >= epoch filtresi kullanılır.
+//
 // Hata yönetimi: bir tablonun silinmesi başarısız olursa kalan tablolar
 // denemeye devam eder; sonuç yanıtında her tablonun durumu listelenir.
 
@@ -12,22 +18,29 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sunucuHatasi } from "@/lib/utils/hataIsle";
 
-// FK sırasına göre: önce bağımlı kayıtlar, sonra üretim zinciri
+// FK sırasına göre: çocuk kayıtlar önce, ebeveynler sonra.
+// (information_schema FK çıktısından topolojik olarak hesaplandı.)
 const SILINECEK_TABLOLAR = [
-  // Bağımlı/yavru kayıtlar
+  // En derin çocuklar
+  "bildirimler",
+  "cc_ileri_sarma_kayitlari",
+  "cc_kazanilan_puanlar",
+  "cc_yanlis_cevap_kayitlari",
+  "challenge_kayip_kayitlari",
+  "ileri_sarma_kayitlari",
   "kazanilan_puanlar",
+  "oneri_kayip_kayitlari",
+  "soru_cevaplari",
+  "soru_seti_puanlari",
   "video_begeniler",
   "video_favoriler",
-  "bildirimler",
-  "ileri_sarma_kayitlari",
-  "challenge_kayitlari",
-  "soru_cevaplari",
-  "izleme_kayitlari",
-  "oneri_kayitlari",
-  "hb_ligi",
-  // Üretim zinciri (yavru → ata)
   "video_puanlari",
-  "soru_seti_puanlari",
+  "yanlis_cevap_kayitlari",
+  // Orta katman
+  "cc_izleme_kayitlari",
+  "izleme_kayitlari",
+  "challenge_kayitlari",
+  "oneri_kayitlari",
   "yayin_yonetimi",
   "soru_seti_durumu",
   "soru_setleri",
@@ -35,6 +48,7 @@ const SILINECEK_TABLOLAR = [
   "videolar",
   "senaryo_durumu",
   "senaryolar",
+  // En üst ebeveyn (test zincirinin tepesi)
   "talepler",
 ];
 
@@ -45,12 +59,11 @@ export async function POST() {
     const sonuclar: { tablo: string; durum: "ok" | "hata"; detay?: string }[] = [];
 
     for (const tablo of SILINECEK_TABLOLAR) {
-      // Tüm satırları sil. neq("id", "") gibi sahte filtre yerine,
-      // Supabase'de "tüm satırları sil" için yaygın desen: var olmayan UUID ile NOT EQUAL.
+      // Tüm satırları sil: created_at her hedef tabloda mevcut (DB'den doğrulandı).
       const { error } = await adminSupabase
         .from(tablo)
         .delete()
-        .neq("created_at", "1970-01-01");
+        .gte("created_at", "1970-01-01");
 
       if (error) {
         sonuclar.push({ tablo, durum: "hata", detay: error.message });
