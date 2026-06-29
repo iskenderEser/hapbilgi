@@ -13,7 +13,7 @@
 //       * teslim_edildi → teslim tarihi
 //       * iptal → iptal sebebi
 //
-// Firma guard: useStoreGuard — firmasında hbstore_aktif=false ise /ana-sayfa'ya yönlenir.
+// Firma erişim kontrolü (hbstore_aktif) proxy.ts HBStore bekçisinde merkezi olarak yapılır.
 
 "use client";
 
@@ -23,7 +23,6 @@ import Navbar from "@/components/Navbar";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { useStoreGuard } from "@/lib/store/useStoreGuard";
 import { DURUM_ETIKETLERI, DURUM_RENKLERI, IPTAL_SURE_SAATI } from "@/lib/store/sabitler";
 import { kargoTakipUrl } from "@/lib/store/kargo";
 import type { SiparisGosterim, AdresSnapshot } from "@/lib/store/tipler";
@@ -36,7 +35,6 @@ const GRI_ZEMIN = "#f9fafb";
 export default function SiparislerimPage() {
   const router = useRouter();
   const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
-  const { storeHazir } = useStoreGuard();
   const [yetkiKontrolEdildi, setYetkiKontrolEdildi] = useState(false);
 
   const [siparisler, setSiparisler] = useState<SiparisGosterim[]>([]);
@@ -87,10 +85,10 @@ export default function SiparislerimPage() {
   };
 
   useEffect(() => {
-    if (!yetkiKontrolEdildi || !storeHazir) return;
+    if (!yetkiKontrolEdildi) return;
     siparisleriYukle();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [yetkiKontrolEdildi, storeHazir]);
+  }, [yetkiKontrolEdildi]);
 
   const handleCikis = async () => {
     await cikisYap();
@@ -175,8 +173,8 @@ export default function SiparislerimPage() {
     });
   };
 
-  // Loading — auth, yetki veya firma guard hazır değilse bekle
-  if (authYukleniyor || !kullanici || !yetkiKontrolEdildi || !storeHazir) {
+  // Loading — auth veya yetki hazır değilse bekle
+  if (authYukleniyor || !kullanici || !yetkiKontrolEdildi) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"

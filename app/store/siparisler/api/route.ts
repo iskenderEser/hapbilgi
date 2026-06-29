@@ -10,7 +10,8 @@
 //
 // Dönüş: { siparisler: [...], toplam: integer }
 //
-// Firma guard: izleyen kullanıcının firmasında hbstore_aktif=false ise 403.
+// Firma erişim kontrolü (hbstore_aktif) proxy.ts HBStore bekçisinde merkezi
+// olarak yapılır — /store yolu kapalı firmada zaten 403 döner.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
@@ -22,7 +23,6 @@ import {
   validasyonHatasi,
 } from "@/lib/utils/hataIsle";
 import { STORE_GENEL_GOREN_ROLLER } from "@/lib/utils/roller";
-import { storeFirmaGuard } from "@/lib/store/firmaGuard";
 
 const VARSAYILAN_LIMIT = 30;
 const MAKS_LIMIT = 100;
@@ -42,10 +42,6 @@ export async function GET(request: NextRequest) {
     }
 
     const adminSupabase = createAdminClient();
-
-    // Firma guard — izleyenin firmasında HBStore kapalıysa 403
-    const guard = await storeFirmaGuard(adminSupabase, user.id);
-    if (!guard.acik) return guard.yanit!;
 
     // Query parametrelerini al
     const { searchParams } = new URL(request.url);

@@ -12,7 +12,8 @@
 //
 // Hata durumlarında { hata, adim, detay } döner.
 //
-// Firma guard: izleyen kullanıcının firmasında hbstore_aktif=false ise 403.
+// Firma erişim kontrolü (hbstore_aktif) proxy.ts HBStore bekçisinde merkezi
+// olarak yapılır — /store yolu kapalı firmada zaten 403 döner.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
@@ -23,7 +24,6 @@ import {
   rolHatasi,
 } from "@/lib/utils/hataIsle";
 import { STORE_GENEL_GOREN_ROLLER } from "@/lib/utils/roller";
-import { storeFirmaGuard } from "@/lib/store/firmaGuard";
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,10 +40,6 @@ export async function GET(request: NextRequest) {
     }
 
     const adminSupabase = createAdminClient();
-
-    // Firma guard — izleyenin firmasında HBStore kapalıysa 403
-    const guard = await storeFirmaGuard(adminSupabase, user.id);
-    if (!guard.acik) return guard.yanit!;
 
     // RPC çağrısı
     const { data, error } = await adminSupabase.rpc("get_siparis_filtre_hiyerarsi", {

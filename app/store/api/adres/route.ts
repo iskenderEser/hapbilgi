@@ -12,8 +12,8 @@
 // Her endpoint kullanıcının kendi adresleri üzerinde çalışır;
 // lib/store/adres.ts içinde sahiplik kontrolü yapılır.
 //
-// Firma guard: firmasında hbstore_aktif=false ise tüm işlemler 403
-// (yetkiAl yardımcısı içinde kontrol edilir → dört fonksiyon birden korunur).
+// Firma erişim kontrolü (hbstore_aktif) proxy.ts HBStore bekçisinde merkezi
+// olarak yapılır — /store yolu kapalı firmada zaten 403 döner.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
@@ -33,9 +33,8 @@ import {
   varsayilanYap,
 } from "@/lib/store/adres";
 import type { AdresInput } from "@/lib/store/tipler";
-import { storeFirmaGuard } from "@/lib/store/firmaGuard";
 
-// ─── Yardımcı: rol kontrolü + firma guard ────────────────────────────────────
+// ─── Yardımcı: rol kontrolü ──────────────────────────────────────────────────
 
 async function yetkiAl(request: NextRequest) {
   const supabase = await createClient();
@@ -48,10 +47,6 @@ async function yetkiAl(request: NextRequest) {
   }
 
   const adminSupabase = createAdminClient();
-
-  // Firma guard — firmasında HBStore kapalıysa 403
-  const guard = await storeFirmaGuard(adminSupabase, user.id);
-  if (!guard.acik) return { hata: guard.yanit! };
 
   return { user, rol, adminSupabase };
 }
