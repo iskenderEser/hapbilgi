@@ -106,6 +106,29 @@ export function useAdminPanel() {
     );
   };
 
+  // Firmanın Challenge Club erişimini aç/kapat (PATCH /admin/api/firmalar/[firma_id])
+  // Kapalı firmada o firmanın hiçbir kullanıcısı CC'ye erişemez (proxy.ts bekçisi).
+  const handleCcToggle = async (f: Firma) => {
+    const yeniDurum = !f.cc_aktif;
+    const res = await fetch(`/admin/api/firmalar/${f.firma_id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cc_aktif: yeniDurum }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      hata(data.hata ?? "Challenge Club durumu güncellenemedi.", data.adim, data.detay);
+      return;
+    }
+    basari(yeniDurum ? "Challenge Club açıldı." : "Challenge Club kapatıldı.");
+    setFirmalar(prev =>
+      prev.map(x => (x.firma_id === f.firma_id ? { ...x, cc_aktif: yeniDurum } : x))
+    );
+    setSeciliFirma(prev =>
+      prev && prev.firma_id === f.firma_id ? { ...prev, cc_aktif: yeniDurum } : prev
+    );
+  };
+
   // Firmanın aktif/pasif durumunu değiştir (PATCH /admin/api/firmalar/[firma_id])
   // Pasif firma → o firmanın tüm kullanıcıları giriş yapamaz (login kontrolü).
   const handleFirmaToggle = async (f: Firma) => {
@@ -213,6 +236,7 @@ export function useAdminPanel() {
     seciliFirma,
     handleFirmaSecildi,
     handleStoreToggle,
+    handleCcToggle,
     handleFirmaToggle,
     handleFirmaSil,
     handleExport,

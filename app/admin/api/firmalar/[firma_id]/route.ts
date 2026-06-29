@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 
-const FIRMA_KOLONLARI = "firma_id, firma_adi, hbstore_aktif, aktif, son_export_at, created_at";
+const FIRMA_KOLONLARI = "firma_id, firma_adi, hbstore_aktif, aktif, cc_aktif, son_export_at, created_at";
 
 export async function GET(
   request: NextRequest,
@@ -83,17 +83,18 @@ export async function PATCH(
     const adminSupabase = createAdminClient();
 
     const body = await request.json();
-    const { hbstore_aktif, aktif } = body;
+    const { hbstore_aktif, aktif, cc_aktif } = body;
 
     // Güncellenecek alanları topla (yalnızca gönderilenler)
     const guncelleme: Record<string, boolean> = {};
     if (typeof hbstore_aktif === "boolean") guncelleme.hbstore_aktif = hbstore_aktif;
     if (typeof aktif === "boolean") guncelleme.aktif = aktif;
+    if (typeof cc_aktif === "boolean") guncelleme.cc_aktif = cc_aktif;
 
     if (Object.keys(guncelleme).length === 0) {
       return validasyonHatasi(
-        "Güncellenecek alan yok. hbstore_aktif veya aktif (true/false) gönderin.",
-        ["hbstore_aktif", "aktif"]
+        "Güncellenecek alan yok. hbstore_aktif, aktif veya cc_aktif (true/false) gönderin.",
+        ["hbstore_aktif", "aktif", "cc_aktif"]
       );
     }
 
@@ -109,12 +110,15 @@ export async function PATCH(
     const guncellenenKontrol = veriKontrol(guncellenen, "firmalar tablosu UPDATE — dönen veri", "Durum güncellendi ancak veri döndürülemedi.");
     if (!guncellenenKontrol.gecerli) return guncellenenKontrol.yanit;
 
-    // Uygun mesajı belirle
+    // Uygun mesajı belirle (tek alan güncellendiyse ona özel mesaj)
     let mesaj = "Firma durumu güncellendi.";
-    if ("aktif" in guncelleme && !("hbstore_aktif" in guncelleme)) {
+    const tekAlan = Object.keys(guncelleme).length === 1;
+    if (tekAlan && "aktif" in guncelleme) {
       mesaj = guncelleme.aktif ? "Firma aktifleştirildi." : "Firma pasifleştirildi.";
-    } else if ("hbstore_aktif" in guncelleme && !("aktif" in guncelleme)) {
+    } else if (tekAlan && "hbstore_aktif" in guncelleme) {
       mesaj = guncelleme.hbstore_aktif ? "Mağaza açıldı." : "Mağaza kapatıldı.";
+    } else if (tekAlan && "cc_aktif" in guncelleme) {
+      mesaj = guncelleme.cc_aktif ? "Challenge Club açıldı." : "Challenge Club kapatıldı.";
     }
 
     return NextResponse.json({ mesaj, firma: guncellenen }, { status: 200 });

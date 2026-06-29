@@ -17,6 +17,7 @@ interface FirmaSidebarProps {
   handleFirmaEkle: (e: React.FormEvent) => void | Promise<void>;
   handleFirmaSecildi: (f: Firma) => void;
   handleStoreToggle: (f: Firma) => void | Promise<void>;
+  handleCcToggle: (f: Firma) => void | Promise<void>;
   handleFirmaToggle: (f: Firma) => void | Promise<void>;
   handleFirmaSil: (f: Firma) => Promise<boolean>;
   handleExport: (f: Firma) => void | Promise<void>;
@@ -76,6 +77,7 @@ export default function FirmaSidebar({
   handleFirmaEkle,
   handleFirmaSecildi,
   handleStoreToggle,
+  handleCcToggle,
   handleFirmaToggle,
   handleFirmaSil,
   handleExport,
@@ -215,6 +217,16 @@ export default function FirmaSidebar({
                       baslik={f.hbstore_aktif ? "Mağaza açık — kapatmak için tıkla" : "Mağaza kapalı — açmak için tıkla"}
                     />
                     Mağaza
+                  </span>
+
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "12px", color: "#737373", fontFamily: "'Nunito', sans-serif" }}>
+                    <Switch
+                      acik={f.cc_aktif}
+                      renk="#7c3aed"
+                      onClick={() => handleCcToggle(f)}
+                      baslik={f.cc_aktif ? "Challenge Club açık — kapatmak için tıkla" : "Challenge Club kapalı — açmak için tıkla"}
+                    />
+                    CC
                   </span>
 
                   <button

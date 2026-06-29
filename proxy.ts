@@ -74,6 +74,112 @@ export async function proxy(request: NextRequest) {
   }
   // -------------------------------------------------------------------------
 
+  // --- Challenge Club firma bekçisi ----------------------------------------
+  // /challenge-club/* ve /cc-ligi/* (sayfa + API) yalnızca firması CC açık
+  // (firmalar.cc_aktif = true) olan kullanıcıya açıktır. Admin bu işi
+  // FirmaSidebar toggle'ı ile firma bazında kapatır; kapalı firmada o firmanın
+  // hiçbir kullanıcısı (BM, TM, üretici, yönetici...) CC'yi göremez/erişemez.
+  //
+  // Tek noktadan kontrol: 8 CC API'sine ve 3 CC sayfasına ayrı ayrı dokunmak
+  // yerine engel burada uygulanır. Sorgu YALNIZCA CC yollarında çalışır
+  // (diğer isteklerde firma sorgusu yapılmaz — dar kapsam).
+  if (
+    pathname.startsWith("/challenge-club") ||
+    pathname.startsWith("/cc-ligi")
+  ) {
+    const ccApiYolu = pathname.includes("/api/") || pathname.endsWith("/api");
+
+    if (!user) {
+      // Oturum yoksa: API → 401, sayfa → login'e
+      if (ccApiYolu) {
+        return NextResponse.json({ error: "Oturum açmanız gerekiyor." }, { status: 401 });
+      }
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    const ccSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const { data: ccKullanici } = await ccSupabase
+      .from("kullanicilar")
+      .select("firma_id")
+      .eq("kullanici_id", user.id)
+      .single();
+
+    if (ccKullanici?.firma_id) {
+      const { data: ccFirma } = await ccSupabase
+        .from("firmalar")
+        .select("cc_aktif")
+        .eq("firma_id", ccKullanici.firma_id)
+        .single();
+
+      if (ccFirma && ccFirma.cc_aktif === false) {
+        // Firma CC kapalı: API → 403 JSON, sayfa → ana-sayfa
+        if (ccApiYolu) {
+          return NextResponse.json(
+            { error: "Challenge Club firmanız için kapalıdır." },
+            { status: 403 }
+          );
+        }
+        return NextResponse.redirect(new URL("/ana-sayfa", request.url));
+      }
+    }
+    // cc_aktif = true veya firma yok → geç (akış aşağıda sürer)
+  }
+  // -------------------------------------------------------------------------
+
+  // --- HBStore firma bekçisi -----------------------------------------------
+  // /store/* (sayfa + API) yalnızca firması HBStore açık (firmalar.hbstore_aktif
+  // = true) olan kullanıcıya açıktır. Admin bu işi FirmaSidebar toggle'ı ile
+  // firma bazında kapatır; kapalı firmada o firmanın hiçbir kullanıcısı
+  // (sipariş veren UTT/KD_UTT/BM, sipariş izleyen TM/GM/yönetici...) store'a
+  // erişemez.
+  //
+  // Tek noktadan kontrol: store API'lerine ve sayfalarına ayrı ayrı guard
+  // koymak yerine engel burada uygulanır (CC bekçisiyle aynı desen). Sorgu
+  // YALNIZCA /store yollarında çalışır — diğer isteklerde firma sorgusu yapılmaz.
+  if (pathname.startsWith("/store")) {
+    const storeApiYolu = pathname.includes("/api/") || pathname.endsWith("/api");
+
+    if (!user) {
+      if (storeApiYolu) {
+        return NextResponse.json({ error: "Oturum açmanız gerekiyor." }, { status: 401 });
+      }
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    const storeSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const { data: storeKullanici } = await storeSupabase
+      .from("kullanicilar")
+      .select("firma_id")
+      .eq("kullanici_id", user.id)
+      .single();
+
+    if (storeKullanici?.firma_id) {
+      const { data: storeFirma } = await storeSupabase
+        .from("firmalar")
+        .select("hbstore_aktif")
+        .eq("firma_id", storeKullanici.firma_id)
+        .single();
+
+      if (storeFirma && storeFirma.hbstore_aktif === false) {
+        if (storeApiYolu) {
+          return NextResponse.json(
+            { error: "HBStore firmanız için kapalıdır." },
+            { status: 403 }
+          );
+        }
+        return NextResponse.redirect(new URL("/ana-sayfa", request.url));
+      }
+    }
+    // hbstore_aktif = true veya firma yok → geç
+  }
+  // -------------------------------------------------------------------------
+
   if (!pathname.startsWith("/senaryolar/api/")) {
     return supabaseResponse;
   }
