@@ -180,6 +180,56 @@ export async function proxy(request: NextRequest) {
   }
   // -------------------------------------------------------------------------
 
+  // --- E-Club firma bekçisi ------------------------------------------------
+  // /eclub/* (sayfa + API) yalnızca firması E-Club açık (firmalar.eclub_aktif
+  // = true) olan kullanıcıya açıktır. Admin bu işi FirmaSidebar toggle'ı ile
+  // firma bazında kapatır; kapalı firmada o firmanın kullanıcıları (UTT/KD_UTT)
+  // E-Club liste yönetimine erişemez.
+  //
+  // NOT: /admin/eclub bu bekçinin KAPSAMINDA DEĞİLDİR (o /admin/api bekçisiyle
+  // ve sayfa auth guard'ıyla korunur, firma bağımsızdır). Burada yalnızca
+  // /eclub yolları kontrol edilir. Sorgu YALNIZCA /eclub yollarında çalışır.
+  if (pathname.startsWith("/eclub")) {
+    const eclubApiYolu = pathname.includes("/api/") || pathname.endsWith("/api");
+
+    if (!user) {
+      if (eclubApiYolu) {
+        return NextResponse.json({ error: "Oturum açmanız gerekiyor." }, { status: 401 });
+      }
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    const eclubSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const { data: eclubKullanici } = await eclubSupabase
+      .from("kullanicilar")
+      .select("firma_id")
+      .eq("kullanici_id", user.id)
+      .single();
+
+    if (eclubKullanici?.firma_id) {
+      const { data: eclubFirma } = await eclubSupabase
+        .from("firmalar")
+        .select("eclub_aktif")
+        .eq("firma_id", eclubKullanici.firma_id)
+        .single();
+
+      if (eclubFirma && eclubFirma.eclub_aktif === false) {
+        if (eclubApiYolu) {
+          return NextResponse.json(
+            { error: "E-Club firmanız için kapalıdır." },
+            { status: 403 }
+          );
+        }
+        return NextResponse.redirect(new URL("/ana-sayfa", request.url));
+      }
+    }
+    // eclub_aktif = true veya firma yok → geç
+  }
+  // -------------------------------------------------------------------------
+
   if (!pathname.startsWith("/senaryolar/api/")) {
     return supabaseResponse;
   }

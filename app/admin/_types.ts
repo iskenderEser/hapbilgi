@@ -6,6 +6,7 @@ export interface Firma {
   hbstore_aktif: boolean;
   aktif: boolean;
   cc_aktif: boolean;
+  eclub_aktif: boolean;
   son_export_at: string | null;
   created_at: string;
 }

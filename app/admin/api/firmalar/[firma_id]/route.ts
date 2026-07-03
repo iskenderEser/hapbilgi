@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 
-const FIRMA_KOLONLARI = "firma_id, firma_adi, hbstore_aktif, aktif, cc_aktif, son_export_at, created_at";
+const FIRMA_KOLONLARI = "firma_id, firma_adi, hbstore_aktif, aktif, cc_aktif, eclub_aktif, son_export_at, created_at";
 
 export async function GET(
   request: NextRequest,
@@ -69,9 +69,11 @@ export async function PUT(
 }
 
 // PATCH — firmanın durum bayraklarını günceller.
-// Body (en az biri): { hbstore_aktif?: boolean, aktif?: boolean }
+// Body (en az biri): { hbstore_aktif?: boolean, aktif?: boolean, cc_aktif?: boolean, eclub_aktif?: boolean }
 //   - hbstore_aktif: HBStore mağazası açık/kapalı
 //   - aktif: firma sisteme erişimi açık/kapalı (pasif → kullanıcılar giriş yapamaz)
+//   - cc_aktif: Challenge Club açık/kapalı
+//   - eclub_aktif: E-Club açık/kapalı
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ firma_id: string }> }
@@ -83,18 +85,19 @@ export async function PATCH(
     const adminSupabase = createAdminClient();
 
     const body = await request.json();
-    const { hbstore_aktif, aktif, cc_aktif } = body;
+    const { hbstore_aktif, aktif, cc_aktif, eclub_aktif } = body;
 
     // Güncellenecek alanları topla (yalnızca gönderilenler)
     const guncelleme: Record<string, boolean> = {};
     if (typeof hbstore_aktif === "boolean") guncelleme.hbstore_aktif = hbstore_aktif;
     if (typeof aktif === "boolean") guncelleme.aktif = aktif;
     if (typeof cc_aktif === "boolean") guncelleme.cc_aktif = cc_aktif;
+    if (typeof eclub_aktif === "boolean") guncelleme.eclub_aktif = eclub_aktif;
 
     if (Object.keys(guncelleme).length === 0) {
       return validasyonHatasi(
-        "Güncellenecek alan yok. hbstore_aktif, aktif veya cc_aktif (true/false) gönderin.",
-        ["hbstore_aktif", "aktif", "cc_aktif"]
+        "Güncellenecek alan yok. hbstore_aktif, aktif, cc_aktif veya eclub_aktif (true/false) gönderin.",
+        ["hbstore_aktif", "aktif", "cc_aktif", "eclub_aktif"]
       );
     }
 
@@ -119,6 +122,8 @@ export async function PATCH(
       mesaj = guncelleme.hbstore_aktif ? "Mağaza açıldı." : "Mağaza kapatıldı.";
     } else if (tekAlan && "cc_aktif" in guncelleme) {
       mesaj = guncelleme.cc_aktif ? "Challenge Club açıldı." : "Challenge Club kapatıldı.";
+    } else if (tekAlan && "eclub_aktif" in guncelleme) {
+      mesaj = guncelleme.eclub_aktif ? "E-Club açıldı." : "E-Club kapatıldı.";
     }
 
     return NextResponse.json({ mesaj, firma: guncellenen }, { status: 200 });
@@ -139,9 +144,6 @@ export async function DELETE(
     const adminSupabase = createAdminClient();
 
     // Export koşulu — yalnızca firma talep üretmişse uygulanır.
-    // Mantık: korunacak iş verisi (talep ve ona bağlı üretim zinciri) varsa,
-    // firma silinmeden önce verisi dışa aktarılmış olmalıdır. Hiç talep
-    // üretmemiş (boş) firma için export şartı aranmaz; doğrudan silinebilir.
     const { count: talepSayisi, error: talepError } = await adminSupabase
       .from("talepler")
       .select("firma_id", { count: "exact", head: true })
@@ -150,7 +152,6 @@ export async function DELETE(
     if (talepError) return hataYaniti("Talep kontrolü yapılamadı.", "talepler tablosu COUNT — firma_id kontrolü", talepError);
 
     if ((talepSayisi ?? 0) > 0) {
-      // Firma talep üretmiş → export şartı geçerli.
       const { data: firma, error: firmaError } = await adminSupabase
         .from("firmalar")
         .select("son_export_at")
@@ -171,7 +172,6 @@ export async function DELETE(
       }
     }
 
-    // Firmaya bağlı takım var mı kontrol et
     const { count: takimSayisi, error: takimError } = await adminSupabase
       .from("takimlar")
       .select("takim_id", { count: "exact", head: true })
@@ -180,7 +180,6 @@ export async function DELETE(
     if (takimError) return hataYaniti("Takım kontrolü yapılamadı.", "takimlar tablosu COUNT — firma_id kontrolü", takimError);
     if ((takimSayisi ?? 0) > 0) return hataYaniti(`Bu firmaya bağlı ${takimSayisi} takım var. Önce takımları silin.`, "firmalar tablosu DELETE — bağlı takım kontrolü", null, 422);
 
-    // Firmaya bağlı kullanıcı var mı kontrol et
     const { count: kullaniciSayisi, error: kullaniciError } = await adminSupabase
       .from("kullanicilar")
       .select("kullanici_id", { count: "exact", head: true })

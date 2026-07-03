@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { URETICI_ROLLER, CCLIGI_GORENLERLER, STORE_ALABILEN_ROLLER, STORE_GENEL_GOREN_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
+import { URETICI_ROLLER, CCLIGI_GORENLERLER, STORE_ALABILEN_ROLLER, STORE_GENEL_GOREN_ROLLER, URETIM_HATTI_GORENLER, ECLUB_GOREN_ROLLER, ECLUB_LIGI_GOREN_ROLLER } from "@/lib/utils/roller";
 
 interface NavbarProps {
   email: string;
@@ -20,6 +20,7 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
   const [menuAcik, setMenuAcik] = useState(false);
   const [storeAcik, setStoreAcik] = useState(false);
   const [ccAcik, setCcAcik] = useState(false);
+  const [eclubAcik, setEclubAcik] = useState(false);
 
   const isAktif = (path: string) => pathname.startsWith(path);
 
@@ -33,13 +34,14 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
   const uretimHattiGorur = URETIM_HATTI_GORENLER.includes(rol);
 
   useEffect(() => {
-    // Firma HBStore + Challenge Club durumunu (ve gerekirse ad-soyad'ı) profil API'den al.
+    // Firma HBStore + Challenge Club + E-Club durumunu (ve gerekirse ad-soyad'ı) profil API'den al.
     fetch("/profil/api")
       .then(res => res.json())
       .then(data => {
         if (data.profil) {
           setStoreAcik(data.profil.hbstore_aktif === true);
           setCcAcik(data.profil.cc_aktif === true);
+          setEclubAcik(data.profil.eclub_aktif === true);
           if (!adSoyad) setKullaniciAd(`${data.profil.ad} ${data.profil.soyad}`);
         }
       })
@@ -218,6 +220,18 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
 
               <button onClick={() => router.push("/hbligi")} onMouseEnter={() => setHover("hbligi")} onMouseLeave={() => setHover(null)} className={pillClass("hbligi", "/hbligi")} style={pillStyle("hbligi", "/hbligi")}>HBLigi</button>
 
+              {eclubAcik && ECLUB_GOREN_ROLLER.includes(rolKucu) && (
+                <button onClick={() => router.push("/eclub/listem")} onMouseEnter={() => setHover("eclub")} onMouseLeave={() => setHover(null)} className={pillClass("eclub", "/eclub/listem")} style={pillStyle("eclub", "/eclub/listem")}>E-Club</button>
+              )}
+
+              {eclubAcik && ECLUB_LIGI_GOREN_ROLLER.includes(rolKucu) && (
+                <button onClick={() => router.push("/eclub/ligi")} onMouseEnter={() => setHover("eclub-ligi")} onMouseLeave={() => setHover(null)} className={pillClass("eclub-ligi", "/eclub/ligi")} style={pillStyle("eclub-ligi", "/eclub/ligi")}>E-Club Ligi</button>
+              )}
+
+              {rolKucu === "admin" && (
+                <button onClick={() => router.push("/admin/eclub")} onMouseEnter={() => setHover("eclub-admin")} onMouseLeave={() => setHover(null)} className={pillClass("eclub-admin", "/admin/eclub")} style={pillStyle("eclub-admin", "/admin/eclub")}>E-Club Admin</button>
+              )}
+
               {ccAcik && CCLIGI_GORENLERLER.includes(rolKucu) && (
                 <button onClick={() => router.push("/cc-ligi")} onMouseEnter={() => setHover("cc-ligi")} onMouseLeave={() => setHover(null)} className={pillClass("cc-ligi", "/cc-ligi")} style={pillStyle("cc-ligi", "/cc-ligi")}>CC Ligi</button>
               )}
@@ -310,6 +324,9 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
           {!isIU && <MenuItem label="Raporlar" onClick={raporaGit} />}
           {analizRoller.includes(rolKucu) && <MenuItem label="Analiz" path="/analiz" />}
           <MenuItem label="HBLigi" path="/hbligi" />
+          {eclubAcik && ECLUB_GOREN_ROLLER.includes(rolKucu) && <MenuItem label="E-Club" path="/eclub/listem" />}
+          {eclubAcik && ECLUB_LIGI_GOREN_ROLLER.includes(rolKucu) && <MenuItem label="E-Club Ligi" path="/eclub/ligi" />}
+          {rolKucu === "admin" && <MenuItem label="E-Club Admin" path="/admin/eclub" />}
           {ccAcik && CCLIGI_GORENLERLER.includes(rolKucu) && <MenuItem label="CC Ligi" path="/cc-ligi" />}
           {storeAcik && STORE_ALABILEN_ROLLER.includes(rolKucu) && <MenuItem label="HBStore" path="/store" />}
           {storeAcik && STORE_GENEL_GOREN_ROLLER.includes(rolKucu) && rolKucu !== "bm" && <MenuItem label="HBStore Siparişleri" path="/store/siparisler" />}

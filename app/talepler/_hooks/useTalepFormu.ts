@@ -5,6 +5,9 @@
 // uploadDosyalar, resetForm.
 // Madde 4 Aşama 2B: fetchTakimlar ve handleYeniUrunEkle(urun_adi, takim_id) burada.
 // useSoruSetiParse ve useHataMesaji içeride composed; parent sadece return değerlerini kullanır.
+//
+// E-Club üretim düzenlemesi: hedef rol eczacı/eczane teknisyeni ise teknik seçimi
+// gizlenir ve teknik_id null gönderilir (teknik bu roller için anlamlı detay değil).
 
 "use client";
 
@@ -77,7 +80,9 @@ export function useTalepFormu() {
   const isUretici = yetenek !== null;
   const turKurali = TALEP_TURU_KURALLARI[egitimTuru];
   const urunGosterilsin = turKurali.urun !== "yok";
-  const teknikGosterilsin = turKurali.teknik !== "yok";
+  // E-Club hedefi (eczacı / eczane teknisyeni) ise teknik gizlenir.
+  const eclubHedef = hedefRol === "eczaci" || hedefRol === "eczane_teknisyeni";
+  const teknikGosterilsin = turKurali.teknik !== "yok" && !eclubHedef;
   const kullaniciTakimId = kullaniciBilgi?.takim_id ?? null;
 
   // ============================================================================
@@ -111,6 +116,12 @@ export function useTalepFormu() {
       setVideoBasiSoruSayisi(soruSetiBuyuklugu);
     }
   }, [soruSetiBuyuklugu, videoBasiSoruSayisi]);
+
+  // Hedef rol E-Club'a (eczacı/teknisyen) çevrilirse, seçili tekniği temizle —
+  // gizlenen alanda seçili değer kalmasın, submit'e sızmasın.
+  useEffect(() => {
+    if (eclubHedef && seciliTeknikId) setSeciliTeknikId("");
+  }, [eclubHedef, seciliTeknikId]);
 
   // ============================================================================
   // Veri çekme
@@ -314,7 +325,9 @@ export function useTalepFormu() {
       hata("Ürün seçimi zorunludur.", "form kontrolü", undefined);
       return false;
     }
-    if (turKurali.teknik === "zorunlu" && !seciliTeknikId) {
+    // Teknik zorunluluğu yalnız E-Club dışı hedeflerde geçerlidir; eczacı/teknisyen
+    // taleplerinde teknik gizli olduğu için kontrol atlanır.
+    if (!eclubHedef && turKurali.teknik === "zorunlu" && !seciliTeknikId) {
       hata("Teknik seçimi zorunludur.", "form kontrolü", undefined);
       return false;
     }
@@ -337,6 +350,7 @@ export function useTalepFormu() {
     return true;
   }, [
     hedefRol,
+    eclubHedef,
     turKurali,
     seciliUrunId,
     seciliTeknikId,
@@ -357,7 +371,8 @@ export function useTalepFormu() {
         egitim_turu: egitimTuru,
         hedef_rol: hedefRol,
         urun_id: turKurali.urun !== "yok" ? seciliUrunId || null : null,
-        teknik_id: turKurali.teknik !== "yok" ? seciliTeknikId || null : null,
+        // E-Club hedeflerinde teknik gizli — her hâlükârda null gönderilir.
+        teknik_id: (!eclubHedef && turKurali.teknik !== "yok") ? seciliTeknikId || null : null,
         aciklama,
         hazir_video: hazirVideo,
         hazir_soru_seti: hazirSoruSeti,
@@ -376,6 +391,7 @@ export function useTalepFormu() {
   }, [
     egitimTuru,
     hedefRol,
+    eclubHedef,
     turKurali,
     seciliUrunId,
     seciliTeknikId,

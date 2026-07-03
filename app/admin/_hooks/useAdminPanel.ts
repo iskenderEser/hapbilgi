@@ -129,6 +129,29 @@ export function useAdminPanel() {
     );
   };
 
+  // Firmanın E-Club erişimini aç/kapat (PATCH /admin/api/firmalar/[firma_id])
+  // Kapalı firmada o firmanın kullanıcıları E-Club menüsünü/sayfalarını göremez.
+  const handleEclubToggle = async (f: Firma) => {
+    const yeniDurum = !f.eclub_aktif;
+    const res = await fetch(`/admin/api/firmalar/${f.firma_id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eclub_aktif: yeniDurum }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      hata(data.hata ?? "E-Club durumu güncellenemedi.", data.adim, data.detay);
+      return;
+    }
+    basari(yeniDurum ? "E-Club açıldı." : "E-Club kapatıldı.");
+    setFirmalar(prev =>
+      prev.map(x => (x.firma_id === f.firma_id ? { ...x, eclub_aktif: yeniDurum } : x))
+    );
+    setSeciliFirma(prev =>
+      prev && prev.firma_id === f.firma_id ? { ...prev, eclub_aktif: yeniDurum } : prev
+    );
+  };
+
   // Firmanın aktif/pasif durumunu değiştir (PATCH /admin/api/firmalar/[firma_id])
   // Pasif firma → o firmanın tüm kullanıcıları giriş yapamaz (login kontrolü).
   const handleFirmaToggle = async (f: Firma) => {
@@ -237,6 +260,7 @@ export function useAdminPanel() {
     handleFirmaSecildi,
     handleStoreToggle,
     handleCcToggle,
+    handleEclubToggle,
     handleFirmaToggle,
     handleFirmaSil,
     handleExport,

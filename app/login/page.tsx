@@ -19,7 +19,12 @@ export default function LoginPage() {
     if (!kullanici) return;
     if (kullanici.rol === undefined) return;
 
-    router.replace(kullanici.rol === "admin" ? "/admin" : "/ana-sayfa");
+    // E-Club kişisi (eczacı/teknisyen) → kendi paneline; admin → /admin; diğerleri → /ana-sayfa
+    if (kullanici.kimlik_turu === "eclub_kisi") {
+      router.replace("/eclub/panel");
+    } else {
+      router.replace(kullanici.rol === "admin" ? "/admin" : "/ana-sayfa");
+    }
   }, [kullanici, yukleniyor]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -36,9 +41,11 @@ export default function LoginPage() {
 
     // Firma aktif mi kontrol et — firması pasif olan kullanıcı giriş yapamaz.
     // Admin bu kontrolden muaftır (firma yönetimi için panele erişmesi gerekir).
+    // E-Club kişilerinin kullanicilar/firma bağı yoktur; bu kontrol onlara uygulanmaz.
     const user = girisData.user;
     const rol = (user?.user_metadata?.rol ?? "").toLowerCase();
-    if (user && rol !== "admin") {
+    const eclubKisi = user?.user_metadata?.eclub_kisi === true;
+    if (user && rol !== "admin" && !eclubKisi) {
       const { data: kullaniciKaydi } = await supabase
         .from("kullanicilar")
         .select("firma_id")

@@ -4,7 +4,8 @@
 // Hook'un return değerini tek `formu` prop'u olarak alır; içeride destrüktüre eder.
 // isUretici/yetenek kontrolü içeride — parent koşullu sarmalama yapmaz.
 //
-// Form akışı: önce hedef rol (UTT/BM) seçilir, sonra diğer alanlar aktifleşir.
+// Form akışı: önce hedef rol (UTT/BM/Eczacı/Eczane Teknisyeni) seçilir, sonra
+// diğer alanlar aktifleşir. Eczacı ve eczane teknisyeni E-Club akışının hedefleridir.
 
 "use client";
 
@@ -78,7 +79,7 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
       <div className="mb-4 p-3 rounded-lg border border-gray-200 bg-gray-50">
         <div className="text-xs text-gray-500 mb-2">Bu talep kimin için? <span className="text-red-500">*</span></div>
         <div className="flex flex-wrap gap-3">
-          {(["utt", "bm"] as const).map((rolKey: HedefRol) => {
+          {(["utt", "bm", "eczaci", "eczane_teknisyeni"] as const).map((rolKey: HedefRol) => {
             const tasarim = HEDEF_ROL_TASARIM[rolKey];
             const secili = formu.hedefRol === rolKey;
             return (

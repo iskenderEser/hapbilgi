@@ -13,7 +13,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import type { AuthKullanici } from "@/types/auth";
+import type { AuthKullanici, KimlikTuru } from "@/types/auth";
 
 interface AuthContextTipi {
   kullanici: AuthKullanici | null;
@@ -56,10 +56,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return;
           }
 
+          // Birleşik kimlik view'ı: kullanicilar + eclub_kisiler'i auth_id üzerinden
+          // birleştirir. Tek sorgu; kimlik_turu ile kim olduğu ayrılır.
           const { data, error } = await supabase
-            .from("kullanicilar")
-            .select("rol, ad, soyad, firma_id")
-            .eq("kullanici_id", user.id)
+            .from("v_auth_kimlik")
+            .select("kimlik_turu, rol, ad, soyad, firma_id, telefon")
+            .eq("auth_id", user.id)
             .single();
 
           if (error || !data) {
@@ -75,7 +77,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             ad: data.ad,
             soyad: data.soyad,
             adSoyad: `${data.ad} ${data.soyad}`.trim(),
-            firma_id: data.firma_id,
+            firma_id: data.firma_id ?? null,
+            kimlik_turu: data.kimlik_turu as KimlikTuru,
+            telefon: data.telefon ?? null,
           });
 
           setYukleniyor(false);

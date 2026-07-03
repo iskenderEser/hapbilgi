@@ -9,6 +9,7 @@ import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 import { HedefRolBant } from "@/components/HedefRolBant";
+import type { HedefRol } from "@/app/talepler/_types";
 import { useAuth } from "@/app/providers/AuthProvider";
 
 interface Video {
@@ -28,7 +29,7 @@ interface Senaryo {
   senaryo_metni: string;
   urun_adi?: string;
   teknik_adi?: string;
-  hedef_rol?: "utt" | "bm";
+  hedef_rol?: HedefRol;
 }
 
 export default function VideoAkisPage() {
@@ -90,7 +91,7 @@ export default function VideoAkisPage() {
           ...senaryoData,
           urun_adi: (talep as any)?.urunler?.urun_adi ?? "-",
           teknik_adi: (talep as any)?.teknikler?.teknik_adi ?? "-",
-          hedef_rol: ((talep as any)?.hedef_rol ?? "utt") as "utt" | "bm",
+          hedef_rol: ((talep as any)?.hedef_rol ?? "utt") as HedefRol,
         });
       }
     }

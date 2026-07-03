@@ -11,12 +11,14 @@ import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
 
 /**
  * Hedef rol — talebin hangi kitle için olduğunu belirler.
- * 'utt' → Ürün Tanıtım Temsilcileri (varsayılan UTT akışı)
- * 'bm'  → Bölge Müdürleri (Challenge Club akışı)
+ * 'utt'               → Ürün Tanıtım Temsilcileri (varsayılan UTT akışı)
+ * 'bm'                → Bölge Müdürleri (Challenge Club akışı)
+ * 'eczaci'            → Eczacılar (E-Club akışı)
+ * 'eczane_teknisyeni' → Eczane Teknisyenleri (E-Club akışı)
  *
  * DB: talepler.hedef_rol kolonu (NOT NULL CHECK).
  */
-export type HedefRol = "utt" | "bm";
+export type HedefRol = "utt" | "bm" | "eczaci" | "eczane_teknisyeni";
 
 export interface Talep {
   talep_id: string;
@@ -106,6 +108,8 @@ export const TUR_ROZET: Record<TalepTuru, { bg: string; renk: string; border: st
 
 // Hedef rol görsel tasarımı (bant + pill için ortak renk/etiket sözlüğü).
 // UTT: mavi tonu (sistemin ana mavisi). BM: bordo (Challenge Club rengi).
+// Eczacı: Türk eczane kırmızısı (#e30a17). Eczane Teknisyeni: konfederasyon
+// laciverti (#10304a) + yeşil (#7ed957). (E-Club akışı — ikisi ayrı hedef.)
 export const HEDEF_ROL_TASARIM: Record<HedefRol, { bg: string; renk: string; border: string; tamEtiket: string; kisaEtiket: string }> = {
   utt: {
     bg: "#eff6ff",
@@ -120,6 +124,20 @@ export const HEDEF_ROL_TASARIM: Record<HedefRol, { bg: string; renk: string; bor
     border: "#fecaca",
     tamEtiket: "Bölge Müdürleri",
     kisaEtiket: "BM",
+  },
+  eczaci: {
+    bg: "#fff5f5",
+    renk: "#e30a17",
+    border: "#e30a17",
+    tamEtiket: "Eczacılar",
+    kisaEtiket: "Eczacı",
+  },
+  eczane_teknisyeni: {
+    bg: "#eaf7e4",
+    renk: "#10304a",
+    border: "#7ed957",
+    tamEtiket: "Eczane Teknisyenleri",
+    kisaEtiket: "Ecz. Tek.",
   },
 };
 

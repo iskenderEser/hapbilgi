@@ -1,9 +1,8 @@
 // app/admin/_components/FirmaSidebar.tsx
 //
 // Admin panel sol paneli: firma listesi + yeni firma ekleme formu.
-// Her firma bir kart: ad + (Firma aktif/pasif · Mağaza aç/kapa · Sil) +
-// (Dışa aktar · İçe aktar). Dışa/İçe aktar butonları şimdilik devre dışıdır
-// (mantık sonraki aşamada eklenecek). Pasif firma soluk + "Pasif" rozeti.
+// Her firma bir kart: ad + (Firma aktif/pasif · Mağaza aç/kapa · CC · E-Club · Sil) +
+// (Dışa aktar). Pasif firma soluk + "Pasif" rozeti.
 
 "use client";
 
@@ -18,6 +17,7 @@ interface FirmaSidebarProps {
   handleFirmaSecildi: (f: Firma) => void;
   handleStoreToggle: (f: Firma) => void | Promise<void>;
   handleCcToggle: (f: Firma) => void | Promise<void>;
+  handleEclubToggle: (f: Firma) => void | Promise<void>;
   handleFirmaToggle: (f: Firma) => void | Promise<void>;
   handleFirmaSil: (f: Firma) => Promise<boolean>;
   handleExport: (f: Firma) => void | Promise<void>;
@@ -78,6 +78,7 @@ export default function FirmaSidebar({
   handleFirmaSecildi,
   handleStoreToggle,
   handleCcToggle,
+  handleEclubToggle,
   handleFirmaToggle,
   handleFirmaSil,
   handleExport,
@@ -197,8 +198,8 @@ export default function FirmaSidebar({
                   )}
                 </div>
 
-                {/* Aksiyon satırı: Firma toggle · Mağaza toggle · Sil */}
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "10px" }}>
+                {/* Aksiyon satırı: Firma · Mağaza · CC · E-Club · Sil */}
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "10px", flexWrap: "wrap" }}>
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "12px", color: "#737373", fontFamily: "'Nunito', sans-serif" }}>
                     <Switch
                       acik={f.aktif}
@@ -227,6 +228,16 @@ export default function FirmaSidebar({
                       baslik={f.cc_aktif ? "Challenge Club açık — kapatmak için tıkla" : "Challenge Club kapalı — açmak için tıkla"}
                     />
                     CC
+                  </span>
+
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "12px", color: "#737373", fontFamily: "'Nunito', sans-serif" }}>
+                    <Switch
+                      acik={f.eclub_aktif}
+                      renk="#0891b2"
+                      onClick={() => handleEclubToggle(f)}
+                      baslik={f.eclub_aktif ? "E-Club açık — kapatmak için tıkla" : "E-Club kapalı — açmak için tıkla"}
+                    />
+                    E-Club
                   </span>
 
                   <button

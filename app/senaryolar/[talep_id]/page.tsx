@@ -7,6 +7,7 @@ import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { HedefRolBant } from "@/components/HedefRolBant";
+import type { HedefRol } from "@/app/talepler/_types";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 
@@ -26,7 +27,7 @@ interface Talep {
   talep_id: string;
   urun_adi: string;
   teknik_adi: string;
-  hedef_rol: "utt" | "bm";
+  hedef_rol: HedefRol;
   aciklama: string;
 }
 
@@ -80,7 +81,7 @@ export default function SenaryolarPage() {
 
     setTalep({
       talep_id: talepData.talep_id,
-      hedef_rol: ((talepData as any).hedef_rol ?? "utt") as "utt" | "bm",
+      hedef_rol: ((talepData as any).hedef_rol ?? "utt") as HedefRol,
       aciklama: talepData.aciklama,
       urun_adi: (talepData as any).urunler?.urun_adi ?? "-",
       teknik_adi: (talepData as any).teknikler?.teknik_adi ?? "-",

@@ -8,6 +8,7 @@ import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { HedefRolBant } from "@/components/HedefRolBant";
+import type { HedefRol } from "@/app/talepler/_types";
 import { useAuth } from "@/app/providers/AuthProvider";
 
 interface Soru {
@@ -34,7 +35,7 @@ interface VideoDurumJoin {
         talepler: {
           soru_seti_buyuklugu: number;
           video_basi_soru_sayisi: number;
-          hedef_rol: "utt" | "bm";
+          hedef_rol: HedefRol;
           urunler: { urun_adi: string } | null;
           teknikler: { teknik_adi: string } | null;
         } | null;
@@ -54,7 +55,7 @@ export default function SoruSetiAkisPage() {
   const [teknikAdi, setTeknikAdi] = useState("");
   const [soruSetiBuyuklugu, setSoruSetiBuyuklugu] = useState<number>(25);
   const [videoBasiSoruSayisi, setVideoBasiSoruSayisi] = useState<number>(2);
-  const [hedefRol, setHedefRol] = useState<"utt" | "bm" | null>(null);
+  const [hedefRol, setHedefRol] = useState<HedefRol | null>(null);
   const [loading, setLoading] = useState(true);
   const [gonderLoading, setGonderLoading] = useState(false);
   const [yapisTir, setYapisTir] = useState("");
@@ -112,7 +113,7 @@ export default function SoruSetiAkisPage() {
     setTeknikAdi(talep?.teknikler?.teknik_adi ?? "-");
     setSoruSetiBuyuklugu(talep?.soru_seti_buyuklugu ?? 25);
     setVideoBasiSoruSayisi(talep?.video_basi_soru_sayisi ?? 2);
-    setHedefRol((talep?.hedef_rol ?? "utt") as "utt" | "bm");
+    setHedefRol((talep?.hedef_rol ?? "utt") as HedefRol);
   }, []);
 
   const fetchSoruSetleri = useCallback(async (supabase: any, video_durum_id: string) => {

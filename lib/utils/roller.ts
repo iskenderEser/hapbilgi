@@ -142,6 +142,34 @@ export const STORE_GENEL_GOREN_ROLLER = [
   ...ADMIN_ROLLER,
 ];
 
+// ───────────────────────────────────────────────────────────────────────────
+// E-Club rol kategorileri (Faz 2)
+// ───────────────────────────────────────────────────────────────────────────
+
+// ECLUB_GOREN_ROLLER: E-Club liste yönetim sayfasını (/eclub/listem) Navbar'da
+// görüp erişebilen roller — eczane/kişi listesini yöneten saha rolleri.
+// ŞİMDİLİK sadece UTT/KD_UTT. Cascade süreci ile birlikte (teknik borç) BM/TM/firma
+// yöneticileri ve E-Club'ın kendi tüketici rolleri (eczaci/eczane_teknisyeni)
+// kendi arayüzlerinden erişecek şekilde genişletilecektir.
+export const ECLUB_GOREN_ROLLER = [
+  ...TUKETICI_ROLLER,  // utt, kd_utt
+];
+
+// ECLUB_LIGI_GOREN_ROLLER: E-Club Ligi sayfasını (/eclub/ligi) Navbar'da görüp
+// erişebilen roller. Liste yönetiminden farklı olarak BM ve TM de görür (cascade
+// lig sıralaması). Eczacı/teknisyen ligi GÖRMEZ (kendi bireysel puanlarını görür).
+export const ECLUB_LIGI_GOREN_ROLLER = [
+  ...TUKETICI_ROLLER,  // utt, kd_utt
+  "bm",
+  "tm",
+];
+
+// ECLUB_TUKETICI_ROLLERI: E-Club içeriğini tüketen roller — eczacı ve eczane teknisyeni.
+// DİKKAT: Bu roller kullanicilar tablosunda DEĞİL, eclub_kisiler tablosunda yaşar.
+// Bu yüzden bilinçli olarak TUM_ROLLER'a dahil EDİLMEZ (TUM_ROLLER kullanicilar
+// rol validasyonu içindir). E-Club kişileri ayrı bir kimlik/yetki düzleminde tutulur.
+export const ECLUB_TUKETICI_ROLLERI = ["eczaci", "eczane_teknisyeni"];
+
 // ROL_ADLARI: Rol kısaltmalarının Türkçe karşılıkları.
 // Yalnızca görüntüleme katmanında kullanılır — veritabanında hiçbir şey değişmez.
 // Kullanım: ROL_ADLARI[rol] ?? rol
@@ -171,4 +199,6 @@ export const ROL_ADLARI: Record<string, string> = {
   ik_yrd_md: "İK Müdür Yardımcısı",
   ik_uz: "İK Uzmanı",
   ik_per: "İK Personeli",
+  eczaci: "Eczacı",
+  eczane_teknisyeni: "Eczane Teknisyeni",
 };

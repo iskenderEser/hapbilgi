@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
-
+import type { HedefRol } from "@/app/talepler/_types";
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
         const videoPuan = videoDurum?.video_puanlari;
 
         const egitimTuru = talep?.egitim_turu ?? "urun_egitimi";
-        const hedefRol = (talep?.hedef_rol ?? "utt") as "utt" | "bm";
+        const hedefRol = (talep?.hedef_rol ?? "utt") as HedefRol;
 
         return {
           soru_seti_durum_id: ss.soru_seti_durum_id,

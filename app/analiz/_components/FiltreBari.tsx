@@ -3,6 +3,11 @@
 // Periyot seçici + 5 filtre dropdown (Takım, Bölge, UTT, Ürün, Eğitim Türü).
 // Yönetici sayfası için tasarlandı — tüm filtreler aktif.
 // TM/BM gibi scope'u sabit roller için opsiyonel prop'larla dropdown'lar sabitlenebilir.
+//
+// Savunma: kapsam alanları (bolgeler, utt_listesi, urunler, takimlar,
+// egitim_turleri) RPC'den gelir. Veri yokken bazı alanlar null dönebildiği için
+// (örn. talep yoksa egitim_turleri) her listede `?? []` ile null'a karşı korunur —
+// hiçbir koşulda null'a .map/.filter yapılmaz.
 
 "use client";
 
@@ -46,17 +51,24 @@ export default function FiltreBari({
   sabitTakim = null,
   sabitBolge = null,
 }: Props) {
+  // Kapsam listeleri — RPC veri yokken null dönebilir; null'a karşı boş diziye düş.
+  const kapsamBolgeler = kapsam.bolgeler ?? [];
+  const kapsamUttListesi = kapsam.utt_listesi ?? [];
+  const kapsamUrunler = kapsam.urunler ?? [];
+  const kapsamTakimlar = kapsam.takimlar ?? [];
+  const kapsamEgitimTurleri = kapsam.egitim_turleri ?? [];
+
   // Etkin takım seçimi: sabitTakim varsa onu kullan, yoksa filtreler.takim_id
   const etkinTakimId = sabitTakim?.takim_id ?? filtreler.takim_id ?? null;
   const etkinBolgeId = sabitBolge?.bolge_id ?? filtreler.bolge_id ?? null;
 
   // Takım seçilmişse (sabit veya kullanıcı tarafından) bölgeleri buna göre filtrele
   const seciliTakimBolgeleri = etkinTakimId
-    ? kapsam.bolgeler.filter((b) => b.takim_id === etkinTakimId)
-    : kapsam.bolgeler;
+    ? kapsamBolgeler.filter((b) => b.takim_id === etkinTakimId)
+    : kapsamBolgeler;
 
   // Takım veya bölge seçilmişse UTT listesini buna göre daralt
-  const seciliKapsamUttleri = kapsam.utt_listesi.filter((u) => {
+  const seciliKapsamUttleri = kapsamUttListesi.filter((u) => {
     if (etkinBolgeId && u.bolge_id !== etkinBolgeId) return false;
     if (etkinTakimId && u.takim_id !== etkinTakimId) return false;
     return true;
@@ -64,8 +76,8 @@ export default function FiltreBari({
 
   // Takım seçilmişse ürünleri buna göre daralt
   const seciliTakimUrunleri = etkinTakimId
-    ? kapsam.urunler.filter((u) => u.takim_id === etkinTakimId || u.takim_id === null)
-    : kapsam.urunler;
+    ? kapsamUrunler.filter((u) => u.takim_id === etkinTakimId || u.takim_id === null)
+    : kapsamUrunler;
 
   const dropdownGuncelle = (alan: keyof Filtreler, deger: string) => {
     const yeni: Filtreler = { ...filtreler, [alan]: deger === "" ? null : deger };
@@ -120,7 +132,7 @@ export default function FiltreBari({
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-koyu-metin focus:outline-none focus:border-bordo"
             >
               <option value="">Tümü</option>
-              {kapsam.takimlar.map((t) => (
+              {kapsamTakimlar.map((t) => (
                 <option key={t.takim_id} value={t.takim_id}>{t.takim_adi}</option>
               ))}
             </select>
@@ -185,7 +197,7 @@ export default function FiltreBari({
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-koyu-metin focus:outline-none focus:border-bordo"
           >
             <option value="">Tümü</option>
-            {kapsam.egitim_turleri.map((et) => (
+            {kapsamEgitimTurleri.map((et) => (
               <option key={et} value={et}>{et}</option>
             ))}
           </select>
