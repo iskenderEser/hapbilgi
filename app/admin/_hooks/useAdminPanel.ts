@@ -129,8 +129,6 @@ export function useAdminPanel() {
     );
   };
 
-  // Firmanın E-Club erişimini aç/kapat (PATCH /admin/api/firmalar/[firma_id])
-  // Kapalı firmada o firmanın kullanıcıları E-Club menüsünü/sayfalarını göremez.
   const handleEclubToggle = async (f: Firma) => {
     const yeniDurum = !f.eclub_aktif;
     const res = await fetch(`/admin/api/firmalar/${f.firma_id}`, {
@@ -149,6 +147,27 @@ export function useAdminPanel() {
     );
     setSeciliFirma(prev =>
       prev && prev.firma_id === f.firma_id ? { ...prev, eclub_aktif: yeniDurum } : prev
+    );
+  };
+
+  const handleEclubStoreToggle = async (f: Firma) => {
+    const yeniDurum = !f.eclub_store_aktif;
+    const res = await fetch(`/admin/api/firmalar/${f.firma_id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eclub_store_aktif: yeniDurum }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      hata(data.hata ?? "E-Club Store durumu güncellenemedi.", data.adim, data.detay);
+      return;
+    }
+    basari(yeniDurum ? "E-Club Store açıldı." : "E-Club Store kapatıldı.");
+    setFirmalar(prev =>
+      prev.map(x => (x.firma_id === f.firma_id ? { ...x, eclub_store_aktif: yeniDurum } : x))
+    );
+    setSeciliFirma(prev =>
+      prev && prev.firma_id === f.firma_id ? { ...prev, eclub_store_aktif: yeniDurum } : prev
     );
   };
 
@@ -261,6 +280,7 @@ export function useAdminPanel() {
     handleStoreToggle,
     handleCcToggle,
     handleEclubToggle,
+    handleEclubStoreToggle,
     handleFirmaToggle,
     handleFirmaSil,
     handleExport,

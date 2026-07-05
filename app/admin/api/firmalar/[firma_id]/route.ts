@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 
-const FIRMA_KOLONLARI = "firma_id, firma_adi, hbstore_aktif, aktif, cc_aktif, eclub_aktif, son_export_at, created_at";
+const FIRMA_KOLONLARI = "firma_id, firma_adi, hbstore_aktif, aktif, cc_aktif, eclub_aktif, eclub_store_aktif, son_export_at, created_at";
 
 export async function GET(
   request: NextRequest,
@@ -85,7 +85,7 @@ export async function PATCH(
     const adminSupabase = createAdminClient();
 
     const body = await request.json();
-    const { hbstore_aktif, aktif, cc_aktif, eclub_aktif } = body;
+    const { hbstore_aktif, aktif, cc_aktif, eclub_aktif, eclub_store_aktif } = body;
 
     // Güncellenecek alanları topla (yalnızca gönderilenler)
     const guncelleme: Record<string, boolean> = {};
@@ -93,11 +93,12 @@ export async function PATCH(
     if (typeof aktif === "boolean") guncelleme.aktif = aktif;
     if (typeof cc_aktif === "boolean") guncelleme.cc_aktif = cc_aktif;
     if (typeof eclub_aktif === "boolean") guncelleme.eclub_aktif = eclub_aktif;
+    if (typeof eclub_store_aktif === "boolean") guncelleme.eclub_store_aktif = eclub_store_aktif;
 
     if (Object.keys(guncelleme).length === 0) {
       return validasyonHatasi(
         "Güncellenecek alan yok. hbstore_aktif, aktif, cc_aktif veya eclub_aktif (true/false) gönderin.",
-        ["hbstore_aktif", "aktif", "cc_aktif", "eclub_aktif"]
+        ["hbstore_aktif", "aktif", "cc_aktif", "eclub_aktif", "eclub_store_aktif"]
       );
     }
 
@@ -124,6 +125,8 @@ export async function PATCH(
       mesaj = guncelleme.cc_aktif ? "Challenge Club açıldı." : "Challenge Club kapatıldı.";
     } else if (tekAlan && "eclub_aktif" in guncelleme) {
       mesaj = guncelleme.eclub_aktif ? "E-Club açıldı." : "E-Club kapatıldı.";
+    } else if (tekAlan && "eclub_store_aktif" in guncelleme) {
+      mesaj = guncelleme.eclub_store_aktif ? "E-Club Store açıldı." : "E-Club Store kapatıldı.";
     }
 
     return NextResponse.json({ mesaj, firma: guncellenen }, { status: 200 });
