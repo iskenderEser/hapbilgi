@@ -4,7 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { kazanilanPuanKaydet } from "@/lib/puan/kayit";
 import { puanKazanilabilirMi, haftaBaslangici } from "@/lib/zaman/kontrol";
-import { izlemeKarariBelirle, extraPuanEsikKarsilandi } from "@/lib/puan/puanturu";
+import { izlemeKarariBelirle, extraPuanEsikKarsilandi } from "@/lib/puan/strateji";
 import { oneriPenceresiAcik } from "@/lib/oneri/pencereKontrol";
 
 export async function PUT(request: NextRequest) {
@@ -119,7 +119,7 @@ export async function PUT(request: NextRequest) {
     const ilkIzleme = (oncekiPuan ?? []).length === 0;
     const kazanilanPuanlar: { tur: string; puan: number }[] = [];
 
-    // İzleme karar mantığı — lib/puan/puanTuru.ts içinde
+    // İzleme karar mantığı — lib/puan/strateji.ts içinde
     const karar = izlemeKarariBelirle(ilkIzleme, ileriSarildi, izleme.izleme_turu);
 
     if (karar.tur === "ilk_izleme" && video_puani > 0) {
