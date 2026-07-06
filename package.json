@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "denetim:sema": "node scripts/denetim/sema-cek.js",
+    "denetim:tara": "node scripts/denetim/kod-tara.js",
+    "denetim": "node scripts/denetim/kod-tara.js && node scripts/denetim/denetle.js"
   },
   "dependencies": {
     "@supabase/ssr": "^0.9.0",
@@ -23,9 +26,12 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.0",
+    "pg": "^8.22.0",
     "tailwindcss": "^4",
+    "ts-morph": "^28.0.0",
     "typescript": "^5"
   }
 }
