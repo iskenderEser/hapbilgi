@@ -58,11 +58,13 @@ export default function CcIzlemePage() {
       }
       setYetkiliMi(true);
 
-      // Yayın bilgisini çek
+      // Yayın bilgisini çek (v_yayin_detay). ileri_sarma_acik bu view'da yoktur;
+      // üreticinin yayın anında yazdığı bu alan kaynak tablosu yayin_yonetimi'nden
+      // ayrıca çekilir (UTT izleme akışıyla aynı kaynak).
       const { data, error } = await supabase
         .from("v_yayin_detay")
         .select(
-          "yayin_id, urun_adi, teknik_adi, video_url, ileri_sarma_acik, hedef_rol, durum"
+          "yayin_id, urun_adi, teknik_adi, video_url, hedef_rol, durum"
         )
         .eq("yayin_id", yayin_id)
         .single();
@@ -89,12 +91,25 @@ export default function CcIzlemePage() {
         return;
       }
 
+      // ileri_sarma_acik — yayin_yonetimi'nden (v_yayin_detay içermez)
+      const { data: yayinYonetimi, error: yyError } = await supabase
+        .from("yayin_yonetimi")
+        .select("ileri_sarma_acik")
+        .eq("yayin_id", yayin_id)
+        .single();
+
+      if (yyError || !yayinYonetimi) {
+        hata("Yayın izleme ayarı çekilemedi.", "yayin_yonetimi SELECT — ileri_sarma_acik", yyError?.message);
+        setLoading(false);
+        return;
+      }
+
       setYayin({
         yayin_id: data.yayin_id,
         urun_adi: data.urun_adi,
         teknik_adi: data.teknik_adi,
         video_url: data.video_url,
-        ileri_sarma_acik: data.ileri_sarma_acik,
+        ileri_sarma_acik: yayinYonetimi.ileri_sarma_acik ?? false,
       });
       setLoading(false);
     };

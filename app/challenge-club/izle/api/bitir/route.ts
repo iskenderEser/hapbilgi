@@ -97,18 +97,36 @@ export async function PUT(request: NextRequest) {
     let soru_gosterilecek = false;
 
     if (!ileri_sarildi_mi) {
-      // Yayın puanlarını çek
+      // video_puani v_yayin_detay view'ından (orada hesaplanır).
       const { data: yayin, error: yayinError } = await adminSupabase
         .from("v_yayin_detay")
-        .select("video_puani, extra_puan")
+        .select("video_puani")
         .eq("yayin_id", izleme.yayin_id)
         .single();
 
       if (yayinError || !yayin) {
         return hataYaniti(
           "Yayın puanları çekilemedi.",
-          "v_yayin_detay SELECT — puanlar",
+          "v_yayin_detay SELECT — video_puani",
           yayinError,
+          404
+        );
+      }
+
+      // extra_puan üreticinin yayın anında yazdığı değerdir; kaynak tablosu
+      // yayin_yonetimi'dir (v_yayin_detay bu alanı içermez). UTT bitir akışıyla
+      // aynı desen: puan kaynağı doğrudan yayin_yonetimi.
+      const { data: yayinYonetimi, error: yyError } = await adminSupabase
+        .from("yayin_yonetimi")
+        .select("extra_puan")
+        .eq("yayin_id", izleme.yayin_id)
+        .single();
+
+      if (yyError || !yayinYonetimi) {
+        return hataYaniti(
+          "Yayın extra puanı çekilemedi.",
+          "yayin_yonetimi SELECT — extra_puan",
+          yyError,
           404
         );
       }
@@ -135,7 +153,7 @@ export async function PUT(request: NextRequest) {
         // Sorular gösterilecek (ileri sarılmamış kendi_izleme)
         soru_gosterilecek = true;
       } else if (izleme.izleme_turu === "extra") {
-        const puan = yayin.extra_puan ?? 0;
+        const puan = yayinYonetimi.extra_puan ?? 0;
         if (puan > 0) {
           const kayit = await extraPuaniKaydet(adminSupabase, {
             bm_id: user.id,
