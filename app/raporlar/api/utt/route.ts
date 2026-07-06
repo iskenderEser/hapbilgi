@@ -107,7 +107,7 @@ export async function GET(request: Request) {
 
   const tumYayinlarToplamPuan = d.yayinlar.reduce((acc: number, y: any) => {
     const video_puani =
-      y.soru_seti_durumu?.soru_setleri?.videolar?.video_puanlari?.video_puani ?? 0;
+      y.soru_seti_durumu?.soru_setleri?.video_durumu?.video_puanlari?.video_puani ?? 0;
     return acc + video_puani;
   }, 0);
   const tahminiPuan = tumYayinlarToplamPuan > 0 ? tumYayinlarToplamPuan : 0;

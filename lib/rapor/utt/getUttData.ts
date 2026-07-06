@@ -106,7 +106,7 @@ export async function getUttData(
               soru_seti_id,
               soru_setleri:soru_seti_id (
                 video_durum_id,
-                videolar:video_durum_id (
+                video_durumu:video_durum_id (
                   video_puanlari (video_puani)
                 )
               )
