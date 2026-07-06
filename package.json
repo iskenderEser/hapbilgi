@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "lint:mimari": "eslint app lib | grep -A1 hapbilgi-mimari || echo 'Mimari kural ihlali yok.'",
     "denetim:sema": "node scripts/denetim/sema-cek.js",
     "denetim:tara": "node scripts/denetim/kod-tara.js",
     "denetim": "node scripts/denetim/kod-tara.js && node scripts/denetim/denetle.js"
