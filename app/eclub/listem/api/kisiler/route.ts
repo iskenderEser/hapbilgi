@@ -79,7 +79,7 @@ export async function GET() {
     // UTT'nin aktif ilişkili eczaneleri
     const { data: iliskiler, error: iliskiError } = await adminSupabase
       .from("eclub_eczane_firma")
-      .select("eczane_id, eclub_eczaneler ( eczane_adi )")
+      .select("eczane_id, eclub_eczaneler ( eclub_eczane_master ( eczane_adi ) )")
       .eq("baglayan_utt_id", user.id)
       .eq("aktif_mi", true);
 
@@ -87,13 +87,18 @@ export async function GET() {
 
     const eczaneIdler: string[] = [];
     const eczaneAdiMap = new Map<string, string>();
-    type EczaneAd = { eczane_adi: string };
+    // eczane_adi eclub_eczaneler'de değil, bir katman derindeki eclub_eczane_master'da
+    // (eclub_eczaneler.gln → eclub_eczane_master.gln FK üzerinden).
+    type Master = { eczane_adi: string };
+    type Eczane = { eclub_eczane_master?: Master | Master[] };
     for (const il of iliskiler ?? []) {
       const eczane_id = (il as { eczane_id: string }).eczane_id;
       eczaneIdler.push(eczane_id);
-      const eRaw = (il as { eclub_eczaneler?: EczaneAd | EczaneAd[] }).eclub_eczaneler;
+      const eRaw = (il as { eclub_eczaneler?: Eczane | Eczane[] }).eclub_eczaneler;
       const e = Array.isArray(eRaw) ? eRaw[0] : eRaw;
-      if (e) eczaneAdiMap.set(eczane_id, e.eczane_adi);
+      const mRaw = e?.eclub_eczane_master;
+      const m = Array.isArray(mRaw) ? mRaw[0] : mRaw;
+      if (m) eczaneAdiMap.set(eczane_id, m.eczane_adi);
     }
 
     if (eczaneIdler.length === 0) return NextResponse.json({ kisiler: [] }, { status: 200 });
@@ -209,7 +214,7 @@ export async function POST(request: NextRequest) {
       // Tek aktif GLN kuralı: başka eczanede aktif bağı var mı?
       const { data: aktifBag } = await adminSupabase
         .from("eclub_kisi_eczane")
-        .select("eczane_id, eclub_eczaneler ( eczane_adi )")
+        .select("eczane_id, eclub_eczaneler ( eclub_eczane_master ( eczane_adi ) )")
         .eq("kisi_id", mevcutKisi.kisi_id)
         .eq("aktif_mi", true)
         .maybeSingle();
@@ -217,9 +222,14 @@ export async function POST(request: NextRequest) {
       if (aktifBag) {
         if (aktifBag.eczane_id === eczane_id)
           return validasyonHatasi("Bu kişi zaten bu eczanede kayıtlı.", ["eposta"]);
-        const eRaw = (aktifBag as { eclub_eczaneler?: { eczane_adi: string } | { eczane_adi: string }[] }).eclub_eczaneler;
+        // eczane_adi bir katman derinde: eclub_eczaneler → eclub_eczane_master
+        type Master = { eczane_adi: string };
+        type Eczane = { eclub_eczane_master?: Master | Master[] };
+        const eRaw = (aktifBag as { eclub_eczaneler?: Eczane | Eczane[] }).eclub_eczaneler;
         const e = Array.isArray(eRaw) ? eRaw[0] : eRaw;
-        const eczaneAdi = e?.eczane_adi ?? "başka bir eczane";
+        const mRaw = e?.eclub_eczane_master;
+        const m = Array.isArray(mRaw) ? mRaw[0] : mRaw;
+        const eczaneAdi = m?.eczane_adi ?? "başka bir eczane";
         return validasyonHatasi(
           `${ad.trim()} ${soyad.trim()} zaten ${eczaneAdi}'nde kayıtlı. Önce admin oradan çıkarmalı.`,
           ["eposta"]

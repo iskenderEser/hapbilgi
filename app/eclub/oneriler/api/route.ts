@@ -13,6 +13,57 @@ import { eclubBildirimOlustur } from "@/lib/utils/eclubBildirim";
 const ECLUB_UTT_ROLLERI = ["utt", "kd_utt"];
 const ECLUB_HEDEF_ROLLER = ["eczaci", "eczane_teknisyeni"];
 
+// Verilen kişi_id'ler için "kisi_id → eczane_adi" haritası kurar.
+// Zincir: eclub_kisi_eczane(aktif bağ) → eclub_eczaneler(gln) → eclub_eczane_master(eczane_adi).
+// Eczacı/teknisyen aktif olarak tek eczaneye bağlıdır (tek ad döner).
+async function kisiEczaneAdiMap(
+  adminSupabase: ReturnType<typeof createAdminClient>,
+  kisiIdler: string[]
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (kisiIdler.length === 0) return map;
+
+  // 1. Aktif kişi-eczane bağları
+  const { data: baglar } = await adminSupabase
+    .from("eclub_kisi_eczane")
+    .select("kisi_id, eczane_id")
+    .in("kisi_id", kisiIdler)
+    .eq("aktif_mi", true);
+
+  if (!baglar || baglar.length === 0) return map;
+
+  const eczaneIdler = [...new Set(baglar.map((b: any) => b.eczane_id))];
+
+  // 2. Eczane → gln
+  const { data: eczaneler } = await adminSupabase
+    .from("eclub_eczaneler")
+    .select("eczane_id, gln")
+    .in("eczane_id", eczaneIdler);
+
+  const eczaneGlnMap = new Map<string, string>();
+  for (const e of eczaneler ?? []) eczaneGlnMap.set((e as any).eczane_id, (e as any).gln);
+
+  const glnler = [...new Set((eczaneler ?? []).map((e: any) => e.gln))];
+
+  // 3. gln → eczane_adi (master)
+  const { data: masterlar } = await adminSupabase
+    .from("eclub_eczane_master")
+    .select("gln, eczane_adi")
+    .in("gln", glnler);
+
+  const glnAdiMap = new Map<string, string>();
+  for (const m of masterlar ?? []) glnAdiMap.set((m as any).gln, (m as any).eczane_adi);
+
+  // 4. kisi_id → eczane_adi birleştir
+  for (const b of baglar) {
+    const gln = eczaneGlnMap.get((b as any).eczane_id);
+    const adi = gln ? glnAdiMap.get(gln) : null;
+    if (adi) map.set((b as any).kisi_id, adi);
+  }
+
+  return map;
+}
+
 // ─── GET: UTT'nin öneri geçmişi ──────────────────────────────────────────────
 export async function GET() {
   try {
@@ -25,17 +76,23 @@ export async function GET() {
     const rol = (user.user_metadata?.rol ?? "").toLowerCase();
     if (!ECLUB_UTT_ROLLERI.includes(rol)) return rolHatasi("Bu sayfaya yalnız UTT/KD_UTT erişebilir.");
 
-    // UTT'nin gönderdiği öneriler + alıcı (eclub_kisiler) bilgisi
+    // UTT'nin gönderdiği öneriler + alıcı (eclub_kisiler) temel bilgisi.
+    // Eczane adı ayrı sorgu+Map ile çözülür (eczane bağı eclub_kisiler'de değil,
+    // eclub_kisi_eczane → eclub_eczaneler → eclub_eczane_master zincirindedir).
     const { data: oneriler, error } = await adminSupabase
       .from("eclub_oneri_kayitlari")
       .select(`
         oneri_id, yayin_id, kisi_id, oneri_baslangic, oneri_bitis, izlendi_mi, created_at,
-        eclub_kisiler ( ad, soyad, rol, eczane_id, eclub_eczaneler ( eczane_adi ) )
+        eclub_kisiler ( ad, soyad, rol )
       `)
       .eq("oneren_id", user.id)
       .order("created_at", { ascending: false });
 
     if (error) return hataYaniti("Öneri geçmişi çekilemedi.", "eclub_oneri_kayitlari SELECT — oneren_id filtresi", error);
+
+    // Alıcı kişilerin eczane adlarını topluca çöz
+    const kisiIdler = [...new Set((oneriler ?? []).map((o: any) => o.kisi_id).filter(Boolean))];
+    const eczaneAdiMap = await kisiEczaneAdiMap(adminSupabase, kisiIdler);
 
     // Yayın adlarını toplu çek (v_yayin_detay)
     const yayinIds = [...new Set((oneriler ?? []).map((o: any) => o.yayin_id))];
@@ -67,7 +124,7 @@ export async function GET() {
         kisi_ad: kisi.ad ?? "-",
         kisi_soyad: kisi.soyad ?? "-",
         kisi_rol: kisi.rol ?? null,
-        eczane_adi: kisi.eclub_eczaneler?.eczane_adi ?? "-",
+        eczane_adi: eczaneAdiMap.get(o.kisi_id) ?? "-",
         oneri_baslangic: o.oneri_baslangic,
         oneri_bitis: o.oneri_bitis,
         izlendi_mi: o.izlendi_mi,
@@ -116,21 +173,69 @@ export async function POST(request: NextRequest) {
     if (yayin.durum !== "yayinda") return isKuraluHatasi(`Bu yayın şu an yayında değil. Durum: ${yayin.durum}`);
     if (!ECLUB_HEDEF_ROLLER.includes(yayin.hedef_rol)) return isKuraluHatasi("Bu yayın E-Club için uygun değil (hedef rol eczacı/teknisyen değil).");
 
-    // 4+5. Kişileri çek: sahiplik (UTT'nin eczanesi) + rol + aktiflik
-    const { data: kisiler, error: kisiError } = await adminSupabase
+    // 4+5. Kişileri çek: rol (eclub_kisiler) + aktiflik & sahiplik.
+    // Aktiflik eclub_kisi_eczane.aktif_mi'de; sahiplik (baglayan_utt_id) o eczanenin
+    // eclub_eczane_firma kaydındadır. Zincir embed'le tek sorguda güvenilir kurulamaz;
+    // ayrı sorgu + Map deseniyle çözülür.
+
+    // 4a. Kişilerin rol bilgisi
+    const { data: kisilerRol, error: kisiRolError } = await adminSupabase
       .from("eclub_kisiler")
-      .select("kisi_id, rol, aktif_mi, eclub_eczaneler!inner(baglayan_utt_id)")
+      .select("kisi_id, rol")
       .in("kisi_id", benzersizKisiler);
 
-    if (kisiError) return hataYaniti("Kişiler sorgulanamadı.", "eclub_kisiler SELECT — kisi_idler", kisiError);
+    if (kisiRolError) return hataYaniti("Kişiler sorgulanamadı.", "eclub_kisiler SELECT — kisi_idler", kisiRolError);
 
+    const rolMap = new Map<string, string>();
+    for (const k of kisilerRol ?? []) rolMap.set((k as any).kisi_id, (k as any).rol);
+
+    // 4b. Aktif kişi-eczane bağları (kisi_id → eczane_id)
+    const { data: baglar, error: bagError } = await adminSupabase
+      .from("eclub_kisi_eczane")
+      .select("kisi_id, eczane_id")
+      .in("kisi_id", benzersizKisiler)
+      .eq("aktif_mi", true);
+
+    if (bagError) return hataYaniti("Kişi-eczane bağları sorgulanamadı.", "eclub_kisi_eczane SELECT — kisi_idler", bagError);
+
+    const kisiEczaneMap = new Map<string, string>(); // kisi_id → eczane_id
+    for (const b of baglar ?? []) kisiEczaneMap.set((b as any).kisi_id, (b as any).eczane_id);
+
+    // 4c. Bu eczanelerin sahibi UTT'ler (eczane_id → baglayan_utt_id)
+    const eczaneIdler = [...new Set((baglar ?? []).map((b: any) => b.eczane_id))];
+    const eczaneUttMap = new Map<string, string>(); // eczane_id → baglayan_utt_id
+    if (eczaneIdler.length > 0) {
+      const { data: firmaBaglari, error: firmaBagError } = await adminSupabase
+        .from("eclub_eczane_firma")
+        .select("eczane_id, baglayan_utt_id")
+        .in("eczane_id", eczaneIdler)
+        .eq("aktif_mi", true);
+
+      if (firmaBagError) return hataYaniti("Eczane sahiplik bilgisi sorgulanamadı.", "eclub_eczane_firma SELECT — eczane_idler", firmaBagError);
+
+      for (const fb of firmaBaglari ?? []) {
+        // Bir eczane birden çok firmaya/UTT'ye bağlı olabilir; bu UTT'nin bağladığı
+        // kayıt varsa sahiplik doğrulanır. Map'e bu UTT eşleşmesini yaz (varsa öncelik).
+        const ez = (fb as any).eczane_id;
+        const bu = (fb as any).baglayan_utt_id;
+        if (bu === user.id) eczaneUttMap.set(ez, bu);
+        else if (!eczaneUttMap.has(ez)) eczaneUttMap.set(ez, bu);
+      }
+    }
+
+    // kisiMap: kişi başına { rol, aktif_mi, utt }
+    // aktif_mi = kişinin aktif bir eczane bağı var mı; utt = o eczanenin sahibi UTT
     const atlanan: { kisi_id: string; sebep: string }[] = [];
     const kisiMap = new Map<string, { rol: string; aktif_mi: boolean; utt: string | null }>();
-    for (const k of kisiler ?? []) {
-      kisiMap.set((k as any).kisi_id, {
-        rol: (k as any).rol,
-        aktif_mi: (k as any).aktif_mi,
-        utt: (k as any).eclub_eczaneler?.baglayan_utt_id ?? null,
+    for (const kid of benzersizKisiler) {
+      const rolK = rolMap.get(kid);
+      if (rolK === undefined) continue; // kişi hiç yok → aşağıda "bulunamadi"
+      const eczaneId = kisiEczaneMap.get(kid); // aktif bağ varsa eczane_id
+      const utt = eczaneId ? (eczaneUttMap.get(eczaneId) ?? null) : null;
+      kisiMap.set(kid, {
+        rol: rolK,
+        aktif_mi: eczaneId !== undefined, // aktif kişi-eczane bağı var mı
+        utt,
       });
     }
 
