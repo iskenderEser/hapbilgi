@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
+import { FIRMA_KOLONLARI } from "@/lib/firma/kolonlar";
+
 
 export async function GET() {
   try {
@@ -9,7 +11,8 @@ export async function GET() {
 
     const { data: firmalar, error } = await adminSupabase
       .from("firmalar")
-      .select("firma_id, firma_adi, hbstore_aktif, aktif, cc_aktif, eclub_aktif, eclub_store_aktif, son_export_at, created_at")
+      .select(FIRMA_KOLONLARI)
+
       .order("firma_adi", { ascending: true });
 
     if (error) return hataYaniti("Firmalar çekilemedi.", "firmalar tablosu SELECT", error);
@@ -50,7 +53,8 @@ export async function POST(request: NextRequest) {
     const { data: yeniFirma, error } = await adminSupabase
       .from("firmalar")
       .insert({ firma_adi: firma_adi.trim() })
-      .select("firma_id, firma_adi, hbstore_aktif, aktif, cc_aktif, eclub_aktif, eclub_store_aktif, son_export_at, created_at")
+      .select(FIRMA_KOLONLARI)
+
       .single();
 
     if (error) return hataYaniti("Firma eklenemedi.", "firmalar tablosu INSERT", error);

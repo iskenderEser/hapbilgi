@@ -2,8 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
+import { FIRMA_KOLONLARI } from "@/lib/firma/kolonlar";
 
-const FIRMA_KOLONLARI = "firma_id, firma_adi, hbstore_aktif, aktif, cc_aktif, eclub_aktif, eclub_store_aktif, son_export_at, created_at";
 
 export async function GET(
   request: NextRequest,
