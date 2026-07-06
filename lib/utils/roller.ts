@@ -164,6 +164,17 @@ export const ECLUB_LIGI_GOREN_ROLLER = [
   "tm",
 ];
 
+// ECLUB_STORE_RAPOR_GOREN_ROLLER: E-Club Store raporunu (kimin ne aldığını)
+// Navbar'da görüp erişebilen firma rolleri. Bu roller alışveriş yapmaz; sadece
+// kendi kapsamındaki E-Club Store sipariş/harcama raporunu görüntüler.
+// Eczacı/teknisyen (alışveriş yapan kişiler) bu listede DEĞİL — onların erişimi
+// ayrı bir kimlik düzleminde (eclub_kisiler) çözülür.
+export const ECLUB_STORE_RAPOR_GOREN_ROLLER = [
+  ...TUKETICI_ROLLER,  // utt, kd_utt
+  "bm",
+  "tm",
+];
+
 // ECLUB_TUKETICI_ROLLERI: E-Club içeriğini tüketen roller — eczacı ve eczane teknisyeni.
 // DİKKAT: Bu roller kullanicilar tablosunda DEĞİL, eclub_kisiler tablosunda yaşar.
 // Bu yüzden bilinçli olarak TUM_ROLLER'a dahil EDİLMEZ (TUM_ROLLER kullanicilar

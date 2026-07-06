@@ -23,22 +23,24 @@ export async function GET() {
 
     if (kullaniciError || !kullanici) return hataYaniti("Kullanıcı bilgisi alınamadı.", "v_kullanici_detay SELECT", kullaniciError);
 
-    // Firmanın HBStore, Challenge Club ve E-Club açık/kapalı durumu — Navbar ve ilgili yüzeyler bunu okur
+    // Firmanın HBStore, Challenge Club, E-Club ve E-Club Store açık/kapalı durumu — Navbar ve ilgili yüzeyler bunu okur
     let hbstore_aktif = false;
     let cc_aktif = false;
     let eclub_aktif = false;
+    let eclub_store_aktif = false;
     if (kullanici.firma_id) {
       const { data: firma } = await adminSupabase
         .from("firmalar")
-        .select("hbstore_aktif, cc_aktif, eclub_aktif")
+        .select("hbstore_aktif, cc_aktif, eclub_aktif, eclub_store_aktif")
         .eq("firma_id", kullanici.firma_id)
         .single();
       hbstore_aktif = firma?.hbstore_aktif ?? false;
       cc_aktif = firma?.cc_aktif ?? false;
       eclub_aktif = firma?.eclub_aktif ?? false;
+      eclub_store_aktif = firma?.eclub_store_aktif ?? false;
     }
 
-    const profilTemel = { ...kullanici, hbstore_aktif, cc_aktif, eclub_aktif };
+    const profilTemel = { ...kullanici, hbstore_aktif, cc_aktif, eclub_aktif, eclub_store_aktif };
 
     if (!["utt", "kd_utt"].includes(rol)) {
       return NextResponse.json({ profil: profilTemel }, { status: 200 });

@@ -2,16 +2,17 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { URETICI_ROLLER, CCLIGI_GORENLERLER, STORE_ALABILEN_ROLLER, STORE_GENEL_GOREN_ROLLER, URETIM_HATTI_GORENLER, ECLUB_GOREN_ROLLER, ECLUB_LIGI_GOREN_ROLLER } from "@/lib/utils/roller";
+import { URETICI_ROLLER, CCLIGI_GORENLERLER, STORE_ALABILEN_ROLLER, STORE_GENEL_GOREN_ROLLER, URETIM_HATTI_GORENLER, ECLUB_GOREN_ROLLER, ECLUB_LIGI_GOREN_ROLLER, ECLUB_STORE_RAPOR_GOREN_ROLLER } from "@/lib/utils/roller";
 
 interface NavbarProps {
   email: string;
   rol: string;
   adSoyad?: string;
+  kimlikTuru?: string;
   onCikis: () => void;
 }
 
-export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
+export default function Navbar({ email, rol, adSoyad, kimlikTuru, onCikis }: NavbarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [badge, setBadge] = useState<Record<string, number>>({});
@@ -21,6 +22,7 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
   const [storeAcik, setStoreAcik] = useState(false);
   const [ccAcik, setCcAcik] = useState(false);
   const [eclubAcik, setEclubAcik] = useState(false);
+  const [eclubStoreAcik, setEclubStoreAcik] = useState(false);
 
   const isAktif = (path: string) => pathname.startsWith(path);
 
@@ -42,6 +44,7 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
           setStoreAcik(data.profil.hbstore_aktif === true);
           setCcAcik(data.profil.cc_aktif === true);
           setEclubAcik(data.profil.eclub_aktif === true);
+          setEclubStoreAcik(data.profil.eclub_store_aktif === true);
           if (!adSoyad) setKullaniciAd(`${data.profil.ad} ${data.profil.soyad}`);
         }
       })
@@ -232,6 +235,18 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
                 <button onClick={() => router.push("/admin/eclub")} onMouseEnter={() => setHover("eclub-admin")} onMouseLeave={() => setHover(null)} className={pillClass("eclub-admin", "/admin/eclub")} style={pillStyle("eclub-admin", "/admin/eclub")}>E-Club Admin</button>
               )}
 
+              {eclubStoreAcik && ECLUB_STORE_RAPOR_GOREN_ROLLER.includes(rolKucu) && (
+                <button onClick={() => router.push("/eclub/store/rapor")} onMouseEnter={() => setHover("eclub-store")} onMouseLeave={() => setHover(null)} className={pillClass("eclub-store", "/eclub/store/rapor")} style={pillStyle("eclub-store", "/eclub/store/rapor")}>E-Club Store</button>
+              )}
+
+              {rolKucu === "admin" && (
+                <button onClick={() => router.push("/admin/eclub-store")} onMouseEnter={() => setHover("eclub-store-admin")} onMouseLeave={() => setHover(null)} className={pillClass("eclub-store-admin", "/admin/eclub-store")} style={pillStyle("eclub-store-admin", "/admin/eclub-store")}>E-Club Store Admin</button>
+              )}
+
+              {kimlikTuru === "eclub_kisi" && (
+                <button onClick={() => router.push("/eclub/store")} onMouseEnter={() => setHover("eclub-store-kisi")} onMouseLeave={() => setHover(null)} className={pillClass("eclub-store-kisi", "/eclub/store")} style={pillStyle("eclub-store-kisi", "/eclub/store")}>E-Club Store</button>
+              )}
+
               {ccAcik && CCLIGI_GORENLERLER.includes(rolKucu) && (
                 <button onClick={() => router.push("/cc-ligi")} onMouseEnter={() => setHover("cc-ligi")} onMouseLeave={() => setHover(null)} className={pillClass("cc-ligi", "/cc-ligi")} style={pillStyle("cc-ligi", "/cc-ligi")}>CC Ligi</button>
               )}
@@ -327,6 +342,9 @@ export default function Navbar({ email, rol, adSoyad, onCikis }: NavbarProps) {
           {eclubAcik && ECLUB_GOREN_ROLLER.includes(rolKucu) && <MenuItem label="E-Club" path="/eclub/listem" />}
           {eclubAcik && ECLUB_LIGI_GOREN_ROLLER.includes(rolKucu) && <MenuItem label="E-Club Ligi" path="/eclub/ligi" />}
           {rolKucu === "admin" && <MenuItem label="E-Club Admin" path="/admin/eclub" />}
+          {eclubStoreAcik && ECLUB_STORE_RAPOR_GOREN_ROLLER.includes(rolKucu) && <MenuItem label="E-Club Store" path="/eclub/store/rapor" />}
+          {rolKucu === "admin" && <MenuItem label="E-Club Store Admin" path="/admin/eclub-store" />}
+          {kimlikTuru === "eclub_kisi" && <MenuItem label="E-Club Store" path="/eclub/store" />}
           {ccAcik && CCLIGI_GORENLERLER.includes(rolKucu) && <MenuItem label="CC Ligi" path="/cc-ligi" />}
           {storeAcik && STORE_ALABILEN_ROLLER.includes(rolKucu) && <MenuItem label="HBStore" path="/store" />}
           {storeAcik && STORE_GENEL_GOREN_ROLLER.includes(rolKucu) && rolKucu !== "bm" && <MenuItem label="HBStore Siparişleri" path="/store/siparisler" />}

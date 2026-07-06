@@ -180,6 +180,53 @@ export async function proxy(request: NextRequest) {
   }
   // -------------------------------------------------------------------------
 
+  // --- E-Club Store firma bekçisi ------------------------------------------
+  // /eclub/store/* (sayfa + API) yalnızca firması E-Club Store açık
+  // (firmalar.eclub_store_aktif = true) olan kullanıcıya açıktır. Bu bekçi
+  // /eclub bekçisinden ÖNCE gelir çünkü /eclub/store aynı zamanda /eclub ile
+  // başlar; store kapalı ama E-Club açık firmada yalnızca store engellenir.
+  // (E-Club de kapalıysa /eclub bekçisi zaten aşağıda tüm /eclub'ı keser.)
+  if (pathname.startsWith("/eclub/store")) {
+    const storeApiYolu = pathname.includes("/api/") || pathname.endsWith("/api");
+
+    if (!user) {
+      if (storeApiYolu) {
+        return NextResponse.json({ error: "Oturum açmanız gerekiyor." }, { status: 401 });
+      }
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    const esSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const { data: esKullanici } = await esSupabase
+      .from("kullanicilar")
+      .select("firma_id")
+      .eq("kullanici_id", user.id)
+      .single();
+
+    if (esKullanici?.firma_id) {
+      const { data: esFirma } = await esSupabase
+        .from("firmalar")
+        .select("eclub_store_aktif")
+        .eq("firma_id", esKullanici.firma_id)
+        .single();
+
+      if (esFirma && esFirma.eclub_store_aktif === false) {
+        if (storeApiYolu) {
+          return NextResponse.json(
+            { error: "E-Club Store firmanız için kapalıdır." },
+            { status: 403 }
+          );
+        }
+        return NextResponse.redirect(new URL("/ana-sayfa", request.url));
+      }
+    }
+    // eclub_store_aktif = true veya firma yok → geç (akış /eclub bekçisine sürer)
+  }
+  // -------------------------------------------------------------------------
+
   // --- E-Club firma bekçisi ------------------------------------------------
   // /eclub/* (sayfa + API) yalnızca firması E-Club açık (firmalar.eclub_aktif
   // = true) olan kullanıcıya açıktır. Admin bu işi FirmaSidebar toggle'ı ile
