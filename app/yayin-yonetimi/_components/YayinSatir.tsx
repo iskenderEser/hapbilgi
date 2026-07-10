@@ -1,16 +1,17 @@
 // app/yayin-yonetimi/_components/YayinSatir.tsx
 //
-// Yayınlanmış (yayında veya durdurulmuş) bir içeriğin satırı: ürün/teknik,
-// video önizleme, video puanı + ileri sarma rozeti, durdur/başlat butonu ve
-// soru seti akordiyonu (salt görüntüleme).
+// Yayınlanmış/durdurulmuş bir içeriğin satırı: ürün/teknik bilgisi, video önizleme,
+// yayın tarihi, tekrar sayacı rozeti (periyotlu yayınlarda), ileri sarma toggle'ı,
+// soru seti akordiyonu ve Durdur/Başlat butonu.
 //
 // Davranış orijinal page.tsx ile birebir aynıdır.
 
 "use client";
 
 import type { Yayin } from "../_types";
+import type { HesaplananTur } from "@/lib/tur/kayit";
 import { HedefRolPill } from "@/components/HedefRolBant";
-import { IleriSarmaBadge, VideoThumb } from "./Yardimcilar";
+import { Toggle, VideoThumb } from "./Yardimcilar";
 import { SoruListesi } from "./SoruListesi";
 
 interface YayinSatirProps {
@@ -19,39 +20,70 @@ interface YayinSatirProps {
   acikAkordiyon: string | null;
   setAcikAkordiyon: (v: string | null) => void;
   formatTarih: (tarih: string) => string;
+  tekrarBilgi?: HesaplananTur;
   getSoruPuani: (soru_seti_durum_id: string, soru_index: number) => number | "";
   setSoruPuani: (soru_seti_durum_id: string, soru_index: number, puan: number) => void;
   hepsineAyniPuanAta: (soru_seti_durum_id: string, sorular: any[], puan: number) => void;
   onVideoAc: (url: string) => void;
   onDurumDegistir: (yayin_id: string, mevcutDurum: string) => void;
+  onIleriSarmaGuncelle?: (yayin_id: string, acik: boolean) => void;
+}
+
+const GUN_MS = 24 * 60 * 60 * 1000;
+
+/** Sonraki tura kalan tam gün (yukarı yuvarlanır; geçmişse 0). */
+function kalanGun(sonrakiTurTarihi: string): number {
+  return Math.max(0, Math.ceil((new Date(sonrakiTurTarihi).getTime() - Date.now()) / GUN_MS));
 }
 
 export function YayinSatir({
-  y, islemLoading, acikAkordiyon, setAcikAkordiyon, formatTarih,
+  y, islemLoading, acikAkordiyon, setAcikAkordiyon, formatTarih, tekrarBilgi,
   getSoruPuani, setSoruPuani, hepsineAyniPuanAta,
-  onVideoAc, onDurumDegistir,
+  onVideoAc, onDurumDegistir, onIleriSarmaGuncelle,
 }: YayinSatirProps) {
+  const yayinda = y.durum === "yayinda";
+  const tekrarli = !!tekrarBilgi?.tekrar_periyot_gun && !!tekrarBilgi?.sonraki_tur_tarihi;
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-2">
-      <div className="flex flex-col md:grid md:items-center md:gap-3 p-4 md:p-3.5"
-        style={{ gridTemplateColumns: "1fr 120px 140px auto" }}>
+      <div className="flex flex-col md:grid md:items-start md:gap-3 p-4 md:p-3.5"
+        style={{ gridTemplateColumns: "1fr 120px 170px auto" }}>
         <div className="flex flex-col gap-1 mb-3 md:mb-0 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-semibold text-gray-900 truncate">{y.urun_adi}</span>
             <HedefRolPill hedefRol={y.hedef_rol} />
+            <span className="text-xs px-2 py-0.5 rounded-full"
+              style={{
+                background: yayinda ? "#f0fdf4" : "#fef2f2",
+                color: yayinda ? "#15803d" : "#b91c1c",
+                border: yayinda ? "0.5px solid #bbf7d0" : "0.5px solid #fecaca",
+              }}>
+              {yayinda ? "Yayında" : "Durduruldu"}
+            </span>
           </div>
           <span className="text-xs text-gray-500 line-clamp-2">{y.teknik_adi}</span>
+          <span className="text-xs text-gray-400">
+            {yayinda ? `Yayın: ${formatTarih(y.yayin_tarihi)}` : `Durdurma: ${y.durdurma_tarihi ? formatTarih(y.durdurma_tarihi) : "-"}`}
+          </span>
+          {tekrarli && (
+            <span className="text-xs px-2 py-0.5 rounded-full w-fit"
+              style={{ background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe" }}>
+              Tekrar: {tekrarBilgi!.tekrar_periyot_gun} gün · Yeni tur: {kalanGun(tekrarBilgi!.sonraki_tur_tarihi!)} gün sonra
+            </span>
+          )}
         </div>
         <div className="mb-3 md:mb-0 flex justify-start md:justify-center">
           <VideoThumb video_url={y.video_url} thumbnail_url={y.thumbnail_url} onAc={onVideoAc} />
         </div>
-        <div className="flex flex-col gap-1 mb-3 md:mb-0">
-          <span className="text-xs text-gray-400">Video puanı</span>
-          <span className="text-sm font-bold" style={{ color: "#56aeff" }}>{y.video_puani} puan</span>
-          <IleriSarmaBadge acik={y.ileri_sarma_acik} />
-          {y.durdurma_tarihi && <span className="text-xs text-gray-400">Durdurulma: {formatTarih(y.durdurma_tarihi)}</span>}
+        <div className="flex flex-col gap-1.5 mb-3 md:mb-0">
+          <span className="text-xs text-gray-500">Video puanı: <b className="text-gray-800">{y.video_puani ?? "-"}</b></span>
+          {onIleriSarmaGuncelle && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-gray-400">İleri sarma</span>
+              <Toggle acik={y.ileri_sarma_acik ?? false} onClick={() => onIleriSarmaGuncelle(y.yayin_id, !(y.ileri_sarma_acik ?? false))} />
+            </div>
+          )}
         </div>
-        <div className="flex items-center gap-2 justify-end">
+        <div className="flex items-start gap-2 justify-end pt-0.5">
           {y.sorular?.length > 0 && (
             <button onClick={() => setAcikAkordiyon(acikAkordiyon === y.yayin_id ? null : y.yayin_id)}
               className="flex items-center gap-1 px-2 py-1 rounded-lg border border-gray-200 bg-gray-50 text-xs font-semibold text-gray-700 cursor-pointer"
@@ -63,23 +95,20 @@ export function YayinSatir({
               </svg>
             </button>
           )}
-          {y.durum === "yayinda" ? (
-            <button onClick={() => onDurumDegistir(y.yayin_id, y.durum)} disabled={islemLoading === y.yayin_id}
-              className="px-2.5 py-1 rounded-lg bg-transparent text-xs font-semibold cursor-pointer"
-              style={{ border: "0.5px solid #fecaca", color: "#bc2d0d", fontFamily: "'Nunito', sans-serif" }}>
-              {islemLoading === y.yayin_id ? "..." : "Durdur"}
-            </button>
-          ) : (
-            <button onClick={() => onDurumDegistir(y.yayin_id, y.durum)} disabled={islemLoading === y.yayin_id}
-              className="px-2.5 py-1 rounded-lg border-none text-white text-xs font-semibold cursor-pointer"
-              style={{ background: "#56aeff", fontFamily: "'Nunito', sans-serif" }}>
-              {islemLoading === y.yayin_id ? "..." : "Yayınla"}
-            </button>
-          )}
+          <button onClick={() => onDurumDegistir(y.yayin_id, y.durum)} disabled={islemLoading === y.yayin_id}
+            className="px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer"
+            style={{
+              background: yayinda ? "white" : "#56aeff",
+              color: yayinda ? "#b91c1c" : "white",
+              border: yayinda ? "0.5px solid #fecaca" : "none",
+              fontFamily: "'Nunito', sans-serif",
+            }}>
+            {islemLoading === y.yayin_id ? "..." : yayinda ? "Durdur" : "Başlat"}
+          </button>
         </div>
       </div>
       {acikAkordiyon === y.yayin_id && y.sorular?.length > 0 && (
-        <SoruListesi sorular={y.sorular} soru_seti_durum_id={y.soru_seti_durum_id} bekleyen={false}
+        <SoruListesi sorular={y.sorular} soru_seti_durum_id={y.soru_seti_durum_id}
           getSoruPuani={getSoruPuani} setSoruPuani={setSoruPuani} hepsineAyniPuanAta={hepsineAyniPuanAta} />
       )}
     </div>

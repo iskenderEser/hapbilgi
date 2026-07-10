@@ -5,7 +5,8 @@
 //
 // Sorumluluklar:
 //   - Bekleyen (puanlama bekleyen) ve yayınlanmış içerikleri çeker (ana sekmeye göre).
-//   - Puanlama state'i (video/soru/extra puanları, ileri sarma).
+//   - Puanlama state'i (video/soru/extra puanları, ileri sarma, tekrar periyodu).
+//   - Yayın tur bilgisi (tekrar sayacı — lib/tur salt-okur toplu hesap).
 //   - Yayınlama, durdurma/başlatma, ileri sarma güncelleme handler'ları.
 //
 // Davranış page.tsx'teki orijinaliyle birebir aynıdır — sadece taşındı.
@@ -16,6 +17,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import type { HedefRol } from "@/app/talepler/_types";
 import type { Bekleyen, Yayin } from "../_types";
+import { gecerliTurBaslangiclari, type HesaplananTur } from "@/lib/tur/kayit";
 
 interface UseYayinYonetimiArgs {
   kullaniciVar: boolean;
@@ -35,6 +37,27 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
   const [bekleyenIleriSarma, setBekleyenIleriSarma] = useState<Record<string, boolean>>({});
   const [ileriSarmaAcik, setIleriSarmaAcik] = useState<Record<string, boolean>>({});
   const [extraPuanlar, setExtraPuanlar] = useState<Record<string, number>>({});
+
+  // Tekrar gönderim periyodu — soru_seti_durum_id → seçilen gün (seçilmediyse tekrar yok).
+  // Seçenek listesi sistem_ayarlari'ndan gelir (tek kaynak): api/tekrar-secenekleri.
+  const [tekrarPeriyotlari, setTekrarPeriyotlari] = useState<Record<string, number>>({});
+  const [tekrarSecenekleri, setTekrarSecenekleri] = useState<number[]>([]);
+
+  // Yayın tur bilgisi — yayin_id → hesaplanmış tur (sayaç rozeti için; salt-okur).
+  const [tekrarBilgi, setTekrarBilgi] = useState<Record<string, HesaplananTur>>({});
+
+  useEffect(() => {
+    if (!kullaniciVar) return;
+    (async () => {
+      const res = await fetch("/yayin-yonetimi/api/tekrar-secenekleri");
+      const d = await res.json();
+      if (!res.ok) {
+        hata(d.hata ?? "Tekrar periyodu seçenekleri yüklenemedi.", d.adim, d.detay);
+      } else {
+        setTekrarSecenekleri(d.secenekler ?? []);
+      }
+    })();
+  }, [kullaniciVar]);
 
   const veriCek = async () => {
     setLoading(true);
@@ -82,6 +105,10 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
         ileri_sarma_acik: ileriSarmaMapLocal[y.yayin_id] ?? false,
       })));
 
+      // Tur bilgisi — sayaç rozeti (salt-okur toplu hesap; satır açmaz).
+      const turMap = await gecerliTurBaslangiclari(supabase, yayinlarData!.map(y => y.yayin_id));
+      setTekrarBilgi(turMap);
+
       const { data: tumSoruPuanlari, error: spError } = await supabase
         .from("soru_seti_puanlari").select("soru_seti_durum_id, soru_index, soru_puani")
         .in("soru_seti_durum_id", yayinlarData!.map(y => y.soru_seti_durum_id));
@@ -98,6 +125,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
       }
     } else {
       setYayinlar([]);
+      setTekrarBilgi({});
     }
 
     setLoading(false);
@@ -170,12 +198,14 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     }
 
     // POST'a artık hedef_roller gönderilmiyor — backend talepler.hedef_rol'den türetiyor.
+    // tekrar_periyot_gun: seçilmediyse null = tekrar yok.
     const res = await fetch("/yayin-yonetimi/api/yayinlar", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         soru_seti_durum_id: b.soru_seti_durum_id,
         ileri_sarma_acik: bekleyenIleriSarma[b.soru_seti_durum_id] ?? false,
         extra_puan: extraPuanlar[b.soru_seti_durum_id] ?? null,
+        tekrar_periyot_gun: tekrarPeriyotlari[b.soru_seti_durum_id] ?? null,
       }),
     });
     const d = await res.json();
@@ -201,6 +231,9 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     bekleyenIleriSarma, setBekleyenIleriSarma,
     ileriSarmaAcik,
     extraPuanlar, setExtraPuanlar,
+    tekrarPeriyotlari, setTekrarPeriyotlari,
+    tekrarSecenekleri,
+    tekrarBilgi,
     // veri
     veriCek,
     // puan yardımcıları

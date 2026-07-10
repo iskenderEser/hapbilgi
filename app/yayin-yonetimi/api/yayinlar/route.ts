@@ -5,6 +5,9 @@ import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasy
 import { cokluBildirimOlustur } from "@/lib/utils/bildirimOlustur";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { talepBilgisiSoruSeti } from "@/lib/utils/talepZinciri";
+import { tekrarPeriyotSecenekleri } from "@/lib/tur/ayarlar";
+import { turKaydiAc } from "@/lib/tur/kayit";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,14 +17,26 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (!URETICI_ROLLER.includes(rol)) return rolHatasi("Sadece yetkili roller yayına alabilir.");
 
     const body = await request.json();
-    const { soru_seti_durum_id, ileri_sarma_acik, extra_puan } = body;
+    const { soru_seti_durum_id, ileri_sarma_acik, extra_puan, tekrar_periyot_gun } = body;
 
     if (!soru_seti_durum_id) return validasyonHatasi("soru_seti_durum_id zorunludur.", ["soru_seti_durum_id"]);
     if (!extra_puan || extra_puan < 5 || extra_puan > 10) return validasyonHatasi("Extra puan 5-10 arasında olmalıdır.", ["extra_puan"]);
+
+    // Tekrar periyodu doğrulaması — null/undefined = tekrar yok (serbest);
+    // değer verilmişse sistem_ayarlari.tekrar_periyot_secenekleri listesinde olmalı (tek kaynak).
+    if (tekrar_periyot_gun !== undefined && tekrar_periyot_gun !== null) {
+      const secenekler = await tekrarPeriyotSecenekleri(adminSupabase);
+      if (!secenekler.includes(tekrar_periyot_gun)) {
+        return validasyonHatasi(
+          `Tekrar periyodu geçersiz. Geçerli değerler: ${secenekler.join(", ")} gün.`,
+          ["tekrar_periyot_gun"]
+        );
+      }
+    }
 
     const { data: soruSetiDurum, error: ssError } = await adminSupabase
       .from("soru_seti_durumu")
@@ -101,6 +116,7 @@ export async function POST(request: NextRequest) {
         ileri_sarma_acik: ileri_sarma_acik ?? false,
         extra_puan,
         hedef_roller: hedefRoller,
+        tekrar_periyot_gun: tekrar_periyot_gun ?? null,
       })
       .select("yayin_id, durum, yayin_tarihi")
       .single();
@@ -109,6 +125,18 @@ export async function POST(request: NextRequest) {
 
     const yayinKontrol = veriKontrol(yeniYayin, "yayin_yonetimi tablosu INSERT — dönen veri", "Yayın oluşturuldu ancak veri döndürülemedi.");
     if (!yayinKontrol.gecerli) return yayinKontrol.yanit;
+
+    // Tur-1 kaydı — yayının ilk turu (tek kaynak: lib/tur/kayit.ts).
+    // Başarısızlıkta yayın geri alınmaz; gecerliTur() eksik tur-1'i kendini onararak açar (U3).
+    const turSonuc = await turKaydiAc(adminSupabase, {
+      yayin_id: (yeniYayin as any).yayin_id,
+      tur_no: 1,
+      acilis_turu: "ilk_yayin",
+      baslangic_tarihi: simdi,
+    });
+    if (!turSonuc.ok) {
+      console.error("[UYARI] Tur-1 kaydı açılamadı:", { yayin_id: (yeniYayin as any).yayin_id, hata: turSonuc.error });
+    }
 
     // Hedef rollerdeki kullanıcılara bildirim gönder
     // v_yayin_detay view ile tek sorguda takim_id + urun_adi alınır (eski 5 SELECT zinciri yerine).

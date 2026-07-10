@@ -1,8 +1,8 @@
 // app/yayin-yonetimi/_components/BekleyenSatir.tsx
 //
 // Puanlama bekleyen bir içeriğin satırı: ürün/teknik bilgisi, video önizleme,
-// video/extra puan seçicileri, ileri sarma toggle'ı, soru seti akordiyonu ve
-// "Yayınla" butonu. Tüm puanlar atanınca Yayınla aktifleşir.
+// video/extra puan seçicileri, tekrar periyodu seçici, ileri sarma toggle'ı,
+// soru seti akordiyonu ve "Yayınla" butonu. Tüm puanlar atanınca Yayınla aktifleşir.
 //
 // Davranış orijinal page.tsx ile birebir aynıdır.
 
@@ -23,6 +23,9 @@ interface BekleyenSatirProps {
   setVideoPuanlari: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   extraPuanlar: Record<string, number>;
   setExtraPuanlar: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  tekrarPeriyotlari: Record<string, number>;
+  setTekrarPeriyotlari: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  tekrarSecenekleri: number[];
   bekleyenIleriSarma: Record<string, boolean>;
   tumPuanlarAtandiMi: (b: Bekleyen) => boolean;
   getSoruPuani: (soru_seti_durum_id: string, soru_index: number) => number | "";
@@ -36,6 +39,7 @@ interface BekleyenSatirProps {
 export function BekleyenSatir({
   b, islemLoading, acikAkordiyon, setAcikAkordiyon,
   videoPuanlari, setVideoPuanlari, extraPuanlar, setExtraPuanlar,
+  tekrarPeriyotlari, setTekrarPeriyotlari, tekrarSecenekleri,
   bekleyenIleriSarma, tumPuanlarAtandiMi,
   getSoruPuani, setSoruPuani, hepsineAyniPuanAta,
   onIleriSarmaToggle, onVideoAc, onYayinlaClick,
@@ -91,6 +95,24 @@ export function BekleyenSatir({
               style={{ fontFamily: "'Nunito', sans-serif", width: 90 }}>
               <option value="">Seçiniz</option>
               {EXTRA_PUAN_SECENEKLERI.map(p => <option key={p} value={p}>{p} puan</option>)}
+            </select>
+          </div>
+          <div>
+            <span className="text-xs text-gray-400 block mb-1">Tekrar periyodu</span>
+            <select value={tekrarPeriyotlari[b.soru_seti_durum_id] ?? ""}
+              onChange={(e) => {
+                const deger = e.target.value;
+                setTekrarPeriyotlari(prev => {
+                  const yeni = { ...prev };
+                  if (deger === "") delete yeni[b.soru_seti_durum_id];
+                  else yeni[b.soru_seti_durum_id] = Number(deger);
+                  return yeni;
+                });
+              }}
+              className="border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-900 bg-white"
+              style={{ fontFamily: "'Nunito', sans-serif", width: 90 }}>
+              <option value="">Tekrar yok</option>
+              {tekrarSecenekleri.map(g => <option key={g} value={g}>{g} gün</option>)}
             </select>
           </div>
           <div className="flex items-center gap-1.5">

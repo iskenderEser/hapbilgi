@@ -134,6 +134,8 @@ export default function YayinYonetimiPage() {
                 acikAkordiyon={acikAkordiyon} setAcikAkordiyon={setAcikAkordiyon}
                 videoPuanlari={yy.videoPuanlari} setVideoPuanlari={yy.setVideoPuanlari}
                 extraPuanlar={yy.extraPuanlar} setExtraPuanlar={yy.setExtraPuanlar}
+                tekrarPeriyotlari={yy.tekrarPeriyotlari} setTekrarPeriyotlari={yy.setTekrarPeriyotlari}
+                tekrarSecenekleri={yy.tekrarSecenekleri}
                 bekleyenIleriSarma={yy.bekleyenIleriSarma}
                 tumPuanlarAtandiMi={yy.tumPuanlarAtandiMi}
                 getSoruPuani={yy.getSoruPuani} setSoruPuani={yy.setSoruPuani} hepsineAyniPuanAta={yy.hepsineAyniPuanAta}
@@ -152,6 +154,7 @@ export default function YayinYonetimiPage() {
                 islemLoading={yy.islemLoading}
                 acikAkordiyon={acikAkordiyon} setAcikAkordiyon={setAcikAkordiyon}
                 formatTarih={formatTarih}
+                tekrarBilgi={yy.tekrarBilgi[y.yayin_id]}
                 getSoruPuani={yy.getSoruPuani} setSoruPuani={yy.setSoruPuani} hepsineAyniPuanAta={yy.hepsineAyniPuanAta}
                 onVideoAc={setAcikVideo}
                 onDurumDegistir={yy.handleDurumDegistir}
@@ -167,6 +170,7 @@ export default function YayinYonetimiPage() {
                 islemLoading={yy.islemLoading}
                 acikAkordiyon={acikAkordiyon} setAcikAkordiyon={setAcikAkordiyon}
                 formatTarih={formatTarih}
+                tekrarBilgi={yy.tekrarBilgi[y.yayin_id]}
                 getSoruPuani={yy.getSoruPuani} setSoruPuani={yy.setSoruPuani} hepsineAyniPuanAta={yy.hepsineAyniPuanAta}
                 onVideoAc={setAcikVideo}
                 onDurumDegistir={yy.handleDurumDegistir}
