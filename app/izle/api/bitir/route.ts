@@ -3,8 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { kazanilanPuanKaydet } from "@/lib/puan/kayit";
-import { puanKazanilabilirMi, ayBaslangici } from "@/lib/zaman/kontrol";
+import { puanKazanilabilirMi } from "@/lib/zaman/kontrol";
 import { izlemeKarariBelirle, extraPuanEsikKarsilandi } from "@/lib/puan/strateji";
+import { tamTekrarSayisi } from "@/lib/puan/tekrarSayim";
 import { oneriPenceresiAcik } from "@/lib/oneri/pencereKontrol";
 import { gecerliTur } from "@/lib/tur/kayit";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
@@ -166,21 +167,14 @@ export async function PUT(request: NextRequest) {
       // sayılmaz (§9.4). Mükerrer yapısal olarak imkânsız: puan yalnızca
       // sayı === eşik anında düşer (4.+ tekrarlarda koşul bir daha tutmaz),
       // ayrı mükerrer sorgusu bu nedenle kaldırıldı.
-      const ayBasi = ayBaslangici();
-      const extraAltSinir = new Date(Math.max(ayBasi.getTime(), turBaslangic.getTime()));
+      // Sayım TEK KAYNAK'tan (lib/puan/tekrarSayim.ts) — alt sınır max(ay başı, tur başı)
+      // fonksiyonun içinde hesaplanır. Ekstra İzlediklerim bölümü de aynı fonksiyon
+      // ailesinin toplu imzasını kullanır; iki ekranın farklı sayması yapısal olarak imkânsız.
+      const sayim = await tamTekrarSayisi(adminSupabase, user.id, izleme.yayin_id, turBaslangic);
 
-      const { count: aylikTamTekrar, error: hiError } = await adminSupabase
-        .from("izleme_kayitlari")
-        .select("izleme_id", { count: "exact", head: true })
-        .eq("yayin_id", izleme.yayin_id)
-        .eq("kullanici_id", user.id)
-        .eq("izleme_turu", "extra")
-        .eq("tamamlandi_mi", true)
-        .gte("izleme_baslangic", extraAltSinir.toISOString());
-
-      if (hiError) {
-        console.error("[UYARI] Aylık tam tekrar sayısı kontrol edilemedi:", { hata: hiError.message });
-      } else if (extraPuanEsikKarsilandi(aylikTamTekrar ?? 0)) {
+      if (!sayim.ok) {
+        console.error("[UYARI] Aylık tam tekrar sayısı kontrol edilemedi:", { hata: sayim.error });
+      } else if (extraPuanEsikKarsilandi(sayim.sayi)) {
         const extraPuanDegeri = yayin.extra_puan ?? 0;
         if (extraPuanDegeri > 0) {
           const sonuc = await kazanilanPuanKaydet(adminSupabase, {
