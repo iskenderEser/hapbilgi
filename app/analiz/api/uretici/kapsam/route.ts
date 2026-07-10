@@ -7,7 +7,7 @@
 // Sonuc: { kapsam: { takim_bagi, takimlar, bolgeler, urunler, utt_listesi, egitim_turleri } }
 
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import {
   hataYaniti,
   sunucuHatasi,
@@ -16,6 +16,7 @@ import {
 } from "@/lib/utils/hataIsle";
 import { ANALIZ_URETICI_ROLLERI } from "@/lib/utils/roller";
 import { getUreticiKapsam } from "@/lib/analiz/uretici/getUreticiAnalizData";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function GET() {
   try {
@@ -27,7 +28,8 @@ export async function GET() {
     } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const adminSupabase = createAdminClient();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (!ANALIZ_URETICI_ROLLERI.includes(rol)) {
       return rolHatasi("Bu sayfa yalnızca üretici roller içindir.");
     }

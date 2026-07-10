@@ -5,7 +5,7 @@
 // Sonuc: { sonuclar: { [degisken_id]: number } }
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import {
   hataYaniti,
   sunucuHatasi,
@@ -16,6 +16,7 @@ import {
 import { ANALIZ_URETICI_ROLLERI } from "@/lib/utils/roller";
 import { getUreticiAnalizData } from "@/lib/analiz/uretici/getUreticiAnalizData";
 import type { AnalizFiltreleri } from "@/lib/analiz/yonetici/getYoneticiAnalizData";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 type Body = {
   kategori?: "uretim" | "tuketim";
@@ -33,7 +34,8 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const adminSupabase = createAdminClient();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (!ANALIZ_URETICI_ROLLERI.includes(rol)) {
       return rolHatasi("Bu sayfa yalnızca üretici roller içindir.");
     }

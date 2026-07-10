@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function GET(
   request: NextRequest,
@@ -17,7 +18,7 @@ export async function GET(
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (!["utt", "kd_utt"].includes(rol)) return rolHatasi("Sadece utt ve kd_utt erişebilir.");
 
     // v_yayin_detay view ile tek sorguda tüm yayın detayları — 9 sorgu → 1 sorgu

@@ -13,6 +13,7 @@ import {
   validasyonHatasi,
 } from "@/lib/utils/hataIsle";
 import { cevaplariIsle } from "@/lib/cc/soru/cevapIsle";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 interface CevapGirisi {
   soru_index: number;
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
     const adminSupabase = createAdminClient();
 
     // 2. Rol kontrolü — sadece BM
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (rol !== "bm") {
       return rolHatasi("Sadece BM rolü Challenge Club cevaplarını gönderebilir.");
     }

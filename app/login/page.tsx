@@ -89,16 +89,16 @@ export default function LoginPage() {
 
         {/* Sol metin - mobile */}
         <div className="text-center md:hidden">
-          <div className="text-xl font-bold uppercase tracking-wide mb-1" style={{ color: "#bc2d0d", letterSpacing: "0.06em" }}>Eğitimin V Hali</div>
-          <div className="text-base font-extrabold text-gray-900 mb-2">İzleyin - Kazanın - Uygulayın</div>
-          <div className="text-sm text-gray-500 leading-relaxed">HapBilgi, ilaç sektörü profesyonelleri için tasarlanmış video tabanlı kurumsal eğitim platformudur.</div>
+          <div className="text-xl font-bold uppercase tracking-wide mb-1" style={{ color: "#bc2d0d", letterSpacing: "0.06em" }}>Öğrenmenin V Hali</div>
+          <div className="invisible text-base font-extrabold text-gray-900 mb-2">İzleyin - Kazanın - Uygulayın</div>
+          <div className="text-sm text-gray-500 leading-relaxed">HapBilgi, sağlık sektörü profesyonelleri için tasarlanmış video tabanlı öğrenme platformudur.</div>
         </div>
 
         {/* Sol metin - tablet/desktop */}
         <div className="hidden md:block max-w-sm lg:max-w-md">
-          <div className="text-3xl lg:text-4xl font-bold uppercase mb-4" style={{ color: "#bc2d0d", letterSpacing: "0.08em" }}>Eğitimin V Hali</div>
-          <div className="text-xl lg:text-3xl font-extrabold text-gray-900 leading-snug mb-4">İzleyin - Kazanın - Uygulayın</div>
-          <div className="text-sm lg:text-base text-gray-500 leading-loose">HapBilgi, ilaç sektörü profesyonelleri için tasarlanmış video tabanlı kurumsal eğitim platformudur.</div>
+          <div className="text-3xl lg:text-4xl font-bold uppercase mb-4" style={{ color: "#bc2d0d", letterSpacing: "0.08em" }}>Öğrenmenin V Hali</div>
+          <div className="hidden text-xl lg:text-3xl font-extrabold text-gray-900 leading-snug mb-4">İzleyin - Kazanın - Uygulayın</div>
+          <div className="text-sm lg:text-base text-gray-500 leading-loose">HapBilgi, sağlık sektörü profesyonelleri için tasarlanmış video tabanlı öğrenme platformudur.</div>
         </div>
 
         {/* Form */}
@@ -136,7 +136,7 @@ export default function LoginPage() {
                 <input type="checkbox" className="w-3 h-3" style={{ accentColor: "#bc2d0d" }} />
                 Beni hatırla
               </label>
-              <a href="#" className="text-xs no-underline" style={{ color: "#56aeff" }}>Şifremi unuttum</a>
+              <a href="#" className="text-xs no-underline" style={{ color: "#bc2d0d" }}>Şifremi unuttum</a>
             </div>
 
             {hata && (
@@ -154,7 +154,7 @@ export default function LoginPage() {
                 disabled={loading}
                 className="w-full md:w-1/2 text-white font-bold rounded-xl py-3 text-sm border-none flex items-center justify-center gap-1"
                 style={{
-                  background: "#bc2d0d",
+                  background: "#56aeff",
                   cursor: loading ? "not-allowed" : "pointer",
                   opacity: loading ? 0.6 : 1,
                   fontFamily: "'Nunito', sans-serif",
@@ -180,9 +180,9 @@ export default function LoginPage() {
       <div className="bg-gray-50 border-t border-gray-200 py-5 px-5 md:px-8">
         <div className="max-w-3xl mx-auto grid grid-cols-3 gap-4 md:gap-10 text-center">
           {[
-            { ikon: "🎬", baslik: "İzleyin", aciklama: "Öğrenmenin devamlılığını sağlayın." },
-            { ikon: "📊", baslik: "Kazanın", aciklama: "İzledikçe yıldızınızı parlatın." },
-            { ikon: "🎯", baslik: "Uygulayın", aciklama: "Kazandıkça daha çok kazanın." },
+            { ikon: "🎬", baslik: "İzleyin", aciklama: "Öğrenmenin devamlılığını sağlayın" },
+            { ikon: "📊", baslik: "Kazanın", aciklama: "İzledikçe yıldızınızı parlatın" },
+            { ikon: "🎯", baslik: "Uygulayın", aciklama: "Kazandıkça hedefinize yaklaşın" },
           ].map((k, i) => (
             <div key={i}>
               <div className="text-2xl md:text-3xl mb-1 md:mb-3">{k.ikon}</div>

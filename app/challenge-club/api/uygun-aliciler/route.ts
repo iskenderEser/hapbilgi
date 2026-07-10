@@ -17,6 +17,7 @@ import {
   validasyonHatasi,
 } from "@/lib/utils/hataIsle";
 import { uygunAliciListesi } from "@/lib/cc/uygunAliciListesi";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     const adminSupabase = createAdminClient();
 
     // 2. Rol kontrolü — sadece BM
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (rol !== "bm") {
       return rolHatasi("Sadece BM rolü Challenge Club gönderebilir.");
     }

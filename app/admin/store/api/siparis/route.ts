@@ -26,6 +26,7 @@ import {
 import { ADMIN_ROLLER } from "@/lib/utils/roller";
 import { siparisIptal } from "@/lib/store/siparis";
 import { KARGO_FIRMA_ADLARI } from "@/lib/store/kargo";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 // ─── Yardımcı: admin yetki kontrolü ──────────────────────────────────────────
 
@@ -34,12 +35,13 @@ async function yetkiAl(request: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return { hata: yetkiHatasi() };
 
-  const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+  const adminSupabase = createAdminClient();
+  const rol = await rolCozucu(adminSupabase, user.id);
   if (!ADMIN_ROLLER.includes(rol)) {
     return { hata: rolHatasi("Bu işleme yalnızca admin erişebilir.") };
   }
 
-  return { user, rol, adminSupabase: createAdminClient() };
+  return { user, rol, adminSupabase };
 }
 
 // ─── GET ─────────────────────────────────────────────────────────────────────

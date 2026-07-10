@@ -5,6 +5,7 @@ import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasy
 import { bildirimOlustur, gonderenBildirimleriOkunduIsaretle } from "@/lib/utils/bildirimOlustur";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { talepBilgisiSenaryo } from "@/lib/utils/talepZinciri";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 const GECERLI_DURUMLAR = [
   "senaryo yaziliyor",
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
     const isPM = URETICI_ROLLER.includes(rol);
     const isIU = rol === "iu";
     if (!isPM && !isIU) return rolHatasi("Sadece yetkili roller ve IU senaryo durumu güncelleyebilir.");

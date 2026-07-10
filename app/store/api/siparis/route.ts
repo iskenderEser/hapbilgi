@@ -31,6 +31,8 @@ import {
   siparisIptal,
   teslimAldim,
 } from "@/lib/store/siparis";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
+
 
 // ─── GET: Kullanıcının kendi siparişleri ─────────────────────────────────────
 
@@ -41,12 +43,12 @@ export async function GET(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const adminSupabase = createAdminClient();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (!STORE_ALABILEN_ROLLER.includes(rol)) {
       return rolHatasi("Sipariş geçmişi yetkiniz yok.");
     }
 
-    const adminSupabase = createAdminClient();
 
     const { searchParams } = new URL(request.url);
     const durum = searchParams.get("durum");
@@ -99,12 +101,12 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const adminSupabase = createAdminClient();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (!STORE_ALABILEN_ROLLER.includes(rol)) {
       return rolHatasi("Sipariş verme yetkiniz yok.");
     }
 
-    const adminSupabase = createAdminClient();
 
     const body = await request.json();
     const { urun_id, adres_id, adet } = body;
@@ -154,12 +156,12 @@ export async function PATCH(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const adminSupabase = createAdminClient();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (!STORE_ALABILEN_ROLLER.includes(rol)) {
       return rolHatasi("Sipariş işlemi yetkiniz yok.");
     }
 
-    const adminSupabase = createAdminClient();
 
     const body = await request.json();
     const { siparis_id, action, sebep } = body;

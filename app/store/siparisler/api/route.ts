@@ -23,6 +23,7 @@ import {
   validasyonHatasi,
 } from "@/lib/utils/hataIsle";
 import { STORE_GENEL_GOREN_ROLLER } from "@/lib/utils/roller";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 const VARSAYILAN_LIMIT = 30;
 const MAKS_LIMIT = 100;
@@ -36,12 +37,12 @@ export async function GET(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     // Rol
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const adminSupabase = createAdminClient();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (!STORE_GENEL_GOREN_ROLLER.includes(rol)) {
       return rolHatasi("Bu sayfaya erişim yetkiniz yok.");
     }
 
-    const adminSupabase = createAdminClient();
 
     // Query parametrelerini al
     const { searchParams } = new URL(request.url);

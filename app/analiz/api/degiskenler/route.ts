@@ -7,7 +7,7 @@
 // Sonuc: { degiskenler: Degisken[] }
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import {
   hataYaniti,
   sunucuHatasi,
@@ -17,6 +17,7 @@ import {
 } from "@/lib/utils/hataIsle";
 import { analizRolKategorisi } from "@/lib/utils/roller";
 import { getDegiskenler, type Kategori } from "@/lib/analiz/paylasilan/kombinasyonlar";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,7 +29,8 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const adminSupabase = createAdminClient();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (!analizRolKategorisi(rol)) {
       return rolHatasi("Analiz sayfasına erişim yetkiniz yok.");
     }

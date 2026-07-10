@@ -15,6 +15,7 @@ import {
   validasyonHatasi,
 } from "@/lib/utils/hataIsle";
 import { ileriSarmaKaybiKaydet } from "@/lib/cc/puan/kayip";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     const adminSupabase = createAdminClient();
 
     // 2. Rol kontrolü — sadece BM
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (rol !== "bm") {
       return rolHatasi(
         "Sadece BM rolü Challenge Club ileri sarma kaydı atabilir."

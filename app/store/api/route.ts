@@ -24,6 +24,7 @@ import {
 } from "@/lib/utils/hataIsle";
 import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
 import { harcamaBakiyesi } from "@/lib/store/bakiye";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,12 +35,12 @@ export async function GET(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     // 2. Rol kontrolü
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const adminSupabase = createAdminClient();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (!STORE_ALABILEN_ROLLER.includes(rol)) {
       return rolHatasi("HBStore'a erişim yetkiniz yok.");
     }
 
-    const adminSupabase = createAdminClient();
 
     const { searchParams } = new URL(request.url);
     const tip = searchParams.get("tip") || "urunler";

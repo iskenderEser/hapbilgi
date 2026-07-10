@@ -12,6 +12,7 @@ import {
   getYoneticiAnaSayfaVeri,
 } from "@/lib/utils/anaSayfaVeri";
 import { getAnaSayfaVideolari } from "@/lib/video/anaSayfaVideolari";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function GET() {
   try {
@@ -21,7 +22,7 @@ export async function GET() {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
 
     let veri: any;
 

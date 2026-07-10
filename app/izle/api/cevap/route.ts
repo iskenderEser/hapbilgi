@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { kazanilanPuanKaydet, yanlisCevapKaybiKaydet } from "@/lib/puan/kayit";
 import { cevapDogruMu } from "@/lib/soru/kontrol";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
 
     const adminSupabase = createAdminClient();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (!["utt", "kd_utt"].includes(rol)) return rolHatasi("Sadece utt ve kd_utt cevap verebilir.");
 
     const body = await request.json();

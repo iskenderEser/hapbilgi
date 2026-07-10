@@ -9,6 +9,7 @@ import {
   oneriBitisHesapla,
 } from "@/lib/eclub/oneriLimit";
 import { eclubBildirimOlustur } from "@/lib/utils/eclubBildirim";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 const ECLUB_UTT_ROLLERI = ["utt", "kd_utt"];
 const ECLUB_HEDEF_ROLLER = ["eczaci", "eczane_teknisyeni"];
@@ -73,7 +74,7 @@ export async function GET() {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (!ECLUB_UTT_ROLLERI.includes(rol)) return rolHatasi("Bu sayfaya yalnız UTT/KD_UTT erişebilir.");
 
     // UTT'nin gönderdiği öneriler + alıcı (eclub_kisiler) temel bilgisi.
@@ -148,7 +149,7 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (!ECLUB_UTT_ROLLERI.includes(rol)) return rolHatasi("Sadece UTT/KD_UTT öneri gönderebilir.");
 
     const body = await request.json();

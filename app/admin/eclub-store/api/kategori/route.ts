@@ -4,11 +4,13 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { ADMIN_ROLLER } from "@/lib/utils/roller";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 async function adminKontrol(supabase: SupabaseClient): Promise<NextResponse | null> {
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) return yetkiHatasi();
-  const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+  const adminSupabase = createAdminClient();
+  const rol = await rolCozucu(adminSupabase, user.id);
   if (!ADMIN_ROLLER.includes(rol)) return rolHatasi("Bu işleme yalnızca admin erişebilir.");
   return null;
 }

@@ -7,7 +7,7 @@
 // Sonuc: { yorum: string, tamamlayici_mi: boolean }
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import {
   hataYaniti,
   sunucuHatasi,
@@ -28,6 +28,7 @@ import {
   type Rol,
 } from "@/lib/analiz/paylasilan/promptOlustur";
 import { aiYorumAl } from "@/lib/utils/aiIstemci";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 type Body = {
   kategori?: Kategori;
@@ -46,7 +47,8 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rolStr = (user.user_metadata?.rol ?? "").toLowerCase();
+    const adminSupabase = createAdminClient();
+    const rolStr = await rolCozucu(adminSupabase, user.id);
     const kategoriRol = analizRolKategorisi(rolStr);
     if (!kategoriRol) {
       return rolHatasi("Analiz sayfasına erişim yetkiniz yok.");

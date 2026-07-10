@@ -11,6 +11,7 @@ import { getBmLig } from "@/lib/hbligi/getBmLig";
 import { getTmLig } from "@/lib/hbligi/getTmLig";
 import { getGenelLig } from "@/lib/hbligi/getGenelLig";
 import type { LigPeriyot } from "@/lib/hbligi/ligRpcCagir";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 // ─── Yardımcı: periyot parametrelerini parse + doğrula ───────────────────────
 // Dönüş null ise validasyon hatası; aksi halde tam LigPeriyot.
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
 
     // Periyot parametrelerini oku + doğrula
     const { searchParams } = new URL(request.url);

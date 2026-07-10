@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function GET() {
   try {
@@ -11,7 +12,7 @@ export async function GET() {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (rol !== "bm") return rolHatasi("Sadece bm erişebilir.");
 
     const { data: yayinlar, error: yayinError } = await adminSupabase

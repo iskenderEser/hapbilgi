@@ -5,13 +5,15 @@ import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isK
 import { ADMIN_ROLLER } from "@/lib/utils/roller";
 import { eclubStoreSiparisIptal } from "@/lib/eclub/store/eclubStoreSiparis";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 const GECERLI_DURUMLAR = ["beklemede", "hazirlaniyor", "kargoda", "teslim_edildi"];
 
 async function adminKontrol(supabase: SupabaseClient): Promise<NextResponse | null> {
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) return yetkiHatasi();
-  const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+  const adminSupabase = createAdminClient();
+  const rol = await rolCozucu(adminSupabase, user.id);
   if (!ADMIN_ROLLER.includes(rol)) return rolHatasi("Bu işleme yalnızca admin erişebilir.");
   return null;
 }

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 // İzleme sayfasına erişebilecek tüm roller
 const IZLEME_ROLLERI = ["utt", "kd_utt", "bm", "tm", ...URETICI_ROLLER];
@@ -15,7 +16,7 @@ export async function GET() {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (!IZLEME_ROLLERI.includes(rol)) return rolHatasi("Bu sayfaya erişim yetkiniz bulunmamaktadır.");
 
     const { data: kullanici, error: kullaniciError } = await adminSupabase

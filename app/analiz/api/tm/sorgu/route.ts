@@ -7,7 +7,7 @@
 // Sonuc: { sonuclar: { [degisken_id]: number } }
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import {
   hataYaniti,
   sunucuHatasi,
@@ -16,6 +16,7 @@ import {
   validasyonHatasi,
 } from "@/lib/utils/hataIsle";
 import { getTmAnalizData, type TmFiltreleri } from "@/lib/analiz/tm/getTmAnalizData";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 type Body = {
   degisken_idleri?: string[];
@@ -32,7 +33,8 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const adminSupabase = createAdminClient();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (rol !== "tm") {
       return rolHatasi("Bu sayfa yalnızca TM rolü içindir.");
     }

@@ -4,7 +4,7 @@
 // Filtre dropdown'larını dolduran veri.
 
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import {
   hataYaniti,
   sunucuHatasi,
@@ -12,6 +12,7 @@ import {
   rolHatasi,
 } from "@/lib/utils/hataIsle";
 import { getTmKapsam } from "@/lib/analiz/tm/getTmAnalizData";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function GET() {
   try {
@@ -23,7 +24,8 @@ export async function GET() {
     } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const adminSupabase = createAdminClient();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (rol !== "tm") {
       return rolHatasi("Bu sayfa yalnızca TM rolü içindir.");
     }

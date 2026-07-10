@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
 import { haftaBaslangici, ayBaslangici, yilBaslangici } from "@/lib/zaman/kontrol";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function GET() {
   try {
@@ -12,7 +13,7 @@ export async function GET() {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
 
     // v_kullanici_detay view'ı firma_adi, takim_adi, bolge_adi'yı join'liyor — 3 ayrı SELECT yerine tek view sorgusu
     const { data: kullanici, error: kullaniciError } = await adminSupabase

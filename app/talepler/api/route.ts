@@ -9,6 +9,7 @@ import {
   type TalepTuru,
 } from "@/lib/uretici/yetenekler";
 import type { HedefRol } from "@/app/talepler/_types";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 // TalepTuru tipinin tüm geçerli değerlerinin runtime listesi —
 // TALEP_TURU_KURALLARI'nın anahtarlarından türetilir, hardcoded liste yok.
@@ -25,7 +26,7 @@ export async function GET() {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
     const isIU = rol === "iu";
     const yetenek = ureticiYetenegi(rol);
 
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
 
     // Yetenek profili — talep oluşturma yetkisinin ve davranış kurallarının kaynağı.
     const yetenek = ureticiYetenegi(rol);

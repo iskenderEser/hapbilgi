@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { ADMIN_ROLLER } from "@/lib/utils/roller";
 import { eclubStoreGorselYukle } from "@/lib/eclub/store/eclubStoreStorage";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,10 +12,10 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const adminSupabase = createAdminClient();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (!ADMIN_ROLLER.includes(rol)) return rolHatasi("Bu işleme yalnızca admin erişebilir.");
 
-    const adminSupabase = createAdminClient();
 
     const formData = await request.formData();
     const dosya = formData.get("dosya");

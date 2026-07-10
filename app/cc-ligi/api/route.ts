@@ -22,6 +22,7 @@ import {
   validasyonHatasi,
 } from "@/lib/utils/hataIsle";
 import { CCLIGI_GORENLERLER } from "@/lib/utils/roller";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 // ─── Yardımcı: periyot parametresi doğrulama ─────────────────────────────────
 
@@ -66,12 +67,12 @@ export async function GET(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     // 2. Rol kontrolü
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const adminSupabase = createAdminClient();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (!CCLIGI_GORENLERLER.includes(rol)) {
       return rolHatasi("Bu sayfaya erişim yetkiniz yok.");
     }
 
-    const adminSupabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const tip = searchParams.get("tip") || "lig";
 

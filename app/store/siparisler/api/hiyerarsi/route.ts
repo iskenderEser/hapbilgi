@@ -24,6 +24,7 @@ import {
   rolHatasi,
 } from "@/lib/utils/hataIsle";
 import { STORE_GENEL_GOREN_ROLLER } from "@/lib/utils/roller";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,12 +35,12 @@ export async function GET(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     // Rol kontrolü
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const adminSupabase = createAdminClient();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (!STORE_GENEL_GOREN_ROLLER.includes(rol)) {
       return rolHatasi("Bu sayfaya erişim yetkiniz yok.");
     }
 
-    const adminSupabase = createAdminClient();
 
     // RPC çağrısı
     const { data, error } = await adminSupabase.rpc("get_siparis_filtre_hiyerarsi", {

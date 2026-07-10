@@ -33,6 +33,7 @@ import {
   varsayilanYap,
 } from "@/lib/store/adres";
 import type { AdresInput } from "@/lib/store/tipler";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 // ─── Yardımcı: rol kontrolü ──────────────────────────────────────────────────
 
@@ -41,12 +42,12 @@ async function yetkiAl(request: NextRequest) {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return { hata: yetkiHatasi() };
 
-  const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+  const adminSupabase = createAdminClient();
+  const rol = await rolCozucu(adminSupabase, user.id);
   if (!STORE_ALABILEN_ROLLER.includes(rol)) {
     return { hata: rolHatasi("Bu işleme yetkiniz yok.") };
   }
 
-  const adminSupabase = createAdminClient();
 
   return { user, rol, adminSupabase };
 }

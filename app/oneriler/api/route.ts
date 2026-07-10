@@ -5,6 +5,7 @@ import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isK
 import { bildirimOlustur } from "@/lib/utils/bildirimOlustur";
 import { oneriTarihKurali } from "@/lib/oneri/tarihKurali";
 import { haftalikLimitKontrol, aylikKotaKontrol, MAKS_ALICI_HAFTA } from "@/lib/oneri/limitKontrol";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 const GET_ROLLERI = ["bm", "tm", "utt", "kd_utt"];
 
@@ -16,7 +17,7 @@ export async function GET() {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (!GET_ROLLERI.includes(rol)) {
       return rolHatasi("Sadece bm, utt ve kd_utt önerilere erişebilir.");
     }
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (rol !== "bm") return rolHatasi("Sadece bm öneri oluşturabilir.");
 
     const body = await request.json();
