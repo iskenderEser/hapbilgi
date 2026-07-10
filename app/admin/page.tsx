@@ -2,9 +2,12 @@
 //
 // Admin paneli — orchestrator. Hook'ları bağlar, sekme dispatch'i yapar.
 // Tüm business logic _hooks/ altında, UI parçaları _components/ altında.
+// Üst bardaki "Sistem Ayarları" butonu, sağ içerik alanında firma görünümü
+// yerine SistemAyarlari panelini gösterir; firma seçilince normale döner.
 
 "use client";
 
+import { useState } from "react";
 import { HataMesajiContainer } from "@/components/HataMesaji";
 import { useAdminPanel } from "./_hooks/useAdminPanel";
 import { useTekilForm } from "./_hooks/useTekilForm";
@@ -20,9 +23,13 @@ import TopluGirisFormu from "./_components/TopluGirisFormu";
 import TakimBolgeFormu from "./_components/TakimBolgeFormu";
 import UrunTeknikYonetimi from "./_components/UrunTeknikYonetimi";
 import KullaniciListesi from "./_components/KullaniciListesi";
+import SistemAyarlari from "./_components/SistemAyarlari";
 
 export default function AdminPanel() {
   const admin = useAdminPanel();
+
+  // Sistem Ayarları paneli — sağ içerik alanının alternatif görünümü.
+  const [ayarlarAcik, setAyarlarAcik] = useState(false);
 
   const tekil = useTekilForm({
     seciliFirma: admin.seciliFirma,
@@ -61,6 +68,12 @@ export default function AdminPanel() {
     basari: admin.basari,
   });
 
+  // Firma seçilince Sistem Ayarları kapanır, firma görünümü döner.
+  const handleFirmaSecildi = (...args: Parameters<typeof admin.handleFirmaSecildi>) => {
+    setAyarlarAcik(false);
+    return admin.handleFirmaSecildi(...args);
+  };
+
   if (admin.yukleniyor || !admin.kullanici) return null;
 
   return (
@@ -71,6 +84,21 @@ export default function AdminPanel() {
           Admin Paneli
         </h1>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <button
+            onClick={() => setAyarlarAcik(true)}
+            style={{
+              padding: "6px 12px",
+              background: ayarlarAcik ? "#1d4ed8" : "transparent",
+              border: "0.5px solid #1d4ed8",
+              borderRadius: "6px",
+              fontSize: "12px",
+              color: ayarlarAcik ? "white" : "#1d4ed8",
+              cursor: "pointer",
+              fontFamily: "'Nunito', sans-serif",
+            }}
+          >
+            Sistem Ayarları
+          </button>
           <span style={{ fontSize: "12px", color: "#737373" }}>
             {admin.kullanici.ad} {admin.kullanici.soyad}
           </span>
@@ -101,7 +129,7 @@ export default function AdminPanel() {
           yeniFirmaAdi={admin.yeniFirmaAdi}
           setYeniFirmaAdi={admin.setYeniFirmaAdi}
           handleFirmaEkle={admin.handleFirmaEkle}
-          handleFirmaSecildi={admin.handleFirmaSecildi}
+          handleFirmaSecildi={handleFirmaSecildi}
           handleStoreToggle={admin.handleStoreToggle}
           handleCcToggle={admin.handleCcToggle}
           handleEclubToggle={admin.handleEclubToggle}
@@ -113,7 +141,9 @@ export default function AdminPanel() {
         />
 
         <div style={{ flex: 1, padding: "20px", overflow: "auto" }}>
-          {!admin.seciliFirma ? (
+          {ayarlarAcik ? (
+            <SistemAyarlari hata={admin.hata} basari={admin.basari} />
+          ) : !admin.seciliFirma ? (
             <p style={{ fontSize: "13px", color: "#737373" }}>
               Soldan bir firma seçin.
             </p>

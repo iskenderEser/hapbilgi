@@ -66,3 +66,11 @@ export interface Teknik {
 }
 
 export type GirisSecimi = "tekil" | "toplu" | "takim" | "urun";
+
+// Sistem Ayarları (sistem_ayarlari tablosu — admin ekranı)
+export interface SistemAyari {
+  anahtar: string;
+  deger: number | number[];
+  aciklama: string | null;
+  updated_at: string;
+}
