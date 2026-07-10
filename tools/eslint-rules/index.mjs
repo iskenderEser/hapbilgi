@@ -83,6 +83,7 @@ const firmaKolonlari = {
 
 // KURAL 3: kayıt tek-kaynak
 const KORUMALI_TABLOLAR = new Set([
+  "yayin_tekrar_kayitlari",
   "kazanilan_puanlar",
   "yanlis_cevap_kayitlari",
   "ileri_sarma_kayitlari",
@@ -95,15 +96,17 @@ const KORUMALI_TABLOLAR = new Set([
 const kayitTekKaynak = {
   meta: {
     type: "problem",
-    docs: { description: "Puan/kayip tablolarina INSERT yalniz lib/puan/ icinden yapilmali." },
+    docs: { description: "Puan/kayip/tur tablolarina INSERT yalniz lib/puan/ veya lib/tur/ icinden yapilmali." },
     schema: [],
     messages: {
-      disari: "'{{tablo}}' tablosuna INSERT yalniz lib/puan/ icinden yapilmali (tek-kaynak).",
+      disari: "'{{tablo}}' tablosuna INSERT yalniz lib/puan/ veya lib/tur/ icinden yapilmali (tek-kaynak).",
     },
   },
   create(context) {
     const dosya = context.filename ?? context.getFilename?.() ?? "";
-    if (dosya.replace(/\\/g, "/").includes("/lib/puan/")) return {};
+    const yol = dosya.replace(/\\/g, "/");
+    if (yol.includes("/lib/puan/") || yol.includes("/lib/tur/")) return {};
+
     return {
       CallExpression(node) {
         const c = node.callee;

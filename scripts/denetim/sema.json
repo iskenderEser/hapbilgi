@@ -1,6 +1,6 @@
 {
-  "uretim_tarihi": "2026-07-05T20:25:51.241Z",
-  "tablo_sayisi": 78,
+  "uretim_tarihi": "2026-07-09T18:48:51.168Z",
+  "tablo_sayisi": 79,
   "rpc_sayisi": 51,
   "tablolar": {
     "analiz_tuketim_degiskenleri": {
@@ -3112,6 +3112,35 @@
         }
       }
     },
+    "yayin_tekrar_kayitlari": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "tekrar_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "yayin_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "tur_no": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "baslangic_tarihi": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        },
+        "acilis_turu": {
+          "tip": "text",
+          "nullable": false
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        }
+      }
+    },
     "yayin_yonetimi": {
       "tur": "BASE TABLE",
       "kolonlar": {
@@ -3154,6 +3183,10 @@
         "hedef_roller": {
           "tip": "ARRAY",
           "nullable": false
+        },
+        "tekrar_periyot_gun": {
+          "tip": "integer",
+          "nullable": true
         }
       }
     }
@@ -3367,12 +3400,12 @@
   "fk": {
     "bildirimler": [
       {
-        "kaynak_kolon": "alici_id",
+        "kaynak_kolon": "gonderen_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "gonderen_id",
+        "kaynak_kolon": "alici_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       }
@@ -3768,12 +3801,12 @@
     ],
     "oneri_kayitlari": [
       {
-        "kaynak_kolon": "oneren_id",
+        "kaynak_kolon": "kullanici_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "kullanici_id",
+        "kaynak_kolon": "oneren_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
@@ -4017,6 +4050,13 @@
         "hedef_tablo": "urunler",
         "hedef_kolon": "urun_id"
       },
+      {
+        "kaynak_kolon": "yayin_id",
+        "hedef_tablo": "yayin_yonetimi",
+        "hedef_kolon": "yayin_id"
+      }
+    ],
+    "yayin_tekrar_kayitlari": [
       {
         "kaynak_kolon": "yayin_id",
         "hedef_tablo": "yayin_yonetimi",
