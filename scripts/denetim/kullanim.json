@@ -271,146 +271,6 @@
       "tablo": "kullanicilar"
     },
     {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 12,
-      "tablo": "kullanicilar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 20,
-      "tablo": "kullanicilar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 33,
-      "tablo": "oneri_kayitlari"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 50,
-      "tablo": "v_yayin_detay"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 85,
-      "tablo": "kullanicilar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 93,
-      "tablo": "bolgeler"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 115,
-      "tablo": "v_yayin_detay"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 121,
-      "tablo": "izleme_kayitlari"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 174,
-      "tablo": "yayin_yonetimi"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 177,
-      "tablo": "video_begeniler"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 180,
-      "tablo": "video_favoriler"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 183,
-      "tablo": "video_begeniler"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 186,
-      "tablo": "video_favoriler"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 189,
-      "tablo": "izleme_kayitlari"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 259,
-      "tablo": "kullanicilar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 286,
-      "tablo": "senaryo_durumu"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 291,
-      "tablo": "video_durumu"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 296,
-      "tablo": "soru_seti_durumu"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 330,
-      "tablo": "talepler"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 348,
-      "tablo": "senaryolar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 362,
-      "tablo": "senaryo_durumu"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 380,
-      "tablo": "videolar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 394,
-      "tablo": "video_durumu"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 412,
-      "tablo": "soru_setleri"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 426,
-      "tablo": "soru_seti_durumu"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 444,
-      "tablo": "yayin_yonetimi"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 475,
-      "tablo": "kullanicilar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 501,
-      "tablo": "kullanicilar"
-    },
-    {
       "dosya": "lib/utils/bildirimOlustur.ts",
       "satir": 63,
       "tablo": "senaryolar"
@@ -846,6 +706,26 @@
       "tablo": "kullanicilar"
     },
     {
+      "dosya": "lib/utils/anaSayfa/bm.ts",
+      "satir": 7,
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/bm.ts",
+      "satir": 15,
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/bm.ts",
+      "satir": 28,
+      "tablo": "oneri_kayitlari"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/bm.ts",
+      "satir": 45,
+      "tablo": "v_yayin_detay"
+    },
+    {
       "dosya": "lib/utils/anaSayfa/bmAktivite.ts",
       "satir": 53,
       "tablo": "bolgeler"
@@ -869,6 +749,126 @@
       "dosya": "lib/utils/anaSayfa/bmAktivite.ts",
       "satir": 117,
       "tablo": "oneri_kayitlari"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 12,
+      "tablo": "senaryo_durumu"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 17,
+      "tablo": "video_durumu"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 22,
+      "tablo": "soru_seti_durumu"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/tm.ts",
+      "satir": 8,
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/uretici.ts",
+      "satir": 20,
+      "tablo": "talepler"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/uretici.ts",
+      "satir": 38,
+      "tablo": "senaryolar"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/uretici.ts",
+      "satir": 52,
+      "tablo": "senaryo_durumu"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/uretici.ts",
+      "satir": 70,
+      "tablo": "videolar"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/uretici.ts",
+      "satir": 84,
+      "tablo": "video_durumu"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/uretici.ts",
+      "satir": 102,
+      "tablo": "soru_setleri"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/uretici.ts",
+      "satir": 116,
+      "tablo": "soru_seti_durumu"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/uretici.ts",
+      "satir": 134,
+      "tablo": "yayin_yonetimi"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 8,
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 16,
+      "tablo": "bolgeler"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 38,
+      "tablo": "v_yayin_detay"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 44,
+      "tablo": "izleme_kayitlari"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 97,
+      "tablo": "yayin_yonetimi"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 100,
+      "tablo": "video_begeniler"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 103,
+      "tablo": "video_favoriler"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 106,
+      "tablo": "video_begeniler"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 109,
+      "tablo": "video_favoriler"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 112,
+      "tablo": "izleme_kayitlari"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/yonetici.ts",
+      "satir": 8,
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/yonetici.ts",
+      "satir": 34,
+      "tablo": "kullanicilar"
     },
     {
       "dosya": "app/bildirimler/api/route.ts",
@@ -3150,174 +3150,6 @@
       "tablo": "kullanicilar"
     },
     {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 12,
-      "ham": "bolge_id, takim_id",
-      "tablo": "kullanicilar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 20,
-      "ham": "kullanici_id, ad, soyad",
-      "tablo": "kullanicilar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 33,
-      "ham": "oneri_id, yayin_id, kullanici_id, izlendi_mi, created_at",
-      "tablo": "oneri_kayitlari"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 50,
-      "ham": "yayin_id, urun_adi, teknik_adi",
-      "tablo": "v_yayin_detay"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 85,
-      "ham": "bolge_id",
-      "tablo": "kullanicilar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 93,
-      "ham": "takim_id",
-      "tablo": "bolgeler"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 115,
-      "ham": "yayin_id, urun_adi, teknik_adi, video_puani, yayin_tarihi, thumbnail_url, video_url, icerik_turu",
-      "tablo": "v_yayin_detay"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 121,
-      "ham": "yayin_id, tamamlandi_mi, izleme_baslangic",
-      "tablo": "izleme_kayitlari"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 174,
-      "ham": "yayin_id, extra_puan, ileri_sarma_acik",
-      "tablo": "yayin_yonetimi"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 177,
-      "ham": "yayin_id",
-      "tablo": "video_begeniler"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 180,
-      "ham": "yayin_id",
-      "tablo": "video_favoriler"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 183,
-      "ham": "yayin_id",
-      "tablo": "video_begeniler"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 186,
-      "ham": "yayin_id",
-      "tablo": "video_favoriler"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 189,
-      "ham": "yayin_id",
-      "tablo": "izleme_kayitlari"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 259,
-      "ham": "takim_id",
-      "tablo": "kullanicilar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 286,
-      "ham": "senaryo_durum_id, senaryo_id, created_at",
-      "tablo": "senaryo_durumu"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 291,
-      "ham": "video_durum_id, video_id, created_at",
-      "tablo": "video_durumu"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 296,
-      "ham": "soru_seti_durum_id, soru_seti_id, created_at",
-      "tablo": "soru_seti_durumu"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 330,
-      "ham": "talep_id, hedef_rol, created_at, urunler(urun_adi), teknikler(teknik_adi)",
-      "tablo": "talepler"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 348,
-      "ham": "senaryo_id",
-      "tablo": "senaryolar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 362,
-      "ham": "durum, senaryo_durum_id, created_at",
-      "tablo": "senaryo_durumu"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 380,
-      "ham": "video_id",
-      "tablo": "videolar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 394,
-      "ham": "durum, video_durum_id, created_at",
-      "tablo": "video_durumu"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 412,
-      "ham": "soru_seti_id",
-      "tablo": "soru_setleri"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 426,
-      "ham": "durum, soru_seti_durum_id, created_at",
-      "tablo": "soru_seti_durumu"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 444,
-      "ham": "yayin_id, durum, yayin_tarihi",
-      "tablo": "yayin_yonetimi"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 475,
-      "ham": "firma_id",
-      "tablo": "kullanicilar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 501,
-      "ham": "kullanici_id, fotograf_url",
-      "tablo": "kullanicilar"
-    },
-    {
       "dosya": "lib/utils/bildirimOlustur.ts",
       "satir": 63,
       "ham": "senaryo_id",
@@ -3774,6 +3606,30 @@
       "tablo": "kullanicilar"
     },
     {
+      "dosya": "lib/utils/anaSayfa/bm.ts",
+      "satir": 7,
+      "ham": "bolge_id, takim_id",
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/bm.ts",
+      "satir": 15,
+      "ham": "kullanici_id, ad, soyad",
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/bm.ts",
+      "satir": 28,
+      "ham": "oneri_id, yayin_id, kullanici_id, izlendi_mi, created_at",
+      "tablo": "oneri_kayitlari"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/bm.ts",
+      "satir": 45,
+      "ham": "yayin_id, urun_adi, teknik_adi",
+      "tablo": "v_yayin_detay"
+    },
+    {
       "dosya": "lib/utils/anaSayfa/bmAktivite.ts",
       "satir": 53,
       "ham": "bolge_id, bolge_adi, takim_id",
@@ -3802,6 +3658,150 @@
       "satir": 117,
       "ham": "oneri_id, oneren_id, izlendi_mi, created_at",
       "tablo": "oneri_kayitlari"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 12,
+      "ham": "senaryo_durum_id, senaryo_id, created_at",
+      "tablo": "senaryo_durumu"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 17,
+      "ham": "video_durum_id, video_id, created_at",
+      "tablo": "video_durumu"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 22,
+      "ham": "soru_seti_durum_id, soru_seti_id, created_at",
+      "tablo": "soru_seti_durumu"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/tm.ts",
+      "satir": 8,
+      "ham": "takim_id",
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/uretici.ts",
+      "satir": 20,
+      "ham": "talep_id, hedef_rol, created_at, urunler(urun_adi), teknikler(teknik_adi)",
+      "tablo": "talepler"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/uretici.ts",
+      "satir": 38,
+      "ham": "senaryo_id",
+      "tablo": "senaryolar"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/uretici.ts",
+      "satir": 52,
+      "ham": "durum, senaryo_durum_id, created_at",
+      "tablo": "senaryo_durumu"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/uretici.ts",
+      "satir": 70,
+      "ham": "video_id",
+      "tablo": "videolar"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/uretici.ts",
+      "satir": 84,
+      "ham": "durum, video_durum_id, created_at",
+      "tablo": "video_durumu"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/uretici.ts",
+      "satir": 102,
+      "ham": "soru_seti_id",
+      "tablo": "soru_setleri"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/uretici.ts",
+      "satir": 116,
+      "ham": "durum, soru_seti_durum_id, created_at",
+      "tablo": "soru_seti_durumu"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/uretici.ts",
+      "satir": 134,
+      "ham": "yayin_id, durum, yayin_tarihi",
+      "tablo": "yayin_yonetimi"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 8,
+      "ham": "bolge_id",
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 16,
+      "ham": "takim_id",
+      "tablo": "bolgeler"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 38,
+      "ham": "yayin_id, urun_adi, teknik_adi, video_puani, yayin_tarihi, thumbnail_url, video_url, icerik_turu",
+      "tablo": "v_yayin_detay"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 44,
+      "ham": "yayin_id, tamamlandi_mi, izleme_baslangic",
+      "tablo": "izleme_kayitlari"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 97,
+      "ham": "yayin_id, extra_puan, ileri_sarma_acik",
+      "tablo": "yayin_yonetimi"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 100,
+      "ham": "yayin_id",
+      "tablo": "video_begeniler"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 103,
+      "ham": "yayin_id",
+      "tablo": "video_favoriler"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 106,
+      "ham": "yayin_id",
+      "tablo": "video_begeniler"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 109,
+      "ham": "yayin_id",
+      "tablo": "video_favoriler"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 112,
+      "ham": "yayin_id",
+      "tablo": "izleme_kayitlari"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/yonetici.ts",
+      "satir": 8,
+      "ham": "firma_id",
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/yonetici.ts",
+      "satir": 34,
+      "ham": "kullanici_id, fotograf_url",
+      "tablo": "kullanicilar"
     },
     {
       "dosya": "app/bildirimler/api/route.ts",
@@ -5926,26 +5926,6 @@
       "fonksiyon": "store_teslim_aldim"
     },
     {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 125,
-      "fonksiyon": "get_kullanici_ozet"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 130,
-      "fonksiyon": "get_kullanici_ozet"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 495,
-      "fonksiyon": "get_yonetici_ana_sayfa"
-    },
-    {
-      "dosya": "lib/utils/anaSayfaVeri.ts",
-      "satir": 496,
-      "fonksiyon": "get_kullanici_ozet"
-    },
-    {
       "dosya": "lib/analiz/bm/getBmAnalizData.ts",
       "satir": 39,
       "fonksiyon": "get_analiz_bm_tuketim"
@@ -6139,6 +6119,26 @@
       "dosya": "lib/eclub/store/eclubStoreSiparis.ts",
       "satir": 62,
       "fonksiyon": "eclub_store_teslim_aldim"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 48,
+      "fonksiyon": "get_kullanici_ozet"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/utt.ts",
+      "satir": 53,
+      "fonksiyon": "get_kullanici_ozet"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/yonetici.ts",
+      "satir": 28,
+      "fonksiyon": "get_yonetici_ana_sayfa"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/yonetici.ts",
+      "satir": 29,
+      "fonksiyon": "get_kullanici_ozet"
     },
     {
       "dosya": "app/cc-ligi/api/route.ts",

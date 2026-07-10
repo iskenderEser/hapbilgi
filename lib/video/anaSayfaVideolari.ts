@@ -1,6 +1,6 @@
 // lib/video/anaSayfaVideolari.ts
 // Ana sayfa için PAYLAŞILAN video verisi. Görünürlük kuralını (gorunurluk.ts) uygulayıp
-// bir rolün GÖRECEĞİ yayınlanmış videoları çeker. anaSayfaVeri.ts'deki getX fonksiyonları bunu çağırır.
+// bir rolün GÖRECEĞİ yayınlanmış videoları çeker. app/ana-sayfa/api/route.ts çağırır (yalnız-izleme rolleri için).
 //
 // Kapsam:
 //  - Tür kapısı: gorunenTurler(rol) — rol hangi türleri görüyorsa onlar.

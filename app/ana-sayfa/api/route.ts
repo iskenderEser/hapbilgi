@@ -3,14 +3,12 @@ import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { URETICI_ROLLER, YONETICI_ROLLER } from "@/lib/utils/roller";
-import {
-  getBmAnaSayfaVeri,
-  getUttAnaSayfaVeri,
-  getTmAnaSayfaVeri,
-  getIuAnaSayfaVeri,
-  getUreticiAnaSayfaVeri,
-  getYoneticiAnaSayfaVeri,
-} from "@/lib/utils/anaSayfaVeri";
+import { getBmAnaSayfaVeri } from "@/lib/utils/anaSayfa/bm";
+import { getUttAnaSayfaVeri } from "@/lib/utils/anaSayfa/utt";
+import { getTmAnaSayfaVeri } from "@/lib/utils/anaSayfa/tm";
+import { getIuAnaSayfaVeri } from "@/lib/utils/anaSayfa/iu";
+import { getUreticiAnaSayfaVeri } from "@/lib/utils/anaSayfa/uretici";
+import { getYoneticiAnaSayfaVeri } from "@/lib/utils/anaSayfa/yonetici";
 import { getAnaSayfaVideolari } from "@/lib/video/anaSayfaVideolari";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
