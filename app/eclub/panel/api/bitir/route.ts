@@ -1,12 +1,14 @@
 // app/eclub/panel/api/bitir/route.ts
 // E-Club izleme — BİTİR. İzlemeyi tamamlar + izleme puanı yazar.
 // Kural: öneri süresi (oneri_bitis > now) geçmişse PUAN yok (izleme yine tamamlanır).
-// İlk kez tamamlanan izleme + video_puani>0 ise eclub_kazanilan_puanlar'a 'izleme' puanı.
+// TUR BAZLI ilk izleme: geçerli turda tamamlanan ilk izleme + video_puani>0 ise
+// eclub_kazanilan_puanlar'a 'izleme' puanı; UTT +10 da aynı koşulda yeniden doğar.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { eclubPuanKaydet, eclubUttPuanKaydet } from "@/lib/puan/eclubKayit";
+import { gecerliTur } from "@/lib/tur/kayit";
 
 const ECLUB_KISI_ROLLERI = ["eczaci", "eczane_teknisyeni"];
 
@@ -69,13 +71,23 @@ export async function PUT(request: NextRequest) {
       const sureGecerli = !!oneri && new Date(oneri.oneri_bitis) > simdi;
 
       if (sureGecerli) {
-        // İlk izleme puanı mı? (bu yayın+kişi için 'izleme' türünde puan var mı)
+        // Geçerli tur — ilk izleme tekilliğinin alt sınırı (tur bazlı tekillik).
+        // Periyot dolmuşsa gecerliTur yeni turu burada açar (otomatik mekanizma).
+        // Başarısızlıkta güvenli geri düşüş: epoch alt sınırı = eski (ömür boyu) davranış.
+        const turSonuc = await gecerliTur(adminSupabase, izleme.yayin_id);
+        if (!turSonuc.ok) {
+          console.error("[UYARI] Geçerli tur çözülemedi, ömür boyu tekillik uygulanacak:", { yayin_id: izleme.yayin_id, hata: turSonuc.error });
+        }
+        const turBaslangic = turSonuc.tur?.baslangic_tarihi ?? "2000-01-01T00:00:00Z";
+
+        // İlk izleme puanı mı? — TUR BAZLI: bu turda 'izleme' türünde puan var mı?
         const { data: oncekiPuan } = await adminSupabase
           .from("eclub_kazanilan_puanlar")
           .select("kazanilan_puan_id")
           .eq("yayin_id", izleme.yayin_id)
           .eq("kisi_id", kisi.kisi_id)
           .eq("puan_turu", "izleme")
+          .gte("created_at", turBaslangic)
           .limit(1);
 
         const ilkIzleme = (oncekiPuan ?? []).length === 0;
@@ -107,7 +119,7 @@ export async function PUT(request: NextRequest) {
           }
 
           // UTT +10 (GönderiPuanı): takım üyesi izleyince öneriyi gönderen UTT'ye.
-          // İlk izleme + süre geçerli koşulunda, izleme başına bir kez.
+          // Tur bazlı ilk izleme + süre geçerli koşulunda — yeni turda yeniden doğar.
           if (oneri.oneren_id) {
             const uttSonuc = await eclubUttPuanKaydet(adminSupabase, {
               utt_id: oneri.oneren_id,
