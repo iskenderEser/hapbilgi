@@ -3,6 +3,8 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import { gecerliTurBaslangiclari } from "@/lib/tur/kayit";
+import { tamTekrarSayilari } from "@/lib/puan/tekrarSayim";
+import { EXTRA_PUAN_TEKRAR_ESIGI } from "@/lib/puan/strateji";
 
 export async function getUttAnaSayfaVeri(userId: string, adminSupabase: SupabaseClient) {
   const { data: kullanici, error: kullaniciError } = await adminSupabase
@@ -69,14 +71,22 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
   const tamamlananMap: Record<string, boolean> = {};       // tur bazlı
   const devamEdenMap: Record<string, boolean> = {};        // tur bazlı
   const omurBoyuTamamlananMap: Record<string, boolean> = {}; // daha_once_izledi rozeti (kalıcı — U8 kararı)
+  const omurBoyuIzlemeSayiMap: Record<string, number> = {};  // Ekstra İzlediklerim: ömür boyu tamamlanmış sayısı (≥2 süzgeci)
+  const buTurdaIzlemeSayiMap: Record<string, number> = {};   // Ekstra İzlediklerim: "bu turda N izleme"
   for (const iz of izlemeler ?? []) {
-    if (iz.tamamlandi_mi) omurBoyuTamamlananMap[iz.yayin_id] = true;
+    if (iz.tamamlandi_mi) {
+      omurBoyuTamamlananMap[iz.yayin_id] = true;
+      omurBoyuIzlemeSayiMap[iz.yayin_id] = (omurBoyuIzlemeSayiMap[iz.yayin_id] ?? 0) + 1;
+    }
 
     // Tur eşiği: tur kaydı olmayan yayında epoch (eski davranış — her kayıt sayılır).
     const turBaslangic = turMap[iz.yayin_id]?.baslangic_tarihi ?? "2000-01-01T00:00:00Z";
     if (new Date(iz.izleme_baslangic) < new Date(turBaslangic)) continue;
 
-    if (iz.tamamlandi_mi) tamamlananMap[iz.yayin_id] = true;
+    if (iz.tamamlandi_mi) {
+      tamamlananMap[iz.yayin_id] = true;
+      buTurdaIzlemeSayiMap[iz.yayin_id] = (buTurdaIzlemeSayiMap[iz.yayin_id] ?? 0) + 1;
+    }
     else devamEdenMap[iz.yayin_id] = true;
   }
 
@@ -162,10 +172,43 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
   const devam_edenler = (yayinlar ?? []).filter((y: any) => devamEdenMap[y.yayin_id] && !tamamlananMap[y.yayin_id]).map(videoToItem);
   const tamamlananlar = (yayinlar ?? []).filter((y: any) => tamamlananMap[y.yayin_id]).map(videoToItem);
 
+  // ── Ekstra İzlediklerim (K-A5) ─────────────────────────────────────────────
+  // Süzgeç: ömür boyu ≥2 tamamlanmış izleme (yayinlar zaten durum='yayinda' — K-A3
+  // kendiliğinden sağlanır). Tam tekrar sayısı TEK KAYNAK'tan (tamTekrarSayilari,
+  // toplu, N+1 yok); "bu ay kazanıldı" durumu sayıdan türer (sayi >= eşik).
+  // Sayım hatasında güvenli davranış: sayilar boş harita döner → kalan = eşik
+  // görünür, puan kararı etkilenmez (görüntü katmanı).
+  const ekstraAdaylar = (yayinlar ?? []).filter((y: any) => (omurBoyuIzlemeSayiMap[y.yayin_id] ?? 0) >= 2);
+  const sayim = await tamTekrarSayilari(adminSupabase, userId, ekstraAdaylar.map((y: any) => y.yayin_id), turMap);
+  if (!sayim.ok) {
+    console.error("[UYARI] Ekstra İzlediklerim tam tekrar sayımı yapılamadı:", { hata: sayim.error });
+  }
+
+  const ekstra_izlediklerim = ekstraAdaylar
+    .map((y: any) => {
+      const tamTekrar = sayim.sayilar[y.yayin_id] ?? 0;
+      return {
+        ...videoToItem(y),
+        toplam_izlemem: omurBoyuIzlemeSayiMap[y.yayin_id] ?? 0,
+        bu_turda_izleme: buTurdaIzlemeSayiMap[y.yayin_id] ?? 0,
+        extra_kalan: Math.max(0, EXTRA_PUAN_TEKRAR_ESIGI - tamTekrar),
+        bu_ay_extra_kazanildi: tamTekrar >= EXTRA_PUAN_TEKRAR_ESIGI,
+      };
+    })
+    // K-A4: extra'ya yakın önce; "bu ay kazanıldı" satırları altta; ikincil: toplam izleme (çoktan aza)
+    .sort((a: any, b: any) => {
+      const aK = a.bu_ay_extra_kazanildi ? 1 : 0;
+      const bK = b.bu_ay_extra_kazanildi ? 1 : 0;
+      if (aK !== bK) return aK - bK;
+      if (a.extra_kalan !== b.extra_kalan) return a.extra_kalan - b.extra_kalan;
+      return b.toplam_izlemem - a.toplam_izlemem;
+    });
+
   return {
     yeni_videolar,
     devam_edenler,
     tamamlananlar,
+    ekstra_izlediklerim,
     istatistikler: {
       yeni: yeni_videolar.length,
       devam: devam_edenler.length,

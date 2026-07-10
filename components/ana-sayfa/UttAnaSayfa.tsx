@@ -28,10 +28,19 @@ interface Video {
   icerik_turu: IcerikTuru | null;
 }
 
+// Ekstra İzlediklerim satırı — Video + tekrar/extra sayaç alanları (K-A5)
+interface EkstraVideo extends Video {
+  toplam_izlemem: number;
+  bu_turda_izleme: number;
+  extra_kalan: number;
+  bu_ay_extra_kazanildi: boolean;
+}
+
 interface UttVeri {
   yeni_videolar: Video[];
   devam_edenler: Video[];
   tamamlananlar: Video[];
+  ekstra_izlediklerim?: EkstraVideo[];
   istatistikler: {
     yeni: number;
     devam: number;
@@ -228,10 +237,10 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
       if (!res.ok) return;
       setUttVeri(prev => {
         if (!prev) return prev;
-        const guncelle = (liste: Video[]) => liste.map(v => v.yayin_id === yayin_id
+        const guncelle = <T extends Video>(liste: T[]): T[] => liste.map(v => v.yayin_id === yayin_id
           ? { ...v, begeni_mi: d.begeni_mi, begeni_sayisi: d.begeni_mi ? v.begeni_sayisi + 1 : v.begeni_sayisi - 1 }
           : v);
-        return { ...prev, yeni_videolar: guncelle(prev.yeni_videolar), devam_edenler: guncelle(prev.devam_edenler), tamamlananlar: guncelle(prev.tamamlananlar) };
+        return { ...prev, yeni_videolar: guncelle(prev.yeni_videolar), devam_edenler: guncelle(prev.devam_edenler), tamamlananlar: guncelle(prev.tamamlananlar), ekstra_izlediklerim: prev.ekstra_izlediklerim ? guncelle(prev.ekstra_izlediklerim) : prev.ekstra_izlediklerim };
       });
     } catch (error) {
       hata("Beğeni işlemi başarısız.");
@@ -250,10 +259,10 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
       if (!res.ok) return;
       setUttVeri(prev => {
         if (!prev) return prev;
-        const guncelle = (liste: Video[]) => liste.map(v => v.yayin_id === yayin_id
+        const guncelle = <T extends Video>(liste: T[]): T[] => liste.map(v => v.yayin_id === yayin_id
           ? { ...v, favori_mi: d.favori_mi, favori_sayisi: d.favori_mi ? v.favori_sayisi + 1 : v.favori_sayisi - 1 }
           : v);
-        return { ...prev, yeni_videolar: guncelle(prev.yeni_videolar), devam_edenler: guncelle(prev.devam_edenler), tamamlananlar: guncelle(prev.tamamlananlar) };
+        return { ...prev, yeni_videolar: guncelle(prev.yeni_videolar), devam_edenler: guncelle(prev.devam_edenler), tamamlananlar: guncelle(prev.tamamlananlar), ekstra_izlediklerim: prev.ekstra_izlediklerim ? guncelle(prev.ekstra_izlediklerim) : prev.ekstra_izlediklerim };
       });
     } catch (error) {
       hata("Favori işlemi başarısız.");
@@ -394,6 +403,43 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
           </div>
         </div>
       )}
+
+      {/* Ekstra İzlediklerim — tekrar izlemelerle extra puan takibi (K-A5; K-A2 boş durum: teşvik) */}
+      <div className="mb-6">
+        <div className="text-sm font-bold text-gray-900 mb-1">⭐ Ekstra İzlediklerim</div>
+        <p className="text-xs text-gray-500 mb-2.5">
+          Bir videoyu ileri sarmadan baştan sona yeniden izlemek &quot;tam tekrar&quot;dır — tam tekrarlarla her ay extra puan kazanabilirsin.
+        </p>
+        {(uttVeri?.ekstra_izlediklerim ?? []).length === 0 ? (
+          <div className="bg-white border border-gray-200 rounded-xl p-6 text-center text-xs text-gray-400">
+            En az iki kez izlediğin videolar burada listelenir — videoları tekrar izleyerek extra puan kazanabilirsin.
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+            {(uttVeri?.ekstra_izlediklerim ?? []).map((video) => (
+              <div key={video.yayin_id} className="flex flex-col gap-1">
+                <VideoKart
+                  video={video}
+                  onVideoClick={handleVideoClick}
+                  onBegeni={handleBegeni}
+                  onFavori={handleFavori}
+                />
+                <span
+                  className="text-[10px] px-2 py-1 rounded-lg text-center"
+                  style={video.bu_ay_extra_kazanildi
+                    ? { background: "#f0fdf4", color: "#15803d", border: "0.5px solid #bbf7d0" }
+                    : { background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe" }}
+                >
+                  Bu turda: {video.bu_turda_izleme} izleme ·{" "}
+                  {video.bu_ay_extra_kazanildi
+                    ? "Bu ay extra kazanıldı ✓"
+                    : `Extra'ya ${video.extra_kalan} tam tekrar kaldı`}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Müdürlükler (TUR_SIRA sırasıyla) */}
       {turGruplari.length === 0 ? (
