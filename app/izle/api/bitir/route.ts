@@ -3,9 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { kazanilanPuanKaydet } from "@/lib/puan/kayit";
-import { puanKazanilabilirMi, haftaBaslangici } from "@/lib/zaman/kontrol";
+import { puanKazanilabilirMi, ayBaslangici } from "@/lib/zaman/kontrol";
 import { izlemeKarariBelirle, extraPuanEsikKarsilandi } from "@/lib/puan/strateji";
 import { oneriPenceresiAcik } from "@/lib/oneri/pencereKontrol";
+import { gecerliTur } from "@/lib/tur/kayit";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function PUT(request: NextRequest) {
   try {
@@ -16,7 +18,7 @@ export async function PUT(request: NextRequest) {
 
     const adminSupabase = createAdminClient();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (!["utt", "kd_utt"].includes(rol)) return rolHatasi("Sadece utt ve kd_utt izleyebilir.");
 
     const body = await request.json();
@@ -70,6 +72,16 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ mesaj: "İzleme tamamlandı.", puan_kazanildi: false, soru_gosterilecek: false }, { status: 200 });
     }
 
+    // Geçerli tur — tüm tekillik sorgularının alt sınırı (tur bazlı tekillik).
+    // Periyot dolmuşsa gecerliTur yeni turu burada açar (otomatik mekanizma).
+    // Başarısızlıkta güvenli geri düşüş: epoch alt sınırı = eski (ömür boyu) davranış;
+    // puan fazla verilmez, yalnızca tekrar kazanımı o çağrıda işlemez.
+    const turSonuc = await gecerliTur(adminSupabase, izleme.yayin_id);
+    if (!turSonuc.ok) {
+      console.error("[UYARI] Geçerli tur çözülemedi, ömür boyu tekillik uygulanacak:", { yayin_id: izleme.yayin_id, hata: turSonuc.error });
+    }
+    const turBaslangic = new Date(turSonuc.tur?.baslangic_tarihi ?? "2000-01-01T00:00:00Z");
+
     const ileriSarmaAcik = yayin.ileri_sarma_acik ?? false;
     const ileriSarildi = ileriSarmaAcik && ileriSarilanSure > 0;
 
@@ -103,13 +115,15 @@ export async function PUT(request: NextRequest) {
 
     const video_puani = vPuan?.video_puani ?? 0;
 
-    // İlk izleme kontrolü — bu yayın için kullanıcının 'izleme' türünde puanı var mı?
+    // İlk izleme kontrolü — TUR BAZLI: bu turda kullanıcının 'izleme' puanı var mı?
+    // (Önceki turların kayıtları sayılmaz; yeni turda izleme puanı yeniden doğar.)
     const { data: oncekiPuan, error: opError } = await adminSupabase
       .from("kazanilan_puanlar")
       .select("kazanilan_puan_id")
       .eq("yayin_id", izleme.yayin_id)
       .eq("kullanici_id", user.id)
       .eq("puan_turu", "izleme")
+      .gte("created_at", turBaslangic.toISOString())
       .limit(1);
 
     if (opError) {
@@ -145,47 +159,42 @@ export async function PUT(request: NextRequest) {
         .update({ izleme_turu: "extra" })
         .eq("izleme_id", izleme_id);
 
-      const haftaBaslangic = haftaBaslangici(baslangicTarihi);
+      // Extra sayım alt sınırı — AY + TUR KESİŞİMLİ (TB2, 09.07.2026):
+      // takvim ayı içinde 3. tam tekrarın sonunda TEK extra; ilk izleme sayılmaz
+      // (yalnızca 'extra' işaretli, tamamlanmış izlemeler sayılır); her yeni ayda
+      // hak yenilenir. Yeni tur ay ortasında açıldıysa önceki turun tekrarları
+      // sayılmaz (§9.4). Mükerrer yapısal olarak imkânsız: puan yalnızca
+      // sayı === eşik anında düşer (4.+ tekrarlarda koşul bir daha tutmaz),
+      // ayrı mükerrer sorgusu bu nedenle kaldırıldı.
+      const ayBasi = ayBaslangici();
+      const extraAltSinir = new Date(Math.max(ayBasi.getTime(), turBaslangic.getTime()));
 
-      const { count: haftaIzlemeSayisi, error: hiError } = await adminSupabase
+      const { count: aylikTamTekrar, error: hiError } = await adminSupabase
         .from("izleme_kayitlari")
         .select("izleme_id", { count: "exact", head: true })
         .eq("yayin_id", izleme.yayin_id)
         .eq("kullanici_id", user.id)
+        .eq("izleme_turu", "extra")
         .eq("tamamlandi_mi", true)
-        .gte("izleme_baslangic", haftaBaslangic.toISOString());
+        .gte("izleme_baslangic", extraAltSinir.toISOString());
 
       if (hiError) {
-        console.error("[UYARI] Haftalık izleme sayısı kontrol edilemedi:", { hata: hiError.message });
-      } else if (extraPuanEsikKarsilandi(haftaIzlemeSayisi ?? 0)) {
-        // Bu haftaya ait extra puan kaydı var mı? (mükerrer önleme)
-        const { data: extraKayit, error: ekError } = await adminSupabase
-          .from("kazanilan_puanlar")
-          .select("kazanilan_puan_id")
-          .eq("yayin_id", izleme.yayin_id)
-          .eq("kullanici_id", user.id)
-          .eq("puan_turu", "extra")
-          .gte("created_at", haftaBaslangic.toISOString())
-          .limit(1);
+        console.error("[UYARI] Aylık tam tekrar sayısı kontrol edilemedi:", { hata: hiError.message });
+      } else if (extraPuanEsikKarsilandi(aylikTamTekrar ?? 0)) {
+        const extraPuanDegeri = yayin.extra_puan ?? 0;
+        if (extraPuanDegeri > 0) {
+          const sonuc = await kazanilanPuanKaydet(adminSupabase, {
+            kullanici_id: user.id,
+            yayin_id: izleme.yayin_id,
+            izleme_id,
+            puan_turu: "extra",
+            puan: extraPuanDegeri,
+          });
 
-        if (ekError) {
-          console.error("[UYARI] Extra puan kontrolü yapılamadı:", { hata: ekError.message });
-        } else if ((extraKayit ?? []).length === 0) {
-          const extraPuanDegeri = yayin.extra_puan ?? 0;
-          if (extraPuanDegeri > 0) {
-            const sonuc = await kazanilanPuanKaydet(adminSupabase, {
-              kullanici_id: user.id,
-              yayin_id: izleme.yayin_id,
-              izleme_id,
-              puan_turu: "extra",
-              puan: extraPuanDegeri,
-            });
-
-            if (!sonuc.ok) {
-              console.error("[UYARI] Extra puan kaydedilemedi:", { izleme_id, hata: sonuc.error });
-            } else {
-              kazanilanPuanlar.push({ tur: "extra", puan: extraPuanDegeri });
-            }
+          if (!sonuc.ok) {
+            console.error("[UYARI] Extra puan kaydedilemedi:", { izleme_id, hata: sonuc.error });
+          } else {
+            kazanilanPuanlar.push({ tur: "extra", puan: extraPuanDegeri });
           }
         }
       }
@@ -206,13 +215,15 @@ export async function PUT(request: NextRequest) {
         const pencere = oneriPenceresiAcik(oneri.oneri_baslangic, oneri.oneri_bitis, baslangicTarihi);
 
         if (pencere.acik) {
-          // Öneri puanı kontrolü — bu yayın için aynı kullanıcıya daha önce öneri puanı verilmiş mi?
+          // Öneri puanı kontrolü — TUR BAZLI: bu turda öneri puanı verilmiş mi?
+          // ("Yayın-kullanıcı çifti için tek defa" kuralı "tur başına tek defa" olur.)
           const { data: oncekiOneriPuan, error: oopError } = await adminSupabase
             .from("kazanilan_puanlar")
             .select("kazanilan_puan_id")
             .eq("yayin_id", izleme.yayin_id)
             .eq("kullanici_id", user.id)
             .eq("puan_turu", "oneri")
+            .gte("created_at", turBaslangic.toISOString())
             .limit(1);
 
           if (oopError) {

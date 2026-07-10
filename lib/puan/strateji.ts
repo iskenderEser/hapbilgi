@@ -1,4 +1,4 @@
-// lib/puan/puanTuru.ts
+// lib/puan/strateji.ts
 
 /**
  * Bir izleme tamamlandığında hangi puan türünün (ilk izleme, extra, puansız tekrar)
@@ -10,34 +10,34 @@
  * Kullanım yerleri:
  * - app/izle/api/bitir/route.ts (izleme tamamlandığında puan kararı)
  *
- * KURALLAR:
+ * KURALLAR (extra kuralı 09.07.2026'da CC modeline güncellendi — TB2):
  *
  * 1. Puansız zamanda (Cmt, Paz tüm gün + Pzt-Cum 20:30-06:59) hiçbir puan verilmez,
  *    hiçbir kayıp kaydedilmez, izleme 'extra' olarak işaretlenmez. Bu kontrol
  *    lib/zaman/kontrol.ts → puanKazanilabilirMi() ile yapılır.
  *
- * 2. İlk izleme: kullanıcının o yayın için 'izleme' türünde kazanilan_puanlar
- *    kaydı yoksa ilk izlemedir. İlk izlemede video_puani verilir.
+ * 2. İlk izleme: kullanıcının o yayın için GEÇERLİ TURDA 'izleme' türünde
+ *    kazanilan_puanlar kaydı yoksa ilk izlemedir. İlk izlemede video_puani verilir.
  *
- * 3. Extra puan: ilk izleme + 3 tam tekrar = toplam 4'üncü tam seyretme
- *    sonunda, ileri sarma olmadan, extra_puan değeri verilir.
- *    'Tam seyretme' = ileri sarmadan tamamlanmış izleme.
- *    Aynı hafta için tek extra puan verilir (mükerrer önleme).
+ * 3. Extra puan: ilk izleme SAYILMAZ. Takvim ayı içinde 3. tam tekrar izlemenin
+ *    (ileri sarmasız, tamamlanmış, 'extra' türünde) sonunda, extra_puan değeri
+ *    BİR KEZ verilir; o ayki 4. ve sonraki tekrarlar puansız. Her yeni ayda hak
+ *    yenilenir. Tur kesişimi: sayım alt sınırı max(ay başı, geçerli tur başı).
+ *    Mükerrer yapısal olarak imkânsızdır: puan yalnızca sayı === eşik anında düşer.
  *
  * 4. Öneri puanı: izleme_turu='oneri' ve öneri penceresi içinde izlendi ise
- *    sistem_ayarlari.oneri_puani değeri verilir. Her yayın-kullanıcı çifti
- *    için tek defa verilir.
+ *    sistem_ayarlari.oneri_puani değeri verilir. GEÇERLİ TUR başına tek defa.
  */
 
 export type IzlemeKarari =
   | { tur: "ilk_izleme"; video_puani_ver: boolean }
-  | { tur: "extra_aday"; haftalik_izleme_kontrolu_gerek: boolean }
+  | { tur: "extra_aday"; aylik_tekrar_kontrolu_gerek: boolean }
   | { tur: "tekrar_puansiz" };
 
 /**
  * Bir izlemenin türüne karar verir (ilk izleme mi, extra adayı mı, puansız tekrar mı).
  *
- * @param ilk_izleme_mi Kullanıcının o yayın için daha önce 'izleme' puanı var mı?
+ * @param ilk_izleme_mi Kullanıcının o yayın için geçerli turda 'izleme' puanı var mı?
  * @param ileri_sarildi Bu izlemede ileri sarma yapıldı mı?
  * @param izleme_turu İzleme türü ('kendi_kendine' | 'oneri' | 'extra')
  * @returns Karar objesi
@@ -58,19 +58,22 @@ export function izlemeKarariBelirle(
   }
 
   // Tekrar izleme, ileri sarılmamış, kendi_kendine → extra puan adayı
-  return { tur: "extra_aday", haftalik_izleme_kontrolu_gerek: true };
+  return { tur: "extra_aday", aylik_tekrar_kontrolu_gerek: true };
 }
 
 /**
- * Haftalık tam seyretme sayısı extra puan eşiğini karşılıyor mu?
+ * Ay içindeki tam tekrar sayısı extra puanı düşürüyor mu?
  *
- * Eşik: 4 (ilk izleme + 3 tam tekrar).
+ * Eşik: 3 tam tekrar (ilk izleme HARİÇ; sayılan yalnızca 'extra' türüne işaretlenmiş,
+ * ileri sarmasız, tamamlanmış izlemelerdir — içinde bulunulan izleme dahil).
  *
- * @param haftalik_tam_seyretme_sayisi O hafta içinde tamamlanmış, ileri sarılmamış izleme sayısı
- * @returns true: extra puan eşiği karşılandı, false: henüz değil
+ * Yalnızca sayı TAM eşiğe eşitken true döner — extra ay içinde tek kez düşer
+ * (4.+ tekrarlarda sayı eşiği aşar, koşul bir daha tutmaz).
+ *
+ * @param aylik_tam_tekrar_sayisi Alt sınırdan (max(ay başı, tur başı)) bu yana tam tekrar sayısı
  */
-export const EXTRA_PUAN_ESIGI = 4;
+export const EXTRA_PUAN_TEKRAR_ESIGI = 3;
 
-export function extraPuanEsikKarsilandi(haftalik_tam_seyretme_sayisi: number): boolean {
-  return haftalik_tam_seyretme_sayisi === EXTRA_PUAN_ESIGI;
+export function extraPuanEsikKarsilandi(aylik_tam_tekrar_sayisi: number): boolean {
+  return aylik_tam_tekrar_sayisi === EXTRA_PUAN_TEKRAR_ESIGI;
 }
