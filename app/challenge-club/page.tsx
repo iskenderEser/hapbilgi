@@ -35,6 +35,7 @@ interface Video {
   video_puani: number;
   yayin_tarihi: string;
   tamamlandi_mi: boolean;
+  sonraki_tur_tarihi?: string | null;
 }
 
 interface Challenge {
@@ -436,6 +437,18 @@ function VideoListesi({
                   }}
                 >
                   Tamamlandı
+                </span>
+              )}
+              {v.tamamlandi_mi && v.sonraki_tur_tarihi && (
+                <span
+                  className="text-xs px-2 py-0.5 rounded-full"
+                  style={{
+                    color: "#1d4ed8",
+                    background: "#eff6ff",
+                    border: "0.5px solid #bfdbfe",
+                  }}
+                >
+                  {Math.max(0, Math.ceil((new Date(v.sonraki_tur_tarihi).getTime() - Date.now()) / (24 * 60 * 60 * 1000)))} gün sonra yeniden puanlı
                 </span>
               )}
             </div>

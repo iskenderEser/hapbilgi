@@ -4,7 +4,9 @@
 //
 // İzleme türü mantığı:
 //   - challenge_id geldiyse → 'challenge' türü, challenge doğrulanır
-//   - Aksi halde → daha önce tamamlandıysa 'extra', değilse 'kendi_izleme'
+//   - Aksi halde → GEÇERLİ TURDA daha önce tamamlandıysa 'extra', değilse 'kendi_izleme'
+//     (tur modeli: yeni turda video kendi_izleme'ye döner — tam puan + sorular yeniden doğar;
+//      periyodu dolmuş yayında yeni turu gecerliTur burada açar — otomatik mekanizma)
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
@@ -19,6 +21,8 @@ import {
 } from "@/lib/utils/hataIsle";
 import { dahaOnceTamamlandiMi } from "@/lib/cc/izleme/extraKontrol";
 import { izlemeBaslat } from "@/lib/cc/izleme/baslat";
+import { gecerliTur } from "@/lib/tur/kayit";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,7 +35,7 @@ export async function POST(request: NextRequest) {
     const adminSupabase = createAdminClient();
 
     // 2. Rol kontrolü — sadece BM
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (rol !== "bm") {
       return rolHatasi("Sadece BM rolü Challenge Club videolarını izleyebilir.");
     }
@@ -126,11 +130,23 @@ export async function POST(request: NextRequest) {
       izleme_turu = "challenge";
       kullanilacakChallengeId = challenge_id;
     } else {
-      // 5b. Challenge yok — extra mı kendi izleme mi karar ver
+      // 5b. Challenge yok — extra mı kendi izleme mi karar ver (TUR BAZLI).
+      // Geçerli tur çözülür; periyot dolmuşsa yeni tur burada açılır.
+      // Başarısızlıkta güvenli geri düşüş: epoch alt sınırı = eski (ömür boyu) davranış.
+      const turSonuc = await gecerliTur(adminSupabase, yayin_id);
+      if (!turSonuc.ok) {
+        console.error("[UYARI] Geçerli tur çözülemedi, ömür boyu tekillik uygulanacak:", {
+          yayin_id,
+          hata: turSonuc.error,
+        });
+      }
+      const turBaslangic = turSonuc.tur?.baslangic_tarihi ?? "2000-01-01T00:00:00Z";
+
       const dahaOnceTamamlandi = await dahaOnceTamamlandiMi(
         adminSupabase,
         user.id,
-        yayin_id
+        yayin_id,
+        turBaslangic
       );
       izleme_turu = dahaOnceTamamlandi ? "extra" : "kendi_izleme";
     }
@@ -162,6 +178,6 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (err) {
-    return sunucuHatasi(err, "POST /challenge-club/izle/api/baslat");
+    return sunucuHatasi(err, "PUT /challenge-club/izle/api/baslat".replace("PUT", "POST"));
   }
 }

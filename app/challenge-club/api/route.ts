@@ -2,7 +2,9 @@
 //
 // Challenge Club backend endpoint'i.
 //
-// GET ?tip=izlenecek-videolar  → BM'in henüz tamamlamadığı CC yayınları
+// GET ?tip=izlenecek-videolar  → BM'in GEÇERLİ TURDA henüz tamamlamadığı CC yayınları
+//                                (tur bazlı — önceki turda tamamlanan video yeni turda
+//                                 "tamamlanmamış" olarak başa döner; salt-okur tur hesabı)
 // GET ?tip=bekleyen            → BM'e gelen, izlenmemiş, süresi geçmemiş challenge'lar
 // GET ?tip=gonderdiklerim      → BM'in bu ay gönderdiği challenge'lar
 // GET ?tip=uygun-aliciler&yayin_id=X → Challenge gönderilebilecek BM listesi
@@ -23,6 +25,8 @@ import { tekrarIzlemeKontrol } from "@/lib/cc/tekrarIzlemeKontrol";
 import { challengeOlustur } from "@/lib/cc/kayit";
 import { AYLIK_MAX_GONDERIM } from "@/lib/cc/sabitler";
 import { ayBaslangici } from "@/lib/zaman/kontrol";
+import { gecerliTurBaslangiclari } from "@/lib/tur/kayit";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,7 +36,7 @@ export async function GET(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (rol !== "bm") return rolHatasi("Sadece BM Challenge Club'a erişebilir.");
 
     const { data: kullanici, error: kError } = await adminSupabase
@@ -47,7 +51,7 @@ export async function GET(request: NextRequest) {
     const tip = searchParams.get("tip") || "izlenecek-videolar";
 
     // ─── tip=izlenecek-videolar ────────────────────────────────────────────
-    // BM'in henüz tamamlamadığı CC yayınları. Önce kendisi izleyebilsin.
+    // BM'in geçerli turda henüz tamamlamadığı CC yayınları. Önce kendisi izleyebilsin.
     if (tip === "izlenecek-videolar") {
       const [yayinlarRes, izlemelerRes] = await Promise.all([
         adminSupabase
@@ -58,21 +62,33 @@ export async function GET(request: NextRequest) {
           .order("yayin_tarihi", { ascending: false }),
         adminSupabase
           .from("cc_izleme_kayitlari")
-          .select("yayin_id")
+          .select("yayin_id, izleme_baslangic")
           .eq("bm_id", kullanici.kullanici_id)
           .eq("tamamlandi_mi", true),
       ]);
 
       if (yayinlarRes.error) return hataYaniti("Yayınlar çekilemedi.", "v_yayin_detay SELECT", yayinlarRes.error);
 
-      const tamamlananSet = new Set<string>(
-        (izlemelerRes.data ?? []).map((iz: { yayin_id: string }) => iz.yayin_id)
-      );
+      // Geçerli tur başlangıçları — SALT-OKUR toplu hesap (lib/tur/kayit.ts).
+      // Tur bazlı bayrak: yalnızca geçerli turda tamamlanan izlemeler videoyu
+      // "tamamlandı" işaretler; önceki turun izlemeleri işaretlemez (§4.1b).
+      const yayinIdler = (yayinlarRes.data ?? []).map((y: any) => y.yayin_id);
+      const turMap = await gecerliTurBaslangiclari(adminSupabase, yayinIdler);
+
+      const tamamlananSet = new Set<string>();
+      for (const iz of (izlemelerRes.data ?? []) as { yayin_id: string; izleme_baslangic: string }[]) {
+        // Tur kaydı olmayan yayında epoch (eski davranış — her kayıt sayılır).
+        const turBaslangic = turMap[iz.yayin_id]?.baslangic_tarihi ?? "2000-01-01T00:00:00Z";
+        if (new Date(iz.izleme_baslangic) >= new Date(turBaslangic)) {
+          tamamlananSet.add(iz.yayin_id);
+        }
+      }
 
       // Önce tamamlanmamışlar, sonra tamamlananlar
       const tumVideolar = (yayinlarRes.data ?? []).map((y: any) => ({
         ...y,
         tamamlandi_mi: tamamlananSet.has(y.yayin_id),
+        sonraki_tur_tarihi: turMap[y.yayin_id]?.sonraki_tur_tarihi ?? null,
       }));
       tumVideolar.sort((a: any, b: any) => Number(a.tamamlandi_mi) - Number(b.tamamlandi_mi));
 
@@ -216,7 +232,7 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (rol !== "bm") return rolHatasi("Sadece BM challenge gönderebilir.");
 
     const { data: kullanici, error: kError } = await adminSupabase

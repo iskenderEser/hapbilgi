@@ -1,7 +1,8 @@
 // app/challenge-club/izle/api/bitir/route.ts
 // CC izleme oturumunu tamamlar. Video bitince frontend tarafından çağrılır.
 // - izleme kaydını günceller (tamamlandi_mi=true, izleme_bitis, ileri_sarildi_mi)
-// - İleri sarılmamışsa video/extra puanı yazar
+// - İleri sarılmamışsa video puanı yazar; extra'da AY+TUR kesişimli hak kontrolü:
+//   takvim ayı içinde 2. tam tekrarın sonunda tek extra (lib/cc/izleme/extraKontrol.ts)
 // - Soruların gösterilip gösterilmeyeceği bilgisini döner
 
 import { NextRequest, NextResponse } from "next/server";
@@ -17,6 +18,10 @@ import {
 } from "@/lib/utils/hataIsle";
 import { izlemeTamamla } from "@/lib/cc/izleme/bitir";
 import { izlemePuaniKaydet, extraPuaniKaydet } from "@/lib/cc/puan/kazanim";
+import { extraPuanHakEdildiMi } from "@/lib/cc/izleme/extraKontrol";
+import { gecerliTur } from "@/lib/tur/kayit";
+import { ayBaslangici } from "@/lib/zaman/kontrol";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function PUT(request: NextRequest) {
   try {
@@ -29,7 +34,7 @@ export async function PUT(request: NextRequest) {
     const adminSupabase = createAdminClient();
 
     // 2. Rol kontrolü — sadece BM
-    const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+    const rol = await rolCozucu(adminSupabase, user.id);
     if (rol !== "bm") {
       return rolHatasi("Sadece BM rolü Challenge Club videolarını izleyebilir.");
     }
@@ -153,22 +158,46 @@ export async function PUT(request: NextRequest) {
         // Sorular gösterilecek (ileri sarılmamış kendi_izleme)
         soru_gosterilecek = true;
       } else if (izleme.izleme_turu === "extra") {
-        const puan = yayinYonetimi.extra_puan ?? 0;
-        if (puan > 0) {
-          const kayit = await extraPuaniKaydet(adminSupabase, {
-            bm_id: user.id,
+        // Extra hak kontrolü — alt sınır: max(ay başı, geçerli tur başı).
+        // Kural: takvim ayı içinde 2. tam tekrarın sonunda TEK extra;
+        // 1. tekrarda henüz yok, 3.+ tekrarlarda artık yok (sayı === eşik).
+        // Tur çözülemezse güvenli geri düşüş: yalnızca ay başı sınırı.
+        const turSonuc = await gecerliTur(adminSupabase, izleme.yayin_id);
+        if (!turSonuc.ok) {
+          console.error("[UYARI] Geçerli tur çözülemedi, yalnızca ay sınırı uygulanacak:", {
             yayin_id: izleme.yayin_id,
-            izleme_id,
-            puan,
+            hata: turSonuc.error,
           });
-          if (!kayit.ok) {
-            return hataYaniti(
-              kayit.error ?? "Extra puan yazılamadı.",
-              "lib/cc/puan/kazanim — extraPuaniKaydet",
-              null
-            );
+        }
+        const ayBasi = ayBaslangici();
+        const turBasi = new Date(turSonuc.tur?.baslangic_tarihi ?? "2000-01-01T00:00:00Z");
+        const altSinir = new Date(Math.max(ayBasi.getTime(), turBasi.getTime()));
+
+        const hak = await extraPuanHakEdildiMi(
+          adminSupabase,
+          user.id,
+          izleme.yayin_id,
+          altSinir.toISOString()
+        );
+
+        if (hak.hak_edildi) {
+          const puan = yayinYonetimi.extra_puan ?? 0;
+          if (puan > 0) {
+            const kayit = await extraPuaniKaydet(adminSupabase, {
+              bm_id: user.id,
+              yayin_id: izleme.yayin_id,
+              izleme_id,
+              puan,
+            });
+            if (!kayit.ok) {
+              return hataYaniti(
+                kayit.error ?? "Extra puan yazılamadı.",
+                "lib/cc/puan/kazanim — extraPuaniKaydet",
+                null
+              );
+            }
+            kazanilan_puan = puan;
           }
-          kazanilan_puan = puan;
         }
         // Extra izlemede soru gösterilmez
         soru_gosterilecek = false;
