@@ -4,6 +4,7 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import { getBmAktiviteVerisi } from "@/lib/utils/anaSayfa/bmAktivite";
+import { gecerliTurBaslangiclari } from "@/lib/tur/kayit";
 
 // ─── BM ───────────────────────────────────────────────────────────────────────
 
@@ -119,7 +120,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
       .order("yayin_tarihi", { ascending: false }),
     adminSupabase
       .from("izleme_kayitlari")
-      .select("yayin_id, tamamlandi_mi")
+      .select("yayin_id, tamamlandi_mi, izleme_baslangic")
       .eq("kullanici_id", userId),
     adminSupabase.rpc("get_kullanici_ozet", {
       p_kullanici_id: userId,
@@ -135,9 +136,23 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
 
   if (yayinError) throw new Error("Yayınlar çekilemedi.")
 
-  const tamamlananMap: Record<string, boolean> = {};
-  const devamEdenMap: Record<string, boolean> = {};
+  // Geçerli tur başlangıçları — SALT-OKUR toplu hesap (lib/tur/kayit.ts).
+  // Tur bazlı süzgeç: yalnızca geçerli turda tamamlanan/devam eden izlemeler
+  // videoyu "yeni videolar"dan düşürür; önceki turun izlemeleri düşürmez —
+  // periyodu dolan video kendiliğinden "yeni"ye döner (§9.1).
+  const yayinIdler = (yayinlar ?? []).map((y: any) => y.yayin_id);
+  const turMap = await gecerliTurBaslangiclari(adminSupabase, yayinIdler);
+
+  const tamamlananMap: Record<string, boolean> = {};       // tur bazlı
+  const devamEdenMap: Record<string, boolean> = {};        // tur bazlı
+  const omurBoyuTamamlananMap: Record<string, boolean> = {}; // daha_once_izledi rozeti (kalıcı — U8 kararı)
   for (const iz of izlemeler ?? []) {
+    if (iz.tamamlandi_mi) omurBoyuTamamlananMap[iz.yayin_id] = true;
+
+    // Tur eşiği: tur kaydı olmayan yayında epoch (eski davranış — her kayıt sayılır).
+    const turBaslangic = turMap[iz.yayin_id]?.baslangic_tarihi ?? "2000-01-01T00:00:00Z";
+    if (new Date(iz.izleme_baslangic) < new Date(turBaslangic)) continue;
+
     if (iz.tamamlandi_mi) tamamlananMap[iz.yayin_id] = true;
     else devamEdenMap[iz.yayin_id] = true;
   }
@@ -147,7 +162,6 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
   const hafta_puani = (haftaOzet && haftaOzet.length > 0) ? (haftaOzet[0].toplam_net_puan ?? 0) : 0;
 
   // Yayın bilgileri (extra_puan, ileri_sarma_acik) toplu çek
-  const yayinIdler = (yayinlar ?? []).map((y: any) => y.yayin_id);
   const [
     { data: yayinBilgileri },
     { data: begeniSayilari },
@@ -203,6 +217,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
 
   const videoToItem = (y: any) => ({
     yayin_id: y.yayin_id,
+    sonraki_tur_tarihi: turMap[y.yayin_id]?.sonraki_tur_tarihi ?? null,
     urun_adi: y.urun_adi ?? "-",
     teknik_adi: y.teknik_adi ?? "-",
     video_url: y.video_url ?? null,
@@ -217,7 +232,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
     izlenme_sayisi: izlenmeSayiMap[y.yayin_id] ?? 0,
     begeni_mi: kullaniciBegeniSet.has(y.yayin_id),
     favori_mi: kullaniciFavoriSet.has(y.yayin_id),
-    daha_once_izledi: tamamlananMap[y.yayin_id] ?? false,
+    daha_once_izledi: omurBoyuTamamlananMap[y.yayin_id] ?? false,
   });
 
   const yeni_videolar = (yayinlar ?? []).filter((y: any) => !tamamlananMap[y.yayin_id] && !devamEdenMap[y.yayin_id]).map(videoToItem);

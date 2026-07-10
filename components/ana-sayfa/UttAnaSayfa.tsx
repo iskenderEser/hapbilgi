@@ -15,6 +15,7 @@ interface Video {
   video_url: string | null;
   thumbnail_url: string | null;
   video_puani: number | null;
+  sonraki_tur_tarihi?: string | null;
   yayin_tarihi: string;
   extra_puan: number;
   ileri_sarma_acik: boolean;
@@ -55,6 +56,9 @@ const GRADYANLAR = [
 ];
 
 // Video kartı render fonksiyonu - %25 küçültüldü
+const GUN_MS = 24 * 60 * 60 * 1000;
+const kalanGun = (tarih: string) => Math.max(0, Math.ceil((new Date(tarih).getTime() - Date.now()) / GUN_MS));
+
 const VideoKart = ({ 
   video, 
   onVideoClick, 
@@ -154,6 +158,12 @@ const VideoKart = ({
               <span className="text-[10px] text-green-600">+{video.extra_puan} extra</span>
             )}
           </div>
+        )}
+        {video.daha_once_izledi && video.sonraki_tur_tarihi && (
+          <span className="mt-1.5 text-[10px] px-2 py-0.5 rounded-full w-fit inline-block"
+            style={{ background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe" }}>
+            {kalanGun(video.sonraki_tur_tarihi)} gün sonra yeniden puanlı
+          </span>
         )}
       </div>
     </div>
