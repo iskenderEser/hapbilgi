@@ -216,6 +216,26 @@
       "tablo": "eczanem_musteriler"
     },
     {
+      "dosya": "lib/eczanem/silme.ts",
+      "satir": 31,
+      "tablo": "eczanem_siparisler"
+    },
+    {
+      "dosya": "lib/eczanem/silme.ts",
+      "satir": 45,
+      "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "lib/eczanem/silme.ts",
+      "satir": 54,
+      "tablo": "eczanem_siparisler"
+    },
+    {
+      "dosya": "lib/eczanem/silme.ts",
+      "satir": 62,
+      "tablo": "eczanem_siparisler"
+    },
+    {
       "dosya": "lib/hbligi/getGenelLig.ts",
       "satir": 51,
       "tablo": "bolgeler"
@@ -507,12 +527,12 @@
     },
     {
       "dosya": "app/login/page.tsx",
-      "satir": 49,
+      "satir": 53,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/login/page.tsx",
-      "satir": 56,
+      "satir": 60,
       "tablo": "firmalar"
     },
     {
@@ -1521,6 +1541,16 @@
       "tablo": "eczanem_musteriler"
     },
     {
+      "dosya": "app/eczanem/api/sil/route.ts",
+      "satir": 28,
+      "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "app/eczanem/api/silme-otp/route.ts",
+      "satir": 25,
+      "tablo": "eczanem_musteriler"
+    },
+    {
       "dosya": "app/izle/api/[yayin_id]/route.ts",
       "satir": 25,
       "tablo": "v_yayin_detay"
@@ -2261,11 +2291,6 @@
       "tablo": "cc_izleme_kayitlari"
     },
     {
-      "dosya": "app/eclub/eczanem/api/davetler/route.ts",
-      "satir": 53,
-      "tablo": "eczanem_davetler"
-    },
-    {
       "dosya": "app/eclub/ligi/api/export/route.ts",
       "satir": 33,
       "tablo": "kullanicilar"
@@ -2629,6 +2654,11 @@
       "dosya": "app/eczanem/api/giris/otp/route.ts",
       "satir": 23,
       "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "app/eczanem/eczane/api/davetler/route.ts",
+      "satir": 53,
+      "tablo": "eczanem_davetler"
     },
     {
       "dosya": "app/raporlar/api/yonetici/akordeon/route.ts",
@@ -3249,6 +3279,24 @@
       "tablo": "eczanem_giris_otp"
     },
     {
+      "dosya": "lib/eczanem/silme.ts",
+      "satir": 31,
+      "ham": "musteri_etiket",
+      "tablo": "eczanem_siparisler"
+    },
+    {
+      "dosya": "lib/eczanem/silme.ts",
+      "satir": 45,
+      "ham": "musteri_id, auth_user_id, telefon",
+      "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "lib/eczanem/silme.ts",
+      "satir": 54,
+      "ham": "eczane_id",
+      "tablo": "eczanem_siparisler"
+    },
+    {
       "dosya": "lib/hbligi/getGenelLig.ts",
       "satir": 51,
       "ham": "bolge_id, bolge_adi",
@@ -3478,13 +3526,13 @@
     },
     {
       "dosya": "app/login/page.tsx",
-      "satir": 49,
+      "satir": 53,
       "ham": "firma_id",
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/login/page.tsx",
-      "satir": 56,
+      "satir": 60,
       "ham": "aktif",
       "tablo": "firmalar"
     },
@@ -4629,6 +4677,18 @@
       "tablo": "eczanem_musteriler"
     },
     {
+      "dosya": "app/eczanem/api/sil/route.ts",
+      "satir": 28,
+      "ham": "musteri_id, telefon",
+      "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "app/eczanem/api/silme-otp/route.ts",
+      "satir": 25,
+      "ham": "telefon",
+      "tablo": "eczanem_musteriler"
+    },
+    {
       "dosya": "app/izle/api/[yayin_id]/route.ts",
       "satir": 25,
       "ham": "yayin_id, durum, yayin_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani",
@@ -5295,12 +5355,6 @@
       "tablo": "v_yayin_detay"
     },
     {
-      "dosya": "app/eclub/eczanem/api/davetler/route.ts",
-      "satir": 53,
-      "ham": "davet_id, ad_soyad, telefon, durum, son_gecerlilik, created_at",
-      "tablo": "eczanem_davetler"
-    },
-    {
       "dosya": "app/eclub/ligi/api/export/route.ts",
       "satir": 33,
       "ham": "kullanici_id, rol, firma_id, bolge_id",
@@ -5653,6 +5707,12 @@
       "satir": 23,
       "ham": "musteri_id, aktif_mi",
       "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "app/eczanem/eczane/api/davetler/route.ts",
+      "satir": 53,
+      "ham": "davet_id, ad_soyad, telefon, durum, son_gecerlilik, created_at",
+      "tablo": "eczanem_davetler"
     },
     {
       "dosya": "app/raporlar/api/yonetici/akordeon/route.ts",

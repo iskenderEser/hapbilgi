@@ -1,5 +1,7 @@
 // types/auth.ts
-export type KimlikTuru = "kullanici" | "eclub_kisi";
+// Üç kimlik düzlemi: iç kullanıcı (kullanicilar), dış müşteri (eclub_kisiler),
+// eczane müşterisi (eczanem_musteriler) — v_auth_kimlik'in kimlik_turu değerleri.
+export type KimlikTuru = "kullanici" | "eclub_kisi" | "musteri";
 
 export interface AuthKullanici {
   id: string;

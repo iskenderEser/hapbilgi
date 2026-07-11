@@ -1,7 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
-import { ADMIN_ROLLER } from "@/lib/utils/roller";
+import { ADMIN_ROLLER, ECLUB_TUKETICI_ROLLERI, MUSTERI_ROLU } from "@/lib/utils/roller";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -272,6 +273,62 @@ export async function proxy(request: NextRequest) {
       }
     }
     // eclub_aktif = true veya firma yok → geç
+  }
+  // -------------------------------------------------------------------------
+
+  // --- Eczanem bekçisi (beşinci) --------------------------------------------
+  // Eczanem bağımsız modüldür ve ROL tabanlı korunur: ne müşterinin ne
+  // eczacının firma_id'si vardır, bu yüzden diğer bekçilerdeki firma-bayrağı
+  // deseni burada uygulanamaz (eczanem_aktif bayrağı UTT ekranlarında, iç
+  // uygulama tarafında devreye girer). Rol, tek kaynak rolCozucu'dan okunur.
+  //
+  // İki dal — sıralama kritiktir (/eclub/store dersi): önce özel prefix
+  // /eczanem/eczane (eczacı/teknisyen, E-Club oturumu), sonra genel /eczanem
+  // (müşteri). Girişsiz istisnalar: müşteri giriş sayfası/API'leri ve davet
+  // kabulü — bunlar oturum ÖNCESİ akışlardır, koruma OTP mekanizmasındadır.
+  if (pathname.startsWith("/eczanem")) {
+    const girissizYol =
+      pathname.startsWith("/eczanem/giris") ||
+      pathname.startsWith("/eczanem/api/giris") ||
+      pathname.startsWith("/eczanem/davet") ||
+      pathname.startsWith("/eczanem/api/davet-kabul");
+
+    if (!girissizYol) {
+      const apiYolu = pathname.includes("/api/") || pathname.endsWith("/api");
+      const eczaneDali = pathname.startsWith("/eczanem/eczane");
+
+      if (!user) {
+        if (apiYolu) {
+          return NextResponse.json({ error: "Oturum açmanız gerekiyor." }, { status: 401 });
+        }
+        // Eczacı dalı E-Club oturumuyla girilir (/login); müşteri dalının
+        // kendi giriş ekranı vardır.
+        return NextResponse.redirect(new URL(eczaneDali ? "/login" : "/eczanem/giris", request.url));
+      }
+
+      const eczanemSupabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+      const rol = await rolCozucu(eczanemSupabase, user.id);
+
+      if (eczaneDali) {
+        if (!ECLUB_TUKETICI_ROLLERI.includes(rol)) {
+          if (apiYolu) {
+            return NextResponse.json({ error: "Bu bölüm eczacı/teknisyene açıktır." }, { status: 403 });
+          }
+          return NextResponse.redirect(new URL(rol === MUSTERI_ROLU ? "/eczanem" : "/ana-sayfa", request.url));
+        }
+      } else if (rol !== MUSTERI_ROLU) {
+        if (apiYolu) {
+          return NextResponse.json({ error: "Bu bölüm Eczanem üyelerine açıktır." }, { status: 403 });
+        }
+        return NextResponse.redirect(
+          new URL(ECLUB_TUKETICI_ROLLERI.includes(rol) ? "/eczanem/eczane" : "/ana-sayfa", request.url)
+        );
+      }
+      // Rol uygun → geç
+    }
   }
   // -------------------------------------------------------------------------
 

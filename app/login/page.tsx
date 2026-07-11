@@ -19,9 +19,13 @@ export default function LoginPage() {
     if (!kullanici) return;
     if (kullanici.rol === undefined) return;
 
-    // E-Club kişisi (eczacı/teknisyen) → kendi paneline; admin → /admin; diğerleri → /ana-sayfa
+    // E-Club kişisi (eczacı/teknisyen) → kendi paneline; Eczanem müşterisi →
+    // kendi paneline (normalde /eczanem/giris kullanır, burası güvenlik ağı);
+    // admin → /admin; diğerleri → /ana-sayfa
     if (kullanici.kimlik_turu === "eclub_kisi") {
       router.replace("/eclub/panel");
+    } else if (kullanici.kimlik_turu === "musteri") {
+      router.replace("/eczanem");
     } else {
       router.replace(kullanici.rol === "admin" ? "/admin" : "/ana-sayfa");
     }
@@ -91,14 +95,14 @@ export default function LoginPage() {
         <div className="text-center md:hidden">
           <div className="text-xl font-bold uppercase tracking-wide mb-1" style={{ color: "#bc2d0d", letterSpacing: "0.06em" }}>Öğrenmenin V Hali</div>
           <div className="invisible text-base font-extrabold text-gray-900 mb-2">İzleyin - Kazanın - Uygulayın</div>
-          <div className="text-sm text-gray-500 leading-relaxed">HapBilgi, sağlık sektörü profesyonelleri için tasarlanmış video tabanlı öğrenme platformudur.</div>
+          <div className="text-sm text-gray-500 leading-relaxed">Öğretirken Kazandırır</div>
         </div>
 
         {/* Sol metin - tablet/desktop */}
         <div className="hidden md:block max-w-sm lg:max-w-md">
           <div className="text-3xl lg:text-4xl font-bold uppercase mb-4" style={{ color: "#bc2d0d", letterSpacing: "0.08em" }}>Öğrenmenin V Hali</div>
           <div className="hidden text-xl lg:text-3xl font-extrabold text-gray-900 leading-snug mb-4">İzleyin - Kazanın - Uygulayın</div>
-          <div className="text-sm lg:text-base text-gray-500 leading-loose">HapBilgi, sağlık sektörü profesyonelleri için tasarlanmış video tabanlı öğrenme platformudur.</div>
+          <div className="text-sm lg:text-base text-gray-500 leading-loose">Öğretirken Kazandırır</div>
         </div>
 
         {/* Form */}
@@ -180,9 +184,9 @@ export default function LoginPage() {
       <div className="bg-gray-50 border-t border-gray-200 py-5 px-5 md:px-8">
         <div className="max-w-3xl mx-auto grid grid-cols-3 gap-4 md:gap-10 text-center">
           {[
-            { ikon: "🎬", baslik: "İzleyin", aciklama: "Öğrenmenin devamlılığını sağlayın" },
-            { ikon: "📊", baslik: "Kazanın", aciklama: "İzledikçe yıldızınızı parlatın" },
-            { ikon: "🎯", baslik: "Uygulayın", aciklama: "Kazandıkça hedefinize yaklaşın" },
+            { ikon: "📽️", baslik: "İzleyin", aciklama: "Yayınlanan videoları izleyin" },
+            { ikon: "🎓", baslik: "Öğrenin", aciklama: "Öğrendiğinizi ispatlayın" },
+            { ikon: "🏆", baslik: "Yarışın", aciklama: "Farkınızı gösterin" },
           ].map((k, i) => (
             <div key={i}>
               <div className="text-2xl md:text-3xl mb-1 md:mb-3">{k.ikon}</div>

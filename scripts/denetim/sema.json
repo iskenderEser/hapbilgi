@@ -1,5 +1,5 @@
 {
-  "uretim_tarihi": "2026-07-11T11:11:47.967Z",
+  "uretim_tarihi": "2026-07-11T11:55:22.003Z",
   "tablo_sayisi": 91,
   "rpc_sayisi": 51,
   "tablolar": {
@@ -1223,7 +1223,7 @@
         },
         "kaynak_kayit_id": {
           "tip": "uuid",
-          "nullable": false
+          "nullable": true
         },
         "dusulen_puan": {
           "tip": "integer",

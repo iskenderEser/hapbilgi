@@ -48,9 +48,16 @@ export default function DavetKabulPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-8 max-w-sm text-center">
           <div className="text-3xl mb-3">✅</div>
           <div className="text-lg font-bold text-gray-900 mb-2">Üyeliğiniz tamamlandı</div>
-          <div className="text-sm text-gray-500">
-            Eczanenizin gönderdiği videolar yakında burada, panelinizde görünecek.
+          <div className="text-sm text-gray-500 mb-5">
+            Oturumunuz açıldı; panelinizde eczanenizin gönderdiği videoları göreceksiniz.
           </div>
+          <button
+            onClick={() => { window.location.href = "/eczanem"; }}
+            className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
+            style={{ background: "#b45309" }}
+          >
+            Panele Git
+          </button>
         </div>
       </div>
     );
