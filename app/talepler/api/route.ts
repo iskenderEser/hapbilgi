@@ -9,6 +9,7 @@ import {
   type TalepTuru,
 } from "@/lib/uretici/yetenekler";
 import type { HedefRol } from "@/app/talepler/_types";
+import { ECZANEM_TALEP_ACAN_ROLLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 // TalepTuru tipinin tüm geçerli değerlerinin runtime listesi —
@@ -16,9 +17,9 @@ import { rolCozucu } from "@/lib/utils/rolCozucu";
 const GECERLI_TALEP_TURLERI = Object.keys(TALEP_TURU_KURALLARI) as TalepTuru[];
 
 // Bu formdan açılabilecek hedef rollerin bilinçli alt kümesi (DB CHECK'i daha
-// geniştir): eczaci/eczane_teknisyeni üretimi ayrı akışta, 'eczanem' ise U4'te
-// yalnız PM'e açılacak — o güne kadar burada reddedilir.
-const GECERLI_HEDEF_ROLLER: HedefRol[] = ["utt", "bm"];
+// geniştir): eczaci/eczane_teknisyeni üretimi ayrı akışta. 'eczanem' U4 ile
+// açıldı — ek şart: yalnız ürün müdürü ailesi açabilir (İP-§4.1, aşağıda).
+const GECERLI_HEDEF_ROLLER: HedefRol[] = ["utt", "bm", "eczanem"];
 
 export async function GET() {
   try {
@@ -139,10 +140,16 @@ export async function POST(request: NextRequest) {
       return validasyonHatasi("Eğitim türü geçersiz.", ["egitim_turu"]);
     }
 
-    // hedef_rol validasyonu — UTT veya BM olmalı.
+    // hedef_rol validasyonu — geçerli alt küme kontrolü.
     const hedefRol = hedef_rol as HedefRol;
     if (!hedefRol || !GECERLI_HEDEF_ROLLER.includes(hedefRol)) {
-      return validasyonHatasi("Hedef rol seçimi zorunludur (utt veya bm).", ["hedef_rol"]);
+      return validasyonHatasi("Hedef rol seçimi zorunludur.", ["hedef_rol"]);
+    }
+
+    // Eczanem hedefli talebi yalnızca ürün müdürü ailesi açabilir (İP-§4.1) —
+    // form seçeneği zaten gizlidir, bu sunucu tarafı doğrulamasıdır.
+    if (hedefRol === "eczanem" && !ECZANEM_TALEP_ACAN_ROLLER.includes(rol)) {
+      return rolHatasi("Eczanem hedefli talebi yalnızca Ürün Müdürü açabilir.");
     }
 
     // Yetenek-bilinçli talep türü validasyonu — rol bu türde talep açabiliyor mu?
@@ -155,17 +162,26 @@ export async function POST(request: NextRequest) {
 
     // Ürün ve teknik zorunluluğu — TALEP_TURU_KURALLARI'ndan okunur.
     const turKurali = TALEP_TURU_KURALLARI[egitimTuru];
+    const eczanemHedefi = hedefRol === "eczanem";
 
     if (turKurali.urun === "zorunlu" && !urun_id) {
       return validasyonHatasi("Ürün seçimi zorunludur.", ["urun_id"]);
     }
-    if (turKurali.teknik === "zorunlu" && !teknik_id) {
+    // Eczanem'de puan/indirim ürüne kilitlidir (dörtlü kilit) — ürün tür
+    // kuralından bağımsız olarak şarttır (İP-§4.3).
+    if (eczanemHedefi && !urun_id) {
+      return validasyonHatasi("Eczanem hedefli talepte ürün seçimi zorunludur.", ["urun_id"]);
+    }
+    // Teknik, teknik-siz hedeflerde (Eczanem — E-Club deseni) zorunlu değildir:
+    // son tüketiciye satış tekniği anlatılmaz, alan formda gizlidir.
+    if (!eczanemHedefi && turKurali.teknik === "zorunlu" && !teknik_id) {
       return validasyonHatasi("Teknik seçimi zorunludur.", ["teknik_id"]);
     }
 
-    // INSERT'e yazılacak urun_id/teknik_id — kural "yok" ise NULL'a zorla.
-    const insertUrunId = turKurali.urun === "yok" ? null : (urun_id ?? null);
-    const insertTeknikId = turKurali.teknik === "yok" ? null : (teknik_id ?? null);
+    // INSERT'e yazılacak urun_id/teknik_id — kural "yok" ise NULL'a zorla;
+    // Eczanem'de teknik her hâlükârda NULL'dur.
+    const insertUrunId = turKurali.urun === "yok" && !eczanemHedefi ? null : (urun_id ?? null);
+    const insertTeknikId = turKurali.teknik === "yok" || eczanemHedefi ? null : (teknik_id ?? null);
 
     if (hazir_soru_seti && !hazir_soru_seti_verisi) {
       return validasyonHatasi("Hazır soru seti verisi zorunludur.", ["hazir_soru_seti_verisi"]);

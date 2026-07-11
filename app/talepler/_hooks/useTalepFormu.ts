@@ -8,6 +8,8 @@
 //
 // E-Club üretim düzenlemesi: hedef rol eczacı/eczane teknisyeni ise teknik seçimi
 // gizlenir ve teknik_id null gönderilir (teknik bu roller için anlamlı detay değil).
+// Eczanem düzenlemesi (U4): 'eczanem' hedefi yalnız ürün müdürü ailesine görünür
+// (İP-§4.1); teknik E-Club gibi gizlidir, ürün her hâlükârda zorunludur (dörtlü kilit).
 
 "use client";
 
@@ -32,7 +34,7 @@ import type {
 } from "../_types";
 import { useSoruSetiParse } from "./useSoruSetiParse";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
+import { URETIM_HATTI_GORENLER, ECZANEM_TALEP_ACAN_ROLLER } from "@/lib/utils/roller";
 
 export function useTalepFormu() {
   const router = useRouter();
@@ -82,7 +84,12 @@ export function useTalepFormu() {
   const urunGosterilsin = turKurali.urun !== "yok";
   // E-Club hedefi (eczacı / eczane teknisyeni) ise teknik gizlenir.
   const eclubHedef = hedefRol === "eczaci" || hedefRol === "eczane_teknisyeni";
-  const teknikGosterilsin = turKurali.teknik !== "yok" && !eclubHedef;
+  // Eczanem hedefinde de teknik gizlenir: son tüketiciye satış tekniği
+  // anlatılmaz, içerik ürün odaklıdır (İP-§4.2 — zincir aynı, teknik yok).
+  const eczanemHedef = hedefRol === "eczanem";
+  // Eczanem hedefi yalnızca ürün müdürü ailesine görünür (İP-§4.1).
+  const eczanemSecilebilir = ECZANEM_TALEP_ACAN_ROLLER.includes(rol.toLowerCase());
+  const teknikGosterilsin = turKurali.teknik !== "yok" && !eclubHedef && !eczanemHedef;
   const kullaniciTakimId = kullaniciBilgi?.takim_id ?? null;
 
   // ============================================================================
@@ -117,11 +124,11 @@ export function useTalepFormu() {
     }
   }, [soruSetiBuyuklugu, videoBasiSoruSayisi]);
 
-  // Hedef rol E-Club'a (eczacı/teknisyen) çevrilirse, seçili tekniği temizle —
-  // gizlenen alanda seçili değer kalmasın, submit'e sızmasın.
+  // Hedef rol teknik-siz bir hedefe (E-Club / Eczanem) çevrilirse, seçili
+  // tekniği temizle — gizlenen alanda seçili değer kalmasın, submit'e sızmasın.
   useEffect(() => {
-    if (eclubHedef && seciliTeknikId) setSeciliTeknikId("");
-  }, [eclubHedef, seciliTeknikId]);
+    if ((eclubHedef || eczanemHedef) && seciliTeknikId) setSeciliTeknikId("");
+  }, [eclubHedef, eczanemHedef, seciliTeknikId]);
 
   // ============================================================================
   // Veri çekme
@@ -325,9 +332,15 @@ export function useTalepFormu() {
       hata("Ürün seçimi zorunludur.", "form kontrolü", undefined);
       return false;
     }
-    // Teknik zorunluluğu yalnız E-Club dışı hedeflerde geçerlidir; eczacı/teknisyen
-    // taleplerinde teknik gizli olduğu için kontrol atlanır.
-    if (!eclubHedef && turKurali.teknik === "zorunlu" && !seciliTeknikId) {
+    // Eczanem'de puan/indirim ürüne kilitlidir (dörtlü kilit) — tür ürünsüz
+    // olsa bile ürün şarttır (İP-§4.3: ürün talep aşamasında seçilidir).
+    if (eczanemHedef && !seciliUrunId) {
+      hata("Eczanem hedefli talepte ürün seçimi zorunludur.", "form kontrolü", undefined);
+      return false;
+    }
+    // Teknik zorunluluğu yalnız teknik-siz hedefler (E-Club / Eczanem) dışında
+    // geçerlidir; bu hedeflerde teknik gizli olduğu için kontrol atlanır.
+    if (!eclubHedef && !eczanemHedef && turKurali.teknik === "zorunlu" && !seciliTeknikId) {
       hata("Teknik seçimi zorunludur.", "form kontrolü", undefined);
       return false;
     }
@@ -351,6 +364,7 @@ export function useTalepFormu() {
   }, [
     hedefRol,
     eclubHedef,
+    eczanemHedef,
     turKurali,
     seciliUrunId,
     seciliTeknikId,
@@ -370,9 +384,10 @@ export function useTalepFormu() {
       body: JSON.stringify({
         egitim_turu: egitimTuru,
         hedef_rol: hedefRol,
-        urun_id: turKurali.urun !== "yok" ? seciliUrunId || null : null,
-        // E-Club hedeflerinde teknik gizli — her hâlükârda null gönderilir.
-        teknik_id: (!eclubHedef && turKurali.teknik !== "yok") ? seciliTeknikId || null : null,
+        // Eczanem'de ürün, tür kuralından bağımsız olarak gönderilir (dörtlü kilit).
+        urun_id: (turKurali.urun !== "yok" || eczanemHedef) ? seciliUrunId || null : null,
+        // Teknik-siz hedeflerde (E-Club / Eczanem) teknik her hâlükârda null gönderilir.
+        teknik_id: (!eclubHedef && !eczanemHedef && turKurali.teknik !== "yok") ? seciliTeknikId || null : null,
         aciklama,
         hazir_video: hazirVideo,
         hazir_soru_seti: hazirSoruSeti,
@@ -392,6 +407,7 @@ export function useTalepFormu() {
     egitimTuru,
     hedefRol,
     eclubHedef,
+    eczanemHedef,
     turKurali,
     seciliUrunId,
     seciliTeknikId,
@@ -544,9 +560,11 @@ export function useTalepFormu() {
     formatTarih,
     handleTalepClick,
 
-    // form: hedef rol (UTT/BM seçimi)
+    // form: hedef rol seçimi
     hedefRol,
     setHedefRol,
+    eczanemHedef,
+    eczanemSecilebilir,
 
     // form: eğitim türü + türetilmiş
     egitimTuru,

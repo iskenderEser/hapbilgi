@@ -1267,7 +1267,7 @@
     },
     {
       "dosya": "app/talepler/_hooks/useTalepFormu.ts",
-      "satir": 143,
+      "satir": 150,
       "tablo": "kullanicilar"
     },
     {
@@ -1292,22 +1292,22 @@
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 39,
+      "satir": 40,
       "tablo": "talepler"
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 107,
+      "satir": 108,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 180,
+      "satir": 196,
       "tablo": "talepler"
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 215,
+      "satir": 231,
       "tablo": "kullanicilar"
     },
     {
@@ -4366,7 +4366,7 @@
     },
     {
       "dosya": "app/talepler/_hooks/useTalepFormu.ts",
-      "satir": 143,
+      "satir": 150,
       "ham": "firma_id, takim_id",
       "tablo": "kullanicilar"
     },
@@ -4396,25 +4396,25 @@
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 39,
+      "satir": 40,
       "ham": "\n        talep_id, uretici_id, takim_id, firma_id, aciklama, hazir_video, hazir_video_url, dosya_urls, created_at,\n        urun_id, teknik_id, egitim_turu, hedef_rol, icerik_turu,\n        hazir_soru_seti,\n        soru_seti_buyuklugu, video_basi_soru_sayisi,\n        urunler(urun_adi),\n        teknikler(teknik_adi)\n      ",
       "tablo": "talepler"
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 107,
+      "satir": 108,
       "ham": "takim_id, firma_id",
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 180,
+      "satir": 196,
       "ham": "\n        talep_id, takim_id, firma_id, hazir_video, created_at,\n        urun_id, teknik_id, egitim_turu, hedef_rol, icerik_turu,\n        hazir_soru_seti, hazir_soru_seti_verisi,\n        soru_seti_buyuklugu, video_basi_soru_sayisi,\n        urunler(urun_adi),\n        teknikler(teknik_adi)\n      ",
       "tablo": "talepler"
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 215,
+      "satir": 231,
       "ham": "kullanici_id",
       "tablo": "kullanicilar"
     },

@@ -204,6 +204,11 @@ export const TUM_HEDEF_ROLLER: HedefRol[] = ["utt", "bm", "eczaci", "eczane_tekn
 // o kişilerin rolü, bu içeriğin hedefi. İkisi bilinçli olarak ayrı durur.)
 export const ECLUB_HEDEF_ROLLER: HedefRol[] = ["eczaci", "eczane_teknisyeni"];
 
+// Eczanem hedefli talebi AÇABİLEN roller (İP-§4.1: "yalnızca PM") — ürün
+// müdürü ailesi. Diğer 10 üretici rol Eczanem hedefini göremez/seçemez:
+// Karşılık tanımı PM'in ürün maliyet kararıdır, ürün sahipliği PM'dedir.
+export const ECZANEM_TALEP_ACAN_ROLLER = ["pm", "jr_pm", "kd_pm"];
+
 // ROL_ADLARI: Rol kısaltmalarının Türkçe karşılıkları.
 // Yalnızca görüntüleme katmanında kullanılır — veritabanında hiçbir şey değişmez.
 // Kullanım: ROL_ADLARI[rol] ?? rol
