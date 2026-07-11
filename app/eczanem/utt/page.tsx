@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
+import UttEczanemDokum from "./_components/UttEczanemDokum";
 
 interface Yayin {
   yayin_id: string;
@@ -181,6 +182,9 @@ export default function UttEczanemPage() {
             </div>
           </>
         )}
+
+        {/* Mutabakat dökümü (U9, İP-§9.2/§10.1) — yayın olmasa da görünür */}
+        <UttEczanemDokum hata={hata} />
       </div>
     </div>
   );

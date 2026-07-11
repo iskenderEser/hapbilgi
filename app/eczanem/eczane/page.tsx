@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import EczanemSiparisKuyrugu from "./_components/EczanemSiparisKuyrugu";
+import EczanemDokum from "./_components/EczanemDokum";
 
 interface DavetSatiri {
   davet_id: string;
@@ -203,6 +204,9 @@ export default function EczanemDavetPage() {
 
         {/* Sipariş onay kuyruğu (İP-§8) — kasada müşteri bekleyebilir, üstte */}
         <EczanemSiparisKuyrugu hata={hata} basari={basari} />
+
+        {/* İşlem dökümü (U9, İP-§9.2) — ürün bazında kutu + indirim toplamı */}
+        <EczanemDokum hata={hata} />
 
         {/* Gelen videolar + üyelere dağıtım (İP-§5.5) */}
         <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">

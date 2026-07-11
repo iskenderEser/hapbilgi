@@ -9,6 +9,7 @@ import { useRapor } from '@/hooks/useRapor';
 import { BORDO, GRI_METIN, KOYU_METIN, GRI_ZEMIN, formatPuan, PERIYOTLAR, Periyot } from '@/lib/utils/raporUtils';
 import Navbar from '@/components/Navbar';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
+import EczanemDokumBolumu from '@/components/raporlar/EczanemDokumBolumu';
 import StatCard from '@/components/raporlar/StatCard';
 import StatGrid from '@/components/raporlar/StatGrid';
 import SectionTitle from '@/components/raporlar/SectionTitle';
@@ -363,6 +364,9 @@ export default function BmRaporPage() {
           begeniListesi={data.begeni_listesi ?? []}
           favoriListesi={data.favori_listesi ?? []}
         />
+
+        {/* Eczanem mutabakat dokumu (U9, IP-9.2) — bayrak/rol sunucuda cozulur */}
+        <EczanemDokumBolumu />
 
       </div>
     </div>

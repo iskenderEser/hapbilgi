@@ -8,6 +8,7 @@ import { useAuth } from '@/app/providers/AuthProvider';
 import Navbar from '@/components/Navbar';
 import UretimBolumu from './_components/UretimBolumu';
 import TuketimBolumu from './_components/TuketimBolumu';
+import EczanemDokumBolumu from '@/components/raporlar/EczanemDokumBolumu';
 
 interface KonuSatiri {
   konu_adi: string;
@@ -133,6 +134,9 @@ export default function YoneticiRaporPage() {
         <TuketimBolumu
           sayimKartlari={data.tuketim.sayim_kartlari}
         />
+
+        {/* Eczanem mutabakat dökümü (U9, İP-§9.2) — firma geneli cascade */}
+        <EczanemDokumBolumu />
 
       </div>
     </div>
