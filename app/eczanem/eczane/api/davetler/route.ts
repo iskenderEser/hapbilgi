@@ -1,4 +1,4 @@
-// app/eclub/eczanem/api/davetler/route.ts
+// app/eczanem/eczane/api/davetler/route.ts
 // Eczacı/teknisyen davet ucu: POST yeni davet, GET eczanenin davet listesi.
 // İş mantığı lib/eczanem/davet.ts'te; burada yalnız auth + rol + orkestrasyon.
 
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, mesaj: "Davet gönderildi." }, { status: 200 });
   } catch (err) {
-    return sunucuHatasi(err, "POST /eclub/eczanem/api/davetler");
+    return sunucuHatasi(err, "POST /eczanem/eczane/api/davetler");
   }
 }
 
@@ -73,6 +73,6 @@ export async function GET() {
 
     return NextResponse.json({ davetler: satirlar }, { status: 200 });
   } catch (err) {
-    return sunucuHatasi(err, "GET /eclub/eczanem/api/davetler");
+    return sunucuHatasi(err, "GET /eczanem/eczane/api/davetler");
   }
 }

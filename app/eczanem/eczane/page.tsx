@@ -1,4 +1,4 @@
-// app/eclub/eczanem/page.tsx
+// app/eczanem/eczane/page.tsx
 // Eczacı/teknisyen Eczanem ekranı — U2 kapsamı: davet formu + davet listesi.
 // (Gelen videolar, üye listesi ve gönderim U6'da bu sayfaya eklenecek.)
 "use client";
@@ -38,7 +38,7 @@ export default function EczanemDavetPage() {
 
   const davetleriCek = useCallback(async () => {
     try {
-      const res = await fetch("/eclub/eczanem/api/davetler");
+      const res = await fetch("/eczanem/eczane/api/davetler");
       const data = await res.json();
       if (!res.ok) { hata(data.hata ?? "Davetler yüklenemedi.", "davet listesi"); return; }
       setDavetler(data.davetler ?? []);
@@ -60,7 +60,7 @@ export default function EczanemDavetPage() {
     e.preventDefault();
     setGonderiliyor(true);
     try {
-      const res = await fetch("/eclub/eczanem/api/davetler", {
+      const res = await fetch("/eczanem/eczane/api/davetler", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ad_soyad: adSoyad, telefon }),
