@@ -95,6 +95,7 @@ const KORUMALI_TABLOLAR = new Set([
   "eczanem_puan_kayitlari",
   "eczanem_harcama_kayitlari",
   "eczanem_siparisler",
+  "eczanem_urun_tarifeleri",
 ]);
 const kayitTekKaynak = {
   meta: {

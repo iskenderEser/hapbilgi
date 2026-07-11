@@ -23,6 +23,7 @@ export default function Navbar({ email, rol, adSoyad, kimlikTuru, onCikis }: Nav
   const [ccAcik, setCcAcik] = useState(false);
   const [eclubAcik, setEclubAcik] = useState(false);
   const [eclubStoreAcik, setEclubStoreAcik] = useState(false);
+  const [eczanemAcik, setEczanemAcik] = useState(false);
 
   const isAktif = (path: string) => pathname.startsWith(path);
 
@@ -45,6 +46,7 @@ export default function Navbar({ email, rol, adSoyad, kimlikTuru, onCikis }: Nav
           setCcAcik(data.profil.cc_aktif === true);
           setEclubAcik(data.profil.eclub_aktif === true);
           setEclubStoreAcik(data.profil.eclub_store_aktif === true);
+          setEczanemAcik(data.profil.eczanem_aktif === true);
           if (!adSoyad) setKullaniciAd(`${data.profil.ad} ${data.profil.soyad}`);
         }
       })
@@ -225,6 +227,10 @@ export default function Navbar({ email, rol, adSoyad, kimlikTuru, onCikis }: Nav
 
               {eclubAcik && ECLUB_GOREN_ROLLER.includes(rolKucu) && (
                 <button onClick={() => router.push("/eclub/listem")} onMouseEnter={() => setHover("eclub")} onMouseLeave={() => setHover(null)} className={pillClass("eclub", "/eclub/listem")} style={pillStyle("eclub", "/eclub/listem")}>E-Club</button>
+              )}
+
+              {eczanemAcik && tuketiciRoller.includes(rolKucu) && (
+                <button onClick={() => router.push("/eczanem/utt")} onMouseEnter={() => setHover("eczanem-utt")} onMouseLeave={() => setHover(null)} className={pillClass("eczanem-utt", "/eczanem/utt")} style={pillStyle("eczanem-utt", "/eczanem/utt")}>Eczanem</button>
               )}
 
               {eclubAcik && ECLUB_LIGI_GOREN_ROLLER.includes(rolKucu) && (

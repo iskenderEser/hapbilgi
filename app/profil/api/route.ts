@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
 import { haftaBaslangici, ayBaslangici, yilBaslangici } from "@/lib/zaman/kontrol";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { FIRMA_KOLONLARI } from "@/lib/firma/kolonlar";
 
 export async function GET() {
   try {
@@ -29,19 +30,21 @@ export async function GET() {
     let cc_aktif = false;
     let eclub_aktif = false;
     let eclub_store_aktif = false;
+    let eczanem_aktif = false;
     if (kullanici.firma_id) {
       const { data: firma } = await adminSupabase
         .from("firmalar")
-        .select("hbstore_aktif, cc_aktif, eclub_aktif, eclub_store_aktif")
+        .select(FIRMA_KOLONLARI)
         .eq("firma_id", kullanici.firma_id)
         .single();
       hbstore_aktif = firma?.hbstore_aktif ?? false;
       cc_aktif = firma?.cc_aktif ?? false;
       eclub_aktif = firma?.eclub_aktif ?? false;
       eclub_store_aktif = firma?.eclub_store_aktif ?? false;
+      eczanem_aktif = firma?.eczanem_aktif ?? false;
     }
 
-    const profilTemel = { ...kullanici, hbstore_aktif, cc_aktif, eclub_aktif, eclub_store_aktif };
+    const profilTemel = { ...kullanici, hbstore_aktif, cc_aktif, eclub_aktif, eclub_store_aktif, eczanem_aktif };
 
     if (!["utt", "kd_utt"].includes(rol)) {
       return NextResponse.json({ profil: profilTemel }, { status: 200 });

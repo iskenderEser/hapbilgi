@@ -26,6 +26,22 @@ export interface MusteriKaydi {
   aktif_mi: boolean;
 }
 
+// auth kullanıcısından aktif müşteri kimliğini çözer (izleme/kazanım
+// route'larının ortak girişi). Pasif/kayıtsız → reddedilir.
+export async function musteriKimligi(
+  adminSupabase: SupabaseClient,
+  authUserId: string
+): Promise<{ ok: boolean; musteriId?: string; hata?: string }> {
+  const { data, error } = await adminSupabase
+    .from("eczanem_musteriler")
+    .select("musteri_id, aktif_mi")
+    .eq("auth_user_id", authUserId)
+    .maybeSingle();
+  if (error || !data) return { ok: false, hata: "Müşteri kaydınız bulunamadı." };
+  if (!data.aktif_mi) return { ok: false, hata: "Üyeliğiniz aktif değil." };
+  return { ok: true, musteriId: data.musteri_id };
+}
+
 // Müşterinin auth kaydını garanti eder: varsa döner, yoksa oluşturup
 // eczanem_musteriler.auth_user_id'ye bağlar (gecerliTur'un kendini onarma
 // deseni — U2 davet akışı da aynı fonksiyonu kullanır, çifte yazım olmaz).

@@ -7,6 +7,7 @@ import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { talepBilgisiSoruSeti } from "@/lib/utils/talepZinciri";
 import { tekrarPeriyotSecenekleri } from "@/lib/tur/ayarlar";
 import { turKaydiAc } from "@/lib/tur/kayit";
+import { tarifeVeBarkodYaz } from "@/lib/eczanem/tarife";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function POST(request: NextRequest) {
@@ -21,22 +22,11 @@ export async function POST(request: NextRequest) {
     if (!URETICI_ROLLER.includes(rol)) return rolHatasi("Sadece yetkili roller yayına alabilir.");
 
     const body = await request.json();
-    const { soru_seti_durum_id, ileri_sarma_acik, extra_puan, tekrar_periyot_gun } = body;
+    const { soru_seti_durum_id, ileri_sarma_acik, extra_puan, tekrar_periyot_gun, barkod, karsilik_puan, karsilik_tl } = body;
 
     if (!soru_seti_durum_id) return validasyonHatasi("soru_seti_durum_id zorunludur.", ["soru_seti_durum_id"]);
-    if (!extra_puan || extra_puan < 5 || extra_puan > 10) return validasyonHatasi("Extra puan 5-10 arasında olmalıdır.", ["extra_puan"]);
-
-    // Tekrar periyodu doğrulaması — null/undefined = tekrar yok (serbest);
-    // değer verilmişse sistem_ayarlari.tekrar_periyot_secenekleri listesinde olmalı (tek kaynak).
-    if (tekrar_periyot_gun !== undefined && tekrar_periyot_gun !== null) {
-      const secenekler = await tekrarPeriyotSecenekleri(adminSupabase);
-      if (!secenekler.includes(tekrar_periyot_gun)) {
-        return validasyonHatasi(
-          `Tekrar periyodu geçersiz. Geçerli değerler: ${secenekler.join(", ")} gün.`,
-          ["tekrar_periyot_gun"]
-        );
-      }
-    }
+    // Extra puan / tekrar periyodu doğrulaması hedef_rol türetildikten SONRA yapılır:
+    // eczanem yayınında bu alanlar yoktur, barkod + Karşılık zorunludur (aşağıda).
 
     const { data: soruSetiDurum, error: ssError } = await adminSupabase
       .from("soru_seti_durumu")
@@ -63,6 +53,48 @@ export async function POST(request: NextRequest) {
     const talepBilgisi = await talepBilgisiSoruSeti(adminSupabase, soruSeti.soru_seti_id);
     if (!talepBilgisi) return hataYaniti("Talep bilgisi bulunamadı, hedef rol türetilemedi.", "talepBilgisiSoruSeti", null);
     const hedefRoller: string[] = [talepBilgisi.hedef_rol];
+
+    // Eczanem yayını mı? Hedef rol talepten türer — forma güvenmez (sunucu tarafı).
+    const eczanemHedefi = talepBilgisi.hedef_rol === "eczanem";
+
+    let eczanemUrunId: string | null = null;
+    if (eczanemHedefi) {
+      // Eczanem yayınında extra puan / ileri sarma / tekrar periyodu YOKTUR
+      // (İP §4.4 — E-Club deseni); barkod + Karşılık zorunludur ve ürün
+      // seviyesine yazılır (K-E3). Karşılık = puan ↔ TL dönüşüm oranı.
+      if (!barkod || typeof barkod !== "string" || !barkod.trim()) {
+        return validasyonHatasi("Eczanem yayınında barkod zorunludur.", ["barkod"]);
+      }
+      if (!karsilik_puan || karsilik_puan <= 0 || !karsilik_tl || karsilik_tl <= 0) {
+        return validasyonHatasi("Eczanem yayınında Karşılık (puan ve TL) zorunludur.", ["karsilik_puan", "karsilik_tl"]);
+      }
+      if (tekrar_periyot_gun !== undefined && tekrar_periyot_gun !== null) {
+        return validasyonHatasi("Eczanem yayınında tekrar periyodu bulunmaz.", ["tekrar_periyot_gun"]);
+      }
+
+      const { data: talepUrun } = await adminSupabase
+        .from("talepler")
+        .select("urun_id")
+        .eq("talep_id", talepBilgisi.talep_id)
+        .single();
+      eczanemUrunId = talepUrun?.urun_id ?? null;
+      if (!eczanemUrunId) return isKuraluHatasi("Eczanem yayınının ürünü bulunamadı — tarife yazılamaz.");
+    } else {
+      // Standart yayın: extra puan zorunlu (5-10); tekrar periyodu opsiyonel ama
+      // verilirse sistem_ayarlari.tekrar_periyot_secenekleri listesinde olmalı.
+      if (!extra_puan || extra_puan < 5 || extra_puan > 10) {
+        return validasyonHatasi("Extra puan 5-10 arasında olmalıdır.", ["extra_puan"]);
+      }
+      if (tekrar_periyot_gun !== undefined && tekrar_periyot_gun !== null) {
+        const secenekler = await tekrarPeriyotSecenekleri(adminSupabase);
+        if (!secenekler.includes(tekrar_periyot_gun)) {
+          return validasyonHatasi(
+            `Tekrar periyodu geçersiz. Geçerli değerler: ${secenekler.join(", ")} gün.`,
+            ["tekrar_periyot_gun"]
+          );
+        }
+      }
+    }
 
     const { data: videoPuan, error: vpError } = await adminSupabase
       .from("video_puanlari")
@@ -105,6 +137,21 @@ export async function POST(request: NextRequest) {
     }
     if (mevcutYayin) return isKuraluHatasi("Bu video zaten yayına alınmış.");
 
+    // Eczanem: barkod + Karşılık ürün seviyesine yayından ÖNCE yazılır — canlı bir
+    // eczanem yayınının daima geçerli bir tarifesi olmalı (yayın açıldıysa puan↔TL
+    // dönüşümü mümkün olmalı). Tarife append-only + ürün seviyesi olduğundan, olası
+    // bir yayın INSERT hatasında yazılan tarife ürünün gerçek güncel karşılığıdır.
+    if (eczanemHedefi && eczanemUrunId) {
+      const tarifeSonuc = await tarifeVeBarkodYaz(adminSupabase, {
+        urun_id: eczanemUrunId,
+        barkod: (barkod as string).trim(),
+        puan: karsilik_puan,
+        tl: karsilik_tl,
+        olusturan_id: user.id,
+      });
+      if (!tarifeSonuc.ok) return isKuraluHatasi(tarifeSonuc.hata ?? "Barkod/Karşılık yazılamadı.");
+    }
+
     const simdi = new Date().toISOString();
     const { data: yeniYayin, error: yayinError } = await adminSupabase
       .from("yayin_yonetimi")
@@ -113,10 +160,11 @@ export async function POST(request: NextRequest) {
         uretici_id: user.id,
         durum: "yayinda",
         yayin_tarihi: simdi,
-        ileri_sarma_acik: ileri_sarma_acik ?? false,
-        extra_puan,
+        // Eczanem yayınında ileri sarma / extra puan / tekrar periyodu yoktur.
+        ileri_sarma_acik: eczanemHedefi ? false : (ileri_sarma_acik ?? false),
+        extra_puan: eczanemHedefi ? null : extra_puan,
         hedef_roller: hedefRoller,
-        tekrar_periyot_gun: tekrar_periyot_gun ?? null,
+        tekrar_periyot_gun: eczanemHedefi ? null : (tekrar_periyot_gun ?? null),
       })
       .select("yayin_id, durum, yayin_tarihi")
       .single();

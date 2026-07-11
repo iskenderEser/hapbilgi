@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
-import { ADMIN_ROLLER, ECLUB_TUKETICI_ROLLERI, MUSTERI_ROLU } from "@/lib/utils/roller";
+import { ADMIN_ROLLER, ECLUB_TUKETICI_ROLLERI, MUSTERI_ROLU, TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function proxy(request: NextRequest) {
@@ -296,14 +296,16 @@ export async function proxy(request: NextRequest) {
     if (!girissizYol) {
       const apiYolu = pathname.includes("/api/") || pathname.endsWith("/api");
       const eczaneDali = pathname.startsWith("/eczanem/eczane");
+      const uttDali = pathname.startsWith("/eczanem/utt");
+      // Eczacı ve UTT dalları iç uygulama oturumuyla (/login) girilir; müşteri
+      // dalının kendi giriş ekranı vardır (/eczanem/giris).
+      const icUygulamaDali = eczaneDali || uttDali;
 
       if (!user) {
         if (apiYolu) {
           return NextResponse.json({ error: "Oturum açmanız gerekiyor." }, { status: 401 });
         }
-        // Eczacı dalı E-Club oturumuyla girilir (/login); müşteri dalının
-        // kendi giriş ekranı vardır.
-        return NextResponse.redirect(new URL(eczaneDali ? "/login" : "/eczanem/giris", request.url));
+        return NextResponse.redirect(new URL(icUygulamaDali ? "/login" : "/eczanem/giris", request.url));
       }
 
       const eczanemSupabase = createClient(
@@ -318,6 +320,15 @@ export async function proxy(request: NextRequest) {
             return NextResponse.json({ error: "Bu bölüm eczacı/teknisyene açıktır." }, { status: 403 });
           }
           return NextResponse.redirect(new URL(rol === MUSTERI_ROLU ? "/eczanem" : "/ana-sayfa", request.url));
+        }
+      } else if (uttDali) {
+        if (!TUKETICI_ROLLER.includes(rol)) {
+          if (apiYolu) {
+            return NextResponse.json({ error: "Bu bölüm UTT'ye açıktır." }, { status: 403 });
+          }
+          return NextResponse.redirect(
+            new URL(ECLUB_TUKETICI_ROLLERI.includes(rol) ? "/eczanem/eczane" : rol === MUSTERI_ROLU ? "/eczanem" : "/ana-sayfa", request.url)
+          );
         }
       } else if (rol !== MUSTERI_ROLU) {
         if (apiYolu) {

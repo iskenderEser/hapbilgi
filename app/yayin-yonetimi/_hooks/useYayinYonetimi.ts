@@ -38,6 +38,12 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
   const [ileriSarmaAcik, setIleriSarmaAcik] = useState<Record<string, boolean>>({});
   const [extraPuanlar, setExtraPuanlar] = useState<Record<string, number>>({});
 
+  // Eczanem yayını: barkod + Karşılık (puan ↔ TL) ürün seviyesine yazılır (U5, K-E3).
+  // Her eczanem yayınında boş gelir, zorunludur; değer aynıysa server yeni tarife açmaz.
+  const [barkodlar, setBarkodlar] = useState<Record<string, string>>({});
+  const [karsilikPuanlar, setKarsilikPuanlar] = useState<Record<string, number>>({});
+  const [karsilikTllar, setKarsilikTllar] = useState<Record<string, number>>({});
+
   // Tekrar gönderim periyodu — soru_seti_durum_id → seçilen gün (seçilmediyse tekrar yok).
   // Seçenek listesi sistem_ayarlari'ndan gelir (tek kaynak): api/tekrar-secenekleri.
   const [tekrarPeriyotlari, setTekrarPeriyotlari] = useState<Record<string, number>>({});
@@ -151,7 +157,13 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
   const tumPuanlarAtandiMi = (b: Bekleyen): boolean => {
     const vp = videoPuanlari[b.soru_seti_durum_id] ?? b.video_puani;
     if (!vp) return false;
-    if (!extraPuanlar[b.soru_seti_durum_id]) return false;
+    if (b.hedef_rol === "eczanem") {
+      // Eczanem: extra puan yok; barkod + Karşılık (puan ve TL) zorunlu.
+      if (!barkodlar[b.soru_seti_durum_id]?.trim()) return false;
+      if (!karsilikPuanlar[b.soru_seti_durum_id] || !karsilikTllar[b.soru_seti_durum_id]) return false;
+    } else if (!extraPuanlar[b.soru_seti_durum_id]) {
+      return false;
+    }
     for (let i = 0; i < b.sorular.length; i++) {
       if (!soruPuanlari[b.soru_seti_durum_id]?.[i]) return false;
     }
@@ -198,14 +210,23 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     }
 
     // POST'a artık hedef_roller gönderilmiyor — backend talepler.hedef_rol'den türetiyor.
-    // tekrar_periyot_gun: seçilmediyse null = tekrar yok.
+    // Eczanem yayınında ileri sarma / extra puan / tekrar periyodu yok; barkod + Karşılık var.
+    const eczanem = b.hedef_rol === "eczanem";
     const res = await fetch("/yayin-yonetimi/api/yayinlar", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         soru_seti_durum_id: b.soru_seti_durum_id,
-        ileri_sarma_acik: bekleyenIleriSarma[b.soru_seti_durum_id] ?? false,
-        extra_puan: extraPuanlar[b.soru_seti_durum_id] ?? null,
-        tekrar_periyot_gun: tekrarPeriyotlari[b.soru_seti_durum_id] ?? null,
+        ...(eczanem
+          ? {
+              barkod: barkodlar[b.soru_seti_durum_id] ?? "",
+              karsilik_puan: karsilikPuanlar[b.soru_seti_durum_id] ?? null,
+              karsilik_tl: karsilikTllar[b.soru_seti_durum_id] ?? null,
+            }
+          : {
+              ileri_sarma_acik: bekleyenIleriSarma[b.soru_seti_durum_id] ?? false,
+              extra_puan: extraPuanlar[b.soru_seti_durum_id] ?? null,
+              tekrar_periyot_gun: tekrarPeriyotlari[b.soru_seti_durum_id] ?? null,
+            }),
       }),
     });
     const d = await res.json();
@@ -231,6 +252,9 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     bekleyenIleriSarma, setBekleyenIleriSarma,
     ileriSarmaAcik,
     extraPuanlar, setExtraPuanlar,
+    barkodlar, setBarkodlar,
+    karsilikPuanlar, setKarsilikPuanlar,
+    karsilikTllar, setKarsilikTllar,
     tekrarPeriyotlari, setTekrarPeriyotlari,
     tekrarSecenekleri,
     tekrarBilgi,

@@ -4,4 +4,4 @@
 // yalnızca burası güncellenir, tüm kullanıcılar otomatik güncel olur.
 
 export const FIRMA_KOLONLARI =
-  "firma_id, firma_adi, hbstore_aktif, aktif, cc_aktif, eclub_aktif, eclub_store_aktif, son_export_at, created_at";
+  "firma_id, firma_adi, hbstore_aktif, aktif, cc_aktif, eclub_aktif, eclub_store_aktif, eczanem_aktif, son_export_at, created_at";

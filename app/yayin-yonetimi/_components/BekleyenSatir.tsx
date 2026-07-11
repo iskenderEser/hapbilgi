@@ -23,6 +23,12 @@ interface BekleyenSatirProps {
   setVideoPuanlari: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   extraPuanlar: Record<string, number>;
   setExtraPuanlar: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  barkodlar: Record<string, string>;
+  setBarkodlar: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  karsilikPuanlar: Record<string, number>;
+  setKarsilikPuanlar: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  karsilikTllar: Record<string, number>;
+  setKarsilikTllar: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   tekrarPeriyotlari: Record<string, number>;
   setTekrarPeriyotlari: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   tekrarSecenekleri: number[];
@@ -39,6 +45,7 @@ interface BekleyenSatirProps {
 export function BekleyenSatir({
   b, islemLoading, acikAkordiyon, setAcikAkordiyon,
   videoPuanlari, setVideoPuanlari, extraPuanlar, setExtraPuanlar,
+  barkodlar, setBarkodlar, karsilikPuanlar, setKarsilikPuanlar, karsilikTllar, setKarsilikTllar,
   tekrarPeriyotlari, setTekrarPeriyotlari, tekrarSecenekleri,
   bekleyenIleriSarma, tumPuanlarAtandiMi,
   getSoruPuani, setSoruPuani, hepsineAyniPuanAta,
@@ -46,6 +53,9 @@ export function BekleyenSatir({
 }: BekleyenSatirProps) {
   const acik = bekleyenIleriSarma[b.soru_seti_durum_id] ?? false;
   const hazir = tumPuanlarAtandiMi(b);
+  // Eczanem yayınında extra puan / tekrar periyodu / ileri sarma YOKTUR (İP §4.4);
+  // yerine barkod + Karşılık (puan ↔ TL) alanları girilir (U5, K-E3).
+  const eczanem = b.hedef_rol === "eczanem";
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-2">
       <div className="flex flex-col md:grid md:items-start md:gap-3 p-4 md:p-3.5"
@@ -87,38 +97,70 @@ export function BekleyenSatir({
               {VIDEO_PUAN_SECENEKLERI.map(p => <option key={p} value={p}>{p} puan</option>)}
             </select>
           </div>
-          <div>
-            <span className="text-xs text-gray-400 block mb-1">Extra puan</span>
-            <select value={extraPuanlar[b.soru_seti_durum_id] ?? ""}
-              onChange={(e) => setExtraPuanlar(prev => ({ ...prev, [b.soru_seti_durum_id]: Number(e.target.value) }))}
-              className="border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-900 bg-white"
-              style={{ fontFamily: "'Nunito', sans-serif", width: 90 }}>
-              <option value="">Seçiniz</option>
-              {EXTRA_PUAN_SECENEKLERI.map(p => <option key={p} value={p}>{p} puan</option>)}
-            </select>
-          </div>
-          <div>
-            <span className="text-xs text-gray-400 block mb-1">Tekrar periyodu</span>
-            <select value={tekrarPeriyotlari[b.soru_seti_durum_id] ?? ""}
-              onChange={(e) => {
-                const deger = e.target.value;
-                setTekrarPeriyotlari(prev => {
-                  const yeni = { ...prev };
-                  if (deger === "") delete yeni[b.soru_seti_durum_id];
-                  else yeni[b.soru_seti_durum_id] = Number(deger);
-                  return yeni;
-                });
-              }}
-              className="border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-900 bg-white"
-              style={{ fontFamily: "'Nunito', sans-serif", width: 90 }}>
-              <option value="">Tekrar yok</option>
-              {tekrarSecenekleri.map(g => <option key={g} value={g}>{g} gün</option>)}
-            </select>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-gray-400">İleri sarma</span>
-            <Toggle acik={acik} onClick={() => onIleriSarmaToggle(b.soru_seti_durum_id, b.urun_adi)} />
-          </div>
+          {eczanem ? (
+            <>
+              <div>
+                <span className="text-xs text-gray-400 block mb-1">Barkod <span className="text-red-500">*</span></span>
+                <input type="text" inputMode="numeric" value={barkodlar[b.soru_seti_durum_id] ?? ""}
+                  onChange={(e) => setBarkodlar(prev => ({ ...prev, [b.soru_seti_durum_id]: e.target.value }))}
+                  placeholder="Barkod"
+                  className="border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-900 bg-white"
+                  style={{ fontFamily: "'Nunito', sans-serif", width: 120 }} />
+              </div>
+              <div>
+                <span className="text-xs text-gray-400 block mb-1">Karşılık <span className="text-red-500">*</span></span>
+                <div className="flex items-center gap-1">
+                  <input type="number" min={1} value={karsilikPuanlar[b.soru_seti_durum_id] ?? ""}
+                    onChange={(e) => setKarsilikPuanlar(prev => ({ ...prev, [b.soru_seti_durum_id]: Number(e.target.value) }))}
+                    placeholder="puan"
+                    className="border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-900 bg-white"
+                    style={{ fontFamily: "'Nunito', sans-serif", width: 56 }} />
+                  <span className="text-xs text-gray-400">=</span>
+                  <input type="number" min={0} step="0.01" value={karsilikTllar[b.soru_seti_durum_id] ?? ""}
+                    onChange={(e) => setKarsilikTllar(prev => ({ ...prev, [b.soru_seti_durum_id]: Number(e.target.value) }))}
+                    placeholder="TL"
+                    className="border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-900 bg-white"
+                    style={{ fontFamily: "'Nunito', sans-serif", width: 56 }} />
+                  <span className="text-xs text-gray-400">TL</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <span className="text-xs text-gray-400 block mb-1">Extra puan</span>
+                <select value={extraPuanlar[b.soru_seti_durum_id] ?? ""}
+                  onChange={(e) => setExtraPuanlar(prev => ({ ...prev, [b.soru_seti_durum_id]: Number(e.target.value) }))}
+                  className="border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-900 bg-white"
+                  style={{ fontFamily: "'Nunito', sans-serif", width: 90 }}>
+                  <option value="">Seçiniz</option>
+                  {EXTRA_PUAN_SECENEKLERI.map(p => <option key={p} value={p}>{p} puan</option>)}
+                </select>
+              </div>
+              <div>
+                <span className="text-xs text-gray-400 block mb-1">Tekrar periyodu</span>
+                <select value={tekrarPeriyotlari[b.soru_seti_durum_id] ?? ""}
+                  onChange={(e) => {
+                    const deger = e.target.value;
+                    setTekrarPeriyotlari(prev => {
+                      const yeni = { ...prev };
+                      if (deger === "") delete yeni[b.soru_seti_durum_id];
+                      else yeni[b.soru_seti_durum_id] = Number(deger);
+                      return yeni;
+                    });
+                  }}
+                  className="border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-900 bg-white"
+                  style={{ fontFamily: "'Nunito', sans-serif", width: 90 }}>
+                  <option value="">Tekrar yok</option>
+                  {tekrarSecenekleri.map(g => <option key={g} value={g}>{g} gün</option>)}
+                </select>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-gray-400">İleri sarma</span>
+                <Toggle acik={acik} onClick={() => onIleriSarmaToggle(b.soru_seti_durum_id, b.urun_adi)} />
+              </div>
+            </>
+          )}
         </div>
         <div className="flex items-start gap-2 justify-end pt-0.5">
           {b.sorular?.length > 0 && (

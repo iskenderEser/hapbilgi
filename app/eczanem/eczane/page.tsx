@@ -1,12 +1,13 @@
 // app/eczanem/eczane/page.tsx
-// Eczacı/teknisyen Eczanem ekranı — U2 kapsamı: davet formu + davet listesi.
-// (Gelen videolar, üye listesi ve gönderim U6'da bu sayfaya eklenecek.)
+// Eczacı/teknisyen Eczanem ekranı: davet formu + davet listesi (U2) ve
+// gelen videolar + aktif üyelere tekil/toplu gönderim (U6, İP-§5.5).
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
+import EczanemSiparisKuyrugu from "./_components/EczanemSiparisKuyrugu";
 
 interface DavetSatiri {
   davet_id: string;
@@ -23,6 +24,17 @@ const DURUM_ETIKETLERI: Record<string, { etiket: string; renk: string }> = {
   iptal: { etiket: "Yenilendi/İptal", renk: "#737373" },
 };
 
+interface GelenVideo {
+  yayin_id: string;
+  urun_adi: string;
+  teknik_adi: string;
+  gelis_tarihi: string;
+}
+interface Uye {
+  musteri_id: string;
+  telefon_maskeli: string;
+}
+
 export default function EczanemDavetPage() {
   const router = useRouter();
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
@@ -35,6 +47,12 @@ export default function EczanemDavetPage() {
   const [gonderiliyor, setGonderiliyor] = useState(false);
   const [davetler, setDavetler] = useState<DavetSatiri[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [videolar, setVideolar] = useState<GelenVideo[]>([]);
+  const [uyeler, setUyeler] = useState<Uye[]>([]);
+  const [seciliVideo, setSeciliVideo] = useState<string | null>(null);
+  const [seciliUyeler, setSeciliUyeler] = useState<Set<string>>(new Set());
+  const [dagitiliyor, setDagitiliyor] = useState(false);
 
   const davetleriCek = useCallback(async () => {
     try {
@@ -49,12 +67,61 @@ export default function EczanemDavetPage() {
     }
   }, [hata]);
 
+  const dagitimCek = useCallback(async () => {
+    try {
+      const res = await fetch("/eczanem/eczane/api/gonderim");
+      const data = await res.json();
+      if (!res.ok) { hata(data.hata ?? "Gönderim verisi yüklenemedi.", "gönderim"); return; }
+      setVideolar(data.videolar ?? []);
+      setUyeler(data.uyeler ?? []);
+      setSeciliVideo((onceki) => onceki ?? data.videolar?.[0]?.yayin_id ?? null);
+    } catch {
+      hata("Gönderim verisi yüklenemedi.", "gönderim");
+    }
+  }, [hata]);
+
   useEffect(() => {
     if (authYukleniyor) return;
     if (!kullanici) { router.replace("/login"); return; }
     if (!eclubKisi) { router.replace("/ana-sayfa"); return; }
     davetleriCek();
-  }, [kullanici, authYukleniyor, eclubKisi, router, davetleriCek]);
+    dagitimCek();
+  }, [kullanici, authYukleniyor, eclubKisi, router, davetleriCek, dagitimCek]);
+
+  const uyeToggle = (musteriId: string) => {
+    setSeciliUyeler((onceki) => {
+      const yeni = new Set(onceki);
+      if (yeni.has(musteriId)) yeni.delete(musteriId);
+      else yeni.add(musteriId);
+      return yeni;
+    });
+  };
+
+  const tumunuSec = () => {
+    setSeciliUyeler((onceki) =>
+      onceki.size === uyeler.length ? new Set() : new Set(uyeler.map((u) => u.musteri_id))
+    );
+  };
+
+  const videoDagit = async () => {
+    if (!seciliVideo || seciliUyeler.size === 0) return;
+    setDagitiliyor(true);
+    try {
+      const res = await fetch("/eczanem/eczane/api/gonderim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ yayin_id: seciliVideo, musteri_idler: [...seciliUyeler] }),
+      });
+      const data = await res.json();
+      if (!res.ok) { hata(data.hata ?? "Gönderilemedi.", "gönderim"); return; }
+      basari(data.mesaj ?? "Gönderildi.");
+      setSeciliUyeler(new Set());
+    } catch {
+      hata("Gönderilemedi.", "gönderim");
+    } finally {
+      setDagitiliyor(false);
+    }
+  };
 
   const davetGonder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,6 +200,81 @@ export default function EczanemDavetPage() {
             </button>
           </div>
         </form>
+
+        {/* Sipariş onay kuyruğu (İP-§8) — kasada müşteri bekleyebilir, üstte */}
+        <EczanemSiparisKuyrugu hata={hata} basari={basari} />
+
+        {/* Gelen videolar + üyelere dağıtım (İP-§5.5) */}
+        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
+          <div className="text-sm font-semibold text-gray-700 mb-1">Video Dağıtımı</div>
+          <div className="text-xs text-gray-500 mb-4">
+            Size gelen bir videoyu üyelerinizden seçtiklerinize gönderin. Aynı video bir
+            müşteriye yalnızca bir kez gider; zaten gönderilmiş olanlar atlanır.
+          </div>
+
+          {videolar.length === 0 ? (
+            <div className="text-sm text-gray-400">Henüz size gönderilmiş video yok.</div>
+          ) : (
+            <>
+              <div className="text-xs font-semibold text-gray-500 mb-2">Video seç</div>
+              <div className="flex flex-col gap-2 mb-5">
+                {videolar.map((v) => {
+                  const secili = v.yayin_id === seciliVideo;
+                  return (
+                    <button
+                      key={v.yayin_id}
+                      onClick={() => setSeciliVideo(v.yayin_id)}
+                      className={`text-left rounded-lg border px-3 py-2.5 transition ${
+                        secili ? "border-amber-500 bg-amber-50" : "border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      <div className="text-sm font-medium text-gray-800">{v.urun_adi}</div>
+                      <div className="text-xs text-gray-400">{v.teknik_adi}</div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs font-semibold text-gray-500">
+                  Üyeler {uyeler.length > 0 && `(${seciliUyeler.size}/${uyeler.length} seçili)`}
+                </div>
+                {uyeler.length > 0 && (
+                  <button onClick={tumunuSec} className="text-xs text-amber-700 hover:underline">
+                    {seciliUyeler.size === uyeler.length ? "Seçimi kaldır" : "Tümünü seç"}
+                  </button>
+                )}
+              </div>
+
+              {uyeler.length === 0 ? (
+                <div className="text-sm text-gray-400">Aktif üyeniz yok.</div>
+              ) : (
+                <div className="divide-y divide-gray-100 mb-4 max-h-64 overflow-y-auto">
+                  {uyeler.map((u) => (
+                    <label key={u.musteri_id} className="flex items-center gap-3 py-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={seciliUyeler.has(u.musteri_id)}
+                        onChange={() => uyeToggle(u.musteri_id)}
+                        className="w-4 h-4 accent-amber-600"
+                      />
+                      <span className="text-sm text-gray-700">{u.telefon_maskeli}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              <button
+                onClick={videoDagit}
+                disabled={dagitiliyor || !seciliVideo || seciliUyeler.size === 0}
+                className="w-full px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-40"
+                style={{ background: "#b45309" }}
+              >
+                {dagitiliyor ? "Gönderiliyor…" : `Seçili ${seciliUyeler.size} üyeye gönder`}
+              </button>
+            </>
+          )}
+        </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="text-sm font-semibold text-gray-700 mb-3">Davetler</div>

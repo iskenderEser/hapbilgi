@@ -134,6 +134,9 @@ export default function YayinYonetimiPage() {
                 acikAkordiyon={acikAkordiyon} setAcikAkordiyon={setAcikAkordiyon}
                 videoPuanlari={yy.videoPuanlari} setVideoPuanlari={yy.setVideoPuanlari}
                 extraPuanlar={yy.extraPuanlar} setExtraPuanlar={yy.setExtraPuanlar}
+                barkodlar={yy.barkodlar} setBarkodlar={yy.setBarkodlar}
+                karsilikPuanlar={yy.karsilikPuanlar} setKarsilikPuanlar={yy.setKarsilikPuanlar}
+                karsilikTllar={yy.karsilikTllar} setKarsilikTllar={yy.setKarsilikTllar}
                 tekrarPeriyotlari={yy.tekrarPeriyotlari} setTekrarPeriyotlari={yy.setTekrarPeriyotlari}
                 tekrarSecenekleri={yy.tekrarSecenekleri}
                 bekleyenIleriSarma={yy.bekleyenIleriSarma}

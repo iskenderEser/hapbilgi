@@ -156,7 +156,7 @@ export async function GET(request: NextRequest) {
       ? sonuc.filter((b: any) => b.hedef_rol === hedefRolFiltresi)
       : sonuc;
 
-    return NextResponse.json({ bekleyenler: sonuc }, { status: 200 });
+    return NextResponse.json({ bekleyenler: filtrelenmis }, { status: 200 });
 
   } catch (err) {
     return sunucuHatasi(err, "GET /yayin-yonetimi/api/bekleyenler");

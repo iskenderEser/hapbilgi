@@ -186,6 +186,171 @@
       "tablo": "eczanem_davetler"
     },
     {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 23,
+      "tablo": "sistem_ayarlari"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 44,
+      "tablo": "v_yayin_detay"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 66,
+      "tablo": "eclub_eczaneler"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 76,
+      "tablo": "eclub_eczane_master"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 96,
+      "tablo": "eczanem_uyelikler"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 143,
+      "tablo": "v_yayin_detay"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 160,
+      "tablo": "eclub_eczane_firma"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 187,
+      "tablo": "eczanem_eczane_gonderimleri"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 212,
+      "tablo": "v_yayin_detay"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 222,
+      "tablo": "eclub_eczane_firma"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 233,
+      "tablo": "eczanem_uyelikler"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 242,
+      "tablo": "eczanem_eczane_gonderimleri"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 277,
+      "tablo": "eczanem_eczane_gonderimleri"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 301,
+      "tablo": "eczanem_uyelikler"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 310,
+      "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 344,
+      "tablo": "eczanem_eczane_gonderimleri"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 353,
+      "tablo": "eczanem_uyelikler"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 362,
+      "tablo": "eczanem_gonderimler"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 381,
+      "tablo": "eczanem_gonderimler"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 26,
+      "tablo": "eczanem_uyelikler"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 35,
+      "tablo": "eclub_eczaneler"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 44,
+      "tablo": "eclub_eczane_master"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 56,
+      "tablo": "sistem_ayarlari"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 83,
+      "tablo": "eczanem_puan_kayitlari"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 122,
+      "tablo": "eczanem_uyelikler"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 132,
+      "tablo": "urunler"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 179,
+      "tablo": "eczanem_siparisler"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 189,
+      "tablo": "eczanem_siparisler"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 215,
+      "tablo": "eczanem_siparisler"
+    },
+    {
+      "dosya": "lib/eczanem/kazanim.ts",
+      "satir": 41,
+      "tablo": "eczanem_izleme_kayitlari"
+    },
+    {
+      "dosya": "lib/eczanem/kazanim.ts",
+      "satir": 50,
+      "tablo": "eczanem_puan_kayitlari"
+    },
+    {
+      "dosya": "lib/eczanem/kazanim.ts",
+      "satir": 72,
+      "tablo": "urunler"
+    },
+    {
+      "dosya": "lib/eczanem/kazanim.ts",
+      "satir": 97,
+      "tablo": "eczanem_puan_kayitlari"
+    },
+    {
       "dosya": "lib/eczanem/otp.ts",
       "satir": 56,
       "tablo": "eczanem_giris_otp"
@@ -212,7 +377,12 @@
     },
     {
       "dosya": "lib/eczanem/oturum.ts",
-      "satir": 48,
+      "satir": 35,
+      "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "lib/eczanem/oturum.ts",
+      "satir": 64,
       "tablo": "eczanem_musteriler"
     },
     {
@@ -234,6 +404,21 @@
       "dosya": "lib/eczanem/silme.ts",
       "satir": 62,
       "tablo": "eczanem_siparisler"
+    },
+    {
+      "dosya": "lib/eczanem/tarife.ts",
+      "satir": 48,
+      "tablo": "eczanem_urun_tarifeleri"
+    },
+    {
+      "dosya": "lib/eczanem/tarife.ts",
+      "satir": 72,
+      "tablo": "urunler"
+    },
+    {
+      "dosya": "lib/eczanem/tarife.ts",
+      "satir": 85,
+      "tablo": "eczanem_urun_tarifeleri"
     },
     {
       "dosya": "lib/hbligi/getGenelLig.ts",
@@ -1127,42 +1312,42 @@
     },
     {
       "dosya": "app/profil/api/route.ts",
-      "satir": 19,
+      "satir": 20,
       "tablo": "v_kullanici_detay"
     },
     {
       "dosya": "app/profil/api/route.ts",
-      "satir": 33,
+      "satir": 35,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/profil/api/route.ts",
-      "satir": 56,
+      "satir": 59,
       "tablo": "izleme_kayitlari"
     },
     {
       "dosya": "app/profil/api/route.ts",
-      "satir": 63,
+      "satir": 66,
       "tablo": "izleme_kayitlari"
     },
     {
       "dosya": "app/profil/api/route.ts",
-      "satir": 70,
+      "satir": 73,
       "tablo": "izleme_kayitlari"
     },
     {
       "dosya": "app/profil/api/route.ts",
-      "satir": 78,
+      "satir": 81,
       "tablo": "kazanilan_puanlar"
     },
     {
       "dosya": "app/profil/api/route.ts",
-      "satir": 97,
+      "satir": 100,
       "tablo": "v_hbligi_sirali"
     },
     {
       "dosya": "app/profil/api/route.ts",
-      "satir": 140,
+      "satir": 143,
       "tablo": "kullanicilar"
     },
     {
@@ -1387,17 +1572,17 @@
     },
     {
       "dosya": "app/yayin-yonetimi/_hooks/useYayinYonetimi.ts",
-      "satir": 85,
+      "satir": 91,
       "tablo": "v_yayin_detay"
     },
     {
       "dosya": "app/yayin-yonetimi/_hooks/useYayinYonetimi.ts",
-      "satir": 93,
+      "satir": 99,
       "tablo": "yayin_yonetimi"
     },
     {
       "dosya": "app/yayin-yonetimi/_hooks/useYayinYonetimi.ts",
-      "satir": 112,
+      "satir": 118,
       "tablo": "soru_seti_puanlari"
     },
     {
@@ -1549,6 +1734,41 @@
       "dosya": "app/eczanem/api/silme-otp/route.ts",
       "satir": 25,
       "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "app/eczanem/api/siparis/route.ts",
+      "satir": 24,
+      "tablo": "eczanem_siparisler"
+    },
+    {
+      "dosya": "app/eczanem/api/siparis/route.ts",
+      "satir": 37,
+      "tablo": "urunler"
+    },
+    {
+      "dosya": "app/eczanem/api/videolar/route.ts",
+      "satir": 23,
+      "tablo": "eczanem_gonderimler"
+    },
+    {
+      "dosya": "app/eczanem/api/videolar/route.ts",
+      "satir": 36,
+      "tablo": "v_yayin_detay"
+    },
+    {
+      "dosya": "app/eczanem/api/videolar/route.ts",
+      "satir": 44,
+      "tablo": "eczanem_izleme_kayitlari"
+    },
+    {
+      "dosya": "app/eczanem/api/videolar/route.ts",
+      "satir": 56,
+      "tablo": "eczanem_puan_kayitlari"
+    },
+    {
+      "dosya": "app/eczanem/utt/api/route.ts",
+      "satir": 18,
+      "tablo": "kullanicilar"
     },
     {
       "dosya": "app/izle/api/[yayin_id]/route.ts",
@@ -1927,47 +2147,52 @@
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 41,
+      "satir": 31,
       "tablo": "soru_seti_durumu"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 52,
+      "satir": 42,
       "tablo": "soru_setleri"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 67,
+      "satir": 75,
+      "tablo": "talepler"
+    },
+    {
+      "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
+      "satir": 99,
       "tablo": "video_puanlari"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 83,
+      "satir": 115,
       "tablo": "soru_seti_puanlari"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 97,
+      "satir": 129,
       "tablo": "yayin_yonetimi"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 109,
+      "satir": 156,
       "tablo": "yayin_yonetimi"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 144,
+      "satir": 192,
       "tablo": "v_yayin_detay"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 153,
+      "satir": 201,
       "tablo": "bolgeler"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 161,
+      "satir": 209,
       "tablo": "kullanicilar"
     },
     {
@@ -2656,9 +2881,104 @@
       "tablo": "eczanem_musteriler"
     },
     {
+      "dosya": "app/eczanem/api/izleme/baslat/route.ts",
+      "satir": 27,
+      "tablo": "eczanem_gonderimler"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/baslat/route.ts",
+      "satir": 39,
+      "tablo": "yayin_yonetimi"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/baslat/route.ts",
+      "satir": 51,
+      "tablo": "eczanem_izleme_kayitlari"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/baslat/route.ts",
+      "satir": 63,
+      "tablo": "eczanem_izleme_kayitlari"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/bitir/route.ts",
+      "satir": 28,
+      "tablo": "eczanem_izleme_kayitlari"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/bitir/route.ts",
+      "satir": 41,
+      "tablo": "eczanem_izleme_kayitlari"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/bitir/route.ts",
+      "satir": 49,
+      "tablo": "eczanem_gonderimler"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/bitir/route.ts",
+      "satir": 61,
+      "tablo": "v_yayin_detay"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/cevapla/route.ts",
+      "satir": 30,
+      "tablo": "eczanem_izleme_kayitlari"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/cevapla/route.ts",
+      "satir": 48,
+      "tablo": "eczanem_gonderimler"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/cevapla/route.ts",
+      "satir": 55,
+      "tablo": "v_yayin_detay"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/cevapla/route.ts",
+      "satir": 70,
+      "tablo": "soru_seti_puanlari"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/sorular/route.ts",
+      "satir": 29,
+      "tablo": "eczanem_izleme_kayitlari"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/sorular/route.ts",
+      "satir": 46,
+      "tablo": "v_yayin_detay"
+    },
+    {
+      "dosya": "app/eczanem/api/siparis/vazgec/route.ts",
+      "satir": 26,
+      "tablo": "eczanem_siparisler"
+    },
+    {
       "dosya": "app/eczanem/eczane/api/davetler/route.ts",
       "satir": 53,
       "tablo": "eczanem_davetler"
+    },
+    {
+      "dosya": "app/eczanem/eczane/api/siparisler/route.ts",
+      "satir": 27,
+      "tablo": "eczanem_siparisler"
+    },
+    {
+      "dosya": "app/eczanem/eczane/api/siparisler/route.ts",
+      "satir": 41,
+      "tablo": "urunler"
+    },
+    {
+      "dosya": "app/eczanem/eczane/api/siparisler/route.ts",
+      "satir": 49,
+      "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "app/eczanem/eczane/api/siparisler/route.ts",
+      "satir": 93,
+      "tablo": "eczanem_siparisler"
     },
     {
       "dosya": "app/raporlar/api/yonetici/akordeon/route.ts",
@@ -3267,6 +3587,186 @@
       "tablo": "eczanem_musteriler"
     },
     {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 23,
+      "ham": "deger",
+      "tablo": "sistem_ayarlari"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 44,
+      "ham": "yayin_id, urun_adi, teknik_adi, yayin_tarihi",
+      "tablo": "v_yayin_detay"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 66,
+      "ham": "eczane_id, gln",
+      "tablo": "eclub_eczaneler"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 76,
+      "ham": "gln, eczane_adi",
+      "tablo": "eclub_eczane_master"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 96,
+      "ham": "eczane_id",
+      "tablo": "eczanem_uyelikler"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 143,
+      "ham": "yayin_id, urun_adi, teknik_adi, yayin_tarihi",
+      "tablo": "v_yayin_detay"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 160,
+      "ham": "eczane_id",
+      "tablo": "eclub_eczane_firma"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 187,
+      "ham": "yayin_id, eczane_id",
+      "tablo": "eczanem_eczane_gonderimleri"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 212,
+      "ham": "yayin_id, durum, hedef_rol",
+      "tablo": "v_yayin_detay"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 222,
+      "ham": "id",
+      "tablo": "eclub_eczane_firma"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 233,
+      "ham": "uyelik_id",
+      "tablo": "eczanem_uyelikler"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 277,
+      "ham": "yayin_id, created_at",
+      "tablo": "eczanem_eczane_gonderimleri"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 301,
+      "ham": "musteri_id",
+      "tablo": "eczanem_uyelikler"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 310,
+      "ham": "musteri_id, telefon",
+      "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 344,
+      "ham": "gonderim_id",
+      "tablo": "eczanem_eczane_gonderimleri"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 353,
+      "ham": "musteri_id",
+      "tablo": "eczanem_uyelikler"
+    },
+    {
+      "dosya": "lib/eczanem/gonderim.ts",
+      "satir": 362,
+      "ham": "musteri_id",
+      "tablo": "eczanem_gonderimler"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 26,
+      "ham": "eczane_id",
+      "tablo": "eczanem_uyelikler"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 35,
+      "ham": "eczane_id, gln",
+      "tablo": "eclub_eczaneler"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 44,
+      "ham": "gln, eczane_adi",
+      "tablo": "eclub_eczane_master"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 56,
+      "ham": "deger",
+      "tablo": "sistem_ayarlari"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 83,
+      "ham": "kalan_puan",
+      "tablo": "eczanem_puan_kayitlari"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 122,
+      "ham": "uyelik_id",
+      "tablo": "eczanem_uyelikler"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 132,
+      "ham": "urun_id, urun_adi",
+      "tablo": "urunler"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 179,
+      "ham": "siparis_id",
+      "tablo": "eczanem_siparisler"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 189,
+      "ham": "siparis_id",
+      "tablo": "eczanem_siparisler"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 215,
+      "ham": "siparis_id",
+      "tablo": "eczanem_siparisler"
+    },
+    {
+      "dosya": "lib/eczanem/kazanim.ts",
+      "satir": 41,
+      "ham": "izleme_id",
+      "tablo": "eczanem_izleme_kayitlari"
+    },
+    {
+      "dosya": "lib/eczanem/kazanim.ts",
+      "satir": 50,
+      "ham": "kayit_id",
+      "tablo": "eczanem_puan_kayitlari"
+    },
+    {
+      "dosya": "lib/eczanem/kazanim.ts",
+      "satir": 72,
+      "ham": "firma_id",
+      "tablo": "urunler"
+    },
+    {
       "dosya": "lib/eczanem/otp.ts",
       "satir": 56,
       "ham": "otp_id",
@@ -3277,6 +3777,12 @@
       "satir": 94,
       "ham": "otp_id, otp_hash, deneme_sayisi",
       "tablo": "eczanem_giris_otp"
+    },
+    {
+      "dosya": "lib/eczanem/oturum.ts",
+      "satir": 35,
+      "ham": "musteri_id, aktif_mi",
+      "tablo": "eczanem_musteriler"
     },
     {
       "dosya": "lib/eczanem/silme.ts",
@@ -3295,6 +3801,12 @@
       "satir": 54,
       "ham": "eczane_id",
       "tablo": "eczanem_siparisler"
+    },
+    {
+      "dosya": "lib/eczanem/tarife.ts",
+      "satir": 48,
+      "ham": "puan, tl",
+      "tablo": "eczanem_urun_tarifeleri"
     },
     {
       "dosya": "lib/hbligi/getGenelLig.ts",
@@ -4204,43 +4716,37 @@
     },
     {
       "dosya": "app/profil/api/route.ts",
-      "satir": 19,
+      "satir": 20,
       "ham": "kullanici_id, ad, soyad, eposta, rol, firma_id, firma_adi, takim_id, takim_adi, bolge_id, bolge_adi, fotograf_url",
       "tablo": "v_kullanici_detay"
     },
     {
       "dosya": "app/profil/api/route.ts",
-      "satir": 33,
-      "ham": "hbstore_aktif, cc_aktif, eclub_aktif, eclub_store_aktif",
-      "tablo": "firmalar"
-    },
-    {
-      "dosya": "app/profil/api/route.ts",
-      "satir": 56,
+      "satir": 59,
       "ham": "izleme_id",
       "tablo": "izleme_kayitlari"
     },
     {
       "dosya": "app/profil/api/route.ts",
-      "satir": 63,
+      "satir": 66,
       "ham": "izleme_id",
       "tablo": "izleme_kayitlari"
     },
     {
       "dosya": "app/profil/api/route.ts",
-      "satir": 70,
+      "satir": 73,
       "ham": "izleme_id",
       "tablo": "izleme_kayitlari"
     },
     {
       "dosya": "app/profil/api/route.ts",
-      "satir": 78,
+      "satir": 81,
       "ham": "puan_turu, puan",
       "tablo": "kazanilan_puanlar"
     },
     {
       "dosya": "app/profil/api/route.ts",
-      "satir": 97,
+      "satir": 100,
       "ham": "firma_sirasi, takim_sirasi, bolge_sirasi",
       "tablo": "v_hbligi_sirali"
     },
@@ -4510,19 +5016,19 @@
     },
     {
       "dosya": "app/yayin-yonetimi/_hooks/useYayinYonetimi.ts",
-      "satir": 85,
+      "satir": 91,
       "ham": "yayin_id, soru_seti_durum_id, durum, yayin_tarihi, durdurma_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, sorular, hedef_rol",
       "tablo": "v_yayin_detay"
     },
     {
       "dosya": "app/yayin-yonetimi/_hooks/useYayinYonetimi.ts",
-      "satir": 93,
+      "satir": 99,
       "ham": "yayin_id, ileri_sarma_acik",
       "tablo": "yayin_yonetimi"
     },
     {
       "dosya": "app/yayin-yonetimi/_hooks/useYayinYonetimi.ts",
-      "satir": 112,
+      "satir": 118,
       "ham": "soru_seti_durum_id, soru_index, soru_puani",
       "tablo": "soru_seti_puanlari"
     },
@@ -4687,6 +5193,48 @@
       "satir": 25,
       "ham": "telefon",
       "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "app/eczanem/api/siparis/route.ts",
+      "satir": 24,
+      "ham": "siparis_id, eczane_id, urun_id, adet, kullanilan_puan, indirim_tl, durum, islem_kodu, onay_tarihi, created_at",
+      "tablo": "eczanem_siparisler"
+    },
+    {
+      "dosya": "app/eczanem/api/siparis/route.ts",
+      "satir": 37,
+      "ham": "urun_id, urun_adi",
+      "tablo": "urunler"
+    },
+    {
+      "dosya": "app/eczanem/api/videolar/route.ts",
+      "satir": 23,
+      "ham": "gonderim_id, yayin_id, eczane_id, created_at",
+      "tablo": "eczanem_gonderimler"
+    },
+    {
+      "dosya": "app/eczanem/api/videolar/route.ts",
+      "satir": 36,
+      "ham": "yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, durum",
+      "tablo": "v_yayin_detay"
+    },
+    {
+      "dosya": "app/eczanem/api/videolar/route.ts",
+      "satir": 44,
+      "ham": "izleme_id, yayin_id, tamamlandi_mi",
+      "tablo": "eczanem_izleme_kayitlari"
+    },
+    {
+      "dosya": "app/eczanem/api/videolar/route.ts",
+      "satir": 56,
+      "ham": "izleme_id",
+      "tablo": "eczanem_puan_kayitlari"
+    },
+    {
+      "dosya": "app/eczanem/utt/api/route.ts",
+      "satir": 18,
+      "ham": "kullanici_id, takim_id",
+      "tablo": "kullanicilar"
     },
     {
       "dosya": "app/izle/api/[yayin_id]/route.ts",
@@ -5044,55 +5592,61 @@
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 41,
+      "satir": 31,
       "ham": "soru_seti_durum_id, soru_seti_id, durum",
       "tablo": "soru_seti_durumu"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 52,
+      "satir": 42,
       "ham": "soru_seti_id, video_durum_id, sorular",
       "tablo": "soru_setleri"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 67,
+      "satir": 75,
+      "ham": "urun_id",
+      "tablo": "talepler"
+    },
+    {
+      "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
+      "satir": 99,
       "ham": "video_puani",
       "tablo": "video_puanlari"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 83,
+      "satir": 115,
       "ham": "soru_index, soru_puani",
       "tablo": "soru_seti_puanlari"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 97,
+      "satir": 129,
       "ham": "yayin_id",
       "tablo": "yayin_yonetimi"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 109,
+      "satir": 156,
       "ham": "yayin_id, durum, yayin_tarihi",
       "tablo": "yayin_yonetimi"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 144,
+      "satir": 192,
       "ham": "takim_id, urun_adi",
       "tablo": "v_yayin_detay"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 153,
+      "satir": 201,
       "ham": "bolge_id",
       "tablo": "bolgeler"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 161,
+      "satir": 209,
       "ham": "kullanici_id",
       "tablo": "kullanicilar"
     },
@@ -5709,10 +6263,118 @@
       "tablo": "eczanem_musteriler"
     },
     {
+      "dosya": "app/eczanem/api/izleme/baslat/route.ts",
+      "satir": 27,
+      "ham": "gonderim_id, yayin_id, musteri_id",
+      "tablo": "eczanem_gonderimler"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/baslat/route.ts",
+      "satir": 39,
+      "ham": "yayin_id, durum",
+      "tablo": "yayin_yonetimi"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/baslat/route.ts",
+      "satir": 51,
+      "ham": "izleme_id, yayin_id, gonderim_id, izleme_baslangic",
+      "tablo": "eczanem_izleme_kayitlari"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/baslat/route.ts",
+      "satir": 63,
+      "ham": "izleme_id, yayin_id, gonderim_id, izleme_baslangic",
+      "tablo": "eczanem_izleme_kayitlari"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/bitir/route.ts",
+      "satir": 28,
+      "ham": "izleme_id, yayin_id, musteri_id, gonderim_id, tamamlandi_mi",
+      "tablo": "eczanem_izleme_kayitlari"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/bitir/route.ts",
+      "satir": 49,
+      "ham": "eczane_id",
+      "tablo": "eczanem_gonderimler"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/bitir/route.ts",
+      "satir": 61,
+      "ham": "video_puani",
+      "tablo": "v_yayin_detay"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/cevapla/route.ts",
+      "satir": 30,
+      "ham": "izleme_id, yayin_id, musteri_id, gonderim_id, tamamlandi_mi",
+      "tablo": "eczanem_izleme_kayitlari"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/cevapla/route.ts",
+      "satir": 48,
+      "ham": "eczane_id",
+      "tablo": "eczanem_gonderimler"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/cevapla/route.ts",
+      "satir": 55,
+      "ham": "sorular, soru_seti_durum_id",
+      "tablo": "v_yayin_detay"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/cevapla/route.ts",
+      "satir": 70,
+      "ham": "soru_index, soru_puani",
+      "tablo": "soru_seti_puanlari"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/sorular/route.ts",
+      "satir": 29,
+      "ham": "izleme_id, yayin_id, musteri_id, tamamlandi_mi",
+      "tablo": "eczanem_izleme_kayitlari"
+    },
+    {
+      "dosya": "app/eczanem/api/izleme/sorular/route.ts",
+      "satir": 46,
+      "ham": "sorular, video_basi_soru_sayisi",
+      "tablo": "v_yayin_detay"
+    },
+    {
+      "dosya": "app/eczanem/api/siparis/vazgec/route.ts",
+      "satir": 26,
+      "ham": "siparis_id, musteri_id",
+      "tablo": "eczanem_siparisler"
+    },
+    {
       "dosya": "app/eczanem/eczane/api/davetler/route.ts",
       "satir": 53,
       "ham": "davet_id, ad_soyad, telefon, durum, son_gecerlilik, created_at",
       "tablo": "eczanem_davetler"
+    },
+    {
+      "dosya": "app/eczanem/eczane/api/siparisler/route.ts",
+      "satir": 27,
+      "ham": "siparis_id, musteri_id, musteri_etiket, urun_id, adet, kullanilan_puan, indirim_tl, durum, islem_kodu, onay_tarihi, created_at",
+      "tablo": "eczanem_siparisler"
+    },
+    {
+      "dosya": "app/eczanem/eczane/api/siparisler/route.ts",
+      "satir": 41,
+      "ham": "urun_id, urun_adi",
+      "tablo": "urunler"
+    },
+    {
+      "dosya": "app/eczanem/eczane/api/siparisler/route.ts",
+      "satir": 49,
+      "ham": "musteri_id, telefon",
+      "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "app/eczanem/eczane/api/siparisler/route.ts",
+      "satir": 93,
+      "ham": "siparis_id, eczane_id, durum",
+      "tablo": "eczanem_siparisler"
     },
     {
       "dosya": "app/raporlar/api/yonetici/akordeon/route.ts",
@@ -6176,6 +6838,16 @@
       "dosya": "lib/eclub/ligRpcCagir.ts",
       "satir": 83,
       "fonksiyon": "get_eclub_ligi_detay_donemlik"
+    },
+    {
+      "dosya": "lib/eczanem/kasa.ts",
+      "satir": 241,
+      "fonksiyon": "eczanem_siparis_onayla"
+    },
+    {
+      "dosya": "lib/eczanem/kazanim.ts",
+      "satir": 62,
+      "fonksiyon": "get_urun_from_yayin"
     },
     {
       "dosya": "lib/hbligi/ligRpcCagir.ts",
