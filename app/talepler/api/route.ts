@@ -15,7 +15,9 @@ import { rolCozucu } from "@/lib/utils/rolCozucu";
 // TALEP_TURU_KURALLARI'nın anahtarlarından türetilir, hardcoded liste yok.
 const GECERLI_TALEP_TURLERI = Object.keys(TALEP_TURU_KURALLARI) as TalepTuru[];
 
-// HedefRol tipinin runtime karşılığı — DB'deki CHECK constraint ile birebir.
+// Bu formdan açılabilecek hedef rollerin bilinçli alt kümesi (DB CHECK'i daha
+// geniştir): eczaci/eczane_teknisyeni üretimi ayrı akışta, 'eczanem' ise U4'te
+// yalnız PM'e açılacak — o güne kadar burada reddedilir.
 const GECERLI_HEDEF_ROLLER: HedefRol[] = ["utt", "bm"];
 
 export async function GET() {

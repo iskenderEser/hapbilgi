@@ -5,7 +5,7 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import type { TalepTuru } from "@/lib/uretici/yetenekler";
-import type { HedefRol } from "@/app/talepler/_types";
+import type { HedefRol } from "@/lib/utils/roller";
 
 export interface TalepBilgisi {
   talep_id: string;

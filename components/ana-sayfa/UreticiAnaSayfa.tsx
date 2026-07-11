@@ -9,12 +9,13 @@ import VideoOynatici from "@/components/izle/VideoOynatici";
 import VideoBolumu from "@/components/ana-sayfa/VideoBolumu";
 import { AnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 import { HedefRolPill } from "@/components/HedefRolBant";
+import type { HedefRol } from "@/lib/utils/roller";
 
 interface TakipSatiri {
   talep_id: string;
   urun_adi: string;
   teknik_adi: string;
-  hedef_rol: "utt" | "bm";
+  hedef_rol: HedefRol;
   asama: "Senaryo" | "Video" | "Soru Seti" | "Yayın";
   durum: string;
   tarih: string;

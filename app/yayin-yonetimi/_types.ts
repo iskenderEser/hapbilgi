@@ -65,7 +65,10 @@ export const ANA_SEKME_ETIKETLERI: Record<HedefRol, string> = {
   bm: "BM Yayınları",
   eczaci: "Eczacı Yayınları",
   eczane_teknisyeni: "Eczane Teknisyeni Yayınları",
+  eczanem: "Eczanem Yayınları",
 };
 
-// Ana sekmelerin gösterim sırası.
+// Ana sekmelerin gösterim sırası. Eczanem bilinçli olarak burada YOK:
+// sekme UI'ı U5/U6 işidir (yayına alma + UTT ekranı); o güne kadar boş
+// sekme gösterilmez. Etiketi yukarıda hazır durur (Record tamlığı).
 export const ANA_SEKMELER: HedefRol[] = ["utt", "bm", "eczaci", "eczane_teknisyeni"];

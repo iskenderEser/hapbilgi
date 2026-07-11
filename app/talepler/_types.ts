@@ -4,21 +4,15 @@
 // Bu dosyaya tüm bileşenler ve hook'lar import eder — bu sayfanın kontrat dosyasıdır.
 
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
+import type { HedefRol } from "@/lib/utils/roller";
 
 // ============================================================================
 // Tipler
 // ============================================================================
 
-/**
- * Hedef rol — talebin hangi kitle için olduğunu belirler.
- * 'utt'               → Ürün Tanıtım Temsilcileri (varsayılan UTT akışı)
- * 'bm'                → Bölge Müdürleri (Challenge Club akışı)
- * 'eczaci'            → Eczacılar (E-Club akışı)
- * 'eczane_teknisyeni' → Eczane Teknisyenleri (E-Club akışı)
- *
- * DB: talepler.hedef_rol kolonu (NOT NULL CHECK).
- */
-export type HedefRol = "utt" | "bm" | "eczaci" | "eczane_teknisyeni";
+// Hedef rol tipinin tek kaynağı lib/utils/roller.ts'tir (U0 — Eczanem zemini).
+// Bu re-export, sayfa-içi bileşenlerin mevcut import yolunu korur.
+export type { HedefRol };
 
 export interface Talep {
   talep_id: string;
@@ -110,6 +104,7 @@ export const TUR_ROZET: Record<TalepTuru, { bg: string; renk: string; border: st
 // UTT: mavi tonu (sistemin ana mavisi). BM: bordo (Challenge Club rengi).
 // Eczacı: Türk eczane kırmızısı (#e30a17). Eczane Teknisyeni: konfederasyon
 // laciverti (#10304a) + yeşil (#7ed957). (E-Club akışı — ikisi ayrı hedef.)
+// Eczanem: amber (eczanenin kendi müşterisi — üçüncü katman).
 export const HEDEF_ROL_TASARIM: Record<HedefRol, { bg: string; renk: string; border: string; tamEtiket: string; kisaEtiket: string }> = {
   utt: {
     bg: "#eff6ff",
@@ -138,6 +133,13 @@ export const HEDEF_ROL_TASARIM: Record<HedefRol, { bg: string; renk: string; bor
     border: "#7ed957",
     tamEtiket: "Eczane Teknisyenleri",
     kisaEtiket: "Ecz. Tek.",
+  },
+  eczanem: {
+    bg: "#fffbeb",
+    renk: "#b45309",
+    border: "#fde68a",
+    tamEtiket: "Eczane Müşterileri",
+    kisaEtiket: "Eczanem",
   },
 };
 

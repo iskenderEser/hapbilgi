@@ -3,12 +3,13 @@
 // Not: Döngü içi sıralı sorgu (N+1) deseni bilinçli olarak İYİLEŞTİRİLMEDEN taşındı — ayrı perf işi.
 
 import { SupabaseClient } from "@supabase/supabase-js";
+import type { HedefRol } from "@/lib/utils/roller";
 
 interface TakipSatiri {
   talep_id: string;
   urun_adi: string;
   teknik_adi: string;
-  hedef_rol: "utt" | "bm";
+  hedef_rol: HedefRol;
   asama: "Senaryo" | "Video" | "Soru Seti" | "Yayın";
   durum: string;
   tarih: string;
@@ -33,7 +34,7 @@ export async function getUreticiAnaSayfaVeri(userId: string, adminSupabase: Supa
   for (const talep of talepler ?? []) {
     const urun_adi = (talep as any).urunler?.urun_adi ?? "-";
     const teknik_adi = (talep as any).teknikler?.teknik_adi ?? "-";
-    const hedef_rol = ((talep as any).hedef_rol ?? "utt") as "utt" | "bm";
+    const hedef_rol = ((talep as any).hedef_rol ?? "utt") as HedefRol;
 
     const { data: senaryolar } = await adminSupabase
       .from("senaryolar")

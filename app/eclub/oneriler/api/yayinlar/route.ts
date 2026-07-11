@@ -3,9 +3,9 @@ import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { ECLUB_HEDEF_ROLLER } from "@/lib/utils/roller";
 
 const ECLUB_UTT_ROLLERI = ["utt", "kd_utt"];
-const ECLUB_HEDEF_ROLLER = ["eczaci", "eczane_teknisyeni"];
 
 export async function GET() {
   try {

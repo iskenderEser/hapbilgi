@@ -181,6 +181,24 @@ export const ECLUB_STORE_RAPOR_GOREN_ROLLER = [
 // rol validasyonu içindir). E-Club kişileri ayrı bir kimlik/yetki düzleminde tutulur.
 export const ECLUB_TUKETICI_ROLLERI = ["eczaci", "eczane_teknisyeni"];
 
+// ============================================================================
+// HEDEF ROL — üretim hattının hedef kitle ekseni (talepler.hedef_rol)
+// ============================================================================
+// DİKKAT: Bunlar kullanıcı rolleri değil, üretilen içeriğin hedef kitle
+// değerleridir; bu yüzden TUM_ROLLER'dan ayrı yaşar.
+//   'utt' / 'bm'                    → iç müşteri (saha)
+//   'eczaci' / 'eczane_teknisyeni'  → dış müşteri (E-Club)
+//   'eczanem'                       → eczanenin kendi müşterisi (üçüncü katman)
+// DB: talepler.hedef_rol CHECK constraint'i ile birebir.
+export type HedefRol = "utt" | "bm" | "eczaci" | "eczane_teknisyeni" | "eczanem";
+
+export const TUM_HEDEF_ROLLER: HedefRol[] = ["utt", "bm", "eczaci", "eczane_teknisyeni", "eczanem"];
+
+// E-Club akışının hedef rolleri — eclub öneri route'larının yayın süzgeci.
+// (ECLUB_TUKETICI_ROLLERI ile değerleri aynıdır ama kavram farklıdır:
+// o kişilerin rolü, bu içeriğin hedefi. İkisi bilinçli olarak ayrı durur.)
+export const ECLUB_HEDEF_ROLLER: HedefRol[] = ["eczaci", "eczane_teknisyeni"];
+
 // ROL_ADLARI: Rol kısaltmalarının Türkçe karşılıkları.
 // Yalnızca görüntüleme katmanında kullanılır — veritabanında hiçbir şey değişmez.
 // Kullanım: ROL_ADLARI[rol] ?? rol

@@ -1,6 +1,6 @@
 {
-  "uretim_tarihi": "2026-07-09T18:48:51.168Z",
-  "tablo_sayisi": 79,
+  "uretim_tarihi": "2026-07-11T06:07:08.111Z",
+  "tablo_sayisi": 89,
   "rpc_sayisi": 51,
   "tablolar": {
     "analiz_tuketim_degiskenleri": {
@@ -1078,6 +1078,352 @@
         }
       }
     },
+    "eczanem_davetler": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "davet_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "eczane_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "davet_eden_kisi_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "telefon": {
+          "tip": "character varying",
+          "nullable": false
+        },
+        "ad_soyad": {
+          "tip": "character varying",
+          "nullable": false
+        },
+        "otp_hash": {
+          "tip": "character varying",
+          "nullable": true
+        },
+        "son_gecerlilik": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        },
+        "durum": {
+          "tip": "character varying",
+          "nullable": false
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        }
+      }
+    },
+    "eczanem_eczane_gonderimleri": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "gonderim_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "yayin_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "eczane_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "gonderen_utt_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        }
+      }
+    },
+    "eczanem_gonderimler": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "gonderim_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "yayin_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "eczane_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "musteri_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "gonderen_kisi_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        }
+      }
+    },
+    "eczanem_harcama_kayitlari": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "harcama_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "siparis_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "kaynak_kayit_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "dusulen_puan": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        }
+      }
+    },
+    "eczanem_izleme_kayitlari": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "izleme_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "gonderim_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "musteri_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "yayin_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "tamamlandi_mi": {
+          "tip": "boolean",
+          "nullable": false
+        },
+        "izleme_baslangic": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        },
+        "izleme_bitis": {
+          "tip": "timestamp with time zone",
+          "nullable": true
+        }
+      }
+    },
+    "eczanem_musteriler": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "musteri_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "auth_user_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "telefon": {
+          "tip": "character varying",
+          "nullable": false
+        },
+        "ad_soyad": {
+          "tip": "character varying",
+          "nullable": false
+        },
+        "kvkk_onay_tarihi": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        },
+        "aktif_mi": {
+          "tip": "boolean",
+          "nullable": false
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        }
+      }
+    },
+    "eczanem_puan_kayitlari": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "kayit_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "musteri_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "eczane_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "firma_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "urun_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "izleme_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "puan_turu": {
+          "tip": "character varying",
+          "nullable": false
+        },
+        "puan": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "kalan_puan": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        }
+      }
+    },
+    "eczanem_siparisler": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "siparis_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "musteri_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "musteri_etiket": {
+          "tip": "character varying",
+          "nullable": true
+        },
+        "eczane_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "urun_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "adet": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "kullanilan_puan": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "indirim_tl": {
+          "tip": "numeric",
+          "nullable": false
+        },
+        "tarife_snapshot": {
+          "tip": "jsonb",
+          "nullable": false
+        },
+        "durum": {
+          "tip": "character varying",
+          "nullable": false
+        },
+        "islem_kodu": {
+          "tip": "character varying",
+          "nullable": true
+        },
+        "onay_tarihi": {
+          "tip": "timestamp with time zone",
+          "nullable": true
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        }
+      }
+    },
+    "eczanem_urun_tarifeleri": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "tarife_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "urun_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "puan": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "tl": {
+          "tip": "numeric",
+          "nullable": false
+        },
+        "gecerlilik_baslangic": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        },
+        "olusturan_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        }
+      }
+    },
+    "eczanem_uyelikler": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "uyelik_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "musteri_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "eczane_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "aktif_mi": {
+          "tip": "boolean",
+          "nullable": false
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        }
+      }
+    },
     "firmalar": {
       "tur": "BASE TABLE",
       "kolonlar": {
@@ -1114,6 +1460,10 @@
           "nullable": false
         },
         "eclub_store_aktif": {
+          "tip": "boolean",
+          "nullable": false
+        },
+        "eczanem_aktif": {
           "tip": "boolean",
           "nullable": false
         }
@@ -2007,6 +2357,10 @@
         },
         "created_at": {
           "tip": "timestamp with time zone",
+          "nullable": true
+        },
+        "barkod": {
+          "tip": "character varying",
           "nullable": true
         }
       }
@@ -3714,6 +4068,114 @@
         "hedef_kolon": "yayin_id"
       }
     ],
+    "eczanem_davetler": [
+      {
+        "kaynak_kolon": "eczane_id",
+        "hedef_tablo": "eclub_eczaneler",
+        "hedef_kolon": "eczane_id"
+      },
+      {
+        "kaynak_kolon": "davet_eden_kisi_id",
+        "hedef_tablo": "eclub_kisiler",
+        "hedef_kolon": "kisi_id"
+      }
+    ],
+    "eczanem_eczane_gonderimleri": [
+      {
+        "kaynak_kolon": "eczane_id",
+        "hedef_tablo": "eclub_eczaneler",
+        "hedef_kolon": "eczane_id"
+      },
+      {
+        "kaynak_kolon": "yayin_id",
+        "hedef_tablo": "yayin_yonetimi",
+        "hedef_kolon": "yayin_id"
+      }
+    ],
+    "eczanem_gonderimler": [
+      {
+        "kaynak_kolon": "eczane_id",
+        "hedef_tablo": "eclub_eczaneler",
+        "hedef_kolon": "eczane_id"
+      },
+      {
+        "kaynak_kolon": "gonderen_kisi_id",
+        "hedef_tablo": "eclub_kisiler",
+        "hedef_kolon": "kisi_id"
+      },
+      {
+        "kaynak_kolon": "musteri_id",
+        "hedef_tablo": "eczanem_musteriler",
+        "hedef_kolon": "musteri_id"
+      },
+      {
+        "kaynak_kolon": "yayin_id",
+        "hedef_tablo": "yayin_yonetimi",
+        "hedef_kolon": "yayin_id"
+      }
+    ],
+    "eczanem_harcama_kayitlari": [
+      {
+        "kaynak_kolon": "kaynak_kayit_id",
+        "hedef_tablo": "eczanem_puan_kayitlari",
+        "hedef_kolon": "kayit_id"
+      },
+      {
+        "kaynak_kolon": "siparis_id",
+        "hedef_tablo": "eczanem_siparisler",
+        "hedef_kolon": "siparis_id"
+      }
+    ],
+    "eczanem_izleme_kayitlari": [
+      {
+        "kaynak_kolon": "gonderim_id",
+        "hedef_tablo": "eczanem_gonderimler",
+        "hedef_kolon": "gonderim_id"
+      },
+      {
+        "kaynak_kolon": "musteri_id",
+        "hedef_tablo": "eczanem_musteriler",
+        "hedef_kolon": "musteri_id"
+      }
+    ],
+    "eczanem_puan_kayitlari": [
+      {
+        "kaynak_kolon": "izleme_id",
+        "hedef_tablo": "eczanem_izleme_kayitlari",
+        "hedef_kolon": "izleme_id"
+      },
+      {
+        "kaynak_kolon": "musteri_id",
+        "hedef_tablo": "eczanem_musteriler",
+        "hedef_kolon": "musteri_id"
+      }
+    ],
+    "eczanem_siparisler": [
+      {
+        "kaynak_kolon": "musteri_id",
+        "hedef_tablo": "eczanem_musteriler",
+        "hedef_kolon": "musteri_id"
+      }
+    ],
+    "eczanem_urun_tarifeleri": [
+      {
+        "kaynak_kolon": "urun_id",
+        "hedef_tablo": "urunler",
+        "hedef_kolon": "urun_id"
+      }
+    ],
+    "eczanem_uyelikler": [
+      {
+        "kaynak_kolon": "eczane_id",
+        "hedef_tablo": "eclub_eczaneler",
+        "hedef_kolon": "eczane_id"
+      },
+      {
+        "kaynak_kolon": "musteri_id",
+        "hedef_tablo": "eczanem_musteriler",
+        "hedef_kolon": "musteri_id"
+      }
+    ],
     "ileri_sarma_kayitlari": [
       {
         "kaynak_kolon": "urun_id",
@@ -3801,12 +4263,12 @@
     ],
     "oneri_kayitlari": [
       {
-        "kaynak_kolon": "kullanici_id",
+        "kaynak_kolon": "oneren_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "oneren_id",
+        "kaynak_kolon": "kullanici_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
