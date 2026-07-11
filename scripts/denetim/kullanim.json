@@ -106,6 +106,36 @@
       "tablo": "eclub_oneri_kayitlari"
     },
     {
+      "dosya": "lib/eczanem/otp.ts",
+      "satir": 48,
+      "tablo": "eczanem_giris_otp"
+    },
+    {
+      "dosya": "lib/eczanem/otp.ts",
+      "satir": 63,
+      "tablo": "eczanem_giris_otp"
+    },
+    {
+      "dosya": "lib/eczanem/otp.ts",
+      "satir": 89,
+      "tablo": "eczanem_giris_otp"
+    },
+    {
+      "dosya": "lib/eczanem/otp.ts",
+      "satir": 107,
+      "tablo": "eczanem_giris_otp"
+    },
+    {
+      "dosya": "lib/eczanem/otp.ts",
+      "satir": 114,
+      "tablo": "eczanem_giris_otp"
+    },
+    {
+      "dosya": "lib/eczanem/oturum.ts",
+      "satir": 48,
+      "tablo": "eczanem_musteriler"
+    },
+    {
       "dosya": "lib/hbligi/getGenelLig.ts",
       "satir": 51,
       "tablo": "bolgeler"
@@ -2501,6 +2531,16 @@
       "tablo": "eclub_eczane_master"
     },
     {
+      "dosya": "app/eczanem/api/giris/dogrula/route.ts",
+      "satir": 25,
+      "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "app/eczanem/api/giris/otp/route.ts",
+      "satir": 23,
+      "tablo": "eczanem_musteriler"
+    },
+    {
       "dosya": "app/raporlar/api/yonetici/akordeon/route.ts",
       "satir": 25,
       "tablo": "kullanicilar"
@@ -3045,6 +3085,18 @@
       "satir": 190,
       "ham": "kisi_id",
       "tablo": "eclub_oneri_kayitlari"
+    },
+    {
+      "dosya": "lib/eczanem/otp.ts",
+      "satir": 48,
+      "ham": "otp_id",
+      "tablo": "eczanem_giris_otp"
+    },
+    {
+      "dosya": "lib/eczanem/otp.ts",
+      "satir": 89,
+      "ham": "otp_id, otp_hash, deneme_sayisi",
+      "tablo": "eczanem_giris_otp"
     },
     {
       "dosya": "lib/hbligi/getGenelLig.ts",
@@ -5427,6 +5479,18 @@
       "satir": 105,
       "ham": "gln, eczane_adi",
       "tablo": "eclub_eczane_master"
+    },
+    {
+      "dosya": "app/eczanem/api/giris/dogrula/route.ts",
+      "satir": 25,
+      "ham": "musteri_id, auth_user_id, telefon, aktif_mi",
+      "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "app/eczanem/api/giris/otp/route.ts",
+      "satir": 23,
+      "ham": "musteri_id, aktif_mi",
+      "tablo": "eczanem_musteriler"
     },
     {
       "dosya": "app/raporlar/api/yonetici/akordeon/route.ts",

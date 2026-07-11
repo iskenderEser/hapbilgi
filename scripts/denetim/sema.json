@@ -1,6 +1,6 @@
 {
-  "uretim_tarihi": "2026-07-11T06:07:08.111Z",
-  "tablo_sayisi": 89,
+  "uretim_tarihi": "2026-07-11T08:09:12.885Z",
+  "tablo_sayisi": 90,
   "rpc_sayisi": 51,
   "tablolar": {
     "analiz_tuketim_degiskenleri": {
@@ -1136,6 +1136,39 @@
         },
         "gonderen_utt_id": {
           "tip": "uuid",
+          "nullable": false
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        }
+      }
+    },
+    "eczanem_giris_otp": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "otp_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "telefon": {
+          "tip": "text",
+          "nullable": false
+        },
+        "otp_hash": {
+          "tip": "text",
+          "nullable": false
+        },
+        "son_gecerlilik": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        },
+        "deneme_sayisi": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "kullanildi_mi": {
+          "tip": "boolean",
           "nullable": false
         },
         "created_at": {
