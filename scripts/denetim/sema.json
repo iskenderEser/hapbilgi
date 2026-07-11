@@ -1,6 +1,6 @@
 {
-  "uretim_tarihi": "2026-07-11T08:09:12.885Z",
-  "tablo_sayisi": 90,
+  "uretim_tarihi": "2026-07-11T11:11:47.967Z",
+  "tablo_sayisi": 91,
   "rpc_sayisi": 51,
   "tablolar": {
     "analiz_tuketim_degiskenleri": {
@@ -1115,6 +1115,10 @@
         },
         "created_at": {
           "tip": "timestamp with time zone",
+          "nullable": false
+        },
+        "deneme_sayisi": {
+          "tip": "integer",
           "nullable": false
         }
       }
@@ -2399,6 +2403,67 @@
       }
     },
     "v_auth_kimlik": {
+      "tur": "VIEW",
+      "kolonlar": {
+        "auth_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "kimlik_turu": {
+          "tip": "text",
+          "nullable": true
+        },
+        "kimlik_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "ad": {
+          "tip": "character varying",
+          "nullable": true
+        },
+        "soyad": {
+          "tip": "character varying",
+          "nullable": true
+        },
+        "eposta": {
+          "tip": "character varying",
+          "nullable": true
+        },
+        "telefon": {
+          "tip": "character varying",
+          "nullable": true
+        },
+        "rol": {
+          "tip": "character varying",
+          "nullable": true
+        },
+        "aktif_mi": {
+          "tip": "boolean",
+          "nullable": true
+        },
+        "firma_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "takim_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "bolge_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "fotograf_url": {
+          "tip": "text",
+          "nullable": true
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": true
+        }
+      }
+    },
+    "v_auth_kimlik_admin": {
       "tur": "VIEW",
       "kolonlar": {
         "auth_id": {

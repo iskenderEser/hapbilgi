@@ -13,22 +13,28 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
- * auth kullanıcısının rolünü v_auth_kimlik'ten okur (lowercase).
+ * auth kullanıcısının rolünü v_auth_kimlik_admin'den okur (lowercase).
  * Kayıt yoksa veya hata olursa "" döner — boş rol, tüm rol kontrollerinden
  * reddedilir (mevcut davranışla aynı güvenli varsayılan).
+ *
+ * NEDEN _admin view (onarım, 11.07.2026): v_auth_kimlik auth.uid() ile
+ * daraltılmıştır (istemci/AuthProvider için doğru), ama bu fonksiyon
+ * service_role ile sorgular ve service_role JWT'sinde sub olmadığından
+ * auth.uid() NULL döner — filtreli view service_role'e HEP BOŞTUR.
+ * v_auth_kimlik_admin filtresiz ikizdir; SELECT yetkisi yalnız service_role'dedir.
  */
 export async function rolCozucu(
   adminSupabase: SupabaseClient,
   authUserId: string
 ): Promise<string> {
   const { data, error } = await adminSupabase
-    .from("v_auth_kimlik")
+    .from("v_auth_kimlik_admin")
     .select("rol")
     .eq("auth_id", authUserId)
     .maybeSingle();
 
   if (error || !data) {
-    if (error) console.error("[lib/utils/rolCozucu] v_auth_kimlik okunamadı:", error.message);
+    if (error) console.error("[lib/utils/rolCozucu] v_auth_kimlik_admin okunamadı:", error.message);
     return "";
   }
 

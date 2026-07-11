@@ -38,6 +38,14 @@ export function otpHashle(telefon: string, otp: string): string {
   return createHash("sha256").update(`${telefon}:${otp}:hapbilgi-eczanem-otp`).digest("hex");
 }
 
+// K-E8 sabit kod kapısı — TEK yer: giriş doğrulaması da davet kabulü de
+// buradan geçer. Canlı ortamda koşulsuz false (çift kilit ortam.ts'te).
+export function sabitKodGecerliMi(telefon: string, girilenOtp: string): boolean {
+  if (canliOrtamMi() || girilenOtp !== TEST_OTP) return false;
+  console.log(`[OTP TEST] ${telefon} sabit kodla doğrulandı (canlı dışı ortam — K-E8).`);
+  return true;
+}
+
 // Giriş OTP'si üretir, hash'ini kaydeder, kodu döner (SMS metnini çağıran kurar).
 // Spam koruması: aynı telefona OTP_YENIDEN_GONDERIM_SANIYE içinde ikinci kod üretilmez.
 export async function girisOtpOlustur(
@@ -80,10 +88,7 @@ export async function girisOtpDogrula(
   telefon: string,
   girilenOtp: string
 ): Promise<OtpSonuc> {
-  if (!canliOrtamMi() && girilenOtp === TEST_OTP) {
-    console.log(`[OTP TEST] ${telefon} sabit kodla doğrulandı (canlı dışı ortam — K-E8).`);
-    return { ok: true };
-  }
+  if (sabitKodGecerliMi(telefon, girilenOtp)) return { ok: true };
 
   const simdi = new Date().toISOString();
   const { data: kayitlar, error: okumaHatasi } = await adminSupabase

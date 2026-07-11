@@ -181,6 +181,11 @@ export const ECLUB_STORE_RAPOR_GOREN_ROLLER = [
 // rol validasyonu içindir). E-Club kişileri ayrı bir kimlik/yetki düzleminde tutulur.
 export const ECLUB_TUKETICI_ROLLERI = ["eczaci", "eczane_teknisyeni"];
 
+// MUSTERI_ROLU: Eczanem müşterisi — üçüncü kimlik düzlemi (eczanem_musteriler).
+// ECLUB_TUKETICI_ROLLERI gibi TUM_ROLLER'a dahil EDİLMEZ; rolCozucu bu değeri
+// v_auth_kimlik_admin'in musteri UNION'ından döner.
+export const MUSTERI_ROLU = "musteri";
+
 // ============================================================================
 // HEDEF ROL — üretim hattının hedef kitle ekseni (talepler.hedef_rol)
 // ============================================================================
@@ -230,4 +235,5 @@ export const ROL_ADLARI: Record<string, string> = {
   ik_per: "İK Personeli",
   eczaci: "Eczacı",
   eczane_teknisyeni: "Eczane Teknisyeni",
+  musteri: "Müşteri",
 };

@@ -106,28 +106,108 @@
       "tablo": "eclub_oneri_kayitlari"
     },
     {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 22,
+      "tablo": "sistem_ayarlari"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 46,
+      "tablo": "eclub_kisiler"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 54,
+      "tablo": "eclub_kisi_eczane"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 73,
+      "tablo": "eclub_kisi_eczane"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 82,
+      "tablo": "eclub_kisiler"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 115,
+      "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 123,
+      "tablo": "eczanem_uyelikler"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 134,
+      "tablo": "eczanem_davetler"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 144,
+      "tablo": "eczanem_davetler"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 177,
+      "tablo": "eczanem_davetler"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 198,
+      "tablo": "eczanem_davetler"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 207,
+      "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 216,
+      "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 224,
+      "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 232,
+      "tablo": "eczanem_uyelikler"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 239,
+      "tablo": "eczanem_davetler"
+    },
+    {
       "dosya": "lib/eczanem/otp.ts",
-      "satir": 48,
+      "satir": 56,
       "tablo": "eczanem_giris_otp"
     },
     {
       "dosya": "lib/eczanem/otp.ts",
-      "satir": 63,
+      "satir": 71,
       "tablo": "eczanem_giris_otp"
     },
     {
       "dosya": "lib/eczanem/otp.ts",
-      "satir": 89,
+      "satir": 94,
       "tablo": "eczanem_giris_otp"
     },
     {
       "dosya": "lib/eczanem/otp.ts",
-      "satir": 107,
+      "satir": 112,
       "tablo": "eczanem_giris_otp"
     },
     {
       "dosya": "lib/eczanem/otp.ts",
-      "satir": 114,
+      "satir": 119,
       "tablo": "eczanem_giris_otp"
     },
     {
@@ -372,8 +452,8 @@
     },
     {
       "dosya": "lib/utils/rolCozucu.ts",
-      "satir": 24,
-      "tablo": "v_auth_kimlik"
+      "satir": 30,
+      "tablo": "v_auth_kimlik_admin"
     },
     {
       "dosya": "lib/utils/talepZinciri.ts",
@@ -1436,6 +1516,11 @@
       "tablo": "eclub_store_urunler"
     },
     {
+      "dosya": "app/eczanem/api/davet-kabul/route.ts",
+      "satir": 30,
+      "tablo": "eczanem_musteriler"
+    },
+    {
       "dosya": "app/izle/api/[yayin_id]/route.ts",
       "satir": 25,
       "tablo": "v_yayin_detay"
@@ -2174,6 +2259,11 @@
       "dosya": "app/challenge-club/izle/api/ileri-sarma/route.ts",
       "satir": 143,
       "tablo": "cc_izleme_kayitlari"
+    },
+    {
+      "dosya": "app/eclub/eczanem/api/davetler/route.ts",
+      "satir": 53,
+      "tablo": "eczanem_davetler"
     },
     {
       "dosya": "app/eclub/ligi/api/export/route.ts",
@@ -3087,14 +3177,74 @@
       "tablo": "eclub_oneri_kayitlari"
     },
     {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 22,
+      "ham": "deger",
+      "tablo": "sistem_ayarlari"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 46,
+      "ham": "kisi_id",
+      "tablo": "eclub_kisiler"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 54,
+      "ham": "eczane_id",
+      "tablo": "eclub_kisi_eczane"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 73,
+      "ham": "kisi_id",
+      "tablo": "eclub_kisi_eczane"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 82,
+      "ham": "telefon",
+      "tablo": "eclub_kisiler"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 115,
+      "ham": "musteri_id",
+      "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 123,
+      "ham": "uyelik_id",
+      "tablo": "eczanem_uyelikler"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 177,
+      "ham": "davet_id, eczane_id, ad_soyad, otp_hash, deneme_sayisi",
+      "tablo": "eczanem_davetler"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 207,
+      "ham": "musteri_id, aktif_mi",
+      "tablo": "eczanem_musteriler"
+    },
+    {
+      "dosya": "lib/eczanem/davet.ts",
+      "satir": 216,
+      "ham": "musteri_id",
+      "tablo": "eczanem_musteriler"
+    },
+    {
       "dosya": "lib/eczanem/otp.ts",
-      "satir": 48,
+      "satir": 56,
       "ham": "otp_id",
       "tablo": "eczanem_giris_otp"
     },
     {
       "dosya": "lib/eczanem/otp.ts",
-      "satir": 89,
+      "satir": 94,
       "ham": "otp_id, otp_hash, deneme_sayisi",
       "tablo": "eczanem_giris_otp"
     },
@@ -3262,9 +3412,9 @@
     },
     {
       "dosya": "lib/utils/rolCozucu.ts",
-      "satir": 24,
+      "satir": 30,
       "ham": "rol",
-      "tablo": "v_auth_kimlik"
+      "tablo": "v_auth_kimlik_admin"
     },
     {
       "dosya": "lib/utils/talepZinciri.ts",
@@ -4473,6 +4623,12 @@
       "tablo": "eclub_store_urunler"
     },
     {
+      "dosya": "app/eczanem/api/davet-kabul/route.ts",
+      "satir": 30,
+      "ham": "musteri_id, auth_user_id, telefon, aktif_mi",
+      "tablo": "eczanem_musteriler"
+    },
+    {
       "dosya": "app/izle/api/[yayin_id]/route.ts",
       "satir": 25,
       "ham": "yayin_id, durum, yayin_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani",
@@ -5137,6 +5293,12 @@
       "satir": 102,
       "ham": "video_puani",
       "tablo": "v_yayin_detay"
+    },
+    {
+      "dosya": "app/eclub/eczanem/api/davetler/route.ts",
+      "satir": 53,
+      "ham": "davet_id, ad_soyad, telefon, durum, son_gecerlilik, created_at",
+      "tablo": "eczanem_davetler"
     },
     {
       "dosya": "app/eclub/ligi/api/export/route.ts",
