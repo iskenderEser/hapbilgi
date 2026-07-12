@@ -9,17 +9,17 @@ import {
   type TalepTuru,
 } from "@/lib/uretici/yetenekler";
 import type { HedefRol } from "@/app/talepler/_types";
-import { ECZANEM_TALEP_ACAN_ROLLER } from "@/lib/utils/roller";
+import { ECZANEM_TALEP_ACAN_ROLLER, ECLUB_HEDEF_ROLLER, TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 // TalepTuru tipinin tüm geçerli değerlerinin runtime listesi —
 // TALEP_TURU_KURALLARI'nın anahtarlarından türetilir, hardcoded liste yok.
 const GECERLI_TALEP_TURLERI = Object.keys(TALEP_TURU_KURALLARI) as TalepTuru[];
 
-// Bu formdan açılabilecek hedef rollerin bilinçli alt kümesi (DB CHECK'i daha
-// geniştir): eczaci/eczane_teknisyeni üretimi ayrı akışta. 'eczanem' U4 ile
-// açıldı — ek şart: yalnız ürün müdürü ailesi açabilir (İP-§4.1, aşağıda).
-const GECERLI_HEDEF_ROLLER: HedefRol[] = ["utt", "bm", "eczanem"];
+// Formun sunduğu beş hedefin tamamı kabul edilir (B-05: eczaci/eczane_teknisyeni
+// daha önce listede yoktu, form-API tutarsızlığı üretiyordu). Tek kaynak roller.ts;
+// 'eczanem' için ek şart: yalnız ürün müdürü ailesi açabilir (İP-§4.1, aşağıda).
+const GECERLI_HEDEF_ROLLER: HedefRol[] = TUM_HEDEF_ROLLER;
 
 export async function GET() {
   try {
@@ -172,16 +172,18 @@ export async function POST(request: NextRequest) {
     if (eczanemHedefi && !urun_id) {
       return validasyonHatasi("Eczanem hedefli talepte ürün seçimi zorunludur.", ["urun_id"]);
     }
-    // Teknik, teknik-siz hedeflerde (Eczanem — E-Club deseni) zorunlu değildir:
-    // son tüketiciye satış tekniği anlatılmaz, alan formda gizlidir.
-    if (!eczanemHedefi && turKurali.teknik === "zorunlu" && !teknik_id) {
+    // Teknik, teknik-siz hedeflerde (Eczanem + E-Club: eczaci/eczane_teknisyeni)
+    // zorunlu değildir: son tüketiciye/eczacıya satış tekniği anlatılmaz, alan
+    // formda gizlidir (useTalepFormu teknikGosterilsin ile simetri — B-05).
+    const tekniksizHedef = eczanemHedefi || ECLUB_HEDEF_ROLLER.includes(hedefRol);
+    if (!tekniksizHedef && turKurali.teknik === "zorunlu" && !teknik_id) {
       return validasyonHatasi("Teknik seçimi zorunludur.", ["teknik_id"]);
     }
 
     // INSERT'e yazılacak urun_id/teknik_id — kural "yok" ise NULL'a zorla;
-    // Eczanem'de teknik her hâlükârda NULL'dur.
+    // teknik-siz hedeflerde teknik her hâlükârda NULL'dur.
     const insertUrunId = turKurali.urun === "yok" && !eczanemHedefi ? null : (urun_id ?? null);
-    const insertTeknikId = turKurali.teknik === "yok" || eczanemHedefi ? null : (teknik_id ?? null);
+    const insertTeknikId = turKurali.teknik === "yok" || tekniksizHedef ? null : (teknik_id ?? null);
 
     if (hazir_soru_seti && !hazir_soru_seti_verisi) {
       return validasyonHatasi("Hazır soru seti verisi zorunludur.", ["hazir_soru_seti_verisi"]);
