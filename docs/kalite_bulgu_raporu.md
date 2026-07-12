@@ -70,3 +70,33 @@ Q2'de bağlanan kararlar:
 - **B-15:** Silme SQL'i hazırlanıp İskender'e verilir; Code çalıştırmaz.
 
 NOT'lar (B-07, B-09, B-11, B-13, B-14, B-16) redbook §6.4'e açık iş olarak işlenir (Q5); B-10 K-E7 (RLS) işinin girdi belgesidir.
+
+## 4. Q3 — Uygulama kaydı (12.07.2026)
+
+Her commit tsc + `npm run denetim` + `npm run lint:mimari` üçlüsünden temiz geçti.
+
+| Bulgu | Commit | Kanıt / not |
+|---|---|---|
+| B-01 | `b01e97f` | RPC çağrısına `kd_utt→utt` eşlemesi. Davranış kanıtı kod düzeyinde (RPC gövdesi `p_rol=ANY(hedef_roller)` + `hedef_roller=[talep.hedef_rol]`); DB'de yayın verisi olmadığından uçtan uca kanıt U10 fiziksel testine düşer. |
+| B-02 | `3313aed` | `baslat`'a pozitif hedef süzgeci (`hedef_roller` + kd_utt≡utt + NULL→['utt'] RPC simetrisi). |
+| B-03 | `3741bc1` | `[yayin_id]` detayına aynı süzgeç (`v_yayin_detay.hedef_rol !== 'utt'` → red). |
+| B-05 | `0a1a10c` | `GECERLI_HEDEF_ROLLER = TUM_HEDEF_ROLLER` (tek kaynak); teknik-zorunlu muafiyeti eclub hedeflerine genişletildi (form `teknikGosterilsin` simetrisi). |
+| B-06 | `7497172` | Metadata okumaları kaldırıldı; firma-aktif kontrolü `useAuth` kimliğiyle (firma_id oradan) useEffect'e taşındı — `kullanicilar` anon sorgusu da düştü; ölü link kaldırıldı. |
+| B-04 | `ef18daa` | 5 server guard (`analiz` ailesi) `rolCozucu`'ya, 3 client sayfa (`challenge-club`, `cc-ligi`, cc izle) `useAuth`'a bağlandı; sayfalarda `user_metadata.rol` okuması kalmadı (grep ile doğrulandı). |
+| B-08 | `2b3ce1e` | 6 route (`izle/bitir`, `izle/cevap`, `eczanem/bitir+cevapla`, `eclub/bitir+cevapla`) yanıta `puan_uyarisi` ekler; 3 oynatıcı gösterir. Önce/sonra: `izle/cevap` puanı yazım DENEMEDEN önce sayıyordu — artık yalnız başarılı yazımda sayılır. |
+| B-12 | `7ebe096` | Önce/sonra kanıtı (TZ=UTC altında smoke): eski kod Salı 05:00 UTC'yi (=08:00 TR) puansız sayar, 18:30 UTC'yi (=21:30 TR) puanlı sayardı; yeni kod 08:00 TR → TRUE, 21:30 TR → FALSE. |
+| B-15 | SQL aşağıda | Code çalıştırmaz — İskender koşar. |
+
+**Ek tespit (B-12 sırasında):** `haftaBaslangici` / `ayBaslangici` / `yilBaslangici` / `isGunuEkle` hâlâ sunucu yerel saatiyle çalışır — UTC sunucuda gün/ay sınırları 3 saat kayar (yalnız 00:00–03:00 TR aralığına düşen kayıtları etkiler). Redbook §6.4'e NOT olarak işlenecek.
+
+### B-15 silme SQL'i (İskender koşar)
+
+```sql
+-- Önce doğrula: yalnız 3 satır dönmeli (v_auth_kimlik_admin'de karşılığı olmayan test kullanıcıları)
+SELECT id, email FROM auth.users
+WHERE email IN ('utt@test.com', 'pm@test.com', 'bm@test.com');
+
+-- Sil (auth.identities/sessions FK cascade ile temizlenir)
+DELETE FROM auth.users
+WHERE email IN ('utt@test.com', 'pm@test.com', 'bm@test.com');
+```
