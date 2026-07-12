@@ -183,14 +183,14 @@ export default function LoginPage() {
       <div className="bg-gray-50 border-t border-gray-200 py-5 px-5 md:px-8">
         <div className="max-w-3xl mx-auto grid grid-cols-3 gap-4 md:gap-10 text-center">
           {[
-            { ikon: "📽️", baslik: "İzleyin", aciklama: "Yayınlanan videoları izleyin" },
-            { ikon: "🎓", baslik: "Öğrenin", aciklama: "Öğrendiğinizi ispatlayın" },
-            { ikon: "🏆", baslik: "Yarışın", aciklama: "Farkınızı gösterin" },
+            { ikon: "🎓", baslik: "İzleyin ve Öğrenin" }, // aciklama: "Her gün videoları izleyin ve sürekli öğrenin" 
+            { ikon: "🏁", baslik: "Ölçün ve Yarışın" }, // aciklama: "Öğrendiklerinizi ölçün ve diğerleriyle yarışın" 
+            { ikon: "🏆", baslik: "Kazanın ve Kazandırın" }, // aciklama: "Farkınızı gösterin, diğerlerini de motive edin" 
           ].map((k, i) => (
             <div key={i}>
               <div className="text-2xl md:text-3xl mb-1 md:mb-3">{k.ikon}</div>
               <div className="text-xs md:text-base font-bold text-gray-900 mb-1 md:mb-2">{k.baslik}</div>
-              <div className="text-xs md:text-sm text-gray-500 leading-relaxed">{k.aciklama}</div>
+              <div className="text-xs md:text-sm text-gray-500 leading-relaxed"></div> 
             </div>
           ))}
         </div>
