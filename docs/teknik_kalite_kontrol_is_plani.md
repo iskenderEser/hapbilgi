@@ -113,5 +113,5 @@ Bilinenlerden başlar, örneklem taramayla genişler:
 - [x] Q1 — Tarama + bulgu raporu (değişiklik yok) — 12.07.2026, `docs/kalite_bulgu_raporu.md` (16 bulgu: 2 KRİTİK, 7 ORTA, 6 NOT, 1 rapor-only)
 - [x] Q2 — Değerlendirme/sınıflandırma (İskender) — 12.07.2026: 9 maddelik Q3 listesi + B-05/B-08/B-12/B-13/B-15 kararları bağlandı (rapor §3)
 - [x] Q3 — Onaylı düzeltmeler (bulgu başına commit) — 12.07.2026: B-01/02/03/05/06/04/08/12 sekiz commit'le kapandı (rapor §4); B-15 SQL'i İskender'de
-- [ ] Q4 — `denetim:tutarlilik` kalıcılaştırma
-- [ ] Q5 — Kapanış + redbook güncellemesi
+- [x] Q4 — `denetim:tutarlilik` kalıcılaştırma — 12.07.2026: 12 SQL + koşucu (`scripts/denetim/tutarlilik/`), ilk koşum 11 temiz / td10 B-15 kalıntısını yakalıyor; T-K3/T-K6 lint adayı olarak redbook §6.4'te
+- [x] Q5 — Kapanış + redbook güncellemesi — 12.07.2026: §6.4 kapananlar bloğu + NOT'lar + K-E1 ifade eşitlemesi (redbook ve eczanem planı) + B-07/B-14 metin düzeltmeleri; kalan tek açık iş B-15 SQL'inin İskender'ce koşulması

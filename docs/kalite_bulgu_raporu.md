@@ -1,4 +1,6 @@
-# Kalite Bulgu Raporu — Q1 Taraması
+# Kalite Bulgu Raporu — FİNAL (Q1 tarama → Q5 kapanış)
+
+*Kapanış (12.07.2026): 16 bulgudan KRİTİK+ORTA 8'i birer commit'le düzeltildi (§4); NOT'lar redbook §6.4'e işlendi; K-E1 ifadesi üç belgede eşitlendi (Turkcell, sözleşme/entegrasyon açık); B-14/B-07 metin düzeltmeleri redbook'ta yapıldı; `denetim:tutarlilik` kalıcı (Q4). Kalan tek iş: B-15 silme SQL'inin İskender'ce koşulması (§4 sonu) — sonrasında `npm run denetim:tutarlilik` tamamen yeşildir.*
 
 *Tarama: 12.07.2026, Code (salt-okuma; Q0 kuralı — sıfır değişiklik). Kapsam: T-K1..8 kod desenleri, T-B1..5 belge-kod uyumu, T-D1..12 DB veri tutarlılığı (DATABASE_URL, session `READ ONLY` kilitli). Plan: docs/teknik_kalite_kontrol_is_plani.md.*
 

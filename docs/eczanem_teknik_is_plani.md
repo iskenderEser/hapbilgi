@@ -2,7 +2,7 @@
 
 *Eczanem İş Planı'nın (işleyiş belgesi, uyumlandırılmış sürüm 10.07.2026) koda dönüşüm planı. Bu belge "nasıl ve hangi sırayla" sorusunun cevabıdır; kurallar ve gerekçeler işleyiş belgesindedir, burada tekrarlanmaz — yalnızca referans verilir (§İP-x.y). Kod yazımı her adımda KONTROL → YAZIM ile ilerler. Belge canlıdır: kapanan her adım §9'daki durum takibinde tiklenir, yeni bulgular ilgili bölüme işlenir.*
 
-*Son güncelleme: 12.07.2026 — U9 + U12 kapandı: kod üretimi tamam (U0–U9), redbook güncel (Eczanem = Bölüm 5). Kalan: U10/U11 fiziksel testler (İskender); açık kararlar K-E1 (SMS — canlı blokörü), K-E2 (davet temizliği), K-E7 (RLS → redbook §6.4 genel listesinde); KVKK metni placeholder; push testler sonrası. Teknik borç ve deploy-öncesi mecburi işlerin tek kaynağı: redbook §6.4.*
+*Son güncelleme: 12.07.2026 — U9 + U12 kapandı: kod üretimi tamam (U0–U9), redbook güncel (Eczanem = Bölüm 5). Kalan: U10/U11 fiziksel testler (İskender); K-E1 kararı KAPALI — Turkcell (10.07.2026; açık kalan sözleşme/entegrasyon, canlı blokörü odur — B-13 ifade eşitleme 12.07.2026); açık kararlar K-E2 (davet temizliği), K-E7 (RLS → redbook §6.4 genel listesinde); KVKK metni placeholder; push testler sonrası. Teknik borç ve deploy-öncesi mecburi işlerin tek kaynağı: redbook §6.4.*
 
 ---
 
@@ -119,7 +119,7 @@ Tümü Faz 5; kaynak veriler Faz 4 sonunda hazırdır.
 *Kapanan her adım tiklenir; her U kendi KONTROL'üyle başlar, kod görülmeden yazım yapılmaz.*
 
 **Kararlar (İskender):** 
-- [ ] K-E1 — SMS sağlayıcısı
+- [x] K-E1 — SMS sağlayıcısı: Turkcell (10.07.2026, İskender; sözleşme/entegrasyon açık — B-13 ifade eşitleme 12.07.2026)
 - [ ] K-E2 — Davet temizliği
 - [x] K-E3 — Karşılık modeli: KAPALI (11.07.2026, İskender): ürün seviyesi tek güncel tarife + tarihçe (`eczanem_urun_tarifeleri`, U0'da hazır); yeni tarife YALNIZ İLERİYE işler (append-only, güncel = max(gecerlilik_baslangic ≤ now)); değer değişmediyse yeni satır açılmaz. Giriş yayına-almada, saklama ürün seviyesinde.
 - [x] K-E4 — Puan değerlerinin yeri: KAPALI (11.07.2026): yayın başına (PM ailesi, mevcut video_puani + soru puanları; sistem ayarı değil)
