@@ -2,7 +2,7 @@
 
 *Eczanem İş Planı'nın (işleyiş belgesi, uyumlandırılmış sürüm 10.07.2026) koda dönüşüm planı. Bu belge "nasıl ve hangi sırayla" sorusunun cevabıdır; kurallar ve gerekçeler işleyiş belgesindedir, burada tekrarlanmaz — yalnızca referans verilir (§İP-x.y). Kod yazımı her adımda KONTROL → YAZIM ile ilerler. Belge canlıdır: kapanan her adım §9'daki durum takibinde tiklenir, yeni bulgular ilgili bölüme işlenir.*
 
-*Son güncelleme: 10.07.2026 — Plan yazıldı; K-E8 (OTP test modu) kapalı karar olarak eklendi. Diğer kararlar ve KONTROL'ler bekliyor.*
+*Son güncelleme: 12.07.2026 — U9 kapandı: kod üretimi tamam (U0–U9, tüm fazlar). Kalan: U10/U11 fiziksel testler (İskender), U12 redbook; açık kararlar K-E1 (SMS — canlı blokörü), K-E2 (davet temizliği), K-E7 (RLS); KVKK metni placeholder; push testler sonrası.*
 
 ---
 
