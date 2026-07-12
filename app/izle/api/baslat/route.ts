@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("yayin_yonetimi")
-      .select("yayin_id, durum")
+      .select("yayin_id, durum, hedef_roller")
       .eq("yayin_id", yayin_id)
       .single();
 
@@ -59,6 +59,15 @@ export async function POST(request: NextRequest) {
     if (!yayinKontrol.gecerli) return yayinKontrol.yanit;
     if (yayinError) return hataYaniti("Yayın sorgulanırken hata oluştu.", "yayin_yonetimi tablosu SELECT", yayinError, 404);
     if (yayin.durum !== "yayinda") return isKuraluHatasi(`Video şu an yayında değil. Mevcut durum: ${yayin.durum}`);
+
+    // Pozitif hedef süzgeci (B-02): yayın, izleyenin rol eşleniğini (kd_utt≡utt)
+    // hedeflemiyorsa izleme başlatılamaz — hedef dışı yayından puan kazanımı ve
+    // içerik erişimi kapanır (utt.ts sızıntısının API tarafı). NULL varsayımı
+    // RPC ile aynı: hedef_roller boşsa ['utt'] sayılır.
+    const hedefEslenik = rol === "kd_utt" ? "utt" : rol;
+    if (!(yayin.hedef_roller ?? ["utt"]).includes(hedefEslenik)) {
+      return rolHatasi("Bu video sizin rolünüze yönelik değil.");
+    }
 
     const insertVeri: any = {
       yayin_id,
