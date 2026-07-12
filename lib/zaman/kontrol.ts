@@ -17,21 +17,37 @@
  * Puanlı saatler: Pazartesi-Cuma 07:00-20:29 arası.
  */
 
+// Puan penceresi Türkiye saatine göre tanımlıdır. Sunucu yerel saati
+// KULLANILAMAZ: Vercel UTC çalışır, getHours() ile pencere fiilen
+// 10:00-23:29 TR'ye kayardı (B-12).
+const TR_SAAT_DILIMI = "Europe/Istanbul";
+const GUN_INDEKSI: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+
 /**
  * Verilen tarihin puan kazanılabilir bir zamanda olup olmadığını kontrol eder.
+ * Pencere TR saatiyle (Europe/Istanbul) hesaplanır; sunucunun saat diliminden bağımsızdır.
  *
  * @param tarih Kontrol edilecek tarih (Date objesi)
  * @returns true: puan kazanılabilir, false: puansız zaman
  */
 export function puanKazanilabilirMi(tarih: Date): boolean {
-  const gun = tarih.getDay(); // 0=Pazar, 1=Pazartesi, ..., 6=Cumartesi
+  const parcalar = new Intl.DateTimeFormat("en-US", {
+    timeZone: TR_SAAT_DILIMI,
+    weekday: "short",
+    hour: "numeric",
+    minute: "numeric",
+    hourCycle: "h23",
+  }).formatToParts(tarih);
+  const al = (tip: string) => parcalar.find((p) => p.type === tip)?.value ?? "";
+
+  const gun = GUN_INDEKSI[al("weekday")] ?? 0; // 0=Pazar ... 6=Cumartesi
 
   // Cumartesi ve Pazar puansızdır
   if (gun < 1 || gun > 5) return false;
 
   // Pazartesi-Cuma 07:00-20:29 arası puanlıdır
   // 07:00 = 420 dakika, 20:29 = 1229 dakika
-  const dakikaCinsinden = tarih.getHours() * 60 + tarih.getMinutes();
+  const dakikaCinsinden = Number(al("hour")) * 60 + Number(al("minute"));
   return dakikaCinsinden >= 420 && dakikaCinsinden <= 1229;
 }
 
