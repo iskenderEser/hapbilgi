@@ -21,14 +21,40 @@ export default function LoginPage() {
 
     // E-Club kişisi (eczacı/teknisyen) → kendi paneline; Eczanem müşterisi →
     // kendi paneline (normalde /eczanem/giris kullanır, burası güvenlik ağı);
-    // admin → /admin; diğerleri → /ana-sayfa
-    if (kullanici.kimlik_turu === "eclub_kisi") {
-      router.replace("/eclub/panel");
-    } else if (kullanici.kimlik_turu === "musteri") {
-      router.replace("/eczanem");
-    } else {
+    // admin → /admin; diğerleri → firma-aktif kontrolünden geçip /ana-sayfa.
+    // Kimlik kaynağı useAuth'tur (B-06/D3 — user_metadata okuması kaldırıldı:
+    // metadata girişte iliştirilir ve bayatlayabilir, rolCozucu dersi).
+    const yonlendir = async () => {
+      if (kullanici.kimlik_turu === "eclub_kisi") {
+        router.replace("/eclub/panel");
+        return;
+      }
+      if (kullanici.kimlik_turu === "musteri") {
+        router.replace("/eczanem");
+        return;
+      }
+
+      // Firma aktif mi — firması pasif olan kullanıcı giriş yapamaz.
+      // Admin muaftır (firma yönetimi için panele erişmesi gerekir);
+      // firma_id useAuth kimliğinden gelir, ayrıca kullanicilar sorgusu gerekmez.
+      if (kullanici.rol !== "admin" && kullanici.firma_id) {
+        const supabase = createClient();
+        const { data: firma } = await supabase
+          .from("firmalar")
+          .select("aktif")
+          .eq("firma_id", kullanici.firma_id)
+          .single();
+
+        if (firma && firma.aktif === false) {
+          await supabase.auth.signOut();
+          setHata("Firmanızın sisteme erişimi şu anda kapalıdır. Lütfen yöneticinizle görüşün.");
+          return;
+        }
+      }
+
       router.replace(kullanici.rol === "admin" ? "/admin" : "/ana-sayfa");
-    }
+    };
+    yonlendir();
   }, [kullanici, yukleniyor]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -36,42 +62,14 @@ export default function LoginPage() {
     setLoading(true);
     setHata("");
     const supabase = createClient();
-    const { data: girisData, error } = await supabase.auth.signInWithPassword({ email, password: sifre });
+    const { error } = await supabase.auth.signInWithPassword({ email, password: sifre });
     if (error) {
       setHata("E-posta veya şifre hatalı.");
       setLoading(false);
       return;
     }
-
-    // Firma aktif mi kontrol et — firması pasif olan kullanıcı giriş yapamaz.
-    // Admin bu kontrolden muaftır (firma yönetimi için panele erişmesi gerekir).
-    // E-Club kişilerinin kullanicilar/firma bağı yoktur; bu kontrol onlara uygulanmaz.
-    const user = girisData.user;
-    const rol = (user?.user_metadata?.rol ?? "").toLowerCase();
-    const eclubKisi = user?.user_metadata?.eclub_kisi === true;
-    if (user && rol !== "admin" && !eclubKisi) {
-      const { data: kullaniciKaydi } = await supabase
-        .from("kullanicilar")
-        .select("firma_id")
-        .eq("kullanici_id", user.id)
-        .single();
-
-      if (kullaniciKaydi?.firma_id) {
-        const { data: firma } = await supabase
-          .from("firmalar")
-          .select("aktif")
-          .eq("firma_id", kullaniciKaydi.firma_id)
-          .single();
-
-        if (firma && firma.aktif === false) {
-          await supabase.auth.signOut();
-          setHata("Firmanızın sisteme erişimi şu anda kapalıdır. Lütfen yöneticinizle görüşün.");
-          setLoading(false);
-          return;
-        }
-      }
-    }
-
+    // Yönlendirme ve firma-aktif kontrolü yukarıdaki useEffect'te,
+    // AuthProvider kimliği çözüldüğünde yapılır.
     setLoading(false);
   };
 
@@ -140,7 +138,8 @@ export default function LoginPage() {
                 <input type="checkbox" className="w-3 h-3" style={{ accentColor: "#bc2d0d" }} />
                 Beni hatırla
               </label>
-              <a href="#" className="text-xs no-underline" style={{ color: "#bc2d0d" }}>Şifremi unuttum</a>
+              {/* "Şifremi unuttum" ölü linki kaldırıldı (B-06/D3);
+                  işlevli hâli ayrı iş olarak §6.4'te. */}
             </div>
 
             {hata && (
