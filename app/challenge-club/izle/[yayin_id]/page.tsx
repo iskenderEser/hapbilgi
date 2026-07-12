@@ -8,6 +8,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/app/providers/AuthProvider";
 import CcVideoOynatici from "@/components/challenge-club/CcVideoOynatici";
 import { HataMesajiContainer, 
   useHataMesaji,
@@ -33,25 +34,23 @@ export default function CcIzlemePage() {
   const [yetkiliMi, setYetkiliMi] = useState<boolean | null>(null);
 
   const { mesajlar, hata, basari, uyari } = useHataMesaji();
+  const { kullanici, yukleniyor: kimlikYukleniyor } = useAuth();
 
-  // Yetki + yayın bilgisi çek
+  // Yetki + yayın bilgisi çek — kimlik kaynağı useAuth/v_auth_kimlik (B-04);
+  // user_metadata bayatlayabildiği için okunmaz (rolCozucu dersi).
   useEffect(() => {
+    if (kimlikYukleniyor) return;
     const veriCek = async () => {
       const supabase = createClient();
 
       // Auth
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser();
-      if (authError || !user) {
+      if (!kullanici) {
         router.push("/login");
         return;
       }
 
       // Rol kontrolü — sadece BM
-      const rol = (user.user_metadata?.rol ?? "").toLowerCase();
-      if (rol !== "bm") {
+      if ((kullanici.rol ?? "").toLowerCase() !== "bm") {
         setYetkiliMi(false);
         setLoading(false);
         return;
@@ -116,7 +115,7 @@ export default function CcIzlemePage() {
 
     veriCek();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [yayin_id]);
+  }, [kullanici, kimlikYukleniyor, yayin_id]);
 
   // Loading durumu
   if (loading) {

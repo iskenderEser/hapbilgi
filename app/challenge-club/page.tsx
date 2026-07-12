@@ -14,6 +14,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/app/providers/AuthProvider";
 import Navbar from "@/components/Navbar";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import ChallengeGonderModal from "@/components/challenge-club/ChallengeGonderModal";
@@ -74,27 +75,25 @@ export default function ChallengeClubPage() {
   const [modalAcik, setModalAcik] = useState(false);
 
   const { mesajlar, hata, basari } = useHataMesaji();
+  const { kullanici, yukleniyor: kimlikYukleniyor } = useAuth();
 
-  // Auth + rol kontrolü
+  // Auth + rol kontrolü — kimlik kaynağı useAuth/v_auth_kimlik (B-04);
+  // user_metadata bayatlayabildiği için okunmaz (rolCozucu dersi).
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        router.push("/login");
-        return;
-      }
-      setUser(data.user);
-      const r = (data.user.user_metadata?.rol ?? "").toLowerCase();
-      setRol(r);
-      const ad = data.user.user_metadata?.ad ?? "";
-      const soyad = data.user.user_metadata?.soyad ?? "";
-      setAdSoyad(`${ad} ${soyad}`.trim());
-      if (r !== "bm") {
-        router.push("/ana-sayfa");
-      }
-    });
+    if (kimlikYukleniyor) return;
+    if (!kullanici) {
+      router.push("/login");
+      return;
+    }
+    setUser(kullanici);
+    const r = (kullanici.rol ?? "").toLowerCase();
+    setRol(r);
+    setAdSoyad(kullanici.adSoyad);
+    if (r !== "bm") {
+      router.push("/ana-sayfa");
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [kullanici, kimlikYukleniyor]);
 
   // Veri çekme
   useEffect(() => {

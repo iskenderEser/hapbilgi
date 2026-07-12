@@ -3,7 +3,8 @@
 // BM analiz sayfası için server-side rol guard.
 
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export default async function BmAnalizLayout({
   children,
@@ -19,7 +20,8 @@ export default async function BmAnalizLayout({
     redirect("/login");
   }
 
-  const rol = (user.user_metadata?.rol ?? "").toLowerCase();
+  // Rol kaynağı v_auth_kimlik_admin'dir (B-04) — user_metadata bayatlayabilir.
+  const rol = await rolCozucu(createAdminClient(), user.id);
   if (rol !== "bm") {
     redirect("/ana-sayfa");
   }

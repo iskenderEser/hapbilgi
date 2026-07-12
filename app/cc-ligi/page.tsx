@@ -24,6 +24,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/app/providers/AuthProvider";
 import Navbar from "@/components/Navbar";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { CCLIGI_GORENLERLER } from "@/lib/utils/roller";
@@ -58,31 +59,29 @@ export default function CcLigiPage() {
   const [ligYukleniyor, setLigYukleniyor] = useState(true);
 
   const { mesajlar, hata, basari } = useHataMesaji();
+  const { kullanici, yukleniyor: kimlikYukleniyor } = useAuth();
 
-  // Auth + rol kontrolü
+  // Auth + rol kontrolü — kimlik kaynağı useAuth/v_auth_kimlik (B-04);
+  // user_metadata bayatlayabildiği için okunmaz (rolCozucu dersi).
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        router.push("/login");
-        return;
-      }
-      setUser(data.user);
-      const r = (data.user.user_metadata?.rol ?? "").toLowerCase();
-      setRol(r);
-      const ad = data.user.user_metadata?.ad ?? "";
-      const soyad = data.user.user_metadata?.soyad ?? "";
-      setAdSoyad(`${ad} ${soyad}`.trim());
+    if (kimlikYukleniyor) return;
+    if (!kullanici) {
+      router.push("/login");
+      return;
+    }
+    setUser(kullanici);
+    const r = (kullanici.rol ?? "").toLowerCase();
+    setRol(r);
+    setAdSoyad(kullanici.adSoyad);
 
-      if (!CCLIGI_GORENLERLER.includes(r)) {
-        router.push("/ana-sayfa");
-        return;
-      }
+    if (!CCLIGI_GORENLERLER.includes(r)) {
+      router.push("/ana-sayfa");
+      return;
+    }
 
-      setYetkiKontrolEdildi(true);
-    });
+    setYetkiKontrolEdildi(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [kullanici, kimlikYukleniyor]);
 
   // Lig verisini çek (periyot/yil/ay/ceyrek değiştiğinde)
   const ligiYukle = useCallback(async () => {
