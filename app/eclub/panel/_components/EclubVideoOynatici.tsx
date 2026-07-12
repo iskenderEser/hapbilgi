@@ -154,6 +154,7 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
     if (d.puan_kazanildi && d.izleme_puani > 0) {
       basari(`+${d.izleme_puani} izleme puanı kazandınız!`);
     }
+    if (d.puan_uyarisi) hata(d.puan_uyarisi, "puan kaydı"); // B-08: yazım hatası kullanıcıya görünür
 
     // Sorular — v_yayin_detay.sorular panel API'den değil, ayrı sorular endpoint'i yok;
     // izleme bitince soruları göstermek için bitir sonrası cevapla ekranına geçiyoruz.
@@ -195,6 +196,7 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
     if (d.kazanilan_puan > 0) {
       basari(`+${d.kazanilan_puan} cevaplama puanı kazandınız!`);
     }
+    if (d.puan_uyarisi) hata(d.puan_uyarisi, "puan kaydı"); // B-08: yazım hatası kullanıcıya görünür
     setIslemLoading(false);
     await onTamamlandi();
   };

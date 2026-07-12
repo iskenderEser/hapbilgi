@@ -221,6 +221,7 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
     if (!res.ok) { hata(d.hata ?? "İzleme tamamlanamadı.", d.adim, d.detay); setIslemLoading(false); return; }
     setIzlemeTamamlandi(true); setSoruGosterilecek(d.soru_gosterilecek);
     if (!d.puan_kazanildi && !d.soru_gosterilecek) uyari(d.mesaj ?? "Puan kazanma saatleri dışında izlendi.");
+    if (d.puan_uyarisi) uyari(d.puan_uyarisi); // B-08: puan yazım hatası kullanıcıya görünür
     if (d.ileri_sarildi) uyari("Video ileri sarıldığı için sorular gösterilmeyecek.");
     if (d.soru_gosterilecek) {
       const sRes = await fetch(`/izle/api/sorular?izleme_id=${id}`);
@@ -244,6 +245,7 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
     if (!res.ok) { hata(d.hata ?? "Cevaplar gönderilemedi.", d.adim, d.detay); setIslemLoading(false); return; }
     setCevapSonuclari(d.sonuclar); setKazanilanPuan(d.kazanilan_puan);
     if (d.kazanilan_puan > 0) basari(`+${d.kazanilan_puan} puan kazandınız!`);
+    if (d.puan_uyarisi) uyari(d.puan_uyarisi); // B-08: puan yazım hatası kullanıcıya görünür
     setIslemLoading(false); await onVeriYenile();
   };
 

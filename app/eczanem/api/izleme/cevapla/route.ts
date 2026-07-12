@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
     }
 
     let kazanilanPuan = 0;
+    let puanUyarisi: string | null = null;
     const sonuclar: Array<{ soru_index: number; dogru_mu: boolean; dogru_secenek: string | null }> = [];
 
     for (const cevap of cevaplar) {
@@ -100,13 +101,17 @@ export async function POST(request: NextRequest) {
           puan: o_soru_puani,
         });
         if (sonuc.ok) kazanilanPuan += o_soru_puani;
-        else console.error("[UYARI] Eczanem cevap kazanımı yazılamadı:", { soru_index, hata: sonuc.error });
+        else {
+          console.error("[UYARI] Eczanem cevap kazanımı yazılamadı:", { soru_index, hata: sonuc.error });
+          // B-08: yazım hatası yutulmaz — yanıtta kullanıcıya bildirilir.
+          puanUyarisi = "Bazı cevap puanları kaydedilemedi.";
+        }
       }
 
       sonuclar.push({ soru_index, dogru_mu, dogru_secenek });
     }
 
-    return NextResponse.json({ mesaj: "Cevaplar değerlendirildi.", kazanilan_puan: kazanilanPuan, sonuclar }, { status: 200 });
+    return NextResponse.json({ mesaj: "Cevaplar değerlendirildi.", kazanilan_puan: kazanilanPuan, sonuclar, puan_uyarisi: puanUyarisi }, { status: 200 });
   } catch (err) {
     return sunucuHatasi(err, "POST /eczanem/api/izleme/cevapla");
   }

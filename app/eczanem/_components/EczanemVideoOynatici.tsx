@@ -128,6 +128,7 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
     setIzlemeTamamlandi(true);
     setSoruGosterilecek(d.soru_gosterilecek === true);
     if (d.puan_kazanildi && d.izleme_puani > 0) basari(`+${d.izleme_puani} izleme puanı kazandınız!`);
+    if (d.puan_uyarisi) hata(d.puan_uyarisi, "puan kaydı"); // B-08: yazım hatası kullanıcıya görünür
 
     if (d.soru_gosterilecek === true) {
       const sRes = await fetch(`/eczanem/api/izleme/sorular?izleme_id=${id}`);
@@ -157,6 +158,7 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
     if (!res.ok) { hata(d.hata ?? "Cevaplar gönderilemedi.", d.adim, d.detay); setIslemLoading(false); return; }
     setCevapSonuclari(d.sonuclar ?? []);
     if (d.kazanilan_puan > 0) basari(`+${d.kazanilan_puan} cevap puanı kazandınız!`);
+    if (d.puan_uyarisi) hata(d.puan_uyarisi, "puan kaydı"); // B-08: yazım hatası kullanıcıya görünür
     setIslemLoading(false);
     await onTamamlandi();
   };

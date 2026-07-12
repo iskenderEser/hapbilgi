@@ -53,6 +53,7 @@ export async function PUT(request: NextRequest) {
       .maybeSingle();
 
     let puanVerildi = false;
+    let puanUyarisi: string | null = null;
     let puanDegeri = 0;
 
     // Ömür boyu ilk izleme + video_puani>0 → izleme kazanımı
@@ -75,7 +76,11 @@ export async function PUT(request: NextRequest) {
           puan: video_puani,
         });
         if (sonuc.ok) { puanVerildi = true; puanDegeri = video_puani; }
-        else console.error("[UYARI] Eczanem izleme kazanımı yazılamadı:", { izleme_id, hata: sonuc.error });
+        else {
+          console.error("[UYARI] Eczanem izleme kazanımı yazılamadı:", { izleme_id, hata: sonuc.error });
+          // B-08: yazım hatası yutulmaz — yanıtta kullanıcıya bildirilir.
+          puanUyarisi = "Puan kaydedilemedi. Videoyu yeniden izlerseniz puan yeniden değerlendirilir.";
+        }
       }
     }
 
@@ -83,6 +88,7 @@ export async function PUT(request: NextRequest) {
       mesaj: "İzleme tamamlandı.",
       puan_kazanildi: puanVerildi,
       izleme_puani: puanDegeri,
+      puan_uyarisi: puanUyarisi,
       soru_gosterilecek: true,
     }, { status: 200 });
   } catch (err) {

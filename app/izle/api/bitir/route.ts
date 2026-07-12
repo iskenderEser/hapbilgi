@@ -133,6 +133,8 @@ export async function PUT(request: NextRequest) {
 
     const ilkIzleme = (oncekiPuan ?? []).length === 0;
     const kazanilanPuanlar: { tur: string; puan: number }[] = [];
+    // B-08: puan yazım hataları yutulmaz — loglanır VE yanıtta kullanıcıya bildirilir.
+    const puanUyarilari: string[] = [];
 
     // İzleme karar mantığı — lib/puan/strateji.ts içinde
     const karar = izlemeKarariBelirle(ilkIzleme, ileriSarildi, izleme.izleme_turu);
@@ -150,6 +152,7 @@ export async function PUT(request: NextRequest) {
 
       if (!sonuc.ok) {
         console.error("[UYARI] İzleme puanı kaydedilemedi:", { izleme_id, hata: sonuc.error });
+        puanUyarilari.push("İzleme puanı kaydedilemedi. Videoyu yeniden izlerseniz puan yeniden değerlendirilir.");
       } else {
         kazanilanPuanlar.push({ tur: "izleme", puan: video_puani });
       }
@@ -187,6 +190,7 @@ export async function PUT(request: NextRequest) {
 
           if (!sonuc.ok) {
             console.error("[UYARI] Extra puan kaydedilemedi:", { izleme_id, hata: sonuc.error });
+            puanUyarilari.push("Extra puan kaydedilemedi.");
           } else {
             kazanilanPuanlar.push({ tur: "extra", puan: extraPuanDegeri });
           }
@@ -245,6 +249,7 @@ export async function PUT(request: NextRequest) {
 
                 if (!sonuc.ok) {
                   console.error("[UYARI] Öneri puanı kaydedilemedi:", { izleme_id, hata: sonuc.error });
+                  puanUyarilari.push("Öneri puanı kaydedilemedi.");
                 } else {
                   kazanilanPuanlar.push({ tur: "oneri", puan: oneriPuani });
                 }
@@ -274,6 +279,7 @@ export async function PUT(request: NextRequest) {
       mesaj: "İzleme tamamlandı.",
       puan_kazanildi: kazanilanPuanlar.length > 0,
       kazanilan_puanlar: kazanilanPuanlar,
+      puan_uyarisi: puanUyarilari.length > 0 ? puanUyarilari.join(" ") : null,
       soru_gosterilecek: ilkIzleme && !ileriSarildi,
       ileri_sarildi: ileriSarildi,
     }, { status: 200 });

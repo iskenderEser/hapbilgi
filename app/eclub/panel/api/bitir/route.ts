@@ -58,6 +58,8 @@ export async function PUT(request: NextRequest) {
 
     // Süre kontrolü: öneri hâlâ geçerli mi (oneri_bitis > now)? Geçmişse puan YOK.
     let puanVerildi = false;
+    // B-08: puan yazım hataları yutulmaz — loglanır VE yanıtta bildirilir.
+    const puanUyarilari: string[] = [];
     let puanDegeri = 0;
 
     if (izleme.oneri_id) {
@@ -115,6 +117,7 @@ export async function PUT(request: NextRequest) {
               puanDegeri = video_puani;
             } else {
               console.error("[UYARI] E-Club izleme puanı kaydedilemedi:", { izleme_id, hata: sonuc.error });
+              puanUyarilari.push("İzleme puanı kaydedilemedi. Videoyu yeniden izlerseniz puan yeniden değerlendirilir.");
             }
           }
 
@@ -128,7 +131,10 @@ export async function PUT(request: NextRequest) {
               izleme_id,
               oneri_id: oneri.oneri_id,
             });
-            if (!uttSonuc.ok) console.error("[UYARI] E-Club UTT +10 kaydedilemedi:", { izleme_id, hata: uttSonuc.error });
+            if (!uttSonuc.ok) {
+              console.error("[UYARI] E-Club UTT +10 kaydedilemedi:", { izleme_id, hata: uttSonuc.error });
+              puanUyarilari.push("Öneriyi gönderen temsilcinin puanı kaydedilemedi.");
+            }
           }
         }
       }
@@ -146,6 +152,7 @@ export async function PUT(request: NextRequest) {
       mesaj: "İzleme tamamlandı.",
       puan_kazanildi: puanVerildi,
       izleme_puani: puanDegeri,
+      puan_uyarisi: puanUyarilari.length > 0 ? puanUyarilari.join(" ") : null,
       soru_gosterilecek: true,
     }, { status: 200 });
 

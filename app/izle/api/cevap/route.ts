@@ -96,6 +96,8 @@ export async function POST(request: NextRequest) {
     }
 
     let kazanilanPuan = 0;
+    // B-08: puan/kayıt yazım hataları yutulmaz — loglanır VE yanıtta bildirilir.
+    const puanUyarilari: string[] = [];
     const cevapSonuclari = [];
 
     for (const cevap of cevaplar) {
@@ -134,7 +136,6 @@ export async function POST(request: NextRequest) {
         const o_soru_puani = soruPuanMap.get(soru_index) ?? 0;
 
         if (o_soru_puani > 0) {
-          kazanilanPuan += o_soru_puani;
           const sonuc = await kazanilanPuanKaydet(adminSupabase, {
             kullanici_id: user.id,
             yayin_id: izleme.yayin_id,
@@ -143,8 +144,13 @@ export async function POST(request: NextRequest) {
             puan: o_soru_puani,
           });
 
-          if (!sonuc.ok) {
+          // B-08: puan yalnız yazım BAŞARILIYSA sayılır (önceden denemeden önce
+          // ekleniyordu — başarısız puan kullanıcıya "kazanıldı" görünüyordu).
+          if (sonuc.ok) {
+            kazanilanPuan += o_soru_puani;
+          } else {
             console.error("[UYARI] Cevaplama puanı kaydedilemedi:", { soru_index, hata: sonuc.error });
+            puanUyarilari.push(`Soru ${soru_index + 1} cevap puanı kaydedilemedi.`);
           }
         }
       } else {
@@ -162,6 +168,7 @@ export async function POST(request: NextRequest) {
 
           if (!sonuc.ok) {
             console.error("[UYARI] Yanlış cevap kaybı kaydedilemedi:", { soru_index, hata: sonuc.error });
+            puanUyarilari.push(`Soru ${soru_index + 1} kayıt işlemi tamamlanamadı.`);
           }
         }
       }
@@ -178,6 +185,7 @@ export async function POST(request: NextRequest) {
       mesaj: "Cevaplar kaydedildi.",
       sonuclar: cevapSonuclari,
       kazanilan_puan: kazanilanPuan,
+      puan_uyarisi: puanUyarilari.length > 0 ? puanUyarilari.join(" ") : null,
     }, { status: 201 });
 
   } catch (err) {

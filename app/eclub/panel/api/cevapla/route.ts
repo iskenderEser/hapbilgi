@@ -100,6 +100,8 @@ export async function POST(request: NextRequest) {
     }
 
     let kazanilanPuan = 0;
+    // B-08: puan/kayıt yazım hataları yutulmaz — loglanır VE yanıtta bildirilir.
+    const puanUyarilari: string[] = [];
     const sonuclar = [];
 
     for (const cevap of cevaplar) {
@@ -133,7 +135,10 @@ export async function POST(request: NextRequest) {
             puan: o_soru_puani,
           });
           if (sonuc.ok) kazanilanPuan += o_soru_puani;
-          else console.error("[UYARI] E-Club cevaplama puanı kaydedilemedi:", { soru_index, hata: sonuc.error });
+          else {
+            console.error("[UYARI] E-Club cevaplama puanı kaydedilemedi:", { soru_index, hata: sonuc.error });
+            puanUyarilari.push(`Soru ${soru_index + 1} cevap puanı kaydedilemedi.`);
+          }
         }
       } else {
         // Yanlış → sadece rapor kaydı (kaybedilen_puan=0, kayıp yok)
@@ -143,7 +148,10 @@ export async function POST(request: NextRequest) {
           izleme_id,
           soru_index,
         });
-        if (!sonuc.ok) console.error("[UYARI] E-Club yanlış cevap kaydedilemedi:", { soru_index, hata: sonuc.error });
+        if (!sonuc.ok) {
+          console.error("[UYARI] E-Club yanlış cevap kaydedilemedi:", { soru_index, hata: sonuc.error });
+          puanUyarilari.push(`Soru ${soru_index + 1} kayıt işlemi tamamlanamadı.`);
+        }
       }
 
       sonuclar.push({ soru_index, verilen_cevap, dogru_mu, dogru_cevap: dogru_secenek });
@@ -153,6 +161,7 @@ export async function POST(request: NextRequest) {
       mesaj: "Cevaplar kaydedildi.",
       sonuclar,
       kazanilan_puan: kazanilanPuan,
+      puan_uyarisi: puanUyarilari.length > 0 ? puanUyarilari.join(" ") : null,
       puanli: sureGecerli,
     }, { status: 201 });
 
