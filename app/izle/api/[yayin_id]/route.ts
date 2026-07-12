@@ -24,12 +24,19 @@ export async function GET(
     // v_yayin_detay view ile tek sorguda tüm yayın detayları — 9 sorgu → 1 sorgu
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, durum, yayin_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani")
+      .select("yayin_id, durum, yayin_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, hedef_rol")
       .eq("yayin_id", yayin_id)
       .single();
 
     if (yayinError || !yayin) return hataYaniti("Yayın bulunamadı.", "v_yayin_detay SELECT", yayinError, 404);
     if (yayin.durum !== "yayinda") return isKuraluHatasi(`Video şu an yayında değil. Mevcut durum: ${yayin.durum}`);
+
+    // Pozitif hedef süzgeci (B-03): hedefi utt olmayan yayının detayı/video_url'i
+    // ID bilinse dahi utt/kd_utt'ye dönmez (baslat'taki B-02 süzgecinin okuma tarafı).
+    // v_yayin_detay.hedef_rol talep hedefidir; hedef_roller = [hedef_rol] (tek kaynak).
+    if ((yayin.hedef_rol ?? "utt") !== "utt") {
+      return rolHatasi("Bu video sizin rolünüze yönelik değil.");
+    }
 
     // Daha önce tamamladı mı
     const { data: izleme } = await adminSupabase
