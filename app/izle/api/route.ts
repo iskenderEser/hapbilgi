@@ -50,7 +50,10 @@ export async function GET() {
       .rpc("get_izle_videolari", {
         p_kullanici_id: user.id,
         p_takim_id: takim_id,
-        p_rol: rol,
+        // kd_utt hedef eşleniği utt'dir: hedef_roller talep hedefinden türer
+        // (utt/bm/eczanem) ve 'kd_utt' hiçbir yayında geçmez — ham rol geçilirse
+        // liste hep boş kalır (B-01). Ana sayfa davranışıyla simetri (anaSayfa/utt.ts).
+        p_rol: rol === "kd_utt" ? "utt" : rol,
       });
 
     if (rpcError) return hataYaniti("Yayınlar çekilemedi.", "get_izle_videolari RPC", rpcError);
