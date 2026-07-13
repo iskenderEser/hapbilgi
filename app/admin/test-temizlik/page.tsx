@@ -52,7 +52,7 @@ export default function TestTemizlikPage() {
 
         <h1 className="text-lg font-bold text-gray-900 mb-2">Test Temizlik</h1>
         <p className="text-sm text-gray-500 mb-6 leading-relaxed">
-          Bu sayfa test ortamına özeldir. Buton, üretim/izleme/etkileşim kayıtlarını siler. Firmalar, takımlar, bölgeler, kullanıcılar, ürünler, teknikler ve kategoriler korunur.
+          Bu sayfa test ortamına özeldir. Buton, tüm modüllerin (iç müşteri, Challenge Club, E-Club, Eczanem, HBStore) üretim/izleme/etkileşim/sipariş kayıtlarını siler; silmeden önce iptal edilmemiş siparişlerin stokları iade edilir. Kimlik ve yapısal veri korunur: firmalar, takımlar, bölgeler, kullanıcılar, E-Club kişileri/eczaneleri, Eczanem müşterileri/üyelikleri/tarifeleri, ürünler, teknikler ve kategoriler.
         </p>
 
         <button
