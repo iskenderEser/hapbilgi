@@ -32,17 +32,16 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // --- Admin API bekçisi ---------------------------------------------------
-  // /admin/api/* (giris ve test-verileri-sil hariç) yalnızca rolü admin olan
-  // kullanıcıya açıktır. Yetki, kullanıcının değiştirebildiği user_metadata'dan
-  // DEĞİL, yetkili kaynak olan kullanicilar tablosundan (service_role) doğrulanır.
-  // test-verileri-sil bilinçli olarak girişsiz bir test aracıdır; proxy onu
-  // kesmez (deploy öncesi bu endpoint tamamen kaldırılacaktır).
+  // /admin/api/* (giris hariç) yalnızca rolü admin olan kullanıcıya açıktır.
+  // Yetki, kullanıcının değiştirebildiği user_metadata'dan DEĞİL, yetkili
+  // kaynak olan kullanicilar tablosundan (service_role) doğrulanır.
+  // test-verileri-sil de bu bekçinin ARKASINDADIR (12.07.2026 — canlıda girişsiz
+  // silme ucu bırakılamaz); deploy öncesi endpoint yine tamamen kaldırılacaktır.
   // İleride firma admini eklenince firma_id de buradan çekilip /firmalar/[firma_id]
   // yoluyla karşılaştırılabilir.
   if (
     pathname.startsWith("/admin/api/") &&
-    !pathname.startsWith("/admin/api/giris") &&
-    !pathname.startsWith("/admin/api/test-verileri-sil")
+    !pathname.startsWith("/admin/api/giris")
   ) {
     if (!user) {
       return NextResponse.json(

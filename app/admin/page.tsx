@@ -24,12 +24,16 @@ import TakimBolgeFormu from "./_components/TakimBolgeFormu";
 import UrunTeknikYonetimi from "./_components/UrunTeknikYonetimi";
 import KullaniciListesi from "./_components/KullaniciListesi";
 import SistemAyarlari from "./_components/SistemAyarlari";
+import TestVeriSilModal from "./_components/TestVeriSilModal";
 
 export default function AdminPanel() {
   const admin = useAdminPanel();
 
   // Sistem Ayarları paneli — sağ içerik alanının alternatif görünümü.
   const [ayarlarAcik, setAyarlarAcik] = useState(false);
+
+  // Test verilerini silme onay modalı (test dönemi aracı — deploy öncesi kaldırılır).
+  const [testSilAcik, setTestSilAcik] = useState(false);
 
   const tekil = useTekilForm({
     seciliFirma: admin.seciliFirma,
@@ -85,6 +89,22 @@ export default function AdminPanel() {
         </h1>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <button
+            onClick={() => setTestSilAcik(true)}
+            style={{
+              padding: "6px 12px",
+              background: "#dc2626",
+              border: "none",
+              borderRadius: "6px",
+              fontSize: "12px",
+              fontWeight: 700,
+              color: "white",
+              cursor: "pointer",
+              fontFamily: "'Nunito', sans-serif",
+            }}
+          >
+            Test Verilerini Sil
+          </button>
+          <button
             onClick={() => setAyarlarAcik(true)}
             style={{
               padding: "6px 12px",
@@ -120,6 +140,13 @@ export default function AdminPanel() {
       </div>
 
       <HataMesajiContainer mesajlar={admin.mesajlar} />
+
+      <TestVeriSilModal
+        acik={testSilAcik}
+        onKapat={() => setTestSilAcik(false)}
+        basari={admin.basari}
+        hata={admin.hata}
+      />
 
       {/* Ana içerik */}
       <div style={{ display: "flex", minHeight: "calc(100vh - 50px)" }}>
