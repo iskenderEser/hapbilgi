@@ -49,6 +49,10 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
   const [tekrarPeriyotlari, setTekrarPeriyotlari] = useState<Record<string, number>>({});
   const [tekrarSecenekleri, setTekrarSecenekleri] = useState<number[]>([]);
 
+  // Opsiyonel yayın günü (İş 2) — soru_seti_durum_id → "YYYY-AA-GG".
+  // Boş = hemen yayın; doluysa yayın o gün 07:00 TR'de cron'la aktive edilir.
+  const [yayinGunleri, setYayinGunleri] = useState<Record<string, string>>({});
+
   // Yayın tur bilgisi — yayin_id → hesaplanmış tur (sayaç rozeti için; salt-okur).
   const [tekrarBilgi, setTekrarBilgi] = useState<Record<string, HesaplananTur>>({});
 
@@ -216,6 +220,8 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         soru_seti_durum_id: b.soru_seti_durum_id,
+        // Opsiyonel yayın günü — boşsa gönderilmez (hemen yayın).
+        ...(yayinGunleri[b.soru_seti_durum_id] ? { yayin_gunu: yayinGunleri[b.soru_seti_durum_id] } : {}),
         ...(eczanem
           ? {
               barkod: barkodlar[b.soru_seti_durum_id] ?? "",
@@ -231,7 +237,25 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     });
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "Yayına alınamadı.", d.adim, d.detay); }
-    else { basari(`${b.urun_adi} yayına alındı.`); await veriCek(); }
+    else {
+      // Planlı yayında API tarihli mesaj döner; hemen yayında bilinen metin.
+      basari(d.mesaj ?? `${b.urun_adi} yayına alındı.`);
+      setYayinGunleri(prev => { const yeni = { ...prev }; delete yeni[b.soru_seti_durum_id]; return yeni; });
+      await veriCek();
+    }
+    setIslemLoading(null);
+  };
+
+  // Planlanmış yayın aksiyonları (İş 2): tarih_degistir | hemen_yayinla | plan_iptal.
+  const handlePlanIslem = async (yayin_id: string, islem: string, yayin_gunu?: string) => {
+    setIslemLoading(yayin_id);
+    const res = await fetch(`/yayin-yonetimi/api/yayinlar/${yayin_id}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ islem, ...(yayin_gunu ? { yayin_gunu } : {}) }),
+    });
+    const d = await res.json();
+    if (!res.ok) { hata(d.hata ?? "İşlem gerçekleştirilemedi.", d.adim, d.detay); }
+    else { basari(d.mesaj ?? "İşlem tamamlandı."); await veriCek(); }
     setIslemLoading(null);
   };
 
@@ -258,11 +282,12 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     tekrarPeriyotlari, setTekrarPeriyotlari,
     tekrarSecenekleri,
     tekrarBilgi,
+    yayinGunleri, setYayinGunleri,
     // veri
     veriCek,
     // puan yardımcıları
     getSoruPuani, setSoruPuani, hepsineAyniPuanAta, tumPuanlarAtandiMi,
     // handler'lar
-    handleIleriSarmaGuncelle, handleYayinla, handleDurumDegistir,
+    handleIleriSarmaGuncelle, handleYayinla, handleDurumDegistir, handlePlanIslem,
   };
 }

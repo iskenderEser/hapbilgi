@@ -74,7 +74,9 @@ export default function YayinYonetimiPage() {
 
   // Yayınları hedef_rol'e göre filtrele (client-side)
   const yayinlarFiltreli = yy.yayinlar.filter(y => y.hedef_rol === aktifAnaSekme);
-  const yayindakiler = yayinlarFiltreli.filter(y => y.durum === "yayinda");
+  // Planlanmış yayınlar "Yayında" sekmesinde listelenir (Planlandı rozetiyle);
+  // tarihi gelince cron aktive eder, rozet kendiliğinden "Yayında"ya döner.
+  const yayindakiler = yayinlarFiltreli.filter(y => y.durum === "yayinda" || y.durum === "planlandi");
   const durdurulular = yayinlarFiltreli.filter(y => y.durum === "Durduruldu");
 
   if (authYukleniyor || !kullanici || yy.loading) {
@@ -139,6 +141,7 @@ export default function YayinYonetimiPage() {
                 karsilikTllar={yy.karsilikTllar} setKarsilikTllar={yy.setKarsilikTllar}
                 tekrarPeriyotlari={yy.tekrarPeriyotlari} setTekrarPeriyotlari={yy.setTekrarPeriyotlari}
                 tekrarSecenekleri={yy.tekrarSecenekleri}
+                yayinGunleri={yy.yayinGunleri} setYayinGunleri={yy.setYayinGunleri}
                 bekleyenIleriSarma={yy.bekleyenIleriSarma}
                 tumPuanlarAtandiMi={yy.tumPuanlarAtandiMi}
                 getSoruPuani={yy.getSoruPuani} setSoruPuani={yy.setSoruPuani} hepsineAyniPuanAta={yy.hepsineAyniPuanAta}
@@ -161,6 +164,7 @@ export default function YayinYonetimiPage() {
                 getSoruPuani={yy.getSoruPuani} setSoruPuani={yy.setSoruPuani} hepsineAyniPuanAta={yy.hepsineAyniPuanAta}
                 onVideoAc={setAcikVideo}
                 onDurumDegistir={yy.handleDurumDegistir}
+                onPlanIslem={yy.handlePlanIslem}
               />
             ))
         )}

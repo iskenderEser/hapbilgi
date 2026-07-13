@@ -32,6 +32,9 @@ interface BekleyenSatirProps {
   tekrarPeriyotlari: Record<string, number>;
   setTekrarPeriyotlari: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   tekrarSecenekleri: number[];
+  // Opsiyonel yayın günü (İş 2): boş = hemen yayın; doluysa o gün 07:00'de (TR) açılır.
+  yayinGunleri: Record<string, string>;
+  setYayinGunleri: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   bekleyenIleriSarma: Record<string, boolean>;
   tumPuanlarAtandiMi: (b: Bekleyen) => boolean;
   getSoruPuani: (soru_seti_durum_id: string, soru_index: number) => number | "";
@@ -47,12 +50,15 @@ export function BekleyenSatir({
   videoPuanlari, setVideoPuanlari, extraPuanlar, setExtraPuanlar,
   barkodlar, setBarkodlar, karsilikPuanlar, setKarsilikPuanlar, karsilikTllar, setKarsilikTllar,
   tekrarPeriyotlari, setTekrarPeriyotlari, tekrarSecenekleri,
+  yayinGunleri, setYayinGunleri,
   bekleyenIleriSarma, tumPuanlarAtandiMi,
   getSoruPuani, setSoruPuani, hepsineAyniPuanAta,
   onIleriSarmaToggle, onVideoAc, onYayinlaClick,
 }: BekleyenSatirProps) {
   const acik = bekleyenIleriSarma[b.soru_seti_durum_id] ?? false;
   const hazir = tumPuanlarAtandiMi(b);
+  const secilenGun = yayinGunleri[b.soru_seti_durum_id] ?? "";
+  const bugun = new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD (yerel)
   // Eczanem yayınında extra puan / tekrar periyodu / ileri sarma YOKTUR (İP §4.4);
   // yerine barkod + Karşılık (puan ↔ TL) alanları girilir (U5, K-E3).
   const eczanem = b.hedef_rol === "eczanem";
@@ -161,6 +167,21 @@ export function BekleyenSatir({
               </div>
             </>
           )}
+          <div>
+            <span className="text-xs text-gray-400 block mb-1">Yayın günü <span className="text-gray-300">(boş = hemen)</span></span>
+            <input type="date" value={secilenGun} min={bugun}
+              onChange={(e) => {
+                const deger = e.target.value;
+                setYayinGunleri(prev => {
+                  const yeni = { ...prev };
+                  if (deger === "") delete yeni[b.soru_seti_durum_id];
+                  else yeni[b.soru_seti_durum_id] = deger;
+                  return yeni;
+                });
+              }}
+              className="border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-900 bg-white"
+              style={{ fontFamily: "'Nunito', sans-serif", width: 120 }} />
+          </div>
         </div>
         <div className="flex items-start gap-2 justify-end pt-0.5">
           {b.sorular?.length > 0 && (
@@ -177,7 +198,7 @@ export function BekleyenSatir({
           <button onClick={() => onYayinlaClick(b)} disabled={!hazir || islemLoading === b.soru_seti_durum_id}
             className="px-2.5 py-1 rounded-lg border-none text-xs font-semibold cursor-pointer"
             style={{ background: hazir ? "#56aeff" : "#f3f4f6", color: hazir ? "white" : "#9ca3af", cursor: hazir ? "pointer" : "not-allowed", fontFamily: "'Nunito', sans-serif" }}>
-            {islemLoading === b.soru_seti_durum_id ? "..." : "Yayınla"}
+            {islemLoading === b.soru_seti_durum_id ? "..." : secilenGun ? "Planla" : "Yayınla"}
           </button>
         </div>
       </div>

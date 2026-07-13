@@ -8,6 +8,7 @@
 
 "use client";
 
+import { useState } from "react";
 import type { Yayin } from "../_types";
 import type { HesaplananTur } from "@/lib/tur/kayit";
 import { HedefRolPill } from "@/components/HedefRolBant";
@@ -27,6 +28,8 @@ interface YayinSatirProps {
   onVideoAc: (url: string) => void;
   onDurumDegistir: (yayin_id: string, mevcutDurum: string) => void;
   onIleriSarmaGuncelle?: (yayin_id: string, acik: boolean) => void;
+  // Planlanmış yayın aksiyonları (İş 2): tarih_degistir | hemen_yayinla | plan_iptal
+  onPlanIslem?: (yayin_id: string, islem: string, yayin_gunu?: string) => void;
 }
 
 const GUN_MS = 24 * 60 * 60 * 1000;
@@ -39,10 +42,14 @@ function kalanGun(sonrakiTurTarihi: string): number {
 export function YayinSatir({
   y, islemLoading, acikAkordiyon, setAcikAkordiyon, formatTarih, tekrarBilgi,
   getSoruPuani, setSoruPuani, hepsineAyniPuanAta,
-  onVideoAc, onDurumDegistir, onIleriSarmaGuncelle,
+  onVideoAc, onDurumDegistir, onIleriSarmaGuncelle, onPlanIslem,
 }: YayinSatirProps) {
   const yayinda = y.durum === "yayinda";
+  const planlandi = y.durum === "planlandi";
   const tekrarli = !!tekrarBilgi?.tekrar_periyot_gun && !!tekrarBilgi?.sonraki_tur_tarihi;
+  // Tarih değiştirme alanı (yalnız planlanmış yayında görünür)
+  const [yeniGun, setYeniGun] = useState("");
+  const bugun = new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD (yerel)
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-2">
       <div className="flex flex-col md:grid md:items-start md:gap-3 p-4 md:p-3.5"
@@ -53,16 +60,18 @@ export function YayinSatir({
             <HedefRolPill hedefRol={y.hedef_rol} />
             <span className="text-xs px-2 py-0.5 rounded-full"
               style={{
-                background: yayinda ? "#f0fdf4" : "#fef2f2",
-                color: yayinda ? "#15803d" : "#b91c1c",
-                border: yayinda ? "0.5px solid #bbf7d0" : "0.5px solid #fecaca",
+                background: yayinda ? "#f0fdf4" : planlandi ? "#fffbeb" : "#fef2f2",
+                color: yayinda ? "#15803d" : planlandi ? "#b45309" : "#b91c1c",
+                border: yayinda ? "0.5px solid #bbf7d0" : planlandi ? "0.5px solid #fde68a" : "0.5px solid #fecaca",
               }}>
-              {yayinda ? "Yayında" : "Durduruldu"}
+              {yayinda ? "Yayında" : planlandi ? "Planlandı" : "Durduruldu"}
             </span>
           </div>
           <span className="text-xs text-gray-500 line-clamp-2">{y.teknik_adi}</span>
           <span className="text-xs text-gray-400">
-            {yayinda ? `Yayın: ${formatTarih(y.yayin_tarihi)}` : `Durdurma: ${y.durdurma_tarihi ? formatTarih(y.durdurma_tarihi) : "-"}`}
+            {yayinda ? `Yayın: ${formatTarih(y.yayin_tarihi)}`
+              : planlandi ? `Planlanan yayın: ${formatTarih(y.yayin_tarihi)}`
+              : `Durdurma: ${y.durdurma_tarihi ? formatTarih(y.durdurma_tarihi) : "-"}`}
           </span>
           {tekrarli && (
             <span className="text-xs px-2 py-0.5 rounded-full w-fit"
@@ -95,16 +104,49 @@ export function YayinSatir({
               </svg>
             </button>
           )}
-          <button onClick={() => onDurumDegistir(y.yayin_id, y.durum)} disabled={islemLoading === y.yayin_id}
-            className="px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer"
-            style={{
-              background: yayinda ? "white" : "#56aeff",
-              color: yayinda ? "#b91c1c" : "white",
-              border: yayinda ? "0.5px solid #fecaca" : "none",
-              fontFamily: "'Nunito', sans-serif",
-            }}>
-            {islemLoading === y.yayin_id ? "..." : yayinda ? "Durdur" : "Başlat"}
-          </button>
+          {planlandi && onPlanIslem ? (
+            <div className="flex flex-col items-end gap-1.5">
+              <button onClick={() => onPlanIslem(y.yayin_id, "hemen_yayinla")} disabled={islemLoading === y.yayin_id}
+                className="px-2.5 py-1 rounded-lg border-none text-xs font-semibold cursor-pointer"
+                style={{ background: "#56aeff", color: "white", fontFamily: "'Nunito', sans-serif" }}>
+                {islemLoading === y.yayin_id ? "..." : "Hemen Yayınla"}
+              </button>
+              <div className="flex items-center gap-1">
+                <input type="date" value={yeniGun} min={bugun}
+                  onChange={(e) => setYeniGun(e.target.value)}
+                  className="border border-gray-200 rounded-lg px-2 py-1 text-xs text-gray-900 bg-white"
+                  style={{ fontFamily: "'Nunito', sans-serif" }} />
+                <button onClick={() => yeniGun && onPlanIslem(y.yayin_id, "tarih_degistir", yeniGun)}
+                  disabled={!yeniGun || islemLoading === y.yayin_id}
+                  className="px-2 py-1 rounded-lg text-xs font-semibold"
+                  style={{
+                    background: yeniGun ? "white" : "#f3f4f6",
+                    color: yeniGun ? "#1d4ed8" : "#9ca3af",
+                    border: yeniGun ? "0.5px solid #bfdbfe" : "0.5px solid #e5e7eb",
+                    cursor: yeniGun ? "pointer" : "not-allowed",
+                    fontFamily: "'Nunito', sans-serif",
+                  }}>
+                  Tarihi Değiştir
+                </button>
+              </div>
+              <button onClick={() => onPlanIslem(y.yayin_id, "plan_iptal")} disabled={islemLoading === y.yayin_id}
+                className="px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer"
+                style={{ background: "white", color: "#b91c1c", border: "0.5px solid #fecaca", fontFamily: "'Nunito', sans-serif" }}>
+                Planı İptal
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => onDurumDegistir(y.yayin_id, y.durum)} disabled={islemLoading === y.yayin_id}
+              className="px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer"
+              style={{
+                background: yayinda ? "white" : "#56aeff",
+                color: yayinda ? "#b91c1c" : "white",
+                border: yayinda ? "0.5px solid #fecaca" : "none",
+                fontFamily: "'Nunito', sans-serif",
+              }}>
+              {islemLoading === y.yayin_id ? "..." : yayinda ? "Durdur" : "Başlat"}
+            </button>
+          )}
         </div>
       </div>
       {acikAkordiyon === y.yayin_id && y.sorular?.length > 0 && (
