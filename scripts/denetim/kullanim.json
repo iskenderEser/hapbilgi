@@ -5155,6 +5155,18 @@
       "tablo": "sistem_ayarlari"
     },
     {
+      "dosya": "app/admin/api/test-verileri-sil/route.ts",
+      "satir": 107,
+      "ham": "urun_id, adet",
+      "tablo": null
+    },
+    {
+      "dosya": "app/admin/api/test-verileri-sil/route.ts",
+      "satir": 120,
+      "ham": "stok",
+      "tablo": null
+    },
+    {
       "dosya": "app/challenge-club/api/uygun-aliciler/route.ts",
       "satir": 47,
       "ham": "firma_id",
