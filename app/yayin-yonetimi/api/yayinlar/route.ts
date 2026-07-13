@@ -137,6 +137,23 @@ export async function POST(request: NextRequest) {
     }
     if (mevcutYayin) return isKuraluHatasi("Bu video zaten yayına alınmış.");
 
+    // Tarih bazlı yayın (opsiyonel): gün seçildiyse yayın 'planlandi' doğar,
+    // yayin_tarihi = o gün 07:00 TR (puan penceresi açılışı; TR sabit UTC+3).
+    // Tüketici ekranları durum='yayinda' süzdüğünden tarihi gelmeden görünmez;
+    // aktivasyon (durum + tur-1 + bildirimler) pg_cron'daki tek kaynaktan koşar:
+    // yayin_planlananlari_aktive — scripts/sql/yayin_aktivasyon.sql.
+    const { yayin_gunu } = body;
+    let planliTarih: Date | null = null;
+    if (yayin_gunu !== undefined && yayin_gunu !== null && yayin_gunu !== "") {
+      if (typeof yayin_gunu !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(yayin_gunu)) {
+        return validasyonHatasi("yayin_gunu YYYY-AA-GG biçiminde olmalıdır.", ["yayin_gunu"]);
+      }
+      const aday = new Date(`${yayin_gunu}T07:00:00+03:00`);
+      if (isNaN(aday.getTime())) return validasyonHatasi("yayin_gunu geçerli bir tarih değil.", ["yayin_gunu"]);
+      // O günün 07:00'i geçmişse (bugün dahil) plan anlamsızdır — hemen yayınlanır.
+      if (aday.getTime() > Date.now()) planliTarih = aday;
+    }
+
     // Eczanem: barkod + Karşılık ürün seviyesine yayından ÖNCE yazılır — canlı bir
     // eczanem yayınının daima geçerli bir tarifesi olmalı (yayın açıldıysa puan↔TL
     // dönüşümü mümkün olmalı). Tarife append-only + ürün seviyesi olduğundan, olası
@@ -158,8 +175,8 @@ export async function POST(request: NextRequest) {
       .insert({
         soru_seti_durum_id,
         uretici_id: user.id,
-        durum: "yayinda",
-        yayin_tarihi: simdi,
+        durum: planliTarih ? "planlandi" : "yayinda",
+        yayin_tarihi: planliTarih ? planliTarih.toISOString() : simdi,
         // Eczanem yayınında ileri sarma / extra puan / tekrar periyodu yoktur.
         ileri_sarma_acik: eczanemHedefi ? false : (ileri_sarma_acik ?? false),
         extra_puan: eczanemHedefi ? null : extra_puan,
@@ -173,6 +190,16 @@ export async function POST(request: NextRequest) {
 
     const yayinKontrol = veriKontrol(yeniYayin, "yayin_yonetimi tablosu INSERT — dönen veri", "Yayın oluşturuldu ancak veri döndürülemedi.");
     if (!yayinKontrol.gecerli) return yayinKontrol.yanit;
+
+    // Planlı yayın: tur-1 ve tüketici bildirimleri AKTİVASYON anına ertelenir
+    // (yayin_planlananlari_aktive üretir) — burada üretilirse tarih gelmeden
+    // bildirim gider ve tur penceresi erken başlardı.
+    if (planliTarih) {
+      return NextResponse.json({
+        mesaj: `Yayın planlandı: ${planliTarih.toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" })} 07:00.`,
+        yayin: yeniYayin,
+      }, { status: 201 });
+    }
 
     // Tur-1 kaydı — yayının ilk turu (tek kaynak: lib/tur/kayit.ts).
     // Başarısızlıkta yayın geri alınmaz; gecerliTur() eksik tur-1'i kendini onararak açar (U3).

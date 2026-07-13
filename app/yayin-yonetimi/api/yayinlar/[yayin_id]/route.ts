@@ -35,6 +35,55 @@ export async function PUT(
 
     const simdi = new Date().toISOString();
 
+    // ─── Planlanmış yayın aksiyonları (İş 2) ─────────────────────────────
+    // Planlı yayın durdur/başlat toggle'ına kapalıdır; üç işlem tanır:
+    // tarih_degistir | hemen_yayinla | plan_iptal. Aktivasyon tek kaynaktan
+    // (yayin_planlananlari_aktive RPC) koşar — tur-1 + bildirimler dahil.
+    if (yayin.durum === "planlandi") {
+      const body = await request.json().catch(() => ({} as Record<string, unknown>));
+      const islem = body?.islem;
+
+      if (islem === "hemen_yayinla") {
+        const { data: aktiveSayisi, error: rpcError } = await adminSupabase
+          .rpc("yayin_planlananlari_aktive", { p_yayin_id: yayin_id });
+        if (rpcError) return hataYaniti("Yayın aktive edilemedi.", "yayin_planlananlari_aktive RPC", rpcError);
+        if (!aktiveSayisi) return isKuraluHatasi("Aktivasyon gerçekleşmedi — yayın planlandı durumunda olmayabilir.");
+        return NextResponse.json({ mesaj: "Yayın hemen yayına alındı." }, { status: 200 });
+      }
+
+      if (islem === "tarih_degistir") {
+        const yayin_gunu = body?.yayin_gunu;
+        if (typeof yayin_gunu !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(yayin_gunu)) {
+          return validasyonHatasi("yayin_gunu YYYY-AA-GG biçiminde olmalıdır.", ["yayin_gunu"]);
+        }
+        const aday = new Date(`${yayin_gunu}T07:00:00+03:00`); // TR sabit UTC+3
+        if (isNaN(aday.getTime())) return validasyonHatasi("yayin_gunu geçerli bir tarih değil.", ["yayin_gunu"]);
+        if (aday.getTime() <= Date.now()) {
+          return isKuraluHatasi("Seçilen günün 07:00'i geçmiş. Hemen yayınlamak için 'Hemen Yayınla' kullanın.");
+        }
+        const { error: updateError } = await adminSupabase
+          .from("yayin_yonetimi")
+          .update({ yayin_tarihi: aday.toISOString() })
+          .eq("yayin_id", yayin_id);
+        if (updateError) return hataYaniti("Yayın tarihi güncellenemedi.", "yayin_yonetimi UPDATE — yayin_tarihi", updateError);
+        return NextResponse.json({ mesaj: "Yayın tarihi güncellendi." }, { status: 200 });
+      }
+
+      if (islem === "plan_iptal") {
+        // Kayıt silinir; video "yayına bekleyenler" kuyruğuna (ve rozete) geri döner.
+        // Planlı yayının turu/bildirimi/izlemesi doğmamıştır — silme yetimsizdir.
+        const { error: silError } = await adminSupabase
+          .from("yayin_yonetimi")
+          .delete()
+          .eq("yayin_id", yayin_id);
+        if (silError) return hataYaniti("Plan iptal edilemedi.", "yayin_yonetimi DELETE — plan iptali", silError);
+        return NextResponse.json({ mesaj: "Plan iptal edildi; video yayına bekleyenlere döndü." }, { status: 200 });
+      }
+
+      return validasyonHatasi("Planlanmış yayın için islem 'tarih_degistir', 'hemen_yayinla' ya da 'plan_iptal' olmalıdır.", ["islem"]);
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
     if (yayin.durum === "yayinda") {
       const { error: updateError } = await adminSupabase
         .from("yayin_yonetimi")

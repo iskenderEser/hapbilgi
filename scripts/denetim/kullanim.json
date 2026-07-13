@@ -1612,17 +1612,17 @@
     },
     {
       "dosya": "app/yayin-yonetimi/_hooks/useYayinYonetimi.ts",
-      "satir": 91,
+      "satir": 95,
       "tablo": "v_yayin_detay"
     },
     {
       "dosya": "app/yayin-yonetimi/_hooks/useYayinYonetimi.ts",
-      "satir": 99,
+      "satir": 103,
       "tablo": "yayin_yonetimi"
     },
     {
       "dosya": "app/yayin-yonetimi/_hooks/useYayinYonetimi.ts",
-      "satir": 118,
+      "satir": 122,
       "tablo": "soru_seti_puanlari"
     },
     {
@@ -2187,12 +2187,17 @@
     },
     {
       "dosya": "app/yayin-yonetimi/api/bekleyenler/route.ts",
-      "satir": 35,
+      "satir": 36,
       "tablo": "soru_seti_durumu"
     },
     {
       "dosya": "app/yayin-yonetimi/api/bekleyenler/route.ts",
-      "satir": 92,
+      "satir": 48,
+      "tablo": "soru_seti_durumu"
+    },
+    {
+      "dosya": "app/yayin-yonetimi/api/bekleyenler/route.ts",
+      "satir": 105,
       "tablo": "soru_seti_puanlari"
     },
     {
@@ -2227,22 +2232,22 @@
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 156,
+      "satir": 173,
       "tablo": "yayin_yonetimi"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 192,
+      "satir": 219,
       "tablo": "v_yayin_detay"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 201,
+      "satir": 228,
       "tablo": "bolgeler"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 209,
+      "satir": 236,
       "tablo": "kullanicilar"
     },
     {
@@ -3092,12 +3097,22 @@
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/[yayin_id]/route.ts",
-      "satir": 39,
+      "satir": 64,
       "tablo": "yayin_yonetimi"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/[yayin_id]/route.ts",
-      "satir": 48,
+      "satir": 75,
+      "tablo": "yayin_yonetimi"
+    },
+    {
+      "dosya": "app/yayin-yonetimi/api/yayinlar/[yayin_id]/route.ts",
+      "satir": 88,
+      "tablo": "yayin_yonetimi"
+    },
+    {
+      "dosya": "app/yayin-yonetimi/api/yayinlar/[yayin_id]/route.ts",
+      "satir": 97,
       "tablo": "yayin_yonetimi"
     },
     {
@@ -5114,19 +5129,19 @@
     },
     {
       "dosya": "app/yayin-yonetimi/_hooks/useYayinYonetimi.ts",
-      "satir": 91,
+      "satir": 95,
       "ham": "yayin_id, soru_seti_durum_id, durum, yayin_tarihi, durdurma_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, sorular, hedef_rol",
       "tablo": "v_yayin_detay"
     },
     {
       "dosya": "app/yayin-yonetimi/_hooks/useYayinYonetimi.ts",
-      "satir": 99,
+      "satir": 103,
       "ham": "yayin_id, ileri_sarma_acik",
       "tablo": "yayin_yonetimi"
     },
     {
       "dosya": "app/yayin-yonetimi/_hooks/useYayinYonetimi.ts",
-      "satir": 118,
+      "satir": 122,
       "ham": "soru_seti_durum_id, soru_index, soru_puani",
       "tablo": "soru_seti_puanlari"
     },
@@ -5702,13 +5717,19 @@
     },
     {
       "dosya": "app/yayin-yonetimi/api/bekleyenler/route.ts",
-      "satir": 35,
+      "satir": 36,
+      "ham": "soru_seti_durum_id",
+      "tablo": "soru_seti_durumu"
+    },
+    {
+      "dosya": "app/yayin-yonetimi/api/bekleyenler/route.ts",
+      "satir": 48,
       "ham": "\n        soru_seti_durum_id,\n        soru_seti_id,\n        created_at,\n        soru_setleri (\n          soru_seti_id,\n          video_durum_id,\n          sorular,\n          video_durumu (\n            video_durum_id,\n            video_id,\n            video_puanlari (\n              video_puan_id,\n              video_puani\n            ),\n            videolar (\n              video_id,\n              video_url,\n              thumbnail_url,\n              senaryo_durum_id,\n              senaryo_durumu (\n                senaryo_durum_id,\n                senaryo_id,\n                senaryolar (\n                  senaryo_id,\n                  talep_id,\n                  talepler (\n                    talep_id,\n                    soru_seti_buyuklugu,\n                    video_basi_soru_sayisi,\n                    egitim_turu,\n                    hedef_rol,\n                    urunler ( urun_adi ),\n                    teknikler ( teknik_adi )\n                  )\n                )\n              )\n            )\n          )\n        )\n      ",
       "tablo": "soru_seti_durumu"
     },
     {
       "dosya": "app/yayin-yonetimi/api/bekleyenler/route.ts",
-      "satir": 92,
+      "satir": 105,
       "ham": "soru_seti_durum_id, soru_seti_puan_id, soru_index, soru_puani",
       "tablo": "soru_seti_puanlari"
     },
@@ -5750,25 +5771,25 @@
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 156,
+      "satir": 173,
       "ham": "yayin_id, durum, yayin_tarihi",
       "tablo": "yayin_yonetimi"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 192,
+      "satir": 219,
       "ham": "takim_id, urun_adi",
       "tablo": "v_yayin_detay"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 201,
+      "satir": 228,
       "ham": "bolge_id",
       "tablo": "bolgeler"
     },
     {
       "dosya": "app/yayin-yonetimi/api/yayinlar/route.ts",
-      "satir": 209,
+      "satir": 236,
       "ham": "kullanici_id",
       "tablo": "kullanicilar"
     },
@@ -7300,6 +7321,11 @@
       "dosya": "app/store/siparisler/api/hiyerarsi/route.ts",
       "satir": 46,
       "fonksiyon": "get_siparis_filtre_hiyerarsi"
+    },
+    {
+      "dosya": "app/yayin-yonetimi/api/yayinlar/[yayin_id]/route.ts",
+      "satir": 47,
+      "fonksiyon": "yayin_planlananlari_aktive"
     }
   ]
 }

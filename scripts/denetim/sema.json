@@ -1,7 +1,7 @@
 {
-  "uretim_tarihi": "2026-07-11T20:20:25.535Z",
+  "uretim_tarihi": "2026-07-13T07:39:14.895Z",
   "tablo_sayisi": 91,
-  "rpc_sayisi": 52,
+  "rpc_sayisi": 53,
   "tablolar": {
     "analiz_tuketim_degiskenleri": {
       "tur": "BASE TABLE",
@@ -3851,6 +3851,10 @@
     "store_teslim_aldim": {
       "argumanlar": "p_siparis_id uuid, p_kullanici_id uuid",
       "donus": "TABLE(ok boolean, hata text)"
+    },
+    "yayin_planlananlari_aktive": {
+      "argumanlar": "p_yayin_id uuid",
+      "donus": "integer"
     }
   },
   "fk": {
