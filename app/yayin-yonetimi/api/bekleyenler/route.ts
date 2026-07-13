@@ -29,6 +29,19 @@ export async function GET(request: NextRequest) {
 
     const yayindakiIds = new Set((yayinlar ?? []).map((y: any) => y.soru_seti_durum_id));
 
+    // Hafif sayı modu (?sayi=1): Navbar "Yayın Yönetimi" rozeti için yalnız
+    // bekleyen adedi döner — 30 sn'de bir çağrıldığından ağır zincir join'i
+    // koşulmaz. Rozet canlı sayımdır: yayına alınınca kendiliğinden düşer.
+    if (searchParams.get("sayi") === "1") {
+      const { data: onayliDurumlar, error: sayiError } = await adminSupabase
+        .from("soru_seti_durumu")
+        .select("soru_seti_durum_id")
+        .eq("durum", "onaylandi");
+      if (sayiError) return hataYaniti("Bekleyen sayısı çekilemedi.", "soru_seti_durumu SELECT — sayı modu", sayiError);
+      const sayi = (onayliDurumlar ?? []).filter((s: any) => !yayindakiIds.has(s.soru_seti_durum_id)).length;
+      return NextResponse.json({ sayi }, { status: 200 });
+    }
+
     // Tek join query ile tüm zinciri çek:
     // soru_seti_durumu → soru_setleri → video_durumu → videolar → senaryo_durumu → senaryolar → talepler → urunler/teknikler
     // video_puanlari, video_durumu'na bağlıdır (video_durum_id FK) — bu yüzden video_durumu altında embed edilir.

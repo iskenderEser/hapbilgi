@@ -16,6 +16,10 @@ export default function Navbar({ email, rol, adSoyad, kimlikTuru, onCikis }: Nav
   const router = useRouter();
   const pathname = usePathname();
   const [badge, setBadge] = useState<Record<string, number>>({});
+  // Yayın Yönetimi rozeti: bildirim değil, canlı "yayına alınmayı bekleyen" sayısı.
+  // (Kuyruk ortaktır — herhangi bir üretici yayınlayabilir; bildirim tek kişiye
+  // giderdi ve okununca düşerdi, kuyruk gerçeğini göstermezdi.)
+  const [yayinBekleyen, setYayinBekleyen] = useState(0);
   const [hover, setHover] = useState<string | null>(null);
   const [kullaniciAd, setKullaniciAd] = useState<string>(adSoyad ?? "");
   const [menuAcik, setMenuAcik] = useState(false);
@@ -60,6 +64,16 @@ export default function Navbar({ email, rol, adSoyad, kimlikTuru, onCikis }: Nav
       const data = await res.json();
       setBadge(data.sayilar ?? {});
     } catch {}
+
+    // Yayın Yönetimi rozeti — yalnız üretici roller (API de aynı rolleri şart koşar).
+    if (isUretici) {
+      try {
+        const res = await fetch("/yayin-yonetimi/api/bekleyenler?sayi=1");
+        if (!res.ok) return;
+        const data = await res.json();
+        setYayinBekleyen(data.sayi ?? 0);
+      } catch {}
+    }
   };
 
   useEffect(() => {
@@ -202,7 +216,9 @@ export default function Navbar({ email, rol, adSoyad, kimlikTuru, onCikis }: Nav
               )}
 
               {isUretici && (
-                <button onClick={() => router.push("/yayin-yonetimi")} onMouseEnter={() => setHover("yayin-yonetimi")} onMouseLeave={() => setHover(null)} className={pillClass("yayin-yonetimi", "/yayin-yonetimi")} style={pillStyle("yayin-yonetimi", "/yayin-yonetimi")}>Yayın Yönetimi</button>
+                <button onClick={() => router.push("/yayin-yonetimi")} onMouseEnter={() => setHover("yayin-yonetimi")} onMouseLeave={() => setHover(null)} className={pillClass("yayin-yonetimi", "/yayin-yonetimi")} style={pillStyle("yayin-yonetimi", "/yayin-yonetimi")}>
+                  Yayın Yönetimi<Badge sayi={yayinBekleyen} />
+                </button>
               )}
 
               {yonlendiriciRoller.includes(rolKucu) && (
@@ -335,7 +351,7 @@ export default function Navbar({ email, rol, adSoyad, kimlikTuru, onCikis }: Nav
             </>
           )}
 
-          {isUretici && <MenuItem label="Yayın Yönetimi" path="/yayin-yonetimi" />}
+          {isUretici && <MenuItem label="Yayın Yönetimi" path="/yayin-yonetimi" badgeSayi={yayinBekleyen} />}
           {yonlendiriciRoller.includes(rolKucu) && <MenuItem label="Öneriler" path="/oneriler" />}
 
           {tuketiciRoller.includes(rolKucu) && (
