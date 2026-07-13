@@ -757,7 +757,7 @@
     },
     {
       "dosya": "app/login/page.tsx",
-      "satir": 42,
+      "satir": 81,
       "tablo": "firmalar"
     },
     {
@@ -4157,7 +4157,7 @@
     },
     {
       "dosya": "app/login/page.tsx",
-      "satir": 42,
+      "satir": 81,
       "ham": "aktif",
       "tablo": "firmalar"
     },
