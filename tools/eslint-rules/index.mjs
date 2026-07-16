@@ -96,20 +96,22 @@ const KORUMALI_TABLOLAR = new Set([
   "eczanem_harcama_kayitlari",
   "eczanem_siparisler",
   "eczanem_urun_tarifeleri",
+  "push_abonelikleri",
+  "push_gonderim_kayitlari",
 ]);
 const kayitTekKaynak = {
   meta: {
     type: "problem",
-    docs: { description: "Puan/kayip/tur tablolarina INSERT yalniz lib/puan/, lib/tur/ veya lib/eczanem/ icinden yapilmali." },
+    docs: { description: "Puan/kayip/tur/push tablolarina INSERT yalniz lib/puan/, lib/tur/, lib/eczanem/ veya lib/push/ icinden yapilmali." },
     schema: [],
     messages: {
-      disari: "'{{tablo}}' tablosuna INSERT yalniz lib/puan/, lib/tur/ veya lib/eczanem/ icinden yapilmali (tek-kaynak).",
+      disari: "'{{tablo}}' tablosuna INSERT yalniz lib/puan/, lib/tur/, lib/eczanem/ veya lib/push/ icinden yapilmali (tek-kaynak).",
     },
   },
   create(context) {
     const dosya = context.filename ?? context.getFilename?.() ?? "";
     const yol = dosya.replace(/\\/g, "/");
-    if (yol.includes("/lib/puan/") || yol.includes("/lib/tur/") || yol.includes("/lib/eczanem/")) return {};
+    if (yol.includes("/lib/puan/") || yol.includes("/lib/tur/") || yol.includes("/lib/eczanem/") || yol.includes("/lib/push/")) return {};
 
     return {
       CallExpression(node) {
