@@ -13,6 +13,7 @@
 //    davet aşamasındaki kayıtlar sayılmaz — eşik şişirme yapısal imkânsız.
 
 import { SupabaseClient } from "@supabase/supabase-js";
+import { pushYayinlaEczanemMusterilereArkada } from "@/lib/push/orkestrasyon";
 
 // Ayar okunamazsa güvenli geri düşüş (davet.ts DAVET_GECERLILIK deseni).
 // Canlı seed değeri 10; bu sabit yalnız okuma hatasında devreye girer.
@@ -385,5 +386,10 @@ export async function musteriyeGonder(
     if (error.code === "23505") return { ok: false, hata: "Gönderim çakışması; tekrar deneyin.", gonderilen: 0, atlanan };
     return { ok: false, hata: "Gönderim kaydedilemedi.", gonderilen: 0, atlanan };
   }
+
+  // Push — K-P3 Eczanem istisnası: in-app bildirim katmanı olmadığından
+  // doğrudan iş olayından tetiklenir; yükte kişi verisi yoktur (K-P6).
+  pushYayinlaEczanemMusterilereArkada(adminSupabase, "eczanem_gonderim", yeni);
+
   return { ok: true, gonderilen: yeni.length, atlanan };
 }

@@ -14,6 +14,10 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import { guncelTarife } from "@/lib/eczanem/tarife";
+import {
+  pushYayinlaEczaneKisilerineArkada,
+  pushYayinlaEczanemMusterilereArkada,
+} from "@/lib/push/orkestrasyon";
 
 export const PUAN_OMRU_GUN_VARSAYILAN = 180;
 
@@ -202,6 +206,11 @@ export async function siparisOlustur(
     .single();
 
   if (error || !yeni) return { ok: false, hata: "Sipariş oluşturulamadı." };
+
+  // Push — K-P3 Eczanem istisnası: eczanenin aktif kişilerine "onay bekliyor".
+  // Yükte müşteri/ürün verisi yoktur (K-P6).
+  pushYayinlaEczaneKisilerineArkada(adminSupabase, "eczanem_siparis", eczaneId);
+
   return { ok: true, siparis_id: yeni.siparis_id };
 }
 
@@ -245,6 +254,20 @@ export async function siparisOnayla(
   }
   const ilk = Array.isArray(data) && data.length > 0 ? data[0] : null;
   if (!ilk) return { ok: false, hata: "Onay sonucu alınamadı." };
+
+  // Push — onay başarılıysa müşteriye haber (K-P3 Eczanem istisnası).
+  // RPC musteri_id dönmez; siparişten okunur — yük yine PII'sizdir (K-P6).
+  if (ilk.ok) {
+    const { data: siparis } = await adminSupabase
+      .from("eczanem_siparisler")
+      .select("musteri_id")
+      .eq("siparis_id", siparisId)
+      .maybeSingle();
+    if (siparis?.musteri_id) {
+      pushYayinlaEczanemMusterilereArkada(adminSupabase, "eczanem_siparis", [siparis.musteri_id]);
+    }
+  }
+
   return {
     ok: Boolean(ilk.ok),
     hata: ilk.hata ?? undefined,

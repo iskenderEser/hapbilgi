@@ -5,8 +5,22 @@ import {
   talepBilgisiVideo,
   talepBilgisiSoruSeti,
 } from "./talepZinciri";
+import { pushYayinlaArkada } from "@/lib/push/orkestrasyon";
+import type { PushOlayTuru } from "@/lib/push/tipler";
 
 type KayitTuru = "talep" | "senaryo" | "video" | "soru_seti" | "yayin" | "oneri" | "challenge";
+
+// In-app bildirim türü → push olayı (P6, K-P3: push in-app yazımın yan
+// etkisidir; alici_id = kullanici_id = auth id olduğundan doğrudan geçer).
+const PUSH_OLAY_ESLEME: Record<KayitTuru, PushOlayTuru> = {
+  talep: "uretim_durum_gecisi",
+  senaryo: "uretim_durum_gecisi",
+  video: "uretim_durum_gecisi",
+  soru_seti: "uretim_durum_gecisi",
+  yayin: "video_yayini",
+  oneri: "video_onerisi",
+  challenge: "challenge",
+};
 
 interface BildirimParams {
   adminSupabase: SupabaseClient;
@@ -196,7 +210,10 @@ export async function bildirimOlustur(params: BildirimParams): Promise<void> {
         kayit_id,
         hata: error.message,
       });
+      return; // in-app yazılamadıysa push da gitmez (K-P3 — in-app asıl kayıt)
     }
+
+    pushYayinlaArkada(adminSupabase, PUSH_OLAY_ESLEME[kayit_turu], [alici_id]);
   } catch (err) {
     console.error("[BİLDİRİM] Beklenmeyen hata:", err);
   }
@@ -241,7 +258,10 @@ export async function cokluBildirimOlustur(params: CokluBildirimParams): Promise
         kayit_id,
         hata: error.message,
       });
+      return; // in-app yazılamadıysa push da gitmez (K-P3)
     }
+
+    pushYayinlaArkada(adminSupabase, PUSH_OLAY_ESLEME[kayit_turu], alici_idler);
   } catch (err) {
     console.error("[BİLDİRİM] Beklenmeyen hata:", err);
   }

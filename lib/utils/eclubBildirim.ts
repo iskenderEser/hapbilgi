@@ -4,6 +4,7 @@
 // gönderen UTT'dir (gonderen_id → kullanicilar, nullable). Talep zinciri yoktur.
 
 import { SupabaseClient } from "@supabase/supabase-js";
+import { pushYayinlaEclubKisilereArkada } from "@/lib/push/orkestrasyon";
 
 type EclubKayitTuru = "oneri";
 
@@ -38,7 +39,11 @@ export async function eclubBildirimOlustur(params: EclubBildirimParams): Promise
       console.error("[ECLUB BİLDİRİM] Bildirim oluşturulamadı:", {
         alici_kisi_id, kayit_turu, kayit_id, hata: error.message,
       });
+      return; // in-app yazılamadıysa push da gitmez (K-P3)
     }
+
+    // P6: kisi_id → auth_user_id köprüsü orkestrasyonda (NULL'lar elenir — K-P2).
+    pushYayinlaEclubKisilereArkada(adminSupabase, "eclub_oneri", [alici_kisi_id]);
   } catch (err) {
     console.error("[ECLUB BİLDİRİM] Beklenmeyen hata:", err);
   }
@@ -79,7 +84,10 @@ export async function eclubCokluBildirimOlustur(params: EclubCokluBildirimParams
       console.error("[ECLUB BİLDİRİM] Çoklu bildirim oluşturulamadı:", {
         alici_sayisi: alici_kisi_idler.length, kayit_turu, kayit_id, hata: error.message,
       });
+      return; // in-app yazılamadıysa push da gitmez (K-P3)
     }
+
+    pushYayinlaEclubKisilereArkada(adminSupabase, "eclub_oneri", alici_kisi_idler);
   } catch (err) {
     console.error("[ECLUB BİLDİRİM] Beklenmeyen hata:", err);
   }
