@@ -346,5 +346,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // sw.js + manifest.json + PWA ikonları statik dosyadır; oturum/rol katmanından
+  // geçmeleri gereksiz (push planı P1 — SW kök scope'tan serbest sunulur).
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|sw.js|manifest.json|icon-192.png|icon-512.png|logo.png).*)"],
 };
