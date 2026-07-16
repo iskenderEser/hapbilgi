@@ -1,6 +1,6 @@
 {
-  "uretim_tarihi": "2026-07-13T07:39:14.895Z",
-  "tablo_sayisi": 91,
+  "uretim_tarihi": "2026-07-16T14:42:07.278Z",
+  "tablo_sayisi": 93,
   "rpc_sayisi": 53,
   "tablolar": {
     "analiz_tuketim_degiskenleri": {
@@ -1798,6 +1798,76 @@
         "created_at": {
           "tip": "timestamp with time zone",
           "nullable": true
+        }
+      }
+    },
+    "push_abonelikleri": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "abonelik_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "auth_user_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "endpoint": {
+          "tip": "text",
+          "nullable": false
+        },
+        "p256dh": {
+          "tip": "text",
+          "nullable": false
+        },
+        "auth": {
+          "tip": "text",
+          "nullable": false
+        },
+        "user_agent": {
+          "tip": "text",
+          "nullable": true
+        },
+        "aktif_mi": {
+          "tip": "boolean",
+          "nullable": false
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        },
+        "son_gorulme": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        }
+      }
+    },
+    "push_gonderim_kayitlari": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "gonderim_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "auth_user_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "olay_turu": {
+          "tip": "text",
+          "nullable": false
+        },
+        "alici_rol": {
+          "tip": "text",
+          "nullable": false
+        },
+        "durum": {
+          "tip": "text",
+          "nullable": false
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
         }
       }
     },
