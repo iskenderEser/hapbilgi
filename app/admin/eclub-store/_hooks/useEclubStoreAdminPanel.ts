@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useHataMesaji } from "@/components/HataMesaji";
 import type { EclubStoreSekme } from "../_types";
+import { ADMIN_ROLLER } from "@/lib/utils/roller";
 
 export function useEclubStoreAdminPanel() {
   const { kullanici, yukleniyor, cikisYap } = useAuth();
@@ -17,7 +18,7 @@ export function useEclubStoreAdminPanel() {
   useEffect(() => {
     if (yukleniyor) return;
     if (!kullanici) { router.replace("/login"); return; }
-    if (kullanici.rol !== "admin") { router.replace("/ana-sayfa"); return; }
+    if (!ADMIN_ROLLER.includes((kullanici.rol ?? "").toLowerCase())) { router.replace("/ana-sayfa"); return; } // B-33: tek kaynak
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kullanici, yukleniyor]);
 
