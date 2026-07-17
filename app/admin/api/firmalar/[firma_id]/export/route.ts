@@ -46,11 +46,22 @@ export async function GET(
     if (!firmaKontrol.gecerli) return firmaKontrol.yanit;
     if (firmaError) return hataYaniti("Firma sorgulanamadı.", "firmalar SELECT — export", firmaError);
 
+    // B-20: export sorgularından HERHANGİ biri hata verirse dışa aktarma
+    // kesilir — eksik sayfa "tam yedek" sayılamaz; son_export_at güncellenmez
+    // (firma silme ön koşulu eksik yedekle sağlanamaz).
+    const sorguHatasi = (etiket: string, error: unknown) =>
+      hataYaniti(
+        `Dışa aktarma iptal edildi: "${etiket}" sorgusu başarısız — eksik yedek üretilmez.`,
+        `export — ${etiket}`,
+        error
+      );
+
     // --- Takımlar (firma) --------------------------------------------------
-    const { data: takimlar } = await adminSupabase
+    const { data: takimlar, error: takimlarHata } = await adminSupabase
       .from("takimlar")
       .select("takim_id, takim_adi")
       .eq("firma_id", firma_id);
+    if (takimlarHata) return sorguHatasi("takımlar", takimlarHata);
 
     const takimIdleri = (takimlar ?? []).map(t => t.takim_id);
     const takimAdMap = new Map((takimlar ?? []).map(t => [t.takim_id, t.takim_adi]));
@@ -58,19 +69,21 @@ export async function GET(
     // --- Bölgeler (takımlara bağlı) ---------------------------------------
     let bolgeler: { bolge_id: string; bolge_adi: string; takim_id: string }[] = [];
     if (takimIdleri.length > 0) {
-      const { data } = await adminSupabase
+      const { data, error: bolgelerHata } = await adminSupabase
         .from("bolgeler")
         .select("bolge_id, bolge_adi, takim_id")
         .in("takim_id", takimIdleri);
+      if (bolgelerHata) return sorguHatasi("bölgeler", bolgelerHata);
       bolgeler = data ?? [];
     }
     const bolgeAdMap = new Map(bolgeler.map(b => [b.bolge_id, b.bolge_adi]));
 
     // --- Kullanıcılar (firma) ---------------------------------------------
-    const { data: kullanicilar } = await adminSupabase
+    const { data: kullanicilar, error: kullanicilarHata } = await adminSupabase
       .from("kullanicilar")
       .select("kullanici_id, ad, soyad, eposta, rol, takim_id, bolge_id")
       .eq("firma_id", firma_id);
+    if (kullanicilarHata) return sorguHatasi("kullanıcılar", kullanicilarHata);
 
     const kullaniciListesi = kullanicilar ?? [];
     const kullaniciIdleri = kullaniciListesi.map(k => k.kullanici_id);
@@ -84,25 +97,28 @@ export async function GET(
     );
 
     // --- Ürünler (firma) ---------------------------------------------------
-    const { data: urunler } = await adminSupabase
+    const { data: urunler, error: urunlerHata } = await adminSupabase
       .from("urunler")
       .select("urun_id, urun_adi, takim_id")
       .eq("firma_id", firma_id);
+    if (urunlerHata) return sorguHatasi("ürünler", urunlerHata);
     const urunListesi = urunler ?? [];
     const urunAdMap = new Map(urunListesi.map(u => [u.urun_id, u.urun_adi]));
 
     // --- Teknikler (firma) -------------------------------------------------
-    const { data: teknikler } = await adminSupabase
+    const { data: teknikler, error: tekniklerHata } = await adminSupabase
       .from("teknikler")
       .select("teknik_id, teknik_adi")
       .eq("firma_id", firma_id);
+    if (tekniklerHata) return sorguHatasi("teknikler", tekniklerHata);
     const teknikListesi = teknikler ?? [];
 
     // --- Talepler (firma) --------------------------------------------------
-    const { data: talepler } = await adminSupabase
+    const { data: talepler, error: taleplerHata } = await adminSupabase
       .from("talepler")
       .select("talep_id, urun_adi, urun_id, teknik_adi, teknik_id, egitim_turu, icerik_turu, hedef_rol, takim_id, created_at")
       .eq("firma_id", firma_id);
+    if (taleplerHata) return sorguHatasi("talepler", taleplerHata);
     const talepListesi = talepler ?? [];
 
     // ======================================================================
@@ -113,52 +129,59 @@ export async function GET(
     // ======================================================================
     const yayinTeknikMap = new Map<string, { urun: string; teknik: string }>();
 
-    const { data: yayinlar } = await adminSupabase
+    const { data: yayinlar, error: yayinlarHata } = await adminSupabase
       .from("yayin_yonetimi")
       .select("yayin_id, soru_seti_durum_id");
+    if (yayinlarHata) return sorguHatasi("yayınlar", yayinlarHata);
 
     if ((yayinlar ?? []).length > 0) {
       const ssDurumIdleri = [...new Set((yayinlar ?? []).map(y => y.soru_seti_durum_id).filter(Boolean))];
 
-      const { data: ssDurumlar } = await adminSupabase
+      const { data: ssDurumlar, error: ssDurumHata } = await adminSupabase
         .from("soru_seti_durumu")
         .select("soru_seti_durum_id, soru_seti_id")
         .in("soru_seti_durum_id", ssDurumIdleri.length ? ssDurumIdleri : ["___"]);
+      if (ssDurumHata) return sorguHatasi("soru seti durumları", ssDurumHata);
       const ssDurumMap = new Map((ssDurumlar ?? []).map(x => [x.soru_seti_durum_id, x.soru_seti_id]));
 
       const soruSetiIdleri = [...new Set((ssDurumlar ?? []).map(x => x.soru_seti_id).filter(Boolean))];
-      const { data: soruSetleri } = await adminSupabase
+      const { data: soruSetleri, error: soruSetiHata } = await adminSupabase
         .from("soru_setleri")
         .select("soru_seti_id, video_durum_id")
         .in("soru_seti_id", soruSetiIdleri.length ? soruSetiIdleri : ["___"]);
+      if (soruSetiHata) return sorguHatasi("soru setleri", soruSetiHata);
       const soruSetiMap = new Map((soruSetleri ?? []).map(x => [x.soru_seti_id, x.video_durum_id]));
 
       const videoDurumIdleri = [...new Set((soruSetleri ?? []).map(x => x.video_durum_id).filter(Boolean))];
-      const { data: videoDurumlar } = await adminSupabase
+      const { data: videoDurumlar, error: videoDurumHata } = await adminSupabase
         .from("video_durumu")
         .select("video_durum_id, video_id")
         .in("video_durum_id", videoDurumIdleri.length ? videoDurumIdleri : ["___"]);
+      if (videoDurumHata) return sorguHatasi("video durumları", videoDurumHata);
       const videoDurumMap = new Map((videoDurumlar ?? []).map(x => [x.video_durum_id, x.video_id]));
 
       const videoIdleri = [...new Set((videoDurumlar ?? []).map(x => x.video_id).filter(Boolean))];
-      const { data: videolar } = await adminSupabase
+      const { data: videolar, error: videolarHata } = await adminSupabase
         .from("videolar")
         .select("video_id, senaryo_durum_id")
         .in("video_id", videoIdleri.length ? videoIdleri : ["___"]);
+      if (videolarHata) return sorguHatasi("videolar", videolarHata);
       const videoMap = new Map((videolar ?? []).map(x => [x.video_id, x.senaryo_durum_id]));
 
       const senaryoDurumIdleri = [...new Set((videolar ?? []).map(x => x.senaryo_durum_id).filter(Boolean))];
-      const { data: senaryoDurumlar } = await adminSupabase
+      const { data: senaryoDurumlar, error: senaryoDurumHata } = await adminSupabase
         .from("senaryo_durumu")
         .select("senaryo_durum_id, senaryo_id")
         .in("senaryo_durum_id", senaryoDurumIdleri.length ? senaryoDurumIdleri : ["___"]);
+      if (senaryoDurumHata) return sorguHatasi("senaryo durumları", senaryoDurumHata);
       const senaryoDurumMap = new Map((senaryoDurumlar ?? []).map(x => [x.senaryo_durum_id, x.senaryo_id]));
 
       const senaryoIdleri = [...new Set((senaryoDurumlar ?? []).map(x => x.senaryo_id).filter(Boolean))];
-      const { data: senaryolar } = await adminSupabase
+      const { data: senaryolar, error: senaryolarHata } = await adminSupabase
         .from("senaryolar")
         .select("senaryo_id, talep_id")
         .in("senaryo_id", senaryoIdleri.length ? senaryoIdleri : ["___"]);
+      if (senaryolarHata) return sorguHatasi("senaryolar", senaryolarHata);
       const senaryoMap = new Map((senaryolar ?? []).map(x => [x.senaryo_id, x.talep_id]));
 
       // talep_id → {urun_adi, teknik_adi} (bu firmaya ait taleplerden)
@@ -226,10 +249,11 @@ export async function GET(
       const kIdParam = kullaniciIdleri;
 
       // Kazanılan puanlar
-      const { data: kazanclar } = await adminSupabase
+      const { data: kazanclar, error: kazanclarHata } = await adminSupabase
         .from("kazanilan_puanlar")
         .select("kullanici_id, urun_id, yayin_id, puan, puan_turu")
         .in("kullanici_id", kIdParam);
+      if (kazanclarHata) return sorguHatasi("kazanılan puanlar", kazanclarHata);
 
       for (const p of kazanclar ?? []) {
         const ut = cozUrunTeknik(p.yayin_id, p.urun_id);
@@ -243,10 +267,11 @@ export async function GET(
       }
 
       // Yanlış cevap kayıpları
-      const { data: yanlisKayiplar } = await adminSupabase
+      const { data: yanlisKayiplar, error: yanlisKayipHata } = await adminSupabase
         .from("yanlis_cevap_kayitlari")
         .select("kullanici_id, urun_id, yayin_id, kaybedilen_puan")
         .in("kullanici_id", kIdParam);
+      if (yanlisKayipHata) return sorguHatasi("yanlış cevap kayıpları", yanlisKayipHata);
       for (const p of yanlisKayiplar ?? []) {
         const ut = cozUrunTeknik(p.yayin_id, p.urun_id);
         const s = bosSatir(p.kullanici_id, ut);
@@ -255,10 +280,11 @@ export async function GET(
       }
 
       // Öneri kayıpları
-      const { data: oneriKayiplar } = await adminSupabase
+      const { data: oneriKayiplar, error: oneriKayipHata } = await adminSupabase
         .from("oneri_kayip_kayitlari")
         .select("kullanici_id, urun_id, yayin_id, kaybedilen_puan")
         .in("kullanici_id", kIdParam);
+      if (oneriKayipHata) return sorguHatasi("öneri kayıpları", oneriKayipHata);
       for (const p of oneriKayiplar ?? []) {
         const ut = cozUrunTeknik(p.yayin_id, p.urun_id);
         const s = bosSatir(p.kullanici_id, ut);
@@ -267,10 +293,11 @@ export async function GET(
       }
 
       // Challenge kayıpları
-      const { data: challengeKayiplar } = await adminSupabase
+      const { data: challengeKayiplar, error: challengeKayipHata } = await adminSupabase
         .from("challenge_kayip_kayitlari")
         .select("kullanici_id, urun_id, yayin_id, kaybedilen_puan")
         .in("kullanici_id", kIdParam);
+      if (challengeKayipHata) return sorguHatasi("challenge kayıpları", challengeKayipHata);
       for (const p of challengeKayiplar ?? []) {
         const ut = cozUrunTeknik(p.yayin_id, p.urun_id);
         const s = bosSatir(p.kullanici_id, ut);
@@ -349,11 +376,16 @@ export async function GET(
     // Excel'i buffer olarak yaz
     const buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
 
-    // Export başarılı → son_export_at güncelle (silme koşulu için)
-    await adminSupabase
+    // Export başarılı → son_export_at güncelle (silme koşulu için).
+    // Bu noktaya yalnız TÜM sorgular başarılıysa gelinir (B-20).
+    const { error: exportAtHata } = await adminSupabase
       .from("firmalar")
       .update({ son_export_at: new Date().toISOString() })
       .eq("firma_id", firma_id);
+    if (exportAtHata) {
+      // Dosya tam üretildi; yalnız silme-koşulu damgası atılamadı — loglanır.
+      console.error("[export] son_export_at güncellenemedi:", exportAtHata.message);
+    }
 
     // Dosya adı: firma_adi_export_YYYY-MM-DD.xlsx (ASCII-güvenli)
     const tarih = new Date().toISOString().slice(0, 10);
