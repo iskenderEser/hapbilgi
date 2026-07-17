@@ -1,9 +1,12 @@
 // app/admin/page.tsx
 //
-// Admin paneli — orchestrator. Hook'ları bağlar, sekme dispatch'i yapar.
+// Admin paneli — orchestrator (M2 kabuğu, admin modernizasyon planı B.2).
+// Yerleşim: üst bar (global bölümler — GLOBAL_BOLUMLER) + sol FirmaSidebar
+// (firma seçimi) + firma bağlamı modül sekmeleri (MODUL_SEKMELERI).
 // Tüm business logic _hooks/ altında, UI parçaları _components/ altında.
-// Üst bardaki "Sistem Ayarları" butonu, sağ içerik alanında firma görünümü
-// yerine SistemAyarlari panelini gösterir; firma seçilince normale döner.
+//
+// Firma admini hazırlığı (K-A1): sekme/bölüm görünürlüğü _constants'taki
+// tek kaynaktan gelir; rol bazlı kapatma ileride oradan yapılır.
 
 "use client";
 
@@ -16,7 +19,10 @@ import { useTakimBolgeForm } from "./_hooks/useTakimBolgeForm";
 import { useUrunTeknik } from "./_hooks/useUrunTeknik";
 import { useKullaniciListesi } from "./_hooks/useKullaniciListesi";
 
+import AdminUstBar from "./_components/AdminUstBar";
 import FirmaSidebar from "./_components/FirmaSidebar";
+import ModulSekmeBari from "./_components/ModulSekmeBari";
+import ModulDurumKarti from "./_components/ModulDurumKarti";
 import SekmeBari from "./_components/SekmeBari";
 import TekilGirisFormu from "./_components/TekilGirisFormu";
 import TopluGirisFormu from "./_components/TopluGirisFormu";
@@ -26,11 +32,14 @@ import KullaniciListesi from "./_components/KullaniciListesi";
 import SistemAyarlari from "./_components/SistemAyarlari";
 import TestVeriSilModal from "./_components/TestVeriSilModal";
 
+import type { GlobalBolumId, ModulSekmeId } from "./_constants";
+
 export default function AdminPanel() {
   const admin = useAdminPanel();
 
-  // Sistem Ayarları paneli — sağ içerik alanının alternatif görünümü.
-  const [ayarlarAcik, setAyarlarAcik] = useState(false);
+  // M2 kabuk state'i: firma bağlamı sekmesi + global bölüm (üst bar).
+  const [seciliSekme, setSeciliSekme] = useState<ModulSekmeId>("kullanicilar");
+  const [globalBolum, setGlobalBolum] = useState<GlobalBolumId | null>(null);
 
   // Test verilerini silme onay modalı (test dönemi aracı — deploy öncesi kaldırılır).
   const [testSilAcik, setTestSilAcik] = useState(false);
@@ -72,72 +81,38 @@ export default function AdminPanel() {
     basari: admin.basari,
   });
 
-  // Firma seçilince Sistem Ayarları kapanır, firma görünümü döner.
+  // Firma seçilince global görünüm kapanır, firma bağlamına dönülür.
   const handleFirmaSecildi = (...args: Parameters<typeof admin.handleFirmaSecildi>) => {
-    setAyarlarAcik(false);
+    setGlobalBolum(null);
     return admin.handleFirmaSecildi(...args);
+  };
+
+  // Modül sekmesi değişince alt-sekme uygun varsayılana çekilir.
+  const handleSekmeSec = (sekme: ModulSekmeId) => {
+    setSeciliSekme(sekme);
+    if (sekme === "kullanicilar") admin.setGirisSecimi("tekil");
+    if (sekme === "yapi") admin.setGirisSecimi("takim");
   };
 
   if (admin.yukleniyor || !admin.kullanici) return null;
 
+  const f = admin.seciliFirma;
+  const kapaliModuller: ModulSekmeId[] = f
+    ? [
+        ...(f.cc_aktif ? [] : ["cclub" as const]),
+        ...(f.eclub_aktif ? [] : ["eclub" as const]),
+      ]
+    : [];
+
   return (
     <div style={{ minHeight: "100vh", background: "#fff", fontFamily: "'Nunito', sans-serif" }}>
-      {/* Top bar */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 80px", borderBottom: "0.5px solid #e5e7eb" }}>
-        <h1 style={{ fontSize: "18px", fontWeight: 700, color: "#111", margin: 0 }}>
-          Admin Paneli
-        </h1>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <button
-            onClick={() => setTestSilAcik(true)}
-            style={{
-              padding: "6px 12px",
-              background: "#dc2626",
-              border: "none",
-              borderRadius: "6px",
-              fontSize: "12px",
-              fontWeight: 700,
-              color: "white",
-              cursor: "pointer",
-              fontFamily: "'Nunito', sans-serif",
-            }}
-          >
-            Test Verilerini Sil
-          </button>
-          <button
-            onClick={() => setAyarlarAcik(true)}
-            style={{
-              padding: "6px 12px",
-              background: ayarlarAcik ? "#1d4ed8" : "transparent",
-              border: "0.5px solid #1d4ed8",
-              borderRadius: "6px",
-              fontSize: "12px",
-              color: ayarlarAcik ? "white" : "#1d4ed8",
-              cursor: "pointer",
-              fontFamily: "'Nunito', sans-serif",
-            }}
-          >
-            Sistem Ayarları
-          </button>
-          <span style={{ fontSize: "12px", color: "#737373" }}>
-            {admin.kullanici.ad} {admin.kullanici.soyad}
-          </span>
-          <button
-            onClick={admin.cikisYap}
-            style={{
-              padding: "6px 12px",
-              background: "#1d4ed8",
-              border: "none",
-              borderRadius: "6px",
-              fontSize: "12px",
-              color: "white",
-              cursor: "pointer",
-            }}
-          >
-            Çıkış
-          </button>
-        </div>
-      </div>
+      <AdminUstBar
+        kullaniciAd={`${admin.kullanici.ad} ${admin.kullanici.soyad}`}
+        globalBolum={globalBolum}
+        setGlobalBolum={setGlobalBolum}
+        onTestSil={() => setTestSilAcik(true)}
+        onCikis={admin.cikisYap}
+      />
 
       <HataMesajiContainer mesajlar={admin.mesajlar} />
 
@@ -148,8 +123,7 @@ export default function AdminPanel() {
         hata={admin.hata}
       />
 
-      {/* Ana içerik */}
-      <div style={{ display: "flex", minHeight: "calc(100vh - 50px)" }}>
+      <div style={{ display: "flex", minHeight: "calc(100vh - 54px)" }}>
         <FirmaSidebar
           firmalar={admin.firmalar}
           seciliFirma={admin.seciliFirma}
@@ -167,31 +141,90 @@ export default function AdminPanel() {
           loading={admin.loading}
         />
 
-        <div style={{ flex: 1, padding: "20px", overflow: "auto" }}>
-          {ayarlarAcik ? (
+        <div style={{ flex: 1, padding: "20px 24px", overflow: "auto" }}>
+          {globalBolum === "sistem" ? (
             <SistemAyarlari hata={admin.hata} basari={admin.basari} />
-          ) : !admin.seciliFirma ? (
+          ) : globalBolum === "hbstore" || globalBolum === "eclubstore" ? (
+            // M2-b'de doldurulur: kopuk store panelleri buraya taşınacak.
             <p style={{ fontSize: "13px", color: "#737373" }}>
-              Soldan bir firma seçin.
+              {globalBolum === "hbstore" ? "HBStore" : "E-Club Store"} yönetimi bu bölüme taşınıyor (M2-b).
             </p>
+          ) : !f ? (
+            <p style={{ fontSize: "13px", color: "#737373" }}>Soldan bir firma seçin.</p>
           ) : (
             <>
               <h2 style={{ fontSize: "16px", fontWeight: 700, color: "#111", marginBottom: "16px" }}>
-                {admin.seciliFirma.firma_adi}
+                {f.firma_adi}
               </h2>
 
-              <SekmeBari girisSecimi={admin.girisSecimi} setGirisSecimi={admin.setGirisSecimi} />
+              <ModulSekmeBari
+                seciliSekme={seciliSekme}
+                setSeciliSekme={handleSekmeSec}
+                kapaliModuller={kapaliModuller}
+              />
 
-              {admin.girisSecimi === "tekil" && (
-                <TekilGirisFormu takimlar={admin.takimlar} {...tekil} />
-              )}
-              {admin.girisSecimi === "toplu" && <TopluGirisFormu {...toplu} />}
-              {admin.girisSecimi === "takim" && <TakimBolgeFormu {...takimBolge} />}
-              {admin.girisSecimi === "urun" && (
-                <UrunTeknikYonetimi takimlar={admin.takimlar} {...urunTeknik} />
+              {seciliSekme === "kullanicilar" && (
+                <>
+                  <SekmeBari
+                    girisSecimi={admin.girisSecimi}
+                    setGirisSecimi={admin.setGirisSecimi}
+                    secenekler={["tekil", "toplu"]}
+                  />
+                  {admin.girisSecimi === "tekil" && (
+                    <TekilGirisFormu takimlar={admin.takimlar} {...tekil} />
+                  )}
+                  {admin.girisSecimi === "toplu" && <TopluGirisFormu {...toplu} />}
+                  <KullaniciListesi {...kullaniciListesi} />
+                </>
               )}
 
-              <KullaniciListesi {...kullaniciListesi} />
+              {seciliSekme === "yapi" && (
+                <>
+                  <SekmeBari
+                    girisSecimi={admin.girisSecimi}
+                    setGirisSecimi={admin.setGirisSecimi}
+                    secenekler={["takim", "urun"]}
+                  />
+                  {admin.girisSecimi === "takim" && <TakimBolgeFormu {...takimBolge} />}
+                  {admin.girisSecimi === "urun" && (
+                    <UrunTeknikYonetimi takimlar={admin.takimlar} {...urunTeknik} />
+                  )}
+                </>
+              )}
+
+              {seciliSekme === "tclub" && (
+                <ModulDurumKarti
+                  baslik="T-Club"
+                  acik={null}
+                  aciklama="Temsilcilerin sürekli öğrenme modülü — üretim hattı, yayınlar, izleme ve puan akışları. Ana modüldür; firma bazında kapatılmaz."
+                />
+              )}
+
+              {seciliSekme === "cclub" && (
+                <ModulDurumKarti
+                  baslik="C-Club (Challenge Club)"
+                  acik={f.cc_aktif}
+                  onToggle={() => admin.handleCcToggle(f)}
+                  aciklama="Değişim liderlerinin modülü — challenge akışları ve CC ligi. Kapalıyken bu firmanın hiçbir kullanıcısı C-Club'a erişemez."
+                />
+              )}
+
+              {seciliSekme === "eclub" && (
+                <ModulDurumKarti
+                  baslik="E-Club"
+                  acik={f.eclub_aktif}
+                  onToggle={() => admin.handleEclubToggle(f)}
+                  aciklama="Eczanelere özel tanıtım modülü — eczane onayları, kayıtlı eczane/kişi yönetimi ve öneri akışları. Eczane onay/kayıt paneli M2-b'de bu sekmeye taşınacak."
+                />
+              )}
+
+              {seciliSekme === "eczanem" && (
+                <ModulDurumKarti
+                  baslik="Eczanem"
+                  acik={null}
+                  aciklama="Eczanenin danışanlarının bilgilenme modülü — gönderimler, üyeler, siparişler ve tarifeler. Firma bayrağı (eczanem_aktif) admin yönetimine M4'te bağlanacak."
+                />
+              )}
             </>
           )}
         </div>

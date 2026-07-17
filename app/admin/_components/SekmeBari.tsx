@@ -9,6 +9,9 @@ import type { GirisSecimi } from "../_types";
 interface SekmeBariProps {
   girisSecimi: GirisSecimi;
   setGirisSecimi: (v: GirisSecimi) => void;
+  // M2: üst modül sekmesi hangi alt-sekmeleri gösterecek?
+  // (Kullanıcılar → tekil/toplu, Yapı → takim/urun). Verilmezse tümü.
+  secenekler?: GirisSecimi[];
 }
 
 const SEKMELER: { id: GirisSecimi; etiket: string }[] = [
@@ -18,10 +21,11 @@ const SEKMELER: { id: GirisSecimi; etiket: string }[] = [
   { id: "urun", etiket: "Ürün / Teknik" },
 ];
 
-export default function SekmeBari({ girisSecimi, setGirisSecimi }: SekmeBariProps) {
+export default function SekmeBari({ girisSecimi, setGirisSecimi, secenekler }: SekmeBariProps) {
+  const gosterilecekler = secenekler ? SEKMELER.filter(s => secenekler.includes(s.id)) : SEKMELER;
   return (
     <div style={{ display: "flex", gap: "4px", marginBottom: "20px", borderBottom: "0.5px solid #e5e7eb" }}>
-      {SEKMELER.map(s => (
+      {gosterilecekler.map(s => (
         <button
           key={s.id}
           onClick={() => setGirisSecimi(s.id)}
