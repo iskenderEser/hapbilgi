@@ -31,6 +31,9 @@ import UrunTeknikYonetimi from "./_components/UrunTeknikYonetimi";
 import KullaniciListesi from "./_components/KullaniciListesi";
 import SistemAyarlari from "./_components/SistemAyarlari";
 import TestVeriSilModal from "./_components/TestVeriSilModal";
+import HbStorePaneli from "./_components/global/HbStorePaneli";
+import EclubStorePaneli from "./_components/global/EclubStorePaneli";
+import EclubYonetimPaneli from "./eclub/_components/EclubYonetimPaneli";
 
 import type { GlobalBolumId, ModulSekmeId } from "./_constants";
 
@@ -144,11 +147,10 @@ export default function AdminPanel() {
         <div style={{ flex: 1, padding: "20px 24px", overflow: "auto" }}>
           {globalBolum === "sistem" ? (
             <SistemAyarlari hata={admin.hata} basari={admin.basari} />
-          ) : globalBolum === "hbstore" || globalBolum === "eclubstore" ? (
-            // M2-b'de doldurulur: kopuk store panelleri buraya taşınacak.
-            <p style={{ fontSize: "13px", color: "#737373" }}>
-              {globalBolum === "hbstore" ? "HBStore" : "E-Club Store"} yönetimi bu bölüme taşınıyor (M2-b).
-            </p>
+          ) : globalBolum === "hbstore" ? (
+            <HbStorePaneli hata={admin.hata} basari={admin.basari} />
+          ) : globalBolum === "eclubstore" ? (
+            <EclubStorePaneli hata={admin.hata} basari={admin.basari} />
           ) : !f ? (
             <p style={{ fontSize: "13px", color: "#737373" }}>Soldan bir firma seçin.</p>
           ) : (
@@ -210,12 +212,16 @@ export default function AdminPanel() {
               )}
 
               {seciliSekme === "eclub" && (
-                <ModulDurumKarti
-                  baslik="E-Club"
-                  acik={f.eclub_aktif}
-                  onToggle={() => admin.handleEclubToggle(f)}
-                  aciklama="Eczanelere özel tanıtım modülü — eczane onayları, kayıtlı eczane/kişi yönetimi ve öneri akışları. Eczane onay/kayıt paneli M2-b'de bu sekmeye taşınacak."
-                />
+                <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                  <ModulDurumKarti
+                    baslik="E-Club"
+                    acik={f.eclub_aktif}
+                    onToggle={() => admin.handleEclubToggle(f)}
+                    aciklama="Eczanelere özel tanıtım modülü — eczane onayları, kayıtlı eczane/kişi yönetimi ve öneri akışları."
+                    m4NotuGoster={false}
+                  />
+                  <EclubYonetimPaneli hata={admin.hata} basari={admin.basari} />
+                </div>
               )}
 
               {seciliSekme === "eczanem" && (

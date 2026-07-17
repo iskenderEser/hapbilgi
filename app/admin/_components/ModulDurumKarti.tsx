@@ -18,6 +18,9 @@ interface ModulDurumKartiProps {
   acik: boolean | null;
   toggleLoading?: boolean;
   onToggle?: () => void;
+  // İçeriği henüz M4'te gelecek sekmelerde true (varsayılan); içerik
+  // taşınmış sekmelerde (E-Club) false — not gösterilmez.
+  m4NotuGoster?: boolean;
 }
 
 export default function ModulDurumKarti(p: ModulDurumKartiProps) {
@@ -77,10 +80,12 @@ export default function ModulDurumKarti(p: ModulDurumKartiProps) {
         {p.aciklama}
       </p>
 
-      <p style={{ fontSize: "12px", color: "#9ca3af", margin: "12px 0 0 0" }}>
-        Bu modülün içerik görünümü ve müdahale araçları M4 fazında bu sekmeye eklenecek
-        (admin_modernizasyon_is_plani.md — B.3).
-      </p>
+      {(p.m4NotuGoster ?? true) && (
+        <p style={{ fontSize: "12px", color: "#9ca3af", margin: "12px 0 0 0" }}>
+          Bu modülün içerik görünümü ve müdahale araçları M4 fazında bu sekmeye eklenecek
+          (admin_modernizasyon_is_plani.md — B.3).
+        </p>
+      )}
     </div>
   );
 }
