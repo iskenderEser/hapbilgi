@@ -173,3 +173,83 @@ export function kullaniciSatirDogrula(
 
   return { ok: true, kayit: { ad, soyad, eposta, sifre, rol, takim_id, bolge_id } };
 }
+
+// ─── Rol geçişi (B-23) ──────────────────────────────────────────────────────
+
+export interface RolGecisiGirdisi {
+  mevcut_takim_id: string | null;
+  mevcut_bolge_id: string | null;
+  takim_id?: unknown;
+  takim_adi?: unknown;
+  bolge_id?: unknown;
+  bolge_adi?: unknown;
+}
+
+export type RolGecisiSonucu =
+  | { ok: true; takim_id: string | null; bolge_id: string | null }
+  | { ok: false; hata: string; alanlar?: string[] };
+
+/**
+ * Rol DEĞİŞİRKEN takım/bölge tutarlılığını çözer (B-23): yeni rolün
+ * zorunlulukları uygulanır — eski role ait alanlar üstünde kalmaz.
+ * Öncelik: istekle gelen takım/bölge > kullanıcının mevcut değeri.
+ * Yeni rol için zorunlu alan hiçbir kaynaktan bulunamazsa geçiş reddedilir.
+ */
+export function rolGecisiCoz(
+  yapi: FirmaYapisi,
+  yeniRol: string,
+  g: RolGecisiGirdisi
+): RolGecisiSonucu {
+  const takimIdGirdi = metinAl(g.takim_id);
+  const takimAdiGirdi = metinAl(g.takim_adi);
+  const bolgeIdGirdi = metinAl(g.bolge_id);
+  const bolgeAdiGirdi = metinAl(g.bolge_adi);
+
+  const takimSec = (): { ok: boolean; takim_id?: string; hata?: string } => {
+    if (takimIdGirdi || takimAdiGirdi) {
+      const t = takimIdGirdi
+        ? yapi.takimlar.find((x) => x.takim_id === takimIdGirdi)
+        : yapi.takimlar.find((x) => x.takim_adi.toLowerCase() === takimAdiGirdi.toLowerCase());
+      return t ? { ok: true, takim_id: t.takim_id } : { ok: false, hata: "Takım bu firmada bulunamadı." };
+    }
+    if (g.mevcut_takim_id) return { ok: true, takim_id: g.mevcut_takim_id };
+    return { ok: false };
+  };
+
+  const bolgeSec = (): { ok: boolean; bolge_id?: string; takim_id?: string; hata?: string } => {
+    if (bolgeIdGirdi || bolgeAdiGirdi) {
+      const b = bolgeIdGirdi
+        ? yapi.bolgeler.find((x) => x.bolge_id === bolgeIdGirdi)
+        : yapi.bolgeler.find((x) => x.bolge_adi.toLowerCase() === bolgeAdiGirdi.toLowerCase());
+      return b ? { ok: true, bolge_id: b.bolge_id, takim_id: b.takim_id } : { ok: false, hata: "Bölge bu firmada bulunamadı." };
+    }
+    if (g.mevcut_bolge_id) {
+      const b = yapi.bolgeler.find((x) => x.bolge_id === g.mevcut_bolge_id);
+      if (b) return { ok: true, bolge_id: b.bolge_id, takim_id: b.takim_id };
+    }
+    return { ok: false };
+  };
+
+  const yetenek = ureticiYetenegi(yeniRol);
+
+  if (yetenek) {
+    const t = takimSec();
+    if (yetenek.takimZorunlu) {
+      if (!t.ok) return { ok: false, hata: t.hata ?? `${yeniRol} rolü için takım zorunludur; takım belirtin.`, alanlar: ["takim_id"] };
+      return { ok: true, takim_id: t.takim_id!, bolge_id: null };
+    }
+    return { ok: true, takim_id: t.ok ? t.takim_id! : null, bolge_id: null };
+  }
+  if (yeniRol === "tm") {
+    const t = takimSec();
+    if (!t.ok) return { ok: false, hata: t.hata ?? "tm rolü için takım zorunludur; takım belirtin.", alanlar: ["takim_id"] };
+    return { ok: true, takim_id: t.takim_id!, bolge_id: null };
+  }
+  if (yeniRol === "bm" || TUKETICI_ROLLER.includes(yeniRol)) {
+    const b = bolgeSec();
+    if (!b.ok) return { ok: false, hata: b.hata ?? `${yeniRol} rolü için bölge zorunludur; bölge belirtin.`, alanlar: ["bolge_id"] };
+    return { ok: true, takim_id: b.takim_id!, bolge_id: b.bolge_id! };
+  }
+  // Yönetici/admin/İU sınıfı: takım-bölge taşınmaz.
+  return { ok: true, takim_id: null, bolge_id: null };
+}

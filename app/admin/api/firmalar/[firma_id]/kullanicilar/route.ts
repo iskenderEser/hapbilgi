@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { TUM_ROLLER } from "@/lib/utils/roller";
-import { firmaYapisiYukle, kullaniciSatirDogrula } from "@/lib/admin/kullaniciDogrulama";
+import { firmaYapisiYukle, kullaniciSatirDogrula, rolGecisiCoz } from "@/lib/admin/kullaniciDogrulama";
 
 export async function GET(
   request: NextRequest,
@@ -151,7 +151,7 @@ export async function PUT(
 
     const { data: kullanici, error: kullaniciError } = await adminSupabase
       .from("kullanicilar")
-      .select("kullanici_id")
+      .select("kullanici_id, rol, takim_id, bolge_id")
       .eq("kullanici_id", kullanici_id)
       .eq("firma_id", firma_id)
       .single();
@@ -160,13 +160,33 @@ export async function PUT(
     if (!kullaniciKontrol.gecerli) return kullaniciKontrol.yanit;
     if (kullaniciError) return hataYaniti("Kullanıcı sorgulanırken hata oluştu.", "kullanicilar tablosu SELECT", kullaniciError, 404);
 
+    const guncellenecek: Record<string, unknown> = {};
+
     if (rol !== undefined) {
+      // B-23: rol tipi doğrulanır; rol değişiminde takım/bölge tutarlılığı
+      // yeni rolün kurallarıyla (tek kaynak: lib/admin/kullaniciDogrulama) çözülür.
+      if (typeof rol !== "string") return validasyonHatasi("Geçersiz rol.", ["rol"]);
       const rolTemiz = rol.trim().toLowerCase();
       if (!TUM_ROLLER.includes(rolTemiz)) return validasyonHatasi("Geçersiz rol.", ["rol"]);
+
+      const yapiSonuc = await firmaYapisiYukle(adminSupabase, firma_id);
+      if (!yapiSonuc.ok) return hataYaniti(yapiSonuc.hata, "firmaYapisiYukle — rol geçişi", null);
+
+      const gecis = rolGecisiCoz(yapiSonuc.yapi, rolTemiz, {
+        mevcut_takim_id: kullanici!.takim_id ?? null,
+        mevcut_bolge_id: kullanici!.bolge_id ?? null,
+        takim_id: body.takim_id,
+        takim_adi: body.takim_adi,
+        bolge_id: body.bolge_id,
+        bolge_adi: body.bolge_adi,
+      });
+      if (!gecis.ok) return validasyonHatasi(gecis.hata, gecis.alanlar);
+
+      guncellenecek.rol = rolTemiz;
+      guncellenecek.takim_id = gecis.takim_id;
+      guncellenecek.bolge_id = gecis.bolge_id;
     }
 
-    const guncellenecek: Record<string, unknown> = {};
-    if (rol !== undefined) guncellenecek.rol = rol.trim().toLowerCase();
     if (aktif_mi !== undefined) guncellenecek.aktif_mi = aktif_mi;
     if (yetki_kullanici_yonetim !== undefined) guncellenecek.yetki_kullanici_yonetim = yetki_kullanici_yonetim;
     if (yetki_aktif_pasif !== undefined) guncellenecek.yetki_aktif_pasif = yetki_aktif_pasif;
