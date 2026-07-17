@@ -34,22 +34,34 @@ export function useAdminPanel() {
   }, [kullanici, yukleniyor]);
 
   const firmalariCek = async () => {
+    try {
     setLoading(true);
     const res = await fetch("/admin/api/firmalar");
     const data = await res.json();
     if (!res.ok) { hata(data.hata ?? "Firmalar yüklenemedi.", data.adim, data.detay); }
     else { setFirmalar(data.firmalar ?? []); }
-    setLoading(false);
+    } catch (err) {
+      // B-32: ağ hatasında sessiz çökme yok — kullanıcı bilgilendirilir.
+      hata("Firmalar yüklenemedi — bağlantı hatası.", "firmalariCek", String(err));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const kullanicilariCek = async (firma_id: string) => {
+    try {
     const res = await fetch(`/admin/api/firmalar/${firma_id}/kullanicilar`);
     const data = await res.json();
     if (!res.ok) { hata(data.hata ?? "Kullanıcılar yüklenemedi.", data.adim, data.detay); }
     else { setKullanicilar(data.kullanicilar ?? []); }
+    } catch (err) {
+      // B-32: ağ hatasında sessiz çökme yok — kullanıcı bilgilendirilir.
+      hata("Kullanıcılar yüklenemedi — bağlantı hatası.", "kullanicilariCek", String(err));
+    }
   };
 
   const takimlariCek = async (firma_id: string) => {
+    try {
     const res = await fetch(`/admin/api/firmalar/${firma_id}/takimlar`);
     const data = await res.json();
     if (!res.ok) { hata(data.hata ?? "Takımlar yüklenemedi.", data.adim, data.detay); return; }
@@ -61,9 +73,14 @@ export function useAdminPanel() {
       })
     );
     setTakimlar(takimListesi);
+    } catch (err) {
+      // B-32: ağ hatasında sessiz çökme yok — kullanıcı bilgilendirilir.
+      hata("Takımlar yüklenemedi — bağlantı hatası.", "takimlariCek", String(err));
+    }
   };
 
   const handleFirmaEkle = async (e: React.FormEvent) => {
+    try {
     e.preventDefault();
     if (!yeniFirmaAdi.trim()) return;
     const res = await fetch("/admin/api/firmalar", {
@@ -74,6 +91,10 @@ export function useAdminPanel() {
     const data = await res.json();
     if (!res.ok) { hata(data.hata ?? "Firma eklenemedi.", data.adim, data.detay); }
     else { basari("Ekleme başarılı."); setYeniFirmaAdi(""); firmalariCek(); }
+    } catch (err) {
+      // B-32: ağ hatasında sessiz çökme yok — kullanıcı bilgilendirilir.
+      hata("Firma eklenemedi — bağlantı hatası.", "handleFirmaEkle", String(err));
+    }
   };
 
   const handleFirmaSecildi = (f: Firma) => {
@@ -85,6 +106,7 @@ export function useAdminPanel() {
 
   // Firmanın HBStore mağazasını aç/kapat (PATCH /admin/api/firmalar/[firma_id])
   const handleStoreToggle = async (f: Firma) => {
+    try {
     const yeniDurum = !f.hbstore_aktif;
     const res = await fetch(`/admin/api/firmalar/${f.firma_id}`, {
       method: "PATCH",
@@ -104,11 +126,16 @@ export function useAdminPanel() {
     setSeciliFirma(prev =>
       prev && prev.firma_id === f.firma_id ? { ...prev, hbstore_aktif: yeniDurum } : prev
     );
+    } catch (err) {
+      // B-32: ağ hatasında sessiz çökme yok — kullanıcı bilgilendirilir.
+      hata("Mağaza durumu güncellenemedi — bağlantı hatası.", "handleStoreToggle", String(err));
+    }
   };
 
   // Firmanın Challenge Club erişimini aç/kapat (PATCH /admin/api/firmalar/[firma_id])
   // Kapalı firmada o firmanın hiçbir kullanıcısı CC'ye erişemez (proxy.ts bekçisi).
   const handleCcToggle = async (f: Firma) => {
+    try {
     const yeniDurum = !f.cc_aktif;
     const res = await fetch(`/admin/api/firmalar/${f.firma_id}`, {
       method: "PATCH",
@@ -127,9 +154,14 @@ export function useAdminPanel() {
     setSeciliFirma(prev =>
       prev && prev.firma_id === f.firma_id ? { ...prev, cc_aktif: yeniDurum } : prev
     );
+    } catch (err) {
+      // B-32: ağ hatasında sessiz çökme yok — kullanıcı bilgilendirilir.
+      hata("Challenge Club durumu güncellenemedi — bağlantı hatası.", "handleCcToggle", String(err));
+    }
   };
 
   const handleEclubToggle = async (f: Firma) => {
+    try {
     const yeniDurum = !f.eclub_aktif;
     const res = await fetch(`/admin/api/firmalar/${f.firma_id}`, {
       method: "PATCH",
@@ -148,9 +180,14 @@ export function useAdminPanel() {
     setSeciliFirma(prev =>
       prev && prev.firma_id === f.firma_id ? { ...prev, eclub_aktif: yeniDurum } : prev
     );
+    } catch (err) {
+      // B-32: ağ hatasında sessiz çökme yok — kullanıcı bilgilendirilir.
+      hata("E-Club durumu güncellenemedi — bağlantı hatası.", "handleEclubToggle", String(err));
+    }
   };
 
   const handleEclubStoreToggle = async (f: Firma) => {
+    try {
     const yeniDurum = !f.eclub_store_aktif;
     const res = await fetch(`/admin/api/firmalar/${f.firma_id}`, {
       method: "PATCH",
@@ -169,11 +206,16 @@ export function useAdminPanel() {
     setSeciliFirma(prev =>
       prev && prev.firma_id === f.firma_id ? { ...prev, eclub_store_aktif: yeniDurum } : prev
     );
+    } catch (err) {
+      // B-32: ağ hatasında sessiz çökme yok — kullanıcı bilgilendirilir.
+      hata("E-Club Store durumu güncellenemedi — bağlantı hatası.", "handleEclubStoreToggle", String(err));
+    }
   };
 
   // Firmanın aktif/pasif durumunu değiştir (PATCH /admin/api/firmalar/[firma_id])
   // Pasif firma → o firmanın tüm kullanıcıları giriş yapamaz (login kontrolü).
   const handleFirmaToggle = async (f: Firma) => {
+    try {
     const yeniDurum = !f.aktif;
     const res = await fetch(`/admin/api/firmalar/${f.firma_id}`, {
       method: "PATCH",
@@ -192,6 +234,10 @@ export function useAdminPanel() {
     setSeciliFirma(prev =>
       prev && prev.firma_id === f.firma_id ? { ...prev, aktif: yeniDurum } : prev
     );
+    } catch (err) {
+      // B-32: ağ hatasında sessiz çökme yok — kullanıcı bilgilendirilir.
+      hata("Firma durumu güncellenemedi — bağlantı hatası.", "handleFirmaToggle", String(err));
+    }
   };
 
   // Firmanın verilerini Excel olarak dışa aktar.
@@ -231,6 +277,7 @@ export function useAdminPanel() {
   // Başarısızsa (örn. export edilmemiş) hata mesajı gösterilir; çağıran taraf
   // dönüş değerine göre modal/uyarı yönetebilir.
   const handleFirmaSil = async (f: Firma): Promise<boolean> => {
+    try {
     const res = await fetch(`/admin/api/firmalar/${f.firma_id}`, {
       method: "DELETE",
     });
@@ -243,6 +290,11 @@ export function useAdminPanel() {
     setFirmalar(prev => prev.filter(x => x.firma_id !== f.firma_id));
     setSeciliFirma(prev => (prev && prev.firma_id === f.firma_id ? null : prev));
     return true;
+    } catch (err) {
+      // B-32: ağ hatasında sessiz çökme yok — kullanıcı bilgilendirilir.
+      hata("Firma silinemedi — bağlantı hatası.", "handleFirmaSil", String(err));
+      return false;
+    }
   };
 
   // YENİ: firmalar yüklenince admin'in kendi firmasını otomatik seç

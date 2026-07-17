@@ -40,49 +40,64 @@ export function useTopluForm({ seciliFirma, refreshKullanicilar, hata, basari }:
 
   const handleDosyaSec = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const dosya = e.target.files?.[0] ?? null;
+    // B-32: input değeri sıfırlanır — düzeltilen dosya AYNI adla yeniden
+    // seçildiğinde de onChange tetiklenir.
+    e.target.value = "";
     setTopluDosya(dosya);
     setOnizlemeSatirlari(null);
+    setKaydetSonucu(null);
     if (!dosya || !seciliFirma) return;
     setOnizlemeLoading(true);
-    const formData = new FormData();
-    formData.append("dosya", dosya);
-    formData.append("mod", "onizle");
-    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/toplu-yukle`, { method: "POST", body: formData });
-    const data = await res.json();
-    if (!res.ok) { hata(data.hata ?? "Dosya okunamadı.", data.adim, data.detay); }
-    else { setOnizlemeSatirlari(data.satirlar ?? []); }
-    setOnizlemeLoading(false);
+    try {
+      const formData = new FormData();
+      formData.append("dosya", dosya);
+      formData.append("mod", "onizle");
+      const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/toplu-yukle`, { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) { hata(data.hata ?? "Dosya okunamadı.", data.adim, data.detay); }
+      else { setOnizlemeSatirlari(data.satirlar ?? []); }
+    } catch (err) {
+      // B-32: ağ hatasında yükleme durumu takılı kalmaz.
+      hata("Dosya okunamadı — bağlantı hatası.", "handleDosyaSec", String(err));
+    } finally {
+      setOnizlemeLoading(false);
+    }
   };
 
   const handleTopluKaydet = async () => {
     if (!topluDosya || !seciliFirma) return;
     setTopluKaydetLoading(true);
     setKaydetSonucu(null);
-    const formData = new FormData();
-    formData.append("dosya", topluDosya);
-    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/toplu-yukle`, { method: "POST", body: formData });
-    const data = await res.json();
-    if (!res.ok) { hata(data.hata ?? "Toplu yükleme başarısız.", data.adim, data.detay); }
-    else {
-      // B-17: sonuç OLDUĞU GİBİ raporlanır — kısmi başarısızlık gizlenmez.
-      const sonuc: TopluKaydetSonucu = {
-        basarili: data.basarili ?? 0,
-        hatali: data.hatali ?? 0,
-        hatalar: data.hatalar ?? [],
-      };
-      setKaydetSonucu(sonuc);
-      if (sonuc.hatali === 0) {
-        basari(`${sonuc.basarili} kullanıcı eklendi.`);
-        setTopluDosya(null);
-        setOnizlemeSatirlari(null);
-      } else {
-        // Kısmi başarısızlıkta önizleme ekranda kalır; hatalı satır listesi
-        // kaydetSonucu üzerinden görünür biçimde basılır (TopluGirisFormu).
-        hata(`${sonuc.basarili} kullanıcı eklendi, ${sonuc.hatali} satır eklenemedi.`, "toplu kaydet");
+    try {
+      const formData = new FormData();
+      formData.append("dosya", topluDosya);
+      const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/toplu-yukle`, { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) { hata(data.hata ?? "Toplu yükleme başarısız.", data.adim, data.detay); }
+      else {
+        // B-17: sonuç OLDUĞU GİBİ raporlanır — kısmi başarısızlık gizlenmez.
+        const sonuc: TopluKaydetSonucu = {
+          basarili: data.basarili ?? 0,
+          hatali: data.hatali ?? 0,
+          hatalar: data.hatalar ?? [],
+        };
+        setKaydetSonucu(sonuc);
+        if (sonuc.hatali === 0) {
+          basari(`${sonuc.basarili} kullanıcı eklendi.`);
+          setTopluDosya(null);
+          setOnizlemeSatirlari(null);
+        } else {
+          // Kısmi başarısızlıkta önizleme ekranda kalır; hatalı satır listesi
+          // kaydetSonucu üzerinden görünür biçimde basılır (TopluGirisFormu).
+          hata(`${sonuc.basarili} kullanıcı eklendi, ${sonuc.hatali} satır eklenemedi.`, "toplu kaydet");
+        }
+        refreshKullanicilar();
       }
-      refreshKullanicilar();
+    } catch (err) {
+      hata("Toplu yükleme tamamlanamadı — bağlantı hatası.", "handleTopluKaydet", String(err));
+    } finally {
+      setTopluKaydetLoading(false);
     }
-    setTopluKaydetLoading(false);
   };
 
   const hazirSayisi = onizlemesatirlari?.filter(s => s.durum === "hazir").length ?? 0;

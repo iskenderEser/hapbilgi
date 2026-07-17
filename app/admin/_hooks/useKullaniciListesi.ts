@@ -88,54 +88,75 @@ export function useKullaniciListesi({ seciliFirma, kullanicilar, refreshKullanic
     if (!seciliFirma) return;
     setAcikRolId(null);
     setRolDegistirLoading(kullanici_id);
-    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
-      method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ kullanici_id, rol: yeniRol }),
-    });
-    const data = await res.json();
-    if (!res.ok) { hata(data.hata ?? "Rol güncellenemedi.", data.adim, data.detay); }
-    else { basari("Rol güncellendi."); refreshKullanicilar(); }
-    setRolDegistirLoading(null);
+    try {
+      const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kullanici_id, rol: yeniRol }),
+      });
+      const data = await res.json();
+      if (!res.ok) { hata(data.hata ?? "Rol güncellenemedi.", data.adim, data.detay); }
+      else { basari("Rol güncellendi."); refreshKullanicilar(); }
+    } catch (err) {
+      // B-32: ağ hatasında yükleme durumu takılı kalmaz.
+      hata("Rol güncellenemedi — bağlantı hatası.", "handleRolDegistir", String(err));
+    } finally {
+      setRolDegistirLoading(null);
+    }
   };
 
   const handleAktifToggle = async (kullanici_id: string, mevcutDurum: boolean) => {
     if (!seciliFirma) return;
     setAktifToggleLoading(kullanici_id);
-    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
-      method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ kullanici_id, aktif_mi: !mevcutDurum }),
-    });
-    const data = await res.json();
-    if (!res.ok) { hata(data.hata ?? "Durum güncellenemedi.", data.adim, data.detay); }
-    else { basari(mevcutDurum ? "Pasife alındı." : "Aktif edildi."); refreshKullanicilar(); }
-    setAktifToggleLoading(null);
+    try {
+      const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kullanici_id, aktif_mi: !mevcutDurum }),
+      });
+      const data = await res.json();
+      if (!res.ok) { hata(data.hata ?? "Durum güncellenemedi.", data.adim, data.detay); }
+      else { basari(mevcutDurum ? "Pasife alındı." : "Aktif edildi."); refreshKullanicilar(); }
+    } catch (err) {
+      hata("Durum güncellenemedi — bağlantı hatası.", "handleAktifToggle", String(err));
+    } finally {
+      setAktifToggleLoading(null);
+    }
   };
 
   const handleYetkiDegistir = async (kullanici_id: string, alan: "yetki_kullanici_yonetim" | "yetki_aktif_pasif", mevcutDeger: boolean) => {
     if (!seciliFirma) return;
     setYetkiLoading(kullanici_id + alan);
-    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
-      method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ kullanici_id, [alan]: !mevcutDeger }),
-    });
-    const data = await res.json();
-    if (!res.ok) { hata(data.hata ?? "Yetki güncellenemedi.", data.adim, data.detay); }
-    else { basari(mevcutDeger ? "Yetki kaldırıldı." : "Yetki tanımlandı."); refreshKullanicilar(); }
-    setYetkiLoading(null);
+    try {
+      const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kullanici_id, [alan]: !mevcutDeger }),
+      });
+      const data = await res.json();
+      if (!res.ok) { hata(data.hata ?? "Yetki güncellenemedi.", data.adim, data.detay); }
+      else { basari(mevcutDeger ? "Yetki kaldırıldı." : "Yetki tanımlandı."); refreshKullanicilar(); }
+    } catch (err) {
+      hata("Yetki güncellenemedi — bağlantı hatası.", "handleYetkiDegistir", String(err));
+    } finally {
+      setYetkiLoading(null);
+    }
   };
 
   const handleSil = async (kullanici_id: string) => {
     if (!seciliFirma) return;
     setSilLoading(kullanici_id);
     setSilOnayId(null);
-    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
-      method: "DELETE", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ kullanici_id }),
-    });
-    const data = await res.json();
-    if (!res.ok) { hata(data.hata ?? "Kullanıcı silinemedi.", data.adim, data.detay); }
-    else { basari("Silme işlemi başarılı."); refreshKullanicilar(); }
-    setSilLoading(null);
+    try {
+      const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+        method: "DELETE", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kullanici_id }),
+      });
+      const data = await res.json();
+      if (!res.ok) { hata(data.hata ?? "Kullanıcı silinemedi.", data.adim, data.detay); }
+      else { basari("Silme işlemi başarılı."); refreshKullanicilar(); }
+    } catch (err) {
+      hata("Kullanıcı silinemedi — bağlantı hatası.", "handleSil", String(err));
+    } finally {
+      setSilLoading(null);
+    }
   };
 
   // B-19: toplu işlemler satır yanıtlarını OKUR ve dürüst raporlar —
@@ -148,6 +169,7 @@ export function useKullaniciListesi({ seciliFirma, kullanicilar, refreshKullanic
   ) => {
     if (!seciliFirma || hedefIdler.length === 0) return;
     setTopluIslemLoading(true);
+    try {
     let basarili = 0;
     const hatalar: string[] = [];
     for (const kullanici_id of hedefIdler) {
@@ -175,7 +197,10 @@ export function useKullaniciListesi({ seciliFirma, kullanicilar, refreshKullanic
     }
     setTopluSilOnay(false);
     refreshKullanicilar();
-    setTopluIslemLoading(false);
+    } finally {
+      // B-32: her koşulda yükleme durumu kapanır.
+      setTopluIslemLoading(false);
+    }
   };
 
   const handleTopluPasif = async () => {

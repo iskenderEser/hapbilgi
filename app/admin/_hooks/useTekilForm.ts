@@ -71,21 +71,27 @@ export function useTekilForm({ seciliFirma, takimlar, refreshKullanicilar, hata,
       return;
     }
     setTekilLoading(true);
-    const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ad: tekilAd, soyad: tekilSoyad, rol: tekilRol, eposta: tekilEposta, sifre: tekilSifre,
-        takim_id: tekilTakimId || undefined, takim_adi: tekilTakimAdi || undefined,
-        bolge_id: tekilBolgeId || undefined, bolge_adi: tekilBolgeAdi || undefined,
-        yetki_kullanici_yonetim: tekilYetkiKullanici,
-        yetki_aktif_pasif: tekilYetkiAktifPasif,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) { hata(data.hata ?? "Kullanıcı eklenemedi.", data.adim, data.detay); }
-    else { basari("Ekleme başarılı."); sifirlaTekilForm(); refreshKullanicilar(); }
-    setTekilLoading(false);
+    try {
+      const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ad: tekilAd, soyad: tekilSoyad, rol: tekilRol, eposta: tekilEposta, sifre: tekilSifre,
+          takim_id: tekilTakimId || undefined, takim_adi: tekilTakimAdi || undefined,
+          bolge_id: tekilBolgeId || undefined, bolge_adi: tekilBolgeAdi || undefined,
+          yetki_kullanici_yonetim: tekilYetkiKullanici,
+          yetki_aktif_pasif: tekilYetkiAktifPasif,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { hata(data.hata ?? "Kullanıcı eklenemedi.", data.adim, data.detay); }
+      else { basari("Ekleme başarılı."); sifirlaTekilForm(); refreshKullanicilar(); }
+    } catch (err) {
+      // B-32: ağ hatasında yükleme durumu takılı kalmaz.
+      hata("Kullanıcı eklenemedi — bağlantı hatası.", "handleTekilKaydet", String(err));
+    } finally {
+      setTekilLoading(false);
+    }
   };
 
   return {
