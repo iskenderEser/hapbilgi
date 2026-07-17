@@ -138,38 +138,74 @@ export function useKullaniciListesi({ seciliFirma, kullanicilar, refreshKullanic
     setSilLoading(null);
   };
 
-  const handleTopluPasif = async () => {
-    if (!seciliFirma || seciliKullanicilar.size === 0) return;
+  // B-19: toplu işlemler satır yanıtlarını OKUR ve dürüst raporlar —
+  // kısmi başarısızlıkta hangi kullanıcıda ne hata olduğu söylenir.
+  const topluIslemKos = async (
+    hedefIdler: string[],
+    istek: (kullanici_id: string) => Promise<Response>,
+    basariMesaji: (adet: number) => string,
+    hataBasligi: string
+  ) => {
+    if (!seciliFirma || hedefIdler.length === 0) return;
     setTopluIslemLoading(true);
-    for (const kullanici_id of Array.from(seciliKullanicilar)) {
+    let basarili = 0;
+    const hatalar: string[] = [];
+    for (const kullanici_id of hedefIdler) {
       const k = kullanicilar.find(x => x.kullanici_id === kullanici_id);
-      if (!k || !k.aktif_mi) continue;
-      await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
-        method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kullanici_id, aktif_mi: false }),
-      });
+      const kimlik = k ? `${k.ad} ${k.soyad}` : kullanici_id;
+      try {
+        const res = await istek(kullanici_id);
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) basarili++;
+        else hatalar.push(`${kimlik}: ${data.hata ?? "işlem başarısız"}`);
+      } catch {
+        hatalar.push(`${kimlik}: ağ hatası`);
+      }
     }
-    basari("Pasife alındı.");
-    setSeciliKullanicilar(new Set());
+    if (hatalar.length === 0) {
+      basari(basariMesaji(basarili));
+      setSeciliKullanicilar(new Set());
+    } else {
+      // Başarısız kalanlar seçili bırakılır — admin görebilsin/yeniden deneyebilsin.
+      hata(`${hataBasligi}: ${basarili} başarılı, ${hatalar.length} başarısız.`, "toplu işlem", hatalar.join(" | "));
+      setSeciliKullanicilar(new Set(hedefIdler.filter(id => hatalar.some(h => {
+        const k = kullanicilar.find(x => x.kullanici_id === id);
+        return h.startsWith(k ? `${k.ad} ${k.soyad}` : id);
+      }))));
+    }
     setTopluSilOnay(false);
     refreshKullanicilar();
     setTopluIslemLoading(false);
   };
 
+  const handleTopluPasif = async () => {
+    if (!seciliFirma) return;
+    const hedefler = Array.from(seciliKullanicilar).filter(id => {
+      const k = kullanicilar.find(x => x.kullanici_id === id);
+      return k && k.aktif_mi;
+    });
+    await topluIslemKos(
+      hedefler,
+      (kullanici_id) => fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kullanici_id, aktif_mi: false }),
+      }),
+      (adet) => `${adet} kullanıcı pasife alındı.`,
+      "Pasife alma"
+    );
+  };
+
   const handleTopluSil = async () => {
-    if (!seciliFirma || seciliKullanicilar.size === 0) return;
-    setTopluIslemLoading(true);
-    for (const kullanici_id of Array.from(seciliKullanicilar)) {
-      await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+    if (!seciliFirma) return;
+    await topluIslemKos(
+      Array.from(seciliKullanicilar),
+      (kullanici_id) => fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
         method: "DELETE", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ kullanici_id }),
-      });
-    }
-    basari("Silme işlemi başarılı.");
-    setSeciliKullanicilar(new Set());
-    setTopluSilOnay(false);
-    refreshKullanicilar();
-    setTopluIslemLoading(false);
+      }),
+      (adet) => `${adet} kullanıcı silindi.`,
+      "Silme"
+    );
   };
 
   const toggleSecim = (kullanici_id: string, secildi: boolean) => {
