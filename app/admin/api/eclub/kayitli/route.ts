@@ -10,18 +10,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, validasyonHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 
-async function adminKontrol(supabase: SupabaseClient, adminSupabase: SupabaseClient): Promise<NextResponse | null> {
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return yetkiHatasi();
-  const { data: kullanici, error } = await adminSupabase
-    .from("kullanicilar")
-    .select("rol")
-    .eq("kullanici_id", user.id)
-    .single();
-  if (error || !kullanici) return hataYaniti("Kullanıcı sorgulanamadı.", "kullanicilar SELECT", error, 404);
-  if ((kullanici.rol ?? "").toLowerCase() !== "admin") return rolHatasi("Bu işlem yalnız admin tarafından yapılabilir.");
-  return null;
+async function adminKontrol(_supabase: SupabaseClient, _adminSupabase: SupabaseClient): Promise<NextResponse | null> {
+  // B-26: tek bekçi — adminGirisKontrol (yerel kopya kaldırıldı).
+  const kontrol = await adminGirisKontrol();
+  return kontrol.gecerli ? null : kontrol.yanit;
 }
 
 export async function GET(request: NextRequest) {

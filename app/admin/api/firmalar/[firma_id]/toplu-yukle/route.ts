@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { firmaYapisiYukle, kullaniciSatirDogrula } from "@/lib/admin/kullaniciDogrulama";
+import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 import * as XLSX from "xlsx";
 
 export async function POST(
@@ -10,6 +11,9 @@ export async function POST(
   { params }: { params: Promise<{ firma_id: string }> }
 ) {
   try {
+    const kontrol = await adminGirisKontrol();
+    if (!kontrol.gecerli) return kontrol.yanit;
+
     const { firma_id } = await params;
     if (!firma_id) return validasyonHatasi("firma_id zorunludur.", ["firma_id"]);
 

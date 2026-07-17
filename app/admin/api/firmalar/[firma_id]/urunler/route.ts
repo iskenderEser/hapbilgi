@@ -2,12 +2,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
+import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ firma_id: string }> }
 ) {
   try {
+    const girisKontrolu = await adminGirisKontrol();
+    if (!girisKontrolu.gecerli) return girisKontrolu.yanit;
+
     const { firma_id } = await params;
     if (!firma_id) return validasyonHatasi("firma_id zorunludur.", ["firma_id"]);
 
@@ -39,6 +43,9 @@ export async function POST(
   { params }: { params: Promise<{ firma_id: string }> }
 ) {
   try {
+    const girisKontrolu = await adminGirisKontrol();
+    if (!girisKontrolu.gecerli) return girisKontrolu.yanit;
+
     const { firma_id } = await params;
     if (!firma_id) return validasyonHatasi("firma_id zorunludur.", ["firma_id"]);
 
@@ -97,6 +104,9 @@ export async function DELETE(
   { params }: { params: Promise<{ firma_id: string }> }
 ) {
   try {
+    const girisKontrolu = await adminGirisKontrol();
+    if (!girisKontrolu.gecerli) return girisKontrolu.yanit;
+
     const { firma_id } = await params;
     if (!firma_id) return validasyonHatasi("firma_id zorunludur.", ["firma_id"]);
 

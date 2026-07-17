@@ -4,12 +4,16 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { TUM_ROLLER } from "@/lib/utils/roller";
 import { firmaYapisiYukle, kullaniciSatirDogrula, rolGecisiCoz } from "@/lib/admin/kullaniciDogrulama";
+import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ firma_id: string }> }
 ) {
   try {
+    const kontrol = await adminGirisKontrol();
+    if (!kontrol.gecerli) return kontrol.yanit;
+
     const { firma_id } = await params;
     if (!firma_id) return validasyonHatasi("firma_id zorunludur.", ["firma_id"]);
 
@@ -69,6 +73,9 @@ export async function POST(
   { params }: { params: Promise<{ firma_id: string }> }
 ) {
   try {
+    const kontrol = await adminGirisKontrol();
+    if (!kontrol.gecerli) return kontrol.yanit;
+
     const { firma_id } = await params;
     if (!firma_id) return validasyonHatasi("firma_id zorunludur.", ["firma_id"]);
 
@@ -138,6 +145,9 @@ export async function PUT(
   { params }: { params: Promise<{ firma_id: string }> }
 ) {
   try {
+    const kontrol = await adminGirisKontrol();
+    if (!kontrol.gecerli) return kontrol.yanit;
+
     const { firma_id } = await params;
     if (!firma_id) return validasyonHatasi("firma_id zorunludur.", ["firma_id"]);
 
@@ -211,6 +221,9 @@ export async function DELETE(
   { params }: { params: Promise<{ firma_id: string }> }
 ) {
   try {
+    const kontrol = await adminGirisKontrol();
+    if (!kontrol.gecerli) return kontrol.yanit;
+
     const { firma_id } = await params;
     if (!firma_id) return validasyonHatasi("firma_id zorunludur.", ["firma_id"]);
 

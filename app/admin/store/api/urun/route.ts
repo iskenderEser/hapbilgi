@@ -27,21 +27,17 @@ import {
 import { ADMIN_ROLLER } from "@/lib/utils/roller";
 import { gorselSil, urlDenYolCikar } from "@/lib/store/storage";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 
 // ─── Yardımcı: admin yetki kontrolü ──────────────────────────────────────────
 
-async function yetkiAl(request: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return { hata: yetkiHatasi() };
-
-  const adminSupabase = createAdminClient();
-  const rol = await rolCozucu(adminSupabase, user.id);
-  if (!ADMIN_ROLLER.includes(rol)) {
-    return { hata: rolHatasi("Bu işleme yalnızca admin erişebilir.") };
+async function yetkiAl(_request: NextRequest) {
+  // B-26: tek bekçi — adminGirisKontrol (yerel kopya kaldırıldı).
+  const kontrol = await adminGirisKontrol();
+  if (!kontrol.gecerli) {
+    return { hata: kontrol.yanit, user: undefined, rol: undefined, adminSupabase: undefined };
   }
-
-  return { user, rol, adminSupabase };
+  return { hata: undefined, user: { id: kontrol.kullaniciId }, rol: kontrol.rol, adminSupabase: createAdminClient() };
 }
 
 // ─── GET ─────────────────────────────────────────────────────────────────────

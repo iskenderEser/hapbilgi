@@ -24,12 +24,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sunucuHatasi, validasyonHatasi, hataYaniti, veriKontrol } from "@/lib/utils/hataIsle";
 import * as XLSX from "xlsx";
+import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ firma_id: string }> }
 ) {
   try {
+    const kontrol = await adminGirisKontrol();
+    if (!kontrol.gecerli) return kontrol.yanit;
+
     const { firma_id } = await params;
     if (!firma_id) return validasyonHatasi("firma_id zorunludur.", ["firma_id"]);
 

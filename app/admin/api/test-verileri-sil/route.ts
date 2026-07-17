@@ -31,6 +31,7 @@ import { NextResponse } from "next/server";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sunucuHatasi } from "@/lib/utils/hataIsle";
+import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 
 // FK sırasına göre: çocuk kayıtlar önce, ebeveynler sonra.
 // (information_schema FK çıktısından topolojik olarak hesaplandı, 12.07.2026.)
@@ -139,6 +140,9 @@ async function stokIadeEt(
 
 export async function POST() {
   try {
+    const kontrol = await adminGirisKontrol();
+    if (!kontrol.gecerli) return kontrol.yanit;
+
     const adminSupabase = createAdminClient();
 
     const sonuclar: IslemSonucu[] = [];

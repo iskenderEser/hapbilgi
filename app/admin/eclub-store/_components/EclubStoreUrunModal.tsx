@@ -116,7 +116,32 @@ export default function EclubStoreUrunModal({ duzenlenecek, kategoriler, onKapat
             // eslint-disable-next-line @next/next/no-img-element
             <img src={gorselUrl} alt="önizleme" style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "6px", border: "0.5px solid #e5e7eb" }} />
           )}
-          <input type="file" accept="image/*" onChange={dosyaSecildi} disabled={gorselYukleniyor} style={{ fontSize: "12px" }} />
+          {/* Native input gizli; görünen buton modalın kendi buton stilinde
+              (tarayıcının ham "Dosya Seç" kontrolü yerine — UX düzenlemesi). */}
+          <input
+            id="eclub-store-gorsel-input"
+            type="file"
+            accept="image/*"
+            onChange={dosyaSecildi}
+            disabled={gorselYukleniyor}
+            style={{ display: "none" }}
+          />
+          <label
+            htmlFor="eclub-store-gorsel-input"
+            style={{
+              alignSelf: "flex-start",
+              padding: "8px 14px",
+              background: "transparent",
+              border: "0.5px solid #d1d5db",
+              borderRadius: "6px",
+              fontSize: "13px",
+              color: gorselYukleniyor ? "#9ca3af" : "#374151",
+              cursor: gorselYukleniyor ? "not-allowed" : "pointer",
+              pointerEvents: gorselYukleniyor ? "none" : "auto",
+            }}
+          >
+            {gorselUrl ? "Görseli Değiştir" : "Görsel Seç"}
+          </label>
           {gorselYukleniyor && <span style={{ fontSize: "12px", color: "#9ca3af" }}>Yükleniyor...</span>}
         </div>
 

@@ -3,10 +3,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { FIRMA_KOLONLARI } from "@/lib/firma/kolonlar";
+import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 
 
 export async function GET() {
   try {
+    const kontrol = await adminGirisKontrol();
+    if (!kontrol.gecerli) return kontrol.yanit;
+
     const adminSupabase = createAdminClient();
 
     const { data: firmalar, error } = await adminSupabase
@@ -26,6 +30,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const kontrol = await adminGirisKontrol();
+    if (!kontrol.gecerli) return kontrol.yanit;
+
     const adminSupabase = createAdminClient();
 
     const body = await request.json();

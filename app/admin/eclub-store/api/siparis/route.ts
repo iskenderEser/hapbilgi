@@ -6,16 +6,14 @@ import { ADMIN_ROLLER } from "@/lib/utils/roller";
 import { eclubStoreSiparisIptal } from "@/lib/eclub/store/eclubStoreSiparis";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 
 const GECERLI_DURUMLAR = ["beklemede", "hazirlaniyor", "kargoda", "teslim_edildi"];
 
-async function adminKontrol(supabase: SupabaseClient): Promise<NextResponse | null> {
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return yetkiHatasi();
-  const adminSupabase = createAdminClient();
-  const rol = await rolCozucu(adminSupabase, user.id);
-  if (!ADMIN_ROLLER.includes(rol)) return rolHatasi("Bu işleme yalnızca admin erişebilir.");
-  return null;
+async function adminKontrol(_supabase: SupabaseClient): Promise<NextResponse | null> {
+  // B-26: tek bekçi — adminGirisKontrol (yerel kopya kaldırıldı).
+  const kontrol = await adminGirisKontrol();
+  return kontrol.gecerli ? null : kontrol.yanit;
 }
 
 export async function GET(request: NextRequest) {

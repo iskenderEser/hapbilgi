@@ -5,16 +5,15 @@ import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } fr
 import { ADMIN_ROLLER } from "@/lib/utils/roller";
 import { eclubStoreGorselYukle } from "@/lib/eclub/store/eclubStoreStorage";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return yetkiHatasi();
+    // B-26: tek bekçi — adminGirisKontrol (satır içi kopya kaldırıldı).
+    const kontrol = await adminGirisKontrol();
+    if (!kontrol.gecerli) return kontrol.yanit;
 
     const adminSupabase = createAdminClient();
-    const rol = await rolCozucu(adminSupabase, user.id);
-    if (!ADMIN_ROLLER.includes(rol)) return rolHatasi("Bu işleme yalnızca admin erişebilir.");
 
 
     const formData = await request.formData();
