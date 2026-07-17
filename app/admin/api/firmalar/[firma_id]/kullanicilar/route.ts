@@ -220,9 +220,14 @@ export async function DELETE(
 
     if (!kullanici_id) return validasyonHatasi("kullanici_id zorunludur.", ["kullanici_id"]);
 
+    // Silme sırası (B-24): arşiv → DB delete → Auth delete.
+    // Eski sıra (Auth önce) geri alınamaz yarım durum bırakabiliyordu:
+    // Auth silinip DB delete FK'ya takılınca girişsiz yetim satır kalıyordu.
+    // Yeni sırada her adımın telafisi var: DB delete düşerse arşiv geri alınır;
+    // Auth delete düşerse satır arşivdeki kopyadan geri yazılır.
     const { data: kullanici, error: kullaniciError } = await adminSupabase
       .from("kullanicilar")
-      .select("kullanici_id, ad, soyad, eposta, rol, firma_id, takim_id, bolge_id")
+      .select("kullanici_id, ad, soyad, eposta, rol, firma_id, takim_id, bolge_id, aktif_mi, yetki_kullanici_yonetim, yetki_aktif_pasif, fotograf_url")
       .eq("kullanici_id", kullanici_id)
       .eq("firma_id", firma_id)
       .single();
@@ -231,7 +236,8 @@ export async function DELETE(
     if (!kullaniciKontrol.gecerli) return kullaniciKontrol.yanit;
     if (kullaniciError) return hataYaniti("Kullanıcı sorgulanırken hata oluştu.", "kullanicilar tablosu SELECT", kullaniciError, 404);
 
-    // Arşivle
+    // 1) Arşivle
+    const silinmeTarihi = new Date().toISOString();
     const { error: arsivError } = await adminSupabase
       .from("silinmis_kullanicilar")
       .insert({
@@ -243,23 +249,58 @@ export async function DELETE(
         firma_id: kullanici.firma_id,
         takim_id: kullanici.takim_id,
         bolge_id: kullanici.bolge_id,
-        silinme_tarihi: new Date().toISOString(),
+        silinme_tarihi: silinmeTarihi,
       });
 
     if (arsivError) return hataYaniti("Kullanıcı arşivlenemedi, silme iptal edildi.", "silinmis_kullanicilar tablosu INSERT", arsivError);
 
-    // Önce Auth'tan sil — başarısız olursa DB'ye dokunma
-    const { error: authError } = await adminSupabase.auth.admin.deleteUser(kullanici_id);
-    if (authError) return hataYaniti("Kullanıcı Auth'tan silinemedi, işlem iptal edildi.", "auth.admin.deleteUser", authError);
+    const arsiviGeriAl = async () => {
+      await adminSupabase
+        .from("silinmis_kullanicilar")
+        .delete()
+        .eq("kullanici_id", kullanici_id)
+        .eq("silinme_tarihi", silinmeTarihi);
+    };
 
-    // Auth başarılıysa DB'den sil
+    // 2) DB'den sil — düşerse (örn. FK) arşiv geri alınır, Auth'a hiç dokunulmamıştır.
     const { error: deleteError } = await adminSupabase
       .from("kullanicilar")
       .delete()
       .eq("kullanici_id", kullanici_id)
       .eq("firma_id", firma_id);
 
-    if (deleteError) return hataYaniti("Kullanıcı tablodan silinemedi.", "kullanicilar tablosu DELETE", deleteError);
+    if (deleteError) {
+      await arsiviGeriAl();
+      return hataYaniti("Kullanıcı tablodan silinemedi; işlem geri alındı.", "kullanicilar tablosu DELETE", deleteError);
+    }
+
+    // 3) Auth'tan sil — düşerse satır elimizdeki kopyadan geri yazılır (telafi).
+    const { error: authError } = await adminSupabase.auth.admin.deleteUser(kullanici_id);
+    if (authError) {
+      const { error: geriYazError } = await adminSupabase
+        .from("kullanicilar")
+        .insert({
+          kullanici_id: kullanici.kullanici_id,
+          ad: kullanici.ad,
+          soyad: kullanici.soyad,
+          eposta: kullanici.eposta,
+          rol: kullanici.rol,
+          firma_id: kullanici.firma_id,
+          takim_id: kullanici.takim_id,
+          bolge_id: kullanici.bolge_id,
+          aktif_mi: kullanici.aktif_mi,
+          yetki_kullanici_yonetim: kullanici.yetki_kullanici_yonetim,
+          yetki_aktif_pasif: kullanici.yetki_aktif_pasif,
+          fotograf_url: kullanici.fotograf_url,
+        });
+      await arsiviGeriAl();
+      if (geriYazError) {
+        // Telafi de düştü — yarım durum loglanır (nadir; elle müdahale gerekir).
+        console.error("[kullanici DELETE] Auth silinemedi ve satır geri yazılamadı:", geriYazError.message);
+        return hataYaniti("Auth silinemedi; kullanıcı satırı geri yazılamadı — elle kontrol gerekir.", "auth.admin.deleteUser + geri yazım", authError);
+      }
+      return hataYaniti("Kullanıcı Auth'tan silinemedi; işlem geri alındı.", "auth.admin.deleteUser", authError);
+    }
 
     return NextResponse.json({ mesaj: "Kullanıcı başarıyla silindi." }, { status: 200 });
 
