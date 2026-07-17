@@ -7,6 +7,7 @@
 
 import { btnBase } from "../_constants";
 import type { OnizlemeSatir } from "../_types";
+import type { TopluKaydetSonucu } from "../_hooks/useTopluForm";
 
 interface TopluGirisFormuProps {
   topluDosya: File | null;
@@ -15,6 +16,7 @@ interface TopluGirisFormuProps {
   topluKaydetLoading: boolean;
   hazirSayisi: number;
   hataliSayisi: number;
+  kaydetSonucu: TopluKaydetSonucu | null;
   handleDosyaSec: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleTopluKaydet: () => void;
 }
@@ -42,17 +44,26 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
         <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#111", marginBottom: "8px", fontFamily: "'Nunito', sans-serif" }}>
           Dosya seç (CSV veya XLSX):
         </label>
+        {/* Native input gizli; görünen buton proje stilinde (tarayıcının ham
+            "Dosya Seç / Dosya seçilmedi" kontrolü yerine — UX düzenlemesi). */}
         <input
+          id="toplu-dosya-input"
           type="file"
           accept=".csv,.xlsx"
           onChange={p.handleDosyaSec}
-          style={{ fontSize: "13px", fontFamily: "'Nunito', sans-serif", color: "#111" }}
+          style={{ display: "none" }}
         />
-        {p.topluDosya && (
-          <p style={{ fontSize: "12px", color: "#737373", marginTop: "6px", fontFamily: "'Nunito', sans-serif" }}>
-            Seçili: {p.topluDosya.name}
-          </p>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <label
+            htmlFor="toplu-dosya-input"
+            style={{ ...btnBase, background: "white", color: "#111" }}
+          >
+            Dosya Seç
+          </label>
+          <span style={{ fontSize: "12px", color: "#737373", fontFamily: "'Nunito', sans-serif" }}>
+            {p.topluDosya ? `Seçili: ${p.topluDosya.name}` : "Henüz dosya seçilmedi"}
+          </span>
+        </div>
       </div>
 
       {/* Yüklenme durumu */}
@@ -130,6 +141,31 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
         <p style={{ fontSize: "13px", color: "#737373", fontFamily: "'Nunito', sans-serif" }}>
           Dosyada geçerli satır bulunamadı.
         </p>
+      )}
+
+      {/* Kaydet sonucu — DÜRÜST özet (B-17): kısmi başarısızlık gizlenmez,
+          hatalı satırlar görünür listelenir. */}
+      {p.kaydetSonucu && (
+        <div
+          style={{
+            marginTop: "16px",
+            border: `0.5px solid ${p.kaydetSonucu.hatali > 0 ? "#fecaca" : "#bbf7d0"}`,
+            background: p.kaydetSonucu.hatali > 0 ? "#fef2f2" : "#f0fdf4",
+            borderRadius: "8px",
+            padding: "12px 14px",
+            fontFamily: "'Nunito', sans-serif",
+          }}
+        >
+          <p style={{ fontSize: "13px", fontWeight: 700, color: p.kaydetSonucu.hatali > 0 ? "#b91c1c" : "#166534", margin: 0 }}>
+            {p.kaydetSonucu.basarili} kullanıcı eklendi
+            {p.kaydetSonucu.hatali > 0 ? `, ${p.kaydetSonucu.hatali} satır eklenemedi:` : "."}
+          </p>
+          {p.kaydetSonucu.hatalar.length > 0 && (
+            <ul style={{ fontSize: "12px", color: "#7f1d1d", margin: "8px 0 0 0", paddingLeft: "18px", lineHeight: 1.7 }}>
+              {p.kaydetSonucu.hatalar.map((h, i) => <li key={i}>{h}</li>)}
+            </ul>
+          )}
+        </div>
       )}
     </div>
   );

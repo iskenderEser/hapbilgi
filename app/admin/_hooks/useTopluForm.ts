@@ -16,16 +16,26 @@ interface UseTopluFormProps {
   basari: (mesaj: string) => void;
 }
 
+// Kaydet sonucunun dürüst özeti (B-17): route satır bazında devam eder ve
+// {basarili, hatali, hatalar[]} döner; UI bunu olduğu gibi gösterir.
+export interface TopluKaydetSonucu {
+  basarili: number;
+  hatali: number;
+  hatalar: string[];
+}
+
 export function useTopluForm({ seciliFirma, refreshKullanicilar, hata, basari }: UseTopluFormProps) {
   const [topluDosya, setTopluDosya] = useState<File | null>(null);
   const [onizlemesatirlari, setOnizlemeSatirlari] = useState<OnizlemeSatir[] | null>(null);
   const [onizlemeLoading, setOnizlemeLoading] = useState(false);
   const [topluKaydetLoading, setTopluKaydetLoading] = useState(false);
+  const [kaydetSonucu, setKaydetSonucu] = useState<TopluKaydetSonucu | null>(null);
 
   // seciliFirma değişince formu sıfırla
   useEffect(() => {
     setTopluDosya(null);
     setOnizlemeSatirlari(null);
+    setKaydetSonucu(null);
   }, [seciliFirma?.firma_id]);
 
   const handleDosyaSec = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,15 +57,29 @@ export function useTopluForm({ seciliFirma, refreshKullanicilar, hata, basari }:
   const handleTopluKaydet = async () => {
     if (!topluDosya || !seciliFirma) return;
     setTopluKaydetLoading(true);
+    setKaydetSonucu(null);
     const formData = new FormData();
     formData.append("dosya", topluDosya);
     const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/toplu-yukle`, { method: "POST", body: formData });
     const data = await res.json();
     if (!res.ok) { hata(data.hata ?? "Toplu yükleme başarısız.", data.adim, data.detay); }
     else {
-      basari("Ekleme başarılı.");
-      setTopluDosya(null);
-      setOnizlemeSatirlari(null);
+      // B-17: sonuç OLDUĞU GİBİ raporlanır — kısmi başarısızlık gizlenmez.
+      const sonuc: TopluKaydetSonucu = {
+        basarili: data.basarili ?? 0,
+        hatali: data.hatali ?? 0,
+        hatalar: data.hatalar ?? [],
+      };
+      setKaydetSonucu(sonuc);
+      if (sonuc.hatali === 0) {
+        basari(`${sonuc.basarili} kullanıcı eklendi.`);
+        setTopluDosya(null);
+        setOnizlemeSatirlari(null);
+      } else {
+        // Kısmi başarısızlıkta önizleme ekranda kalır; hatalı satır listesi
+        // kaydetSonucu üzerinden görünür biçimde basılır (TopluGirisFormu).
+        hata(`${sonuc.basarili} kullanıcı eklendi, ${sonuc.hatali} satır eklenemedi.`, "toplu kaydet");
+      }
       refreshKullanicilar();
     }
     setTopluKaydetLoading(false);
@@ -71,6 +95,7 @@ export function useTopluForm({ seciliFirma, refreshKullanicilar, hata, basari }:
     topluKaydetLoading,
     hazirSayisi,
     hataliSayisi,
+    kaydetSonucu,
     handleDosyaSec,
     handleTopluKaydet,
   };
