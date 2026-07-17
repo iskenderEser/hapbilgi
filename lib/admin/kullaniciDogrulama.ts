@@ -16,6 +16,9 @@ import { TUM_ROLLER, TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { ureticiYetenegi } from "@/lib/uretici/yetenekler";
 
 const ALAN_UZUNLUK_SINIRI = 200;
+// B-36: Supabase auth'un min-6 kuralı burada Türkçe mesajla önden yakalanır;
+// ham İngilizce Auth hatası kullanıcıya hiç ulaşmaz.
+const SIFRE_MIN_UZUNLUK = 6;
 
 export interface FirmaYapisi {
   firma_id: string;
@@ -111,6 +114,9 @@ export function kullaniciSatirDogrula(
   }
   if (!eposta.includes("@")) {
     return { ok: false, hata: "Geçersiz e-posta adresi.", alanlar: ["eposta"] };
+  }
+  if (sifre.length < SIFRE_MIN_UZUNLUK) {
+    return { ok: false, hata: `Şifre en az ${SIFRE_MIN_UZUNLUK} karakter olmalıdır.`, alanlar: ["sifre"] };
   }
   if (!TUM_ROLLER.includes(rol)) {
     return { ok: false, hata: `Geçersiz rol: "${rol}".`, alanlar: ["rol"] };
