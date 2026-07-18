@@ -175,7 +175,7 @@ export default function AdminPanel() {
                     <TekilGirisFormu takimlar={admin.takimlar} {...tekil} />
                   )}
                   {admin.girisSecimi === "toplu" && <TopluGirisFormu {...toplu} />}
-                  <KullaniciListesi {...kullaniciListesi} />
+                  <KullaniciListesi {...kullaniciListesi} takimlar={admin.takimlar} />
                 </>
               )}
 

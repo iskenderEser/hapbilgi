@@ -7,7 +7,8 @@
 "use client";
 
 import { ROLLER, filterSelectStyle } from "../_constants";
-import type { Kullanici } from "../_types";
+import type { Kullanici, Takim } from "../_types";
+import { kullaniciEksikMi } from "@/lib/admin/kullaniciDogrulama";
 
 interface KullaniciListesiProps {
   aramaMetni: string;
@@ -40,6 +41,11 @@ interface KullaniciListesiProps {
   setTopluSilOnay: (v: boolean) => void;
   topluIslemLoading: boolean;
   yetkiLoading: string | null;
+
+  // K-A6: tamamlama akışı için firmanın tam takım/bölge yapısı
+  takimlar: Takim[];
+  eksikTamamlaLoading: string | null;
+  handleEksikTamamla: (kullanici_id: string, atama: { takim_id?: string; bolge_id?: string }) => void;
 
   handleRolDegistir: (kullanici_id: string, yeniRol: string) => void;
   handleAktifToggle: (kullanici_id: string, mevcutDurum: boolean) => void;
@@ -200,6 +206,7 @@ export default function KullaniciListesi(p: KullaniciListesiProps) {
                     <option value="">Durum ▾</option>
                     <option value="aktif">Aktif</option>
                     <option value="pasif">Pasif</option>
+                    <option value="eksik">Eksik bilgili</option>
                   </select>
                 </th>
                 <th style={thStyle}>Yetkiler</th>
@@ -231,8 +238,44 @@ export default function KullaniciListesi(p: KullaniciListesiProps) {
                     )}
                   </td>
                   <td style={tdStyle}>{k.eposta}</td>
-                  <td style={tdStyle}>{k.takim_adi ?? "-"}</td>
-                  <td style={tdStyle}>{k.bolge_adi ?? "-"}</td>
+                  {/* K-A6: takım/bölge eksikse rozet + hücre içi atama seçicisi.
+                      Eksik tanımı tek kaynaktan (kullaniciEksikMi). */}
+                  {(() => {
+                    const eksik = kullaniciEksikMi(k.rol, k.takim_id ?? null, k.bolge_id ?? null);
+                    const yukleniyor = p.eksikTamamlaLoading === k.kullanici_id;
+                    const eksikSelectStyle: React.CSSProperties = {
+                      ...filterSelectStyle, padding: "2px 6px",
+                      background: "#fffbeb", border: "0.5px solid #fcd34d", color: "#92400e",
+                    };
+                    return (
+                      <>
+                        <td style={tdStyle}>
+                          {eksik.eksikAlanlar.includes("takim") ? (
+                            yukleniyor ? "..." : (
+                              <select value="" style={eksikSelectStyle}
+                                onChange={(e) => e.target.value && p.handleEksikTamamla(k.kullanici_id, { takim_id: e.target.value })}>
+                                <option value="">⚠ Takım ata ▾</option>
+                                {p.takimlar.map(t => <option key={t.takim_id} value={t.takim_id}>{t.takim_adi}</option>)}
+                              </select>
+                            )
+                          ) : (k.takim_adi ?? "-")}
+                        </td>
+                        <td style={tdStyle}>
+                          {eksik.eksikAlanlar.includes("bolge") ? (
+                            yukleniyor ? "..." : (
+                              <select value="" style={eksikSelectStyle}
+                                onChange={(e) => e.target.value && p.handleEksikTamamla(k.kullanici_id, { bolge_id: e.target.value })}>
+                                <option value="">⚠ Bölge ata ▾</option>
+                                {p.takimlar.flatMap(t => t.bolgeler.map(b => (
+                                  <option key={b.bolge_id} value={b.bolge_id}>{t.takim_adi} — {b.bolge_adi}</option>
+                                )))}
+                              </select>
+                            )
+                          ) : (k.bolge_adi ?? "-")}
+                        </td>
+                      </>
+                    );
+                  })()}
                   <td style={tdStyle}>
                     <button onClick={() => p.handleAktifToggle(k.kullanici_id, k.aktif_mi)}
                       disabled={p.aktifToggleLoading === k.kullanici_id}

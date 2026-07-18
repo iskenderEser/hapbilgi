@@ -9,6 +9,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import type { Firma, Kullanici } from "../_types";
+import { kullaniciEksikMi } from "@/lib/admin/kullaniciDogrulama";
 
 interface UseKullaniciListesiProps {
   seciliFirma: Firma | null;
@@ -59,7 +60,10 @@ export function useKullaniciListesi({ seciliFirma, kullanicilar, refreshKullanic
       const rolUyumu = filtrRol === "" || k.rol === filtrRol;
       const takimUyumu = filtrTakim === "" || k.takim_adi === filtrTakim;
       const bolgeUyumu = filtrBolge === "" || k.bolge_adi === filtrBolge;
-      const durumUyumu = filtrDurum === "" || (filtrDurum === "aktif" ? k.aktif_mi : !k.aktif_mi);
+      const durumUyumu = filtrDurum === "" ||
+        (filtrDurum === "eksik"
+          ? kullaniciEksikMi(k.rol, k.takim_id ?? null, k.bolge_id ?? null).eksik
+          : filtrDurum === "aktif" ? k.aktif_mi : !k.aktif_mi);
       return aramaUyumu && rolUyumu && takimUyumu && bolgeUyumu && durumUyumu;
     });
   }, [kullanicilar, aramaMetni, filtrRol, filtrTakim, filtrBolge, filtrDurum]);
@@ -137,6 +141,27 @@ export function useKullaniciListesi({ seciliFirma, kullanicilar, refreshKullanic
       hata("Yetki güncellenemedi — bağlantı hatası.", "handleYetkiDegistir", String(err));
     } finally {
       setYetkiLoading(null);
+    }
+  };
+
+  // K-A6 tamamlama akışı: eksik bilgili kullanıcıya rol değişmeden
+  // takım ya da bölge atanır (PUT — mevcut rolün kurallarıyla çözülür).
+  const [eksikTamamlaLoading, setEksikTamamlaLoading] = useState<string | null>(null);
+  const handleEksikTamamla = async (kullanici_id: string, atama: { takim_id?: string; bolge_id?: string }) => {
+    if (!seciliFirma) return;
+    setEksikTamamlaLoading(kullanici_id);
+    try {
+      const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kullanici_id, ...atama }),
+      });
+      const data = await res.json();
+      if (!res.ok) { hata(data.hata ?? "Atama yapılamadı.", data.adim, data.detay); }
+      else { basari("Eksik bilgi tamamlandı."); refreshKullanicilar(); }
+    } catch (err) {
+      hata("Atama yapılamadı — bağlantı hatası.", "handleEksikTamamla", String(err));
+    } finally {
+      setEksikTamamlaLoading(null);
     }
   };
 
@@ -273,6 +298,8 @@ export function useKullaniciListesi({ seciliFirma, kullanicilar, refreshKullanic
     yetkiLoading,
 
     // Handler'lar
+    eksikTamamlaLoading,
+    handleEksikTamamla,
     handleRolDegistir,
     handleAktifToggle,
     handleYetkiDegistir,

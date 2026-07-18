@@ -21,6 +21,8 @@ export interface Kullanici {
   aktif_mi: boolean;
   yetki_kullanici_yonetim: boolean;
   yetki_aktif_pasif: boolean;
+  takim_id?: string | null;
+  bolge_id?: string | null;
   takim_adi?: string;
   bolge_adi?: string;
 }

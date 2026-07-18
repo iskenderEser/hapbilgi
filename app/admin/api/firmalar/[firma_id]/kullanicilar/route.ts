@@ -165,8 +165,11 @@ export async function PUT(
     const { kullanici_id, rol, aktif_mi, yetki_kullanici_yonetim, yetki_aktif_pasif } = body;
 
     if (!kullanici_id) return validasyonHatasi("kullanici_id zorunludur.", ["kullanici_id"]);
-    if (rol === undefined && aktif_mi === undefined && yetki_kullanici_yonetim === undefined && yetki_aktif_pasif === undefined)
-      return validasyonHatasi("Güncellenecek alan zorunludur.", ["rol", "aktif_mi", "yetki_kullanici_yonetim", "yetki_aktif_pasif"]);
+    // K-A6 tamamlama akışı: rol değişmeden yalnız takım/bölge ataması da geçerli istektir.
+    const atamaVar = body.takim_id !== undefined || body.takim_adi !== undefined
+      || body.bolge_id !== undefined || body.bolge_adi !== undefined;
+    if (rol === undefined && aktif_mi === undefined && yetki_kullanici_yonetim === undefined && yetki_aktif_pasif === undefined && !atamaVar)
+      return validasyonHatasi("Güncellenecek alan zorunludur.", ["rol", "aktif_mi", "yetki_kullanici_yonetim", "yetki_aktif_pasif", "takim_id", "bolge_id"]);
 
     const { data: kullanici, error: kullaniciError } = await adminSupabase
       .from("kullanicilar")
@@ -204,6 +207,26 @@ export async function PUT(
       guncellenecek.rol = rolTemiz;
       guncellenecek.takim_id = gecis.takim_id;
       guncellenecek.bolge_id = gecis.bolge_id;
+    }
+
+    if (rol === undefined && atamaVar) {
+      // K-A6 tamamlama: MEVCUT rolün kurallarıyla takım/bölge çözülür —
+      // rol geçişiyle aynı tek kaynaktan (rolGecisiCoz), ayrı kural yazılmaz.
+      const yapiSonuc = await firmaYapisiYukle(adminSupabase, firma_id);
+      if (!yapiSonuc.ok) return hataYaniti(yapiSonuc.hata, "firmaYapisiYukle — eksik tamamlama", null);
+
+      const cozum = rolGecisiCoz(yapiSonuc.yapi, kullanici!.rol, {
+        mevcut_takim_id: kullanici!.takim_id ?? null,
+        mevcut_bolge_id: kullanici!.bolge_id ?? null,
+        takim_id: body.takim_id,
+        takim_adi: body.takim_adi,
+        bolge_id: body.bolge_id,
+        bolge_adi: body.bolge_adi,
+      });
+      if (!cozum.ok) return validasyonHatasi(cozum.hata, cozum.alanlar);
+
+      guncellenecek.takim_id = cozum.takim_id;
+      guncellenecek.bolge_id = cozum.bolge_id;
     }
 
     if (aktif_mi !== undefined) guncellenecek.aktif_mi = aktif_mi;
