@@ -11,6 +11,7 @@
 
 ## Onay disiplini
 - Kod değişikliği öncesi planı özetle, onay al.
+- HapBilgi'nin çalışmasına DOĞRUDAN ya da DOLAYLI etki edecek her eylem (minör/majör fark etmez — kod commit'i, dosya silme, davranış değiştiren her şey) öncesi: yapılacakları madde madde listele, onay al, SONRA yap. İstisnalar: (1) İskender o iş için "onaya gerek yok" derse sormadan nihai işi yap, bitince raporla; (2) çalışmaya etki etmeyen işler (süreç/kural belgeleri, çalışma düzeni notları) onay gerektirmez.
 - Canlı DB'ye YAZAN hiçbir komutu kendin çalıştırma — SQL'i kullanıcıya ver.
 - Test verisi yarattıysan işin sonunda temizle.
 
