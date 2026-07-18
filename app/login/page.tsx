@@ -50,6 +50,11 @@ export default function LoginPage() {
   const [sifreGoster, setSifreGoster] = useState(false);
   const [loading, setLoading] = useState(false);
   const [hata, setHata] = useState("");
+  // F-03/A: Şifremi unuttum — giriş formuyla yer değiştiren sıfırlama görünümü.
+  const [sifirlamaAcik, setSifirlamaAcik] = useState(false);
+  const [sifirlamaEmail, setSifirlamaEmail] = useState("");
+  const [sifirlamaGonderiliyor, setSifirlamaGonderiliyor] = useState(false);
+  const [sifirlamaMesaj, setSifirlamaMesaj] = useState("");
   const router = useRouter();
   const { kullanici, yukleniyor } = useAuth();
 
@@ -112,6 +117,26 @@ export default function LoginPage() {
     setLoading(false);
   };
 
+  // F-03/A: sıfırlama bağlantısı isteği. Mesaj her durumda nötrdür —
+  // adresin kayıtlı olup olmadığı dışarı sızdırılmaz.
+  const handleSifirlamaGonder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSifirlamaGonderiliyor(true);
+    setSifirlamaMesaj("");
+    const supabase = createClient();
+    const { error } = await supabase.auth.resetPasswordForEmail(sifirlamaEmail.trim(), {
+      redirectTo: `${window.location.origin}/sifre-yenile`,
+    });
+    setSifirlamaGonderiliyor(false);
+    if (error) {
+      setSifirlamaMesaj("Bağlantı gönderilemedi. Lütfen biraz sonra tekrar deneyin.");
+      return;
+    }
+    setSifirlamaMesaj(
+      "E-posta adresiniz sistemde kayıtlıysa şifre sıfırlama bağlantısı gönderildi. Gelen kutunuzu kontrol edin."
+    );
+  };
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row" style={{ fontFamily: "'Nunito', sans-serif" }}>
 
@@ -154,6 +179,58 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
           <img src="/logo.png" alt="hapbilgi" className="object-contain mx-auto mb-8" style={{ height: 144 }} />
 
+          {sifirlamaAcik ? (
+          /* F-03/A: şifre sıfırlama görünümü — giriş formuyla yer değiştirir */
+          <form onSubmit={handleSifirlamaGonder} className="flex flex-col gap-4">
+            <div>
+              <h2 className="text-base font-bold text-gray-900 m-0 mb-1">Şifre Sıfırlama</h2>
+              <p className="text-xs text-gray-500 m-0 leading-relaxed">
+                Kayıtlı e-posta adresinizi girin; şifre sıfırlama bağlantısı gönderelim.
+              </p>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">E-posta</label>
+              <input
+                type="email"
+                value={sifirlamaEmail}
+                onChange={(e) => setSifirlamaEmail(e.target.value)}
+                required
+                placeholder="ornek@sirket.com"
+                className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm bg-white text-gray-900 outline-none box-border transition-shadow focus:border-[#bc2d0d] focus:ring-2 focus:ring-[#bc2d0d]/15"
+                style={{ fontFamily: "'Nunito', sans-serif" }}
+              />
+            </div>
+
+            {sifirlamaMesaj && (
+              <div className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+                <p className="text-xs text-gray-700 m-0 leading-relaxed">{sifirlamaMesaj}</p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={sifirlamaGonderiliyor}
+              className="w-full text-white font-bold rounded-xl py-3 text-sm border-none transition-opacity hover:opacity-90"
+              style={{
+                background: BORDO,
+                cursor: sifirlamaGonderiliyor ? "not-allowed" : "pointer",
+                opacity: sifirlamaGonderiliyor ? 0.6 : 1,
+                fontFamily: "'Nunito', sans-serif",
+              }}
+            >
+              {sifirlamaGonderiliyor ? "Gönderiliyor..." : "Sıfırlama Bağlantısı Gönder"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setSifirlamaAcik(false); setSifirlamaMesaj(""); }}
+              className="bg-transparent border-none p-0 text-xs cursor-pointer mx-auto"
+              style={{ color: BORDO, fontFamily: "'Nunito', sans-serif" }}
+            >
+              ← Girişe dön
+            </button>
+          </form>
+          ) : (
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1.5">E-posta</label>
@@ -207,8 +284,15 @@ export default function LoginPage() {
                 <input type="checkbox" className="w-3 h-3" style={{ accentColor: BORDO }} />
                 Beni hatırla
               </label>
-              {/* İşlevlendirme ayrı iş (§6.4) — link İskender talebiyle geri geldi (13.07.2026). */}
-              <a href="#" className="text-xs no-underline" style={{ color: BORDO }}>Şifremi unuttum</a>
+              {/* F-03/A: sıfırlama görünümünü açar; girilmiş e-posta öndoldurulur */}
+              <button
+                type="button"
+                onClick={() => { setSifirlamaEmail(email); setSifirlamaMesaj(""); setSifirlamaAcik(true); }}
+                className="bg-transparent border-none p-0 text-xs cursor-pointer"
+                style={{ color: BORDO, fontFamily: "'Nunito', sans-serif" }}
+              >
+                Şifremi unuttum
+              </button>
             </div>
 
             {hata && (
@@ -242,6 +326,7 @@ export default function LoginPage() {
               ) : "Giriş Yap"}
             </button>
           </form>
+          )}
 
           <div className="text-center mt-10">
             <span className="text-xs text-gray-400">© 2026 HapBilgi · Tüm hakları saklıdır.</span>
