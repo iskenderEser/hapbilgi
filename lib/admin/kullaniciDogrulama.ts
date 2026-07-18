@@ -178,7 +178,11 @@ export async function firmaYapisiYukle(
 }
 
 function metinAl(deger: unknown): string {
-  return typeof deger === "string" ? deger.trim() : "";
+  // Hücre değeri tipinden bağımsız okunur: Excel "123456" gibi girdilere
+  // kendi kafasına göre sayı tipi atar — değer neyse o alınır.
+  if (typeof deger === "string") return deger.trim();
+  if (typeof deger === "number" && Number.isFinite(deger)) return String(deger);
+  return "";
 }
 
 /**
