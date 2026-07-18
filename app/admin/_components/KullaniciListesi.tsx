@@ -218,8 +218,12 @@ export default function KullaniciListesi(p: KullaniciListesiProps) {
               </tr>
             </thead>
             <tbody>
-              {p.filtrelenmisKullanicilar.map(k => (
-                <tr key={k.kullanici_id} style={{ background: p.seciliKullanicilar.has(k.kullanici_id) ? "#eff6ff" : "white" }}>
+              {p.filtrelenmisKullanicilar.map(k => {
+                // K-A6/T-7: eksik tanımı tek kaynaktan; eksik satır amber
+                // arka planla "kızarır" — göze sokulur (görsel vurgu kararı).
+                const eksik = kullaniciEksikMi(k.rol, k.takim_id ?? null, k.bolge_id ?? null, k.telefon ?? null);
+                return (
+                <tr key={k.kullanici_id} style={{ background: p.seciliKullanicilar.has(k.kullanici_id) ? "#eff6ff" : eksik.eksik ? "#fffbeb" : "white" }}>
                   <td style={tdStyle}>
                     <input type="checkbox" checked={p.seciliKullanicilar.has(k.kullanici_id)}
                       onChange={(e) => p.toggleSecim(k.kullanici_id, e.target.checked)} />
@@ -266,10 +270,8 @@ export default function KullaniciListesi(p: KullaniciListesiProps) {
                       )
                     )}
                   </td>
-                  {/* K-A6: takım/bölge eksikse rozet + hücre içi atama seçicisi.
-                      Eksik tanımı tek kaynaktan (kullaniciEksikMi). */}
+                  {/* K-A6: takım/bölge eksikse rozet + hücre içi atama seçicisi. */}
                   {(() => {
-                    const eksik = kullaniciEksikMi(k.rol, k.takim_id ?? null, k.bolge_id ?? null, k.telefon ?? null);
                     const yukleniyor = p.eksikTamamlaLoading === k.kullanici_id;
                     const eksikSelectStyle: React.CSSProperties = {
                       ...filterSelectStyle, padding: "2px 6px",
@@ -352,7 +354,8 @@ export default function KullaniciListesi(p: KullaniciListesiProps) {
                     )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

@@ -104,7 +104,7 @@ export async function POST(
     // yeni listede olmayan mevcut kullanıcıya DOKUNULMAZ.
     const { data: mevcutData, error: mevcutError } = await adminSupabase
       .from("kullanicilar")
-      .select("kullanici_id, ad, soyad, eposta, telefon, rol, takim_id, bolge_id")
+      .select("kullanici_id, ad, soyad, eposta, telefon, rol, takim_id, bolge_id, aktif_mi")
       .eq("firma_id", firma_id);
     if (mevcutError) return hataYaniti("Mevcut kullanıcılar çekilemedi.", "kullanicilar tablosu SELECT — upsert eşleştirme", mevcutError);
     const mevcutlar = (mevcutData ?? []) as MevcutKullanici[];
@@ -351,7 +351,9 @@ export async function POST(
           firma_id,
           takim_id: satir.takim_id ?? null,
           bolge_id: satir.bolge_id ?? null,
-          aktif_mi: true,
+          // T-7: eksik bilgili kullanıcı PASİF doğar; eksiği kapanınca
+          // otomatik aktifleşir (satirUpsertPlani / PUT aynı kural).
+          aktif_mi: satir.durum !== "eksik",
         });
 
       if (insertError) {

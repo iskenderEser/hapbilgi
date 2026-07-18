@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { TUM_ROLLER } from "@/lib/utils/roller";
-import { firmaYapisiYukle, kullaniciSatirDogrula, rolGecisiCoz, telefonNormalize } from "@/lib/admin/kullaniciDogrulama";
+import { firmaYapisiYukle, kullaniciEksikMi, kullaniciSatirDogrula, rolGecisiCoz, telefonNormalize } from "@/lib/admin/kullaniciDogrulama";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 
 export async function GET(
@@ -128,7 +128,8 @@ export async function POST(
         firma_id,
         takim_id: kayit.takim_id,
         bolge_id: kayit.bolge_id,
-        aktif_mi: true,
+        // T-7: eksik bilgili kullanıcı PASİF doğar; eksiği kapanınca otomatik aktifleşir.
+        aktif_mi: !eksikMi,
         yetki_kullanici_yonetim: yetki_kullanici_yonetim === true,
         yetki_aktif_pasif: yetki_aktif_pasif === true,
       });
@@ -144,7 +145,7 @@ export async function POST(
 
     return NextResponse.json({
       mesaj: eksikMi
-        ? `Kullanıcı eklendi — EKSİK BİLGİLİ (${dogrulama.eksikAlanlar.join(", ")} atanmadı).${dogrulama.uyari ? ` ${dogrulama.uyari}` : ""}`
+        ? `Kullanıcı eklendi — EKSİK BİLGİLİ (${dogrulama.eksikAlanlar.join(", ")} atanmadı), PASİF doğdu; eksiği tamamlanınca aktifleşir.${dogrulama.uyari ? ` ${dogrulama.uyari}` : ""}`
         : "Kullanıcı başarıyla eklendi.",
       eksik: eksikMi,
       eksikAlanlar: dogrulama.eksikAlanlar,
@@ -180,7 +181,7 @@ export async function PUT(
 
     const { data: kullanici, error: kullaniciError } = await adminSupabase
       .from("kullanicilar")
-      .select("kullanici_id, rol, takim_id, bolge_id")
+      .select("kullanici_id, rol, takim_id, bolge_id, telefon, aktif_mi")
       .eq("kullanici_id", kullanici_id)
       .eq("firma_id", firma_id)
       .single();
@@ -247,6 +248,23 @@ export async function PUT(
     if (yetki_kullanici_yonetim !== undefined) guncellenecek.yetki_kullanici_yonetim = yetki_kullanici_yonetim;
     if (yetki_aktif_pasif !== undefined) guncellenecek.yetki_aktif_pasif = yetki_aktif_pasif;
 
+    // T-7: eksiği BU istekle kapanan pasif kullanıcı otomatik aktifleşir.
+    // Açık aktif_mi isteği (admin toggle'ı) her zaman önceliklidir; bilinçli
+    // pasife alınmış (eksiksiz) kullanıcıya kural dokunmaz.
+    let otomatikAktif = false;
+    if (aktif_mi === undefined && !kullanici!.aktif_mi) {
+      const onceEksik = kullaniciEksikMi(kullanici!.rol, kullanici!.takim_id ?? null, kullanici!.bolge_id ?? null, kullanici!.telefon ?? null).eksik;
+      const sonRol = (guncellenecek.rol as string | undefined) ?? kullanici!.rol;
+      const sonTakim = guncellenecek.takim_id !== undefined ? (guncellenecek.takim_id as string | null) : (kullanici!.takim_id ?? null);
+      const sonBolge = guncellenecek.bolge_id !== undefined ? (guncellenecek.bolge_id as string | null) : (kullanici!.bolge_id ?? null);
+      const sonTelefon = (guncellenecek.telefon as string | undefined) ?? kullanici!.telefon ?? null;
+      const sonraEksik = kullaniciEksikMi(sonRol, sonTakim, sonBolge, sonTelefon).eksik;
+      if (onceEksik && !sonraEksik) {
+        guncellenecek.aktif_mi = true;
+        otomatikAktif = true;
+      }
+    }
+
     const { error: updateError } = await adminSupabase
       .from("kullanicilar")
       .update(guncellenecek)
@@ -261,7 +279,11 @@ export async function PUT(
       return hataYaniti("Kullanıcı güncellenemedi.", "kullanicilar tablosu UPDATE", updateError);
     }
 
-    return NextResponse.json({ mesaj: "Kullanıcı başarıyla güncellendi." }, { status: 200 });
+    return NextResponse.json({
+      mesaj: otomatikAktif
+        ? "Kullanıcı güncellendi — eksik bilgisi tamamlandı, aktifleşti."
+        : "Kullanıcı başarıyla güncellendi.",
+    }, { status: 200 });
 
   } catch (err) {
     return sunucuHatasi(err, "PUT /admin/api/firmalar/[firma_id]/kullanicilar");

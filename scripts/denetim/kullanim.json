@@ -3277,37 +3277,37 @@
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 181,
+      "satir": 182,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 250,
+      "satir": 268,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 293,
+      "satir": 315,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 306,
+      "satir": 328,
       "tablo": "silinmis_kullanicilar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 323,
-      "tablo": "silinmis_kullanicilar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 331,
-      "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
       "satir": 345,
+      "tablo": "silinmis_kullanicilar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
+      "satir": 353,
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
+      "satir": 367,
       "tablo": "kullanicilar"
     },
     {
@@ -6752,13 +6752,13 @@
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 181,
-      "ham": "kullanici_id, rol, takim_id, bolge_id",
+      "satir": 182,
+      "ham": "kullanici_id, rol, takim_id, bolge_id, telefon, aktif_mi",
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 293,
+      "satir": 315,
       "ham": "kullanici_id, ad, soyad, eposta, rol, firma_id, takim_id, bolge_id, aktif_mi, yetki_kullanici_yonetim, yetki_aktif_pasif, fotograf_url",
       "tablo": "kullanicilar"
     },
@@ -6825,7 +6825,7 @@
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
       "satir": 105,
-      "ham": "kullanici_id, ad, soyad, eposta, telefon, rol, takim_id, bolge_id",
+      "ham": "kullanici_id, ad, soyad, eposta, telefon, rol, takim_id, bolge_id, aktif_mi",
       "tablo": "kullanicilar"
     },
     {

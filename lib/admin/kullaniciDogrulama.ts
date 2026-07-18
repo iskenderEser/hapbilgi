@@ -419,6 +419,7 @@ export interface MevcutKullanici {
   rol: string;
   takim_id: string | null;
   bolge_id: string | null;
+  aktif_mi: boolean;
 }
 
 export interface GuncellemeAlanlari {
@@ -429,6 +430,7 @@ export interface GuncellemeAlanlari {
   rol?: string;
   takim_id?: string | null;
   bolge_id?: string | null;
+  aktif_mi?: boolean;
 }
 
 export type UpsertPlaniSonucu =
@@ -504,6 +506,16 @@ export function satirUpsertPlani(
   if (kayit.rol !== mevcut.rol) { alanlar.rol = kayit.rol; degisenAlanlar.push("rol"); }
   if (son.takim_id !== mevcut.takim_id) { alanlar.takim_id = son.takim_id; degisenAlanlar.push("takım"); }
   if (son.bolge_id !== mevcut.bolge_id) { alanlar.bolge_id = son.bolge_id; degisenAlanlar.push("bölge"); }
+
+  // T-7: eksiği BU satırla kapanan pasif kullanıcı otomatik aktifleşir.
+  // Bilinçli pasife alınmış (eksiksiz) kullanıcıya dokunulmaz — kural yalnız
+  // "önce eksikti, şimdi değil" geçişinde çalışır.
+  const onceEksik = kullaniciEksikMi(mevcut.rol, mevcut.takim_id, mevcut.bolge_id, mevcut.telefon).eksik;
+  const sonraEksik = kullaniciEksikMi(kayit.rol, son.takim_id, son.bolge_id, kayit.telefon).eksik;
+  if (onceEksik && !sonraEksik && !mevcut.aktif_mi) {
+    alanlar.aktif_mi = true;
+    degisenAlanlar.push("aktifleşti");
+  }
 
   if (degisenAlanlar.length === 0) return { islem: "degisiklik-yok", kullanici_id: mevcut.kullanici_id };
 
