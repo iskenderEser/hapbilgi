@@ -85,7 +85,8 @@ export function useTekilForm({ seciliFirma, takimlar, refreshKullanicilar, hata,
       });
       const data = await res.json();
       if (!res.ok) { hata(data.hata ?? "Kullanıcı eklenemedi.", data.adim, data.detay); }
-      else { basari("Ekleme başarılı."); sifirlaTekilForm(); refreshKullanicilar(); }
+      // K-A6: eksik bilgili eklemede route'un uyarılı mesajı olduğu gibi gösterilir.
+      else { basari(data.mesaj ?? "Ekleme başarılı."); sifirlaTekilForm(); refreshKullanicilar(); }
     } catch (err) {
       // B-32: ağ hatasında yükleme durumu takılı kalmaz.
       hata("Kullanıcı eklenemedi — bağlantı hatası.", "handleTekilKaydet", String(err));

@@ -15,6 +15,7 @@ interface TopluGirisFormuProps {
   onizlemeLoading: boolean;
   topluKaydetLoading: boolean;
   hazirSayisi: number;
+  eksikSayisi: number;
   hataliSayisi: number;
   kaydetSonucu: TopluKaydetSonucu | null;
   handleDosyaSec: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -78,6 +79,8 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
         <>
           <div style={{ marginBottom: "12px", display: "flex", gap: "12px", fontSize: "13px", fontWeight: 600, fontFamily: "'Nunito', sans-serif" }}>
             <span style={{ color: "#1d4ed8" }}>Hazır: {p.hazirSayisi}</span>
+            {/* K-A6: eksik satırlar da yüklenir — ayrı sayaçla görünür */}
+            <span style={{ color: "#d97706" }}>Eksik bilgili: {p.eksikSayisi}</span>
             <span style={{ color: "#dc2626" }}>Hatalı: {p.hataliSayisi}</span>
           </div>
 
@@ -97,7 +100,7 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
               </thead>
               <tbody>
                 {p.onizlemesatirlari.map((s) => (
-                  <tr key={s.index} style={{ background: s.durum === "hatali" ? "#fef2f2" : "white" }}>
+                  <tr key={s.index} style={{ background: s.durum === "hatali" ? "#fef2f2" : s.durum === "eksik" ? "#fffbeb" : "white" }}>
                     <td style={tarz_td}>{s.index}</td>
                     <td style={tarz_td}>{s.ad}</td>
                     <td style={tarz_td}>{s.soyad}</td>
@@ -108,6 +111,10 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
                     <td style={tarz_td}>
                       {s.durum === "hazir" ? (
                         <span style={{ color: "#1d4ed8", fontWeight: 600 }}>Hazır</span>
+                      ) : s.durum === "eksik" ? (
+                        <span style={{ color: "#d97706", fontWeight: 600 }} title={s.uyari_mesaji}>
+                          Eksik bilgili{s.uyari_mesaji ? ` — ${s.uyari_mesaji}` : " (takım/bölge yok)"}
+                        </span>
                       ) : (
                         <span style={{ color: "#dc2626", fontWeight: 600 }} title={s.hata_mesaji}>
                           Hatalı
@@ -120,19 +127,22 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
             </table>
           </div>
 
-          {/* Toplu kaydet butonu — sadece hazır satır varsa aktif */}
+          {/* Toplu kaydet — K-A6: eksik bilgili satırlar da yüklenir,
+              buton hazır+eksik toplamını kaydeder */}
           <button
             onClick={p.handleTopluKaydet}
-            disabled={p.hazirSayisi === 0 || p.topluKaydetLoading}
+            disabled={p.hazirSayisi + p.eksikSayisi === 0 || p.topluKaydetLoading}
             style={{
               ...btnBase,
-              background: p.hazirSayisi === 0 || p.topluKaydetLoading ? "#d1d5db" : "#1d4ed8",
+              background: p.hazirSayisi + p.eksikSayisi === 0 || p.topluKaydetLoading ? "#d1d5db" : "#1d4ed8",
               color: "white",
               border: "none",
-              cursor: p.hazirSayisi === 0 || p.topluKaydetLoading ? "not-allowed" : "pointer",
+              cursor: p.hazirSayisi + p.eksikSayisi === 0 || p.topluKaydetLoading ? "not-allowed" : "pointer",
             }}
           >
-            {p.topluKaydetLoading ? "Kaydediliyor..." : `${p.hazirSayisi} kullanıcıyı kaydet`}
+            {p.topluKaydetLoading
+              ? "Kaydediliyor..."
+              : `${p.hazirSayisi + p.eksikSayisi} kullanıcıyı kaydet${p.eksikSayisi > 0 ? ` (${p.eksikSayisi} eksik bilgili)` : ""}`}
           </button>
         </>
       )}
@@ -158,6 +168,7 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
         >
           <p style={{ fontSize: "13px", fontWeight: 700, color: p.kaydetSonucu.hatali > 0 ? "#b91c1c" : "#166534", margin: 0 }}>
             {p.kaydetSonucu.basarili} kullanıcı eklendi
+            {p.kaydetSonucu.eksikli > 0 ? ` (${p.kaydetSonucu.eksikli} tanesi eksik bilgili — takım/bölge tamamlanmalı)` : ""}
             {p.kaydetSonucu.hatali > 0 ? `, ${p.kaydetSonucu.hatali} satır eklenemedi:` : "."}
           </p>
           {p.kaydetSonucu.hatalar.length > 0 && (

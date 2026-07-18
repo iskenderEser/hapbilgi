@@ -48,9 +48,71 @@ export interface DogrulanmisKullanici {
   bolge_id: string | null;
 }
 
+// K-A6 — eksik kabul modeli: kimlik çekirdeği (ad, soyad, eposta, sifre, rol)
+// tam olan satır, takım/bölge çözülemese de KABUL edilir; kayıt NULL alanla
+// döner ve eksikAlanlar doldurulur. "Eksik bilgili" tanımının TEK KAYNAĞI
+// kullaniciEksikMi'dir — listede rozet, firma aktivasyon kilidi ve başka her
+// tüketici kendi kontrolünü yazmaz, bu fonksiyonu çağırır.
+export type EksikAlan = "takim" | "bolge";
+
 export type SatirDogrulamaSonucu =
-  | { ok: true; kayit: DogrulanmisKullanici }
+  | { ok: true; kayit: DogrulanmisKullanici; eksikAlanlar: EksikAlan[]; uyari?: string }
   | { ok: false; hata: string; alanlar?: string[] };
+
+/**
+ * Kullanıcının "eksik bilgili" olup olmadığını rol kurallarından türetir.
+ * DB'de ayrı bir eksik kolonu YOKTUR; tanım her zaman buradan okunur.
+ */
+export function kullaniciEksikMi(
+  rol: string,
+  takim_id: string | null,
+  bolge_id: string | null
+): { eksik: boolean; eksikAlanlar: EksikAlan[] } {
+  const eksikAlanlar: EksikAlan[] = [];
+  const yetenek = ureticiYetenegi(rol);
+  if (yetenek) {
+    if (yetenek.takimZorunlu && !takim_id) eksikAlanlar.push("takim");
+  } else if (rol === "tm") {
+    if (!takim_id) eksikAlanlar.push("takim");
+  } else if (rol === "bm" || TUKETICI_ROLLER.includes(rol)) {
+    // Takım bölgeden türetilir; eksiklik bölge üzerinden raporlanır.
+    if (!bolge_id) eksikAlanlar.push("bolge");
+  }
+  return { eksik: eksikAlanlar.length > 0, eksikAlanlar };
+}
+
+export interface EksikKullanici {
+  kullanici_id: string;
+  ad: string;
+  soyad: string;
+  rol: string;
+  eksikAlanlar: EksikAlan[];
+}
+
+/**
+ * Firmanın eksik bilgili kullanıcılarını döner (tek SELECT + saf filtre).
+ * Firma aktivasyon kilidi (K-A6) ve liste rozeti bu yardımcıyı kullanır.
+ */
+export async function firmaninEksikKullanicilari(
+  adminSupabase: SupabaseClient,
+  firma_id: string
+): Promise<{ ok: true; eksikler: EksikKullanici[] } | { ok: false; hata: string }> {
+  const { data, error } = await adminSupabase
+    .from("kullanicilar")
+    .select("kullanici_id, ad, soyad, rol, takim_id, bolge_id")
+    .eq("firma_id", firma_id);
+
+  if (error) return { ok: false, hata: "Kullanıcılar çekilemedi." };
+
+  const eksikler: EksikKullanici[] = [];
+  for (const k of data ?? []) {
+    const sonuc = kullaniciEksikMi(k.rol, k.takim_id, k.bolge_id);
+    if (sonuc.eksik) {
+      eksikler.push({ kullanici_id: k.kullanici_id, ad: k.ad, soyad: k.soyad, rol: k.rol, eksikAlanlar: sonuc.eksikAlanlar });
+    }
+  }
+  return { ok: true, eksikler };
+}
 
 /**
  * Firmanın takım/bölge yapısını TEK sorgu çiftiyle yükler.
@@ -93,6 +155,11 @@ function metinAl(deger: unknown): string {
  * - TM: takım zorunlu. BM/UTT/KD_UTT: bölge zorunlu, takım bölgeden türetilir.
  * - Diğer roller (yönetici/admin/İU): takım-bölge atanmaz.
  * - Takım/bölge id ya da adla verilebilir; eşleşme firma yapısı İÇİNDE aranır.
+ *
+ * K-A6 — eksik kabul: takım/bölge zorunluluğu artık RED sebebi DEĞİLDİR.
+ * Alan boşsa ya da verilen ad/id firmada eşleşmezse satır kabul edilir,
+ * ilgili alan NULL kalır, eksikAlanlar işaretlenir; eşleşmeyen girdi için
+ * uyari mesajı döner (yanlış yazım sessizce kaybolmaz, görünür kalır).
  */
 export function kullaniciSatirDogrula(
   yapi: FirmaYapisi,
@@ -153,31 +220,33 @@ export function kullaniciSatirDogrula(
 
   let takim_id: string | null = null;
   let bolge_id: string | null = null;
+  let uyari: string | undefined;
 
+  const takimGirdiVar = Boolean(takimIdGirdi || takimAdiGirdi);
+  const bolgeGirdiVar = Boolean(bolgeIdGirdi || bolgeAdiGirdi);
   const yetenek = ureticiYetenegi(rol);
 
-  if (yetenek) {
+  if (yetenek || rol === "tm") {
     const t = takimBul();
-    if (yetenek.takimZorunlu) {
-      if (!t.ok) return { ok: false, hata: t.hata ?? `${rol} rolü için takım zorunludur.`, alanlar: ["takim_adi"] };
+    if (t.ok) {
       takim_id = t.takim_id!;
-    } else if (takimIdGirdi || takimAdiGirdi) {
-      if (!t.ok) return { ok: false, hata: t.hata ?? "Takım bulunamadı.", alanlar: ["takim_adi"] };
-      takim_id = t.takim_id!;
+    } else if (takimGirdiVar) {
+      // Verilmiş ama firmada eşleşmemiş: NULL kabul + görünür uyarı (K-A6).
+      uyari = `${t.hata ?? "Takım bulunamadı."} Kullanıcı takım ataması olmadan kaydedilir.`;
     }
-  } else if (rol === "tm") {
-    const t = takimBul();
-    if (!t.ok) return { ok: false, hata: t.hata ?? "tm rolü için takım zorunludur.", alanlar: ["takim_adi"] };
-    takim_id = t.takim_id!;
   } else if (rol === "bm" || TUKETICI_ROLLER.includes(rol)) {
     const b = bolgeBul();
-    if (!b.ok) return { ok: false, hata: b.hata ?? `${rol} rolü için bölge zorunludur.`, alanlar: ["bolge_adi"] };
-    bolge_id = b.bolge_id!;
-    takim_id = b.takim_id!;
+    if (b.ok) {
+      bolge_id = b.bolge_id!;
+      takim_id = b.takim_id!;
+    } else if (bolgeGirdiVar) {
+      uyari = `${b.hata ?? "Bölge bulunamadı."} Kullanıcı bölge ataması olmadan kaydedilir.`;
+    }
   }
   // Diğer roller: takım/bölge atanmaz.
 
-  return { ok: true, kayit: { ad, soyad, eposta, sifre, rol, takim_id, bolge_id } };
+  const { eksikAlanlar } = kullaniciEksikMi(rol, takim_id, bolge_id);
+  return { ok: true, kayit: { ad, soyad, eposta, sifre, rol, takim_id, bolge_id }, eksikAlanlar, uyari };
 }
 
 // ─── Rol geçişi (B-23) ──────────────────────────────────────────────────────

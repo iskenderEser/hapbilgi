@@ -52,6 +52,9 @@ export async function POST(
     if (!yapiSonuc.ok) return hataYaniti(yapiSonuc.hata, "firmaYapisiYukle — toplu yükleme", null);
     const yapi = yapiSonuc.yapi;
 
+    // K-A6 — eksik kabul: kimlik çekirdeği tam ama takım/bölge çözülememiş
+    // satır "eksik" durumuyla YÜKLENİR (NULL alanla); yalnız kimlik çekirdeği
+    // bozuk satırlar "hatali" kalır ve yüklenmez.
     type SatirSonuc = {
       index: number;
       ad: string;
@@ -60,8 +63,9 @@ export async function POST(
       eposta: string;
       takim_adi: string;
       bolge_adi: string;
-      durum: "hazir" | "hatali";
+      durum: "hazir" | "eksik" | "hatali";
       hata_mesaji?: string;
+      uyari_mesaji?: string;
       takim_id?: string | null;
       bolge_id?: string | null;
     };
@@ -98,7 +102,8 @@ export async function POST(
 
       satirSonuclari.push({
         ...satirBase,
-        durum: "hazir",
+        durum: dogrulama.eksikAlanlar.length > 0 ? "eksik" : "hazir",
+        uyari_mesaji: dogrulama.uyari,
         takim_id: dogrulama.kayit.takim_id,
         bolge_id: dogrulama.kayit.bolge_id,
       });
@@ -109,6 +114,7 @@ export async function POST(
     }
 
     let basarili = 0;
+    let eksikli = 0; // başarılı yüklenen ama eksik bilgili (K-A6) satır sayısı
     let hatali = 0;
     const hatalar: string[] = [];
 
@@ -157,11 +163,13 @@ export async function POST(
       }
 
       basarili++;
+      if (satir.durum === "eksik") eksikli++;
     }
 
     return NextResponse.json({
-      mesaj: `Toplu yükleme tamamlandı. ${basarili} başarılı, ${hatali} hatalı.`,
+      mesaj: `Toplu yükleme tamamlandı. ${basarili} başarılı${eksikli > 0 ? ` (${eksikli} tanesi eksik bilgili)` : ""}, ${hatali} hatalı.`,
       basarili,
+      eksikli,
       hatali,
       hatalar: hatalar.length > 0 ? hatalar : undefined,
     }, { status: 200 });

@@ -2,12 +2,17 @@
   "fromlar": [
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 63,
+      "satir": 100,
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "lib/admin/kullaniciDogrulama.ts",
+      "satir": 125,
       "tablo": "takimlar"
     },
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 73,
+      "satir": 135,
       "tablo": "bolgeler"
     },
     {
@@ -3267,42 +3272,42 @@
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 115,
+      "satir": 118,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 162,
+      "satir": 171,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 204,
+      "satir": 213,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 241,
+      "satir": 250,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 254,
+      "satir": 263,
       "tablo": "silinmis_kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 271,
+      "satir": 280,
       "tablo": "silinmis_kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 279,
+      "satir": 288,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 293,
+      "satir": 302,
       "tablo": "kullanicilar"
     },
     {
@@ -3362,7 +3367,7 @@
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
-      "satir": 138,
+      "satir": 144,
       "tablo": "kullanicilar"
     },
     {
@@ -3479,13 +3484,19 @@
   "selectler": [
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 63,
+      "satir": 100,
+      "ham": "kullanici_id, ad, soyad, rol, takim_id, bolge_id",
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "lib/admin/kullaniciDogrulama.ts",
+      "satir": 125,
       "ham": "takim_id, takim_adi",
       "tablo": "takimlar"
     },
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 73,
+      "satir": 135,
       "ham": "bolge_id, bolge_adi, takim_id",
       "tablo": "bolgeler"
     },
@@ -6731,13 +6742,13 @@
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 162,
+      "satir": 171,
       "ham": "kullanici_id, rol, takim_id, bolge_id",
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 241,
+      "satir": 250,
       "ham": "kullanici_id, ad, soyad, eposta, rol, firma_id, takim_id, bolge_id, aktif_mi, yetki_kullanici_yonetim, yetki_aktif_pasif, fotograf_url",
       "tablo": "kullanicilar"
     },

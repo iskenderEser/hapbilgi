@@ -20,6 +20,7 @@ interface UseTopluFormProps {
 // {basarili, hatali, hatalar[]} döner; UI bunu olduğu gibi gösterir.
 export interface TopluKaydetSonucu {
   basarili: number;
+  eksikli: number; // K-A6: yüklenen ama eksik bilgili satır sayısı
   hatali: number;
   hatalar: string[];
 }
@@ -78,12 +79,13 @@ export function useTopluForm({ seciliFirma, refreshKullanicilar, hata, basari }:
         // B-17: sonuç OLDUĞU GİBİ raporlanır — kısmi başarısızlık gizlenmez.
         const sonuc: TopluKaydetSonucu = {
           basarili: data.basarili ?? 0,
+          eksikli: data.eksikli ?? 0,
           hatali: data.hatali ?? 0,
           hatalar: data.hatalar ?? [],
         };
         setKaydetSonucu(sonuc);
         if (sonuc.hatali === 0) {
-          basari(`${sonuc.basarili} kullanıcı eklendi.`);
+          basari(`${sonuc.basarili} kullanıcı eklendi${sonuc.eksikli > 0 ? ` (${sonuc.eksikli} tanesi eksik bilgili — takım/bölge tamamlanmalı)` : ""}.`);
           setTopluDosya(null);
           setOnizlemeSatirlari(null);
         } else {
@@ -101,6 +103,7 @@ export function useTopluForm({ seciliFirma, refreshKullanicilar, hata, basari }:
   };
 
   const hazirSayisi = onizlemesatirlari?.filter(s => s.durum === "hazir").length ?? 0;
+  const eksikSayisi = onizlemesatirlari?.filter(s => s.durum === "eksik").length ?? 0;
   const hataliSayisi = onizlemesatirlari?.filter(s => s.durum === "hatali").length ?? 0;
 
   return {
@@ -109,6 +112,7 @@ export function useTopluForm({ seciliFirma, refreshKullanicilar, hata, basari }:
     onizlemeLoading,
     topluKaydetLoading,
     hazirSayisi,
+    eksikSayisi,
     hataliSayisi,
     kaydetSonucu,
     handleDosyaSec,

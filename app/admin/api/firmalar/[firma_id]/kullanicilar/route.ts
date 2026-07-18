@@ -102,6 +102,9 @@ export async function POST(
     const dogrulama = kullaniciSatirDogrula(yapiSonuc.yapi, body);
     if (!dogrulama.ok) return validasyonHatasi(dogrulama.hata, dogrulama.alanlar);
     const kayit = dogrulama.kayit;
+    // K-A6 — eksik kabul: takım/bölge çözülememişse kayıt yine açılır,
+    // eksiklik yanıtta görünür şekilde raporlanır.
+    const eksikMi = dogrulama.eksikAlanlar.length > 0;
 
     const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
       email: kayit.eposta,
@@ -133,7 +136,13 @@ export async function POST(
       return hataYaniti("Kullanıcı veritabanına kaydedilemedi.", "kullanicilar tablosu INSERT", insertError);
     }
 
-    return NextResponse.json({ mesaj: "Kullanıcı başarıyla eklendi." }, { status: 201 });
+    return NextResponse.json({
+      mesaj: eksikMi
+        ? `Kullanıcı eklendi — EKSİK BİLGİLİ (${dogrulama.eksikAlanlar.join(", ")} atanmadı).${dogrulama.uyari ? ` ${dogrulama.uyari}` : ""}`
+        : "Kullanıcı başarıyla eklendi.",
+      eksik: eksikMi,
+      eksikAlanlar: dogrulama.eksikAlanlar,
+    }, { status: 201 });
 
   } catch (err) {
     return sunucuHatasi(err, "POST /admin/api/firmalar/[firma_id]/kullanicilar");

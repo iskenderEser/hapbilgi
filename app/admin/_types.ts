@@ -33,8 +33,10 @@ export interface OnizlemeSatir {
   eposta: string;
   takim_adi: string;
   bolge_adi: string;
-  durum: "hazir" | "hatali";
+  // K-A6: "eksik" = kimlik çekirdeği tam, takım/bölge çözülemedi — YÜKLENİR.
+  durum: "hazir" | "eksik" | "hatali";
   hata_mesaji?: string;
+  uyari_mesaji?: string;
 }
 
 export interface TakimBlok {
