@@ -102,3 +102,104 @@ WHERE email IN ('utt@test.com', 'pm@test.com', 'bm@test.com');
 DELETE FROM auth.users
 WHERE email IN ('utt@test.com', 'pm@test.com', 'bm@test.com');
 ```
+
+---
+
+# Admin Paneli TAM Taraması (17.07.2026 — v2)
+
+*Bu bölüm, aynı gün yapılan ilk (kısmi) admin taramasının YERİNE geçer — ilk tarama kapsam eksikliği nedeniyle İskender tarafından reddedilmiştir; B-27'si (sayfa kapısı yok iddiası) bu tam taramada YANLIŞ çıkmıştır (düzeltme: B-33).*
+
+*Tarama: 17.07.2026, Code (salt-okuma; Q0 — sıfır değişiklik). Kapsam: `app/admin/**`'ın TAMAMI — 24 API rotası, 15 hook, ~20 bileşen satır düzeyinde + dokundukları lib katmanı (`lib/store/storage+siparis`, `lib/eclub/store/*`, `lib/utils/adminGirisKontrol`, `lib/firma/kolonlar`, `lib/uretici/yetenekler` çağrı yüzeyi) + proxy admin bekçisi. DB doğrulamaları DATABASE_URL salt-okuma: rol bütünlüğü (12 rol, tümü geçerli — B-18 sızması henüz gerçekleşmemiş), FK haritası (urunler←9 tablo, teknikler/takimlar/firmalar←talepler), firma sayısı=1 (B-22 uykuda).*
+
+## 5. Bulgular (admin tam taraması)
+
+Format: `B-## | kategori | kanıt | önem | önerilen düzeltme`
+
+### KRİTİK
+
+- **B-17 | T-K5 | Toplu kullanıcı yüklemede kısmi başarısızlık UI'da yutulur — her koşulda "Ekleme başarılı."** Kanıt: route satır bazında devam edip `{basarili, hatali, hatalar[]}` döner, durum 200 (`app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts:137-193`); hook yalnız `res.ok`'a bakar, `data.hatalar`'ı okumaz, formu sıfırlar (`app/admin/_hooks/useTopluForm.ts:47-62`). 11 satırın 5'i kaydolmasa admin asla görmez (B-08 sınıfının admin emsali). | KRİTİK | Hook `hatali>0` ise satır hatalarını görünür listeler; "X başarılı, Y hatalı" özeti.
+
+- **B-18 | T-K1 | Toplu yüklemede ROL DOĞRULAMASI YOK — geçersiz rol "Hazır" sayılıp DB'ye yazılır.** Kanıt: tekli rota `TUM_ROLLER.includes` uygular (`kullanicilar/route.ts:102`); toplu rota rolü hiçbir listeye vurmaz (`toplu-yukle/route.ts:75-131`, dosyada roller.ts import'u yok) — `genel_mudur` gibi değer takım/bölge listelerinin ikisine de girmediğinden zorunluluk kontrolünden de muaf kalıp `kullanicilar.rol`'e yazılır; hiçbir yetki kapısından geçemeyen hayalet kullanıcı doğar. Fiziksel test dosyasında 4 satır bu sınıftaydı. DB bugün temiz (sızma yalnız toplu yükleme hiç başarılı koşmadığı için yaşanmadı). | KRİTİK | B-21'deki ortak doğrulama lib'i.
+
+- **B-19 | T-K5 | Toplu SİL ve toplu PASİF, satır yanıtlarını hiç okumaz — silme kısmen başarısız olsa da "Silme işlemi başarılı."** Kanıt: `useKullaniciListesi.ts:142-155` (`handleTopluPasif`) ve `:159-173` (`handleTopluSil`) — döngüdeki `fetch`'lerin `res.ok`'u kontrol edilmez, koşulsuz `basari(...)` + seçim temizlenir. Tekil `handleSil` (127-139) doğru davranır. Arşiv/Auth hatasında satır sessizce hayatta kalır, admin yanlış bilgilendirilir. | KRİTİK | Döngüde sonuç toplama + "X silindi, Y silinemedi (sebep)" raporu.
+
+- **B-20 | T-K5 | Export'ta veri sorgularının hataları yutulur; eksik Excel'e "tam yedek" muamelesi yapılır ve firma silme yolu açılır.** Kanıt: `export/route.ts` yalnız firma sorgusunda hata kontrol eder (:39-47); takımlar/bölgeler/kullanıcılar/ürünler/teknikler/talepler/yayın zinciri/puan-kayıp sorgularının TÜMÜ `const { data } = ...` ile error'suz (:50,:61,:70,:87,:95,:102,:116-161,:229,:246-270) — bir sorgu hata verirse ilgili sayfa sessizce boş kalır; buna rağmen `son_export_at` koşulsuz güncellenir (:352-356) ve firma DELETE'in export ön koşulu (:157-175, `[firma_id]/route.ts`) sağlanmış sayılır. Sonuç: eksik yedek + silinebilir firma = geri dönüşsüz veri kaybı zinciri. | KRİTİK | Her sorguda hata kontrolü; herhangi biri hata verirse export'u hata ile kes, `son_export_at` güncelleme.
+
+### ORTA
+
+- **B-21 | T-K1/T-K6 | Tekli ve toplu kullanıcı ekleme İKİ AYRI kural setiyle çalışır.** Kanıt: tekli rota rol kurallarını `ureticiYetenegi` + `TUKETICI_ROLLER`'dan türetir (`kullanicilar/route.ts:108-222`); toplu rota koda gömülü `["pm","jr_pm","kd_pm","tm"]` / `["bm","utt","kd_utt"]` listeleriyle (`toplu-yukle/route.ts:108,118`) — üretici yetenek profili toplu tarafta yok; İlke 3 (tek kaynak) ihlali + davranış sapması. | ORTA | Satır doğrulama + takım/bölge çözümü tek lib fonksiyonuna; iki rota da onu çağırır (B-18'i de kapatır).
+
+- **B-22 | T-K1 | Bölge çözümünde firma kapsamı doğrulanmıyor.** Kanıt: tekli POST bm/utt yolunda `bolgeler` SELECT'i firma filtresi olmadan (`kullanicilar/route.ts:198-217`; takım sorgularındaki `.eq("firma_id")` simetriği yok); toplu rota tüm bölgeleri firma'sız çeker (`toplu-yukle/route.ts:50-52`). İkinci firma açıldığında aynı adlı bölge yanlış firmaya bağlanabilir (bugün firma=1, uykuda). | ORTA | Bölge çözümü `bolgeler→takimlar.firma_id` üzerinden firmaya kilitlenir.
+
+- **B-23 | T-K1 | Rol değişikliğinde takım/bölge tutarlılığı denetlenmez; rol tipi de doğrulanmaz.** Kanıt: PUT yalnız `TUM_ROLLER` üyeliğine bakar, takım/bölge alanlarına dokunmaz (`kullanicilar/route.ts:288-303`); KullaniciListesi satır içi rol dropdown'ı bu ucu kullanır (`useKullaniciListesi.ts:88-99`). utt→tm geçişinde `bolge_id` kalır, takım zorunluluğu aranmaz → rol-veri uyumsuz kullanıcı. Ek: `rol.trim()` (:289) — rol string değilse (ör. sayı) 500. | ORTA | Rol geçişine yeni rolün zorunlulukları (B-21 ortak fonksiyonu) uygulanır; string kontrolü eklenir.
+
+- **B-24 | T-K5 | Kullanıcı silmede Auth-önce sıra geri alınamaz yarım durum bırakabilir.** Kanıt: `auth.admin.deleteUser` başarılı olup `kullanicilar` DELETE başarısız olursa (FK vb.) auth'suz yetim satır kalır; telafi yok (`kullanicilar/route.ts:356-367`; POST'taki rollback deseninin — :249-251 — simetriği yok). | ORTA | Sıra ters çevrilir ya da DB hatasında telafi eklenir.
+
+- **B-25 | T-B (UX) | Toplu yükleme insan-format toleranssız; satır hatası fiilen görünmez.** Kanıt: başlıklar makine adıyla birebir aranır (`toplu-yukle/route.ts:77-83`; "Ad/E-posta/Takım" başlıklı insan dosyası 11/11 "Zorunlu alan eksik" — fiziksel test kanıtı); rol yalnız kod kabul eder, `ROL_ADLARI` (roller.ts:215) kullanılmaz; hata yalnız `title` tooltip'inde (`TopluGirisFormu.tsx:110`) ve kullanıcıda hiç çıkmadı; indirilecek şablon yok. | ORTA | Esnek başlık eşleme + rol ad→kod çevirisi + görünür hata sütunu + "şablonu indir".
+
+- **B-26 | T-D/T-K6 | Admin uçlarında EN AZ DÖRT savunma deseni; bu iş için yazılmış `adminGirisKontrol` ölü kod.** Kanıt: (1) `/admin/api/*` rotalarının çoğunda route-içi kontrol YOK, koruma yalnız proxy bekçisi (proxy.ts:43-72); (2) store/eclub-store rotaları proxy yolunun DIŞINDA, route-içi `rolCozucu`+`ADMIN_ROLLER` ile (`store/api/urun/route.ts:33-45` vb.); (3) `sistem-ayarlari` ve `eclub/*` rotaları KENDİ yerel `adminKontrol` kopyalarıyla (`sistem-ayarlari/route.ts:17-28`, `eclub/kayitli/route.ts:14-25`, `eclub/onaylar`, `eclub-store/*`); (4) `lib/utils/adminGirisKontrol.ts` repo genelinde hiçbir yerden çağrılmıyor (dosya başı "her admin route'unda kullanın" talimatına rağmen — grep 0 sonuç). Bugün açık kapı yok ama tek-katman bağımlılığı + kopya çokluğu kırılgan. | ORTA | Tüm rotalar `adminGirisKontrol`'e bağlanır; yerel kopyalar silinir.
+
+- **B-27 | T-K1 | E-Club Store siparişinde serbest durum atlama — teslim edilmiş siparişe puan iadesi mümkün.** Kanıt: `action="durum"` dört durum arasında HER YÖNE geçişe izin verir, geçiş matrisi yok (`eclub-store/api/siparis/route.ts:10,90-107`); `teslim_edildi → beklemede` çekilip `action="iptal"` ile RPC iadesi tetiklenebilir — ürün müşteride, puan+stok iade edilmiş olur. HBStore simetriği kısıtlı (yalnız beklemede→kargoda, `store/api/siparis/route.ts:129-145`). "iptal" değeri listede olmadığından iade-atlamalı iptal yolu YOK (o kapı kapalı). | ORTA | Geçiş matrisi: beklemede→hazirlaniyor→kargoda→teslim_edildi ileri yönlü; teslim_edildi'den geri dönüş kapalı.
+
+- **B-28 | T-B2 | Sistem Ayarları paneli jsonb-NESNE değerli anahtarı yönetemiyor.** Kanıt: sunucu doğrulaması yalnız pozitif sayı / sayı dizisi kabul eder (`sistem-ayarlari/route.ts:31-37`); UI `degerMetni` nesneyi `String(deger)` = "[object Object]" basar (`SistemAyarlari.tsx:24-25`). P0'da eklenen `push_olay_aktif` (jsonb nesne) panelde bozuk görünür ve düzenlenemez — push planı B.2-6 ("olay bazlı aç/kapa `sistem_ayarlari`'ndan yönetilir") fiilen karşılanmaz. | ORTA | Panel+route'a nesne (anahtar→boolean) değer desteği; ya da push_olay_aktif için özel toggle UI.
+
+- **B-29 | T-K5 | Ürün/teknik silmede bağlı-veri koruması yok — kullanımda olan kayıt ham FK hatasıyla düşer.** Kanıt: `urunler/route.ts:95-131` ve `teknikler/route.ts:75-111` DELETE'lerinde hiçbir bağlılık kontrolü yok; FK haritası (sema.json): `urunler` ← talepler, kazanilan_puanlar, eczanem_urun_tarifeleri, ileri_sarma, oneri_kayip, challenge_kayip, eclub_* (9 tablo); `teknikler` ← talepler. Kullanımdaki ürünün silinmesi "Ürün silinemedi." ham mesajıyla düşer (takım/bölge/kullanıcı silmelerindeki rehberli engellerin — `[takim_id]/route.ts:97-112` — simetriği yok). | ORTA | Silme öncesi bağlılık sayımı + açıklayıcı 422 ("X talepte kullanılıyor").
+
+- **B-30 | T-B5 | "Export edilirse firma silinir" vaadi kodda tutmuyor — talepli firma FK nedeniyle her koşulda silinemez.** Kanıt: firma DELETE export + takım + kullanıcı kontrollerinden geçse bile (`[firma_id]/route.ts:149-192`) `talepler.firma_id → firmalar` FK'sı (sema.json) DELETE'i düşürür; yanıt ham "Firma silinemedi." (:199) — sebep söylenmez, talepler için rehberli engel yok. | ORTA | Talep (ve varsa diğer FK) sayımı + açıklayıcı engel; ya da talepli firma silme akışı bilinçli tanımlanır.
+
+### NOT
+
+- **B-31 | T-K6 | Admin'de yerel `ROLLER` kopyası + dropdown'larda ham rol kodu.** Kanıt: `_constants.ts:5-10` kendi listesi (roller.ts'ten import yok; `admin` bilinçli hariç olabilir); `TekilGirisFormu.tsx:56` ve `KullaniciListesi.tsx:220-229` kodu ham basar — `ROL_ADLARI` dururken insan "kd_utt" görür. | NOT | `TUM_ROLLER`(−admin) türetimi + görünümde `ROL_ADLARI[kod]`.
+
+- **B-32 | T-K5 | Eski hook'larda fetch try/catch'siz — ağ hatasında loading takılır; dosya input'u sıfırlanmaz.** Kanıt: `useAdminPanel` (36-64, 66-77…), `useTekilForm` (66-89), `useTopluForm` (31-62), `useKullaniciListesi` (tekil handler'lar) korumasız — fırlatan fetch loading state'ini açık bırakır ("Dosya okunuyor..." kalıcı); yeni katman (eclub/store/eclub-store hook'ları, modallar) try/catch'li — tutarsızlık. Ek: `TopluGirisFormu` input `value` reset edilmediğinden düzeltilen dosya aynı adla yeniden seçilince `onChange` tetiklenmez. | NOT | try/finally standardı + seçim sonrası `e.target.value=""`.
+
+- **B-33 | DÜZELTME (ilk taramanın B-27'si yanlıştı) | /admin sayfa kapısı VARDIR.** Kanıt: `useAdminPanel.ts:28-34`, `useStoreAdminPanel.ts:29`, `useEclubStoreAdminPanel.ts:62` — admin değilse `/ana-sayfa`'ya yönlendirir. Kalan küçük izler: üç yerde `rol !== "admin"` hardcoded (`ADMIN_ROLLER` yerine — B-09 sınıfı) ve kapı yalnız client-side (veri zaten API'lerce korunur). | NOT | `ADMIN_ROLLER.includes` kullanımı; istenirse proxy'ye `/admin` sayfa kapsamı.
+
+- **B-34 | T-K7 | test-verileri-sil kapsamı push tablolarını bilmiyor.** Kanıt: `SILINECEK_TABLOLAR` (test-verileri-sil/route.ts:37-93) 12.07 envanteri; 16.07'de doğan `push_gonderim_kayitlari` (işlem verisi) listede yok — test temizliğinde kalıntı kalır (`push_abonelikleri` kimlik-benzeri, korunması savunulabilir). | NOT | Listeye `push_gonderim_kayitlari` eklenir; araç zaten deploy öncesi kaldırılacak.
+
+- **B-35 | T-K5 | Takım listesinde N+1 fetch.** Kanıt: `useAdminPanel.ts:52-64` — her takım için ayrı bölge isteği. Mevcut ölçekte zararsız. | NOT | Bölgeleri tek istekte döndüren uca geçiş (istenirse).
+
+- **B-36 | T-K1 | Şifre politikası yok.** Kanıt: tekli/toplu yalnız boş-değil + ≤200 kontrol eder (`kullanicilar/route.ts:93,99`; `toplu-yukle/route.ts:95`); Supabase min-6 kuralına takılan şifre ham İngilizce Auth hatası olarak döner. | NOT | Min uzunluk kontrolü + Türkçe mesaj.
+
+- **B-37 | T-K1 | E-Club Store admin iptalinde alan anlamları kayıyor.** Kanıt: `iptal_eden_kisi_id`'ye AUTH id yazılır (admin'in eclub kisi kaydı yoktur; `eclub-store/api/siparis/route.ts:110-118`); `sebep` opsiyonel (HBStore'da zorunlu — `store/api/siparis/route.ts:166-168`) — kayıt izi tutarsız. | NOT | is_admin=true yolunda alan sözleşmesi netleştirilir; sebep zorunlu yapılır.
+
+- **B-38 | T-K1 | Store ürün PATCH'inde kategori varlık kontrolü yok.** Kanıt: POST kategori doğrular (`store/api/urun/route.ts:112-120`), PATCH `kategori_id`'yi kontrolsüz yazar (:170-171) — geçersiz id ham FK hatası. | NOT | PATCH'e aynı kontrol.
+
+## 6. Temiz çıkan taramalar (admin tam taraması)
+
+- **Takım/bölge rotaları** (takimlar, [takim_id], bolgeler, [bolge_id]): firma/takım kapsaması, ad-teklik kontrolleri, silmede rehberli bağlılık engelleri — panelin ÖRNEK deseni; bulguların çoğu bu desenden sapmadır.
+- **Firma CRUD + PATCH bayrakları**: validasyon, mükerrer ad, `FIRMA_KOLONLARI` tek kaynağı, beş modül anahtarının tek uçta yönetimi doğru.
+- **Tekli kullanıcı POST**: rol doğrulama + `ureticiYetenegi` profili + Auth→DB rollback telafisi yerinde.
+- **Sipariş para hareketleri atomik**: HBStore/E-Club Store iptal ve teslim RPC'lerde (`store_siparis_iptal`, `eclub_store_siparis_iptal`, `*_teslim_aldim`) — TS tarafında parça parça para işlemi yok (B-27 durum-atlamayı yönetim katmanında bırakır, RPC'ler kendi kurallarını korur).
+- **Storage katmanı**: mime + 2MB sınırı iki store'da da; PATCH/DELETE'te eski görselin temizlenmesi ve "görsel silinemese de kayıt tutarlı" log yaklaşımı bilinçli.
+- **E-Club onay/kayıt akışı**: bekleyen kontrolü, karar validasyonu, reddedilen kaydın güvenli hard-delete gerekçesi; harita temelli birleştirme (N+1'siz).
+- **test-verileri-sil**: FK-sıralı silme + silme öncesi stok iadesi + tablo başına sonuç raporu + kapsamlı onay modalı (kapsam eksiği yalnız B-34).
+- **Silme onayları UI genelinde**: tekil inline "Eminim", toplu iki aşama, firma `window.confirm`, store/eclub-store inline onaylar, TestVeriSilModal listeli onay.
+- **Export üretimi**: harita temelli zincir çözümü (N+1'siz), şifre/hassas alan dışarı çıkmıyor, ASCII-güvenli dosya adı (sorun yalnız B-20 hata yutumu).
+- **Yeni katman hata işleyişi**: eclub/store/eclub-store hook'ları ve modallar try/catch + `res.ok` disiplinli.
+
+*Q2 kararı (İskender, 17.07.2026): önem ayrımı yapılmadan TÜMÜ düzeltilecek; iş, admin modernizasyon planının (docs/admin_modernizasyon_is_plani.md) M0–M5 fazlarına bağlandı.*
+
+## 7. Uygulama kaydı — M0 (17.07.2026)
+
+Her commit tsc + `npm run denetim` + `npm run lint:mimari` üçlüsünden temiz geçti.
+
+| Bulgu | Commit | Önce → Sonra |
+|---|---|---|
+| B-17 | `58a8063` | Hook `data.hatalar`'ı okumuyordu, koşulsuz "Ekleme başarılı." → kaydet sonucu `{basarili, hatali, hatalar[]}` state'e alınır, ekranda renkli kutuda satır satır listelenir; kısmi hatada önizleme temizlenmez. |
+| B-19 | `ce471bc` | Toplu sil/pasif döngüsü `res.ok` okumuyordu → ortak `topluIslemKos`: satır sonuçları toplanır, "X başarılı, Y başarısız (sebepler)" raporlanır; başarısızlar seçili bırakılır. |
+| B-18+B-21+B-22 | `8dc1a2e` | İki rota iki ayrı kural seti; toplu tarafta rol doğrulaması yok; bölge sorguları firma'sız → `lib/admin/kullaniciDogrulama.ts` TEK kaynak: `firmaYapisiYukle` (bölgeler takım→firma zinciriyle kilitli) + saf `kullaniciSatirDogrula` (TUM_ROLLER + ureticiYetenegi kuralları); tekli ve toplu rota aynı fonksiyonu çağırır. (B-22 aynı kod yolunda doğal olarak kapandı — ayrı commit'e bölmek bilinçli kötü ara-kod gerektirecekti.) |
+| B-20 | `1ab3af2` | 17 export sorgusunun hatası yutuluyordu, `son_export_at` koşulsuz güncelleniyordu → her sorguda kontrol; herhangi biri düşerse "Dışa aktarma iptal edildi: ... eksik yedek üretilmez." ile kesilir; damga yalnız tam yedekte atılır. |
+| B-23 | `16741b1` | PUT rol değişiminde takım/bölge dokunulmuyordu → `rolGecisiCoz` (kural kitabına eklendi): yeni rolün zorunlulukları uygulanır (utt→tm takım ister; yönetici sınıfına geçişte takım/bölge temizlenir); `rol` tip kontrolü eklendi. |
+| B-24 | `ece0ed1` | Auth-önce silme, DB hatasında geri alınamaz yetim satır bırakıyordu → sıra arşiv→DB→Auth; DB düşerse arşiv geri alınır, Auth düşerse satır kopyadan geri yazılır — her adım telafili. |
+
+## 8. Uygulama kaydı — M1 (17.07.2026)
+
+| Bulgu | Commit | Önce → Sonra |
+|---|---|---|
+| B-26 | `4196029` | 4 farklı savunma deseni + ölü `adminGirisKontrol` → giriş hariç 23 rotanın TÜM handler'ları `adminGirisKontrol()`'den geçer (grep haritasıyla doğrulandı); yerel `adminKontrol`/`yetkiAl` kopyaları tek bekçiye saran ince sarmalayıcıya indirildi; `/admin/api/*` artık proxy + route çift katmanlı. |
+| B-32 | `1ba09f6` | Eski hook'larda korumasız fetch'ler; ağ hatasında "yükleniyor..." takılı, aynı dosya yeniden seçilemiyor → `useAdminPanel` (10 fonksiyon) + `useTekilForm` + `useTopluForm` + `useKullaniciListesi` try/catch/finally standardında; loading her koşulda kapanır; dosya input'u seçim sonrası sıfırlanır. |
+| B-33 | `bf41b9f` | Üç shell'de `rol !== "admin"` sabit karşılaştırma → `ADMIN_ROLLER.includes(...)` (tek kaynak). (İlk taramanın "kapı yok" iddiasının düzeltmesi raporda kayıtlı; kapılar zaten vardı.) |
+| B-36 | `e0d9b15` | Şifre yalnız boş-değil kontrolüydü; kısa şifre ham İngilizce Auth hatası döndürüyordu → kural kitabına min-6 + Türkçe mesaj; tekli ve toplu aynı kuraldan geçer. |
+
+Kalan işler: B-25 + K-A6 eksik-kabul modeli (M3), yeni bilgi mimarisi (M2), modül sekmeleri (M4), B-27/B-28/B-29/B-30/B-34/B-35/B-37/B-38 (M5).
