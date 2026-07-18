@@ -2372,42 +2372,42 @@
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 22,
+      "satir": 23,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 59,
+      "satir": 60,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 115,
+      "satir": 131,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 163,
+      "satir": 179,
       "tablo": "talepler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 171,
+      "satir": 187,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 191,
+      "satir": 207,
       "tablo": "takimlar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 199,
+      "satir": 215,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 207,
+      "satir": 223,
       "tablo": "firmalar"
     },
     {
@@ -5908,25 +5908,25 @@
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 163,
+      "satir": 179,
       "ham": "firma_id",
       "tablo": "talepler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 171,
+      "satir": 187,
       "ham": "son_export_at",
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 191,
+      "satir": 207,
       "ham": "takim_id",
       "tablo": "takimlar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 199,
+      "satir": 215,
       "ham": "kullanici_id",
       "tablo": "kullanicilar"
     },

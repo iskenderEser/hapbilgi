@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { FIRMA_KOLONLARI } from "@/lib/firma/kolonlar";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
+import { firmaninEksikKullanicilari } from "@/lib/admin/kullaniciDogrulama";
 
 
 export async function GET(
@@ -110,6 +111,21 @@ export async function PATCH(
         "Güncellenecek alan yok. hbstore_aktif, aktif, cc_aktif veya eclub_aktif (true/false) gönderin.",
         ["hbstore_aktif", "aktif", "cc_aktif", "eclub_aktif", "eclub_store_aktif"]
       );
+    }
+
+    // K-A6 — aktivasyon kilidi: firmada eksik bilgili kullanıcı varken firma
+    // AKTİFLEŞTİRİLEMEZ; kim ve neden eksik, sebepli mesajla döner.
+    if (guncelleme.aktif === true) {
+      const eksikSonuc = await firmaninEksikKullanicilari(adminSupabase, firma_id);
+      if (!eksikSonuc.ok) return hataYaniti(eksikSonuc.hata, "firmaninEksikKullanicilari — aktivasyon kilidi", null);
+      if (eksikSonuc.eksikler.length > 0) {
+        const isimler = eksikSonuc.eksikler.slice(0, 5).map((e) => `${e.ad} ${e.soyad} (${e.eksikAlanlar.join(", ")})`).join(", ");
+        const fazlasi = eksikSonuc.eksikler.length > 5 ? ` ve ${eksikSonuc.eksikler.length - 5} kişi daha` : "";
+        return validasyonHatasi(
+          `Firma aktifleştirilemez: ${eksikSonuc.eksikler.length} kullanıcının eksik bilgisi var — önce tamamlayın. Eksikler: ${isimler}${fazlasi}. (Kullanıcı listesinde "Eksik bilgili" filtresiyle görülebilir.)`,
+          ["aktif"]
+        );
+      }
     }
 
     const { data: guncellenen, error } = await adminSupabase
