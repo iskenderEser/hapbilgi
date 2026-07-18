@@ -40,6 +40,10 @@ export interface OnizlemeSatir {
   bolge_adi: string;
   // K-A6: "eksik" = kimlik çekirdeği tam, takım/bölge çözülemedi — YÜKLENİR.
   durum: "hazir" | "eksik" | "hatali";
+  // Upsert: satır mevcut kayda eşleşirse "guncelle" (degisen alan listesiyle)
+  // ya da "degisiklik-yok"; eşleşmezse "yeni". Hatalı satırda boş kalır.
+  islem?: "yeni" | "guncelle" | "degisiklik-yok";
+  degisen?: string[];
   hata_mesaji?: string;
   uyari_mesaji?: string;
 }

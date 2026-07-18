@@ -2,7 +2,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
-import { firmaYapisiYukle, kullaniciSatirDogrula, turkceKatla } from "@/lib/admin/kullaniciDogrulama";
+import {
+  firmaYapisiYukle,
+  kullaniciSatirDogrula,
+  kullaniciEksikMi,
+  satirUpsertPlani,
+  turkceKatla,
+  type GuncellemeAlanlari,
+  type MevcutKullanici,
+} from "@/lib/admin/kullaniciDogrulama";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 import * as XLSX from "xlsx";
 
@@ -73,7 +81,9 @@ export async function POST(
     // Kimlik çekirdeği kolonları dosyada hiç yoksa satır satır "eksik alan"
     // yağdırmak yerine tek, anlaşılır dosya hatası dönülür.
     const bulunanKolonlar = new Set(rows.flatMap((r) => Object.keys(r)));
-    const zorunluKolonlar = ["ad", "soyad", "eposta", "telefon", "sifre", "rol"];
+    // Şifre kolonu dosya düzeyinde zorunlu DEĞİL: tamamlama listeleri şifresiz
+    // gelir; yeni kullanıcı satırında şifre zorunluluğunu satirUpsertPlani uygular.
+    const zorunluKolonlar = ["ad", "soyad", "eposta", "telefon", "rol"];
     const eksikKolonlar = zorunluKolonlar.filter((k) => !bulunanKolonlar.has(k));
     if (eksikKolonlar.length > 0) {
       return validasyonHatasi(
@@ -89,6 +99,17 @@ export async function POST(
     if (!yapiSonuc.ok) return hataYaniti(yapiSonuc.hata, "firmaYapisiYukle — toplu yükleme", null);
     const yapi = yapiSonuc.yapi;
 
+    // Upsert modeli: satırlar firmanın MEVCUT kullanıcılarıyla eşleştirilir
+    // (önce e-posta, sonra telefon). Eşleşen güncellenir, eşleşmeyen eklenir,
+    // yeni listede olmayan mevcut kullanıcıya DOKUNULMAZ.
+    const { data: mevcutData, error: mevcutError } = await adminSupabase
+      .from("kullanicilar")
+      .select("kullanici_id, ad, soyad, eposta, telefon, rol, takim_id, bolge_id")
+      .eq("firma_id", firma_id);
+    if (mevcutError) return hataYaniti("Mevcut kullanıcılar çekilemedi.", "kullanicilar tablosu SELECT — upsert eşleştirme", mevcutError);
+    const mevcutlar = (mevcutData ?? []) as MevcutKullanici[];
+    const mevcutMap = new Map(mevcutlar.map((m) => [m.kullanici_id, m]));
+
     // K-A6 — eksik kabul: kimlik çekirdeği tam ama takım/bölge çözülememiş
     // satır "eksik" durumuyla YÜKLENİR (NULL alanla); yalnız kimlik çekirdeği
     // bozuk satırlar "hatali" kalır ve yüklenmez.
@@ -102,17 +123,27 @@ export async function POST(
       takim_adi: string;
       bolge_adi: string;
       durum: "hazir" | "eksik" | "hatali";
+      islem?: "yeni" | "guncelle" | "degisiklik-yok";
+      degisen?: string[];
       hata_mesaji?: string;
       uyari_mesaji?: string;
       takim_id?: string | null;
       bolge_id?: string | null;
+      // guncelle dalının kayıt-anı verisi (önizlemede kullanılmaz)
+      hedef_kullanici_id?: string;
+      guncelleme?: GuncellemeAlanlari;
+      eposta_degisti?: boolean;
+      metadata_degisti?: boolean;
     };
 
     const satirSonuclari: SatirSonuc[] = [];
-    // Dosya içi mükerrer telefon kontrolü: normalize edilmiş numara anahtardır —
-    // aynı numara ikinci kez gelirse satır görünür hatayla düşer (DB benzersizlik
-    // index'ine İngilizce hata mesajıyla takılmak yerine önden yakalanır).
+    // Dosya içi tekillik: aynı telefon, aynı e-posta ya da aynı mevcut
+    // kullanıcıya eşleşen ikinci satır görünür hatayla düşer — DB benzersizlik
+    // index'ine İngilizce mesajla takılmak ya da aynı kayda çelişen iki
+    // güncelleme yazmak yerine önden yakalanır.
     const gorulenTelefonlar = new Map<string, number>();
+    const gorulenEpostalar = new Map<string, number>();
+    const eslesenKullanicilar = new Map<string, number>();
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -138,40 +169,97 @@ export async function POST(
         bolge_adi: String(row["bolge_adi"] ?? "").trim(),
       };
 
-      const dogrulama = kullaniciSatirDogrula(yapi, girdi);
+      const dogrulama = kullaniciSatirDogrula(yapi, girdi, { sifreZorunlu: false });
       if (!dogrulama.ok) {
         satirSonuclari.push({ ...satirBase, durum: "hatali", hata_mesaji: dogrulama.hata });
         continue;
       }
+      const kayit = dogrulama.kayit;
 
-      const oncekiSatir = gorulenTelefonlar.get(dogrulama.kayit.telefon);
-      if (oncekiSatir !== undefined) {
-        satirSonuclari.push({
-          ...satirBase,
-          durum: "hatali",
-          hata_mesaji: `Telefon numarası dosyada mükerrer — satır ${oncekiSatir} ile aynı (${dogrulama.kayit.telefon}).`,
-        });
+      const telefonOnceki = gorulenTelefonlar.get(kayit.telefon);
+      if (telefonOnceki !== undefined) {
+        satirSonuclari.push({ ...satirBase, durum: "hatali", hata_mesaji: `Telefon numarası dosyada mükerrer — satır ${telefonOnceki} ile aynı (${kayit.telefon}).` });
         continue;
       }
-      gorulenTelefonlar.set(dogrulama.kayit.telefon, i + 1);
+      const epostaOnceki = gorulenEpostalar.get(kayit.eposta);
+      if (epostaOnceki !== undefined) {
+        satirSonuclari.push({ ...satirBase, durum: "hatali", hata_mesaji: `E-posta dosyada mükerrer — satır ${epostaOnceki} ile aynı (${kayit.eposta}).` });
+        continue;
+      }
 
-      satirSonuclari.push({
+      const plan = satirUpsertPlani(yapi, mevcutlar, kayit);
+      if (plan.islem === "hata") {
+        satirSonuclari.push({ ...satirBase, durum: "hatali", hata_mesaji: plan.hata });
+        continue;
+      }
+      if (plan.islem !== "yeni") {
+        const hedefOnceki = eslesenKullanicilar.get(plan.kullanici_id);
+        if (hedefOnceki !== undefined) {
+          satirSonuclari.push({ ...satirBase, durum: "hatali", hata_mesaji: `Bu satır da satır ${hedefOnceki} ile aynı mevcut kullanıcıya eşleşiyor — satır işlenmedi.` });
+          continue;
+        }
+        eslesenKullanicilar.set(plan.kullanici_id, i + 1);
+      }
+      gorulenTelefonlar.set(kayit.telefon, i + 1);
+      gorulenEpostalar.set(kayit.eposta, i + 1);
+
+      // Satır KANONİK değerleri taşır (rolCoz'dan geçmiş rol kodu, normalize
+      // telefon, katlanmış e-posta) — kayıt aşaması ve auth metadata bunları
+      // kullanır; ham girdinin (örn. insan-adlı rol) DB'ye sızması biter.
+      const ortak = {
         ...satirBase,
-        // Önizleme/kayıt telefonu normalize edilmiş haliyle taşır.
-        telefon: dogrulama.kayit.telefon,
-        durum: dogrulama.eksikAlanlar.length > 0 ? "eksik" : "hazir",
+        ad: kayit.ad,
+        soyad: kayit.soyad,
+        rol: kayit.rol,
+        eposta: kayit.eposta,
+        telefon: kayit.telefon,
         uyari_mesaji: dogrulama.uyari,
-        takim_id: dogrulama.kayit.takim_id,
-        bolge_id: dogrulama.kayit.bolge_id,
-      });
+      };
+
+      if (plan.islem === "yeni") {
+        satirSonuclari.push({
+          ...ortak,
+          durum: dogrulama.eksikAlanlar.length > 0 ? "eksik" : "hazir",
+          islem: "yeni",
+          takim_id: kayit.takim_id,
+          bolge_id: kayit.bolge_id,
+        });
+      } else if (plan.islem === "degisiklik-yok") {
+        const mevcut = mevcutMap.get(plan.kullanici_id)!;
+        const eksik = kullaniciEksikMi(mevcut.rol, mevcut.takim_id, mevcut.bolge_id, mevcut.telefon);
+        satirSonuclari.push({
+          ...ortak,
+          durum: eksik.eksik ? "eksik" : "hazir",
+          islem: "degisiklik-yok",
+          hedef_kullanici_id: plan.kullanici_id,
+        });
+      } else {
+        // Güncelleme sonrası duruma göre eksiklik: tamamlama listesi eksiği
+        // kapatıyorsa satır "hazir" görünür.
+        const eksik = kullaniciEksikMi(plan.son.rol, plan.son.takim_id, plan.son.bolge_id, kayit.telefon);
+        satirSonuclari.push({
+          ...ortak,
+          durum: eksik.eksik ? "eksik" : "hazir",
+          islem: "guncelle",
+          degisen: plan.degisenAlanlar,
+          takim_id: plan.son.takim_id,
+          bolge_id: plan.son.bolge_id,
+          hedef_kullanici_id: plan.kullanici_id,
+          guncelleme: plan.alanlar,
+          eposta_degisti: plan.epostaDegisti,
+          metadata_degisti: plan.metadataDegisti,
+        });
+      }
     }
 
     if (mod === "onizle") {
       return NextResponse.json({ satirlar: satirSonuclari }, { status: 200 });
     }
 
-    let basarili = 0;
-    let eksikli = 0; // başarılı yüklenen ama eksik bilgili (K-A6) satır sayısı
+    let eklenen = 0;
+    let guncellenen = 0;
+    let degismeyen = 0;
+    let eksikli = 0; // işlenen ama eksik bilgili (K-A6) satır sayısı
     let hatali = 0;
     const hatalar: string[] = [];
 
@@ -182,6 +270,59 @@ export async function POST(
         continue;
       }
 
+      if (satir.islem === "degisiklik-yok") {
+        degismeyen++;
+        if (satir.durum === "eksik") eksikli++;
+        continue;
+      }
+
+      if (satir.islem === "guncelle") {
+        // Sıra: önce auth (e-posta/metadata), sonra DB satırı; DB düşerse auth
+        // eski değerlere geri döndürülür — silme rotasındaki telafi disipliniyle aynı.
+        const authDegisiklik: { email?: string; user_metadata?: Record<string, string> } = {};
+        if (satir.eposta_degisti) authDegisiklik.email = satir.eposta;
+        if (satir.metadata_degisti) authDegisiklik.user_metadata = { rol: satir.rol, ad: satir.ad, soyad: satir.soyad };
+
+        if (authDegisiklik.email || authDegisiklik.user_metadata) {
+          const { error: authGuncelleError } = await adminSupabase.auth.admin.updateUserById(
+            satir.hedef_kullanici_id!,
+            authDegisiklik
+          );
+          if (authGuncelleError) {
+            hatalar.push(`Satır ${satir.index} — Auth güncellenemedi: ${authGuncelleError.message}`);
+            hatali++;
+            continue;
+          }
+        }
+
+        const { error: updateError } = await adminSupabase
+          .from("kullanicilar")
+          .update(satir.guncelleme!)
+          .eq("kullanici_id", satir.hedef_kullanici_id!)
+          .eq("firma_id", firma_id);
+
+        if (updateError) {
+          if (authDegisiklik.email || authDegisiklik.user_metadata) {
+            const eski = mevcutMap.get(satir.hedef_kullanici_id!)!;
+            await adminSupabase.auth.admin.updateUserById(satir.hedef_kullanici_id!, {
+              ...(authDegisiklik.email ? { email: eski.eposta } : {}),
+              ...(authDegisiklik.user_metadata ? { user_metadata: { rol: eski.rol, ad: eski.ad, soyad: eski.soyad } } : {}),
+            });
+          }
+          const mesaj = updateError.code === "23505" && updateError.message.includes("telefon")
+            ? `Bu telefon numarası başka bir kullanıcıda kayıtlı (${satir.telefon}).`
+            : `DB güncelleme hatası: ${updateError.message}`;
+          hatalar.push(`Satır ${satir.index} — ${mesaj}`);
+          hatali++;
+          continue;
+        }
+
+        guncellenen++;
+        if (satir.durum === "eksik") eksikli++;
+        continue;
+      }
+
+      // islem === "yeni"
       const row = rows[satir.index - 1];
       const sifre = String(row["sifre"] ?? "").trim();
 
@@ -224,13 +365,23 @@ export async function POST(
         continue;
       }
 
-      basarili++;
+      eklenen++;
       if (satir.durum === "eksik") eksikli++;
     }
 
+    const ozet = [
+      `${eklenen} eklendi`,
+      `${guncellenen} güncellendi`,
+      ...(degismeyen > 0 ? [`${degismeyen} değişiklik yok`] : []),
+      ...(eksikli > 0 ? [`${eksikli} eksik bilgili`] : []),
+      `${hatali} hatalı`,
+    ].join(", ");
+
     return NextResponse.json({
-      mesaj: `Toplu yükleme tamamlandı. ${basarili} başarılı${eksikli > 0 ? ` (${eksikli} tanesi eksik bilgili)` : ""}, ${hatali} hatalı.`,
-      basarili,
+      mesaj: `Toplu yükleme tamamlandı. ${ozet}.`,
+      eklenen,
+      guncellenen,
+      degismeyen,
       eksikli,
       hatali,
       hatalar: hatalar.length > 0 ? hatalar : undefined,

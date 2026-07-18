@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { TUM_ROLLER } from "@/lib/utils/roller";
-import { firmaYapisiYukle, kullaniciSatirDogrula, rolGecisiCoz } from "@/lib/admin/kullaniciDogrulama";
+import { firmaYapisiYukle, kullaniciSatirDogrula, rolGecisiCoz, telefonNormalize } from "@/lib/admin/kullaniciDogrulama";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 
 export async function GET(
@@ -171,11 +171,12 @@ export async function PUT(
     const { kullanici_id, rol, aktif_mi, yetki_kullanici_yonetim, yetki_aktif_pasif } = body;
 
     if (!kullanici_id) return validasyonHatasi("kullanici_id zorunludur.", ["kullanici_id"]);
-    // K-A6 tamamlama akışı: rol değişmeden yalnız takım/bölge ataması da geçerli istektir.
+    // K-A6 tamamlama akışı: rol değişmeden yalnız takım/bölge ataması ya da
+    // telefon eklenmesi/düzeltilmesi de geçerli istektir.
     const atamaVar = body.takim_id !== undefined || body.takim_adi !== undefined
       || body.bolge_id !== undefined || body.bolge_adi !== undefined;
-    if (rol === undefined && aktif_mi === undefined && yetki_kullanici_yonetim === undefined && yetki_aktif_pasif === undefined && !atamaVar)
-      return validasyonHatasi("Güncellenecek alan zorunludur.", ["rol", "aktif_mi", "yetki_kullanici_yonetim", "yetki_aktif_pasif", "takim_id", "bolge_id"]);
+    if (rol === undefined && aktif_mi === undefined && yetki_kullanici_yonetim === undefined && yetki_aktif_pasif === undefined && !atamaVar && body.telefon === undefined)
+      return validasyonHatasi("Güncellenecek alan zorunludur.", ["rol", "aktif_mi", "yetki_kullanici_yonetim", "yetki_aktif_pasif", "takim_id", "bolge_id", "telefon"]);
 
     const { data: kullanici, error: kullaniciError } = await adminSupabase
       .from("kullanicilar")
@@ -235,6 +236,13 @@ export async function PUT(
       guncellenecek.bolge_id = cozum.bolge_id;
     }
 
+    if (body.telefon !== undefined) {
+      // Tekil telefon ekleme/düzeltme: toplu yüklemeyle aynı normalize kuralı.
+      const telefonSonuc = telefonNormalize(body.telefon);
+      if (!telefonSonuc.ok) return validasyonHatasi(telefonSonuc.hata, ["telefon"]);
+      guncellenecek.telefon = telefonSonuc.telefon;
+    }
+
     if (aktif_mi !== undefined) guncellenecek.aktif_mi = aktif_mi;
     if (yetki_kullanici_yonetim !== undefined) guncellenecek.yetki_kullanici_yonetim = yetki_kullanici_yonetim;
     if (yetki_aktif_pasif !== undefined) guncellenecek.yetki_aktif_pasif = yetki_aktif_pasif;
@@ -245,7 +253,13 @@ export async function PUT(
       .eq("kullanici_id", kullanici_id)
       .eq("firma_id", firma_id);
 
-    if (updateError) return hataYaniti("Kullanıcı güncellenemedi.", "kullanicilar tablosu UPDATE", updateError);
+    if (updateError) {
+      // 23505 = benzersizlik ihlali; telefon index'i Türkçe mesajla raporlanır.
+      if (updateError.code === "23505" && updateError.message.includes("telefon")) {
+        return validasyonHatasi(`Bu telefon numarası başka bir kullanıcıda kayıtlı (${guncellenecek.telefon}).`, ["telefon"]);
+      }
+      return hataYaniti("Kullanıcı güncellenemedi.", "kullanicilar tablosu UPDATE", updateError);
+    }
 
     return NextResponse.json({ mesaj: "Kullanıcı başarıyla güncellendi." }, { status: 200 });
 

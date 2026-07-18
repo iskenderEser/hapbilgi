@@ -17,10 +17,12 @@ interface UseTopluFormProps {
 }
 
 // Kaydet sonucunun dürüst özeti (B-17): route satır bazında devam eder ve
-// {basarili, hatali, hatalar[]} döner; UI bunu olduğu gibi gösterir.
+// upsert kırılımını döner; UI bunu olduğu gibi gösterir.
 export interface TopluKaydetSonucu {
-  basarili: number;
-  eksikli: number; // K-A6: yüklenen ama eksik bilgili satır sayısı
+  eklenen: number;
+  guncellenen: number;
+  degismeyen: number;
+  eksikli: number; // K-A6: işlenen ama eksik bilgili satır sayısı
   hatali: number;
   hatalar: string[];
 }
@@ -78,20 +80,22 @@ export function useTopluForm({ seciliFirma, refreshKullanicilar, hata, basari }:
       else {
         // B-17: sonuç OLDUĞU GİBİ raporlanır — kısmi başarısızlık gizlenmez.
         const sonuc: TopluKaydetSonucu = {
-          basarili: data.basarili ?? 0,
+          eklenen: data.eklenen ?? 0,
+          guncellenen: data.guncellenen ?? 0,
+          degismeyen: data.degismeyen ?? 0,
           eksikli: data.eksikli ?? 0,
           hatali: data.hatali ?? 0,
           hatalar: data.hatalar ?? [],
         };
         setKaydetSonucu(sonuc);
         if (sonuc.hatali === 0) {
-          basari(`${sonuc.basarili} kullanıcı eklendi${sonuc.eksikli > 0 ? ` (${sonuc.eksikli} tanesi eksik bilgili — takım/bölge tamamlanmalı)` : ""}.`);
+          basari(data.mesaj ?? "Toplu yükleme tamamlandı.");
           setTopluDosya(null);
           setOnizlemeSatirlari(null);
         } else {
           // Kısmi başarısızlıkta önizleme ekranda kalır; hatalı satır listesi
           // kaydetSonucu üzerinden görünür biçimde basılır (TopluGirisFormu).
-          hata(`${sonuc.basarili} kullanıcı eklendi, ${sonuc.hatali} satır eklenemedi.`, "toplu kaydet");
+          hata(`${sonuc.eklenen} eklendi, ${sonuc.guncellenen} güncellendi, ${sonuc.hatali} satır işlenemedi.`, "toplu kaydet");
         }
         refreshKullanicilar();
       }
@@ -102,7 +106,9 @@ export function useTopluForm({ seciliFirma, refreshKullanicilar, hata, basari }:
     }
   };
 
-  const hazirSayisi = onizlemesatirlari?.filter(s => s.durum === "hazir").length ?? 0;
+  const yeniSayisi = onizlemesatirlari?.filter(s => s.islem === "yeni").length ?? 0;
+  const guncelleSayisi = onizlemesatirlari?.filter(s => s.islem === "guncelle").length ?? 0;
+  const degismeyenSayisi = onizlemesatirlari?.filter(s => s.islem === "degisiklik-yok").length ?? 0;
   const eksikSayisi = onizlemesatirlari?.filter(s => s.durum === "eksik").length ?? 0;
   const hataliSayisi = onizlemesatirlari?.filter(s => s.durum === "hatali").length ?? 0;
 
@@ -111,7 +117,9 @@ export function useTopluForm({ seciliFirma, refreshKullanicilar, hata, basari }:
     onizlemesatirlari,
     onizlemeLoading,
     topluKaydetLoading,
-    hazirSayisi,
+    yeniSayisi,
+    guncelleSayisi,
+    degismeyenSayisi,
     eksikSayisi,
     hataliSayisi,
     kaydetSonucu,

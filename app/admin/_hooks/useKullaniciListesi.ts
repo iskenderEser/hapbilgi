@@ -165,6 +165,27 @@ export function useKullaniciListesi({ seciliFirma, kullanicilar, refreshKullanic
     }
   };
 
+  // Telefonu boş (kolon öncesi) mevcut kullanıcıya tekil telefon ekleme —
+  // PUT normalize/benzersizlik kurallarını uygular, hata Türkçe döner.
+  const [telefonEkleLoading, setTelefonEkleLoading] = useState<string | null>(null);
+  const handleTelefonEkle = async (kullanici_id: string, telefon: string) => {
+    if (!seciliFirma) return;
+    setTelefonEkleLoading(kullanici_id);
+    try {
+      const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kullanici_id, telefon }),
+      });
+      const data = await res.json();
+      if (!res.ok) { hata(data.hata ?? "Telefon kaydedilemedi.", data.adim, data.detay); }
+      else { basari("Telefon kaydedildi."); refreshKullanicilar(); }
+    } catch (err) {
+      hata("Telefon kaydedilemedi — bağlantı hatası.", "handleTelefonEkle", String(err));
+    } finally {
+      setTelefonEkleLoading(null);
+    }
+  };
+
   const handleSil = async (kullanici_id: string) => {
     if (!seciliFirma) return;
     setSilLoading(kullanici_id);
@@ -300,6 +321,8 @@ export function useKullaniciListesi({ seciliFirma, kullanicilar, refreshKullanic
     // Handler'lar
     eksikTamamlaLoading,
     handleEksikTamamla,
+    telefonEkleLoading,
+    handleTelefonEkle,
     handleRolDegistir,
     handleAktifToggle,
     handleYetkiDegistir,

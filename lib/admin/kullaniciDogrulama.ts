@@ -225,11 +225,17 @@ function metinAl(deger: unknown): string {
  * Alan boşsa ya da verilen ad/id firmada eşleşmezse satır kabul edilir,
  * ilgili alan NULL kalır, eksikAlanlar işaretlenir; eşleşmeyen girdi için
  * uyari mesajı döner (yanlış yazım sessizce kaybolmaz, görünür kalır).
+ *
+ * Upsert modeli: sifreZorunlu=false ile şifre kolonsuz (tamamlama) listeler
+ * doğrulanır — şifre satırda VARSA yine min-6 kuralından geçer; yeni
+ * kullanıcı için şifre zorunluluğunu satirUpsertPlani uygular.
  */
 export function kullaniciSatirDogrula(
   yapi: FirmaYapisi,
-  girdi: KullaniciGirdisi
+  girdi: KullaniciGirdisi,
+  secenekler?: { sifreZorunlu?: boolean }
 ): SatirDogrulamaSonucu {
+  const sifreZorunlu = secenekler?.sifreZorunlu ?? true;
   const ad = metinAl(girdi.ad);
   const soyad = metinAl(girdi.soyad);
   const eposta = metinAl(girdi.eposta).toLowerCase();
@@ -238,8 +244,9 @@ export function kullaniciSatirDogrula(
   // B-25: rol kod ya da insan adıyla gelebilir — tek çözümleyiciden geçer.
   const rol = rolCoz(metinAl(girdi.rol));
 
-  if (!ad || !soyad || !eposta || !telefonHam || !sifre || !rol) {
-    return { ok: false, hata: "Zorunlu alan eksik (ad, soyad, eposta, telefon, sifre, rol).", alanlar: ["ad", "soyad", "eposta", "telefon", "sifre", "rol"] };
+  if (!ad || !soyad || !eposta || !telefonHam || (sifreZorunlu && !sifre) || !rol) {
+    const zorunlular = sifreZorunlu ? "ad, soyad, eposta, telefon, sifre, rol" : "ad, soyad, eposta, telefon, rol";
+    return { ok: false, hata: `Zorunlu alan eksik (${zorunlular}).`, alanlar: ["ad", "soyad", "eposta", "telefon", "sifre", "rol"] };
   }
   for (const [alan, deger] of [["ad", ad], ["soyad", soyad], ["eposta", eposta], ["sifre", sifre]] as const) {
     if (deger.length > ALAN_UZUNLUK_SINIRI) {
@@ -254,7 +261,7 @@ export function kullaniciSatirDogrula(
     return { ok: false, hata: telefonSonuc.hata, alanlar: ["telefon"] };
   }
   const telefon = telefonSonuc.telefon;
-  if (sifre.length < SIFRE_MIN_UZUNLUK) {
+  if (sifre && sifre.length < SIFRE_MIN_UZUNLUK) {
     return { ok: false, hata: `Şifre en az ${SIFRE_MIN_UZUNLUK} karakter olmalıdır.`, alanlar: ["sifre"] };
   }
   if (!TUM_ROLLER.includes(rol)) {
@@ -399,4 +406,114 @@ export function rolGecisiCoz(
   }
   // Yönetici/admin/İU sınıfı: takım-bölge taşınmaz.
   return { ok: true, takim_id: null, bolge_id: null };
+}
+
+// ─── Toplu yükleme upsert planı (İskender kararı, 18.07.2026) ───────────────
+
+export interface MevcutKullanici {
+  kullanici_id: string;
+  ad: string;
+  soyad: string;
+  eposta: string;
+  telefon: string | null;
+  rol: string;
+  takim_id: string | null;
+  bolge_id: string | null;
+}
+
+export interface GuncellemeAlanlari {
+  ad?: string;
+  soyad?: string;
+  eposta?: string;
+  telefon?: string;
+  rol?: string;
+  takim_id?: string | null;
+  bolge_id?: string | null;
+}
+
+export type UpsertPlaniSonucu =
+  | { islem: "yeni" }
+  | { islem: "degisiklik-yok"; kullanici_id: string }
+  | {
+      islem: "guncelle";
+      kullanici_id: string;
+      alanlar: GuncellemeAlanlari; // yalnız DEĞİŞEN alanlar — UPDATE payload'ı
+      degisenAlanlar: string[]; // önizlemede insan-okur liste ("soyad", "e-posta"...)
+      epostaDegisti: boolean; // auth e-postası da güncellenmeli
+      metadataDegisti: boolean; // auth user_metadata (ad/soyad/rol) da güncellenmeli
+      son: { rol: string; takim_id: string | null; bolge_id: string | null };
+    }
+  | { islem: "hata"; hata: string };
+
+/**
+ * Doğrulanmış satırı firmanın mevcut kullanıcılarıyla eşleştirir ve yapılacak
+ * işi çıkarır (upsert modeli):
+ * - Eşleştirme anahtarı: önce e-posta, sonra telefon. İkisi FARKLI kişilere
+ *   çıkarsa satır hatadır — sessiz seçim yok.
+ * - Eşleşen kayıtta yalnız değişen alanlar güncellenir; ŞİFRE ASLA EZİLMEZ
+ *   (satırda şifre gelse bile mevcut kullanıcıda yok sayılır).
+ * - Satırda takım/bölge verilmemişse mevcut değer KORUNUR (eksik kabul
+ *   modeliyle uyumlu — tamamlama listesi eksiği kapatır, dolu alanı silmez).
+ * - Rol DEĞİŞTİYSE takım/bölge tutarlılığı rolGecisiCoz'dan çözülür (B-23
+ *   tek kural kaynağı); yeni rolün zorunlusu karşılanamazsa satır hatadır.
+ * - Eşleşmeyen satır yeni kullanıcıdır — şifre orada zorunludur.
+ */
+export function satirUpsertPlani(
+  yapi: FirmaYapisi,
+  mevcutlar: MevcutKullanici[],
+  kayit: DogrulanmisKullanici
+): UpsertPlaniSonucu {
+  const epostaEs = mevcutlar.find((m) => m.eposta.toLowerCase() === kayit.eposta);
+  const telefonEs = mevcutlar.find((m) => m.telefon === kayit.telefon);
+
+  if (epostaEs && telefonEs && epostaEs.kullanici_id !== telefonEs.kullanici_id) {
+    return {
+      islem: "hata",
+      hata: `Çakışma: e-posta "${epostaEs.ad} ${epostaEs.soyad}" kaydıyla, telefon "${telefonEs.ad} ${telefonEs.soyad}" kaydıyla eşleşiyor — satır işlenmedi.`,
+    };
+  }
+
+  const mevcut = epostaEs ?? telefonEs;
+  if (!mevcut) {
+    if (!kayit.sifre) {
+      return { islem: "hata", hata: "Satır hiçbir kayıtla eşleşmedi — yeni kullanıcı için şifre zorunludur." };
+    }
+    return { islem: "yeni" };
+  }
+
+  let son: { takim_id: string | null; bolge_id: string | null };
+  if (kayit.rol !== mevcut.rol) {
+    const gecis = rolGecisiCoz(yapi, kayit.rol, {
+      mevcut_takim_id: mevcut.takim_id,
+      mevcut_bolge_id: mevcut.bolge_id,
+      takim_id: kayit.takim_id ?? undefined,
+      bolge_id: kayit.bolge_id ?? undefined,
+    });
+    if (!gecis.ok) return { islem: "hata", hata: `Rol değişimi: ${gecis.hata}` };
+    son = { takim_id: gecis.takim_id, bolge_id: gecis.bolge_id };
+  } else {
+    son = { takim_id: kayit.takim_id ?? mevcut.takim_id, bolge_id: kayit.bolge_id ?? mevcut.bolge_id };
+  }
+
+  const alanlar: GuncellemeAlanlari = {};
+  const degisenAlanlar: string[] = [];
+  if (kayit.ad !== mevcut.ad) { alanlar.ad = kayit.ad; degisenAlanlar.push("ad"); }
+  if (kayit.soyad !== mevcut.soyad) { alanlar.soyad = kayit.soyad; degisenAlanlar.push("soyad"); }
+  if (kayit.eposta !== mevcut.eposta.toLowerCase()) { alanlar.eposta = kayit.eposta; degisenAlanlar.push("e-posta"); }
+  if (kayit.telefon !== mevcut.telefon) { alanlar.telefon = kayit.telefon; degisenAlanlar.push("telefon"); }
+  if (kayit.rol !== mevcut.rol) { alanlar.rol = kayit.rol; degisenAlanlar.push("rol"); }
+  if (son.takim_id !== mevcut.takim_id) { alanlar.takim_id = son.takim_id; degisenAlanlar.push("takım"); }
+  if (son.bolge_id !== mevcut.bolge_id) { alanlar.bolge_id = son.bolge_id; degisenAlanlar.push("bölge"); }
+
+  if (degisenAlanlar.length === 0) return { islem: "degisiklik-yok", kullanici_id: mevcut.kullanici_id };
+
+  return {
+    islem: "guncelle",
+    kullanici_id: mevcut.kullanici_id,
+    alanlar,
+    degisenAlanlar,
+    epostaDegisti: alanlar.eposta !== undefined,
+    metadataDegisti: alanlar.ad !== undefined || alanlar.soyad !== undefined || alanlar.rol !== undefined,
+    son: { rol: kayit.rol, takim_id: son.takim_id, bolge_id: son.bolge_id },
+  };
 }

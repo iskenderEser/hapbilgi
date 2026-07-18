@@ -47,6 +47,8 @@ interface KullaniciListesiProps {
   takimlar: Takim[];
   eksikTamamlaLoading: string | null;
   handleEksikTamamla: (kullanici_id: string, atama: { takim_id?: string; bolge_id?: string }) => void;
+  telefonEkleLoading: string | null;
+  handleTelefonEkle: (kullanici_id: string, telefon: string) => void;
 
   handleRolDegistir: (kullanici_id: string, yeniRol: string) => void;
   handleAktifToggle: (kullanici_id: string, mevcutDurum: boolean) => void;
@@ -241,10 +243,28 @@ export default function KullaniciListesi(p: KullaniciListesiProps) {
                     )}
                   </td>
                   <td style={tdStyle}>{k.eposta}</td>
-                  {/* Telefon kimlik çekirdeğinde: yeni kayıtta hep dolu;
-                      kolon öncesi eski kayıtta boş kalmış olabilir. */}
+                  {/* Telefon kimlik çekirdeğinde: yeni kayıtta hep dolu; kolon
+                      öncesi eski kayıtta boşsa hücre içinden eklenir (Enter). */}
                   <td style={tdStyle}>
-                    {k.telefon ?? <span style={{ color: "#d97706", fontWeight: 600 }}>⚠ yok</span>}
+                    {k.telefon ?? (
+                      p.telefonEkleLoading === k.kullanici_id ? "..." : (
+                        <input
+                          type="tel"
+                          placeholder="⚠ 05XX XXX XX XX"
+                          title="Enter ile kaydet"
+                          style={{
+                            ...filterSelectStyle, padding: "2px 6px", width: "130px",
+                            background: "#fffbeb", border: "0.5px solid #fcd34d", color: "#92400e",
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              const deger = (e.target as HTMLInputElement).value.trim();
+                              if (deger) p.handleTelefonEkle(k.kullanici_id, deger);
+                            }
+                          }}
+                        />
+                      )
+                    )}
                   </td>
                   {/* K-A6: takım/bölge eksikse rozet + hücre içi atama seçicisi.
                       Eksik tanımı tek kaynaktan (kullaniciEksikMi). */}

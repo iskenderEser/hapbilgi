@@ -6,6 +6,7 @@
 "use client";
 
 import { btnBase } from "../_constants";
+import { ROL_ADLARI } from "@/lib/utils/roller";
 import type { OnizlemeSatir } from "../_types";
 import type { TopluKaydetSonucu } from "../_hooks/useTopluForm";
 
@@ -14,7 +15,9 @@ interface TopluGirisFormuProps {
   onizlemesatirlari: OnizlemeSatir[] | null;
   onizlemeLoading: boolean;
   topluKaydetLoading: boolean;
-  hazirSayisi: number;
+  yeniSayisi: number;
+  guncelleSayisi: number;
+  degismeyenSayisi: number;
   eksikSayisi: number;
   hataliSayisi: number;
   kaydetSonucu: TopluKaydetSonucu | null;
@@ -96,8 +99,11 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
       {/* Önizleme tablosu */}
       {p.onizlemesatirlari && p.onizlemesatirlari.length > 0 && (
         <>
-          <div style={{ marginBottom: "12px", display: "flex", gap: "12px", fontSize: "13px", fontWeight: 600, fontFamily: "'Nunito', sans-serif" }}>
-            <span style={{ color: "#1d4ed8" }}>Hazır: {p.hazirSayisi}</span>
+          <div style={{ marginBottom: "12px", display: "flex", gap: "12px", flexWrap: "wrap", fontSize: "13px", fontWeight: 600, fontFamily: "'Nunito', sans-serif" }}>
+            {/* Upsert kırılımı: eşleşmeyen satır yeni, eşleşen güncelleme */}
+            <span style={{ color: "#1d4ed8" }}>Yeni: {p.yeniSayisi}</span>
+            <span style={{ color: "#0f766e" }}>Güncellenecek: {p.guncelleSayisi}</span>
+            <span style={{ color: "#737373" }}>Değişiklik yok: {p.degismeyenSayisi}</span>
             {/* K-A6: eksik satırlar da yüklenir — ayrı sayaçla görünür */}
             <span style={{ color: "#d97706" }}>Eksik bilgili: {p.eksikSayisi}</span>
             <span style={{ color: "#dc2626" }}>Hatalı: {p.hataliSayisi}</span>
@@ -115,6 +121,7 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
                   <th style={tarz_th}>Telefon</th>
                   <th style={tarz_th}>Takım</th>
                   <th style={tarz_th}>Bölge</th>
+                  <th style={tarz_th}>İşlem</th>
                   <th style={tarz_th}>Durum</th>
                 </tr>
               </thead>
@@ -124,11 +131,25 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
                     <td style={tarz_td}>{s.index}</td>
                     <td style={tarz_td}>{s.ad}</td>
                     <td style={tarz_td}>{s.soyad}</td>
-                    <td style={tarz_td}>{s.rol}</td>
+                    {/* Satır kanonik rol kodunu taşır; görünüm insan adıdır (B-31 çizgisi) */}
+                    <td style={tarz_td}>{ROL_ADLARI[s.rol] ?? s.rol}</td>
                     <td style={tarz_td}>{s.eposta}</td>
                     <td style={tarz_td}>{s.telefon}</td>
                     <td style={tarz_td}>{s.takim_adi}</td>
                     <td style={tarz_td}>{s.bolge_adi}</td>
+                    <td style={tarz_td}>
+                      {s.islem === "yeni" ? (
+                        <span style={{ color: "#1d4ed8", fontWeight: 600 }}>Yeni</span>
+                      ) : s.islem === "guncelle" ? (
+                        <span style={{ color: "#0f766e", fontWeight: 600 }}>
+                          Güncelleme{s.degisen && s.degisen.length > 0 ? ` — ${s.degisen.join(", ")}` : ""}
+                        </span>
+                      ) : s.islem === "degisiklik-yok" ? (
+                        <span style={{ color: "#737373" }}>Değişiklik yok</span>
+                      ) : (
+                        <span style={{ color: "#737373" }}>—</span>
+                      )}
+                    </td>
                     <td style={tarz_td}>
                       {s.durum === "hazir" ? (
                         <span style={{ color: "#1d4ed8", fontWeight: 600 }}>Hazır</span>
@@ -149,22 +170,22 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
             </table>
           </div>
 
-          {/* Toplu kaydet — K-A6: eksik bilgili satırlar da yüklenir,
-              buton hazır+eksik toplamını kaydeder */}
+          {/* Toplu kaydet — upsert: yeni + güncellenecek satırlar işlenir;
+              K-A6 gereği eksik bilgili satırlar da dahildir */}
           <button
             onClick={p.handleTopluKaydet}
-            disabled={p.hazirSayisi + p.eksikSayisi === 0 || p.topluKaydetLoading}
+            disabled={p.yeniSayisi + p.guncelleSayisi === 0 || p.topluKaydetLoading}
             style={{
               ...btnBase,
-              background: p.hazirSayisi + p.eksikSayisi === 0 || p.topluKaydetLoading ? "#d1d5db" : "#1d4ed8",
+              background: p.yeniSayisi + p.guncelleSayisi === 0 || p.topluKaydetLoading ? "#d1d5db" : "#1d4ed8",
               color: "white",
               border: "none",
-              cursor: p.hazirSayisi + p.eksikSayisi === 0 || p.topluKaydetLoading ? "not-allowed" : "pointer",
+              cursor: p.yeniSayisi + p.guncelleSayisi === 0 || p.topluKaydetLoading ? "not-allowed" : "pointer",
             }}
           >
             {p.topluKaydetLoading
               ? "Kaydediliyor..."
-              : `${p.hazirSayisi + p.eksikSayisi} kullanıcıyı kaydet${p.eksikSayisi > 0 ? ` (${p.eksikSayisi} eksik bilgili)` : ""}`}
+              : `${p.yeniSayisi} ekle, ${p.guncelleSayisi} güncelle${p.eksikSayisi > 0 ? ` (${p.eksikSayisi} eksik bilgili)` : ""}`}
           </button>
         </>
       )}
@@ -189,9 +210,10 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
           }}
         >
           <p style={{ fontSize: "13px", fontWeight: 700, color: p.kaydetSonucu.hatali > 0 ? "#b91c1c" : "#166534", margin: 0 }}>
-            {p.kaydetSonucu.basarili} kullanıcı eklendi
-            {p.kaydetSonucu.eksikli > 0 ? ` (${p.kaydetSonucu.eksikli} tanesi eksik bilgili — takım/bölge tamamlanmalı)` : ""}
-            {p.kaydetSonucu.hatali > 0 ? `, ${p.kaydetSonucu.hatali} satır eklenemedi:` : "."}
+            {p.kaydetSonucu.eklenen} eklendi, {p.kaydetSonucu.guncellenen} güncellendi
+            {p.kaydetSonucu.degismeyen > 0 ? `, ${p.kaydetSonucu.degismeyen} değişiklik yok` : ""}
+            {p.kaydetSonucu.eksikli > 0 ? ` (${p.kaydetSonucu.eksikli} tanesi eksik bilgili — tamamlanmalı)` : ""}
+            {p.kaydetSonucu.hatali > 0 ? `, ${p.kaydetSonucu.hatali} satır işlenemedi:` : "."}
           </p>
           {p.kaydetSonucu.hatalar.length > 0 && (
             <ul style={{ fontSize: "12px", color: "#7f1d1d", margin: "8px 0 0 0", paddingLeft: "18px", lineHeight: 1.7 }}>
