@@ -138,7 +138,7 @@ export default function LoginPage() {
       return;
     }
     setSifirlamaMesaj(
-      "E-posta adresiniz sistemde kayıtlıysa şifre sıfırlama bağlantısı gönderildi. Gelen kutunuzu kontrol edin."
+      "E-posta adresiniz sistemde kayıtlıysa şifre sıfırlama bağlantısı gönderilecektir. Gelen kutunuzu kontrol edin."
     );
   };
 
