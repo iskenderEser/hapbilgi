@@ -37,6 +37,19 @@ const tarz_td: React.CSSProperties = {
   color: "#111",
 };
 
+// B-25 — şablon indir: insan başlıklı, tek örnek satırlı XLSX üretir.
+// xlsx tıklamada dinamik import edilir (sayfa yüküne binmez).
+async function sablonIndir() {
+  const XLSX = await import("xlsx");
+  const sayfa = XLSX.utils.aoa_to_sheet([
+    ["Ad", "Soyad", "E-posta", "Şifre", "Rol", "Takım", "Bölge"],
+    ["Ali", "Veli", "ali.veli@ornek.com", "gizli123", "Ürün Tanıtım Temsilcisi", "Kardiyoloji", "Kadıköy"],
+  ]);
+  const kitap = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(kitap, sayfa, "Kullanicilar");
+  XLSX.writeFile(kitap, "kullanici_yukleme_sablonu.xlsx");
+}
+
 export default function TopluGirisFormu(p: TopluGirisFormuProps) {
   return (
     <div style={{ maxWidth: "1000px" }}>
@@ -61,6 +74,12 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
           >
             Dosya Seç
           </label>
+          <button
+            onClick={sablonIndir}
+            style={{ ...btnBase, background: "white", color: "#737373" }}
+          >
+            Şablonu İndir
+          </button>
           <span style={{ fontSize: "12px", color: "#737373", fontFamily: "'Nunito', sans-serif" }}>
             {p.topluDosya ? `Seçili: ${p.topluDosya.name}` : "Henüz dosya seçilmedi"}
           </span>
@@ -116,8 +135,9 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
                           Eksik bilgili{s.uyari_mesaji ? ` — ${s.uyari_mesaji}` : " (takım/bölge yok)"}
                         </span>
                       ) : (
-                        <span style={{ color: "#dc2626", fontWeight: 600 }} title={s.hata_mesaji}>
-                          Hatalı
+                        // B-25: hata yalnız tooltip'te değil, GÖRÜNÜR metin olarak.
+                        <span style={{ color: "#dc2626", fontWeight: 600 }}>
+                          Hatalı{s.hata_mesaji ? ` — ${s.hata_mesaji}` : ""}
                         </span>
                       )}
                     </td>

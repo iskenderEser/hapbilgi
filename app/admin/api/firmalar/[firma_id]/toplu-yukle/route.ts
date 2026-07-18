@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
-import { firmaYapisiYukle, kullaniciSatirDogrula } from "@/lib/admin/kullaniciDogrulama";
+import { firmaYapisiYukle, kullaniciSatirDogrula, turkceKatla } from "@/lib/admin/kullaniciDogrulama";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 import * as XLSX from "xlsx";
 
@@ -41,9 +41,43 @@ export async function POST(
     const workbook = XLSX.read(buffer, { type: "array" });
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
-    const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+    const hamSatirlar: any[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
-    if (rows.length === 0) return validasyonHatasi("Dosya en az 1 veri satırı içermelidir.", ["dosya"]);
+    if (hamSatirlar.length === 0) return validasyonHatasi("Dosya en az 1 veri satırı içermelidir.", ["dosya"]);
+
+    // B-25 — insan-format başlık toleransı: başlıklar katlanarak (Türkçe
+    // küçük harf + diakritik/boşluk temizliği) makine adlarına eşlenir.
+    // "Ad" / "E-posta" / "Takım Adı" gibi insan başlıkları kabul edilir.
+    const BASLIK_ESLEME: Record<string, string> = {
+      ad: "ad", adi: "ad", isim: "ad",
+      soyad: "soyad", soyadi: "soyad", soyisim: "soyad",
+      eposta: "eposta", email: "eposta", mail: "eposta", epostaadresi: "eposta",
+      sifre: "sifre", parola: "sifre", password: "sifre",
+      rol: "rol", gorev: "rol", unvan: "rol",
+      takim: "takim_adi", takimadi: "takim_adi", takimad: "takim_adi",
+      bolge: "bolge_adi", bolgeadi: "bolge_adi", bolgead: "bolge_adi",
+    };
+
+    const rows: Record<string, unknown>[] = hamSatirlar.map((ham) => {
+      const satir: Record<string, unknown> = {};
+      for (const [baslik, deger] of Object.entries(ham)) {
+        const hedef = BASLIK_ESLEME[turkceKatla(baslik)];
+        if (hedef) satir[hedef] = deger;
+      }
+      return satir;
+    });
+
+    // Kimlik çekirdeği kolonları dosyada hiç yoksa satır satır "eksik alan"
+    // yağdırmak yerine tek, anlaşılır dosya hatası dönülür.
+    const bulunanKolonlar = new Set(rows.flatMap((r) => Object.keys(r)));
+    const zorunluKolonlar = ["ad", "soyad", "eposta", "sifre", "rol"];
+    const eksikKolonlar = zorunluKolonlar.filter((k) => !bulunanKolonlar.has(k));
+    if (eksikKolonlar.length > 0) {
+      return validasyonHatasi(
+        `Dosyada şu kolonlar bulunamadı: ${eksikKolonlar.join(", ")}. Başlık satırını kontrol edin ya da şablonu indirip kullanın.`,
+        ["dosya"]
+      );
+    }
 
     // Doğrulama kural kitabı TEK KAYNAK: tekli rota ile aynı fonksiyonlar
     // (B-18: rol doğrulaması dahil; B-21: koda gömülü rol listeleri kalktı;

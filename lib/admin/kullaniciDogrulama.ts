@@ -12,8 +12,42 @@
 // saf fonksiyon (kullaniciSatirDogrula) — toplu yüklemede N sorgu üretmez.
 
 import { SupabaseClient } from "@supabase/supabase-js";
-import { TUM_ROLLER, TUKETICI_ROLLER } from "@/lib/utils/roller";
+import { TUM_ROLLER, TUKETICI_ROLLER, ROL_ADLARI } from "@/lib/utils/roller";
 import { ureticiYetenegi } from "@/lib/uretici/yetenekler";
+
+/**
+ * İnsan girdisini karşılaştırma için katlar: Türkçe küçük harf, diakritik
+ * sadeleştirme, harf/rakam dışı her şey atılır ("E-posta" → "eposta",
+ * "Takım Adı" → "takimadi"). Başlık eşleme ve rol adı çözümü bunu kullanır (B-25).
+ */
+export function turkceKatla(metin: string): string {
+  return metin
+    .toLocaleLowerCase("tr-TR")
+    .replace(/ş/g, "s")
+    .replace(/ç/g, "c")
+    .replace(/ö/g, "o")
+    .replace(/ü/g, "u")
+    .replace(/ğ/g, "g")
+    .replace(/ı/g, "i")
+    .replace(/â/g, "a")
+    .replace(/î/g, "i")
+    .replace(/û/g, "u")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+/**
+ * Rol girdisini koda çözer (B-25): kod ("utt") ya da insan adı
+ * ("Ürün Tanıtım Temsilcisi") kabul edilir; ad eşlemesi ROL_ADLARI'ndan
+ * katlanarak yapılır. Çözülemezse girdi olduğu gibi döner (TUM_ROLLER
+ * kontrolü reddeder).
+ */
+export function rolCoz(girdi: string): string {
+  const kod = girdi.toLocaleLowerCase("tr-TR").trim();
+  if (TUM_ROLLER.includes(kod)) return kod;
+  const katli = turkceKatla(girdi);
+  const eslesme = Object.entries(ROL_ADLARI).find(([, ad]) => turkceKatla(ad) === katli);
+  return eslesme ? eslesme[0] : kod;
+}
 
 const ALAN_UZUNLUK_SINIRI = 200;
 // B-36: Supabase auth'un min-6 kuralı burada Türkçe mesajla önden yakalanır;
@@ -169,7 +203,8 @@ export function kullaniciSatirDogrula(
   const soyad = metinAl(girdi.soyad);
   const eposta = metinAl(girdi.eposta).toLowerCase();
   const sifre = metinAl(girdi.sifre);
-  const rol = metinAl(girdi.rol).toLowerCase();
+  // B-25: rol kod ya da insan adıyla gelebilir — tek çözümleyiciden geçer.
+  const rol = rolCoz(metinAl(girdi.rol));
 
   if (!ad || !soyad || !eposta || !sifre || !rol) {
     return { ok: false, hata: "Zorunlu alan eksik (ad, soyad, eposta, sifre, rol).", alanlar: ["ad", "soyad", "eposta", "sifre", "rol"] };
@@ -186,7 +221,7 @@ export function kullaniciSatirDogrula(
     return { ok: false, hata: `Şifre en az ${SIFRE_MIN_UZUNLUK} karakter olmalıdır.`, alanlar: ["sifre"] };
   }
   if (!TUM_ROLLER.includes(rol)) {
-    return { ok: false, hata: `Geçersiz rol: "${rol}".`, alanlar: ["rol"] };
+    return { ok: false, hata: `Geçersiz rol: "${rol}". Rol kodu (ör. utt) ya da tam adı (ör. Ürün Tanıtım Temsilcisi) kullanın.`, alanlar: ["rol"] };
   }
 
   const takimIdGirdi = metinAl(girdi.takim_id);

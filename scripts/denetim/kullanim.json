@@ -2,17 +2,17 @@
   "fromlar": [
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 100,
+      "satir": 134,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 125,
+      "satir": 159,
       "tablo": "takimlar"
     },
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 135,
+      "satir": 169,
       "tablo": "bolgeler"
     },
     {
@@ -3367,7 +3367,7 @@
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
-      "satir": 144,
+      "satir": 178,
       "tablo": "kullanicilar"
     },
     {
@@ -3484,19 +3484,19 @@
   "selectler": [
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 100,
+      "satir": 134,
       "ham": "kullanici_id, ad, soyad, rol, takim_id, bolge_id",
       "tablo": "kullanicilar"
     },
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 125,
+      "satir": 159,
       "ham": "takim_id, takim_adi",
       "tablo": "takimlar"
     },
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 135,
+      "satir": 169,
       "ham": "bolge_id, bolge_adi, takim_id",
       "tablo": "bolgeler"
     },
