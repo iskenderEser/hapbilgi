@@ -7,6 +7,7 @@ import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
+import { guvenliDosyaAdi } from "@/lib/utils/guvenliDosyaAdi";
 import { HedefRolBant } from "@/components/HedefRolBant";
 import { useAuth } from "@/app/providers/AuthProvider";
 
@@ -138,7 +139,7 @@ export default function TalepDetayPage() {
     setDosyaYukleniyor(true);
     const supabase = createClient();
     for (const dosya of dosyalar) {
-      const dosyaYolu = `${talep_id}/${Date.now()}_${dosya.name}`;
+      const dosyaYolu = `${talep_id}/${Date.now()}_${guvenliDosyaAdi(dosya.name)}`;
       const { error: uploadError } = await supabase.storage.from("talep-dosyalari").upload(dosyaYolu, dosya);
       if (uploadError) { hata(`${dosya.name} yüklenemedi.`, "storage upload", uploadError.message); continue; }
       const { data: urlData } = supabase.storage.from("talep-dosyalari").getPublicUrl(dosyaYolu);

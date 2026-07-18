@@ -35,6 +35,7 @@ import type {
 import { useSoruSetiParse } from "./useSoruSetiParse";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { URETIM_HATTI_GORENLER, ECZANEM_TALEP_ACAN_ROLLER } from "@/lib/utils/roller";
+import { guvenliDosyaAdi } from "@/lib/utils/guvenliDosyaAdi";
 
 export function useTalepFormu() {
   const router = useRouter();
@@ -427,7 +428,7 @@ export function useTalepFormu() {
       try {
         const supabase = createClient();
         const { dosya } = bekleyenVideo;
-        const dosyaYolu = `${talep_id}/video_${Date.now()}_${dosya.name}`;
+        const dosyaYolu = `${talep_id}/video_${Date.now()}_${guvenliDosyaAdi(dosya.name)}`;
         const { error: uploadError } = await supabase.storage
           .from("talep-dosyalari")
           .upload(dosyaYolu, dosya);
@@ -463,7 +464,7 @@ export function useTalepFormu() {
       try {
         const supabase = createClient();
         for (const { dosya } of bekleyenDosyalar) {
-          const dosyaYolu = `${talep_id}/${Date.now()}_${dosya.name}`;
+          const dosyaYolu = `${talep_id}/${Date.now()}_${guvenliDosyaAdi(dosya.name)}`;
           const { error: uploadError } = await supabase.storage
             .from("talep-dosyalari")
             .upload(dosyaYolu, dosya);
