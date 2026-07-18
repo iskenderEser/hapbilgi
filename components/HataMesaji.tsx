@@ -11,7 +11,7 @@ export interface HataMesajiProps {
   adim?: string;
   detay?: string;
   otomatikKapat?: boolean;
-  sure?: number; // ms cinsinden, varsayılan 4000
+  sure?: number; // ms cinsinden, varsayılan 12000 (İskender kararı F-01: bildirimler en az 10-15 sn okunabilir kalmalı)
   onKapat?: () => void;
 }
 
@@ -28,7 +28,7 @@ export default function HataMesaji({
   adim,
   detay,
   otomatikKapat = true,
-  sure = 4000,
+  sure = 12000,
   onKapat,
 }: HataMesajiProps) {
   const [gorunsun, setGorunsun] = useState(true);
