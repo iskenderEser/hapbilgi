@@ -39,3 +39,19 @@
 | 4 | `TalepOnayModal` — validasyon sonrası özet (ürün, teknik varsa, soru adedi, video başı soru sayısı, açıklama özeti ilk 4 cümle + "...", ekli dosya/video adları) + Evet/Hayır; Hayır formu aynen bırakır. Smoke: `aciklamaOzetle` 6 cümle → ilk 4 + "..." | `0f357f3` |
 
 **Durum:** ÇÖZÜLDÜ (kod tarafı) — İskender'in fiziksel test doğrulaması bekleniyor: Türkçe adlı PDF ile talep oluşturma (modal → Evet → dosyanın talebe eklendiği görülmeli).
+
+---
+
+### F-02 — "Test verileri sil" 2 tabloda silme hatası veriyor (18.07.2026)
+
+**Tespit (İskender):** Test verileri sil komutu sonrası bildirim: "2 tabloda silme hatası oluştu. Adım: test-verileri-sil — `eczanem_izleme_kayitlari: column eczanem_izleme_kayitlari.created_at does not exist` | `store_puan_harcamalari: permission denied for table store_puan_harcamalari`". Eczanem'de zaten veri yokken neden çıktığı soruldu.
+
+**Kök neden teşhisi (kod + şema kanıtlı):** İki hata da YAPISAL — tabloda satır olsun olmasın çıkar (veri yokken de çıkması bundan):
+1. `eczanem_izleme_kayitlari`'nda `created_at` kolonu HİÇ YOK (kolonları: izleme_id, gonderim_id, musteri_id, yayin_id, tamamlandi_mi, izleme_baslangic, izleme_bitis — `sema.json` doğrulaması). Rota tüm tablolarda `created_at >= 1970` filtresiyle siliyor (`test-verileri-sil/route.ts`); rotadaki "tüm hedef tablolarda created_at mevcut (DB'den doğrulandı)" notu bayatlamış — bu tablo sonradan kapsama girmiş.
+2. `store_puan_harcamalari`'nda hata Postgres YETKİ hatası: service_role'ün bu tabloda GRANT'i yok (RLS değil — service_role RLS'i zaten aşar; tablo muhtemelen GRANT verilmeden oluşturulmuş). Kod düzeltmesiyle çözülmez; DB'de GRANT gerekir.
+
+**Çözüm (uygulanan):**
+1. **Kod (`ac94cba`):** `eczanem_izleme_kayitlari` için silme filtresi birincil anahtara alındı (`OZEL_FILTRE_KOLONU` istisna haritası — `izleme_id is not null` tüm satırları siler, PK hiçbir satırda null olamaz); rotadaki bayat "tüm hedef tablolarda created_at mevcut" notu düzeltildi. Üçlü doğrulama temiz; rota canlı DB'ye yazdığı için smoke İskender'in bir sonraki fiziksel koşumuna bırakıldı (bilinçli — canlı DB yazımı Code'a kapalı).
+2. **DB (SQL — İskender uyguladı, 18.07.2026):** GRANT kontrol sorgusu service_role'de DELETE GRANT'i olmayan ÜÇ tablo çıkardı: `sistem_ayarlari`, `silinmis_kullanicilar`, `store_puan_harcamalari`. Üçüne birden `GRANT ALL ... TO service_role` atandı — "permission denied" kökten çözüldü; silinmis_kullanicilar (kullanıcı silme arşivi) ve sistem_ayarlari'ndaki olası gizli yetki sorunları da önlendi.
+
+**Durum:** ÇÖZÜLDÜ — doğrulama: İskender "test verileri sil"i tekrar koşacak, iki hata da görünmemeli.
