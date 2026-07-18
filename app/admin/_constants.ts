@@ -1,13 +1,11 @@
 // app/admin/_constants.ts
 
 import type { CSSProperties } from "react";
+import { TUM_ROLLER, ADMIN_ROLLER } from "@/lib/utils/roller";
 
-export const ROLLER = [
-  "pm", "jr_pm", "kd_pm", "iu", "tm", "bm", "utt", "kd_utt",
-  "gm", "gm_yrd", "drk", "paz_md", "blm_md", "med_md", "grp_pm", "sm",
-  "egt_md", "egt_yrd_md", "egt_yon", "egt_uz",
-  "ik_drk", "ik_md", "ik_yrd_md", "ik_uz", "ik_per",
-];
+// B-31: yerel rol kopyası kalktı — tek kaynaktan (roller.ts) türetilir;
+// admin rolleri panelden atanamaz (bilinçli hariç).
+export const ROLLER = TUM_ROLLER.filter((r) => !ADMIN_ROLLER.includes(r));
 
 export const inputStyle: CSSProperties = {
   flex: 1,

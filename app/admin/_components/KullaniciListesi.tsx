@@ -7,6 +7,7 @@
 "use client";
 
 import { ROLLER, filterSelectStyle } from "../_constants";
+import { ROL_ADLARI } from "@/lib/utils/roller";
 import type { Kullanici, Takim } from "../_types";
 import { kullaniciEksikMi } from "@/lib/admin/kullaniciDogrulama";
 
@@ -182,7 +183,7 @@ export default function KullaniciListesi(p: KullaniciListesiProps) {
                   <select value={p.filtrRol} onChange={(e) => p.setFiltrRol(e.target.value)}
                     style={p.filtrRol ? headerSelectAktifStyle : headerSelectStyle}>
                     <option value="">Rol ▾</option>
-                    {p.benzersizRoller.map(r => <option key={r} value={r}>{r}</option>)}
+                    {p.benzersizRoller.map(r => <option key={r} value={r}>{ROL_ADLARI[r] ?? r}</option>)}
                   </select>
                 </th>
                 <th style={thStyle}>E-posta</th>
@@ -228,12 +229,13 @@ export default function KullaniciListesi(p: KullaniciListesiProps) {
                         onChange={(e) => p.handleRolDegistir(k.kullanici_id, e.target.value)}
                         onBlur={() => p.setAcikRolId(null)}
                         style={{ ...filterSelectStyle, padding: "2px 6px" }}>
-                        {ROLLER.map(r => <option key={r} value={r}>{r}</option>)}
+                        {/* B-31: insan adı gösterilir, değer kod kalır */}
+                        {ROLLER.map(r => <option key={r} value={r}>{ROL_ADLARI[r] ?? r}</option>)}
                       </select>
                     ) : (
                       <span onClick={() => p.setAcikRolId(k.kullanici_id)}
                         style={{ cursor: "pointer", color: "#1d4ed8", fontWeight: 600 }}>
-                        {p.rolDegistirLoading === k.kullanici_id ? "..." : k.rol}
+                        {p.rolDegistirLoading === k.kullanici_id ? "..." : (ROL_ADLARI[k.rol] ?? k.rol)}
                       </span>
                     )}
                   </td>

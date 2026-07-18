@@ -7,6 +7,7 @@
 "use client";
 
 import { ROLLER, rowStyle, labelStyle, inputStyle, btnBase } from "../_constants";
+import { ROL_ADLARI } from "@/lib/utils/roller";
 import type { Takim, Bolge } from "../_types";
 
 interface TekilGirisFormuProps {
@@ -53,7 +54,8 @@ export default function TekilGirisFormu(p: TekilGirisFormuProps) {
         <span style={labelStyle}>Rol</span>
         <select value={p.tekilRol} onChange={(e) => p.setTekilRol(e.target.value)} style={inputStyle} required>
           <option value="">Rol seçin...</option>
-          {ROLLER.map(r => <option key={r} value={r}>{r}</option>)}
+          {/* B-31: dropdown insan adı gösterir, değer kod kalır */}
+          {ROLLER.map(r => <option key={r} value={r}>{ROL_ADLARI[r] ?? r}</option>)}
         </select>
       </div>
 
