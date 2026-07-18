@@ -1,5 +1,5 @@
 {
-  "uretim_tarihi": "2026-07-16T14:42:07.278Z",
+  "uretim_tarihi": "2026-07-18T09:34:10.251Z",
   "tablo_sayisi": 93,
   "rpc_sayisi": 53,
   "tablolar": {
@@ -1727,6 +1727,10 @@
         },
         "yetki_aktif_pasif": {
           "tip": "boolean",
+          "nullable": true
+        },
+        "telefon": {
+          "tip": "text",
           "nullable": true
         }
       }

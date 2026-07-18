@@ -62,7 +62,7 @@ export function useKullaniciListesi({ seciliFirma, kullanicilar, refreshKullanic
       const bolgeUyumu = filtrBolge === "" || k.bolge_adi === filtrBolge;
       const durumUyumu = filtrDurum === "" ||
         (filtrDurum === "eksik"
-          ? kullaniciEksikMi(k.rol, k.takim_id ?? null, k.bolge_id ?? null).eksik
+          ? kullaniciEksikMi(k.rol, k.takim_id ?? null, k.bolge_id ?? null, k.telefon ?? null).eksik
           : filtrDurum === "aktif" ? k.aktif_mi : !k.aktif_mi);
       return aramaUyumu && rolUyumu && takimUyumu && bolgeUyumu && durumUyumu;
     });

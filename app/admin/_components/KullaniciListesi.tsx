@@ -187,6 +187,7 @@ export default function KullaniciListesi(p: KullaniciListesiProps) {
                   </select>
                 </th>
                 <th style={thStyle}>E-posta</th>
+                <th style={thStyle}>Telefon</th>
                 <th style={thStyle}>
                   <select value={p.filtrTakim} onChange={(e) => p.setFiltrTakim(e.target.value)}
                     style={p.filtrTakim ? headerSelectAktifStyle : headerSelectStyle}>
@@ -240,10 +241,15 @@ export default function KullaniciListesi(p: KullaniciListesiProps) {
                     )}
                   </td>
                   <td style={tdStyle}>{k.eposta}</td>
+                  {/* Telefon kimlik çekirdeğinde: yeni kayıtta hep dolu;
+                      kolon öncesi eski kayıtta boş kalmış olabilir. */}
+                  <td style={tdStyle}>
+                    {k.telefon ?? <span style={{ color: "#d97706", fontWeight: 600 }}>⚠ yok</span>}
+                  </td>
                   {/* K-A6: takım/bölge eksikse rozet + hücre içi atama seçicisi.
                       Eksik tanımı tek kaynaktan (kullaniciEksikMi). */}
                   {(() => {
-                    const eksik = kullaniciEksikMi(k.rol, k.takim_id ?? null, k.bolge_id ?? null);
+                    const eksik = kullaniciEksikMi(k.rol, k.takim_id ?? null, k.bolge_id ?? null, k.telefon ?? null);
                     const yukleniyor = p.eksikTamamlaLoading === k.kullanici_id;
                     const eksikSelectStyle: React.CSSProperties = {
                       ...filterSelectStyle, padding: "2px 6px",

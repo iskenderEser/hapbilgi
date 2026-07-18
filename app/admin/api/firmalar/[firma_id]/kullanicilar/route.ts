@@ -33,7 +33,7 @@ export async function GET(
     const { data: kullanicilar, error } = await adminSupabase
       .from("kullanicilar")
       .select(`
-        kullanici_id, ad, soyad, eposta, rol, firma_id,
+        kullanici_id, ad, soyad, eposta, telefon, rol, firma_id,
         takim_id, bolge_id, aktif_mi,
         yetki_kullanici_yonetim, yetki_aktif_pasif, created_at,
         takimlar ( takim_adi ),
@@ -49,6 +49,7 @@ export async function GET(
       ad: k.ad,
       soyad: k.soyad,
       eposta: k.eposta,
+      telefon: k.telefon ?? null,
       rol: k.rol,
       firma_id: k.firma_id,
       takim_id: k.takim_id,
@@ -122,6 +123,7 @@ export async function POST(
         ad: kayit.ad,
         soyad: kayit.soyad,
         eposta: kayit.eposta,
+        telefon: kayit.telefon,
         rol: kayit.rol,
         firma_id,
         takim_id: kayit.takim_id,
@@ -133,6 +135,10 @@ export async function POST(
 
     if (insertError) {
       await adminSupabase.auth.admin.deleteUser(authData.user.id);
+      // 23505 = benzersizlik ihlali; telefon index'i Türkçe mesajla raporlanır.
+      if (insertError.code === "23505" && insertError.message.includes("telefon")) {
+        return validasyonHatasi(`Bu telefon numarası başka bir kullanıcıda kayıtlı (${kayit.telefon}).`, ["telefon"]);
+      }
       return hataYaniti("Kullanıcı veritabanına kaydedilemedi.", "kullanicilar tablosu INSERT", insertError);
     }
 

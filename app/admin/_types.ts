@@ -17,6 +17,8 @@ export interface Kullanici {
   ad: string;
   soyad: string;
   eposta: string;
+  // Kolon sonradan eklendi — eski kayıtlar null olabilir; eksik tanımına girer.
+  telefon: string | null;
   rol: string;
   aktif_mi: boolean;
   yetki_kullanici_yonetim: boolean;
@@ -33,6 +35,7 @@ export interface OnizlemeSatir {
   soyad: string;
   rol: string;
   eposta: string;
+  telefon: string;
   takim_adi: string;
   bolge_adi: string;
   // K-A6: "eksik" = kimlik çekirdeği tam, takım/bölge çözülemedi — YÜKLENİR.

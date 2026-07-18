@@ -2,17 +2,17 @@
   "fromlar": [
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 134,
+      "satir": 160,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 159,
+      "satir": 185,
       "tablo": "takimlar"
     },
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 169,
+      "satir": 195,
       "tablo": "bolgeler"
     },
     {
@@ -3267,47 +3267,47 @@
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 84,
+      "satir": 85,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 118,
+      "satir": 119,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 174,
+      "satir": 180,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 236,
+      "satir": 242,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 273,
+      "satir": 279,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 286,
+      "satir": 292,
       "tablo": "silinmis_kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 303,
+      "satir": 309,
       "tablo": "silinmis_kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 311,
+      "satir": 317,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 325,
+      "satir": 331,
       "tablo": "kullanicilar"
     },
     {
@@ -3367,7 +3367,7 @@
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
-      "satir": 178,
+      "satir": 201,
       "tablo": "kullanicilar"
     },
     {
@@ -3484,19 +3484,19 @@
   "selectler": [
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 134,
-      "ham": "kullanici_id, ad, soyad, rol, takim_id, bolge_id",
+      "satir": 160,
+      "ham": "kullanici_id, ad, soyad, rol, takim_id, bolge_id, telefon",
       "tablo": "kullanicilar"
     },
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 159,
+      "satir": 185,
       "ham": "takim_id, takim_adi",
       "tablo": "takimlar"
     },
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 169,
+      "satir": 195,
       "ham": "bolge_id, bolge_adi, takim_id",
       "tablo": "bolgeler"
     },
@@ -6731,24 +6731,24 @@
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
       "satir": 33,
-      "ham": "\n        kullanici_id, ad, soyad, eposta, rol, firma_id,\n        takim_id, bolge_id, aktif_mi,\n        yetki_kullanici_yonetim, yetki_aktif_pasif, created_at,\n        takimlar ( takim_adi ),\n        bolgeler ( bolge_adi )\n      ",
+      "ham": "\n        kullanici_id, ad, soyad, eposta, telefon, rol, firma_id,\n        takim_id, bolge_id, aktif_mi,\n        yetki_kullanici_yonetim, yetki_aktif_pasif, created_at,\n        takimlar ( takim_adi ),\n        bolgeler ( bolge_adi )\n      ",
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 84,
+      "satir": 85,
       "ham": "firma_id",
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 174,
+      "satir": 180,
       "ham": "kullanici_id, rol, takim_id, bolge_id",
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 273,
+      "satir": 279,
       "ham": "kullanici_id, ad, soyad, eposta, rol, firma_id, takim_id, bolge_id, aktif_mi, yetki_kullanici_yonetim, yetki_aktif_pasif, fotograf_url",
       "tablo": "kullanicilar"
     },

@@ -20,6 +20,8 @@ interface TekilGirisFormuProps {
   setTekilRol: (v: string) => void;
   tekilEposta: string;
   setTekilEposta: (v: string) => void;
+  tekilTelefon: string;
+  setTekilTelefon: (v: string) => void;
   tekilSifre: string;
   setTekilSifre: (v: string) => void;
   tekilTakimId: string;
@@ -63,6 +65,12 @@ export default function TekilGirisFormu(p: TekilGirisFormuProps) {
         <span style={labelStyle}>E-posta</span>
         <input type="email" value={p.tekilEposta} onChange={(e) => p.setTekilEposta(e.target.value)}
           style={inputStyle} required />
+      </div>
+
+      <div style={rowStyle}>
+        <span style={labelStyle}>Telefon</span>
+        <input type="tel" value={p.tekilTelefon} onChange={(e) => p.setTekilTelefon(e.target.value)}
+          style={inputStyle} required placeholder="05XX XXX XX XX" />
       </div>
 
       <div style={rowStyle}>

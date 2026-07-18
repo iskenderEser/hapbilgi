@@ -22,6 +22,7 @@ export function useTekilForm({ seciliFirma, takimlar, refreshKullanicilar, hata,
   const [tekilSoyad, setTekilSoyad] = useState("");
   const [tekilRol, setTekilRol] = useState("");
   const [tekilEposta, setTekilEposta] = useState("");
+  const [tekilTelefon, setTekilTelefon] = useState("");
   const [tekilSifre, setTekilSifre] = useState("");
   const [tekilTakimId, setTekilTakimId] = useState("");
   const [tekilTakimAdi, setTekilTakimAdi] = useState("");
@@ -34,7 +35,7 @@ export function useTekilForm({ seciliFirma, takimlar, refreshKullanicilar, hata,
 
   const sifirlaTekilForm = () => {
     setTekilAd(""); setTekilSoyad(""); setTekilRol("");
-    setTekilEposta(""); setTekilSifre("");
+    setTekilEposta(""); setTekilTelefon(""); setTekilSifre("");
     setTekilTakimId(""); setTekilTakimAdi("");
     setTekilBolgeId(""); setTekilBolgeAdi("");
     setSeciliTakimBolgeleri([]);
@@ -76,7 +77,7 @@ export function useTekilForm({ seciliFirma, takimlar, refreshKullanicilar, hata,
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ad: tekilAd, soyad: tekilSoyad, rol: tekilRol, eposta: tekilEposta, sifre: tekilSifre,
+          ad: tekilAd, soyad: tekilSoyad, rol: tekilRol, eposta: tekilEposta, telefon: tekilTelefon, sifre: tekilSifre,
           takim_id: tekilTakimId || undefined, takim_adi: tekilTakimAdi || undefined,
           bolge_id: tekilBolgeId || undefined, bolge_adi: tekilBolgeAdi || undefined,
           yetki_kullanici_yonetim: tekilYetkiKullanici,
@@ -101,6 +102,7 @@ export function useTekilForm({ seciliFirma, takimlar, refreshKullanicilar, hata,
     tekilSoyad, setTekilSoyad,
     tekilRol, setTekilRol,
     tekilEposta, setTekilEposta,
+    tekilTelefon, setTekilTelefon,
     tekilSifre, setTekilSifre,
     tekilTakimId,
     tekilBolgeId,

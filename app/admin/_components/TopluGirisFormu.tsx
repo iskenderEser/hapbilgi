@@ -42,8 +42,8 @@ const tarz_td: React.CSSProperties = {
 async function sablonIndir() {
   const XLSX = await import("xlsx");
   const sayfa = XLSX.utils.aoa_to_sheet([
-    ["Ad", "Soyad", "E-posta", "Şifre", "Rol", "Takım", "Bölge"],
-    ["Ali", "Veli", "ali.veli@ornek.com", "gizli123", "Ürün Tanıtım Temsilcisi", "Kardiyoloji", "Kadıköy"],
+    ["Ad", "Soyad", "E-posta", "Telefon", "Şifre", "Rol", "Takım", "Bölge"],
+    ["Ali", "Veli", "ali.veli@ornek.com", "0532 123 45 67", "gizli123", "Ürün Tanıtım Temsilcisi", "Kardiyoloji", "Kadıköy"],
   ]);
   const kitap = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(kitap, sayfa, "Kullanicilar");
@@ -112,6 +112,7 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
                   <th style={tarz_th}>Soyad</th>
                   <th style={tarz_th}>Rol</th>
                   <th style={tarz_th}>E-posta</th>
+                  <th style={tarz_th}>Telefon</th>
                   <th style={tarz_th}>Takım</th>
                   <th style={tarz_th}>Bölge</th>
                   <th style={tarz_th}>Durum</th>
@@ -125,6 +126,7 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
                     <td style={tarz_td}>{s.soyad}</td>
                     <td style={tarz_td}>{s.rol}</td>
                     <td style={tarz_td}>{s.eposta}</td>
+                    <td style={tarz_td}>{s.telefon}</td>
                     <td style={tarz_td}>{s.takim_adi}</td>
                     <td style={tarz_td}>{s.bolge_adi}</td>
                     <td style={tarz_td}>

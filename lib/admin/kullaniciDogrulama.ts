@@ -49,6 +49,26 @@ export function rolCoz(girdi: string): string {
   return eslesme ? eslesme[0] : kod;
 }
 
+/**
+ * Telefon girdisini tek biçime çevirir: rakam dışı her şey atılır, +90/90
+ * öneki düşürülür, 10 haneli "5..." girdinin başına 0 eklenir. Hedef biçim
+ * 05XXXXXXXXX (11 hane) — DB'de bu biçimde saklanır, benzersizlik index'i
+ * bu sayede "0555 123 45 67" ile "05551234567"yi aynı numara sayar.
+ * Excel'in sayı tipine çevirip baştaki 0'ı düşürdüğü hücreler 10-hane
+ * kuralıyla geri kazanılır.
+ */
+export function telefonNormalize(girdi: unknown): { ok: true; telefon: string } | { ok: false; hata: string } {
+  const ham = metinAl(girdi);
+  if (!ham) return { ok: false, hata: "Telefon zorunludur." };
+  let rakamlar = ham.replace(/\D/g, "");
+  if (rakamlar.length === 12 && rakamlar.startsWith("90")) rakamlar = rakamlar.slice(2);
+  if (rakamlar.length === 10 && rakamlar.startsWith("5")) rakamlar = "0" + rakamlar;
+  if (!/^05\d{9}$/.test(rakamlar)) {
+    return { ok: false, hata: `Geçersiz telefon: "${ham}". Beklenen biçim: 05XX XXX XX XX.` };
+  }
+  return { ok: true, telefon: rakamlar };
+}
+
 const ALAN_UZUNLUK_SINIRI = 200;
 // B-36: Supabase auth'un min-6 kuralı burada Türkçe mesajla önden yakalanır;
 // ham İngilizce Auth hatası kullanıcıya hiç ulaşmaz.
@@ -64,6 +84,7 @@ export interface KullaniciGirdisi {
   ad?: unknown;
   soyad?: unknown;
   eposta?: unknown;
+  telefon?: unknown;
   sifre?: unknown;
   rol?: unknown;
   takim_id?: unknown;
@@ -76,18 +97,21 @@ export interface DogrulanmisKullanici {
   ad: string;
   soyad: string;
   eposta: string;
+  telefon: string;
   sifre: string;
   rol: string;
   takim_id: string | null;
   bolge_id: string | null;
 }
 
-// K-A6 — eksik kabul modeli: kimlik çekirdeği (ad, soyad, eposta, sifre, rol)
-// tam olan satır, takım/bölge çözülemese de KABUL edilir; kayıt NULL alanla
-// döner ve eksikAlanlar doldurulur. "Eksik bilgili" tanımının TEK KAYNAĞI
-// kullaniciEksikMi'dir — listede rozet, firma aktivasyon kilidi ve başka her
-// tüketici kendi kontrolünü yazmaz, bu fonksiyonu çağırır.
-export type EksikAlan = "takim" | "bolge";
+// K-A6 — eksik kabul modeli: kimlik çekirdeği (ad, soyad, eposta, telefon,
+// sifre, rol) tam olan satır, takım/bölge çözülemese de KABUL edilir; kayıt
+// NULL alanla döner ve eksikAlanlar doldurulur. "Eksik bilgili" tanımının TEK
+// KAYNAĞI kullaniciEksikMi'dir — listede rozet, firma aktivasyon kilidi ve
+// başka her tüketici kendi kontrolünü yazmaz, bu fonksiyonu çağırır.
+// Telefon kimlik çekirdeğindedir (İskender kararı, 18.07.2026): yeni satır
+// telefonsuz giremez; kolon öncesi mevcut kayıtlar için eksik alanı sayılır.
+export type EksikAlan = "takim" | "bolge" | "telefon";
 
 export type SatirDogrulamaSonucu =
   | { ok: true; kayit: DogrulanmisKullanici; eksikAlanlar: EksikAlan[]; uyari?: string }
@@ -100,9 +124,11 @@ export type SatirDogrulamaSonucu =
 export function kullaniciEksikMi(
   rol: string,
   takim_id: string | null,
-  bolge_id: string | null
+  bolge_id: string | null,
+  telefon: string | null
 ): { eksik: boolean; eksikAlanlar: EksikAlan[] } {
   const eksikAlanlar: EksikAlan[] = [];
+  if (!telefon) eksikAlanlar.push("telefon");
   const yetenek = ureticiYetenegi(rol);
   if (yetenek) {
     if (yetenek.takimZorunlu && !takim_id) eksikAlanlar.push("takim");
@@ -133,14 +159,14 @@ export async function firmaninEksikKullanicilari(
 ): Promise<{ ok: true; eksikler: EksikKullanici[] } | { ok: false; hata: string }> {
   const { data, error } = await adminSupabase
     .from("kullanicilar")
-    .select("kullanici_id, ad, soyad, rol, takim_id, bolge_id")
+    .select("kullanici_id, ad, soyad, rol, takim_id, bolge_id, telefon")
     .eq("firma_id", firma_id);
 
   if (error) return { ok: false, hata: "Kullanıcılar çekilemedi." };
 
   const eksikler: EksikKullanici[] = [];
   for (const k of data ?? []) {
-    const sonuc = kullaniciEksikMi(k.rol, k.takim_id, k.bolge_id);
+    const sonuc = kullaniciEksikMi(k.rol, k.takim_id, k.bolge_id, k.telefon);
     if (sonuc.eksik) {
       eksikler.push({ kullanici_id: k.kullanici_id, ad: k.ad, soyad: k.soyad, rol: k.rol, eksikAlanlar: sonuc.eksikAlanlar });
     }
@@ -187,7 +213,8 @@ function metinAl(deger: unknown): string {
 
 /**
  * Bir kullanıcı satırını doğrular ve temiz kayda çevirir. Kurallar:
- * - ad/soyad/eposta/sifre/rol zorunlu; alanlar ≤200; eposta '@' içerir.
+ * - ad/soyad/eposta/telefon/sifre/rol zorunlu; alanlar ≤200; eposta '@' içerir.
+ * - telefon telefonNormalize'dan geçer (05XXXXXXXXX'e oturmayan girdi RED).
  * - rol TUM_ROLLER'da olmalı (B-18 — geçersiz rol yapısal olarak giremez).
  * - Üretici roller: takım zorunluluğu yetenek profilinden (takimZorunlu).
  * - TM: takım zorunlu. BM/UTT/KD_UTT: bölge zorunlu, takım bölgeden türetilir.
@@ -206,12 +233,13 @@ export function kullaniciSatirDogrula(
   const ad = metinAl(girdi.ad);
   const soyad = metinAl(girdi.soyad);
   const eposta = metinAl(girdi.eposta).toLowerCase();
+  const telefonHam = metinAl(girdi.telefon);
   const sifre = metinAl(girdi.sifre);
   // B-25: rol kod ya da insan adıyla gelebilir — tek çözümleyiciden geçer.
   const rol = rolCoz(metinAl(girdi.rol));
 
-  if (!ad || !soyad || !eposta || !sifre || !rol) {
-    return { ok: false, hata: "Zorunlu alan eksik (ad, soyad, eposta, sifre, rol).", alanlar: ["ad", "soyad", "eposta", "sifre", "rol"] };
+  if (!ad || !soyad || !eposta || !telefonHam || !sifre || !rol) {
+    return { ok: false, hata: "Zorunlu alan eksik (ad, soyad, eposta, telefon, sifre, rol).", alanlar: ["ad", "soyad", "eposta", "telefon", "sifre", "rol"] };
   }
   for (const [alan, deger] of [["ad", ad], ["soyad", soyad], ["eposta", eposta], ["sifre", sifre]] as const) {
     if (deger.length > ALAN_UZUNLUK_SINIRI) {
@@ -221,6 +249,11 @@ export function kullaniciSatirDogrula(
   if (!eposta.includes("@")) {
     return { ok: false, hata: "Geçersiz e-posta adresi.", alanlar: ["eposta"] };
   }
+  const telefonSonuc = telefonNormalize(telefonHam);
+  if (!telefonSonuc.ok) {
+    return { ok: false, hata: telefonSonuc.hata, alanlar: ["telefon"] };
+  }
+  const telefon = telefonSonuc.telefon;
   if (sifre.length < SIFRE_MIN_UZUNLUK) {
     return { ok: false, hata: `Şifre en az ${SIFRE_MIN_UZUNLUK} karakter olmalıdır.`, alanlar: ["sifre"] };
   }
@@ -284,8 +317,8 @@ export function kullaniciSatirDogrula(
   }
   // Diğer roller: takım/bölge atanmaz.
 
-  const { eksikAlanlar } = kullaniciEksikMi(rol, takim_id, bolge_id);
-  return { ok: true, kayit: { ad, soyad, eposta, sifre, rol, takim_id, bolge_id }, eksikAlanlar, uyari };
+  const { eksikAlanlar } = kullaniciEksikMi(rol, takim_id, bolge_id, telefon);
+  return { ok: true, kayit: { ad, soyad, eposta, telefon, sifre, rol, takim_id, bolge_id }, eksikAlanlar, uyari };
 }
 
 // ─── Rol geçişi (B-23) ──────────────────────────────────────────────────────

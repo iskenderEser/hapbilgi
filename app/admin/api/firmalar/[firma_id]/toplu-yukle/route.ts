@@ -52,6 +52,9 @@ export async function POST(
       ad: "ad", adi: "ad", isim: "ad",
       soyad: "soyad", soyadi: "soyad", soyisim: "soyad",
       eposta: "eposta", email: "eposta", mail: "eposta", epostaadresi: "eposta",
+      telefon: "telefon", tel: "telefon", telefonno: "telefon", telefonnumarasi: "telefon",
+      gsm: "telefon", gsmno: "telefon", cep: "telefon", cepno: "telefon",
+      ceptelefonu: "telefon", ceptel: "telefon",
       sifre: "sifre", parola: "sifre", password: "sifre",
       rol: "rol", gorev: "rol", unvan: "rol",
       takim: "takim_adi", takimadi: "takim_adi", takimad: "takim_adi",
@@ -70,7 +73,7 @@ export async function POST(
     // Kimlik çekirdeği kolonları dosyada hiç yoksa satır satır "eksik alan"
     // yağdırmak yerine tek, anlaşılır dosya hatası dönülür.
     const bulunanKolonlar = new Set(rows.flatMap((r) => Object.keys(r)));
-    const zorunluKolonlar = ["ad", "soyad", "eposta", "sifre", "rol"];
+    const zorunluKolonlar = ["ad", "soyad", "eposta", "telefon", "sifre", "rol"];
     const eksikKolonlar = zorunluKolonlar.filter((k) => !bulunanKolonlar.has(k));
     if (eksikKolonlar.length > 0) {
       return validasyonHatasi(
@@ -95,6 +98,7 @@ export async function POST(
       soyad: string;
       rol: string;
       eposta: string;
+      telefon: string;
       takim_adi: string;
       bolge_adi: string;
       durum: "hazir" | "eksik" | "hatali";
@@ -105,6 +109,10 @@ export async function POST(
     };
 
     const satirSonuclari: SatirSonuc[] = [];
+    // Dosya içi mükerrer telefon kontrolü: normalize edilmiş numara anahtardır —
+    // aynı numara ikinci kez gelirse satır görünür hatayla düşer (DB benzersizlik
+    // index'ine İngilizce hata mesajıyla takılmak yerine önden yakalanır).
+    const gorulenTelefonlar = new Map<string, number>();
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -112,6 +120,7 @@ export async function POST(
         ad: row["ad"],
         soyad: row["soyad"],
         eposta: row["eposta"],
+        telefon: row["telefon"],
         sifre: row["sifre"],
         rol: row["rol"],
         takim_adi: row["takim_adi"],
@@ -124,6 +133,7 @@ export async function POST(
         soyad: String(row["soyad"] ?? "").trim(),
         rol: String(row["rol"] ?? "").trim().toLowerCase(),
         eposta: String(row["eposta"] ?? "").trim().toLowerCase(),
+        telefon: String(row["telefon"] ?? "").trim(),
         takim_adi: String(row["takim_adi"] ?? "").trim(),
         bolge_adi: String(row["bolge_adi"] ?? "").trim(),
       };
@@ -134,8 +144,21 @@ export async function POST(
         continue;
       }
 
+      const oncekiSatir = gorulenTelefonlar.get(dogrulama.kayit.telefon);
+      if (oncekiSatir !== undefined) {
+        satirSonuclari.push({
+          ...satirBase,
+          durum: "hatali",
+          hata_mesaji: `Telefon numarası dosyada mükerrer — satır ${oncekiSatir} ile aynı (${dogrulama.kayit.telefon}).`,
+        });
+        continue;
+      }
+      gorulenTelefonlar.set(dogrulama.kayit.telefon, i + 1);
+
       satirSonuclari.push({
         ...satirBase,
+        // Önizleme/kayıt telefonu normalize edilmiş haliyle taşır.
+        telefon: dogrulama.kayit.telefon,
         durum: dogrulama.eksikAlanlar.length > 0 ? "eksik" : "hazir",
         uyari_mesaji: dogrulama.uyari,
         takim_id: dogrulama.kayit.takim_id,
@@ -182,6 +205,7 @@ export async function POST(
           ad: satir.ad,
           soyad: satir.soyad,
           eposta: satir.eposta,
+          telefon: satir.telefon,
           rol: satir.rol,
           firma_id,
           takim_id: satir.takim_id ?? null,
@@ -191,7 +215,11 @@ export async function POST(
 
       if (insertError) {
         await adminSupabase.auth.admin.deleteUser(authData.user.id);
-        hatalar.push(`Satır ${satir.index} — DB kayıt hatası: ${insertError.message}`);
+        // 23505 = benzersizlik ihlali; telefon index'ine takılan satır Türkçe raporlanır.
+        const mesaj = insertError.code === "23505" && insertError.message.includes("telefon")
+          ? `Bu telefon numarası başka bir kullanıcıda kayıtlı (${satir.telefon}).`
+          : `DB kayıt hatası: ${insertError.message}`;
+        hatalar.push(`Satır ${satir.index} — ${mesaj}`);
         hatali++;
         continue;
       }
