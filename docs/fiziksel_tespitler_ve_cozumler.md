@@ -55,3 +55,26 @@
 2. **DB (SQL — İskender uyguladı, 18.07.2026):** GRANT kontrol sorgusu service_role'de DELETE GRANT'i olmayan ÜÇ tablo çıkardı: `sistem_ayarlari`, `silinmis_kullanicilar`, `store_puan_harcamalari`. Üçüne birden `GRANT ALL ... TO service_role` atandı — "permission denied" kökten çözüldü; silinmis_kullanicilar (kullanıcı silme arşivi) ve sistem_ayarlari'ndaki olası gizli yetki sorunları da önlendi.
 
 **Durum:** ÇÖZÜLDÜ — doğrulama: İskender "test verileri sil"i tekrar koşacak, iki hata da görünmemeli.
+
+---
+
+### F-03 — Login'de "Şifremi unuttum" ve "Beni hatırla" işlevsiz (18.07.2026)
+
+**Tespit (İskender):** Login sayfasındaki "Şifremi unuttum" ve "Beni hatırla" fonksiyonları kontrol edilsin — "Şifremi unuttum" boşta, geliştirme yapılmamış olabilir; aynısı "Beni hatırla" için de geçerli olabilir.
+
+**Teşhis (kod kanıtlı — tespit doğru, ikisi de salt görsel):**
+1. **"Şifremi unuttum"** (`app/login/page.tsx`): `<a href="#">` — ölü link, hiçbir akışa bağlı değil. Koddaki not bunun bilinçli ertelendiğini söylüyor: "İşlevlendirme ayrı iş (§6.4) — link İskender talebiyle geri geldi (13.07.2026)".
+2. **"Beni hatırla"**: checkbox hiçbir state'e bağlı değil (onChange yok, değeri okunmuyor). Önemli ayrıntı: Supabase varsayılanı oturumu ZATEN kalıcı tutar (localStorage) — yani bugün kutu işaretlense de işaretlenmese de herkes "hatırlanıyor". Gerçek işlev "işaretsizse tarayıcı kapanınca oturum düşsün" demektir.
+
+**Çözüm planı (İskender onayı 18.07.2026; "Beni hatırla" tercihi: işlevlendir):**
+- A) Şifremi unuttum: login'de e-posta formu → `resetPasswordForEmail` (her durumda nötr mesaj — adres var/yok sızdırılmaz) + yeni `/sifre-yenile` sayfası (yeni şifre + tekrar, min 6 politikası, kaydet → login). Supabase panelinde Redirect URL kontrolü İskender'de.
+- B) Beni hatırla: işaretli (varsayılan) → bugünkü kalıcı oturum; işaretsiz → tarayıcı kapanınca oturum düşer.
+
+**Çözüm (uygulanan — 2 commit, üçlü doğrulama temiz):**
+
+| Madde | İş | Commit |
+|---|---|---|
+| A | "Şifremi unuttum" işlevlendi: login'de sıfırlama görünümü (e-posta öndoldurulur, `resetPasswordForEmail`, nötr mesaj — adres kayıtlı mı sızdırılmaz) + yeni `/sifre-yenile` sayfası (kurtarma oturumu 5 sn toleransla doğrulanır, yeni şifre + tekrar, B-36 politikası min 6, kayıt sonrası signOut → login) | `9241789` |
+| B | "Beni hatırla" işlevlendi: varsayılan işaretli (bugünkü kalıcı oturum); işaretsiz girişte kalıcı bayrak + tarayıcı kapanınca ölen işaret çerezi yazılır; AuthProvider açılışta ikisini karşılaştırıp gerekiyorsa oturumu düşürür. Bilinen sınır: tarayıcının "kaldığım yerden devam et" ayarı oturum çerezlerini geri getirebilir | `13c72b2` |
+
+**Durum:** KOD TARAFI BİTTİ — İskender'in fiziksel doğrulaması sonrası ÇÖZÜLDÜ yazılacak. Doğrulama adımları: (1) push sonrası canlıda "Şifremi unuttum" → e-posta → bağlantı → yeni şifre → yeni şifreyle giriş; (2) işaretsiz "Beni hatırla" ile giriş → tarayıcıyı tamamen kapat-aç → login'e düşmeli. Ön koşul: Supabase panelinde Authentication → URL Configuration'da site adresi + `/sifre-yenile` Redirect URL listesinde olmalı (İskender kontrol edecek).
