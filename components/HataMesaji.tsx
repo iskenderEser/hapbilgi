@@ -123,8 +123,10 @@ export function useHataMesaji() {
   const basari = (mesaj: string) =>
     ekle({ mesaj, tur: "basari" });
 
-  const uyari = (mesaj: string, adim?: string) =>
-    ekle({ mesaj, tur: "uyari", adim });
+  // kalici: true → otomatik kapanmaz, kullanıcı elle kapatır (kısmi başarısızlık raporu gibi
+  // kaybolmaması gereken mesajlar için — F-01/3).
+  const uyari = (mesaj: string, adim?: string, kalici?: boolean) =>
+    ekle({ mesaj, tur: "uyari", adim, otomatikKapat: !kalici });
 
   const bilgi = (mesaj: string) =>
     ekle({ mesaj, tur: "bilgi" });

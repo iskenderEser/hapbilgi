@@ -39,7 +39,7 @@ import { guvenliDosyaAdi } from "@/lib/utils/guvenliDosyaAdi";
 
 export function useTalepFormu() {
   const router = useRouter();
-  const { mesajlar, hata, basari } = useHataMesaji();
+  const { mesajlar, hata, basari, uyari } = useHataMesaji();
   const okunmamisIdler = useOkunmamisIdler("talep");
   const soruSetiParse = useSoruSetiParse();
 
@@ -457,9 +457,11 @@ export function useTalepFormu() {
     [bekleyenVideo, hata]
   );
 
+  // Dönüş: yüklenemeyen dosya adları — kısmi başarısızlık handleSubmit'te dürüstçe raporlanır (F-01/3).
   const uploadDosyalar = useCallback(
-    async (talep_id: string): Promise<void> => {
-      if (bekleyenDosyalar.length === 0) return;
+    async (talep_id: string): Promise<string[]> => {
+      if (bekleyenDosyalar.length === 0) return [];
+      const basarisizlar: string[] = [];
       setDosyaYukleniyor(true);
       try {
         const supabase = createClient();
@@ -470,6 +472,7 @@ export function useTalepFormu() {
             .upload(dosyaYolu, dosya);
           if (uploadError) {
             hata(`${dosya.name} yüklenemedi.`, "storage upload", uploadError.message);
+            basarisizlar.push(dosya.name);
             continue;
           }
           const { data: urlData } = supabase.storage
@@ -486,6 +489,7 @@ export function useTalepFormu() {
             }),
           });
         }
+        return basarisizlar;
       } finally {
         setDosyaYukleniyor(false);
       }
@@ -516,12 +520,28 @@ export function useTalepFormu() {
       try {
         const talep_id = await submitTalep();
         if (!talep_id) return;
+        // Talep bu noktada oluştu — dosya sonucu ne olursa olsun kullanıcıya
+        // gerçek durum söylenir; kısmi başarısızlık gizlenmez (F-01/3).
+        // (Eski akış video hatasında sessizce dönüyordu; yeniden "Gönder" ise
+        // aynı talebi ikinci kez yaratırdı — form artık her durumda sıfırlanır.)
+        const basarisizlar: string[] = [];
         if (hazirVideo && bekleyenVideo) {
           const ok = await uploadVideo(talep_id);
-          if (!ok) return;
+          if (!ok) basarisizlar.push(`${bekleyenVideo.preview.dosya_adi} (video)`);
         }
-        if (bekleyenDosyalar.length > 0) await uploadDosyalar(talep_id);
-        basari("Talep başarıyla oluşturuldu.");
+        if (bekleyenDosyalar.length > 0) {
+          basarisizlar.push(...(await uploadDosyalar(talep_id)));
+        }
+        if (basarisizlar.length === 0) {
+          basari("Talep başarıyla oluşturuldu.");
+        } else {
+          uyari(
+            `Talep oluşturuldu ancak şu dosyalar yüklenemedi: ${basarisizlar.join(", ")}. ` +
+              "Talep detay sayfasından tekrar yükleyebilirsiniz.",
+            undefined,
+            true
+          );
+        }
         resetForm();
         await veriCek();
       } finally {
@@ -537,6 +557,7 @@ export function useTalepFormu() {
       bekleyenDosyalar.length,
       uploadDosyalar,
       basari,
+      uyari,
       resetForm,
       veriCek,
     ]
