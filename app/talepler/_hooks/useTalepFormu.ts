@@ -512,10 +512,12 @@ export function useTalepFormu() {
     setVideoBasiSoruSayisi(2);
   }, [yetenek, soruSetiParse]);
 
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!validateForm()) return;
+  // F-01/4: Gönderim iki aşamalı — "Talep Oluştur" validasyondan geçirir ve onay
+  // modalını açar; asıl gönderim (gonderimiCalistir) yalnız modaldaki Evet'le başlar.
+  const [onayModalAcik, setOnayModalAcik] = useState(false);
+
+  const gonderimiCalistir = useCallback(
+    async () => {
       setFormLoading(true);
       try {
         const talep_id = await submitTalep();
@@ -549,7 +551,6 @@ export function useTalepFormu() {
       }
     },
     [
-      validateForm,
       submitTalep,
       hazirVideo,
       bekleyenVideo,
@@ -562,6 +563,23 @@ export function useTalepFormu() {
       veriCek,
     ]
   );
+
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!validateForm()) return;
+      setOnayModalAcik(true);
+    },
+    [validateForm]
+  );
+
+  const handleOnayEvet = useCallback(async () => {
+    setOnayModalAcik(false);
+    await gonderimiCalistir();
+  }, [gonderimiCalistir]);
+
+  // Hayır: modal kapanır, form ve girdiler aynen kalır — hiçbir şey gönderilmez.
+  const handleOnayHayir = useCallback(() => setOnayModalAcik(false), []);
 
   // ============================================================================
   // Public API
@@ -638,10 +656,13 @@ export function useTalepFormu() {
     handleDosyaSec,
     handleBekleyenDosyaSil,
 
-    // form: submit
+    // form: submit + onay modalı (F-01/4)
     formLoading,
     dosyaYukleniyor,
     handleSubmit,
+    onayModalAcik,
+    handleOnayEvet,
+    handleOnayHayir,
 
     // bildirimler
     mesajlar,

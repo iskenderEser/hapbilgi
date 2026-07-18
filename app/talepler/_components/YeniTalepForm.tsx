@@ -17,6 +17,7 @@ import { SoruSetiAyarlari } from "./SoruSetiAyarlari";
 import { HazirSoruSetiBlogu } from "./HazirSoruSetiBlogu";
 import { VideoYukleme } from "./VideoYukleme";
 import { EkDosyaYukleme } from "./EkDosyaYukleme";
+import { TalepOnayModal } from "./TalepOnayModal";
 
 interface YeniTalepFormProps {
   formu: ReturnType<typeof useTalepFormu>;
@@ -223,6 +224,24 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
           </button>
         </div>
       </form>
+
+      {/* F-01/4: gönderim ancak modaldaki Evet ile başlar; Hayır formu aynen bırakır */}
+      <TalepOnayModal
+        acik={formu.onayModalAcik}
+        ozet={{
+          urunAdi: formu.urunler.find((u) => u.urun_id === formu.seciliUrunId)?.urun_adi ?? null,
+          teknikAdi: formu.teknikGosterilsin
+            ? formu.teknikler.find((t) => t.teknik_id === formu.seciliTeknikId)?.teknik_adi ?? null
+            : null,
+          soruAdedi: formu.soruSetiBuyuklugu,
+          videoBasiSoru: formu.videoBasiSoruSayisi,
+          aciklama: formu.aciklama,
+          dosyaAdlari: formu.bekleyenDosyalar.map((d) => d.preview.dosya_adi),
+          videoAdi: formu.bekleyenVideo?.preview.dosya_adi ?? null,
+        }}
+        onEvet={formu.handleOnayEvet}
+        onHayir={formu.handleOnayHayir}
+      />
     </div>
   );
 }
