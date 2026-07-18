@@ -21,8 +21,10 @@
 // çocuk → ebeveyn olacak şekilde dizilmiştir. hb_ligi bir VIEW olduğu için
 // listede yoktur (silinemez; kendi verisi yoktur).
 //
-// Tüm hedef tablolarda created_at kolonu mevcuttur (DB'den doğrulandı);
-// "tüm satırları sil" için created_at >= epoch filtresi kullanılır.
+// "Tüm satırları sil" için created_at >= epoch filtresi kullanılır; created_at
+// kolonu OLMAYAN tablolar OZEL_FILTRE_KOLONU'nda birincil anahtarla silinir
+// (F-02: eczanem_izleme_kayitlari'nda created_at yok — "column does not exist"
+// tablo boşken bile silmeyi patlatıyordu).
 //
 // Hata yönetimi: bir tablonun silinmesi başarısız olursa kalan tablolar
 // denemeye devam eder; sonuç yanıtında her tablonun durumu listelenir.
@@ -93,6 +95,12 @@ const SILINECEK_TABLOLAR = [
   "talepler",
 ];
 
+// created_at kolonu olmayan tablolar: silme filtresi birincil anahtar üzerinden
+// "is not null" ile kurulur (tüm satırları siler; PK hiçbir satırda null olamaz).
+const OZEL_FILTRE_KOLONU: Record<string, string> = {
+  eczanem_izleme_kayitlari: "izleme_id",
+};
+
 type IslemSonucu = { tablo: string; durum: "ok" | "hata"; detay?: string };
 
 // İptal edilmemiş siparişlerin düşürdüğü stoğu ürünlere geri ekler.
@@ -153,11 +161,11 @@ export async function POST() {
 
     // 2) Silme — FK sırasıyla.
     for (const tablo of SILINECEK_TABLOLAR) {
-      // Tüm satırları sil: created_at her hedef tabloda mevcut (DB'den doğrulandı).
-      const { error } = await adminSupabase
-        .from(tablo)
-        .delete()
-        .gte("created_at", "1970-01-01");
+      const ozelKolon = OZEL_FILTRE_KOLONU[tablo];
+      const sorgu = adminSupabase.from(tablo).delete();
+      const { error } = ozelKolon
+        ? await sorgu.not(ozelKolon, "is", null)
+        : await sorgu.gte("created_at", "1970-01-01");
 
       if (error) {
         sonuclar.push({ tablo, durum: "hata", detay: error.message });
