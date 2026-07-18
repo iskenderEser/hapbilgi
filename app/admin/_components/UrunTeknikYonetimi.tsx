@@ -5,7 +5,7 @@
 
 "use client";
 
-import { inputStyle, btnBase, rowStyle, labelStyle } from "../_constants";
+import { inputStyle, btnBase, rowStyle, labelStyle, RENK_BORDO } from "../_constants";
 import type { Takim, Urun, Teknik } from "../_types";
 
 interface UrunTeknikYonetimiProps {
@@ -87,7 +87,7 @@ export default function UrunTeknikYonetimi(p: UrunTeknikYonetimiProps) {
             disabled={!p.yeniUrunAdi.trim() || !p.yeniUrunTakimId || p.urunEkleLoading}
             style={{
               ...btnBase,
-              background: !p.yeniUrunAdi.trim() || !p.yeniUrunTakimId || p.urunEkleLoading ? "#d1d5db" : "#1d4ed8",
+              background: !p.yeniUrunAdi.trim() || !p.yeniUrunTakimId || p.urunEkleLoading ? "#d1d5db" : RENK_BORDO,
               color: "white", border: "none", marginTop: "8px",
             }}
           >
@@ -141,7 +141,7 @@ export default function UrunTeknikYonetimi(p: UrunTeknikYonetimiProps) {
             disabled={!p.yeniTeknikAdi.trim() || p.teknikEkleLoading}
             style={{
               ...btnBase,
-              background: !p.yeniTeknikAdi.trim() || p.teknikEkleLoading ? "#d1d5db" : "#1d4ed8",
+              background: !p.yeniTeknikAdi.trim() || p.teknikEkleLoading ? "#d1d5db" : RENK_BORDO,
               color: "white", border: "none", marginTop: "8px",
             }}
           >

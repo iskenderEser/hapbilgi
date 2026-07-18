@@ -17,6 +17,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import type { Urun, Kategori } from "@/lib/store/tipler";
+import { RENK_BORDO } from "../../_constants";
 
 interface UrunGosterim extends Urun {
   store_kategoriler?: { ad: string } | null;
@@ -55,8 +56,6 @@ const BOS_FORM: FormState = {
 const MAKS_BOYUT_MB = 2;
 const IZINLI_FORMATLAR = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
-const MAVI = "#56aeff";
-const BORDO = "#bc2d0d";
 const KOYU_METIN = "#374151";
 const GRI_METIN = "#737373";
 
@@ -255,7 +254,7 @@ export default function UrunModal({
                   onClick={handleGorselSil}
                   disabled={islemSuruyor}
                   className="absolute top-2 right-2 px-2 py-1 rounded-lg text-white text-xs font-semibold cursor-pointer border-none"
-                  style={{ background: BORDO, opacity: islemSuruyor ? 0.5 : 1 }}
+                  style={{ background: RENK_BORDO, opacity: islemSuruyor ? 0.5 : 1 }}
                 >
                   Kaldır
                 </button>
@@ -272,7 +271,7 @@ export default function UrunModal({
                 className="rounded-lg flex flex-col items-center justify-center cursor-pointer"
                 style={{
                   border: surukleAktif
-                    ? `1px dashed ${MAVI}`
+                    ? `1px dashed ${RENK_BORDO}`
                     : "1px dashed #d1d5db",
                   background: surukleAktif ? "#f0f9ff" : "#f9fafb",
                   minHeight: "120px",
@@ -428,7 +427,7 @@ export default function UrunModal({
             disabled={islemSuruyor}
             className="px-5 py-2 rounded-lg border-none text-white text-xs font-semibold cursor-pointer"
             style={{
-              background: MAVI,
+              background: RENK_BORDO,
               opacity: islemSuruyor ? 0.5 : 1,
               fontFamily: "'Nunito', sans-serif",
             }}

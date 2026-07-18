@@ -2,6 +2,7 @@
 "use client";
 
 import type { EclubStoreSekme } from "../_types";
+import { RENK_BORDO } from "../../_constants";
 
 interface Props {
   aktifSekme: EclubStoreSekme;
@@ -27,8 +28,8 @@ export default function EclubStoreSekmeBari({ aktifSekme, setAktifSekme }: Props
               padding: "10px 18px",
               background: "transparent",
               border: "none",
-              borderBottom: aktif ? "2px solid #56aeff" : "2px solid transparent",
-              color: aktif ? "#1d4ed8" : "#6b7280",
+              borderBottom: aktif ? `2px solid ${RENK_BORDO}` : "2px solid transparent",
+              color: aktif ? RENK_BORDO : "#6b7280",
               fontWeight: aktif ? 600 : 400,
               fontSize: "14px",
               cursor: "pointer",

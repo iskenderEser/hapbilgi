@@ -6,7 +6,7 @@
 
 "use client";
 
-import { ROLLER, filterSelectStyle } from "../_constants";
+import { ROLLER, filterSelectStyle, RENK_BORDO, RENK_BORDO_ZEMIN } from "../_constants";
 import { ROL_ADLARI } from "@/lib/utils/roller";
 import type { Kullanici, Takim } from "../_types";
 import { kullaniciEksikMi } from "@/lib/admin/kullaniciDogrulama";
@@ -105,7 +105,7 @@ const headerSelectStyle: React.CSSProperties = {
 };
 
 const headerSelectAktifStyle: React.CSSProperties = {
-  ...headerSelectStyle, color: "#1d4ed8",
+  ...headerSelectStyle, color: RENK_BORDO,
 };
 
 export default function KullaniciListesi(p: KullaniciListesiProps) {
@@ -141,8 +141,8 @@ export default function KullaniciListesi(p: KullaniciListesiProps) {
 
       {/* Toplu işlem bar */}
       {p.seciliKullanicilar.size > 0 && (
-        <div style={{ display: "flex", gap: "8px", alignItems: "center", padding: "8px 12px", background: "#eff6ff", borderRadius: "6px", marginBottom: "8px" }}>
-          <span style={{ fontSize: "12px", fontWeight: 600, color: "#1d4ed8", fontFamily: "'Nunito', sans-serif" }}>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center", padding: "8px 12px", background: RENK_BORDO_ZEMIN, borderRadius: "6px", marginBottom: "8px" }}>
+          <span style={{ fontSize: "12px", fontWeight: 600, color: RENK_BORDO, fontFamily: "'Nunito', sans-serif" }}>
             {p.seciliKullanicilar.size} seçili
           </span>
           <button onClick={p.handleTopluPasif} disabled={p.topluIslemLoading} style={topluBtnStyle("#f59e0b", p.topluIslemLoading)}>
@@ -223,7 +223,7 @@ export default function KullaniciListesi(p: KullaniciListesiProps) {
                 // arka planla "kızarır" — göze sokulur (görsel vurgu kararı).
                 const eksik = kullaniciEksikMi(k.rol, k.takim_id ?? null, k.bolge_id ?? null, k.telefon ?? null);
                 return (
-                <tr key={k.kullanici_id} style={{ background: p.seciliKullanicilar.has(k.kullanici_id) ? "#eff6ff" : eksik.eksik ? "#fffbeb" : "white" }}>
+                <tr key={k.kullanici_id} style={{ background: p.seciliKullanicilar.has(k.kullanici_id) ? RENK_BORDO_ZEMIN : eksik.eksik ? "#fffbeb" : "white" }}>
                   <td style={tdStyle}>
                     <input type="checkbox" checked={p.seciliKullanicilar.has(k.kullanici_id)}
                       onChange={(e) => p.toggleSecim(k.kullanici_id, e.target.checked)} />
@@ -241,7 +241,7 @@ export default function KullaniciListesi(p: KullaniciListesiProps) {
                       </select>
                     ) : (
                       <span onClick={() => p.setAcikRolId(k.kullanici_id)}
-                        style={{ cursor: "pointer", color: "#1d4ed8", fontWeight: 600 }}>
+                        style={{ cursor: "pointer", color: RENK_BORDO, fontWeight: 600 }}>
                         {p.rolDegistirLoading === k.kullanici_id ? "..." : (ROL_ADLARI[k.rol] ?? k.rol)}
                       </span>
                     )}

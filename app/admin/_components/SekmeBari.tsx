@@ -5,6 +5,7 @@
 "use client";
 
 import type { GirisSecimi } from "../_types";
+import { RENK_BORDO } from "../_constants";
 
 interface SekmeBariProps {
   girisSecimi: GirisSecimi;
@@ -27,8 +28,8 @@ export default function SekmeBari({ girisSecimi, setGirisSecimi }: SekmeBariProp
             padding: "10px 16px",
             background: "transparent",
             border: "none",
-            borderBottom: girisSecimi === s.id ? "2px solid #1d4ed8" : "2px solid transparent",
-            color: girisSecimi === s.id ? "#1d4ed8" : "#737373",
+            borderBottom: girisSecimi === s.id ? `2px solid ${RENK_BORDO}` : "2px solid transparent",
+            color: girisSecimi === s.id ? RENK_BORDO : "#737373",
             fontSize: "13px",
             fontWeight: girisSecimi === s.id ? 700 : 500,
             cursor: "pointer",

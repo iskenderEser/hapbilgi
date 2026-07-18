@@ -9,6 +9,7 @@
 
 import { useEffect, useState } from "react";
 import type { SistemAyari } from "../_types";
+import { RENK_BORDO } from "../_constants";
 
 interface SistemAyarlariProps {
   hata: (mesaj: string, adim?: string, detay?: string) => void;
@@ -116,7 +117,7 @@ export default function SistemAyarlari({ hata, basari }: SistemAyarlariProps) {
               disabled={kaydeden === a.anahtar || degerMetni(a.deger) === (duzenlenen[a.anahtar] ?? "")}
               style={{
                 padding: "6px 12px", border: "none", borderRadius: "6px", fontSize: "12px", fontWeight: 600,
-                background: degerMetni(a.deger) === (duzenlenen[a.anahtar] ?? "") ? "#f3f4f6" : "#1d4ed8",
+                background: degerMetni(a.deger) === (duzenlenen[a.anahtar] ?? "") ? "#f3f4f6" : RENK_BORDO,
                 color: degerMetni(a.deger) === (duzenlenen[a.anahtar] ?? "") ? "#9ca3af" : "white",
                 cursor: degerMetni(a.deger) === (duzenlenen[a.anahtar] ?? "") ? "not-allowed" : "pointer",
                 fontFamily: "'Nunito', sans-serif",

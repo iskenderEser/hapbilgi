@@ -6,7 +6,7 @@
 
 "use client";
 
-import { ROLLER, rowStyle, labelStyle, inputStyle, btnBase } from "../_constants";
+import { ROLLER, rowStyle, labelStyle, inputStyle, btnBase, RENK_BORDO } from "../_constants";
 import { ROL_ADLARI } from "@/lib/utils/roller";
 import type { Takim, Bolge } from "../_types";
 
@@ -111,7 +111,7 @@ export default function TekilGirisFormu(p: TekilGirisFormuProps) {
       </div>
 
       <button type="submit" disabled={p.tekilLoading}
-        style={{ ...btnBase, background: p.tekilLoading ? "#d1d5db" : "#1d4ed8", color: "white", border: "none", marginTop: "12px" }}>
+        style={{ ...btnBase, background: p.tekilLoading ? "#d1d5db" : RENK_BORDO, color: "white", border: "none", marginTop: "12px" }}>
         {p.tekilLoading ? "Kaydediliyor..." : "Kaydet"}
       </button>
     </form>

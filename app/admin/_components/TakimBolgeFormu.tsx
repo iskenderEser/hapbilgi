@@ -6,7 +6,7 @@
 
 "use client";
 
-import { rowStyle, labelStyle, inputStyle, btnBase } from "../_constants";
+import { rowStyle, labelStyle, inputStyle, btnBase, RENK_BORDO } from "../_constants";
 import type { TakimBlok } from "../_types";
 
 interface TakimBolgeFormuProps {
@@ -88,7 +88,7 @@ export default function TakimBolgeFormu(p: TakimBolgeFormuProps) {
 
       <button
         onClick={p.handleYeniBlokEkle}
-        style={{ ...btnBase, background: "white", color: "#1d4ed8", marginBottom: "16px" }}
+        style={{ ...btnBase, background: "white", color: RENK_BORDO, marginBottom: "16px" }}
       >
         + Yeni Takım Ekle
       </button>
@@ -99,7 +99,7 @@ export default function TakimBolgeFormu(p: TakimBolgeFormuProps) {
           disabled={!gecerli || p.kaydetLoading}
           style={{
             ...btnBase,
-            background: !gecerli || p.kaydetLoading ? "#d1d5db" : "#1d4ed8",
+            background: !gecerli || p.kaydetLoading ? "#d1d5db" : RENK_BORDO,
             color: "white",
             border: "none",
             cursor: !gecerli || p.kaydetLoading ? "not-allowed" : "pointer",

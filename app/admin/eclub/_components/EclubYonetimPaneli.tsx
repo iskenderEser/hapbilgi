@@ -10,6 +10,7 @@
 import { useState } from "react";
 import { useEclubOnaylar } from "../_hooks/useEclubOnaylar";
 import { useEclubKayitli } from "../_hooks/useEclubKayitli";
+import { RENK_BORDO, RENK_BORDO_ZEMIN } from "../../_constants";
 
 const KISI_ROL_ETIKETLERI: Record<string, string> = {
   eczaci: "Eczacı",
@@ -145,7 +146,7 @@ export default function EclubYonetimPaneli({ hata, basari }: EclubYonetimPaneliP
                         <div key={k.kisi_id} className="pl-11 pr-4 md:pr-5 py-2.5 flex items-center justify-between gap-3 border-b border-gray-100 last:border-b-0">
                           <div className="flex items-center gap-2.5">
                             <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
-                              style={{ background: "#eff6ff", color: "#1d4ed8" }}>
+                              style={{ background: RENK_BORDO_ZEMIN, color: RENK_BORDO }}>
                               {`${k.ad?.[0] ?? ""}${k.soyad?.[0] ?? ""}`}
                             </div>
                             <div className="flex flex-col gap-0.5">

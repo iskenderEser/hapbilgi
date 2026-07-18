@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import type { EclubStoreUrunDetay, EclubStoreKategori } from "@/lib/eclub/store/eclubStoreTipler";
+import { RENK_BORDO } from "../../_constants";
 
 interface Props {
   duzenlenecek: EclubStoreUrunDetay | null;
@@ -152,7 +153,7 @@ export default function EclubStoreUrunModal({ duzenlenecek, kategoriler, onKapat
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
           <button onClick={onKapat} style={{ padding: "8px 14px", background: "transparent", border: "0.5px solid #d1d5db", borderRadius: "6px", fontSize: "13px", color: "#6b7280", cursor: "pointer" }}>Vazgeç</button>
-          <button onClick={kaydet} disabled={loading || gorselYukleniyor} style={{ padding: "8px 16px", background: "#56aeff", border: "none", borderRadius: "6px", fontSize: "13px", color: "#fff", fontWeight: 600, cursor: "pointer" }}>{loading ? "..." : "Kaydet"}</button>
+          <button onClick={kaydet} disabled={loading || gorselYukleniyor} style={{ padding: "8px 16px", background: RENK_BORDO, border: "none", borderRadius: "6px", fontSize: "13px", color: "#fff", fontWeight: 600, cursor: "pointer" }}>{loading ? "..." : "Kaydet"}</button>
         </div>
       </div>
     </div>

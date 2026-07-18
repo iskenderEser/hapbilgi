@@ -7,6 +7,18 @@ import { TUM_ROLLER, ADMIN_ROLLER } from "@/lib/utils/roller";
 // admin rolleri panelden atanamaz (bilinçli hariç).
 export const ROLLER = TUM_ROLLER.filter((r) => !ADMIN_ROLLER.includes(r));
 
+// Tasarım dili login neslinden (K-A3): baykuş grisi + bordo vurgu + Nunito.
+// T-3: bordo ailesi TEK kaynak burasıdır — bileşenlerde mavi/yerel renk
+// kopyası kalmadı. ANLAMSAL renkler bu dile dahil değildir (İskender kararı,
+// 18.07.2026): sipariş durum etiketleri (mavi Hazırlanıyor, mor Kargoda...),
+// modül switch renkleri, amber eksik dili ve kırmızı hata dili yerinde kalır.
+export const RENK_GRI = "#737373";
+export const RENK_BORDO = "#bc2d0d";
+export const RENK_CIZGI = "#e5e7eb";
+// Seçili/vurgulu zemin ve kenarlık — bordo ailesinin açık tonları.
+export const RENK_BORDO_ZEMIN = "#fef2f2";
+export const RENK_BORDO_KENAR = "#fecaca";
+
 export const inputStyle: CSSProperties = {
   flex: 1,
   border: "none",
@@ -27,8 +39,8 @@ export const readonlyInputStyle: CSSProperties = {
 };
 
 export const labelStyle: CSSProperties = {
-  background: "#eff6ff",
-  color: "#1d4ed8",
+  background: RENK_BORDO_ZEMIN,
+  color: RENK_BORDO,
   fontSize: "12px",
   fontWeight: 600,
   padding: "8px 12px",
@@ -74,14 +86,9 @@ export const filterSelectStyle: CSSProperties = {
 };
 // ─────────────────────────────────────────────────────────────────────────
 // M2 — Yönetim kabuğu tek kaynağı (admin modernizasyon planı B.2, K-A3/K-A4).
-// Tasarım dili login neslinden: baykuş grisi + bordo vurgu + Nunito.
 // firmaAdminGorur: ileride "firma admini" rolü (K-A1) için görünürlük bayrağı —
 // sekme/bölüm kapatma tek yerden yapılır, dağınık if'lerle değil.
 // ─────────────────────────────────────────────────────────────────────────
-
-export const RENK_GRI = "#737373";
-export const RENK_BORDO = "#bc2d0d";
-export const RENK_CIZGI = "#e5e7eb";
 
 export type ModulSekmeId =
   | "kullanicilar"

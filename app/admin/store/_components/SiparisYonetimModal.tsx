@@ -11,6 +11,7 @@
 
 import { useEffect, useState } from "react";
 import { KARGO_FIRMA_ADLARI } from "@/lib/store/kargo";
+import { RENK_BORDO } from "../../_constants";
 
 export type SiparisYonetimModu = "kargola" | "iptal";
 
@@ -30,8 +31,6 @@ interface Props {
   basari: (mesaj: string) => void;
 }
 
-const MAVI = "#56aeff";
-const BORDO = "#bc2d0d";
 const KOYU_METIN = "#374151";
 const GRI_METIN = "#737373";
 
@@ -143,7 +142,8 @@ export default function SiparisYonetimModal({
   };
 
   const baslik = mod === "kargola" ? "Kargoya Ver" : "Siparişi İptal Et";
-  const aksiyonRenk = mod === "kargola" ? MAVI : BORDO;
+  // T-3: iki mod da tek vurgu dilinde (bordo); ayrım başlık/etiketle yapılır.
+  const aksiyonRenk = RENK_BORDO;
   const aksiyonEtiket = mod === "kargola" ? "Kargoya Ver" : "İptal Et";
 
   return (

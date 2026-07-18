@@ -3,6 +3,7 @@
 
 import type { EclubStoreAdminSiparis } from "@/lib/eclub/store/eclubStoreTipler";
 import EclubStoreSiparisYonetimModal from "./EclubStoreSiparisYonetimModal";
+import { RENK_BORDO, RENK_BORDO_ZEMIN, RENK_BORDO_KENAR } from "../../_constants";
 
 interface Props {
   siparisler: EclubStoreAdminSiparis[];
@@ -43,7 +44,7 @@ export default function EclubStoreSiparislerSekmesi(props: Props) {
           const aktif = durumFiltre === f.id;
           return (
             <button key={f.id} onClick={() => setDurumFiltre(f.id)}
-              style={{ padding: "5px 12px", background: aktif ? "#e6f1fb" : "transparent", border: aktif ? "1px solid #56aeff" : "0.5px solid #e5e7eb", borderRadius: "6px", fontSize: "12px", color: aktif ? "#1d4ed8" : "#6b7280", fontWeight: aktif ? 600 : 400, cursor: "pointer" }}>
+              style={{ padding: "5px 12px", background: aktif ? RENK_BORDO_ZEMIN : "transparent", border: aktif ? `1px solid ${RENK_BORDO_KENAR}` : "0.5px solid #e5e7eb", borderRadius: "6px", fontSize: "12px", color: aktif ? RENK_BORDO : "#6b7280", fontWeight: aktif ? 600 : 400, cursor: "pointer" }}>
               {f.ad}
             </button>
           );

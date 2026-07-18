@@ -9,6 +9,7 @@
 "use client";
 
 import type { Firma } from "../_types";
+import { RENK_BORDO, RENK_BORDO_ZEMIN, RENK_BORDO_KENAR } from "../_constants";
 
 interface FirmaSidebarProps {
   firmalar: Firma[];
@@ -127,7 +128,7 @@ export default function FirmaSidebar({
           disabled={!yeniFirmaAdi.trim()}
           style={{
             padding: "8px 14px",
-            background: yeniFirmaAdi.trim() ? "#1d4ed8" : "#d1d5db",
+            background: yeniFirmaAdi.trim() ? RENK_BORDO : "#d1d5db",
             color: "white",
             border: "none",
             borderRadius: "6px",
@@ -152,8 +153,8 @@ export default function FirmaSidebar({
             const pasif = !f.aktif;
             // Zebra: dönüşümlü arka plan. Seçili firma vurgulanır.
             const zebraBg = i % 2 === 0 ? "#ffffff" : "#fafafa";
-            const kartBg = secili ? "#eff6ff" : zebraBg;
-            const kartBorder = secili ? "0.5px solid #93c5fd" : "0.5px solid #e5e7eb";
+            const kartBg = secili ? RENK_BORDO_ZEMIN : zebraBg;
+            const kartBorder = secili ? `0.5px solid ${RENK_BORDO_KENAR}` : "0.5px solid #e5e7eb";
 
             return (
               <div
@@ -178,7 +179,7 @@ export default function FirmaSidebar({
                       padding: 0,
                       fontSize: "14px",
                       fontWeight: secili ? 700 : 500,
-                      color: secili ? "#1d4ed8" : "#111",
+                      color: secili ? RENK_BORDO : "#111",
                       cursor: "pointer",
                       fontFamily: "'Nunito', sans-serif",
                     }}
@@ -240,7 +241,7 @@ export default function FirmaSidebar({
                   <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "12px", color: "#737373", fontFamily: "'Nunito', sans-serif" }}>
                     <Switch
                       acik={f.hbstore_aktif}
-                      renk="#1d4ed8"
+                      renk={RENK_BORDO}
                       onClick={() => handleStoreToggle(f)}
                       baslik={f.hbstore_aktif ? "Mağaza açık — kapatmak için tıkla" : "Mağaza kapalı — açmak için tıkla"}
                     />
@@ -306,10 +307,10 @@ export default function FirmaSidebar({
                       flex: 1,
                       padding: "6px",
                       background: "#ffffff",
-                      border: "0.5px solid #1d4ed8",
+                      border: `0.5px solid ${RENK_BORDO}`,
                       borderRadius: "6px",
                       fontSize: "12px",
-                      color: "#1d4ed8",
+                      color: RENK_BORDO,
                       cursor: "pointer",
                       fontFamily: "'Nunito', sans-serif",
                     }}

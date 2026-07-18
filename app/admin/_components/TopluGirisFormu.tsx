@@ -5,7 +5,7 @@
 
 "use client";
 
-import { btnBase } from "../_constants";
+import { btnBase, RENK_BORDO } from "../_constants";
 import { ROL_ADLARI } from "@/lib/utils/roller";
 import type { OnizlemeSatir } from "../_types";
 import type { TopluKaydetSonucu } from "../_hooks/useTopluForm";
@@ -101,7 +101,7 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
         <>
           <div style={{ marginBottom: "12px", display: "flex", gap: "12px", flexWrap: "wrap", fontSize: "13px", fontWeight: 600, fontFamily: "'Nunito', sans-serif" }}>
             {/* Upsert kırılımı: eşleşmeyen satır yeni, eşleşen güncelleme */}
-            <span style={{ color: "#1d4ed8" }}>Yeni: {p.yeniSayisi}</span>
+            <span style={{ color: RENK_BORDO }}>Yeni: {p.yeniSayisi}</span>
             <span style={{ color: "#0f766e" }}>Güncellenecek: {p.guncelleSayisi}</span>
             <span style={{ color: "#737373" }}>Değişiklik yok: {p.degismeyenSayisi}</span>
             {/* K-A6: eksik satırlar da yüklenir — ayrı sayaçla görünür */}
@@ -139,7 +139,7 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
                     <td style={tarz_td}>{s.bolge_adi}</td>
                     <td style={tarz_td}>
                       {s.islem === "yeni" ? (
-                        <span style={{ color: "#1d4ed8", fontWeight: 600 }}>Yeni</span>
+                        <span style={{ color: RENK_BORDO, fontWeight: 600 }}>Yeni</span>
                       ) : s.islem === "guncelle" ? (
                         <span style={{ color: "#0f766e", fontWeight: 600 }}>
                           Güncelleme{s.degisen && s.degisen.length > 0 ? ` — ${s.degisen.join(", ")}` : ""}
@@ -152,7 +152,7 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
                     </td>
                     <td style={tarz_td}>
                       {s.durum === "hazir" ? (
-                        <span style={{ color: "#1d4ed8", fontWeight: 600 }}>Hazır</span>
+                        <span style={{ color: RENK_BORDO, fontWeight: 600 }}>Hazır</span>
                       ) : s.durum === "eksik" ? (
                         <span style={{ color: "#d97706", fontWeight: 600 }} title={s.uyari_mesaji}>
                           Eksik bilgili{s.uyari_mesaji ? ` — ${s.uyari_mesaji}` : " (takım/bölge yok)"}
@@ -177,7 +177,7 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
             disabled={p.yeniSayisi + p.guncelleSayisi === 0 || p.topluKaydetLoading}
             style={{
               ...btnBase,
-              background: p.yeniSayisi + p.guncelleSayisi === 0 || p.topluKaydetLoading ? "#d1d5db" : "#1d4ed8",
+              background: p.yeniSayisi + p.guncelleSayisi === 0 || p.topluKaydetLoading ? "#d1d5db" : RENK_BORDO,
               color: "white",
               border: "none",
               cursor: p.yeniSayisi + p.guncelleSayisi === 0 || p.topluKaydetLoading ? "not-allowed" : "pointer",

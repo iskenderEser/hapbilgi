@@ -9,6 +9,7 @@
 import UrunModal from "./UrunModal";
 import type { Kategori } from "@/lib/store/tipler";
 import type { UrunGosterim } from "../_types";
+import { RENK_BORDO } from "../../_constants";
 
 interface UrunlerSekmesiProps {
   // Veri
@@ -78,7 +79,7 @@ export default function UrunlerSekmesi(p: UrunlerSekmesiProps) {
           onClick={p.handleYeniEkle}
           style={{
             padding: "6px 12px",
-            background: "#1d4ed8",
+            background: RENK_BORDO,
             color: "white",
             border: "none",
             borderRadius: "6px",

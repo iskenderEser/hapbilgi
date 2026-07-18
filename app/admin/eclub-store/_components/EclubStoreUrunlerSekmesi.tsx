@@ -3,6 +3,7 @@
 
 import type { EclubStoreUrunDetay, EclubStoreKategori } from "@/lib/eclub/store/eclubStoreTipler";
 import EclubStoreUrunModal from "./EclubStoreUrunModal";
+import { RENK_BORDO } from "../../_constants";
 
 interface Props {
   urunler: EclubStoreUrunDetay[];
@@ -32,7 +33,7 @@ export default function EclubStoreUrunlerSekmesi(props: Props) {
     <div style={{ fontFamily: "'Nunito', sans-serif" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
         <span style={{ fontSize: "14px", color: "#6b7280" }}>{urunler.length} ürün</span>
-        <button onClick={handleYeniEkle} style={{ padding: "8px 14px", background: "#56aeff", border: "none", borderRadius: "6px", fontSize: "13px", color: "#fff", fontWeight: 600, cursor: "pointer" }}>+ Yeni Ürün</button>
+        <button onClick={handleYeniEkle} style={{ padding: "8px 14px", background: RENK_BORDO, border: "none", borderRadius: "6px", fontSize: "13px", color: "#fff", fontWeight: 600, cursor: "pointer" }}>+ Yeni Ürün</button>
       </div>
 
       {yukleniyor ? (

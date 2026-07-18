@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import type { EclubStoreAdminSiparis } from "@/lib/eclub/store/eclubStoreTipler";
+import { RENK_BORDO } from "../../_constants";
 
 interface Props {
   siparis: EclubStoreAdminSiparis;
@@ -96,7 +97,7 @@ export default function EclubStoreSiparisYonetimModal({ siparis, islemLoading, o
 
             <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", marginTop: "4px" }}>
               <button onClick={() => setIptalMod(true)} style={{ padding: "8px 14px", background: "transparent", border: "0.5px solid #fecaca", borderRadius: "6px", fontSize: "13px", color: "#bc2d0d", cursor: "pointer" }}>Siparişi İptal Et</button>
-              <button onClick={kaydet} disabled={islemLoading} style={{ padding: "8px 16px", background: "#56aeff", border: "none", borderRadius: "6px", fontSize: "13px", color: "#fff", fontWeight: 600, cursor: "pointer" }}>{islemLoading ? "..." : "Durumu Kaydet"}</button>
+              <button onClick={kaydet} disabled={islemLoading} style={{ padding: "8px 16px", background: RENK_BORDO, border: "none", borderRadius: "6px", fontSize: "13px", color: "#fff", fontWeight: 600, cursor: "pointer" }}>{islemLoading ? "..." : "Durumu Kaydet"}</button>
             </div>
           </>
         )}

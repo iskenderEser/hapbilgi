@@ -15,6 +15,7 @@ import { DURUM_ETIKETLERI, DURUM_RENKLERI } from "@/lib/store/sabitler";
 import { kargoTakipUrl } from "@/lib/store/kargo";
 import type { SiparisGosterim } from "../_types";
 import type { AdresSnapshot } from "@/lib/store/tipler";
+import { RENK_BORDO } from "../../_constants";
 
 interface SiparislerSekmesiProps {
   // Veri
@@ -160,7 +161,7 @@ export default function SiparislerSekmesi(p: SiparislerSekmesiProps) {
                         href={kargoUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ color: "#1d4ed8", textDecoration: "underline" }}
+                        style={{ color: RENK_BORDO, textDecoration: "underline" }}
                       >
                         {s.kargo_takip_no}
                       </a>
@@ -210,7 +211,7 @@ export default function SiparislerSekmesi(p: SiparislerSekmesiProps) {
                         onClick={() => p.handleKargola(s)}
                         style={{
                           padding: "5px 12px",
-                          background: "#1d4ed8",
+                          background: RENK_BORDO,
                           color: "white",
                           border: "none",
                           borderRadius: "6px",

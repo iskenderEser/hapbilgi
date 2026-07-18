@@ -12,6 +12,7 @@
 
 import { useEffect, useState } from "react";
 import type { Kategori } from "@/lib/store/tipler";
+import { RENK_BORDO } from "../../_constants";
 
 interface Props {
   acik: boolean;
@@ -34,7 +35,6 @@ const BOS_FORM: FormState = {
   aktif_mi: true,
 };
 
-const MAVI = "#56aeff";
 const KOYU_METIN = "#374151";
 const GRI_METIN = "#737373";
 
@@ -201,7 +201,7 @@ export default function KategoriModal({
             disabled={kaydediliyor}
             className="px-5 py-2 rounded-lg border-none text-white text-xs font-semibold cursor-pointer"
             style={{
-              background: MAVI,
+              background: RENK_BORDO,
               opacity: kaydediliyor ? 0.5 : 1,
               fontFamily: "'Nunito', sans-serif",
             }}
