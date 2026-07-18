@@ -3,9 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import {
+  adKatla,
   firmaYapisiYukle,
   kullaniciSatirDogrula,
   kullaniciEksikMi,
+  organizasyonKurulumPlani,
   satirUpsertPlani,
   turkceKatla,
   type GuncellemeAlanlari,
@@ -98,6 +100,58 @@ export async function POST(
     const yapiSonuc = await firmaYapisiYukle(adminSupabase, firma_id);
     if (!yapiSonuc.ok) return hataYaniti(yapiSonuc.hata, "firmaYapisiYukle — toplu yükleme", null);
     const yapi = yapiSonuc.yapi;
+
+    // K-A8 — organizasyonun dosyadan kurulması: dosyada adı geçen ama firmada
+    // olmayan takım/bölge "eksik" değil, kurulum planıdır. Önizlemede satırlar
+    // sanal yapıyla çözülür ve "oluşturulacak" bilgisi görünür; kaydette önce
+    // takım/bölge gerçekten açılır, satırlar sonra bilinen akışla işlenir —
+    // kayıt tek dosyayla tamamlanır.
+    const kurulum = organizasyonKurulumPlani(
+      yapi,
+      rows.map((r) => ({ rol: r["rol"], takim_adi: r["takim_adi"], bolge_adi: r["bolge_adi"] }))
+    );
+    const yeniTakimSet = new Set(kurulum.yeniTakimlar.map((t) => adKatla(t)));
+    const yeniBolgeSet = new Set(kurulum.yeniBolgeler.map((b) => adKatla(b.bolge_adi)));
+    let olusturulanTakim = 0;
+    let olusturulanBolge = 0;
+
+    if (mod === "onizle") {
+      // Sanal yapı: kurulacaklar çözüme eklenir — satır eksik uyarısı üretmez.
+      for (const takimAdi of kurulum.yeniTakimlar) {
+        yapi.takimlar.push({ takim_id: `yeni:${adKatla(takimAdi)}`, takim_adi: takimAdi });
+      }
+      for (const b of kurulum.yeniBolgeler) {
+        const takim = yapi.takimlar.find((t) => adKatla(t.takim_adi) === adKatla(b.takim_adi));
+        if (takim) yapi.bolgeler.push({ bolge_id: `yeni:${adKatla(b.bolge_adi)}`, bolge_adi: b.bolge_adi, takim_id: takim.takim_id });
+      }
+    } else {
+      for (const takimAdi of kurulum.yeniTakimlar) {
+        const { data: yeniTakim, error: takimInsertError } = await adminSupabase
+          .from("takimlar")
+          .insert({ firma_id, takim_adi: takimAdi })
+          .select("takim_id, takim_adi")
+          .single();
+        if (takimInsertError || !yeniTakim) {
+          return hataYaniti(`"${takimAdi}" takımı oluşturulamadı.`, "takimlar tablosu INSERT — K-A8 kurulum", takimInsertError);
+        }
+        yapi.takimlar.push(yeniTakim);
+        olusturulanTakim++;
+      }
+      for (const b of kurulum.yeniBolgeler) {
+        const takim = yapi.takimlar.find((t) => adKatla(t.takim_adi) === adKatla(b.takim_adi));
+        if (!takim) continue; // planda bölgenin takımı ya mevcuttur ya yukarıda açıldı
+        const { data: yeniBolge, error: bolgeInsertError } = await adminSupabase
+          .from("bolgeler")
+          .insert({ takim_id: takim.takim_id, bolge_adi: b.bolge_adi })
+          .select("bolge_id, bolge_adi, takim_id")
+          .single();
+        if (bolgeInsertError || !yeniBolge) {
+          return hataYaniti(`"${b.bolge_adi}" bölgesi oluşturulamadı.`, "bolgeler tablosu INSERT — K-A8 kurulum", bolgeInsertError);
+        }
+        yapi.bolgeler.push(yeniBolge);
+        olusturulanBolge++;
+      }
+    }
 
     // Upsert modeli: satırlar firmanın MEVCUT kullanıcılarıyla eşleştirilir
     // (önce e-posta, sonra telefon). Eşleşen güncellenir, eşleşmeyen eklenir,
@@ -206,6 +260,19 @@ export async function POST(
       // Satır KANONİK değerleri taşır (rolCoz'dan geçmiş rol kodu, normalize
       // telefon, katlanmış e-posta) — kayıt aşaması ve auth metadata bunları
       // kullanır; ham girdinin (örn. insan-adlı rol) DB'ye sızması biter.
+      // K-A8: önizlemede satır, hangi takım/bölgenin bu yüklemeyle
+      // oluşturulacağını görünür taşır (yazım hatasından çöp kayıt üretmeye
+      // karşı kaydetmeden önce göz onayı).
+      const kurulumNotlari: string[] = [];
+      if (mod === "onizle") {
+        if (satirBase.takim_adi && yeniTakimSet.has(adKatla(satirBase.takim_adi))) {
+          kurulumNotlari.push(`"${satirBase.takim_adi}" takımı bu yüklemeyle oluşturulacak.`);
+        }
+        if (satirBase.bolge_adi && yeniBolgeSet.has(adKatla(satirBase.bolge_adi))) {
+          kurulumNotlari.push(`"${satirBase.bolge_adi}" bölgesi bu yüklemeyle oluşturulacak.`);
+        }
+      }
+
       const ortak = {
         ...satirBase,
         ad: kayit.ad,
@@ -213,7 +280,7 @@ export async function POST(
         rol: kayit.rol,
         eposta: kayit.eposta,
         telefon: kayit.telefon,
-        uyari_mesaji: dogrulama.uyari,
+        uyari_mesaji: [dogrulama.uyari, ...kurulumNotlari].filter(Boolean).join(" ") || undefined,
       };
 
       if (plan.islem === "yeni") {
@@ -253,7 +320,7 @@ export async function POST(
     }
 
     if (mod === "onizle") {
-      return NextResponse.json({ satirlar: satirSonuclari }, { status: 200 });
+      return NextResponse.json({ satirlar: satirSonuclari, kurulum }, { status: 200 });
     }
 
     let eklenen = 0;
@@ -372,6 +439,8 @@ export async function POST(
     }
 
     const ozet = [
+      ...(olusturulanTakim > 0 ? [`${olusturulanTakim} takım oluşturuldu`] : []),
+      ...(olusturulanBolge > 0 ? [`${olusturulanBolge} bölge oluşturuldu`] : []),
       `${eklenen} eklendi`,
       `${guncellenen} güncellendi`,
       ...(degismeyen > 0 ? [`${degismeyen} değişiklik yok`] : []),
@@ -386,6 +455,8 @@ export async function POST(
       degismeyen,
       eksikli,
       hatali,
+      olusturulanTakim,
+      olusturulanBolge,
       hatalar: hatalar.length > 0 ? hatalar : undefined,
     }, { status: 200 });
 

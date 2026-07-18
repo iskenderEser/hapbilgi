@@ -58,6 +58,8 @@ export default function AdminPanel() {
   const toplu = useTopluForm({
     seciliFirma: admin.seciliFirma,
     refreshKullanicilar: admin.refreshKullanicilar,
+    // K-A8: yükleme takım/bölge oluşturabilir — organizasyon görünümü tazelenir.
+    refreshTakimlar: admin.refreshTakimlar,
     hata: admin.hata,
     basari: admin.basari,
   });

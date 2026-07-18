@@ -7,12 +7,13 @@
 
 import { btnBase, RENK_BORDO } from "../_constants";
 import { ROL_ADLARI } from "@/lib/utils/roller";
-import type { OnizlemeSatir } from "../_types";
+import type { OnizlemeKurulum, OnizlemeSatir } from "../_types";
 import type { TopluKaydetSonucu } from "../_hooks/useTopluForm";
 
 interface TopluGirisFormuProps {
   topluDosya: File | null;
   onizlemesatirlari: OnizlemeSatir[] | null;
+  onizlemeKurulum: OnizlemeKurulum | null;
   onizlemeLoading: boolean;
   topluKaydetLoading: boolean;
   yeniSayisi: number;
@@ -110,6 +111,17 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
             <span style={{ color: "#dc2626" }}>Hatalı: {p.hataliSayisi}</span>
           </div>
 
+          {/* K-A8: dosyadan kurulacak organizasyon — kaydetmeden önce göz onayı
+              (yazım hatasından çöp takım/bölge üretmeye karşı görünür liste). */}
+          {p.onizlemeKurulum && (p.onizlemeKurulum.yeniTakimlar.length > 0 || p.onizlemeKurulum.yeniBolgeler.length > 0) && (
+            <div style={{ marginBottom: "12px", padding: "8px 12px", background: "#fef2f2", border: "0.5px solid #fecaca", borderRadius: "6px", fontSize: "13px", color: RENK_BORDO, fontWeight: 600, fontFamily: "'Nunito', sans-serif" }}>
+              Bu yüklemeyle oluşturulacak:
+              {p.onizlemeKurulum.yeniTakimlar.length > 0 && ` ${p.onizlemeKurulum.yeniTakimlar.length} takım (${p.onizlemeKurulum.yeniTakimlar.join(", ")})`}
+              {p.onizlemeKurulum.yeniTakimlar.length > 0 && p.onizlemeKurulum.yeniBolgeler.length > 0 && " ·"}
+              {p.onizlemeKurulum.yeniBolgeler.length > 0 && ` ${p.onizlemeKurulum.yeniBolgeler.length} bölge (${p.onizlemeKurulum.yeniBolgeler.map((b) => `${b.bolge_adi} → ${b.takim_adi}`).join(", ")})`}
+            </div>
+          )}
+
           <div style={{ overflow: "auto", border: "0.5px solid #e5e7eb", borderRadius: "8px", marginBottom: "16px" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px", fontFamily: "'Nunito', sans-serif" }}>
               <thead style={{ background: "#f9fafb" }}>
@@ -153,7 +165,11 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
                     </td>
                     <td style={tarz_td}>
                       {s.durum === "hazir" ? (
-                        <span style={{ color: RENK_BORDO, fontWeight: 600 }}>Hazır</span>
+                        // K-A8: satır hazır ama takım/bölgesi bu yüklemeyle
+                        // kurulacaksa bilgi görünür kalır.
+                        <span style={{ color: RENK_BORDO, fontWeight: 600 }}>
+                          Hazır{s.uyari_mesaji ? ` — ${s.uyari_mesaji}` : ""}
+                        </span>
                       ) : s.durum === "eksik" ? (
                         <span style={{ color: "#d97706", fontWeight: 600 }} title={s.uyari_mesaji}>
                           Eksik bilgili{s.uyari_mesaji ? ` — ${s.uyari_mesaji}` : " (takım/bölge yok)"}
@@ -211,6 +227,8 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
           }}
         >
           <p style={{ fontSize: "13px", fontWeight: 700, color: p.kaydetSonucu.hatali > 0 ? "#b91c1c" : "#166534", margin: 0 }}>
+            {p.kaydetSonucu.olusturulanTakim > 0 ? `${p.kaydetSonucu.olusturulanTakim} takım oluşturuldu, ` : ""}
+            {p.kaydetSonucu.olusturulanBolge > 0 ? `${p.kaydetSonucu.olusturulanBolge} bölge oluşturuldu, ` : ""}
             {p.kaydetSonucu.eklenen} eklendi, {p.kaydetSonucu.guncellenen} güncellendi
             {p.kaydetSonucu.degismeyen > 0 ? `, ${p.kaydetSonucu.degismeyen} değişiklik yok` : ""}
             {p.kaydetSonucu.eksikli > 0 ? ` (${p.kaydetSonucu.eksikli} tanesi eksik bilgili — tamamlanmalı)` : ""}

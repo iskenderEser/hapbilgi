@@ -7,11 +7,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Firma, OnizlemeSatir } from "../_types";
+import type { Firma, OnizlemeKurulum, OnizlemeSatir } from "../_types";
 
 interface UseTopluFormProps {
   seciliFirma: Firma | null;
   refreshKullanicilar: () => void;
+  // K-A8: yükleme takım/bölge oluşturabilir — organizasyon görünümü tazelenir.
+  refreshTakimlar: () => void;
   hata: (mesaj: string, adim?: string, detay?: string) => void;
   basari: (mesaj: string) => void;
 }
@@ -24,12 +26,16 @@ export interface TopluKaydetSonucu {
   degismeyen: number;
   eksikli: number; // K-A6: işlenen ama eksik bilgili satır sayısı
   hatali: number;
+  // K-A8: bu yüklemeyle açılan takım/bölge sayıları
+  olusturulanTakim: number;
+  olusturulanBolge: number;
   hatalar: string[];
 }
 
-export function useTopluForm({ seciliFirma, refreshKullanicilar, hata, basari }: UseTopluFormProps) {
+export function useTopluForm({ seciliFirma, refreshKullanicilar, refreshTakimlar, hata, basari }: UseTopluFormProps) {
   const [topluDosya, setTopluDosya] = useState<File | null>(null);
   const [onizlemesatirlari, setOnizlemeSatirlari] = useState<OnizlemeSatir[] | null>(null);
+  const [onizlemeKurulum, setOnizlemeKurulum] = useState<OnizlemeKurulum | null>(null);
   const [onizlemeLoading, setOnizlemeLoading] = useState(false);
   const [topluKaydetLoading, setTopluKaydetLoading] = useState(false);
   const [kaydetSonucu, setKaydetSonucu] = useState<TopluKaydetSonucu | null>(null);
@@ -38,6 +44,7 @@ export function useTopluForm({ seciliFirma, refreshKullanicilar, hata, basari }:
   useEffect(() => {
     setTopluDosya(null);
     setOnizlemeSatirlari(null);
+    setOnizlemeKurulum(null);
     setKaydetSonucu(null);
   }, [seciliFirma?.firma_id]);
 
@@ -48,6 +55,7 @@ export function useTopluForm({ seciliFirma, refreshKullanicilar, hata, basari }:
     e.target.value = "";
     setTopluDosya(dosya);
     setOnizlemeSatirlari(null);
+    setOnizlemeKurulum(null);
     setKaydetSonucu(null);
     if (!dosya || !seciliFirma) return;
     setOnizlemeLoading(true);
@@ -58,7 +66,7 @@ export function useTopluForm({ seciliFirma, refreshKullanicilar, hata, basari }:
       const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/toplu-yukle`, { method: "POST", body: formData });
       const data = await res.json();
       if (!res.ok) { hata(data.hata ?? "Dosya okunamadı.", data.adim, data.detay); }
-      else { setOnizlemeSatirlari(data.satirlar ?? []); }
+      else { setOnizlemeSatirlari(data.satirlar ?? []); setOnizlemeKurulum(data.kurulum ?? null); }
     } catch (err) {
       // B-32: ağ hatasında yükleme durumu takılı kalmaz.
       hata("Dosya okunamadı — bağlantı hatası.", "handleDosyaSec", String(err));
@@ -85,13 +93,18 @@ export function useTopluForm({ seciliFirma, refreshKullanicilar, hata, basari }:
           degismeyen: data.degismeyen ?? 0,
           eksikli: data.eksikli ?? 0,
           hatali: data.hatali ?? 0,
+          olusturulanTakim: data.olusturulanTakim ?? 0,
+          olusturulanBolge: data.olusturulanBolge ?? 0,
           hatalar: data.hatalar ?? [],
         };
         setKaydetSonucu(sonuc);
+        // K-A8: takım/bölge açıldıysa organizasyon görünümü tazelenir.
+        if (sonuc.olusturulanTakim > 0 || sonuc.olusturulanBolge > 0) refreshTakimlar();
         if (sonuc.hatali === 0) {
           basari(data.mesaj ?? "Toplu yükleme tamamlandı.");
           setTopluDosya(null);
           setOnizlemeSatirlari(null);
+          setOnizlemeKurulum(null);
         } else {
           // Kısmi başarısızlıkta önizleme ekranda kalır; hatalı satır listesi
           // kaydetSonucu üzerinden görünür biçimde basılır (TopluGirisFormu).
@@ -115,6 +128,7 @@ export function useTopluForm({ seciliFirma, refreshKullanicilar, hata, basari }:
   return {
     topluDosya,
     onizlemesatirlari,
+    onizlemeKurulum,
     onizlemeLoading,
     topluKaydetLoading,
     yeniSayisi,

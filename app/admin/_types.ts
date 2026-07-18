@@ -51,6 +51,13 @@ export interface OnizlemeSatir {
   uyari_mesaji?: string;
 }
 
+// K-A8: önizleme yanıtındaki kurulum planı — bu yüklemeyle oluşturulacak
+// takım/bölgeler (özet şeridinde gösterilir; kaydette gerçekten açılır).
+export interface OnizlemeKurulum {
+  yeniTakimlar: string[];
+  yeniBolgeler: { bolge_adi: string; takim_adi: string }[];
+}
+
 export interface TakimBlok {
   id: number;
   takim_adi: string;

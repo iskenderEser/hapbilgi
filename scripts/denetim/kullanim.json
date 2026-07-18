@@ -3367,22 +3367,32 @@
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
-      "satir": 30,
+      "satir": 32,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
-      "satir": 105,
+      "satir": 129,
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
+      "satir": 143,
+      "tablo": "bolgeler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
+      "satir": 159,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
-      "satir": 298,
+      "satir": 365,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
-      "satir": 342,
+      "satir": 409,
       "tablo": "kullanicilar"
     },
     {
@@ -6829,13 +6839,25 @@
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
-      "satir": 30,
+      "satir": 32,
       "ham": "firma_id",
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
-      "satir": 105,
+      "satir": 129,
+      "ham": "takim_id, takim_adi",
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
+      "satir": 143,
+      "ham": "bolge_id, bolge_adi, takim_id",
+      "tablo": "bolgeler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
+      "satir": 159,
       "ham": "kullanici_id, ad, soyad, eposta, telefon, rol, takim_id, bolge_id, aktif_mi",
       "tablo": "kullanicilar"
     },

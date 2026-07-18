@@ -220,6 +220,15 @@ export async function firmaYapisiYukle(
   return { ok: true, yapi: { firma_id, takimlar: takimlar ?? [], bolgeler } };
 }
 
+/**
+ * Takım/bölge adı karşılaştırması Türkçe kurallarla katlanır: düz toLowerCase
+ * "İ"yi "i + birleşen nokta"ya çevirip "İzmir/izmir" eşleşmesini bozar.
+ * Tüm ad eşleşmeleri (satır çözümü, rol geçişi, K-A8 kurulum planı) bunu kullanır.
+ */
+export function adKatla(ad: string): string {
+  return ad.toLocaleLowerCase("tr-TR");
+}
+
 function metinAl(deger: unknown): string {
   // Hücre değeri tipinden bağımsız okunur: Excel "123456" gibi girdilere
   // kendi kafasına göre sayı tipi atar — değer neyse o alınır.
@@ -296,7 +305,7 @@ export function kullaniciSatirDogrula(
       return t ? { ok: true, takim_id: t.takim_id } : { ok: false, hata: "Takım bu firmada bulunamadı." };
     }
     if (takimAdiGirdi) {
-      const t = yapi.takimlar.find((x) => x.takim_adi.toLowerCase() === takimAdiGirdi.toLowerCase());
+      const t = yapi.takimlar.find((x) => adKatla(x.takim_adi) === adKatla(takimAdiGirdi));
       return t ? { ok: true, takim_id: t.takim_id } : { ok: false, hata: `"${takimAdiGirdi}" adında takım bu firmada bulunamadı.` };
     }
     return { ok: false };
@@ -308,7 +317,7 @@ export function kullaniciSatirDogrula(
       return b ? { ok: true, bolge_id: b.bolge_id, takim_id: b.takim_id } : { ok: false, hata: "Bölge bu firmada bulunamadı." };
     }
     if (bolgeAdiGirdi) {
-      const b = yapi.bolgeler.find((x) => x.bolge_adi.toLowerCase() === bolgeAdiGirdi.toLowerCase());
+      const b = yapi.bolgeler.find((x) => adKatla(x.bolge_adi) === adKatla(bolgeAdiGirdi));
       return b ? { ok: true, bolge_id: b.bolge_id, takim_id: b.takim_id } : { ok: false, hata: `"${bolgeAdiGirdi}" adında bölge bu firmada bulunamadı.` };
     }
     return { ok: false };
@@ -343,6 +352,59 @@ export function kullaniciSatirDogrula(
 
   const { eksikAlanlar } = kullaniciEksikMi(rol, takim_id, bolge_id, telefon);
   return { ok: true, kayit: { ad, soyad, eposta, telefon, sifre, rol, takim_id, bolge_id }, eksikAlanlar, uyari };
+}
+
+// ─── K-A8: organizasyonun dosyadan kurulması ────────────────────────────────
+
+export interface OrganizasyonKurulumPlani {
+  yeniTakimlar: string[];
+  yeniBolgeler: { bolge_adi: string; takim_adi: string }[];
+}
+
+/**
+ * Toplu yükleme satırlarından oluşturulacak takım/bölge planını çıkarır (K-A8):
+ * dosyada adı geçen ama firmada eşleşmeyen takım/bölge "eksik" değil, kurulum
+ * planıdır — kayıt tek dosyayla tamamlanır. Kurallar:
+ * - Rolü takım isteyen satırın eşleşmeyen takım adı yeni takımdır.
+ * - Rolü bölge isteyen satırın eşleşmeyen bölge adı, satırda takım adı da
+ *   VARSA o takımın (mevcut ya da bu planla açılacak) altına yeni bölgedir;
+ *   takımsız bölge OLUŞTURULMAZ (satır eksik kalır — uydurma bağ yapılmaz).
+ * - Ad eşleşmesi satır çözümüyle aynı kuraldadır (küçük-harf karşılaştırma):
+ *   "şimşek/Şimşek" ikinci takım üretmez; ilk yazım korunur.
+ * Saf fonksiyondur; DB okumaz/yazmaz — yazım kararı çağıran rotadadır.
+ */
+export function organizasyonKurulumPlani(
+  yapi: FirmaYapisi,
+  satirlar: { rol?: unknown; takim_adi?: unknown; bolge_adi?: unknown }[]
+): OrganizasyonKurulumPlani {
+  const mevcutTakimlar = new Set(yapi.takimlar.map((t) => adKatla(t.takim_adi)));
+  const mevcutBolgeler = new Set(yapi.bolgeler.map((b) => adKatla(b.bolge_adi)));
+  const yeniTakimlar = new Map<string, string>();
+  const yeniBolgeler = new Map<string, { bolge_adi: string; takim_adi: string }>();
+
+  for (const s of satirlar) {
+    const rol = rolCoz(metinAl(s.rol));
+    if (!TUM_ROLLER.includes(rol)) continue; // geçersiz satır zaten düşer
+    const takimAdi = metinAl(s.takim_adi);
+    const bolgeAdi = metinAl(s.bolge_adi);
+    const takimIster = Boolean(ureticiYetenegi(rol)) || rol === "tm";
+    const bolgeIster = rol === "bm" || TUKETICI_ROLLER.includes(rol);
+
+    const takimYeni = Boolean(takimAdi) && !mevcutTakimlar.has(adKatla(takimAdi));
+    if (takimIster && takimYeni && !yeniTakimlar.has(adKatla(takimAdi))) {
+      yeniTakimlar.set(adKatla(takimAdi), takimAdi);
+    }
+    if (bolgeIster && bolgeAdi && takimAdi && !mevcutBolgeler.has(adKatla(bolgeAdi))) {
+      // Bölgenin takımı da dosyadan geliyorsa önce o açılır.
+      if (takimYeni && !yeniTakimlar.has(adKatla(takimAdi))) {
+        yeniTakimlar.set(adKatla(takimAdi), takimAdi);
+      }
+      if (!yeniBolgeler.has(adKatla(bolgeAdi))) {
+        yeniBolgeler.set(adKatla(bolgeAdi), { bolge_adi: bolgeAdi, takim_adi: takimAdi });
+      }
+    }
+  }
+  return { yeniTakimlar: [...yeniTakimlar.values()], yeniBolgeler: [...yeniBolgeler.values()] };
 }
 
 // ─── Rol geçişi (B-23) ──────────────────────────────────────────────────────
@@ -380,7 +442,7 @@ export function rolGecisiCoz(
     if (takimIdGirdi || takimAdiGirdi) {
       const t = takimIdGirdi
         ? yapi.takimlar.find((x) => x.takim_id === takimIdGirdi)
-        : yapi.takimlar.find((x) => x.takim_adi.toLowerCase() === takimAdiGirdi.toLowerCase());
+        : yapi.takimlar.find((x) => adKatla(x.takim_adi) === adKatla(takimAdiGirdi));
       return t ? { ok: true, takim_id: t.takim_id } : { ok: false, hata: "Takım bu firmada bulunamadı." };
     }
     if (g.mevcut_takim_id) return { ok: true, takim_id: g.mevcut_takim_id };
@@ -391,7 +453,7 @@ export function rolGecisiCoz(
     if (bolgeIdGirdi || bolgeAdiGirdi) {
       const b = bolgeIdGirdi
         ? yapi.bolgeler.find((x) => x.bolge_id === bolgeIdGirdi)
-        : yapi.bolgeler.find((x) => x.bolge_adi.toLowerCase() === bolgeAdiGirdi.toLowerCase());
+        : yapi.bolgeler.find((x) => adKatla(x.bolge_adi) === adKatla(bolgeAdiGirdi));
       return b ? { ok: true, bolge_id: b.bolge_id, takim_id: b.takim_id } : { ok: false, hata: "Bölge bu firmada bulunamadı." };
     }
     if (g.mevcut_bolge_id) {
