@@ -5,6 +5,15 @@
 // açıklama kartı gösterilir; kullanıcı isterse tarayıcı izni istenir.
 // Reddedilirse (tarayıcı ya da kart düzeyinde) zorlama yok.
 //
+// K-P12 — hesap-düzeyi ilk rıza (İskender kararı, 17.07.2026):
+// Tarayıcı izni SİTEYE verilir (cihaz kapsamı), ama abonelik HESABA açılır.
+// Bu yüzden tarayıcı izni verilmiş olsa bile, bu cihazda daha önce "evet"
+// dememiş her hesabın ilk girişinde kart çıkar; rıza vermeyen hesap adına
+// abonelik ne açılır ne devralınır (sessiz otomatik abonelik yoktur).
+// Rıza ve erteleme anahtarları hesaba özeldir. Bilinçli yan etki: ortak
+// cihazda rıza vermeyen hesap çalışırken, son rıza vermiş hesabın (PII'siz,
+// K-P6) bildirimi düşebilir — abonelik satırı son rıza verende kalır.
+//
 // Üç kimlik düzlemi için ortaktır (K-P11 — abone olmak rol-agnostik):
 // AuthProvider'ın altında, layout'a bir kez asılır.
 
@@ -19,16 +28,16 @@ import {
   mevcutIzin,
 } from "@/lib/push/istemci";
 
-// Kart "Daha sonra" denirse bu süre boyunca tekrar gösterilmez.
+// Kart "Daha sonra" denirse bu süre boyunca (o hesap için) tekrar gösterilmez.
 const ERTELEME_GUN = 7;
-const ERTELEME_ANAHTARI = "hb_push_erteleme";
-// İzin verilmişken kullanıcının tarayıcıdan izni geri çektiğini
-// bir sonraki girişte ayırt edebilmek için.
-const ABONE_OLDU_ANAHTARI = "hb_push_abone";
 
-function ertelemeAktifMi(): boolean {
+// K-P12: anahtarlar hesaba özel — rıza da erteleme de cihaz+hesap kapsamında.
+const ertelemeAnahtari = (kullaniciId: string) => `hb_push_erteleme_${kullaniciId}`;
+const onayAnahtari = (kullaniciId: string) => `hb_push_onay_${kullaniciId}`;
+
+function ertelemeAktifMi(kullaniciId: string): boolean {
   try {
-    const kayit = localStorage.getItem(ERTELEME_ANAHTARI);
+    const kayit = localStorage.getItem(ertelemeAnahtari(kullaniciId));
     if (!kayit) return false;
     return Date.now() - Number(kayit) < ERTELEME_GUN * 24 * 60 * 60 * 1000;
   } catch {
@@ -43,34 +52,71 @@ export function PushAbonelik() {
   useEffect(() => {
     if (!kullanici) return;
 
-    const izin = mevcutIzin();
+    // K-P12 öncesi global anahtarların temizliği (hesap-bazlıya geçildi).
+    try {
+      localStorage.removeItem("hb_push_erteleme");
+      localStorage.removeItem("hb_push_abone");
+    } catch {
+      // localStorage kapalıysa geç
+    }
 
-    if (izin === "granted") {
-      // Sessiz tazeleme — endpoint rotasyonuna karşı upsert (K-P5).
-      localStorage.setItem(ABONE_OLDU_ANAHTARI, "1");
-      void aboneligiTazele();
-    } else if (izin === "denied") {
-      // Daha önce aboneyken izin geri çekilmiş: sunucudaki kaydı pasifle (C.5).
-      if (localStorage.getItem(ABONE_OLDU_ANAHTARI)) {
-        localStorage.removeItem(ABONE_OLDU_ANAHTARI);
+    const izin = mevcutIzin();
+    if (izin === "desteklenmiyor") return;
+
+    let onayVar = false;
+    try {
+      onayVar = localStorage.getItem(onayAnahtari(kullanici.id)) === "1";
+    } catch {
+      // localStorage kapalıysa rıza bilinemez — kart akışına düşer
+    }
+
+    if (izin === "denied") {
+      // Rıza vermiş hesap tarayıcıdan izni geri çekmiş: sunucu kaydını pasifle (C.5).
+      if (onayVar) {
+        try {
+          localStorage.removeItem(onayAnahtari(kullanici.id));
+        } catch {}
         void aboneligiPasifle();
       }
-    } else if (izin === "default" && !ertelemeAktifMi()) {
+      return; // tarayıcı engellemişken kart gösterilmez (zorlama yok)
+    }
+
+    if (onayVar) {
+      if (izin === "granted") {
+        // Rızalı hesap: sessiz tazeleme — endpoint rotasyonuna karşı upsert (K-P5).
+        void aboneligiTazele();
+      } else if (!ertelemeAktifMi(kullanici.id)) {
+        // Rıza var ama site izni sıfırlanmış ("default"a dönmüş): kart yeniden çıkar.
+        setKartAcik(true);
+      }
+      return;
+    }
+
+    // K-P12: rıza yok — tarayıcı izni verilmiş olsa bile sessiz abonelik YOK, kart çıkar.
+    if (!ertelemeAktifMi(kullanici.id)) {
       setKartAcik(true);
     }
   }, [kullanici?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const izinVer = async () => {
+    if (!kullanici) return;
     setKartAcik(false);
+    // Tarayıcı izni zaten verilmişse prompt tekrar ÇIKMAZ (anında granted döner);
+    // verilmemişse standart iki adımlı akış işler.
     const sonuc = await aboneOlVeKaydet();
-    if (sonuc === "granted") localStorage.setItem(ABONE_OLDU_ANAHTARI, "1");
+    if (sonuc === "granted") {
+      try {
+        localStorage.setItem(onayAnahtari(kullanici.id), "1");
+      } catch {}
+    }
     // "denied" ise zorlama yok; tarayıcı zaten bir daha sormaz.
   };
 
   const ertele = () => {
+    if (!kullanici) return;
     setKartAcik(false);
     try {
-      localStorage.setItem(ERTELEME_ANAHTARI, String(Date.now()));
+      localStorage.setItem(ertelemeAnahtari(kullanici.id), String(Date.now()));
     } catch {
       // localStorage kapalıysa kart yalnız bu oturumda gizlenir.
     }

@@ -2,7 +2,7 @@
 
 *Oturumdan bağımsız, rol-farkında, tarayıcı temelli push bildirim orkestrasyonu*
 
-*Sürüm: v1.2 — 16.07.2026. v1.1: kod taraması sonrası 3 düzeltme (Eczanem K-P3 istisnası, serverless `after()` netlemesi, NULL `auth_user_id` atlama kuralı). v1.2: **P0–P8 uygulandı** (kod `lib/push/` + `app/api/push/abonelik` + SW/manifest + P6 entegrasyonları; DB tabloları/ayarları canlıda; `video_yayini` olayı eklendi; store + pg_cron bulguları C.9'a işlendi). Kalan: C.7 fiziksel test bloğu (insan-yürütümlü) + P9 deploy (C.8 ön koşulları). Kapsam: mevcut in-app bildirim + badge (polling) katmanının ÜSTÜNE eklenen, HapBilgi kapalıyken ve kullanıcı login değilken bile tarayıcı üzerinden teslim edilen bir push katmanı. Bu belge ana teknik raporun (`hapbilgi_teknik_rapor_guncel.md` — bundan sonra "TR") desenine bağlıdır; § referansları TR'ye işaret eder. İş kuralı ayrıntıları geliştikçe bu belge canlı tutulur.*
+*Sürüm: v1.3 — 17.07.2026. v1.3: K-P12 (hesap-düzeyi ilk rıza — fiziksel test bulgusu üzerine). v1.1: kod taraması sonrası 3 düzeltme (Eczanem K-P3 istisnası, serverless `after()` netlemesi, NULL `auth_user_id` atlama kuralı). v1.2: **P0–P8 uygulandı** (kod `lib/push/` + `app/api/push/abonelik` + SW/manifest + P6 entegrasyonları; DB tabloları/ayarları canlıda; `video_yayini` olayı eklendi; store + pg_cron bulguları C.9'a işlendi). Kalan: C.7 fiziksel test bloğu (insan-yürütümlü) + P9 deploy (C.8 ön koşulları). Kapsam: mevcut in-app bildirim + badge (polling) katmanının ÜSTÜNE eklenen, HapBilgi kapalıyken ve kullanıcı login değilken bile tarayıcı üzerinden teslim edilen bir push katmanı. Bu belge ana teknik raporun (`hapbilgi_teknik_rapor_guncel.md` — bundan sonra "TR") desenine bağlıdır; § referansları TR'ye işaret eder. İş kuralı ayrıntıları geliştikçe bu belge canlı tutulur.*
 
 ---
 
@@ -151,6 +151,8 @@ PK→auth eşlemesi ve NULL kuralı: `kullanicilar.kullanici_id` auth id'nin ken
 **K-P10 — Olay→rol→içerik eşlemesi tek kaynaktır.** Orkestrasyon, alıcı çözümünde `roller.ts` (§2.3) kümelerini kullanır; içerik şablonları `lib/push/icerik.ts`'te rol-aware ve tek kaynaktır (koda dağılmış string yoktur — TR §2.5 İlke 3).
 
 **K-P11 — Abone olmak rol-agnostiktir, göndermek rol-aware'dir.** `/api/push/abonelik` yalnız geçerli oturum ister (herkes abone olabilir), rol kapısı yoktur. Rol mantığı gönderim (orkestrasyon) anında uygulanır. Bu, §2.4'teki "kim?/ne?" ayrımının push'a düşmesidir.
+
+**K-P12 — Hesap-düzeyi ilk rıza; sessiz otomatik abonelik yoktur (İskender kararı, 17.07.2026).** Tarayıcı izni SİTEYE verilir (cihaz kapsamı — platform kuralı), abonelik ise HESABA açılır. İlk uygulama, cihaz izni varken giren her hesabı sorgusuz abone ediyordu (fiziksel testte yakalandı: aynı tarayıcıda hesap değiştikçe abonelik rızasız el değiştirdi). Karar: cihazda tarayıcı izni verilmiş olsa bile, o cihazda daha önce rıza vermemiş her hesabın ilk girişinde yumuşak kart çıkar; "İzin ver" denmeden o hesap adına abonelik açılmaz/devralınmaz. Cihaz izni zaten varsa tarayıcı prompt'u tekrar görünmez — tek tık yeter. Rıza ve erteleme anahtarları hesaba özeldir (`hb_push_onay_<id>`, `hb_push_erteleme_<id>`, localStorage — rıza cihaz+hesap kapsamındadır, DB gerektirmez). Bilinçli yan etki: ortak cihazda rıza vermeyen hesap çalışırken son rıza verenin (PII'siz — K-P6) bildirimi düşebilir; satır son rıza verende kalır. Kalıcı, cihazlar-arası tercih paneli C.9'daki açık iştir.
 
 ### C.1 Mimari genel bakış — üç katman
 
