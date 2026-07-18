@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { TUM_ROLLER } from "@/lib/utils/roller";
-import { firmaYapisiYukle, kullaniciEksikMi, kullaniciSatirDogrula, rolGecisiCoz, telefonNormalize } from "@/lib/admin/kullaniciDogrulama";
+import { firmaYapisiYukle, kullaniciEksikMi, kullaniciSatirDogrula, rolCoz, rolGecisiCoz, telefonNormalize } from "@/lib/admin/kullaniciDogrulama";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 
 export async function GET(
@@ -195,8 +195,10 @@ export async function PUT(
     if (rol !== undefined) {
       // B-23: rol tipi doğrulanır; rol değişiminde takım/bölge tutarlılığı
       // yeni rolün kurallarıyla (tek kaynak: lib/admin/kullaniciDogrulama) çözülür.
+      // T-4: rol girdisi tekli/topluyla aynı çözümden geçer (rolCoz — insan adı
+      // da kabul); çözülemeyen girdiyi TUM_ROLLER kontrolü reddeder.
       if (typeof rol !== "string") return validasyonHatasi("Geçersiz rol.", ["rol"]);
-      const rolTemiz = rol.trim().toLowerCase();
+      const rolTemiz = rolCoz(rol);
       if (!TUM_ROLLER.includes(rolTemiz)) return validasyonHatasi("Geçersiz rol.", ["rol"]);
 
       const yapiSonuc = await firmaYapisiYukle(adminSupabase, firma_id);
