@@ -14,6 +14,7 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { AuthKullanici, KimlikTuru } from "@/types/auth";
+import { oturumDusurulmeliMi, beniHatirlaTemizle } from "@/lib/utils/beniHatirla";
 
 interface AuthContextTipi {
   kullanici: AuthKullanici | null;
@@ -51,6 +52,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const { data: { user } } = await supabase.auth.getUser();
 
           if (!user) {
+            setKullanici(null);
+            setYukleniyor(false);
+            return;
+          }
+
+          // F-03/B: "Beni hatırla" işaretsiz girilmişti ve tarayıcı kapatılıp
+          // açılmış (oturum işaret çerezi ölmüş) — oturum düşürülür.
+          if (oturumDusurulmeliMi()) {
+            beniHatirlaTemizle();
+            await supabase.auth.signOut();
             setKullanici(null);
             setYukleniyor(false);
             return;

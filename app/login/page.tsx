@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { beniHatirlaKaydet } from "@/lib/utils/beniHatirla";
 
 const BORDO = "#bc2d0d";
 
@@ -50,6 +51,8 @@ export default function LoginPage() {
   const [sifreGoster, setSifreGoster] = useState(false);
   const [loading, setLoading] = useState(false);
   const [hata, setHata] = useState("");
+  // F-03/B: Beni hatırla — işaretsizse oturum tarayıcı kapanınca düşer.
+  const [beniHatirla, setBeniHatirla] = useState(true);
   // F-03/A: Şifremi unuttum — giriş formuyla yer değiştiren sıfırlama görünümü.
   const [sifirlamaAcik, setSifirlamaAcik] = useState(false);
   const [sifirlamaEmail, setSifirlamaEmail] = useState("");
@@ -112,6 +115,8 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
+    // F-03/B: tercih girişte yazılır; işaretsizse tarayıcı kapanınca oturum düşer.
+    beniHatirlaKaydet(beniHatirla);
     // Yönlendirme ve firma-aktif kontrolü yukarıdaki useEffect'te,
     // AuthProvider kimliği çözüldüğünde yapılır.
     setLoading(false);
@@ -281,7 +286,13 @@ export default function LoginPage() {
 
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
-                <input type="checkbox" className="w-3 h-3" style={{ accentColor: BORDO }} />
+                <input
+                  type="checkbox"
+                  checked={beniHatirla}
+                  onChange={(e) => setBeniHatirla(e.target.checked)}
+                  className="w-3 h-3"
+                  style={{ accentColor: BORDO }}
+                />
                 Beni hatırla
               </label>
               {/* F-03/A: sıfırlama görünümünü açar; girilmiş e-posta öndoldurulur */}
