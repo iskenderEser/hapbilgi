@@ -59,14 +59,15 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
       {/* Dosya seçme */}
       <div style={{ marginBottom: "20px" }}>
         <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#111", marginBottom: "8px", fontFamily: "'Nunito', sans-serif" }}>
-          Dosya seç (CSV veya XLSX):
+          Dosya seç (CSV, XLSX veya XLS):
         </label>
         {/* Native input gizli; görünen buton proje stilinde (tarayıcının ham
             "Dosya Seç / Dosya seçilmedi" kontrolü yerine — UX düzenlemesi). */}
+        {/* T-6: kabul listesi rotayla eşit (.csv/.xlsx/.xls — toplu-yukle route). */}
         <input
           id="toplu-dosya-input"
           type="file"
-          accept=".csv,.xlsx"
+          accept=".csv,.xlsx,.xls"
           onChange={p.handleDosyaSec}
           style={{ display: "none" }}
         />
