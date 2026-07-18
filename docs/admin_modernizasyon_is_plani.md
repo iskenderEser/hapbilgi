@@ -135,4 +135,14 @@ Sistem ayarları jsonb (B-28); store sipariş durum matrisi (B-27); silme koruma
 
 ---
 
-*Bu belge canlıdır: kararlar C.5'ten kapatıldıkça K-A serisi (kapalı karar) olarak işlenecek; fazlar ilerledikçe durum notları eklenecektir.*
+## D. Durum Notları
+
+**M0 — KAPANDI (17.07.2026).** B-17, B-19, B-18+B-21+B-22, B-20, B-23, B-24 — her biri ayrı commit.
+
+**M1 — KAPANDI (17.07.2026).** B-26, B-32, B-33, B-36.
+
+**M2 — KAPANDI (18.07.2026).** M2-a kabuk + M2-b taşımalar + M2-c iki gruplu sekme çubuğu (Firma: Kullanıcılar | Organizasyon | Ürün & Teknik ‖ Modüller: T-Club | C-Club | E-Club | Eczanem; "Yapı" sekmesi ikiye bölündü, ölü alt-sekme kalıntıları temizlendi). Kapanış teyidi: (1) İskender panele girip tüm sekme/bölümlere erişimi ve yeni yerleşimi onayladı (K-A4 ilk bakış — sorun yok); (2) üç eski URL (`/admin/store`, `/admin/eclub`, `/admin/eclub-store`) canlıda doğrulandı — girişsiz ziyaretçi hepsinden `/login`'e düşüyor (redirect + auth kapısı zinciri çalışıyor, red senaryosu); (3) Navbar'da admin'e giden hiçbir link kalmadı (kod taraması temiz). Üçlü doğrulama her commit'te temizdi.
+
+---
+
+*Bu belge canlıdır: kararlar C.5'ten kapatıldıkça K-A serisi (kapalı karar) olarak işlenecek; fazlar ilerledikçe durum notları D bölümüne eklenecektir.*
