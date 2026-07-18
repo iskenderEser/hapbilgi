@@ -175,6 +175,23 @@ export async function firmaninEksikKullanicilari(
 }
 
 /**
+ * Tüm firmaların kullanıcı satırlarından firma başına eksik bilgili kullanıcı
+ * sayısını üretir (T-2 — FirmaSidebar göstergesi). Eksik tanımı yine tek
+ * kaynaktan (kullaniciEksikMi); saf fonksiyondur, DB okumaz.
+ */
+export function eksikSayilariCikar(
+  kullanicilar: { firma_id: string; rol: string; takim_id: string | null; bolge_id: string | null; telefon: string | null }[]
+): Map<string, number> {
+  const sayilar = new Map<string, number>();
+  for (const k of kullanicilar) {
+    if (kullaniciEksikMi(k.rol, k.takim_id, k.bolge_id, k.telefon).eksik) {
+      sayilar.set(k.firma_id, (sayilar.get(k.firma_id) ?? 0) + 1);
+    }
+  }
+  return sayilar;
+}
+
+/**
  * Firmanın takım/bölge yapısını TEK sorgu çiftiyle yükler.
  * Bölgeler firma kapsamına kilitlidir (B-22).
  */

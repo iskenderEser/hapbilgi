@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { FIRMA_KOLONLARI } from "@/lib/firma/kolonlar";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
+import { eksikSayilariCikar } from "@/lib/admin/kullaniciDogrulama";
 
 
 export async function GET() {
@@ -21,7 +22,24 @@ export async function GET() {
 
     if (error) return hataYaniti("Firmalar çekilemedi.", "firmalar tablosu SELECT", error);
 
-    return NextResponse.json({ firmalar: firmalar ?? [] }, { status: 200 });
+    // T-2: firma kartındaki "⚠ N eksik bilgili" rozeti için firma başına eksik
+    // sayısı — tüm firmaların kullanıcıları TEK sorguda çekilir (firma başına
+    // N+1 yok), sayım saf fonksiyonda (eksik tanımı tek kaynak: kullaniciEksikMi).
+    const { data: kullaniciSatirlari, error: kullaniciError } = await adminSupabase
+      .from("kullanicilar")
+      .select("firma_id, rol, takim_id, bolge_id, telefon");
+
+    if (kullaniciError) {
+      return hataYaniti("Eksik bilgili kullanıcı sayıları çekilemedi.", "kullanicilar tablosu SELECT — eksik sayımı (T-2)", kullaniciError);
+    }
+
+    const eksikSayilari = eksikSayilariCikar(kullaniciSatirlari ?? []);
+    const firmalarYaniti = (firmalar ?? []).map((f) => ({
+      ...f,
+      eksik_sayisi: eksikSayilari.get(f.firma_id) ?? 0,
+    }));
+
+    return NextResponse.json({ firmalar: firmalarYaniti }, { status: 200 });
 
   } catch (err) {
     return sunucuHatasi(err, "GET /admin/api/firmalar");

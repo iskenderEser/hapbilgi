@@ -34,9 +34,11 @@ export function useAdminPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kullanici, yukleniyor]);
 
-  const firmalariCek = async () => {
+  // sessiz=true: arka plan tazelemesi (T-2 rozet güncellemesi) — loading
+  // state'ine dokunulmaz, sidebar "Yükleniyor..."a düşüp titremez.
+  const firmalariCek = async (sessiz = false) => {
     try {
-    setLoading(true);
+    if (!sessiz) setLoading(true);
     const res = await fetch("/admin/api/firmalar");
     const data = await res.json();
     if (!res.ok) { hata(data.hata ?? "Firmalar yüklenemedi.", data.adim, data.detay); }
@@ -45,7 +47,7 @@ export function useAdminPanel() {
       // B-32: ağ hatasında sessiz çökme yok — kullanıcı bilgilendirilir.
       hata("Firmalar yüklenemedi — bağlantı hatası.", "firmalariCek", String(err));
     } finally {
-      setLoading(false);
+      if (!sessiz) setLoading(false);
     }
   };
 
@@ -311,6 +313,9 @@ export function useAdminPanel() {
 
   const refreshKullanicilar = () => {
     if (seciliFirma) kullanicilariCek(seciliFirma.firma_id);
+    // T-2: kullanıcı değişikliği (ekleme/atama/telefon/silme/aktif-pasif)
+    // firma kartındaki eksik sayısını değiştirebilir — rozet sessiz tazelenir.
+    firmalariCek(true);
   };
 
   const refreshTakimlar = () => {

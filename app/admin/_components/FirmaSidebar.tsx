@@ -2,7 +2,9 @@
 //
 // Admin panel sol paneli: firma listesi + yeni firma ekleme formu.
 // Her firma bir kart: ad + (Firma aktif/pasif · Mağaza · CC · E-Club · E-Club Store · Sil) +
-// (Dışa aktar). Pasif firma soluk + "Pasif" rozeti.
+// (Dışa aktar). Pasif firma soluk + "Pasif" rozeti; eksik bilgili kullanıcısı
+// olan firmada amber "⚠ N eksik bilgili" rozeti (T-2 — aktivasyon kilidinin
+// sebepli göstergesi).
 
 "use client";
 
@@ -196,6 +198,29 @@ export default function FirmaSidebar({
                       }}
                     >
                       Pasif
+                    </span>
+                  )}
+                  {/* T-2: eksik bilgili kullanıcı göstergesi — pasif firmada
+                      aktivasyon kilidinin sebebi, aktif firmada uyarı (T-1). */}
+                  {(f.eksik_sayisi ?? 0) > 0 && (
+                    <span
+                      title={
+                        f.aktif
+                          ? `${f.eksik_sayisi} kullanıcının eksik bilgisi var (takım/bölge/telefon) — kullanıcı listesinde "Eksik bilgili" filtresiyle görülebilir.`
+                          : `Firma aktifleştirilemez — önce ${f.eksik_sayisi} kullanıcının eksik bilgisini (takım/bölge/telefon) tamamlayın.`
+                      }
+                      style={{
+                        fontSize: "11px",
+                        background: "#fffbeb",
+                        border: "0.5px solid #fcd34d",
+                        color: "#92400e",
+                        padding: "2px 8px",
+                        borderRadius: "999px",
+                        fontWeight: 600,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      ⚠ {f.eksik_sayisi} eksik bilgili
                     </span>
                   )}
                 </div>

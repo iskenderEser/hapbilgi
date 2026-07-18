@@ -7,12 +7,12 @@
     },
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 185,
+      "satir": 202,
       "tablo": "takimlar"
     },
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 195,
+      "satir": 212,
       "tablo": "bolgeler"
     },
     {
@@ -1687,17 +1687,22 @@
     },
     {
       "dosya": "app/admin/api/firmalar/route.ts",
-      "satir": 16,
+      "satir": 17,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/route.ts",
-      "satir": 46,
+      "satir": 28,
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/route.ts",
+      "satir": 64,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/route.ts",
-      "satir": 60,
+      "satir": 78,
       "tablo": "firmalar"
     },
     {
@@ -3500,13 +3505,13 @@
     },
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 185,
+      "satir": 202,
       "ham": "takim_id, takim_adi",
       "tablo": "takimlar"
     },
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 195,
+      "satir": 212,
       "ham": "bolge_id, bolge_adi, takim_id",
       "tablo": "bolgeler"
     },
@@ -5216,7 +5221,13 @@
     },
     {
       "dosya": "app/admin/api/firmalar/route.ts",
-      "satir": 46,
+      "satir": 28,
+      "ham": "firma_id, rol, takim_id, bolge_id, telefon",
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/route.ts",
+      "satir": 64,
       "ham": "firma_id",
       "tablo": "firmalar"
     },

@@ -10,6 +10,9 @@ export interface Firma {
   eclub_store_aktif: boolean;
   son_export_at: string | null;
   created_at: string;
+  // T-2: GET /admin/api/firmalar hesaplayıp ekler (eksik tanımı kullaniciEksikMi);
+  // firma kartındaki "⚠ N eksik bilgili" rozeti bunu okur.
+  eksik_sayisi?: number;
 }
 
 export interface Kullanici {
