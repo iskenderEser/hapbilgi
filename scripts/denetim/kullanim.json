@@ -1,6 +1,16 @@
 {
   "fromlar": [
     {
+      "dosya": "lib/admin/kullaniciDogrulama.ts",
+      "satir": 63,
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "lib/admin/kullaniciDogrulama.ts",
+      "satir": 73,
+      "tablo": "bolgeler"
+    },
+    {
       "dosya": "lib/cc/kayit.ts",
       "satir": 63,
       "tablo": "challenge_kayitlari"
@@ -1672,37 +1682,32 @@
     },
     {
       "dosya": "app/admin/api/firmalar/route.ts",
-      "satir": 12,
+      "satir": 16,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/route.ts",
-      "satir": 39,
+      "satir": 46,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/route.ts",
-      "satir": 53,
+      "satir": 60,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/sistem-ayarlari/route.ts",
-      "satir": 20,
-      "tablo": "kullanicilar"
-    },
-    {
-      "dosya": "app/admin/api/sistem-ayarlari/route.ts",
-      "satir": 47,
+      "satir": 41,
       "tablo": "sistem_ayarlari"
     },
     {
       "dosya": "app/admin/api/sistem-ayarlari/route.ts",
-      "satir": 78,
+      "satir": 72,
       "tablo": "sistem_ayarlari"
     },
     {
       "dosya": "app/admin/api/sistem-ayarlari/route.ts",
-      "satir": 87,
+      "satir": 81,
       "tablo": "sistem_ayarlari"
     },
     {
@@ -2297,277 +2302,267 @@
     },
     {
       "dosya": "app/admin/api/eclub/kayitli/route.ts",
-      "satir": 17,
-      "tablo": "kullanicilar"
-    },
-    {
-      "dosya": "app/admin/api/eclub/kayitli/route.ts",
-      "satir": 41,
+      "satir": 35,
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/admin/api/eclub/kayitli/route.ts",
-      "satir": 56,
+      "satir": 50,
       "tablo": "eclub_kisiler"
     },
     {
       "dosya": "app/admin/api/eclub/kayitli/route.ts",
-      "satir": 82,
+      "satir": 76,
       "tablo": "eclub_eczane_firma"
     },
     {
       "dosya": "app/admin/api/eclub/kayitli/route.ts",
-      "satir": 93,
+      "satir": 87,
       "tablo": "eclub_eczaneler"
     },
     {
       "dosya": "app/admin/api/eclub/kayitli/route.ts",
-      "satir": 101,
+      "satir": 95,
       "tablo": "eclub_eczane_master"
     },
     {
       "dosya": "app/admin/api/eclub/kayitli/route.ts",
-      "satir": 112,
+      "satir": 106,
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/admin/api/eclub/kayitli/route.ts",
-      "satir": 140,
+      "satir": 134,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/eclub/kayitli/route.ts",
-      "satir": 168,
+      "satir": 162,
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/admin/api/eclub/onaylar/route.ts",
-      "satir": 18,
+      "satir": 30,
+      "tablo": "eclub_eczane_master"
+    },
+    {
+      "dosya": "app/admin/api/eclub/onaylar/route.ts",
+      "satir": 42,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/eclub/onaylar/route.ts",
-      "satir": 36,
+      "satir": 87,
       "tablo": "eclub_eczane_master"
     },
     {
       "dosya": "app/admin/api/eclub/onaylar/route.ts",
-      "satir": 48,
-      "tablo": "kullanicilar"
-    },
-    {
-      "dosya": "app/admin/api/eclub/onaylar/route.ts",
-      "satir": 93,
+      "satir": 102,
       "tablo": "eclub_eczane_master"
     },
     {
       "dosya": "app/admin/api/eclub/onaylar/route.ts",
-      "satir": 108,
-      "tablo": "eclub_eczane_master"
-    },
-    {
-      "dosya": "app/admin/api/eclub/onaylar/route.ts",
-      "satir": 117,
+      "satir": 111,
       "tablo": "eclub_eczane_master"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 18,
+      "satir": 22,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 52,
+      "satir": 59,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 105,
+      "satir": 115,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 150,
+      "satir": 163,
       "tablo": "talepler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 158,
+      "satir": 171,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 178,
+      "satir": 191,
       "tablo": "takimlar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 186,
+      "satir": 199,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 194,
+      "satir": 207,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/eclub-store/api/kategori/route.ts",
-      "satir": 26,
+      "satir": 24,
       "tablo": "eclub_store_kategoriler"
     },
     {
       "dosya": "app/admin/eclub-store/api/kategori/route.ts",
-      "satir": 32,
+      "satir": 30,
       "tablo": "eclub_store_urunler"
     },
     {
       "dosya": "app/admin/eclub-store/api/kategori/route.ts",
-      "satir": 63,
+      "satir": 61,
       "tablo": "eclub_store_kategoriler"
     },
     {
       "dosya": "app/admin/eclub-store/api/kategori/route.ts",
-      "satir": 88,
+      "satir": 86,
       "tablo": "eclub_store_kategoriler"
     },
     {
       "dosya": "app/admin/eclub-store/api/kategori/route.ts",
-      "satir": 111,
+      "satir": 109,
       "tablo": "eclub_store_urunler"
     },
     {
       "dosya": "app/admin/eclub-store/api/kategori/route.ts",
-      "satir": 118,
+      "satir": 116,
       "tablo": "eclub_store_kategoriler"
     },
     {
       "dosya": "app/admin/eclub-store/api/siparis/route.ts",
-      "satir": 31,
+      "satir": 29,
       "tablo": "eclub_store_siparisler"
     },
     {
       "dosya": "app/admin/eclub-store/api/siparis/route.ts",
-      "satir": 43,
+      "satir": 41,
       "tablo": "eclub_kisiler"
     },
     {
       "dosya": "app/admin/eclub-store/api/siparis/route.ts",
-      "satir": 101,
+      "satir": 99,
       "tablo": "eclub_store_siparisler"
     },
     {
       "dosya": "app/admin/eclub-store/api/urun/route.ts",
-      "satir": 26,
+      "satir": 24,
       "tablo": "eclub_store_urunler"
     },
     {
       "dosya": "app/admin/eclub-store/api/urun/route.ts",
-      "satir": 32,
+      "satir": 30,
       "tablo": "eclub_store_kategoriler"
     },
     {
       "dosya": "app/admin/eclub-store/api/urun/route.ts",
-      "satir": 67,
+      "satir": 65,
       "tablo": "eclub_store_urunler"
     },
     {
       "dosya": "app/admin/eclub-store/api/urun/route.ts",
-      "satir": 104,
+      "satir": 102,
       "tablo": "eclub_store_urunler"
     },
     {
       "dosya": "app/admin/eclub-store/api/urun/route.ts",
-      "satir": 136,
+      "satir": 134,
       "tablo": "eclub_store_siparisler"
     },
     {
       "dosya": "app/admin/eclub-store/api/urun/route.ts",
-      "satir": 143,
+      "satir": 141,
       "tablo": "eclub_store_urunler"
     },
     {
       "dosya": "app/admin/eclub-store/api/urun/route.ts",
-      "satir": 151,
+      "satir": 149,
       "tablo": "eclub_store_urunler"
     },
     {
       "dosya": "app/admin/store/api/kategori/route.ts",
-      "satir": 50,
+      "satir": 46,
       "tablo": "store_kategoriler"
     },
     {
       "dosya": "app/admin/store/api/kategori/route.ts",
-      "satir": 85,
+      "satir": 81,
       "tablo": "store_kategoriler"
     },
     {
       "dosya": "app/admin/store/api/kategori/route.ts",
-      "satir": 144,
+      "satir": 140,
       "tablo": "store_kategoriler"
     },
     {
       "dosya": "app/admin/store/api/kategori/route.ts",
-      "satir": 178,
+      "satir": 174,
       "tablo": "store_urunler"
     },
     {
       "dosya": "app/admin/store/api/kategori/route.ts",
-      "satir": 194,
+      "satir": 190,
       "tablo": "store_kategoriler"
     },
     {
       "dosya": "app/admin/store/api/siparis/route.ts",
-      "satir": 58,
+      "satir": 54,
       "tablo": "store_siparisler"
     },
     {
       "dosya": "app/admin/store/api/siparis/route.ts",
-      "satir": 130,
+      "satir": 126,
       "tablo": "store_siparisler"
     },
     {
       "dosya": "app/admin/store/api/siparis/route.ts",
-      "satir": 147,
+      "satir": 143,
       "tablo": "store_siparisler"
     },
     {
       "dosya": "app/admin/store/api/urun/route.ts",
-      "satir": 55,
+      "satir": 51,
       "tablo": "store_urunler"
     },
     {
       "dosya": "app/admin/store/api/urun/route.ts",
-      "satir": 112,
+      "satir": 108,
       "tablo": "store_kategoriler"
     },
     {
       "dosya": "app/admin/store/api/urun/route.ts",
-      "satir": 122,
+      "satir": 118,
       "tablo": "store_urunler"
     },
     {
       "dosya": "app/admin/store/api/urun/route.ts",
-      "satir": 160,
+      "satir": 156,
       "tablo": "store_urunler"
     },
     {
       "dosya": "app/admin/store/api/urun/route.ts",
-      "satir": 208,
+      "satir": 204,
       "tablo": "store_urunler"
     },
     {
       "dosya": "app/admin/store/api/urun/route.ts",
-      "satir": 258,
+      "satir": 254,
       "tablo": "store_siparisler"
     },
     {
       "dosya": "app/admin/store/api/urun/route.ts",
-      "satir": 275,
+      "satir": 271,
       "tablo": "store_urunler"
     },
     {
       "dosya": "app/admin/store/api/urun/route.ts",
-      "satir": 286,
+      "satir": 282,
       "tablo": "store_urunler"
     },
     {
@@ -3162,366 +3157,338 @@
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 39,
+      "satir": 43,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 50,
+      "satir": 64,
       "tablo": "takimlar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 61,
+      "satir": 76,
       "tablo": "bolgeler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 70,
+      "satir": 86,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 87,
+      "satir": 104,
       "tablo": "urunler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 95,
+      "satir": 113,
       "tablo": "teknikler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 102,
+      "satir": 121,
       "tablo": "talepler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 116,
+      "satir": 136,
       "tablo": "yayin_yonetimi"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 123,
+      "satir": 144,
       "tablo": "soru_seti_durumu"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 130,
+      "satir": 152,
       "tablo": "soru_setleri"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 137,
+      "satir": 160,
       "tablo": "video_durumu"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 144,
+      "satir": 168,
       "tablo": "videolar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 151,
+      "satir": 176,
       "tablo": "senaryo_durumu"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 158,
+      "satir": 184,
       "tablo": "senaryolar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 229,
+      "satir": 256,
       "tablo": "kazanilan_puanlar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 246,
+      "satir": 274,
       "tablo": "yanlis_cevap_kayitlari"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 258,
+      "satir": 287,
       "tablo": "oneri_kayip_kayitlari"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 270,
+      "satir": 300,
       "tablo": "challenge_kayip_kayitlari"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 353,
+      "satir": 385,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 18,
+      "satir": 22,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 29,
+      "satir": 33,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 77,
+      "satir": 84,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 124,
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 135,
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 149,
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 160,
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 174,
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 185,
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 199,
-      "tablo": "bolgeler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 210,
-      "tablo": "bolgeler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 233,
+      "satir": 115,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 277,
+      "satir": 162,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 299,
+      "satir": 204,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 328,
+      "satir": 241,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 340,
+      "satir": 254,
       "tablo": "silinmis_kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 361,
+      "satir": 271,
+      "tablo": "silinmis_kullanicilar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
+      "satir": 279,
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
+      "satir": 293,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/route.ts",
-      "satir": 16,
+      "satir": 20,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/route.ts",
-      "satir": 26,
+      "satir": 30,
       "tablo": "takimlar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/route.ts",
-      "satir": 58,
+      "satir": 65,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/route.ts",
-      "satir": 68,
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/route.ts",
-      "satir": 80,
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/teknikler/route.ts",
-      "satir": 16,
-      "tablo": "teknikler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/teknikler/route.ts",
-      "satir": 46,
-      "tablo": "teknikler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/teknikler/route.ts",
-      "satir": 58,
-      "tablo": "teknikler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/teknikler/route.ts",
-      "satir": 89,
-      "tablo": "teknikler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/teknikler/route.ts",
-      "satir": 100,
-      "tablo": "teknikler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
-      "satir": 17,
-      "tablo": "firmalar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
-      "satir": 43,
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
-      "satir": 50,
-      "tablo": "bolgeler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
-      "satir": 164,
-      "tablo": "kullanicilar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
-      "satir": 19,
-      "tablo": "urunler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
-      "satir": 57,
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
-      "satir": 66,
-      "tablo": "urunler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
-      "satir": 78,
-      "tablo": "urunler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
-      "satir": 109,
-      "tablo": "urunler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
-      "satir": 120,
-      "tablo": "urunler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
-      "satir": 17,
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
-      "satir": 53,
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
-      "satir": 66,
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
-      "satir": 97,
-      "tablo": "bolgeler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
-      "satir": 105,
-      "tablo": "kullanicilar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
-      "satir": 113,
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/route.ts",
-      "satir": 18,
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/route.ts",
-      "satir": 29,
-      "tablo": "bolgeler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/route.ts",
-      "satir": 63,
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/route.ts",
       "satir": 75,
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/route.ts",
+      "satir": 87,
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/teknikler/route.ts",
+      "satir": 20,
+      "tablo": "teknikler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/teknikler/route.ts",
+      "satir": 53,
+      "tablo": "teknikler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/teknikler/route.ts",
+      "satir": 65,
+      "tablo": "teknikler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/teknikler/route.ts",
+      "satir": 99,
+      "tablo": "teknikler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/teknikler/route.ts",
+      "satir": 110,
+      "tablo": "teknikler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
+      "satir": 22,
+      "tablo": "firmalar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
+      "satir": 138,
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
+      "satir": 23,
+      "tablo": "urunler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
+      "satir": 64,
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
+      "satir": 73,
+      "tablo": "urunler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
+      "satir": 85,
+      "tablo": "urunler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
+      "satir": 119,
+      "tablo": "urunler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
+      "satir": 130,
+      "tablo": "urunler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
+      "satir": 21,
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
+      "satir": 60,
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
+      "satir": 73,
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
+      "satir": 107,
+      "tablo": "bolgeler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
+      "satir": 115,
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
+      "satir": 123,
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/route.ts",
+      "satir": 22,
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/route.ts",
+      "satir": 33,
       "tablo": "bolgeler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/route.ts",
-      "satir": 87,
+      "satir": 70,
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/route.ts",
+      "satir": 82,
+      "tablo": "bolgeler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/route.ts",
+      "satir": 94,
       "tablo": "bolgeler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/[bolge_id]/route.ts",
-      "satir": 18,
+      "satir": 22,
       "tablo": "bolgeler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/[bolge_id]/route.ts",
-      "satir": 56,
+      "satir": 63,
       "tablo": "bolgeler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/[bolge_id]/route.ts",
-      "satir": 69,
+      "satir": 76,
       "tablo": "bolgeler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/[bolge_id]/route.ts",
-      "satir": 102,
+      "satir": 112,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/[bolge_id]/route.ts",
-      "satir": 110,
+      "satir": 120,
       "tablo": "bolgeler"
     }
   ],
   "selectler": [
+    {
+      "dosya": "lib/admin/kullaniciDogrulama.ts",
+      "satir": 63,
+      "ham": "takim_id, takim_adi",
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "lib/admin/kullaniciDogrulama.ts",
+      "satir": 73,
+      "ham": "bolge_id, bolge_adi, takim_id",
+      "tablo": "bolgeler"
+    },
     {
       "dosya": "lib/cc/kayit.ts",
       "satir": 63,
@@ -5228,37 +5195,31 @@
     },
     {
       "dosya": "app/admin/api/firmalar/route.ts",
-      "satir": 39,
+      "satir": 46,
       "ham": "firma_id",
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/sistem-ayarlari/route.ts",
-      "satir": 20,
-      "ham": "rol",
-      "tablo": "kullanicilar"
-    },
-    {
-      "dosya": "app/admin/api/sistem-ayarlari/route.ts",
-      "satir": 47,
+      "satir": 41,
       "ham": "anahtar, deger, aciklama, updated_at",
       "tablo": "sistem_ayarlari"
     },
     {
       "dosya": "app/admin/api/sistem-ayarlari/route.ts",
-      "satir": 78,
+      "satir": 72,
       "ham": "anahtar",
       "tablo": "sistem_ayarlari"
     },
     {
       "dosya": "app/admin/api/test-verileri-sil/route.ts",
-      "satir": 107,
+      "satir": 108,
       "ham": "urun_id, adet",
       "tablo": null
     },
     {
       "dosya": "app/admin/api/test-verileri-sil/route.ts",
-      "satir": 120,
+      "satir": 121,
       "ham": "stok",
       "tablo": null
     },
@@ -5876,211 +5837,199 @@
     },
     {
       "dosya": "app/admin/api/eclub/kayitli/route.ts",
-      "satir": 17,
-      "ham": "rol",
-      "tablo": "kullanicilar"
-    },
-    {
-      "dosya": "app/admin/api/eclub/kayitli/route.ts",
-      "satir": 41,
+      "satir": 35,
       "ham": "kisi_id, aktif_mi",
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/admin/api/eclub/kayitli/route.ts",
-      "satir": 56,
+      "satir": 50,
       "ham": "kisi_id, ad, soyad, rol",
       "tablo": "eclub_kisiler"
     },
     {
       "dosya": "app/admin/api/eclub/kayitli/route.ts",
-      "satir": 82,
+      "satir": 76,
       "ham": "eczane_id",
       "tablo": "eclub_eczane_firma"
     },
     {
       "dosya": "app/admin/api/eclub/kayitli/route.ts",
-      "satir": 93,
+      "satir": 87,
       "ham": "eczane_id, gln",
       "tablo": "eclub_eczaneler"
     },
     {
       "dosya": "app/admin/api/eclub/kayitli/route.ts",
-      "satir": 101,
+      "satir": 95,
       "ham": "gln, eczane_adi, il, ilce",
       "tablo": "eclub_eczane_master"
     },
     {
       "dosya": "app/admin/api/eclub/kayitli/route.ts",
-      "satir": 112,
+      "satir": 106,
       "ham": "eczane_id, aktif_mi",
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/admin/api/eclub/kayitli/route.ts",
-      "satir": 140,
+      "satir": 134,
       "ham": "firma_id, firma_adi, eclub_aktif",
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/eclub/onaylar/route.ts",
-      "satir": 18,
-      "ham": "rol",
-      "tablo": "kullanicilar"
-    },
-    {
-      "dosya": "app/admin/api/eclub/onaylar/route.ts",
-      "satir": 36,
+      "satir": 30,
       "ham": "gln, eczane_adi, il, ilce, ekleyen_utt_id, created_at",
       "tablo": "eclub_eczane_master"
     },
     {
       "dosya": "app/admin/api/eclub/onaylar/route.ts",
-      "satir": 48,
+      "satir": 42,
       "ham": "kullanici_id, ad, soyad",
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/eclub/onaylar/route.ts",
-      "satir": 93,
+      "satir": 87,
       "ham": "gln, onay_durumu, kaynak",
       "tablo": "eclub_eczane_master"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 150,
+      "satir": 163,
       "ham": "firma_id",
       "tablo": "talepler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 158,
+      "satir": 171,
       "ham": "son_export_at",
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 178,
+      "satir": 191,
       "ham": "takim_id",
       "tablo": "takimlar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/route.ts",
-      "satir": 186,
+      "satir": 199,
       "ham": "kullanici_id",
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/eclub-store/api/kategori/route.ts",
-      "satir": 26,
+      "satir": 24,
       "ham": "kategori_id, ad, sira, aktif_mi",
       "tablo": "eclub_store_kategoriler"
     },
     {
       "dosya": "app/admin/eclub-store/api/kategori/route.ts",
-      "satir": 32,
+      "satir": 30,
       "ham": "kategori_id",
       "tablo": "eclub_store_urunler"
     },
     {
       "dosya": "app/admin/eclub-store/api/kategori/route.ts",
-      "satir": 63,
+      "satir": 61,
       "ham": "kategori_id",
       "tablo": "eclub_store_kategoriler"
     },
     {
       "dosya": "app/admin/eclub-store/api/kategori/route.ts",
-      "satir": 111,
+      "satir": 109,
       "ham": "urun_id",
       "tablo": "eclub_store_urunler"
     },
     {
       "dosya": "app/admin/eclub-store/api/siparis/route.ts",
-      "satir": 31,
+      "satir": 29,
       "ham": "siparis_id, kisi_id, urun_id, adet, toplam_puan, durum, kargo_firmasi, kargo_takip_no, adres_snapshot, iptal_sebebi, created_at, eclub_store_urunler ( ad )",
       "tablo": "eclub_store_siparisler"
     },
     {
       "dosya": "app/admin/eclub-store/api/siparis/route.ts",
-      "satir": 43,
+      "satir": 41,
       "ham": "kisi_id, ad, soyad",
       "tablo": "eclub_kisiler"
     },
     {
       "dosya": "app/admin/eclub-store/api/urun/route.ts",
-      "satir": 26,
+      "satir": 24,
       "ham": "urun_id, kategori_id, ad, aciklama, gorsel_url, puan_fiyat, stok, aktif_mi",
       "tablo": "eclub_store_urunler"
     },
     {
       "dosya": "app/admin/eclub-store/api/urun/route.ts",
-      "satir": 32,
+      "satir": 30,
       "ham": "kategori_id, ad",
       "tablo": "eclub_store_kategoriler"
     },
     {
       "dosya": "app/admin/eclub-store/api/urun/route.ts",
-      "satir": 67,
+      "satir": 65,
       "ham": "urun_id",
       "tablo": "eclub_store_urunler"
     },
     {
       "dosya": "app/admin/eclub-store/api/urun/route.ts",
-      "satir": 136,
+      "satir": 134,
       "ham": "siparis_id",
       "tablo": "eclub_store_siparisler"
     },
     {
       "dosya": "app/admin/store/api/kategori/route.ts",
-      "satir": 50,
+      "satir": 46,
       "ham": "kategori_id, ad, sira, aktif_mi, created_at",
       "tablo": "store_kategoriler"
     },
     {
       "dosya": "app/admin/store/api/kategori/route.ts",
-      "satir": 178,
+      "satir": 174,
       "ham": "urun_id",
       "tablo": "store_urunler"
     },
     {
       "dosya": "app/admin/store/api/siparis/route.ts",
-      "satir": 58,
+      "satir": 54,
       "ham": "\n        siparis_id,\n        kullanici_id,\n        urun_id,\n        adres_id,\n        adres_snapshot,\n        adet,\n        puan_birim_fiyat,\n        toplam_puan,\n        durum,\n        kargo_firmasi,\n        kargo_takip_no,\n        iptal_sebebi,\n        created_at,\n        guncellenme_at,\n        teslim_alma_at,\n        store_urunler ( ad, gorsel_url ),\n        kullanicilar ( ad, soyad, eposta, rol )\n      ",
       "tablo": "store_siparisler"
     },
     {
       "dosya": "app/admin/store/api/siparis/route.ts",
-      "satir": 130,
+      "satir": 126,
       "ham": "durum",
       "tablo": "store_siparisler"
     },
     {
       "dosya": "app/admin/store/api/urun/route.ts",
-      "satir": 55,
+      "satir": 51,
       "ham": "\n        urun_id,\n        kategori_id,\n        ad,\n        aciklama,\n        gorsel_url,\n        puan_fiyati,\n        stok,\n        aktif_mi,\n        created_at,\n        updated_at,\n        store_kategoriler ( ad )\n      ",
       "tablo": "store_urunler"
     },
     {
       "dosya": "app/admin/store/api/urun/route.ts",
-      "satir": 112,
+      "satir": 108,
       "ham": "kategori_id",
       "tablo": "store_kategoriler"
     },
     {
       "dosya": "app/admin/store/api/urun/route.ts",
-      "satir": 160,
+      "satir": 156,
       "ham": "gorsel_url",
       "tablo": "store_urunler"
     },
     {
       "dosya": "app/admin/store/api/urun/route.ts",
-      "satir": 258,
+      "satir": 254,
       "ham": "siparis_id",
       "tablo": "store_siparisler"
     },
     {
       "dosya": "app/admin/store/api/urun/route.ts",
-      "satir": 275,
+      "satir": 271,
       "ham": "gorsel_url",
       "tablo": "store_urunler"
     },
@@ -6656,373 +6605,313 @@
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 39,
+      "satir": 43,
       "ham": "firma_id, firma_adi",
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 50,
+      "satir": 64,
       "ham": "takim_id, takim_adi",
       "tablo": "takimlar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 61,
+      "satir": 76,
       "ham": "bolge_id, bolge_adi, takim_id",
       "tablo": "bolgeler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 70,
+      "satir": 86,
       "ham": "kullanici_id, ad, soyad, eposta, rol, takim_id, bolge_id",
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 87,
+      "satir": 104,
       "ham": "urun_id, urun_adi, takim_id",
       "tablo": "urunler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 95,
+      "satir": 113,
       "ham": "teknik_id, teknik_adi",
       "tablo": "teknikler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 102,
+      "satir": 121,
       "ham": "talep_id, urun_adi, urun_id, teknik_adi, teknik_id, egitim_turu, icerik_turu, hedef_rol, takim_id, created_at",
       "tablo": "talepler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 116,
+      "satir": 136,
       "ham": "yayin_id, soru_seti_durum_id",
       "tablo": "yayin_yonetimi"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 123,
+      "satir": 144,
       "ham": "soru_seti_durum_id, soru_seti_id",
       "tablo": "soru_seti_durumu"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 130,
+      "satir": 152,
       "ham": "soru_seti_id, video_durum_id",
       "tablo": "soru_setleri"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 137,
+      "satir": 160,
       "ham": "video_durum_id, video_id",
       "tablo": "video_durumu"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 144,
+      "satir": 168,
       "ham": "video_id, senaryo_durum_id",
       "tablo": "videolar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 151,
+      "satir": 176,
       "ham": "senaryo_durum_id, senaryo_id",
       "tablo": "senaryo_durumu"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 158,
+      "satir": 184,
       "ham": "senaryo_id, talep_id",
       "tablo": "senaryolar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 229,
+      "satir": 256,
       "ham": "kullanici_id, urun_id, yayin_id, puan, puan_turu",
       "tablo": "kazanilan_puanlar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 246,
+      "satir": 274,
       "ham": "kullanici_id, urun_id, yayin_id, kaybedilen_puan",
       "tablo": "yanlis_cevap_kayitlari"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 258,
+      "satir": 287,
       "ham": "kullanici_id, urun_id, yayin_id, kaybedilen_puan",
       "tablo": "oneri_kayip_kayitlari"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/export/route.ts",
-      "satir": 270,
+      "satir": 300,
       "ham": "kullanici_id, urun_id, yayin_id, kaybedilen_puan",
       "tablo": "challenge_kayip_kayitlari"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 18,
+      "satir": 22,
       "ham": "firma_id",
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 29,
+      "satir": 33,
       "ham": "\n        kullanici_id, ad, soyad, eposta, rol, firma_id,\n        takim_id, bolge_id, aktif_mi,\n        yetki_kullanici_yonetim, yetki_aktif_pasif, created_at,\n        takimlar ( takim_adi ),\n        bolgeler ( bolge_adi )\n      ",
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 77,
+      "satir": 84,
       "ham": "firma_id",
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 124,
-      "ham": "takim_id",
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 135,
-      "ham": "takim_id",
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 149,
-      "ham": "takim_id",
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 160,
-      "ham": "takim_id",
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 174,
-      "ham": "takim_id",
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 185,
-      "ham": "takim_id",
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 199,
-      "ham": "bolge_id, takim_id",
-      "tablo": "bolgeler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 210,
-      "ham": "bolge_id, takim_id",
-      "tablo": "bolgeler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 277,
-      "ham": "kullanici_id",
+      "satir": 162,
+      "ham": "kullanici_id, rol, takim_id, bolge_id",
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/kullanicilar/route.ts",
-      "satir": 328,
-      "ham": "kullanici_id, ad, soyad, eposta, rol, firma_id, takim_id, bolge_id",
+      "satir": 241,
+      "ham": "kullanici_id, ad, soyad, eposta, rol, firma_id, takim_id, bolge_id, aktif_mi, yetki_kullanici_yonetim, yetki_aktif_pasif, fotograf_url",
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/route.ts",
-      "satir": 16,
+      "satir": 20,
       "ham": "firma_id",
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/route.ts",
-      "satir": 26,
+      "satir": 30,
       "ham": "takim_id, firma_id, takim_adi, created_at",
       "tablo": "takimlar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/route.ts",
-      "satir": 58,
+      "satir": 65,
       "ham": "firma_id",
       "tablo": "firmalar"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/route.ts",
-      "satir": 68,
-      "ham": "takim_id",
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/route.ts",
-      "satir": 80,
-      "ham": "takim_id, firma_id, takim_adi, created_at",
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/teknikler/route.ts",
-      "satir": 16,
-      "ham": "teknik_id, teknik_adi, created_at",
-      "tablo": "teknikler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/teknikler/route.ts",
-      "satir": 46,
-      "ham": "teknik_id",
-      "tablo": "teknikler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/teknikler/route.ts",
-      "satir": 58,
-      "ham": "teknik_id, teknik_adi, created_at",
-      "tablo": "teknikler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/teknikler/route.ts",
-      "satir": 89,
-      "ham": "teknik_id",
-      "tablo": "teknikler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
-      "satir": 17,
-      "ham": "firma_id",
-      "tablo": "firmalar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
-      "satir": 43,
-      "ham": "takim_id, takim_adi",
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
-      "satir": 50,
-      "ham": "bolge_id, bolge_adi, takim_id",
-      "tablo": "bolgeler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
-      "satir": 19,
-      "ham": "urun_id, urun_adi, takim_id, created_at",
-      "tablo": "urunler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
-      "satir": 57,
-      "ham": "takim_id",
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
-      "satir": 66,
-      "ham": "urun_id",
-      "tablo": "urunler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
-      "satir": 78,
-      "ham": "urun_id, urun_adi, takim_id, created_at",
-      "tablo": "urunler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
-      "satir": 109,
-      "ham": "urun_id",
-      "tablo": "urunler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
-      "satir": 17,
-      "ham": "takim_id, firma_id, takim_adi, created_at",
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
-      "satir": 53,
-      "ham": "takim_id",
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
-      "satir": 66,
-      "ham": "takim_id, firma_id, takim_adi, created_at",
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
-      "satir": 97,
-      "ham": "bolge_id",
-      "tablo": "bolgeler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
-      "satir": 105,
-      "ham": "kullanici_id",
-      "tablo": "kullanicilar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/route.ts",
-      "satir": 18,
-      "ham": "takim_id",
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/route.ts",
-      "satir": 29,
-      "ham": "bolge_id, takim_id, bolge_adi, created_at",
-      "tablo": "bolgeler"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/route.ts",
-      "satir": 63,
-      "ham": "takim_id",
-      "tablo": "takimlar"
-    },
-    {
-      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/route.ts",
       "satir": 75,
+      "ham": "takim_id",
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/route.ts",
+      "satir": 87,
+      "ham": "takim_id, firma_id, takim_adi, created_at",
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/teknikler/route.ts",
+      "satir": 20,
+      "ham": "teknik_id, teknik_adi, created_at",
+      "tablo": "teknikler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/teknikler/route.ts",
+      "satir": 53,
+      "ham": "teknik_id",
+      "tablo": "teknikler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/teknikler/route.ts",
+      "satir": 65,
+      "ham": "teknik_id, teknik_adi, created_at",
+      "tablo": "teknikler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/teknikler/route.ts",
+      "satir": 99,
+      "ham": "teknik_id",
+      "tablo": "teknikler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/toplu-yukle/route.ts",
+      "satir": 22,
+      "ham": "firma_id",
+      "tablo": "firmalar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
+      "satir": 23,
+      "ham": "urun_id, urun_adi, takim_id, created_at",
+      "tablo": "urunler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
+      "satir": 64,
+      "ham": "takim_id",
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
+      "satir": 73,
+      "ham": "urun_id",
+      "tablo": "urunler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
+      "satir": 85,
+      "ham": "urun_id, urun_adi, takim_id, created_at",
+      "tablo": "urunler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/urunler/route.ts",
+      "satir": 119,
+      "ham": "urun_id",
+      "tablo": "urunler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
+      "satir": 21,
+      "ham": "takim_id, firma_id, takim_adi, created_at",
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
+      "satir": 60,
+      "ham": "takim_id",
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
+      "satir": 73,
+      "ham": "takim_id, firma_id, takim_adi, created_at",
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
+      "satir": 107,
+      "ham": "bolge_id",
+      "tablo": "bolgeler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/route.ts",
+      "satir": 115,
+      "ham": "kullanici_id",
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/route.ts",
+      "satir": 22,
+      "ham": "takim_id",
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/route.ts",
+      "satir": 33,
+      "ham": "bolge_id, takim_id, bolge_adi, created_at",
+      "tablo": "bolgeler"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/route.ts",
+      "satir": 70,
+      "ham": "takim_id",
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/route.ts",
+      "satir": 82,
       "ham": "bolge_id",
       "tablo": "bolgeler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/route.ts",
-      "satir": 87,
+      "satir": 94,
       "ham": "bolge_id, takim_id, bolge_adi, created_at",
       "tablo": "bolgeler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/[bolge_id]/route.ts",
-      "satir": 18,
+      "satir": 22,
       "ham": "bolge_id, takim_id, bolge_adi, created_at",
       "tablo": "bolgeler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/[bolge_id]/route.ts",
-      "satir": 56,
+      "satir": 63,
       "ham": "bolge_id",
       "tablo": "bolgeler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/[bolge_id]/route.ts",
-      "satir": 69,
+      "satir": 76,
       "ham": "bolge_id, takim_id, bolge_adi, created_at",
       "tablo": "bolgeler"
     },
     {
       "dosya": "app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/[bolge_id]/route.ts",
-      "satir": 102,
+      "satir": 112,
       "ham": "kullanici_id",
       "tablo": "kullanicilar"
     }

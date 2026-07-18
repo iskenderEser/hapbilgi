@@ -85,21 +85,35 @@ export const RENK_GRI = "#737373";
 export const RENK_BORDO = "#bc2d0d";
 export const RENK_CIZGI = "#e5e7eb";
 
-export type ModulSekmeId = "kullanicilar" | "yapi" | "tclub" | "cclub" | "eclub" | "eczanem";
+export type ModulSekmeId =
+  | "kullanicilar"
+  | "organizasyon"
+  | "urunteknik"
+  | "tclub"
+  | "cclub"
+  | "eclub"
+  | "eczanem";
+
+// Sekme grupları (İskender kararı, 17.07.2026): takım/bölge ve ürün/teknik
+// MODÜL değil, firmanın KURULUŞ TANIMLARIDIR (organizasyon şeması firmanın
+// altındadır). Sekme çubuğu iki grup halinde çizilir: "Firma" | "Modüller".
+export type SekmeGrubu = "firma" | "modul";
 
 export interface ModulSekme {
   id: ModulSekmeId;
   etiket: string;
+  grup: SekmeGrubu;
   firmaAdminGorur: boolean;
 }
 
 export const MODUL_SEKMELERI: ModulSekme[] = [
-  { id: "kullanicilar", etiket: "Kullanıcılar", firmaAdminGorur: true },
-  { id: "yapi", etiket: "Yapı", firmaAdminGorur: true },
-  { id: "tclub", etiket: "T-Club", firmaAdminGorur: true },
-  { id: "cclub", etiket: "C-Club", firmaAdminGorur: true },
-  { id: "eclub", etiket: "E-Club", firmaAdminGorur: true },
-  { id: "eczanem", etiket: "Eczanem", firmaAdminGorur: true },
+  { id: "kullanicilar", etiket: "Kullanıcılar", grup: "firma", firmaAdminGorur: true },
+  { id: "organizasyon", etiket: "Organizasyon", grup: "firma", firmaAdminGorur: true },
+  { id: "urunteknik", etiket: "Ürün & Teknik", grup: "firma", firmaAdminGorur: true },
+  { id: "tclub", etiket: "T-Club", grup: "modul", firmaAdminGorur: true },
+  { id: "cclub", etiket: "C-Club", grup: "modul", firmaAdminGorur: true },
+  { id: "eclub", etiket: "E-Club", grup: "modul", firmaAdminGorur: true },
+  { id: "eczanem", etiket: "Eczanem", grup: "modul", firmaAdminGorur: true },
 ];
 
 export type GlobalBolumId = "hbstore" | "eclubstore" | "sistem";

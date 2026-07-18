@@ -90,11 +90,11 @@ export default function AdminPanel() {
     return admin.handleFirmaSecildi(...args);
   };
 
-  // Modül sekmesi değişince alt-sekme uygun varsayılana çekilir.
+  // Kullanıcılar sekmesine dönüşte alt-sekme varsayılana çekilir;
+  // Organizasyon ve Ürün & Teknik alt-sekmesiz doğrudan render edilir.
   const handleSekmeSec = (sekme: ModulSekmeId) => {
     setSeciliSekme(sekme);
     if (sekme === "kullanicilar") admin.setGirisSecimi("tekil");
-    if (sekme === "yapi") admin.setGirisSecimi("takim");
   };
 
   if (admin.yukleniyor || !admin.kullanici) return null;
@@ -170,7 +170,6 @@ export default function AdminPanel() {
                   <SekmeBari
                     girisSecimi={admin.girisSecimi}
                     setGirisSecimi={admin.setGirisSecimi}
-                    secenekler={["tekil", "toplu"]}
                   />
                   {admin.girisSecimi === "tekil" && (
                     <TekilGirisFormu takimlar={admin.takimlar} {...tekil} />
@@ -180,18 +179,10 @@ export default function AdminPanel() {
                 </>
               )}
 
-              {seciliSekme === "yapi" && (
-                <>
-                  <SekmeBari
-                    girisSecimi={admin.girisSecimi}
-                    setGirisSecimi={admin.setGirisSecimi}
-                    secenekler={["takim", "urun"]}
-                  />
-                  {admin.girisSecimi === "takim" && <TakimBolgeFormu {...takimBolge} />}
-                  {admin.girisSecimi === "urun" && (
-                    <UrunTeknikYonetimi takimlar={admin.takimlar} {...urunTeknik} />
-                  )}
-                </>
+              {seciliSekme === "organizasyon" && <TakimBolgeFormu {...takimBolge} />}
+
+              {seciliSekme === "urunteknik" && (
+                <UrunTeknikYonetimi takimlar={admin.takimlar} {...urunTeknik} />
               )}
 
               {seciliSekme === "tclub" && (

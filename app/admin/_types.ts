@@ -65,7 +65,7 @@ export interface Teknik {
   teknik_adi: string;
 }
 
-export type GirisSecimi = "tekil" | "toplu" | "takim" | "urun";
+export type GirisSecimi = "tekil" | "toplu";
 
 // Sistem Ayarları (sistem_ayarlari tablosu — admin ekranı)
 export interface SistemAyari {
