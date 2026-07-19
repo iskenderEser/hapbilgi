@@ -105,4 +105,12 @@
 2. **"Öğrenmenin V Hali" silinecek**; yerine positioning-why cümlesi olarak **"Öğretirken Kazandırır"** geçecek (niçin HapBilgi'yi satın alayım sorusunun cevabı).
 3. Bilgi amaçlı kayıt — **"kazanmak" tanımı** (İskender, 18.07.2026): Bilgi (tüm roller) · Prestij (şirket nezdinde UTT ve BM ve takım) · Ölçebilme (ölçebilme kazancı — doğruyu savunabilme) · Hediye (store'lar) · Ayrıcalık (eczanelerin E-Club'a girebilme kazancı — izle, puan al, hediye al ve danışan ekleyebilme avantajı) · İndirim (danışanların güvenilir ürünü indirimli alma kazancı).
 
+**Ek 4 (18.07) — modül cümleleri (`c122c22`):** "Modül" etiketi kalktı; dört açıklama "amaç + İÇİN + hedef kitle + yüklem" kalıbına geçti (İskender'le birlikte yazıldı; değer zinciri: temsilci → lider → eczane → danışan):
+1. T-Club — Öğrenmenin sürekliliği için temsilcilere fırsatlar sunar
+2. C-Club — Değişimin sürdürülebilirliği için liderlerin öğrenmesini destekler
+3. E-Club — Değer yaratan bilgiye ulaştırmak için eczaneleri motive eder ("ulaştırmak" mutabakatı korundu)
+4. Eczanem — Güvenilir ürün bilgisine eczaneler aracılığıyla ulaşılması için danışanların öğrenmesini teşvik eder
+
+Karar kaydı (4c tercihi, İskender): kamuya açık alanda eczane lehine açık kazanç vaadi yazılamaz (rekabet engeli; sisteme girmeleri kendi tercihleri olmadığından doğrudan fayda söylenemez) — "öğrenmeyi teşvik" zımni faydadır, sektörel anlamı bilinir.
+
 **Durum:** KOD TARAFI BİTTİ — İskender görsel kontrolü bekleniyor (localhost'ta anında görünür). Doğrulama adımları: (1) push sonrası canlıda "Şifremi unuttum" → e-posta → bağlantı → yeni şifre → yeni şifreyle giriş; (2) işaretsiz "Beni hatırla" ile giriş → tarayıcıyı tamamen kapat-aç → login'e düşmeli. Ön koşul: Supabase panelinde Authentication → URL Configuration'da site adresi + `/sifre-yenile` Redirect URL listesinde olmalı (İskender kontrol edecek).
