@@ -27,6 +27,8 @@ IU = çalışan, sistem = şirketin veznesi; A1 o veznenin kuralları:
 5. **Çalışan yarın robot olabilir:** uç, ekrana değil sözleşmeye bağlı — ileride yapay IU aynı ucu aynı kurallarla çağırır ("insan-şimdilik" notunun teknik karşılığı).
 - Uç: `POST /videolar/api/bunny-yukleme-baslat` → `{video_guid, imza, sonKullanma, libraryId}`. Türkçe hata yönetimi (Bunny erişilemedi / limit / yetki).
 
+**A1 SONUCU (19.07.2026 — BİTTİ, `93e686c`):** Uç yazıldı: IU rol + sıra kontrolü (yalnız ilk yükleme ya da "revizyon bekleniyor"), başlığı sistem koyar (`urunadi_vN` — v_yayin_detay + versiyon sayımı), 2 saatlik tek-videoluk imza, kanonik `embed_url` yanıtla döner (istemci URL kurmaz), tutanak log'u. Çekirdek `lib/video/bunnyYukleme.ts` (oluştur/imza/sil-telafi) — sunucu-tarafı, ekrandan bağımsız. Üçlü doğrulama temiz; smoke: imza formülü bilinen vektör + guid ayrımı. A0 açık ucu kararı: PATCH teyidi A2'de gerçek kütüphaneyle (İskender: "b", 19.07).
+
 ### A2 — İstemci: dosya seç + doğrudan yükleme
 - IU ekranındaki URL alanı yerine "Video dosyası seç" (+ sürükle-bırak); `tus-js-client` ile tarayıcıdan Bunny'ye doğrudan, kaldığı yerden devam edebilen yükleme; ilerleme çubuğu (%).
 - Yükleme bitince sistem `video_url`'yi kanonik embed adresi olarak KENDİSİ yazar (`player.mediadelivery.net/embed/{lib}/{guid}`) — mevcut PUT rotası ve "inceleme bekleniyor" akışı aynen.
