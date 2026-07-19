@@ -60,7 +60,7 @@ export default function TalepDetayPage() {
   const [dosyaYukleniyor, setDosyaYukleniyor] = useState(false);
   const [siliniyor, setSiliniyor] = useState<string | null>(null);
   const [goruntuleniyorUrl, setGoruntuleniyorUrl] = useState<string | null>(null);
-  // A4 — hazır videoyu PM buradan da yükleyebilir (form yüklemesi yarım kaldıysa ya da red sonrası).
+  // A4 — hazır videoyu üretici buradan da yükleyebilir (form yüklemesi yarım kaldıysa ya da red sonrası).
   const [seciliVideoDosya, setSeciliVideoDosya] = useState<File | null>(null);
   const [videoYukleniyor, setVideoYukleniyor] = useState(false);
   const [yuklemeYuzdesi, setYuklemeYuzdesi] = useState<number | null>(null);
@@ -190,7 +190,7 @@ export default function TalepDetayPage() {
     setSiliniyor(null);
   };
 
-  // A4 — form yüklemesi yarım kaldıysa ya da PM reddettiyse: aynı vezne + TUS akışı buradan.
+  // A4 — form yüklemesi yarım kaldıysa ya da üretici reddettiyse: aynı vezne + TUS akışı buradan.
   const handleHazirVideoYukle = async () => {
     if (!seciliVideoDosya) return;
     setVideoYukleniyor(true);
@@ -345,8 +345,8 @@ export default function TalepDetayPage() {
                 <span className="text-xs text-amber-800 leading-relaxed">
                   {isPM && !talep.hazir_video_url && "Hazır video talebi — video henüz yüklenmedi. Talebin üreticisi aşağıdan video dosyasını doğrudan Bunny'ye yükleyebilir."}
                   {isPM && talep.hazir_video_url && "Hazır video yüklendi. Lütfen videoyu izleyerek onaylayın."}
-                  {isIU && !talep.hazir_video_url && <span>Bu talep için <strong>senaryo aşaması atlanmıştır</strong>. PM hazır videoyu doğrudan Bunny'ye yükleyecektir; onay sonrasında soru seti aşaması başlar.</span>}
-                  {isIU && talep.hazir_video_url && <span>Bu talep için <strong>senaryo aşaması atlanmıştır</strong>. Video yüklendi, PM onayı bekleniyor.</span>}
+                  {isIU && !talep.hazir_video_url && <span>Bu talep için <strong>senaryo aşaması atlanmıştır</strong>. Üretici hazır videoyu doğrudan Bunny'ye yükleyecektir; onay sonrasında soru seti aşaması başlar.</span>}
+                  {isIU && talep.hazir_video_url && <span>Bu talep için <strong>senaryo aşaması atlanmıştır</strong>. Video yüklendi, üretici onayı bekleniyor.</span>}
                 </span>
               </div>
             </div>
@@ -362,7 +362,7 @@ export default function TalepDetayPage() {
                   </svg>
                   <span className="text-xs text-blue-800 leading-relaxed">
                     {isPM && `Bu talep için hazır soru seti yüklenmiştir. ${talep.hazir_soru_seti_verisi.length} soru mevcut — video onaylandığında sistem seti otomatik işler.`}
-                    {isIU && `PM bu talep için hazır soru seti yüklemiştir. ${talep.hazir_soru_seti_verisi.length} soru mevcut — video onayıyla birlikte sistem otomatik işler.`}
+                    {isIU && `Üretici bu talep için hazır soru seti yüklemiştir. ${talep.hazir_soru_seti_verisi.length} soru mevcut — video onayıyla birlikte sistem otomatik işler.`}
                   </span>
                 </div>
                 <button
@@ -424,7 +424,7 @@ export default function TalepDetayPage() {
             )}
           </div>
 
-          {/* PM (üretici) — video yükleme (A4: dosya seç + doğrudan Bunny; form yüklemesi yarım kaldıysa ya da red sonrası) */}
+          {/* Üretici — video yükleme (A4: dosya seç + doğrudan Bunny; form yüklemesi yarım kaldıysa ya da red sonrası) */}
           {isUretici && talep.hazir_video && !talep.hazir_video_url && (
             <div className="px-4 md:px-5 py-4 border-b border-gray-100">
               <div className="text-xs font-semibold text-gray-900 mb-2.5">Hazır Video Yükleme</div>
@@ -456,7 +456,7 @@ export default function TalepDetayPage() {
             </div>
           )}
 
-          {/* PM — Video önizleme ve onay */}
+          {/* Üretici — video önizleme ve onay */}
           {isPM && talep.hazir_video && talep.hazir_video_url && (
             <div className="px-4 md:px-5 py-4 border-b border-gray-100">
               <div className="text-xs font-semibold text-gray-900 mb-2.5">Video Önizleme</div>

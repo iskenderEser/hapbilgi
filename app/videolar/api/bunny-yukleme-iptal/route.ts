@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { URETICI_ROLLER, IU_ROLU } from "@/lib/utils/roller";
 import { bunnyVideoSil } from "@/lib/video/bunnyYukleme";
 
 export async function POST(request: NextRequest) {
@@ -20,9 +21,9 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    // A4: hazır video akışında iptali PM (üretici) çağırır; A2 akışında IU.
+    // A4: hazır video akışında iptali üretici çağırır (tüm üretici roller — İskender 19.07); A2 akışında IU.
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (!["iu", "pm", "jr_pm", "kd_pm"].includes(rol)) return rolHatasi("Sadece IU ve PM yükleme iptal edebilir.");
+    if (![IU_ROLU, ...URETICI_ROLLER].includes(rol)) return rolHatasi("Sadece IU ve üretici roller yükleme iptal edebilir.");
 
     const body = await request.json();
     const { video_guid } = body;

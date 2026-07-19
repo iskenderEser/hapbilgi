@@ -1,7 +1,7 @@
 // app/talepler/api/bunny-yukleme-baslat/route.ts
 //
 // A4 — hazır videonun vezne ucu (docs/bunny_dogrudan_yukleme_is_plani.md).
-// Hazır video artık PM'in talep formundan DOĞRUDAN Bunny'ye gider (Supabase
+// Hazır video artık üreticinin talep formundan DOĞRUDAN Bunny'ye gider (Supabase
 // storage'a hiç girmez); IU'nun indir-yeniden-yükle adımı kalktı. Vezne kuralları
 // A1 ile aynı: kimlik + sıra kontrolü, kaydı sistem açar adı sistem koyar,
 // istemciye tek videoya özel süreli TUS imzası iner; API anahtarı asla inmez.
@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { bunnyYuklemeBaslat, hazirVideoBaslik, BUNNY_TUS_ENDPOINT } from "@/lib/video/bunnyYukleme";
 
 export async function POST(request: NextRequest) {
@@ -21,8 +22,9 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
+    // İskender kararı (19.07): hazır akışı TÜM üretici roller aynı şekilde kullanır.
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (!["pm", "jr_pm", "kd_pm"].includes(rol)) return rolHatasi("Sadece PM hazır video yüklemesi başlatabilir.");
+    if (!URETICI_ROLLER.includes(rol)) return rolHatasi("Sadece üretici roller hazır video yüklemesi başlatabilir.");
 
     const body = await request.json();
     const { talep_id } = body;
@@ -49,7 +51,7 @@ export async function POST(request: NextRequest) {
     if (!kayit.ok) return hataYaniti(kayit.hata, kayit.adim, kayit.detay ? { message: kayit.detay } : null);
 
     // Tutanak: kim, hangi talep, hangi Bunny kimliği, ne zaman.
-    console.log(`[talep-bunny-yukleme-baslat] pm=${user.id} talep_id=${talep_id} guid=${kayit.videoGuid} baslik="${baslik}"`);
+    console.log(`[talep-bunny-yukleme-baslat] uretici=${user.id} rol=${rol} talep_id=${talep_id} guid=${kayit.videoGuid} baslik="${baslik}"`);
 
     return NextResponse.json({
       video_guid: kayit.videoGuid,

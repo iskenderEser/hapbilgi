@@ -2172,7 +2172,7 @@
     },
     {
       "dosya": "app/talepler/api/bunny-yukleme-baslat/route.ts",
-      "satir": 33,
+      "satir": 35,
       "tablo": "talepler"
     },
     {
@@ -2197,22 +2197,22 @@
     },
     {
       "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 32,
+      "satir": 34,
       "tablo": "talepler"
     },
     {
       "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 42,
+      "satir": 44,
       "tablo": "talepler"
     },
     {
       "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 74,
+      "satir": 78,
       "tablo": "talepler"
     },
     {
       "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 86,
+      "satir": 90,
       "tablo": "talepler"
     },
     {
@@ -2247,12 +2247,12 @@
     },
     {
       "dosya": "app/videolar/api/bunny-yukleme-iptal/route.ts",
-      "satir": 34,
+      "satir": 35,
       "tablo": "videolar"
     },
     {
       "dosya": "app/videolar/api/bunny-yukleme-iptal/route.ts",
-      "satir": 40,
+      "satir": 41,
       "tablo": "talepler"
     },
     {
@@ -5764,7 +5764,7 @@
     },
     {
       "dosya": "app/talepler/api/bunny-yukleme-baslat/route.ts",
-      "satir": 33,
+      "satir": 35,
       "ham": "talep_id, uretici_id, hazir_video, hazir_video_url, urunler(urun_adi), teknikler(teknik_adi)",
       "tablo": "talepler"
     },
@@ -5782,13 +5782,13 @@
     },
     {
       "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 32,
+      "satir": 34,
       "ham": "talep_id, uretici_id, hazir_video",
       "tablo": "talepler"
     },
     {
       "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 74,
+      "satir": 78,
       "ham": "talep_id, uretici_id, hazir_video, hazir_video_url, hazir_soru_seti, hazir_soru_seti_verisi, soru_seti_buyuklugu, video_basi_soru_sayisi",
       "tablo": "talepler"
     },
@@ -5830,13 +5830,13 @@
     },
     {
       "dosya": "app/videolar/api/bunny-yukleme-iptal/route.ts",
-      "satir": 34,
+      "satir": 35,
       "ham": "video_id",
       "tablo": "videolar"
     },
     {
       "dosya": "app/videolar/api/bunny-yukleme-iptal/route.ts",
-      "satir": 40,
+      "satir": 41,
       "ham": "talep_id",
       "tablo": "talepler"
     },

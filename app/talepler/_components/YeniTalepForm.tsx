@@ -135,9 +135,9 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
           {(formu.hazirVideo || formu.hazirSoruSeti) && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800 leading-relaxed">
               {formu.hazirVideo && formu.hazirSoruSeti &&
-                "Hazır video ve soru seti talebi oluşturuyorsunuz. Senaryo aşaması atlanacak — IU videoyu Bunny.net'e yükleyecek, ardından sizin yüklediğiniz soru setini sisteme işleyecektir."}
+                "Hazır video ve soru seti talebi oluşturuyorsunuz. Senaryo aşaması atlanacak — video, talep oluşturulurken doğrudan Bunny'ye yüklenecek; onayınızla birlikte hazır soru seti de sisteme otomatik işlenecektir."}
               {formu.hazirVideo && !formu.hazirSoruSeti &&
-                "Hazır video talebi oluşturuyorsunuz. Senaryo aşaması atlanacak — IU videoyu Bunny.net'e yükleyip URL iletecek, ardından soru seti yazım sürecine geçilecektir."}
+                "Hazır video talebi oluşturuyorsunuz. Senaryo aşaması atlanacak — video, talep oluşturulurken doğrudan Bunny'ye yüklenecek; onayınızın ardından soru seti yazım sürecine geçilecektir."}
               {!formu.hazirVideo && formu.hazirSoruSeti &&
                 "Hazır soru seti talebi oluşturuyorsunuz. Normal senaryo ve video akışı işleyecek — IU soru seti yazma aşamasında sizin yüklediğiniz soru setini sisteme işleyecektir."}
             </div>

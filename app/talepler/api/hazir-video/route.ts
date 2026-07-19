@@ -3,10 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { embedUrlGuidCikar } from "@/lib/video/bunnyYukleme";
 import { hazirZinciriKur } from "@/lib/hazirVideoSoruSeti/zincir";
 
-// PUT: kanonik embed adresini sistem yazar (A4 — yükleme PM formundan doğrudan
+// PUT: kanonik embed adresini sistem yazar (A4 — yükleme üreticinin formundan doğrudan
 // Bunny'ye gider; adres vezneden döner, istemci URL kurmaz. IU'nun URL girme yolu kalktı.)
 export async function PUT(request: NextRequest) {
   try {
@@ -16,8 +17,9 @@ export async function PUT(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
+    // İskender kararı (19.07): hazır akışı TÜM üretici roller aynı şekilde kullanır.
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (!["pm", "jr_pm", "kd_pm"].includes(rol)) return rolHatasi("Sadece talebin üreticisi (PM) video adresi kaydedebilir.");
+    if (!URETICI_ROLLER.includes(rol)) return rolHatasi("Sadece talebin üreticisi video adresi kaydedebilir.");
 
     const body = await request.json();
     const { talep_id, hazir_video_url } = body;
@@ -62,8 +64,10 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
+    // İskender kararı (19.07): hazır akışı TÜM üretici roller aynı şekilde kullanır;
+    // onay yetkisi rolde değil üreticiliktedir (aşağıda uretici_id şartı).
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (!["pm", "jr_pm", "kd_pm"].includes(rol)) return rolHatasi("Sadece PM onaylayabilir.");
+    if (!URETICI_ROLLER.includes(rol)) return rolHatasi("Sadece talebin üreticisi onaylayabilir.");
 
     const body = await request.json();
     const { talep_id, karar } = body;
