@@ -78,4 +78,22 @@
 | B | "Beni hatırla" işlevlendi: varsayılan işaretli (bugünkü kalıcı oturum); işaretsiz girişte kalıcı bayrak + tarayıcı kapanınca ölen işaret çerezi yazılır; AuthProvider açılışta ikisini karşılaştırıp gerekiyorsa oturumu düşürür. Bilinen sınır: tarayıcının "kaldığım yerden devam et" ayarı oturum çerezlerini geri getirebilir | `13c72b2` |
 | A-ek | Sıfırlama mesajı zaman kipi: "gönderildi" → "gönderilecektir" (İskender kararı — mesaj, adres kayıtlı değilse de doğru kalmalı) | `7748695` |
 
-**Durum:** ÇÖZÜLDÜ (İskender fiziksel doğrulaması 18.07.2026). Doğrulama akışı: görsel test başarılı → sahte @test.com adresleri gerçek mail alamadığı için İskender izniyle mill firmasına gerçek e-postalı geçici kullanıcı eklendi (Code ekledi — İskender'in açık istisna izniyle) → sıfırlama maili geldi (Supabase varsayılan gönderici) → `/sifre-yenile` sayfası çalıştı, yeni şifre belirlendi → geçici kullanıcı silindi (DB + Auth, test verisi temizliği). Not: mail göndericisi şimdilik Supabase varsayılanı (İngilizce şablon, saatlik ~2-4 mail limiti) — İskender kararı: kendi domain'e geçilene kadar yeterli; canlıya açılmadan önce özel SMTP bağlanacak (açık iş). Doğrulama adımları: (1) push sonrası canlıda "Şifremi unuttum" → e-posta → bağlantı → yeni şifre → yeni şifreyle giriş; (2) işaretsiz "Beni hatırla" ile giriş → tarayıcıyı tamamen kapat-aç → login'e düşmeli. Ön koşul: Supabase panelinde Authentication → URL Configuration'da site adresi + `/sifre-yenile` Redirect URL listesinde olmalı (İskender kontrol edecek).
+**Durum:** ÇÖZÜLDÜ (İskender fiziksel doğrulaması 18.07.2026). Doğrulama akışı: görsel test başarılı → sahte @test.com adresleri gerçek mail alamadığı için İskender izniyle mill firmasına gerçek e-postalı geçici kullanıcı eklendi (Code ekledi — İskender'in açık istisna izniyle) → sıfırlama maili geldi (Supabase varsayılan gönderici) → `/sifre-yenile` sayfası çalıştı, yeni şifre belirlendi → geçici kullanıcı silindi (DB + Auth, test verisi temizliği). Not: mail göndericisi şimdilik Supabase varsayılanı (İngilizce şablon, saatlik ~2-4 mail limiti) — İskender kararı: kendi domain'e geçilene kadar yeterli; canlıya açılmadan önce özel SMTP bağlanacak (açık iş).
+
+---
+
+### F-04 — Giriş ekranı renk ve yerleşim değişim talebi (18.07.2026)
+
+**Talep (İskender — madde madde, çözüm önerisi talep edilmedi):**
+1. Split görünümdeki sol taraf genişliği diğer tarafla %50-%50 dengelenecek.
+2. Logo sol üst-orta tarafa taşınacak.
+3. Sol taraf art alan rengi `#f3f4f7` olacak.
+4. Sol taraf text ve ikonların rengi `#737373` olacak.
+5. Eczanem kalp ikonunun çizgi rengi `#bc2d0d` olacak.
+6. Sağ taraf art alan rengi `#f7f7f8` olacak.
+7. E-posta ve şifre giriş çerçeveleri, beni hatırla, şifremi unuttum aynı kalacak.
+8. Butonların üstüne sola yaslı, bold, text renk kodu `#737373` "Giriş" yazılacak.
+
+**Çözüm (uygulanan):** 8 maddenin tamamı tek commit'te (`8bddd08`): split %50-%50 (`md:w-1/2` her iki panel), logo sol panelin üstüne yatay ortalı taşındı (sağdan kalktı), sol zemin `#f3f4f7`, sol metin/ikonlar `#737373` (ikon kutuları aynı yapıda açık-zemin tonlarına çevrildi), Eczanem kalbi sabit `#bc2d0d`, sağ zemin `#f7f7f8`, form bloğunun üstünde sola yaslı bold `#737373` "Giriş" başlığı (yalnız giriş görünümünde — şifre sıfırlama görünümü kendi başlığını korur), giriş çerçeveleri / beni hatırla / şifremi unuttum dokunulmadı. Üçlü doğrulama temiz.
+
+**Durum:** KOD TARAFI BİTTİ — İskender görsel kontrolü bekleniyor (localhost'ta anında görünür). Doğrulama adımları: (1) push sonrası canlıda "Şifremi unuttum" → e-posta → bağlantı → yeni şifre → yeni şifreyle giriş; (2) işaretsiz "Beni hatırla" ile giriş → tarayıcıyı tamamen kapat-aç → login'e düşmeli. Ön koşul: Supabase panelinde Authentication → URL Configuration'da site adresi + `/sifre-yenile` Redirect URL listesinde olmalı (İskender kontrol edecek).
