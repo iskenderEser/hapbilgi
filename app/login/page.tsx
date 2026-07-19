@@ -155,7 +155,9 @@ export default function LoginPage() {
       <div className="md:w-1/2 flex items-center justify-center px-6 py-10 md:px-12 lg:px-16"
         style={{ background: "#f3f4f7" }}>
         <div className="max-w-md w-full">
-          <img src="/logo.png" alt="hapbilgi" className="object-contain mx-auto mb-8" style={{ height: 144 }} />
+          {/* F-04: şeffaf zeminli varyant — beyaz gömülü logo.png açık zeminde
+              kutu gibi görünüyordu; logo.png beyaz zeminli sayfalarda kalmaya devam eder */}
+          <img src="/logo-acik-zemin.png" alt="hapbilgi" className="object-contain mx-auto mb-8" style={{ height: 144 }} />
 
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-2" style={{ color: GRI_METIN }}>
             Öğrenmenin V Hali
