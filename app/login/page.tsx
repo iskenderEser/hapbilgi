@@ -24,6 +24,9 @@ const GRI_METIN = "#737373";
 // lider → eczane → danışan. Eczanem satırında açık kazanç vaadi BİLİNÇLİ yok:
 // kamuya açık alanda eczane lehine doğrudan fayda yazılamaz (rekabet/mevzuat
 // hassasiyeti, İskender kararı) — "öğrenmeyi teşvik" zımni faydadır.
+// "Eczaneler aracılığıyla" ifadesi de İskender tarafından kaldırıldı (18.07):
+// kanalı anmak bile rekabet engeli doğurabilir — sistemde olmayan eczane
+// rekabette yenik düşer imasından kaçınılır.
 // İkon dili: üç Club kendi baş harfiyle (tek desen), Eczanem kalple ayrışır.
 // ("+" bilinçli kullanılmadı — eczacılık bağlamında yanlış anlaşılabilir.)
 const MODULLER = [
@@ -44,7 +47,7 @@ const MODULLER = [
   },
   {
     ad: "Eczanem",
-    aciklama: "Güvenilir ürün bilgisine eczaneler aracılığıyla ulaşılması için danışanların öğrenmesini teşvik eder",
+    aciklama: "Güvenilir ürün bilgisine ulaşılması için danışanların öğrenmesini teşvik eder",
     // F-04/5: kalbin çizgi rengi bordo — currentColor değil, sabit.
     ikon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#bc2d0d" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
