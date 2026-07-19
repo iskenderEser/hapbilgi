@@ -120,6 +120,7 @@ export default function SifreYenilePage() {
                 value={sifre1}
                 onChange={(e) => setSifre1(e.target.value)}
                 required
+                autoComplete="new-password"
                 placeholder="••••••••"
                 className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm bg-white text-gray-900 outline-none box-border transition-shadow focus:border-[#bc2d0d] focus:ring-2 focus:ring-[#bc2d0d]/15"
                 style={{ fontFamily: "'Nunito', sans-serif" }}
@@ -133,6 +134,7 @@ export default function SifreYenilePage() {
                 value={sifre2}
                 onChange={(e) => setSifre2(e.target.value)}
                 required
+                autoComplete="new-password"
                 placeholder="••••••••"
                 className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm bg-white text-gray-900 outline-none box-border transition-shadow focus:border-[#bc2d0d] focus:ring-2 focus:ring-[#bc2d0d]/15"
                 style={{ fontFamily: "'Nunito', sans-serif" }}

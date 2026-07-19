@@ -200,6 +200,7 @@ export default function LoginPage() {
                 value={sifirlamaEmail}
                 onChange={(e) => setSifirlamaEmail(e.target.value)}
                 required
+                autoComplete="email"
                 placeholder="ornek@sirket.com"
                 className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm bg-white text-gray-900 outline-none box-border transition-shadow focus:border-[#bc2d0d] focus:ring-2 focus:ring-[#bc2d0d]/15"
                 style={{ fontFamily: "'Nunito', sans-serif" }}
@@ -244,6 +245,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                autoComplete="username"
                 placeholder="ornek@sirket.com"
                 className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm bg-white text-gray-900 outline-none box-border transition-shadow focus:border-[#bc2d0d] focus:ring-2 focus:ring-[#bc2d0d]/15"
                 style={{ fontFamily: "'Nunito', sans-serif" }}
@@ -258,6 +260,7 @@ export default function LoginPage() {
                   value={sifre}
                   onChange={(e) => setSifre(e.target.value)}
                   required
+                  autoComplete="current-password"
                   placeholder="••••••••"
                   className="w-full border border-gray-300 rounded-xl pl-3.5 pr-10 py-2.5 text-sm bg-white text-gray-900 outline-none box-border transition-shadow focus:border-[#bc2d0d] focus:ring-2 focus:ring-[#bc2d0d]/15"
                   style={{ fontFamily: "'Nunito', sans-serif" }}
