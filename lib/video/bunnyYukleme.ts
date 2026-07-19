@@ -84,6 +84,43 @@ export function tusImzasiUret(libraryId: string, apiKey: string, sonKullanma: nu
   return createHash("sha256").update(libraryId + apiKey + sonKullanma + videoGuid).digest("hex");
 }
 
+/** Kanonik embed/play adresinden Bunny video GUID'ini ayıklar (saf — smoke bununla). */
+export function embedUrlGuidCikar(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const eslesme = url.match(/mediadelivery\.net\/(?:embed|play)\/\d+\/([0-9a-fA-F-]{36})/);
+  return eslesme ? eslesme[1] : null;
+}
+
+// Bunny encode durumları: 0 kuyruk, 1 yüklendi, 2 işleniyor, 3 transcode, 4 BİTTİ, 5-6 HATA.
+export interface BunnyVideoDurum {
+  ok: true;
+  hazir: boolean; // izleme + kapak kullanılabilir
+  hatali: boolean; // encode başarısız — kullanıcıya dürüstçe söylenir
+  bunnyDurum: number;
+}
+
+/** A3: videonun Bunny tarafındaki işlenme durumu (kart açılışında sorgulanır, polling yok). */
+export async function bunnyVideoDurumu(videoGuid: string): Promise<BunnyVideoDurum | BunnyHata> {
+  const ortam = ortamDegerleri();
+  if (!ortam) {
+    return { ok: false, hata: "Bunny yapılandırması eksik.", adim: "env kontrolü", detay: "BUNNY_LIBRARY_ID / BUNNY_API_KEY tanımsız" };
+  }
+  let yanit: Response;
+  try {
+    yanit = await fetch(`${BUNNY_API}/library/${ortam.libraryId}/videos/${videoGuid}`, {
+      headers: { AccessKey: ortam.apiKey },
+    });
+  } catch (err: any) {
+    return { ok: false, hata: "Bunny'ye ulaşılamadı.", adim: "Bunny video durum GET", detay: err?.message };
+  }
+  if (!yanit.ok) {
+    return { ok: false, hata: "Bunny video durumu alınamadı.", adim: "Bunny video durum GET", detay: `HTTP ${yanit.status}` };
+  }
+  const video = await yanit.json();
+  const durum = typeof video?.status === "number" ? video.status : -1;
+  return { ok: true, hazir: durum === 4, hatali: durum === 5 || durum === 6, bunnyDurum: durum };
+}
+
 /** Yarım kalan/iptal edilen yüklemenin Bunny kaydını temizler (telafi). */
 export async function bunnyVideoSil(videoGuid: string): Promise<boolean> {
   const ortam = ortamDegerleri();

@@ -47,6 +47,9 @@ export default function VideoAkisPage() {
   // dosya tarayıcıdan doğrudan Bunny'ye gider, kimliği sistem yazar.
   const [seciliDosya, setSeciliDosya] = useState<File | null>(null);
   const [yuklemeYuzdesi, setYuklemeYuzdesi] = useState<number | null>(null);
+  // A3: son videonun Bunny işlenme durumu — null: bilinmiyor/sorgulanmadı,
+  // "isleniyor": encode sürüyor (rozet), "hatali": encode başarısız (dürüst uyarı).
+  const [bunnyIslemeDurumu, setBunnyIslemeDurumu] = useState<"isleniyor" | "hatali" | null>(null);
   const [revizyonNotu, setRevizyonNotu] = useState("");
   const [aktifRevizyon, setAktifRevizyon] = useState(false);
   const [acikVideo, setAcikVideo] = useState<string | null>(null);
@@ -116,6 +119,23 @@ export default function VideoAkisPage() {
 
     setVideolar(videolarWithDurum);
     setLoading(false);
+
+    // A3: son videonun Bunny işlenme durumu — kart açılışında tek sorgu, polling yok.
+    // Encode bitmediyse kapak/izleme henüz yok; rozetle dürüstçe söylenir.
+    const sonV = videolarWithDurum[videolarWithDurum.length - 1];
+    setBunnyIslemeDurumu(null);
+    if (sonV?.video_url?.includes("mediadelivery.net")) {
+      try {
+        const res = await fetch(`/videolar/api/bunny-durum?video_id=${sonV.video_id}`);
+        const d = await res.json();
+        if (res.ok && d.bunny_kaydi) {
+          if (d.hatali) setBunnyIslemeDurumu("hatali");
+          else if (!d.hazir) setBunnyIslemeDurumu("isleniyor");
+        }
+      } catch {
+        // durum sorgusu süs değil ama kritik de değil — sessiz geç, rozet çıkmaz
+      }
+    }
   };
 
   useEffect(() => { if (kullanici && senaryo_durum_id) veriCek(); }, [kullanici, senaryo_durum_id]);
@@ -167,6 +187,11 @@ export default function VideoAkisPage() {
       });
     } catch (err: any) {
       hata("Video Bunny'ye yüklenemedi. Tekrar deneyin.", "TUS yükleme", err?.message);
+      // A3 telafisi: vezneden açılan ama hiçbir kayda bağlanmayan Bunny kaydını temizle.
+      fetch("/videolar/api/bunny-yukleme-iptal", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ video_guid: d.video_guid }),
+      }).catch(() => {});
       setGonderLoading(false);
       setYuklemeYuzdesi(null);
       return;
@@ -316,6 +341,22 @@ export default function VideoAkisPage() {
                         }
                       </div>
                       <p className="text-xs text-gray-400 m-0 break-all">{v.video_url}</p>
+                    </div>
+                  )}
+
+                  {/* A3: encode rozeti — yalnız son videoda; mavi = hazırlanıyor dili */}
+                  {v.video_id === sonVideo?.video_id && bunnyIslemeDurumu === "isleniyor" && (
+                    <div className="mx-3 mb-3 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+                      <p className="text-xs text-blue-800 m-0">
+                        Video işleniyor — kapak ve izleme kısa süre içinde hazır olur. Sayfayı daha sonra yenileyin.
+                      </p>
+                    </div>
+                  )}
+                  {v.video_id === sonVideo?.video_id && bunnyIslemeDurumu === "hatali" && (
+                    <div className="mx-3 mb-3 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                      <p className="text-xs text-red-700 m-0">
+                        Video işlenemedi — dosya bozuk olabilir. Lütfen yeniden yükleyin.
+                      </p>
                     </div>
                   )}
 
