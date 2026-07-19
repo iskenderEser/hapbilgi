@@ -39,6 +39,8 @@ IU = çalışan, sistem = şirketin veznesi; A1 o veznenin kuralları:
 ### A3 — Encode durumu (küçük)
 - Bunny işlemeyi bitirmeden izleme açılmayabilir; kartta "video işleniyor" rozeti (Bunny video status sorgusu — kaydet anında + kart açılışında kontrol; sürekli polling yok).
 
+**A3 SONUCU (19.07.2026 — KOD BİTTİ, `1f18454`):** Kart açılışında TEK Bunny durum sorgusu (`GET /videolar/api/bunny-durum` — polling yok): encode sürüyorsa mavi "video işleniyor" rozeti (F-06 kapak gecikmesi bulgusunun çözümü), encode hatasında (status 5/6) kırmızı dürüst uyarı; hazır (status 4) ya da Bunny-dışı/eski kayıtlarda rozet çıkmaz. A2'nin açık ucu kapandı: TUS hatasında vezneden açılan yetim kayıt `POST bunny-yukleme-iptal` ile silinir — güvenlik kuralı: bir kayda bağlanmış GUID SİLİNMEZ, yalnız yetim silinir. Çekirdek eklemeler `lib/video/bunnyYukleme.ts`: `embedUrlGuidCikar` (saf) + `bunnyVideoDurumu`. Üçlü doğrulama temiz; smoke: `embedUrlGuidCikar` mutlu + red. Fiziksel teyit ayrıca yapılmadı — İskender kararı (19.07): beklemeden A4'e geçildi; rozet, olağan kullanımda ilk encode'lu yüklemede kendini gösterecek.
+
 ### A4 — Hazır video akışı (faz 2, ayrı karar)
 - Talep formundaki "hazır video" bugün Supabase storage'a gidiyor; IU indirip Bunny'ye taşıyordu. Aynı doğrudan-Bunny akışına alınması ayrı fazdır — kapsam ve sıra İskender kararı.
 
