@@ -156,3 +156,20 @@ Karar kaydı 2 (18.07, İskender — kod düzeltmesini kendisi yaptı): 4. cüml
 **Durum:** ÇÖZÜM GEREKMEZ (bilinçli kabul) — kapak gecikmesi ayağı A3 kapsamında.
 
 **Durum:** KOD TARAFI BİTTİ — İskender görsel kontrolü bekleniyor (localhost'ta anında görünür). Doğrulama adımları: (1) push sonrası canlıda "Şifremi unuttum" → e-posta → bağlantı → yeni şifre → yeni şifreyle giriş; (2) işaretsiz "Beni hatırla" ile giriş → tarayıcıyı tamamen kapat-aç → login'e düşmeli. Ön koşul: Supabase panelinde Authentication → URL Configuration'da site adresi + `/sifre-yenile` Redirect URL listesinde olmalı (İskender kontrol edecek).
+
+---
+
+### F-07 — Hazır video + hazır soru seti birleşik kolu hiç çalışmıyordu; hazır akış ayrı modüle alındı (19.07.2026)
+
+**Tespit (İskender, teste başlamadan önce akış kontrolü talebi):** Hazır video kolunda hazır soru seti de seçilebiliyor; video yüklemesi sonrası sistemin "toplam kaç soru / video başı kaç soru" işleyişini nasıl yürüteceği belirsizdi — kullanıcı videoyu kendi yüklediği gibi soruları da kendi yüklemek ister.
+
+**Teşhis (kod incelemesi):**
+1. **B-1 (KRİTİK):** "Soru Setini Sisteme İşle" butonu videoyu `videolar.senaryo_durum_id = talep_id` ile arıyordu — zincir talep → senaryo → senaryo_durumu → videolar olduğundan sorgu HİÇBİR ZAMAN kayıt bulamaz; buton her denemede "Video kaydı bulunamadı" verirdi. Ayrıca hazır kolda `soru_seti_durumu` kaydı hiç açılmadığından bu kol yayın bekleyenlerine hiç düşemiyordu.
+2. **B-2 (ORTA):** Hazır seti sisteme işleme adımı IU'daydı; A4 sonrası PM videoyu kendisi yüklerken kendi getirdiği sorular için IU'nun butona basması ve PM'in kendi verisini tekrar onaylaması gerekiyordu.
+3. Parametrelerin işleyişi netleşti: üretici toplam soru sayısını ve video başı soru sayısını talep aşamasında tanımlar; sistem videoya kalıcı atama yazmaz, izleme anında setten video başı sayı kadar rastgele seçer (izle/eclub/eczanem uçları). Hazır set form aşamasında toplam sayıya tam eşitlikle denetlenir.
+
+**Karar (İskender, 19.07):** IU koluna dokunmadan hazır akış kendi grubuna alınır — olası müdahale IU koluna hasar vermez.
+
+**Çözüm (KOD BİTTİ):** Yeni çekirdek modül `lib/hazirVideoSoruSeti/` (zincir kurulumu + parametre kilidi tek noktada; sunucu tarafı, ekrandan bağımsız). Video onayı zinciri modülden kurulur; hazır soru seti varsa sorular OTOMATİK işlenir ve "onaylandı" durumuyla yayın bekleyenlerine düşer (senaryo/videodaki "otomatik onay" deseni). Parametre kilidi sunucuda: hazır set sayısı = toplam soru sayısı, video başı ≤ toplam (Türkçe gerekçeli red). B-1'li buton ve IU işleme adımı kaldırıldı; `PUT/POST hazir-video` URL'leri ve IU üretim hattı (senaryolar/videolar/soru-setleri) hiç değişmedi. Üçlü doğrulama temiz; smoke: `hazirParametreKontrol` mutlu + red.
+
+**Durum:** KOD BİTTİ — fiziksel teyit İskender'de (hazır video + hazır soru setli talep: onay sonrası yayın bekleyenlerine düşmeli, izlemede video başı sayı kadar soru çıkmalı).

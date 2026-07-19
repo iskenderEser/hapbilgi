@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { embedUrlGuidCikar } from "@/lib/video/bunnyYukleme";
+import { hazirZinciriKur } from "@/lib/hazirVideoSoruSeti/zincir";
 
 // PUT: kanonik embed adresini sistem yazar (A4 — yükleme PM formundan doğrudan
 // Bunny'ye gider; adres vezneden döner, istemci URL kurmaz. IU'nun URL girme yolu kalktı.)
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
 
     const { data: talep, error: talepError } = await adminSupabase
       .from("talepler")
-      .select("talep_id, uretici_id, urun_adi, teknik_adi, hazir_video, hazir_video_url, takim_id")
+      .select("talep_id, uretici_id, hazir_video, hazir_video_url, hazir_soru_seti, hazir_soru_seti_verisi, soru_seti_buyuklugu, video_basi_soru_sayisi")
       .eq("talep_id", talep_id)
       .single();
 
@@ -91,79 +92,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ mesaj: "Video reddedildi. Yeni video yüklenebilir." }, { status: 200 });
     }
 
-    // Onaylama — zinciri otomatik oluştur
-    // 1. senaryolar
-    const { data: senaryo, error: senaryoError } = await adminSupabase
-      .from("senaryolar")
-      .insert({
-        talep_id,
-        iu_id: null,
-        senaryo_metni: "[Hazır Video — Senaryo Atlandı]",
-      })
-      .select("senaryo_id")
-      .single();
+    // Onaylama — zincir kurulumu hazır kolun kendi modülünde (lib/hazirVideoSoruSeti):
+    // senaryo → video → soru seti; hazır soru seti varsa sorular otomatik işlenir
+    // ve "onaylandı" durumuyla yayın bekleyenlerine düşer (IU'nun elle işleme adımı kalktı).
+    const zincir = await hazirZinciriKur(adminSupabase, {
+      talep_id: talep.talep_id,
+      hazir_video_url: talep.hazir_video_url,
+      hazir_soru_seti: talep.hazir_soru_seti ?? false,
+      hazir_soru_seti_verisi: talep.hazir_soru_seti_verisi ?? null,
+      soru_seti_buyuklugu: talep.soru_seti_buyuklugu ?? null,
+      video_basi_soru_sayisi: talep.video_basi_soru_sayisi ?? null,
+    }, user.id);
 
-    if (senaryoError || !senaryo) return hataYaniti("Senaryo oluşturulamadı.", "senaryolar tablosu INSERT", senaryoError);
-
-    // 2. senaryo_durumu
-    const { data: senaryoDurum, error: sdError } = await adminSupabase
-      .from("senaryo_durumu")
-      .insert({
-        senaryo_id: senaryo.senaryo_id,
-        durum: "onaylandi",
-        degistiren_id: user.id,
-        notlar: "Hazır video talebi — otomatik onay",
-      })
-      .select("senaryo_durum_id")
-      .single();
-
-    if (sdError || !senaryoDurum) return hataYaniti("Senaryo durumu oluşturulamadı.", "senaryo_durumu tablosu INSERT", sdError);
-
-    // 3. videolar
-    const { data: video, error: videoError } = await adminSupabase
-      .from("videolar")
-      .insert({
-        senaryo_durum_id: senaryoDurum.senaryo_durum_id,
-        iu_id: null,
-        video_url: talep.hazir_video_url,
-        thumbnail_url: null,
-      })
-      .select("video_id")
-      .single();
-
-    if (videoError || !video) return hataYaniti("Video oluşturulamadı.", "videolar tablosu INSERT", videoError);
-
-    // 4. video_durumu
-    const { data: videoDurum, error: vdError } = await adminSupabase
-      .from("video_durumu")
-      .insert({
-        video_id: video.video_id,
-        durum: "onaylandi",
-        degistiren_id: user.id,
-        notlar: "Hazır video talebi — otomatik onay",
-      })
-      .select("video_durum_id")
-      .single();
-
-    if (vdError || !videoDurum) return hataYaniti("Video durumu oluşturulamadı.", "video_durumu tablosu INSERT", vdError);
-
-    // 5. soru_setleri
-    const { data: soruSeti, error: ssError } = await adminSupabase
-      .from("soru_setleri")
-      .insert({
-        video_durum_id: videoDurum.video_durum_id,
-        iu_id: null,
-        sorular: [],
-      })
-      .select("soru_seti_id")
-      .single();
-
-    if (ssError || !soruSeti) return hataYaniti("Soru seti oluşturulamadı.", "soru_setleri tablosu INSERT", ssError);
+    if (!zincir.ok) return hataYaniti(zincir.hata, zincir.adim, zincir.detay ?? null);
 
     return NextResponse.json({
-      mesaj: "Video onaylandı. Soru seti yazım süreci başlayabilir.",
-      soru_seti_id: soruSeti.soru_seti_id,
-      video_durum_id: videoDurum.video_durum_id,
+      mesaj: zincir.soruSetiIslendi
+        ? "Video onaylandı; hazır soru seti otomatik işlendi ve onaylandı."
+        : "Video onaylandı. Soru seti yazım süreci başlayabilir.",
+      soru_seti_id: zincir.soru_seti_id,
+      video_durum_id: zincir.video_durum_id,
+      soru_seti_islendi: zincir.soruSetiIslendi,
     }, { status: 201 });
 
   } catch (err) {

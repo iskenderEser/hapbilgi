@@ -67,7 +67,6 @@ export default function TalepDetayPage() {
   // A3/A4 — hazır videonun encode durumu; tek sorgu, polling yok.
   const [bunnyIslemeDurumu, setBunnyIslemeDurumu] = useState<"isleniyor" | "hatali" | null>(null);
   const [kararLoading, setKararLoading] = useState<"onayla" | "reddet" | null>(null);
-  const [soruSetiIsleLoading, setSoruSetiIsleLoading] = useState(false);
   const [soruSetiAcik, setSoruSetiAcik] = useState(false);
   const dosyaInputRef = useRef<HTMLInputElement>(null);
   const { mesajlar, hata, basari } = useHataMesaji();
@@ -245,48 +244,11 @@ export default function TalepDetayPage() {
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "İşlem gerçekleştirilemedi.", d.adim, d.detay); }
     else {
-      if (karar === "onayla") basari("Video onaylandı. Soru seti yazım süreci başlayabilir.");
+      // Onay mesajı sunucudan gelir — hazır soru seti otomatik işlendiyse bunu söyler.
+      if (karar === "onayla") basari(d.mesaj ?? "Video onaylandı.");
       else { basari("Video reddedildi. Yeni video yükleyebilirsiniz."); setTalep(prev => prev ? { ...prev, hazir_video_url: null } : prev); }
     }
     setKararLoading(null);
-  };
-
-  const handleSoruSetiIsle = async (video_durum_id: string) => {
-    if (!talep?.hazir_soru_seti_verisi?.length) return;
-    setSoruSetiIsleLoading(true);
-
-    // Önce mevcut soru setini bul
-    const supabase = createClient();
-    const { data: soruSetleri } = await supabase
-      .from("soru_setleri")
-      .select("soru_seti_id")
-      .eq("video_durum_id", video_durum_id)
-      .order("created_at", { ascending: false })
-      .limit(1);
-
-    const soruSetiId = soruSetleri?.[0]?.soru_seti_id;
-    if (!soruSetiId) { hata("Soru seti kaydı bulunamadı.", "soru_setleri tablosu SELECT", undefined); setSoruSetiIsleLoading(false); return; }
-
-    // Soru setini güncelle
-    const res = await fetch("/soru-setleri/api", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ soru_seti_id: soruSetiId, sorular: talep.hazir_soru_seti_verisi }),
-    });
-    const d = await res.json();
-    if (!res.ok) { hata(d.hata ?? "Soru seti işlenemedi.", d.adim, d.detay); setSoruSetiIsleLoading(false); return; }
-
-    // Durumu güncelle
-    const res2 = await fetch("/soru-setleri/api/durum", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ soru_seti_id: soruSetiId, durum: "inceleme bekleniyor" }),
-    });
-    const d2 = await res2.json();
-    if (!res2.ok) { hata(d2.hata ?? "Durum güncellenemedi.", d2.adim, d2.detay); }
-    else { basari("PM'in soru seti sisteme işlendi. PM onayı bekleniyor."); }
-
-    setSoruSetiIsleLoading(false);
   };
 
   const rolKucu = (kullanici?.rol ?? "").toLowerCase();
@@ -399,8 +361,8 @@ export default function TalepDetayPage() {
                     <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                   </svg>
                   <span className="text-xs text-blue-800 leading-relaxed">
-                    {isPM && `Bu talep için hazır soru seti yüklenmiştir. ${talep.hazir_soru_seti_verisi.length} soru mevcut — IU soru seti aşamasında bu seti sisteme işleyecektir.`}
-                    {isIU && `PM bu talep için hazır soru seti yüklemiştir. ${talep.hazir_soru_seti_verisi.length} soru mevcut — soru seti aşamasında "Soru Setini Sisteme İşle" butonunu kullanabilirsiniz.`}
+                    {isPM && `Bu talep için hazır soru seti yüklenmiştir. ${talep.hazir_soru_seti_verisi.length} soru mevcut — video onaylandığında sistem seti otomatik işler.`}
+                    {isIU && `PM bu talep için hazır soru seti yüklemiştir. ${talep.hazir_soru_seti_verisi.length} soru mevcut — video onayıyla birlikte sistem otomatik işler.`}
                   </span>
                 </div>
                 <button
@@ -527,32 +489,8 @@ export default function TalepDetayPage() {
                 Senaryo Yaz
               </button>
             )}
-            {isIU && talep.hazir_video && talep.hazir_soru_seti && talep.hazir_soru_seti_verisi && (
-              <button
-                onClick={async () => {
-                  // video_durum_id'yi bul
-                  const supabase = createClient();
-                  const { data: videolar } = await supabase
-                    .from("videolar")
-                    .select("video_id")
-                    .eq("senaryo_durum_id", talep_id)
-                    .limit(1);
-                  if (!videolar?.[0]) { hata("Video kaydı bulunamadı.", "videolar tablosu SELECT", undefined); return; }
-                  const { data: vd } = await supabase
-                    .from("video_durumu")
-                    .select("video_durum_id")
-                    .eq("video_id", videolar[0].video_id)
-                    .order("created_at", { ascending: false })
-                    .limit(1);
-                  if (!vd?.[0]) { hata("Video durumu bulunamadı.", "video_durumu tablosu SELECT", undefined); return; }
-                  await handleSoruSetiIsle(vd[0].video_durum_id);
-                }}
-                disabled={soruSetiIsleLoading}
-                className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer"
-                style={{ background: "#56aeff", opacity: soruSetiIsleLoading ? 0.6 : 1, fontFamily: "'Nunito', sans-serif" }}>
-                {soruSetiIsleLoading ? "İşleniyor..." : "Soru Setini Sisteme İşle"}
-              </button>
-            )}
+            {/* Hazır soru seti IU'suz işlenir (lib/hazirVideoSoruSeti): video onayı seti
+                otomatik yazar ve onaylar — eski "Soru Setini Sisteme İşle" adımı kalktı. */}
             {isIU && talep.hazir_video && !talep.hazir_soru_seti && (
               <button disabled className="bg-gray-100 text-gray-400 border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-not-allowed"
                 style={{ fontFamily: "'Nunito', sans-serif" }}>

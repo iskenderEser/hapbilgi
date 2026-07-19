@@ -486,6 +486,36 @@
       "tablo": "eczanem_urun_tarifeleri"
     },
     {
+      "dosya": "lib/hazirVideoSoruSeti/zincir.ts",
+      "satir": 50,
+      "tablo": "senaryolar"
+    },
+    {
+      "dosya": "lib/hazirVideoSoruSeti/zincir.ts",
+      "satir": 65,
+      "tablo": "senaryo_durumu"
+    },
+    {
+      "dosya": "lib/hazirVideoSoruSeti/zincir.ts",
+      "satir": 81,
+      "tablo": "videolar"
+    },
+    {
+      "dosya": "lib/hazirVideoSoruSeti/zincir.ts",
+      "satir": 97,
+      "tablo": "video_durumu"
+    },
+    {
+      "dosya": "lib/hazirVideoSoruSeti/zincir.ts",
+      "satir": 114,
+      "tablo": "soru_setleri"
+    },
+    {
+      "dosya": "lib/hazirVideoSoruSeti/zincir.ts",
+      "satir": 131,
+      "tablo": "soru_seti_durumu"
+    },
+    {
       "dosya": "lib/hbligi/getGenelLig.ts",
       "satir": 51,
       "tablo": "bolgeler"
@@ -1557,23 +1587,8 @@
     },
     {
       "dosya": "app/talepler/[talep_id]/page.tsx",
-      "satir": 95,
+      "satir": 94,
       "tablo": "talepler"
-    },
-    {
-      "dosya": "app/talepler/[talep_id]/page.tsx",
-      "satir": 260,
-      "tablo": "soru_setleri"
-    },
-    {
-      "dosya": "app/talepler/[talep_id]/page.tsx",
-      "satir": 535,
-      "tablo": "videolar"
-    },
-    {
-      "dosya": "app/talepler/[talep_id]/page.tsx",
-      "satir": 541,
-      "tablo": "video_durumu"
     },
     {
       "dosya": "app/talepler/api/route.ts",
@@ -2182,48 +2197,23 @@
     },
     {
       "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 31,
+      "satir": 32,
       "tablo": "talepler"
     },
     {
       "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 41,
+      "satir": 42,
       "tablo": "talepler"
     },
     {
       "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 73,
+      "satir": 74,
       "tablo": "talepler"
     },
     {
       "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 85,
+      "satir": 86,
       "tablo": "talepler"
-    },
-    {
-      "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 96,
-      "tablo": "senaryolar"
-    },
-    {
-      "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 109,
-      "tablo": "senaryo_durumu"
-    },
-    {
-      "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 123,
-      "tablo": "videolar"
-    },
-    {
-      "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 137,
-      "tablo": "video_durumu"
-    },
-    {
-      "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 151,
-      "tablo": "soru_setleri"
     },
     {
       "dosya": "app/videolar/api/bunny-durum/route.ts",
@@ -4027,6 +4017,36 @@
       "tablo": "eczanem_urun_tarifeleri"
     },
     {
+      "dosya": "lib/hazirVideoSoruSeti/zincir.ts",
+      "satir": 50,
+      "ham": "senaryo_id",
+      "tablo": "senaryolar"
+    },
+    {
+      "dosya": "lib/hazirVideoSoruSeti/zincir.ts",
+      "satir": 65,
+      "ham": "senaryo_durum_id",
+      "tablo": "senaryo_durumu"
+    },
+    {
+      "dosya": "lib/hazirVideoSoruSeti/zincir.ts",
+      "satir": 81,
+      "ham": "video_id",
+      "tablo": "videolar"
+    },
+    {
+      "dosya": "lib/hazirVideoSoruSeti/zincir.ts",
+      "satir": 97,
+      "ham": "video_durum_id",
+      "tablo": "video_durumu"
+    },
+    {
+      "dosya": "lib/hazirVideoSoruSeti/zincir.ts",
+      "satir": 114,
+      "ham": "soru_seti_id",
+      "tablo": "soru_setleri"
+    },
+    {
       "dosya": "lib/hbligi/getGenelLig.ts",
       "satir": 51,
       "ham": "bolge_id, bolge_adi",
@@ -5120,27 +5140,9 @@
     },
     {
       "dosya": "app/talepler/[talep_id]/page.tsx",
-      "satir": 95,
+      "satir": 94,
       "ham": "talep_id, uretici_id, hedef_rol, aciklama, created_at, dosya_urls, hazir_video, hazir_video_url, hazir_soru_seti, hazir_soru_seti_verisi, urun_id, teknik_id, urunler(urun_adi), teknikler(teknik_adi)",
       "tablo": "talepler"
-    },
-    {
-      "dosya": "app/talepler/[talep_id]/page.tsx",
-      "satir": 260,
-      "ham": "soru_seti_id",
-      "tablo": "soru_setleri"
-    },
-    {
-      "dosya": "app/talepler/[talep_id]/page.tsx",
-      "satir": 535,
-      "ham": "video_id",
-      "tablo": "videolar"
-    },
-    {
-      "dosya": "app/talepler/[talep_id]/page.tsx",
-      "satir": 541,
-      "ham": "video_durum_id",
-      "tablo": "video_durumu"
     },
     {
       "dosya": "app/talepler/api/route.ts",
@@ -5780,45 +5782,15 @@
     },
     {
       "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 31,
+      "satir": 32,
       "ham": "talep_id, uretici_id, hazir_video",
       "tablo": "talepler"
     },
     {
       "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 73,
-      "ham": "talep_id, uretici_id, urun_adi, teknik_adi, hazir_video, hazir_video_url, takim_id",
+      "satir": 74,
+      "ham": "talep_id, uretici_id, hazir_video, hazir_video_url, hazir_soru_seti, hazir_soru_seti_verisi, soru_seti_buyuklugu, video_basi_soru_sayisi",
       "tablo": "talepler"
-    },
-    {
-      "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 96,
-      "ham": "senaryo_id",
-      "tablo": "senaryolar"
-    },
-    {
-      "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 109,
-      "ham": "senaryo_durum_id",
-      "tablo": "senaryo_durumu"
-    },
-    {
-      "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 123,
-      "ham": "video_id",
-      "tablo": "videolar"
-    },
-    {
-      "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 137,
-      "ham": "video_durum_id",
-      "tablo": "video_durumu"
-    },
-    {
-      "dosya": "app/talepler/api/hazir-video/route.ts",
-      "satir": 151,
-      "ham": "soru_seti_id",
-      "tablo": "soru_setleri"
     },
     {
       "dosya": "app/videolar/api/bunny-durum/route.ts",
