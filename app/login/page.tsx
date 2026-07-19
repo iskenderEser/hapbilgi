@@ -14,6 +14,10 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import { beniHatirlaKaydet } from "@/lib/utils/beniHatirla";
 
 const BORDO = "#bc2d0d";
+// F-04 (18.07.2026): giriş ekranı renk/yerleşim talebi — sol %50 açık zemin
+// (#f3f4f7) + logo sol üst-orta + metin/ikon #737373 (Eczanem kalbi bordo),
+// sağ %50 #f7f7f8 + "Giriş" başlığı. Madde listesi: docs/fiziksel_tespitler_ve_cozumler.md F-04.
+const GRI_METIN = "#737373";
 
 // Sol paneldeki modül tanıtımları — adlar/ifadeler İskender onaylı (13.07.2026).
 // İkon dili: üç Club kendi baş harfiyle (tek desen), Eczanem kalple ayrışır.
@@ -37,8 +41,9 @@ const MODULLER = [
   {
     ad: "Eczanem",
     aciklama: "Eczanenin danışanlarının bilgilenme modülü",
+    // F-04/5: kalbin çizgi rengi bordo — currentColor değil, sabit.
     ikon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#bc2d0d" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 20s-7-4.4-9.2-8.8C1.5 8.4 3.4 5 6.6 5 8.7 5 10.5 6.3 12 8c1.5-1.7 3.3-3 5.4-3 3.2 0 5.1 3.4 3.8 6.2C19 15.6 12 20 12 20z" />
       </svg>
     ),
@@ -145,15 +150,17 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row" style={{ fontFamily: "'Nunito', sans-serif" }}>
 
-      {/* Sol panel — marka anlatısı: düz zemin, baykuş grisi (#737373 — logodan
-          örneklendi; projenin GRI_METIN tonuyla aynı), başlık + dört modül */}
-      <div className="md:w-1/2 lg:w-[54%] flex items-center justify-center px-6 py-10 md:px-12 lg:px-16"
-        style={{ background: "#737373" }}>
+      {/* Sol panel — marka anlatısı (F-04): %50 genişlik, açık zemin #f3f4f7,
+          logo sol üst-orta, metin ve ikonlar #737373 (Eczanem kalbi bordo) */}
+      <div className="md:w-1/2 flex items-center justify-center px-6 py-10 md:px-12 lg:px-16"
+        style={{ background: "#f3f4f7" }}>
         <div className="max-w-md w-full">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-2">
+          <img src="/logo.png" alt="hapbilgi" className="object-contain mx-auto mb-8" style={{ height: 144 }} />
+
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-2" style={{ color: GRI_METIN }}>
             Öğrenmenin V Hali
           </h1>
-          <p className="text-base lg:text-lg mb-8 md:mb-10" style={{ color: "rgba(255,255,255,0.9)" }}>
+          <p className="text-base lg:text-lg mb-8 md:mb-10" style={{ color: GRI_METIN }}>
             Öğretirken Kazandırır
           </p>
 
@@ -163,15 +170,15 @@ export default function LoginPage() {
                 <span className="flex-shrink-0 flex items-center justify-center rounded-lg"
                   style={{
                     width: 38, height: 38,
-                    background: "rgba(255,255,255,0.10)",
-                    border: "1px solid rgba(255,255,255,0.18)",
-                    color: "rgba(255,255,255,0.9)",
+                    background: "rgba(115,115,115,0.08)",
+                    border: "1px solid rgba(115,115,115,0.22)",
+                    color: GRI_METIN,
                   }}>
                   {m.ikon}
                 </span>
                 <div className="min-w-0">
-                  <div className="text-base font-bold text-white">{m.ad}</div>
-                  <div className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.88)" }}>{m.aciklama}</div>
+                  <div className="text-base font-bold" style={{ color: GRI_METIN }}>{m.ad}</div>
+                  <div className="text-sm leading-relaxed" style={{ color: GRI_METIN }}>{m.aciklama}</div>
                 </div>
               </div>
             ))}
@@ -179,10 +186,14 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Sağ panel — giriş */}
-      <div className="flex-1 bg-white flex flex-col items-center justify-center px-6 py-10 md:py-6">
+      {/* Sağ panel — giriş (F-04): %50 genişlik, zemin #f7f7f8, logo sola taşındı,
+          form bloğunun üstünde sola yaslı bold "Giriş" başlığı */}
+      <div className="md:w-1/2 flex flex-col items-center justify-center px-6 py-10 md:py-6"
+        style={{ background: "#f7f7f8" }}>
         <div className="w-full max-w-sm">
-          <img src="/logo.png" alt="hapbilgi" className="object-contain mx-auto mb-8" style={{ height: 144 }} />
+          {!sifirlamaAcik && (
+            <h2 className="text-xl font-bold text-left mb-6" style={{ color: GRI_METIN }}>Giriş</h2>
+          )}
 
           {sifirlamaAcik ? (
           /* F-03/A: şifre sıfırlama görünümü — giriş formuyla yer değiştirir */
