@@ -16,9 +16,14 @@ IU video yükleme akışından Bunny paneli ve link taşıma tümüyle çıkar: 
 - Bunny Stream API ile video kaydı açma (`POST /library/{id}/videos`) ve TUS imza formülünün (SHA256: library API key + video GUID + son kullanma) küçük bir dosyayla uçtan uca denenmesi. Test, İskender'in test hesabında (hb2026 / 707975) yapılır.
 - Env zaten hazır: `BUNNY_LIBRARY_ID`, `BUNNY_API_KEY`, `NEXT_PUBLIC_BUNNY_PULL_ZONE` (19.07'de hb2026 değerlerine eşitlendi).
 
-### A1 — Sunucu ucu: yükleme başlatma
-- `POST /videolar/api/bunny-yukleme-baslat`: IU rol kontrolü; Bunny'de video kaydı açar (başlık: ürün/senaryo adından), TUS imzası üretir; `{video_guid, imza, sonKullanma, libraryId}` döner. API anahtarı istemciye ASLA inmez.
-- Türkçe hata yönetimi (Bunny erişilemedi / limit / yetki).
+### A1 — Sunucu ucu: yükleme başlatma ("vezne" modeli — İskender çerçevesi, 19.07)
+IU = çalışan, sistem = şirketin veznesi; A1 o veznenin kuralları:
+1. **Kimlik ve sıra kontrolü:** (a) oturum + rol gerçekten IU mu; (b) bu videonun sırası gerçekten yükleme mi (durum "revizyon bekleniyor" ya da ilk yükleme). Yetkisiz veya sırası gelmemiş istek Türkçe gerekçeyle reddedilir.
+2. **Kaydı şirket açar, adı şirket koyar:** Bunny'deki video kaydını sistem açar, adı sistem verir (ör. `hepifarma_normavas_v2`) — kütüphane düzeni çalışanın adlandırma disiplinine emanet edilmez.
+3. **Anahtar kasada, çalışana günlük kart:** API anahtarı yalnız sunucuda; IU'nun tarayıcısına inen şey TEK videoya özel, SÜRELİ yükleme imzası. Başka kapı açmaz; IU değişse Bunny tarafında iptal edilecek şey yoktur.
+4. **Tutanak:** kim, hangi senaryo, hangi video kimliği, ne zaman — Supabase'e işlenir.
+5. **Çalışan yarın robot olabilir:** uç, ekrana değil sözleşmeye bağlı — ileride yapay IU aynı ucu aynı kurallarla çağırır ("insan-şimdilik" notunun teknik karşılığı).
+- Uç: `POST /videolar/api/bunny-yukleme-baslat` → `{video_guid, imza, sonKullanma, libraryId}`. Türkçe hata yönetimi (Bunny erişilemedi / limit / yetki).
 
 ### A2 — İstemci: dosya seç + doğrudan yükleme
 - IU ekranındaki URL alanı yerine "Video dosyası seç" (+ sürükle-bırak); `tus-js-client` ile tarayıcıdan Bunny'ye doğrudan, kaldığı yerden devam edebilen yükleme; ilerleme çubuğu (%).
