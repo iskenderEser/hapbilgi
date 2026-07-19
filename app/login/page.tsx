@@ -171,7 +171,7 @@ export default function LoginPage() {
 
           {/* Positioning-why cümlesi (İskender, 18.07.2026): "Öğrenmenin V Hali" kalktı,
               slogan başlık oldu. "Kazanmak" tanımı: docs/fiziksel_tespitler_ve_cozumler.md F-04 Ek 3. */}
-          <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold leading-tight mb-8 md:mb-10" style={{ color: GRI_METIN }}>
+          <h1 className="text-2xl md:text-3xl lg:text-3xl font-extrabold leading-tight mb-8 md:mb-10" style={{ color: GRI_METIN }}>
             Öğretirken Kazandırır
           </h1>
 
