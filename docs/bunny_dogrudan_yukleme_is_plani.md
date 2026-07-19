@@ -13,8 +13,10 @@ IU video yükleme akışından Bunny paneli ve link taşıma tümüyle çıkar: 
 ## Aşamalar
 
 ### A0 — Altyapı teyidi (keşif)
-- Bunny Stream API ile video kaydı açma (`POST /library/{id}/videos`) ve TUS imza formülünün (SHA256: library API key + video GUID + son kullanma) küçük bir dosyayla uçtan uca denenmesi. Test, İskender'in test hesabında (hb2026 / 707975) yapılır.
+- Bunny Stream API ile video kaydı açma (`POST /library/{id}/videos`) ve TUS imza formülünün (SHA256: library_id + api_key + expiration + video_guid) küçük bir dosyayla uçtan uca denenmesi. Test, İskender'in test hesabında (hb2026 / 707975) yapılır.
 - Env zaten hazır: `BUNNY_LIBRARY_ID`, `BUNNY_API_KEY`, `NEXT_PUBLIC_BUNNY_PULL_ZONE` (19.07'de hb2026 değerlerine eşitlendi).
+
+**A0 SONUCU (19.07.2026 — koşuldu):** 5 adımdan 4'ü TEYİT: API ile kayıt açma ✅ · imza üretimi + TUS oturum açılışı (201) ✅ · bozuk imzanın reddi (401) ✅ · API ile silme ✅. Bunny planlanan esnekliği SUNUYOR; anahtar-kasada/süreli-imza modeli çalışıyor. Tek açık uç: veri aktarım adımı (TUS PATCH) el yapımı istekte 400 aldı — güçlü şüphe chunked gövde/Content-Length ayrıntısı; `tus-js-client` bunu kendiliğinden doğru yapar. Teyidin şimdi mi (tek deneme) A2'de mi yapılacağı İskender kararında. Bunny tarafı temiz bırakıldı (tüm test kayıtları silindi; imza formülü doğrulandı ve A1'de bu haliyle kullanılacak).
 
 ### A1 — Sunucu ucu: yükleme başlatma ("vezne" modeli — İskender çerçevesi, 19.07)
 IU = çalışan, sistem = şirketin veznesi; A1 o veznenin kuralları:
