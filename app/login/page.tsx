@@ -19,28 +19,32 @@ const BORDO = "#bc2d0d";
 // sağ %50 #f7f7f8 + "Giriş" başlığı. Madde listesi: docs/fiziksel_tespitler_ve_cozumler.md F-04.
 const GRI_METIN = "#737373";
 
-// Sol paneldeki modül tanıtımları — adlar/ifadeler İskender onaylı (13.07.2026).
+// Sol paneldeki modül tanıtımları — cümleler İskender'le birlikte yazıldı (18.07.2026).
+// Kalıp: "amaç + İÇİN + hedef kitle + yüklem"; değer zinciri sırası temsilci →
+// lider → eczane → danışan. Eczanem satırında açık kazanç vaadi BİLİNÇLİ yok:
+// kamuya açık alanda eczane lehine doğrudan fayda yazılamaz (rekabet/mevzuat
+// hassasiyeti, İskender kararı) — "öğrenmeyi teşvik" zımni faydadır.
 // İkon dili: üç Club kendi baş harfiyle (tek desen), Eczanem kalple ayrışır.
 // ("+" bilinçli kullanılmadı — eczacılık bağlamında yanlış anlaşılabilir.)
 const MODULLER = [
   {
     ad: "T-Club",
-    aciklama: "Temsilcilerin sürekli öğrenme modülü",
+    aciklama: "Öğrenmenin sürekliliği için temsilcilere fırsatlar sunar",
     ikon: <span className="text-base font-extrabold">T</span>,
   },
   {
     ad: "C-Club",
-    aciklama: "Değişim liderlerinin modülü",
+    aciklama: "Değişimin sürdürülebilirliği için liderlerin öğrenmesini destekler",
     ikon: <span className="text-base font-extrabold">C</span>,
   },
   {
     ad: "E-Club",
-    aciklama: "Eczanelere özel tanıtım modülü",
+    aciklama: "Değer yaratan bilgiye ulaştırmak için eczaneleri motive eder",
     ikon: <span className="text-base font-extrabold">E</span>,
   },
   {
     ad: "Eczanem",
-    aciklama: "Eczanenin danışanlarının bilgilenme modülü",
+    aciklama: "Güvenilir ürün bilgisine eczaneler aracılığıyla ulaşılması için danışanların öğrenmesini teşvik eder",
     // F-04/5: kalbin çizgi rengi bordo — currentColor değil, sabit.
     ikon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#bc2d0d" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
