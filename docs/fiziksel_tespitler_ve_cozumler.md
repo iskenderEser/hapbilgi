@@ -98,4 +98,11 @@
 
 **Ek (18.07):** Logo, gömülü beyaz zemini yüzünden açık panelde kutu gibi patladı — İskender onayıyla Code, dış beyazı kenardan flood-fill ile şeffaflaştırdı (baykuş içi beyazlar korundu); `public/logo-acik-zemin.png` yalnız login sol paneline bağlı, `logo.png` beyaz zeminli sayfalarda aynen (`97324a8`).
 
+**Ek 2 (18.07) — hizalama ince ayarları ve başlık oranı:** İskender görsel kontrolle iki tur ince ayar verdi (`2ab37d3` → `d6209f8` → `b233e16`: sol blok −75px, sağ blok +60px — "Giriş", "Öğretirken Kazandırır" hizasında). H1 font oranlarını İskender kendisi küçülttü: `text-2xl / md:text-3xl / lg:text-4xl` (24/30/36px) — kayda geçirildi.
+
+**Ek 3 (18.07) — logo ve başlık değişim talebi (İskender):**
+1. Logoda "hapbilgi" markasının altındaki **v-learning yazısı kalkacak** (Code kaldırabildiğini teyit etti — şeffaf varyant üzerinde bölge temizliği).
+2. **"Öğrenmenin V Hali" silinecek**; yerine positioning-why cümlesi olarak **"Öğretirken Kazandırır"** geçecek (niçin HapBilgi'yi satın alayım sorusunun cevabı).
+3. Bilgi amaçlı kayıt — **"kazanmak" tanımı** (İskender, 18.07.2026): Bilgi (tüm roller) · Prestij (şirket nezdinde UTT ve BM ve takım) · Ölçebilme (ölçebilme kazancı — doğruyu savunabilme) · Hediye (store'lar) · Ayrıcalık (eczanelerin E-Club'a girebilme kazancı — izle, puan al, hediye al ve danışan ekleyebilme avantajı) · İndirim (danışanların güvenilir ürünü indirimli alma kazancı).
+
 **Durum:** KOD TARAFI BİTTİ — İskender görsel kontrolü bekleniyor (localhost'ta anında görünür). Doğrulama adımları: (1) push sonrası canlıda "Şifremi unuttum" → e-posta → bağlantı → yeni şifre → yeni şifreyle giriş; (2) işaretsiz "Beni hatırla" ile giriş → tarayıcıyı tamamen kapat-aç → login'e düşmeli. Ön koşul: Supabase panelinde Authentication → URL Configuration'da site adresi + `/sifre-yenile` Redirect URL listesinde olmalı (İskender kontrol edecek).

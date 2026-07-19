@@ -161,12 +161,11 @@ export default function LoginPage() {
               kutu gibi görünüyordu; logo.png beyaz zeminli sayfalarda kalmaya devam eder */}
           <img src="/logo-acik-zemin.png" alt="hapbilgi" className="object-contain mx-auto mb-8" style={{ height: 144 }} />
 
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight mb-2" style={{ color: GRI_METIN }}>
-            Öğrenmenin V Hali
-          </h1>
-          <p className="text-base lg:text-lg mb-8 md:mb-10" style={{ color: GRI_METIN }}>
+          {/* Positioning-why cümlesi (İskender, 18.07.2026): "Öğrenmenin V Hali" kalktı,
+              slogan başlık oldu. "Kazanmak" tanımı: docs/fiziksel_tespitler_ve_cozumler.md F-04 Ek 3. */}
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold leading-tight mb-8 md:mb-10" style={{ color: GRI_METIN }}>
             Öğretirken Kazandırır
-          </p>
+          </h1>
 
           <div className="flex flex-col gap-4 md:gap-5">
             {MODULLER.map((m) => (
