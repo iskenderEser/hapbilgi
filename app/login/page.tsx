@@ -154,7 +154,9 @@ export default function LoginPage() {
           logo sol üst-orta, metin ve ikonlar #737373 (Eczanem kalbi bordo) */}
       <div className="md:w-1/2 flex items-center justify-center px-6 py-10 md:px-12 lg:px-16"
         style={{ background: "#f3f4f7" }}>
-        <div className="max-w-md w-full">
+        {/* F-04 hizalama: masaüstünde sol blok 3cm yukarı, sağ blok 3cm aşağı —
+            metin alanının orta çizgisi giriş alanının ekseniyle çakışır (İskender, ekran görseliyle) */}
+        <div className="max-w-md w-full md:-translate-y-[113px]">
           {/* F-04: şeffaf zeminli varyant — beyaz gömülü logo.png açık zeminde
               kutu gibi görünüyordu; logo.png beyaz zeminli sayfalarda kalmaya devam eder */}
           <img src="/logo-acik-zemin.png" alt="hapbilgi" className="object-contain mx-auto mb-8" style={{ height: 144 }} />
@@ -192,7 +194,7 @@ export default function LoginPage() {
           form bloğunun üstünde sola yaslı bold "Giriş" başlığı */}
       <div className="md:w-1/2 flex flex-col items-center justify-center px-6 py-10 md:py-6"
         style={{ background: "#f7f7f8" }}>
-        <div className="w-full max-w-sm">
+        <div className="w-full max-w-sm md:translate-y-[113px]">
           {!sifirlamaAcik && (
             <h2 className="text-xl font-bold text-left mb-6" style={{ color: GRI_METIN }}>Giriş</h2>
           )}
