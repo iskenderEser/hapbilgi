@@ -11,6 +11,7 @@ import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 import { HedefRolBant } from "@/components/HedefRolBant";
 import type { HedefRol } from "@/app/talepler/_types";
 import { useAuth } from "@/app/providers/AuthProvider";
+import * as tus from "tus-js-client";
 
 interface Video {
   video_id: string;
@@ -42,7 +43,10 @@ export default function VideoAkisPage() {
   const [videolar, setVideolar] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
   const [gonderLoading, setGonderLoading] = useState(false);
-  const [videoUrl, setVideoUrl] = useState("");
+  // A2 (Bunny doğrudan yükleme): IU artık link yapıştırmaz, dosya seçer —
+  // dosya tarayıcıdan doğrudan Bunny'ye gider, kimliği sistem yazar.
+  const [seciliDosya, setSeciliDosya] = useState<File | null>(null);
+  const [yuklemeYuzdesi, setYuklemeYuzdesi] = useState<number | null>(null);
   const [revizyonNotu, setRevizyonNotu] = useState("");
   const [aktifRevizyon, setAktifRevizyon] = useState(false);
   const [acikVideo, setAcikVideo] = useState<string | null>(null);
@@ -127,26 +131,64 @@ export default function VideoAkisPage() {
   const iuGonderebilir = isIU && (!sonVideo || sonVideo.son_durum === "revizyon bekleniyor" || !sonVideo.video_url);
   const revizyonSayisi = videolar.filter(v => v.son_durum === "revizyon bekleniyor").length;
 
+  // A2 — Bunny doğrudan yükleme: (1) vezneden izin al, (2) dosyayı tarayıcıdan
+  // doğrudan Bunny'ye TUS ile yükle (kesintiden devam edebilir), (3) kanonik embed
+  // adresini sisteme yazdır, durumu ilerlet. Link kavramı IU hayatından çıktı.
   const handleIuGonder = async () => {
-    if (!videoUrl.trim() || !sonVideo) return;
+    if (!seciliDosya || !sonVideo) return;
     setGonderLoading(true);
-    const res = await fetch("/videolar/api", {
-      method: "PUT", headers: { "Content-Type": "application/json" },
-      // F-05: thumbnail elle girilmez — kapak her zaman video linkinden otomatik üretilir
-      // (thumbnailUrlUret, YouTube davranışı; İskender kararı 19.07.2026). Kolon eski
-      // kayıtların elle girilmiş kapakları için okunmaya devam eder.
-      body: JSON.stringify({ video_id: sonVideo.video_id, video_url: videoUrl.trim(), thumbnail_url: null }),
+
+    // 1) Vezne: kimlik + sıra kontrolü + Bunny kaydı + süreli imza
+    const res = await fetch("/videolar/api/bunny-yukleme-baslat", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ video_id: sonVideo.video_id }),
     });
     const d = await res.json();
-    if (!res.ok) { hata(d.hata ?? "Video URL kaydedilemedi.", d.adim, d.detay); setGonderLoading(false); return; }
-    const res2 = await fetch("/videolar/api/durum", {
+    if (!res.ok) { hata(d.hata ?? "Yükleme başlatılamadı.", d.adim, d.detay); setGonderLoading(false); return; }
+
+    // 2) Doğrudan Bunny'ye — dosya bizim sunucuya uğramaz
+    try {
+      await new Promise<void>((tamamla, reddet) => {
+        const yukleme = new tus.Upload(seciliDosya, {
+          endpoint: d.tus_endpoint,
+          retryDelays: [0, 1000, 3000, 5000],
+          headers: {
+            AuthorizationSignature: d.imza,
+            AuthorizationExpire: String(d.son_kullanma),
+            VideoId: d.video_guid,
+            LibraryId: String(d.library_id),
+          },
+          metadata: { filetype: seciliDosya.type, title: d.baslik },
+          onError: reddet,
+          onProgress: (yuklenen, toplam) => setYuklemeYuzdesi(Math.round((yuklenen / toplam) * 100)),
+          onSuccess: () => tamamla(),
+        });
+        yukleme.start();
+      });
+    } catch (err: any) {
+      hata("Video Bunny'ye yüklenemedi. Tekrar deneyin.", "TUS yükleme", err?.message);
+      setGonderLoading(false);
+      setYuklemeYuzdesi(null);
+      return;
+    }
+
+    // 3) Kimliği sistem yazar (kanonik embed adresi vezneden geldi; kapak otomatik — F-05)
+    const res2 = await fetch("/videolar/api", {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ video_id: sonVideo.video_id, video_url: d.embed_url, thumbnail_url: null }),
+    });
+    const d2 = await res2.json();
+    if (!res2.ok) { hata(d2.hata ?? "Video kaydedilemedi.", d2.adim, d2.detay); setGonderLoading(false); setYuklemeYuzdesi(null); return; }
+
+    const res3 = await fetch("/videolar/api/durum", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ video_id: sonVideo.video_id, durum: "inceleme bekleniyor" }),
     });
-    const d2 = await res2.json();
-    if (!res2.ok) { hata(d2.hata ?? "Durum kaydedilemedi.", d2.adim, d2.detay); }
-    else basari("Video PM'e gönderildi.");
-    setVideoUrl("");
+    const d3 = await res3.json();
+    if (!res3.ok) { hata(d3.hata ?? "Durum kaydedilemedi.", d3.adim, d3.detay); }
+    else basari("Video yüklendi ve PM'e gönderildi.");
+    setSeciliDosya(null);
+    setYuklemeYuzdesi(null);
     await veriCek();
     setGonderLoading(false);
   };
@@ -337,22 +379,34 @@ export default function VideoAkisPage() {
             </div>
           )}
 
-          {/* IU URL girişi */}
+          {/* IU video yükleme (A2 — Bunny doğrudan): link değil dosya; Bunny paneli IU hayatından çıktı */}
           {iuGonderebilir && (
             <div className="border-t border-gray-100 px-4 md:px-5 py-4 bg-gray-50">
-              {/* F-05: tek alan — Direct play URL. Thumbnail alanı kaldırıldı,
-                  kapak videodan otomatik üretilir; ikinci alan IU'yu yanıltıyordu. */}
-              <input
-                type="text" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)}
-                placeholder="Bunny.net video linki (Direct play URL)..."
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-2.5"
-                style={{ fontFamily: "'Nunito', sans-serif" }}
-              />
+              <label className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 cursor-pointer mb-2.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                <span className="font-semibold">{seciliDosya ? seciliDosya.name : "Video dosyası seç"}</span>
+                <input
+                  type="file" accept="video/*" className="hidden"
+                  onChange={(e) => setSeciliDosya(e.target.files?.[0] ?? null)}
+                />
+              </label>
+
+              {yuklemeYuzdesi !== null && (
+                <div className="mb-2.5">
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div className="h-full rounded-full transition-all" style={{ width: `${yuklemeYuzdesi}%`, background: "#56aeff" }} />
+                  </div>
+                  <p className="text-xs text-gray-500 m-0 mt-1">Bunny'ye yükleniyor... %{yuklemeYuzdesi}</p>
+                </div>
+              )}
+
               <div className="flex justify-end">
-                <button onClick={handleIuGonder} disabled={!videoUrl.trim() || gonderLoading}
+                <button onClick={handleIuGonder} disabled={!seciliDosya || gonderLoading}
                   className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer"
-                  style={{ background: "#56aeff", opacity: !videoUrl.trim() ? 0.5 : 1, fontFamily: "'Nunito', sans-serif" }}>
-                  {gonderLoading ? "Gönderiliyor..." : "Gönder"}
+                  style={{ background: "#56aeff", opacity: !seciliDosya || gonderLoading ? 0.5 : 1, fontFamily: "'Nunito', sans-serif" }}>
+                  {gonderLoading ? (yuklemeYuzdesi !== null ? `Yükleniyor... %${yuklemeYuzdesi}` : "Gönderiliyor...") : "Yükle ve Gönder"}
                 </button>
               </div>
             </div>
