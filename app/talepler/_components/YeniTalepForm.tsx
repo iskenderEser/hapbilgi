@@ -183,6 +183,7 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
               bekleyen={formu.bekleyenVideo}
               onSec={formu.handleVideoSec}
               onSil={formu.handleBekleyenVideoSil}
+              yuklemeYuzdesi={formu.videoYuklemeYuzdesi}
             />
           )}
 
@@ -217,7 +218,9 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
             }}
           >
             {formu.dosyaYukleniyor
-              ? "Dosyalar yükleniyor..."
+              ? formu.videoYuklemeYuzdesi !== null
+                ? `Video yükleniyor... %${formu.videoYuklemeYuzdesi}`
+                : "Dosyalar yükleniyor..."
               : formu.formLoading
               ? "Gönderiliyor..."
               : "Talep Oluştur"}

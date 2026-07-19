@@ -10,6 +10,7 @@ import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { guvenliDosyaAdi } from "@/lib/utils/guvenliDosyaAdi";
 import { HedefRolBant } from "@/components/HedefRolBant";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
 
 interface Talep {
   talep_id: string;
@@ -59,8 +60,12 @@ export default function TalepDetayPage() {
   const [dosyaYukleniyor, setDosyaYukleniyor] = useState(false);
   const [siliniyor, setSiliniyor] = useState<string | null>(null);
   const [goruntuleniyorUrl, setGoruntuleniyorUrl] = useState<string | null>(null);
-  const [hazirVideoUrl, setHazirVideoUrl] = useState("");
-  const [urlKaydediliyor, setUrlKaydediliyor] = useState(false);
+  // A4 — hazır videoyu PM buradan da yükleyebilir (form yüklemesi yarım kaldıysa ya da red sonrası).
+  const [seciliVideoDosya, setSeciliVideoDosya] = useState<File | null>(null);
+  const [videoYukleniyor, setVideoYukleniyor] = useState(false);
+  const [yuklemeYuzdesi, setYuklemeYuzdesi] = useState<number | null>(null);
+  // A3/A4 — hazır videonun encode durumu; tek sorgu, polling yok.
+  const [bunnyIslemeDurumu, setBunnyIslemeDurumu] = useState<"isleniyor" | "hatali" | null>(null);
   const [kararLoading, setKararLoading] = useState<"onayla" | "reddet" | null>(null);
   const [soruSetiIsleLoading, setSoruSetiIsleLoading] = useState(false);
   const [soruSetiAcik, setSoruSetiAcik] = useState(false);
@@ -109,6 +114,22 @@ export default function TalepDetayPage() {
         setLoading(false);
       });
   }, [kullanici, talep_id]);
+
+  // A3/A4: hazır videonun Bunny işlenme durumu — sayfa açılışında tek sorgu, polling yok.
+  useEffect(() => {
+    setBunnyIslemeDurumu(null);
+    if (!talep?.hazir_video_url?.includes("mediadelivery.net")) return;
+    fetch(`/videolar/api/bunny-durum?talep_id=${talep_id}`)
+      .then(res => res.json().then(d => {
+        if (res.ok && d.bunny_kaydi) {
+          if (d.hatali) setBunnyIslemeDurumu("hatali");
+          else if (!d.hazir) setBunnyIslemeDurumu("isleniyor");
+        }
+      }))
+      .catch(() => {
+        // durum sorgusu süs değil ama kritik de değil — sessiz geç, rozet çıkmaz
+      });
+  }, [talep?.hazir_video_url, talep_id]);
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -170,18 +191,48 @@ export default function TalepDetayPage() {
     setSiliniyor(null);
   };
 
-  const handleHazirVideoUrlKaydet = async () => {
-    if (!hazirVideoUrl.trim()) return;
-    setUrlKaydediliyor(true);
-    const res = await fetch("/talepler/api/hazir-video", {
-      method: "PUT",
+  // A4 — form yüklemesi yarım kaldıysa ya da PM reddettiyse: aynı vezne + TUS akışı buradan.
+  const handleHazirVideoYukle = async () => {
+    if (!seciliVideoDosya) return;
+    setVideoYukleniyor(true);
+
+    // 1) Vezne: kimlik + sıra kontrolü + Bunny kaydı + süreli imza
+    const res = await fetch("/talepler/api/bunny-yukleme-baslat", {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ talep_id, hazir_video_url: hazirVideoUrl.trim() }),
+      body: JSON.stringify({ talep_id }),
     });
     const d = await res.json();
-    if (!res.ok) { hata(d.hata ?? "URL kaydedilemedi.", d.adim, d.detay); }
-    else { setTalep(prev => prev ? { ...prev, hazir_video_url: hazirVideoUrl.trim() } : prev); basari("Video URL kaydedildi. PM onayı bekleniyor."); }
-    setUrlKaydediliyor(false);
+    if (!res.ok) { hata(d.hata ?? "Video yüklemesi başlatılamadı.", d.adim, d.detay); setVideoYukleniyor(false); return; }
+
+    // 2) Doğrudan Bunny'ye — dosya bizim sunucuya uğramaz
+    try {
+      await bunnyTusYukle(seciliVideoDosya, d, setYuklemeYuzdesi);
+    } catch (err: any) {
+      hata("Video Bunny'ye yüklenemedi. Tekrar deneyin.", "TUS yükleme", err?.message);
+      // Telafi: vezneden açılan ama hiçbir kayda bağlanmayan Bunny kaydını temizle.
+      fetch("/videolar/api/bunny-yukleme-iptal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ video_guid: d.video_guid }),
+      }).catch(() => {});
+      setVideoYukleniyor(false);
+      setYuklemeYuzdesi(null);
+      return;
+    }
+
+    // 3) Kanonik embed adresini sistem yazar (adres vezneden geldi, istemci URL kurmaz)
+    const res2 = await fetch("/talepler/api/hazir-video", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ talep_id, hazir_video_url: d.embed_url }),
+    });
+    const d2 = await res2.json();
+    if (!res2.ok) { hata(d2.hata ?? "Video adresi kaydedilemedi.", d2.adim, d2.detay); }
+    else { setTalep(prev => prev ? { ...prev, hazir_video_url: d.embed_url } : prev); basari("Video yüklendi."); }
+    setSeciliVideoDosya(null);
+    setVideoYukleniyor(false);
+    setYuklemeYuzdesi(null);
   };
 
   const handleHazirVideoKarar = async (karar: "onayla" | "reddet") => {
@@ -195,7 +246,7 @@ export default function TalepDetayPage() {
     if (!res.ok) { hata(d.hata ?? "İşlem gerçekleştirilemedi.", d.adim, d.detay); }
     else {
       if (karar === "onayla") basari("Video onaylandı. Soru seti yazım süreci başlayabilir.");
-      else { basari("Video reddedildi. IU yeni URL girebilir."); setTalep(prev => prev ? { ...prev, hazir_video_url: null } : prev); }
+      else { basari("Video reddedildi. Yeni video yükleyebilirsiniz."); setTalep(prev => prev ? { ...prev, hazir_video_url: null } : prev); }
     }
     setKararLoading(null);
   };
@@ -254,6 +305,9 @@ export default function TalepDetayPage() {
   }
 
   if (!talep) return null;
+
+  // A4: hazır videoyu yalnız talebin üreticisi yükler (vezne de sunucuda aynı şartı arar).
+  const isUretici = isPM && talep.uretici_id === kullanici.id;
 
   const DosyaChip = ({ dosya }: { dosya: DosyaItem }) => {
     const { etiket, bg, renk } = dosyaTipiRenk(dosya.dosya_adi);
@@ -327,10 +381,10 @@ export default function TalepDetayPage() {
                   <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                 </svg>
                 <span className="text-xs text-amber-800 leading-relaxed">
-                  {isPM && !talep.hazir_video_url && "PM tarafından hazır video talebi oluşturulmuştur. IU videoyu Bunny.net'e yükleyip URL iletecektir."}
-                  {isPM && talep.hazir_video_url && "IU videoyu Bunny.net'e yükledi. Lütfen videoyu izleyerek onaylayın."}
-                  {isIU && !talep.hazir_video_url && <span>Bu talep için <strong>senaryo aşaması atlanmıştır</strong>. PM hazır videoyu talebe eklemiştir. Videoyu Bunny.net'e yükleyip URL'i giriniz.</span>}
-                  {isIU && talep.hazir_video_url && <span>Bu talep için <strong>senaryo aşaması atlanmıştır</strong>. Video URL kaydedildi, PM onayı bekleniyor.</span>}
+                  {isPM && !talep.hazir_video_url && "Hazır video talebi — video henüz yüklenmedi. Talebin üreticisi aşağıdan video dosyasını doğrudan Bunny'ye yükleyebilir."}
+                  {isPM && talep.hazir_video_url && "Hazır video yüklendi. Lütfen videoyu izleyerek onaylayın."}
+                  {isIU && !talep.hazir_video_url && <span>Bu talep için <strong>senaryo aşaması atlanmıştır</strong>. PM hazır videoyu doğrudan Bunny'ye yükleyecektir; onay sonrasında soru seti aşaması başlar.</span>}
+                  {isIU && talep.hazir_video_url && <span>Bu talep için <strong>senaryo aşaması atlanmıştır</strong>. Video yüklendi, PM onayı bekleniyor.</span>}
                 </span>
               </div>
             </div>
@@ -408,34 +462,35 @@ export default function TalepDetayPage() {
             )}
           </div>
 
-          {/* IU — Bunny.net URL girişi */}
-          {isIU && talep.hazir_video && (
+          {/* PM (üretici) — video yükleme (A4: dosya seç + doğrudan Bunny; form yüklemesi yarım kaldıysa ya da red sonrası) */}
+          {isUretici && talep.hazir_video && !talep.hazir_video_url && (
             <div className="px-4 md:px-5 py-4 border-b border-gray-100">
-              <div className="text-xs font-semibold text-gray-900 mb-2.5">Bunny.net Video URL</div>
-              {!talep.hazir_video_url ? (
-                <>
-                  <div className="flex flex-col md:flex-row gap-2">
-                    <input
-                      value={hazirVideoUrl}
-                      onChange={(e) => setHazirVideoUrl(e.target.value)}
-                      placeholder="https://iframe.mediadelivery.net/embed/..."
-                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none"
-                      style={{ fontFamily: "'Nunito', sans-serif" }}
-                    />
-                    <button onClick={handleHazirVideoUrlKaydet} disabled={!hazirVideoUrl.trim() || urlKaydediliyor}
-                      className="text-white border-none rounded-lg px-4 py-2 text-xs font-semibold cursor-pointer whitespace-nowrap"
-                      style={{ background: "#56aeff", opacity: !hazirVideoUrl.trim() || urlKaydediliyor ? 0.6 : 1, fontFamily: "'Nunito', sans-serif" }}>
-                      {urlKaydediliyor ? "..." : "URL Kaydet"}
-                    </button>
+              <div className="text-xs font-semibold text-gray-900 mb-2.5">Hazır Video Yükleme</div>
+              <label className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-700 cursor-pointer mb-2.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                <span className="font-semibold">{seciliVideoDosya ? seciliVideoDosya.name : "Video dosyası seç"}</span>
+                <input
+                  type="file" accept="video/*" className="hidden"
+                  onChange={(e) => setSeciliVideoDosya(e.target.files?.[0] ?? null)}
+                />
+              </label>
+              {yuklemeYuzdesi !== null && (
+                <div className="mb-2.5">
+                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                    <div className="h-full rounded-full transition-all" style={{ width: `${yuklemeYuzdesi}%`, background: "#56aeff" }} />
                   </div>
-                  <div className="text-xs text-gray-400 mt-1.5">Videoyu Bunny.net'e yükledikten sonra embed URL'ini buraya girin.</div>
-                </>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0" />
-                  <span className="text-xs text-gray-500">PM onayı bekleniyor...</span>
+                  <p className="text-xs text-gray-500 m-0 mt-1">Bunny'ye yükleniyor... %{yuklemeYuzdesi}</p>
                 </div>
               )}
+              <div className="flex justify-end">
+                <button onClick={handleHazirVideoYukle} disabled={!seciliVideoDosya || videoYukleniyor}
+                  className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer"
+                  style={{ background: "#56aeff", opacity: !seciliVideoDosya || videoYukleniyor ? 0.5 : 1, fontFamily: "'Nunito', sans-serif" }}>
+                  {videoYukleniyor ? (yuklemeYuzdesi !== null ? `Yükleniyor... %${yuklemeYuzdesi}` : "Gönderiliyor...") : "Bunny'ye Yükle"}
+                </button>
+              </div>
             </div>
           )}
 
@@ -443,6 +498,21 @@ export default function TalepDetayPage() {
           {isPM && talep.hazir_video && talep.hazir_video_url && (
             <div className="px-4 md:px-5 py-4 border-b border-gray-100">
               <div className="text-xs font-semibold text-gray-900 mb-2.5">Video Önizleme</div>
+              {/* A3/A4: encode rozeti — mavi = hazırlanıyor dili, kırmızı = dürüst hata */}
+              {bunnyIslemeDurumu === "isleniyor" && (
+                <div className="mb-2.5 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+                  <p className="text-xs text-blue-800 m-0">
+                    Video işleniyor — kapak ve izleme kısa süre içinde hazır olur. Sayfayı daha sonra yenileyin.
+                  </p>
+                </div>
+              )}
+              {bunnyIslemeDurumu === "hatali" && (
+                <div className="mb-2.5 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  <p className="text-xs text-red-700 m-0">
+                    Video işlenemedi — dosya bozuk olabilir. Reddedip yeniden yükleyebilirsiniz.
+                  </p>
+                </div>
+              )}
               <iframe src={talep.hazir_video_url} width="100%" height="360" frameBorder="0" allowFullScreen
                 className="rounded-lg border border-gray-200" />
             </div>
@@ -496,10 +566,10 @@ export default function TalepDetayPage() {
                 Senaryolar
               </button>
             )}
-            {isPM && talep.hazir_video && !talep.hazir_video_url && (
+            {isPM && !isUretici && talep.hazir_video && !talep.hazir_video_url && (
               <button disabled className="bg-gray-100 text-gray-400 border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-not-allowed"
                 style={{ fontFamily: "'Nunito', sans-serif" }}>
-                IU URL Bekliyor...
+                Video Yükleme Bekleniyor...
               </button>
             )}
             {isPM && talep.hazir_video && talep.hazir_video_url && (

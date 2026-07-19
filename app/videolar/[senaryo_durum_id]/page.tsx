@@ -11,7 +11,7 @@ import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 import { HedefRolBant } from "@/components/HedefRolBant";
 import type { HedefRol } from "@/app/talepler/_types";
 import { useAuth } from "@/app/providers/AuthProvider";
-import * as tus from "tus-js-client";
+import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
 
 interface Video {
   video_id: string;
@@ -166,25 +166,9 @@ export default function VideoAkisPage() {
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "Yükleme başlatılamadı.", d.adim, d.detay); setGonderLoading(false); return; }
 
-    // 2) Doğrudan Bunny'ye — dosya bizim sunucuya uğramaz
+    // 2) Doğrudan Bunny'ye — dosya bizim sunucuya uğramaz (A4'te talep formu da aynı yardımcıyı kullanır)
     try {
-      await new Promise<void>((tamamla, reddet) => {
-        const yukleme = new tus.Upload(seciliDosya, {
-          endpoint: d.tus_endpoint,
-          retryDelays: [0, 1000, 3000, 5000],
-          headers: {
-            AuthorizationSignature: d.imza,
-            AuthorizationExpire: String(d.son_kullanma),
-            VideoId: d.video_guid,
-            LibraryId: String(d.library_id),
-          },
-          metadata: { filetype: seciliDosya.type, title: d.baslik },
-          onError: reddet,
-          onProgress: (yuklenen, toplam) => setYuklemeYuzdesi(Math.round((yuklenen / toplam) * 100)),
-          onSuccess: () => tamamla(),
-        });
-        yukleme.start();
-      });
+      await bunnyTusYukle(seciliDosya, d, setYuklemeYuzdesi);
     } catch (err: any) {
       hata("Video Bunny'ye yüklenemedi. Tekrar deneyin.", "TUS yükleme", err?.message);
       // A3 telafisi: vezneden açılan ama hiçbir kayda bağlanmayan Bunny kaydını temizle.

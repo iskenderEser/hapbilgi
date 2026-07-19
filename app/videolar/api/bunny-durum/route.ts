@@ -4,6 +4,8 @@
 // Kart açılışında bir kez sorgulanır (polling yok): encode bitmediyse istemci
 // "video işleniyor" rozetini gösterir. Bunny-dışı / eski kayıtlar hazir=true sayılır
 // (rozet çıkmaz — davranış değişmez).
+// A4: talep_id ile de sorgulanabilir — hazır videonun (talepler.hazir_video_url)
+// encode durumu PM onay ekranında aynı rozetle gösterilir.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
@@ -25,19 +27,35 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const video_id = searchParams.get("video_id");
-    if (!video_id) return validasyonHatasi("video_id zorunludur.", ["video_id"]);
+    const talep_id = searchParams.get("talep_id");
+    if (!video_id && !talep_id) return validasyonHatasi("video_id ya da talep_id zorunludur.", ["video_id", "talep_id"]);
 
-    const { data: video, error: videoError } = await adminSupabase
-      .from("videolar")
-      .select("video_id, video_url")
-      .eq("video_id", video_id)
-      .single();
+    let videoUrl: string | null = null;
+    if (video_id) {
+      const { data: video, error: videoError } = await adminSupabase
+        .from("videolar")
+        .select("video_id, video_url")
+        .eq("video_id", video_id)
+        .single();
 
-    const videoKontrol = veriKontrol(video, "videolar tablosu SELECT — video_id", "Video kaydı bulunamadı.");
-    if (!videoKontrol.gecerli) return videoKontrol.yanit;
-    if (videoError) return hataYaniti("Video sorgulanamadı.", "videolar tablosu SELECT", videoError, 404);
+      const videoKontrol = veriKontrol(video, "videolar tablosu SELECT — video_id", "Video kaydı bulunamadı.");
+      if (!videoKontrol.gecerli) return videoKontrol.yanit;
+      if (videoError) return hataYaniti("Video sorgulanamadı.", "videolar tablosu SELECT", videoError, 404);
+      videoUrl = video.video_url;
+    } else {
+      const { data: talep, error: talepError } = await adminSupabase
+        .from("talepler")
+        .select("talep_id, hazir_video_url")
+        .eq("talep_id", talep_id!)
+        .single();
 
-    const guid = embedUrlGuidCikar(video.video_url);
+      const talepKontrol = veriKontrol(talep, "talepler tablosu SELECT — talep_id", "Talep bulunamadı.");
+      if (!talepKontrol.gecerli) return talepKontrol.yanit;
+      if (talepError) return hataYaniti("Talep sorgulanamadı.", "talepler tablosu SELECT", talepError, 404);
+      videoUrl = talep.hazir_video_url;
+    }
+
+    const guid = embedUrlGuidCikar(videoUrl);
     if (!guid) {
       // Bunny-dışı/eski kayıt: işlenme kavramı yok — hazır kabul edilir.
       return NextResponse.json({ hazir: true, hatali: false, bunny_kaydi: false }, { status: 200 });

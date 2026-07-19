@@ -36,6 +36,7 @@ import { useSoruSetiParse } from "./useSoruSetiParse";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { URETIM_HATTI_GORENLER, ECZANEM_TALEP_ACAN_ROLLER } from "@/lib/utils/roller";
 import { guvenliDosyaAdi } from "@/lib/utils/guvenliDosyaAdi";
+import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
 
 export function useTalepFormu() {
   const router = useRouter();
@@ -421,37 +422,57 @@ export function useTalepFormu() {
     hata,
   ]);
 
+  // A4 — hazır video Supabase storage'a hiç girmez: (1) vezneden izin (kimlik +
+  // sıra kontrolü, kaydı sistem açar), (2) dosya tarayıcıdan DOĞRUDAN Bunny'ye
+  // TUS ile, (3) kanonik embed adresini sistem yazar. IU'nun indir-yükle adımı kalktı.
+  const [videoYuklemeYuzdesi, setVideoYuklemeYuzdesi] = useState<number | null>(null);
+
   const uploadVideo = useCallback(
     async (talep_id: string): Promise<boolean> => {
       if (!bekleyenVideo) return true;
       setDosyaYukleniyor(true);
       try {
-        const supabase = createClient();
-        const { dosya } = bekleyenVideo;
-        const dosyaYolu = `${talep_id}/video_${Date.now()}_${guvenliDosyaAdi(dosya.name)}`;
-        const { error: uploadError } = await supabase.storage
-          .from("talep-dosyalari")
-          .upload(dosyaYolu, dosya);
-        if (uploadError) {
-          hata("Video yüklenemedi.", "storage upload", uploadError.message);
-          return false;
-        }
-        const { data: urlData } = supabase.storage
-          .from("talep-dosyalari")
-          .getPublicUrl(dosyaYolu);
-        await fetch("/talepler/api/dosyalar", {
+        // 1) Vezne: izin + Bunny kaydı + süreli imza
+        const res = await fetch("/talepler/api/bunny-yukleme-baslat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            talep_id,
-            dosya_adi: dosya.name,
-            url: urlData.publicUrl,
-            boyut: dosya.size,
-          }),
+          body: JSON.stringify({ talep_id }),
         });
+        const d = await res.json();
+        if (!res.ok) {
+          hata(d.hata ?? "Video yüklemesi başlatılamadı.", d.adim, d.detay);
+          return false;
+        }
+
+        // 2) Doğrudan Bunny'ye — dosya bizim sunucuya uğramaz
+        try {
+          await bunnyTusYukle(bekleyenVideo.dosya, d, setVideoYuklemeYuzdesi);
+        } catch (err: any) {
+          hata("Video Bunny'ye yüklenemedi.", "TUS yükleme", err?.message);
+          // Telafi: vezneden açılan ama hiçbir kayda bağlanmayan Bunny kaydını temizle.
+          fetch("/videolar/api/bunny-yukleme-iptal", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ video_guid: d.video_guid }),
+          }).catch(() => {});
+          return false;
+        }
+
+        // 3) Kanonik embed adresini sistem yazar (adres vezneden geldi, istemci URL kurmaz)
+        const res2 = await fetch("/talepler/api/hazir-video", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ talep_id, hazir_video_url: d.embed_url }),
+        });
+        const d2 = await res2.json();
+        if (!res2.ok) {
+          hata(d2.hata ?? "Video adresi kaydedilemedi.", d2.adim, d2.detay);
+          return false;
+        }
         return true;
       } finally {
         setDosyaYukleniyor(false);
+        setVideoYuklemeYuzdesi(null);
       }
     },
     [bekleyenVideo, hata]
@@ -641,6 +662,7 @@ export function useTalepFormu() {
     bekleyenVideo,
     handleVideoSec,
     handleBekleyenVideoSil,
+    videoYuklemeYuzdesi,
 
     // form: hazır soru seti
     hazirSoruSeti,

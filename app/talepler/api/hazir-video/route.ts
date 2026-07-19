@@ -3,8 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { embedUrlGuidCikar } from "@/lib/video/bunnyYukleme";
 
-// PUT: IU video URL kaydeder
+// PUT: kanonik embed adresini sistem yazar (A4 — yükleme PM formundan doğrudan
+// Bunny'ye gider; adres vezneden döner, istemci URL kurmaz. IU'nun URL girme yolu kalktı.)
 export async function PUT(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -14,22 +16,27 @@ export async function PUT(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (rol !== "iu") return rolHatasi("Sadece IU video URL girebilir.");
+    if (!["pm", "jr_pm", "kd_pm"].includes(rol)) return rolHatasi("Sadece talebin üreticisi (PM) video adresi kaydedebilir.");
 
     const body = await request.json();
     const { talep_id, hazir_video_url } = body;
 
     if (!talep_id) return validasyonHatasi("talep_id zorunludur.", ["talep_id"]);
     if (!hazir_video_url) return validasyonHatasi("hazir_video_url zorunludur.", ["hazir_video_url"]);
+    // Adres vezneden dönen kanonik embed olmalı — elle URL taşıma kavramı bitti.
+    if (!embedUrlGuidCikar(hazir_video_url)) {
+      return validasyonHatasi("Video adresi kanonik Bunny embed adresi olmalıdır.", ["hazir_video_url"]);
+    }
 
     const { data: talep, error: talepError } = await adminSupabase
       .from("talepler")
-      .select("talep_id, hazir_video")
+      .select("talep_id, uretici_id, hazir_video")
       .eq("talep_id", talep_id)
       .single();
 
     if (talepError || !talep) return hataYaniti("Talep bulunamadı.", "talepler tablosu SELECT — talep_id", talepError);
     if (!talep.hazir_video) return isKuraluHatasi("Bu talep hazır video talebi değil.");
+    if (talep.uretici_id !== user.id) return rolHatasi("Yalnız talebin üreticisi video adresi kaydedebilir.");
 
     const { error: updateError } = await adminSupabase
       .from("talepler")
@@ -72,7 +79,7 @@ export async function POST(request: NextRequest) {
     if (talepError || !talep) return hataYaniti("Talep bulunamadı.", "talepler tablosu SELECT — talep_id", talepError);
     if (!talep.hazir_video) return isKuraluHatasi("Bu talep hazır video talebi değil.");
     if (talep.uretici_id !== user.id) return rolHatasi("Bu talebi onaylama yetkiniz yok.");
-    if (!talep.hazir_video_url) return isKuraluHatasi("IU henüz video URL'i girmemiş.");
+    if (!talep.hazir_video_url) return isKuraluHatasi("Henüz video yüklenmemiş.");
 
     if (karar === "reddet") {
       const { error: resetError } = await adminSupabase
@@ -81,7 +88,7 @@ export async function POST(request: NextRequest) {
         .eq("talep_id", talep_id);
 
       if (resetError) return hataYaniti("Red işlemi gerçekleştirilemedi.", "talepler tablosu UPDATE — hazir_video_url reset", resetError);
-      return NextResponse.json({ mesaj: "Video reddedildi. IU yeni URL girebilir." }, { status: 200 });
+      return NextResponse.json({ mesaj: "Video reddedildi. Yeni video yüklenebilir." }, { status: 200 });
     }
 
     // Onaylama — zinciri otomatik oluştur

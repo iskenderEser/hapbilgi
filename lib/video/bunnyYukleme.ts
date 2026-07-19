@@ -84,6 +84,11 @@ export function tusImzasiUret(libraryId: string, apiKey: string, sonKullanma: nu
   return createHash("sha256").update(libraryId + apiKey + sonKullanma + videoGuid).digest("hex");
 }
 
+/** A4: hazır video başlığı — kütüphane düzeni sisteme aittir (saf — smoke bununla). */
+export function hazirVideoBaslik(urunAdi?: string | null, teknikAdi?: string | null): string {
+  return `${urunAdi || teknikAdi || "video"}_hazir`;
+}
+
 /** Kanonik embed/play adresinden Bunny video GUID'ini ayıklar (saf — smoke bununla). */
 export function embedUrlGuidCikar(url: string | null | undefined): string | null {
   if (!url) return null;

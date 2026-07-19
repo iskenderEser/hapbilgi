@@ -2,7 +2,8 @@
 //
 // "Hazır videom var" seçiliyken görünen tek video dosyası seçim bölümü.
 // Parent koşullu render eder (hazirVideo === true).
-// Yükleme aşaması parent'ta (handleSubmit içinde Supabase Storage + Bunny.net pipeline).
+// Yükleme aşaması parent'ta (A4: talep oluşunca vezneden izin + tarayıcıdan
+// doğrudan Bunny'ye TUS — dosya Supabase'e hiç girmez).
 
 "use client";
 
@@ -13,9 +14,10 @@ interface VideoYuklemeProps {
   bekleyen: BekleyenDosya | null;
   onSec: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSil: () => void;
+  yuklemeYuzdesi?: number | null;
 }
 
-export function VideoYukleme({ bekleyen, onSec, onSil }: VideoYuklemeProps) {
+export function VideoYukleme({ bekleyen, onSec, onSil, yuklemeYuzdesi = null }: VideoYuklemeProps) {
   const videoInputRef = useRef<HTMLInputElement>(null);
 
   // Dosya seçildikten sonra input'un value'su temizlenir — aynı dosya tekrar seçilebilsin.
@@ -28,7 +30,7 @@ export function VideoYukleme({ bekleyen, onSec, onSil }: VideoYuklemeProps) {
     <div>
       <label className="text-xs text-gray-500 block mb-1.5">
         Video Dosyası <span className="font-semibold" style={{ color: "#bc2d0d" }}>*</span>{" "}
-        <span className="text-gray-400 font-normal">(IU bu videoyu Bunny.net'e yükleyecek)</span>
+        <span className="text-gray-400 font-normal">(talep oluşturulunca doğrudan Bunny'ye yüklenir)</span>
       </label>
       <div className="flex items-center gap-2.5 mb-1.5">
         <label
@@ -74,6 +76,14 @@ export function VideoYukleme({ bekleyen, onSec, onSil }: VideoYuklemeProps) {
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </div>
+        </div>
+      )}
+      {yuklemeYuzdesi !== null && (
+        <div className="mt-2">
+          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+            <div className="h-full rounded-full transition-all" style={{ width: `${yuklemeYuzdesi}%`, background: "#56aeff" }} />
+          </div>
+          <p className="text-xs text-gray-500 m-0 mt-1">Bunny'ye yükleniyor... %{yuklemeYuzdesi}</p>
         </div>
       )}
     </div>
