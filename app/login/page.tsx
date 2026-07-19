@@ -194,7 +194,7 @@ export default function LoginPage() {
           form bloğunun üstünde sola yaslı bold "Giriş" başlığı */}
       <div className="md:w-1/2 flex flex-col items-center justify-center px-6 py-10 md:py-6"
         style={{ background: "#f7f7f8" }}>
-        <div className="w-full max-w-sm md:translate-y-[37px]">
+        <div className="w-full max-w-sm md:translate-y-[60px]">
           {!sifirlamaAcik && (
             <h2 className="text-xl font-bold text-left mb-6" style={{ color: GRI_METIN }}>Giriş</h2>
           )}
