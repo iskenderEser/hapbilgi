@@ -109,8 +109,10 @@
 1. T-Club — Öğrenmenin sürekliliği için temsilcilere fırsatlar sunar
 2. C-Club — Değişimin sürdürülebilirliği için liderlerin öğrenmesini destekler
 3. E-Club — Değer yaratan bilgiye ulaştırmak için eczaneleri motive eder ("ulaştırmak" mutabakatı korundu)
-4. Eczanem — Güvenilir ürün bilgisine eczaneler aracılığıyla ulaşılması için danışanların öğrenmesini teşvik eder
+4. Eczanem — Güvenilir ürün bilgisine ulaşılması için danışanların öğrenmesini teşvik eder
 
 Karar kaydı (4c tercihi, İskender): kamuya açık alanda eczane lehine açık kazanç vaadi yazılamaz (rekabet engeli; sisteme girmeleri kendi tercihleri olmadığından doğrudan fayda söylenemez) — "öğrenmeyi teşvik" zımni faydadır, sektörel anlamı bilinir.
+
+Karar kaydı 2 (18.07, İskender — kod düzeltmesini kendisi yaptı): 4. cümledeki "eczaneler aracılığıyla" ifadesi de kaldırıldı — kanalı anmak bile rekabet engeli doğurabilir; sistemde olmayan eczanenin rekabette yenik düşeceği iması kamuya açık metinde bulunmamalı. Kural genelleşti: Eczanem'in kamuya açık metinlerinde ne eczane lehine kazanç, ne de eczane kanalı vurgusu yazılır.
 
 **Durum:** KOD TARAFI BİTTİ — İskender görsel kontrolü bekleniyor (localhost'ta anında görünür). Doğrulama adımları: (1) push sonrası canlıda "Şifremi unuttum" → e-posta → bağlantı → yeni şifre → yeni şifreyle giriş; (2) işaretsiz "Beni hatırla" ile giriş → tarayıcıyı tamamen kapat-aç → login'e düşmeli. Ön koşul: Supabase panelinde Authentication → URL Configuration'da site adresi + `/sifre-yenile` Redirect URL listesinde olmalı (İskender kontrol edecek).
