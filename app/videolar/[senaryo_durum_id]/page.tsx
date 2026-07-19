@@ -43,7 +43,6 @@ export default function VideoAkisPage() {
   const [loading, setLoading] = useState(true);
   const [gonderLoading, setGonderLoading] = useState(false);
   const [videoUrl, setVideoUrl] = useState("");
-  const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [revizyonNotu, setRevizyonNotu] = useState("");
   const [aktifRevizyon, setAktifRevizyon] = useState(false);
   const [acikVideo, setAcikVideo] = useState<string | null>(null);
@@ -133,7 +132,10 @@ export default function VideoAkisPage() {
     setGonderLoading(true);
     const res = await fetch("/videolar/api", {
       method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ video_id: sonVideo.video_id, video_url: videoUrl.trim(), thumbnail_url: thumbnailUrl.trim() || null }),
+      // F-05: thumbnail elle girilmez — kapak her zaman video linkinden otomatik üretilir
+      // (thumbnailUrlUret, YouTube davranışı; İskender kararı 19.07.2026). Kolon eski
+      // kayıtların elle girilmiş kapakları için okunmaya devam eder.
+      body: JSON.stringify({ video_id: sonVideo.video_id, video_url: videoUrl.trim(), thumbnail_url: null }),
     });
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "Video URL kaydedilemedi.", d.adim, d.detay); setGonderLoading(false); return; }
@@ -144,7 +146,7 @@ export default function VideoAkisPage() {
     const d2 = await res2.json();
     if (!res2.ok) { hata(d2.hata ?? "Durum kaydedilemedi.", d2.adim, d2.detay); }
     else basari("Video PM'e gönderildi.");
-    setVideoUrl(""); setThumbnailUrl("");
+    setVideoUrl("");
     await veriCek();
     setGonderLoading(false);
   };
@@ -246,7 +248,22 @@ export default function VideoAkisPage() {
                     <div className="p-3">
                       <div className="rounded-lg overflow-hidden mb-2 cursor-pointer" onClick={() => setAcikVideo(v.video_url)}>
                         {thumb
-                          ? <img src={thumb} alt="thumbnail" className="w-full object-cover" style={{ height: 180 }} />
+                          ? (
+                            <div className="relative w-full" style={{ height: 180 }}>
+                              {/* F-05: kapak yüklenemezse (403 vb.) kırık görsel yerine gri yedek — oneriler sayfasıyla aynı desen */}
+                              <img src={thumb} alt="thumbnail" className="w-full h-full object-cover" onError={(e) => {
+                                const img = e.currentTarget;
+                                img.style.display = "none";
+                                const yedek = img.parentElement?.querySelector(".thumbnail-yedek") as HTMLElement | null;
+                                if (yedek) yedek.style.display = "flex";
+                              }} />
+                              <div className="thumbnail-yedek w-full h-full absolute inset-0 bg-gray-200 items-center justify-center" style={{ display: "none" }}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" width="32" height="32">
+                                  <circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8z"/>
+                                </svg>
+                              </div>
+                            </div>
+                          )
                           : (
                             <div className="w-full bg-gray-200 flex items-center justify-center" style={{ height: 180 }}>
                               <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" width="32" height="32">
@@ -323,15 +340,11 @@ export default function VideoAkisPage() {
           {/* IU URL girişi */}
           {iuGonderebilir && (
             <div className="border-t border-gray-100 px-4 md:px-5 py-4 bg-gray-50">
+              {/* F-05: tek alan — Direct play URL. Thumbnail alanı kaldırıldı,
+                  kapak videodan otomatik üretilir; ikinci alan IU'yu yanıltıyordu. */}
               <input
                 type="text" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)}
-                placeholder="Bunny.net video URL..."
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-2"
-                style={{ fontFamily: "'Nunito', sans-serif" }}
-              />
-              <input
-                type="text" value={thumbnailUrl} onChange={(e) => setThumbnailUrl(e.target.value)}
-                placeholder="Thumbnail URL (opsiyonel)..."
+                placeholder="Bunny.net video linki (Direct play URL)..."
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-2.5"
                 style={{ fontFamily: "'Nunito', sans-serif" }}
               />
