@@ -117,4 +117,26 @@ Karar kaydı 2 (18.07, İskender — kod düzeltmesini kendisi yaptı): 4. cüml
 
 **Ek 5 (18.07, İskender elden):** Sağ (giriş) panel zemini `#f7f7f8` → `#ffffff` (madde 6 revizyonu); sol panel `#f3f4f7` olarak kaldı.
 
+---
+
+### F-05 — Üretim testinde video thumbnail'i IU ve PM ekranında görünmüyor (19.07.2026)
+
+**Tespit (İskender):** Hepifarma / merve@test2.com (PM) üretim testi: senaryo talebi → yazım → revizyon → onay akışı sorunsuz. IU, Bunny.net'ten aldığı URL'yi iki alana da yapıştırdı ("Bunny.net URL'si" + "Thumbnail (opsiyonel)") ve videoyu PM'e gönderdi. IU'nun gönderilen ekranında da PM görünümünde de thumbnail yok.
+
+**Teşhis (kod + canlı DB salt-okuma + HTTP kanıtlı) — üç katman:**
+1. **Yanlış link (UI'nin izin verdiği kullanım hatası):** DB kaydında iki alanda da AYNI adres var ve bu adres oynatıcı (embed) linki değil, doğrudan `.../thumbnail.jpg` GÖRSEL linki (`vz-f374be51-b0f.b-cdn.net/...`). Alanlarda hiçbir format doğrulaması yok. Yan etki: `video_url` bir görsel olduğu için izleme de kırık olacak (oynatıcı bu adresi tanımaz).
+2. **403 — asıl "görünmeme" sebebi:** Yapıştırılan b-cdn.net adresi doğrudan erişime kapalı: HTTP 403 döndürüyor (Bunny pull zone koruması). `<img>` yüklenemiyor → thumbnail her iki ekranda da boş. Bu sayfada `onError` yedeği de yok (oneriler sayfasında var) — kırık görsel placeholder'a bile düşmüyor.
+3. **Konfig uyuşmazlığı:** Uygulamanın otomatik thumbnail üretimi `NEXT_PUBLIC_BUNNY_PULL_ZONE=vz-214e1e95-2ff.b-cdn.net` kullanıyor; videonun gerçek zone'u `vz-f374be51-b0f`. IU doğru embed linkini yapıştırıp thumbnail'i boş bıraksaydı bile otomatik thumbnail YANLIŞ zone'dan üretilecekti. Env bayat mı, IU farklı kütüphaneye mi yüklüyor — İskender netleştirecek.
+
+**Ara not (19.07, İskender):** Bunny.net hesapları free (14 gün deneme) — 403 büyük olasılıkla süresi dolmuş hesaptan. Bu tek başına hem erişim reddini hem env'deki bayat zone'u açıklar (her yeni free hesap = yeni pull zone). İskender yeni free hesap açıp taze link üretecek; çözüm o linkin üzerinde konuşulacak.
+
+**Karar (19.07, İskender):** Thumbnail alanı IU ekranından tamamen kalkacak; kapak her zaman videodan otomatik üretilecek (YouTube davranışı). IU'nun tek işi Direct play URL yapıştırmak.
+
+**Çözüm (uygulanan):**
+1. **Kod (`7ee0d38`):** IU ekranındaki "Thumbnail URL (opsiyonel)" alanı kaldırıldı; gönderimde `thumbnail_url` her zaman null → kapak `thumbnailUrlUret` ile video linkinden otomatik. Video alanı placeholder'ı "Bunny.net video linki (Direct play URL)..." olarak netleşti. Kapak yüklenemezse (403 vb.) kırık görsel yerine gri yedek (oneriler sayfası deseni). Eski kayıtların elle girilmiş kapakları okunmaya devam eder.
+2. **Env:** `.env.local` → `NEXT_PUBLIC_BUNNY_PULL_ZONE=vz-f374be51-b0f.b-cdn.net` (kütüphanenin gerçek zone'u; gitignore'da, commit'e girmez). Vercel'deki aynı değişken canlıya çıkmadan önce İskender tarafından güncellenecek.
+3. **İskender'de:** Bunny panel → Stream kütüphanesi → Security: token authentication kapalı / allowed referrers boş olmalı (403'ün kökü — eski link uzatma sonrası da 403 veriyordu, süre değil güvenlik ayarı).
+
+**Durum:** KOD TARAFI BİTTİ — doğrulama: İskender Bunny Security ayarını kontrol edip yeni turda Direct play URL ile video gönderecek; kapak IU ve PM ekranında kendiliğinden görünmeli.
+
 **Durum:** KOD TARAFI BİTTİ — İskender görsel kontrolü bekleniyor (localhost'ta anında görünür). Doğrulama adımları: (1) push sonrası canlıda "Şifremi unuttum" → e-posta → bağlantı → yeni şifre → yeni şifreyle giriş; (2) işaretsiz "Beni hatırla" ile giriş → tarayıcıyı tamamen kapat-aç → login'e düşmeli. Ön koşul: Supabase panelinde Authentication → URL Configuration'da site adresi + `/sifre-yenile` Redirect URL listesinde olmalı (İskender kontrol edecek).
