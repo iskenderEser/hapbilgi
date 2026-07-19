@@ -34,6 +34,8 @@ IU = çalışan, sistem = şirketin veznesi; A1 o veznenin kuralları:
 - Yükleme bitince sistem `video_url`'yi kanonik embed adresi olarak KENDİSİ yazar (`player.mediadelivery.net/embed/{lib}/{guid}`) — mevcut PUT rotası ve "inceleme bekleniyor" akışı aynen.
 - Şema notu: ayrı `bunny_video_id` kolonu ilk fazda GEREKMEZ — GUID, embed URL'nin içinde; ihtiyaç doğarsa türetilir.
 
+**A2 SONUCU (19.07.2026 — KOD BİTTİ, `a47aa63`):** IU ekranında URL alanı kalktı; "Video dosyası seç" + ilerleme çubuğu + "Yükle ve Gönder". Akış: vezneden izin → `tus-js-client` ile tarayıcıdan doğrudan Bunny'ye (kesintiden devam; dosya sunucumuza uğramaz) → kanonik embed adresini sistem yazar → durum "inceleme bekleniyor". Yeni bağımlılık: `tus-js-client ^4.3.1`. Bilinen açık uç: yükleme yarıda kalırsa Bunny'de yetim kayıt kalabilir — telafi ucu A3 kapsamına not edildi. **Doğrulama:** üçlü temiz; A0'ın açık ucu (TUS veri aktarımı) İskender'in fiziksel turunda gerçek dosyayla teyit edilecek (test felsefesi: tur, iyileştirme ihtiyaçlarını göstermek için).
+
 ### A3 — Encode durumu (küçük)
 - Bunny işlemeyi bitirmeden izleme açılmayabilir; kartta "video işleniyor" rozeti (Bunny video status sorgusu — kaydet anında + kart açılışında kontrol; sürekli polling yok).
 
