@@ -96,4 +96,6 @@
 
 **Çözüm (uygulanan):** 8 maddenin tamamı tek commit'te (`8bddd08`): split %50-%50 (`md:w-1/2` her iki panel), logo sol panelin üstüne yatay ortalı taşındı (sağdan kalktı), sol zemin `#f3f4f7`, sol metin/ikonlar `#737373` (ikon kutuları aynı yapıda açık-zemin tonlarına çevrildi), Eczanem kalbi sabit `#bc2d0d`, sağ zemin `#f7f7f8`, form bloğunun üstünde sola yaslı bold `#737373` "Giriş" başlığı (yalnız giriş görünümünde — şifre sıfırlama görünümü kendi başlığını korur), giriş çerçeveleri / beni hatırla / şifremi unuttum dokunulmadı. Üçlü doğrulama temiz.
 
+**Ek (18.07):** Logo, gömülü beyaz zemini yüzünden açık panelde kutu gibi patladı — İskender onayıyla Code, dış beyazı kenardan flood-fill ile şeffaflaştırdı (baykuş içi beyazlar korundu); `public/logo-acik-zemin.png` yalnız login sol paneline bağlı, `logo.png` beyaz zeminli sayfalarda aynen (`97324a8`).
+
 **Durum:** KOD TARAFI BİTTİ — İskender görsel kontrolü bekleniyor (localhost'ta anında görünür). Doğrulama adımları: (1) push sonrası canlıda "Şifremi unuttum" → e-posta → bağlantı → yeni şifre → yeni şifreyle giriş; (2) işaretsiz "Beni hatırla" ile giriş → tarayıcıyı tamamen kapat-aç → login'e düşmeli. Ön koşul: Supabase panelinde Authentication → URL Configuration'da site adresi + `/sifre-yenile` Redirect URL listesinde olmalı (İskender kontrol edecek).
