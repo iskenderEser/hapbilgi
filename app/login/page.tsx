@@ -16,7 +16,7 @@ import { beniHatirlaKaydet } from "@/lib/utils/beniHatirla";
 const BORDO = "#bc2d0d";
 // F-04 (18.07.2026): giriş ekranı renk/yerleşim talebi — sol %50 açık zemin
 // (#f3f4f7) + logo sol üst-orta + metin/ikon #737373 (Eczanem kalbi bordo),
-// sağ %50 #f7f7f8 + "Giriş" başlığı. Madde listesi: docs/fiziksel_tespitler_ve_cozumler.md F-04.
+// sağ %50 #ffffff + "Giriş" başlığı. Madde listesi: docs/fiziksel_tespitler_ve_cozumler.md F-04.
 const GRI_METIN = "#737373";
 
 // Sol paneldeki modül tanıtımları — cümleler İskender'le birlikte yazıldı (18.07.2026).
@@ -197,10 +197,10 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Sağ panel — giriş (F-04): %50 genişlik, zemin #f7f7f8, logo sola taşındı,
+      {/* Sağ panel — giriş (F-04): %50 genişlik, zemin #ffffff, logo sola taşındı,
           form bloğunun üstünde sola yaslı bold "Giriş" başlığı */}
       <div className="md:w-1/2 flex flex-col items-center justify-center px-6 py-10 md:py-6"
-        style={{ background: "#f7f7f8" }}>
+        style={{ background: "#ffffff" }}>
         <div className="w-full max-w-sm md:translate-y-[60px]">
           {!sifirlamaAcik && (
             <h2 className="text-xl font-bold text-left mb-6" style={{ color: GRI_METIN }}>Giriş</h2>

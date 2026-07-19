@@ -115,4 +115,6 @@ Karar kaydı (4c tercihi, İskender): kamuya açık alanda eczane lehine açık 
 
 Karar kaydı 2 (18.07, İskender — kod düzeltmesini kendisi yaptı): 4. cümledeki "eczaneler aracılığıyla" ifadesi de kaldırıldı — kanalı anmak bile rekabet engeli doğurabilir; sistemde olmayan eczanenin rekabette yenik düşeceği iması kamuya açık metinde bulunmamalı. Kural genelleşti: Eczanem'in kamuya açık metinlerinde ne eczane lehine kazanç, ne de eczane kanalı vurgusu yazılır.
 
+**Ek 5 (18.07, İskender elden):** Sağ (giriş) panel zemini `#f7f7f8` → `#ffffff` (madde 6 revizyonu); sol panel `#f3f4f7` olarak kaldı.
+
 **Durum:** KOD TARAFI BİTTİ — İskender görsel kontrolü bekleniyor (localhost'ta anında görünür). Doğrulama adımları: (1) push sonrası canlıda "Şifremi unuttum" → e-posta → bağlantı → yeni şifre → yeni şifreyle giriş; (2) işaretsiz "Beni hatırla" ile giriş → tarayıcıyı tamamen kapat-aç → login'e düşmeli. Ön koşul: Supabase panelinde Authentication → URL Configuration'da site adresi + `/sifre-yenile` Redirect URL listesinde olmalı (İskender kontrol edecek).
