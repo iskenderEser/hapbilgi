@@ -137,6 +137,8 @@ Karar kaydı 2 (18.07, İskender — kod düzeltmesini kendisi yaptı): 4. cüml
 2. **Env:** `.env.local` → `NEXT_PUBLIC_BUNNY_PULL_ZONE=vz-f374be51-b0f.b-cdn.net` (kütüphanenin gerçek zone'u; gitignore'da, commit'e girmez). Vercel'deki aynı değişken canlıya çıkmadan önce İskender tarafından güncellenecek.
 3. **İskender'de:** Bunny panel → Stream kütüphanesi → Security: token authentication kapalı / allowed referrers boş olmalı (403'ün kökü — eski link uzatma sonrası da 403 veriyordu, süre değil güvenlik ayarı).
 
-**Durum:** KOD TARAFI BİTTİ — doğrulama: İskender Bunny Security ayarını kontrol edip yeni turda Direct play URL ile video gönderecek; kapak IU ve PM ekranında kendiliğinden görünmeli.
+**Asıl bulgu (19.07, İskender'in test felsefesi düzeltmesiyle):** Testin gösterdiği gerçek iyileştirme ihtiyacı, "yanlış link yapıştırma" semptomu değil, insanın Bunny panelinden link taşıdığı iş akışının kendisi. Karar: IU, HapBilgi içinden dosya yükleyecek; sistem Bunny'ye API ile kendisi gönderecek (dosya Bunny'de, kimlik Supabase'de, izleme Bunny oynatıcısından). Link normalizasyonu yaması bilinçli RAFA KALKTI — semptomu örtüp asıl çözümün önceliğini düşürürdü. Plan: `docs/bunny_dogrudan_yukleme_is_plani.md`. Ara düzeltmeler (403/env/thumbnail alanı) yukarıda kayıtlı ve geçerli.
+
+**Durum:** BULGU TANIMLANDI, GELİŞTİRME PLANLANDI — uygulama, İskender'in plan onayı ve iş sırası kararıyla başlayacak.
 
 **Durum:** KOD TARAFI BİTTİ — İskender görsel kontrolü bekleniyor (localhost'ta anında görünür). Doğrulama adımları: (1) push sonrası canlıda "Şifremi unuttum" → e-posta → bağlantı → yeni şifre → yeni şifreyle giriş; (2) işaretsiz "Beni hatırla" ile giriş → tarayıcıyı tamamen kapat-aç → login'e düşmeli. Ön koşul: Supabase panelinde Authentication → URL Configuration'da site adresi + `/sifre-yenile` Redirect URL listesinde olmalı (İskender kontrol edecek).
