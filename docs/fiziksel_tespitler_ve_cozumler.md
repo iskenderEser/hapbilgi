@@ -109,7 +109,7 @@
 1. T-Club — Öğrenmenin sürekliliği için temsilcilere fırsatlar sunar
 2. C-Club — Değişimin sürdürülebilirliği için liderlerin öğrenmesini destekler
 3. E-Club — Değer yaratan bilgiye ulaştırmak için eczaneleri motive eder ("ulaştırmak" mutabakatı korundu)
-4. Eczanem — Güvenilir ürün bilgisine ulaşılması için danışanların öğrenmesini teşvik eder
+4. Eczanem — Ürün bilgisine eczaneden ulaşılması için danışanları teşvik eder *(son hal — İskender'in elden düzeltmeleriyle)*
 
 Karar kaydı (4c tercihi, İskender): kamuya açık alanda eczane lehine açık kazanç vaadi yazılamaz (rekabet engeli; sisteme girmeleri kendi tercihleri olmadığından doğrudan fayda söylenemez) — "öğrenmeyi teşvik" zımni faydadır, sektörel anlamı bilinir.
 
