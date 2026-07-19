@@ -139,6 +139,20 @@ Karar kaydı 2 (18.07, İskender — kod düzeltmesini kendisi yaptı): 4. cüml
 
 **Asıl bulgu (19.07, İskender'in test felsefesi düzeltmesiyle):** Testin gösterdiği gerçek iyileştirme ihtiyacı, "yanlış link yapıştırma" semptomu değil, insanın Bunny panelinden link taşıdığı iş akışının kendisi. Karar: IU, HapBilgi içinden dosya yükleyecek; sistem Bunny'ye API ile kendisi gönderecek (dosya Bunny'de, kimlik Supabase'de, izleme Bunny oynatıcısından). Link normalizasyonu yaması bilinçli RAFA KALKTI — semptomu örtüp asıl çözümün önceliğini düşürürdü. Plan: `docs/bunny_dogrudan_yukleme_is_plani.md`. Ara düzeltmeler (403/env/thumbnail alanı) yukarıda kayıtlı ve geçerli.
 
-**Durum:** BULGU TANIMLANDI, GELİŞTİRME PLANLANDI — uygulama, İskender'in plan onayı ve iş sırası kararıyla başlayacak.
+**Durum:** BULGU TANIMLANDI, GELİŞTİRME PLANLANDI — uygulama, İskender'in plan onayı ve iş sırası kararıyla başlayacak. *(Güncelleme 19.07: A0-A2 uygulandı; İskender fiziksel teyidi — gerçek dosyayla uçtan uca yükleme başarılı. Kayıt: `docs/bunny_dogrudan_yukleme_is_plani.md`.)*
+
+---
+
+### F-06 — Video versiyonları ayrı saklanmıyor; yükleme sonrası kapak gecikmesi (19.07.2026)
+
+**Tespit (İskender, A2 fiziksel turu):** (1) Yükleme sonrası IU ekranında kapak görünmedi ("yüklendi" yazdı). (2) PM yüklenen videoyu ve kapağı gördü. (3) Ekranda tek video var — ilk video için revizyon istendiği halde ilk/ikinci video alt alta görünmüyor; hangi videonun görüldüğü ayırt edilemedi.
+
+**Teşhis (kod + canlı DB salt-okuma):**
+1. Kapak gecikmesi: Bunny encode bitmeden kapak oluşmuyor — IU baktığında henüz hazır değildi, PM baktığında hazırdı. A3'ün (işleniyor rozeti) tam konusu.
+2. Versiyonlar: sistem video versiyonlarını ayrı satır olarak SAKLAMIYOR — revizyonda yeni yükleme aynı kaydın üzerine yazılıyor (DB'de tek satır; adresi yeni videonun embed'i; durum geçmişi inceleme → revizyon → inceleme). Karttaki "Versiyon N" etiketi ve "Revizyon: 1/2" sayacı durum tarihçesinden sayıyor; eski videonun görüntüsü sistemde tutulmuyor. İskender'in gördüğü video kesinlikle yeni yüklenendir.
+
+**Karar (İskender, 19.07):** Seçenek (a) — mevcut davranış BİLİNÇLİ KABUL: revizyonda eski video gider, yenisi üzerine yazılır; versiyon saklama geliştirmesi yapılmayacak. (Eski dosya Bunny kütüphanesinde durur, sistem bağlantısı kopar.)
+
+**Durum:** ÇÖZÜM GEREKMEZ (bilinçli kabul) — kapak gecikmesi ayağı A3 kapsamında.
 
 **Durum:** KOD TARAFI BİTTİ — İskender görsel kontrolü bekleniyor (localhost'ta anında görünür). Doğrulama adımları: (1) push sonrası canlıda "Şifremi unuttum" → e-posta → bağlantı → yeni şifre → yeni şifreyle giriş; (2) işaretsiz "Beni hatırla" ile giriş → tarayıcıyı tamamen kapat-aç → login'e düşmeli. Ön koşul: Supabase panelinde Authentication → URL Configuration'da site adresi + `/sifre-yenile` Redirect URL listesinde olmalı (İskender kontrol edecek).
