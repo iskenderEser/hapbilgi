@@ -93,7 +93,10 @@ Doğrulama disiplini: her aşama ayrı commit + üçlü doğrulama + en fazla 1 
 - Yeni bağımlılıklar: mammoth, xlsx, jszip, pdfjs-dist.
 - Üçlü doğrulama temiz. Smoke: mutlu = mini `.docx` → doğru dolan taslak (mammoth'un tarayıcı derlemesi require-cache yamasıyla Node'da birebir simüle edildi, çünkü mammoth Node/tarayıcı için ayrı iç modül kullanıyor); red = desteklenmeyen uzantı mesajı. Fiziksel Word/Excel/PDF testi İskender'in test turunda.
 
+## Y-4 SONUÇ (20.07.2026 — KOD DEĞİŞİKLİĞİ YOK)
+
+İki ekran (`SoruIceAktar.tsx`, `SoruSetiFormu.tsx`, `HazirSoruSetiBlogu.tsx`, IU yazım sayfası) baştan sona tarandı: format örneği kutusu tek kopya ve güncel; D-3 ve Y-2 zaten bayat "(IU işleyecek)" metnini ve eski textarea/önizleme kapısını (`useSoruSetiParse` dahil) temizlemişti. Kalan bayat ipucu ya da kopya bulunamadı — Y-4'ün kod tarafı D-3/Y-2 ile birlikte örtük olarak zaten kapanmış. Bu bölümün yazılmasıyla plan tamamlandı sayılır.
+
 ## Durum (20.07.2026)
 
-- **D-1/D-2/D-3, Y-1/Y-2, Y-3 KOD BİTTİ** (commit'ler: f35d1a8, f5f0396, 68a429e). Fiziksel teyit İskender'in toplu test turunda.
-- **Y-4 YAPILMADI** (metin sadeleştirme + Y-SONUÇ işleme; bu bölümün yazılmasıyla belge kısmı kapanmış sayılabilir, ekran metinleri bekliyor).
+- **D-1/D-2/D-3, Y-1/Y-2/Y-3/Y-4 KOD BİTTİ** (commit'ler: f35d1a8, f5f0396, 68a429e). Y planı tamamlandı. Fiziksel teyit (gerçek Word/Excel/PDF ile) İskender'in toplu test turunda.
