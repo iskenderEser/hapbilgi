@@ -86,8 +86,14 @@ Doğrulama disiplini: her aşama ayrı commit + üçlü doğrulama + en fazla 1 
 - **Y-2:** İki ekran da ortak bileşende: IU yazım ekranı (`app/soru-setleri/[video_durum_id]/page.tsx`) ve üretici bloğu (`HazirSoruSetiBlogu.tsx` + `useTalepFormu.ts`). Eski textarea/önizleme kapısı ve `useSoruSetiParse` hook'u kaldırıldı. Revizyon doğrudan kartlara yüklüyor. Toplu yapıştır katlanır `components/SoruIceAktar.tsx`'te; `parseSoruSetiEsnek` ASLA reddetmez, çözülen kartlara dökülür.
 - Smoke: `taslaklariDogrula` mutlu + red ✓. Üçlü doğrulama temiz ✓.
 
+## Y-3 SONUÇ (20.07.2026 — KOD BİTTİ, commit 68a429e)
+
+- `lib/soru/dosyadanGetir.ts`: istemci taraflı dosya → form taslağı katmanı. `.txt`/`.docx` (mammoth) / `.pptx` (jszip+xml) → esnek parse; `.xlsx` (SheetJS) hücreler doğrudan kartlara (sütun: soru|A|B|doğru, şablon indirme dahil); `.pdf` (pdfjs) metin tabanlıysa parse'a girer, taranmış PDF Türkçe gerekçeyle reddedilir. Dosya sunucuya hiç gitmez, okuyucu kütüphaneler yalnız seçim anında dinamik yüklenir. 10 MB tavanı.
+- `SoruIceAktar.tsx`'e "Dosyadan getir" düğmesi + Excel şablonu indirme bağlandı; esnek felsefe korunur.
+- Yeni bağımlılıklar: mammoth, xlsx, jszip, pdfjs-dist.
+- Üçlü doğrulama temiz. Smoke: mutlu = mini `.docx` → doğru dolan taslak (mammoth'un tarayıcı derlemesi require-cache yamasıyla Node'da birebir simüle edildi, çünkü mammoth Node/tarayıcı için ayrı iç modül kullanıyor); red = desteklenmeyen uzantı mesajı. Fiziksel Word/Excel/PDF testi İskender'in test turunda.
+
 ## Durum (20.07.2026)
 
-- **D-1/D-2/D-3 ve Y-1/Y-2 KOD BİTTİ** (commit'ler: f35d1a8, f5f0396). Fiziksel teyit İskender'in toplu test turunda.
-- **Y-3 KOD HAZIR ama COMMIT'LENMEDİ** (çalışma ağacında): `lib/soru/dosyadanGetir.ts` iki paketi birden kapsıyor (.txt/.docx/.xlsx + şablon indirme, .pptx/.pdf + taranmış PDF reddi, 10 MB tavanı); `SoruIceAktar.tsx`'e "Dosyadan getir" düğmesi bağlı; 4 bağımlılık kurulu. 20.07 kontrol turunda üçlü doğrulama bu ağaçta (Y-3 dahil) temiz çıktı. **Eksik: Y-3 smoke'u (mini .docx mutlu + geçersiz dosya red) koşulmadı, commit yapılmadı.**
+- **D-1/D-2/D-3, Y-1/Y-2, Y-3 KOD BİTTİ** (commit'ler: f35d1a8, f5f0396, 68a429e). Fiziksel teyit İskender'in toplu test turunda.
 - **Y-4 YAPILMADI** (metin sadeleştirme + Y-SONUÇ işleme; bu bölümün yazılmasıyla belge kısmı kapanmış sayılabilir, ekran metinleri bekliyor).
