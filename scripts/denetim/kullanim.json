@@ -1597,7 +1597,7 @@
     },
     {
       "dosya": "app/talepler/[talep_id]/page.tsx",
-      "satir": 94,
+      "satir": 93,
       "tablo": "talepler"
     },
     {
@@ -1652,27 +1652,27 @@
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 79,
+      "satir": 77,
       "tablo": "senaryo_durumu"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 86,
+      "satir": 84,
       "tablo": "senaryolar"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 93,
+      "satir": 91,
       "tablo": "talepler"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 105,
+      "satir": 103,
       "tablo": "videolar"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 113,
+      "satir": 111,
       "tablo": "video_durumu"
     },
     {
@@ -5167,7 +5167,7 @@
     },
     {
       "dosya": "app/talepler/[talep_id]/page.tsx",
-      "satir": 94,
+      "satir": 93,
       "ham": "talep_id, uretici_id, hedef_rol, aciklama, created_at, dosya_urls, hazir_video, hazir_video_url, hazir_soru_seti, hazir_soru_seti_verisi, urun_id, teknik_id, urunler(urun_adi), teknikler(teknik_adi)",
       "tablo": "talepler"
     },
@@ -5233,31 +5233,31 @@
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 79,
+      "satir": 77,
       "ham": "senaryo_id",
       "tablo": "senaryo_durumu"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 86,
+      "satir": 84,
       "ham": "senaryo_id, talep_id, senaryo_metni",
       "tablo": "senaryolar"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 93,
+      "satir": 91,
       "ham": "hedef_rol, urunler(urun_adi), teknikler(teknik_adi)",
       "tablo": "talepler"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 105,
+      "satir": 103,
       "ham": "video_id, senaryo_durum_id, iu_id, video_url, thumbnail_url, created_at",
       "tablo": "videolar"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 113,
+      "satir": 111,
       "ham": "durum, notlar",
       "tablo": "video_durumu"
     },

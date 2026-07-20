@@ -12,6 +12,7 @@ import { HedefRolBant } from "@/components/HedefRolBant";
 import type { HedefRol } from "@/app/talepler/_types";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
+import { useBunnyIslemeDurumu } from "@/hooks/useBunnyIslemeDurumu";
 
 interface Video {
   video_id: string;
@@ -47,9 +48,6 @@ export default function VideoAkisPage() {
   // dosya tarayıcıdan doğrudan Bunny'ye gider, kimliği sistem yazar.
   const [seciliDosya, setSeciliDosya] = useState<File | null>(null);
   const [yuklemeYuzdesi, setYuklemeYuzdesi] = useState<number | null>(null);
-  // A3: son videonun Bunny işlenme durumu — null: bilinmiyor/sorgulanmadı,
-  // "isleniyor": encode sürüyor (rozet), "hatali": encode başarısız (dürüst uyarı).
-  const [bunnyIslemeDurumu, setBunnyIslemeDurumu] = useState<"isleniyor" | "hatali" | null>(null);
   const [revizyonNotu, setRevizyonNotu] = useState("");
   const [aktifRevizyon, setAktifRevizyon] = useState(false);
   const [acikVideo, setAcikVideo] = useState<string | null>(null);
@@ -119,23 +117,6 @@ export default function VideoAkisPage() {
 
     setVideolar(videolarWithDurum);
     setLoading(false);
-
-    // A3: son videonun Bunny işlenme durumu — kart açılışında tek sorgu, polling yok.
-    // Encode bitmediyse kapak/izleme henüz yok; rozetle dürüstçe söylenir.
-    const sonV = videolarWithDurum[videolarWithDurum.length - 1];
-    setBunnyIslemeDurumu(null);
-    if (sonV?.video_url?.includes("mediadelivery.net")) {
-      try {
-        const res = await fetch(`/videolar/api/bunny-durum?video_id=${sonV.video_id}`);
-        const d = await res.json();
-        if (res.ok && d.bunny_kaydi) {
-          if (d.hatali) setBunnyIslemeDurumu("hatali");
-          else if (!d.hazir) setBunnyIslemeDurumu("isleniyor");
-        }
-      } catch {
-        // durum sorgusu süs değil ama kritik de değil — sessiz geç, rozet çıkmaz
-      }
-    }
   };
 
   useEffect(() => { if (kullanici && senaryo_durum_id) veriCek(); }, [kullanici, senaryo_durum_id]);
@@ -148,6 +129,9 @@ export default function VideoAkisPage() {
   const isIU = rolKucu === "iu";
 
   const sonVideo = videolar[videolar.length - 1];
+  // Video modernizasyonu (20.07.2026): tek seferlik kontrol yerine sınırlı süreli
+  // tekrar-sorgu — IU ve PM ekranı sayfayı yenilemeden de "hazır"a geçişi görür.
+  const bunnyIslemeDurumu = useBunnyIslemeDurumu(sonVideo?.video_url, { video_id: sonVideo?.video_id });
   const iuGonderebilir = isIU && (!sonVideo || sonVideo.son_durum === "revizyon bekleniyor" || !sonVideo.video_url);
   const revizyonSayisi = videolar.filter(v => v.son_durum === "revizyon bekleniyor").length;
 

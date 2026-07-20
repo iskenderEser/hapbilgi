@@ -11,6 +11,7 @@ import { guvenliDosyaAdi } from "@/lib/utils/guvenliDosyaAdi";
 import { HedefRolBant } from "@/components/HedefRolBant";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
+import { useBunnyIslemeDurumu } from "@/hooks/useBunnyIslemeDurumu";
 
 interface Talep {
   talep_id: string;
@@ -64,8 +65,6 @@ export default function TalepDetayPage() {
   const [seciliVideoDosya, setSeciliVideoDosya] = useState<File | null>(null);
   const [videoYukleniyor, setVideoYukleniyor] = useState(false);
   const [yuklemeYuzdesi, setYuklemeYuzdesi] = useState<number | null>(null);
-  // A3/A4 — hazır videonun encode durumu; tek sorgu, polling yok.
-  const [bunnyIslemeDurumu, setBunnyIslemeDurumu] = useState<"isleniyor" | "hatali" | null>(null);
   const [kararLoading, setKararLoading] = useState<"onayla" | "reddet" | null>(null);
   const [soruSetiAcik, setSoruSetiAcik] = useState(false);
   const dosyaInputRef = useRef<HTMLInputElement>(null);
@@ -114,21 +113,9 @@ export default function TalepDetayPage() {
       });
   }, [kullanici, talep_id]);
 
-  // A3/A4: hazır videonun Bunny işlenme durumu — sayfa açılışında tek sorgu, polling yok.
-  useEffect(() => {
-    setBunnyIslemeDurumu(null);
-    if (!talep?.hazir_video_url?.includes("mediadelivery.net")) return;
-    fetch(`/videolar/api/bunny-durum?talep_id=${talep_id}`)
-      .then(res => res.json().then(d => {
-        if (res.ok && d.bunny_kaydi) {
-          if (d.hatali) setBunnyIslemeDurumu("hatali");
-          else if (!d.hazir) setBunnyIslemeDurumu("isleniyor");
-        }
-      }))
-      .catch(() => {
-        // durum sorgusu süs değil ama kritik de değil — sessiz geç, rozet çıkmaz
-      });
-  }, [talep?.hazir_video_url, talep_id]);
+  // Video modernizasyonu (20.07.2026): tek seferlik kontrol yerine sınırlı süreli
+  // tekrar-sorgu — PM ekranı sayfayı yenilemeden de "hazır"a geçişi görür.
+  const bunnyIslemeDurumu = useBunnyIslemeDurumu(talep?.hazir_video_url, { talep_id });
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
