@@ -12,6 +12,7 @@ import { HedefRolBant } from "@/components/HedefRolBant";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
 import { useBunnyIslemeDurumu } from "@/hooks/useBunnyIslemeDurumu";
+import { DosyaGoruntuleListesi, type DosyaItem as ComponentDosyaItem } from "@/components/DosyaGoruntuleListesi";
 
 interface Talep {
   talep_id: string;
@@ -28,27 +29,9 @@ interface Talep {
   hazir_soru_seti_verisi: any[] | null;
 }
 
-interface DosyaItem {
-  dosya_adi: string;
-  url: string;
-  boyut: number;
-  yuklenme_tarihi: string;
-}
+type DosyaItem = ComponentDosyaItem;
 
 const DESTEKLENEN_FORMATLAR = ".pdf,.docx,.pptx,.xlsx,.txt,.png,.jpg,.jpeg,.mp4,.mov,.avi,.mkv,.webm";
-const OFFICE_FORMATLAR = ["docx", "doc", "pptx", "ppt", "xlsx", "xls"];
-
-const dosyaTipiRenk = (dosya_adi: string): { etiket: string; bg: string; renk: string } => {
-  const ext = dosya_adi.split(".").pop()?.toLowerCase() ?? "";
-  if (ext === "pdf") return { etiket: "PDF", bg: "#fef2f2", renk: "#bc2d0d" };
-  if (["docx", "doc"].includes(ext)) return { etiket: "DOC", bg: "#eff6ff", renk: "#1d4ed8" };
-  if (["pptx", "ppt"].includes(ext)) return { etiket: "PPT", bg: "#fff7ed", renk: "#c2410c" };
-  if (["xlsx", "xls"].includes(ext)) return { etiket: "XLS", bg: "#f0fdf4", renk: "#15803d" };
-  if (ext === "txt") return { etiket: "TXT", bg: "#f9fafb", renk: "#374151" };
-  if (["png", "jpg", "jpeg"].includes(ext)) return { etiket: "IMG", bg: "#fdf4ff", renk: "#7e22ce" };
-  if (["mp4", "mov", "webm", "avi", "mkv"].includes(ext)) return { etiket: "VID", bg: "#f0fdf4", renk: "#16a34a" };
-  return { etiket: ext.toUpperCase(), bg: "#f9fafb", renk: "#737373" };
-};
 
 export default function TalepDetayPage() {
   const router = useRouter();
@@ -60,7 +43,6 @@ export default function TalepDetayPage() {
   const [loading, setLoading] = useState(true);
   const [dosyaYukleniyor, setDosyaYukleniyor] = useState(false);
   const [siliniyor, setSiliniyor] = useState<string | null>(null);
-  const [goruntuleniyorUrl, setGoruntuleniyorUrl] = useState<string | null>(null);
   // A4 — hazır videoyu üretici buradan da yükleyebilir (form yüklemesi yarım kaldıysa ya da red sonrası).
   const [seciliVideoDosya, setSeciliVideoDosya] = useState<File | null>(null);
   const [videoYukleniyor, setVideoYukleniyor] = useState(false);
@@ -119,26 +101,6 @@ export default function TalepDetayPage() {
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
-
-  const handleGoruntule = async (dosya: DosyaItem) => {
-    // URL'den storage yolunu çıkar: ".../talep-dosyalari/<yol>" → "<yol>"
-    const dosyaYolu = dosya.url.split("/talep-dosyalari/")[1];
-    if (!dosyaYolu) { hata("Dosya yolu çözümlenemedi.", "url parse", undefined); return; }
-
-    setGoruntuleniyorUrl(dosya.url);
-    const res = await fetch(`/talepler/api/dosyalar?yol=${encodeURIComponent(dosyaYolu)}`);
-    const d = await res.json();
-    setGoruntuleniyorUrl(null);
-
-    if (!res.ok) { hata(d.hata ?? "Dosya görüntülenemedi.", d.adim, d.detay); return; }
-
-    const ext = dosya.dosya_adi.split(".").pop()?.toLowerCase() ?? "";
-    const acilacakUrl = OFFICE_FORMATLAR.includes(ext)
-      ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(d.signed_url)}`
-      : d.signed_url;
-
-    window.open(acilacakUrl, "_blank");
-  };
 
   const handleDosyaSec = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const dosyalar = Array.from(e.target.files ?? []);
@@ -258,33 +220,6 @@ export default function TalepDetayPage() {
   // A4: hazır videoyu yalnız talebin üreticisi yükler (vezne de sunucuda aynı şartı arar).
   const isUretici = isPM && talep.uretici_id === kullanici.id;
 
-  const DosyaChip = ({ dosya }: { dosya: DosyaItem }) => {
-    const { etiket, bg, renk } = dosyaTipiRenk(dosya.dosya_adi);
-    const isGoruntuleniyor = goruntuleniyorUrl === dosya.url;
-    return (
-      <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-full py-1 pl-2 pr-2.5">
-        <div className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0" style={{ background: bg }}>
-          <span style={{ fontSize: 7, fontWeight: 700, color: renk }}>{etiket}</span>
-        </div>
-        <span className="text-xs text-gray-700 max-w-28 truncate">{dosya.dosya_adi}</span>
-        <span onClick={() => !isGoruntuleniyor && handleGoruntule(dosya)}
-          className="text-xs font-semibold cursor-pointer ml-0.5 whitespace-nowrap"
-          style={{ color: "#56aeff", opacity: isGoruntuleniyor ? 0.5 : 1 }}>
-          {isGoruntuleniyor ? "..." : "Görüntüle"}
-        </span>
-        {isPM && (
-          siliniyor === dosya.url ? (
-            <span className="text-xs text-gray-400 ml-0.5">...</span>
-          ) : (
-            <svg onClick={() => handleDosyaSil(dosya.url)} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" className="cursor-pointer flex-shrink-0 ml-0.5">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          )
-        )}
-      </div>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
@@ -393,8 +328,20 @@ export default function TalepDetayPage() {
             {(talep.dosya_urls.length > 0 || isPM) && (
               <div>
                 {talep.dosya_urls.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-2.5">
-                    {talep.dosya_urls.map((dosya, i) => <DosyaChip key={i} dosya={dosya} />)}
+                  <div className="mb-2.5">
+                    <DosyaGoruntuleListesi
+                      dosyalar={talep.dosya_urls}
+                      onHata={hata}
+                      sagAksiyon={(dosya) => isPM && (
+                        siliniyor === dosya.url ? (
+                          <span className="text-xs text-gray-400 ml-0.5">...</span>
+                        ) : (
+                          <svg onClick={() => handleDosyaSil(dosya.url)} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" className="cursor-pointer flex-shrink-0 ml-0.5">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                          </svg>
+                        )
+                      )}
+                    />
                   </div>
                 )}
                 {isPM && (

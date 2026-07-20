@@ -10,6 +10,7 @@ import { HedefRolBant } from "@/components/HedefRolBant";
 import type { HedefRol } from "@/app/talepler/_types";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
+import { DosyaGoruntuleListesi, type DosyaItem } from "@/components/DosyaGoruntuleListesi";
 
 interface Senaryo {
   senaryo_id: string;
@@ -29,6 +30,7 @@ interface Talep {
   teknik_adi: string;
   hedef_rol: HedefRol;
   aciklama: string;
+  dosya_urls: DosyaItem[];
 }
 
 export default function SenaryolarPage() {
@@ -42,6 +44,10 @@ export default function SenaryolarPage() {
   const [loading, setLoading] = useState(true);
   const [gonderLoading, setGonderLoading] = useState(false);
   const [senaryoMetni, setSenaryoMetni] = useState("");
+  // G-1 (docs/talep_senaryo_is_sureci_gelistirme_is_plani.md): durum çağrısı
+  // başarısız olup metin ekranda kalırsa, tekrar "Gönder" aynı senaryo satırını
+  // yeniden OLUŞTURMAZ — yalnız durum çağrısını tekrarlar.
+  const [beklemedekiSenaryoId, setBeklemedekiSenaryoId] = useState<string | null>(null);
   const [revizyonNotu, setRevizyonNotu] = useState("");
   const [aktifRevizyon, setAktifRevizyon] = useState<string | null>(null);
   const { mesajlar, hata, basari } = useHataMesaji();
@@ -69,7 +75,7 @@ export default function SenaryolarPage() {
 
     const { data: talepData, error: talepError } = await supabase
       .from("talepler")
-      .select(`talep_id, hedef_rol, aciklama, urunler(urun_adi), teknikler(teknik_adi)`)
+      .select(`talep_id, hedef_rol, aciklama, dosya_urls, urunler(urun_adi), teknikler(teknik_adi)`)
       .eq("talep_id", talep_id)
       .single();
 
@@ -85,6 +91,7 @@ export default function SenaryolarPage() {
       aciklama: talepData.aciklama,
       urun_adi: (talepData as any).urunler?.urun_adi ?? "-",
       teknik_adi: (talepData as any).teknikler?.teknik_adi ?? "-",
+      dosya_urls: talepData.dosya_urls ?? [],
     });
 
     const { data: senaryolarData, error: senaryoError } = await supabase
@@ -109,6 +116,25 @@ export default function SenaryolarPage() {
 
   useEffect(() => { if (kullanici && talep_id) veriCek(); }, [kullanici, talep_id]);
 
+  // G-2: taslak — sayfa açılışında varsa geri yüklenir, yazarken debounce'lu kaydedilir.
+  const taslakAnahtari = `senaryo-taslak-${talep_id}`;
+  useEffect(() => {
+    if (!talep_id) return;
+    const kayitliTaslak = localStorage.getItem(taslakAnahtari);
+    if (kayitliTaslak) setSenaryoMetni(kayitliTaslak);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [talep_id]);
+
+  useEffect(() => {
+    if (!talep_id) return;
+    const zamanlayici = setTimeout(() => {
+      if (senaryoMetni.trim()) localStorage.setItem(taslakAnahtari, senaryoMetni);
+      else localStorage.removeItem(taslakAnahtari);
+    }, 1000);
+    return () => clearTimeout(zamanlayici);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [senaryoMetni, talep_id]);
+
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
@@ -119,19 +145,37 @@ export default function SenaryolarPage() {
   const handleSenaryoGonder = async () => {
     if (!senaryoMetni.trim()) return;
     setGonderLoading(true);
-    const res = await fetch("/senaryolar/api", {
+
+    // G-1: satır daha önce oluşturulup durum çağrısı başarısız olduysa (retry),
+    // senaryo satırı YENİDEN oluşturulmaz — yalnız durum çağrısı tekrarlanır.
+    let senaryoId = beklemedekiSenaryoId;
+    if (!senaryoId) {
+      const res = await fetch("/senaryolar/api", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ talep_id, senaryo_metni: senaryoMetni.trim() }),
+      });
+      const d = await res.json();
+      if (!res.ok) { hata(d.hata ?? "Senaryo oluşturulamadı.", d.adim, d.detay); setGonderLoading(false); return; }
+      senaryoId = d.senaryo.senaryo_id;
+      setBeklemedekiSenaryoId(senaryoId);
+    }
+
+    const durumRes = await fetch("/senaryolar/api/durum", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ talep_id, senaryo_metni: senaryoMetni.trim() }),
+      body: JSON.stringify({ senaryo_id: senaryoId, durum: "inceleme bekleniyor" }),
     });
-    const d = await res.json();
-    if (!res.ok) { hata(d.hata ?? "Senaryo oluşturulamadı.", d.adim, d.detay); setGonderLoading(false); return; }
-    const { senaryo } = d;
-    const d1 = await fetch("/senaryolar/api/durum", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ senaryo_id: senaryo.senaryo_id, durum: "senaryo yaziliyor" }) });
-    if (!d1.ok) { const e = await d1.json(); hata(e.hata ?? "Durum kaydedilemedi.", e.adim, e.detay); }
-    const d2 = await fetch("/senaryolar/api/durum", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ senaryo_id: senaryo.senaryo_id, durum: "inceleme bekleniyor" }) });
-    if (!d2.ok) { const e = await d2.json(); hata(e.hata ?? "Durum kaydedilemedi.", e.adim, e.detay); }
-    else basari("Senaryo PM'e gönderildi.");
+    const durumData = await durumRes.json();
+    if (!durumRes.ok) {
+      // Metin ve taslak KORUNUR — kullanıcı veri kaybetmeden tekrar dener.
+      hata(durumData.hata ?? "Durum kaydedilemedi.", durumData.adim, durumData.detay);
+      setGonderLoading(false);
+      return;
+    }
+
+    basari("Senaryo PM'e gönderildi.");
     setSenaryoMetni("");
+    setBeklemedekiSenaryoId(null);
+    localStorage.removeItem(taslakAnahtari);
     await veriCek();
     setGonderLoading(false);
   };
@@ -195,6 +239,11 @@ export default function SenaryolarPage() {
               <span className="text-base font-semibold text-gray-900">{talep.urun_adi}</span>
               <span className="text-xs text-gray-500">{talep.teknik_adi}</span>
               {talep.aciklama && <p className="text-sm text-gray-700 mt-2 leading-relaxed">{talep.aciklama}</p>}
+              {talep.dosya_urls.length > 0 && (
+                <div className="mt-2.5">
+                  <DosyaGoruntuleListesi dosyalar={talep.dosya_urls} onHata={hata} />
+                </div>
+              )}
             </div>
           </div>
         )}
