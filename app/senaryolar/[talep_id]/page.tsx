@@ -182,19 +182,35 @@ export default function SenaryolarPage() {
     if (!senaryoMetni.trim()) return;
     setGonderLoading(true);
 
-    // G-1: satır daha önce oluşturulup durum çağrısı başarısız olduysa (retry),
-    // senaryo satırı YENİDEN oluşturulmaz — yalnız durum çağrısı tekrarlanır.
+    // G-1 + Ç-1: retry'da satır YENİDEN oluşturulmaz ama metin HER gönderimde
+    // sunucuya taşınır (retry → aynı satıra UPDATE) — düzenlenmiş metin ile
+    // DB bir daha ayrışamaz.
     let senaryoId = beklemedekiSenaryoId;
-    if (!senaryoId) {
-      const res = await fetch("/senaryolar/api", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ talep_id, senaryo_metni: senaryoMetni.trim() }),
-      });
-      const d = await res.json();
-      if (!res.ok) { hata(d.hata ?? "Senaryo oluşturulamadı.", d.adim, d.detay); setGonderLoading(false); return; }
-      senaryoId = d.senaryo.senaryo_id;
-      setBeklemedekiSenaryoId(senaryoId);
+    const res = await fetch("/senaryolar/api", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(
+        senaryoId
+          ? { senaryo_id: senaryoId, senaryo_metni: senaryoMetni.trim() }
+          : { talep_id, senaryo_metni: senaryoMetni.trim() }
+      ),
+    });
+    const d = await res.json();
+    if (!res.ok) {
+      // 422 = satırın durum kaydı zaten var: önceki durum çağrısı aslında
+      // sunucuya ulaşmış (yanıt ağda kaybolmuş). Akış tazelenir.
+      if (senaryoId && res.status === 422) {
+        hata("Önceki gönderim sunucuya ulaşmış; akış tazelendi.", d.adim, d.detay);
+        setBeklemedekiSenaryoId(null);
+        await veriCek();
+        setGonderLoading(false);
+        return;
+      }
+      hata(d.hata ?? "Senaryo oluşturulamadı.", d.adim, d.detay);
+      setGonderLoading(false);
+      return;
     }
+    senaryoId = d.senaryo.senaryo_id;
+    setBeklemedekiSenaryoId(senaryoId);
 
     const durumRes = await fetch("/senaryolar/api/durum", {
       method: "POST", headers: { "Content-Type": "application/json" },

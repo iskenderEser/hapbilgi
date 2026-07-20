@@ -1,7 +1,7 @@
 // app/senaryolar/api/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
+import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
@@ -54,9 +54,40 @@ export async function POST(request: NextRequest) {
     if (rol !== "iu") return rolHatasi("Sadece IU senaryo oluşturabilir.");
 
     const body = await request.json();
-    const { talep_id, senaryo_metni } = body;
-    if (!talep_id) return validasyonHatasi("talep_id zorunludur.", ["talep_id"]);
+    const { talep_id, senaryo_metni, senaryo_id } = body;
     if (!senaryo_metni || senaryo_metni.trim() === "") return validasyonHatasi("Senaryo metni zorunludur.", ["senaryo_metni"]);
+
+    // Ç-1 (docs/talep_senaryo_is_sureci_gelistirme_is_plani.md): senaryo_id
+    // verilirse INSERT değil UPDATE — retry'da düzenlenen metin de sunucuya
+    // taşınır. Yalnız kendi satırı ve yalnız hiç durum kaydı yokken.
+    if (senaryo_id) {
+      const { data: mevcut, error: mevcutError } = await adminSupabase
+        .from("senaryolar")
+        .select("senaryo_id, iu_id")
+        .eq("senaryo_id", senaryo_id)
+        .single();
+      if (mevcutError || !mevcut) return hataYaniti("Senaryo bulunamadı.", "senaryolar tablosu SELECT — senaryo_id kontrolü", mevcutError, 404);
+      if (mevcut.iu_id !== user.id) return rolHatasi("Bu senaryo başka bir IU'ya ait.");
+
+      const { count, error: durumSayError } = await adminSupabase
+        .from("senaryo_durumu")
+        .select("senaryo_durum_id", { count: "exact", head: true })
+        .eq("senaryo_id", senaryo_id);
+      if (durumSayError) return hataYaniti("Durum kaydı kontrol edilemedi.", "senaryo_durumu tablosu COUNT — güncelleme kontrolü", durumSayError);
+      if ((count ?? 0) > 0) return isKuraluHatasi("Bu senaryonun durum kaydı zaten var; metin güncellenemez.");
+
+      const { data: guncelSenaryo, error: guncelError } = await adminSupabase
+        .from("senaryolar")
+        .update({ senaryo_metni: senaryo_metni.trim() })
+        .eq("senaryo_id", senaryo_id)
+        .select("senaryo_id, talep_id, senaryo_metni, created_at")
+        .single();
+      if (guncelError) return hataYaniti("Senaryo güncellenemedi.", "senaryolar tablosu UPDATE", guncelError);
+
+      return NextResponse.json({ mesaj: "Senaryo güncellendi.", senaryo: guncelSenaryo }, { status: 200 });
+    }
+
+    if (!talep_id) return validasyonHatasi("talep_id zorunludur.", ["talep_id"]);
 
     const { data: talep, error: talepError } = await adminSupabase
       .from("talepler")
