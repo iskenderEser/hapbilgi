@@ -4,7 +4,7 @@
 // handleSubmit beş alt fonksiyona bölünmüştür: validateForm, submitTalep, uploadVideo,
 // uploadDosyalar, resetForm.
 // Madde 4 Aşama 2B: fetchTakimlar ve handleYeniUrunEkle(urun_adi, takim_id) burada.
-// useSoruSetiParse ve useHataMesaji içeride composed; parent sadece return değerlerini kullanır.
+// Hazır soru seti yapısal form kartlarıyla girilir (Y-2 — lib/soru/taslak); useHataMesaji içeride composed.
 //
 // E-Club üretim düzenlemesi: hedef rol eczacı/eczane teknisyeni ise teknik seçimi
 // gizlenir ve teknik_id null gönderilir (teknik bu roller için anlamlı detay değil).
@@ -32,7 +32,7 @@ import type {
   BekleyenDosya,
   HedefRol,
 } from "../_types";
-import { useSoruSetiParse } from "./useSoruSetiParse";
+import { type SoruTaslagi, taslaklariBoyutla, taslaklariDogrula, taslaklardanSorular } from "@/lib/soru/taslak";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { URETIM_HATTI_GORENLER, ECZANEM_TALEP_ACAN_ROLLER } from "@/lib/utils/roller";
 import { guvenliDosyaAdi } from "@/lib/utils/guvenliDosyaAdi";
@@ -42,7 +42,8 @@ export function useTalepFormu() {
   const router = useRouter();
   const { mesajlar, hata, basari, uyari } = useHataMesaji();
   const okunmamisIdler = useOkunmamisIdler("talep");
-  const soruSetiParse = useSoruSetiParse();
+  // Y-2: hazır soru seti yapısal form kartlarıyla girilir (textarea/parse kapısı kalktı).
+  const [soruTaslaklari, setSoruTaslaklari] = useState<SoruTaslagi[]>([]);
 
   // ============================================================================
   // Auth + kullanıcı
@@ -229,12 +230,21 @@ export function useTalepFormu() {
 
   const toggleHazirSoruSeti = useCallback(() => {
     setHazirSoruSeti((prev) => !prev);
-    soruSetiParse.reset();
-  }, [soruSetiParse]);
+    setSoruTaslaklari([]);
+  }, []);
 
-  const handleSoruSetiOnizle = useCallback(() => {
-    soruSetiParse.onOnizle(soruSetiBuyuklugu);
-  }, [soruSetiParse, soruSetiBuyuklugu]);
+  // Form kartları büyüklükle senkron tutulur: eksikse boş kart doğar, büyüklük
+  // küçülünce yalnız BOŞ kartlar düşer (dolu veri sessizce silinmez).
+  useEffect(() => {
+    if (!hazirSoruSeti) return;
+    setSoruTaslaklari(prev => taslaklariBoyutla(prev, soruSetiBuyuklugu));
+  }, [hazirSoruSeti, soruSetiBuyuklugu]);
+
+  // İçe aktarma (toplu yapıştır / dosyadan): esnek parse formu doldurur, eksikler formda tamamlanır.
+  const handleSoruIceAktar = useCallback((taslaklar: SoruTaslagi[], uyariMesaji: string) => {
+    setSoruTaslaklari(taslaklariBoyutla(taslaklar, soruSetiBuyuklugu));
+    if (uyariMesaji) uyari(uyariMesaji);
+  }, [soruSetiBuyuklugu, uyari]);
 
   // Yeni ürün — Madde 4 Aşama 2B: takim_id parametresi.
   const handleYeniUrunEkle = useCallback(
@@ -350,9 +360,12 @@ export function useTalepFormu() {
       hata("Hazır video talebi için video dosyası zorunludur.", "video dosyası kontrolü", undefined);
       return false;
     }
-    if (hazirSoruSeti && soruSetiParse.onizleme.length === 0) {
-      hata("Hazır soru seti için önce önizleme yapmalısınız.", "soru seti kontrolü", undefined);
-      return false;
+    if (hazirSoruSeti) {
+      const taslakHatasi = taslaklariDogrula(soruTaslaklari, soruSetiBuyuklugu);
+      if (taslakHatasi) {
+        hata(taslakHatasi, "soru seti kontrolü", undefined);
+        return false;
+      }
     }
     if (videoBasiSoruSayisi > soruSetiBuyuklugu) {
       hata(
@@ -373,7 +386,7 @@ export function useTalepFormu() {
     hazirVideo,
     bekleyenVideo,
     hazirSoruSeti,
-    soruSetiParse.onizleme.length,
+    soruTaslaklari,
     videoBasiSoruSayisi,
     soruSetiBuyuklugu,
     hata,
@@ -394,7 +407,7 @@ export function useTalepFormu() {
         hazir_video: hazirVideo,
         hazir_soru_seti: hazirSoruSeti,
         hazir_soru_seti_verisi:
-          hazirSoruSeti && soruSetiParse.onizleme.length > 0 ? soruSetiParse.onizleme : null,
+          hazirSoruSeti && soruTaslaklari.length > 0 ? taslaklardanSorular(soruTaslaklari) : null,
         soru_seti_buyuklugu: soruSetiBuyuklugu,
         video_basi_soru_sayisi: videoBasiSoruSayisi,
       }),
@@ -416,7 +429,7 @@ export function useTalepFormu() {
     aciklama,
     hazirVideo,
     hazirSoruSeti,
-    soruSetiParse.onizleme,
+    soruTaslaklari,
     soruSetiBuyuklugu,
     videoBasiSoruSayisi,
     hata,
@@ -528,10 +541,10 @@ export function useTalepFormu() {
     setBekleyenVideo(null);
     setHazirVideo(false);
     setHazirSoruSeti(false);
-    soruSetiParse.reset();
+    setSoruTaslaklari([]);
     setSoruSetiBuyuklugu(25);
     setVideoBasiSoruSayisi(2);
-  }, [yetenek, soruSetiParse]);
+  }, [yetenek]);
 
   // F-01/4: Gönderim iki aşamalı — "Talep Oluştur" validasyondan geçirir ve onay
   // modalını açar; asıl gönderim (gonderimiCalistir) yalnız modaldaki Evet'le başlar.
@@ -667,11 +680,9 @@ export function useTalepFormu() {
     // form: hazır soru seti
     hazirSoruSeti,
     toggleHazirSoruSeti,
-    soruSetiMetni: soruSetiParse.metin,
-    setSoruSetiMetni: soruSetiParse.setMetin,
-    soruSetiOnizleme: soruSetiParse.onizleme,
-    soruSetiHata: soruSetiParse.hata,
-    handleSoruSetiOnizle,
+    soruTaslaklari,
+    setSoruTaslaklari,
+    handleSoruIceAktar,
 
     // form: ek dosyalar
     bekleyenDosyalar,

@@ -190,11 +190,9 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
           {formu.hazirSoruSeti && (
             <HazirSoruSetiBlogu
               buyukluk={formu.soruSetiBuyuklugu}
-              metin={formu.soruSetiMetni}
-              onMetinChange={formu.setSoruSetiMetni}
-              onizleme={formu.soruSetiOnizleme}
-              hata={formu.soruSetiHata}
-              onOnizle={formu.handleSoruSetiOnizle}
+              taslaklar={formu.soruTaslaklari}
+              onDegis={formu.setSoruTaslaklari}
+              onIceAktar={formu.handleSoruIceAktar}
             />
           )}
 

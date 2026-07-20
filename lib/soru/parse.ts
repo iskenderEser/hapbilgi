@@ -21,6 +21,8 @@
 // Çıktı sözleşmesi eski parse ile birebir aynı (soru_metni / secenekler[harf,
 // metin, dogru]) — alt akış (kayıt, hazır modül, izleme uçları) etkilenmez.
 
+import type { SoruTaslagi } from "./taslak";
+
 export interface Soru {
   soru_metni: string;
   secenekler: { harf: string; metin: string; dogru: boolean }[];
@@ -142,4 +144,76 @@ export const parseSoruSeti = (metin: string, maxSoru: number): { sorular: Soru[]
   }));
 
   return { sorular, hata: "" };
+};
+
+// ============================================================================
+// Esnek parse (Y-2) — form ön doldurucu: ASLA reddetmez.
+// Sert parse kabul kapısıdır; bu ise yapıştırılan/dosyadan gelen metni form
+// kartlarına döker — çözülemeyen alanlar boş kalır, kullanıcı formda tamamlar.
+// ============================================================================
+
+export const parseSoruSetiEsnek = (metin: string): { taslaklar: SoruTaslagi[]; uyari: string } => {
+  const satirlar = metin
+    .split(/\r?\n/)
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+
+  const taslaklar: SoruTaslagi[] = [];
+  let aktif: SoruTaslagi | null = null;
+  let sonOge: "soru" | "a" | "b" | null = null;
+
+  const tamam = (t: SoruTaslagi) => t.secenek_a !== "" && t.secenek_b !== "" && t.dogru !== null;
+
+  for (const satir of satirlar) {
+    if (NUMARA.test(satir)) {
+      if (aktif) taslaklar.push(aktif);
+      aktif = { soru_metni: satir.replace(NUMARA, ""), secenek_a: "", secenek_b: "", dogru: null };
+      sonOge = "soru";
+      continue;
+    }
+    if (SECENEK_A.test(satir)) {
+      if (!aktif) aktif = { soru_metni: "", secenek_a: "", secenek_b: "", dogru: null };
+      const metinA = satir.replace(SECENEK_A, "");
+      aktif.secenek_a = aktif.secenek_a ? `${aktif.secenek_a} ${metinA}` : metinA;
+      sonOge = "a";
+      continue;
+    }
+    if (SECENEK_B.test(satir)) {
+      if (!aktif) aktif = { soru_metni: "", secenek_a: "", secenek_b: "", dogru: null };
+      const metinB = satir.replace(SECENEK_B, "");
+      aktif.secenek_b = aktif.secenek_b ? `${aktif.secenek_b} ${metinB}` : metinB;
+      sonOge = "b";
+      continue;
+    }
+    if (DOGRU.test(satir)) {
+      if (!aktif) aktif = { soru_metni: "", secenek_a: "", secenek_b: "", dogru: null };
+      const harf = satir.replace(DOGRU, "").match(/[AB]/i)?.[0]?.toUpperCase();
+      aktif.dogru = harf === "A" || harf === "B" ? harf : null; // çözülemeyen işaret boş kalır — formda seçilir
+      sonOge = null;
+      continue;
+    }
+    if (!aktif || tamam(aktif)) {
+      if (aktif) taslaklar.push(aktif);
+      aktif = { soru_metni: satir, secenek_a: "", secenek_b: "", dogru: null };
+      sonOge = "soru";
+    } else if (sonOge === "a") {
+      aktif.secenek_a = `${aktif.secenek_a} ${satir}`;
+    } else if (sonOge === "b") {
+      aktif.secenek_b = `${aktif.secenek_b} ${satir}`;
+    } else {
+      aktif.soru_metni = `${aktif.soru_metni} ${satir}`.trim();
+    }
+  }
+  if (aktif) taslaklar.push(aktif);
+
+  if (taslaklar.length === 0) {
+    return { taslaklar, uyari: "Metinde soru bulunamadı — formu elle doldurabilirsiniz." };
+  }
+  const eksikler = taslaklar
+    .map((t, i) => (!t.soru_metni || !t.secenek_a || !t.secenek_b || t.dogru === null ? i + 1 : null))
+    .filter((n): n is number => n !== null);
+  const uyari = eksikler.length > 0
+    ? `${eksikler.join(", ")}. soru(lar)da eksik alan var — formda tamamlayın.`
+    : "";
+  return { taslaklar, uyari };
 };

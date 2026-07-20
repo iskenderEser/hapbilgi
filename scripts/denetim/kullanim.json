@@ -1527,17 +1527,17 @@
     },
     {
       "dosya": "app/soru-setleri/[video_durum_id]/page.tsx",
-      "satir": 88,
+      "satir": 89,
       "tablo": "video_durumu"
     },
     {
       "dosya": "app/soru-setleri/[video_durum_id]/page.tsx",
-      "satir": 121,
+      "satir": 122,
       "tablo": "soru_setleri"
     },
     {
       "dosya": "app/soru-setleri/[video_durum_id]/page.tsx",
-      "satir": 131,
+      "satir": 132,
       "tablo": "soru_seti_durumu"
     },
     {
@@ -1592,7 +1592,7 @@
     },
     {
       "dosya": "app/talepler/_hooks/useTalepFormu.ts",
-      "satir": 152,
+      "satir": 153,
       "tablo": "kullanicilar"
     },
     {
@@ -5083,19 +5083,19 @@
     },
     {
       "dosya": "app/soru-setleri/[video_durum_id]/page.tsx",
-      "satir": 88,
+      "satir": 89,
       "ham": "\n        video_id,\n        videolar!inner (\n          senaryo_durumu!inner (\n            senaryolar!inner (\n              talepler!inner (\n                soru_seti_buyuklugu,\n                video_basi_soru_sayisi,\n                hedef_rol,\n                urunler (urun_adi),\n                teknikler (teknik_adi)\n              )\n            )\n          )\n        )\n      ",
       "tablo": "video_durumu"
     },
     {
       "dosya": "app/soru-setleri/[video_durum_id]/page.tsx",
-      "satir": 121,
+      "satir": 122,
       "ham": "soru_seti_id, video_durum_id, iu_id, sorular, created_at",
       "tablo": "soru_setleri"
     },
     {
       "dosya": "app/soru-setleri/[video_durum_id]/page.tsx",
-      "satir": 131,
+      "satir": 132,
       "ham": "soru_seti_id, soru_seti_durum_id, durum, notlar",
       "tablo": "soru_seti_durumu"
     },
@@ -5161,7 +5161,7 @@
     },
     {
       "dosya": "app/talepler/_hooks/useTalepFormu.ts",
-      "satir": 152,
+      "satir": 153,
       "ham": "firma_id, takim_id",
       "tablo": "kullanicilar"
     },

@@ -10,7 +10,9 @@ import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { HedefRolBant } from "@/components/HedefRolBant";
 import type { HedefRol } from "@/app/talepler/_types";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { parseSoruSeti } from "@/lib/soru/parse";
+import { SoruSetiFormu } from "@/components/SoruSetiFormu";
+import { SoruIceAktar } from "@/components/SoruIceAktar";
+import { type SoruTaslagi, taslaklariBoyutla, taslaklariDogrula, taslaklardanSorular, sorulardanTaslaklar } from "@/lib/soru/taslak";
 
 interface Soru {
   soru_metni: string;
@@ -59,13 +61,12 @@ export default function SoruSetiAkisPage() {
   const [hedefRol, setHedefRol] = useState<HedefRol | null>(null);
   const [loading, setLoading] = useState(true);
   const [gonderLoading, setGonderLoading] = useState(false);
-  const [yapisTir, setYapisTir] = useState("");
-  const [onizleme, setOnizleme] = useState<Soru[]>([]);
-  const [parseHata, setParseHata] = useState("");
+  // Y-2: yapısal giriş — sorular form kartlarıyla yazılır (textarea/parse kapısı kalktı).
+  const [taslaklar, setTaslaklar] = useState<SoruTaslagi[]>([]);
   const [revizyonNotu, setRevizyonNotu] = useState("");
   const [aktifRevizyon, setAktifRevizyon] = useState(false);
   const [acikSet, setAcikSet] = useState<string | null>(null);
-  const { mesajlar, hata, basari } = useHataMesaji();
+  const { mesajlar, hata, basari, uyari } = useHataMesaji();
 
   useEffect(() => {
     if (authYukleniyor) return;
@@ -163,31 +164,20 @@ export default function SoruSetiAkisPage() {
 
   useEffect(() => { if (kullanici && video_durum_id) veriCek(); }, [kullanici, video_durum_id, veriCek]);
 
-  // Mevcut soruları, parse edilebilir metin formatına çevirir (revizyonda textarea'ya yüklemek için)
-  const sorulariMetneFormatla = (sorular: Soru[]): string => {
-    return sorular
-      .map((soru, i) => {
-        const dogruHarf = soru.secenekler.find(s => s.dogru)?.harf ?? "A";
-        const seceneklerMetni = soru.secenekler
-          .map(s => `${s.harf}) ${s.metin}`)
-          .join("\n");
-        return `${i + 1}. ${soru.soru_metni}\n${seceneklerMetni}\nDoğru: ${dogruHarf}`;
-      })
-      .join("\n\n");
-  };
-
-  // Revizyon talebi gelen soru setinin soruları textarea'ya düzenlenebilir halde yüklenir
+  // Form kartlarının hazırlanması: revizyonda mevcut sorular DOĞRUDAN kartlara
+  // yüklenir (eski metne-çevir/textarea yolu kalktı); ilk yazımda büyüklük kadar
+  // boş kart doğar. Kullanıcının başladığı form üzerine yazılmaz — yalnız boyut
+  // senkronu yapılır (boyutla boş kartlara dokunur, dolu veri silinmez).
   useEffect(() => {
+    if ((kullanici?.rol ?? "").toLowerCase() !== "iu") return;
     const sonSet = soruSetleri[soruSetleri.length - 1];
-    if (
-      (kullanici?.rol ?? "").toLowerCase() === "iu" &&
-      sonSet?.son_durum === "revizyon bekleniyor" &&
-      sonSet.sorular?.length > 0 &&
-      !yapisTir
-    ) {
-      setYapisTir(sorulariMetneFormatla(sonSet.sorular));
-    }
-  }, [soruSetleri, kullanici]);
+    setTaslaklar(prev => {
+      if (prev.length === 0 && sonSet?.son_durum === "revizyon bekleniyor" && sonSet.sorular?.length > 0) {
+        return sorulardanTaslaklar(sonSet.sorular);
+      }
+      return taslaklariBoyutla(prev, soruSetiBuyuklugu);
+    });
+  }, [soruSetleri, kullanici, soruSetiBuyuklugu]);
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -200,20 +190,21 @@ export default function SoruSetiAkisPage() {
   const iuGonderebilir = isIU && (!sonSet || sonSet.son_durum === "revizyon bekleniyor" || !sonSet.sorular?.length);
   const revizyonSayisi = soruSetleri.filter(ss => ss.son_durum === "revizyon bekleniyor").length;
 
-  const handleParse = () => {
-    // D-1: parse tek doğruluk kaynağından (lib/soru/parse.ts) — yerel kopya kaldırıldı.
-    const { sorular, hata: parseHataMsg } = parseSoruSeti(yapisTir, soruSetiBuyuklugu);
-    if (parseHataMsg) {
-      setParseHata(parseHataMsg);
-      setOnizleme([]);
-    } else {
-      setParseHata("");
-      setOnizleme(sorular);
-    }
+  // İçe aktarma (toplu yapıştır / dosyadan): esnek parse formu doldurur, eksikler formda tamamlanır.
+  const handleIceAktar = (yeniTaslaklar: SoruTaslagi[], uyariMesaji: string) => {
+    setTaslaklar(taslaklariBoyutla(yeniTaslaklar, soruSetiBuyuklugu));
+    if (uyariMesaji) uyari(uyariMesaji);
   };
 
   const handleIuGonder = async () => {
-    if (!onizleme.length || !sonSet) return;
+    if (!sonSet) return;
+    // Alan bazlı doğrulama — konumlu Türkçe mesaj ("2. sorunun B seçeneği boş" vb.).
+    const taslakHatasi = taslaklariDogrula(taslaklar, soruSetiBuyuklugu);
+    if (taslakHatasi) {
+      hata(taslakHatasi, "soru seti kontrolü", undefined);
+      return;
+    }
+    const sorular = taslaklardanSorular(taslaklar);
     setGonderLoading(true);
 
     try {
@@ -223,7 +214,7 @@ export default function SoruSetiAkisPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           soru_seti_id: sonSet.soru_seti_id,
-          sorular: onizleme,
+          sorular,
         }),
       });
       const d = await res.json();
@@ -242,7 +233,7 @@ export default function SoruSetiAkisPage() {
       if (!res2.ok) throw new Error(d2.hata ?? "Durum kaydedilemedi.");
 
       basari("Soru seti PM'e gönderildi.");
-      setYapisTir(""); setOnizleme([]);
+      setTaslaklar([]);
       await veriCek();
     } catch (err: any) {
       hata(err.message, "soru seti gönderme", err.message);
@@ -429,68 +420,17 @@ export default function SoruSetiAkisPage() {
             })}
           </div>
 
+          {/* Y-2: yapısal soru girişi — kartlar asıl yol; toplu yapıştırma formu dolduran hızlandırıcı */}
           {iuGonderebilir && (
             <div className="border-t border-gray-100 px-4 md:px-5 py-4 bg-gray-50">
-              <p className="text-xs text-gray-500 mb-1">Soruları aşağıdaki formatta yapıştırın:</p>
-              <div className="bg-gray-100 rounded-lg px-3 py-2.5 mb-3 text-xs text-gray-500 leading-relaxed font-mono">
-                1. Soru metni buraya yazılır<br />
-                A) Birinci seçenek<br />
-                B) İkinci seçenek<br />
-                Doğru: A<br />
-                <br />
-                2. Soru metni buraya yazılır<br />
-                A) Birinci seçenek<br />
-                B) İkinci seçenek<br />
-                Doğru: B
-              </div>
-              <textarea
-                value={yapisTir}
-                onChange={(e) => { setYapisTir(e.target.value); setOnizleme([]); setParseHata(""); }}
-                placeholder={`Soruları buraya yapıştırın... (tam ${soruSetiBuyuklugu} soru)`}
-                rows={12}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-xs text-gray-900 bg-white resize-y mb-2 focus:outline-none focus:border-[#56aeff] transition-colors"
-                style={{ fontFamily: "'Nunito', sans-serif" }}
-              />
-              {parseHata && <p className="text-xs mb-2" style={{ color: "#bc2d0d" }}>{parseHata}</p>}
-
-              {onizleme.length > 0 && (
-                <div className="mb-3 bg-white border border-gray-200 rounded-lg p-3 max-h-72 overflow-auto">
-                  <p className="text-xs font-semibold text-gray-900 mb-2">Önizleme — {onizleme.length} soru</p>
-                  {onizleme.map((s, i) => (
-                    <div key={i} className="mb-2 p-2 bg-gray-50 rounded-lg">
-                      <p className="text-xs text-gray-700 font-medium m-0 mb-1">{i + 1}. {s.soru_metni}</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {s.secenekler.map((se, j) => (
-                          <span key={j} className="text-xs px-2 py-0.5 rounded-full inline-block"
-                            style={{
-                              border: se.dogru ? "0.5px solid #56aeff" : "0.5px solid #e5e7eb",
-                              color: se.dogru ? "#56aeff" : "#737373",
-                              background: se.dogru ? "#e6f1fb" : "white",
-                            }}>
-                            {se.harf}. {se.metin}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex gap-2 justify-end">
-                {!onizleme.length ? (
-                  <button onClick={handleParse} disabled={!yapisTir.trim()}
-                    className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer transition-colors disabled:opacity-50"
-                    style={{ fontFamily: "'Nunito', sans-serif", background: "#56aeff" }}>
-                    Önizle
-                  </button>
-
-                ) : (
-                  <button onClick={handleIuGonder} disabled={gonderLoading}
-                    className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer hover:opacity-90 transition-colors disabled:opacity-50"
-                    style={{ background: "#56aeff", fontFamily: "'Nunito', sans-serif" }}>
-                    {gonderLoading ? "Gönderiliyor..." : "Gönder"}
-                  </button>
-                )}
+              <SoruIceAktar onDoldur={handleIceAktar} />
+              <SoruSetiFormu taslaklar={taslaklar} onDegis={setTaslaklar} buyukluk={soruSetiBuyuklugu} />
+              <div className="flex justify-end mt-3">
+                <button onClick={handleIuGonder} disabled={gonderLoading}
+                  className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer hover:opacity-90 transition-colors disabled:opacity-50"
+                  style={{ background: "#56aeff", fontFamily: "'Nunito', sans-serif" }}>
+                  {gonderLoading ? "Gönderiliyor..." : "Gönder"}
+                </button>
               </div>
             </div>
           )}
