@@ -170,7 +170,8 @@ export default function SoruSetleriListePage() {
   };
 
   const filtreliSatirlar = satirlar.filter(s => {
-    const durumUyumu = filtreler.size === 0 || (s.son_durum && filtreler.has(s.son_durum as FiltreDurum));
+    // G-4: durumu henüz olmayan satır yazım bekleyen iştir — filtre ne olursa olsun listede kalır.
+    const durumUyumu = filtreler.size === 0 || !s.son_durum || filtreler.has(s.son_durum as FiltreDurum);
     return durumUyumu;
   });
 

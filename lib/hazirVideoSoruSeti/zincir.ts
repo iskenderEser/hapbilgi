@@ -10,6 +10,7 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import { hazirParametreKontrol } from "./parametreKontrol";
+import { cokluBildirimOlustur } from "@/lib/utils/bildirimOlustur";
 
 export interface HazirZincirGirdisi {
   talep_id: string;
@@ -18,6 +19,7 @@ export interface HazirZincirGirdisi {
   hazir_soru_seti_verisi: any[] | null;
   soru_seti_buyuklugu: number | null;
   video_basi_soru_sayisi: number | null;
+  urun_adi?: string | null; // bildirim metni için (G-2)
 }
 
 export interface HazirZincirSonucu {
@@ -109,14 +111,25 @@ export async function hazirZinciriKur(
     return { ok: false, hata: "Video durumu oluşturulamadı.", adim: "video_durumu tablosu INSERT", detay: vdError };
   }
 
-  // 5. soru_setleri — hazır set varsa sorular DOĞRUDAN yazılır (IU adımı yok);
-  // yoksa boş set açılır (soru seti bu kolda başka yoldan gelecekse mevcut davranış).
+  // 5-6. Soru seti: hazır set varsa sorular DOĞRUDAN yazılıp otomatik onaylanır
+  // (V2); yoksa boş set açılır ve IU'lara "yazmaya hazır" bildirimi gider (V1 — G-2).
+  if (girdi.hazir_soru_seti && girdi.hazir_soru_seti_verisi) {
+    const islenen = await hazirSoruSetiIsle(adminSupabase, videoDurum.video_durum_id, girdi, degistiren_id);
+    if (!islenen.ok) return islenen;
+    return {
+      ok: true,
+      video_durum_id: videoDurum.video_durum_id,
+      soru_seti_id: islenen.soru_seti_id,
+      soruSetiIslendi: true,
+    };
+  }
+
   const { data: soruSeti, error: ssError } = await adminSupabase
     .from("soru_setleri")
     .insert({
       video_durum_id: videoDurum.video_durum_id,
       iu_id: null,
-      sorular: girdi.hazir_soru_seti && girdi.hazir_soru_seti_verisi ? girdi.hazir_soru_seti_verisi : [],
+      sorular: [],
     })
     .select("soru_seti_id")
     .single();
@@ -125,28 +138,88 @@ export async function hazirZinciriKur(
     return { ok: false, hata: "Soru seti oluşturulamadı.", adim: "soru_setleri tablosu INSERT", detay: ssError };
   }
 
-  // 6. hazır set otomatik onayı — "onaylandı" durum kaydıyla yayın bekleyenlerine düşer.
-  let soruSetiIslendi = false;
-  if (girdi.hazir_soru_seti && girdi.hazir_soru_seti_verisi) {
-    const { error: ssdError } = await adminSupabase
-      .from("soru_seti_durumu")
-      .insert({
-        soru_seti_id: soruSeti.soru_seti_id,
-        durum: "onaylandi",
-        degistiren_id,
-        notlar: "Hazır soru seti — otomatik onay",
-      });
-
-    if (ssdError) {
-      return { ok: false, hata: "Soru seti durumu oluşturulamadı.", adim: "soru_seti_durumu tablosu INSERT", detay: ssdError };
-    }
-    soruSetiIslendi = true;
+  // G-2: iş bu anda doğdu — normal hattaki "soru seti yazmaya hazır" bildiriminin
+  // hazır koldaki karşılığı. Hazır kolda videoyu yükleyen IU olmadığından tüm
+  // aktif IU'lara gider (talep açılış bildirimi deseni). Bildirim başarısızlığı
+  // zinciri düşürmez — set açılmıştır, iş listede görünür.
+  const { data: iuKullanicilar } = await adminSupabase
+    .from("kullanicilar")
+    .select("kullanici_id")
+    .eq("rol", "iu")
+    .eq("aktif_mi", true);
+  const iuIdler = (iuKullanicilar ?? []).map((k: any) => k.kullanici_id);
+  if (iuIdler.length > 0) {
+    await cokluBildirimOlustur({
+      adminSupabase,
+      alici_idler: iuIdler,
+      gonderen_id: degistiren_id,
+      kayit_turu: "soru_seti",
+      kayit_id: soruSeti.soru_seti_id,
+      mesaj: `Hazır video onaylandı, soru seti yazmaya hazır: ${girdi.urun_adi ?? "-"}`,
+    });
   }
 
   return {
     ok: true,
     video_durum_id: videoDurum.video_durum_id,
     soru_seti_id: soruSeti.soru_seti_id,
-    soruSetiIslendi,
+    soruSetiIslendi: false,
   };
+}
+
+export interface HazirSoruSetiIslendi {
+  ok: true;
+  soru_seti_id: string;
+}
+
+/**
+ * Hazır soru setini işler: parametre kilidi → sorular yazılır → "onaylandı"
+ * durum kaydı (yayın bekleyenlerine düşer). İki çağıran var:
+ * - hazirZinciriKur (V2: hazır video + hazır set),
+ * - normal hattın video onay ucu (V3 / G-1a: video IU'dan, set üreticiden) —
+ *   işleme mantığı modülde kalır, uç yalnız çağırır (F-07 gruplama kararı).
+ */
+export async function hazirSoruSetiIsle(
+  adminSupabase: SupabaseClient,
+  video_durum_id: string,
+  girdi: Pick<HazirZincirGirdisi, "hazir_soru_seti_verisi" | "soru_seti_buyuklugu" | "video_basi_soru_sayisi">,
+  degistiren_id: string
+): Promise<HazirSoruSetiIslendi | HazirZincirHata> {
+  const parametreHatasi = hazirParametreKontrol(
+    girdi.soru_seti_buyuklugu,
+    girdi.video_basi_soru_sayisi,
+    girdi.hazir_soru_seti_verisi?.length ?? 0
+  );
+  if (parametreHatasi) {
+    return { ok: false, hata: parametreHatasi, adim: "hazır akış parametre kontrolü" };
+  }
+
+  const { data: soruSeti, error: ssError } = await adminSupabase
+    .from("soru_setleri")
+    .insert({
+      video_durum_id,
+      iu_id: null,
+      sorular: girdi.hazir_soru_seti_verisi,
+    })
+    .select("soru_seti_id")
+    .single();
+
+  if (ssError || !soruSeti) {
+    return { ok: false, hata: "Soru seti oluşturulamadı.", adim: "soru_setleri tablosu INSERT", detay: ssError };
+  }
+
+  const { error: ssdError } = await adminSupabase
+    .from("soru_seti_durumu")
+    .insert({
+      soru_seti_id: soruSeti.soru_seti_id,
+      durum: "onaylandi",
+      degistiren_id,
+      notlar: "Hazır soru seti — otomatik onay",
+    });
+
+  if (ssdError) {
+    return { ok: false, hata: "Soru seti durumu oluşturulamadı.", adim: "soru_seti_durumu tablosu INSERT", detay: ssdError };
+  }
+
+  return { ok: true, soru_seti_id: soruSeti.soru_seti_id };
 }

@@ -229,23 +229,28 @@ export async function POST(request: NextRequest) {
     const turAdi = TALEP_TURU_KURALLARI[egitimTuru].ad;
     const bildirimBasligi = (yeniTalep as any).urunler?.urun_adi ?? turAdi;
 
-    // Tüm IU kullanıcılarına bildirim gönder
-    const { data: iuKullanicilar } = await adminSupabase
-      .from("kullanicilar")
-      .select("kullanici_id")
-      .eq("rol", "iu")
-      .eq("aktif_mi", true);
+    // G-3 (İskender kararı 19.07): hazır video taleplerinde açılış bildirimi gitmez —
+    // IU'nun işi ya hiç yoktur (video+set hazır) ya da video onayında doğar
+    // (yalnız video hazır; bildirimi o anda gider — hazır zincir modülü, G-2).
+    if (!hazir_video) {
+      // Tüm IU kullanıcılarına bildirim gönder
+      const { data: iuKullanicilar } = await adminSupabase
+        .from("kullanicilar")
+        .select("kullanici_id")
+        .eq("rol", "iu")
+        .eq("aktif_mi", true);
 
-    const iuIdler = (iuKullanicilar ?? []).map((k: any) => k.kullanici_id);
+      const iuIdler = (iuKullanicilar ?? []).map((k: any) => k.kullanici_id);
 
-    await cokluBildirimOlustur({
-      adminSupabase,
-      alici_idler: iuIdler,
-      gonderen_id: user.id,
-      kayit_turu: "talep",
-      kayit_id: (yeniTalep as any).talep_id,
-      mesaj: `Yeni talep: ${bildirimBasligi}`,
-    });
+      await cokluBildirimOlustur({
+        adminSupabase,
+        alici_idler: iuIdler,
+        gonderen_id: user.id,
+        kayit_turu: "talep",
+        kayit_id: (yeniTalep as any).talep_id,
+        mesaj: `Yeni talep: ${bildirimBasligi}`,
+      });
+    }
 
     return NextResponse.json({
       mesaj: "Talep oluşturuldu.",

@@ -86,6 +86,17 @@ Talep açılışında tüm aktif IU'lara giden "Yeni talep" bildirimi KOŞULSUZD
 
 Her adım: tsc + `npm run denetim` + `npm run lint:mimari` temiz; en fazla 1 smoke (1 mutlu + 1 red). Rol matrisi taraması yapılmaz — fiziksel teyit İskender'de. Canlı DB'ye yazan hiçbir komut oturumda çalıştırılmaz.
 
+## Kararlar ve sonuç (19.07.2026 — KOD BİTTİ)
+
+İskender kararları: **G-1 seçenek (a)** işleme · **G-3 evet** · **G-4 evet** ("kodlamada mantıksal hata, düzeltilecek"). G-2, G-3 ile çift olduğundan birlikte uygulandı (G-3 açılış bildirimini kaldırınca V1'in tek sinyali G-2 bildirimi olur — plan metnindeki bağ).
+
+- **G-1a:** Modüle `hazirSoruSetiIsle` eklendi (parametre kilidi → sorular yazılır → "onaylandı" durumu). Normal hattın video onay ucu (`app/videolar/api/durum/route.ts`) talepte `hazir_soru_seti` varsa boş set açmak yerine bu fonksiyonu çağırır; IU'ya "yazmaya hazır" bildirimi gitmez, işleme hatasında onaylayana [SİSTEM] bildirimi düşer. İşleme mantığı modülde — uç yalnız çağırır (F-07 gruplama kararı korunur). `hazirZinciriKur` (V2) de aynı fonksiyonu kullanır — tek doğruluk kaynağı.
+- **G-2:** V1'de boş set doğduğu anda tüm aktif IU'lara bildirim: "Hazır video onaylandı, soru seti yazmaya hazır: <ürün>" (`zincir.ts`; hazır kolda videoyu yükleyen IU olmadığından alıcı tüm aktif IU'lardır). Bildirim için `hazir-video` ucu talep sorgusuna ürün/teknik adı eklendi.
+- **G-3:** Talep açılışındaki "Yeni talep" bildirimi `hazir_video=true` taleplerde atlanır (`app/talepler/api/route.ts`).
+- **G-4:** Durum filtresi düzeltildi: durumu henüz olmayan satır (yazım bekleyen iş) filtre seçiliyken listeden düşmez (`app/soru-setleri/page.tsx:172-176`).
+
+Üçlü doğrulama temiz. Smoke: modülün parametre kilidi F-07'de smoke'landı (`hazirParametreKontrol` mutlu+red); bu adım yeni saf fonksiyon eklemedi.
+
 ## Durum
 
-**KARAR BEKLİYOR** — bu belge tespit ve öneri katmanıdır; kod değişikliği yapılmamıştır. G-1 seçeneği (a/b) ve G-2/G-3/G-4 kapsam kararları İskender'de.
+**KOD BİTTİ — fiziksel teyit İskender'de.** Teyit adımları: (V3) normal hatta hazır setli talep → IU videosu onaylanınca setin otomatik "onaylandı" olup yayın bekleyenlerine düştüğü; (V1) video onayında IU'lara bildirim gittiği ve setin filtre açıkken de listede göründüğü; (V1/V2) talep açılışında IU'ya "Yeni talep" bildirimi GİTMEDİĞİ.

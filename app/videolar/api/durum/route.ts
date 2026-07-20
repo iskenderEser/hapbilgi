@@ -6,6 +6,7 @@ import { bildirimOlustur, gonderenBildirimleriOkunduIsaretle } from "@/lib/utils
 import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { talepBilgisiVideo } from "@/lib/utils/talepZinciri";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { hazirSoruSetiIsle } from "@/lib/hazirVideoSoruSeti/zincir";
 
 const GECERLI_DURUMLAR = [
   "inceleme bekleniyor",
@@ -85,36 +86,64 @@ export async function POST(request: NextRequest) {
 
     // Onaylandi ise soru_setleri tablosuna otomatik kayıt oluştur ve IU'ya soru_seti bildirimi gönder
     if (durum === "onaylandi") {
-      const { data: yeniSoruSeti, error: soruSetiError } = await adminSupabase
-        .from("soru_setleri")
-        .insert({
-          video_durum_id: yeniDurum.video_durum_id,
-          iu_id: user.id,
-          sorular: [],
-        })
-        .select("soru_seti_id")
-        .single();
-
-      if (soruSetiError) {
-        await bildirimOlustur({
-          adminSupabase,
-          alici_id: user.id,
-          gonderen_id: user.id,
-          kayit_turu: "video",
-          kayit_id: video_id,
-          mesaj: `[SİSTEM] Video onaylandı ancak soru seti kaydı otomatik oluşturulamadı. Ürün: ${urun_adi}. Lütfen yönetimle iletişime geçin.`,
-        });
+      // G-1a (hazır akış modülü — İskender kararı 19.07): talepte hazır soru seti
+      // varsa boş set yerine üreticinin seti işlenir ve otomatik onaylanır; IU'nun
+      // soru seti işi bu talepte hiç doğmaz, "yazmaya hazır" bildirimi gitmez.
+      // İşleme mantığı modüldedir; bu uç yalnız çağırır (F-07 gruplama kararı).
+      let hazirTalep: { hazir_soru_seti: boolean; hazir_soru_seti_verisi: any[] | null; soru_seti_buyuklugu: number | null; video_basi_soru_sayisi: number | null } | null = null;
+      if (talepBilgisi?.talep_id) {
+        const { data } = await adminSupabase
+          .from("talepler")
+          .select("hazir_soru_seti, hazir_soru_seti_verisi, soru_seti_buyuklugu, video_basi_soru_sayisi")
+          .eq("talep_id", talepBilgisi.talep_id)
+          .single();
+        hazirTalep = data ?? null;
       }
 
-      if (!soruSetiError && yeniSoruSeti?.soru_seti_id && video.iu_id) {
-        await bildirimOlustur({
-          adminSupabase,
-          alici_id: video.iu_id,
-          gonderen_id: user.id,
-          kayit_turu: "soru_seti",
-          kayit_id: yeniSoruSeti.soru_seti_id,
-          mesaj: `Videon onaylandı, soru seti yazmaya hazır: ${urun_adi}`,
-        });
+      if (hazirTalep?.hazir_soru_seti && hazirTalep.hazir_soru_seti_verisi) {
+        const islenen = await hazirSoruSetiIsle(adminSupabase, yeniDurum.video_durum_id, hazirTalep, user.id);
+        if (!islenen.ok) {
+          await bildirimOlustur({
+            adminSupabase,
+            alici_id: user.id,
+            gonderen_id: user.id,
+            kayit_turu: "video",
+            kayit_id: video_id,
+            mesaj: `[SİSTEM] Video onaylandı ancak hazır soru seti işlenemedi (${islenen.hata}). Ürün: ${urun_adi}. Lütfen yönetimle iletişime geçin.`,
+          });
+        }
+      } else {
+        const { data: yeniSoruSeti, error: soruSetiError } = await adminSupabase
+          .from("soru_setleri")
+          .insert({
+            video_durum_id: yeniDurum.video_durum_id,
+            iu_id: user.id,
+            sorular: [],
+          })
+          .select("soru_seti_id")
+          .single();
+
+        if (soruSetiError) {
+          await bildirimOlustur({
+            adminSupabase,
+            alici_id: user.id,
+            gonderen_id: user.id,
+            kayit_turu: "video",
+            kayit_id: video_id,
+            mesaj: `[SİSTEM] Video onaylandı ancak soru seti kaydı otomatik oluşturulamadı. Ürün: ${urun_adi}. Lütfen yönetimle iletişime geçin.`,
+          });
+        }
+
+        if (!soruSetiError && yeniSoruSeti?.soru_seti_id && video.iu_id) {
+          await bildirimOlustur({
+            adminSupabase,
+            alici_id: video.iu_id,
+            gonderen_id: user.id,
+            kayit_turu: "soru_seti",
+            kayit_id: yeniSoruSeti.soru_seti_id,
+            mesaj: `Videon onaylandı, soru seti yazmaya hazır: ${urun_adi}`,
+          });
+        }
       }
     }
 

@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     const { data: talep, error: talepError } = await adminSupabase
       .from("talepler")
-      .select("talep_id, uretici_id, hazir_video, hazir_video_url, hazir_soru_seti, hazir_soru_seti_verisi, soru_seti_buyuklugu, video_basi_soru_sayisi")
+      .select("talep_id, uretici_id, hazir_video, hazir_video_url, hazir_soru_seti, hazir_soru_seti_verisi, soru_seti_buyuklugu, video_basi_soru_sayisi, urunler(urun_adi), teknikler(teknik_adi)")
       .eq("talep_id", talep_id)
       .single();
 
@@ -106,6 +106,7 @@ export async function POST(request: NextRequest) {
       hazir_soru_seti_verisi: talep.hazir_soru_seti_verisi ?? null,
       soru_seti_buyuklugu: talep.soru_seti_buyuklugu ?? null,
       video_basi_soru_sayisi: talep.video_basi_soru_sayisi ?? null,
+      urun_adi: (talep as any).urunler?.urun_adi ?? (talep as any).teknikler?.teknik_adi ?? null,
     }, user.id);
 
     if (!zincir.ok) return hataYaniti(zincir.hata, zincir.adim, zincir.detay ?? null);
