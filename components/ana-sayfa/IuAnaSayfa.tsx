@@ -4,27 +4,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useHataMesaji } from "@/components/HataMesaji";
-
-interface IsSatiri {
-  talep_id: string;
-  urun_adi: string;
-  teknik_adi: string;
-  asama: "Senaryo" | "Video" | "Soru Seti";
-  durum: string;
-  tarih: string;
-  yol: string;
-  kategori: "bekleyen" | "revizyon" | "devam" | "tamamlanan";
-}
-
-interface IUVeri {
-  satirlar: IsSatiri[];
-  istatistikler: {
-    bekleyen: number;
-    revizyon: number;
-    devam: number;
-    tamamlanan: number;
-  };
-}
+import type { IuAnaSayfaVeri } from "@/lib/utils/anaSayfa/iu";
 
 interface Props {
   user: any;
@@ -33,7 +13,7 @@ interface Props {
 
 export default function IuAnaSayfa({ user, adSoyad }: Props) {
   const router = useRouter();
-  const [iuVeri, setIuVeri] = useState<IUVeri | null>(null);
+  const [iuVeri, setIuVeri] = useState<IuAnaSayfaVeri | null>(null);
   const [loading, setLoading] = useState(true);
   const [aktifFiltre, setAktifFiltre] = useState<string>("tumu");
   const { hata } = useHataMesaji();

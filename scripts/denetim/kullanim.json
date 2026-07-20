@@ -1217,18 +1217,43 @@
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 12,
-      "tablo": "senaryo_durumu"
+      "satir": 54,
+      "tablo": "talepler"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 17,
-      "tablo": "video_durumu"
+      "satir": 95,
+      "tablo": "senaryolar"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 22,
-      "tablo": "soru_seti_durumu"
+      "satir": 102,
+      "tablo": "v_senaryo_son_durum"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 123,
+      "tablo": "videolar"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 133,
+      "tablo": "v_video_son_durum"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 157,
+      "tablo": "soru_setleri"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 167,
+      "tablo": "v_soru_seti_son_durum"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 191,
+      "tablo": "bildirimler"
     },
     {
       "dosya": "lib/utils/anaSayfa/tm.ts",
@@ -4729,21 +4754,51 @@
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 12,
-      "ham": "senaryo_durum_id, senaryo_id, created_at",
-      "tablo": "senaryo_durumu"
+      "satir": 54,
+      "ham": "talep_id, urunler(urun_adi), teknikler(teknik_adi)",
+      "tablo": "talepler"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 17,
-      "ham": "video_durum_id, video_id, created_at",
-      "tablo": "video_durumu"
+      "satir": 95,
+      "ham": "senaryo_id, talep_id, created_at, talepler(urunler(urun_adi), teknikler(teknik_adi))",
+      "tablo": "senaryolar"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 22,
-      "ham": "soru_seti_durum_id, soru_seti_id, created_at",
-      "tablo": "soru_seti_durumu"
+      "satir": 102,
+      "ham": "senaryo_id, durum, created_at",
+      "tablo": "v_senaryo_son_durum"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 123,
+      "ham": "\n      video_id, senaryo_durum_id, created_at,\n      senaryo_durumu ( senaryolar ( talep_id, talepler ( urunler(urun_adi), teknikler(teknik_adi) ) ) )\n    ",
+      "tablo": "videolar"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 133,
+      "ham": "video_id, durum, created_at",
+      "tablo": "v_video_son_durum"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 157,
+      "ham": "\n      soru_seti_id, video_durum_id, created_at,\n      video_durumu ( videolar ( senaryo_durumu ( senaryolar ( talep_id, talepler ( urunler(urun_adi), teknikler(teknik_adi) ) ) ) ) )\n    ",
+      "tablo": "soru_setleri"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 167,
+      "ham": "soru_seti_id, durum, created_at",
+      "tablo": "v_soru_seti_son_durum"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 191,
+      "ham": "kayit_turu, kayit_id, mesaj, created_at",
+      "tablo": "bildirimler"
     },
     {
       "dosya": "lib/utils/anaSayfa/tm.ts",
