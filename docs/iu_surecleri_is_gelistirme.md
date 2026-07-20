@@ -24,3 +24,11 @@
 - **G-4 | Fiziksel teyit:** Gerçek bir IU hesabıyla ana sayfaya girip (a) okunmamış bildirim varken "Bekleyen İşler" sayısının ve satırının çıktığı, (b) kendi yazdığı bir senaryo/video/soru seti revizyona düştüğünde "revizyon bekleniyor" pill'inin ve satırının doğru göründüğü, (c) onaylanan işin "Tamamlanan" tarafına geçtiği İskender'in test turunda doğrulanır.
 
 Sıra: G-1 → G-2 → G-3 tek iş paketi (aynı dosyalara dokunuyorlar); G-4 fiziksel teyit, kod dışı.
+
+## G-1/G-2/G-3 SONUÇ (20.07.2026 — KOD BİTTİ, commit `ae65ef5`)
+
+- **G-1:** `lib/utils/anaSayfa/iu.ts` yeniden yazıldı. Kaynak A (`bildirimler`, `alici_id=kullanıcı`, `goruldu_mu=false`) ve Kaynak B (`senaryolar`/`videolar`/`soru_setleri`'nde `iu_id=kullanıcı`, ilgili `v_*_son_durum` view'larıyla toplu birleşim — N+1 yok) birleştirilip `IuAnaSayfa.tsx`'in beklediği `{ satirlar, istatistikler }` şekli üretiliyor. Durum→kategori eşlemesi `lib/utils/anaSayfa/iuDurumEsle.ts`'te saf fonksiyon (`iuKendiDurumunuEsle`).
+- **G-2:** `IsSatiri`/`IuAnaSayfaVeri` tipleri artık `lib/utils/anaSayfa/iu.ts`'te tanımlı ve export ediliyor; `IuAnaSayfa.tsx` kendi kopyası yerine bunu import ediyor. `app/ana-sayfa/api/route.ts`'teki genel `any` (tüm roller ortak dönüş noktası olduğu için) kapsam dışı bırakıldı — asıl hedef olan "IU şekli sessizce ayrışamaz" güvencesi tip paylaşımıyla sağlandı.
+- **G-3:** Üçlü doğrulama temiz (`denetim`: kullanılan tüm tablo/view/kolon adları DB şemasıyla uyumlu doğrulandı). Smoke: `iuKendiDurumunuEsle` mutlu (revizyon bekleniyor/onaylandi/inceleme bekleniyor → doğru kategori+metin) + red/sınır (bilinmeyen string, `null`, `undefined` → güvenli "devam"a düşüyor, çökme yok).
+- Çıktı sözleşmesi (component props) değişmedi, `IuAnaSayfa.tsx` JSX'ine dokunulmadı.
+- **G-4 bekliyor** — gerçek IU hesabıyla fiziksel teyit İskender'in test turunda.
