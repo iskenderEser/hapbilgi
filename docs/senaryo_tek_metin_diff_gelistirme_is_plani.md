@@ -25,3 +25,14 @@
 - **G-7 | Doğrulama disiplini:** tsc + `npm run denetim` + `npm run lint:mimari` temiz. En fazla 1 smoke: `diffHesapla` saf fonksiyonu için mutlu (bir cümle değişince doğru eklendi/çıkarıldı/değişmedi ayrımı) + red/sınır (boş metin, birebir aynı metin → hiç fark yok) senaryosu.
 
 Sıra: G-1 (çekirdek diff) → G-2+G-3 (iki ekranın render'ı, aynı pakette) → G-4+G-5 → G-6 zaten tasarım gereği sağlanıyor (kod değişikliği gerektirmez, yalnız doğrulanır). Fiziksel teyit İskender'in test turunda: gerçek bir revizyon turu — üstü çizili/vurgulu gösterimin doğru çalıştığı, onay sonrası temizlendiği.
+
+## G-1..G-6 SONUÇ (20.07.2026 — KOD BİTTİ, commit `e7042ec`)
+
+- **G-1:** `lib/utils/senaryo/diffHesapla.ts` — `diff` paketi (`diffWords`) ile saf çekirdek; çıkarılan "cikar", eklenen "ekle", değişmeyen "ayni" olarak ayrıştırılıyor. `onceki` boşsa (ilk gönderim) tüm metin "ayni" kabul edilir, karşılaştırma yapılmaz.
+- **G-2:** `components/SenaryoMetniGoster.tsx` — "cikar" üstü çizili + soluk, "ekle" kırmızı vurgulu, "ayni" düz render. PM inceleme ekranında yalnız `sonSenaryo.son_durum === "inceleme bekleniyor"` VE bir önceki versiyon varsa devreye giriyor; onaylı/iptal/ilk gönderimde düz metin.
+- **G-3:** IU'nun textarea'sı artık boş başlamıyor — taslak yoksa ve son durum "revizyon bekleniyor" ise önceki metinle önceden dolduruluyor (veri yüklendikten sonra yalnız bir kez, `useRef` kilidiyle).
+- **G-4:** Onay sonrası temizlenme ekstra kod gerektirmedi — diff yalnız "inceleme bekleniyor" durumunda hesaplanıyor, onaylı halde zaten düz metin gösteriliyor.
+- **G-5:** Revizyon notları artık versiyon kartlarından bağımsız, `senaryo_durumu` üzerinden tüm `talep`'e ait `durum="revizyon bekleniyor"` kayıtları kronolojik toplanıp ayrı bir "Revizyon Notları" bölümünde gösteriliyor.
+- **G-6 (doğrulandı):** Veri modeli değişmedi — `senaryolar` hâlâ her revizyonda yeni satır; yalnız ekran `sonSenaryo` + `oncekiSenaryo`'yu okuyor. Sunucu uçlarına dokunulmadı.
+- Yeni bağımlılık: `diff` (+ `@types/diff` devDependency). Üçlü doğrulama temiz (`denetim`: DB şemasıyla uyuşmazlık yok). Smoke: `senaryoDiffHesapla` mutlu + red/sınır geçti. Dev sunucu konsol hatasız derledi.
+- **Fiziksel teyit bekliyor** — İskender'in test turunda gerçek bir revizyon turu.
