@@ -1,25 +1,22 @@
 // lib/utils/anaSayfa/iu.ts
 //
-// İU ana sayfa verisi (yeniden yazım — docs/iu_surecleri_is_gelistirme.md G-1).
-// Eski sürüm components/ana-sayfa/IuAnaSayfa.tsx'in beklediği { satirlar,
-// istatistikler } şeklini hiç üretmiyordu (T-1); bu sürüm iki kaynağı birleştirir:
+// İU ana sayfa verisi (docs/iu_surecleri_is_gelistirme.md G-1 + DÜZELTME bölümü).
+// İki kaynak birleşir, sonra talep bazında TEKİLLEŞTİRİLİR (çift satır hatası
+// düzeltmesi — aynı talep için bildirim + kendi-işi satırı tek satıra iner):
 //
-//   Kaynak A — "Bekleyen İşler": IU'nun asıl iş bulma mekanizması bildirimler
-//   sistemidir (yeni talep/revizyon → tüm/ilgili IU'lara bildirim gider, T-5).
-//   Okunmamış (goruldu_mu=false) bildirimler kategori "bekleyen" olur.
+//   Kaynak A — "Bekleyen İşler": okunmamış bildirimler (IU'nun asıl iş bulma
+//   mekanizması, T-5). Zincir bilgileri kayit_turu başına TEK toplu sorguyla
+//   çekilir — bildirim başına sorgu yok (T-6 N+1 yasağı).
 //
-//   Kaynak B — "Devam Eden" / "Revizyon" / "Tamamlanan": iu_id = bu kullanıcı
-//   olan senaryolar/videolar/soru_setleri satırları, v_*_son_durum view'larından
-//   (T-6) son durumla birleştirilip iuKendiDurumunuEsle ile kategoriye çevrilir.
+//   Kaynak B — kendi işleri: iu_id = kullanıcı olan senaryolar/videolar/
+//   soru_setleri, v_*_son_durum view'larıyla toplu birleşir. "Iptal Edildi"
+//   listelenmez; "tamamlanan" satırlar 30 günlük pencereye tabidir.
 //
-// Çıktı sözleşmesi IuAnaSayfa.tsx ile birebir — frontend'e dokunulmadı.
+// Çıktı sözleşmesi IuAnaSayfa.tsx ile birebir — tip buradan import edilir.
 
 import { SupabaseClient } from "@supabase/supabase-js";
-import { talepBilgisiSenaryo, talepBilgisiVideo, talepBilgisiSoruSeti } from "@/lib/utils/talepZinciri";
-import { iuKendiDurumunuEsle, type IuKategori } from "@/lib/utils/anaSayfa/iuDurumEsle";
+import { iuKendiDurumunuEsle, talepBazindaTekillestir, type IuKategori } from "@/lib/utils/anaSayfa/iuDurumEsle";
 
-// G-2 (docs/iu_surecleri_is_gelistirme.md): dönüş tipi burada tanımlanır, IuAnaSayfa.tsx
-// aynı tipi import eder — backend/frontend şekli bir daha sessizce ayrışamaz.
 export interface IsSatiri {
   talep_id: string;
   urun_adi: string;
@@ -36,6 +33,97 @@ export interface IuAnaSayfaVeri {
   istatistikler: { bekleyen: number; revizyon: number; devam: number; tamamlanan: number };
 }
 
+interface Bildirim {
+  kayit_turu: string;
+  kayit_id: string;
+  mesaj: string;
+  created_at: string;
+}
+
+interface ZincirBilgi {
+  talep_id: string;
+  urun_adi: string;
+  teknik_adi: string;
+  yol: string;
+}
+
+const TAMAMLANAN_PENCERE_MS = 30 * 24 * 60 * 60 * 1000; // 30 gün — liste sınırsız büyümesin
+
+const urunTeknik = (talep: any) => ({
+  urun_adi: talep?.urunler?.urun_adi ?? "-",
+  teknik_adi: talep?.teknikler?.teknik_adi ?? "-",
+});
+
+// Kaynak A: bildirimlerin talep zinciri bilgileri — kayit_turu başına TEK sorgu.
+// Dönen harita anahtarı `${kayit_turu}:${kayit_id}`.
+async function bildirimZincirHaritasi(
+  adminSupabase: SupabaseClient,
+  bildirimler: Bildirim[]
+): Promise<Map<string, ZincirBilgi>> {
+  const harita = new Map<string, ZincirBilgi>();
+  const idler = (tur: string) => bildirimler.filter(b => b.kayit_turu === tur).map(b => b.kayit_id);
+
+  const [talepIdler, senaryoIdler, videoIdler, soruSetiIdler] =
+    [idler("talep"), idler("senaryo"), idler("video"), idler("soru_seti")];
+
+  const sorgular: PromiseLike<void>[] = [];
+
+  if (talepIdler.length > 0) {
+    sorgular.push(adminSupabase
+      .from("talepler")
+      .select("talep_id, urunler(urun_adi), teknikler(teknik_adi)")
+      .in("talep_id", talepIdler)
+      .then(({ data }) => {
+        for (const t of (data ?? []) as any[]) {
+          harita.set(`talep:${t.talep_id}`, { talep_id: t.talep_id, ...urunTeknik(t), yol: `/senaryolar/${t.talep_id}` });
+        }
+      }));
+  }
+
+  if (senaryoIdler.length > 0) {
+    sorgular.push(adminSupabase
+      .from("senaryolar")
+      .select("senaryo_id, talep_id, talepler(urunler(urun_adi), teknikler(teknik_adi))")
+      .in("senaryo_id", senaryoIdler)
+      .then(({ data }) => {
+        for (const s of (data ?? []) as any[]) {
+          harita.set(`senaryo:${s.senaryo_id}`, { talep_id: s.talep_id, ...urunTeknik(s.talepler), yol: `/senaryolar/${s.talep_id}` });
+        }
+      }));
+  }
+
+  if (videoIdler.length > 0) {
+    sorgular.push(adminSupabase
+      .from("videolar")
+      .select("video_id, senaryo_durum_id, senaryo_durumu(senaryolar(talep_id, talepler(urunler(urun_adi), teknikler(teknik_adi))))")
+      .in("video_id", videoIdler)
+      .then(({ data }) => {
+        for (const v of (data ?? []) as any[]) {
+          const senaryo = v.senaryo_durumu?.senaryolar;
+          if (!senaryo) continue;
+          harita.set(`video:${v.video_id}`, { talep_id: senaryo.talep_id, ...urunTeknik(senaryo.talepler), yol: `/videolar/${v.senaryo_durum_id}` });
+        }
+      }));
+  }
+
+  if (soruSetiIdler.length > 0) {
+    sorgular.push(adminSupabase
+      .from("soru_setleri")
+      .select("soru_seti_id, video_durum_id, video_durumu(videolar(senaryo_durumu(senaryolar(talep_id, talepler(urunler(urun_adi), teknikler(teknik_adi))))))")
+      .in("soru_seti_id", soruSetiIdler)
+      .then(({ data }) => {
+        for (const s of (data ?? []) as any[]) {
+          const senaryo = s.video_durumu?.videolar?.senaryo_durumu?.senaryolar;
+          if (!senaryo) continue;
+          harita.set(`soru_seti:${s.soru_seti_id}`, { talep_id: senaryo.talep_id, ...urunTeknik(senaryo.talepler), yol: `/soru-setleri/${s.video_durum_id}` });
+        }
+      }));
+  }
+
+  await Promise.all(sorgular);
+  return harita;
+}
+
 const BILDIRIM_ASAMA: Record<string, "Senaryo" | "Video" | "Soru Seti"> = {
   talep: "Senaryo",
   senaryo: "Senaryo",
@@ -43,52 +131,33 @@ const BILDIRIM_ASAMA: Record<string, "Senaryo" | "Video" | "Soru Seti"> = {
   soru_seti: "Soru Seti",
 };
 
-async function bekleyenSatiriKur(
-  adminSupabase: SupabaseClient,
-  bildirim: { kayit_turu: string; kayit_id: string; mesaj: string; created_at: string }
-): Promise<IsSatiri | null> {
-  const asama = BILDIRIM_ASAMA[bildirim.kayit_turu];
-  if (!asama) return null; // yayin/oneri/challenge — IU ana sayfasının kapsamı dışı
+async function bekleyenSatirlar(adminSupabase: SupabaseClient, userId: string): Promise<IsSatiri[]> {
+  const { data: bildirimler } = await adminSupabase
+    .from("bildirimler")
+    .select("kayit_turu, kayit_id, mesaj, created_at")
+    .eq("alici_id", userId)
+    .eq("goruldu_mu", false)
+    .order("created_at", { ascending: false });
 
-  if (bildirim.kayit_turu === "talep") {
-    const { data: talep } = await adminSupabase
-      .from("talepler")
-      .select("talep_id, urunler(urun_adi), teknikler(teknik_adi)")
-      .eq("talep_id", bildirim.kayit_id)
-      .single();
-    if (!talep) return null;
-    return {
-      talep_id: bildirim.kayit_id,
-      urun_adi: (talep as any).urunler?.urun_adi ?? "-",
-      teknik_adi: (talep as any).teknikler?.teknik_adi ?? "-",
-      asama,
-      durum: bildirim.mesaj,
-      tarih: bildirim.created_at,
-      yol: `/senaryolar/${bildirim.kayit_id}`,
-      kategori: "bekleyen",
-    };
-  }
+  const ilgili = ((bildirimler ?? []) as Bildirim[]).filter(b => BILDIRIM_ASAMA[b.kayit_turu]);
+  if (ilgili.length === 0) return [];
 
-  const zincirCek = bildirim.kayit_turu === "senaryo" ? talepBilgisiSenaryo
-    : bildirim.kayit_turu === "video" ? talepBilgisiVideo
-    : talepBilgisiSoruSeti;
-  const bilgi = await zincirCek(adminSupabase, bildirim.kayit_id);
-  if (!bilgi) return null;
+  const harita = await bildirimZincirHaritasi(adminSupabase, ilgili);
 
-  const yol = bildirim.kayit_turu === "senaryo" ? `/senaryolar/${bilgi.talep_id}`
-    : bildirim.kayit_turu === "video" ? "/videolar"
-    : "/soru-setleri";
-
-  return {
-    talep_id: bilgi.talep_id,
-    urun_adi: bilgi.urun_adi,
-    teknik_adi: bilgi.teknik_adi,
-    asama,
-    durum: bildirim.mesaj,
-    tarih: bildirim.created_at,
-    yol,
-    kategori: "bekleyen",
-  };
+  return ilgili.flatMap(b => {
+    const bilgi = harita.get(`${b.kayit_turu}:${b.kayit_id}`);
+    if (!bilgi) return []; // zincir kopuksa (silinmiş kayıt) satır atlanır, çökme yok
+    return [{
+      talep_id: bilgi.talep_id,
+      urun_adi: bilgi.urun_adi,
+      teknik_adi: bilgi.teknik_adi,
+      asama: BILDIRIM_ASAMA[b.kayit_turu],
+      durum: b.mesaj,
+      tarih: b.created_at,
+      yol: bilgi.yol,
+      kategori: "bekleyen" as const,
+    }];
+  });
 }
 
 async function kendiSenaryolarim(adminSupabase: SupabaseClient, userId: string): Promise<IsSatiri[]> {
@@ -103,19 +172,19 @@ async function kendiSenaryolarim(adminSupabase: SupabaseClient, userId: string):
     .from("v_senaryo_son_durum").select("senaryo_id, durum, created_at").in("senaryo_id", ids);
   const durumMap = new Map((sonDurumlar ?? []).map((d: any) => [d.senaryo_id, d]));
 
-  return satirlarim.map((s: any) => {
+  return satirlarim.flatMap((s: any) => {
     const sd = durumMap.get(s.senaryo_id);
     const esleme = iuKendiDurumunuEsle(sd?.durum ?? null);
-    return {
+    if (!esleme) return []; // Iptal Edildi — listelenmez
+    return [{
       talep_id: s.talep_id,
-      urun_adi: s.talepler?.urunler?.urun_adi ?? "-",
-      teknik_adi: s.talepler?.teknikler?.teknik_adi ?? "-",
+      ...urunTeknik(s.talepler),
       asama: "Senaryo" as const,
       durum: esleme.metin,
       tarih: sd?.created_at ?? s.created_at,
       yol: `/senaryolar/${s.talep_id}`,
       kategori: esleme.kategori,
-    };
+    }];
   });
 }
 
@@ -136,14 +205,13 @@ async function kendiVideolarim(adminSupabase: SupabaseClient, userId: string): P
 
   return satirlarim.flatMap((v: any) => {
     const senaryo = v.senaryo_durumu?.senaryolar;
-    const talep = senaryo?.talepler;
-    if (!talep) return []; // zincir kopuksa (beklenmez) satır atlanır, çökme yok
+    if (!senaryo?.talepler) return []; // zincir kopuksa satır atlanır, çökme yok
     const sd = durumMap.get(v.video_id);
     const esleme = iuKendiDurumunuEsle(sd?.durum ?? null);
+    if (!esleme) return [];
     return [{
       talep_id: senaryo.talep_id,
-      urun_adi: talep.urunler?.urun_adi ?? "-",
-      teknik_adi: talep.teknikler?.teknik_adi ?? "-",
+      ...urunTeknik(senaryo.talepler),
       asama: "Video" as const,
       durum: esleme.metin,
       tarih: sd?.created_at ?? v.created_at,
@@ -170,14 +238,13 @@ async function kendiSoruSetlerim(adminSupabase: SupabaseClient, userId: string):
 
   return satirlarim.flatMap((s: any) => {
     const senaryo = s.video_durumu?.videolar?.senaryo_durumu?.senaryolar;
-    const talep = senaryo?.talepler;
-    if (!talep) return [];
+    if (!senaryo?.talepler) return [];
     const sd = durumMap.get(s.soru_seti_id);
     const esleme = iuKendiDurumunuEsle(sd?.durum ?? null);
+    if (!esleme) return [];
     return [{
       talep_id: senaryo.talep_id,
-      urun_adi: talep.urunler?.urun_adi ?? "-",
-      teknik_adi: talep.teknikler?.teknik_adi ?? "-",
+      ...urunTeknik(senaryo.talepler),
       asama: "Soru Seti" as const,
       durum: esleme.metin,
       tarih: sd?.created_at ?? s.created_at,
@@ -188,26 +255,19 @@ async function kendiSoruSetlerim(adminSupabase: SupabaseClient, userId: string):
 }
 
 export async function getIuAnaSayfaVeri(userId: string, adminSupabase: SupabaseClient): Promise<IuAnaSayfaVeri> {
-  const { data: bildirimler } = await adminSupabase
-    .from("bildirimler")
-    .select("kayit_turu, kayit_id, mesaj, created_at")
-    .eq("alici_id", userId)
-    .eq("goruldu_mu", false)
-    .order("created_at", { ascending: false });
-
-  const [bekleyenSatirlar, senaryoSatirlari, videoSatirlari, soruSetiSatirlari] = await Promise.all([
-    Promise.all((bildirimler ?? []).map(b => bekleyenSatiriKur(adminSupabase, b))),
+  const [bekleyenler, senaryolarim, videolarim, soruSetlerim] = await Promise.all([
+    bekleyenSatirlar(adminSupabase, userId),
     kendiSenaryolarim(adminSupabase, userId),
     kendiVideolarim(adminSupabase, userId),
     kendiSoruSetlerim(adminSupabase, userId),
   ]);
 
-  const satirlar: IsSatiri[] = [
-    ...bekleyenSatirlar.filter((s): s is IsSatiri => s !== null),
-    ...senaryoSatirlari,
-    ...videoSatirlari,
-    ...soruSetiSatirlari,
-  ].sort((a, b) => new Date(b.tarih).getTime() - new Date(a.tarih).getTime());
+  const simdi = Date.now();
+  const satirlar = talepBazindaTekillestir([
+    ...bekleyenler, ...senaryolarim, ...videolarim, ...soruSetlerim,
+  ])
+    .filter(s => s.kategori !== "tamamlanan" || simdi - new Date(s.tarih).getTime() <= TAMAMLANAN_PENCERE_MS)
+    .sort((a, b) => new Date(b.tarih).getTime() - new Date(a.tarih).getTime());
 
   const sayimYap = (kategori: IuKategori) => satirlar.filter(s => s.kategori === kategori).length;
 

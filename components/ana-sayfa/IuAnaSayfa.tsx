@@ -45,12 +45,13 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
     }
   };
 
-  const durumRenk = (durum: string) => {
-    if (durum === "revizyon bekleniyor") return { bg: "#fef3c7", text: "#92400e" };
-    if (durum === "İncelemede") return { bg: "#eff6ff", text: "#1d4ed8" };
-    if (durum === "Tamamlandı") return { bg: "#f0fdf4", text: "#166534" };
-    if (durum === "İptal Edildi") return { bg: "#fef2f2", text: "#bc2d0d" };
-    if (durum === "Yazılıyor") return { bg: "#f0fdf4", text: "#166534" };
+  // Renk kategoriye bağlıdır (stat kartlarıyla aynı dil) — durum metnine göre
+  // eşleme kırılgandı: metin değişince pill sessizce griye düşüyordu.
+  const kategoriRenk = (kategori: string) => {
+    if (kategori === "bekleyen") return { bg: "#fef2f2", text: "#bc2d0d" };
+    if (kategori === "revizyon") return { bg: "#fef3c7", text: "#92400e" };
+    if (kategori === "devam") return { bg: "#eff6ff", text: "#1d4ed8" };
+    if (kategori === "tamamlanan") return { bg: "#f0fdf4", text: "#166534" };
     return { bg: "#f3f4f6", text: "#9ca3af" };
   };
 
@@ -133,7 +134,7 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
           ) : (
             filtrelenmis.map((s, i) => {
               const asamaR = asamaRenk(s.asama);
-              const durumR = durumRenk(s.durum);
+              const durumR = kategoriRenk(s.kategori);
               return (
                 <div
                   key={`${s.talep_id}-${i}`}
@@ -168,7 +169,7 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
           ) : (
             filtrelenmis.map((s, i) => {
               const asamaR = asamaRenk(s.asama);
-              const durumR = durumRenk(s.durum);
+              const durumR = kategoriRenk(s.kategori);
               return (
                 <div
                   key={`${s.talep_id}-${i}`}

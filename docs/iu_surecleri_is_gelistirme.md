@@ -32,3 +32,17 @@ Sıra: G-1 → G-2 → G-3 tek iş paketi (aynı dosyalara dokunuyorlar); G-4 fi
 - **G-3:** Üçlü doğrulama temiz (`denetim`: kullanılan tüm tablo/view/kolon adları DB şemasıyla uyumlu doğrulandı). Smoke: `iuKendiDurumunuEsle` mutlu (revizyon bekleniyor/onaylandi/inceleme bekleniyor → doğru kategori+metin) + red/sınır (bilinmeyen string, `null`, `undefined` → güvenli "devam"a düşüyor, çökme yok).
 - Çıktı sözleşmesi (component props) değişmedi, `IuAnaSayfa.tsx` JSX'ine dokunulmadı.
 - **G-4 bekliyor** — gerçek IU hesabıyla fiziksel teyit İskender'in test turunda.
+
+## DÜZELTME (20.07.2026 — İskender kararı)
+
+**"model olrak Sonet (!!) ile çalışıldığı için yanlış ve hatalı işler üretilmiş. Yeniden düzeltildi. Geliştirme maliyeti x2 oldu."**
+
+Fiziksel testte yakalanan çift-satır hatası üzerine `ae65ef5` commit'inin kalite incelemesi (Fable ile) yapıldı; 5 kusur bulundu ve plana uygun düzeltildi:
+
+- **D-1 | Talep bazında tekilleştirme (yaşanan çift satır hatası):** Aynı talep için bildirim satırı + kendi-işi satırı ayrı ayrı listeleniyordu; istatistikler de şişiyordu. `talepBazindaTekillestir` saf fonksiyonu eklendi (`iuDurumEsle.ts`): talep başına TEK satır — öncelik: üretim hattında ileri aşama > kendi-işi satırı (bildirim değil) > yeni tarih. Bu kural revizyon zincirindeki çoklu versiyon satırlarını da (v1 revizyon + v2 incelemede) tek satıra indirir.
+- **D-2 | Kaynak A'daki N+1 kaldırıldı (plan T-6 ihlaliydi):** Bildirim başına ayrı zincir sorgusu yerine `kayit_turu` başına TEK toplu `.in()` sorgusu (`bildirimZincirHaritasi`) — en fazla 4 sorgu.
+- **D-3 | İptal edilen işler listelenmiyor:** "Iptal Edildi" eşlemede yoktu, sonsuza dek "Devam Eden" görünüyordu; artık `iuKendiDurumunuEsle` null döner, satır listeden düşer.
+- **D-4 | "Tamamlanan" 30 gün penceresi:** Sınırsız birikme yerine yalnız son 30 günde tamamlananlar listelenir.
+- **D-5 | Pill renkleri kategori bazlı:** `IuAnaSayfa.tsx`'teki renk eşlemesi durum METNİNE bağlıydı ve yeni metinlerle eşleşmediği için pill'ler gri düşüyordu; renk artık `kategori` alanından geliyor (stat kartlarıyla aynı dil), metin değişiklikleri rengi bir daha kıramaz.
+
+Smoke (yenilendi): mutlu = aynı talep için bildirim+kendi-işi → tek satır, kendi-işi kazanır; red/sınır = ileri aşama kazanır, aynı aşamada yeni tarih kazanır, "Iptal Edildi" listelenmez, farklı talepler birleşmez. Üçlü doğrulama temiz. Fiziksel teyit (G-4) İskender'in test turunda.

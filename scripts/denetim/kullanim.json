@@ -1217,43 +1217,58 @@
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 54,
+      "satir": 72,
       "tablo": "talepler"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 95,
+      "satir": 84,
       "tablo": "senaryolar"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 102,
-      "tablo": "v_senaryo_son_durum"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 123,
+      "satir": 96,
       "tablo": "videolar"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 133,
-      "tablo": "v_video_son_durum"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 157,
+      "satir": 110,
       "tablo": "soru_setleri"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 167,
-      "tablo": "v_soru_seti_son_durum"
+      "satir": 135,
+      "tablo": "bildirimler"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 191,
-      "tablo": "bildirimler"
+      "satir": 164,
+      "tablo": "senaryolar"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 171,
+      "tablo": "v_senaryo_son_durum"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 192,
+      "tablo": "videolar"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 202,
+      "tablo": "v_video_son_durum"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 225,
+      "tablo": "soru_setleri"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 235,
+      "tablo": "v_soru_seti_son_durum"
     },
     {
       "dosya": "lib/utils/anaSayfa/tm.ts",
@@ -4759,51 +4774,69 @@
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 54,
+      "satir": 72,
       "ham": "talep_id, urunler(urun_adi), teknikler(teknik_adi)",
       "tablo": "talepler"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 95,
+      "satir": 84,
+      "ham": "senaryo_id, talep_id, talepler(urunler(urun_adi), teknikler(teknik_adi))",
+      "tablo": "senaryolar"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 96,
+      "ham": "video_id, senaryo_durum_id, senaryo_durumu(senaryolar(talep_id, talepler(urunler(urun_adi), teknikler(teknik_adi))))",
+      "tablo": "videolar"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 110,
+      "ham": "soru_seti_id, video_durum_id, video_durumu(videolar(senaryo_durumu(senaryolar(talep_id, talepler(urunler(urun_adi), teknikler(teknik_adi))))))",
+      "tablo": "soru_setleri"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 135,
+      "ham": "kayit_turu, kayit_id, mesaj, created_at",
+      "tablo": "bildirimler"
+    },
+    {
+      "dosya": "lib/utils/anaSayfa/iu.ts",
+      "satir": 164,
       "ham": "senaryo_id, talep_id, created_at, talepler(urunler(urun_adi), teknikler(teknik_adi))",
       "tablo": "senaryolar"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 102,
+      "satir": 171,
       "ham": "senaryo_id, durum, created_at",
       "tablo": "v_senaryo_son_durum"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 123,
+      "satir": 192,
       "ham": "\n      video_id, senaryo_durum_id, created_at,\n      senaryo_durumu ( senaryolar ( talep_id, talepler ( urunler(urun_adi), teknikler(teknik_adi) ) ) )\n    ",
       "tablo": "videolar"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 133,
+      "satir": 202,
       "ham": "video_id, durum, created_at",
       "tablo": "v_video_son_durum"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 157,
+      "satir": 225,
       "ham": "\n      soru_seti_id, video_durum_id, created_at,\n      video_durumu ( videolar ( senaryo_durumu ( senaryolar ( talep_id, talepler ( urunler(urun_adi), teknikler(teknik_adi) ) ) ) ) )\n    ",
       "tablo": "soru_setleri"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 167,
+      "satir": 235,
       "ham": "soru_seti_id, durum, created_at",
       "tablo": "v_soru_seti_son_durum"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 191,
-      "ham": "kayit_turu, kayit_id, mesaj, created_at",
-      "tablo": "bildirimler"
     },
     {
       "dosya": "lib/utils/anaSayfa/tm.ts",
