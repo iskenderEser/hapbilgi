@@ -289,6 +289,12 @@ export default function SenaryolarPage() {
   const oncekiSenaryo = senaryolar.length > 1 ? senaryolar[senaryolar.length - 2] : null;
   const revSayisi = senaryolar.filter(x => x.son_durum === "revizyon bekleniyor").length;
   const iuYazabilir = isIU && (!sonSenaryo || sonSenaryo.son_durum === "revizyon bekleniyor" || sonSenaryo.son_durum === null);
+  // A-1 (docs/senaryo_tek_metin_ekran_kurgusu_is_plani.md): IU revizyon
+  // yaparken metin ekranda BİR kez görünür — salt-okuma kart gizlenir,
+  // PM'in son notu üstte ayrı kutuda durur.
+  const iuRevizyonModu = isIU && sonSenaryo?.son_durum === "revizyon bekleniyor";
+  const guncelNot = revizyonNotlari.length > 0 ? revizyonNotlari[revizyonNotlari.length - 1] : null;
+  const eskiNotlar = revizyonNotlari.slice(0, -1);
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
@@ -330,13 +336,32 @@ export default function SenaryolarPage() {
               <p className="text-sm text-gray-400 text-center py-5">Henüz senaryo yazılmadı.</p>
             )}
 
-            {sonSenaryo && (() => {
+            {/* A-1: IU revizyon modu — PM'in son notu üstte, metin yalnız textarea'da */}
+            {iuRevizyonModu && guncelNot && (
+              <div className="border border-yellow-200 bg-yellow-50 rounded-xl px-4 py-3">
+                <span className="text-xs font-semibold text-yellow-800">PM&apos;in revizyon notu</span>
+                <p className="text-sm text-yellow-900 mt-1 mb-0 leading-relaxed">{guncelNot.notlar}</p>
+                <div className="text-xs text-yellow-700 mt-1" style={{ opacity: 0.7 }}>{formatTarih(guncelNot.created_at)}</div>
+              </div>
+            )}
+            {iuRevizyonModu && eskiNotlar.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-gray-400">Önceki revizyon notları</span>
+                {eskiNotlar.map(n => (
+                  <div key={n.senaryo_durum_id} className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
+                    {n.notlar} <span className="text-gray-400">— {formatTarih(n.created_at)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {sonSenaryo && !iuRevizyonModu && (() => {
               const renk = durumRenk(sonSenaryo.son_durum ?? "");
               // Ç-7: karar butonları yalnız talebi açan üreticiye görünür.
               const isPMKararverilebilir = isPM && talep?.uretici_id === kullanici.id && sonSenaryo.son_durum === "inceleme bekleniyor";
-              // G-2: PM inceleme ekranında diff — yalnız incelemedeyken ve önceki
-              // versiyon varsa. Onaylı/iptal/ilk gönderim → düz metin.
-              const diffGoster = sonSenaryo.son_durum === "inceleme bekleniyor" && !!oncekiSenaryo;
+              // A-3: renkli fark (üstü çizili/kırmızı) yalnız PM'e — IU
+              // incelemedeyken kendi metnini düz görür.
+              const diffGoster = isPM && sonSenaryo.son_durum === "inceleme bekleniyor" && !!oncekiSenaryo;
 
               return (
                 <div className="border border-gray-200 rounded-xl overflow-hidden">
@@ -356,6 +381,21 @@ export default function SenaryolarPage() {
                       onceki={diffGoster ? oncekiSenaryo!.senaryo_metni : undefined}
                     />
                   </div>
+
+                  {/* A-2: revizyon notları mockup'taki gibi kartın İÇİNDE —
+                      metnin altı, karar butonlarının üstü. */}
+                  {revizyonNotlari.length > 0 && (
+                    <div className="px-3 py-2.5 border-t border-gray-100">
+                      <span className="text-xs font-semibold text-gray-500">Revizyon notları</span>
+                      <div className="flex flex-col gap-1 mt-1.5">
+                        {revizyonNotlari.map(n => (
+                          <div key={n.senaryo_durum_id} className="text-xs text-gray-700 bg-gray-50 rounded-lg px-3 py-2">
+                            {n.notlar} <span className="text-gray-400">— {formatTarih(n.created_at)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {isPMKararverilebilir && (
                     <div className="px-3 py-3 border-t border-gray-100 bg-gray-50">
@@ -407,22 +447,6 @@ export default function SenaryolarPage() {
               );
             })()}
 
-            {/* G-5: revizyon notları — versiyon kartlarından bağımsız, kronolojik */}
-            {revizyonNotlari.length > 0 && (
-              <div className="border border-gray-200 rounded-xl overflow-hidden">
-                <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
-                  <span className="text-xs font-semibold text-gray-500">Revizyon Notları</span>
-                </div>
-                <div className="flex flex-col divide-y divide-gray-100">
-                  {revizyonNotlari.map(n => (
-                    <div key={n.senaryo_durum_id} className="px-3 py-2.5 bg-yellow-50">
-                      <div className="text-xs text-yellow-800">{n.notlar}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">{formatTarih(n.created_at)}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* IU yazım alanı */}

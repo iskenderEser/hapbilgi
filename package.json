@@ -12,7 +12,7 @@
     "denetim:tara": "node scripts/denetim/kod-tara.js",
     "denetim": "node scripts/denetim/kod-tara.js && node scripts/denetim/denetle.js",
     "denetim:tutarlilik": "node scripts/denetim/tutarlilik/calistir.js",
-    "test:smoke": "node --test tests/gonderimKarari.smoke.test.ts"
+    "test:smoke": "node --test tests/*.smoke.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.9.0",
