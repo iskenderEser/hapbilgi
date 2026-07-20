@@ -13,6 +13,7 @@ import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { DosyaGoruntuleListesi, type DosyaItem } from "@/components/DosyaGoruntuleListesi";
 import { SenaryoMetniGoster } from "@/components/SenaryoMetniGoster";
 import { gonderimKarari } from "@/lib/utils/senaryo/gonderimKarari";
+import { SenaryoDuzeltmeEditoru } from "@/components/SenaryoDuzeltmeEditoru";
 
 interface Senaryo {
   senaryo_id: string;
@@ -148,6 +149,8 @@ export default function SenaryolarPage() {
 
   // G-2: taslak — sayfa açılışında varsa geri yüklenir, yazarken debounce'lu kaydedilir.
   const taslakAnahtari = `senaryo-taslak-${talep_id}`;
+  // Revizyon editörünün işaretli taslağı (üstü çizili/kırmızı model) ayrı anahtarda.
+  const duzeltmeAnahtari = `senaryo-duzeltme-${talep_id}`;
   // G-3 (docs/senaryo_tek_metin_diff_gelistirme_is_plani.md): taslak yoksa ve
   // IU revizyon yapacaksa, textarea önceki metinle önceden doldurulur —
   // sıfırdan yazılmaz. Veri yüklendikten sonra YALNIZ BİR KEZ çalışır.
@@ -243,6 +246,7 @@ export default function SenaryolarPage() {
     setSenaryoMetni("");
     setBeklemedekiSenaryoId(null);
     localStorage.removeItem(taslakAnahtari);
+    localStorage.removeItem(duzeltmeAnahtari);
     await veriCek();
     setGonderLoading(false);
   };
@@ -452,14 +456,25 @@ export default function SenaryolarPage() {
           {/* IU yazım alanı */}
           {iuYazabilir && (
             <div className="border-t border-gray-100 px-4 md:px-5 py-4 bg-gray-50">
-              <textarea
-                value={senaryoMetni}
-                onChange={(e) => setSenaryoMetni(e.target.value)}
-                placeholder="Senaryo metnini yazın..."
-                rows={6}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 bg-white resize-y mb-2.5"
-                style={{ fontFamily: "'Nunito', sans-serif" }}
-              />
+              {iuRevizyonModu && sonSenaryo ? (
+                // Revizyonda düz textarea YOK: canlı işaretli editör — silinen
+                // anında üstü çizili kalır, yazılan anında kırmızı görünür.
+                <SenaryoDuzeltmeEditoru
+                  key={sonSenaryo.senaryo_id}
+                  temelMetin={sonSenaryo.senaryo_metni}
+                  taslakAnahtari={duzeltmeAnahtari}
+                  onDegisti={setSenaryoMetni}
+                />
+              ) : (
+                <textarea
+                  value={senaryoMetni}
+                  onChange={(e) => setSenaryoMetni(e.target.value)}
+                  placeholder="Senaryo metnini yazın..."
+                  rows={6}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-900 bg-white resize-y mb-2.5"
+                  style={{ fontFamily: "'Nunito', sans-serif" }}
+                />
+              )}
               <div className="flex justify-end">
                 <button onClick={handleSenaryoGonder} disabled={!senaryoMetni.trim() || gonderLoading}
                   className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer"
