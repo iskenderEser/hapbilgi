@@ -1517,17 +1517,22 @@
     },
     {
       "dosya": "app/senaryolar/[talep_id]/page.tsx",
-      "satir": 76,
+      "satir": 86,
       "tablo": "talepler"
     },
     {
       "dosya": "app/senaryolar/[talep_id]/page.tsx",
-      "satir": 97,
+      "satir": 107,
       "tablo": "senaryolar"
     },
     {
       "dosya": "app/senaryolar/[talep_id]/page.tsx",
-      "satir": 105,
+      "satir": 115,
+      "tablo": "senaryo_durumu"
+    },
+    {
+      "dosya": "app/senaryolar/[talep_id]/page.tsx",
+      "satir": 129,
       "tablo": "senaryo_durumu"
     },
     {
@@ -5096,20 +5101,26 @@
     },
     {
       "dosya": "app/senaryolar/[talep_id]/page.tsx",
-      "satir": 76,
+      "satir": 86,
       "ham": "talep_id, hedef_rol, aciklama, dosya_urls, urunler(urun_adi), teknikler(teknik_adi)",
       "tablo": "talepler"
     },
     {
       "dosya": "app/senaryolar/[talep_id]/page.tsx",
-      "satir": 97,
+      "satir": 107,
       "ham": "senaryo_id, talep_id, iu_id, senaryo_metni, created_at",
       "tablo": "senaryolar"
     },
     {
       "dosya": "app/senaryolar/[talep_id]/page.tsx",
-      "satir": 105,
-      "ham": "senaryo_durum_id, durum, notlar, created_at",
+      "satir": 115,
+      "ham": "senaryo_durum_id, durum, created_at",
+      "tablo": "senaryo_durumu"
+    },
+    {
+      "dosya": "app/senaryolar/[talep_id]/page.tsx",
+      "satir": 129,
+      "ham": "senaryo_durum_id, notlar, created_at",
       "tablo": "senaryo_durumu"
     },
     {

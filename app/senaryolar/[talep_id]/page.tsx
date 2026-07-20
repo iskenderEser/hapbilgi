@@ -2,7 +2,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
@@ -11,6 +11,7 @@ import type { HedefRol } from "@/app/talepler/_types";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { DosyaGoruntuleListesi, type DosyaItem } from "@/components/DosyaGoruntuleListesi";
+import { SenaryoMetniGoster } from "@/components/SenaryoMetniGoster";
 
 interface Senaryo {
   senaryo_id: string;
@@ -20,8 +21,16 @@ interface Senaryo {
   created_at: string;
   son_durum?: string;
   son_durum_tarihi?: string;
-  son_durum_notlar?: string;
   senaryo_durum_id?: string;
+}
+
+// G-5 (docs/senaryo_tek_metin_diff_gelistirme_is_plani.md): tüm revizyon
+// turlarının notu, hangi versiyona bağlı olduğundan bağımsız, kronolojik
+// ayrı bir listede gösterilir — versiyon kartlarına gömülü değil.
+interface RevizyonNotu {
+  senaryo_durum_id: string;
+  notlar: string;
+  created_at: string;
 }
 
 interface Talep {
@@ -41,6 +50,7 @@ export default function SenaryolarPage() {
   const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
   const [talep, setTalep] = useState<Talep | null>(null);
   const [senaryolar, setSenaryolar] = useState<Senaryo[]>([]);
+  const [revizyonNotlari, setRevizyonNotlari] = useState<RevizyonNotu[]>([]);
   const [loading, setLoading] = useState(true);
   const [gonderLoading, setGonderLoading] = useState(false);
   const [senaryoMetni, setSenaryoMetni] = useState("");
@@ -103,14 +113,31 @@ export default function SenaryolarPage() {
     const senaryolarWithDurum = await Promise.all(
       (senaryolarData ?? []).map(async (s) => {
         const { data: durumlar } = await supabase
-          .from("senaryo_durumu").select("senaryo_durum_id, durum, notlar, created_at")
+          .from("senaryo_durumu").select("senaryo_durum_id, durum, created_at")
           .eq("senaryo_id", s.senaryo_id).order("created_at", { ascending: false }).limit(1);
         const sonDurum = durumlar?.[0];
-        return { ...s, son_durum: sonDurum?.durum ?? null, son_durum_tarihi: sonDurum?.created_at ?? null, son_durum_notlar: sonDurum?.notlar ?? null, senaryo_durum_id: sonDurum?.senaryo_durum_id ?? null };
+        return { ...s, son_durum: sonDurum?.durum ?? null, son_durum_tarihi: sonDurum?.created_at ?? null, senaryo_durum_id: sonDurum?.senaryo_durum_id ?? null };
       })
     );
 
     setSenaryolar(senaryolarWithDurum);
+
+    // G-5: tüm revizyon turlarının notu, hangi senaryo satırına ait olduğundan
+    // bağımsız, kronolojik olarak toplanır.
+    const senaryoIds = (senaryolarData ?? []).map(s => s.senaryo_id);
+    if (senaryoIds.length > 0) {
+      const { data: revizyonlar } = await supabase
+        .from("senaryo_durumu")
+        .select("senaryo_durum_id, notlar, created_at")
+        .in("senaryo_id", senaryoIds)
+        .eq("durum", "revizyon bekleniyor")
+        .not("notlar", "is", null)
+        .order("created_at", { ascending: true });
+      setRevizyonNotlari(revizyonlar ?? []);
+    } else {
+      setRevizyonNotlari([]);
+    }
+
     setLoading(false);
   };
 
@@ -118,12 +145,21 @@ export default function SenaryolarPage() {
 
   // G-2: taslak — sayfa açılışında varsa geri yüklenir, yazarken debounce'lu kaydedilir.
   const taslakAnahtari = `senaryo-taslak-${talep_id}`;
+  // G-3 (docs/senaryo_tek_metin_diff_gelistirme_is_plani.md): taslak yoksa ve
+  // IU revizyon yapacaksa, textarea önceki metinle önceden doldurulur —
+  // sıfırdan yazılmaz. Veri yüklendikten sonra YALNIZ BİR KEZ çalışır.
+  const baslangicDolduruldu = useRef(false);
   useEffect(() => {
-    if (!talep_id) return;
+    if (loading || baslangicDolduruldu.current) return;
+    baslangicDolduruldu.current = true;
+
     const kayitliTaslak = localStorage.getItem(taslakAnahtari);
-    if (kayitliTaslak) setSenaryoMetni(kayitliTaslak);
+    if (kayitliTaslak) { setSenaryoMetni(kayitliTaslak); return; }
+
+    const sonV = senaryolar[senaryolar.length - 1];
+    if (sonV?.son_durum === "revizyon bekleniyor") setSenaryoMetni(sonV.senaryo_metni);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [talep_id]);
+  }, [loading]);
 
   useEffect(() => {
     if (!talep_id) return;
@@ -217,6 +253,10 @@ export default function SenaryolarPage() {
   }
 
   const sonSenaryo = senaryolar[senaryolar.length - 1];
+  // G-2: PM inceleme ekranında diff — yalnız bir önceki versiyon varsa (ilk
+  // gönderimde karşılaştıracak bir şey yok, düz metin gösterilir).
+  const oncekiSenaryo = senaryolar.length > 1 ? senaryolar[senaryolar.length - 2] : null;
+  const revSayisi = senaryolar.filter(x => x.son_durum === "revizyon bekleniyor").length;
   const iuYazabilir = isIU && (!sonSenaryo || sonSenaryo.son_durum === "revizyon bekleniyor" || sonSenaryo.son_durum === null);
 
   return (
@@ -259,44 +299,35 @@ export default function SenaryolarPage() {
               <p className="text-sm text-gray-400 text-center py-5">Henüz senaryo yazılmadı.</p>
             )}
 
-            {senaryolar.map((s, i) => {
-              const renk = durumRenk(s.son_durum ?? "");
-              const revSayisi = senaryolar.filter(x => x.son_durum === "revizyon bekleniyor").length;
-              const isPMKararverilebilir = isPM && s.son_durum === "inceleme bekleniyor" && i === senaryolar.length - 1;
+            {sonSenaryo && (() => {
+              const renk = durumRenk(sonSenaryo.son_durum ?? "");
+              const isPMKararverilebilir = isPM && sonSenaryo.son_durum === "inceleme bekleniyor";
+              // G-2: PM inceleme ekranında diff — yalnız incelemedeyken ve önceki
+              // versiyon varsa. Onaylı/iptal/ilk gönderim → düz metin.
+              const diffGoster = sonSenaryo.son_durum === "inceleme bekleniyor" && !!oncekiSenaryo;
 
               return (
-                <div key={s.senaryo_id} className="border border-gray-200 rounded-xl overflow-hidden">
-                  {/* Versiyon başlık */}
+                <div className="border border-gray-200 rounded-xl overflow-hidden">
                   <div className="px-3 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">Versiyon {i + 1}</span>
-                      <span className="text-xs text-gray-400">{formatTarih(s.created_at)}</span>
-                    </div>
-                    {s.son_durum && (
+                    <span className="text-xs text-gray-400">{formatTarih(sonSenaryo.created_at)}</span>
+                    {sonSenaryo.son_durum && (
                       <span className="text-xs px-2.5 py-0.5 rounded-full"
                         style={{ background: renk.bg, color: renk.text, border: `0.5px solid ${renk.border}` }}>
-                        {s.son_durum}
+                        {sonSenaryo.son_durum}
                       </span>
                     )}
                   </div>
 
-                  {/* Senaryo metni */}
-                  <div className="px-3 py-3.5 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-                    {s.senaryo_metni}
+                  <div className="px-3 py-3.5">
+                    <SenaryoMetniGoster
+                      mevcut={sonSenaryo.senaryo_metni}
+                      onceki={diffGoster ? oncekiSenaryo!.senaryo_metni : undefined}
+                    />
                   </div>
 
-                  {/* Revizyon notu */}
-                  {s.son_durum === "revizyon bekleniyor" && s.son_durum_notlar && (
-                    <div className="px-3 py-2.5 bg-yellow-50 border-t border-yellow-200">
-                      <span className="text-xs font-semibold text-yellow-800">Revizyon Notu: </span>
-                      <span className="text-xs text-yellow-800">{s.son_durum_notlar}</span>
-                    </div>
-                  )}
-
-                  {/* PM karar alanı */}
                   {isPMKararverilebilir && (
                     <div className="px-3 py-3 border-t border-gray-100 bg-gray-50">
-                      {aktifRevizyon === s.senaryo_id ? (
+                      {aktifRevizyon === sonSenaryo.senaryo_id ? (
                         <div className="flex flex-col gap-2">
                           <textarea
                             value={revizyonNotu}
@@ -311,7 +342,7 @@ export default function SenaryolarPage() {
                               className="px-3 py-1.5 rounded-lg border border-gray-200 bg-transparent text-gray-500 text-xs cursor-pointer">
                               İptal
                             </button>
-                            <button onClick={() => handlePMKarar(s.senaryo_id, "revizyon bekleniyor", revizyonNotu)}
+                            <button onClick={() => handlePMKarar(sonSenaryo.senaryo_id, "revizyon bekleniyor", revizyonNotu)}
                               disabled={!revizyonNotu.trim() || gonderLoading}
                               className="px-3 py-1.5 rounded-lg border-none bg-amber-500 text-white text-xs font-semibold cursor-pointer"
                               style={{ opacity: !revizyonNotu.trim() ? 0.5 : 1 }}>
@@ -321,17 +352,17 @@ export default function SenaryolarPage() {
                         </div>
                       ) : (
                         <div className="flex gap-2 justify-end flex-wrap">
-                          <button onClick={() => handlePMKarar(s.senaryo_id, "onaylandi")} disabled={gonderLoading}
+                          <button onClick={() => handlePMKarar(sonSenaryo.senaryo_id, "onaylandi")} disabled={gonderLoading}
                             className="px-3 py-1.5 rounded-lg border-none bg-green-700 text-white text-xs font-semibold cursor-pointer">
                             Onayla
                           </button>
                           {revSayisi < 2 && (
-                            <button onClick={() => setAktifRevizyon(s.senaryo_id)} disabled={gonderLoading}
+                            <button onClick={() => setAktifRevizyon(sonSenaryo.senaryo_id)} disabled={gonderLoading}
                               className="px-3 py-1.5 rounded-lg border-none bg-amber-500 text-white text-xs font-semibold cursor-pointer">
                               Revizyon İste
                             </button>
                           )}
-                          <button onClick={() => handlePMKarar(s.senaryo_id, "Iptal Edildi")} disabled={gonderLoading}
+                          <button onClick={() => handlePMKarar(sonSenaryo.senaryo_id, "Iptal Edildi")} disabled={gonderLoading}
                             className="px-3 py-1.5 rounded-lg bg-transparent text-xs font-semibold cursor-pointer"
                             style={{ border: "0.5px solid #fecaca", color: "#bc2d0d" }}>
                             İptal Et
@@ -342,7 +373,24 @@ export default function SenaryolarPage() {
                   )}
                 </div>
               );
-            })}
+            })()}
+
+            {/* G-5: revizyon notları — versiyon kartlarından bağımsız, kronolojik */}
+            {revizyonNotlari.length > 0 && (
+              <div className="border border-gray-200 rounded-xl overflow-hidden">
+                <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
+                  <span className="text-xs font-semibold text-gray-500">Revizyon Notları</span>
+                </div>
+                <div className="flex flex-col divide-y divide-gray-100">
+                  {revizyonNotlari.map(n => (
+                    <div key={n.senaryo_durum_id} className="px-3 py-2.5 bg-yellow-50">
+                      <div className="text-xs text-yellow-800">{n.notlar}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{formatTarih(n.created_at)}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* IU yazım alanı */}
