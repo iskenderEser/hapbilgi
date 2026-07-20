@@ -36,7 +36,7 @@ export function HazirSoruSetiBlogu({
       <div className="px-3 py-2.5 bg-gray-50 border-b border-gray-100">
         <span className="text-xs font-semibold text-gray-700">Soru Seti</span>
         <span className="text-xs text-gray-400 ml-2">
-          (IU bu soru setini sisteme işleyecek — tam {buyukluk} soru girilmeli)
+          (video onaylandığında sistem seti otomatik işler — tam {buyukluk} soru girilmeli)
         </span>
       </div>
       <div className="p-3">
@@ -54,7 +54,7 @@ export function HazirSoruSetiBlogu({
         <textarea
           value={metin}
           onChange={(e) => onMetinChange(e.target.value)}
-          placeholder={`Soruları buraya yapıştırın... (tam ${buyukluk} soru, sorular arasında boş satır bırakın)`}
+          placeholder={`Soruları buraya yapıştırın... (tam ${buyukluk} soru)`}
           rows={10}
           className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-xs text-gray-900 bg-white resize-y mb-2"
           style={{ fontFamily: "'Nunito', sans-serif" }}

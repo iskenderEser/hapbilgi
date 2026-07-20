@@ -61,6 +61,14 @@
 
 Her adım: tsc + `npm run denetim` + `npm run lint:mimari` temiz; en fazla 1 smoke (1 mutlu + 1 red — D-1'de doğal aday: toleranslı parse'a A4 tablosunun kırdığı vakalar). Fiziksel teyit İskender'de: gerçek Word'den kopyala-yapıştır + (D-4 yapılırsa) gerçek .docx yükleme. Canlı DB'ye yazım yok.
 
+## D-1/D-2/D-3 SONUCU (19.07.2026 — KOD BİTTİ; İskender kararı: "d1/d2/d3 öncelikli yapılsın")
+
+- **D-1:** Parse tek doğruluk kaynağına taşındı: `lib/soru/parse.ts` — toleranslı satır-temelli mantık. Boş satırlar tümüyle anlamsız (soru içinde de arada da serbest); numaralı satır ya da tamamlanmış sorudan sonraki düz satır yeni soruyu başlatır (numarasız soru da çalışır — Word listesi riski kapandı); "Doğru/Dogru" ikisi de kabul; uzun metnin alt satıra taşması son öğeye eklenir. Format şartı aynen: soru + tam 2 seçenek (A/B) + doğru şık. Çıktı sözleşmesi değişmedi. İki ekran da buradan kullanıyor: üretici hook'u yeniden-export (`useSoruSetiParse.ts`), IU sayfasındaki yerel kopya SİLİNDİ (K-2 kapandı).
+- **D-2:** Hata mesajları konumlu: "2. soruda B seçeneği bulunamadı." / "N. soruda doğru cevap A veya B olmalıdır." / seçenek soru metninden önce gelirse yönlendirici mesaj. Sayı uyuşmazlığı mesajı artık gerçeği söylüyor (boş satır soruyu bölemediği için sayım doğru).
+- **D-3:** Üretici formundaki bayat "(IU bu soru setini sisteme işleyecek)" ibaresi "(video onaylandığında sistem seti otomatik işler)" oldu; iki ekranda "sorular arasında boş satır bırakın" zorunluluğu placeholder'lardan kalktı; IU "Önizle" butonunun blok-sayımına dayalı renk sinyali kaldırıldı (K-7).
+
+Üçlü doğrulama temiz. Smoke: mutlu = yaşanan olayın girdisi (soru içi boş satırlar + ğ'siz "Dogru") artık parse ediliyor ✓; red = "2. soruda B seçeneği bulunamadı." ✓. A4 tablosunun 3 KIRIYOR vakası tasarım gereği kapandı (boş satır, numarasız, ğ'siz).
+
 ## Durum
 
-**KONTROL BİTTİ — GELİŞTİRME KARARI BEKLİYOR.** D-1/D-2/D-3 paketi ve D-4 fazı için kapsam kararı İskender'de.
+**D-1/D-2/D-3 KOD BİTTİ — fiziksel teyit İskender'de** (önerilen: gerçek Word'de yazılmış, boş satırlı/numaralı bir seti her iki ekrana yapıştırmak). **D-4 (Word dosyası yükleme) AYRI FAZ — İskender ile konuşulup planlanacak.**

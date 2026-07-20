@@ -10,6 +10,7 @@ import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { HedefRolBant } from "@/components/HedefRolBant";
 import type { HedefRol } from "@/app/talepler/_types";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { parseSoruSeti } from "@/lib/soru/parse";
 
 interface Soru {
   soru_metni: string;
@@ -199,49 +200,9 @@ export default function SoruSetiAkisPage() {
   const iuGonderebilir = isIU && (!sonSet || sonSet.son_durum === "revizyon bekleniyor" || !sonSet.sorular?.length);
   const revizyonSayisi = soruSetleri.filter(ss => ss.son_durum === "revizyon bekleniyor").length;
 
-  const parseSorular = (metin: string): { sorular: Soru[]; hata: string | null } => {
-    const bloklar = metin.split(/\n\s*\n/).filter(b => b.trim());
-    const sorular: Soru[] = [];
-
-    for (let blok of bloklar) {
-      const lines = blok.split("\n").map(l => l.trim()).filter(l => l);
-      if (lines.length < 4) continue;
-
-      const soruLine = lines.find(l => /^\d+[\.\)]/.test(l));
-      if (!soruLine) return { sorular: [], hata: "Soru metni bulunamadı." };
-      
-      const soruMetni = soruLine.replace(/^\d+[\.\)]\s*/, "");
-      
-      const aLine = lines.find(l => /^A[\)\.]/i.test(l));
-      const bLine = lines.find(l => /^B[\)\.]/i.test(l));
-      if (!aLine || !bLine) return { sorular: [], hata: "A ve B seçenekleri bulunamadı." };
-
-      const secenekA = aLine.replace(/^A[\)\.]\s*/i, "");
-      const secenekB = bLine.replace(/^B[\)\.]\s*/i, "");
-      
-      const dogruLine = lines.find(l => /^Doğru:/i.test(l));
-      if (!dogruLine) return { sorular: [], hata: "Doğru cevap satırı bulunamadı." };
-      
-      const dogruHarf = dogruLine.match(/[AB]/i)?.[0]?.toUpperCase();
-      if (dogruHarf !== "A" && dogruHarf !== "B") return { sorular: [], hata: "Doğru cevap A veya B olmalıdır." };
-
-      sorular.push({
-        soru_metni: soruMetni,
-        secenekler: [
-          { harf: "A", metin: secenekA, dogru: dogruHarf === "A" },
-          { harf: "B", metin: secenekB, dogru: dogruHarf === "B" },
-        ],
-      });
-    }
-
-    if (sorular.length !== soruSetiBuyuklugu) {
-      return { sorular: [], hata: `Soru sayısı tam ${soruSetiBuyuklugu} olmalıdır. Şu an: ${sorular.length}` };
-    }
-    return { sorular, hata: null };
-  };
-
   const handleParse = () => {
-    const { sorular, hata: parseHataMsg } = parseSorular(yapisTir);
+    // D-1: parse tek doğruluk kaynağından (lib/soru/parse.ts) — yerel kopya kaldırıldı.
+    const { sorular, hata: parseHataMsg } = parseSoruSeti(yapisTir, soruSetiBuyuklugu);
     if (parseHataMsg) {
       setParseHata(parseHataMsg);
       setOnizleme([]);
@@ -485,7 +446,7 @@ export default function SoruSetiAkisPage() {
               <textarea
                 value={yapisTir}
                 onChange={(e) => { setYapisTir(e.target.value); setOnizleme([]); setParseHata(""); }}
-                placeholder={`Soruları buraya yapıştırın... (tam ${soruSetiBuyuklugu} soru, sorular arasında boş satır bırakın)`}
+                placeholder={`Soruları buraya yapıştırın... (tam ${soruSetiBuyuklugu} soru)`}
                 rows={12}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-xs text-gray-900 bg-white resize-y mb-2 focus:outline-none focus:border-[#56aeff] transition-colors"
                 style={{ fontFamily: "'Nunito', sans-serif" }}
@@ -519,10 +480,7 @@ export default function SoruSetiAkisPage() {
                 {!onizleme.length ? (
                   <button onClick={handleParse} disabled={!yapisTir.trim()}
                     className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer transition-colors disabled:opacity-50"
-                    style={{ 
-                      fontFamily: "'Nunito', sans-serif",
-                      background: yapisTir.trim().split(/\n\s*\n/).filter(b => b.trim()).length === soruSetiBuyuklugu ? "#56aeff" : "#6b7280"
-                    }}>
+                    style={{ fontFamily: "'Nunito', sans-serif", background: "#56aeff" }}>
                     Önizle
                   </button>
 
