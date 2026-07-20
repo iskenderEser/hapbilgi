@@ -69,6 +69,25 @@ Her adım: tsc + `npm run denetim` + `npm run lint:mimari` temiz; en fazla 1 smo
 
 Üçlü doğrulama temiz. Smoke: mutlu = yaşanan olayın girdisi (soru içi boş satırlar + ğ'siz "Dogru") artık parse ediliyor ✓; red = "2. soruda B seçeneği bulunamadı." ✓. A4 tablosunun 3 KIRIYOR vakası tasarım gereği kapandı (boş satır, numarasız, ğ'siz).
 
-## Durum
+## Yapısal Giriş Geliştirmesi — Y planı (İskender planı, 19.07.2026; belgeye işleme 20.07 — önceki oturum kullanım limitine takıldığı için geç yazıldı)
 
-**D-1/D-2/D-3 KOD BİTTİ — fiziksel teyit İskender'de** (önerilen: gerçek Word'de yazılmış, boş satırlı/numaralı bir seti her iki ekrana yapıştırmak). **D-4 (Word dosyası yükleme) AYRI FAZ — İskender ile konuşulup planlanacak.**
+D-4 kararının yerini alan/kapsayan büyük adım: giriş yolu metin parse'ından **yapısal forma** taşınır; parse ve dosya okuma yardımcıya döner.
+
+- **Y-1 | Ortak yapısal form bileşeni (çekirdek):** Tek ortak bileşen — soru kartları: her kartta soru kutusu, altında A ve B seçenek satırları, yanında doğru işareti (radyo + "temizle"), kart silme; üstte "12/25" sayacı ve karta atlama; büyüklük tavanına kadar "soru ekle". Alan bazlı Türkçe doğrulama ("2. sorunun B seçeneği boş", "5. soruda doğru cevap işaretlenmemiş") — gönderim öncesi engel, kullanıcı nerede ne eksik görerek ilerler. Çıktı bugünkü veri sözleşmesinin aynısı → kayıt, hazır modül, yayın, izleme tarafında sıfır değişiklik.
+- **Y-2 | İki ekrana takılması:** Üretici talep formundaki hazır soru seti bloğu ve IU'nun soru seti yazım ekranı aynı bileşeni kullanır; textarea asıl giriş yolu olmaktan çıkar. Revizyonda mevcut sorular metne çevrilmeden doğrudan form kartlarına yüklenir. "Toplu yapıştır" hızlandırıcı olarak kalır (katlanır alan): toleranslı parse formu doldurur, çözülemeyen yer formda elle tamamlanır — parse kapı olmaktan çıkar, yardımcı olur.
+- **Y-3 | Dosyadan getirme (D-4 kapsamı bunun içinde):** Ortak katman `lib/soru/dosyadanGetir.ts`: dosya → metin → parse → form ön doldurma. Tümü tarayıcıda, dosya sunucuya hiç gitmez; kütüphaneler yalnız dosya seçilince dinamik yüklenir. Okuyucular: 1. paket .docx (mammoth) + .txt + .xlsx (SheetJS; sütunlar soru|A|B|doğru — hücreler metin parse'ına girmeden doğrudan kartlara, "şablon indir" butonu); 2. paket .pptx (slayt metinleri, jszip) + metin tabanlı .pdf (pdfjs; taranmış PDF Türkçe mesajla reddedilir). Yeni bağımlılıklar: mammoth, xlsx, jszip, pdfjs-dist.
+- **Y-4 | Temizlik ve metinler:** Format örneği kutuları yeni düzene göre sadeleşir; bayat ipuçları kalkar; plan belgesine Y-SONUÇ işlenir.
+
+Doğrulama disiplini: her aşama ayrı commit + üçlü doğrulama + en fazla 1 smoke (Y-1: alan doğrulama saf fonksiyonu; Y-3: mini .docx → form ön doldurma mutlu, geçersiz dosya red). Fiziksel testler yapılmaz — D1-D3 ile birlikte İskender'in toplu test turuna bırakılır. Riskler: paket boyutu (dinamik yüklemeyle sınırlandı); Excel sütun düzeni kullanıcı disiplini ister (şablonla yumuşatılır); PDF kalitesi dosyaya göre değişir (form düzeltme imkânı telafi eder).
+
+## Y-1/Y-2 SONUCU (20.07.2026 — KOD BİTTİ, commit f5f0396; kontrol turu 20.07'de koşuldu)
+
+- **Y-1:** `components/SoruSetiFormu.tsx` (kartlar, sayaç, karta atlama, tavana kadar ekle, silme, radyo + "işareti temizle") + saf çekirdek `lib/soru/taslak.ts` (`SoruTaslagi`, `taslaklariDogrula` konumlu Türkçe mesajlar, `taslaklardanSorular` / `sorulardanTaslaklar` çevrimleri, `taslaklariBoyutla` — dolu kart sessizce silinmez). Çıktı sözleşmesi değişmedi, sunucu uçlarına dokunulmadı.
+- **Y-2:** İki ekran da ortak bileşende: IU yazım ekranı (`app/soru-setleri/[video_durum_id]/page.tsx`) ve üretici bloğu (`HazirSoruSetiBlogu.tsx` + `useTalepFormu.ts`). Eski textarea/önizleme kapısı ve `useSoruSetiParse` hook'u kaldırıldı. Revizyon doğrudan kartlara yüklüyor. Toplu yapıştır katlanır `components/SoruIceAktar.tsx`'te; `parseSoruSetiEsnek` ASLA reddetmez, çözülen kartlara dökülür.
+- Smoke: `taslaklariDogrula` mutlu + red ✓. Üçlü doğrulama temiz ✓.
+
+## Durum (20.07.2026)
+
+- **D-1/D-2/D-3 ve Y-1/Y-2 KOD BİTTİ** (commit'ler: f35d1a8, f5f0396). Fiziksel teyit İskender'in toplu test turunda.
+- **Y-3 KOD HAZIR ama COMMIT'LENMEDİ** (çalışma ağacında): `lib/soru/dosyadanGetir.ts` iki paketi birden kapsıyor (.txt/.docx/.xlsx + şablon indirme, .pptx/.pdf + taranmış PDF reddi, 10 MB tavanı); `SoruIceAktar.tsx`'e "Dosyadan getir" düğmesi bağlı; 4 bağımlılık kurulu. 20.07 kontrol turunda üçlü doğrulama bu ağaçta (Y-3 dahil) temiz çıktı. **Eksik: Y-3 smoke'u (mini .docx mutlu + geçersiz dosya red) koşulmadı, commit yapılmadı.**
+- **Y-4 YAPILMADI** (metin sadeleştirme + Y-SONUÇ işleme; bu bölümün yazılmasıyla belge kısmı kapanmış sayılabilir, ekran metinleri bekliyor).
