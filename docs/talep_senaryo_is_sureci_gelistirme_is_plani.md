@@ -23,3 +23,11 @@
 - **G-4 | Doğrulama disiplini:** tsc + `npm run denetim` + `npm run lint:mimari` temiz. En fazla 1 smoke: G-1'in hata dalı için — durum çağrısı başarısız olduğunda metnin `state`'te kaldığını doğrulayan saf/izole bir test (mümkünse mantığı küçük bir yardımcı fonksiyona çıkarıp test edilir; değilse React Testing Library gerektirmeyecek şekilde en dar kapsamda doğrulanır). Fiziksel teyit İskender'in test turunda: (a) durum isteğini bilerek kesip (ağ sekmesinden ya da geçici hata enjekte ederek) metnin kaybolmadığını görmek, (b) taslağın sayfa yenilemesinden sağ çıktığını görmek, (c) referans dosyanın senaryo ekranında göründüğünü görmek.
 
 Sıra: G-1 tek başına öncelikli (veri kaybı riski); G-2 ve G-3 ayrı, birbirinden bağımsız küçük iyileştirmeler — aynı pakette yapılabilir ya da ayrı ayrı.
+
+## G-1/G-2/G-3 SONUÇ (20.07.2026 — KOD BİTTİ, commit `50dc5a7`)
+
+- **G-1:** İstemci akışı ikiye indi (satır oluştur → tek durum çağrısı `inceleme bekleniyor`). Durum çağrısı başarısız olursa `setSenaryoMetni("")` artık çalışmıyor — metin state'te kalıyor, hata mesajı gösteriliyor. Tekrar "Gönder"e basıldığında `beklemedekiSenaryoId` state'i sayesinde senaryo satırı yeniden oluşturulmuyor, yalnız durum çağrısı tekrarlanıyor. Sunucu ucuna dokunulmadı.
+- **G-2:** `senaryo-taslak-${talep_id}` anahtarıyla localStorage taslak — yazarken 1 sn debounce'lu kaydediliyor, sayfa açılışında geri yükleniyor, başarılı gönderimde temizleniyor.
+- **G-3:** Talep sorgusuna `dosya_urls` eklendi, salt-okuma liste talep bilgisi kartının altında gösteriliyor. Görüntüleme mantığı `components/DosyaGoruntuleListesi.tsx`'e çıkarıldı (plandaki `DosyaChip.tsx` adı yerine bu isim kullanıldı — işlevi birebir aynı); `app/talepler/[talep_id]/page.tsx`'teki yerel kopya kaldırıldı, PM'in silme ikonu `sagAksiyon` render prop'uyla korundu.
+- Üçlü doğrulama temiz (`denetim`: DB şemasıyla uyuşmazlık yok). Değişen dosyalarda yeni eslint hatası yok (mevcut `any`/unescaped-entity borcu sayıca aynı kaldı); yeni bileşen tertemiz.
+- **Fiziksel teyit bekliyor** — İskender'in test turunda: durum isteğini kesip metnin korunduğunu, taslağın sayfa yenilemesinden sağ çıktığını, referans dosyanın senaryo ekranında göründüğünü doğrulamak.
