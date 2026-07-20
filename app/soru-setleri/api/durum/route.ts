@@ -52,6 +52,11 @@ export async function POST(request: NextRequest) {
     const talepBilgisi = await talepBilgisiSoruSeti(adminSupabase, soru_seti_id);
     const urun_adi = talepBilgisi?.urun_adi ?? "-";
 
+    // Ç-7: karar yetkisi yalnız talebi açan üreticide; zincir kopuksa da reddet.
+    if (isPM && (!talepBilgisi?.uretici_id || talepBilgisi.uretici_id !== user.id)) {
+      return rolHatasi("Bu talep üzerinde karar yetkisi talebi açan üreticidedir.");
+    }
+
     if (isIU && durum === "inceleme bekleniyor") {
       const soruSetiBuyuklugu = talepBilgisi?.soru_seti_buyuklugu ?? 15;
       if (!soruSeti.sorular || soruSeti.sorular.length !== soruSetiBuyuklugu) {

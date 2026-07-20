@@ -47,17 +47,23 @@ export function DosyaGoruntuleListesi({ dosyalar, onHata, sagAksiyon }: Props) {
     if (!dosyaYolu) { onHata("Dosya yolu çözümlenemedi.", "url parse", undefined); return; }
 
     setGoruntuleniyorUrl(dosya.url);
-    const res = await fetch(`/talepler/api/dosyalar?yol=${encodeURIComponent(dosyaYolu)}`);
-    const d = await res.json();
-    setGoruntuleniyorUrl(null);
+    // Ç-5: fetch/json ağ hatasıyla fırlarsa chip "..."de kilitli kalmasın.
+    try {
+      const res = await fetch(`/talepler/api/dosyalar?yol=${encodeURIComponent(dosyaYolu)}`);
+      const d = await res.json();
 
-    if (!res.ok) { onHata(d.hata ?? "Dosya görüntülenemedi.", d.adim, d.detay); return; }
+      if (!res.ok) { onHata(d.hata ?? "Dosya görüntülenemedi.", d.adim, d.detay); return; }
 
-    const ext = dosya.dosya_adi.split(".").pop()?.toLowerCase() ?? "";
-    const acilacakUrl = OFFICE_FORMATLAR.includes(ext)
-      ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(d.signed_url)}`
-      : d.signed_url;
-    window.open(acilacakUrl, "_blank");
+      const ext = dosya.dosya_adi.split(".").pop()?.toLowerCase() ?? "";
+      const acilacakUrl = OFFICE_FORMATLAR.includes(ext)
+        ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(d.signed_url)}`
+        : d.signed_url;
+      window.open(acilacakUrl, "_blank");
+    } catch (err) {
+      onHata("Dosya görüntülenemedi.", "ağ/istek hatası", String(err));
+    } finally {
+      setGoruntuleniyorUrl(null);
+    }
   };
 
   return (

@@ -32,6 +32,7 @@ interface Senaryo {
   urun_adi?: string;
   teknik_adi?: string;
   hedef_rol?: HedefRol;
+  uretici_id?: string | null;
 }
 
 export default function VideoAkisPage() {
@@ -89,13 +90,14 @@ export default function VideoAkisPage() {
         hata("Senaryo bulunamadı.", "senaryolar tablosu SELECT — senaryo_id", senaryoError?.message);
       } else {
         const { data: talep } = await supabase
-          .from("talepler").select(`hedef_rol, urunler(urun_adi), teknikler(teknik_adi)`)
+          .from("talepler").select(`uretici_id, hedef_rol, urunler(urun_adi), teknikler(teknik_adi)`)
           .eq("talep_id", senaryoData.talep_id).single();
         setSenaryo({
           ...senaryoData,
           urun_adi: (talep as any)?.urunler?.urun_adi ?? "-",
           teknik_adi: (talep as any)?.teknikler?.teknik_adi ?? "-",
           hedef_rol: ((talep as any)?.hedef_rol ?? "utt") as HedefRol,
+          uretici_id: (talep as any)?.uretici_id ?? null,
         });
       }
     }
@@ -341,7 +343,8 @@ export default function VideoAkisPage() {
           </div>
 
           {/* PM karar alanı */}
-          {isPM && sonVideo?.son_durum === "inceleme bekleniyor" && (
+          {/* Ç-7: karar butonları yalnız talebi açan üreticiye görünür. */}
+          {isPM && senaryo?.uretici_id === kullanici.id && sonVideo?.son_durum === "inceleme bekleniyor" && (
             <div className="border-t border-gray-100 px-4 md:px-5 py-3.5 bg-gray-50">
               {aktifRevizyon ? (
                 <div className="flex flex-col gap-2">

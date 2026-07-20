@@ -36,6 +36,7 @@ interface VideoDurumJoin {
     senaryo_durumu: {
       senaryolar: {
         talepler: {
+          uretici_id: string | null;
           soru_seti_buyuklugu: number;
           video_basi_soru_sayisi: number;
           hedef_rol: HedefRol;
@@ -59,6 +60,8 @@ export default function SoruSetiAkisPage() {
   const [soruSetiBuyuklugu, setSoruSetiBuyuklugu] = useState<number>(25);
   const [videoBasiSoruSayisi, setVideoBasiSoruSayisi] = useState<number>(2);
   const [hedefRol, setHedefRol] = useState<HedefRol | null>(null);
+  // Ç-7: karar butonlarını yalnız talebi açan üreticiye göstermek için.
+  const [ureticiId, setUreticiId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [gonderLoading, setGonderLoading] = useState(false);
   // Y-2: yapısal giriş — sorular form kartlarıyla yazılır (textarea/parse kapısı kalktı).
@@ -94,6 +97,7 @@ export default function SoruSetiAkisPage() {
           senaryo_durumu!inner (
             senaryolar!inner (
               talepler!inner (
+                uretici_id,
                 soru_seti_buyuklugu,
                 video_basi_soru_sayisi,
                 hedef_rol,
@@ -116,6 +120,7 @@ export default function SoruSetiAkisPage() {
     setSoruSetiBuyuklugu(talep?.soru_seti_buyuklugu ?? 25);
     setVideoBasiSoruSayisi(talep?.video_basi_soru_sayisi ?? 2);
     setHedefRol((talep?.hedef_rol ?? "utt") as HedefRol);
+    setUreticiId(talep?.uretici_id ?? null);
   }, []);
 
   const fetchSoruSetleri = useCallback(async (supabase: any, video_durum_id: string) => {
@@ -328,7 +333,8 @@ export default function SoruSetiAkisPage() {
 
             {soruSetleri.map((ss, i) => {
               const renk = durumRenk(ss.son_durum ?? "");
-              const isPMKararverilebilir = isPM && ss.son_durum === "inceleme bekleniyor" && i === soruSetleri.length - 1;
+              // Ç-7: karar butonları yalnız talebi açan üreticiye görünür.
+              const isPMKararverilebilir = isPM && ureticiId === kullanici?.id && ss.son_durum === "inceleme bekleniyor" && i === soruSetleri.length - 1;
 
               return (
                 <div key={ss.soru_seti_id} className="border border-gray-200 rounded-xl overflow-hidden">

@@ -7,14 +7,15 @@ import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { talepBilgisiSenaryo } from "@/lib/utils/talepZinciri";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
+// Ç-6: "senaryo yaziliyor" ölü durum — istemciden artık gönderilmiyor,
+// listelerden çıkarıldı. DB'deki tarihî kayıtlara dokunulmaz.
 const GECERLI_DURUMLAR = [
-  "senaryo yaziliyor",
   "inceleme bekleniyor",
   "revizyon bekleniyor",
   "onaylandi",
   "Iptal Edildi",
 ];
-const IU_DURUMLARI = ["senaryo yaziliyor", "inceleme bekleniyor"];
+const IU_DURUMLARI = ["inceleme bekleniyor"];
 const PM_DURUMLARI = ["revizyon bekleniyor", "onaylandi", "Iptal Edildi"];
 
 export async function POST(request: NextRequest) {
@@ -52,6 +53,11 @@ export async function POST(request: NextRequest) {
     // Talep zinciri — tek join sorgusu
     const talepBilgisi = await talepBilgisiSenaryo(adminSupabase, senaryo_id);
     const urun_adi = talepBilgisi?.urun_adi ?? "-";
+
+    // Ç-7: karar yetkisi yalnız talebi açan üreticide; zincir kopuksa da reddet.
+    if (isPM && (!talepBilgisi?.uretici_id || talepBilgisi.uretici_id !== user.id)) {
+      return rolHatasi("Bu talep üzerinde karar yetkisi talebi açan üreticidedir.");
+    }
 
     // PM revizyon hakkı kontrolü
     if (isPM && durum === "revizyon bekleniyor") {

@@ -56,6 +56,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Ç-7: talep bilgisi karar kontrolünden önce çekilir; karar yetkisi yalnız
+    // talebi açan üreticide, zincir kopuksa da reddet.
+    const talepBilgisi = await talepBilgisiVideo(adminSupabase, video_id);
+    const urun_adi = talepBilgisi?.urun_adi ?? "-";
+    if (isPM && (!talepBilgisi?.uretici_id || talepBilgisi.uretici_id !== user.id)) {
+      return rolHatasi("Bu talep üzerinde karar yetkisi talebi açan üreticidedir.");
+    }
+
     if (isPM && durum === "revizyon bekleniyor") {
       const { count, error: countError } = await adminSupabase
         .from("video_durumu")
@@ -65,9 +73,6 @@ export async function POST(request: NextRequest) {
       if (countError) return hataYaniti("Revizyon sayısı kontrol edilemedi.", "video_durumu tablosu COUNT — revizyon kontrolü", countError);
       if ((count ?? 0) >= 2) return isKuraluHatasi("Maksimum revizyon hakkı (2) kullanıldı. Daha fazla revizyon istenemez.");
     }
-
-    const talepBilgisi = await talepBilgisiVideo(adminSupabase, video_id);
-    const urun_adi = talepBilgisi?.urun_adi ?? "-";
 
     const { data: yeniDurum, error: durumError } = await adminSupabase
       .from("video_durumu")

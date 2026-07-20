@@ -12,6 +12,7 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { DosyaGoruntuleListesi, type DosyaItem } from "@/components/DosyaGoruntuleListesi";
 import { SenaryoMetniGoster } from "@/components/SenaryoMetniGoster";
+import { gonderimKarari } from "@/lib/utils/senaryo/gonderimKarari";
 
 interface Senaryo {
   senaryo_id: string;
@@ -35,6 +36,7 @@ interface RevizyonNotu {
 
 interface Talep {
   talep_id: string;
+  uretici_id: string | null;
   urun_adi: string;
   teknik_adi: string;
   hedef_rol: HedefRol;
@@ -85,7 +87,7 @@ export default function SenaryolarPage() {
 
     const { data: talepData, error: talepError } = await supabase
       .from("talepler")
-      .select(`talep_id, hedef_rol, aciklama, dosya_urls, urunler(urun_adi), teknikler(teknik_adi)`)
+      .select(`talep_id, uretici_id, hedef_rol, aciklama, dosya_urls, urunler(urun_adi), teknikler(teknik_adi)`)
       .eq("talep_id", talep_id)
       .single();
 
@@ -97,6 +99,7 @@ export default function SenaryolarPage() {
 
     setTalep({
       talep_id: talepData.talep_id,
+      uretici_id: (talepData as any).uretici_id ?? null,
       hedef_rol: ((talepData as any).hedef_rol ?? "utt") as HedefRol,
       aciklama: talepData.aciklama,
       urun_adi: (talepData as any).urunler?.urun_adi ?? "-",
@@ -153,10 +156,16 @@ export default function SenaryolarPage() {
     if (loading || baslangicDolduruldu.current) return;
     baslangicDolduruldu.current = true;
 
+    // Ç-4: sunucuda gönderilmiş/sonuçlanmış iş varsa (durum null ya da
+    // "revizyon bekleniyor" DEĞİLSE) bayat taslak geri yüklenmez ve silinir —
+    // başka cihazdan gönderim yapılmış olabilir.
+    const sonV = senaryolar[senaryolar.length - 1];
+    const sunucudaGonderilmis = !!sonV && sonV.son_durum != null && sonV.son_durum !== "revizyon bekleniyor";
+    if (sunucudaGonderilmis) { localStorage.removeItem(taslakAnahtari); return; }
+
     const kayitliTaslak = localStorage.getItem(taslakAnahtari);
     if (kayitliTaslak) { setSenaryoMetni(kayitliTaslak); return; }
 
-    const sonV = senaryolar[senaryolar.length - 1];
     if (sonV?.son_durum === "revizyon bekleniyor") setSenaryoMetni(sonV.senaryo_metni);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
@@ -182,15 +191,21 @@ export default function SenaryolarPage() {
     if (!senaryoMetni.trim()) return;
     setGonderLoading(true);
 
-    // G-1 + Ç-1: retry'da satır YENİDEN oluşturulmaz ama metin HER gönderimde
-    // sunucuya taşınır (retry → aynı satıra UPDATE) — düzenlenmiş metin ile
-    // DB bir daha ayrışamaz.
-    let senaryoId = beklemedekiSenaryoId;
+    // G-1 + Ç-1 + Ç-2: retry'da satır YENİDEN oluşturulmaz ama metin HER
+    // gönderimde sunucuya taşınır (retry → aynı satıra UPDATE). Hedef satır
+    // kararı sunucudaki gerçeğe bakar (gonderimKarari): reload sonrası
+    // durumsuz kalan kendi satırı da yeniden kullanılır — öksüz satır doğmaz.
+    const sonSatir = senaryolar.length > 0 ? senaryolar[senaryolar.length - 1] : null;
+    const karar = gonderimKarari(
+      beklemedekiSenaryoId,
+      sonSatir ? { senaryo_id: sonSatir.senaryo_id, iu_id: sonSatir.iu_id, son_durum: sonSatir.son_durum ?? null } : null,
+      kullanici!.id
+    );
     const res = await fetch("/senaryolar/api", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(
-        senaryoId
-          ? { senaryo_id: senaryoId, senaryo_metni: senaryoMetni.trim() }
+        karar.tur === "guncelle"
+          ? { senaryo_id: karar.senaryo_id, senaryo_metni: senaryoMetni.trim() }
           : { talep_id, senaryo_metni: senaryoMetni.trim() }
       ),
     });
@@ -198,7 +213,7 @@ export default function SenaryolarPage() {
     if (!res.ok) {
       // 422 = satırın durum kaydı zaten var: önceki durum çağrısı aslında
       // sunucuya ulaşmış (yanıt ağda kaybolmuş). Akış tazelenir.
-      if (senaryoId && res.status === 422) {
+      if (karar.tur === "guncelle" && res.status === 422) {
         hata("Önceki gönderim sunucuya ulaşmış; akış tazelendi.", d.adim, d.detay);
         setBeklemedekiSenaryoId(null);
         await veriCek();
@@ -209,7 +224,7 @@ export default function SenaryolarPage() {
       setGonderLoading(false);
       return;
     }
-    senaryoId = d.senaryo.senaryo_id;
+    const senaryoId = d.senaryo.senaryo_id;
     setBeklemedekiSenaryoId(senaryoId);
 
     const durumRes = await fetch("/senaryolar/api/durum", {
@@ -317,7 +332,8 @@ export default function SenaryolarPage() {
 
             {sonSenaryo && (() => {
               const renk = durumRenk(sonSenaryo.son_durum ?? "");
-              const isPMKararverilebilir = isPM && sonSenaryo.son_durum === "inceleme bekleniyor";
+              // Ç-7: karar butonları yalnız talebi açan üreticiye görünür.
+              const isPMKararverilebilir = isPM && talep?.uretici_id === kullanici.id && sonSenaryo.son_durum === "inceleme bekleniyor";
               // G-2: PM inceleme ekranında diff — yalnız incelemedeyken ve önceki
               // versiyon varsa. Onaylı/iptal/ilk gönderim → düz metin.
               const diffGoster = sonSenaryo.son_durum === "inceleme bekleniyor" && !!oncekiSenaryo;
