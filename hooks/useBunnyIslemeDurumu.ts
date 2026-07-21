@@ -14,7 +14,7 @@ interface Sorgu {
  * süre boyunca (lib/video/islemeDurumu.ts TAVAN_SANIYE) periyodik tekrar sorgular.
  * Sonsuz polling yok — tavan dolunca durur, kullanıcı manuel yenilemeye döner.
  * IU ve PM/üretici ekranları aynı hook'u kullanır (app/videolar, app/talepler).
- * F-6 (docs/Test_210726.md): video "işleniyor"dan "hazır"a geçtiğinde onHazir
+ * F-6 (docs/test_pm_iu_21072026.md): video "işleniyor"dan "hazır"a geçtiğinde onHazir
  * çağrılır — sayfa, kapak/oynatıcıyı refresh'siz tazeleyebilsin.
  */
 export function useBunnyIslemeDurumu(

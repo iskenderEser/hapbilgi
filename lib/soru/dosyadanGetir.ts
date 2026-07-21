@@ -67,7 +67,7 @@ function metinden(metin: string): DosyaGetirmeSonucu {
 }
 
 async function docxMetni(dosya: File): Promise<string> {
-  // F-10 (docs/Test_210726.md): extractRawText, Word'ün OTOMATİK liste
+  // F-10 (docs/test_pm_iu_21072026.md): extractRawText, Word'ün OTOMATİK liste
   // işaretlerini ("1.", "A)") düşürüyordu — ayrıştırıcı soru sınırı bulamayıp
   // her şeyi 1. soruya yığıyordu. HTML çıkarımı liste yapısını korur; işaretler
   // buradan yeniden üretilir.

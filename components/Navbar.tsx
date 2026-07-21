@@ -117,7 +117,7 @@ export default function Navbar({ email, rol, adSoyad, kimlikTuru, onCikis }: Nav
     return `${base} ${aktif ? "font-semibold" : ""}`;
   };
 
-  // F-11 (docs/Test_210726.md): rozet taşıyan iş pillerinde renk "sıradaki iş
+  // F-11 (docs/test_pm_iu_21072026.md): rozet taşıyan iş pillerinde renk "sıradaki iş
   // bende mi"yi gösterir — iş varsa bordo, yoksa nötr (aktif sayfa kalın yazıyla
   // belli olur). isli verilmeyen piller eski davranışta kalır (aktif → bordo).
   const pillStyle = (key: string, path: string, mavi?: boolean, isli?: boolean): React.CSSProperties => {

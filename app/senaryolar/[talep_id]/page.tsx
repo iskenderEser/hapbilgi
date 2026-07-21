@@ -363,7 +363,7 @@ export default function SenaryolarPage() {
               const renk = durumRenk(sonSenaryo.son_durum ?? "");
               // Ç-7: karar butonları yalnız talebi açan üreticiye görünür.
               const isPMKararverilebilir = isPM && talep?.uretici_id === kullanici.id && sonSenaryo.son_durum === "inceleme bekleniyor";
-              // F-4 (docs/Test_210726.md): işaretli görünüm onay gelene kadar
+              // F-4 (docs/test_pm_iu_21072026.md): işaretli görünüm onay gelene kadar
               // HERKESE — IU da gönderdiği revizyonun çizili/kırmızı halini görür.
               const diffGoster = sonSenaryo.son_durum === "inceleme bekleniyor" && !!oncekiSenaryo;
 

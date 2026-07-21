@@ -133,7 +133,7 @@ export default function VideoAkisPage() {
   const sonVideo = videolar[videolar.length - 1];
   // Video modernizasyonu (20.07.2026): tek seferlik kontrol yerine sınırlı süreli
   // tekrar-sorgu — IU ve PM ekranı sayfayı yenilemeden de "hazır"a geçişi görür.
-  // F-6 (docs/Test_210726.md): hazıra geçişte kapak/oynatıcı da refresh'siz
+  // F-6 (docs/test_pm_iu_21072026.md): hazıra geçişte kapak/oynatıcı da refresh'siz
   // tazelenir — medya öğeleri sayaçla yeniden kurulur.
   const [medyaYenile, setMedyaYenile] = useState(0);
   const bunnyIslemeDurumu = useBunnyIslemeDurumu(

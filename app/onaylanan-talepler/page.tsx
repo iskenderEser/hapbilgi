@@ -1,6 +1,6 @@
 // app/onaylanan-talepler/page.tsx
 //
-// F-12 (docs/Test_210726.md): IU'nun "Onaylanan Talepler" sekmesi — tek
+// F-12 (docs/test_pm_iu_21072026.md): IU'nun "Onaylanan Talepler" sekmesi — tek
 // sayfada, yukarıdan aşağıya her talebin ONAYLANAN senaryosu, videosu
 // (oynatılabilir) ve soru seti, salt-okuma. Zincir: talep → onaylı senaryo →
 // (o onay kaydına bağlı) onaylı video → (o onay kaydına bağlı) onaylı soru seti.

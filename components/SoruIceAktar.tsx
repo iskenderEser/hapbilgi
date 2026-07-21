@@ -1,6 +1,6 @@
 // components/SoruIceAktar.tsx
 //
-// Soru içe aktarma (F-8/F-9 — docs/Test_210726.md): IU soru sayfasında tek
+// Soru içe aktarma (F-8/F-9 — docs/test_pm_iu_21072026.md): IU soru sayfasında tek
 // yol DOSYA YÜKLEME'dir (`yalnizDosya`) — bayat text alanı ve Excel şablonu
 // linki kaldırıldı. PM talep formu (hazır soru seti) yapıştırma yolunu şimdilik
 // koruyor. Dosya sunucuya gitmez — tarayıcıda okunur (lib/soru/dosyadanGetir),

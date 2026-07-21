@@ -97,7 +97,7 @@ export default function TalepDetayPage() {
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
-  // F-1 (docs/Test_210726.md): dosya ekleme yalnız talep AÇILIRKEN yapılır —
+  // F-1 (docs/test_pm_iu_21072026.md): dosya ekleme yalnız talep AÇILIRKEN yapılır —
   // gönderilmiş talebin detayında ekleme yolu kaldırıldı (silme duruyor).
   const handleDosyaSil = async (url: string) => {
     setSiliniyor(url);
