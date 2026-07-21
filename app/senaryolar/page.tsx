@@ -248,7 +248,7 @@ export default function SenaryolarListePage() {
                     <tr className="border-b border-gray-100 bg-gray-50">
                       <th className="text-left px-5 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Teknik</th>
-                      <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Son Durum</th>
+                      <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase w-44">Son Durum</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Tarih</th>
                       <th className="px-5 py-2.5"></th>
                     </tr>
@@ -272,7 +272,7 @@ export default function SenaryolarListePage() {
                           <td className="px-3 py-3 text-gray-500">{s.teknik_adi}</td>
                           <td className="px-3 py-3">
                             {s.son_durum && (
-                              <span className="text-xs px-2.5 py-0.5 rounded-full"
+                              <span className="text-xs px-2.5 py-0.5 rounded-full whitespace-nowrap"
                                 style={{ background: renk.bg, color: renk.text, border: `0.5px solid ${renk.border}` }}>
                                 {s.son_durum}
                               </span>

@@ -1,7 +1,7 @@
 // hooks/useBunnyIslemeDurumu.ts
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { pollingKarariVer, SORGU_ARALIGI_MS, type IslemeDurumu } from "@/lib/video/islemeDurumu";
 
 interface Sorgu {
@@ -14,10 +14,18 @@ interface Sorgu {
  * süre boyunca (lib/video/islemeDurumu.ts TAVAN_SANIYE) periyodik tekrar sorgular.
  * Sonsuz polling yok — tavan dolunca durur, kullanıcı manuel yenilemeye döner.
  * IU ve PM/üretici ekranları aynı hook'u kullanır (app/videolar, app/talepler).
+ * F-6 (docs/Test_210726.md): video "işleniyor"dan "hazır"a geçtiğinde onHazir
+ * çağrılır — sayfa, kapak/oynatıcıyı refresh'siz tazeleyebilsin.
  */
-export function useBunnyIslemeDurumu(videoUrl: string | null | undefined, sorgu: Sorgu): IslemeDurumu {
+export function useBunnyIslemeDurumu(
+  videoUrl: string | null | undefined,
+  sorgu: Sorgu,
+  onHazir?: () => void
+): IslemeDurumu {
   const [durum, setDurum] = useState<IslemeDurumu>(null);
   const sorguId = sorgu.video_id ?? sorgu.talep_id ?? null;
+  const onHazirRef = useRef(onHazir);
+  onHazirRef.current = onHazir;
 
   useEffect(() => {
     setDurum(null);
@@ -25,6 +33,7 @@ export function useBunnyIslemeDurumu(videoUrl: string | null | undefined, sorgu:
 
     let aktif = true;
     let gecenSaniye = 0;
+    let isleniyorGoruldu = false;
     let zamanlayici: ReturnType<typeof setTimeout> | null = null;
     const parametre = sorgu.video_id ? `video_id=${sorgu.video_id}` : `talep_id=${sorgu.talep_id}`;
 
@@ -37,6 +46,9 @@ export function useBunnyIslemeDurumu(videoUrl: string | null | undefined, sorgu:
 
         const karar = pollingKarariVer({ hazir: d.hazir, hatali: d.hatali }, gecenSaniye);
         setDurum(karar.durum);
+        // F-6: izleme sırasında hazıra geçti — sayfa medyayı tazelesin.
+        if (d.hazir && isleniyorGoruldu) onHazirRef.current?.();
+        if (karar.durum === "isleniyor") isleniyorGoruldu = true;
         if (karar.devamEt) {
           gecenSaniye += SORGU_ARALIGI_MS / 1000;
           zamanlayici = setTimeout(dongu, SORGU_ARALIGI_MS);

@@ -2,12 +2,11 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
-import { guvenliDosyaAdi } from "@/lib/utils/guvenliDosyaAdi";
 import { HedefRolBant } from "@/components/HedefRolBant";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
@@ -31,8 +30,6 @@ interface Talep {
 
 type DosyaItem = ComponentDosyaItem;
 
-const DESTEKLENEN_FORMATLAR = ".pdf,.docx,.pptx,.xlsx,.txt,.png,.jpg,.jpeg,.mp4,.mov,.avi,.mkv,.webm";
-
 export default function TalepDetayPage() {
   const router = useRouter();
   const params = useParams();
@@ -41,7 +38,6 @@ export default function TalepDetayPage() {
   const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
   const [talep, setTalep] = useState<Talep | null>(null);
   const [loading, setLoading] = useState(true);
-  const [dosyaYukleniyor, setDosyaYukleniyor] = useState(false);
   const [siliniyor, setSiliniyor] = useState<string | null>(null);
   // A4 — hazır videoyu üretici buradan da yükleyebilir (form yüklemesi yarım kaldıysa ya da red sonrası).
   const [seciliVideoDosya, setSeciliVideoDosya] = useState<File | null>(null);
@@ -49,7 +45,6 @@ export default function TalepDetayPage() {
   const [yuklemeYuzdesi, setYuklemeYuzdesi] = useState<number | null>(null);
   const [kararLoading, setKararLoading] = useState<"onayla" | "reddet" | null>(null);
   const [soruSetiAcik, setSoruSetiAcik] = useState(false);
-  const dosyaInputRef = useRef<HTMLInputElement>(null);
   const { mesajlar, hata, basari } = useHataMesaji();
 
   useEffect(() => {
@@ -102,30 +97,8 @@ export default function TalepDetayPage() {
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
-  const handleDosyaSec = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const dosyalar = Array.from(e.target.files ?? []);
-    if (dosyalar.length === 0) return;
-    setDosyaYukleniyor(true);
-    const supabase = createClient();
-    for (const dosya of dosyalar) {
-      const dosyaYolu = `${talep_id}/${Date.now()}_${guvenliDosyaAdi(dosya.name)}`;
-      const { error: uploadError } = await supabase.storage.from("talep-dosyalari").upload(dosyaYolu, dosya);
-      if (uploadError) { hata(`${dosya.name} yüklenemedi.`, "storage upload", uploadError.message); continue; }
-      const { data: urlData } = supabase.storage.from("talep-dosyalari").getPublicUrl(dosyaYolu);
-      const res = await fetch("/talepler/api/dosyalar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ talep_id, dosya_adi: dosya.name, url: urlData.publicUrl, boyut: dosya.size }),
-      });
-      const d = await res.json();
-      if (!res.ok) { hata(d.hata ?? "Dosya kaydedilemedi.", d.adim, d.detay); continue; }
-      setTalep(prev => prev ? { ...prev, dosya_urls: d.dosyalar } : prev);
-      basari(`${dosya.name} yüklendi.`);
-    }
-    if (dosyaInputRef.current) dosyaInputRef.current.value = "";
-    setDosyaYukleniyor(false);
-  };
-
+  // F-1 (docs/Test_210726.md): dosya ekleme yalnız talep AÇILIRKEN yapılır —
+  // gönderilmiş talebin detayında ekleme yolu kaldırıldı (silme duruyor).
   const handleDosyaSil = async (url: string) => {
     setSiliniyor(url);
     const res = await fetch("/talepler/api/dosyalar", {
@@ -325,35 +298,21 @@ export default function TalepDetayPage() {
             {talep.aciklama && (
               <p className="text-sm text-gray-700 leading-relaxed mb-3">{talep.aciklama}</p>
             )}
-            {(talep.dosya_urls.length > 0 || isPM) && (
-              <div>
-                {talep.dosya_urls.length > 0 && (
-                  <div className="mb-2.5">
-                    <DosyaGoruntuleListesi
-                      dosyalar={talep.dosya_urls}
-                      onHata={hata}
-                      sagAksiyon={(dosya) => isPM && (
-                        siliniyor === dosya.url ? (
-                          <span className="text-xs text-gray-400 ml-0.5">...</span>
-                        ) : (
-                          <svg onClick={() => handleDosyaSil(dosya.url)} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" className="cursor-pointer flex-shrink-0 ml-0.5">
-                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                          </svg>
-                        )
-                      )}
-                    />
-                  </div>
-                )}
-                {isPM && (
-                  <label className="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-gray-700 cursor-pointer"
-                    style={{ opacity: dosyaYukleniyor ? 0.6 : 1, cursor: dosyaYukleniyor ? "wait" : "pointer" }}>
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                    </svg>
-                    {dosyaYukleniyor ? "Yükleniyor..." : "Dosya Ekle"}
-                    <input ref={dosyaInputRef} type="file" multiple accept={DESTEKLENEN_FORMATLAR} onChange={handleDosyaSec} disabled={dosyaYukleniyor} className="hidden" />
-                  </label>
-                )}
+            {talep.dosya_urls.length > 0 && (
+              <div className="mb-2.5">
+                <DosyaGoruntuleListesi
+                  dosyalar={talep.dosya_urls}
+                  onHata={hata}
+                  sagAksiyon={(dosya) => isPM && (
+                    siliniyor === dosya.url ? (
+                      <span className="text-xs text-gray-400 ml-0.5">...</span>
+                    ) : (
+                      <svg onClick={() => handleDosyaSil(dosya.url)} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" className="cursor-pointer flex-shrink-0 ml-0.5">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    )
+                  )}
+                />
               </div>
             )}
           </div>
@@ -431,13 +390,8 @@ export default function TalepDetayPage() {
                 Soru Seti Yaz
               </button>
             )}
-            {isPM && !talep.hazir_video && (
-              <button onClick={() => router.push(`/senaryolar/${talep_id}`)}
-                className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer"
-                style={{ background: "#56aeff", fontFamily: "'Nunito', sans-serif" }}>
-                Senaryolar
-              </button>
-            )}
+            {/* F-2: "Senaryolar" butonu kaldırıldı — PM senaryo takibini
+                Navbar'daki Senaryolar sekmesi + badge ile yapar. */}
             {isPM && !isUretici && talep.hazir_video && !talep.hazir_video_url && (
               <button disabled className="bg-gray-100 text-gray-400 border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-not-allowed"
                 style={{ fontFamily: "'Nunito', sans-serif" }}>

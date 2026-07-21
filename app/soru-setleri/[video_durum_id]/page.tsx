@@ -429,7 +429,8 @@ export default function SoruSetiAkisPage() {
           {/* Y-2: yapısal soru girişi — kartlar asıl yol; toplu yapıştırma formu dolduran hızlandırıcı */}
           {iuGonderebilir && (
             <div className="border-t border-gray-100 px-4 md:px-5 py-4 bg-gray-50">
-              <SoruIceAktar onDoldur={handleIceAktar} />
+              {/* F-8/F-9: IU sayfasında tek yol dosya yükleme — text alanı yok. */}
+              <SoruIceAktar onDoldur={handleIceAktar} yalnizDosya />
               <SoruSetiFormu taslaklar={taslaklar} onDegis={setTaslaklar} buyukluk={soruSetiBuyuklugu} />
               <div className="flex justify-end mt-3">
                 <button onClick={handleIuGonder} disabled={gonderLoading}

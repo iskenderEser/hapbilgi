@@ -67,9 +67,54 @@ function metinden(metin: string): DosyaGetirmeSonucu {
 }
 
 async function docxMetni(dosya: File): Promise<string> {
+  // F-10 (docs/Test_210726.md): extractRawText, Word'ün OTOMATİK liste
+  // işaretlerini ("1.", "A)") düşürüyordu — ayrıştırıcı soru sınırı bulamayıp
+  // her şeyi 1. soruya yığıyordu. HTML çıkarımı liste yapısını korur; işaretler
+  // buradan yeniden üretilir.
   const mammoth = await import("mammoth");
-  const sonuc = await mammoth.extractRawText({ arrayBuffer: await dosya.arrayBuffer() });
-  return sonuc.value ?? "";
+  const sonuc = await mammoth.convertToHtml({ arrayBuffer: await dosya.arrayBuffer() });
+  return htmldenSatirlar(sonuc.value ?? "");
+}
+
+// HTML'den satır listesi: 1. seviye liste öğeleri soru işareti ("1."), daha
+// derin seviyeler seçenek işareti ("A)") alır. Metinde işaret ZATEN yazılıysa
+// (elle yazılmış "A)" / "Doğru:") ikinci kez eklenmez.
+function htmldenSatirlar(html: string): string {
+  const belge = new DOMParser().parseFromString(html, "text/html");
+  const satirlar: string[] = [];
+  const HARFLER = "ABCDEFGH";
+  const isaretliMi = (s: string) =>
+    /^\d+[\.\)]\s/.test(s) || /^[A-H][\)\.]\s/i.test(s) || /^do[gğ]ru\s*:/i.test(s);
+
+  const listeIsle = (liste: Element, derinlik: number) => {
+    let sira = 0;
+    for (const li of Array.from(liste.children)) {
+      if (li.tagName.toLowerCase() !== "li") continue;
+      const kopya = li.cloneNode(true) as Element;
+      Array.from(kopya.querySelectorAll("ol,ul")).forEach(x => x.remove());
+      const metin = (kopya.textContent ?? "").replace(/\s+/g, " ").trim();
+      if (metin) {
+        const onek = isaretliMi(metin) ? "" : derinlik === 0 ? `${sira + 1}. ` : `${HARFLER[Math.min(sira, HARFLER.length - 1)]}) `;
+        satirlar.push(onek + metin);
+      }
+      Array.from(li.children).forEach(c => {
+        if (["ol", "ul"].includes(c.tagName.toLowerCase())) listeIsle(c, derinlik + 1);
+      });
+      sira++;
+    }
+  };
+
+  const gez = (el: Element) => {
+    for (const c of Array.from(el.children)) {
+      const ad = c.tagName.toLowerCase();
+      if (ad === "ol" || ad === "ul") { listeIsle(c, 0); continue; }
+      if (ad === "table" || ad === "div" || ad === "tbody" || ad === "tr") { gez(c); continue; }
+      const metin = (c.textContent ?? "").replace(/\s+/g, " ").trim();
+      if (metin) satirlar.push(metin);
+    }
+  };
+  gez(belge.body);
+  return satirlar.join("\n");
 }
 
 async function excelden(dosya: File): Promise<DosyaGetirmeSonucu> {
@@ -100,18 +145,6 @@ async function excelden(dosya: File): Promise<DosyaGetirmeSonucu> {
     return { ok: false, hata: "Excel'de soru satırı bulunamadı (sütun düzeni: soru | A | B | doğru)." };
   }
   return { ok: true, taslaklar, uyari: eksikUyarisi(taslaklar) };
-}
-
-/** Excel şablonu üretip indirtir — sütun disiplini kullanıcıya hazır verilir. */
-export async function excelSablonuIndir(): Promise<void> {
-  const XLSX = await import("xlsx");
-  const sayfa = XLSX.utils.aoa_to_sheet([
-    ["Soru", "A seçeneği", "B seçeneği", "Doğru (A/B)"],
-    ["Örnek soru metni?", "Birinci seçenek", "İkinci seçenek", "A"],
-  ]);
-  const calisma = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(calisma, sayfa, "Sorular");
-  XLSX.writeFile(calisma, "soru_seti_sablonu.xlsx");
 }
 
 async function pptxMetni(dosya: File): Promise<string> {

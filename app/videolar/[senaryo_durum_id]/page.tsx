@@ -133,7 +133,14 @@ export default function VideoAkisPage() {
   const sonVideo = videolar[videolar.length - 1];
   // Video modernizasyonu (20.07.2026): tek seferlik kontrol yerine sınırlı süreli
   // tekrar-sorgu — IU ve PM ekranı sayfayı yenilemeden de "hazır"a geçişi görür.
-  const bunnyIslemeDurumu = useBunnyIslemeDurumu(sonVideo?.video_url, { video_id: sonVideo?.video_id });
+  // F-6 (docs/Test_210726.md): hazıra geçişte kapak/oynatıcı da refresh'siz
+  // tazelenir — medya öğeleri sayaçla yeniden kurulur.
+  const [medyaYenile, setMedyaYenile] = useState(0);
+  const bunnyIslemeDurumu = useBunnyIslemeDurumu(
+    sonVideo?.video_url,
+    { video_id: sonVideo?.video_id },
+    () => setMedyaYenile(x => x + 1)
+  );
   const iuGonderebilir = isIU && (!sonVideo || sonVideo.son_durum === "revizyon bekleniyor" || !sonVideo.video_url);
   const revizyonSayisi = videolar.filter(v => v.son_durum === "revizyon bekleniyor").length;
 
@@ -263,9 +270,14 @@ export default function VideoAkisPage() {
 
             {videolar.map((v, i) => {
               const renk = durumRenk(v.son_durum ?? "");
-              const thumb = v.thumbnail_url ?? thumbnailUrlUret(v.video_url);
+              const thumbHam = v.thumbnail_url ?? thumbnailUrlUret(v.video_url);
+              // F-6: hazıra geçişte kapak yeniden istenir (önbellekteki boş/hatalı
+              // yanıt sayaçlı parametreyle aşılır).
+              const thumb = thumbHam && medyaYenile > 0
+                ? `${thumbHam}${thumbHam.includes("?") ? "&" : "?"}y=${medyaYenile}`
+                : thumbHam;
               return (
-                <div key={v.video_id} className="border border-gray-200 rounded-xl overflow-hidden">
+                <div key={`${v.video_id}-${medyaYenile}`} className="border border-gray-200 rounded-xl overflow-hidden">
                   {/* Versiyon başlık */}
                   <div className="px-3 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
                     <div className="flex items-center gap-2">

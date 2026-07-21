@@ -117,7 +117,10 @@ export default function Navbar({ email, rol, adSoyad, kimlikTuru, onCikis }: Nav
     return `${base} ${aktif ? "font-semibold" : ""}`;
   };
 
-  const pillStyle = (key: string, path: string, mavi?: boolean): React.CSSProperties => {
+  // F-11 (docs/Test_210726.md): rozet taşıyan iş pillerinde renk "sıradaki iş
+  // bende mi"yi gösterir — iş varsa bordo, yoksa nötr (aktif sayfa kalın yazıyla
+  // belli olur). isli verilmeyen piller eski davranışta kalır (aktif → bordo).
+  const pillStyle = (key: string, path: string, mavi?: boolean, isli?: boolean): React.CSSProperties => {
     const aktif = isAktif(path)
       || (key === "raporlar" && pathname.startsWith("/raporlar"))
       || (key === "analiz" && pathname.startsWith("/analiz"))
@@ -129,6 +132,17 @@ export default function Navbar({ email, rol, adSoyad, kimlikTuru, onCikis }: Nav
         color: "#56aeff",
         background: aktif ? "rgba(86,174,255,0.12)" : isHover ? "rgba(86,174,255,0.08)" : "rgba(86,174,255,0.05)",
         boxShadow: "inset 0 0 0 0.5px rgba(86,174,255,0.35)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+        fontFamily: "'Nunito', sans-serif",
+      };
+    }
+
+    if (isli !== undefined) {
+      return {
+        color: isli ? "#bc2d0d" : "#374151",
+        background: isli ? "rgba(188,45,13,0.08)" : aktif ? "rgba(0,0,0,0.07)" : isHover ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.04)",
+        boxShadow: isli ? "inset 0 0 0 0.5px rgba(188,45,13,0.25)" : "inset 0 0 0 0.5px rgba(0,0,0,0.08)",
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
         fontFamily: "'Nunito', sans-serif",
@@ -200,23 +214,30 @@ export default function Navbar({ email, rol, adSoyad, kimlikTuru, onCikis }: Nav
 
               {uretimHattiGorur && (
                 <>
-                  <button onClick={() => router.push("/talepler")} onMouseEnter={() => setHover("talepler")} onMouseLeave={() => setHover(null)} className={pillClass("talepler", "/talepler")} style={pillStyle("talepler", "/talepler")}>
+                  <button onClick={() => router.push("/talepler")} onMouseEnter={() => setHover("talepler")} onMouseLeave={() => setHover(null)} className={pillClass("talepler", "/talepler")} style={pillStyle("talepler", "/talepler", false, (badge["talep"] ?? 0) > 0)}>
                     Talepler<Badge sayi={badge["talep"] ?? 0} />
                   </button>
-                  <button onClick={() => router.push("/senaryolar")} onMouseEnter={() => setHover("senaryolar")} onMouseLeave={() => setHover(null)} className={pillClass("senaryolar", "/senaryolar")} style={pillStyle("senaryolar", "/senaryolar")}>
+                  <button onClick={() => router.push("/senaryolar")} onMouseEnter={() => setHover("senaryolar")} onMouseLeave={() => setHover(null)} className={pillClass("senaryolar", "/senaryolar")} style={pillStyle("senaryolar", "/senaryolar", false, (badge["senaryo"] ?? 0) > 0)}>
                     Senaryolar<Badge sayi={badge["senaryo"] ?? 0} />
                   </button>
-                  <button onClick={() => router.push("/videolar")} onMouseEnter={() => setHover("videolar")} onMouseLeave={() => setHover(null)} className={pillClass("videolar", "/videolar")} style={pillStyle("videolar", "/videolar")}>
+                  <button onClick={() => router.push("/videolar")} onMouseEnter={() => setHover("videolar")} onMouseLeave={() => setHover(null)} className={pillClass("videolar", "/videolar")} style={pillStyle("videolar", "/videolar", false, (badge["video"] ?? 0) > 0)}>
                     Videolar<Badge sayi={badge["video"] ?? 0} />
                   </button>
-                  <button onClick={() => router.push("/soru-setleri")} onMouseEnter={() => setHover("soru-setleri")} onMouseLeave={() => setHover(null)} className={pillClass("soru-setleri", "/soru-setleri")} style={pillStyle("soru-setleri", "/soru-setleri")}>
+                  <button onClick={() => router.push("/soru-setleri")} onMouseEnter={() => setHover("soru-setleri")} onMouseLeave={() => setHover(null)} className={pillClass("soru-setleri", "/soru-setleri")} style={pillStyle("soru-setleri", "/soru-setleri", false, (badge["soru_seti"] ?? 0) > 0)}>
                     Soru Setleri<Badge sayi={badge["soru_seti"] ?? 0} />
                   </button>
                 </>
               )}
 
+              {/* F-12: IU'nun onaylanmış işleri tek sayfada, salt-okuma */}
+              {isIU && (
+                <button onClick={() => router.push("/onaylanan-talepler")} onMouseEnter={() => setHover("onaylanan-talepler")} onMouseLeave={() => setHover(null)} className={pillClass("onaylanan-talepler", "/onaylanan-talepler")} style={pillStyle("onaylanan-talepler", "/onaylanan-talepler")}>
+                  Onaylanan Talepler
+                </button>
+              )}
+
               {isUretici && (
-                <button onClick={() => router.push("/yayin-yonetimi")} onMouseEnter={() => setHover("yayin-yonetimi")} onMouseLeave={() => setHover(null)} className={pillClass("yayin-yonetimi", "/yayin-yonetimi")} style={pillStyle("yayin-yonetimi", "/yayin-yonetimi")}>
+                <button onClick={() => router.push("/yayin-yonetimi")} onMouseEnter={() => setHover("yayin-yonetimi")} onMouseLeave={() => setHover(null)} className={pillClass("yayin-yonetimi", "/yayin-yonetimi")} style={pillStyle("yayin-yonetimi", "/yayin-yonetimi", false, yayinBekleyen > 0)}>
                   Yayın Yönetimi<Badge sayi={yayinBekleyen} />
                 </button>
               )}
@@ -226,7 +247,7 @@ export default function Navbar({ email, rol, adSoyad, kimlikTuru, onCikis }: Nav
               )}
 
               {tuketiciRoller.includes(rolKucu) && (
-                <button onClick={() => router.push("/oneriler")} onMouseEnter={() => setHover("oneriler-utt")} onMouseLeave={() => setHover(null)} className={pillClass("oneriler-utt", "/oneriler")} style={pillStyle("oneriler-utt", "/oneriler")}>
+                <button onClick={() => router.push("/oneriler")} onMouseEnter={() => setHover("oneriler-utt")} onMouseLeave={() => setHover(null)} className={pillClass("oneriler-utt", "/oneriler")} style={pillStyle("oneriler-utt", "/oneriler", false, (badge["oneri"] ?? 0) > 0)}>
                   Öneriler<Badge sayi={badge["oneri"] ?? 0} />
                 </button>
               )}
@@ -343,6 +364,7 @@ export default function Navbar({ email, rol, adSoyad, kimlikTuru, onCikis }: Nav
             </>
           )}
 
+          {isIU && <MenuItem label="Onaylanan Talepler" path="/onaylanan-talepler" />}
           {isUretici && <MenuItem label="Yayın Yönetimi" path="/yayin-yonetimi" badgeSayi={yayinBekleyen} />}
           {yonlendiriciRoller.includes(rolKucu) && <MenuItem label="Öneriler" path="/oneriler" />}
 

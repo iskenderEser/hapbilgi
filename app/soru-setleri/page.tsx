@@ -275,7 +275,7 @@ export default function SoruSetleriListePage() {
                       <th className="text-left px-5 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Teknik</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Soru</th>
-                      <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Son Durum</th>
+                      <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase w-44">Son Durum</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Tarih</th>
                       <th className="px-5 py-2.5"></th>
                     </tr>
@@ -300,7 +300,7 @@ export default function SoruSetleriListePage() {
                           <td className="px-3 py-3 text-gray-500">{ss.soru_sayisi} soru</td>
                           <td className="px-3 py-3">
                             {ss.son_durum && (
-                              <span className="text-xs px-2.5 py-0.5 rounded-full"
+                              <span className="text-xs px-2.5 py-0.5 rounded-full whitespace-nowrap"
                                 style={{ background: renk.bg, color: renk.text, border: `0.5px solid ${renk.border}` }}>
                                 {ss.son_durum}
                               </span>

@@ -861,6 +861,21 @@
       "tablo": "firmalar"
     },
     {
+      "dosya": "app/onaylanan-talepler/page.tsx",
+      "satir": 58,
+      "tablo": "senaryo_durumu"
+    },
+    {
+      "dosya": "app/onaylanan-talepler/page.tsx",
+      "satir": 70,
+      "tablo": "video_durumu"
+    },
+    {
+      "dosya": "app/onaylanan-talepler/page.tsx",
+      "satir": 76,
+      "tablo": "soru_seti_durumu"
+    },
+    {
       "dosya": "app/providers/AuthProvider.tsx",
       "satir": 72,
       "tablo": "v_auth_kimlik"
@@ -1657,7 +1672,7 @@
     },
     {
       "dosya": "app/talepler/[talep_id]/page.tsx",
-      "satir": 75,
+      "satir": 70,
       "tablo": "talepler"
     },
     {
@@ -4398,6 +4413,24 @@
       "tablo": "firmalar"
     },
     {
+      "dosya": "app/onaylanan-talepler/page.tsx",
+      "satir": 58,
+      "ham": "senaryo_durum_id, created_at, senaryolar(talep_id, senaryo_metni, talepler(talep_id, hedef_rol, urunler(urun_adi), teknikler(teknik_adi)))",
+      "tablo": "senaryo_durumu"
+    },
+    {
+      "dosya": "app/onaylanan-talepler/page.tsx",
+      "satir": 70,
+      "ham": "video_durum_id, videolar(video_url, senaryo_durum_id)",
+      "tablo": "video_durumu"
+    },
+    {
+      "dosya": "app/onaylanan-talepler/page.tsx",
+      "satir": 76,
+      "ham": "soru_setleri(video_durum_id, sorular)",
+      "tablo": "soru_seti_durumu"
+    },
+    {
       "dosya": "app/providers/AuthProvider.tsx",
       "satir": 72,
       "ham": "kimlik_turu, rol, ad, soyad, firma_id, telefon",
@@ -5299,7 +5332,7 @@
     },
     {
       "dosya": "app/talepler/[talep_id]/page.tsx",
-      "satir": 75,
+      "satir": 70,
       "ham": "talep_id, uretici_id, hedef_rol, aciklama, created_at, dosya_urls, hazir_video, hazir_video_url, hazir_soru_seti, hazir_soru_seti_verisi, urun_id, teknik_id, urunler(urun_adi), teknikler(teknik_adi)",
       "tablo": "talepler"
     },
