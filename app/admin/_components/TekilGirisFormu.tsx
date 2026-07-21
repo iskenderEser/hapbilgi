@@ -8,6 +8,7 @@
 
 import { ROLLER, rowStyle, labelStyle, inputStyle, btnBase, RENK_BORDO } from "../_constants";
 import { ROL_ADLARI } from "@/lib/utils/roller";
+import { adSoyadCanliBicimle } from "@/lib/utils/adSoyadBicimle";
 import type { Takim, Bolge } from "../_types";
 
 interface TekilGirisFormuProps {
@@ -40,15 +41,17 @@ interface TekilGirisFormuProps {
 export default function TekilGirisFormu(p: TekilGirisFormuProps) {
   return (
     <form onSubmit={p.handleTekilKaydet} style={{ maxWidth: "600px" }}>
+      {/* Ad/Soyad kuralı (İskender talimatı, 21.07): nasıl yazılırsa yazılsın
+          her kelime İlk Harf Büyük'e daha yazılırken çevrilir. */}
       <div style={rowStyle}>
         <span style={labelStyle}>Ad</span>
-        <input type="text" value={p.tekilAd} onChange={(e) => p.setTekilAd(e.target.value)}
+        <input type="text" value={p.tekilAd} onChange={(e) => p.setTekilAd(adSoyadCanliBicimle(e.target.value))}
           style={inputStyle} required minLength={2} />
       </div>
 
       <div style={rowStyle}>
         <span style={labelStyle}>Soyad</span>
-        <input type="text" value={p.tekilSoyad} onChange={(e) => p.setTekilSoyad(e.target.value)}
+        <input type="text" value={p.tekilSoyad} onChange={(e) => p.setTekilSoyad(adSoyadCanliBicimle(e.target.value))}
           style={inputStyle} required minLength={2} />
       </div>
 

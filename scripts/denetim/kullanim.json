@@ -2,17 +2,17 @@
   "fromlar": [
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 156,
+      "satir": 157,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 198,
+      "satir": 199,
       "tablo": "takimlar"
     },
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 208,
+      "satir": 209,
       "tablo": "bolgeler"
     },
     {
@@ -3634,19 +3634,19 @@
   "selectler": [
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 156,
+      "satir": 157,
       "ham": "kullanici_id, ad, soyad, rol, takim_id, bolge_id, telefon",
       "tablo": "kullanicilar"
     },
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 198,
+      "satir": 199,
       "ham": "takim_id, takim_adi",
       "tablo": "takimlar"
     },
     {
       "dosya": "lib/admin/kullaniciDogrulama.ts",
-      "satir": 208,
+      "satir": 209,
       "ham": "bolge_id, bolge_adi, takim_id",
       "tablo": "bolgeler"
     },

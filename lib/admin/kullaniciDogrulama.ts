@@ -14,6 +14,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { TUM_ROLLER, TUKETICI_ROLLER, ROL_ADLARI } from "@/lib/utils/roller";
 import { ureticiYetenegi } from "@/lib/uretici/yetenekler";
+import { adSoyadBicimle } from "@/lib/utils/adSoyadBicimle";
 
 /**
  * İnsan girdisini karşılaştırma için katlar: Türkçe küçük harf, diakritik
@@ -258,8 +259,10 @@ export function kullaniciSatirDogrula(
   secenekler?: { sifreZorunlu?: boolean }
 ): SatirDogrulamaSonucu {
   const sifreZorunlu = secenekler?.sifreZorunlu ?? true;
-  const ad = metinAl(girdi.ad);
-  const soyad = metinAl(girdi.soyad);
+  // Ad/Soyad kuralı (İskender talimatı, 21.07): girdi nasıl gelirse gelsin
+  // her kelime İlk Harf Büyük'e çevrilir — tekil ve toplu aynı kapıdan geçer.
+  const ad = adSoyadBicimle(metinAl(girdi.ad));
+  const soyad = adSoyadBicimle(metinAl(girdi.soyad));
   const eposta = metinAl(girdi.eposta).toLowerCase();
   const telefonHam = metinAl(girdi.telefon);
   const sifre = metinAl(girdi.sifre);
