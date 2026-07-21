@@ -256,9 +256,15 @@ export default function KullaniciListesi(p: KullaniciListesiProps) {
                           type="tel"
                           placeholder="⚠ 5XXXXXXXXXX (11 hane)"
                           title="Enter ile kaydet"
+                          maxLength={11}
                           style={{
                             ...filterSelectStyle, padding: "2px 6px", width: "130px",
                             background: "#fffbeb", border: "0.5px solid #fcd34d", color: "#92400e",
+                          }}
+                          onInput={(e) => {
+                            // Telefon kuralı: yalnız rakam, baştaki 0 daha yazılırken silinir.
+                            const el = e.currentTarget;
+                            el.value = el.value.replace(/\D/g, "").replace(/^0+/, "").slice(0, 11);
                           }}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
