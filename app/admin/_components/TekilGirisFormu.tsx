@@ -69,8 +69,9 @@ export default function TekilGirisFormu(p: TekilGirisFormuProps) {
 
       <div style={rowStyle}>
         <span style={labelStyle}>Telefon</span>
-        <input type="tel" value={p.tekilTelefon} onChange={(e) => p.setTekilTelefon(e.target.value)}
-          style={inputStyle} required placeholder="05XX XXX XX XX" />
+        {/* Telefon kuralı (İskender talimatı, 21.07): 11 hane, 0 ile başlamaz, ilk hane 5. */}
+        <input type="tel" value={p.tekilTelefon} onChange={(e) => p.setTekilTelefon(e.target.value.replace(/[^\d\s-]/g, "").slice(0, 13))}
+          style={inputStyle} required placeholder="5XXXXXXXXXX (11 hane)" maxLength={13} />
       </div>
 
       <div style={rowStyle}>

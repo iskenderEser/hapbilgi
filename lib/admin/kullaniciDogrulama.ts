@@ -50,21 +50,17 @@ export function rolCoz(girdi: string): string {
 }
 
 /**
- * Telefon girdisini tek biçime çevirir: rakam dışı her şey atılır, +90/90
- * öneki düşürülür, 10 haneli "5..." girdinin başına 0 eklenir. Hedef biçim
- * 05XXXXXXXXX (11 hane) — DB'de bu biçimde saklanır, benzersizlik index'i
- * bu sayede "0555 123 45 67" ile "05551234567"yi aynı numara sayar.
- * Excel'in sayı tipine çevirip baştaki 0'ı düşürdüğü hücreler 10-hane
- * kuralıyla geri kazanılır.
+ * Telefon kuralı (İskender talimatı, 21.07): ayraçlar (boşluk/tire vb.)
+ * atıldıktan sonra numara TAM 11 hane olmalı, 0 ile BAŞLAMAMALI ve ilk hane
+ * 5 olmalıdır. Hedef biçim 5XXXXXXXXXX — DB'ye bu biçimde yazılır. Tekil ve
+ * toplu giriş aynı kapıdan geçer.
  */
 export function telefonNormalize(girdi: unknown): { ok: true; telefon: string } | { ok: false; hata: string } {
   const ham = metinAl(girdi);
   if (!ham) return { ok: false, hata: "Telefon zorunludur." };
-  let rakamlar = ham.replace(/\D/g, "");
-  if (rakamlar.length === 12 && rakamlar.startsWith("90")) rakamlar = rakamlar.slice(2);
-  if (rakamlar.length === 10 && rakamlar.startsWith("5")) rakamlar = "0" + rakamlar;
-  if (!/^05\d{9}$/.test(rakamlar)) {
-    return { ok: false, hata: `Geçersiz telefon: "${ham}". Beklenen biçim: 05XX XXX XX XX.` };
+  const rakamlar = ham.replace(/\D/g, "");
+  if (!/^5\d{10}$/.test(rakamlar)) {
+    return { ok: false, hata: `Geçersiz telefon: "${ham}". Kural: 11 hane, 0 ile başlamaz, ilk hane 5 olmalıdır.` };
   }
   return { ok: true, telefon: rakamlar };
 }
@@ -240,7 +236,7 @@ function metinAl(deger: unknown): string {
 /**
  * Bir kullanıcı satırını doğrular ve temiz kayda çevirir. Kurallar:
  * - ad/soyad/eposta/telefon/sifre/rol zorunlu; alanlar ≤200; eposta '@' içerir.
- * - telefon telefonNormalize'dan geçer (05XXXXXXXXX'e oturmayan girdi RED).
+ * - telefon telefonNormalize'dan geçer (11 hane, 0 ile başlamaz, ilk hane 5 — oturmayan girdi RED).
  * - rol TUM_ROLLER'da olmalı (B-18 — geçersiz rol yapısal olarak giremez).
  * - Üretici roller: takım zorunluluğu yetenek profilinden (takimZorunlu).
  * - TM: takım zorunlu. BM/UTT/KD_UTT: bölge zorunlu, takım bölgeden türetilir.

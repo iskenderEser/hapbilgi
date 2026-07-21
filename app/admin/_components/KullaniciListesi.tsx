@@ -254,7 +254,7 @@ export default function KullaniciListesi(p: KullaniciListesiProps) {
                       p.telefonEkleLoading === k.kullanici_id ? "..." : (
                         <input
                           type="tel"
-                          placeholder="⚠ 05XX XXX XX XX"
+                          placeholder="⚠ 5XXXXXXXXXX (11 hane)"
                           title="Enter ile kaydet"
                           style={{
                             ...filterSelectStyle, padding: "2px 6px", width: "130px",
