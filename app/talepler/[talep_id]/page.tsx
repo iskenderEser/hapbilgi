@@ -89,6 +89,14 @@ export default function TalepDetayPage() {
       });
   }, [kullanici, talep_id]);
 
+  // V1-5 (İskender talimatı, 21.07): İU'nun dünyasında hazır video talebinin tek
+  // görünümü Soru Setleri'ndeki iştir — doğrudan URL ile gelse bile İU bu
+  // sayfayı görmez, işin yaşadığı yere yönlendirilir.
+  useEffect(() => {
+    const rol = (kullanici?.rol ?? "").toLowerCase();
+    if (rol === "iu" && talep?.hazir_video) router.replace("/soru-setleri");
+  }, [kullanici, talep, router]);
+
   // Video modernizasyonu (20.07.2026): tek seferlik kontrol yerine sınırlı süreli
   // tekrar-sorgu — PM ekranı sayfayı yenilemeden de "hazır"a geçişi görür.
   const bunnyIslemeDurumu = useBunnyIslemeDurumu(talep?.hazir_video_url, { talep_id });
@@ -180,6 +188,9 @@ export default function TalepDetayPage() {
 
   if (!talep) return null;
 
+  // V1-5: yönlendirme effect'i koşana dek İU'ya hazır video detayı bir an bile gösterilmez.
+  if (isIU && talep.hazir_video) return null;
+
   // A4: hazır videoyu yalnız talebin üreticisi yükler (vezne de sunucuda aynı şartı arar).
   const isUretici = isPM && talep.uretici_id === kullanici.id;
 
@@ -232,10 +243,7 @@ export default function TalepDetayPage() {
                   {isPM && talep.hazir_video_url && (talep.hazir_soru_seti
                     ? "Hazır video gönderildi — hazır soru seti otomatik işlendi, video yayın bekleyenlerine düştü."
                     : "Hazır video gönderildi — soru seti içerik üreticisi tarafından hazırlanacak.")}
-                  {isIU && !talep.hazir_video_url && <span>Bu talep için <strong>senaryo aşaması atlanmıştır</strong>. Üretici hazır videoyu doğrudan Bunny'ye yükleyecektir; yüklendiğinde soru seti işi Soru Setleri sekmenize düşer.</span>}
-                  {isIU && talep.hazir_video_url && <span>Bu talep için <strong>senaryo aşaması atlanmıştır</strong>. {talep.hazir_soru_seti
-                    ? "Video yüklendi — hazır soru seti otomatik işlendi, sizin bir işiniz yoktur."
-                    : "Video yüklendi — soru seti yazımı Soru Setleri sekmesinden yürütülür."}</span>}
+                  {/* V1-5: İU'ya yönelik metinler kaldırıldı — İU bu sayfaya hazır video talebi için ulaşamaz. */}
                 </span>
               </div>
             </div>
@@ -383,24 +391,8 @@ export default function TalepDetayPage() {
                 Senaryo Yaz
               </button>
             )}
-            {/* Hazır soru seti IU'suz işlenir (lib/hazirVideoSoruSeti): video yüklemesi
-                seti otomatik yazar ve onaylar — eski "Soru Setini Sisteme İşle" adımı kalktı.
-                V1-5: soru seti işi video yüklendiği anda doğar — buton İU'yu işin
-                yaşadığı yere (Soru Setleri) götürür; video yüklenmediyse pasiftir. */}
-            {isIU && talep.hazir_video && !talep.hazir_soru_seti && (
-              talep.hazir_video_url ? (
-                <button onClick={() => router.push("/soru-setleri")}
-                  className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer"
-                  style={{ background: "#56aeff", fontFamily: "'Nunito', sans-serif" }}>
-                  Soru Seti Yaz
-                </button>
-              ) : (
-                <button disabled className="bg-gray-100 text-gray-400 border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-not-allowed"
-                  style={{ fontFamily: "'Nunito', sans-serif" }}>
-                  Soru Seti Yaz
-                </button>
-              )
-            )}
+            {/* V1-5 (İskender talimatı, 21.07): İU'nun "Soru Seti Yaz" butonu kaldırıldı —
+                İU bu sayfaya hazır video talebi için ulaşamaz; iş Soru Setleri'nde yaşar. */}
             {/* F-2: "Senaryolar" butonu kaldırıldı — PM senaryo takibini
                 Navbar'daki Senaryolar sekmesi + badge ile yapar. */}
             {isPM && !isUretici && talep.hazir_video && !talep.hazir_video_url && (

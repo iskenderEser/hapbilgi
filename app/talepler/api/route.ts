@@ -51,8 +51,14 @@ export async function GET() {
 
     // Talep görünürlük kuralı: üretici sadece kendi açtığı talepleri görür.
     // IU tüm talepleri görür (talebe cevap vermek için tüm taleplere erişimi gerekir).
+    // İstisna (V1-5, İskender talimatı 21.07): hazır video talepleri İU'nun
+    // Talepler listesinde HİÇ görünmez — İU için işin tek görünümü Soru
+    // Setleri'ndeki kayıttır. V3 (video yok - set var) normal hatta aktığından
+    // süzgeç yalnız hazir_video=true talepleri kapsar.
     if (yetenek) {
       query = query.eq("uretici_id", user.id);
+    } else {
+      query = query.eq("hazir_video", false);
     }
 
     const { data: talepler, error } = await query;
