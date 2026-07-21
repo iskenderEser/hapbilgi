@@ -2,11 +2,14 @@
 //
 // Hazır kolun (hazır video + hazır soru seti) zincir kurulumu TEK NOKTADA —
 // İskender kararı (19.07.2026): hazır akış IU üretim hattından ayrı gruplanır,
-// olası müdahale IU koluna dokunmaz. Video onayında sistem zinciri kurar:
-// senaryo (atlandı) → senaryo durumu → video → video durumu → soru seti;
-// hazır soru seti varsa sorular OTOMATİK işlenir ve durum "onaylandı" açılır
-// (senaryo/videodaki "otomatik onay" deseninin aynısı) — IU'nun elle "sisteme
-// işle" adımı kalktı. SUNUCU TARAFI: adminSupabase ile çağrılır.
+// olası müdahale IU koluna dokunmaz. Zincir: senaryo (atlandı) → senaryo durumu
+// → video → video durumu → soru seti; hazır soru seti varsa sorular OTOMATİK
+// işlenir ve durum "onaylandı" açılır (senaryo/videodaki "otomatik onay"
+// deseninin aynısı) — IU'nun elle "sisteme işle" adımı kalktı.
+// Güncelleme (V1-5/V1-6, İskender kararı 21.07.2026 — fiziksel test): PM'in
+// kendi yüklediği videoyu ayrıca "onaylama" ara adımı kaldırıldı; zincir, video
+// yüklemesi tamamlanır tamamlanmaz (PUT hazir-video) kurulur — soru seti işi ve
+// IU bildirimi o anda doğar. SUNUCU TARAFI: adminSupabase ile çağrılır.
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import { hazirParametreKontrol } from "./parametreKontrol";
@@ -155,7 +158,7 @@ export async function hazirZinciriKur(
       gonderen_id: degistiren_id,
       kayit_turu: "soru_seti",
       kayit_id: soruSeti.soru_seti_id,
-      mesaj: `Hazır video onaylandı, soru seti yazmaya hazır: ${girdi.urun_adi ?? "-"}`,
+      mesaj: `Hazır video yüklendi, soru seti yazmaya hazır: ${girdi.urun_adi ?? "-"}`,
     });
   }
 
@@ -165,6 +168,30 @@ export async function hazirZinciriKur(
     soru_seti_id: soruSeti.soru_seti_id,
     soruSetiIslendi: false,
   };
+}
+
+/**
+ * Talebin hazır zinciri kurulu mu? Kuruluysa zincirdeki video_id döner, yoksa null.
+ * Kullanım (PUT hazir-video): zincir yokken yükleme zinciri kurar; zincir varken
+ * yeniden yükleme (işlenemeyen video telafisi) yalnızca video adresini günceller —
+ * mükerrer zincir/bildirim yapısal olarak engellenir.
+ */
+export async function hazirZincirVideoBul(
+  adminSupabase: SupabaseClient,
+  talep_id: string
+): Promise<string | null> {
+  const { data } = await adminSupabase
+    .from("senaryolar")
+    .select("senaryo_id, senaryo_durumu(senaryo_durum_id, videolar(video_id))")
+    .eq("talep_id", talep_id);
+
+  for (const senaryo of data ?? []) {
+    for (const durum of (senaryo as any).senaryo_durumu ?? []) {
+      const video = (durum.videolar ?? [])[0];
+      if (video?.video_id) return video.video_id;
+    }
+  }
+  return null;
 }
 
 export interface HazirSoruSetiIslendi {

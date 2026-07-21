@@ -43,7 +43,6 @@ export default function TalepDetayPage() {
   const [seciliVideoDosya, setSeciliVideoDosya] = useState<File | null>(null);
   const [videoYukleniyor, setVideoYukleniyor] = useState(false);
   const [yuklemeYuzdesi, setYuklemeYuzdesi] = useState<number | null>(null);
-  const [kararLoading, setKararLoading] = useState<"onayla" | "reddet" | null>(null);
   const [soruSetiAcik, setSoruSetiAcik] = useState(false);
   const { mesajlar, hata, basari } = useHataMesaji();
 
@@ -150,27 +149,18 @@ export default function TalepDetayPage() {
     });
     const d2 = await res2.json();
     if (!res2.ok) { hata(d2.hata ?? "Video adresi kaydedilemedi.", d2.adim, d2.detay); }
-    else { setTalep(prev => prev ? { ...prev, hazir_video_url: d.embed_url } : prev); basari("Video yüklendi."); }
+    else { setTalep(prev => prev ? { ...prev, hazir_video_url: d.embed_url } : prev); basari(d2.mesaj ?? "Video gönderildi."); }
     setSeciliVideoDosya(null);
     setVideoYukleniyor(false);
     setYuklemeYuzdesi(null);
   };
 
-  const handleHazirVideoKarar = async (karar: "onayla" | "reddet") => {
-    setKararLoading(karar);
-    const res = await fetch("/talepler/api/hazir-video", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ talep_id, karar }),
-    });
-    const d = await res.json();
-    if (!res.ok) { hata(d.hata ?? "İşlem gerçekleştirilemedi.", d.adim, d.detay); }
-    else {
-      // Onay mesajı sunucudan gelir — hazır soru seti otomatik işlendiyse bunu söyler.
-      if (karar === "onayla") basari(d.mesaj ?? "Video onaylandı.");
-      else { basari("Video reddedildi. Yeni video yükleyebilirsiniz."); setTalep(prev => prev ? { ...prev, hazir_video_url: null } : prev); }
-    }
-    setKararLoading(null);
+  // V1-5/V1-6 (İskender kararı, 21.07): PM'in ayrı video onay adımı kalktı — zincir
+  // yükleme anında kurulur. Bu handler yalnız işlenemeyen video telafisi içindir:
+  // yerel URL temizlenir, yükleme alanı geri gelir; yeni PUT zincirdeki adresi günceller.
+  const handleYenidenYukle = () => {
+    setSeciliVideoDosya(null);
+    setTalep(prev => prev ? { ...prev, hazir_video_url: null } : prev);
   };
 
   const rolKucu = (kullanici?.rol ?? "").toLowerCase();
@@ -239,9 +229,13 @@ export default function TalepDetayPage() {
                 </svg>
                 <span className="text-xs text-amber-800 leading-relaxed">
                   {isPM && !talep.hazir_video_url && "Hazır video talebi — video henüz yüklenmedi. Talebin üreticisi aşağıdan video dosyasını doğrudan Bunny'ye yükleyebilir."}
-                  {isPM && talep.hazir_video_url && "Hazır video yüklendi. Lütfen videoyu izleyerek onaylayın."}
-                  {isIU && !talep.hazir_video_url && <span>Bu talep için <strong>senaryo aşaması atlanmıştır</strong>. Üretici hazır videoyu doğrudan Bunny'ye yükleyecektir; onay sonrasında soru seti aşaması başlar.</span>}
-                  {isIU && talep.hazir_video_url && <span>Bu talep için <strong>senaryo aşaması atlanmıştır</strong>. Video yüklendi, üretici onayı bekleniyor.</span>}
+                  {isPM && talep.hazir_video_url && (talep.hazir_soru_seti
+                    ? "Hazır video gönderildi — hazır soru seti otomatik işlendi, video yayın bekleyenlerine düştü."
+                    : "Hazır video gönderildi — soru seti içerik üreticisi tarafından hazırlanacak.")}
+                  {isIU && !talep.hazir_video_url && <span>Bu talep için <strong>senaryo aşaması atlanmıştır</strong>. Üretici hazır videoyu doğrudan Bunny'ye yükleyecektir; yüklendiğinde soru seti işi Soru Setleri sekmenize düşer.</span>}
+                  {isIU && talep.hazir_video_url && <span>Bu talep için <strong>senaryo aşaması atlanmıştır</strong>. {talep.hazir_soru_seti
+                    ? "Video yüklendi — hazır soru seti otomatik işlendi, sizin bir işiniz yoktur."
+                    : "Video yüklendi — soru seti yazımı Soru Setleri sekmesinden yürütülür."}</span>}
                 </span>
               </div>
             </div>
@@ -256,8 +250,8 @@ export default function TalepDetayPage() {
                     <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                   </svg>
                   <span className="text-xs text-blue-800 leading-relaxed">
-                    {isPM && `Bu talep için hazır soru seti yüklenmiştir. ${talep.hazir_soru_seti_verisi.length} soru mevcut — video onaylandığında sistem seti otomatik işler.`}
-                    {isIU && `Üretici bu talep için hazır soru seti yüklemiştir. ${talep.hazir_soru_seti_verisi.length} soru mevcut — video onayıyla birlikte sistem otomatik işler.`}
+                    {isPM && `Bu talep için hazır soru seti yüklenmiştir. ${talep.hazir_soru_seti_verisi.length} soru mevcut — video yüklendiğinde sistem seti otomatik işler.`}
+                    {isIU && `Üretici bu talep için hazır soru seti yüklemiştir. ${talep.hazir_soru_seti_verisi.length} soru mevcut — video yüklemesiyle birlikte sistem otomatik işler.`}
                   </span>
                 </div>
                 <button
@@ -362,10 +356,17 @@ export default function TalepDetayPage() {
                 </div>
               )}
               {bunnyIslemeDurumu === "hatali" && (
-                <div className="mb-2.5 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                <div className="mb-2.5 bg-red-50 border border-red-200 rounded-lg px-3 py-2 flex items-center justify-between gap-3">
                   <p className="text-xs text-red-700 m-0">
-                    Video işlenemedi — dosya bozuk olabilir. Reddedip yeniden yükleyebilirsiniz.
+                    Video işlenemedi — dosya bozuk olabilir. Yeni video yükleyebilirsiniz.
                   </p>
+                  {isUretici && (
+                    <button onClick={handleYenidenYukle}
+                      className="flex-shrink-0 bg-white text-red-700 rounded-lg px-3 py-1.5 text-xs font-semibold cursor-pointer"
+                      style={{ border: "0.5px solid #fecaca", fontFamily: "'Nunito', sans-serif" }}>
+                      Yeni Video Yükle
+                    </button>
+                  )}
                 </div>
               )}
               <iframe src={talep.hazir_video_url} width="100%" height="360" frameBorder="0" allowFullScreen
@@ -382,13 +383,23 @@ export default function TalepDetayPage() {
                 Senaryo Yaz
               </button>
             )}
-            {/* Hazır soru seti IU'suz işlenir (lib/hazirVideoSoruSeti): video onayı seti
-                otomatik yazar ve onaylar — eski "Soru Setini Sisteme İşle" adımı kalktı. */}
+            {/* Hazır soru seti IU'suz işlenir (lib/hazirVideoSoruSeti): video yüklemesi
+                seti otomatik yazar ve onaylar — eski "Soru Setini Sisteme İşle" adımı kalktı.
+                V1-5: soru seti işi video yüklendiği anda doğar — buton İU'yu işin
+                yaşadığı yere (Soru Setleri) götürür; video yüklenmediyse pasiftir. */}
             {isIU && talep.hazir_video && !talep.hazir_soru_seti && (
-              <button disabled className="bg-gray-100 text-gray-400 border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-not-allowed"
-                style={{ fontFamily: "'Nunito', sans-serif" }}>
-                Soru Seti Yaz
-              </button>
+              talep.hazir_video_url ? (
+                <button onClick={() => router.push("/soru-setleri")}
+                  className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer"
+                  style={{ background: "#56aeff", fontFamily: "'Nunito', sans-serif" }}>
+                  Soru Seti Yaz
+                </button>
+              ) : (
+                <button disabled className="bg-gray-100 text-gray-400 border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-not-allowed"
+                  style={{ fontFamily: "'Nunito', sans-serif" }}>
+                  Soru Seti Yaz
+                </button>
+              )
             )}
             {/* F-2: "Senaryolar" butonu kaldırıldı — PM senaryo takibini
                 Navbar'daki Senaryolar sekmesi + badge ile yapar. */}
@@ -398,20 +409,8 @@ export default function TalepDetayPage() {
                 Video Yükleme Bekleniyor...
               </button>
             )}
-            {isPM && talep.hazir_video && talep.hazir_video_url && (
-              <>
-                <button onClick={() => handleHazirVideoKarar("reddet")} disabled={kararLoading !== null}
-                  className="bg-transparent rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer"
-                  style={{ color: "#bc2d0d", border: "0.5px solid #fecaca", opacity: kararLoading !== null ? 0.6 : 1, fontFamily: "'Nunito', sans-serif" }}>
-                  {kararLoading === "reddet" ? "..." : "Reddet"}
-                </button>
-                <button onClick={() => handleHazirVideoKarar("onayla") } disabled={kararLoading !== null}
-                  className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer bg-green-700"
-                  style={{ opacity: kararLoading !== null ? 0.6 : 1, fontFamily: "'Nunito', sans-serif" }}>
-                  {kararLoading === "onayla" ? "..." : "Onayla"}
-                </button>
-              </>
-            )}
+            {/* V1-6 (İskender kararı, 21.07): PM'in kendi yüklediği videoyu ikinci kez
+                onayladığı Onayla/Reddet adımı kaldırıldı — zincir yükleme anında kurulur. */}
           </div>
         </div>
       </div>

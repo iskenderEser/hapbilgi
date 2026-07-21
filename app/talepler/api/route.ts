@@ -230,8 +230,9 @@ export async function POST(request: NextRequest) {
     const bildirimBasligi = (yeniTalep as any).urunler?.urun_adi ?? turAdi;
 
     // G-3 (İskender kararı 19.07): hazır video taleplerinde açılış bildirimi gitmez —
-    // IU'nun işi ya hiç yoktur (video+set hazır) ya da video onayında doğar
-    // (yalnız video hazır; bildirimi o anda gider — hazır zincir modülü, G-2).
+    // IU'nun işi ya hiç yoktur (video+set hazır) ya da video yüklemesi tamamlanınca
+    // doğar (yalnız video hazır; bildirim o anda gider — hazır zincir modülü, G-2;
+    // V1-5/V1-6 ile onay ara adımı kalktı, tetik yükleme anıdır).
     if (!hazir_video) {
       // Tüm IU kullanıcılarına bildirim gönder
       const { data: iuKullanicilar } = await adminSupabase
