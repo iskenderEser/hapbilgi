@@ -1,6 +1,8 @@
 // components/ana-sayfa/IuAnaSayfa.tsx
 "use client";
 
+import { ROL_ADLARI } from "@/lib/utils/roller";
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useHataMesaji } from "@/components/HataMesaji";
@@ -77,9 +79,9 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
       {/* Karşılama */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-2 mb-6">
         <div>
-          <h1 className="text-lg md:text-xl font-extrabold text-gray-900 m-0">Merhaba, {ad} 👋</h1>
+          <h1 className="text-lg md:text-xl font-extrabold text-gray-900 m-0">Merhaba {ad}, 👋</h1>
           <p className="text-sm text-gray-500 mt-1">
-            <strong style={{ color: "#56aeff", fontWeight: 700 }}>HapBilgi · </strong>IU
+            <strong style={{ color: "#56aeff", fontWeight: 700 }}>HapBilgi · </strong>{ROL_ADLARI["iu"]}
           </p>
         </div>
         <span className="hidden md:inline text-xs text-gray-500 bg-white border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap">
