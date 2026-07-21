@@ -137,7 +137,7 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
               {formu.hazirVideo && formu.hazirSoruSeti &&
                 "Hazır video ve soru seti talebi oluşturuyorsunuz. Senaryo aşaması atlanacak — video, talep oluşturulurken doğrudan Bunny'ye yüklenecek; onayınızla birlikte hazır soru seti de sisteme otomatik işlenecektir."}
               {formu.hazirVideo && !formu.hazirSoruSeti &&
-                "Hazır video talebi oluşturuyorsunuz. Senaryo aşaması atlanacak — video, talep oluşturulurken doğrudan Bunny'ye yüklenecek; onayınızın ardından soru seti yazım sürecine geçilecektir."}
+                "Videonuzu yükledikten sonra hazır soru setinizle devam edebilir ya da içerik üreticisinden talep edebilirsiniz."}
               {!formu.hazirVideo && formu.hazirSoruSeti &&
                 "Hazır soru seti talebi oluşturuyorsunuz. Normal senaryo ve video akışı işleyecek — IU soru seti yazma aşamasında sizin yüklediğiniz soru setini sisteme işleyecektir."}
             </div>
