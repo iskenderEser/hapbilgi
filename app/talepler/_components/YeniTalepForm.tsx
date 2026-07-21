@@ -171,7 +171,7 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
             <textarea
               value={formu.aciklama}
               onChange={(e) => formu.setAciklama(e.target.value)}
-              placeholder="Talep açıklamasını girin"
+              placeholder="Açıklama yazınız"
               rows={4}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white resize-y box-border"
               style={{ fontFamily: "'Nunito', sans-serif" }}
