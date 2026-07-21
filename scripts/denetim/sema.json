@@ -1,7 +1,7 @@
 {
-  "uretim_tarihi": "2026-07-18T09:34:10.251Z",
+  "uretim_tarihi": "2026-07-21T11:57:58.518Z",
   "tablo_sayisi": 93,
-  "rpc_sayisi": 53,
+  "rpc_sayisi": 54,
   "tablolar": {
     "analiz_tuketim_degiskenleri": {
       "tur": "BASE TABLE",
@@ -2423,6 +2423,10 @@
         "hedef_rol": {
           "tip": "text",
           "nullable": false
+        },
+        "talep_no": {
+          "tip": "integer",
+          "nullable": false
         }
       }
     },
@@ -3925,6 +3929,10 @@
     "store_teslim_aldim": {
       "argumanlar": "p_siparis_id uuid, p_kullanici_id uuid",
       "donus": "TABLE(ok boolean, hata text)"
+    },
+    "talep_no_ata": {
+      "argumanlar": "",
+      "donus": "trigger"
     },
     "yayin_planlananlari_aktive": {
       "argumanlar": "p_yayin_id uuid",

@@ -292,7 +292,7 @@ export default function VideolarListePage() {
                           <td className="px-3 py-3 text-gray-500">{v.teknik_adi}</td>
                           <td className="px-3 py-3">
                             {v.son_durum && (
-                              <span className="text-xs px-2.5 py-0.5 rounded-full whitespace-nowrap"
+                              <span className="text-xs px-2.5 py-0.5 rounded-full inline-block max-w-full break-words text-center leading-snug"
                                 style={{ background: renk.bg, color: renk.text, border: `0.5px solid ${renk.border}` }}>
                                 {v.son_durum}
                               </span>
