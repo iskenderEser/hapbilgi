@@ -231,6 +231,7 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
       {/* F-01/4: gönderim ancak modaldaki Evet ile başlar; Hayır formu aynen bırakır */}
       <TalepOnayModal
         acik={formu.onayModalAcik}
+        iuSoruSeti={formu.hazirVideo && !formu.hazirSoruSeti}
         ozet={{
           urunAdi: formu.urunler.find((u) => u.urun_id === formu.seciliUrunId)?.urun_adi ?? null,
           teknikAdi: formu.teknikGosterilsin
