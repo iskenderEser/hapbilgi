@@ -221,6 +221,8 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
                 : "Dosyalar yükleniyor..."
               : formu.formLoading
               ? "Gönderiliyor..."
+              : formu.hazirVideo || formu.hazirSoruSeti
+              ? "Gönderiniz"
               : "Talep Oluştur"}
           </button>
         </div>
