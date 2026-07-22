@@ -1,6 +1,6 @@
 {
-  "uretim_tarihi": "2026-07-21T11:57:58.518Z",
-  "tablo_sayisi": 93,
+  "uretim_tarihi": "2026-07-22T16:36:48.841Z",
+  "tablo_sayisi": 94,
   "rpc_sayisi": 54,
   "tablolar": {
     "analiz_tuketim_degiskenleri": {
@@ -3366,6 +3366,31 @@
         },
         "created_at": {
           "tip": "timestamp with time zone",
+          "nullable": true
+        }
+      }
+    },
+    "v_uretim_detay": {
+      "tur": "VIEW",
+      "kolonlar": {
+        "talep_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "uretici_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "urun_adi": {
+          "tip": "text",
+          "nullable": true
+        },
+        "senaryo_durum_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "video_durum_id": {
+          "tip": "uuid",
           "nullable": true
         }
       }

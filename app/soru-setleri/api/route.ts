@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       query = query.eq("video_durum_id", video_durum_id);
     } else if (URETICI_ROLLER.includes(rol)) {
       const { data: yayinlar, error: yayinError } = await adminSupabase
-        .from("v_yayin_detay")
+        .from("v_uretim_detay")
         .select("video_durum_id")
         .eq("uretici_id", user.id);
 

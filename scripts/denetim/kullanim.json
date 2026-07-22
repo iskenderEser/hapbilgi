@@ -1628,7 +1628,7 @@
     {
       "dosya": "app/soru-setleri/api/route.ts",
       "satir": 31,
-      "tablo": "v_yayin_detay"
+      "tablo": "v_uretim_detay"
     },
     {
       "dosya": "app/soru-setleri/api/route.ts",
@@ -1687,17 +1687,17 @@
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 108,
+      "satir": 114,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 198,
+      "satir": 204,
       "tablo": "talepler"
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 238,
+      "satir": 244,
       "tablo": "kullanicilar"
     },
     {
@@ -1763,7 +1763,7 @@
     {
       "dosya": "app/videolar/api/route.ts",
       "satir": 31,
-      "tablo": "v_yayin_detay"
+      "tablo": "v_uretim_detay"
     },
     {
       "dosya": "app/videolar/api/route.ts",
@@ -2328,7 +2328,7 @@
     {
       "dosya": "app/videolar/api/bunny-yukleme-baslat/route.ts",
       "satir": 58,
-      "tablo": "v_yayin_detay"
+      "tablo": "v_uretim_detay"
     },
     {
       "dosya": "app/videolar/api/bunny-yukleme-baslat/route.ts",
@@ -5285,7 +5285,7 @@
       "dosya": "app/soru-setleri/api/route.ts",
       "satir": 31,
       "ham": "video_durum_id",
-      "tablo": "v_yayin_detay"
+      "tablo": "v_uretim_detay"
     },
     {
       "dosya": "app/soru-setleri/api/route.ts",
@@ -5355,19 +5355,19 @@
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 108,
+      "satir": 114,
       "ham": "takim_id, firma_id",
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 198,
+      "satir": 204,
       "ham": "\n        talep_id, takim_id, firma_id, hazir_video, created_at,\n        urun_id, teknik_id, egitim_turu, hedef_rol, icerik_turu,\n        hazir_soru_seti, hazir_soru_seti_verisi,\n        soru_seti_buyuklugu, video_basi_soru_sayisi,\n        urunler(urun_adi),\n        teknikler(teknik_adi)\n      ",
       "tablo": "talepler"
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 238,
+      "satir": 244,
       "ham": "kullanici_id",
       "tablo": "kullanicilar"
     },
@@ -5447,7 +5447,7 @@
       "dosya": "app/videolar/api/route.ts",
       "satir": 31,
       "ham": "senaryo_durum_id",
-      "tablo": "v_yayin_detay"
+      "tablo": "v_uretim_detay"
     },
     {
       "dosya": "app/videolar/api/route.ts",
@@ -6017,7 +6017,7 @@
       "dosya": "app/videolar/api/bunny-yukleme-baslat/route.ts",
       "satir": 58,
       "ham": "urun_adi",
-      "tablo": "v_yayin_detay"
+      "tablo": "v_uretim_detay"
     },
     {
       "dosya": "app/videolar/api/bunny-yukleme-baslat/route.ts",

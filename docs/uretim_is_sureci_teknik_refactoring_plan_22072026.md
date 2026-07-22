@@ -162,4 +162,5 @@ Temizlik SQL → İskender. İskender uçtan uca: dört varyant + revizyon + red
 
 Her adım tamamlandıkça yapılanlar ve yaşanan sorunlar buraya işlenir.
 
+- **22.07 — Ek ön-geliştirme: v_yayin_detay üretim/tüketim ayrımı.** Üretim refactoring'i Adım 3'te v_yayin_detay'a (yayın-kapılı, ~25 tüketicili merkezî görünüm) dokunmayı gerektiriyordu. Üretimi bu bağdan koparmak için üretime özel `v_uretim_detay` görünümü kuruldu (İskender kararı: seçenek b — talep/ürünlerden, yayına bağlı değil; üretici yayınlanmamış kayıtları da görür). 3 üretim ucu (videolar/api, soru-setleri/api, bunny-yukleme-baslat) v_yayin_detay yerine v_uretim_detay'a çevrildi. v_yayin_detay tüketim için olduğu gibi kaldı. Üçlü doğrulama temiz. Sonuç: üretim v_yayin_detay'dan bağımsız; Adım 3'teki v_yayin_detay değişikliği artık yalnız tüketim işi.
 - **22.07 — Plan oluşturuldu.** İlk refactoring planı kod + DB ile doğrulandı; kök neden düzeltildi (hayalet satır değil, NOT NULL ihlali — §2). Veri temsili Yol 2, görünürlük RLS (c1), `kaynak` yalnız video+set (c2), sahiplik geliştirme borcu olarak ertelendi. İskender onayıyla bu belge yazıldı.

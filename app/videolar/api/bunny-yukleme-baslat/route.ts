@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     // 3) Ad üretimi — kütüphane düzeni sisteme aittir: ürün adı + versiyon no.
     const { data: detay } = await adminSupabase
-      .from("v_yayin_detay")
+      .from("v_uretim_detay")
       .select("urun_adi")
       .eq("senaryo_durum_id", video.senaryo_durum_id)
       .limit(1)
