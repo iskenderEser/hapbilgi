@@ -1,10 +1,10 @@
-// lib/hazirVideoSoruSeti/parametreKontrol.ts
+// lib/uretim/parametreKontrol.ts
 //
-// Hazır kolun (hazır video + hazır soru seti) parametre kuralları TEK NOKTADA.
-// Üretici, toplam soru sayısını ve video başı soru sayısını talep aşamasında
-// tanımlar; sistem bu tanımı izleme anında rastgele seçimle uygular. Buradaki
-// kontrol, hazır setin o tanıma uyduğunun sunucu tarafı güvencesidir (form
-// zaten denetler — bu ikinci kilittir). Saf fonksiyon — smoke bununla.
+// Hazır soru setinin parametre kuralları TEK NOKTADA (Adım 3'te
+// lib/hazirVideoSoruSeti'nden buraya taşındı). Üretici, toplam soru sayısını
+// ve video başı soru sayısını talep aşamasında tanımlar; hazır setin o tanıma
+// uyduğunun sunucu tarafı güvencesi budur (form zaten denetler — bu ikinci
+// kilittir). Saf fonksiyon.
 
 // Talep şemasındaki varsayılanlarla aynı (talepZinciri.ts fallback'leriyle uyumlu).
 const VARSAYILAN_BUYUKLUK = 25;

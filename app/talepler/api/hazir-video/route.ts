@@ -5,7 +5,7 @@ import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isK
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { embedUrlGuidCikar } from "@/lib/video/bunnyYukleme";
-import { hazirZinciriKur, hazirZincirVideoBul } from "@/lib/hazirVideoSoruSeti/zincir";
+import { hazirVideoGir, hazirVideoBul } from "@/lib/uretim/surec";
 
 // PUT: kanonik embed adresini sistem yazar (A4 — yükleme üreticinin formundan doğrudan
 // Bunny'ye gider; adres vezneden döner, istemci URL kurmaz. IU'nun URL girme yolu kalktı.)
@@ -53,40 +53,39 @@ export async function PUT(request: NextRequest) {
     // burada kurulur — soru seti işi ve IU bildirimi bu anda doğar. Zincir zaten
     // kuruluysa (işlenemeyen video sonrası yeniden yükleme) yalnızca zincirdeki
     // video adresi güncellenir; mükerrer zincir/bildirim oluşmaz.
-    const mevcutVideoId = await hazirZincirVideoBul(adminSupabase, talep_id);
+    const mevcutVideoId = await hazirVideoBul(adminSupabase, talep_id);
     if (mevcutVideoId) {
       const { error: videoGuncelleError } = await adminSupabase
         .from("videolar")
         .update({ video_url: hazir_video_url.trim() })
         .eq("video_id", mevcutVideoId);
-      if (videoGuncelleError) return hataYaniti("Zincirdeki video adresi güncellenemedi.", "videolar tablosu UPDATE — video_url", videoGuncelleError);
+      if (videoGuncelleError) return hataYaniti("Hazır video adresi güncellenemedi.", "videolar tablosu UPDATE — video_url", videoGuncelleError);
       return NextResponse.json({ mesaj: "Video güncellendi." }, { status: 200 });
     }
 
-    const zincir = await hazirZinciriKur(adminSupabase, {
+    const sonuc = await hazirVideoGir(adminSupabase, {
       talep_id: talep.talep_id,
-      hazir_video_url: hazir_video_url.trim(),
+      video_url: hazir_video_url.trim(),
       hazir_soru_seti: talep.hazir_soru_seti ?? false,
       hazir_soru_seti_verisi: talep.hazir_soru_seti_verisi ?? null,
       soru_seti_buyuklugu: talep.soru_seti_buyuklugu ?? null,
       video_basi_soru_sayisi: talep.video_basi_soru_sayisi ?? null,
-      urun_adi: (talep as any).urunler?.urun_adi ?? (talep as any).teknikler?.teknik_adi ?? null,
-    }, user.id);
+      urun_adi: (talep as any).urunler?.urun_adi ?? (talep as any).teknikler?.teknik_adi ?? "-",
+      degistiren_id: user.id,
+    });
 
-    if (!zincir.ok) {
-      // Telafi: zincir kurulamadıysa URL geri alınır — üretici yeniden yükleyip
-      // zincir kurulumunu yeniden tetikleyebilir (yarım kalmış gönderim kalmaz).
+    if (!sonuc.ok) {
+      // Telafi: kurulamadıysa URL geri alınır — üretici yeniden yükleyebilir.
       await adminSupabase.from("talepler").update({ hazir_video_url: null }).eq("talep_id", talep_id);
-      return hataYaniti(zincir.hata, zincir.adim, zincir.detay ?? null);
+      return hataYaniti(sonuc.hata, sonuc.adim, null);
     }
 
     return NextResponse.json({
-      mesaj: zincir.soruSetiIslendi
+      mesaj: sonuc.soruSetiIslendi
         ? "Video gönderildi; hazır soru seti otomatik işlendi ve onaylandı."
         : "Video gönderildi. Soru seti içerik üreticisine yönlendirildi.",
-      soru_seti_id: zincir.soru_seti_id,
-      video_durum_id: zincir.video_durum_id,
-      soru_seti_islendi: zincir.soruSetiIslendi,
+      video_id: sonuc.video_id,
+      soru_seti_islendi: sonuc.soruSetiIslendi,
     }, { status: 200 });
 
   } catch (err) {

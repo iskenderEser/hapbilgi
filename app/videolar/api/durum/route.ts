@@ -6,8 +6,7 @@ import { bildirimOlustur, gonderenBildirimleriOkunduIsaretle } from "@/lib/utils
 import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { talepBilgisiVideo } from "@/lib/utils/talepZinciri";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { hazirSoruSetiIsle } from "@/lib/hazirVideoSoruSeti/zincir";
-import { videoOnayindaSoruSetiAc } from "@/lib/uretim/surec";
+import { videoOnayindaSoruSetiAc, hazirSoruSetiGir } from "@/lib/uretim/surec";
 
 const GECERLI_DURUMLAR = [
   "inceleme bekleniyor",
@@ -106,8 +105,15 @@ export async function POST(request: NextRequest) {
         hazirTalep = data ?? null;
       }
 
-      if (hazirTalep?.hazir_soru_seti && hazirTalep.hazir_soru_seti_verisi) {
-        const islenen = await hazirSoruSetiIsle(adminSupabase, yeniDurum.video_durum_id, hazirTalep, user.id);
+      if (hazirTalep?.hazir_soru_seti && hazirTalep.hazir_soru_seti_verisi && talepBilgisi?.talep_id) {
+        const islenen = await hazirSoruSetiGir(adminSupabase, {
+          talep_id: talepBilgisi.talep_id,
+          video_durum_id: yeniDurum.video_durum_id,
+          sorular: hazirTalep.hazir_soru_seti_verisi,
+          soru_seti_buyuklugu: hazirTalep.soru_seti_buyuklugu,
+          video_basi_soru_sayisi: hazirTalep.video_basi_soru_sayisi,
+          degistiren_id: user.id,
+        });
         if (!islenen.ok) {
           await bildirimOlustur({
             adminSupabase,
