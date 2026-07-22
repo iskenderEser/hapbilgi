@@ -1,0 +1,165 @@
+# Üretim İş Süreci Teknik Refactoring Planı — 22.07.2026
+
+**Karar sahibi:** İskender.
+**Kapsam:** Üretim ekseni — talep → (senaryo) → video → soru seti → yayın — ve bunun dört varyantı. Tüketim tarafı (T-Club, C-Club, E-Club, Eczanem), yayın/puanlama ve Bunny yükleme kapsam dışıdır.
+**Veri temsili kararı:** Yol 2 (her iş ürünü talebe bağlı, birinci sınıf; kaynağını taşır).
+
+Bu belge, 22.07 ilk refactoring planının **kod + DB ile doğrulanmış ve düzeltilmiş** halidir. İlk planın çekirdek sezgisi ("tek hat, çoklu giriş") doğrudur; kök neden teşhisi ve kapsamı düzeltilmiştir (§2).
+
+---
+
+## 1. Kavramsal model — tek süreç, iki seçim, dört varyant
+
+Ortada iki ayrı "hat" yoktur. **Tek bir üretim süreci** vardır; süreç, üretici rolün talebi açarken yaptığı **iki seçime** göre dört varyanta ayrılır. "Hazır" ayrı bir kol değil, aynı hatta bazı aşamaların baştan dolu (onaylı) gelmesidir. Bu iki seçim veride zaten var: `talepler.hazir_video`, `talepler.hazir_soru_seti`.
+
+| | Video yok | Video hazır |
+|---|---|---|
+| **Soru seti yok** | İU: senaryo → video → soru seti | İU: yalnız soru seti |
+| **Soru seti hazır** | İU: senaryo → video | İU'ya iş yok — üretici doğrudan yayına |
+
+Her aşamanın (senaryo, video, soru seti) iki hali vardır: **İU yapacak** (bekliyor) ya da **hazır geldi** (baştan onaylı). Senaryonun hazır varyantı **yoktur** — senaryo her zaman İU üretir (iş modeli gereği; bir gün değişirse o gün eklenir).
+
+---
+
+## 2. Doğrulanmış kök neden (kanıtlı)
+
+İlk plan, 22.07 arızasını "hazır kol `iu_id=null` hayalet satırlar üretiyor, RLS onları gizliyor" diye açıkladı. **Bu yanlıştır.** Kod + DB doğrulaması:
+
+- `lib/hazirVideoSoruSeti/zincir.ts` üç tabloya da `iu_id: null` yazıyor (senaryo, video, soru seti).
+- Ama şema anlık görüntüsü (`scripts/denetim/sema.json`, canlı DB'den 21.07): `senaryolar.iu_id`, `videolar.iu_id`, `soru_setleri.iu_id` üçü de **NOT NULL**.
+- Salt-okuma sayım sorgusu (İskender koştu, 22.07): üç tabloda da `iu_id IS NULL` satır sayısı **sıfır**.
+
+**Sonuç:** Hazır zincir daha ilk INSERT'te (senaryo, `iu_id=null`) NOT NULL ihlaliyle patlıyor; `hazir-video/route.ts` URL'i geri alıp PM'e hata dönüyor. **Hiç satır doğmuyor** — hayalet satır yok, RLS'in gizlediği bir şey yok. İU işi görememesinin nedeni okuma-filtresi değil, yazımın hiç tutmaması.
+
+Bu düzeltme önemlidir: refactoring, yanlış katmana (okuma/RLS) değil, doğru soruna (veri modelinin hazır aşamayı dürüstçe ifade edememesi) yönelir.
+
+**Yapısal tespitler (doğrulandı, geçerli):**
+- **İki kopya kural.** "Onay → sonraki iş doğar → bildirim" kuralı `videolar/api/durum/route.ts` (≈121-151) ve `hazirVideoSoruSeti/zincir.ts` (≈130-163) içinde iki kez, farklı semantikle yazılı.
+- **Sahte senaryo.** Hazır kol, veri modeli "video senaryosuz olamaz" dediği için `"[Hazır Video — Senaryo Atlandı]"` metinli sahte senaryo üretiyor (`zincir.ts` ≈54-63).
+- **`iu_id` yükü.** Video/soru seti aşama açılışında `iu_id=PM` (yer tutucu) yazılıyor; İU teslim edince `iu_id=İU` üzerine yazıyor. Kimlik-sahiplik-yer tutucu tek alanda eziliyor (kalite raporu B-39 ile de doğrulandı).
+- **Üç ayrı görünürlük mekanizması.** Talepler (elle süzgeç, service-role), PM listeleri (`v_yayin_detay` görünümü), İU soru setleri (istemci `!inner` zinciri).
+
+---
+
+## 3. Hedef veri modeli (Yol 2)
+
+İlke: her iş ürünü (senaryo/video/soru seti) **talebe doğrudan bağlı, kendi ayakları üstünde** durur; kaynağını taşır. Durum geçmişi mevcut append-only `*_durumu` tablolarında kalır (korunur).
+
+| Tablo | Eklenen / değişen alan | Anlam |
+|---|---|---|
+| `videolar` | **+`talep_id`** (FK talepler) | Video artık senaryoya değil, talebe bağlı |
+| | **+`kaynak`** ('iu' / 'hazir', default 'iu') | İU mü üretti, hazır mı geldi — dürüst bilgi |
+| | `senaryo_durum_id` → **nullable** | Yalnız İU-senaryosundan gelen videoda dolu; hazırda boş |
+| | `iu_id` → **nullable** | "Videoyu üreten İU"; hazırda ve teslim öncesi boş |
+| `soru_setleri` | **+`talep_id`** (FK talepler) | Set artık videoya değil, talebe bağlı |
+| | **+`kaynak`** ('iu' / 'hazir', default 'iu') | Aynı |
+| | `video_durum_id` → **nullable** | İlişkilendirme bilgisi; zorunlu bağ değil |
+| | `iu_id` → **nullable** | "Seti yazan İU"; hazırda ve yazım öncesi boş |
+| `senaryolar` | **değişmez** | Zaten `iu_id`=İU; hazır varyantı yok, `kaynak` gerekmez |
+
+**Aşama açılış deseni (tekilleştirilir):** Bir aşama İU'ya açıldığında **boş kabuk** satır oluşur: `kaynak='iu'`, `iu_id=null` (sahibi henüz yok — bkz. §5 sahiplik borcu), durumsuz (=bekliyor). İU teslim edince içerik + `iu_id=İU` + durum yazılır. Hazır girişte kabuk `kaynak='hazir'`, içerik dolu, durum `onaylandi`, `iu_id=null` doğar. Böylece `iu_id`'ye asla yanlış (PM) kimlik yazılmaz — NOT NULL kırığının gerçek çözümü budur.
+
+**Görünümler (SQL → İskender):** `v_yayin_detay` zincir yerine `ürün.talep_id → talepler.uretici_id` ile sadeleşir; `v_soru_seti_son_durum` (yalnız durum) korunur.
+
+---
+
+## 4. Süreç modülü — `lib/uretim/surec.ts` (yeni)
+
+Tek kural yeri. Barındırır: aşama açma, durum geçişinde sıradaki işi doğurma, bildirim tetikleme, hazır girişler, parametre kilidi (`parametreKontrol` buraya taşınır). Ekranlar ve API uçları kuralı hep buradan çağırır; içine "hazırsa atla" serpiştirilmez. (Tek modül ≠ tek dosyada akan süreç; `page.tsx` dosyaları şişirilmez.)
+
+Modül, talebin iki seçimini okuyup varyantı kurar:
+
+| Varyant (video, set) | Modülün kurduğu |
+|---|---|
+| yok, yok | Senaryo aşaması İU'ya açılır → onay → video → onay → set |
+| hazır, yok | Video `kaynak='hazir'` onaylı doğar; **set aşaması İU'ya hemen açılır** |
+| yok, hazır | Senaryo → video İU'da; set `kaynak='hazir'` onaylı doğar |
+| hazır, hazır | İkisi de onaylı doğar; üretici doğrudan yayına |
+
+---
+
+## 5. Kararlar
+
+- **c1 — Görünürlük: RLS (tek hukuk).** "Kim neyi görür" kuralları veritabanında (RLS) tanımlanır; rol + kapsam + sahiplikten türer. Üretim tablolarına (senaryolar/videolar/soru_setleri + durum tabloları) politikalar yazılır (SQL → İskender). Okumalar İU'nun **kendi oturumuna** taşınır; `talepler`'deki elle süzgeç ve PM listelerindeki service-role okumaları kalkar. Yazma işlemleri (durum geçişi, çok tablolu kayıt, bildirim) sunucu API'sinde service-role'da kalır.
+- **c2 — `kaynak` alanı yalnız `videolar` + `soru_setleri`'nde.** Senaryo dokunulmaz (tek varyant — gerçek asimetri, keyfi istisna değil). Senaryo RLS politikası `kaynak` koşulu taşımaz ("tüm bekleyen senaryo işi İU'nundur").
+- **Sahiplik — geliştirme borcu (bu turda havuz).** Mimari "bu bekleyen işin sahibi kim?" sorusunu prospektif olarak **sormaz**; kabuk `iu_id=null` doğar, tüm aktif İU'lara görünür (havuz, ilk üstlenen yapar). "Sorumlu İU" alanı + tam atama makinesi (firma-İU eşlemesi, kuyruk, devir) bu planın **dışında**, ayrı bir geliştirme turunda karara bağlanacak. (Hafıza: `isin-sahibi-gelistirme-borcu`.)
+
+---
+
+## 6. Kapsam dışı (net sınır)
+
+- **Atama/sahiplik makinesi** — geliştirme borcu, ayrı tur.
+- **Tüketim tarafı** (`app/izle/*`), **yayın/puanlama** (`app/yayin-yonetimi/*`), **Bunny yükleme** (`app/videolar/api/bunny-*`), **admin export** — süreci okur, kuralını yazmaz; dokunulmaz.
+
+---
+
+## 7. Etkilenecek dosyalar (kararlarla değişkenlik olabilir)
+
+**Yeni:**
+- `lib/uretim/surec.ts` — tek süreç modülü.
+
+**Silinecek / taşınacak:**
+- `lib/hazirVideoSoruSeti/zincir.ts` — silinir.
+- `lib/hazirVideoSoruSeti/parametreKontrol.ts` — mantık `surec.ts`'e taşınır, klasör boşalır.
+
+**Çekirdek (değişecek):**
+- `app/talepler/api/route.ts` — talep açılışı + hazır girişlerin modüle bağlanması; elle görünürlük süzgeci RLS'e devredilir.
+- `app/talepler/api/hazir-video/route.ts` — modülün hazır video girişini çağırır.
+- `app/senaryolar/api/durum/route.ts`, `app/videolar/api/durum/route.ts`, `app/soru-setleri/api/durum/route.ts` — kopya kural kodları sökülür, modüle bağlanır.
+- `app/senaryolar/api/route.ts`, `app/videolar/api/route.ts`, `app/soru-setleri/api/route.ts` — teslimde `iu_id=İU` + `kaynak` yönetimi; RLS'e uyum.
+- `app/soru-setleri/page.tsx` — istemci `!inner` zinciri yerine RLS'e uygun okuma.
+
+**Dokunulabilir (karara bağlı):**
+- `app/senaryolar/page.tsx`, `app/videolar/page.tsx` — İU listeleri, RLS'e uyum.
+- `lib/utils/anaSayfa/iu.ts`, `lib/utils/anaSayfa/uretici.ts` — rozet/sayaç, tek kaynaktan.
+- `lib/utils/talepZinciri.ts` — `talep_id` ile sadeleşir.
+- Detay sayfaları (`app/.../[id]/page.tsx`) — zincir şekli değişince ufak uyum.
+
+---
+
+## 8. Adım adım plan
+
+Her adım: 1 commit; tsc + `npm run denetim` + `npm run lint:mimari` temiz; ≤1 duman testi (1 mutlu + 1 red); DB yazımı (veri + şema + politika) SQL → İskender, Claude canlıya yazmaz; adım öncesi yapılacaklar listelenir + onay alınır; push yok.
+
+**Adım 1 — Veri temeli (eklemeli, davranış değişmez).**
+DB (SQL → İskender): §3 kolon eklemeleri (nullable), `kaynak` default 'iu', mevcut satırlara `talep_id` backfill (zinciri yürüyerek) + `kaynak='iu'`; `v_yayin_detay` yeniden. **RLS politikalarının SQL'i de burada hazırlanır** (uygulaması Adım 4'te devreye alınır). Kod değişmez.
+Doğrulama: denetim (sema.json yenilenir) + tsc. Çıktı: yeni temel canlı; normal akış etkilenmez.
+
+**Adım 2 — Süreç modülü + normal hat.**
+`lib/uretim/surec.ts` yazılır. `senaryolar/api/durum` ve `videolar/api/durum` içindeki kopya "onayda otomatik satır + bildirim" mantığı sökülüp modüle bağlanır; kabuklar artık `talep_id`+`kaynak='iu'`+`iu_id=null`. Teslim uçları (`senaryolar/api` POST, `videolar/api` PUT, `soru-setleri/api` PUT) teslimde `iu_id=İU` yazar.
+Doğrulama: normal hat senaryo→video→set uçtan uca (1 mutlu + 1 red). Çıktı: normal hat yeni modelde; `iu_id` yükü çözüldü.
+
+**Adım 3 — Hazır kol tek hatta katılır; ayrı modül sökülür.**
+`talepler/api/hazir-video` ve talep açılışı modülün hazır girişlerini çağırır (sahte senaryo yok). `lib/hazirVideoSoruSeti/zincir.ts` silinir; `parametreKontrol` modüle taşınır.
+Doğrulama: hazır video (varyant 2) uçtan uca — İU seti görür ve yazar (1 mutlu + 1 red parametre). Çıktı: **hazır akış onarılır**; ayrı modül ve sahte senaryo gider.
+*Geçiş notu (bkz. hafıza `gecis-durumu-kontrolu`): Adım 1'de `iu_id` nullable olunca eski hazır modül "sahte senaryolu ama çalışır" ara hale gelebilir; bu yüzden hazır video Adım 3'e kadar denenmez, Adım 3 hem kodu değiştirir hem varsa ara-satırları temizler (temizlik SQL → İskender).*
+
+**Adım 4 — Görünürlük RLS'e iner (tek hukuk).**
+RLS politikaları devreye alınır (Adım 1'de hazırlanan SQL → İskender); okumalar İU'nun kendi oturumuna taşınır; `talepler/api` elle süzgeci ve PM listelerindeki service-role okumaları kalkar; İU soru setleri sayfası RLS'e uygun okur.
+Doğrulama: dört varyant doğru listede, doğru rolde (1 mutlu + 1 red). Çıktı: tek görünürlük hukuku; zincir/istemci kırılganlığı biter.
+
+**Adım 5 — Eski zincir bağımlılıkları sökülür (temizlik).**
+`talepZinciri.ts` yardımcıları `talep_id` ile sadeleşir; zincire dayalı kalan okuma/görünüm kalıntıları kalkar; ölü kod temizlenir.
+Doğrulama: üçlü temiz + normal/hazır duman. Çıktı: zincir tesisatı gider.
+
+**Adım 6 — Test verisi temizliği + fiziksel test.**
+Temizlik SQL → İskender. İskender uçtan uca: dört varyant + revizyon + red senaryoları.
+Çıktı: temiz zemin; İskender onayı.
+
+---
+
+## 9. Çalışma disiplini
+
+- Her adım öncesi yapılacaklar madde madde + İskender onayı; bir adım = bir commit; push yok.
+- Üçlü doğrulama (tsc + denetim + lint:mimari) temiz geçmeden adım kapanmaz; adım başına ≤1 duman testi (1 mutlu + 1 red). Rol matrisi taraması yok (fiziksel testte).
+- DB'ye yazan her şey (veri + şema + politika) SQL olarak İskender'e verilir; Claude canlı DB'ye yazmaz.
+- Uçtan uca doğrulama İskender'in fiziksel testlerindedir; test tespitleri talimattır, kapsamları onaysız daraltılamaz.
+- İskender'in emri ve tespitleri birebir uygulanır; üzerine Claude'un kendi yöntemi (risk-azaltma refleksi dahil) eklenemez — sapma gerekliyse önce açıkça yazılır ve sorulur.
+
+---
+
+## 10. Uygulama günlüğü
+
+Her adım tamamlandıkça yapılanlar ve yaşanan sorunlar buraya işlenir.
+
+- **22.07 — Plan oluşturuldu.** İlk refactoring planı kod + DB ile doğrulandı; kök neden düzeltildi (hayalet satır değil, NOT NULL ihlali — §2). Veri temsili Yol 2, görünürlük RLS (c1), `kaynak` yalnız video+set (c2), sahiplik geliştirme borcu olarak ertelendi. İskender onayıyla bu belge yazıldı.
