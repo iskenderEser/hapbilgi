@@ -71,18 +71,29 @@ Kod incelemesiyle (22.07, salt okuma) tespit edilen yapısal karşılıklar:
 
 ### 6.3 Adımlar
 
+İlke (İskender emri, 22.07): Adımlar eski kodu korumaz, toparlamaz, ömrünü uzatmaz. Her adım kararlaştırılan yeni mimariyi doğrudan kurar; eski kod, yeni yapı devraldıkça sökülür.
+
 | Adım | İş | Çıktı |
 |---|---|---|
-| A1 | Süreç kurallarını tek modülde topla — `videolar/api/durum` ve `zincir.ts` içindeki onay-sonrası kopyaları birleştir. Davranış değişmez; zemin temizlenir. | Tek kural modülü; kopya kod sıfır |
-| A2 | Kaynak bilgisini veri modeline ekle: senaryo/video/soru seti kayıtlarına "İU üretimi / üreticiden hazır" alanı. Sahte senaryo kaydı yazımı biter (şema değişikliği SQL olarak İskender'e). | Açık kaynak alanı; sahte kayıt yok |
-| A3 | Hazır kolu tek hatta bağla: hazır video yüklemesi hattın "video onaylandı" girişinden akar; V1/V2/V3 üçü de aynı kural modülünden geçer. `hazirVideoSoruSeti` ayrı kod yolu kalkar. | Hazır kol = hatta geç katılan iş |
-| A4 | Atama sistemini kur: firma-İU eşleme tablosu, admin atama ekranı, atama bekleyenler kuyruğu, talep-bazlı istisna, devir (şema SQL'leri İskender'e). | 6.2'deki modelin tamamı çalışır |
-| A5 | Görünürlüğü RLS'e taşı: rol kilidi + kapsam + sahiplikten türeyen politikalar; ekranlar tek hukuka bağlanır; rozet/bildirim atamadan türetilir. API'lerdeki elle filtreler sökülür (politika SQL'leri İskender'e). | Tek görünürlük hukuku |
-| A6 | Test verilerini temizle (temizlik SQL'i İskender'e) ve fiziksel test: üç hazır varyant + atama senaryoları (atama, istisna, firma taşıma, devir). | Temiz zemin; İskender onayı |
+| A1 | Yeni yapının veri temeli kurulur: her iş ürününe (senaryo/video/soru seti) kaynak alanı ("İU üretimi / üreticiden hazır") ve sahiplik alanı; firma-İU eşleme tablosu; talep-bazlı atama/istisna tablosu; videonun talebe doğrudan bağlanması — sahte senaryo ihtiyacı kökten kalkar. Tüm şema değişiklikleri SQL olarak İskender'e verilir, İskender koşar. | Yeni veri temeli canlı |
+| A2 | Süreç kuralı yeni tasarıma göre sıfırdan yazılır: tek hat, durum geçişleri, geçişte doğan işin sorumlu İU'ya sahipli doğması. Normal hattın uçları (senaryo/video/soru seti durum uçları) bu modüle bağlanır; eski kopya kural kodları sökülür. | Tek hat çalışır; kopya kod sökülmüş |
+| A3 | Hazır kol tek hatta bağlanır: hazır video "video onaylandı" girişinden, hazır soru seti "soru seti onaylandı" girişinden katılır (V1/V2/V3). Ayrı hazır-zincir kodu (`lib/hazirVideoSoruSeti`) sökülür. Sonuç: PM hazır videoyu yükler; iş, sorumlu İU'nun Soru Setleri'nde doğar ve rozeti yakar. | Hazır kol = hatta ileriden katılan iş; İU işi görür |
+| A4 | Atama sistemi kurulur: admin eşleme yönetimi ekranı, atama bekleyenler kuyruğu, talep istisnası, firma taşıma, devir; bildirim ve rozet sahiplikten türetilir — herkese yayın biter. | 6.2 modeli uçtan uca çalışır |
+| A5 | Görünürlük RLS'e taşınır: rol kilidi + kapsam + sahiplikten türeyen politikalar (politika SQL'leri İskender'e); tüm ekranlar tek hukuka bağlanır; API'lerdeki elle görünürlük filtreleri sökülür. | Tek görünürlük hukuku |
+| A6 | Test verileri temizlenir (temizlik SQL'i İskender'e) ve fiziksel test: üç hazır varyant + atama senaryoları (atama, istisna, firma taşıma, devir). | Temiz zemin; İskender onayı |
 
 ### 6.4 Çalışma disiplini
 
-- Her adım öncesi plan özeti + İskender onayı; bir adım = bir commit; push yok.
+- Her adım öncesi yapılacaklar madde madde yazılır + İskender onayı alınır; bir adım = bir commit; push yok.
 - Her adım tsc + `npm run denetim` + `npm run lint:mimari` üçlüsünden temiz geçmeden kapanmaz; adım başına en fazla 1 smoke test (1 mutlu yol + 1 red).
 - DB'ye yazan her şey (veri + şema + politika) SQL olarak İskender'e verilir; Claude canlı DB'ye yazmaz.
 - Uçtan uca doğrulama İskender'in fiziksel testlerindedir; test tespitleri talimattır, kapsamları onaysız daraltılamaz.
+- İskender'in emri ve tespitleri birebir uygulanır; üzerine Claude'un kendi yöntemi (risk azaltma refleksi dahil) eklenemez — sapma gerekli görülürse önce açıkça yazılır ve sorulur.
+
+---
+
+## 7. Uygulama günlüğü
+
+Refactoring tamamlandıkça her adımın yapılanları ve yaşanan sorunları buraya işlenir.
+
+- **22.07 — Plan düzeltmesi (İskender emri):** İlk sürümdeki A1 ("eski kopyaları davranışı koruyarak birleştir") emre aykırıydı — eski kodu koruma odaklıydı ve İskender'in emrinde yoktu; Claude'un kendi risk-azaltma refleksiyle plana eklenmişti. Çıkarıldı; adımlar yeni mimariyi doğrudan kuracak şekilde yeniden yazıldı.
