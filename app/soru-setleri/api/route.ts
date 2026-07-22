@@ -20,25 +20,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const video_durum_id = searchParams.get("video_durum_id");
 
-    let query = adminSupabase
+    // Görünürlük RLS'te (Adım 4): İU tüm setleri, üretici yalnız kendi talebinin
+    // setlerini görür. Okuma OTURUMLA yapılır (elle süzgeç ve v_uretim_detay kalktı
+    // — Adım 5). video_durum_id filtresi ek daraltmadır.
+    let query = supabase
       .from("soru_setleri")
       .select("soru_seti_id, video_durum_id, iu_id, sorular, created_at")
       .order("created_at", { ascending: false });
 
     if (video_durum_id) {
       query = query.eq("video_durum_id", video_durum_id);
-    } else if (URETICI_ROLLER.includes(rol)) {
-      const { data: yayinlar, error: yayinError } = await adminSupabase
-        .from("v_uretim_detay")
-        .select("video_durum_id")
-        .eq("uretici_id", user.id);
-
-      if (yayinError) return hataYaniti("PM'in yayınları çekilemedi.", "v_yayin_detay SELECT — uretici_id filtresi", yayinError);
-
-      const videoDurumIdler = (yayinlar ?? []).map((y: any) => y.video_durum_id).filter(Boolean);
-      if (videoDurumIdler.length === 0) return NextResponse.json({ soruSetleri: [] }, { status: 200 });
-
-      query = query.in("video_durum_id", videoDurumIdler);
     }
 
     const { data: soruSetleri, error } = await query;

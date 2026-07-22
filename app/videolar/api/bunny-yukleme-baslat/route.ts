@@ -11,6 +11,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { bunnyYuklemeBaslat, BUNNY_TUS_ENDPOINT } from "@/lib/video/bunnyYukleme";
+import { talepBilgisiVideo } from "@/lib/utils/talepZinciri";
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,19 +56,15 @@ export async function POST(request: NextRequest) {
     }
 
     // 3) Ad üretimi — kütüphane düzeni sisteme aittir: ürün adı + versiyon no.
-    const { data: detay } = await adminSupabase
-      .from("v_uretim_detay")
-      .select("urun_adi")
-      .eq("senaryo_durum_id", video.senaryo_durum_id)
-      .limit(1)
-      .maybeSingle();
+    // Ürün adı talepten gelir (talep_id doğrudan bağ — Adım 5; v_uretim_detay kalktı).
+    const talepBilgisi = await talepBilgisiVideo(adminSupabase, video_id);
 
     const { count } = await adminSupabase
       .from("videolar")
       .select("video_id", { count: "exact", head: true })
       .eq("senaryo_durum_id", video.senaryo_durum_id);
 
-    const baslik = `${detay?.urun_adi ?? "video"}_v${count ?? 1}`;
+    const baslik = `${talepBilgisi?.urun_adi ?? "video"}_v${count ?? 1}`;
 
     // 4) Bunny kaydı + süreli imza
     const kayit = await bunnyYuklemeBaslat(baslik);

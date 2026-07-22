@@ -37,7 +37,7 @@ export async function GET() {
       return rolHatasi("Sadece üretici roller ve IU taleplerine erişebilir.");
     }
 
-    let query = adminSupabase
+    let query = supabase
       .from("talepler")
       .select(`
         talep_id, uretici_id, takim_id, firma_id, aciklama, hazir_video, hazir_video_url, dosya_urls, created_at,
@@ -49,15 +49,13 @@ export async function GET() {
       `)
       .order("created_at", { ascending: false });
 
-    // Talep görünürlük kuralı: üretici sadece kendi açtığı talepleri görür.
-    // IU tüm talepleri görür (talebe cevap vermek için tüm taleplere erişimi gerekir).
-    // İstisna (V1-5, İskender talimatı 21.07): hazır video talepleri İU'nun
-    // Talepler listesinde HİÇ görünmez — İU için işin tek görünümü Soru
-    // Setleri'ndeki kayıttır. V3 (video yok - set var) normal hatta aktığından
-    // süzgeç yalnız hazir_video=true talepleri kapsar.
-    if (yetenek) {
-      query = query.eq("uretici_id", user.id);
-    } else {
+    // Görünürlük RLS'te (Adım 4): üretici yalnız kendi talebini, İU hepsini —
+    // bu yüzden okuma OTURUMLA yapılır, elle uretici_id süzgeci kalktı (Adım 5).
+    // İU istisnası (V1-5, İskender 21.07) İŞ KURALI olarak KALIR: hazır video
+    // talepleri İU'nun Talepler listesinde görünmez (İU için tek görünüm Soru
+    // Setleri kaydıdır). Bu bir görünürlük/sahiplik kuralı değil, liste kuralıdır;
+    // RLS'e girmez, burada durur.
+    if (isIU) {
       query = query.eq("hazir_video", false);
     }
 
