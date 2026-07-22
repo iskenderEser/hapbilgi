@@ -6,6 +6,7 @@ import { bildirimOlustur, gonderenBildirimleriOkunduIsaretle } from "@/lib/utils
 import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { talepBilgisiSenaryo } from "@/lib/utils/talepZinciri";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { senaryoOnayindaVideoAc } from "@/lib/uretim/surec";
 
 // Ç-6: "senaryo yaziliyor" ölü durum — istemciden artık gönderilmiyor,
 // listelerden çıkarıldı. DB'deki tarihî kayıtlara dokunulmaz.
@@ -86,35 +87,19 @@ export async function POST(request: NextRequest) {
     const durumKontrol = veriKontrol(yeniDurum, "senaryo_durumu tablosu INSERT — dönen veri", "Durum kaydedildi ancak veri döndürülemedi.");
     if (!durumKontrol.gecerli) return durumKontrol.yanit;
 
-    // Onaylandi ise videolar tablosuna otomatik kayıt oluştur ve IU'ya video bildirimi gönder
-    if (durum === "onaylandi") {
-      const { data: yeniVideo, error: videoError } = await adminSupabase
-        .from("videolar")
-        .insert({
+    // Onaylandı → süreç modülü sıradaki işi (video kabuğu) doğurur ve İU'ya bildirir.
+    if (durum === "onaylandi" && talepBilgisi?.talep_id) {
+      const sonuc = await senaryoOnayindaVideoAc(adminSupabase, {
+        senaryo_durum_id: yeniDurum.senaryo_durum_id,
+        talep_id: talepBilgisi.talep_id,
+        senaryo_iu_id: senaryo.iu_id,
+        onaylayan_id: user.id,
+        urun_adi,
+      });
+      if (!sonuc.ok) {
+        console.error("[UYARI] Senaryo onaylandı ancak video kabuğu oluşturulamadı:", {
           senaryo_durum_id: yeniDurum.senaryo_durum_id,
-          iu_id: user.id,
-          video_url: "",
-        })
-        .select("video_id")
-        .single();
-
-      if (videoError) {
-        console.error("[UYARI] Senaryo onaylandı ancak video kaydı oluşturulamadı:", {
-          senaryo_durum_id: yeniDurum.senaryo_durum_id,
-          kod: videoError.code,
-          mesaj: videoError.message,
-          hint: videoError.hint,
-        });
-      }
-
-      if (!videoError && yeniVideo?.video_id && senaryo.iu_id) {
-        await bildirimOlustur({
-          adminSupabase,
-          alici_id: senaryo.iu_id,
-          gonderen_id: user.id,
-          kayit_turu: "video",
-          kayit_id: yeniVideo.video_id,
-          mesaj: `Senaryon onaylandı, video yüklemeye hazır: ${urun_adi}`,
+          hata: sonuc.hata,
         });
       }
     }

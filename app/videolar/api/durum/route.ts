@@ -7,6 +7,7 @@ import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { talepBilgisiVideo } from "@/lib/utils/talepZinciri";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { hazirSoruSetiIsle } from "@/lib/hazirVideoSoruSeti/zincir";
+import { videoOnayindaSoruSetiAc } from "@/lib/uretim/surec";
 
 const GECERLI_DURUMLAR = [
   "inceleme bekleniyor",
@@ -117,36 +118,23 @@ export async function POST(request: NextRequest) {
             mesaj: `[SİSTEM] Video onaylandı ancak hazır soru seti işlenemedi (${islenen.hata}). Ürün: ${urun_adi}. Lütfen yönetimle iletişime geçin.`,
           });
         }
-      } else {
-        const { data: yeniSoruSeti, error: soruSetiError } = await adminSupabase
-          .from("soru_setleri")
-          .insert({
-            video_durum_id: yeniDurum.video_durum_id,
-            iu_id: user.id,
-            sorular: [],
-          })
-          .select("soru_seti_id")
-          .single();
-
-        if (soruSetiError) {
+      } else if (talepBilgisi?.talep_id) {
+        // Normal hat → süreç modülü soru seti kabuğunu doğurur ve İU'ya bildirir.
+        const sonuc = await videoOnayindaSoruSetiAc(adminSupabase, {
+          video_durum_id: yeniDurum.video_durum_id,
+          talep_id: talepBilgisi.talep_id,
+          video_iu_id: video.iu_id,
+          onaylayan_id: user.id,
+          urun_adi,
+        });
+        if (!sonuc.ok) {
           await bildirimOlustur({
             adminSupabase,
             alici_id: user.id,
             gonderen_id: user.id,
             kayit_turu: "video",
             kayit_id: video_id,
-            mesaj: `[SİSTEM] Video onaylandı ancak soru seti kaydı otomatik oluşturulamadı. Ürün: ${urun_adi}. Lütfen yönetimle iletişime geçin.`,
-          });
-        }
-
-        if (!soruSetiError && yeniSoruSeti?.soru_seti_id && video.iu_id) {
-          await bildirimOlustur({
-            adminSupabase,
-            alici_id: video.iu_id,
-            gonderen_id: user.id,
-            kayit_turu: "soru_seti",
-            kayit_id: yeniSoruSeti.soru_seti_id,
-            mesaj: `Videon onaylandı, soru seti yazmaya hazır: ${urun_adi}`,
+            mesaj: `[SİSTEM] Video onaylandı ancak soru seti kaydı oluşturulamadı (${sonuc.hata}). Ürün: ${urun_adi}. Lütfen yönetimle iletişime geçin.`,
           });
         }
       }

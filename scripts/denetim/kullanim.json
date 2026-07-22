@@ -741,6 +741,16 @@
       "tablo": "yayin_tekrar_kayitlari"
     },
     {
+      "dosya": "lib/uretim/surec.ts",
+      "satir": 32,
+      "tablo": "videolar"
+    },
+    {
+      "dosya": "lib/uretim/surec.ts",
+      "satir": 73,
+      "tablo": "soru_setleri"
+    },
+    {
       "dosya": "lib/utils/adminGirisKontrol.ts",
       "satir": 33,
       "tablo": "kullanicilar"
@@ -2217,23 +2227,18 @@
     },
     {
       "dosya": "app/senaryolar/api/durum/route.ts",
-      "satir": 43,
+      "satir": 44,
       "tablo": "senaryolar"
     },
     {
       "dosya": "app/senaryolar/api/durum/route.ts",
-      "satir": 64,
+      "satir": 65,
       "tablo": "senaryo_durumu"
     },
     {
       "dosya": "app/senaryolar/api/durum/route.ts",
-      "satir": 74,
+      "satir": 75,
       "tablo": "senaryo_durumu"
-    },
-    {
-      "dosya": "app/senaryolar/api/durum/route.ts",
-      "satir": 91,
-      "tablo": "videolar"
     },
     {
       "dosya": "app/soru-setleri/api/durum/route.ts",
@@ -2347,28 +2352,23 @@
     },
     {
       "dosya": "app/videolar/api/durum/route.ts",
-      "satir": 43,
+      "satir": 44,
       "tablo": "videolar"
     },
     {
       "dosya": "app/videolar/api/durum/route.ts",
-      "satir": 68,
+      "satir": 69,
       "tablo": "video_durumu"
     },
     {
       "dosya": "app/videolar/api/durum/route.ts",
-      "satir": 77,
+      "satir": 78,
       "tablo": "video_durumu"
     },
     {
       "dosya": "app/videolar/api/durum/route.ts",
-      "satir": 100,
+      "satir": 101,
       "tablo": "talepler"
-    },
-    {
-      "dosya": "app/videolar/api/durum/route.ts",
-      "satir": 121,
-      "tablo": "soru_setleri"
     },
     {
       "dosya": "app/yayin-yonetimi/api/bekleyenler/route.ts",
@@ -4304,6 +4304,18 @@
       "tablo": "yayin_tekrar_kayitlari"
     },
     {
+      "dosya": "lib/uretim/surec.ts",
+      "satir": 32,
+      "ham": "video_id",
+      "tablo": "videolar"
+    },
+    {
+      "dosya": "lib/uretim/surec.ts",
+      "satir": 73,
+      "ham": "soru_seti_id",
+      "tablo": "soru_setleri"
+    },
+    {
       "dosya": "lib/utils/adminGirisKontrol.ts",
       "satir": 33,
       "ham": "rol",
@@ -5919,27 +5931,21 @@
     },
     {
       "dosya": "app/senaryolar/api/durum/route.ts",
-      "satir": 43,
+      "satir": 44,
       "ham": "senaryo_id, talep_id, iu_id",
       "tablo": "senaryolar"
     },
     {
       "dosya": "app/senaryolar/api/durum/route.ts",
-      "satir": 64,
+      "satir": 65,
       "ham": "senaryo_durum_id",
       "tablo": "senaryo_durumu"
     },
     {
       "dosya": "app/senaryolar/api/durum/route.ts",
-      "satir": 74,
+      "satir": 75,
       "ham": "senaryo_durum_id, senaryo_id, durum, notlar, created_at",
       "tablo": "senaryo_durumu"
-    },
-    {
-      "dosya": "app/senaryolar/api/durum/route.ts",
-      "satir": 91,
-      "ham": "video_id",
-      "tablo": "videolar"
     },
     {
       "dosya": "app/soru-setleri/api/durum/route.ts",
@@ -6039,33 +6045,27 @@
     },
     {
       "dosya": "app/videolar/api/durum/route.ts",
-      "satir": 43,
+      "satir": 44,
       "ham": "video_id, senaryo_durum_id, video_url, iu_id",
       "tablo": "videolar"
     },
     {
       "dosya": "app/videolar/api/durum/route.ts",
-      "satir": 68,
+      "satir": 69,
       "ham": "video_durum_id",
       "tablo": "video_durumu"
     },
     {
       "dosya": "app/videolar/api/durum/route.ts",
-      "satir": 77,
+      "satir": 78,
       "ham": "video_durum_id, video_id, durum, notlar, created_at",
       "tablo": "video_durumu"
     },
     {
       "dosya": "app/videolar/api/durum/route.ts",
-      "satir": 100,
+      "satir": 101,
       "ham": "hazir_soru_seti, hazir_soru_seti_verisi, soru_seti_buyuklugu, video_basi_soru_sayisi",
       "tablo": "talepler"
-    },
-    {
-      "dosya": "app/videolar/api/durum/route.ts",
-      "satir": 121,
-      "ham": "soru_seti_id",
-      "tablo": "soru_setleri"
     },
     {
       "dosya": "app/yayin-yonetimi/api/bekleyenler/route.ts",
