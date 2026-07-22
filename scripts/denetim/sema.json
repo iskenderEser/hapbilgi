@@ -1,5 +1,5 @@
 {
-  "uretim_tarihi": "2026-07-22T16:36:48.841Z",
+  "uretim_tarihi": "2026-07-22T17:05:55.349Z",
   "tablo_sayisi": 94,
   "rpc_sayisi": 54,
   "tablolar": {
@@ -2091,11 +2091,11 @@
         },
         "video_durum_id": {
           "tip": "uuid",
-          "nullable": false
+          "nullable": true
         },
         "iu_id": {
           "tip": "uuid",
-          "nullable": false
+          "nullable": true
         },
         "sorular": {
           "tip": "jsonb",
@@ -2104,6 +2104,14 @@
         "created_at": {
           "tip": "timestamp with time zone",
           "nullable": true
+        },
+        "talep_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "kaynak": {
+          "tip": "text",
+          "nullable": false
         }
       }
     },
@@ -3610,11 +3618,11 @@
         },
         "senaryo_durum_id": {
           "tip": "uuid",
-          "nullable": false
+          "nullable": true
         },
         "iu_id": {
           "tip": "uuid",
-          "nullable": false
+          "nullable": true
         },
         "video_url": {
           "tip": "text",
@@ -3627,6 +3635,14 @@
         "created_at": {
           "tip": "timestamp with time zone",
           "nullable": true
+        },
+        "talep_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "kaynak": {
+          "tip": "text",
+          "nullable": false
         }
       }
     },
@@ -4081,12 +4097,12 @@
     ],
     "challenge_kayitlari": [
       {
-        "kaynak_kolon": "gonderen_id",
+        "kaynak_kolon": "alan_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "alan_id",
+        "kaynak_kolon": "gonderen_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
@@ -4476,12 +4492,12 @@
     ],
     "oneri_kayitlari": [
       {
-        "kaynak_kolon": "oneren_id",
+        "kaynak_kolon": "kullanici_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "kullanici_id",
+        "kaynak_kolon": "oneren_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
@@ -4551,6 +4567,11 @@
         "kaynak_kolon": "iu_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
+      },
+      {
+        "kaynak_kolon": "talep_id",
+        "hedef_tablo": "talepler",
+        "hedef_kolon": "talep_id"
       },
       {
         "kaynak_kolon": "video_durum_id",
@@ -4707,6 +4728,11 @@
         "kaynak_kolon": "senaryo_durum_id",
         "hedef_tablo": "senaryo_durumu",
         "hedef_kolon": "senaryo_durum_id"
+      },
+      {
+        "kaynak_kolon": "talep_id",
+        "hedef_tablo": "talepler",
+        "hedef_kolon": "talep_id"
       }
     ],
     "yanlis_cevap_kayitlari": [

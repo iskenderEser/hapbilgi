@@ -122,7 +122,7 @@ Modül, talebin iki seçimini okuyup varyantı kurar:
 Her adım: 1 commit; tsc + `npm run denetim` + `npm run lint:mimari` temiz; ≤1 duman testi (1 mutlu + 1 red); DB yazımı (veri + şema + politika) SQL → İskender, Claude canlıya yazmaz; adım öncesi yapılacaklar listelenir + onay alınır; push yok.
 
 **Adım 1 — Veri temeli (eklemeli, davranış değişmez).**
-DB (SQL → İskender): §3 kolon eklemeleri (nullable), `kaynak` default 'iu', mevcut satırlara `talep_id` backfill (zinciri yürüyerek) + `kaynak='iu'`; `v_yayin_detay` yeniden. **RLS politikalarının SQL'i de burada hazırlanır** (uygulaması Adım 4'te devreye alınır). Kod değişmez.
+DB (SQL → İskender): §3 kolon eklemeleri (nullable), `kaynak` default 'iu', mevcut satırlara `talep_id` backfill (zinciri yürüyerek) + `kaynak='iu'`. RLS politikalarının SQL'i bu adımda değil, **Adım 4'ün hemen öncesinde** hazırlanır (okuma modeli Adım 2–3'te oturur). Kod değişmez.
 Doğrulama: denetim (sema.json yenilenir) + tsc. Çıktı: yeni temel canlı; normal akış etkilenmez.
 
 **Adım 2 — Süreç modülü + normal hat.**
@@ -135,7 +135,7 @@ Doğrulama: hazır video (varyant 2) uçtan uca — İU seti görür ve yazar (1
 *Geçiş notu (bkz. hafıza `gecis-durumu-kontrolu`): Adım 1'de `iu_id` nullable olunca eski hazır modül "sahte senaryolu ama çalışır" ara hale gelebilir; bu yüzden hazır video Adım 3'e kadar denenmez, Adım 3 hem kodu değiştirir hem varsa ara-satırları temizler (temizlik SQL → İskender).*
 
 **Adım 4 — Görünürlük RLS'e iner (tek hukuk).**
-RLS politikaları devreye alınır (Adım 1'de hazırlanan SQL → İskender); okumalar İU'nun kendi oturumuna taşınır; `talepler/api` elle süzgeci ve PM listelerindeki service-role okumaları kalkar; İU soru setleri sayfası RLS'e uygun okur.
+RLS politikaları devreye alınır (Adım 4 öncesinde hazırlanan SQL → İskender); okumalar İU'nun kendi oturumuna taşınır; `talepler/api` elle süzgeci ve PM listelerindeki service-role okumaları kalkar; İU soru setleri sayfası RLS'e uygun okur.
 Doğrulama: dört varyant doğru listede, doğru rolde (1 mutlu + 1 red). Çıktı: tek görünürlük hukuku; zincir/istemci kırılganlığı biter.
 
 **Adım 5 — Eski zincir bağımlılıkları sökülür (temizlik).**
@@ -162,5 +162,6 @@ Temizlik SQL → İskender. İskender uçtan uca: dört varyant + revizyon + red
 
 Her adım tamamlandıkça yapılanlar ve yaşanan sorunlar buraya işlenir.
 
+- **22.07 — Adım 1 yapıldı (veri temeli).** `videolar` ve `soru_setleri`: +`talep_id` (FK talepler, nullable), +`kaynak` (default 'iu', CHECK 'iu'/'hazir'), `senaryo_durum_id`/`video_durum_id`/`iu_id` nullable yapıldı; mevcut satırlara `talep_id` backfill (doğrulama: her iki tabloda talep_null=0). Şema + backfill canlıda (SQL İskender koştu). denetim/tsc/lint temiz; kod değişmedi. RLS taslağı Adım 4 öncesine ertelendi (İskender kararı). Plan §8 Adım 1'den "v_yayin_detay yeniden" ifadesi çıkarıldı (ön-geliştirme ile üretim zaten ayrıldı).
 - **22.07 — Ek ön-geliştirme: v_yayin_detay üretim/tüketim ayrımı.** Üretim refactoring'i Adım 3'te v_yayin_detay'a (yayın-kapılı, ~25 tüketicili merkezî görünüm) dokunmayı gerektiriyordu. Üretimi bu bağdan koparmak için üretime özel `v_uretim_detay` görünümü kuruldu (İskender kararı: seçenek b — talep/ürünlerden, yayına bağlı değil; üretici yayınlanmamış kayıtları da görür). 3 üretim ucu (videolar/api, soru-setleri/api, bunny-yukleme-baslat) v_yayin_detay yerine v_uretim_detay'a çevrildi. v_yayin_detay tüketim için olduğu gibi kaldı. Üçlü doğrulama temiz. Sonuç: üretim v_yayin_detay'dan bağımsız; Adım 3'teki v_yayin_detay değişikliği artık yalnız tüketim işi.
 - **22.07 — Plan oluşturuldu.** İlk refactoring planı kod + DB ile doğrulandı; kök neden düzeltildi (hayalet satır değil, NOT NULL ihlali — §2). Veri temsili Yol 2, görünürlük RLS (c1), `kaynak` yalnız video+set (c2), sahiplik geliştirme borcu olarak ertelendi. İskender onayıyla bu belge yazıldı.
