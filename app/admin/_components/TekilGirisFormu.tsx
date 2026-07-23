@@ -9,6 +9,7 @@
 import { ROLLER, rowStyle, labelStyle, inputStyle, btnBase, RENK_BORDO } from "../_constants";
 import { ROL_ADLARI } from "@/lib/utils/roller";
 import { adSoyadCanliBicimle } from "@/lib/utils/adSoyadBicimle";
+import { telefonBicimle, telefonRakam } from "@/lib/admin/telefonBicim";
 import type { Takim, Bolge } from "../_types";
 
 interface TekilGirisFormuProps {
@@ -72,11 +73,12 @@ export default function TekilGirisFormu(p: TekilGirisFormuProps) {
 
       <div style={rowStyle}>
         <span style={labelStyle}>Telefon</span>
-        {/* Telefon kuralı (İskender talimatı, 21.07): 11 hane, 0 ile başlamaz, ilk hane 5.
-            0 daha YAZILIRKEN engellenir — baştaki 0'lar anında silinir. */}
-        <input type="tel" value={p.tekilTelefon}
-          onChange={(e) => p.setTekilTelefon(e.target.value.replace(/\D/g, "").replace(/^0+/, "").slice(0, 11))}
-          style={inputStyle} required placeholder="5XXXXXXXXXX (11 hane)" maxLength={11} />
+        {/* Telefon kuralı (İskender, 23.07): 10 hane, ilk hane 5 zorunlu (0 dahil
+            başka rakamla başlayamaz), gösterim 3-3-4 "542 000 0000". Kural yazarken
+            uygulanır: ham rakam state'te, ekranda boşluklu; 5-dışı baş anında silinir. */}
+        <input type="tel" value={telefonBicimle(p.tekilTelefon)}
+          onChange={(e) => p.setTekilTelefon(telefonRakam(e.target.value))}
+          style={inputStyle} required placeholder="542 000 0000" maxLength={12} />
       </div>
 
       <div style={rowStyle}>

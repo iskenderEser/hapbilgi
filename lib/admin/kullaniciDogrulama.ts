@@ -51,17 +51,18 @@ export function rolCoz(girdi: string): string {
 }
 
 /**
- * Telefon kuralı (İskender talimatı, 21.07): ayraçlar (boşluk/tire vb.)
- * atıldıktan sonra numara TAM 11 hane olmalı, 0 ile BAŞLAMAMALI ve ilk hane
- * 5 olmalıdır. Hedef biçim 5XXXXXXXXXX — DB'ye bu biçimde yazılır. Tekil ve
+ * Telefon kuralı (İskender, 23.07): ayraçlar (boşluk/tire vb.) atıldıktan sonra
+ * numara TAM 10 hane olmalı ve ilk hane ZORUNLU 5'tir (0 dahil başka hiçbir
+ * rakamla başlayamaz). Hedef biçim 5XXXXXXXXX (10 hane) — DB'ye yalın yazılır;
+ * gösterim 3-3-4 boşluklu "542 000 0000" (lib/admin/telefonBicim.ts). Tekil ve
  * toplu giriş aynı kapıdan geçer.
  */
 export function telefonNormalize(girdi: unknown): { ok: true; telefon: string } | { ok: false; hata: string } {
   const ham = metinAl(girdi);
   if (!ham) return { ok: false, hata: "Telefon zorunludur." };
   const rakamlar = ham.replace(/\D/g, "");
-  if (!/^5\d{10}$/.test(rakamlar)) {
-    return { ok: false, hata: `Geçersiz telefon: "${ham}". Kural: 11 hane, 0 ile başlamaz, ilk hane 5 olmalıdır.` };
+  if (!/^5\d{9}$/.test(rakamlar)) {
+    return { ok: false, hata: `Geçersiz telefon: "${ham}". Kural: 10 hane, 5 ile başlar (0 ile başlayamaz). Örn: 542 000 0000` };
   }
   return { ok: true, telefon: rakamlar };
 }
@@ -237,7 +238,7 @@ function metinAl(deger: unknown): string {
 /**
  * Bir kullanıcı satırını doğrular ve temiz kayda çevirir. Kurallar:
  * - ad/soyad/eposta/telefon/sifre/rol zorunlu; alanlar ≤200; eposta '@' içerir.
- * - telefon telefonNormalize'dan geçer (11 hane, 0 ile başlamaz, ilk hane 5 — oturmayan girdi RED).
+ * - telefon telefonNormalize'dan geçer (10 hane, ilk hane 5 — oturmayan girdi RED).
  * - rol TUM_ROLLER'da olmalı (B-18 — geçersiz rol yapısal olarak giremez).
  * - Üretici roller: takım zorunluluğu yetenek profilinden (takimZorunlu).
  * - TM: takım zorunlu. BM/UTT/KD_UTT: bölge zorunlu, takım bölgeden türetilir.
