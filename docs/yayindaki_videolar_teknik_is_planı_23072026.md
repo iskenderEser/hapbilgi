@@ -133,6 +133,10 @@ Her adım: 1 commit; üçlü doğrulama (tsc + `npm run denetim` + `npm run lint
 
 Her adım tamamlandıkça buraya işlenir.
 
+- **23.07 — Adım 6 yapıldı (erişim/güvenlik teyidi — kod değişikliği yok).** Kod incelemesiyle doğrulandı:
+  - **Erişim:** API ucu `YAYINDAKI_VIDEO_GORENLER` dışını `rolHatasi` ile reddeder; `proxy.ts` bekçisi URL'den gireni kapatır (tüketici/iu → API 403 / sayfa `/ana-sayfa`).
+  - **İzleme modu:** sayfa `VideoOynatici`'yi `tuketici={false}` çağırır. `VideoOynatici`'de `baslat` efekti (`if (!tuketici) return;`) ve `bitir` efekti (`if (!tuketici ...) return;`) erken döner; soru-cevap ve ileri-sarma UI yalnız `tuketici` iken render edilir. Sonuç: yönetici/üretici izlerken **hiçbir izleme/puan/cevap kaydı doğmaz** — `izle/api/baslat|bitir|cevap|sorular|ileri-sarma` bu sayfadan tetiklenmez.
+  - Kod değişikliği gerekmedi; yalnız belge güncellendi. Kalan: Adım 7 (uçtan uca fiziksel test — İskender).
 - **23.07 — Adım 5 yapıldı (kart güncellemesi — ana sayfaya dokunulmadı).** Yeni sayfaya ÖZEL kart bileşeni [`app/yayindaki-videolar/_components/YayindakiVideoBolumu.tsx`](../app/yayindaki-videolar/_components/YayindakiVideoBolumu.tsx) yazıldı (paylaşımlı `VideoBolumu`'ndan ayrı → ana sayfa kartı eskisi gibi puanlı kalır, karar 2).
   - **Kart (mockup ile birebir):** thumbnail (gradient/play deseni), üst satır ürün + teknik; alt satır **★ favori** + **♥ beğeni** (sol) · **yayın tarihi** (sağ); altında **üreten** (kısa rol + ad soyad, `ROL_KISA` haritası; bilinmeyen rol tam adına düşer). Puan rozeti yok.
   - **Bağlama:** [`KlasorGrid`](../app/yayindaki-videolar/_components/KlasorGrid.tsx) artık `VideoBolumu` yerine `YayindakiVideoBolumu` kullanıyor. `VideoBolumu` (ana sayfa) hiç değişmedi.
