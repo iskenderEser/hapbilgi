@@ -16,6 +16,7 @@ import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { HedefRolPill } from "@/components/HedefRolBant";
 import type { HedefRol } from "@/app/talepler/_types";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { talepIdGoster } from "@/lib/utils/talepId";
 
 interface SoruKaydi {
   soru_metni: string;
@@ -109,7 +110,7 @@ export default function OnaylananTaleplerPage() {
       const firmaAdi = talep.firmalar?.firma_adi ?? "";
       liste.push({
         talep_id: talep.talep_id,
-        talep_no_goster: talep.talep_no ? `${firmaAdi}_${talep.talep_no}` : "-",
+        talep_no_goster: talepIdGoster(firmaAdi, talep.talep_no),
         urun_adi: talep.urunler?.urun_adi ?? "-",
         teknik_adi: talep.teknikler?.teknik_adi ?? "-",
         hedef_rol: (talep.hedef_rol ?? "utt") as HedefRol,
