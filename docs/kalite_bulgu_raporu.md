@@ -203,3 +203,7 @@ Her commit tsc + `npm run denetim` + `npm run lint:mimari` üçlüsünden temiz 
 | B-36 | `e0d9b15` | Şifre yalnız boş-değil kontrolüydü; kısa şifre ham İngilizce Auth hatası döndürüyordu → kural kitabına min-6 + Türkçe mesaj; tekli ve toplu aynı kuraldan geçer. |
 
 Kalan işler: B-25 + K-A6 eksik-kabul modeli (M3), yeni bilgi mimarisi (M2), modül sekmeleri (M4), B-27/B-28/B-29/B-30/B-34/B-35/B-37/B-38 (M5).
+
+## 9. Süreç incelemesi bulguları — normal üretim kolu (21.07.2026, İskender talimatıyla kaydedildi)
+
+B-39 | T-K | Kanıt: `app/senaryolar/api/durum/route.ts:95` ve `app/videolar/api/durum/route.ts:125` — senaryo onayında açılan boş video kaydına ve video onayında açılan boş soru seti kaydına `iu_id: user.id` yazılır; `user` o anda onayı veren PM'dir. Alan, İU işi teslim ettiğinde (`app/videolar/api/route.ts:86`, `app/soru-setleri/api/route.ts:100`) İU kimliğiyle üzerine yazılarak düzelir. | Önem: NOT | Önerilen düzeltme: ara evrede `iu_id`'ye PM yazmak yerine NULL bırakmak (hazır kol zinciri `lib/hazirVideoSoruSeti/zincir.ts` zaten `iu_id: null` deseniyle çalışıyor) ya da senaryodaki İU'yu taşımak; "bu işin İU'su kim" sorusu ara evrede yanlış cevap vermesin. Bekleyen: İskender onayı.
