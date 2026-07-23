@@ -81,60 +81,37 @@ async function gonderenTalepBildirimleriOkunduYap(
     const senaryo_idler = (senaryolar ?? []).map((s: any) => s.senaryo_id);
     ilgili_idler.push(...senaryo_idler);
 
-    let senaryo_durum_idler: string[] = [];
-    if (senaryo_idler.length > 0) {
-      const { data: senaryoDurumlari } = await adminSupabase
-        .from("senaryo_durumu")
-        .select("senaryo_durum_id")
-        .in("senaryo_id", senaryo_idler);
-      senaryo_durum_idler = (senaryoDurumlari ?? []).map((s: any) => s.senaryo_durum_id);
-    }
+    // Video id'leri — talebe DOĞRUDAN bağlı (talep_id). Eski senaryo_durum_id zinciri
+    // hazır videoda (senaryosuz) ilk adımda kopuyor, video/soru seti id'leri hiç
+    // toplanamıyor, badge temizlenmiyordu — talep_id yolu hazırda da çalışır.
+    const { data: videolar } = await adminSupabase
+      .from("videolar")
+      .select("video_id")
+      .eq("talep_id", talep_id);
+    ilgili_idler.push(...(videolar ?? []).map((v: any) => v.video_id));
 
-    let video_idler: string[] = [];
-    if (senaryo_durum_idler.length > 0) {
-      const { data: videolar } = await adminSupabase
-        .from("videolar")
-        .select("video_id")
-        .in("senaryo_durum_id", senaryo_durum_idler);
-      video_idler = (videolar ?? []).map((v: any) => v.video_id);
-      ilgili_idler.push(...video_idler);
-    }
+    // Soru seti id'leri — talebe DOĞRUDAN bağlı (talep_id).
+    const { data: soruSetleri } = await adminSupabase
+      .from("soru_setleri")
+      .select("soru_seti_id")
+      .eq("talep_id", talep_id);
+    const soru_seti_idler = (soruSetleri ?? []).map((s: any) => s.soru_seti_id);
+    ilgili_idler.push(...soru_seti_idler);
 
-    let video_durum_idler: string[] = [];
-    if (video_idler.length > 0) {
-      const { data: videoDurumlari } = await adminSupabase
-        .from("video_durumu")
-        .select("video_durum_id")
-        .in("video_id", video_idler);
-      video_durum_idler = (videoDurumlari ?? []).map((v: any) => v.video_durum_id);
-    }
-
-    let soru_seti_idler: string[] = [];
-    if (video_durum_idler.length > 0) {
-      const { data: soruSetleri } = await adminSupabase
-        .from("soru_setleri")
-        .select("soru_seti_id")
-        .in("video_durum_id", video_durum_idler);
-      soru_seti_idler = (soruSetleri ?? []).map((s: any) => s.soru_seti_id);
-      ilgili_idler.push(...soru_seti_idler);
-    }
-
-    let soru_seti_durum_idler: string[] = [];
+    // Yayın id'leri — soru seti durumu üstünden.
     if (soru_seti_idler.length > 0) {
       const { data: soruSetiDurumlari } = await adminSupabase
         .from("soru_seti_durumu")
         .select("soru_seti_durum_id")
         .in("soru_seti_id", soru_seti_idler);
-      soru_seti_durum_idler = (soruSetiDurumlari ?? []).map((s: any) => s.soru_seti_durum_id);
-    }
-
-    if (soru_seti_durum_idler.length > 0) {
-      const { data: yayinlar } = await adminSupabase
-        .from("yayin_yonetimi")
-        .select("yayin_id")
-        .in("soru_seti_durum_id", soru_seti_durum_idler);
-      const yayin_idler = (yayinlar ?? []).map((y: any) => y.yayin_id);
-      ilgili_idler.push(...yayin_idler);
+      const soru_seti_durum_idler = (soruSetiDurumlari ?? []).map((s: any) => s.soru_seti_durum_id);
+      if (soru_seti_durum_idler.length > 0) {
+        const { data: yayinlar } = await adminSupabase
+          .from("yayin_yonetimi")
+          .select("yayin_id")
+          .in("soru_seti_durum_id", soru_seti_durum_idler);
+        ilgili_idler.push(...(yayinlar ?? []).map((y: any) => y.yayin_id));
+      }
     }
 
     if (ilgili_idler.length === 0) return;
