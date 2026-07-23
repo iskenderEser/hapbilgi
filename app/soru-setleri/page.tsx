@@ -9,9 +9,12 @@ import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useOkunmamisIdler } from "@/hooks/useOkunmamisIdler";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
+import { talepIdGoster } from "@/lib/utils/talepId";
 
 interface SoruSetiSatir {
   talep_id: string;
+  talep_no: number;
+  firma_adi: string;
   video_durum_id: string;
   soru_seti_id: string;
   urun_adi: string;
@@ -78,11 +81,11 @@ export default function SoruSetleriListePage() {
     const talepIdler = Array.from(talepMap.keys());
 
     // 3) Talep bilgisi (ürün/teknik adı) talep_id ile toplu çek
-    const talepBilgiMap = new Map<string, { urun_adi: string; teknik_adi: string }>();
+    const talepBilgiMap = new Map<string, { urun_adi: string; teknik_adi: string; talep_no: number; firma_adi: string }>();
     if (talepIdler.length > 0) {
       const { data: talepler, error: tError } = await supabase
         .from("talepler")
-        .select("talep_id, urunler (urun_adi), teknikler (teknik_adi)")
+        .select("talep_id, talep_no, urunler (urun_adi), teknikler (teknik_adi), firmalar (firma_adi)")
         .in("talep_id", talepIdler);
 
       if (tError) {
@@ -95,6 +98,8 @@ export default function SoruSetleriListePage() {
         talepBilgiMap.set(t.talep_id, {
           urun_adi: t.urunler?.urun_adi ?? "-",
           teknik_adi: t.teknikler?.teknik_adi ?? "-",
+          talep_no: t.talep_no ?? 0,
+          firma_adi: t.firmalar?.firma_adi ?? "",
         });
       });
     }
@@ -127,6 +132,8 @@ export default function SoruSetleriListePage() {
 
       return {
         talep_id: ss.talep_id,
+        talep_no: bilgi?.talep_no ?? 0,
+        firma_adi: bilgi?.firma_adi ?? "",
         video_durum_id: ss.video_durum_id,
         soru_seti_id: ss.soru_seti_id,
         urun_adi: bilgi?.urun_adi ?? "-",
@@ -226,6 +233,7 @@ export default function SoruSetleriListePage() {
                     <div key={ss.talep_id} onClick={() => router.push(`/soru-setleri/${ss.video_durum_id}`)}
                       className="px-4 py-3 border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors"
                       style={okunmamis ? { boxShadow: "inset 3px 0 0 0 #bc2d0d" } : undefined}>
+                      <div className="text-xs text-gray-500 mb-1">{talepIdGoster(ss.firma_adi, ss.talep_no)}</div>
                       <div className="flex justify-between items-start mb-1">
                         <div className="flex items-center gap-1.5">
                           {okunmamis && (
@@ -254,7 +262,8 @@ export default function SoruSetleriListePage() {
                 <table className="w-full border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 bg-gray-50">
-                      <th className="text-left px-5 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün</th>
+                      <th className="text-left px-5 py-2.5 text-gray-400 font-medium text-xs uppercase">ID</th>
+                      <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Teknik</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Soru</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase w-44">Son Durum</th>
@@ -270,7 +279,8 @@ export default function SoruSetleriListePage() {
                         <tr key={ss.talep_id} onClick={() => router.push(`/soru-setleri/${ss.video_durum_id}`)}
                           className="border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors duration-100"
                           style={okunmamis ? { boxShadow: "inset 3px 0 0 0 #bc2d0d" } : undefined}>
-                          <td className="px-5 py-3 text-gray-900">
+                          <td className="px-5 py-3 text-gray-500 text-xs whitespace-nowrap">{talepIdGoster(ss.firma_adi, ss.talep_no)}</td>
+                          <td className="px-3 py-3 text-gray-900">
                             <div className="flex items-center gap-1.5">
                               {okunmamis && (
                                 <span className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#bc2d0d" }} />
