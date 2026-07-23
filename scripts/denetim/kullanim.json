@@ -831,6 +831,26 @@
       "tablo": "takimlar"
     },
     {
+      "dosya": "lib/video/yayindakiVideolar.ts",
+      "satir": 26,
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "lib/video/yayindakiVideolar.ts",
+      "satir": 33,
+      "tablo": "v_yayin_detay"
+    },
+    {
+      "dosya": "lib/video/yayindakiVideolar.ts",
+      "satir": 40,
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "lib/video/yayindakiVideolar.ts",
+      "satir": 58,
+      "tablo": "kullanicilar"
+    },
+    {
       "dosya": "app/hbligi/page.tsx",
       "satir": 99,
       "tablo": "kullanicilar"
@@ -4332,6 +4352,36 @@
       "satir": 57,
       "ham": "takim_id",
       "tablo": "takimlar"
+    },
+    {
+      "dosya": "lib/video/yayindakiVideolar.ts",
+      "satir": 26,
+      "ham": "takim_id, firma_id",
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "lib/video/yayindakiVideolar.ts",
+      "satir": 33,
+      "ham": "yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, icerik_turu, takim_id, uretici_id",
+      "tablo": "v_yayin_detay"
+    },
+    {
+      "dosya": "lib/video/yayindakiVideolar.ts",
+      "satir": 40,
+      "ham": "takim_id",
+      "tablo": "takimlar"
+    },
+    {
+      "dosya": "lib/video/yayindakiVideolar.ts",
+      "satir": 58,
+      "ham": "kullanici_id, ad, soyad, rol",
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "lib/video/yayindakiVideolar.ts",
+      "satir": 68,
+      "ham": "yayin_id",
+      "tablo": null
     },
     {
       "dosya": "app/hbligi/page.tsx",

@@ -133,6 +133,13 @@ Her adım: 1 commit; üçlü doğrulama (tsc + `npm run denetim` + `npm run lint
 
 Her adım tamamlandıkça buraya işlenir.
 
+- **23.07 — Adım 3 yapıldı (veri katmanı: üreten + favori/beğeni, tüm türler, İK dahil).** Yeni veri fonksiyonu [`lib/video/yayindakiVideolar.ts`](../lib/video/yayindakiVideolar.ts) → `getYayindakiVideolar` (mevcut `getAnaSayfaVideolari` bozulmadı, ana sayfada kalıyor).
+  - **Görünürlük (yeni sayfaya özel):** `v_yayin_detay`, `durum='yayinda'`; **tür süzgeci YOK** (ana sayfadaki "kendi türünü görme" dışlaması uygulanmaz → yayındaki her tür görünür, İK dahil). **Konum kapsamı korundu:** `kapsamGenisMi` → geniş rol firma takımları, dar rol (tm/bm/İK) yalnız kendi takımı; başka firma sızmaz.
+  - **Üreten:** `v_yayin_detay.uretici_id` → `kullanicilar(ad, soyad, rol)` **tek toplu sorgu** (N+1 yok) → `ureten_ad_soyad`, `ureten_rol` (Adım 4'te departman klasörüne eşlenecek).
+  - **Favori/beğeni:** `video_favoriler` / `video_begeniler` (ikisi de `yayin_id` anahtarlı) ilgili yayınlar için toplu çekilip JS'te sayıldı → `favori_sayisi`, `begeni_sayisi`. **DB yazımı yok** (açık karar 3: view yerine kod).
+  - **Tip:** `YayindakiVideo = AnaSayfaVideo + ureten_ad_soyad + ureten_rol + favori_sayisi + begeni_sayisi`. API ([`.../api/route.ts`](../app/yayindaki-videolar/api/route.ts)) bu fonksiyona geçti; sayfa `videolar` tipi `YayindakiVideo[]` (kart Adım 5'te kullanacak).
+  - Doğrulama: tsc/denetim/lint temiz (denetim yeni sorguların kolonlarını şemayla doğruladı). Sayaçların doğru değeri gerçek veriyle İskender'in fiziksel testinde (yeni alanlar ekranda Adım 5'te görünür).
+  - Not: dar kapsamlı roller (tm/bm/İK) yalnız kendi takımını görür — İK'nın takımı yoksa liste boş olabilir; gerekirse konum kuralı ayrı ele alınır.
 - **23.07 — Adım 2 yapıldı (sayfa iskeleti + rota + navbar pill + rol bekçisi).** Gezilebilir kabuk kuruldu; mevcut bileşenler yeniden kullanıldı, yeni tasarım yok.
   - **Sayfa:** [`app/yayindaki-videolar/page.tsx`](../app/yayindaki-videolar/page.tsx) — `Navbar` + "Yayındaki videolar" başlığı + "izleme modu" rozeti; `aktifVideo` yoksa `VideoBolumu` (düz liste, `baslik=""`), varsa `VideoOynatici` (`tuketici={false}` → puan/soru yok). Rol bekçisi sayfada da tekrar (`YAYINDAKI_VIDEO_GORENLER` değilse `/ana-sayfa`'ya).
   - **API:** [`app/yayindaki-videolar/api/route.ts`](../app/yayindaki-videolar/api/route.ts) — auth + `YAYINDAKI_VIDEO_GORENLER` kontrolü + `getAnaSayfaVideolari` (Adım 2'de mevcut haliyle; üreten/favori/beğeni Adım 3'te).

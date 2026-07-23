@@ -14,6 +14,7 @@ import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import VideoBolumu from "@/components/ana-sayfa/VideoBolumu";
 import VideoOynatici from "@/components/izle/VideoOynatici";
 import { AnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
+import { YayindakiVideo } from "@/lib/video/yayindakiVideolar";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { YAYINDAKI_VIDEO_GORENLER } from "@/lib/utils/roller";
 
@@ -21,7 +22,7 @@ export default function YayindakiVideolarPage() {
   const router = useRouter();
   const { kullanici, yukleniyor, cikisYap } = useAuth();
   const { mesajlar, hata } = useHataMesaji();
-  const [videolar, setVideolar] = useState<AnaSayfaVideo[]>([]);
+  const [videolar, setVideolar] = useState<YayindakiVideo[]>([]);
   const [aktifVideo, setAktifVideo] = useState<AnaSayfaVideo | null>(null);
   const [loading, setLoading] = useState(true);
 
