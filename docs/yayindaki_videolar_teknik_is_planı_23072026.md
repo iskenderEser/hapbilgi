@@ -133,6 +133,11 @@ Her adım: 1 commit; üçlü doğrulama (tsc + `npm run denetim` + `npm run lint
 
 Her adım tamamlandıkça buraya işlenir.
 
+- **23.07 — Adım 4 yapıldı (departman klasörleri).** Videolar üreten rolüne göre departmana gruplanıp klasör olarak gösteriliyor.
+  - **Eşleme (tek yer):** [`lib/video/departman.ts`](../lib/video/departman.ts) — `departmanKey(rol)`: `ik_*`→ik, `egt_*`→egitim, `med_md`→medikal, gerisi→urun. `DEPARTMAN_SIRA` = urun > medikal > egitim > ik. `DEPARTMAN_ETIKET` default: Ürün Müdürlüğü / Medikal Müdürlük / Eğitim Müdürlüğü / İK Müdürlüğü. Firma-özel adlandırma (Müdürlük/Direktörlük) ileride bu haritaya override katmanıyla bağlanacak — `firmalar` tablosunda alan yok, ayrı DB/tur işi (kod yorumunda not düşüldü).
+  - **UI:** [`app/yayindaki-videolar/_components/KlasorGrid.tsx`](../app/yayindaki-videolar/_components/KlasorGrid.tsx) — klasör grid (departman adı + "N video", boş departman gösterilmez) → klasöre tıkla → o departmanın videoları mevcut `VideoBolumu` ile → "← Klasörler" geri. Seçili departman KlasorGrid iç state'inde; video seçimi `onVideoSec` ile sayfaya (tam sayfa `VideoOynatici`).
+  - **Sayfa:** düz `VideoBolumu` yerine `KlasorGrid` bağlandı ([`page.tsx`](../app/yayindaki-videolar/page.tsx)).
+  - Doğrulama: tsc/denetim/lint temiz. Klasör→kart→oynatıcı akışı + boş departman gizleme İskender'in fiziksel testinde.
 - **23.07 — Adım 3 yapıldı (veri katmanı: üreten + favori/beğeni, tüm türler, İK dahil).** Yeni veri fonksiyonu [`lib/video/yayindakiVideolar.ts`](../lib/video/yayindakiVideolar.ts) → `getYayindakiVideolar` (mevcut `getAnaSayfaVideolari` bozulmadı, ana sayfada kalıyor).
   - **Görünürlük (yeni sayfaya özel):** `v_yayin_detay`, `durum='yayinda'`; **tür süzgeci YOK** (ana sayfadaki "kendi türünü görme" dışlaması uygulanmaz → yayındaki her tür görünür, İK dahil). **Konum kapsamı korundu:** `kapsamGenisMi` → geniş rol firma takımları, dar rol (tm/bm/İK) yalnız kendi takımı; başka firma sızmaz.
   - **Üreten:** `v_yayin_detay.uretici_id` → `kullanicilar(ad, soyad, rol)` **tek toplu sorgu** (N+1 yok) → `ureten_ad_soyad`, `ureten_rol` (Adım 4'te departman klasörüne eşlenecek).

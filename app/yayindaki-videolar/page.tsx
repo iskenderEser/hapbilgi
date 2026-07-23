@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
-import VideoBolumu from "@/components/ana-sayfa/VideoBolumu";
+import KlasorGrid from "./_components/KlasorGrid";
 import VideoOynatici from "@/components/izle/VideoOynatici";
 import { AnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 import { YayindakiVideo } from "@/lib/video/yayindakiVideolar";
@@ -90,7 +90,7 @@ export default function YayindakiVideolarPage() {
           ) : videolar.length === 0 ? (
             <div className="text-sm text-gray-500 py-16 text-center">Görüntülenecek yayında video yok.</div>
           ) : (
-            <VideoBolumu videolar={videolar} onVideoSec={setAktifVideo} baslik="" />
+            <KlasorGrid videolar={videolar} onVideoSec={setAktifVideo} />
           )}
         </div>
       )}
