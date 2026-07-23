@@ -33,17 +33,13 @@ interface SoruSeti {
 interface VideoDurumJoin {
   video_id: string;
   videolar: {
-    senaryo_durumu: {
-      senaryolar: {
-        talepler: {
-          uretici_id: string | null;
-          soru_seti_buyuklugu: number;
-          video_basi_soru_sayisi: number;
-          hedef_rol: HedefRol;
-          urunler: { urun_adi: string } | null;
-          teknikler: { teknik_adi: string } | null;
-        } | null;
-      } | null;
+    talepler: {
+      uretici_id: string | null;
+      soru_seti_buyuklugu: number;
+      video_basi_soru_sayisi: number;
+      hedef_rol: HedefRol;
+      urunler: { urun_adi: string } | null;
+      teknikler: { teknik_adi: string } | null;
     } | null;
   } | null;
 }
@@ -89,22 +85,22 @@ export default function SoruSetiAkisPage() {
   };
 
   const fetchUrunBilgileri = useCallback(async (supabase: any, video_durum_id: string) => {
+    // Talebe video_durumu → videolar → talepler yoluyla, talep_id üstünden ulaşılır
+    // (Adım 5 sonrası video talebe DOĞRUDAN bağlı). Eski senaryo_durumu/senaryolar
+    // zinciri hazır videoda (senaryo_durum_id=null) kırılıp tüm alanları varsayılana
+    // düşürüyordu — talep_id yolu hazırda da çalışır.
     const { data, error } = await supabase
       .from("video_durumu")
       .select(`
         video_id,
         videolar!inner (
-          senaryo_durumu!inner (
-            senaryolar!inner (
-              talepler!inner (
-                uretici_id,
-                soru_seti_buyuklugu,
-                video_basi_soru_sayisi,
-                hedef_rol,
-                urunler (urun_adi),
-                teknikler (teknik_adi)
-              )
-            )
+          talepler!inner (
+            uretici_id,
+            soru_seti_buyuklugu,
+            video_basi_soru_sayisi,
+            hedef_rol,
+            urunler (urun_adi),
+            teknikler (teknik_adi)
           )
         )
       `)
@@ -112,9 +108,9 @@ export default function SoruSetiAkisPage() {
       .single();
 
     if (error || !data) return;
-    
+
     const typedData = data as unknown as VideoDurumJoin;
-    const talep = typedData.videolar?.senaryo_durumu?.senaryolar?.talepler;
+    const talep = typedData.videolar?.talepler;
     setUrunAdi(talep?.urunler?.urun_adi ?? "-");
     setTeknikAdi(talep?.teknikler?.teknik_adi ?? "-");
     setSoruSetiBuyuklugu(talep?.soru_seti_buyuklugu ?? 25);
