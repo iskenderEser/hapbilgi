@@ -2,7 +2,7 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { URETICI_ROLLER, CCLIGI_GORENLERLER, STORE_ALABILEN_ROLLER, STORE_GENEL_GOREN_ROLLER, URETIM_HATTI_GORENLER, ECLUB_GOREN_ROLLER, ECLUB_LIGI_GOREN_ROLLER, ECLUB_STORE_RAPOR_GOREN_ROLLER } from "@/lib/utils/roller";
+import { URETICI_ROLLER, CCLIGI_GORENLERLER, STORE_ALABILEN_ROLLER, STORE_GENEL_GOREN_ROLLER, URETIM_HATTI_GORENLER, ECLUB_GOREN_ROLLER, ECLUB_LIGI_GOREN_ROLLER, ECLUB_STORE_RAPOR_GOREN_ROLLER, YAYINDAKI_VIDEO_GORENLER } from "@/lib/utils/roller";
 
 interface NavbarProps {
   email: string;
@@ -211,6 +211,12 @@ export default function Navbar({ email, rol, adSoyad, kimlikTuru, onCikis }: Nav
             />
             <div className="hidden md:flex items-center gap-1.5 flex-wrap">
               <button onClick={() => router.push("/ana-sayfa")} onMouseEnter={() => setHover("ana-sayfa")} onMouseLeave={() => setHover(null)} className={pillClass("ana-sayfa", "/ana-sayfa")} style={pillStyle("ana-sayfa", "/ana-sayfa")}>Ana Sayfa</button>
+
+              {YAYINDAKI_VIDEO_GORENLER.includes(rolKucu) && (
+                <button onClick={() => router.push("/yayindaki-videolar")} onMouseEnter={() => setHover("yayindaki-videolar")} onMouseLeave={() => setHover(null)} className={pillClass("yayindaki-videolar", "/yayindaki-videolar")} style={pillStyle("yayindaki-videolar", "/yayindaki-videolar")}>
+                  Yayındaki Videolar
+                </button>
+              )}
 
               {uretimHattiGorur && (
                 <>

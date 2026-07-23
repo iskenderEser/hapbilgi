@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
-import { ADMIN_ROLLER, ECLUB_TUKETICI_ROLLERI, MUSTERI_ROLU, TUKETICI_ROLLER } from "@/lib/utils/roller";
+import { ADMIN_ROLLER, ECLUB_TUKETICI_ROLLERI, MUSTERI_ROLU, TUKETICI_ROLLER, YAYINDAKI_VIDEO_GORENLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function proxy(request: NextRequest) {
@@ -124,6 +124,31 @@ export async function proxy(request: NextRequest) {
       }
     }
     // cc_aktif = true veya firma yok → geç (akış aşağıda sürer)
+  }
+  // -------------------------------------------------------------------------
+
+  // --- Yayındaki Videolar bekçisi ------------------------------------------
+  // /yayindaki-videolar (sayfa + api) yalnız YAYINDAKI_VIDEO_GORENLER rollerine
+  // açıktır (üretici + yönetici + tm/bm; iu ve tüketici roller hariç). Pill gizli
+  // olsa da URL'den doğrudan giriş burada kapanır. Sorgu YALNIZCA bu yolda çalışır.
+  if (pathname.startsWith("/yayindaki-videolar")) {
+    const yvApiYolu = pathname.includes("/api/") || pathname.endsWith("/api");
+
+    if (!user) {
+      if (yvApiYolu) return NextResponse.json({ error: "Oturum açmanız gerekiyor." }, { status: 401 });
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    const yvSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const yvRol = await rolCozucu(yvSupabase, user.id);
+
+    if (!YAYINDAKI_VIDEO_GORENLER.includes(yvRol)) {
+      if (yvApiYolu) return NextResponse.json({ error: "Bu sayfaya erişim yetkiniz yok." }, { status: 403 });
+      return NextResponse.redirect(new URL("/ana-sayfa", request.url));
+    }
   }
   // -------------------------------------------------------------------------
 
