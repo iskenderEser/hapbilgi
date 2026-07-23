@@ -11,6 +11,7 @@
 import type { Bekleyen } from "../_types";
 import { VIDEO_PUAN_SECENEKLERI, EXTRA_PUAN_SECENEKLERI } from "../_types";
 import { HedefRolPill } from "@/components/HedefRolBant";
+import { talepIdGoster } from "@/lib/utils/talepId";
 import { Toggle, VideoThumb } from "./Yardimcilar";
 import { SoruListesi } from "./SoruListesi";
 
@@ -69,6 +70,7 @@ export function BekleyenSatir({
       <div className="flex flex-col md:grid md:items-start md:gap-3 p-4 md:p-3.5"
         style={{ gridTemplateColumns: "1fr 120px auto" }}>
         <div className="flex flex-col gap-1 mb-3 md:mb-0 min-w-0">
+          <span className="text-xs text-gray-500">{talepIdGoster(b.firma_adi, b.talep_no)}</span>
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-semibold text-gray-900 truncate">{b.urun_adi}</span>
             <HedefRolPill hedefRol={b.hedef_rol} />

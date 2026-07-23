@@ -94,7 +94,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     // Yayınlar: tüm yayınları çekip client-side hedef_rol'e göre filtrele
     const { data: yayinlarData, error: yayinError } = await supabase
       .from("v_yayin_detay")
-      .select("yayin_id, soru_seti_durum_id, durum, yayin_tarihi, durdurma_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, sorular, hedef_rol")
+      .select("yayin_id, soru_seti_durum_id, durum, yayin_tarihi, durdurma_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, sorular, hedef_rol, talep_no, firma_adi")
       .order("yayin_tarihi", { ascending: false });
 
     if (yayinError) { hata("Yayınlar yüklenemedi.", "v_yayin_detay view SELECT", yayinError.message); setLoading(false); return; }

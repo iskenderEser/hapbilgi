@@ -12,6 +12,7 @@ import { useState } from "react";
 import type { Yayin } from "../_types";
 import type { HesaplananTur } from "@/lib/tur/kayit";
 import { HedefRolPill } from "@/components/HedefRolBant";
+import { talepIdGoster } from "@/lib/utils/talepId";
 import { Toggle, VideoThumb } from "./Yardimcilar";
 import { SoruListesi } from "./SoruListesi";
 
@@ -55,6 +56,7 @@ export function YayinSatir({
       <div className="flex flex-col md:grid md:items-start md:gap-3 p-4 md:p-3.5"
         style={{ gridTemplateColumns: "1fr 120px 170px auto" }}>
         <div className="flex flex-col gap-1 mb-3 md:mb-0 min-w-0">
+          <span className="text-xs text-gray-500">{talepIdGoster(y.firma_adi, y.talep_no)}</span>
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-semibold text-gray-900 truncate">{y.urun_adi}</span>
             <HedefRolPill hedefRol={y.hedef_rol} />

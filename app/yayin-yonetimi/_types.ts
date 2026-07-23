@@ -20,6 +20,8 @@ export interface Bekleyen {
   video_puan_id: string | null;
   video_puani: number | null;
   soru_puan_map: Record<number, { soru_seti_puan_id: string; soru_puani: number }>;
+  talep_no: number;
+  firma_adi: string;
   urun_adi: string;
   teknik_adi: string;
   hedef_rol: HedefRol;
@@ -35,6 +37,8 @@ export interface Yayin {
   durum: string;
   yayin_tarihi: string;
   durdurma_tarihi: string | null;
+  talep_no: number;
+  firma_adi: string;
   urun_adi: string;
   teknik_adi: string;
   video_url: string | null;

@@ -70,12 +70,14 @@ export async function GET(request: NextRequest) {
               thumbnail_url,
               talepler (
                 talep_id,
+                talep_no,
                 soru_seti_buyuklugu,
                 video_basi_soru_sayisi,
                 egitim_turu,
                 hedef_rol,
                 urunler ( urun_adi ),
-                teknikler ( teknik_adi )
+                teknikler ( teknik_adi ),
+                firmalar ( firma_adi )
               )
             )
           )
@@ -144,6 +146,8 @@ export async function GET(request: NextRequest) {
           video_puan_id: videoPuan?.video_puan_id ?? null,
           video_puani: videoPuan?.video_puani ?? null,
           soru_puan_map: soruPuanlarByDurumId[ss.soru_seti_durum_id] ?? {},
+          talep_no: talep?.talep_no ?? 0,
+          firma_adi: talep?.firmalar?.firma_adi ?? "",
           urun_adi: talep?.urunler?.urun_adi ?? "-",
           teknik_adi: talep?.teknikler?.teknik_adi ?? "-",
           egitim_turu: egitimTuru,

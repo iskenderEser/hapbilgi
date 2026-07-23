@@ -1,7 +1,7 @@
 {
-  "uretim_tarihi": "2026-07-22T17:05:55.349Z",
-  "tablo_sayisi": 94,
-  "rpc_sayisi": 54,
+  "uretim_tarihi": "2026-07-23T20:32:20.203Z",
+  "tablo_sayisi": 93,
+  "rpc_sayisi": 55,
   "tablolar": {
     "analiz_tuketim_degiskenleri": {
       "tur": "BASE TABLE",
@@ -1502,6 +1502,14 @@
         },
         "eczanem_aktif": {
           "tip": "boolean",
+          "nullable": false
+        },
+        "firma_no": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "son_talep_sira": {
+          "tip": "integer",
           "nullable": false
         }
       }
@@ -3378,31 +3386,6 @@
         }
       }
     },
-    "v_uretim_detay": {
-      "tur": "VIEW",
-      "kolonlar": {
-        "talep_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "uretici_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "urun_adi": {
-          "tip": "text",
-          "nullable": true
-        },
-        "senaryo_durum_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "video_durum_id": {
-          "tip": "uuid",
-          "nullable": true
-        }
-      }
-    },
     "v_video_son_durum": {
       "tur": "VIEW",
       "kolonlar": {
@@ -3513,6 +3496,14 @@
         },
         "hedef_rol": {
           "tip": "text",
+          "nullable": true
+        },
+        "talep_no": {
+          "tip": "integer",
+          "nullable": true
+        },
+        "firma_adi": {
+          "tip": "character varying",
           "nullable": true
         }
       }
@@ -3782,6 +3773,10 @@
     "eczanem_siparis_onayla": {
       "argumanlar": "p_siparis_id uuid",
       "donus": "TABLE(ok boolean, hata text, islem_kodu text, indirim_tl numeric, kullanilan_puan integer)"
+    },
+    "firma_no_ata": {
+      "argumanlar": "",
+      "donus": "trigger"
     },
     "get_analiz_bm_kapsam": {
       "argumanlar": "p_kullanici_id uuid",
