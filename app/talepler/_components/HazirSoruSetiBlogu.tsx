@@ -1,10 +1,10 @@
 // app/talepler/_components/HazirSoruSetiBlogu.tsx
 //
 // "Hazır soru setim var" seçiliyken görünen blok (Y-2 — yapısal giriş):
-//   - Toplu içe aktarma paneli (yapıştır → esnek parse formu doldurur)
+//   - Dosya yükleme (SoruIceAktar — Word/Excel/PPT/PDF/metin okuyup formu doldurur)
 //   - Yapısal soru kartları (SoruSetiFormu — soru + A/B + doğru işareti)
-// Serbest metin formatı ve önizleme kapısı kalktı; doğrulama alan bazlıdır
-// ve gönderimde useTalepFormu.validateForm'da (taslaklariDogrula) çalışır.
+// F-8/F-9: bayat yapıştır text alanı kaldırıldı (IU sayfasıyla aynı). Doğrulama alan
+// bazlıdır ve gönderimde useTalepFormu.validateForm'da (taslaklariDogrula) çalışır.
 // Parent koşullu render eder (hazirSoruSeti === true).
 
 "use client";
