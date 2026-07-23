@@ -30,7 +30,7 @@ import TakimBolgeFormu from "./_components/TakimBolgeFormu";
 import UrunTeknikYonetimi from "./_components/UrunTeknikYonetimi";
 import KullaniciListesi from "./_components/KullaniciListesi";
 import SistemAyarlari from "./_components/SistemAyarlari";
-import TestVeriSilModal from "./_components/TestVeriSilModal";
+import TalepYayinSilModal from "./_components/TalepYayinSilModal";
 import HbStorePaneli from "./_components/global/HbStorePaneli";
 import EclubStorePaneli from "./_components/global/EclubStorePaneli";
 import EclubYonetimPaneli from "./eclub/_components/EclubYonetimPaneli";
@@ -121,7 +121,7 @@ export default function AdminPanel() {
 
       <HataMesajiContainer mesajlar={admin.mesajlar} />
 
-      <TestVeriSilModal
+      <TalepYayinSilModal
         acik={testSilAcik}
         onKapat={() => setTestSilAcik(false)}
         basari={admin.basari}

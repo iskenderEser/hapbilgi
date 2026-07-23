@@ -1,7 +1,7 @@
 {
-  "uretim_tarihi": "2026-07-23T20:32:20.203Z",
+  "uretim_tarihi": "2026-07-23T23:04:27.031Z",
   "tablo_sayisi": 93,
-  "rpc_sayisi": 55,
+  "rpc_sayisi": 58,
   "tablolar": {
     "analiz_tuketim_degiskenleri": {
       "tur": "BASE TABLE",
@@ -3970,9 +3970,21 @@
       "argumanlar": "",
       "donus": "trigger"
     },
+    "tekil_talep_sil": {
+      "argumanlar": "p_talep_id uuid",
+      "donus": "jsonb"
+    },
+    "toplu_test_sil": {
+      "argumanlar": "",
+      "donus": "jsonb"
+    },
     "yayin_planlananlari_aktive": {
       "argumanlar": "p_yayin_id uuid",
       "donus": "integer"
+    },
+    "yayin_puan_var_mi": {
+      "argumanlar": "p_yayin_id uuid",
+      "donus": "boolean"
     }
   },
   "fk": {

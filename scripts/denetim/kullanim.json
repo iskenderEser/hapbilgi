@@ -1831,6 +1831,31 @@
       "tablo": "sistem_ayarlari"
     },
     {
+      "dosya": "app/admin/api/talep-sil/route.ts",
+      "satir": 29,
+      "tablo": "talepler"
+    },
+    {
+      "dosya": "app/admin/api/talep-sil/route.ts",
+      "satir": 38,
+      "tablo": "yayin_yonetimi"
+    },
+    {
+      "dosya": "app/admin/api/talep-sil/route.ts",
+      "satir": 106,
+      "tablo": "talepler"
+    },
+    {
+      "dosya": "app/admin/api/talep-sil/route.ts",
+      "satir": 119,
+      "tablo": "yayin_yonetimi"
+    },
+    {
+      "dosya": "app/admin/api/talep-sil/route.ts",
+      "satir": 128,
+      "tablo": "yayin_yonetimi"
+    },
+    {
       "dosya": "app/challenge-club/api/uygun-aliciler/route.ts",
       "satir": 47,
       "tablo": "kullanicilar"
@@ -5488,16 +5513,28 @@
       "tablo": "sistem_ayarlari"
     },
     {
-      "dosya": "app/admin/api/test-verileri-sil/route.ts",
-      "satir": 116,
-      "ham": "urun_id, adet",
-      "tablo": null
+      "dosya": "app/admin/api/talep-sil/route.ts",
+      "satir": 29,
+      "ham": "talep_id, talep_no, firmalar ( firma_adi ), urunler ( urun_adi ), teknikler ( teknik_adi )",
+      "tablo": "talepler"
     },
     {
-      "dosya": "app/admin/api/test-verileri-sil/route.ts",
-      "satir": 129,
-      "ham": "stok",
-      "tablo": null
+      "dosya": "app/admin/api/talep-sil/route.ts",
+      "satir": 38,
+      "ham": "yayin_id, durum, soru_seti_durumu!inner ( soru_setleri!inner ( talep_id ) )",
+      "tablo": "yayin_yonetimi"
+    },
+    {
+      "dosya": "app/admin/api/talep-sil/route.ts",
+      "satir": 106,
+      "ham": "talep_id",
+      "tablo": "talepler"
+    },
+    {
+      "dosya": "app/admin/api/talep-sil/route.ts",
+      "satir": 119,
+      "ham": "yayin_id, durum, soru_seti_durumu!inner ( soru_setleri!inner ( talep_id ) )",
+      "tablo": "yayin_yonetimi"
     },
     {
       "dosya": "app/challenge-club/api/uygun-aliciler/route.ts",
@@ -7556,6 +7593,21 @@
       "dosya": "app/oneriler/api/route.ts",
       "satir": 26,
       "fonksiyon": "get_oneri_listesi"
+    },
+    {
+      "dosya": "app/admin/api/talep-sil/route.ts",
+      "satir": 45,
+      "fonksiyon": "yayin_puan_var_mi"
+    },
+    {
+      "dosya": "app/admin/api/talep-sil/route.ts",
+      "satir": 113,
+      "fonksiyon": "tekil_talep_sil"
+    },
+    {
+      "dosya": "app/admin/api/test-verileri-sil/route.ts",
+      "satir": 23,
+      "fonksiyon": "toplu_test_sil"
     },
     {
       "dosya": "app/raporlar/api/bm/route.ts",

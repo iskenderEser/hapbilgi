@@ -84,7 +84,7 @@ export default function AdminUstBar(p: AdminUstBarProps) {
             marginLeft: "8px",
           }}
         >
-          Test Verilerini Sil
+          Talep/Yayın Silme
         </button>
 
         <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.85)", marginLeft: "8px" }}>

@@ -1,150 +1,18 @@
 // app/admin/api/test-verileri-sil/route.ts
 //
 // Test ortamında üretim/izleme/etkileşim kayıtlarını topluca siler.
-// Kapsam (12.07.2026 genişletmesi — kalite kontrol sonrası): iç müşteri +
-// Challenge Club + E-Club + Eczanem + HBStore işlem kayıtları.
+// (24.07.2026) Silme mantığı ve stok iadesi atomik RPC'ye taşındı:
+// public.toplu_test_sil() — scripts/sql/toplu_test_sil.sql. Bu route artık
+// ince sarmalayıcıdır: admin kontrolü → RPC → sonuç.
 //
-// Yapısal ve KİMLİK verisi korunur: firmalar, takimlar, bolgeler,
-// kullanicilar, urunler, teknikler, kategoriler, silinmis_kullanicilar,
-// eclub_kisiler, eclub_eczaneler (+master/firma/kisi_eczane bağları),
-// eclub_takim_adlari, eczanem_musteriler, eczanem_uyelikler,
-// eczanem_urun_tarifeleri, store/eclub-store ürün-kategori katalogları,
-// sistem_ayarlari, analiz_* yapılandırması. Kimlik tabloları bilinçli
-// korunur: satırları silinirse bağlı auth kullanıcıları sahipsiz kalır
-// (denetim:tutarlilik td10 ihlali — B-15 emsali).
-//
-// STOK İADESİ: siparişler silinmeden önce, iptal edilmemiş siparişlerin
-// düşürdüğü stok ürünlere geri eklenir (iptal akışı stoğu zaten iade
-// ettiğinden 'iptal' durumundakiler hariç). Eczanem'de stok kavramı yoktur.
-//
-// Silme sırası FK ilişkilerine göre (information_schema'dan doğrulanarak)
-// çocuk → ebeveyn olacak şekilde dizilmiştir. hb_ligi bir VIEW olduğu için
-// listede yoktur (silinemez; kendi verisi yoktur).
-//
-// "Tüm satırları sil" için created_at >= epoch filtresi kullanılır; created_at
-// kolonu OLMAYAN tablolar OZEL_FILTRE_KOLONU'nda birincil anahtarla silinir
-// (F-02: eczanem_izleme_kayitlari'nda created_at yok — "column does not exist"
-// tablo boşken bile silmeyi patlatıyordu).
-//
-// Hata yönetimi: bir tablonun silinmesi başarısız olursa kalan tablolar
-// denemeye devam eder; sonuç yanıtında her tablonun durumu listelenir.
+// Kural değişikliği: PUANLI yayınlar ve bağlıları (üretim zinciri + tüketici
+// kayıtları) KORUNUR; puansız her şey ve yayına bağlı olmayan ticaret/auth
+// kayıtları silinir. Yapısal/kimlik tabloları RPC içinde bilinçli korunur.
 
 import { NextResponse } from "next/server";
-import { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/server";
-import { sunucuHatasi } from "@/lib/utils/hataIsle";
+import { sunucuHatasi, hataYaniti } from "@/lib/utils/hataIsle";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
-
-// FK sırasına göre: çocuk kayıtlar önce, ebeveynler sonra.
-// (information_schema FK çıktısından topolojik olarak hesaplandı, 12.07.2026.)
-const SILINECEK_TABLOLAR = [
-  // En derin çocuklar
-  "bildirimler",
-  "cc_ileri_sarma_kayitlari",
-  "cc_kazanilan_puanlar",
-  "cc_yanlis_cevap_kayitlari",
-  "challenge_kayip_kayitlari",
-  "ileri_sarma_kayitlari",
-  "kazanilan_puanlar",
-  "oneri_kayip_kayitlari",
-  "soru_cevaplari",
-  "soru_seti_puanlari",
-  "video_begeniler",
-  "video_favoriler",
-  "video_puanlari",
-  "yanlis_cevap_kayitlari",
-  // E-Club (çocuk → ebeveyn; kisiler/eczaneler KORUNUR)
-  "eclub_store_siparis_firma_puan",
-  "eclub_store_siparisler",
-  "eclub_store_adresler",
-  "eclub_kazanilan_puanlar",
-  "eclub_yanlis_cevap_kayitlari",
-  "eclub_dogru_cevap_kayitlari",
-  "eclub_utt_puanlari",
-  "eclub_oneri_kayip_kayitlari",
-  "eclub_bildirimler",
-  "eclub_izleme_kayitlari",
-  "eclub_oneri_kayitlari",
-  // Eczanem (çocuk → ebeveyn; musteriler/uyelikler/tarifeler KORUNUR)
-  "eczanem_harcama_kayitlari",
-  "eczanem_siparisler",
-  "eczanem_puan_kayitlari",
-  "eczanem_izleme_kayitlari",
-  "eczanem_gonderimler",
-  "eczanem_eczane_gonderimleri",
-  "eczanem_giris_otp",
-  "eczanem_davetler",
-  // HBStore (çocuk → ebeveyn; urunler/kategoriler KORUNUR)
-  "store_puan_harcamalari",
-  "store_siparisler",
-  "store_adresler",
-  // Orta katman
-  "cc_izleme_kayitlari",
-  "izleme_kayitlari",
-  "challenge_kayitlari",
-  "oneri_kayitlari",
-  "yayin_tekrar_kayitlari",
-  "yayin_yonetimi",
-  "soru_seti_durumu",
-  "soru_setleri",
-  "video_durumu",
-  "videolar",
-  "senaryo_durumu",
-  "senaryolar",
-  // En üst ebeveyn (test zincirinin tepesi)
-  "talepler",
-];
-
-// created_at kolonu olmayan tablolar: silme filtresi birincil anahtar üzerinden
-// "is not null" ile kurulur (tüm satırları siler; PK hiçbir satırda null olamaz).
-const OZEL_FILTRE_KOLONU: Record<string, string> = {
-  eczanem_izleme_kayitlari: "izleme_id",
-};
-
-type IslemSonucu = { tablo: string; durum: "ok" | "hata"; detay?: string };
-
-// İptal edilmemiş siparişlerin düşürdüğü stoğu ürünlere geri ekler.
-// Siparişler hemen ardından silineceği için iade hesabı basittir:
-// ürün başına SUM(adet), durum <> 'iptal'.
-async function stokIadeEt(
-  adminSupabase: SupabaseClient,
-  siparisTablosu: "store_siparisler" | "eclub_store_siparisler",
-  urunTablosu: "store_urunler" | "eclub_store_urunler",
-): Promise<IslemSonucu> {
-  const etiket = `${urunTablosu} stok iadesi`;
-
-  const { data: siparisler, error } = await adminSupabase
-    .from(siparisTablosu)
-    .select("urun_id, adet")
-    .neq("durum", "iptal");
-  if (error) return { tablo: etiket, durum: "hata", detay: error.message };
-
-  const toplamlar = new Map<string, number>();
-  for (const s of siparisler ?? []) {
-    toplamlar.set(s.urun_id, (toplamlar.get(s.urun_id) ?? 0) + (s.adet ?? 0));
-  }
-
-  for (const [urunId, adet] of toplamlar) {
-    if (adet <= 0) continue;
-    const { data: urun, error: uError } = await adminSupabase
-      .from(urunTablosu)
-      .select("stok")
-      .eq("urun_id", urunId)
-      .single();
-    if (uError || !urun) {
-      return { tablo: etiket, durum: "hata", detay: `urun_id ${urunId}: ${uError?.message ?? "ürün bulunamadı"}` };
-    }
-    const { error: gError } = await adminSupabase
-      .from(urunTablosu)
-      .update({ stok: (urun.stok ?? 0) + adet })
-      .eq("urun_id", urunId);
-    if (gError) {
-      return { tablo: etiket, durum: "hata", detay: `urun_id ${urunId}: ${gError.message}` };
-    }
-  }
-
-  return { tablo: `${etiket} (${toplamlar.size} ürün)`, durum: "ok" };
-}
 
 export async function POST() {
   try {
@@ -152,36 +20,15 @@ export async function POST() {
     if (!kontrol.gecerli) return kontrol.yanit;
 
     const adminSupabase = createAdminClient();
+    const { data, error } = await adminSupabase.rpc("toplu_test_sil");
+    if (error) return hataYaniti("Toplu silme başarısız.", "toplu_test_sil RPC", error, 500);
 
-    const sonuclar: IslemSonucu[] = [];
-
-    // 1) Stok iadesi — siparişler silinmeden ÖNCE (iki store; Eczanem'de stok yok).
-    sonuclar.push(await stokIadeEt(adminSupabase, "store_siparisler", "store_urunler"));
-    sonuclar.push(await stokIadeEt(adminSupabase, "eclub_store_siparisler", "eclub_store_urunler"));
-
-    // 2) Silme — FK sırasıyla.
-    for (const tablo of SILINECEK_TABLOLAR) {
-      const ozelKolon = OZEL_FILTRE_KOLONU[tablo];
-      const sorgu = adminSupabase.from(tablo).delete();
-      const { error } = ozelKolon
-        ? await sorgu.not(ozelKolon, "is", null)
-        : await sorgu.gte("created_at", "1970-01-01");
-
-      if (error) {
-        sonuclar.push({ tablo, durum: "hata", detay: error.message });
-      } else {
-        sonuclar.push({ tablo, durum: "ok" });
-      }
-    }
-
-    const basarili = sonuclar.filter(s => s.durum === "ok").length;
-    const basarisiz = sonuclar.filter(s => s.durum === "hata").length;
-
+    const korunanYayin = (data as any)?.korunan_yayin ?? 0;
+    const korunanTalep = (data as any)?.korunan_talep ?? 0;
     return NextResponse.json({
-      mesaj: `Test verileri silindi. ${basarili} tablo temizlendi${basarisiz > 0 ? `, ${basarisiz} tabloda hata oluştu` : ""}.`,
-      detay: sonuclar,
+      mesaj: `Test verileri silindi. Puanlı ${korunanYayin} yayın (${korunanTalep} talep) korundu.`,
+      detay: data,
     }, { status: 200 });
-
   } catch (err) {
     return sunucuHatasi(err, "POST /admin/api/test-verileri-sil");
   }
