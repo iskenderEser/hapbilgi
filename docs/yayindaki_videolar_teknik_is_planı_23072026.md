@@ -133,6 +133,11 @@ Her adım: 1 commit; üçlü doğrulama (tsc + `npm run denetim` + `npm run lint
 
 Her adım tamamlandıkça buraya işlenir.
 
+- **23.07 — Adım 5 yapıldı (kart güncellemesi — ana sayfaya dokunulmadı).** Yeni sayfaya ÖZEL kart bileşeni [`app/yayindaki-videolar/_components/YayindakiVideoBolumu.tsx`](../app/yayindaki-videolar/_components/YayindakiVideoBolumu.tsx) yazıldı (paylaşımlı `VideoBolumu`'ndan ayrı → ana sayfa kartı eskisi gibi puanlı kalır, karar 2).
+  - **Kart (mockup ile birebir):** thumbnail (gradient/play deseni), üst satır ürün + teknik; alt satır **★ favori** + **♥ beğeni** (sol) · **yayın tarihi** (sağ); altında **üreten** (kısa rol + ad soyad, `ROL_KISA` haritası; bilinmeyen rol tam adına düşer). Puan rozeti yok.
+  - **Bağlama:** [`KlasorGrid`](../app/yayindaki-videolar/_components/KlasorGrid.tsx) artık `VideoBolumu` yerine `YayindakiVideoBolumu` kullanıyor. `VideoBolumu` (ana sayfa) hiç değişmedi.
+  - Doğrulama: tsc/denetim/lint temiz. Kart görünümü İskender'in fiziksel testinde (favori/beğeni gerçek değerleri + üreten etiketi).
+  - **Durum:** özellik işlevsel olarak tamam (pill → sayfa → klasör → kart → oynatıcı, izleme modu). Kalan: Adım 6 (erişim/güvenlik teyidi) + Adım 7 (uçtan uca fiziksel test).
 - **23.07 — Adım 4 yapıldı (departman klasörleri).** Videolar üreten rolüne göre departmana gruplanıp klasör olarak gösteriliyor.
   - **Eşleme (tek yer):** [`lib/video/departman.ts`](../lib/video/departman.ts) — `departmanKey(rol)`: `ik_*`→ik, `egt_*`→egitim, `med_md`→medikal, gerisi→urun. `DEPARTMAN_SIRA` = urun > medikal > egitim > ik. `DEPARTMAN_ETIKET` default: Ürün Müdürlüğü / Medikal Müdürlük / Eğitim Müdürlüğü / İK Müdürlüğü. Firma-özel adlandırma (Müdürlük/Direktörlük) ileride bu haritaya override katmanıyla bağlanacak — `firmalar` tablosunda alan yok, ayrı DB/tur işi (kod yorumunda not düşüldü).
   - **UI:** [`app/yayindaki-videolar/_components/KlasorGrid.tsx`](../app/yayindaki-videolar/_components/KlasorGrid.tsx) — klasör grid (departman adı + "N video", boş departman gösterilmez) → klasöre tıkla → o departmanın videoları mevcut `VideoBolumu` ile → "← Klasörler" geri. Seçili departman KlasorGrid iç state'inde; video seçimi `onVideoSec` ile sayfaya (tam sayfa `VideoOynatici`).

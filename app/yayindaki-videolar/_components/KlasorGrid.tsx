@@ -8,7 +8,7 @@
 "use client";
 
 import { useState } from "react";
-import VideoBolumu from "@/components/ana-sayfa/VideoBolumu";
+import YayindakiVideoBolumu from "./YayindakiVideoBolumu";
 import type { YayindakiVideo } from "@/lib/video/yayindakiVideolar";
 import type { AnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 import { DEPARTMAN_SIRA, DEPARTMAN_ETIKET, departmanKey, type DepartmanKey } from "@/lib/video/departman";
@@ -43,7 +43,7 @@ export default function KlasorGrid({ videolar, onVideoSec }: Props) {
           <span className="text-sm font-bold text-gray-900">{DEPARTMAN_ETIKET[secili]}</span>
           <span className="text-xs text-gray-500">· {grup.length} video</span>
         </div>
-        <VideoBolumu videolar={grup} onVideoSec={onVideoSec} baslik="" />
+        <YayindakiVideoBolumu videolar={grup} onVideoSec={onVideoSec} />
       </div>
     );
   }
