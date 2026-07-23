@@ -23,26 +23,6 @@ interface SoruSetiSatir {
 
 type FiltreDurum = "inceleme bekleniyor" | "revizyon bekleniyor" | "onaylandi" | "Iptal Edildi";
 
-interface SoruSetiJoin {
-  soru_seti_id: string;
-  video_durum_id: string;
-  sorular: any[] | null;
-  created_at: string;
-  video_durumu: {
-    videolar: {
-      senaryo_durumu: {
-        senaryolar: {
-          talep_id: string;
-          talepler: {
-            urunler: { urun_adi: string } | null;
-            teknikler: { teknik_adi: string } | null;
-          } | null;
-        } | null;
-      } | null;
-    } | null;
-  } | null;
-}
-
 export default function SoruSetleriListePage() {
   const router = useRouter();
   const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
@@ -74,28 +54,11 @@ export default function SoruSetleriListePage() {
     setLoading(true);
     const supabase = createClient();
 
-    // 1) Soru setlerini tüm zincirle çek (en yeniden eskiye)
+    // 1) Soru setlerini talep_id ile çek — zincir yürümek yok, hazır ürünler de gelir.
+    //    Görünürlüğü RLS belirler (İU hepsini, üretici yalnız kendi talebini).
     const { data: soruSetleri, error: ssError } = await supabase
       .from("soru_setleri")
-      .select(`
-        soru_seti_id,
-        video_durum_id,
-        sorular,
-        created_at,
-        video_durumu!inner (
-          videolar!inner (
-            senaryo_durumu!inner (
-              senaryolar!inner (
-                talep_id,
-                talepler!inner (
-                  urunler (urun_adi),
-                  teknikler (teknik_adi)
-                )
-              )
-            )
-          )
-        )
-      `)
+      .select("soru_seti_id, video_durum_id, talep_id, sorular, created_at")
       .order("created_at", { ascending: false });
 
     if (ssError || !soruSetleri) {
@@ -107,16 +70,36 @@ export default function SoruSetleriListePage() {
     // 2) Talep bazlı tekilleştir — her talep için sadece en yeni soru seti
     const talepMap = new Map<string, any>();
     for (const ss of soruSetleri) {
-      const typed = ss as unknown as SoruSetiJoin;
-      const talep_id = typed.video_durumu?.videolar?.senaryo_durumu?.senaryolar?.talep_id;
+      const talep_id = (ss as any).talep_id;
       if (!talep_id) continue;
-      if (!talepMap.has(talep_id)) {
-        talepMap.set(talep_id, { ...ss, _talep_id: talep_id });
-      }
+      if (!talepMap.has(talep_id)) talepMap.set(talep_id, ss);
     }
     const tekilSoruSetleri = Array.from(talepMap.values());
+    const talepIdler = Array.from(talepMap.keys());
 
-    // 3) Son durumları view'dan toplu çek
+    // 3) Talep bilgisi (ürün/teknik adı) talep_id ile toplu çek
+    const talepBilgiMap = new Map<string, { urun_adi: string; teknik_adi: string }>();
+    if (talepIdler.length > 0) {
+      const { data: talepler, error: tError } = await supabase
+        .from("talepler")
+        .select("talep_id, urunler (urun_adi), teknikler (teknik_adi)")
+        .in("talep_id", talepIdler);
+
+      if (tError) {
+        hata("Talep bilgileri yüklenemedi.", "talepler tablosu SELECT", tError.message);
+        setLoading(false);
+        return;
+      }
+
+      talepler?.forEach((t: any) => {
+        talepBilgiMap.set(t.talep_id, {
+          urun_adi: t.urunler?.urun_adi ?? "-",
+          teknik_adi: t.teknikler?.teknik_adi ?? "-",
+        });
+      });
+    }
+
+    // 4) Son durumları view'dan toplu çek
     const soruSetiIds = tekilSoruSetleri.map((ss: any) => ss.soru_seti_id);
     const sonDurumMap = new Map<string, { durum: string; created_at: string }>();
 
@@ -137,18 +120,17 @@ export default function SoruSetleriListePage() {
       });
     }
 
-    // 4) Satırları kur — talep bazlı tek satır
+    // 5) Satırları kur — talep bazlı tek satır
     const sonuc: SoruSetiSatir[] = tekilSoruSetleri.map((ss: any) => {
-      const typed = ss as unknown as SoruSetiJoin;
-      const talep = typed.video_durumu?.videolar?.senaryo_durumu?.senaryolar?.talepler;
+      const bilgi = talepBilgiMap.get(ss.talep_id);
       const sonDurum = sonDurumMap.get(ss.soru_seti_id);
 
       return {
-        talep_id: ss._talep_id,
+        talep_id: ss.talep_id,
         video_durum_id: ss.video_durum_id,
         soru_seti_id: ss.soru_seti_id,
-        urun_adi: talep?.urunler?.urun_adi ?? "-",
-        teknik_adi: talep?.teknikler?.teknik_adi ?? "-",
+        urun_adi: bilgi?.urun_adi ?? "-",
+        teknik_adi: bilgi?.teknik_adi ?? "-",
         soru_sayisi: Array.isArray(ss.sorular) ? ss.sorular.length : 0,
         son_durum: sonDurum?.durum ?? null,
         son_tarih: sonDurum?.created_at ?? ss.created_at,
