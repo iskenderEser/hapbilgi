@@ -9,9 +9,12 @@ import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useOkunmamisIdler } from "@/hooks/useOkunmamisIdler";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
+import { talepIdGoster } from "@/lib/utils/talepId";
 
 interface SenaryoSatir {
   talep_id: string;
+  talep_no: number;
+  firma_adi: string;
   senaryo_id: string;
   urun_adi: string;
   teknik_adi: string;
@@ -26,8 +29,10 @@ interface SenaryoJoin {
   talep_id: string;
   created_at: string;
   talepler: {
+    talep_no: number;
     urunler: { urun_adi: string } | null;
     teknikler: { teknik_adi: string } | null;
+    firmalar: { firma_adi: string } | null;
   } | null;
 }
 
@@ -70,8 +75,10 @@ export default function SenaryolarListePage() {
         talep_id,
         created_at,
         talepler!inner (
+          talep_no,
           urunler (urun_adi),
-          teknikler (teknik_adi)
+          teknikler (teknik_adi),
+          firmalar (firma_adi)
         )
       `)
       .order("created_at", { ascending: false });
@@ -120,6 +127,8 @@ export default function SenaryolarListePage() {
 
       return {
         talep_id: s.talep_id,
+        talep_no: talep?.talep_no ?? 0,
+        firma_adi: talep?.firmalar?.firma_adi ?? "",
         senaryo_id: s.senaryo_id,
         urun_adi: talep?.urunler?.urun_adi ?? "-",
         teknik_adi: talep?.teknikler?.teknik_adi ?? "-",
@@ -221,6 +230,7 @@ export default function SenaryolarListePage() {
                     <div key={s.talep_id} onClick={() => router.push(`/senaryolar/${s.talep_id}`)}
                       className="px-4 py-3 border-b border-gray-50 cursor-pointer"
                       style={okunmamis ? { boxShadow: "inset 3px 0 0 0 #bc2d0d" } : undefined}>
+                      <div className="text-xs text-gray-500 mb-1">{talepIdGoster(s.firma_adi, s.talep_no)}</div>
                       <div className="flex justify-between items-start mb-1">
                         <div className="flex items-center gap-1.5">
                           {okunmamis && (
@@ -246,7 +256,8 @@ export default function SenaryolarListePage() {
                 <table className="w-full border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 bg-gray-50">
-                      <th className="text-left px-5 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün</th>
+                      <th className="text-left px-5 py-2.5 text-gray-400 font-medium text-xs uppercase">ID</th>
+                      <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Teknik</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase w-44">Son Durum</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Tarih</th>
@@ -261,7 +272,8 @@ export default function SenaryolarListePage() {
                         <tr key={s.talep_id} onClick={() => router.push(`/senaryolar/${s.talep_id}`)}
                           className="border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors duration-100"
                           style={okunmamis ? { boxShadow: "inset 3px 0 0 0 #bc2d0d" } : undefined}>
-                          <td className="px-5 py-3 text-gray-900">
+                          <td className="px-5 py-3 text-gray-500 text-xs whitespace-nowrap">{talepIdGoster(s.firma_adi, s.talep_no)}</td>
+                          <td className="px-3 py-3 text-gray-900">
                             <div className="flex items-center gap-1.5">
                               {okunmamis && (
                                 <span className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#bc2d0d" }} />
