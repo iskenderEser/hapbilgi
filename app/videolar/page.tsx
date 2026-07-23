@@ -9,10 +9,13 @@ import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useOkunmamisIdler } from "@/hooks/useOkunmamisIdler";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
+import { talepIdGoster } from "@/lib/utils/talepId";
 
 
 interface VideoSatir {
   talep_id: string;
+  talep_no: number;
+  firma_adi: string;
   senaryo_durum_id: string;
   video_id: string;
   urun_adi: string;
@@ -35,8 +38,10 @@ interface VideoJoin {
     senaryolar: {
       talep_id: string;
       talepler: {
+        talep_no: number;
         urunler: { urun_adi: string } | null;
         teknikler: { teknik_adi: string } | null;
+        firmalar: { firma_adi: string } | null;
       } | null;
     } | null;
   } | null;
@@ -86,8 +91,10 @@ export default function VideolarListePage() {
           senaryolar!inner (
             talep_id,
             talepler!inner (
+              talep_no,
               urunler (urun_adi),
-              teknikler (teknik_adi)
+              teknikler (teknik_adi),
+              firmalar (firma_adi)
             )
           )
         )
@@ -141,6 +148,8 @@ export default function VideolarListePage() {
 
       return {
         talep_id: v._talep_id,
+        talep_no: talep?.talep_no ?? 0,
+        firma_adi: talep?.firmalar?.firma_adi ?? "",
         senaryo_durum_id: v.senaryo_durum_id,
         video_id: v.video_id,
         urun_adi: talep?.urunler?.urun_adi ?? "-",
@@ -241,6 +250,7 @@ export default function VideolarListePage() {
                     <div key={v.talep_id} onClick={() => router.push(`/videolar/${v.senaryo_durum_id}`)}
                       className="px-4 py-3 border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors"
                       style={okunmamis ? { boxShadow: "inset 3px 0 0 0 #bc2d0d" } : undefined}>
+                      <div className="text-xs text-gray-500 mb-1">{talepIdGoster(v.firma_adi, v.talep_no)}</div>
                       <div className="flex justify-between items-start mb-1">
                         <div className="flex items-center gap-1.5">
                           {okunmamis && (
@@ -266,7 +276,8 @@ export default function VideolarListePage() {
                 <table className="w-full border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 bg-gray-50">
-                      <th className="text-left px-5 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün</th>
+                      <th className="text-left px-5 py-2.5 text-gray-400 font-medium text-xs uppercase">ID</th>
+                      <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Teknik</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase w-44">Son Durum</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Tarih</th>
@@ -281,7 +292,8 @@ export default function VideolarListePage() {
                         <tr key={v.talep_id} onClick={() => router.push(`/videolar/${v.senaryo_durum_id}`)}
                           className="border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors duration-100"
                           style={okunmamis ? { boxShadow: "inset 3px 0 0 0 #bc2d0d" } : undefined}>
-                          <td className="px-5 py-3 text-gray-900">
+                          <td className="px-5 py-3 text-gray-500 text-xs whitespace-nowrap">{talepIdGoster(v.firma_adi, v.talep_no)}</td>
+                          <td className="px-3 py-3 text-gray-900">
                             <div className="flex items-center gap-1.5">
                               {okunmamis && (
                                 <span className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#bc2d0d" }} />
