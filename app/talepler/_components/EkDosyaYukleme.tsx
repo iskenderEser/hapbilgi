@@ -17,11 +17,12 @@ import {
 interface EkDosyaYuklemeProps {
   bekleyenler: BekleyenDosya[];
   hazirVideo: boolean; // true ise video formatları kabul edilmez (video VideoYukleme'de)
+  disabled?: boolean; // true ise dosya ekleme kapalı (hazır video + hazır soru seti ikilisinde)
   onSec: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSil: (index: number) => void;
 }
 
-export function EkDosyaYukleme({ bekleyenler, hazirVideo, onSec, onSil }: EkDosyaYuklemeProps) {
+export function EkDosyaYukleme({ bekleyenler, hazirVideo, disabled = false, onSec, onSil }: EkDosyaYuklemeProps) {
   const dosyaInputRef = useRef<HTMLInputElement>(null);
 
   // Dosya seçildikten sonra input'un value'su temizlenir — aynı dosya tekrar seçilebilsin.
@@ -36,7 +37,14 @@ export function EkDosyaYukleme({ bekleyenler, hazirVideo, onSec, onSil }: EkDosy
         Ek Dosyalar <span className="text-gray-400 font-normal">(isteğe bağlı)</span>
       </label>
       <div className="flex items-center gap-2.5 mb-2">
-        <label className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-700 cursor-pointer whitespace-nowrap">
+        <label
+          className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-700 whitespace-nowrap"
+          style={{
+            cursor: disabled ? "not-allowed" : "pointer",
+            opacity: disabled ? 0.5 : 1,
+            pointerEvents: disabled ? "none" : "auto",
+          }}
+        >
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
@@ -48,6 +56,7 @@ export function EkDosyaYukleme({ bekleyenler, hazirVideo, onSec, onSil }: EkDosy
             multiple
             accept={hazirVideo ? EK_DOSYA_FORMATLAR : DESTEKLENEN_FORMATLAR}
             onChange={handleChange}
+            disabled={disabled}
             className="hidden"
           />
         </label>

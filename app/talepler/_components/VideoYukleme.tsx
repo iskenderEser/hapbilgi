@@ -28,10 +28,6 @@ export function VideoYukleme({ bekleyen, onSec, onSil, yuklemeYuzdesi = null }: 
 
   return (
     <div>
-      <label className="text-xs text-gray-500 block mb-1.5">
-        Video Dosyası <span className="font-semibold" style={{ color: "#bc2d0d" }}>*</span>{" "}
-        <span className="text-gray-400 font-normal">(talep oluşturulunca doğrudan Bunny'ye yüklenir)</span>
-      </label>
       <div className="flex items-center gap-2.5 mb-1.5">
         <label
           className="flex items-center gap-1 bg-white border rounded-lg px-3 py-1.5 text-xs font-semibold cursor-pointer whitespace-nowrap"

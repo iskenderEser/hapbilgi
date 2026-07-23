@@ -27,6 +27,8 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
   if (!formu.isUretici || !formu.yetenek) return null;
 
   const formAktif = formu.hedefRol !== null;
+  // Hazır video + hazır soru seti ikilisinde açıklama ve ek dosya girişi kapatılır.
+  const ikiliHazir = formu.hazirVideo && formu.hazirSoruSeti;
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-5">
@@ -135,7 +137,7 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
           {(formu.hazirVideo || formu.hazirSoruSeti) && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800 leading-relaxed">
               {formu.hazirVideo && formu.hazirSoruSeti &&
-                "Hazır video ve soru seti talebi oluşturuyorsunuz. Senaryo aşaması atlanacak — video, talep oluşturulurken doğrudan Bunny'ye yüklenecek; onayınızla birlikte hazır soru seti de sisteme otomatik işlenecektir."}
+                "Hazır video ve soru seti talebi oluşturuyorsunuz. Video ve soru setinizi yükledikten sonra yayın yönetimi aşamasındaki işlemler sonrası yayına açabilirsiniz."}
               {formu.hazirVideo && !formu.hazirSoruSeti &&
                 "Videonuzu yükledikten sonra hazır soru setinizle devam edebilir ya da içerik üreticisinden talep edebilirsiniz."}
               {!formu.hazirVideo && formu.hazirSoruSeti &&
@@ -173,7 +175,8 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
               onChange={(e) => formu.setAciklama(e.target.value)}
               placeholder="Açıklama yazınız"
               rows={4}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white resize-y box-border"
+              disabled={ikiliHazir}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white resize-y box-border disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
               style={{ fontFamily: "'Nunito', sans-serif" }}
             />
           </div>
@@ -199,6 +202,7 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
           <EkDosyaYukleme
             bekleyenler={formu.bekleyenDosyalar}
             hazirVideo={formu.hazirVideo}
+            disabled={ikiliHazir}
             onSec={formu.handleDosyaSec}
             onSil={formu.handleBekleyenDosyaSil}
           />
