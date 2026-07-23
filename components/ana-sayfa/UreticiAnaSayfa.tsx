@@ -8,9 +8,12 @@ import { useHataMesaji } from "@/components/HataMesaji";
 import { HedefRolPill } from "@/components/HedefRolBant";
 import type { HedefRol } from "@/lib/utils/roller";
 import { ROL_ADLARI } from "@/lib/utils/roller";
+import { talepIdGoster } from "@/lib/utils/talepId";
 
 interface TakipSatiri {
   talep_id: string;
+  talep_no: number;
+  firma_adi: string;
   urun_adi: string;
   teknik_adi: string;
   hedef_rol: HedefRol;
@@ -112,7 +115,8 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
   );
   const ornekSatirDesktop = (
     <>
-      <div className="grid gap-3 px-5 py-3 items-center" style={{ gridTemplateColumns: "1.4fr 1.2fr 0.8fr 1.1fr 1.4fr 1fr 20px", opacity: 0.5 }} aria-hidden="true">
+      <div className="grid gap-3 px-5 py-3 items-center" style={{ gridTemplateColumns: "1.3fr 1.4fr 1.2fr 0.8fr 1.1fr 1.4fr 1fr 20px", opacity: 0.5 }} aria-hidden="true">
+        <div className="text-xs text-gray-400 italic truncate">FirmaAdı_10001</div>
         <div className="text-sm font-semibold text-gray-400 italic truncate">Ürün adı</div>
         <div className="text-xs text-gray-400 italic truncate">Teknik adı</div>
         <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block bg-gray-100 text-gray-400">UTT</span></div>
@@ -129,6 +133,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
   const ornekSatirMobil = (
     <>
       <div className="px-4 py-3" style={{ opacity: 0.5 }} aria-hidden="true">
+        <div className="text-xs text-gray-400 italic mb-1">FirmaAdı_10001</div>
         <div className="flex justify-between items-start mb-1.5">
           <div className="text-sm font-bold text-gray-400 italic">Ürün adı</div>
           <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">İnceleme Bekliyor</span>
@@ -218,6 +223,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
                   className="px-4 py-3 cursor-pointer"
                   style={{ borderBottom: i < filtrelenmis.length - 1 ? "1px solid #f3f4f6" : "none" }}
                 >
+                  <div className="text-xs text-gray-500 mb-1">{talepIdGoster(s.firma_adi, s.talep_no)}</div>
                   <div className="flex justify-between items-start mb-1.5">
                     <div className="text-sm font-bold text-gray-900">{s.urun_adi}</div>
                     <span className="text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: durumR.bg, color: durumR.text }}>{s.durum}</span>
@@ -236,8 +242,8 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
 
         {/* Desktop: tablo görünümü */}
         <div className="hidden md:block">
-          <div className="grid gap-3 px-5 py-2.5 bg-gray-50 border-b border-gray-200" style={{ gridTemplateColumns: "1.4fr 1.2fr 0.8fr 1.1fr 1.4fr 1fr 20px" }}>
-            {["ÜRÜN", "TEKNİK", "KİME", "AŞAMA", "DURUM", "TARİH", ""].map((h, i) => (
+          <div className="grid gap-3 px-5 py-2.5 bg-gray-50 border-b border-gray-200" style={{ gridTemplateColumns: "1.3fr 1.4fr 1.2fr 0.8fr 1.1fr 1.4fr 1fr 20px" }}>
+            {["ID", "ÜRÜN", "TEKNİK", "KİME", "AŞAMA", "DURUM", "TARİH", ""].map((h, i) => (
               <div key={i} className="text-xs font-bold text-gray-400 uppercase tracking-wide">{h}</div>
             ))}
           </div>
@@ -253,10 +259,11 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
                   onClick={() => router.push(s.yol)}
                   className="grid gap-3 px-5 py-3 items-center cursor-pointer bg-white hover:bg-gray-50 transition-colors duration-100"
                   style={{
-                    gridTemplateColumns: "1.4fr 1.2fr 0.8fr 1.1fr 1.4fr 1fr 20px",
+                    gridTemplateColumns: "1.3fr 1.4fr 1.2fr 0.8fr 1.1fr 1.4fr 1fr 20px",
                     borderBottom: i < filtrelenmis.length - 1 ? "1px solid #f3f4f6" : "none",
                   }}
                 >
+                  <div className="text-xs text-gray-500 truncate" title={talepIdGoster(s.firma_adi, s.talep_no)}>{talepIdGoster(s.firma_adi, s.talep_no)}</div>
                   <div className="text-sm font-bold text-gray-900 truncate">{s.urun_adi}</div>
                   <div className="text-xs text-gray-500 truncate">{s.teknik_adi}</div>
                   <div><HedefRolPill hedefRol={s.hedef_rol} /></div>
