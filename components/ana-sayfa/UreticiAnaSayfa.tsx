@@ -103,6 +103,48 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
   const istat = pmVeri?.istatistikler ?? { inceleme_bekleyen: 0, yayin_bekleyen: 0, yayinda: 0, toplam: 0 };
   const filtrelenmis = aktifFiltre === "tumu" ? satirlar : satirlar.filter(s => s.kategori === aktifFiltre);
   const ad = adSoyad.split(" ")[0] || "PM";
+  const hicTalepYok = satirlar.length === 0;
+
+  // Boş durum: hiç talep yoksa (üretim başlamadan önce) tabloyu tanıtan soluk örnek
+  // satır + açıklama gösterilir; filtre yüzünden boşsa normal "içerik yok" mesajı kalır.
+  const bosMesaj = (
+    <div className="p-10 text-center text-sm text-gray-400">Bu kategoride içerik bulunmuyor.</div>
+  );
+  const ornekSatirDesktop = (
+    <>
+      <div className="grid gap-3 px-5 py-3 items-center" style={{ gridTemplateColumns: "1.4fr 1.2fr 0.8fr 1.1fr 1.4fr 1fr 20px", opacity: 0.5 }} aria-hidden="true">
+        <div className="text-sm font-semibold text-gray-400 italic truncate">Ürün adı</div>
+        <div className="text-xs text-gray-400 italic truncate">Teknik adı</div>
+        <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block bg-gray-100 text-gray-400">UTT</span></div>
+        <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block bg-gray-100 text-gray-400">Senaryo</span></div>
+        <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block bg-gray-100 text-gray-400">İnceleme Bekliyor</span></div>
+        <span className="text-xs text-gray-400 italic">—</span>
+        <span className="text-gray-200 text-base">›</span>
+      </div>
+      <div className="px-5 py-4 text-center text-xs text-gray-400 border-t border-gray-100">
+        Henüz üretimin yok. İlk talebini açtığında üretim akışın burada görünecek.
+      </div>
+    </>
+  );
+  const ornekSatirMobil = (
+    <>
+      <div className="px-4 py-3" style={{ opacity: 0.5 }} aria-hidden="true">
+        <div className="flex justify-between items-start mb-1.5">
+          <div className="text-sm font-bold text-gray-400 italic">Ürün adı</div>
+          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">İnceleme Bekliyor</span>
+        </div>
+        <div className="flex gap-2 items-center flex-wrap">
+          <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">Senaryo</span>
+          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">UTT</span>
+          <span className="text-xs text-gray-400 italic">Teknik adı</span>
+        </div>
+        <div className="text-xs text-gray-400 mt-1 italic">—</div>
+      </div>
+      <div className="px-4 py-4 text-center text-xs text-gray-400 border-t border-gray-100">
+        Henüz üretimin yok. İlk talebini açtığında üretim akışın burada görünecek.
+      </div>
+    </>
+  );
 
   return (
     <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
@@ -164,7 +206,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
         {/* Mobile: kart görünümü */}
         <div className="md:hidden">
           {filtrelenmis.length === 0 ? (
-            <div className="p-10 text-center text-sm text-gray-400">Bu kategoride içerik bulunmuyor.</div>
+            hicTalepYok ? ornekSatirMobil : bosMesaj
           ) : (
             filtrelenmis.map((s, i) => {
               const asamaR = asamaRenk(s.asama);
@@ -200,7 +242,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
             ))}
           </div>
           {filtrelenmis.length === 0 ? (
-            <div className="p-10 text-center text-sm text-gray-400">Bu kategoride içerik bulunmuyor.</div>
+            hicTalepYok ? ornekSatirDesktop : bosMesaj
           ) : (
             filtrelenmis.map((s, i) => {
               const asamaR = asamaRenk(s.asama);
