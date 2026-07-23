@@ -42,8 +42,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ sayi }, { status: 200 });
     }
 
-    // Tek join query ile tüm zinciri çek:
-    // soru_seti_durumu → soru_setleri → video_durumu → videolar → senaryo_durumu → senaryolar → talepler → urunler/teknikler
+    // Tek join query ile zinciri çek. Talebe videolar → talepler (talep_id) ile
+    // DOĞRUDAN ulaşılır (Adım 5 modeli); eski senaryo_durumu→senaryolar hopları
+    // kaldırıldı — hazır videoda senaryo_durum_id=null olduğundan o zincir talebi
+    // düşürüp ürün adı/teknik/hedef rolü "-"/varsayılana çeviriyordu.
     // video_puanlari, video_durumu'na bağlıdır (video_durum_id FK) — bu yüzden video_durumu altında embed edilir.
     const { data: onaylananlar, error: onayError } = await adminSupabase
       .from("soru_seti_durumu")
@@ -66,23 +68,14 @@ export async function GET(request: NextRequest) {
               video_id,
               video_url,
               thumbnail_url,
-              senaryo_durum_id,
-              senaryo_durumu (
-                senaryo_durum_id,
-                senaryo_id,
-                senaryolar (
-                  senaryo_id,
-                  talep_id,
-                  talepler (
-                    talep_id,
-                    soru_seti_buyuklugu,
-                    video_basi_soru_sayisi,
-                    egitim_turu,
-                    hedef_rol,
-                    urunler ( urun_adi ),
-                    teknikler ( teknik_adi )
-                  )
-                )
+              talepler (
+                talep_id,
+                soru_seti_buyuklugu,
+                video_basi_soru_sayisi,
+                egitim_turu,
+                hedef_rol,
+                urunler ( urun_adi ),
+                teknikler ( teknik_adi )
               )
             )
           )
@@ -135,9 +128,7 @@ export async function GET(request: NextRequest) {
 
         const videoDurum = soruSeti.video_durumu;
         const video = videoDurum?.videolar;
-        const senaryoDurum = video?.senaryo_durumu;
-        const senaryo = senaryoDurum?.senaryolar;
-        const talep = senaryo?.talepler;
+        const talep = video?.talepler;
         const videoPuan = videoDurum?.video_puanlari;
 
         const egitimTuru = talep?.egitim_turu ?? "urun_egitimi";
