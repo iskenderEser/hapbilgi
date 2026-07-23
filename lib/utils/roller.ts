@@ -53,6 +53,16 @@ export const URETIM_HATTI_GORENLER = [
   IU_ROLU,            // iu
 ];
 
+// YAYINDAKI_VIDEO_GORENLER: "Yayındaki Videolar" pill'ini + sayfasını görebilen
+// roller. Yalnız-izleme (puan/soru yok). Üretici (İK dahil) + yönetici + tm/bm.
+// İçerik Uzmanı (iu) ve tüketici roller (utt/kd_utt/eczaci/eczane_teknisyeni/
+// musteri) HARİÇ — otomatik dışarıda, hiçbir alt listede yoklar.
+export const YAYINDAKI_VIDEO_GORENLER = [
+  ...URETICI_ROLLER,       // pm, jr_pm, kd_pm, med_md, egt_*, ik_*
+  ...YONETICI_ROLLER,      // gm, gm_yrd, drk, paz_md, blm_md, grp_pm, sm
+  ...YONLENDIRICI_ROLLER,  // tm, bm
+];
+
 // ───────────────────────────────────────────────────────────────────────────
 // Analiz sayfasına özel rol kategorileri (Faz 1)
 // ───────────────────────────────────────────────────────────────────────────
