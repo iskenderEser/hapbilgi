@@ -8,6 +8,7 @@
 
 import { TALEP_TURU_KURALLARI } from "@/lib/uretici/yetenekler";
 import { type Talep, TUR_ROZET } from "../_types";
+import { talepIdGoster } from "@/lib/utils/talepId";
 
 interface TalepListesiProps {
   talepler: Talep[];
@@ -59,6 +60,7 @@ export function TalepListesi({
                   className="relative px-4 py-3 border-b border-gray-50 cursor-pointer"
                   style={okunmamis ? { boxShadow: "inset 3px 0 0 0 #bc2d0d" } : undefined}
                 >
+                  <div className="text-xs text-gray-500 mb-1">{talepIdGoster(t.firma_adi, t.talep_no)}</div>
                   <div className="flex justify-between items-start mb-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       {okunmamis && (
@@ -131,7 +133,8 @@ export function TalepListesi({
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left px-5 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün / Tür</th>
+                  <th className="text-left px-5 py-2.5 text-gray-400 font-medium text-xs uppercase">ID</th>
+                  <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün / Tür</th>
                   <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Teknik Adı</th>
                   <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Soru Seti</th>
                   <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Tarih</th>
@@ -148,7 +151,8 @@ export function TalepListesi({
                       className="border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors duration-100"
                       style={okunmamis ? { boxShadow: "inset 3px 0 0 0 #bc2d0d" } : undefined}
                     >
-                      <td className="px-5 py-3 text-gray-900">
+                      <td className="px-5 py-3 text-gray-500 text-xs whitespace-nowrap">{talepIdGoster(t.firma_adi, t.talep_no)}</td>
+                      <td className="px-3 py-3 text-gray-900">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {okunmamis && (
                             <span

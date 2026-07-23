@@ -16,6 +16,8 @@ export type { HedefRol };
 
 export interface Talep {
   talep_id: string;
+  talep_no: number;
+  firma_adi: string;
   uretici_id: string;
   urun_id: string | null;
   teknik_id: string | null;

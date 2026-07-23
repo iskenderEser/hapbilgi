@@ -40,12 +40,13 @@ export async function GET() {
     let query = supabase
       .from("talepler")
       .select(`
-        talep_id, uretici_id, takim_id, firma_id, aciklama, hazir_video, hazir_video_url, dosya_urls, created_at,
+        talep_id, talep_no, uretici_id, takim_id, firma_id, aciklama, hazir_video, hazir_video_url, dosya_urls, created_at,
         urun_id, teknik_id, egitim_turu, hedef_rol, icerik_turu,
         hazir_soru_seti,
         soru_seti_buyuklugu, video_basi_soru_sayisi,
         urunler(urun_adi),
-        teknikler(teknik_adi)
+        teknikler(teknik_adi),
+        firmalar(firma_adi)
       `)
       .order("created_at", { ascending: false });
 
@@ -64,6 +65,8 @@ export async function GET() {
 
     const sonuc = (talepler ?? []).map((t: any) => ({
       talep_id: t.talep_id,
+      talep_no: t.talep_no,
+      firma_adi: t.firmalar?.firma_adi ?? "",
       uretici_id: t.uretici_id,
       takim_id: t.takim_id,
       firma_id: t.firma_id,
