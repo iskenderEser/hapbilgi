@@ -314,3 +314,17 @@ export function teknikEkleyebilirMi(rol: string): boolean {
     (tur) => TALEP_TURU_KURALLARI[tur].teknik !== "yok"
   );
 }
+
+/**
+ * Bu rolün ürettiği içerik hiç teknik taşır mı? (açabildiği türlerden en az biri
+ * teknik !== "yok" ise true). Ana sayfa "Talep Durum Tablosu"nda TEKNİK kolonunun
+ * role göre gösterilip gösterilmeyeceğini belirler — med_md/ik_* için false
+ * (o rollerde kolon hiç görünmez), pm/egt_* için true.
+ */
+export function rolTeknikKullanirMi(rol: string): boolean {
+  const yetenek = ureticiYetenegi(rol);
+  if (!yetenek) return false;
+  return yetenek.acabilecegiTalepTurleri.some(
+    (tur) => TALEP_TURU_KURALLARI[tur].teknik !== "yok"
+  );
+}

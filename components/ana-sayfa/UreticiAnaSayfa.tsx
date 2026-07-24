@@ -9,6 +9,7 @@ import { HedefRolPill } from "@/components/HedefRolBant";
 import type { HedefRol } from "@/lib/utils/roller";
 import { ROL_ADLARI } from "@/lib/utils/roller";
 import { talepIdGoster } from "@/lib/utils/talepId";
+import { rolTeknikKullanirMi } from "@/lib/uretici/yetenekler";
 
 interface TakipSatiri {
   talep_id: string;
@@ -108,6 +109,13 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
   const ad = adSoyad.split(" ")[0] || "PM";
   const hicTalepYok = satirlar.length === 0;
 
+  // TEKNİK kolonu yalnız içeriği teknik taşıyan rollerde görünür (pm/egt_*);
+  // med_md/İK'da hiç gösterilmez (veri-güdümlü, rol-başına hardcode yok).
+  const teknikGoster = rolTeknikKullanirMi(rol.toLowerCase());
+  const gridCols = teknikGoster
+    ? "1.3fr 1.4fr 1.2fr 0.8fr 1.1fr 1.4fr 1fr 20px"
+    : "1.3fr 1.4fr 0.8fr 1.1fr 1.4fr 1fr 20px";
+
   // Boş durum: hiç talep yoksa (üretim başlamadan önce) tabloyu tanıtan soluk örnek
   // satır + açıklama gösterilir; filtre yüzünden boşsa normal "içerik yok" mesajı kalır.
   const bosMesaj = (
@@ -115,10 +123,10 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
   );
   const ornekSatirDesktop = (
     <>
-      <div className="grid gap-3 px-5 py-3 items-center" style={{ gridTemplateColumns: "1.3fr 1.4fr 1.2fr 0.8fr 1.1fr 1.4fr 1fr 20px", opacity: 0.5 }} aria-hidden="true">
+      <div className="grid gap-3 px-5 py-3 items-center" style={{ gridTemplateColumns: gridCols, opacity: 0.5 }} aria-hidden="true">
         <div className="text-xs text-gray-400 italic truncate">FirmaAdı_10001</div>
-        <div className="text-sm font-semibold text-gray-400 italic truncate">Ürün adı</div>
-        <div className="text-xs text-gray-400 italic truncate">Teknik adı</div>
+        <div className="text-sm font-semibold text-gray-400 italic truncate">Ürün / Eğitim adı</div>
+        {teknikGoster && <div className="text-xs text-gray-400 italic truncate">Teknik adı</div>}
         <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block bg-gray-100 text-gray-400">UTT</span></div>
         <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block bg-gray-100 text-gray-400">Senaryo</span></div>
         <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block bg-gray-100 text-gray-400">İnceleme Bekliyor</span></div>
@@ -135,13 +143,13 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
       <div className="px-4 py-3" style={{ opacity: 0.5 }} aria-hidden="true">
         <div className="text-xs text-gray-400 italic mb-1">FirmaAdı_10001</div>
         <div className="flex justify-between items-start mb-1.5">
-          <div className="text-sm font-bold text-gray-400 italic">Ürün adı</div>
+          <div className="text-sm font-bold text-gray-400 italic">Ürün / Eğitim adı</div>
           <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">İnceleme Bekliyor</span>
         </div>
         <div className="flex gap-2 items-center flex-wrap">
           <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">Senaryo</span>
           <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">UTT</span>
-          <span className="text-xs text-gray-400 italic">Teknik adı</span>
+          {teknikGoster && <span className="text-xs text-gray-400 italic">Teknik adı</span>}
         </div>
         <div className="text-xs text-gray-400 mt-1 italic">—</div>
       </div>
@@ -194,7 +202,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
 
       {/* İçerik tablosu başlık */}
       <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-bold text-gray-900">İçerik Takibi</span>
+        <span className="text-sm font-bold text-gray-900">Talep Durum Tablosu</span>
         {aktifFiltre !== "tumu" && (
           <button
             onClick={() => setAktifFiltre("tumu")}
@@ -231,7 +239,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
                   <div className="flex gap-2 items-center flex-wrap">
                     <span className="text-xs font-bold px-1.5 py-0.5 rounded-full" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span>
                     <HedefRolPill hedefRol={s.hedef_rol} />
-                    <span className="text-xs text-gray-500">{s.teknik_adi}</span>
+                    {teknikGoster && <span className="text-xs text-gray-500">{s.teknik_adi}</span>}
                   </div>
                   <div className="text-xs text-gray-400 mt-1">{formatTarih(s.tarih)}</div>
                 </div>
@@ -242,8 +250,8 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
 
         {/* Desktop: tablo görünümü */}
         <div className="hidden md:block">
-          <div className="grid gap-3 px-5 py-2.5 bg-gray-50 border-b border-gray-200" style={{ gridTemplateColumns: "1.3fr 1.4fr 1.2fr 0.8fr 1.1fr 1.4fr 1fr 20px" }}>
-            {["ID", "ÜRÜN", "TEKNİK", "KİME", "AŞAMA", "DURUM", "TARİH", ""].map((h, i) => (
+          <div className="grid gap-3 px-5 py-2.5 bg-gray-50 border-b border-gray-200" style={{ gridTemplateColumns: gridCols }}>
+            {["ID", "Ürün / Eğitim", ...(teknikGoster ? ["TEKNİK"] : []), "KİME", "AŞAMA", "DURUM", "TARİH", ""].map((h, i) => (
               <div key={i} className="text-xs font-bold text-gray-400 uppercase tracking-wide">{h}</div>
             ))}
           </div>
@@ -259,13 +267,13 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
                   onClick={() => router.push(s.yol)}
                   className="grid gap-3 px-5 py-3 items-center cursor-pointer bg-white hover:bg-gray-50 transition-colors duration-100"
                   style={{
-                    gridTemplateColumns: "1.3fr 1.4fr 1.2fr 0.8fr 1.1fr 1.4fr 1fr 20px",
+                    gridTemplateColumns: gridCols,
                     borderBottom: i < filtrelenmis.length - 1 ? "1px solid #f3f4f6" : "none",
                   }}
                 >
                   <div className="text-xs text-gray-500 truncate" title={talepIdGoster(s.firma_adi, s.talep_no)}>{talepIdGoster(s.firma_adi, s.talep_no)}</div>
                   <div className="text-sm font-bold text-gray-900 truncate">{s.urun_adi}</div>
-                  <div className="text-xs text-gray-500 truncate">{s.teknik_adi}</div>
+                  {teknikGoster && <div className="text-xs text-gray-500 truncate">{s.teknik_adi}</div>}
                   <div><HedefRolPill hedefRol={s.hedef_rol} /></div>
                   <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block whitespace-nowrap" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span></div>
                   <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block whitespace-nowrap" style={{ background: durumR.bg, color: durumR.text }}>{s.durum}</span></div>
