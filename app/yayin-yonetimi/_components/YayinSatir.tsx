@@ -69,6 +69,7 @@ export function YayinSatir({
               {yayinda ? "Yayında" : planlandi ? "Planlandı" : "Durduruldu"}
             </span>
           </div>
+          {y.turu_adi && <span className="text-xs text-gray-400">{y.turu_adi}</span>}
           <span className="text-xs text-gray-500 line-clamp-2">{y.teknik_adi}</span>
           <span className="text-xs text-gray-400">
             {yayinda ? `Yayın: ${formatTarih(y.yayin_tarihi)}`

@@ -145,7 +145,10 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
                   style={{ borderBottom: i < filtrelenmis.length - 1 ? "1px solid #f3f4f6" : "none" }}
                 >
                   <div className="flex justify-between items-start mb-1.5">
-                    <div className="text-sm font-bold text-gray-900">{s.urun_adi}</div>
+                    <div>
+                      <div className="text-sm font-bold text-gray-900">{s.urun_adi}</div>
+                      {s.turu_adi && <div className="text-xs text-gray-400 mt-0.5">{s.turu_adi}</div>}
+                    </div>
                     <span className="text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: durumR.bg, color: durumR.text }}>{s.durum}</span>
                   </div>
                   <div className="flex gap-2 items-center">
@@ -162,7 +165,7 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
         {/* Desktop: tablo görünümü */}
         <div className="hidden md:block">
           <div className="grid gap-3 px-5 py-2.5 bg-gray-50 border-b border-gray-200" style={{ gridTemplateColumns: "1.8fr 1.4fr 1.1fr 1.4fr 1fr 20px" }}>
-            {["ÜRÜN", "TEKNİK", "AŞAMA", "DURUM", "TARİH", ""].map((h, i) => (
+            {["Ürün / Eğitim", "TEKNİK", "AŞAMA", "DURUM", "TARİH", ""].map((h, i) => (
               <div key={i} className="text-xs font-bold text-gray-400 uppercase tracking-wide">{h}</div>
             ))}
           </div>
@@ -182,7 +185,10 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
                     borderBottom: i < filtrelenmis.length - 1 ? "1px solid #f3f4f6" : "none",
                   }}
                 >
-                  <div className="text-sm font-bold text-gray-900 truncate">{s.urun_adi}</div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-bold text-gray-900 truncate">{s.urun_adi}</div>
+                    {s.turu_adi && <div className="text-xs text-gray-400 truncate">{s.turu_adi}</div>}
+                  </div>
                   <div className="text-xs text-gray-500 truncate">{s.teknik_adi}</div>
                   <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block whitespace-nowrap" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span></div>
                   <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block whitespace-nowrap" style={{ background: durumR.bg, color: durumR.text }}>{s.durum}</span></div>

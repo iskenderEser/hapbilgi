@@ -75,6 +75,7 @@ export function BekleyenSatir({
             <span className="text-sm font-semibold text-gray-900 truncate">{b.urun_adi}</span>
             <HedefRolPill hedefRol={b.hedef_rol} />
           </div>
+          {b.turu_adi && <span className="text-xs text-gray-400">{b.turu_adi}</span>}
           <span className="text-xs text-gray-500 line-clamp-2">{b.teknik_adi}</span>
           {(b.soru_seti_buyuklugu || b.video_basi_soru_sayisi) && (
             <div className="flex gap-2 mt-0.5">

@@ -10,6 +10,7 @@ import { useOkunmamisIdler } from "@/hooks/useOkunmamisIdler";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { talepIdGoster } from "@/lib/utils/talepId";
+import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
 
 interface SoruSetiSatir {
   talep_id: string;
@@ -19,6 +20,7 @@ interface SoruSetiSatir {
   soru_seti_id: string;
   urun_adi: string;
   teknik_adi: string;
+  turu_adi: string | null;
   soru_sayisi: number;
   son_durum: string | null;
   son_tarih: string;
@@ -81,11 +83,11 @@ export default function SoruSetleriListePage() {
     const talepIdler = Array.from(talepMap.keys());
 
     // 3) Talep bilgisi (ürün/teknik adı) talep_id ile toplu çek
-    const talepBilgiMap = new Map<string, { urun_adi: string; teknik_adi: string; talep_no: number; firma_adi: string }>();
+    const talepBilgiMap = new Map<string, { urun_adi: string; teknik_adi: string; turu_adi: string | null; talep_no: number; firma_adi: string }>();
     if (talepIdler.length > 0) {
       const { data: talepler, error: tError } = await supabase
         .from("talepler")
-        .select("talep_id, talep_no, urunler (urun_adi), teknikler (teknik_adi), firmalar (firma_adi)")
+        .select("talep_id, talep_no, egitim_turu, urun_adi, urunler (urun_adi), teknikler (teknik_adi), firmalar (firma_adi)")
         .in("talep_id", talepIdler);
 
       if (tError) {
@@ -96,8 +98,9 @@ export default function SoruSetleriListePage() {
 
       talepler?.forEach((t: any) => {
         talepBilgiMap.set(t.talep_id, {
-          urun_adi: t.urunler?.urun_adi ?? "-",
+          urun_adi: t.urunler?.urun_adi ?? t.urun_adi ?? "-",
           teknik_adi: t.teknikler?.teknik_adi ?? "-",
+          turu_adi: t.egitim_turu ? (TALEP_TURU_KURALLARI[t.egitim_turu as TalepTuru]?.ad ?? null) : null,
           talep_no: t.talep_no ?? 0,
           firma_adi: t.firmalar?.firma_adi ?? "",
         });
@@ -138,6 +141,7 @@ export default function SoruSetleriListePage() {
         soru_seti_id: ss.soru_seti_id,
         urun_adi: bilgi?.urun_adi ?? "-",
         teknik_adi: bilgi?.teknik_adi ?? "-",
+        turu_adi: bilgi?.turu_adi ?? null,
         soru_sayisi: Array.isArray(ss.sorular) ? ss.sorular.length : 0,
         son_durum: sonDurum?.durum ?? null,
         son_tarih: sonDurum?.created_at ?? ss.created_at,
@@ -248,6 +252,7 @@ export default function SoruSetleriListePage() {
                           </span>
                         )}
                       </div>
+                      {ss.turu_adi && <div className="text-xs text-gray-400">{ss.turu_adi}</div>}
                       <div className="text-xs text-gray-500">{ss.teknik_adi}</div>
                       <div className="flex gap-3 mt-0.5">
                         <span className="text-xs text-gray-400">{ss.soru_sayisi} soru</span>
@@ -263,7 +268,7 @@ export default function SoruSetleriListePage() {
                   <thead>
                     <tr className="border-b border-gray-100 bg-gray-50">
                       <th className="text-left px-5 py-2.5 text-gray-400 font-medium text-xs uppercase">ID</th>
-                      <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün</th>
+                      <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün / Eğitim</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Teknik</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Soru</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase w-44">Son Durum</th>
@@ -287,6 +292,7 @@ export default function SoruSetleriListePage() {
                               )}
                               <span style={{ fontWeight: okunmamis ? 700 : 500 }}>{ss.urun_adi}</span>
                             </div>
+                            {ss.turu_adi && <div className="text-xs text-gray-400 mt-0.5">{ss.turu_adi}</div>}
                           </td>
                           <td className="px-3 py-3 text-gray-500">{ss.teknik_adi}</td>
                           <td className="px-3 py-3 text-gray-500">{ss.soru_sayisi} soru</td>

@@ -24,6 +24,7 @@ export interface Bekleyen {
   firma_adi: string;
   urun_adi: string;
   teknik_adi: string;
+  turu_adi: string | null; // içerik/eğitim türü etiketi ("Medikal Eğitim" vb.)
   hedef_rol: HedefRol;
   soru_seti_buyuklugu: number | null;
   video_basi_soru_sayisi: number | null;
@@ -41,6 +42,7 @@ export interface Yayin {
   firma_adi: string;
   urun_adi: string;
   teknik_adi: string;
+  turu_adi: string | null; // içerik/eğitim türü etiketi ("Medikal Eğitim" vb.)
   video_url: string | null;
   thumbnail_url: string | null;
   video_puani: number | null;

@@ -18,6 +18,7 @@ import { useEffect, useState } from "react";
 import type { HedefRol } from "@/app/talepler/_types";
 import type { Bekleyen, Yayin } from "../_types";
 import { gecerliTurBaslangiclari, type HesaplananTur } from "@/lib/tur/kayit";
+import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
 
 interface UseYayinYonetimiArgs {
   kullaniciVar: boolean;
@@ -94,7 +95,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     // Yayınlar: tüm yayınları çekip client-side hedef_rol'e göre filtrele
     const { data: yayinlarData, error: yayinError } = await supabase
       .from("v_yayin_detay")
-      .select("yayin_id, soru_seti_durum_id, durum, yayin_tarihi, durdurma_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, sorular, hedef_rol, talep_no, firma_adi")
+      .select("yayin_id, soru_seti_durum_id, durum, yayin_tarihi, durdurma_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, sorular, hedef_rol, talep_no, firma_adi, egitim_turu")
       .order("yayin_tarihi", { ascending: false });
 
     if (yayinError) { hata("Yayınlar yüklenemedi.", "v_yayin_detay view SELECT", yayinError.message); setLoading(false); return; }
@@ -112,6 +113,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
       setYayinlar((yayinlarData ?? []).map(y => ({
         ...y,
         hedef_rol: (y.hedef_rol ?? "utt") as HedefRol,
+        turu_adi: (y as any).egitim_turu ? (TALEP_TURU_KURALLARI[(y as any).egitim_turu as TalepTuru]?.ad ?? null) : null,
         ileri_sarma_acik: ileriSarmaMapLocal[y.yayin_id] ?? false,
       })));
 

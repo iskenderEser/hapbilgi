@@ -13,6 +13,7 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import { SoruSetiFormu } from "@/components/SoruSetiFormu";
 import { SoruIceAktar } from "@/components/SoruIceAktar";
 import { type SoruTaslagi, taslaklariBoyutla, taslaklariDogrula, taslaklardanSorular, sorulardanTaslaklar } from "@/lib/soru/taslak";
+import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
 
 interface Soru {
   soru_metni: string;
@@ -38,6 +39,8 @@ interface VideoDurumJoin {
       soru_seti_buyuklugu: number;
       video_basi_soru_sayisi: number;
       hedef_rol: HedefRol;
+      egitim_turu: TalepTuru | null;
+      urun_adi: string | null;
       urunler: { urun_adi: string } | null;
       teknikler: { teknik_adi: string } | null;
     } | null;
@@ -53,6 +56,7 @@ export default function SoruSetiAkisPage() {
   const [soruSetleri, setSoruSetleri] = useState<SoruSeti[]>([]);
   const [urunAdi, setUrunAdi] = useState("");
   const [teknikAdi, setTeknikAdi] = useState("");
+  const [turuAdi, setTuruAdi] = useState<string | null>(null);
   const [soruSetiBuyuklugu, setSoruSetiBuyuklugu] = useState<number>(25);
   const [videoBasiSoruSayisi, setVideoBasiSoruSayisi] = useState<number>(2);
   const [hedefRol, setHedefRol] = useState<HedefRol | null>(null);
@@ -99,6 +103,8 @@ export default function SoruSetiAkisPage() {
             soru_seti_buyuklugu,
             video_basi_soru_sayisi,
             hedef_rol,
+            egitim_turu,
+            urun_adi,
             urunler (urun_adi),
             teknikler (teknik_adi)
           )
@@ -111,8 +117,9 @@ export default function SoruSetiAkisPage() {
 
     const typedData = data as unknown as VideoDurumJoin;
     const talep = typedData.videolar?.talepler;
-    setUrunAdi(talep?.urunler?.urun_adi ?? "-");
+    setUrunAdi(talep?.urunler?.urun_adi ?? talep?.urun_adi ?? "-");
     setTeknikAdi(talep?.teknikler?.teknik_adi ?? "-");
+    setTuruAdi(talep?.egitim_turu ? (TALEP_TURU_KURALLARI[talep.egitim_turu as TalepTuru]?.ad ?? null) : null);
     setSoruSetiBuyuklugu(talep?.soru_seti_buyuklugu ?? 25);
     setVideoBasiSoruSayisi(talep?.video_basi_soru_sayisi ?? 2);
     setHedefRol((talep?.hedef_rol ?? "utt") as HedefRol);
@@ -301,7 +308,14 @@ export default function SoruSetiAkisPage() {
 
         <div className="bg-white border border-gray-200 rounded-xl px-4 md:px-5 py-4">
           <span className="text-base font-semibold text-gray-900">{urunAdi}</span>
-          <span className="text-xs text-gray-500 block mt-1">{teknikAdi}</span>
+          <div className="flex items-center gap-2 mt-1">
+            {turuAdi && (
+              <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "#f5f3ff", color: "#6d28d9", border: "0.5px solid #ddd6fe" }}>
+                {turuAdi}
+              </span>
+            )}
+            {teknikAdi && teknikAdi !== "-" && <span className="text-xs text-gray-500">{teknikAdi}</span>}
+          </div>
           {isIU && (
             <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100">
               <span className="text-xs px-2.5 py-1 rounded-full"

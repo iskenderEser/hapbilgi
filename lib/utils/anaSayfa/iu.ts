@@ -16,11 +16,13 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import { iuKendiDurumunuEsle, talepBazindaTekillestir, type IuKategori } from "@/lib/utils/anaSayfa/iuDurumEsle";
+import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
 
 export interface IsSatiri {
   talep_id: string;
   urun_adi: string;
   teknik_adi: string;
+  turu_adi: string | null; // içerik/eğitim türü ("Medikal Eğitim" vb.) — bilgilendirici etiket
   asama: "Senaryo" | "Video" | "Soru Seti";
   durum: string;
   tarih: string;
@@ -44,14 +46,17 @@ interface ZincirBilgi {
   talep_id: string;
   urun_adi: string;
   teknik_adi: string;
+  turu_adi: string | null;
   yol: string;
 }
 
 const TAMAMLANAN_PENCERE_MS = 30 * 24 * 60 * 60 * 1000; // 30 gün — liste sınırsız büyümesin
 
 const urunTeknik = (talep: any) => ({
-  urun_adi: talep?.urunler?.urun_adi ?? "-",
+  // Ürün yoksa serbest eğitim/içerik adına düş (medikal_egitim, ik_egitimi — İskender 24.07).
+  urun_adi: talep?.urunler?.urun_adi ?? talep?.urun_adi ?? "-",
   teknik_adi: talep?.teknikler?.teknik_adi ?? "-",
+  turu_adi: talep?.egitim_turu ? (TALEP_TURU_KURALLARI[talep.egitim_turu as TalepTuru]?.ad ?? null) : null,
 });
 
 // Kaynak A: bildirimlerin talep zinciri bilgileri — kayit_turu başına TEK sorgu.
@@ -71,7 +76,7 @@ async function bildirimZincirHaritasi(
   if (talepIdler.length > 0) {
     sorgular.push(adminSupabase
       .from("talepler")
-      .select("talep_id, urunler(urun_adi), teknikler(teknik_adi)")
+      .select("talep_id, egitim_turu, urun_adi, urunler(urun_adi), teknikler(teknik_adi)")
       .in("talep_id", talepIdler)
       .then(({ data }) => {
         for (const t of (data ?? []) as any[]) {
@@ -83,7 +88,7 @@ async function bildirimZincirHaritasi(
   if (senaryoIdler.length > 0) {
     sorgular.push(adminSupabase
       .from("senaryolar")
-      .select("senaryo_id, talep_id, talepler(urunler(urun_adi), teknikler(teknik_adi))")
+      .select("senaryo_id, talep_id, talepler(egitim_turu, urun_adi, urunler(urun_adi), teknikler(teknik_adi))")
       .in("senaryo_id", senaryoIdler)
       .then(({ data }) => {
         for (const s of (data ?? []) as any[]) {
@@ -95,7 +100,7 @@ async function bildirimZincirHaritasi(
   if (videoIdler.length > 0) {
     sorgular.push(adminSupabase
       .from("videolar")
-      .select("video_id, senaryo_durum_id, senaryo_durumu(senaryolar(talep_id, talepler(urunler(urun_adi), teknikler(teknik_adi))))")
+      .select("video_id, senaryo_durum_id, senaryo_durumu(senaryolar(talep_id, talepler(egitim_turu, urun_adi, urunler(urun_adi), teknikler(teknik_adi))))")
       .in("video_id", videoIdler)
       .then(({ data }) => {
         for (const v of (data ?? []) as any[]) {
@@ -109,7 +114,7 @@ async function bildirimZincirHaritasi(
   if (soruSetiIdler.length > 0) {
     sorgular.push(adminSupabase
       .from("soru_setleri")
-      .select("soru_seti_id, video_durum_id, video_durumu(videolar(senaryo_durumu(senaryolar(talep_id, talepler(urunler(urun_adi), teknikler(teknik_adi))))))")
+      .select("soru_seti_id, video_durum_id, video_durumu(videolar(senaryo_durumu(senaryolar(talep_id, talepler(egitim_turu, urun_adi, urunler(urun_adi), teknikler(teknik_adi))))))")
       .in("soru_seti_id", soruSetiIdler)
       .then(({ data }) => {
         for (const s of (data ?? []) as any[]) {
@@ -151,6 +156,7 @@ async function bekleyenSatirlar(adminSupabase: SupabaseClient, userId: string): 
       talep_id: bilgi.talep_id,
       urun_adi: bilgi.urun_adi,
       teknik_adi: bilgi.teknik_adi,
+      turu_adi: bilgi.turu_adi,
       asama: BILDIRIM_ASAMA[b.kayit_turu],
       durum: b.mesaj,
       tarih: b.created_at,
@@ -163,7 +169,7 @@ async function bekleyenSatirlar(adminSupabase: SupabaseClient, userId: string): 
 async function kendiSenaryolarim(adminSupabase: SupabaseClient, userId: string): Promise<IsSatiri[]> {
   const { data: satirlarim } = await adminSupabase
     .from("senaryolar")
-    .select("senaryo_id, talep_id, created_at, talepler(urunler(urun_adi), teknikler(teknik_adi))")
+    .select("senaryo_id, talep_id, created_at, talepler(egitim_turu, urun_adi, urunler(urun_adi), teknikler(teknik_adi))")
     .eq("iu_id", userId);
   if (!satirlarim || satirlarim.length === 0) return [];
 
@@ -193,7 +199,7 @@ async function kendiVideolarim(adminSupabase: SupabaseClient, userId: string): P
     .from("videolar")
     .select(`
       video_id, senaryo_durum_id, created_at,
-      senaryo_durumu ( senaryolar ( talep_id, talepler ( urunler(urun_adi), teknikler(teknik_adi) ) ) )
+      senaryo_durumu ( senaryolar ( talep_id, talepler ( egitim_turu, urun_adi, urunler(urun_adi), teknikler(teknik_adi) ) ) )
     `)
     .eq("iu_id", userId);
   if (!satirlarim || satirlarim.length === 0) return [];
@@ -226,7 +232,7 @@ async function kendiSoruSetlerim(adminSupabase: SupabaseClient, userId: string):
     .from("soru_setleri")
     .select(`
       soru_seti_id, video_durum_id, created_at,
-      video_durumu ( videolar ( senaryo_durumu ( senaryolar ( talep_id, talepler ( urunler(urun_adi), teknikler(teknik_adi) ) ) ) ) )
+      video_durumu ( videolar ( senaryo_durumu ( senaryolar ( talep_id, talepler ( egitim_turu, urun_adi, urunler(urun_adi), teknikler(teknik_adi) ) ) ) ) )
     `)
     .eq("iu_id", userId);
   if (!satirlarim || satirlarim.length === 0) return [];

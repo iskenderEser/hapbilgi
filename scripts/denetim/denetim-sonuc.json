@@ -1,5 +1,11 @@
 {
-  "tarih": "2026-07-24T08:20:52.586Z",
-  "hata_sayisi": 0,
-  "hatalar": []
+  "tarih": "2026-07-24T10:10:50.614Z",
+  "hata_sayisi": 1,
+  "hatalar": [
+    {
+      "dosya": "app/yayin-yonetimi/_hooks/useYayinYonetimi.ts",
+      "satir": 96,
+      "mesaj": "Kolon yok: \"v_yayin_detay.egitim_turu\""
+    }
+  ]
 }
