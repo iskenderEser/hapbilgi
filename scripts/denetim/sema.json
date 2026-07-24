@@ -1,5 +1,5 @@
 {
-  "uretim_tarihi": "2026-07-23T23:04:27.031Z",
+  "uretim_tarihi": "2026-07-24T10:16:12.012Z",
   "tablo_sayisi": 93,
   "rpc_sayisi": 58,
   "tablolar": {
@@ -3504,6 +3504,10 @@
         },
         "firma_adi": {
           "tip": "character varying",
+          "nullable": true
+        },
+        "egitim_turu": {
+          "tip": "text",
           "nullable": true
         }
       }
