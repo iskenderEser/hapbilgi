@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
     const {
       egitim_turu,
       hedef_rol,
-      urun_id, teknik_id, aciklama,
+      urun_id, teknik_id, urun_adi, aciklama,
       hazir_video, hazir_soru_seti, hazir_soru_seti_verisi,
       soru_seti_buyuklugu, video_basi_soru_sayisi,
     } = body;
@@ -192,6 +192,15 @@ export async function POST(request: NextRequest) {
     const insertUrunId = turKurali.urun === "yok" && !eczanemHedefi ? null : (urun_id ?? null);
     const insertTeknikId = turKurali.teknik === "yok" || tekniksizHedef ? null : (teknik_id ?? null);
 
+    // Ürün de teknik de olmayan türlerde (medikal_egitim, ik_egitimi) izleyiciye
+    // görünecek ad talepler.urun_adi'na yazılır (İskender 24.07). Diğer türlerde
+    // ad urun_id join'inden geldiğinden urun_adi NULL kalır.
+    const serbestTuru = turKurali.urun === "yok" && turKurali.teknik === "yok" && !eczanemHedefi;
+    if (serbestTuru && !(typeof urun_adi === "string" && urun_adi.trim())) {
+      return validasyonHatasi("Eğitim/İçerik adı zorunludur.", ["urun_adi"]);
+    }
+    const insertUrunAdi = serbestTuru ? (urun_adi as string).trim() : null;
+
     if (hazir_soru_seti && !hazir_soru_seti_verisi) {
       return validasyonHatasi("Hazır soru seti verisi zorunludur.", ["hazir_soru_seti_verisi"]);
     }
@@ -213,6 +222,7 @@ export async function POST(request: NextRequest) {
         icerik_turu: icerikTuru,
         urun_id: insertUrunId,
         teknik_id: insertTeknikId,
+        urun_adi: insertUrunAdi,
         aciklama: aciklama?.trim() ?? null,
         hazir_video: hazir_video ?? false,
         hazir_soru_seti: hazir_soru_seti ?? false,
@@ -234,7 +244,7 @@ export async function POST(request: NextRequest) {
 
     // Bildirim mesajı — ürünlü talepte ürün adı, ürünsüzde tür adı.
     const turAdi = TALEP_TURU_KURALLARI[egitimTuru].ad;
-    const bildirimBasligi = (yeniTalep as any).urunler?.urun_adi ?? turAdi;
+    const bildirimBasligi = (yeniTalep as any).urunler?.urun_adi ?? insertUrunAdi ?? turAdi;
 
     // G-3 (İskender kararı 19.07): hazır video taleplerinde açılış bildirimi gitmez —
     // IU'nun işi ya hiç yoktur (video+set hazır) ya da video yüklemesi tamamlanınca
@@ -266,7 +276,7 @@ export async function POST(request: NextRequest) {
         ...yeniTalep,
         egitim_turu: egitimTuru,
         hedef_rol: hedefRol,
-        urun_adi: (yeniTalep as any).urunler?.urun_adi ?? "-",
+        urun_adi: (yeniTalep as any).urunler?.urun_adi ?? insertUrunAdi ?? "-",
         teknik_adi: (yeniTalep as any).teknikler?.teknik_adi ?? "-",
       }
     }, { status: 201 });

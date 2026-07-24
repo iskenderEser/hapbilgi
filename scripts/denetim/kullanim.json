@@ -1682,7 +1682,7 @@
     },
     {
       "dosya": "app/talepler/_hooks/useTalepFormu.ts",
-      "satir": 153,
+      "satir": 158,
       "tablo": "kullanicilar"
     },
     {
@@ -1702,12 +1702,12 @@
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 205,
+      "satir": 214,
       "tablo": "talepler"
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 245,
+      "satir": 255,
       "tablo": "kullanicilar"
     },
     {
@@ -1837,22 +1837,22 @@
     },
     {
       "dosya": "app/admin/api/talep-sil/route.ts",
-      "satir": 38,
-      "tablo": "yayin_yonetimi"
+      "satir": 39,
+      "tablo": "v_yayin_detay"
     },
     {
       "dosya": "app/admin/api/talep-sil/route.ts",
-      "satir": 106,
+      "satir": 107,
       "tablo": "talepler"
     },
     {
       "dosya": "app/admin/api/talep-sil/route.ts",
-      "satir": 119,
-      "tablo": "yayin_yonetimi"
+      "satir": 120,
+      "tablo": "v_yayin_detay"
     },
     {
       "dosya": "app/admin/api/talep-sil/route.ts",
-      "satir": 128,
+      "satir": 129,
       "tablo": "yayin_yonetimi"
     },
     {
@@ -4927,7 +4927,7 @@
     {
       "dosya": "lib/utils/anaSayfa/uretici.ts",
       "satir": 29,
-      "ham": "talep_id, talep_no, hedef_rol, hazir_video, created_at, urunler(urun_adi), teknikler(teknik_adi), firmalar(firma_adi)",
+      "ham": "talep_id, talep_no, hedef_rol, hazir_video, created_at, urun_adi, urunler(urun_adi), teknikler(teknik_adi), firmalar(firma_adi)",
       "tablo": "talepler"
     },
     {
@@ -5352,7 +5352,7 @@
     },
     {
       "dosya": "app/talepler/_hooks/useTalepFormu.ts",
-      "satir": 153,
+      "satir": 158,
       "ham": "firma_id, takim_id",
       "tablo": "kullanicilar"
     },
@@ -5376,13 +5376,13 @@
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 205,
+      "satir": 214,
       "ham": "\n        talep_id, takim_id, firma_id, hazir_video, created_at,\n        urun_id, teknik_id, egitim_turu, hedef_rol, icerik_turu,\n        hazir_soru_seti, hazir_soru_seti_verisi,\n        soru_seti_buyuklugu, video_basi_soru_sayisi,\n        urunler(urun_adi),\n        teknikler(teknik_adi)\n      ",
       "tablo": "talepler"
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 245,
+      "satir": 255,
       "ham": "kullanici_id",
       "tablo": "kullanicilar"
     },
@@ -5520,21 +5520,21 @@
     },
     {
       "dosya": "app/admin/api/talep-sil/route.ts",
-      "satir": 38,
-      "ham": "yayin_id, durum, soru_seti_durumu!inner ( soru_setleri!inner ( talep_id ) )",
-      "tablo": "yayin_yonetimi"
+      "satir": 39,
+      "ham": "yayin_id, durum",
+      "tablo": "v_yayin_detay"
     },
     {
       "dosya": "app/admin/api/talep-sil/route.ts",
-      "satir": 106,
+      "satir": 107,
       "ham": "talep_id",
       "tablo": "talepler"
     },
     {
       "dosya": "app/admin/api/talep-sil/route.ts",
-      "satir": 119,
-      "ham": "yayin_id, durum, soru_seti_durumu!inner ( soru_setleri!inner ( talep_id ) )",
-      "tablo": "yayin_yonetimi"
+      "satir": 120,
+      "ham": "yayin_id",
+      "tablo": "v_yayin_detay"
     },
     {
       "dosya": "app/challenge-club/api/uygun-aliciler/route.ts",
@@ -7596,12 +7596,12 @@
     },
     {
       "dosya": "app/admin/api/talep-sil/route.ts",
-      "satir": 45,
+      "satir": 46,
       "fonksiyon": "yayin_puan_var_mi"
     },
     {
       "dosya": "app/admin/api/talep-sil/route.ts",
-      "satir": 113,
+      "satir": 114,
       "fonksiyon": "tekil_talep_sil"
     },
     {

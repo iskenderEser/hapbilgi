@@ -194,7 +194,12 @@ export function UrunTeknikSecici({
 
       {teknikGosterilsin && (
         <div className="flex-1">
-          <label className="text-xs text-gray-500 block mb-1">Teknik Adı</label>
+          <label className="text-xs text-gray-500 block mb-1">
+            Teknik Adı
+            {turKurali.teknik === "tercihli" && (
+              <span className="text-gray-400 font-normal ml-1">(tercihli)</span>
+            )}
+          </label>
           <select
             value={yeniTeknikGoster ? "yeni" : seciliTeknikId}
             onChange={(e) => handleTeknikSelectChange(e.target.value)}

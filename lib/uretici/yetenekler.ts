@@ -68,11 +68,11 @@ export type TalepTuru =
  * Talep türünün ürün ve teknik zorunluluk profili.
  *
  * - urun: "zorunlu" → urun_id NOT NULL, "tercihli" → kullanıcı seçebilir, "yok" → urun_id NULL
- * - teknik: "zorunlu" → teknik_id NOT NULL, "yok" → teknik_id NULL
+ * - teknik: "zorunlu" → teknik_id NOT NULL, "tercihli" → kullanıcı seçebilir, "yok" → teknik_id NULL
  */
 export interface TalepTuruKurali {
   urun: "zorunlu" | "tercihli" | "yok";
-  teknik: "zorunlu" | "yok";
+  teknik: "zorunlu" | "tercihli" | "yok";
   ad: string; // UI'da kullanılan Türkçe ad
 }
 
@@ -83,7 +83,7 @@ export interface TalepTuruKurali {
 export const TALEP_TURU_KURALLARI: Record<TalepTuru, TalepTuruKurali> = {
   urun_egitimi: {
     urun: "zorunlu",
-    teknik: "zorunlu",
+    teknik: "tercihli", // İskender 24.07: pm teknik seçimi artık isteğe bağlı
     ad: "Ürün Eğitimi",
   },
   satis_teknikleri: {

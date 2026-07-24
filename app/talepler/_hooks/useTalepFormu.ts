@@ -76,6 +76,9 @@ export function useTalepFormu() {
   const [bekleyenVideo, setBekleyenVideo] = useState<BekleyenDosya | null>(null);
   const [hazirVideo, setHazirVideo] = useState(false);
   const [hazirSoruSeti, setHazirSoruSeti] = useState(false);
+  // Ürün de teknik de olmayan türlerde (medikal_egitim, ik_egitimi) izleyiciye
+  // görünecek serbest "Eğitim/İçerik Adı" — talepler.urun_adi'na yazılır (İskender 24.07).
+  const [serbestAd, setSerbestAd] = useState("");
 
   // ============================================================================
   // Türetilmiş değerler
@@ -93,6 +96,8 @@ export function useTalepFormu() {
   // Eczanem hedefi yalnızca ürün müdürü ailesine görünür (İP-§4.1).
   const eczanemSecilebilir = ECZANEM_TALEP_ACAN_ROLLER.includes(rol.toLowerCase());
   const teknikGosterilsin = turKurali.teknik !== "yok" && !eclubHedef && !eczanemHedef;
+  // Ürün ve teknik ikisi de yoksa serbest ad alanı gösterilir (eczanem hariç: orada ürün zorunlu).
+  const serbestAdGoster = turKurali.urun === "yok" && turKurali.teknik === "yok" && !eczanemHedef;
   const kullaniciTakimId = kullaniciBilgi?.takim_id ?? null;
 
   // ============================================================================
@@ -221,6 +226,8 @@ export function useTalepFormu() {
     setEgitimTuru(tur);
     if (kural.urun === "yok") setSeciliUrunId("");
     if (kural.teknik === "yok") setSeciliTeknikId("");
+    // Serbest ad yalnız ürün+teknik yoksa anlamlı; değilse temizle (submit'e sızmasın).
+    if (!(kural.urun === "yok" && kural.teknik === "yok")) setSerbestAd("");
   }, []);
 
   const toggleHazirVideo = useCallback(() => {
@@ -356,6 +363,11 @@ export function useTalepFormu() {
       hata("Teknik seçimi zorunludur.", "form kontrolü", undefined);
       return false;
     }
+    // Ürünsüz+tekniksiz türlerde izleyici için ad zorunludur.
+    if (serbestAdGoster && !serbestAd.trim()) {
+      hata("Eğitim/İçerik adı zorunludur.", "form kontrolü", undefined);
+      return false;
+    }
     if (hazirVideo && !bekleyenVideo) {
       hata("Hazır video talebi için video dosyası zorunludur.", "video dosyası kontrolü", undefined);
       return false;
@@ -383,6 +395,8 @@ export function useTalepFormu() {
     turKurali,
     seciliUrunId,
     seciliTeknikId,
+    serbestAdGoster,
+    serbestAd,
     hazirVideo,
     bekleyenVideo,
     hazirSoruSeti,
@@ -403,6 +417,8 @@ export function useTalepFormu() {
         urun_id: (turKurali.urun !== "yok" || eczanemHedef) ? seciliUrunId || null : null,
         // Teknik-siz hedeflerde (E-Club / Eczanem) teknik her hâlükârda null gönderilir.
         teknik_id: (!eclubHedef && !eczanemHedef && turKurali.teknik !== "yok") ? seciliTeknikId || null : null,
+        // Ürünsüz+tekniksiz türlerde izleyici adı; diğer türlerde ad urun_id'den gelir.
+        urun_adi: serbestAdGoster ? serbestAd.trim() : null,
         aciklama,
         hazir_video: hazirVideo,
         hazir_soru_seti: hazirSoruSeti,
@@ -426,6 +442,8 @@ export function useTalepFormu() {
     turKurali,
     seciliUrunId,
     seciliTeknikId,
+    serbestAdGoster,
+    serbestAd,
     aciklama,
     hazirVideo,
     hazirSoruSeti,
@@ -536,6 +554,7 @@ export function useTalepFormu() {
     if (yetenek) setEgitimTuru(yetenek.acabilecegiTalepTurleri[0]);
     setSeciliUrunId("");
     setSeciliTeknikId("");
+    setSerbestAd("");
     setAciklama("");
     setBekleyenDosyalar([]);
     setBekleyenVideo(null);
@@ -646,6 +665,9 @@ export function useTalepFormu() {
     turKurali,
     urunGosterilsin,
     teknikGosterilsin,
+    serbestAdGoster,
+    serbestAd,
+    setSerbestAd,
 
     // form: urun/teknik/takim
     urunler,

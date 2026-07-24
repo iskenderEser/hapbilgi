@@ -161,6 +161,22 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
             onTeknikEkle={formu.handleYeniTeknikEkle}
           />
 
+          {/* Ürün de teknik de olmayan türlerde (medikal/İK) izleyiciye görünecek ad. */}
+          {formu.serbestAdGoster && (
+            <div>
+              <label className="text-xs text-gray-500 block mb-1">
+                Eğitim/İçerik Adı <span className="text-red-500">*</span>
+              </label>
+              <input
+                value={formu.serbestAd}
+                onChange={(e) => formu.setSerbestAd(e.target.value)}
+                placeholder="İzleyicinin göreceği eğitim/içerik adı"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white box-border"
+                style={{ fontFamily: "'Nunito', sans-serif" }}
+              />
+            </div>
+          )}
+
           <SoruSetiAyarlari
             buyukluk={formu.soruSetiBuyuklugu}
             videoBasi={formu.videoBasiSoruSayisi}
@@ -237,7 +253,9 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
         acik={formu.onayModalAcik}
         iuSoruSeti={formu.hazirVideo && !formu.hazirSoruSeti}
         ozet={{
-          urunAdi: formu.urunler.find((u) => u.urun_id === formu.seciliUrunId)?.urun_adi ?? null,
+          urunAdi: formu.serbestAdGoster
+            ? (formu.serbestAd.trim() || null)
+            : formu.urunler.find((u) => u.urun_id === formu.seciliUrunId)?.urun_adi ?? null,
           teknikAdi: formu.teknikGosterilsin
             ? formu.teknikler.find((t) => t.teknik_id === formu.seciliTeknikId)?.teknik_adi ?? null
             : null,

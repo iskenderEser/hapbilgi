@@ -28,7 +28,7 @@ interface TakipSatiri {
 export async function getUreticiAnaSayfaVeri(userId: string, adminSupabase: SupabaseClient) {
   const { data: talepler, error: talepError } = await adminSupabase
     .from("talepler")
-    .select(`talep_id, talep_no, hedef_rol, hazir_video, created_at, urunler(urun_adi), teknikler(teknik_adi), firmalar(firma_adi)`)
+    .select(`talep_id, talep_no, hedef_rol, hazir_video, created_at, urun_adi, urunler(urun_adi), teknikler(teknik_adi), firmalar(firma_adi)`)
     .eq("uretici_id", userId)
     .order("created_at", { ascending: false });
 
@@ -40,7 +40,7 @@ export async function getUreticiAnaSayfaVeri(userId: string, adminSupabase: Supa
   let yayinda = 0;
 
   for (const talep of talepler ?? []) {
-    const urun_adi = (talep as any).urunler?.urun_adi ?? "-";
+    const urun_adi = (talep as any).urunler?.urun_adi ?? (talep as any).urun_adi ?? "-";
     const teknik_adi = (talep as any).teknikler?.teknik_adi ?? "-";
     const hedef_rol = ((talep as any).hedef_rol ?? "utt") as HedefRol;
     const talep_no = (talep as any).talep_no as number;
