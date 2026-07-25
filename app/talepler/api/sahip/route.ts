@@ -51,23 +51,42 @@ export async function GET(request: NextRequest) {
       .eq("talep_id", talep_id)
       .maybeSingle();
     if (talepError) return hataYaniti("Talep sorgulanamadı.", "talepler SELECT — talep_id", talepError);
-    if (!talep?.uretici_id) return NextResponse.json({ sahip: null }, { status: 200 });
 
-    const { data: sahip, error: sahipError } = await adminSupabase
+    // İÜ künyesi ancak İÜ talebe İLK CEVABI verdiğinde doğar (İskender 25.07):
+    // iu_id zincirdeki bir kayda yazılmışsa iş fiilen o kişidedir. Varyant fark
+    // etmez — hazır videoda senaryo/video yoktur, iş soru setinden başlar; bu
+    // yüzden en ileri aşamadan geriye doğru bakılır.
+    const iuAra = (tablo: "senaryolar" | "videolar" | "soru_setleri") =>
+      adminSupabase.from(tablo).select("iu_id").eq("talep_id", talep_id!).not("iu_id", "is", null).limit(1);
+    const [setIu, videoIu, senaryoIu] = await Promise.all([
+      iuAra("soru_setleri"), iuAra("videolar"), iuAra("senaryolar"),
+    ]);
+    const iuId: string | null =
+      (setIu.data?.[0] as any)?.iu_id ?? (videoIu.data?.[0] as any)?.iu_id ?? (senaryoIu.data?.[0] as any)?.iu_id ?? null;
+
+    const idler = [talep?.uretici_id, iuId].filter(Boolean) as string[];
+    if (idler.length === 0) return NextResponse.json({ sahip: null, icerik_ureticisi: null }, { status: 200 });
+
+    const { data: kisiler, error: kisiError } = await adminSupabase
       .from("kullanicilar")
-      .select("ad, soyad, eposta, telefon, rol")
-      .eq("kullanici_id", talep.uretici_id)
-      .maybeSingle();
-    if (sahipError) return hataYaniti("Talep sahibi sorgulanamadı.", "kullanicilar SELECT — uretici_id", sahipError);
-    if (!sahip) return NextResponse.json({ sahip: null }, { status: 200 });
+      .select("kullanici_id, ad, soyad, eposta, telefon, rol")
+      .in("kullanici_id", idler);
+    if (kisiError) return hataYaniti("Kişi bilgileri sorgulanamadı.", "kullanicilar SELECT — künye", kisiError);
+
+    const kunye = (id: string | null | undefined) => {
+      const k = (kisiler ?? []).find((x: any) => x.kullanici_id === id) as any;
+      if (!k) return null;
+      return {
+        ad_soyad: `${k.ad ?? ""} ${k.soyad ?? ""}`.trim() || "-",
+        unvan: ROL_ADLARI[k.rol] ?? k.rol,
+        eposta: k.eposta ?? null,
+        telefon: k.telefon ?? null,
+      };
+    };
 
     return NextResponse.json({
-      sahip: {
-        ad_soyad: `${sahip.ad ?? ""} ${sahip.soyad ?? ""}`.trim() || "-",
-        unvan: ROL_ADLARI[sahip.rol] ?? sahip.rol,
-        eposta: sahip.eposta ?? null,
-        telefon: sahip.telefon ?? null,
-      },
+      sahip: kunye(talep?.uretici_id),
+      icerik_ureticisi: kunye(iuId),
     }, { status: 200 });
 
   } catch (err) {

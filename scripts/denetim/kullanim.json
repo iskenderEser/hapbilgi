@@ -2372,7 +2372,7 @@
     },
     {
       "dosya": "app/talepler/api/sahip/route.ts",
-      "satir": 56,
+      "satir": 70,
       "tablo": "kullanicilar"
     },
     {
@@ -6068,8 +6068,14 @@
     },
     {
       "dosya": "app/talepler/api/sahip/route.ts",
-      "satir": 56,
-      "ham": "ad, soyad, eposta, telefon, rol",
+      "satir": 60,
+      "ham": "iu_id",
+      "tablo": null
+    },
+    {
+      "dosya": "app/talepler/api/sahip/route.ts",
+      "satir": 70,
+      "ham": "kullanici_id, ad, soyad, eposta, telefon, rol",
       "tablo": "kullanicilar"
     },
     {
