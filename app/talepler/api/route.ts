@@ -11,6 +11,7 @@ import {
 import type { HedefRol } from "@/app/talepler/_types";
 import { ECZANEM_TALEP_ACAN_ROLLER, ECLUB_HEDEF_ROLLER, TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { hazirParametreKontrol } from "@/lib/uretim/parametreKontrol";
 
 // TalepTuru tipinin tüm geçerli değerlerinin runtime listesi —
 // TALEP_TURU_KURALLARI'nın anahtarlarından türetilir, hardcoded liste yok.
@@ -138,7 +139,7 @@ export async function POST(request: NextRequest) {
       hedef_rol,
       urun_id, teknik_id, urun_adi, aciklama,
       hazir_video, hazir_soru_seti, hazir_soru_seti_verisi,
-      soru_seti_buyuklugu, video_basi_soru_sayisi,
+      soru_seti_buyuklugu, secenek_sayisi, video_basi_soru_sayisi,
     } = body;
 
     // egitim_turu validasyonu — tip kontrolü
@@ -207,9 +208,23 @@ export async function POST(request: NextRequest) {
 
     const soruSetiBuyuklugu = soru_seti_buyuklugu ?? 25;
     const videoBasisSoruSayisi = video_basi_soru_sayisi ?? 2;
+    const secenekSayisi = secenek_sayisi ?? 4;
 
     if (![10, 15, 20, 25].includes(soruSetiBuyuklugu)) return validasyonHatasi("Soru seti büyüklüğü 10, 15, 20 veya 25 olmalıdır.", ["soru_seti_buyuklugu"]);
+    if (![2, 3, 4].includes(secenekSayisi)) return validasyonHatasi("Seçenek sayısı 2, 3 veya 4 olmalıdır.", ["secenek_sayisi"]);
     if (videoBasisSoruSayisi < 1 || videoBasisSoruSayisi > soruSetiBuyuklugu) return validasyonHatasi(`Video başı soru sayısı 1 ile ${soruSetiBuyuklugu} arasında olmalıdır.`, ["video_basi_soru_sayisi"]);
+
+    // Hazır set parametre kilidi TALEP ANINDA (25.07 — hatalı üretim süreçleri planı §3.1):
+    // uyumsuz set eskiden DB'ye girer, saatler sonra video yüklemesinde patlar ve zinciri
+    // yarım bırakırdı. Kural artık girdide uygulanır; kural tek yerde (parametreKontrol).
+    if (hazir_soru_seti) {
+      const parametreHatasi = hazirParametreKontrol(
+        soruSetiBuyuklugu,
+        videoBasisSoruSayisi,
+        Array.isArray(hazir_soru_seti_verisi) ? hazir_soru_seti_verisi.length : null,
+      );
+      if (parametreHatasi) return validasyonHatasi(parametreHatasi, ["hazir_soru_seti_verisi"]);
+    }
 
     const { data: yeniTalep, error } = await adminSupabase
       .from("talepler")
@@ -228,6 +243,7 @@ export async function POST(request: NextRequest) {
         hazir_soru_seti: hazir_soru_seti ?? false,
         hazir_soru_seti_verisi: hazir_soru_seti_verisi ?? null,
         soru_seti_buyuklugu: soruSetiBuyuklugu,
+        secenek_sayisi: secenekSayisi,
         video_basi_soru_sayisi: videoBasisSoruSayisi,
       })
       .select(`

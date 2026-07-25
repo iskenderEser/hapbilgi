@@ -135,6 +135,13 @@ export async function hazirVideoBul(
  *    olmadığından iş havuza düşer, tüm aktif İU'lara bildirim gider (sahiplik
  *    borcu — bkz. plan §5; sorumlu İU modeli ayrı tur).
  * Fake senaryo YOKtur.
+ *
+ * TAMAMLAYICI (25.07 — hatalı üretim süreçleri planı §3): zincir "baştan kur ya da
+ * çık" değil, "eksik halkayı tamamla" mantığındadır. Eskiden ortada bir adım
+ * patlarsa video+onay DB'de kalır, yeniden yüklemede route sadece adresi tazeleyip
+ * çıkar ve soru seti BİR DAHA doğmazdı — talep kalıcı kilitlenirdi. Artık her çağrı
+ * eksik halkayı arar: var olan halka atlanır, bildirim mükerrer gitmez.
+ * Parametre kilidi de en başa alındı — uyumsuz hazır set tek satır bile yazdırmaz.
  */
 export async function hazirVideoGir(
   adminSupabase: SupabaseClient,
@@ -149,47 +156,95 @@ export async function hazirVideoGir(
     degistiren_id: string;
   }
 ): Promise<HazirVideoSonuc | HazirHata> {
-  // 1. video — talebe doğrudan bağlı, senaryo yok
-  const { data: video, error: vErr } = await adminSupabase
-    .from("videolar")
-    .insert({
-      talep_id: girdi.talep_id,
-      senaryo_durum_id: null,
-      kaynak: "hazir",
-      iu_id: null,
-      video_url: girdi.video_url,
-      thumbnail_url: null,
-    })
-    .select("video_id")
-    .single();
-  if (vErr || !video) return { ok: false, hata: vErr?.message ?? "Video oluşturulamadı.", adim: "videolar INSERT" };
+  const hazirSetVar = girdi.hazir_soru_seti && !!girdi.hazir_soru_seti_verisi;
 
-  // 2. video_durumu — otomatik onay
-  const { data: vd, error: vdErr } = await adminSupabase
+  // 0. Parametre kilidi — HİÇBİR YAZMADAN ÖNCE. Talep ucunda da uygulanır (girdide
+  //    engelleme); bu, eski uyumsuz taleplere karşı ikinci kilittir.
+  if (hazirSetVar) {
+    const parametreHatasi = hazirParametreKontrol(
+      girdi.soru_seti_buyuklugu,
+      girdi.video_basi_soru_sayisi,
+      girdi.hazir_soru_seti_verisi!.length,
+    );
+    if (parametreHatasi) return { ok: false, hata: parametreHatasi, adim: "hazır parametre kontrolü" };
+  }
+
+  // 1. video — talebe doğrudan bağlı, senaryo yok. Varsa adres tazelenir.
+  const mevcutVideoId = await hazirVideoBul(adminSupabase, girdi.talep_id);
+  let video_id: string;
+  if (mevcutVideoId) {
+    const { error: guncelErr } = await adminSupabase
+      .from("videolar")
+      .update({ video_url: girdi.video_url })
+      .eq("video_id", mevcutVideoId);
+    if (guncelErr) return { ok: false, hata: guncelErr.message, adim: "videolar UPDATE — video_url" };
+    video_id = mevcutVideoId;
+  } else {
+    const { data: video, error: vErr } = await adminSupabase
+      .from("videolar")
+      .insert({
+        talep_id: girdi.talep_id,
+        senaryo_durum_id: null,
+        kaynak: "hazir",
+        iu_id: null,
+        video_url: girdi.video_url,
+        thumbnail_url: null,
+      })
+      .select("video_id")
+      .single();
+    if (vErr || !video) return { ok: false, hata: vErr?.message ?? "Video oluşturulamadı.", adim: "videolar INSERT" };
+    video_id = video.video_id;
+  }
+
+  // 2. video_durumu — otomatik onay. Zincirin geri kalanı ONAYLI durum kaydına
+  //    bağlandığından yalnız 'onaylandi' satırı aranır.
+  const { data: mevcutVd, error: vdOkuErr } = await adminSupabase
     .from("video_durumu")
-    .insert({ video_id: video.video_id, durum: "onaylandi", degistiren_id: girdi.degistiren_id, notlar: "Hazır video — otomatik onay" })
     .select("video_durum_id")
-    .single();
-  if (vdErr || !vd) return { ok: false, hata: vdErr?.message ?? "Video durumu oluşturulamadı.", adim: "video_durumu INSERT" };
+    .eq("video_id", video_id)
+    .eq("durum", "onaylandi")
+    .limit(1)
+    .maybeSingle();
+  if (vdOkuErr) return { ok: false, hata: vdOkuErr.message, adim: "video_durumu SELECT — onaylı durum kontrolü" };
 
-  // 3. soru seti
-  if (girdi.hazir_soru_seti && girdi.hazir_soru_seti_verisi) {
+  let video_durum_id: string = (mevcutVd as any)?.video_durum_id ?? "";
+  if (!video_durum_id) {
+    const { data: vd, error: vdErr } = await adminSupabase
+      .from("video_durumu")
+      .insert({ video_id, durum: "onaylandi", degistiren_id: girdi.degistiren_id, notlar: "Hazır video — otomatik onay" })
+      .select("video_durum_id")
+      .single();
+    if (vdErr || !vd) return { ok: false, hata: vdErr?.message ?? "Video durumu oluşturulamadı.", adim: "video_durumu INSERT" };
+    video_durum_id = vd.video_durum_id;
+  }
+
+  // 3. soru seti — zaten varsa zincir tamamdır, mükerrer set/bildirim doğmaz.
+  const { data: mevcutSet, error: setOkuErr } = await adminSupabase
+    .from("soru_setleri")
+    .select("soru_seti_id")
+    .eq("video_durum_id", video_durum_id)
+    .limit(1)
+    .maybeSingle();
+  if (setOkuErr) return { ok: false, hata: setOkuErr.message, adim: "soru_setleri SELECT — mevcut set kontrolü" };
+  if (mevcutSet) return { ok: true, video_id, soruSetiIslendi: hazirSetVar };
+
+  if (hazirSetVar) {
     const s = await hazirSoruSetiGir(adminSupabase, {
       talep_id: girdi.talep_id,
-      video_durum_id: vd.video_durum_id,
-      sorular: girdi.hazir_soru_seti_verisi,
+      video_durum_id,
+      sorular: girdi.hazir_soru_seti_verisi!,
       soru_seti_buyuklugu: girdi.soru_seti_buyuklugu,
       video_basi_soru_sayisi: girdi.video_basi_soru_sayisi,
       degistiren_id: girdi.degistiren_id,
     });
     if (!s.ok) return s;
-    return { ok: true, video_id: video.video_id, soruSetiIslendi: true };
+    return { ok: true, video_id, soruSetiIslendi: true };
   }
 
   // Hazır set yok → İU'ya boş set kabuğu; iş havuza düşer (tüm aktif İU'ya bildirim)
   const { data: set, error: sErr } = await adminSupabase
     .from("soru_setleri")
-    .insert({ talep_id: girdi.talep_id, video_durum_id: vd.video_durum_id, kaynak: "iu", iu_id: null, sorular: [] })
+    .insert({ talep_id: girdi.talep_id, video_durum_id, kaynak: "iu", iu_id: null, sorular: [] })
     .select("soru_seti_id")
     .single();
   if (sErr || !set) return { ok: false, hata: sErr?.message ?? "Soru seti kabuğu oluşturulamadı.", adim: "soru_setleri INSERT" };
@@ -210,7 +265,7 @@ export async function hazirVideoGir(
       mesaj: `Hazır video yüklendi, soru seti yazmaya hazır: ${girdi.urun_adi}`,
     });
   }
-  return { ok: true, video_id: video.video_id, soruSetiIslendi: false };
+  return { ok: true, video_id, soruSetiIslendi: false };
 }
 
 /**
@@ -249,7 +304,19 @@ export async function hazirSoruSetiGir(
   const { error: sdErr } = await adminSupabase
     .from("soru_seti_durumu")
     .insert({ soru_seti_id: set.soru_seti_id, durum: "onaylandi", degistiren_id: girdi.degistiren_id, notlar: "Hazır soru seti — otomatik onay" });
-  if (sdErr) return { ok: false, hata: sdErr.message, adim: "soru_seti_durumu INSERT" };
+  if (sdErr) {
+    // Yarım set bırakma (25.07 planı §4.3): onay yazılamadıysa az önce eklenen set
+    // silinir. Çağıran yalnız video_durumu'nu geri alır — FK güvenli sıra budur.
+    const { error: temizlikErr } = await adminSupabase
+      .from("soru_setleri")
+      .delete()
+      .eq("soru_seti_id", set.soru_seti_id);
+    return {
+      ok: false,
+      hata: temizlikErr ? `${sdErr.message} (yarım set temizlenemedi: ${temizlikErr.message})` : sdErr.message,
+      adim: "soru_seti_durumu INSERT",
+    };
+  }
 
   return { ok: true, soru_seti_id: set.soru_seti_id };
 }

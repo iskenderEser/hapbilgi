@@ -5,7 +5,7 @@ import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isK
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { embedUrlGuidCikar } from "@/lib/video/bunnyYukleme";
-import { hazirVideoGir, hazirVideoBul } from "@/lib/uretim/surec";
+import { hazirVideoGir } from "@/lib/uretim/surec";
 
 // PUT: kanonik embed adresini sistem yazar (A4 — yükleme üreticinin formundan doğrudan
 // Bunny'ye gider; adres vezneden döner, istemci URL kurmaz. IU'nun URL girme yolu kalktı.)
@@ -50,19 +50,12 @@ export async function PUT(request: NextRequest) {
 
     // V1-5/V1-6 kök çözüm (İskender kararı, 21.07 — fiziksel test): PM'in ayrı
     // "video onayı" ara adımı kalktı. Zincir, yükleme tamamlanır tamamlanmaz
-    // burada kurulur — soru seti işi ve IU bildirimi bu anda doğar. Zincir zaten
-    // kuruluysa (işlenemeyen video sonrası yeniden yükleme) yalnızca zincirdeki
-    // video adresi güncellenir; mükerrer zincir/bildirim oluşmaz.
-    const mevcutVideoId = await hazirVideoBul(adminSupabase, talep_id);
-    if (mevcutVideoId) {
-      const { error: videoGuncelleError } = await adminSupabase
-        .from("videolar")
-        .update({ video_url: hazir_video_url.trim() })
-        .eq("video_id", mevcutVideoId);
-      if (videoGuncelleError) return hataYaniti("Hazır video adresi güncellenemedi.", "videolar tablosu UPDATE — video_url", videoGuncelleError);
-      return NextResponse.json({ mesaj: "Video güncellendi." }, { status: 200 });
-    }
-
+    // burada kurulur — soru seti işi ve IU bildirimi bu anda doğar.
+    //
+    // 25.07 (hatalı üretim süreçleri planı §3.4): buradaki "video zaten var →
+    // yalnız adresi güncelle ve çık" erken dönüşü KALDIRILDI. Zincir ortada
+    // koptuysa o dal talebi kalıcı kilitliyordu (soru seti bir daha doğmuyordu).
+    // Karar tek yerde: süreç modülü eksik halkayı tamamlar, var olanı atlar.
     const sonuc = await hazirVideoGir(adminSupabase, {
       talep_id: talep.talep_id,
       video_url: hazir_video_url.trim(),
