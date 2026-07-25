@@ -12,6 +12,7 @@ import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isK
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { bunnyYuklemeBaslat, hazirVideoBaslik, BUNNY_TUS_ENDPOINT } from "@/lib/video/bunnyYukleme";
+import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     // (ilk yükleme ya da red sonrası — reddet hazir_video_url'yi sıfırlar).
     const { data: talep, error: talepError } = await adminSupabase
       .from("talepler")
-      .select("talep_id, uretici_id, hazir_video, hazir_video_url, urunler(urun_adi), teknikler(teknik_adi)")
+      .select(`${TALEP_ALANLARI}, hazir_video_url`)
       .eq("talep_id", talep_id)
       .single();
 
@@ -44,7 +45,10 @@ export async function POST(request: NextRequest) {
     if (talep.hazir_video_url) return isKuraluHatasi("Bu talepte video zaten yüklü — yenisi ancak red sonrası yüklenebilir.");
 
     // 3) Ad üretimi — kütüphane düzeni sisteme aittir.
-    const baslik = hazirVideoBaslik((talep as any).urunler?.urun_adi, (talep as any).teknikler?.teknik_adi);
+    // Dosya adı künyeden (25.07, Aşama 3): ürünsüz eğitimlerde ad serbest alandadır.
+    // Bunny'ye giden başlık kalıcıdır — yanlış yazılırsa sonradan düzelmez.
+    const kunye = haritalaTalep(talep);
+    const baslik = hazirVideoBaslik(kunye.urun_adi !== "-" ? kunye.urun_adi : null, kunye.teknik_adi);
 
     // 4) Bunny kaydı + süreli imza
     const kayit = await bunnyYuklemeBaslat(baslik);

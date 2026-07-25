@@ -9,8 +9,9 @@ import TalepSahibiKarti from "@/components/TalepSahibiKarti";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
-import { HedefRolBant } from "@/components/HedefRolBant";
-import type { HedefRol } from "@/app/talepler/_types";
+import { HedefRolPill } from "@/components/HedefRolBant";
+import { TeknikPill } from "@/components/TeknikPill";
+import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
 import { useBunnyIslemeDurumu } from "@/hooks/useBunnyIslemeDurumu";
@@ -26,14 +27,14 @@ interface Video {
   son_durum_notlar?: string;
 }
 
+// Senaryo yalnız senaryonun kendi verisini taşır (25.07, Aşama 3). Talebe ait
+// alanlar (ad, teknik, hedef rol, üretici) buradan çıkarıldı — künye tek kapıdan
+// gelir ve ayrı state'te durur. Karışık tutmak, aynı bilginin iki şekli olması
+// demekti.
 interface Senaryo {
   senaryo_id: string;
   talep_id: string;
   senaryo_metni: string;
-  urun_adi?: string;
-  teknik_adi?: string;
-  hedef_rol?: HedefRol;
-  uretici_id?: string | null;
 }
 
 export default function VideoAkisPage() {
@@ -43,6 +44,7 @@ export default function VideoAkisPage() {
 
   const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
   const [senaryo, setSenaryo] = useState<Senaryo | null>(null);
+  const [talep, setTalep] = useState<TalepBilgisi | null>(null);
   const [videolar, setVideolar] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
   const [gonderLoading, setGonderLoading] = useState(false);
@@ -76,6 +78,14 @@ export default function VideoAkisPage() {
     setLoading(true);
     const supabase = createClient();
 
+    // Talep künyesi TEK KAPIDAN (25.07, Aşama 3): ekran senaryo_durum_id'yi verir,
+    // zincir çözümü ve ad kuralı sunucuda kalır. Senaryonun kendi verisiyle
+    // karıştırılmaz — ikisi ayrı state.
+    const kunyeRes = await fetch(`/talepler/api/kunye?senaryo_durum_id=${senaryo_durum_id}`);
+    const kunyeVeri = await kunyeRes.json();
+    if (kunyeRes.ok) setTalep(kunyeVeri.kunye);
+    else hata(kunyeVeri.hata ?? "Talep künyesi alınamadı.", "talep künyesi", kunyeVeri.detay);
+
     const { data: senaryoDurum, error: sdError } = await supabase
       .from("senaryo_durumu").select("senaryo_id")
       .eq("senaryo_durum_id", senaryo_durum_id).single();
@@ -90,16 +100,7 @@ export default function VideoAkisPage() {
       if (senaryoError || !senaryoData) {
         hata("Senaryo bulunamadı.", "senaryolar tablosu SELECT — senaryo_id", senaryoError?.message);
       } else {
-        const { data: talep } = await supabase
-          .from("talepler").select(`uretici_id, hedef_rol, urunler(urun_adi), teknikler(teknik_adi)`)
-          .eq("talep_id", senaryoData.talep_id).single();
-        setSenaryo({
-          ...senaryoData,
-          urun_adi: (talep as any)?.urunler?.urun_adi ?? "-",
-          teknik_adi: (talep as any)?.teknikler?.teknik_adi ?? "-",
-          hedef_rol: ((talep as any)?.hedef_rol ?? "utt") as HedefRol,
-          uretici_id: (talep as any)?.uretici_id ?? null,
-        });
+        setSenaryo(senaryoData);
       }
     }
 
@@ -237,7 +238,6 @@ export default function VideoAkisPage() {
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
       <TalepSahibiKarti rol={kullanici.rol} senaryoDurumId={senaryo_durum_id} />
-      {senaryo?.hedef_rol && <HedefRolBant hedefRol={senaryo.hedef_rol} />}
 
       <div className="max-w-3xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
 
@@ -251,8 +251,11 @@ export default function VideoAkisPage() {
         {senaryo && (
           <div className="bg-white border border-gray-200 rounded-xl px-4 md:px-5 py-4">
             <div className="flex flex-col gap-1 mb-2.5">
-              <span className="text-base font-semibold text-gray-900">{senaryo.urun_adi}</span>
-              <span className="text-xs text-gray-500">{senaryo.teknik_adi}</span>
+              <span className="text-base font-semibold text-gray-900">{talep?.urun_adi ?? "-"}</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <TeknikPill teknikAdi={talep?.teknik_adi} />
+                {talep?.hedef_rol && <HedefRolPill hedefRol={talep.hedef_rol} />}
+              </div>
             </div>
             <p className="text-sm text-gray-700 leading-relaxed m-0 whitespace-pre-wrap">{senaryo.senaryo_metni}</p>
           </div>
@@ -287,7 +290,7 @@ export default function VideoAkisPage() {
                       <span className="text-xs text-gray-400">{formatTarih(v.created_at)}</span>
                     </div>
                     {v.son_durum && (
-                      <span className="text-xs px-2.5 py-0.5 rounded-full"
+                      <span className="text-[10px] px-2.5 py-0.5 rounded-full"
                         style={{ background: renk.bg, color: renk.text, border: `0.5px solid ${renk.border}` }}>
                         {v.son_durum}
                       </span>
@@ -358,7 +361,7 @@ export default function VideoAkisPage() {
 
           {/* PM karar alanı */}
           {/* Ç-7: karar butonları yalnız talebi açan üreticiye görünür. */}
-          {isPM && senaryo?.uretici_id === kullanici.id && sonVideo?.son_durum === "inceleme bekleniyor" && (
+          {isPM && talep?.uretici_id === kullanici.id && sonVideo?.son_durum === "inceleme bekleniyor" && (
             <div className="border-t border-gray-100 px-4 md:px-5 py-3.5 bg-gray-50">
               {aktifRevizyon ? (
                 <div className="flex flex-col gap-2">
@@ -367,7 +370,7 @@ export default function VideoAkisPage() {
                     onChange={(e) => setRevizyonNotu(e.target.value)}
                     placeholder="Revizyon notunu yazın..."
                     rows={3}
-                    className="w-full border border-yellow-200 rounded-lg px-3 py-2 text-xs resize-y"
+                    className="w-full border border-yellow-200 rounded-lg px-3 py-2 text-sm resize-y"
                     style={{ fontFamily: "'Nunito', sans-serif" }}
                   />
                   <div className="flex gap-2 justify-end">

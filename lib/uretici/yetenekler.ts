@@ -317,7 +317,7 @@ export function teknikEkleyebilirMi(rol: string): boolean {
 
 /**
  * Bu rolün ürettiği içerik hiç teknik taşır mı? (açabildiği türlerden en az biri
- * teknik !== "yok" ise true). Ana sayfa "Talep Durum Tablosu"nda TEKNİK kolonunun
+ * teknik !== "yok" ise true). Ana sayfa "Yayın Listesi"nde TEKNİK kolonunun
  * role göre gösterilip gösterilmeyeceğini belirler — med_md/ik_* için false
  * (o rollerde kolon hiç görünmez), pm/egt_* için true.
  */

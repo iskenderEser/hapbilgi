@@ -7,11 +7,12 @@ import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import TalepSahibiKarti from "@/components/TalepSahibiKarti";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
-import { HedefRolBant } from "@/components/HedefRolBant";
-import type { HedefRol } from "@/app/talepler/_types";
+import { HedefRolPill } from "@/components/HedefRolBant";
+import { TeknikPill } from "@/components/TeknikPill";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { DosyaGoruntuleListesi, type DosyaItem } from "@/components/DosyaGoruntuleListesi";
+import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
 import { SenaryoMetniGoster } from "@/components/SenaryoMetniGoster";
 import { gonderimKarari } from "@/lib/utils/senaryo/gonderimKarari";
 import { SenaryoDuzeltmeEditoru } from "@/components/SenaryoDuzeltmeEditoru";
@@ -36,15 +37,10 @@ interface RevizyonNotu {
   created_at: string;
 }
 
-interface Talep {
-  talep_id: string;
-  uretici_id: string | null;
-  urun_adi: string;
-  teknik_adi: string;
-  hedef_rol: HedefRol;
-  aciklama: string;
-  dosya_urls: DosyaItem[];
-}
+// Yerel Talep arayüzü kaldırıldı (25.07, Aşama 3): künyenin şekli tek yerde
+// tanımlıdır (TalepBilgisi). Ekranda ikinci bir tip kopyası tutmak, alan
+// eklendiğinde iki yeri güncellemeyi gerektiriyordu — kopyalanan kural sorununun
+// tip tarafındaki yüzü.
 
 export default function SenaryolarPage() {
   const router = useRouter();
@@ -52,7 +48,7 @@ export default function SenaryolarPage() {
   const talep_id = params.talep_id as string;
 
   const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
-  const [talep, setTalep] = useState<Talep | null>(null);
+  const [talep, setTalep] = useState<TalepBilgisi | null>(null);
   const [senaryolar, setSenaryolar] = useState<Senaryo[]>([]);
   const [revizyonNotlari, setRevizyonNotlari] = useState<RevizyonNotu[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,27 +83,19 @@ export default function SenaryolarPage() {
     setLoading(true);
     const supabase = createClient();
 
-    const { data: talepData, error: talepError } = await supabase
-      .from("talepler")
-      .select(`talep_id, uretici_id, hedef_rol, aciklama, dosya_urls, urunler(urun_adi), teknikler(teknik_adi)`)
-      .eq("talep_id", talep_id)
-      .single();
+    // Talep künyesi TEK KAPIDAN gelir (25.07, Aşama 3): bu ekran hangi alanların
+    // çekileceğini ve adın hangi kaynaktan seçileceğini bilmez — kimliğini verir,
+    // künyeyi alır. Eski elle sorgu + ad yedeği kaldırıldı (bkz. api/kunye/route.ts).
+    const kunyeRes = await fetch(`/talepler/api/kunye?talep_id=${talep_id}`);
+    const kunyeVeri = await kunyeRes.json();
 
-    if (talepError || !talepData) {
-      hata("Talep bulunamadı.", "talepler tablosu SELECT — talep_id");
+    if (!kunyeRes.ok) {
+      hata(kunyeVeri.hata ?? "Talep bulunamadı.", "talep künyesi", kunyeVeri.detay);
       router.push("/talepler");
       return;
     }
 
-    setTalep({
-      talep_id: talepData.talep_id,
-      uretici_id: (talepData as any).uretici_id ?? null,
-      hedef_rol: ((talepData as any).hedef_rol ?? "utt") as HedefRol,
-      aciklama: talepData.aciklama,
-      urun_adi: (talepData as any).urunler?.urun_adi ?? "-",
-      teknik_adi: (talepData as any).teknikler?.teknik_adi ?? "-",
-      dosya_urls: talepData.dosya_urls ?? [],
-    });
+    setTalep(kunyeVeri.kunye);
 
     const { data: senaryolarData, error: senaryoError } = await supabase
       .from("senaryolar").select("senaryo_id, talep_id, iu_id, senaryo_metni, created_at")
@@ -305,7 +293,6 @@ export default function SenaryolarPage() {
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
       <TalepSahibiKarti rol={kullanici.rol} talepId={talep_id} />
-      {talep && <HedefRolBant hedefRol={talep.hedef_rol} />}
 
       <div className="max-w-3xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
 
@@ -320,11 +307,14 @@ export default function SenaryolarPage() {
           <div className="bg-white border border-gray-200 rounded-xl px-4 md:px-5 py-4">
             <div className="flex flex-col gap-1">
               <span className="text-base font-semibold text-gray-900">{talep.urun_adi}</span>
-              <span className="text-xs text-gray-500">{talep.teknik_adi}</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <TeknikPill teknikAdi={talep.teknik_adi} />
+                <HedefRolPill hedefRol={talep.hedef_rol} />
+              </div>
               {talep.aciklama && <p className="text-sm text-gray-700 mt-2 leading-relaxed">{talep.aciklama}</p>}
-              {talep.dosya_urls.length > 0 && (
+              {(talep.dosya_urls?.length ?? 0) > 0 && (
                 <div className="mt-2.5">
-                  <DosyaGoruntuleListesi dosyalar={talep.dosya_urls} onHata={hata} />
+                  <DosyaGoruntuleListesi dosyalar={(talep.dosya_urls ?? []) as DosyaItem[]} onHata={hata} />
                 </div>
               )}
             </div>
@@ -374,7 +364,7 @@ export default function SenaryolarPage() {
                   <div className="px-3 py-2.5 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
                     <span className="text-xs text-gray-400">{formatTarih(sonSenaryo.created_at)}</span>
                     {sonSenaryo.son_durum && (
-                      <span className="text-xs px-2.5 py-0.5 rounded-full"
+                      <span className="text-[10px] px-2.5 py-0.5 rounded-full"
                         style={{ background: renk.bg, color: renk.text, border: `0.5px solid ${renk.border}` }}>
                         {sonSenaryo.son_durum}
                       </span>
@@ -412,7 +402,7 @@ export default function SenaryolarPage() {
                             onChange={(e) => setRevizyonNotu(e.target.value)}
                             placeholder="Revizyon notunu yazın..."
                             rows={3}
-                            className="w-full border border-yellow-200 rounded-lg px-3 py-2 text-xs resize-y"
+                            className="w-full border border-yellow-200 rounded-lg px-3 py-2 text-sm resize-y"
                             style={{ fontFamily: "'Nunito', sans-serif" }}
                           />
                           <div className="flex gap-2 justify-end">

@@ -8,8 +8,9 @@ import Navbar from "@/components/Navbar";
 import TalepSahibiKarti from "@/components/TalepSahibiKarti";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
-import { HedefRolBant } from "@/components/HedefRolBant";
-import type { HedefRol } from "@/app/talepler/_types";
+import { HedefRolPill } from "@/components/HedefRolBant";
+import { TeknikPill } from "@/components/TeknikPill";
+import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { SoruSetiFormu } from "@/components/SoruSetiFormu";
 import { SoruIceAktar } from "@/components/SoruIceAktar";
@@ -32,22 +33,9 @@ interface SoruSeti {
   soru_seti_durum_id?: string;
 }
 
-interface VideoDurumJoin {
-  video_id: string;
-  videolar: {
-    talepler: {
-      uretici_id: string | null;
-      soru_seti_buyuklugu: number;
-      secenek_sayisi: number;
-      video_basi_soru_sayisi: number;
-      hedef_rol: HedefRol;
-      egitim_turu: TalepTuru | null;
-      urun_adi: string | null;
-      urunler: { urun_adi: string } | null;
-      teknikler: { teknik_adi: string } | null;
-    } | null;
-  } | null;
-}
+// VideoDurumJoin arayüzü kaldırıldı (25.07, Aşama 3): elle kurulan çok katlı
+// join'in şeklini tarif ediyordu. Join sunucuya taşındı, künyenin şekli tek
+// yerde tanımlı (TalepBilgisi).
 
 export default function SoruSetiAkisPage() {
   const router = useRouter();
@@ -56,15 +44,20 @@ export default function SoruSetiAkisPage() {
 
   const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
   const [soruSetleri, setSoruSetleri] = useState<SoruSeti[]>([]);
-  const [urunAdi, setUrunAdi] = useState("");
-  const [teknikAdi, setTeknikAdi] = useState("");
-  const [turuAdi, setTuruAdi] = useState<string | null>(null);
-  const [soruSetiBuyuklugu, setSoruSetiBuyuklugu] = useState<number>(25);
-  const [secenekSayisi, setSecenekSayisi] = useState<number>(2);
-  const [videoBasiSoruSayisi, setVideoBasiSoruSayisi] = useState<number>(2);
-  const [hedefRol, setHedefRol] = useState<HedefRol | null>(null);
+  // Talebe ait sekiz ayrı state tek künyede toplandı (25.07, Aşama 3). Eskiden her
+  // alan ayrı state'ti ve hepsi aynı sorgudan besleniyordu; künye tek kapıdan
+  // geldiği için bölmenin karşılığı kalmadı. Ekranda kullanılan türetilmiş
+  // değerler (tür adı, sayılar) künyeden okunur.
+  const [talep, setTalep] = useState<TalepBilgisi | null>(null);
+  const urunAdi = talep?.urun_adi ?? "";
+  const teknikAdi = talep?.teknik_adi ?? "";
+  const turuAdi = talep?.egitim_turu ? (TALEP_TURU_KURALLARI[talep.egitim_turu]?.ad ?? null) : null;
+  const soruSetiBuyuklugu = talep?.soru_seti_buyuklugu ?? 25;
+  const secenekSayisi = talep?.secenek_sayisi ?? 2;
+  const videoBasiSoruSayisi = talep?.video_basi_soru_sayisi ?? 2;
+  const hedefRol = talep?.hedef_rol ?? null;
   // Ç-7: karar butonlarını yalnız talebi açan üreticiye göstermek için.
-  const [ureticiId, setUreticiId] = useState<string | null>(null);
+  const ureticiId = talep?.uretici_id ?? null;
   const [loading, setLoading] = useState(true);
   const [gonderLoading, setGonderLoading] = useState(false);
   // Y-2: yapısal giriş — sorular form kartlarıyla yazılır (textarea/parse kapısı kalktı).
@@ -91,44 +84,14 @@ export default function SoruSetiAkisPage() {
     router.push("/login");
   };
 
-  const fetchUrunBilgileri = useCallback(async (supabase: any, video_durum_id: string) => {
-    // Talebe video_durumu → videolar → talepler yoluyla, talep_id üstünden ulaşılır
-    // (Adım 5 sonrası video talebe DOĞRUDAN bağlı). Eski senaryo_durumu/senaryolar
-    // zinciri hazır videoda (senaryo_durum_id=null) kırılıp tüm alanları varsayılana
-    // düşürüyordu — talep_id yolu hazırda da çalışır.
-    const { data, error } = await supabase
-      .from("video_durumu")
-      .select(`
-        video_id,
-        videolar!inner (
-          talepler!inner (
-            uretici_id,
-            soru_seti_buyuklugu,
-            secenek_sayisi,
-            video_basi_soru_sayisi,
-            hedef_rol,
-            egitim_turu,
-            urun_adi,
-            urunler (urun_adi),
-            teknikler (teknik_adi)
-          )
-        )
-      `)
-      .eq("video_durum_id", video_durum_id)
-      .single();
-
-    if (error || !data) return;
-
-    const typedData = data as unknown as VideoDurumJoin;
-    const talep = typedData.videolar?.talepler;
-    setUrunAdi(talep?.urunler?.urun_adi ?? talep?.urun_adi ?? "-");
-    setTeknikAdi(talep?.teknikler?.teknik_adi ?? "-");
-    setTuruAdi(talep?.egitim_turu ? (TALEP_TURU_KURALLARI[talep.egitim_turu as TalepTuru]?.ad ?? null) : null);
-    setSoruSetiBuyuklugu(talep?.soru_seti_buyuklugu ?? 25);
-    setSecenekSayisi(talep?.secenek_sayisi ?? 2);
-    setVideoBasiSoruSayisi(talep?.video_basi_soru_sayisi ?? 2);
-    setHedefRol((talep?.hedef_rol ?? "utt") as HedefRol);
-    setUreticiId(talep?.uretici_id ?? null);
+  // Talep künyesi TEK KAPIDAN (25.07, Aşama 3). Eskiden burada video_durumu →
+  // videolar → talepler çok katlı join'i elle kuruluyor, dokuz alan tek tek
+  // haritalanıyordu. Zincir çözümü (hazır videoda senaryo kolunun boş olması
+  // dahil) artık sunucuda; ekran yalnız video_durum_id verir.
+  const fetchUrunBilgileri = useCallback(async (video_durum_id: string) => {
+    const res = await fetch(`/talepler/api/kunye?video_durum_id=${video_durum_id}`);
+    const veri = await res.json();
+    if (res.ok) setTalep(veri.kunye);
   }, []);
 
   const fetchSoruSetleri = useCallback(async (supabase: any, video_durum_id: string) => {
@@ -169,7 +132,7 @@ export default function SoruSetiAkisPage() {
   const veriCek = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
-    await fetchUrunBilgileri(supabase, video_durum_id);
+    await fetchUrunBilgileri(video_durum_id);
     const soruSetleriData = await fetchSoruSetleri(supabase, video_durum_id);
     setSoruSetleri(soruSetleriData);
     setLoading(false);
@@ -302,7 +265,6 @@ export default function SoruSetiAkisPage() {
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
       <TalepSahibiKarti rol={kullanici.rol} videoDurumId={video_durum_id} />
-      {hedefRol && <HedefRolBant hedefRol={hedefRol} />}
 
       <div className="max-w-3xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
 
@@ -314,21 +276,26 @@ export default function SoruSetiAkisPage() {
 
         <div className="bg-white border border-gray-200 rounded-xl px-4 md:px-5 py-4">
           <span className="text-base font-semibold text-gray-900">{urunAdi}</span>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
             {turuAdi && (
-              <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "#f5f3ff", color: "#6d28d9", border: "0.5px solid #ddd6fe" }}>
+              <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "#f5f3ff", color: "#6d28d9", border: "0.5px solid #ddd6fe" }}>
                 {turuAdi}
               </span>
             )}
-            {teknikAdi && teknikAdi !== "-" && <span className="text-xs text-gray-500">{teknikAdi}</span>}
+            <TeknikPill teknikAdi={teknikAdi} />
+            {hedefRol && <HedefRolPill hedefRol={hedefRol} />}
           </div>
           {isIU && (
             <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100">
-              <span className="text-xs px-2.5 py-1 rounded-full"
+              <span className="text-[10px] px-2.5 py-1 rounded-full"
                 style={{ background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe" }}>
                 Toplam soru: <strong>{soruSetiBuyuklugu}</strong>
               </span>
-              <span className="text-xs px-2.5 py-1 rounded-full"
+              <span className="text-[10px] px-2.5 py-1 rounded-full"
+                style={{ background: "#fffbeb", color: "#b45309", border: "0.5px solid #fde68a" }}>
+                Seçenek sayısı: <strong>{secenekSayisi}</strong>
+              </span>
+              <span className="text-[10px] px-2.5 py-1 rounded-full"
                 style={{ background: "#f0fdf4", color: "#15803d", border: "0.5px solid #bbf7d0" }}>
                 Her videoda: <strong>{videoBasiSoruSayisi}</strong> soru gösterilecek
               </span>
@@ -362,7 +329,7 @@ export default function SoruSetiAkisPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {ss.son_durum && (
-                        <span className="text-xs px-2.5 py-0.5 rounded-full"
+                        <span className="text-[10px] px-2.5 py-0.5 rounded-full"
                           style={{ background: renk.bg, color: renk.text, border: `0.5px solid ${renk.border}` }}>
                           {ss.son_durum}
                         </span>
@@ -383,7 +350,7 @@ export default function SoruSetiAkisPage() {
                           <p className="text-xs text-gray-700 font-semibold m-0 mb-1.5">{si + 1}. {soru.soru_metni}</p>
                           <div className="flex flex-col gap-1">
                             {soru.secenekler.map((s, si2) => (
-                              <span key={si2} className="text-xs px-2 py-0.5 rounded-full inline-block w-fit"
+                              <span key={si2} className="text-[10px] px-2 py-0.5 rounded-full inline-block w-fit"
                                 style={{
                                   border: s.dogru ? "0.5px solid #56aeff" : "0.5px solid #e5e7eb",
                                   color: s.dogru ? "#56aeff" : "#737373",
@@ -411,7 +378,7 @@ export default function SoruSetiAkisPage() {
                         <div className="flex flex-col gap-2">
                           <textarea value={revizyonNotu} onChange={(e) => setRevizyonNotu(e.target.value)}
                             placeholder="Revizyon notunu yazın..." rows={3}
-                            className="w-full border border-yellow-200 rounded-lg px-3 py-2 text-xs resize-y focus:outline-none focus:border-yellow-400"
+                            className="w-full border border-yellow-200 rounded-lg px-3 py-2 text-sm resize-y focus:outline-none focus:border-yellow-400"
                             style={{ fontFamily: "'Nunito', sans-serif" }} />
                           <div className="flex gap-2 justify-end">
                             <button onClick={() => { setAktifRevizyon(false); setRevizyonNotu(""); }}

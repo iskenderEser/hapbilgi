@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import DurumAnahtari from "@/components/DurumAnahtari";
 import { durumMesaji, kayitDurumKodu, type DurumKodu } from "@/lib/utils/durum/mesaj";
 import { ROL_ADLARI } from "@/lib/utils/roller";
+import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
 import UretimVaryantiRozet from "@/components/UretimVaryantiRozet";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
@@ -88,33 +89,32 @@ export default function SoruSetleriListePage() {
     const tekilSoruSetleri = Array.from(talepMap.values());
     const talepIdler = Array.from(talepMap.keys());
 
-    // 3) Talep bilgisi (ürün/teknik adı) talep_id ile toplu çek
+    // 3) Talep künyeleri TEK KAPIDAN, toplu (25.07, Aşama 3): alan listesi ve ad
+    // kuralı ekranda değil, sunucuda. Tür adı künyedeki egitim_turu'ndan türetilir.
     const talepUreticiMap = new Map<string, string>();
     const talepBilgiMap = new Map<string, { urun_adi: string; teknik_adi: string; turu_adi: string | null; talep_no: number; firma_adi: string; hazir_video: boolean; hazir_soru_seti: boolean }>();
     if (talepIdler.length > 0) {
-      const { data: talepler, error: tError } = await supabase
-        .from("talepler")
-        .select("talep_id, talep_no, egitim_turu, uretici_id, urun_adi, hazir_video, hazir_soru_seti, urunler (urun_adi), teknikler (teknik_adi), firmalar (firma_adi)")
-        .in("talep_id", talepIdler);
+      const res = await fetch(`/talepler/api/kunye?talep_idler=${talepIdler.join(",")}`);
+      const veri = await res.json();
 
-      if (tError) {
-        hata("Talep bilgileri yüklenemedi.", "talepler tablosu SELECT", tError.message);
+      if (!res.ok) {
+        hata(veri.hata ?? "Talep bilgileri yüklenemedi.", "talep künyesi", veri.detay);
         setLoading(false);
         return;
       }
 
-      talepler?.forEach((t: any) => {
-        if (t.uretici_id) talepUreticiMap.set(t.talep_id, t.uretici_id);
-        talepBilgiMap.set(t.talep_id, {
-          urun_adi: t.urunler?.urun_adi ?? t.urun_adi ?? "-",
-          teknik_adi: t.teknikler?.teknik_adi ?? "-",
-          turu_adi: t.egitim_turu ? (TALEP_TURU_KURALLARI[t.egitim_turu as TalepTuru]?.ad ?? null) : null,
-          talep_no: t.talep_no ?? 0,
-          firma_adi: t.firmalar?.firma_adi ?? "",
-          hazir_video: t.hazir_video ?? false,
-          hazir_soru_seti: t.hazir_soru_seti ?? false,
+      for (const k of veri.kunyeler as TalepBilgisi[]) {
+        if (k.uretici_id) talepUreticiMap.set(k.talep_id, k.uretici_id);
+        talepBilgiMap.set(k.talep_id, {
+          urun_adi: k.urun_adi,
+          teknik_adi: k.teknik_adi,
+          turu_adi: k.egitim_turu ? (TALEP_TURU_KURALLARI[k.egitim_turu]?.ad ?? null) : null,
+          talep_no: k.talep_no ?? 0,
+          firma_adi: k.firma_adi,
+          hazir_video: k.hazir_video,
+          hazir_soru_seti: k.hazir_soru_seti,
         });
-      });
+      }
     }
 
 
@@ -243,7 +243,7 @@ export default function SoruSetleriListePage() {
                           <span className="text-sm text-gray-900" style={{ fontWeight: okunmamis ? 700 : 600 }}>{ss.urun_adi}</span>
                           <UretimVaryantiRozet hazirVideo={ss.hazir_video} hazirSoruSeti={ss.hazir_soru_seti} />
                         </div>
-                        <span className="text-xs px-2 py-0.5 rounded-full leading-tight"
+                        <span className="text-[10px] px-2 py-0.5 rounded-full leading-tight"
                           style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}`, fontSize: 11 }}>
                           {durum.metin}
                         </span>
@@ -294,7 +294,7 @@ export default function SoruSetleriListePage() {
                           <td className="px-3 py-3 text-gray-500">{ss.teknik_adi}</td>
                           <td className="px-3 py-3 text-gray-500">{ss.soru_sayisi} soru</td>
                           <td className="px-3 py-3">
-                            <span className="text-xs px-2.5 py-0.5 rounded-full inline-block max-w-full break-words text-center leading-snug"
+                            <span className="text-[10px] px-2.5 py-0.5 rounded-full inline-block max-w-full break-words text-center leading-snug"
                               style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}` }}>
                               {durum.metin}
                             </span>

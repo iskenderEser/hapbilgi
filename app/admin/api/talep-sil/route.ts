@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 import { sunucuHatasi, validasyonHatasi, veriKontrol, hataYaniti } from "@/lib/utils/hataIsle";
+import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
 
 // Görünen ID'nin son segmentindeki sayı = talep_no.
 function talepNoCoz(gorunenId: string | null): number | null {
@@ -26,12 +27,16 @@ async function talebiCoz(adminSupabase: ReturnType<typeof createAdminClient>, go
   const talepNo = talepNoCoz(gorunenId);
   if (talepNo == null) return { hata: "GECERSIZ_ID" as const };
 
-  const { data: talep, error } = await adminSupabase
+  // Künye ortak listeden (25.07, Aşama 3): ürünsüz eğitimlerde (ik_egitimi,
+  // kurumsal...) ad talepler'in serbest alanındadır — elle join yazıldığında
+  // silme özetinde "-" görünüyordu.
+  const { data: hamTalep, error } = await adminSupabase
     .from("talepler")
-    .select(`talep_id, talep_no, firmalar ( firma_adi ), urunler ( urun_adi ), teknikler ( teknik_adi )`)
+    .select(TALEP_ALANLARI)
     .eq("talep_no", talepNo)
     .maybeSingle();
   if (error) return { hata: "SORGU" as const, error };
+  const talep = hamTalep ? haritalaTalep(hamTalep) : null;
   if (!talep) return { hata: "BULUNAMADI" as const };
 
   // Talebin yayın(lar)ı + durum: v_yayin_detay talep_no taşır (bekleyen talepte
@@ -56,9 +61,9 @@ async function talebiCoz(adminSupabase: ReturnType<typeof createAdminClient>, go
     ozet: {
       talep_id: talep.talep_id,
       gorunen_id: gorunenId,
-      firma_adi: (talep as any).firmalar?.firma_adi ?? "-",
-      urun_adi: (talep as any).urunler?.urun_adi ?? "-",
-      teknik_adi: (talep as any).teknikler?.teknik_adi ?? "-",
+      firma_adi: talep.firma_adi || "-",
+      urun_adi: talep.urun_adi,
+      teknik_adi: talep.teknik_adi,
       yayin_var: yayinVar,
       puan_var: puanVar,
       durum,

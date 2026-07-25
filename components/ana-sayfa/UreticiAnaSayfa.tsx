@@ -15,7 +15,7 @@ import { ureticiDurumMesaji, type DurumKodu } from "@/lib/utils/durum/mesaj";
 
 interface TakipSatiri {
   talep_id: string;
-  talep_no: number;
+  talep_no: number | null;
   firma_adi: string;
   urun_adi: string;
   teknik_adi: string;
@@ -126,9 +126,9 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
         <div className="text-xs text-gray-400 italic truncate">FirmaAdı_10001</div>
         <div className="text-sm font-semibold text-gray-400 italic truncate">Ürün / Eğitim adı</div>
         {teknikGoster && <div className="text-xs text-gray-400 italic truncate">Teknik adı</div>}
-        <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block bg-gray-100 text-gray-400">UTT</span></div>
-        <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block bg-gray-100 text-gray-400">Senaryo</span></div>
-        <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block bg-gray-100 text-gray-400 leading-tight">Sizden Onay Bekleniyor</span></div>
+        <div><span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block bg-gray-100 text-gray-400">UTT</span></div>
+        <div><span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block bg-gray-100 text-gray-400">Senaryo</span></div>
+        <div><span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block bg-gray-100 text-gray-400 leading-tight">Sizden Onay Bekleniyor</span></div>
         <span className="text-xs text-gray-400 italic">—</span>
         <span className="text-gray-200 text-base">›</span>
       </div>
@@ -143,9 +143,9 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
         <div className="text-xs text-gray-400 italic mb-1">FirmaAdı_10001</div>
         <div className="text-sm font-bold text-gray-400 italic mb-1.5">Ürün / Eğitim adı</div>
         <div className="flex gap-2 items-center flex-wrap">
-          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">Sizden Onay Bekleniyor</span>
-          <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">Senaryo</span>
-          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">UTT</span>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">Sizden Onay Bekleniyor</span>
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">Senaryo</span>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">UTT</span>
           {teknikGoster && <span className="text-xs text-gray-400 italic">Teknik adı</span>}
         </div>
         <div className="text-xs text-gray-400 mt-1 italic">—</div>
@@ -168,7 +168,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
             {ROL_ADLARI[rol.toLowerCase()] ?? rol.toUpperCase()}
           </p>
         </div>
-        <span className="hidden md:inline text-xs text-gray-500 bg-white border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap">
+        <span className="hidden md:inline text-[10px] text-gray-500 bg-white border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap">
           {bugunTarih()}
         </span>
       </div>
@@ -199,7 +199,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
 
       {/* İçerik tablosu başlık */}
       <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-bold text-gray-900">Talep Durum Tablosu</span>
+        <span className="text-base font-bold text-gray-900">Yayın Listesi</span>
         {aktifFiltre !== "tumu" && (
           <button
             onClick={() => setAktifFiltre("tumu")}
@@ -236,8 +236,8 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
                   {/* Durum tam metindir, kısaltılmaz — mobilde kendi satırından başlar
                       ve sararak sığar (İskender kararı 25.07: "uzayacaksa uzasın"). */}
                   <div className="flex gap-2 items-center flex-wrap">
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: durumM.renk.bg, color: durumM.renk.text, border: `0.5px solid ${durumM.renk.border}` }}>{durumM.metin}</span>
-                    <span className="text-xs font-bold px-1.5 py-0.5 rounded-full" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: durumM.renk.bg, color: durumM.renk.text, border: `0.5px solid ${durumM.renk.border}` }}>{durumM.metin}</span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span>
                     <HedefRolPill hedefRol={s.hedef_rol} />
                     {teknikGoster && <span className="text-xs text-gray-500">{s.teknik_adi}</span>}
                   </div>
@@ -278,8 +278,8 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
                   </div>
                   {teknikGoster && <div className="text-xs text-gray-500 truncate">{s.teknik_adi}</div>}
                   <div><HedefRolPill hedefRol={s.hedef_rol} /></div>
-                  <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block whitespace-nowrap" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span></div>
-                  <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block leading-tight" style={{ background: durumM.renk.bg, color: durumM.renk.text, border: `0.5px solid ${durumM.renk.border}` }}>{durumM.metin}</span></div>
+                  <div><span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block whitespace-nowrap" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span></div>
+                  <div><span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block leading-tight" style={{ background: durumM.renk.bg, color: durumM.renk.text, border: `0.5px solid ${durumM.renk.border}` }}>{durumM.metin}</span></div>
                   <span className="text-xs text-gray-400 whitespace-nowrap">{formatTarih(s.tarih)}</span>
                   <span className="text-gray-300 text-base">›</span>
                 </div>

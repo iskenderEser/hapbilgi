@@ -22,7 +22,8 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import type { IuKategori } from "@/lib/utils/anaSayfa/iuDurumEsle";
 import { talepBazindaTekillestir } from "@/lib/utils/anaSayfa/iuDurumEsle";
-import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
+import { TALEP_TURU_KURALLARI } from "@/lib/uretici/yetenekler";
+import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
 import { kayitDurumKodu, type Asama, type DurumKodu } from "@/lib/utils/durum/mesaj";
 import { ROL_ADLARI } from "@/lib/utils/roller";
 
@@ -47,14 +48,16 @@ export interface IuAnaSayfaVeri {
 
 const TAMAMLANAN_PENCERE_MS = 30 * 24 * 60 * 60 * 1000; // 30 gün — liste sınırsız büyümesin
 
-const TALEP_ALANLARI = "talep_id, uretici_id, created_at, egitim_turu, urun_adi, urunler(urun_adi), teknikler(teknik_adi)";
-
-const urunTeknik = (talep: any) => ({
-  // Ürün yoksa serbest eğitim/içerik adına düş (medikal_egitim, ik_egitimi).
-  urun_adi: talep?.urunler?.urun_adi ?? talep?.urun_adi ?? "-",
-  teknik_adi: talep?.teknikler?.teknik_adi ?? "-",
-  turu_adi: talep?.egitim_turu ? (TALEP_TURU_KURALLARI[talep.egitim_turu as TalepTuru]?.ad ?? null) : null,
-});
+// Alan listesi ve ad kuralı ortak kaynaktan (25.07, Aşama 3). Buradaki yerel kopya
+// kaldırıldı — aynı kural iki yerde durunca biri güncellenmeden kalabiliyordu.
+const urunTeknik = (talep: any) => {
+  const k = haritalaTalep(talep);
+  return {
+    urun_adi: k.urun_adi,
+    teknik_adi: k.teknik_adi,
+    turu_adi: k.egitim_turu ? (TALEP_TURU_KURALLARI[k.egitim_turu]?.ad ?? null) : null,
+  };
+};
 
 /** Durum kodu → stat kartı kategorisi. İptal listelenmez (null). */
 function kategoriBul(kod: DurumKodu): IuKategori | null {

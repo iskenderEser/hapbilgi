@@ -6,6 +6,7 @@ import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { embedUrlGuidCikar } from "@/lib/video/bunnyYukleme";
 import { hazirVideoGir } from "@/lib/uretim/surec";
+import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
 
 // PUT: kanonik embed adresini sistem yazar (A4 — yükleme üreticinin formundan doğrudan
 // Bunny'ye gider; adres vezneden döner, istemci URL kurmaz. IU'nun URL girme yolu kalktı.)
@@ -33,7 +34,8 @@ export async function PUT(request: NextRequest) {
 
     const { data: talep, error: talepError } = await adminSupabase
       .from("talepler")
-      .select("talep_id, uretici_id, hazir_video, hazir_soru_seti, hazir_soru_seti_verisi, soru_seti_buyuklugu, video_basi_soru_sayisi, urunler(urun_adi), teknikler(teknik_adi)")
+      // Künye alanları ortak listeden (25.07, Aşama 3); hazır set verisi bu akışa özel.
+      .select(`${TALEP_ALANLARI}, hazir_soru_seti_verisi`)
       .eq("talep_id", talep_id)
       .single();
 
@@ -63,7 +65,10 @@ export async function PUT(request: NextRequest) {
       hazir_soru_seti_verisi: talep.hazir_soru_seti_verisi ?? null,
       soru_seti_buyuklugu: talep.soru_seti_buyuklugu ?? null,
       video_basi_soru_sayisi: talep.video_basi_soru_sayisi ?? null,
-      urun_adi: (talep as any).urunler?.urun_adi ?? (talep as any).teknikler?.teknik_adi ?? "-",
+      // Ad kuralı künyeden: ürünlü türlerde ürün adı, ürünsüzde serbest alan.
+      // Eskiden ürün yoksa TEKNİK adına düşülüyordu — yanlış yedekti; ürünsüz
+      // eğitimlerde İÜ'ye giden bildirime "-" yazılıyordu.
+      urun_adi: haritalaTalep(talep).urun_adi,
       degistiren_id: user.id,
     });
 

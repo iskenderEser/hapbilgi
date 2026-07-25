@@ -11,6 +11,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import type { HedefRol } from "@/lib/utils/roller";
 import { kayitDurumKodu, yayinDurumKodu, type DurumKodu } from "@/lib/utils/durum/mesaj";
+import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
 
 type TakipKategori =
   | "inceleme" | "yayin-bekleyen" | "yayinda" | "durdurulan"
@@ -18,7 +19,7 @@ type TakipKategori =
 
 interface TakipSatiri {
   talep_id: string;
-  talep_no: number;
+  talep_no: number | null;
   firma_adi: string;
   urun_adi: string;
   teknik_adi: string;
@@ -54,7 +55,7 @@ function kategoriBul(kod: DurumKodu): TakipKategori {
 export async function getUreticiAnaSayfaVeri(userId: string, adminSupabase: SupabaseClient) {
   const { data: talepler, error: talepError } = await adminSupabase
     .from("talepler")
-    .select(`talep_id, talep_no, hedef_rol, hazir_video, hazir_soru_seti, created_at, urun_adi, urunler(urun_adi), teknikler(teknik_adi), firmalar(firma_adi)`)
+    .select(TALEP_ALANLARI)
     .eq("uretici_id", userId)
     .order("created_at", { ascending: false });
 
@@ -65,16 +66,14 @@ export async function getUreticiAnaSayfaVeri(userId: string, adminSupabase: Supa
   let yayin_bekleyen = 0;
   let yayinda = 0;
 
-  for (const talep of talepler ?? []) {
-    const urun_adi = (talep as any).urunler?.urun_adi ?? (talep as any).urun_adi ?? "-";
-    const teknik_adi = (talep as any).teknikler?.teknik_adi ?? "-";
-    const hedef_rol = ((talep as any).hedef_rol ?? "utt") as HedefRol;
-    const talep_no = (talep as any).talep_no as number;
-    const firma_adi = (talep as any).firmalar?.firma_adi ?? "";
-    const hazirVideo = (talep as any).hazir_video === true;
-    const hazir_soru_seti = (talep as any).hazir_soru_seti === true;
+  for (const ham of talepler ?? []) {
+    // Alan listesi ve ad kuralı ortak kaynaktan (25.07, Aşama 3): buradaki yerel
+    // haritalama kaldırıldı, tek çeviriciden geçiliyor.
+    const talep = haritalaTalep(ham);
+    const { urun_adi, teknik_adi, hedef_rol, talep_no, firma_adi, hazir_soru_seti } = talep;
+    const hazirVideo = talep.hazir_video;
     // Zincir boyunca "bir önceki aşamanın tarihi" — bekleyen satırların tarihi buradan.
-    let oncekiTarih: string = talep.created_at;
+    let oncekiTarih: string = talep.created_at ?? "";
 
     // ── Senaryo aşaması: yalnız normal kol. Hazır video senaryosuz, bu aşamayı atlar. ──
     if (!hazirVideo) {

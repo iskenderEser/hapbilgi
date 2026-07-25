@@ -172,6 +172,55 @@ const dogruClient = {
   },
 };
 
+// KURAL 5: talep künyesi tek kaynaktan (25.07, Aşama 3)
+//
+// İçeriğin adı iki kaynaktan gelebilir: ürünlü türlerde urunler join'i, ürünsüz
+// türlerde (ik_egitimi, kurumsal...) talepler'in serbest alanı. Bu kural 13 ekranda
+// ayrı ayrı kopyalanmıştı; dördünde yanlış kopyalandı ve ürünsüz eğitimlerde
+// ekranlara, bildirimlere, Bunny video başlığına "-" yazıldı.
+//
+// Bekçi: talepler tablosundan urunler/teknikler join'i ELLE seçilirse uyarır.
+// Doğrusu — istemci: /talepler/api/kunye ucu; sunucu: TALEP_ALANLARI + haritalaTalep
+// (lib/utils/talepZinciri.ts). Tek kaynağın kendisi bu kuralın dışındadır.
+const talepKunyeTekKaynak = {
+  meta: {
+    type: "problem",
+    docs: { description: "Talep kunyesini elle sorgulamayi engeller; tek kaynak lib/utils/talepZinciri.ts." },
+    schema: [],
+    messages: {
+      elle: "Talep kunyesi elle sorgulanmis (urunler/teknikler join'i). Istemci: /talepler/api/kunye ucunu, sunucu: TALEP_ALANLARI + haritalaTalep kullanin — ad kurali tek yerde durmali.",
+    },
+  },
+  create(context) {
+    const dosya = context.filename ?? context.getFilename?.() ?? "";
+    // Tek kaynağın kendisi ve şema aracı muaf.
+    if (dosya.includes("talepZinciri")) return {};
+
+    return {
+      // .select("... urunler(urun_adi) ...") — düz metin ya da şablon dizgi
+      "CallExpression > MemberExpression[property.name='select']"(node) {
+        const cagri = node.parent;
+        const arg = cagri.arguments?.[0];
+        if (!arg) return;
+
+        let metin = null;
+        if (arg.type === "Literal" && typeof arg.value === "string") metin = arg.value;
+        else if (arg.type === "TemplateLiteral") metin = arg.quasis.map(q => q.value.raw).join(" ");
+        if (!metin) return;
+
+        // Künye join'i: ürün ya da teknik adı talepler üzerinden çekiliyor mu?
+        const kunyeJoin = /urunler\s*\(\s*urun_adi|teknikler\s*\(\s*teknik_adi/.test(metin);
+        if (!kunyeJoin) return;
+
+        // Ortak listeyi kullanan sorgular muaf (şablonda ${TALEP_ALANLARI} geçer).
+        if (/TALEP_ALANLARI/.test(context.sourceCode.getText(cagri))) return;
+
+        context.report({ node: arg, messageId: "elle" });
+      },
+    };
+  },
+};
+
 const plugin = {
   meta: { name: "hapbilgi-mimari", version: "0.0.1" },
   rules: {
@@ -179,6 +228,7 @@ const plugin = {
     "firma-kolonlari": firmaKolonlari,
     "kayit-tek-kaynak": kayitTekKaynak,
     "dogru-client": dogruClient,
+    "talep-kunye-tek-kaynak": talepKunyeTekKaynak,
   },
 };
 

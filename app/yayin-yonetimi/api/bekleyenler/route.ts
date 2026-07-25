@@ -5,6 +5,7 @@ import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/ha
 import { URETICI_ROLLER } from "@/lib/utils/roller";
 import type { HedefRol } from "@/app/talepler/_types";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
 export async function GET(request: NextRequest) {
   try {
@@ -69,18 +70,7 @@ export async function GET(request: NextRequest) {
               video_id,
               video_url,
               thumbnail_url,
-              talepler (
-                talep_id,
-                talep_no,
-                soru_seti_buyuklugu,
-                video_basi_soru_sayisi,
-                egitim_turu,
-                hedef_rol,
-                urun_adi,
-                urunler ( urun_adi ),
-                teknikler ( teknik_adi ),
-                firmalar ( firma_adi )
-              )
+              talepler ( ${TALEP_ALANLARI} )
             )
           )
         )
@@ -132,11 +122,12 @@ export async function GET(request: NextRequest) {
 
         const videoDurum = soruSeti.video_durumu;
         const video = videoDurum?.videolar;
-        const talep = video?.talepler;
+        // Künye ortak çeviriciden (25.07, Aşama 3): ad kuralı ve varsayılanlar tek yerde.
+        const talep = video?.talepler ? haritalaTalep(video.talepler) : null;
         const videoPuan = videoDurum?.video_puanlari;
 
         const egitimTuru = talep?.egitim_turu ?? "urun_egitimi";
-        const hedefRol = (talep?.hedef_rol ?? "utt") as HedefRol;
+        const hedefRol = talep?.hedef_rol ?? ("utt" as HedefRol);
 
         return {
           soru_seti_durum_id: ss.soru_seti_durum_id,
@@ -149,9 +140,9 @@ export async function GET(request: NextRequest) {
           video_puani: videoPuan?.video_puani ?? null,
           soru_puan_map: soruPuanlarByDurumId[ss.soru_seti_durum_id] ?? {},
           talep_no: talep?.talep_no ?? 0,
-          firma_adi: talep?.firmalar?.firma_adi ?? "",
-          urun_adi: talep?.urunler?.urun_adi ?? talep?.urun_adi ?? "-",
-          teknik_adi: talep?.teknikler?.teknik_adi ?? "-",
+          firma_adi: talep?.firma_adi ?? "",
+          urun_adi: talep?.urun_adi ?? "-",
+          teknik_adi: talep?.teknik_adi ?? "-",
           turu_adi: TALEP_TURU_KURALLARI[egitimTuru as TalepTuru]?.ad ?? null,
           egitim_turu: egitimTuru,
           hedef_rol: hedefRol,

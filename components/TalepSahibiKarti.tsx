@@ -54,7 +54,7 @@ export default function TalepSahibiKarti({ rol, talepId, senaryoDurumId, videoDu
   if (!kisi) return null;
 
   return (
-    <div className="max-w-4xl mx-auto px-3 md:px-6 pt-4">
+    <div className="max-w-3xl mx-auto px-3 md:px-6 pt-4">
       <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <div className="min-w-0">
           <div className="text-xs text-gray-400 mb-0.5">{isIU ? "Talebi açan" : "İçerik üreticisi"}</div>

@@ -11,6 +11,7 @@ import {
 import type { HedefRol } from "@/app/talepler/_types";
 import { ECZANEM_TALEP_ACAN_ROLLER, ECLUB_HEDEF_ROLLER, TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
 import { hazirParametreKontrol } from "@/lib/uretim/parametreKontrol";
 
 // TalepTuru tipinin tüm geçerli değerlerinin runtime listesi —
@@ -40,14 +41,10 @@ export async function GET() {
 
     let query = supabase
       .from("talepler")
+      // Künye alanları ortak listeden; kalanlar bu listeye özel.
       .select(`
-        talep_id, talep_no, uretici_id, takim_id, firma_id, aciklama, hazir_video, hazir_video_url, dosya_urls, created_at,
-        urun_id, teknik_id, egitim_turu, hedef_rol, icerik_turu,
-        hazir_soru_seti,
-        soru_seti_buyuklugu, video_basi_soru_sayisi,
-        urunler(urun_adi),
-        teknikler(teknik_adi),
-        firmalar(firma_adi)
+        ${TALEP_ALANLARI},
+        takim_id, firma_id, urun_id, teknik_id, hazir_video_url
       `)
       .order("created_at", { ascending: false });
 
@@ -64,28 +61,17 @@ export async function GET() {
     const { data: talepler, error } = await query;
     if (error) return hataYaniti("Talepler çekilemedi.", "talepler tablosu SELECT", error);
 
+    // Künye ortak çeviriciden (25.07, Aşama 3): ad kuralı ve varsayılanlar tek
+    // yerde. Bu listeye özel alanlar (takım, firma/ürün/teknik kimlikleri, hazır
+    // video adresi) künyenin üstüne eklenir — künyeye girmezler, yalnız burada
+    // ve talep formunda kullanılırlar.
     const sonuc = (talepler ?? []).map((t: any) => ({
-      talep_id: t.talep_id,
-      talep_no: t.talep_no,
-      firma_adi: t.firmalar?.firma_adi ?? "",
-      uretici_id: t.uretici_id,
+      ...haritalaTalep(t),
       takim_id: t.takim_id,
       firma_id: t.firma_id,
       urun_id: t.urun_id,
       teknik_id: t.teknik_id,
-      egitim_turu: t.egitim_turu ?? "urun_egitimi",
-      hedef_rol: t.hedef_rol ?? "utt",
-      icerik_turu: t.icerik_turu ?? null,
-      urun_adi: t.urunler?.urun_adi ?? t.urun_adi ?? "-",
-      teknik_adi: t.teknikler?.teknik_adi ?? t.teknik_adi ?? "-",
-      aciklama: t.aciklama,
-      hazir_video: t.hazir_video,
       hazir_video_url: t.hazir_video_url,
-      hazir_soru_seti: t.hazir_soru_seti ?? false,
-      soru_seti_buyuklugu: t.soru_seti_buyuklugu ?? 25,
-      video_basi_soru_sayisi: t.video_basi_soru_sayisi ?? 2,
-      dosya_urls: t.dosya_urls,
-      created_at: t.created_at,
     }));
 
     return NextResponse.json({ talepler: sonuc }, { status: 200 });
@@ -246,21 +232,20 @@ export async function POST(request: NextRequest) {
         secenek_sayisi: secenekSayisi,
         video_basi_soru_sayisi: videoBasisSoruSayisi,
       })
+      // Künye alanları ortak listeden; kalanlar bu yanıta özel.
       .select(`
-        talep_id, takim_id, firma_id, hazir_video, created_at,
-        urun_id, teknik_id, egitim_turu, hedef_rol, icerik_turu,
-        hazir_soru_seti, hazir_soru_seti_verisi,
-        soru_seti_buyuklugu, video_basi_soru_sayisi,
-        urunler(urun_adi),
-        teknikler(teknik_adi)
+        ${TALEP_ALANLARI},
+        takim_id, firma_id, urun_id, teknik_id, hazir_soru_seti_verisi
       `)
       .single();
 
     if (error) return hataYaniti("Talep oluşturulamadı.", "talepler tablosu INSERT", error);
 
-    // Bildirim mesajı — ürünlü talepte ürün adı, ürünsüzde tür adı.
+    // Bildirim mesajı — künyedeki ad kuralı ürünlü/ürünsüz ayrımını zaten çözer;
+    // hiçbiri yoksa tür adına düşer.
     const turAdi = TALEP_TURU_KURALLARI[egitimTuru].ad;
-    const bildirimBasligi = (yeniTalep as any).urunler?.urun_adi ?? insertUrunAdi ?? turAdi;
+    const yeniKunye = haritalaTalep(yeniTalep);
+    const bildirimBasligi = yeniKunye.urun_adi !== "-" ? yeniKunye.urun_adi : turAdi;
 
     // G-3 (İskender kararı 19.07): hazır video taleplerinde açılış bildirimi gitmez —
     // IU'nun işi ya hiç yoktur (video+set hazır) ya da video yüklemesi tamamlanınca
@@ -289,11 +274,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       mesaj: "Talep oluşturuldu.",
       talep: {
-        ...yeniTalep,
-        egitim_turu: egitimTuru,
-        hedef_rol: hedefRol,
-        urun_adi: (yeniTalep as any).urunler?.urun_adi ?? insertUrunAdi ?? "-",
-        teknik_adi: (yeniTalep as any).teknikler?.teknik_adi ?? "-",
+        ...yeniKunye,
+        takim_id: (yeniTalep as any).takim_id,
+        firma_id: (yeniTalep as any).firma_id,
+        urun_id: (yeniTalep as any).urun_id,
+        teknik_id: (yeniTalep as any).teknik_id,
+        hazir_soru_seti_verisi: (yeniTalep as any).hazir_soru_seti_verisi ?? null,
       }
     }, { status: 201 });
 

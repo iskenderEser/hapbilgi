@@ -14,6 +14,7 @@ import DurumAnahtari from "@/components/DurumAnahtari";
 import UretimVaryantiRozet from "@/components/UretimVaryantiRozet";
 import { durumMesaji, kayitDurumKodu, type DurumKodu } from "@/lib/utils/durum/mesaj";
 import { ROL_ADLARI } from "@/lib/utils/roller";
+import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
 
 interface SenaryoSatir {
   talep_id: string;
@@ -30,20 +31,8 @@ interface SenaryoSatir {
   hazir_soru_seti: boolean;
 }
 
-interface SenaryoJoin {
-  senaryo_id: string;
-  talep_id: string;
-  created_at: string;
-  talepler: {
-    talep_no: number;
-    hazir_video: boolean | null;
-    hazir_soru_seti: boolean | null;
-    urun_adi: string | null;
-    urunler: { urun_adi: string } | null;
-    teknikler: { teknik_adi: string } | null;
-    firmalar: { firma_adi: string } | null;
-  } | null;
-}
+// SenaryoJoin arayüzü kaldırıldı (25.07, Aşama 3): elle kurulan talep join'inin
+// şeklini tarif ediyordu. Künye tek kapıdan geliyor, şekli TalepBilgisi'nde.
 
 export default function SenaryolarListePage() {
   const router = useRouter();
@@ -84,16 +73,7 @@ export default function SenaryolarListePage() {
         talep_id,
         iu_id,
         created_at,
-        talepler!inner (
-          talep_no,
-          uretici_id,
-          hazir_video,
-          hazir_soru_seti,
-          urun_adi,
-          urunler (urun_adi),
-          teknikler (teknik_adi),
-          firmalar (firma_adi)
-        )
+        talepler!inner ( talep_id )
       `)
       .order("created_at", { ascending: false });
 
@@ -134,11 +114,23 @@ export default function SenaryolarListePage() {
     }
 
 
+    // Talep künyeleri TEK KAPIDAN, toplu (25.07, Aşama 3): liste kaç talep
+    // içeriyorsa hepsi tek istekte gelir; ekran alan listesi ve ad kuralı bilmez.
+    const kunyeMap = new Map<string, TalepBilgisi>();
+    {
+      const talepIdler = tekilSenaryolar.map((s: any) => s.talep_id);
+      if (talepIdler.length > 0) {
+        const res = await fetch(`/talepler/api/kunye?talep_idler=${talepIdler.join(",")}`);
+        const veri = await res.json();
+        if (res.ok) for (const k of veri.kunyeler as TalepBilgisi[]) kunyeMap.set(k.talep_id, k);
+      }
+    }
+
     // Talebi açan üreticinin unvanı — İÜ mesajları "Ürün Müdürü İnceliyor" gibi
     // gerçek unvanla yazılır ("üretici" kod dilidir, ekrana çıkmaz).
     const rolAdiMap = new Map<string, string>();
     {
-      const uretIdler = Array.from(new Set(tekilSenaryolar.map((s: any) => s.talepler?.uretici_id))).filter(Boolean) as string[];
+      const uretIdler = Array.from(new Set(tekilSenaryolar.map((s: any) => kunyeMap.get(s.talep_id)?.uretici_id))).filter(Boolean) as string[];
       if (uretIdler.length > 0) {
         const { data: sahipler } = await supabase
           .from("kullanicilar")
@@ -146,7 +138,7 @@ export default function SenaryolarListePage() {
           .in("kullanici_id", uretIdler);
         const rolMap = new Map((sahipler ?? []).map((k: any) => [k.kullanici_id, k.rol]));
         for (const s of tekilSenaryolar as any[]) {
-          const r = rolMap.get(s.talepler?.uretici_id);
+          const r = rolMap.get(kunyeMap.get(s.talep_id)?.uretici_id ?? "");
           if (r) rolAdiMap.set(s.talep_id, ROL_ADLARI[r] ?? r);
         }
       }
@@ -154,17 +146,16 @@ export default function SenaryolarListePage() {
 
     // 4) Satırları kur — talep bazlı tek satır
     const sonuc: SenaryoSatir[] = tekilSenaryolar.map((s: any) => {
-      const typed = s as unknown as SenaryoJoin;
-      const talep = typed.talepler;
+      const talep = kunyeMap.get(s.talep_id);
       const sonDurum = sonDurumMap.get(s.senaryo_id);
 
       return {
         talep_id: s.talep_id,
         talep_no: talep?.talep_no ?? 0,
-        firma_adi: talep?.firmalar?.firma_adi ?? "",
+        firma_adi: talep?.firma_adi ?? "",
         senaryo_id: s.senaryo_id,
-        urun_adi: talep?.urunler?.urun_adi ?? talep?.urun_adi ?? "-",
-        teknik_adi: talep?.teknikler?.teknik_adi ?? "-",
+        urun_adi: talep?.urun_adi ?? "-",
+        teknik_adi: talep?.teknik_adi ?? "-",
         hazir_video: talep?.hazir_video ?? false,
         hazir_soru_seti: talep?.hazir_soru_seti ?? false,
         durum_kodu: kayitDurumKodu(sonDurum?.durum, !!s.iu_id),
@@ -235,7 +226,7 @@ export default function SenaryolarListePage() {
                           <span className="text-sm text-gray-900" style={{ fontWeight: okunmamis ? 700 : 600 }}>{s.urun_adi}</span>
                           <UretimVaryantiRozet hazirVideo={s.hazir_video} hazirSoruSeti={s.hazir_soru_seti} />
                         </div>
-                        <span className="text-xs px-2 py-0.5 rounded-full leading-tight"
+                        <span className="text-[10px] px-2 py-0.5 rounded-full leading-tight"
                           style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}`, fontSize: 11 }}>
                           {durum.metin}
                         </span>
@@ -279,7 +270,7 @@ export default function SenaryolarListePage() {
                           </td>
                           <td className="px-3 py-3 text-gray-500">{s.teknik_adi}</td>
                           <td className="px-3 py-3">
-                            <span className="text-xs px-2.5 py-0.5 rounded-full inline-block max-w-full break-words text-center leading-snug"
+                            <span className="text-[10px] px-2.5 py-0.5 rounded-full inline-block max-w-full break-words text-center leading-snug"
                               style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}` }}>
                               {durum.metin}
                             </span>

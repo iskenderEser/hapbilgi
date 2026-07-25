@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { HedefRolPill } from "@/components/HedefRolBant";
+import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
 import type { HedefRol } from "@/app/talepler/_types";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { talepIdGoster } from "@/lib/utils/talepId";
@@ -63,7 +64,7 @@ export default function OnaylananTaleplerPage() {
     // Onaylı senaryolar (talep + firma bilgisiyle)
     const { data: senaryoOnaylari, error: sErr } = await supabase
       .from("senaryo_durumu")
-      .select("senaryo_durum_id, created_at, senaryolar(talep_id, senaryo_metni, talepler(talep_id, talep_no, created_at, hedef_rol, urunler(urun_adi), teknikler(teknik_adi), firmalar(firma_adi)))")
+      .select("senaryo_durum_id, created_at, senaryolar(talep_id, senaryo_metni)")
       .eq("durum", "onaylandi")
       .order("created_at", { ascending: false });
     if (sErr) {
@@ -98,23 +99,33 @@ export default function OnaylananTaleplerPage() {
       if (set?.video_durum_id && set.sorular?.length) setMap.set(set.video_durum_id, set.sorular);
     });
 
+    // Talep künyeleri TEK KAPIDAN, toplu (25.07, Aşama 3).
+    const talepIdler = Array.from(new Set(
+      (senaryoOnaylari ?? []).map((o: any) => o.senaryolar?.talep_id).filter(Boolean)
+    )) as string[];
+    const kunyeMap = new Map<string, TalepBilgisi>();
+    if (talepIdler.length > 0) {
+      const res = await fetch(`/talepler/api/kunye?talep_idler=${talepIdler.join(",")}`);
+      const veri = await res.json();
+      if (res.ok) for (const k of veri.kunyeler as TalepBilgisi[]) kunyeMap.set(k.talep_id, k);
+    }
+
     // Talep başına EN SON onaylı senaryo esas alınır (sıralama zaten yeni→eski).
     const gorulen = new Set<string>();
     const liste: OnayliTalep[] = [];
     (senaryoOnaylari ?? []).forEach((o: any) => {
       const senaryo = o.senaryolar;
-      const talep = senaryo?.talepler;
+      const talep = kunyeMap.get(senaryo?.talep_id);
       if (!senaryo || !talep || gorulen.has(talep.talep_id)) return;
       gorulen.add(talep.talep_id);
       const video = videoMap.get(o.senaryo_durum_id) ?? null;
-      const firmaAdi = talep.firmalar?.firma_adi ?? "";
       liste.push({
         talep_id: talep.talep_id,
-        talep_no_goster: talepIdGoster(firmaAdi, talep.talep_no),
-        urun_adi: talep.urunler?.urun_adi ?? "-",
-        teknik_adi: talep.teknikler?.teknik_adi ?? "-",
-        hedef_rol: (talep.hedef_rol ?? "utt") as HedefRol,
-        talep_tarihi: talep.created_at ?? null,
+        talep_no_goster: talepIdGoster(talep.firma_adi, talep.talep_no),
+        urun_adi: talep.urun_adi,
+        teknik_adi: talep.teknik_adi,
+        hedef_rol: talep.hedef_rol,
+        talep_tarihi: talep.created_at,
         onay_tarihi: o.created_at,
         senaryo_metni: senaryo.senaryo_metni,
         video_url: video?.video_url ?? null,

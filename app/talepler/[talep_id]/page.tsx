@@ -8,26 +8,19 @@ import Navbar from "@/components/Navbar";
 import TalepSahibiKarti from "@/components/TalepSahibiKarti";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
-import { HedefRolBant } from "@/components/HedefRolBant";
+import { HedefRolPill } from "@/components/HedefRolBant";
+import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
+import { TeknikPill } from "@/components/TeknikPill";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
 import { useBunnyIslemeDurumu } from "@/hooks/useBunnyIslemeDurumu";
 import { DosyaGoruntuleListesi, type DosyaItem as ComponentDosyaItem } from "@/components/DosyaGoruntuleListesi";
 
-interface Talep {
-  talep_id: string;
-  uretici_id: string;
-  hedef_rol: "utt" | "bm";
-  urun_adi: string;
-  teknik_adi: string;
-  aciklama: string;
-  created_at: string;
-  dosya_urls: DosyaItem[];
-  hazir_video: boolean;
+// Künye ortak tipten gelir; bu ekrana özel iki alan üstüne eklenir (25.07, Aşama 3).
+type Talep = TalepBilgisi & {
   hazir_video_url: string | null;
-  hazir_soru_seti: boolean;
   hazir_soru_seti_verisi: any[] | null;
-}
+};
 
 type DosyaItem = ComponentDosyaItem;
 
@@ -64,30 +57,36 @@ export default function TalepDetayPage() {
     router.push("/login");
   };
 
+  // Künye TEK KAPIDAN, içerik ayrı (25.07, Aşama 3). hazir_video_url ve
+  // hazir_soru_seti_verisi künyeye girmez: ikincisi 15+ sorunun tam metnidir ve
+  // yalnız BU ekranda kullanılır — künyeye konsa her liste satırında taşınırdı.
+  // Buradaki ikinci sorgu ad kuralı içermez, yalnız bu ekrana özel iki alan çeker.
   useEffect(() => {
     if (!kullanici || !talep_id) return;
     const supabase = createClient();
-    supabase
-      .from("talepler")
-      .select(`talep_id, uretici_id, hedef_rol, aciklama, created_at, dosya_urls, hazir_video, hazir_video_url, hazir_soru_seti, hazir_soru_seti_verisi, urun_id, teknik_id, urunler(urun_adi), teknikler(teknik_adi)`)
-      .eq("talep_id", talep_id)
-      .single()
-      .then(({ data, error }) => {
-        if (error || !data) {
-          hata("Talep bulunamadı veya erişim yetkiniz yok.", "talepler tablosu SELECT — talep_id");
-          router.push("/talepler");
-          return;
-        }
-        setTalep({
-          ...data,
-          urun_adi: (data as any).urunler?.urun_adi ?? "-",
-          teknik_adi: (data as any).teknikler?.teknik_adi ?? "-",
-          dosya_urls: data.dosya_urls ?? [],
-          hazir_soru_seti: data.hazir_soru_seti ?? false,
-          hazir_soru_seti_verisi: data.hazir_soru_seti_verisi ?? null,
-        });
-        setLoading(false);
+
+    (async () => {
+      const kunyeRes = await fetch(`/talepler/api/kunye?talep_id=${talep_id}`);
+      const kunyeVeri = await kunyeRes.json();
+      if (!kunyeRes.ok) {
+        hata(kunyeVeri.hata ?? "Talep bulunamadı veya erişim yetkiniz yok.", "talep künyesi", kunyeVeri.detay);
+        router.push("/talepler");
+        return;
+      }
+
+      const { data: icerik } = await supabase
+        .from("talepler")
+        .select("hazir_video_url, hazir_soru_seti_verisi")
+        .eq("talep_id", talep_id)
+        .single();
+
+      setTalep({
+        ...kunyeVeri.kunye,
+        hazir_video_url: icerik?.hazir_video_url ?? null,
+        hazir_soru_seti_verisi: icerik?.hazir_soru_seti_verisi ?? null,
       });
+      setLoading(false);
+    })();
   }, [kullanici, talep_id]);
 
   // V1-5 (İskender talimatı, 21.07): İU'nun dünyasında hazır video talebinin tek
@@ -199,7 +198,6 @@ export default function TalepDetayPage() {
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
       <TalepSahibiKarti rol={kullanici.rol} talepId={talep_id} />
-      <HedefRolBant hedefRol={talep.hedef_rol} />
 
       <div className="max-w-3xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
 
@@ -217,19 +215,22 @@ export default function TalepDetayPage() {
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-base font-semibold text-gray-900">{talep.urun_adi}</span>
                 {talep.hazir_video && (
-                  <span className="font-bold px-2 py-0.5 rounded-full" style={{ fontSize: 9, background: "#fff7ed", color: "#c2410c", border: "0.5px solid #fed7aa" }}>
+                  <span className="font-bold px-2 py-0.5 rounded-full" style={{ fontSize: 10, background: "#fff7ed", color: "#c2410c", border: "0.5px solid #fed7aa" }}>
                     Hazır Video
                   </span>
                 )}
                 {talep.hazir_soru_seti && (
-                  <span className="font-bold px-2 py-0.5 rounded-full" style={{ fontSize: 9, background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe" }}>
+                  <span className="font-bold px-2 py-0.5 rounded-full" style={{ fontSize: 10, background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe" }}>
                     Hazır Soru Seti
                   </span>
                 )}
               </div>
-              <span className="text-xs text-gray-500">{talep.teknik_adi}</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <TeknikPill teknikAdi={talep.teknik_adi} />
+                <HedefRolPill hedefRol={talep.hedef_rol} />
+              </div>
             </div>
-            <span className="text-xs text-gray-400 whitespace-nowrap">{formatTarih(talep.created_at)}</span>
+            <span className="text-xs text-gray-400 whitespace-nowrap">{talep.created_at ? formatTarih(talep.created_at) : "-"}</span>
           </div>
 
           {/* Hazır video uyarı kutusu */}
@@ -260,7 +261,7 @@ export default function TalepDetayPage() {
                     <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                   </svg>
                   <span className="text-xs text-blue-800 leading-relaxed">
-                    {isPM && `Bu talep için hazır soru seti yüklenmiştir. ${talep.hazir_soru_seti_verisi.length} soru mevcut — video yüklendiğinde sistem seti otomatik işler.`}
+                    {isPM && "Bu talep için soru setinizi yüklediniz. Senaryo ve video içerik üreticiniz tarafından oluşturulacaktır."}
                     {isIU && `Üretici bu talep için hazır soru seti yüklemiştir. ${talep.hazir_soru_seti_verisi.length} soru mevcut — video yüklemesiyle birlikte sistem otomatik işler.`}
                   </span>
                 </div>
@@ -280,7 +281,7 @@ export default function TalepDetayPage() {
                       <p className="text-xs text-gray-700 font-semibold m-0 mb-1.5">{i + 1}. {soru.soru_metni}</p>
                       <div className="flex flex-col gap-1">
                         {soru.secenekler?.map((s: any, j: number) => (
-                          <span key={j} className="text-xs px-2 py-0.5 rounded-full inline-block w-fit"
+                          <span key={j} className="text-[10px] px-2 py-0.5 rounded-full inline-block w-fit"
                             style={{
                               border: s.dogru ? "0.5px solid #56aeff" : "0.5px solid #e5e7eb",
                               color: s.dogru ? "#56aeff" : "#737373",
@@ -302,10 +303,10 @@ export default function TalepDetayPage() {
             {talep.aciklama && (
               <p className="text-sm text-gray-700 leading-relaxed mb-3">{talep.aciklama}</p>
             )}
-            {talep.dosya_urls.length > 0 && (
+            {(talep.dosya_urls?.length ?? 0) > 0 && (
               <div className="mb-2.5">
                 <DosyaGoruntuleListesi
-                  dosyalar={talep.dosya_urls}
+                  dosyalar={(talep.dosya_urls ?? []) as DosyaItem[]}
                   onHata={hata}
                   sagAksiyon={(dosya) => isPM && (
                     siliniyor === dosya.url ? (

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import DurumAnahtari from "@/components/DurumAnahtari";
 import { durumMesaji, kayitDurumKodu, type DurumKodu } from "@/lib/utils/durum/mesaj";
 import { ROL_ADLARI } from "@/lib/utils/roller";
+import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
 import UretimVaryantiRozet from "@/components/UretimVaryantiRozet";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
@@ -34,6 +35,8 @@ interface VideoSatir {
   hazir_soru_seti: boolean;
 }
 
+// Talep dalı kaldırıldı (25.07, Aşama 3): künye tek kapıdan gelir. Burada yalnız
+// videodan talebe ulaşan zincir tarif edilir.
 interface VideoJoin {
   video_id: string;
   senaryo_durum_id: string;
@@ -41,18 +44,7 @@ interface VideoJoin {
   thumbnail_url: string | null;
   created_at: string;
   senaryo_durumu: {
-    senaryolar: {
-      talep_id: string;
-      talepler: {
-        talep_no: number;
-        hazir_video: boolean | null;
-        hazir_soru_seti: boolean | null;
-        urun_adi: string | null;
-        urunler: { urun_adi: string } | null;
-        teknikler: { teknik_adi: string } | null;
-        firmalar: { firma_adi: string } | null;
-      } | null;
-    } | null;
+    senaryolar: { talep_id: string } | null;
   } | null;
 }
 
@@ -98,19 +90,7 @@ export default function VideolarListePage() {
         thumbnail_url,
         created_at,
         senaryo_durumu!inner (
-          senaryolar!inner (
-            talep_id,
-            talepler!inner (
-              talep_no,
-              uretici_id,
-              hazir_video,
-              hazir_soru_seti,
-              urun_adi,
-              urunler (urun_adi),
-              teknikler (teknik_adi),
-              firmalar (firma_adi)
-            )
-          )
+          senaryolar!inner ( talep_id )
         )
       `)
       .order("created_at", { ascending: false });
@@ -155,10 +135,21 @@ export default function VideolarListePage() {
     }
 
 
+    // Talep künyeleri TEK KAPIDAN, toplu (25.07, Aşama 3).
+    const kunyeMap = new Map<string, TalepBilgisi>();
+    {
+      const talepIdler = tekilVideolar.map((v: any) => v._talep_id);
+      if (talepIdler.length > 0) {
+        const res = await fetch(`/talepler/api/kunye?talep_idler=${talepIdler.join(",")}`);
+        const veri = await res.json();
+        if (res.ok) for (const k of veri.kunyeler as TalepBilgisi[]) kunyeMap.set(k.talep_id, k);
+      }
+    }
+
     // Talebi açan üreticinin unvanı — İÜ mesajları gerçek unvanla yazılır.
     const rolAdiMap = new Map<string, string>();
     {
-      const uretIdler = Array.from(new Set(tekilVideolar.map((v: any) => v.senaryo_durumu?.senaryolar?.talepler?.uretici_id))).filter(Boolean) as string[];
+      const uretIdler = Array.from(new Set(tekilVideolar.map((v: any) => kunyeMap.get(v._talep_id)?.uretici_id))).filter(Boolean) as string[];
       if (uretIdler.length > 0) {
         const { data: sahipler } = await supabase
           .from("kullanicilar")
@@ -166,7 +157,7 @@ export default function VideolarListePage() {
           .in("kullanici_id", uretIdler);
         const rolMap = new Map((sahipler ?? []).map((k: any) => [k.kullanici_id, k.rol]));
         for (const v of tekilVideolar as any[]) {
-          const r = rolMap.get(v.senaryo_durumu?.senaryolar?.talepler?.uretici_id);
+          const r = rolMap.get(kunyeMap.get(v._talep_id)?.uretici_id ?? "");
           if (r) rolAdiMap.set(v._talep_id, ROL_ADLARI[r] ?? r);
         }
       }
@@ -174,18 +165,17 @@ export default function VideolarListePage() {
 
     // 4) Satırları kur — talep bazlı tek satır
     const sonuc: VideoSatir[] = tekilVideolar.map((v: any) => {
-      const typed = v as unknown as VideoJoin;
-      const talep = typed.senaryo_durumu?.senaryolar?.talepler;
+      const talep = kunyeMap.get(v._talep_id);
       const sonDurum = sonDurumMap.get(v.video_id);
 
       return {
         talep_id: v._talep_id,
         talep_no: talep?.talep_no ?? 0,
-        firma_adi: talep?.firmalar?.firma_adi ?? "",
+        firma_adi: talep?.firma_adi ?? "",
         senaryo_durum_id: v.senaryo_durum_id,
         video_id: v.video_id,
-        urun_adi: talep?.urunler?.urun_adi ?? talep?.urun_adi ?? "-",
-        teknik_adi: talep?.teknikler?.teknik_adi ?? "-",
+        urun_adi: talep?.urun_adi ?? "-",
+        teknik_adi: talep?.teknik_adi ?? "-",
         hazir_video: talep?.hazir_video ?? false,
         hazir_soru_seti: talep?.hazir_soru_seti ?? false,
         video_url: v.video_url ?? null,
@@ -259,7 +249,7 @@ export default function VideolarListePage() {
                           <span className="text-sm text-gray-900" style={{ fontWeight: okunmamis ? 700 : 600 }}>{v.urun_adi}</span>
                           <UretimVaryantiRozet hazirVideo={v.hazir_video} hazirSoruSeti={v.hazir_soru_seti} />
                         </div>
-                        <span className="text-xs px-2 py-0.5 rounded-full leading-tight"
+                        <span className="text-[10px] px-2 py-0.5 rounded-full leading-tight"
                           style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}`, fontSize: 11 }}>
                           {durum.metin}
                         </span>
@@ -303,7 +293,7 @@ export default function VideolarListePage() {
                           </td>
                           <td className="px-3 py-3 text-gray-500">{v.teknik_adi}</td>
                           <td className="px-3 py-3">
-                            <span className="text-xs px-2.5 py-0.5 rounded-full inline-block max-w-full break-words text-center leading-snug"
+                            <span className="text-[10px] px-2.5 py-0.5 rounded-full inline-block max-w-full break-words text-center leading-snug"
                               style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}` }}>
                               {durum.metin}
                             </span>

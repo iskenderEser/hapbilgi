@@ -12,7 +12,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
-  // HapBilgi yerel mimari plugin — ölü RPC + FIRMA_KOLONLARI + kayıt tek-kaynak + doğru client.
+  // HapBilgi yerel mimari plugin — ölü RPC + FIRMA_KOLONLARI + kayıt tek-kaynak
+  // + doğru client + talep künyesi tek kaynak.
   {
     files: ["app/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}"],
     plugins: { "hapbilgi-mimari": hapbilgiMimari },
@@ -21,6 +22,7 @@ const eslintConfig = defineConfig([
       "hapbilgi-mimari/firma-kolonlari": "warn",
       "hapbilgi-mimari/kayit-tek-kaynak": "warn",
       "hapbilgi-mimari/dogru-client": "error",
+      "hapbilgi-mimari/talep-kunye-tek-kaynak": "warn",
     },
   },
 ]);
