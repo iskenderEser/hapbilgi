@@ -13,6 +13,7 @@ import type { Yayin } from "../_types";
 import type { HesaplananTur } from "@/lib/tur/kayit";
 import { HedefRolPill } from "@/components/HedefRolBant";
 import { talepIdGoster } from "@/lib/utils/talepId";
+import { ureticiDurumMesaji, yayinDurumKodu } from "@/lib/utils/durum/mesaj";
 import { Toggle, VideoThumb } from "./Yardimcilar";
 import { SoruListesi } from "./SoruListesi";
 
@@ -47,6 +48,7 @@ export function YayinSatir({
 }: YayinSatirProps) {
   const yayinda = y.durum === "yayinda";
   const planlandi = y.durum === "planlandi";
+  const durum = ureticiDurumMesaji(yayinDurumKodu(y.durum), y.yayin_tarihi);
   const tekrarli = !!tekrarBilgi?.tekrar_periyot_gun && !!tekrarBilgi?.sonraki_tur_tarihi;
   // Tarih değiştirme alanı (yalnız planlanmış yayında görünür)
   const [yeniGun, setYeniGun] = useState("");
@@ -60,13 +62,11 @@ export function YayinSatir({
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-semibold text-gray-900 truncate">{y.urun_adi}</span>
             <HedefRolPill hedefRol={y.hedef_rol} />
-            <span className="text-xs px-2 py-0.5 rounded-full"
-              style={{
-                background: yayinda ? "#f0fdf4" : planlandi ? "#fffbeb" : "#fef2f2",
-                color: yayinda ? "#15803d" : planlandi ? "#b45309" : "#b91c1c",
-                border: yayinda ? "0.5px solid #bbf7d0" : planlandi ? "0.5px solid #fde68a" : "0.5px solid #fecaca",
-              }}>
-              {yayinda ? "Yayında" : planlandi ? "Planlandı" : "Durduruldu"}
+            {/* Metin ve renk tek sözlükten (25.07) — yayın durumu ana sayfada ne
+                yazıyorsa burada da aynısını yazar. Yalnız üretici görür. */}
+            <span className="text-xs px-2 py-0.5 rounded-full leading-tight"
+              style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}` }}>
+              {durum.metin}
             </span>
           </div>
           {y.turu_adi && <span className="text-xs text-gray-400">{y.turu_adi}</span>}
