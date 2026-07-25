@@ -5,6 +5,7 @@ import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi } from "@/lib/u
 import { TUM_ROLLER } from "@/lib/utils/roller";
 import { firmaYapisiYukle, kullaniciEksikMi, kullaniciSatirDogrula, rolCoz, rolGecisiCoz, telefonNormalize } from "@/lib/admin/kullaniciDogrulama";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
+import { adSoyadBicimle } from "@/lib/utils/adSoyadBicimle";
 
 export async function GET(
   request: NextRequest,
@@ -176,12 +177,15 @@ export async function PUT(
     // telefon eklenmesi/düzeltilmesi de geçerli istektir.
     const atamaVar = body.takim_id !== undefined || body.takim_adi !== undefined
       || body.bolge_id !== undefined || body.bolge_adi !== undefined;
-    if (rol === undefined && aktif_mi === undefined && yetki_kullanici_yonetim === undefined && yetki_aktif_pasif === undefined && !atamaVar && body.telefon === undefined)
-      return validasyonHatasi("Güncellenecek alan zorunludur.", ["rol", "aktif_mi", "yetki_kullanici_yonetim", "yetki_aktif_pasif", "takim_id", "bolge_id", "telefon"]);
+    // Kimlik düzenleme (25.07): admin ad/soyad/e-posta/şifre de değiştirebilir.
+    const kimlikVar = body.ad !== undefined || body.soyad !== undefined
+      || body.eposta !== undefined || body.sifre !== undefined;
+    if (rol === undefined && aktif_mi === undefined && yetki_kullanici_yonetim === undefined && yetki_aktif_pasif === undefined && !atamaVar && !kimlikVar && body.telefon === undefined)
+      return validasyonHatasi("Güncellenecek alan zorunludur.", ["ad", "soyad", "eposta", "sifre", "rol", "aktif_mi", "yetki_kullanici_yonetim", "yetki_aktif_pasif", "takim_id", "bolge_id", "telefon"]);
 
     const { data: kullanici, error: kullaniciError } = await adminSupabase
       .from("kullanicilar")
-      .select("kullanici_id, rol, takim_id, bolge_id, telefon, aktif_mi")
+      .select("kullanici_id, rol, takim_id, bolge_id, telefon, aktif_mi, ad, soyad, eposta")
       .eq("kullanici_id", kullanici_id)
       .eq("firma_id", firma_id)
       .single();
@@ -246,6 +250,53 @@ export async function PUT(
       guncellenecek.telefon = telefonSonuc.telefon;
     }
 
+    // ── Kimlik alanları (25.07: admin düzenleme) ─────────────────────────────
+    // kullanici_id DEĞİŞMEZ; bu yüzden kullanıcının ürettiği her şey (puanlar,
+    // talepler, izlemeler, senaryo/video/soru seti sahipliği) olduğu gibi kalır —
+    // yalnız künye güncellenir, eski bilginin üstüne yazılır.
+    if (body.ad !== undefined) {
+      const ad = adSoyadBicimle(String(body.ad ?? ""));
+      if (ad.length < 2) return validasyonHatasi("Ad en az 2 karakter olmalıdır.", ["ad"]);
+      guncellenecek.ad = ad;
+    }
+    if (body.soyad !== undefined) {
+      const soyad = adSoyadBicimle(String(body.soyad ?? ""));
+      if (soyad.length < 2) return validasyonHatasi("Soyad en az 2 karakter olmalıdır.", ["soyad"]);
+      guncellenecek.soyad = soyad;
+    }
+
+    const yeniEposta = body.eposta !== undefined ? String(body.eposta).trim().toLowerCase() : undefined;
+    if (yeniEposta !== undefined) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(yeniEposta)) return validasyonHatasi("Geçerli bir e-posta adresi girin.", ["eposta"]);
+      guncellenecek.eposta = yeniEposta;
+    }
+
+    const yeniSifre = body.sifre !== undefined && String(body.sifre).length > 0 ? String(body.sifre) : undefined;
+    if (yeniSifre !== undefined && yeniSifre.length < 6) {
+      return validasyonHatasi("Şifre en az 6 karakter olmalıdır.", ["sifre"]);
+    }
+
+    // E-posta giriş kimliğidir: Auth ile tablo ayrışırsa kullanıcı giremez.
+    // Bu yüzden ÖNCE Auth güncellenir — başarısızsa tabloya hiç dokunulmaz.
+    const epostaDegisti = yeniEposta !== undefined && yeniEposta !== (kullanici!.eposta ?? "").toLowerCase();
+    if (epostaDegisti || yeniSifre !== undefined || body.ad !== undefined || body.soyad !== undefined) {
+      const { error: authError } = await adminSupabase.auth.admin.updateUserById(kullanici_id, {
+        ...(epostaDegisti ? { email: yeniEposta, email_confirm: true } : {}),
+        ...(yeniSifre !== undefined ? { password: yeniSifre } : {}),
+        user_metadata: {
+          rol: (guncellenecek.rol as string | undefined) ?? kullanici!.rol,
+          ad: (guncellenecek.ad as string | undefined) ?? kullanici!.ad,
+          soyad: (guncellenecek.soyad as string | undefined) ?? kullanici!.soyad,
+        },
+      });
+      if (authError) {
+        const mesaj = /already|registered|exists/i.test(authError.message)
+          ? `Bu e-posta başka bir kullanıcıda kayıtlı (${yeniEposta}).`
+          : "Giriş bilgileri güncellenemedi.";
+        return validasyonHatasi(mesaj, epostaDegisti ? ["eposta"] : ["sifre"]);
+      }
+    }
+
     if (aktif_mi !== undefined) guncellenecek.aktif_mi = aktif_mi;
     if (yetki_kullanici_yonetim !== undefined) guncellenecek.yetki_kullanici_yonetim = yetki_kullanici_yonetim;
     if (yetki_aktif_pasif !== undefined) guncellenecek.yetki_aktif_pasif = yetki_aktif_pasif;
@@ -274,9 +325,16 @@ export async function PUT(
       .eq("firma_id", firma_id);
 
     if (updateError) {
+      // Auth zaten değişmişse geri alınır — giriş kimliği tabloyla ayrışmasın.
+      if (epostaDegisti) {
+        await adminSupabase.auth.admin.updateUserById(kullanici_id, { email: kullanici!.eposta, email_confirm: true });
+      }
       // 23505 = benzersizlik ihlali; telefon index'i Türkçe mesajla raporlanır.
       if (updateError.code === "23505" && updateError.message.includes("telefon")) {
         return validasyonHatasi(`Bu telefon numarası başka bir kullanıcıda kayıtlı (${guncellenecek.telefon}).`, ["telefon"]);
+      }
+      if (updateError.code === "23505" && updateError.message.includes("eposta")) {
+        return validasyonHatasi(`Bu e-posta başka bir kullanıcıda kayıtlı (${guncellenecek.eposta}).`, ["eposta"]);
       }
       return hataYaniti("Kullanıcı güncellenemedi.", "kullanicilar tablosu UPDATE", updateError);
     }

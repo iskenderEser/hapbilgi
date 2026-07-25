@@ -11,6 +11,7 @@ import { ROL_ADLARI } from "@/lib/utils/roller";
 import type { Kullanici, Takim } from "../_types";
 import { kullaniciEksikMi } from "@/lib/admin/kullaniciDogrulama";
 import { telefonBicimle } from "@/lib/admin/telefonBicim";
+import KullaniciDuzenleModal from "./KullaniciDuzenleModal";
 
 interface KullaniciListesiProps {
   aramaMetni: string;
@@ -50,6 +51,10 @@ interface KullaniciListesiProps {
   handleEksikTamamla: (kullanici_id: string, atama: { takim_id?: string; bolge_id?: string }) => void;
   telefonEkleLoading: string | null;
   handleTelefonEkle: (kullanici_id: string, telefon: string) => void;
+  duzenlenenId: string | null;
+  setDuzenlenenId: (v: string | null) => void;
+  duzenleLoading: boolean;
+  handleKullaniciGuncelle: (kullanici_id: string, veri: Record<string, unknown>) => void;
 
   handleRolDegistir: (kullanici_id: string, yeniRol: string) => void;
   handleAktifToggle: (kullanici_id: string, mevcutDurum: boolean) => void;
@@ -342,7 +347,11 @@ export default function KullaniciListesi(p: KullaniciListesiProps) {
                       <span>A/P</span>
                     </label>
                   </td>
-                  <td style={tdStyle}>
+                  <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
+                    <button onClick={() => p.setDuzenlenenId(k.kullanici_id)}
+                      style={{ ...silBtnStyle(RENK_BORDO, false), marginRight: "4px" }}>
+                      Düzenle
+                    </button>
                     {p.silOnayId === k.kullanici_id ? (
                       <>
                         <button onClick={() => p.handleSil(k.kullanici_id)}
@@ -368,6 +377,21 @@ export default function KullaniciListesi(p: KullaniciListesiProps) {
           </table>
         </div>
       )}
+
+      {/* Düzenleme modalı — tekil giriş kartıyla aynı alanlar, dolu gelir. */}
+      {(() => {
+        const duzenlenen = p.filtrelenmisKullanicilar.find(k => k.kullanici_id === p.duzenlenenId);
+        if (!duzenlenen) return null;
+        return (
+          <KullaniciDuzenleModal
+            kullanici={duzenlenen}
+            takimlar={p.takimlar}
+            loading={p.duzenleLoading}
+            onKapat={() => p.setDuzenlenenId(null)}
+            onKaydet={(veri) => p.handleKullaniciGuncelle(duzenlenen.kullanici_id, { ...veri })}
+          />
+        );
+      })()}
     </div>
   );
 }

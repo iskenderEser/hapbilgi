@@ -88,6 +88,26 @@ export function useKullaniciListesi({ seciliFirma, kullanicilar, refreshKullanic
     sifirlaIslemler();
   }, [seciliFirma?.firma_id]);
 
+  // Kullanıcı düzenleme (25.07): modal tekil giriş kartıyla aynı alanları taşır,
+  // kullanici_id sabit kalır — üretilen puan/içerik etkilenmez.
+  const handleKullaniciGuncelle = async (kullanici_id: string, veri: Record<string, unknown>) => {
+    if (!seciliFirma) return;
+    setDuzenleLoading(true);
+    try {
+      const res = await fetch(`/admin/api/firmalar/${seciliFirma.firma_id}/kullanicilar`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kullanici_id, ...veri }),
+      });
+      const data = await res.json();
+      if (!res.ok) { hata(data.hata ?? "Kullanıcı güncellenemedi.", data.adim, data.detay); }
+      else { basari(data.mesaj ?? "Kullanıcı güncellendi."); setDuzenlenenId(null); refreshKullanicilar(); }
+    } catch (err) {
+      hata("Kullanıcı güncellenemedi — bağlantı hatası.", "handleKullaniciGuncelle", String(err));
+    } finally {
+      setDuzenleLoading(false);
+    }
+  };
+
   const handleRolDegistir = async (kullanici_id: string, yeniRol: string) => {
     if (!seciliFirma) return;
     setAcikRolId(null);
@@ -168,6 +188,8 @@ export function useKullaniciListesi({ seciliFirma, kullanicilar, refreshKullanic
   // Telefonu boş (kolon öncesi) mevcut kullanıcıya tekil telefon ekleme —
   // PUT normalize/benzersizlik kurallarını uygular, hata Türkçe döner.
   const [telefonEkleLoading, setTelefonEkleLoading] = useState<string | null>(null);
+  const [duzenlenenId, setDuzenlenenId] = useState<string | null>(null);
+  const [duzenleLoading, setDuzenleLoading] = useState(false);
   const handleTelefonEkle = async (kullanici_id: string, telefon: string) => {
     if (!seciliFirma) return;
     setTelefonEkleLoading(kullanici_id);
@@ -323,6 +345,9 @@ export function useKullaniciListesi({ seciliFirma, kullanicilar, refreshKullanic
     handleEksikTamamla,
     telefonEkleLoading,
     handleTelefonEkle,
+    duzenlenenId, setDuzenlenenId,
+    duzenleLoading,
+    handleKullaniciGuncelle,
     handleRolDegistir,
     handleAktifToggle,
     handleYetkiDegistir,
