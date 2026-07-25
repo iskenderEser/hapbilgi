@@ -145,32 +145,75 @@ zincir kopması değil, Durum sütunundaki belirsiz mesajdı (bkz. §6).
 
 ---
 
-## 6. Bu plan bitince dönülecek iş — Durum mesajı sözlüğü
+## 6. Durum mesajı sözlüğü — UYGULANDI (25.07.2026)
 
-Talep Durum Tablosu'nun Durum sütunundaki mesajlar bilgi vermiyor: "Devam Ediyor" hem
-"İÜ'nün elinde" hem "iptal edildi" anlamına geliyor; "Durduruldu" planlanmış yayını da yutuyor;
-"Video Bekleniyor" normal kolda hiç çıkmıyor, hazır kolda ise üreticinin kendi işini gösteriyor.
+Tek doğruluk kaynağı: `lib/utils/durum/mesaj.ts`. Ekranda görünen hiçbir durum
+metni ya da rengi başka dosyada tanımlı değildir. Satırlar metin değil **durum
+kodu** taşır; karşılığı role göre çözülür.
 
-Üretici rolü için üzerinde mutabık kalınan sözlük (uygulama bu plandan sonra):
+### Üretici rolünün gördüğü
 
 | Mesaj | Ne zaman | Top |
 |---|---|---|
-| `İçerik Üreticisine İletildi` | İş İÜ tarafına geçti, henüz elini sürmedi (`iu_id` NULL) | İÜ |
-| `İçerik Üreticisi Hazırlıyor` | Bir İÜ üzerinde çalışıyor (`iu_id` dolu, teslim yok) | İÜ |
-| `İçerik Üreticisi Düzeltiyor` | Revizyon istendi, düzeltiliyor | İÜ |
-| `Sizde: Onay Bekliyor` | İÜ teslim etti | Üretici |
-| `Sizde: Video Yükle` | Hazır video, yükleme üreticide | Üretici |
-| `Sizde: Yayına Al` | Set onaylı, yayın kaydı yok | Üretici |
-| `Planlandı · 28 Tem` | İleri tarihli yayın, sistem 07:00'de açacak | Sistem |
-| `Yayında` | Canlı | — |
-| `Yayın Durduruldu` | Yayın durduruldu | Üretici |
+| `Sizden Onay Bekleniyor` | İÜ teslim etti | Üretici |
+| `Sizden Video Bekleniyor` | Hazır video talebi, yükleme üreticide | Üretici |
+| `Yayına Almanız Bekleniyor` | Soru seti onaylı, yayın kaydı yok | Üretici |
+| `İçerik Üreticisine İletildi` | İş İÜ tarafına geçti (`iu_id` NULL) | İÜ |
+| `İçerik Üreticisi Hazırlıyor` | `iu_id` dolu, teslim yok | İÜ |
+| `İçerik Üreticisi Düzeltiyor` | Revizyon istendi | İÜ |
+| `Onayladınız` | Aşama onaylandı | — |
+| `Planlandı · 28 Tem` | İleri tarihli yayın | Sistem |
+| `Yayında` / `Yayını Durdurdunuz` | Yayın aşaması | — / Üretici |
 | `İptal Ettiniz` | İş iptal edildi | — |
-| `Sistem Hatası` | Zincir kurulamadı | Yönetim |
+| `Sistem Hatası` | Zincir kopuk | Yönetim |
 
-Kararlar: ön ek kalır (K1); "Üstlenilmedi" yerine "İçerik Üreticisine İletildi" (K2);
-iptal satırı tabloda kalır, etiketi "İptal Ettiniz" (K3); dil *siz* formunda.
+### İçerik Üreticisi rolünün gördüğü
 
-Açık soru: rol adı bugün her yerde "İçerik Uzmanı" (`lib/utils/roller.ts:229`). Durum
-mesajları "İçerik Üreticisi" diyecekse rol adının da değişip değişmeyeceği kararı bekliyor.
+Mesaj **aşamaya** ve **talebi açanın gerçek unvanına** duyarlıdır.
 
-Sonrasında aynı çalışma İU rolü için ayrıca yapılacak.
+| Mesaj | Ne zaman |
+|---|---|
+| `Senaryo / Video / Soru Seti Yazmanız (Yüklemeniz) Bekleniyor` | İş sizde, teslim yok |
+| `Senaryo / Video / Soru Seti Revizyonu Bekleniyor` | Revizyon istendi |
+| `{Unvan} İnceliyor` · `{Unvan} Onayladı` · `{Unvan} İptal Etti` | Karar üreticide |
+| `{Unvan} Videoyu Yüklüyor` · `{Unvan} Yayına Alacak` | Aksiyon üreticide |
+| `Yayın Planlandı` · `Yayında` · `Yayın Durduruldu` | Yayın aşaması |
+| `Sistem Hatası` | Zincir kopuk |
+
+`{Unvan}` = `ROL_ADLARI[talep.uretici.rol]` — Ürün Müdürü, Eğitim Müdürü,
+Medikal Müdür… "Üretici" kod dilidir, ekrana çıkmaz.
+
+### Kararlar (İskender, 25.07.2026)
+
+- **Dil:** siz formu. Kısaltma yok, tek sözlük — filtre butonları da satır
+  rozetiyle aynı metni taşır ("uzayacaksa uzasın"; düzen buna göre dizildi).
+- **Robotik ifade yasak:** "Sizde — Teslim Edilmedi" gibi tire ile bölünmüş
+  etiketler değil, düzgün Türkçe cümle. Ayrıca neyin beklendiği yazılır
+  ("Düzeltmeniz Bekleniyor" değil, "Senaryo Revizyonu Bekleniyor").
+- **Havuz/üstlenme kavramı YOK:** sistemde tek İÜ vardır; çoğalırsa iş admin ya
+  da otomatik atamayla dağıtılacaktır. "Havuzda", "Başka İçerik Üreticisinde"
+  gibi durumlar reddedildi.
+- **Rol adı:** "İçerik Uzmanı" hiç kullanılmadı, yanlışlıkla yerleşmişti →
+  **İçerik Üreticisi** (`lib/utils/roller.ts`).
+- **İptal edilen iş** tabloda kalır, kartlara sayılmaz.
+
+### Kaynak değişikliği — İÜ ana sayfası
+
+Satırlar artık okunmamış bildirimden değil işin kendisinden türer
+(`lib/utils/anaSayfa/iu.ts`). Eskiden durum sütununa bildirim cümlesi yazılıyor
+ve İÜ bildirimi okuduğunda iş listeden kayboluyordu. Zincir `talep_id` üzerinden
+kurulur — hazır video talebinin soru seti işi eski zincirde tamamen görünmezdi.
+
+### İletişim kartı
+
+Üretim hattı ekranlarının üstünde sabit (`components/TalepSahibiKarti.tsx`,
+uç: `/talepler/api/sahip`). İÜ talebi açanın künyesini talep açıldığı andan
+itibaren görür; üretici İÜ'nün künyesini İÜ **ilk cevabı verdiğinde** görür
+(zincirde `iu_id` doğduğunda). Şema değişikliği yok; unvan = rol adı.
+
+## 7. Yapılmayan — açık kalan
+
+- **Fiziksel test hiç yapılmadı.** Tüm doğrulama tsc + denetim + lint:mimari
+  düzeyindedir; ekranlar giriş arkasında olduğu için tarayıcıda görülmedi.
+- "Sizden Video Bekleniyor" satırları hiçbir stat kartına sayılmıyor (bugünkü
+  davranış korundu) — ayrı kart istenirse ayrı iş.
