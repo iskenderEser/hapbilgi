@@ -97,10 +97,30 @@ export async function POST(request: NextRequest) {
         urun_adi,
       });
       if (!sonuc.ok) {
+        // "Onay ya tam olur ya hiç olmaz" (25.07 — hatalı üretim süreçleri planı §4.1).
+        // Eskiden burada yalnız console'a yazılırdı: üretici "onayladım" der, İU'ya iş
+        // düşmez, talep kimsenin listesinde olmadan üretim hattında asılı kalırdı.
+        // Artık onay geri alınır; üretici hatayı görür ve tekrar dener.
         console.error("[UYARI] Senaryo onaylandı ancak video kabuğu oluşturulamadı:", {
           senaryo_durum_id: yeniDurum.senaryo_durum_id,
           hata: sonuc.hata,
         });
+        const { error: geriAlError } = await adminSupabase
+          .from("senaryo_durumu")
+          .delete()
+          .eq("senaryo_durum_id", yeniDurum.senaryo_durum_id);
+        if (geriAlError) {
+          // Son çare: geri alma da tutmadıysa sessiz kalınmaz.
+          await bildirimOlustur({
+            adminSupabase,
+            alici_id: user.id,
+            gonderen_id: user.id,
+            kayit_turu: "senaryo",
+            kayit_id: senaryo_id,
+            mesaj: `[SİSTEM] Senaryo onaylandı ancak video işi açılamadı ve onay geri alınamadı (${sonuc.hata}). Ürün: ${urun_adi}. Lütfen yönetimle iletişime geçin.`,
+          });
+        }
+        return hataYaniti("Onay tamamlanamadı — sıradaki iş açılamadı, lütfen tekrar deneyin.", "senaryoOnayindaVideoAc — video kabuğu", null);
       }
     }
 

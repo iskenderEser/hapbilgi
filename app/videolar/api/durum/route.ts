@@ -105,6 +105,8 @@ export async function POST(request: NextRequest) {
         hazirTalep = data ?? null;
       }
 
+      let zincirHatasi: string | null = null;
+
       if (hazirTalep?.hazir_soru_seti && hazirTalep.hazir_soru_seti_verisi && talepBilgisi?.talep_id) {
         const islenen = await hazirSoruSetiGir(adminSupabase, {
           talep_id: talepBilgisi.talep_id,
@@ -114,16 +116,7 @@ export async function POST(request: NextRequest) {
           video_basi_soru_sayisi: hazirTalep.video_basi_soru_sayisi,
           degistiren_id: user.id,
         });
-        if (!islenen.ok) {
-          await bildirimOlustur({
-            adminSupabase,
-            alici_id: user.id,
-            gonderen_id: user.id,
-            kayit_turu: "video",
-            kayit_id: video_id,
-            mesaj: `[SİSTEM] Video onaylandı ancak hazır soru seti işlenemedi (${islenen.hata}). Ürün: ${urun_adi}. Lütfen yönetimle iletişime geçin.`,
-          });
-        }
+        if (!islenen.ok) zincirHatasi = islenen.hata;
       } else if (talepBilgisi?.talep_id) {
         // Normal hat → süreç modülü soru seti kabuğunu doğurur ve İU'ya bildirir.
         const sonuc = await videoOnayindaSoruSetiAc(adminSupabase, {
@@ -133,16 +126,35 @@ export async function POST(request: NextRequest) {
           onaylayan_id: user.id,
           urun_adi,
         });
-        if (!sonuc.ok) {
+        if (!sonuc.ok) zincirHatasi = sonuc.hata ?? "Soru seti kabuğu oluşturulamadı.";
+      }
+
+      // "Onay ya tam olur ya hiç olmaz" (25.07 — hatalı üretim süreçleri planı §4.2).
+      // Eskiden onay ayakta kalır, yalnız [SİSTEM] bildirimi giderdi: talep soru seti
+      // aşamasında ölü kalır, kurtarmak için elle DB müdahalesi gerekirdi. Artık onay
+      // geri alınır; üretici hatayı görür ve tekrar dener. hazirSoruSetiGir kendi
+      // yarım kaydını temizlediğinden burada yalnız video_durumu geri alınır.
+      if (zincirHatasi) {
+        console.error("[UYARI] Video onaylandı ancak soru seti işi açılamadı:", {
+          video_durum_id: yeniDurum.video_durum_id,
+          hata: zincirHatasi,
+        });
+        const { error: geriAlError } = await adminSupabase
+          .from("video_durumu")
+          .delete()
+          .eq("video_durum_id", yeniDurum.video_durum_id);
+        if (geriAlError) {
+          // Son çare: geri alma da tutmadıysa sessiz kalınmaz.
           await bildirimOlustur({
             adminSupabase,
             alici_id: user.id,
             gonderen_id: user.id,
             kayit_turu: "video",
             kayit_id: video_id,
-            mesaj: `[SİSTEM] Video onaylandı ancak soru seti kaydı oluşturulamadı (${sonuc.hata}). Ürün: ${urun_adi}. Lütfen yönetimle iletişime geçin.`,
+            mesaj: `[SİSTEM] Video onaylandı ancak soru seti işi açılamadı ve onay geri alınamadı (${zincirHatasi}). Ürün: ${urun_adi}. Lütfen yönetimle iletişime geçin.`,
           });
         }
+        return hataYaniti("Onay tamamlanamadı — sıradaki iş açılamadı, lütfen tekrar deneyin.", "video onayı — soru seti zinciri", null);
       }
     }
 
