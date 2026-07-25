@@ -24,7 +24,9 @@ export const YONLENDIRICI_ROLLER = ["tm", "bm"];
 // TUKETICI_ROLLER: UTT ve KD_UTT — sahada video tüketen, soruları cevaplayan roller.
 export const TUKETICI_ROLLER = ["utt", "kd_utt"];
 
-// IU_ROLU: İçerik Uzmanı — talebe cevap veren, üretim hattının operasyonel hizmetkârı.
+// IU_ROLU: İçerik Üreticisi — talebe cevap veren, üretim hattının operasyonel hizmetkârı.
+// (25.07: ekranlarda görünen ad "İçerik Uzmanı" değil "İçerik Üreticisi"dir —
+//  İskender: eski ad hiç kullanılmadı, yanlışlıkla yerleşmiş.)
 export const IU_ROLU = "iu";
 
 // TUM_ROLLER: Sistemdeki tüm geçerli rollerin birleşik listesi.
@@ -45,7 +47,7 @@ export const TUM_ROLLER = [
 
 // URETIM_HATTI_GORENLER: Üretim hattı sayfalarını (/talepler, /senaryolar,
 // /videolar, /soru-setleri) görebilen roller.
-// Üretici roller (13 rol) ve İçerik Uzmanı dahildir.
+// Üretici roller (13 rol) ve İçerik Üreticisi dahildir.
 // PM tarafı talep oluşturur, senaryo/video/soru seti incelemesi yapar;
 // İU tarafı senaryo/video/soru seti üretir.
 export const URETIM_HATTI_GORENLER = [
@@ -55,7 +57,7 @@ export const URETIM_HATTI_GORENLER = [
 
 // YAYINDAKI_VIDEO_GORENLER: "Yayındaki Videolar" pill'ini + sayfasını görebilen
 // roller. Yalnız-izleme (puan/soru yok). Üretici (İK dahil) + yönetici + tm/bm.
-// İçerik Uzmanı (iu) ve tüketici roller (utt/kd_utt/eczaci/eczane_teknisyeni/
+// İçerik Üreticisi (iu) ve tüketici roller (utt/kd_utt/eczaci/eczane_teknisyeni/
 // musteri) HARİÇ — otomatik dışarıda, hiçbir alt listede yoklar.
 export const YAYINDAKI_VIDEO_GORENLER = [
   ...URETICI_ROLLER,       // pm, jr_pm, kd_pm, med_md, egt_*, ik_*
@@ -226,7 +228,7 @@ export const ROL_ADLARI: Record<string, string> = {
   pm: "Ürün Müdürü",
   jr_pm: "Ürün Müdürü (Jr.)",
   kd_pm: "Kıdemli Ürün Müdürü",
-  iu: "İçerik Uzmanı",
+  iu: "İçerik Üreticisi",
   tm: "Takım Müdürü",
   bm: "Bölge Müdürü",
   utt: "Ürün Tanıtım Temsilcisi",
