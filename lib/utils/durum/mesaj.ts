@@ -17,8 +17,7 @@
 // adıyla yazılır. Filtre butonları da aynı metni taşır (İskender: "uzayacaksa
 // uzasın") — hiçbir yüzeyde ikinci bir sözlük yoktur.
 //
-// İÇERİK ÜRETİCİSİ TARAFI AYRI TURDUR: aynı kodlar İÜ'nün diliyle ikinci bir
-// tabloya bağlanacak (IU_DURUM). Kod listesi ortak kalsın diye union burada.
+// İÇERİK ÜRETİCİSİ TARAFI aşağıdaki ikinci tabloda — aynı kodlar, İÜ'nün dili.
 
 export type DurumTopu = "uretici" | "icerik_ureticisi" | "sistem" | "kapali";
 
@@ -64,7 +63,7 @@ const URETICI_DURUM: Record<DurumKodu, DurumMesaji> = {
   iu_duzeltiyor:    { metin: "İçerik Üreticisi Düzeltiyor", top: "icerik_ureticisi", renk: REVIZYON },
   onay_bekleniyor:  { metin: "Sizden Onay Bekleniyor",      top: "uretici",          renk: AKSIYON },
   video_bekleniyor: { metin: "Sizden Video Bekleniyor",     top: "uretici",          renk: AKSIYON },
-  yayin_bekleniyor: { metin: "Sizden Yayın Bekleniyor",     top: "uretici",          renk: AKSIYON },
+  yayin_bekleniyor: { metin: "Yayına Almanız Bekleniyor",  top: "uretici",          renk: AKSIYON },
   onaylandi:        { metin: "Onayladınız",                 top: "kapali",           renk: ONAY },
   planlandi:        { metin: "Planlandı",                   top: "sistem",           renk: PLANLI },
   yayinda:          { metin: "Yayında",                     top: "kapali",           renk: CANLI },
