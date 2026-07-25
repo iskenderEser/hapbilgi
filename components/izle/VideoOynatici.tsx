@@ -265,7 +265,7 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
             <div className="text-xs text-gray-500 mt-1">{video.teknik_adi}</div>
           </div>
           {tuketici && video.ileri_sarma_acik && (
-            <span className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
+            <span className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full"
               style={{ color: "#bc2d0d", background: "rgba(188,45,13,0.08)", border: "0.5px solid rgba(188,45,13,0.25)" }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#bc2d0d" strokeWidth="2.5">
                 <polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/>

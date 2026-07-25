@@ -20,7 +20,7 @@ export const Toggle = ({ acik, onClick }: { acik: boolean; onClick: () => void }
 );
 
 export const IleriSarmaBadge = ({ acik }: { acik: boolean }) => acik ? (
-  <span className="text-xs rounded-full px-2 py-0.5 inline-block mt-1"
+  <span className="text-[10px] rounded-full px-2 py-0.5 inline-block mt-1"
     style={{ color: "#bc2d0d", background: "rgba(188,45,13,0.08)", border: "0.5px solid rgba(188,45,13,0.25)" }}>
     İleri sarma açık
   </span>

@@ -108,11 +108,11 @@ export default function EclubPanelPage() {
                       </div>
 
                       <div className="flex items-center gap-2 flex-wrap mt-auto">
-                        <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #93c5fd" }}>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #93c5fd" }}>
                           {gunKalan(o.oneri_bitis)} gün kaldı
                         </span>
                         {o.izlendi_mi && (
-                          <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "#eaf7e4", color: "#166534", border: "0.5px solid #7ed957" }}>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "#eaf7e4", color: "#166534", border: "0.5px solid #7ed957" }}>
                             İzlendi
                           </span>
                         )}

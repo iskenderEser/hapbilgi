@@ -171,7 +171,7 @@ export default function TmAnaSayfa({ user, adSoyad }: Props) {
                 <td className="py-1.5 px-2 text-gray-500">{new Date(o.oneri_bitis).toLocaleDateString("tr-TR")}</td>
                 <td className="py-1.5 px-2 text-center">
                   <span
-                    className="inline-block px-2 py-0.5 rounded-full text-xs"
+                    className="inline-block px-2 py-0.5 rounded-full text-[10px]"
                     style={{
                       background: o.izlendi_mi ? "#f0fdf4" : "#fef2f2",
                       color: o.izlendi_mi ? "#166534" : "#991b1b",
@@ -197,7 +197,7 @@ export default function TmAnaSayfa({ user, adSoyad }: Props) {
           <h1 className="text-lg md:text-xl font-extrabold text-gray-900 m-0">Merhaba {ad}, 👋</h1>
           <p className="text-sm text-gray-500 mt-1">{ROL_ADLARI["tm"]}</p>
         </div>
-        <span className="hidden md:inline text-xs text-gray-500 bg-white border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap">
+        <span className="hidden md:inline text-[10px] text-gray-500 bg-white border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap">
           {bugunTarih()}
         </span>
       </div>
@@ -243,7 +243,7 @@ export default function TmAnaSayfa({ user, adSoyad }: Props) {
                   <div className="flex justify-between items-start mb-1.5">
                     <div className="text-sm font-bold text-gray-900">{s.bm_adi}</div>
                     <span
-                      className="text-xs font-bold px-2 py-0.5 rounded-full"
+                      className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                       style={{ background: s.hafta_oneri > 0 ? "#f0fdf4" : "#f3f4f6", color: s.hafta_oneri > 0 ? "#166534" : "#9ca3af" }}
                     >
                       {s.hafta_oneri} öneri
@@ -282,7 +282,7 @@ export default function TmAnaSayfa({ user, adSoyad }: Props) {
                   <div className="text-xs text-gray-500">{s.bolge_adi}</div>
                   <div>
                     <span
-                      className="text-xs font-bold px-2 py-0.5 rounded-full inline-block"
+                      className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block"
                       style={{ background: s.hafta_oneri > 0 ? "#f0fdf4" : "#f3f4f6", color: s.hafta_oneri > 0 ? "#166534" : "#9ca3af" }}
                     >
                       {s.hafta_oneri} öneri

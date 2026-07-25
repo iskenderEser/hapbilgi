@@ -49,7 +49,7 @@ export function SoruListesi({
               <div className="text-xs text-gray-700 leading-relaxed mb-1.5">{soru.soru_metni}</div>
               <div className="flex flex-col gap-1">
                 {soru.secenekler?.map((s: any, j: number) => (
-                  <span key={j} className="text-xs px-2.5 py-0.5 rounded-full w-fit"
+                  <span key={j} className="text-[10px] px-2.5 py-0.5 rounded-full w-fit"
                     style={{ border: s.dogru ? "0.5px solid #56aeff" : "0.5px solid #e5e7eb", color: s.dogru ? "#56aeff" : "#737373", background: s.dogru ? "#e6f1fb" : "white" }}>
                     {s.harf}. {s.metin}
                   </span>

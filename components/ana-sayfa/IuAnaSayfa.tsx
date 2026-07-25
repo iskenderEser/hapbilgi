@@ -77,7 +77,7 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
             <strong style={{ color: "#56aeff", fontWeight: 700 }}>HapBilgi · </strong>{ROL_ADLARI["iu"]}
           </p>
         </div>
-        <span className="hidden md:inline text-xs text-gray-500 bg-white border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap">
+        <span className="hidden md:inline text-[10px] text-gray-500 bg-white border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap">
           {bugunTarih()}
         </span>
       </div>
@@ -142,10 +142,10 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
                       <div className="text-sm font-bold text-gray-900">{s.urun_adi}</div>
                       {s.turu_adi && <div className="text-xs text-gray-400 mt-0.5">{s.turu_adi}</div>}
                     </div>
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full leading-tight" style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}` }}>{durum.metin}</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full leading-tight" style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}` }}>{durum.metin}</span>
                   </div>
                   <div className="flex gap-2 items-center">
-                    <span className="text-xs font-bold px-1.5 py-0.5 rounded-full" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span>
                     <span className="text-xs text-gray-500">{s.teknik_adi}</span>
                   </div>
                   <div className="text-xs text-gray-400 mt-1">{formatTarih(s.tarih)}</div>
@@ -183,8 +183,8 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
                     {s.turu_adi && <div className="text-xs text-gray-400 truncate">{s.turu_adi}</div>}
                   </div>
                   <div className="text-xs text-gray-500 truncate">{s.teknik_adi}</div>
-                  <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block whitespace-nowrap" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span></div>
-                  <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block leading-tight" style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}` }}>{durum.metin}</span></div>
+                  <div><span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block whitespace-nowrap" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span></div>
+                  <div><span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block leading-tight" style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}` }}>{durum.metin}</span></div>
                   <span className="text-xs text-gray-400 whitespace-nowrap">{formatTarih(s.tarih)}</span>
                   <span className="text-gray-300 text-base">›</span>
                 </div>

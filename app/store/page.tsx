@@ -353,7 +353,7 @@ function UrunKarti({
         <div className="flex gap-1.5 flex-wrap mt-auto pt-1.5">
           {stokYok && (
             <span
-              className="text-xs px-2 py-0.5 rounded-full"
+              className="text-[10px] px-2 py-0.5 rounded-full"
               style={{
                 color: BORDO,
                 background: "#fef2f2",
@@ -365,7 +365,7 @@ function UrunKarti({
           )}
           {stokAz && (
             <span
-              className="text-xs px-2 py-0.5 rounded-full"
+              className="text-[10px] px-2 py-0.5 rounded-full"
               style={{
                 color: SARI_TEXT,
                 background: "#fefce8",
@@ -377,7 +377,7 @@ function UrunKarti({
           )}
           {!stokYok && !stokAz && (
             <span
-              className="text-xs px-2 py-0.5 rounded-full"
+              className="text-[10px] px-2 py-0.5 rounded-full"
               style={{
                 color: YESIL,
                 background: "#f0fdf4",
@@ -389,7 +389,7 @@ function UrunKarti({
           )}
           {yetersizBakiye && !stokYok && (
             <span
-              className="text-xs px-2 py-0.5 rounded-full"
+              className="text-[10px] px-2 py-0.5 rounded-full"
               style={{
                 color: GRI_METIN,
                 background: "#f3f4f6",

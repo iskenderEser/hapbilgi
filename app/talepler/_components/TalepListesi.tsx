@@ -78,12 +78,12 @@ export function TalepListesi({
                       </span>
                       {t.urun_adi !== "-" && rozet.etiket && (
                         <span
-                          className="text-xs font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
+                          className="text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
                           style={{
                             background: rozet.bg,
                             color: rozet.renk,
                             border: `0.5px solid ${rozet.border}`,
-                            fontSize: 9,
+                            fontSize: 10,
                           }}
                         >
                           {rozet.etiket}
@@ -141,7 +141,7 @@ export function TalepListesi({
                             <span
                               className="font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
                               style={{
-                                fontSize: 9,
+                                fontSize: 10,
                                 background: rozet.bg,
                                 color: rozet.renk,
                                 border: `0.5px solid ${rozet.border}`,

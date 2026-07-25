@@ -251,14 +251,14 @@ export default function KullanicilarPage() {
                         <td className="px-5 py-3 text-gray-900 font-medium whitespace-nowrap">{k.ad} {k.soyad}</td>
                         <td className="px-3 py-3 text-gray-400 text-xs">{k.eposta}</td>
                         <td className="px-3 py-3">
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">{k.rol}</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">{k.rol}</span>
                         </td>
                         <td className="px-3 py-3 text-gray-400 text-xs">
                           {k.bolge_adi && <div>{k.bolge_adi}</div>}
                           {k.takim_adi && <div className="text-gray-300">{k.takim_adi}</div>}
                         </td>
                         <td className="px-3 py-3">
-                          <span className={`text-xs px-2 py-0.5 rounded-full border ${k.aktif_mi ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 border-red-100'}`}
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full border ${k.aktif_mi ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 border-red-100'}`}
                             style={{ color: k.aktif_mi ? '#16a34a' : '#bc2d0d' }}>
                             {k.aktif_mi ? "Aktif" : "Pasif"}
                           </span>
@@ -293,13 +293,13 @@ export default function KullanicilarPage() {
                         <div className="text-sm font-semibold text-gray-900">{k.ad} {k.soyad}</div>
                         <div className="text-xs text-gray-400 mt-0.5">{k.eposta}</div>
                       </div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full border shrink-0 ${k.aktif_mi ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 border-red-100'}`}
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full border shrink-0 ${k.aktif_mi ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 border-red-100'}`}
                         style={{ color: k.aktif_mi ? '#16a34a' : '#bc2d0d' }}>
                         {k.aktif_mi ? "Aktif" : "Pasif"}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 mb-2.5">
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">{k.rol}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">{k.rol}</span>
                       {k.bolge_adi && <span className="text-xs text-gray-400">{k.bolge_adi}</span>}
                       {k.takim_adi && <span className="text-xs text-gray-300">{k.takim_adi}</span>}
                     </div>

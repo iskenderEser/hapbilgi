@@ -193,7 +193,7 @@ export default function CcChallengeListesi({ yil, ay, hata }: Props) {
                     </td>
                     <td className="px-3 py-2.5 text-center">
                       <span
-                        className="inline-block px-2.5 py-1 rounded-full text-xs font-medium border"
+                        className="inline-block px-2.5 py-1 rounded-full text-[10px] font-medium border"
                         style={{
                           color: d.renk,
                           background: d.arka,

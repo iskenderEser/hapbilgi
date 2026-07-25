@@ -80,13 +80,13 @@ export function BekleyenSatir({
           {(b.soru_seti_buyuklugu || b.video_basi_soru_sayisi) && (
             <div className="flex gap-2 mt-0.5">
               {b.soru_seti_buyuklugu && (
-                <span className="text-xs px-2 py-0.5 rounded-full"
+                <span className="text-[10px] px-2 py-0.5 rounded-full"
                   style={{ background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe" }}>
                   {b.soru_seti_buyuklugu} soru
                 </span>
               )}
               {b.video_basi_soru_sayisi && (
-                <span className="text-xs px-2 py-0.5 rounded-full"
+                <span className="text-[10px] px-2 py-0.5 rounded-full"
                   style={{ background: "#f0fdf4", color: "#15803d", border: "0.5px solid #bbf7d0" }}>
                   Video başı {b.video_basi_soru_sayisi}
                 </span>

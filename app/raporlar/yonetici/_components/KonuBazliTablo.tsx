@@ -62,7 +62,7 @@ export default function KonuBazliTablo({ konuListesi }: Props) {
                 <td className="px-3 py-2">
                   <div className="text-sm font-medium text-gray-900">{satir.konu_adi}</div>
                   <div
-                    className="inline-block text-xs px-2 py-0.5 rounded-full mt-1"
+                    className="inline-block text-[10px] px-2 py-0.5 rounded-full mt-1"
                     style={{ background: `${turRenk}20`, color: turRenk }}
                   >
                     {turAd}

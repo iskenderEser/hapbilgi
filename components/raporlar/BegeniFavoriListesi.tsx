@@ -55,7 +55,7 @@ export default function BegeniFavoriListesi({ begeniListesi, favoriListesi, isUt
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     {isUtt && v.benim_begenim && (
-                      <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: '#FAECE7', color: BORDO }}>senin</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#FAECE7', color: BORDO }}>senin</span>
                     )}
                     <span className="text-xs font-medium" style={{ color: BORDO }}>{v.begeni_sayisi}</span>
                   </div>
@@ -88,7 +88,7 @@ export default function BegeniFavoriListesi({ begeniListesi, favoriListesi, isUt
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     {isUtt && v.benim_favorim && (
-                      <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: '#FAECE7', color: BORDO }}>senin</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#FAECE7', color: BORDO }}>senin</span>
                     )}
                     <span className="text-xs font-medium" style={{ color: BORDO }}>{v.favori_sayisi}</span>
                   </div>

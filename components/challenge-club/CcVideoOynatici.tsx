@@ -357,7 +357,7 @@ export default function CcVideoOynatici({
           <div className="flex items-center gap-2">
             {izlemeTuru === "challenge" && (
               <span
-                className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
+                className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full"
                 style={{
                   color: "#bc2d0d",
                   background: "rgba(188,45,13,0.08)",
@@ -369,7 +369,7 @@ export default function CcVideoOynatici({
             )}
             {izlemeTuru === "extra" && (
               <span
-                className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
+                className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full"
                 style={{
                   color: "#7c3aed",
                   background: "rgba(124,58,237,0.08)",
@@ -381,7 +381,7 @@ export default function CcVideoOynatici({
             )}
             {video.ileri_sarma_acik && (
               <span
-                className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
+                className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full"
                 style={{
                   color: "#bc2d0d",
                   background: "rgba(188,45,13,0.08)",

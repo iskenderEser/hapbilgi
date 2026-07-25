@@ -99,7 +99,7 @@ export function EczaneBlogu({ eczane, kisiler, islemLoading, onListedenCikar, on
           <div key={k.kisi_id} className="px-4 md:px-5 py-3">
             {duzenlenenKisi === k.kisi_id ? (
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs px-2 py-0.5 rounded-full"
+                <span className="text-[10px] px-2 py-0.5 rounded-full"
                   style={{ background: k.rol === "eczaci" ? "#fff5f5" : "#eaf7e4", color: k.rol === "eczaci" ? "#e30a17" : "#10304a", border: `0.5px solid ${k.rol === "eczaci" ? "#e30a17" : "#7ed957"}` }}>
                   {KISI_ROL_ETIKETLERI[k.rol]}
                 </span>
@@ -119,7 +119,7 @@ export function EczaneBlogu({ eczane, kisiler, islemLoading, onListedenCikar, on
             ) : (
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-3 flex-wrap text-sm">
-                  <span className="text-xs px-2 py-0.5 rounded-full"
+                  <span className="text-[10px] px-2 py-0.5 rounded-full"
                     style={{ background: k.rol === "eczaci" ? "#fff5f5" : "#eaf7e4", color: k.rol === "eczaci" ? "#e30a17" : "#10304a", border: `0.5px solid ${k.rol === "eczaci" ? "#e30a17" : "#7ed957"}` }}>
                     {KISI_ROL_ETIKETLERI[k.rol]}
                   </span>

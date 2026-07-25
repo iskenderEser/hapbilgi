@@ -92,7 +92,7 @@ export function OneriGonder({ yayinlar, kisiler, gonderLoading, onGonder }: Prop
                       <span className="text-sm font-medium text-gray-900">{y.urun_adi}</span>
                       <span className="text-xs text-gray-500">{y.teknik_adi}</span>
                     </div>
-                    <span className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap"
+                    <span className="text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap"
                       style={{ background: r.bg, color: r.renk, border: `0.5px solid ${r.border}` }}>
                       {ROL_ETIKETLERI[y.hedef_rol]}
                     </span>

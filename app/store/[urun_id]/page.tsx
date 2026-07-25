@@ -300,7 +300,7 @@ export default function UrunDetayPage() {
                 <div className="mb-3">
                   {urun.stok === 0 ? (
                     <span
-                      className="text-xs px-2.5 py-1 rounded-full"
+                      className="text-[10px] px-2.5 py-1 rounded-full"
                       style={{
                         color: BORDO,
                         background: "#fef2f2",
@@ -311,7 +311,7 @@ export default function UrunDetayPage() {
                     </span>
                   ) : urun.stok <= STOK_AZ_ESIK ? (
                     <span
-                      className="text-xs px-2.5 py-1 rounded-full"
+                      className="text-[10px] px-2.5 py-1 rounded-full"
                       style={{
                         color: SARI_TEXT,
                         background: "#fefce8",
@@ -322,7 +322,7 @@ export default function UrunDetayPage() {
                     </span>
                   ) : (
                     <span
-                      className="text-xs px-2.5 py-1 rounded-full"
+                      className="text-[10px] px-2.5 py-1 rounded-full"
                       style={{
                         color: YESIL,
                         background: "#f0fdf4",

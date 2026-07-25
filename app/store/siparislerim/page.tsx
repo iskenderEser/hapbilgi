@@ -289,7 +289,7 @@ export default function SiparislerimPage() {
                           {urunAdi}
                         </div>
                         <span
-                          className="text-xs px-2.5 py-1 rounded-full whitespace-nowrap flex-shrink-0"
+                          className="text-[10px] px-2.5 py-1 rounded-full whitespace-nowrap flex-shrink-0"
                           style={{
                             color: durumStili.metin,
                             background: durumStili.arka,

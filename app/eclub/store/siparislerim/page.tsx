@@ -116,7 +116,7 @@ export default function EclubSiparislerimPage() {
                 <div key={s.siparis_id} className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-sm font-medium text-gray-900">{urunAd(s)}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full" style={{ color: durum.renk, background: durum.bg }}>{durum.ad}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ color: durum.renk, background: durum.bg }}>{durum.ad}</span>
                   </div>
                   <div className="flex items-center gap-4 text-xs text-gray-500">
                     <span>Adet: {s.adet}</span>

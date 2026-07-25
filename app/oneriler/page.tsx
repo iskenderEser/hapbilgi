@@ -453,7 +453,7 @@ export default function OnerilerPage() {
                             <td className="px-3 py-2.5 text-gray-500 whitespace-nowrap">{formatTarihTablo(o.oneri_bitis)}</td>
                             <td className="px-3 py-2.5 whitespace-nowrap">
                               <span
-                                className="text-xs px-2 py-0.5 rounded-full"
+                                className="text-[10px] px-2 py-0.5 rounded-full"
                                 style={{ background: dbi.bg, color: dbi.renk, border: `0.5px solid ${dbi.border}` }}
                               >
                                 {dbi.etiket}

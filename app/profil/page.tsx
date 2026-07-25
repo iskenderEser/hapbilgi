@@ -211,7 +211,7 @@ export default function ProfilPage() {
         </div>
 
         <div
-          className="text-xs px-3 py-0.5 rounded-full"
+          className="text-[10px] px-3 py-0.5 rounded-full"
           style={{ background: "rgba(188,45,13,0.08)", color: "#bc2d0d", border: "0.5px solid rgba(188,45,13,0.25)" }}
         >
           {profil?.rol}

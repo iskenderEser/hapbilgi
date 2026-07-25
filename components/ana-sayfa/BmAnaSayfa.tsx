@@ -111,7 +111,7 @@ export default function BmAnaSayfa({ user, adSoyad }: Props) {
           <h1 className="text-lg md:text-xl font-extrabold text-gray-900 m-0">Merhaba {ad}, 👋</h1>
           <p className="text-sm text-gray-500 mt-1">{ROL_ADLARI["bm"]}</p>
         </div>
-        <span className="hidden md:inline text-xs text-gray-500 bg-white border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap">
+        <span className="hidden md:inline text-[10px] text-gray-500 bg-white border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap">
           {bugunTarih()}
         </span>
       </div>
@@ -183,7 +183,7 @@ export default function BmAnaSayfa({ user, adSoyad }: Props) {
                 >
                   <div className="flex justify-between items-start mb-1.5">
                     <div className="text-sm font-bold text-gray-900">{s.utt_adi}</div>
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: durumR.bg, color: durumR.text }}>{s.durum}</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: durumR.bg, color: durumR.text }}>{s.durum}</span>
                   </div>
                   <div className="text-xs text-gray-700">{s.urun_adi} · {s.teknik_adi}</div>
                   <div className="text-xs text-gray-400 mt-1">{formatTarih(s.tarih)}</div>
@@ -218,7 +218,7 @@ export default function BmAnaSayfa({ user, adSoyad }: Props) {
                   <div className="text-sm font-bold text-gray-900 truncate">{s.utt_adi}</div>
                   <div className="text-xs text-gray-700 truncate">{s.urun_adi}</div>
                   <div className="text-xs text-gray-500 truncate">{s.teknik_adi}</div>
-                  <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block whitespace-nowrap" style={{ background: durumR.bg, color: durumR.text }}>{s.durum}</span></div>
+                  <div><span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block whitespace-nowrap" style={{ background: durumR.bg, color: durumR.text }}>{s.durum}</span></div>
                   <span className="text-xs text-gray-400 whitespace-nowrap">{formatTarih(s.tarih)}</span>
                   <span className="text-gray-300 text-base">›</span>
                 </div>

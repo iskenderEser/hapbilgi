@@ -64,7 +64,7 @@ export function YayinSatir({
             <HedefRolPill hedefRol={y.hedef_rol} />
             {/* Metin ve renk tek sözlükten (25.07) — yayın durumu ana sayfada ne
                 yazıyorsa burada da aynısını yazar. Yalnız üretici görür. */}
-            <span className="text-xs px-2 py-0.5 rounded-full leading-tight"
+            <span className="text-[10px] px-2 py-0.5 rounded-full leading-tight"
               style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}` }}>
               {durum.metin}
             </span>
@@ -77,7 +77,7 @@ export function YayinSatir({
               : `Durdurma: ${y.durdurma_tarihi ? formatTarih(y.durdurma_tarihi) : "-"}`}
           </span>
           {tekrarli && (
-            <span className="text-xs px-2 py-0.5 rounded-full w-fit"
+            <span className="text-[10px] px-2 py-0.5 rounded-full w-fit"
               style={{ background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe" }}>
               Tekrar: {tekrarBilgi!.tekrar_periyot_gun} gün · Yeni tur: {kalanGun(tekrarBilgi!.sonraki_tur_tarihi!)} gün sonra
             </span>

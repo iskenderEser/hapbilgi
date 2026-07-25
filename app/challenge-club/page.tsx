@@ -367,7 +367,7 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className="px-4 py-1.5 rounded-full text-xs cursor-pointer border whitespace-nowrap flex items-center gap-1.5 flex-shrink-0"
+      className="px-4 py-1.5 rounded-full text-[10px] cursor-pointer border whitespace-nowrap flex items-center gap-1.5 flex-shrink-0"
       style={{
         fontFamily: "'Nunito', sans-serif",
         background: aktif ? BORDO : "white",
@@ -378,7 +378,7 @@ function TabButton({
       {etiket}
       {rozet !== undefined && (
         <span
-          className="text-xs px-1.5 py-0.5 rounded-full font-semibold"
+          className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
           style={{
             background: aktif ? "rgba(255,255,255,0.25)" : BORDO,
             color: aktif ? "white" : "white",
@@ -428,7 +428,7 @@ function VideoListesi({
               </div>
               {v.tamamlandi_mi && (
                 <span
-                  className="text-xs px-2 py-0.5 rounded-full"
+                  className="text-[10px] px-2 py-0.5 rounded-full"
                   style={{
                     color: YESIL,
                     background: "#f0fdf4",
@@ -440,7 +440,7 @@ function VideoListesi({
               )}
               {v.tamamlandi_mi && v.sonraki_tur_tarihi && (
                 <span
-                  className="text-xs px-2 py-0.5 rounded-full"
+                  className="text-[10px] px-2 py-0.5 rounded-full"
                   style={{
                     color: "#1d4ed8",
                     background: "#eff6ff",
@@ -581,7 +581,7 @@ function GonderdiklerimListesi({
               </div>
             </div>
             <div
-              className="px-3 py-1 rounded-full text-xs font-medium flex-shrink-0 border"
+              className="px-3 py-1 rounded-full text-[10px] font-medium flex-shrink-0 border"
               style={{
                 background: d.arka,
                 color: d.renk,

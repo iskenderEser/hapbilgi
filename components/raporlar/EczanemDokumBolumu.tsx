@@ -72,7 +72,7 @@ export default function EczanemDokumBolumu() {
             <button
               key={p.key}
               onClick={() => setPeriyot(p.key)}
-              className="px-2 py-0.5 rounded-full text-[11px] border transition"
+              className="px-2 py-0.5 rounded-full text-[10px] border transition"
               style={{
                 background: periyot === p.key ? AMBER : "transparent",
                 color: periyot === p.key ? "#fff" : "#6b7280",
