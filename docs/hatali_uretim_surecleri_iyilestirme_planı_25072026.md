@@ -125,12 +125,13 @@ dener. Ölü talep üretilmez.
 
 ---
 
-## 5. Adım 3 — Canlı kayıt onarımı
+## 5. Adım 3 — Canlı kayıt onarımı — GEREK KALMADI
 
-Adım 0 çıktısına göre belirlenir.
+Adım 0 sorguları 25.07.2026'da İskender tarafından koşuldu: **üçü de sıfır satır döndü.**
+Canlı ortamda bu iki bozukluktan zarar görmüş kayıt yok — onarım SQL'ine gerek kalmadı.
 
-- Kayıt Adım 1 ile kendiliğinden açılıyorsa SQL'e gerek yok.
-- Açılmıyorsa onarım SQL'i **tek tek** verilir, İskender koşar (riskli canlı DB kuralı).
+24.07 `egt_md` testinde sezilen tuhaflık ya test talebi silindiğinde temizlendi ya da
+zincir kopması değil, Durum sütunundaki belirsiz mesajdı (bkz. §6).
 
 ---
 
