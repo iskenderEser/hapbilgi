@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import TalepSahibiKarti from "@/components/TalepSahibiKarti";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { HedefRolBant } from "@/components/HedefRolBant";
 import type { HedefRol } from "@/app/talepler/_types";
@@ -303,6 +304,7 @@ export default function SenaryolarPage() {
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
+      <TalepSahibiKarti rol={kullanici.rol} talepId={talep_id} />
       {talep && <HedefRolBant hedefRol={talep.hedef_rol} />}
 
       <div className="max-w-3xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">

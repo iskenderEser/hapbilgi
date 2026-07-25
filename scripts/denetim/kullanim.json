@@ -922,38 +922,53 @@
     },
     {
       "dosya": "app/senaryolar/page.tsx",
-      "satir": 78,
+      "satir": 80,
       "tablo": "senaryolar"
     },
     {
       "dosya": "app/senaryolar/page.tsx",
-      "satir": 117,
+      "satir": 120,
       "tablo": "v_senaryo_son_durum"
     },
     {
+      "dosya": "app/senaryolar/page.tsx",
+      "satir": 143,
+      "tablo": "kullanicilar"
+    },
+    {
       "dosya": "app/soru-setleri/page.tsx",
-      "satir": 68,
+      "satir": 70,
       "tablo": "soru_setleri"
     },
     {
       "dosya": "app/soru-setleri/page.tsx",
-      "satir": 92,
+      "satir": 95,
       "tablo": "talepler"
     },
     {
       "dosya": "app/soru-setleri/page.tsx",
-      "satir": 121,
+      "satir": 126,
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "app/soru-setleri/page.tsx",
+      "satir": 143,
       "tablo": "v_soru_seti_son_durum"
     },
     {
       "dosya": "app/videolar/page.tsx",
-      "satir": 89,
+      "satir": 91,
       "tablo": "videolar"
     },
     {
       "dosya": "app/videolar/page.tsx",
-      "satir": 138,
+      "satir": 141,
       "tablo": "v_video_son_durum"
+    },
+    {
+      "dosya": "app/videolar/page.tsx",
+      "satir": 163,
+      "tablo": "kullanicilar"
     },
     {
       "dosya": "lib/rapor/bm/getBmData.ts",
@@ -1282,53 +1297,38 @@
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 89,
+      "satir": 78,
       "tablo": "senaryolar"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 101,
+      "satir": 80,
       "tablo": "videolar"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 115,
+      "satir": 82,
       "tablo": "soru_setleri"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 140,
-      "tablo": "bildirimler"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 170,
-      "tablo": "senaryolar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 177,
+      "satir": 92,
       "tablo": "v_senaryo_son_durum"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 198,
-      "tablo": "videolar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 208,
+      "satir": 93,
       "tablo": "v_video_son_durum"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 231,
-      "tablo": "soru_setleri"
+      "satir": 94,
+      "tablo": "v_soru_seti_son_durum"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 241,
-      "tablo": "v_soru_seti_son_durum"
+      "satir": 110,
+      "tablo": "kullanicilar"
     },
     {
       "dosya": "lib/utils/anaSayfa/tm.ts",
@@ -1592,22 +1592,22 @@
     },
     {
       "dosya": "app/senaryolar/[talep_id]/page.tsx",
-      "satir": 89,
+      "satir": 90,
       "tablo": "talepler"
     },
     {
       "dosya": "app/senaryolar/[talep_id]/page.tsx",
-      "satir": 111,
+      "satir": 112,
       "tablo": "senaryolar"
     },
     {
       "dosya": "app/senaryolar/[talep_id]/page.tsx",
-      "satir": 119,
+      "satir": 120,
       "tablo": "senaryo_durumu"
     },
     {
       "dosya": "app/senaryolar/[talep_id]/page.tsx",
-      "satir": 133,
+      "satir": 134,
       "tablo": "senaryo_durumu"
     },
     {
@@ -1647,17 +1647,17 @@
     },
     {
       "dosya": "app/soru-setleri/[video_durum_id]/page.tsx",
-      "satir": 98,
+      "satir": 99,
       "tablo": "video_durumu"
     },
     {
       "dosya": "app/soru-setleri/[video_durum_id]/page.tsx",
-      "satir": 134,
+      "satir": 135,
       "tablo": "soru_setleri"
     },
     {
       "dosya": "app/soru-setleri/[video_durum_id]/page.tsx",
-      "satir": 144,
+      "satir": 145,
       "tablo": "soru_seti_durumu"
     },
     {
@@ -1712,7 +1712,7 @@
     },
     {
       "dosya": "app/talepler/[talep_id]/page.tsx",
-      "satir": 69,
+      "satir": 70,
       "tablo": "talepler"
     },
     {
@@ -1767,27 +1767,27 @@
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 78,
+      "satir": 79,
       "tablo": "senaryo_durumu"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 85,
+      "satir": 86,
       "tablo": "senaryolar"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 92,
+      "satir": 93,
       "tablo": "talepler"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 105,
+      "satir": 106,
       "tablo": "videolar"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 113,
+      "satir": 114,
       "tablo": "video_durumu"
     },
     {
@@ -2354,6 +2354,26 @@
       "dosya": "app/talepler/api/hazir-video/route.ts",
       "satir": 72,
       "tablo": "talepler"
+    },
+    {
+      "dosya": "app/talepler/api/sahip/route.ts",
+      "satir": 29,
+      "tablo": "senaryo_durumu"
+    },
+    {
+      "dosya": "app/talepler/api/sahip/route.ts",
+      "satir": 38,
+      "tablo": "video_durumu"
+    },
+    {
+      "dosya": "app/talepler/api/sahip/route.ts",
+      "satir": 48,
+      "tablo": "talepler"
+    },
+    {
+      "dosya": "app/talepler/api/sahip/route.ts",
+      "satir": 56,
+      "tablo": "kullanicilar"
     },
     {
       "dosya": "app/videolar/api/bunny-durum/route.ts",
@@ -4512,45 +4532,63 @@
     },
     {
       "dosya": "app/senaryolar/page.tsx",
-      "satir": 78,
-      "ham": "\n        senaryo_id,\n        talep_id,\n        iu_id,\n        created_at,\n        talepler!inner (\n          talep_no,\n          hazir_video,\n          hazir_soru_seti,\n          urun_adi,\n          urunler (urun_adi),\n          teknikler (teknik_adi),\n          firmalar (firma_adi)\n        )\n      ",
+      "satir": 80,
+      "ham": "\n        senaryo_id,\n        talep_id,\n        iu_id,\n        created_at,\n        talepler!inner (\n          talep_no,\n          uretici_id,\n          hazir_video,\n          hazir_soru_seti,\n          urun_adi,\n          urunler (urun_adi),\n          teknikler (teknik_adi),\n          firmalar (firma_adi)\n        )\n      ",
       "tablo": "senaryolar"
     },
     {
       "dosya": "app/senaryolar/page.tsx",
-      "satir": 117,
+      "satir": 120,
       "ham": "senaryo_id, durum, created_at",
       "tablo": "v_senaryo_son_durum"
     },
     {
+      "dosya": "app/senaryolar/page.tsx",
+      "satir": 143,
+      "ham": "kullanici_id, rol",
+      "tablo": "kullanicilar"
+    },
+    {
       "dosya": "app/soru-setleri/page.tsx",
-      "satir": 68,
+      "satir": 70,
       "ham": "soru_seti_id, video_durum_id, talep_id, iu_id, sorular, created_at",
       "tablo": "soru_setleri"
     },
     {
       "dosya": "app/soru-setleri/page.tsx",
-      "satir": 92,
-      "ham": "talep_id, talep_no, egitim_turu, urun_adi, hazir_video, hazir_soru_seti, urunler (urun_adi), teknikler (teknik_adi), firmalar (firma_adi)",
+      "satir": 95,
+      "ham": "talep_id, talep_no, egitim_turu, uretici_id, urun_adi, hazir_video, hazir_soru_seti, urunler (urun_adi), teknikler (teknik_adi), firmalar (firma_adi)",
       "tablo": "talepler"
     },
     {
       "dosya": "app/soru-setleri/page.tsx",
-      "satir": 121,
+      "satir": 126,
+      "ham": "kullanici_id, rol",
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "app/soru-setleri/page.tsx",
+      "satir": 143,
       "ham": "soru_seti_id, durum, created_at",
       "tablo": "v_soru_seti_son_durum"
     },
     {
       "dosya": "app/videolar/page.tsx",
-      "satir": 89,
-      "ham": "\n        video_id,\n        senaryo_durum_id,\n        iu_id,\n        video_url,\n        thumbnail_url,\n        created_at,\n        senaryo_durumu!inner (\n          senaryolar!inner (\n            talep_id,\n            talepler!inner (\n              talep_no,\n              hazir_video,\n              hazir_soru_seti,\n              urun_adi,\n              urunler (urun_adi),\n              teknikler (teknik_adi),\n              firmalar (firma_adi)\n            )\n          )\n        )\n      ",
+      "satir": 91,
+      "ham": "\n        video_id,\n        senaryo_durum_id,\n        iu_id,\n        video_url,\n        thumbnail_url,\n        created_at,\n        senaryo_durumu!inner (\n          senaryolar!inner (\n            talep_id,\n            talepler!inner (\n              talep_no,\n              uretici_id,\n              hazir_video,\n              hazir_soru_seti,\n              urun_adi,\n              urunler (urun_adi),\n              teknikler (teknik_adi),\n              firmalar (firma_adi)\n            )\n          )\n        )\n      ",
       "tablo": "videolar"
     },
     {
       "dosya": "app/videolar/page.tsx",
-      "satir": 138,
+      "satir": 141,
       "ham": "video_id, durum, created_at",
       "tablo": "v_video_son_durum"
+    },
+    {
+      "dosya": "app/videolar/page.tsx",
+      "satir": 163,
+      "ham": "kullanici_id, rol",
+      "tablo": "kullanicilar"
     },
     {
       "dosya": "lib/analiz/paylasilan/kombinasyonlar.ts",
@@ -4902,69 +4940,27 @@
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 77,
-      "ham": "talep_id, egitim_turu, urun_adi, urunler(urun_adi), teknikler(teknik_adi)",
-      "tablo": "talepler"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 89,
-      "ham": "senaryo_id, talep_id, talepler(egitim_turu, urun_adi, urunler(urun_adi), teknikler(teknik_adi))",
-      "tablo": "senaryolar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 101,
-      "ham": "video_id, senaryo_durum_id, senaryo_durumu(senaryolar(talep_id, talepler(egitim_turu, urun_adi, urunler(urun_adi), teknikler(teknik_adi))))",
-      "tablo": "videolar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 115,
-      "ham": "soru_seti_id, video_durum_id, video_durumu(videolar(senaryo_durumu(senaryolar(talep_id, talepler(egitim_turu, urun_adi, urunler(urun_adi), teknikler(teknik_adi))))))",
-      "tablo": "soru_setleri"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 140,
-      "ham": "kayit_turu, kayit_id, mesaj, created_at",
-      "tablo": "bildirimler"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 170,
-      "ham": "senaryo_id, talep_id, created_at, talepler(egitim_turu, urun_adi, urunler(urun_adi), teknikler(teknik_adi))",
-      "tablo": "senaryolar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 177,
+      "satir": 92,
       "ham": "senaryo_id, durum, created_at",
       "tablo": "v_senaryo_son_durum"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 198,
-      "ham": "\n      video_id, senaryo_durum_id, created_at,\n      senaryo_durumu ( senaryolar ( talep_id, talepler ( egitim_turu, urun_adi, urunler(urun_adi), teknikler(teknik_adi) ) ) )\n    ",
-      "tablo": "videolar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 208,
+      "satir": 93,
       "ham": "video_id, durum, created_at",
       "tablo": "v_video_son_durum"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 231,
-      "ham": "\n      soru_seti_id, video_durum_id, created_at,\n      video_durumu ( videolar ( senaryo_durumu ( senaryolar ( talep_id, talepler ( egitim_turu, urun_adi, urunler(urun_adi), teknikler(teknik_adi) ) ) ) ) )\n    ",
-      "tablo": "soru_setleri"
+      "satir": 94,
+      "ham": "soru_seti_id, durum, created_at",
+      "tablo": "v_soru_seti_son_durum"
     },
     {
       "dosya": "lib/utils/anaSayfa/iu.ts",
-      "satir": 241,
-      "ham": "soru_seti_id, durum, created_at",
-      "tablo": "v_soru_seti_son_durum"
+      "satir": 110,
+      "ham": "kullanici_id, rol",
+      "tablo": "kullanicilar"
     },
     {
       "dosya": "lib/utils/anaSayfa/tm.ts",
@@ -5262,25 +5258,25 @@
     },
     {
       "dosya": "app/senaryolar/[talep_id]/page.tsx",
-      "satir": 89,
+      "satir": 90,
       "ham": "talep_id, uretici_id, hedef_rol, aciklama, dosya_urls, urunler(urun_adi), teknikler(teknik_adi)",
       "tablo": "talepler"
     },
     {
       "dosya": "app/senaryolar/[talep_id]/page.tsx",
-      "satir": 111,
+      "satir": 112,
       "ham": "senaryo_id, talep_id, iu_id, senaryo_metni, created_at",
       "tablo": "senaryolar"
     },
     {
       "dosya": "app/senaryolar/[talep_id]/page.tsx",
-      "satir": 119,
+      "satir": 120,
       "ham": "senaryo_durum_id, durum, created_at",
       "tablo": "senaryo_durumu"
     },
     {
       "dosya": "app/senaryolar/[talep_id]/page.tsx",
-      "satir": 133,
+      "satir": 134,
       "ham": "senaryo_durum_id, notlar, created_at",
       "tablo": "senaryo_durumu"
     },
@@ -5328,19 +5324,19 @@
     },
     {
       "dosya": "app/soru-setleri/[video_durum_id]/page.tsx",
-      "satir": 98,
+      "satir": 99,
       "ham": "\n        video_id,\n        videolar!inner (\n          talepler!inner (\n            uretici_id,\n            soru_seti_buyuklugu,\n            secenek_sayisi,\n            video_basi_soru_sayisi,\n            hedef_rol,\n            egitim_turu,\n            urun_adi,\n            urunler (urun_adi),\n            teknikler (teknik_adi)\n          )\n        )\n      ",
       "tablo": "video_durumu"
     },
     {
       "dosya": "app/soru-setleri/[video_durum_id]/page.tsx",
-      "satir": 134,
+      "satir": 135,
       "ham": "soru_seti_id, video_durum_id, iu_id, sorular, created_at",
       "tablo": "soru_setleri"
     },
     {
       "dosya": "app/soru-setleri/[video_durum_id]/page.tsx",
-      "satir": 144,
+      "satir": 145,
       "ham": "soru_seti_id, soru_seti_durum_id, durum, notlar",
       "tablo": "soru_seti_durumu"
     },
@@ -5406,7 +5402,7 @@
     },
     {
       "dosya": "app/talepler/[talep_id]/page.tsx",
-      "satir": 69,
+      "satir": 70,
       "ham": "talep_id, uretici_id, hedef_rol, aciklama, created_at, dosya_urls, hazir_video, hazir_video_url, hazir_soru_seti, hazir_soru_seti_verisi, urun_id, teknik_id, urunler(urun_adi), teknikler(teknik_adi)",
       "tablo": "talepler"
     },
@@ -5472,31 +5468,31 @@
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 78,
+      "satir": 79,
       "ham": "senaryo_id",
       "tablo": "senaryo_durumu"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 85,
+      "satir": 86,
       "ham": "senaryo_id, talep_id, senaryo_metni",
       "tablo": "senaryolar"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 92,
+      "satir": 93,
       "ham": "uretici_id, hedef_rol, urunler(urun_adi), teknikler(teknik_adi)",
       "tablo": "talepler"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 105,
+      "satir": 106,
       "ham": "video_id, senaryo_durum_id, iu_id, video_url, thumbnail_url, created_at",
       "tablo": "videolar"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 113,
+      "satir": 114,
       "ham": "durum, notlar",
       "tablo": "video_durumu"
     },
@@ -6051,6 +6047,30 @@
       "satir": 34,
       "ham": "talep_id, uretici_id, hazir_video, hazir_soru_seti, hazir_soru_seti_verisi, soru_seti_buyuklugu, video_basi_soru_sayisi, urunler(urun_adi), teknikler(teknik_adi)",
       "tablo": "talepler"
+    },
+    {
+      "dosya": "app/talepler/api/sahip/route.ts",
+      "satir": 29,
+      "ham": "senaryolar(talep_id)",
+      "tablo": "senaryo_durumu"
+    },
+    {
+      "dosya": "app/talepler/api/sahip/route.ts",
+      "satir": 38,
+      "ham": "videolar(talep_id)",
+      "tablo": "video_durumu"
+    },
+    {
+      "dosya": "app/talepler/api/sahip/route.ts",
+      "satir": 48,
+      "ham": "uretici_id",
+      "tablo": "talepler"
+    },
+    {
+      "dosya": "app/talepler/api/sahip/route.ts",
+      "satir": 56,
+      "ham": "ad, soyad, eposta, telefon, rol",
+      "tablo": "kullanicilar"
     },
     {
       "dosya": "app/videolar/api/bunny-durum/route.ts",

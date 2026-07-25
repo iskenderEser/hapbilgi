@@ -2,28 +2,16 @@
 //
 // IU ana sayfası — satır kararlarının saf çekirdeği
 // (docs/iu_surecleri_is_gelistirme.md G-1 + DÜZELTME bölümü):
-//   1) iuKendiDurumunuEsle: son durum → kategori + görünen metin.
-//      "Iptal Edildi" null döner — iptal edilen iş listelenmez.
-//   2) talepBazindaTekillestir: iki kaynağın (bildirim + kendi işi) ürettiği
-//      satırlar talep bazında TEK satıra iner — yaşanan çift satır hatasının
-//      düzeltmesi. Öncelik: ileri aşama > kendi işi (bildirim değil) > yeni tarih.
+//   talepBazindaTekillestir: aynı talebin birden çok aşama satırı TEK satıra iner.
+//      Öncelik: ileri aşama > yeni tarih.
+//
+// 25.07: iuKendiDurumunuEsle KALDIRILDI — durum metinleri artık tek sözlükten
+// gelir (lib/utils/durum/mesaj.ts) ve satırlar bildirimden değil işin kendisinden
+// türer, dolayısıyla "bildirim mi kendi işi mi" ayrımı da anlamını yitirdi.
 // Yan etki yok — smoke testi bu dosyayı hedefler.
 
 export type IuKategori = "bekleyen" | "revizyon" | "devam" | "tamamlanan";
 
-export interface DurumEsleme {
-  kategori: IuKategori;
-  metin: string;
-}
-
-/** "Iptal Edildi" null döner (listelenmez); bilinmeyen/eksik durum güvenle "devam"a düşer. */
-export function iuKendiDurumunuEsle(durum: string | null | undefined): DurumEsleme | null {
-  if (durum === "Iptal Edildi") return null;
-  if (durum === "revizyon bekleniyor") return { kategori: "revizyon", metin: "Revizyon İstendi" };
-  if (durum === "onaylandi") return { kategori: "tamamlanan", metin: "Tamamlandı" };
-  if (durum === "inceleme bekleniyor") return { kategori: "devam", metin: "İncelemede" };
-  return { kategori: "devam", metin: "Devam Ediyor" };
-}
 
 const ASAMA_SIRA: Record<string, number> = { "Senaryo": 1, "Video": 2, "Soru Seti": 3 };
 
@@ -41,9 +29,8 @@ function dahaIyiTemsil(a: TekillestirilebilirSatir, b: TekillestirilebilirSatir)
   const siraA = ASAMA_SIRA[a.asama] ?? 0;
   const siraB = ASAMA_SIRA[b.asama] ?? 0;
   if (siraA !== siraB) return siraA > siraB;
-  const kendiA = a.kategori !== "bekleyen";
-  const kendiB = b.kategori !== "bekleyen";
-  if (kendiA !== kendiB) return kendiA;
+  // "bildirim mi kendi işi mi" ayrımı kalktı (25.07 — bildirim artık satır kaynağı
+  // değil); aynı aşamada yeni tarih kazanır (revizyon zincirinde son versiyon).
   return new Date(a.tarih).getTime() > new Date(b.tarih).getTime();
 }
 

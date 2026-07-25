@@ -73,26 +73,73 @@ const URETICI_DURUM: Record<DurumKodu, DurumMesaji> = {
   sistem_hatasi:    { metin: "Sistem Hatası",               top: "sistem",           renk: HATA },
 };
 
-// İÇERİK ÜRETİCİSİ TABLOSU — GEÇİCİ (25.07).
-// Üretim hattı sayfalarını (Senaryolar/Videolar/Soru Setleri) İÜ de görür; üretici
-// dilini oraya basmak yanlış olurdu ("Sizden Onay Bekleniyor" İÜ'ye gösterilemez).
-// Bu tablo İÜ dilini UYDURMAZ — ürünün bugün zaten kullandığı terimleri toplar
-// (lib/utils/anaSayfa/iuDurumEsle.ts: "İncelemede", "Revizyon İstendi",
-// "Tamamlandı"; durum anahtarı: "Yazım Bekleniyor"). İÜ turunda İskender ile
-// birlikte yeniden yazılacak — o zamana kadar davranış bugünküyle aynı kalır.
-const IU_DURUM: Record<DurumKodu, DurumMesaji> = {
-  iu_iletildi:      { metin: "Yazım Bekleniyor",     top: "icerik_ureticisi", renk: BEKLEME },
-  iu_hazirliyor:    { metin: "Yazım Bekleniyor",     top: "icerik_ureticisi", renk: BEKLEME },
-  iu_duzeltiyor:    { metin: "Revizyon İstendi",     top: "icerik_ureticisi", renk: REVIZYON },
-  onay_bekleniyor:  { metin: "İncelemede",           top: "uretici",          renk: CANLI },
-  video_bekleniyor: { metin: "Üreticide",            top: "uretici",          renk: BEKLEME },
-  yayin_bekleniyor: { metin: "Üreticide",            top: "uretici",          renk: BEKLEME },
-  onaylandi:        { metin: "Tamamlandı",           top: "kapali",           renk: ONAY },
-  planlandi:        { metin: "Planlandı",            top: "sistem",           renk: PLANLI },
-  yayinda:          { metin: "Yayında",              top: "kapali",           renk: CANLI },
-  yayin_durduruldu: { metin: "Yayın Durduruldu",     top: "uretici",          renk: HATA },
-  iptal:            { metin: "İptal Edildi",         top: "kapali",           renk: BEKLEME },
-  sistem_hatasi:    { metin: "Sistem Hatası",        top: "sistem",           renk: HATA },
+// İÇERİK ÜRETİCİSİ TABLOSU (İskender kararı 25.07).
+// İki fark üretici tablosundan ayırır:
+//   1) İÜ'nün yaptığı iş aşamaya göre değişir (senaryo yazmak / video yüklemek /
+//      soru seti yazmak) — mesaj "neyin" beklendiğini söyler, aşama adını yutmaz.
+//   2) Karşı taraf "üretici" diye anılmaz (o kod dilidir); talebi açan kişinin
+//      gerçek unvanı yazılır: "Ürün Müdürü İnceliyor", "Medikal Müdür İptal Etti".
+// Havuz/üstlenme kavramı YOKTUR: sistemde tek İÜ vardır, çoğalırsa iş atamayla
+// dağıtılacaktır. Bu yüzden "kimse üstlenmedi" ile "üzerinde çalışılıyor" İÜ
+// tarafında tek mesaja iner — ikisi de "senin işin".
+
+export type Asama = "Senaryo" | "Video" | "Soru Seti";
+
+/** Talebi açan kişinin unvanı bilinmiyorsa kullanılacak nötr ad (kod dili değil). */
+const TALEP_SAHIBI = "Talep Sahibi";
+
+const IU_ISTENEN: Record<Asama, string> = {
+  "Senaryo": "Senaryo Yazmanız Bekleniyor",
+  "Video": "Video Yüklemeniz Bekleniyor",
+  "Soru Seti": "Soru Seti Yazmanız Bekleniyor",
+};
+
+const IU_REVIZYON: Record<Asama, string> = {
+  "Senaryo": "Senaryo Revizyonu Bekleniyor",
+  "Video": "Video Revizyonu Bekleniyor",
+  "Soru Seti": "Soru Seti Revizyonu Bekleniyor",
+};
+
+export interface IuMesajGirdi {
+  asama?: Asama;
+  /** Talebi açan üreticinin unvanı — ROL_ADLARI[rol]. */
+  rolAdi?: string | null;
+  tarih?: string | null;
+}
+
+function iuMetin(kod: DurumKodu, g: IuMesajGirdi): string {
+  const asama = g.asama ?? "Senaryo";
+  const rol = g.rolAdi?.trim() || TALEP_SAHIBI;
+  switch (kod) {
+    case "iu_iletildi":
+    case "iu_hazirliyor":    return IU_ISTENEN[asama];
+    case "iu_duzeltiyor":    return IU_REVIZYON[asama];
+    case "onay_bekleniyor":  return `${rol} İnceliyor`;
+    case "onaylandi":        return `${rol} Onayladı`;
+    case "iptal":            return `${rol} İptal Etti`;
+    case "video_bekleniyor": return `${rol} Videoyu Yüklüyor`;
+    case "yayin_bekleniyor": return `${rol} Yayına Alacak`;
+    case "planlandi":        return "Yayın Planlandı";
+    case "yayinda":          return "Yayında";
+    case "yayin_durduruldu": return "Yayın Durduruldu";
+    case "sistem_hatasi":    return "Sistem Hatası";
+  }
+}
+
+// Renk ve "top kimde" bilgisi kodla sabittir; yalnız metin role/aşamaya göre değişir.
+const IU_RENK: Record<DurumKodu, { top: DurumTopu; renk: DurumRenk }> = {
+  iu_iletildi:      { top: "icerik_ureticisi", renk: AKSIYON },
+  iu_hazirliyor:    { top: "icerik_ureticisi", renk: AKSIYON },
+  iu_duzeltiyor:    { top: "icerik_ureticisi", renk: REVIZYON },
+  onay_bekleniyor:  { top: "uretici",          renk: BEKLEME },
+  video_bekleniyor: { top: "uretici",          renk: BEKLEME },
+  yayin_bekleniyor: { top: "uretici",          renk: BEKLEME },
+  onaylandi:        { top: "kapali",           renk: ONAY },
+  planlandi:        { top: "sistem",           renk: PLANLI },
+  yayinda:          { top: "kapali",           renk: CANLI },
+  yayin_durduruldu: { top: "uretici",          renk: HATA },
+  iptal:            { top: "kapali",           renk: BEKLEME },
+  sistem_hatasi:    { top: "sistem",           renk: HATA },
 };
 
 /** "2026-07-28T..." → "28 Tem" (planlı yayının açılacağı gün). */
@@ -108,17 +155,18 @@ export function ureticiDurumMesaji(kod: DurumKodu, tarih?: string | null): Durum
   return tarihEkle(URETICI_DURUM[kod], kod, tarih);
 }
 
-/** İçerik Üreticisi rolünün göreceği mesaj (bkz. IU_DURUM — geçici tablo). */
-export function iuDurumMesaji(kod: DurumKodu, tarih?: string | null): DurumMesaji {
-  return tarihEkle(IU_DURUM[kod], kod, tarih);
+/** İçerik Üreticisi rolünün göreceği mesaj — aşamaya ve talep sahibinin unvanına duyarlı. */
+export function iuDurumMesaji(kod: DurumKodu, g: IuMesajGirdi = {}): DurumMesaji {
+  const { top, renk } = IU_RENK[kod];
+  return tarihEkle({ metin: iuMetin(kod, g), top, renk }, kod, g.tarih);
 }
 
 /**
  * Rolüne göre mesaj. Üretim hattı sayfaları (Senaryolar/Videolar/Soru Setleri)
  * iki rol tarafından da görüldüğü için bu kapıdan geçer.
  */
-export function durumMesaji(kod: DurumKodu, rol: string | null | undefined, tarih?: string | null): DurumMesaji {
-  return rol === "iu" ? iuDurumMesaji(kod, tarih) : ureticiDurumMesaji(kod, tarih);
+export function durumMesaji(kod: DurumKodu, rol: string | null | undefined, g: IuMesajGirdi = {}): DurumMesaji {
+  return rol === "iu" ? iuDurumMesaji(kod, g) : ureticiDurumMesaji(kod, g.tarih);
 }
 
 function tarihEkle(temel: DurumMesaji, kod: DurumKodu, tarih?: string | null): DurumMesaji {

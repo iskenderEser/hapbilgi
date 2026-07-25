@@ -3,6 +3,7 @@
 
 import { ROL_ADLARI } from "@/lib/utils/roller";
 
+import { iuDurumMesaji } from "@/lib/utils/durum/mesaj";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useHataMesaji } from "@/components/HataMesaji";
@@ -47,15 +48,7 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
     }
   };
 
-  // Renk kategoriye bağlıdır (stat kartlarıyla aynı dil) — durum metnine göre
-  // eşleme kırılgandı: metin değişince pill sessizce griye düşüyordu.
-  const kategoriRenk = (kategori: string) => {
-    if (kategori === "bekleyen") return { bg: "#fef2f2", text: "#bc2d0d" };
-    if (kategori === "revizyon") return { bg: "#fef3c7", text: "#92400e" };
-    if (kategori === "devam") return { bg: "#eff6ff", text: "#1d4ed8" };
-    if (kategori === "tamamlanan") return { bg: "#f0fdf4", text: "#166534" };
-    return { bg: "#f3f4f6", text: "#9ca3af" };
-  };
+  // kategoriRenk kaldırıldı (25.07): renk de metin de durum sözlüğünden gelir.
 
   if (loading) {
     return (
@@ -92,8 +85,8 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
       {/* Stat kartlar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
         {[
-          { label: "Bekleyen İşler", value: istat.bekleyen, sub: "Senaryo veya içerik bekleniyor", renk: "#bc2d0d", filtre: "bekleyen" },
-          { label: "revizyon bekleniyor", value: istat.revizyon, sub: "PM'den revizyon talebi geldi", renk: "#f59e0b", filtre: "revizyon" },
+          { label: "Sizden Bekleniyor", value: istat.bekleyen, sub: "Yazım veya yükleme sizde", renk: "#bc2d0d", filtre: "bekleyen" },
+          { label: "Revizyon İstenen", value: istat.revizyon, sub: "Üreticiden revizyon talebi geldi", renk: "#f59e0b", filtre: "revizyon" },
           { label: "Devam Eden", value: istat.devam, sub: "Yazılıyor veya incelemede", renk: "#56aeff", filtre: "devam" },
           { label: "Tamamlanan", value: istat.tamamlanan, sub: "Onaylı veya yayında", renk: "#16a34a", filtre: "tamamlanan" },
         ].map(k => (
@@ -136,7 +129,7 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
           ) : (
             filtrelenmis.map((s, i) => {
               const asamaR = asamaRenk(s.asama);
-              const durumR = kategoriRenk(s.kategori);
+              const durum = iuDurumMesaji(s.durum_kodu, { asama: s.asama, rolAdi: s.uretici_rol_adi, tarih: s.tarih });
               return (
                 <div
                   key={`${s.talep_id}-${i}`}
@@ -149,7 +142,7 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
                       <div className="text-sm font-bold text-gray-900">{s.urun_adi}</div>
                       {s.turu_adi && <div className="text-xs text-gray-400 mt-0.5">{s.turu_adi}</div>}
                     </div>
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: durumR.bg, color: durumR.text }}>{s.durum}</span>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full leading-tight" style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}` }}>{durum.metin}</span>
                   </div>
                   <div className="flex gap-2 items-center">
                     <span className="text-xs font-bold px-1.5 py-0.5 rounded-full" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span>
@@ -174,7 +167,7 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
           ) : (
             filtrelenmis.map((s, i) => {
               const asamaR = asamaRenk(s.asama);
-              const durumR = kategoriRenk(s.kategori);
+              const durum = iuDurumMesaji(s.durum_kodu, { asama: s.asama, rolAdi: s.uretici_rol_adi, tarih: s.tarih });
               return (
                 <div
                   key={`${s.talep_id}-${i}`}
@@ -191,7 +184,7 @@ export default function IuAnaSayfa({ user, adSoyad }: Props) {
                   </div>
                   <div className="text-xs text-gray-500 truncate">{s.teknik_adi}</div>
                   <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block whitespace-nowrap" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span></div>
-                  <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block whitespace-nowrap" style={{ background: durumR.bg, color: durumR.text }}>{s.durum}</span></div>
+                  <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block leading-tight" style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}` }}>{durum.metin}</span></div>
                   <span className="text-xs text-gray-400 whitespace-nowrap">{formatTarih(s.tarih)}</span>
                   <span className="text-gray-300 text-base">›</span>
                 </div>

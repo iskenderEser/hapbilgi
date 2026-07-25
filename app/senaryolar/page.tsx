@@ -13,6 +13,7 @@ import { talepIdGoster } from "@/lib/utils/talepId";
 import DurumAnahtari from "@/components/DurumAnahtari";
 import UretimVaryantiRozet from "@/components/UretimVaryantiRozet";
 import { durumMesaji, kayitDurumKodu, type DurumKodu } from "@/lib/utils/durum/mesaj";
+import { ROL_ADLARI } from "@/lib/utils/roller";
 
 interface SenaryoSatir {
   talep_id: string;
@@ -23,6 +24,7 @@ interface SenaryoSatir {
   teknik_adi: string;
   // Ham durum taşınmaz: ekrana çıkan her metin tek sözlükten okunur.
   durum_kodu: DurumKodu;
+  uretici_rol_adi: string | null;
   son_tarih: string;
   hazir_video: boolean;
   hazir_soru_seti: boolean;
@@ -84,6 +86,7 @@ export default function SenaryolarListePage() {
         created_at,
         talepler!inner (
           talep_no,
+          uretici_id,
           hazir_video,
           hazir_soru_seti,
           urun_adi,
@@ -130,6 +133,25 @@ export default function SenaryolarListePage() {
       });
     }
 
+
+    // Talebi açan üreticinin unvanı — İÜ mesajları "Ürün Müdürü İnceliyor" gibi
+    // gerçek unvanla yazılır ("üretici" kod dilidir, ekrana çıkmaz).
+    const rolAdiMap = new Map<string, string>();
+    {
+      const uretIdler = Array.from(new Set(tekilSenaryolar.map((s: any) => s.talepler?.uretici_id))).filter(Boolean) as string[];
+      if (uretIdler.length > 0) {
+        const { data: sahipler } = await supabase
+          .from("kullanicilar")
+          .select("kullanici_id, rol")
+          .in("kullanici_id", uretIdler);
+        const rolMap = new Map((sahipler ?? []).map((k: any) => [k.kullanici_id, k.rol]));
+        for (const s of tekilSenaryolar as any[]) {
+          const r = rolMap.get(s.talepler?.uretici_id);
+          if (r) rolAdiMap.set(s.talep_id, ROL_ADLARI[r] ?? r);
+        }
+      }
+    }
+
     // 4) Satırları kur — talep bazlı tek satır
     const sonuc: SenaryoSatir[] = tekilSenaryolar.map((s: any) => {
       const typed = s as unknown as SenaryoJoin;
@@ -146,6 +168,7 @@ export default function SenaryolarListePage() {
         hazir_video: talep?.hazir_video ?? false,
         hazir_soru_seti: talep?.hazir_soru_seti ?? false,
         durum_kodu: kayitDurumKodu(sonDurum?.durum, !!s.iu_id),
+        uretici_rol_adi: rolAdiMap.get(s.talep_id) ?? null,
         son_tarih: sonDurum?.created_at ?? s.created_at,
       };
     });
@@ -187,7 +210,7 @@ export default function SenaryolarListePage() {
       <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6">
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
 
-          <DurumAnahtari baslik="Senaryolar" rol={kullanici.rol} aktif={aktifDurum} onSec={setAktifDurum} sayim={sayim} />
+          <DurumAnahtari baslik="Senaryolar" rol={kullanici.rol} asama="Senaryo" aktif={aktifDurum} onSec={setAktifDurum} sayim={sayim} />
 
           {filtreliSatirlar.length === 0 ? (
             <div className="p-10 text-center text-sm text-gray-400">
@@ -197,7 +220,7 @@ export default function SenaryolarListePage() {
             <>
               <div className="md:hidden">
                 {filtreliSatirlar.map((s) => {
-                  const durum = durumMesaji(s.durum_kodu, kullanici.rol, s.son_tarih);
+                  const durum = durumMesaji(s.durum_kodu, kullanici.rol, { asama: "Senaryo", rolAdi: s.uretici_rol_adi, tarih: s.son_tarih });
                   const okunmamis = okunmamisIdler.has(s.senaryo_id);
                   return (
                     <div key={s.talep_id} onClick={() => router.push(`/senaryolar/${s.talep_id}`)}
@@ -238,7 +261,7 @@ export default function SenaryolarListePage() {
                   </thead>
                   <tbody>
                     {filtreliSatirlar.map((s) => {
-                      const durum = durumMesaji(s.durum_kodu, kullanici.rol, s.son_tarih);
+                      const durum = durumMesaji(s.durum_kodu, kullanici.rol, { asama: "Senaryo", rolAdi: s.uretici_rol_adi, tarih: s.son_tarih });
                       const okunmamis = okunmamisIdler.has(s.senaryo_id);
                       return (
                         <tr key={s.talep_id} onClick={() => router.push(`/senaryolar/${s.talep_id}`)}

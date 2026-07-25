@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DurumAnahtari from "@/components/DurumAnahtari";
 import { durumMesaji, kayitDurumKodu, type DurumKodu } from "@/lib/utils/durum/mesaj";
+import { ROL_ADLARI } from "@/lib/utils/roller";
 import UretimVaryantiRozet from "@/components/UretimVaryantiRozet";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
@@ -27,6 +28,7 @@ interface SoruSetiSatir {
   soru_sayisi: number;
   // Ham durum taşınmaz: ekrana çıkan her metin tek sözlükten okunur.
   durum_kodu: DurumKodu;
+  uretici_rol_adi: string | null;
   son_tarih: string;
   hazir_video: boolean;
   hazir_soru_seti: boolean;
@@ -87,11 +89,12 @@ export default function SoruSetleriListePage() {
     const talepIdler = Array.from(talepMap.keys());
 
     // 3) Talep bilgisi (ürün/teknik adı) talep_id ile toplu çek
+    const talepUreticiMap = new Map<string, string>();
     const talepBilgiMap = new Map<string, { urun_adi: string; teknik_adi: string; turu_adi: string | null; talep_no: number; firma_adi: string; hazir_video: boolean; hazir_soru_seti: boolean }>();
     if (talepIdler.length > 0) {
       const { data: talepler, error: tError } = await supabase
         .from("talepler")
-        .select("talep_id, talep_no, egitim_turu, urun_adi, hazir_video, hazir_soru_seti, urunler (urun_adi), teknikler (teknik_adi), firmalar (firma_adi)")
+        .select("talep_id, talep_no, egitim_turu, uretici_id, urun_adi, hazir_video, hazir_soru_seti, urunler (urun_adi), teknikler (teknik_adi), firmalar (firma_adi)")
         .in("talep_id", talepIdler);
 
       if (tError) {
@@ -101,6 +104,7 @@ export default function SoruSetleriListePage() {
       }
 
       talepler?.forEach((t: any) => {
+        if (t.uretici_id) talepUreticiMap.set(t.talep_id, t.uretici_id);
         talepBilgiMap.set(t.talep_id, {
           urun_adi: t.urunler?.urun_adi ?? t.urun_adi ?? "-",
           teknik_adi: t.teknikler?.teknik_adi ?? "-",
@@ -111,6 +115,24 @@ export default function SoruSetleriListePage() {
           hazir_soru_seti: t.hazir_soru_seti ?? false,
         });
       });
+    }
+
+
+    // Talebi açan üreticinin unvanı — İÜ mesajları gerçek unvanla yazılır.
+    const rolAdiMap = new Map<string, string>();
+    {
+      const uretIdler = Array.from(new Set(talepUreticiMap.values()));
+      if (uretIdler.length > 0) {
+        const { data: sahipler } = await supabase
+          .from("kullanicilar")
+          .select("kullanici_id, rol")
+          .in("kullanici_id", uretIdler);
+        const rolMap = new Map((sahipler ?? []).map((k: any) => [k.kullanici_id, k.rol]));
+        for (const [tId, uId] of talepUreticiMap) {
+          const r = rolMap.get(uId);
+          if (r) rolAdiMap.set(tId, ROL_ADLARI[r] ?? r);
+        }
+      }
     }
 
     // 4) Son durumları view'dan toplu çek
@@ -152,6 +174,7 @@ export default function SoruSetleriListePage() {
         hazir_soru_seti: bilgi?.hazir_soru_seti ?? false,
         soru_sayisi: Array.isArray(ss.sorular) ? ss.sorular.length : 0,
         durum_kodu: kayitDurumKodu(sonDurum?.durum, !!ss.iu_id),
+        uretici_rol_adi: rolAdiMap.get(ss.talep_id) ?? null,
         son_tarih: sonDurum?.created_at ?? ss.created_at,
       };
     });
@@ -195,7 +218,7 @@ export default function SoruSetleriListePage() {
       <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6">
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
 
-          <DurumAnahtari baslik="Soru Setleri" rol={kullanici.rol} aktif={aktifDurum} onSec={setAktifDurum} sayim={sayim} />
+          <DurumAnahtari baslik="Soru Setleri" rol={kullanici.rol} asama="Soru Seti" aktif={aktifDurum} onSec={setAktifDurum} sayim={sayim} />
 
           {filtreliSatirlar.length === 0 ? (
             <div className="p-10 text-center text-sm text-gray-400">
@@ -205,7 +228,7 @@ export default function SoruSetleriListePage() {
             <>
               <div className="md:hidden">
                 {filtreliSatirlar.map((ss) => {
-                  const durum = durumMesaji(ss.durum_kodu, kullanici.rol, ss.son_tarih);
+                  const durum = durumMesaji(ss.durum_kodu, kullanici.rol, { asama: "Soru Seti", rolAdi: ss.uretici_rol_adi, tarih: ss.son_tarih });
                   const okunmamis = okunmamisIdler.has(ss.soru_seti_id);
                   return (
                     <div key={ss.talep_id} onClick={() => router.push(`/soru-setleri/${ss.video_durum_id}`)}
@@ -251,7 +274,7 @@ export default function SoruSetleriListePage() {
                   </thead>
                   <tbody>
                     {filtreliSatirlar.map((ss) => {
-                      const durum = durumMesaji(ss.durum_kodu, kullanici.rol, ss.son_tarih);
+                      const durum = durumMesaji(ss.durum_kodu, kullanici.rol, { asama: "Soru Seti", rolAdi: ss.uretici_rol_adi, tarih: ss.son_tarih });
                       const okunmamis = okunmamisIdler.has(ss.soru_seti_id);
                       return (
                         <tr key={ss.talep_id} onClick={() => router.push(`/soru-setleri/${ss.video_durum_id}`)}

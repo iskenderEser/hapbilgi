@@ -15,7 +15,7 @@
 
 "use client";
 
-import { durumMesaji, type DurumKodu } from "@/lib/utils/durum/mesaj";
+import { durumMesaji, type Asama, type DurumKodu } from "@/lib/utils/durum/mesaj";
 
 type Bolge = "bekleyen" | "takip" | "arsiv";
 
@@ -45,12 +45,14 @@ const BOLGELER: { key: Bolge; etiket: string }[] = [
 interface Props {
   baslik: string;
   rol: string;
+  /** Sayfanın aşaması — İÜ etiketleri aşamaya göre değişir. */
+  asama: Asama;
   aktif: DurumKodu;
   onSec: (d: DurumKodu) => void;
   sayim: Partial<Record<DurumKodu, number>>;
 }
 
-export default function DurumAnahtari({ baslik, rol, aktif, onSec, sayim }: Props) {
+export default function DurumAnahtari({ baslik, rol, asama, aktif, onSec, sayim }: Props) {
   return (
     <div className="px-4 md:px-5 py-3.5 border-b border-gray-100 flex flex-col lg:flex-row lg:items-start justify-between gap-3">
       <div className="flex flex-col lg:flex-row lg:items-start gap-2 lg:gap-4 min-w-0">
@@ -68,7 +70,7 @@ export default function DurumAnahtari({ baslik, rol, aktif, onSec, sayim }: Prop
                 {bolgePilller.map((p) => {
                   const secili = aktif === p.kod;
                   const n = sayim[p.kod] ?? 0;
-                  const m = durumMesaji(p.kod, rol);
+                  const m = durumMesaji(p.kod, rol, { asama });
                   return (
                     <button
                       key={p.kod}

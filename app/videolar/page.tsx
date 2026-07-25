@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DurumAnahtari from "@/components/DurumAnahtari";
 import { durumMesaji, kayitDurumKodu, type DurumKodu } from "@/lib/utils/durum/mesaj";
+import { ROL_ADLARI } from "@/lib/utils/roller";
 import UretimVaryantiRozet from "@/components/UretimVaryantiRozet";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
@@ -27,6 +28,7 @@ interface VideoSatir {
   thumbnail_url: string | null;
   // Ham durum taşınmaz: ekrana çıkan her metin tek sözlükten okunur.
   durum_kodu: DurumKodu;
+  uretici_rol_adi: string | null;
   son_tarih: string;
   hazir_video: boolean;
   hazir_soru_seti: boolean;
@@ -100,6 +102,7 @@ export default function VideolarListePage() {
             talep_id,
             talepler!inner (
               talep_no,
+              uretici_id,
               hazir_video,
               hazir_soru_seti,
               urun_adi,
@@ -151,6 +154,24 @@ export default function VideolarListePage() {
       });
     }
 
+
+    // Talebi açan üreticinin unvanı — İÜ mesajları gerçek unvanla yazılır.
+    const rolAdiMap = new Map<string, string>();
+    {
+      const uretIdler = Array.from(new Set(tekilVideolar.map((v: any) => v.senaryo_durumu?.senaryolar?.talepler?.uretici_id))).filter(Boolean) as string[];
+      if (uretIdler.length > 0) {
+        const { data: sahipler } = await supabase
+          .from("kullanicilar")
+          .select("kullanici_id, rol")
+          .in("kullanici_id", uretIdler);
+        const rolMap = new Map((sahipler ?? []).map((k: any) => [k.kullanici_id, k.rol]));
+        for (const v of tekilVideolar as any[]) {
+          const r = rolMap.get(v.senaryo_durumu?.senaryolar?.talepler?.uretici_id);
+          if (r) rolAdiMap.set(v._talep_id, ROL_ADLARI[r] ?? r);
+        }
+      }
+    }
+
     // 4) Satırları kur — talep bazlı tek satır
     const sonuc: VideoSatir[] = tekilVideolar.map((v: any) => {
       const typed = v as unknown as VideoJoin;
@@ -170,6 +191,7 @@ export default function VideolarListePage() {
         video_url: v.video_url ?? null,
         thumbnail_url: v.thumbnail_url ?? null,
         durum_kodu: kayitDurumKodu(sonDurum?.durum, !!v.iu_id),
+        uretici_rol_adi: rolAdiMap.get(v._talep_id) ?? null,
         son_tarih: sonDurum?.created_at ?? v.created_at,
       };
     });
@@ -212,7 +234,7 @@ export default function VideolarListePage() {
       <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6">
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
 
-          <DurumAnahtari baslik="Videolar" rol={kullanici.rol} aktif={aktifDurum} onSec={setAktifDurum} sayim={sayim} />
+          <DurumAnahtari baslik="Videolar" rol={kullanici.rol} asama="Video" aktif={aktifDurum} onSec={setAktifDurum} sayim={sayim} />
 
           {filtreliSatirlar.length === 0 ? (
             <div className="p-10 text-center text-sm text-gray-400">
@@ -222,7 +244,7 @@ export default function VideolarListePage() {
             <>
               <div className="md:hidden">
                 {filtreliSatirlar.map((v) => {
-                  const durum = durumMesaji(v.durum_kodu, kullanici.rol, v.son_tarih);
+                  const durum = durumMesaji(v.durum_kodu, kullanici.rol, { asama: "Video", rolAdi: v.uretici_rol_adi, tarih: v.son_tarih });
                   const okunmamis = okunmamisIdler.has(v.video_id);
                   return (
                     <div key={v.talep_id} onClick={() => router.push(`/videolar/${v.senaryo_durum_id}`)}
@@ -263,7 +285,7 @@ export default function VideolarListePage() {
                   </thead>
                   <tbody>
                     {filtreliSatirlar.map((v) => {
-                      const durum = durumMesaji(v.durum_kodu, kullanici.rol, v.son_tarih);
+                      const durum = durumMesaji(v.durum_kodu, kullanici.rol, { asama: "Video", rolAdi: v.uretici_rol_adi, tarih: v.son_tarih });
                       const okunmamis = okunmamisIdler.has(v.video_id);
                       return (
                         <tr key={v.talep_id} onClick={() => router.push(`/videolar/${v.senaryo_durum_id}`)}

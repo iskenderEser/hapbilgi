@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import TalepSahibiKarti from "@/components/TalepSahibiKarti";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { HedefRolBant } from "@/components/HedefRolBant";
@@ -300,6 +301,7 @@ export default function SoruSetiAkisPage() {
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
+      <TalepSahibiKarti rol={kullanici.rol} videoDurumId={video_durum_id} />
       {hedefRol && <HedefRolBant hedefRol={hedefRol} />}
 
       <div className="max-w-3xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
