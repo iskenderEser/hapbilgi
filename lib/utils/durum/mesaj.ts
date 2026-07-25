@@ -73,6 +73,28 @@ const URETICI_DURUM: Record<DurumKodu, DurumMesaji> = {
   sistem_hatasi:    { metin: "Sistem Hatası",               top: "sistem",           renk: HATA },
 };
 
+// İÇERİK ÜRETİCİSİ TABLOSU — GEÇİCİ (25.07).
+// Üretim hattı sayfalarını (Senaryolar/Videolar/Soru Setleri) İÜ de görür; üretici
+// dilini oraya basmak yanlış olurdu ("Sizden Onay Bekleniyor" İÜ'ye gösterilemez).
+// Bu tablo İÜ dilini UYDURMAZ — ürünün bugün zaten kullandığı terimleri toplar
+// (lib/utils/anaSayfa/iuDurumEsle.ts: "İncelemede", "Revizyon İstendi",
+// "Tamamlandı"; durum anahtarı: "Yazım Bekleniyor"). İÜ turunda İskender ile
+// birlikte yeniden yazılacak — o zamana kadar davranış bugünküyle aynı kalır.
+const IU_DURUM: Record<DurumKodu, DurumMesaji> = {
+  iu_iletildi:      { metin: "Yazım Bekleniyor",     top: "icerik_ureticisi", renk: BEKLEME },
+  iu_hazirliyor:    { metin: "Yazım Bekleniyor",     top: "icerik_ureticisi", renk: BEKLEME },
+  iu_duzeltiyor:    { metin: "Revizyon İstendi",     top: "icerik_ureticisi", renk: REVIZYON },
+  onay_bekleniyor:  { metin: "İncelemede",           top: "uretici",          renk: CANLI },
+  video_bekleniyor: { metin: "Üreticide",            top: "uretici",          renk: BEKLEME },
+  yayin_bekleniyor: { metin: "Üreticide",            top: "uretici",          renk: BEKLEME },
+  onaylandi:        { metin: "Tamamlandı",           top: "kapali",           renk: ONAY },
+  planlandi:        { metin: "Planlandı",            top: "sistem",           renk: PLANLI },
+  yayinda:          { metin: "Yayında",              top: "kapali",           renk: CANLI },
+  yayin_durduruldu: { metin: "Yayın Durduruldu",     top: "uretici",          renk: HATA },
+  iptal:            { metin: "İptal Edildi",         top: "kapali",           renk: BEKLEME },
+  sistem_hatasi:    { metin: "Sistem Hatası",        top: "sistem",           renk: HATA },
+};
+
 /** "2026-07-28T..." → "28 Tem" (planlı yayının açılacağı gün). */
 export function kisaTarih(tarih: string): string {
   return new Date(tarih).toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
@@ -83,7 +105,23 @@ export function kisaTarih(tarih: string): string {
  * ("Planlandı · 28 Tem") — üreticinin bilmesi gereken tek ek bilgi odur.
  */
 export function ureticiDurumMesaji(kod: DurumKodu, tarih?: string | null): DurumMesaji {
-  const temel = URETICI_DURUM[kod];
+  return tarihEkle(URETICI_DURUM[kod], kod, tarih);
+}
+
+/** İçerik Üreticisi rolünün göreceği mesaj (bkz. IU_DURUM — geçici tablo). */
+export function iuDurumMesaji(kod: DurumKodu, tarih?: string | null): DurumMesaji {
+  return tarihEkle(IU_DURUM[kod], kod, tarih);
+}
+
+/**
+ * Rolüne göre mesaj. Üretim hattı sayfaları (Senaryolar/Videolar/Soru Setleri)
+ * iki rol tarafından da görüldüğü için bu kapıdan geçer.
+ */
+export function durumMesaji(kod: DurumKodu, rol: string | null | undefined, tarih?: string | null): DurumMesaji {
+  return rol === "iu" ? iuDurumMesaji(kod, tarih) : ureticiDurumMesaji(kod, tarih);
+}
+
+function tarihEkle(temel: DurumMesaji, kod: DurumKodu, tarih?: string | null): DurumMesaji {
   if (kod === "planlandi" && tarih) {
     return { ...temel, metin: `${temel.metin} · ${kisaTarih(tarih)}` };
   }

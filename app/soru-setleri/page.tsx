@@ -3,7 +3,8 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import DurumAnahtari, { type DurumSecim } from "@/components/DurumAnahtari";
+import DurumAnahtari from "@/components/DurumAnahtari";
+import { durumMesaji, kayitDurumKodu, type DurumKodu } from "@/lib/utils/durum/mesaj";
 import UretimVaryantiRozet from "@/components/UretimVaryantiRozet";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
@@ -24,7 +25,8 @@ interface SoruSetiSatir {
   teknik_adi: string;
   turu_adi: string | null;
   soru_sayisi: number;
-  son_durum: string | null;
+  // Ham durum taşınmaz: ekrana çıkan her metin tek sözlükten okunur.
+  durum_kodu: DurumKodu;
   son_tarih: string;
   hazir_video: boolean;
   hazir_soru_seti: boolean;
@@ -35,7 +37,7 @@ export default function SoruSetleriListePage() {
   const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
   const [satirlar, setSatirlar] = useState<SoruSetiSatir[]>([]);
   const [loading, setLoading] = useState(true);
-  const [aktifDurum, setAktifDurum] = useState<DurumSecim>("inceleme bekleniyor");
+  const [aktifDurum, setAktifDurum] = useState<DurumKodu>("onay_bekleniyor");
   const { mesajlar, hata } = useHataMesaji();
 
   const okunmamisIdler = useOkunmamisIdler("soru_seti");
@@ -65,7 +67,7 @@ export default function SoruSetleriListePage() {
     //    Görünürlüğü RLS belirler (İU hepsini, üretici yalnız kendi talebini).
     const { data: soruSetleri, error: ssError } = await supabase
       .from("soru_setleri")
-      .select("soru_seti_id, video_durum_id, talep_id, sorular, created_at")
+      .select("soru_seti_id, video_durum_id, talep_id, iu_id, sorular, created_at")
       .order("created_at", { ascending: false });
 
     if (ssError || !soruSetleri) {
@@ -149,7 +151,7 @@ export default function SoruSetleriListePage() {
         hazir_video: bilgi?.hazir_video ?? false,
         hazir_soru_seti: bilgi?.hazir_soru_seti ?? false,
         soru_sayisi: Array.isArray(ss.sorular) ? ss.sorular.length : 0,
-        son_durum: sonDurum?.durum ?? null,
+        durum_kodu: kayitDurumKodu(sonDurum?.durum, !!ss.iu_id),
         son_tarih: sonDurum?.created_at ?? ss.created_at,
       };
     });
@@ -161,35 +163,19 @@ export default function SoruSetleriListePage() {
   useEffect(() => { if (kullanici) veriCek(); }, [kullanici, veriCek]);
 
   const sayim = useMemo(() => {
-    const s: Record<DurumSecim, number> = {
-      "inceleme bekleniyor": 0, "revizyon bekleniyor": 0, "onaylandi": 0, "Iptal Edildi": 0, "durumsuz": 0,
-    };
-    for (const r of satirlar) {
-      const d = r.son_durum;
-      if (!d) s["durumsuz"] += 1;
-      else if (d in s) s[d as DurumSecim] += 1;
-    }
+    const s: Partial<Record<DurumKodu, number>> = {};
+    for (const r of satirlar) s[r.durum_kodu] = (s[r.durum_kodu] ?? 0) + 1;
     return s;
   }, [satirlar]);
 
   // G-4: durumu henüz olmayan (yazım bekleyen) satırlar "takip" bölgesinde
   // "Yazım bekleniyor" pill'iyle erişilir — gizlenmez.
-  const filtreliSatirlar = satirlar.filter(s =>
-    aktifDurum === "durumsuz" ? !s.son_durum : s.son_durum === aktifDurum
-  );
+  const filtreliSatirlar = satirlar.filter(s => s.durum_kodu === aktifDurum);
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
 
-  const durumRenk = (durum: string) => {
-    switch (durum) {
-      case "onaylandi": return { bg: "#f0fdf4", text: "#16a34a", border: "#bbf7d0" };
-      case "Iptal Edildi": return { bg: "#fef2f2", text: "#bc2d0d", border: "#fecaca" };
-      case "revizyon bekleniyor": return { bg: "#fefce8", text: "#854d0e", border: "#fde68a" };
-      case "inceleme bekleniyor": return { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" };
-      default: return { bg: "#f9fafb", text: "#737373", border: "#e5e7eb" };
-    }
-  };
+  // durumRenk kaldırıldı (25.07): metin ve renk tek sözlükten — lib/utils/durum/mesaj.ts.
 
   if (authYukleniyor || !kullanici || loading) {
     return (
@@ -209,7 +195,7 @@ export default function SoruSetleriListePage() {
       <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6">
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
 
-          <DurumAnahtari baslik="Soru Setleri" aktif={aktifDurum} onSec={setAktifDurum} sayim={sayim} />
+          <DurumAnahtari baslik="Soru Setleri" rol={kullanici.rol} aktif={aktifDurum} onSec={setAktifDurum} sayim={sayim} />
 
           {filtreliSatirlar.length === 0 ? (
             <div className="p-10 text-center text-sm text-gray-400">
@@ -219,7 +205,7 @@ export default function SoruSetleriListePage() {
             <>
               <div className="md:hidden">
                 {filtreliSatirlar.map((ss) => {
-                  const renk = durumRenk(ss.son_durum ?? "");
+                  const durum = durumMesaji(ss.durum_kodu, kullanici.rol, ss.son_tarih);
                   const okunmamis = okunmamisIdler.has(ss.soru_seti_id);
                   return (
                     <div key={ss.talep_id} onClick={() => router.push(`/soru-setleri/${ss.video_durum_id}`)}
@@ -234,12 +220,10 @@ export default function SoruSetleriListePage() {
                           <span className="text-sm text-gray-900" style={{ fontWeight: okunmamis ? 700 : 600 }}>{ss.urun_adi}</span>
                           <UretimVaryantiRozet hazirVideo={ss.hazir_video} hazirSoruSeti={ss.hazir_soru_seti} />
                         </div>
-                        {ss.son_durum && (
-                          <span className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap"
-                            style={{ background: renk.bg, color: renk.text, border: `0.5px solid ${renk.border}`, fontSize: 11 }}>
-                            {ss.son_durum}
-                          </span>
-                        )}
+                        <span className="text-xs px-2 py-0.5 rounded-full leading-tight"
+                          style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}`, fontSize: 11 }}>
+                          {durum.metin}
+                        </span>
                       </div>
                       {ss.turu_adi && <div className="text-xs text-gray-400">{ss.turu_adi}</div>}
                       <div className="text-xs text-gray-500">{ss.teknik_adi}</div>
@@ -260,14 +244,14 @@ export default function SoruSetleriListePage() {
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün / Eğitim</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Teknik</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Soru</th>
-                      <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase w-44">Son Durum</th>
+                      <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase w-56">Son Durum</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Tarih</th>
                       <th className="px-5 py-2.5"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {filtreliSatirlar.map((ss) => {
-                      const renk = durumRenk(ss.son_durum ?? "");
+                      const durum = durumMesaji(ss.durum_kodu, kullanici.rol, ss.son_tarih);
                       const okunmamis = okunmamisIdler.has(ss.soru_seti_id);
                       return (
                         <tr key={ss.talep_id} onClick={() => router.push(`/soru-setleri/${ss.video_durum_id}`)}
@@ -287,12 +271,10 @@ export default function SoruSetleriListePage() {
                           <td className="px-3 py-3 text-gray-500">{ss.teknik_adi}</td>
                           <td className="px-3 py-3 text-gray-500">{ss.soru_sayisi} soru</td>
                           <td className="px-3 py-3">
-                            {ss.son_durum && (
-                              <span className="text-xs px-2.5 py-0.5 rounded-full inline-block max-w-full break-words text-center leading-snug"
-                                style={{ background: renk.bg, color: renk.text, border: `0.5px solid ${renk.border}` }}>
-                                {ss.son_durum}
-                              </span>
-                            )}
+                            <span className="text-xs px-2.5 py-0.5 rounded-full inline-block max-w-full break-words text-center leading-snug"
+                              style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}` }}>
+                              {durum.metin}
+                            </span>
                           </td>
                           <td className="px-3 py-3 text-gray-500 text-xs">{formatTarih(ss.son_tarih)}</td>
                           <td className="px-5 py-3">
