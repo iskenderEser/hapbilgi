@@ -15,12 +15,13 @@ import type { SoruTaslagi } from "@/lib/soru/taslak";
 
 interface HazirSoruSetiBloguProps {
   buyukluk: number;
+  secenekSayisi: number;
   taslaklar: SoruTaslagi[];
   onDegis: (taslaklar: SoruTaslagi[]) => void;
   onIceAktar: (taslaklar: SoruTaslagi[], uyari: string) => void;
 }
 
-export function HazirSoruSetiBlogu({ buyukluk, taslaklar, onDegis, onIceAktar }: HazirSoruSetiBloguProps) {
+export function HazirSoruSetiBlogu({ buyukluk, secenekSayisi, taslaklar, onDegis, onIceAktar }: HazirSoruSetiBloguProps) {
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden">
       <div className="px-3 py-2.5 bg-gray-50 border-b border-gray-100">
@@ -30,8 +31,8 @@ export function HazirSoruSetiBlogu({ buyukluk, taslaklar, onDegis, onIceAktar }:
         </span>
       </div>
       <div className="p-3">
-        <SoruIceAktar onDoldur={onIceAktar} />
-        <SoruSetiFormu taslaklar={taslaklar} onDegis={onDegis} buyukluk={buyukluk} />
+        <SoruIceAktar onDoldur={onIceAktar} secenekSayisi={secenekSayisi} />
+        <SoruSetiFormu taslaklar={taslaklar} onDegis={onDegis} buyukluk={buyukluk} secenekSayisi={secenekSayisi} />
       </div>
     </div>
   );

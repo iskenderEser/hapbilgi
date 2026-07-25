@@ -44,7 +44,7 @@ export default function YayindakiVideoBolumu({ videolar, onVideoSec }: Props) {
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
       {videolar.map((v) => {
         const thumb = v.thumbnail_url ?? thumbnailUrlUret(v.video_url);
         return (

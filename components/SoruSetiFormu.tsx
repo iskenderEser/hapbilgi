@@ -11,31 +11,36 @@
 "use client";
 
 import { useRef } from "react";
-import { type SoruTaslagi, bosSoruTaslagi } from "@/lib/soru/taslak";
+import { type SoruTaslagi, bosSoruTaslagi, harfBul } from "@/lib/soru/taslak";
 
 interface SoruSetiFormuProps {
   taslaklar: SoruTaslagi[];
   onDegis: (taslaklar: SoruTaslagi[]) => void;
   buyukluk: number;
+  secenekSayisi: number;
 }
 
-export function SoruSetiFormu({ taslaklar, onDegis, buyukluk }: SoruSetiFormuProps) {
+export function SoruSetiFormu({ taslaklar, onDegis, buyukluk, secenekSayisi }: SoruSetiFormuProps) {
   const kartRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const guncelle = (i: number, alan: Partial<SoruTaslagi>) => {
     onDegis(taslaklar.map((t, j) => (j === i ? { ...t, ...alan } : t)));
   };
 
+  const secenekGuncelle = (i: number, idx: number, deger: string) => {
+    guncelle(i, { secenekler: taslaklar[i].secenekler.map((s, k) => (k === idx ? deger : s)) });
+  };
+
   const sil = (i: number) => onDegis(taslaklar.filter((_, j) => j !== i));
 
   const ekle = () => {
-    onDegis([...taslaklar, bosSoruTaslagi()]);
+    onDegis([...taslaklar, bosSoruTaslagi(secenekSayisi)]);
     // Yeni kart render edildikten sonra görünür alana getirilir.
     setTimeout(() => kartRefs.current[taslaklar.length]?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
   };
 
   const kartTamam = (t: SoruTaslagi) =>
-    t.soru_metni.trim() !== "" && t.secenek_a.trim() !== "" && t.secenek_b.trim() !== "" && t.dogru !== null;
+    t.soru_metni.trim() !== "" && t.secenekler.every(s => s.trim() !== "") && t.dogru !== null;
 
   const tamamSayisi = taslaklar.filter(kartTamam).length;
 
@@ -84,23 +89,23 @@ export function SoruSetiFormu({ taslaklar, onDegis, buyukluk }: SoruSetiFormuPro
               className="w-full border border-gray-200 rounded-lg px-2.5 py-2 text-xs text-gray-900 bg-white resize-y mb-1.5 box-border"
               style={{ fontFamily: "'Nunito', sans-serif" }}
             />
-            {(["A", "B"] as const).map(harf => (
-              <div key={harf} className="flex items-center gap-2 mb-1.5">
-                <span className="text-xs font-semibold text-gray-400 w-3 flex-shrink-0">{harf}</span>
+            {t.secenekler.map((deger, idx) => (
+              <div key={idx} className="flex items-center gap-2 mb-1.5">
+                <span className="text-xs font-semibold text-gray-400 w-3 flex-shrink-0">{harfBul(idx)}</span>
                 <input
-                  value={harf === "A" ? t.secenek_a : t.secenek_b}
-                  onChange={e => guncelle(i, harf === "A" ? { secenek_a: e.target.value } : { secenek_b: e.target.value })}
-                  placeholder={`${harf} seçeneği`}
+                  value={deger}
+                  onChange={e => secenekGuncelle(i, idx, e.target.value)}
+                  placeholder={`${harfBul(idx)} seçeneği`}
                   className="flex-1 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-900 bg-white"
                   style={{ fontFamily: "'Nunito', sans-serif" }}
                 />
                 <label className="flex items-center gap-1 cursor-pointer flex-shrink-0 text-xs"
-                  style={{ color: t.dogru === harf ? "#16a34a" : "#9ca3af" }}>
+                  style={{ color: t.dogru === idx ? "#16a34a" : "#9ca3af" }}>
                   <input
                     type="radio"
                     name={`soru-${i}-dogru`}
-                    checked={t.dogru === harf}
-                    onChange={() => guncelle(i, { dogru: harf })}
+                    checked={t.dogru === idx}
+                    onChange={() => guncelle(i, { dogru: idx })}
                     className="cursor-pointer"
                     style={{ accentColor: "#16a34a" }}
                   />

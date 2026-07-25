@@ -141,7 +141,7 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
               {formu.hazirVideo && !formu.hazirSoruSeti &&
                 "Videonuzu yükledikten sonra hazır soru setinizle devam edebilir ya da içerik üreticisinden talep edebilirsiniz."}
               {!formu.hazirVideo && formu.hazirSoruSeti &&
-                "Hazır soru seti talebi oluşturuyorsunuz. Normal senaryo ve video akışı işleyecek — IU soru seti yazma aşamasında sizin yüklediğiniz soru setini sisteme işleyecektir."}
+                "Hazır soru seti ile talep oluşturuyorsunuz. Video için senaryo yazılmasını ve videonun oluşturulmasını içerik üreticiniz yapacaktır."}
             </div>
           )}
 
@@ -180,8 +180,10 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
           <SoruSetiAyarlari
             buyukluk={formu.soruSetiBuyuklugu}
             videoBasi={formu.videoBasiSoruSayisi}
+            secenek={formu.secenekSayisi}
             onBuyuklukChange={formu.setSoruSetiBuyuklugu}
             onVideoBasiChange={formu.setVideoBasiSoruSayisi}
+            onSecenekChange={formu.setSecenekSayisi}
           />
 
           <div>
@@ -209,6 +211,7 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
           {formu.hazirSoruSeti && (
             <HazirSoruSetiBlogu
               buyukluk={formu.soruSetiBuyuklugu}
+              secenekSayisi={formu.secenekSayisi}
               taslaklar={formu.soruTaslaklari}
               onDegis={formu.setSoruTaslaklari}
               onIceAktar={formu.handleSoruIceAktar}

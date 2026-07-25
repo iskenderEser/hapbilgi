@@ -2,7 +2,9 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import DurumAnahtari, { type DurumSecim } from "@/components/DurumAnahtari";
+import UretimVaryantiRozet from "@/components/UretimVaryantiRozet";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
@@ -24,9 +26,9 @@ interface VideoSatir {
   thumbnail_url: string | null;
   son_durum: string | null;
   son_tarih: string;
+  hazir_video: boolean;
+  hazir_soru_seti: boolean;
 }
-
-type FiltreDurum = "inceleme bekleniyor" | "revizyon bekleniyor" | "onaylandi" | "Iptal Edildi";
 
 interface VideoJoin {
   video_id: string;
@@ -39,6 +41,9 @@ interface VideoJoin {
       talep_id: string;
       talepler: {
         talep_no: number;
+        hazir_video: boolean | null;
+        hazir_soru_seti: boolean | null;
+        urun_adi: string | null;
         urunler: { urun_adi: string } | null;
         teknikler: { teknik_adi: string } | null;
         firmalar: { firma_adi: string } | null;
@@ -52,7 +57,7 @@ export default function VideolarListePage() {
   const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
   const [satirlar, setSatirlar] = useState<VideoSatir[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filtreler, setFiltreler] = useState<Set<FiltreDurum>>(new Set());
+  const [aktifDurum, setAktifDurum] = useState<DurumSecim>("inceleme bekleniyor");
   const { mesajlar, hata } = useHataMesaji();
 
   const okunmamisIdler = useOkunmamisIdler("video");
@@ -92,6 +97,9 @@ export default function VideolarListePage() {
             talep_id,
             talepler!inner (
               talep_no,
+              hazir_video,
+              hazir_soru_seti,
+              urun_adi,
               urunler (urun_adi),
               teknikler (teknik_adi),
               firmalar (firma_adi)
@@ -152,8 +160,10 @@ export default function VideolarListePage() {
         firma_adi: talep?.firmalar?.firma_adi ?? "",
         senaryo_durum_id: v.senaryo_durum_id,
         video_id: v.video_id,
-        urun_adi: talep?.urunler?.urun_adi ?? "-",
+        urun_adi: talep?.urunler?.urun_adi ?? talep?.urun_adi ?? "-",
         teknik_adi: talep?.teknikler?.teknik_adi ?? "-",
+        hazir_video: talep?.hazir_video ?? false,
+        hazir_soru_seti: talep?.hazir_soru_seti ?? false,
         video_url: v.video_url ?? null,
         thumbnail_url: v.thumbnail_url ?? null,
         son_durum: sonDurum?.durum ?? null,
@@ -167,18 +177,21 @@ export default function VideolarListePage() {
 
   useEffect(() => { if (kullanici) veriCek(); }, [kullanici, veriCek]);
 
-  const toggleFiltre = (durum: FiltreDurum) => {
-    setFiltreler(prev => {
-      const yeni = new Set(prev);
-      if (yeni.has(durum)) { yeni.delete(durum); } else { yeni.add(durum); }
-      return yeni;
-    });
-  };
+  const sayim = useMemo(() => {
+    const s: Record<DurumSecim, number> = {
+      "inceleme bekleniyor": 0, "revizyon bekleniyor": 0, "onaylandi": 0, "Iptal Edildi": 0, "durumsuz": 0,
+    };
+    for (const r of satirlar) {
+      const d = r.son_durum;
+      if (!d) s["durumsuz"] += 1;
+      else if (d in s) s[d as DurumSecim] += 1;
+    }
+    return s;
+  }, [satirlar]);
 
-  const filtreliSatirlar = satirlar.filter(s => {
-    const durumUyumu = filtreler.size === 0 || (s.son_durum && filtreler.has(s.son_durum as FiltreDurum));
-    return durumUyumu;
-  });
+  const filtreliSatirlar = satirlar.filter(s =>
+    aktifDurum === "durumsuz" ? !s.son_durum : s.son_durum === aktifDurum
+  );
 
   const formatTarih = useCallback((tarih: string) => {
     return new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
@@ -193,13 +206,6 @@ export default function VideolarListePage() {
       default: return { bg: "#f9fafb", text: "#737373", border: "#e5e7eb" };
     }
   };
-
-  const filtreSec: { durum: FiltreDurum; etiket: string }[] = [
-    { durum: "inceleme bekleniyor", etiket: "İnceleme Bekleyenler" },
-    { durum: "revizyon bekleniyor", etiket: "Revizyon Bekleyenler" },
-    { durum: "onaylandi", etiket: "Onaylananlar" },
-    { durum: "Iptal Edildi", etiket: "İptal Edilenler" },
-  ];
 
   if (authYukleniyor || !kullanici || loading) {
     return (
@@ -219,26 +225,11 @@ export default function VideolarListePage() {
       <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6">
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
 
-          <div className="px-4 md:px-5 py-3.5 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-              <span className="text-sm font-semibold text-gray-900">Videolar</span>
-              <div className="flex flex-wrap items-center gap-3">
-                {filtreSec.map(f => (
-                  <label key={f.durum} className="flex items-center gap-1 cursor-pointer text-xs"
-                    style={{ color: filtreler.has(f.durum) ? "#111" : "#737373", fontWeight: filtreler.has(f.durum) ? 600 : 400 }}>
-                    <input type="checkbox" checked={filtreler.has(f.durum)} onChange={() => toggleFiltre(f.durum)}
-                      className="cursor-pointer w-3 h-3" style={{ accentColor: "#bc2d0d" }} />
-                    {f.etiket}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <span className="text-xs text-gray-500">{filtreliSatirlar.length} kayıt</span>
-          </div>
+          <DurumAnahtari baslik="Videolar" aktif={aktifDurum} onSec={setAktifDurum} sayim={sayim} />
 
           {filtreliSatirlar.length === 0 ? (
             <div className="p-10 text-center text-sm text-gray-400">
-              {filtreler.size > 0 ? "Seçilen filtreye uygun video bulunamadı." : "Henüz video bulunmuyor."}
+              {satirlar.length === 0 ? "Henüz video bulunmuyor." : "Bu durumda video yok."}
             </div>
           ) : (
             <>
@@ -252,11 +243,12 @@ export default function VideolarListePage() {
                       style={okunmamis ? { boxShadow: "inset 3px 0 0 0 #bc2d0d" } : undefined}>
                       <div className="text-xs text-gray-500 mb-1">{talepIdGoster(v.firma_adi, v.talep_no)}</div>
                       <div className="flex justify-between items-start mb-1">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           {okunmamis && (
                             <span className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#bc2d0d" }} />
                           )}
                           <span className="text-sm text-gray-900" style={{ fontWeight: okunmamis ? 700 : 600 }}>{v.urun_adi}</span>
+                          <UretimVaryantiRozet hazirVideo={v.hazir_video} hazirSoruSeti={v.hazir_soru_seti} />
                         </div>
                         {v.son_durum && (
                           <span className="text-xs px-2 py-0.5 rounded-full whitespace-nowrap"
@@ -277,7 +269,7 @@ export default function VideolarListePage() {
                   <thead>
                     <tr className="border-b border-gray-100 bg-gray-50">
                       <th className="text-left px-5 py-2.5 text-gray-400 font-medium text-xs uppercase">ID</th>
-                      <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün</th>
+                      <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün / Eğitim</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Teknik</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase w-44">Son Durum</th>
                       <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Tarih</th>
@@ -294,11 +286,12 @@ export default function VideolarListePage() {
                           style={okunmamis ? { boxShadow: "inset 3px 0 0 0 #bc2d0d" } : undefined}>
                           <td className="px-5 py-3 text-gray-500 text-xs whitespace-nowrap">{talepIdGoster(v.firma_adi, v.talep_no)}</td>
                           <td className="px-3 py-3 text-gray-900">
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               {okunmamis && (
                                 <span className="inline-block w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: "#bc2d0d" }} />
                               )}
                               <span style={{ fontWeight: okunmamis ? 700 : 500 }}>{v.urun_adi}</span>
+                              <UretimVaryantiRozet hazirVideo={v.hazir_video} hazirSoruSeti={v.hazir_soru_seti} />
                             </div>
                           </td>
                           <td className="px-3 py-3 text-gray-500">{v.teknik_adi}</td>

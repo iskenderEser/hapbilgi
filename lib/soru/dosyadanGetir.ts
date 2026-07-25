@@ -28,14 +28,14 @@ const MAKS_BOYUT = 10 * 1024 * 1024; // 10 MB — soru dosyaları için fazlası
 
 const eksikUyarisi = (taslaklar: SoruTaslagi[]): string => {
   const eksikler = taslaklar
-    .map((t, i) => (!t.soru_metni || !t.secenek_a || !t.secenek_b || t.dogru === null ? i + 1 : null))
+    .map((t, i) => (!t.soru_metni || t.secenekler.some(s => !s) || t.dogru === null ? i + 1 : null))
     .filter((n): n is number => n !== null);
   return eksikler.length > 0
     ? `${eksikler.join(", ")}. soru(lar)da eksik alan var — formda tamamlayın.`
     : "";
 };
 
-export async function dosyadanTaslaklar(dosya: File): Promise<DosyaGetirmeSonucu> {
+export async function dosyadanTaslaklar(dosya: File, secenekSayisi: number): Promise<DosyaGetirmeSonucu> {
   if (dosya.size > MAKS_BOYUT) {
     return { ok: false, hata: "Dosya 10 MB'tan büyük olamaz." };
   }
@@ -44,15 +44,15 @@ export async function dosyadanTaslaklar(dosya: File): Promise<DosyaGetirmeSonucu
   try {
     switch (uzanti) {
       case "txt":
-        return metinden(await dosya.text());
+        return metinden(await dosya.text(), secenekSayisi);
       case "docx":
-        return metinden(await docxMetni(dosya));
+        return metinden(await docxMetni(dosya), secenekSayisi);
       case "xlsx":
-        return excelden(dosya);
+        return excelden(dosya, secenekSayisi);
       case "pptx":
-        return metinden(await pptxMetni(dosya));
+        return metinden(await pptxMetni(dosya), secenekSayisi);
       case "pdf":
-        return await pdften(dosya);
+        return await pdften(dosya, secenekSayisi);
       default:
         return { ok: false, hata: `".${uzanti}" desteklenmiyor. Desteklenen türler: ${DESTEKLENEN_UZANTILAR}` };
     }
@@ -61,8 +61,8 @@ export async function dosyadanTaslaklar(dosya: File): Promise<DosyaGetirmeSonucu
   }
 }
 
-function metinden(metin: string): DosyaGetirmeSonucu {
-  const { taslaklar, uyari } = parseSoruSetiEsnek(metin);
+function metinden(metin: string, secenekSayisi: number): DosyaGetirmeSonucu {
+  const { taslaklar, uyari } = parseSoruSetiEsnek(metin, secenekSayisi);
   return { ok: true, taslaklar, uyari };
 }
 
@@ -117,7 +117,7 @@ function htmldenSatirlar(html: string): string {
   return satirlar.join("\n");
 }
 
-async function excelden(dosya: File): Promise<DosyaGetirmeSonucu> {
+async function excelden(dosya: File, secenekSayisi: number): Promise<DosyaGetirmeSonucu> {
   const XLSX = await import("xlsx");
   const calisma = XLSX.read(await dosya.arrayBuffer(), { type: "array" });
   const sayfa = calisma.Sheets[calisma.SheetNames[0]];
@@ -132,17 +132,19 @@ async function excelden(dosya: File): Promise<DosyaGetirmeSonucu> {
     ? dolular.slice(1)
     : dolular;
 
+  // Sütun düzeni: soru | seçenek1 | … | seçenekN | doğru.
   const taslaklar: SoruTaslagi[] = govde.map(r => {
-    const dogruHam = String(r[3] ?? "").trim().toUpperCase();
+    const secenekler = Array.from({ length: secenekSayisi }, (_, k) => String(r[1 + k] ?? "").trim());
+    const dogruHam = String(r[1 + secenekSayisi] ?? "").trim().toUpperCase();
+    const dogruIdx = dogruHam ? dogruHam.charCodeAt(0) - 65 : -1;
     return {
       soru_metni: String(r[0] ?? "").trim(),
-      secenek_a: String(r[1] ?? "").trim(),
-      secenek_b: String(r[2] ?? "").trim(),
-      dogru: dogruHam.startsWith("A") ? "A" : dogruHam.startsWith("B") ? "B" : null,
+      secenekler,
+      dogru: dogruIdx >= 0 && dogruIdx < secenekSayisi ? dogruIdx : null,
     };
   });
   if (taslaklar.length === 0) {
-    return { ok: false, hata: "Excel'de soru satırı bulunamadı (sütun düzeni: soru | A | B | doğru)." };
+    return { ok: false, hata: "Excel'de soru satırı bulunamadı (sütun düzeni: soru | seçenekler… | doğru)." };
   }
   return { ok: true, taslaklar, uyari: eksikUyarisi(taslaklar) };
 }
@@ -167,7 +169,7 @@ async function pptxMetni(dosya: File): Promise<string> {
   return satirlar.join("\n");
 }
 
-async function pdften(dosya: File): Promise<DosyaGetirmeSonucu> {
+async function pdften(dosya: File, secenekSayisi: number): Promise<DosyaGetirmeSonucu> {
   const pdfjs = await import("pdfjs-dist");
   pdfjs.GlobalWorkerOptions.workerSrc = new URL(
     "pdfjs-dist/build/pdf.worker.min.mjs",
@@ -198,5 +200,5 @@ async function pdften(dosya: File): Promise<DosyaGetirmeSonucu> {
   if (!metin.trim()) {
     return { ok: false, hata: "PDF'te seçilebilir metin bulunamadı — taranmış (görüntü) PDF desteklenmez." };
   }
-  return metinden(metin);
+  return metinden(metin, secenekSayisi);
 }

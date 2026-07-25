@@ -70,6 +70,7 @@ export function useTalepFormu() {
   const [seciliTeknikId, setSeciliTeknikId] = useState("");
   const [takimlar, setTakimlar] = useState<Takim[]>([]);
   const [soruSetiBuyuklugu, setSoruSetiBuyuklugu] = useState<number>(25);
+  const [secenekSayisi, setSecenekSayisi] = useState<number>(4);
   const [videoBasiSoruSayisi, setVideoBasiSoruSayisi] = useState<number>(2);
   const [aciklama, setAciklama] = useState("");
   const [bekleyenDosyalar, setBekleyenDosyalar] = useState<BekleyenDosya[]>([]);
@@ -244,14 +245,14 @@ export function useTalepFormu() {
   // küçülünce yalnız BOŞ kartlar düşer (dolu veri sessizce silinmez).
   useEffect(() => {
     if (!hazirSoruSeti) return;
-    setSoruTaslaklari(prev => taslaklariBoyutla(prev, soruSetiBuyuklugu));
-  }, [hazirSoruSeti, soruSetiBuyuklugu]);
+    setSoruTaslaklari(prev => taslaklariBoyutla(prev, soruSetiBuyuklugu, secenekSayisi));
+  }, [hazirSoruSeti, soruSetiBuyuklugu, secenekSayisi]);
 
   // İçe aktarma (toplu yapıştır / dosyadan): esnek parse formu doldurur, eksikler formda tamamlanır.
   const handleSoruIceAktar = useCallback((taslaklar: SoruTaslagi[], uyariMesaji: string) => {
-    setSoruTaslaklari(taslaklariBoyutla(taslaklar, soruSetiBuyuklugu));
+    setSoruTaslaklari(taslaklariBoyutla(taslaklar, soruSetiBuyuklugu, secenekSayisi));
     if (uyariMesaji) uyari(uyariMesaji);
-  }, [soruSetiBuyuklugu, uyari]);
+  }, [soruSetiBuyuklugu, secenekSayisi, uyari]);
 
   // Yeni ürün — Madde 4 Aşama 2B: takim_id parametresi.
   const handleYeniUrunEkle = useCallback(
@@ -403,6 +404,7 @@ export function useTalepFormu() {
     soruTaslaklari,
     videoBasiSoruSayisi,
     soruSetiBuyuklugu,
+    secenekSayisi,
     hata,
   ]);
 
@@ -425,6 +427,7 @@ export function useTalepFormu() {
         hazir_soru_seti_verisi:
           hazirSoruSeti && soruTaslaklari.length > 0 ? taslaklardanSorular(soruTaslaklari) : null,
         soru_seti_buyuklugu: soruSetiBuyuklugu,
+        secenek_sayisi: secenekSayisi,
         video_basi_soru_sayisi: videoBasiSoruSayisi,
       }),
     });
@@ -449,6 +452,7 @@ export function useTalepFormu() {
     hazirSoruSeti,
     soruTaslaklari,
     soruSetiBuyuklugu,
+    secenekSayisi,
     videoBasiSoruSayisi,
     hata,
   ]);
@@ -562,6 +566,7 @@ export function useTalepFormu() {
     setHazirSoruSeti(false);
     setSoruTaslaklari([]);
     setSoruSetiBuyuklugu(25);
+    setSecenekSayisi(4);
     setVideoBasiSoruSayisi(2);
   }, [yetenek]);
 
@@ -684,6 +689,8 @@ export function useTalepFormu() {
     // form: soru seti ayarları
     soruSetiBuyuklugu,
     setSoruSetiBuyuklugu,
+    secenekSayisi,
+    setSecenekSayisi,
     videoBasiSoruSayisi,
     setVideoBasiSoruSayisi,
 

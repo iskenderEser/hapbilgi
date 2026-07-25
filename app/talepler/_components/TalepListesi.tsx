@@ -9,6 +9,7 @@
 import { TALEP_TURU_KURALLARI } from "@/lib/uretici/yetenekler";
 import { type Talep, TUR_ROZET } from "../_types";
 import { talepIdGoster } from "@/lib/utils/talepId";
+import UretimVaryantiRozet from "@/components/UretimVaryantiRozet";
 
 interface TalepListesiProps {
   talepler: Talep[];
@@ -75,7 +76,7 @@ export function TalepListesi({
                       >
                         {baslik}
                       </span>
-                      {rozet.etiket && (
+                      {t.urun_adi !== "-" && rozet.etiket && (
                         <span
                           className="text-xs font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
                           style={{
@@ -88,32 +89,7 @@ export function TalepListesi({
                           {rozet.etiket}
                         </span>
                       )}
-                      {t.hazir_video && (
-                        <span
-                          className="text-xs font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
-                          style={{
-                            background: "#fff7ed",
-                            color: "#c2410c",
-                            border: "0.5px solid #fed7aa",
-                            fontSize: 9,
-                          }}
-                        >
-                          Hazır Video
-                        </span>
-                      )}
-                      {t.hazir_soru_seti && (
-                        <span
-                          className="text-xs font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
-                          style={{
-                            background: "#eff6ff",
-                            color: "#1d4ed8",
-                            border: "0.5px solid #bfdbfe",
-                            fontSize: 9,
-                          }}
-                        >
-                          Hazır Soru Seti
-                        </span>
-                      )}
+                      <UretimVaryantiRozet hazirVideo={t.hazir_video} hazirSoruSeti={t.hazir_soru_seti} />
                     </div>
                     <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" width="14" height="14">
                       <path d="M9 5l7 7-7 7" />
@@ -161,7 +137,7 @@ export function TalepListesi({
                             />
                           )}
                           <span style={{ fontWeight: okunmamis ? 700 : 500 }}>{baslik}</span>
-                          {rozet.etiket && (
+                          {t.urun_adi !== "-" && rozet.etiket && (
                             <span
                               className="font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
                               style={{
@@ -174,32 +150,7 @@ export function TalepListesi({
                               {rozet.etiket}
                             </span>
                           )}
-                          {t.hazir_video && (
-                            <span
-                              className="font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
-                              style={{
-                                fontSize: 9,
-                                background: "#fff7ed",
-                                color: "#c2410c",
-                                border: "0.5px solid #fed7aa",
-                              }}
-                            >
-                              Hazır Video
-                            </span>
-                          )}
-                          {t.hazir_soru_seti && (
-                            <span
-                              className="font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
-                              style={{
-                                fontSize: 9,
-                                background: "#eff6ff",
-                                color: "#1d4ed8",
-                                border: "0.5px solid #bfdbfe",
-                              }}
-                            >
-                              Hazır Soru Seti
-                            </span>
-                          )}
+                          <UretimVaryantiRozet hazirVideo={t.hazir_video} hazirSoruSeti={t.hazir_soru_seti} />
                         </div>
                       </td>
                       <td className="px-3 py-3 text-gray-500">

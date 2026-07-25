@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useHataMesaji } from "@/components/HataMesaji";
 import { HedefRolPill } from "@/components/HedefRolBant";
+import UretimVaryantiRozet from "@/components/UretimVaryantiRozet";
 import type { HedefRol } from "@/lib/utils/roller";
 import { ROL_ADLARI } from "@/lib/utils/roller";
 import { talepIdGoster } from "@/lib/utils/talepId";
@@ -18,6 +19,8 @@ interface TakipSatiri {
   urun_adi: string;
   teknik_adi: string;
   hedef_rol: HedefRol;
+  hazir_video: boolean;
+  hazir_soru_seti: boolean;
   asama: "Senaryo" | "Video" | "Soru Seti" | "Yayın";
   durum: string;
   tarih: string;
@@ -233,7 +236,10 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
                 >
                   <div className="text-xs text-gray-500 mb-1">{talepIdGoster(s.firma_adi, s.talep_no)}</div>
                   <div className="flex justify-between items-start mb-1.5">
-                    <div className="text-sm font-bold text-gray-900">{s.urun_adi}</div>
+                    <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                      <span className="text-sm font-bold text-gray-900">{s.urun_adi}</span>
+                      <UretimVaryantiRozet hazirVideo={s.hazir_video} hazirSoruSeti={s.hazir_soru_seti} />
+                    </div>
                     <span className="text-xs font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{ background: durumR.bg, color: durumR.text }}>{s.durum}</span>
                   </div>
                   <div className="flex gap-2 items-center flex-wrap">
@@ -272,7 +278,10 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
                   }}
                 >
                   <div className="text-xs text-gray-500 truncate" title={talepIdGoster(s.firma_adi, s.talep_no)}>{talepIdGoster(s.firma_adi, s.talep_no)}</div>
-                  <div className="text-sm font-bold text-gray-900 truncate">{s.urun_adi}</div>
+                  <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                    <span className="text-sm font-bold text-gray-900 truncate">{s.urun_adi}</span>
+                    <UretimVaryantiRozet hazirVideo={s.hazir_video} hazirSoruSeti={s.hazir_soru_seti} />
+                  </div>
                   {teknikGoster && <div className="text-xs text-gray-500 truncate">{s.teknik_adi}</div>}
                   <div><HedefRolPill hedefRol={s.hedef_rol} /></div>
                   <div><span className="text-xs font-bold px-2 py-0.5 rounded-full inline-block whitespace-nowrap" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span></div>

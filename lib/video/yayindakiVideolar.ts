@@ -16,6 +16,7 @@ export interface YayindakiVideo extends AnaSayfaVideo {
   ureten_rol: string;
   favori_sayisi: number;
   begeni_sayisi: number;
+  izlenme_sayisi: number;
 }
 
 export async function getYayindakiVideolar(
@@ -36,16 +37,24 @@ export async function getYayindakiVideolar(
     .eq("durum", "yayinda")
     .order("yayin_tarihi", { ascending: false });
 
+  // Kapsam: takıma bağlı içerik + firma geneli (takımsız, takim_id NULL) içerik.
+  // Firma geneli medikal/eğitim içeriği takim_id NULL üretiliyor; eski salt-takım
+  // süzgeci bunları eliyordu (Medikal Müdürlük klasörü hiç oluşmuyordu). Firma
+  // sınırı korunur (firma_id eşitliği) → başka firma sızmaz.
+  const firmaGeneli = `and(takim_id.is.null,firma_id.eq.${kullanici.firma_id})`;
   if (kapsamGenisMi(rol)) {
     const { data: takimlar } = await adminSupabase
       .from("takimlar")
       .select("takim_id")
       .eq("firma_id", kullanici.firma_id);
     const takimIdler = (takimlar ?? []).map((t: any) => t.takim_id);
-    query = query.in("takim_id", takimIdler.length > 0 ? takimIdler : ["00000000-0000-0000-0000-000000000000"]);
+    const takimListe = takimIdler.length > 0 ? takimIdler.join(",") : "00000000-0000-0000-0000-000000000000";
+    query = query.or(`takim_id.in.(${takimListe}),${firmaGeneli}`);
+  } else if (kullanici.takim_id) {
+    query = query.or(`takim_id.eq.${kullanici.takim_id},${firmaGeneli}`);
   } else {
-    if (!kullanici.takim_id) return [];
-    query = query.eq("takim_id", kullanici.takim_id);
+    // Takımsız dar rol: yalnız firma geneli (takımsız) içerik.
+    query = query.is("takim_id", null).eq("firma_id", kullanici.firma_id);
   }
 
   const { data: videolar, error } = await query;
@@ -73,6 +82,15 @@ export async function getYayindakiVideolar(
   const favoriSay = await sayimHarita("video_favoriler");
   const begeniSay = await sayimHarita("video_begeniler");
 
+  // İzlenme = tamamlanmış izleme kaydı sayısı (UTT ana sayfasıyla aynı ölçüt).
+  const { data: izlemeData } = await adminSupabase
+    .from("izleme_kayitlari")
+    .select("yayin_id")
+    .in("yayin_id", yayinIdler)
+    .eq("tamamlandi_mi", true);
+  const izlenmeSay = new Map<string, number>();
+  (izlemeData ?? []).forEach((r: any) => izlenmeSay.set(r.yayin_id, (izlenmeSay.get(r.yayin_id) ?? 0) + 1));
+
   return satirlar.map((v) => {
     const u = ureticiHarita.get(v.uretici_id);
     const adSoyad = u ? `${u.ad ?? ""} ${u.soyad ?? ""}`.trim() : "";
@@ -90,6 +108,7 @@ export async function getYayindakiVideolar(
       ureten_rol: u?.rol ?? "",
       favori_sayisi: favoriSay.get(v.yayin_id) ?? 0,
       begeni_sayisi: begeniSay.get(v.yayin_id) ?? 0,
+      izlenme_sayisi: izlenmeSay.get(v.yayin_id) ?? 0,
     };
   });
 }

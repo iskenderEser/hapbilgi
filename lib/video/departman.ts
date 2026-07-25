@@ -18,6 +18,15 @@ export const DEPARTMAN_ETIKET: Record<DepartmanKey, string> = {
   ik: "İK Müdürlüğü",
 };
 
+// Departman aksan rengi — ana sayfa stat kartlarıyla aynı 4 hue (görsel bütünlük).
+// Klasör kartlarının sol şeridi + ikon tonu bundan gelir.
+export const DEPARTMAN_RENK: Record<DepartmanKey, string> = {
+  urun: "#56aeff",
+  medikal: "#16a34a",
+  egitim: "#f59e0b",
+  ik: "#bc2d0d",
+};
+
 /** Üreten rolünü departman anahtarına eşler. Üretenler yalnız URETICI_ROLLER'dır. */
 export function departmanKey(rol: string | null | undefined): DepartmanKey {
   const r = (rol ?? "").trim().toLowerCase();

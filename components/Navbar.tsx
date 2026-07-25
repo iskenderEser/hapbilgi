@@ -130,8 +130,8 @@ export default function Navbar({ email, rol, adSoyad, kimlikTuru, onCikis }: Nav
     if (mavi) {
       return {
         color: "#56aeff",
-        background: aktif ? "rgba(86,174,255,0.12)" : isHover ? "rgba(86,174,255,0.08)" : "rgba(86,174,255,0.05)",
-        boxShadow: "inset 0 0 0 0.5px rgba(86,174,255,0.35)",
+        background: aktif ? "rgba(86,174,255,0.16)" : isHover ? "rgba(86,174,255,0.10)" : "rgba(86,174,255,0.05)",
+        boxShadow: aktif ? "inset 0 0 0 1.5px #56aeff" : "inset 0 0 0 0.5px rgba(86,174,255,0.35)",
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
         fontFamily: "'Nunito', sans-serif",
@@ -139,10 +139,20 @@ export default function Navbar({ email, rol, adSoyad, kimlikTuru, onCikis }: Nav
     }
 
     if (isli !== undefined) {
+      // Dolgu + metin = iş sinyali (bordo, F-11). Aktif sinyali AYRI kanaldan: mavi
+      // halka + hafif mavi wash — bordo iş pill'leri arasında "buradasın" böyle ayrışır.
       return {
         color: isli ? "#bc2d0d" : "#374151",
-        background: isli ? "rgba(188,45,13,0.08)" : aktif ? "rgba(0,0,0,0.07)" : isHover ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.04)",
-        boxShadow: isli ? "inset 0 0 0 0.5px rgba(188,45,13,0.25)" : "inset 0 0 0 0.5px rgba(0,0,0,0.08)",
+        background: aktif
+          ? (isli ? "rgba(188,45,13,0.10)" : "rgba(86,174,255,0.10)")
+          : isli
+            ? (isHover ? "rgba(188,45,13,0.12)" : "rgba(188,45,13,0.08)")
+            : (isHover ? "rgba(0,0,0,0.07)" : "rgba(0,0,0,0.04)"),
+        boxShadow: aktif
+          ? "inset 0 0 0 1.5px #56aeff"
+          : isli
+            ? "inset 0 0 0 0.5px rgba(188,45,13,0.25)"
+            : "inset 0 0 0 0.5px rgba(0,0,0,0.08)",
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
         fontFamily: "'Nunito', sans-serif",
@@ -150,9 +160,9 @@ export default function Navbar({ email, rol, adSoyad, kimlikTuru, onCikis }: Nav
     }
 
     return {
-      color: aktif ? "#bc2d0d" : "#374151",
-      background: aktif ? "rgba(188,45,13,0.08)" : isHover ? "rgba(188,45,13,0.06)" : "rgba(0,0,0,0.04)",
-      boxShadow: aktif ? "inset 0 0 0 0.5px rgba(188,45,13,0.25)" : "inset 0 0 0 0.5px rgba(0,0,0,0.08)",
+      color: aktif ? "#185fa5" : "#374151",
+      background: aktif ? "rgba(86,174,255,0.12)" : isHover ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.04)",
+      boxShadow: aktif ? "inset 0 0 0 1.5px #56aeff" : "inset 0 0 0 0.5px rgba(0,0,0,0.08)",
       backdropFilter: "blur(8px)",
       WebkitBackdropFilter: "blur(8px)",
       fontFamily: "'Nunito', sans-serif",
@@ -212,12 +222,6 @@ export default function Navbar({ email, rol, adSoyad, kimlikTuru, onCikis }: Nav
             <div className="hidden md:flex items-center gap-1.5 flex-wrap">
               <button onClick={() => router.push("/ana-sayfa")} onMouseEnter={() => setHover("ana-sayfa")} onMouseLeave={() => setHover(null)} className={pillClass("ana-sayfa", "/ana-sayfa")} style={pillStyle("ana-sayfa", "/ana-sayfa")}>Ana Sayfa</button>
 
-              {YAYINDAKI_VIDEO_GORENLER.includes(rolKucu) && (
-                <button onClick={() => router.push("/yayindaki-videolar")} onMouseEnter={() => setHover("yayindaki-videolar")} onMouseLeave={() => setHover(null)} className={pillClass("yayindaki-videolar", "/yayindaki-videolar")} style={pillStyle("yayindaki-videolar", "/yayindaki-videolar")}>
-                  Yayındaki Videolar
-                </button>
-              )}
-
               {uretimHattiGorur && (
                 <>
                   <button onClick={() => router.push("/talepler")} onMouseEnter={() => setHover("talepler")} onMouseLeave={() => setHover(null)} className={pillClass("talepler", "/talepler")} style={pillStyle("talepler", "/talepler", false, (badge["talep"] ?? 0) > 0)}>
@@ -255,6 +259,12 @@ export default function Navbar({ email, rol, adSoyad, kimlikTuru, onCikis }: Nav
               {tuketiciRoller.includes(rolKucu) && (
                 <button onClick={() => router.push("/oneriler")} onMouseEnter={() => setHover("oneriler-utt")} onMouseLeave={() => setHover(null)} className={pillClass("oneriler-utt", "/oneriler")} style={pillStyle("oneriler-utt", "/oneriler", false, (badge["oneri"] ?? 0) > 0)}>
                   Öneriler<Badge sayi={badge["oneri"] ?? 0} />
+                </button>
+              )}
+
+              {YAYINDAKI_VIDEO_GORENLER.includes(rolKucu) && (
+                <button onClick={() => router.push("/yayindaki-videolar")} onMouseEnter={() => setHover("yayindaki-videolar")} onMouseLeave={() => setHover(null)} className={pillClass("yayindaki-videolar", "/yayindaki-videolar")} style={pillStyle("yayindaki-videolar", "/yayindaki-videolar")}>
+                  Yayındaki Videolar
                 </button>
               )}
 

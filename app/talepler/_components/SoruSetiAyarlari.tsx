@@ -10,15 +10,19 @@ import { SORU_SETI_BUYUKLUGU_SECENEKLERI } from "../_types";
 interface SoruSetiAyarlariProps {
   buyukluk: number;
   videoBasi: number;
+  secenek: number;
   onBuyuklukChange: (n: number) => void;
   onVideoBasiChange: (n: number) => void;
+  onSecenekChange: (n: number) => void;
 }
 
 export function SoruSetiAyarlari({
   buyukluk,
   videoBasi,
+  secenek,
   onBuyuklukChange,
   onVideoBasiChange,
+  onSecenekChange,
 }: SoruSetiAyarlariProps) {
   return (
     <div className="flex flex-col md:flex-row gap-3">
@@ -32,6 +36,19 @@ export function SoruSetiAyarlari({
         >
           {SORU_SETI_BUYUKLUGU_SECENEKLERI.map((s) => (
             <option key={s} value={s}>{s} soru</option>
+          ))}
+        </select>
+      </div>
+      <div className="flex-1">
+        <label className="text-xs text-gray-500 block mb-1">Seçenek sayısı</label>
+        <select
+          value={secenek}
+          onChange={(e) => onSecenekChange(Number(e.target.value))}
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white cursor-pointer box-border"
+          style={{ fontFamily: "'Nunito', sans-serif", color: "#111" }}
+        >
+          {[2, 3, 4].map((s) => (
+            <option key={s} value={s}>{s} seçenek</option>
           ))}
         </select>
       </div>

@@ -1,5 +1,5 @@
 {
-  "uretim_tarihi": "2026-07-24T10:16:12.012Z",
+  "uretim_tarihi": "2026-07-24T18:09:52.316Z",
   "tablo_sayisi": 93,
   "rpc_sayisi": 58,
   "tablolar": {
@@ -2443,6 +2443,10 @@
         "talep_no": {
           "tip": "integer",
           "nullable": false
+        },
+        "secenek_sayisi": {
+          "tip": "smallint",
+          "nullable": false
         }
       }
     },
@@ -3508,6 +3512,10 @@
         },
         "egitim_turu": {
           "tip": "text",
+          "nullable": true
+        },
+        "firma_id": {
+          "tip": "uuid",
           "nullable": true
         }
       }

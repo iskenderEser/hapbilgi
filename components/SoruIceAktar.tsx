@@ -13,9 +13,10 @@ import type { SoruTaslagi } from "@/lib/soru/taslak";
 
 interface SoruIceAktarProps {
   onDoldur: (taslaklar: SoruTaslagi[], uyari: string) => void;
+  secenekSayisi: number;
 }
 
-export function SoruIceAktar({ onDoldur }: SoruIceAktarProps) {
+export function SoruIceAktar({ onDoldur, secenekSayisi }: SoruIceAktarProps) {
   const [dosyaHata, setDosyaHata] = useState("");
   const [dosyaOkunuyor, setDosyaOkunuyor] = useState(false);
   const dosyaInputRef = useRef<HTMLInputElement>(null);
@@ -26,7 +27,7 @@ export function SoruIceAktar({ onDoldur }: SoruIceAktarProps) {
     if (!dosya) return;
     setDosyaHata("");
     setDosyaOkunuyor(true);
-    const sonuc = await dosyadanTaslaklar(dosya);
+    const sonuc = await dosyadanTaslaklar(dosya, secenekSayisi);
     setDosyaOkunuyor(false);
     if (!sonuc.ok) {
       setDosyaHata(sonuc.hata);

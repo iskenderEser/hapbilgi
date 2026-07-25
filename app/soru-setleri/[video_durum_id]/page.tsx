@@ -37,6 +37,7 @@ interface VideoDurumJoin {
     talepler: {
       uretici_id: string | null;
       soru_seti_buyuklugu: number;
+      secenek_sayisi: number;
       video_basi_soru_sayisi: number;
       hedef_rol: HedefRol;
       egitim_turu: TalepTuru | null;
@@ -58,6 +59,7 @@ export default function SoruSetiAkisPage() {
   const [teknikAdi, setTeknikAdi] = useState("");
   const [turuAdi, setTuruAdi] = useState<string | null>(null);
   const [soruSetiBuyuklugu, setSoruSetiBuyuklugu] = useState<number>(25);
+  const [secenekSayisi, setSecenekSayisi] = useState<number>(2);
   const [videoBasiSoruSayisi, setVideoBasiSoruSayisi] = useState<number>(2);
   const [hedefRol, setHedefRol] = useState<HedefRol | null>(null);
   // Ç-7: karar butonlarını yalnız talebi açan üreticiye göstermek için.
@@ -101,6 +103,7 @@ export default function SoruSetiAkisPage() {
           talepler!inner (
             uretici_id,
             soru_seti_buyuklugu,
+            secenek_sayisi,
             video_basi_soru_sayisi,
             hedef_rol,
             egitim_turu,
@@ -121,6 +124,7 @@ export default function SoruSetiAkisPage() {
     setTeknikAdi(talep?.teknikler?.teknik_adi ?? "-");
     setTuruAdi(talep?.egitim_turu ? (TALEP_TURU_KURALLARI[talep.egitim_turu as TalepTuru]?.ad ?? null) : null);
     setSoruSetiBuyuklugu(talep?.soru_seti_buyuklugu ?? 25);
+    setSecenekSayisi(talep?.secenek_sayisi ?? 2);
     setVideoBasiSoruSayisi(talep?.video_basi_soru_sayisi ?? 2);
     setHedefRol((talep?.hedef_rol ?? "utt") as HedefRol);
     setUreticiId(talep?.uretici_id ?? null);
@@ -183,9 +187,9 @@ export default function SoruSetiAkisPage() {
       if (prev.length === 0 && sonSet?.son_durum === "revizyon bekleniyor" && sonSet.sorular?.length > 0) {
         return sorulardanTaslaklar(sonSet.sorular);
       }
-      return taslaklariBoyutla(prev, soruSetiBuyuklugu);
+      return taslaklariBoyutla(prev, soruSetiBuyuklugu, secenekSayisi);
     });
-  }, [soruSetleri, kullanici, soruSetiBuyuklugu]);
+  }, [soruSetleri, kullanici, soruSetiBuyuklugu, secenekSayisi]);
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -200,7 +204,7 @@ export default function SoruSetiAkisPage() {
 
   // İçe aktarma (toplu yapıştır / dosyadan): esnek parse formu doldurur, eksikler formda tamamlanır.
   const handleIceAktar = (yeniTaslaklar: SoruTaslagi[], uyariMesaji: string) => {
-    setTaslaklar(taslaklariBoyutla(yeniTaslaklar, soruSetiBuyuklugu));
+    setTaslaklar(taslaklariBoyutla(yeniTaslaklar, soruSetiBuyuklugu, secenekSayisi));
     if (uyariMesaji) uyari(uyariMesaji);
   };
 
@@ -440,8 +444,8 @@ export default function SoruSetiAkisPage() {
           {iuGonderebilir && (
             <div className="border-t border-gray-100 px-4 md:px-5 py-4 bg-gray-50">
               {/* F-8/F-9: tek yol dosya yükleme — text alanı yok. */}
-              <SoruIceAktar onDoldur={handleIceAktar} />
-              <SoruSetiFormu taslaklar={taslaklar} onDegis={setTaslaklar} buyukluk={soruSetiBuyuklugu} />
+              <SoruIceAktar onDoldur={handleIceAktar} secenekSayisi={secenekSayisi} />
+              <SoruSetiFormu taslaklar={taslaklar} onDegis={setTaslaklar} buyukluk={soruSetiBuyuklugu} secenekSayisi={secenekSayisi} />
               <div className="flex justify-end mt-3">
                 <button onClick={handleIuGonder} disabled={gonderLoading}
                   className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer hover:opacity-90 transition-colors disabled:opacity-50"
