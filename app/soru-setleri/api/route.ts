@@ -74,6 +74,9 @@ export async function PUT(request: NextRequest) {
     if (!talepBilgisi) return hataYaniti("Talep bilgisi alınamadı.", "talepBilgisiSoruSeti — talep zinciri", null);
 
     const soruSetiBuyuklugu = talepBilgisi.soru_seti_buyuklugu;
+    // Seçenek sayısı talebe bağlı parametredir (2/3/4 — 24.07). Sabit 2 varsayımı
+    // 3/4 seçenekli setleri reddediyordu; kontrol talebin değeriyle yapılır.
+    const secenekSayisi = talepBilgisi.secenek_sayisi;
 
     if (sorular.length !== soruSetiBuyuklugu) {
       return validasyonHatasi(`Soru sayısı ${soruSetiBuyuklugu} olmalıdır. Mevcut: ${sorular.length}`, ["sorular"]);
@@ -81,8 +84,8 @@ export async function PUT(request: NextRequest) {
 
     for (let i = 0; i < sorular.length; i++) {
       const soru = sorular[i];
-      if (!soru.soru_metni || !soru.secenekler || soru.secenekler.length !== 2) {
-        return validasyonHatasi(`${i + 1}. sorunun metni ve tam 2 seçeneği olmalıdır.`, [`sorular[${i}]`]);
+      if (!soru.soru_metni || !soru.secenekler || soru.secenekler.length !== secenekSayisi) {
+        return validasyonHatasi(`${i + 1}. sorunun metni ve tam ${secenekSayisi} seçeneği olmalıdır.`, [`sorular[${i}]`]);
       }
     }
 
