@@ -209,7 +209,7 @@ export default function OnaylananTaleplerPage() {
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
 
-      <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
+      <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7 flex flex-col gap-4">
         <h1 className="text-lg font-bold text-gray-900 m-0">Onaylanan Talepler</h1>
 
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">

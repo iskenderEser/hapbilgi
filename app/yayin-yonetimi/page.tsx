@@ -94,7 +94,7 @@ export default function YayinYonetimiPage() {
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
 
-      <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6">
+      <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
 
         {/* Ana sekmeler: hedef role göre — UTT / BM / Eczacı / Eczane Teknisyeni */}
         <div className="flex flex-wrap gap-1 mb-4">

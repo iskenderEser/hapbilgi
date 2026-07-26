@@ -35,7 +35,7 @@ export default function TaleplerPage() {
         onCikis={formu.handleCikis}
       />
 
-      <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-5">
+      <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7 flex flex-col gap-5">
         <YeniTalepForm formu={formu} />
         <TalepListesi
           talepler={formu.talepler}

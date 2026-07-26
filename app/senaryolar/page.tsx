@@ -13,7 +13,6 @@ import { talepIdGoster } from "@/lib/utils/talepId";
 import DurumAnahtari from "@/components/DurumAnahtari";
 import UretimVaryantiRozet from "@/components/UretimVaryantiRozet";
 import { durumMesaji, kayitDurumKodu, type DurumKodu } from "@/lib/utils/durum/mesaj";
-import { ROL_ADLARI } from "@/lib/utils/roller";
 import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
 
 interface SenaryoSatir {
@@ -126,23 +125,8 @@ export default function SenaryolarListePage() {
       }
     }
 
-    // Talebi açan üreticinin unvanı — İÜ mesajları "Ürün Müdürü İnceliyor" gibi
-    // gerçek unvanla yazılır ("üretici" kod dilidir, ekrana çıkmaz).
-    const rolAdiMap = new Map<string, string>();
-    {
-      const uretIdler = Array.from(new Set(tekilSenaryolar.map((s: any) => kunyeMap.get(s.talep_id)?.uretici_id))).filter(Boolean) as string[];
-      if (uretIdler.length > 0) {
-        const { data: sahipler } = await supabase
-          .from("kullanicilar")
-          .select("kullanici_id, rol")
-          .in("kullanici_id", uretIdler);
-        const rolMap = new Map((sahipler ?? []).map((k: any) => [k.kullanici_id, k.rol]));
-        for (const s of tekilSenaryolar as any[]) {
-          const r = rolMap.get(kunyeMap.get(s.talep_id)?.uretici_id ?? "");
-          if (r) rolAdiMap.set(s.talep_id, ROL_ADLARI[r] ?? r);
-        }
-      }
-    }
+    // Talebi açanın unvanı künyeden gelir (25.07): buradaki ayrı kullanicilar
+    // sorgusu kaldırıldı — aynı blok üç liste ekranında birebir tekrar ediyordu.
 
     // 4) Satırları kur — talep bazlı tek satır
     const sonuc: SenaryoSatir[] = tekilSenaryolar.map((s: any) => {
@@ -159,7 +143,7 @@ export default function SenaryolarListePage() {
         hazir_video: talep?.hazir_video ?? false,
         hazir_soru_seti: talep?.hazir_soru_seti ?? false,
         durum_kodu: kayitDurumKodu(sonDurum?.durum, !!s.iu_id),
-        uretici_rol_adi: rolAdiMap.get(s.talep_id) ?? null,
+        uretici_rol_adi: talep?.uretici_rol_adi ?? null,
         son_tarih: sonDurum?.created_at ?? s.created_at,
       };
     });
@@ -198,7 +182,7 @@ export default function SenaryolarListePage() {
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
 
-      <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6">
+      <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
 
           <DurumAnahtari baslik="Senaryolar" rol={kullanici.rol} asama="Senaryo" aktif={aktifDurum} onSec={setAktifDurum} sayim={sayim} />

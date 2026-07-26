@@ -104,7 +104,9 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
   const satirlar = pmVeri?.satirlar ?? [];
   const istat = pmVeri?.istatistikler ?? { inceleme_bekleyen: 0, yayin_bekleyen: 0, yayinda: 0, toplam: 0 };
   const filtrelenmis = aktifFiltre === "tumu" ? satirlar : satirlar.filter(s => s.kategori === aktifFiltre);
-  const ad = adSoyad.split(" ")[0] || "PM";
+  // Ad çözülemezse rolün unvanı yazılır — "PM" kod dilidir ve bu bileşeni 13
+  // üretici rolün hepsi kullanıyor (Eğitim Müdürü de "Merhaba PM" görüyordu).
+  const ad = adSoyad.split(" ")[0] || ROL_ADLARI[rol.toLowerCase()] || "";
   const hicTalepYok = satirlar.length === 0;
 
   // TEKNİK kolonu yalnız içeriği teknik taşıyan rollerde görünür (pm/egt_*);

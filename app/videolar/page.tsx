@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DurumAnahtari from "@/components/DurumAnahtari";
 import { durumMesaji, kayitDurumKodu, type DurumKodu } from "@/lib/utils/durum/mesaj";
-import { ROL_ADLARI } from "@/lib/utils/roller";
 import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
 import UretimVaryantiRozet from "@/components/UretimVaryantiRozet";
 import { useRouter } from "next/navigation";
@@ -146,22 +145,7 @@ export default function VideolarListePage() {
       }
     }
 
-    // Talebi açan üreticinin unvanı — İÜ mesajları gerçek unvanla yazılır.
-    const rolAdiMap = new Map<string, string>();
-    {
-      const uretIdler = Array.from(new Set(tekilVideolar.map((v: any) => kunyeMap.get(v._talep_id)?.uretici_id))).filter(Boolean) as string[];
-      if (uretIdler.length > 0) {
-        const { data: sahipler } = await supabase
-          .from("kullanicilar")
-          .select("kullanici_id, rol")
-          .in("kullanici_id", uretIdler);
-        const rolMap = new Map((sahipler ?? []).map((k: any) => [k.kullanici_id, k.rol]));
-        for (const v of tekilVideolar as any[]) {
-          const r = rolMap.get(kunyeMap.get(v._talep_id)?.uretici_id ?? "");
-          if (r) rolAdiMap.set(v._talep_id, ROL_ADLARI[r] ?? r);
-        }
-      }
-    }
+    // Talebi açanın unvanı künyeden gelir (25.07): ayrı kullanicilar sorgusu kalktı.
 
     // 4) Satırları kur — talep bazlı tek satır
     const sonuc: VideoSatir[] = tekilVideolar.map((v: any) => {
@@ -181,7 +165,7 @@ export default function VideolarListePage() {
         video_url: v.video_url ?? null,
         thumbnail_url: v.thumbnail_url ?? null,
         durum_kodu: kayitDurumKodu(sonDurum?.durum, !!v.iu_id),
-        uretici_rol_adi: rolAdiMap.get(v._talep_id) ?? null,
+        uretici_rol_adi: talep?.uretici_rol_adi ?? null,
         son_tarih: sonDurum?.created_at ?? v.created_at,
       };
     });
@@ -221,7 +205,7 @@ export default function VideolarListePage() {
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
 
-      <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6">
+      <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
 
           <DurumAnahtari baslik="Videolar" rol={kullanici.rol} asama="Video" aktif={aktifDurum} onSec={setAktifDurum} sayim={sayim} />

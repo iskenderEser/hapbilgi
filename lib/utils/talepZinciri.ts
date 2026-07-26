@@ -9,13 +9,16 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import type { TalepTuru } from "@/lib/uretici/yetenekler";
-import type { HedefRol } from "@/lib/utils/roller";
+import { ROL_ADLARI, type HedefRol } from "@/lib/utils/roller";
 
 export interface TalepBilgisi {
   talep_id: string;
   talep_no: number | null;
   firma_adi: string;
   uretici_id: string | null;
+  /** Talebi açanın UNVANI (Ürün Müdürü, Eğitim Müdürü…). "PM"/"üretici" kod
+   *  dilidir, ekrana çıkmaz — İÜ'ye gösterilen her metin bunu kullanır. */
+  uretici_rol_adi: string | null;
   urun_adi: string;
   teknik_adi: string;
   egitim_turu: TalepTuru;
@@ -62,7 +65,8 @@ export const TALEP_ALANLARI = `
   teknik_adi,
   urunler ( urun_adi ),
   teknikler ( teknik_adi ),
-  firmalar ( firma_adi )
+  firmalar ( firma_adi ),
+  kullanicilar!uretici_id ( rol )
 `;
 
 export function haritalaTalep(talep: any): TalepBilgisi {
@@ -71,6 +75,10 @@ export function haritalaTalep(talep: any): TalepBilgisi {
     talep_no: talep.talep_no ?? null,
     firma_adi: talep.firmalar?.firma_adi ?? "",
     uretici_id: talep.uretici_id ?? null,
+    // Unvan tek yerden çözülür (ROL_ADLARI). Eskiden liste ekranları bunu ayrı bir
+    // kullanicilar sorgusuyla, üç sayfada tekrarlanan kodla hesaplıyordu; detay
+    // ekranlarında ise hiç yoktu — orada metinlere sabit "PM" yazılmıştı.
+    uretici_rol_adi: talep.kullanicilar?.rol ? (ROL_ADLARI[talep.kullanicilar.rol] ?? talep.kullanicilar.rol) : null,
     urun_adi: talep.urunler?.urun_adi ?? talep.urun_adi ?? "-",
     teknik_adi: talep.teknikler?.teknik_adi ?? talep.teknik_adi ?? "-",
     egitim_turu: (talep.egitim_turu ?? "urun_egitimi") as TalepTuru,

@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DurumAnahtari from "@/components/DurumAnahtari";
 import { durumMesaji, kayitDurumKodu, type DurumKodu } from "@/lib/utils/durum/mesaj";
-import { ROL_ADLARI } from "@/lib/utils/roller";
 import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
 import UretimVaryantiRozet from "@/components/UretimVaryantiRozet";
 import { useRouter } from "next/navigation";
@@ -91,8 +90,7 @@ export default function SoruSetleriListePage() {
 
     // 3) Talep künyeleri TEK KAPIDAN, toplu (25.07, Aşama 3): alan listesi ve ad
     // kuralı ekranda değil, sunucuda. Tür adı künyedeki egitim_turu'ndan türetilir.
-    const talepUreticiMap = new Map<string, string>();
-    const talepBilgiMap = new Map<string, { urun_adi: string; teknik_adi: string; turu_adi: string | null; talep_no: number; firma_adi: string; hazir_video: boolean; hazir_soru_seti: boolean }>();
+    const talepBilgiMap = new Map<string, TalepBilgisi & { turu_adi: string | null }>();
     if (talepIdler.length > 0) {
       const res = await fetch(`/talepler/api/kunye?talep_idler=${talepIdler.join(",")}`);
       const veri = await res.json();
@@ -104,36 +102,16 @@ export default function SoruSetleriListePage() {
       }
 
       for (const k of veri.kunyeler as TalepBilgisi[]) {
-        if (k.uretici_id) talepUreticiMap.set(k.talep_id, k.uretici_id);
+        // Künye olduğu gibi taşınır; ekrana özel tek türetme tür adıdır.
         talepBilgiMap.set(k.talep_id, {
-          urun_adi: k.urun_adi,
-          teknik_adi: k.teknik_adi,
+          ...k,
           turu_adi: k.egitim_turu ? (TALEP_TURU_KURALLARI[k.egitim_turu]?.ad ?? null) : null,
-          talep_no: k.talep_no ?? 0,
-          firma_adi: k.firma_adi,
-          hazir_video: k.hazir_video,
-          hazir_soru_seti: k.hazir_soru_seti,
         });
       }
     }
 
 
-    // Talebi açan üreticinin unvanı — İÜ mesajları gerçek unvanla yazılır.
-    const rolAdiMap = new Map<string, string>();
-    {
-      const uretIdler = Array.from(new Set(talepUreticiMap.values()));
-      if (uretIdler.length > 0) {
-        const { data: sahipler } = await supabase
-          .from("kullanicilar")
-          .select("kullanici_id, rol")
-          .in("kullanici_id", uretIdler);
-        const rolMap = new Map((sahipler ?? []).map((k: any) => [k.kullanici_id, k.rol]));
-        for (const [tId, uId] of talepUreticiMap) {
-          const r = rolMap.get(uId);
-          if (r) rolAdiMap.set(tId, ROL_ADLARI[r] ?? r);
-        }
-      }
-    }
+    // Talebi açanın unvanı künyeden gelir (25.07): ayrı kullanicilar sorgusu kalktı.
 
     // 4) Son durumları view'dan toplu çek
     const soruSetiIds = tekilSoruSetleri.map((ss: any) => ss.soru_seti_id);
@@ -174,7 +152,7 @@ export default function SoruSetleriListePage() {
         hazir_soru_seti: bilgi?.hazir_soru_seti ?? false,
         soru_sayisi: Array.isArray(ss.sorular) ? ss.sorular.length : 0,
         durum_kodu: kayitDurumKodu(sonDurum?.durum, !!ss.iu_id),
-        uretici_rol_adi: rolAdiMap.get(ss.talep_id) ?? null,
+        uretici_rol_adi: bilgi?.uretici_rol_adi ?? null,
         son_tarih: sonDurum?.created_at ?? ss.created_at,
       };
     });
@@ -215,7 +193,7 @@ export default function SoruSetleriListePage() {
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
 
-      <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6">
+      <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
 
           <DurumAnahtari baslik="Soru Setleri" rol={kullanici.rol} asama="Soru Seti" aktif={aktifDurum} onSec={setAktifDurum} sayim={sayim} />
