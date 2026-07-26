@@ -16,6 +16,7 @@ import { SoruSetiFormu } from "@/components/SoruSetiFormu";
 import { SoruIceAktar } from "@/components/SoruIceAktar";
 import { type SoruTaslagi, taslaklariBoyutla, taslaklariDogrula, taslaklardanSorular, sorulardanTaslaklar } from "@/lib/soru/taslak";
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
+import { uretimToast, toastVaryant, type ToastOlay } from "@/lib/uretim/toastMesaj";
 
 interface Soru {
   soru_metni: string;
@@ -178,6 +179,9 @@ export default function SoruSetiAkisPage() {
   // edince sayaç sıfırlanmıyor.
   const revizyonSayisi = sonSet?.revizyon_sayisi ?? 0;
 
+  // Toast metni tek merkezden (26.07).
+  const toastBaglam = { varyant: toastVaryant(talep?.hazir_video, talep?.hazir_soru_seti), rolAdi: talep?.uretici_rol_adi };
+
   // İçe aktarma (toplu yapıştır / dosyadan): esnek parse formu doldurur, eksikler formda tamamlanır.
   const handleIceAktar = (yeniTaslaklar: SoruTaslagi[], uyariMesaji: string) => {
     setTaslaklar(taslaklariBoyutla(yeniTaslaklar, soruSetiBuyuklugu, secenekSayisi));
@@ -186,6 +190,8 @@ export default function SoruSetiAkisPage() {
 
   const handleIuGonder = async () => {
     if (!sonSet) return;
+    // Revize bayrağı handler girişinde okunur (araya iki istek girer).
+    const teslimRevize = sonSet.son_durum === "revizyon bekleniyor";
     // Alan bazlı doğrulama — konumlu Türkçe mesaj ("2. sorunun B seçeneği boş" vb.).
     const taslakHatasi = taslaklariDogrula(taslaklar, soruSetiBuyuklugu);
     if (taslakHatasi) {
@@ -220,11 +226,7 @@ export default function SoruSetiAkisPage() {
       const d2 = await res2.json();
       if (!res2.ok) throw new Error(d2.hata ?? "Durum kaydedilemedi.");
 
-      // Unvan künyeden (25.07): "PM" kod dilidir, ekrana çıkmaz. Unvan ek almasın
-      // diye "... onayına gönderildi" kalıbı kullanılır.
-      basari(talep?.uretici_rol_adi
-        ? `Soru seti ${talep.uretici_rol_adi} onayına gönderildi.`
-        : "Soru seti onaya gönderildi.");
+      basari(uretimToast({ rol: "iu", olay: "teslim", asama: "soru_seti", revize: teslimRevize }, toastBaglam));
       setTaslaklar([]);
       await veriCek();
     } catch (err: any) {
@@ -236,8 +238,9 @@ export default function SoruSetiAkisPage() {
 
   const handlePMKarar = async (durum: string, notlar?: string) => {
     if (!sonSet) return;
+    const onayRevize = (sonSet.revizyon_sayisi ?? 0) > 0;
     setGonderLoading(true);
-    
+
     try {
       const res = await fetch("/soru-setleri/api/durum", {
         method: "POST",
@@ -247,7 +250,11 @@ export default function SoruSetiAkisPage() {
       const d = await res.json();
       if (!res.ok) throw new Error(d.hata ?? "İşlem gerçekleştirilemedi.");
       
-      basari(durum === "onaylandi" ? "Soru seti onaylandı." : durum === "revizyon bekleniyor" ? "Revizyon talebi gönderildi." : "Soru seti iptal edildi.");
+      const olay: ToastOlay =
+        durum === "onaylandi"           ? { rol: "uretici", olay: "onay", asama: "soru_seti", revize: onayRevize }
+      : durum === "revizyon bekleniyor" ? { rol: "uretici", olay: "revizyon", asama: "soru_seti" }
+      :                                   { rol: "uretici", olay: "iptal", asama: "soru_seti" };
+      basari(uretimToast(olay, toastBaglam));
       setAktifRevizyon(false); setRevizyonNotu(""); await veriCek();
     } catch (err: any) {
       hata(err.message, "PM karar", err);
