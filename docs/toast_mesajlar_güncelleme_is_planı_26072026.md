@@ -403,3 +403,68 @@ metinleri söktüğü için).
 | R3 | `hazir-video` ucundan `mesaj` alanını başka tüketen olması | Adım 6c'de grep ile teyit, varsa o da bağlanır |
 | R4 | Metnin tablodan sapması | Sözlük tablodan birebir kopyalanır; Adım 8'de önce/sonra tablosu ile karşılaştırılır |
 | R5 | İleride metnin tekrar sayfalara dağılması | Adım 7 lint bekçisi |
+
+---
+
+## 7. Uygulama sonucu — TAMAMLANDI (26.07.2026)
+
+Sekiz adım da uygulandı. Her adım tek commit, her commit öncesi üçlü doğrulama
+(`tsc --noEmit` + `npm run denetim` + `npm run lint:mimari`) temiz.
+
+### Önce → sonra
+
+| # | Önce | Sonra |
+|---|---|---|
+| M1 | `Senaryo {Unvan} onayına gönderildi.` | `Senaryoyu {Unvan} onayına ilettiniz` |
+| M2 | `Senaryo onaylandı.` | `Senaryoyu onayladınız, içerik üreticinize video talebiniz iletildi` |
+| M2 | `Revizyon talebi gönderildi.` | `Senaryo için revizyon talebiniz içerik üreticisine iletildi` |
+| M2 | `Senaryo iptal edildi.` | `Senaryo talebinizi iptal ettiniz` |
+| M3 | `Video yüklendi, {Unvan} onayına gönderildi.` | `Videoyu {Unvan} onayına ilettiniz` |
+| M4 | `Video onaylandı.` | `Videoyu onayladınız, soru seti talebiniz içerik üreticisine iletildi` (hazır set varyantında: `…yayın yönetimi sayfasına gidiniz`) |
+| M4 | `Revizyon talebi gönderildi.` | `Video için revizyon talebiniz içerik üreticisine iletildi` |
+| M4 | `Video iptal edildi.` | `Video talebinizi iptal ettiniz` |
+| M5 | `Soru seti {Unvan} onayına gönderildi.` | `Soru setini {Unvan} onayına ilettiniz` |
+| M6 | `Soru seti onaylandı.` | `Soru setini onayladınız, yayın yönetimi sayfasına gidiniz` |
+| M6 | `Revizyon talebi gönderildi.` | `Soru seti için revizyon talebiniz içerik üreticisine iletildi` |
+| M6 | `Soru seti iptal edildi.` | `Soru seti talebinizi iptal ettiniz` |
+| M7 | `Talep başarıyla oluşturuldu.` | Varyanta göre 3 ayrı cümle (normal/hazır set → senaryo, hazır video → soru seti, ikisi hazır → yayın yönlendirmesi) |
+| M8 | sunucudan gelen `d2.mesaj` | merkezden çözülen talep gönderimi metni |
+| M9 | uçta üretilen iki cümle | **silindi** — uç yalnız olgu döndürüyor |
+
+Revizyon turunda üretici ve İÜ cümleleri "Revize " ile başlar (12 yeni cümle).
+
+### Doğrulama kanıtı
+
+Sözlük dört varyantta çalıştırıldı; üretilen 40 cümlenin tamamı §2'deki
+onaylı tabloyla **birebir** aynı. Örnekler (varyant farkının göründüğü satırlar):
+
+```
+normal      | Videoyu onayladınız, soru seti talebiniz içerik üreticisine iletildi
+hazir_set   | Videoyu onayladınız, yayın yönetimi sayfasına gidiniz
+normal      | Senaryo talebiniz içerik üreticinize iletildi
+hazir_video | Soru seti talebiniz içerik üreticinize iletildi
+hazir_ikisi | Yayın yönetimi sayfasına gidiniz
+```
+
+Üretim hattında gömülü akış metni kalmadı; bekçi temiz. Muaf tutulan üç toast
+(ek dosya silme, ürün ekleme, teknik ekleme) akış mesajı değil, gerekçeli
+`eslint-disable` ile işaretli.
+
+### Yan düzeltme (planda öngörülmemişti, Adım 2'de çıktı)
+
+Video ve soru seti ekranlarındaki **"Revizyon: n / 2" sayacı bozuktu**: satır
+sayarak çalışıyordu, oysa revizyon yeni satır doğurmuyor (aynı satıra UPDATE).
+İÜ yeniden teslim edince sayaç sıfırlanıyordu. Artık durum geçmişinden okunuyor.
+
+### Adım 7c — tekilleştirme kararı
+
+`toastMesaj.ts`'teki `ToastAsama` ile `durum/mesaj.ts`'teki `Asama`
+**birleştirilmedi**: ikincisinde anahtar aynı zamanda ekrana çıkan etiket,
+birincisinde cümle parçası üreten kod. Birleştirme rozet sözlüğünün anahtarını
+değiştirmeyi gerektirirdi — kapsam dışı. Gerekçe iki dosyaya da yazıldı.
+
+### Yapılmayan
+
+**Fiziksel test yapılmadı.** Tüm doğrulama tsc + denetim + lint:mimari + sözlük
+çıktısı düzeyinde. Ekranlar giriş arkasında olduğu için tarayıcıda görülmedi.
+Dört varyantta birer mutlu yol + bir revizyon turu İskender'de.

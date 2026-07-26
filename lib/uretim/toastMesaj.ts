@@ -31,7 +31,15 @@
 /** Talebin iki bağımsız anahtarından (hazir_video × hazir_soru_seti) doğan dört varyant. */
 export type ToastVaryant = "normal" | "hazir_video" | "hazir_set" | "hazir_ikisi";
 
-/** Üretim hattının üç aşaması. Senaryonun hazır varyantı yoktur; o hep İÜ üretir. */
+/** Üretim hattının üç aşaması. Senaryonun hazır varyantı yoktur; o hep İÜ üretir.
+ *
+ *  NEDEN durum/mesaj.ts'teki `Asama` ile BİRLEŞTİRİLMEDİ (26.07, Adım 7c):
+ *  oradaki tip ekrana basılan ETİKETİN kendisidir ("Senaryo Yazmanız Bekleniyor"
+ *  sözlüğünün anahtarı aynı zamanda görünen ad). Buradaki ise bir KOD — cümle
+ *  parçaları (`Senaryoyu` / `senaryoyu` / `Senaryo`) ondan türetilir. İkisini
+ *  birleştirmek, rozet sözlüğünün anahtarını kod'a çevirmeyi gerektirirdi; o
+ *  sözlük ve tüketicileri bu işin kapsamı dışında. Aynı kavramın iki gösterimi
+ *  bilinçli bırakıldı. */
 export type ToastAsama = "senaryo" | "video" | "soru_seti";
 
 export type ToastOlay =

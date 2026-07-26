@@ -82,6 +82,11 @@ const URETICI_DURUM: Record<DurumKodu, DurumMesaji> = {
 // dağıtılacaktır. Bu yüzden "kimse üstlenmedi" ile "üzerinde çalışılıyor" İÜ
 // tarafında tek mesaja iner — ikisi de "senin işin".
 
+// Bu tipin ikizi lib/uretim/toastMesaj.ts'te `ToastAsama` adıyla durur (kod
+// biçiminde: "senaryo"|"video"|"soru_seti"). Birleştirilmedi: burada anahtar
+// aynı zamanda ekrana çıkan etikettir, orada cümle parçası üretmek için kullanılan
+// bir koddur. Gerekçe orada da yazılı. İki sözlük iki yüzeye bakar — rozet (bir
+// işin HALİ) ve toast (bir aksiyonun SONUCU).
 export type Asama = "Senaryo" | "Video" | "Soru Seti";
 
 /** Talebi açan kişinin unvanı bilinmiyorsa kullanılacak nötr ad (kod dili değil). */
