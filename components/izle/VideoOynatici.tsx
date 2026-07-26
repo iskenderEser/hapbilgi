@@ -14,6 +14,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { createVideoPlayer, type VideoPlayer } from "@/lib/video/videoPlayer";
+import VideoCercevesi from "@/components/video/VideoCercevesi";
 
 interface OynaticiVideo {
   yayin_id: string;
@@ -278,9 +279,14 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
         {/* Video */}
         {video.video_url && (
           <div className="border-b border-gray-100">
-            <iframe key={video.yayin_id} ref={iframeRef} src={video.video_url} width="100%" height="400"
-              frameBorder="0" allowFullScreen
-              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;" />
+            {/* Kutu artık videonun oranına göre çizilir (26.07 — VideoCercevesi).
+                iframe burada kalır: ref playerjs'e bağlı, sarmalayıcı yalnız kutuyu kurar.
+                width/height nitelikleri kalktı — ölçüyü CSS veriyor. */}
+            <VideoCercevesi>
+              <iframe key={video.yayin_id} ref={iframeRef} src={video.video_url}
+                frameBorder="0" allowFullScreen
+                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;" />
+            </VideoCercevesi>
           </div>
         )}
 
