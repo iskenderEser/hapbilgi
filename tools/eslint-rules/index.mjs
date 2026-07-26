@@ -221,6 +221,49 @@ const talepKunyeTekKaynak = {
   },
 };
 
+// KURAL 6: üretim hattı toast metni tek kaynaktan (26.07)
+//
+// Akış cümleleri ("Senaryo onaylandı.", "Revizyon talebi gönderildi.") beş
+// dosyada satır içi string olarak yazılıydı. Sonuç: aynı olay her sayfada başka
+// dille anlatılıyor, hiçbiri talebin varyantını bilmiyordu.
+//
+// Bekçi: üretim hattı dosyalarında basari() çağrısına DÜZ METİN geçilirse uyarır.
+// Doğrusu uretimToast(...) — lib/uretim/toastMesaj.ts.
+// hata() ve uyari() kapsam dışı: onlar teknik hata ve biçim uyarısı taşır,
+// merkezde durmazlar.
+const toastTekKaynak = {
+  meta: {
+    type: "problem",
+    docs: { description: "Uretim hatti toast metnini sayfaya gomulmesini engeller; tek kaynak lib/uretim/toastMesaj.ts." },
+    schema: [],
+    messages: {
+      gomulu: "Toast metni sayfaya gomulmus. Akis cumleleri lib/uretim/toastMesaj icindeki uretimToast(...) ile cozulur — metin tek yerde durmali.",
+    },
+  },
+  create(context) {
+    const dosya = (context.filename ?? context.getFilename?.() ?? "").replace(/\\/g, "/");
+    // Yalnız üretim hattı: senaryo, video, soru seti ve talep ekranları.
+    const hatta =
+      dosya.includes("/app/senaryolar/") ||
+      dosya.includes("/app/videolar/") ||
+      dosya.includes("/app/soru-setleri/") ||
+      dosya.includes("/app/talepler/");
+    if (!hatta) return {};
+
+    return {
+      "CallExpression[callee.name='basari']"(node) {
+        const arg = node.arguments?.[0];
+        if (!arg) return;
+        if (arg.type === "Literal" && typeof arg.value === "string") {
+          context.report({ node: arg, messageId: "gomulu" });
+        } else if (arg.type === "TemplateLiteral") {
+          context.report({ node: arg, messageId: "gomulu" });
+        }
+      },
+    };
+  },
+};
+
 const plugin = {
   meta: { name: "hapbilgi-mimari", version: "0.0.1" },
   rules: {
@@ -229,6 +272,7 @@ const plugin = {
     "kayit-tek-kaynak": kayitTekKaynak,
     "dogru-client": dogruClient,
     "talep-kunye-tek-kaynak": talepKunyeTekKaynak,
+    "toast-tek-kaynak": toastTekKaynak,
   },
 };
 

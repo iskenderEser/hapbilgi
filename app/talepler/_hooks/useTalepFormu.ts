@@ -273,6 +273,7 @@ export function useTalepFormu() {
         hata(d.hata ?? "Ürün eklenemedi.", d.adim, d.detay);
         throw new Error(d.hata ?? "Ürün eklenemedi.");
       }
+      // eslint-disable-next-line hapbilgi-mimari/toast-tek-kaynak -- master veri ekleme; üretim hattı akış mesajı değil.
       basari(`"${urun_adi}" ürünü eklendi.`);
       await fetchUreticiVerileri(kullaniciVeri.firma_id, kullaniciVeri.takim_id ?? null);
       setSeciliUrunId(d.urun.urun_id);
@@ -297,6 +298,7 @@ export function useTalepFormu() {
         hata(d.hata ?? "Teknik eklenemedi.", d.adim, d.detay);
         throw new Error(d.hata ?? "Teknik eklenemedi.");
       }
+      // eslint-disable-next-line hapbilgi-mimari/toast-tek-kaynak -- master veri ekleme; üretim hattı akış mesajı değil.
       basari(`"${teknik_adi}" tekniği eklendi.`);
       await fetchUreticiVerileri(kullaniciVeri.firma_id, kullaniciVeri.takim_id ?? null);
       setSeciliTeknikId(d.teknik.teknik_id);

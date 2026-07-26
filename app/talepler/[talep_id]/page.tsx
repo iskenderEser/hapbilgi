@@ -116,6 +116,7 @@ export default function TalepDetayPage() {
     });
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "Dosya silinemedi.", d.adim, d.detay); }
+    // eslint-disable-next-line hapbilgi-mimari/toast-tek-kaynak -- ek dosya silme; üretim hattı akış mesajı değil, sözlükte yeri yok.
     else { setTalep(prev => prev ? { ...prev, dosya_urls: d.dosyalar } : prev); basari("Dosya silindi."); }
     setSiliniyor(null);
   };
