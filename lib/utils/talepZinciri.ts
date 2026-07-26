@@ -10,6 +10,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import type { TalepTuru } from "@/lib/uretici/yetenekler";
 import { ROL_ADLARI, type HedefRol } from "@/lib/utils/roller";
+import { departmanKey, type DepartmanKey } from "@/lib/video/departman";
 
 export interface TalepBilgisi {
   talep_id: string;
@@ -19,6 +20,12 @@ export interface TalepBilgisi {
   /** Talebi açanın UNVANI (Ürün Müdürü, Eğitim Müdürü…). "PM"/"üretici" kod
    *  dilidir, ekrana çıkmaz — İÜ'ye gösterilen her metin bunu kullanır. */
   uretici_rol_adi: string | null;
+  /** Talebi açan rolün DEPARTMAN anahtarı (urun/medikal/egitim/ik) — klasörleme
+   *  bunun üzerinden yürür (26.07). Ham kod (pm, jr_pm, kd_pm, egt_md…) künyeden
+   *  dışarı çıkmaz: üç ayrı ürün rolü tek "Ürün" klasörüne düşer ve bu eşleme
+   *  ekranlara dağılırsa iki liste farklı klasörleme gösterebilir. Unvan
+   *  (uretici_rol_adi) metin içindir, departman gruplama içindir — ikisi ayrı. */
+  departman: DepartmanKey;
   urun_adi: string;
   teknik_adi: string;
   egitim_turu: TalepTuru;
@@ -79,6 +86,9 @@ export function haritalaTalep(talep: any): TalepBilgisi {
     // kullanicilar sorgusuyla, üç sayfada tekrarlanan kodla hesaplıyordu; detay
     // ekranlarında ise hiç yoktu — orada metinlere sabit "PM" yazılmıştı.
     uretici_rol_adi: talep.kullanicilar?.rol ? (ROL_ADLARI[talep.kullanicilar.rol] ?? talep.kullanicilar.rol) : null,
+    // Aynı ham rolden iki ayrı çıktı: unvan (metin) ve departman (gruplama).
+    // Sorguya dokunulmadı — kullanicilar.rol zaten TALEP_ALANLARI içinde geliyordu.
+    departman: departmanKey(talep.kullanicilar?.rol),
     urun_adi: talep.urunler?.urun_adi ?? talep.urun_adi ?? "-",
     teknik_adi: talep.teknikler?.teknik_adi ?? talep.teknik_adi ?? "-",
     egitim_turu: (talep.egitim_turu ?? "urun_egitimi") as TalepTuru,
