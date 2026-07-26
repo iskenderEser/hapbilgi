@@ -31,6 +31,9 @@ interface SoruSeti {
   son_durum?: string;
   son_durum_notlar?: string;
   soru_seti_durum_id?: string;
+  /** Bu setin durum geçmişinde kaç kez revizyon istendi (26.07 — toast merkezi).
+   *  Son durum yetmez: İÜ yeniden teslim edince "inceleme bekleniyor"a döner. */
+  revizyon_sayisi: number;
 }
 
 // VideoDurumJoin arayüzü kaldırıldı (25.07, Aşama 3): elle kurulan çok katlı
@@ -111,10 +114,16 @@ export default function SoruSetiAkisPage() {
       .in("soru_seti_id", soruSetiIds)
       .order("created_at", { ascending: false });
 
+    // Sorgu zaten TÜM durum satırlarını çekiyor (yeni sorgu gerekmedi, 26.07):
+    // ilki son durumu verir, tamamı revizyon turu sayısını.
     const durumMap = new Map();
+    const revizyonSayaci = new Map<string, number>();
     durumlar?.forEach((d: any) => {
       if (!durumMap.has(d.soru_seti_id)) {
         durumMap.set(d.soru_seti_id, d);
+      }
+      if (d.durum === "revizyon bekleniyor") {
+        revizyonSayaci.set(d.soru_seti_id, (revizyonSayaci.get(d.soru_seti_id) ?? 0) + 1);
       }
     });
 
@@ -125,6 +134,7 @@ export default function SoruSetiAkisPage() {
         son_durum: durum?.durum ?? null,
         son_durum_notlar: durum?.notlar ?? null,
         soru_seti_durum_id: durum?.soru_seti_durum_id ?? null,
+        revizyon_sayisi: revizyonSayaci.get(ss.soru_seti_id) ?? 0,
       };
     });
   }, []);
@@ -164,7 +174,9 @@ export default function SoruSetiAkisPage() {
 
   const sonSet = soruSetleri[soruSetleri.length - 1];
   const iuGonderebilir = isIU && (!sonSet || sonSet.son_durum === "revizyon bekleniyor" || !sonSet.sorular?.length);
-  const revizyonSayisi = soruSetleri.filter(ss => ss.son_durum === "revizyon bekleniyor").length;
+  // 26.07: satır sayma yerine son setin durum geçmişi — İÜ yeniden teslim
+  // edince sayaç sıfırlanmıyor.
+  const revizyonSayisi = sonSet?.revizyon_sayisi ?? 0;
 
   // İçe aktarma (toplu yapıştır / dosyadan): esnek parse formu doldurur, eksikler formda tamamlanır.
   const handleIceAktar = (yeniTaslaklar: SoruTaslagi[], uyariMesaji: string) => {
@@ -208,7 +220,11 @@ export default function SoruSetiAkisPage() {
       const d2 = await res2.json();
       if (!res2.ok) throw new Error(d2.hata ?? "Durum kaydedilemedi.");
 
-      basari("Soru seti PM'e gönderildi.");
+      // Unvan künyeden (25.07): "PM" kod dilidir, ekrana çıkmaz. Unvan ek almasın
+      // diye "... onayına gönderildi" kalıbı kullanılır.
+      basari(talep?.uretici_rol_adi
+        ? `Soru seti ${talep.uretici_rol_adi} onayına gönderildi.`
+        : "Soru seti onaya gönderildi.");
       setTaslaklar([]);
       await veriCek();
     } catch (err: any) {

@@ -26,6 +26,10 @@ interface Senaryo {
   son_durum?: string;
   son_durum_tarihi?: string;
   senaryo_durum_id?: string;
+  /** Bu satırın durum geçmişinde kaç kez revizyon istendi (26.07 — toast merkezi).
+   *  "Bu tur revizyon muydu" sorusunun tek sinyali; son duruma bakmak yetmez,
+   *  İÜ yeniden teslim edince son durum "inceleme bekleniyor"a döner. */
+  revizyon_sayisi: number;
 }
 
 // G-5 (docs/senaryo_tek_metin_diff_gelistirme_is_plani.md): tüm revizyon
@@ -105,11 +109,20 @@ export default function SenaryolarPage() {
 
     const senaryolarWithDurum = await Promise.all(
       (senaryolarData ?? []).map(async (s) => {
+        // limit(1) kaldırıldı (26.07): son durumun yanında GEÇMİŞ de gerekiyor —
+        // revizyon turu sayısı buradan türer. Revizyon tavanı 2 olduğu için
+        // satır başına durum kaydı tek hanededir, ek maliyet yok.
         const { data: durumlar } = await supabase
           .from("senaryo_durumu").select("senaryo_durum_id, durum, created_at")
-          .eq("senaryo_id", s.senaryo_id).order("created_at", { ascending: false }).limit(1);
+          .eq("senaryo_id", s.senaryo_id).order("created_at", { ascending: false });
         const sonDurum = durumlar?.[0];
-        return { ...s, son_durum: sonDurum?.durum ?? null, son_durum_tarihi: sonDurum?.created_at ?? null, senaryo_durum_id: sonDurum?.senaryo_durum_id ?? null };
+        return {
+          ...s,
+          son_durum: sonDurum?.durum ?? null,
+          son_durum_tarihi: sonDurum?.created_at ?? null,
+          senaryo_durum_id: sonDurum?.senaryo_durum_id ?? null,
+          revizyon_sayisi: (durumlar ?? []).filter(d => d.durum === "revizyon bekleniyor").length,
+        };
       })
     );
 
@@ -231,7 +244,13 @@ export default function SenaryolarPage() {
       return;
     }
 
-    basari("Senaryo PM'e gönderildi.");
+    // Unvan künyeden (25.07): "PM" kod dilidir, ekrana çıkmaz. Talebi açan kim ise
+    // onun unvanı yazılır. "... onayına gönderildi" kalıbı bilinçli: unvanlar hem
+    // ünlüyle ("Ürün Müdürü") hem ünsüzle ("Medikal Müdür") bittiği için yönelme
+    // eki üretmek gerekirdi; bu kalıpta unvan ek almaz, hepsinde doğru okunur.
+    basari(talep?.uretici_rol_adi
+      ? `Senaryo ${talep.uretici_rol_adi} onayına gönderildi.`
+      : "Senaryo onaya gönderildi.");
     setSenaryoMetni("");
     setBeklemedekiSenaryoId(null);
     localStorage.removeItem(taslakAnahtari);

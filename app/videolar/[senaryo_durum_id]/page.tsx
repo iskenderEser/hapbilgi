@@ -25,6 +25,10 @@ interface Video {
   created_at: string;
   son_durum?: string;
   son_durum_notlar?: string;
+  /** Bu satırın durum geçmişinde kaç kez revizyon istendi (26.07 — toast merkezi).
+   *  Son duruma bakmak yetmez: İÜ yeniden yükleyince son durum "inceleme
+   *  bekleniyor"a döner, revizyon izi kaybolur. */
+  revizyon_sayisi: number;
 }
 
 // Senaryo yalnız senaryonun kendi verisini taşır (25.07, Aşama 3). Talebe ait
@@ -112,10 +116,17 @@ export default function VideoAkisPage() {
 
     const videolarWithDurum = await Promise.all(
       (videolarData ?? []).map(async (v) => {
+        // limit(1) kaldırıldı (26.07): son durumun yanında geçmiş de gerekiyor —
+        // revizyon turu sayısı buradan türer (revizyon tavanı 2, liste kısa).
         const { data: durumlar } = await supabase
           .from("video_durumu").select("durum, notlar")
-          .eq("video_id", v.video_id).order("created_at", { ascending: false }).limit(1);
-        return { ...v, son_durum: durumlar?.[0]?.durum ?? null, son_durum_notlar: durumlar?.[0]?.notlar ?? null };
+          .eq("video_id", v.video_id).order("created_at", { ascending: false });
+        return {
+          ...v,
+          son_durum: durumlar?.[0]?.durum ?? null,
+          son_durum_notlar: durumlar?.[0]?.notlar ?? null,
+          revizyon_sayisi: (durumlar ?? []).filter((d: { durum: string }) => d.durum === "revizyon bekleniyor").length,
+        };
       })
     );
 
@@ -144,7 +155,11 @@ export default function VideoAkisPage() {
     () => setMedyaYenile(x => x + 1)
   );
   const iuGonderebilir = isIU && (!sonVideo || sonVideo.son_durum === "revizyon bekleniyor" || !sonVideo.video_url);
-  const revizyonSayisi = videolar.filter(v => v.son_durum === "revizyon bekleniyor").length;
+  // 26.07: eskiden "son durumu revizyon olan SATIR sayısı" sayılıyordu. Video
+  // revizyonda yeni satır doğurmaz (aynı satıra UPDATE), İÜ yeniden yükleyince
+  // son durum "inceleme bekleniyor"a döner — sayaç sıfırlanıyordu. Doğru kaynak
+  // satırın durum GEÇMİŞİ.
+  const revizyonSayisi = sonVideo?.revizyon_sayisi ?? 0;
 
   // A2 — Bunny doğrudan yükleme: (1) vezneden izin al, (2) dosyayı tarayıcıdan
   // doğrudan Bunny'ye TUS ile yükle (kesintiden devam edebilir), (3) kanonik embed
@@ -190,7 +205,11 @@ export default function VideoAkisPage() {
     });
     const d3 = await res3.json();
     if (!res3.ok) { hata(d3.hata ?? "Durum kaydedilemedi.", d3.adim, d3.detay); }
-    else basari("Video yüklendi ve PM'e gönderildi.");
+    // Unvan künyeden (25.07): "PM" kod dilidir, ekrana çıkmaz. Unvan ek almasın
+    // diye "... onayına gönderildi" kalıbı kullanılır.
+    else basari(talep?.uretici_rol_adi
+      ? `Video yüklendi, ${talep.uretici_rol_adi} onayına gönderildi.`
+      : "Video yüklendi, onaya gönderildi.");
     setSeciliDosya(null);
     setYuklemeYuzdesi(null);
     await veriCek();
