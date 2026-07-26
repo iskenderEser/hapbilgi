@@ -15,6 +15,7 @@ import { DosyaGoruntuleListesi, type DosyaItem } from "@/components/DosyaGoruntu
 import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
 import { SenaryoMetniGoster } from "@/components/SenaryoMetniGoster";
 import { gonderimKarari } from "@/lib/utils/senaryo/gonderimKarari";
+import { uretimToast, toastVaryant, type ToastOlay } from "@/lib/uretim/toastMesaj";
 import { SenaryoDuzeltmeEditoru } from "@/components/SenaryoDuzeltmeEditoru";
 
 interface Senaryo {
@@ -192,8 +193,14 @@ export default function SenaryolarPage() {
   const isPM = URETICI_ROLLER.includes(rolKucu);
   const isIU = rolKucu === "iu";
 
+  // Toast metni tek merkezden (26.07): sayfa cümle tutmaz, olayı + varyantı verir.
+  const toastBaglam = { varyant: toastVaryant(talep?.hazir_video, talep?.hazir_soru_seti), rolAdi: talep?.uretici_rol_adi };
+
   const handleSenaryoGonder = async () => {
     if (!senaryoMetni.trim()) return;
+    // Revize bayrağı handler GİRİŞİNDE okunur: basari() çağrısına gelindiğinde
+    // araya birden çok await girdi, state tazelenmiş olabilir.
+    const teslimRevize = senaryolar[senaryolar.length - 1]?.son_durum === "revizyon bekleniyor";
     setGonderLoading(true);
 
     // G-1 + Ç-1 + Ç-2: retry'da satır YENİDEN oluşturulmaz ama metin HER
@@ -244,13 +251,7 @@ export default function SenaryolarPage() {
       return;
     }
 
-    // Unvan künyeden (25.07): "PM" kod dilidir, ekrana çıkmaz. Talebi açan kim ise
-    // onun unvanı yazılır. "... onayına gönderildi" kalıbı bilinçli: unvanlar hem
-    // ünlüyle ("Ürün Müdürü") hem ünsüzle ("Medikal Müdür") bittiği için yönelme
-    // eki üretmek gerekirdi; bu kalıpta unvan ek almaz, hepsinde doğru okunur.
-    basari(talep?.uretici_rol_adi
-      ? `Senaryo ${talep.uretici_rol_adi} onayına gönderildi.`
-      : "Senaryo onaya gönderildi.");
+    basari(uretimToast({ rol: "iu", olay: "teslim", asama: "senaryo", revize: teslimRevize }, toastBaglam));
     setSenaryoMetni("");
     setBeklemedekiSenaryoId(null);
     localStorage.removeItem(taslakAnahtari);
@@ -260,6 +261,9 @@ export default function SenaryolarPage() {
   };
 
   const handlePMKarar = async (senaryo_id: string, durum: string, notlar?: string) => {
+    // Onaylanan iş daha önce revizyona düşmüş mü — "Revize senaryoyu onayladınız"
+    // ile "Senaryoyu onayladınız" ayrımı buradan gelir.
+    const onayRevize = (senaryolar.find(s => s.senaryo_id === senaryo_id)?.revizyon_sayisi ?? 0) > 0;
     setGonderLoading(true);
     const res = await fetch("/senaryolar/api/durum", {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -268,7 +272,11 @@ export default function SenaryolarPage() {
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "İşlem gerçekleştirilemedi.", d.adim, d.detay); }
     else {
-      basari(durum === "onaylandi" ? "Senaryo onaylandı." : durum === "revizyon bekleniyor" ? "Revizyon talebi gönderildi." : "Senaryo iptal edildi.");
+      const olay: ToastOlay =
+        durum === "onaylandi"           ? { rol: "uretici", olay: "onay", asama: "senaryo", revize: onayRevize }
+      : durum === "revizyon bekleniyor" ? { rol: "uretici", olay: "revizyon", asama: "senaryo" }
+      :                                   { rol: "uretici", olay: "iptal", asama: "senaryo" };
+      basari(uretimToast(olay, toastBaglam));
       setAktifRevizyon(null); setRevizyonNotu(""); await veriCek();
     }
     setGonderLoading(false);
