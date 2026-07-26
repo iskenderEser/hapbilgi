@@ -19,15 +19,21 @@ import type { HedefRol } from "@/app/talepler/_types";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import VideoCercevesi from "@/components/video/VideoCercevesi";
+import TalepKlasorleri from "@/components/talep/TalepKlasorleri";
+import type { DepartmanKey } from "@/lib/video/departman";
 
 interface SoruKaydi {
   soru_metni: string;
   secenekler: { harf: string; metin: string; dogru: boolean }[];
 }
 
+// Klasörleme alanları (firma_adi, departman, urun_adi) künyeden gelir ve
+// TalepKlasorleri'nin beklediği sözleşmeyi karşılar — ekran ayrıca hesaplamaz.
 interface OnayliTalep {
   talep_id: string;
   talep_no_goster: string;
+  firma_adi: string;
+  departman: DepartmanKey;
   urun_adi: string;
   teknik_adi: string;
   hedef_rol: HedefRol;
@@ -123,6 +129,8 @@ export default function OnaylananTaleplerPage() {
       liste.push({
         talep_id: talep.talep_id,
         talep_no_goster: talepIdGoster(talep.firma_adi, talep.talep_no),
+        firma_adi: talep.firma_adi,
+        departman: talep.departman,
         urun_adi: talep.urun_adi,
         teknik_adi: talep.teknik_adi,
         hedef_rol: talep.hedef_rol,
@@ -215,15 +223,19 @@ export default function OnaylananTaleplerPage() {
       <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7 flex flex-col gap-4">
         <h1 className="text-lg font-bold text-gray-900 m-0">Onaylanan Talepler</h1>
 
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          {kayitlar.length === 0 && (
+        {kayitlar.length === 0 ? (
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <p className="text-sm text-gray-400 text-center py-8 m-0">Henüz onaylanmış talep yok.</p>
-          )}
-
-          {/* Mobil: kart listesi (tıkla-aç) */}
-          {kayitlar.length > 0 && (
+          </div>
+        ) : (
+          // Klasör kırılımı (26.07): düz liste talep geldikçe uzuyordu ve onaylı
+          // bir işin hangi firmaya/müdürlüğe/ürüne ait olduğu okunmuyordu.
+          // Gösterim aşağıda aynı kaldı — yalnız hangi taleplerin görüneceğini
+          // klasör belirliyor.
+          <TalepKlasorleri talepler={kayitlar} render={(liste) => (
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div className="md:hidden divide-y divide-gray-50">
-              {kayitlar.map(k => (
+              {liste.map(k => (
                 <div key={k.talep_id}>
                   <div onClick={() => setAcikTalep(acikTalep === k.talep_id ? null : k.talep_id)}
                     className="px-4 py-3 cursor-pointer flex items-center justify-between gap-2">
@@ -245,10 +257,7 @@ export default function OnaylananTaleplerPage() {
                 </div>
               ))}
             </div>
-          )}
 
-          {/* Masaüstü: tablo (tıkla-aç) */}
-          {kayitlar.length > 0 && (
             <div className="hidden md:block">
               <table className="w-full border-collapse text-sm">
                 <thead>
@@ -261,7 +270,7 @@ export default function OnaylananTaleplerPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {kayitlar.map(k => (
+                  {liste.map(k => (
                     <Fragment key={k.talep_id}>
                       <tr onClick={() => setAcikTalep(acikTalep === k.talep_id ? null : k.talep_id)}
                         className="border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors duration-100">
@@ -288,8 +297,9 @@ export default function OnaylananTaleplerPage() {
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
+          </div>
+          )} />
+        )}
       </div>
 
       <HataMesajiContainer mesajlar={mesajlar} />
