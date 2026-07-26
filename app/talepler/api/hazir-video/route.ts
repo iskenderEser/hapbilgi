@@ -78,10 +78,10 @@ export async function PUT(request: NextRequest) {
       return hataYaniti(sonuc.hata, sonuc.adim, null);
     }
 
+    // Ekrana basılacak cümle burada ÜRETİLMEZ (26.07): toast metni tek merkezde
+    // (lib/uretim/toastMesaj). Metnin sunucuda durması onu ikinci bir kaynak
+    // yapıyordu. Uç yalnız olguyu döndürür, cümleyi çağıran çözer.
     return NextResponse.json({
-      mesaj: sonuc.soruSetiIslendi
-        ? "Video gönderildi; hazır soru seti otomatik işlendi ve onaylandı."
-        : "Video gönderildi. Soru seti içerik üreticisine yönlendirildi.",
       video_id: sonuc.video_id,
       soru_seti_islendi: sonuc.soruSetiIslendi,
     }, { status: 200 });

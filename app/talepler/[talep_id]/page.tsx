@@ -15,6 +15,7 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
 import { useBunnyIslemeDurumu } from "@/hooks/useBunnyIslemeDurumu";
 import { DosyaGoruntuleListesi, type DosyaItem as ComponentDosyaItem } from "@/components/DosyaGoruntuleListesi";
+import { uretimToast, toastVaryant } from "@/lib/uretim/toastMesaj";
 
 // Künye ortak tipten gelir; bu ekrana özel iki alan üstüne eklenir (25.07, Aşama 3).
 type Talep = TalepBilgisi & {
@@ -157,7 +158,16 @@ export default function TalepDetayPage() {
     });
     const d2 = await res2.json();
     if (!res2.ok) { hata(d2.hata ?? "Video adresi kaydedilemedi.", d2.adim, d2.detay); }
-    else { setTalep(prev => prev ? { ...prev, hazir_video_url: d.embed_url } : prev); basari(d2.mesaj ?? "Video gönderildi."); }
+    else {
+      setTalep(prev => prev ? { ...prev, hazir_video_url: d.embed_url } : prev);
+      // Bu uç yarım kalan/reddedilen yüklemenin telafisidir; zincir burada
+      // kurulduğu için mesaj talep açılışındakiyle aynıdır (26.07). Metni artık
+      // sunucu değil sözlük veriyor.
+      basari(uretimToast(
+        { rol: "uretici", olay: "talep_gonderildi" },
+        { varyant: toastVaryant(talep?.hazir_video, talep?.hazir_soru_seti) },
+      ));
+    }
     setSeciliVideoDosya(null);
     setVideoYukleniyor(false);
     setYuklemeYuzdesi(null);

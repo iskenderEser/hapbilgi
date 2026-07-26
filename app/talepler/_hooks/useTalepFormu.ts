@@ -23,6 +23,7 @@ import {
 } from "@/lib/uretici/yetenekler";
 import { useOkunmamisIdler } from "@/hooks/useOkunmamisIdler";
 import { useHataMesaji } from "@/components/HataMesaji";
+import { uretimToast, toastVaryant } from "@/lib/uretim/toastMesaj";
 import type {
   Talep,
   Urun,
@@ -593,7 +594,14 @@ export function useTalepFormu() {
           basarisizlar.push(...(await uploadDosyalar(talep_id)));
         }
         if (basarisizlar.length === 0) {
-          basari("Talep başarıyla oluşturuldu.");
+          // Metin varyanttan çözülür (26.07): talep açmak bir aşama kapatmaz,
+          // yalnız doğan işi ve sahibini ilan eder. Hazır videoda zincir yükleme
+          // biter bitmez kurulduğu için ilan edilen iş senaryo değil soru setidir;
+          // ikisi de hazırsa İÜ'ye iş düşmez, sıra üreticinin kendisindedir.
+          basari(uretimToast(
+            { rol: "uretici", olay: "talep_gonderildi" },
+            { varyant: toastVaryant(hazirVideo, hazirSoruSeti) },
+          ));
         } else {
           uyari(
             `Talep oluşturuldu ancak şu dosyalar yüklenemedi: ${basarisizlar.join(", ")}. ` +
@@ -611,6 +619,7 @@ export function useTalepFormu() {
     [
       submitTalep,
       hazirVideo,
+      hazirSoruSeti,
       bekleyenVideo,
       uploadVideo,
       bekleyenDosyalar.length,
