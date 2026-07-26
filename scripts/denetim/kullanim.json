@@ -922,17 +922,17 @@
     },
     {
       "dosya": "app/onaylanan-talepler/page.tsx",
-      "satir": 65,
+      "satir": 66,
       "tablo": "senaryo_durumu"
     },
     {
       "dosya": "app/onaylanan-talepler/page.tsx",
-      "satir": 77,
+      "satir": 78,
       "tablo": "video_durumu"
     },
     {
       "dosya": "app/onaylanan-talepler/page.tsx",
-      "satir": 83,
+      "satir": 84,
       "tablo": "soru_seti_durumu"
     },
     {
@@ -1702,7 +1702,7 @@
     },
     {
       "dosya": "app/talepler/[talep_id]/page.tsx",
-      "satir": 78,
+      "satir": 79,
       "tablo": "talepler"
     },
     {
@@ -1757,22 +1757,22 @@
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 94,
+      "satir": 95,
       "tablo": "senaryo_durumu"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 101,
+      "satir": 102,
       "tablo": "senaryolar"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 112,
+      "satir": 113,
       "tablo": "videolar"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 122,
+      "satir": 123,
       "tablo": "video_durumu"
     },
     {
@@ -4493,19 +4493,19 @@
     },
     {
       "dosya": "app/onaylanan-talepler/page.tsx",
-      "satir": 65,
+      "satir": 66,
       "ham": "senaryo_durum_id, created_at, senaryolar(talep_id, senaryo_metni)",
       "tablo": "senaryo_durumu"
     },
     {
       "dosya": "app/onaylanan-talepler/page.tsx",
-      "satir": 77,
+      "satir": 78,
       "ham": "video_durum_id, videolar(video_url, senaryo_durum_id)",
       "tablo": "video_durumu"
     },
     {
       "dosya": "app/onaylanan-talepler/page.tsx",
-      "satir": 83,
+      "satir": 84,
       "ham": "soru_setleri(video_durum_id, sorular)",
       "tablo": "soru_seti_durumu"
     },
@@ -5345,7 +5345,7 @@
     },
     {
       "dosya": "app/talepler/[talep_id]/page.tsx",
-      "satir": 78,
+      "satir": 79,
       "ham": "hazir_video_url, hazir_soru_seti_verisi",
       "tablo": "talepler"
     },
@@ -5399,25 +5399,25 @@
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 94,
+      "satir": 95,
       "ham": "senaryo_id",
       "tablo": "senaryo_durumu"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 101,
+      "satir": 102,
       "ham": "senaryo_id, talep_id, senaryo_metni",
       "tablo": "senaryolar"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 112,
+      "satir": 113,
       "ham": "video_id, senaryo_durum_id, iu_id, video_url, thumbnail_url, created_at",
       "tablo": "videolar"
     },
     {
       "dosya": "app/videolar/[senaryo_durum_id]/page.tsx",
-      "satir": 122,
+      "satir": 123,
       "ham": "durum, notlar",
       "tablo": "video_durumu"
     },

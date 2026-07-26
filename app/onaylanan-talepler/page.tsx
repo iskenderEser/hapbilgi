@@ -18,6 +18,7 @@ import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
 import type { HedefRol } from "@/app/talepler/_types";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { talepIdGoster } from "@/lib/utils/talepId";
+import VideoCercevesi from "@/components/video/VideoCercevesi";
 
 interface SoruKaydi {
   soru_metni: string;
@@ -176,8 +177,10 @@ export default function OnaylananTaleplerPage() {
       {k.video_url && (
         <div>
           <div className="text-xs font-semibold text-gray-500 mb-1.5">Onaylı Video</div>
-          <iframe src={k.video_url} width="100%" height="320" frameBorder="0" allowFullScreen
-            className="rounded-lg border border-gray-200" />
+          {/* Kutu videonun oranına göre çizilir (26.07). Kenarlık/köşe iframe'den kutuya taşındı. */}
+          <VideoCercevesi videoUrl={k.video_url} className="rounded-lg border border-gray-200">
+            <iframe src={k.video_url} frameBorder="0" allowFullScreen />
+          </VideoCercevesi>
         </div>
       )}
 

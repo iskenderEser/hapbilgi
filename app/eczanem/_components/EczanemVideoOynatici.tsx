@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createVideoPlayer, type VideoPlayer } from "@/lib/video/videoPlayer";
+import VideoCercevesi from "@/components/video/VideoCercevesi";
 
 interface OynaticiVideo {
   gonderim_id: string;
@@ -180,16 +181,17 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
 
         {video.video_url && (
           <div className="border-b border-gray-100">
-            <iframe
-              key={video.gonderim_id}
-              ref={iframeRef}
-              src={video.video_url}
-              width="100%"
-              height="400"
-              frameBorder="0"
-              allowFullScreen
-              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-            />
+            {/* Kutu videonun oranına göre çizilir (26.07). iframe burada kalır — ref playerjs'e bağlı. */}
+            <VideoCercevesi videoUrl={video.video_url}>
+              <iframe
+                key={video.gonderim_id}
+                ref={iframeRef}
+                src={video.video_url}
+                frameBorder="0"
+                allowFullScreen
+                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+              />
+            </VideoCercevesi>
           </div>
         )}
 

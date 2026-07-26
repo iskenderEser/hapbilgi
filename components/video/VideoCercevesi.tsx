@@ -26,36 +26,109 @@
 // Ortalama iki katmanlı: dış kapta `justify-center`, kutuda `mx-auto`.
 // margin-auto tek başına, kutunun genişliği tavandan türediği için her yerleşim
 // bağlamında güvenilir değil; flex ortalaması garantiyi tamamlar.
+//
+// ORAN NEREDEN GELİYOR — KAPAKTAN ÖLÇÜLÜYOR (Adım 0 kararı, 26.07):
+// Bunny'nin thumbnail.jpg dosyası videonun GERÇEK oranında üretiliyor; sabit bir
+// kutuya doldurulmuyor. 30022 numaralı talebin dikey test videosunda ölçüldü:
+// kapak 720×1280, Bunny API'sinin bildirdiği width/height de 720×1280 — birebir.
+// Bu yüzden oran için DB kolonu, webhook ya da sunucu değişikliği GEREKMİYOR;
+// kutu kapağı okuyarak kendi oranını buluyor. (Yol A — plan 10 adımdan 6'ya indi.)
+//
+// Video URL'i doğrudan ölçülemez: o bir HTML embed sayfasıdır, `Image` yükleyemez;
+// cross-origin iframe içeriği de CSS'e ya da JS'e hiçbir koşulda sızmaz. Ölçülebilir
+// tek şey kapak görselidir.
+//
+// BİLİNEN ÖDÜN: ilk çizimde oran henüz bilinmediği için 16:9 kutu çizilir, kapak
+// yüklenince dikey videoda kutu bir kez yeniden boyutlanır. Kapak küçük (~60 KB) ve
+// kart ekranlarında zaten önbellekte olduğu için pratikte tek karelik sıçrama.
 
 "use client";
 
+import { useEffect, useState } from "react";
 import { enBoyOrani, dikeyMi } from "@/lib/video/enBoyOrani";
+import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 
 interface Props {
-  /** Videonun ham ölçüleri. Bilinmiyorsa 16:9'a düşer — mevcut videoların davranışı. */
+  /** Oynatılan videonun adresi. Ölçü verilmemişse kapağı buradan bulunup ölçülür. */
+  videoUrl?: string | null;
+  /** Videonun ham ölçüleri. Verilirse kapak ölçümü hiç yapılmaz (öncelikli kaynak). */
   genislik?: number | null;
   yukseklik?: number | null;
   /** Oynatıcı iframe'i. Çağıran sahiplenir (ref, playerjs, sandbox nitelikleri onda kalır). */
   children: React.ReactNode;
+  /** Kutunun görünüm sınıfları (kenarlık, köşe yuvarlama…). İframe'in ÜZERİNDEKİ
+   *  böyle sınıflar buraya taşınmalıdır: [&>iframe]:border-0 kuralı iframe'in kendi
+   *  kenarlığını siler, kutuda ise overflow-hidden sayesinde köşe de doğru kırpılır. */
+  className?: string;
 }
 
 /** İframe'in kutuyu doldurmasını garantileyen ortak sınıflar. */
 const IFRAME_DOLDUR = "[&>iframe]:block [&>iframe]:w-full [&>iframe]:h-full [&>iframe]:border-0";
 
-export default function VideoCercevesi({ genislik, yukseklik, children }: Props) {
-  const oran = enBoyOrani(genislik, yukseklik);
+/**
+ * Dikey/masaüstü ölçüsü. Tavan `min(78vh,720px)`: 26.07'de ölçülen ilk halde
+ * 560 px'lik tavan, 815 px yükseklikli bir ekranda videoyu gereksiz küçük
+ * bırakıyordu (İskender kararı — yükseltildi). vh payı, tarayıcı çubuklarıyla
+ * birlikte videonun ekrandan taşmamasını garantiler.
+ *
+ * NOT: Tailwind sınıf adlarını kaynakta BİREBİR tarar; bu metin şablon
+ * değişkeniyle kurulursa sınıf hiç üretilmez. Bu yüzden tam sınıf dizisi sabit
+ * olarak durur, parça parça birleştirilmez.
+ */
+const DIKEY_OLCU = "w-full md:w-auto md:h-[min(78vh,720px)] md:mx-auto";
+
+/**
+ * Dikey videoda kutunun yanında kalan boşluğun zemini (pillarbox).
+ *
+ * Neden: kart/modal 16:9 için ölçülmüştür; dikey video yanlarında geniş boşluk
+ * bırakır (ölçüldü: 768 px'lik modalda video 316 px, yanlarda 226'şar px). Bu
+ * boşluk beyaz kalınca "eksik yüklenmiş" gibi okunuyordu; koyu zemin onu
+ * oynatıcı letterbox'ına çevirir — YouTube/Vimeo davranışı.
+ *
+ * YALNIZ DİKEYDE uygulanır: yatay videoda kutu kabı zaten tamamen doldurur,
+ * zemin hiç görünmez. Koşulsuz verilseydi bile görünmezdi ama niyet okunmazdı.
+ */
+const PILLARBOX = "bg-gray-900";
+
+export default function VideoCercevesi({ videoUrl, genislik, yukseklik, children, className = "" }: Props) {
+  const [olculen, setOlculen] = useState<{ g: number; y: number } | null>(null);
+
+  useEffect(() => {
+    // Ölçü dışarıdan geldiyse kapağa hiç gidilmez.
+    if (genislik && yukseklik) return;
+
+    // Video değiştiyse önceki ölçü SIFIRLANIR: eski videonun oranı yenisinin
+    // kutusunu çizerse yanlış çerçeve kalıcı olur — tek karelik 16:9 daha ucuz.
+    setOlculen(null);
+
+    const kapak = thumbnailUrlUret(videoUrl);
+    if (!kapak) return; // Bunny dışı / eski / bozuk URL → 16:9 yedeği
+
+    let aktif = true;
+    const img = new Image();
+    img.onload = () => {
+      // 0 ölçü gelirse yazma: enBoyOrani zaten yakalar ama state'i kirletmenin anlamı yok.
+      if (aktif && img.naturalWidth > 0 && img.naturalHeight > 0) {
+        setOlculen({ g: img.naturalWidth, y: img.naturalHeight });
+      }
+    };
+    // onerror bilinçli olarak boş: kapak 403/404 olsa da 16:9 yedeği zaten devrede.
+    img.src = kapak;
+
+    return () => { aktif = false; }; // unmount sonrası setState yarışını kapatır
+  }, [videoUrl, genislik, yukseklik]);
+
+  const oran = enBoyOrani(genislik ?? olculen?.g, yukseklik ?? olculen?.y);
   const dikey = dikeyMi(oran);
 
   // Dikey/masaüstü: yükseklik tavana sabitlenir, genişliği oran türetir (mx-auto ortalar).
   // Dikey/mobil ve tüm yatay: tam genişlik, yüksekliği oran türetir.
-  const olcuSiniflari = dikey
-    ? "w-full md:w-auto md:h-[min(70vh,560px)] md:mx-auto"
-    : "w-full";
+  const olcuSiniflari = dikey ? DIKEY_OLCU : "w-full";
 
   return (
-    <div className="flex justify-center w-full">
+    <div className={`flex justify-center w-full ${dikey ? PILLARBOX : ""}`}>
       <div
-        className={`relative overflow-hidden max-w-full ${IFRAME_DOLDUR} ${olcuSiniflari}`}
+        className={`relative overflow-hidden max-w-full ${IFRAME_DOLDUR} ${olcuSiniflari} ${className}`}
         style={{ aspectRatio: oran }}
       >
         {children}

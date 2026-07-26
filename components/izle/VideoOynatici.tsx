@@ -282,7 +282,7 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
             {/* Kutu artık videonun oranına göre çizilir (26.07 — VideoCercevesi).
                 iframe burada kalır: ref playerjs'e bağlı, sarmalayıcı yalnız kutuyu kurar.
                 width/height nitelikleri kalktı — ölçüyü CSS veriyor. */}
-            <VideoCercevesi>
+            <VideoCercevesi videoUrl={video.video_url}>
               <iframe key={video.yayin_id} ref={iframeRef} src={video.video_url}
                 frameBorder="0" allowFullScreen
                 allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;" />

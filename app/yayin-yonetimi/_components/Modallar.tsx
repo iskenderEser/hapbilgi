@@ -11,6 +11,7 @@
 
 import type { Bekleyen } from "../_types";
 import { HedefRolPill } from "@/components/HedefRolBant";
+import VideoCercevesi from "@/components/video/VideoCercevesi";
 
 export function VideoOnizlemeModal({ url, onKapat }: { url: string; onKapat: () => void }) {
   return (
@@ -20,7 +21,10 @@ export function VideoOnizlemeModal({ url, onKapat }: { url: string; onKapat: () 
           <span className="text-sm font-semibold text-gray-900">Video Önizleme</span>
           <button onClick={onKapat} className="bg-transparent border-none cursor-pointer text-gray-500 text-lg">✕</button>
         </div>
-        <iframe src={url} width="100%" height="450" frameBorder="0" allowFullScreen />
+        {/* Kutu videonun oranına göre çizilir (26.07). */}
+        <VideoCercevesi videoUrl={url}>
+          <iframe src={url} frameBorder="0" allowFullScreen />
+        </VideoCercevesi>
       </div>
     </div>
   );

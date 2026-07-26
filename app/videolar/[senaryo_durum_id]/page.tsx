@@ -9,6 +9,7 @@ import TalepSahibiKarti from "@/components/TalepSahibiKarti";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import VideoCercevesi from "@/components/video/VideoCercevesi";
 import { HedefRolPill } from "@/components/HedefRolBant";
 import { TeknikPill } from "@/components/TeknikPill";
 import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
@@ -482,7 +483,9 @@ export default function VideoAkisPage() {
               <button onClick={() => setAcikVideo(null)}
                 className="bg-transparent border-none cursor-pointer text-gray-500 text-lg">✕</button>
             </div>
-            <iframe src={acikVideo} width="100%" height="450" frameBorder="0" allowFullScreen />
+            <VideoCercevesi videoUrl={acikVideo}>
+              <iframe src={acikVideo} frameBorder="0" allowFullScreen />
+            </VideoCercevesi>
           </div>
         </div>
       )}
