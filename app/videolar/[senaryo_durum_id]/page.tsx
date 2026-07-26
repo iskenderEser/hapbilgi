@@ -15,6 +15,7 @@ import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
 import { useBunnyIslemeDurumu } from "@/hooks/useBunnyIslemeDurumu";
+import { uretimToast, toastVaryant, type ToastOlay } from "@/lib/uretim/toastMesaj";
 
 interface Video {
   video_id: string;
@@ -161,11 +162,18 @@ export default function VideoAkisPage() {
   // satırın durum GEÇMİŞİ.
   const revizyonSayisi = sonVideo?.revizyon_sayisi ?? 0;
 
+  // Toast metni tek merkezden (26.07). Bu sayfada varyant kritik: hazır soru
+  // seti olan talepte video onayı İÜ'ye iş açmaz, top üreticide kalır — cümlenin
+  // ikinci yarısını sözlük çözer, burada koşul yazılmaz.
+  const toastBaglam = { varyant: toastVaryant(talep?.hazir_video, talep?.hazir_soru_seti), rolAdi: talep?.uretici_rol_adi };
+
   // A2 — Bunny doğrudan yükleme: (1) vezneden izin al, (2) dosyayı tarayıcıdan
   // doğrudan Bunny'ye TUS ile yükle (kesintiden devam edebilir), (3) kanonik embed
   // adresini sisteme yazdır, durumu ilerlet. Link kavramı IU hayatından çıktı.
   const handleIuGonder = async () => {
     if (!seciliDosya || !sonVideo) return;
+    // Revize bayrağı handler girişinde okunur (araya TUS yüklemesi ve üç istek girer).
+    const teslimRevize = sonVideo.son_durum === "revizyon bekleniyor";
     setGonderLoading(true);
 
     // 1) Vezne: kimlik + sıra kontrolü + Bunny kaydı + süreli imza
@@ -205,11 +213,7 @@ export default function VideoAkisPage() {
     });
     const d3 = await res3.json();
     if (!res3.ok) { hata(d3.hata ?? "Durum kaydedilemedi.", d3.adim, d3.detay); }
-    // Unvan künyeden (25.07): "PM" kod dilidir, ekrana çıkmaz. Unvan ek almasın
-    // diye "... onayına gönderildi" kalıbı kullanılır.
-    else basari(talep?.uretici_rol_adi
-      ? `Video yüklendi, ${talep.uretici_rol_adi} onayına gönderildi.`
-      : "Video yüklendi, onaya gönderildi.");
+    else basari(uretimToast({ rol: "iu", olay: "teslim", asama: "video", revize: teslimRevize }, toastBaglam));
     setSeciliDosya(null);
     setYuklemeYuzdesi(null);
     await veriCek();
@@ -218,6 +222,7 @@ export default function VideoAkisPage() {
 
   const handlePMKarar = async (durum: string, notlar?: string) => {
     if (!sonVideo) return;
+    const onayRevize = (sonVideo.revizyon_sayisi ?? 0) > 0;
     setGonderLoading(true);
     const res = await fetch("/videolar/api/durum", {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -226,7 +231,11 @@ export default function VideoAkisPage() {
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "İşlem gerçekleştirilemedi.", d.adim, d.detay); }
     else {
-      basari(durum === "onaylandi" ? "Video onaylandı." : durum === "revizyon bekleniyor" ? "Revizyon talebi gönderildi." : "Video iptal edildi.");
+      const olay: ToastOlay =
+        durum === "onaylandi"           ? { rol: "uretici", olay: "onay", asama: "video", revize: onayRevize }
+      : durum === "revizyon bekleniyor" ? { rol: "uretici", olay: "revizyon", asama: "video" }
+      :                                   { rol: "uretici", olay: "iptal", asama: "video" };
+      basari(uretimToast(olay, toastBaglam));
       setAktifRevizyon(false); setRevizyonNotu(""); await veriCek();
     }
     setGonderLoading(false);
