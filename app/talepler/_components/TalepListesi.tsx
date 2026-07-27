@@ -1,15 +1,24 @@
 // app/talepler/_components/TalepListesi.tsx
 //
-// Talepler listesi: mobil kart görünümü + masaüstü tablo görünümü.
-// Tüm liste kartını (dış sarmal + başlık + boş durum + satırlar) kapsar.
-// Routing parent'ta — bu bileşen sadece tıklama olayını yukarı bildirir.
+// DEVAM EDEN TALEPLER: üretimi süren talepler (senaryo / video / soru seti
+// aşamasındakiler + sistem hatası olanlar). Mobil kart + masaüstü tablo.
+//
+// 27.07 — kapsam daraldı (İskender kararı): üretimi BİTMİŞ talepler bu listede
+// görünmez, onlar ana sayfadaki Yayın Listesi'ne aittir. İPTAL edilenler de
+// burada değil, hemen altındaki kendi tablosunda. Eskiden üçü tek listedeydi ve
+// Merve'nin 6 talebinin 5'i aslında bitmiş işti — liste %83 tekrar üretiyordu.
+// Süzme sayfada (page.tsx) yapılır; bu bileşen ne süzer ne durum yorumlar.
+//
+// Arama ve kademeli listeleme merkezden (components/liste) — 40 liste ekranının
+// hepsi aynı davranışı paylaşsın diye. Routing parent'ta.
 
 "use client";
 
 import { TALEP_TURU_KURALLARI } from "@/lib/uretici/yetenekler";
 import { type Talep, TUR_ROZET } from "../_types";
 import { talepIdGoster } from "@/lib/utils/talepId";
-import UretimVaryantiRozet from "@/components/UretimVaryantiRozet";
+import { Pill, VaryantPill, AsamaPill } from "@/components/pill";
+import { useListe, ListeArama, DahaFazlaGoster } from "@/components/liste";
 
 interface TalepListesiProps {
   talepler: Talep[];
@@ -35,24 +44,38 @@ export function TalepListesi({
   formatTarih,
   onTalepClick,
 }: TalepListesiProps) {
+  // Aranabilir alanları sayfa tanımlar; merkez "talep no" diye bir kavram bilmez.
+  const liste = useListe({
+    veri: talepler,
+    aramaAlanlari: [
+      { anahtar: "no", etiket: "Talep No", deger: (t: Talep) => t.talep_no },
+      { anahtar: "ad", etiket: "Ürün / Eğitim", deger: (t: Talep) => t.urun_adi },
+    ],
+  });
+
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-        <span className="text-sm font-semibold text-gray-900">
-          {isUretici ? "Taleplerim" : "Tüm Talepler"}
-        </span>
-        <span className="text-xs text-gray-500">{talepler.length} kayıt</span>
+      <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-gray-900">
+            {isUretici ? "Devam Eden Taleplerim" : "Devam Eden Talepler"}
+          </span>
+          <span className="text-xs text-gray-500">{liste.toplam} kayıt</span>
+        </div>
+        <ListeArama arama={liste.arama} />
       </div>
 
-      {talepler.length === 0 ? (
+      {liste.toplam === 0 ? (
         <div className="p-10 text-center text-sm text-gray-400">
-          {isUretici ? "Henüz talep oluşturmadınız." : "Henüz talep bulunmuyor."}
+          {liste.hamToplam === 0
+            ? (isUretici ? "Devam eden talebiniz yok." : "Devam eden talep bulunmuyor.")
+            : "Aramanıza uyan talep bulunamadı."}
         </div>
       ) : (
         <>
           {/* MOBİL — kart görünümü */}
           <div className="md:hidden">
-            {talepler.map((t) => {
+            {liste.gorunen.map((t) => {
               const { okunmamis, rozet, baslik } = talepGorselVerisi(t, okunmamisIdler);
               return (
                 <div
@@ -77,27 +100,20 @@ export function TalepListesi({
                         {baslik}
                       </span>
                       {t.urun_adi !== "-" && rozet.etiket && (
-                        <span
-                          className="text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
-                          style={{
-                            background: rozet.bg,
-                            color: rozet.renk,
-                            border: `0.5px solid ${rozet.border}`,
-                            fontSize: 10,
-                          }}
-                        >
+                        <Pill renk={{ bg: rozet.bg, metin: rozet.renk, kenar: rozet.border }}>
                           {rozet.etiket}
-                        </span>
+                        </Pill>
                       )}
-                      <UretimVaryantiRozet hazirVideo={t.hazir_video} hazirSoruSeti={t.hazir_soru_seti} />
+                      <VaryantPill hazirVideo={t.hazir_video} hazirSoruSeti={t.hazir_soru_seti} />
                     </div>
                     <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" width="14" height="14">
                       <path d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
-                  {t.teknik_adi !== "-" && (
-                    <div className="text-xs text-gray-500">{t.teknik_adi}</div>
-                  )}
+                  <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                    <AsamaPill asama={t.asama} />
+                    {t.teknik_adi !== "-" && <span className="text-xs text-gray-500">{t.teknik_adi}</span>}
+                  </div>
                   <div className="text-xs text-gray-400 mt-0.5">{formatTarih(t.created_at)}</div>
                 </div>
               );
@@ -112,13 +128,14 @@ export function TalepListesi({
                   <th className="text-left px-5 py-2.5 text-gray-400 font-medium text-xs uppercase">ID</th>
                   <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Ürün / Tür</th>
                   <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Teknik Adı</th>
+                  <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Aşama</th>
                   <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Soru Seti</th>
                   <th className="text-left px-3 py-2.5 text-gray-400 font-medium text-xs uppercase">Tarih</th>
                   <th className="px-5 py-2.5"></th>
                 </tr>
               </thead>
               <tbody>
-                {talepler.map((t) => {
+                {liste.gorunen.map((t) => {
                   const { okunmamis, rozet, baslik } = talepGorselVerisi(t, okunmamisIdler);
                   return (
                     <tr
@@ -138,19 +155,11 @@ export function TalepListesi({
                           )}
                           <span style={{ fontWeight: okunmamis ? 700 : 500 }}>{baslik}</span>
                           {t.urun_adi !== "-" && rozet.etiket && (
-                            <span
-                              className="font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap"
-                              style={{
-                                fontSize: 10,
-                                background: rozet.bg,
-                                color: rozet.renk,
-                                border: `0.5px solid ${rozet.border}`,
-                              }}
-                            >
+                            <Pill renk={{ bg: rozet.bg, metin: rozet.renk, kenar: rozet.border }}>
                               {rozet.etiket}
-                            </span>
+                            </Pill>
                           )}
-                          <UretimVaryantiRozet hazirVideo={t.hazir_video} hazirSoruSeti={t.hazir_soru_seti} />
+                          <VaryantPill hazirVideo={t.hazir_video} hazirSoruSeti={t.hazir_soru_seti} kendiSatirinda={false} />
                         </div>
                       </td>
                       <td className="px-3 py-3 text-gray-500">
@@ -160,6 +169,7 @@ export function TalepListesi({
                           <span className="text-gray-300">—</span>
                         )}
                       </td>
+                      <td className="px-3 py-3"><AsamaPill asama={t.asama} /></td>
                       <td className="px-3 py-3">
                         <span className="text-xs text-gray-500">{t.soru_seti_buyuklugu} soru</span>
                         <span className="text-xs text-gray-400 ml-1">
@@ -178,6 +188,13 @@ export function TalepListesi({
               </tbody>
             </table>
           </div>
+
+          <DahaFazlaGoster
+            dahaVar={liste.dahaVar}
+            gorunenSayi={liste.gorunen.length}
+            toplam={liste.toplam}
+            onGoster={liste.dahaFazlaGoster}
+          />
         </>
       )}
     </div>

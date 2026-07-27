@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import KlasorGrid from "./_components/KlasorGrid";
+import { useListe, ListeArama } from "@/components/liste";
 import VideoOynatici from "@/components/izle/VideoOynatici";
 import { AnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 import { YayindakiVideo } from "@/lib/video/yayindakiVideolar";
@@ -23,6 +24,19 @@ export default function YayindakiVideolarPage() {
   const { kullanici, yukleniyor, cikisYap } = useAuth();
   const { mesajlar, hata } = useHataMesaji();
   const [videolar, setVideolar] = useState<YayindakiVideo[]>([]);
+
+  // Yalnız ARAMA (İskender kararı 27.07): ekran klasör + kart ızgarası, satır
+  // listesi değil; kademeli açma ızgarada ayrı bir iş. adim: Infinity → dilimleme yok.
+  // Not: bu ekranın verisinde talep_no yok (yayın kaydından beslenir), bu yüzden
+  // aranabilir alanlar ürün/eğitim adı ve teknik adıdır.
+  const liste = useListe({
+    veri: videolar,
+    adim: Infinity,
+    aramaAlanlari: [
+      { anahtar: "ad", etiket: "Ürün / Eğitim", deger: (v: YayindakiVideo) => v.urun_adi },
+      { anahtar: "teknik", etiket: "Teknik", deger: (v: YayindakiVideo) => v.teknik_adi },
+    ],
+  });
   const [aktifVideo, setAktifVideo] = useState<AnaSayfaVideo | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -75,9 +89,12 @@ export default function YayindakiVideolarPage() {
         <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <h1 className="text-lg font-bold text-gray-900 m-0">Yayındaki videolar</h1>
-            <span className="text-xs font-semibold rounded-lg px-2.5 py-1" style={{ background: "#eff6ff", color: "#1d4ed8" }}>
-              izleme modu
-            </span>
+            <div className="flex items-center gap-2">
+              <ListeArama arama={liste.arama} />
+              <span className="text-xs font-semibold rounded-lg px-2.5 py-1" style={{ background: "#eff6ff", color: "#1d4ed8" }}>
+                izleme modu
+              </span>
+            </div>
           </div>
 
           {loading ? (
@@ -87,10 +104,12 @@ export default function YayindakiVideolarPage() {
                 <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
             </div>
-          ) : videolar.length === 0 ? (
-            <div className="text-sm text-gray-500 py-16 text-center">Görüntülenecek yayında video yok.</div>
+          ) : liste.toplam === 0 ? (
+            <div className="text-sm text-gray-500 py-16 text-center">
+              {videolar.length === 0 ? "Görüntülenecek yayında video yok." : "Aramanıza uyan video bulunamadı."}
+            </div>
           ) : (
-            <KlasorGrid videolar={videolar} onVideoSec={setAktifVideo} />
+            <KlasorGrid videolar={liste.gorunen} onVideoSec={setAktifVideo} />
           )}
         </div>
       )}

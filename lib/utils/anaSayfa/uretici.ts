@@ -25,17 +25,17 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import type { HedefRol } from "@/lib/utils/roller";
-import { kayitDurumKodu, yayinDurumKodu, type DurumKodu } from "@/lib/utils/durum/mesaj";
-import { TALEP_ALANLARI, haritalaTalep, type TalepBilgisi } from "@/lib/utils/talepZinciri";
+import { type DurumKodu } from "@/lib/utils/durum/mesaj";
+import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
+// Zincir okuma ve aşama kaskadı ortak dosyada (27.07): aynı soruyu Talepler
+// sayfası da soruyor, iki kopya zamanla iki farklı cevap verirdi.
+import { asamaCoz, zincirHaritasi, type ZincirAsama } from "@/lib/utils/uretimZinciri";
 
 type TakipKategori =
   | "inceleme" | "yayin-bekleyen" | "yayinda" | "durdurulan"
   | "devam" | "iptal" | "planlanan" | "hata" | "video-bekleyen";
 
-// 27.07: dördüncü aşama "Yayın" değil "Tamamlandı". Sebep: durum sütunundaki
-// metinlerin çoğu "yayın" kelimesini taşıyor (Yayına Alınız, Yayına Aldınız,
-// Yayınını Planladınız); yan yana iki sütunda aynı kelime tekrarlanıyordu.
-type Asama = "Senaryo" | "Video" | "Soru Seti" | "Tamamlandı";
+type Asama = ZincirAsama;
 
 interface TakipSatiri {
   talep_id: string;
@@ -55,35 +55,6 @@ interface TakipSatiri {
   kategori: TakipKategori;
 }
 
-/** v_uretici_icerik_takip'in bir satırı: bir talebin üretim zinciri anlık görüntüsü. */
-interface ZincirSatiri {
-  talep_id: string;
-  senaryo_id: string | null;
-  senaryo_iu_id: string | null;
-  senaryo_durum: string | null;
-  senaryo_durum_tarih: string | null;
-  video_id: string | null;
-  video_iu_id: string | null;
-  video_durum: string | null;
-  video_durum_tarih: string | null;
-  soru_seti_id: string | null;
-  soru_seti_iu_id: string | null;
-  soru_seti_durum: string | null;
-  soru_seti_durum_tarih: string | null;
-  yayin_durum: string | null;
-  yayin_tarihi: string | null;
-}
-
-// Kolonlar açık yazılır (select("*") DEĞİL): denetim aracı yıldızı atlar, açık
-// listede ise view kolonu değişirse `npm run denetim` bunu yakalar.
-const ZINCIR_ALANLARI = `
-  talep_id,
-  senaryo_id, senaryo_iu_id, senaryo_durum, senaryo_durum_tarih,
-  video_id, video_iu_id, video_durum, video_durum_tarih,
-  soru_seti_id, soru_seti_iu_id, soru_seti_durum, soru_seti_durum_tarih,
-  yayin_durum, yayin_tarihi
-`;
-
 /** Durum kodu → ana sayfa stat kartı/filtre kategorisi. Karta bağlı olmayan kodlar yalnız "tümü"de görünür. */
 function kategoriBul(kod: DurumKodu): TakipKategori {
   switch (kod) {
@@ -101,102 +72,24 @@ function kategoriBul(kod: DurumKodu): TakipKategori {
   }
 }
 
-/**
- * Zincirin nerede durduğunu bulur: ilk tamamlanmamış aşama satırın aşamasıdır.
- * Saf fonksiyon — sorgu yapmaz, yalnız view satırını okur.
- * Bekleyen aşamaların tarihi "bir önceki aşamanın onay tarihi"dir (oncekiTarih).
- */
-function asamaCoz(talep: TalepBilgisi, z: ZincirSatiri): Omit<TakipSatiri, keyof TalepKunye | "kategori"> {
-  let oncekiTarih: string = talep.created_at ?? "";
-
-  // ── Senaryo: yalnız normal kol. Hazır video senaryosuz, bu aşamayı atlar. ──
-  if (!talep.hazir_video) {
-    if (!z.senaryo_id) {
-      // Senaryo kaydı yok → hiçbir İÜ işi üstlenmemiş; iş İÜ tarafında bekliyor.
-      return { asama: "Senaryo", durum_kodu: "iu_iletildi", tarih: oncekiTarih, yol: `/talepler/${talep.talep_id}` };
-    }
-    if (z.senaryo_durum !== "onaylandi") {
-      return {
-        asama: "Senaryo",
-        durum_kodu: kayitDurumKodu(z.senaryo_durum, !!z.senaryo_iu_id),
-        tarih: z.senaryo_durum_tarih ?? oncekiTarih,
-        yol: `/senaryolar/${talep.talep_id}`,
-      };
-    }
-    oncekiTarih = z.senaryo_durum_tarih ?? oncekiTarih;
-  }
-
-  // ── Video (ortak): video talebe talep_id ile bağlı (hazır + normal). ──
-  if (!z.video_id) {
-    // Hazır kolda video kaydı yoksa yükleme üreticidedir. Normal kolda kabuk
-    // senaryo onayıyla doğduğundan burada olmaması zincir kopmasıdır.
-    const kod: DurumKodu = talep.hazir_video ? "video_bekleniyor" : "sistem_hatasi";
-    return {
-      asama: "Video",
-      durum_kodu: kod,
-      tarih: oncekiTarih,
-      yol: talep.hazir_video ? `/talepler/${talep.talep_id}` : "/videolar",
-    };
-  }
-  if (z.video_durum !== "onaylandi") {
-    return {
-      asama: "Video",
-      durum_kodu: kayitDurumKodu(z.video_durum, !!z.video_iu_id),
-      tarih: z.video_durum_tarih ?? oncekiTarih,
-      yol: "/videolar",
-    };
-  }
-  oncekiTarih = z.video_durum_tarih ?? oncekiTarih;
-
-  // ── Soru seti (ortak): set video_durum_id ile bağlı. ──
-  if (!z.soru_seti_id) {
-    // Set kabuğu video onayıyla (hazır kolda yükleme anında) doğar; yoksa zincir kopuktur.
-    return { asama: "Soru Seti", durum_kodu: "sistem_hatasi", tarih: oncekiTarih, yol: "/soru-setleri" };
-  }
-  if (z.soru_seti_durum !== "onaylandi") {
-    return {
-      asama: "Soru Seti",
-      durum_kodu: kayitDurumKodu(z.soru_seti_durum, !!z.soru_seti_iu_id),
-      tarih: z.soru_seti_durum_tarih ?? oncekiTarih,
-      yol: "/soru-setleri",
-    };
-  }
-  oncekiTarih = z.soru_seti_durum_tarih ?? oncekiTarih;
-
-  // ── Yayın: zincirin sonu. Kayıt yoksa yayına alma üreticidedir (mesaj.ts). ──
-  return {
-    asama: "Tamamlandı",
-    durum_kodu: yayinDurumKodu(z.yayin_durum),
-    tarih: z.yayin_tarihi ?? oncekiTarih,
-    yol: "/yayin-yonetimi",
-  };
-}
-
 /** Satırın künye alanları — talepten gelir, zincirden değil. */
 type TalepKunye = Pick<TakipSatiri,
   "talep_id" | "talep_no" | "firma_adi" | "urun_adi" | "teknik_adi" | "hedef_rol" | "hazir_video" | "hazir_soru_seti">;
 
 export async function getUreticiAnaSayfaVeri(userId: string, adminSupabase: SupabaseClient) {
   // İki sorgu paralel: künye/adlar ∥ zincir. İkisi de uretici_id süzgeçli.
-  const [talepR, zincirR] = await Promise.all([
+  const [talepR, zincirler] = await Promise.all([
     adminSupabase
       .from("talepler")
       .select(TALEP_ALANLARI)
       .eq("uretici_id", userId)
       .order("created_at", { ascending: false }),
-    adminSupabase
-      .from("v_uretici_icerik_takip")
-      .select(ZINCIR_ALANLARI)
-      .eq("uretici_id", userId),
+    zincirHaritasi(adminSupabase, { ureticiId: userId }),
   ]);
 
   // DB'nin kendi mesajı taşınır: "çekilemedi" tek başına teşhis ettirmiyor
   // (27.07 dersi — 500'ün sebebi ancak sunucu terminalinden bulunabiliyordu).
   if (talepR.error) throw new Error(`Talepler çekilemedi: ${talepR.error.message}`);
-  if (zincirR.error) throw new Error(`İçerik takibi çekilemedi: ${zincirR.error.message}`);
-
-  const zincirler = new Map<string, ZincirSatiri>();
-  for (const z of (zincirR.data ?? []) as unknown as ZincirSatiri[]) zincirler.set(z.talep_id, z);
 
   const satirlar: TakipSatiri[] = [];
 

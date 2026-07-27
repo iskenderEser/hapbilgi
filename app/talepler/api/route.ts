@@ -12,6 +12,7 @@ import type { HedefRol } from "@/app/talepler/_types";
 import { ECZANEM_TALEP_ACAN_ROLLER, ECLUB_HEDEF_ROLLER, TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
+import { zincirHaritasi, asamaCoz, uretimBittiMi, iptalEdildiMi } from "@/lib/utils/uretimZinciri";
 import { hazirParametreKontrol } from "@/lib/uretim/parametreKontrol";
 
 // TalepTuru tipinin tüm geçerli değerlerinin runtime listesi —
@@ -65,7 +66,7 @@ export async function GET() {
     // yerde. Bu listeye özel alanlar (takım, firma/ürün/teknik kimlikleri, hazır
     // video adresi) künyenin üstüne eklenir — künyeye girmezler, yalnız burada
     // ve talep formunda kullanılırlar.
-    const sonuc = (talepler ?? []).map((t: any) => ({
+    const kunyeler = (talepler ?? []).map((t: any) => ({
       ...haritalaTalep(t),
       takim_id: t.takim_id,
       firma_id: t.firma_id,
@@ -73,6 +74,49 @@ export async function GET() {
       teknik_id: t.teknik_id,
       hazir_video_url: t.hazir_video_url,
     }));
+
+    // Zincir durumu (27.07): sayfa artık talepleri "devam eden" ve "iptal edilen"
+    // diye ayırıyor, bitmiş olanları hiç göstermiyor (onlar Yayın Listesi'nde).
+    // Bu ayrım ancak talebin üretim zincirinin nerede olduğu bilinirse yapılabilir.
+    // Kaskad ortak dosyada — ana sayfayla aynı cevabı vermesi böyle garanti edilir.
+    // View service_role yetkilidir; oturum istemcisiyle değil adminSupabase ile okunur.
+    const zincirler = await zincirHaritasi(adminSupabase, {
+      talepIdler: kunyeler.map((t) => t.talep_id),
+    });
+
+    const durumlar = new Map<string, ReturnType<typeof asamaCoz>>();
+    for (const t of kunyeler) {
+      const z = zincirler.get(t.talep_id);
+      if (z) durumlar.set(t.talep_id, asamaCoz(t, z));
+    }
+
+    // İÇERİK ÜRETİCİSİ ADI: iptal tablosunda "iş kimdeydi" görünsün. Tek toplu
+    // sorgu — talep başına ad çözmek N+1 olurdu (üretici ana sayfasının dersi).
+    const iuIdler = [...new Set(
+      [...durumlar.values()].map((d) => d.iu_id).filter((id): id is string => !!id),
+    )];
+    const iuAdlari = new Map<string, string>();
+    if (iuIdler.length > 0) {
+      const { data: iular } = await adminSupabase
+        .from("kullanicilar")
+        .select("kullanici_id, ad, soyad")
+        .in("kullanici_id", iuIdler);
+      for (const k of iular ?? []) iuAdlari.set(k.kullanici_id, `${k.ad ?? ""} ${k.soyad ?? ""}`.trim());
+    }
+
+    const sonuc = kunyeler.map((t) => {
+      // Zincir satırı yoksa talep henüz hiçbir aşamaya girmemiş sayılır; sessizce
+      // düşürmek yerine "devam eden" kabul edilir — liste kayıt kaybetmemeli.
+      const durum = durumlar.get(t.talep_id);
+      return {
+        ...t,
+        asama: durum?.asama ?? "Senaryo",
+        durum_kodu: durum?.durum_kodu ?? "iu_iletildi",
+        uretim_bitti: durum ? uretimBittiMi(durum) : false,
+        iptal_edildi: durum ? iptalEdildiMi(durum) : false,
+        iu_ad_soyad: durum?.iu_id ? (iuAdlari.get(durum.iu_id) ?? null) : null,
+      };
+    });
 
     return NextResponse.json({ talepler: sonuc }, { status: 200 });
 

@@ -5,6 +5,8 @@
 
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
 import type { HedefRol } from "@/lib/utils/roller";
+import type { ZincirAsama } from "@/lib/utils/uretimZinciri";
+import type { DurumKodu } from "@/lib/utils/durum/mesaj";
 
 // ============================================================================
 // Tipler
@@ -31,6 +33,15 @@ export interface Talep {
   hazir_soru_seti: boolean;
   soru_seti_buyuklugu: number;
   video_basi_soru_sayisi: number;
+  // ── Zincir durumu (27.07): /talepler/api ekler, v_uretici_icerik_takip'ten türer.
+  // Sayfa bu alanlarla "devam eden / iptal edilen" ayrımını yapar; üretimi bitmiş
+  // talepler hiç gösterilmez — onlar ana sayfadaki Yayın Listesi'ne aittir.
+  asama: ZincirAsama;
+  durum_kodu: DurumKodu;
+  uretim_bitti: boolean;
+  iptal_edildi: boolean;
+  /** İşi o an üstlenen içerik üreticisinin adı — iptal tablosunda gösterilir. */
+  iu_ad_soyad: string | null;
 }
 
 export interface Urun {

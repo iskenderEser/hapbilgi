@@ -21,6 +21,7 @@ import { ANA_SEKMELER, ANA_SEKME_ETIKETLERI } from "./_types";
 import { useYayinYonetimi } from "./_hooks/useYayinYonetimi";
 import { BekleyenSatir } from "./_components/BekleyenSatir";
 import { YayinSatir } from "./_components/YayinSatir";
+import { useListe, ListeArama, DahaFazlaGoster } from "@/components/liste";
 import { VideoOnizlemeModal, YayinOnayModal, IleriSarmaOnayModal } from "./_components/Modallar";
 
 export default function YayinYonetimiPage() {
@@ -79,6 +80,17 @@ export default function YayinYonetimiPage() {
   const yayindakiler = yayinlarFiltreli.filter(y => y.durum === "yayinda" || y.durum === "planlandi");
   const durdurulular = yayinlarFiltreli.filter(y => y.durum === "Durduruldu");
 
+  // Arama + kademeli listeleme merkezden (components/liste). Üç sekme üç ayrı
+  // liste olduğu için üç kanca var; React kancaları koşulsuz çağrılmalı, bu yüzden
+  // aktif sekmeye göre tek kanca kurulamaz — üçü de kurulur, biri kullanılır.
+  const ARAMA_ALANLARI = [
+    { anahtar: "no", etiket: "Talep No", deger: (r: { talep_no: number }) => r.talep_no },
+    { anahtar: "ad", etiket: "Ürün / Eğitim", deger: (r: { urun_adi: string }) => r.urun_adi },
+  ];
+  const bekleyenListe = useListe({ veri: yy.bekleyenler, aramaAlanlari: ARAMA_ALANLARI });
+  const yayindaListe = useListe({ veri: yayindakiler, aramaAlanlari: ARAMA_ALANLARI });
+  const durdurulanListe = useListe({ veri: durdurulular, aramaAlanlari: ARAMA_ALANLARI });
+
   if (authYukleniyor || !kullanici || yy.loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -128,9 +140,12 @@ export default function YayinYonetimiPage() {
         </div>
 
         {aktifSekme === "bekleyen" && (
-          yy.bekleyenler.length === 0
-            ? <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">Bekleyen video yok.</div>
-            : yy.bekleyenler.map(b => (
+          <div className="mb-3 flex justify-end"><ListeArama arama={bekleyenListe.arama} /></div>
+        )}
+        {aktifSekme === "bekleyen" && (
+          bekleyenListe.toplam === 0
+            ? <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">{yy.bekleyenler.length === 0 ? "Bekleyen video yok." : "Aramanıza uyan kayıt bulunamadı."}</div>
+            : bekleyenListe.gorunen.map(b => (
               <BekleyenSatir key={b.soru_seti_durum_id} b={b}
                 islemLoading={yy.islemLoading}
                 acikAkordiyon={acikAkordiyon} setAcikAkordiyon={setAcikAkordiyon}
@@ -152,10 +167,22 @@ export default function YayinYonetimiPage() {
             ))
         )}
 
+        {aktifSekme === "bekleyen" && (
+          <DahaFazlaGoster
+            dahaVar={bekleyenListe.dahaVar}
+            gorunenSayi={bekleyenListe.gorunen.length}
+            toplam={bekleyenListe.toplam}
+            onGoster={bekleyenListe.dahaFazlaGoster}
+          />
+        )}
+
         {aktifSekme === "yayinda" && (
-          yayindakiler.length === 0
-            ? <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">Yayında video yok.</div>
-            : yayindakiler.map(y => (
+          <div className="mb-3 flex justify-end"><ListeArama arama={yayindaListe.arama} /></div>
+        )}
+        {aktifSekme === "yayinda" && (
+          yayindaListe.toplam === 0
+            ? <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">{yayindakiler.length === 0 ? "Yayında video yok." : "Aramanıza uyan kayıt bulunamadı."}</div>
+            : yayindaListe.gorunen.map(y => (
               <YayinSatir key={y.yayin_id} y={y}
                 islemLoading={yy.islemLoading}
                 acikAkordiyon={acikAkordiyon} setAcikAkordiyon={setAcikAkordiyon}
@@ -169,10 +196,22 @@ export default function YayinYonetimiPage() {
             ))
         )}
 
+        {aktifSekme === "yayinda" && (
+          <DahaFazlaGoster
+            dahaVar={yayindaListe.dahaVar}
+            gorunenSayi={yayindaListe.gorunen.length}
+            toplam={yayindaListe.toplam}
+            onGoster={yayindaListe.dahaFazlaGoster}
+          />
+        )}
+
         {aktifSekme === "durdurulan" && (
-          durdurulular.length === 0
-            ? <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">Durdurulan video yok.</div>
-            : durdurulular.map(y => (
+          <div className="mb-3 flex justify-end"><ListeArama arama={durdurulanListe.arama} /></div>
+        )}
+        {aktifSekme === "durdurulan" && (
+          durdurulanListe.toplam === 0
+            ? <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">{durdurulular.length === 0 ? "Durdurulan video yok." : "Aramanıza uyan kayıt bulunamadı."}</div>
+            : durdurulanListe.gorunen.map(y => (
               <YayinSatir key={y.yayin_id} y={y}
                 islemLoading={yy.islemLoading}
                 acikAkordiyon={acikAkordiyon} setAcikAkordiyon={setAcikAkordiyon}
@@ -183,6 +222,15 @@ export default function YayinYonetimiPage() {
                 onDurumDegistir={yy.handleDurumDegistir}
               />
             ))
+        )}
+
+        {aktifSekme === "durdurulan" && (
+          <DahaFazlaGoster
+            dahaVar={durdurulanListe.dahaVar}
+            gorunenSayi={durdurulanListe.gorunen.length}
+            toplam={durdurulanListe.toplam}
+            onGoster={durdurulanListe.dahaFazlaGoster}
+          />
         )}
       </div>
 

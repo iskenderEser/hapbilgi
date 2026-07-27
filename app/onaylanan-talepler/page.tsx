@@ -20,6 +20,7 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import VideoCercevesi from "@/components/video/VideoCercevesi";
 import TalepKlasorleri from "@/components/talep/TalepKlasorleri";
+import { useListe, ListeArama } from "@/components/liste";
 import type { DepartmanKey } from "@/lib/video/departman";
 
 interface SoruKaydi {
@@ -52,8 +53,33 @@ export default function OnaylananTaleplerPage() {
   const [loading, setLoading] = useState(true);
   const { mesajlar, hata } = useHataMesaji();
 
+  // Yalnız ARAMA (İskender kararı 27.07): sayfada klasör kırılımı var, klasör
+  // içinde "daha fazla göster" tuhaf durur. adim: Infinity → dilimleme kapalı.
+  // Arama klasörlemeden ÖNCE uygulanır ki klasörler arama sonucunu yansıtsın.
+  const liste = useListe({
+    veri: kayitlar,
+    adim: Infinity,
+    aramaAlanlari: [
+      { anahtar: "no", etiket: "Talep No", deger: (k: OnayliTalep) => k.talep_no_goster },
+      { anahtar: "ad", etiket: "Ürün / Eğitim", deger: (k: OnayliTalep) => k.urun_adi },
+    ],
+  });
+
+
   useEffect(() => {
-    if (authYukleniyor) return;
+    // Yalnız ARAMA (İskender kararı 27.07): sayfada klasör kırılımı var, klasör
+  // içinde "daha fazla göster" tuhaf durur. adim: Infinity → dilimleme kapalı.
+  // Arama klasörlemeden ÖNCE uygulanır ki klasörler arama sonucunu yansıtsın.
+  const liste = useListe({
+    veri: kayitlar,
+    adim: Infinity,
+    aramaAlanlari: [
+      { anahtar: "no", etiket: "Talep No", deger: (k: OnayliTalep) => k.talep_no_goster },
+      { anahtar: "ad", etiket: "Ürün / Eğitim", deger: (k: OnayliTalep) => k.urun_adi },
+    ],
+  });
+
+  if (authYukleniyor) return;
     if (!kullanici) {
       router.push("/login");
       return;
@@ -223,16 +249,20 @@ export default function OnaylananTaleplerPage() {
       <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7 flex flex-col gap-4">
         <h1 className="text-lg font-bold text-gray-900 m-0">Onaylanan Talepler</h1>
 
-        {kayitlar.length === 0 ? (
+        <div className="mb-3 flex justify-end"><ListeArama arama={liste.arama} /></div>
+
+        {liste.toplam === 0 ? (
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <p className="text-sm text-gray-400 text-center py-8 m-0">Henüz onaylanmış talep yok.</p>
+            <p className="text-sm text-gray-400 text-center py-8 m-0">
+              {kayitlar.length === 0 ? "Henüz onaylanmış talep yok." : "Aramanıza uyan talep bulunamadı."}
+            </p>
           </div>
         ) : (
           // Klasör kırılımı (26.07): düz liste talep geldikçe uzuyordu ve onaylı
           // bir işin hangi firmaya/müdürlüğe/ürüne ait olduğu okunmuyordu.
           // Gösterim aşağıda aynı kaldı — yalnız hangi taleplerin görüneceğini
           // klasör belirliyor.
-          <TalepKlasorleri talepler={kayitlar} render={(liste) => (
+          <TalepKlasorleri talepler={liste.gorunen} render={(liste) => (
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div className="md:hidden divide-y divide-gray-50">
               {liste.map(k => (

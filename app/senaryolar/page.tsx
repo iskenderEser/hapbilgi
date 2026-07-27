@@ -9,6 +9,7 @@ import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useOkunmamisIdler } from "@/hooks/useOkunmamisIdler";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
+import { useListe, ListeArama, DahaFazlaGoster } from "@/components/liste";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import DurumAnahtari from "@/components/DurumAnahtari";
 import UretimVaryantiRozet from "@/components/UretimVaryantiRozet";
@@ -160,7 +161,18 @@ export default function SenaryolarListePage() {
     return s;
   }, [satirlar]);
 
-  const filtreliSatirlar = satirlar.filter(s => s.durum_kodu === aktifDurum);
+  // Sıra önemli: önce durum sekmesi (DurumAnahtari), sonra arama, sonra dilimleme.
+  // Arama ve "daha fazla göster" merkezden (components/liste) — 9 liste ekranı
+  // aynı davranışı paylaşsın diye; sayfa yalnız aranabilir alanları tanımlar.
+  const durumSuzulmus = satirlar.filter(s => s.durum_kodu === aktifDurum);
+  const liste = useListe({
+    veri: durumSuzulmus,
+    aramaAlanlari: [
+      { anahtar: "no", etiket: "Talep No", deger: (s: typeof durumSuzulmus[number]) => s.talep_no },
+      { anahtar: "ad", etiket: "Ürün / Eğitim", deger: (s: typeof durumSuzulmus[number]) => s.urun_adi },
+    ],
+  });
+  const filtreliSatirlar = liste.gorunen;
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
@@ -187,9 +199,16 @@ export default function SenaryolarListePage() {
 
           <DurumAnahtari baslik="Senaryolar" rol={kullanici.rol} asama="Senaryo" aktif={aktifDurum} onSec={setAktifDurum} sayim={sayim} />
 
-          {filtreliSatirlar.length === 0 ? (
+          <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+            <span className="text-xs text-gray-500">{liste.toplam} kayıt</span>
+            <ListeArama arama={liste.arama} />
+          </div>
+
+          {liste.toplam === 0 ? (
             <div className="p-10 text-center text-sm text-gray-400">
-              {satirlar.length === 0 ? "Henüz senaryo bulunmuyor." : "Bu durumda senaryo yok."}
+              {satirlar.length === 0 ? "Henüz senaryo bulunmuyor."
+                : liste.hamToplam === 0 ? "Bu durumda senaryo yok."
+                : "Aramanıza uyan kayıt bulunamadı."}
             </div>
           ) : (
             <>
@@ -269,6 +288,13 @@ export default function SenaryolarListePage() {
                   </tbody>
                 </table>
               </div>
+
+              <DahaFazlaGoster
+                dahaVar={liste.dahaVar}
+                gorunenSayi={liste.gorunen.length}
+                toplam={liste.toplam}
+                onGoster={liste.dahaFazlaGoster}
+              />
             </>
           )}
         </div>

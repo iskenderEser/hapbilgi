@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useHataMesaji } from "@/components/HataMesaji";
 import { HedefRolPill, VaryantPill, AsamaPill, DurumPill, Pill, type PillAsama, type PillRenk } from "@/components/pill";
+import { useListe, ListeArama, DahaFazlaGoster } from "@/components/liste";
 import type { HedefRol } from "@/lib/utils/roller";
 import { ROL_ADLARI } from "@/lib/utils/roller";
 import { talepIdGoster } from "@/lib/utils/talepId";
@@ -85,6 +86,21 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
   // Boş durum örnek satırındaki soluk pill'lerin rengi (gerçek veri değil, tanıtım).
   const ORNEK_RENK: PillRenk = { bg: "#f3f4f6", metin: "#9ca3af", kenar: "#e5e7eb" };
 
+  // Satır türetimi ve liste kancası, yükleme dönüşünün ÜSTÜNDE durmak zorunda:
+  // React kancaları koşulsuz çağrılmalı, erken return'ün altına konamaz.
+  const satirlar = pmVeri?.satirlar ?? [];
+  const filtrelenmisKategori = aktifFiltre === "tumu" ? satirlar : satirlar.filter(s => s.kategori === aktifFiltre);
+
+  // Arama + kademeli listeleme merkezden (components/liste) — Talepler sayfasıyla
+  // aynı davranış. Sıra önemli: önce kategori süzgeci (stat kartları), sonra arama.
+  const liste = useListe({
+    veri: filtrelenmisKategori,
+    aramaAlanlari: [
+      { anahtar: "no", etiket: "Talep No", deger: (s: TakipSatiri) => s.talep_no },
+      { anahtar: "ad", etiket: "Ürün / Eğitim", deger: (s: TakipSatiri) => s.urun_adi },
+    ],
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-20">
@@ -96,9 +112,8 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
     );
   }
 
-  const satirlar = pmVeri?.satirlar ?? [];
   const istat = pmVeri?.istatistikler ?? { inceleme_bekleyen: 0, yayin_bekleyen: 0, yayinda: 0, toplam: 0 };
-  const filtrelenmis = aktifFiltre === "tumu" ? satirlar : satirlar.filter(s => s.kategori === aktifFiltre);
+  const filtrelenmis = liste.gorunen;
   // Ad çözülemezse rolün unvanı yazılır — "PM" kod dilidir ve bu bileşeni 13
   // üretici rolün hepsi kullanıyor (Eğitim Müdürü de "Merhaba PM" görüyordu).
   const ad = adSoyad.split(" ")[0] || ROL_ADLARI[rol.toLowerCase()] || "";
@@ -215,15 +230,18 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
       {/* İçerik tablosu başlık */}
       <div className="flex items-center justify-between mb-3">
         <span className="text-base font-bold text-gray-900">Yayın Listesi</span>
-        {aktifFiltre !== "tumu" && (
-          <button
-            onClick={() => setAktifFiltre("tumu")}
-            className="text-xs text-gray-500 bg-transparent border border-gray-200 rounded-full px-3 py-1 cursor-pointer"
-            style={{ fontFamily: "'Nunito', sans-serif" }}
-          >
-            Filtreyi Kaldır
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {aktifFiltre !== "tumu" && (
+            <button
+              onClick={() => setAktifFiltre("tumu")}
+              className="text-xs text-gray-500 bg-transparent border border-gray-200 rounded-full px-3 py-1 cursor-pointer"
+              style={{ fontFamily: "'Nunito', sans-serif" }}
+            >
+              Filtreyi Kaldır
+            </button>
+          )}
+          <ListeArama arama={liste.arama} />
+        </div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
@@ -302,6 +320,13 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
             })
           )}
         </div>
+
+        <DahaFazlaGoster
+          dahaVar={liste.dahaVar}
+          gorunenSayi={liste.gorunen.length}
+          toplam={liste.toplam}
+          onGoster={liste.dahaFazlaGoster}
+        />
 
       </div>
     </div>

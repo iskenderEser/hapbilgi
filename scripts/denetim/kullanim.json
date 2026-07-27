@@ -856,6 +856,11 @@
       "tablo": "talepler"
     },
     {
+      "dosya": "lib/utils/uretimZinciri.ts",
+      "satir": 84,
+      "tablo": "v_uretici_icerik_takip"
+    },
+    {
       "dosya": "lib/video/anaSayfaVideolari.ts",
       "satir": 40,
       "tablo": "kullanicilar"
@@ -902,17 +907,17 @@
     },
     {
       "dosya": "app/kullanicilar/page.tsx",
-      "satir": 74,
+      "satir": 75,
       "tablo": "firmalar"
     },
     {
       "dosya": "app/kullanicilar/page.tsx",
-      "satir": 75,
+      "satir": 76,
       "tablo": "takimlar"
     },
     {
       "dosya": "app/kullanicilar/page.tsx",
-      "satir": 76,
+      "satir": 77,
       "tablo": "bolgeler"
     },
     {
@@ -922,17 +927,17 @@
     },
     {
       "dosya": "app/onaylanan-talepler/page.tsx",
-      "satir": 72,
+      "satir": 98,
       "tablo": "senaryo_durumu"
     },
     {
       "dosya": "app/onaylanan-talepler/page.tsx",
-      "satir": 84,
+      "satir": 110,
       "tablo": "video_durumu"
     },
     {
       "dosya": "app/onaylanan-talepler/page.tsx",
-      "satir": 90,
+      "satir": 116,
       "tablo": "soru_seti_durumu"
     },
     {
@@ -942,32 +947,32 @@
     },
     {
       "dosya": "app/senaryolar/page.tsx",
-      "satir": 68,
+      "satir": 69,
       "tablo": "senaryolar"
     },
     {
       "dosya": "app/senaryolar/page.tsx",
-      "satir": 99,
+      "satir": 100,
       "tablo": "v_senaryo_son_durum"
     },
     {
       "dosya": "app/soru-setleri/page.tsx",
-      "satir": 70,
+      "satir": 71,
       "tablo": "soru_setleri"
     },
     {
       "dosya": "app/soru-setleri/page.tsx",
-      "satir": 121,
+      "satir": 122,
       "tablo": "v_soru_seti_son_durum"
     },
     {
       "dosya": "app/videolar/page.tsx",
-      "satir": 82,
+      "satir": 83,
       "tablo": "videolar"
     },
     {
       "dosya": "app/videolar/page.tsx",
-      "satir": 120,
+      "satir": 121,
       "tablo": "v_video_son_durum"
     },
     {
@@ -1337,13 +1342,8 @@
     },
     {
       "dosya": "lib/utils/anaSayfa/uretici.ts",
-      "satir": 182,
+      "satir": 82,
       "tablo": "talepler"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/uretici.ts",
-      "satir": 187,
-      "tablo": "v_uretici_icerik_takip"
     },
     {
       "dosya": "lib/utils/anaSayfa/utt.ts",
@@ -1677,22 +1677,27 @@
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 42,
+      "satir": 43,
       "tablo": "talepler"
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 102,
+      "satir": 100,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 215,
+      "satir": 146,
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "app/talepler/api/route.ts",
+      "satir": 259,
       "tablo": "talepler"
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 256,
+      "satir": 300,
       "tablo": "kullanicilar"
     },
     {
@@ -4439,19 +4444,19 @@
     },
     {
       "dosya": "app/kullanicilar/page.tsx",
-      "satir": 74,
+      "satir": 75,
       "ham": "firma_id, firma_adi",
       "tablo": "firmalar"
     },
     {
       "dosya": "app/kullanicilar/page.tsx",
-      "satir": 75,
+      "satir": 76,
       "ham": "takim_id, takim_adi, firma_id",
       "tablo": "takimlar"
     },
     {
       "dosya": "app/kullanicilar/page.tsx",
-      "satir": 76,
+      "satir": 77,
       "ham": "bolge_id, bolge_adi, takim_id",
       "tablo": "bolgeler"
     },
@@ -4463,19 +4468,19 @@
     },
     {
       "dosya": "app/onaylanan-talepler/page.tsx",
-      "satir": 72,
+      "satir": 98,
       "ham": "senaryo_durum_id, created_at, senaryolar(talep_id, senaryo_metni)",
       "tablo": "senaryo_durumu"
     },
     {
       "dosya": "app/onaylanan-talepler/page.tsx",
-      "satir": 84,
+      "satir": 110,
       "ham": "video_durum_id, videolar(video_url, senaryo_durum_id)",
       "tablo": "video_durumu"
     },
     {
       "dosya": "app/onaylanan-talepler/page.tsx",
-      "satir": 90,
+      "satir": 116,
       "ham": "soru_setleri(video_durum_id, sorular)",
       "tablo": "soru_seti_durumu"
     },
@@ -4487,37 +4492,37 @@
     },
     {
       "dosya": "app/senaryolar/page.tsx",
-      "satir": 68,
+      "satir": 69,
       "ham": "\n        senaryo_id,\n        talep_id,\n        iu_id,\n        created_at,\n        talepler!inner ( talep_id )\n      ",
       "tablo": "senaryolar"
     },
     {
       "dosya": "app/senaryolar/page.tsx",
-      "satir": 99,
+      "satir": 100,
       "ham": "senaryo_id, durum, created_at",
       "tablo": "v_senaryo_son_durum"
     },
     {
       "dosya": "app/soru-setleri/page.tsx",
-      "satir": 70,
+      "satir": 71,
       "ham": "soru_seti_id, video_durum_id, talep_id, iu_id, sorular, created_at",
       "tablo": "soru_setleri"
     },
     {
       "dosya": "app/soru-setleri/page.tsx",
-      "satir": 121,
+      "satir": 122,
       "ham": "soru_seti_id, durum, created_at",
       "tablo": "v_soru_seti_son_durum"
     },
     {
       "dosya": "app/videolar/page.tsx",
-      "satir": 82,
+      "satir": 83,
       "ham": "\n        video_id,\n        senaryo_durum_id,\n        iu_id,\n        video_url,\n        thumbnail_url,\n        created_at,\n        senaryo_durumu!inner (\n          senaryolar!inner ( talep_id )\n        )\n      ",
       "tablo": "videolar"
     },
     {
       "dosya": "app/videolar/page.tsx",
-      "satir": 120,
+      "satir": 121,
       "ham": "video_id, durum, created_at",
       "tablo": "v_video_son_durum"
     },
@@ -5279,13 +5284,19 @@
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 102,
+      "satir": 100,
+      "ham": "kullanici_id, ad, soyad",
+      "tablo": "kullanicilar"
+    },
+    {
+      "dosya": "app/talepler/api/route.ts",
+      "satir": 146,
       "ham": "takim_id, firma_id",
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/talepler/api/route.ts",
-      "satir": 256,
+      "satir": 300,
       "ham": "kullanici_id",
       "tablo": "kullanicilar"
     },

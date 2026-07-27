@@ -2,6 +2,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { useListe, ListeArama, DahaFazlaGoster } from "@/components/liste";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
@@ -89,6 +90,16 @@ export default function KullanicilarPage() {
 
   const filtreliTakimlar = hiyerarsi.takimlar.filter(t => !secilenFirma || t.firma_id === secilenFirma);
   const filtreliBolgeler = hiyerarsi.bolgeler.filter(b => !secilenTakim || b.takim_id === secilenTakim);
+
+  // Arama + kademeli listeleme merkezden (components/liste). Sayfada bugün yalnız
+  // firma/takım/bölge açılır kutuları var; ada veya e-postaya göre metin araması yoktu.
+  const liste = useListe({
+    veri: kullanicilar,
+    aramaAlanlari: [
+      { anahtar: "ad", etiket: "Ad Soyad", deger: (k: Kullanici) => `${k.ad} ${k.soyad}` },
+      { anahtar: "eposta", etiket: "E-posta", deger: (k: Kullanici) => k.eposta },
+    ],
+  });
 
   const formSifirla = () => {
     setAd(""); setSoyad("");
@@ -224,12 +235,17 @@ export default function KullanicilarPage() {
         {/* Kullanıcı listesi */}
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           <div className="px-5 py-3 border-b border-gray-200 flex items-center justify-between">
-            <span className="text-sm font-semibold text-gray-900">Kullanıcılar</span>
-            <span className="text-xs text-gray-400">{kullanicilar.length} kayıt</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-gray-900">Kullanıcılar</span>
+              <span className="text-xs text-gray-400">{liste.toplam} kayıt</span>
+            </div>
+            <ListeArama arama={liste.arama} />
           </div>
 
-          {kullanicilar.length === 0 ? (
-            <div className="p-10 text-center text-gray-400 text-sm">Henüz kullanıcı bulunmuyor.</div>
+          {liste.toplam === 0 ? (
+            <div className="p-10 text-center text-gray-400 text-sm">
+              {kullanicilar.length === 0 ? "Henüz kullanıcı bulunmuyor." : "Aramanıza uyan kullanıcı bulunamadı."}
+            </div>
           ) : (
             <>
               {/* Desktop / Tablet tablo */}
@@ -246,7 +262,7 @@ export default function KullanicilarPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {kullanicilar.map((k) => (
+                    {liste.gorunen.map((k) => (
                       <tr key={k.kullanici_id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                         <td className="px-5 py-3 text-gray-900 font-medium whitespace-nowrap">{k.ad} {k.soyad}</td>
                         <td className="px-3 py-3 text-gray-400 text-xs">{k.eposta}</td>
@@ -286,7 +302,7 @@ export default function KullanicilarPage() {
 
               {/* Mobile kart görünümü */}
               <div className="md:hidden divide-y divide-gray-100">
-                {kullanicilar.map((k) => (
+                {liste.gorunen.map((k) => (
                   <div key={k.kullanici_id} className="px-4 py-3">
                     <div className="flex items-start justify-between gap-2 mb-1.5">
                       <div>
@@ -319,6 +335,13 @@ export default function KullanicilarPage() {
                   </div>
                 ))}
               </div>
+
+              <DahaFazlaGoster
+                dahaVar={liste.dahaVar}
+                gorunenSayi={liste.gorunen.length}
+                toplam={liste.toplam}
+                onGoster={liste.dahaFazlaGoster}
+              />
             </>
           )}
         </div>
