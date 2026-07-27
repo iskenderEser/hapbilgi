@@ -5,13 +5,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useHataMesaji } from "@/components/HataMesaji";
-import { HedefRolPill } from "@/components/HedefRolBant";
-import UretimVaryantiRozet from "@/components/UretimVaryantiRozet";
+import { HedefRolPill, VaryantPill, AsamaPill, DurumPill, Pill, type PillAsama, type PillRenk } from "@/components/pill";
 import type { HedefRol } from "@/lib/utils/roller";
 import { ROL_ADLARI } from "@/lib/utils/roller";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import { rolTeknikKullanirMi } from "@/lib/uretici/yetenekler";
-import { ureticiDurumMesaji, type DurumKodu } from "@/lib/utils/durum/mesaj";
+import { type DurumKodu } from "@/lib/utils/durum/mesaj";
 
 interface TakipSatiri {
   talep_id: string;
@@ -22,7 +21,7 @@ interface TakipSatiri {
   hedef_rol: HedefRol;
   hazir_video: boolean;
   hazir_soru_seti: boolean;
-  asama: "Senaryo" | "Video" | "Soru Seti" | "Yayın";
+  asama: PillAsama;
   durum_kodu: DurumKodu;
   tarih: string;
   yol: string;
@@ -77,18 +76,14 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
   const bugunTarih = () =>
     new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
 
-  const asamaRenk = (asama: string) => {
-    switch (asama) {
-      case "Senaryo": return { bg: "#f5f3ff", text: "#6d28d9" };
-      case "Video": return { bg: "#eff6ff", text: "#1d4ed8" };
-      case "Soru Seti": return { bg: "#fff7ed", text: "#c2410c" };
-      case "Yayın": return { bg: "#f0fdf4", text: "#166534" };
-      default: return { bg: "#f3f4f6", text: "#6b7280" };
-    }
-  };
-
   // durumRenk kaldırıldı (25.07): metin ve renk artık tek sözlükten okunur —
   // lib/utils/durum/mesaj.ts. Aynı durum her ekranda aynı yazar, aynı renkte çıkar.
+  // asamaRenk kaldırıldı (27.07): aşama pill'i artık nötr (AsamaPill). Renkli
+  // olduğunda durum pill'iyle çakışıyordu — #eff6ff hem "Video aşaması" hem
+  // "inceleme bekleniyor" demekti. Renk yalnız durumda anlam taşır.
+
+  // Boş durum örnek satırındaki soluk pill'lerin rengi (gerçek veri değil, tanıtım).
+  const ORNEK_RENK: PillRenk = { bg: "#f3f4f6", metin: "#9ca3af", kenar: "#e5e7eb" };
 
   if (loading) {
     return (
@@ -112,10 +107,27 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
   // TEKNİK kolonu yalnız içeriği teknik taşıyan rollerde görünür (pm/egt_*);
   // med_md/İK'da hiç gösterilmez (veri-güdümlü, rol-başına hardcode yok).
   const teknikGoster = rolTeknikKullanirMi(rol.toLowerCase());
-  // DURUM kolonu genişletildi (25.07): mesajlar artık tam cümle, kısaltma yok.
+  // Sütun düzeni (27.07): ÜRETİM YÖNTEMİ kendi sütununa çıktı — varyant rozetleri
+  // ürün adının altında duruyordu, "Hazır" ekiyle o satır uzayınca yer sıkıştı.
+  // Varyant ürün adının parçası değil, satırın bağımsız bir özelliğidir.
+  // Sıra: ID · ÜRÜN/EĞİTİM · (TEKNİK) · ÜRETİM YÖNTEMİ · HEDEF ROL · AŞAMA · DURUM · YAYIN TARİHİ
+  //
+  // EŞİT SÜTUN + HİZA (27.07, İskender): iki sorun tek satırda çözülür.
+  // (1) Sütunlar eşit paylı — eskiden DURUM 1.8fr ile diğerlerinin iki katıydı;
+  //     durum metinleri iki kelimeye indiği için o genişlik artık gereksiz ve
+  //     sütun aralıkları göze eşitsiz görünüyordu.
+  // (2) minmax(0,1fr) ŞART: çıplak `1fr` aslında `minmax(auto,1fr)`dir, yani
+  //     hücrenin İÇERİĞİ payından genişse o sütun şişer. Başlık ve her veri satırı
+  //     ayrı birer grid olduğundan bu şişme yalnız o satırı kaydırıyor, satırlar
+  //     birbirine hizalanmıyordu (ÜRETİM YÖNTEMİ hücresi kimi satırda boş, kiminde
+  //     iki pill olduğu için fark büyüdü). minmax(0,…) içerik alt sınırını sıfırlar.
+  // Tek istisna ÜRETİM YÖNTEMİ (İskender kararı 27.07, seçenek B): iki varyantı
+  // olan talepte "Hazır Video" + "Hazır Soru" eşit payda (~160px) yan yana
+  // sığmayıp alt alta düşüyor, o satır diğerlerinden yüksek kalıyordu. 1.4 pay
+  // ile ikisi tek satırda durur; kalan yedi sütun eşit paylı kalır.
   const gridCols = teknikGoster
-    ? "1.1fr 1.3fr 1fr 0.75fr 0.95fr 2.1fr 0.85fr 20px"
-    : "1.1fr 1.4fr 0.75fr 0.95fr 2.1fr 0.85fr 20px";
+    ? "repeat(3, minmax(0, 1fr)) minmax(0, 1.4fr) repeat(4, minmax(0, 1fr)) 20px"
+    : "repeat(2, minmax(0, 1fr)) minmax(0, 1.4fr) repeat(4, minmax(0, 1fr)) 20px";
 
   // Boş durum: hiç talep yoksa (üretim başlamadan önce) tabloyu tanıtan soluk örnek
   // satır + açıklama gösterilir; filtre yüzünden boşsa normal "içerik yok" mesajı kalır.
@@ -125,13 +137,14 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
   const ornekSatirDesktop = (
     <>
       <div className="grid gap-3 px-5 py-3 items-center" style={{ gridTemplateColumns: gridCols, opacity: 0.5 }} aria-hidden="true">
-        <div className="text-xs text-gray-400 italic truncate">FirmaAdı_10001</div>
-        <div className="text-sm font-semibold text-gray-400 italic truncate">Ürün / Eğitim adı</div>
-        {teknikGoster && <div className="text-xs text-gray-400 italic truncate">Teknik adı</div>}
-        <div><span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block bg-gray-100 text-gray-400">UTT</span></div>
-        <div><span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block bg-gray-100 text-gray-400">Senaryo</span></div>
-        <div><span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block bg-gray-100 text-gray-400 leading-tight">Sizden Onay Bekleniyor</span></div>
-        <span className="text-xs text-gray-400 italic">—</span>
+        <div className="text-xs text-gray-400 italic truncate text-center">FirmaAdı_10001</div>
+        <div className="text-sm font-semibold text-gray-400 italic truncate text-center">Ürün / Eğitim adı</div>
+        {teknikGoster && <div className="text-xs text-gray-400 italic truncate text-center">Teknik adı</div>}
+        <div className="text-center"><Pill renk={ORNEK_RENK}>Hazır Video</Pill></div>
+        <div className="text-center"><Pill renk={ORNEK_RENK}>UTT</Pill></div>
+        <div className="text-center"><Pill renk={ORNEK_RENK}>Senaryo</Pill></div>
+        <div className="text-center"><Pill renk={ORNEK_RENK} sarabilir>Onayınız Bekleniyor</Pill></div>
+        <span className="text-xs text-gray-400 italic text-center">—</span>
         <span className="text-gray-200 text-base">›</span>
       </div>
       <div className="px-5 py-4 text-center text-xs text-gray-400 border-t border-gray-100">
@@ -145,9 +158,9 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
         <div className="text-xs text-gray-400 italic mb-1">FirmaAdı_10001</div>
         <div className="text-sm font-bold text-gray-400 italic mb-1.5">Ürün / Eğitim adı</div>
         <div className="flex gap-2 items-center flex-wrap">
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">Sizden Onay Bekleniyor</span>
-          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">Senaryo</span>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">UTT</span>
+          <Pill renk={ORNEK_RENK} sarabilir>Onayınız Bekleniyor</Pill>
+          <Pill renk={ORNEK_RENK}>Senaryo</Pill>
+          <Pill renk={ORNEK_RENK}>UTT</Pill>
           {teknikGoster && <span className="text-xs text-gray-400 italic">Teknik adı</span>}
         </div>
         <div className="text-xs text-gray-400 mt-1 italic">—</div>
@@ -221,8 +234,6 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
             hicTalepYok ? ornekSatirMobil : bosMesaj
           ) : (
             filtrelenmis.map((s, i) => {
-              const asamaR = asamaRenk(s.asama);
-              const durumM = ureticiDurumMesaji(s.durum_kodu, s.tarih);
               return (
                 <div
                   key={`${s.talep_id}-${i}`}
@@ -231,15 +242,16 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
                   style={{ borderBottom: i < filtrelenmis.length - 1 ? "1px solid #f3f4f6" : "none" }}
                 >
                   <div className="text-xs text-gray-500 mb-1">{talepIdGoster(s.firma_adi, s.talep_no)}</div>
+                  {/* Mobilde sütun yok: varyant rozeti adın altında kalır. */}
                   <div className="flex items-center gap-1.5 flex-wrap min-w-0 mb-1.5">
                     <span className="text-sm font-bold text-gray-900">{s.urun_adi}</span>
-                    <UretimVaryantiRozet hazirVideo={s.hazir_video} hazirSoruSeti={s.hazir_soru_seti} />
+                    <VaryantPill hazirVideo={s.hazir_video} hazirSoruSeti={s.hazir_soru_seti} />
                   </div>
                   {/* Durum tam metindir, kısaltılmaz — mobilde kendi satırından başlar
                       ve sararak sığar (İskender kararı 25.07: "uzayacaksa uzasın"). */}
                   <div className="flex gap-2 items-center flex-wrap">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: durumM.renk.bg, color: durumM.renk.text, border: `0.5px solid ${durumM.renk.border}` }}>{durumM.metin}</span>
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span>
+                    <DurumPill kod={s.durum_kodu} rol={rol} tarih={s.tarih} />
+                    <AsamaPill asama={s.asama} />
                     <HedefRolPill hedefRol={s.hedef_rol} />
                     {teknikGoster && <span className="text-xs text-gray-500">{s.teknik_adi}</span>}
                   </div>
@@ -253,16 +265,14 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
         {/* Desktop: tablo görünümü */}
         <div className="hidden md:block">
           <div className="grid gap-3 px-5 py-2.5 bg-gray-50 border-b border-gray-200" style={{ gridTemplateColumns: gridCols }}>
-            {["ID", "Ürün / Eğitim", ...(teknikGoster ? ["TEKNİK"] : []), "KİME", "AŞAMA", "DURUM", "TARİH", ""].map((h, i) => (
-              <div key={i} className="text-xs font-bold text-gray-400 uppercase tracking-wide">{h}</div>
+            {["ID", "Ürün / Eğitim", ...(teknikGoster ? ["TEKNİK"] : []), "ÜRETİM YÖNTEMİ", "HEDEF ROL", "AŞAMA", "DURUM", "YAYIN TARİHİ", ""].map((h, i) => (
+              <div key={i} className="text-xs font-bold text-gray-400 uppercase tracking-wide text-center">{h}</div>
             ))}
           </div>
           {filtrelenmis.length === 0 ? (
             hicTalepYok ? ornekSatirDesktop : bosMesaj
           ) : (
             filtrelenmis.map((s, i) => {
-              const asamaR = asamaRenk(s.asama);
-              const durumM = ureticiDurumMesaji(s.durum_kodu, s.tarih);
               return (
                 <div
                   key={`${s.talep_id}-${i}`}
@@ -273,16 +283,19 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
                     borderBottom: i < filtrelenmis.length - 1 ? "1px solid #f3f4f6" : "none",
                   }}
                 >
-                  <div className="text-xs text-gray-500 truncate" title={talepIdGoster(s.firma_adi, s.talep_no)}>{talepIdGoster(s.firma_adi, s.talep_no)}</div>
-                  <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                    <span className="text-sm font-bold text-gray-900 truncate">{s.urun_adi}</span>
-                    <UretimVaryantiRozet hazirVideo={s.hazir_video} hazirSoruSeti={s.hazir_soru_seti} />
+                  {/* Tüm hücreler ortalı (İskender kararı 27.07): başlık ile içerik
+                      aynı eksende dursun. Pill'ler inline-flex olduğu için text-center
+                      onları da ortalar; varyant hücresi flex olduğundan justify-center. */}
+                  <div className="text-xs text-gray-500 truncate text-center" title={talepIdGoster(s.firma_adi, s.talep_no)}>{talepIdGoster(s.firma_adi, s.talep_no)}</div>
+                  <div className="min-w-0">
+                    <span className="text-sm font-bold text-gray-900 truncate block text-center">{s.urun_adi}</span>
                   </div>
-                  {teknikGoster && <div className="text-xs text-gray-500 truncate">{s.teknik_adi}</div>}
-                  <div><HedefRolPill hedefRol={s.hedef_rol} /></div>
-                  <div><span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block whitespace-nowrap" style={{ background: asamaR.bg, color: asamaR.text }}>{s.asama}</span></div>
-                  <div><span className="text-[10px] font-bold px-2 py-0.5 rounded-full inline-block leading-tight" style={{ background: durumM.renk.bg, color: durumM.renk.text, border: `0.5px solid ${durumM.renk.border}` }}>{durumM.metin}</span></div>
-                  <span className="text-xs text-gray-400 whitespace-nowrap">{formatTarih(s.tarih)}</span>
+                  {teknikGoster && <div className="text-xs text-gray-500 truncate text-center">{s.teknik_adi}</div>}
+                  <div className="flex justify-center"><VaryantPill hazirVideo={s.hazir_video} hazirSoruSeti={s.hazir_soru_seti} kendiSatirinda={false} /></div>
+                  <div className="text-center"><HedefRolPill hedefRol={s.hedef_rol} /></div>
+                  <div className="text-center"><AsamaPill asama={s.asama} /></div>
+                  <div className="text-center"><DurumPill kod={s.durum_kodu} rol={rol} tarih={s.tarih} /></div>
+                  <span className="text-xs text-gray-400 whitespace-nowrap text-center">{formatTarih(s.tarih)}</span>
                   <span className="text-gray-300 text-base">›</span>
                 </div>
               );

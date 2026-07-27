@@ -32,7 +32,10 @@ type TakipKategori =
   | "inceleme" | "yayin-bekleyen" | "yayinda" | "durdurulan"
   | "devam" | "iptal" | "planlanan" | "hata" | "video-bekleyen";
 
-type Asama = "Senaryo" | "Video" | "Soru Seti" | "Yayın";
+// 27.07: dördüncü aşama "Yayın" değil "Tamamlandı". Sebep: durum sütunundaki
+// metinlerin çoğu "yayın" kelimesini taşıyor (Yayına Alınız, Yayına Aldınız,
+// Yayınını Planladınız); yan yana iki sütunda aynı kelime tekrarlanıyordu.
+type Asama = "Senaryo" | "Video" | "Soru Seti" | "Tamamlandı";
 
 interface TakipSatiri {
   talep_id: string;
@@ -162,7 +165,7 @@ function asamaCoz(talep: TalepBilgisi, z: ZincirSatiri): Omit<TakipSatiri, keyof
 
   // ── Yayın: zincirin sonu. Kayıt yoksa yayına alma üreticidedir (mesaj.ts). ──
   return {
-    asama: "Yayın",
+    asama: "Tamamlandı",
     durum_kodu: yayinDurumKodu(z.yayin_durum),
     tarih: z.yayin_tarihi ?? oncekiTarih,
     yol: "/yayin-yonetimi",

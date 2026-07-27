@@ -58,15 +58,20 @@ const PLANLI: DurumRenk = { bg: "#f5f3ff", text: "#6d28d9", border: "#ddd6fe" };
 const HATA: DurumRenk = { bg: "#fef2f2", text: "#bc2d0d", border: "#fecaca" };
 
 const URETICI_DURUM: Record<DurumKodu, DurumMesaji> = {
-  iu_iletildi:      { metin: "İçerik Üreticisine İletildi", top: "icerik_ureticisi", renk: BEKLEME },
-  iu_hazirliyor:    { metin: "İçerik Üreticisi Hazırlıyor", top: "icerik_ureticisi", renk: BEKLEME },
-  iu_duzeltiyor:    { metin: "İçerik Üreticisi Düzeltiyor", top: "icerik_ureticisi", renk: REVIZYON },
-  onay_bekleniyor:  { metin: "Sizden Onay Bekleniyor",      top: "uretici",          renk: AKSIYON },
-  video_bekleniyor: { metin: "Sizden Video Bekleniyor",     top: "uretici",          renk: AKSIYON },
-  yayin_bekleniyor: { metin: "Yayına Almanız Bekleniyor",  top: "uretici",          renk: AKSIYON },
-  onaylandi:        { metin: "Onayladınız",                 top: "kapali",           renk: ONAY },
-  planlandi:        { metin: "Planlandı",                   top: "sistem",           renk: PLANLI },
-  yayinda:          { metin: "Yayında",                     top: "kapali",           renk: CANLI },
+  // 27.07 — metinler kısaldı ve tek dile oturdu (İskender kararı): en fazla iki
+  // kelime, gizli özne ikinci çoğul şahıs ("siz"), ve AŞAMA sütunuyla aynı kelimeyi
+  // basmamak. Eskiden aşama "Yayın", durum "Yayında" yazıyordu — yan yana iki
+  // sütunda aynı kelime tekrarlanıyordu. Aşama artık "Tamamlandı".
+  // "İçerik Üreticisi" → "Üreticiniz": üreticinin gözünden İÜ onun üreticisidir.
+  iu_iletildi:      { metin: "Üreticinize İletildi",   top: "icerik_ureticisi", renk: BEKLEME },
+  iu_hazirliyor:    { metin: "Üreticiniz Hazırlıyor",  top: "icerik_ureticisi", renk: BEKLEME },
+  iu_duzeltiyor:    { metin: "Üreticiniz Düzenliyor",  top: "icerik_ureticisi", renk: REVIZYON },
+  onay_bekleniyor:  { metin: "Onayınız Bekleniyor",    top: "uretici",          renk: AKSIYON },
+  video_bekleniyor: { metin: "Videonuzu İletiniz",     top: "uretici",          renk: AKSIYON },
+  yayin_bekleniyor: { metin: "Yayına Alınız",          top: "uretici",          renk: AKSIYON },
+  onaylandi:        { metin: "Onayladınız",            top: "kapali",           renk: ONAY },
+  planlandi:        { metin: "Yayınını Planladınız",   top: "sistem",           renk: PLANLI },
+  yayinda:          { metin: "Yayına Aldınız",         top: "kapali",           renk: CANLI },
   yayin_durduruldu: { metin: "Yayını Durdurdunuz",          top: "uretici",          renk: HATA },
   iptal:            { metin: "İptal Ettiniz",               top: "kapali",           renk: BEKLEME },
   sistem_hatasi:    { metin: "Sistem Hatası",               top: "sistem",           renk: HATA },
