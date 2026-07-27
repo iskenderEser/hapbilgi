@@ -1,6 +1,6 @@
 {
-  "uretim_tarihi": "2026-07-24T18:09:52.316Z",
-  "tablo_sayisi": 93,
+  "uretim_tarihi": "2026-07-27T06:56:31.809Z",
+  "tablo_sayisi": 94,
   "rpc_sayisi": 58,
   "tablolar": {
     "analiz_tuketim_degiskenleri": {
@@ -3385,6 +3385,75 @@
           "nullable": true
         },
         "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": true
+        }
+      }
+    },
+    "v_uretici_icerik_takip": {
+      "tur": "VIEW",
+      "kolonlar": {
+        "talep_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "uretici_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "senaryo_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "senaryo_iu_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "senaryo_durum": {
+          "tip": "character varying",
+          "nullable": true
+        },
+        "senaryo_durum_tarih": {
+          "tip": "timestamp with time zone",
+          "nullable": true
+        },
+        "video_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "video_iu_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "video_durum": {
+          "tip": "character varying",
+          "nullable": true
+        },
+        "video_durum_tarih": {
+          "tip": "timestamp with time zone",
+          "nullable": true
+        },
+        "soru_seti_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "soru_seti_iu_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "soru_seti_durum": {
+          "tip": "character varying",
+          "nullable": true
+        },
+        "soru_seti_durum_tarih": {
+          "tip": "timestamp with time zone",
+          "nullable": true
+        },
+        "yayin_durum": {
+          "tip": "character varying",
+          "nullable": true
+        },
+        "yayin_tarihi": {
           "tip": "timestamp with time zone",
           "nullable": true
         }

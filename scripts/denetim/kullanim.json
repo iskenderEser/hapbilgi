@@ -1337,43 +1337,13 @@
     },
     {
       "dosya": "lib/utils/anaSayfa/uretici.ts",
-      "satir": 56,
+      "satir": 179,
       "tablo": "talepler"
     },
     {
       "dosya": "lib/utils/anaSayfa/uretici.ts",
-      "satir": 80,
-      "tablo": "senaryolar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/uretici.ts",
-      "satir": 95,
-      "tablo": "senaryo_durumu"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/uretici.ts",
-      "satir": 114,
-      "tablo": "videolar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/uretici.ts",
-      "satir": 131,
-      "tablo": "video_durumu"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/uretici.ts",
-      "satir": 149,
-      "tablo": "soru_setleri"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/uretici.ts",
-      "satir": 164,
-      "tablo": "soru_seti_durumu"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/uretici.ts",
-      "satir": 182,
-      "tablo": "yayin_yonetimi"
+      "satir": 184,
+      "tablo": "v_uretici_icerik_takip"
     },
     {
       "dosya": "lib/utils/anaSayfa/utt.ts",
@@ -4928,48 +4898,6 @@
       "satir": 8,
       "ham": "takim_id",
       "tablo": "kullanicilar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/uretici.ts",
-      "satir": 80,
-      "ham": "senaryo_id, iu_id",
-      "tablo": "senaryolar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/uretici.ts",
-      "satir": 95,
-      "ham": "durum, senaryo_durum_id, created_at",
-      "tablo": "senaryo_durumu"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/uretici.ts",
-      "satir": 114,
-      "ham": "video_id, iu_id",
-      "tablo": "videolar"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/uretici.ts",
-      "satir": 131,
-      "ham": "durum, video_durum_id, created_at",
-      "tablo": "video_durumu"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/uretici.ts",
-      "satir": 149,
-      "ham": "soru_seti_id, iu_id",
-      "tablo": "soru_setleri"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/uretici.ts",
-      "satir": 164,
-      "ham": "durum, soru_seti_durum_id, created_at",
-      "tablo": "soru_seti_durumu"
-    },
-    {
-      "dosya": "lib/utils/anaSayfa/uretici.ts",
-      "satir": 182,
-      "ham": "yayin_id, durum, yayin_tarihi",
-      "tablo": "yayin_yonetimi"
     },
     {
       "dosya": "lib/utils/anaSayfa/utt.ts",
