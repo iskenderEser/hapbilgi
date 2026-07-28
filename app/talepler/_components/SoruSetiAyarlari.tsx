@@ -14,6 +14,10 @@ interface SoruSetiAyarlariProps {
   onBuyuklukChange: (n: number) => void;
   onVideoBasiChange: (n: number) => void;
   onSecenekChange: (n: number) => void;
+  /** Etiketler isteğe bağlı: varsayılanları bu sayfanın bugünkü metinleridir.
+   *  v2 kendi adlarını geçirir (İskender, A-10b) — /talepler değişmez. */
+  buyuklukEtiketi?: string;
+  videoBasiEtiketi?: string;
 }
 
 export function SoruSetiAyarlari({
@@ -23,11 +27,13 @@ export function SoruSetiAyarlari({
   onBuyuklukChange,
   onVideoBasiChange,
   onSecenekChange,
+  buyuklukEtiketi = "Soru seti büyüklüğü",
+  videoBasiEtiketi = "Video başı soru sayısı",
 }: SoruSetiAyarlariProps) {
   return (
     <div className="flex flex-col md:flex-row gap-3">
       <div className="flex-1">
-        <label className="text-xs text-gray-500 block mb-1">Soru seti büyüklüğü</label>
+        <label className="text-xs text-gray-500 block mb-1">{buyuklukEtiketi}</label>
         <select
           value={buyukluk}
           onChange={(e) => onBuyuklukChange(Number(e.target.value))}
@@ -54,7 +60,7 @@ export function SoruSetiAyarlari({
       </div>
       <div className="flex-1">
         <label className="text-xs text-gray-500 block mb-1">
-          Video başı soru sayısı
+          {videoBasiEtiketi}
           <span className="text-gray-400 font-normal ml-1">(max {buyukluk})</span>
         </label>
         <select
