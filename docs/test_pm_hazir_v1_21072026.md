@@ -1,6 +1,22 @@
 # Hazır Video & Soru Seti — Fiziksel Test, Varyasyon 1
 
-*21.07.2026. Kaynak: İskender'in fiziksel test turu (`hb_testler_pm_iu_talep_210726.xlsx`, sayfa `pm-hazırVideo&SoruSeti`). Üretici rol: PM, tüketici rol: UTT. Talep tipi: Hazır Video & Soru Seti. Üç varyasyon test edilecek: **V1 = video var - soru seti yok** (bu belge), V2 = video yok - soru var, V3 = her ikisi de var. Madde numaralandırması varyasyon öneklidir (V1-1, V1-2, ...) — sonraki varyasyonlarla karışmaz (İskender talimatı).*
+*21.07.2026. Kaynak: İskender'in fiziksel test turu (`hb_testler_pm_iu_talep_210726.xlsx`, sayfa `pm-hazırVideo&SoruSeti`). Üretici rol: PM, tüketici rol: UTT. Talep tipi: Hazır Video & Soru Seti. Bu belge **hazır video var / hazır soru seti yok** varyantını kapsar — güncel standartta **V2**.*
+
+> **NUMARALANDIRMA NOTU (27.07.2026, İskender kararı).** Varyant numaraları tek standarda
+> bağlandı: X ekseni soru seti (yok → var), Y ekseni video (yok → var).
+>
+> | | Soru seti YOK | Soru seti VAR |
+> |---|---|---|
+> | **Video YOK** | **V1** — normal hat | **V3** — yalnız hazır set |
+> | **Video VAR** | **V2** — yalnız hazır video | **V4** — ikisi hazır |
+>
+> Bu belge yazıldığında farklı bir sayım kullanılıyordu (test turu sırası: video var → set var →
+> ikisi var). Metindeki varyant anmaları yeni standarda çevrilmiştir.
+>
+> **Madde kimlikleri (`V1-1` … `V1-7`) DEĞİŞTİRİLMEDİ.** Bunlar varyant numarası değil, bu test
+> turunun bulgu kimlikleridir ve commit mesajlarında geçer (`fc4ad7f` V1-1, `7d826ce` V1-3,
+> `70ae462` V1-5/V1-6, `142e187` V1-5). Çevrilseler git geçmişiyle bağ kopardı.
+> Standart: **madde kimliği `V1-x` = bu belgenin turu = varyant V2.**
 
 ---
 
@@ -47,7 +63,7 @@ Madde madde teknik karşılıklar:
 
 **Doğrulama:** tsc + `npm run denetim` + `npm run lint:mimari` temiz. Duman testi YAPILMADI — mutlu yol PM oturumu + gerçek Bunny yüklemesi gerektirir (U5/U6 emsali); uçtan uca doğrulama İskender'in fiziksel testine bırakıldı.
 
-**Fiziksel teyit (İskender):** (a) hazır video talebinde yeni uyarı metni + "Açıklama yazınız" + "Gönderiniz" butonu, (b) modal çeşitlemeleri (hiçbiri yok / biri eksik / ikisi dolu), (c) gönderim sonrası İU'da Soru Setleri rozetinin yanması ve işin Soru Setleri'nde görünmesi, (d) talep detayında yeni metinler + İU "Soru Seti Yaz" aktif butonu, (e) V1 akışı tamamlanınca V2 ("video yok - soru var") ve V3 ("her ikisi de var") testleri.
+**Fiziksel teyit (İskender):** (a) hazır video talebinde yeni uyarı metni + "Açıklama yazınız" + "Gönderiniz" butonu, (b) modal çeşitlemeleri (hiçbiri yok / biri eksik / ikisi dolu), (c) gönderim sonrası İU'da Soru Setleri rozetinin yanması ve işin Soru Setleri'nde görünmesi, (d) talep detayında yeni metinler + İU "Soru Seti Yaz" aktif butonu, (e) bu akış (V2) tamamlanınca V3 ("video yok - set var") ve V4 ("her ikisi de var") testleri.
 
 ---
 
@@ -63,4 +79,4 @@ Madde madde teknik karşılıklar:
 3. Soru Setleri pill'i kızarır (bordo) ve badge'inde bekleyen iş sayısı görünür — gelen talep kadar.
 4. Talep detayındaki İU'ya yönelik uyarı metinleri anlamsızdır — İU o sayfaya bu talep için hiç ulaşmamalıdır.
 
-**Durum:** KAPANDI (`142e187`, İskender emri 21.07). Uygulanan: (1) `GET /talepler/api` İU sorgusuna `hazir_video=false` süzgeci — hazır video talepleri (V1+V2) İU'nun Talepler listesine sunucudan hiç dönmez; V3 (video yok - set var) İU normal hatta çalıştığından listede kalır; üretici tarafı değişmedi. (2) Talep detayı İU'ya hazır video talebinde açılmaz — doğrudan URL girişinde `/soru-setleri`'ne yönlendirme (render bekçisi + effect); sayfadaki İU'ya yönelik hazır video metinleri ve "Soru Seti Yaz" butonu kaldırıldı (ulaşılamaz ölü kod bırakılmadı); V3'ün İU'ya görünen hazır soru seti bilgi metni korundu. (3) Talepler rozeti değişiklik gerektirmedi — tek `kayit_turu: "talep"` bildirimi G-3 ile hazır videoda zaten atlanıyor. (4) Soru Setleri badge'i araştırmayla kapandı: badge sistemi bildirim esaslıdır ama sayfa ziyaretiyle sönmez — bildirim ancak İU zincir üzerinde işini yapınca (`bildirimOlustur`'un `gonderen_id` mekanizması) okunur; yani badge zaten "bekleyen iş sayısı, gelen talep kadar" davranışını verir, kod değişikliği gerekmez. Doğrulama: tsc + `npm run denetim` + `npm run lint:mimari` temiz; uçtan uca doğrulama İskender'in fiziksel testinde (İU listesinde hazır video talebinin olmaması + doğrudan URL'den yönlendirme + Soru Setleri rozet sayısı).
+**Durum:** KAPANDI (`142e187`, İskender emri 21.07). Uygulanan: (1) `GET /talepler/api` İU sorgusuna `hazir_video=false` süzgeci — hazır video talepleri (V2+V4) İU'nun Talepler listesine sunucudan hiç dönmez; V3 (video yok - set var) İU normal hatta çalıştığından listede kalır; üretici tarafı değişmedi. (2) Talep detayı İU'ya hazır video talebinde açılmaz — doğrudan URL girişinde `/soru-setleri`'ne yönlendirme (render bekçisi + effect); sayfadaki İU'ya yönelik hazır video metinleri ve "Soru Seti Yaz" butonu kaldırıldı (ulaşılamaz ölü kod bırakılmadı); V3'ün İU'ya görünen hazır soru seti bilgi metni korundu. (3) Talepler rozeti değişiklik gerektirmedi — tek `kayit_turu: "talep"` bildirimi G-3 ile hazır videoda zaten atlanıyor. (4) Soru Setleri badge'i araştırmayla kapandı: badge sistemi bildirim esaslıdır ama sayfa ziyaretiyle sönmez — bildirim ancak İU zincir üzerinde işini yapınca (`bildirimOlustur`'un `gonderen_id` mekanizması) okunur; yani badge zaten "bekleyen iş sayısı, gelen talep kadar" davranışını verir, kod değişikliği gerekmez. Doğrulama: tsc + `npm run denetim` + `npm run lint:mimari` temiz; uçtan uca doğrulama İskender'in fiziksel testinde (İU listesinde hazır video talebinin olmaması + doğrudan URL'den yönlendirme + Soru Setleri rozet sayısı).

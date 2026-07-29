@@ -88,7 +88,15 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
 
   // Satır türetimi ve liste kancası, yükleme dönüşünün ÜSTÜNDE durmak zorunda:
   // React kancaları koşulsuz çağrılmalı, erken return'ün altına konamaz.
-  const satirlar = pmVeri?.satirlar ?? [];
+  const tumSatirlar = pmVeri?.satirlar ?? [];
+
+  // KAPSAM (27.07, İskender kararı): Yayın Listesi YALNIZ üretimi bitenleri gösterir
+  // — yayına alınmayı bekleyen, planlanan, yayında, yayını durdurulan. Üretimi süren
+  // talepler burada değil, Talepler sayfasındaki "Devam Eden Taleplerim" tablosunda;
+  // iptal edilenler de oradaki kendi tablosunda. Önceden üçü de bu listedeydi ve
+  // aynı talepler iki ekranda birden görünüyordu (Merve'de 6 kaydın 5'i tekrardı).
+  const satirlar = tumSatirlar.filter(s => s.asama === "Tamamlandı");
+
   const filtrelenmisKategori = aktifFiltre === "tumu" ? satirlar : satirlar.filter(s => s.kategori === aktifFiltre);
 
   // Arama + kademeli listeleme merkezden (components/liste) — Talepler sayfasıyla
@@ -117,7 +125,9 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
   // Ad çözülemezse rolün unvanı yazılır — "PM" kod dilidir ve bu bileşeni 13
   // üretici rolün hepsi kullanıyor (Eğitim Müdürü de "Merhaba PM" görüyordu).
   const ad = adSoyad.split(" ")[0] || ROL_ADLARI[rol.toLowerCase()] || "";
-  const hicTalepYok = satirlar.length === 0;
+  // Örnek satır yalnız hiç talep yokken çıkar. Talep var ama hiçbiri bitmemişse
+  // tanıtım satırı değil, normal "içerik yok" mesajı doğru olan.
+  const hicTalepYok = tumSatirlar.length === 0;
 
   // TEKNİK kolonu yalnız içeriği teknik taşıyan rollerde görünür (pm/egt_*);
   // med_md/İK'da hiç gösterilmez (veri-güdümlü, rol-başına hardcode yok).

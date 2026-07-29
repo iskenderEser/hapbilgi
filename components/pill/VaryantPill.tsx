@@ -30,16 +30,25 @@ interface Props {
   kendiSatirinda?: boolean;
 }
 
-const VARYANT: Record<"video" | "soru", { etiket: string; renk: PillRenk }> = {
+type VaryantTipi = "video" | "soru" | "iu";
+
+const VARYANT: Record<VaryantTipi, { etiket: string; renk: PillRenk }> = {
   video: { etiket: "Hazır Video", renk: { bg: "#dbeafe", metin: "#1d4ed8", kenar: "#93c5fd" } },
   soru: { etiket: "Hazır Soru", renk: { bg: "#fbe4de", metin: "#bc2d0d", kenar: "#e9b3a6" } },
+  // Normal üretim: içeriği İÇERİK ÜRETİCİSİ hazırlar. Eskiden bu durumda hücre
+  // boş kalıyordu ("-" gibi görünüyordu) — oysa bu bir eksik veri değil, üç
+  // üretim yönteminden biri. Boş bırakmak "yöntem yok" demekti, yanlıştı.
+  iu: { etiket: "İçerik Üreticisi", renk: { bg: "#f5f3ff", metin: "#6d28d9", kenar: "#ddd6fe" } },
 };
 
 export function VaryantPill({ hazirVideo, hazirSoruSeti, kendiSatirinda = true }: Props) {
-  const tipler: ("video" | "soru")[] = [];
+  const tipler: VaryantTipi[] = [];
   if (hazirVideo) tipler.push("video");
   if (hazirSoruSeti) tipler.push("soru");
-  if (tipler.length === 0) return null;
+  // Hiçbir hazır bayrak yoksa üretim baştan sona İÜ'nündür. Bu kural MERKEZDE
+  // durur: VaryantPill'i kullanan her ekran pill'i kendiliğinden alır, hiçbir
+  // sayfaya elle yazılmaz (İskender kuralı 27.07).
+  if (tipler.length === 0) tipler.push("iu");
 
   // flexBasis:100% → sarmalı ana satırda kendi satırına düşer. Yerleşim kararı
   // aslında sayfaya aittir; Adım 4'te satır düzeni elden geçirilirken kaldırılacak.

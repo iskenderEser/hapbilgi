@@ -2,6 +2,49 @@
 
 *19.07.2026. Kaynak: F-07 açık ucu (docs/fiziksel_tespitler_ve_cozumler.md) — "Hazır Soru Setim Var" tek başına seçildiğinde işleme mekanizmasının olmayışı. İskender talebi: dört varyantın `lib/hazirVideoSoruSeti` modülü bağlamında kod üzerinden kontrolü (19.07, bu oturum) ve sonuçların iş planı olarak yazımı. Tüm tespitler kod kanıtlıdır; hiçbir dosya değiştirilmemiştir.*
 
+> **NUMARALANDIRMA DÜZELTMESİ (27.07.2026, İskender kararı).** Varyant numaraları bu tarihte
+> tek standarda bağlandı; belgedeki bölümler yeni numaralara göre yeniden sıralandı.
+> **Standart:** X ekseni soru seti (yok → var), Y ekseni video (yok → var); okuma sütun sütun.
+> Gerekçe: sistemin kullanım davranışının bu yönde gelişme ihtimali yüksek.
+>
+> | | Soru seti YOK | Soru seti VAR |
+> |---|---|---|
+> | **Video YOK** | **V1** — normal hat | **V3** — yalnız hazır set |
+> | **Video VAR** | **V2** — yalnız hazır video | **V4** — ikisi hazır |
+>
+> **Eski → yeni eşleme** (19–23.07 tarihli commit mesajları ve `test_pm_hazir_v1_21072026.md`
+> hâlâ eski numaraları taşır):
+>
+> | Eski numara | Yeni numara |
+> |---|---|
+> | V1 (hazır video var, set yok) | **V2** |
+> | V2 (ikisi var) | **V4** |
+> | V3 (yalnız set) | **V3** — değişmedi |
+> | V4 (normal hat) | **V1** |
+>
+> Kodun kendi adlandırması (`ToastVaryant`: `normal` / `hazir_video` / `hazir_set` /
+> `hazir_ikisi`) yeni sırayla birebir örtüşür — orada numara kullanılmadığı için çakışma yoktur.
+
+> **KOD REFERANSLARI GEÇERLİLİK NOTU (27.07.2026).** Aşağıdaki bölümlerdeki dosya yolları,
+> fonksiyon adları ve satır numaraları **19.07.2026 tarihinde donmuştur**; tespitlerin kanıtı
+> oldukları için değiştirilmemiştir. Kod o tarihten sonra iki kez taşındı — 19.07 akşamı
+> G-1a/G-2/G-3/G-4 uygulandı, 21.07'de üretici onay ara adımı kalktı (`70ae462`), 22.07'de
+> hazır kol tek hatta katıldı ve ayrı modül söküldü (`72e870a`,
+> [uretim_is_sureci_teknik_refactoring_plan_22072026.md](uretim_is_sureci_teknik_refactoring_plan_22072026.md)).
+> Bugünkü karşılıklar:
+>
+> | Belgede geçen (19.07) | Bugünkü karşılığı |
+> |---|---|
+> | `lib/hazirVideoSoruSeti/zincir.ts` | **silindi** → [lib/uretim/surec.ts](../lib/uretim/surec.ts) |
+> | `lib/hazirVideoSoruSeti/parametreKontrol.ts` | [lib/uretim/parametreKontrol.ts](../lib/uretim/parametreKontrol.ts) |
+> | `hazirZinciriKur()` | `hazirVideoGir()` |
+> | `hazirSoruSetiIsle()` | `hazirSoruSetiGir()` |
+> | Sahte senaryo `"[Hazır Video — Senaryo Atlandı]"` | **kaldırıldı** — hazır videoda `senaryo_durum_id = null`, senaryo satırı hiç doğmaz |
+> | `POST /talepler/api/hazir-video` (üretici onay ucu) | **silindi** — zincir `PUT`'ta, yükleme biter bitmez kurulur |
+> | Zincirin bağlanma biçimi | `videolar`/`soru_setleri` artık talebe **doğrudan** bağlı (`talep_id`) ve `kaynak` (`'iu'`/`'hazir'`) taşır |
+>
+> Satır numaraları da kaymıştır; bugünkü davranışın tek doğru kaynağı koddur.
+
 ## Kapsam ve terimler
 
 - **Üretici:** Talebi açan rol. Hazır akış TÜM üretici rollere açıktır (`URETICI_ROLLER`, İskender kararı 19.07, `c753a2e`); onay yetkisi rolde değil üreticiliktedir — herkes yalnız kendi talebini yürütür (`uretici_id` şartı).
@@ -15,7 +58,19 @@
 
 ---
 
-## Varyant 1 — Hazır video VAR, hazır soru seti YOK
+## Varyant 1 — Hazır video YOK, hazır soru seti YOK (normal hat)
+
+**Mevcut davranış:** Klasik üretim hattı; `hazirVideoSoruSeti` modülü HİÇ devreye girmez — F-07'nin "IU koluna dokunmadan gruplama" kararı korunmuştur. Bildirim zinciri tamdır: talep açılışında tüm aktif IU'lara "Yeni talep"; senaryo onayında IU'ya "video yüklemeye hazır"; video onayında IU'ya "soru seti yazmaya hazır"; ara durumlarda üreticiye "inceleme bekliyor" / "revizyon istendi" bildirimleri (`senaryolar/api/durum`, `videolar/api/durum`, `soru-setleri/api/durum`).
+
+**Operasyonel iş bölümü:**
+- *Üretici:* Talep açar; senaryo, video ve soru seti onaylarını yürütür (revizyon hakları dahil).
+- *IU:* Senaryo yazar, videoyu yükler (A2 — doğrudan Bunny), soru setini yazar.
+
+**Geliştirme gerekli mi:** HAYIR.
+
+---
+
+## Varyant 2 — Hazır video VAR, hazır soru seti YOK
 
 **Mevcut davranış (kod kanıtlı):** Üretici onayında zincir kurulur; soru seti BOŞ açılır (`sorular: []`, `iu_id: null`), `soru_seti_durumu` kaydı AÇILMAZ, onay mesajı "Soru seti yazım süreci başlayabilir." (`zincir.ts:112-119`, `hazir-video/route.ts:116`). Boş set IU'nun soru seti listesine düşer — liste sorgusunun zincir join'leri hazır kolda da çözülür, senaryo "[Hazır Video — Senaryo Atlandı]" kaydı vardır. IU normal `PUT /soru-setleri/api` ile soruları yazar; soru sayısı talep zincirinden okunan `soru_seti_buyuklugu` ile denetlenir, yazımda `iu_id` IU'ya atanır (`app/soru-setleri/api/route.ts:80-100`); sonrası normal durum/onay akışı.
 
@@ -31,18 +86,6 @@
 
 ---
 
-## Varyant 2 — Hazır video VAR, hazır soru seti VAR
-
-**Mevcut davranış:** F-07 çözümünün kendisi (`a8a5429`). Form dosya + set önizlemeyi zorunlu kılar (`useTalepFormu.ts:349-356`); üretici onayında parametre kilidi çalışır, sorular OTOMATİK yazılır, `soru_seti_durumu` "onaylandı" açılır → yayın bekleyenlerine düşer (`zincir.ts:128-144`). Uçtan uca tutarlı.
-
-**Operasyonel iş bölümü:**
-- *Üretici:* Talep formunda dosya seçer + hazır seti girer/önizler; videoyu onaylar. Onayla birlikte içerik yayın hattına girer.
-- *IU:* HİÇBİR işi yoktur.
-
-**Geliştirme gerekli mi:** HAYIR. (Yalnız kesişen konu: aşağıdaki "açılış bildirimi" maddesi — bu kolda IU'ya giden "Yeni talep" bildirimi tümüyle gereksizdir.)
-
----
-
 ## Varyant 3 — Hazır video YOK, hazır soru seti VAR (AÇIK UCUN KENDİSİ)
 
 **Mevcut davranış (kod kanıtlı):** Form kombinasyona izin verir, API veriyi kaydeder (`hazir_soru_seti_verisi` zorunlu — `app/talepler/api/route.ts:188-190`). Ama `hazir_video=false` olduğundan hazır uçlar talebi reddeder ve `hazirZinciriKur` HİÇ çağrılmaz; talep normal IU hattına düşer. Normal hattın hiçbir noktası — senaryo, video onayı, soru seti ekranları/uçları — `hazir_soru_seti` alanlarını OKUMAZ (grep: `app/videolar/api/durum`, `app/senaryolar/api/durum`, `app/soru-setleri/**`, `lib/utils/talepZinciri.ts` içinde sıfır referans). Video onaylanınca boş set açılır, IU'ya "soru seti yazmaya hazır" bildirimi gider; üreticinin girdiği hazır set DB'de ÖLÜ VERİ olarak kalır. Tek izi talep listesindeki "Hazır Soru Seti" rozetidir (`TalepListesi.tsx:102-112`).
@@ -54,31 +97,31 @@
 - *IU:* Normal hattın tamamını üretir: senaryo yazar, video yükler, soruları SIFIRDAN yazar — üreticinin seti önüne hiçbir ekranda gelmez.
 
 **Geliştirme gerekli mi:** EVET — karar İskender'de, iki seçenek:
-- **(a) İşleme:** Normal hatta video onayı anında (`app/videolar/api/durum/route.ts:87-96`) talep `hazir_soru_seti=true` ise boş set yerine hazır veri yazılır ve Varyant 2 deseniyle "onaylandı" durumu açılır (parametre kilidi dahil — `hazirParametreKontrol` burada da çağrılır). IU soru seti adımı bu talepte hiç doğmaz; "soru seti yazmaya hazır" bildirimi atlanır. Dikkat noktası: bu, normal hattın onay ucuna hazır modülünden bilinçli ve dar bir dokunuştur — F-07'nin "IU koluna dokunma" kararıyla çelişmemesi için işleme mantığı modülde kalır, uç yalnız çağırır.
+- **(a) İşleme:** Normal hatta video onayı anında (`app/videolar/api/durum/route.ts:87-96`) talep `hazir_soru_seti=true` ise boş set yerine hazır veri yazılır ve Varyant 4 deseniyle "onaylandı" durumu açılır (parametre kilidi dahil — `hazirParametreKontrol` burada da çağrılır). IU soru seti adımı bu talepte hiç doğmaz; "soru seti yazmaya hazır" bildirimi atlanır. Dikkat noktası: bu, normal hattın onay ucuna hazır modülünden bilinçli ve dar bir dokunuştur — F-07'nin "IU koluna dokunma" kararıyla çelişmemesi için işleme mantığı modülde kalır, uç yalnız çağırır.
 - **(b) Engelleme:** Form ve API bu kombinasyonu reddeder ("Hazır soru seti yalnız hazır videoyla birlikte seçilebilir"); mevcut ölü kayıtlar için tek seferlik durum kararı verilir. Basit ama üreticiden yeteneği geri alır.
 
 ---
 
-## Varyant 4 — Hazır video YOK, hazır soru seti YOK (normal hat)
+## Varyant 4 — Hazır video VAR, hazır soru seti VAR
 
-**Mevcut davranış:** Klasik üretim hattı; `hazirVideoSoruSeti` modülü HİÇ devreye girmez — F-07'nin "IU koluna dokunmadan gruplama" kararı korunmuştur. Bildirim zinciri tamdır: talep açılışında tüm aktif IU'lara "Yeni talep"; senaryo onayında IU'ya "video yüklemeye hazır"; video onayında IU'ya "soru seti yazmaya hazır"; ara durumlarda üreticiye "inceleme bekliyor" / "revizyon istendi" bildirimleri (`senaryolar/api/durum`, `videolar/api/durum`, `soru-setleri/api/durum`).
+**Mevcut davranış:** F-07 çözümünün kendisi (`a8a5429`). Form dosya + set önizlemeyi zorunlu kılar (`useTalepFormu.ts:349-356`); üretici onayında parametre kilidi çalışır, sorular OTOMATİK yazılır, `soru_seti_durumu` "onaylandı" açılır → yayın bekleyenlerine düşer (`zincir.ts:128-144`). Uçtan uca tutarlı.
 
 **Operasyonel iş bölümü:**
-- *Üretici:* Talep açar; senaryo, video ve soru seti onaylarını yürütür (revizyon hakları dahil).
-- *IU:* Senaryo yazar, videoyu yükler (A2 — doğrudan Bunny), soru setini yazar.
+- *Üretici:* Talep formunda dosya seçer + hazır seti girer/önizler; videoyu onaylar. Onayla birlikte içerik yayın hattına girer.
+- *IU:* HİÇBİR işi yoktur.
 
-**Geliştirme gerekli mi:** HAYIR.
+**Geliştirme gerekli mi:** HAYIR. (Yalnız kesişen konu: aşağıdaki "açılış bildirimi" maddesi — bu kolda IU'ya giden "Yeni talep" bildirimi tümüyle gereksizdir.)
 
 ---
 
 ## Kesişen konu — talep açılışındaki "Yeni talep" bildirimi
 
-Talep açılışında tüm aktif IU'lara giden "Yeni talep" bildirimi KOŞULSUZDUR (`app/talepler/api/route.ts:232-248`) — hazır video kollarında da gider. Varyant 2'de IU'nun hiçbir işi yoktur (bildirim tümüyle gereksiz); Varyant 1'de işi çok sonra, video onayında doğar (bildirim erken ve yanıltıcı). Öneri: `hazir_video=true` taleplerde açılış bildirimi atlanır; Varyant 1'in bildirimi set doğduğu anda gider (G-2). Karar İskender'de.
+Talep açılışında tüm aktif IU'lara giden "Yeni talep" bildirimi KOŞULSUZDUR (`app/talepler/api/route.ts:232-248`) — hazır video kollarında da gider. Varyant 4'te IU'nun hiçbir işi yoktur (bildirim tümüyle gereksiz); Varyant 2'de işi çok sonra, video onayında doğar (bildirim erken ve yanıltıcı). Öneri: `hazir_video=true` taleplerde açılış bildirimi atlanır; Varyant 2'nin bildirimi set doğduğu anda gider (G-2). Karar İskender'de.
 
 ## Önerilen geliştirme adımları (öncelik sırasıyla — hepsi İskender onayı bekler)
 
 - **G-1 | Varyant 3 kararı ve uygulaması** — seçenek (a) işleme ya da (b) engelleme. Açık ucu kapatan asıl iş.
-- **G-2 | Varyant 1 bildirimi** — hazır zincirde boş set açıldığında IU'lara bildirim; normal hattaki desenin aynısı.
+- **G-2 | Varyant 2 bildirimi** — hazır zincirde boş set açıldığında IU'lara bildirim; normal hattaki desenin aynısı.
 - **G-3 | Açılış bildirimi ayarı (opsiyonel, NOT düzeyi)** — hazır video taleplerinde koşulsuz "Yeni talep" bildiriminin kaldırılması/koşullanması.
 - **G-4 | Liste filtre ince noktası (opsiyonel, NOT düzeyi)** — durumu olmayan (yazım bekleyen) setin, durum filtresi seçiliyken listeden kaybolmaması.
 
@@ -88,10 +131,10 @@ Her adım: tsc + `npm run denetim` + `npm run lint:mimari` temiz; en fazla 1 smo
 
 ## Kararlar ve sonuç (19.07.2026 — KOD BİTTİ)
 
-İskender kararları: **G-1 seçenek (a)** işleme · **G-3 evet** · **G-4 evet** ("kodlamada mantıksal hata, düzeltilecek"). G-2, G-3 ile çift olduğundan birlikte uygulandı (G-3 açılış bildirimini kaldırınca V1'in tek sinyali G-2 bildirimi olur — plan metnindeki bağ).
+İskender kararları: **G-1 seçenek (a)** işleme · **G-3 evet** · **G-4 evet** ("kodlamada mantıksal hata, düzeltilecek"). G-2, G-3 ile çift olduğundan birlikte uygulandı (G-3 açılış bildirimini kaldırınca V2'nin tek sinyali G-2 bildirimi olur — plan metnindeki bağ).
 
-- **G-1a:** Modüle `hazirSoruSetiIsle` eklendi (parametre kilidi → sorular yazılır → "onaylandı" durumu). Normal hattın video onay ucu (`app/videolar/api/durum/route.ts`) talepte `hazir_soru_seti` varsa boş set açmak yerine bu fonksiyonu çağırır; IU'ya "yazmaya hazır" bildirimi gitmez, işleme hatasında onaylayana [SİSTEM] bildirimi düşer. İşleme mantığı modülde — uç yalnız çağırır (F-07 gruplama kararı korunur). `hazirZinciriKur` (V2) de aynı fonksiyonu kullanır — tek doğruluk kaynağı.
-- **G-2:** V1'de boş set doğduğu anda tüm aktif IU'lara bildirim: "Hazır video onaylandı, soru seti yazmaya hazır: <ürün>" (`zincir.ts`; hazır kolda videoyu yükleyen IU olmadığından alıcı tüm aktif IU'lardır). Bildirim için `hazir-video` ucu talep sorgusuna ürün/teknik adı eklendi.
+- **G-1a:** Modüle `hazirSoruSetiIsle` eklendi (parametre kilidi → sorular yazılır → "onaylandı" durumu). Normal hattın video onay ucu (`app/videolar/api/durum/route.ts`) talepte `hazir_soru_seti` varsa boş set açmak yerine bu fonksiyonu çağırır; IU'ya "yazmaya hazır" bildirimi gitmez, işleme hatasında onaylayana [SİSTEM] bildirimi düşer. İşleme mantığı modülde — uç yalnız çağırır (F-07 gruplama kararı korunur). `hazirZinciriKur` (V4) de aynı fonksiyonu kullanır — tek doğruluk kaynağı.
+- **G-2:** V2'de boş set doğduğu anda tüm aktif IU'lara bildirim: "Hazır video onaylandı, soru seti yazmaya hazır: <ürün>" (`zincir.ts`; hazır kolda videoyu yükleyen IU olmadığından alıcı tüm aktif IU'lardır). Bildirim için `hazir-video` ucu talep sorgusuna ürün/teknik adı eklendi.
 - **G-3:** Talep açılışındaki "Yeni talep" bildirimi `hazir_video=true` taleplerde atlanır (`app/talepler/api/route.ts`).
 - **G-4:** Durum filtresi düzeltildi: durumu henüz olmayan satır (yazım bekleyen iş) filtre seçiliyken listeden düşmez (`app/soru-setleri/page.tsx:172-176`).
 
@@ -99,4 +142,4 @@ Her adım: tsc + `npm run denetim` + `npm run lint:mimari` temiz; en fazla 1 smo
 
 ## Durum
 
-**KOD BİTTİ — fiziksel teyit İskender'de.** Teyit adımları: (V3) normal hatta hazır setli talep → IU videosu onaylanınca setin otomatik "onaylandı" olup yayın bekleyenlerine düştüğü; (V1) video onayında IU'lara bildirim gittiği ve setin filtre açıkken de listede göründüğü; (V1/V2) talep açılışında IU'ya "Yeni talep" bildirimi GİTMEDİĞİ.
+**KOD BİTTİ — fiziksel teyit İskender'de.** Teyit adımları: (V3) normal hatta hazır setli talep → IU videosu onaylanınca setin otomatik "onaylandı" olup yayın bekleyenlerine düştüğü; (V2) video onayında IU'lara bildirim gittiği ve setin filtre açıkken de listede göründüğü; (V2/V4) talep açılışında IU'ya "Yeni talep" bildirimi GİTMEDİĞİ.
