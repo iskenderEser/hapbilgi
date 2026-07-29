@@ -99,13 +99,14 @@ const KORUMALI_TABLOLAR = new Set([
   "push_abonelikleri",
   "push_gonderim_kayitlari",
 ]);
+const YAZMA_ISLEMLERI = new Set(["insert", "update", "delete", "upsert"]);
 const kayitTekKaynak = {
   meta: {
     type: "problem",
-    docs: { description: "Puan/kayip/tur/push tablolarina INSERT yalniz lib/puan/, lib/tur/, lib/eczanem/ veya lib/push/ icinden yapilmali." },
+    docs: { description: "Puan/kayip/tur/push tablolarina INSERT/UPDATE/DELETE/UPSERT yalniz lib/puan/, lib/tur/, lib/eczanem/ veya lib/push/ icinden yapilmali." },
     schema: [],
     messages: {
-      disari: "'{{tablo}}' tablosuna INSERT yalniz lib/puan/, lib/tur/, lib/eczanem/ veya lib/push/ icinden yapilmali (tek-kaynak).",
+      disari: "'{{tablo}}' tablosuna {{islem}} yalniz lib/puan/, lib/tur/, lib/eczanem/ veya lib/push/ icinden yapilmali (tek-kaynak).",
     },
   },
   create(context) {
@@ -117,14 +118,15 @@ const kayitTekKaynak = {
       CallExpression(node) {
         const c = node.callee;
         if (c.type !== "MemberExpression") return;
-        if (c.property?.name !== "insert") return;
+        const islem = c.property?.name;
+        if (!YAZMA_ISLEMLERI.has(islem)) return;
         let obj = c.object;
         while (obj && obj.type === "CallExpression") {
           const oc = obj.callee;
           if (oc?.type === "MemberExpression" && oc.property?.name === "from") {
             const a = obj.arguments?.[0];
             if (a?.type === "Literal" && KORUMALI_TABLOLAR.has(a.value)) {
-              context.report({ node: a, messageId: "disari", data: { tablo: a.value } });
+              context.report({ node: a, messageId: "disari", data: { tablo: a.value, islem: islem.toUpperCase() } });
             }
             break;
           }
