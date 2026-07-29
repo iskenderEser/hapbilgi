@@ -15,8 +15,8 @@
 - Canlı DB'ye YAZAN hiçbir komutu kendin çalıştırma — SQL'i kullanıcıya ver.
 - Test verisi yarattıysan işin sonunda temizle.
 
-## Kalite taraması frenleri (docs/teknik_kalite_kontrol_is_plani.md §4)
-- **Q0 kuralı — SIFIR DEĞİŞİKLİK:** Tarama aşamasında hiçbir dosya değiştirilmez, hiçbir DB yazımı yapılmaz. Çıktı yalnızca `docs/kalite_bulgu_raporu.md`.
+## Kalite taraması frenleri
+- **Q0 kuralı — SIFIR DEĞİŞİKLİK:** Tarama aşamasında hiçbir dosya değiştirilmez, hiçbir DB yazımı yapılmaz.
 - **Bulgu formatı:** `B-## | kategori (T-K/T-D/T-B) | kanıt (dosya:satır ya da SQL çıktısı) | önem (KRİTİK/ORTA/NOT) | önerilen düzeltme (1-2 cümle)`.
 - Tarama maddeleri tek tek koşulur; madde başına tek geçiş; bir maddede 2 takılmada dur-sor.
 - Bulgu başına derinleşme yok — kanıtla, raporla, geç.
@@ -24,4 +24,4 @@
 - **Düzeltme disiplini (Q2 onayı sonrası):** yalnızca İskender'in KRİTİK/ORTA onayladığı bulgular; bir bulgu = bir commit; her commit üçlü doğrulamadan geçer; davranış değiştiren düzeltmelerde önce/sonra kanıtı rapora eklenir.
 
 ## Kaynaklar
-- Proje bilgisi: docs/ altındaki üç belge. Kararlar oradadır, yeniden sorgulama.
+- Proje bilgisi: docs/ altındaki belgeler. Kararlar oradadır, yeniden sorgulama.
