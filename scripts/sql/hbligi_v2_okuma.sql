@@ -10,6 +10,12 @@
 -- puanı olmayan aktif UTT de 0'la listede; LEFT JOIN → COALESCE 0).
 -- toplam_puan = 4 kazanım − 3 kayıp (periyot RPC'lerinin kanonik formülü).
 --
+-- Periyot RPC'leri SECURITY DEFINER: hb_ligi_ozet_v2 iç tablodur (KORUMALI,
+-- yalnız trigger yazar). Çağıran rolün (authenticated) tabloda SELECT izni yok;
+-- RPC kontrollü kapı olarak tanımlayıcı yetkisiyle okur (proje deseni:
+-- oneri_kaybi_tara, yayin_aktivasyon). Tüm-zaman view'ları yalnız admin
+-- (service_role) tarafından okunduğundan onlarda gerek yoktur.
+--
 -- KOŞUM: tamamı bir kez. CREATE OR REPLACE → tekrar koşumu güvenli.
 -- Faz 2.6 bunu v1 canlı-SUM ile birebir doğrular.
 
@@ -47,6 +53,8 @@ CREATE OR REPLACE FUNCTION public.get_hb_ligi_aylik_v2(p_yil integer, p_ay integ
  RETURNS TABLE(kullanici_id uuid, rol text, izleme_puani integer, cevaplama_puani integer, oneri_puani integer, extra_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, oneri_kaybi integer, toplam_puan integer, ad text, soyad text, eposta text, firma_id uuid, firma_adi text, takim_id uuid, takim_adi text, bolge_id uuid, bolge_adi text, firma_sirasi bigint, bolge_sirasi bigint, takim_sirasi bigint)
  LANGUAGE plpgsql
  STABLE
+ SECURITY DEFINER
+ SET search_path TO 'public'
 AS $function$
 BEGIN
   RETURN QUERY
@@ -91,6 +99,8 @@ CREATE OR REPLACE FUNCTION public.get_hb_ligi_donemlik_v2(p_yil integer, p_ceyre
  RETURNS TABLE(kullanici_id uuid, rol text, izleme_puani integer, cevaplama_puani integer, oneri_puani integer, extra_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, oneri_kaybi integer, toplam_puan integer, ad text, soyad text, eposta text, firma_id uuid, firma_adi text, takim_id uuid, takim_adi text, bolge_id uuid, bolge_adi text, firma_sirasi bigint, bolge_sirasi bigint, takim_sirasi bigint)
  LANGUAGE plpgsql
  STABLE
+ SECURITY DEFINER
+ SET search_path TO 'public'
 AS $function$
 BEGIN
   RETURN QUERY
@@ -135,6 +145,8 @@ CREATE OR REPLACE FUNCTION public.get_hb_ligi_yillik_v2(p_yil integer)
  RETURNS TABLE(kullanici_id uuid, rol text, izleme_puani integer, cevaplama_puani integer, oneri_puani integer, extra_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, oneri_kaybi integer, toplam_puan integer, ad text, soyad text, eposta text, firma_id uuid, firma_adi text, takim_id uuid, takim_adi text, bolge_id uuid, bolge_adi text, firma_sirasi bigint, bolge_sirasi bigint, takim_sirasi bigint)
  LANGUAGE plpgsql
  STABLE
+ SECURITY DEFINER
+ SET search_path TO 'public'
 AS $function$
 BEGIN
   RETURN QUERY
