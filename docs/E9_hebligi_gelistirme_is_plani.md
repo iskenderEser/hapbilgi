@@ -62,8 +62,8 @@ istenmiyor; toplamı önceden tutan **özet tablo** ile değiştirilecek. Sıral
   SQL repo'da (`scripts/sql/hbligi_v2_kopya.sql`). *(SQL — İskender)*
 - [x] **1.2** Kod kopyası: `lib/hbligi_v2/` (6 dosya), `_v2` RPC'lerine bağlı.
   Teknik üçlü temiz (tsc / denetim / lint:mimari). *(Claude)*
-- [ ] **1.3** Sadakat doğrulaması: v2 çıktısı v1 ile birebir aynı mı — tüm-zaman +
-  3 periyot karşılaştırma sorgusu. *(SQL — İskender)*
+- [x] **1.3** Sadakat doğrulaması: v2 çıktısı v1 ile birebir aynı — tüm-zaman +
+  3 periyot `EXCEPT` farkı dört yönde de 0. *(SQL — İskender)*
 
 ## Faz 2 — Özet tablo (ölçek geliştirmesi)
 
