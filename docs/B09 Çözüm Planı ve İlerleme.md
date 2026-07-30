@@ -7,17 +7,17 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 
 ---
 
-## ▶ DEVAM NOKTASI (son güncelleme: 30.07 — E1 sonrası)
+## ▶ DEVAM NOKTASI (son güncelleme: 30.07 — E2 sonrası)
 
 > Yeni oturum buradan devam etsin. Tüm iş commit'li; çalışma ağacında B-09'a ait
 > bekleyen değişiklik yok.
 
-- **Tamamlanan:** **T-CLUB BİTTİ** — G1 (bekçi) · T1 · T2 · T3 · T3b · T4 · T5 · T6 · T7. **E-CLUB: E1 yapıldı.** Hepsi commit'li, üçlü doğrulamadan geçti.
-- **Sıradaki adımlar:** E-Club → E2 (Karar #4) → E3 → E4 (ops) → C1 (dokunma) → Ez1 → Ez2 (ops) → kompleks modüller.
+- **Tamamlanan:** **T-CLUB BİTTİ** — G1 (bekçi) · T1 · T2 · T3 · T3b · T4 · T5 · T6 · T7. **E-CLUB: E1 · E2 yapıldı.** Hepsi commit'li, üçlü doğrulamadan geçti.
+- **Sıradaki adımlar:** E-Club → E3 → E4 (ops) → C1 (dokunma) → Ez1 → Ez2 (ops) → kompleks modüller.
 - **Kalan tekil `=== "iu"` (kendi adımlarında süpürülecek):** `ana-sayfa/api:33` T6'da yapıldı; kalanlar
   `talepler/api/route.ts:36,303` + `talepler/[talep_id]/page`, `onaylanan-talepler/page:87`,
   `lib/utils/durum/mesaj.ts:178`, `lib/uretim/surec.ts:255` (.eq) — hepsi tekil, sınırda.
-- **Bekçi baseline durumu:** başlangıç 50 → **şu an 29** (T2 −8 izle, T3b −takımlar, T5 −dosyalar, T6 −ana-sayfa+hbligi, T7 −izle/api/route, E1 −8 eclub;
+- **Bekçi baseline durumu:** başlangıç 50 → **şu an 22** (T2 −8 izle, T3b −takımlar, T5 −dosyalar, T6 −ana-sayfa+hbligi, T7 −izle/api/route, E1 −8 eclub, E2 −7 eclub;
   T4 dosyaları baseline'da değildi — tekil `=== "iu"` kural kapsamında değil). `tools/eslint-rules/index.mjs` `ROL_BASELINE`.
 
 ---
@@ -159,9 +159,14 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 - **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok, bekçi 0 fire.
 
 ### E2 · UTT tarafı (liste + öneri) *(Karar #4 — en özgül gruba)*
-- **Durum:** bekliyor · **Kategori:** Gerçek Sorun · **Davranış:** değişmez
-- **Dosyalar (7):** `eclub/oneriler/api/{route,yayinlar}`, `eclub/oneriler/page`, `eclub/listem/api/{eczaneler,kisiler}`, `eclub/listem/page`, `eclub/ligi/api/takim-adi`
-- **Hedef:** yerel `ECLUB_UTT_ROLLERI`/`UTT_ROLLER` → liste yönetimi `ECLUB_GOREN_ROLLER`, öneri `TUKETICI_ROLLER`
+- **Durum:** ✅ yapıldı (30.07) — commit `b5004ca`.
+- **Kategori:** Gerçek Sorun · **Davranış:** değişmez (her iki hedef bugün `["utt","kd_utt"]` ≡ eski yerel değer, tsc teyit)
+- **Yapılan (7 dosya):** yerel `ECLUB_UTT_ROLLERI`/`UTT_ROLLER` kaldırıldı, en özgül gruba bağlandı:
+  öneri (`oneriler/api/{route,yayinlar}`, `oneriler/page`) + `ligi/takim-adi` → `TUKETICI_ROLLER`;
+  liste yönetimi (`listem/api/{eczaneler,kisiler}`, `listem/page`) → `ECLUB_GOREN_ROLLER`.
+- **Karar notu:** `takim-adi` `ECLUB_LIGI_GOREN_ROLLER`'a DEĞİL `TUKETICI_ROLLER`'a bağlandı — takım adını yalnız UTT belirler (bm/tm hariç); ligi görüntüleme kümesi (bm/tm dahil) buraya uymaz.
+- **Baseline:** 7 dosya tamamen temizlenip düştü (29→22). `kisiler` E1+E2 ile iki literalini de kaybedip baseline'dan düştü.
+- **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok, bekçi 0 fire.
 
 ### E3 · E-Club Ligi + Store rapor
 - **Durum:** bekliyor · **Kategori:** Gerçek Sorun · **Davranış:** değişmez
