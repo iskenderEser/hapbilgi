@@ -7,17 +7,17 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 
 ---
 
-## ▶ DEVAM NOKTASI (son güncelleme: 30.07 — E2 sonrası)
+## ▶ DEVAM NOKTASI (son güncelleme: 30.07 — E3 sonrası)
 
 > Yeni oturum buradan devam etsin. Tüm iş commit'li; çalışma ağacında B-09'a ait
 > bekleyen değişiklik yok.
 
-- **Tamamlanan:** **T-CLUB BİTTİ** — G1 (bekçi) · T1 · T2 · T3 · T3b · T4 · T5 · T6 · T7. **E-CLUB: E1 · E2 yapıldı.** Hepsi commit'li, üçlü doğrulamadan geçti.
-- **Sıradaki adımlar:** E-Club → E3 → E4 (ops) → C1 (dokunma) → Ez1 → Ez2 (ops) → kompleks modüller.
+- **Tamamlanan:** **T-CLUB BİTTİ** — G1 (bekçi) · T1 · T2 · T3 · T3b · T4 · T5 · T6 · T7. **E-CLUB: E1 · E2 · E3 yapıldı.** Hepsi commit'li, üçlü doğrulamadan geçti.
+- **Sıradaki adımlar:** E-Club → E4 (ops) → C1 (dokunma) → Ez1 → Ez2 (ops) → kompleks modüller.
 - **Kalan tekil `=== "iu"` (kendi adımlarında süpürülecek):** `ana-sayfa/api:33` T6'da yapıldı; kalanlar
   `talepler/api/route.ts:36,303` + `talepler/[talep_id]/page`, `onaylanan-talepler/page:87`,
   `lib/utils/durum/mesaj.ts:178`, `lib/uretim/surec.ts:255` (.eq) — hepsi tekil, sınırda.
-- **Bekçi baseline durumu:** başlangıç 50 → **şu an 22** (T2 −8 izle, T3b −takımlar, T5 −dosyalar, T6 −ana-sayfa+hbligi, T7 −izle/api/route, E1 −8 eclub, E2 −7 eclub;
+- **Bekçi baseline durumu:** başlangıç 50 → **şu an 19** (T2 −8 izle, T3b −takımlar, T5 −dosyalar, T6 −ana-sayfa+hbligi, T7 −izle/api/route, E1 −8 eclub, E2 −7 eclub, E3 −3 eclub;
   T4 dosyaları baseline'da değildi — tekil `=== "iu"` kural kapsamında değil). `tools/eslint-rules/index.mjs` `ROL_BASELINE`.
 
 ---
@@ -169,8 +169,11 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 - **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok, bekçi 0 fire.
 
 ### E3 · E-Club Ligi + Store rapor
-- **Durum:** bekliyor · **Kategori:** Gerçek Sorun · **Davranış:** değişmez
-- **Dosyalar:** `eclub/ligi/api/{route,export}` → `ECLUB_LIGI_GOREN_ROLLER`; `eclub/store/rapor/api/route` → `ECLUB_STORE_RAPOR_GOREN_ROLLER`
+- **Durum:** ✅ yapıldı (30.07) — commit `0df2732`.
+- **Kategori:** Gerçek Sorun · **Davranış:** değişmez (yerel `["utt","kd_utt","bm","tm"]` ≡ hedefler, tsc teyit)
+- **Yapılan (3 dosya):** `ligi/api/{route,export}` yerel `LIG_GOREN_ROLLER` → `ECLUB_LIGI_GOREN_ROLLER`; `store/rapor/api/route` yerel `FIRMA_YETKILI_ROLLER` → `ECLUB_STORE_RAPOR_GOREN_ROLLER`. `store/rapor`'daki `adminMi` (`=== "admin"`) tekil kontrol korundu.
+- **Baseline:** 3 dosya tamamen temizlenip düştü (22→19).
+- **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok, bekçi 0 fire.
 
 ### E4 · E-Club Ligi sayfa içi dağıtım *(opsiyonel)*
 - **Durum:** bekliyor · **Kategori:** Sınırda · **Davranış:** değişmez
