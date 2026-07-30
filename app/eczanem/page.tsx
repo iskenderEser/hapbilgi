@@ -10,6 +10,7 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import EczanemVideoOynatici from "./_components/EczanemVideoOynatici";
 import EczanemKasa from "./_components/EczanemKasa";
+import { MUSTERI_ROLU } from "@/lib/utils/roller";
 
 interface VideoSatiri {
   gonderim_id: string;
@@ -28,7 +29,7 @@ export default function EczanemPanelPage() {
   const { kullanici, yukleniyor } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
 
-  const musteri = !!kullanici && kullanici.kimlik_turu === "musteri";
+  const musteri = !!kullanici && kullanici.kimlik_turu === MUSTERI_ROLU;
 
   // Silme akışı durumu: kapali → kod-istendi → (API) → silindi
   const [silmeAdimi, setSilmeAdimi] = useState<"kapali" | "kod" | "silindi">("kapali");
