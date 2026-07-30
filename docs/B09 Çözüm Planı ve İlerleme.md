@@ -15,7 +15,8 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 - **Tamamlanan:** **T-CLUB BİTTİ** — G1 (bekçi) · T1 · T2 · T3 · T3b · T4 · T5 · T6 · T7. **E-CLUB BİTTİ** — E1 · E2 · E3 · E4. **C-CLUB: C1 sıfır-eylem.** **ECZANEM BİTTİ** — Ez1 · Ez2. **→ Çekirdek B-09 tamam.** Hepsi commit'li, üçlü doğrulamadan geçti.
 - **KOMPLEKS FAZ (baseline'daki 18 dosya, tek tek):**
   - ✅ **K1 Rapor** (5) — `.in('rol',['utt','kd_utt'])` → `TUKETICI_ROLLER`. Yapıldı, baseline 18→13.
-  - ⬜ K2 Öneri (4) · K3 anaSayfa (2) · K4 Profil (2) · K5 Video görünürlük (1) · K6 Hedef listeleri (3, hedef ekseni → `TUM_HEDEF_ROLLER`) · **K7 Kullanıcılar (1) — KARAR** (dropdown'da İK+admin eksik, kasıt mı sapma mı?).
+  - ✅ **K2 Öneri** (4) — `TUKETICI_ROLLER`/`YONLENDIRICI_ROLLER`/spread. Yapıldı, baseline 13→9.
+  - ⬜ K3 anaSayfa (2) · K4 Profil (2) · K5 Video görünürlük (1) · K6 Hedef listeleri (3, hedef ekseni → `TUM_HEDEF_ROLLER`) · **K7 Kullanıcılar (1) — KARAR** (dropdown'da İK+admin eksik, kasıt mı sapma mı?).
 - **Kalan tekil `=== "iu"` (kendi adımlarında süpürülecek):** `ana-sayfa/api:33` T6'da yapıldı; kalanlar
   `talepler/api/route.ts:36,303` + `talepler/[talep_id]/page`, `onaylanan-talepler/page:87`,
   `lib/utils/durum/mesaj.ts:178`, `lib/uretim/surec.ts:255` (.eq) — hepsi tekil, sınırda.

@@ -10,6 +10,7 @@
 // Hafta tanımı: Pazartesi 00:00 → Pazar 23:59 (lib/zaman/kontrol.ts ile uyumlu).
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { haftaBaslangici, ayBaslangici } from "@/lib/zaman/kontrol";
 
 /** Bir alıcı UTT için haftalık öneri üst sınırı */
@@ -117,7 +118,7 @@ export async function aylikKotaKontrol(
     .from("kullanicilar")
     .select("kullanici_id", { count: "exact", head: true })
     .eq("bolge_id", bolge_id)
-    .in("rol", ["utt", "kd_utt"])
+    .in("rol", TUKETICI_ROLLER)
     .eq("aktif_mi", true);
 
   if (uttError) {

@@ -2,6 +2,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { TUKETICI_ROLLER, YONLENDIRICI_ROLLER } from "@/lib/utils/roller";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
@@ -112,13 +113,13 @@ export default function OnerilerPage() {
     else { setOneriler(data.oneriler ?? []); }
 
     const rolKucu = (kullanici?.rol ?? "").toLowerCase();
-    if (["tm", "bm"].includes(rolKucu)) {
+    if (YONLENDIRICI_ROLLER.includes(rolKucu)) {
       const yRes = await fetch("/oneriler/api/yayinlar");
       const yData = await yRes.json();
       if (!yRes.ok) { hata(yData.hata ?? "Yayınlar yüklenemedi.", yData.adim, yData.detay); }
       else { setYayinlar(yData.videolar ?? []); }
 
-      const kRes = await fetch(`/kullanicilar/api?kapsamim=true&rol=utt,kd_utt`);
+      const kRes = await fetch("/oneriler/api/kullanicilar");
       const kData = await kRes.json();
       if (!kRes.ok) { hata(kData.hata ?? "Kullanıcılar yüklenemedi.", kData.adim, kData.detay); }
       else { setKullanicilar(kData.kullanicilar ?? []); }
@@ -144,8 +145,8 @@ export default function OnerilerPage() {
   };
 
   const rolKucu = (kullanici?.rol ?? "").toLowerCase();
-  const isBMTM = ["tm", "bm"].includes(rolKucu);
-  const isUTT = ["utt", "kd_utt"].includes(rolKucu);
+  const isBMTM = YONLENDIRICI_ROLLER.includes(rolKucu);
+  const isUTT = TUKETICI_ROLLER.includes(rolKucu);
 
   const sureciGectiMi = (bitis: string) => new Date(bitis) < new Date();
   const henuzBaslamadiMi = (baslangic: string) => new Date(baslangic) > new Date();

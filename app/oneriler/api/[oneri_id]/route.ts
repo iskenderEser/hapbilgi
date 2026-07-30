@@ -1,6 +1,7 @@
 // app/oneriler/api/[oneri_id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { YONLENDIRICI_ROLLER } from "@/lib/utils/roller";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
@@ -19,7 +20,7 @@ export async function PUT(
     if (authError || !user) return yetkiHatasi();
 
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (!["tm", "bm"].includes(rol)) return rolHatasi("Sadece tm ve bm öneri güncelleyebilir.");
+    if (!YONLENDIRICI_ROLLER.includes(rol)) return rolHatasi("Sadece tm ve bm öneri güncelleyebilir.");
 
     const { data: oneri, error: oneriError } = await adminSupabase
       .from("oneri_kayitlari")

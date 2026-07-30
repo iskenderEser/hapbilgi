@@ -1,13 +1,14 @@
 // app/oneriler/api/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { TUKETICI_ROLLER, YONLENDIRICI_ROLLER } from "@/lib/utils/roller";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { bildirimOlustur } from "@/lib/utils/bildirimOlustur";
 import { oneriTarihKurali } from "@/lib/oneri/tarihKurali";
 import { haftalikLimitKontrol, aylikKotaKontrol, MAKS_ALICI_HAFTA } from "@/lib/oneri/limitKontrol";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
-const GET_ROLLERI = ["bm", "tm", "utt", "kd_utt"];
+const GET_ROLLERI = [...YONLENDIRICI_ROLLER, ...TUKETICI_ROLLER];
 
 export async function GET() {
   try {
