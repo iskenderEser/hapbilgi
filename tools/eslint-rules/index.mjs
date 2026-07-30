@@ -312,9 +312,8 @@ const ROL_BASELINE = new Set([
   "app/eclub/store/api/siparis/route.ts",
   "app/eclub/store/rapor/api/route.ts",
   "app/eczanem/utt/page.tsx",
-  "app/izle/api/route.ts", // T7: IZLEME_ROLLERI (satır 9) hâlâ dizi — o çözülünce düşer
-  // T2 (30.07) temizlendi ve baseline'dan düşürüldü: izle/api/{baslat,bitir,cevap,
-  // begeni,favori,sorular,ileri-sarma,[yayin_id]} — hepsi TUKETICI_ROLLER'a bağlandı.
+  // T2+T7 (30.07): izle/api'nin tamamı temizlendi ve baseline'dan düşürüldü
+  // (tüketim uçları → TUKETICI_ROLLER, IZLEME_ROLLERI → spread grupları).
   "app/kullanicilar/page.tsx",
   "app/oneriler/api/[oneri_id]/route.ts",
   "app/oneriler/api/route.ts",

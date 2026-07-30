@@ -2,11 +2,11 @@
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
-import { TUKETICI_ROLLER, URETICI_ROLLER } from "@/lib/utils/roller";
+import { TUKETICI_ROLLER, URETICI_ROLLER, YONLENDIRICI_ROLLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
-// İzleme sayfasına erişebilecek tüm roller
-const IZLEME_ROLLERI = ["utt", "kd_utt", "bm", "tm", ...URETICI_ROLLER];
+// İzleme sayfasına erişebilecek tüm roller (üye kümesi birebir korunur)
+const IZLEME_ROLLERI = [...TUKETICI_ROLLER, ...YONLENDIRICI_ROLLER, ...URETICI_ROLLER];
 
 export async function GET() {
   try {
