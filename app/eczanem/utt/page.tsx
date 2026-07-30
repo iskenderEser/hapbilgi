@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import UttEczanemDokum from "./_components/UttEczanemDokum";
+import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 
 interface Yayin {
   yayin_id: string;
@@ -28,8 +29,6 @@ interface Veri {
   eczaneler: Eczane[];
   gonderilenler: string[];
 }
-
-const TUKETICI_ROLLER = ["utt", "kd_utt"];
 
 export default function UttEczanemPage() {
   const router = useRouter();

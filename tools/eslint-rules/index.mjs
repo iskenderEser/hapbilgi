@@ -293,7 +293,6 @@ const ROL_BASELINE = new Set([
   // 30.07 — mevcut ihlaller (50 dosya). Bir dosya tamamen temizlenince
   // buradan silinir (kural o dosyada sıkılaşır). Kompleks modül dosyaları
   // (kullanicilar/profil/raporlar/oneriler/takimlar) sıraları gelene kadar burada bekler.
-  "app/eczanem/utt/page.tsx",
   // T2+T7 (30.07): izle/api'nin tamamı temizlendi ve baseline'dan düşürüldü
   // (tüketim uçları → TUKETICI_ROLLER, IZLEME_ROLLERI → spread grupları).
   "app/kullanicilar/page.tsx",
