@@ -98,6 +98,7 @@ const KORUMALI_TABLOLAR = new Set([
   "eczanem_urun_tarifeleri",
   "push_abonelikleri",
   "push_gonderim_kayitlari",
+  "hb_ligi_ozet_v2",
 ]);
 const YAZMA_ISLEMLERI = new Set(["insert", "update", "delete", "upsert"]);
 const kayitTekKaynak = {

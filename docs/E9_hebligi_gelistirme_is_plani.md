@@ -84,8 +84,9 @@ istenmiyor; toplamı önceden tutan **özet tablo** ile değiştirilecek. Sıral
 - [x] **2.4** `hb_ligi_v2` + periyot RPC'leri özet tablodan okur (SUM yerine hazır
   toplam + `row_number`). Çıktı yine 22 kolon. SQL repo'da
   (`scripts/sql/hbligi_v2_okuma.sql`). *(SQL — İskender)*
-- [ ] **2.5** Koruma: `hb_ligi_ozet_v2` → `KORUMALI_TABLOLAR`; sema.json yenilenir.
-  *(Kod: Claude / sema-cek: İskender)*
+- [x] **2.5** Koruma: `hb_ligi_ozet_v2` → `KORUMALI_TABLOLAR` (eslint). Teknik üçlü
+  temiz. sema.json yenilemesi sona ertelendi — tablo TS'te referans edilmiyor,
+  denetim temiz; sema tüm iş bitince yenilenir. *(Kod: Claude)*
 - [x] **2.6** Paralel doğrulama (doğruluk kapısı): özet tabanlı v2, canlı-SUM v1 ile
   **birebir** — tüm-zaman + aylık + dönemlik + yıllık `EXCEPT` farkı dört yönde de 0.
 
