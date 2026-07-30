@@ -1867,7 +1867,7 @@
     },
     {
       "dosya": "app/eclub/ligi/api/route.ts",
-      "satir": 34,
+      "satir": 33,
       "tablo": "kullanicilar"
     },
     {
@@ -2832,7 +2832,7 @@
     },
     {
       "dosya": "app/eclub/ligi/api/export/route.ts",
-      "satir": 33,
+      "satir": 32,
       "tablo": "kullanicilar"
     },
     {
@@ -3152,37 +3152,37 @@
     },
     {
       "dosya": "app/eclub/store/rapor/api/route.ts",
-      "satir": 16,
+      "satir": 15,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/eclub/store/rapor/api/route.ts",
-      "satir": 30,
+      "satir": 29,
       "tablo": "eclub_store_siparis_firma_puan"
     },
     {
       "dosya": "app/eclub/store/rapor/api/route.ts",
-      "satir": 47,
+      "satir": 46,
       "tablo": "eclub_store_siparisler"
     },
     {
       "dosya": "app/eclub/store/rapor/api/route.ts",
-      "satir": 69,
+      "satir": 68,
       "tablo": "eclub_kisiler"
     },
     {
       "dosya": "app/eclub/store/rapor/api/route.ts",
-      "satir": 80,
+      "satir": 79,
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/eclub/store/rapor/api/route.ts",
-      "satir": 93,
+      "satir": 92,
       "tablo": "eclub_eczaneler"
     },
     {
       "dosya": "app/eclub/store/rapor/api/route.ts",
-      "satir": 105,
+      "satir": 104,
       "tablo": "eclub_eczane_master"
     },
     {
@@ -5519,7 +5519,7 @@
     },
     {
       "dosya": "app/eclub/ligi/api/route.ts",
-      "satir": 34,
+      "satir": 33,
       "ham": "kullanici_id, rol, firma_id, takim_id, bolge_id",
       "tablo": "kullanicilar"
     },
@@ -6431,7 +6431,7 @@
     },
     {
       "dosya": "app/eclub/ligi/api/export/route.ts",
-      "satir": 33,
+      "satir": 32,
       "ham": "kullanici_id, rol, firma_id, bolge_id",
       "tablo": "kullanicilar"
     },
@@ -6731,43 +6731,43 @@
     },
     {
       "dosya": "app/eclub/store/rapor/api/route.ts",
-      "satir": 16,
+      "satir": 15,
       "ham": "kullanici_id, rol, firma_id",
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/eclub/store/rapor/api/route.ts",
-      "satir": 30,
+      "satir": 29,
       "ham": "id, siparis_id, firma_id, kullanilan_puan, created_at",
       "tablo": "eclub_store_siparis_firma_puan"
     },
     {
       "dosya": "app/eclub/store/rapor/api/route.ts",
-      "satir": 47,
+      "satir": 46,
       "ham": "siparis_id, kisi_id, urun_id, toplam_puan, durum, created_at, eclub_store_urunler ( ad )",
       "tablo": "eclub_store_siparisler"
     },
     {
       "dosya": "app/eclub/store/rapor/api/route.ts",
-      "satir": 69,
+      "satir": 68,
       "ham": "kisi_id, ad, soyad",
       "tablo": "eclub_kisiler"
     },
     {
       "dosya": "app/eclub/store/rapor/api/route.ts",
-      "satir": 80,
+      "satir": 79,
       "ham": "kisi_id, eczane_id",
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/eclub/store/rapor/api/route.ts",
-      "satir": 93,
+      "satir": 92,
       "ham": "eczane_id, gln",
       "tablo": "eclub_eczaneler"
     },
     {
       "dosya": "app/eclub/store/rapor/api/route.ts",
-      "satir": 105,
+      "satir": 104,
       "ham": "gln, eczane_adi",
       "tablo": "eclub_eczane_master"
     },
