@@ -7,17 +7,17 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 
 ---
 
-## ▶ DEVAM NOKTASI (son güncelleme: 30.07)
+## ▶ DEVAM NOKTASI (son güncelleme: 30.07 — E1 sonrası)
 
 > Yeni oturum buradan devam etsin. Tüm iş commit'li; çalışma ağacında B-09'a ait
 > bekleyen değişiklik yok.
 
-- **Tamamlanan:** **T-CLUB BİTTİ** — G1 (bekçi) · T1 · T2 · T3 · T3b · T4 · T5 · T6 · T7. Hepsi commit'li, üçlü doğrulamadan geçti.
-- **Sıradaki adımlar:** E-Club → E1 → E2 (Karar #4) → E3 → E4 (ops) → C1 (dokunma) → Ez1 → Ez2 (ops) → kompleks modüller.
+- **Tamamlanan:** **T-CLUB BİTTİ** — G1 (bekçi) · T1 · T2 · T3 · T3b · T4 · T5 · T6 · T7. **E-CLUB: E1 yapıldı.** Hepsi commit'li, üçlü doğrulamadan geçti.
+- **Sıradaki adımlar:** E-Club → E2 (Karar #4) → E3 → E4 (ops) → C1 (dokunma) → Ez1 → Ez2 (ops) → kompleks modüller.
 - **Kalan tekil `=== "iu"` (kendi adımlarında süpürülecek):** `ana-sayfa/api:33` T6'da yapıldı; kalanlar
   `talepler/api/route.ts:36,303` + `talepler/[talep_id]/page`, `onaylanan-talepler/page:87`,
   `lib/utils/durum/mesaj.ts:178`, `lib/uretim/surec.ts:255` (.eq) — hepsi tekil, sınırda.
-- **Bekçi baseline durumu:** başlangıç 50 → **şu an 37** (T2 −8 izle, T3b −takımlar, T5 −dosyalar, T6 −ana-sayfa+hbligi, T7 −izle/api/route;
+- **Bekçi baseline durumu:** başlangıç 50 → **şu an 29** (T2 −8 izle, T3b −takımlar, T5 −dosyalar, T6 −ana-sayfa+hbligi, T7 −izle/api/route, E1 −8 eclub;
   T4 dosyaları baseline'da değildi — tekil `=== "iu"` kural kapsamında değil). `tools/eslint-rules/index.mjs` `ROL_BASELINE`.
 
 ---
@@ -152,9 +152,11 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 ## ADIM 2 — E-CLUB
 
 ### E1 · Kişi rolleri (panel + store + liste)
-- **Durum:** bekliyor · **Kategori:** Gerçek Sorun · **Davranış:** değişmez
-- **Dosyalar (9):** `eclub/panel/api/{baslat,bitir,route,sorular,cevapla}`, `eclub/listem/api/kisiler`, `eclub/store/api/{route,siparis,adres}`
-- **Hedef:** yerel `ECLUB_KISI_ROLLERI = ["eczaci","eczane_teknisyeni"]` → `ECLUB_TUKETICI_ROLLERI`
+- **Durum:** ✅ yapıldı (30.07) — commit `c72ebdd`.
+- **Kategori:** Gerçek Sorun · **Davranış:** değişmez (`ECLUB_TUKETICI_ROLLERI` ≡ eski yerel değer `["eczaci","eczane_teknisyeni"]`, tsc teyit)
+- **Yapılan (9 dosya):** yerel `ECLUB_KISI_ROLLERI = ["eczaci","eczane_teknisyeni"]` kaldırıldı, roller.ts'teki mevcut `ECLUB_TUKETICI_ROLLERI` import edildi. Dosyalar: `panel/api/{baslat,bitir,route,sorular,cevapla}`, `listem/api/kisiler`, `store/api/{route,siparis,adres}`.
+- **Baseline:** 8 dosya tamamen temizlenip düştü (37→29). `listem/api/kisiler` baseline'da **KALDI** — içindeki `ECLUB_UTT_ROLLERI` (E2'nin işi) hâlâ literal olduğundan düşürülemezdi.
+- **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok, bekçi 0 fire.
 
 ### E2 · UTT tarafı (liste + öneri) *(Karar #4 — en özgül gruba)*
 - **Durum:** bekliyor · **Kategori:** Gerçek Sorun · **Davranış:** değişmez
