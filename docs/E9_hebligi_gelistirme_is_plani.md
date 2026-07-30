@@ -60,7 +60,8 @@ istenmiyor; toplamı önceden tutan **özet tablo** ile değiştirilecek. Sıral
 - [x] **1.1** DB kopyası: `hb_ligi_v2`, `v_hbligi_sirali_v2`,
   `get_hb_ligi_aylik/donemlik/yillik_v2` — v1'in aynısı, `_v2` ekiyle. Kuruldu;
   SQL repo'da (`scripts/sql/hbligi_v2_kopya.sql`). *(SQL — İskender)*
-- [ ] **1.2** Kod kopyası: `lib/hbligi_v2/` (6 dosya), `_v2` RPC'lerine bağlı. *(Claude)*
+- [x] **1.2** Kod kopyası: `lib/hbligi_v2/` (6 dosya), `_v2` RPC'lerine bağlı.
+  Teknik üçlü temiz (tsc / denetim / lint:mimari). *(Claude)*
 - [ ] **1.3** Sadakat doğrulaması: v2 çıktısı v1 ile birebir aynı mı — tüm-zaman +
   3 periyot karşılaştırma sorgusu. *(SQL — İskender)*
 
