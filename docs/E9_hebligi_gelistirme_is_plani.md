@@ -92,8 +92,10 @@ istenmiyor; toplamı önceden tutan **özet tablo** ile değiştirilecek. Sıral
 
 ## Faz 3 — Karşılaştırma raporu
 
-- [ ] **3.1** v1 ↔ v2 tam fark raporu. Fark çıkarsa gerçek hata kanıtıdır → tek tek
-  incelenir.
+- [x] **3.1** v1 ↔ v2 tam fark raporu — fark YOK. **Statik** (2.6: tüm-zaman +
+  3 periyot `EXCEPT`=0) + **canlı** (trigger smoke testi: +999 puan yazımından
+  sonra tümzaman/aylık/yıllık fark 0, `ROLLBACK` ile kalıntısız). Trigger
+  canlılığı doğrulandı; cutover'a hazır.
 
 ## Faz 4 — Geçiş (cutover) — lokal, ayrı onay
 
