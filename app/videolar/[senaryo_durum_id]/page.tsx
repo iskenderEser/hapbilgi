@@ -7,7 +7,7 @@ import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import TalepSahibiKarti from "@/components/TalepSahibiKarti";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
-import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
+import { IU_ROLU, URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 import VideoCercevesi from "@/components/video/VideoCercevesi";
 import { HedefRolPill } from "@/components/HedefRolBant";
@@ -143,7 +143,7 @@ export default function VideoAkisPage() {
 
   const rolKucu = (kullanici?.rol ?? "").toLowerCase();
   const isPM = URETICI_ROLLER.includes(rolKucu);
-  const isIU = rolKucu === "iu";
+  const isIU = rolKucu === IU_ROLU;
 
   const sonVideo = videolar[videolar.length - 1];
   // Video modernizasyonu (20.07.2026): tek seferlik kontrol yerine sınırlı süreli

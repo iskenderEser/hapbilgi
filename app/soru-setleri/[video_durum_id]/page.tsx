@@ -7,7 +7,7 @@ import { useRouter, useParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import TalepSahibiKarti from "@/components/TalepSahibiKarti";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
-import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
+import { IU_ROLU, URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { HedefRolPill } from "@/components/HedefRolBant";
 import { TeknikPill } from "@/components/TeknikPill";
 import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
@@ -156,7 +156,7 @@ export default function SoruSetiAkisPage() {
   // boş kart doğar. Kullanıcının başladığı form üzerine yazılmaz — yalnız boyut
   // senkronu yapılır (boyutla boş kartlara dokunur, dolu veri silinmez).
   useEffect(() => {
-    if ((kullanici?.rol ?? "").toLowerCase() !== "iu") return;
+    if ((kullanici?.rol ?? "").toLowerCase() !== IU_ROLU) return;
     const sonSet = soruSetleri[soruSetleri.length - 1];
     setTaslaklar(prev => {
       if (prev.length === 0 && sonSet?.son_durum === "revizyon bekleniyor" && sonSet.sorular?.length > 0) {
@@ -171,7 +171,7 @@ export default function SoruSetiAkisPage() {
 
   const rolKucu = (kullanici?.rol ?? "").toLowerCase();
   const isPM = URETICI_ROLLER.includes(rolKucu);
-  const isIU = rolKucu === "iu";
+  const isIU = rolKucu === IU_ROLU;
 
   const sonSet = soruSetleri[soruSetleri.length - 1];
   const iuGonderebilir = isIU && (!sonSet || sonSet.son_durum === "revizyon bekleniyor" || !sonSet.sorular?.length);

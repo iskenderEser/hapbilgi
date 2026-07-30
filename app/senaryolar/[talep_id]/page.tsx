@@ -10,7 +10,7 @@ import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { HedefRolPill } from "@/components/HedefRolBant";
 import { TeknikPill } from "@/components/TeknikPill";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
+import { IU_ROLU, URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { DosyaGoruntuleListesi, type DosyaItem } from "@/components/DosyaGoruntuleListesi";
 import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
 import { SenaryoMetniGoster } from "@/components/SenaryoMetniGoster";
@@ -191,7 +191,7 @@ export default function SenaryolarPage() {
 
   const rolKucu = (kullanici?.rol ?? "").toLowerCase();
   const isPM = URETICI_ROLLER.includes(rolKucu);
-  const isIU = rolKucu === "iu";
+  const isIU = rolKucu === IU_ROLU;
 
   // Toast metni tek merkezden (26.07): sayfa cümle tutmaz, olayı + varyantı verir.
   const toastBaglam = { varyant: toastVaryant(talep?.hazir_video, talep?.hazir_soru_seti), rolAdi: talep?.uretici_rol_adi };

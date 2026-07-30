@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
-import { URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
+import { IU_ROLU, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function GET(request: NextRequest) {
@@ -50,7 +50,7 @@ export async function PUT(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (rol !== "iu") return rolHatasi("Sadece IU video URL'i girebilir.");
+    if (rol !== IU_ROLU) return rolHatasi("Sadece IU video URL'i girebilir.");
 
     const body = await request.json();
     const { video_id, video_url, thumbnail_url } = body;

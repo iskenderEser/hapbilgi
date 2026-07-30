@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
-import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
+import { IU_ROLU, URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function GET(request: NextRequest) {
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (rol !== "iu") return rolHatasi("Sadece IU senaryo oluşturabilir.");
+    if (rol !== IU_ROLU) return rolHatasi("Sadece IU senaryo oluşturabilir.");
 
     const body = await request.json();
     const { talep_id, senaryo_metni, senaryo_id } = body;

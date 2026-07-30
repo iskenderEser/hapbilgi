@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { IU_ROLU } from "@/lib/utils/roller";
 import { bunnyYuklemeBaslat, BUNNY_TUS_ENDPOINT } from "@/lib/video/bunnyYukleme";
 import { talepBilgisiVideo } from "@/lib/utils/talepZinciri";
 
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (rol !== "iu") return rolHatasi("Sadece IU video yükleme başlatabilir.");
+    if (rol !== IU_ROLU) return rolHatasi("Sadece IU video yükleme başlatabilir.");
 
     const body = await request.json();
     const { video_id } = body;

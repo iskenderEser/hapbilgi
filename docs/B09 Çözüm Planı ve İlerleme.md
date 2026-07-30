@@ -7,16 +7,19 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 
 ---
 
-## ▶ DEVAM NOKTASI (son güncelleme: 30.07, mola öncesi)
+## ▶ DEVAM NOKTASI (son güncelleme: 30.07)
 
 > Yeni oturum buradan devam etsin. Tüm iş commit'li; çalışma ağacında B-09'a ait
 > bekleyen değişiklik yok.
 
-- **Tamamlanan:** G1 (bekçi) · T1 (sessiz hata) · T2 (izle, 9 dosya) · T3 (üretim hattı, 6 dosya) · T3b (takımlar, 1 dosya). Hepsi commit'li, üçlü doğrulamadan geçti.
-- **Sıradaki adımlar:** T4 (ops) → T5 (Karar #1: PM ailesi sabiti) → T6 → T7 (Karar #3) →
+- **Tamamlanan:** G1 (bekçi) · T1 (sessiz hata) · T2 (izle, 9 dosya) · T3 (üretim hattı, 6 dosya) · T3b (takımlar, 1 dosya) · T4 (İÜ teslim, 10 dosya). Hepsi commit'li, üçlü doğrulamadan geçti.
+- **Sıradaki adımlar:** T5 (Karar #1: PM ailesi sabiti) → T6 → T7 (Karar #3) →
   E1 → E2 (Karar #4) → E3 → E4 (ops) → C1 (dokunma) → Ez1 → Ez2 (ops) → kompleks modüller.
-- **Bekçi baseline durumu:** başlangıç 50 → **şu an 41** (T2'de 8 izle dosyası, T3b'de takımlar düştü). Kalanlar her
-  modül temizlendikçe düşecek; `tools/eslint-rules/index.mjs` `ROL_BASELINE`.
+- **T4 artığı (kendi adımlarında süpürülecek):** teslim üçlüsü dışındaki gerçek `=== "iu"` sitelerine
+  dokunulmadı — `ana-sayfa/api:33` (T6), `talepler/api/route.ts:36,303` + `talepler/[talep_id]/page`
+  (T5 civarı), `onaylanan-talepler/page:87`, `lib/utils/durum/mesaj.ts:178`, `lib/uretim/surec.ts:255` (.eq).
+- **Bekçi baseline durumu:** başlangıç 50 → **şu an 41** (T2'de 8 izle dosyası, T3b'de takımlar düştü;
+  T4 dosyaları baseline'da değildi — tekil `=== "iu"` kural kapsamında değil). `tools/eslint-rules/index.mjs` `ROL_BASELINE`.
 
 ---
 
@@ -109,9 +112,16 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 - **Baseline:** dosya spread-only kaldı (0 literal) → `ROL_BASELINE`'dan düşürüldü. Bekçi 42 → 41.
 - **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok (baseline'sız da temiz — ratchet çalıştı).
 
-### T4 · Üretim hattı — İÜ teslim *(opsiyonel, düşük kazanç)*
-- **Durum:** bekliyor · **Kategori:** Sınırda · **Davranış:** değişmez
-- **Hedef:** İÜ-özel yazma kontrollerinde `=== "iu"` (~10 yer) → `IU_ROLU`
+### T4 · Üretim hattı — İÜ teslim
+- **Durum:** ✅ yapıldı (30.07) — commit'te.
+- **Kategori:** Sınırda · **Davranış:** değişmez (`IU_ROLU` ≡ `"iu"`, tsc teyit)
+- **Yapılan (10 dosya):** teslim üçlüsünde (senaryolar/videolar/soru-setleri × api+durum+page)
+  gerçek `rol === "iu"` / `!== "iu"` → `IU_ROLU`. **Toast payload'ları** (`uretimToast({ rol: "iu" })`),
+  `kaynak: "iu"` ve tip-union etiketlerine dokunulmadı — rol değil, veri.
+- **Kapsam kararı:** T4'ü teslim üçlüsüyle sınırladım (asimetrinin — T3'ün dokunduğu dosyalarda
+  `URETIM_HATTI_GORENLER` yanında `!== "iu"` kalması — olduğu yer). Diğer gerçek `=== "iu"` siteleri
+  Devam Noktası'ndaki listeyle kendi adımlarında (T5/T6) süpürülecek — düşmedi.
+- **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok.
 
 ### T5 · Talep dosyaları *(Karar #1 uygulanır)*
 - **Durum:** bekliyor · **Kategori:** Karar/Gerçek Sorun · **Davranış:** değişmez

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { bildirimOlustur, gonderenBildirimleriOkunduIsaretle } from "@/lib/utils/bildirimOlustur";
-import { URETICI_ROLLER } from "@/lib/utils/roller";
+import { IU_ROLU, URETICI_ROLLER } from "@/lib/utils/roller";
 import { talepBilgisiVideo } from "@/lib/utils/talepZinciri";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { videoOnayindaSoruSetiAc, hazirSoruSetiGir } from "@/lib/uretim/surec";
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     const rol = await rolCozucu(adminSupabase, user.id);
     const isPM = URETICI_ROLLER.includes(rol);
-    const isIU = rol === "iu";
+    const isIU = rol === IU_ROLU;
     if (!isPM && !isIU) return rolHatasi("Sadece yetkili roller ve IU video durumu güncelleyebilir.");
 
     const body = await request.json();
