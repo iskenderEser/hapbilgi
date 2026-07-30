@@ -81,12 +81,13 @@ istenmiyor; toplamı önceden tutan **özet tablo** ile değiştirilecek. Sıral
 - [x] **2.3** Bakım tetikleyicisi: 4 tabloya `AFTER INSERT` → ilgili (kullanıcı,
   yıl, ay) kovasını günceller. Kuruldu (tek generic fonksiyon + 4 trigger);
   yalnız INSERT (silme → backfill ile resync). *(SQL — İskender)* — sıra: 2.2'den önce koşuldu.
-- [ ] **2.4** `hb_ligi_v2` + periyot RPC'leri özet tablodan okuyacak şekilde yeniden
-  yazılır (SUM yerine hazır toplam + `row_number`). Çıktı yine 22 kolon. *(SQL — İskender)*
+- [x] **2.4** `hb_ligi_v2` + periyot RPC'leri özet tablodan okur (SUM yerine hazır
+  toplam + `row_number`). Çıktı yine 22 kolon. SQL repo'da
+  (`scripts/sql/hbligi_v2_okuma.sql`). *(SQL — İskender)*
 - [ ] **2.5** Koruma: `hb_ligi_ozet_v2` → `KORUMALI_TABLOLAR`; sema.json yenilenir.
   *(Kod: Claude / sema-cek: İskender)*
-- [ ] **2.6** Paralel doğrulama (doğruluk kapısı): özet tabanlı v2, canlı-SUM v1 ile
-  birebir tutuyor mu — tüm-zaman + tüm periyotlar. Tutmadan sonraki faza geçilmez.
+- [x] **2.6** Paralel doğrulama (doğruluk kapısı): özet tabanlı v2, canlı-SUM v1 ile
+  **birebir** — tüm-zaman + aylık + dönemlik + yıllık `EXCEPT` farkı dört yönde de 0.
 
 ## Faz 3 — Karşılaştırma raporu
 
