@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
-import { URETICI_ROLLER } from "@/lib/utils/roller";
+import { URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function GET(request: NextRequest) {
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (![...URETICI_ROLLER, "iu"].includes(rol)) return rolHatasi("Sadece yetkili roller ve IU videolara erişebilir.");
+    if (!URETIM_HATTI_GORENLER.includes(rol)) return rolHatasi("Sadece yetkili roller ve IU videolara erişebilir.");
 
     const { searchParams } = new URL(request.url);
     const senaryo_durum_id = searchParams.get("senaryo_durum_id");

@@ -77,9 +77,21 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 - **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok, bekçi 0 fire.
 
 ### T3 · Üretim hattı — erişim
-- **Durum:** bekliyor · **Kategori:** Karışık · **Davranış:** değişmez
-- **Dosyalar (4):** `senaryolar/api/route.ts:15`, `videolar/api/route.ts:17`, `videolar/api/bunny-durum:26`, `soru-setleri/api/route.ts:18`
-- **Hedef:** `[...URETICI_ROLLER,"iu"]` → `URETIM_HATTI_GORENLER`
+- **Durum:** ✅ yapıldı (30.07) — commit'te.
+- **Kategori:** Karışık · **Davranış:** değişmez (`URETIM_HATTI_GORENLER` ≡ `[...URETICI_ROLLER,"iu"]`)
+- **Düzeltme:** matris "4 dosya" diyordu; aynı desen **6 dosyadaymış** (matris `head` ile eksik saymış).
+  Aynı emri tüm örneklerine uyguladım: `senaryolar/api/route.ts`, `videolar/api/route.ts`,
+  `videolar/api/bunny-durum/route.ts`, `soru-setleri/api/route.ts`, **`teknikler/api/route.ts`**,
+  **`urunler/api/route.ts`** → `[...URETICI_ROLLER,"iu"]` → `URETIM_HATTI_GORENLER`.
+- **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok. (Bu 6 dosya bekçi baseline'ında değildi —
+  tek literal + spread, kural fire etmiyordu.)
+
+### T3b · KEŞİF — `takimlar/api/route.ts` (+admin varyantı)
+- **Durum:** ⏳ karar bekliyor (İskender'e sunuldu)
+- **Bulgu:** `takimlar/api/route.ts:19` `TAKIM_GORUNTULEME_ROLLERI = [...URETICI_ROLLER, "iu", "admin"]`
+  — T3 ailesinin kardeşi ama küme farklı (+admin). Bekçi **baseline'ında** (2 literal: "iu","admin").
+- **Öneri (yapılınca):** `[...URETIM_HATTI_GORENLER, ...ADMIN_ROLLER]` — birebir aynı küme, spread-only,
+  bekçi-temiz → baseline'dan düşer. Küme farklı olduğu için T3'e sessizce katılmadı.
 
 ### T4 · Üretim hattı — İÜ teslim *(opsiyonel, düşük kazanç)*
 - **Durum:** bekliyor · **Kategori:** Sınırda · **Davranış:** değişmez

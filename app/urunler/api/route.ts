@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
-import { URETICI_ROLLER } from "@/lib/utils/roller";
+import { URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { urunEkleyebilirMi, ureticiYetenegi } from "@/lib/uretici/yetenekler";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (![...URETICI_ROLLER, "iu"].includes(rol)) return rolHatasi("Sadece yetkili roller ve IU ürün listesine erişebilir.");
+    if (!URETIM_HATTI_GORENLER.includes(rol)) return rolHatasi("Sadece yetkili roller ve IU ürün listesine erişebilir.");
 
     const { searchParams } = new URL(request.url);
     const firma_id = searchParams.get("firma_id");
