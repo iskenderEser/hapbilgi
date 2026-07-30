@@ -16,6 +16,7 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import { useEclubLigi, type UttSatir } from "./_hooks/useEclubLigi";
 import LigAkordiyon from "@/components/eclub/LigAkordiyon";
 import LigDetayTablo from "@/components/eclub/LigDetayTablo";
+import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 
 const PERIYOT_ETIKET: Record<string, string> = { ay: "Bu Ay", donem: "Bu Çeyrek", yil: "Bu Yıl" };
 
@@ -34,7 +35,7 @@ export default function EclubLigiPage() {
   const [takimAdiDuzenle, setTakimAdiDuzenle] = useState(false);
   const [takimAdiTaslak, setTakimAdiTaslak] = useState("");
 
-  const uttMu = rol === "utt" || rol === "kd_utt";
+  const uttMu = TUKETICI_ROLLER.includes(rol);
 
   useEffect(() => {
     if (!uttMu) return;
@@ -68,7 +69,7 @@ export default function EclubLigiPage() {
   // UTT ise kendi takımının detayını otomatik aç (bir kez)
   useEffect(() => {
     if (loading || !kullanici) return;
-    if (rol !== "utt" && rol !== "kd_utt") return;
+    if (!TUKETICI_ROLLER.includes(rol)) return;
     const benim = satirlar.find((s) => s.utt_id === kullanici.id);
     if (benim && !acikUtt.has(benim.utt_id)) uttTikla(benim.utt_id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -178,7 +179,7 @@ export default function EclubLigiPage() {
           <div>
             <h1 className="text-lg font-semibold text-gray-900 m-0">E-Club Ligi</h1>
             <p className="text-sm text-gray-500 m-0">
-              {rol === "utt" || rol === "kd_utt" ? "Takımın ve bölgendeki takımlar" : rol === "bm" ? "Bölgendeki takımlar" : "Firmandaki takımlar"}
+              {TUKETICI_ROLLER.includes(rol) ? "Takımın ve bölgendeki takımlar" : rol === "bm" ? "Bölgendeki takımlar" : "Firmandaki takımlar"}
             </p>
           </div>
           {periyotSecici}
@@ -188,7 +189,7 @@ export default function EclubLigiPage() {
           <div className="bg-white border border-gray-200 rounded-xl px-5 py-10 text-center">
             <p className="text-sm text-gray-400 m-0">Bu dönemde lig verisi yok.</p>
           </div>
-        ) : (rol === "utt" || rol === "kd_utt") ? (
+        ) : TUKETICI_ROLLER.includes(rol) ? (
           // UTT: kendi takımı düz detay + diğer UTT'ler akordiyon
           <div className="flex flex-col gap-4">
             {(() => {
