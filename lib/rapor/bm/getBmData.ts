@@ -2,6 +2,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { hataYaniti } from '@/lib/utils/hataIsle';
+import { TUKETICI_ROLLER } from '@/lib/utils/roller';
 
 interface Kullanici {
   kullanici_id: string;
@@ -147,7 +148,7 @@ export async function getBmData(
       .from('kullanicilar')
       .select('kullanici_id', { count: 'exact', head: true })
       .eq('bolge_id', kullanici.bolge_id)
-      .in('rol', ['utt', 'kd_utt'])
+      .in('rol', TUKETICI_ROLLER)
       .eq('aktif_mi', true),
     // Takım net SUM (katkı hesabı için) — scope: takım, tek satır (no p_kullanici_id)
     adminSupabase.rpc('get_kullanici_ozet', {

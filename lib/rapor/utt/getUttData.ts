@@ -1,5 +1,6 @@
 // lib/rapor/utt/getUttData.ts
 import { SupabaseClient } from '@/lib/types/rapor';
+import { TUKETICI_ROLLER } from '@/lib/utils/roller';
 
 interface Kullanici {
   kullanici_id: string;
@@ -71,7 +72,7 @@ export async function getUttData(
       .from('v_hbligi_sirali')
       .select('kullanici_id, ad, soyad, toplam_puan, bolge_sirasi')
       .eq('bolge_id', kullanici.bolge_id)
-      .in('rol', ['utt', 'kd_utt'])
+      .in('rol', TUKETICI_ROLLER)
       .order('toplam_puan', { ascending: false }),
 
     // 5. Takım puan toplamı — periyot bağımsız
@@ -79,7 +80,7 @@ export async function getUttData(
       .from('v_hbligi_sirali')
       .select('toplam_puan')
       .eq('takim_id', kullanici.takim_id)
-      .in('rol', ['utt', 'kd_utt']),
+      .in('rol', TUKETICI_ROLLER),
 
     // 6. Bölge adı
     adminSupabase

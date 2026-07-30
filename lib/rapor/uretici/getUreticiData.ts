@@ -3,6 +3,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { hataYaniti } from '@/lib/utils/hataIsle';
 import { UreticiYetenek } from '@/lib/uretici/yetenekler';
+import { TUKETICI_ROLLER } from '@/lib/utils/roller';
 
 interface Kullanici {
   kullanici_id: string;
@@ -156,7 +157,7 @@ export async function getUreticiData(
   const uttSayisiQuery = adminSupabase
     .from('kullanicilar')
     .select('kullanici_id', { count: 'exact', head: true })
-    .in('rol', ['utt', 'kd_utt'])
+    .in('rol', TUKETICI_ROLLER)
     .eq('aktif_mi', true);
   if (isTakimScope) {
     uttSayisiQuery.eq('takim_id', kullanici.takim_id);

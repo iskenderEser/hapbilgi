@@ -3,6 +3,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { hataYaniti, yetkiHatasi } from '@/lib/utils/hataIsle';
 import { tarihAraligi } from '@/lib/utils/tarihAraligi';
+import { TUKETICI_ROLLER } from '@/lib/utils/roller';
 import { getUttData } from '@/lib/rapor/utt/getUttData';
 import { katkiYuzdesi } from '@/lib/rapor/paylasilan/oran';
 import { ligSiralamasi } from '@/lib/rapor/paylasilan/ligSira';
@@ -30,7 +31,7 @@ export async function GET(request: Request) {
   }
 
   const rol = (kullanici.rol ?? '').toLowerCase();
-  if (!['utt', 'kd_utt'].includes(rol)) {
+  if (!TUKETICI_ROLLER.includes(rol)) {
     return yetkiHatasi('Bu rapora erişim yetkiniz yok');
   }
 
