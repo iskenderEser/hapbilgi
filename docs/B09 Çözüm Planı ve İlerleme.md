@@ -7,13 +7,13 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 
 ---
 
-## ▶ DEVAM NOKTASI (son güncelleme: 30.07 — E4 sonrası)
+## ▶ DEVAM NOKTASI (son güncelleme: 30.07 — C1 sonrası)
 
 > Yeni oturum buradan devam etsin. Tüm iş commit'li; çalışma ağacında B-09'a ait
 > bekleyen değişiklik yok.
 
-- **Tamamlanan:** **T-CLUB BİTTİ** — G1 (bekçi) · T1 · T2 · T3 · T3b · T4 · T5 · T6 · T7. **E-CLUB BİTTİ** — E1 · E2 · E3 · E4. Hepsi commit'li, üçlü doğrulamadan geçti.
-- **Sıradaki adımlar:** C1 (dokunma) → Ez1 → Ez2 (ops) → kompleks modüller.
+- **Tamamlanan:** **T-CLUB BİTTİ** — G1 (bekçi) · T1 · T2 · T3 · T3b · T4 · T5 · T6 · T7. **E-CLUB BİTTİ** — E1 · E2 · E3 · E4. **C-CLUB: C1 sıfır-eylem (zaten temiz).** Hepsi commit'li, üçlü doğrulamadan geçti.
+- **Sıradaki adımlar:** Ez1 → Ez2 (ops) → kompleks modüller.
 - **Kalan tekil `=== "iu"` (kendi adımlarında süpürülecek):** `ana-sayfa/api:33` T6'da yapıldı; kalanlar
   `talepler/api/route.ts:36,303` + `talepler/[talep_id]/page`, `onaylanan-talepler/page:87`,
   `lib/utils/durum/mesaj.ts:178`, `lib/uretim/surec.ts:255` (.eq) — hepsi tekil, sınırda.
@@ -187,8 +187,10 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 ## ADIM 3 — C-CLUB
 
 ### C1 · Challenge tekil "bm" *(dokunma önerisi)*
-- **Durum:** bekliyor · **Kategori:** Sınırda
-- **Not:** Modül tek-rollü; tekil `=== "bm"` meşru. Öneri: bekçi baseline'ından düşür, koda dokunma.
+- **Durum:** ✅ yapıldı (30.07) — **sıfır-eylem**, commit yok (kod/baseline değişmedi).
+- **Kategori:** Sınırda
+- **Bulgu (keşif):** `challenge-club` + `cc-ligi` modülünde bekçinin yakalayacağı dizi literali (≥2 rol) YOK; tüm rol kontrolleri tekil `rol === "bm"`/`!== "bm"` (+ `hedef_rol !== "bm"` — ayrı kavram). Modül tek-rollü (BM). Tekil kontrol Karar #1'de bilinçli kapsam dışı → koda dokunulmaz.
+- **Düzeltme:** Planın "bekçi baseline'ından düşür" önerisi hatalı varsayıma dayanıyormuş — `challenge-club`/`cc-ligi` `ROL_BASELINE`'da HİÇ yok (tam liste tarandı, 19 girişin hiçbiri değil). Düşürülecek giriş yok, eylem gerekmedi.
 
 ---
 
