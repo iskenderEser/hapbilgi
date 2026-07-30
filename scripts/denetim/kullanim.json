@@ -1872,52 +1872,52 @@
     },
     {
       "dosya": "app/eclub/oneriler/api/route.ts",
-      "satir": 28,
+      "satir": 26,
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/eclub/oneriler/api/route.ts",
-      "satir": 39,
+      "satir": 37,
       "tablo": "eclub_eczaneler"
     },
     {
       "dosya": "app/eclub/oneriler/api/route.ts",
-      "satir": 50,
+      "satir": 48,
       "tablo": "eclub_eczane_master"
     },
     {
       "dosya": "app/eclub/oneriler/api/route.ts",
-      "satir": 83,
+      "satir": 81,
       "tablo": "eclub_oneri_kayitlari"
     },
     {
       "dosya": "app/eclub/oneriler/api/route.ts",
-      "satir": 102,
+      "satir": 100,
       "tablo": "v_yayin_detay"
     },
     {
       "dosya": "app/eclub/oneriler/api/route.ts",
-      "satir": 166,
+      "satir": 164,
       "tablo": "v_yayin_detay"
     },
     {
       "dosya": "app/eclub/oneriler/api/route.ts",
-      "satir": 183,
+      "satir": 181,
       "tablo": "eclub_kisiler"
     },
     {
       "dosya": "app/eclub/oneriler/api/route.ts",
-      "satir": 194,
+      "satir": 192,
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/eclub/oneriler/api/route.ts",
-      "satir": 209,
+      "satir": 207,
       "tablo": "eclub_eczane_firma"
     },
     {
       "dosya": "app/eclub/oneriler/api/route.ts",
-      "satir": 297,
+      "satir": 295,
       "tablo": "eclub_oneri_kayitlari"
     },
     {
@@ -2837,17 +2837,17 @@
     },
     {
       "dosya": "app/eclub/ligi/api/takim-adi/route.ts",
-      "satir": 15,
+      "satir": 14,
       "tablo": "eclub_takim_adlari"
     },
     {
       "dosya": "app/eclub/ligi/api/takim-adi/route.ts",
-      "satir": 37,
+      "satir": 36,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/eclub/ligi/api/takim-adi/route.ts",
-      "satir": 50,
+      "satir": 49,
       "tablo": "eclub_takim_adlari"
     },
     {
@@ -2932,77 +2932,77 @@
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 45,
+      "satir": 43,
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 59,
+      "satir": 57,
       "tablo": "eclub_eczane_firma"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 80,
+      "satir": 78,
       "tablo": "eclub_eczane_firma"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 107,
+      "satir": 105,
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 187,
+      "satir": 185,
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 201,
+      "satir": 199,
       "tablo": "eclub_kisiler"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 215,
+      "satir": 213,
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 261,
+      "satir": 259,
       "tablo": "eclub_kisiler"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 277,
+      "satir": 275,
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 282,
+      "satir": 280,
       "tablo": "eclub_kisiler"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 291,
+      "satir": 289,
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 326,
+      "satir": 324,
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 338,
+      "satir": 336,
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 376,
+      "satir": 374,
       "tablo": "eclub_kisiler"
     },
     {
       "dosya": "app/eclub/oneriler/api/yayinlar/route.ts",
-      "satir": 21,
+      "satir": 19,
       "tablo": "v_yayin_detay"
     },
     {
@@ -5525,61 +5525,61 @@
     },
     {
       "dosya": "app/eclub/oneriler/api/route.ts",
-      "satir": 28,
+      "satir": 26,
       "ham": "kisi_id, eczane_id",
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/eclub/oneriler/api/route.ts",
-      "satir": 39,
+      "satir": 37,
       "ham": "eczane_id, gln",
       "tablo": "eclub_eczaneler"
     },
     {
       "dosya": "app/eclub/oneriler/api/route.ts",
-      "satir": 50,
+      "satir": 48,
       "ham": "gln, eczane_adi",
       "tablo": "eclub_eczane_master"
     },
     {
       "dosya": "app/eclub/oneriler/api/route.ts",
-      "satir": 83,
+      "satir": 81,
       "ham": "\n        oneri_id, yayin_id, kisi_id, oneri_baslangic, oneri_bitis, izlendi_mi, created_at,\n        eclub_kisiler ( ad, soyad, rol )\n      ",
       "tablo": "eclub_oneri_kayitlari"
     },
     {
       "dosya": "app/eclub/oneriler/api/route.ts",
-      "satir": 102,
+      "satir": 100,
       "ham": "yayin_id, urun_adi, teknik_adi, hedef_rol",
       "tablo": "v_yayin_detay"
     },
     {
       "dosya": "app/eclub/oneriler/api/route.ts",
-      "satir": 166,
+      "satir": 164,
       "ham": "yayin_id, durum, hedef_rol, urun_adi",
       "tablo": "v_yayin_detay"
     },
     {
       "dosya": "app/eclub/oneriler/api/route.ts",
-      "satir": 183,
+      "satir": 181,
       "ham": "kisi_id, rol",
       "tablo": "eclub_kisiler"
     },
     {
       "dosya": "app/eclub/oneriler/api/route.ts",
-      "satir": 194,
+      "satir": 192,
       "ham": "kisi_id, eczane_id",
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/eclub/oneriler/api/route.ts",
-      "satir": 209,
+      "satir": 207,
       "ham": "eczane_id, baglayan_utt_id",
       "tablo": "eclub_eczane_firma"
     },
     {
       "dosya": "app/eclub/oneriler/api/route.ts",
-      "satir": 297,
+      "satir": 295,
       "ham": "oneri_id",
       "tablo": "eclub_oneri_kayitlari"
     },
@@ -6437,13 +6437,13 @@
     },
     {
       "dosya": "app/eclub/ligi/api/takim-adi/route.ts",
-      "satir": 15,
+      "satir": 14,
       "ham": "takim_adi",
       "tablo": "eclub_takim_adlari"
     },
     {
       "dosya": "app/eclub/ligi/api/takim-adi/route.ts",
-      "satir": 37,
+      "satir": 36,
       "ham": "rol",
       "tablo": "kullanicilar"
     },
@@ -6521,61 +6521,61 @@
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 45,
+      "satir": 43,
       "ham": "rol, firma_id",
       "tablo": "kullanicilar"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 59,
+      "satir": 57,
       "ham": "id",
       "tablo": "eclub_eczane_firma"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 80,
+      "satir": 78,
       "ham": "eczane_id, eclub_eczaneler ( eclub_eczane_master ( eczane_adi ) )",
       "tablo": "eclub_eczane_firma"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 107,
+      "satir": 105,
       "ham": "kisi_id, eczane_id, aktif_mi, created_at, eclub_kisiler ( kisi_id, rol, ad, soyad, eposta, telefon, auth_user_id )",
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 187,
+      "satir": 185,
       "ham": "kisi_id, eclub_kisiler ( rol )",
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 201,
+      "satir": 199,
       "ham": "kisi_id, rol",
       "tablo": "eclub_kisiler"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 215,
+      "satir": 213,
       "ham": "eczane_id, eclub_eczaneler ( eclub_eczane_master ( eczane_adi ) )",
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 261,
+      "satir": 259,
       "ham": "kisi_id",
       "tablo": "eclub_kisiler"
     },
     {
       "dosya": "app/eclub/listem/api/kisiler/route.ts",
-      "satir": 326,
+      "satir": 324,
       "ham": "id",
       "tablo": "eclub_kisi_eczane"
     },
     {
       "dosya": "app/eclub/oneriler/api/yayinlar/route.ts",
-      "satir": 21,
+      "satir": 19,
       "ham": "yayin_id, urun_adi, teknik_adi, hedef_rol, video_url, thumbnail_url",
       "tablo": "v_yayin_detay"
     },
