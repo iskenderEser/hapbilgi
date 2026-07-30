@@ -9,10 +9,10 @@
 
 import { IcerikTuru, TUR_SIRA } from "./icerikTuru";
 import { URETICI_YETENEKLERI } from "@/lib/uretici/yetenekler";
-import { YONETICI_ROLLER } from "@/lib/utils/roller";
+import { TUKETICI_ROLLER, YONETICI_ROLLER, YONLENDIRICI_ROLLER } from "@/lib/utils/roller";
 
-const TUKETICILER = ["utt", "kd_utt"];
-const TM_BM = ["tm", "bm"];
+const TUKETICILER = TUKETICI_ROLLER;
+const TM_BM = YONLENDIRICI_ROLLER;
 
 // Üretici rol grupları — icerikTuru üzerinden URETICI_YETENEKLERI'nden türetilir.
 const URUN_ROLLERI = Object.keys(URETICI_YETENEKLERI).filter(

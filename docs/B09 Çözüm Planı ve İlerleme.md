@@ -18,7 +18,8 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
   - ✅ **K2 Öneri** (4) — `TUKETICI_ROLLER`/`YONLENDIRICI_ROLLER`/spread. Yapıldı, baseline 13→9.
   - ✅ **K3 anaSayfa** (2) — `.in("rol", …)` → `TUKETICI_ROLLER`. Yapıldı, baseline 9→7.
   - ✅ **K4 Profil** (2) — `["utt","kd_utt"]` → `TUKETICI_ROLLER`. Yapıldı, baseline 7→5.
-  - ⬜ K5 Video görünürlük (1) · K6 Hedef listeleri (3, hedef ekseni → `TUM_HEDEF_ROLLER`) · **K7 Kullanıcılar (1) — KARAR** (dropdown'da İK+admin eksik, kasıt mı sapma mı?).
+  - ✅ **K5 Video görünürlük** (1) — `TUKETICILER`/`TM_BM` → `TUKETICI_ROLLER`/`YONLENDIRICI_ROLLER`. `"med_md"` tekil özel-durum bırakıldı (belgeli). Baseline 5→4.
+  - ⬜ K6 Hedef listeleri (3, hedef ekseni → `TUM_HEDEF_ROLLER`) · **K7 Kullanıcılar (1) — KARAR** (dropdown'da İK+admin eksik, kasıt mı sapma mı?).
 - **Kalan tekil `=== "iu"` (kendi adımlarında süpürülecek):** `ana-sayfa/api:33` T6'da yapıldı; kalanlar
   `talepler/api/route.ts:36,303` + `talepler/[talep_id]/page`, `onaylanan-talepler/page:87`,
   `lib/utils/durum/mesaj.ts:178`, `lib/uretim/surec.ts:255` (.eq) — hepsi tekil, sınırda.

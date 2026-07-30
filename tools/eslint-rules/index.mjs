@@ -299,7 +299,6 @@ const ROL_BASELINE = new Set([
   "app/talepler-v2/_components/YeniTalepFormV2.tsx",
   "app/talepler/_components/YeniTalepForm.tsx",
   "app/yayin-yonetimi/_types.ts",
-  "lib/video/gorunurluk.ts",
 ]);
 const rolTekKaynak = {
   meta: {
