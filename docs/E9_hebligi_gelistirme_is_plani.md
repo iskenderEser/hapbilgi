@@ -77,8 +77,9 @@ istenmiyor; toplamı önceden tutan **özet tablo** ile değiştirilecek. Sıral
   yazar, sonraki yazımları trigger yakalar.
 - [ ] **2.2** Backfill: mevcut 4 tablodan `INSERT…SELECT…GROUP BY kullanici_id,
   date_trunc('month')`. *(SQL — İskender)*
-- [ ] **2.3** Bakım tetikleyicisi: 4 tabloya `AFTER INSERT` → ilgili (kullanıcı,
-  yıl, ay) kovasını günceller. *(SQL — İskender)*
+- [x] **2.3** Bakım tetikleyicisi: 4 tabloya `AFTER INSERT` → ilgili (kullanıcı,
+  yıl, ay) kovasını günceller. Kuruldu (tek generic fonksiyon + 4 trigger);
+  yalnız INSERT (silme → backfill ile resync). *(SQL — İskender)* — sıra: 2.2'den önce koşuldu.
 - [ ] **2.4** `hb_ligi_v2` + periyot RPC'leri özet tablodan okuyacak şekilde yeniden
   yazılır (SUM yerine hazır toplam + `row_number`). Çıktı yine 22 kolon. *(SQL — İskender)*
 - [ ] **2.5** Koruma: `hb_ligi_ozet_v2` → `KORUMALI_TABLOLAR`; sema.json yenilenir.
