@@ -7,13 +7,13 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 
 ---
 
-## ▶ DEVAM NOKTASI (son güncelleme: 30.07 — Ez1 sonrası)
+## ▶ DEVAM NOKTASI (son güncelleme: 30.07 — Ez2 sonrası)
 
 > Yeni oturum buradan devam etsin. Tüm iş commit'li; çalışma ağacında B-09'a ait
 > bekleyen değişiklik yok.
 
-- **Tamamlanan:** **T-CLUB BİTTİ** — G1 (bekçi) · T1 · T2 · T3 · T3b · T4 · T5 · T6 · T7. **E-CLUB BİTTİ** — E1 · E2 · E3 · E4. **C-CLUB: C1 sıfır-eylem.** **ECZANEM: Ez1 yapıldı.** Hepsi commit'li, üçlü doğrulamadan geçti.
-- **Sıradaki adımlar:** Ez2 (ops) → kompleks modüller.
+- **Tamamlanan:** **T-CLUB BİTTİ** — G1 (bekçi) · T1 · T2 · T3 · T3b · T4 · T5 · T6 · T7. **E-CLUB BİTTİ** — E1 · E2 · E3 · E4. **C-CLUB: C1 sıfır-eylem.** **ECZANEM BİTTİ** — Ez1 · Ez2. **→ Çekirdek B-09 tamam.** Hepsi commit'li, üçlü doğrulamadan geçti.
+- **Sıradaki adımlar:** Kompleks modüller (admin / analiz / raporlar / kullanicilar / profil / login) — baseline'da bekleyen 18 dosya.
 - **Kalan tekil `=== "iu"` (kendi adımlarında süpürülecek):** `ana-sayfa/api:33` T6'da yapıldı; kalanlar
   `talepler/api/route.ts:36,303` + `talepler/[talep_id]/page`, `onaylanan-talepler/page:87`,
   `lib/utils/durum/mesaj.ts:178`, `lib/uretim/surec.ts:255` (.eq) — hepsi tekil, sınırda.
@@ -204,8 +204,11 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 - **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok, bekçi 0 fire.
 
 ### Ez2 · Müşteri kimlik kontrolü *(opsiyonel)*
-- **Durum:** bekliyor · **Kategori:** Sınırda · **Davranış:** değişmez
-- **Dosya:** `app/eczanem/page.tsx:31` `"musteri"` → `MUSTERI_ROLU`
+- **Durum:** ✅ yapıldı (30.07) — commit `f8ad4e7`.
+- **Kategori:** Sınırda · **Davranış:** değişmez (değer `"musteri"` ≡ `MUSTERI_ROLU`, tsc teyit)
+- **Yapılan (1 dosya):** `eczanem/page.tsx:31` tekil `kimlik_turu === "musteri"` → `=== MUSTERI_ROLU`. (Not: karşılaştırma `rol` değil `kimlik_turu` alanına; değer aynı olduğundan davranış korunur.)
+- **Baseline:** dosya baseline'da değildi — ratchet etkisi yok (18'de kaldı).
+- **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok.
 
 ---
 
