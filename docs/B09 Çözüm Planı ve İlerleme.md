@@ -56,11 +56,16 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 ## ADIM 1 — T-CLUB
 
 ### T1 · Sessiz hata — Sipariş filtresi *(canlı kusur, öncelikli)*
-- **Durum:** bekliyor · **Kategori:** Sessiz Hata · **Davranış:** DEĞİŞİR (önce/sonra kanıtı)
-- **Dosya:** `app/store/siparisler/_components/SiparisFiltreleri.tsx:147-151`
-- **Hedef:** hayalet roller (`egt_uzm/egt_uzm_jr/ik_uzm/ik_uzm_jr`) kaldırılır; küme
-  `STORE_GENEL_GOREN_ROLLER`'dan türetilir (bm/tm hariç — "Takım filtresi" bloğu).
-- **Sonuç:** `egt_uz`, `egt_yon`, `egt_yrd_md`, `ik_uz`, `ik_yrd_md`, `ik_drk`, `ik_per` "Takım" filtresini görür olur.
+- **Durum:** ✅ yapıldı (30.07) — commit'te.
+- **Kategori:** Sessiz Hata · **Davranış:** DEĞİŞİR (önce/sonra kanıtı aşağıda)
+- **Dosya:** `app/store/siparisler/_components/SiparisFiltreleri.tsx`
+- **Yapılan:** 18-rollük elle OR-zinciri (satır 147-151) `takimFiltresiGoren` türevine indirildi:
+  `STORE_GENEL_GOREN_ROLLER.includes(rol) && rol !== "bm" && rol !== "tm"`. Hayalet roller kalktı.
+- **Önce/sonra kanıtı:** filtreyi gören rol 14 → 21. **Yeniden kazanan (7):** egt_yrd_md, egt_yon,
+  egt_uz, ik_drk, ik_yrd_md, ik_uz, ik_per. **Kaybeden: yok** (regresyon yok). Temizlenen hayalet: 4.
+- **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok. (Bu blok dizi değil OR-zinciriydi;
+  bekçi baseline'ında değildi — baseline'dan silme gerekmedi.)
+- **Not:** UI'da rol-rol fiziksel doğrulama U-serisinin işi (CLAUDE.md: rol matrisi taraması yapılmaz).
 
 ### T2 · Tüketim — izleme akışı
 - **Durum:** bekliyor · **Kategori:** Gerçek Sorun · **Davranış:** değişmez

@@ -19,6 +19,7 @@ import type {
   HiyerarsiKullanici,
 } from "../_types";
 import { DURUM_ETIKETLERI } from "@/lib/store/sabitler";
+import { STORE_GENEL_GOREN_ROLLER } from "@/lib/utils/roller";
 
 interface SiparisFiltreleriProps {
   hiyerarsi: Hiyerarsi | null;
@@ -64,6 +65,13 @@ export default function SiparisFiltreleri(p: SiparisFiltreleriProps) {
 
   const h = p.hiyerarsi;
   const rol = h.rol;
+
+  // TAKIM filtresini gören roller: firma genelini görenler (STORE_GENEL_GOREN_ROLLER)
+  // eksi yönlendiriciler — bm yalnız kullanıcı listesini, tm zaten kendi takımında.
+  // Tek kaynak roller.ts; blok eskiden elle yazılıydı ve dört rol hatalı kodla (egt_uzm/
+  // ik_uzm) yazıldığından gerçek egt_uz/egt_yon/egt_yrd_md/ik_* rolleri filtreyi göremiyordu.
+  const takimFiltresiGoren =
+    STORE_GENEL_GOREN_ROLLER.includes(rol) && rol !== "bm" && rol !== "tm";
 
   // ─── Görüntülenecek listeleri rol bazlı hesapla ────────────────────────────
 
@@ -143,12 +151,8 @@ export default function SiparisFiltreleri(p: SiparisFiltreleriProps) {
         </div>
       )}
 
-      {/* TAKIM — TM hariç (TM kendi takımında zaten) */}
-      {(rol === "admin" || rol === "pm" || rol === "jr_pm" || rol === "kd_pm" ||
-        rol === "med_md" || rol === "egt_md" || rol === "egt_uzm" || rol === "egt_uzm_jr" ||
-        rol === "ik_md" || rol === "ik_uzm" || rol === "ik_uzm_jr" ||
-        rol === "gm" || rol === "gm_yrd" || rol === "drk" || rol === "paz_md" ||
-        rol === "blm_md" || rol === "grp_pm" || rol === "sm") && (
+      {/* TAKIM — TM hariç (TM kendi takımında zaten), BM hariç (yalnız kullanıcı) */}
+      {takimFiltresiGoren && (
         <div>
           <label style={labelStyle}>Takım</label>
           <select
