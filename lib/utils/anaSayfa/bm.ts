@@ -2,6 +2,7 @@
 // BM ana sayfa verisi. (R0: lib/utils/anaSayfaVeri.ts'ten saf taşıma — davranış değişmedi.)
 
 import { SupabaseClient } from "@supabase/supabase-js";
+import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 
 export async function getBmAnaSayfaVeri(userId: string, adminSupabase: SupabaseClient) {
   const { data: bmKullanici, error: bmError } = await adminSupabase
@@ -16,7 +17,7 @@ export async function getBmAnaSayfaVeri(userId: string, adminSupabase: SupabaseC
     .from("kullanicilar")
     .select("kullanici_id, ad, soyad")
     .eq("bolge_id", bmKullanici.bolge_id)
-    .in("rol", ["utt", "kd_utt"])
+    .in("rol", TUKETICI_ROLLER)
     .eq("aktif_mi", true);
 
   const uttIdler = (uttler ?? []).map((u: any) => u.kullanici_id);

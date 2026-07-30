@@ -3,6 +3,7 @@
 // (R0: lib/utils/anaSayfaVeri.ts'ten saf taşıma — davranış değişmedi.)
 
 import { SupabaseClient } from "@supabase/supabase-js";
+import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 
 export async function getYoneticiAnaSayfaVeri(userId: string, adminSupabase: SupabaseClient) {
   const { data: kullanici, error: kullaniciError } = await adminSupabase
@@ -35,7 +36,7 @@ export async function getYoneticiAnaSayfaVeri(userId: string, adminSupabase: Sup
       .from("kullanicilar")
       .select("kullanici_id, fotograf_url")
       .eq("firma_id", kullanici.firma_id)
-      .in("rol", ["utt", "kd_utt"])
+      .in("rol", TUKETICI_ROLLER)
       .eq("aktif_mi", true),
   ]);
 
