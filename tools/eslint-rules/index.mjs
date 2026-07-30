@@ -295,7 +295,6 @@ const ROL_BASELINE = new Set([
   // (kullanicilar/profil/raporlar/oneriler/takimlar) sıraları gelene kadar burada bekler.
   // T2+T7 (30.07): izle/api'nin tamamı temizlendi ve baseline'dan düşürüldü
   // (tüketim uçları → TUKETICI_ROLLER, IZLEME_ROLLERI → spread grupları).
-  "app/kullanicilar/page.tsx",
 ]);
 const rolTekKaynak = {
   meta: {

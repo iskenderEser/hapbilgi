@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { ADMIN_ROLLER, TUM_ROLLER } from "@/lib/utils/roller";
 
 interface Kullanici {
   kullanici_id: string;
@@ -31,7 +32,9 @@ interface Hiyerarsi {
   bolgeler: { bolge_id: string; bolge_adi: string; takim_id: string }[];
 }
 
-const ROLLER = ["pm", "jr_pm", "kd_pm", "iu", "tm", "bm", "utt", "kd_utt", "gm", "gm_yrd", "drk", "paz_md", "blm_md", "med_md", "grp_pm", "sm", "egt_md", "egt_yrd_md", "egt_yon", "egt_uz"];
+// Atanabilir roller: tüm kullanıcı rolleri, admin hariç (admin bu ekrandan atanmaz).
+// Tek kaynak roller.ts — İK rolleri dahil hiçbir rol elle atlanmasın (B-09 K7).
+const ROLLER = TUM_ROLLER.filter((r) => !ADMIN_ROLLER.includes(r));
 
 export default function KullanicilarPage() {
   const router = useRouter();
@@ -55,6 +58,12 @@ export default function KullanicilarPage() {
     if (!oturumKullanici) {
       router.push("/login");
       return;
+    }
+    // Bu ekran kullanıcı ROLÜNÜ değiştirebildiği için yalnız admin'e açıktır
+    // (29.07.2026). Proxy bekçisi asıl katman; buradaki kontrol ekranın
+    // yetkisiz kullanıcıya bir an bile çizilmemesi içindir.
+    if (!ADMIN_ROLLER.includes((oturumKullanici.rol ?? "").toLowerCase())) {
+      router.push("/ana-sayfa");
     }
   }, [oturumKullanici, authYukleniyor, router]);
 

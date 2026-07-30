@@ -20,12 +20,16 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
   - ✅ **K4 Profil** (2) — `["utt","kd_utt"]` → `TUKETICI_ROLLER`. Yapıldı, baseline 7→5.
   - ✅ **K5 Video görünürlük** (1) — `TUKETICILER`/`TM_BM` → `TUKETICI_ROLLER`/`YONLENDIRICI_ROLLER`. `"med_md"` tekil özel-durum bırakıldı (belgeli). Baseline 5→4.
   - ✅ **K6 Hedef listeleri** (3) — `ANA_SEKMELER` = `TUM_HEDEF_ROLLER`; iki form `TUM_HEDEF_ROLLER.filter(...)` (sıra korundu). Baseline 4→1.
-  - ⬜ **K7 Kullanıcılar (1) — KARAR BEKLİYOR** (`kullanicilar/page.tsx:35` ROLLER dropdown'ında İK 5 rol + admin yok; kasıt mı sapma mı?).
+  - ✅ **K7 Kullanıcılar** (1) — **KARAR: göstersin.** `ROLLER = TUM_ROLLER.filter(r => !ADMIN_ROLLER.includes(r))`.
+    **Davranış değişti:** dropdown 20→25 rol, **5 İK rolü eklendi** (ik_drk/ik_md/ik_yrd_md/ik_uz/ik_per), admin dışarıda, çıkan yok. **Baseline 1→0.**
+    Not: bugüne dek admin bu ekrandan İK kullanıcısı oluşturamıyordu (sessiz sapma) — düzeltildi. UI fiziksel testi U-serisi.
 - **Kalan tekil `=== "iu"` (kendi adımlarında süpürülecek):** `ana-sayfa/api:33` T6'da yapıldı; kalanlar
   `talepler/api/route.ts:36,303` + `talepler/[talep_id]/page`, `onaylanan-talepler/page:87`,
   `lib/utils/durum/mesaj.ts:178`, `lib/uretim/surec.ts:255` (.eq) — hepsi tekil, sınırda.
-- **Bekçi baseline durumu:** başlangıç 50 → **şu an 13** (çekirdek fazı 50→18; K1 Rapor −5 → 13).
-  `tools/eslint-rules/index.mjs` `ROL_BASELINE`.
+- **Bekçi baseline durumu:** başlangıç 50 → **ŞU AN 0.** Baseline boş; `rol-tek-kaynak` kuralı artık
+  TAM SIKI — tüm repoda herhangi bir yeni hard-code rol dizisi anında reddedilir. `tools/eslint-rules/index.mjs`.
+- **✅ B-09 TAMAMEN TAMAM.** Çekirdek (T-Club/E-Club/C-Club/Eczanem) + kompleks faz (K1–K7) bitti.
+  Kalan tek meşru dokunulmamış: tekil `=== "iu"`/`"bm"`/`"med_md"` özel durumları (sınırda, bilinçli).
 
 ---
 
