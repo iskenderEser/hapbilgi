@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
-import { URETICI_ROLLER } from "@/lib/utils/roller";
+import { TUKETICI_ROLLER, URETICI_ROLLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 // İzleme sayfasına erişebilecek tüm roller
@@ -30,7 +30,7 @@ export async function GET() {
     // takim_id'yi belirle: UTT/KD_UTT bölge üzerinden, diğerleri doğrudan
     let takim_id = kullanici.takim_id ?? null;
 
-    if (["utt", "kd_utt"].includes(rol)) {
+    if (TUKETICI_ROLLER.includes(rol)) {
       if (!kullanici.bolge_id) return hataYaniti("Kullanıcıya bölge atanmamış.", "kullanicilar tablosu SELECT — bolge_id kontrolü", null);
       const { data: bolge, error: bolgeError } = await adminSupabase
         .from("bolgeler")

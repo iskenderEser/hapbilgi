@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { rastgeleSoruSec } from "@/lib/soru/secim";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 
 // Yayında video_basi_soru_sayisi tanımlı değilse kullanılacak varsayılan değer.
 // Platform standardı: video başına 2 soru.
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
     const adminSupabase = createAdminClient();
 
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (!["utt", "kd_utt"].includes(rol)) return rolHatasi("Sadece utt ve kd_utt soruları görebilir.");
+    if (!TUKETICI_ROLLER.includes(rol)) return rolHatasi("Sadece utt ve kd_utt soruları görebilir.");
 
     const { searchParams } = new URL(request.url);
     const izleme_id = searchParams.get("izleme_id");

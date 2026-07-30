@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { ileriSarmaKaybiKaydet } from "@/lib/puan/kayit";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
     const adminSupabase = createAdminClient();
 
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (!["utt", "kd_utt"].includes(rol)) return rolHatasi("Sadece utt ve kd_utt izleyebilir.");
+    if (!TUKETICI_ROLLER.includes(rol)) return rolHatasi("Sadece utt ve kd_utt izleyebilir.");
 
     const body = await request.json();
     const { yayin_id, izleme_id, atlama_baslangic, atlama_bitis, atlanan_sure, kaybedilen_puan } = body;

@@ -9,6 +9,7 @@ import { tamTekrarSayisi } from "@/lib/puan/tekrarSayim";
 import { oneriPenceresiAcik } from "@/lib/oneri/pencereKontrol";
 import { gecerliTur } from "@/lib/tur/kayit";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 
 export async function PUT(request: NextRequest) {
   try {
@@ -20,7 +21,7 @@ export async function PUT(request: NextRequest) {
     const adminSupabase = createAdminClient();
 
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (!["utt", "kd_utt"].includes(rol)) return rolHatasi("Sadece utt ve kd_utt izleyebilir.");
+    if (!TUKETICI_ROLLER.includes(rol)) return rolHatasi("Sadece utt ve kd_utt izleyebilir.");
 
     const body = await request.json();
     const { izleme_id, ileri_sarilan_sure } = body;

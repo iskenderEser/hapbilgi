@@ -5,6 +5,7 @@ import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasy
 import { kazanilanPuanKaydet, yanlisCevapKaybiKaydet } from "@/lib/puan/kayit";
 import { cevapDogruMu } from "@/lib/soru/kontrol";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
     const adminSupabase = createAdminClient();
 
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (!["utt", "kd_utt"].includes(rol)) return rolHatasi("Sadece utt ve kd_utt cevap verebilir.");
+    if (!TUKETICI_ROLLER.includes(rol)) return rolHatasi("Sadece utt ve kd_utt cevap verebilir.");
 
     const body = await request.json();
     const { izleme_id, cevaplar } = body;

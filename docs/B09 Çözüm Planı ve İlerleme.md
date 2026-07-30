@@ -68,9 +68,13 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 - **Not:** UI'da rol-rol fiziksel doğrulama U-serisinin işi (CLAUDE.md: rol matrisi taraması yapılmaz).
 
 ### T2 · Tüketim — izleme akışı
-- **Durum:** bekliyor · **Kategori:** Gerçek Sorun · **Davranış:** değişmez
-- **Dosyalar (9):** `app/izle/api/{baslat,bitir,cevap,begeni,favori,sorular,ileri-sarma,[yayin_id],route}`
-- **Hedef:** `["utt","kd_utt"]` → `TUKETICI_ROLLER`
+- **Durum:** ✅ yapıldı (30.07) — commit'te.
+- **Kategori:** Gerçek Sorun · **Davranış:** değişmez (`TUKETICI_ROLLER` ≡ `["utt","kd_utt"]`, tsc teyit)
+- **Yapılan (9 dosya):** `["utt","kd_utt"]` → `TUKETICI_ROLLER`; her dosyaya roller.ts import'u eklendi.
+- **Baseline:** 8 tekil dosya (`baslat,bitir,cevap,begeni,favori,sorular,ileri-sarma,[yayin_id]`)
+  tamamen temizlendi → baseline'dan düştü. `izle/api/route.ts` baseline'da KALIYOR — satır 33 çözüldü
+  ama satır 9 `IZLEME_ROLLERI` T7'nin işi.
+- **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok, bekçi 0 fire.
 
 ### T3 · Üretim hattı — erişim
 - **Durum:** bekliyor · **Kategori:** Karışık · **Davranış:** değişmez
