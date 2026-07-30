@@ -7,17 +7,17 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 
 ---
 
-## ▶ DEVAM NOKTASI (son güncelleme: 30.07 — C1 sonrası)
+## ▶ DEVAM NOKTASI (son güncelleme: 30.07 — Ez1 sonrası)
 
 > Yeni oturum buradan devam etsin. Tüm iş commit'li; çalışma ağacında B-09'a ait
 > bekleyen değişiklik yok.
 
-- **Tamamlanan:** **T-CLUB BİTTİ** — G1 (bekçi) · T1 · T2 · T3 · T3b · T4 · T5 · T6 · T7. **E-CLUB BİTTİ** — E1 · E2 · E3 · E4. **C-CLUB: C1 sıfır-eylem (zaten temiz).** Hepsi commit'li, üçlü doğrulamadan geçti.
-- **Sıradaki adımlar:** Ez1 → Ez2 (ops) → kompleks modüller.
+- **Tamamlanan:** **T-CLUB BİTTİ** — G1 (bekçi) · T1 · T2 · T3 · T3b · T4 · T5 · T6 · T7. **E-CLUB BİTTİ** — E1 · E2 · E3 · E4. **C-CLUB: C1 sıfır-eylem.** **ECZANEM: Ez1 yapıldı.** Hepsi commit'li, üçlü doğrulamadan geçti.
+- **Sıradaki adımlar:** Ez2 (ops) → kompleks modüller.
 - **Kalan tekil `=== "iu"` (kendi adımlarında süpürülecek):** `ana-sayfa/api:33` T6'da yapıldı; kalanlar
   `talepler/api/route.ts:36,303` + `talepler/[talep_id]/page`, `onaylanan-talepler/page:87`,
   `lib/utils/durum/mesaj.ts:178`, `lib/uretim/surec.ts:255` (.eq) — hepsi tekil, sınırda.
-- **Bekçi baseline durumu:** başlangıç 50 → **şu an 19** (T2 −8 izle, T3b −takımlar, T5 −dosyalar, T6 −ana-sayfa+hbligi, T7 −izle/api/route, E1 −8 eclub, E2 −7 eclub, E3 −3 eclub;
+- **Bekçi baseline durumu:** başlangıç 50 → **şu an 18** (T2 −8 izle, T3b −takımlar, T5 −dosyalar, T6 −ana-sayfa+hbligi, T7 −izle/api/route, E1 −8 eclub, E2 −7 eclub, E3 −3 eclub, Ez1 −eczanem/utt;
   T4 dosyaları baseline'da değildi — tekil `=== "iu"` kural kapsamında değil). `tools/eslint-rules/index.mjs` `ROL_BASELINE`.
 
 ---
@@ -197,9 +197,11 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 ## ADIM 4 — ECZANEM
 
 ### Ez1 · İsim gölgesi
-- **Durum:** bekliyor · **Kategori:** Gerçek Sorun · **Davranış:** değişmez
-- **Dosya:** `app/eczanem/utt/page.tsx:32`
-- **Hedef:** yerel `const TUKETICI_ROLLER = [...]` kaldırılır, roller.ts'ten import edilir (gölge biter)
+- **Durum:** ✅ yapıldı (30.07) — commit `15bd6b2`.
+- **Kategori:** Gerçek Sorun · **Davranış:** değişmez (değer `["utt","kd_utt"]` ≡ roller.ts export, tsc teyit)
+- **Yapılan (1 dosya):** `eczanem/utt/page.tsx`'te roller.ts'i gölgeleyen yerel `const TUKETICI_ROLLER` silindi, roller.ts'ten import edildi. Kullanım aynı isimle tek kaynağa bağlandı (gölge bitti).
+- **Baseline:** dosya tamamen temizlenip düştü (19→18).
+- **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok, bekçi 0 fire.
 
 ### Ez2 · Müşteri kimlik kontrolü *(opsiyonel)*
 - **Durum:** bekliyor · **Kategori:** Sınırda · **Davranış:** değişmez
