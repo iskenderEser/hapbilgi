@@ -14,9 +14,9 @@ import {
   rolHatasi,
   validasyonHatasi,
 } from "@/lib/utils/hataIsle";
-import { URETICI_ROLLER } from "@/lib/utils/roller";
+import { URETIM_HATTI_GORENLER, ADMIN_ROLLER } from "@/lib/utils/roller";
 
-const TAKIM_GORUNTULEME_ROLLERI = [...URETICI_ROLLER, "iu", "admin"];
+const TAKIM_GORUNTULEME_ROLLERI = [...URETIM_HATTI_GORENLER, ...ADMIN_ROLLER];
 
 async function rolGetir(userId: string): Promise<string> {
   const adminSupabase = createAdminClient();

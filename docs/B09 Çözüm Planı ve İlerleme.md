@@ -7,6 +7,19 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 
 ---
 
+## ▶ DEVAM NOKTASI (son güncelleme: 30.07, mola öncesi)
+
+> Yeni oturum buradan devam etsin. Tüm iş commit'li; çalışma ağacında B-09'a ait
+> bekleyen değişiklik yok.
+
+- **Tamamlanan:** G1 (bekçi) · T1 (sessiz hata) · T2 (izle, 9 dosya) · T3 (üretim hattı, 6 dosya) · T3b (takımlar, 1 dosya). Hepsi commit'li, üçlü doğrulamadan geçti.
+- **Sıradaki adımlar:** T4 (ops) → T5 (Karar #1: PM ailesi sabiti) → T6 → T7 (Karar #3) →
+  E1 → E2 (Karar #4) → E3 → E4 (ops) → C1 (dokunma) → Ez1 → Ez2 (ops) → kompleks modüller.
+- **Bekçi baseline durumu:** başlangıç 50 → **şu an 41** (T2'de 8 izle dosyası, T3b'de takımlar düştü). Kalanlar her
+  modül temizlendikçe düşecek; `tools/eslint-rules/index.mjs` `ROL_BASELINE`.
+
+---
+
 ## Kararlar (30.07 — kapalı)
 
 1. **Regresyon bekçisi kurulacak, ÖNCE (kesin).** ESLint `hapbilgi-mimari/rol-tek-kaynak` kuralı.
@@ -86,12 +99,15 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 - **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok. (Bu 6 dosya bekçi baseline'ında değildi —
   tek literal + spread, kural fire etmiyordu.)
 
-### T3b · KEŞİF — `takimlar/api/route.ts` (+admin varyantı)
-- **Durum:** ⏳ karar bekliyor (İskender'e sunuldu)
-- **Bulgu:** `takimlar/api/route.ts:19` `TAKIM_GORUNTULEME_ROLLERI = [...URETICI_ROLLER, "iu", "admin"]`
-  — T3 ailesinin kardeşi ama küme farklı (+admin). Bekçi **baseline'ında** (2 literal: "iu","admin").
-- **Öneri (yapılınca):** `[...URETIM_HATTI_GORENLER, ...ADMIN_ROLLER]` — birebir aynı küme, spread-only,
-  bekçi-temiz → baseline'dan düşer. Küme farklı olduğu için T3'e sessizce katılmadı.
+### T3b · `takimlar/api/route.ts` (+admin varyantı)
+- **Durum:** ✅ yapıldı (30.07) — commit'te.
+- **Kategori:** Karışık · **Davranış:** değişmez (`[...URETIM_HATTI_GORENLER, ...ADMIN_ROLLER]` ≡ `[...URETICI_ROLLER, "iu", "admin"]`, kod ile teyit)
+- **Yapılan:** `takimlar/api/route.ts:19` `TAKIM_GORUNTULEME_ROLLERI` yerel dizisi
+  `[...URETICI_ROLLER, "iu", "admin"]` → `[...URETIM_HATTI_GORENLER, ...ADMIN_ROLLER]`; import
+  `URETICI_ROLLER` → `URETIM_HATTI_GORENLER, ADMIN_ROLLER`. Küme birebir aynı (T3'e sessizce
+  katılmadı çünkü küme +admin ile farklıydı).
+- **Baseline:** dosya spread-only kaldı (0 literal) → `ROL_BASELINE`'dan düşürüldü. Bekçi 42 → 41.
+- **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok (baseline'sız da temiz — ratchet çalıştı).
 
 ### T4 · Üretim hattı — İÜ teslim *(opsiyonel, düşük kazanç)*
 - **Durum:** bekliyor · **Kategori:** Sınırda · **Davranış:** değişmez
