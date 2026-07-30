@@ -326,7 +326,6 @@ const ROL_BASELINE = new Set([
   "app/raporlar/api/utt/route.ts",
   "app/talepler-v2/_components/YeniTalepFormV2.tsx",
   "app/talepler/_components/YeniTalepForm.tsx",
-  "app/talepler/api/dosyalar/route.ts",
   "app/yayin-yonetimi/_types.ts",
   "lib/oneri/limitKontrol.ts",
   "lib/rapor/bm/getBmData.ts",

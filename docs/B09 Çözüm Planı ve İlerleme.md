@@ -12,13 +12,13 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 > Yeni oturum buradan devam etsin. Tüm iş commit'li; çalışma ağacında B-09'a ait
 > bekleyen değişiklik yok.
 
-- **Tamamlanan:** G1 (bekçi) · T1 (sessiz hata) · T2 (izle, 9 dosya) · T3 (üretim hattı, 6 dosya) · T3b (takımlar, 1 dosya) · T4 (İÜ teslim, 10 dosya). Hepsi commit'li, üçlü doğrulamadan geçti.
-- **Sıradaki adımlar:** T5 (Karar #1: PM ailesi sabiti) → T6 → T7 (Karar #3) →
+- **Tamamlanan:** G1 (bekçi) · T1 (sessiz hata) · T2 (izle, 9 dosya) · T3 (üretim hattı, 6 dosya) · T3b (takımlar, 1 dosya) · T4 (İÜ teslim, 10 dosya) · T5 (talep dosyaları + PM_AILESI_ROLLER tabanı). Hepsi commit'li, üçlü doğrulamadan geçti.
+- **Sıradaki adımlar:** T6 → T7 (Karar #3) →
   E1 → E2 (Karar #4) → E3 → E4 (ops) → C1 (dokunma) → Ez1 → Ez2 (ops) → kompleks modüller.
 - **T4 artığı (kendi adımlarında süpürülecek):** teslim üçlüsü dışındaki gerçek `=== "iu"` sitelerine
   dokunulmadı — `ana-sayfa/api:33` (T6), `talepler/api/route.ts:36,303` + `talepler/[talep_id]/page`
   (T5 civarı), `onaylanan-talepler/page:87`, `lib/utils/durum/mesaj.ts:178`, `lib/uretim/surec.ts:255` (.eq).
-- **Bekçi baseline durumu:** başlangıç 50 → **şu an 41** (T2'de 8 izle dosyası, T3b'de takımlar düştü;
+- **Bekçi baseline durumu:** başlangıç 50 → **şu an 40** (T2'de 8 izle, T3b'de takımlar, T5'te dosyalar düştü;
   T4 dosyaları baseline'da değildi — tekil `=== "iu"` kural kapsamında değil). `tools/eslint-rules/index.mjs` `ROL_BASELINE`.
 
 ---
@@ -123,10 +123,14 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
   Devam Noktası'ndaki listeyle kendi adımlarında (T5/T6) süpürülecek — düşmedi.
 - **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok.
 
-### T5 · Talep dosyaları *(Karar #1 uygulanır)*
-- **Durum:** bekliyor · **Kategori:** Karar/Gerçek Sorun · **Davranış:** değişmez
-- **Dosya:** `app/talepler/api/dosyalar/route.ts:16,44,87`
-- **Hedef:** yeni "PM ailesi" sabiti (erişim = PM ailesi + İÜ; yükleme/silme = PM ailesi)
+### T5 · Talep dosyaları *(Karar #1 uygulandı)*
+- **Durum:** ✅ yapıldı (30.07) — commit'te.
+- **Kategori:** Karar/Gerçek Sorun · **Davranış:** değişmez (değer birebir, tsc teyit)
+- **Karar #1:** roller.ts'e `PM_AILESI_ROLLER = ["pm","jr_pm","kd_pm"]` tabanı eklendi. Aynı 3 rolü
+  taşıyan `ECZANEM_TALEP_ACAN_ROLLER` (kavram birebir "PM ailesi") bu tabana bağlandı → kaynak dosyada
+  mükerrer dizi yok. (Domain ileride ayrışırsa tekrar bölünür.)
+- **Yapılan:** `dosyalar/route.ts` → erişim `[...PM_AILESI_ROLLER, IU_ROLU]`, yükleme/silme `PM_AILESI_ROLLER`.
+- **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok, bekçi 0 fire. Dosya baseline'dan düştü.
 
 ### T6 · Ana sayfa + HB Ligi dispatch
 - **Durum:** bekliyor · **Kategori:** Karışık/Sınırda · **Davranış:** değişmez

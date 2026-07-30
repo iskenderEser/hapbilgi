@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { PM_AILESI_ROLLER, IU_ROLU } from "@/lib/utils/roller";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (!["pm", "jr_pm", "kd_pm", "iu"].includes(rol)) return rolHatasi("Bu dosyaya erişim yetkiniz yok.");
+    if (![...PM_AILESI_ROLLER, IU_ROLU].includes(rol)) return rolHatasi("Bu dosyaya erişim yetkiniz yok.");
 
     const { searchParams } = new URL(request.url);
     const dosyaYolu = searchParams.get("yol");
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (!["pm", "jr_pm", "kd_pm"].includes(rol)) return rolHatasi("Sadece PM dosya yükleyebilir.");
+    if (!PM_AILESI_ROLLER.includes(rol)) return rolHatasi("Sadece PM dosya yükleyebilir.");
 
     const body = await request.json();
     const { talep_id, dosya_adi, url, boyut } = body;
@@ -84,7 +85,7 @@ export async function DELETE(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (!["pm", "jr_pm", "kd_pm"].includes(rol)) return rolHatasi("Sadece PM dosya silebilir.");
+    if (!PM_AILESI_ROLLER.includes(rol)) return rolHatasi("Sadece PM dosya silebilir.");
 
     const body = await request.json();
     const { talep_id, url } = body;
