@@ -14,10 +14,10 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { ECLUB_GOREN_ROLLER } from "@/lib/utils/roller";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-const ECLUB_UTT_ROLLERI = ["utt", "kd_utt"];
 const ECLUB_5UTT_ESIK = 5;
 
 function glnGecerliMi(gln: string): boolean {
@@ -36,7 +36,7 @@ async function uttKontrol(adminSupabase: SupabaseClient, userId: string): Promis
     .single();
   if (error || !kullanici) return { hata: hataYaniti("Kullanıcı sorgulanamadı.", "kullanicilar SELECT", error, 404) };
   const rolKucu = (kullanici.rol ?? "").toLowerCase();
-  if (!ECLUB_UTT_ROLLERI.includes(rolKucu)) return { hata: rolHatasi("Bu sayfaya yalnız UTT/KD_UTT erişebilir.") };
+  if (!ECLUB_GOREN_ROLLER.includes(rolKucu)) return { hata: rolHatasi("Bu sayfaya yalnız UTT/KD_UTT erişebilir.") };
   if (!kullanici.firma_id) return { hata: validasyonHatasi("Firma bilgisi bulunamadı.", ["firma_id"]) };
   return { firma_id: kullanici.firma_id as string };
 }

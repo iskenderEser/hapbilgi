@@ -9,15 +9,14 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import { useEclubListem } from "./_hooks/useEclubListem";
 import { EczaneBlogu } from "./_components/EczaneBlogu";
 import { glnGecerliMi, KISI_ROL_ETIKETLERI, type GlnSorguSonuc } from "./_types";
-
-const ECLUB_UTT_ROLLERI = ["utt", "kd_utt"];
+import { ECLUB_GOREN_ROLLER } from "@/lib/utils/roller";
 
 export default function EclubListemPage() {
   const router = useRouter();
   const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
 
-  const rolUygun = !!kullanici && ECLUB_UTT_ROLLERI.includes((kullanici.rol ?? "").toLowerCase());
+  const rolUygun = !!kullanici && ECLUB_GOREN_ROLLER.includes((kullanici.rol ?? "").toLowerCase());
   const hazir = !authYukleniyor && rolUygun;
 
   const {

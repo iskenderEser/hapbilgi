@@ -3,9 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { ECLUB_HEDEF_ROLLER } from "@/lib/utils/roller";
-
-const ECLUB_UTT_ROLLERI = ["utt", "kd_utt"];
+import { ECLUB_HEDEF_ROLLER, TUKETICI_ROLLER } from "@/lib/utils/roller";
 
 export async function GET() {
   try {
@@ -16,7 +14,7 @@ export async function GET() {
     if (authError || !user) return yetkiHatasi();
 
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (!ECLUB_UTT_ROLLERI.includes(rol)) return rolHatasi("Bu sayfaya yalnız UTT/KD_UTT erişebilir.");
+    if (!TUKETICI_ROLLER.includes(rol)) return rolHatasi("Bu sayfaya yalnız UTT/KD_UTT erişebilir.");
 
     const { data: yayinlar, error: yayinError } = await adminSupabase
       .from("v_yayin_detay")

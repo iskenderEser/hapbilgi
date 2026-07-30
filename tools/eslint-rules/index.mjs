@@ -295,13 +295,6 @@ const ROL_BASELINE = new Set([
   // (kullanicilar/profil/raporlar/oneriler/takimlar) sıraları gelene kadar burada bekler.
   "app/eclub/ligi/api/export/route.ts",
   "app/eclub/ligi/api/route.ts",
-  "app/eclub/ligi/api/takim-adi/route.ts",
-  "app/eclub/listem/api/eczaneler/route.ts",
-  "app/eclub/listem/api/kisiler/route.ts",
-  "app/eclub/listem/page.tsx",
-  "app/eclub/oneriler/api/route.ts",
-  "app/eclub/oneriler/api/yayinlar/route.ts",
-  "app/eclub/oneriler/page.tsx",
   "app/eclub/store/rapor/api/route.ts",
   "app/eczanem/utt/page.tsx",
   // T2+T7 (30.07): izle/api'nin tamamı temizlendi ve baseline'dan düşürüldü

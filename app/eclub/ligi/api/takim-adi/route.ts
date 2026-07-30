@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
-
-const UTT_ROLLER = ["utt", "kd_utt"];
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,7 +39,7 @@ export async function PUT(request: NextRequest) {
       .eq("kullanici_id", user.id)
       .single();
     if (benError || !ben) return hataYaniti("Kullanıcı bulunamadı.", "kullanicilar SELECT", benError, 404);
-    if (!UTT_ROLLER.includes((ben.rol ?? "").toLowerCase())) return rolHatasi("Sadece UTT takım adı belirleyebilir.");
+    if (!TUKETICI_ROLLER.includes((ben.rol ?? "").toLowerCase())) return rolHatasi("Sadece UTT takım adı belirleyebilir.");
 
     const body = await request.json();
     const takimAdi = typeof body.takim_adi === "string" ? body.takim_adi.trim() : "";

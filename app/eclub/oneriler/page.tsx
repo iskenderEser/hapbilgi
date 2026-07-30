@@ -9,8 +9,7 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import { useEclubOneriler } from "./_hooks/useEclubOneriler";
 import { OneriGonder } from "./_components/OneriGonder";
 import { OneriGecmisi } from "./_components/OneriGecmisi";
-
-const ECLUB_UTT_ROLLERI = ["utt", "kd_utt"];
+import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 
 type Sekme = "gonder" | "gecmis";
 
@@ -19,7 +18,7 @@ export default function EclubOnerilerPage() {
   const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
 
-  const rolUygun = !!kullanici && ECLUB_UTT_ROLLERI.includes((kullanici.rol ?? "").toLowerCase());
+  const rolUygun = !!kullanici && TUKETICI_ROLLER.includes((kullanici.rol ?? "").toLowerCase());
   const hazir = !authYukleniyor && rolUygun;
 
   const { yayinlar, kisiler, gecmis, loading, gonderLoading, oneriGonder } =

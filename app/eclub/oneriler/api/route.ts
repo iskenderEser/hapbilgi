@@ -10,9 +10,7 @@ import {
 } from "@/lib/eclub/oneriLimit";
 import { eclubBildirimOlustur } from "@/lib/utils/eclubBildirim";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { ECLUB_HEDEF_ROLLER } from "@/lib/utils/roller";
-
-const ECLUB_UTT_ROLLERI = ["utt", "kd_utt"];
+import { ECLUB_HEDEF_ROLLER, TUKETICI_ROLLER } from "@/lib/utils/roller";
 
 // Verilen kişi_id'ler için "kisi_id → eczane_adi" haritası kurar.
 // Zincir: eclub_kisi_eczane(aktif bağ) → eclub_eczaneler(gln) → eclub_eczane_master(eczane_adi).
@@ -75,7 +73,7 @@ export async function GET() {
     if (authError || !user) return yetkiHatasi();
 
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (!ECLUB_UTT_ROLLERI.includes(rol)) return rolHatasi("Bu sayfaya yalnız UTT/KD_UTT erişebilir.");
+    if (!TUKETICI_ROLLER.includes(rol)) return rolHatasi("Bu sayfaya yalnız UTT/KD_UTT erişebilir.");
 
     // UTT'nin gönderdiği öneriler + alıcı (eclub_kisiler) temel bilgisi.
     // Eczane adı ayrı sorgu+Map ile çözülür (eczane bağı eclub_kisiler'de değil,
@@ -150,7 +148,7 @@ export async function POST(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (!ECLUB_UTT_ROLLERI.includes(rol)) return rolHatasi("Sadece UTT/KD_UTT öneri gönderebilir.");
+    if (!TUKETICI_ROLLER.includes(rol)) return rolHatasi("Sadece UTT/KD_UTT öneri gönderebilir.");
 
     const body = await request.json();
     const { yayin_id, kisi_idler } = body;
