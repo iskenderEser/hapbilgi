@@ -12,13 +12,13 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 > Yeni oturum buradan devam etsin. Tüm iş commit'li; çalışma ağacında B-09'a ait
 > bekleyen değişiklik yok.
 
-- **Tamamlanan:** G1 (bekçi) · T1 (sessiz hata) · T2 (izle, 9 dosya) · T3 (üretim hattı, 6 dosya) · T3b (takımlar, 1 dosya) · T4 (İÜ teslim, 10 dosya) · T5 (talep dosyaları + PM_AILESI_ROLLER tabanı). Hepsi commit'li, üçlü doğrulamadan geçti.
-- **Sıradaki adımlar:** T6 → T7 (Karar #3) →
+- **Tamamlanan:** G1 (bekçi) · T1 (sessiz hata) · T2 (izle, 9 dosya) · T3 (üretim hattı, 6 dosya) · T3b (takımlar, 1 dosya) · T4 (İÜ teslim, 10 dosya) · T5 (talep dosyaları + PM_AILESI_ROLLER tabanı) · T6 (ana sayfa + HB Ligi, 2 dosya). Hepsi commit'li, üçlü doğrulamadan geçti.
+- **Sıradaki adımlar:** T7 (Karar #3) →
   E1 → E2 (Karar #4) → E3 → E4 (ops) → C1 (dokunma) → Ez1 → Ez2 (ops) → kompleks modüller.
-- **T4 artığı (kendi adımlarında süpürülecek):** teslim üçlüsü dışındaki gerçek `=== "iu"` sitelerine
-  dokunulmadı — `ana-sayfa/api:33` (T6), `talepler/api/route.ts:36,303` + `talepler/[talep_id]/page`
-  (T5 civarı), `onaylanan-talepler/page:87`, `lib/utils/durum/mesaj.ts:178`, `lib/uretim/surec.ts:255` (.eq).
-- **Bekçi baseline durumu:** başlangıç 50 → **şu an 40** (T2'de 8 izle, T3b'de takımlar, T5'te dosyalar düştü;
+- **Kalan tekil `=== "iu"` (kendi adımlarında süpürülecek):** `ana-sayfa/api:33` T6'da yapıldı; kalanlar
+  `talepler/api/route.ts:36,303` + `talepler/[talep_id]/page`, `onaylanan-talepler/page:87`,
+  `lib/utils/durum/mesaj.ts:178`, `lib/uretim/surec.ts:255` (.eq) — hepsi tekil, sınırda.
+- **Bekçi baseline durumu:** başlangıç 50 → **şu an 38** (T2 −8 izle, T3b −takımlar, T5 −dosyalar, T6 −ana-sayfa+hbligi;
   T4 dosyaları baseline'da değildi — tekil `=== "iu"` kural kapsamında değil). `tools/eslint-rules/index.mjs` `ROL_BASELINE`.
 
 ---
@@ -133,9 +133,11 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 - **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok, bekçi 0 fire. Dosya baseline'dan düştü.
 
 ### T6 · Ana sayfa + HB Ligi dispatch
-- **Durum:** bekliyor · **Kategori:** Karışık/Sınırda · **Davranış:** değişmez
-- **Dosyalar:** `ana-sayfa/api/route.ts:31,46`, `hbligi/api/route.ts:70`
-- **Hedef:** `["utt","kd_utt"]` → `TUKETICI_ROLLER` (bm/tm/iu tekil kalır)
+- **Durum:** ✅ yapıldı (30.07) — commit'te.
+- **Kategori:** Karışık/Sınırda · **Davranış:** değişmez
+- **Yapılan:** `ana-sayfa/api/route.ts` + `hbligi/api/route.ts` `["utt","kd_utt"]` → `TUKETICI_ROLLER`;
+  ayrıca ana-sayfa'daki T4 artığı `rol === "iu"` → `IU_ROLU` süpürüldü. `bm`/`tm`/`admin` tekil kaldı (sınırda).
+- **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok, bekçi 0 fire. İki dosya baseline'dan düştü.
 
 ### T7 · `IZLEME_ROLLERI` *(Karar #2 — davranış-korur isimlendirme)*
 - **Durum:** bekliyor · **Kategori:** Karar · **Davranış:** değişmez (niyet doğrulanır)

@@ -293,7 +293,6 @@ const ROL_BASELINE = new Set([
   // 30.07 — mevcut ihlaller (50 dosya). Bir dosya tamamen temizlenince
   // buradan silinir (kural o dosyada sıkılaşır). Kompleks modül dosyaları
   // (kullanicilar/profil/raporlar/oneriler/takimlar) sıraları gelene kadar burada bekler.
-  "app/ana-sayfa/api/route.ts",
   "app/eclub/ligi/api/export/route.ts",
   "app/eclub/ligi/api/route.ts",
   "app/eclub/ligi/api/takim-adi/route.ts",
@@ -313,7 +312,6 @@ const ROL_BASELINE = new Set([
   "app/eclub/store/api/siparis/route.ts",
   "app/eclub/store/rapor/api/route.ts",
   "app/eczanem/utt/page.tsx",
-  "app/hbligi/api/route.ts",
   "app/izle/api/route.ts", // T7: IZLEME_ROLLERI (satır 9) hâlâ dizi — o çözülünce düşer
   // T2 (30.07) temizlendi ve baseline'dan düşürüldü: izle/api/{baslat,bitir,cevap,
   // begeni,favori,sorular,ileri-sarma,[yayin_id]} — hepsi TUKETICI_ROLLER'a bağlandı.

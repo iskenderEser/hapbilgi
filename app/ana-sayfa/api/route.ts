@@ -2,7 +2,7 @@
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
-import { URETICI_ROLLER, YONETICI_ROLLER } from "@/lib/utils/roller";
+import { IU_ROLU, TUKETICI_ROLLER, URETICI_ROLLER, YONETICI_ROLLER } from "@/lib/utils/roller";
 import { getBmAnaSayfaVeri } from "@/lib/utils/anaSayfa/bm";
 import { getUttAnaSayfaVeri } from "@/lib/utils/anaSayfa/utt";
 import { getTmAnaSayfaVeri } from "@/lib/utils/anaSayfa/tm";
@@ -28,9 +28,9 @@ export async function GET() {
       veri = await getBmAnaSayfaVeri(user.id, adminSupabase);
     } else if (rol === "tm") {
       veri = await getTmAnaSayfaVeri(user.id, adminSupabase);
-    } else if (["utt", "kd_utt"].includes(rol)) {
+    } else if (TUKETICI_ROLLER.includes(rol)) {
       veri = await getUttAnaSayfaVeri(user.id, adminSupabase);
-    } else if (rol === "iu") {
+    } else if (rol === IU_ROLU) {
       veri = await getIuAnaSayfaVeri(user.id, adminSupabase);
     } else if (URETICI_ROLLER.includes(rol)) {
       veri = await getUreticiAnaSayfaVeri(user.id, adminSupabase);
@@ -43,7 +43,7 @@ export async function GET() {
     // Yalnız-izleme rolleri için ana sayfa video listesini ekle.
     // UTT/KD_UTT kendi video verisini (getUttAnaSayfaVeri) kullanmaya devam eder.
     // getAnaSayfaVideolari, video görmeyen roller (İK, IU) için boş dizi döndürür → bölüm çıkmaz.
-    if (!["utt", "kd_utt"].includes(rol)) {
+    if (!TUKETICI_ROLLER.includes(rol)) {
       veri = { ...veri, videolar: await getAnaSayfaVideolari(user.id, rol, adminSupabase) };
     }
 

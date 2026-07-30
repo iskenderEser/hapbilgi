@@ -12,6 +12,7 @@ import { getTmLig } from "@/lib/hbligi/getTmLig";
 import { getGenelLig } from "@/lib/hbligi/getGenelLig";
 import type { LigPeriyot } from "@/lib/hbligi/ligRpcCagir";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 
 // ─── Yardımcı: periyot parametrelerini parse + doğrula ───────────────────────
 // Dönüş null ise validasyon hatası; aksi halde tam LigPeriyot.
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-      if (["utt", "kd_utt"].includes(rol)) {
+      if (TUKETICI_ROLLER.includes(rol)) {
         if (!kullanici.bolge_id) {
           return hataYaniti("Kullanıcıya bölge atanmamış.", "kullanicilar SELECT — bolge_id kontrolü", null);
         }
