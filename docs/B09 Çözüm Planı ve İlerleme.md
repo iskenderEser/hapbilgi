@@ -7,13 +7,13 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 
 ---
 
-## ▶ DEVAM NOKTASI (son güncelleme: 30.07 — E3 sonrası)
+## ▶ DEVAM NOKTASI (son güncelleme: 30.07 — E4 sonrası)
 
 > Yeni oturum buradan devam etsin. Tüm iş commit'li; çalışma ağacında B-09'a ait
 > bekleyen değişiklik yok.
 
-- **Tamamlanan:** **T-CLUB BİTTİ** — G1 (bekçi) · T1 · T2 · T3 · T3b · T4 · T5 · T6 · T7. **E-CLUB: E1 · E2 · E3 yapıldı.** Hepsi commit'li, üçlü doğrulamadan geçti.
-- **Sıradaki adımlar:** E-Club → E4 (ops) → C1 (dokunma) → Ez1 → Ez2 (ops) → kompleks modüller.
+- **Tamamlanan:** **T-CLUB BİTTİ** — G1 (bekçi) · T1 · T2 · T3 · T3b · T4 · T5 · T6 · T7. **E-CLUB BİTTİ** — E1 · E2 · E3 · E4. Hepsi commit'li, üçlü doğrulamadan geçti.
+- **Sıradaki adımlar:** C1 (dokunma) → Ez1 → Ez2 (ops) → kompleks modüller.
 - **Kalan tekil `=== "iu"` (kendi adımlarında süpürülecek):** `ana-sayfa/api:33` T6'da yapıldı; kalanlar
   `talepler/api/route.ts:36,303` + `talepler/[talep_id]/page`, `onaylanan-talepler/page:87`,
   `lib/utils/durum/mesaj.ts:178`, `lib/uretim/surec.ts:255` (.eq) — hepsi tekil, sınırda.
@@ -176,8 +176,11 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 - **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok, bekçi 0 fire.
 
 ### E4 · E-Club Ligi sayfa içi dağıtım *(opsiyonel)*
-- **Durum:** bekliyor · **Kategori:** Sınırda · **Davranış:** değişmez
-- **Dosyalar:** `eclub/ligi/page.tsx:37,71,181,191,243`, `useEclubLigi.ts:131`
+- **Durum:** ✅ yapıldı (30.07) — commit `ec0c7bc`.
+- **Kategori:** Sınırda · **Davranış:** değişmez (`TUKETICI_ROLLER` ≡ `["utt","kd_utt"]`, tsc teyit)
+- **Yapılan (1 dosya):** `ligi/page.tsx`'te 4 yerde `rol === "utt" || rol === "kd_utt"` (37, 71, 181, 191) → `TUKETICI_ROLLER.includes(rol)`.
+- **Kapsam kararı:** yalnız utt/kd_utt çiftleri çevrildi; tekil `=== "bm"` (181, 243) ve `!== "tm"` (`useEclubLigi:131`) İskender talimatıyla korundu (Karar #1/C1: tekil kontrol meşru). Bu dosyalar baseline'da değildi — ratchet etkisi yok.
+- **Doğrulama:** tsc=0, denetim temiz, lint:mimari ihlal yok.
 
 ---
 
