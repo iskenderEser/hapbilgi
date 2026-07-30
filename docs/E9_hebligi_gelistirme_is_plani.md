@@ -75,8 +75,9 @@ istenmiyor; toplamı önceden tutan **özet tablo** ile değiştirilecek. Sıral
   *Not — kalan sıra (yarış-güvenli):* **2.3 trigger → 2.2 backfill.** Trigger
   aktifken backfill yetkili tam-hesapla (SET) koşulur; backfill anındaki gerçeği
   yazar, sonraki yazımları trigger yakalar.
-- [ ] **2.2** Backfill: mevcut 4 tablodan `INSERT…SELECT…GROUP BY kullanici_id,
-  date_trunc('month')`. *(SQL — İskender)*
+- [x] **2.2** Backfill: mevcut 4 tablodan kişi × ay kovaları dolduruldu (yetkili
+  tam-hesap/SET). Doğrulama: özet tüm-zaman toplamı v1 `hb_ligi` ile birebir
+  (`farkli=0`). SQL repo'da (`scripts/sql/hbligi_v2_backfill.sql`). *(SQL — İskender)*
 - [x] **2.3** Bakım tetikleyicisi: 4 tabloya `AFTER INSERT` → ilgili (kullanıcı,
   yıl, ay) kovasını günceller. Kuruldu (tek generic fonksiyon + 4 trigger);
   yalnız INSERT (silme → backfill ile resync). *(SQL — İskender)* — sıra: 2.2'den önce koşuldu.
