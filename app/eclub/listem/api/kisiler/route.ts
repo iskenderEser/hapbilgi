@@ -10,11 +10,11 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const ECLUB_UTT_ROLLERI = ["utt", "kd_utt"];
-const ECLUB_KISI_ROLLERI = ["eczaci", "eczane_teknisyeni"];
 
 function epostaGecerliMi(eposta: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(eposta);
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
     if (eposta.length > 200) return validasyonHatasi("E-posta 200 karakterden uzun olamaz.", ["eposta"]);
 
     const rolTemiz = rol.trim().toLowerCase();
-    if (!ECLUB_KISI_ROLLERI.includes(rolTemiz)) return validasyonHatasi("Geçersiz rol.", ["rol"]);
+    if (!ECLUB_TUKETICI_ROLLERI.includes(rolTemiz)) return validasyonHatasi("Geçersiz rol.", ["rol"]);
 
     const epostaTemiz = eposta.trim().toLowerCase();
     if (!epostaGecerliMi(epostaTemiz)) return validasyonHatasi("Geçerli bir e-posta adresi giriniz.", ["eposta"]);

@@ -1,9 +1,8 @@
 // app/eclub/store/api/adres/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
-
-const ECLUB_KISI_ROLLERI = ["eczaci", "eczane_teknisyeni"];
 
 async function kisiCoz(adminSupabase: ReturnType<typeof createAdminClient>, authUserId: string) {
   const { data } = await adminSupabase
@@ -23,7 +22,7 @@ export async function GET(request: NextRequest) {
     const adminSupabase = createAdminClient();
     const kisi = await kisiCoz(adminSupabase, user.id);
     if (!kisi) return rolHatasi("Bu işlem yalnız E-Club kişilerine açıktır.");
-    if (!ECLUB_KISI_ROLLERI.includes(kisi.rol)) return rolHatasi("Geçersiz kişi rolü.");
+    if (!ECLUB_TUKETICI_ROLLERI.includes(kisi.rol)) return rolHatasi("Geçersiz kişi rolü.");
 
     const { data, error } = await adminSupabase
       .from("eclub_store_adresler")
@@ -48,7 +47,7 @@ export async function POST(request: NextRequest) {
     const adminSupabase = createAdminClient();
     const kisi = await kisiCoz(adminSupabase, user.id);
     if (!kisi) return rolHatasi("Bu işlem yalnız E-Club kişilerine açıktır.");
-    if (!ECLUB_KISI_ROLLERI.includes(kisi.rol)) return rolHatasi("Geçersiz kişi rolü.");
+    if (!ECLUB_TUKETICI_ROLLERI.includes(kisi.rol)) return rolHatasi("Geçersiz kişi rolü.");
 
     const body = await request.json();
     const { baslik, ad_soyad, telefon, il, ilce, acik_adres, varsayilan_mi } = body;
@@ -94,7 +93,7 @@ export async function DELETE(request: NextRequest) {
     const adminSupabase = createAdminClient();
     const kisi = await kisiCoz(adminSupabase, user.id);
     if (!kisi) return rolHatasi("Bu işlem yalnız E-Club kişilerine açıktır.");
-    if (!ECLUB_KISI_ROLLERI.includes(kisi.rol)) return rolHatasi("Geçersiz kişi rolü.");
+    if (!ECLUB_TUKETICI_ROLLERI.includes(kisi.rol)) return rolHatasi("Geçersiz kişi rolü.");
 
     const { searchParams } = new URL(request.url);
     const adres_id = searchParams.get("adres_id");

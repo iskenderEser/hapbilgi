@@ -5,11 +5,10 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { eclubPuanKaydet, eclubYanlisCevapKaydet, eclubDogruCevapKaydet } from "@/lib/puan/eclubKayit";
 import { cevapDogruMu, type Soru } from "@/lib/soru/kontrol";
-
-const ECLUB_KISI_ROLLERI = ["eczaci", "eczane_teknisyeni"];
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     if (kisiError) return hataYaniti("Kişi bilgisi alınamadı.", "eclub_kisiler SELECT — auth_user_id", kisiError);
     if (!kisi) return rolHatasi("Bu işlem yalnız E-Club kişilerine açıktır.");
-    if (!ECLUB_KISI_ROLLERI.includes(kisi.rol)) return rolHatasi("Geçersiz kişi rolü.");
+    if (!ECLUB_TUKETICI_ROLLERI.includes(kisi.rol)) return rolHatasi("Geçersiz kişi rolü.");
 
     const body = await request.json();
     const { izleme_id, cevaplar } = body;
