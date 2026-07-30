@@ -106,5 +106,12 @@ istenmiyor; toplamı önceden tutan **özet tablo** ile değiştirilecek. Sıral
 
 ## Faz 5 — v1 emekli — ayrı onay
 
-- [ ] **5.1** v2 kanıtlanınca v1 nesneleri (`hb_ligi`, `v_hbligi_sirali`, 3 RPC,
-  `lib/hbligi`) kaldırılır; `_v2` ekleri sadeleştirilir.
+- [x] **5.1** v1 kaldırıldı: DB nesneleri (`v_hbligi_sirali`, `hb_ligi`, 3 v1 RPC)
+  DROP edildi (`scripts/sql/hbligi_v1_kaldir.sql`); `lib/hbligi/` (6 dosya) silindi;
+  `td11` audit'i `_v2`'ye çevrildi. `_v2` ekleri korundu (rename riski alınmadı).
+  Teknik üçlü temiz. *(SQL — İskender / kod — Claude)*
+
+---
+
+*E9 kapandı — HBLigi ölçek geçişi tamam. Kalan: REDBOOK §497/499/785 + acik_isler
+md.9 v1'i "güncel" anlatıyor → ayrı doküman güncellemesi (Kural 2a, İskender onayı).*

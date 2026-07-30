@@ -2,7 +2,7 @@
 -- get_kullanici_ozet'in aynı yıl toplam_net_puan'ı birebir mi? Boş dönüş = temiz.
 SELECT l.kullanici_id::text, l.ad, l.soyad,
        l.toplam_puan AS lig_puani, o.toplam_net_puan AS rapor_puani
-FROM get_hb_ligi_yillik(EXTRACT(year FROM now())::int) l
+FROM get_hb_ligi_yillik_v2(EXTRACT(year FROM now())::int) l
 JOIN LATERAL get_kullanici_ozet(
   date_trunc('year', now()), now(), l.kullanici_id, NULL, NULL, NULL
 ) o ON true
