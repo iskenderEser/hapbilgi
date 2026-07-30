@@ -266,6 +266,120 @@ const toastTekKaynak = {
   },
 };
 
+// KURAL 7: rol tek-kaynak — hard-code rol dizisi yasağı (B-09, ratchet)
+//
+// "Bu rolü kim görebilir" kararı lib/utils/roller.ts'teki adlandırılmış
+// gruplardan (TUKETICI_ROLLER, ECLUB_TUKETICI_ROLLERI...) okunmalı; dosyalara
+// elle yazılmamalı. Bekçi, İÇİNDE ≥2 hard-code rol string'i olan dizi
+// literallerini (grup yeniden-tanımı) reddeder.
+//
+// KAPSAM DIŞI (bilinçli): tekil karşılaştırma (rol === "bm"), tip-union
+// ("eczaci" | "eczane_teknisyeni" — ArrayExpression değil), tekil elemanlı
+// dizi. Spread karışımı ([...URETICI_ROLLER, "iu"]) v1'de yakalanmaz; modül
+// adımında elle temizlenir.
+//
+// RATCHET: bugün ihlal içeren dosyalar ROL_BASELINE'da tanınır (geçer). Her
+// modül temizlendikçe o dosyalar baseline'dan düşer; baseline boşalınca kural
+// tam sıkı olur. roller.ts'in kendisi her zaman muaf.
+const ROL_LITERALLERI = new Set([
+  "pm", "jr_pm", "kd_pm", "med_md", "egt_md", "egt_yrd_md", "egt_yon", "egt_uz",
+  "ik_drk", "ik_md", "ik_yrd_md", "ik_uz", "ik_per", "gm", "gm_yrd", "drk",
+  "paz_md", "blm_md", "grp_pm", "sm", "admin", "tm", "bm", "utt", "kd_utt", "iu",
+  "eczaci", "eczane_teknisyeni",
+]);
+// "musteri"/"eczanem" bilinçli dışarıda: kimlik_turu/hedef_rol değerleri,
+// rol-dizisi bağlamında nadir; eklemek gereksiz false-positive üretir.
+const ROL_BASELINE = new Set([
+  // 30.07 — mevcut ihlaller (50 dosya). Bir dosya tamamen temizlenince
+  // buradan silinir (kural o dosyada sıkılaşır). Kompleks modül dosyaları
+  // (kullanicilar/profil/raporlar/oneriler/takimlar) sıraları gelene kadar burada bekler.
+  "app/ana-sayfa/api/route.ts",
+  "app/eclub/ligi/api/export/route.ts",
+  "app/eclub/ligi/api/route.ts",
+  "app/eclub/ligi/api/takim-adi/route.ts",
+  "app/eclub/listem/api/eczaneler/route.ts",
+  "app/eclub/listem/api/kisiler/route.ts",
+  "app/eclub/listem/page.tsx",
+  "app/eclub/oneriler/api/route.ts",
+  "app/eclub/oneriler/api/yayinlar/route.ts",
+  "app/eclub/oneriler/page.tsx",
+  "app/eclub/panel/api/baslat/route.ts",
+  "app/eclub/panel/api/bitir/route.ts",
+  "app/eclub/panel/api/cevapla/route.ts",
+  "app/eclub/panel/api/route.ts",
+  "app/eclub/panel/api/sorular/route.ts",
+  "app/eclub/store/api/adres/route.ts",
+  "app/eclub/store/api/route.ts",
+  "app/eclub/store/api/siparis/route.ts",
+  "app/eclub/store/rapor/api/route.ts",
+  "app/eczanem/utt/page.tsx",
+  "app/hbligi/api/route.ts",
+  "app/izle/api/[yayin_id]/route.ts",
+  "app/izle/api/baslat/route.ts",
+  "app/izle/api/begeni/route.ts",
+  "app/izle/api/bitir/route.ts",
+  "app/izle/api/cevap/route.ts",
+  "app/izle/api/favori/route.ts",
+  "app/izle/api/ileri-sarma/route.ts",
+  "app/izle/api/route.ts",
+  "app/izle/api/sorular/route.ts",
+  "app/kullanicilar/page.tsx",
+  "app/oneriler/api/[oneri_id]/route.ts",
+  "app/oneriler/api/route.ts",
+  "app/oneriler/page.tsx",
+  "app/profil/api/route.ts",
+  "app/profil/page.tsx",
+  "app/raporlar/api/utt/route.ts",
+  "app/takimlar/api/route.ts",
+  "app/talepler-v2/_components/YeniTalepFormV2.tsx",
+  "app/talepler/_components/YeniTalepForm.tsx",
+  "app/talepler/api/dosyalar/route.ts",
+  "app/yayin-yonetimi/_types.ts",
+  "lib/oneri/limitKontrol.ts",
+  "lib/rapor/bm/getBmData.ts",
+  "lib/rapor/tm/getTmData.ts",
+  "lib/rapor/uretici/getUreticiData.ts",
+  "lib/rapor/utt/getUttData.ts",
+  "lib/utils/anaSayfa/bm.ts",
+  "lib/utils/anaSayfa/yonetici.ts",
+  "lib/video/gorunurluk.ts",
+]);
+const rolTekKaynak = {
+  meta: {
+    type: "problem",
+    docs: { description: "Hard-code rol dizisini engeller; tek kaynak lib/utils/roller.ts adlandirilmis gruplari." },
+    schema: [],
+    messages: {
+      elle: "Hard-code rol dizisi: [{{roller}}]. roller.ts'teki adlandirilmis grubu kullan (or. TUKETICI_ROLLER) — rol karari tek yerde durmali.",
+    },
+  },
+  create(context) {
+    const yol = (context.filename ?? context.getFilename?.() ?? "").replace(/\\/g, "/");
+    if (yol.endsWith("/lib/utils/roller.ts")) return {};
+    for (const b of ROL_BASELINE) {
+      if (yol.endsWith("/" + b)) return {};
+    }
+    return {
+      ArrayExpression(node) {
+        const roller = node.elements.filter(
+          (el) =>
+            el &&
+            el.type === "Literal" &&
+            typeof el.value === "string" &&
+            ROL_LITERALLERI.has(el.value),
+        );
+        if (roller.length >= 2) {
+          context.report({
+            node,
+            messageId: "elle",
+            data: { roller: roller.map((r) => r.value).join(", ") },
+          });
+        }
+      },
+    };
+  },
+};
+
 const plugin = {
   meta: { name: "hapbilgi-mimari", version: "0.0.1" },
   rules: {
@@ -275,6 +389,7 @@ const plugin = {
     "dogru-client": dogruClient,
     "talep-kunye-tek-kaynak": talepKunyeTekKaynak,
     "toast-tek-kaynak": toastTekKaynak,
+    "rol-tek-kaynak": rolTekKaynak,
   },
 };
 

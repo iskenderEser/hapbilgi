@@ -38,14 +38,18 @@ tek başına devam için yeterlidir (hedef sabitler + dosya listeleri burada).*
 ## ADIM 0 — Bekçi (önce)
 
 ### G1 · `rol-tek-kaynak` ESLint kuralı + baseline
-- **Durum:** bekliyor
+- **Durum:** ✅ yapıldı (30.07) — commit'te.
 - **Kategori:** regresyon bekçisi · **Davranış:** runtime'da değişmez (yalnız lint)
-- **Ne:** `hapbilgi-mimari` ESLint eklentisine (`toast-tek-kaynak`/`kayit-tek-kaynak` kardeşi) yeni kural.
-  Hard-code rol string literallerini reddeder; `roller.ts` + baseline + meşru-literal allowlist hariç.
-- **Baseline:** bugünkü 132 ihlal dosyası (bkz. `B09 Açık İşi ... Öncelik Kategorisi.md`). Her modül
-  adımı bittikçe temizlenen dosyalar baseline'dan çıkarılır.
-- **Smoke:** mutlu yol = `lint:mimari` baseline ile temiz geçer; red = yeni bir dosyaya elle `"utt"`
-  yazınca kural hata verir.
+- **Ne:** `hapbilgi-mimari` ESLint eklentisine (`tools/eslint-rules/index.mjs`, KURAL 7) yeni kural.
+  İçinde **≥2 hard-code rol string'i** olan dizi literallerini (grup yeniden-tanımı) reddeder.
+  Kapsam dışı (bilinçli): tekil `=== "bm"`, tip-union, spread karışımı (`[...GRUP,"iu"]` v1'de değil).
+- **Baseline (ratchet):** kuralın gerçekte fire ettiği **50 dosya** `ROL_BASELINE`'da tanınır. Kompleks
+  modül dosyaları (kullanicilar/profil/raporlar/oneriler/takimlar) sıraları gelene kadar burada bekler.
+  Bir dosya tamamen temizlenince buradan silinir → kural o dosyada sıkılaşır.
+- **Doğrulama:** tsc=0, denetim temiz, lint:mimari "ihlal yok". Red senaryosu: baseline dışı dosyaya
+  `["utt","kd_utt"]` yazınca kural fire etti (TUKETICI_ROLLER öner). `eslint.config.mjs`'e "warn" olarak eklendi.
+- **Bilinen sınır:** baseline dosya-düzeyi — baseline'daki bir dosyaya yeni ihlal eklenirse yakalanmaz
+  (o dosyalar zaten temizlik listesinde). Yeni/temiz dosyada tam koruma.
 
 ---
 

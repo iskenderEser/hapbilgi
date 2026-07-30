@@ -24,6 +24,7 @@ const eslintConfig = defineConfig([
       "hapbilgi-mimari/dogru-client": "error",
       "hapbilgi-mimari/talep-kunye-tek-kaynak": "warn",
       "hapbilgi-mimari/toast-tek-kaynak": "warn",
+      "hapbilgi-mimari/rol-tek-kaynak": "warn",
     },
   },
 ]);
