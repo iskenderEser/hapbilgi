@@ -4,6 +4,7 @@
 // page.tsx, hook ve alt bileşenler buradan import eder.
 
 import type { HedefRol } from "@/app/talepler/_types";
+import { TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
 
 // ============================================================================
 // Tipler
@@ -76,4 +77,4 @@ export const ANA_SEKME_ETIKETLERI: Record<HedefRol, string> = {
 
 // Ana sekmelerin gösterim sırası. Eczanem sekmesi U5'te açıldı — PM eczanem
 // bekleyen videolarını buradan yayına alır (barkod + Karşılık formu satır içinde).
-export const ANA_SEKMELER: HedefRol[] = ["utt", "bm", "eczaci", "eczane_teknisyeni", "eczanem"];
+export const ANA_SEKMELER: HedefRol[] = TUM_HEDEF_ROLLER;

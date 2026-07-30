@@ -11,6 +11,7 @@
 
 import type { useTalepFormu } from "../_hooks/useTalepFormu";
 import { HEDEF_ROL_TASARIM, type HedefRol } from "../_types";
+import { TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
 import { TalepTuruTablari } from "./TalepTuruTablari";
 import { UrunTeknikSecici } from "./UrunTeknikSecici";
 import { SoruSetiAyarlari } from "./SoruSetiAyarlari";
@@ -82,11 +83,10 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
       <div className="mb-4 p-3 rounded-lg border border-gray-200 bg-gray-50">
         <div className="text-xs text-gray-500 mb-2">Bu talep kimin için? <span className="text-red-500">*</span></div>
         <div className="flex flex-wrap gap-3">
-          {([
-            "utt", "bm", "eczaci", "eczane_teknisyeni",
+          {TUM_HEDEF_ROLLER.filter(
             // Eczanem hedefi yalnız ürün müdürü ailesine sunulur (İP-§4.1).
-            ...(formu.eczanemSecilebilir ? (["eczanem"] as const) : []),
-          ] as HedefRol[]).map((rolKey: HedefRol) => {
+            (r) => r !== "eczanem" || formu.eczanemSecilebilir,
+          ).map((rolKey: HedefRol) => {
             const tasarim = HEDEF_ROL_TASARIM[rolKey];
             const secili = formu.hedefRol === rolKey;
             return (

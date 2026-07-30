@@ -15,6 +15,7 @@
 
 import type { useTalepFormu } from "@/app/talepler/_hooks/useTalepFormu";
 import { HEDEF_ROL_TASARIM, type HedefRol } from "@/app/talepler/_types";
+import { TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
 import { TALEP_TURU_ALT_ACIKLAMA, TUM_TURLER } from "@/app/talepler/_types";
 import { UrunTeknikSecici } from "@/app/talepler/_components/UrunTeknikSecici";
@@ -41,10 +42,9 @@ export function YeniTalepFormV2({ formu }: Props) {
   const ikiliHazir = formu.hazirVideo && formu.hazirSoruSeti;
 
   // Eczanem hedefi yalnız ürün müdürü ailesine sunulur (İP-§4.1).
-  const hedefRoller = ([
-    "utt", "bm", "eczaci", "eczane_teknisyeni",
-    ...(formu.eczanemSecilebilir ? (["eczanem"] as const) : []),
-  ] as HedefRol[]);
+  const hedefRoller = TUM_HEDEF_ROLLER.filter(
+    (r) => r !== "eczanem" || formu.eczanemSecilebilir,
+  );
 
   return (
     <div>
