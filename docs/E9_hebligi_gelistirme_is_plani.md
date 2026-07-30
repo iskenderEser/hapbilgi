@@ -99,8 +99,10 @@ istenmiyor; toplamı önceden tutan **özet tablo** ile değiştirilecek. Sıral
 
 ## Faz 4 — Geçiş (cutover) — lokal, ayrı onay
 
-- [ ] **4.1** Tüketiciler (`profil/api`, `getUttData`, `lib/hbligi` kullanımı) v2'ye
-  yönlendirilir. Push yok; lokal doğrulama.
+- [x] **4.1** Tüketiciler v2'ye yönlendirildi: `app/hbligi/api/route.ts`
+  (`lib/hbligi` → `lib/hbligi_v2`), `app/profil/api/route.ts` +
+  `lib/rapor/utt/getUttData.ts` (`v_hbligi_sirali` → `_v2`). Teknik üçlü temiz;
+  app'te v1 referansı kalmadı. Push yok. *(Claude)*
 
 ## Faz 5 — v1 emekli — ayrı onay
 

@@ -99,7 +99,7 @@ export async function GET() {
 
     // Sıralama
     const { data: siralama } = await adminSupabase
-      .from("v_hbligi_sirali")
+      .from("v_hbligi_sirali_v2")
       .select("firma_sirasi, takim_sirasi, bolge_sirasi")
       .eq("kullanici_id", user.id)
       .single();

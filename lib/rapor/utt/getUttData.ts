@@ -62,14 +62,14 @@ export async function getUttData(
 
     // 3. HBLigi — kişisel sıra — periyot bağımsız
     adminSupabase
-      .from('v_hbligi_sirali')
+      .from('v_hbligi_sirali_v2')
       .select('bolge_sirasi, takim_sirasi, toplam_puan')
       .eq('kullanici_id', kullanici.kullanici_id)
       .maybeSingle(),
 
     // 4. Bölge sıralaması — periyot bağımsız, limit yok
     adminSupabase
-      .from('v_hbligi_sirali')
+      .from('v_hbligi_sirali_v2')
       .select('kullanici_id, ad, soyad, toplam_puan, bolge_sirasi')
       .eq('bolge_id', kullanici.bolge_id)
       .in('rol', TUKETICI_ROLLER)
@@ -77,7 +77,7 @@ export async function getUttData(
 
     // 5. Takım puan toplamı — periyot bağımsız
     adminSupabase
-      .from('v_hbligi_sirali')
+      .from('v_hbligi_sirali_v2')
       .select('toplam_puan')
       .eq('takim_id', kullanici.takim_id)
       .in('rol', TUKETICI_ROLLER),
