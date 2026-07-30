@@ -8,10 +8,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { ECLUB_LIGI_GOREN_ROLLER } from "@/lib/utils/roller";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { ligUttToplamCagir, ligDetayCagir, type LigPeriyot, type Periyot } from "@/lib/eclub/ligRpcCagir";
-
-const LIG_GOREN_ROLLER = ["utt", "kd_utt", "bm", "tm"];
 
 function periyotParse(sp: URLSearchParams): LigPeriyot {
   const periyot = (sp.get("periyot") as Periyot) || "ay";
@@ -39,7 +38,7 @@ export async function GET(request: NextRequest) {
     if (benError || !ben) return hataYaniti("Kullanıcı bulunamadı.", "kullanicilar SELECT", benError, 404);
 
     const rol = (ben.rol ?? "").toLowerCase();
-    if (!LIG_GOREN_ROLLER.includes(rol)) return rolHatasi("E-Club Ligi'ni görme yetkiniz yok.");
+    if (!ECLUB_LIGI_GOREN_ROLLER.includes(rol)) return rolHatasi("E-Club Ligi'ni görme yetkiniz yok.");
 
     const { searchParams } = new URL(request.url);
     const p = periyotParse(searchParams);

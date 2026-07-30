@@ -1,9 +1,8 @@
 // app/eclub/store/rapor/api/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { ECLUB_STORE_RAPOR_GOREN_ROLLER } from "@/lib/utils/roller";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
-
-const FIRMA_YETKILI_ROLLER = ["utt", "kd_utt", "bm", "tm"];
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     const rol = (ben.rol ?? "").toLowerCase();
     const adminMi = rol === "admin";
-    if (!adminMi && !FIRMA_YETKILI_ROLLER.includes(rol)) {
+    if (!adminMi && !ECLUB_STORE_RAPOR_GOREN_ROLLER.includes(rol)) {
       return rolHatasi("Bu raporu görme yetkiniz yok.");
     }
 
