@@ -1,6 +1,7 @@
 // app/profil/api/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { hataYaniti, sunucuHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
 import { haftaBaslangici, ayBaslangici, yilBaslangici } from "@/lib/zaman/kontrol";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
@@ -46,7 +47,7 @@ export async function GET() {
 
     const profilTemel = { ...kullanici, hbstore_aktif, cc_aktif, eclub_aktif, eclub_store_aktif, eczanem_aktif };
 
-    if (!["utt", "kd_utt"].includes(rol)) {
+    if (!TUKETICI_ROLLER.includes(rol)) {
       return NextResponse.json({ profil: profilTemel }, { status: 200 });
     }
 

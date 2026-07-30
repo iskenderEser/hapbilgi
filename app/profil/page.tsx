@@ -2,6 +2,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
@@ -143,7 +144,7 @@ export default function ProfilPage() {
     setSifreLoading(false);
   };
 
-  const isUTT = ["utt", "kd_utt"].includes((kullanici?.rol ?? "").toLowerCase());
+  const isUTT = TUKETICI_ROLLER.includes((kullanici?.rol ?? "").toLowerCase());
 
   if (authYukleniyor || !kullanici || loading) {
     return (

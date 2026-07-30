@@ -296,8 +296,6 @@ const ROL_BASELINE = new Set([
   // T2+T7 (30.07): izle/api'nin tamamı temizlendi ve baseline'dan düşürüldü
   // (tüketim uçları → TUKETICI_ROLLER, IZLEME_ROLLERI → spread grupları).
   "app/kullanicilar/page.tsx",
-  "app/profil/api/route.ts",
-  "app/profil/page.tsx",
   "app/talepler-v2/_components/YeniTalepFormV2.tsx",
   "app/talepler/_components/YeniTalepForm.tsx",
   "app/yayin-yonetimi/_types.ts",
