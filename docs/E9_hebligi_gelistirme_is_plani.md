@@ -67,8 +67,14 @@ istenmiyor; toplamı önceden tutan **özet tablo** ile değiştirilecek. Sıral
 
 ## Faz 2 — Özet tablo (ölçek geliştirmesi)
 
-- [ ] **2.1** `hb_ligi_ozet_v2` tablosu: `kullanici_id + yil + ay + 4 kazanım +
-  3 kayıp`. Sıra kolonu YOK (okuma anında `row_number`). *(SQL — İskender)*
+- [x] **2.1** `hb_ligi_ozet_v2` tablosu: `kullanici_id + yil + ay + 4 kazanım +
+  3 kayıp`. Sıra kolonu YOK (okuma anında `row_number`). Kuruldu (boş), SQL
+  repo'da (`scripts/sql/hbligi_v2_ozet.sql`). RLS geliştirme boyunca kapalı
+  (genel kural — tüm RLS'ler geliştirme sonunda aktive edilir). *(SQL — İskender)*
+
+  *Not — kalan sıra (yarış-güvenli):* **2.3 trigger → 2.2 backfill.** Trigger
+  aktifken backfill yetkili tam-hesapla (SET) koşulur; backfill anındaki gerçeği
+  yazar, sonraki yazımları trigger yakalar.
 - [ ] **2.2** Backfill: mevcut 4 tablodan `INSERT…SELECT…GROUP BY kullanici_id,
   date_trunc('month')`. *(SQL — İskender)*
 - [ ] **2.3** Bakım tetikleyicisi: 4 tabloya `AFTER INSERT` → ilgili (kullanıcı,
