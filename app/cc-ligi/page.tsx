@@ -53,6 +53,14 @@ export default function CcLigiPage() {
   const [yil, setYil] = useState<number>(buDonem.yil);
   const [ay, setAy] = useState<number>(buAn.getMonth() + 1); // 1-12
   const [ceyrek, setCeyrek] = useState<number>(buDonem.ceyrek);
+  // Bu haftanın no'su — Pazartesi bazlı, seçici/DB ile aynı (1 Ocak'ı içeren hafta = 1).
+  const buHaftaNo = (d: Date): number => {
+    const ocak1 = new Date(d.getFullYear(), 0, 1);
+    const dow = (ocak1.getDay() + 6) % 7;
+    const h1 = new Date(d.getFullYear(), 0, 1 - dow);
+    return Math.floor((d.getTime() - h1.getTime()) / 604800000) + 1;
+  };
+  const [hafta, setHafta] = useState<number>(buHaftaNo(buAn));
 
   // Lig tablosu state
   const [ligSatirlari, setLigSatirlari] = useState<LigSatiri[]>([]);
@@ -90,6 +98,7 @@ export default function CcLigiPage() {
       let url = `/cc-ligi/api?tip=lig&periyot=${periyot}&yil=${yil}`;
       if (periyot === "ay") url += `&ay=${ay}`;
       if (periyot === "donem") url += `&ceyrek=${ceyrek}`;
+      if (periyot === "hafta") url += `&hafta=${hafta}`;
 
       const res = await fetch(url);
       const d = await res.json();
@@ -103,7 +112,7 @@ export default function CcLigiPage() {
       hata("Lig verisi yüklenemedi.", "fetch", String(err));
     }
     setLigYukleniyor(false);
-  }, [periyot, yil, ay, ceyrek, hata]);
+  }, [periyot, yil, ay, ceyrek, hafta, hata]);
 
   useEffect(() => {
     if (!yetkiKontrolEdildi) return;
@@ -220,10 +229,12 @@ export default function CcLigiPage() {
           yil={yil}
           ay={ay}
           ceyrek={ceyrek}
+          hafta={hafta}
           onPeriyotChange={setPeriyot}
           onYilChange={setYil}
           onAyChange={setAy}
           onCeyrekChange={setCeyrek}
+          onHaftaChange={setHafta}
         />
 
         {/* Lig tablosu */}

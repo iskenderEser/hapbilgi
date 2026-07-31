@@ -56,6 +56,17 @@ function yilParse(searchParams: URLSearchParams): { yil: number } | null {
   return { yil };
 }
 
+function yilHaftaParse(searchParams: URLSearchParams): { yil: number; hafta: number } | null {
+  const yilStr = searchParams.get("yil");
+  const haftaStr = searchParams.get("hafta");
+  if (!yilStr || !haftaStr) return null;
+  const yil = Number(yilStr);
+  const hafta = Number(haftaStr);
+  if (!Number.isInteger(yil) || yil < 2020 || yil > 2100) return null;
+  if (!Number.isInteger(hafta) || hafta < 1 || hafta > 53) return null;
+  return { yil, hafta };
+}
+
 // ─── GET ─────────────────────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
@@ -148,8 +159,30 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ lig: data ?? [], periyot: "yil" }, { status: 200 });
       }
 
+      if (periyot === "hafta") {
+        const p = yilHaftaParse(searchParams);
+        if (!p) {
+          return validasyonHatasi(
+            "Haftalık lig için yil ve hafta parametreleri zorunludur (yil 2020-2100, hafta 1-53).",
+            ["yil", "hafta"]
+          );
+        }
+        const { data, error } = await adminSupabase.rpc("get_cc_ligi_haftalik", {
+          p_yil: p.yil,
+          p_hafta: p.hafta,
+        });
+        if (error) {
+          return hataYaniti(
+            "Haftalık CC Ligi verisi çekilemedi.",
+            "get_cc_ligi_haftalik RPC",
+            error
+          );
+        }
+        return NextResponse.json({ lig: data ?? [], periyot: "hafta" }, { status: 200 });
+      }
+
       return validasyonHatasi(
-        `Geçersiz periyot parametresi: ${periyot} (geçerli: ay, donem, yil)`,
+        `Geçersiz periyot parametresi: ${periyot} (geçerli: ay, donem, yil, hafta)`,
         ["periyot"]
       );
     }
