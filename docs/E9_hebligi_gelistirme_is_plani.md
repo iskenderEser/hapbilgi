@@ -148,3 +148,16 @@ kolonlar Toplam'ı tutmuyordu. (v1'den beri var, E9 getirisi değil.)
 - [x] **7.2** `page.tsx` `UttTablosu` (tüm roller ortak): masaüstü 3 kayıp kolonu +
   mobil kırılıma 3 kayıp — kırmızı "−" (rapor deseni); tablo yatay kaydırılır.
   Teknik üçlü temiz. *(Kod — Claude)*
+
+## Faz 8 — Lig arayüzü yeniden tasarımı (leaderboard)
+
+Excel-gridi görünüm sitenin diline çekildi. `UttTablosu` (tüm roller ortak)
+podyum + "senin sıran" kartı + progression çubuklu açılır kartlara dönüştü.
+
+- [x] **8.1** Podyum: ilk 3, madalya renkli (siraRenk/siraYazi), 1. en yüksek
+  basamakta (kürsü mantığı); taç lider için. *(Kod — Claude)*
+- [x] **8.2** "Senin sıran" kartı (sıra / net puan). Sıralı liste: yumuşak kartlar,
+  sıra rozeti + bölge/takım/firma chip'leri + iri net puan + progression çubuğu
+  (yeşil net / kırmızı kayıp, lidere oranlı) + tıklayınca kazanım/kayıp kırılımı
+  (rapor deseni). Mobil/masaüstü tek responsive yapı. BM/TM/Genel sarmalayıcıları
+  sadeleşti. Teknik üçlü temiz. *(Kod — Claude)*

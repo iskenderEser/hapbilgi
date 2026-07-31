@@ -233,10 +233,8 @@ export default function HBLigiPage() {
           </div>
 
           {/* Kendi bölgesindeki UTT'ler */}
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100">
-              <h2 className="text-sm font-bold text-gray-700 m-0">Bölgem — UTT Sıralaması</h2>
-            </div>
+          <div className="flex flex-col gap-2">
+            <h2 className="text-sm font-bold text-gray-700 m-0 px-1">Bölgem — UTT Sıralaması</h2>
             <UttTablosu satirlar={bolge_utt} userId={kullanici.id} siraRenk={siraRenk} siraYazi={siraYazi} gostTakim={false} />
           </div>
         </div>
@@ -287,10 +285,8 @@ export default function HBLigiPage() {
           </div>
 
           {/* Kendi takımındaki UTT'ler */}
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100">
-              <h2 className="text-sm font-bold text-gray-700 m-0">Takımım — UTT Sıralaması</h2>
-            </div>
+          <div className="flex flex-col gap-2">
+            <h2 className="text-sm font-bold text-gray-700 m-0 px-1">Takımım — UTT Sıralaması</h2>
             <UttTablosu satirlar={takim_utt} userId={kullanici.id} siraRenk={siraRenk} siraYazi={siraYazi} />
           </div>
         </div>
@@ -350,14 +346,7 @@ export default function HBLigiPage() {
           )}
         </div>
 
-        {/* Tablo */}
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          {lig.length === 0 ? (
-            <div className="p-10 text-center text-sm text-gray-400">Henüz lig verisi bulunmuyor.</div>
-          ) : (
-            <UttTablosu satirlar={lig} userId={kullanici.id} siraRenk={siraRenk} siraYazi={siraYazi} gostFirma gostTakim />
-          )}
-        </div>
+        <UttTablosu satirlar={lig} userId={kullanici.id} siraRenk={siraRenk} siraYazi={siraYazi} gostFirma gostTakim />
       </div>
     </div>
   );
@@ -374,115 +363,146 @@ interface UttTablosuProps {
   gostFirma?: boolean;
 }
 
+const MADALYA_ZEMIN: Record<number, string> = { 1: "#e6f1fb", 2: "#f8fafc", 3: "#f8fafc" };
+const MADALYA_KENAR: Record<number, string> = { 1: "#bfdbfe", 2: "#e5e7eb", 3: "#e5e7eb" };
+const PEDESTAL_YUK: Record<number, number> = { 1: 72, 2: 46, 3: 32 };
+
 function UttTablosu({ satirlar, userId, siraRenk, siraYazi, gostTakim = true, gostFirma = false }: UttTablosuProps) {
+  const [acik, setAcik] = useState<Set<string>>(new Set());
+
   if (satirlar.length === 0) {
     return <div className="p-10 text-center text-sm text-gray-400">Henüz lig verisi bulunmuyor.</div>;
   }
 
+  const sirali = [...satirlar]
+    .sort((a, b) => b.toplam_puan - a.toplam_puan)
+    .map((r, i) => ({ ...r, rank: i + 1 }));
+  const maxKazanim = Math.max(
+    1,
+    ...sirali.map((r) => r.izleme_puani + r.cevaplama_puani + r.oneri_puani + r.extra_puani),
+  );
+  const ben = sirali.find((r) => r.benim || r.kullanici_id === userId);
+  const top3 = sirali.slice(0, 3);
+  const podyum = [top3[1], top3[0], top3[2]].filter(Boolean) as typeof top3;
+
+  const cevir = (id: string) =>
+    setAcik((onceki) => {
+      const yeni = new Set(onceki);
+      if (yeni.has(id)) yeni.delete(id); else yeni.add(id);
+      return yeni;
+    });
+
+  const chip = (metin: string) => (
+    <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "#f1f5f9", color: "#64748b" }}>{metin}</span>
+  );
+
   return (
-    <>
-      {/* Mobile */}
-      <div className="md:hidden">
-        {satirlar.map((l) => (
-          <div key={l.kullanici_id} className="px-4 py-3 border-b border-gray-50"
-            style={{ background: l.benim || l.kullanici_id === userId ? "#f0f9ff" : "white" }}>
-            <div className="flex items-center gap-3 mb-1">
-              <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ background: siraRenk(l.sira) }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: siraYazi(l.sira) }}>{l.sira}</span>
+    <div className="flex flex-col gap-5" style={{ fontFamily: "'Nunito', sans-serif" }}>
+
+      {/* Podyum */}
+      <div className="flex items-end justify-center gap-3 md:gap-4 pt-1">
+        {podyum.map((r) => {
+          const lider = r.rank === 1;
+          return (
+            <div key={r.kullanici_id} className="flex flex-col items-center" style={{ width: 118 }}>
+              <div style={{ height: 22 }}>
+                {lider && (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#f59e0b" aria-hidden="true">
+                    <path d="M5 16L3 6l5.5 4L12 4l3.5 6L21 6l-2 10H5z" />
+                  </svg>
+                )}
               </div>
-              <div className="flex-1 min-w-0">
-                <span className="text-sm text-gray-900 truncate"
-                  style={{ fontWeight: l.benim || l.kullanici_id === userId ? 700 : 500 }}>
-                  {l.ad}
-                  {(l.benim || l.kullanici_id === userId) && (
-                    <span className="text-xs ml-1" style={{ color: "#56aeff" }}>sen</span>
-                  )}
-                </span>
+              <div className="rounded-full flex items-center justify-center"
+                style={{ width: 48, height: 48, background: siraRenk(r.rank), color: siraYazi(r.rank), fontSize: 18, fontWeight: 700 }}>
+                {r.rank}
               </div>
-              <span className="text-sm font-bold" style={{ color: "#56aeff" }}>{l.toplam_puan}</span>
+              <div className="text-sm text-gray-900 mt-1.5 text-center truncate" style={{ maxWidth: 112 }}>{r.ad}</div>
+              <div style={{ fontSize: lider ? 22 : 18, fontWeight: 700, color: "#56aeff", marginBottom: 6 }}>{r.toplam_puan}</div>
+              <div style={{ width: "100%", height: PEDESTAL_YUK[r.rank], borderRadius: "12px 12px 0 0", background: MADALYA_ZEMIN[r.rank], border: `1px solid ${MADALYA_KENAR[r.rank]}`, borderBottom: "none" }} />
             </div>
-            <div className="flex gap-3 ml-9">
-              <span className="text-xs text-gray-400">{l.bolge}</span>
-              {gostTakim && l.takim && <span className="text-xs text-gray-400">{l.takim}</span>}
-            </div>
-            <div className="flex gap-4 ml-9 mt-1 flex-wrap">
-              {[
-                { label: "İzleme", val: l.izleme_puani, kayip: false },
-                { label: "Cevap", val: l.cevaplama_puani, kayip: false },
-                { label: "Öneri", val: l.oneri_puani, kayip: false },
-                { label: "Extra", val: l.extra_puani, kayip: false },
-                { label: "İleri Sarma Kaybı", val: l.ileri_sarma_kaybi, kayip: true },
-                { label: "Yanlış Cevap Kaybı", val: l.yanlis_cevap_kaybi, kayip: true },
-                { label: "Öneri Kaybı", val: l.oneri_kaybi, kayip: true },
-              ].map(({ label, val, kayip }) => (
-                <div key={label} className="flex flex-col">
-                  <span className="text-xs" style={{ color: kayip ? "#dc2626" : "#9ca3af" }}>{label}</span>
-                  <span className="text-xs font-medium" style={{ color: kayip ? "#dc2626" : "#374151" }}>
-                    {kayip && val > 0 ? "− " : ""}{val}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Desktop */}
-      <div className="hidden md:block overflow-x-auto">
-        <table className="w-full border-collapse text-xs">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="text-center px-3 py-2.5 text-gray-400 font-medium" style={{ width: 40 }}>#</th>
-              <th className="text-left px-3 py-2.5 text-gray-400 font-medium">Ad Soyad</th>
-              <th className="text-left px-3 py-2.5 text-gray-400 font-medium">Bölge</th>
-              {gostTakim && <th className="text-left px-3 py-2.5 text-gray-400 font-medium">Takım</th>}
-              {gostFirma && <th className="text-left px-3 py-2.5 text-gray-400 font-medium">Firma</th>}
-              <th className="text-center px-2 py-2.5 text-gray-400 font-medium">İzleme</th>
-              <th className="text-center px-2 py-2.5 text-gray-400 font-medium">Cevap</th>
-              <th className="text-center px-2 py-2.5 text-gray-400 font-medium">Öneri</th>
-              <th className="text-center px-2 py-2.5 text-gray-400 font-medium">Extra</th>
-              <th className="text-center px-3 py-2.5 font-medium whitespace-nowrap" style={{ color: "#dc2626" }}>İleri Sarma Kaybı</th>
-              <th className="text-center px-3 py-2.5 font-medium whitespace-nowrap" style={{ color: "#dc2626" }}>Yanlış Cevap Kaybı</th>
-              <th className="text-center px-3 py-2.5 font-medium whitespace-nowrap" style={{ color: "#dc2626" }}>Öneri Kaybı</th>
-              <th className="text-center px-3 py-2.5 text-gray-400 font-medium">Toplam</th>
-            </tr>
-          </thead>
-          <tbody>
-            {satirlar.map((l) => (
-              <tr key={l.kullanici_id} className="border-b border-gray-50"
-                style={{ background: l.benim || l.kullanici_id === userId ? "#f0f9ff" : "white" }}>
-                <td className="px-3 py-3 text-center">
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center mx-auto"
-                    style={{ background: siraRenk(l.sira) }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: siraYazi(l.sira) }}>{l.sira}</span>
+      {/* Senin sıran */}
+      {ben && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: "#f0f9ff" }}>
+          <span className="text-xs" style={{ color: "#56aeff" }}>Senin sıran</span>
+          <span className="text-base font-bold" style={{ color: "#56aeff" }}>{ben.rank} / {sirali.length}</span>
+          <div className="flex-1" />
+          <span className="text-xs" style={{ color: "#56aeff" }}>Net puanın</span>
+          <span className="text-lg font-bold" style={{ color: "#56aeff" }}>{ben.toplam_puan}</span>
+        </div>
+      )}
+
+      {/* Sıralı liste */}
+      <div className="flex flex-col gap-2">
+        {sirali.map((l) => {
+          const kayip = l.ileri_sarma_kaybi + l.yanlis_cevap_kaybi + l.oneri_kaybi;
+          const yesil = (Math.max(0, l.toplam_puan) / maxKazanim) * 100;
+          const kirmizi = (kayip / maxKazanim) * 100;
+          const benim = l.benim || l.kullanici_id === userId;
+          const acikMi = acik.has(l.kullanici_id);
+          const kalemler = [
+            { label: "İzleme", val: l.izleme_puani, kayip: false },
+            { label: "Cevaplama", val: l.cevaplama_puani, kayip: false },
+            { label: "Öneri", val: l.oneri_puani, kayip: false },
+            { label: "Extra", val: l.extra_puani, kayip: false },
+            { label: "İleri Sarma Kaybı", val: l.ileri_sarma_kaybi, kayip: true },
+            { label: "Yanlış Cevap Kaybı", val: l.yanlis_cevap_kaybi, kayip: true },
+            { label: "Öneri Kaybı", val: l.oneri_kaybi, kayip: true },
+          ];
+          return (
+            <div key={l.kullanici_id} className="bg-white rounded-xl"
+              style={{ border: benim ? "2px solid #56aeff" : "0.5px solid #e5e7eb" }}>
+              <button onClick={() => cevir(l.kullanici_id)}
+                className="w-full flex items-center gap-3 px-3 md:px-4 py-3 bg-transparent cursor-pointer text-left">
+                <span className="rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ width: 28, height: 28, background: siraRenk(l.rank), color: siraYazi(l.rank), fontSize: 12, fontWeight: 700 }}>{l.rank}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm text-gray-900 truncate" style={{ fontWeight: benim ? 700 : 500 }}>
+                    {l.ad}{benim && <span className="text-xs ml-1" style={{ color: "#56aeff" }}>sen</span>}
                   </div>
-                </td>
-                <td className="px-3 py-3 text-gray-900"
-                  style={{ fontWeight: l.benim || l.kullanici_id === userId ? 700 : 500 }}>
-                  {l.ad}
-                  {(l.benim || l.kullanici_id === userId) && (
-                    <span className="text-xs ml-1" style={{ color: "#56aeff" }}>sen</span>
-                  )}
-                </td>
-                <td className="px-3 py-3 text-gray-500">{l.bolge}</td>
-                {gostTakim && <td className="px-3 py-3 text-gray-500">{(l as any).takim ?? "-"}</td>}
-                {gostFirma && <td className="px-3 py-3 text-gray-500">{(l as any).firma ?? "-"}</td>}
-                <td className="px-2 py-3 text-center text-gray-700">{l.izleme_puani}</td>
-                <td className="px-2 py-3 text-center text-gray-700">{l.cevaplama_puani}</td>
-                <td className="px-2 py-3 text-center text-gray-700">{l.oneri_puani}</td>
-                <td className="px-2 py-3 text-center text-gray-700">{l.extra_puani}</td>
-                <td className="px-2 py-3 text-center" style={{ color: "#dc2626" }}>{l.ileri_sarma_kaybi > 0 ? `− ${l.ileri_sarma_kaybi}` : 0}</td>
-                <td className="px-2 py-3 text-center" style={{ color: "#dc2626" }}>{l.yanlis_cevap_kaybi > 0 ? `− ${l.yanlis_cevap_kaybi}` : 0}</td>
-                <td className="px-2 py-3 text-center" style={{ color: "#dc2626" }}>{l.oneri_kaybi > 0 ? `− ${l.oneri_kaybi}` : 0}</td>
-                <td className="px-3 py-3 text-center">
-                  <span className="text-sm font-bold" style={{ color: "#56aeff" }}>{l.toplam_puan}</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  <div className="flex gap-1.5 mt-1 flex-wrap">
+                    {chip(l.bolge)}
+                    {gostTakim && l.takim && chip(l.takim)}
+                    {gostFirma && (l as any).firma && chip((l as any).firma)}
+                  </div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <div style={{ fontSize: 20, fontWeight: 700, color: "#56aeff", lineHeight: 1.1 }}>{l.toplam_puan}</div>
+                  <div className="text-xs text-gray-400">net puan</div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth={2}
+                  className="flex-shrink-0" style={{ transform: acikMi ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
+
+              <div className="px-3 md:px-4 pb-3">
+                <div className="flex rounded-full overflow-hidden" style={{ height: 10, background: "#f1f5f9" }}>
+                  <div style={{ width: `${yesil}%`, background: "#639922" }} />
+                  <div style={{ width: `${kirmizi}%`, background: "#e24b4a" }} />
+                </div>
+              </div>
+
+              {acikMi && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2.5 px-3 md:px-4 pb-4 pt-3"
+                  style={{ borderTop: "0.5px solid #e5e7eb" }}>
+                  {kalemler.map(({ label, val, kayip }) => (
+                    <div key={label}>
+                      <div className="text-xs" style={{ color: kayip ? "#dc2626" : "#9ca3af" }}>{label}</div>
+                      <div className="text-sm font-medium" style={{ color: kayip ? "#dc2626" : "#374151" }}>
+                        {kayip && val > 0 ? "− " : ""}{val}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
-    </>
+    </div>
   );
 }
