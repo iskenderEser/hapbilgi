@@ -49,7 +49,7 @@ Bu belge, UTT ana sayfası video sergileme düzeninin küratörlü raflara çevr
 
 ### Sıra ve commit
 
-1. Görünürlük düzeltmesi (askıdaki) — 2 commit (SQL + utt.ts).
+1. Görünürlük düzeltmesi — SQL + utt.ts. **✓ yapıldı** (tek commit — iki yüzey, tek mantıksal düzeltme).
 2. İş A — raf yardımcısı + UttAnaSayfa (1-2 commit).
 3. İş B — roller / guard / veri / açılış / düzen (mantıksal 2-3 commit).
 

@@ -21,6 +21,15 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
     .eq("bolge_id", kullanici.bolge_id)
     .single();
 
+  // Firma-geneli (takımsız) içeriği kapsamak için UTT'nin firmasını da çöz.
+  // UTT bölge seviyesindedir (kullanicilar.firma_id boş olabilir); firma
+  // takım üzerinden okunur. Açık sorgu (nested embed değil) — mevcut desen.
+  const { data: takim } = await adminSupabase
+    .from("takimlar")
+    .select("firma_id")
+    .eq("takim_id", bolge?.takim_id)
+    .single();
+
   // Hafta başlangıcı (Pazartesi 00:00) — get_kullanici_ozet periyodu için kullanılır
   const haftaBaslangic = new Date();
   haftaBaslangic.setDate(haftaBaslangic.getDate() - haftaBaslangic.getDay() + 1);
@@ -41,7 +50,12 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
       .from("v_yayin_detay")
       .select("yayin_id, urun_adi, teknik_adi, video_puani, yayin_tarihi, thumbnail_url, video_url, icerik_turu")
       .eq("durum", "yayinda")
-      .eq("takim_id", bolge?.takim_id)
+      // Takım süzgeci: kendi takımının içeriği VEYA firma-geneli (takımsız +
+      // aynı firma) içerik. Firma seviyeli üreticiler (med_md/egt_*/ik_*)
+      // taleplerini takim_id = NULL ile açar; tam-eşleşme bu içeriği eliyordu
+      // (V1'in tek-takım varsayımı, üretici rol genişleyince dar kaldı).
+      // 24.07 Yayındaki Videolar düzeltmesinin tüketim tarafına taşınması.
+      .or(`takim_id.eq.${bolge?.takim_id},and(takim_id.is.null,firma_id.eq.${takim?.firma_id})`)
       // Pozitif hedef süzgeci: UTT ana sayfası yalnız 'utt' hedefli yayınları
       // listeler. Süzgeçsiz hâli bm/eczaci/eczanem hedefli yayınları da
       // sızdırırdı (v_yayin_detay tüm hedef_rol satırlarını içerir).
