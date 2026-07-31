@@ -455,7 +455,15 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
       {/* Tümü rafı — TÜM videolar, random sırayla, yatay kayan raf (limitsiz) */}
       {raflar.tumuRafi.length > 0 && (
         <div className="mb-6">
-          <div className="text-sm font-bold text-gray-900 mb-2.5">Tümü</div>
+          <div className="group flex items-center gap-1 mb-2.5 w-fit cursor-pointer">
+            <span className="text-sm font-bold text-gray-900">Tümü</span>
+            <svg
+              className="w-4 h-4 text-gray-400 transition-all duration-200 group-hover:text-gray-800 group-hover:translate-x-0.5"
+              fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
           <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
             {raflar.tumuRafi.map((video) => (
               <div key={video.yayin_id} className="flex-shrink-0 w-40 sm:w-44 md:w-52 snap-start">
