@@ -1,26 +1,22 @@
 -- scripts/sql/hbligi_v2_backfill.sql
 --
--- E9 Faz 2.2 — HBLigi_v2 özet tablosu backfill (docs/E9_hebligi_gelistirme_is_plani.md).
--- Mevcut 4 olay tablosundan kişi × ay kovalarını tek seferde doldurur.
+-- E9 Faz 6.3 — HBLigi_v2 GÜNLÜK özet backfill (docs/E9_hebligi_gelistirme_is_plani.md).
+-- Mevcut 4 olay tablosundan kişi × gün kovalarını tek seferde doldurur.
 --
--- YETKİLİ TAM-HESAP (SET semantiği): ON CONFLICT ... DO UPDATE SET = EXCLUDED
--- (ekleme değil). Trigger (Faz 2.3) zaten aktif olduğundan backfill'i en son
--- koşmak, backfill anındaki gerçeği tabloya yazar; trigger'ın araya girmiş
--- kısmi eklemelerini tam-hesap ezer. Sonraki yazımları trigger yakalar.
--- Tekrar koşumu güvenli (idempotent, SET).
+-- YETKİLİ TAM-HESAP (SET): ON CONFLICT DO UPDATE = EXCLUDED (ekleme değil).
+-- Trigger aktifken en son koşulur; backfill anındaki gerçeği yazar, araya girmiş
+-- trigger eklemelerini ezer, sonraki yazımları trigger yakalar. Tekrar güvenli.
 --
--- Kova: created_at'in yıl/ay'ı (oturum saat dilimi — periyot RPC'leri de
--- make_timestamptz ile aynısını kullanır; Faz 2.6 periyot bazında doğrular).
--- Tüm-zaman toplamı saat diliminden bağımsızdır (aylar toplamı = genel toplam).
+-- Kova: created_at::date (oturum saat dilimi — okuma katmanı tarih aralıkları da
+-- aynısını kullanır; Faz 6.6 canlı-SUM ile birebir doğrular).
 
 INSERT INTO public.hb_ligi_ozet_v2 AS o
-  (kullanici_id, yil, ay,
+  (kullanici_id, tarih,
    izleme_puani, cevaplama_puani, oneri_puani, extra_puani,
    ileri_sarma_kaybi, yanlis_cevap_kaybi, oneri_kaybi, guncellenme)
 SELECT
   t.kullanici_id,
-  EXTRACT(year  FROM t.created_at)::smallint,
-  EXTRACT(month FROM t.created_at)::smallint,
+  (t.created_at)::date,
   SUM(t.izleme), SUM(t.cevaplama), SUM(t.oneri), SUM(t.extra),
   SUM(t.ileri), SUM(t.yanlis), SUM(t.onerikayip),
   now()
@@ -39,10 +35,8 @@ FROM (
   UNION ALL
   SELECT kullanici_id, created_at, 0,0,0,0, 0, 0, kaybedilen_puan FROM oneri_kayip_kayitlari
 ) t
-GROUP BY t.kullanici_id,
-         EXTRACT(year  FROM t.created_at),
-         EXTRACT(month FROM t.created_at)
-ON CONFLICT (kullanici_id, yil, ay) DO UPDATE SET
+GROUP BY t.kullanici_id, (t.created_at)::date
+ON CONFLICT (kullanici_id, tarih) DO UPDATE SET
   izleme_puani       = EXCLUDED.izleme_puani,
   cevaplama_puani    = EXCLUDED.cevaplama_puani,
   oneri_puani        = EXCLUDED.oneri_puani,

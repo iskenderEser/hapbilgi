@@ -126,10 +126,12 @@ Doğrulama: v1 yok → günlük çıktı, taban-tablo canlı-SUM ile ve mevcut a
 karşılaştırılır. Migrasyon sırasında (6.1–6.4 arası) lig sayfası kısa süre hata
 verebilir (lokal/dev — kabul).
 
-- [ ] **6.1** Günlük özet şeması: `hb_ligi_ozet_v2` → `(kullanici_id, tarih)`. *(SQL — İskender)*
-- [ ] **6.2** Trigger: kova `created_at::date`. *(SQL — İskender)*
-- [ ] **6.3** Backfill: `GROUP BY kullanici_id, created_at::date`. *(SQL — İskender)*
-- [ ] **6.4** Okuma katmanı: `hb_ligi_v2` + aylık/dönemlik/yıllık günlükten tarih-aralığıyla toplar. *(SQL — İskender)*
-- [ ] **6.5** Yeni `get_hb_ligi_haftalik_v2(p_yil, p_hafta)` — Pazartesi bazlı hafta aralığı. *(SQL — İskender)*
-- [ ] **6.6** Doğrulama: günlük-tabanlı çıktı canlı-SUM ile birebir (tüm-zaman + 4 periyot). *(SQL — İskender)*
+- [x] **6.1** Günlük özet şeması: `hb_ligi_ozet_v2` → `(kullanici_id, tarih)`. *(SQL — İskender)*
+- [x] **6.2** Trigger: kova `created_at::date`. *(SQL — İskender)*
+- [x] **6.3** Backfill: `GROUP BY kullanici_id, created_at::date`. *(SQL — İskender)*
+- [x] **6.4** Okuma katmanı: `hb_ligi_v2` + `v_hbligi_sirali_v2` + aylık/dönemlik/yıllık,
+  ortak `_hb_ligi_v2_aralik(bas,bit)` yardımcısıyla günlükten tarih-aralığı toplar. *(SQL — İskender)*
+- [x] **6.5** Yeni `get_hb_ligi_haftalik_v2(p_yil, p_hafta)` — Pazartesi bazlı hafta aralığı. *(SQL — İskender)*
+- [x] **6.6** Doğrulama: günlük çıktı taban-tablo canlı-SUM ile birebir — tüm-zaman +
+  bu-hafta `farkli=0` (aylık/dönemlik/yıllık aynı yardımcıyı paylaşır). *(SQL — İskender)*
 - [ ] **6.7** UI/kod: `Periyot`+`"hafta"`, hafta dropdown, seçici, `ligRpcCagir`, API `periyotParse`, sayfa. Teknik üçlü. *(Kod — Claude)*
