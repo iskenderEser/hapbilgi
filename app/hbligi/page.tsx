@@ -73,6 +73,14 @@ export default function HBLigiPage() {
   const [yil, setYil] = useState<number>(buDonem.yil);
   const [ay, setAy] = useState<number>(buAn.getMonth() + 1);
   const [ceyrek, setCeyrek] = useState<number>(buDonem.ceyrek);
+  // Bu haftanın no'su — Pazartesi bazlı, seçici/DB ile aynı (1 Ocak'ı içeren hafta = 1).
+  const buHaftaNo = (d: Date): number => {
+    const ocak1 = new Date(d.getFullYear(), 0, 1);
+    const dow = (ocak1.getDay() + 6) % 7;
+    const h1 = new Date(d.getFullYear(), 0, 1 - dow);
+    return Math.floor((d.getTime() - h1.getTime()) / 604800000) + 1;
+  };
+  const [hafta, setHafta] = useState<number>(buHaftaNo(buAn));
 
   useEffect(() => {
     if (authYukleniyor) return;
@@ -116,13 +124,14 @@ export default function HBLigiPage() {
     params.set("yil", String(yil));
     if (periyot === "ay") params.set("ay", String(ay));
     if (periyot === "donem") params.set("ceyrek", String(ceyrek));
+    if (periyot === "hafta") params.set("hafta", String(hafta));
     const res = await fetch(`/hbligi/api?${params.toString()}`);
     const data = await res.json();
     setVeri(data);
     setLoading(false);
   };
 
-  useEffect(() => { if (kullanici) veriCek(); }, [kullanici, secilenBolge, secilenTakim, secilenFirma, periyot, yil, ay, ceyrek]);
+  useEffect(() => { if (kullanici) veriCek(); }, [kullanici, secilenBolge, secilenTakim, secilenFirma, periyot, yil, ay, ceyrek, hafta]);
 
   const siraRenk = (sira: number) => {
     if (sira === 1) return "#f59e0b";
@@ -139,10 +148,12 @@ export default function HBLigiPage() {
       yil={yil}
       ay={ay}
       ceyrek={ceyrek}
+      hafta={hafta}
       onPeriyotChange={setPeriyot}
       onYilChange={setYil}
       onAyChange={setAy}
       onCeyrekChange={setCeyrek}
+      onHaftaChange={setHafta}
     />
   );
 

@@ -134,4 +134,6 @@ verebilir (lokal/dev — kabul).
 - [x] **6.5** Yeni `get_hb_ligi_haftalik_v2(p_yil, p_hafta)` — Pazartesi bazlı hafta aralığı. *(SQL — İskender)*
 - [x] **6.6** Doğrulama: günlük çıktı taban-tablo canlı-SUM ile birebir — tüm-zaman +
   bu-hafta `farkli=0` (aylık/dönemlik/yıllık aynı yardımcıyı paylaşır). *(SQL — İskender)*
-- [ ] **6.7** UI/kod: `Periyot`+`"hafta"`, hafta dropdown, seçici, `ligRpcCagir`, API `periyotParse`, sayfa. Teknik üçlü. *(Kod — Claude)*
+- [x] **6.7** UI/kod: `ligRpcCagir` (`"hafta"` + dispatch), `api/route` (`periyotParse`),
+  `HbLigiPeriyotSecici` (Haftalık + tarih-etiketli hafta dropdown), `page` (hafta state).
+  Teknik üçlü temiz. *(Kod — Claude)*

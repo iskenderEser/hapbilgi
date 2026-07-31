@@ -1,7 +1,7 @@
 // app/hbligi/api/route.ts
 //
 // HBLigi endpoint'i — role göre dispatch eder, iş mantığı lib/hbligi/'de.
-// Periyot: ?periyot=ay|donem|yil & yil=X & ay=Y & ceyrek=Z
+// Periyot: ?periyot=ay|donem|yil|hafta & yil=X & ay=Y & ceyrek=Z & hafta=W
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
@@ -24,15 +24,20 @@ function periyotParse(searchParams: URLSearchParams): LigPeriyot | null {
   if (periyot === "ay") {
     const ay = Number(searchParams.get("ay"));
     if (!Number.isInteger(ay) || ay < 1 || ay > 12) return null;
-    return { periyot, yil, ay, ceyrek: 1 };
+    return { periyot, yil, ay, ceyrek: 1, hafta: 1 };
   }
   if (periyot === "donem") {
     const ceyrek = Number(searchParams.get("ceyrek"));
     if (!Number.isInteger(ceyrek) || ceyrek < 1 || ceyrek > 4) return null;
-    return { periyot, yil, ay: 1, ceyrek };
+    return { periyot, yil, ay: 1, ceyrek, hafta: 1 };
   }
   if (periyot === "yil") {
-    return { periyot, yil, ay: 1, ceyrek: 1 };
+    return { periyot, yil, ay: 1, ceyrek: 1, hafta: 1 };
+  }
+  if (periyot === "hafta") {
+    const hafta = Number(searchParams.get("hafta"));
+    if (!Number.isInteger(hafta) || hafta < 1 || hafta > 53) return null;
+    return { periyot, yil, ay: 1, ceyrek: 1, hafta };
   }
   return null;
 }
@@ -52,8 +57,8 @@ export async function GET(request: NextRequest) {
     const periyot = periyotParse(searchParams);
     if (!periyot) {
       return validasyonHatasi(
-        "Geçersiz periyot parametreleri (periyot: ay/donem/yil; yil 2020-2100; ay 1-12; ceyrek 1-4).",
-        ["periyot", "yil", "ay", "ceyrek"]
+        "Geçersiz periyot parametreleri (periyot: ay/donem/yil/hafta; yil 2020-2100; ay 1-12; ceyrek 1-4; hafta 1-53).",
+        ["periyot", "yil", "ay", "ceyrek", "hafta"]
       );
     }
 

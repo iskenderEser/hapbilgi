@@ -5,17 +5,19 @@
 //   - ay    → get_hb_ligi_aylik_v2(yil, ay)
 //   - donem → get_hb_ligi_donemlik_v2(yil, ceyrek)
 //   - yil   → get_hb_ligi_yillik_v2(yil)
+//   - hafta → get_hb_ligi_haftalik_v2(yil, hafta)
 // Dört rol fonksiyonu (getUttLig/getBmLig/getTmLig/getGenelLig) bunu çağırır.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type Periyot = "ay" | "donem" | "yil";
+export type Periyot = "ay" | "donem" | "yil" | "hafta";
 
 export interface LigPeriyot {
   periyot: Periyot;
   yil: number;
   ay: number;     // 1-12  (periyot=ay için)
   ceyrek: number; // 1-4   (periyot=donem için)
+  hafta: number;  // 1-53  (periyot=hafta için)
 }
 
 /**
@@ -40,6 +42,15 @@ export async function ligRpcCagir(
       p_yil: p.yil,
     });
     if (error) throw new Error(`get_hb_ligi_yillik_v2 RPC: ${error.message}`);
+    return data ?? [];
+  }
+
+  if (p.periyot === "hafta") {
+    const { data, error } = await supabase.rpc("get_hb_ligi_haftalik_v2", {
+      p_yil: p.yil,
+      p_hafta: p.hafta,
+    });
+    if (error) throw new Error(`get_hb_ligi_haftalik_v2 RPC: ${error.message}`);
     return data ?? [];
   }
 

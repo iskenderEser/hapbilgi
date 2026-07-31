@@ -12,23 +12,50 @@
 
 import { useMemo } from "react";
 
-export type Periyot = "ay" | "donem" | "yil";
+export type Periyot = "ay" | "donem" | "yil" | "hafta";
 
 interface Props {
   periyot: Periyot;
   yil: number;
   ay: number;       // 1-12
   ceyrek: number;   // 1-4
+  hafta: number;    // 1-53
   onPeriyotChange: (p: Periyot) => void;
   onYilChange: (y: number) => void;
   onAyChange: (a: number) => void;
   onCeyrekChange: (c: number) => void;
+  onHaftaChange: (h: number) => void;
 }
 
 const AY_ADLARI = [
   "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
   "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
 ];
+
+const AY_KISA = [
+  "Oca", "Şub", "Mar", "Nis", "May", "Haz",
+  "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara",
+];
+
+// Yılın haftaları — Pazartesi bazlı, hafta 1 = 1 Ocak'ı içeren haftanın Pazartesi'si
+// (DB: date_trunc('week', make_date(yil,1,1)) ile aynı). Etiket tarih aralıklıdır.
+function yilinHaftalari(yil: number): { no: number; label: string }[] {
+  const ocak1 = new Date(yil, 0, 1);
+  const dow = (ocak1.getDay() + 6) % 7; // Pzt=0 ... Paz=6
+  const h1 = new Date(yil, 0, 1 - dow);  // 1. haftanın Pazartesi'si
+  const yilSonu = new Date(yil, 11, 31);
+  const fmt = (d: Date) => `${d.getDate()} ${AY_KISA[d.getMonth()]}`;
+  const liste: { no: number; label: string }[] = [];
+  for (let n = 1; ; n++) {
+    const bas = new Date(h1);
+    bas.setDate(h1.getDate() + (n - 1) * 7);
+    if (bas > yilSonu) break;
+    const bit = new Date(bas);
+    bit.setDate(bas.getDate() + 6);
+    liste.push({ no: n, label: `${n}. Hafta (${fmt(bas)} – ${fmt(bit)})` });
+  }
+  return liste;
+}
 
 const CEYREK_ADLARI = [
   "Q1 (Oca-Mar)",
@@ -42,10 +69,12 @@ export default function HbLigiPeriyotSecici({
   yil,
   ay,
   ceyrek,
+  hafta,
   onPeriyotChange,
   onYilChange,
   onAyChange,
   onCeyrekChange,
+  onHaftaChange,
 }: Props) {
   // Yıl seçenekleri: 2024'ten içinde bulunduğumuz yıla kadar
   const yilSecenekleri = useMemo(() => {
@@ -57,6 +86,8 @@ export default function HbLigiPeriyotSecici({
     }
     return yillar;
   }, []);
+
+  const haftaSecenekleri = useMemo(() => yilinHaftalari(yil), [yil]);
 
   const selectStili = {
     fontFamily: "'Nunito', sans-serif",
@@ -80,10 +111,27 @@ export default function HbLigiPeriyotSecici({
         className="px-3 py-1.5 text-sm rounded-lg bg-white cursor-pointer"
         style={selectStili}
       >
+        <option value="hafta">Haftalık</option>
         <option value="ay">Aylık</option>
         <option value="donem">Dönemlik</option>
         <option value="yil">Yıllık</option>
       </select>
+
+      {/* Hafta dropdown — sadece periyot=hafta ise */}
+      {periyot === "hafta" && (
+        <select
+          value={hafta}
+          onChange={(e) => onHaftaChange(Number(e.target.value))}
+          className="px-3 py-1.5 text-sm rounded-lg bg-white cursor-pointer"
+          style={selectStili}
+        >
+          {haftaSecenekleri.map((h) => (
+            <option key={h.no} value={h.no}>
+              {h.label}
+            </option>
+          ))}
+        </select>
+      )}
 
       {/* Ay dropdown — sadece periyot=ay ise */}
       {periyot === "ay" && (
