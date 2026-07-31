@@ -3,12 +3,13 @@
 
 import { ROL_ADLARI } from "@/lib/utils/roller";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import VideoOynatici from "@/components/izle/VideoOynatici";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
-import { IcerikTuru, TUR_SIRA, TUR_BASLIK } from "@/lib/video/icerikTuru";
+import { IcerikTuru, TUR_BASLIK } from "@/lib/video/icerikTuru";
+import { anaSayfaRaflari } from "@/lib/video/anaSayfaRaflari";
 
 interface Video {
   yayin_id: string;
@@ -227,6 +228,19 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
     }
   }, [uttVeri, searchParams]);
 
+  // Küratörlü raflar (A1) — tohum yükleme başına bir kez üretilir (render'da
+  // titremez; sayfa yenilenince değişir). Raf hesabı veri değişince yeniden koşar
+  // ama aynı tohumla deterministiktir → beğeni/favori güncellemesi rafı zıplatmaz.
+  const [rafTohum] = useState(() => Date.now());
+  const raflar = useMemo(() => {
+    const tv = [
+      ...(uttVeri?.yeni_videolar ?? []),
+      ...(uttVeri?.devam_edenler ?? []),
+      ...(uttVeri?.tamamlananlar ?? []),
+    ];
+    return anaSayfaRaflari(tv, rafTohum);
+  }, [uttVeri, rafTohum]);
+
   const handleBegeni = async (e: React.MouseEvent, yayin_id: string) => {
     e.stopPropagation();
     try {
@@ -328,11 +342,6 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
     .filter(v => v.begeni_sayisi > 0)
     .sort((a, b) => b.begeni_sayisi - a.begeni_sayisi)
     .slice(0, 5);
-
-  // Müdürlük grupları (TUR_SIRA sırasıyla)
-  const turGruplari = TUR_SIRA
-    .map((tur) => ({ tur, videolar: tumVideolar.filter((v) => v.icerik_turu === tur) }))
-    .filter((g) => g.videolar.length > 0);
 
   return (
     <div className="max-w-6xl mx-auto px-3 py-4 pb-20 md:px-6 md:py-5 md:pb-5 lg:px-8 lg:py-7">
@@ -443,13 +452,31 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
         )}
       </div>
 
-      {/* Müdürlükler (TUR_SIRA sırasıyla) */}
-      {turGruplari.length === 0 ? (
+      {/* Tümü rafı — tamamen random ≤5 (departman raflarının üstünde) */}
+      {raflar.tumuRafi.length > 0 && (
+        <div className="mb-6">
+          <div className="text-sm font-bold text-gray-900 mb-2.5">Tümü</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+            {raflar.tumuRafi.map((video) => (
+              <VideoKart
+                key={video.yayin_id}
+                video={video}
+                onVideoClick={handleVideoClick}
+                onBegeni={handleBegeni}
+                onFavori={handleFavori}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Departman rafları (TUR_SIRA) — her biri tek satır ≤5, 5-üstünlük algoritması */}
+      {raflar.departmanRaflari.length === 0 ? (
         <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">
           Henüz yayınlanmış video bulunmuyor.
         </div>
       ) : (
-        turGruplari.map((g) => (
+        raflar.departmanRaflari.map((g) => (
           <div key={g.tur} className="mb-6">
             <div className="text-sm font-bold text-gray-900 mb-2.5">{TUR_BASLIK[g.tur]}</div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">

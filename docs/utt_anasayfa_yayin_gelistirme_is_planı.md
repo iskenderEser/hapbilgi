@@ -35,8 +35,8 @@ Bu belge, UTT ana sayfası video sergileme düzeninin küratörlü raflara çevr
 ### İş A — Ana sayfa küratörlü raflar (backend gerektirmez)
 
 - **A1 — ✓ yapıldı** — Yeni saf yardımcı `lib/video/anaSayfaRaflari.ts`: girdi utt-görünür video listesi; çıktı `{ tumuRafi: Video[] (random ≤5), departmanRaflari: {tur, videolar: Video[]}[] (her tur 5-üstünlük) }`. Algoritma **tek yerde**, saf ve test edilebilir; random tohumu parametreyle (yükleme başına sabit). Tek-kaynak ilkesi.
-- **A2** — `components/ana-sayfa/UttAnaSayfa.tsx`: mevcut departman sarma-ızgarası (446-468) yerine (i) **"Tümü" rafı**, (ii) **departman rafları**; her raf **tek satır** (≤5, sarma yok, responsive: mobilde daha az sütun). Raf hesabı A1'den `useMemo` ile veri yüklendiğinde bir kez. Stat kartlar + global bloklar + Ekstra aynen kalır.
-- **A3** — Backend'e dokunulmaz (metrikler mevcut payload'da).
+- **A2 — ✓ yapıldı** — `components/ana-sayfa/UttAnaSayfa.tsx`: mevcut departman sarma-ızgarası (446-468) yerine (i) **"Tümü" rafı**, (ii) **departman rafları**; her raf **tek satır** (≤5, sarma yok, responsive: mobilde daha az sütun). Raf hesabı A1'den `useMemo` ile veri yüklendiğinde bir kez. Stat kartlar + global bloklar + Ekstra aynen kalır.
+- **A3 — ✓ yapıldı (no-op)** — Backend'e dokunulmaz (metrikler mevcut payload'da).
 
 ### İş B — UTT "Yayındaki Videolar" sekmesi (rol-duyarlı)
 
