@@ -63,7 +63,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
       .order("yayin_tarihi", { ascending: false }),
     adminSupabase
       .from("izleme_kayitlari")
-      .select("yayin_id, tamamlandi_mi, izleme_baslangic")
+      .select("yayin_id, tamamlandi_mi, izleme_baslangic, izleme_bitis")
       .eq("kullanici_id", userId),
     adminSupabase.rpc("get_kullanici_ozet", {
       p_kullanici_id: userId,
@@ -91,10 +91,15 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
   const omurBoyuTamamlananMap: Record<string, boolean> = {}; // daha_once_izledi rozeti (kalıcı — U8 kararı)
   const omurBoyuIzlemeSayiMap: Record<string, number> = {};  // Ekstra İzlediklerim: ömür boyu tamamlanmış sayısı (≥2 süzgeci)
   const buTurdaIzlemeSayiMap: Record<string, number> = {};   // Ekstra İzlediklerim: "bu turda N izleme"
+  const sonIzlemeMap: Record<string, string> = {};           // En Son İzlediklerim: yayın başına en geç tamamlanma anı
   for (const iz of izlemeler ?? []) {
     if (iz.tamamlandi_mi) {
       omurBoyuTamamlananMap[iz.yayin_id] = true;
       omurBoyuIzlemeSayiMap[iz.yayin_id] = (omurBoyuIzlemeSayiMap[iz.yayin_id] ?? 0) + 1;
+      const bitis = iz.izleme_bitis ?? iz.izleme_baslangic;
+      if (bitis && (!sonIzlemeMap[iz.yayin_id] || new Date(bitis) > new Date(sonIzlemeMap[iz.yayin_id]))) {
+        sonIzlemeMap[iz.yayin_id] = bitis;
+      }
     }
 
     // Tur eşiği: tur kaydı olmayan yayında epoch (eski davranış — her kayıt sayılır).
@@ -190,6 +195,13 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
   const devam_edenler = (yayinlar ?? []).filter((y: any) => devamEdenMap[y.yayin_id] && !tamamlananMap[y.yayin_id]).map(videoToItem);
   const tamamlananlar = (yayinlar ?? []).filter((y: any) => tamamlananMap[y.yayin_id]).map(videoToItem);
 
+  // En Son İzlediklerim: tamamlanan izlemeler, en geç tamamlanma anına göre (desc), ilk 5.
+  const son_izlediklerim = (yayinlar ?? [])
+    .filter((y: any) => sonIzlemeMap[y.yayin_id])
+    .sort((a: any, b: any) => new Date(sonIzlemeMap[b.yayin_id]).getTime() - new Date(sonIzlemeMap[a.yayin_id]).getTime())
+    .slice(0, 5)
+    .map(videoToItem);
+
   // ── Ekstra İzlediklerim (K-A5) ─────────────────────────────────────────────
   // Süzgeç: ömür boyu ≥2 tamamlanmış izleme (yayinlar zaten durum='yayinda' — K-A3
   // kendiliğinden sağlanır). Tam tekrar sayısı TEK KAYNAK'tan (tamTekrarSayilari,
@@ -226,6 +238,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
     yeni_videolar,
     devam_edenler,
     tamamlananlar,
+    son_izlediklerim,
     ekstra_izlediklerim,
     istatistikler: {
       yeni: yeni_videolar.length,

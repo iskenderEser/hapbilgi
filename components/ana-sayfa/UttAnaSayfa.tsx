@@ -43,6 +43,7 @@ interface UttVeri {
   yeni_videolar: Video[];
   devam_edenler: Video[];
   tamamlananlar: Video[];
+  son_izlediklerim?: Video[];
   ekstra_izlediklerim?: EkstraVideo[];
   istatistikler: {
     yeni: number;
@@ -378,80 +379,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
         ))}
       </div>
 
-      {/* Sıralı içerik: En Çok İzlenen -> En Çok Beğenilen -> Müdürlükler */}
-      
-      {/* En Çok İzlenen */}
-      {enCokIzlenen.length > 0 && (
-        <div className="mb-6">
-          <div className="text-sm font-bold text-gray-900 mb-2.5">🔥 En Çok İzlenen</div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-            {enCokIzlenen.map((video) => (
-              <VideoKart
-                key={video.yayin_id}
-                video={video}
-                onVideoClick={handleVideoClick}
-                onBegeni={handleBegeni}
-                onFavori={handleFavori}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* En Çok Beğenilen */}
-      {enCokBegenilen.length > 0 && (
-        <div className="mb-6">
-          <div className="text-sm font-bold text-gray-900 mb-2.5">❤️ En Çok Beğenilen</div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-            {enCokBegenilen.map((video) => (
-              <VideoKart
-                key={video.yayin_id}
-                video={video}
-                onVideoClick={handleVideoClick}
-                onBegeni={handleBegeni}
-                onFavori={handleFavori}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Ekstra İzlediklerim — tekrar izlemelerle extra puan takibi (K-A5; K-A2 boş durum: teşvik) */}
-      <div className="mb-6">
-        <div className="text-sm font-bold text-gray-900 mb-1">⭐ Ekstra İzlediklerim</div>
-        <p className="text-xs text-gray-500 mb-2.5">
-          Bir videoyu ileri sarmadan baştan sona yeniden izlemek &quot;tam tekrar&quot;dır — tam tekrarlarla her ay extra puan kazanabilirsin.
-        </p>
-        {(uttVeri?.ekstra_izlediklerim ?? []).length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded-xl p-6 text-center text-xs text-gray-400">
-            En az iki kez izlediğin videolar burada listelenir — videoları tekrar izleyerek extra puan kazanabilirsin.
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-            {(uttVeri?.ekstra_izlediklerim ?? []).map((video) => (
-              <div key={video.yayin_id} className="flex flex-col gap-1">
-                <VideoKart
-                  video={video}
-                  onVideoClick={handleVideoClick}
-                  onBegeni={handleBegeni}
-                  onFavori={handleFavori}
-                />
-                <span
-                  className="text-[10px] px-2 py-1 rounded-lg text-center"
-                  style={video.bu_ay_extra_kazanildi
-                    ? { background: "#f0fdf4", color: "#15803d", border: "0.5px solid #bbf7d0" }
-                    : { background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe" }}
-                >
-                  Bu turda: {video.bu_turda_izleme} izleme ·{" "}
-                  {video.bu_ay_extra_kazanildi
-                    ? "Bu ay extra kazanıldı ✓"
-                    : `Extra'ya ${video.extra_kalan} tam tekrar kaldı`}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Sıralı içerik: Tümü -> En Son İzlediklerim -> Ekstra -> En Çok İzlenenler -> En Çok Beğenilenler -> Departmanlar */}
 
       {/* Tümü rafı — TÜM videolar, random sırayla, yatay kayan raf (limitsiz) */}
       {raflar.tumuRafi.length > 0 && (
@@ -503,6 +431,97 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* En Son İzlediklerim — son tamamlanan 5 izleme (izleme_bitis desc); boşsa gizli */}
+      {(uttVeri?.son_izlediklerim ?? []).length > 0 && (
+        <div className="mb-6">
+          <div className="text-sm font-bold text-gray-900 mb-2.5">🕒 En Son İzlediklerim</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+            {(uttVeri?.son_izlediklerim ?? []).map((video) => (
+              <VideoKart
+                key={video.yayin_id}
+                video={video}
+                onVideoClick={handleVideoClick}
+                onBegeni={handleBegeni}
+                onFavori={handleFavori}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Ekstra İzlediklerim — tekrar izlemelerle extra puan takibi (K-A5; K-A2 boş durum: teşvik) */}
+      <div className="mb-6">
+        <div className="text-sm font-bold text-gray-900 mb-1">⭐ Ekstra İzlediklerim</div>
+        <p className="text-xs text-gray-500 mb-2.5">
+          Bir videoyu ileri sarmadan baştan sona yeniden izlemek &quot;tam tekrar&quot;dır — tam tekrarlarla her ay extra puan kazanabilirsin.
+        </p>
+        {(uttVeri?.ekstra_izlediklerim ?? []).length === 0 ? (
+          <div className="bg-white border border-gray-200 rounded-xl p-6 text-center text-xs text-gray-400">
+            En az iki kez izlediğin videolar burada listelenir — videoları tekrar izleyerek extra puan kazanabilirsin.
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+            {(uttVeri?.ekstra_izlediklerim ?? []).map((video) => (
+              <div key={video.yayin_id} className="flex flex-col gap-1">
+                <VideoKart
+                  video={video}
+                  onVideoClick={handleVideoClick}
+                  onBegeni={handleBegeni}
+                  onFavori={handleFavori}
+                />
+                <span
+                  className="text-[10px] px-2 py-1 rounded-lg text-center"
+                  style={video.bu_ay_extra_kazanildi
+                    ? { background: "#f0fdf4", color: "#15803d", border: "0.5px solid #bbf7d0" }
+                    : { background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe" }}
+                >
+                  Bu turda: {video.bu_turda_izleme} izleme ·{" "}
+                  {video.bu_ay_extra_kazanildi
+                    ? "Bu ay extra kazanıldı ✓"
+                    : `Extra'ya ${video.extra_kalan} tam tekrar kaldı`}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* En Çok İzlenenler */}
+      {enCokIzlenen.length > 0 && (
+        <div className="mb-6">
+          <div className="text-sm font-bold text-gray-900 mb-2.5">🔥 En Çok İzlenenler</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+            {enCokIzlenen.map((video) => (
+              <VideoKart
+                key={video.yayin_id}
+                video={video}
+                onVideoClick={handleVideoClick}
+                onBegeni={handleBegeni}
+                onFavori={handleFavori}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* En Çok Beğenilenler */}
+      {enCokBegenilen.length > 0 && (
+        <div className="mb-6">
+          <div className="text-sm font-bold text-gray-900 mb-2.5">❤️ En Çok Beğenilenler</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+            {enCokBegenilen.map((video) => (
+              <VideoKart
+                key={video.yayin_id}
+                video={video}
+                onVideoClick={handleVideoClick}
+                onBegeni={handleBegeni}
+                onFavori={handleFavori}
+              />
+            ))}
           </div>
         </div>
       )}
