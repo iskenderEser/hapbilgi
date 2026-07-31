@@ -452,19 +452,20 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
         )}
       </div>
 
-      {/* Tümü rafı — tamamen random ≤5 (departman raflarının üstünde) */}
+      {/* Tümü rafı — TÜM videolar, random sırayla, yatay kayan raf (limitsiz) */}
       {raflar.tumuRafi.length > 0 && (
         <div className="mb-6">
           <div className="text-sm font-bold text-gray-900 mb-2.5">Tümü</div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
             {raflar.tumuRafi.map((video) => (
-              <VideoKart
-                key={video.yayin_id}
-                video={video}
-                onVideoClick={handleVideoClick}
-                onBegeni={handleBegeni}
-                onFavori={handleFavori}
-              />
+              <div key={video.yayin_id} className="flex-shrink-0 w-40 sm:w-44 md:w-52 snap-start">
+                <VideoKart
+                  video={video}
+                  onVideoClick={handleVideoClick}
+                  onBegeni={handleBegeni}
+                  onFavori={handleFavori}
+                />
+              </div>
             ))}
           </div>
         </div>

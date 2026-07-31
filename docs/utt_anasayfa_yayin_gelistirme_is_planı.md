@@ -23,7 +23,7 @@ Bu belge, UTT ana sayfası video sergileme düzeninin küratörlü raflara çevr
 - **T4** — Slot dolum kuralı: metriğin **gerçek kazananı** varsa **deterministik** (harf sırası eşitlik bozucu); metrik tanımsız (hepsi 0) ya da kazananı üst slotça alınmışsa **random rotasyon** (her yüklemede değişir); video tekil; tavan 5; az video → az kutu; **yalnız "en yeni" çoklu slot doldurabilir**.
 - **T5** — Global "En Çok İzlenen / En Çok Beğenilen" blokları **kalacak**.
 - **T6** — Metrikler **platform-geneli** kalacak; **tamamlanan** videolar da rafa girebilir.
-- **T7** — Departman raflarının **en üstünde** (Ekstra İzlediklerim'den sonra, ilk departmandan önce) **"Tümü" rafı** — tamamen random ≤5, her yüklemede değişir.
+- **T7** — Departman raflarının **en üstünde** (Ekstra İzlediklerim'den sonra, ilk departmandan önce) **"Tümü" rafı** — **TÜM videolar**, random sırayla, **yatay kayan raf (limitsiz)**, her yüklemede sıra değişir. (Düzeltme: önceki "≤5" hatalıydı — "Tümü" adı ve kayan raf tanımıyla çelişiyordu.)
 - **Ortaklaşılan** — Random, **yükleme başına bir kez** hesaplanır (oturum içi sabit, yenilemede değişir) → sayfa render'larında titremez.
 
 ---

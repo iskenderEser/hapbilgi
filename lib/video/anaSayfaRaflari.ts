@@ -8,7 +8,7 @@
 // o slot RANDOM ile dolar (rotasyon). Video tekil; tavan 5; az video → az kutu.
 // Sıfır-katılım kategoride satır = en yeni (sabit) + 3 random + en yüksek puanlı (sabit).
 //
-// Tümü rafı: tüm videolardan tamamen random ≤5.
+// Tümü rafı: TÜM videolar random sırayla (limit yok — yatay kayan raf).
 //
 // Random deterministiktir: aynı TOHUM → aynı diziliş. Tohum yükleme başına bir kez
 // üretilir (oturum içi sabit, sayfa yenilenince değişir) → render'da titremez.
@@ -105,17 +105,15 @@ function departmanRafi<T extends RafVideo>(videolar: T[], rnd: () => number): T[
   return slotlar.filter((v): v is T => v !== null);
 }
 
-// Tüm videolardan tamamen random ≤5 raf.
+// Tümü rafı: TÜM videolar, random sırayla (LİMİT YOK — kayan/yatay raf).
+// Fisher-Yates karıştırma (tohumlu → yükleme başına kararlı, yenilemede değişir).
 function tumuRafiKur<T extends RafVideo>(videolar: T[], rnd: () => number): T[] {
-  const kullanildi = new Set<string>();
-  const sonuc: T[] = [];
-  while (sonuc.length < RAF_LIMIT && kullanildi.size < videolar.length) {
-    const kalan = videolar.filter((v) => !kullanildi.has(v.yayin_id));
-    const secili = kalan[Math.floor(rnd() * kalan.length)];
-    kullanildi.add(secili.yayin_id);
-    sonuc.push(secili);
+  const arr = [...videolar];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-  return sonuc;
+  return arr;
 }
 
 export function anaSayfaRaflari<T extends RafVideo>(
