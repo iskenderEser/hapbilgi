@@ -48,7 +48,7 @@
  * ve DONAR — kullanıcının rolü sonradan değişse bile içeriğin türü
  * değişmez (tarihsel kayıt korunur).
  */
-export type IcerikTuru = "ik" | "medikal" | "egitim" | "urun";
+export type IcerikTuru = "ik" | "medikal" | "egitim" | "urun" | "urun_medikal";
 
 /**
  * Talep türü — bir talebin sınıfı.
@@ -74,6 +74,10 @@ export interface TalepTuruKurali {
   urun: "zorunlu" | "tercihli" | "yok";
   teknik: "zorunlu" | "tercihli" | "yok";
   ad: string; // UI'da kullanılan Türkçe ad
+  // Bu talep türünden üretilen içeriğin kategorik türü. talepler.icerik_turu
+  // buradan yazılır (rolün tek icerikTuru'sundan DEĞİL) — bir rol birden çok
+  // talep türü açabildiği için içerik türü talebe göre belirlenir.
+  icerikTuru: IcerikTuru;
 }
 
 /**
@@ -85,26 +89,31 @@ export const TALEP_TURU_KURALLARI: Record<TalepTuru, TalepTuruKurali> = {
     urun: "zorunlu",
     teknik: "tercihli", // İskender 24.07: pm teknik seçimi artık isteğe bağlı
     ad: "Ürün Eğitimi",
+    icerikTuru: "urun",
   },
   satis_teknikleri: {
     urun: "tercihli",
     teknik: "zorunlu",
     ad: "Satış Teknikleri",
+    icerikTuru: "egitim",
   },
   medikal_egitim: {
     urun: "yok",
     teknik: "yok",
     ad: "Medikal Eğitim",
+    icerikTuru: "medikal",
   },
   urun_medikal_egitim: {
     urun: "zorunlu",
     teknik: "yok",
     ad: "Ürün-Medikal Eğitim",
+    icerikTuru: "urun_medikal",
   },
   ik_egitimi: {
     urun: "yok",
     teknik: "yok",
     ad: "İK Eğitimi/Bilgilendirme",
+    icerikTuru: "ik",
   },
 };
 

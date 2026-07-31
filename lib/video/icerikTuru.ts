@@ -14,14 +14,15 @@ export type { IcerikTuru };
 
 // Ana sayfa bölüm başlıkları.
 export const TUR_BASLIK: Record<IcerikTuru, string> = {
-  ik: "İK Eğitimleri",
+  urun: "Ürün Eğitimleri",
+  urun_medikal: "Ürün Medikal Eğitimleri",
   medikal: "Medikal Eğitimler",
   egitim: "Eğitim Müdürlüğü Eğitimleri",
-  urun: "Ürün Eğitimleri",
+  ik: "İK Eğitimleri",
 };
 
 // Ana sayfada bölümlerin gösterim sırası (ve geçerli tür listesi).
-export const TUR_SIRA: IcerikTuru[] = ["ik", "medikal", "egitim", "urun"];
+export const TUR_SIRA: IcerikTuru[] = ["urun", "urun_medikal", "medikal", "egitim", "ik"];
 
 /** DB'den okunan icerik_turu değerinin geçerli bir tür olup olmadığını doğrular. */
 export function isIcerikTuru(x: unknown): x is IcerikTuru {

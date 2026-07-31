@@ -139,10 +139,6 @@ export async function POST(request: NextRequest) {
     const yetenek = ureticiYetenegi(rol);
     if (!yetenek) return rolHatasi("Sadece üretici roller talep oluşturabilir.");
 
-    // İçerik türü, üreticinin yetenek profilinden gelir ve talebe yazılıp DONAR
-    // (rol sonradan değişse bile içeriğin türü değişmez).
-    const icerikTuru = yetenek.icerikTuru;
-
     const { data: kullaniciKaydi, error: kullaniciError } = await adminSupabase
       .from("kullanicilar")
       .select("takim_id, firma_id")
@@ -197,6 +193,12 @@ export async function POST(request: NextRequest) {
         ["egitim_turu"],
       );
     }
+
+    // İçerik türü TALEP TÜRÜNDEN gelir (rolün tek icerikTuru'sundan değil) ve
+    // talebe yazılıp DONAR — rol sonradan değişse bile içeriğin türü değişmez.
+    // Bir rol birden çok talep türü açabildiğinden (ör. med_md: medikal_egitim
+    // ile urun_medikal_egitim) içerik türü talebe göre ayrışır.
+    const icerikTuru = TALEP_TURU_KURALLARI[egitimTuru].icerikTuru;
 
     // Ürün ve teknik zorunluluğu — TALEP_TURU_KURALLARI'ndan okunur.
     const turKurali = TALEP_TURU_KURALLARI[egitimTuru];
