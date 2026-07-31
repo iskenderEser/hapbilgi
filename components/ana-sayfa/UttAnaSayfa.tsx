@@ -3,7 +3,7 @@
 
 import { ROL_ADLARI } from "@/lib/utils/roller";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import VideoOynatici from "@/components/izle/VideoOynatici";
@@ -189,6 +189,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
   const [loading, setLoading] = useState(true);
   const [aktifVideo, setAktifVideo] = useState<Video | null>(null);
   const [aktifOneriId, setAktifOneriId] = useState<string | null>(null);
+  const tumuRef = useRef<HTMLDivElement>(null);
   const { mesajlar, hata, basari, uyari } = useHataMesaji();
 
   const veriCek = async (sessiz = false) => {
@@ -455,26 +456,53 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
       {/* Tümü rafı — TÜM videolar, random sırayla, yatay kayan raf (limitsiz) */}
       {raflar.tumuRafi.length > 0 && (
         <div className="mb-6">
-          <div className="group flex items-center gap-1 mb-2.5 w-fit cursor-pointer">
+          <div className="flex items-center gap-1 mb-2.5">
             <span className="text-sm font-bold text-gray-900">Tümü</span>
-            <svg
-              className="w-4 h-4 text-gray-400 transition-all duration-200 group-hover:text-gray-800 group-hover:translate-x-0.5"
-              fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"
-            >
+            <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
-            {raflar.tumuRafi.map((video) => (
-              <div key={video.yayin_id} className="flex-shrink-0 w-40 sm:w-44 md:w-52 snap-start">
-                <VideoKart
-                  video={video}
-                  onVideoClick={handleVideoClick}
-                  onBegeni={handleBegeni}
-                  onFavori={handleFavori}
-                />
-              </div>
-            ))}
+          <div className="relative group">
+            {/* Sol kaydırma tutamacı — Netflix tarzı, hover'da belirir */}
+            <button
+              type="button"
+              aria-label="Sola kaydır"
+              onClick={() =>
+                tumuRef.current?.scrollBy({ left: -tumuRef.current.clientWidth * 0.85, behavior: "smooth" })
+              }
+              className="absolute left-0 inset-y-0 z-10 w-16 flex items-center justify-start bg-gradient-to-r from-gray-50 via-gray-50/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            >
+              <svg className="w-7 h-7 text-gray-800 drop-shadow-sm" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            <div ref={tumuRef} className="flex gap-2 overflow-x-auto -mx-1 px-1 snap-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {raflar.tumuRafi.map((video) => (
+                <div key={video.yayin_id} className="flex-shrink-0 w-40 sm:w-44 md:w-52 snap-start">
+                  <VideoKart
+                    video={video}
+                    onVideoClick={handleVideoClick}
+                    onBegeni={handleBegeni}
+                    onFavori={handleFavori}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Sağ kaydırma tutamacı */}
+            <button
+              type="button"
+              aria-label="Sağa kaydır"
+              onClick={() =>
+                tumuRef.current?.scrollBy({ left: tumuRef.current.clientWidth * 0.85, behavior: "smooth" })
+              }
+              className="absolute right-0 inset-y-0 z-10 w-16 flex items-center justify-end bg-gradient-to-l from-gray-50 via-gray-50/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            >
+              <svg className="w-7 h-7 text-gray-800 drop-shadow-sm" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
           </div>
         </div>
       )}
