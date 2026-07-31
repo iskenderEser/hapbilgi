@@ -1,7 +1,9 @@
 # Açık İşler — güncel liste
 
 *29.07.2026 (30.07 güncelleme: B-09 — eski md.3 — kapandı, REDBOOK §7'ye taşındı ve
-listeden çıkarıldı; maddeler yeniden numaralandı). Kaynak: redbook §6.4 + bu tarihte
+listeden çıkarıldı; maddeler yeniden numaralandı. 31.07 güncelleme: E9 — HB Ligi
+ölçeklenmesi (eski md.9) — kapandı, REDBOOK Bölüm 7'ye taşındı ve listeden çıkarıldı;
+kalan maddeler yeniden numaralandı). Kaynak: redbook §6.4 + bu tarihte
 yapılan kod kontrolleri. Bu belge yalnız **yapılacak** işleri taşır; kapanmış işler
 redbook Bölüm 7'de, sistemin bugünkü çalışma biçimi redbook Bölüm 1–6'dadır.*
 
@@ -68,33 +70,16 @@ kurulmadı. E-Club Ligi'ndeki cascade'den ayrı bir iştir.
 
 ---
 
-## E. Ölçek
-
-**9 · HB Ligi ölçeklenmesi. — ✅ ÇÖZÜLDÜ (E9, 31.07.2026).**
-
-Canlı-SUM (`v_hbligi_sirali` her sorguda sıfırdan toplama) yerine kişi × gün
-**özet tablosu** (`hb_ligi_ozet_v2`) + 4 besleyen tabloya `AFTER INSERT` trigger +
-okuma anında `row_number` sıralaması kuruldu; geçiş canlı-SUM ile birebir
-doğrulandı (fark 0). Ayrıca haftalık periyot eklendi, lig arayüzü leaderboard'a
-dönüştü (kayıplar görünür), ve öneri kaybı yazımı (`oneri_kaybi_tara`) kurularak
-eksik ceza mekanizması tamamlandı. Aynı ölçek + haftalık deseni **CC Ligi'ne** de
-uygulandı (`cc_ligi_ozet`). Mimari REDBOOK §2.5'te güncellendi.
-
-*(Bu madde kapandı; numaralandırma cascade'i md.19'un göndermelerini bozmamak için
-korundu — tam yeniden numaralandırma ayrı bir temizlik işi.)*
-
----
-
 ## F. Ertelenen işler (bilinçli)
 
-**10 · `tekrar_id` FK kolonu.**
+**9 · `tekrar_id` FK kolonu.**
 Tüm tekillik sorguları tarih karşılaştırmasıyla çözüldüğünden ertelendi;
 raporlama JOIN ihtiyacı doğarsa kolon eklenip geriye doğru doldurulur.
 
-**11 · E-Club kişi tarafı sayacı ve UTT "gönderime hazır" durumları.**
+**10 · E-Club kişi tarafı sayacı ve UTT "gönderime hazır" durumları.**
 Sayaç UTT gönderim ekranına aittir; o ekran Eczanem geliştirmesiyle şekillenecek.
 
-**12 · Ekstra İzlediklerim'in CC/BM karşılığı.**
+**11 · Ekstra İzlediklerim'in CC/BM karşılığı.**
 BM'in "İzlenecek Videolar" düzleminde aynı bölümün eşik-2 karşılığı; ihtiyaç
 doğarsa aynı desen birebir uygulanır.
 
@@ -102,29 +87,29 @@ doğarsa aynı desen birebir uygulanır.
 
 ## G. Doğrulama — insan yürütümlü
 
-**13 · U10 — Tekrar Gönderim uçtan uca fiziksel test (push öncesi şart).**
+**12 · U10 — Tekrar Gönderim uçtan uca fiziksel test (push öncesi şart).**
 12 senaryo: yayına alma/tur-1, ilk izleme, yeni extra kuralı (UTT ve CC), tur
 dönüşü, sayaç rozetleri, BM/CC akışı, öneri, E-Club, durdur/başlat tur
 bağımsızlığı, challenge etkilenmezliği, Sistem Ayarları paneli, puansız zaman
 penceresi.
 
-**14 · U7 — Ekstra İzlediklerim fiziksel testi (push öncesi şart).**
+**13 · U7 — Ekstra İzlediklerim fiziksel testi (push öncesi şart).**
 9 senaryo: liste/sıralama doğruluğu, tur dönüşünde sayaç sıfırlanması,
 "extra'ya X kaldı" ile karar birebirliği, ay dönümünde hak yenilenmesi, ileri
 sarmalı ve puansız-pencere izlemelerinin sayaca girmemesi, durdurulan yayının
-bölümden düşmesi, boş durum, beğeni/favori senkronu. 16 ile birleşik koşulabilir.
+bölümden düşmesi, boş durum, beğeni/favori senkronu. 15 ile birleşik koşulabilir.
 
-**15 · Eczanem U10/U11 — faz sonu ara testler + uçtan uca test.**
+**14 · Eczanem U10/U11 — faz sonu ara testler + uçtan uca test.**
 Davet→OTP→üyelik, eşik, gönderim teklikleri, izleme→kazanım, dörtlü kilit
 sızmazlığı, FIFO/180 gün senaryosu, sipariş→onay→fiş→mükerrer onay reddi, KVKK
 silme sonrası toplamların korunumu, görünürlük sınırları, İP-§11 risk tablosunun
 satır satır sağlaması.
 
-**16 · Final test.**
+**15 · Final test.**
 Deploy öncesi uçtan uca doğrulama: üç müşteri katmanının kritik akışları
 (üretim → tüketim → puan → lig → store) manuel/otomatik test edilir.
 
-**17 · Vercel push/deploy.**
+**16 · Vercel push/deploy.**
 Yukarıdaki doğrulama bloğu + A grubu + C grubu kapanmadan `origin`'e push
 yapılmaz. Push, biriken commit serisinin tek hazır durum olarak yayınlanmasıdır.
 Eczanem için ayrıca üretim env'inde SMS sağlayıcı anahtarları tanımlanmalıdır.
@@ -133,7 +118,7 @@ Eczanem için ayrıca üretim env'inde SMS sağlayıcı anahtarları tanımlanma
 
 ## H. 29.07.2026'da eklenen maddeler
 
-**18 · Admin M4 — modül sekmelerinin içi doldurulacak.**
+**17 · Admin M4 — modül sekmelerinin içi doldurulacak.**
 Bugün admin dört modülü açıp kapatabiliyor, içeriğini göremiyor (REDBOOK §6.1).
 M4 her sekmeye iki katman ekler.
 
@@ -167,17 +152,17 @@ değişikliği gerektirir, ayrı planlanır.
 *Sıra önerisi:* T-Club → Eczanem → C-Club. Her sekme ayrı iş adımı, kendi
 testiyle kapanır.
 
-**19 · Admin M5.** Kalan bulgular tek tek maddelere çıkarıldı: B-27 → md.21, B-29 → md.22,
-B-38 → md.23, B-34 → md.24, B-35 → md.25, B-37 → md.26.
+**18 · Admin M5.** Kalan bulgular tek tek maddelere çıkarıldı: B-27 → md.20, B-29 → md.21,
+B-38 → md.22, B-34 → md.23, B-35 → md.24, B-37 → md.25.
 B-28 silinecek (İskender kararı, 29.07); B-30 iş değil, olması gereken —
 REDBOOK Bölüm 7'ye kural olarak yazıldı.
 
-**20 · Kalite raporu §9 — B-39 teyidi.**
+**19 · Kalite raporu §9 — B-39 teyidi.**
 Ara evrede `iu_id`'ye üreticinin yazılması tespiti. 22.07 refactoring'inde
 kabuklar `iu_id = null` doğar hâle geldi; maddenin fiilen kapanıp kapanmadığı
 teyit edilmedi.
 
-**21 · B-27 — E-Club Store sipariş durumu serbest atlıyor.**
+**20 · B-27 — E-Club Store sipariş durumu serbest atlıyor.**
 E-Club Store'da bir siparişin durumu yönetim ekranından sıra kuralı olmadan
 değiştirilebiliyor; dört durum arasında her yönde geçiş serbest.
 
@@ -191,7 +176,7 @@ beklemede → kargoda geçişine izin var.
 tek yerde yazılır, geri dönüşler kapatılır.
 Kanıt: `app/eclub/store/api/siparis/route.ts` (durum aksiyonu, geçiş matrisi yok).
 
-**22 · B-29 — ürün/teknik silmede engelin sebebi söylenmiyor.**
+**21 · B-29 — ürün/teknik silmede engelin sebebi söylenmiyor.**
 Admin bir ürünü ya da tekniği silmeye kalkınca sistem "bu kullanımda mı" diye
 bakmıyor. Silme isteği doğrudan veritabanına gidiyor; kayıt kullanımdaysa FK
 kısıtı silmeyi düşürüyor ve ekrana "Ürün silinemedi." + ham veritabanı hata
@@ -210,7 +195,7 @@ Kusur tamamen anlatım katmanında.
 Kanıt: `app/admin/api/firmalar/[firma_id]/urunler/route.ts` ve
 `.../teknikler/route.ts` DELETE blokları — bağlılık kontrolü yok.
 
-**23 · B-38 — store ürününde kategori kontrolü yarım.**
+**22 · B-38 — store ürününde kategori kontrolü yarım.**
 Yeni ürün eklenirken kategorinin gerçekten var olduğu doğrulanıyor; aynı ürün
 sonradan düzenlenirken doğrulanmıyor. Geçersiz kategori yazılırsa yine ham
 veritabanı hatası çıkıyor.
@@ -218,7 +203,7 @@ veritabanı hatası çıkıyor.
 *Düzeltme:* POST'taki kategori varlık kontrolü PATCH'e de konur.
 Kanıt: `app/admin/store/api/urun/route.ts` — POST kontrol ediyor, PATCH etmiyor.
 
-**24 · B-34 — silme fonksiyonları push kayıtlarını bırakıyor.**
+**23 · B-34 — silme fonksiyonları push kayıtlarını bırakıyor.**
 Ne toplu test silme ne de tekil talep silme `push_gonderim_kayitlari` tablosuna
 dokunuyor. Bir talebi ya da tüm test verisini silsen bile "kime hangi push
 gitti" kayıtları duruyor.
@@ -243,7 +228,7 @@ dokunulmaz, (b) tabloya `yayin_id` eklenir (şema değişikliği).
 öncesi tümüyle kaldırılacak (md.1) — o zaman toplu taraf kendiliğinden düşer,
 tekil taraf kalır.
 
-**25 · Admin takım ekleme düzeltmesi (N+1 hatası) — B-35.**
+**24 · Admin takım ekleme düzeltmesi (N+1 hatası) — B-35.**
 Admin panelinde Organizasyon sekmesi açıldığında sistem önce takımları çekiyor,
 sonra **her takım için ayrı ayrı** bölge isteği atıyor. 5 takım varsa 6 istek,
 20 takım varsa 21 istek.
@@ -255,7 +240,7 @@ Kanıt: `app/admin/_hooks/useAdminPanel.ts` — takım döngüsü içinde bölge
 başına takım sayısı büyüdükçe sekme açılışı yavaşlar. Aynı sınıf hata daha ağır
 bir yerde kapatılmıştı: üretici ana sayfasında 43 sorgu → 2 (27.07).
 
-**26 · E-Club Store admin iptalinde alan anlamları kayıyor — B-37.**
+**25 · E-Club Store admin iptalinde alan anlamları kayıyor — B-37.**
 Dört ayrı sorun var:
 
 1. **Alana auth kimliği yazılıyor.** İptal çağrısındaki `iptal_eden_kisi_id`
