@@ -385,6 +385,21 @@ function UttTablosu({ satirlar, userId, siraRenk, siraYazi, gostTakim = true, go
   const top3 = sirali.slice(0, 3);
   const podyum = [top3[1], top3[0], top3[2]].filter(Boolean) as typeof top3;
 
+  const puanGirildi = sirali.some(
+    (r) => r.izleme_puani + r.cevaplama_puani + r.oneri_puani + r.extra_puani > 0,
+  );
+  if (!puanGirildi) {
+    return (
+      <div className="py-14 px-4 text-center bg-white rounded-xl" style={{ border: "0.5px solid #e5e7eb", fontFamily: "'Nunito', sans-serif" }}>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth={1.5} className="mx-auto mb-3" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8 21h8m-4-3v3M6 4h12v5a6 6 0 01-12 0V4zM6 8a3 3 0 01-3-3V4h3m12 4a3 3 0 003-3V4h-3" />
+        </svg>
+        <div className="text-base font-bold text-gray-700">Henüz puan yok</div>
+        <div className="text-sm text-gray-400 mt-1">İzleme ve cevaplama yapıldıkça sıralama oluşur.</div>
+      </div>
+    );
+  }
+
   const cevir = (id: string) =>
     setAcik((onceki) => {
       const yeni = new Set(onceki);
