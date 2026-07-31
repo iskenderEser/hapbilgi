@@ -412,9 +412,9 @@ function UttTablosu({ satirlar, userId, siraRenk, siraYazi, gostTakim = true, go
                 { label: "Cevap", val: l.cevaplama_puani, kayip: false },
                 { label: "Öneri", val: l.oneri_puani, kayip: false },
                 { label: "Extra", val: l.extra_puani, kayip: false },
-                { label: "İl.Sarma", val: l.ileri_sarma_kaybi, kayip: true },
-                { label: "Yan.Cevap", val: l.yanlis_cevap_kaybi, kayip: true },
-                { label: "Ön.Kaybı", val: l.oneri_kaybi, kayip: true },
+                { label: "İleri Sarma Kaybı", val: l.ileri_sarma_kaybi, kayip: true },
+                { label: "Yanlış Cevap Kaybı", val: l.yanlis_cevap_kaybi, kayip: true },
+                { label: "Öneri Kaybı", val: l.oneri_kaybi, kayip: true },
               ].map(({ label, val, kayip }) => (
                 <div key={label} className="flex flex-col">
                   <span className="text-xs" style={{ color: kayip ? "#dc2626" : "#9ca3af" }}>{label}</span>
@@ -442,9 +442,9 @@ function UttTablosu({ satirlar, userId, siraRenk, siraYazi, gostTakim = true, go
               <th className="text-center px-2 py-2.5 text-gray-400 font-medium">Cevap</th>
               <th className="text-center px-2 py-2.5 text-gray-400 font-medium">Öneri</th>
               <th className="text-center px-2 py-2.5 text-gray-400 font-medium">Extra</th>
-              <th className="text-center px-2 py-2.5 font-medium" style={{ color: "#dc2626" }}>İl.Sarma</th>
-              <th className="text-center px-2 py-2.5 font-medium" style={{ color: "#dc2626" }}>Yan.Cevap</th>
-              <th className="text-center px-2 py-2.5 font-medium" style={{ color: "#dc2626" }}>Ön.Kaybı</th>
+              <th className="text-center px-3 py-2.5 font-medium whitespace-nowrap" style={{ color: "#dc2626" }}>İleri Sarma Kaybı</th>
+              <th className="text-center px-3 py-2.5 font-medium whitespace-nowrap" style={{ color: "#dc2626" }}>Yanlış Cevap Kaybı</th>
+              <th className="text-center px-3 py-2.5 font-medium whitespace-nowrap" style={{ color: "#dc2626" }}>Öneri Kaybı</th>
               <th className="text-center px-3 py-2.5 text-gray-400 font-medium">Toplam</th>
             </tr>
           </thead>
