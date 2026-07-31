@@ -137,3 +137,14 @@ verebilir (lokal/dev — kabul).
 - [x] **6.7** UI/kod: `ligRpcCagir` (`"hafta"` + dispatch), `api/route` (`periyotParse`),
   `HbLigiPeriyotSecici` (Haftalık + tarih-etiketli hafta dropdown), `page` (hafta state).
   Teknik üçlü temiz. *(Kod — Claude)*
+
+## Faz 7 — Lig'de kayıpların gösterimi
+
+Tespit: lig, yalnız 4 kazanımı + net Toplam'ı gösteriyordu; 3 kayıp `lib/hbligi_v2`
+katmanında düşüyordu (RPC döndürse de). Net = artı − eksi mantığı görünmez olduğundan
+kolonlar Toplam'ı tutmuyordu. (v1'den beri var, E9 getirisi değil.)
+
+- [x] **7.1** `lib/hbligi_v2` 4 rol fonksiyonu 3 kayıp alanını çıktıya geçirir. *(Kod — Claude)*
+- [x] **7.2** `page.tsx` `UttTablosu` (tüm roller ortak): masaüstü 3 kayıp kolonu +
+  mobil kırılıma 3 kayıp — kırmızı "−" (rapor deseni); tablo yatay kaydırılır.
+  Teknik üçlü temiz. *(Kod — Claude)*

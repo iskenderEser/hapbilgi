@@ -18,6 +18,9 @@ export interface BmLigUttSatiri {
   cevaplama_puani: number;
   oneri_puani: number;
   extra_puani: number;
+  ileri_sarma_kaybi: number;
+  yanlis_cevap_kaybi: number;
+  oneri_kaybi: number;
   toplam_puan: number;
 }
 
@@ -74,6 +77,9 @@ export async function getBmLig(
     cevaplama_puani: l.cevaplama_puani,
     oneri_puani: l.oneri_puani,
     extra_puani: l.extra_puani,
+    ileri_sarma_kaybi: l.ileri_sarma_kaybi,
+    yanlis_cevap_kaybi: l.yanlis_cevap_kaybi,
+    oneri_kaybi: l.oneri_kaybi,
     toplam_puan: l.toplam_puan,
   }));
 

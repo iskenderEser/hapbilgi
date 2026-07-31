@@ -20,6 +20,9 @@ interface UttSatiri {
   cevaplama_puani: number;
   oneri_puani: number;
   extra_puani: number;
+  ileri_sarma_kaybi: number;
+  yanlis_cevap_kaybi: number;
+  oneri_kaybi: number;
   toplam_puan: number;
   benim?: boolean;
 }
@@ -403,16 +406,21 @@ function UttTablosu({ satirlar, userId, siraRenk, siraYazi, gostTakim = true, go
               <span className="text-xs text-gray-400">{l.bolge}</span>
               {gostTakim && l.takim && <span className="text-xs text-gray-400">{l.takim}</span>}
             </div>
-            <div className="flex gap-4 ml-9 mt-1">
+            <div className="flex gap-4 ml-9 mt-1 flex-wrap">
               {[
-                { label: "İzleme", val: l.izleme_puani },
-                { label: "Cevap", val: l.cevaplama_puani },
-                { label: "Öneri", val: l.oneri_puani },
-                { label: "Extra", val: l.extra_puani },
-              ].map(({ label, val }) => (
+                { label: "İzleme", val: l.izleme_puani, kayip: false },
+                { label: "Cevap", val: l.cevaplama_puani, kayip: false },
+                { label: "Öneri", val: l.oneri_puani, kayip: false },
+                { label: "Extra", val: l.extra_puani, kayip: false },
+                { label: "İl.Sarma", val: l.ileri_sarma_kaybi, kayip: true },
+                { label: "Yan.Cevap", val: l.yanlis_cevap_kaybi, kayip: true },
+                { label: "Ön.Kaybı", val: l.oneri_kaybi, kayip: true },
+              ].map(({ label, val, kayip }) => (
                 <div key={label} className="flex flex-col">
-                  <span className="text-xs text-gray-400">{label}</span>
-                  <span className="text-xs text-gray-700 font-medium">{val}</span>
+                  <span className="text-xs" style={{ color: kayip ? "#dc2626" : "#9ca3af" }}>{label}</span>
+                  <span className="text-xs font-medium" style={{ color: kayip ? "#dc2626" : "#374151" }}>
+                    {kayip && val > 0 ? "− " : ""}{val}
+                  </span>
                 </div>
               ))}
             </div>
@@ -421,7 +429,7 @@ function UttTablosu({ satirlar, userId, siraRenk, siraYazi, gostTakim = true, go
       </div>
 
       {/* Desktop */}
-      <div className="hidden md:block">
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full border-collapse text-xs">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
@@ -434,6 +442,9 @@ function UttTablosu({ satirlar, userId, siraRenk, siraYazi, gostTakim = true, go
               <th className="text-center px-2 py-2.5 text-gray-400 font-medium">Cevap</th>
               <th className="text-center px-2 py-2.5 text-gray-400 font-medium">Öneri</th>
               <th className="text-center px-2 py-2.5 text-gray-400 font-medium">Extra</th>
+              <th className="text-center px-2 py-2.5 font-medium" style={{ color: "#dc2626" }}>İl.Sarma</th>
+              <th className="text-center px-2 py-2.5 font-medium" style={{ color: "#dc2626" }}>Yan.Cevap</th>
+              <th className="text-center px-2 py-2.5 font-medium" style={{ color: "#dc2626" }}>Ön.Kaybı</th>
               <th className="text-center px-3 py-2.5 text-gray-400 font-medium">Toplam</th>
             </tr>
           </thead>
@@ -461,6 +472,9 @@ function UttTablosu({ satirlar, userId, siraRenk, siraYazi, gostTakim = true, go
                 <td className="px-2 py-3 text-center text-gray-700">{l.cevaplama_puani}</td>
                 <td className="px-2 py-3 text-center text-gray-700">{l.oneri_puani}</td>
                 <td className="px-2 py-3 text-center text-gray-700">{l.extra_puani}</td>
+                <td className="px-2 py-3 text-center" style={{ color: "#dc2626" }}>{l.ileri_sarma_kaybi > 0 ? `− ${l.ileri_sarma_kaybi}` : 0}</td>
+                <td className="px-2 py-3 text-center" style={{ color: "#dc2626" }}>{l.yanlis_cevap_kaybi > 0 ? `− ${l.yanlis_cevap_kaybi}` : 0}</td>
+                <td className="px-2 py-3 text-center" style={{ color: "#dc2626" }}>{l.oneri_kaybi > 0 ? `− ${l.oneri_kaybi}` : 0}</td>
                 <td className="px-3 py-3 text-center">
                   <span className="text-sm font-bold" style={{ color: "#56aeff" }}>{l.toplam_puan}</span>
                 </td>
