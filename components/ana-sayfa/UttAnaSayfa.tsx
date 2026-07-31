@@ -183,6 +183,68 @@ const VideoKart = ({
   );
 };
 
+// Yatay kayan raf — Netflix tarzı chevron tutamaçlar (hover'da belirir), kendi
+// ref'iyle (birden çok raf olduğu için). Tümü ve departman rafları bunu kullanır.
+const KayanRaf = ({
+  baslik,
+  videolar,
+  onVideoClick,
+  onBegeni,
+  onFavori,
+}: {
+  baslik: React.ReactNode;
+  videolar: Video[];
+  onVideoClick: (video: Video) => void;
+  onBegeni: (e: React.MouseEvent, yayin_id: string) => void;
+  onFavori: (e: React.MouseEvent, yayin_id: string) => void;
+}) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const kaydir = (yon: number) =>
+    ref.current?.scrollBy({ left: yon * ref.current.clientWidth * 0.85, behavior: "smooth" });
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-center gap-1 mb-2.5">{baslik}</div>
+      <div className="relative group">
+        <button
+          type="button"
+          aria-label="Sola kaydır"
+          onClick={() => kaydir(-1)}
+          className="absolute left-0 inset-y-0 z-10 w-16 flex items-center justify-start bg-gradient-to-r from-gray-50 via-gray-50/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+        >
+          <svg className="w-7 h-7 text-gray-800 drop-shadow-sm" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        <div ref={ref} className="flex gap-2 overflow-x-auto -mx-1 px-1 snap-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {videolar.map((video) => (
+            <div key={video.yayin_id} className="flex-shrink-0 w-40 sm:w-44 md:w-52 snap-start">
+              <VideoKart
+                video={video}
+                onVideoClick={onVideoClick}
+                onBegeni={onBegeni}
+                onFavori={onFavori}
+              />
+            </div>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          aria-label="Sağa kaydır"
+          onClick={() => kaydir(1)}
+          className="absolute right-0 inset-y-0 z-10 w-16 flex items-center justify-end bg-gradient-to-l from-gray-50 via-gray-50/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+        >
+          <svg className="w-7 h-7 text-gray-800 drop-shadow-sm" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -190,7 +252,6 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
   const [loading, setLoading] = useState(true);
   const [aktifVideo, setAktifVideo] = useState<Video | null>(null);
   const [aktifOneriId, setAktifOneriId] = useState<string | null>(null);
-  const tumuRef = useRef<HTMLDivElement>(null);
   const { mesajlar, hata, basari, uyari } = useHataMesaji();
 
   const veriCek = async (sessiz = false) => {
@@ -383,56 +444,20 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
 
       {/* Tümü rafı — TÜM videolar, random sırayla, yatay kayan raf (limitsiz) */}
       {raflar.tumuRafi.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center gap-1 mb-2.5">
-            <span className="text-sm font-bold text-gray-900">Tümü</span>
-            <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </div>
-          <div className="relative group">
-            {/* Sol kaydırma tutamacı — Netflix tarzı, hover'da belirir */}
-            <button
-              type="button"
-              aria-label="Sola kaydır"
-              onClick={() =>
-                tumuRef.current?.scrollBy({ left: -tumuRef.current.clientWidth * 0.85, behavior: "smooth" })
-              }
-              className="absolute left-0 inset-y-0 z-10 w-16 flex items-center justify-start bg-gradient-to-r from-gray-50 via-gray-50/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-            >
-              <svg className="w-7 h-7 text-gray-800 drop-shadow-sm" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-
-            <div ref={tumuRef} className="flex gap-2 overflow-x-auto -mx-1 px-1 snap-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {raflar.tumuRafi.map((video) => (
-                <div key={video.yayin_id} className="flex-shrink-0 w-40 sm:w-44 md:w-52 snap-start">
-                  <VideoKart
-                    video={video}
-                    onVideoClick={handleVideoClick}
-                    onBegeni={handleBegeni}
-                    onFavori={handleFavori}
-                  />
-                </div>
-              ))}
-            </div>
-
-            {/* Sağ kaydırma tutamacı */}
-            <button
-              type="button"
-              aria-label="Sağa kaydır"
-              onClick={() =>
-                tumuRef.current?.scrollBy({ left: tumuRef.current.clientWidth * 0.85, behavior: "smooth" })
-              }
-              className="absolute right-0 inset-y-0 z-10 w-16 flex items-center justify-end bg-gradient-to-l from-gray-50 via-gray-50/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-            >
-              <svg className="w-7 h-7 text-gray-800 drop-shadow-sm" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+        <KayanRaf
+          baslik={
+            <>
+              <span className="text-sm font-bold text-gray-900">Tümü</span>
+              <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
-            </button>
-          </div>
-        </div>
+            </>
+          }
+          videolar={raflar.tumuRafi}
+          onVideoClick={handleVideoClick}
+          onBegeni={handleBegeni}
+          onFavori={handleFavori}
+        />
       )}
 
       {/* En Son İzlediklerim — son tamamlanan 5 izleme (izleme_bitis desc); boşsa gizli */}
@@ -533,20 +558,14 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
         </div>
       ) : (
         raflar.departmanRaflari.map((g) => (
-          <div key={g.tur} className="mb-6">
-            <div className="text-sm font-bold text-gray-900 mb-2.5">{TUR_BASLIK[g.tur]}</div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-              {g.videolar.map((video) => (
-                <VideoKart
-                  key={video.yayin_id}
-                  video={video}
-                  onVideoClick={handleVideoClick}
-                  onBegeni={handleBegeni}
-                  onFavori={handleFavori}
-                />
-              ))}
-            </div>
-          </div>
+          <KayanRaf
+            key={g.tur}
+            baslik={<span className="text-sm font-bold text-gray-900">{TUR_BASLIK[g.tur]}</span>}
+            videolar={g.videolar}
+            onVideoClick={handleVideoClick}
+            onBegeni={handleBegeni}
+            onFavori={handleFavori}
+          />
         ))
       )}
 

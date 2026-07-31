@@ -1,12 +1,13 @@
 // lib/video/anaSayfaRaflari.ts
 // UTT ana sayfası küratörlü raf seçimi — TEK KAYNAK (saf, test edilebilir).
 //
-// Departman rafı (5-üstünlük): slot sırası sabit —
+// Departman rafı (5-üstünlük + kayan raf): ilk 5 slot sırası sabit —
 //   [en yeni · en çok izlenen · en çok beğenilen · en çok favorilenen · en yüksek puanlı]
 // Her slot kendi metriğinin GERÇEK kazananını alır (deterministik, harf sırası
 // eşitlik bozucu). Metrik tanımsızsa (hepsi 0) ya da kazananı üst slotça alınmışsa
-// o slot RANDOM ile dolar (rotasyon). Video tekil; tavan 5; az video → az kutu.
-// Sıfır-katılım kategoride satır = en yeni (sabit) + 3 random + en yüksek puanlı (sabit).
+// o slot RANDOM ile dolar (rotasyon). Video tekil. İlk 5'ten sonrası (6+) kalan
+// videoların tohumlu-random sırasıyla eklenir — LİMİT YOK (yatay kayan raf).
+// Sıfır-katılım kategoride ilk 5 = en yeni (sabit) + 3 random + en yüksek puanlı (sabit).
 //
 // Tümü rafı: TÜM videolar random sırayla (limit yok — yatay kayan raf).
 //
@@ -66,7 +67,8 @@ function metrikTepesi<T extends RafVideo>(
   return en;
 }
 
-// Bir kategorinin videolarından 5-üstünlük rafını kurar.
+// Bir kategorinin videolarından rafı kurar: ilk 5 = 5-üstünlük (sabit kural),
+// 6. ve sonrası = kalan videolar tohumlu-random sırayla (kayan raf, limit yok).
 function departmanRafi<T extends RafVideo>(videolar: T[], rnd: () => number): T[] {
   if (videolar.length === 0) return [];
 
@@ -102,7 +104,16 @@ function departmanRafi<T extends RafVideo>(videolar: T[], rnd: () => number): T[
     kullanildi.add(secili.yayin_id);
   }
 
-  return slotlar.filter((v): v is T => v !== null);
+  const ilk5 = slotlar.filter((v): v is T => v !== null);
+
+  // 3) Kalan videolar (6+) → tohumlu-random sırayla eklenir (ilk 5 korunur).
+  const kalanlar = videolar.filter((v) => !kullanildi.has(v.yayin_id));
+  for (let i = kalanlar.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [kalanlar[i], kalanlar[j]] = [kalanlar[j], kalanlar[i]];
+  }
+
+  return [...ilk5, ...kalanlar];
 }
 
 // Tümü rafı: TÜM videolar, random sırayla (LİMİT YOK — kayan/yatay raf).
