@@ -1,7 +1,7 @@
 {
-  "uretim_tarihi": "2026-07-27T06:56:31.809Z",
-  "tablo_sayisi": 94,
-  "rpc_sayisi": 58,
+  "uretim_tarihi": "2026-07-31T09:19:36.191Z",
+  "tablo_sayisi": 96,
+  "rpc_sayisi": 65,
   "tablolar": {
     "analiz_tuketim_degiskenleri": {
       "tur": "BASE TABLE",
@@ -287,6 +287,55 @@
           "nullable": true
         },
         "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        }
+      }
+    },
+    "cc_ligi_ozet": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "kullanici_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "tarih": {
+          "tip": "date",
+          "nullable": false
+        },
+        "izleme_puani": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "cevaplama_puani": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "extra_puani": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "cc_gonderme_puani": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "cc_referral_puani": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "ileri_sarma_kaybi": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "yanlis_cevap_kaybi": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "challenge_kaybi": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "guncellenme": {
           "tip": "timestamp with time zone",
           "nullable": false
         }
@@ -1514,7 +1563,52 @@
         }
       }
     },
-    "hb_ligi": {
+    "hb_ligi_ozet_v2": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "kullanici_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "tarih": {
+          "tip": "date",
+          "nullable": false
+        },
+        "izleme_puani": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "cevaplama_puani": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "oneri_puani": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "extra_puani": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "ileri_sarma_kaybi": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "yanlis_cevap_kaybi": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "oneri_kaybi": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "guncellenme": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        }
+      }
+    },
+    "hb_ligi_v2": {
       "tur": "VIEW",
       "kolonlar": {
         "kullanici_id": {
@@ -2679,7 +2773,7 @@
         }
       }
     },
-    "v_hbligi_sirali": {
+    "v_hbligi_sirali_v2": {
       "tur": "VIEW",
       "kolonlar": {
         "kullanici_id": {
@@ -3835,6 +3929,18 @@
     }
   },
   "rpc": {
+    "_cc_ligi_aralik": {
+      "argumanlar": "p_bas date, p_bit date",
+      "donus": "TABLE(kullanici_id uuid, ad text, soyad text, firma_id uuid, takim_id uuid, bolge_id uuid, izleme_puani integer, cevaplama_puani integer, extra_puani integer, cc_gonderme_puani integer, cc_referral_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, challenge_kaybi integer, toplam_net_puan integer, genel_sira bigint, firma_sirasi bigint, takim_sirasi bigint, bolge_sirasi bigint)"
+    },
+    "_hb_ligi_v2_aralik": {
+      "argumanlar": "p_bas date, p_bit date",
+      "donus": "TABLE(kullanici_id uuid, rol text, izleme_puani integer, cevaplama_puani integer, oneri_puani integer, extra_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, oneri_kaybi integer, toplam_puan integer, ad text, soyad text, eposta text, firma_id uuid, firma_adi text, takim_id uuid, takim_adi text, bolge_id uuid, bolge_adi text, firma_sirasi bigint, bolge_sirasi bigint, takim_sirasi bigint)"
+    },
+    "cc_ligi_ozet_guncelle": {
+      "argumanlar": "",
+      "donus": "trigger"
+    },
     "challenge_kaybi_tara": {
       "argumanlar": "",
       "donus": "integer"
@@ -3915,6 +4021,10 @@
       "argumanlar": "p_yil integer, p_ceyrek integer",
       "donus": "TABLE(kullanici_id uuid, ad text, soyad text, firma_id uuid, takim_id uuid, bolge_id uuid, izleme_puani integer, cevaplama_puani integer, extra_puani integer, cc_gonderme_puani integer, cc_referral_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, challenge_kaybi integer, toplam_net_puan integer, genel_sira bigint, firma_sirasi bigint, takim_sirasi bigint, bolge_sirasi bigint)"
     },
+    "get_cc_ligi_haftalik": {
+      "argumanlar": "p_yil integer, p_hafta integer",
+      "donus": "TABLE(kullanici_id uuid, ad text, soyad text, firma_id uuid, takim_id uuid, bolge_id uuid, izleme_puani integer, cevaplama_puani integer, extra_puani integer, cc_gonderme_puani integer, cc_referral_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, challenge_kaybi integer, toplam_net_puan integer, genel_sira bigint, firma_sirasi bigint, takim_sirasi bigint, bolge_sirasi bigint)"
+    },
     "get_cc_ligi_yil_lideri": {
       "argumanlar": "p_yil integer",
       "donus": "TABLE(kullanici_id uuid, ad text, soyad text, toplam_net_puan integer)"
@@ -3955,15 +4065,19 @@
       "argumanlar": "p_kullanici_id uuid",
       "donus": "integer"
     },
-    "get_hb_ligi_aylik": {
+    "get_hb_ligi_aylik_v2": {
       "argumanlar": "p_yil integer, p_ay integer",
       "donus": "TABLE(kullanici_id uuid, rol text, izleme_puani integer, cevaplama_puani integer, oneri_puani integer, extra_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, oneri_kaybi integer, toplam_puan integer, ad text, soyad text, eposta text, firma_id uuid, firma_adi text, takim_id uuid, takim_adi text, bolge_id uuid, bolge_adi text, firma_sirasi bigint, bolge_sirasi bigint, takim_sirasi bigint)"
     },
-    "get_hb_ligi_donemlik": {
+    "get_hb_ligi_donemlik_v2": {
       "argumanlar": "p_yil integer, p_ceyrek integer",
       "donus": "TABLE(kullanici_id uuid, rol text, izleme_puani integer, cevaplama_puani integer, oneri_puani integer, extra_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, oneri_kaybi integer, toplam_puan integer, ad text, soyad text, eposta text, firma_id uuid, firma_adi text, takim_id uuid, takim_adi text, bolge_id uuid, bolge_adi text, firma_sirasi bigint, bolge_sirasi bigint, takim_sirasi bigint)"
     },
-    "get_hb_ligi_yillik": {
+    "get_hb_ligi_haftalik_v2": {
+      "argumanlar": "p_yil integer, p_hafta integer",
+      "donus": "TABLE(kullanici_id uuid, rol text, izleme_puani integer, cevaplama_puani integer, oneri_puani integer, extra_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, oneri_kaybi integer, toplam_puan integer, ad text, soyad text, eposta text, firma_id uuid, firma_adi text, takim_id uuid, takim_adi text, bolge_id uuid, bolge_adi text, firma_sirasi bigint, bolge_sirasi bigint, takim_sirasi bigint)"
+    },
+    "get_hb_ligi_yillik_v2": {
       "argumanlar": "p_yil integer",
       "donus": "TABLE(kullanici_id uuid, rol text, izleme_puani integer, cevaplama_puani integer, oneri_puani integer, extra_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, oneri_kaybi integer, toplam_puan integer, ad text, soyad text, eposta text, firma_id uuid, firma_adi text, takim_id uuid, takim_adi text, bolge_id uuid, bolge_adi text, firma_sirasi bigint, bolge_sirasi bigint, takim_sirasi bigint)"
     },
@@ -4031,6 +4145,14 @@
       "argumanlar": "p_firma_id uuid",
       "donus": "TABLE(konu_adi text, icerik_turu text, uretilen_video_sayisi integer, kendi_izleme_sayisi integer, oneri_sayisi integer, extra_izleme_sayisi integer, toplam_izleme_sayisi integer)"
     },
+    "hb_ligi_ozet_v2_guncelle": {
+      "argumanlar": "",
+      "donus": "trigger"
+    },
+    "oneri_kaybi_tara": {
+      "argumanlar": "",
+      "donus": "integer"
+    },
     "set_updated_at": {
       "argumanlar": "",
       "donus": "trigger"
@@ -4071,12 +4193,12 @@
   "fk": {
     "bildirimler": [
       {
-        "kaynak_kolon": "gonderen_id",
+        "kaynak_kolon": "alici_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "alici_id",
+        "kaynak_kolon": "gonderen_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       }
@@ -4142,6 +4264,13 @@
         "kaynak_kolon": "yayin_id",
         "hedef_tablo": "yayin_yonetimi",
         "hedef_kolon": "yayin_id"
+      }
+    ],
+    "cc_ligi_ozet": [
+      {
+        "kaynak_kolon": "kullanici_id",
+        "hedef_tablo": "kullanicilar",
+        "hedef_kolon": "kullanici_id"
       }
     ],
     "cc_yanlis_cevap_kayitlari": [
@@ -4491,6 +4620,13 @@
         "kaynak_kolon": "musteri_id",
         "hedef_tablo": "eczanem_musteriler",
         "hedef_kolon": "musteri_id"
+      }
+    ],
+    "hb_ligi_ozet_v2": [
+      {
+        "kaynak_kolon": "kullanici_id",
+        "hedef_tablo": "kullanicilar",
+        "hedef_kolon": "kullanici_id"
       }
     ],
     "ileri_sarma_kayitlari": [
