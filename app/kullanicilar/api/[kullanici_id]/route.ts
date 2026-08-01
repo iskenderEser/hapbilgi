@@ -2,12 +2,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
+import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
+
+// Bu üç uç kullanıcı ROLÜNÜ okuyup değiştirebildiği için yalnız admin'e açıktır.
+// Proxy'deki /kullanicilar bekçisi birinci katman, buradaki kontrol ikincisidir
+// (admin M1 deseni: route-içi bekçi asıl, proxy yedek).
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ kullanici_id: string }> }
 ) {
   try {
+    const kontrol = await adminGirisKontrol();
+    if (!kontrol.gecerli) return kontrol.yanit;
+
     const { kullanici_id } = await params;
     if (!kullanici_id) return validasyonHatasi("kullanici_id zorunludur.", ["kullanici_id"]);
 
@@ -36,6 +44,9 @@ export async function PUT(
   { params }: { params: Promise<{ kullanici_id: string }> }
 ) {
   try {
+    const kontrol = await adminGirisKontrol();
+    if (!kontrol.gecerli) return kontrol.yanit;
+
     const { kullanici_id } = await params;
     if (!kullanici_id) return validasyonHatasi("kullanici_id zorunludur.", ["kullanici_id"]);
 
@@ -94,6 +105,9 @@ export async function DELETE(
   { params }: { params: Promise<{ kullanici_id: string }> }
 ) {
   try {
+    const kontrol = await adminGirisKontrol();
+    if (!kontrol.gecerli) return kontrol.yanit;
+
     const { kullanici_id } = await params;
     if (!kullanici_id) return validasyonHatasi("kullanici_id zorunludur.", ["kullanici_id"]);
 

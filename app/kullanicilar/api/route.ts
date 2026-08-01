@@ -2,9 +2,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi } from "@/lib/utils/hataIsle";
+import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
+
+// Kullanıcı listesi yalnız admin'e açıktır (29.07.2026 kararı). Proxy'deki
+// /kullanicilar bekçisi birinci katman, buradaki kontrol ikincisidir.
+// NOT: Öneriler ekranı bu ucu `kapsamim=true` ile kullanıyordu; o ekran BM/TM'e
+// ait olduğu için kilitten sonra kendi ucunu almalıdır (ayrı iş).
 
 export async function GET(request: NextRequest) {
   try {
+    const kontrol = await adminGirisKontrol();
+    if (!kontrol.gecerli) return kontrol.yanit;
+
     const adminSupabase = createAdminClient();
 
     const { searchParams } = new URL(request.url);

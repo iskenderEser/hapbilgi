@@ -35,8 +35,6 @@ export async function proxy(request: NextRequest) {
   // /admin/api/* (giris hariç) yalnızca rolü admin olan kullanıcıya açıktır.
   // Yetki, kullanıcının değiştirebildiği user_metadata'dan DEĞİL, yetkili
   // kaynak olan kullanicilar tablosundan (service_role) doğrulanır.
-  // test-verileri-sil de bu bekçinin ARKASINDADIR (12.07.2026 — canlıda girişsiz
-  // silme ucu bırakılamaz); deploy öncesi endpoint yine tamamen kaldırılacaktır.
   // İleride firma admini eklenince firma_id de buradan çekilip /firmalar/[firma_id]
   // yoluyla karşılaştırılabilir.
   if (
@@ -69,6 +67,32 @@ export async function proxy(request: NextRequest) {
     }
 
     return supabaseResponse; // admin → geç
+  }
+  // -------------------------------------------------------------------------
+
+  // --- Kullanıcı yönetimi bekçisi ------------------------------------------
+  // /kullanicilar/* (sayfa + API) yalnızca admin'e açıktır. Bu ekran kullanıcı
+  // ROLÜNÜ değiştirebildiği için korumasız kalması yetki yükseltmesi demektir:
+  // 29.07.2026'da ne bekçisi ne de uç-içi kontrolü olduğu görüldü — giriş yapan
+  // herhangi bir kullanıcı kendi rolünü admin yapabiliyordu.
+  if (pathname.startsWith("/kullanicilar")) {
+    const kApiYolu = pathname.includes("/api/") || pathname.endsWith("/api");
+
+    if (!user) {
+      if (kApiYolu) return NextResponse.json({ error: "Oturum açmanız gerekiyor." }, { status: 401 });
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    const kSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const kRol = await rolCozucu(kSupabase, user.id);
+
+    if (!ADMIN_ROLLER.includes(kRol)) {
+      if (kApiYolu) return NextResponse.json({ error: "Bu sayfaya erişim yetkiniz yok." }, { status: 403 });
+      return NextResponse.redirect(new URL("/ana-sayfa", request.url));
+    }
   }
   // -------------------------------------------------------------------------
 
