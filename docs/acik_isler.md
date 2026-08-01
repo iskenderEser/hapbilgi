@@ -4,7 +4,13 @@
 listeden çıkarıldı; maddeler yeniden numaralandı. 31.07 güncelleme: E9 — HB Ligi
 ölçeklenmesi (eski md.9) — kapandı, REDBOOK Bölüm 7'ye taşındı; ayrıca `tekrar_id` FK
 kolonu (eski md.9/F) sınırlı kaynak önceliklendirmesiyle listeden çıkarıldı — yatırım
-bugün için gerekçesiz görüldü. Kalan maddeler yeniden numaralandı). Kaynak: redbook §6.4 +
+bugün için gerekçesiz görüldü. Kalan maddeler yeniden numaralandı. 01.08 güncelleme:
+B-35 — admin takım ekleme N+1 (eski md.23/H) — kod incelemesiyle tespit teyit edildi
+ama düşük öncelik/zararsız görülerek sınırlı kaynak önceliklendirmesiyle listeden
+çıkarıldı; kalan maddeler yeniden numaralandı. Ayrıca H grubu yeniden
+yapılandırıldı: Admin M5 (md.17) şemsiye madde olarak tanımlandı, dağıttığı
+bulgular 17.1–17.5 alt maddelerine toplandı, B-39 (M5 dışı) md.18 olarak
+ayrıldı). Kaynak: redbook §6.4 +
 bu tarihte yapılan kod kontrolleri. Bu belge yalnız **yapılacak** işleri taşır; kapanmış
 işler redbook Bölüm 7'de, sistemin bugünkü çalışma biçimi redbook Bölüm 1–6'dadır.*
 
@@ -65,48 +71,34 @@ bağlanması ayrı iş.
 `eclub_bildirimler` tablosuna yazım çalışıyor, kişi tarafında gösterilmiyor.
 Okundu işaretleme mekanizması ve harici kanal (WhatsApp/SMS) bildirimi yok.
 
-**8 · Liste yönetimi cascade görünümü.**
-BM/TM'in altındaki UTT'lerin eczane/kişi listelerini görebildiği cascade
-kurulmadı. E-Club Ligi'ndeki cascade'den ayrı bir iştir.
-
 ---
 
 ## F. Ertelenen işler (bilinçli)
 
-**9 · E-Club kişi tarafı sayacı ve UTT "gönderime hazır" durumları.**
+**8 · E-Club kişi tarafı sayacı ve UTT "gönderime hazır" durumları.**
 Sayaç UTT gönderim ekranına aittir; o ekran Eczanem geliştirmesiyle şekillenecek.
-
-**10 · Ekstra İzlediklerim'in CC/BM karşılığı.**
-BM'in "İzlenecek Videolar" düzleminde aynı bölümün eşik-2 karşılığı; ihtiyaç
-doğarsa aynı desen birebir uygulanır.
 
 ---
 
 ## G. Doğrulama — insan yürütümlü
 
-**11 · U10 — Tekrar Gönderim uçtan uca fiziksel test (push öncesi şart).**
+**9 · U10 — Tekrar Gönderim uçtan uca fiziksel test (push öncesi şart).**
 12 senaryo: yayına alma/tur-1, ilk izleme, yeni extra kuralı (UTT ve CC), tur
 dönüşü, sayaç rozetleri, BM/CC akışı, öneri, E-Club, durdur/başlat tur
 bağımsızlığı, challenge etkilenmezliği, Sistem Ayarları paneli, puansız zaman
 penceresi.
 
-**12 · U7 — Ekstra İzlediklerim fiziksel testi (push öncesi şart).**
-9 senaryo: liste/sıralama doğruluğu, tur dönüşünde sayaç sıfırlanması,
-"extra'ya X kaldı" ile karar birebirliği, ay dönümünde hak yenilenmesi, ileri
-sarmalı ve puansız-pencere izlemelerinin sayaca girmemesi, durdurulan yayının
-bölümden düşmesi, boş durum, beğeni/favori senkronu. 14 ile birleşik koşulabilir.
-
-**13 · Eczanem U10/U11 — faz sonu ara testler + uçtan uca test.**
+**10 · Eczanem U10/U11 — faz sonu ara testler + uçtan uca test.**
 Davet→OTP→üyelik, eşik, gönderim teklikleri, izleme→kazanım, dörtlü kilit
 sızmazlığı, FIFO/180 gün senaryosu, sipariş→onay→fiş→mükerrer onay reddi, KVKK
 silme sonrası toplamların korunumu, görünürlük sınırları, İP-§11 risk tablosunun
 satır satır sağlaması.
 
-**14 · Final test.**
+**11 · Final test.**
 Deploy öncesi uçtan uca doğrulama: üç müşteri katmanının kritik akışları
 (üretim → tüketim → puan → lig → store) manuel/otomatik test edilir.
 
-**15 · Vercel push/deploy.**
+**12 · Vercel push/deploy.**
 Yukarıdaki doğrulama bloğu + A grubu + C grubu kapanmadan `origin`'e push
 yapılmaz. Push, biriken commit serisinin tek hazır durum olarak yayınlanmasıdır.
 Eczanem için ayrıca üretim env'inde SMS sağlayıcı anahtarları tanımlanmalıdır.
@@ -115,7 +107,7 @@ Eczanem için ayrıca üretim env'inde SMS sağlayıcı anahtarları tanımlanma
 
 ## H. 29.07.2026'da eklenen maddeler
 
-**16 · Admin M4 — modül sekmelerinin içi doldurulacak.**
+**13 · Admin M4 — modül sekmelerinin içi doldurulacak.**
 Bugün admin dört modülü açıp kapatabiliyor, içeriğini göremiyor (REDBOOK §6.1).
 M4 her sekmeye iki katman ekler.
 
@@ -149,17 +141,13 @@ değişikliği gerektirir, ayrı planlanır.
 *Sıra önerisi:* T-Club → Eczanem → C-Club. Her sekme ayrı iş adımı, kendi
 testiyle kapanır.
 
-**17 · Admin M5.** Kalan bulgular tek tek maddelere çıkarıldı: B-27 → md.19, B-29 → md.20,
-B-38 → md.21, B-34 → md.22, B-35 → md.23, B-37 → md.24.
-B-28 silinecek (İskender kararı, 29.07); B-30 iş değil, olması gereken —
-REDBOOK Bölüm 7'ye kural olarak yazıldı.
+**14 · Admin M5 — admin kalite taramasından kalan bulgular (şemsiye madde).**
+Bu madde kendi başına bir iş değildir; admin kalite taramasında kalan bulguları
+aşağıdaki alt maddelere (14.1–14.3) dağıtan bir kayıttır. B-28 silinecek (İskender
+kararı, 29.07); B-30 iş değil, olması gereken — REDBOOK Bölüm 7'ye kural olarak
+yazıldı.
 
-**18 · Kalite raporu §9 — B-39 teyidi.**
-Ara evrede `iu_id`'ye üreticinin yazılması tespiti. 22.07 refactoring'inde
-kabuklar `iu_id = null` doğar hâle geldi; maddenin fiilen kapanıp kapanmadığı
-teyit edilmedi.
-
-**19 · B-27 — E-Club Store sipariş durumu serbest atlıyor.**
+**14.1 · B-27 — E-Club Store sipariş durumu serbest atlıyor.**
 E-Club Store'da bir siparişin durumu yönetim ekranından sıra kuralı olmadan
 değiştirilebiliyor; dört durum arasında her yönde geçiş serbest.
 
@@ -173,26 +161,7 @@ beklemede → kargoda geçişine izin var.
 tek yerde yazılır, geri dönüşler kapatılır.
 Kanıt: `app/eclub/store/api/siparis/route.ts` (durum aksiyonu, geçiş matrisi yok).
 
-**20 · B-29 — ürün/teknik silmede engelin sebebi söylenmiyor.**
-Admin bir ürünü ya da tekniği silmeye kalkınca sistem "bu kullanımda mı" diye
-bakmıyor. Silme isteği doğrudan veritabanına gidiyor; kayıt kullanımdaysa FK
-kısıtı silmeyi düşürüyor ve ekrana "Ürün silinemedi." + ham veritabanı hata
-metni (`23503`) çıkıyor. Admin neden silinemediğini, hangi kayda bağlı
-olduğunu öğrenemiyor.
-
-Bağlılık: ürün 9 tabloya bağlı (talepler, kazanılan puanlar, ileri sarma,
-öneri kaybı, challenge kaybı, Eczanem tarifeleri, E-Club tabloları); teknik
-yalnız taleplere.
-
-*Risk sınırı:* veri kaybı YOK — FK zaten koruyor, silme fiilen engelleniyor.
-Kusur tamamen anlatım katmanında.
-
-*Düzeltme:* silmeden önce bağlılık sayılır; kullanımdaysa silme denenmez,
-"bu ürün N talepte ve M puan kaydında kullanılıyor, silinemez" denir.
-Kanıt: `app/admin/api/firmalar/[firma_id]/urunler/route.ts` ve
-`.../teknikler/route.ts` DELETE blokları — bağlılık kontrolü yok.
-
-**21 · B-38 — store ürününde kategori kontrolü yarım.**
+**14.2 · B-38 — store ürününde kategori kontrolü yarım.**
 Yeni ürün eklenirken kategorinin gerçekten var olduğu doğrulanıyor; aynı ürün
 sonradan düzenlenirken doğrulanmıyor. Geçersiz kategori yazılırsa yine ham
 veritabanı hatası çıkıyor.
@@ -200,44 +169,7 @@ veritabanı hatası çıkıyor.
 *Düzeltme:* POST'taki kategori varlık kontrolü PATCH'e de konur.
 Kanıt: `app/admin/store/api/urun/route.ts` — POST kontrol ediyor, PATCH etmiyor.
 
-**22 · B-34 — silme fonksiyonları push kayıtlarını bırakıyor.**
-Ne toplu test silme ne de tekil talep silme `push_gonderim_kayitlari` tablosuna
-dokunuyor. Bir talebi ya da tüm test verisini silsen bile "kime hangi push
-gitti" kayıtları duruyor.
-
-*Kanıt tazelendi (29.07):* bulgu ilk yazıldığında `test-verileri-sil/route.ts`
-içindeki `SILINECEK_TABLOLAR` listesini gösteriyordu — o kod artık YOK, silme
-24.07'de atomik RPC'ye taşındı. Düzeltme yeri bugün `scripts/sql/toplu_test_sil.sql`
-(48 tablo) ve `scripts/sql/tekil_talep_sil.sql` (39 tablo); ikisinde de push
-tablosu geçmiyor.
-
-*Toplu tarafın düzeltmesi basit:* `DELETE FROM push_gonderim_kayitlari;` satırı
-eklenir — orası zaten "test verisini süpür" işidir.
-
-*Tekil taraf düzeltilemiyor — KARAR GEREKİYOR.* `push_gonderim_kayitlari`
-kolonları: `gonderim_id`, `auth_user_id`, `olay_turu`, `alici_rol`, `created_at`,
-`durum`. **Talep ya da yayın bağı YOK.** Bu yüzden tekil silmede "bu talebin
-push'ları" diye süzülemez; oraya koşulsuz DELETE yazmak tek talep silerken tüm
-sistemin push geçmişini uçurur. Seçenekler: (a) tekil silmede push'a hiç
-dokunulmaz, (b) tabloya `yayin_id` eklenir (şema değişikliği).
-
-*Ağırlık:* düşük; ayrıca test aracının kendisi deploy
-öncesi tümüyle kaldırılacak (md.1) — o zaman toplu taraf kendiliğinden düşer,
-tekil taraf kalır.
-
-**23 · Admin takım ekleme düzeltmesi (N+1 hatası) — B-35.**
-Admin panelinde Organizasyon sekmesi açıldığında sistem önce takımları çekiyor,
-sonra **her takım için ayrı ayrı** bölge isteği atıyor. 5 takım varsa 6 istek,
-20 takım varsa 21 istek.
-
-*Düzeltme:* bölgeleri tek istekte döndüren uca geçilir.
-Kanıt: `app/admin/_hooks/useAdminPanel.ts` — takım döngüsü içinde bölge fetch'i.
-
-*Ağırlık:* düşük, bugünkü ölçekte zararsız; firma
-başına takım sayısı büyüdükçe sekme açılışı yavaşlar. Aynı sınıf hata daha ağır
-bir yerde kapatılmıştı: üretici ana sayfasında 43 sorgu → 2 (27.07).
-
-**24 · E-Club Store admin iptalinde alan anlamları kayıyor — B-37.**
+**14.3 · B-37 — E-Club Store admin iptalinde alan anlamları kayıyor.**
 Dört ayrı sorun var:
 
 1. **Alana auth kimliği yazılıyor.** İptal çağrısındaki `iptal_eden_kisi_id`
@@ -267,3 +199,12 @@ Kanıt: `app/admin/store/api/siparis/route.ts` (zorunlu) ↔
 kolon YOK ve RPC tanımı repo'da bulunmuyor (`scripts/sql/` içinde store
 RPC'leri yok) — canlı DB'de. RPC'nin bu değeri ne yaptığı görülmeden
 dokunulmamalı. Ön koşul: RPC tanımının okunması.
+
+**15 · Kalite raporu §9 — B-39 teyidi.**
+Ara evrede `iu_id`'ye üreticinin yazılması tespiti. 22.07 refactoring'inde
+kabuklar `iu_id = null` doğar hâle geldi; maddenin fiilen kapanıp kapanmadığı
+teyit edilmedi.
+
+---
+
+## I. Toplu Ve Tekil Silme
