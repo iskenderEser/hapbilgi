@@ -447,7 +447,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
         <KayanRaf
           baslik={
             <>
-              <span className="text-sm font-bold text-gray-900">Tümü</span>
+              <span className="text-base md:text-lg font-bold text-gray-900">Tümü</span>
               <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
@@ -463,7 +463,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
       {/* En Son İzlediklerim — son tamamlanan 5 izleme (izleme_bitis desc); boşsa gizli */}
       {(uttVeri?.son_izlediklerim ?? []).length > 0 && (
         <div className="mb-6">
-          <div className="text-sm font-bold text-gray-900 mb-2.5">🕒 En Son İzlediklerim</div>
+          <div className="text-base md:text-lg font-bold text-gray-900 mb-2.5">🕒 En Son İzlediklerim</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
             {(uttVeri?.son_izlediklerim ?? []).map((video) => (
               <VideoKart
@@ -480,7 +480,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
 
       {/* Ekstra İzlediklerim — tekrar izlemelerle extra puan takibi (K-A5; K-A2 boş durum: teşvik) */}
       <div className="mb-6">
-        <div className="text-sm font-bold text-gray-900 mb-1">⭐ Ekstra İzlediklerim</div>
+        <div className="text-base md:text-lg font-bold text-gray-900 mb-1">⭐ Ekstra İzlediklerim</div>
         <p className="text-xs text-gray-500 mb-2.5">
           Bir videoyu ileri sarmadan baştan sona yeniden izlemek &quot;tam tekrar&quot;dır — tam tekrarlarla her ay extra puan kazanabilirsin.
         </p>
@@ -518,7 +518,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
       {/* En Çok İzlenenler */}
       {enCokIzlenen.length > 0 && (
         <div className="mb-6">
-          <div className="text-sm font-bold text-gray-900 mb-2.5">🔥 En Çok İzlenenler</div>
+          <div className="text-base md:text-lg font-bold text-gray-900 mb-2.5">🔥 En Çok İzlenenler</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
             {enCokIzlenen.map((video) => (
               <VideoKart
@@ -536,7 +536,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
       {/* En Çok Beğenilenler */}
       {enCokBegenilen.length > 0 && (
         <div className="mb-6">
-          <div className="text-sm font-bold text-gray-900 mb-2.5">❤️ En Çok Beğenilenler</div>
+          <div className="text-base md:text-lg font-bold text-gray-900 mb-2.5">❤️ En Çok Beğenilenler</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
             {enCokBegenilen.map((video) => (
               <VideoKart
@@ -560,7 +560,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
         raflar.departmanRaflari.map((g) => (
           <KayanRaf
             key={g.tur}
-            baslik={<span className="text-sm font-bold text-gray-900">{TUR_BASLIK[g.tur]}</span>}
+            baslik={<span className="text-base md:text-lg font-bold text-gray-900">{TUR_BASLIK[g.tur]}</span>}
             videolar={g.videolar}
             onVideoClick={handleVideoClick}
             onBegeni={handleBegeni}
