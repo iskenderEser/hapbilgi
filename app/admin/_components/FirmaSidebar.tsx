@@ -24,6 +24,7 @@ interface FirmaSidebarProps {
   handleEclubStoreToggle: (f: Firma) => void | Promise<void>;
   handleFirmaToggle: (f: Firma) => void | Promise<void>;
   handleFirmaSil: (f: Firma) => Promise<boolean>;
+  onVeriSil: (f: Firma) => void;
   handleExport: (f: Firma) => void | Promise<void>;
   loading: boolean;
 }
@@ -86,6 +87,7 @@ export default function FirmaSidebar({
   handleEclubStoreToggle,
   handleFirmaToggle,
   handleFirmaSil,
+  onVeriSil,
   handleExport,
   loading,
 }: FirmaSidebarProps) {
@@ -279,10 +281,28 @@ export default function FirmaSidebar({
                   </span>
 
                   <button
+                    onClick={() => onVeriSil(f)}
+                    title="Firmanın üretilen test verisini temizle (firma korunur)"
+                    style={{
+                      marginLeft: "auto",
+                      flexShrink: 0,
+                      padding: "5px 9px",
+                      background: "transparent",
+                      border: "0.5px solid #d1d5db",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      color: "#525252",
+                      cursor: "pointer",
+                      fontFamily: "'Nunito', sans-serif",
+                    }}
+                  >
+                    Veri Sil
+                  </button>
+
+                  <button
                     onClick={() => silTikla(f)}
                     title="Firmayı sil"
                     style={{
-                      marginLeft: "auto",
                       flexShrink: 0,
                       padding: "5px 9px",
                       background: "transparent",

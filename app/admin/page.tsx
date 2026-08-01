@@ -20,6 +20,8 @@ import { useUrunTeknik } from "./_hooks/useUrunTeknik";
 import { useKullaniciListesi } from "./_hooks/useKullaniciListesi";
 
 import AdminUstBar from "./_components/AdminUstBar";
+import TopluTekilSilModal from "./_components/TopluTekilSilModal";
+import FirmaVeriSilModal from "./_components/FirmaVeriSilModal";
 import FirmaSidebar from "./_components/FirmaSidebar";
 import ModulSekmeBari from "./_components/ModulSekmeBari";
 import ModulDurumKarti from "./_components/ModulDurumKarti";
@@ -35,6 +37,7 @@ import EclubStorePaneli from "./_components/global/EclubStorePaneli";
 import EclubYonetimPaneli from "./eclub/_components/EclubYonetimPaneli";
 
 import type { GlobalBolumId, ModulSekmeId } from "./_constants";
+import type { Firma } from "./_types";
 
 export default function AdminPanel() {
   const admin = useAdminPanel();
@@ -42,6 +45,8 @@ export default function AdminPanel() {
   // M2 kabuk state'i: firma bağlamı sekmesi + global bölüm (üst bar).
   const [seciliSekme, setSeciliSekme] = useState<ModulSekmeId>("kullanicilar");
   const [globalBolum, setGlobalBolum] = useState<GlobalBolumId | null>(null);
+  const [silModalAcik, setSilModalAcik] = useState(false);
+  const [veriSilFirma, setVeriSilFirma] = useState<Firma | null>(null);
 
   const tekil = useTekilForm({
     seciliFirma: admin.seciliFirma,
@@ -112,6 +117,21 @@ export default function AdminPanel() {
         globalBolum={globalBolum}
         setGlobalBolum={setGlobalBolum}
         onCikis={admin.cikisYap}
+        onSilAc={() => setSilModalAcik(true)}
+      />
+
+      <TopluTekilSilModal
+        acik={silModalAcik}
+        onKapat={() => setSilModalAcik(false)}
+        hata={admin.hata}
+        basari={admin.basari}
+      />
+
+      <FirmaVeriSilModal
+        firma={veriSilFirma}
+        onKapat={() => setVeriSilFirma(null)}
+        hata={admin.hata}
+        basari={admin.basari}
       />
 
       <HataMesajiContainer mesajlar={admin.mesajlar} />
@@ -130,6 +150,7 @@ export default function AdminPanel() {
           handleEclubStoreToggle={admin.handleEclubStoreToggle}
           handleFirmaToggle={admin.handleFirmaToggle}
           handleFirmaSil={admin.handleFirmaSil}
+          onVeriSil={setVeriSilFirma}
           handleExport={admin.handleExport}
           loading={admin.loading}
         />
