@@ -14,6 +14,7 @@ interface AdminUstBarProps {
   globalBolum: GlobalBolumId | null;
   setGlobalBolum: (v: GlobalBolumId | null) => void;
   onCikis: () => void;
+  onSilAc: () => void;
 }
 
 export default function AdminUstBar(p: AdminUstBarProps) {
@@ -67,6 +68,24 @@ export default function AdminUstBar(p: AdminUstBarProps) {
             </button>
           );
         })}
+
+        <button
+          onClick={p.onSilAc}
+          title="Toplu / Tekil test verisi silme"
+          style={{
+            padding: "6px 12px",
+            background: "rgba(255,255,255,0.10)",
+            border: "1px solid rgba(255,255,255,0.35)",
+            borderRadius: "8px",
+            fontSize: "12px",
+            fontWeight: 600,
+            color: "white",
+            cursor: "pointer",
+            fontFamily: "'Nunito', sans-serif",
+          }}
+        >
+          Toplu/Tekil Sil
+        </button>
 
         <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.85)", marginLeft: "8px" }}>
           {p.kullaniciAd}
