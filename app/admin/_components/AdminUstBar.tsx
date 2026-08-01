@@ -2,7 +2,7 @@
 //
 // M2 — Yönetim kabuğunun üst barı (K-A3: login neslinden görsel dil).
 // Sol: başlık. Sağ: GLOBAL bölümler (GLOBAL_BOLUMLER tek kaynağından —
-// firma bağlamından bağımsız işler), test aracı, kullanıcı + çıkış.
+// firma bağlamından bağımsız işler), kullanıcı + çıkış.
 // Global bölümler ileride firma adminine kapalıdır (firmaAdminGorur, K-A1).
 
 "use client";
@@ -13,7 +13,6 @@ interface AdminUstBarProps {
   kullaniciAd: string;
   globalBolum: GlobalBolumId | null;
   setGlobalBolum: (v: GlobalBolumId | null) => void;
-  onTestSil: () => void;
   onCikis: () => void;
 }
 
@@ -68,24 +67,6 @@ export default function AdminUstBar(p: AdminUstBarProps) {
             </button>
           );
         })}
-
-        <button
-          onClick={p.onTestSil}
-          style={{
-            padding: "6px 12px",
-            background: "transparent",
-            border: "1px solid rgba(255,255,255,0.35)",
-            borderRadius: "8px",
-            fontSize: "12px",
-            fontWeight: 600,
-            color: "#fecaca",
-            cursor: "pointer",
-            fontFamily: "'Nunito', sans-serif",
-            marginLeft: "8px",
-          }}
-        >
-          Talep/Yayın Silme
-        </button>
 
         <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.85)", marginLeft: "8px" }}>
           {p.kullaniciAd}

@@ -30,7 +30,6 @@ import TakimBolgeFormu from "./_components/TakimBolgeFormu";
 import UrunTeknikYonetimi from "./_components/UrunTeknikYonetimi";
 import KullaniciListesi from "./_components/KullaniciListesi";
 import SistemAyarlari from "./_components/SistemAyarlari";
-import TalepYayinSilModal from "./_components/TalepYayinSilModal";
 import HbStorePaneli from "./_components/global/HbStorePaneli";
 import EclubStorePaneli from "./_components/global/EclubStorePaneli";
 import EclubYonetimPaneli from "./eclub/_components/EclubYonetimPaneli";
@@ -43,9 +42,6 @@ export default function AdminPanel() {
   // M2 kabuk state'i: firma bağlamı sekmesi + global bölüm (üst bar).
   const [seciliSekme, setSeciliSekme] = useState<ModulSekmeId>("kullanicilar");
   const [globalBolum, setGlobalBolum] = useState<GlobalBolumId | null>(null);
-
-  // Test verilerini silme onay modalı (test dönemi aracı — deploy öncesi kaldırılır).
-  const [testSilAcik, setTestSilAcik] = useState(false);
 
   const tekil = useTekilForm({
     seciliFirma: admin.seciliFirma,
@@ -115,18 +111,10 @@ export default function AdminPanel() {
         kullaniciAd={`${admin.kullanici.ad} ${admin.kullanici.soyad}`}
         globalBolum={globalBolum}
         setGlobalBolum={setGlobalBolum}
-        onTestSil={() => setTestSilAcik(true)}
         onCikis={admin.cikisYap}
       />
 
       <HataMesajiContainer mesajlar={admin.mesajlar} />
-
-      <TalepYayinSilModal
-        acik={testSilAcik}
-        onKapat={() => setTestSilAcik(false)}
-        basari={admin.basari}
-        hata={admin.hata}
-      />
 
       <div style={{ display: "flex", minHeight: "calc(100vh - 54px)" }}>
         <FirmaSidebar
