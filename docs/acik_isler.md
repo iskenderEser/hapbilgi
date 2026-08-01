@@ -204,7 +204,3 @@ dokunulmamalı. Ön koşul: RPC tanımının okunması.
 Ara evrede `iu_id`'ye üreticinin yazılması tespiti. 22.07 refactoring'inde
 kabuklar `iu_id = null` doğar hâle geldi; maddenin fiilen kapanıp kapanmadığı
 teyit edilmedi.
-
----
-
-## I. Toplu Ve Tekil Silme
