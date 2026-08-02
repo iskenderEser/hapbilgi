@@ -31,6 +31,13 @@ export default function SolListe(props: SolListeProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [hover, setHover] = useState<string | null>(null);
+  const [kapaliGruplar, setKapaliGruplar] = useState<Set<string>>(new Set());
+  const grupToggle = (baslik: string) =>
+    setKapaliGruplar((onceki) => {
+      const yeni = new Set(onceki);
+      if (yeni.has(baslik)) yeni.delete(baslik); else yeni.add(baslik);
+      return yeni;
+    });
 
   const cozPath = (oge: NavOge) => (typeof oge.path === "function" ? oge.path(props) : oge.path);
   const rozetSayisi = (oge: NavOge) =>
@@ -49,7 +56,7 @@ export default function SolListe(props: SolListeProps) {
         className="relative w-full flex items-center justify-between rounded-lg cursor-pointer border-none text-left transition-all duration-200"
         style={{
           padding: "7px 10px",
-          fontSize: "13px",
+          fontSize: "15px",
           fontWeight: aktif ? 700 : 500,
           color: aktif ? "#185fa5" : "#374151",
           background: aktif ? "rgba(86,174,255,0.12)" : isHover ? "rgba(0,0,0,0.05)" : "transparent",
@@ -85,14 +92,21 @@ export default function SolListe(props: SolListeProps) {
             return <Satir key={grup.baslik} oge={gorunur[0]} />;
           }
 
+          const acik = !kapaliGruplar.has(grup.baslik);
           return (
             <div key={grup.baslik} className="flex flex-col gap-1">
-              <span
-                style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.04em", padding: "0 10px 2px", fontFamily: "'Nunito', sans-serif" }}
+              <button
+                onClick={() => grupToggle(grup.baslik)}
+                className="w-full flex items-center justify-between bg-transparent border-none cursor-pointer"
+                style={{ fontSize: "13px", fontWeight: 800, color: "#111827", textTransform: "uppercase", letterSpacing: "0.04em", padding: "2px 10px 4px", fontFamily: "'Nunito', sans-serif" }}
               >
-                {grup.baslik}
-              </span>
-              {gorunur.map((oge) => (
+                <span>{grup.baslik}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth={2.5}
+                  style={{ transform: acik ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
+              {acik && gorunur.map((oge) => (
                 <Satir key={oge.etiket} oge={oge} />
               ))}
             </div>

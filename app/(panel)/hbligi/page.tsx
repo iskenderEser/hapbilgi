@@ -3,6 +3,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { aktifDonem } from "@/lib/zaman/kontrol";
 import HbLigiPeriyotSecici, { type Periyot } from "@/components/hbligi/HbLigiPeriyotSecici";
@@ -58,6 +59,7 @@ type HBLigiVeri =
   | { tip: "genel"; lig: GenelSatiri[]; filtreler: Filtreler };
 
 export default function HBLigiPage() {
+  const router = useRouter();
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const [veri, setVeri] = useState<HBLigiVeri | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,6 +83,13 @@ export default function HBLigiPage() {
     return Math.floor((d.getTime() - h1.getTime()) / 604800000) + 1;
   };
   const [hafta, setHafta] = useState<number>(buHaftaNo(buAn));
+
+  // IU'nun HBLigi ile ilgisi yok — erişimi engellenir (E4).
+  useEffect(() => {
+    if (!authYukleniyor && kullanici && kullanici.rol.toLowerCase() === "iu") {
+      router.replace("/ana-sayfa");
+    }
+  }, [kullanici, authYukleniyor, router]);
 
   // BM rolündeki kullanıcı için bolge_id'yi kullanicilar tablosundan çek.
   // Bu sayfada bm bölge highlight'ı için gereklidir.

@@ -109,7 +109,7 @@ export const PANEL_NAV: NavGrup[] = [
   {
     baslik: "Ligler",
     oglar: [
-      { etiket: "HBLigi",      path: "/hbligi",     gate: () => true },
+      { etiket: "HBLigi",      path: "/hbligi",     gate: (c) => c.rolKucu !== "iu" },
       { etiket: "CC Ligi",     path: "/cc-ligi",    gate: (c) => c.ccAcik && CCLIGI_GORENLERLER.includes(c.rolKucu) },
       { etiket: "E-Club Ligi", path: "/eclub/ligi", gate: (c) => c.eclubAcik && ECLUB_LIGI_GOREN_ROLLER.includes(c.rolKucu) },
     ],

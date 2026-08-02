@@ -52,6 +52,9 @@ export async function GET(request: NextRequest) {
 
     const rol = await rolCozucu(adminSupabase, user.id);
 
+    // IU'nun HBLigi ile ilgisi yok — erişim yok (E4).
+    if (rol === "iu") return yetkiHatasi();
+
     // Periyot parametrelerini oku + doğrula
     const { searchParams } = new URL(request.url);
     const periyot = periyotParse(searchParams);
