@@ -2,10 +2,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/app/providers/AuthProvider';
-import Navbar from '@/components/Navbar';
 import UretimBolumu from './_components/UretimBolumu';
 import TuketimBolumu from './_components/TuketimBolumu';
 import EczanemDokumBolumu from '@/components/raporlar/EczanemDokumBolumu';
@@ -47,17 +45,10 @@ interface RaporData {
 }
 
 export default function YoneticiRaporPage() {
-  const router = useRouter();
-  const { kullanici, yukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor } = useAuth();
   const [data, setData] = useState<RaporData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!yukleniyor && kullanici === null) {
-      router.replace('/login');
-    }
-  }, [kullanici, yukleniyor, router]);
 
   useEffect(() => {
     if (!kullanici) return;
@@ -99,12 +90,6 @@ export default function YoneticiRaporPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar
-        email={kullanici.email}
-        rol={kullanici.rol}
-        adSoyad={kullanici.adSoyad}
-        onCikis={cikisYap}
-      />
       <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
 
         <Link href="/ana-sayfa" className="flex items-center gap-1.5 text-xs mb-4 text-gray-500">

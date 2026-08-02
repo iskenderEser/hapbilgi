@@ -2,12 +2,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useRapor } from '@/hooks/useRapor';
 import { BORDO, GRI_METIN, KOYU_METIN, GRI_ZEMIN, formatPuan, PERIYOTLAR, Periyot } from '@/lib/utils/raporUtils';
-import Navbar from '@/components/Navbar';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
 import EczanemDokumBolumu from '@/components/raporlar/EczanemDokumBolumu';
 import StatCard from '@/components/raporlar/StatCard';
@@ -95,8 +93,7 @@ interface RaporData {
 const KIRMIZI = '#E24B4A';
 
 export default function BmRaporPage() {
-  const router = useRouter();
-  const { kullanici, yukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor } = useAuth();
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
   const [acikUrunId, setAcikUrunId] = useState<string | null>(null);
 
@@ -105,12 +102,6 @@ export default function BmRaporPage() {
     periyot,
     kullanici?.id
   );
-
-  useEffect(() => {
-    if (!yukleniyor && kullanici === null) {
-      router.replace('/login');
-    }
-  }, [kullanici, yukleniyor, router]);
 
   if (yukleniyor || loading) return (
     <div className="flex justify-center items-center min-h-screen">
@@ -126,7 +117,6 @@ export default function BmRaporPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={cikisYap} />
       <div className="max-w-4xl mx-auto px-3 py-3 pb-20 md:px-4 md:py-4 md:pb-4">
 
         <Link href="/ana-sayfa" className="flex items-center gap-1.5 text-xs mb-4" style={{ color: GRI_METIN }}>

@@ -8,9 +8,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
-import Navbar from "@/components/Navbar";
 import type { Periyot } from "@/lib/utils/raporUtils";
 import { tarihAraligi } from "@/lib/utils/tarihAraligi";
 import { periyotAltKirilim } from "@/lib/utils/periyotAltKirilim";
@@ -37,8 +35,7 @@ const PERIYOT_ETIKETLERI: Record<Periyot, string> = {
 };
 
 export default function AnalizBmSayfasi() {
-  const router = useRouter();
-  const { kullanici, yukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor } = useAuth();
 
   const [kapsam, setKapsam] = useState<BmKapsam | null>(null);
   const [tuketimDegiskenler, setTuketimDegiskenler] = useState<Degisken[]>([]);
@@ -59,12 +56,6 @@ export default function AnalizBmSayfasi() {
   const [aiYorum, setAiYorum] = useState<string | null>(null);
 
   const [analizYukleniyor, setAnalizYukleniyor] = useState(false);
-
-  useEffect(() => {
-    if (!yukleniyor && kullanici === null) {
-      router.replace("/login");
-    }
-  }, [kullanici, yukleniyor, router]);
 
   const degiskenAdlari = useMemo(() => {
     const harita: Record<string, string> = {};
@@ -243,12 +234,6 @@ export default function AnalizBmSayfasi() {
   if (yuklemeHatasi || !kapsam) {
     return (
       <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-        <Navbar
-          email={kullanici.email}
-          rol={kullanici.rol}
-          adSoyad={kullanici.adSoyad}
-          onCikis={cikisYap}
-        />
         <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
           <div className="text-sm text-red-500">
             Sayfa yüklenirken hata oluştu: {yuklemeHatasi ?? "Kapsam alınamadı"}
@@ -272,12 +257,6 @@ export default function AnalizBmSayfasi() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar
-        email={kullanici.email}
-        rol={kullanici.rol}
-        adSoyad={kullanici.adSoyad}
-        onCikis={cikisYap}
-      />
       <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7 flex flex-col gap-4">
         <h1 className="text-xl font-bold text-koyu-metin">Analiz</h1>
 

@@ -124,7 +124,7 @@ Sayfalar gruplar hâlinde `app/(panel)/` altına taşınır; her sayfadan `<Navb
 `tsc`+denetim+`lint:mimari` → 1 smoke → commit.
 
 1. ✅ **Üretim hattı:** talepler(+[id]), senaryolar(+[id]), videolar(+[id]), soru-setleri(+[id]), yayin-yonetimi, onaylanan-talepler (10 sayfa taşındı+sadeleşti; tsc+denetim+lint temiz)
-2. **Raporlar + Analiz:** raporlar/{utt,bm,tm,uretici,yonetici}, analiz/{bm,tm,uretici,yonetici}
+2. ✅ **Raporlar + Analiz:** raporlar/{utt,bm,tm,uretici,yonetici}, analiz/{bm,tm,uretici,yonetici} (9 sayfa taşındı+sadeleşti; tsc+denetim+lint temiz)
 3. **Ligler + Öneriler:** hbligi, cc-ligi, oneriler, challenge-club
 4. **HBStore:** store(+[id]), store/siparisler, store/adreslerim, store/siparislerim
 5. **E-Club (saha):** eclub/listem, eclub/oneriler, eclub/panel, eclub/ligi, eclub/store/rapor
@@ -152,6 +152,7 @@ her batch tsc'si erken yakalar.
 | E1 | **Logo hizası:** Sol liste gelince logo navbarda sağda kalıyor; logo sol liste sütunuyla hizalanacak (navbar ortalı yerleşiminden kaynaklı). | ⬜ |
 | E2 | **Sol liste her sayfada görünür.** NOT: Faz 2 tüm sayfaları `(panel)`'e taşıyınca kendiliğinden çözülür (ayrı düzeltme değil) — sonda yalnız **doğrulanır**. | ⬜ |
 | E3 | **Açılır/kapanır gruplar:** Üretim / Yayın / Raporlama gibi çok öğeli gruplar ok (chevron) ile açılıp kapansın (accordion) — uzun listede ihtiyaç duyulan açılır. (İskender + Claude ortak tercihi.) | ⬜ |
+| E4 | **IU'da HBLigi gizle:** IU rolü HBLigi'yi görmemeli. `panelNav.config` HBLigi gate şu an `() => true`; IU hariç tutulacak. (Batch 1 görsel smoke'da fark edildi.) | ⬜ |
 
 ---
 
@@ -167,6 +168,14 @@ her batch tsc'si erken yakalar.
 
 ## 8. Değişiklik Günlüğü
 
+- **02.08.2026** — Faz 2 Batch 2 (raporlar + analiz) tamamlandı: 2 dizin / 9 sayfa `(panel)`'e
+  taşındı. Bu batch deseni Batch 1'den farklıydı (tam okundu): Navbar `handleCikis` yerine doğrudan
+  `cikisYap`, guard ayrı bir useEffect (`if (!yukleniyor && kullanici === null) router.replace('/login')`),
+  analiz sayfalarında **2 Navbar** (hata-render + ana-render), zaten `if (!kullanici …) return null`
+  daraltması var. Çıkarılanlar: Navbar + useRouter + router + cikisYap + genel guard useEffect.
+  Sayfaya özel korunanlar: veri useEffect'leri, `if (!kullanici) return` veri guard'ları, spinner,
+  hata-render, index dispatcher'lar (analiz/page, raporlar/page — Navbar'sız redirect). Wrapper'lar
+  korundu (çok-return'lü analiz'de fragment riski). tsc + denetim + lint:mimari temiz.
 - **02.08.2026** — Faz 2 Batch 1 (üretim hattı) tamamlandı: 6 dizin (10 sayfa) `(panel)`'e
   taşındı, her sayfadan Navbar+genel guard çıkarıldı (sayfaya özel yönlendirme/erişim korundu),
   `kullanici` null daralması için spinner guard'ına `!kullanici` eklendi. Taşınan `@/app/talepler/*`

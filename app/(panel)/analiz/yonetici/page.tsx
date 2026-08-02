@@ -1,21 +1,22 @@
-// app/analiz/tm/page.tsx
+// app/analiz/yonetici/page.tsx
 //
-// TM rolü için analiz sayfası.
-// Takım sabit (TM'nin kendi takımı, değiştirilemez), bölge/UTT/ürün/eğitim seçilebilir.
-// Sadece tüketim. Çizgi grafik mimarisi.
+// Yönetici rolü için analiz sayfası. Orchestrator.
+// - Mount'ta paralel: değişkenler (uretim + tuketim) + kapsam.
+// - Periyot/filtre değiştiğinde tüketim türev değerleri arka planda güncellenir.
+// - "Analiz Et" → her dilim için paralel sorgu → tek seferde noktalar dizisi oluşturulur,
+//   ardından yorumla endpoint'ine toplam değerlerle çağrı atılır.
 
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
-import Navbar from "@/components/Navbar";
 import type { Periyot } from "@/lib/utils/raporUtils";
 import { tarihAraligi } from "@/lib/utils/tarihAraligi";
 import { periyotAltKirilim } from "@/lib/utils/periyotAltKirilim";
-import type { Degisken } from "@/lib/analiz/paylasilan/kombinasyonlar";
-import type { TmKapsam } from "@/lib/analiz/tm/getTmAnalizData";
+import type { Degisken, Kategori } from "@/lib/analiz/paylasilan/kombinasyonlar";
+import type { Kapsam } from "@/lib/analiz/yonetici/getYoneticiAnalizData";
 
+import UretimKart from "../_components/UretimKart";
 import TuketimKart from "../_components/TuketimKart";
 import FiltreBari, { type Filtreler } from "../_components/FiltreBari";
 import SonucGrafigi from "../_components/SonucGrafigi";
@@ -35,11 +36,11 @@ const PERIYOT_ETIKETLERI: Record<Periyot, string> = {
   bu_yil: "Yıllık",
 };
 
-export default function AnalizTmSayfasi() {
-  const router = useRouter();
-  const { kullanici, yukleniyor, cikisYap } = useAuth();
+export default function AnalizYoneticiSayfasi() {
+  const { kullanici, yukleniyor } = useAuth();
 
-  const [kapsam, setKapsam] = useState<TmKapsam | null>(null);
+  const [kapsam, setKapsam] = useState<Kapsam | null>(null);
+  const [uretimDegiskenler, setUretimDegiskenler] = useState<Degisken[]>([]);
   const [tuketimDegiskenler, setTuketimDegiskenler] = useState<Degisken[]>([]);
   const [ilkYukleme, setIlkYukleme] = useState(true);
   const [yuklemeHatasi, setYuklemeHatasi] = useState<string | null>(null);
@@ -47,6 +48,7 @@ export default function AnalizTmSayfasi() {
   const [periyot, setPeriyot] = useState<Periyot>("bu_ay");
   const [filtreler, setFiltreler] = useState<Filtreler>({});
 
+  const [uretimSecimi, setUretimSecimi] = useState<string[]>([]);
   const [tuketimSecimi, setTuketimSecimi] = useState<string[]>([]);
   const [turevDegerleri, setTurevDegerleri] = useState<Record<string, number>>({});
 
@@ -57,25 +59,22 @@ export default function AnalizTmSayfasi() {
   const [aiYorumDurum, setAiYorumDurum] = useState<AiYorumDurum>("idle");
   const [aiYorum, setAiYorum] = useState<string | null>(null);
 
+  const [karmaSecimUyari, setKarmaSecimUyari] = useState<string | null>(null);
   const [analizYukleniyor, setAnalizYukleniyor] = useState(false);
-
-  useEffect(() => {
-    if (!yukleniyor && kullanici === null) {
-      router.replace("/login");
-    }
-  }, [kullanici, yukleniyor, router]);
 
   const degiskenAdlari = useMemo(() => {
     const harita: Record<string, string> = {};
+    for (const d of uretimDegiskenler) harita[d.degisken_id] = d.ad;
     for (const d of tuketimDegiskenler) harita[d.degisken_id] = d.ad;
     return harita;
-  }, [tuketimDegiskenler]);
+  }, [uretimDegiskenler, tuketimDegiskenler]);
 
   const tamFiltreler = useMemo(() => {
     const { baslangic, bitis } = tarihAraligi(periyot);
     return {
       baslangic,
       bitis,
+      takim_id: filtreler.takim_id ?? null,
       bolge_id: filtreler.bolge_id ?? null,
       urun_id: filtreler.urun_id ?? null,
       utt_id: filtreler.utt_id ?? null,
@@ -87,17 +86,21 @@ export default function AnalizTmSayfasi() {
     if (!kullanici) return;
     const ilkVerileriCek = async () => {
       try {
-        const [tuketimRes, kapsamRes] = await Promise.all([
+        const [uretimRes, tuketimRes, kapsamRes] = await Promise.all([
+          fetch("/analiz/api/degiskenler?kategori=uretim"),
           fetch("/analiz/api/degiskenler?kategori=tuketim"),
-          fetch("/analiz/api/tm/kapsam"),
+          fetch("/analiz/api/yonetici/kapsam"),
         ]);
 
+        if (!uretimRes.ok) throw new Error("Üretim değişkenleri yüklenemedi.");
         if (!tuketimRes.ok) throw new Error("Tüketim değişkenleri yüklenemedi.");
         if (!kapsamRes.ok) throw new Error("Kapsam yüklenemedi.");
 
+        const uretimJson = await uretimRes.json();
         const tuketimJson = await tuketimRes.json();
         const kapsamJson = await kapsamRes.json();
 
+        setUretimDegiskenler(uretimJson.degiskenler ?? []);
         setTuketimDegiskenler(tuketimJson.degiskenler ?? []);
         setKapsam(kapsamJson.kapsam);
       } catch (err) {
@@ -113,10 +116,11 @@ export default function AnalizTmSayfasi() {
     if (ilkYukleme || !kullanici) return;
     const turevleriGetir = async () => {
       try {
-        const res = await fetch("/analiz/api/tm/sorgu", {
+        const res = await fetch("/analiz/api/yonetici/sorgu", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            kategori: "tuketim",
             degisken_idleri: TUREV_IDLERI,
             filtreler: tamFiltreler,
           }),
@@ -135,9 +139,20 @@ export default function AnalizTmSayfasi() {
   }, [tamFiltreler, ilkYukleme, kullanici]);
 
   async function analizEt() {
-    if (tuketimSecimi.length === 0) return;
+    setKarmaSecimUyari(null);
+    const uretimDoluMu = uretimSecimi.length > 0;
+    const tuketimDoluMu = tuketimSecimi.length > 0;
 
-    const degisken_idleri = tuketimSecimi;
+    if (uretimDoluMu && tuketimDoluMu) {
+      setKarmaSecimUyari("Lütfen yalnızca bir kategoriden seçim yapın (üretim veya tüketim).");
+      return;
+    }
+    if (!uretimDoluMu && !tuketimDoluMu) {
+      return;
+    }
+
+    const kategori: Kategori = uretimDoluMu ? "uretim" : "tuketim";
+    const degisken_idleri = uretimDoluMu ? uretimSecimi : tuketimSecimi;
 
     setSonucIdleri([]);
     setSonuclar({});
@@ -147,13 +162,16 @@ export default function AnalizTmSayfasi() {
     setAiYorumDurum("loading");
 
     try {
+      // Dilim listesi periyoda göre
       const dilimler = periyotAltKirilim(periyot);
 
+      // Her dilim için paralel sorgu
       const dilimSorguPromises = dilimler.map((d) =>
-        fetch("/analiz/api/tm/sorgu", {
+        fetch("/analiz/api/yonetici/sorgu", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            kategori,
             degisken_idleri,
             filtreler: {
               ...tamFiltreler,
@@ -164,10 +182,12 @@ export default function AnalizTmSayfasi() {
         }).then((r) => (r.ok ? r.json() : { sonuclar: {} }))
       );
 
-      const toplamPromise = fetch("/analiz/api/tm/sorgu", {
+      // Toplam (üst kartlar için) — tüm dilim aralığını tek sorgu
+      const toplamPromise = fetch("/analiz/api/yonetici/sorgu", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          kategori,
           degisken_idleri,
           filtreler: tamFiltreler,
         }),
@@ -175,6 +195,7 @@ export default function AnalizTmSayfasi() {
 
       const [toplamData, ...dilimDatalari] = await Promise.all([toplamPromise, ...dilimSorguPromises]);
 
+      // Noktalar dizisi: her dilim için { etiket, id1: deger, id2: deger, ... }
       const yeniNoktalar: Record<string, number | string>[] = dilimler.map((d, i) => {
         const nokta: Record<string, number | string> = { etiket: d.etiket };
         const ds = dilimDatalari[i]?.sonuclar ?? {};
@@ -188,21 +209,24 @@ export default function AnalizTmSayfasi() {
       setSonuclar(toplamData.sonuclar ?? {});
       setNoktalar(yeniNoktalar);
 
+      // AI yorum çağrısı
       const yorumlaRes = await fetch("/analiz/api/yorumla", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          kategori: "tuketim",
+          kategori,
           degisken_idleri,
           sonuclar: toplamData.sonuclar,
           baglam: {
-            rol: "tm",
-            rol_ad: "Takım Müdürü",
+            rol: "yonetici",
+            rol_ad: "Yönetici",
             periyot_etiketi: PERIYOT_ETIKETLERI[periyot],
             urun_adi: filtreler.urun_id
               ? kapsam?.urunler.find((u) => u.urun_id === filtreler.urun_id)?.urun_adi ?? null
               : null,
-            takim_adi: kapsam?.takim_adi ?? null,
+            takim_adi: filtreler.takim_id
+              ? kapsam?.takimlar.find((t) => t.takim_id === filtreler.takim_id)?.takim_adi ?? null
+              : null,
             bolge_adi: filtreler.bolge_id
               ? kapsam?.bolgeler.find((b) => b.bolge_id === filtreler.bolge_id)?.bolge_adi ?? null
               : null,
@@ -245,12 +269,6 @@ export default function AnalizTmSayfasi() {
   if (yuklemeHatasi || !kapsam) {
     return (
       <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-        <Navbar
-          email={kullanici.email}
-          rol={kullanici.rol}
-          adSoyad={kullanici.adSoyad}
-          onCikis={cikisYap}
-        />
         <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
           <div className="text-sm text-red-500">
             Sayfa yüklenirken hata oluştu: {yuklemeHatasi ?? "Kapsam alınamadı"}
@@ -260,36 +278,25 @@ export default function AnalizTmSayfasi() {
     );
   }
 
-  // FiltreBari'nin tip katılığı yüzünden TmKapsam'a takimlar (sabit, tek eleman) ekliyoruz.
-  // Bu sadece tip uyumu için; FiltreBari sabitTakim prop'u alınca dropdown'u kilitler.
-  const kapsamGenisletilmis = {
-    ...kapsam,
-    takimlar: [{ takim_id: kapsam.takim_id, takim_adi: kapsam.takim_adi }],
-    bolgeler: kapsam.bolgeler.map((b) => ({ ...b, takim_id: kapsam.takim_id })),
-    urunler: kapsam.urunler.map((u) => ({ ...u, takim_id: null })),
-    utt_listesi: kapsam.utt_listesi.map((u) => ({ ...u, takim_id: kapsam.takim_id })),
-  };
-
-  const analizButonAktif = tuketimSecimi.length > 0;
+  const analizButonAktif = uretimSecimi.length > 0 || tuketimSecimi.length > 0;
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar
-        email={kullanici.email}
-        rol={kullanici.rol}
-        adSoyad={kullanici.adSoyad}
-        onCikis={cikisYap}
-      />
       <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7 flex flex-col gap-4">
         <h1 className="text-xl font-bold text-koyu-metin">Analiz</h1>
 
         <FiltreBari
           periyot={periyot}
           filtreler={filtreler}
-          kapsam={kapsamGenisletilmis}
-          sabitTakim={{ takim_id: kapsam.takim_id, takim_adi: kapsam.takim_adi }}
+          kapsam={kapsam}
           onPeriyotDegisti={setPeriyot}
           onFiltreDegisti={setFiltreler}
+        />
+
+        <UretimKart
+          degiskenler={uretimDegiskenler}
+          secili={uretimSecimi}
+          onSecimDegisti={setUretimSecimi}
         />
 
         <TuketimKart
@@ -298,6 +305,12 @@ export default function AnalizTmSayfasi() {
           onSecimDegisti={setTuketimSecimi}
           turevDegerleri={turevDegerleri}
         />
+
+        {karmaSecimUyari && (
+          <div className="bg-white rounded-lg border border-red-300 p-4 text-sm text-red-600">
+            {karmaSecimUyari}
+          </div>
+        )}
 
         <div className="flex justify-end">
           <button
