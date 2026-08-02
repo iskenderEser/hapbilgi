@@ -60,28 +60,26 @@ export default function PanelNavbar({ adSoyad, email, onCikis, onHamburger }: Pa
       className="sticky top-0 z-50 border-b border-gray-200 px-3 py-2 md:px-6 md:py-2.5"
       style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderBottomColor: "#e5e7eb" }}
     >
-      <div className="max-w-6xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
-          <img
-            src="/logo.png"
-            alt="hapbilgi"
-            className="h-10 md:h-14 lg:h-20 cursor-pointer mr-2 flex-shrink-0"
-            onClick={() => router.push("/")}
-          />
-          <div className="hidden md:flex items-center gap-1.5 flex-wrap">
-            {BILGI_PILLERI.map((p) => (
-              <button
-                key={p.key}
-                onClick={() => router.push(p.path)}
-                onMouseEnter={() => setHover(p.key)}
-                onMouseLeave={() => setHover(null)}
-                className={pillClass(isAktif(p.path))}
-                style={pillStyle(p.key, isAktif(p.path))}
-              >
-                {p.etiket}
-              </button>
-            ))}
-          </div>
+      <div className="flex items-center justify-between gap-4">
+        <img
+          src="/logo.png"
+          alt="hapbilgi"
+          className="h-10 md:h-14 lg:h-20 cursor-pointer flex-shrink-0"
+          onClick={() => router.push("/")}
+        />
+        <div className="hidden md:flex flex-1 items-center justify-center gap-1.5 flex-wrap">
+          {BILGI_PILLERI.map((p) => (
+            <button
+              key={p.key}
+              onClick={() => router.push(p.path)}
+              onMouseEnter={() => setHover(p.key)}
+              onMouseLeave={() => setHover(null)}
+              className={pillClass(isAktif(p.path))}
+              style={pillStyle(p.key, isAktif(p.path))}
+            >
+              {p.etiket}
+            </button>
+          ))}
         </div>
 
         <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
