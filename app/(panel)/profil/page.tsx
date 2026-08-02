@@ -4,8 +4,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 
@@ -41,8 +39,7 @@ interface Siralama {
 }
 
 export default function ProfilPage() {
-  const router = useRouter();
-  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const [profil, setProfil] = useState<Profil | null>(null);
   const [izleme, setIzleme] = useState<Izleme | null>(null);
   const [puanDagilimi, setPuanDagilimi] = useState<PuanDagilimi | null>(null);
@@ -55,19 +52,6 @@ export default function ProfilPage() {
   const [yeniSifreTekrar, setYeniSifreTekrar] = useState("");
   const dosyaInputRef = useRef<HTMLInputElement>(null);
   const { mesajlar, hata, basari } = useHataMesaji();
-
-  useEffect(() => {
-    if (authYukleniyor) return;
-    if (!kullanici) {
-      router.push("/login");
-      return;
-    }
-  }, [kullanici, authYukleniyor, router]);
-
-  const handleCikis = async () => {
-    await cikisYap();
-    router.push("/login");
-  };
 
   useEffect(() => {
     if (!kullanici) return;
@@ -373,8 +357,6 @@ export default function ProfilPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
-
       <div className="max-w-5xl mx-auto px-3 py-3 pb-20 md:px-6 md:py-6 md:pb-6">
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col md:flex-row md:min-h-[600px]">
           <SolPanel />

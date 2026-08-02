@@ -31,7 +31,7 @@ kolaylaşır.
 |---|---|---|
 | 0 | Kararların sabitlenmesi (KARAR-1…6) | ✅ |
 | 1 | Faz 1 — Kabuk + pilot (yalnız `/ana-sayfa`) | ✅ |
-| 2 | Faz 2 — Yayım (kalan 40 sayfa, batch) | ⬜ |
+| 2 | Faz 2 — Yayım (kalan 40 sayfa, batch) | ✅ |
 | 3 | Faz 3 — Temizlik (eski Navbar sil + REDBOOK) | ⬜ |
 
 Bağımlılık: 0 → 1 (görsel onay) → 2 → 3.
@@ -129,7 +129,7 @@ Sayfalar gruplar hâlinde `app/(panel)/` altına taşınır; her sayfadan `<Navb
 4. ✅ **HBStore:** store(+[urun_id]), store/siparisler, store/adreslerim, store/siparislerim (5 sayfa taşındı+sadeleşti; tsc+denetim+lint temiz)
 5. ✅ **E-Club (saha):** eclub/listem, oneriler, panel, ligi + store/rapor (28 dosya taşındı+sadeleşti; tsc+denetim+lint temiz)
 6. ✅ **E-Club Store (eclub_kisi):** eclub/store(+adreslerim, siparislerim) taşındı+sadeleşti; tsc+denetim+lint temiz
-7. **Kalan:** profil, kullanicilar, yayindaki-videolar ve Navbar kullanan diğerleri
+7. ✅ **Kalan:** profil, kullanicilar, talepler-v2, yayindaki-videolar (4 sayfa taşındı+sadeleşti; tsc+denetim+lint temiz). Artık hiçbir sayfa eski Navbar kullanmıyor.
 
 En büyük risk: taşımada `../` relative import kırılması (çoğu `@/` alias). Pilot ve
 her batch tsc'si erken yakalar.
@@ -168,6 +168,14 @@ her batch tsc'si erken yakalar.
 
 ## 8. Değişiklik Günlüğü
 
+- **02.08.2026** — Faz 2 Batch 7 (kalan sayfalar) tamamlandı → **Faz 2 bitti.** profil, kullanicilar,
+  talepler-v2, yayindaki-videolar (4 sayfa) `(panel)`'e taşındı; `app/` kökünde artık `@/components/Navbar`
+  kullanan sayfa YOK. 4 sayfadan Navbar + handleCikis + kullanılmayan `cikisYap` çıkarıldı. **profil**: genel
+  guard useEffect tek başınaydı ve `router` yalnız onda + handleCikis'te kullanılıyordu → guard useEffect +
+  `useRouter` + `router` de çıkarıldı (ligi deseni). **kullanicilar/talepler-v2/yayindaki-videolar**: sayfaya
+  özel rol guard'ı + `router` korundu. Mutlak import yoktu; talepler-v2 içi `../` göreli importlar dizinle
+  birlikte taşındı. tsc + denetim + lint:mimari temiz (kalan eslint react-hooks/img uyarıları önceden vardı —
+  HEAD'de doğrulandı, kapsam dışı). Sırada **Faz 3** (Navbar.tsx sil + REDBOOK).
 - **02.08.2026** — Faz 2 Batch 6 (E-Club Store / eclub_kisi) tamamlandı: store kök + adreslerim +
   siparislerim (7 dosya) `(panel)`'e taşındı (Batch 5'te bölünen store'un kalanı; `rapor`'a dokunulmadı,
   `app/eclub` tamamen boşaldı). 3 sayfadan Navbar + handleCikis + kullanılmayan `cikisYap` çıkarıldı;

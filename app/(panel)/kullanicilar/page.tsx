@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/client";
 import { useListe, ListeArama, DahaFazlaGoster } from "@/components/liste";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { ADMIN_ROLLER, TUM_ROLLER } from "@/lib/utils/roller";
@@ -38,7 +37,7 @@ const ROLLER = TUM_ROLLER.filter((r) => !ADMIN_ROLLER.includes(r));
 
 export default function KullanicilarPage() {
   const router = useRouter();
-  const { kullanici: oturumKullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { kullanici: oturumKullanici, yukleniyor: authYukleniyor } = useAuth();
   const [kullanicilar, setKullanicilar] = useState<Kullanici[]>([]);
   const [hiyerarsi, setHiyerarsi] = useState<Hiyerarsi>({ firmalar: [], takimlar: [], bolgeler: [] });
   const [loading, setLoading] = useState(true);
@@ -66,11 +65,6 @@ export default function KullanicilarPage() {
       router.push("/ana-sayfa");
     }
   }, [oturumKullanici, authYukleniyor, router]);
-
-  const handleCikis = async () => {
-    await cikisYap();
-    router.push("/login");
-  };
 
   const veriCek = async () => {
     setLoading(true);
@@ -162,8 +156,6 @@ export default function KullanicilarPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-[Nunito]">
-      <Navbar email={oturumKullanici.email} rol={oturumKullanici.rol} adSoyad={oturumKullanici.adSoyad} onCikis={handleCikis} />
-
       <div className="max-w-5xl mx-auto px-4 py-6 flex flex-col gap-5">
 
         {/* Düzenleme formu */}

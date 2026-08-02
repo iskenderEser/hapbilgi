@@ -16,7 +16,6 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import { HataMesajiContainer } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
@@ -28,7 +27,7 @@ import { IptalAkordiyonu } from "./_components/IptalAkordiyonu";
 
 export default function TaleplerV2Page() {
   const router = useRouter();
-  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const merkez = useTalepMerkezi();
 
   // D-1: faz 1 yalnız üretici rollerine açık. İÜ eski sayfalarda çalışmaya devam
@@ -44,11 +43,6 @@ export default function TaleplerV2Page() {
     }
   }, [kullanici, authYukleniyor, router]);
 
-  const handleCikis = async () => {
-    await cikisYap();
-    router.push("/login");
-  };
-
   if (authYukleniyor || !kullanici || merkez.loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -62,13 +56,6 @@ export default function TaleplerV2Page() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar
-        email={kullanici.email}
-        rol={kullanici.rol}
-        adSoyad={kullanici.adSoyad}
-        onCikis={handleCikis}
-      />
-
       <div className="max-w-[1400px] mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7 flex flex-col gap-5">
         <YeniTalepAkordiyonu onTalepOlusturuldu={merkez.talepOlusturuldu} />
 

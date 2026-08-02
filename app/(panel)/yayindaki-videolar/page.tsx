@@ -9,7 +9,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import KlasorGrid from "./_components/KlasorGrid";
 import { useListe, ListeArama } from "@/components/liste";
@@ -21,7 +20,7 @@ import { YAYINDAKI_VIDEO_GORENLER } from "@/lib/utils/roller";
 
 export default function YayindakiVideolarPage() {
   const router = useRouter();
-  const { kullanici, yukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor } = useAuth();
   const { mesajlar, hata } = useHataMesaji();
   const [videolar, setVideolar] = useState<YayindakiVideo[]>([]);
 
@@ -70,8 +69,6 @@ export default function YayindakiVideolarPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#f9fafb", fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={cikisYap} />
-
       {aktifVideo ? (
         <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
           <VideoOynatici
