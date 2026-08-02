@@ -127,8 +127,8 @@ Sayfalar gruplar hâlinde `app/(panel)/` altına taşınır; her sayfadan `<Navb
 2. ✅ **Raporlar + Analiz:** raporlar/{utt,bm,tm,uretici,yonetici}, analiz/{bm,tm,uretici,yonetici} (9 sayfa taşındı+sadeleşti; tsc+denetim+lint temiz)
 3. ✅ **Ligler + Öneriler:** hbligi, cc-ligi, oneriler, challenge-club (+ challenge-club/izle) taşındı+sadeleşti; tsc+denetim+lint temiz
 4. ✅ **HBStore:** store(+[urun_id]), store/siparisler, store/adreslerim, store/siparislerim (5 sayfa taşındı+sadeleşti; tsc+denetim+lint temiz)
-5. **E-Club (saha):** eclub/listem, eclub/oneriler, eclub/panel, eclub/ligi, eclub/store/rapor
-6. **E-Club Store (eclub_kisi):** eclub/store(+adreslerim, siparislerim) — dar varyant testi
+5. ✅ **E-Club (saha):** eclub/listem, oneriler, panel, ligi + store/rapor (28 dosya taşındı+sadeleşti; tsc+denetim+lint temiz)
+6. ✅ **E-Club Store (eclub_kisi):** eclub/store(+adreslerim, siparislerim) taşındı+sadeleşti; tsc+denetim+lint temiz
 7. **Kalan:** profil, kullanicilar, yayindaki-videolar ve Navbar kullanan diğerleri
 
 En büyük risk: taşımada `../` relative import kırılması (çoğu `@/` alias). Pilot ve
@@ -168,6 +168,17 @@ her batch tsc'si erken yakalar.
 
 ## 8. Değişiklik Günlüğü
 
+- **02.08.2026** — Faz 2 Batch 6 (E-Club Store / eclub_kisi) tamamlandı: store kök + adreslerim +
+  siparislerim (7 dosya) `(panel)`'e taşındı (Batch 5'te bölünen store'un kalanı; `rapor`'a dokunulmadı,
+  `app/eclub` tamamen boşaldı). 3 sayfadan Navbar + handleCikis + kullanılmayan `cikisYap` çıkarıldı;
+  `router` (guard + modal/buton yönlendirmeleri) ve sayfaya özel guard (kimlik `eclub_kisi` + veri çekme)
+  korundu. Import güncellemesi gerekmedi (store-içi `./`/`../` + `@/` alias). tsc + denetim + lint:mimari temiz.
+- **02.08.2026** — Faz 2 Batch 5 (E-Club saha) tamamlandı: eclub/{listem, oneriler, panel, ligi} +
+  store/rapor (28 dosya) `(panel)`'e taşındı. 5 sayfadan Navbar + handleCikis + kullanılmayan `cikisYap`
+  çıkarıldı; **ligi**'de ayrıca genel guard useEffect + `useRouter` + `router` (başka kullanımı yoktu).
+  **listem/oneriler/panel/rapor**'da sayfaya özel guard (rol/kimlik/veri çekme) + `router` korundu.
+  **store bölündü:** rapor Batch 5'te taşındı, kök/adreslerim/siparislerim Batch 6'ya (eclub_kisi) bırakıldı.
+  Import güncellemesi gerekmedi (tümü `@/` alias veya `./` göreli). tsc + denetim + lint:mimari temiz.
 - **02.08.2026** — Faz 2 Batch 4 (HBStore) tamamlandı: `store` dizini (5 sayfa) `(panel)`'e taşındı.
   Hepsi modern desen ve uniform; `router` her sayfada render'da kullanıldığı için korundu. Guard
   useEffect sayfaya özel (STORE_ALABILEN rol kontrolü + `setYetkiKontrolEdildi`) → korundu; yalnız

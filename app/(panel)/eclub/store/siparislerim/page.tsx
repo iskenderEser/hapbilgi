@@ -3,7 +3,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 
@@ -29,7 +28,7 @@ const DURUM_ETIKET: Record<string, { ad: string; renk: string; bg: string }> = {
 
 export default function EclubSiparislerimPage() {
   const router = useRouter();
-  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
 
   const eclubKisi = !!kullanici && kullanici.kimlik_turu === "eclub_kisi";
@@ -58,8 +57,6 @@ export default function EclubSiparislerimPage() {
     if (!eclubKisi) { router.replace("/ana-sayfa"); return; }
     siparisCek();
   }, [kullanici, authYukleniyor, eclubKisi, router, siparisCek]);
-
-  const handleCikis = async () => { await cikisYap(); router.push("/login"); };
 
   const islem = async (siparis_id: string, action: "iptal" | "teslim_aldim") => {
     setIslemId(siparis_id);
@@ -96,8 +93,6 @@ export default function EclubSiparislerimPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} kimlikTuru={kullanici.kimlik_turu} onCikis={handleCikis} />
-
       <div className="max-w-3xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-semibold text-gray-900 m-0">Siparişlerim</h1>
