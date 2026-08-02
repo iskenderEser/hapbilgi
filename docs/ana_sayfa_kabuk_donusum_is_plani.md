@@ -125,7 +125,7 @@ Sayfalar gruplar hâlinde `app/(panel)/` altına taşınır; her sayfadan `<Navb
 
 1. ✅ **Üretim hattı:** talepler(+[id]), senaryolar(+[id]), videolar(+[id]), soru-setleri(+[id]), yayin-yonetimi, onaylanan-talepler (10 sayfa taşındı+sadeleşti; tsc+denetim+lint temiz)
 2. ✅ **Raporlar + Analiz:** raporlar/{utt,bm,tm,uretici,yonetici}, analiz/{bm,tm,uretici,yonetici} (9 sayfa taşındı+sadeleşti; tsc+denetim+lint temiz)
-3. **Ligler + Öneriler:** hbligi, cc-ligi, oneriler, challenge-club
+3. ✅ **Ligler + Öneriler:** hbligi, cc-ligi, oneriler, challenge-club (+ challenge-club/izle) taşındı+sadeleşti; tsc+denetim+lint temiz
 4. **HBStore:** store(+[id]), store/siparisler, store/adreslerim, store/siparislerim
 5. **E-Club (saha):** eclub/listem, eclub/oneriler, eclub/panel, eclub/ligi, eclub/store/rapor
 6. **E-Club Store (eclub_kisi):** eclub/store(+adreslerim, siparislerim) — dar varyant testi
@@ -168,6 +168,14 @@ her batch tsc'si erken yakalar.
 
 ## 8. Değişiklik Günlüğü
 
+- **02.08.2026** — Faz 2 Batch 3 (ligler + öneriler + challenge) tamamlandı: 4 dizin `(panel)`'e
+  taşındı. Sayfalar çok heterojendi (hepsi tam okundu): **hbligi** 4 Navbar (3×8-girinti replace_all
+  + 1×6-girinti); **oneriler** modern (router back-nav'da kaldı); **cc-ligi + challenge-club** eski
+  desen (user/rol/adSoyad state, eski `supabase.auth.signOut` handleCikis) — Navbar + createClient +
+  boşta kalan rol/adSoyad state + guard'daki setRol/setAdSoyad temizlendi; router/rol/user (sayfaya
+  özel) korundu. **challenge-club/izle** immersive değil, Navbar'sız → trim yok, sadece taşındı.
+  Ayrıca taşımadan önce **4 ölü kalem** silindi (İskender onayı): oneriler `createClient`+`formatTarih`,
+  cc-ligi `BORDO`+`basari`. tsc + no-unused-vars + denetim + lint:mimari temiz.
 - **02.08.2026** — Faz 2 Batch 2 (raporlar + analiz) tamamlandı: 2 dizin / 9 sayfa `(panel)`'e
   taşındı. Bu batch deseni Batch 1'den farklıydı (tam okundu): Navbar `handleCikis` yerine doğrudan
   `cikisYap`, guard ayrı bir useEffect (`if (!yukleniyor && kullanici === null) router.replace('/login')`),

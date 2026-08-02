@@ -3,8 +3,6 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { aktifDonem } from "@/lib/zaman/kontrol";
 import HbLigiPeriyotSecici, { type Periyot } from "@/components/hbligi/HbLigiPeriyotSecici";
@@ -60,8 +58,7 @@ type HBLigiVeri =
   | { tip: "genel"; lig: GenelSatiri[]; filtreler: Filtreler };
 
 export default function HBLigiPage() {
-  const router = useRouter();
-  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const [veri, setVeri] = useState<HBLigiVeri | null>(null);
   const [loading, setLoading] = useState(true);
   const [secilenBolge, setSecilenBolge] = useState("");
@@ -84,19 +81,6 @@ export default function HBLigiPage() {
     return Math.floor((d.getTime() - h1.getTime()) / 604800000) + 1;
   };
   const [hafta, setHafta] = useState<number>(buHaftaNo(buAn));
-
-  useEffect(() => {
-    if (authYukleniyor) return;
-    if (!kullanici) {
-      router.push("/login");
-      return;
-    }
-  }, [kullanici, authYukleniyor, router]);
-
-  const handleCikis = async () => {
-    await cikisYap();
-    router.push("/login");
-  };
 
   // BM rolündeki kullanıcı için bolge_id'yi kullanicilar tablosundan çek.
   // Bu sayfada bm bölge highlight'ı için gereklidir.
@@ -176,7 +160,6 @@ export default function HBLigiPage() {
     const { lig } = veri;
     return (
       <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-        <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
         <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold text-gray-900 m-0">HBLigi</h1>
@@ -194,7 +177,6 @@ export default function HBLigiPage() {
     const { bolge_utt, takim_bolge_siralaması } = veri;
     return (
       <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-        <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
         <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
           <h1 className="text-xl font-bold text-gray-900 m-0">HBLigi</h1>
           {periyotSecici}
@@ -247,7 +229,6 @@ export default function HBLigiPage() {
     const { takim_utt, takim_siralamasi } = veri;
     return (
       <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-        <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
         <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
           <h1 className="text-xl font-bold text-gray-900 m-0">HBLigi</h1>
           {periyotSecici}
@@ -299,7 +280,6 @@ export default function HBLigiPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
       <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
 
         <div className="flex items-center justify-between">

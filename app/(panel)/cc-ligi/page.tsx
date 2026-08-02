@@ -23,9 +23,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/app/providers/AuthProvider";
-import Navbar from "@/components/Navbar";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { CCLIGI_GORENLERLER } from "@/lib/utils/roller";
 import { aktifDonem } from "@/lib/zaman/kontrol";
@@ -34,7 +32,6 @@ import CcLigiPeriyotSecici, { type Periyot } from "@/components/cc-ligi/CcLigiPe
 import CcLigiTablosu, { type LigSatiri } from "@/components/cc-ligi/CcLigiTablosu";
 import CcChallengeListesi from "@/components/cc-ligi/CcChallengeListesi";
 
-const BORDO = "#bc2d0d";
 const GRI_METIN = "#737373";
 const KOYU_METIN = "#111827";
 const GRI_ZEMIN = "#f9fafb";
@@ -42,8 +39,6 @@ const GRI_ZEMIN = "#f9fafb";
 export default function CcLigiPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [rol, setRol] = useState("");
-  const [adSoyad, setAdSoyad] = useState("");
   const [yetkiKontrolEdildi, setYetkiKontrolEdildi] = useState(false);
 
   // Periyot state
@@ -66,7 +61,7 @@ export default function CcLigiPage() {
   const [ligSatirlari, setLigSatirlari] = useState<LigSatiri[]>([]);
   const [ligYukleniyor, setLigYukleniyor] = useState(true);
 
-  const { mesajlar, hata, basari } = useHataMesaji();
+  const { mesajlar, hata } = useHataMesaji();
   const { kullanici, yukleniyor: kimlikYukleniyor } = useAuth();
 
   // Auth + rol kontrolü — kimlik kaynağı useAuth/v_auth_kimlik (B-04);
@@ -79,8 +74,6 @@ export default function CcLigiPage() {
     }
     setUser(kullanici);
     const r = (kullanici.rol ?? "").toLowerCase();
-    setRol(r);
-    setAdSoyad(kullanici.adSoyad);
 
     if (!CCLIGI_GORENLERLER.includes(r)) {
       router.push("/ana-sayfa");
@@ -118,12 +111,6 @@ export default function CcLigiPage() {
     if (!yetkiKontrolEdildi) return;
     ligiYukle();
   }, [yetkiKontrolEdildi, ligiYukle]);
-
-  const handleCikis = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-  };
 
   // Loading
   if (!user || !yetkiKontrolEdildi) {
@@ -169,12 +156,6 @@ export default function CcLigiPage() {
       className="min-h-screen pb-20 md:pb-0"
       style={{ background: GRI_ZEMIN, fontFamily: "'Nunito', sans-serif" }}
     >
-      <Navbar
-        email={user?.email ?? ""}
-        rol={rol}
-        adSoyad={adSoyad}
-        onCikis={handleCikis}
-      />
 
       {/* Hata/başarı mesajları */}
       <div className="fixed top-20 right-4 z-40 flex flex-col gap-2 max-w-sm">

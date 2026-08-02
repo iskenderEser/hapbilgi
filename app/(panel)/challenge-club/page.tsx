@@ -13,9 +13,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/app/providers/AuthProvider";
-import Navbar from "@/components/Navbar";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import ChallengeGonderModal from "@/components/challenge-club/ChallengeGonderModal";
 
@@ -63,7 +61,6 @@ export default function ChallengeClubPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [rol, setRol] = useState("");
-  const [adSoyad, setAdSoyad] = useState("");
   const [loading, setLoading] = useState(true);
   const [aktifTab, setAktifTab] = useState<Tab>("izlenecek");
 
@@ -88,7 +85,6 @@ export default function ChallengeClubPage() {
     setUser(kullanici);
     const r = (kullanici.rol ?? "").toLowerCase();
     setRol(r);
-    setAdSoyad(kullanici.adSoyad);
     if (r !== "bm") {
       router.push("/ana-sayfa");
     }
@@ -149,12 +145,6 @@ export default function ChallengeClubPage() {
       hata("Veri çekilirken hata oluştu.", "fetch", String(err));
     }
     setLoading(false);
-  };
-
-  const handleCikis = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
   };
 
   const handleVideoIzle = (yayin_id: string) => {
@@ -221,12 +211,6 @@ export default function ChallengeClubPage() {
       className="min-h-screen pb-20 md:pb-0"
       style={{ background: GRI_ZEMIN, fontFamily: "'Nunito', sans-serif" }}
     >
-      <Navbar
-        email={user?.email ?? ""}
-        rol={rol}
-        adSoyad={adSoyad}
-        onCikis={handleCikis}
-      />
 
       {/* Hata/başarı mesajları */}
       <div className="fixed top-20 right-4 z-40 flex flex-col gap-2 max-w-sm">

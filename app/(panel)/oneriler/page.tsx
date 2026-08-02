@@ -1,11 +1,9 @@
 // app/oneriler/page.tsx
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
 import { TUKETICI_ROLLER, YONLENDIRICI_ROLLER } from "@/lib/utils/roller";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -56,7 +54,7 @@ const DURUM_BILGI: Record<DurumTipi, { etiket: string; renk: string; bg: string;
 
 export default function OnerilerPage() {
   const router = useRouter();
-  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const [oneriler, setOneriler] = useState<Oneri[]>([]);
   const [yayinlar, setYayinlar] = useState<Yayin[]>([]);
   const [kullanicilar, setKullanicilar] = useState<Kullanici[]>([]);
@@ -92,19 +90,6 @@ export default function OnerilerPage() {
     setOneriler(prev => prev.map(o => o.yayin_id === yayin_id ? { ...o, favori_mi: d.favori_mi, favori_sayisi: d.favori_mi ? o.favori_sayisi + 1 : o.favori_sayisi - 1 } : o));
   };
 
-  useEffect(() => {
-    if (authYukleniyor) return;
-    if (!kullanici) {
-      router.push("/login");
-      return;
-    }
-  }, [kullanici, authYukleniyor, router]);
-
-  const handleCikis = async () => {
-    await cikisYap();
-    router.push("/login");
-  };
-
   const veriCek = useCallback(async () => {
     setLoading(true);
     const res = await fetch("/oneriler/api");
@@ -128,9 +113,6 @@ export default function OnerilerPage() {
   }, [kullanici?.rol]);
 
   useEffect(() => { if (kullanici) veriCek(); }, [kullanici, veriCek]);
-
-  const formatTarih = (tarih: string) =>
-    new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
   const formatTarihKisa = (tarih: string) => {
     const date = new Date(tarih);
@@ -265,7 +247,6 @@ export default function OnerilerPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20 md:pb-0" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
 
       <div className="max-w-5xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-5">
 
