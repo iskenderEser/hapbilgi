@@ -10,7 +10,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { STORE_GENEL_GOREN_ROLLER } from "@/lib/utils/roller";
@@ -25,10 +24,10 @@ const GRI_ZEMIN = "#f9fafb";
 
 export default function SiparislerPage() {
   const router = useRouter();
-  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const [yetkiKontrolEdildi, setYetkiKontrolEdildi] = useState(false);
 
-  const { mesajlar, hata, basari } = useHataMesaji();
+  const { mesajlar, hata } = useHataMesaji();
 
   const { hiyerarsi, yukleniyor: hiyerarsiYukleniyor } = useHiyerarsi({ hata });
 
@@ -51,11 +50,6 @@ export default function SiparislerPage() {
 
     setYetkiKontrolEdildi(true);
   }, [kullanici, authYukleniyor, router]);
-
-  const handleCikis = async () => {
-    await cikisYap();
-    router.push("/login");
-  };
 
   // Loading — auth veya yetki hazır değilse bekle
   if (authYukleniyor || !kullanici || !yetkiKontrolEdildi) {
@@ -82,12 +76,6 @@ export default function SiparislerPage() {
       className="min-h-screen pb-20 md:pb-0"
       style={{ background: GRI_ZEMIN, fontFamily: "'Nunito', sans-serif" }}
     >
-      <Navbar
-        email={kullanici.email}
-        rol={kullanici.rol}
-        adSoyad={kullanici.adSoyad}
-        onCikis={handleCikis}
-      />
 
       <div className="fixed top-20 right-4 z-40 flex flex-col gap-2 max-w-sm">
         {mesajlar.map((m, i) => (

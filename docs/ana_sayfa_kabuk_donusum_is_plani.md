@@ -126,7 +126,7 @@ Sayfalar gruplar hâlinde `app/(panel)/` altına taşınır; her sayfadan `<Navb
 1. ✅ **Üretim hattı:** talepler(+[id]), senaryolar(+[id]), videolar(+[id]), soru-setleri(+[id]), yayin-yonetimi, onaylanan-talepler (10 sayfa taşındı+sadeleşti; tsc+denetim+lint temiz)
 2. ✅ **Raporlar + Analiz:** raporlar/{utt,bm,tm,uretici,yonetici}, analiz/{bm,tm,uretici,yonetici} (9 sayfa taşındı+sadeleşti; tsc+denetim+lint temiz)
 3. ✅ **Ligler + Öneriler:** hbligi, cc-ligi, oneriler, challenge-club (+ challenge-club/izle) taşındı+sadeleşti; tsc+denetim+lint temiz
-4. **HBStore:** store(+[id]), store/siparisler, store/adreslerim, store/siparislerim
+4. ✅ **HBStore:** store(+[urun_id]), store/siparisler, store/adreslerim, store/siparislerim (5 sayfa taşındı+sadeleşti; tsc+denetim+lint temiz)
 5. **E-Club (saha):** eclub/listem, eclub/oneriler, eclub/panel, eclub/ligi, eclub/store/rapor
 6. **E-Club Store (eclub_kisi):** eclub/store(+adreslerim, siparislerim) — dar varyant testi
 7. **Kalan:** profil, kullanicilar, yayindaki-videolar ve Navbar kullanan diğerleri
@@ -168,6 +168,12 @@ her batch tsc'si erken yakalar.
 
 ## 8. Değişiklik Günlüğü
 
+- **02.08.2026** — Faz 2 Batch 4 (HBStore) tamamlandı: `store` dizini (5 sayfa) `(panel)`'e taşındı.
+  Hepsi modern desen ve uniform; `router` her sayfada render'da kullanıldığı için korundu. Guard
+  useEffect sayfaya özel (STORE_ALABILEN rol kontrolü + `setYetkiKontrolEdildi`) → korundu; yalnız
+  Navbar + cikisYap + handleCikis çıkarıldı. Pre-existing 3 ölü kalem temizlendi (İskender onayı):
+  store/page + store/[urun_id] `MAVI`, store/siparisler `basari`. tsc + no-unused-vars + denetim +
+  lint:mimari temiz.
 - **02.08.2026** — Faz 2 Batch 3 (ligler + öneriler + challenge) tamamlandı: 4 dizin `(panel)`'e
   taşındı. Sayfalar çok heterojendi (hepsi tam okundu): **hbligi** 4 Navbar (3×8-girinti replace_all
   + 1×6-girinti); **oneriler** modern (router back-nav'da kaldı); **cc-ligi + challenge-club** eski

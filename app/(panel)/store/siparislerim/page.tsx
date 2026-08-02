@@ -19,7 +19,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -34,7 +33,7 @@ const GRI_ZEMIN = "#f9fafb";
 
 export default function SiparislerimPage() {
   const router = useRouter();
-  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const [yetkiKontrolEdildi, setYetkiKontrolEdildi] = useState(false);
 
   const [siparisler, setSiparisler] = useState<SiparisGosterim[]>([]);
@@ -89,11 +88,6 @@ export default function SiparislerimPage() {
     siparisleriYukle();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [yetkiKontrolEdildi]);
-
-  const handleCikis = async () => {
-    await cikisYap();
-    router.push("/login");
-  };
 
   const handleIptalOnayla = async () => {
     if (!iptalEdilecek) return;
@@ -198,12 +192,6 @@ export default function SiparislerimPage() {
       className="min-h-screen pb-20 md:pb-0"
       style={{ background: GRI_ZEMIN, fontFamily: "'Nunito', sans-serif" }}
     >
-      <Navbar
-        email={kullanici.email}
-        rol={kullanici.rol}
-        adSoyad={kullanici.adSoyad}
-        onCikis={handleCikis}
-      />
 
       <div className="fixed top-20 right-4 z-40 flex flex-col gap-2 max-w-sm">
         {mesajlar.map((m, i) => (

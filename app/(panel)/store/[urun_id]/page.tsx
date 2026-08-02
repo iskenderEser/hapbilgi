@@ -19,7 +19,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -31,7 +30,6 @@ interface UrunDetay extends Urun {
 }
 
 const BORDO = "#bc2d0d";
-const MAVI = "#56aeff";
 const GRI_METIN = "#737373";
 const KOYU_METIN = "#111827";
 const GRI_ZEMIN = "#f9fafb";
@@ -43,7 +41,7 @@ export default function UrunDetayPage() {
   const params = useParams();
   const urun_id = params?.urun_id as string;
 
-  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const [yetkiKontrolEdildi, setYetkiKontrolEdildi] = useState(false);
 
   const [urun, setUrun] = useState<UrunDetay | null>(null);
@@ -124,11 +122,6 @@ export default function UrunDetayPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [yetkiKontrolEdildi, urun_id]);
 
-  const handleCikis = async () => {
-    await cikisYap();
-    router.push("/login");
-  };
-
   const handleSatinAl = () => {
     if (!urun) return;
     if (!seciliAdresId) {
@@ -206,12 +199,6 @@ export default function UrunDetayPage() {
       className="min-h-screen pb-20 md:pb-0"
       style={{ background: GRI_ZEMIN, fontFamily: "'Nunito', sans-serif" }}
     >
-      <Navbar
-        email={kullanici.email}
-        rol={kullanici.rol}
-        adSoyad={kullanici.adSoyad}
-        onCikis={handleCikis}
-      />
 
       <div className="fixed top-20 right-4 z-40 flex flex-col gap-2 max-w-sm">
         {mesajlar.map((m, i) => (
