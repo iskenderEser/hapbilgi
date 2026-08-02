@@ -3,7 +3,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useEclubOneriler } from "./_hooks/useEclubOneriler";
@@ -15,7 +14,7 @@ type Sekme = "gonder" | "gecmis";
 
 export default function EclubOnerilerPage() {
   const router = useRouter();
-  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
 
   const rolUygun = !!kullanici && TUKETICI_ROLLER.includes((kullanici.rol ?? "").toLowerCase());
@@ -32,11 +31,6 @@ export default function EclubOnerilerPage() {
     if (!rolUygun) { router.push("/ana-sayfa"); return; }
   }, [kullanici, authYukleniyor, rolUygun, router]);
 
-  const handleCikis = async () => {
-    await cikisYap();
-    router.push("/login");
-  };
-
   if (authYukleniyor || !kullanici || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -50,8 +44,6 @@ export default function EclubOnerilerPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
-
       <div className="max-w-3xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
 
         <div className="flex flex-col gap-1">

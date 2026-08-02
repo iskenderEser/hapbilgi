@@ -3,7 +3,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useEclubListem } from "./_hooks/useEclubListem";
@@ -13,7 +12,7 @@ import { ECLUB_GOREN_ROLLER } from "@/lib/utils/roller";
 
 export default function EclubListemPage() {
   const router = useRouter();
-  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
 
   const rolUygun = !!kullanici && ECLUB_GOREN_ROLLER.includes((kullanici.rol ?? "").toLowerCase());
@@ -40,11 +39,6 @@ export default function EclubListemPage() {
     if (!kullanici) { router.push("/login"); return; }
     if (!rolUygun) { router.push("/ana-sayfa"); return; }
   }, [kullanici, authYukleniyor, rolUygun, router]);
-
-  const handleCikis = async () => {
-    await cikisYap();
-    router.push("/login");
-  };
 
   const kisilerByEczane = useMemo(() => {
     const map = new Map<string, typeof kisiler>();
@@ -107,8 +101,6 @@ export default function EclubListemPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
-
       <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
 
         <div className="flex flex-col gap-1">

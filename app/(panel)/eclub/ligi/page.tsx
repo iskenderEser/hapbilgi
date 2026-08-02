@@ -9,8 +9,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useEclubLigi, type UttSatir } from "./_hooks/useEclubLigi";
@@ -21,8 +19,7 @@ import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 const PERIYOT_ETIKET: Record<string, string> = { ay: "Bu Ay", donem: "Bu Çeyrek", yil: "Bu Yıl" };
 
 export default function EclubLigiPage() {
-  const router = useRouter();
-  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
 
   const {
@@ -61,11 +58,6 @@ export default function EclubLigiPage() {
     veriCek();
   };
 
-  useEffect(() => {
-    if (authYukleniyor) return;
-    if (!kullanici) { router.replace("/login"); return; }
-  }, [kullanici, authYukleniyor, router]);
-
   // UTT ise kendi takımının detayını otomatik aç (bir kez)
   useEffect(() => {
     if (loading || !kullanici) return;
@@ -74,8 +66,6 @@ export default function EclubLigiPage() {
     if (benim && !acikUtt.has(benim.utt_id)) uttTikla(benim.utt_id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, rol, satirlar, kullanici]);
-
-  const handleCikis = async () => { await cikisYap(); router.push("/login"); };
 
   if (authYukleniyor || !kullanici || loading) {
     return (
@@ -172,8 +162,6 @@ export default function EclubLigiPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
-
       <div className="max-w-5xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>

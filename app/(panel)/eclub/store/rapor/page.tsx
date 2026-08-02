@@ -3,7 +3,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 
@@ -26,7 +25,7 @@ const DURUM_ETIKET: Record<string, string> = {
 
 export default function EclubStoreRaporPage() {
   const router = useRouter();
-  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const { mesajlar, hata } = useHataMesaji();
 
   const [satirlar, setSatirlar] = useState<RaporSatir[]>([]);
@@ -56,8 +55,6 @@ export default function EclubStoreRaporPage() {
     raporCek();
   }, [kullanici, authYukleniyor, router, raporCek]);
 
-  const handleCikis = async () => { await cikisYap(); router.push("/login"); };
-
   const filtreli = useMemo(() => {
     return satirlar.filter((s) => {
       const f = (v: string, ara: string) => !ara || v.toLocaleLowerCase("tr").includes(ara.toLocaleLowerCase("tr"));
@@ -86,8 +83,6 @@ export default function EclubStoreRaporPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
-
       <div className="max-w-5xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
         <div>
           <h1 className="text-lg font-semibold text-gray-900 m-0">E-Club Store — Puan Kullanım Raporu</h1>

@@ -3,7 +3,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useEclubPanel, type PanelOneri } from "./_hooks/useEclubPanel";
@@ -16,7 +15,7 @@ const KISI_ROL_ETIKETLERI: Record<string, string> = {
 
 export default function EclubPanelPage() {
   const router = useRouter();
-  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
 
   const eclubKisi = !!kullanici && kullanici.kimlik_turu === "eclub_kisi";
@@ -31,11 +30,6 @@ export default function EclubPanelPage() {
     if (!kullanici) { router.replace("/login"); return; }
     if (!eclubKisi) { router.replace("/ana-sayfa"); return; }
   }, [kullanici, authYukleniyor, eclubKisi, router]);
-
-  const handleCikis = async () => {
-    await cikisYap();
-    router.push("/login");
-  };
 
   if (authYukleniyor || !kullanici || loading) {
     return (
@@ -55,8 +49,6 @@ export default function EclubPanelPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
-
       <div className="max-w-3xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
 
         {seciliOneri ? (
