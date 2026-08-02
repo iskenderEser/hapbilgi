@@ -32,7 +32,7 @@ kolaylaşır.
 | 0 | Kararların sabitlenmesi (KARAR-1…6) | ✅ |
 | 1 | Faz 1 — Kabuk + pilot (yalnız `/ana-sayfa`) | ✅ |
 | 2 | Faz 2 — Yayım (kalan 40 sayfa, batch) | ✅ |
-| 3 | Faz 3 — Temizlik (eski Navbar sil + REDBOOK) | ⬜ |
+| 3 | Faz 3 — Temizlik (eski Navbar sil + REDBOOK) | ✅ |
 
 Bağımlılık: 0 → 1 (görsel onay) → 2 → 3.
 
@@ -187,6 +187,10 @@ her batch tsc'si erken yakalar.
   **listem/oneriler/panel/rapor**'da sayfaya özel guard (rol/kimlik/veri çekme) + `router` korundu.
   **store bölündü:** rapor Batch 5'te taşındı, kök/adreslerim/siparislerim Batch 6'ya (eclub_kisi) bırakıldı.
   Import güncellemesi gerekmedi (tümü `@/` alias veya `./` göreli). tsc + denetim + lint:mimari temiz.
+- **02.08.2026** — Faz 3 (temizlik) tamamlandı: eski `components/Navbar.tsx` silindi (sıfır importer
+  doğrulandı; kalan iki referans yalnız yorumdu, "eski/silindi" olarak güncellendi). Bottom-tab/hamburger
+  artığı yok (hepsi eski Navbar'ın içindeydi). REDBOOK §7'ye "Ana sayfa kabuk dönüşümü (02.08.2026)"
+  adımı eklendi. tsc + lint:mimari temiz. **Faz 1–3 tamam; kalan yalnız Ek İşler (§6.5: E1–E4).**
 - **02.08.2026** — Faz 2 Batch 4 (HBStore) tamamlandı: `store` dizini (5 sayfa) `(panel)`'e taşındı.
   Hepsi modern desen ve uniform; `router` her sayfada render'da kullanıldığı için korundu. Guard
   useEffect sayfaya özel (STORE_ALABILEN rol kontrolü + `setYetkiKontrolEdildi`) → korundu; yalnız

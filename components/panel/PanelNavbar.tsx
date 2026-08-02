@@ -4,7 +4,7 @@
 //
 // Tüm rollerde AYNI ve sabit: 5 bilgi amaçlı (fonksiyonel olmayan) pill + sağ blok
 // (ad-soyad + avatar→/profil + Çıkış). Fonksiyonel piller burada YOK — onlar sol
-// listeye (Adım 1.3) taşınır. Pill görünümü mevcut components/Navbar.tsx'ten alındı
+// listeye (Adım 1.3) taşınır. Pill görünümü eski components/Navbar.tsx'ten alındı (Faz 3'te silindi)
 // (tutarlılık). Bu bileşen bu adımda hiçbir sayfaya bağlanmaz (bağlama: layout, 1.5).
 
 "use client";

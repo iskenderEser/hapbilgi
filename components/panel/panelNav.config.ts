@@ -4,7 +4,7 @@
 // (docs/ana_sayfa_kabuk_donusum_is_plani.md).
 //
 // Sol liste (SolListe) ve mobil drawer (MobilDrawer) bu bildirimsel ağaçtan beslenir.
-// Rol/aktiflik koşulları mevcut components/Navbar.tsx'ten BİREBİR alınmıştır
+// Rol/aktiflik koşulları eski components/Navbar.tsx'ten BİREBİR alınmıştır (Faz 3'te silindi)
 // (davranış-korur; KARAR-3). Notlar:
 //   • "Ana Sayfa" navbar bilgi pill'idir → bu ağaçta YOKTUR (KARAR-5/6).
 //   • eclub_kisi dar gezinmesi KARAR-4 gereği layout'ta çözülür → bu ağaçta YOKTUR.
