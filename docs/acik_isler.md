@@ -204,3 +204,14 @@ dokunulmamalı. Ön koşul: RPC tanımının okunması.
 Ara evrede `iu_id`'ye üreticinin yazılması tespiti. 22.07 refactoring'inde
 kabuklar `iu_id = null` doğar hâle geldi; maddenin fiilen kapanıp kapanmadığı
 teyit edilmedi.
+
+---
+
+## I. 02.08.2026'da eklenen maddeler
+
+**16 · Genel eslint kalite borcu — `no-explicit-any` + `react-hooks/set-state-in-effect`.**
+Kabuk dönüşümünde görüldü: bu kalemler mimari gate'in (lint:mimari) parçası DEĞİL,
+genel eslint'te yaygın ve önceden var. Somut örnek `app/(panel)/onaylanan-talepler/page.tsx`:
+`veriCek` içinde 4× `(x: any)` (Supabase yanıtları tiplenmemiş) + satır 162 `useEffect`
+içinde doğrudan `veriCek()` → setState (kademeli render uyarısı). Kod tabanı genelinde
+tarama + ayrı kalite pass'i gerekiyor; kabuk dönüşümü kapsamı dışında.

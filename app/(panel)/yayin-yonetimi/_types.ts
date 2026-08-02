@@ -3,7 +3,7 @@
 // Yayın yönetimi sayfasının paylaşılan tip sözleşmeleri ve sabitleri.
 // page.tsx, hook ve alt bileşenler buradan import eder.
 
-import type { HedefRol } from "@/app/talepler/_types";
+import type { HedefRol } from "@/app/(panel)/talepler/_types";
 import { TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
 
 // ============================================================================

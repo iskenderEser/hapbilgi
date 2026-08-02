@@ -10,12 +10,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
-import type { HedefRol } from "@/app/talepler/_types";
-import { HEDEF_ROL_TASARIM } from "@/app/talepler/_types";
+import type { HedefRol } from "@/app/(panel)/talepler/_types";
+import { HEDEF_ROL_TASARIM } from "@/app/(panel)/talepler/_types";
 import type { Bekleyen, AltSekme } from "./_types";
 import { ANA_SEKMELER, ANA_SEKME_ETIKETLERI } from "./_types";
 import { useYayinYonetimi } from "./_hooks/useYayinYonetimi";
@@ -25,8 +23,7 @@ import { useListe, ListeArama, DahaFazlaGoster } from "@/components/liste";
 import { VideoOnizlemeModal, YayinOnayModal, IleriSarmaOnayModal } from "./_components/Modallar";
 
 export default function YayinYonetimiPage() {
-  const router = useRouter();
-  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { kullanici } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
 
   const [aktifAnaSekme, setAktifAnaSekme] = useState<HedefRol>("utt");
@@ -44,11 +41,6 @@ export default function YayinYonetimiPage() {
     hata,
     basari,
   });
-
-  const handleCikis = async () => {
-    await cikisYap();
-    router.push("/login");
-  };
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -91,7 +83,8 @@ export default function YayinYonetimiPage() {
   const yayindaListe = useListe({ veri: yayindakiler, aramaAlanlari: ARAMA_ALANLARI });
   const durdurulanListe = useListe({ veri: durdurulular, aramaAlanlari: ARAMA_ALANLARI });
 
-  if (authYukleniyor || !kullanici || yy.loading) {
+  // Auth guard layout'ta; burada yalnız veri yükleme spinner'ı.
+  if (yy.loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
@@ -103,9 +96,7 @@ export default function YayinYonetimiPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
-
+    <>
       <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
 
         {/* Ana sekmeler: hedef role göre — UTT / BM / Eczacı / Eczane Teknisyeni */}
@@ -247,6 +238,6 @@ export default function YayinYonetimiPage() {
       )}
 
       <HataMesajiContainer mesajlar={mesajlar} />
-    </div>
+    </>
   );
 }

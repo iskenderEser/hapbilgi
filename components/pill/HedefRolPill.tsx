@@ -9,7 +9,7 @@
 
 "use client";
 
-import { HEDEF_ROL_TASARIM, type HedefRol } from "@/app/talepler/_types";
+import { HEDEF_ROL_TASARIM, type HedefRol } from "@/app/(panel)/talepler/_types";
 import { Pill } from "./Pill";
 
 export function HedefRolPill({ hedefRol, className }: { hedefRol: HedefRol; className?: string }) {

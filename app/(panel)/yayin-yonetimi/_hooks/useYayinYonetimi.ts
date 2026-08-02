@@ -15,7 +15,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
-import type { HedefRol } from "@/app/talepler/_types";
+import type { HedefRol } from "@/app/(panel)/talepler/_types";
 import type { Bekleyen, Yayin } from "../_types";
 import { gecerliTurBaslangiclari, type HesaplananTur } from "@/lib/tur/kayit";
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";

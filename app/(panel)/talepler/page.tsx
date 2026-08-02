@@ -6,7 +6,6 @@
 
 "use client";
 
-import Navbar from "@/components/Navbar";
 import { HataMesajiContainer } from "@/components/HataMesaji";
 import { useTalepFormu } from "./_hooks/useTalepFormu";
 import { YeniTalepForm } from "./_components/YeniTalepForm";
@@ -16,7 +15,8 @@ import { IptalEdilenTalepler } from "./_components/IptalEdilenTalepler";
 export default function TaleplerPage() {
   const formu = useTalepFormu();
 
-  if (formu.authYukleniyor || !formu.kullanici || formu.loading) {
+  // Auth guard layout'ta; burada yalnız veri yükleme spinner'ı (sayfaya özel).
+  if (formu.loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center gap-2">
@@ -28,14 +28,7 @@ export default function TaleplerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar
-        email={formu.kullanici.email}
-        rol={formu.kullanici.rol}
-        adSoyad={formu.kullanici.adSoyad}
-        onCikis={formu.handleCikis}
-      />
-
+    <>
       <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7 flex flex-col gap-5">
         <YeniTalepForm formu={formu} />
         {/* Kapsam ayrımı (27.07): üretimi biten talepler bu sayfada hiç görünmez —
@@ -55,6 +48,6 @@ export default function TaleplerPage() {
       </div>
 
       <HataMesajiContainer mesajlar={formu.mesajlar} />
-    </div>
+    </>
   );
 }

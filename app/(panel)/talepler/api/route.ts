@@ -8,7 +8,7 @@ import {
   TALEP_TURU_KURALLARI,
   type TalepTuru,
 } from "@/lib/uretici/yetenekler";
-import type { HedefRol } from "@/app/talepler/_types";
+import type { HedefRol } from "@/app/(panel)/talepler/_types";
 import { ECZANEM_TALEP_ACAN_ROLLER, ECLUB_HEDEF_ROLLER, TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";

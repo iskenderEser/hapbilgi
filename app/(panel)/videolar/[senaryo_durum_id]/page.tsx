@@ -4,7 +4,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import TalepSahibiKarti from "@/components/TalepSahibiKarti";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { IU_ROLU, URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
@@ -48,7 +47,7 @@ export default function VideoAkisPage() {
   const params = useParams();
   const senaryo_durum_id = params.senaryo_durum_id as string;
 
-  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const [senaryo, setSenaryo] = useState<Senaryo | null>(null);
   const [talep, setTalep] = useState<TalepBilgisi | null>(null);
   const [videolar, setVideolar] = useState<Video[]>([]);
@@ -74,11 +73,6 @@ export default function VideoAkisPage() {
       return;
     }
   }, [kullanici, authYukleniyor, router]);
-
-  const handleCikis = async () => {
-    await cikisYap();
-    router.push("/login");
-  };
 
   const veriCek = async () => {
     setLoading(true);
@@ -252,7 +246,8 @@ export default function VideoAkisPage() {
     }
   };
 
-  if (authYukleniyor || !kullanici || loading) {
+  // Auth guard layout'ta; erişim kontrolü useEffect'te; burada veri spinner'ı.
+  if (!kullanici || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
@@ -264,8 +259,7 @@ export default function VideoAkisPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
+    <>
       <TalepSahibiKarti rol={kullanici.rol} senaryoDurumId={senaryo_durum_id} />
 
       <div className="max-w-3xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
@@ -491,6 +485,6 @@ export default function VideoAkisPage() {
       )}
 
       <HataMesajiContainer mesajlar={mesajlar} />
-    </div>
+    </>
   );
 }

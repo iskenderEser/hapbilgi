@@ -13,17 +13,17 @@
 
 "use client";
 
-import type { useTalepFormu } from "@/app/talepler/_hooks/useTalepFormu";
-import { HEDEF_ROL_TASARIM, type HedefRol } from "@/app/talepler/_types";
+import type { useTalepFormu } from "@/app/(panel)/talepler/_hooks/useTalepFormu";
+import { HEDEF_ROL_TASARIM, type HedefRol } from "@/app/(panel)/talepler/_types";
 import { TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
-import { TALEP_TURU_ALT_ACIKLAMA, TUM_TURLER } from "@/app/talepler/_types";
-import { UrunTeknikSecici } from "@/app/talepler/_components/UrunTeknikSecici";
-import { SoruSetiAyarlari } from "@/app/talepler/_components/SoruSetiAyarlari";
-import { HazirSoruSetiBlogu } from "@/app/talepler/_components/HazirSoruSetiBlogu";
-import { VideoYukleme } from "@/app/talepler/_components/VideoYukleme";
-import { EkDosyaYukleme } from "@/app/talepler/_components/EkDosyaYukleme";
-import { TalepOnayModal } from "@/app/talepler/_components/TalepOnayModal";
+import { TALEP_TURU_ALT_ACIKLAMA, TUM_TURLER } from "@/app/(panel)/talepler/_types";
+import { UrunTeknikSecici } from "@/app/(panel)/talepler/_components/UrunTeknikSecici";
+import { SoruSetiAyarlari } from "@/app/(panel)/talepler/_components/SoruSetiAyarlari";
+import { HazirSoruSetiBlogu } from "@/app/(panel)/talepler/_components/HazirSoruSetiBlogu";
+import { VideoYukleme } from "@/app/(panel)/talepler/_components/VideoYukleme";
+import { EkDosyaYukleme } from "@/app/(panel)/talepler/_components/EkDosyaYukleme";
+import { TalepOnayModal } from "@/app/(panel)/talepler/_components/TalepOnayModal";
 
 interface Props {
   formu: ReturnType<typeof useTalepFormu>;

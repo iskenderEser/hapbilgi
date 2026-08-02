@@ -4,7 +4,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import TalepSahibiKarti from "@/components/TalepSahibiKarti";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { IU_ROLU, URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
@@ -46,7 +45,7 @@ export default function SoruSetiAkisPage() {
   const params = useParams();
   const video_durum_id = params.video_durum_id as string;
 
-  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const [soruSetleri, setSoruSetleri] = useState<SoruSeti[]>([]);
   // Talebe ait sekiz ayrı state tek künyede toplandı (25.07, Aşama 3). Eskiden her
   // alan ayrı state'ti ve hepsi aynı sorgudan besleniyordu; künye tek kapıdan
@@ -82,11 +81,6 @@ export default function SoruSetiAkisPage() {
       return;
     }
   }, [kullanici, authYukleniyor, router]);
-
-  const handleCikis = async () => {
-    await cikisYap();
-    router.push("/login");
-  };
 
   // Talep künyesi TEK KAPIDAN (25.07, Aşama 3). Eskiden burada video_durumu →
   // videolar → talepler çok katlı join'i elle kuruluyor, dokuz alan tek tek
@@ -273,7 +267,8 @@ export default function SoruSetiAkisPage() {
     }
   };
 
-  if (authYukleniyor || !kullanici || loading) {
+  // Auth guard layout'ta; erişim kontrolü useEffect'te; burada veri spinner'ı.
+  if (!kullanici || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center gap-2">
@@ -285,8 +280,7 @@ export default function SoruSetiAkisPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
+    <>
       <TalepSahibiKarti rol={kullanici.rol} videoDurumId={video_durum_id} />
 
       <div className="max-w-3xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
@@ -451,6 +445,6 @@ export default function SoruSetiAkisPage() {
       </div>
 
       <HataMesajiContainer mesajlar={mesajlar} />
-    </div>
+    </>
   );
 }

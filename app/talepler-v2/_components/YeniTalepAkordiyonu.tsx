@@ -17,7 +17,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useTalepFormu } from "@/app/talepler/_hooks/useTalepFormu";
+import { useTalepFormu } from "@/app/(panel)/talepler/_hooks/useTalepFormu";
 import { HataMesajiContainer } from "@/components/HataMesaji";
 import { YeniTalepFormV2 } from "./YeniTalepFormV2";
 

@@ -247,11 +247,13 @@ const toastTekKaynak = {
   create(context) {
     const dosya = (context.filename ?? context.getFilename?.() ?? "").replace(/\\/g, "/");
     // Yalnız üretim hattı: senaryo, video, soru seti ve talep ekranları.
+    // Klasör adıyla eşleşir (yol öneki değil) → route group (ör. /app/(panel)/talepler/)
+    // ya da ileride başka bir yere taşınsalar da bekçi kapsamı korunur.
     const hatta =
-      dosya.includes("/app/senaryolar/") ||
-      dosya.includes("/app/videolar/") ||
-      dosya.includes("/app/soru-setleri/") ||
-      dosya.includes("/app/talepler/");
+      dosya.includes("/senaryolar/") ||
+      dosya.includes("/videolar/") ||
+      dosya.includes("/soru-setleri/") ||
+      dosya.includes("/talepler/");
     if (!hatta) return {};
 
     return {

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
-import type { HedefRol } from "@/app/talepler/_types";
+import type { HedefRol } from "@/app/(panel)/talepler/_types";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";

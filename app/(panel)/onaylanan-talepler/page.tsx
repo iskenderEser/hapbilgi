@@ -11,11 +11,10 @@
 import { createClient } from "@/lib/supabase/client";
 import { Fragment, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { HedefRolPill } from "@/components/HedefRolBant";
 import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
-import type { HedefRol } from "@/app/talepler/_types";
+import type { HedefRol } from "@/app/(panel)/talepler/_types";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import VideoCercevesi from "@/components/video/VideoCercevesi";
@@ -47,7 +46,7 @@ interface OnayliTalep {
 
 export default function OnaylananTaleplerPage() {
   const router = useRouter();
-  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const [kayitlar, setKayitlar] = useState<OnayliTalep[]>([]);
   const [acikTalep, setAcikTalep] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,19 +66,7 @@ export default function OnaylananTaleplerPage() {
 
 
   useEffect(() => {
-    // Yalnız ARAMA (İskender kararı 27.07): sayfada klasör kırılımı var, klasör
-  // içinde "daha fazla göster" tuhaf durur. adim: Infinity → dilimleme kapalı.
-  // Arama klasörlemeden ÖNCE uygulanır ki klasörler arama sonucunu yansıtsın.
-  const liste = useListe({
-    veri: kayitlar,
-    adim: Infinity,
-    aramaAlanlari: [
-      { anahtar: "no", etiket: "Talep No", deger: (k: OnayliTalep) => k.talep_no_goster },
-      { anahtar: "ad", etiket: "Ürün / Eğitim", deger: (k: OnayliTalep) => k.urun_adi },
-    ],
-  });
-
-  if (authYukleniyor) return;
+    if (authYukleniyor) return;
     if (!kullanici) {
       router.push("/login");
       return;
@@ -174,15 +161,11 @@ export default function OnaylananTaleplerPage() {
 
   useEffect(() => { if (kullanici) veriCek(); }, [kullanici]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleCikis = async () => {
-    await cikisYap();
-    router.push("/login");
-  };
-
   const formatTarih = (tarih: string | null) =>
     tarih ? new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "-";
 
-  if (authYukleniyor || !kullanici || loading) {
+  // Auth guard layout'ta; IU erişim kontrolü useEffect'te; burada veri spinner'ı.
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
@@ -243,9 +226,7 @@ export default function OnaylananTaleplerPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <Navbar email={kullanici.email} rol={kullanici.rol} adSoyad={kullanici.adSoyad} onCikis={handleCikis} />
-
+    <>
       <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7 flex flex-col gap-4">
         <h1 className="text-lg font-bold text-gray-900 m-0">Onaylanan Talepler</h1>
 
@@ -333,6 +314,6 @@ export default function OnaylananTaleplerPage() {
       </div>
 
       <HataMesajiContainer mesajlar={mesajlar} />
-    </div>
+    </>
   );
 }

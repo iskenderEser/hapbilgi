@@ -21,8 +21,8 @@
 "use client";
 
 import { useState } from "react";
-import { VideoYukleme } from "@/app/talepler/_components/VideoYukleme";
-import type { BekleyenDosya } from "@/app/talepler/_types";
+import { VideoYukleme } from "@/app/(panel)/talepler/_components/VideoYukleme";
+import type { BekleyenDosya } from "@/app/(panel)/talepler/_types";
 
 interface Props {
   /** null değilse yükleme sürüyor demektir. */

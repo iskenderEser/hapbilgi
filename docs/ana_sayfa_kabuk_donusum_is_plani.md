@@ -123,7 +123,7 @@ Sayfalar gruplar hâlinde `app/(panel)/` altına taşınır; her sayfadan `<Navb
 çıkarılır. Taşınmayanlar eski Navbar'la çalışır. Her batch: taşı → Navbar+guard sil →
 `tsc`+denetim+`lint:mimari` → 1 smoke → commit.
 
-1. **Üretim hattı:** talepler(+[id]), senaryolar(+[id]), videolar(+[id]), soru-setleri(+[id]), yayin-yonetimi, onaylanan-talepler
+1. ✅ **Üretim hattı:** talepler(+[id]), senaryolar(+[id]), videolar(+[id]), soru-setleri(+[id]), yayin-yonetimi, onaylanan-talepler (10 sayfa taşındı+sadeleşti; tsc+denetim+lint temiz)
 2. **Raporlar + Analiz:** raporlar/{utt,bm,tm,uretici,yonetici}, analiz/{bm,tm,uretici,yonetici}
 3. **Ligler + Öneriler:** hbligi, cc-ligi, oneriler, challenge-club
 4. **HBStore:** store(+[id]), store/siparisler, store/adreslerim, store/siparislerim
@@ -167,6 +167,17 @@ her batch tsc'si erken yakalar.
 
 ## 8. Değişiklik Günlüğü
 
+- **02.08.2026** — Faz 2 Batch 1 (üretim hattı) tamamlandı: 6 dizin (10 sayfa) `(panel)`'e
+  taşındı, her sayfadan Navbar+genel guard çıkarıldı (sayfaya özel yönlendirme/erişim korundu),
+  `kullanici` null daralması için spinner guard'ına `!kullanici` eklendi. Taşınan `@/app/talepler/*`
+  mutlak importları `@/app/(panel)/talepler/*`'e güncellendi (10 dosya). **Mimari bekçi düzeltmesi:**
+  `toast-tek-kaynak` yol kontrolü `/app/talepler/` → `/talepler/` (klasör adı) olarak genişletildi;
+  route group taşımalarında bekçi kapsamı korunur (İskender kararı: "yok say" değil "kapsamı genişlet").
+  **Önceden var olan bug — DÜZELTİLDİ (İskender onayıyla):** `onaylanan-talepler/page.tsx`'te HEAD'de
+  guard `useEffect`'inin içine kopyalanmış `const liste = useListe(...)` vardı (React hook kuralı
+  ihlali). Kopya blok çıkarıldı; useEffect yalnız guard'ı içeriyor (üstteki `const liste` korundu).
+  `rules-of-hooks` 0'a indi; tsc + lint:mimari temiz. Kalan eslint uyarıları (any/set-state-in-effect,
+  veriCek) önceden vardı, kapsam dışı.
 - **02.08.2026** — Faz 1 tamamlandı, görsel onay alındı (İskender sekmeleri gezdi, hata yok).
   Geri bildirimden 3 madde **Ek İşler (§6.5)** olarak eklendi (E1 logo hizası, E2 sol liste
   her sayfada — Faz 2 ile kendiliğinden, E3 accordion gruplar). Ek işler tüm fazlardan sonra.
