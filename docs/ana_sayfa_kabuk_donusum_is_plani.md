@@ -1,0 +1,163 @@
+# Ana Sayfa Kabuk Dönüşümü — İş Planı
+
+*Oluşturma: 02.08.2026. Bu belge **yaşayan** iş planıdır: her aşama tamamlandıkça
+durum ✅ **yapıldı** olarak işaretlenir ve belge güncel tutulur. Karar değişiklikleri
+en alttaki Değişiklik Günlüğü'ne yazılır.*
+
+**Durum efsanesi:** ⬜ beklemede · 🟨 yapılıyor · ✅ yapıldı
+
+---
+
+## 0. Amaç
+
+Login sonrası açılan uygulama kabuğunun sekme yapısını değiştirmek. Her rol için ana
+ve alt görevler çoğaldığından mevcut navbar pill sistemi yetmiyor, yük sayfanın içine
+biniyor. Yeni yapı:
+
+- **Navbar (tüm roller aynı, sabit):** 5 bilgi amaçlı (fonksiyonel olmayan) pill —
+  **Ana Sayfa · HapBilgi Nedir · Nasıl Çalışır · Sözleşmeler · İletişim** — mevcut
+  sıra ve sağ blok (Ad-Soyad + avatar + Çıkış) korunur.
+- **Sol liste:** Bugün navbardaki rol-bazlı **fonksiyonel** piller, sayfanın soluna,
+  navbarın hemen altına **ana görev → alt görev** dikey listesi olarak iner.
+
+Böylece role göre navbar yükü kalkar; aktif pillerin alt fonksiyonlarına ulaşmak
+kolaylaşır.
+
+---
+
+## 1. Aşama Takibi (özet)
+
+| # | Aşama | Durum |
+|---|---|---|
+| 0 | Kararların sabitlenmesi (KARAR-1…6) | ✅ |
+| 1 | Faz 1 — Kabuk + pilot (yalnız `/ana-sayfa`) | ⬜ |
+| 2 | Faz 2 — Yayım (kalan 40 sayfa, batch) | ⬜ |
+| 3 | Faz 3 — Temizlik (eski Navbar sil + REDBOOK) | ⬜ |
+
+Bağımlılık: 0 → 1 (görsel onay) → 2 → 3.
+
+---
+
+## 2. Teşhis (mevcut durum)
+
+- **Navbar tek bileşen (`components/Navbar.tsx`) ama 41 sayfa onu ayrı ayrı render
+  ediyor** — ortak layout yok. Fonksiyonel piller her sayfada bu yüzden çıkıyor. Kök
+  sorun budur: **tekrar (duplication)**.
+- Navbar içi: solda logo + rol-bazlı fonksiyonel piller; sağda ad-soyad + avatar +
+  Çıkış. Ayrıca mobilde hamburger menü + tüketici için alt tab bar.
+- Kimlik/çıkış zaten context'te: `useAuth()` (`app/providers/AuthProvider.tsx`) →
+  `{ kullanici, yukleniyor, cikisYap }`. AuthProvider kök layout'u sarıyor.
+- Guard deseni tek-tip: `useAuth` + `yukleniyor→spinner` + `!kullanici→/login`;
+  `/ana-sayfa`'da ek `admin→/admin` ve `ROLE_MAP` kontrolü.
+- **eclub_kisi** kimliği yalnız 3 sayfada: `/eclub/store`, `.../adreslerim`,
+  `.../siparislerim` (dış müşteri; saha sol listesi ona uymaz).
+- `proxy.ts` **path-bazlı**; route group URL'i değiştirmediği için etkilenmez.
+- Bilgi rotaları (`hapbilgi-nedir`, `nasil-calisir`, `sozlesmeler`, `iletisim`) **yok**.
+
+**Neden ortak layout (route group):** Kök neden tekrar olduğundan, çözüm kabuğu her
+sayfaya yeniden sardırmak değil (bu tekrarı korur), **tek bir ortak layout'ta**
+render etmektir. Next.js App Router'ın native yapısıdır; 4 değere (ideal /
+sürdürülebilir / kaliteli / verimli) uyan tek yol budur.
+
+---
+
+## 3. Kararlar (Aşama 0 — ✅ 02.08.2026)
+
+- **KARAR-1 — Route group:** `app/(panel)/`. URL'leri değiştirmez, ortak layout kazandırır.
+- **KARAR-2 — Gezinme tek kaynak:** Sol liste ve mobil drawer, imperatif JSX yerine
+  bildirimsel bir config'ten (`panelNav.config.ts`) beslenir. Bugünkü masaüstü/mobil
+  pill tekrarı biter.
+- **KARAR-3 — Gating birebir korunur:** Kim neyi görüyorsa aynı (`roller.ts` setleri,
+  `profil/api`, `bildirimler/api`, `yayin-yonetimi/api/bekleyenler`). Davranış-korur iş.
+- **KARAR-4 — eclub_kisi:** Layout `kimlikTuru`'na göre dallanır — eclub_kisi'de sol
+  liste yerine yalnız "E-Club Store" gezinmesi (bugünkü Navbar dallanmasının taşınmışı).
+- **KARAR-5 — Bilgi pilleri = 4 gerçek rota:** `/hapbilgi-nedir`, `/nasil-calisir`,
+  `/sozlesmeler`, `/iletisim` — ortak `BilgiSayfa` kabuğunu kullanan iskelet sayfalar
+  (başlık + placeholder). "Ana Sayfa" pill'i mevcut `/ana-sayfa`.
+- **KARAR-6 — Sol listenin ana→alt ağacı:** aşağıdaki tablo.
+
+### Sol liste — ana → alt görev ağacı
+
+| Ana görev | Alt görevler | Kimde (mevcut Navbar koşulu) |
+|---|---|---|
+| **Üretim** | Talepler · Senaryolar · Videolar · Soru Setleri | üretim hattı rolleri |
+| **Yayın** | Yayın Yönetimi · Yayındaki Videolar · Onaylanan Talepler | üretici / İÜ |
+| **Öneriler** | Öneriler | BM · UTT |
+| **Raporlama** | Raporlar · Analiz | İÜ hariç / analiz rolleri |
+| **Ligler** | HBLigi · CC Ligi · E-Club Ligi | ilgili roller |
+| **HBStore** | Mağaza · Siparişler | store rolleri |
+| **E-Club** | E-Club · E-Club Store | e-club rolleri |
+| **Eczanem** | Eczanem | UTT |
+| **Challenge Club** | — | BM |
+
+Rozetler (Talepler/Senaryolar/Video/Soru/Yayın/Öneri) aynı kaynaklardan korunur.
+Tek öğeli grup tek satır olur.
+
+---
+
+## 4. Faz 1 — Kabuk + pilot (yalnız `/ana-sayfa`)
+
+**Amaç:** Yeni yapının tamamını tek sayfada canlı görüp görsel onay almak. Kalan 40
+sayfa bu fazda taşınmaz; eski Navbar'larıyla çalışır (iki nav geçici bir arada, kırılma yok).
+
+| Adım | İş | Dosya |
+|---|---|---|
+| 1.1 | Gezinme config'i (ana→alt ağaç + rol/aktiflik koşulları + badge anahtarları) | `components/panel/panelNav.config.ts` (yeni) |
+| 1.2 | Yeni üst bar — 5 bilgi pill'i + sağ blok (ad-soyad, avatar→`/profil`, Çıkış) | `components/panel/PanelNavbar.tsx` (yeni) |
+| 1.3 | Sol liste — config'i okur, grup + alt öğe, aktif vurgu, badge fetch | `components/panel/SolListe.tsx` (yeni) |
+| 1.4 | Mobil drawer — aynı config; eski bottom-tab yeniden kurgulanır | `components/panel/MobilDrawer.tsx` (yeni) |
+| 1.5 | Ortak layout — `useAuth` guard tek yerde + profil bayrakları context + yerleşim | `app/(panel)/layout.tsx` (yeni, "use client") |
+| 1.6 | Bilgi sayfaları (iskelet) — ortak kabuk + 4 rota | `components/panel/BilgiSayfa.tsx` + `app/(panel)/{hapbilgi-nedir,nasil-calisir,sozlesmeler,iletisim}/page.tsx` |
+| 1.7 | Pilot taşıma: `app/ana-sayfa/` → `app/(panel)/ana-sayfa/`; Navbar+guard sil, yalnız içerik dön | `app/(panel)/ana-sayfa/page.tsx` |
+| 1.8 | Doğrulama: tsc+denetim+lint; preview masaüstü+mobil; ekran görüntüsü; smoke; **görsel onay**; commit | — |
+
+- **layout.tsx guard:** `yukleniyor→spinner`, `!kullanici→/login`, `admin→/admin`;
+  `profil/api` bayraklarını bir kez çekip context'le alt bileşenlere verir.
+- eclub_kisi bu fazda kapsam dışı (batch-6'da).
+
+---
+
+## 5. Faz 2 — Yayım (kalan 40 sayfa)
+
+Sayfalar gruplar hâlinde `app/(panel)/` altına taşınır; her sayfadan `<Navbar>` + guard
+çıkarılır. Taşınmayanlar eski Navbar'la çalışır. Her batch: taşı → Navbar+guard sil →
+`tsc`+denetim+`lint:mimari` → 1 smoke → commit.
+
+1. **Üretim hattı:** talepler(+[id]), senaryolar(+[id]), videolar(+[id]), soru-setleri(+[id]), yayin-yonetimi, onaylanan-talepler
+2. **Raporlar + Analiz:** raporlar/{utt,bm,tm,uretici,yonetici}, analiz/{bm,tm,uretici,yonetici}
+3. **Ligler + Öneriler:** hbligi, cc-ligi, oneriler, challenge-club
+4. **HBStore:** store(+[id]), store/siparisler, store/adreslerim, store/siparislerim
+5. **E-Club (saha):** eclub/listem, eclub/oneriler, eclub/panel, eclub/ligi, eclub/store/rapor
+6. **E-Club Store (eclub_kisi):** eclub/store(+adreslerim, siparislerim) — dar varyant testi
+7. **Kalan:** profil, kullanicilar, yayindaki-videolar ve Navbar kullanan diğerleri
+
+En büyük risk: taşımada `../` relative import kırılması (çoğu `@/` alias). Pilot ve
+her batch tsc'si erken yakalar.
+
+---
+
+## 6. Faz 3 — Temizlik
+
+- Tüm sayfalar taşındıktan sonra `components/Navbar.tsx` **silinir**; eski
+  bottom-tab/hamburger artıkları temizlenir.
+- REDBOOK §7'ye "Ana sayfa kabuk dönüşümü" adımı; ilgili açık iş kapanır.
+- Son üçlü doğrulama + commit.
+
+---
+
+## 7. Doğrulama ve sınırlar
+
+- **Smoke (her faz/batch):** 1 mutlu yol (bir rolle gezinme + aktif vurgu + badge) +
+  gerekli yerde 1 red (yetkisiz/kimlik varyantı).
+- **Teknik üçlü:** `tsc` + denetim + `lint:mimari`.
+- **DB yazımı yok**; tümü lokal; commit'ler İskender onayıyla; **push yok** (Kural 4c).
+- Oluşturulan geçici test verisi/dosya iş sonunda temizlenir (Kural 6d).
+
+---
+
+## 8. Değişiklik Günlüğü
+
+- **02.08.2026** — Belge oluşturuldu. Aşama 0 kapandı: ortak layout (route group)
+  yaklaşımı benimsendi (önceki "AppShell'i her sayfaya sardır" fikri, tekrarı koruduğu
+  için elendi). KARAR-1…6 sabitlendi; teşhis (41 sayfa ayrı Navbar, useAuth context,
+  eclub_kisi 3 sayfa, path-bazlı proxy) doğrulandı.
