@@ -149,7 +149,7 @@ her batch tsc'si erken yakalar.
 
 | # | İş | Durum |
 |---|---|---|
-| E1 | **Logo hizası:** navbar tam-genişlik yapıldı; logo sola hizalandı, piller ortalandı. | 🟨 kısmi (logo ✓, piller sonra) |
+| E1 | **Logo hizası + piller:** navbar tam-genişlik; logo solda, 5 pil tek blok navbarın **ortasına** sabitlendi (mutlak ortalama — pencere genişliğinden bağımsız), sağ blok sağda. | ✅ |
 | E2 | **Sol liste her sayfada görünür.** NOT: Faz 2 tüm sayfaları `(panel)`'e taşıyınca kendiliğinden çözülür (ayrı düzeltme değil) — sonda yalnız **doğrulanır**. | ⬜ |
 | E3 | **Açılır/kapanır gruplar:** çok öğeli gruplar akordiyon (chevron döner); başlıklar **siyah bold**, alt öğeler koyu gri. Sol liste font +2px. | ✅ |
 | E4 | **IU'da HBLigi TAMAMEN kaldırıldı:** nav gate (IU hariç) + sayfa (IU→/ana-sayfa) + API (IU→403). | ✅ |

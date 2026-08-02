@@ -60,14 +60,14 @@ export default function PanelNavbar({ adSoyad, email, onCikis, onHamburger }: Pa
       className="sticky top-0 z-50 border-b border-gray-200 px-3 py-2 md:px-6 md:py-2.5"
       style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderBottomColor: "#e5e7eb" }}
     >
-      <div className="flex items-center justify-between gap-4">
+      <div className="relative flex items-center justify-between gap-4">
         <img
           src="/logo.png"
           alt="hapbilgi"
           className="h-10 md:h-14 lg:h-20 cursor-pointer flex-shrink-0"
           onClick={() => router.push("/")}
         />
-        <div className="hidden md:flex flex-1 items-center justify-center gap-1.5 flex-wrap">
+        <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-1.5">
           {BILGI_PILLERI.map((p) => (
             <button
               key={p.key}
