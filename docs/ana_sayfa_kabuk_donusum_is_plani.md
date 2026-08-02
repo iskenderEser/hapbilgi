@@ -30,7 +30,7 @@ kolaylaşır.
 | # | Aşama | Durum |
 |---|---|---|
 | 0 | Kararların sabitlenmesi (KARAR-1…6) | ✅ |
-| 1 | Faz 1 — Kabuk + pilot (yalnız `/ana-sayfa`) | ⬜ |
+| 1 | Faz 1 — Kabuk + pilot (yalnız `/ana-sayfa`) | ✅ |
 | 2 | Faz 2 — Yayım (kalan 40 sayfa, batch) | ⬜ |
 | 3 | Faz 3 — Temizlik (eski Navbar sil + REDBOOK) | ⬜ |
 
@@ -102,14 +102,14 @@ sayfa bu fazda taşınmaz; eski Navbar'larıyla çalışır (iki nav geçici bir
 
 | Adım | İş | Dosya |
 |---|---|---|
-| 1.1 | Gezinme config'i (ana→alt ağaç + rol/aktiflik koşulları + badge anahtarları) | `components/panel/panelNav.config.ts` (yeni) |
-| 1.2 | Yeni üst bar — 5 bilgi pill'i + sağ blok (ad-soyad, avatar→`/profil`, Çıkış) | `components/panel/PanelNavbar.tsx` (yeni) |
-| 1.3 | Sol liste — config'i okur, grup + alt öğe, aktif vurgu, badge fetch | `components/panel/SolListe.tsx` (yeni) |
-| 1.4 | Mobil drawer — aynı config; eski bottom-tab yeniden kurgulanır | `components/panel/MobilDrawer.tsx` (yeni) |
-| 1.5 | Ortak layout — `useAuth` guard tek yerde + profil bayrakları context + yerleşim | `app/(panel)/layout.tsx` (yeni, "use client") |
-| 1.6 | Bilgi sayfaları (iskelet) — ortak kabuk + 4 rota | `components/panel/BilgiSayfa.tsx` + `app/(panel)/{hapbilgi-nedir,nasil-calisir,sozlesmeler,iletisim}/page.tsx` |
-| 1.7 | Pilot taşıma: `app/ana-sayfa/` → `app/(panel)/ana-sayfa/`; Navbar+guard sil, yalnız içerik dön | `app/(panel)/ana-sayfa/page.tsx` |
-| 1.8 | Doğrulama: tsc+denetim+lint; preview masaüstü+mobil; ekran görüntüsü; smoke; **görsel onay**; commit | — |
+| 1.1 ✅ | Gezinme config'i (ana→alt ağaç + rol/aktiflik koşulları + badge anahtarları) | `components/panel/panelNav.config.ts` (yeni) |
+| 1.2 ✅ | Yeni üst bar — 5 bilgi pill'i + sağ blok (ad-soyad, avatar→`/profil`, Çıkış) | `components/panel/PanelNavbar.tsx` (yeni) |
+| 1.3 ✅ | Sol liste — config'i okur, grup + alt öğe, aktif vurgu; rozeti **prop'tan** alır (tek kaynak, B kararı) | `components/panel/SolListe.tsx` (yeni) |
+| 1.4 ✅ | Mobil drawer — aynı config; rozeti prop'tan alır; eski bottom-tab yeniden kurgulanır | `components/panel/MobilDrawer.tsx` (yeni) |
+| 1.5 ✅ | Ortak layout — `useAuth` guard + profil bayrakları + **rozet çekimi tek sefer** (B) → SolListe/MobilDrawer'a dağıtır; eclub_kisi'de ECLUB_KISI_NAV (b) | `app/(panel)/layout.tsx` (yeni, "use client") |
+| 1.6 ✅ | Bilgi sayfaları (iskelet) — ortak kabuk + 4 rota | `components/panel/BilgiSayfa.tsx` + `app/(panel)/{hapbilgi-nedir,nasil-calisir,sozlesmeler,iletisim}/page.tsx` |
+| 1.7 ✅ | Pilot taşıma: `app/ana-sayfa/` → `app/(panel)/ana-sayfa/`; Navbar+guard sil, yalnız içerik dön | `app/(panel)/ana-sayfa/page.tsx` |
+| 1.8 ✅ | Doğrulama: tsc+denetim+lint temiz; preview; **görsel onay alındı** (İskender: sekmeler gezildi, hata yok). Commit standing kural gereği YOK | — |
 
 - **layout.tsx guard:** `yukleniyor→spinner`, `!kullanici→/login`, `admin→/admin`;
   `profil/api` bayraklarını bir kez çekip context'le alt bileşenlere verir.
@@ -145,6 +145,16 @@ her batch tsc'si erken yakalar.
 
 ---
 
+## 6.5 Ek İşler (tüm fazlardan SONRA — İskender'in Faz 1 görsel geri bildirimi)
+
+| # | İş | Durum |
+|---|---|---|
+| E1 | **Logo hizası:** Sol liste gelince logo navbarda sağda kalıyor; logo sol liste sütunuyla hizalanacak (navbar ortalı yerleşiminden kaynaklı). | ⬜ |
+| E2 | **Sol liste her sayfada görünür.** NOT: Faz 2 tüm sayfaları `(panel)`'e taşıyınca kendiliğinden çözülür (ayrı düzeltme değil) — sonda yalnız **doğrulanır**. | ⬜ |
+| E3 | **Açılır/kapanır gruplar:** Üretim / Yayın / Raporlama gibi çok öğeli gruplar ok (chevron) ile açılıp kapansın (accordion) — uzun listede ihtiyaç duyulan açılır. (İskender + Claude ortak tercihi.) | ⬜ |
+
+---
+
 ## 7. Doğrulama ve sınırlar
 
 - **Smoke (her faz/batch):** 1 mutlu yol (bir rolle gezinme + aktif vurgu + badge) +
@@ -157,6 +167,13 @@ her batch tsc'si erken yakalar.
 
 ## 8. Değişiklik Günlüğü
 
+- **02.08.2026** — Faz 1 tamamlandı, görsel onay alındı (İskender sekmeleri gezdi, hata yok).
+  Geri bildirimden 3 madde **Ek İşler (§6.5)** olarak eklendi (E1 logo hizası, E2 sol liste
+  her sayfada — Faz 2 ile kendiliğinden, E3 accordion gruplar). Ek işler tüm fazlardan sonra.
+- **02.08.2026** — Karar B (rozet tek kaynak): Rozet çekimi SolListe içinden alınıp
+  layout'a (Adım 1.5) tek sefere taşınacak; SolListe ve MobilDrawer rozeti **prop**
+  olarak alacak. Gerekçe: tek kaynak + verimli (mükerrer istek yok). Fonksiyonel
+  testlerde gerekirse düzenlenecek. Adım 1.3 (SolListe) buna göre revize edildi.
 - **02.08.2026** — Belge oluşturuldu. Aşama 0 kapandı: ortak layout (route group)
   yaklaşımı benimsendi (önceki "AppShell'i her sayfaya sardır" fikri, tekrarı koruduğu
   için elendi). KARAR-1…6 sabitlendi; teşhis (41 sayfa ayrı Navbar, useAuth context,
