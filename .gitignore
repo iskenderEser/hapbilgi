@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# denetim araç çıktıları (her koşumda yeniden üretilir)
+scripts/denetim/denetim-sonuc.json
+scripts/denetim/kullanim.json
