@@ -45,7 +45,7 @@ function daireStili(hal: Adim["hal"]): React.CSSProperties {
     case "aktif":
       return { background: "#fff", borderColor: "#bc2d0d", boxShadow: "0 0 0 3px rgba(188,45,13,0.14)" };
     case "kapali":
-      return { background: "#fecaca", borderColor: "#bc2d0d" };
+      return { background: "#bc2d0d", borderColor: "#bc2d0d" };
     default:
       return { background: "#fff", borderColor: "#e5e7eb" };
   }
