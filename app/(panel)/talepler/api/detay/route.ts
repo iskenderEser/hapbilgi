@@ -1,6 +1,6 @@
-// app/talepler-v2/api/detay/route.ts
+// app/talepler/api/detay/route.ts
 //
-// SEÇİLEN TALEBİN DERİN VERİSİ (docs/talepler_v2_is_plani.md, A-5).
+// SEÇİLEN TALEBİN DERİN VERİSİ — üretici rol detay ucu.
 //
 // Sol liste hafif kalsın diye ağır veri listeyle birlikte taşınmaz: kullanıcı bir
 // talep seçtiğinde yalnız o talebin senaryo metni, video adresi ve soru seti
@@ -177,6 +177,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ talep_id, senaryo, video, soru_seti }, { status: 200 });
 
   } catch (err) {
-    return sunucuHatasi(err, "GET /talepler-v2/api/detay");
+    return sunucuHatasi(err, "GET /talepler/api/detay");
   }
 }

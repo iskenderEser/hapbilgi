@@ -1,22 +1,22 @@
 // app/talepler/page.tsx
 //
-// Talepler sayfası orchestrator'ı.
-// Tüm state ve handler'lar useTalepFormu hook'unda; bu dosya sadece bileşenleri bağlar.
-// Madde 2 parçalama tamamlandı — eski 711 satırlık monolit bu thin shell ile değiştirildi.
+// Talepler route'unun tek girişi — role göre iki deneyime dallanır (03.08 birleşme):
+//   üretici rolleri → UreticiRolGorunum   (talep-merkezli tek sayfa üretim, eski v2)
+//   İÜ + diğerleri  → IcerikUreticiGorunum (klasik geniş sayfa, eski v1)
+// Eski paralel /talepler-v2 rotası kaldırıldı; v2 davranışı aynen bu route altında yaşar.
+// Auth guard layout'ta; burada yalnız kullanıcı yüklenene kadar spinner.
 
 "use client";
 
-import { HataMesajiContainer } from "@/components/HataMesaji";
-import { useTalepFormu } from "./_hooks/useTalepFormu";
-import { YeniTalepForm } from "./_components/YeniTalepForm";
-import { TalepListesi } from "./_components/TalepListesi";
-import { IptalEdilenTalepler } from "./_components/IptalEdilenTalepler";
+import { useAuth } from "@/app/providers/AuthProvider";
+import { URETICI_ROLLER } from "@/lib/utils/roller";
+import { IcerikUreticiGorunum } from "./_components/IcerikUreticiGorunum";
+import { UreticiRolGorunum } from "./_components/UreticiRolGorunum";
 
 export default function TaleplerPage() {
-  const formu = useTalepFormu();
+  const { kullanici, yukleniyor } = useAuth();
 
-  // Auth guard layout'ta; burada yalnız veri yükleme spinner'ı (sayfaya özel).
-  if (formu.loading) {
+  if (yukleniyor || !kullanici) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center gap-2">
@@ -27,27 +27,7 @@ export default function TaleplerPage() {
     );
   }
 
-  return (
-    <>
-      <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7 flex flex-col gap-5">
-        <YeniTalepForm formu={formu} />
-        {/* Kapsam ayrımı (27.07): üretimi biten talepler bu sayfada hiç görünmez —
-            onlar ana sayfadaki Yayın Listesi'ne aittir. Burası mutfak: devam eden
-            işler üstte, iptal edilenler altta (geriye bakma amaçlı). */}
-        <TalepListesi
-          talepler={formu.talepler.filter((t) => !t.uretim_bitti && !t.iptal_edildi)}
-          isUretici={formu.isUretici}
-          okunmamisIdler={formu.okunmamisIdler}
-          formatTarih={formu.formatTarih}
-          onTalepClick={formu.handleTalepClick}
-        />
-        <IptalEdilenTalepler
-          talepler={formu.talepler.filter((t) => t.iptal_edildi)}
-          formatTarih={formu.formatTarih}
-        />
-      </div>
-
-      <HataMesajiContainer mesajlar={formu.mesajlar} />
-    </>
-  );
+  return URETICI_ROLLER.includes((kullanici.rol ?? "").toLowerCase())
+    ? <UreticiRolGorunum />
+    : <IcerikUreticiGorunum />;
 }

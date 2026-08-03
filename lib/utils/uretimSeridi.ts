@@ -2,7 +2,7 @@
 //
 // ÜRETİM ŞERİDİNİN SAF ÇÖZÜCÜSÜ (docs/talepler_v2_is_plani.md, A-3).
 //
-// Talep merkezli sayfada (/talepler-v2) aşama ayrı bir YER değil, talebin
+// Talep merkezli sayfada (/talepler) aşama ayrı bir YER değil, talebin
 // içindeki ADIM. Şerit her talepte SABİT BEŞ adım gösterir:
 //   Talep → Senaryo → Video → Soru Seti → Yayın
 //

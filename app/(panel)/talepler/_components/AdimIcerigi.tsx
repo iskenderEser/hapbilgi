@@ -1,4 +1,4 @@
-// app/talepler-v2/_components/AdimIcerigi.tsx
+// app/talepler/_components/AdimIcerigi.tsx
 //
 // Bir adımın açılınca görünen içeriği. Senaryo metni, video önizlemesi ve soru
 // listesi artık ayrı sayfalarda değil — talebin içindeki adımın kutusunda.
@@ -16,7 +16,7 @@ import VideoCercevesi from "@/components/video/VideoCercevesi";
 import type { IslemeDurumu } from "@/lib/video/islemeDurumu";
 import type { AdimAnahtari } from "@/lib/utils/uretimSeridi";
 import { HazirVideoYukleme } from "./HazirVideoYukleme";
-import type { RevizyonNotu, TalepDetay, TalepSatiri } from "../_types";
+import type { RevizyonNotu, TalepDetay, TalepSatiri } from "../_ureticiRolTypes";
 
 interface Props {
   anahtar: AdimAnahtari;

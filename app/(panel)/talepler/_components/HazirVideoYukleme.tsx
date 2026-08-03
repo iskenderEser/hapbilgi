@@ -1,4 +1,4 @@
-// app/talepler-v2/_components/HazirVideoYukleme.tsx
+// app/talepler/_components/HazirVideoYukleme.tsx
 //
 // Hazır video kolunda (V2/V4) üreticinin videoyu yüklediği alan — Video adımının
 // kutusunda yaşar. Bugün bunun için /talepler/[talep_id] detay sayfasına gitmek

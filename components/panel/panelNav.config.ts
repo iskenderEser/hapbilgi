@@ -69,8 +69,9 @@ export const PANEL_NAV: NavGrup[] = [
   {
     baslik: "Üretim",
     oglar: [
-      // Dönüşüm (03.08): üretici v2'ye (tek sayfa üretim), İÜ v1 Talepler'de kalır.
-      { etiket: "Talepler",     path: (c) => URETICI_ROLLER.includes(c.rolKucu) ? "/talepler-v2" : "/talepler", badgeKey: "talep", gate: (c) => URETIM_HATTI_GORENLER.includes(c.rolKucu) },
+      // Birleşme (03.08): tek /talepler rotası; deneyim role göre sayfa içinde dallanır
+      // (üretici → talep-merkezli, İÜ → klasik). Rol ayrımı artık page.tsx'te.
+      { etiket: "Talepler",     path: "/talepler", badgeKey: "talep", gate: (c) => URETIM_HATTI_GORENLER.includes(c.rolKucu) },
       // Ayrı üretim sayfaları yalnız İÜ'ye — üretici bu üç aşamayı v2 şeridinde görür.
       { etiket: "Senaryolar",   path: "/senaryolar",   badgeKey: "senaryo",   gate: (c) => c.rolKucu === IU_ROLU },
       { etiket: "Videolar",     path: "/videolar",     badgeKey: "video",     gate: (c) => c.rolKucu === IU_ROLU },

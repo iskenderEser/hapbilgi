@@ -1,4 +1,4 @@
-// app/talepler-v2/_components/YeniTalepFormV2.tsx
+// app/talepler/_components/YeniTalepFormV2.tsx
 //
 // Yeni Talep formunun v2 yerleşimi — DÖRT SÜTUN (İskender tasarımı, 28.07):
 //   1) Bu talep kimin için   2) Yayın içeriği

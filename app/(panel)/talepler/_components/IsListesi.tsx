@@ -1,4 +1,4 @@
-// app/talepler-v2/_components/IsListesi.tsx
+// app/talepler/_components/IsListesi.tsx
 //
 // Sol kolon — üretimi devam eden taleplerin iş kuyruğu.
 //
@@ -21,7 +21,7 @@ import { talepIdGoster } from "@/lib/utils/talepId";
 import { ureticiDurumMesaji } from "@/lib/utils/durum/mesaj";
 import { AsamaPill, DurumPill } from "@/components/pill";
 import { useListe, ListeArama, DahaFazlaGoster } from "@/components/liste";
-import { ASAMA_SUZGEC_SECENEKLERI, type AsamaSuzgeci, type TalepSatiri } from "../_types";
+import { ASAMA_SUZGEC_SECENEKLERI, type AsamaSuzgeci, type TalepSatiri } from "../_ureticiRolTypes";
 
 interface Props {
   talepler: TalepSatiri[];

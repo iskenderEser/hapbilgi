@@ -1,6 +1,6 @@
-// app/talepler-v2/api/route.ts
+// app/talepler/api/uretici-rol/route.ts
 //
-// TALEP MERKEZLİ ÜRETİM — liste ucu (docs/talepler_v2_is_plani.md, A-2).
+// TALEP MERKEZLİ ÜRETİM — üretici rol liste ucu.
 //
 // /talepler/api GET'inin deseni birebir korunur: talepler OTURUM istemcisiyle
 // okunur (görünürlük RLS'te — üretici yalnız kendi talebini görür), zincir view'i
@@ -93,6 +93,6 @@ export async function GET() {
     return NextResponse.json({ talepler: sonuc }, { status: 200 });
 
   } catch (err) {
-    return sunucuHatasi(err, "GET /talepler-v2/api");
+    return sunucuHatasi(err, "GET /talepler/api/uretici-rol");
   }
 }

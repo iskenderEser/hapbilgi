@@ -1,4 +1,4 @@
-// app/talepler-v2/_components/AksiyonSeridi.tsx
+// app/talepler/_components/AksiyonSeridi.tsx
 //
 // Üreticinin karar şeridi: Onayla / Revizyon İste / İptal Et.
 //

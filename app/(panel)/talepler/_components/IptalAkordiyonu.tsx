@@ -1,4 +1,4 @@
-// app/talepler-v2/_components/IptalAkordiyonu.tsx
+// app/talepler/_components/IptalAkordiyonu.tsx
 //
 // İptal edilen talepler — sol kolonun altında, kapalı akordiyonda.
 //
@@ -18,7 +18,7 @@ import { useState } from "react";
 import { TALEP_TURU_KURALLARI } from "@/lib/uretici/yetenekler";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import { AsamaPill } from "@/components/pill";
-import type { TalepSatiri } from "../_types";
+import type { TalepSatiri } from "../_ureticiRolTypes";
 
 interface Props {
   talepler: TalepSatiri[];

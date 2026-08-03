@@ -1,4 +1,4 @@
-// app/talepler-v2/_hooks/useTalepMerkezi.ts
+// app/talepler/_hooks/useTalepMerkezi.ts
 //
 // Talep merkezli sayfanın tek state otoritesi: liste + seçim.
 //
@@ -16,7 +16,7 @@ import { useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { uretimToast, toastVaryant, type ToastAsama, type ToastOlay } from "@/lib/uretim/toastMesaj";
 import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
-import type { TalepDetay, TalepSatiri } from "../_types";
+import type { TalepDetay, TalepSatiri } from "../_ureticiRolTypes";
 
 /** Aktif adım → hangi ucun hangi kimlikle çağrılacağı. Üç uç da mevcut, değiştirilmiyor. */
 const KARAR_UCU: Record<ToastAsama, { yol: string; anahtar: string }> = {
@@ -52,7 +52,7 @@ export function useTalepMerkezi() {
 
   const veriCek = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/talepler-v2/api");
+    const res = await fetch("/talepler/api/uretici-rol");
     const data = await res.json();
     if (!res.ok) {
       hata(data.hata ?? "Talepler yüklenemedi.", data.adim, data.detay);
@@ -109,7 +109,7 @@ export function useTalepMerkezi() {
     let aktif = true;
     setDetayYukleniyor(true);
     (async () => {
-      const res = await fetch(`/talepler-v2/api/detay?talep_id=${seciliTalepId}`);
+      const res = await fetch(`/talepler/api/detay?talep_id=${seciliTalepId}`);
       const data = await res.json();
       if (!aktif) return;
       if (!res.ok) {

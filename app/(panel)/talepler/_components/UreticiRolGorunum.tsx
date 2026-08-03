@@ -1,47 +1,27 @@
-// app/talepler-v2/page.tsx
+// app/talepler/_components/UreticiRolGorunum.tsx
 //
-// TALEP MERKEZLİ ÜRETİM — yeni tek sayfa tasarımı (docs/talepler_v2_is_plani.md).
+// TALEP MERKEZLİ ÜRETİM GÖRÜNÜMÜ — üretici rolleri için (eski talepler-v2).
 //
 // Temel ilke: aşama ayrı bir YER değil, talebin içindeki ADIM. Kullanıcı talepten
 // çıkmadan tüm üretim sürecini yönetir; Senaryolar / Videolar / Soru Setleri
 // sayfalarına gitmez.
 //
-// Bu rota mevcut yapıya PARALEL kurulur: /talepler, /senaryolar, /videolar,
-// /soru-setleri aynen çalışmaya devam eder ve bu sayfa onların hiçbirine dokunmaz.
-// Navbar'a bağlantı EKLENMEZ — sayfaya adres çubuğuna yazılarak girilir (S-2).
-//
-// A-1: iskelet. A-4: sol kolon gerçek veriyle bağlandı.
+// /talepler route'u role göre bu görünümü veya IcerikUreticiGorunum'u render eder
+// (page.tsx). Rol ayrımı orada yapıldığı için burada yönlendirme guard'ı yok.
 
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { HataMesajiContainer } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { URETICI_ROLLER } from "@/lib/utils/roller";
-import { useTalepMerkezi } from "./_hooks/useTalepMerkezi";
-import { IsListesi } from "./_components/IsListesi";
-import { TalepDetayi } from "./_components/TalepDetayi";
-import { YeniTalepAkordiyonu } from "./_components/YeniTalepAkordiyonu";
-import { IptalAkordiyonu } from "./_components/IptalAkordiyonu";
+import { useTalepMerkezi } from "../_hooks/useTalepMerkezi";
+import { IsListesi } from "./IsListesi";
+import { TalepDetayi } from "./TalepDetayi";
+import { YeniTalepAkordiyonu } from "./YeniTalepAkordiyonu";
+import { IptalAkordiyonu } from "./IptalAkordiyonu";
 
-export default function TaleplerV2Page() {
-  const router = useRouter();
+export function UreticiRolGorunum() {
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const merkez = useTalepMerkezi();
-
-  // D-1: faz 1 yalnız üretici rollerine açık. İÜ eski sayfalarda çalışmaya devam
-  // eder; sayfa oturduktan sonra İÜ gözü ayrı faz olarak ele alınacak.
-  useEffect(() => {
-    if (authYukleniyor) return;
-    if (!kullanici) {
-      router.push("/login");
-      return;
-    }
-    if (!URETICI_ROLLER.includes((kullanici.rol ?? "").toLowerCase())) {
-      router.push("/ana-sayfa");
-    }
-  }, [kullanici, authYukleniyor, router]);
 
   if (authYukleniyor || !kullanici || merkez.loading) {
     return (

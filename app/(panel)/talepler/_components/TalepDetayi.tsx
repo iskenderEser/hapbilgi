@@ -1,4 +1,4 @@
-// app/talepler-v2/_components/TalepDetayi.tsx
+// app/talepler/_components/TalepDetayi.tsx
 //
 // Sağ kolon — seçili talebin künyesi ve üretim şeridi.
 //
@@ -22,7 +22,7 @@ import { AdimIcerigi } from "./AdimIcerigi";
 import { AksiyonSeridi } from "./AksiyonSeridi";
 import type { ToastAsama } from "@/lib/uretim/toastMesaj";
 import type { KararDurumu } from "../_hooks/useTalepMerkezi";
-import type { TalepDetay, TalepSatiri } from "../_types";
+import type { TalepDetay, TalepSatiri } from "../_ureticiRolTypes";
 
 interface Props {
   talep: TalepSatiri | null;

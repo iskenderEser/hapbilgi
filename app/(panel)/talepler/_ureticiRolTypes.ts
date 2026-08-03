@@ -1,4 +1,4 @@
-// app/talepler-v2/_types.ts
+// app/talepler/_ureticiRolTypes.ts
 //
 // Talep merkezli sayfanın sözleşmeleri. Künye tipi ortak dosyadan gelir
 // (lib/utils/talepZinciri); burada yalnız bu sayfanın uçlarının EKLEDİĞİ alanlar
@@ -8,7 +8,7 @@ import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
 import type { ZincirAsama, ZincirSatiri } from "@/lib/utils/uretimZinciri";
 import type { DurumKodu } from "@/lib/utils/durum/mesaj";
 
-/** /talepler-v2/api GET'inin bir satırı: künye + çözülmüş durum + ham zincir. */
+/** /talepler/api/uretici-rol GET'inin bir satırı: künye + çözülmüş durum + ham zincir. */
 export interface TalepSatiri extends TalepBilgisi {
   hazir_video_url: string | null;
   /** Zincirin şu anki aşaması — sol listedeki AŞAMA sütunu. */
@@ -24,7 +24,7 @@ export interface TalepSatiri extends TalepBilgisi {
 }
 
 // ============================================================================
-// Detay ucu (/talepler-v2/api/detay) — seçili talebin derin verisi
+// Detay ucu (/talepler/api/detay) — seçili talebin derin verisi
 // ============================================================================
 
 /** Bir revizyon turunun notu. */

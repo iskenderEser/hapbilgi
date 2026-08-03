@@ -1,4 +1,4 @@
-// app/talepler-v2/_components/UretimSeridi.tsx
+// app/talepler/_components/UretimSeridi.tsx
 //
 // ÜRETİM ŞERİDİ — sayfanın omurgası.
 //

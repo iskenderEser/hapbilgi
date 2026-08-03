@@ -1,4 +1,4 @@
-// app/talepler-v2/_components/YeniTalepAkordiyonu.tsx
+// app/talepler/_components/YeniTalepAkordiyonu.tsx
 //
 // Talep açma da bu sayfada: kullanıcı talep oluşturmak için başka bir ekrana
 // gitmiyor. Akordiyon kapalı başlar, çağrılınca açılır.
