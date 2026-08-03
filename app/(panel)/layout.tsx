@@ -119,7 +119,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   const gruplar = kullanici.kimlik_turu === "eclub_kisi" ? ECLUB_KISI_NAV : PANEL_NAV;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f9fafb", fontFamily: "'Nunito', sans-serif" }}>
+    <div style={{ height: "100vh", background: "#f9fafb", fontFamily: "'Nunito', sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <PanelNavbar adSoyad={kullanici.adSoyad} email={kullanici.email} onCikis={cikisYap} onHamburger={() => setDrawerAcik(true)} />
 
       <MobilDrawer
@@ -131,9 +131,9 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         onKapat={() => setDrawerAcik(false)}
       />
 
-      <div className="flex" style={{ minHeight: "calc(100vh - 54px)" }}>
+      <div className="flex flex-1" style={{ minHeight: 0 }}>
         <SolListe {...ctx} gruplar={gruplar} badge={badge} yayinBekleyen={yayinBekleyen} />
-        <main className="flex-1" style={{ minWidth: 0 }}>{children}</main>
+        <main className="flex-1 overflow-y-auto" style={{ minWidth: 0 }}>{children}</main>
       </div>
     </div>
   );
