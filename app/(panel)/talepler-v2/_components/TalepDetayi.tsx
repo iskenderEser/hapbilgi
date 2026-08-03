@@ -96,6 +96,9 @@ export function TalepDetayi({
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div className="px-4 md:px-5 py-3.5 border-b border-gray-100">
+        <span className="text-sm font-semibold text-gray-900">Talep Takip</span>
+      </div>
       {/* Künye */}
       <div className="px-4 md:px-5 py-4 border-b border-gray-100 flex items-start justify-between gap-3 flex-wrap">
         <div className="flex flex-col gap-1.5 min-w-0">

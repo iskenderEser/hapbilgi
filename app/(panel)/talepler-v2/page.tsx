@@ -55,7 +55,7 @@ export default function TaleplerV2Page() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
+    <>
       <div className="max-w-[1400px] mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7 flex flex-col gap-5">
         <YeniTalepAkordiyonu onTalepOlusturuldu={merkez.talepOlusturuldu} />
 
@@ -99,6 +99,6 @@ export default function TaleplerV2Page() {
       </div>
 
       <HataMesajiContainer mesajlar={merkez.mesajlar} />
-    </div>
+    </>
   );
 }
