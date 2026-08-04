@@ -215,15 +215,15 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
 
       {/* Stat kartlar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
-        {[
-          { label: "Sizden Onay Bekleyen", value: istat.inceleme_bekleyen, sub: "Senaryo, video veya soru seti", renk: "#bc2d0d", filtre: "inceleme" },
+        {([
+          { label: "Sizden Onay Bekleyen", value: istat.inceleme_bekleyen, sub: "Senaryo, video veya soru seti", renk: "#bc2d0d", git: "/talepler" },
           { label: "Yayına Alınmayı Bekleyen", value: istat.yayin_bekleyen, sub: "Onaylı, yayına alınmadı", renk: "#f59e0b", filtre: "yayin-bekleyen" },
           { label: "Yayında Olanlar", value: istat.yayinda, sub: "UTT'ler izleyebilir", renk: "#16a34a", filtre: "yayinda" },
           { label: "Toplam Talep", value: istat.toplam, sub: "Tüm içerik kalemleri", renk: "#56aeff", filtre: "tumu" },
-        ].map(k => (
+        ] as { label: string; value: number; sub: string; renk: string; filtre?: string; git?: string }[]).map(k => (
           <div
-            key={k.filtre}
-            onClick={() => setAktifFiltre(aktifFiltre === k.filtre ? "tumu" : k.filtre)}
+            key={k.filtre ?? k.git}
+            onClick={() => (k.git ? router.push(k.git) : setAktifFiltre(aktifFiltre === k.filtre ? "tumu" : k.filtre!))}
             className="bg-white border border-gray-200 rounded-xl p-3 md:p-5 cursor-pointer transition-shadow duration-150"
             style={{
               borderLeft: `3px solid ${k.renk}`,
