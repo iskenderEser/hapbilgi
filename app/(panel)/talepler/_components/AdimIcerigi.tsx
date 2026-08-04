@@ -121,7 +121,15 @@ export function AdimIcerigi({
       if (videoYuklenebilir) {
         return <HazirVideoYukleme yuzde={videoYuzdesi} onYukle={onVideoYukle} />;
       }
-      if (!v || !v.video_url) return <Bos metin="Henüz video yüklenmedi." />;
+      if (!v || !v.video_url) return (
+        <div className="aspect-video rounded-lg border border-gray-200 bg-gray-50 flex flex-col items-center justify-center gap-2 text-gray-400">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+            <rect x="3" y="6" width="18" height="12" rx="2" />
+            <path d="M10 9.5 L15 12 L10 14.5 Z" fill="currentColor" stroke="none" />
+          </svg>
+          <span className="text-sm">Videonuz burada gösterilecek</span>
+        </div>
+      );
       return (
         <div>
           {bunnyIslemeDurumu === "isleniyor" && (
