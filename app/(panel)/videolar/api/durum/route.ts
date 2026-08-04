@@ -159,11 +159,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (isIU && durum === "inceleme bekleniyor" && talepBilgisi?.uretici_id) {
+      // Alıcı üretici — Talepler tek sayfada yönetir; bildirim "talep" türüyle
+      // yazılır → Talepler rozetine düşer (bkz. senaryolar/api/durum aynı desen).
       await bildirimOlustur({
         adminSupabase,
         alici_id: talepBilgisi.uretici_id,
         gonderen_id: user.id,
-        kayit_turu: "video",
+        kayit_turu: "talep",
         kayit_id: video_id,
         mesaj: `Video inceleme bekliyor: ${urun_adi}`,
       });

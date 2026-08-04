@@ -126,11 +126,15 @@ export async function POST(request: NextRequest) {
 
     // Bildirimler
     if (isIU && durum === "inceleme bekleniyor" && talepBilgisi?.uretici_id) {
+      // Alıcı üretici — tüm aşamaları tek "Talepler" sayfasında yönetir; ayrı
+      // Senaryo/Video/Soru sekmesi görmez. Bu yüzden bildirim aşama türüyle değil
+      // "talep" türüyle yazılır → Talepler rozetine düşer. (kayit_id senaryo_id
+      // kalır; okundu-yapma kayit_id zincirinden çalışır, kayit_turu'ndan değil.)
       await bildirimOlustur({
         adminSupabase,
         alici_id: talepBilgisi.uretici_id,
         gonderen_id: user.id,
-        kayit_turu: "senaryo",
+        kayit_turu: "talep",
         kayit_id: senaryo_id,
         mesaj: `Senaryo inceleme bekliyor: ${urun_adi}`,
       });
