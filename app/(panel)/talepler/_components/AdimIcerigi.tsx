@@ -104,7 +104,7 @@ export function AdimIcerigi({
     // ── Senaryo: metin (önceki varsa farkıyla) + revizyon notları ──────────
     case "senaryo": {
       const s = detay?.senaryo;
-      if (!s) return <Bos metin="Henüz senaryo yazılmadı." />;
+      if (!s) return <Bos metin="Senaryonuz burada görünecek" />;
       return (
         <div>
           <SenaryoMetniGoster mevcut={s.metin} onceki={s.onceki_metin ?? undefined} />
