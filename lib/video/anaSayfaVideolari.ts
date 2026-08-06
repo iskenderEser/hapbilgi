@@ -19,6 +19,8 @@ import { gorunenTurler, kapsamGenisMi } from "./gorunurluk";
 
 export interface AnaSayfaVideo {
   yayin_id: string;
+  talep_no?: number | null;
+  firma_adi?: string | null;
   urun_adi: string;
   teknik_adi: string;
   video_url: string | null;
@@ -47,7 +49,7 @@ export async function getAnaSayfaVideolari(
 
   let query = adminSupabase
     .from("v_yayin_detay")
-    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, icerik_turu, takim_id")
+    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, icerik_turu, takim_id, talep_no, firma_adi")
     .eq("durum", "yayinda")
     .in("icerik_turu", turler)
     .order("yayin_tarihi", { ascending: false });
@@ -72,6 +74,8 @@ export async function getAnaSayfaVideolari(
 
   return (videolar ?? []).map((v: any) => ({
     yayin_id: v.yayin_id,
+    talep_no: v.talep_no ?? null,
+    firma_adi: v.firma_adi ?? null,
     urun_adi: v.urun_adi ?? "-",
     teknik_adi: v.teknik_adi ?? "-",
     video_url: v.video_url ?? null,

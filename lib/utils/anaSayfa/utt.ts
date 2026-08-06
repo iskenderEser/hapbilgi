@@ -48,7 +48,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
   ] = await Promise.all([
     adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, urun_adi, teknik_adi, video_puani, yayin_tarihi, thumbnail_url, video_url, icerik_turu")
+      .select("yayin_id, urun_adi, teknik_adi, video_puani, yayin_tarihi, thumbnail_url, video_url, icerik_turu, talep_no, firma_adi")
       .eq("durum", "yayinda")
       // Takım süzgeci: kendi takımının içeriği VEYA firma-geneli (takımsız +
       // aynı firma) içerik. Firma seviyeli üreticiler (med_md/egt_*/ik_*)
@@ -173,6 +173,8 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
 
   const videoToItem = (y: any) => ({
     yayin_id: y.yayin_id,
+    talep_no: y.talep_no ?? null,
+    firma_adi: y.firma_adi ?? null,
     sonraki_tur_tarihi: turMap[y.yayin_id]?.sonraki_tur_tarihi ?? null,
     urun_adi: y.urun_adi ?? "-",
     teknik_adi: y.teknik_adi ?? "-",

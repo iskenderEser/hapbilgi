@@ -10,6 +10,7 @@
 
 import { AnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { talepIdGoster } from "@/lib/utils/talepId";
 
 interface Props {
   videolar: AnaSayfaVideo[];
@@ -68,6 +69,9 @@ export default function VideoBolumu({ videolar, onVideoSec, baslik = "Videolar" 
                   <div className="text-xs font-bold text-gray-900 truncate">{v.urun_adi}</div>
                   <div className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">{v.teknik_adi}</div>
                 </div>
+                {v.talep_no != null && (
+                  <div className="text-[10px] text-gray-400 font-mono">{talepIdGoster(v.firma_adi, v.talep_no)}</div>
+                )}
                 <div className="flex items-center justify-between">
                   {v.video_puani !== null ? (
                     <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-0.5 text-xs text-gray-500">

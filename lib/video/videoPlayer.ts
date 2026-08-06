@@ -37,8 +37,11 @@ export interface VideoPlayer {
   /** Player kullanıma hazır olduğunda çağrılır. Diğer event'ları bağlamak için bu callback içinde yapın. */
   onReady(callback: () => void): void;
 
-  /** Her video saniye güncellemesinde tetiklenir. data.seconds: mevcut konum (s). */
-  onTimeUpdate(callback: (data: { seconds: number }) => void): void;
+  /** Her video saniye güncellemesinde tetiklenir.
+   *  data.seconds: mevcut konum (s). data.duration: videonun toplam süresi (s) —
+   *  playerjs bu iki değeri birlikte gönderir; süre bilgisi ayrı bir getDuration
+   *  çağrısına gerek kalmadan doğrudan buradan okunabilir. */
+  onTimeUpdate(callback: (data: { seconds: number; duration?: number }) => void): void;
 
   /** Video sona erdiğinde tetiklenir. NOT: Bazı provider'lar bu event'ı her zaman göndermez —
    *  bu yüzden tüketici kod manuel bitiş tespiti (timeupdate + duration) de yapmalıdır. */
