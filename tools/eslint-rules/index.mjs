@@ -369,6 +369,8 @@ const ZAMAN_BASELINE = new Set([
   //   Baslangici + ayKaydir) yeniden kuruldu, düşürüldü.
   // Adım 6 (06.08): tarihAraligi.ts bu_donem+bu_gun dalları ceyrekBaslangici/
   //   gunBaslangici'ya bağlandı, düşürüldü.
+  // Adım 7a (06.08): HbLigiPeriyotSecici.tsx yerel yilinHaftalari kopyası +
+  //   getFullYear tek kaynağa (yilinHaftalari/aktifPeriyot) bağlandı, düşürüldü.
   "app/(panel)/cc-ligi/page.tsx",
   "app/(panel)/eclub/ligi/_hooks/useEclubLigi.ts",
   "app/(panel)/eclub/ligi/api/export/route.ts",
@@ -376,7 +378,6 @@ const ZAMAN_BASELINE = new Set([
   "app/(panel)/hbligi/page.tsx",
   "app/admin/api/firmalar/[firma_id]/export/route.ts",
   "components/cc-ligi/CcLigiPeriyotSecici.tsx",
-  "components/hbligi/HbLigiPeriyotSecici.tsx",
 ]);
 const zamanTekKaynak = {
   meta: {
