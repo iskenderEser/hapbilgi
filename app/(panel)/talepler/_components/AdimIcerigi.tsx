@@ -157,7 +157,7 @@ export function AdimIcerigi({
     // ── Soru seti: soru listesi + revizyon notu ────────────────────────────
     case "soru_seti": {
       const ss = detay?.soru_seti;
-      if (!ss || ss.sorular.length === 0) return <Bos metin="Henüz soru seti oluşturulmadı." />;
+      if (!ss || ss.sorular.length === 0) return <Bos metin="Soru setiniz burada gösterilecek" />;
       return (
         <div>
           <div className="flex flex-col gap-2 max-h-80 overflow-auto">
