@@ -13,6 +13,7 @@
 // `bm_satirlari` / `bm_istatistikler` adıyla kendi response'unda kullanır.
 
 import { SupabaseClient } from "@supabase/supabase-js";
+import { haftaBaslangici } from "@/lib/zaman/kontrol";
 
 export type BmKapsam =
   | { tip: "takim"; takim_id: string }
@@ -121,9 +122,7 @@ export async function getBmAktiviteVerisi(
     : { data: [] as any[] };
 
   // 4) Bu haftanın başlangıcı (Pazartesi 00:00).
-  const haftaBaslangic = new Date();
-  haftaBaslangic.setDate(haftaBaslangic.getDate() - haftaBaslangic.getDay() + 1);
-  haftaBaslangic.setHours(0, 0, 0, 0);
+  const haftaBaslangic = haftaBaslangici(new Date());
 
   // 5) BM bazında satırları kur.
   const satirlar: BmAktiviteSatiri[] = (bmler ?? []).map((bm: any) => {

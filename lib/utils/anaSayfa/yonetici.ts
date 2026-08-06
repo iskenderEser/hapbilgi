@@ -4,6 +4,7 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
+import { haftaBaslangici } from "@/lib/zaman/kontrol";
 
 export async function getYoneticiAnaSayfaVeri(userId: string, adminSupabase: SupabaseClient) {
   const { data: kullanici, error: kullaniciError } = await adminSupabase
@@ -15,9 +16,7 @@ export async function getYoneticiAnaSayfaVeri(userId: string, adminSupabase: Sup
   if (kullaniciError || !kullanici) throw new Error("Kullanıcı bilgisi alınamadı.");
 
   // Hafta başlangıcı (Pazartesi 00:00)
-  const haftaBaslangic = new Date();
-  haftaBaslangic.setDate(haftaBaslangic.getDate() - haftaBaslangic.getDay() + 1);
-  haftaBaslangic.setHours(0, 0, 0, 0);
+  const haftaBaslangic = haftaBaslangici(new Date());
   const simdi = new Date().toISOString();
 
   // Paralel: anlık 6 stat + haftalık UTT puanları + UTT listesi (rol/foto için)

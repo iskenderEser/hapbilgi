@@ -9,6 +9,7 @@ import { useHataMesaji } from "@/components/HataMesaji";
 import VideoOynatici from "@/components/izle/VideoOynatici";
 import VideoBolumu from "@/components/ana-sayfa/VideoBolumu";
 import { AnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
+import { haftaBaslangici } from "@/lib/zaman/kontrol";
 
 interface HaftaninEni {
   kullanici_id: string;
@@ -57,14 +58,12 @@ export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
   }, [user]);
 
   const bugunTarih = () =>
-    new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
+    new Date().toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", day: "numeric", month: "long", year: "numeric", weekday: "long" });
 
   const haftaTarihi = () => {
-    const baslangic = new Date();
-    baslangic.setDate(baslangic.getDate() - baslangic.getDay() + 1);
-    const bitis = new Date(baslangic);
-    bitis.setDate(bitis.getDate() + 6);
-    return `${baslangic.toLocaleDateString("tr-TR", { day: "2-digit", month: "short" })} — ${bitis.toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" })}`;
+    const baslangic = haftaBaslangici(new Date());
+    const bitis = new Date(baslangic.getTime() + 6 * 24 * 60 * 60 * 1000);
+    return `${baslangic.toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", day: "2-digit", month: "short" })} — ${bitis.toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", day: "2-digit", month: "short", year: "numeric" })}`;
   };
 
   if (loading) {

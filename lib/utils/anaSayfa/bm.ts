@@ -3,6 +3,7 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
+import { haftaBaslangici } from "@/lib/zaman/kontrol";
 
 export async function getBmAnaSayfaVeri(userId: string, adminSupabase: SupabaseClient) {
   const { data: bmKullanici, error: bmError } = await adminSupabase
@@ -34,9 +35,7 @@ export async function getBmAnaSayfaVeri(userId: string, adminSupabase: SupabaseC
 
   if (oneriError) throw new Error("Öneriler çekilemedi.");
 
-  const haftaBaslangic = new Date();
-  haftaBaslangic.setDate(haftaBaslangic.getDate() - haftaBaslangic.getDay() + 1);
-  haftaBaslangic.setHours(0, 0, 0, 0);
+  const haftaBaslangic = haftaBaslangici(new Date());
 
   const haftaOneriler = (oneriler ?? []).filter(
     (o: any) => new Date(o.created_at) >= haftaBaslangic

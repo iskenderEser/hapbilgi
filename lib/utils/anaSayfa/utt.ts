@@ -5,6 +5,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { gecerliTurBaslangiclari } from "@/lib/tur/kayit";
 import { tamTekrarSayilari } from "@/lib/puan/tekrarSayim";
 import { EXTRA_PUAN_TEKRAR_ESIGI } from "@/lib/puan/strateji";
+import { haftaBaslangici } from "@/lib/zaman/kontrol";
 
 export async function getUttAnaSayfaVeri(userId: string, adminSupabase: SupabaseClient) {
   const { data: kullanici, error: kullaniciError } = await adminSupabase
@@ -31,9 +32,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
     .single();
 
   // Hafta başlangıcı (Pazartesi 00:00) — get_kullanici_ozet periyodu için kullanılır
-  const haftaBaslangic = new Date();
-  haftaBaslangic.setDate(haftaBaslangic.getDate() - haftaBaslangic.getDay() + 1);
-  haftaBaslangic.setHours(0, 0, 0, 0);
+  const haftaBaslangic = haftaBaslangici(new Date());
 
   // Toplam puan için "geçmişten şimdiye" geniş aralık — tek kaynak prensibine uymak için
   // get_kullanici_ozet kullanıyoruz (4 kazanım − 3 kayıp = net puan).
