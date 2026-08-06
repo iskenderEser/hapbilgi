@@ -10,14 +10,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ECLUB_LIGI_GOREN_ROLLER } from "@/lib/utils/roller";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
+import { aktifPeriyot } from "@/lib/zaman/kontrol";
 import { ligUttToplamCagir, ligDetayCagir, type LigPeriyot, type Periyot } from "@/lib/eclub/ligRpcCagir";
 
 function periyotParse(sp: URLSearchParams): LigPeriyot {
   const periyot = (sp.get("periyot") as Periyot) || "ay";
-  const now = new Date();
-  const yil = parseInt(sp.get("yil") || String(now.getFullYear()), 10);
-  const ay = parseInt(sp.get("ay") || String(now.getMonth() + 1), 10);
-  const ceyrek = parseInt(sp.get("ceyrek") || String(Math.floor(now.getMonth() / 3) + 1), 10);
+  const { yil: bYil, ay: bAy, ceyrek: bCeyrek } = aktifPeriyot();
+  const yil = parseInt(sp.get("yil") || String(bYil), 10);
+  const ay = parseInt(sp.get("ay") || String(bAy), 10);
+  const ceyrek = parseInt(sp.get("ceyrek") || String(bCeyrek), 10);
   return { periyot, yil, ay, ceyrek };
 }
 

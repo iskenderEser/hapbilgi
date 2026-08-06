@@ -377,9 +377,8 @@ const ZAMAN_BASELINE = new Set([
   //   aktifPeriyot'a bağlandı, düşürüldü.
   // Adım 7d (06.08): cc-ligi/page.tsx açılış dönemi + challenge listesi ay/yıl
   //   aktifPeriyot'a bağlandı, düşürüldü.
-  "app/(panel)/eclub/ligi/_hooks/useEclubLigi.ts",
-  "app/(panel)/eclub/ligi/api/export/route.ts",
-  "app/(panel)/eclub/ligi/api/route.ts",
+  // Adım 8a (06.08): eclub/ligi 3 dosyası (hook + 2 route) periyot varsayılanları
+  //   aktifPeriyot'a bağlandı (hook+API tutarlı), düşürüldü.
   "app/admin/api/firmalar/[firma_id]/export/route.ts",
 ]);
 const zamanTekKaynak = {

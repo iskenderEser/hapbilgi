@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { DetaySatir } from "@/lib/eclub/ligRpcCagir";
+import { aktifPeriyot } from "@/lib/zaman/kontrol";
 
 export type Periyot = "ay" | "donem" | "yil";
 
@@ -52,10 +53,10 @@ export function useEclubLigi({ hata }: Args) {
   const [loading, setLoading] = useState(true);
 
   const [periyot, setPeriyot] = useState<Periyot>("ay");
-  const now = new Date();
-  const [yil] = useState(now.getFullYear());
-  const [ay] = useState(now.getMonth() + 1);
-  const [ceyrek] = useState(Math.floor(now.getMonth() / 3) + 1);
+  const buP = aktifPeriyot();
+  const [yil] = useState(buP.yil);
+  const [ay] = useState(buP.ay);
+  const [ceyrek] = useState(buP.ceyrek);
 
   // Merkezi akordiyon state: açık UTT'ler ve açık BM'ler (id setleri)
   const [acikUtt, setAcikUtt] = useState<Set<string>>(new Set());
