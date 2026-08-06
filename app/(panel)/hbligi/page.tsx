@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { aktifDonem } from "@/lib/zaman/kontrol";
+import { aktifPeriyot } from "@/lib/zaman/kontrol";
 import HbLigiPeriyotSecici, { type Periyot } from "@/components/hbligi/HbLigiPeriyotSecici";
 
 interface UttSatiri {
@@ -69,20 +69,12 @@ export default function HBLigiPage() {
   const [bmBolgeId, setBmBolgeId] = useState<string | null>(null);
 
   // Periyot state (varsayılan: içinde bulunulan çeyrek)
-  const buAn = new Date();
-  const buDonem = aktifDonem(buAn);
+  const buPeriyot = aktifPeriyot();
   const [periyot, setPeriyot] = useState<Periyot>("donem");
-  const [yil, setYil] = useState<number>(buDonem.yil);
-  const [ay, setAy] = useState<number>(buAn.getMonth() + 1);
-  const [ceyrek, setCeyrek] = useState<number>(buDonem.ceyrek);
-  // Bu haftanın no'su — Pazartesi bazlı, seçici/DB ile aynı (1 Ocak'ı içeren hafta = 1).
-  const buHaftaNo = (d: Date): number => {
-    const ocak1 = new Date(d.getFullYear(), 0, 1);
-    const dow = (ocak1.getDay() + 6) % 7;
-    const h1 = new Date(d.getFullYear(), 0, 1 - dow);
-    return Math.floor((d.getTime() - h1.getTime()) / 604800000) + 1;
-  };
-  const [hafta, setHafta] = useState<number>(buHaftaNo(buAn));
+  const [yil, setYil] = useState<number>(buPeriyot.yil);
+  const [ay, setAy] = useState<number>(buPeriyot.ay);
+  const [ceyrek, setCeyrek] = useState<number>(buPeriyot.ceyrek);
+  const [hafta, setHafta] = useState<number>(buPeriyot.hafta);
 
   // IU'nun HBLigi ile ilgisi yok — erişimi engellenir (E4).
   useEffect(() => {
