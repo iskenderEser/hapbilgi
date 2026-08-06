@@ -24,6 +24,18 @@
  * Bu yüzden takvim parçaları daima `Intl.DateTimeFormat` + Europe/Istanbul ile
  * okunur (`trParcalari`) ve TR duvar saatleri mutlak UTC anına çevrilir (`trAnUtc`).
  * Sonuç her iki ortamda da aynıdır — sistem nereye deploy edilirse edilsin kaymaz.
+ *
+ * ── YÜZEY KURALI (06.08.2026) ──────────────────────────────────────────────
+ * Bu dosya dışarıya HAM PARÇA değil KAVRAM yayınlar. `trParcalari` bilinçli
+ * olarak özeldir: parça okuyucusu dışarı çıkarsa her dosya kendi hesabını
+ * yapmaya devam eder — sadece saati doğru olur, kopyalar kalır. Nitekim B-12
+ * bu dosyayı düzelttiği hâlde 14 dosyada 59 elle hesap kaldı.
+ *
+ * Bir tüketicinin ham parçaya ihtiyacı varsa buradaki kavram eksiktir; çözüm
+ * o kavramı buraya eklemektir, yüzeyi ham parçaya açmak değil.
+ *
+ * Sözleşmenin bekçisi: tests/zaman.sinir.smoke.test.ts (doğruyu ölçer) ve
+ * hapbilgi-mimari/zaman-tek-kaynak lint kuralı (yanlışı engeller).
  */
 
 const TR_SAAT_DILIMI = "Europe/Istanbul";
@@ -33,6 +45,11 @@ const GUN_INDEKSI: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Th
 // Bu yüzden TR duvar saati ile UTC arası fark her zaman sabit 3 saattir.
 const TR_OFSET_DK = 3 * 60;
 const GUN_MS = 24 * 60 * 60 * 1000;
+const HAFTA_MS = 7 * GUN_MS;
+
+// Hafta etiketlerinde kullanılır (yilinHaftalari). Ay adları burada durur ki
+// hafta listesi üreten her ekran kendi kopyasını taşımasın.
+const AY_KISA = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
 
 /**
  * Bir anın Türkiye saatine (Europe/Istanbul) göre takvim parçaları.
@@ -185,5 +202,112 @@ export function aktifDonem(tarih: Date = new Date()): { yil: number; ceyrek: num
   return {
     yil,
     ceyrek: Math.floor((ay - 1) / 3) + 1,
+  };
+}
+
+/**
+ * Verilen anın ait olduğu TR gününün 00:00'ı.
+ *
+ * `setHours(0,0,0,0)` karşılığıdır ama makinenin saatini değil TR gününü
+ * kullanır: UTC sunucuda `setHours` günü 03:00 TR'de başlatırdı.
+ */
+export function gunBaslangici(tarih: Date = new Date()): Date {
+  const { yil, ay, gun } = trParcalari(tarih);
+  return trAnUtc(yil, ay, gun);
+}
+
+/**
+ * Verilen anın ait olduğu TR çeyreğinin ilk günü 00:00'ı.
+ * Çeyrekler: Q1=Oca-Mar, Q2=Nis-Haz, Q3=Tem-Eyl, Q4=Eki-Ara.
+ */
+export function ceyrekBaslangici(tarih: Date = new Date()): Date {
+  const { yil, ay } = trParcalari(tarih);
+  return trAnUtc(yil, Math.floor((ay - 1) / 3) * 3 + 1, 1);
+}
+
+/**
+ * TR gününü `YYYY-MM-DD` olarak verir.
+ *
+ * `toISOString().slice(0,10)` yerine BUNU kullanın: o kalıp günü UTC'den keser,
+ * TR saatiyle 00:00-02:59 arasında bir önceki günü döndürür.
+ */
+export function trGunu(tarih: Date = new Date()): string {
+  const { yil, ay, gun } = trParcalari(tarih);
+  return `${yil}-${String(ay).padStart(2, "0")}-${String(gun).padStart(2, "0")}`;
+}
+
+/**
+ * `YYYY-MM-DD` gün dizesine N gün ekler, yine `YYYY-MM-DD` döner.
+ * Ay ve yıl taşması `Date.UTC` tarafından normalize edilir (31 Ağustos +1 → 1 Eylül).
+ *
+ * @param gun Kaynak gün, `YYYY-MM-DD`
+ * @param n Eklenecek gün sayısı (negatif olabilir)
+ */
+export function trGunEkle(gun: string, n: number): string {
+  const [y, a, g] = gun.split("-").map(Number);
+  return trGunu(trAnUtc(y, a, g + n));
+}
+
+/**
+ * Bir yılın 1. haftasının Pazartesi'si (TR).
+ * Hafta 1 tanımı: 1 Ocak'ı içeren haftanın Pazartesi'si — veritabanındaki
+ * `date_trunc('week', make_date(yil,1,1))` ile aynı sözleşme.
+ */
+function yilinIlkHaftaPazartesi(yil: number): Date {
+  const { haftaGunu } = trParcalari(trAnUtc(yil, 1, 1));
+  const pazartesiyeFark = haftaGunu === 0 ? -6 : 1 - haftaGunu;
+  return trAnUtc(yil, 1, 1 + pazartesiyeFark);
+}
+
+/**
+ * Verilen anın TR hafta numarası (Pazartesi bazlı, 1 Ocak'ı içeren hafta = 1).
+ * Lig periyot seçicileri ve haftalık lig RPC'si bu numarayı kullanır.
+ */
+export function haftaNo(tarih: Date = new Date()): number {
+  const { yil } = trParcalari(tarih);
+  const ilkPazartesi = yilinIlkHaftaPazartesi(yil);
+  const gunBasi = gunBaslangici(tarih);
+  return Math.floor((gunBasi.getTime() - ilkPazartesi.getTime()) / HAFTA_MS) + 1;
+}
+
+/**
+ * Bir yılın hafta listesi — seçici dropdown'ları için numara + tarih aralıklı etiket.
+ * Son hafta, 31 Aralık'ı içeren haftadır.
+ */
+export function yilinHaftalari(yil: number): { no: number; label: string }[] {
+  const ilkPazartesi = yilinIlkHaftaPazartesi(yil);
+  const etiketle = (t: Date) => {
+    const { gun, ay } = trParcalari(t);
+    return `${gun} ${AY_KISA[ay - 1]}`;
+  };
+
+  const liste: { no: number; label: string }[] = [];
+  for (let n = 1; ; n++) {
+    const bas = new Date(ilkPazartesi.getTime() + (n - 1) * HAFTA_MS);
+    if (trParcalari(bas).yil > yil) break;
+    const bit = new Date(bas.getTime() + 6 * GUN_MS);
+    liste.push({ no: n, label: `${n}. Hafta (${etiketle(bas)} – ${etiketle(bit)})` });
+  }
+  return liste;
+}
+
+/**
+ * İçinde bulunulan periyodun dört bileşeni tek çağrıda (TR).
+ *
+ * Lig sayfaları ve E-Club uçları bu üçlüyü (yıl/ay/çeyrek) ayrı ayrı ve elle
+ * hesaplıyordu — aynı üç satır beş yerde kopyalanmıştı. Tek kaynak burasıdır.
+ */
+export function aktifPeriyot(tarih: Date = new Date()): {
+  yil: number;
+  ay: number;
+  ceyrek: number;
+  hafta: number;
+} {
+  const { yil, ay } = trParcalari(tarih);
+  return {
+    yil,
+    ay,
+    ceyrek: Math.floor((ay - 1) / 3) + 1,
+    hafta: haftaNo(tarih),
   };
 }
