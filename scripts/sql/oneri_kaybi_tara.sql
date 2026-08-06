@@ -16,6 +16,11 @@
 -- İdempotent: oneri_id UNIQUE + ON CONFLICT DO NOTHING → tekrar koşumu güvenli.
 -- Desen yayin_aktivasyon.sql ile aynı (SECURITY DEFINER, search_path, SKIP LOCKED).
 --
+-- GÜNCELLEME (05.08.2026 — Arıza 2): Fonksiyon, ürünü çözülemeyen öneriyi
+-- atlıyordu. Ürünsüz içerik (medikal, İK) meşru hâle geldiğinden bu atlama
+-- kazanç-kayıp simetrisini bozuyordu: kazanç yazılıp kayıp yazılmıyordu.
+-- Artık ürün bulunursa etiket olarak yazılır, bulunmazsa boş bırakılır.
+--
 -- KOŞUM: Supabase SQL editöründe bu dosyanın tamamı bir kez çalıştırılır.
 -- Yeniden çalıştırmak güvenlidir (CREATE OR REPLACE). Cron kaydı zaten mevcut
 -- olduğundan (jobid 2, doğru fonksiyonu çağırıyor) yeniden schedule edilmez.
@@ -51,10 +56,10 @@ BEGIN
                         AND kp.puan_turu = 'oneri')
     FOR UPDATE SKIP LOCKED
   LOOP
+    -- Ürün etiketi: varsa yazılır, yoksa boş kalır (05.08.2026 — puan yayına
+    -- aittir, ürün yayının varsa taşıdığı etikettir). Ürünsüz içerikte (medikal,
+    -- İK) kaybın atlanması kazanç-kayıp simetrisini bozuyordu.
     v_urun_id := public.get_urun_from_yayin(o.yayin_id);
-    IF v_urun_id IS NULL THEN
-      CONTINUE;  -- ürünü çözülemeyen öneriyi atla, bozuk kayıt yazma
-    END IF;
 
     INSERT INTO oneri_kayip_kayitlari
       (kullanici_id, yayin_id, oneri_id, urun_id, kaybedilen_puan)

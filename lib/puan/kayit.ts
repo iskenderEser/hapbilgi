@@ -21,6 +21,10 @@ import {
 /**
  * Verilen yayın için urun_id'yi DB function'ı ile çeker.
  * Internal helper — her kayıt fonksiyonu kayıt öncesinde bunu çağırır.
+ *
+ * NULL dönmesi bir hata DEĞİLDİR (05.08.2026): puan yayına aittir, ürün yayının
+ * varsa taşıdığı etikettir. Ürünsüz içerik (medikal, İK) meşrudur ve puan yazar;
+ * o kayıtlarda urun_id boş kalır. Kayıt fonksiyonları bu yüzden NULL'da durmaz.
  */
 async function yayindanUrunId(
   supabase: SupabaseClient,
@@ -44,9 +48,6 @@ export async function kazanilanPuanKaydet(
   params: KazanilanPuanParams
 ): Promise<KayitSonuc> {
   const urun_id = await yayindanUrunId(supabase, params.yayin_id);
-  if (!urun_id) {
-    return { ok: false, error: 'Yayından urun_id çekilemedi.' };
-  }
 
   const { error } = await supabase
     .from('kazanilan_puanlar')
@@ -76,9 +77,6 @@ export async function yanlisCevapKaybiKaydet(
   params: YanlisCevapKayipParams
 ): Promise<KayitSonuc> {
   const urun_id = await yayindanUrunId(supabase, params.yayin_id);
-  if (!urun_id) {
-    return { ok: false, error: 'Yayından urun_id çekilemedi.' };
-  }
 
   const { error } = await supabase
     .from('yanlis_cevap_kayitlari')
@@ -109,9 +107,6 @@ export async function ileriSarmaKaybiKaydet(
   params: IleriSarmaKayipParams
 ): Promise<KayitSonuc> {
   const urun_id = await yayindanUrunId(supabase, params.yayin_id);
-  if (!urun_id) {
-    return { ok: false, error: 'Yayından urun_id çekilemedi.' };
-  }
 
   const { error } = await supabase
     .from('ileri_sarma_kayitlari')
@@ -146,9 +141,6 @@ export async function oneriKaybiKaydet(
   params: OneriKayipParams
 ): Promise<KayitSonuc> {
   const urun_id = await yayindanUrunId(supabase, params.yayin_id);
-  if (!urun_id) {
-    return { ok: false, error: 'Yayından urun_id çekilemedi.' };
-  }
 
   const { error } = await supabase
     .from('oneri_kayip_kayitlari')

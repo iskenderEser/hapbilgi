@@ -177,18 +177,19 @@ export async function challengeKaybiKaydet(
     videoAdi: string; // bildirim mesajı için
   }
 ): Promise<KayitSonuc> {
-  // 1. urun_id çek
+  // 1. urun_id çek — BOŞ DÖNMESİ HATA DEĞİLDİR (05.08.2026).
+  // Puan yayına aittir; ürün, yayının varsa taşıdığı etikettir. Ürünsüz içerik
+  // (medikal, İK) meşrudur ve kayıp yazar; o kayıtlarda urun_id boş kalır.
   const { data: urunIdData, error: urunIdError } = await supabase.rpc(
     "get_urun_from_yayin",
     { p_yayin_id: params.yayin_id }
   );
 
-  if (urunIdError || !urunIdData) {
-    console.error("[lib/cc/kayit] challengeKaybiKaydet urun_id hatası:", urunIdError?.message);
-    return { ok: false, error: "Yayından urun_id çekilemedi." };
+  if (urunIdError) {
+    console.error("[lib/cc/kayit] challengeKaybiKaydet urun_id hatası:", urunIdError.message);
   }
 
-  const urun_id = urunIdData as string;
+  const urun_id = (urunIdData as string | null) ?? null;
 
   // 2. challenge_kayip_kayitlari'a INSERT
   const { error: insertError } = await supabase
