@@ -6,7 +6,8 @@
 --
 -- Tek fonksiyon, üç mod (p_mod):
 --   'tum'   → tüm firmalar (filtresiz)
---   'firma' → tek firma (p_firma_id) — kapsam: talep.urun_id → urunler.firma_id
+--   'firma' → tek firma (p_firma_id) — kapsam: talepler.firma_id (ürünsüz talepler
+--             de kapsamdadır: medikal/İK içeriği ürün taşımaz)
 --   'tekil' → tek talebin yayınları (p_talep_id)
 --
 -- BİTMİŞ sipariş korunur: mağazalar durum='teslim_edildi', eczanem durum='onaylandi'.
@@ -48,16 +49,14 @@ BEGIN
 
   -- ── 1) Kapsam kümeleri (silmeden ÖNCE topla) ─────────────────────────
   v_talep := CASE p_mod
-    WHEN 'firma' THEN ARRAY(SELECT t.talep_id FROM talepler t JOIN urunler u ON u.urun_id=t.urun_id WHERE u.firma_id=p_firma_id)
+    WHEN 'firma' THEN ARRAY(SELECT t.talep_id FROM talepler t WHERE t.firma_id = p_firma_id)
     WHEN 'tekil' THEN ARRAY[p_talep_id]
     ELSE NULL END;
+  -- Yayın kapsamı künyeden okunur (05.08.2026) — yayından talebe giden zincir
+  -- tek kaynakta (v_yayin_kunye) tanımlıdır, burada tekrarlanmaz.
   v_yayin := CASE p_mod
     WHEN 'tum' THEN ARRAY(SELECT yayin_id FROM yayin_yonetimi)
-    ELSE ARRAY(
-      SELECT y.yayin_id FROM yayin_yonetimi y
-      JOIN soru_seti_durumu ssd ON ssd.soru_seti_durum_id = y.soru_seti_durum_id
-      JOIN soru_setleri ss ON ss.soru_seti_id = ssd.soru_seti_id
-      WHERE ss.talep_id = ANY(v_talep))
+    ELSE ARRAY(SELECT ky.yayin_id FROM v_yayin_kunye ky WHERE ky.talep_id = ANY(v_talep))
   END;
   v_senaryo   := ARRAY(SELECT senaryo_id  FROM senaryolar   WHERE v_hepsi OR talep_id = ANY(v_talep));
   v_video     := ARRAY(SELECT video_id    FROM videolar     WHERE v_hepsi OR talep_id = ANY(v_talep));
