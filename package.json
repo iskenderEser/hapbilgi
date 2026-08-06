@@ -12,8 +12,8 @@
     "denetim:tara": "node scripts/denetim/kod-tara.js",
     "denetim": "node scripts/denetim/kod-tara.js && node scripts/denetim/denetle.js",
     "denetim:tutarlilik": "node scripts/denetim/tutarlilik/calistir.js",
-    "test:smoke": "node --test tests/*.smoke.test.ts",
-    "test:smoke:tz": "TZ=UTC node --test tests/*.smoke.test.ts && TZ=Pacific/Kiritimati node --test tests/*.smoke.test.ts"
+    "test:smoke": "node --import ./tests/_alias.mjs --test tests/*.smoke.test.ts",
+    "test:smoke:tz": "TZ=UTC node --import ./tests/_alias.mjs --test tests/*.smoke.test.ts && TZ=Pacific/Kiritimati node --import ./tests/_alias.mjs --test tests/*.smoke.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.9.0",
