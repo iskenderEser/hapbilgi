@@ -367,6 +367,8 @@ const ZAMAN_BASELINE = new Set([
   //   + YoneticiAnaSayfa.tsx) haftaBaslangici'ya bağlandı, düşürüldü.
   // Adım 5 (06.08): periyotAltKirilim.ts kavramlarla (gun/hafta/ay/ceyrek/yil
   //   Baslangici + ayKaydir) yeniden kuruldu, düşürüldü.
+  // Adım 6 (06.08): tarihAraligi.ts bu_donem+bu_gun dalları ceyrekBaslangici/
+  //   gunBaslangici'ya bağlandı, düşürüldü.
   "app/(panel)/cc-ligi/page.tsx",
   "app/(panel)/eclub/ligi/_hooks/useEclubLigi.ts",
   "app/(panel)/eclub/ligi/api/export/route.ts",
@@ -375,7 +377,6 @@ const ZAMAN_BASELINE = new Set([
   "app/admin/api/firmalar/[firma_id]/export/route.ts",
   "components/cc-ligi/CcLigiPeriyotSecici.tsx",
   "components/hbligi/HbLigiPeriyotSecici.tsx",
-  "lib/utils/tarihAraligi.ts",
 ]);
 const zamanTekKaynak = {
   meta: {
