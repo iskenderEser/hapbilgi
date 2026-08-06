@@ -25,6 +25,7 @@ export async function getUttData(
     bolgeRes,
     takimRes,
     urunDagilimiRes,
+    kategoriDagilimiRes,
     begeniRawRes,
     favoriRawRes,
     benimBegeniRes,
@@ -84,7 +85,19 @@ export async function getUttData(
       p_bitis: bitis,
     }),
 
-    // 8. Takım beğeni listesi — periyot bağımsız
+    // 8. Eğitim kategorisi bazlı puan + kayıp + teknik dağılımı — RPC ile tek noktadan
+    // get_kullanici_kategori_dagilimi: 7 no'lu sorgunun ikizi, ekseni ürün değil
+    // içerik türü. Ürünsüz içerik (medikal, İK) de girdiği için bu dağılımın
+    // toplamı kullanıcının toplam net puanına eşittir — ürün dağılımı ise
+    // ürünsüz içeriği dışarıda bırakır (bkz. get_kullanici_urun_dagilimi.sql).
+    // Tek kaynak — BM/TM/Firma raporlarında da aynı RPC kullanılacak.
+    adminSupabase.rpc('get_kullanici_kategori_dagilimi', {
+      p_kullanici_id: kullanici.kullanici_id,
+      p_baslangic: baslangic,
+      p_bitis: bitis,
+    }),
+
+    // 9. Takım beğeni listesi — periyot bağımsız
     adminSupabase
       .from('v_rapor_begeni_favori')
       .select('yayin_id, urun_adi, teknik_adi, begeni_sayisi')
@@ -92,7 +105,7 @@ export async function getUttData(
       .order('begeni_sayisi', { ascending: false })
       .limit(5),
 
-    // 9. Takım favori listesi — periyot bağımsız
+    // 10. Takım favori listesi — periyot bağımsız
     adminSupabase
       .from('v_rapor_begeni_favori')
       .select('yayin_id, urun_adi, teknik_adi, favori_sayisi')
@@ -100,13 +113,13 @@ export async function getUttData(
       .order('favori_sayisi', { ascending: false })
       .limit(5),
 
-    // 10. Kullanıcının kendi beğenileri
+    // 11. Kullanıcının kendi beğenileri
     adminSupabase
       .from('video_begeniler')
       .select('yayin_id')
       .eq('kullanici_id', kullanici.kullanici_id),
 
-    // 11. Kullanıcının kendi favorileri
+    // 12. Kullanıcının kendi favorileri
     adminSupabase
       .from('video_favoriler')
       .select('yayin_id')
@@ -124,6 +137,7 @@ export async function getUttData(
     bolge: bolgeRes.data ?? null,
     takim: takimRes.data ?? null,
     urunDagilimi: urunDagilimiRes.data ?? [],
+    kategoriDagilimi: kategoriDagilimiRes.data ?? [],
     begeniRaw: begeniRawRes.data ?? [],
     favoriRaw: favoriRawRes.data ?? [],
     benimBegenim: benimBegeniRes.data ?? [],

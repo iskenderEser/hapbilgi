@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useRapor } from '@/hooks/useRapor';
 import { BORDO, KIRMIZI, GRI_METIN, KOYU_METIN, GRI_ZEMIN, formatPuan, PERIYOTLAR, Periyot } from '@/lib/utils/raporUtils';
+import { TUR_RAPOR_ADI, TUR_SIRA, isIcerikTuru } from '@/lib/video/icerikTuru';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
 import StatGrid from '@/components/raporlar/StatGrid';
 import SectionTitle from '@/components/raporlar/SectionTitle';
@@ -27,6 +28,34 @@ interface UrunDagilimi {
   toplam_net_puan: number;
   teknik_dagilimi: Array<{ teknik_adi: string; izlenme_sayisi: number }>;
 }
+
+// Eğitim kategorisi kırılımı — ürün kırılımının ikizi, ekseni içerik türü.
+// Ürünsüz içerik (medikal, İK) de girdiği için bu listenin toplamı
+// istatistikler.toplam_net_puan'a eşittir; ürün kırılımı ise ürünsüzü dışarıda
+// bırakır. İki blok aynı puanları iki farklı eksende gösterir.
+interface KategoriDagilimi {
+  icerik_turu: string;
+  izlenme_sayisi: number;
+  video_puani: number;
+  soru_puani: number;
+  oneri_puani: number;
+  extra_puan: number;
+  ileri_sarma_kaybi: number;
+  yanlis_cevap_kaybi: number;
+  oneri_kaybi: number;
+  toplam_net_puan: number;
+  teknik_dagilimi: Array<{ teknik_adi: string; izlenme_sayisi: number }>;
+}
+
+// Kategori adı üretim hattındaki talep türü adıdır; tanınmayan bir tür gelirse
+// ham anahtar gösterilir (sessizce boş satır yerine görünür anomali).
+const kategoriAdi = (tur: string) => (isIcerikTuru(tur) ? TUR_RAPOR_ADI[tur] : tur);
+
+// Gösterim sırası ana sayfayla aynı kaynaktan; tanınmayan tür sona düşer.
+const kategoriSirasi = (tur: string) => {
+  const i = isIcerikTuru(tur) ? TUR_SIRA.indexOf(tur) : -1;
+  return i === -1 ? TUR_SIRA.length : i;
+};
 
 interface RaporData {
   kullanici: {
@@ -67,6 +96,7 @@ interface RaporData {
       kendisi_mi: boolean;
     }>;
   };
+  kategori_dagilimi: KategoriDagilimi[];
   urun_dagilimi: UrunDagilimi[];
   begeni_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; begeni_sayisi: number; benim_begenim: boolean }>;
   favori_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; favori_sayisi: number; benim_favorim: boolean }>;
@@ -76,6 +106,7 @@ export default function UttRaporPage() {
   const { kullanici, yukleniyor } = useAuth();
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
   const [acikUrunId, setAcikUrunId] = useState<string | null>(null);
+  const [acikKategori, setAcikKategori] = useState<string | null>(null);
 
   const { data, loading, error } = useRapor<RaporData>(
     '/raporlar/api/utt',
@@ -230,6 +261,81 @@ export default function UttRaporPage() {
                 {formatPuan(data.istatistikler.toplam_net_puan)}
               </span>
             </div>
+
+            {/* Eğitim Kategorisi Akordeonu — toplamı yukarıdaki bordo satıra eşittir */}
+            {(data.kategori_dagilimi ?? []).length > 0 && (
+              <div className="mt-3 pt-3" style={{ borderTop: `0.5px solid ${BORDER}` }}>
+                <div className="text-xs mb-2" style={{ color: GRI_METIN }}>Eğitim kategorisi dağılımı</div>
+                {[...data.kategori_dagilimi]
+                  .sort((a, b) => kategoriSirasi(a.icerik_turu) - kategoriSirasi(b.icerik_turu))
+                  .map(kat => {
+                    const acik = acikKategori === kat.icerik_turu;
+                    return (
+                      <div key={kat.icerik_turu} className="border rounded-lg mb-2 overflow-hidden" style={{ borderColor: BORDER }}>
+                        <button
+                          onClick={() => setAcikKategori(acik ? null : kat.icerik_turu)}
+                          className="w-full flex justify-between items-center px-3 py-2.5 transition-colors hover:bg-gray-50"
+                          style={{ background: acik ? '#FAFAFA' : 'transparent' }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <svg
+                              width="14"
+                              height="14"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke={BORDO}
+                              style={{ transform: acik ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                            <span className="text-sm font-medium" style={{ color: KOYU_METIN }}>{kategoriAdi(kat.icerik_turu)}</span>
+                            <span className="text-xs" style={{ color: GRI_METIN }}>· {kat.izlenme_sayisi} izlenme</span>
+                          </div>
+                          <span className="text-sm font-semibold" style={{ color: BORDO }}>
+                            {formatPuan(kat.toplam_net_puan)}
+                          </span>
+                        </button>
+                        {acik && (
+                          <div className="px-3 pb-3 pt-2" style={{ background: '#FAFAFA' }}>
+                            {[
+                              { label: 'Video puanı', value: kat.video_puani, renk: KOYU_METIN },
+                              { label: 'Soru puanı', value: kat.soru_puani, renk: '#3B6D11', prefix: '+ ' },
+                              { label: 'Öneri puanı', value: kat.oneri_puani, renk: '#3B6D11', prefix: '+ ' },
+                              { label: 'Extra puan', value: kat.extra_puan, renk: '#3B6D11', prefix: '+ ' },
+                              { label: 'İleri sarma kaybı', value: kat.ileri_sarma_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },
+                              { label: 'Yanlış cevap kaybı', value: kat.yanlis_cevap_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },
+                              { label: 'Öneri kaybı', value: kat.oneri_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },
+                            ].map(s => (
+                              <div key={s.label} className="flex justify-between py-1.5 text-xs" style={{ borderBottom: `0.5px solid ${BORDER}` }}>
+                                <span style={{ color: s.kayip ? KIRMIZI : GRI_METIN }}>{s.label}</span>
+                                <span style={{ color: s.renk, fontWeight: 500 }}>
+                                  {s.prefix || ''}{formatPuan(Math.abs(s.value ?? 0))}
+                                </span>
+                              </div>
+                            ))}
+                            <div className="flex justify-between py-2 mt-1 text-xs font-medium">
+                              <span style={{ color: BORDO }}>Net puan</span>
+                              <span style={{ color: BORDO }}>{formatPuan(kat.toplam_net_puan)}</span>
+                            </div>
+
+                            {(kat.teknik_dagilimi ?? []).length > 0 && (
+                              <div className="mt-3 pt-2" style={{ borderTop: `0.5px solid ${BORDER}` }}>
+                                <div className="text-xs mb-1.5" style={{ color: GRI_METIN }}>Teknik dağılımı</div>
+                                {kat.teknik_dagilimi.map(t => (
+                                  <div key={t.teknik_adi} className="flex justify-between py-1 text-xs">
+                                    <span style={{ color: KOYU_METIN }}>{t.teknik_adi}</span>
+                                    <span style={{ color: GRI_METIN }}>{t.izlenme_sayisi} izlenme</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
 
             {/* Ürün Bazlı Akordeon */}
             {(data.urun_dagilimi ?? []).length > 0 && (

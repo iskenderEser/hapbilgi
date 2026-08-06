@@ -6,7 +6,7 @@
 // her rolün yetenek profilinde tanımlanır. Bu dosya yalnızca ana sayfa
 // gösterimi için gerekli sunum metadata'sını taşır.
 
-import type { IcerikTuru } from "@/lib/uretici/yetenekler";
+import { TALEP_TURU_KURALLARI, type IcerikTuru } from "@/lib/uretici/yetenekler";
 
 // IcerikTuru tipini yeniden export — geriye dönük uyumluluk için
 // (mevcut tüketiciler "@/lib/video/icerikTuru" üzerinden import edebilir).
@@ -23,6 +23,15 @@ export const TUR_BASLIK: Record<IcerikTuru, string> = {
 
 // Ana sayfada bölümlerin gösterim sırası (ve geçerli tür listesi).
 export const TUR_SIRA: IcerikTuru[] = ["urun", "urun_medikal", "medikal", "egitim", "ik"];
+
+// Rapor kırılımlarında kategori adı — üretim hattındaki talep türü adının
+// aynısıdır ("Ürün Eğitimi", "Satış Teknikleri", ...). Elle yazılmaz;
+// TALEP_TURU_KURALLARI'ndan türetilir ki üretim hattında ad değişirse rapor
+// kendiliğinden takip etsin. Yukarıdaki TUR_BASLIK'tan farkı: o ana sayfanın
+// bölüm başlığıdır (çoğul, "Ürün Eğitimleri"), bu ise tekil kategori adıdır.
+export const TUR_RAPOR_ADI: Record<IcerikTuru, string> = Object.fromEntries(
+  Object.values(TALEP_TURU_KURALLARI).map((kural) => [kural.icerikTuru, kural.ad])
+) as Record<IcerikTuru, string>;
 
 /** DB'den okunan icerik_turu değerinin geçerli bir tür olup olmadığını doğrular. */
 export function isIcerikTuru(x: unknown): x is IcerikTuru {

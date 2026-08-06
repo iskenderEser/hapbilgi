@@ -134,6 +134,7 @@ export async function GET(request: Request) {
           kendisi_mi: s.kendisi_mi,
         })),
       },
+      kategori_dagilimi: d.kategoriDagilimi,
       urun_dagilimi: d.urunDagilimi,
       begeni_listesi: begeniListesi,
       favori_listesi: favoriListesi,
