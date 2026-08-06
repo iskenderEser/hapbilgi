@@ -215,3 +215,21 @@ genel eslint'te yaygın ve önceden var. Somut örnek `app/(panel)/onaylanan-tal
 `veriCek` içinde 4× `(x: any)` (Supabase yanıtları tiplenmemiş) + satır 162 `useEffect`
 içinde doğrudan `veriCek()` → setState (kademeli render uyarısı). Kod tabanı genelinde
 tarama + ayrı kalite pass'i gerekiyor; kabuk dönüşümü kapsamı dışında.
+
+---
+
+## J. 05.08.2026'da eklenen maddeler
+
+**17 · FK'sı olmayan puan tablolarında yetim kayıt riski — incelenecek.**
+"Veri Sil" doğrulaması sırasında görüldü. Sistemde üç tablo, silme zincirinin
+bağlandığı kolonlarda FK taşımıyor: `eclub_dogru_cevap_kayitlari` (hiç FK yok),
+`eclub_utt_puanlari` (hiç FK yok), `ileri_sarma_kayitlari` (yalnız `urun_id`
+FK'sı var; `yayin_id`, `izleme_id`, `kullanici_id` korumasız). FK olmadığı için
+ebeveyn silindiğinde bu satırlar veritabanı tarafından engellenmez ya da
+temizlenmez — silme kodu onları elle ele almak zorundadır ve atlanırsa sessizce
+birikirler. REDBOOK §6.1 bu üçünü "cascade yakalamaz" diye not etmiş, ama
+yetim kayıt olup olmadığı hiç ölçülmemiştir.
+
+*İncelenecek:* (a) bu üç tabloda canlıda yetim kayıt var mı, (b) `test_veri_temizle`
+ve tekil silme bu tabloları eksiksiz kapsıyor mu, (c) FK eklemek mi yoksa kod
+tarafında kapsamayı garanti altına almak mı doğru çözüm.
