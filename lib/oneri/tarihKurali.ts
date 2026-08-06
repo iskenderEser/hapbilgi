@@ -9,6 +9,8 @@
 //
 // Bu sabitler lib/zaman/kontrol.ts'teki puansız zaman kuralı ile uyumludur.
 
+import { trGunu } from "@/lib/zaman/kontrol";
+
 /** Öneri başlangıç günü için saat suffix'i (Türkiye saati 07:00) */
 export const ONERI_BASLANGIC_SAAT = "T07:00:00+03:00";
 
@@ -32,12 +34,12 @@ export type TarihKuraliSonuc =
  *
  * @param oneri_baslangic YYYY-MM-DD format gün string'i
  * @param oneri_bitis YYYY-MM-DD format gün string'i
- * @param bugun Karşılaştırma yapılacak bugün (default: today's UTC YYYY-MM-DD)
+ * @param bugun Karşılaştırma yapılacak bugün (default: bugünün TR günü, YYYY-MM-DD)
  */
 export function oneriTarihKurali(
   oneri_baslangic: string,
   oneri_bitis: string,
-  bugun: string = new Date().toISOString().slice(0, 10)
+  bugun: string = trGunu()
 ): TarihKuraliSonuc {
   if (!TARIH_FORMAT.test(oneri_baslangic) || !TARIH_FORMAT.test(oneri_bitis)) {
     return { gecerli: false, sebep: "format_hatali" };

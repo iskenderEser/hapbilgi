@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { trGunu, trGunEkle } from "@/lib/zaman/kontrol";
 import { useAuth } from "@/app/providers/AuthProvider";
 
 interface Oneri {
@@ -206,10 +207,8 @@ export default function OnerilerPage() {
     if (oneriBitis && deger >= oneriBitis) setOneriBitis("");
   };
 
-  const yarinStr = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-  const bitisMinStr = oneriBaslangic
-    ? new Date(new Date(oneriBaslangic).getTime() + 86400000).toISOString().slice(0, 10)
-    : "";
+  const yarinStr = trGunEkle(trGunu(), 1);
+  const bitisMinStr = oneriBaslangic ? trGunEkle(oneriBaslangic, 1) : "";
 
   const handleOneriGonder = async (e: React.FormEvent) => {
     e.preventDefault();

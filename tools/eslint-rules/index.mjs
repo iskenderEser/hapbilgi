@@ -359,20 +359,19 @@ const ZAMAN_MAKINE_METOTLARI = new Set([
 ]);
 const ZAMAN_KESME_METOTLARI = new Set(["slice", "substring", "substr"]);
 const ZAMAN_BASELINE = new Set([
-  // 06.08 — mevcut ihlaller (17 dosya). Bir dosya tek kaynağa bağlanınca buradan
-  // silinir (kural o dosyada sıkılaşır); baseline boşalınca kural error'a çekilir.
+  // 06.08 — mevcut ihlaller. Bir dosya tek kaynağa bağlanınca buradan silinir
+  // (kural o dosyada sıkılaşır); baseline boşalınca kural error'a çekilir.
   // Liste kuralın kendi çıktısından türetildi (app + lib + components).
+  // Adım 3 (06.08): lib/oneri/tarihKurali.ts + oneriler/page.tsx düşürüldü.
   "app/(panel)/cc-ligi/page.tsx",
   "app/(panel)/eclub/ligi/_hooks/useEclubLigi.ts",
   "app/(panel)/eclub/ligi/api/export/route.ts",
   "app/(panel)/eclub/ligi/api/route.ts",
   "app/(panel)/hbligi/page.tsx",
-  "app/(panel)/oneriler/page.tsx",
   "app/admin/api/firmalar/[firma_id]/export/route.ts",
   "components/ana-sayfa/YoneticiAnaSayfa.tsx",
   "components/cc-ligi/CcLigiPeriyotSecici.tsx",
   "components/hbligi/HbLigiPeriyotSecici.tsx",
-  "lib/oneri/tarihKurali.ts",
   "lib/utils/anaSayfa/bm.ts",
   "lib/utils/anaSayfa/bmAktivite.ts",
   "lib/utils/anaSayfa/utt.ts",
