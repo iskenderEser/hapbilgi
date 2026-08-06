@@ -371,13 +371,14 @@ const ZAMAN_BASELINE = new Set([
   //   gunBaslangici'ya bağlandı, düşürüldü.
   // Adım 7a (06.08): HbLigiPeriyotSecici.tsx yerel yilinHaftalari kopyası +
   //   getFullYear tek kaynağa (yilinHaftalari/aktifPeriyot) bağlandı, düşürüldü.
+  // Adım 7b (06.08): CcLigiPeriyotSecici.tsx (Hb'nin kopyası) aynı şekilde
+  //   tek kaynağa bağlandı, düşürüldü.
   "app/(panel)/cc-ligi/page.tsx",
   "app/(panel)/eclub/ligi/_hooks/useEclubLigi.ts",
   "app/(panel)/eclub/ligi/api/export/route.ts",
   "app/(panel)/eclub/ligi/api/route.ts",
   "app/(panel)/hbligi/page.tsx",
   "app/admin/api/firmalar/[firma_id]/export/route.ts",
-  "components/cc-ligi/CcLigiPeriyotSecici.tsx",
 ]);
 const zamanTekKaynak = {
   meta: {

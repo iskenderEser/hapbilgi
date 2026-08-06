@@ -11,6 +11,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { yilinHaftalari, aktifPeriyot } from "@/lib/zaman/kontrol";
 
 export type Periyot = "ay" | "donem" | "yil" | "hafta";
 
@@ -31,31 +32,6 @@ const AY_ADLARI = [
   "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
   "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
 ];
-
-const AY_KISA = [
-  "Oca", "Şub", "Mar", "Nis", "May", "Haz",
-  "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara",
-];
-
-// Yılın haftaları — Pazartesi bazlı, hafta 1 = 1 Ocak'ı içeren haftanın Pazartesi'si
-// (DB: date_trunc('week', make_date(yil,1,1)) ile aynı). Etiket tarih aralıklıdır.
-function yilinHaftalari(yil: number): { no: number; label: string }[] {
-  const ocak1 = new Date(yil, 0, 1);
-  const dow = (ocak1.getDay() + 6) % 7;
-  const h1 = new Date(yil, 0, 1 - dow);
-  const yilSonu = new Date(yil, 11, 31);
-  const fmt = (d: Date) => `${d.getDate()} ${AY_KISA[d.getMonth()]}`;
-  const liste: { no: number; label: string }[] = [];
-  for (let n = 1; ; n++) {
-    const bas = new Date(h1);
-    bas.setDate(h1.getDate() + (n - 1) * 7);
-    if (bas > yilSonu) break;
-    const bit = new Date(bas);
-    bit.setDate(bas.getDate() + 6);
-    liste.push({ no: n, label: `${n}. Hafta (${fmt(bas)} – ${fmt(bit)})` });
-  }
-  return liste;
-}
 
 const CEYREK_ADLARI = [
   "Q1 (Oca-Mar)",
@@ -78,7 +54,7 @@ export default function CcLigiPeriyotSecici({
 }: Props) {
   // Yıl seçenekleri: 2024'ten içinde bulunduğumuz yıla kadar
   const yilSecenekleri = useMemo(() => {
-    const buYil = new Date().getFullYear();
+    const buYil = aktifPeriyot().yil;
     const baslangic = 2024;
     const yillar: number[] = [];
     for (let y = buYil; y >= baslangic; y--) {
