@@ -226,6 +226,17 @@ export function ceyrekBaslangici(tarih: Date = new Date()): Date {
 }
 
 /**
+ * Verilen anın TR ayından n ay kaydırılmış ayın 1. günü 00:00'ı (TR).
+ * `Date.UTC` ay/yıl taşmasını normalize eder: Aralık +1 → gelecek yıl Ocak,
+ * Ocak −1 → geçen yıl Aralık. Grafik dilimlerinde ardışık ay sınırları için
+ * kullanılır (`ayBaslangici`'nin kaydırmalı biçimi; n=0 ay başının kendisi).
+ */
+export function ayKaydir(tarih: Date, n: number): Date {
+  const { yil, ay } = trParcalari(tarih);
+  return trAnUtc(yil, ay + n, 1);
+}
+
+/**
  * TR gününü `YYYY-MM-DD` olarak verir.
  *
  * `toISOString().slice(0,10)` yerine BUNU kullanın: o kalıp günü UTC'den keser,

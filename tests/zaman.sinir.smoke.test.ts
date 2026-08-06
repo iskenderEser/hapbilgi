@@ -24,6 +24,7 @@ import {
   haftaNo,
   aktifPeriyot,
   yilinHaftalari,
+  ayKaydir,
 } from "../lib/zaman/kontrol.ts";
 
 test("mutlu: gun ici bir an dogru TR gunune ve periyoda cozulur", () => {
@@ -74,4 +75,9 @@ test("sinir: pazar, gece yarisi sonrasi ve periyot gecisleri TR'ye sadik kalir",
   assert.equal(trGunEkle("2026-08-31", 1), "2026-09-01");
   assert.equal(trGunEkle("2026-12-31", 1), "2027-01-01");
   assert.equal(trGunEkle("2026-03-01", -1), "2026-02-28");
+
+  // 7) ayKaydir ay/yıl taşmasını normalize eder (grafik dilim sınırları).
+  assert.equal(trGunu(ayKaydir(new Date("2026-12-15T12:00:00+03:00"), 1)), "2027-01-01");
+  assert.equal(trGunu(ayKaydir(new Date("2026-08-15T12:00:00+03:00"), 2)), "2026-10-01");
+  assert.equal(trGunu(ayKaydir(new Date("2026-01-10T12:00:00+03:00"), -1)), "2025-12-01");
 });
