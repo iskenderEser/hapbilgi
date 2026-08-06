@@ -11,8 +11,8 @@
 -- rol (authenticated) SELECT edemez, RPC tanımlayıcı yetkisiyle okur. Tüm-zaman
 -- view'ı yalnız admin (service_role) tarafından okunur → gerek yok.
 --
--- Tarih aralıkları (hepsi session saat dilimi, created_at::date backfill/trigger
--- ile tutarlı; Faz 6.6 canlı-SUM ile birebir doğrular):
+-- Tarih aralıkları (make_date/date_trunc = TR takvim günü; kova ataması
+-- (created_at AT TIME ZONE 'Europe/Istanbul')::date ile tutarlı):
 --   aylık   : [make_date(yil,ay,1), +1 ay)
 --   dönemlik: [make_date(yil,(çeyrek-1)*3+1,1), +3 ay)
 --   yıllık  : [make_date(yil,1,1), make_date(yil+1,1,1))

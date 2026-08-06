@@ -9,7 +9,7 @@ INSERT INTO public.cc_ligi_ozet AS o
    izleme_puani, cevaplama_puani, extra_puani, cc_gonderme_puani, cc_referral_puani,
    ileri_sarma_kaybi, yanlis_cevap_kaybi, challenge_kaybi, guncellenme)
 SELECT
-  t.kullanici_id, (t.created_at)::date,
+  t.kullanici_id, (t.created_at AT TIME ZONE 'Europe/Istanbul')::date,
   SUM(t.izleme), SUM(t.cevaplama), SUM(t.extra), SUM(t.ccg), SUM(t.ccr),
   SUM(t.ileri), SUM(t.yanlis), SUM(t.challenge), now()
 FROM (
@@ -28,7 +28,7 @@ FROM (
   UNION ALL
   SELECT kullanici_id, created_at, 0,0,0,0,0, 0, 0, kaybedilen_puan FROM challenge_kayip_kayitlari
 ) t
-GROUP BY t.kullanici_id, (t.created_at)::date
+GROUP BY t.kullanici_id, (t.created_at AT TIME ZONE 'Europe/Istanbul')::date
 ON CONFLICT (kullanici_id, tarih) DO UPDATE SET
   izleme_puani       = EXCLUDED.izleme_puani,
   cevaplama_puani    = EXCLUDED.cevaplama_puani,

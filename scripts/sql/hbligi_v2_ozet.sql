@@ -55,7 +55,7 @@ SECURITY DEFINER
 SET search_path TO 'public'
 AS $fonk$
 DECLARE
-  v_tarih date := (NEW.created_at)::date;
+  v_tarih date := (NEW.created_at AT TIME ZONE 'Europe/Istanbul')::date;
   v_kol   text;
   v_delta integer;
 BEGIN

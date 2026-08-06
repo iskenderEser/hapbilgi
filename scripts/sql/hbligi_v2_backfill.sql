@@ -7,8 +7,9 @@
 -- Trigger aktifken en son koşulur; backfill anındaki gerçeği yazar, araya girmiş
 -- trigger eklemelerini ezer, sonraki yazımları trigger yakalar. Tekrar güvenli.
 --
--- Kova: created_at::date (oturum saat dilimi — okuma katmanı tarih aralıkları da
--- aynısını kullanır; Faz 6.6 canlı-SUM ile birebir doğrular).
+-- Kova: (created_at AT TIME ZONE 'Europe/Istanbul')::date — TR takvim günü.
+-- Okuma katmanı (make_date/date_trunc) zaten TR takvim günü sınırları üretir;
+-- ikisi aynı şeyi söyler. Faz 6.6 canlı-SUM ile birebir doğrular.
 
 INSERT INTO public.hb_ligi_ozet_v2 AS o
   (kullanici_id, tarih,
@@ -16,7 +17,7 @@ INSERT INTO public.hb_ligi_ozet_v2 AS o
    ileri_sarma_kaybi, yanlis_cevap_kaybi, oneri_kaybi, guncellenme)
 SELECT
   t.kullanici_id,
-  (t.created_at)::date,
+  (t.created_at AT TIME ZONE 'Europe/Istanbul')::date,
   SUM(t.izleme), SUM(t.cevaplama), SUM(t.oneri), SUM(t.extra),
   SUM(t.ileri), SUM(t.yanlis), SUM(t.onerikayip),
   now()
@@ -35,7 +36,7 @@ FROM (
   UNION ALL
   SELECT kullanici_id, created_at, 0,0,0,0, 0, 0, kaybedilen_puan FROM oneri_kayip_kayitlari
 ) t
-GROUP BY t.kullanici_id, (t.created_at)::date
+GROUP BY t.kullanici_id, (t.created_at AT TIME ZONE 'Europe/Istanbul')::date
 ON CONFLICT (kullanici_id, tarih) DO UPDATE SET
   izleme_puani       = EXCLUDED.izleme_puani,
   cevaplama_puani    = EXCLUDED.cevaplama_puani,

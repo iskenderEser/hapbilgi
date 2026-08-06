@@ -169,7 +169,7 @@ BEGIN
   INSERT INTO cc_ligi_ozet
     (kullanici_id, tarih, izleme_puani, cevaplama_puani, extra_puani,
      cc_gonderme_puani, cc_referral_puani, ileri_sarma_kaybi, yanlis_cevap_kaybi, challenge_kaybi, guncellenme)
-  SELECT t.kullanici_id, (t.created_at)::date,
+  SELECT t.kullanici_id, (t.created_at AT TIME ZONE 'Europe/Istanbul')::date,
     SUM(t.izleme), SUM(t.cevaplama), SUM(t.extra), SUM(t.ccg), SUM(t.ccr),
     SUM(t.ileri), SUM(t.yanlis), SUM(t.challenge), now()
   FROM (
@@ -184,12 +184,12 @@ BEGIN
     UNION ALL SELECT kullanici_id, created_at, 0,0,0,0,0, 0,kaybedilen_puan,0 FROM yanlis_cevap_kayitlari
     UNION ALL SELECT kullanici_id, created_at, 0,0,0,0,0, 0,0,kaybedilen_puan FROM challenge_kayip_kayitlari
   ) t(kullanici_id, created_at, izleme, cevaplama, extra, ccg, ccr, ileri, yanlis, challenge)
-  GROUP BY t.kullanici_id, (t.created_at)::date;
+  GROUP BY t.kullanici_id, (t.created_at AT TIME ZONE 'Europe/Istanbul')::date;
 
   INSERT INTO hb_ligi_ozet_v2
     (kullanici_id, tarih, izleme_puani, cevaplama_puani, oneri_puani, extra_puani,
      ileri_sarma_kaybi, yanlis_cevap_kaybi, oneri_kaybi, guncellenme)
-  SELECT t.kullanici_id, (t.created_at)::date,
+  SELECT t.kullanici_id, (t.created_at AT TIME ZONE 'Europe/Istanbul')::date,
     SUM(t.izleme), SUM(t.cevaplama), SUM(t.oneri), SUM(t.extra),
     SUM(t.ileri), SUM(t.yanlis), SUM(t.onerikayip), now()
   FROM (
@@ -203,7 +203,7 @@ BEGIN
     UNION ALL SELECT kullanici_id, created_at, 0,0,0,0, 0,kaybedilen_puan,0 FROM yanlis_cevap_kayitlari
     UNION ALL SELECT kullanici_id, created_at, 0,0,0,0, 0,0,kaybedilen_puan FROM oneri_kayip_kayitlari
   ) t(kullanici_id, created_at, izleme, cevaplama, oneri, extra, ileri, yanlis, onerikayip)
-  GROUP BY t.kullanici_id, (t.created_at)::date;
+  GROUP BY t.kullanici_id, (t.created_at AT TIME ZONE 'Europe/Istanbul')::date;
 
   RETURN jsonb_build_object(
     'durum','silindi', 'mod', p_mod,
