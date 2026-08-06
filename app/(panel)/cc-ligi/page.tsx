@@ -17,7 +17,7 @@
 // Çeyrek lideri (banner) hangi çeyrek için: kullanıcının seçtiği periyota
 // bakılmaz, içinde bulunulan çeyrek gösterilir (yıl seçili olabilir).
 //
-// Çeyrek hesabı tek kaynaktan: lib/zaman/kontrol.ts → aktifDonem().
+// Periyot hesabı tek kaynaktan: lib/zaman/kontrol.ts → aktifPeriyot().
 
 "use client";
 
@@ -26,7 +26,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { CCLIGI_GORENLERLER } from "@/lib/utils/roller";
-import { aktifDonem } from "@/lib/zaman/kontrol";
+import { aktifPeriyot } from "@/lib/zaman/kontrol";
 import CcLigiBanner from "@/components/cc-ligi/CcLigiBanner";
 import CcLigiPeriyotSecici, { type Periyot } from "@/components/cc-ligi/CcLigiPeriyotSecici";
 import CcLigiTablosu, { type LigSatiri } from "@/components/cc-ligi/CcLigiTablosu";
@@ -42,20 +42,12 @@ export default function CcLigiPage() {
   const [yetkiKontrolEdildi, setYetkiKontrolEdildi] = useState(false);
 
   // Periyot state
-  const buAn = new Date();
-  const buDonem = aktifDonem(buAn);
+  const buPeriyot = aktifPeriyot();
   const [periyot, setPeriyot] = useState<Periyot>("ay");
-  const [yil, setYil] = useState<number>(buDonem.yil);
-  const [ay, setAy] = useState<number>(buAn.getMonth() + 1); // 1-12
-  const [ceyrek, setCeyrek] = useState<number>(buDonem.ceyrek);
-  // Bu haftanın no'su — Pazartesi bazlı, seçici/DB ile aynı (1 Ocak'ı içeren hafta = 1).
-  const buHaftaNo = (d: Date): number => {
-    const ocak1 = new Date(d.getFullYear(), 0, 1);
-    const dow = (ocak1.getDay() + 6) % 7;
-    const h1 = new Date(d.getFullYear(), 0, 1 - dow);
-    return Math.floor((d.getTime() - h1.getTime()) / 604800000) + 1;
-  };
-  const [hafta, setHafta] = useState<number>(buHaftaNo(buAn));
+  const [yil, setYil] = useState<number>(buPeriyot.yil);
+  const [ay, setAy] = useState<number>(buPeriyot.ay); // 1-12
+  const [ceyrek, setCeyrek] = useState<number>(buPeriyot.ceyrek);
+  const [hafta, setHafta] = useState<number>(buPeriyot.hafta);
 
   // Lig tablosu state
   const [ligSatirlari, setLigSatirlari] = useState<LigSatiri[]>([]);
@@ -145,11 +137,11 @@ export default function CcLigiPage() {
 
   // Banner için: içinde bulunulan çeyrek (kullanıcı seçimi banner'ı etkilemez)
   // Yıl ise kullanıcının seçtiği yıl ile gider — geçmiş yıllarda da geçmiş lideri gösterir
-  const bannerCeyrek = aktifDonem(buAn).ceyrek;
+  const bannerCeyrek = buPeriyot.ceyrek;
 
   // Challenge listesi: her zaman içinde bulunulan ay
-  const cListYil = buAn.getFullYear();
-  const cListAy = buAn.getMonth() + 1;
+  const cListYil = buPeriyot.yil;
+  const cListAy = buPeriyot.ay;
 
   return (
     <div

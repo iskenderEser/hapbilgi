@@ -375,7 +375,8 @@ const ZAMAN_BASELINE = new Set([
   //   tek kaynağa bağlandı, düşürüldü.
   // Adım 7c (06.08): hbligi/page.tsx açılış dönemi (ay + yerel buHaftaNo)
   //   aktifPeriyot'a bağlandı, düşürüldü.
-  "app/(panel)/cc-ligi/page.tsx",
+  // Adım 7d (06.08): cc-ligi/page.tsx açılış dönemi + challenge listesi ay/yıl
+  //   aktifPeriyot'a bağlandı, düşürüldü.
   "app/(panel)/eclub/ligi/_hooks/useEclubLigi.ts",
   "app/(panel)/eclub/ligi/api/export/route.ts",
   "app/(panel)/eclub/ligi/api/route.ts",
