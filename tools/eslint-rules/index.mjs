@@ -380,7 +380,9 @@ const ZAMAN_BASELINE = new Set([
   // Adım 8a (06.08): eclub/ligi 3 dosyası (hook + 2 route) periyot varsayılanları
   //   aktifPeriyot'a bağlandı (hook+API tutarlı), düşürüldü.
   // Adım 8b (06.08): firmalar/export dosya adı günü trGunu'ya bağlandı, düşürüldü.
-  //   → BASELINE BOŞ. Adım 9'da kural warn'dan error'a çekilecek.
+  //   → BASELINE BOŞ. Adım 9'da kural error'a çekildi (eslint.config.mjs) —
+  //   makine saatiyle zaman hesabı yazan yeni kod artık derlemeyi durdurur.
+  //   Baseline mekanizması yerinde: ileride bir ihlal çıkarsa yine kullanılır.
 ]);
 const zamanTekKaynak = {
   meta: {

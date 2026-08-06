@@ -25,7 +25,7 @@ const eslintConfig = defineConfig([
       "hapbilgi-mimari/talep-kunye-tek-kaynak": "warn",
       "hapbilgi-mimari/toast-tek-kaynak": "warn",
       "hapbilgi-mimari/rol-tek-kaynak": "warn",
-      "hapbilgi-mimari/zaman-tek-kaynak": "warn",
+      "hapbilgi-mimari/zaman-tek-kaynak": "error",
     },
   },
 ]);
