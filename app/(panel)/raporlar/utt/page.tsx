@@ -49,15 +49,10 @@ interface RaporData {
     cevaplama_puani: number;
     oneri_puani: number;
     extra_puan: number;
-    toplam_kazanim: number;
     ileri_sarma_kaybi: number;
     yanlis_cevap_kaybi: number;
     oneri_kaybi: number;
     toplam_net_puan: number;
-    tamamlanan_izleme: number;
-    alinan_oneri: number;
-    tamamlanan_oneri: number;
-    bekleyen_oneri: number;
   };
   lig: {
     bolge_sirasi: number | null;
@@ -72,19 +67,7 @@ interface RaporData {
       kendisi_mi: boolean;
     }>;
   };
-  beklemede: {
-    izlenmemis_video_sayisi: number;
-    tahmini_kazanilacak_puan: number | null;
-    bekleyen_oneri_sayisi: number;
-  };
   urun_dagilimi: UrunDagilimi[];
-  oneriler: Array<{
-    oneri_id: string;
-    tamamlandi_mi: boolean;
-    gonderen: string;
-    tarih: string;
-    durum: string;
-  }>;
   begeni_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; begeni_sayisi: number; benim_begenim: boolean }>;
   favori_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; favori_sayisi: number; benim_favorim: boolean }>;
 }

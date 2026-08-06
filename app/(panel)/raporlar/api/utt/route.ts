@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   // Kullanıcı
   const { data: kullanici, error: kullaniciError } = await adminSupabase
     .from('kullanicilar')
-    .select('kullanici_id, ad, soyad, rol, bolge_id, takim_id, firma_id')
+    .select('kullanici_id, ad, soyad, rol, bolge_id, takim_id')
     .eq('eposta', user.email)
     .single();
 
@@ -59,30 +59,15 @@ export async function GET(request: Request) {
     toplam_net_puan: 0,
   };
 
-  const toplam_kazanim =
-    (ozet.video_puani ?? 0) +
-    (ozet.soru_puani ?? 0) +
-    (ozet.oneri_puani ?? 0) +
-    (ozet.extra_puan ?? 0);
-
-  const alinan_oneri = d.oneriler.length;
-  const tamamlanan_oneri = d.oneriler.filter((o: any) => o.izlendi_mi).length;
-  const bekleyen_oneri = alinan_oneri - tamamlanan_oneri;
-
   const istatistikler = {
     izleme_puani: ozet.video_puani ?? 0,
     extra_puan: ozet.extra_puan ?? 0,
     oneri_puani: ozet.oneri_puani ?? 0,
     cevaplama_puani: ozet.soru_puani ?? 0,
-    toplam_kazanim,
     ileri_sarma_kaybi: ozet.ileri_sarma_kaybi ?? 0,
     yanlis_cevap_kaybi: ozet.yanlis_cevap_kaybi ?? 0,
     oneri_kaybi: ozet.oneri_kaybi ?? 0,
     toplam_net_puan: ozet.toplam_net_puan ?? 0,
-    tamamlanan_izleme: d.tamamlananIzlemeSayisi,
-    alinan_oneri,
-    tamamlanan_oneri,
-    bekleyen_oneri,
   };
 
   // ─── HBLigi ──────────────────────────────────────────────────────────────
@@ -101,17 +86,6 @@ export async function GET(request: Request) {
     toplam_puan: u.toplam_puan ?? 0,
   }));
   const ligSonuc = ligSiralamasi(bolgeLigSatirlari, kullanici.kullanici_id, kisiselPuan);
-
-  // ─── Beklemede ───────────────────────────────────────────────────────────
-  const toplamYayinSayisi = d.yayinlar.length;
-  const izlenmemisVideoSayisi = Math.max(0, toplamYayinSayisi - d.tamamlananIzlemeSayisi);
-
-  const tumYayinlarToplamPuan = d.yayinlar.reduce((acc: number, y: any) => {
-    const video_puani =
-      y.soru_seti_durumu?.soru_setleri?.video_durumu?.video_puanlari?.video_puani ?? 0;
-    return acc + video_puani;
-  }, 0);
-  const tahminiPuan = tumYayinlarToplamPuan > 0 ? tumYayinlarToplamPuan : 0;
 
   // ─── Beğeni / Favori ─────────────────────────────────────────────────────
   const benimBegeniSet = new Set(d.benimBegenim.map((b) => b.yayin_id));
@@ -160,19 +134,7 @@ export async function GET(request: Request) {
           kendisi_mi: s.kendisi_mi,
         })),
       },
-      beklemede: {
-        izlenmemis_video_sayisi: izlenmemisVideoSayisi,
-        tahmini_kazanilacak_puan: tahminiPuan,
-        bekleyen_oneri_sayisi: istatistikler.bekleyen_oneri,
-      },
       urun_dagilimi: d.urunDagilimi,
-      oneriler: d.oneriler.map((o: any) => ({
-        oneri_id: o.oneri_id,
-        tamamlandi_mi: o.izlendi_mi,
-        gonderen: o.gonderen ? `${o.gonderen.ad} ${o.gonderen.soyad}` : '-',
-        tarih: o.created_at,
-        durum: o.izlendi_mi ? 'Tamamlandı' : 'Bekliyor',
-      })),
       begeni_listesi: begeniListesi,
       favori_listesi: favoriListesi,
     },
