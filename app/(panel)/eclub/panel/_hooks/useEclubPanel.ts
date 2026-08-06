@@ -6,6 +6,8 @@ import { useCallback, useEffect, useState } from "react";
 export interface PanelOneri {
   oneri_id: string;
   yayin_id: string;
+  talep_no?: number | null;
+  firma_adi?: string | null;
   urun_adi: string;
   teknik_adi: string | null;
   video_url: string | null;

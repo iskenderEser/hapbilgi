@@ -35,7 +35,7 @@ export async function GET() {
     if (yayinIdler.length > 0) {
       const { data: yayinlar } = await adminSupabase
         .from("v_yayin_detay")
-        .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, durum")
+        .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, durum, talep_no, firma_adi")
         .in("yayin_id", yayinIdler);
       for (const y of yayinlar ?? []) yayinMap.set((y as any).yayin_id, y);
     }
@@ -71,6 +71,8 @@ export async function GET() {
         return {
           gonderim_id: g.gonderim_id,
           yayin_id: g.yayin_id,
+          talep_no: y?.talep_no ?? null,
+          firma_adi: y?.firma_adi ?? null,
           urun_adi: y?.urun_adi ?? "-",
           teknik_adi: y?.teknik_adi ?? "-",
           video_url: y?.video_url ?? null,

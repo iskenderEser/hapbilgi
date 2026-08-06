@@ -47,19 +47,21 @@ export async function GET() {
     interface YayinDetay {
       urun_adi: string | null; teknik_adi: string | null;
       video_url: string | null; thumbnail_url: string | null; icerik_turu: string | null;
+      talep_no: number | null; firma_adi: string | null;
     }
     const yayinIds = [...new Set((oneriler ?? []).map((o) => (o as { yayin_id: string }).yayin_id))];
     const yayinMap = new Map<string, YayinDetay>();
     if (yayinIds.length > 0) {
       const { data: yayinlar } = await adminSupabase
         .from("v_yayin_detay")
-        .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, icerik_turu")
+        .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, icerik_turu, talep_no, firma_adi")
         .in("yayin_id", yayinIds);
       for (const y of yayinlar ?? []) {
         const yy = y as { yayin_id: string } & YayinDetay;
         yayinMap.set(yy.yayin_id, {
           urun_adi: yy.urun_adi, teknik_adi: yy.teknik_adi,
           video_url: yy.video_url, thumbnail_url: yy.thumbnail_url, icerik_turu: yy.icerik_turu,
+          talep_no: yy.talep_no, firma_adi: yy.firma_adi,
         });
       }
     }
@@ -70,6 +72,8 @@ export async function GET() {
       return {
         oneri_id: oo.oneri_id,
         yayin_id: oo.yayin_id,
+        talep_no: y?.talep_no ?? null,
+        firma_adi: y?.firma_adi ?? null,
         urun_adi: y?.urun_adi ?? "-",
         teknik_adi: y?.teknik_adi ?? null,
         video_url: y?.video_url ?? null,

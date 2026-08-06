@@ -9,12 +9,15 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import EczanemVideoOynatici from "./_components/EczanemVideoOynatici";
+import { talepIdGoster } from "@/lib/utils/talepId";
 import EczanemKasa from "./_components/EczanemKasa";
 import { MUSTERI_ROLU } from "@/lib/utils/roller";
 
 interface VideoSatiri {
   gonderim_id: string;
   yayin_id: string;
+  talep_no?: number | null;
+  firma_adi?: string | null;
   urun_adi: string;
   teknik_adi: string | null;
   video_url: string | null;
@@ -161,6 +164,9 @@ export default function EczanemPanelPage() {
                     <div className="min-w-0">
                       <div className="text-sm font-medium text-gray-800 truncate">{v.urun_adi}</div>
                       {v.teknik_adi && <div className="text-xs text-gray-400 truncate">{v.teknik_adi}</div>}
+                      {v.talep_no != null && (
+                        <div className="text-[10px] text-gray-400 font-mono">{talepIdGoster(v.firma_adi, v.talep_no)}</div>
+                      )}
                     </div>
                     <div className="text-right whitespace-nowrap">
                       {v.izlendi && v.cevaplandi ? (

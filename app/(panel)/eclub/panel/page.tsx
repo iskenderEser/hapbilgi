@@ -7,6 +7,7 @@ import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useEclubPanel, type PanelOneri } from "./_hooks/useEclubPanel";
 import EclubVideoOynatici from "./_components/EclubVideoOynatici";
+import { talepIdGoster } from "@/lib/utils/talepId";
 
 const KISI_ROL_ETIKETLERI: Record<string, string> = {
   eczaci: "Eczacı",
@@ -97,6 +98,9 @@ export default function EclubPanelPage() {
                       <div className="flex flex-col gap-0.5">
                         <span className="text-sm font-semibold text-gray-900">{o.urun_adi}</span>
                         {o.teknik_adi && <span className="text-xs text-gray-500">{o.teknik_adi}</span>}
+                        {o.talep_no != null && (
+                          <span className="text-[10px] text-gray-400 font-mono">{talepIdGoster(o.firma_adi, o.talep_no)}</span>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-2 flex-wrap mt-auto">
