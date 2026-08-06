@@ -14,6 +14,15 @@
 // LineChart'ı doldurmak için kullanılır.
 
 import type { Periyot } from "@/lib/utils/raporUtils";
+import {
+  gunBaslangici,
+  haftaBaslangici,
+  ayBaslangici,
+  ceyrekBaslangici,
+  yilBaslangici,
+  ayKaydir,
+  aktifDonem,
+} from "@/lib/zaman/kontrol";
 
 export type Dilim = {
   etiket: string;
@@ -23,95 +32,66 @@ export type Dilim = {
 
 const AY_KISALTMALARI = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
 const GUN_KISALTMALARI = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
+const SAAT_MS = 60 * 60 * 1000;
+const GUN_MS = 24 * SAAT_MS;
 
-export function periyotAltKirilim(periyot: Periyot): Dilim[] {
-  const simdi = new Date();
-
+// Tüm sınırlar lib/zaman/kontrol.ts kavramlarından TR saatine göre kurulur;
+// makinenin saat diliminden bağımsızdır (etiket ile sınır aynı takvimden gelir).
+// Türkiye DST kullanmadığı için gün/saat kaydırmaları milisaniye ile güvenlidir.
+export function periyotAltKirilim(periyot: Periyot, simdi: Date = new Date()): Dilim[] {
   if (periyot === "bu_gun") {
-    // 4 dilim: 6 saatlik aralıklar (0-6, 6-12, 12-18, 18-24)
-    const gunBas = new Date(simdi.getFullYear(), simdi.getMonth(), simdi.getDate());
-    return [0, 1, 2, 3].map((i) => {
-      const bas = new Date(gunBas);
-      bas.setHours(i * 6);
-      const bit = new Date(gunBas);
-      bit.setHours((i + 1) * 6);
-      return {
-        etiket: String((i + 1) * 6),
-        baslangic: bas.toISOString(),
-        bitis: bit.toISOString(),
-      };
-    });
+    // 4 dilim: TR 6 saatlik aralıklar (00-06, 06-12, 12-18, 18-24)
+    const gunBas = gunBaslangici(simdi).getTime();
+    return [0, 1, 2, 3].map((i) => ({
+      etiket: String((i + 1) * 6),
+      baslangic: new Date(gunBas + i * 6 * SAAT_MS).toISOString(),
+      bitis: new Date(gunBas + (i + 1) * 6 * SAAT_MS).toISOString(),
+    }));
   }
 
   if (periyot === "bu_hafta") {
-    // 7 dilim: Pzt-Paz
-    const gun = simdi.getDay();
-    const pazartesiOffset = gun === 0 ? 6 : gun - 1;
-    const pazartesi = new Date(simdi);
-    pazartesi.setDate(simdi.getDate() - pazartesiOffset);
-    pazartesi.setHours(0, 0, 0, 0);
-
-    return [0, 1, 2, 3, 4, 5, 6].map((i) => {
-      const bas = new Date(pazartesi);
-      bas.setDate(pazartesi.getDate() + i);
-      const bit = new Date(bas);
-      bit.setDate(bas.getDate() + 1);
-      return {
-        etiket: GUN_KISALTMALARI[i],
-        baslangic: bas.toISOString(),
-        bitis: bit.toISOString(),
-      };
-    });
+    // 7 dilim: Pzt-Paz (TR)
+    const pazartesi = haftaBaslangici(simdi).getTime();
+    return [0, 1, 2, 3, 4, 5, 6].map((i) => ({
+      etiket: GUN_KISALTMALARI[i],
+      baslangic: new Date(pazartesi + i * GUN_MS).toISOString(),
+      bitis: new Date(pazartesi + (i + 1) * GUN_MS).toISOString(),
+    }));
   }
 
   if (periyot === "bu_ay") {
-    // 4 dilim: ay başından bugüne 4 eşit hafta benzeri parça
-    // Sade tutmak için: ay başı + her hafta 7 gün, son dilim ay sonuna kadar
-    const ayBas = new Date(simdi.getFullYear(), simdi.getMonth(), 1);
-    const ayBitis = new Date(simdi.getFullYear(), simdi.getMonth() + 1, 1);
-    const toplamGun = Math.round((ayBitis.getTime() - ayBas.getTime()) / (1000 * 60 * 60 * 24));
+    // 4 dilim: ay başından ay sonuna 4 eşit hafta benzeri parça (TR)
+    const ayBas = ayBaslangici(simdi);
+    const ayBitis = ayKaydir(simdi, 1); // sonraki ayın 1'i
+    const toplamGun = Math.round((ayBitis.getTime() - ayBas.getTime()) / GUN_MS);
     const dilimGun = Math.ceil(toplamGun / 4);
-
-    return [0, 1, 2, 3].map((i) => {
-      const bas = new Date(ayBas);
-      bas.setDate(ayBas.getDate() + i * dilimGun);
-      const bit = new Date(ayBas);
-      bit.setDate(ayBas.getDate() + (i + 1) * dilimGun);
-      if (i === 3) bit.setTime(ayBitis.getTime()); // son dilim ay sonuna kadar
-      return {
-        etiket: String(i + 1),
-        baslangic: bas.toISOString(),
-        bitis: bit.toISOString(),
-      };
-    });
+    return [0, 1, 2, 3].map((i) => ({
+      etiket: String(i + 1),
+      baslangic: new Date(ayBas.getTime() + i * dilimGun * GUN_MS).toISOString(),
+      // son dilim ay sonuna kadar
+      bitis: (i === 3 ? ayBitis : new Date(ayBas.getTime() + (i + 1) * dilimGun * GUN_MS)).toISOString(),
+    }));
   }
 
   if (periyot === "bu_donem") {
-    // 3 dilim: bu çeyreğin 3 ayı
-    const ay = simdi.getMonth();
-    const ceyrekBasAy = Math.floor(ay / 3) * 3;
-    return [0, 1, 2].map((i) => {
-      const bas = new Date(simdi.getFullYear(), ceyrekBasAy + i, 1);
-      const bit = new Date(simdi.getFullYear(), ceyrekBasAy + i + 1, 1);
-      return {
-        etiket: AY_KISALTMALARI[ceyrekBasAy + i],
-        baslangic: bas.toISOString(),
-        bitis: bit.toISOString(),
-      };
-    });
+    // 3 dilim: bu çeyreğin 3 ayı (TR)
+    const ceyrekBas = ceyrekBaslangici(simdi);
+    const ceyrekBasAy = (aktifDonem(simdi).ceyrek - 1) * 3; // 0, 3, 6, 9 → etiket için
+    return [0, 1, 2].map((i) => ({
+      etiket: AY_KISALTMALARI[ceyrekBasAy + i],
+      baslangic: ayKaydir(ceyrekBas, i).toISOString(),
+      bitis: ayKaydir(ceyrekBas, i + 1).toISOString(),
+    }));
   }
 
   if (periyot === "bu_yil") {
-    // 12 dilim: Oca-Ara
-    return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => {
-      const bas = new Date(simdi.getFullYear(), i, 1);
-      const bit = new Date(simdi.getFullYear(), i + 1, 1);
-      return {
-        etiket: AY_KISALTMALARI[i],
-        baslangic: bas.toISOString(),
-        bitis: bit.toISOString(),
-      };
-    });
+    // 12 dilim: Oca-Ara (TR)
+    const yilBas = yilBaslangici(simdi);
+    return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => ({
+      etiket: AY_KISALTMALARI[i],
+      baslangic: ayKaydir(yilBas, i).toISOString(),
+      bitis: ayKaydir(yilBas, i + 1).toISOString(),
+    }));
   }
 
   return [];
