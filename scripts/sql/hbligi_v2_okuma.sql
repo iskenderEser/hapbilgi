@@ -64,6 +64,11 @@ CREATE OR REPLACE VIEW public.v_hbligi_sirali_v2 AS
      LEFT JOIN takimlar t ON t.takim_id = k.takim_id
      LEFT JOIN bolgeler b ON b.bolge_id = k.bolge_id;
 
+-- View'lara SELECT yetkisi — yeniden kurulduğunda düşer, burada geri verilir.
+-- Rapor (getUttData) bu view'ları service_role ile okur; yetki yoksa PostgREST
+-- "42501 permission denied" döner ve rapor katkı/sıra 0/"-" gösterir (06.08.2026).
+GRANT SELECT ON public.hb_ligi_v2, public.v_hbligi_sirali_v2 TO anon, authenticated, service_role;
+
 -- Ortak: bir tarih aralığından [p_bas, p_bit) sıralı 22-kolon lig döndürür.
 CREATE OR REPLACE FUNCTION public._hb_ligi_v2_aralik(p_bas date, p_bit date)
  RETURNS TABLE(kullanici_id uuid, rol text, izleme_puani integer, cevaplama_puani integer, oneri_puani integer, extra_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, oneri_kaybi integer, toplam_puan integer, ad text, soyad text, eposta text, firma_id uuid, firma_adi text, takim_id uuid, takim_adi text, bolge_id uuid, bolge_adi text, firma_sirasi bigint, bolge_sirasi bigint, takim_sirasi bigint)
