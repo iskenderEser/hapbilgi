@@ -25,6 +25,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { sunucuHatasi, validasyonHatasi, hataYaniti, veriKontrol } from "@/lib/utils/hataIsle";
 import * as XLSX from "xlsx";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
+import { trGunu } from "@/lib/zaman/kontrol";
 
 export async function GET(
   request: NextRequest,
@@ -392,7 +393,7 @@ export async function GET(
     }
 
     // Dosya adı: firma_adi_export_YYYY-MM-DD.xlsx (ASCII-güvenli)
-    const tarih = new Date().toISOString().slice(0, 10);
+    const tarih = trGunu();
     const guvenliAd = (firma!.firma_adi ?? "firma")
       .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-zA-Z0-9_-]/g, "_");

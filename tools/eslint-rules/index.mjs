@@ -379,7 +379,8 @@ const ZAMAN_BASELINE = new Set([
   //   aktifPeriyot'a bağlandı, düşürüldü.
   // Adım 8a (06.08): eclub/ligi 3 dosyası (hook + 2 route) periyot varsayılanları
   //   aktifPeriyot'a bağlandı (hook+API tutarlı), düşürüldü.
-  "app/admin/api/firmalar/[firma_id]/export/route.ts",
+  // Adım 8b (06.08): firmalar/export dosya adı günü trGunu'ya bağlandı, düşürüldü.
+  //   → BASELINE BOŞ. Adım 9'da kural warn'dan error'a çekilecek.
 ]);
 const zamanTekKaynak = {
   meta: {
