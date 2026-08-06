@@ -15,7 +15,7 @@ const eslintConfig = defineConfig([
   // HapBilgi yerel mimari plugin — ölü RPC + FIRMA_KOLONLARI + kayıt tek-kaynak
   // + doğru client + talep künyesi tek kaynak + toast metni tek kaynak.
   {
-    files: ["app/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}"],
+    files: ["app/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}", "components/**/*.{ts,tsx}"],
     plugins: { "hapbilgi-mimari": hapbilgiMimari },
     rules: {
       "hapbilgi-mimari/olu-rpc": "warn",
@@ -25,6 +25,7 @@ const eslintConfig = defineConfig([
       "hapbilgi-mimari/talep-kunye-tek-kaynak": "warn",
       "hapbilgi-mimari/toast-tek-kaynak": "warn",
       "hapbilgi-mimari/rol-tek-kaynak": "warn",
+      "hapbilgi-mimari/zaman-tek-kaynak": "warn",
     },
   },
 ]);

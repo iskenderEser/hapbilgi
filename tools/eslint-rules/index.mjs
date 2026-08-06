@@ -336,6 +336,95 @@ const rolTekKaynak = {
   },
 };
 
+// KURAL 8: zaman tek-kaynak — makine saatiyle takvim hesabı yasağı (ratchet)
+//
+// "Bugün/hafta/ay/çeyrek/yıl hangisi" kararı lib/zaman/kontrol.ts'in yayınladığı
+// KAVRAMLARDAN (gunBaslangici, aktifPeriyot, trGunu...) gelmeli; dosyalar makinenin
+// saatini soran çağrılarla kendi takvim hesabını yapmamalı. Makine saati local'de TR
+// (doğru), Vercel'de UTC (gün/hafta/ay/yıl/çeyrek sınırları 3 saat kayar).
+//
+// YAKALANAN: makine-saati getter/setter'ları (getHours/getMinutes/getDay/getDate/
+// getMonth/getFullYear/setHours/setDate/setMonth) ve takvim gününü UTC'den kesme
+// kalıbı (.toISOString().slice/.substring/.substr).
+//
+// KAPSAM DIŞI (bilinçli): düz .toISOString() — mutlak anı DB'ye vermek doğru
+// kullanımdır ve yasaklanamaz; getUTC*/getTime — zaten mutlak/UTC.
+//
+// RATCHET: bugün ihlalli dosyalar ZAMAN_BASELINE'da tanınır (geçer). Her modül
+// tek kaynağa bağlandıkça o dosya baseline'dan düşer; baseline boşalınca kural
+// error'a çekilir (Adım 9). kontrol.ts'in kendisi her zaman muaf.
+const ZAMAN_MAKINE_METOTLARI = new Set([
+  "getHours", "getMinutes", "getDay", "getDate", "getMonth", "getFullYear",
+  "setHours", "setDate", "setMonth",
+]);
+const ZAMAN_KESME_METOTLARI = new Set(["slice", "substring", "substr"]);
+const ZAMAN_BASELINE = new Set([
+  // 06.08 — mevcut ihlaller (17 dosya). Bir dosya tek kaynağa bağlanınca buradan
+  // silinir (kural o dosyada sıkılaşır); baseline boşalınca kural error'a çekilir.
+  // Liste kuralın kendi çıktısından türetildi (app + lib + components).
+  "app/(panel)/cc-ligi/page.tsx",
+  "app/(panel)/eclub/ligi/_hooks/useEclubLigi.ts",
+  "app/(panel)/eclub/ligi/api/export/route.ts",
+  "app/(panel)/eclub/ligi/api/route.ts",
+  "app/(panel)/hbligi/page.tsx",
+  "app/(panel)/oneriler/page.tsx",
+  "app/admin/api/firmalar/[firma_id]/export/route.ts",
+  "components/ana-sayfa/YoneticiAnaSayfa.tsx",
+  "components/cc-ligi/CcLigiPeriyotSecici.tsx",
+  "components/hbligi/HbLigiPeriyotSecici.tsx",
+  "lib/oneri/tarihKurali.ts",
+  "lib/utils/anaSayfa/bm.ts",
+  "lib/utils/anaSayfa/bmAktivite.ts",
+  "lib/utils/anaSayfa/utt.ts",
+  "lib/utils/anaSayfa/yonetici.ts",
+  "lib/utils/periyotAltKirilim.ts",
+  "lib/utils/tarihAraligi.ts",
+]);
+const zamanTekKaynak = {
+  meta: {
+    type: "problem",
+    docs: { description: "Makine saatiyle takvim hesabini engeller; tek kaynak lib/zaman/kontrol.ts kavramlari." },
+    schema: [],
+    messages: {
+      makine: "Makine saati cagrisi: '.{{ad}}()'. Yerel saat dilimine baglidir (Vercel'de UTC, sinirlar kayar). lib/zaman/kontrol.ts kavramlarini kullan (or. gunBaslangici, aktifPeriyot, trGunu).",
+      kesme: "Takvim gunu UTC'den kesiliyor (.toISOString().{{ad}}). 00:00-02:59 TR araliginda onceki gunu verir. trGunu()/trGunEkle() kullan.",
+    },
+  },
+  create(context) {
+    const yol = (context.filename ?? context.getFilename?.() ?? "").replace(/\\/g, "/");
+    if (yol.endsWith("/lib/zaman/kontrol.ts")) return {};
+    for (const b of ZAMAN_BASELINE) {
+      if (yol.endsWith("/" + b)) return {};
+    }
+    return {
+      MemberExpression(node) {
+        const ad = node.property?.name;
+        if (!ad) return;
+        // Makine-saati getter/setter çağrısı (property access değil, çağrı)
+        if (
+          ZAMAN_MAKINE_METOTLARI.has(ad) &&
+          node.parent?.type === "CallExpression" &&
+          node.parent.callee === node
+        ) {
+          context.report({ node: node.property, messageId: "makine", data: { ad } });
+          return;
+        }
+        // .toISOString().slice/.substring/.substr — UTC'den gün kesme kalıbı
+        if (ZAMAN_KESME_METOTLARI.has(ad)) {
+          const obj = node.object;
+          if (
+            obj?.type === "CallExpression" &&
+            obj.callee?.type === "MemberExpression" &&
+            obj.callee.property?.name === "toISOString"
+          ) {
+            context.report({ node: node.property, messageId: "kesme", data: { ad } });
+          }
+        }
+      },
+    };
+  },
+};
+
 const plugin = {
   meta: { name: "hapbilgi-mimari", version: "0.0.1" },
   rules: {
@@ -346,6 +435,7 @@ const plugin = {
     "talep-kunye-tek-kaynak": talepKunyeTekKaynak,
     "toast-tek-kaynak": toastTekKaynak,
     "rol-tek-kaynak": rolTekKaynak,
+    "zaman-tek-kaynak": zamanTekKaynak,
   },
 };
 
