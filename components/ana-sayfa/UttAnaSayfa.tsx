@@ -10,9 +10,12 @@ import VideoOynatici from "@/components/izle/VideoOynatici";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 import { IcerikTuru, TUR_BASLIK } from "@/lib/video/icerikTuru";
 import { anaSayfaRaflari } from "@/lib/video/anaSayfaRaflari";
+import { talepIdGoster } from "@/lib/utils/talepId";
 
 interface Video {
   yayin_id: string;
+  talep_no?: number | null;
+  firma_adi?: string | null;
   urun_adi: string;
   teknik_adi: string;
   video_url: string | null;
@@ -163,15 +166,21 @@ const VideoKart = ({
           <span>{formatTarih(video.yayin_tarihi)}</span>
           <span>{video.izlenme_sayisi} izlenme</span>
         </div>
-
-        {video.video_puani !== null && (
-          <div className="mt-1.5 flex items-center gap-1">
-            <span className="text-[10px] font-bold text-yellow-600">★ {video.video_puani}</span>
-            {video.extra_puan > 0 && (
-              <span className="text-[10px] text-green-600">+{video.extra_puan} extra</span>
+        <div className="mt-1.5 flex items-center justify-between gap-1">
+          <div className="flex items-center gap-1">
+            {video.video_puani !== null && (
+              <>
+                <span className="text-[10px] font-bold text-yellow-600">★ {video.video_puani}</span>
+                {video.extra_puan > 0 && (
+                  <span className="text-[10px] text-green-600">+{video.extra_puan} extra</span>
+                )}
+              </>
             )}
           </div>
-        )}
+          {video.talep_no != null && (
+            <span className="text-[10px] font-mono" style={{ color: "#bc2d0d" }}>{talepIdGoster(video.firma_adi, video.talep_no)}</span>
+          )}
+        </div>
         {video.daha_once_izledi && video.sonraki_tur_tarihi && (
           <span className="mt-1.5 text-[10px] px-2 py-0.5 rounded-full w-fit inline-block"
             style={{ background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe" }}>
@@ -275,10 +284,18 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
     veriCek();
   }, [user]);
 
+  // Açık video adresin kendisinde taşınır (?yayin_id=...). Böylece navbar'daki
+  // "Ana Sayfa" parametresiz adrese gittiğinde bu etki videoyu kapatır — aynı
+  // rotada takılı kalma sorunu (kullanıcı listeye dönemiyordu) böyle çözülür.
   useEffect(() => {
     const yayinId = searchParams.get("yayin_id");
     const oneriId = searchParams.get("oneri_id");
-    if (!yayinId || !uttVeri) return;
+    if (!yayinId) {
+      setAktifVideo(null);
+      setAktifOneriId(null);
+      return;
+    }
+    if (!uttVeri) return;
     const tumVideolar = [
       ...uttVeri.yeni_videolar,
       ...uttVeri.devam_edenler,
@@ -351,6 +368,14 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
   const handleVideoClick = (video: Video) => {
     setAktifVideo(video);
     setAktifOneriId(null);
+    // Adrese yaz — "Ana Sayfa" parametresiz adrese gidince video kapansın.
+    router.push(`/ana-sayfa?yayin_id=${video.yayin_id}`, { scroll: false });
+  };
+
+  const handleVideoKapat = () => {
+    setAktifVideo(null);
+    setAktifOneriId(null);
+    router.push("/ana-sayfa", { scroll: false });
   };
 
   const bugunTarih = () =>
@@ -375,7 +400,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
           video={aktifVideo}
           tuketici={true}
           oneri_id={aktifOneriId}
-          onKapat={() => { setAktifVideo(null); setAktifOneriId(null); }}
+          onKapat={handleVideoKapat}
           onVeriYenile={() => veriCek(true)}
           hata={hata}
           basari={basari}

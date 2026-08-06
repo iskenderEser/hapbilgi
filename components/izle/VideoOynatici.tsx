@@ -131,13 +131,16 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
     ileriSarilanToplamRef.current = 0;
 
     player.onReady(() => {
-      // Video süresini al — manuel bitiş kontrolü için
-      player.getDuration((sure: number) => {
-        if (sure && sure > 0) videoSuresiRef.current = sure;
-      });
+      // timeupdate — hem ileri sarma takibi hem manuel bitiş tespiti.
+      // Süre, tek seferlik getDuration yerine her tik'te gelen canlı değerden
+      // okunur (playerjs timeupdate payload'ı süreyi de taşır). Böylece video
+      // verisi geç yüklense bile süre kendini onarır; ileri sarma kayıp puanı da
+      // bu süreye bağlı olduğundan doğru beslenir.
+      player.onTimeUpdate((data: { seconds: number; duration?: number }) => {
+        if (data.duration && data.duration > 0) {
+          videoSuresiRef.current = data.duration;
+        }
 
-      // timeupdate — hem ileri sarma takibi hem manuel bitiş tespiti
-      player.onTimeUpdate((data: { seconds: number }) => {
         if (video.ileri_sarma_acik && data.seconds > maxIzlenenRef.current) {
           maxIzlenenRef.current = data.seconds;
         }
@@ -285,7 +288,7 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
             <VideoCercevesi videoUrl={video.video_url}>
               <iframe key={video.yayin_id} ref={iframeRef} src={video.video_url}
                 frameBorder="0" allowFullScreen
-                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;" />
+                allow="accelerometer; gyroscope; encrypted-media; picture-in-picture;" />
             </VideoCercevesi>
           </div>
         )}
@@ -346,6 +349,15 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
                     <span className="text-sm font-bold text-blue-700">+{kazanilanPuan} puan kazandınız!</span>
                   </div>
                 )}
+                {/* Akışın sonu — dönüş yolu sonuçların altında, gözün olduğu yerde.
+                    Üstteki "← Videolar" bağlantısı bağ sanılıp kaçırılabiliyordu. */}
+                <div className="flex justify-end">
+                  <button onClick={onKapat}
+                    className="text-white border-none rounded-lg px-6 py-2.5 text-xs font-semibold cursor-pointer"
+                    style={{ background: "#56aeff", fontFamily: "'Nunito', sans-serif" }}>
+                    Videolara dön
+                  </button>
+                </div>
               </div>
             )}
 
