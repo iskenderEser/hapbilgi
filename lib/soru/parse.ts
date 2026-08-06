@@ -96,6 +96,14 @@ export const parseSoruSeti = (metin: string, maxSoru: number, secenekSayisi: num
       continue;
     }
 
+    // Sınır dışı şık işareti — taşma DEĞİL, uyuşmazlıktır.
+    // "C)" satırı 2 seçenekli sette şık sayılmaz; aşağıdaki taşma kuralına
+    // düşerse sessizce bir önceki şıkkın metnine yapışır (fazla şık kaybolur,
+    // kimse uyarılmaz). Bu yüzden burada durdurulur.
+    if (sm) {
+      return hataYap(`Her soruya sadece ${secenekSayisi} seçenek yazabilirsiniz. ${siraNo}. soruda ${sm[1].toUpperCase()} seçeneği var.`);
+    }
+
     if (DOGRU.test(satir)) {
       if (!aktif) return hataYap('1. sorunun "Doğru:" satırı, soru metninden önce geldi — önce soru metnini yazın.');
       const harf = satir.replace(DOGRU, "").match(/[A-E]/i)?.[0];
@@ -159,6 +167,7 @@ export const parseSoruSetiEsnek = (metin: string, secenekSayisi: number): { tasl
   const taslaklar: SoruTaslagi[] = [];
   let aktif: SoruTaslagi | null = null;
   let sonOge: "soru" | number | null = null;
+  const sinirDisiSiralar = new Set<number>(); // seçenek sayısını aşan şık görülen soru sıraları
 
   const tamam = (t: SoruTaslagi) => t.secenekler.every(s => s !== "") && t.dogru !== null;
 
@@ -176,6 +185,12 @@ export const parseSoruSetiEsnek = (metin: string, secenekSayisi: number): { tasl
       const m = satir.replace(SECENEK, "");
       aktif.secenekler[idx] = aktif.secenekler[idx] ? `${aktif.secenekler[idx]} ${m}` : m;
       sonOge = idx;
+      continue;
+    }
+    // Sınır dışı şık işareti — bu kol reddetmez, ama satırı bir öncekine
+    // yapıştırmaz da: forma alınmaz, sıra numarası uyarıda bildirilir.
+    if (sm) {
+      sinirDisiSiralar.add(taslaklar.length + (aktif ? 1 : 0) || 1);
       continue;
     }
     if (DOGRU.test(satir)) {
@@ -204,8 +219,14 @@ export const parseSoruSetiEsnek = (metin: string, secenekSayisi: number): { tasl
   const eksikler = taslaklar
     .map((t, i) => (!t.soru_metni || t.secenekler.some(s => !s) || t.dogru === null ? i + 1 : null))
     .filter((n): n is number => n !== null);
-  const uyari = eksikler.length > 0
-    ? `${eksikler.join(", ")}. soru(lar)da eksik alan var — formda tamamlayın.`
-    : "";
-  return { taslaklar, uyari };
+
+  const uyarilar: string[] = [];
+  if (sinirDisiSiralar.size > 0) {
+    const siralar = [...sinirDisiSiralar].sort((a, b) => a - b).join(", ");
+    uyarilar.push(`Her soruya sadece ${secenekSayisi} seçenek yazabilirsiniz. ${siralar}. soru(lar)daki fazla şık forma alınmadı.`);
+  }
+  if (eksikler.length > 0) {
+    uyarilar.push(`${eksikler.join(", ")}. soru(lar)da eksik alan var — formda tamamlayın.`);
+  }
+  return { taslaklar, uyari: uyarilar.join(" ") };
 };
