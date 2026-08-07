@@ -190,51 +190,6 @@ export default function UttRaporPage() {
           ))}
         </StatGrid>
 
-        {/* HBLigi Sıralaması */}
-        <div className="mb-5">
-          <SectionTitle>hbligi sıralaması</SectionTitle>
-          <div className="border rounded-xl p-4" style={{ borderColor: BORDER }}>
-            <div className="flex gap-6 pb-3 mb-3" style={{ borderBottom: `0.5px solid ${BORDER}` }}>
-              {[
-                { label: 'Bölge sırası', value: data.lig.bolge_sirasi ? `${data.lig.bolge_sirasi}.` : '-', accent: true },
-                { label: 'Takım sırası', value: `${data.lig.takim_sirasi || '-'}`, accent: false },
-                { label: 'Bir üst sıra için', value: data.lig.bir_ust_puan_farki ? `− ${formatPuan(data.lig.bir_ust_puan_farki)}` : '—', accent: false },
-                { label: 'Kalan sipariş puanı', value: formatPuan(data.kalan_siparis_puani), accent: true },
-              ].map(m => (
-                <div key={m.label}>
-                  <div className="text-xs mb-1" style={{ color: GRI_METIN }}>{m.label}</div>
-                  <div className="text-xl font-semibold" style={{ color: m.accent ? BORDO : KOYU_METIN }}>{m.value}</div>
-                </div>
-              ))}
-            </div>
-            {data.lig.bolge_siralamasi.map(kisi => (
-              <div
-                key={`${kisi.sira}-${kisi.ad}-${kisi.soyad}`}
-                className="flex items-center justify-between py-2"
-                style={{
-                  borderBottom: kisi.kendisi_mi ? 'none' : `0.5px solid ${BORDER}`,
-                  ...(kisi.kendisi_mi ? { background: '#FAECE7', borderRadius: 6, padding: '7px 10px', margin: '3px -4px' } : {}),
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-5 text-center text-sm font-medium" style={{ color: kisi.sira <= 3 ? BORDO : GRI_METIN }}>
-                    {kisi.sira}
-                  </span>
-                  <span className="text-sm" style={{ color: KOYU_METIN }}>
-                    {kisi.ad} {kisi.soyad}
-                    {kisi.kendisi_mi && (
-                      <span className="ml-1 text-xs" style={{ color: BORDO }}>sen</span>
-                    )}
-                  </span>
-                </div>
-                <span className="text-sm font-medium" style={{ color: KOYU_METIN }}>
-                  {formatPuan(kisi.puan)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Toplam Puan + Ürün Bazlı Akordeon */}
         <div className="mb-5">
           <SectionTitle>toplam puan</SectionTitle>
