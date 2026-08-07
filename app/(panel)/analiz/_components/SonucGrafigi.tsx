@@ -1,32 +1,17 @@
 // app/analiz/_components/SonucGrafigi.tsx
 //
 // "Analiz Et" sonrası seçilen pill kombinasyonunun sonuçlarını gösterir.
-// Üst tarafta: seçilen değişkenlerin toplam değer kartları.
-// Alt tarafta: birim uyumuna göre çizgi grafik veya iki ayrı bar grafik.
-//
-// Mod kararı:
-//   - Tüm seçimler aynı birim → tek çizgi grafik
+// Üst: seçilen değişkenlerin toplam değer kartları.
+// Alt: birim uyumuna göre grafik —
+//   - Tüm seçimler aynı birim → tek çizgi grafik (çok serili)
 //   - Karışık birim            → iki ayrı bar grafik (adet + puan)
-//
-// Bar grafiklerde: maxBarSize=60 (geniş alan ezilmez),
-// linearGradient + drop-shadow ile modern 3D hissi.
+// Grafik motoru: components/grafik/EChart (ECharts). Bar'larda dikey gradient
+// (3D his), değer etiketleri; çizgide serilere göre legend.
 
 "use client";
 
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-  Cell,
-  LabelList,
-} from "recharts";
+import type { EChartsCoreOption } from "echarts/core";
+import EChart from "@/components/grafik/EChart";
 
 type Props = {
   degisken_idleri: string[];
@@ -61,22 +46,14 @@ const TUKETIM_KAYIP_IDLERI = new Set<string>([
 const CIZGI_PALETI = ["#3b82f6", "#f97316", "#22c55e"];
 
 function pillRengiSinifi(id: string): { rakam: string; kenar: string } {
-  if (URETIM_YESIL_IDLERI.has(id)) {
-    return { rakam: "text-green-600", kenar: "border-l-green-500" };
-  }
-  if (URETIM_TURUNCU_IDLERI.has(id)) {
-    return { rakam: "text-orange-600", kenar: "border-l-orange-500" };
-  }
-  if (TUKETIM_KAYIP_IDLERI.has(id)) {
-    return { rakam: "text-red-600", kenar: "border-l-red-500" };
-  }
+  if (URETIM_YESIL_IDLERI.has(id)) return { rakam: "text-green-600", kenar: "border-l-green-500" };
+  if (URETIM_TURUNCU_IDLERI.has(id)) return { rakam: "text-orange-600", kenar: "border-l-orange-500" };
+  if (TUKETIM_KAYIP_IDLERI.has(id)) return { rakam: "text-red-600", kenar: "border-l-red-500" };
   return { rakam: "text-blue-600", kenar: "border-l-blue-500" };
 }
 
 function pillBirimi(id: string): "adet" | "puan" {
-  if (id === "net_puan" || id === "kazanilan_toplam_puan" || id === "kaybedilen_toplam_puan") {
-    return "puan";
-  }
+  if (id === "net_puan" || id === "kazanilan_toplam_puan" || id === "kaybedilen_toplam_puan") return "puan";
   if (id.endsWith("_puani")) return "puan";
   if (id.endsWith("_sayisi")) return "adet";
   return "adet";
@@ -89,105 +66,101 @@ function pillBarRengi(id: string): string {
   return "#3b82f6";
 }
 
-// Renk gradient için açık ton döndürür (3D hissi için)
+// Gradient için açık ton (3D his).
 function pillBarRengiAcik(id: string): string {
-  if (URETIM_YESIL_IDLERI.has(id)) return "#86efac";   // green-300
-  if (URETIM_TURUNCU_IDLERI.has(id)) return "#fdba74"; // orange-300
-  if (TUKETIM_KAYIP_IDLERI.has(id)) return "#fca5a5";  // red-300
-  return "#93c5fd";                                     // blue-300
+  if (URETIM_YESIL_IDLERI.has(id)) return "#86efac";
+  if (URETIM_TURUNCU_IDLERI.has(id)) return "#fdba74";
+  if (TUKETIM_KAYIP_IDLERI.has(id)) return "#fca5a5";
+  return "#93c5fd";
 }
 
-export default function SonucGrafigi({
-  degisken_idleri,
-  degisken_adlari,
-  sonuclar,
-  noktalar,
-}: Props) {
+interface BarKalem {
+  ad: string;
+  deger: number;
+  renk: string;
+  renkAcik: string;
+}
+
+function barOption(veri: BarKalem[]): EChartsCoreOption {
+  return {
+    tooltip: { trigger: "item", formatter: "{b}: {c}" },
+    grid: { left: 8, right: 10, top: 28, bottom: 40, containLabel: true },
+    xAxis: {
+      type: "category",
+      data: veri.map((v) => v.ad),
+      axisLabel: { color: "#374151", fontSize: 12, interval: 0, rotate: 15 },
+      axisLine: { lineStyle: { color: "#e5e7eb" } },
+    },
+    yAxis: {
+      type: "value",
+      axisLabel: { color: "#6b7280", fontSize: 12 },
+      splitLine: { lineStyle: { color: "#eef0f2" } },
+    },
+    series: [{
+      type: "bar",
+      barMaxWidth: 85,
+      itemStyle: { borderRadius: [6, 6, 0, 0] },
+      label: { show: true, position: "top", color: "#374151", fontSize: 13, fontWeight: "bold" },
+      data: veri.map((v) => ({
+        value: v.deger,
+        itemStyle: {
+          color: {
+            type: "linear", x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              { offset: 0, color: v.renkAcik },
+              { offset: 1, color: v.renk },
+            ],
+          },
+        },
+      })),
+    }],
+  };
+}
+
+export default function SonucGrafigi({ degisken_idleri, degisken_adlari, sonuclar, noktalar }: Props) {
   const birimler = degisken_idleri.map((id) => pillBirimi(id));
   const hepsiAyniBirim = birimler.every((b) => b === birimler[0]);
 
-  const adetIdleri = degisken_idleri.filter((id) => pillBirimi(id) === "adet");
-  const puanIdleri = degisken_idleri.filter((id) => pillBirimi(id) === "puan");
+  const barVeri = (idler: string[]): BarKalem[] =>
+    idler.map((id) => ({
+      ad: degisken_adlari[id] ?? id,
+      deger: sonuclar[id] ?? 0,
+      renk: pillBarRengi(id),
+      renkAcik: pillBarRengiAcik(id),
+    }));
 
-  const adetBarVeri = adetIdleri.map((id) => ({
-    ad: degisken_adlari[id] ?? id,
-    deger: sonuclar[id] ?? 0,
-    id,
-    renk: pillBarRengi(id),
-    renkAcik: pillBarRengiAcik(id),
-  }));
-  const puanBarVeri = puanIdleri.map((id) => ({
-    ad: degisken_adlari[id] ?? id,
-    deger: sonuclar[id] ?? 0,
-    id,
-    renk: pillBarRengi(id),
-    renkAcik: pillBarRengiAcik(id),
-  }));
+  const adetBarVeri = barVeri(degisken_idleri.filter((id) => pillBirimi(id) === "adet"));
+  const puanBarVeri = barVeri(degisken_idleri.filter((id) => pillBirimi(id) === "puan"));
 
-  // BarChart bileşeni (tekrarı önlemek için inline component)
-  function BarGrafik({ veri, baslik }: { veri: typeof adetBarVeri; baslik: string }) {
-    return (
-      <div>
-        <div className="text-xs font-medium text-gri-metin uppercase tracking-wide mb-2">
-          {baslik}
-        </div>
-        <div className="w-full" style={{ height: 280 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={veri} margin={{ top: 25, right: 10, left: 0, bottom: 5 }}>
-              <defs>
-                {veri.map((entry) => (
-                  <linearGradient
-                    key={`grad-${entry.id}`}
-                    id={`grad-${entry.id}`}
-                    x1="0" y1="0" x2="0" y2="1"
-                  >
-                    <stop offset="0%" stopColor={entry.renkAcik} stopOpacity={0.95} />
-                    <stop offset="100%" stopColor={entry.renk} stopOpacity={1} />
-                  </linearGradient>
-                ))}
-                <filter id="bar-shadow" x="-10%" y="-10%" width="120%" height="120%">
-                  <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.18" />
-                </filter>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis
-                dataKey="ad"
-                tick={{ fontSize: 12, fill: "#374151" }}
-                interval={0}
-                angle={-15}
-                textAnchor="end"
-                height={70}
-              />
-              <YAxis tick={{ fontSize: 12, fill: "#6b7280" }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#fff",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "0.375rem",
-                  fontSize: "0.875rem",
-                }}
-              />
-              <Bar
-                dataKey="deger"
-                radius={[6, 6, 0, 0]}
-                maxBarSize={85}
-                style={{ filter: "url(#bar-shadow)" }}
-              >
-                {veri.map((entry) => (
-                  <Cell key={entry.id} fill={`url(#grad-${entry.id})`} />
-                ))}
-                <LabelList
-                  dataKey="deger"
-                  position="top"
-                  style={{ fontSize: 13, fontWeight: 600, fill: "#374151" }}
-                />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    );
-  }
+  const cizgiOption: EChartsCoreOption = {
+    color: CIZGI_PALETI,
+    tooltip: { trigger: "axis" },
+    legend: {
+      bottom: 0,
+      data: degisken_idleri.map((id) => degisken_adlari[id] ?? id),
+      textStyle: { color: "#374151", fontSize: 13 },
+    },
+    grid: { left: 8, right: 16, top: 16, bottom: 40, containLabel: true },
+    xAxis: {
+      type: "category",
+      data: noktalar.map((n) => String(n.etiket ?? "")),
+      axisLabel: { color: "#374151", fontSize: 13 },
+      axisLine: { lineStyle: { color: "#e5e7eb" } },
+    },
+    yAxis: {
+      type: "value",
+      axisLabel: { color: "#6b7280", fontSize: 13 },
+      splitLine: { lineStyle: { color: "#eef0f2" } },
+    },
+    series: degisken_idleri.map((id) => ({
+      name: degisken_adlari[id] ?? id,
+      type: "line",
+      smooth: true,
+      symbolSize: 8,
+      lineStyle: { width: 2 },
+      data: noktalar.map((n) => Number(n[id] ?? 0)),
+    })),
+  };
 
   return (
     <section className="bg-white rounded-lg border border-gray-200 p-6 flex flex-col gap-6">
@@ -195,18 +168,12 @@ export default function SonucGrafigi({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {degisken_idleri.map((id) => {
           const stil = pillRengiSinifi(id);
-          const deger = sonuclar[id] ?? 0;
           return (
-            <div
-              key={id}
-              className={`bg-white border border-gray-200 border-l-4 ${stil.kenar} rounded-md px-4 py-3`}
-            >
+            <div key={id} className={`bg-white border border-gray-200 border-l-4 ${stil.kenar} rounded-md px-4 py-3`}>
               <div className="text-xs font-medium text-gri-metin uppercase tracking-wide mb-1">
                 {degisken_adlari[id] ?? id}
               </div>
-              <div className={`text-2xl font-bold ${stil.rakam}`}>
-                {deger}
-              </div>
+              <div className={`text-2xl font-bold ${stil.rakam}`}>{sonuclar[id] ?? 0}</div>
             </div>
           );
         })}
@@ -214,45 +181,21 @@ export default function SonucGrafigi({
 
       {/* Alt: birim uyumuna göre grafik */}
       {hepsiAyniBirim ? (
-        <div className="w-full" style={{ height: 360 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={noktalar} margin={{ top: 20, right: 30, bottom: 5, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis
-                dataKey="etiket"
-                tick={{ fontSize: 13, fill: "#374151" }}
-              />
-              <YAxis tick={{ fontSize: 13, fill: "#6b7280" }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#fff",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "0.375rem",
-                  fontSize: "0.875rem",
-                }}
-              />
-              <Legend
-                wrapperStyle={{ fontSize: "13px" }}
-                formatter={(value) => degisken_adlari[value] ?? value}
-              />
-              {degisken_idleri.map((id, idx) => (
-                <Line
-                  key={id}
-                  type="monotone"
-                  dataKey={id}
-                  stroke={CIZGI_PALETI[idx % CIZGI_PALETI.length]}
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <EChart option={cizgiOption} height={360} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {adetBarVeri.length > 0 && <BarGrafik veri={adetBarVeri} baslik="Adet" />}
-          {puanBarVeri.length > 0 && <BarGrafik veri={puanBarVeri} baslik="Puan" />}
+          {adetBarVeri.length > 0 && (
+            <div>
+              <div className="text-xs font-medium text-gri-metin uppercase tracking-wide mb-2">Adet</div>
+              <EChart option={barOption(adetBarVeri)} height={300} />
+            </div>
+          )}
+          {puanBarVeri.length > 0 && (
+            <div>
+              <div className="text-xs font-medium text-gri-metin uppercase tracking-wide mb-2">Puan</div>
+              <EChart option={barOption(puanBarVeri)} height={300} />
+            </div>
+          )}
         </div>
       )}
     </section>
