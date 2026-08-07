@@ -130,7 +130,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
 
   return (
     <div style={{ height: "100vh", background: "#f9fafb", fontFamily: "'Nunito', sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <PanelNavbar adSoyad={kullanici.adSoyad} email={kullanici.email} ozet={ozet} onCikis={cikisYap} onHamburger={() => setDrawerAcik(true)} />
+      <PanelNavbar adSoyad={kullanici.adSoyad} email={kullanici.email} ozet={ozet} siparisPuaniGoster={flags.storeAcik || flags.eclubStoreAcik} onCikis={cikisYap} onHamburger={() => setDrawerAcik(true)} />
 
       <MobilDrawer
         {...ctx}
