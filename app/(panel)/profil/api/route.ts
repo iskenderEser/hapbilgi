@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { hataYaniti, sunucuHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
-import { haftaBaslangici, ayBaslangici, yilBaslangici } from "@/lib/zaman/kontrol";
+import { haftaBaslangici, ayBaslangici, yilBaslangici, aktifPeriyot } from "@/lib/zaman/kontrol";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { FIRMA_KOLONLARI } from "@/lib/firma/kolonlar";
 
@@ -97,12 +97,28 @@ export async function GET() {
       else if (p.puan_turu === "extra") extra_puani += p.puan;
     }
 
-    // Sıralama
+    // Sıralama (tüm-zaman) — profil sayfası bu üçlüyü kullanır.
     const { data: siralama } = await adminSupabase
       .from("v_hbligi_sirali_v2")
       .select("firma_sirasi, takim_sirasi, bolge_sirasi")
       .eq("kullanici_id", user.id)
       .single();
+
+    // ── Navbar özeti (yalnız UTT/KD_UTT — bu blok TUKETICI_ROLLER içinde) ──────
+    // Haftalık puan + haftalık takım sırası: bu haftanın lig RPC'sinden Berk'in
+    // satırı. Toplam/tüm-zaman DEĞİL — navbar değerleri haftalıktır.
+    const { yil, hafta } = aktifPeriyot();
+    const { data: haftalikLig } = await adminSupabase.rpc("get_hb_ligi_haftalik_v2", {
+      p_yil: yil,
+      p_hafta: hafta,
+    });
+    const benimHaftalik = Array.isArray(haftalikLig)
+      ? haftalikLig.find((r: { kullanici_id: string }) => r.kullanici_id === user.id)
+      : null;
+    // Sipariş puanı: çeyreklik harcanabilir bakiye (formül sistemde — get_harcama_bakiyesi).
+    const { data: bakiyeData } = await adminSupabase.rpc("get_harcama_bakiyesi", {
+      p_kullanici_id: user.id,
+    });
 
     return NextResponse.json({
       profil: profilTemel,
@@ -121,6 +137,11 @@ export async function GET() {
         firma_sirasi: siralama?.firma_sirasi ?? null,
         takim_sirasi: siralama?.takim_sirasi ?? null,
         bolge_sirasi: siralama?.bolge_sirasi ?? null,
+      },
+      navbar_ozet: {
+        haftalik_puan: benimHaftalik?.toplam_puan ?? 0,
+        takim_sirasi: benimHaftalik?.takim_sirasi ?? null,
+        siparis_puani: Number.isFinite(Number(bakiyeData)) ? Number(bakiyeData) : 0,
       },
     }, { status: 200 });
 

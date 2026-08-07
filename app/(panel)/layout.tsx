@@ -33,6 +33,8 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   const [badge, setBadge] = useState<Record<string, number>>({});
   const [yayinBekleyen, setYayinBekleyen] = useState(0);
   const [drawerAcik, setDrawerAcik] = useState(false);
+  // Navbar kişisel özeti — yalnız UTT/KD_UTT için profil/api döndürür (BM sonraya).
+  const [ozet, setOzet] = useState<{ haftalikPuan: number; takimSirasi: number | null; siparisPuani: number } | null>(null);
 
   const rolKucu = kullanici?.rol?.trim().toLowerCase() ?? "";
   const isUretici = URETICI_ROLLER.includes(rolKucu);
@@ -56,6 +58,14 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
             eclubAcik: data.profil.eclub_aktif === true,
             eclubStoreAcik: data.profil.eclub_store_aktif === true,
             eczanemAcik: data.profil.eczanem_aktif === true,
+          });
+        }
+        // Navbar özeti — navbar_ozet yalnız UTT/KD_UTT payload'ında bulunur.
+        if (data.navbar_ozet) {
+          setOzet({
+            haftalikPuan: data.navbar_ozet.haftalik_puan ?? 0,
+            takimSirasi: data.navbar_ozet.takim_sirasi ?? null,
+            siparisPuani: data.navbar_ozet.siparis_puani ?? 0,
           });
         }
       })
@@ -120,7 +130,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
 
   return (
     <div style={{ height: "100vh", background: "#f9fafb", fontFamily: "'Nunito', sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <PanelNavbar adSoyad={kullanici.adSoyad} email={kullanici.email} onCikis={cikisYap} onHamburger={() => setDrawerAcik(true)} />
+      <PanelNavbar adSoyad={kullanici.adSoyad} email={kullanici.email} ozet={ozet} onCikis={cikisYap} onHamburger={() => setDrawerAcik(true)} />
 
       <MobilDrawer
         {...ctx}

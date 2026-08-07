@@ -15,6 +15,8 @@ import { useState } from "react";
 interface PanelNavbarProps {
   adSoyad?: string;
   email?: string;
+  // Kişisel özet — yalnız UTT/KD_UTT (BM sonraya). Verilmezse alt satır çizilmez.
+  ozet?: { haftalikPuan: number; takimSirasi: number | null; siparisPuani: number } | null;
   onCikis: () => void;
   onHamburger?: () => void; // mobilde sol drawer'ı açar (Adım 1.5)
 }
@@ -28,7 +30,7 @@ const BILGI_PILLERI: { key: string; etiket: string; path: string }[] = [
   { key: "iletisim", etiket: "İletişim", path: "/iletisim" },
 ];
 
-export default function PanelNavbar({ adSoyad, email, onCikis, onHamburger }: PanelNavbarProps) {
+export default function PanelNavbar({ adSoyad, email, ozet, onCikis, onHamburger }: PanelNavbarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [hover, setHover] = useState<string | null>(null);
@@ -83,27 +85,52 @@ export default function PanelNavbar({ adSoyad, email, onCikis, onHamburger }: Pa
         </div>
 
         <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
-          <div className="hidden md:flex items-center gap-3">
-            {adSoyad && <span className="text-xs font-semibold text-gray-700">{adSoyad}</span>}
-            <div
-              onClick={() => router.push("/profil")}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-gray-200 cursor-pointer"
-              style={{ background: "#56aeff" }}
-            >
-              {bashHarfler}
+          <div className="hidden md:flex flex-col items-end gap-2">
+            <div className="flex items-center gap-3">
+              {adSoyad && <span className="text-sm font-semibold text-gray-700">{adSoyad}</span>}
+              <div
+                onClick={() => router.push("/profil")}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white border-2 border-gray-200 cursor-pointer"
+                style={{ background: "#56aeff" }}
+              >
+                {bashHarfler}
+              </div>
+              <button
+                onClick={onCikis}
+                onMouseEnter={() => setHover("cikis")}
+                onMouseLeave={() => setHover(null)}
+                className={`${pillClass(false)} flex items-center gap-1.5`}
+                style={pillStyle("cikis", false)}
+              >
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Çıkış
+              </button>
             </div>
-            <button
-              onClick={onCikis}
-              onMouseEnter={() => setHover("cikis")}
-              onMouseLeave={() => setHover(null)}
-              className={`${pillClass(false)} flex items-center gap-1.5`}
-              style={pillStyle("cikis", false)}
-            >
-              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              Çıkış
-            </button>
+
+            {/* Kişisel özet — Haftalık Puan · Takım Sırası · Sipariş Puanı (yalnız UTT/KD_UTT).
+                Üç teğet kutu, tek tip yükseklik; toplam genişlik üst satırla aynı (w-full + flex-1).
+                "haftalık sıra" notu ortadaki kutunun dışında/altında — kutular oval olmasın. */}
+            {ozet && (
+              <div className="flex w-full items-start gap-1">
+                <div className="flex-1 flex flex-col items-center rounded-lg" style={{ background: "rgba(86,174,255,0.10)", boxShadow: "inset 0 0 0 0.5px rgba(86,174,255,0.30)", padding: "2px 6px" }}>
+                  <span style={{ fontSize: 9, color: "#6b7280", lineHeight: 1.25, whiteSpace: "nowrap" }}>Haftalık puan</span>
+                  <span className="font-semibold" style={{ fontSize: 12, color: "#374151", lineHeight: 1.2 }}>{ozet.haftalikPuan.toLocaleString("tr-TR")}</span>
+                </div>
+                <div className="flex-1 flex flex-col items-center">
+                  <div className="w-full flex flex-col items-center rounded-lg" style={{ background: "rgba(86,174,255,0.10)", boxShadow: "inset 0 0 0 0.5px rgba(86,174,255,0.30)", padding: "2px 6px" }}>
+                    <span style={{ fontSize: 9, color: "#6b7280", lineHeight: 1.25, whiteSpace: "nowrap" }}>Takım Sırası</span>
+                    <span className="font-semibold" style={{ fontSize: 12, color: "#185fa5", lineHeight: 1.2 }}>{ozet.takimSirasi ? `${ozet.takimSirasi}.` : "-"}</span>
+                  </div>
+                  <span style={{ fontSize: 8.5, color: "#9ca3af", fontStyle: "italic", lineHeight: 1.3, whiteSpace: "nowrap" }}>haftalık sıra</span>
+                </div>
+                <div className="flex-1 flex flex-col items-center rounded-lg" style={{ background: "rgba(86,174,255,0.10)", boxShadow: "inset 0 0 0 0.5px rgba(86,174,255,0.30)", padding: "2px 6px" }}>
+                  <span style={{ fontSize: 9, color: "#6b7280", lineHeight: 1.25, whiteSpace: "nowrap" }}>Sipariş puanı</span>
+                  <span className="font-semibold" style={{ fontSize: 12, color: "#d85a30", lineHeight: 1.2 }}>{ozet.siparisPuani.toLocaleString("tr-TR")}</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Mobil: avatar + hamburger (sol drawer'ı açar — Adım 1.5). */}
