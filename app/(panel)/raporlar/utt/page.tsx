@@ -72,7 +72,6 @@ interface RaporData {
     bolge_toplam_puan: number;
     takim_toplam_puan: number;
   };
-  kalan_siparis_puani: number;
   istatistikler: {
     izleme_puani: number;
     cevaplama_puani: number;
@@ -82,19 +81,6 @@ interface RaporData {
     yanlis_cevap_kaybi: number;
     oneri_kaybi: number;
     toplam_net_puan: number;
-  };
-  lig: {
-    bolge_sirasi: number | null;
-    takim_sirasi: number | null;
-    toplam_bolge_utt: number;
-    bir_ust_puan_farki: number | null;
-    bolge_siralamasi: Array<{
-      sira: number;
-      ad: string;
-      soyad: string;
-      puan: number;
-      kendisi_mi: boolean;
-    }>;
   };
   kategori_dagilimi: KategoriDagilimi[];
   urun_dagilimi: UrunDagilimi[];

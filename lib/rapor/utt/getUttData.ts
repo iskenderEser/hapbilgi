@@ -40,10 +40,11 @@ export async function getUttData(
       p_bitis: bitis,
     }),
 
-    // 2. HBLigi — kişisel sıra — periyot bağımsız
+    // 2. Kişisel toplam puan — katkı yüzdesi (bölge/takım payı) için. Sıra artık
+    //    raporda gösterilmiyor (navbar'a taşındı), yalnız toplam_puan gerekli.
     adminSupabase
       .from('v_hbligi_sirali_v2')
-      .select('bolge_sirasi, takim_sirasi, toplam_puan')
+      .select('toplam_puan')
       .eq('kullanici_id', kullanici.kullanici_id)
       .maybeSingle(),
 

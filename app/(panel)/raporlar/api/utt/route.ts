@@ -6,7 +6,6 @@ import { tarihAraligi } from '@/lib/utils/tarihAraligi';
 import { TUKETICI_ROLLER } from '@/lib/utils/roller';
 import { getUttData } from '@/lib/rapor/utt/getUttData';
 import { katkiYuzdesi } from '@/lib/rapor/paylasilan/oran';
-import { ligSiralamasi } from '@/lib/rapor/paylasilan/ligSira';
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -38,14 +37,6 @@ export async function GET(request: Request) {
   // Veri
   const d = await getUttData(adminSupabase, kullanici, baslangic, bitis);
 
-  // ─── Kalan sipariş puanı (harcanabilir bakiye) ───────────────────────────
-  // Periyottan bağımsız: get_harcama_bakiyesi her zaman içinde bulunulan
-  // çeyreğin anlık bakiyesini döner (lig puanı − mağaza harcaması + iade).
-  const { data: bakiyeData } = await adminSupabase.rpc('get_harcama_bakiyesi', {
-    p_kullanici_id: kullanici.kullanici_id,
-  });
-  const kalanSiparisPuani = Number.isFinite(Number(bakiyeData)) ? Number(bakiyeData) : 0;
-
   // ─── İstatistikler — RPC çıktısından doğrudan ────────────────────────────
   const ozet = d.ozet ?? {
     izlenme_sayisi: 0,
@@ -70,22 +61,13 @@ export async function GET(request: Request) {
     toplam_net_puan: ozet.toplam_net_puan ?? 0,
   };
 
-  // ─── HBLigi ──────────────────────────────────────────────────────────────
+  // ─── Katkı (bölge/takım payı) ────────────────────────────────────────────
   const kisiselPuan = d.lig?.toplam_puan ?? 0;
   const toplamBolgePuan = d.bolgeLig.reduce((acc, u) => acc + (u.toplam_puan ?? 0), 0);
   const toplamTakimPuan = d.takimLig.reduce((acc, u) => acc + (u.toplam_puan ?? 0), 0);
-  const toplamBolgeUtt = d.bolgeLig.length || 1;
 
   const bolgePuanMax = katkiYuzdesi(kisiselPuan, toplamBolgePuan);
   const takimPuanMax = katkiYuzdesi(kisiselPuan, toplamTakimPuan);
-
-  // Bölge lig sıralaması — paylaşılan helper
-  const bolgeLigSatirlari = d.bolgeLig.map(u => ({
-    id: u.kullanici_id,
-    ad: `${u.ad} ${u.soyad}`,
-    toplam_puan: u.toplam_puan ?? 0,
-  }));
-  const ligSonuc = ligSiralamasi(bolgeLigSatirlari, kullanici.kullanici_id, kisiselPuan);
 
   // ─── Beğeni / Favori ─────────────────────────────────────────────────────
   const benimBegeniSet = new Set(d.benimBegenim.map((b) => b.yayin_id));
@@ -119,21 +101,7 @@ export async function GET(request: Request) {
         bolge_toplam_puan: toplamBolgePuan,
         takim_toplam_puan: toplamTakimPuan,
       },
-      kalan_siparis_puani: kalanSiparisPuani,
       istatistikler,
-      lig: {
-        bolge_sirasi: d.lig?.bolge_sirasi ?? null,
-        takim_sirasi: d.lig?.takim_sirasi ?? null,
-        toplam_bolge_utt: toplamBolgeUtt,
-        bir_ust_puan_farki: ligSonuc.birUstPuanFarki,
-        bolge_siralamasi: ligSonuc.siralama.map(s => ({
-          sira: s.sira,
-          ad: s.ad.split(' ').slice(0, -1).join(' '),
-          soyad: s.ad.split(' ').slice(-1).join(' '),
-          puan: s.puan,
-          kendisi_mi: s.kendisi_mi,
-        })),
-      },
       kategori_dagilimi: d.kategoriDagilimi,
       urun_dagilimi: d.urunDagilimi,
       begeni_listesi: begeniListesi,
