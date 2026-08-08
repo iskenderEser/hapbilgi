@@ -112,8 +112,49 @@ videolar 13, profil 12, izle 11, senaryolar 11, ana-sayfa 10…
 - **Çıktı:** Ek A envanterine eklenen üç sütun. "Kaç tanesi inline, kaç tanesi
   sözlüklü" oranı buradan çıkar.
 
-### Keşif sonucu
-_(bölüm bitince doldurulacak)_
+### Keşif sonucu (08.08.2026)
+
+**Kaynağa göre (kesişimsiz, ilk-argüman bazlı) — 458 çağrı.**
+
+| Kaynak | Adet | Pay | Açıklama |
+|---|---:|---:|---|
+| Satır-içi **statik** | 238 | %51 | Sabit string, elle yazılı — `hata("Veriler yüklenemedi.")` |
+| **Sunucu metni + istemci yedeği** | 187 | %40 | `hata(d.hata ?? "yedek")` — metin iki yerde yazılı |
+| Satır-içi **dinamik** | 23 | %5 | Template literal, `${...}` enterpolasyonlu |
+| **Sözlük** (`uretimToast`) | 10 | %2 | Yalnız üretim hattı |
+| Salt sunucu (yedeksiz) | 0 | — | Her sunucu mesajının istemci yedeği var |
+
+→ Satır-içi toplam **261 (%57)**; merkezî yalnız **%2**.
+
+**Kaynak × Tür çaprazı.**
+
+| Kaynak | hata | başarı | uyarı |
+|---|---:|---:|---:|
+| statik | 176 | 55 | 7 |
+| sunucu+yedek | 167 | 19 | 1 |
+| dinamik | 9 | 13 | 1 |
+| sözlük | 0 | 10 | 0 |
+
+**Dinamik içerik → merkez API parametre almak zorunda.** 23 dinamik çağrının
+enterpole ettiği değerler: puan (`kazanilan_puan`, `izleme_puani`, `net`), sayı
+(`yayin_sayisi`, `silinen_siparis`, `eklenen/guncellenen/hatali`), kimlik
+(`islem_kodu`, `firma_adi`, `takim_adi`, `bolge_adi`), ayar (`MAKS_BOYUT_MB`).
+Merkez statik string haritası olamaz; **değer enjekte edilen kalıplar** gerekir.
+
+**Özet teşhis.**
+1. **Kaynak dağılımı tersine dönmüş:** ideal mimaride içerik merkezde olmalıyken
+   burada %57 satır-içi, %40 iki-katman, yalnız %2 sözlük.
+2. **En sorunlu %40 (sunucu+yedek):** metnin sahibi belirsiz — sunucu `d.hata`
+   döndürüyor, istemci ayrıca yedek yazıyor (çoğu tahmin/kopya). Neredeyse hepsi
+   hata (167/187). Merkezileştirmenin çözmesi gereken asıl düğüm: **hata metninin
+   sahibi kim — sunucu mu, paylaşılan sözlük mü?**
+3. **238 statik (%51):** hacmin gövdesi; göçü mekanik ama yüzey geniş.
+4. **Tür dengesizliği:** hata her yeri eziyor (352), başarı 97, uyarı 9, bilgi 0.
+   Sistem ağırlıkla "hata raporlama"; stratejik hedef olan "doğru kişiye doğru işi
+   devret" (başarı/devir) mesajlaşması üretim hattı dışında gelişmemiş.
+5. **Örüntü işareti:** toast'ın değeri hiç baştan planlanmamış — ara ara gündeme
+   gelip (üretim hattı sözlüğü gibi ada ada) sonra kaybolmuş; sistem geneli
+   satır-içi refleksle büyümüş.
 
 ---
 
