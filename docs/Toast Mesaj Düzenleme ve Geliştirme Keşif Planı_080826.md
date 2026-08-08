@@ -269,8 +269,62 @@ her route'ta inline string; satır-içi refleks kalıcı bildirim kanalında da 
   (API `mesaj` döndüren uçlar) — bunlar merkeze taşınırken en riskli katman.
 - **Çıktı:** Risk/kısıt notları.
 
-### Keşif sonucu
-_(bölüm bitince doldurulacak)_
+### Keşif sonucu (08.08.2026)
+
+**A) Dil tutarlılığı → çoğunlukla "siz", sızıntılar var.**
+- Baskın form siz (doğru). Sen-form sızıntısı: `store/[urun_id]` → "Bakiyen
+  yetmiyor.", "Siparişin alındı!".
+- Aynı olayın hem siz hem sen varyantı ("Siparişiniz alındı." vs "Siparişin
+  alındı!") → tek olay, iki dil.
+
+**B) Kamusal alan kısıtı (Kural 7b) → ihlal yok, denetim kapısı gerekli.**
+- Müşteri yüzeyinde `"+N puan kazandınız!"`, `"indirim N TL"` var — eylem sonrası
+  olgusal teyit, kazanç vaadi değil → ihlal değil. Ama kamuya açık; merkezileşmede
+  7b filtresi bir inceleme kapısı olarak kurulmalı (şu an bakan yok).
+
+**C) Sunucu-üretimli metin → göç riski düşük, omurga zaten var.**
+
+| Katman | Omurga | Metin sahipliği |
+|---|---|---|
+| Toast (client) | `useHataMesaji` (46 dosya) | text inline param |
+| Sunucu hata | **`hataIsle.ts` (129 route)** | jenerik varsayılan + route inline param |
+| Bildirim | `bildirimOlustur` (7 route) | `mesaj` inline param |
+
+Kritik gözlem: sunucu çoğu zaman jenerik metin dönüyor ("Sunucu hatası.");
+kullanıcının gördüğü, istemcideki yedek (`d.hata ?? "asıl mesaj"`). Asıl mesaj
+zaten istemcide → merkeze taşınması kolay; sunucu metin yerine **kod** dönebilir.
+
+**D) Göç risk haritası.**
+
+| Grup | Adet | Risk | Neden |
+|---|---:|---|---|
+| Satır-içi statik | 238 | Düşük | Mekanik taşıma |
+| Sunucu+yedek | 187 | Orta | "Sunucu kod, metni merkez kursun" kararı gerekir; asıl metin zaten istemcide |
+| Dinamik | 23 | Orta | Merkez parametreli kalıp desteklemeli |
+| Sözlük | 10 | Yok | Zaten merkezde |
+
+**Özet teşhis.**
+1. Her üç kanalın da (toast/sunucu-hata/bildirim) omurgası mevcut —
+   merkezileştirme greenfield değil, hook noktaları hazır.
+2. Asıl mesajlar büyük ölçüde istemcide (sunucu jenerik) → taşınabilirlik yüksek,
+   risk düşük.
+3. Çözülmesi gereken üç karar: (a) hata metninin sahibi (sunucu kod ↔ merkez
+   metin), (b) dinamik parametre kalıpları, (c) kamusal/dil (7b + siz-form)
+   denetim kapısı.
+
+---
+
+## Keşif kapanışı (5/5 bölüm)
+
+Beş bölüm tamamlandı. Ana bulgu: **motorlar (toast/bildirim/sunucu-hata) merkezî
+ve sağlam; içerik ise sistemin ~%95'inde satır-içi, olay-merkezli tek kaynak
+yok.** Toast'ın stratejik değeri ("doğru kişiye, sıra kimde") yalnız üretim
+hattında kurulmuş; gerisi hata-raporlama refleksiyle büyümüş. İki orphan
+(`bilgi()`, `cc/bildirimMesajlari.ts`) "planlandı-sonra-unutuldu" örüntüsünün
+kanıtı. Göç riski düşük çünkü her kanalın omurgası ve asıl metinler hazır.
+
+**Sonraki faz:** iyileştirme/çözüm mimarisi (ayrı belge/plan) — İskender
+talimatıyla açılır.
 
 ---
 
