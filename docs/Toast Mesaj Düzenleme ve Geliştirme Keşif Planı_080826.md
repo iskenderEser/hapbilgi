@@ -55,8 +55,51 @@ başlangıç noktası.
   — her biri neyi kapsıyor.
 - **Çıktı:** "Çağrı noktası → dosya/modül" listesi + motor envanteri.
 
-### Keşif sonucu
-_(bölüm bitince doldurulacak)_
+### Keşif sonucu (08.08.2026)
+
+**Gösterim motoru → tek ve merkezî.**
+- Tek dosya: `components/HataMesaji.tsx`. Toast state'ini yalnız burası tutuyor —
+  paralel motor yok (admin/eczanem dâhil herkes bunu kullanıyor).
+- `useHataMesaji()` hook'u dört fonksiyon veriyor: `hata` · `basari` · `uyari` ·
+  `bilgi` (+ `temizle`).
+- Kapsayıcı `HataMesajiContainer`: ekranda sabit **sağ-üst** (top:24 / right:24),
+  maxWidth 380px, zIndex 9999. *(Kod yorumunda "sağ alt" yazıyor ama konum
+  sağ-üst — küçük tutarsızlık, Bölüm 4'e not.)*
+- Davranış: varsayılan **12 sn** otomatik kapanır; `uyari`'da `kalici` (kapanmaz)
+  seçeneği var. Süre türden bağımsız.
+- **46 dosya** motoru tüketiyor.
+
+**Çağrı noktaları → ~458 (05.08 taramasıyla tutarlı).**
+
+| Tür | Adet | Not |
+|---|---|---|
+| `hata(` | 352 | Baskın kalıp: `hata(d.hata ?? "yedek", "adım")` → sunucu metni + istemci yedeği (iki-katman içerik) |
+| `basari(` | 97 | |
+| `uyari(` | 9 | |
+| `bilgi(` | 0 | Tanımlı ama hiç kullanılmıyor (ölü API) |
+
+Modül yoğunluğu (ilk sıralar): admin 151 *(kapsam dışı — İskender kararı)*,
+eclub 60, eczanem 45, talepler 38, store 32, challenge-club 16, yayin-yönetimi 13,
+videolar 13, profil 12, izle 11, senaryolar 11, ana-sayfa 10…
+
+**İçerik sözlükleri → tek ada merkezî, gerisi dağınık.**
+
+| Dosya | Ne | Toast içeriği mi? |
+|---|---|---|
+| `lib/uretim/toastMesaj.ts` | Üretim hattı toast sözlüğü (`uretimToast(olay, baglam)`, "devir fişi" felsefesi) | ✅ Evet — tek gerçek toast-içerik sözlüğü; yalnız **9 talepler/üretim dosyasında** tüketiliyor |
+| `lib/utils/durum/mesaj.ts` | Durum **rozeti** sözlüğü (işin HÂLİ) | ❌ Toast değil, ayrı yüzey |
+| `lib/cc/bildirimMesajlari.ts` · `lib/utils/bildirimOlustur.ts` · `lib/utils/eclubBildirim.ts` | Kalıcı **bildirim** (tabloya yazılır) | ❌ Toast değil, farklı kanal (Bölüm 4) |
+
+**Özet teşhis.**
+- **Motor:** merkezî, tekil, sağlam — sorun burada değil.
+- **İçerik:** 458 çağrının yalnız üretim hattı kısmı (~9 dosya) sözlüklü; geri
+  kalan neredeyse tümü satır-içi. "Tek merkez" felsefesi kurulmuş ama sistemin
+  **~%95'ine yayılmamış.** Sonuç: işi "sistemi yönetmek" olan kod dosyalarının
+  üstüne, olmaması gereken bir metin-yönetimi yükü binmiş (direktöre telefon
+  cevaplatmak gibi — verimsiz).
+- İki yapısal düğüm: (1) `bilgi()` ölü; (2) `d.hata ?? yedek` kalıbı içeriği
+  baştan iki katmana (istemci + sunucu) bölüyor — merkezileştirmede ilk çözülmesi
+  gerekenler.
 
 ---
 
