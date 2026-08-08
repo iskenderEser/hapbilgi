@@ -185,7 +185,7 @@ export default function UttRaporPage() {
             <DagilimGrafik
               veri={[
                 { ad: 'Video', puan: data.istatistikler.izleme_puani, renk: '#1D9E75' },
-                { ad: 'Soru', puan: data.istatistikler.cevaplama_puani, renk: '#1D9E75' },
+                { ad: 'Doğru Cevap', puan: data.istatistikler.cevaplama_puani, renk: '#1D9E75' },
                 { ad: 'Öneri', puan: data.istatistikler.oneri_puani, renk: '#1D9E75' },
                 { ad: 'Extra', puan: data.istatistikler.extra_puan, renk: '#1D9E75' },
                 { ad: 'İleri sarma', puan: -data.istatistikler.ileri_sarma_kaybi, renk: BORDO },
@@ -222,7 +222,7 @@ export default function UttRaporPage() {
                       </div>
                       {[
                         { label: 'Video puanı', value: seciliKat.video_puani, renk: KOYU_METIN },
-                        { label: 'Soru puanı', value: seciliKat.soru_puani, renk: '#3B6D11', prefix: '+ ' },
+                        { label: 'Doğru Cevap Puanı', value: seciliKat.soru_puani, renk: '#3B6D11', prefix: '+ ' },
                         { label: 'Öneri puanı', value: seciliKat.oneri_puani, renk: '#3B6D11', prefix: '+ ' },
                         { label: 'Extra puan', value: seciliKat.extra_puan, renk: '#3B6D11', prefix: '+ ' },
                         { label: 'İleri sarma kaybı', value: seciliKat.ileri_sarma_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },

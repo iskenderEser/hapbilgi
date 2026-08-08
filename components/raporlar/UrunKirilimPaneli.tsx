@@ -1,7 +1,7 @@
 // components/raporlar/UrunKirilimPaneli.tsx
 //
 // Ürün dağılımı — master-detail: solda ürün butonları (nav), ortada seçili ürünün
-// PUAN KIRILIMI grafiği (Video/Soru/Öneri/Extra yeşil + kayıplar kırmızı, negatif).
+// PUAN KIRILIMI grafiği (Video/Doğru Cevap/Öneri/Extra yeşil + kayıplar kırmızı, negatif).
 // Görünüm Sütun/Çizgi/Tablo (pasta yok — net puan negatif olabilir), PNG indir.
 // Teknik dağılımı burada YOK (Analiz'e ait). Grafik gövdesi DagilimGrafik.
 
@@ -29,7 +29,7 @@ const BORDO = "#bc2d0d";
 function kirilim(u: UrunKirilim): DagilimKalem[] {
   return [
     { ad: "Video", puan: u.video_puani, renk: YESIL },
-    { ad: "Soru", puan: u.soru_puani, renk: YESIL },
+    { ad: "Doğru Cevap", puan: u.soru_puani, renk: YESIL },
     { ad: "Öneri", puan: u.oneri_puani, renk: YESIL },
     { ad: "Extra", puan: u.extra_puan, renk: YESIL },
     { ad: "İleri sarma", puan: -u.ileri_sarma_kaybi, renk: BORDO },

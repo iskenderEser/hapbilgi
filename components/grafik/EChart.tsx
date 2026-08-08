@@ -80,13 +80,47 @@ export default function EChart({ option, height = 320, className, style, onClick
     grafikRef.current?.setOption(option, { replaceMerge: ["xAxis", "yAxis"] });
   }, [option]);
 
-  const indir = () => {
-    const url = grafikRef.current?.getDataURL({ type: "png", pixelRatio: 2, backgroundColor: "#fff" });
-    if (!url) return;
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${indirAdi}.png`;
-    a.click();
+  // PNG indir — ekrandaki grafik değişmez; yalnız indirilen dosyanın sağ-alt
+  // köşesine HapBilgi logosu (baykuş + "hapbilgi") filigran olarak basılır.
+  const indir = async () => {
+    const grafik = grafikRef.current;
+    if (!grafik) return;
+    const kaynak = grafik.getDataURL({ type: "png", pixelRatio: 2, backgroundColor: "#fff" });
+
+    const yukle = (src: string) =>
+      new Promise<HTMLImageElement>((coz, red) => {
+        const im = new Image();
+        im.onload = () => coz(im);
+        im.onerror = red;
+        im.src = src;
+      });
+
+    const tetikle = (dataUrl: string) => {
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `${indirAdi}.png`;
+      a.click();
+    };
+
+    try {
+      const [taban, logo] = await Promise.all([yukle(kaynak), yukle("/logo-acik-zemin.png")]);
+      const canvas = document.createElement("canvas");
+      canvas.width = taban.naturalWidth;
+      canvas.height = taban.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return tetikle(kaynak);
+      ctx.drawImage(taban, 0, 0);
+      // Sağ-alt filigran — genişlik grafiğin %7'si (40–110px arası), oran korunur, %50 saydam.
+      const lw = Math.min(110, Math.max(40, canvas.width * 0.07));
+      const lh = lw * (logo.naturalHeight / logo.naturalWidth);
+      const bosluk = Math.max(12, canvas.width * 0.02);
+      ctx.globalAlpha = 0.5;
+      ctx.drawImage(logo, canvas.width - lw - bosluk, canvas.height - lh - bosluk, lw, lh);
+      ctx.globalAlpha = 1;
+      tetikle(canvas.toDataURL("image/png"));
+    } catch {
+      tetikle(kaynak); // logo yüklenemezse filigransız indir
+    }
   };
 
   return (
