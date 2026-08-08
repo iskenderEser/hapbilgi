@@ -1,18 +1,144 @@
-# Toast Mesajları — Mevcut Durum ve Öneri
+# Toast Mesaj Düzenleme ve Geliştirme — Keşif Planı
 
-*05.08.2026. Fiziksel testler öncesi mesaj içeriklerinin gözden geçirilmesi için çıkarıldı.
-Kapsam: rol bazlı; İÜ ve admin dışarıda bırakıldı (İskender kararı).
-Kaynak: `app/` ve `components/` altındaki toast çağrılarının taranması (458 çağrı,
-tekrarlar birleştirildi). Merkez sözlükler: `lib/uretim/toastMesaj.ts` (üretim hattı),
-`lib/utils/durum/mesaj.ts` (durum rozetleri), `components/HataMesaji.tsx` (kutu ve süre).*
+*08.08.2026. Amaç: tüm toast mesajlarının tek bir merkezden yönetildiği,
+sürdürülebilir bir kurgunun tasarlanabilmesi için önce mevcut durumun kategorik
+keşfi. Bu belge canlıdır: her bölümün keşif sonucu, o bölümün çalışması bitince
+ilgili "Keşif sonucu" başlığının altına yazılır. Tüm bölümler bitince belge,
+çözüm mimarisinin girdisi olur ve olası geri dönüşlerde "nerede kaldık" kaydı
+buradan okunur.*
+
+---
+
+## 0. Neden bu iş (bağlam)
+
+- **Toast, hapbilgi'nin her rolle iç iletişimindeki tek aracıdır** → kritik
+  altyapı, "yan özellik" değil.
+- Bugün **metin katmanı disiplinsiz**: her sayfa/handler cümleyi kendi içinde
+  üretip bırakıyor. Birkaç alan (üretim/durum/CC) sözlüğe toplanmış ama gerisi
+  dağınık (satır-içi string).
+- **Gidişat riski:** mesaj üreten nesneler component sayısı kadar çoğalır →
+  çalışsa bile yönetilemez hâle gelir (tutarlılık, dil, "top kimde" bilgisi her
+  yerde farklı).
+- **Hedef:** tüm toast mesajları **tek merkezde** yönetilsin; diğer yerler
+  cümleyi üretmesin, merkeze **danışsın**; merkez üç şeyi garanti etsin —
+  **doğru kişi** (rol/alıcı) · **doğru an** (eylem sırasında ya da sonrasında) ·
+  **doğru mesaj** (tutarlı dil, "sıra kimde" bilgisi dâhil). Yani
+  `lib/uretim/toastMesaj.ts`'in üretim hattı için kurduğu felsefeyi tüm sisteme
+  yaymak.
+
+---
+
+## Keşif algoritmasının mantığı
+
+Sıralama rastgele değil: **listelemeden sınıflayamazsın, sınıflamadan role/olaya
+bağlayamazsın.** Her bölüm bir öncekinin çıktısını girdi alır; sonda hepsi tek
+bir **envanter + harita** tablosunda birleşir. Bu tablo = çözüm tasarımının
+başlangıç noktası.
+
+- **Disiplin:** her bölüm yalnız **tarama** — sıfır değişiklik (Kural 6c), tek
+  tek koşulur.
+- **Girdi tabanı:** 05.08.2026'da yapılmış rol bazlı içerik taraması (458 çağrı
+  → 61 satır) bu belgeye **Ek A** olarak taşındı. O belge bu işin içinde bir
+  nesneydi; ayrı dosya (`toast_mesaj_mevcut_oneri.md`) bu belgeye katılıp
+  kaldırıldı. **Bölüm 1–3, Ek A'nın üstüne kurulur** — envanter sıfırdan
+  taranmaz, eksik sütunlar (kaynak, zamanlama/top-kimde, kanal, risk) eklenir.
+
+---
+
+## Bölüm 1 — Envanter & Motor (ne, nerede, kaç)
+
+- **Amaç:** Bütün toast yüzeyini ve gösterim altyapılarını çıkarmak.
+- **Toplanır:** (a) tüm `basari/hata/uyari/bilgi` çağrı noktaları; (b) gösterim
+  motorları — `HataMesaji`/`useHataMesaji` tek mi, yoksa admin/eczanem gibi
+  paralel motorlar var mı; (c) mevcut merkezî sözlükler (`toastMesaj.ts`,
+  `durum/mesaj.ts`, `cc/bildirimMesajlari`, `bildirimOlustur`, `eclubBildirim`)
+  — her biri neyi kapsıyor.
+- **Çıktı:** "Çağrı noktası → dosya/modül" listesi + motor envanteri.
+
+### Keşif sonucu
+_(bölüm bitince doldurulacak)_
+
+---
+
+## Bölüm 2 — Kaynak & Tür Sınıflandırması (her mesaj ne cinsten)
+
+- **Amaç:** Dağınıklığın haritasını çıkarmak.
+- **Toplanır:** her çağrı için → **kaynak** (satır-içi string / sözlük /
+  sunucu-üretimli), **tür** (hata/başarı/uyarı/bilgi), **içerik** (statik mi,
+  `puan`/`isim` gibi dinamik değer enterpolasyonlu mu).
+- **Çıktı:** Ek A envanterine eklenen üç sütun. "Kaç tanesi inline, kaç tanesi
+  sözlüklü" oranı buradan çıkar.
+
+### Keşif sonucu
+_(bölüm bitince doldurulacak)_
+
+---
+
+## Bölüm 3 — Rol × Olay × Zamanlama Matrisi (asıl mesele)
+
+- **Amaç:** "Doğru kişi / doğru an / doğru mesaj" beklentisini ölçmek.
+- **Toplanır:** her mesaj için → **hangi rol görüyor** (utt/kd_utt, bm, üretici,
+  içerik üreticisi, admin, eczane, eclub, cc); **hangi olay/eylem** tetikliyor;
+  **zamanlama** (eylem *sırasında* mı, *sonrasında/devir* mi); **"top kimde"**
+  bilgisi var mı, yok mu.
+- **Çıktı:** Rol-olay matrisi. `toastMesaj.ts`'in "devir fişi" felsefesinin
+  nerede uygulandığı / nerede eksik olduğu buradan görünür.
+
+### Keşif sonucu
+_(bölüm bitince doldurulacak)_
+
+---
+
+## Bölüm 4 — Kanal Ayrımı & Mükerrerlik (toast ≠ bildirim)
+
+- **Amaç:** Karışan kavramları ayırmak.
+- **Toplanır:** anlık **toast** (aktöre) ile kalıcı **bildirim** (karşı tarafa)
+  nerede birbirine karışmış; aynı olayın farklı yerlerde **farklı dille**
+  tekrarı; motorlar arası davranış tutarsızlığı (süre, konum, stil).
+- **Çıktı:** Çakışma/mükerrerlik listesi.
+
+### Keşif sonucu
+_(bölüm bitince doldurulacak)_
+
+---
+
+## Bölüm 5 — Dil, Kısıt & Risk (göç edilebilirlik)
+
+- **Amaç:** Merkezileştirmenin kırılganlık noktalarını görmek.
+- **Toplanır:** dil tutarlılığı (siz-formu, terminoloji), **kamusal alan kısıtı**
+  (eczane lehine kazanç vaadi yasağı — Kural 7b); **sunucu-üretimli metinler**
+  (API `mesaj` döndüren uçlar) — bunlar merkeze taşınırken en riskli katman.
+- **Çıktı:** Risk/kısıt notları.
+
+### Keşif sonucu
+_(bölüm bitince doldurulacak)_
+
+---
+
+## Nihai çıktı
+
+Beş bölüm tek bir **"Toast Envanteri + Rol/Olay Haritası"** olarak birleşir
+(satır = mesaj; sütunlar = kaynak, tür, rol, olay, zamanlama, kanal, risk).
+Çözüm mimarisi bunun üstüne kurulur.
+
+---
+
+## Ek A — Mevcut Toast Envanteri (05.08.2026 taraması)
+
+*Bu bölüm, kaldırılan `docs/toast_mesaj_mevcut_oneri.md` belgesinin içeriğidir.
+Orijinal amacı: fiziksel testler öncesi mesaj içeriklerinin (dil/içerik)
+gözden geçirilmesi. Kapsam: rol bazlı; İÜ ve admin dışarıda bırakılmıştı
+(İskender kararı). Kaynak: `app/` ve `components/` altındaki toast çağrılarının
+taranması (458 çağrı, tekrarlar birleştirildi). Merkez sözlükler:
+`lib/uretim/toastMesaj.ts` (üretim hattı), `lib/utils/durum/mesaj.ts` (durum
+rozetleri), `components/HataMesaji.tsx` (kutu ve süre). Bu envanter, Bölüm 1–3
+için taban kabul edilir.*
 
 **Süre:** Tüm toast'lar 12 saniye görünür, otomatik kapanır. Kalıcı (kapanmayan)
 kullanım hiçbir yerde yok. Süre mesajdan bağımsızdır — kritik uyarı ile liste
 hatası aynı süre kalır.
 
----
-
-## UTT
+### UTT
 
 | # | Durum | Kategori | Mesaj içeriği | Öneri |
 |---|---|---|---|---|
@@ -38,7 +164,7 @@ hatası aynı süre kalır.
 | 20 | Mağaza: stok / bakiye | Hata | "Stok yetersiz." / "Bakiyen yetmiyor." | "Stok yetersiz. Farklı bir ürün seçebilirsiniz." / "Puanınız yetersiz." |
 | 21 | Mağaza: adres | Başarı | "Adres eklendi." / "Adres silindi." / "Varsayılan adres güncellendi." | "Adresinizi eklediniz." / "Adresinizi sildiniz." / "Varsayılan adresinizi güncellediniz." |
 
-## BM
+### BM
 
 | # | Durum | Kategori | Mesaj içeriği | Öneri |
 |---|---|---|---|---|
@@ -52,14 +178,14 @@ hatası aynı süre kalır.
 | 29 | Challenge gönderilemedi | Hata | "Challenge gönderilemedi." | "Challenge gönderilemedi. Tekrar deneyiniz." |
 | 30 | Mağaza (UTT ile ortak) | — | Yukarıdaki mağaza satırlarının aynısı | 19–21 numaralı öneriler geçerli |
 
-## TM
+### TM
 
 | # | Durum | Kategori | Mesaj içeriği | Öneri |
 |---|---|---|---|---|
 | 31 | Ana sayfa verisi | Hata | "Veriler yüklenemedi." | "Sayfa verisi yüklenemedi. Sayfayı yenileyip tekrar deneyiniz." |
 | 32 | Öneri listesi | Hata | "Öneriler çekilemedi." | "Öneri listesi yüklenemedi. Sayfayı yenileyip tekrar deneyiniz." |
 
-## Üretici roller
+### Üretici roller
 
 | # | Durum | Kategori | Mesaj içeriği | Öneri |
 |---|---|---|---|---|
@@ -75,13 +201,13 @@ hatası aynı süre kalır.
 | 42 | Genel işlem | Hata | "İşlem gerçekleştirilemedi." | Olayın adıyla yazılmalı — "Onayınız kaydedilemedi. Tekrar deneyiniz." gibi |
 | 43 | Dosya | Başarı / Hata | "Dosya silindi." / "Dosya silinemedi." | "Dosyayı sildiniz." / "Dosya silinemedi. Tekrar deneyiniz." |
 
-## Yönetici roller
+### Yönetici roller
 
 | # | Durum | Kategori | Mesaj içeriği | Öneri |
 |---|---|---|---|---|
 | 44 | Ana sayfa verisi | Hata | "Veriler yüklenemedi." | "Sayfa verisi yüklenemedi. Sayfayı yenileyip tekrar deneyiniz." |
 
-## Eczacı ve eczane teknisyeni
+### Eczacı ve eczane teknisyeni
 
 | # | Durum | Kategori | Mesaj içeriği | Öneri |
 |---|---|---|---|---|
@@ -95,7 +221,7 @@ hatası aynı süre kalır.
 | 52 | Eczanem: sipariş düşürüldü | Başarı | "Sipariş düşürüldü." | "Siparişi reddettiniz." |
 | 53 | Eczanem: döküm / liste | Hata | "Döküm yüklenemedi." / "Siparişler yüklenemedi." | "Döküm yüklenemedi. Sayfayı yenileyip tekrar deneyiniz." / "Sipariş listesi yüklenemedi. Sayfayı yenileyip tekrar deneyiniz." |
 
-## Müşteri (Eczanem)
+### Müşteri (Eczanem)
 
 | # | Durum | Kategori | Mesaj içeriği | Öneri |
 |---|---|---|---|---|
