@@ -168,8 +168,47 @@ Merkez statik string haritası olamaz; **değer enjekte edilen kalıplar** gerek
 - **Çıktı:** Rol-olay matrisi. `toastMesaj.ts`'in "devir fişi" felsefesinin
   nerede uygulandığı / nerede eksik olduğu buradan görünür.
 
-### Keşif sonucu
-_(bölüm bitince doldurulacak)_
+### Keşif sonucu (08.08.2026)
+
+**Zamanlama tipolojisi (Ek A'nın 61 kanonik mesajı).**
+
+| Tip | ~Adet | Anlam | "Top kimde" ihtiyacı |
+|---|---:|---|---|
+| Anlık **hata** | ~31 | Kişinin kendi işi başarısız | Yok |
+| **Devir** | ~13 | İş başka role/kişiye geçti | **Var (asıl mesele)** |
+| **Öz-onay** | ~7 | Kendi eylemin başarılı, iş sende kalır | Yok |
+| Uyarı/kural | ~6 | Zaman/kural hatırlatma | Yok |
+| Puan/ödül | ~3 | Kazanım bildirimi | Yok |
+
+**Devir mesajlarının "top kimde" durumu → 13'te yalnız 5'i taşıyor.**
+
+| Devir olayı | "top kimde" |
+|---|---|
+| Üretim hattı: talep / onay / revizyon / iptal (33–36) | ✅ Var — `uretimToast` "onayladınız, *sıradaki iş+sahibi*" / "*rol* onayına ilettiniz" |
+| Yayına alma (37) | ⚠️ Mesaj yok |
+| Challenge gönderildi (28) | ❌ Bare |
+| Eczanem: video / davet / sipariş onay-red (18, 48, 50, 51, 52) | ❌ Çoğu bare |
+| Mağaza sipariş (19) · Müşteri sipariş (60) | ❌ Bare |
+
+→ Stratejik hedefin ("doğru kişiye, sıra kimde") uygulandığı tek ada **üretim
+hattı**. Devir olması gereken ~8 yerde toast, "top kimde" bilgisi olmayan öz-ack
+olarak yazılmış.
+
+**Kanal & katman işareti (Bölüm 4'e taban).**
+- Karşı-taraf bildirimi 3 ayrı kanaldan: (a) `bildirimler` tablosu → 7 API route
+  (üretim + öneri); (b) eczanem **SMS** (davet/otp); (c) challenge →
+  `cc/bildirimMesajlari.ts` **tanımlı ama hiç tüketilmiyor (orphan)**.
+- Devir toast'ı UI/client'ta, karşı-taraf bildirimi server/route'ta üretiliyor →
+  **ayrı katmanlar, gevşek bağ, tek kaynak yok.**
+
+**Özet teşhis.**
+1. Toast'ların çoğu (~%67) anlık öz-geri-bildirim; devir yalnız ~%21.
+2. Devirin de **~%60'ı "top kimde" bilgisini kaybediyor** — tam da iç iletişimin
+   en değerli olduğu yerde.
+3. Devir semantiği toast (client) ile bildirim (server) arasında bölünmüş;
+   birbirini bilmiyorlar.
+4. **İkinci orphan:** `cc/bildirimMesajlari.ts` hiç kullanılmıyor — `bilgi()` ile
+   birlikte "planlandı-sonra-unutuldu" örüntüsünün ikinci kanıtı.
 
 ---
 
