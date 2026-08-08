@@ -220,8 +220,44 @@ olarak yazılmış.
   tekrarı; motorlar arası davranış tutarsızlığı (süre, konum, stil).
 - **Çıktı:** Çakışma/mükerrerlik listesi.
 
-### Keşif sonucu
-_(bölüm bitince doldurulacak)_
+### Keşif sonucu (08.08.2026)
+
+**A) Mükerrerlik (aynı kanal — toast).**
+- 293 farklı literal; **68'i ≥2 dosyada birebir tekrar**.
+- En çoklar: `"Veriler yüklenemedi."` 7 dosya, `"Videolar yüklenemedi."` 6,
+  `"Siparişler yüklenemedi."` 6, `"İzleme başlatılamadı."` 4…
+- Aynı anlam farklı sözcüklerle: "Veriler yüklenemedi" / "Veri yüklenirken hata
+  oluştu" / "İşlem sırasında hata oluştu" / "İşlem gerçekleştirilemedi" — hepsi
+  "yükleme/işlem başarısız", 4-5 ayrı dille.
+
+**B) Kanal ayrımı (aynı olay — farklı kanallar).** Tek mantıksal devir olayı 3-4
+kanala dağılıyor, her kanalın metni bağımsız kaynaktan:
+
+| Kanal | Kime | Metin kaynağı |
+|---|---|---|
+| Toast | Eylemi yapan (anlık) | üretim hattında `uretimToast`; gerisi inline |
+| `bildirimler` tablosu | Karşı taraf (uygulama içi) | route içinde inline `mesaj` string |
+| Push | Karşı taraf (cihaz) | `PushOlayTuru` — ayrı katman |
+| SMS | Müşteri (eczanem) | ayrı |
+
+**C) Toast ≠ Bildirim → üretim hattında bile bölünmüş.** Aynı "senaryo onayı"
+devrinde: toast (client) `uretimToast` → "Senaryoyu onayladınız, *sıradaki
+iş+sahibi*"; bildirim (server, `senaryolar/api/durum`) route içinde inline →
+`` `Senaryo inceleme bekliyor: ${urun_adi}` ``. Bir olay, **iki metin, iki katman,
+tek kaynak yok** — tutarlılık garantisi yok.
+
+**D) Bildirim kanalı da aynı hastalıkta.** `bildirimOlustur({ mesaj })` — `mesaj`
+her route'ta inline string; satır-içi refleks kalıcı bildirim kanalında da var.
+
+**Özet teşhis.**
+1. Toast içinde 68 mükerrer literal + aynı anlamın çok-dilli tekrarı → tek
+   "yükleme hatası" bile standart değil.
+2. Bir olay 3-4 kanala saçılıyor; kanallar birbirinden habersiz, her biri metnini
+   kendi yazıyor.
+3. Toast ile bildirim eşlenmemiş — devir bilgisi (actor'a) ile karşı-taraf bilgisi
+   (counterparty'ye) ayrı ellerden; tutarlılık garantisi yok.
+4. Sorun "toast dağınıklığı"ndan büyük: **olay-merkezli tek kaynak** eksik — toast,
+   bildirim ve push aynı olayı ayrı ayrı anlatıyor.
 
 ---
 
