@@ -126,7 +126,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
     { data: izlemeSayilari },
   ] = await Promise.all([
     yayinIdler.length > 0
-      ? adminSupabase.from("yayin_yonetimi").select("yayin_id, extra_puan, ileri_sarma_acik").in("yayin_id", yayinIdler)
+      ? adminSupabase.from("yayin_yonetimi").select("yayin_id, extra_puan").in("yayin_id", yayinIdler)
       : { data: [] },
     yayinIdler.length > 0
       ? adminSupabase.from("video_begeniler").select("yayin_id").in("yayin_id", yayinIdler)
@@ -146,10 +146,8 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
   ]);
 
   const extraPuanMap: Record<string, number> = {};
-  const ileriSarmaMap: Record<string, boolean> = {};
   for (const yb of yayinBilgileri ?? []) {
     extraPuanMap[yb.yayin_id] = yb.extra_puan ?? 0;
-    ileriSarmaMap[yb.yayin_id] = yb.ileri_sarma_acik ?? false;
   }
 
   const begeniSayiMap: Record<string, number> = {};
@@ -183,7 +181,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
     yayin_tarihi: y.yayin_tarihi,
     icerik_turu: y.icerik_turu ?? null,
     extra_puan: extraPuanMap[y.yayin_id] ?? 0,
-    ileri_sarma_acik: ileriSarmaMap[y.yayin_id] ?? false,
+    ileri_sarma_acik: false,
     begeni_sayisi: begeniSayiMap[y.yayin_id] ?? 0,
     favori_sayisi: favoriSayiMap[y.yayin_id] ?? 0,
     izlenme_sayisi: izlenmeSayiMap[y.yayin_id] ?? 0,
