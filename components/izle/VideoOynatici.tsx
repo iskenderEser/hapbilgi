@@ -169,20 +169,26 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
     ileriSarilanToplamRef.current = 0;
 
     player.onReady(() => {
-      // timeupdate — hem ileri sarma takibi hem manuel bitiş tespiti.
-      // Süre, tek seferlik getDuration yerine her tik'te gelen canlı değerden
-      // okunur (playerjs timeupdate payload'ı süreyi de taşır). Böylece video
-      // verisi geç yüklense bile süre kendini onarır; ileri sarma kayıp puanı da
-      // bu süreye bağlı olduğundan doğru beslenir.
+      // İzleme ilerleyişi, ileri sarma denetimi ve bitiş tespiti tek timeupdate
+      // akışından yürür. Süre canlı payload'dan okunur (getDuration'a gerek yok);
+      // video geç yüklense de kendini onarır ve ileri sarma puan kaybı bu süreye
+      // bağlı olduğundan doğru beslenir.
       player.onTimeUpdate((data: { seconds: number; duration?: number }) => {
         if (data.duration && data.duration > 0) {
           videoSuresiRef.current = data.duration;
         }
 
-        if (video.ileri_sarma_acik && data.seconds > maxIzlenenRef.current) {
+        // maxIzlenen = KESİNTİSİZ izlemeyle ulaşılan en ileri nokta. Yalnız normal
+        // oynatma tik'lerinde (küçük artış) ilerler; ileri atlama büyük sıçrama
+        // yarattığından buraya yazılmaz. Böylece atlanan konum "izlenmiş" sayılmaz
+        // ve onSeeked atlamayı yakalayabilir (aksi halde maxIzlenen konuma yetişip
+        // atlamayı gizlerdi).
+        const ilerleme = data.seconds - maxIzlenenRef.current;
+        if (ilerleme > 0 && ilerleme < 1.5) {
           maxIzlenenRef.current = data.seconds;
         }
 
+        // Bitiş tespiti — üçüncü taraf 'ended' event'ine güvenmeden süreye göre.
         if (
           !izlemeBitirildiRef.current &&
           videoSuresiRef.current > 0 &&
@@ -193,20 +199,21 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
         }
       });
 
-      // İleri sarma — yalnız ileri_sarma_acik=true ise
-      if (video.ileri_sarma_acik) {
-        player.onSeeked(() => {
-          player.getCurrentTime((current: number) => {
-            if (current > maxIzlenenRef.current + 1) {
-              setBekleyenSeekBitis(current);
-              setIleriSarmaModal(true);
-              player.setCurrentTime(maxIzlenenRef.current);
-            }
-          });
+      // İleri sarma denetimi: kullanıcı izlemediği bir noktaya (maxIzlenen'in
+      // ilerisine) atlarsa video geri sarılır ve onay modalı açılır. Onaylarsa
+      // atlanan süre kadar puan kaybıyla ileri gider (handleIleriSarmaOnayla),
+      // reddederse kaldığı yerden devam eder.
+      player.onSeeked(() => {
+        player.getCurrentTime((current: number) => {
+          if (current > maxIzlenenRef.current + 1) {
+            setBekleyenSeekBitis(current);
+            setIleriSarmaModal(true);
+            player.setCurrentTime(maxIzlenenRef.current);
+          }
         });
-      }
+      });
 
-      // ended — yedek tetikleyici. Provider çalıştırırsa daha erken yakalar.
+      // ended — yedek bitiş tetikleyicisi (provider gönderirse daha erken yakalar).
       player.onEnded(() => {
         if (izlemeBitirildiRef.current) return;
         izlemeBitirildiRef.current = true;
@@ -220,7 +227,7 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
       if (playerRef.current === player) playerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [izlemeBasladi, video.yayin_id, tuketici, video.ileri_sarma_acik]);
+  }, [izlemeBasladi, video.yayin_id, tuketici]);
 
   const handleIleriSarmaOnayla = async () => {
     if (!izlemeId || bekleyenSeekBitis === null) return;
@@ -319,15 +326,6 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
             <div className="text-base font-semibold text-gray-900">{video.urun_adi}</div>
             <div className="text-xs text-gray-500 mt-1">{video.teknik_adi}</div>
           </div>
-          {tuketici && video.ileri_sarma_acik && (
-            <span className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full"
-              style={{ color: "#bc2d0d", background: "rgba(188,45,13,0.08)", border: "0.5px solid rgba(188,45,13,0.25)" }}>
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#bc2d0d" strokeWidth="2.5">
-                <polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/>
-              </svg>
-              İleri sarma açık
-            </span>
-          )}
         </div>
 
         {/* Video */}

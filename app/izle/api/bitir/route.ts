@@ -65,7 +65,7 @@ export async function PUT(request: NextRequest) {
 
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("yayin_yonetimi")
-      .select("soru_seti_durum_id, ileri_sarma_acik, extra_puan")
+      .select("soru_seti_durum_id, extra_puan")
       .eq("yayin_id", izleme.yayin_id)
       .single();
 
@@ -84,8 +84,8 @@ export async function PUT(request: NextRequest) {
     }
     const turBaslangic = new Date(turSonuc.tur?.baslangic_tarihi ?? "2000-01-01T00:00:00Z");
 
-    const ileriSarmaAcik = yayin.ileri_sarma_acik ?? false;
-    const ileriSarildi = ileriSarmaAcik && ileriSarilanSure > 0;
+    // B kararı: her video cezalı-seek. İleri sarma flag'i kalktı; atlama olduysa penaltı.
+    const ileriSarildi = ileriSarilanSure > 0;
 
     const { data: soruSetiDurum, error: ssdError } = await adminSupabase
       .from("soru_seti_durumu")
