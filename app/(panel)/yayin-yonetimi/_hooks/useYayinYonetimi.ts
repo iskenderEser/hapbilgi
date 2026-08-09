@@ -35,8 +35,6 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
 
   const [videoPuanlari, setVideoPuanlari] = useState<Record<string, number>>({});
   const [soruPuanlari, setSoruPuanlari] = useState<Record<string, Record<number, number>>>({});
-  const [bekleyenIleriSarma, setBekleyenIleriSarma] = useState<Record<string, boolean>>({});
-  const [ileriSarmaAcik, setIleriSarmaAcik] = useState<Record<string, boolean>>({});
   const [extraPuanlar, setExtraPuanlar] = useState<Record<string, number>>({});
 
   // Eczanem yayını: barkod + Karşılık (puan ↔ TL) ürün seviyesine yazılır (U5, K-E3).
@@ -101,20 +99,10 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     if (yayinError) { hata("Yayınlar yüklenemedi.", "v_yayin_detay view SELECT", yayinError.message); setLoading(false); return; }
 
     if ((yayinlarData ?? []).length > 0) {
-      const { data: yayinBilgileri } = await supabase
-        .from("yayin_yonetimi").select("yayin_id, ileri_sarma_acik")
-        .in("yayin_id", yayinlarData!.map(y => y.yayin_id));
-
-      const ileriSarmaMapLocal: Record<string, boolean> = {};
-      for (const yb of yayinBilgileri ?? []) {
-        ileriSarmaMapLocal[yb.yayin_id] = yb.ileri_sarma_acik ?? false;
-      }
-      setIleriSarmaAcik(ileriSarmaMapLocal);
       setYayinlar((yayinlarData ?? []).map(y => ({
         ...y,
         hedef_rol: (y.hedef_rol ?? "utt") as HedefRol,
         turu_adi: (y as any).egitim_turu ? (TALEP_TURU_KURALLARI[(y as any).egitim_turu as TalepTuru]?.ad ?? null) : null,
-        ileri_sarma_acik: ileriSarmaMapLocal[y.yayin_id] ?? false,
       })));
 
       // Tur bilgisi — sayaç rozeti (salt-okur toplu hesap; satır açmaz).
@@ -176,22 +164,6 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     return true;
   };
 
-  // ─── İleri sarma ────────────────────────────────────────────────────────
-
-  const handleIleriSarmaGuncelle = async (yayin_id: string, ileri_sarma_acik: boolean) => {
-    const res = await fetch("/yayin-yonetimi/api/ileri-sarma", {
-      method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ yayin_id, ileri_sarma_acik }),
-    });
-    const d = await res.json();
-    if (!res.ok) { hata(d.hata ?? "İleri sarma ayarı güncellenemedi.", d.adim, d.detay); }
-    else {
-      setIleriSarmaAcik(prev => ({ ...prev, [yayin_id]: ileri_sarma_acik }));
-      setYayinlar(prev => prev.map(y => y.yayin_id === yayin_id ? { ...y, ileri_sarma_acik } : y));
-      basari(ileri_sarma_acik ? "İleri sarma açıldı." : "İleri sarma kapatıldı.");
-    }
-  };
-
   // ─── Yayınlama ──────────────────────────────────────────────────────────
 
   const handleYayinla = async (b: Bekleyen) => {
@@ -231,7 +203,6 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
               karsilik_tl: karsilikTllar[b.soru_seti_durum_id] ?? null,
             }
           : {
-              ileri_sarma_acik: bekleyenIleriSarma[b.soru_seti_durum_id] ?? false,
               extra_puan: extraPuanlar[b.soru_seti_durum_id] ?? null,
               tekrar_periyot_gun: tekrarPeriyotlari[b.soru_seti_durum_id] ?? null,
             }),
@@ -275,8 +246,6 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     bekleyenler, yayinlar, loading, islemLoading,
     videoPuanlari, setVideoPuanlari,
     soruPuanlari,
-    bekleyenIleriSarma, setBekleyenIleriSarma,
-    ileriSarmaAcik,
     extraPuanlar, setExtraPuanlar,
     barkodlar, setBarkodlar,
     karsilikPuanlar, setKarsilikPuanlar,
@@ -290,6 +259,6 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     // puan yardımcıları
     getSoruPuani, setSoruPuani, hepsineAyniPuanAta, tumPuanlarAtandiMi,
     // handler'lar
-    handleIleriSarmaGuncelle, handleYayinla, handleDurumDegistir, handlePlanIslem,
+    handleYayinla, handleDurumDegistir, handlePlanIslem,
   };
 }

@@ -49,7 +49,6 @@ export interface Yayin {
   video_puani: number | null;
   soru_puani: number | null;
   sorular: any[];
-  ileri_sarma_acik: boolean;
   hedef_rol: HedefRol;
 }
 

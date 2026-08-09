@@ -12,7 +12,7 @@ import type { Bekleyen } from "../_types";
 import { VIDEO_PUAN_SECENEKLERI, EXTRA_PUAN_SECENEKLERI } from "../_types";
 import { HedefRolPill } from "@/components/HedefRolBant";
 import { talepIdGoster } from "@/lib/utils/talepId";
-import { Toggle, VideoThumb } from "./Yardimcilar";
+import { VideoThumb } from "./Yardimcilar";
 import { SoruListesi } from "./SoruListesi";
 
 interface BekleyenSatirProps {
@@ -36,12 +36,10 @@ interface BekleyenSatirProps {
   // Opsiyonel yayın günü (İş 2): boş = hemen yayın; doluysa o gün 07:00'de (TR) açılır.
   yayinGunleri: Record<string, string>;
   setYayinGunleri: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  bekleyenIleriSarma: Record<string, boolean>;
   tumPuanlarAtandiMi: (b: Bekleyen) => boolean;
   getSoruPuani: (soru_seti_durum_id: string, soru_index: number) => number | "";
   setSoruPuani: (soru_seti_durum_id: string, soru_index: number, puan: number) => void;
   hepsineAyniPuanAta: (soru_seti_durum_id: string, sorular: any[], puan: number) => void;
-  onIleriSarmaToggle: (soru_seti_durum_id: string, urun_adi: string) => void;
   onVideoAc: (url: string) => void;
   onYayinlaClick: (b: Bekleyen) => void;
 }
@@ -52,11 +50,10 @@ export function BekleyenSatir({
   barkodlar, setBarkodlar, karsilikPuanlar, setKarsilikPuanlar, karsilikTllar, setKarsilikTllar,
   tekrarPeriyotlari, setTekrarPeriyotlari, tekrarSecenekleri,
   yayinGunleri, setYayinGunleri,
-  bekleyenIleriSarma, tumPuanlarAtandiMi,
+  tumPuanlarAtandiMi,
   getSoruPuani, setSoruPuani, hepsineAyniPuanAta,
-  onIleriSarmaToggle, onVideoAc, onYayinlaClick,
+  onVideoAc, onYayinlaClick,
 }: BekleyenSatirProps) {
-  const acik = bekleyenIleriSarma[b.soru_seti_durum_id] ?? false;
   const hazir = tumPuanlarAtandiMi(b);
   const secilenGun = yayinGunleri[b.soru_seti_durum_id] ?? "";
   const bugun = new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD (yerel)
@@ -187,10 +184,6 @@ export function BekleyenSatir({
                 <option value="">Tekrar yok</option>
                 {tekrarSecenekleri.map(g => <option key={g} value={g}>{g} gün</option>)}
               </select>
-            </div>
-            <div>
-              <span className="text-xs text-gray-400 block mb-1">İleri sarma</span>
-              <Toggle acik={acik} onClick={() => onIleriSarmaToggle(b.soru_seti_durum_id, b.urun_adi)} />
             </div>
           </>
         )}

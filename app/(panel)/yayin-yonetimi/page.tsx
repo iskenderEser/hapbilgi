@@ -20,7 +20,7 @@ import { useYayinYonetimi } from "./_hooks/useYayinYonetimi";
 import { BekleyenSatir } from "./_components/BekleyenSatir";
 import { YayinSatir } from "./_components/YayinSatir";
 import { useListe, ListeArama, DahaFazlaGoster } from "@/components/liste";
-import { VideoOnizlemeModal, YayinOnayModal, IleriSarmaOnayModal } from "./_components/Modallar";
+import { VideoOnizlemeModal, YayinOnayModal } from "./_components/Modallar";
 
 export default function YayinYonetimiPage() {
   const { kullanici } = useAuth();
@@ -33,7 +33,6 @@ export default function YayinYonetimiPage() {
   const [acikAkordiyon, setAcikAkordiyon] = useState<string | null>(null);
   const [acikVideo, setAcikVideo] = useState<string | null>(null);
   const [onayModal, setOnayModal] = useState<Bekleyen | null>(null);
-  const [ileriSarmaOnayModal, setIleriSarmaOnayModal] = useState<{ soru_seti_durum_id: string; urun_adi: string } | null>(null);
 
   const yy = useYayinYonetimi({
     kullaniciVar: !!kullanici,
@@ -44,18 +43,6 @@ export default function YayinYonetimiPage() {
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-
-  // Bekleyen ileri sarma toggle: kapalıyken açma onayı için modal açar; açıkken kapatır.
-  const handleBekleyenIleriSarmaToggle = (soru_seti_durum_id: string, urun_adi: string) => {
-    const mevcutDurum = yy.bekleyenIleriSarma[soru_seti_durum_id] ?? false;
-    if (!mevcutDurum) { setIleriSarmaOnayModal({ soru_seti_durum_id, urun_adi }); }
-    else { yy.setBekleyenIleriSarma(prev => ({ ...prev, [soru_seti_durum_id]: false })); }
-  };
-
-  const handleIleriSarmaOnaylaVeAc = (soru_seti_durum_id: string) => {
-    yy.setBekleyenIleriSarma(prev => ({ ...prev, [soru_seti_durum_id]: true }));
-    setIleriSarmaOnayModal(null);
-  };
 
   // Yayınla onayı: modaldaki içeriği yayınlar, modalı kapatır.
   const handleYayinlaOnayla = async () => {
@@ -148,10 +135,8 @@ export default function YayinYonetimiPage() {
                 tekrarPeriyotlari={yy.tekrarPeriyotlari} setTekrarPeriyotlari={yy.setTekrarPeriyotlari}
                 tekrarSecenekleri={yy.tekrarSecenekleri}
                 yayinGunleri={yy.yayinGunleri} setYayinGunleri={yy.setYayinGunleri}
-                bekleyenIleriSarma={yy.bekleyenIleriSarma}
                 tumPuanlarAtandiMi={yy.tumPuanlarAtandiMi}
                 getSoruPuani={yy.getSoruPuani} setSoruPuani={yy.setSoruPuani} hepsineAyniPuanAta={yy.hepsineAyniPuanAta}
-                onIleriSarmaToggle={handleBekleyenIleriSarmaToggle}
                 onVideoAc={setAcikVideo}
                 onYayinlaClick={setOnayModal}
               />
@@ -229,12 +214,6 @@ export default function YayinYonetimiPage() {
 
       {onayModal && (
         <YayinOnayModal bekleyen={onayModal} onIptal={() => setOnayModal(null)} onYayinla={handleYayinlaOnayla} />
-      )}
-
-      {ileriSarmaOnayModal && (
-        <IleriSarmaOnayModal urun_adi={ileriSarmaOnayModal.urun_adi}
-          onIptal={() => setIleriSarmaOnayModal(null)}
-          onOnayla={() => handleIleriSarmaOnaylaVeAc(ileriSarmaOnayModal.soru_seti_durum_id)} />
       )}
 
       <HataMesajiContainer mesajlar={mesajlar} />

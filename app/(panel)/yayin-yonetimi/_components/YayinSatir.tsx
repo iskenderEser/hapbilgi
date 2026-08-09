@@ -14,7 +14,7 @@ import type { HesaplananTur } from "@/lib/tur/kayit";
 import { HedefRolPill } from "@/components/HedefRolBant";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import { ureticiDurumMesaji, yayinDurumKodu } from "@/lib/utils/durum/mesaj";
-import { Toggle, VideoThumb } from "./Yardimcilar";
+import { VideoThumb } from "./Yardimcilar";
 import { SoruListesi } from "./SoruListesi";
 
 interface YayinSatirProps {
@@ -29,7 +29,6 @@ interface YayinSatirProps {
   hepsineAyniPuanAta: (soru_seti_durum_id: string, sorular: any[], puan: number) => void;
   onVideoAc: (url: string) => void;
   onDurumDegistir: (yayin_id: string, mevcutDurum: string) => void;
-  onIleriSarmaGuncelle?: (yayin_id: string, acik: boolean) => void;
   // Planlanmış yayın aksiyonları (İş 2): tarih_degistir | hemen_yayinla | plan_iptal
   onPlanIslem?: (yayin_id: string, islem: string, yayin_gunu?: string) => void;
 }
@@ -44,7 +43,7 @@ function kalanGun(sonrakiTurTarihi: string): number {
 export function YayinSatir({
   y, islemLoading, acikAkordiyon, setAcikAkordiyon, formatTarih, tekrarBilgi,
   getSoruPuani, setSoruPuani, hepsineAyniPuanAta,
-  onVideoAc, onDurumDegistir, onIleriSarmaGuncelle, onPlanIslem,
+  onVideoAc, onDurumDegistir, onPlanIslem,
 }: YayinSatirProps) {
   const yayinda = y.durum === "yayinda";
   const planlandi = y.durum === "planlandi";
@@ -88,12 +87,6 @@ export function YayinSatir({
         </div>
         <div className="flex flex-col gap-1.5 mb-3 md:mb-0">
           <span className="text-xs text-gray-500">Video puanı: <b className="text-gray-800">{y.video_puani ?? "-"}</b></span>
-          {onIleriSarmaGuncelle && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-gray-400">İleri sarma</span>
-              <Toggle acik={y.ileri_sarma_acik ?? false} onClick={() => onIleriSarmaGuncelle(y.yayin_id, !(y.ileri_sarma_acik ?? false))} />
-            </div>
-          )}
         </div>
         <div className="flex items-start gap-2 justify-end pt-0.5">
           {y.sorular?.length > 0 && (
