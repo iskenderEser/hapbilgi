@@ -38,6 +38,40 @@ interface CevapSonucu {
   dogru_cevap: string;
 }
 
+// Puan kalemi — izleme akışında kazanılabilen puan türleri ve ablatif etiketleri.
+interface PuanKalemi {
+  tur: string;
+  puan: number;
+}
+
+const PUAN_ETIKET: Record<string, string> = {
+  izleme: "izlemeden",
+  extra: "ekstra izlemeden",
+  oneri: "öneriden",
+  cevap: "doğru cevaplamadan",
+};
+
+// Kazanılan puan kalemlerinden birleşik, motive edici toast metni kurar.
+// 0 puanlı kalemler gizlenir. Tek kalem: "İzlemeden 40 puan kazandınız. Tebrikler!"
+// Çok kalem: "İzlemeden 40 puan ve doğru cevaplamadan 10 puan, toplam da 50 puan
+// kazandınız. Tebrikler!". Kazanç yoksa null döner (toast atılmaz).
+function puanMesaji(kalemler: PuanKalemi[]): string | null {
+  const dolu = kalemler.filter((k) => k.puan > 0);
+  if (dolu.length === 0) return null;
+
+  const etiket = (tur: string) => PUAN_ETIKET[tur] ?? tur;
+  const buyuk = (s: string) => s.charAt(0).toLocaleUpperCase("tr-TR") + s.slice(1);
+  const parca = dolu.map((k, i) => `${i === 0 ? buyuk(etiket(k.tur)) : etiket(k.tur)} ${k.puan} puan`);
+
+  if (parca.length === 1) return `${parca[0]} kazandınız. Tebrikler!`;
+
+  const govde = parca.length === 2
+    ? parca.join(" ve ")
+    : `${parca.slice(0, -1).join(", ")} ve ${parca[parca.length - 1]}`;
+  const toplam = dolu.reduce((t, k) => t + k.puan, 0);
+  return `${govde}, toplam da ${toplam} puan kazandınız. Tebrikler!`;
+}
+
 interface Props {
   video: OynaticiVideo;
   tuketici: boolean;                 // sadece utt/kd_utt: izleme akışı + puan/soru. false → yalnızca oynatma.
@@ -70,6 +104,9 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
   const videoSuresiRef = useRef<number>(0);
   const playerRef = useRef<VideoPlayer | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  // Sorulu akışta bitir'in döndürdüğü izleme/öneri puan kalemleri — cevap sonrası
+  // birleşik toast'ta izleme + doğru cevaplama tek mesajda gösterilsin diye saklanır.
+  const izlemeKalemleriRef = useRef<PuanKalemi[]>([]);
 
   // Video değiştiğinde: TÜM state sıfırlanır ve yeni baslat tetiklenir.
   // Aynı VideoOynatici örneği farklı videoyu oynattığında temiz başlangıç sağlar.
@@ -91,6 +128,7 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
 
     izlemeIdRef.current = null;
     izlemeBitirildiRef.current = false;
+    izlemeKalemleriRef.current = [];
     maxIzlenenRef.current = 0;
     ileriSarilanToplamRef.current = 0;
     videoSuresiRef.current = 0;
@@ -227,15 +265,20 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
     if (!d.puan_kazanildi && !d.soru_gosterilecek) uyari(d.mesaj ?? "Puan kazanma saatleri dışında izlendi.");
     if (d.puan_uyarisi) uyari(d.puan_uyarisi); // B-08: puan yazım hatası kullanıcıya görünür
     if (d.ileri_sarildi) uyari("Video ileri sarıldığı için sorular gösterilmeyecek.");
+    const bitirKalemleri: PuanKalemi[] = d.kazanilan_puanlar ?? [];
     if (d.soru_gosterilecek) {
+      // İzleme/öneri kalemlerini sakla — toast cevap sonrası birleşik atılacak.
+      izlemeKalemleriRef.current = bitirKalemleri;
       const sRes = await fetch(`/izle/api/sorular?izleme_id=${id}`);
       const sData = await sRes.json();
       if (!sRes.ok) { hata(sData.hata ?? "Sorular yüklenemedi.", sData.adim, sData.detay); }
       else { setSorular(sData.sorular ?? []); }
     } else {
-      const toplam = d.kazanilan_puanlar?.reduce((t: number, p: any) => t + p.puan, 0) ?? 0;
+      // Sorusuz akış — kazanç burada kesinleşir, birleşik mesaj hemen atılır.
+      const toplam = bitirKalemleri.reduce((t, k) => t + k.puan, 0);
       setKazanilanPuan(toplam);
-      if (toplam > 0) basari(`+${toplam} puan kazandınız!`);
+      const mesaj = puanMesaji(bitirKalemleri);
+      if (mesaj) basari(mesaj);
     }
     setIslemLoading(false);
   };
@@ -248,7 +291,15 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "Cevaplar gönderilemedi.", d.adim, d.detay); setIslemLoading(false); return; }
     setCevapSonuclari(d.sonuclar); setKazanilanPuan(d.kazanilan_puan);
-    if (d.kazanilan_puan > 0) basari(`+${d.kazanilan_puan} puan kazandınız!`);
+    // Birleşik toast: izleme (bitir'de saklanan) + doğru cevaplama tek mesajda.
+    // Cevap 0 ise cevap kalemi düşer (puanMesaji 0'ı gizler) → yalnız izleme kalır.
+    const kalemler: PuanKalemi[] = [
+      ...izlemeKalemleriRef.current,
+      { tur: "cevap", puan: d.kazanilan_puan ?? 0 },
+    ];
+    const mesaj = puanMesaji(kalemler);
+    if (mesaj) basari(mesaj);
+    izlemeKalemleriRef.current = [];
     if (d.puan_uyarisi) uyari(d.puan_uyarisi); // B-08: puan yazım hatası kullanıcıya görünür
     setIslemLoading(false); await onVeriYenile();
   };
