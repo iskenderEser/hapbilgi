@@ -9,18 +9,43 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import type { HedefRol } from "@/app/(panel)/talepler/_types";
-import { HEDEF_ROL_TASARIM } from "@/app/(panel)/talepler/_types";
 import type { Bekleyen, AltSekme } from "./_types";
-import { ANA_SEKMELER, ANA_SEKME_ETIKETLERI } from "./_types";
 import { useYayinYonetimi } from "./_hooks/useYayinYonetimi";
 import { BekleyenSatir } from "./_components/BekleyenSatir";
 import { YayinSatir } from "./_components/YayinSatir";
 import { useListe, ListeArama, DahaFazlaGoster } from "@/components/liste";
 import { VideoOnizlemeModal, YayinOnayModal } from "./_components/Modallar";
+import { YayinKumandaPaneli } from "./_components/YayinKumandaPaneli";
+
+function ListeBasligi({ baslik, aciklama, sayi, arama }: { baslik: string; aciklama: string; sayi: number; arama: ReactNode }) {
+  return (
+    <div className="mb-3 flex flex-col gap-3 rounded-2xl border border-[#dfe7f1] bg-white px-4 py-3.5 shadow-[0_6px_18px_rgba(31,55,90,0.035)] sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h2 className="text-base font-extrabold text-[#203653]">{baslik}</h2>
+        <p className="mt-0.5 text-xs text-[#7b8da5]">{aciklama}</p>
+      </div>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <span className="w-fit rounded-full bg-[#eef5fd] px-2.5 py-1 text-[10px] font-extrabold text-[#4479b7]">{sayi} kayıt</span>
+        {arama}
+      </div>
+    </div>
+  );
+}
+
+function BosListe({ mesaj }: { mesaj: string }) {
+  return (
+    <div className="rounded-2xl border border-[#dfe7f1] bg-white px-6 py-12 text-center shadow-[0_6px_18px_rgba(31,55,90,0.03)]">
+      <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f0f5fb] text-[#7f96b3]">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5"><path d="M4 5h16v14H4zM8 9h8M8 13h5" /></svg>
+      </span>
+      <p className="mt-3 text-sm font-bold text-[#647994]">{mesaj}</p>
+    </div>
+  );
+}
 
 export default function YayinYonetimiPage() {
   const { kullanici } = useAuth();
@@ -57,6 +82,8 @@ export default function YayinYonetimiPage() {
   // Planlanmış yayınlar "Yayında" sekmesinde listelenir (Planlandı rozetiyle);
   // tarihi gelince cron aktive eder, rozet kendiliğinden "Yayında"ya döner.
   const yayindakiler = yayinlarFiltreli.filter(y => y.durum === "yayinda" || y.durum === "planlandi");
+  const canliSayisi = yayinlarFiltreli.filter(y => y.durum === "yayinda").length;
+  const planliSayisi = yayinlarFiltreli.filter(y => y.durum === "planlandi").length;
   const durdurulular = yayinlarFiltreli.filter(y => y.durum === "Durduruldu");
 
   // Arama + kademeli listeleme merkezden (components/liste). Üç sekme üç ayrı
@@ -84,45 +111,25 @@ export default function YayinYonetimiPage() {
 
   return (
     <>
-      <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
-
-        {/* Ana sekmeler: hedef role göre — UTT / BM / Eczacı / Eczane Teknisyeni */}
-        <div className="flex flex-wrap gap-1 mb-4">
-          {ANA_SEKMELER.map((sekme) => {
-            const tasarim = HEDEF_ROL_TASARIM[sekme];
-            const aktif = aktifAnaSekme === sekme;
-            return (
-              <button key={sekme} onClick={() => setAktifAnaSekme(sekme)}
-                className="px-5 py-2 rounded-lg border cursor-pointer text-sm font-semibold"
-                style={{
-                  background: aktif ? tasarim.renk : "white",
-                  color: aktif ? "white" : "#737373",
-                  borderColor: aktif ? tasarim.renk : "#e5e7eb",
-                  fontFamily: "'Nunito', sans-serif",
-                }}>
-                {ANA_SEKME_ETIKETLERI[sekme]}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Alt sekmeler: Bekleyen / Yayında / Durdurulan */}
-        <div className="flex gap-1 bg-white border border-gray-200 rounded-xl p-1 w-fit mb-5 overflow-x-auto">
-          {(["bekleyen", "yayinda", "durdurulan"] as const).map((sekme) => (
-            <button key={sekme} onClick={() => setAktifSekme(sekme)}
-              className="px-4 py-1.5 rounded-lg border-none cursor-pointer text-xs font-semibold whitespace-nowrap"
-              style={{ background: aktifSekme === sekme ? HEDEF_ROL_TASARIM[aktifAnaSekme].renk : "transparent", color: aktifSekme === sekme ? "white" : "#737373", fontFamily: "'Nunito', sans-serif" }}>
-              {sekme === "bekleyen" ? `Bekleyen (${yy.bekleyenler.length})` : sekme === "yayinda" ? `Yayında (${yayindakiler.length})` : `Durdurulan (${durdurulular.length})`}
-            </button>
-          ))}
-        </div>
+      <div className="min-h-full bg-[#f5f8fc]">
+      <div className="mx-auto flex max-w-[1480px] flex-col gap-5 px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
+        <YayinKumandaPaneli
+          aktifHedef={aktifAnaSekme}
+          aktifDurum={aktifSekme}
+          bekleyen={yy.bekleyenler.length}
+          canli={canliSayisi}
+          planli={planliSayisi}
+          durdurulan={durdurulular.length}
+          onHedefDegistir={setAktifAnaSekme}
+          onDurumDegistir={setAktifSekme}
+        />
 
         {aktifSekme === "bekleyen" && (
-          <div className="mb-3 flex justify-end"><ListeArama arama={bekleyenListe.arama} /></div>
+          <ListeBasligi baslik="Yayına Hazır İçerikler" aciklama="Puanları tamamlayın ve yayın zamanını belirleyin." sayi={bekleyenListe.toplam} arama={<ListeArama arama={bekleyenListe.arama} />} />
         )}
         {aktifSekme === "bekleyen" && (
           bekleyenListe.toplam === 0
-            ? <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">{yy.bekleyenler.length === 0 ? "Bekleyen video yok." : "Aramanıza uyan kayıt bulunamadı."}</div>
+            ? <BosListe mesaj={yy.bekleyenler.length === 0 ? "Yayına hazırlanmayı bekleyen içerik yok." : "Aramanıza uyan kayıt bulunamadı."} />
             : bekleyenListe.gorunen.map(b => (
               <BekleyenSatir key={b.soru_seti_durum_id} b={b}
                 islemLoading={yy.islemLoading}
@@ -153,11 +160,11 @@ export default function YayinYonetimiPage() {
         )}
 
         {aktifSekme === "yayinda" && (
-          <div className="mb-3 flex justify-end"><ListeArama arama={yayindaListe.arama} /></div>
+          <ListeBasligi baslik="Aktif Yayınlar" aciklama="Canlı ve planlanmış içeriklerin yaşam döngüsünü yönetin." sayi={yayindaListe.toplam} arama={<ListeArama arama={yayindaListe.arama} />} />
         )}
         {aktifSekme === "yayinda" && (
           yayindaListe.toplam === 0
-            ? <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">{yayindakiler.length === 0 ? "Yayında video yok." : "Aramanıza uyan kayıt bulunamadı."}</div>
+            ? <BosListe mesaj={yayindakiler.length === 0 ? "Bu hedef kitle için aktif yayın yok." : "Aramanıza uyan kayıt bulunamadı."} />
             : yayindaListe.gorunen.map(y => (
               <YayinSatir key={y.yayin_id} y={y}
                 islemLoading={yy.islemLoading}
@@ -182,11 +189,11 @@ export default function YayinYonetimiPage() {
         )}
 
         {aktifSekme === "durdurulan" && (
-          <div className="mb-3 flex justify-end"><ListeArama arama={durdurulanListe.arama} /></div>
+          <ListeBasligi baslik="Durdurulan Yayınlar" aciklama="Yayından kaldırılan içerikleri inceleyin veya yeniden başlatın." sayi={durdurulanListe.toplam} arama={<ListeArama arama={durdurulanListe.arama} />} />
         )}
         {aktifSekme === "durdurulan" && (
           durdurulanListe.toplam === 0
-            ? <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">{durdurulular.length === 0 ? "Durdurulan video yok." : "Aramanıza uyan kayıt bulunamadı."}</div>
+            ? <BosListe mesaj={durdurulular.length === 0 ? "Bu hedef kitle için durdurulan yayın yok." : "Aramanıza uyan kayıt bulunamadı."} />
             : durdurulanListe.gorunen.map(y => (
               <YayinSatir key={y.yayin_id} y={y}
                 islemLoading={yy.islemLoading}
@@ -208,6 +215,7 @@ export default function YayinYonetimiPage() {
             onGoster={durdurulanListe.dahaFazlaGoster}
           />
         )}
+      </div>
       </div>
 
       {acikVideo && <VideoOnizlemeModal url={acikVideo} onKapat={() => setAcikVideo(null)} />}

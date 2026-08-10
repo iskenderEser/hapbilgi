@@ -16,11 +16,15 @@ export const VideoThumb = ({ video_url, thumbnail_url, onAc }: {
 }) => {
   const thumb = thumbnail_url ?? thumbnailUrlUret(video_url);
   return (
-    <div onClick={() => video_url && onAc(video_url)}
-      className="relative flex items-center justify-center rounded-lg overflow-hidden flex-shrink-0"
-      style={{ width: 110, height: 62, border: "0.5px solid #e5e7eb", background: "#e5e7eb", cursor: video_url ? "pointer" : "default" }}>
+    <button
+      type="button"
+      onClick={() => video_url && onAc(video_url)}
+      disabled={!video_url}
+      aria-label={video_url ? "Videoyu önizle" : "Video önizlemesi bulunmuyor"}
+      className="relative flex h-[72px] w-32 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#dbe5f0] bg-[#e8eef5] p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff] disabled:cursor-default"
+    >
       {thumb
-        ? <img src={thumb} alt="thumbnail" className="w-full h-full object-cover" />
+        ? <img src={thumb} alt="Video küçük resmi" className="w-full h-full object-cover" />
         : <div className="w-full h-full" style={{ background: "#b5d4f4" }} />
       }
       {video_url && (
@@ -28,6 +32,6 @@ export const VideoThumb = ({ video_url, thumbnail_url, onAc }: {
           <svg width="10" height="12" viewBox="0 0 10 12" fill="white"><path d="M0 0l10 6-10 6z" /></svg>
         </div>
       )}
-    </div>
+    </button>
   );
 };
