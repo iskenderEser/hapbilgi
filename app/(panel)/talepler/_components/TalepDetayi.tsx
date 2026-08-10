@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { TALEP_TURU_KURALLARI } from "@/lib/uretici/yetenekler";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import { adimlariCoz } from "@/lib/utils/uretimSeridi";
+import { ureticiDurumMesaji } from "@/lib/utils/durum/mesaj";
 import { useBunnyIslemeDurumu } from "@/hooks/useBunnyIslemeDurumu";
 import { TeknikPill, VaryantPill, HedefRolPill } from "@/components/pill";
 import { UretimSeridi } from "./UretimSeridi";
@@ -57,11 +58,18 @@ export function TalepDetayi({
 
   if (!talep) {
     return (
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <span className="text-sm font-semibold text-gray-900">Talep Detayı</span>
+      <div className="overflow-hidden rounded-2xl border border-[#dfe7f2] bg-white shadow-[0_10px_28px_rgba(31,55,90,0.045)]">
+        <div className="border-b border-[#e8eef5] px-5 py-4">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#7390b3]">Üretim görünümü</p>
+          <h2 className="mt-0.5 text-base font-extrabold text-[#203653]">Talep Takibi</h2>
         </div>
-        <div className="p-10 text-center text-sm text-gray-400">Soldan bir talep seçin.</div>
+        <div className="px-6 py-14 text-center">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef6ff] text-[#4b91d8]">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6"><path d="M4 5h16v14H4zM8 9h8M8 13h5" /><path d="m15 16 2 2 4-4" /></svg>
+          </span>
+          <p className="mt-3 text-sm font-extrabold text-[#425672]">Takip etmek istediğiniz talebi seçin</p>
+          <p className="mx-auto mt-1 max-w-xs text-xs leading-5 text-[#8292a8]">İş kuyruğundan bir talep seçtiğinizde tüm üretim adımları burada açılır.</p>
+        </div>
       </div>
     );
   }
@@ -74,6 +82,16 @@ export function TalepDetayi({
   // Top içerik üreticisindeyken (Üreticinize İletildi / Hazırlıyor / Düzenliyor)
   // onaylanacak bir şey yoktur — düğme hiç çizilmez.
   const aktif = adimlar.find((a) => a.hal === "aktif");
+  const aktifDurum = aktif?.durum_kodu
+    ? ureticiDurumMesaji(aktif.durum_kodu, aktif.tarih)
+    : null;
+  const sorumlu = aktifDurum?.top === "uretici"
+    ? "Siz"
+    : aktifDurum?.top === "icerik_ureticisi"
+    ? "İçerik üreticiniz"
+    : aktifDurum?.top === "sistem"
+    ? "Sistem"
+    : "Tamamlandı";
   const blok =
     aktif?.anahtar === "senaryo" ? detay?.senaryo
     : aktif?.anahtar === "video" ? detay?.video
@@ -95,15 +113,19 @@ export function TalepDetayi({
       : null;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-      <div className="px-4 md:px-5 py-3.5 border-b border-gray-100">
-        <span className="text-sm font-semibold text-gray-900">Talep Takip</span>
+    <section aria-labelledby="talep-takip-baslik" className="overflow-hidden rounded-2xl border border-[#dfe7f2] bg-white shadow-[0_10px_28px_rgba(31,55,90,0.045)]">
+      <div className="border-b border-[#e8eef5] px-4 py-4 md:px-5">
+        <p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#7390b3]">Üretim görünümü</p>
+        <h2 id="talep-takip-baslik" className="mt-0.5 text-base font-extrabold text-[#203653]">Talep Takibi</h2>
       </div>
       {/* Künye */}
-      <div className="px-4 md:px-5 py-4 border-b border-gray-100 flex items-start justify-between gap-3 flex-wrap">
-        <div className="flex flex-col gap-1.5 min-w-0">
-          <span className="text-base font-semibold text-gray-900">{baslik}</span>
-          <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#e8eef5] px-4 py-4 md:px-5">
+        <div className="min-w-0">
+          <span className="block text-lg font-extrabold tracking-[-0.015em] text-[#1f3552]">{baslik}</span>
+          <span className="mt-1 block text-xs font-semibold text-[#8292a8]">
+            {talepIdGoster(talep.firma_adi, talep.talep_no)} · {formatTarih(talep.created_at)}
+          </span>
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
             <TeknikPill teknikAdi={talep.teknik_adi} />
             <HedefRolPill hedefRol={talep.hedef_rol} />
             <VaryantPill
@@ -113,14 +135,32 @@ export function TalepDetayi({
             />
           </div>
         </div>
-        <span className="text-xs text-gray-400 whitespace-nowrap">
-          {talepIdGoster(talep.firma_adi, talep.talep_no)} · {formatTarih(talep.created_at)}
-        </span>
+
+        <div className="min-w-[220px] flex-1 rounded-2xl border border-[#dce8f5] bg-[#f6faff] px-3.5 py-3 sm:max-w-[290px]">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#6f8daf]">Şu anda</p>
+          <div className="mt-2 grid grid-cols-2 gap-3">
+            <div>
+              <span className="block text-[10px] font-bold text-[#8a99ad]">Aktif aşama</span>
+              <span className="mt-0.5 block text-sm font-extrabold text-[#29415f]">{aktif?.etiket ?? "—"}</span>
+            </div>
+            <div>
+              <span className="block text-[10px] font-bold text-[#8a99ad]">Sorumlu</span>
+              <span className="mt-0.5 block text-sm font-extrabold text-[#29415f]">{sorumlu}</span>
+            </div>
+          </div>
+          {aktifDurum && <p className="mt-2 border-t border-[#dfebf7] pt-2 text-xs font-bold text-[#507094]">{aktifDurum.metin}</p>}
+        </div>
       </div>
 
       {/* Üretim şeridi */}
-      <div className="px-4 md:px-5 py-4">
-        <div className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3.5">Üretim Akışı</div>
+      <div className="px-4 py-4 md:px-5">
+        <div className="mb-3.5 flex items-end justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#7390b3]">Talep → Yayın</p>
+            <h3 className="mt-0.5 text-sm font-extrabold text-[#2b405c]">Üretim Akışı</h3>
+          </div>
+          <span className="text-[10px] font-semibold text-[#8a99ad]">5 adım</span>
+        </div>
         <UretimSeridi
           adimlar={adimlar}
           rol={rol}
@@ -151,13 +191,15 @@ export function TalepDetayi({
         {/* Soru seti onaylandığı an talep bu listeden düşüyor (D-4), dolayısıyla
             Yayın adımı burada hiçbir zaman "aktif" görünmüyor. Bu satır kullanıcıya
             sürecin nerede devam ettiğini söyler (İskender kararı 28.07). */}
-        <div
+        <button
+          type="button"
           onClick={() => router.push("/yayin-yonetimi")}
-          className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500 cursor-pointer hover:text-gray-700 transition-colors"
+          className="mt-3 flex w-full items-center justify-between gap-3 border-t border-[#e8eef5] pt-3 text-left text-xs font-semibold text-[#647994] transition-colors hover:text-[#287fce]"
         >
-          Soru seti onaylandıktan sonra iş Yayın Yönetimi&apos;ne geçer.
-        </div>
+          <span>Soru seti onaylandıktan sonra iş Yayın Yönetimi&apos;ne geçer.</span>
+          <span aria-hidden="true" className="text-lg">›</span>
+        </button>
       </div>
-    </div>
+    </section>
   );
 }

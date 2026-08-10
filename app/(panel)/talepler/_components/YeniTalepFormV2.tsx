@@ -1,8 +1,8 @@
 // app/talepler/_components/YeniTalepFormV2.tsx
 //
-// Yeni Talep formunun v2 yerleşimi — DÖRT SÜTUN (İskender tasarımı, 28.07):
-//   1) Bu talep kimin için   2) Yayın içeriği
-//   3) Ürün + teknik         4) Soru sayısı + seçenek + video başına adet
+// Yeni Talep formunun v2 yerleşimi — dört karar bölümü:
+//   1) Hedef kitle            2) İçerik türü
+//   3) Ürün + teknik          4) Ölçme ayarları
 // Altında açıklama tam genişlikte, en altta dosya ekle ve gönder.
 //
 // KURAL KOPYALANMIYOR: bu dosya yalnız YERLEŞİMDİR. Hedef rol kapısı, tür-ürün-
@@ -48,35 +48,50 @@ export function YeniTalepFormV2({ formu }: Props) {
 
   return (
     <div>
-      {/* Başlık + iki anahtar */}
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-        <h2 className="text-sm font-semibold text-gray-900 m-0">Yeni Talep</h2>
-        <div className="flex items-center gap-4">
+      {/* Başlık + hazır içerik anahtarları */}
+      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h2 className="m-0 text-base font-extrabold text-[#203653]">Talebinizi yapılandırın</h2>
+          <p className="mt-1 text-xs leading-4 text-[#7b8ca5]">
+            Önce hedef kitleyi seçin; içerik ve üretim seçenekleri buna göre açılır.
+          </p>
+        </div>
+        <div className="rounded-xl border border-[#e2e9f2] bg-white px-3 py-2.5">
+          <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#7a8da8]">
+            Elimde hazır içerik var
+          </p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {[
-            { etiket: "Hazır Videom Var", acik: formu.hazirVideo, degistir: formu.toggleHazirVideo },
-            { etiket: "Hazır Soru Setim Var", acik: formu.hazirSoruSeti, degistir: formu.toggleHazirSoruSeti },
+            { etiket: "Hazır video", acik: formu.hazirVideo, degistir: formu.toggleHazirVideo },
+            { etiket: "Hazır soru seti", acik: formu.hazirSoruSeti, degistir: formu.toggleHazirSoruSeti },
           ].map((a) => (
-            <label key={a.etiket} className="flex items-center gap-1.5 cursor-pointer">
-              <div
+            <div key={a.etiket} className="flex items-center gap-2">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={a.acik}
+                aria-label={a.etiket}
                 onClick={a.degistir}
-                className="relative cursor-pointer flex-shrink-0 rounded-full transition-colors duration-200"
-                style={{ width: 32, height: 18, background: a.acik ? "#56aeff" : "#e5e7eb" }}
+                className="relative shrink-0 rounded-full transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff] focus-visible:ring-offset-2"
+                style={{ width: 34, height: 20, background: a.acik ? "#56aeff" : "#d9e1eb" }}
               >
-                <div
-                  className="absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white transition-all duration-200"
-                  style={{ left: a.acik ? 16 : 2, boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }}
+                <span
+                  aria-hidden="true"
+                  className="absolute top-[3px] h-3.5 w-3.5 rounded-full bg-white transition-all duration-200"
+                  style={{ left: a.acik ? 17 : 3, boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }}
                 />
-              </div>
-              <span className="text-xs font-semibold text-gray-700">{a.etiket}</span>
-            </label>
+              </button>
+              <span className="text-xs font-bold text-[#425672]">{a.etiket}</span>
+            </div>
           ))}
+          </div>
         </div>
       </div>
 
-      <form onSubmit={formu.handleSubmit} className="flex flex-col gap-3">
+      <form onSubmit={formu.handleSubmit} className="flex flex-col gap-4">
         {/* Hazır kol bilgisi — sütunların üstünde, tam genişlik */}
         {(formu.hazirVideo || formu.hazirSoruSeti) && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800 leading-relaxed">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs leading-relaxed text-amber-900">
             {formu.hazirVideo && formu.hazirSoruSeti &&
               "Hazır video ve soru seti talebi oluşturuyorsunuz. Video ve soru setinizi yükledikten sonra yayın yönetimi aşamasındaki işlemler sonrası yayına açabilirsiniz."}
             {formu.hazirVideo && !formu.hazirSoruSeti &&
@@ -86,20 +101,35 @@ export function YeniTalepFormV2({ formu }: Props) {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
+        {!formAktif && (
+          <div className="flex items-center gap-2 rounded-xl border border-[#cfe3fb] bg-[#eef7ff] px-3.5 py-2.5 text-xs font-bold text-[#397bbd]">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 shrink-0">
+              <path d="M12 8v4m0 4h.01M10.3 3.6 2.4 17.3A2 2 0 0 0 4.1 20h15.8a2 2 0 0 0 1.7-2.7L13.7 3.6a2 2 0 0 0-3.4 0Z" />
+            </svg>
+            Önce hedef kitleyi seçin. Diğer talep ayarları seçiminizden sonra etkinleşecektir.
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-3.5 xl:grid-cols-2 xl:items-start">
           {/* 1 — Hedef rol. Formun ilk karar noktası; seçilmeden alt alanlar pasif. */}
-          <div>
-            <div className="text-xs text-gray-500 mb-1.5">
-              Bu talep kimin için? <span className="text-red-500">*</span>
+          <section className="rounded-2xl border border-[#dfe8f3] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
+            <div className="mb-3 flex items-start gap-3">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#eaf4ff] text-xs font-extrabold text-[#2483e2]">1</span>
+              <div>
+                <h3 className="text-sm font-extrabold text-[#263b58]">
+                  Hedef Kitle <span className="text-red-500">*</span>
+                </h3>
+                <p className="mt-0.5 text-xs text-[#7a8ca5]">Bu içerik kimin gelişimi için hazırlanacak?</p>
+              </div>
             </div>
-            <div className="flex flex-col gap-1.5">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {hedefRoller.map((rolKey) => {
                 const tasarim = HEDEF_ROL_TASARIM[rolKey];
                 const secili = formu.hedefRol === rolKey;
                 return (
                   <label
                     key={rolKey}
-                    className="flex items-center gap-2 cursor-pointer px-2.5 py-1.5 rounded-lg border transition-all"
+                    className="flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 transition-all"
                     style={{
                       background: secili ? tasarim.bg : "#fff",
                       borderColor: secili ? tasarim.renk : "#e5e7eb",
@@ -114,31 +144,46 @@ export function YeniTalepFormV2({ formu }: Props) {
                       className="cursor-pointer"
                       style={{ accentColor: tasarim.renk }}
                     />
-                    <span className="text-xs font-semibold" style={{ color: secili ? tasarim.renk : "#374151" }}>
+                    <span className="text-xs font-bold" style={{ color: secili ? tasarim.renk : "#425672" }}>
                       {tasarim.tamEtiket}
                     </span>
                   </label>
                 );
               })}
             </div>
-          </div>
+          </section>
 
           {/* Hedef rol seçilmeden kalan üç sütun pasif görünür ve tıklanamaz.
               Pasiflik sütun sütun verilir: grid çocuğunu saran bir kapsayıcı
               sütun düzenini bozardı. */}
           <>
             {/* 2 — Yayın içeriği (talep türü). Rolün açamadıkları soluk ve tıklanamaz. */}
-            <div style={{ opacity: formAktif ? 1 : 0.4, pointerEvents: formAktif ? "auto" : "none" }}>
-              <div className="text-xs text-gray-500 mb-1.5">Yayın içeriği</div>
-              <div className="flex flex-col gap-1.5">
+            <fieldset
+              disabled={!formAktif}
+              aria-disabled={!formAktif}
+              className="rounded-2xl border border-[#dfe8f3] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)] transition-opacity"
+              style={{ opacity: formAktif ? 1 : 0.58, pointerEvents: formAktif ? "auto" : "none" }}
+            >
+              <legend className="sr-only">İçerik Türü</legend>
+              <div className="mb-3 flex items-start gap-3">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#f0edff] text-xs font-extrabold text-[#7557d5]">2</span>
+                <div>
+                  <h3 className="text-sm font-extrabold text-[#263b58]">İçerik Türü</h3>
+                  <p className="mt-0.5 text-xs text-[#7a8ca5]">Talebin eğitim odağını belirleyin.</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {TUM_TURLER.map((tur: TalepTuru) => {
                   const acabilir = formu.yetenek!.acabilecegiTalepTurleri.includes(tur);
                   const secili = formu.egitimTuru === tur;
                   return (
-                    <div
+                    <button
+                      type="button"
                       key={tur}
                       onClick={() => acabilir && formu.handleEgitimTuruDegis(tur)}
-                      className="px-2.5 py-1.5 rounded-lg border transition-all"
+                      disabled={!acabilir}
+                      aria-pressed={secili}
+                      className="min-h-[58px] rounded-xl border px-3 py-2 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff] focus-visible:ring-offset-1"
                       style={{
                         ...secimKutusu(secili),
                         cursor: acabilir ? "pointer" : "not-allowed",
@@ -146,15 +191,31 @@ export function YeniTalepFormV2({ formu }: Props) {
                       }}
                       title={TALEP_TURU_ALT_ACIKLAMA[tur]}
                     >
-                      <span className="text-xs font-semibold">{TALEP_TURU_KURALLARI[tur].ad}</span>
-                    </div>
+                      <span className="block text-xs font-extrabold">{TALEP_TURU_KURALLARI[tur].ad}</span>
+                      <span className="mt-0.5 block text-[10px] leading-3.5 text-[#8493a9]">
+                        {TALEP_TURU_ALT_ACIKLAMA[tur]}
+                      </span>
+                    </button>
                   );
                 })}
               </div>
-            </div>
+            </fieldset>
 
             {/* 3 — Ürün + teknik. Ürünsüz+tekniksiz türlerde yeri serbest ada geçer. */}
-            <div style={{ opacity: formAktif ? 1 : 0.4, pointerEvents: formAktif ? "auto" : "none" }}>
+            <fieldset
+              disabled={!formAktif}
+              aria-disabled={!formAktif}
+              className="rounded-2xl border border-[#dfe8f3] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)] transition-opacity"
+              style={{ opacity: formAktif ? 1 : 0.58, pointerEvents: formAktif ? "auto" : "none" }}
+            >
+              <legend className="sr-only">Ürün ve Teknik</legend>
+              <div className="mb-3 flex items-start gap-3">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#e9f8f1] text-xs font-extrabold text-[#159463]">3</span>
+                <div>
+                  <h3 className="text-sm font-extrabold text-[#263b58]">Ürün ve Teknik</h3>
+                  <p className="mt-0.5 text-xs text-[#7a8ca5]">İçeriğin ticari ve davranışsal bağlamını seçin.</p>
+                </div>
+              </div>
               {/* UrunTeknikSecici kendi içinde md+ ekranda ürün ve tekniği YAN YANA
                   diziyor (flex-row). Burada sütun dar olduğu için ikisi alt alta
                   olmalı — yön zorla değiştirilir, ortak bileşene dokunulmaz. */}
@@ -189,7 +250,7 @@ export function YeniTalepFormV2({ formu }: Props) {
                   </div>
                 )}
               </div>
-            </div>
+            </fieldset>
 
             {/* 4 — Soru ayarları. ORTAK BİLEŞEN (28.07 düzeltmesi): üç select bir
                 süre burada elle yazılıydı; seçenek listeleri ikinci kez kopyalanmış
@@ -198,10 +259,20 @@ export function YeniTalepFormV2({ formu }: Props) {
                 Bileşen kendi içinde md+ ekranda üçünü YAN YANA diziyor; bu sütun
                 dar olduğu için yön sarmalayıcıda `!flex-col` ile zorlanır —
                 UrunTeknikSecici'de olduğu gibi, ortak bileşene dokunulmaz. */}
-            <div
-              className="[&>div]:!flex-col"
-              style={{ opacity: formAktif ? 1 : 0.4, pointerEvents: formAktif ? "auto" : "none" }}
+            <fieldset
+              disabled={!formAktif}
+              aria-disabled={!formAktif}
+              className="rounded-2xl border border-[#dfe8f3] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)] transition-opacity [&>div:last-child]:!flex-col"
+              style={{ opacity: formAktif ? 1 : 0.58, pointerEvents: formAktif ? "auto" : "none" }}
             >
+              <legend className="sr-only">Ölçme Ayarları</legend>
+              <div className="mb-3 flex items-start gap-3">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#fff3e8] text-xs font-extrabold text-[#d66b16]">4</span>
+                <div>
+                  <h3 className="text-sm font-extrabold text-[#263b58]">Ölçme Ayarları</h3>
+                  <p className="mt-0.5 text-xs text-[#7a8ca5]">Soru setinin kapsamını ve yoğunluğunu belirleyin.</p>
+                </div>
+              </div>
               <SoruSetiAyarlari
                 buyukluk={formu.soruSetiBuyuklugu}
                 videoBasi={formu.videoBasiSoruSayisi}
@@ -212,20 +283,20 @@ export function YeniTalepFormV2({ formu }: Props) {
                 buyuklukEtiketi="Soru sayısı"
                 videoBasiEtiketi="Video başına soru adedi"
               />
-            </div>
+            </fieldset>
           </>
         </div>
 
         {/* Açıklama — dört sütunun altında, tam genişlik */}
-        <div style={{ opacity: formAktif ? 1 : 0.4, pointerEvents: formAktif ? "auto" : "none" }}>
-          <label className="text-xs text-gray-500 block mb-1">Açıklama</label>
+        <div className="rounded-2xl border border-[#dfe8f3] bg-white p-4" style={{ opacity: formAktif ? 1 : 0.58, pointerEvents: formAktif ? "auto" : "none" }}>
+          <label className="mb-1.5 block text-xs font-extrabold text-[#425672]">Talep Açıklaması</label>
           <textarea
             value={formu.aciklama}
             onChange={(e) => formu.setAciklama(e.target.value)}
             placeholder="Açıklama yazınız"
             rows={3}
-            disabled={ikiliHazir}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white resize-y box-border disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+            disabled={!formAktif || ikiliHazir}
+            className="box-border w-full resize-y rounded-xl border border-[#dce5f0] bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-[#56aeff] focus:ring-2 focus:ring-[#56aeff]/15 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
             style={{ fontFamily: "'Nunito', sans-serif" }}
           />
         </div>
@@ -255,12 +326,12 @@ export function YeniTalepFormV2({ formu }: Props) {
         </div>
 
         {/* En alt: solda dosya ekle, sağda gönder */}
-        <div className="flex items-end justify-between gap-3 flex-wrap">
+        <div className="flex flex-wrap items-end justify-between gap-3 rounded-2xl border border-[#dfe8f3] bg-white p-4">
           <div style={{ opacity: formAktif ? 1 : 0.4, pointerEvents: formAktif ? "auto" : "none" }}>
             <EkDosyaYukleme
               bekleyenler={formu.bekleyenDosyalar}
               hazirVideo={formu.hazirVideo}
-              disabled={ikiliHazir}
+              disabled={!formAktif || ikiliHazir}
               onSec={formu.handleDosyaSec}
               onSil={formu.handleBekleyenDosyaSil}
             />
@@ -268,7 +339,7 @@ export function YeniTalepFormV2({ formu }: Props) {
           <button
             type="submit"
             disabled={!formAktif || formu.formLoading || formu.dosyaYukleniyor}
-            className="text-white border-none rounded-lg px-5 py-2.5 text-xs font-semibold cursor-pointer whitespace-nowrap"
+            className="min-w-[150px] cursor-pointer whitespace-nowrap rounded-xl border-none px-5 py-3 text-xs font-extrabold text-white shadow-[0_8px_18px_rgba(37,131,226,0.2)] transition-transform enabled:hover:-translate-y-0.5 disabled:cursor-not-allowed"
             style={{
               background: "#56aeff",
               opacity: !formAktif || formu.formLoading || formu.dosyaYukleniyor ? 0.6 : 1,

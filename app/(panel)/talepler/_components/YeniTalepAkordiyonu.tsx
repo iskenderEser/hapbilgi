@@ -58,28 +58,45 @@ export function YeniTalepAkordiyonu({ onTalepOlusturuldu }: Props) {
         içeride olsaydı başarı bildirimi kapanışla birlikte kaybolurdu. */}
     <HataMesajiContainer mesajlar={formu.mesajlar} />
 
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-      <div
+    <div className="overflow-hidden rounded-2xl border border-[#dce7f4] bg-white shadow-[0_10px_30px_rgba(31,55,90,0.05)]">
+      <button
+        type="button"
+        aria-expanded={acik}
+        aria-controls="yeni-talep-formu"
         onClick={() => setAcik((a) => !a)}
-        className="px-5 py-4 flex items-center justify-between gap-3 cursor-pointer select-none hover:bg-gray-50 transition-colors"
+        className="group flex w-full items-center justify-between gap-4 px-4 py-4 text-left transition-colors hover:bg-[#f8fbff] md:px-5"
       >
-        <span className="text-sm font-semibold text-gray-900">Yeni Talep Oluştur</span>
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#6b7280"
-          strokeWidth="2"
-          width="16"
-          height="16"
-          className="transition-transform duration-200 flex-shrink-0"
-          style={{ transform: acik ? "rotate(180deg)" : "none" }}
-        >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
-      </div>
+        <span className="flex min-w-0 items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eaf4ff] text-[#2483e2] transition-colors group-hover:bg-[#ddecff]">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-extrabold text-[#203653]">Yeni İçerik Talebi</span>
+            <span className="mt-0.5 block text-xs leading-4 text-[#7487a2]">
+              Hedef kitlenizi ve üretim ihtiyacınızı tanımlayın.
+            </span>
+          </span>
+        </span>
+        <span className="flex shrink-0 items-center gap-2 text-xs font-bold text-[#3989d7]">
+          <span className="hidden sm:inline">{acik ? "Formu kapat" : "Talep oluştur"}</span>
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="h-4 w-4 transition-transform duration-200"
+            style={{ transform: acik ? "rotate(180deg)" : "none" }}
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </span>
+      </button>
 
       {acik && (
-        <div className="border-t border-gray-100 p-4 md:p-5">
+        <div id="yeni-talep-formu" className="border-t border-[#e8eef6] bg-[#fbfdff] p-4 md:p-5">
           <YeniTalepFormV2 formu={formu} />
         </div>
       )}

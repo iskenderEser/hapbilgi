@@ -43,12 +43,19 @@ function daireStili(hal: Adim["hal"]): React.CSSProperties {
     case "tamam":
       return { background: "#16a34a", borderColor: "#16a34a" };
     case "aktif":
-      return { background: "#fff", borderColor: "#bc2d0d", boxShadow: "0 0 0 3px rgba(188,45,13,0.14)" };
+      return { background: "#2583e2", borderColor: "#2583e2", boxShadow: "0 0 0 4px rgba(37,131,226,0.13)" };
     case "kapali":
-      return { background: "#bc2d0d", borderColor: "#bc2d0d" };
+      return { background: "#fff7f5", borderColor: "#efb7aa" };
     default:
-      return { background: "#fff", borderColor: "#e5e7eb" };
+      return { background: "#f7f9fc", borderColor: "#dce4ee" };
   }
+}
+
+function kartStili(hal: Adim["hal"]): React.CSSProperties {
+  if (hal === "aktif") return { background: "#f8fbff", borderColor: "#8fc5fb", boxShadow: "0 8px 22px rgba(37,131,226,0.08)" };
+  if (hal === "tamam") return { background: "#ffffff", borderColor: "#dce9e2" };
+  if (hal === "kapali") return { background: "#fffafa", borderColor: "#f2ded9" };
+  return { background: "#fafbfd", borderColor: "#e7ecf2" };
 }
 
 export function UretimSeridi({ adimlar, rol, formatTarih, icerikCiz, talepId }: Props) {
@@ -82,28 +89,40 @@ export function UretimSeridi({ adimlar, rol, formatTarih, icerikCiz, talepId }: 
         return (
           <div key={adim.anahtar} className="flex gap-3">
             {/* Daire + bağlantı çizgisi */}
-            <div className="flex flex-col items-center w-4 flex-shrink-0">
+            <div className="flex w-7 shrink-0 flex-col items-center">
               <span
-                className="w-4 h-4 rounded-full flex-shrink-0 mt-0.5 border-2 transition-all"
+                className="mt-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-[10px] font-extrabold transition-all"
                 style={daireStili(adim.hal)}
-              />
+              >
+                {adim.hal === "tamam" ? (
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" className="h-3.5 w-3.5"><path d="m5 12 4 4L19 6" /></svg>
+                ) : adim.hal === "kapali" ? (
+                  <span className="text-[#c85e49]">—</span>
+                ) : (
+                  <span className={adim.hal === "aktif" ? "text-white" : "text-[#8a99ad]"}>{i + 1}</span>
+                )}
+              </span>
               {!sonuncu && (
                 <span
-                  className="w-0.5 flex-1 my-1"
+                  className="my-1 min-h-4 w-0.5 flex-1"
                   style={{ background: adim.hal === "tamam" ? "#bbf7d0" : "#e5e7eb" }}
                 />
               )}
             </div>
 
             {/* Gövde */}
-            <div className={`min-w-0 flex-1 ${sonuncu ? "" : "pb-4"}`}>
-              <div
-                onClick={yolaGider || acilabilir ? tikla : undefined}
-                className={`flex items-center gap-2 flex-wrap ${yolaGider || acilabilir ? "cursor-pointer" : "cursor-default"}`}
+            <div className={`min-w-0 flex-1 ${sonuncu ? "" : "pb-3"}`}>
+              <div className="overflow-hidden rounded-xl border transition-all" style={kartStili(adim.hal)}>
+              <button
+                type="button"
+                onClick={tikla}
+                disabled={!yolaGider && !acilabilir}
+                aria-expanded={acilabilir ? acik === adim.anahtar : undefined}
+                className="flex w-full flex-wrap items-center gap-2 px-3 py-2.5 text-left disabled:cursor-default enabled:cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#56aeff]"
               >
                 <span
-                  className="text-sm font-bold"
-                  style={{ color: adim.hal === "ileri" ? "#9ca3af" : adim.hal === "kapali" ? "#bc2d0d" : "#111827" }}
+                  className="text-sm font-extrabold"
+                  style={{ color: adim.hal === "ileri" ? "#8e9caf" : adim.hal === "kapali" ? "#a84f3f" : "#273d59" }}
                 >
                   {adim.etiket}
                 </span>
@@ -117,15 +136,23 @@ export function UretimSeridi({ adimlar, rol, formatTarih, icerikCiz, talepId }: 
                 ) : null}
 
                 {adim.tarih && adim.hal !== "kapali" && (
-                  <span className="text-xs text-gray-400">{formatTarih(adim.tarih)}</span>
+                  <span className="ml-auto text-[10px] font-semibold text-[#94a1b2]">{formatTarih(adim.tarih)}</span>
                 )}
-              </div>
+                {(yolaGider || acilabilir) && (
+                  <span
+                    aria-hidden="true"
+                    className="ml-auto text-base font-bold text-[#87a0bd] transition-transform"
+                    style={{ transform: acilabilir && acik === adim.anahtar ? "rotate(90deg)" : undefined }}
+                  >›</span>
+                )}
+              </button>
 
               {icerik && (
-                <div className="mt-2 border border-gray-200 rounded-xl bg-gray-50 px-3.5 py-3">
+                <div className="border-t border-[#dfe8f2] bg-white px-3.5 py-3.5">
                   {icerik}
                 </div>
               )}
+              </div>
             </div>
           </div>
         );
