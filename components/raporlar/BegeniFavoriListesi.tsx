@@ -20,20 +20,21 @@ interface Props {
   begeniListesi: VideoItem[];
   favoriListesi: VideoItem[];
   isUtt?: boolean;
+  modern?: boolean;
 }
 
-export default function BegeniFavoriListesi({ begeniListesi, favoriListesi, isUtt = false }: Props) {
+export default function BegeniFavoriListesi({ begeniListesi, favoriListesi, isUtt = false, modern = false }: Props) {
   if (begeniListesi.length === 0 && favoriListesi.length === 0) return null;
 
   return (
     <div className="mb-5">
-      <div className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: GRI_METIN }}>
+      <div className={`mb-2 text-xs font-bold uppercase tracking-wider ${modern ? "text-[#66809f]" : ""}`} style={modern ? undefined : { color: GRI_METIN }}>
         beğeni & favori sıralaması
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
 
         {/* En Çok Beğenilen */}
-        <div className="border rounded-xl p-4" style={{ borderColor: '#e5e7eb' }}>
+        <div className={`${modern ? "rounded-2xl border border-[#e8edf3] bg-white shadow-[0_8px_26px_rgba(36,64,98,0.05)]" : "rounded-xl border"} p-4`} style={modern ? undefined : { borderColor: '#e5e7eb' }}>
           <div className="flex items-center gap-2 mb-3">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BORDO} strokeWidth="2">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
@@ -66,7 +67,7 @@ export default function BegeniFavoriListesi({ begeniListesi, favoriListesi, isUt
         </div>
 
         {/* En Çok Favoriye Eklenen */}
-        <div className="border rounded-xl p-4" style={{ borderColor: '#e5e7eb' }}>
+        <div className={`${modern ? "rounded-2xl border border-[#e8edf3] bg-white shadow-[0_8px_26px_rgba(36,64,98,0.05)]" : "rounded-xl border"} p-4`} style={modern ? undefined : { borderColor: '#e5e7eb' }}>
           <div className="flex items-center gap-2 mb-3">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BORDO} strokeWidth="2">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>

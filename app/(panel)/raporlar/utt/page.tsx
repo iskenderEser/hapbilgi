@@ -1,21 +1,19 @@
 // app/raporlar/utt/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
+import { Activity, ArrowLeft, BarChart3, BookOpenCheck, CircleMinus, CirclePlus, Gauge, Layers3, Sparkles } from 'lucide-react';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useRapor } from '@/hooks/useRapor';
-import { BORDO, KIRMIZI, GRI_METIN, KOYU_METIN, GRI_ZEMIN, formatPuan, PERIYOTLAR, Periyot } from '@/lib/utils/raporUtils';
+import { KIRMIZI, GRI_METIN, KOYU_METIN, formatPuan, PERIYOTLAR, Periyot } from '@/lib/utils/raporUtils';
 import { TUR_RAPOR_ADI, TUR_SIRA, isIcerikTuru } from '@/lib/video/icerikTuru';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
-import StatGrid from '@/components/raporlar/StatGrid';
-import SectionTitle from '@/components/raporlar/SectionTitle';
 import DagilimGrafik from '@/components/raporlar/DagilimGrafik';
 import UrunKirilimPaneli from '@/components/raporlar/UrunKirilimPaneli';
+import styles from './utt-report.module.css';
 
 const DEFAULT_PERIYOT: Periyot = 'bu_ay';
-const BORDER = '#e5e7eb';
-
 interface UrunDagilimi {
   urun_id: string;
   urun_adi: string;
@@ -113,160 +111,171 @@ export default function UttRaporPage() {
   );
   if (!kullanici || !data) return null;
 
-  return (
-    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <div className="max-w-4xl mx-auto px-3 py-3 pb-20 md:px-4 md:py-4 md:pb-4">
+  const pozitifKalemler = [
+    { ad: 'Video', puan: data.istatistikler.izleme_puani },
+    { ad: 'Doğru cevap', puan: data.istatistikler.cevaplama_puani },
+    { ad: 'Öneri', puan: data.istatistikler.oneri_puani },
+    { ad: 'Extra', puan: data.istatistikler.extra_puan },
+  ];
+  const kayipKalemleri = [
+    { ad: 'İleri sarma', puan: data.istatistikler.ileri_sarma_kaybi },
+    { ad: 'Yanlış cevap', puan: data.istatistikler.yanlis_cevap_kaybi },
+    { ad: 'Öneri kaybı', puan: data.istatistikler.oneri_kaybi },
+  ];
+  const pozitifToplam = pozitifKalemler.reduce((toplam, kalem) => toplam + kalem.puan, 0);
+  const toplamKayip = kayipKalemleri.reduce((toplam, kalem) => toplam + kalem.puan, 0);
+  const enGuclu = [...pozitifKalemler].sort((a, b) => b.puan - a.puan)[0];
+  const enBuyukKayip = [...kayipKalemleri].sort((a, b) => b.puan - a.puan)[0];
+  const oneCikanUrun = [...(data.urun_dagilimi ?? [])].sort((a, b) => b.toplam_net_puan - a.toplam_net_puan)[0];
 
-        <Link href="/ana-sayfa" className="flex items-center gap-1.5 text-xs mb-4" style={{ color: GRI_METIN }}>
-          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Ana Sayfa
+  return (
+    <div className={styles.page} style={{ fontFamily: "'Nunito', sans-serif" }}>
+      <div className={styles.container}>
+        <Link href="/ana-sayfa" className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-[#7890aa] hover:text-[#237ac8]">
+          <ArrowLeft className="h-3.5 w-3.5" /> Ana Sayfa
         </Link>
 
-        {/* Başlık + Zaman filtresi */}
-        <div className="flex justify-between items-start mb-6">
+        <header className={styles.header}>
           <div>
-            <h1 className="text-xl font-semibold" style={{ color: KOYU_METIN }}>
+            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">
+              <Sparkles className="h-3.5 w-3.5" /> Kişisel performans analizi
+            </div>
+            <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">
               {data.kullanici.ad} {data.kullanici.soyad}
             </h1>
-            <p className="text-sm mt-0.5" style={{ color: GRI_METIN }}>
+            <p className="mt-0.5 text-xs font-semibold text-[#78889d]">
               {data.kullanici.rol.toUpperCase()} · {data.kullanici.bolge_adi} · {data.kullanici.takim_adi}
             </p>
           </div>
-          <div className="flex gap-1.5">
+          <div className={styles.periods} aria-label="Rapor dönemi">
             {PERIYOTLAR.map(p => (
               <button
                 key={p.key}
                 onClick={() => setPeriyot(p.key)}
-                className="px-3 py-1 rounded-full text-xs border transition-colors"
-                style={{
-                  background: periyot === p.key ? BORDO : 'transparent',
-                  color: periyot === p.key ? '#fff' : GRI_METIN,
-                  borderColor: periyot === p.key ? BORDO : BORDER,
-                }}
+                className={`${styles.periodButton} ${periyot === p.key ? styles.periodActive : ''}`}
               >
                 {p.label}
               </button>
             ))}
           </div>
+        </header>
+
+        <div className={styles.heroGrid}>
+          <section className={`${styles.panel} ${styles.scoreHero}`}>
+            <div>
+              <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">Dönem net puanı</div>
+              <div className={styles.netScore}>{formatPuan(data.istatistikler.toplam_net_puan)}</div>
+            </div>
+            <div className="relative z-10 min-w-0">
+              <h2 className="text-base font-extrabold text-[#20324c]">Puanını nasıl ürettin?</h2>
+              <p className="mt-1 text-xs font-medium leading-relaxed text-[#718198]">
+                En güçlü kaynağın <strong className="text-[#16865f]">{enGuclu.ad} (+{formatPuan(enGuclu.puan)})</strong>.
+                {enBuyukKayip.puan > 0 && <> En yüksek kaybın <strong className="text-[#d44b40]">{enBuyukKayip.ad} (−{formatPuan(enBuyukKayip.puan)})</strong>.</>}
+              </p>
+              <div className={styles.metricGrid}>
+                <div className={styles.metric}>
+                  <CirclePlus className="mb-1 h-4 w-4 text-[#1d9e75]" />
+                  <div className="text-[10px] font-bold text-[#8190a3]">Pozitif üretim</div>
+                  <div className="text-base font-extrabold tabular-nums text-[#16865f]">+{formatPuan(pozitifToplam)}</div>
+                </div>
+                <div className={styles.metric}>
+                  <CircleMinus className="mb-1 h-4 w-4 text-[#e25546]" />
+                  <div className="text-[10px] font-bold text-[#8190a3]">Puan kaybı</div>
+                  <div className="text-base font-extrabold tabular-nums text-[#d44b40]">−{formatPuan(toplamKayip)}</div>
+                </div>
+                <div className={styles.metric}>
+                  <Layers3 className="mb-1 h-4 w-4 text-[#7c5ce7]" />
+                  <div className="text-[10px] font-bold text-[#8190a3]">Öne çıkan ürün</div>
+                  <div className="truncate text-sm font-extrabold text-[#43546d]">{oneCikanUrun?.urun_adi ?? '—'}</div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className={`${styles.panel} ${styles.contribution}`}>
+            <div className="mb-3 flex items-center justify-between">
+              <div><div className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#71859d]">Etkileşim alanın</div><h2 className="text-sm font-extrabold text-[#20324c]">Katkı Payın</h2></div>
+              <div className={styles.sectionIcon}><Gauge className="h-4 w-4" /></div>
+            </div>
+            {[
+              { label: 'Bölge katkısı', yuzde: data.katki.bolge_katki_yuzdesi, mevcut: data.katki.bolge_mevcut_puan, toplam: data.katki.bolge_toplam_puan },
+              { label: 'Takım katkısı', yuzde: data.katki.takim_katki_yuzdesi, mevcut: data.katki.bolge_mevcut_puan, toplam: data.katki.takim_toplam_puan },
+            ].map(k => (
+              <div key={k.label} className={styles.contributionItem}>
+                <div className="mb-1.5 flex items-end justify-between">
+                  <span className="text-xs font-bold text-[#556981]">{k.label}</span>
+                  <span className="text-xl font-black tabular-nums text-[#237ac8]">%{k.yuzde}</span>
+                </div>
+                <div className={styles.progressTrack}><div className={styles.progressFill} style={{ width: `${Math.max(0, Math.min(k.yuzde, 100))}%` }} /></div>
+                <div className="mt-1.5 flex justify-between text-[10px] font-semibold text-[#8a98aa]">
+                  <span>Sen: {formatPuan(k.mevcut)}</span><span>Toplam: {formatPuan(k.toplam)}</span>
+                </div>
+              </div>
+            ))}
+          </section>
         </div>
 
-        {/* Katkı Kartları */}
-        <StatGrid columns={2} className="mb-5">
-          {[
-            { label: 'Bölge katkısı', yuzde: data.katki.bolge_katki_yuzdesi, mevcut: data.katki.bolge_mevcut_puan, toplam: data.katki.bolge_toplam_puan },
-            { label: 'Takım katkısı', yuzde: data.katki.takim_katki_yuzdesi, mevcut: data.katki.bolge_mevcut_puan, toplam: data.katki.takim_toplam_puan },
-          ].map(k => (
-            <div key={k.label} className="border rounded-xl p-4" style={{ borderColor: BORDER }}>
-              <div className="text-xs mb-2" style={{ color: GRI_METIN }}>{k.label}</div>
-              <div className="text-2xl font-semibold mb-2" style={{ color: BORDO }}>%{k.yuzde}</div>
-              <div className="h-6 rounded-md relative overflow-hidden" style={{ background: GRI_ZEMIN }}>
-                <div
-                  className="absolute left-0 top-0 h-full rounded-md flex items-center justify-end pr-2"
-                  style={{ width: `${Math.max(0, Math.min(k.yuzde, 100))}%`, background: BORDO }}
-                >
-                  {k.yuzde >= 10 && <span className="text-white text-xs font-medium">%{k.yuzde}</span>}
-                </div>
-              </div>
-              <div className="flex justify-between text-xs mt-1.5" style={{ color: GRI_METIN }}>
-                <span>Mevcut: <span style={{ color: BORDO, fontWeight: 500 }}>{formatPuan(k.mevcut)}</span></span>
-                <span>Toplam: <span style={{ color: BORDO, fontWeight: 500 }}>{formatPuan(k.toplam)}</span></span>
-              </div>
-            </div>
-          ))}
-        </StatGrid>
-
-        {/* Toplam Puan + Ürün Bazlı Akordeon */}
-        <div className="mb-5">
-          <SectionTitle>toplam puan</SectionTitle>
-          <div className="border rounded-xl p-4" style={{ borderColor: BORDER }}>
-            {/* Toplam Puan — dağılım grafiği (kazanım yeşil / kayıp kırmızı, negatif kayıplar). Tablo = eski liste. */}
-            <DagilimGrafik
-              veri={[
-                { ad: 'Video', puan: data.istatistikler.izleme_puani, renk: '#1D9E75' },
-                { ad: 'Doğru Cevap', puan: data.istatistikler.cevaplama_puani, renk: '#1D9E75' },
-                { ad: 'Öneri', puan: data.istatistikler.oneri_puani, renk: '#1D9E75' },
-                { ad: 'Extra', puan: data.istatistikler.extra_puan, renk: '#1D9E75' },
-                { ad: 'İleri sarma', puan: -data.istatistikler.ileri_sarma_kaybi, renk: BORDO },
-                { ad: 'Yanlış cevap', puan: -data.istatistikler.yanlis_cevap_kaybi, renk: BORDO },
-                { ad: 'Öneri kaybı', puan: -data.istatistikler.oneri_kaybi, renk: BORDO },
-              ]}
-              modlar={['bar', 'line', 'tablo']}
-              apsisAdi="Puan türü"
-              ordinatAdi="Puan"
-              indirAdi="toplam-puan"
-            />
-            <div className="mt-4" />
-            <div className="flex justify-between items-center px-3 py-2.5 rounded-lg mt-2 mb-4" style={{ background: '#FAECE7' }}>
-              <span className="text-sm font-medium" style={{ color: BORDO }}>Toplam puan</span>
-              <span className="text-xl font-semibold" style={{ color: BORDO }}>
-                {formatPuan(data.istatistikler.toplam_net_puan)}
-              </span>
-            </div>
-
-            {/* Eğitim Kategorisi — dağılım grafiği (pie↔bar) + tıkla-drill-down */}
-            {(data.kategori_dagilimi ?? []).length > 0 && (() => {
-              const sirali = [...data.kategori_dagilimi].sort((a, b) => kategoriSirasi(a.icerik_turu) - kategoriSirasi(b.icerik_turu));
-              const kategoriler = sirali.map(k => ({ ad: kategoriAdi(k.icerik_turu), puan: k.toplam_net_puan }));
-              const seciliKat = sirali.find(k => kategoriAdi(k.icerik_turu) === acikKategori) ?? null;
-              return (
-                <div className="mt-3 pt-3" style={{ borderTop: `0.5px solid ${BORDER}` }}>
-                  <div className="text-xs mb-2" style={{ color: GRI_METIN }}>Eğitim Kategori Puanları</div>
-                  <DagilimGrafik veri={kategoriler} secili={acikKategori} onSecim={setAcikKategori} indirAdi="egitim-kategori-dagilimi" />
-                  {seciliKat && (
-                    <div className="mt-3 border rounded-lg p-3" style={{ borderColor: BORDER, background: '#FAFAFA' }}>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium" style={{ color: KOYU_METIN }}>{kategoriAdi(seciliKat.icerik_turu)} · {seciliKat.izlenme_sayisi} izlenme</span>
-                        <span className="text-sm font-semibold" style={{ color: BORDO }}>{formatPuan(seciliKat.toplam_net_puan)}</span>
-                      </div>
-                      {[
-                        { label: 'Video puanı', value: seciliKat.video_puani, renk: KOYU_METIN },
-                        { label: 'Doğru Cevap Puanı', value: seciliKat.soru_puani, renk: '#3B6D11', prefix: '+ ' },
-                        { label: 'Öneri puanı', value: seciliKat.oneri_puani, renk: '#3B6D11', prefix: '+ ' },
-                        { label: 'Extra puan', value: seciliKat.extra_puan, renk: '#3B6D11', prefix: '+ ' },
-                        { label: 'İleri sarma kaybı', value: seciliKat.ileri_sarma_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },
-                        { label: 'Yanlış cevap kaybı', value: seciliKat.yanlis_cevap_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },
-                        { label: 'Öneri kaybı', value: seciliKat.oneri_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },
-                      ].map(s => (
-                        <div key={s.label} className="flex justify-between py-1.5 text-xs" style={{ borderBottom: `0.5px solid ${BORDER}` }}>
-                          <span style={{ color: s.kayip ? KIRMIZI : GRI_METIN }}>{s.label}</span>
-                          <span style={{ color: s.renk, fontWeight: 500 }}>{s.prefix || ''}{formatPuan(Math.abs(s.value ?? 0))}</span>
-                        </div>
-                      ))}
-                      {(seciliKat.teknik_dagilimi ?? []).length > 0 && (
-                        <div className="mt-3 pt-2" style={{ borderTop: `0.5px solid ${BORDER}` }}>
-                          <div className="text-xs mb-1.5" style={{ color: GRI_METIN }}>Teknik dağılımı</div>
-                          {seciliKat.teknik_dagilimi.map(t => (
-                            <div key={t.teknik_adi} className="flex justify-between py-1 text-xs">
-                              <span style={{ color: KOYU_METIN }}>{t.teknik_adi}</span>
-                              <span style={{ color: GRI_METIN }}>{t.izlenme_sayisi} izlenme</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* Ürün Dağılımı — master-detail: solda ürünler, ortada seçili ürünün puan kırılımı */}
-            {(data.urun_dagilimi ?? []).length > 0 && (
-              <div className="mt-3 pt-3" style={{ borderTop: `0.5px solid ${BORDER}` }}>
-                <div className="text-xs mb-2" style={{ color: GRI_METIN }}>Ürün Puan</div>
-                <UrunKirilimPaneli urunler={data.urun_dagilimi} />
-              </div>
-            )}
+        <section className={`${styles.panel} ${styles.section}`}>
+          <div className={styles.sectionHeader}>
+            <div><div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">Kazançlar ve kayıplar</div><h2 className="text-base font-extrabold text-[#20324c]">Puan Akışı</h2><p className="mt-0.5 text-[11px] font-medium text-[#8190a3]">Net puanını oluşturan bütün davranış kalemleri</p></div>
+            <div className={styles.sectionIcon}><Activity className="h-4 w-4" /></div>
           </div>
+          <DagilimGrafik
+            veri={[
+              { ad: 'Video', puan: data.istatistikler.izleme_puani, renk: '#1D9E75' },
+              { ad: 'Doğru Cevap', puan: data.istatistikler.cevaplama_puani, renk: '#1D9E75' },
+              { ad: 'Öneri', puan: data.istatistikler.oneri_puani, renk: '#1D9E75' },
+              { ad: 'Extra', puan: data.istatistikler.extra_puan, renk: '#1D9E75' },
+              { ad: 'İleri sarma', puan: -data.istatistikler.ileri_sarma_kaybi, renk: '#D44B40' },
+              { ad: 'Yanlış cevap', puan: -data.istatistikler.yanlis_cevap_kaybi, renk: '#D44B40' },
+              { ad: 'Öneri kaybı', puan: -data.istatistikler.oneri_kaybi, renk: '#D44B40' },
+            ]}
+            modlar={['bar', 'line', 'tablo']}
+            apsisAdi="Puan türü"
+            ordinatAdi="Puan"
+            indirAdi="toplam-puan"
+            height={270}
+            modern
+          />
+          <div className={styles.insight}><BarChart3 className="mt-0.5 h-4 w-4 shrink-0 text-[#237ac8]" /><span>Bu dönemde <strong>{formatPuan(pozitifToplam)}</strong> pozitif puan ürettin; davranış kayıpları net sonucunu <strong>{formatPuan(toplamKayip)} puan</strong> azalttı.</span></div>
+        </section>
+
+        <div className={styles.analysisGrid}>
+          {(data.kategori_dagilimi ?? []).length > 0 && (() => {
+            const sirali = [...data.kategori_dagilimi].sort((a, b) => kategoriSirasi(a.icerik_turu) - kategoriSirasi(b.icerik_turu));
+            const kategoriler = sirali.map(k => ({ ad: kategoriAdi(k.icerik_turu), puan: k.toplam_net_puan }));
+            const seciliKat = sirali.find(k => kategoriAdi(k.icerik_turu) === acikKategori) ?? null;
+            return (
+              <section className={`${styles.panel} ${styles.section} mb-0`}>
+                <div className={styles.sectionHeader}><div><div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">Nerede güçlüsün?</div><h2 className="text-base font-extrabold text-[#20324c]">Eğitim Kategorileri</h2></div><div className={styles.sectionIcon}><BookOpenCheck className="h-4 w-4" /></div></div>
+                <DagilimGrafik veri={kategoriler} secili={acikKategori} onSecim={setAcikKategori} indirAdi="egitim-kategori-dagilimi" height={250} modern />
+                {seciliKat && (
+                  <div className={styles.detailBox}>
+                    <div className="mb-2 flex items-center justify-between"><span className="text-xs font-extrabold text-[#20324c]">{kategoriAdi(seciliKat.icerik_turu)} · {seciliKat.izlenme_sayisi} izlenme</span><span className="text-sm font-extrabold text-[#237ac8]">{formatPuan(seciliKat.toplam_net_puan)}</span></div>
+                    {[
+                      { label: 'Video puanı', value: seciliKat.video_puani, renk: KOYU_METIN },
+                      { label: 'Doğru cevap puanı', value: seciliKat.soru_puani, renk: '#16865f', prefix: '+ ' },
+                      { label: 'Öneri puanı', value: seciliKat.oneri_puani, renk: '#16865f', prefix: '+ ' },
+                      { label: 'Extra puan', value: seciliKat.extra_puan, renk: '#16865f', prefix: '+ ' },
+                      { label: 'İleri sarma kaybı', value: seciliKat.ileri_sarma_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },
+                      { label: 'Yanlış cevap kaybı', value: seciliKat.yanlis_cevap_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },
+                      { label: 'Öneri kaybı', value: seciliKat.oneri_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },
+                    ].map(s => <div key={s.label} className="flex justify-between border-b border-[#e9eef4] py-1.5 text-[11px]"><span className={s.kayip ? 'text-[#d44b40]' : 'text-[#718198]'}>{s.label}</span><span style={{ color: s.renk, fontWeight: 700 }}>{s.prefix || ''}{formatPuan(Math.abs(s.value ?? 0))}</span></div>)}
+                  </div>
+                )}
+              </section>
+            );
+          })()}
+
+          {(data.urun_dagilimi ?? []).length > 0 && (
+            <section className={`${styles.panel} ${styles.section} mb-0`}>
+              <div className={styles.sectionHeader}><div><div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">Hangi ürün katkı sağladı?</div><h2 className="text-base font-extrabold text-[#20324c]">Ürün Performansı</h2></div><div className={styles.sectionIcon}><Layers3 className="h-4 w-4" /></div></div>
+              <UrunKirilimPaneli urunler={data.urun_dagilimi} modern />
+            </section>
+          )}
         </div>
 
-        <BegeniFavoriListesi
-          begeniListesi={data.begeni_listesi ?? []}
-          favoriListesi={data.favori_listesi ?? []}
-          isUtt={true}
-        />
-
+        <BegeniFavoriListesi begeniListesi={data.begeni_listesi ?? []} favoriListesi={data.favori_listesi ?? []} isUtt modern />
       </div>
     </div>
   );

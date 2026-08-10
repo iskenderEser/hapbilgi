@@ -43,9 +43,10 @@ const dosyaAdi = (s: string) =>
 
 interface Props {
   urunler: UrunKirilim[];
+  modern?: boolean;
 }
 
-export default function UrunKirilimPaneli({ urunler }: Props) {
+export default function UrunKirilimPaneli({ urunler, modern = false }: Props) {
   const [seciliId, setSeciliId] = useState<string>(urunler[0]?.urun_id ?? "");
   const secili = urunler.find((u) => u.urun_id === seciliId) ?? urunler[0];
   if (!secili) return null;
@@ -63,8 +64,8 @@ export default function UrunKirilimPaneli({ urunler }: Props) {
               onClick={() => setSeciliId(u.urun_id)}
               className="text-left px-2 py-1 rounded-md text-xs whitespace-nowrap md:whitespace-normal transition-colors leading-tight"
               style={{
-                border: "0.5px solid #e5e7eb",
-                background: aktif ? "rgba(86,174,255,0.12)" : "#fff",
+                border: modern ? "1px solid transparent" : "0.5px solid #e5e7eb",
+                background: aktif ? (modern ? "#e7f3ff" : "rgba(86,174,255,0.12)") : (modern ? "#f6f8fb" : "#fff"),
                 color: aktif ? "#185fa5" : "#374151",
                 fontWeight: aktif ? 600 : 400,
               }}
@@ -87,6 +88,7 @@ export default function UrunKirilimPaneli({ urunler }: Props) {
           apsisAdi="Puan türü"
           ordinatAdi="Puan"
           indirAdi={`urun-${dosyaAdi(secili.urun_adi)}`}
+          modern={modern}
         />
       </div>
     </div>

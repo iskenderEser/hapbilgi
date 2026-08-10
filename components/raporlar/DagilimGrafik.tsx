@@ -32,6 +32,7 @@ interface Props {
   ordinatAdi?: string;
   modlar?: Mod[];       // varsayılan dört mod; negatif veri olan yerde pie hariç tutulur
   indirAdi?: string;    // PNG indir butonu dosya adı
+  modern?: boolean;
 }
 
 export default function DagilimGrafik({
@@ -43,6 +44,7 @@ export default function DagilimGrafik({
   ordinatAdi = "Puan",
   modlar = ["pie", "bar", "line", "tablo"],
   indirAdi,
+  modern = false,
 }: Props) {
   const [mod, setMod] = useState<Mod>(modlar.includes("pie") ? "pie" : modlar[0]);
   const paletli = veri.some((k) => k.renk); // per-item semantik renk (kazanım/kayıp)
@@ -129,11 +131,11 @@ export default function DagilimGrafik({
   }, [veri, mod, apsisAdi, ordinatAdi, paletli, dar]);
 
   const btnStil = (aktif: boolean): React.CSSProperties => ({
-    padding: "4px 13px", borderRadius: 999, fontSize: 13, cursor: "pointer",
-    border: "0.5px solid #e5e7eb",
-    background: aktif ? "rgba(86,174,255,0.12)" : "#fff",
+    padding: modern ? "6px 12px" : "4px 13px", borderRadius: modern ? 10 : 999, fontSize: modern ? 11 : 13, cursor: "pointer",
+    border: modern ? "1px solid transparent" : "0.5px solid #e5e7eb",
+    background: aktif ? (modern ? "#e7f3ff" : "rgba(86,174,255,0.12)") : (modern ? "#f6f8fb" : "#fff"),
     color: aktif ? "#185fa5" : "#6b7280",
-    fontWeight: aktif ? 600 : 400,
+    fontWeight: aktif ? 700 : modern ? 600 : 400,
   });
 
   const modTanimlari: { key: Mod; etiket: string }[] = [
