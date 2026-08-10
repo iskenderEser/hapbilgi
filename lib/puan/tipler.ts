@@ -35,6 +35,7 @@ export interface IleriSarmaKayipParams {
   atlama_bitis: number;     // saniye
   atlanan_sure: number;     // saniye
   kaybedilen_puan: number;
+  olay_id: string;
 }
 
 export interface OneriKayipParams {
@@ -47,4 +48,5 @@ export interface OneriKayipParams {
 export interface KayitSonuc {
   ok: boolean;
   error?: string;
+  errorCode?: string;
 }

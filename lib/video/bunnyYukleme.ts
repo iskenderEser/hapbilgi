@@ -102,6 +102,17 @@ export interface BunnyVideoDurum {
   hazir: boolean; // izleme + kapak kullanılabilir
   hatali: boolean; // encode başarısız — kullanıcıya dürüstçe söylenir
   bunnyDurum: number;
+  videoSuresiSaniye: number | null;
+}
+
+/** Bunny Get Video cevabındaki `length` alanını güvenilir tam saniyeye çevirir. */
+export function bunnyVideoSuresiCoz(video: unknown): number | null {
+  if (!video || typeof video !== "object") return null;
+  const length = (video as { length?: unknown }).length;
+  if (typeof length !== "number" || !Number.isFinite(length) || !Number.isInteger(length) || length <= 0) {
+    return null;
+  }
+  return length;
 }
 
 /** A3: videonun Bunny tarafındaki işlenme durumu (kart açılışında sorgulanır, polling yok). */
@@ -123,7 +134,13 @@ export async function bunnyVideoDurumu(videoGuid: string): Promise<BunnyVideoDur
   }
   const video = await yanit.json();
   const durum = typeof video?.status === "number" ? video.status : -1;
-  return { ok: true, hazir: durum === 4, hatali: durum === 5 || durum === 6, bunnyDurum: durum };
+  return {
+    ok: true,
+    hazir: durum === 4,
+    hatali: durum === 5 || durum === 6,
+    bunnyDurum: durum,
+    videoSuresiSaniye: bunnyVideoSuresiCoz(video),
+  };
 }
 
 /** Yarım kalan/iptal edilen yüklemenin Bunny kaydını temizler (telafi). */

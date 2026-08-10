@@ -43,6 +43,9 @@ export interface VideoPlayer {
    *  çağrısına gerek kalmadan doğrudan buradan okunabilir. */
   onTimeUpdate(callback: (data: { seconds: number; duration?: number }) => void): void;
 
+  /** Kullanıcı veya uygulama oynatmayı başlattığında tetiklenir. */
+  onPlay(callback: () => void): void;
+
   /** Video sona erdiğinde tetiklenir. NOT: Bazı provider'lar bu event'ı her zaman göndermez —
    *  bu yüzden tüketici kod manuel bitiş tespiti (timeupdate + duration) de yapmalıdır. */
   onEnded(callback: () => void): void;
@@ -58,6 +61,10 @@ export interface VideoPlayer {
 
   /** Oynatma konumunu (saniye) ayarlar. */
   setCurrentTime(seconds: number): void;
+
+  /** Oynatmayı başlatır / duraklatır. */
+  play(): void;
+  pause(): void;
 
   /** Tüm dinleyicileri kaldırır, bellek temizliği yapar. */
   destroy(): void;
@@ -204,6 +211,12 @@ class BunnyAdapter implements VideoPlayer {
     else this.bekleyenEventler.push(kur);
   }
 
+  onPlay(callback: () => void): void {
+    const kur = () => this.player?.on("play", callback);
+    if (this.player) kur();
+    else this.bekleyenEventler.push(kur);
+  }
+
   onEnded(callback: () => void): void {
     const kur = () => this.player?.on("ended", callback);
     if (this.player) kur();
@@ -228,11 +241,20 @@ class BunnyAdapter implements VideoPlayer {
     this.player?.setCurrentTime(seconds);
   }
 
+  play(): void {
+    this.player?.play();
+  }
+
+  pause(): void {
+    this.player?.pause();
+  }
+
   destroy(): void {
     // playerjs'in resmi destroy metodu yok; off ile event'leri kaldırırız.
     try {
       this.player?.off("ready");
       this.player?.off("timeupdate");
+      this.player?.off("play");
       this.player?.off("ended");
       this.player?.off("seeked");
     } catch (e) {

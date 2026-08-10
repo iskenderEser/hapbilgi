@@ -62,7 +62,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
       .order("yayin_tarihi", { ascending: false }),
     adminSupabase
       .from("izleme_kayitlari")
-      .select("yayin_id, tamamlandi_mi, izleme_baslangic, izleme_bitis")
+      .select("yayin_id, tamamlandi_mi, gercek_oynatma_mi, izleme_baslangic, izleme_bitis")
       .eq("kullanici_id", userId),
     adminSupabase.rpc("get_kullanici_ozet", {
       p_kullanici_id: userId,
@@ -92,6 +92,10 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
   const buTurdaIzlemeSayiMap: Record<string, number> = {};   // Ekstra İzlediklerim: "bu turda N izleme"
   const sonIzlemeMap: Record<string, string> = {};           // En Son İzlediklerim: yayın başına en geç tamamlanma anı
   for (const iz of izlemeler ?? []) {
+    // Eski oynatıcı yalnız detay açılışında satır üretirdi. Backfill'de gerçek
+    // oynatma olmadığı belirsiz kalan bu satırlar Yeni/Devam/Tamam sayımına girmez.
+    if (!iz.gercek_oynatma_mi) continue;
+
     if (iz.tamamlandi_mi) {
       omurBoyuTamamlananMap[iz.yayin_id] = true;
       omurBoyuIzlemeSayiMap[iz.yayin_id] = (omurBoyuIzlemeSayiMap[iz.yayin_id] ?? 0) + 1;
@@ -141,7 +145,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
       ? adminSupabase.from("video_favoriler").select("yayin_id").in("yayin_id", yayinIdler).eq("kullanici_id", userId)
       : { data: [] },
     yayinIdler.length > 0
-      ? adminSupabase.from("izleme_kayitlari").select("yayin_id").in("yayin_id", yayinIdler).eq("tamamlandi_mi", true)
+      ? adminSupabase.from("izleme_kayitlari").select("yayin_id").in("yayin_id", yayinIdler).eq("tamamlandi_mi", true).eq("gercek_oynatma_mi", true)
       : { data: [] },
   ]);
 
@@ -188,6 +192,11 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
     begeni_mi: kullaniciBegeniSet.has(y.yayin_id),
     favori_mi: kullaniciFavoriSet.has(y.yayin_id),
     daha_once_izledi: omurBoyuTamamlananMap[y.yayin_id] ?? false,
+    durum: tamamlananMap[y.yayin_id]
+      ? "tamamlanan"
+      : devamEdenMap[y.yayin_id]
+        ? "devam"
+        : "yeni",
   });
 
   const yeni_videolar = (yayinlar ?? []).filter((y: any) => !tamamlananMap[y.yayin_id] && !devamEdenMap[y.yayin_id]).map(videoToItem);

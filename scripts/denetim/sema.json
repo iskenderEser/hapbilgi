@@ -1,7 +1,7 @@
 {
   "uretim_tarihi": "2026-08-06T05:57:01.080Z",
   "tablo_sayisi": 97,
-  "rpc_sayisi": 65,
+  "rpc_sayisi": 66,
   "tablolar": {
     "analiz_tuketim_degiskenleri": {
       "tur": "BASE TABLE",
@@ -1695,6 +1695,10 @@
         "urun_id": {
           "tip": "uuid",
           "nullable": true
+        },
+        "olay_id": {
+          "tip": "uuid",
+          "nullable": true
         }
       }
     },
@@ -1734,6 +1738,30 @@
           "nullable": true
         },
         "oneri_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "gercek_oynatma_mi": {
+          "tip": "boolean",
+          "nullable": false
+        },
+        "soru_hakki_var_mi": {
+          "tip": "boolean",
+          "nullable": true
+        },
+        "soru_hakki_nedeni": {
+          "tip": "text",
+          "nullable": true
+        },
+        "soru_indeksleri": {
+          "tip": "ARRAY",
+          "nullable": true
+        },
+        "video_suresi_saniye": {
+          "tip": "integer",
+          "nullable": true
+        },
+        "baslat_olay_id": {
           "tip": "uuid",
           "nullable": true
         }
@@ -3858,6 +3886,10 @@
         "kaynak": {
           "tip": "text",
           "nullable": false
+        },
+        "video_suresi_saniye": {
+          "tip": "integer",
+          "nullable": true
         }
       }
     },
@@ -4233,6 +4265,10 @@
     "test_veri_temizle": {
       "argumanlar": "p_mod text, p_firma_id uuid, p_talep_id uuid",
       "donus": "jsonb"
+    },
+    "utt_izleme_tamamla": {
+      "argumanlar": "p_izleme_id uuid, p_kullanici_id uuid, p_soru_hakki_var_mi boolean, p_soru_hakki_nedeni text, p_soru_indeksleri integer[]",
+      "donus": "TABLE(izleme_id uuid, tamamlandi_mi boolean, yeni_tamamlandi boolean, soru_hakki_var_mi boolean, soru_hakki_nedeni text, soru_indeksleri integer[], izleme_bitis timestamp with time zone)"
     },
     "yayin_planlananlari_aktive": {
       "argumanlar": "p_yayin_id uuid",

@@ -64,7 +64,7 @@ export async function kazanilanPuanKaydet(
     console.error('[lib/puan] kazanilanPuanKaydet hatası:', {
       yayin_id: params.yayin_id, puan_turu: params.puan_turu, hata: error.message,
     });
-    return { ok: false, error: error.message };
+    return { ok: false, error: error.message, errorCode: error.code };
   }
   return { ok: true };
 }
@@ -93,7 +93,7 @@ export async function yanlisCevapKaybiKaydet(
     console.error('[lib/puan] yanlisCevapKaybiKaydet hatası:', {
       yayin_id: params.yayin_id, soru_index: params.soru_index, hata: error.message,
     });
-    return { ok: false, error: error.message };
+    return { ok: false, error: error.message, errorCode: error.code };
   }
   return { ok: true };
 }
@@ -119,13 +119,14 @@ export async function ileriSarmaKaybiKaydet(
       atlama_bitis: params.atlama_bitis,
       atlanan_sure: params.atlanan_sure,
       kaybedilen_puan: params.kaybedilen_puan,
+      olay_id: params.olay_id,
     });
 
   if (error) {
     console.error('[lib/puan] ileriSarmaKaybiKaydet hatası:', {
       yayin_id: params.yayin_id, hata: error.message,
     });
-    return { ok: false, error: error.message };
+    return { ok: false, error: error.message, errorCode: error.code };
   }
   return { ok: true };
 }

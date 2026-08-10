@@ -1,36 +1,26 @@
-// app/izle/api/sorular/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
-import { rastgeleSoruSec } from "@/lib/soru/secim";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
-
-// Yayında video_basi_soru_sayisi tanımlı değilse kullanılacak varsayılan değer.
-// Platform standardı: video başına 2 soru.
-const VARSAYILAN_SORU_SAYISI = 2;
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const adminSupabase = createAdminClient();
-
     const rol = await rolCozucu(adminSupabase, user.id);
     if (!TUKETICI_ROLLER.includes(rol)) return rolHatasi("Sadece utt ve kd_utt soruları görebilir.");
 
     const { searchParams } = new URL(request.url);
     const izleme_id = searchParams.get("izleme_id");
-
     if (!izleme_id) return validasyonHatasi("izleme_id zorunludur.", ["izleme_id"]);
 
-    // İzleme kaydını kontrol et
     const { data: izleme, error: izlemeError } = await adminSupabase
       .from("izleme_kayitlari")
-      .select("izleme_id, yayin_id, kullanici_id, tamamlandi_mi")
+      .select("izleme_id, yayin_id, kullanici_id, tamamlandi_mi, soru_hakki_var_mi, soru_hakki_nedeni, soru_indeksleri")
       .eq("izleme_id", izleme_id)
       .single();
 
@@ -39,55 +29,49 @@ export async function GET(request: NextRequest) {
     if (izlemeError) return hataYaniti("İzleme kaydı sorgulanırken hata oluştu.", "izleme_kayitlari tablosu SELECT", izlemeError, 404);
     if (izleme.kullanici_id !== user.id) return rolHatasi("Bu izleme kaydına erişim yetkiniz yok.");
     if (!izleme.tamamlandi_mi) return isKuraluHatasi("Sorular ancak video tamamlandıktan sonra gösterilebilir.");
+    if (!izleme.soru_hakki_var_mi) {
+      return isKuraluHatasi(`Bu izleme için soru hakkı bulunmuyor (${izleme.soru_hakki_nedeni ?? "uygun_degil"}).`);
+    }
 
-    // Daha önce cevap verildi mi?
-    const { data: oncekiCevap, error: ocError } = await adminSupabase
+    const soruIndeksleri = izleme.soru_indeksleri as number[] | null;
+    if (!Array.isArray(soruIndeksleri) || soruIndeksleri.length === 0) {
+      return hataYaniti("İzlemeye atanmış soru seti bulunamadı.", "izleme_kayitlari.soru_indeksleri", null);
+    }
+
+    const { data: oncekiCevap, error: cevapError } = await adminSupabase
       .from("soru_cevaplari")
       .select("soru_cevap_id")
       .eq("izleme_id", izleme_id)
       .limit(1);
-
-    if (ocError) return hataYaniti("Önceki cevaplar kontrol edilemedi.", "soru_cevaplari tablosu SELECT", ocError);
+    if (cevapError) return hataYaniti("Önceki cevaplar kontrol edilemedi.", "soru_cevaplari tablosu SELECT", cevapError);
     if ((oncekiCevap ?? []).length > 0) return isKuraluHatasi("Bu izleme için sorular zaten cevaplandı.");
 
-    // v_yayin_detay ile tek sorguda sorular + video_basi_soru_sayisi — 5 sorgu → 1 sorgu
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("sorular, video_basi_soru_sayisi")
+      .select("sorular")
       .eq("yayin_id", izleme.yayin_id)
       .single();
-
-    if (yayinError || !yayin) return hataYaniti("Yayın bilgisi alınamadı.", "v_yayin_detay SELECT", yayinError, 404);
-
-    const videoBasiSoruSayisi = yayin.video_basi_soru_sayisi ?? VARSAYILAN_SORU_SAYISI;
-
-    if (!yayin.sorular || yayin.sorular.length < videoBasiSoruSayisi) {
-      return hataYaniti(
-        `Soru setinde yeterli soru bulunamadı. Gerekli: ${videoBasiSoruSayisi}, mevcut: ${yayin.sorular?.length ?? 0}`,
-        "v_yayin_detay — sorular kontrolü",
-        null,
-        404
-      );
+    if (yayinError || !yayin || !Array.isArray(yayin.sorular)) {
+      return hataYaniti("Yayın soru seti alınamadı.", "v_yayin_detay SELECT — sabit sorular", yayinError, 404);
     }
 
-    // Rastgele soru seçimi — lib/soru/secim.ts (Fisher-Yates shuffle).
-    // orijinalIndex alanı eklenir; cevap doğrulaması için kullanılır (soru_index = orijinal konum).
-    const secilenler = rastgeleSoruSec(yayin.sorular as any[], videoBasiSoruSayisi);
-
-    // GÜVENLİK: 'dogru' alanı client'a SIZDIRILMAMALI. Aşağıdaki map yalnızca
-    // { harf, metin } alanlarını döndürür; 'dogru' kasıtlı olarak düşürülür.
-    // Bu mantık değiştirilirse doğru cevaplar client'a sızar → cevap endpoint'i devre dışı kalır.
-    const secilenSorular = secilenler.map((s: any) => ({
-      soru_index: s.orijinalIndex,
-      soru_metni: s.soru_metni,
-      secenekler: s.secenekler.map((se: any) => ({
-        harf: se.harf,
-        metin: se.metin,
-      })),
-    }));
+    const secilenSorular = soruIndeksleri.map((soru_index) => {
+      const soru = yayin.sorular?.[soru_index];
+      if (!soru || !Array.isArray(soru.secenekler)) return null;
+      return {
+        soru_index,
+        soru_metni: soru.soru_metni,
+        secenekler: soru.secenekler.map((secenek: { harf: string; metin: string }) => ({
+          harf: secenek.harf,
+          metin: secenek.metin,
+        })),
+      };
+    });
+    if (secilenSorular.some((soru) => soru === null)) {
+      return hataYaniti("Atanmış soru indekslerinden biri güncel soru setinde bulunamadı.", "izleme_kayitlari.soru_indeksleri", null);
+    }
 
     return NextResponse.json({ sorular: secilenSorular }, { status: 200 });
-
   } catch (err) {
     return sunucuHatasi(err, "GET /izle/api/sorular");
   }

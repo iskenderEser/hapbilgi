@@ -12,6 +12,8 @@ import { IcerikTuru, TUR_BASLIK } from "@/lib/video/icerikTuru";
 import { anaSayfaRaflari } from "@/lib/video/anaSayfaRaflari";
 import { talepIdGoster } from "@/lib/utils/talepId";
 
+type VideoDurumu = "yeni" | "devam" | "tamamlanan";
+
 interface Video {
   yayin_id: string;
   talep_no?: number | null;
@@ -32,6 +34,7 @@ interface Video {
   favori_mi: boolean;
   daha_once_izledi: boolean;
   icerik_turu: IcerikTuru | null;
+  durum: VideoDurumu;
 }
 
 // Ekstra İzlediklerim satırı — Video + tekrar/extra sayaç alanları (K-A5)
@@ -110,15 +113,19 @@ const VideoKart = ({
           </div>
         )}
         
-        {/* Yeni etiketi - sadece izlenmemişse göster */}
-        {!video.daha_once_izledi && (
+        {video.durum === "yeni" && (
           <div className="absolute top-1.5 right-1.5 bg-blue-500 text-white text-[10px] px-1.5 py-0.5 rounded-full shadow-sm">
             Yeni
           </div>
         )}
-        
-        {/* İzlendi etiketi - sadece izlenmişse göster */}
-        {video.daha_once_izledi && (
+
+        {video.durum === "devam" && (
+          <div className="absolute top-1.5 right-1.5 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
+            Yarım Kaldı
+          </div>
+        )}
+
+        {video.durum === "tamamlanan" && (
           <div className="absolute top-1.5 right-1.5 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded-full">
             ✓ İzlendi
           </div>
@@ -186,6 +193,12 @@ const VideoKart = ({
             style={{ background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe" }}>
             {kalanGun(video.sonraki_tur_tarihi)} gün sonra yeniden puanlı
           </span>
+        )}
+        {video.durum === "devam" && (
+          <div className="mt-2 flex items-center justify-between rounded-lg bg-amber-50 px-2 py-1.5 text-[10px] font-bold text-amber-700">
+            <span>Baştan İzle</span>
+            <span aria-hidden="true">→</span>
+          </div>
         )}
       </div>
     </div>
@@ -261,6 +274,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
   const [loading, setLoading] = useState(true);
   const [aktifVideo, setAktifVideo] = useState<Video | null>(null);
   const [aktifOneriId, setAktifOneriId] = useState<string | null>(null);
+  const [aktifDurumFiltresi, setAktifDurumFiltresi] = useState<VideoDurumu | null>(null);
   const { mesajlar, hata, basari, uyari } = useHataMesaji();
 
   const veriCek = async (sessiz = false) => {
@@ -414,6 +428,18 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
   const istat = uttVeri?.istatistikler ?? { yeni: 0, devam: 0, tamamlanan: 0, hafta_puani: 0, toplam_puan: 0 };
   const ad = adSoyad.split(" ")[0] || "Temsilci";
 
+  const durumListeleri: Record<VideoDurumu, Video[]> = {
+    yeni: uttVeri?.yeni_videolar ?? [],
+    devam: uttVeri?.devam_edenler ?? [],
+    tamamlanan: uttVeri?.tamamlananlar ?? [],
+  };
+  const aktifDurumVideolari = aktifDurumFiltresi ? durumListeleri[aktifDurumFiltresi] : [];
+  const durumBasliklari: Record<VideoDurumu, string> = {
+    yeni: "Yeni Videolar",
+    devam: "Yarım Kalan Videolar",
+    tamamlanan: "Tamamlanan Videolar",
+  };
+
   const tumVideolar = [
     ...(uttVeri?.yeni_videolar ?? []),
     ...(uttVeri?.devam_edenler ?? []),
@@ -448,24 +474,85 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
       {/* Stat kartlar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
         {[
-          { label: "Yeni Videolar", value: istat.yeni, sub: "Henüz izlenmedi", renk: "#bc2d0d", filtre: "yeni" },
-          { label: "Devam Eden", value: istat.devam, sub: "Yarıda bırakılan", renk: "#f59e0b", filtre: "devam" },
-          { label: "Tamamlanan", value: istat.tamamlanan, sub: "İzlendi ve tamamlandı", renk: "#16a34a", filtre: "tamamlanan" },
-          { label: "Bu Haftaki Puan", value: istat.hafta_puani, sub: `Toplam: ${istat.toplam_puan.toLocaleString("tr-TR")} p`, renk: "#56aeff", filtre: "" },
-        ].map((k, idx) => (
-          <div
-            key={idx}
-            className="bg-white border border-gray-200 rounded-xl p-3 md:p-5"
-            style={{ borderLeft: `3px solid ${k.renk}` }}
-          >
-            <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">{k.label}</div>
-            <div className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-none">{k.value.toLocaleString("tr-TR")}</div>
-            <div className="hidden md:block text-xs text-gray-500 mt-1.5">{k.sub}</div>
-          </div>
-        ))}
+          { label: "Yeni Videolar", value: istat.yeni, sub: "Henüz izlenmedi", renk: "#bc2d0d", filtre: "yeni" as VideoDurumu },
+          { label: "Devam Eden", value: istat.devam, sub: "Yarıda bırakılan", renk: "#f59e0b", filtre: "devam" as VideoDurumu },
+          { label: "Tamamlanan", value: istat.tamamlanan, sub: "İzlendi ve tamamlandı", renk: "#16a34a", filtre: "tamamlanan" as VideoDurumu },
+          { label: "Bu Haftaki Puan", value: istat.hafta_puani, sub: `Toplam: ${istat.toplam_puan.toLocaleString("tr-TR")} p`, renk: "#56aeff", filtre: null },
+        ].map((k, idx) => {
+          const secili = k.filtre ? aktifDurumFiltresi === k.filtre : false;
+          const ortakSinif = "bg-white border border-gray-200 border-l-[3px] [border-left-color:var(--stat-renk)] rounded-xl p-3 text-left md:p-5 transition-all";
+          const ortakStil = {
+            "--stat-renk": k.renk,
+            boxShadow: secili ? `0 0 0 2px ${k.renk}22` : "none",
+          } as React.CSSProperties;
+          const icerik = (
+            <>
+              <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">{k.label}</div>
+              <div className="text-2xl md:text-3xl font-extrabold text-gray-900 leading-none">{k.value.toLocaleString("tr-TR")}</div>
+              <div className="hidden md:block text-xs text-gray-500 mt-1.5">{k.sub}</div>
+            </>
+          );
+
+          return k.filtre ? (
+            <button
+              type="button"
+              key={idx}
+              onClick={() => setAktifDurumFiltresi(secili ? null : k.filtre)}
+              aria-pressed={secili}
+              className={`${ortakSinif} cursor-pointer hover:-translate-y-0.5 hover:shadow-md`}
+              style={ortakStil}
+            >
+              {icerik}
+            </button>
+          ) : (
+            <div key={idx} className={`${ortakSinif} cursor-default`} style={ortakStil}>
+              {icerik}
+            </div>
+          );
+        })}
       </div>
 
       {/* Sıralı içerik: Tümü -> En Son İzlediklerim -> Ekstra -> En Çok İzlenenler -> En Çok Beğenilenler -> Departmanlar */}
+
+      {aktifDurumFiltresi ? (
+        <section>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="m-0 text-base font-extrabold text-gray-900 md:text-lg">{durumBasliklari[aktifDurumFiltresi]}</h2>
+              <p className="mt-1 text-xs text-gray-500">
+                {aktifDurumFiltresi === "devam"
+                  ? "Yarım kalan videolar yeniden açıldığında baştan başlar."
+                  : `${aktifDurumVideolari.length} video`}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAktifDurumFiltresi(null)}
+              className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-600 hover:border-gray-300 hover:text-gray-900"
+            >
+              Tümünü Göster
+            </button>
+          </div>
+          {aktifDurumVideolari.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-400">
+              Bu durumda video bulunmuyor.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+              {aktifDurumVideolari.map((video) => (
+                <VideoKart
+                  key={video.yayin_id}
+                  video={video}
+                  onVideoClick={handleVideoClick}
+                  onBegeni={handleBegeni}
+                  onFavori={handleFavori}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      ) : (
+        <>
 
       {/* Tümü rafı — TÜM videolar, random sırayla, yatay kayan raf (limitsiz) */}
       {raflar.tumuRafi.length > 0 && (
@@ -592,6 +679,8 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
             onFavori={handleFavori}
           />
         ))
+      )}
+        </>
       )}
 
       <HataMesajiContainer mesajlar={mesajlar} />

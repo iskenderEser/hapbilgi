@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     const { data: izleme, error: izlemeError } = await adminSupabase
       .from("izleme_kayitlari")
-      .select("izleme_id, yayin_id, kullanici_id, tamamlandi_mi")
+      .select("izleme_id, yayin_id, kullanici_id, tamamlandi_mi, soru_hakki_var_mi, soru_hakki_nedeni, soru_indeksleri")
       .eq("izleme_id", izleme_id)
       .single();
 
@@ -38,6 +38,23 @@ export async function POST(request: NextRequest) {
     if (izlemeError) return hataYaniti("İzleme kaydı sorgulanırken hata oluştu.", "izleme_kayitlari tablosu SELECT", izlemeError, 404);
     if (izleme.kullanici_id !== user.id) return rolHatasi("Bu izleme kaydına erişim yetkiniz yok.");
     if (!izleme.tamamlandi_mi) return isKuraluHatasi("Cevaplar ancak video tamamlandıktan sonra gönderilebilir.");
+    if (!izleme.soru_hakki_var_mi) {
+      return isKuraluHatasi(`Bu izleme için soru hakkı bulunmuyor (${izleme.soru_hakki_nedeni ?? "uygun_degil"}).`);
+    }
+
+    const atanmisIndeksler = izleme.soru_indeksleri as number[] | null;
+    const gelenIndeksler = cevaplar.map((cevap: any) => cevap?.soru_index);
+    const gelenBenzersiz = new Set(gelenIndeksler);
+    if (
+      !Array.isArray(atanmisIndeksler)
+      || atanmisIndeksler.length === 0
+      || gelenBenzersiz.size !== gelenIndeksler.length
+      || gelenIndeksler.length !== atanmisIndeksler.length
+      || gelenIndeksler.some((indeks: unknown) => typeof indeks !== "number" || !atanmisIndeksler.includes(indeks))
+      || cevaplar.some((cevap: any) => typeof cevap?.verilen_cevap !== "string" || cevap.verilen_cevap.trim().length === 0)
+    ) {
+      return validasyonHatasi("Cevaplar, izlemeye atanmış soru kümesiyle birebir eşleşmelidir.", ["cevaplar"]);
+    }
 
     const { data: oncekiCevap, error: ocError } = await adminSupabase
       .from("soru_cevaplari")
@@ -96,42 +113,46 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (!Array.isArray(soruSeti.sorular)) {
+      return hataYaniti("Soru seti geçerli değil.", "soru_setleri.sorular", null);
+    }
+
+    const cevapSonuclari = cevaplar.map((cevap: { soru_index: number; verilen_cevap: string }) => {
+      const soru = soruSeti.sorular?.[cevap.soru_index];
+      if (!soru) return null;
+      const { dogru_mu, dogru_secenek } = cevapDogruMu(soru, cevap.verilen_cevap);
+      return {
+        soru_index: cevap.soru_index,
+        verilen_cevap: cevap.verilen_cevap,
+        dogru_mu,
+        dogru_cevap: dogru_secenek,
+      };
+    });
+    if (cevapSonuclari.some((sonuc) => sonuc === null)) {
+      return validasyonHatasi("Atanmış sorulardan biri soru setinde bulunamadı.", ["cevaplar"]);
+    }
+
+    // Tüm cevaplar tek INSERT ifadesinde yazılır: bir satır hata verirse hiçbir
+    // cevap kısmen kalmaz. Unique indeks aynı izleme+soruyu ikinci kez engeller.
+    const { error: cevapYazmaError } = await adminSupabase
+      .from("soru_cevaplari")
+      .insert(cevapSonuclari.map((sonuc) => ({
+        izleme_id,
+        kullanici_id: user.id,
+        soru_index: sonuc!.soru_index,
+        verilen_cevap: sonuc!.verilen_cevap,
+        dogru_mu: sonuc!.dogru_mu,
+      })));
+    if (cevapYazmaError) {
+      if (cevapYazmaError.code === "23505") return isKuraluHatasi("Bu izleme için sorular zaten cevaplandı.");
+      return hataYaniti("Cevaplar kaydedilemedi.", "soru_cevaplari toplu INSERT", cevapYazmaError);
+    }
+
     let kazanilanPuan = 0;
-    // B-08: puan/kayıt yazım hataları yutulmaz — loglanır VE yanıtta bildirilir.
     const puanUyarilari: string[] = [];
-    const cevapSonuclari = [];
 
-    for (const cevap of cevaplar) {
-      const { soru_index, verilen_cevap } = cevap;
-
-      if (soru_index === undefined || soru_index === null) {
-        console.error("[UYARI] Geçersiz soru_index:", { soru_index });
-        continue;
-      }
-
-      const soru = soruSeti.sorular?.[soru_index];
-      if (!soru) {
-        console.error("[UYARI] Soru bulunamadı:", { soru_index, toplam_soru: soruSeti.sorular?.length });
-        continue;
-      }
-
-      // Doğru cevap kontrolü — lib/soru/kontrol.ts
-      const { dogru_mu, dogru_secenek } = cevapDogruMu(soru, verilen_cevap);
-
-      const { error: cevapError } = await adminSupabase
-        .from("soru_cevaplari")
-        .insert({
-          izleme_id,
-          kullanici_id: user.id,
-          soru_index,
-          verilen_cevap,
-          dogru_mu,
-        });
-
-      if (cevapError) {
-        console.error("[UYARI] Cevap kaydedilemedi:", { soru_index, hata: cevapError.message });
-      }
-
+    for (const cevapSonucu of cevapSonuclari) {
+      const { soru_index, dogru_mu } = cevapSonucu!;
       if (dogru_mu) {
         // Doğru cevap → cevaplama puanı. Bu sorunun kendi puanı (soru_puani).
         const o_soru_puani = soruPuanMap.get(soru_index) ?? 0;
@@ -174,12 +195,6 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      cevapSonuclari.push({
-        soru_index,
-        verilen_cevap,
-        dogru_mu,
-        dogru_cevap: dogru_secenek,
-      });
     }
 
     return NextResponse.json({

@@ -14,6 +14,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { createVideoPlayer, type VideoPlayer } from "@/lib/video/videoPlayer";
+import { oynatmaBaslatilmaliMi } from "@/lib/izleme/baslat";
 import VideoCercevesi from "@/components/video/VideoCercevesi";
 
 interface OynaticiVideo {
@@ -85,7 +86,6 @@ interface Props {
 
 export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVeriYenile, hata, basari, uyari }: Props) {
   const [izlemeId, setIzlemeId] = useState<string | null>(null);
-  const [izlemeBasladi, setIzlemeBasladi] = useState(false);
   const [izlemeTamamlandi, setIzlemeTamamlandi] = useState(false);
   const [sorular, setSorular] = useState<Soru[]>([]);
   const [soruGosterilecek, setSoruGosterilecek] = useState(false);
@@ -97,10 +97,12 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
   const [bekleyenSeekBitis, setBekleyenSeekBitis] = useState<number | null>(null);
 
   const maxIzlenenRef = useRef<number>(0);
-  const ileriSarilanToplamRef = useRef<number>(0);
   const izlemeIdRef = useRef<string | null>(null);
   const izlemeBitirildiRef = useRef<boolean>(false);
   const baslatTetiklendiRef = useRef<string | null>(null);
+  const baslatiliyorRef = useRef<boolean>(false);
+  const baslatOlayIdRef = useRef<string | null>(null);
+  const ileriSarmaOlayIdRef = useRef<string | null>(null);
   const videoSuresiRef = useRef<number>(0);
   const playerRef = useRef<VideoPlayer | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -108,7 +110,8 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
   // birleşik toast'ta izleme + doğru cevaplama tek mesajda gösterilsin diye saklanır.
   const izlemeKalemleriRef = useRef<PuanKalemi[]>([]);
 
-  // Video değiştiğinde: TÜM state sıfırlanır ve yeni baslat tetiklenir.
+  // Video değiştiğinde tüm durum sıfırlanır. İzleme kaydı burada değil,
+  // kullanıcının ilk gerçek oynatma olayında açılır.
   // Aynı VideoOynatici örneği farklı videoyu oynattığında temiz başlangıç sağlar.
   useEffect(() => {
     if (!tuketici) return;
@@ -116,7 +119,6 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
     if (baslatTetiklendiRef.current === video.yayin_id) return;
 
     setIzlemeId(null);
-    setIzlemeBasladi(false);
     setIzlemeTamamlandi(false);
     setSorular([]);
     setSoruGosterilecek(false);
@@ -128,9 +130,11 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
 
     izlemeIdRef.current = null;
     izlemeBitirildiRef.current = false;
+    baslatiliyorRef.current = false;
+    baslatOlayIdRef.current = null;
+    ileriSarmaOlayIdRef.current = null;
     izlemeKalemleriRef.current = [];
     maxIzlenenRef.current = 0;
-    ileriSarilanToplamRef.current = 0;
     videoSuresiRef.current = 0;
 
     // Önceki player'ı temizle (varsa)
@@ -140,8 +144,6 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
     }
 
     baslatTetiklendiRef.current = video.yayin_id;
-
-    handleIzlemeBaslat();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tuketici, video.yayin_id]);
 
@@ -154,7 +156,7 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
   // tetikleyici olabilir. İki yol da `izlemeBitirildiRef` ile korunur,
   // çift `bitir` çağrısı imkansız.
   useEffect(() => {
-    if (!tuketici || !izlemeBasladi || !iframeRef.current || !video.video_url) return;
+    if (!tuketici || !iframeRef.current || !video.video_url) return;
 
     let player: VideoPlayer;
     try {
@@ -166,14 +168,40 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
     playerRef.current = player;
 
     maxIzlenenRef.current = 0;
-    ileriSarilanToplamRef.current = 0;
 
     player.onReady(() => {
+      // Provider önceki konumu hatırlasa dahi her gerçek deneme sıfırdan başlar.
+      // Bu sistem sıfırlaması ileri sarma sayılmaz.
+      player.setCurrentTime(0);
+
+      const gercekOynatmayiBaslat = () => {
+        if (!oynatmaBaslatilmaliMi({
+          tuketici,
+          izlemeId: izlemeIdRef.current,
+          baslatiliyor: baslatiliyorRef.current,
+        })) return;
+
+        // Sunucu oturumu açılana kadar oynatma ilerlemez. Başarılı yanıttan sonra
+        // yine sıfırdan başlatılır; yalın sayfa açılışı DB kaydı üretmez.
+        player.pause();
+        player.setCurrentTime(0);
+        void handleIzlemeBaslat(player);
+      };
+
+      player.onPlay(gercekOynatmayiBaslat);
+
       // İzleme ilerleyişi, ileri sarma denetimi ve bitiş tespiti tek timeupdate
       // akışından yürür. Süre canlı payload'dan okunur (getDuration'a gerek yok);
       // video geç yüklense de kendini onarır ve ileri sarma puan kaybı bu süreye
       // bağlı olduğundan doğru beslenir.
       player.onTimeUpdate((data: { seconds: number; duration?: number }) => {
+        // Bazı provider/sürümlerde play olayı kaçarsa ilk gerçek ilerleme güvenli
+        // yedektir; oturum açılana kadar konumu sıfıra geri alır.
+        if (!izlemeIdRef.current) {
+          if (data.seconds > 0) gercekOynatmayiBaslat();
+          return;
+        }
+
         if (data.duration && data.duration > 0) {
           videoSuresiRef.current = data.duration;
         }
@@ -205,8 +233,13 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
       // reddederse kaldığı yerden devam eder.
       player.onSeeked(() => {
         player.getCurrentTime((current: number) => {
+          if (!izlemeIdRef.current) {
+            player.setCurrentTime(0);
+            return;
+          }
           if (current > maxIzlenenRef.current + 1) {
             setBekleyenSeekBitis(current);
+            ileriSarmaOlayIdRef.current = crypto.randomUUID();
             setIleriSarmaModal(true);
             player.setCurrentTime(maxIzlenenRef.current);
           }
@@ -215,7 +248,7 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
 
       // ended — yedek bitiş tetikleyicisi (provider gönderirse daha erken yakalar).
       player.onEnded(() => {
-        if (izlemeBitirildiRef.current) return;
+        if (!izlemeIdRef.current || izlemeBitirildiRef.current) return;
         izlemeBitirildiRef.current = true;
         handleIzlemeBitir();
       });
@@ -227,67 +260,146 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
       if (playerRef.current === player) playerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [izlemeBasladi, video.yayin_id, tuketici]);
+  }, [video.yayin_id, tuketici]);
 
   const handleIleriSarmaOnayla = async () => {
-    if (!izlemeId || bekleyenSeekBitis === null) return;
+    const id = izlemeIdRef.current ?? izlemeId;
+    if (!id || bekleyenSeekBitis === null) return;
     setIleriSarmaModal(false);
-    const atlanan = bekleyenSeekBitis - maxIzlenenRef.current;
-    const sure = videoSuresiRef.current;
-    const saniyeBasiPuan = (video.video_puani ?? 0) > 0 && sure > 0 ? (video.video_puani! / sure) : 0;
-    const kaybedilenPuan = Math.round(saniyeBasiPuan * atlanan);
-    ileriSarilanToplamRef.current += atlanan;
-    await fetch("/izle/api/ileri-sarma", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ yayin_id: video.yayin_id, izleme_id: izlemeId, atlama_baslangic: Math.round(maxIzlenenRef.current), atlama_bitis: Math.round(bekleyenSeekBitis), atlanan_sure: Math.round(atlanan), kaybedilen_puan: kaybedilenPuan }),
-    });
-    if (playerRef.current) { playerRef.current.setCurrentTime(bekleyenSeekBitis); maxIzlenenRef.current = bekleyenSeekBitis; }
-    setBekleyenSeekBitis(null);
+    setIslemLoading(true);
+    ileriSarmaOlayIdRef.current ??= crypto.randomUUID();
+
+    try {
+      const res = await fetch("/izle/api/ileri-sarma", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          izleme_id: id,
+          olay_id: ileriSarmaOlayIdRef.current,
+          atlama_baslangic: maxIzlenenRef.current,
+          atlama_bitis: bekleyenSeekBitis,
+        }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        hata(d.hata ?? "İleri sarma kaydedilemedi.", d.adim, d.detay);
+        setIleriSarmaModal(true);
+        return;
+      }
+
+      if (playerRef.current) {
+        playerRef.current.setCurrentTime(bekleyenSeekBitis);
+        maxIzlenenRef.current = bekleyenSeekBitis;
+      }
+      if ((d.kaybedilen_puan ?? 0) > 0) {
+        uyari(`İleri sarma kaydedildi: ${d.kaybedilen_puan} puan kaybettiniz.`);
+      } else {
+        uyari("İleri sarma kaydedildi. Bu izleme için soru hakkı kapandı.");
+      }
+      setBekleyenSeekBitis(null);
+      ileriSarmaOlayIdRef.current = null;
+    } catch (err) {
+      hata("İleri sarma kaydedilemedi.", "POST /izle/api/ileri-sarma", err);
+      setIleriSarmaModal(true);
+    } finally {
+      setIslemLoading(false);
+    }
   };
 
-  const handleIleriSarmaReddet = () => { setIleriSarmaModal(false); setBekleyenSeekBitis(null); };
+  const handleIleriSarmaReddet = () => {
+    setIleriSarmaModal(false);
+    setBekleyenSeekBitis(null);
+    ileriSarmaOlayIdRef.current = null;
+  };
 
-  const handleIzlemeBaslat = async () => {
+  const handleIzlemeBaslat = async (player: VideoPlayer) => {
+    if (!oynatmaBaslatilmaliMi({
+      tuketici,
+      izlemeId: izlemeIdRef.current,
+      baslatiliyor: baslatiliyorRef.current,
+    })) return;
+
+    baslatiliyorRef.current = true;
     setIslemLoading(true);
-    const body = oneri_id
-      ? { yayin_id: video.yayin_id, izleme_turu: "oneri", oneri_id }
-      : { yayin_id: video.yayin_id, izleme_turu: "kendi_kendine" };
-    const res = await fetch("/izle/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    const d = await res.json();
-    if (!res.ok) { hata(d.hata ?? "İzleme başlatılamadı.", d.adim, d.detay); setIslemLoading(false); return; }
-    setIzlemeId(d.izleme.izleme_id);
-    izlemeIdRef.current = d.izleme.izleme_id;
-    setIzlemeBasladi(true);
-    setIslemLoading(false);
+    baslatOlayIdRef.current ??= crypto.randomUUID();
+
+    try {
+      const body = {
+        yayin_id: video.yayin_id,
+        oneri_id: oneri_id ?? null,
+        baslat_olay_id: baslatOlayIdRef.current,
+      };
+      const res = await fetch("/izle/api/baslat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        hata(d.hata ?? "İzleme başlatılamadı.", d.adim, d.detay);
+        player.setCurrentTime(0);
+        return;
+      }
+
+      setIzlemeId(d.izleme.izleme_id);
+      izlemeIdRef.current = d.izleme.izleme_id;
+      player.setCurrentTime(0);
+      player.play();
+    } catch (err) {
+      hata("İzleme başlatılamadı.", "POST /izle/api/baslat", err);
+      player.setCurrentTime(0);
+    } finally {
+      baslatiliyorRef.current = false;
+      setIslemLoading(false);
+    }
   };
 
   const handleIzlemeBitir = async () => {
     const id = izlemeIdRef.current ?? izlemeId;
     if (!id) return;
     setIslemLoading(true);
-    const res = await fetch("/izle/api/bitir", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ izleme_id: id, ileri_sarilan_sure: ileriSarilanToplamRef.current }) });
-    const d = await res.json();
-    if (!res.ok) { hata(d.hata ?? "İzleme tamamlanamadı.", d.adim, d.detay); setIslemLoading(false); return; }
-    setIzlemeTamamlandi(true); setSoruGosterilecek(d.soru_gosterilecek);
-    if (!d.puan_kazanildi && !d.soru_gosterilecek) uyari(d.mesaj ?? "Puan kazanma saatleri dışında izlendi.");
-    if (d.puan_uyarisi) uyari(d.puan_uyarisi); // B-08: puan yazım hatası kullanıcıya görünür
-    if (d.ileri_sarildi) uyari("Video ileri sarıldığı için sorular gösterilmeyecek.");
-    const bitirKalemleri: PuanKalemi[] = d.kazanilan_puanlar ?? [];
-    if (d.soru_gosterilecek) {
-      // İzleme/öneri kalemlerini sakla — toast cevap sonrası birleşik atılacak.
-      izlemeKalemleriRef.current = bitirKalemleri;
-      const sRes = await fetch(`/izle/api/sorular?izleme_id=${id}`);
-      const sData = await sRes.json();
-      if (!sRes.ok) { hata(sData.hata ?? "Sorular yüklenemedi.", sData.adim, sData.detay); }
-      else { setSorular(sData.sorular ?? []); }
-    } else {
-      // Sorusuz akış — kazanç burada kesinleşir, birleşik mesaj hemen atılır.
-      const toplam = bitirKalemleri.reduce((t, k) => t + k.puan, 0);
-      setKazanilanPuan(toplam);
-      const mesaj = puanMesaji(bitirKalemleri);
-      if (mesaj) basari(mesaj);
+    try {
+      const res = await fetch("/izle/api/bitir", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ izleme_id: id }) });
+      const d = await res.json();
+      if (!res.ok) {
+        izlemeBitirildiRef.current = false;
+        hata(d.hata ?? "İzleme tamamlanamadı.", d.adim, d.detay);
+        return;
+      }
+      setIzlemeTamamlandi(true); setSoruGosterilecek(d.soru_gosterilecek);
+      if (!d.puan_kazanildi && !d.soru_gosterilecek) uyari(d.mesaj ?? "Puan kazanma saatleri dışında izlendi.");
+      if (d.puan_uyarisi) uyari(d.puan_uyarisi); // B-08: puan yazım hatası kullanıcıya görünür
+      if (!d.soru_gosterilecek && d.soru_hakki_nedeni) {
+        const nedenMesaji: Record<string, string> = {
+          ileri_sarma: "Video ileri sarıldığı için bu izleme sonunda sorular gösterilmeyecek.",
+          yarim_deneme: "Bu turda daha önce yarım kalan bir deneme olduğu için sorular gösterilmeyecek.",
+          tekrar_izleme: "Bu video bu turda daha önce tamamlandığı için sorular tekrar gösterilmeyecek.",
+          puan_disinda: "Puan saatleri dışında tamamlandığı için sorular gösterilmeyecek.",
+        };
+        const mesaj = nedenMesaji[d.soru_hakki_nedeni];
+        if (mesaj) uyari(mesaj);
+      }
+      const bitirKalemleri: PuanKalemi[] = d.kazanilan_puanlar ?? [];
+      if (d.soru_gosterilecek) {
+        // İzleme/öneri kalemlerini sakla — toast cevap sonrası birleşik atılacak.
+        izlemeKalemleriRef.current = bitirKalemleri;
+        const sRes = await fetch(`/izle/api/sorular?izleme_id=${id}`);
+        const sData = await sRes.json();
+        if (!sRes.ok) hata(sData.hata ?? "Sorular yüklenemedi.", sData.adim, sData.detay);
+        else setSorular(sData.sorular ?? []);
+      } else {
+        // Sorusuz akış — kazanç burada kesinleşir, birleşik mesaj hemen atılır.
+        const toplam = bitirKalemleri.reduce((t, k) => t + k.puan, 0);
+        setKazanilanPuan(toplam);
+        const mesaj = puanMesaji(bitirKalemleri);
+        if (mesaj) basari(mesaj);
+      }
+    } catch (err) {
+      izlemeBitirildiRef.current = false;
+      hata("İzleme tamamlanamadı; yeniden denenecek.", "PUT /izle/api/bitir", err);
+    } finally {
+      setIslemLoading(false);
     }
-    setIslemLoading(false);
   };
 
   const handleCevapGonder = async () => {
