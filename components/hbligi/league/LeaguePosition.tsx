@@ -21,10 +21,7 @@ export default function LeaguePosition({ rank, toplam, haftaDegisim, top3, lider
   return (
     <section className={`${styles.panel} flex h-full min-h-0 flex-col p-4`}>
         <div className="mb-2 flex items-center justify-between">
-          <div>
-            <div className={styles.eyebrow}>Şu an neredesin?</div>
-            <h2 className={styles.sectionHeading}>Ligdeki Konumun</h2>
-          </div>
+          <h2 className={styles.sectionHeading}>Ligdeki Konumun</h2>
           <div className="rounded-full bg-[#fff6df] p-2 text-[#e49a0c]"><Trophy className="h-4 w-4" /></div>
         </div>
         <div className={styles.positionLayout}>

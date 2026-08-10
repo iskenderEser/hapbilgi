@@ -12,7 +12,7 @@ export default function LeagueHeader({ periyotSecici }: { periyotSecici: ReactNo
   return (
     <div className={styles.header}>
       <div className="min-w-0">
-        <div className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">
+        <div className={`${styles.headerEyebrow} mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]`}>
           <Sparkles className="h-3.5 w-3.5" /> Kişisel liderlik merkezi
         </div>
         <div className="flex items-center gap-2">
@@ -26,9 +26,6 @@ export default function LeagueHeader({ periyotSecici }: { periyotSecici: ReactNo
             <TooltipContent>Net puanın seni sıralamada nereye taşıyor ve nasıl yükselirsin.</TooltipContent>
           </Tooltip>
         </div>
-        <p className="mt-0.5 text-xs font-medium text-[#71829a]">
-          Konumunu gör, farkı anla ve liderliğe giden en etkili adımı seç.
-        </p>
       </div>
       <div className={`${styles.headerActions} [&_.hb-ligi-periyot-secici]:mb-0`}>
         {periyotSecici}

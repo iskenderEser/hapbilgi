@@ -144,7 +144,7 @@ export default function LeaguePage({
           </div>
         </div>
 
-        <div className="shrink-0">
+        <div className={`${styles.insight} shrink-0`}>
           <LeadershipInsight mesaj={STUB_INSIGHT_KAPANIS} />
         </div>
         </div>

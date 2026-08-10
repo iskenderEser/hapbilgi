@@ -49,7 +49,7 @@ export default function ScoreComposition({
   return (
     <section className={`${styles.panel} flex h-full min-h-0 flex-col p-4`}>
         <div className="mb-2 flex items-center justify-between">
-          <div><div className={styles.eyebrow}>Neden bu konumdasın?</div><h2 className={styles.sectionHeading}>Net Puanın Bileşimi</h2></div>
+          <h2 className={styles.sectionHeading}>Net Puanın Bileşimi</h2>
           <div className="rounded-full bg-[#edf6ff] p-2 text-[#3599ee]"><Gauge className="h-4 w-4" /></div>
         </div>
 
@@ -74,7 +74,7 @@ export default function ScoreComposition({
           </div>
         </div>
 
-        <div className="mt-2 rounded-xl bg-[#f5f8fc] px-3 py-2 text-[11px] font-medium leading-snug text-[#61748d]">{insight}</div>
+        <div className={`${styles.scoreInsight} mt-2 rounded-xl bg-[#f5f8fc] px-3 py-2 text-[11px] font-medium leading-snug text-[#61748d]`}>{insight}</div>
     </section>
   );
 }

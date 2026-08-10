@@ -51,7 +51,7 @@ export default function CompetitorComparison({
   return (
     <section className={`${styles.panel} flex h-full min-h-0 flex-col p-4`}>
         <div className="mb-2 flex shrink-0 items-end justify-between">
-          <div><div className={styles.eyebrow}>Kime ne kadar yakınsın?</div><h2 className={styles.sectionHeading}>Rakiplerine Göre Konumun</h2></div>
+          <h2 className={styles.sectionHeading}>Rakiplerine Göre Konumun</h2>
           <button className="flex items-center gap-1 text-[10px] font-extrabold text-[#3589d8]">Tüm lig <ArrowUpRight className="h-3 w-3" /></button>
         </div>
         <div className={`${styles.scrollArea} [&_[data-slot=table-container]]:overflow-visible`}>
