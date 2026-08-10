@@ -77,6 +77,8 @@
   - Dikey video ve oranlı çerçeve (26.07.2026)
   - Pill ve liste merkezleri (27.07.2026)
   - Üretici ana sayfası — 43 sorgu → 2 (27.07.2026)
+- [8. Kullanıcı Bilgilendirme Ekleri](#8-kullanıcı-bilgilendirme-ekleri)
+  - [8.1 UTT video izleme, ileri sarma ve soru hakkı](#81-utt-video-izleme-ileri-sarma-ve-soru-hakkı)
 
 ---
 
@@ -974,3 +976,36 @@ Dokuz adım tek tek yürüdü; her biri üçlü doğrulama (tsc + denetim + lint
 **DB tarafı (ayrı commit `b439cfb`):** oturum UTC; gün kovaları `(created_at)::date` ile günü UTC'den kesiyordu. Ölçüm (salt-okuma, İskender koştu): üç 7/24 tablo (`eclub_kazanilan_puanlar`/`eczanem_puan_kayitlari`/`cc_kazanilan_puanlar`) **boş**, UTT tablosu 13 kayıt (hepsi öğleden sonra → kaymasız). Veri yokken **proaktif** düzeltme: 5 yazma noktası — `hbligi_v2_ozet` + `cc_ligi_ozet` trigger'ları, `hbligi_v2_backfill` + `cc_ligi_backfill`, `test_veri_temizle` — `(created_at AT TIME ZONE 'Europe/Istanbul')::date`'e çevrildi; **okuma katmanı** (`hbligi_v2_okuma`/`cc_ligi_okuma`'da `make_date`/`date_trunc` = TR takvim günü sınırları) zaten doğruydu, dokunulmadı — iki taraf artık tutarlı. İki trigger canlıda `pg_get_functiondef ... LIKE '%Europe/Istanbul%'` ile doğrulandı (`true`); İskender 4 sorguyu koştu (4/4 başarılı), HB backfill'de fark 0 (kaymasız veri), CC backfill gerekmedi (boş tablo).
 
 **Açık kalan (bilinçli, notlandı):** `hapbilgi-mimari/zaman-tek-kaynak` bekçisi `toLocaleDateString`/`Intl` `timeZone`'suz çağrıları, `new Date(yıl,ay,gün)` yerel kurucusunu ve `scripts/sql/` dosyalarını **yakalamaz**; ayrıca "Türkiye kalıcı UTC+3, DST yok" varsayımına ve puan penceresine (maskeleme) bağımlıdır. Tümü lokal; DB işlemleri İskender tarafından koşuldu; push yok.
+
+---
+
+## 8. Kullanıcı Bilgilendirme Ekleri
+
+Bu bölüm, kullanıcıya açıklanması gereken davranış kurallarını senaryolar üzerinden tanımlar. Buradaki kurallar ürün kararıdır; teknik uygulama bu davranışlarla birebir uyumlu olmak zorundadır.
+
+### 8.1 UTT video izleme, ileri sarma ve soru hakkı
+
+**Temel kural:** Soru hakkı yalnızca **geçerli yayın turundaki** ilk gerçek izleme denemesinde, video baştan sona tamamlandığında ve hiç ileri sarılmadığında doğar. Bir video geçerli turda daha önce yarım bırakılmışsa veya herhangi bir denemede ileri sarılmışsa, o turun sonraki izlemelerinde soru hakkı açılmaz. Yeni yayın turu başladığında hak yeniden değerlendirilir; tekrar periyodu bulunmayan yayında tek tur ömür boyu sürdüğü için kapanan hak yeniden doğmaz.
+
+"Bir kerede izleme", aynı oynatma oturumu içinde baştan sona tamamlamaktır. Kullanıcının videoyu duraklatıp aynı oturumda devam etmesi bu bütünlüğü bozmaz. Sayfadan çıkmak, sekmeyi kapatmak, başka bir videoya geçmek veya oynatma oturumunu sonlandırmak ise videoyu yarım bırakmak sayılır. Video yalnızca açıldığında değil, gerçek oynatma başladığında izleme denemesi başlar.
+
+| İzleme biçimi | İzleme puanı | İleri sarma kaybı | Sorular |
+|---|---:|---:|---|
+| İlk denemede, ileri sarmadan bitirdi | Tam puan | Yok | Gösterilir |
+| İlk denemede ileri sardı ve bitirdi | Tam puan | Anında kaydedilir | Gösterilmez |
+| İleri sardı, yarım bıraktı, bir daha dönmedi | Yok | Anında kaydedilir | Gösterilmez |
+| İleri sardı, yarım bıraktı, döndü ve ileri sarmadan bitirdi | Tam puan | Önceki kayıp korunur | Gösterilmez |
+| İleri sardı, yarım bıraktı, döndü, tekrar ileri sardı ve bitirdi | Tam puan | Her iki kayıp da korunur | Gösterilmez |
+| İleri sardı, yarım bıraktı, döndü, tekrar ileri sardı ve yine bitirmedi | Yok | Her iki kayıp da korunur | Gösterilmez |
+| İleri sarmadan yarım bıraktı, döndü ve bitirdi | Tam puan | Yok | Gösterilmez |
+| Birkaç kez yarım bırakıp sonunda bitirdi | Tam puan | Varsa tüm ileri sarma kayıpları korunur | Gösterilmez |
+
+**Puan muhasebesi:** İzleme kazanımı ile ileri sarma kaybı birbirine gömülmez; ayrı olaylar olarak kaydedilir. Kullanıcı bir denemede `-3` puanlık ileri sarma kaybı oluşturup videoyu yarım bırakır, sonraki denemede videoyu baştan sona tamamlayarak `+10` izleme puanı kazanırsa videonun net etkisi `+7` puandır. Sonraki tamamlamada "kalan 7 puan" yazılmaz; tam izleme kazanımı yazılır ve daha önce oluşan kayıp ayrıca düşülür.
+
+**İleri ve geri sarma sınırları:** Geri sarma kayıp oluşturmaz. Aynı oynatma oturumunda daha önce izlenmiş bir bölgeye yeniden ilerlemek ikinci kez kayıp doğurmaz. Yeni bir izleme denemesinde yeniden ileri sarılırsa yeni bir kayıp oluşur. İleri sarma kaybı, videonun daha sonra tamamlanıp tamamlanmamasından bağımsız olarak ileri sarma gerçekleştiği anda kaydedilir; böylece çıkış yaparak kayıptan veya soru kısıtından kaçılması önlenir.
+
+**Puansız zaman penceresi:** §3.1'deki mevcut kural korunur. Hafta sonu ve hafta içi 07.00–20.29 dışındaki izlemelerde kazanım, pozitif kayıp ve soru yoktur; pencere izleme başlangıç anına göre belirlenir. Bu pencerede ileri sarma davranışı yine o turun soru hakkını kapatır, ancak pozitif `kaybedilen_puan` kaydı üretilmez.
+
+**Yarım bırakılan videoya dönüş:** Yarım bırakılan video yeniden açıldığında kaldığı yerden sürmez, baştan başlar. Kullanıcı videoyu sonraki bir denemede tamamladığında tam izleme puanını alabilir; ancak ilk deneme bütünlüğü bozulduğu için sorular gösterilmez. İlk tamamlamadan sonraki tekrar izlemeler, mevcut extra puan kurallarına tabidir ve ilk izleme sorularını yeniden açmaz.
+
+**Ana sayfa ayrımı:** "Yeni Videolar" ile yarım bırakılmış videolar tek listede birleştirilmez. Video yalnızca gerçek oynatma başladıktan sonra yarım bırakılmış sayılır; sadece video yüzeyini açıp kapatmak "Yeni Videolar" durumunu değiştirmez. Ana sayfadaki görsel düzen ve adlandırma bu iş kuralından ayrı ele alınır.
