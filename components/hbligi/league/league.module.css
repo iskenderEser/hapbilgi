@@ -1,0 +1,188 @@
+.shell {
+  container-name: dashboard;
+  container-type: inline-size;
+  height: 100%;
+  min-height: 0;
+  color: #10213d;
+}
+
+.dashboard {
+  display: grid;
+  gap: 12px;
+}
+
+.panel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 30px rgba(36, 64, 98, 0.06);
+}
+
+.topGrid,
+.profileGrid,
+.bottomGrid {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+}
+
+.sectionHeading {
+  color: #10213d;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.eyebrow {
+  color: #66809f;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.softTile {
+  border-radius: 14px;
+  background: #f7f9fc;
+}
+
+.scrollArea {
+  min-height: 0;
+  overflow: auto;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.positionLayout {
+  display: grid;
+  grid-template-columns: minmax(105px, 0.55fr) minmax(290px, 1.75fr) minmax(155px, 0.75fr);
+  min-height: 0;
+  flex: 1;
+  align-items: stretch;
+  gap: 18px;
+}
+
+.podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  min-height: 145px;
+  gap: 8px;
+}
+
+.podiumPerson {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  text-align: center;
+}
+
+.podiumBase {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px 12px 4px 4px;
+}
+
+.profileGroups {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.profileItems {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 8px;
+}
+
+.profilePrimary {
+  border-bottom: 1px solid #edf0f4;
+}
+
+@container dashboard (min-width: 760px) {
+  .profilePrimary {
+    border-right: 1px solid #edf0f4;
+    border-bottom: 0;
+  }
+}
+
+@container dashboard (min-width: 1080px) {
+  .topGrid {
+    grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.9fr);
+  }
+
+  .bottomGrid {
+    grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.9fr);
+  }
+  .profileGrid {
+    grid-template-columns: minmax(0, 3fr) minmax(230px, 0.92fr);
+  }
+}
+
+@media (min-height: 760px) {
+  @container dashboard (min-width: 1080px) {
+    .dashboard {
+      height: 100%;
+      min-height: 0;
+      grid-template-rows: auto minmax(0, 1.25fr) minmax(0, 0.92fr) minmax(0, 1.12fr) auto;
+      overflow: hidden;
+    }
+
+    .topGrid,
+    .profileGrid,
+    .bottomGrid {
+      min-height: 0;
+      overflow: hidden;
+    }
+  }
+}
+
+@container dashboard (max-width: 759px) {
+  .positionLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .profileGroups {
+    grid-template-columns: 1fr;
+  }
+
+  .headerActions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@container dashboard (max-width: 520px) {
+  .profileItems {
+    grid-template-columns: 1fr;
+  }
+
+  .podium {
+    min-height: 132px;
+  }
+}

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { aktifPeriyot } from "@/lib/zaman/kontrol";
 import HbLigiPeriyotSecici, { type Periyot } from "@/components/hbligi/HbLigiPeriyotSecici";
+import LeaguePage from "@/components/hbligi/league/LeaguePage";
 
 interface UttSatiri {
   sira: number;
@@ -147,7 +148,7 @@ export default function HBLigiPage() {
 
   if (authYukleniyor || !kullanici || loading || !veri) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex h-full min-h-0 items-center justify-center bg-gray-50">
         <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
           <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
@@ -160,14 +161,9 @@ export default function HBLigiPage() {
   if (veri.tip === "utt") {
     const { lig } = veri;
     return (
-      <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-        <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold text-gray-900 m-0">HBLigi</h1>
-            <span className="text-xs text-gray-500">{lig.length} kişi — Bölge Sıralaması</span>
-          </div>
-          {periyotSecici}
-          <UttTablosu satirlar={lig} userId={kullanici.id} siraRenk={siraRenk} siraYazi={siraYazi} />
+      <div className="h-full min-h-0 overflow-y-auto bg-[linear-gradient(135deg,#f8fbff_0%,#f6f8fb_48%,#fbfcfe_100%)]" style={{ fontFamily: "'Nunito', sans-serif" }}>
+        <div className="mx-auto min-h-full max-w-[1440px] px-3 py-3 md:h-full md:min-h-0 md:px-5 md:py-3">
+          <LeaguePage satirlar={lig} userId={kullanici.id} periyotSecici={periyotSecici} />
         </div>
       </div>
     );
