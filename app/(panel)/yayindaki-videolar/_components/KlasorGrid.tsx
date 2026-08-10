@@ -31,6 +31,9 @@ export default function KlasorGrid({ videolar, onVideoSec }: Props) {
 
   if (secili) {
     const grup = gruplar.get(secili) ?? [];
+    const renk = DEPARTMAN_RENK[secili];
+    const ureticiSayisi = new Set(grup.map((video) => `${video.ureten_rol}:${video.ureten_ad_soyad}`)).size;
+    const izlenmeSayisi = grup.reduce((toplam, video) => toplam + video.izlenme_sayisi, 0);
     // Klasör içi dört bölüm — her biri ilk 5 (UTT ana sayfası deseni).
     const enYeni = [...grup]
       .sort((a, b) => new Date(b.yayin_tarihi).getTime() - new Date(a.yayin_tarihi).getTime())
@@ -38,30 +41,46 @@ export default function KlasorGrid({ videolar, onVideoSec }: Props) {
     const enCokIzlenen = [...grup].filter((v) => v.izlenme_sayisi > 0).sort((a, b) => b.izlenme_sayisi - a.izlenme_sayisi).slice(0, 5);
     const enCokBegenilen = [...grup].filter((v) => v.begeni_sayisi > 0).sort((a, b) => b.begeni_sayisi - a.begeni_sayisi).slice(0, 5);
     const enCokFavorilenen = [...grup].filter((v) => v.favori_sayisi > 0).sort((a, b) => b.favori_sayisi - a.favori_sayisi).slice(0, 5);
-    const bolumler: { baslik: string; liste: YayindakiVideo[] }[] = [
-      { baslik: "Yeni Videolar", liste: enYeni },
-      { baslik: "En Çok İzlenenler", liste: enCokIzlenen },
-      { baslik: "En Çok Beğenilenler", liste: enCokBegenilen },
-      { baslik: "En Çok Favorilenler", liste: enCokFavorilenen },
+    const bolumler: { baslik: string; aciklama: string; liste: YayindakiVideo[] }[] = [
+      { baslik: "Yeni Yayınlar", aciklama: "Birimin kataloğa en son eklediği içerikler", liste: enYeni },
+      { baslik: "En Çok İzlenenler", aciklama: "Tamamlanan izlemelerde öne çıkanlar", liste: enCokIzlenen },
+      { baslik: "En Çok Beğenilenler", aciklama: "Kullanıcı beğenisi en yüksek yayınlar", liste: enCokBegenilen },
+      { baslik: "En Çok Favorilenenler", aciklama: "Daha sonra erişmek için en çok kaydedilenler", liste: enCokFavorilenen },
     ];
     return (
-      <div>
-        <div className="flex items-center gap-3 mb-3 flex-wrap">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3 rounded-2xl border border-[#dfe7f1] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)] sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ color: renk, backgroundColor: `${renk}14` }}>
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5"><path d="M3 7h6l2 2h10v10H3V7Z" /><path d="M3 7V5h7l2 2" /></svg>
+            </span>
+            <div className="min-w-0">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.14em]" style={{ color: renk }}>Üretici birim</p>
+              <h3 className="truncate text-base font-extrabold text-[#203653]">{DEPARTMAN_ETIKET[secili]}</h3>
+              <p className="mt-0.5 text-xs text-[#7b8da5]">{grup.length} yayın · {ureticiSayisi} üretici · {izlenmeSayisi} tamamlanan izleme</p>
+            </div>
+          </div>
           <button
+            type="button"
             onClick={() => setSecili(null)}
-            className="text-xs font-semibold text-gray-700 border border-gray-200 rounded-lg px-3 py-1.5 bg-white hover:bg-gray-50 transition-colors"
+            className="inline-flex w-fit items-center gap-1.5 rounded-xl border border-[#d9e4f0] bg-[#f8fbff] px-3 py-2 text-xs font-extrabold text-[#476b96] transition-colors hover:bg-[#eef5fd] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff]"
           >
-            ← Klasörler
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5"><path d="m15 18-6-6 6-6" /></svg>
+            Tüm birimler
           </button>
-          <span className="text-sm font-bold text-gray-900">{DEPARTMAN_ETIKET[secili]}</span>
-          <span className="text-xs text-gray-500">· {grup.length} video</span>
         </div>
         {bolumler.map((b) =>
           b.liste.length === 0 ? null : (
-            <div key={b.baslik} className="mb-5">
-              <div className="text-sm font-bold text-gray-900 mb-2.5">{b.baslik}</div>
+            <section key={b.baslik} className="rounded-2xl border border-[#dfe7f1] bg-white p-3.5 shadow-[0_6px_18px_rgba(31,55,90,0.035)] md:p-4">
+              <div className="mb-3 flex items-end justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-extrabold text-[#243957]">{b.baslik}</h4>
+                  <p className="mt-0.5 text-[11px] text-[#7b8ca5]">{b.aciklama}</p>
+                </div>
+                <span className="shrink-0 rounded-full bg-[#f0f5fb] px-2.5 py-1 text-[10px] font-extrabold text-[#637b99]">{b.liste.length} yayın</span>
+              </div>
               <YayindakiVideoBolumu videolar={b.liste} onVideoSec={onVideoSec} />
-            </div>
+            </section>
           )
         )}
       </div>
@@ -69,26 +88,34 @@ export default function KlasorGrid({ videolar, onVideoSec }: Props) {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
       {doluDepartmanlar.map((k) => {
-        const sayi = gruplar.get(k)?.length ?? 0;
+        const grup = gruplar.get(k) ?? [];
+        const sayi = grup.length;
+        const ureticiSayisi = new Set(grup.map((video) => `${video.ureten_rol}:${video.ureten_ad_soyad}`)).size;
+        const izlenmeSayisi = grup.reduce((toplam, video) => toplam + video.izlenme_sayisi, 0);
         const renk = DEPARTMAN_RENK[k];
         return (
           <button
+            type="button"
             key={k}
             onClick={() => setSecili(k)}
-            className="text-left bg-white border border-gray-200 rounded-xl p-3 md:p-5 cursor-pointer transition-shadow duration-150 flex flex-col gap-3"
-            style={{ borderLeft: `3px solid ${renk}` }}
-            onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.boxShadow = `0 0 0 2px ${renk}33`)}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.boxShadow = "none")}
+            className="group flex min-h-36 flex-col justify-between rounded-2xl border bg-white p-4 text-left shadow-[0_6px_18px_rgba(31,55,90,0.035)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(31,55,90,0.09)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff]"
+            style={{ borderColor: `${renk}45` }}
           >
-            <div className="flex items-center justify-between">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={renk} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-              </svg>
-              <span className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-2 py-0.5">{sayi} video</span>
+            <div className="flex items-start justify-between gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ color: renk, backgroundColor: `${renk}14` }}>
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5"><path d="M3 7h6l2 2h10v10H3V7Z" /><path d="M3 7V5h7l2 2" /></svg>
+              </span>
+              <span className="rounded-full px-2.5 py-1 text-[10px] font-extrabold" style={{ color: renk, backgroundColor: `${renk}10` }}>{sayi} yayın</span>
             </div>
-            <span className="text-sm font-bold text-gray-900">{DEPARTMAN_ETIKET[k]}</span>
+            <div className="mt-5">
+              <span className="block text-sm font-extrabold text-[#243957]">{DEPARTMAN_ETIKET[k]}</span>
+              <span className="mt-1 flex items-center justify-between gap-2 text-[11px] text-[#7b8ca5]">
+                <span>{ureticiSayisi} üretici · {izlenmeSayisi} izleme</span>
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 transition-transform group-hover:translate-x-0.5" style={{ color: renk }}><path d="m9 18 6-6-6-6" /></svg>
+              </span>
+            </div>
           </button>
         );
       })}

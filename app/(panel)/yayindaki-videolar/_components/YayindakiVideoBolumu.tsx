@@ -41,65 +41,70 @@ export default function YayindakiVideoBolumu({ videolar, onVideoSec }: Props) {
   if (videolar.length === 0) return null;
 
   const formatTarih = (tarih: string) =>
-    new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
+    new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" });
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       {videolar.map((v) => {
         const thumb = v.thumbnail_url ?? thumbnailUrlUret(v.video_url);
         return (
-          <div
+          <button
+            type="button"
             key={v.yayin_id}
             onClick={() => onVideoSec(v)}
-            className="bg-white rounded-xl overflow-hidden cursor-pointer transition-shadow duration-150"
-            style={{ border: "0.5px solid #e5e7eb" }}
-            onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 16px rgba(0,0,0,0.08)")}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.boxShadow = "none")}
+            aria-label={`${v.urun_adi} yayınını görüntüle`}
+            className="group overflow-hidden rounded-xl border border-[#dfe7f1] bg-white text-left transition-all hover:-translate-y-0.5 hover:border-[#b9d5f0] hover:shadow-[0_10px_24px_rgba(31,55,90,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff]"
           >
             <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16/9" }}>
               {thumb
-                ? <img src={thumb} alt="thumbnail" className="w-full h-full object-cover" />
+                ? <img src={thumb} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
                 : <div className="w-full h-full" style={{ background: GRADYANLAR[Math.abs(v.yayin_id.charCodeAt(0)) % GRADYANLAR.length] }} />
               }
+              <div className="absolute inset-0 bg-gradient-to-t from-[#10233a]/45 via-transparent to-transparent" />
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
-                  <svg width="9" height="11" viewBox="0 0 10 12" fill="white"><path d="M0 0l10 6-10 6z" /></svg>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-[#10233a]/65 shadow-lg backdrop-blur-sm transition-transform group-hover:scale-105">
+                  <svg aria-hidden="true" width="10" height="12" viewBox="0 0 10 12" fill="white"><path d="M0 0l10 6-10 6z" /></svg>
                 </div>
               </div>
+              <span className="absolute bottom-2 left-2 rounded-full border border-white/25 bg-[#10233a]/70 px-2 py-1 text-[9px] font-extrabold uppercase tracking-[0.1em] text-white backdrop-blur-sm">
+                Görüntüle
+              </span>
             </div>
 
-            <div className="px-2.5 py-2 flex flex-col gap-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <div className="text-xs font-bold text-gray-900 truncate">{v.urun_adi}</div>
-                <div className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">{v.teknik_adi}</div>
-              </div>
-
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-0.5 text-xs text-gray-500">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2">
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                    </svg>
-                    <span className="font-semibold text-gray-900">{v.favori_sayisi}</span>
-                  </span>
-                  <span className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-0.5 text-xs text-gray-500">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#e24b4a" strokeWidth="2">
-                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                    </svg>
-                    <span className="font-semibold text-gray-900">{v.begeni_sayisi}</span>
-                  </span>
+            <div className="flex flex-col gap-2.5 p-3">
+              <div className="min-w-0">
+                <div className="truncate text-sm font-extrabold text-[#243957]">{v.urun_adi}</div>
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <span className="truncate rounded-md bg-[#eef5fd] px-2 py-0.5 text-[10px] font-bold text-[#4d79aa]">{v.teknik_adi || "Teknik belirtilmedi"}</span>
+                  <span className="shrink-0 text-[10px] text-[#8a9bb0]">{formatTarih(v.yayin_tarihi)}</span>
                 </div>
-                <div className="text-xs text-gray-400 flex-shrink-0">{formatTarih(v.yayin_tarihi)}</div>
               </div>
 
-              <div className="flex items-center gap-1.5 border-t border-gray-100 pt-1.5">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
+              <div className="grid grid-cols-3 gap-1 rounded-lg bg-[#f7f9fc] px-2 py-1.5 text-[#70849d]">
+                <span className="flex items-center justify-center gap-1 text-[10px]" title="Tamamlanan izleme">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3 w-3"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" /><circle cx="12" cy="12" r="2.5" /></svg>
+                  <b className="text-[#314a68]">{v.izlenme_sayisi}</b>
+                </span>
+                <span className="flex items-center justify-center gap-1 border-x border-[#e2e9f1] text-[10px]" title="Beğeni">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3 w-3"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" /></svg>
+                  <b className="text-[#314a68]">{v.begeni_sayisi}</b>
+                </span>
+                <span className="flex items-center justify-center gap-1 text-[10px]" title="Favori">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3 w-3"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z" /></svg>
+                  <b className="text-[#314a68]">{v.favori_sayisi}</b>
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5 border-t border-[#edf1f6] pt-2">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#f0f4f9] text-[#7c8fa7]">
+                  <svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-                </svg>
-                <span className="text-xs text-gray-500 truncate">{uretenEtiket(v.ureten_rol, v.ureten_ad_soyad)}</span>
+                  </svg>
+                </span>
+                <span className="truncate text-[11px] font-bold text-[#617691]">{uretenEtiket(v.ureten_rol, v.ureten_ad_soyad)}</span>
               </div>
             </div>
-          </div>
+          </button>
         );
       })}
     </div>
