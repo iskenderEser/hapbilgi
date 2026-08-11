@@ -89,6 +89,9 @@ export function promptOlustur(girdi: PromptGirdisi): string {
     metriklerOzeti(kombinasyon.degisken_idleri, degisken_adlari, sonuclar),
     tamamlayiciNotu(kombinasyon),
     ``,
-    `Lütfen bu verilere bakarak ${baglam.rol_ad ?? "kullanıcı"} için kısa, somut ve eyleme dönük bir yorum yaz. Yorumun 3-5 cümleyi geçmesin. Türkçe yaz.`,
+    `Yalnızca yukarıda verilen metriklere dayan. Seçilmemiş bir metriğin değeri, oranı veya durumu hakkında çıkarım yapma.`,
+    `Kalan izleme fırsatı gerçekleşmiş kayıp veya ceza değildir; başarı yüzdesi hesaplamak için tek başına yeterli değildir.`,
+    `Verilmeyen bir payda üzerinden yüzde, tamamlanma oranı ya da "sıfır kayıp" gibi sonuçlar üretme.`,
+    `Lütfen bu verilere bakarak ${baglam.rol_ad ?? "kullanıcı"} için kısa, somut ve eyleme dönük bir yorum yaz. Yorumun 3-5 cümleyi geçmesin. Türkçe ve düz metin yaz; Markdown kullanma.`,
   ].join("\n");
 }

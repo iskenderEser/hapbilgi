@@ -11,6 +11,7 @@
 "use client";
 
 import type { EChartsCoreOption } from "echarts/core";
+import { BarChart3 } from "lucide-react";
 import EChart from "@/components/grafik/EChart";
 
 type Props = {
@@ -163,17 +164,21 @@ export default function SonucGrafigi({ degisken_idleri, degisken_adlari, sonucla
   };
 
   return (
-    <section className="bg-white rounded-lg border border-gray-200 p-6 flex flex-col gap-6">
+    <section className="flex min-w-0 flex-col gap-5 rounded-[20px] border border-[#dfe8f1] bg-white/95 p-5 shadow-[0_10px_30px_rgba(35,68,105,0.055)]">
+      <div className="flex items-center justify-between gap-3">
+        <div><div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#3589d8]"><BarChart3 className="h-3.5 w-3.5" /> Karşılaştırma görünümü</div><h2 className="mt-1 text-base font-extrabold text-[#20324c]">Seçilen metriklerin yönü</h2></div>
+        <span className="rounded-full bg-[#eef5fd] px-2.5 py-1 text-[9px] font-extrabold text-[#4479b7]">{degisken_idleri.length} metrik</span>
+      </div>
       {/* Üst: toplam değer kartları */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {degisken_idleri.map((id) => {
           const stil = pillRengiSinifi(id);
           return (
-            <div key={id} className={`bg-white border border-gray-200 border-l-4 ${stil.kenar} rounded-md px-4 py-3`}>
-              <div className="text-xs font-medium text-gri-metin uppercase tracking-wide mb-1">
+            <div key={id} className={`rounded-[14px] border border-[#e7ecf2] border-l-4 ${stil.kenar} bg-[#f9fbfd] px-4 py-3`}>
+              <div className="mb-1 text-[9px] font-extrabold uppercase tracking-[0.05em] text-[#7b8ca1]">
                 {degisken_adlari[id] ?? id}
               </div>
-              <div className={`text-2xl font-bold ${stil.rakam}`}>{sonuclar[id] ?? 0}</div>
+              <div className={`text-2xl font-black ${stil.rakam}`}>{sonuclar[id] ?? 0}</div>
             </div>
           );
         })}
@@ -186,13 +191,13 @@ export default function SonucGrafigi({ degisken_idleri, degisken_adlari, sonucla
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {adetBarVeri.length > 0 && (
             <div>
-              <div className="text-xs font-medium text-gri-metin uppercase tracking-wide mb-2">Adet</div>
+              <div className="mb-2 text-[9px] font-extrabold uppercase tracking-[0.08em] text-[#7b8ca1]">Adet</div>
               <EChart option={barOption(adetBarVeri)} height={300} />
             </div>
           )}
           {puanBarVeri.length > 0 && (
             <div>
-              <div className="text-xs font-medium text-gri-metin uppercase tracking-wide mb-2">Puan</div>
+              <div className="mb-2 text-[9px] font-extrabold uppercase tracking-[0.08em] text-[#7b8ca1]">Puan</div>
               <EChart option={barOption(puanBarVeri)} height={300} />
             </div>
           )}

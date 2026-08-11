@@ -19,6 +19,7 @@ import {
   TooltipComponent,
   LegendComponent,
   DatasetComponent,
+  GraphicComponent,
 } from "echarts/components";
 import { LabelLayout, UniversalTransition } from "echarts/features";
 import { CanvasRenderer } from "echarts/renderers";
@@ -32,6 +33,7 @@ echarts.use([
   TooltipComponent,
   LegendComponent,
   DatasetComponent,
+  GraphicComponent,
   LabelLayout,
   UniversalTransition,
   CanvasRenderer,

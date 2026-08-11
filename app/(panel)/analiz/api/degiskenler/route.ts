@@ -16,7 +16,6 @@ import {
   validasyonHatasi,
 } from "@/lib/utils/hataIsle";
 import { analizRolKategorisi } from "@/lib/utils/roller";
-import { getDegiskenler, type Kategori } from "@/lib/analiz/paylasilan/kombinasyonlar";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function GET(request: NextRequest) {
@@ -43,14 +42,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let degiskenler;
-    try {
-      degiskenler = await getDegiskenler(kategoriParam as Kategori);
-    } catch (err) {
+    const tablo = kategoriParam === "uretim"
+      ? "analiz_uretim_degiskenleri"
+      : "analiz_tuketim_degiskenleri";
+    let sorgu = adminSupabase.from(tablo).select("*").order("sira", { ascending: true });
+    if (kategoriParam === "uretim") {
+      sorgu = sorgu.neq("degisken_id", "ileri_sarma_izinli_video_sayisi");
+    }
+    const { data: degiskenler, error: degiskenHatasi } = await sorgu;
+    if (degiskenHatasi) {
       return hataYaniti(
         "Değişken listesi çekilirken hata oluştu.",
-        "getDegiskenler",
-        err instanceof Error ? { message: err.message } : { message: String(err) }
+        tablo,
+        degiskenHatasi,
       );
     }
 

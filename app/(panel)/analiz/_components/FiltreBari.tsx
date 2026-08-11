@@ -11,6 +11,7 @@
 
 "use client";
 
+import { CalendarDays, SlidersHorizontal } from "lucide-react";
 import type { Periyot } from "@/lib/utils/raporUtils";
 import type { Kapsam } from "@/lib/analiz/yonetici/getYoneticiAnalizData";
 
@@ -94,42 +95,30 @@ export default function FiltreBari({
   };
 
   return (
-    <section className="bg-white rounded-lg border border-gray-200 p-5">
-      {/* Periyot butonları */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {PERIYOT_SECENEKLERI.map((p) => {
-          const aktif = periyot === p.deger;
-          return (
-            <button
-              key={p.deger}
-              type="button"
-              onClick={() => onPeriyotDegisti(p.deger)}
-              className={
-                "px-4 py-2 rounded-md text-sm font-medium border transition-colors " +
-                (aktif
-                  ? "bg-bordo text-white border-bordo"
-                  : "bg-white text-koyu-metin border-gray-300 hover:border-bordo hover:text-bordo")
-              }
-            >
-              {p.etiket}
-            </button>
-          );
-        })}
+    <section className="rounded-[20px] border border-[#dfe8f1] bg-white/95 p-4 shadow-[0_8px_24px_rgba(35,68,105,0.045)]">
+      <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]"><SlidersHorizontal className="h-3.5 w-3.5" /> Analiz kapsamı</div>
+          <div className="mt-1 text-xs font-extrabold text-[#263b55]">Dönemi ve inceleme alanını belirle</div>
+        </div>
+        <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-[13px] border border-[#dfe7f0] bg-[#f6f9fc] p-1" aria-label="Analiz dönemi">
+          <CalendarDays className="ml-1.5 h-3.5 w-3.5 shrink-0 text-[#7a8da4]" />
+          {PERIYOT_SECENEKLERI.map((p) => <button key={p.deger} type="button" onClick={() => onPeriyotDegisti(p.deger)} className={`shrink-0 rounded-[9px] border-0 px-3 py-1.5 text-[10px] font-extrabold transition-colors ${periyot === p.deger ? "bg-[#2c84cf] text-white shadow-[0_4px_10px_rgba(35,122,200,0.18)]" : "bg-transparent text-[#71839a] hover:bg-[#eaf3fb] hover:text-[#237ac8]"}`}>{p.etiket}</button>)}
+        </div>
       </div>
 
-      {/* Dropdown grid */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
         <div>
-          <label className="block text-xs font-medium text-gri-metin mb-1">Takım</label>
+          <label className="mb-1 block text-[9px] font-extrabold uppercase tracking-[0.04em] text-[#8190a3]">Takım</label>
           {sabitTakim ? (
-            <div className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-gray-50 text-koyu-metin">
+            <div className="w-full rounded-xl border border-[#e3eaf1] bg-[#f5f8fb] px-3 py-2 text-[11px] font-bold text-[#52677f]">
               {sabitTakim.takim_adi}
             </div>
           ) : (
             <select
               value={filtreler.takim_id ?? ""}
               onChange={(e) => dropdownGuncelle("takim_id", e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-koyu-metin focus:outline-none focus:border-bordo"
+              className="w-full rounded-xl border border-[#dce5ee] bg-white px-3 py-2 text-[11px] font-bold text-[#52677f] outline-none transition-colors focus:border-[#56aeff]"
             >
               <option value="">Tümü</option>
               {kapsamTakimlar.map((t) => (
@@ -140,16 +129,16 @@ export default function FiltreBari({
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gri-metin mb-1">Bölge</label>
+          <label className="mb-1 block text-[9px] font-extrabold uppercase tracking-[0.04em] text-[#8190a3]">Bölge</label>
           {sabitBolge ? (
-            <div className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md bg-gray-50 text-koyu-metin">
+            <div className="w-full rounded-xl border border-[#e3eaf1] bg-[#f5f8fb] px-3 py-2 text-[11px] font-bold text-[#52677f]">
               {sabitBolge.bolge_adi}
             </div>
           ) : (
             <select
               value={filtreler.bolge_id ?? ""}
               onChange={(e) => dropdownGuncelle("bolge_id", e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-koyu-metin focus:outline-none focus:border-bordo"
+              className="w-full rounded-xl border border-[#dce5ee] bg-white px-3 py-2 text-[11px] font-bold text-[#52677f] outline-none transition-colors focus:border-[#56aeff]"
             >
               <option value="">Tümü</option>
               {seciliTakimBolgeleri.map((b) => (
@@ -160,11 +149,11 @@ export default function FiltreBari({
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gri-metin mb-1">UTT</label>
+          <label className="mb-1 block text-[9px] font-extrabold uppercase tracking-[0.04em] text-[#8190a3]">UTT</label>
           <select
             value={filtreler.utt_id ?? ""}
             onChange={(e) => dropdownGuncelle("utt_id", e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-koyu-metin focus:outline-none focus:border-bordo"
+            className="w-full rounded-xl border border-[#dce5ee] bg-white px-3 py-2 text-[11px] font-bold text-[#52677f] outline-none transition-colors focus:border-[#56aeff]"
           >
             <option value="">Tümü</option>
             {seciliKapsamUttleri.map((u) => (
@@ -176,11 +165,11 @@ export default function FiltreBari({
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gri-metin mb-1">Ürün</label>
+          <label className="mb-1 block text-[9px] font-extrabold uppercase tracking-[0.04em] text-[#8190a3]">Ürün</label>
           <select
             value={filtreler.urun_id ?? ""}
             onChange={(e) => dropdownGuncelle("urun_id", e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-koyu-metin focus:outline-none focus:border-bordo"
+            className="w-full rounded-xl border border-[#dce5ee] bg-white px-3 py-2 text-[11px] font-bold text-[#52677f] outline-none transition-colors focus:border-[#56aeff]"
           >
             <option value="">Tümü</option>
             {seciliTakimUrunleri.map((u) => (
@@ -190,11 +179,11 @@ export default function FiltreBari({
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gri-metin mb-1">Eğitim Türü</label>
+          <label className="mb-1 block text-[9px] font-extrabold uppercase tracking-[0.04em] text-[#8190a3]">Eğitim Türü</label>
           <select
             value={filtreler.egitim_turu ?? ""}
             onChange={(e) => dropdownGuncelle("egitim_turu", e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white text-koyu-metin focus:outline-none focus:border-bordo"
+            className="w-full rounded-xl border border-[#dce5ee] bg-white px-3 py-2 text-[11px] font-bold text-[#52677f] outline-none transition-colors focus:border-[#56aeff]"
           >
             <option value="">Tümü</option>
             {kapsamEgitimTurleri.map((et) => (
