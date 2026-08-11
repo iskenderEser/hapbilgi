@@ -25,13 +25,14 @@ export async function PUT(
     // Yayını bul
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("yayin_yonetimi")
-      .select("yayin_id, durum")
+      .select("yayin_id, durum, uretici_id")
       .eq("yayin_id", yayin_id)
       .single();
 
     const yayinKontrol = veriKontrol(yayin, "yayin_yonetimi tablosu SELECT — yayin_id kontrolü", "Yayın bulunamadı.");
     if (!yayinKontrol.gecerli) return yayinKontrol.yanit;
     if (yayinError) return hataYaniti("Yayın sorgulanırken hata oluştu.", "yayin_yonetimi tablosu SELECT", yayinError, 404);
+    if (yayin.uretici_id !== user.id) return rolHatasi("Yalnız kendi yayınınızı yönetebilirsiniz.");
 
     const simdi = new Date().toISOString();
 

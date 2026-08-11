@@ -10,6 +10,32 @@ import { turKaydiAc } from "@/lib/tur/kayit";
 import { tarifeVeBarkodYaz } from "@/lib/eczanem/tarife";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
+const YAYIN_LISTE_ALANLARI = "yayin_id, soru_seti_durum_id, durum, yayin_tarihi, durdurma_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, sorular, hedef_rol, talep_no, firma_adi, egitim_turu";
+
+export async function GET() {
+  try {
+    const supabase = await createClient();
+    const adminSupabase = createAdminClient();
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return yetkiHatasi();
+
+    const rol = await rolCozucu(adminSupabase, user.id);
+    if (!URETICI_ROLLER.includes(rol)) return rolHatasi("Sadece yetkili roller yayınlarını görebilir.");
+
+    const { data: yayinlar, error } = await adminSupabase
+      .from("v_yayin_detay")
+      .select(YAYIN_LISTE_ALANLARI)
+      .eq("uretici_id", user.id)
+      .order("yayin_tarihi", { ascending: false });
+
+    if (error) return hataYaniti("Yayınlar yüklenemedi.", "v_yayin_detay SELECT — üretici filtresi", error);
+    return NextResponse.json({ yayinlar: yayinlar ?? [] }, { status: 200 });
+  } catch (err) {
+    return sunucuHatasi(err, "GET /yayin-yonetimi/api/yayinlar");
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -52,6 +78,7 @@ export async function POST(request: NextRequest) {
     // Hedef rolleri talep'ten türet (kullanıcı seçimi yok — Karar 1: hedef rol talep aşamasında belirlenir)
     const talepBilgisi = await talepBilgisiSoruSeti(adminSupabase, soruSeti.soru_seti_id);
     if (!talepBilgisi) return hataYaniti("Talep bilgisi bulunamadı, hedef rol türetilemedi.", "talepBilgisiSoruSeti", null);
+    if (talepBilgisi.uretici_id !== user.id) return rolHatasi("Yalnız kendi içeriğinizi yayına alabilirsiniz.");
     const hedefRoller: string[] = [talepBilgisi.hedef_rol];
 
     // Eczanem yayını mı? Hedef rol talepten türer — forma güvenmez (sunucu tarafı).

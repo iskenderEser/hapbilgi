@@ -27,6 +27,11 @@ interface UseYayinYonetimiArgs {
   basari: (mesaj: string) => void;
 }
 
+type YayinApiSatiri = Omit<Yayin, "hedef_rol" | "turu_adi"> & {
+  hedef_rol: string | null;
+  egitim_turu: string | null;
+};
+
 export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: UseYayinYonetimiArgs) {
   const [bekleyenler, setBekleyenler] = useState<Bekleyen[]>([]);
   const [yayinlar, setYayinlar] = useState<Yayin[]>([]);
@@ -90,13 +95,16 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
       setSoruPuanlari(yeniSoruPuanlari);
     }
 
-    // Yayınlar: tüm yayınları çekip client-side hedef_rol'e göre filtrele
-    const { data: yayinlarData, error: yayinError } = await supabase
-      .from("v_yayin_detay")
-      .select("yayin_id, soru_seti_durum_id, durum, yayin_tarihi, durdurma_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, sorular, hedef_rol, talep_no, firma_adi, egitim_turu")
-      .order("yayin_tarihi", { ascending: false });
-
-    if (yayinError) { hata("Yayınlar yüklenemedi.", "v_yayin_detay view SELECT", yayinError.message); setLoading(false); return; }
+    // Yayınlar sunucuda oturumdaki üreticiye göre süzülür. Hedef rol ayrımı
+    // sayfadaki sekmeler için client-side kalır; sahiplik sınırı client'a bırakılmaz.
+    const yayinRes = await fetch("/yayin-yonetimi/api/yayinlar");
+    const yayinData = await yayinRes.json();
+    if (!yayinRes.ok) {
+      hata(yayinData.hata ?? "Yayınlar yüklenemedi.", yayinData.adim, yayinData.detay);
+      setLoading(false);
+      return;
+    }
+    const yayinlarData = (yayinData.yayinlar ?? []) as YayinApiSatiri[];
 
     if ((yayinlarData ?? []).length > 0) {
       setYayinlar((yayinlarData ?? []).map(y => ({

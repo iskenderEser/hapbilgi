@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     // Opsiyonel filtre: ?hedef_rol=utt veya ?hedef_rol=bm
     const { searchParams } = new URL(request.url);
     const hedefRolFiltresi = searchParams.get("hedef_rol");
+    const sayiModu = searchParams.get("sayi") === "1";
 
     // Zaten yayında olan soru_seti_durum_id'leri çek
     const { data: yayinlar, error: yayinError } = await adminSupabase
@@ -30,19 +31,6 @@ export async function GET(request: NextRequest) {
     if (yayinError) return hataYaniti("Yayınlar çekilemedi.", "yayin_yonetimi tablosu SELECT", yayinError);
 
     const yayindakiIds = new Set((yayinlar ?? []).map((y: any) => y.soru_seti_durum_id));
-
-    // Hafif sayı modu (?sayi=1): Navbar "Yayın Yönetimi" rozeti için yalnız
-    // bekleyen adedi döner — 30 sn'de bir çağrıldığından ağır zincir join'i
-    // koşulmaz. Rozet canlı sayımdır: yayına alınınca kendiliğinden düşer.
-    if (searchParams.get("sayi") === "1") {
-      const { data: onayliDurumlar, error: sayiError } = await adminSupabase
-        .from("soru_seti_durumu")
-        .select("soru_seti_durum_id")
-        .eq("durum", "onaylandi");
-      if (sayiError) return hataYaniti("Bekleyen sayısı çekilemedi.", "soru_seti_durumu SELECT — sayı modu", sayiError);
-      const sayi = (onayliDurumlar ?? []).filter((s: any) => !yayindakiIds.has(s.soru_seti_durum_id)).length;
-      return NextResponse.json({ sayi }, { status: 200 });
-    }
 
     // Tek join query ile zinciri çek. Talebe videolar → talepler (talep_id) ile
     // DOĞRUDAN ulaşılır (Adım 5 modeli); eski senaryo_durumu→senaryolar hopları
@@ -84,7 +72,9 @@ export async function GET(request: NextRequest) {
       (ss: any) => !yayindakiIds.has(ss.soru_seti_durum_id)
     );
 
-    if (bekleyenler.length === 0) return NextResponse.json({ bekleyenler: [] }, { status: 200 });
+    if (bekleyenler.length === 0) {
+      return NextResponse.json(sayiModu ? { sayi: 0 } : { bekleyenler: [] }, { status: 200 });
+    }
 
     // Soru puanlarını tek sorguda çek
     const bekleyenDurumIdler = bekleyenler.map((ss: any) => ss.soru_seti_durum_id);
@@ -124,6 +114,7 @@ export async function GET(request: NextRequest) {
         const video = videoDurum?.videolar;
         // Künye ortak çeviriciden (25.07, Aşama 3): ad kuralı ve varsayılanlar tek yerde.
         const talep = video?.talepler ? haritalaTalep(video.talepler) : null;
+        if (!talep || talep.uretici_id !== user.id) return null;
         const videoPuan = videoDurum?.video_puanlari;
 
         const egitimTuru = talep?.egitim_turu ?? "urun_egitimi";
@@ -158,6 +149,7 @@ export async function GET(request: NextRequest) {
       ? sonuc.filter((b: any) => b.hedef_rol === hedefRolFiltresi)
       : sonuc;
 
+    if (sayiModu) return NextResponse.json({ sayi: filtrelenmis.length }, { status: 200 });
     return NextResponse.json({ bekleyenler: filtrelenmis }, { status: 200 });
 
   } catch (err) {

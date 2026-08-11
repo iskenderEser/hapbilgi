@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { talepBilgisiSoruSeti } from "@/lib/utils/talepZinciri";
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,6 +33,18 @@ export async function POST(request: NextRequest) {
         return validasyonHatasi(`Soru puanı 3-7 arasında tam sayı olmalıdır. soru_index: ${p.soru_index}, girilen: ${p.soru_puani}`, ["soru_puani"]);
       }
     }
+
+    const { data: sahipSeti, error: sahipSetiError } = await adminSupabase
+      .from("soru_seti_durumu")
+      .select("soru_seti_id")
+      .eq("soru_seti_durum_id", soru_seti_durum_id)
+      .single();
+    if (sahipSetiError || !sahipSeti) {
+      return hataYaniti("Soru seti bulunamadı.", "soru_seti_durum_id → soru_seti_id", sahipSetiError, 404);
+    }
+    const talepBilgisi = await talepBilgisiSoruSeti(adminSupabase, sahipSeti.soru_seti_id);
+    if (!talepBilgisi) return hataYaniti("Talep bilgisi bulunamadı.", "soru_seti_id → talep sahipliği", null, 404);
+    if (talepBilgisi.uretici_id !== user.id) return rolHatasi("Yalnız kendi içeriğinizin soru puanlarını değiştirebilirsiniz.");
 
     // Yayında mı kontrol et
     const { data: yayin, error: yayinError } = await adminSupabase
