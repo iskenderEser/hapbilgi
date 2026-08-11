@@ -7,12 +7,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { getUttLig } from "@/lib/hbligi_v2/getUttLig";
-import { getBmLig } from "@/lib/hbligi_v2/getBmLig";
-import { getTmLig } from "@/lib/hbligi_v2/getTmLig";
-import { getGenelLig } from "@/lib/hbligi_v2/getGenelLig";
+import { getSahaLig, type SahaGorunumu } from "@/lib/hbligi_v2/getSahaLig";
 import type { LigPeriyot } from "@/lib/hbligi_v2/ligRpcCagir";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { TUKETICI_ROLLER } from "@/lib/utils/roller";
+import {
+  ADMIN_ROLLER,
+  TUKETICI_ROLLER,
+  URETICI_ROLLER,
+  YONETICI_ROLLER,
+} from "@/lib/utils/roller";
 
 // ─── Yardımcı: periyot parametrelerini parse + doğrula ───────────────────────
 // Dönüş null ise validasyon hatası; aksi halde tam LigPeriyot.
@@ -84,24 +87,21 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(sonuc, { status: 200 });
       }
 
-      if (rol === "bm") {
-        if (!kullanici.bolge_id || !kullanici.takim_id) {
-          return hataYaniti("BM için bölge ve takım ataması gerekli.", "kullanicilar SELECT — bolge_id/takim_id kontrolü", null);
-        }
-        const sonuc = await getBmLig(adminSupabase, kullanici.bolge_id, kullanici.takim_id, periyot);
-        return NextResponse.json(sonuc, { status: 200 });
-      }
+      let gorunum: SahaGorunumu | null = null;
+      if (rol === "bm") gorunum = "bm";
+      else if (rol === "tm") gorunum = "tm";
+      else if (URETICI_ROLLER.includes(rol)) gorunum = "uretici";
+      else if (YONETICI_ROLLER.includes(rol)) gorunum = "yonetici";
+      else if (ADMIN_ROLLER.includes(rol)) gorunum = "admin";
 
-      if (rol === "tm") {
-        if (!kullanici.takim_id) {
-          return hataYaniti("TM için takım ataması gerekli.", "kullanicilar SELECT — takim_id kontrolü", null);
-        }
-        const sonuc = await getTmLig(adminSupabase, kullanici.takim_id, periyot);
-        return NextResponse.json(sonuc, { status: 200 });
-      }
+      if (!gorunum) return yetkiHatasi();
 
-      // Diğer roller (PM, GM, IU vb.)
-      const sonuc = await getGenelLig(adminSupabase, periyot);
+      const sonuc = await getSahaLig(adminSupabase, {
+        gorunum,
+        firma_id: kullanici.firma_id,
+        takim_id: kullanici.takim_id,
+        bolge_id: kullanici.bolge_id,
+      }, periyot);
       return NextResponse.json(sonuc, { status: 200 });
 
     } catch (err) {

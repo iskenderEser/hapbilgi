@@ -6,7 +6,7 @@
 //   - donem → get_hb_ligi_donemlik_v2(yil, ceyrek)
 //   - yil   → get_hb_ligi_yillik_v2(yil)
 //   - hafta → get_hb_ligi_haftalik_v2(yil, hafta)
-// Dört rol fonksiyonu (getUttLig/getBmLig/getTmLig/getGenelLig) bunu çağırır.
+// UTT görünümü ve kapsam-güvenli üst rol saha görünümü bunu çağırır.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
