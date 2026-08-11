@@ -1,0 +1,127 @@
+.page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 88% 2%, rgba(73, 160, 231, .11), transparent 24rem),
+    linear-gradient(180deg, #f7faff 0, #f4f7fb 100%);
+  color: #172943;
+}
+
+.container { max-width: 1420px; margin: 0 auto; padding: 18px 22px 34px; }
+.header { display: flex; align-items: flex-end; justify-content: space-between; gap: 22px; margin-bottom: 18px; }
+.periods { display: inline-flex; gap: 3px; padding: 4px; border: 1px solid #dfe7f0; border-radius: 14px; background: rgba(255,255,255,.82); box-shadow: 0 7px 22px rgba(42,73,108,.05); }
+.periodButton { padding: 7px 13px; border: 0; border-radius: 10px; color: #71839a; background: transparent; font-size: 11px; font-weight: 800; cursor: pointer; transition: .16s ease; }
+.periodButton:hover { color: #237ac8; background: #eef6fd; }
+.periodActive { color: #fff !important; background: linear-gradient(135deg,#328fdc,#237ac8) !important; box-shadow: 0 5px 12px rgba(35,122,200,.22); }
+
+.panel { border: 1px solid #e0e8f1; border-radius: 20px; background: rgba(255,255,255,.94); box-shadow: 0 10px 30px rgba(35,68,105,.055); }
+.heroGrid { display: grid; grid-template-columns: minmax(0,1.65fr) minmax(330px,.75fr); gap: 14px; margin-bottom: 14px; }
+.productionHero { position: relative; overflow: hidden; padding: 20px; }
+.productionHero::after { content: ''; position: absolute; right: -55px; top: -80px; width: 230px; height: 230px; border-radius: 50%; background: radial-gradient(circle,rgba(53,137,216,.12),transparent 67%); pointer-events: none; }
+.panelHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 15px; }
+.iconBadge { display: grid; place-items: center; width: 36px; height: 36px; flex: 0 0 auto; border-radius: 12px; color: #237ac8; background: #edf7ff; }
+.metricGrid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 9px; position: relative; z-index: 1; }
+.metricCard { min-width: 0; min-height: 116px; padding: 13px; border-radius: 15px; background: #f6f9fd; border: 1px solid #edf1f6; }
+.metricBlue { background: linear-gradient(145deg,#edf7ff,#f8fbff); border-color: #dbeeff; }
+.metricGreen { background: linear-gradient(145deg,#edf9f4,#f8fcfa); border-color: #dcefe7; }
+.metricAmber { background: linear-gradient(145deg,#fff8e9,#fffcf5); border-color: #f6ead0; }
+.metricRed { background: linear-gradient(145deg,#fff2ef,#fff9f7); border-color: #f5e3de; }
+.metricLabel { min-height: 31px; color: #72849a; font-size: 10px; line-height: 1.35; font-weight: 800; text-transform: uppercase; letter-spacing: .055em; }
+.metricValue { margin-top: 4px; color: #20344f; font-size: 27px; line-height: 1; font-weight: 900; font-variant-numeric: tabular-nums; }
+.metricNote { margin-top: 7px; color: #8a98aa; font-size: 10px; line-height: 1.35; font-weight: 650; }
+.insight { display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: #f3f8fd; color: #64768d; font-size: 11px; line-height: 1.5; font-weight: 650; }
+
+.watchHero { padding: 20px; }
+.watchBody { display: grid; grid-template-columns: 122px minmax(0,1fr); align-items: center; gap: 16px; }
+.ring { --value: 0; position: relative; display: grid; place-items: center; width: 122px; height: 122px; border-radius: 50%; background: conic-gradient(#2c8edc calc(var(--value) * 1%),#e8eef5 0); }
+.ring::before { content: ''; position: absolute; inset: 12px; border-radius: inherit; background: #fff; }
+.ringContent { position: relative; z-index: 1; text-align: center; }
+.ringValue { color: #1e3959; font-size: 27px; line-height: 1; font-weight: 950; }
+.ringLabel { margin-top: 4px; color: #8493a6; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+.watchStats { display: grid; gap: 8px; }
+.watchStat { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding-bottom: 7px; border-bottom: 1px solid #edf1f5; }
+.watchStat:last-child { border-bottom: 0; padding-bottom: 0; }
+.watchStat span { color: #74869b; font-size: 10px; font-weight: 750; }
+.watchStat strong { color: #243a55; font-size: 15px; font-weight: 900; font-variant-numeric: tabular-nums; }
+
+.operationGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.operationGrid > section:first-child { display: flex; flex-direction: column; }
+.section { padding: 18px 20px; }
+.stageGrid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; }
+.stage { padding: 12px; border-radius: 14px; background: #f7f9fc; border: 1px solid #ecf0f5; }
+.stageTop { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.stageIcon { display: grid; place-items: center; width: 29px; height: 29px; border-radius: 10px; color: #c27b16; background: #fff5dc; }
+.stageValue { color: #243951; font-size: 22px; font-weight: 900; }
+.stageLabel { margin-top: 9px; color: #566b84; font-size: 11px; line-height: 1.35; font-weight: 800; }
+.stageSummary { flex: 1; min-height: 72px; display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 12px 14px; border-radius: 14px; color: #557085; background: linear-gradient(135deg,#eff9f5,#f7fcfa); border: 1px solid #deefe8; font-size: 11px; line-height: 1.45; font-weight: 700; }
+.stageSummary strong { display: block; color: #19775c; font-size: 12px; font-weight: 900; }
+.qualityRows { display: grid; gap: 4px; }
+.qualityRow { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid #edf1f5; }
+.qualityRow:last-child { border-bottom: 0; }
+.qualityLabel { color: #52677f; font-size: 11px; font-weight: 800; }
+.qualityNote { margin-top: 2px; color: #909cad; font-size: 9px; font-weight: 650; }
+.qualityValue { color: #263b55; font-size: 13px; font-weight: 900; }
+.duration { margin-top: 10px; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 11px 13px; border-radius: 13px; color: #687b91; background: #eef6fd; font-size: 11px; font-weight: 750; }
+.duration strong { color: #237ac8; font-size: 16px; font-weight: 900; }
+
+.impactGrid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 9px; }
+.impactCard { padding: 14px; border-radius: 15px; background: #f8fafc; border: 1px solid #edf1f5; }
+.impactCard:first-child { background: linear-gradient(145deg,#edf7ff,#f8fbff); border-color: #dcecff; }
+.impactLabel { color: #7c8ca0; font-size: 10px; line-height: 1.35; font-weight: 800; }
+.impactValue { margin-top: 6px; color: #213751; font-size: 22px; font-weight: 950; font-variant-numeric: tabular-nums; }
+.impactSub { margin-top: 4px; color: #94a0b0; font-size: 9px; line-height: 1.4; font-weight: 650; }
+
+.dataGrid { display: grid; grid-template-columns: minmax(0,1.45fr) minmax(330px,.75fr); align-items: start; gap: 14px; margin-bottom: 14px; }
+.tableWrap { overflow-x: auto; border: 1px solid #e6ecf3; border-radius: 14px; }
+.table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 11px; }
+.table th { padding: 10px 11px; text-align: left; color: #7c8da2; background: #f7f9fc; font-size: 9px; font-weight: 850; text-transform: uppercase; letter-spacing: .04em; }
+.table td { padding: 10px 11px; color: #40546d; border-top: 1px solid #edf1f5; font-weight: 650; }
+.table tbody tr:hover { background: #f8fbfe; }
+.filter { width: 100%; margin-top: 5px; padding: 4px 6px; border: 1px solid #dce5ef; border-radius: 7px; color: #4f6279; background: #fff; font-size: 10px; font-weight: 700; }
+.summaryRow td { background: #eef6fd; color: #5d728a; font-weight: 800; }
+
+.sideStack { display: grid; gap: 14px; align-content: start; }
+.suggestionStats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.miniStat { padding: 11px 8px; text-align: center; border-radius: 12px; background: #f7f9fc; }
+.miniStat strong { display: block; color: #263d58; font-size: 20px; font-weight: 950; }
+.miniStat span { display: block; margin-top: 3px; color: #8392a5; font-size: 9px; font-weight: 750; }
+.progressTrack { height: 7px; overflow: hidden; border-radius: 999px; background: #e9eef4; }
+.progressFill { height: 100%; border-radius: inherit; background: linear-gradient(90deg,#34a47a,#25bf8b); }
+.rankList { display: grid; gap: 6px; }
+.rankRow { display: grid; grid-template-columns: 25px minmax(0,1fr) auto; align-items: center; gap: 8px; padding: 8px 9px; border-radius: 11px; color: #546981; background: #f8fafc; font-size: 11px; font-weight: 750; }
+.rankOwn { color: #1e659e; background: #edf7ff; }
+.rankNo { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 8px; background: #fff; color: #71849b; font-size: 10px; font-weight: 900; }
+
+.productList { overflow: hidden; border: 1px solid #e5ebf2; border-radius: 15px; }
+.product { border-bottom: 1px solid #e9eef4; }
+.product:last-child { border-bottom: 0; }
+.productButton { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 14px; border: 0; color: #263b54; background: #fff; cursor: pointer; text-align: left; }
+.productButton:hover { background: #f8fbfe; }
+.productBody { padding: 0 12px 12px; background: #f7fafe; }
+.productScore { color: #237ac8; font-size: 12px; font-weight: 900; white-space: nowrap; }
+.chevron { transition: transform .16s ease; }
+.chevronOpen { transform: rotate(90deg); }
+.empty { padding: 22px; border: 1px dashed #dbe4ee; border-radius: 14px; color: #8494a8; background: #fafcff; text-align: center; font-size: 11px; font-weight: 700; }
+
+@media (max-width: 1080px) {
+  .heroGrid, .dataGrid { grid-template-columns: 1fr; }
+  .watchBody { grid-template-columns: 110px minmax(0,1fr); }
+  .ring { width: 110px; height: 110px; }
+  .impactGrid { grid-template-columns: repeat(3,1fr); }
+}
+
+@media (max-width: 760px) {
+  .container { padding: 14px 12px 28px; }
+  .header { align-items: flex-start; flex-direction: column; }
+  .periods { width: 100%; overflow-x: auto; }
+  .periodButton { flex: 1 0 auto; }
+  .metricGrid { grid-template-columns: repeat(2,1fr); }
+  .operationGrid { grid-template-columns: 1fr; }
+  .impactGrid { grid-template-columns: repeat(2,1fr); }
+  .stageGrid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 430px) {
+  .metricGrid, .impactGrid { grid-template-columns: 1fr 1fr; }
+  .watchBody { grid-template-columns: 1fr; justify-items: center; }
+  .watchStats { width: 100%; }
+}

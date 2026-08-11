@@ -6,7 +6,7 @@ import { tarihAraligi } from '@/lib/utils/tarihAraligi';
 import { ureticiYetenegi } from '@/lib/uretici/yetenekler';
 import { getUreticiData } from '@/lib/rapor/uretici/getUreticiData';
 import { uttOzetAgregasyon } from '@/lib/rapor/paylasilan/agregasyon';
-import { katkiYuzdesi, izlenmeOrani, tamamlanmaOrani } from '@/lib/rapor/paylasilan/oran';
+import { katkiYuzdesi, tamamlanmaOrani } from '@/lib/rapor/paylasilan/oran';
 import { ligSiralamasi } from '@/lib/rapor/paylasilan/ligSira';
 
 export async function GET(request: Request) {
@@ -46,10 +46,6 @@ export async function GET(request: Request) {
   const enYuksekBolgePuan = d.bolgeBazli.reduce((acc, b) => Math.max(acc, b.toplam_net_puan ?? 0), 0);
   const ortalamaPuanBolge = bolgeSayisi > 0 ? Math.round(a.toplamNet / bolgeSayisi) : 0;
 
-  // ─── İzlenme oranı — paylaşılan helper ──────────────────────────────────
-  const izlenme = izlenmeOrani(a.toplamIzlenme, d.scopeOzet.toplam_yayin, d.toplamUttSayisi);
-  const kalanIzlenme = Math.max(0, d.scopeOzet.toplam_yayin * d.toplamUttSayisi - a.toplamIzlenme);
-
   // ─── Şirket katkısı — paylaşılan helper ─────────────────────────────────
   const sirketKatki = katkiYuzdesi(a.toplamNet, d.sirketToplamPuan);
 
@@ -79,10 +75,73 @@ export async function GET(request: Request) {
     ortalama_utt_puani: b.toplam_utt > 0 ? Math.round(b.toplam_net_puan / b.toplam_utt) : 0,
   })).sort((x, y) => y.toplam_net_puan - x.toplam_net_puan);
 
-  // ─── Üretim revizyon yüzdeleri — paylaşılan helper (tamamlanmaOrani) ────
-  const senaryoYuzde = tamamlanmaOrani(d.uretimOzet.senaryo_revizyon, d.uretimOzet.toplam_talep);
-  const videoYuzde = tamamlanmaOrani(d.uretimOzet.video_revizyon, d.uretimOzet.toplam_talep);
-  const soruSetiYuzde = tamamlanmaOrani(d.uretimOzet.soru_seti_revizyon, d.uretimOzet.toplam_talep);
+  // Revizyon oranı olay adedini değil, revizyon gören benzersiz talebi ölçer.
+  const revizyonPaydasi = d.anaOzet.donemde_yayina_alinan;
+  const senaryoYuzde = tamamlanmaOrani(d.anaOzet.senaryo_revizyonlu_talep, revizyonPaydasi);
+  const videoYuzde = tamamlanmaOrani(d.anaOzet.video_revizyonlu_talep, revizyonPaydasi);
+  const soruSetiYuzde = tamamlanmaOrani(d.anaOzet.soru_seti_revizyonlu_talep, revizyonPaydasi);
+
+  // Ürün künyesi olmayan puanlar eski ürün RPC'sinde doğal olarak dışarıda
+  // kalır. Bölge toplamı ile ürün toplamlarının farkını ayrı, görünür bir
+  // eğitim grubu olarak ekleyerek dağılımı scope net puanıyla mutabık tutarız.
+  const puanAlanlari = [
+    'video_puani',
+    'soru_puani',
+    'oneri_puani',
+    'extra_puan',
+    'ileri_sarma_kaybi',
+    'yanlis_cevap_kaybi',
+    'oneri_kaybi',
+    'toplam_net_puan',
+  ] as const;
+  const sayi = (deger: unknown) => Number(deger ?? 0);
+  const urunBolgeToplamlari = new Map<string, Record<(typeof puanAlanlari)[number], number>>();
+
+  for (const urun of d.urunBazliBolge) {
+    for (const bolge of urun.bolge_listesi ?? []) {
+      const mevcut = urunBolgeToplamlari.get(bolge.bolge_id) ?? Object.fromEntries(
+        puanAlanlari.map(alan => [alan, 0])
+      ) as Record<(typeof puanAlanlari)[number], number>;
+      for (const alan of puanAlanlari) mevcut[alan] += sayi(bolge[alan]);
+      urunBolgeToplamlari.set(bolge.bolge_id, mevcut);
+    }
+  }
+
+  const urunsuzBolgeListesi = d.bolgeBazli.flatMap(bolge => {
+    const urunToplami = urunBolgeToplamlari.get(bolge.bolge_id);
+    const farklar = Object.fromEntries(
+      puanAlanlari.map(alan => [alan, sayi(bolge[alan]) - sayi(urunToplami?.[alan])])
+    ) as Record<(typeof puanAlanlari)[number], number>;
+    const puanHareketiVar = puanAlanlari.some(alan => farklar[alan] !== 0);
+    if (!puanHareketiVar) return [];
+    return [{
+      bolge_id: bolge.bolge_id,
+      bolge_adi: bolge.bolge_adi,
+      toplam_utt: bolge.toplam_utt,
+      ...farklar,
+    }];
+  });
+
+  const urunBazliDagilim = [...d.urunBazliBolge];
+  if (urunsuzBolgeListesi.length > 0) {
+    const bolgeSayisi = urunsuzBolgeListesi.length;
+    const toplamlar = Object.fromEntries(
+      puanAlanlari.map(alan => [alan, urunsuzBolgeListesi.reduce((toplam, bolge) => toplam + bolge[alan], 0)])
+    ) as Record<(typeof puanAlanlari)[number], number>;
+    urunBazliDagilim.push({
+      urun_id: '__urune_bagli_olmayan__',
+      urun_adi: 'Ürüne Bağlı Olmayan Eğitimler',
+      toplam_net_puan: toplamlar.toplam_net_puan,
+      bolge_listesi: urunsuzBolgeListesi,
+      ortalama: {
+        ...Object.fromEntries(
+          puanAlanlari.map(alan => [alan, Math.round(toplamlar[alan] / bolgeSayisi)])
+        ) as Record<(typeof puanAlanlari)[number], number>,
+        bolge_sayisi: bolgeSayisi,
+      },
+    });
+  }
+  urunBazliDagilim.sort((x, y) => sayi(y.toplam_net_puan) - sayi(x.toplam_net_puan));
 
   return NextResponse.json({
     success: true,
@@ -99,24 +158,28 @@ export async function GET(request: Request) {
         icerikTuru: yetenek.icerikTuru,
       },
       uretim_hatti: {
-        toplam_talep: d.uretimOzet.toplam_talep,
-        yayinda: d.uretimOzet.yayindaki_talep,
-        devam_eden: d.uretimOzet.devam_eden_talep,
-        iptal_durdurulan: d.uretimOzet.durdurulan_talep,
+        donemde_yayina_alinan: d.anaOzet.donemde_yayina_alinan,
+        su_an_yayinda: d.anaOzet.su_an_yayinda,
+        planlanan: d.anaOzet.planlanan,
+        devam_eden: d.anaOzet.devam_eden_talep,
+        iptal_durdurulan: d.anaOzet.durdurulan_ve_iptal,
       },
       bekleyen_asamalar: {
-        senaryo_onayi: d.uretimOzet.senaryo_bekleyen,
-        video_onayi: d.uretimOzet.video_bekleyen,
-        soru_seti_onayi: d.uretimOzet.soru_seti_bekleyen,
+        senaryo_onayi: d.anaOzet.senaryo_onayi_bekleyen,
+        video_onayi: d.anaOzet.video_onayi_bekleyen,
+        soru_seti_onayi: d.anaOzet.soru_seti_onayi_bekleyen,
       },
       revizyon_oranlari: {
-        senaryo_revizyon: d.uretimOzet.senaryo_revizyon,
+        senaryo_revizyon: d.anaOzet.senaryo_revizyon_olayi,
+        senaryo_revizyonlu_talep: d.anaOzet.senaryo_revizyonlu_talep,
         senaryo_yuzde: senaryoYuzde,
-        video_revizyon: d.uretimOzet.video_revizyon,
+        video_revizyon: d.anaOzet.video_revizyon_olayi,
+        video_revizyonlu_talep: d.anaOzet.video_revizyonlu_talep,
         video_yuzde: videoYuzde,
-        soru_seti_revizyon: d.uretimOzet.soru_seti_revizyon,
+        soru_seti_revizyon: d.anaOzet.soru_seti_revizyon_olayi,
+        soru_seti_revizyonlu_talep: d.anaOzet.soru_seti_revizyonlu_talep,
         soru_seti_yuzde: soruSetiYuzde,
-        ortalama_talep_yayin_suresi: d.uretimOzet.ortalama_talep_yayin_suresi,
+        ortalama_uretim_suresi_saat: d.anaOzet.ortalama_uretim_suresi_saat,
       },
       katki: {
         sirket_katki_yuzdesi: sirketKatki,
@@ -126,16 +189,19 @@ export async function GET(request: Request) {
       scope_ozet: {
         toplam_bolge: bolgeSayisi,
         toplam_utt: d.toplamUttSayisi,
-        aktif_utt: a.aktifUtt,
-        hic_izlemeyen_utt: a.hicIzlemeyenUtt,
+        aktif_utt: d.anaOzet.donem_aktif_utt,
+        hic_izlemeyen_utt: Math.max(0, d.toplamUttSayisi - d.anaOzet.donem_aktif_utt),
         toplam_puan: a.toplamNet,
         ortalama_puan_bolge: ortalamaPuanBolge,
         en_yuksek_bolge_puan: enYuksekBolgePuan,
         en_yuksek_utt_puan: a.enYuksekUttPuan,
-        izlenme_orani: izlenme,
-        toplam_izlenme: a.toplamIzlenme,
-        kalan_izlenme: kalanIzlenme,
-        toplam_yayin: d.scopeOzet.toplam_yayin,
+        guncel_tur_izlenme_orani: d.anaOzet.guncel_tur_izlenme_orani,
+        guncel_tur_tamamlanan: d.anaOzet.guncel_tur_tamamlanan,
+        guncel_tur_kalan: d.anaOzet.guncel_tur_kalan,
+        guncel_tur_toplam_firsat: d.anaOzet.guncel_tur_toplam_firsat,
+        donem_tamamlanan_izleme: d.anaOzet.donem_tamamlanan_izleme,
+        donem_benzersiz_utt_yayin: d.anaOzet.donem_benzersiz_utt_yayin,
+        toplam_yayin: d.anaOzet.scope_toplam_yayin,
       },
       lig: {
         kendi_sirasi: lig.kendiSira,
@@ -157,7 +223,7 @@ export async function GET(request: Request) {
         bekleyen_oneri_olan_utt_sayisi: d.scopeOzet.bekleyen_oneri_olan_utt_sayisi,
       },
       bolge_listesi: bolgeListesi,
-      urun_bazli_dagilim: d.urunBazliBolge,
+      urun_bazli_dagilim: urunBazliDagilim,
       begeni_listesi: d.begeniRaw,
       favori_listesi: d.favoriRaw,
     },
