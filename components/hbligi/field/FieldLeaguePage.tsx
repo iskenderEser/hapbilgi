@@ -362,17 +362,19 @@ export default function FieldLeaguePage({
               <div className={styles.tableHead}>
                 <span>Sıra</span><span>Kullanıcı</span><span>Katkı / kayıp</span><span>Net puan</span>
               </div>
-              {uttler.map((utt) => {
+              {uttler.map((utt, index) => {
                 const kayip = utt.ileri_sarma_kaybi + utt.yanlis_cevap_kaybi + utt.oneri_kaybi;
                 const kazanim = utt.izleme_puani + utt.cevaplama_puani + utt.oneri_puani + utt.extra_puani;
                 const acik = acikUtt === utt.kullanici_id;
+                const liderFarkiUtt = Math.max(0, (uttler[0]?.toplam_puan ?? utt.toplam_puan) - utt.toplam_puan);
+                const birUstFarki = index === 0 ? 0 : Math.max(0, uttler[index - 1].toplam_puan - utt.toplam_puan);
                 return (
                   <div key={utt.kullanici_id} className={styles.uttGroup}>
-                    <button type="button" className={styles.uttRow} onClick={() => setAcikUtt(acik ? null : utt.kullanici_id)}>
+                    <button type="button" className={`${styles.uttRow} ${acik ? styles.uttRowOpen : ""}`} onClick={() => setAcikUtt(acik ? null : utt.kullanici_id)}>
                       <span className={`${styles.rank} ${siraRozeti(utt.sira)}`}>{utt.sira}</span>
                       <span className={styles.uttIdentity}>
                         <strong>{utt.ad}</strong>
-                        <small>{utt.bolge} · {utt.takim}</small>
+                        <small>{utt.bolge} · Puan DNA&apos;sını gör</small>
                       </span>
                       <span className={styles.gainLoss}>
                         <em>+{kazanim}</em><em>{kayip > 0 ? `−${kayip}` : "0"}</em>
@@ -382,13 +384,17 @@ export default function FieldLeaguePage({
                     </button>
                     {acik && (
                       <div className={styles.uttDetail}>
-                        <span>İzleme <strong>{utt.izleme_puani}</strong></span>
-                        <span>Cevaplama <strong>{utt.cevaplama_puani}</strong></span>
-                        <span>Öneri <strong>{utt.oneri_puani}</strong></span>
-                        <span>Extra <strong>{utt.extra_puani}</strong></span>
-                        <span>İleri sarma <strong>−{utt.ileri_sarma_kaybi}</strong></span>
-                        <span>Yanlış cevap <strong>−{utt.yanlis_cevap_kaybi}</strong></span>
-                        <span>Öneri kaybı <strong>−{utt.oneri_kaybi}</strong></span>
+                        <div className={styles.uttDetailIntro}>
+                          <span>LİG PERSPEKTİFİ</span>
+                          <strong>{utt.sira}. sıra · {utt.toplam_puan} net puan</strong>
+                          <small>{utt.sira === 1 ? "Lider konumda" : `Liderle ${liderFarkiUtt} · bir üst sırayla ${birUstFarki} puan fark`}</small>
+                        </div>
+                        <div className={styles.uttDetailGain}><span>İzleme</span><strong>+{utt.izleme_puani}</strong></div>
+                        <div className={styles.uttDetailGain}><span>Cevaplama</span><strong>+{utt.cevaplama_puani}</strong></div>
+                        <div className={styles.uttDetailGain}><span>Öneri + extra</span><strong>+{utt.oneri_puani + utt.extra_puani}</strong></div>
+                        <div className={styles.uttDetailLoss}><span>İleri sarma</span><strong>−{utt.ileri_sarma_kaybi}</strong></div>
+                        <div className={styles.uttDetailLoss}><span>Yanlış cevap</span><strong>−{utt.yanlis_cevap_kaybi}</strong></div>
+                        <div className={styles.uttDetailLoss}><span>Öneri kaybı</span><strong>−{utt.oneri_kaybi}</strong></div>
                       </div>
                     )}
                   </div>

@@ -244,16 +244,23 @@
 .tableHead { padding: 7px 10px; background: #f6f8fb; color: #8a98aa; font-size: 8px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
 .tableHead span:nth-child(4) { text-align: right; }
 .uttGroup + .uttGroup { border-top: 1px solid #edf1f5; }
-.uttRow { width: 100%; padding: 8px 10px; border: 0; background: #fff; color: inherit; cursor: pointer; text-align: left; }
+.uttRow { width: 100%; padding: 8px 10px; border: 0; background: #fff; color: inherit; cursor: pointer; text-align: left; transition: background .16s ease; }
 .uttRow:hover { background: #f8fbfe; }
+.uttRowOpen { background: #f8fbfe; }
 .gainLoss { display: flex; gap: 6px; font-style: normal; font-size: 10px; font-weight: 900; }
 .gainLoss em { color: #15955a; font-style: normal; }
 .gainLoss em + em { color: #df4d4d; }
 .uttNet { color: #258edc; font-size: 14px; font-weight: 900; text-align: right; }
+.uttRow svg { color: #6f91ad; transition: transform .18s ease; }
 .rotated { transform: rotate(180deg); }
-.uttDetail { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; padding: 8px 12px 10px 48px; background: #f8fafc; }
-.uttDetail span { display: flex; flex-direction: column; color: #8795a8; font-size: 8px; font-weight: 700; }
-.uttDetail strong { color: #344a65; font-size: 10px; }
+.uttDetail { display: grid; grid-template-columns: minmax(175px, 1.45fr) repeat(6, minmax(82px, 1fr)); gap: 7px; margin: 0 10px 10px; padding: 10px; border: 1px solid #dfebf5; border-radius: 13px; background: linear-gradient(135deg, #eef7ff, #f8fbfe); }
+.uttDetail > div { display: flex; min-height: 56px; flex-direction: column; justify-content: center; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.9); }
+.uttDetail span { color: #8293a7; font-size: 8px; font-weight: 850; letter-spacing: .03em; text-transform: uppercase; }
+.uttDetail strong { margin-top: 4px; color: #344a65; font-size: 11px; font-weight: 900; }
+.uttDetailIntro span { color: #4385b8; }
+.uttDetailIntro small { margin-top: 3px; color: #7c8fa4; font-size: 8px; line-height: 1.35; font-weight: 700; }
+.uttDetailGain strong { color: #208a66; }
+.uttDetailLoss strong { color: #d45c4b; }
 
 .signals { display: grid; gap: 7px; }
 .signals > div { display: grid; grid-template-columns: 32px minmax(0, 1fr); align-items: center; gap: 9px; padding: 8px; border-radius: 12px; background: #f8fafc; }
@@ -280,6 +287,8 @@
 @container field-dashboard (max-width: 900px) {
   .statsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .topGrid, .bottomGrid { grid-template-columns: 1fr; }
+  .uttDetail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .uttDetailIntro { grid-column: span 3; }
 }
 
 @container field-dashboard (max-width: 620px) {
@@ -294,5 +303,6 @@
   .tableHead { display: none; }
   .uttRow { grid-template-columns: 30px minmax(120px, 1fr) 54px 16px; }
   .gainLoss { display: none; }
-  .uttDetail { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-left: 48px; }
+  .uttDetail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .uttDetailIntro { grid-column: span 2; }
 }
