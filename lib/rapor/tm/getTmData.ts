@@ -1,8 +1,6 @@
-// lib/rapor/tm/getTmData.ts
-import { SupabaseClient } from '@supabase/supabase-js';
-import { NextResponse } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { NextResponse } from 'next/server';
 import { hataYaniti } from '@/lib/utils/hataIsle';
-import { TUKETICI_ROLLER } from '@/lib/utils/roller';
 
 interface Kullanici {
   kullanici_id: string;
@@ -10,28 +8,63 @@ interface Kullanici {
   firma_id: string;
 }
 
-interface OzetSatir {
-  kullanici_id: string;
-  ad: string;
-  soyad: string;
-  izlenme_sayisi: number;
-  video_puani: number;
-  soru_puani: number;
-  oneri_puani: number;
-  extra_puan: number;
-  ileri_sarma_kaybi: number;
-  yanlis_cevap_kaybi: number;
-  oneri_kaybi: number;
-  toplam_net_puan: number;
+export interface TmAnaOzet {
+  toplam_yayin: number;
+  toplam_bolge: number;
+  toplam_utt: number;
+  guncel_tur_toplam_firsat: number;
+  guncel_tur_tamamlanan: number;
+  guncel_tur_kalan: number;
+  guncel_tur_izlenme_orani: number;
+  donem_tamamlanan_izleme: number;
+  donem_benzersiz_utt_yayin: number;
+  donem_aktif_utt: number;
 }
 
-interface BolgeBazliSatir {
+export interface TmBolgePerformans {
   bolge_id: string;
   bolge_adi: string;
   bm_adi: string;
   toplam_utt: number;
   aktif_utt: number;
-  hic_izlemeyen_utt: number;
+  tamamlanan_izleme: number;
+  benzersiz_yayin: number;
+  izleme_puani: number;
+  cevaplama_puani: number;
+  oneri_puani: number;
+  extra_puan: number;
+  ileri_sarma_kaybi: number;
+  yanlis_cevap_kaybi: number;
+  oneri_kaybi: number;
+  kazanilan_toplam: number;
+  kaybedilen_toplam: number;
+  net_puan: number;
+}
+
+export interface TmUttPerformans {
+  kullanici_id: string;
+  ad: string;
+  soyad: string;
+  bolge_id: string;
+  bolge_adi: string;
+  tamamlanan_izleme: number;
+  benzersiz_yayin: number;
+  izleme_puani: number;
+  cevaplama_puani: number;
+  oneri_puani: number;
+  extra_puan: number;
+  ileri_sarma_kaybi: number;
+  yanlis_cevap_kaybi: number;
+  oneri_kaybi: number;
+  kazanilan_toplam: number;
+  kaybedilen_toplam: number;
+  net_puan: number;
+}
+
+export interface UrunBolgeSatiri {
+  bolge_id: string;
+  bolge_adi: string;
+  toplam_utt: number;
   video_puani: number;
   soru_puani: number;
   oneri_puani: number;
@@ -40,71 +73,57 @@ interface BolgeBazliSatir {
   yanlis_cevap_kaybi: number;
   oneri_kaybi: number;
   toplam_net_puan: number;
-  urun_dagilimi: any;
 }
 
-interface UrunBazliBolgeSatir {
+export interface UrunBazliBolge {
   urun_id: string;
   urun_adi: string;
   toplam_net_puan: number;
-  bolge_listesi: any;
-  ortalama: any;
+  bolge_listesi: UrunBolgeSatiri[];
+  ortalama: Record<string, number>;
 }
 
-interface TakimSiraSatir {
-  takim_id: string;
-  takim_adi: string;
-  toplam_puan: number;
+export interface TmEtkilesim {
+  yayin_id: string;
+  icerik_adi: string;
+  teknik_adi: string;
+  begeni_sayisi: number;
+  favori_sayisi: number;
 }
+
+interface OzetSatiri { toplam_net_puan: number | null }
 
 interface TmData {
   hata: NextResponse | null;
   takim: { takim_adi: string } | null;
   firma: { firma_adi: string } | null;
-  // Takım UTT'lerinin kullanıcı bazlı ozet'i (katkı/aktif sayısı için)
-  uttOzetler: OzetSatir[];
-  // Bölge bazlı tablo (Blok 1)
-  bolgeBazli: BolgeBazliSatir[];
-  // Ürün bazlı bölge dağılımı (Blok 2 — akordeon)
-  urunBazliBolge: UrunBazliBolgeSatir[];
-  // Scope-bağımsız metrikler (toplam_yayin + öneri etkinliği — takım kapsamında)
-  scopeOzet: {
-    toplam_yayin: number;
+  anaOzet: TmAnaOzet;
+  bolgePerformans: TmBolgePerformans[];
+  uttPerformans: TmUttPerformans[];
+  urunBazliBolge: UrunBazliBolge[];
+  oneriOzet: {
     gonderilen_oneri: number;
     tamamlanan_oneri: number;
     bekleyen_oneri: number;
     bekleyen_oneri_olan_utt_sayisi: number;
   };
-  // Takımdaki toplam UTT sayısı
-  toplamUttSayisi: number;
-  // Şirket toplam net (katkı hesabı için)
   sirketToplamPuan: number;
-  // Firmadaki tüm takımlar — HBLigi takım sıralaması için (her takımın net puanı)
-  takimSirasi: TakimSiraSatir[];
-  // Beğeni & favori listeleri
-  begeniRaw: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; begeni_sayisi: number }>;
-  favoriRaw: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; favori_sayisi: number }>;
+  etkilesim: TmEtkilesim[];
 }
 
+const bosAnaOzet: TmAnaOzet = {
+  toplam_yayin: 0, toplam_bolge: 0, toplam_utt: 0,
+  guncel_tur_toplam_firsat: 0, guncel_tur_tamamlanan: 0,
+  guncel_tur_kalan: 0, guncel_tur_izlenme_orani: 0,
+  donem_tamamlanan_izleme: 0, donem_benzersiz_utt_yayin: 0,
+  donem_aktif_utt: 0,
+};
+
 const bos: TmData = {
-  hata: null,
-  takim: null,
-  firma: null,
-  uttOzetler: [],
-  bolgeBazli: [],
-  urunBazliBolge: [],
-  scopeOzet: {
-    toplam_yayin: 0,
-    gonderilen_oneri: 0,
-    tamamlanan_oneri: 0,
-    bekleyen_oneri: 0,
-    bekleyen_oneri_olan_utt_sayisi: 0,
-  },
-  toplamUttSayisi: 0,
-  sirketToplamPuan: 0,
-  takimSirasi: [],
-  begeniRaw: [],
-  favoriRaw: [],
+  hata: null, takim: null, firma: null, anaOzet: bosAnaOzet,
+  bolgePerformans: [], uttPerformans: [], urunBazliBolge: [],
+  oneriOzet: { gonderilen_oneri: 0, tamamlanan_oneri: 0, bekleyen_oneri: 0, bekleyen_oneri_olan_utt_sayisi: 0 },
+  sirketToplamPuan: 0, etkilesim: [],
 };
 
 export async function getTmData(
@@ -113,133 +132,45 @@ export async function getTmData(
   baslangic: string,
   bitis: string
 ): Promise<TmData> {
-  // 1) Firmadaki tüm takımları çek (HBLigi takım sıralaması için)
-  const { data: firmaTakimlari, error: takimListError } = await adminSupabase
-    .from('takimlar')
-    .select('takim_id, takim_adi')
-    .eq('firma_id', kullanici.firma_id);
-
-  if (takimListError) {
-    return { ...bos, hata: hataYaniti('Takım listesi çekilemedi', 'takimlar', takimListError) };
-  }
-
-  // 2) Paralel: takım adı, firma adı, takım UTT ozet, bölge bazlı grup, ürün bazlı bölge grup,
-  //    scope ozet, toplam UTT count, şirket net SUM, beğeni & favori listeleri
-  const [
-    takimAdRes,
-    firmaAdRes,
-    uttOzetlerRes,
-    bolgeBazliRes,
-    urunBazliBolgeRes,
-    scopeOzetRes,
-    toplamUttRes,
-    sirketOzetRes,
-    begeniRawRes,
-    favoriRawRes,
-  ] = await Promise.all([
+  const [takimRes, firmaRes, anaRes, bolgeRes, uttRes, urunRes, oneriRes, sirketRes, etkilesimRes] = await Promise.all([
     adminSupabase.from('takimlar').select('takim_adi').eq('takim_id', kullanici.takim_id).maybeSingle(),
     adminSupabase.from('firmalar').select('firma_adi').eq('firma_id', kullanici.firma_id).maybeSingle(),
-    adminSupabase.rpc('get_kullanici_ozet', {
-      p_baslangic: baslangic,
-      p_bitis: bitis,
-      p_takim_id: kullanici.takim_id,
-    }),
-    adminSupabase.rpc('get_bolge_bazli_grup', {
-      p_baslangic: baslangic,
-      p_bitis: bitis,
-      p_takim_id: kullanici.takim_id,
-    }),
-    adminSupabase.rpc('get_urun_bazli_bolge_grup', {
-      p_baslangic: baslangic,
-      p_bitis: bitis,
-      p_takim_id: kullanici.takim_id,
-    }),
-    adminSupabase.rpc('get_scope_ozet', {
-      p_baslangic: baslangic,
-      p_bitis: bitis,
-      p_takim_id: kullanici.takim_id,
-      p_oneren_id: null,
-    }),
-    adminSupabase
-      .from('kullanicilar')
-      .select('kullanici_id', { count: 'exact', head: true })
-      .eq('takim_id', kullanici.takim_id)
-      .in('rol', TUKETICI_ROLLER)
-      .eq('aktif_mi', true),
-    adminSupabase.rpc('get_kullanici_ozet', {
-      p_baslangic: baslangic,
-      p_bitis: bitis,
-      p_firma_id: kullanici.firma_id,
-    }),
-    adminSupabase
-      .from('v_rapor_begeni_favori')
-      .select('yayin_id, urun_adi, teknik_adi, begeni_sayisi')
-      .eq('takim_id', kullanici.takim_id)
-      .order('begeni_sayisi', { ascending: false })
-      .limit(5),
-    adminSupabase
-      .from('v_rapor_begeni_favori')
-      .select('yayin_id, urun_adi, teknik_adi, favori_sayisi')
-      .eq('takim_id', kullanici.takim_id)
-      .order('favori_sayisi', { ascending: false })
-      .limit(5),
+    adminSupabase.rpc('get_tm_rapor_ana_ozet_v2', { p_tm_id: kullanici.kullanici_id, p_baslangic: baslangic, p_bitis: bitis }),
+    adminSupabase.rpc('get_tm_bolge_performans_v2', { p_tm_id: kullanici.kullanici_id, p_baslangic: baslangic, p_bitis: bitis }),
+    adminSupabase.rpc('get_tm_utt_performans_v2', { p_tm_id: kullanici.kullanici_id, p_baslangic: baslangic, p_bitis: bitis }),
+    adminSupabase.rpc('get_urun_bazli_bolge_grup', { p_baslangic: baslangic, p_bitis: bitis, p_takim_id: kullanici.takim_id }),
+    // Eski RPC yalnız doğrulanmış öneri alanları için tutulur.
+    adminSupabase.rpc('get_scope_ozet', { p_baslangic: baslangic, p_bitis: bitis, p_takim_id: kullanici.takim_id, p_oneren_id: null }),
+    adminSupabase.rpc('get_kullanici_ozet', { p_baslangic: baslangic, p_bitis: bitis, p_firma_id: kullanici.firma_id }),
+    adminSupabase.rpc('get_tm_etkilesim_v2', { p_tm_id: kullanici.kullanici_id, p_baslangic: baslangic, p_bitis: bitis }),
   ]);
 
-  if (takimAdRes.error)        return { ...bos, hata: hataYaniti('Takım adı çekilemedi', 'takimlar', takimAdRes.error) };
-  if (firmaAdRes.error)        return { ...bos, hata: hataYaniti('Firma adı çekilemedi', 'firmalar', firmaAdRes.error) };
-  if (uttOzetlerRes.error)     return { ...bos, hata: hataYaniti('Takım UTT özetleri çekilemedi', 'get_kullanici_ozet (takim)', uttOzetlerRes.error) };
-  if (bolgeBazliRes.error)     return { ...bos, hata: hataYaniti('Bölge bazlı grup çekilemedi', 'get_bolge_bazli_grup', bolgeBazliRes.error) };
-  if (urunBazliBolgeRes.error) return { ...bos, hata: hataYaniti('Ürün bazlı bölge grup çekilemedi', 'get_urun_bazli_bolge_grup', urunBazliBolgeRes.error) };
-  if (scopeOzetRes.error)      return { ...bos, hata: hataYaniti('Scope özeti çekilemedi', 'get_scope_ozet', scopeOzetRes.error) };
-  if (toplamUttRes.error)      return { ...bos, hata: hataYaniti('Toplam UTT sayısı çekilemedi', 'kullanicilar count', toplamUttRes.error) };
-  if (sirketOzetRes.error)     return { ...bos, hata: hataYaniti('Şirket toplam puanı çekilemedi', 'get_kullanici_ozet (firma)', sirketOzetRes.error) };
-  if (begeniRawRes.error)      return { ...bos, hata: hataYaniti('Beğeni listesi çekilemedi', 'v_rapor_begeni_favori', begeniRawRes.error) };
-  if (favoriRawRes.error)      return { ...bos, hata: hataYaniti('Favori listesi çekilemedi', 'v_rapor_begeni_favori', favoriRawRes.error) };
+  if (takimRes.error) return { ...bos, hata: hataYaniti('Takım adı çekilemedi', 'takimlar', takimRes.error) };
+  if (firmaRes.error) return { ...bos, hata: hataYaniti('Firma adı çekilemedi', 'firmalar', firmaRes.error) };
+  if (anaRes.error) return { ...bos, hata: hataYaniti('TM ana özeti çekilemedi', 'get_tm_rapor_ana_ozet_v2', anaRes.error) };
+  if (bolgeRes.error) return { ...bos, hata: hataYaniti('TM bölge performansı çekilemedi', 'get_tm_bolge_performans_v2', bolgeRes.error) };
+  if (uttRes.error) return { ...bos, hata: hataYaniti('TM UTT performansı çekilemedi', 'get_tm_utt_performans_v2', uttRes.error) };
+  if (urunRes.error) return { ...bos, hata: hataYaniti('Ürün bazlı bölge dağılımı çekilemedi', 'get_urun_bazli_bolge_grup', urunRes.error) };
+  if (oneriRes.error) return { ...bos, hata: hataYaniti('Öneri özeti çekilemedi', 'get_scope_ozet', oneriRes.error) };
+  if (sirketRes.error) return { ...bos, hata: hataYaniti('Şirket puanı çekilemedi', 'get_kullanici_ozet (firma)', sirketRes.error) };
+  if (etkilesimRes.error) return { ...bos, hata: hataYaniti('TM etkileşimleri çekilemedi', 'get_tm_etkilesim_v2', etkilesimRes.error) };
 
-  // Şirket toplam net = scope'lu ozet satırlarının toplamı
-  const sirketOzetler = (sirketOzetRes.data ?? []) as OzetSatir[];
-  const sirketToplamPuan = sirketOzetler.reduce((acc, o) => acc + (o.toplam_net_puan ?? 0), 0);
-
-  // Takım sıralaması — her takım için scope'lu ozet alıp toplamı çıkar.
-  // Firmadaki takım sayısı küçük (tipik 5-10), tek tek RPC çağrısı kabul edilebilir.
-  const takimSirasiPromises = (firmaTakimlari ?? []).map(async (t: any) => {
-    const { data } = await adminSupabase.rpc('get_kullanici_ozet', {
-      p_baslangic: baslangic,
-      p_bitis: bitis,
-      p_takim_id: t.takim_id,
-    });
-    const toplam = (data ?? []).reduce(
-      (acc: number, o: any) => acc + (o.toplam_net_puan ?? 0),
-      0
-    );
-    return { takim_id: t.takim_id, takim_adi: t.takim_adi, toplam_puan: toplam };
-  });
-  const takimSirasi = (await Promise.all(takimSirasiPromises)).sort(
-    (a, b) => b.toplam_puan - a.toplam_puan
-  );
-
-  const scopeOzetSatir = (scopeOzetRes.data && (scopeOzetRes.data as any[]).length > 0)
-    ? (scopeOzetRes.data as any[])[0]
-    : null;
-
+  const oneri = (oneriRes.data?.[0] ?? {}) as Partial<TmData['oneriOzet']>;
   return {
     hata: null,
-    takim: takimAdRes.data,
-    firma: firmaAdRes.data,
-    uttOzetler: (uttOzetlerRes.data ?? []) as OzetSatir[],
-    bolgeBazli: (bolgeBazliRes.data ?? []) as BolgeBazliSatir[],
-    urunBazliBolge: (urunBazliBolgeRes.data ?? []) as UrunBazliBolgeSatir[],
-    scopeOzet: {
-      toplam_yayin: scopeOzetSatir?.toplam_yayin ?? 0,
-      gonderilen_oneri: scopeOzetSatir?.gonderilen_oneri ?? 0,
-      tamamlanan_oneri: scopeOzetSatir?.tamamlanan_oneri ?? 0,
-      bekleyen_oneri: scopeOzetSatir?.bekleyen_oneri ?? 0,
-      bekleyen_oneri_olan_utt_sayisi: scopeOzetSatir?.bekleyen_oneri_olan_utt_sayisi ?? 0,
+    takim: takimRes.data,
+    firma: firmaRes.data,
+    anaOzet: (anaRes.data?.[0] ?? bosAnaOzet) as TmAnaOzet,
+    bolgePerformans: (bolgeRes.data ?? []) as TmBolgePerformans[],
+    uttPerformans: (uttRes.data ?? []) as TmUttPerformans[],
+    urunBazliBolge: (urunRes.data ?? []) as UrunBazliBolge[],
+    oneriOzet: {
+      gonderilen_oneri: Number(oneri.gonderilen_oneri ?? 0),
+      tamamlanan_oneri: Number(oneri.tamamlanan_oneri ?? 0),
+      bekleyen_oneri: Number(oneri.bekleyen_oneri ?? 0),
+      bekleyen_oneri_olan_utt_sayisi: Number(oneri.bekleyen_oneri_olan_utt_sayisi ?? 0),
     },
-    toplamUttSayisi: toplamUttRes.count ?? 0,
-    sirketToplamPuan,
-    takimSirasi,
-    begeniRaw: begeniRawRes.data ?? [],
-    favoriRaw: favoriRawRes.data ?? [],
+    sirketToplamPuan: ((sirketRes.data ?? []) as OzetSatiri[]).reduce((toplam, satir) => toplam + Number(satir.toplam_net_puan ?? 0), 0),
+    etkilesim: (etkilesimRes.data ?? []) as TmEtkilesim[],
   };
 }

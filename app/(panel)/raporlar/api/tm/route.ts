@@ -1,19 +1,21 @@
-// app/raporlar/api/tm/route.ts
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { hataYaniti, yetkiHatasi } from '@/lib/utils/hataIsle';
 import { tarihAraligi } from '@/lib/utils/tarihAraligi';
 import { getTmData } from '@/lib/rapor/tm/getTmData';
-import { uttOzetAgregasyon } from '@/lib/rapor/paylasilan/agregasyon';
-import { katkiYuzdesi, izlenmeOrani, tamamlanmaOrani } from '@/lib/rapor/paylasilan/oran';
-import { ligSiralamasi } from '@/lib/rapor/paylasilan/ligSira';
+import { katkiYuzdesi, tamamlanmaOrani } from '@/lib/rapor/paylasilan/oran';
+
+const puanAlanlari = ['video_puani', 'soru_puani', 'oneri_puani', 'extra_puan', 'ileri_sarma_kaybi', 'yanlis_cevap_kaybi', 'oneri_kaybi', 'toplam_net_puan'] as const;
+type PuanAlani = (typeof puanAlanlari)[number];
+type PuanToplami = Record<PuanAlani, number>;
+const bosPuan = (): PuanToplami => Object.fromEntries(puanAlanlari.map(alan => [alan, 0])) as PuanToplami;
+const sayi = (deger: unknown) => Number(deger ?? 0);
 
 export async function GET(request: Request) {
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
   const { searchParams } = new URL(request.url);
-  const periyot = searchParams.get('periyot') || 'bu_ay';
-  const { baslangic, bitis } = tarihAraligi(periyot);
+  const { baslangic, bitis } = tarihAraligi(searchParams.get('periyot') || 'bu_ay');
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return yetkiHatasi('Oturum açılmamış');
@@ -23,109 +25,94 @@ export async function GET(request: Request) {
     .select('kullanici_id, ad, soyad, rol, takim_id, firma_id')
     .eq('eposta', user.email)
     .single();
+  if (kullaniciError || !kullanici) return hataYaniti('Kullanıcı bulunamadı', 'kullanici_bulamadi', kullaniciError);
+  if ((kullanici.rol ?? '').toLowerCase() !== 'tm') return yetkiHatasi('Bu rapora erişim yetkiniz yok');
 
-  if (kullaniciError || !kullanici) {
-    return hataYaniti('Kullanıcı bulunamadı', 'kullanici_bulamadi', kullaniciError);
-  }
-
-  const rol = (kullanici.rol ?? '').toLowerCase();
-  if (rol !== 'tm') return yetkiHatasi('Bu rapora erişim yetkiniz yok');
-
-  // Veri katmanı
   const d = await getTmData(adminSupabase, kullanici, baslangic, bitis);
   if (d.hata) return d.hata;
 
-  // ─── Takım agregasyonu — paylaşılan helper ──────────────────────────────
-  const a = uttOzetAgregasyon(d.uttOzetler, d.toplamUttSayisi);
+  const genel = d.bolgePerformans.reduce((toplam, bolge) => {
+    toplam.video_puani += sayi(bolge.izleme_puani);
+    toplam.soru_puani += sayi(bolge.cevaplama_puani);
+    toplam.oneri_puani += sayi(bolge.oneri_puani);
+    toplam.extra_puan += sayi(bolge.extra_puan);
+    toplam.ileri_sarma_kaybi += sayi(bolge.ileri_sarma_kaybi);
+    toplam.yanlis_cevap_kaybi += sayi(bolge.yanlis_cevap_kaybi);
+    toplam.oneri_kaybi += sayi(bolge.oneri_kaybi);
+    toplam.toplam_net_puan += sayi(bolge.net_puan);
+    return toplam;
+  }, bosPuan());
 
-  // Bölge sayısı + bölge bazlı en yüksek puan + ortalama
-  const bolgeSayisi = d.bolgeBazli.length;
-  const enYuksekBolgePuan = d.bolgeBazli.reduce((acc, b) => Math.max(acc, b.toplam_net_puan ?? 0), 0);
-  const ortalamaPuanBolge = bolgeSayisi > 0 ? Math.round(a.toplamNet / bolgeSayisi) : 0;
-
-  // ─── İzlenme oranı — paylaşılan helper ──────────────────────────────────
-  const izlenme = izlenmeOrani(a.toplamIzlenme, d.scopeOzet.toplam_yayin, d.toplamUttSayisi);
-  const kalanIzlenme = Math.max(0, d.scopeOzet.toplam_yayin * d.toplamUttSayisi - a.toplamIzlenme);
-
-  // ─── Şirket katkısı — paylaşılan helper ─────────────────────────────────
-  const sirketKatki = katkiYuzdesi(a.toplamNet, d.sirketToplamPuan);
-
-  // ─── HBLigi — takım sıralaması — paylaşılan helper ──────────────────────
-  const ligGiris = d.takimSirasi.map(t => ({
-    id: t.takim_id,
-    ad: t.takim_adi,
-    toplam_puan: t.toplam_puan,
-  }));
-  const lig = ligSiralamasi(ligGiris, kullanici.takim_id ?? '', a.toplamNet);
-
-  // ─── Öneri etkinliği — paylaşılan helper ────────────────────────────────
-  const oneriOrani = tamamlanmaOrani(d.scopeOzet.tamamlanan_oneri, d.scopeOzet.gonderilen_oneri);
-
-  // ─── Bölge listesi inşası ───────────────────────────────────────────────
-  const bolgeListesi = d.bolgeBazli.map(b => ({
-    bolge_id: b.bolge_id,
-    bolge_adi: b.bolge_adi,
-    bm_adi: b.bm_adi,
-    toplam_utt: b.toplam_utt,
-    aktif_utt: b.aktif_utt,
-    hic_izlemeyen_utt: b.hic_izlemeyen_utt,
-    toplam_net_puan: b.toplam_net_puan,
-    katki_yuzdesi: katkiYuzdesi(b.toplam_net_puan, a.toplamNet),
-    ortalama_utt_puani: b.toplam_utt > 0 ? Math.round(b.toplam_net_puan / b.toplam_utt) : 0,
-  })).sort((x, y) => y.toplam_net_puan - x.toplam_net_puan);
-
-  return NextResponse.json({
-    success: true,
-    data: {
-      kullanici: {
-        ad: kullanici.ad,
-        soyad: kullanici.soyad,
-        rol: kullanici.rol,
-        takim_adi: d.takim?.takim_adi ?? '-',
-        firma_adi: d.firma?.firma_adi ?? '-',
-      },
-      katki: {
-        sirket_katki_yuzdesi: sirketKatki,
-        takim_toplam_puan: a.toplamNet,
-        sirket_toplam_puan: d.sirketToplamPuan,
-      },
-      takim_ozet: {
-        toplam_bolge: bolgeSayisi,
-        toplam_utt: d.toplamUttSayisi,
-        aktif_utt: a.aktifUtt,
-        hic_izlemeyen_utt: a.hicIzlemeyenUtt,
-        toplam_puan: a.toplamNet,
-        ortalama_puan_bolge: ortalamaPuanBolge,
-        en_yuksek_bolge_puan: enYuksekBolgePuan,
-        en_yuksek_utt_puan: a.enYuksekUttPuan,
-        izlenme_orani: izlenme,
-        toplam_izlenme: a.toplamIzlenme,
-        kalan_izlenme: kalanIzlenme,
-        toplam_yayin: d.scopeOzet.toplam_yayin,
-      },
-      lig: {
-        takim_sirasi: lig.kendiSira,
-        toplam_takim_sayisi: d.takimSirasi.length,
-        bir_ust_puan_farki: lig.birUstPuanFarki,
-        takipci_farki: lig.takipciFarki,
-        firma_siralamasi: lig.siralama.map(s => ({
-          sira: s.sira,
-          takim_adi: s.ad,
-          puan: s.puan,
-          kendisi_mi: s.kendisi_mi,
-        })),
-      },
-      oneri_etkinligi: {
-        gonderilen: d.scopeOzet.gonderilen_oneri,
-        tamamlanan: d.scopeOzet.tamamlanan_oneri,
-        tamamlanma_orani: oneriOrani,
-        bekleyen: d.scopeOzet.bekleyen_oneri,
-        bekleyen_oneri_olan_utt_sayisi: d.scopeOzet.bekleyen_oneri_olan_utt_sayisi,
-      },
-      bolge_listesi: bolgeListesi,
-      urun_bazli_dagilim: d.urunBazliBolge,
-      begeni_listesi: d.begeniRaw,
-      favori_listesi: d.favoriRaw,
-    },
+  const urunBolgeToplamlari = new Map<string, PuanToplami>();
+  for (const urun of d.urunBazliBolge) {
+    for (const bolge of urun.bolge_listesi ?? []) {
+      const mevcut = urunBolgeToplamlari.get(bolge.bolge_id) ?? bosPuan();
+      for (const alan of puanAlanlari) mevcut[alan] += sayi(bolge[alan]);
+      urunBolgeToplamlari.set(bolge.bolge_id, mevcut);
+    }
+  }
+  const urunDisiBolgeler = d.bolgePerformans.flatMap(bolge => {
+    const urunToplami = urunBolgeToplamlari.get(bolge.bolge_id);
+    const bolgeGenel: PuanToplami = {
+      video_puani: bolge.izleme_puani,
+      soru_puani: bolge.cevaplama_puani,
+      oneri_puani: bolge.oneri_puani,
+      extra_puan: bolge.extra_puan,
+      ileri_sarma_kaybi: bolge.ileri_sarma_kaybi,
+      yanlis_cevap_kaybi: bolge.yanlis_cevap_kaybi,
+      oneri_kaybi: bolge.oneri_kaybi,
+      toplam_net_puan: bolge.net_puan,
+    };
+    const fark = Object.fromEntries(puanAlanlari.map(alan => [alan, bolgeGenel[alan] - sayi(urunToplami?.[alan])])) as PuanToplami;
+    if (!puanAlanlari.some(alan => fark[alan] !== 0)) return [];
+    return [{ bolge_id: bolge.bolge_id, bolge_adi: bolge.bolge_adi, toplam_utt: bolge.toplam_utt, ...fark }];
   });
+  const icerikDagilimi = [...d.urunBazliBolge];
+  if (urunDisiBolgeler.length > 0) {
+    const toplamlar = Object.fromEntries(puanAlanlari.map(alan => [alan, urunDisiBolgeler.reduce((t, b) => t + b[alan], 0)])) as PuanToplami;
+    icerikDagilimi.push({
+      urun_id: '__urun_disi__', urun_adi: 'Ürün Dışı Eğitimler', toplam_net_puan: toplamlar.toplam_net_puan,
+      bolge_listesi: urunDisiBolgeler,
+      ortalama: Object.fromEntries(puanAlanlari.map(alan => [alan, Math.round(toplamlar[alan] / urunDisiBolgeler.length)])),
+    });
+  }
+  icerikDagilimi.sort((a, b) => b.toplam_net_puan - a.toplam_net_puan);
+
+  const kazanilanToplam = genel.video_puani + genel.soru_puani + genel.oneri_puani + genel.extra_puan;
+  const kaybedilenToplam = genel.ileri_sarma_kaybi + genel.yanlis_cevap_kaybi + genel.oneri_kaybi;
+  const bolgeListesi = d.bolgePerformans.map(bolge => ({
+    ...bolge,
+    katki_yuzdesi: katkiYuzdesi(bolge.net_puan, genel.toplam_net_puan),
+    ortalama_utt_puani: bolge.toplam_utt > 0 ? Math.round(bolge.net_puan / bolge.toplam_utt) : 0,
+    utt_listesi: d.uttPerformans.filter(utt => utt.bolge_id === bolge.bolge_id),
+  }));
+
+  return NextResponse.json({ success: true, data: {
+    kullanici: { ad: kullanici.ad, soyad: kullanici.soyad, rol: kullanici.rol, takim_adi: d.takim?.takim_adi ?? '-', firma_adi: d.firma?.firma_adi ?? '-' },
+    performans: {
+      net_puan: genel.toplam_net_puan, kazanilan_toplam: kazanilanToplam, kaybedilen_toplam: kaybedilenToplam,
+      ortalama_bolge_puani: d.anaOzet.toplam_bolge > 0 ? Math.round(genel.toplam_net_puan / d.anaOzet.toplam_bolge) : 0,
+      en_yuksek_bolge_puani: d.bolgePerformans.reduce((en, bolge) => Math.max(en, bolge.net_puan), 0),
+      izleme_puani: genel.video_puani, cevaplama_puani: genel.soru_puani, oneri_puani: genel.oneri_puani, extra_puan: genel.extra_puan,
+      ileri_sarma_kaybi: genel.ileri_sarma_kaybi, yanlis_cevap_kaybi: genel.yanlis_cevap_kaybi, oneri_kaybi: genel.oneri_kaybi,
+    },
+    kapsam: {
+      toplam_bolge: d.anaOzet.toplam_bolge, toplam_utt: d.anaOzet.toplam_utt, aktif_utt: d.anaOzet.donem_aktif_utt,
+      toplam_yayin: d.anaOzet.toplam_yayin, guncel_tur_toplam_firsat: d.anaOzet.guncel_tur_toplam_firsat,
+      guncel_tur_tamamlanan: d.anaOzet.guncel_tur_tamamlanan, guncel_tur_kalan: d.anaOzet.guncel_tur_kalan,
+      guncel_tur_izlenme_orani: d.anaOzet.guncel_tur_izlenme_orani,
+      donem_tamamlanan_izleme: d.anaOzet.donem_tamamlanan_izleme,
+      donem_benzersiz_utt_yayin: d.anaOzet.donem_benzersiz_utt_yayin,
+    },
+    katki: { sirket_katki_yuzdesi: katkiYuzdesi(genel.toplam_net_puan, d.sirketToplamPuan), sirket_toplam_puan: d.sirketToplamPuan },
+    oneri_etkinligi: {
+      gonderilen: d.oneriOzet.gonderilen_oneri, tamamlanan: d.oneriOzet.tamamlanan_oneri,
+      bekleyen: d.oneriOzet.bekleyen_oneri, bekleyen_oneri_olan_utt_sayisi: d.oneriOzet.bekleyen_oneri_olan_utt_sayisi,
+      tamamlanma_orani: tamamlanmaOrani(d.oneriOzet.tamamlanan_oneri, d.oneriOzet.gonderilen_oneri),
+    },
+    bolge_listesi: bolgeListesi,
+    icerik_dagilimi: icerikDagilimi,
+    begeni_listesi: d.etkilesim.filter(x => x.begeni_sayisi > 0).map(x => ({ yayin_id: x.yayin_id, urun_adi: x.icerik_adi, teknik_adi: x.teknik_adi, begeni_sayisi: x.begeni_sayisi })),
+    favori_listesi: d.etkilesim.filter(x => x.favori_sayisi > 0).map(x => ({ yayin_id: x.yayin_id, urun_adi: x.icerik_adi, teknik_adi: x.teknik_adi, favori_sayisi: x.favori_sayisi })),
+  }});
 }
