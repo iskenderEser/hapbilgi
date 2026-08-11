@@ -1,6 +1,5 @@
-// lib/rapor/yonetici/getYoneticiData.ts
-import { SupabaseClient } from '@/lib/types/rapor';
 import { NextResponse } from 'next/server';
+import type { SupabaseClient } from '@/lib/types/rapor';
 
 interface Kullanici {
   kullanici_id: string;
@@ -9,44 +8,40 @@ interface Kullanici {
 
 export async function getYoneticiData(
   adminSupabase: SupabaseClient,
-  kullanici: Kullanici
+  kullanici: Kullanici,
+  baslangic: string,
+  bitis: string,
 ) {
-  const [
-    firmaRes,
-    icerikSayimRes,
-    konuListesiRes,
-    anaSayfaStatRes,
-    extraVideoRes,
-  ] = await Promise.all([
+  const [firmaRes, ozetRes, takimRes, egitimTuruRes] = await Promise.all([
     adminSupabase
       .from('firmalar')
       .select('firma_adi')
       .eq('firma_id', kullanici.firma_id)
       .maybeSingle(),
-
-    adminSupabase.rpc('get_yonetici_icerik_turu_sayimi', {
-      p_firma_id: kullanici.firma_id,
+    adminSupabase.rpc('get_yonetici_rapor_ana_ozet_v2', {
+      p_yonetici_id: kullanici.kullanici_id,
+      p_baslangic: baslangic,
+      p_bitis: bitis,
     }),
-
-    adminSupabase.rpc('get_yonetici_uretim_konu_bazli', {
-      p_firma_id: kullanici.firma_id,
+    adminSupabase.rpc('get_yonetici_hiyerarsi_v2', {
+      p_yonetici_id: kullanici.kullanici_id,
+      p_baslangic: baslangic,
+      p_bitis: bitis,
+      p_seviye: 'takim',
+      p_ust_birim_id: null,
     }),
-
-    adminSupabase.rpc('get_yonetici_ana_sayfa', {
-      p_firma_id: kullanici.firma_id,
-    }),
-
-    adminSupabase.rpc('get_yonetici_en_cok_extra_video', {
-      p_firma_id: kullanici.firma_id,
+    adminSupabase.rpc('get_yonetici_egitim_turu_etkisi_v3', {
+      p_yonetici_id: kullanici.kullanici_id,
+      p_baslangic: baslangic,
+      p_bitis: bitis,
     }),
   ]);
 
   const hatalar = [
     firmaRes.error && { mesaj: 'Firma bilgisi çekilemedi.', adim: 'firmalar SELECT', detay: firmaRes.error },
-    icerikSayimRes.error && { mesaj: 'İçerik türü sayımı çekilemedi.', adim: 'get_yonetici_icerik_turu_sayimi RPC', detay: icerikSayimRes.error },
-    konuListesiRes.error && { mesaj: 'Konu bazlı liste çekilemedi.', adim: 'get_yonetici_uretim_konu_bazli RPC', detay: konuListesiRes.error },
-    anaSayfaStatRes.error && { mesaj: 'Tüketim sayım verisi çekilemedi.', adim: 'get_yonetici_ana_sayfa RPC', detay: anaSayfaStatRes.error },
-    extraVideoRes.error && { mesaj: 'Extra video verisi çekilemedi.', adim: 'get_yonetici_en_cok_extra_video RPC', detay: extraVideoRes.error },
+    ozetRes.error && { mesaj: 'Yönetici rapor özeti çekilemedi.', adim: 'get_yonetici_rapor_ana_ozet_v2', detay: ozetRes.error },
+    takimRes.error && { mesaj: 'Takım performansı çekilemedi.', adim: 'get_yonetici_hiyerarsi_v2 — takım', detay: takimRes.error },
+    egitimTuruRes.error && { mesaj: 'Eğitim türü etkisi çekilemedi.', adim: 'get_yonetici_egitim_turu_etkisi_v3', detay: egitimTuruRes.error },
   ].filter(Boolean) as { mesaj: string; adim: string; detay: unknown }[];
 
   if (hatalar.length > 0) {
@@ -54,22 +49,20 @@ export async function getYoneticiData(
     return {
       hata: NextResponse.json(
         { success: false, mesaj: ilkHata.mesaj, adim: ilkHata.adim },
-        { status: 500 }
+        { status: 500 },
       ),
       firma: null,
-      icerikSayim: null,
-      konuListesi: [],
-      anaSayfaStat: null,
-      extraVideo: null,
+      ozet: null,
+      takimlar: [],
+      egitimTurleri: [],
     };
   }
 
   return {
     hata: null,
     firma: firmaRes.data ?? null,
-    icerikSayim: (icerikSayimRes.data && icerikSayimRes.data.length > 0) ? icerikSayimRes.data[0] : null,
-    konuListesi: konuListesiRes.data ?? [],
-    anaSayfaStat: (anaSayfaStatRes.data && anaSayfaStatRes.data.length > 0) ? anaSayfaStatRes.data[0] : null,
-    extraVideo: extraVideoRes.data ?? null,
+    ozet: ozetRes.data?.[0] ?? null,
+    takimlar: takimRes.data ?? [],
+    egitimTurleri: egitimTuruRes.data ?? [],
   };
 }
