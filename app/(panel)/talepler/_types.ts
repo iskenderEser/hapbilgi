@@ -3,7 +3,7 @@
 // Talepler sayfasının paylaşılan tip sözleşmeleri, sabitler ve helper'lar.
 // Bu dosyaya tüm bileşenler ve hook'lar import eder — bu sayfanın kontrat dosyasıdır.
 
-import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
+import { TALEP_TURU_KURALLARI, TALEP_TURU_SIRA, type TalepTuru } from "@/lib/uretici/yetenekler";
 import type { HedefRol } from "@/lib/utils/roller";
 import type { ZincirAsama } from "@/lib/utils/uretimZinciri";
 import type { DurumKodu } from "@/lib/utils/durum/mesaj";
@@ -101,8 +101,8 @@ export const TALEP_TURU_ALT_ACIKLAMA: Record<TalepTuru, string> = {
   ik_egitimi: "İK bilgilendirme, KVKK, etik",
 };
 
-// Tüm geçerli talep türlerinin sırası — TALEP_TURU_KURALLARI anahtarlarından.
-export const TUM_TURLER = Object.keys(TALEP_TURU_KURALLARI) as TalepTuru[];
+// Tüm geçerli talep türlerinin sırası — üretim ve raporların ortak sözleşmesi.
+export const TUM_TURLER = [...TALEP_TURU_SIRA];
 
 // Liste tablosunda gösterilen tür rozeti (renk + etiket).
 export const TUR_ROZET: Record<TalepTuru, { bg: string; renk: string; border: string; etiket: string }> = {

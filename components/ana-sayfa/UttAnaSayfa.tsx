@@ -663,13 +663,13 @@ export default function UttAnaSayfa({ user, rol, adSoyad }: Props) {
         </div>
       )}
 
-      {/* Departman rafları (TUR_SIRA) — her biri tek satır ≤5, 5-üstünlük algoritması */}
-      {raflar.departmanRaflari.length === 0 ? (
+      {/* Eğitim türü rafları (TUR_SIRA) — her biri tek satır ≤5, 5-üstünlük algoritması */}
+      {raflar.egitimTuruRaflari.length === 0 ? (
         <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm text-gray-400">
           Henüz yayınlanmış video bulunmuyor.
         </div>
       ) : (
-        raflar.departmanRaflari.map((g) => (
+        raflar.egitimTuruRaflari.map((g) => (
           <KayanRaf
             key={g.tur}
             baslik={<span className="text-base md:text-lg font-bold text-gray-900">{TUR_BASLIK[g.tur]}</span>}

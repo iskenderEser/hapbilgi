@@ -6,6 +6,7 @@ import { cokluBildirimOlustur } from "@/lib/utils/bildirimOlustur";
 import {
   ureticiYetenegi,
   TALEP_TURU_KURALLARI,
+  TALEP_TURU_SIRA,
   type TalepTuru,
 } from "@/lib/uretici/yetenekler";
 import type { HedefRol } from "@/app/(panel)/talepler/_types";
@@ -15,9 +16,8 @@ import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
 import { zincirHaritasi, asamaCoz, uretimBittiMi, iptalEdildiMi } from "@/lib/utils/uretimZinciri";
 import { hazirParametreKontrol } from "@/lib/uretim/parametreKontrol";
 
-// TalepTuru tipinin tüm geçerli değerlerinin runtime listesi —
-// TALEP_TURU_KURALLARI'nın anahtarlarından türetilir, hardcoded liste yok.
-const GECERLI_TALEP_TURLERI = Object.keys(TALEP_TURU_KURALLARI) as TalepTuru[];
+// Talep formu ve raporlarla ortak kanonik eğitim türü sırası.
+const GECERLI_TALEP_TURLERI = TALEP_TURU_SIRA;
 
 // Formun sunduğu beş hedefin tamamı kabul edilir (B-05: eczaci/eczane_teknisyeni
 // daha önce listede yoktu, form-API tutarsızlığı üretiyordu). Tek kaynak roller.ts;

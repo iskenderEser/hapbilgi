@@ -65,6 +65,19 @@ export type TalepTuru =
   | "ik_egitimi";
 
 /**
+ * Raporlar, filtreler ve talep formu için kanonik eğitim türü sırası.
+ * Departman klasörleriyle karıştırılmamalıdır: burada beş eğitim/içerik türü
+ * vardır; üretici departmanları ise ayrı bir eksendir ve dört tanedir.
+ */
+export const TALEP_TURU_SIRA: readonly TalepTuru[] = [
+  "urun_egitimi",
+  "satis_teknikleri",
+  "medikal_egitim",
+  "urun_medikal_egitim",
+  "ik_egitimi",
+];
+
+/**
  * Talep türünün ürün ve teknik zorunluluk profili.
  *
  * - urun: "zorunlu" → urun_id NOT NULL, "tercihli" → kullanıcı seçebilir, "yok" → urun_id NULL
@@ -116,6 +129,16 @@ export const TALEP_TURU_KURALLARI: Record<TalepTuru, TalepTuruKurali> = {
     icerikTuru: "ik",
   },
 };
+
+/** DB veya API'den gelen değerin kanonik beş eğitim türünden biri olduğunu doğrular. */
+export function isTalepTuru(deger: unknown): deger is TalepTuru {
+  return typeof deger === "string" && (TALEP_TURU_SIRA as readonly string[]).includes(deger);
+}
+
+/** Eğitim türünün kullanıcıya gösterilecek adını tek kaynaktan döndürür. */
+export function talepTuruAdi(deger: TalepTuru): string {
+  return TALEP_TURU_KURALLARI[deger].ad;
+}
 
 /**
  * Rapor sayfasında kullanıcının görebileceği kapsam.

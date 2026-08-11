@@ -1,7 +1,7 @@
 // lib/video/anaSayfaRaflari.ts
 // UTT ana sayfası küratörlü raf seçimi — TEK KAYNAK (saf, test edilebilir).
 //
-// Departman rafı (5-üstünlük + kayan raf): ilk 5 slot sırası sabit —
+// Eğitim türü rafı (5-üstünlük + kayan raf): ilk 5 slot sırası sabit —
 //   [en yeni · en çok izlenen · en çok beğenilen · en çok favorilenen · en yüksek puanlı]
 // Her slot kendi metriğinin GERÇEK kazananını alır (deterministik, harf sırası
 // eşitlik bozucu). Metrik tanımsızsa (hepsi 0) ya da kazananı üst slotça alınmışsa
@@ -69,7 +69,7 @@ function metrikTepesi<T extends RafVideo>(
 
 // Bir kategorinin videolarından rafı kurar: ilk 5 = 5-üstünlük (sabit kural),
 // 6. ve sonrası = kalan videolar tohumlu-random sırayla (kayan raf, limit yok).
-function departmanRafi<T extends RafVideo>(videolar: T[], rnd: () => number): T[] {
+function egitimTuruRafi<T extends RafVideo>(videolar: T[], rnd: () => number): T[] {
   if (videolar.length === 0) return [];
 
   const kullanildi = new Set<string>();
@@ -130,16 +130,16 @@ function tumuRafiKur<T extends RafVideo>(videolar: T[], rnd: () => number): T[] 
 export function anaSayfaRaflari<T extends RafVideo>(
   videolar: T[],
   tohum: number,
-): { tumuRafi: T[]; departmanRaflari: { tur: IcerikTuru; videolar: T[] }[] } {
+): { tumuRafi: T[]; egitimTuruRaflari: { tur: IcerikTuru; videolar: T[] }[] } {
   const rnd = tohumluRng(tohum);
   const tumuRafi = tumuRafiKur(videolar, rnd);
-  const departmanRaflari = TUR_SIRA.map((tur) => ({
+  const egitimTuruRaflari = TUR_SIRA.map((tur) => ({
     tur,
-    videolar: departmanRafi(
+    videolar: egitimTuruRafi(
       videolar.filter((v) => v.icerik_turu === tur),
       rnd,
     ),
   })).filter((g) => g.videolar.length > 0);
 
-  return { tumuRafi, departmanRaflari };
+  return { tumuRafi, egitimTuruRaflari };
 }
