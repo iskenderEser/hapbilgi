@@ -39,7 +39,7 @@ export interface BmUttPerformans {
   net_puan: number;
 }
 
-export interface UrunUttSatiri {
+export interface KullaniciOzetSatiri {
   kullanici_id: string;
   ad: string;
   soyad: string;
@@ -54,14 +54,17 @@ export interface UrunUttSatiri {
   toplam_net_puan: number;
 }
 
-export interface UrunBazliGrup {
+interface DagilimSatiri extends KullaniciOzetSatiri {
+  teknik_dagilimi: Array<{ teknik_adi: string; izlenme_sayisi: number }>;
+}
+
+export interface KullaniciUrunDagilimi extends DagilimSatiri {
   urun_id: string;
   urun_adi: string;
-  toplam_izlenme: number;
-  toplam_net_puan: number;
-  utt_listesi: UrunUttSatiri[];
-  ortalama: Record<string, number>;
-  teknik_dagilimi: Array<{ teknik_adi: string; izlenme_sayisi: number }>;
+}
+
+export interface KullaniciKategoriDagilimi extends DagilimSatiri {
+  icerik_turu: string;
 }
 
 export interface BmEtkilesim {
@@ -72,17 +75,15 @@ export interface BmEtkilesim {
   favori_sayisi: number;
 }
 
-interface OzetSatiri {
-  toplam_net_puan: number | null;
-}
-
 interface BmData {
   hata: NextResponse | null;
   bolge: { bolge_adi: string } | null;
   takim: { takim_adi: string } | null;
   anaOzet: BmAnaOzet;
   uttPerformans: BmUttPerformans[];
-  urunDagilimi: UrunBazliGrup[];
+  bolgeOzet: KullaniciOzetSatiri[];
+  kategoriDagilimi: KullaniciKategoriDagilimi[];
+  urunDagilimi: KullaniciUrunDagilimi[];
   oneriOzet: {
     gonderilen_oneri: number;
     tamamlanan_oneri: number;
@@ -112,6 +113,8 @@ const bos: BmData = {
   takim: null,
   anaOzet: bosAnaOzet,
   uttPerformans: [],
+  bolgeOzet: [],
+  kategoriDagilimi: [],
   urunDagilimi: [],
   oneriOzet: {
     gonderilen_oneri: 0,
@@ -135,6 +138,8 @@ export async function getBmData(
     takimAdRes,
     anaOzetRes,
     uttPerformansRes,
+    bolgeOzetRes,
+    kategoriDagilimiRes,
     urunDagilimiRes,
     oneriOzetRes,
     takimOzetRes,
@@ -153,7 +158,17 @@ export async function getBmData(
       p_baslangic: baslangic,
       p_bitis: bitis,
     }),
-    adminSupabase.rpc('get_urun_bazli_grup', {
+    adminSupabase.rpc('get_kullanici_ozet', {
+      p_baslangic: baslangic,
+      p_bitis: bitis,
+      p_bolge_id: kullanici.bolge_id,
+    }),
+    adminSupabase.rpc('get_kullanici_kategori_dagilimi', {
+      p_baslangic: baslangic,
+      p_bitis: bitis,
+      p_bolge_id: kullanici.bolge_id,
+    }),
+    adminSupabase.rpc('get_kullanici_urun_dagilimi', {
       p_baslangic: baslangic,
       p_bitis: bitis,
       p_bolge_id: kullanici.bolge_id,
@@ -186,15 +201,17 @@ export async function getBmData(
   if (takimAdRes.error) return { ...bos, hata: hataYaniti('Takım adı çekilemedi', 'takimlar', takimAdRes.error) };
   if (anaOzetRes.error) return { ...bos, hata: hataYaniti('BM ana özeti çekilemedi', 'get_bm_rapor_ana_ozet_v2', anaOzetRes.error) };
   if (uttPerformansRes.error) return { ...bos, hata: hataYaniti('BM UTT performansı çekilemedi', 'get_bm_utt_performans_v2', uttPerformansRes.error) };
-  if (urunDagilimiRes.error) return { ...bos, hata: hataYaniti('Ürün dağılımı çekilemedi', 'get_urun_bazli_grup', urunDagilimiRes.error) };
+  if (bolgeOzetRes.error) return { ...bos, hata: hataYaniti('Bölge özeti çekilemedi', 'get_kullanici_ozet (bölge)', bolgeOzetRes.error) };
+  if (kategoriDagilimiRes.error) return { ...bos, hata: hataYaniti('Kategori dağılımı çekilemedi', 'get_kullanici_kategori_dagilimi', kategoriDagilimiRes.error) };
+  if (urunDagilimiRes.error) return { ...bos, hata: hataYaniti('Ürün dağılımı çekilemedi', 'get_kullanici_urun_dagilimi', urunDagilimiRes.error) };
   if (oneriOzetRes.error) return { ...bos, hata: hataYaniti('Öneri özeti çekilemedi', 'get_scope_ozet', oneriOzetRes.error) };
   if (takimOzetRes.error) return { ...bos, hata: hataYaniti('Takım puanı çekilemedi', 'get_kullanici_ozet (takım)', takimOzetRes.error) };
   if (sirketOzetRes.error) return { ...bos, hata: hataYaniti('Şirket puanı çekilemedi', 'get_kullanici_ozet (firma)', sirketOzetRes.error) };
   if (etkilesimRes.error) return { ...bos, hata: hataYaniti('BM etkileşimleri çekilemedi', 'get_bm_etkilesim_v2', etkilesimRes.error) };
 
-  const takimToplamPuan = ((takimOzetRes.data ?? []) as OzetSatiri[])
+  const takimToplamPuan = ((takimOzetRes.data ?? []) as KullaniciOzetSatiri[])
     .reduce((toplam, satir) => toplam + Number(satir.toplam_net_puan ?? 0), 0);
-  const sirketToplamPuan = ((sirketOzetRes.data ?? []) as OzetSatiri[])
+  const sirketToplamPuan = ((sirketOzetRes.data ?? []) as KullaniciOzetSatiri[])
     .reduce((toplam, satir) => toplam + Number(satir.toplam_net_puan ?? 0), 0);
   const oneri = (oneriOzetRes.data?.[0] ?? {}) as Partial<BmData['oneriOzet']>;
 
@@ -204,7 +221,9 @@ export async function getBmData(
     takim: takimAdRes.data,
     anaOzet: (anaOzetRes.data?.[0] ?? bosAnaOzet) as BmAnaOzet,
     uttPerformans: (uttPerformansRes.data ?? []) as BmUttPerformans[],
-    urunDagilimi: (urunDagilimiRes.data ?? []) as UrunBazliGrup[],
+    bolgeOzet: (bolgeOzetRes.data ?? []) as KullaniciOzetSatiri[],
+    kategoriDagilimi: (kategoriDagilimiRes.data ?? []) as KullaniciKategoriDagilimi[],
+    urunDagilimi: (urunDagilimiRes.data ?? []) as KullaniciUrunDagilimi[],
     oneriOzet: {
       gonderilen_oneri: Number(oneri.gonderilen_oneri ?? 0),
       tamamlanan_oneri: Number(oneri.tamamlanan_oneri ?? 0),

@@ -11,6 +11,7 @@ import {
   CircleGauge,
   ChevronDown,
   Heart,
+  Layers3,
   Lightbulb,
   RadioTower,
   Sparkles,
@@ -22,9 +23,11 @@ import {
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useRapor } from '@/hooks/useRapor';
 import { formatPuan, PERIYOTLAR, type Periyot } from '@/lib/utils/raporUtils';
+import { TUR_RAPOR_ADI, TUR_SIRA, isIcerikTuru } from '@/lib/video/icerikTuru';
 import DagilimGrafik from '@/components/raporlar/DagilimGrafik';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
 import EczanemDokumBolumu from '@/components/raporlar/EczanemDokumBolumu';
+import UrunKirilimPaneli from '@/components/raporlar/UrunKirilimPaneli';
 import styles from './bm-report.module.css';
 
 const DEFAULT_PERIYOT: Periyot = 'bu_ay';
@@ -47,10 +50,8 @@ interface UttPerformans {
   net_puan: number;
 }
 
-interface IcerikDagilimi {
-  urun_id: string;
-  urun_adi: string;
-  toplam_izlenme: number;
+interface DagilimPuanlari {
+  izlenme_sayisi: number;
   video_puani: number;
   soru_puani: number;
   oneri_puani: number;
@@ -59,6 +60,16 @@ interface IcerikDagilimi {
   yanlis_cevap_kaybi: number;
   oneri_kaybi: number;
   toplam_net_puan: number;
+  teknik_dagilimi: Array<{ teknik_adi: string; izlenme_sayisi: number }>;
+}
+
+interface KategoriDagilimi extends DagilimPuanlari {
+  icerik_turu: string;
+}
+
+interface UrunDagilimi extends DagilimPuanlari {
+  urun_id: string;
+  urun_adi: string;
 }
 
 interface RaporData {
@@ -103,10 +114,18 @@ interface RaporData {
     tamamlanma_orani: number;
   };
   utt_performans: UttPerformans[];
-  icerik_dagilimi: IcerikDagilimi[];
+  kategori_dagilimi: KategoriDagilimi[];
+  urun_dagilimi: UrunDagilimi[];
   begeni_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; begeni_sayisi: number }>;
   favori_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; favori_sayisi: number }>;
 }
+
+const kategoriAdi = (tur: string) => (isIcerikTuru(tur) ? TUR_RAPOR_ADI[tur] : tur);
+
+const kategoriSirasi = (tur: string) => {
+  const sira = isIcerikTuru(tur) ? TUR_SIRA.indexOf(tur) : -1;
+  return sira === -1 ? TUR_SIRA.length : sira;
+};
 
 function BolumBasligi({ ust, baslik, aciklama }: { ust: string; baslik: string; aciklama?: string }) {
   return (
@@ -121,7 +140,7 @@ function BolumBasligi({ ust, baslik, aciklama }: { ust: string; baslik: string; 
 export default function BmRaporPage() {
   const { kullanici, yukleniyor } = useAuth();
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
-  const [seciliIcerik, setSeciliIcerik] = useState<string | null>(null);
+  const [seciliKategori, setSeciliKategori] = useState<string | null>(null);
   const [acikUtt, setAcikUtt] = useState<string | null>(null);
   const { data, loading, error } = useRapor<RaporData>('/raporlar/api/bm', periyot, kullanici?.id);
 
@@ -135,11 +154,14 @@ export default function BmRaporPage() {
     { ad: 'Öneri kaybı', puan: -data.performans.oneri_kaybi, renk: '#a35b73' },
   ] : [], [data]);
 
-  const icerikGrafik = useMemo(() => data?.icerik_dagilimi.map(urun => ({
-    ad: urun.urun_adi,
-    puan: urun.toplam_net_puan,
-  })) ?? [], [data]);
-  const seciliIcerikDetayi = data?.icerik_dagilimi.find(urun => urun.urun_adi === seciliIcerik) ?? null;
+  const siraliKategoriler = useMemo(() => [...(data?.kategori_dagilimi ?? [])]
+    .sort((a, b) => kategoriSirasi(a.icerik_turu) - kategoriSirasi(b.icerik_turu)), [data]);
+  const kategoriGrafik = useMemo(() => siraliKategoriler.map(kategori => ({
+    ad: kategoriAdi(kategori.icerik_turu),
+    puan: kategori.toplam_net_puan,
+  })), [siraliKategoriler]);
+  const seciliKategoriDetayi = siraliKategoriler
+    .find(kategori => kategoriAdi(kategori.icerik_turu) === seciliKategori) ?? null;
   const uttSiralamasi = useMemo(() => {
     if (!data) return [];
     let oncekiPuan: number | null = null;
@@ -331,21 +353,28 @@ export default function BmRaporPage() {
         </section>
 
         <section className={`${styles.panel} ${styles.section} ${styles.contentSection}`}>
-          <BolumBasligi ust="İÇERİK ETKİSİ" baslik="Puan hangi içeriklerde oluştu?" aciklama="Ürünlü içerikler ile ürün dışı eğitimler artık bölge net puanıyla tam mutabık." />
-          {icerikGrafik.length > 0 ? (
+          <BolumBasligi ust="İÇERİK ETKİSİ" baslik="Eğitim kategorileri" aciklama="Bölgedeki UTT’lerin puanları eğitim kategorilerine göre toplanır." />
+          {kategoriGrafik.length > 0 ? (
             <>
-              <DagilimGrafik veri={icerikGrafik} secili={seciliIcerik} onSecim={setSeciliIcerik} height={300} apsisAdi="İçerik grubu" ordinatAdi="Net puan" indirAdi="bm-icerik-dagilimi" modern />
-              {seciliIcerikDetayi && (
+              <DagilimGrafik veri={kategoriGrafik} secili={seciliKategori} onSecim={setSeciliKategori} height={300} apsisAdi="Eğitim kategorisi" ordinatAdi="Net puan" indirAdi="bm-kategori-dagilimi" modern />
+              {seciliKategoriDetayi && (
                 <div className={styles.contentDetail}>
-                  <div><span>Seçili içerik</span><strong>{seciliIcerikDetayi.urun_adi}</strong></div>
-                  <div><span>İzleme puanı</span><strong>+{formatPuan(seciliIcerikDetayi.video_puani)}</strong></div>
-                  <div><span>Cevaplama</span><strong>+{formatPuan(seciliIcerikDetayi.soru_puani)}</strong></div>
-                  <div><span>Toplam kayıp</span><strong className={styles.negative}>−{formatPuan(seciliIcerikDetayi.ileri_sarma_kaybi + seciliIcerikDetayi.yanlis_cevap_kaybi + seciliIcerikDetayi.oneri_kaybi)}</strong></div>
-                  <div><span>Net puan</span><strong className={styles.net}>{formatPuan(seciliIcerikDetayi.toplam_net_puan)}</strong></div>
+                  <div><span>Seçili kategori</span><strong>{kategoriAdi(seciliKategoriDetayi.icerik_turu)}</strong></div>
+                  <div><span>İzleme puanı</span><strong>+{formatPuan(seciliKategoriDetayi.video_puani)}</strong></div>
+                  <div><span>Cevaplama</span><strong>+{formatPuan(seciliKategoriDetayi.soru_puani)}</strong></div>
+                  <div><span>Toplam kayıp</span><strong className={styles.negative}>−{formatPuan(seciliKategoriDetayi.ileri_sarma_kaybi + seciliKategoriDetayi.yanlis_cevap_kaybi + seciliKategoriDetayi.oneri_kaybi)}</strong></div>
+                  <div><span>Net puan</span><strong className={styles.net}>{formatPuan(seciliKategoriDetayi.toplam_net_puan)}</strong></div>
                 </div>
               )}
             </>
-          ) : <div className={styles.empty}>Bu periyotta içerik puanı oluşmadı.</div>}
+          ) : <div className={styles.empty}>Bu periyotta kategori puanı oluşmadı.</div>}
+        </section>
+
+        <section className={`${styles.panel} ${styles.section} ${styles.contentSection}`}>
+          <BolumBasligi ust="ÜRÜN ETKİSİ" baslik="Ürün performansı" aciklama="Ürün içeren eğitimlerin bölge toplamları gösterilir." />
+          {data.urun_dagilimi.length > 0
+            ? <UrunKirilimPaneli urunler={data.urun_dagilimi} modern />
+            : <div className={styles.empty}>Bu periyotta ürün puanı oluşmadı.</div>}
         </section>
 
         <div className={styles.engagementHeading}><Heart size={15} /><span>BÖLGE ETKİLEŞİMİ</span><small>Bu periyotta bölge UTT’lerinin şirket yayınlarında bıraktığı izler</small></div>

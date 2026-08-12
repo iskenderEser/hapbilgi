@@ -1,7 +1,7 @@
 {
-  "uretim_tarihi": "2026-08-11T11:52:44.221Z",
+  "uretim_tarihi": "2026-08-12T08:27:10.725Z",
   "tablo_sayisi": 98,
-  "rpc_sayisi": 70,
+  "rpc_sayisi": 80,
   "tablolar": {
     "analiz_tuketim_degiskenleri": {
       "tur": "BASE TABLE",
@@ -4131,6 +4131,18 @@
       "argumanlar": "p_kullanici_id uuid, p_baslangic timestamp with time zone, p_bitis timestamp with time zone, p_urun_id uuid, p_egitim_turu text, p_takim_id uuid",
       "donus": "TABLE(urun_sayisi bigint, video_sayisi bigint, soru_sayisi bigint, ileri_sarma_izinli_video_sayisi bigint, potansiyel_video_izleme_puani bigint, potansiyel_dogru_cevap_puani bigint)"
     },
+    "get_bm_etkilesim_v2": {
+      "argumanlar": "p_bm_id uuid, p_baslangic timestamp with time zone, p_bitis timestamp with time zone",
+      "donus": "TABLE(yayin_id uuid, icerik_adi text, teknik_adi text, begeni_sayisi integer, favori_sayisi integer)"
+    },
+    "get_bm_rapor_ana_ozet_v2": {
+      "argumanlar": "p_bm_id uuid, p_baslangic timestamp with time zone, p_bitis timestamp with time zone",
+      "donus": "TABLE(toplam_yayin integer, toplam_utt integer, guncel_tur_toplam_firsat integer, guncel_tur_tamamlanan integer, guncel_tur_kalan integer, guncel_tur_izlenme_orani integer, donem_tamamlanan_izleme integer, donem_benzersiz_utt_yayin integer, donem_aktif_utt integer)"
+    },
+    "get_bm_utt_performans_v2": {
+      "argumanlar": "p_bm_id uuid, p_baslangic timestamp with time zone, p_bitis timestamp with time zone",
+      "donus": "TABLE(kullanici_id uuid, ad text, soyad text, tamamlanan_izleme integer, benzersiz_yayin integer, izleme_puani integer, cevaplama_puani integer, oneri_puani integer, extra_puan integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, oneri_kaybi integer, kazanilan_toplam integer, kaybedilen_toplam integer, net_puan integer)"
+    },
     "get_bolge_bazli_grup": {
       "argumanlar": "p_baslangic timestamp with time zone, p_bitis timestamp with time zone, p_takim_id uuid, p_firma_id uuid",
       "donus": "TABLE(bolge_id uuid, bolge_adi text, takim_id uuid, takim_adi text, bm_adi text, toplam_utt integer, aktif_utt integer, hic_izlemeyen_utt integer, video_puani integer, soru_puani integer, oneri_puani integer, extra_puan integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, oneri_kaybi integer, toplam_net_puan integer, urun_dagilimi jsonb)"
@@ -4247,6 +4259,22 @@
       "argumanlar": "p_baslangic timestamp with time zone, p_bitis timestamp with time zone, p_firma_id uuid",
       "donus": "TABLE(takim_id uuid, takim_adi text, firma_id uuid, toplam_bolge integer, toplam_utt integer, aktif_utt integer, hic_izlemeyen_utt integer, izlenme_sayisi integer, video_puani integer, soru_puani integer, oneri_puani integer, extra_puan integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, oneri_kaybi integer, toplam_net_puan integer)"
     },
+    "get_tm_bolge_performans_v2": {
+      "argumanlar": "p_tm_id uuid, p_baslangic timestamp with time zone, p_bitis timestamp with time zone",
+      "donus": "TABLE(bolge_id uuid, bolge_adi text, bm_adi text, toplam_utt integer, aktif_utt integer, tamamlanan_izleme integer, benzersiz_yayin integer, izleme_puani integer, cevaplama_puani integer, oneri_puani integer, extra_puan integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, oneri_kaybi integer, kazanilan_toplam integer, kaybedilen_toplam integer, net_puan integer)"
+    },
+    "get_tm_etkilesim_v2": {
+      "argumanlar": "p_tm_id uuid, p_baslangic timestamp with time zone, p_bitis timestamp with time zone",
+      "donus": "TABLE(yayin_id uuid, icerik_adi text, teknik_adi text, begeni_sayisi integer, favori_sayisi integer)"
+    },
+    "get_tm_rapor_ana_ozet_v2": {
+      "argumanlar": "p_tm_id uuid, p_baslangic timestamp with time zone, p_bitis timestamp with time zone",
+      "donus": "TABLE(toplam_yayin integer, toplam_bolge integer, toplam_utt integer, guncel_tur_toplam_firsat integer, guncel_tur_tamamlanan integer, guncel_tur_kalan integer, guncel_tur_izlenme_orani integer, donem_tamamlanan_izleme integer, donem_benzersiz_utt_yayin integer, donem_aktif_utt integer)"
+    },
+    "get_tm_utt_performans_v2": {
+      "argumanlar": "p_tm_id uuid, p_baslangic timestamp with time zone, p_bitis timestamp with time zone",
+      "donus": "TABLE(kullanici_id uuid, ad text, soyad text, bolge_id uuid, bolge_adi text, tamamlanan_izleme integer, benzersiz_yayin integer, izleme_puani integer, cevaplama_puani integer, oneri_puani integer, extra_puan integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, oneri_kaybi integer, kazanilan_toplam integer, kaybedilen_toplam integer, net_puan integer)"
+    },
     "get_uretici_rapor_ana_ozet_v2": {
       "argumanlar": "p_uretici_id uuid, p_baslangic timestamp with time zone, p_bitis timestamp with time zone, p_takim_id uuid, p_firma_id uuid",
       "donus": "TABLE(donemde_yayina_alinan integer, su_an_yayinda integer, planlanan integer, durdurulan_ve_iptal integer, devam_eden_talep integer, senaryo_onayi_bekleyen integer, video_onayi_bekleyen integer, soru_seti_onayi_bekleyen integer, senaryo_revizyon_olayi integer, senaryo_revizyonlu_talep integer, video_revizyon_olayi integer, video_revizyonlu_talep integer, soru_seti_revizyon_olayi integer, soru_seti_revizyonlu_talep integer, ortalama_uretim_suresi_saat numeric, scope_toplam_yayin integer, scope_toplam_utt integer, guncel_tur_toplam_firsat integer, guncel_tur_tamamlanan integer, guncel_tur_kalan integer, guncel_tur_izlenme_orani integer, donem_tamamlanan_izleme integer, donem_benzersiz_utt_yayin integer, donem_aktif_utt integer)"
@@ -4254,10 +4282,6 @@
     "get_urun_bazli_bolge_grup": {
       "argumanlar": "p_baslangic timestamp with time zone, p_bitis timestamp with time zone, p_takim_id uuid, p_firma_id uuid",
       "donus": "TABLE(urun_id uuid, urun_adi text, toplam_net_puan integer, bolge_listesi jsonb, ortalama jsonb)"
-    },
-    "get_urun_bazli_grup": {
-      "argumanlar": "p_baslangic timestamp with time zone, p_bitis timestamp with time zone, p_kullanici_id uuid, p_bolge_id uuid, p_takim_id uuid, p_firma_id uuid",
-      "donus": "TABLE(urun_id uuid, urun_adi text, toplam_izlenme integer, toplam_net_puan integer, utt_listesi jsonb, ortalama jsonb, teknik_dagilimi jsonb)"
     },
     "get_urun_from_yayin": {
       "argumanlar": "p_yayin_id uuid",
@@ -4267,13 +4291,29 @@
       "argumanlar": "p_firma_id uuid",
       "donus": "TABLE(yayinda_toplam_video integer, toplam_izleme_sayisi integer, en_cok_izlenen_video text, en_cok_izleyen_takim text, en_cok_izleyen_bolge text, en_cok_izleyen_utt text)"
     },
+    "get_yonetici_egitim_turu_etkisi_v3": {
+      "argumanlar": "p_yonetici_id uuid, p_baslangic timestamp with time zone, p_bitis timestamp with time zone",
+      "donus": "TABLE(egitim_turu text, donemde_yayina_alinan integer, tamamlanan_izleme integer, izleme_puani integer, cevaplama_puani integer, oneri_puani integer, extra_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, oneri_kaybi integer, challenge_kaybi integer, kazanilan_toplam integer, kaybedilen_toplam integer, net_puan integer, begeni_sayisi integer, favori_sayisi integer, extra_izleme_sayisi integer, urun_dagilimi jsonb)"
+    },
     "get_yonetici_en_cok_extra_video": {
       "argumanlar": "p_firma_id uuid",
       "donus": "text"
     },
+    "get_yonetici_hiyerarsi_v2": {
+      "argumanlar": "p_yonetici_id uuid, p_baslangic timestamp with time zone, p_bitis timestamp with time zone, p_seviye text, p_ust_birim_id uuid",
+      "donus": "TABLE(birim_id uuid, birim_adi text, toplam_utt integer, aktif_utt integer, tamamlanan_izleme integer, benzersiz_yayin integer, izleme_puani integer, cevaplama_puani integer, oneri_puani integer, extra_puan integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, oneri_kaybi integer, challenge_kaybi integer, kazanilan_toplam integer, kaybedilen_toplam integer, net_puan integer)"
+    },
+    "get_yonetici_icerik_etkisi_v2": {
+      "argumanlar": "p_yonetici_id uuid, p_baslangic timestamp with time zone, p_bitis timestamp with time zone",
+      "donus": "TABLE(icerik_id text, icerik_adi text, donemde_yayina_alinan integer, tamamlanan_izleme integer, izleme_puani integer, cevaplama_puani integer, oneri_puani integer, extra_puan integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, oneri_kaybi integer, challenge_kaybi integer, kazanilan_toplam integer, kaybedilen_toplam integer, net_puan integer, begeni_sayisi integer, favori_sayisi integer, extra_izleme_sayisi integer)"
+    },
     "get_yonetici_icerik_turu_sayimi": {
       "argumanlar": "p_firma_id uuid",
       "donus": "TABLE(urun_egitimi_sayisi integer, satis_teknikleri_sayisi integer, medikal_toplam_sayisi integer, ik_egitimi_sayisi integer)"
+    },
+    "get_yonetici_rapor_ana_ozet_v2": {
+      "argumanlar": "p_yonetici_id uuid, p_baslangic timestamp with time zone, p_bitis timestamp with time zone",
+      "donus": "TABLE(toplam_takim integer, toplam_bolge integer, toplam_utt integer, aktif_utt integer, donem_tamamlanan_izleme integer, donem_benzersiz_utt_yayin integer, izleme_puani integer, cevaplama_puani integer, oneri_puani integer, extra_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, oneri_kaybi integer, challenge_kaybi integer, kazanilan_toplam integer, kaybedilen_toplam integer, net_puan integer, toplam_yayina_alma integer, donemde_yayina_alinan integer, su_an_yayinda integer, donem_urun_egitimi integer, donem_genel_egitim integer, donem_medikal_egitim integer, donem_ik_egitimi integer, donem_normal_uretim integer, donem_hazir_video integer, donem_hazir_soru_seti integer, donem_hazir_video_ve_soru_seti integer, guncel_tur_toplam_firsat integer, guncel_tur_tamamlanan integer, guncel_tur_kalan integer, guncel_tur_izlenme_orani integer)"
     },
     "get_yonetici_uretim_konu_bazli": {
       "argumanlar": "p_firma_id uuid",
