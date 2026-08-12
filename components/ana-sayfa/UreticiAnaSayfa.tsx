@@ -12,6 +12,7 @@ import { ROL_ADLARI } from "@/lib/utils/roller";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import { rolTeknikKullanirMi } from "@/lib/uretici/yetenekler";
 import { type DurumKodu } from "@/lib/utils/durum/mesaj";
+import { departmanKey } from "@/lib/video/departman";
 
 interface TakipSatiri {
   talep_id: string;
@@ -73,6 +74,14 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" });
+
+  // Yayın Listesi üretimi biten kayıtları gösterir; hedef ekranı ise yayın durumu
+  // belirler. Yalnız canlı yayınlar salt-izleme kataloğuna, diğerleri mevcut yayın
+  // yönetimi akışına gider. Departman rolün tek kanonik eşlemesinden türetilir.
+  const satirYolu = (satir: TakipSatiri) =>
+    satir.durum_kodu === "yayinda"
+      ? `/yayindaki-videolar?departman=${departmanKey(rol)}`
+      : satir.yol;
 
   const bugunTarih = () =>
     new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
@@ -265,7 +274,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
               return (
                 <div
                   key={`${s.talep_id}-${i}`}
-                  onClick={() => router.push(s.yol)}
+                  onClick={() => router.push(satirYolu(s))}
                   className="px-4 py-3 cursor-pointer"
                   style={{ borderBottom: i < filtrelenmis.length - 1 ? "1px solid #f3f4f6" : "none" }}
                 >
@@ -304,7 +313,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
               return (
                 <div
                   key={`${s.talep_id}-${i}`}
-                  onClick={() => router.push(s.yol)}
+                  onClick={() => router.push(satirYolu(s))}
                   className="grid gap-3 px-5 py-3 items-center cursor-pointer bg-white hover:bg-gray-50 transition-colors duration-100"
                   style={{
                     gridTemplateColumns: gridCols,

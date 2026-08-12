@@ -8,6 +8,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import YayindakiVideoBolumu from "./YayindakiVideoBolumu";
 import type { YayindakiVideo } from "@/lib/video/yayindakiVideolar";
 import type { AnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
@@ -19,7 +20,12 @@ interface Props {
 }
 
 export default function KlasorGrid({ videolar, onVideoSec }: Props) {
-  const [secili, setSecili] = useState<DepartmanKey | null>(null);
+  const searchParams = useSearchParams();
+  const urlDepartmani = DEPARTMAN_SIRA.find((key) => key === searchParams.get("departman")) ?? null;
+  // undefined: kullanıcı henüz seçim yapmadı, URL'deki geçerli departman kullanılır.
+  // null: kullanıcı "Tüm birimler"e dönmeyi açıkça seçti.
+  const [kullaniciSecimi, setKullaniciSecimi] = useState<DepartmanKey | null | undefined>(undefined);
+  const secili = kullaniciSecimi === undefined ? urlDepartmani : kullaniciSecimi;
 
   const gruplar = new Map<DepartmanKey, YayindakiVideo[]>();
   for (const v of videolar) {
@@ -62,7 +68,7 @@ export default function KlasorGrid({ videolar, onVideoSec }: Props) {
           </div>
           <button
             type="button"
-            onClick={() => setSecili(null)}
+            onClick={() => setKullaniciSecimi(null)}
             className="inline-flex w-fit items-center gap-1.5 rounded-xl border border-[#d9e4f0] bg-[#f8fbff] px-3 py-2 text-xs font-extrabold text-[#476b96] transition-colors hover:bg-[#eef5fd] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff]"
           >
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5"><path d="m15 18-6-6 6-6" /></svg>
@@ -99,7 +105,7 @@ export default function KlasorGrid({ videolar, onVideoSec }: Props) {
           <button
             type="button"
             key={k}
-            onClick={() => setSecili(k)}
+            onClick={() => setKullaniciSecimi(k)}
             className="group flex min-h-36 flex-col justify-between rounded-2xl border bg-white p-4 text-left shadow-[0_6px_18px_rgba(31,55,90,0.035)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(31,55,90,0.09)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff]"
             style={{ borderColor: `${renk}45` }}
           >

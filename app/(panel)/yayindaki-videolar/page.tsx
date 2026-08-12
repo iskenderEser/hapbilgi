@@ -7,7 +7,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import KlasorGrid from "./_components/KlasorGrid";
@@ -206,7 +206,9 @@ export default function YayindakiVideolarPage() {
               {videolar.length === 0 ? "Görüntülenecek yayında video yok." : "Aramanıza uyan video bulunamadı."}
             </div>
           ) : (
-            <KlasorGrid videolar={liste.gorunen} onVideoSec={setAktifVideo} />
+            <Suspense fallback={null}>
+              <KlasorGrid videolar={liste.gorunen} onVideoSec={setAktifVideo} />
+            </Suspense>
           )}
         </div>
       )}
