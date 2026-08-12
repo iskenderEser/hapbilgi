@@ -1,7 +1,7 @@
 {
-  "uretim_tarihi": "2026-08-12T08:27:10.725Z",
+  "uretim_tarihi": "2026-08-12T10:54:39.190Z",
   "tablo_sayisi": 98,
-  "rpc_sayisi": 80,
+  "rpc_sayisi": 81,
   "tablolar": {
     "analiz_tuketim_degiskenleri": {
       "tur": "BASE TABLE",
@@ -4134,6 +4134,10 @@
     "get_bm_etkilesim_v2": {
       "argumanlar": "p_bm_id uuid, p_baslangic timestamp with time zone, p_bitis timestamp with time zone",
       "donus": "TABLE(yayin_id uuid, icerik_adi text, teknik_adi text, begeni_sayisi integer, favori_sayisi integer)"
+    },
+    "get_bm_oneri_durumu_v1": {
+      "argumanlar": "p_bm_id uuid, p_baslangic timestamp with time zone, p_bitis timestamp with time zone",
+      "donus": "TABLE(oneri_id uuid, kullanici_id uuid, utt_ad text, utt_soyad text, yayin_id uuid, urun_adi text, teknik_adi text, oneri_baslangic timestamp with time zone, oneri_bitis timestamp with time zone, created_at timestamp with time zone, durum text)"
     },
     "get_bm_rapor_ana_ozet_v2": {
       "argumanlar": "p_bm_id uuid, p_baslangic timestamp with time zone, p_bitis timestamp with time zone",

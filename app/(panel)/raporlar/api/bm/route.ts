@@ -4,9 +4,7 @@ import { hataYaniti, yetkiHatasi } from '@/lib/utils/hataIsle';
 import { tarihAraligi } from '@/lib/utils/tarihAraligi';
 import { getBmData } from '@/lib/rapor/bm/getBmData';
 import { kategorileriTopla, ozetToplami, urunleriTopla } from '@/lib/rapor/bm/toplamlar';
-import { katkiYuzdesi, tamamlanmaOrani } from '@/lib/rapor/paylasilan/oran';
-
-const sayi = (deger: unknown) => Number(deger ?? 0);
+import { katkiYuzdesi } from '@/lib/rapor/paylasilan/oran';
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -37,11 +35,20 @@ export async function GET(request: Request) {
   const genel = ozetToplami(d.bolgeOzet);
   const kategoriDagilimi = kategorileriTopla(d.kategoriDagilimi);
   const urunDagilimi = urunleriTopla(d.urunDagilimi);
+  const tamamlananOneri = d.oneriDurumu.filter(oneri => oneri.durum === 'tamamlanan').length;
+  const bekleyenOneri = d.oneriDurumu.filter(oneri => oneri.durum === 'bekleyen').length;
+  const suresiGecmisOneri = d.oneriDurumu.filter(oneri => oneri.durum === 'suresi_gecmis').length;
 
-  const kazanilanToplam = genel.video_puani + genel.soru_puani + genel.oneri_puani + genel.extra_puan;
-  const kaybedilenToplam = genel.ileri_sarma_kaybi + genel.yanlis_cevap_kaybi + genel.oneri_kaybi;
-  const toplamUtt = d.bolgeOzet.length;
-  const oneriTamamlanma = tamamlanmaOrani(d.oneriOzet.tamamlanan_oneri, d.oneriOzet.gonderilen_oneri);
+  const istatistikler = {
+    izleme_puani: genel.video_puani,
+    cevaplama_puani: genel.soru_puani,
+    oneri_puani: genel.oneri_puani,
+    extra_puan: genel.extra_puan,
+    ileri_sarma_kaybi: genel.ileri_sarma_kaybi,
+    yanlis_cevap_kaybi: genel.yanlis_cevap_kaybi,
+    oneri_kaybi: genel.oneri_kaybi,
+    toplam_net_puan: genel.toplam_net_puan,
+  };
 
   return NextResponse.json({
     success: true,
@@ -53,46 +60,22 @@ export async function GET(request: Request) {
         bolge_adi: d.bolge?.bolge_adi ?? '-',
         takim_adi: d.takim?.takim_adi ?? '-',
       },
-      performans: {
-        net_puan: genel.toplam_net_puan,
-        kazanilan_toplam: kazanilanToplam,
-        kaybedilen_toplam: kaybedilenToplam,
-        ortalama_puan: toplamUtt > 0 ? Math.round(genel.toplam_net_puan / toplamUtt) : 0,
-        en_yuksek_puan: d.bolgeOzet.reduce((enYuksek, utt) => Math.max(enYuksek, sayi(utt.toplam_net_puan)), 0),
-        izleme_puani: genel.video_puani,
-        cevaplama_puani: genel.soru_puani,
-        oneri_puani: genel.oneri_puani,
-        extra_puan: genel.extra_puan,
-        ileri_sarma_kaybi: genel.ileri_sarma_kaybi,
-        yanlis_cevap_kaybi: genel.yanlis_cevap_kaybi,
-        oneri_kaybi: genel.oneri_kaybi,
-      },
-      kapsam: {
-        toplam_utt: toplamUtt,
-        aktif_utt: d.anaOzet.donem_aktif_utt,
-        hic_izlemeyen_utt: Math.max(0, toplamUtt - d.anaOzet.donem_aktif_utt),
-        toplam_yayin: d.anaOzet.toplam_yayin,
-        guncel_tur_toplam_firsat: d.anaOzet.guncel_tur_toplam_firsat,
-        guncel_tur_tamamlanan: d.anaOzet.guncel_tur_tamamlanan,
-        guncel_tur_kalan: d.anaOzet.guncel_tur_kalan,
-        guncel_tur_izlenme_orani: d.anaOzet.guncel_tur_izlenme_orani,
-        donem_tamamlanan_izleme: d.anaOzet.donem_tamamlanan_izleme,
-        donem_benzersiz_utt_yayin: d.anaOzet.donem_benzersiz_utt_yayin,
-      },
       katki: {
         takim_katki_yuzdesi: katkiYuzdesi(genel.toplam_net_puan, d.takimToplamPuan),
         sirket_katki_yuzdesi: katkiYuzdesi(genel.toplam_net_puan, d.sirketToplamPuan),
+        bolge_mevcut_puan: genel.toplam_net_puan,
         takim_toplam_puan: d.takimToplamPuan,
         sirket_toplam_puan: d.sirketToplamPuan,
       },
-      oneri_etkinligi: {
-        gonderilen: d.oneriOzet.gonderilen_oneri,
-        tamamlanan: d.oneriOzet.tamamlanan_oneri,
-        bekleyen: d.oneriOzet.bekleyen_oneri,
-        bekleyen_oneri_olan_utt_sayisi: d.oneriOzet.bekleyen_oneri_olan_utt_sayisi,
-        tamamlanma_orani: oneriTamamlanma,
-      },
       utt_performans: d.uttPerformans,
+      oneri_durumu: {
+        toplam: d.oneriDurumu.length,
+        tamamlanan: tamamlananOneri,
+        bekleyen: bekleyenOneri,
+        suresi_gecmis: suresiGecmisOneri,
+        kayitlar: d.oneriDurumu,
+      },
+      istatistikler,
       kategori_dagilimi: kategoriDagilimi,
       urun_dagilimi: urunDagilimi,
       begeni_listesi: d.etkilesim

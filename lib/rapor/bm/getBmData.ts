@@ -9,18 +9,6 @@ interface Kullanici {
   firma_id: string;
 }
 
-export interface BmAnaOzet {
-  toplam_yayin: number;
-  toplam_utt: number;
-  guncel_tur_toplam_firsat: number;
-  guncel_tur_tamamlanan: number;
-  guncel_tur_kalan: number;
-  guncel_tur_izlenme_orani: number;
-  donem_tamamlanan_izleme: number;
-  donem_benzersiz_utt_yayin: number;
-  donem_aktif_utt: number;
-}
-
 export interface BmUttPerformans {
   kullanici_id: string;
   ad: string;
@@ -75,56 +63,55 @@ export interface BmEtkilesim {
   favori_sayisi: number;
 }
 
+export type BmOneriDurumu = 'tamamlanan' | 'bekleyen' | 'suresi_gecmis';
+
+export interface BmOneriKaydi {
+  oneri_id: string;
+  kullanici_id: string;
+  utt_ad: string;
+  utt_soyad: string;
+  yayin_id: string;
+  urun_adi: string | null;
+  teknik_adi: string | null;
+  oneri_baslangic: string;
+  oneri_bitis: string;
+  created_at: string;
+  izleme_tarihi: string | null;
+  durum: BmOneriDurumu;
+}
+
+interface BmOneriIzlemesi {
+  izleme_id: string;
+  oneri_id: string;
+  izleme_bitis: string;
+}
+
 interface BmData {
   hata: NextResponse | null;
   bolge: { bolge_adi: string } | null;
   takim: { takim_adi: string } | null;
-  anaOzet: BmAnaOzet;
   uttPerformans: BmUttPerformans[];
   bolgeOzet: KullaniciOzetSatiri[];
   kategoriDagilimi: KullaniciKategoriDagilimi[];
   urunDagilimi: KullaniciUrunDagilimi[];
-  oneriOzet: {
-    gonderilen_oneri: number;
-    tamamlanan_oneri: number;
-    bekleyen_oneri: number;
-    bekleyen_oneri_olan_utt_sayisi: number;
-  };
   takimToplamPuan: number;
   sirketToplamPuan: number;
   etkilesim: BmEtkilesim[];
+  oneriDurumu: BmOneriKaydi[];
 }
-
-const bosAnaOzet: BmAnaOzet = {
-  toplam_yayin: 0,
-  toplam_utt: 0,
-  guncel_tur_toplam_firsat: 0,
-  guncel_tur_tamamlanan: 0,
-  guncel_tur_kalan: 0,
-  guncel_tur_izlenme_orani: 0,
-  donem_tamamlanan_izleme: 0,
-  donem_benzersiz_utt_yayin: 0,
-  donem_aktif_utt: 0,
-};
 
 const bos: BmData = {
   hata: null,
   bolge: null,
   takim: null,
-  anaOzet: bosAnaOzet,
   uttPerformans: [],
   bolgeOzet: [],
   kategoriDagilimi: [],
   urunDagilimi: [],
-  oneriOzet: {
-    gonderilen_oneri: 0,
-    tamamlanan_oneri: 0,
-    bekleyen_oneri: 0,
-    bekleyen_oneri_olan_utt_sayisi: 0,
-  },
   takimToplamPuan: 0,
   sirketToplamPuan: 0,
   etkilesim: [],
+  oneriDurumu: [],
 };
 
 export async function getBmData(
@@ -136,23 +123,17 @@ export async function getBmData(
   const [
     bolgeAdRes,
     takimAdRes,
-    anaOzetRes,
     uttPerformansRes,
     bolgeOzetRes,
     kategoriDagilimiRes,
     urunDagilimiRes,
-    oneriOzetRes,
     takimOzetRes,
     sirketOzetRes,
     etkilesimRes,
+    oneriDurumuRes,
   ] = await Promise.all([
     adminSupabase.from('bolgeler').select('bolge_adi').eq('bolge_id', kullanici.bolge_id).maybeSingle(),
     adminSupabase.from('takimlar').select('takim_adi').eq('takim_id', kullanici.takim_id).maybeSingle(),
-    adminSupabase.rpc('get_bm_rapor_ana_ozet_v2', {
-      p_bm_id: kullanici.kullanici_id,
-      p_baslangic: baslangic,
-      p_bitis: bitis,
-    }),
     adminSupabase.rpc('get_bm_utt_performans_v2', {
       p_bm_id: kullanici.kullanici_id,
       p_baslangic: baslangic,
@@ -173,13 +154,6 @@ export async function getBmData(
       p_bitis: bitis,
       p_bolge_id: kullanici.bolge_id,
     }),
-    // Bu eski RPC yalnız doğrulanmış öneri metrikleri için tutulur.
-    adminSupabase.rpc('get_scope_ozet', {
-      p_baslangic: baslangic,
-      p_bitis: bitis,
-      p_bolge_id: kullanici.bolge_id,
-      p_oneren_id: kullanici.kullanici_id,
-    }),
     adminSupabase.rpc('get_kullanici_ozet', {
       p_baslangic: baslangic,
       p_bitis: bitis,
@@ -195,43 +169,86 @@ export async function getBmData(
       p_baslangic: baslangic,
       p_bitis: bitis,
     }),
+    adminSupabase.rpc('get_bm_oneri_durumu_v1', {
+      p_bm_id: kullanici.kullanici_id,
+      p_baslangic: baslangic,
+      p_bitis: bitis,
+    }),
   ]);
 
   if (bolgeAdRes.error) return { ...bos, hata: hataYaniti('Bölge adı çekilemedi', 'bolgeler', bolgeAdRes.error) };
   if (takimAdRes.error) return { ...bos, hata: hataYaniti('Takım adı çekilemedi', 'takimlar', takimAdRes.error) };
-  if (anaOzetRes.error) return { ...bos, hata: hataYaniti('BM ana özeti çekilemedi', 'get_bm_rapor_ana_ozet_v2', anaOzetRes.error) };
   if (uttPerformansRes.error) return { ...bos, hata: hataYaniti('BM UTT performansı çekilemedi', 'get_bm_utt_performans_v2', uttPerformansRes.error) };
   if (bolgeOzetRes.error) return { ...bos, hata: hataYaniti('Bölge özeti çekilemedi', 'get_kullanici_ozet (bölge)', bolgeOzetRes.error) };
   if (kategoriDagilimiRes.error) return { ...bos, hata: hataYaniti('Kategori dağılımı çekilemedi', 'get_kullanici_kategori_dagilimi', kategoriDagilimiRes.error) };
   if (urunDagilimiRes.error) return { ...bos, hata: hataYaniti('Ürün dağılımı çekilemedi', 'get_kullanici_urun_dagilimi', urunDagilimiRes.error) };
-  if (oneriOzetRes.error) return { ...bos, hata: hataYaniti('Öneri özeti çekilemedi', 'get_scope_ozet', oneriOzetRes.error) };
   if (takimOzetRes.error) return { ...bos, hata: hataYaniti('Takım puanı çekilemedi', 'get_kullanici_ozet (takım)', takimOzetRes.error) };
   if (sirketOzetRes.error) return { ...bos, hata: hataYaniti('Şirket puanı çekilemedi', 'get_kullanici_ozet (firma)', sirketOzetRes.error) };
   if (etkilesimRes.error) return { ...bos, hata: hataYaniti('BM etkileşimleri çekilemedi', 'get_bm_etkilesim_v2', etkilesimRes.error) };
+  if (oneriDurumuRes.error) return { ...bos, hata: hataYaniti('BM öneri durumu çekilemedi', 'get_bm_oneri_durumu_v1', oneriDurumuRes.error) };
+
+  const oneriDurumu = (oneriDurumuRes.data ?? []) as Omit<BmOneriKaydi, 'izleme_tarihi'>[];
+  const tamamlananOneriIdleri = oneriDurumu
+    .filter(oneri => oneri.durum === 'tamamlanan')
+    .map(oneri => oneri.oneri_id);
+  const izlemeTarihiMap = new Map<string, string>();
+
+  if (tamamlananOneriIdleri.length > 0) {
+    const { data: oneriIzlemeleri, error: oneriIzlemeError } = await adminSupabase
+      .from('izleme_kayitlari')
+      .select('izleme_id, oneri_id, izleme_bitis')
+      .in('oneri_id', tamamlananOneriIdleri)
+      .eq('izleme_turu', 'oneri')
+      .eq('tamamlandi_mi', true)
+      .eq('gercek_oynatma_mi', true)
+      .not('izleme_bitis', 'is', null)
+      .order('izleme_bitis', { ascending: true });
+    if (oneriIzlemeError) {
+      return { ...bos, hata: hataYaniti('Öneri izleme tarihleri çekilemedi', 'izleme_kayitlari', oneriIzlemeError) };
+    }
+
+    const izlemeler = (oneriIzlemeleri ?? []) as BmOneriIzlemesi[];
+    const izlemeIdleri = izlemeler.map(izleme => izleme.izleme_id);
+    const ileriSarilanIzlemeler = new Set<string>();
+
+    if (izlemeIdleri.length > 0) {
+      const { data: ileriSarmaKayitlari, error: ileriSarmaError } = await adminSupabase
+        .from('ileri_sarma_kayitlari')
+        .select('izleme_id')
+        .in('izleme_id', izlemeIdleri);
+      if (ileriSarmaError) {
+        return { ...bos, hata: hataYaniti('Öneri izleme tarihleri doğrulanamadı', 'ileri_sarma_kayitlari', ileriSarmaError) };
+      }
+      for (const kayit of ileriSarmaKayitlari ?? []) {
+        ileriSarilanIzlemeler.add(kayit.izleme_id);
+      }
+    }
+
+    for (const izleme of izlemeler) {
+      if (!ileriSarilanIzlemeler.has(izleme.izleme_id) && !izlemeTarihiMap.has(izleme.oneri_id)) {
+        izlemeTarihiMap.set(izleme.oneri_id, izleme.izleme_bitis);
+      }
+    }
+  }
 
   const takimToplamPuan = ((takimOzetRes.data ?? []) as KullaniciOzetSatiri[])
     .reduce((toplam, satir) => toplam + Number(satir.toplam_net_puan ?? 0), 0);
   const sirketToplamPuan = ((sirketOzetRes.data ?? []) as KullaniciOzetSatiri[])
     .reduce((toplam, satir) => toplam + Number(satir.toplam_net_puan ?? 0), 0);
-  const oneri = (oneriOzetRes.data?.[0] ?? {}) as Partial<BmData['oneriOzet']>;
-
   return {
     hata: null,
     bolge: bolgeAdRes.data,
     takim: takimAdRes.data,
-    anaOzet: (anaOzetRes.data?.[0] ?? bosAnaOzet) as BmAnaOzet,
     uttPerformans: (uttPerformansRes.data ?? []) as BmUttPerformans[],
     bolgeOzet: (bolgeOzetRes.data ?? []) as KullaniciOzetSatiri[],
     kategoriDagilimi: (kategoriDagilimiRes.data ?? []) as KullaniciKategoriDagilimi[],
     urunDagilimi: (urunDagilimiRes.data ?? []) as KullaniciUrunDagilimi[],
-    oneriOzet: {
-      gonderilen_oneri: Number(oneri.gonderilen_oneri ?? 0),
-      tamamlanan_oneri: Number(oneri.tamamlanan_oneri ?? 0),
-      bekleyen_oneri: Number(oneri.bekleyen_oneri ?? 0),
-      bekleyen_oneri_olan_utt_sayisi: Number(oneri.bekleyen_oneri_olan_utt_sayisi ?? 0),
-    },
     takimToplamPuan,
     sirketToplamPuan,
     etkilesim: (etkilesimRes.data ?? []) as BmEtkilesim[],
+    oneriDurumu: oneriDurumu.map(oneri => ({
+      ...oneri,
+      izleme_tarihi: izlemeTarihiMap.get(oneri.oneri_id) ?? null,
+    })),
   };
 }

@@ -14,6 +14,14 @@ import UrunKirilimPaneli from '@/components/raporlar/UrunKirilimPaneli';
 import styles from './utt-report.module.css';
 
 const DEFAULT_PERIYOT: Periyot = 'bu_ay';
+const PERIYOT_PUAN_ADI: Record<Periyot, string> = {
+  bu_gun: 'Gün',
+  bu_hafta: 'Hafta',
+  bu_ay: 'Ay',
+  bu_donem: 'Dönem',
+  bu_yil: 'Yıl',
+};
+
 interface UrunDagilimi {
   urun_id: string;
   urun_adi: string;
@@ -163,7 +171,7 @@ export default function UttRaporPage() {
         <div className={styles.heroGrid}>
           <section className={`${styles.panel} ${styles.scoreHero}`}>
             <div>
-              <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">Dönem net puanı</div>
+              <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">{PERIYOT_PUAN_ADI[periyot]} net puanı</div>
               <div className={styles.netScore}>{formatPuan(data.istatistikler.toplam_net_puan)}</div>
             </div>
             <div className="relative z-10 min-w-0">
