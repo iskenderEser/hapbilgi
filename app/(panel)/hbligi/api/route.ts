@@ -10,6 +10,7 @@ import { getUttLig } from "@/lib/hbligi_v2/getUttLig";
 import { getSahaLig, type SahaGorunumu } from "@/lib/hbligi_v2/getSahaLig";
 import type { LigPeriyot } from "@/lib/hbligi_v2/ligRpcCagir";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { ureticiYetenegi, type RaporScope } from "@/lib/uretici/yetenekler";
 import {
   ADMIN_ROLLER,
   TUKETICI_ROLLER,
@@ -88,9 +89,13 @@ export async function GET(request: NextRequest) {
       }
 
       let gorunum: SahaGorunumu | null = null;
+      let ureticiScope: RaporScope | null = null;
       if (rol === "bm") gorunum = "bm";
       else if (rol === "tm") gorunum = "tm";
-      else if (URETICI_ROLLER.includes(rol)) gorunum = "uretici";
+      else if (URETICI_ROLLER.includes(rol)) {
+        gorunum = "uretici";
+        ureticiScope = ureticiYetenegi(rol)?.raporScope ?? null;
+      }
       else if (YONETICI_ROLLER.includes(rol)) gorunum = "yonetici";
       else if (ADMIN_ROLLER.includes(rol)) gorunum = "admin";
 
@@ -101,6 +106,7 @@ export async function GET(request: NextRequest) {
         firma_id: kullanici.firma_id,
         takim_id: kullanici.takim_id,
         bolge_id: kullanici.bolge_id,
+        uretici_scope: ureticiScope,
       }, periyot);
       return NextResponse.json(sonuc, { status: 200 });
 

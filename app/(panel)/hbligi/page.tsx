@@ -65,7 +65,7 @@ export default function HBLigiPage() {
       const response = await fetch(`/hbligi/api?${params.toString()}`);
       const payload = await response.json();
       if (!response.ok) {
-        throw new Error(payload?.message ?? payload?.error ?? "HBLigi verisi alınamadı.");
+        throw new Error(payload?.hata ?? payload?.message ?? payload?.error ?? "HBLigi verisi alınamadı.");
       }
       setVeri(payload as HBLigiVeri);
     } catch (error) {

@@ -5,6 +5,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ligRpcCagir, type LigPeriyot } from "@/lib/hbligi_v2/ligRpcCagir";
+import type { RaporScope } from "@/lib/uretici/yetenekler";
 
 export type SahaGorunumu = "bm" | "tm" | "uretici" | "yonetici" | "admin";
 export type SahaBirimTuru = "bolge" | "takim" | "firma";
@@ -44,6 +45,7 @@ export interface SahaLigKapsami {
   firma_id: string | null;
   takim_id: string | null;
   bolge_id: string | null;
+  uretici_scope?: RaporScope | null;
 }
 
 function sayi(value: unknown): number {
@@ -117,6 +119,18 @@ export async function getSahaLig(
       gorunum: "yonetici",
       kapsam_adi: ilkAd(firmaSatirlari, "firma", "Firma sahası"),
       kapsam_aciklamasi: "Firma genelinde takım ve UTT performansı",
+      ana_birim: "takim",
+      odak_birim_id: null,
+      lig: firmaSatirlari,
+    };
+  }
+
+  if (kapsam.gorunum === "uretici" && kapsam.uretici_scope === "firma") {
+    return {
+      tip: "saha",
+      gorunum: "uretici",
+      kapsam_adi: ilkAd(firmaSatirlari, "firma", "Firma sahası"),
+      kapsam_aciklamasi: "Üretilen içeriğin firma sahasındaki karşılığı",
       ana_birim: "takim",
       odak_birim_id: null,
       lig: firmaSatirlari,
