@@ -1,18 +1,18 @@
 // app/oneriler/api/kullanicilar/route.ts
 //
-// Öneri gönderilecek kişi listesi — yalnız yönlendirici roller (TM/BM).
+// Öneri gönderilecek kişi listesi — yalnız BM.
 //
 // 29.07.2026: bu liste eskiden /kullanicilar/api'den çekiliyordu. O uç kullanıcı
 // ROLÜNÜ değiştirebilen ekranın ucudur ve admin'e kilitlendi; Öneriler ekranı
 // bu yüzden kendi ucunu aldı. Burada yazma yoktur, yalnız çağıranın KENDİ
-// kapsamındaki tüketiciler döner: BM → kendi bölgesi, TM → kendi takımı.
+// kapsamındaki tüketiciler döner: BM → kendi bölgesi.
 // Kapsam sunucuda belirlenir, istemciden parametre alınmaz.
 
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { TUKETICI_ROLLER, YONLENDIRICI_ROLLER } from "@/lib/utils/roller";
+import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 
 export async function GET() {
   try {
@@ -23,11 +23,11 @@ export async function GET() {
     const adminSupabase = createAdminClient();
 
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (!YONLENDIRICI_ROLLER.includes(rol)) return rolHatasi();
+    if (rol !== "bm") return rolHatasi("Sadece bm öneri alıcılarını görebilir.");
 
     const { data: me, error: meError } = await adminSupabase
       .from("kullanicilar")
-      .select("takim_id, bolge_id")
+      .select("bolge_id")
       .eq("kullanici_id", user.id)
       .single();
 
@@ -41,11 +41,7 @@ export async function GET() {
       .in("rol", TUKETICI_ROLLER)
       .order("ad", { ascending: true });
 
-    // BM ve TM aynı listeyi farklı kapsamda görür; bu bir rol listesi değil,
-    // iki rolün hiyerarşideki farklı seviyesidir (BM bölge, TM takım).
-    query = rol === "bm"
-      ? query.eq("bolge_id", me.bolge_id)
-      : query.eq("takim_id", me.takim_id);
+    query = query.eq("bolge_id", me.bolge_id);
 
     const { data: kullanicilar, error } = await query;
     if (error) return hataYaniti("Kullanıcılar çekilemedi.", "v_kullanici_detay view SELECT", error);

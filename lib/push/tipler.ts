@@ -32,7 +32,7 @@ export interface PushAbonelikKaydi {
 // buraya üye + icerik.ts'e satır + pushYayinla çağrısı (K-P10).
 export type PushOlayTuru =
   | "uretim_durum_gecisi" // senaryo/video/soru seti onay–revizyon–iptal (§3.1)
-  | "video_onerisi" // BM/TM → UTT
+  | "video_onerisi" // BM → UTT
   | "video_yayini" // yeni video yayında → UTT (app-tarafı yayın bildirimi; pg_cron aktivasyonu kapsam dışı — C.9)
   | "eclub_oneri" // UTT → eclub kişisi
   | "challenge" // BM → BM (§3.3)

@@ -18,7 +18,8 @@ export const YONETICI_ROLLER = [
 // İleride firma bazlı admin eklenebilir: "firma_admin"
 export const ADMIN_ROLLER = ["admin"];
 
-// YONLENDIRICI_ROLLER: TM ve BM — UTT performansını izleyen ve yönlendiren roller.
+// YONLENDIRICI_ROLLER: TM ve BM — UTT performansını hiyerarşik olarak izleyen roller.
+// Öneri gönderme yetkisi bu gruptan türetilmez; yalnız BM'ye aittir.
 export const YONLENDIRICI_ROLLER = ["tm", "bm"];
 
 // TUKETICI_ROLLER: UTT ve KD_UTT — sahada video tüketen, soruları cevaplayan roller.

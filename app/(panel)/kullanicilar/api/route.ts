@@ -6,8 +6,8 @@ import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 
 // Kullanıcı listesi yalnız admin'e açıktır (29.07.2026 kararı). Proxy'deki
 // /kullanicilar bekçisi birinci katman, buradaki kontrol ikincisidir.
-// NOT: Öneriler ekranı bu ucu `kapsamim=true` ile kullanıyordu; o ekran BM/TM'e
-// ait olduğu için kilitten sonra kendi ucunu almalıdır (ayrı iş).
+// NOT: Öneriler ekranı artık bu ucu kullanmaz; BM için ayrı ve yalnızca bölge
+// kapsamını döndüren `/oneriler/api/kullanicilar` ucu vardır.
 
 export async function GET(request: NextRequest) {
   try {

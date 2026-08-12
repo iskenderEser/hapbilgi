@@ -20,10 +20,11 @@ export async function GET() {
 
     const rol = await rolCozucu(adminSupabase, user.id);
     if (!GET_ROLLERI.includes(rol)) {
-      return rolHatasi("Sadece bm, utt ve kd_utt önerilere erişebilir.");
+      return rolHatasi("Sadece tm, bm, utt ve kd_utt önerilere erişebilir.");
     }
 
-    // Tek RPC ile tüm öneri listesi + yan bilgiler. N+1 sorgu pattern'i kaldırıldı.
+    // BM kendi gönderimlerini, UTT kendi gelen önerilerini, TM ise takımındaki
+    // BM gönderimlerini salt-okuma izler. Öneri oluşturma yetkisi yalnız BM'dedir.
     const { data: oneriler, error } = await adminSupabase.rpc("get_oneri_listesi", {
       p_kullanici_id: user.id,
       p_rol: rol,

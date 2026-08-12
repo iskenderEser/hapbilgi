@@ -1,7 +1,7 @@
 // app/oneriler/page.tsx
 "use client";
 
-import { TUKETICI_ROLLER, YONLENDIRICI_ROLLER } from "@/lib/utils/roller";
+import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
@@ -66,8 +66,11 @@ export default function OnerilerPage() {
   const [oneriBaslangic, setOneriBaslangic] = useState("");
   const [oneriBitis, setOneriBitis] = useState("");
   const { mesajlar, hata, basari } = useHataMesaji();
+  const rolKucu = (kullanici?.rol ?? "").toLowerCase();
+  const isBM = rolKucu === "bm";
+  const isUTT = TUKETICI_ROLLER.includes(rolKucu);
 
-  // BM/TM tablo filtreleri ve sıralama
+  // BM tablo filtreleri ve sıralama
   const [filtreUTT, setFiltreUTT] = useState<string>("");
   const [filtreUrun, setFiltreUrun] = useState<string>("");
   const [filtreTeknik, setFiltreTeknik] = useState<string>("");
@@ -98,8 +101,8 @@ export default function OnerilerPage() {
     if (!res.ok) { hata(data.hata ?? "Öneriler yüklenemedi.", data.adim, data.detay); }
     else { setOneriler(data.oneriler ?? []); }
 
-    const rolKucu = (kullanici?.rol ?? "").toLowerCase();
-    if (YONLENDIRICI_ROLLER.includes(rolKucu)) {
+    const veriRolu = (kullanici?.rol ?? "").toLowerCase();
+    if (veriRolu === "bm") {
       const yRes = await fetch("/oneriler/api/yayinlar");
       const yData = await yRes.json();
       if (!yRes.ok) { hata(yData.hata ?? "Yayınlar yüklenemedi.", yData.adim, yData.detay); }
@@ -127,10 +130,6 @@ export default function OnerilerPage() {
     return date.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
   };
 
-  const rolKucu = (kullanici?.rol ?? "").toLowerCase();
-  const isBMTM = YONLENDIRICI_ROLLER.includes(rolKucu);
-  const isUTT = TUKETICI_ROLLER.includes(rolKucu);
-
   const sureciGectiMi = (bitis: string) => new Date(bitis) < new Date();
   const henuzBaslamadiMi = (baslangic: string) => new Date(baslangic) > new Date();
 
@@ -141,7 +140,7 @@ export default function OnerilerPage() {
     return { renk: "#737373", etiket: "İzlenecek", soluk: false };
   };
 
-  // BM/TM tablo için durum tipi (3 değer)
+  // BM tablosu için durum tipi (3 değer)
   const durumTipi = (o: Oneri): DurumTipi => {
     if (o.izlendi_mi) return "izlendi";
     if (sureciGectiMi(o.oneri_bitis)) return "sureSiGecti";
@@ -244,13 +243,23 @@ export default function OnerilerPage() {
     );
   }
 
+  if (!isBM && !isUTT) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 text-sm text-gray-600">
+          Bu sayfaya erişim yetkiniz yok. Öneri gönderme yetkisi yalnız BM rolüne aittir.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20 md:pb-0" style={{ fontFamily: "'Nunito', sans-serif" }}>
 
       <div className="max-w-5xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-5">
 
-        {/* BM/TM — Yeni Öneri Formu */}
-        {isBMTM && (
+        {/* BM — Yeni Öneri Formu */}
+        {isBM && (
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div className="px-4 md:px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
               <span className="text-sm font-semibold text-gray-900">Yeni Öneri</span>
@@ -330,8 +339,8 @@ export default function OnerilerPage() {
           </div>
         )}
 
-        {/* BM/TM — Gönderilen Öneriler Tablosu */}
-        {isBMTM && (
+        {/* BM — Gönderilen Öneriler Tablosu */}
+        {isBM && (
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div className="px-4 md:px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
               <span className="text-sm font-semibold text-gray-900">Gönderilen Öneriler</span>
