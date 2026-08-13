@@ -9,7 +9,7 @@ import { getTmAnaSayfaVeri } from "@/lib/utils/anaSayfa/tm";
 import { getIuAnaSayfaVeri } from "@/lib/utils/anaSayfa/iu";
 import { getUreticiAnaSayfaVeri } from "@/lib/utils/anaSayfa/uretici";
 import { getYoneticiAnaSayfaVeri } from "@/lib/utils/anaSayfa/yonetici";
-import { getAnaSayfaVideolari } from "@/lib/video/anaSayfaVideolari";
+import { getAnaSayfaVideolari, getBmAnaSayfaVideolari } from "@/lib/video/anaSayfaVideolari";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function GET() {
@@ -44,7 +44,10 @@ export async function GET() {
     // UTT/KD_UTT kendi video verisini (getUttAnaSayfaVeri) kullanmaya devam eder.
     // getAnaSayfaVideolari, video görmeyen roller (İK, IU) için boş dizi döndürür → bölüm çıkmaz.
     if (!TUKETICI_ROLLER.includes(rol)) {
-      veri = { ...veri, videolar: await getAnaSayfaVideolari(user.id, rol, adminSupabase) };
+      const videolar = rol === "bm"
+        ? await getBmAnaSayfaVideolari(user.id, adminSupabase)
+        : await getAnaSayfaVideolari(user.id, rol, adminSupabase);
+      veri = { ...veri, videolar };
     }
 
     return NextResponse.json(veri, { status: 200 });

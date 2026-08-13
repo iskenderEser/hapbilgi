@@ -6,12 +6,14 @@
 //  - Tür kapısı: gorunenTurler(rol) — rol hangi türleri görüyorsa onlar.
 //  - Konum: geniş roller → kendi firmalarındaki TÜM takımlar; dar roller → yalnız kendi takımı.
 //    (Çok-firmalı yapı: başka firmanın videosu sızmaz.)
+//  - BM özel görünümü: UTT ile eş katalog için kendi takımı + firma geneli ve
+//    yalnız hedef_rol='utt' yayınlar.
 //
-// Bilinçli olarak şimdilik DIŞARIDA:
-//  - "Tüm firma" (takim_id NULL) içeriği: med/egt "tüm firma" seçimi henüz üretilemediği için
-//    bu içerik yok. Üretim etkinleşince v_yayin_detay'a firma_id eklenip burada ele alınacak.
-//  - Tüketici alanları (beğeni/favori/izlendi/puan): yalnız-izleme rolleri için gerekmiyor.
-//    UTT/KD_UTT kendi sayfasını (getUttAnaSayfaVeri) kullanmaya devam ediyor.
+// Varsayılan ortak çağrıda firma-geneli (takim_id NULL) içerik dışarıdadır;
+// yalnız bunu açıkça isteyen rol çağrıları firma sınırı korunarak dahil eder.
+//  - Tüketiciye özgü kişisel izleme/puan durumu: UTT/KD_UTT kendi sayfasını
+//    (getUttAnaSayfaVeri) kullanmaya devam ediyor. BM rafları için gereken
+//    toplu etkileşim sayıları getBmAnaSayfaVideolari tarafından ayrıca eklenir.
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import { IcerikTuru } from "./icerikTuru";
@@ -31,10 +33,22 @@ export interface AnaSayfaVideo {
   ileri_sarma_acik: boolean; // yalnız-izleme modunda kullanılmaz; oynatıcı tipiyle uyum için
 }
 
+export interface BmAnaSayfaVideo extends AnaSayfaVideo {
+  izlenme_sayisi: number;
+  begeni_sayisi: number;
+  favori_sayisi: number;
+}
+
+interface AnaSayfaVideoSecenekleri {
+  hedefRol?: string;
+  firmaGeneliDahil?: boolean;
+}
+
 export async function getAnaSayfaVideolari(
   userId: string,
   rol: string,
-  adminSupabase: SupabaseClient
+  adminSupabase: SupabaseClient,
+  secenekler: AnaSayfaVideoSecenekleri = {},
 ): Promise<AnaSayfaVideo[]> {
   const turler = gorunenTurler(rol);
   if (turler.length === 0) return []; // İK rolleri, IU, tanımsız roller → ana sayfada video yok
@@ -54,6 +68,10 @@ export async function getAnaSayfaVideolari(
     .in("icerik_turu", turler)
     .order("yayin_tarihi", { ascending: false });
 
+  if (secenekler.hedefRol) {
+    query = query.eq("hedef_rol", secenekler.hedefRol);
+  }
+
   if (kapsamGenisMi(rol)) {
     // Geniş: kullanıcının firmasındaki tüm takımlar
     const { data: takimlar } = await adminSupabase
@@ -62,11 +80,23 @@ export async function getAnaSayfaVideolari(
       .eq("firma_id", kullanici.firma_id);
 
     const takimIdler = (takimlar ?? []).map((t: any) => t.takim_id);
-    query = query.in("takim_id", takimIdler.length > 0 ? takimIdler : ["00000000-0000-0000-0000-000000000000"]);
+    if (secenekler.firmaGeneliDahil) {
+      const takimListe = takimIdler.length > 0 ? takimIdler.join(",") : "00000000-0000-0000-0000-000000000000";
+      query = query.or(`takim_id.in.(${takimListe}),and(takim_id.is.null,firma_id.eq.${kullanici.firma_id})`);
+    } else {
+      query = query.in("takim_id", takimIdler.length > 0 ? takimIdler : ["00000000-0000-0000-0000-000000000000"]);
+    }
   } else {
-    // Dar: yalnız kendi takımı
-    if (!kullanici.takim_id) return [];
-    query = query.eq("takim_id", kullanici.takim_id);
+    // Dar: kendi takımı; istenirse aynı firmadaki takımsız genel içerik de dahil.
+    if (kullanici.takim_id && secenekler.firmaGeneliDahil) {
+      query = query.or(`takim_id.eq.${kullanici.takim_id},and(takim_id.is.null,firma_id.eq.${kullanici.firma_id})`);
+    } else if (kullanici.takim_id) {
+      query = query.eq("takim_id", kullanici.takim_id);
+    } else if (secenekler.firmaGeneliDahil) {
+      query = query.is("takim_id", null).eq("firma_id", kullanici.firma_id);
+    } else {
+      return [];
+    }
   }
 
   const { data: videolar, error } = await query;
@@ -84,5 +114,62 @@ export async function getAnaSayfaVideolari(
     yayin_tarihi: v.yayin_tarihi,
     icerik_turu: (v.icerik_turu as IcerikTuru) ?? null,
     ileri_sarma_acik: false,
+  }));
+}
+
+/**
+ * BM ana sayfasındaki kategori raflarının kullandığı etkileşimli video verisi.
+ * Görünür video kapsamı getAnaSayfaVideolari'nden gelir; burada yalnız raf
+ * sıralaması için gereken tamamlanmış izleme, beğeni ve favori sayıları eklenir.
+ */
+export async function getBmAnaSayfaVideolari(
+  userId: string,
+  adminSupabase: SupabaseClient,
+): Promise<BmAnaSayfaVideo[]> {
+  const videolar = await getAnaSayfaVideolari(userId, "bm", adminSupabase, {
+    hedefRol: "utt",
+    firmaGeneliDahil: true,
+  });
+  if (videolar.length === 0) return [];
+
+  const yayinIdler = videolar.map((video) => video.yayin_id);
+  const [begeniSonucu, favoriSonucu, izlemeSonucu] = await Promise.all([
+    adminSupabase
+      .from("video_begeniler")
+      .select("yayin_id")
+      .in("yayin_id", yayinIdler),
+    adminSupabase
+      .from("video_favoriler")
+      .select("yayin_id")
+      .in("yayin_id", yayinIdler),
+    adminSupabase
+      .from("izleme_kayitlari")
+      .select("yayin_id")
+      .in("yayin_id", yayinIdler)
+      .eq("tamamlandi_mi", true)
+      .eq("gercek_oynatma_mi", true),
+  ]);
+
+  if (begeniSonucu.error || favoriSonucu.error || izlemeSonucu.error) {
+    throw new Error("BM video etkileşim sayıları çekilemedi.");
+  }
+
+  const say = (satirlar: { yayin_id: string }[]) => {
+    const sonuc = new Map<string, number>();
+    for (const satir of satirlar) {
+      sonuc.set(satir.yayin_id, (sonuc.get(satir.yayin_id) ?? 0) + 1);
+    }
+    return sonuc;
+  };
+
+  const begeniler = say(begeniSonucu.data ?? []);
+  const favoriler = say(favoriSonucu.data ?? []);
+  const izlemeler = say(izlemeSonucu.data ?? []);
+
+  return videolar.map((video) => ({
+    ...video,
+    izlenme_sayisi: izlemeler.get(video.yayin_id) ?? 0,
+    begeni_sayisi: begeniler.get(video.yayin_id) ?? 0,
+    favori_sayisi: favoriler.get(video.yayin_id) ?? 0,
   }));
 }
