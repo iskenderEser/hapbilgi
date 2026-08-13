@@ -92,8 +92,8 @@ export const PANEL_NAV: NavGrup[] = [
   {
     baslik: "Öneri Takibi",
     oglar: [
-      // BM (yönlendirici) rozetsiz; UTT/KD_UTT rozetli — badgeKey UTT için dolar.
-      { etiket: "Öneri Takibi", path: "/oneriler", badgeKey: "oneri", gate: (c) => c.rolKucu === "bm" || TUKETICI_ROLLER.includes(c.rolKucu) },
+      // TM/BM (yönlendirici) rozetsiz; UTT/KD_UTT rozetli — badgeKey UTT için dolar.
+      { etiket: "Öneri Takibi", path: "/oneriler", badgeKey: "oneri", gate: (c) => c.rolKucu === "tm" || c.rolKucu === "bm" || TUKETICI_ROLLER.includes(c.rolKucu) },
     ],
   },
   {

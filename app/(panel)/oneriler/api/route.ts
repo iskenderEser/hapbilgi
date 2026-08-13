@@ -33,6 +33,18 @@ interface BmOneriTakipKaydi {
   durum: "tamamlanan" | "bekleyen" | "suresi_gecmis";
 }
 
+interface TmBmPerformansKaydi {
+  bm_id: string;
+  bm_adi: string;
+  bolge_id: string;
+  bolge_adi: string;
+}
+
+interface TmOneriTakipKaydi {
+  yayin_id: string;
+  [anahtar: string]: unknown;
+}
+
 const gecerliPeriyot = (deger: string): deger is Periyot =>
   PERIYOTLAR.some((periyot) => periyot.key === deger);
 
@@ -49,13 +61,69 @@ export async function GET(request: NextRequest) {
       return rolHatasi("Sadece tm, bm, utt ve kd_utt önerilere erişebilir.");
     }
 
-    if (rol === "bm") {
+    if (rol === "bm" || rol === "tm") {
       const periyot = request.nextUrl.searchParams.get("periyot") ?? "bu_ay";
       if (!gecerliPeriyot(periyot)) {
         return validasyonHatasi("Geçersiz öneri takip periyodu.", ["periyot"]);
       }
 
       const { baslangic, bitis } = tarihAraligi(periyot);
+
+      if (rol === "tm") {
+        const [takipSonucu, bmSonucu] = await Promise.all([
+          adminSupabase.rpc("get_tm_oneri_durumu_v1", {
+            p_tm_id: user.id,
+            p_baslangic: baslangic,
+            p_bitis: bitis,
+          }),
+          adminSupabase.rpc("get_tm_bm_performans_v1", {
+            p_tm_id: user.id,
+            p_baslangic: baslangic,
+            p_bitis: bitis,
+          }),
+        ]);
+
+        if (takipSonucu.error) {
+          return hataYaniti("TM öneri takip kayıtları çekilemedi.", "get_tm_oneri_durumu_v1 RPC", takipSonucu.error);
+        }
+        if (bmSonucu.error) {
+          return hataYaniti("Takımdaki BM listesi çekilemedi.", "get_tm_bm_performans_v1 RPC — öneri takibi", bmSonucu.error);
+        }
+
+        const tmTakipKayitlari = (takipSonucu.data ?? []) as TmOneriTakipKaydi[];
+        const yayinIdleri = [...new Set(tmTakipKayitlari.map((kayit) => kayit.yayin_id).filter(Boolean))];
+        const { data: yayinlar, error: yayinError } = yayinIdleri.length > 0
+          ? await adminSupabase
+              .from("v_yayin_detay")
+              .select("yayin_id, video_url, thumbnail_url")
+              .in("yayin_id", yayinIdleri)
+          : { data: [], error: null };
+
+        if (yayinError) {
+          return hataYaniti("TM öneri video bilgileri çekilemedi.", "v_yayin_detay SELECT — TM öneri takibi", yayinError);
+        }
+
+        const yayinHaritasi = new Map((yayinlar ?? []).map((yayin) => [yayin.yayin_id, yayin]));
+        const tmOneriler = tmTakipKayitlari.map((kayit) => ({
+          ...kayit,
+          video_url: yayinHaritasi.get(kayit.yayin_id)?.video_url ?? null,
+          thumbnail_url: yayinHaritasi.get(kayit.yayin_id)?.thumbnail_url ?? null,
+        }));
+
+        const bmListesi = ((bmSonucu.data ?? []) as TmBmPerformansKaydi[]).map((bm) => ({
+          bm_id: bm.bm_id,
+          bm_adi: bm.bm_adi,
+          bolge_id: bm.bolge_id,
+          bolge_adi: bm.bolge_adi,
+        }));
+
+        return NextResponse.json({
+          oneriler: tmOneriler,
+          bm_listesi: bmListesi,
+          periyot,
+        }, { status: 200 });
+      }
+
       const { data: takipKayitlari, error: takipError } = await adminSupabase.rpc(
         "get_bm_oneri_durumu_v1",
         {

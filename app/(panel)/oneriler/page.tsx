@@ -8,18 +8,22 @@ import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 import { useAuth } from "@/app/providers/AuthProvider";
 import BmOneriTakibi, { type OneriKaydi } from "./_components/BmOneriTakibi";
+import TmOneriTakibi, { type TmBmKaydi, type TmOneriKaydi } from "./_components/TmOneriTakibi";
 import type { Periyot } from "@/lib/utils/raporUtils";
 
 export default function OnerilerPage() {
   const router = useRouter();
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const [oneriler, setOneriler] = useState<OneriKaydi[]>([]);
+  const [tmOneriler, setTmOneriler] = useState<TmOneriKaydi[]>([]);
+  const [tmBmler, setTmBmler] = useState<TmBmKaydi[]>([]);
   const [loading, setLoading] = useState(true);
   const [periyot, setPeriyot] = useState<Periyot>("bu_ay");
   const { mesajlar, hata } = useHataMesaji();
   const hataRef = useRef(hata);
   const rolKucu = (kullanici?.rol ?? "").toLowerCase();
   const isBM = rolKucu === "bm";
+  const isTM = rolKucu === "tm";
   const isUTT = TUKETICI_ROLLER.includes(rolKucu);
 
   useEffect(() => { hataRef.current = hata; }, [hata]);
@@ -44,17 +48,22 @@ export default function OnerilerPage() {
     if (!kullanici?.id) return;
     let aktif = true;
     const veriCek = async () => {
-      const url = isBM ? `/oneriler/api?periyot=${periyot}` : "/oneriler/api";
+      const url = isBM || isTM ? `/oneriler/api?periyot=${periyot}` : "/oneriler/api";
       const res = await fetch(url);
       const data = await res.json();
       if (!aktif) return;
       if (!res.ok) hataRef.current(data.hata ?? "Öneriler yüklenemedi.", data.adim, data.detay);
-      else setOneriler(data.oneriler ?? []);
+      else if (isTM) {
+        setTmOneriler(data.oneriler ?? []);
+        setTmBmler(data.bm_listesi ?? []);
+      } else {
+        setOneriler(data.oneriler ?? []);
+      }
       setLoading(false);
     };
     void veriCek();
     return () => { aktif = false; };
-  }, [isBM, kullanici?.id, periyot]);
+  }, [isBM, isTM, kullanici?.id, periyot]);
 
   const handlePeriyotDegistir = (yeniPeriyot: Periyot) => {
     if (yeniPeriyot === periyot) return;
@@ -89,11 +98,11 @@ export default function OnerilerPage() {
     );
   }
 
-  if (!isBM && !isUTT) {
+  if (!isBM && !isTM && !isUTT) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 text-sm text-gray-600">
-          Bu sayfaya yalnız BM, UTT ve KD_UTT rolleri erişebilir.
+          Bu sayfaya yalnız TM, BM, UTT ve KD_UTT rolleri erişebilir.
         </div>
       </div>
     );
@@ -102,11 +111,20 @@ export default function OnerilerPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-20 md:pb-0" style={{ fontFamily: "'Nunito', sans-serif" }}>
 
-      <div className={isBM ? "" : "max-w-5xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-5"}>
+      <div className={isBM || isTM ? "" : "max-w-5xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-5"}>
 
         {isBM && (
           <BmOneriTakibi
             oneriler={oneriler}
+            periyot={periyot}
+            onPeriyotDegistir={handlePeriyotDegistir}
+          />
+        )}
+
+        {isTM && (
+          <TmOneriTakibi
+            oneriler={tmOneriler}
+            bmler={tmBmler}
             periyot={periyot}
             onPeriyotDegistir={handlePeriyotDegistir}
           />

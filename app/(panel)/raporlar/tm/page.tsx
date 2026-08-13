@@ -2,7 +2,7 @@
 
 import { Fragment, useState } from 'react';
 import Link from 'next/link';
-import { Activity, ArrowLeft, BarChart3, BookOpenCheck, CheckCircle2, ChevronDown, CircleMinus, CirclePlus, Clock3, Gauge, Layers3, Send, Sparkles, TriangleAlert, Users } from 'lucide-react';
+import { Activity, ArrowLeft, BarChart3, BookOpenCheck, ChevronDown, CircleMinus, CirclePlus, Gauge, Layers3, Sparkles, Users } from 'lucide-react';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useRapor } from '@/hooks/useRapor';
 import { KIRMIZI, GRI_METIN, KOYU_METIN, formatPuan, PERIYOTLAR, type Periyot } from '@/lib/utils/raporUtils';
@@ -85,28 +85,6 @@ interface BmPerformans {
   utt_listesi: UttPerformans[];
 }
 
-type OneriDurumu = 'tamamlanan' | 'bekleyen' | 'suresi_gecmis';
-type OneriSecimi = 'toplam' | OneriDurumu;
-
-interface OneriKaydi {
-  bm_id: string;
-  bm_adi: string;
-  bolge_id: string;
-  bolge_adi: string;
-  oneri_id: string;
-  kullanici_id: string;
-  utt_ad: string;
-  utt_soyad: string;
-  yayin_id: string;
-  urun_adi: string | null;
-  teknik_adi: string | null;
-  oneri_baslangic: string;
-  oneri_bitis: string;
-  created_at: string;
-  izleme_tarihi: string | null;
-  durum: OneriDurumu;
-}
-
 interface RaporData {
   kullanici: {
     ad: string;
@@ -131,13 +109,6 @@ interface RaporData {
     toplam_net_puan: number;
   };
   bm_performans: BmPerformans[];
-  oneri_durumu: {
-    toplam: number;
-    tamamlanan: number;
-    bekleyen: number;
-    suresi_gecmis: number;
-    kayitlar: OneriKaydi[];
-  };
   kategori_dagilimi: KategoriDagilimi[];
   urun_dagilimi: UrunDagilimi[];
   begeni_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; begeni_sayisi: number }>;
@@ -151,31 +122,12 @@ const kategoriSirasi = (tur: string) => {
   return sira === -1 ? TUR_SIRA.length : sira;
 };
 
-const tarihSaatMetni = (tarih: string | null) => tarih
-  ? new Date(tarih).toLocaleString('tr-TR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  : '—';
-
-const ONERI_DURUM_ETIKETI: Record<OneriDurumu, string> = {
-  tamamlanan: 'Tamamlandı',
-  bekleyen: 'Bekliyor',
-  suresi_gecmis: 'Süresi geçmiş',
-};
-
 export default function TmRaporPage() {
   const { kullanici, yukleniyor } = useAuth();
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
   const [acikKategori, setAcikKategori] = useState<string | null>(null);
   const [acikBm, setAcikBm] = useState<string | null>(null);
   const [acikUtt, setAcikUtt] = useState<string | null>(null);
-  const [acikOneriDurumu, setAcikOneriDurumu] = useState<OneriSecimi | null>(null);
-  const [acikOneriBm, setAcikOneriBm] = useState<string | null>(null);
-  const [acikOneriKaydi, setAcikOneriKaydi] = useState<string | null>(null);
   const { data, loading, error } = useRapor<RaporData>('/raporlar/api/tm', periyot, kullanici?.id);
 
   if (yukleniyor || loading) return (
@@ -215,27 +167,6 @@ export default function TmRaporPage() {
       birUstleFark: index === 0 ? 0 : Math.max(0, data.bm_performans[index - 1].net_puan - bm.net_puan),
     };
   });
-  const oneriKartlari = [
-    { key: 'toplam', label: 'Toplam öneri', value: data.oneri_durumu.toplam, icon: Send, tone: bmStyles.oneriTotal },
-    { key: 'tamamlanan', label: 'Tamamlanan', value: data.oneri_durumu.tamamlanan, icon: CheckCircle2, tone: bmStyles.oneriCompleted },
-    { key: 'bekleyen', label: 'Bekleyen', value: data.oneri_durumu.bekleyen, icon: Clock3, tone: bmStyles.oneriPending },
-    { key: 'suresi_gecmis', label: 'Süresi geçmiş', value: data.oneri_durumu.suresi_gecmis, icon: TriangleAlert, tone: bmStyles.oneriExpired },
-  ] as const;
-  const seciliOneriler = acikOneriDurumu === null
-    ? []
-    : acikOneriDurumu === 'toplam'
-      ? data.oneri_durumu.kayitlar
-      : data.oneri_durumu.kayitlar.filter(oneri => oneri.durum === acikOneriDurumu);
-  const seciliBmOnerileri = (data.bm_performans ?? [])
-    .map(bm => ({
-      bm_id: bm.bm_id,
-      bm_adi: bm.bm_adi,
-      bolge_adi: bm.bolge_adi,
-      oneriler: seciliOneriler.filter(oneri => oneri.bm_id === bm.bm_id),
-    }))
-    .sort((a, b) => b.oneriler.length - a.oneriler.length || a.bm_adi.localeCompare(b.bm_adi, 'tr'));
-  const seciliOneriBasligi = oneriKartlari.find(kart => kart.key === acikOneriDurumu)?.label;
-
   return (
     <div className={styles.page} style={{ fontFamily: "'Nunito', sans-serif" }}>
       <div className={styles.container}>
@@ -456,140 +387,6 @@ export default function TmRaporPage() {
             </div>
           ) : (
             <div className={bmStyles.empty}>Bu dönem için BM performans kaydı bulunmuyor.</div>
-          )}
-        </section>
-
-        <section className={`${styles.panel} ${styles.section}`}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">Öneri takibi</div>
-              <h2 className="text-base font-extrabold text-[#20324c]">Öneri Durumu</h2>
-              <p className="mt-0.5 text-[11px] font-medium text-[#8190a3]">Seçilen periyotta takım BM’lerinin UTT’lere gönderdiği öneriler</p>
-            </div>
-            <div className={styles.sectionIcon}><Send className="h-4 w-4" /></div>
-          </div>
-
-          <div className={bmStyles.oneriStats}>
-            {oneriKartlari.map(kart => {
-              const acik = acikOneriDurumu === kart.key;
-              return (
-                <button
-                  type="button"
-                  key={kart.key}
-                  className={`${bmStyles.oneriStat} ${kart.tone} ${acik ? bmStyles.oneriStatActive : ''}`}
-                  onClick={() => {
-                    setAcikOneriDurumu(acik ? null : kart.key);
-                    setAcikOneriBm(null);
-                    setAcikOneriKaydi(null);
-                  }}
-                  aria-expanded={acik}
-                  aria-controls="tm-oneri-detayi"
-                >
-                  <span className={bmStyles.oneriStatIcon}><kart.icon size={17} /></span>
-                  <span><small>{kart.label}</small><strong>{formatPuan(kart.value)}</strong></span>
-                  <ChevronDown size={15} className={acik ? bmStyles.oneriChevronOpen : bmStyles.oneriChevron} />
-                </button>
-              );
-            })}
-          </div>
-
-          {acikOneriDurumu && (
-            <div id="tm-oneri-detayi" className={bmStyles.oneriDetail}>
-              <div className={bmStyles.oneriDetailHeader}>
-                <strong>{seciliOneriBasligi}</strong>
-                <span>{seciliBmOnerileri.length} BM · {seciliOneriler.length} öneri</span>
-              </div>
-              {seciliBmOnerileri.length > 0 ? (
-                <div className={bmStyles.oneriBmList}>
-                  {seciliBmOnerileri.map(bm => {
-                    const bmAcik = acikOneriBm === bm.bm_id;
-                    const bmBasHarfleri = bm.bm_adi
-                      .split(' ')
-                      .filter(Boolean)
-                      .slice(0, 2)
-                      .map(parca => parca.charAt(0))
-                      .join('');
-                    return (
-                      <div key={bm.bm_id} className={bmStyles.oneriBmGroup}>
-                        <button
-                          type="button"
-                          className={bmStyles.oneriBmToggle}
-                          onClick={() => {
-                            setAcikOneriBm(bmAcik ? null : bm.bm_id);
-                            setAcikOneriKaydi(null);
-                          }}
-                          aria-expanded={bmAcik}
-                          aria-controls={`tm-oneri-bm-${bm.bm_id}`}
-                        >
-                          <span className={bmStyles.oneriBmAvatar}>{bmBasHarfleri}</span>
-                          <span className={bmStyles.oneriInfo}>
-                            <strong>{bm.bm_adi}</strong>
-                            <small>{bm.bolge_adi}</small>
-                          </span>
-                          <span className={bmStyles.oneriBmCount}><strong>{bm.oneriler.length}</strong><small>öneri</small></span>
-                          <ChevronDown size={15} className={bmAcik ? bmStyles.oneriChevronOpen : bmStyles.oneriChevron} />
-                        </button>
-                        {bmAcik && (
-                          <div id={`tm-oneri-bm-${bm.bm_id}`} className={bmStyles.oneriBmBody}>
-                            {bm.oneriler.length > 0 ? (
-                              <div className={bmStyles.oneriList}>
-                                {bm.oneriler.map(oneri => {
-                                  const kayitAcik = acikOneriKaydi === oneri.oneri_id;
-                                  return (
-                                    <article key={oneri.oneri_id} className={bmStyles.oneriAccordionRow}>
-                                      <button
-                                        type="button"
-                                        className={bmStyles.oneriAccordionToggle}
-                                        onClick={() => setAcikOneriKaydi(kayitAcik ? null : oneri.oneri_id)}
-                                        aria-expanded={kayitAcik}
-                                      >
-                                        <span className={bmStyles.oneriAvatar}>{oneri.utt_ad.charAt(0)}{oneri.utt_soyad.charAt(0)}</span>
-                                        <span className={bmStyles.oneriInfo}>
-                                          <strong>{oneri.utt_ad} {oneri.utt_soyad}</strong>
-                                          <small>{oneri.bm_adi} · {oneri.bolge_adi}</small>
-                                        </span>
-                                        <span className={`${bmStyles.oneriAccordionStatus} ${bmStyles[oneri.durum]}`}>{ONERI_DURUM_ETIKETI[oneri.durum]}</span>
-                                        <ChevronDown size={15} className={kayitAcik ? bmStyles.oneriChevronOpen : bmStyles.oneriChevron} />
-                                      </button>
-                                      {kayitAcik && (
-                                        <div className={`${bmStyles.oneriAccordionBody} ${oneri.durum === 'tamamlanan' ? bmStyles.oneriAccordionBodyCompleted : ''}`}>
-                                          <div className={bmStyles.oneriTimeBox}>
-                                            <span>Yayın Adı</span>
-                                            <strong>{oneri.urun_adi ?? 'Ürün dışı eğitim'} · {oneri.teknik_adi ?? 'Teknik belirtilmemiş'}</strong>
-                                          </div>
-                                          <div className={bmStyles.oneriTimeBox}>
-                                            <span>Öneri Başlangıç Zamanı</span>
-                                            <strong>{tarihSaatMetni(oneri.oneri_baslangic)}</strong>
-                                          </div>
-                                          <div className={bmStyles.oneriTimeBox}>
-                                            <span>Öneri Bitiş Zamanı</span>
-                                            <strong>{tarihSaatMetni(oneri.oneri_bitis)}</strong>
-                                          </div>
-                                          {oneri.durum === 'tamamlanan' && (
-                                            <div className={bmStyles.oneriTimeBox}>
-                                              <span>Öneri İzleme Tarihi</span>
-                                              <strong>{tarihSaatMetni(oneri.izleme_tarihi)}</strong>
-                                            </div>
-                                          )}
-                                        </div>
-                                      )}
-                                    </article>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <div className={bmStyles.oneriBmEmpty}>Bu BM için {seciliOneriBasligi?.toLocaleLowerCase('tr-TR')} bulunmuyor.</div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className={bmStyles.empty}>Bu takımda görüntülenecek BM bulunmuyor.</div>
-              )}
-            </div>
           )}
         </section>
 

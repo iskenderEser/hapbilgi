@@ -41,6 +41,13 @@ export function useVideoEtkilesimKatmani({ anahtar, playerRef, etkin = true }: P
   const oynaticiHazir = useCallback((player: VideoPlayer) => {
     if (!etkin || playerRef.current !== player) return;
     hazirRef.current = true;
+
+    // Kaynak URL autoplay içeriyorsa video, ortak şeffaf katmana tıklanmadan da
+    // başlayabilir. Gerçek oynatma başladığı anda katmanı kaldır; aksi halde
+    // katman iframe'in mousemove olaylarını yutar ve sağlayıcının süre/ses/tam
+    // ekran kontrolleri oynatma sırasında görünmez.
+    player.onPlay(katmaniKapat);
+
     if (!oynatmaBekliyorRef.current) return;
 
     player.play();

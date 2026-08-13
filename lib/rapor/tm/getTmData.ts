@@ -61,27 +61,6 @@ export interface TmEtkilesim {
   favori_sayisi: number;
 }
 
-export type TmOneriDurumu = 'tamamlanan' | 'bekleyen' | 'suresi_gecmis';
-
-export interface TmOneriKaydi {
-  bm_id: string;
-  bm_adi: string;
-  bolge_id: string;
-  bolge_adi: string;
-  oneri_id: string;
-  kullanici_id: string;
-  utt_ad: string;
-  utt_soyad: string;
-  yayin_id: string;
-  urun_adi: string | null;
-  teknik_adi: string | null;
-  oneri_baslangic: string;
-  oneri_bitis: string;
-  created_at: string;
-  izleme_tarihi: string | null;
-  durum: TmOneriDurumu;
-}
-
 interface TmData {
   hata: NextResponse | null;
   takim: { takim_adi: string } | null;
@@ -94,7 +73,6 @@ interface TmData {
   takimToplamPuan: number;
   sirketToplamPuan: number;
   etkilesim: TmEtkilesim[];
-  oneriDurumu: TmOneriKaydi[];
 }
 
 const bos: TmData = {
@@ -109,7 +87,6 @@ const bos: TmData = {
   takimToplamPuan: 0,
   sirketToplamPuan: 0,
   etkilesim: [],
-  oneriDurumu: [],
 };
 
 const toplamPuan = (satirlar: KullaniciOzetSatiri[]) => satirlar.reduce(
@@ -132,7 +109,6 @@ export async function getTmData(
     urunDagilimiRes,
     sirketOzetRes,
     etkilesimRes,
-    oneriDurumuRes,
   ] = await Promise.all([
     adminSupabase.from('takimlar').select('takim_adi').eq('takim_id', kullanici.takim_id).maybeSingle(),
     adminSupabase.from('firmalar').select('firma_adi').eq('firma_id', kullanici.firma_id).maybeSingle(),
@@ -166,11 +142,6 @@ export async function getTmData(
       p_baslangic: baslangic,
       p_bitis: bitis,
     }),
-    adminSupabase.rpc('get_tm_oneri_durumu_v1', {
-      p_tm_id: kullanici.kullanici_id,
-      p_baslangic: baslangic,
-      p_bitis: bitis,
-    }),
   ]);
 
   if (takimRes.error) return { ...bos, hata: hataYaniti('Takım adı çekilemedi', 'takimlar', takimRes.error) };
@@ -181,7 +152,6 @@ export async function getTmData(
   if (urunDagilimiRes.error) return { ...bos, hata: hataYaniti('Takım ürün dağılımı çekilemedi', 'get_kullanici_urun_dagilimi', urunDagilimiRes.error) };
   if (sirketOzetRes.error) return { ...bos, hata: hataYaniti('Şirket puanı çekilemedi', 'get_kullanici_ozet (firma)', sirketOzetRes.error) };
   if (etkilesimRes.error) return { ...bos, hata: hataYaniti('TM etkileşimleri çekilemedi', 'get_tm_etkilesim_v2', etkilesimRes.error) };
-  if (oneriDurumuRes.error) return { ...bos, hata: hataYaniti('TM öneri durumu çekilemedi', 'get_tm_oneri_durumu_v1', oneriDurumuRes.error) };
 
   const bmPerformans = (bmPerformansRes.data ?? []) as TmBmPerformans[];
   const uttPerformansSonuclari = await Promise.all(
@@ -213,8 +183,6 @@ export async function getTmData(
     }))
   );
   const takimOzet = (takimOzetRes.data ?? []) as KullaniciOzetSatiri[];
-  const oneriDurumu = (oneriDurumuRes.data ?? []) as TmOneriKaydi[];
-
   return {
     hata: null,
     takim: takimRes.data,
@@ -227,6 +195,5 @@ export async function getTmData(
     takimToplamPuan: toplamPuan(takimOzet),
     sirketToplamPuan: toplamPuan((sirketOzetRes.data ?? []) as KullaniciOzetSatiri[]),
     etkilesim: (etkilesimRes.data ?? []) as TmEtkilesim[],
-    oneriDurumu,
   };
 }

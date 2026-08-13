@@ -35,10 +35,6 @@ export async function GET(request: Request) {
   const genel = ozetToplami(d.takimOzet);
   const kategoriDagilimi = kategorileriTopla(d.kategoriDagilimi);
   const urunDagilimi = urunleriTopla(d.urunDagilimi);
-  const tamamlananOneri = d.oneriDurumu.filter(oneri => oneri.durum === 'tamamlanan').length;
-  const bekleyenOneri = d.oneriDurumu.filter(oneri => oneri.durum === 'bekleyen').length;
-  const suresiGecmisOneri = d.oneriDurumu.filter(oneri => oneri.durum === 'suresi_gecmis').length;
-
   const istatistikler = {
     izleme_puani: genel.video_puani,
     cevaplama_puani: genel.soru_puani,
@@ -69,13 +65,6 @@ export async function GET(request: Request) {
         ...bm,
         utt_listesi: d.uttPerformans.filter(utt => utt.bm_id === bm.bm_id),
       })),
-      oneri_durumu: {
-        toplam: d.oneriDurumu.length,
-        tamamlanan: tamamlananOneri,
-        bekleyen: bekleyenOneri,
-        suresi_gecmis: suresiGecmisOneri,
-        kayitlar: d.oneriDurumu,
-      },
       istatistikler,
       kategori_dagilimi: kategoriDagilimi,
       urun_dagilimi: urunDagilimi,

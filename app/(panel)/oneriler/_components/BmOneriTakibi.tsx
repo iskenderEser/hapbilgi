@@ -2,7 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { X } from "lucide-react";
 import { DahaFazlaGoster, useListe } from "@/components/liste";
+import VideoOnizleme from "@/components/video/VideoOnizleme";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 import { PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
 import reportStyles from "@/app/(panel)/raporlar/utt/utt-report.module.css";
@@ -62,6 +64,7 @@ export default function BmOneriTakibi({ oneriler, periyot, onPeriyotDegistir }: 
   const [konuFiltresi, setKonuFiltresi] = useState("");
   const [uttFiltresi, setUttFiltresi] = useState("");
   const [durumFiltresi, setDurumFiltresi] = useState<DurumFiltresi>("tum");
+  const [acikVideo, setAcikVideo] = useState<string | null>(null);
 
   const sayilar = useMemo(() => {
     const tamamlanan = oneriler.filter((oneri) => kayitDurumu(oneri) === "tamamlandi").length;
@@ -199,7 +202,16 @@ export default function BmOneriTakibi({ oneriler, periyot, onPeriyotDegistir }: 
                 return (
                   <article key={oneri.oneri_id} className="rounded-xl border border-[#e0e8f1] bg-white p-3">
                     <div className="flex gap-3">
-                      <span className="h-14 w-24 shrink-0 overflow-hidden rounded-lg bg-[#d9e8f7]">{kapak && <img src={kapak} alt="" className="h-full w-full object-cover" />}</span>
+                      <button
+                        type="button"
+                        disabled={!oneri.video_url}
+                        onClick={() => oneri.video_url && setAcikVideo(oneri.video_url)}
+                        aria-label={`${oneri.urun_adi || "Öneri"} videosunu aç`}
+                        className="group relative h-14 w-24 shrink-0 overflow-hidden rounded-lg bg-[#d9e8f7] disabled:cursor-default"
+                      >
+                        {kapak && <img src={kapak} alt="" className="h-full w-full object-cover" />}
+                        {oneri.video_url && <span className="absolute inset-0 flex items-center justify-center bg-[#10233a]/25"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#10233a]/70 text-white transition-transform group-hover:scale-105"><svg aria-hidden="true" width="8" height="10" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z" /></svg></span></span>}
+                      </button>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-2"><strong className="truncate text-sm text-[#263e5b]">{oneri.urun_adi}</strong><span className="shrink-0 rounded-full px-2 py-0.5 text-[9px] font-extrabold" style={{ color: durum.renk, backgroundColor: durum.zemin }}>{durum.etiket}</span></div>
                         <p className="mt-1 truncate text-[11px] font-semibold text-[#71859d]">{oneri.teknik_adi || "Teknik belirtilmedi"}</p>
@@ -224,7 +236,7 @@ export default function BmOneriTakibi({ oneriler, periyot, onPeriyotDegistir }: 
                     const kapak = oneri.thumbnail_url ?? thumbnailUrlUret(oneri.video_url);
                     return (
                       <tr key={oneri.oneri_id} className="border-t border-[#edf1f6] hover:bg-[#fbfcfe]">
-                        <td className="px-4 py-3"><div className="flex min-w-[220px] items-center gap-3"><span className="h-10 w-16 shrink-0 overflow-hidden rounded-lg bg-[#d9e8f7]">{kapak && <img src={kapak} alt="" className="h-full w-full object-cover" />}</span><span className="min-w-0"><strong className="block truncate text-xs text-[#2d4562]">{oneri.urun_adi}</strong><small className="mt-0.5 block truncate text-[10px] text-[#7a8da5]">{oneri.teknik_adi || "Teknik belirtilmedi"}</small></span></div></td>
+                        <td className="px-4 py-3"><div className="flex min-w-[220px] items-center gap-3"><button type="button" disabled={!oneri.video_url} onClick={() => oneri.video_url && setAcikVideo(oneri.video_url)} aria-label={`${oneri.urun_adi || "Öneri"} videosunu aç`} className="group relative h-10 w-16 shrink-0 overflow-hidden rounded-lg bg-[#d9e8f7] disabled:cursor-default">{kapak && <img src={kapak} alt="" className="h-full w-full object-cover" />}{oneri.video_url && <span className="absolute inset-0 flex items-center justify-center bg-[#10233a]/25"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#10233a]/70 text-white transition-transform group-hover:scale-105"><svg aria-hidden="true" width="7" height="9" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z" /></svg></span></span>}</button><span className="min-w-0"><strong className="block truncate text-xs text-[#2d4562]">{oneri.urun_adi}</strong><small className="mt-0.5 block truncate text-[10px] text-[#7a8da5]">{oneri.teknik_adi || "Teknik belirtilmedi"}</small></span></div></td>
                         <td className="px-4 py-3 font-extrabold text-[#405873]">{oneri.kullanici_adi}</td>
                         <td className="px-4 py-3 font-semibold text-[#718198]">{tarih(oneri.oneri_baslangic)}</td>
                         <td className="px-4 py-3 font-semibold text-[#718198]">{tarih(oneri.oneri_bitis)}</td>
@@ -239,6 +251,18 @@ export default function BmOneriTakibi({ oneriler, periyot, onPeriyotDegistir }: 
           </>
         )}
       </section>
+
+      {acikVideo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setAcikVideo(null)}>
+          <div role="dialog" aria-modal="true" aria-labelledby="bm-video-onizleme-baslik" className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-[#edf1f6] px-4 py-3">
+              <strong id="bm-video-onizleme-baslik" className="text-sm font-extrabold text-[#243957]">Video Önizleme</strong>
+              <button type="button" onClick={() => setAcikVideo(null)} aria-label="Video önizlemeyi kapat" className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#f2f5f9] text-[#718198]"><X size={16} /></button>
+            </div>
+            <VideoOnizleme videoUrl={acikVideo} ariaLabel="Video önizlemeyi oynat" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
