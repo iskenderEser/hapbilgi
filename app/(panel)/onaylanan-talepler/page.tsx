@@ -17,7 +17,7 @@ import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
 import type { HedefRol } from "@/app/(panel)/talepler/_types";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { talepIdGoster } from "@/lib/utils/talepId";
-import VideoCercevesi from "@/components/video/VideoCercevesi";
+import VideoOnizleme from "@/components/video/VideoOnizleme";
 import TalepKlasorleri from "@/components/talep/TalepKlasorleri";
 import { useListe, ListeArama } from "@/components/liste";
 import type { DepartmanKey } from "@/lib/video/departman";
@@ -194,10 +194,11 @@ export default function OnaylananTaleplerPage() {
       {k.video_url && (
         <div>
           <div className="text-xs font-semibold text-gray-500 mb-1.5">Onaylı Video</div>
-          {/* Kutu videonun oranına göre çizilir (26.07). Kenarlık/köşe iframe'den kutuya taşındı. */}
-          <VideoCercevesi videoUrl={k.video_url} className="rounded-lg border border-gray-200">
-            <iframe src={k.video_url} frameBorder="0" allowFullScreen />
-          </VideoCercevesi>
+          <VideoOnizleme
+            videoUrl={k.video_url}
+            className="rounded-lg border border-gray-200"
+            ariaLabel={`${k.urun_adi} videosunu oynat`}
+          />
         </div>
       )}
 

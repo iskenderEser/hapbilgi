@@ -168,8 +168,9 @@ export default function DagilimGrafik({
             {veri.map((k) => (
               <tr
                 key={k.ad}
-                onClick={() => onSecim?.(k.ad === secili ? null : k.ad)}
-                className="cursor-pointer hover:bg-gray-50"
+                onClick={onSecim ? () => onSecim(k.ad === secili ? null : k.ad) : undefined}
+                data-etkilesimli={onSecim ? "true" : "false"}
+                className={onSecim ? "hover:bg-gray-50" : ""}
                 style={{ borderBottom: "0.5px solid #f1f1ee", background: k.ad === secili ? "rgba(86,174,255,0.08)" : "transparent" }}
               >
                 <td className="py-2" style={{ color: k.renk ?? "#374151" }}>{k.ad}</td>
@@ -183,10 +184,10 @@ export default function DagilimGrafik({
           option={option}
           height={height}
           indirAdi={indirAdi}
-          onClick={(p: EChartTiklama) => {
+          onClick={onSecim ? (p: EChartTiklama) => {
             const ad = p.name ?? null;
-            onSecim?.(ad && ad === secili ? null : ad);
-          }}
+            onSecim(ad && ad === secili ? null : ad);
+          } : undefined}
         />
       )}
     </div>

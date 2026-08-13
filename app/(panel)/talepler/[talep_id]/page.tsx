@@ -13,7 +13,7 @@ import { TeknikPill } from "@/components/TeknikPill";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
 import { useBunnyIslemeDurumu } from "@/hooks/useBunnyIslemeDurumu";
-import VideoCercevesi from "@/components/video/VideoCercevesi";
+import VideoOnizleme from "@/components/video/VideoOnizleme";
 import { DosyaGoruntuleListesi, type DosyaItem as ComponentDosyaItem } from "@/components/DosyaGoruntuleListesi";
 import { uretimToast, toastVaryant } from "@/lib/uretim/toastMesaj";
 
@@ -386,11 +386,11 @@ export default function TalepDetayPage() {
                   )}
                 </div>
               )}
-              {/* Kutu videonun oranına göre çizilir (26.07). Kenarlık/köşe iframe'den kutuya
-                  taşındı: çerçeve iframe'in kendi kenarlığını siliyor, köşeyi kutu kırpıyor. */}
-              <VideoCercevesi videoUrl={talep.hazir_video_url} className="rounded-lg border border-gray-200">
-                <iframe src={talep.hazir_video_url} frameBorder="0" allowFullScreen />
-              </VideoCercevesi>
+              <VideoOnizleme
+                videoUrl={talep.hazir_video_url}
+                className="rounded-lg border border-gray-200"
+                ariaLabel="Hazır videoyu oynat"
+              />
             </div>
           )}
 

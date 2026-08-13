@@ -23,6 +23,7 @@ import { PANEL_NAV, type NavContext, type NavGrup, type NavOge } from "./panelNa
 type MobilDrawerProps = NavContext & {
   acik: boolean;
   onKapat: () => void;
+  onCikis: () => void;
   badge: Record<string, number>;
   yayinBekleyen: number;
   // Çizilecek ağaç — layout verir (eclub_kisi'de ECLUB_KISI_NAV). Varsayılan PANEL_NAV.
@@ -46,20 +47,21 @@ export default function MobilDrawer(props: MobilDrawerProps) {
 
   const gruplar = props.gruplar ?? PANEL_NAV;
   const git = (path: string) => { router.push(path); props.onKapat(); };
+  const cikis = () => { props.onKapat(); props.onCikis(); };
   const cozPath = (oge: NavOge) => (typeof oge.path === "function" ? oge.path(props) : oge.path);
   const rozetSayisi = (oge: NavOge) =>
     oge.yayinBekleyenRozeti ? props.yayinBekleyen : oge.badgeKey ? (props.badge[oge.badgeKey] ?? 0) : 0;
 
-  const Satir = ({ etiket, path, sayi }: { etiket: string; path: string; sayi?: number }) => {
+  const Satir = ({ etiket, path, sayi, girintili = false }: { etiket: string; path: string; sayi?: number; girintili?: boolean }) => {
     const aktif = pathname.startsWith(path);
     return (
       <button
         onClick={() => git(path)}
         className="w-full flex items-center justify-between rounded-lg cursor-pointer border-none text-left"
         style={{
-          padding: "10px 12px",
+          padding: girintili ? "10px 12px 10px 20px" : "10px 12px",
           fontSize: "14px",
-          fontWeight: aktif ? 700 : 500,
+          fontWeight: aktif ? 700 : 600,
           color: aktif ? "#185fa5" : "#374151",
           background: aktif ? "rgba(86,174,255,0.12)" : "transparent",
           fontFamily: "'Nunito', sans-serif",
@@ -115,25 +117,42 @@ export default function MobilDrawer(props: MobilDrawerProps) {
             const gorunur = grup.oglar.filter((o) => o.gate(props));
             if (gorunur.length === 0) return null;
 
-            if (gorunur.length === 1) {
-              const oge = gorunur[0];
-              return <Satir key={grup.baslik} etiket={oge.etiket} path={cozPath(oge)} sayi={rozetSayisi(oge)} />;
+            if (grup.baslikGoster === false) {
+              return (
+                <div key={grup.baslik} className="flex flex-col gap-1">
+                  {gorunur.map((oge) => (
+                    <Satir key={oge.etiket} etiket={oge.etiket} path={cozPath(oge)} sayi={rozetSayisi(oge)} />
+                  ))}
+                </div>
+              );
             }
 
             return (
               <div key={grup.baslik} className="flex flex-col gap-1">
                 <span
-                  style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.04em", padding: "0 12px 2px", fontFamily: "'Nunito', sans-serif" }}
+                  style={{ fontSize: "12px", fontWeight: 800, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", padding: "0 12px 2px", fontFamily: "'Nunito', sans-serif" }}
                 >
                   {grup.baslik}
                 </span>
                 {gorunur.map((oge) => (
-                  <Satir key={oge.etiket} etiket={oge.etiket} path={cozPath(oge)} sayi={rozetSayisi(oge)} />
+                  <Satir key={oge.etiket} etiket={oge.etiket} path={cozPath(oge)} sayi={rozetSayisi(oge)} girintili />
                 ))}
               </div>
             );
           })}
         </div>
+
+        <div className="h-px my-3" style={{ background: "#f0f0f0" }} />
+        <button
+          onClick={cikis}
+          className="w-full flex items-center gap-2 rounded-lg border-none bg-transparent px-3 py-2.5 text-left font-semibold cursor-pointer"
+          style={{ color: "#bc2d0d", fontSize: "14px", fontFamily: "'Nunito', sans-serif" }}
+        >
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          Çıkış
+        </button>
       </div>
     </div>
   );

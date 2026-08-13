@@ -7,10 +7,36 @@ import { bildirimOlustur } from "@/lib/utils/bildirimOlustur";
 import { oneriTarihKurali } from "@/lib/oneri/tarihKurali";
 import { haftalikLimitKontrol, aylikKotaKontrol, MAKS_ALICI_HAFTA } from "@/lib/oneri/limitKontrol";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { tarihAraligi } from "@/lib/utils/tarihAraligi";
+import { PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
 
 const GET_ROLLERI = [...YONLENDIRICI_ROLLER, ...TUKETICI_ROLLER];
 
-export async function GET() {
+interface OneriIstegi {
+  yayin_id: string;
+  kullanici_id: string;
+  oneri_baslangic: string;
+  oneri_bitis: string;
+}
+
+interface BmOneriTakipKaydi {
+  oneri_id: string;
+  yayin_id: string;
+  kullanici_id: string;
+  utt_ad: string;
+  utt_soyad: string;
+  oneri_baslangic: string;
+  oneri_bitis: string;
+  created_at: string;
+  urun_adi: string | null;
+  teknik_adi: string | null;
+  durum: "tamamlanan" | "bekleyen" | "suresi_gecmis";
+}
+
+const gecerliPeriyot = (deger: string): deger is Periyot =>
+  PERIYOTLAR.some((periyot) => periyot.key === deger);
+
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     const adminSupabase = createAdminClient();
@@ -21,6 +47,67 @@ export async function GET() {
     const rol = await rolCozucu(adminSupabase, user.id);
     if (!GET_ROLLERI.includes(rol)) {
       return rolHatasi("Sadece tm, bm, utt ve kd_utt önerilere erişebilir.");
+    }
+
+    if (rol === "bm") {
+      const periyot = request.nextUrl.searchParams.get("periyot") ?? "bu_ay";
+      if (!gecerliPeriyot(periyot)) {
+        return validasyonHatasi("Geçersiz öneri takip periyodu.", ["periyot"]);
+      }
+
+      const { baslangic, bitis } = tarihAraligi(periyot);
+      const { data: takipKayitlari, error: takipError } = await adminSupabase.rpc(
+        "get_bm_oneri_durumu_v1",
+        {
+          p_bm_id: user.id,
+          p_baslangic: baslangic,
+          p_bitis: bitis,
+        },
+      );
+
+      if (takipError) {
+        return hataYaniti("Öneri takip kayıtları çekilemedi.", "get_bm_oneri_durumu_v1 RPC", takipError);
+      }
+
+      const bmTakipKayitlari = (takipKayitlari ?? []) as BmOneriTakipKaydi[];
+      const yayinIdleri = [...new Set(bmTakipKayitlari.map((kayit) => kayit.yayin_id).filter(Boolean))];
+      const { data: yayinlar, error: yayinError } = yayinIdleri.length > 0
+        ? await adminSupabase
+            .from("v_yayin_detay")
+            .select("yayin_id, video_url, thumbnail_url, video_puani")
+            .in("yayin_id", yayinIdleri)
+        : { data: [], error: null };
+
+      if (yayinError) {
+        return hataYaniti("Öneri video bilgileri çekilemedi.", "v_yayin_detay SELECT — BM öneri takibi", yayinError);
+      }
+
+      const yayinHaritasi = new Map((yayinlar ?? []).map((yayin) => [yayin.yayin_id, yayin]));
+      const oneriler = bmTakipKayitlari.map((kayit) => {
+        const yayin = yayinHaritasi.get(kayit.yayin_id);
+        return {
+          oneri_id: kayit.oneri_id,
+          yayin_id: kayit.yayin_id,
+          oneren_id: user.id,
+          kullanici_id: kayit.kullanici_id,
+          oneri_baslangic: kayit.oneri_baslangic,
+          oneri_bitis: kayit.oneri_bitis,
+          izlendi_mi: kayit.durum === "tamamlanan",
+          created_at: kayit.created_at,
+          urun_adi: kayit.urun_adi,
+          teknik_adi: kayit.teknik_adi,
+          video_url: yayin?.video_url ?? null,
+          thumbnail_url: yayin?.thumbnail_url ?? null,
+          kullanici_adi: `${kayit.utt_ad} ${kayit.utt_soyad}`.trim(),
+          video_puani: yayin?.video_puani ?? null,
+          begeni_sayisi: 0,
+          favori_sayisi: 0,
+          begeni_mi: false,
+          favori_mi: false,
+        };
+      });
+
+      return NextResponse.json({ oneriler, periyot }, { status: 200 });
     }
 
     // BM kendi gönderimlerini, UTT kendi gelen önerilerini, TM ise takımındaki
@@ -50,7 +137,7 @@ export async function POST(request: NextRequest) {
     const rol = await rolCozucu(adminSupabase, user.id);
     if (rol !== "bm") return rolHatasi("Sadece bm öneri oluşturabilir.");
 
-    const body = await request.json();
+    const body = await request.json() as { oneriler?: OneriIstegi[] };
     const { oneriler } = body;
 
     if (!oneriler || !Array.isArray(oneriler) || oneriler.length === 0) {
@@ -91,10 +178,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // BM'nin bölgesini çek (aylık kota için)
+    // BM'nin bölge/firma/takım kapsamını çek.
     const { data: bm, error: bmError } = await adminSupabase
       .from("kullanicilar")
-      .select("bolge_id")
+      .select("bolge_id, firma_id, takim_id")
       .eq("kullanici_id", user.id)
       .single();
 
@@ -104,11 +191,30 @@ export async function POST(request: NextRequest) {
     if (!bm.bolge_id) {
       return hataYaniti("BM'ye bölge atanmamış.", "kullanicilar SELECT — bolge_id NULL", null);
     }
+    if (!bm.firma_id) {
+      return hataYaniti("BM'ye firma atanmamış.", "kullanicilar SELECT — firma_id NULL", null);
+    }
+
+    // İstemciden gelen alıcı kimlikleri arayüz listesine güvenilmeden yeniden doğrulanır.
+    const aliciIdler = [...new Set(oneriler.map((oneri) => oneri.kullanici_id))];
+    const { data: alicilar, error: aliciError } = await adminSupabase
+      .from("kullanicilar")
+      .select("kullanici_id")
+      .in("kullanici_id", aliciIdler)
+      .in("rol", TUKETICI_ROLLER)
+      .eq("aktif_mi", true)
+      .eq("bolge_id", bm.bolge_id)
+      .eq("firma_id", bm.firma_id);
+
+    if (aliciError) return hataYaniti("Öneri alıcıları doğrulanamadı.", "kullanicilar SELECT — BM alıcı kapsamı", aliciError);
+    if ((alicilar ?? []).length !== aliciIdler.length) {
+      return isKuraluHatasi("Yalnızca kendi bölgenizdeki aktif UTT/KD_UTT kullanıcılarına öneri gönderebilirsiniz.");
+    }
 
     // Haftalık alıcı limit kontrolü
     let haftalikSonuc;
     try {
-      const istek_alicilari = oneriler.map((o: any) => o.kullanici_id);
+      const istek_alicilari = oneriler.map((oneri) => oneri.kullanici_id);
       haftalikSonuc = await haftalikLimitKontrol(adminSupabase, user.id, istek_alicilari);
     } catch (err) {
       return hataYaniti(
@@ -145,17 +251,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Yayın geçerliliği kontrolü — toplu IN sorgusu
-    const yayinIds = [...new Set(oneriler.map((o: any) => o.yayin_id))];
+    const yayinIds = [...new Set(oneriler.map((oneri) => oneri.yayin_id))];
     const { data: yayinlar, error: yayinError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, durum, urun_adi")
+      .select("yayin_id, durum, urun_adi, hedef_rol, firma_id, takim_id")
       .in("yayin_id", yayinIds);
 
     if (yayinError) return hataYaniti("Yayınlar sorgulanırken hata oluştu.", "v_yayin_detay view SELECT", yayinError);
 
-    const yayinMap = new Map<string, { durum: string; urun_adi: string | null }>();
+    const yayinMap = new Map<string, { durum: string; urun_adi: string | null; hedef_rol: string | null; firma_id: string | null; takim_id: string | null }>();
     for (const y of yayinlar ?? []) {
-      yayinMap.set(y.yayin_id, { durum: y.durum, urun_adi: y.urun_adi });
+      yayinMap.set(y.yayin_id, y);
     }
 
     for (const oneri of oneriler) {
@@ -165,6 +271,13 @@ export async function POST(request: NextRequest) {
       }
       if (y.durum !== "yayinda") {
         return isKuraluHatasi(`yayin_id ${oneri.yayin_id} şu an yayında değil. Durum: ${y.durum}`);
+      }
+      if (y.hedef_rol !== "utt") {
+        return isKuraluHatasi("Yalnızca UTT/KD_UTT hedefli yayınlar önerilebilir.");
+      }
+      const bmKapsaminda = y.firma_id === bm.firma_id && (y.takim_id === null || y.takim_id === bm.takim_id);
+      if (!bmKapsaminda) {
+        return isKuraluHatasi("Yayın, BM'nin erişebildiği şirket kataloğu kapsamında değil.");
       }
     }
 

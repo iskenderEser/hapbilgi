@@ -155,11 +155,11 @@ export default function BmAnaSayfa({ user, adSoyad }: Props) {
             </button>
           )}
           <button
-            onClick={() => router.push("/oneriler")}
+            onClick={() => router.push("/yayindaki-videolar")}
             className="text-xs font-semibold text-white border-none rounded-full px-4 py-1.5 cursor-pointer"
             style={{ background: "#56aeff", fontFamily: "'Nunito', sans-serif" }}
           >
-            + Yeni Öneri
+            + Video Öner
           </button>
         </div>
       </div>

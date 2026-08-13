@@ -139,6 +139,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         yayinBekleyen={yayinBekleyen}
         acik={drawerAcik}
         onKapat={() => setDrawerAcik(false)}
+        onCikis={cikisYap}
       />
 
       <div className="flex flex-1" style={{ minHeight: 0 }}>

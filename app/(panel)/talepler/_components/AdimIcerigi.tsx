@@ -12,7 +12,7 @@
 import { DosyaGoruntuleListesi, type DosyaItem } from "@/components/DosyaGoruntuleListesi";
 import { SenaryoMetniGoster } from "@/components/SenaryoMetniGoster";
 import { Pill, type PillRenk } from "@/components/pill";
-import VideoCercevesi from "@/components/video/VideoCercevesi";
+import VideoOnizleme from "@/components/video/VideoOnizleme";
 import type { IslemeDurumu } from "@/lib/video/islemeDurumu";
 import type { AdimAnahtari } from "@/lib/utils/uretimSeridi";
 import { HazirVideoYukleme } from "./HazirVideoYukleme";
@@ -146,9 +146,11 @@ export function AdimIcerigi({
               </p>
             </div>
           )}
-          <VideoCercevesi videoUrl={v.video_url} className="rounded-lg border border-gray-200">
-            <iframe src={v.video_url} frameBorder="0" allowFullScreen />
-          </VideoCercevesi>
+          <VideoOnizleme
+            videoUrl={v.video_url}
+            className="rounded-lg border border-gray-200"
+            ariaLabel="Videoyu oynat"
+          />
           <RevizyonNotlari notlar={v.notlar} formatTarih={formatTarih} />
         </div>
       );

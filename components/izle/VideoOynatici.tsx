@@ -16,6 +16,7 @@ import { useEffect, useState, useRef } from "react";
 import { createVideoPlayer, type VideoPlayer } from "@/lib/video/videoPlayer";
 import { oynatmaBaslatilmaliMi } from "@/lib/izleme/baslat";
 import VideoCercevesi from "@/components/video/VideoCercevesi";
+import { useVideoEtkilesimKatmani } from "@/components/video/useVideoEtkilesimKatmani";
 
 interface OynaticiVideo {
   yayin_id: string;
@@ -76,6 +77,7 @@ function puanMesaji(kalemler: PuanKalemi[]): string | null {
 interface Props {
   video: OynaticiVideo;
   tuketici: boolean;                 // sadece utt/kd_utt: izleme akışı + puan/soru. false → yalnızca oynatma.
+  onizlemeYuzeyi?: boolean;          // BM katalog önizlemesi: ilk video yüzeyi tıklanabilir katmanla açılır.
   oneri_id?: string | null;          // öneri akışından geliyorsa öneri kimliği; yoksa null/undefined
   onKapat: () => void;
   onVeriYenile: () => void | Promise<void>;
@@ -84,7 +86,7 @@ interface Props {
   uyari: (mesaj: string) => void;
 }
 
-export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVeriYenile, hata, basari, uyari }: Props) {
+export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false, oneri_id, onKapat, onVeriYenile, hata, basari, uyari }: Props) {
   const [izlemeId, setIzlemeId] = useState<string | null>(null);
   const [izlemeTamamlandi, setIzlemeTamamlandi] = useState(false);
   const [sorular, setSorular] = useState<Soru[]>([]);
@@ -106,6 +108,11 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
   const videoSuresiRef = useRef<number>(0);
   const playerRef = useRef<VideoPlayer | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const onizlemeEtkilesimi = useVideoEtkilesimKatmani({
+    anahtar: video.yayin_id,
+    playerRef,
+    etkin: onizlemeYuzeyi && !tuketici,
+  });
   // Sorulu akışta bitir'in döndürdüğü izleme/öneri puan kalemleri — cevap sonrası
   // birleşik toast'ta izleme + doğru cevaplama tek mesajda gösterilsin diye saklanır.
   const izlemeKalemleriRef = useRef<PuanKalemi[]>([]);
@@ -156,7 +163,7 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
   // tetikleyici olabilir. İki yol da `izlemeBitirildiRef` ile korunur,
   // çift `bitir` çağrısı imkansız.
   useEffect(() => {
-    if (!tuketici || !iframeRef.current || !video.video_url) return;
+    if ((!tuketici && !onizlemeYuzeyi) || !iframeRef.current || !video.video_url) return;
 
     let player: VideoPlayer;
     try {
@@ -166,6 +173,17 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
       return;
     }
     playerRef.current = player;
+
+    if (!tuketici) {
+      player.onReady(() => {
+        onizlemeEtkilesimi.oynaticiHazir(player);
+      });
+
+      return () => {
+        player.destroy();
+        if (playerRef.current === player) playerRef.current = null;
+      };
+    }
 
     maxIzlenenRef.current = 0;
 
@@ -260,7 +278,7 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
       if (playerRef.current === player) playerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [video.yayin_id, tuketici]);
+  }, [video.yayin_id, tuketici, onizlemeYuzeyi]);
 
   const handleIleriSarmaOnayla = async () => {
     const id = izlemeIdRef.current ?? izlemeId;
@@ -446,10 +464,16 @@ export default function VideoOynatici({ video, tuketici, oneri_id, onKapat, onVe
             {/* Kutu artık videonun oranına göre çizilir (26.07 — VideoCercevesi).
                 iframe burada kalır: ref playerjs'e bağlı, sarmalayıcı yalnız kutuyu kurar.
                 width/height nitelikleri kalktı — ölçüyü CSS veriyor. */}
-            <VideoCercevesi videoUrl={video.video_url}>
+            <VideoCercevesi
+              videoUrl={video.video_url}
+              etkilesimKatmani={onizlemeEtkilesimi.katmanAcik ? {
+                ariaLabel: `${video.urun_adi} videosunu oynat`,
+                onClick: onizlemeEtkilesimi.oynat,
+              } : null}
+            >
               <iframe key={video.yayin_id} ref={iframeRef} src={video.video_url}
                 frameBorder="0" allowFullScreen
-                allow="accelerometer; gyroscope; encrypted-media; picture-in-picture;" />
+                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;" />
             </VideoCercevesi>
           </div>
         )}

@@ -12,6 +12,7 @@ import { AnaSayfaVideo } from "./anaSayfaVideolari";
 import { kapsamGenisMi } from "./gorunurluk";
 
 export interface YayindakiVideo extends AnaSayfaVideo {
+  hedef_rol: string;
   ureten_ad_soyad: string;
   ureten_rol: string;
   favori_sayisi: number;
@@ -33,7 +34,7 @@ export async function getYayindakiVideolar(
 
   let query = adminSupabase
     .from("v_yayin_detay")
-    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, icerik_turu, takim_id, uretici_id")
+    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, icerik_turu, hedef_rol, takim_id, uretici_id")
     .eq("durum", "yayinda")
     .order("yayin_tarihi", { ascending: false });
 
@@ -103,6 +104,7 @@ export async function getYayindakiVideolar(
       video_puani: v.video_puani ?? null,
       yayin_tarihi: v.yayin_tarihi,
       icerik_turu: v.icerik_turu ?? null,
+      hedef_rol: v.hedef_rol ?? "",
       ileri_sarma_acik: false,
       ureten_ad_soyad: adSoyad || "-",
       ureten_rol: u?.rol ?? "",

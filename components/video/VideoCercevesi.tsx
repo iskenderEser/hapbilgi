@@ -60,6 +60,13 @@ interface Props {
    *  böyle sınıflar buraya taşınmalıdır: [&>iframe]:border-0 kuralı iframe'in kendi
    *  kenarlığını siler, kutuda ise overflow-hidden sayesinde köşe de doğru kırpılır. */
   className?: string;
+  /** Cross-origin iframe'in üstünde çalışan ortak ilk oynatma yüzeyi. İframe'in
+   *  iç CSS'ine erişilemediği için parmak imleci ve ilk oynatma bu katmanda
+   *  çözülür; oynatma başlayınca çağıran katmanı kapatır. */
+  etkilesimKatmani?: {
+    ariaLabel: string;
+    onClick: () => void;
+  } | null;
 }
 
 /** İframe'in kutuyu doldurmasını garantileyen ortak sınıflar. */
@@ -90,7 +97,14 @@ const DIKEY_OLCU = "w-full md:w-auto md:h-[min(78vh,720px)] md:mx-auto";
  */
 const PILLARBOX = "bg-gray-900";
 
-export default function VideoCercevesi({ videoUrl, genislik, yukseklik, children, className = "" }: Props) {
+export default function VideoCercevesi({
+  videoUrl,
+  genislik,
+  yukseklik,
+  children,
+  className = "",
+  etkilesimKatmani = null,
+}: Props) {
   const [olculen, setOlculen] = useState<{ g: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -132,6 +146,15 @@ export default function VideoCercevesi({ videoUrl, genislik, yukseklik, children
         style={{ aspectRatio: oran }}
       >
         {children}
+        {etkilesimKatmani && (
+          <button
+            type="button"
+            onClick={etkilesimKatmani.onClick}
+            aria-label={etkilesimKatmani.ariaLabel}
+            data-etkilesimli="true"
+            className="absolute inset-0 z-10 border-0 bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#56aeff]"
+          />
+        )}
       </div>
     </div>
   );

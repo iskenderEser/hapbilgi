@@ -1,8 +1,9 @@
 // app/oneriler/api/yayinlar/route.ts
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
+import { sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { getYayindakiVideolar } from "@/lib/video/yayindakiVideolar";
 
 export async function GET() {
   try {
@@ -15,16 +16,10 @@ export async function GET() {
     const rol = await rolCozucu(adminSupabase, user.id);
     if (rol !== "bm") return rolHatasi("Sadece bm erişebilir.");
 
-    const { data: yayinlar, error: yayinError } = await adminSupabase
-      .from("v_yayin_detay")
-      .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url")
-      .eq("durum", "yayinda")
-      .eq("hedef_rol", "utt")
-      .order("yayin_tarihi", { ascending: false });
+    const yayinlar = (await getYayindakiVideolar(user.id, rol, adminSupabase))
+      .filter((yayin) => yayin.hedef_rol === "utt");
 
-    if (yayinError) return hataYaniti("Yayınlar çekilemedi.", "v_yayin_detay view SELECT — Yayinda filtresi", yayinError);
-
-    return NextResponse.json({ videolar: yayinlar ?? [] }, { status: 200 });
+    return NextResponse.json({ videolar: yayinlar }, { status: 200 });
 
   } catch (err) {
     return sunucuHatasi(err, "GET /oneriler/api/yayinlar");

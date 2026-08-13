@@ -2,7 +2,7 @@
 
 import { Fragment, useState } from 'react';
 import Link from 'next/link';
-import { Activity, ArrowLeft, BarChart3, BookOpenCheck, CheckCircle2, ChevronDown, CircleMinus, CirclePlus, Clock3, Gauge, Layers3, Send, Sparkles, TriangleAlert, Users } from 'lucide-react';
+import { Activity, ArrowLeft, BarChart3, BookOpenCheck, ChevronDown, CircleMinus, CirclePlus, Gauge, Layers3, Sparkles, Users } from 'lucide-react';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useRapor } from '@/hooks/useRapor';
 import { KIRMIZI, GRI_METIN, KOYU_METIN, formatPuan, PERIYOTLAR, type Periyot } from '@/lib/utils/raporUtils';
@@ -63,24 +63,6 @@ interface UttPerformans {
   net_puan: number;
 }
 
-type OneriDurumu = 'tamamlanan' | 'bekleyen' | 'suresi_gecmis';
-type OneriSecimi = 'toplam' | OneriDurumu;
-
-interface OneriKaydi {
-  oneri_id: string;
-  kullanici_id: string;
-  utt_ad: string;
-  utt_soyad: string;
-  yayin_id: string;
-  urun_adi: string | null;
-  teknik_adi: string | null;
-  oneri_baslangic: string;
-  oneri_bitis: string;
-  created_at: string;
-  izleme_tarihi: string | null;
-  durum: OneriDurumu;
-}
-
 interface RaporData {
   kullanici: {
     ad: string;
@@ -107,13 +89,6 @@ interface RaporData {
     toplam_net_puan: number;
   };
   utt_performans: UttPerformans[];
-  oneri_durumu: {
-    toplam: number;
-    tamamlanan: number;
-    bekleyen: number;
-    suresi_gecmis: number;
-    kayitlar: OneriKaydi[];
-  };
   kategori_dagilimi: KategoriDagilimi[];
   urun_dagilimi: UrunDagilimi[];
   begeni_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; begeni_sayisi: number }>;
@@ -127,28 +102,11 @@ const kategoriSirasi = (tur: string) => {
   return sira === -1 ? TUR_SIRA.length : sira;
 };
 
-const tarihSaatMetni = (tarih: string | null) => tarih
-  ? new Date(tarih).toLocaleString('tr-TR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  : '—';
-
-const ONERI_DURUM_ETIKETI: Record<OneriDurumu, string> = {
-  tamamlanan: 'Tamamlandı',
-  bekleyen: 'Bekliyor',
-  suresi_gecmis: 'Süresi geçmiş',
-};
-
 export default function BmRaporPage() {
   const { kullanici, yukleniyor } = useAuth();
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
   const [acikKategori, setAcikKategori] = useState<string | null>(null);
   const [acikUtt, setAcikUtt] = useState<string | null>(null);
-  const [acikOneriDurumu, setAcikOneriDurumu] = useState<OneriSecimi | null>(null);
   const { data, loading, error } = useRapor<RaporData>('/raporlar/api/bm', periyot, kullanici?.id);
 
   if (yukleniyor || loading) return (
@@ -188,19 +146,6 @@ export default function BmRaporPage() {
       birUstleFark: index === 0 ? 0 : Math.max(0, data.utt_performans[index - 1].net_puan - utt.net_puan),
     };
   });
-  const oneriKartlari = [
-    { key: 'toplam', label: 'Toplam öneri', value: data.oneri_durumu.toplam, icon: Send, tone: bmStyles.oneriTotal },
-    { key: 'tamamlanan', label: 'Tamamlanan', value: data.oneri_durumu.tamamlanan, icon: CheckCircle2, tone: bmStyles.oneriCompleted },
-    { key: 'bekleyen', label: 'Bekleyen', value: data.oneri_durumu.bekleyen, icon: Clock3, tone: bmStyles.oneriPending },
-    { key: 'suresi_gecmis', label: 'Süresi geçmiş', value: data.oneri_durumu.suresi_gecmis, icon: TriangleAlert, tone: bmStyles.oneriExpired },
-  ] as const;
-  const seciliOneriler = acikOneriDurumu === null
-    ? []
-    : acikOneriDurumu === 'toplam'
-      ? data.oneri_durumu.kayitlar
-      : data.oneri_durumu.kayitlar.filter(oneri => oneri.durum === acikOneriDurumu);
-  const seciliOneriBasligi = oneriKartlari.find(kart => kart.key === acikOneriDurumu)?.label;
-
   return (
     <div className={styles.page} style={{ fontFamily: "'Nunito', sans-serif" }}>
       <div className={styles.container}>
@@ -380,81 +325,6 @@ export default function BmRaporPage() {
             </div>
           ) : (
             <div className={bmStyles.empty}>Bu dönem için UTT performans kaydı bulunmuyor.</div>
-          )}
-        </section>
-
-        <section className={`${styles.panel} ${styles.section}`}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">Öneri takibi</div>
-              <h2 className="text-base font-extrabold text-[#20324c]">Öneri Durumu</h2>
-              <p className="mt-0.5 text-[11px] font-medium text-[#8190a3]">Seçilen periyotta bölge UTT’lerine gönderilen öneriler</p>
-            </div>
-            <div className={styles.sectionIcon}><Send className="h-4 w-4" /></div>
-          </div>
-
-          <div className={bmStyles.oneriStats}>
-            {oneriKartlari.map(kart => {
-              const acik = acikOneriDurumu === kart.key;
-              return (
-                <button
-                  type="button"
-                  key={kart.key}
-                  className={`${bmStyles.oneriStat} ${kart.tone} ${acik ? bmStyles.oneriStatActive : ''}`}
-                  onClick={() => setAcikOneriDurumu(acik ? null : kart.key)}
-                  aria-expanded={acik}
-                  aria-controls="bm-oneri-detayi"
-                >
-                  <span className={bmStyles.oneriStatIcon}><kart.icon size={17} /></span>
-                  <span><small>{kart.label}</small><strong>{formatPuan(kart.value)}</strong></span>
-                  <ChevronDown size={15} className={acik ? bmStyles.oneriChevronOpen : bmStyles.oneriChevron} />
-                </button>
-              );
-            })}
-          </div>
-
-          {acikOneriDurumu && (
-            <div id="bm-oneri-detayi" className={bmStyles.oneriDetail}>
-              <div className={bmStyles.oneriDetailHeader}>
-                <strong>{seciliOneriBasligi}</strong>
-                <span>{seciliOneriler.length} öneri</span>
-              </div>
-              {seciliOneriler.length > 0 ? (
-                <div className={bmStyles.oneriList}>
-                  {seciliOneriler.map(oneri => (
-                    <article key={oneri.oneri_id} className={bmStyles.oneriRow}>
-                      <span className={bmStyles.oneriAvatar}>{oneri.utt_ad.charAt(0)}{oneri.utt_soyad.charAt(0)}</span>
-                      <div className={bmStyles.oneriInfo}>
-                        <strong>{oneri.utt_ad} {oneri.utt_soyad}</strong>
-                      </div>
-                      <span className={`${bmStyles.oneriStatus} ${bmStyles[oneri.durum]}`}>{ONERI_DURUM_ETIKETI[oneri.durum]}</span>
-                      <div className={`${bmStyles.oneriTimeGrid} ${acikOneriDurumu === 'tamamlanan' ? bmStyles.oneriTimeGridCompleted : ''}`}>
-                        <div className={bmStyles.oneriTimeBox}>
-                          <span>Yayın Adı</span>
-                          <strong>{oneri.urun_adi ?? 'Ürün dışı eğitim'} · {oneri.teknik_adi ?? 'Teknik belirtilmemiş'}</strong>
-                        </div>
-                        <div className={bmStyles.oneriTimeBox}>
-                          <span>Öneri Başlangıç Zamanı</span>
-                          <strong>{tarihSaatMetni(oneri.oneri_baslangic)}</strong>
-                        </div>
-                        <div className={bmStyles.oneriTimeBox}>
-                          <span>Öneri Bitiş Zamanı</span>
-                          <strong>{tarihSaatMetni(oneri.oneri_bitis)}</strong>
-                        </div>
-                        {acikOneriDurumu === 'tamamlanan' && (
-                          <div className={bmStyles.oneriTimeBox}>
-                            <span>Öneri İzleme Tarihi</span>
-                            <strong>{tarihSaatMetni(oneri.izleme_tarihi)}</strong>
-                          </div>
-                        )}
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <div className={bmStyles.empty}>Bu periyotta {seciliOneriBasligi?.toLocaleLowerCase('tr-TR')} bulunmuyor.</div>
-              )}
-            </div>
           )}
         </section>
 

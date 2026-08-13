@@ -11,7 +11,7 @@
 import { useEffect } from "react";
 import type { Bekleyen } from "../_types";
 import { HedefRolPill } from "@/components/HedefRolBant";
-import VideoCercevesi from "@/components/video/VideoCercevesi";
+import VideoOnizleme from "@/components/video/VideoOnizleme";
 
 function useEscapeKapat(onKapat: () => void) {
   useEffect(() => {
@@ -32,10 +32,7 @@ export function VideoOnizlemeModal({ url, onKapat }: { url: string; onKapat: () 
           <span id="video-onizleme-baslik" className="text-sm font-extrabold text-[#243957]">Video Önizleme</span>
           <button type="button" aria-label="Video önizlemeyi kapat" onClick={onKapat} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border-none bg-[#f2f5f9] text-lg text-gray-500">✕</button>
         </div>
-        {/* Kutu videonun oranına göre çizilir (26.07). */}
-        <VideoCercevesi videoUrl={url}>
-          <iframe src={url} frameBorder="0" allowFullScreen />
-        </VideoCercevesi>
+        <VideoOnizleme videoUrl={url} ariaLabel="Video önizlemeyi oynat" />
       </div>
     </div>
   );

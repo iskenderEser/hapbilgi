@@ -18,6 +18,7 @@ import { YayindakiVideo } from "@/lib/video/yayindakiVideolar";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { YAYINDAKI_VIDEO_GORENLER } from "@/lib/utils/roller";
 import { departmanKey } from "@/lib/video/departman";
+import BmOneriPaneli from "./_components/BmOneriPaneli";
 
 function OzetKarti({
   etiket,
@@ -53,15 +54,20 @@ function OzetKarti({
 export default function YayindakiVideolarPage() {
   const router = useRouter();
   const { kullanici, yukleniyor } = useAuth();
-  const { mesajlar, hata } = useHataMesaji();
+  const { mesajlar, hata, basari } = useHataMesaji();
   const [videolar, setVideolar] = useState<YayindakiVideo[]>([]);
+  const [oneriModu, setOneriModu] = useState(false);
+  const [secilenYayinlar, setSecilenYayinlar] = useState<YayindakiVideo[]>([]);
+  const rolKucu = (kullanici?.rol ?? "").trim().toLowerCase();
+  const bmMi = rolKucu === "bm";
+  const katalogVideolari = oneriModu ? videolar.filter((video) => video.hedef_rol === "utt") : videolar;
 
   // Yalnız ARAMA (İskender kararı 27.07): ekran klasör + kart ızgarası, satır
   // listesi değil; kademeli açma ızgarada ayrı bir iş. adim: Infinity → dilimleme yok.
   // Not: bu ekranın verisinde talep_no yok (yayın kaydından beslenir), bu yüzden
   // aranabilir alanlar ürün/eğitim adı ve teknik adıdır.
   const liste = useListe({
-    veri: videolar,
+    veri: katalogVideolari,
     adim: Infinity,
     aramaAlanlari: [
       { anahtar: "ad", etiket: "Ürün / Eğitim", deger: (v: YayindakiVideo) => v.urun_adi },
@@ -76,6 +82,24 @@ export default function YayindakiVideolarPage() {
   const toplamEtkilesim = videolar.reduce((toplam, video) => toplam + video.begeni_sayisi + video.favori_sayisi, 0);
   const toplamBegeni = videolar.reduce((toplam, video) => toplam + video.begeni_sayisi, 0);
   const toplamFavori = videolar.reduce((toplam, video) => toplam + video.favori_sayisi, 0);
+
+  const oneriVideoSec = (video: YayindakiVideo) => {
+    setSecilenYayinlar((mevcut) => {
+      if (mevcut.some((secili) => secili.yayin_id === video.yayin_id)) {
+        return mevcut.filter((secili) => secili.yayin_id !== video.yayin_id);
+      }
+      if (mevcut.length >= 3) {
+        hata("Tek seferde en fazla 3 video önerilebilir.");
+        return mevcut;
+      }
+      return [...mevcut, video];
+    });
+  };
+
+  const oneriModunuKapat = () => {
+    setSecilenYayinlar([]);
+    setOneriModu(false);
+  };
 
   useEffect(() => {
     if (aktifVideo) window.scrollTo({ top: 0, behavior: "auto" });
@@ -124,6 +148,7 @@ export default function YayindakiVideolarPage() {
             key={aktifVideo.yayin_id}
             video={aktifVideo}
             tuketici={false}
+            onizlemeYuzeyi={bmMi}
             onKapat={() => setAktifVideo(null)}
             onVeriYenile={() => {}}
             hata={() => {}}
@@ -185,14 +210,37 @@ export default function YayindakiVideolarPage() {
           <div className="flex flex-col gap-3 rounded-2xl border border-[#dfe7f1] bg-white px-4 py-3.5 shadow-[0_6px_18px_rgba(31,55,90,0.035)] sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-base font-extrabold text-[#203653]">Yayın Kataloğu</h2>
-              <p className="mt-0.5 text-xs text-[#7b8da5]">Üretici birime göre ilerleyin veya içerik adı ve tekniğe göre arayın.</p>
+              <p className="mt-0.5 text-xs text-[#7b8da5]">
+                {oneriModu ? "UTT gelişim ihtiyacına uygun en fazla 3 videoyu seçin." : "Üretici birime göre ilerleyin veya içerik adı ve tekniğe göre arayın."}
+              </p>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               {!loading && <span className="w-fit rounded-full bg-[#eef5fd] px-2.5 py-1 text-[10px] font-extrabold text-[#4479b7]">{liste.toplam} yayın</span>}
               <ListeArama arama={liste.arama} />
-              <span className="w-fit rounded-full bg-[#f0f5fb] px-2.5 py-1 text-[10px] font-extrabold text-[#637b99]">Salt görüntüleme</span>
+              {bmMi && (
+                <button
+                  type="button"
+                  onClick={() => oneriModu ? oneriModunuKapat() : setOneriModu(true)}
+                  className={`w-fit rounded-xl px-3 py-2 text-[11px] font-extrabold transition-colors ${oneriModu ? "border border-[#d9e4f0] bg-white text-[#617894] hover:bg-[#f5f8fc]" : "bg-[#2f7fc7] text-white hover:bg-[#256daf]"}`}
+                >
+                  {oneriModu ? "Öneri Seçimini Kapat" : "Video Önermek İstiyorum"}
+                </button>
+              )}
+              {!oneriModu && <span className="w-fit rounded-full bg-[#f0f5fb] px-2.5 py-1 text-[10px] font-extrabold text-[#637b99]">Salt görüntüleme</span>}
             </div>
           </div>
+
+          {oneriModu && bmMi && (
+            <BmOneriPaneli
+              videolar={secilenYayinlar}
+              onVideoSec={(video) => setAktifVideo(video)}
+              onVideoKaldir={(yayinId) => setSecilenYayinlar((mevcut) => mevcut.filter((video) => video.yayin_id !== yayinId))}
+              onVazgec={oneriModunuKapat}
+              onBasarili={oneriModunuKapat}
+              hata={hata}
+              basari={basari}
+            />
+          )}
 
           {loading ? (
             <div className="flex items-center justify-center rounded-2xl border border-[#dfe7f1] bg-white p-20">
@@ -207,7 +255,13 @@ export default function YayindakiVideolarPage() {
             </div>
           ) : (
             <Suspense fallback={null}>
-              <KlasorGrid videolar={liste.gorunen} onVideoSec={setAktifVideo} />
+              <KlasorGrid
+                videolar={liste.gorunen}
+                onVideoSec={setAktifVideo}
+                oneriModu={oneriModu}
+                secilenYayinlar={secilenYayinlar.map((video) => video.yayin_id)}
+                onOneriSec={oneriVideoSec}
+              />
             </Suspense>
           )}
         </div>

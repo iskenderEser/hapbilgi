@@ -73,3 +73,39 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/*
+ * PLATFORM ETKİLEŞİM SÖZLEŞMESİ
+ *
+ * Tıklanabilir HTML öğeleri parmak, devre dışı öğeler normal ok gösterir.
+ * Özel kartlar semantik olarak button/role="button" kullanmalı veya
+ * data-etkilesimli="true" taşımalıdır. İframe ve grafik yüzeyleri kendi ortak
+ * bileşenlerinden bu sözleşmeye bağlanır; sayfa bazında cursor kuralı yazılmaz.
+ */
+:where(
+  a[href],
+  button:not(:disabled),
+  input[type="button"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="reset"]:not(:disabled),
+  select:not(:disabled),
+  summary,
+  label[for],
+  [role="button"]:not([aria-disabled="true"]),
+  [role="link"]:not([aria-disabled="true"]),
+  [data-etkilesimli="true"]:not([aria-disabled="true"])
+) {
+  cursor: pointer;
+}
+
+:where(
+  button:disabled,
+  input[type="button"]:disabled,
+  input[type="submit"]:disabled,
+  input[type="reset"]:disabled,
+  select:disabled,
+  [aria-disabled="true"],
+  [data-etkilesimli="false"]
+) {
+  cursor: default !important;
+}

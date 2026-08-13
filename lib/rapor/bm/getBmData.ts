@@ -63,29 +63,6 @@ export interface BmEtkilesim {
   favori_sayisi: number;
 }
 
-export type BmOneriDurumu = 'tamamlanan' | 'bekleyen' | 'suresi_gecmis';
-
-export interface BmOneriKaydi {
-  oneri_id: string;
-  kullanici_id: string;
-  utt_ad: string;
-  utt_soyad: string;
-  yayin_id: string;
-  urun_adi: string | null;
-  teknik_adi: string | null;
-  oneri_baslangic: string;
-  oneri_bitis: string;
-  created_at: string;
-  izleme_tarihi: string | null;
-  durum: BmOneriDurumu;
-}
-
-interface BmOneriIzlemesi {
-  izleme_id: string;
-  oneri_id: string;
-  izleme_bitis: string;
-}
-
 interface BmData {
   hata: NextResponse | null;
   bolge: { bolge_adi: string } | null;
@@ -97,7 +74,6 @@ interface BmData {
   takimToplamPuan: number;
   sirketToplamPuan: number;
   etkilesim: BmEtkilesim[];
-  oneriDurumu: BmOneriKaydi[];
 }
 
 const bos: BmData = {
@@ -111,7 +87,6 @@ const bos: BmData = {
   takimToplamPuan: 0,
   sirketToplamPuan: 0,
   etkilesim: [],
-  oneriDurumu: [],
 };
 
 export async function getBmData(
@@ -130,7 +105,6 @@ export async function getBmData(
     takimOzetRes,
     sirketOzetRes,
     etkilesimRes,
-    oneriDurumuRes,
   ] = await Promise.all([
     adminSupabase.from('bolgeler').select('bolge_adi').eq('bolge_id', kullanici.bolge_id).maybeSingle(),
     adminSupabase.from('takimlar').select('takim_adi').eq('takim_id', kullanici.takim_id).maybeSingle(),
@@ -169,11 +143,6 @@ export async function getBmData(
       p_baslangic: baslangic,
       p_bitis: bitis,
     }),
-    adminSupabase.rpc('get_bm_oneri_durumu_v1', {
-      p_bm_id: kullanici.kullanici_id,
-      p_baslangic: baslangic,
-      p_bitis: bitis,
-    }),
   ]);
 
   if (bolgeAdRes.error) return { ...bos, hata: hataYaniti('Bölge adı çekilemedi', 'bolgeler', bolgeAdRes.error) };
@@ -185,52 +154,6 @@ export async function getBmData(
   if (takimOzetRes.error) return { ...bos, hata: hataYaniti('Takım puanı çekilemedi', 'get_kullanici_ozet (takım)', takimOzetRes.error) };
   if (sirketOzetRes.error) return { ...bos, hata: hataYaniti('Şirket puanı çekilemedi', 'get_kullanici_ozet (firma)', sirketOzetRes.error) };
   if (etkilesimRes.error) return { ...bos, hata: hataYaniti('BM etkileşimleri çekilemedi', 'get_bm_etkilesim_v2', etkilesimRes.error) };
-  if (oneriDurumuRes.error) return { ...bos, hata: hataYaniti('BM öneri durumu çekilemedi', 'get_bm_oneri_durumu_v1', oneriDurumuRes.error) };
-
-  const oneriDurumu = (oneriDurumuRes.data ?? []) as Omit<BmOneriKaydi, 'izleme_tarihi'>[];
-  const tamamlananOneriIdleri = oneriDurumu
-    .filter(oneri => oneri.durum === 'tamamlanan')
-    .map(oneri => oneri.oneri_id);
-  const izlemeTarihiMap = new Map<string, string>();
-
-  if (tamamlananOneriIdleri.length > 0) {
-    const { data: oneriIzlemeleri, error: oneriIzlemeError } = await adminSupabase
-      .from('izleme_kayitlari')
-      .select('izleme_id, oneri_id, izleme_bitis')
-      .in('oneri_id', tamamlananOneriIdleri)
-      .eq('izleme_turu', 'oneri')
-      .eq('tamamlandi_mi', true)
-      .eq('gercek_oynatma_mi', true)
-      .not('izleme_bitis', 'is', null)
-      .order('izleme_bitis', { ascending: true });
-    if (oneriIzlemeError) {
-      return { ...bos, hata: hataYaniti('Öneri izleme tarihleri çekilemedi', 'izleme_kayitlari', oneriIzlemeError) };
-    }
-
-    const izlemeler = (oneriIzlemeleri ?? []) as BmOneriIzlemesi[];
-    const izlemeIdleri = izlemeler.map(izleme => izleme.izleme_id);
-    const ileriSarilanIzlemeler = new Set<string>();
-
-    if (izlemeIdleri.length > 0) {
-      const { data: ileriSarmaKayitlari, error: ileriSarmaError } = await adminSupabase
-        .from('ileri_sarma_kayitlari')
-        .select('izleme_id')
-        .in('izleme_id', izlemeIdleri);
-      if (ileriSarmaError) {
-        return { ...bos, hata: hataYaniti('Öneri izleme tarihleri doğrulanamadı', 'ileri_sarma_kayitlari', ileriSarmaError) };
-      }
-      for (const kayit of ileriSarmaKayitlari ?? []) {
-        ileriSarilanIzlemeler.add(kayit.izleme_id);
-      }
-    }
-
-    for (const izleme of izlemeler) {
-      if (!ileriSarilanIzlemeler.has(izleme.izleme_id) && !izlemeTarihiMap.has(izleme.oneri_id)) {
-        izlemeTarihiMap.set(izleme.oneri_id, izleme.izleme_bitis);
-      }
-    }
-  }
-
   const takimToplamPuan = ((takimOzetRes.data ?? []) as KullaniciOzetSatiri[])
     .reduce((toplam, satir) => toplam + Number(satir.toplam_net_puan ?? 0), 0);
   const sirketToplamPuan = ((sirketOzetRes.data ?? []) as KullaniciOzetSatiri[])
@@ -246,9 +169,5 @@ export async function getBmData(
     takimToplamPuan,
     sirketToplamPuan,
     etkilesim: (etkilesimRes.data ?? []) as BmEtkilesim[],
-    oneriDurumu: oneriDurumu.map(oneri => ({
-      ...oneri,
-      izleme_tarihi: izlemeTarihiMap.get(oneri.oneri_id) ?? null,
-    })),
   };
 }

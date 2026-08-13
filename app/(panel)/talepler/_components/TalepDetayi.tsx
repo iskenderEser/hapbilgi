@@ -68,7 +68,7 @@ export function TalepDetayi({
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6"><path d="M4 5h16v14H4zM8 9h8M8 13h5" /><path d="m15 16 2 2 4-4" /></svg>
           </span>
           <p className="mt-3 text-sm font-extrabold text-[#425672]">Takip etmek istediğiniz talebi seçin</p>
-          <p className="mx-auto mt-1 max-w-xs text-xs leading-5 text-[#8292a8]">İş kuyruğundan bir talep seçtiğinizde tüm üretim adımları burada açılır.</p>
+          <p className="mx-auto mt-1 max-w-xs text-xs leading-5 text-[#8292a8]">Talep takip listesinden bir talep seçtiğinizde tüm üretim adımları burada açılır.</p>
         </div>
       </div>
     );

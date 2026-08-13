@@ -15,6 +15,7 @@
 import { useEffect, useState, useRef } from "react";
 import { createVideoPlayer, type VideoPlayer } from "@/lib/video/videoPlayer";
 import VideoCercevesi from "@/components/video/VideoCercevesi";
+import { useVideoEtkilesimKatmani } from "@/components/video/useVideoEtkilesimKatmani";
 
 interface OynaticiVideo {
   yayin_id: string;
@@ -85,6 +86,11 @@ export default function CcVideoOynatici({
   const videoSuresiRef = useRef<number>(0);
   const playerRef = useRef<VideoPlayer | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const videoEtkilesimi = useVideoEtkilesimKatmani({
+    anahtar: video.yayin_id,
+    playerRef,
+    etkin: Boolean(video.video_url),
+  });
 
   // ─── İzleme başlatma — video değiştiğinde tüm state sıfırlanır ─────────────
   useEffect(() => {
@@ -140,6 +146,7 @@ export default function CcVideoOynatici({
     maxIzlenenRef.current = 0;
 
     player.onReady(() => {
+      videoEtkilesimi.oynaticiHazir(player);
       // Video süresi
       player.getDuration((sure: number) => {
         if (sure && sure > 0) videoSuresiRef.current = sure;
@@ -410,7 +417,13 @@ export default function CcVideoOynatici({
         {video.video_url && (
           <div className="border-b border-gray-100">
             {/* Kutu videonun oranına göre çizilir (26.07). iframe burada kalır — ref playerjs'e bağlı. */}
-            <VideoCercevesi videoUrl={video.video_url}>
+            <VideoCercevesi
+              videoUrl={video.video_url}
+              etkilesimKatmani={videoEtkilesimi.katmanAcik ? {
+                ariaLabel: `${video.urun_adi} videosunu oynat`,
+                onClick: videoEtkilesimi.oynat,
+              } : null}
+            >
               <iframe
                 key={video.yayin_id}
                 ref={iframeRef}

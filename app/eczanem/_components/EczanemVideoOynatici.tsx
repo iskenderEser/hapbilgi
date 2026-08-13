@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createVideoPlayer, type VideoPlayer } from "@/lib/video/videoPlayer";
 import VideoCercevesi from "@/components/video/VideoCercevesi";
+import { useVideoEtkilesimKatmani } from "@/components/video/useVideoEtkilesimKatmani";
 
 interface OynaticiVideo {
   gonderim_id: string;
@@ -50,6 +51,11 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
   const videoSuresiRef = useRef<number>(0);
   const playerRef = useRef<VideoPlayer | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const videoEtkilesimi = useVideoEtkilesimKatmani({
+    anahtar: video.gonderim_id,
+    playerRef,
+    etkin: Boolean(video.video_url),
+  });
 
   // İzleme başlat — video değiştiğinde
   useEffect(() => {
@@ -76,6 +82,7 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
     playerRef.current = player;
 
     player.onReady(() => {
+      videoEtkilesimi.oynaticiHazir(player);
       player.getDuration((sure: number) => {
         if (sure && sure > 0) videoSuresiRef.current = sure;
       });
@@ -182,7 +189,13 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
         {video.video_url && (
           <div className="border-b border-gray-100">
             {/* Kutu videonun oranına göre çizilir (26.07). iframe burada kalır — ref playerjs'e bağlı. */}
-            <VideoCercevesi videoUrl={video.video_url}>
+            <VideoCercevesi
+              videoUrl={video.video_url}
+              etkilesimKatmani={videoEtkilesimi.katmanAcik ? {
+                ariaLabel: `${video.urun_adi} videosunu oynat`,
+                onClick: videoEtkilesimi.oynat,
+              } : null}
+            >
               <iframe
                 key={video.gonderim_id}
                 ref={iframeRef}

@@ -59,7 +59,10 @@ export default function EChart({ option, height = 320, className, style, onClick
   const grafikRef = useRef<echarts.ECharts | null>(null);
   // Handler'ı ref'te tut ki her değişimde grafik yeniden kurulmasın.
   const tiklamaRef = useRef(onClick);
-  tiklamaRef.current = onClick;
+
+  useEffect(() => {
+    tiklamaRef.current = onClick;
+  }, [onClick]);
 
   // Kurulum + tıklama + boyut takibi + temizlik (bir kez).
   useEffect(() => {
@@ -67,10 +70,23 @@ export default function EChart({ option, height = 320, className, style, onClick
     const grafik = echarts.init(kutuRef.current);
     grafikRef.current = grafik;
     grafik.on("click", (p) => tiklamaRef.current?.(p as EChartTiklama));
+
+    // Yalnız tıklama davranışı verilen grafikte ve yalnız gerçek bir grafik
+    // elemanının üzerinde parmak göster. Boş çizim alanı normal ok olarak kalır.
+    const zrender = grafik.getZr();
+    const imleciGuncelle = (olay: { target?: unknown }) => {
+      zrender.setCursorStyle(tiklamaRef.current && olay.target ? "pointer" : "default");
+    };
+    const imleciSifirla = () => zrender.setCursorStyle("default");
+    zrender.on("mousemove", imleciGuncelle);
+    zrender.on("globalout", imleciSifirla);
+
     const gozlemci = new ResizeObserver(() => grafik.resize());
     gozlemci.observe(kutuRef.current);
     return () => {
       gozlemci.disconnect();
+      zrender.off("mousemove", imleciGuncelle);
+      zrender.off("globalout", imleciSifirla);
       grafik.dispose();
       grafikRef.current = null;
     };

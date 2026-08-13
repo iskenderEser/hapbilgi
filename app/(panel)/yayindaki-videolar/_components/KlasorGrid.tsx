@@ -17,9 +17,12 @@ import { DEPARTMAN_SIRA, DEPARTMAN_ETIKET, DEPARTMAN_RENK, departmanKey, type De
 interface Props {
   videolar: YayindakiVideo[];
   onVideoSec: (video: AnaSayfaVideo) => void;
+  oneriModu?: boolean;
+  secilenYayinlar?: string[];
+  onOneriSec?: (video: YayindakiVideo) => void;
 }
 
-export default function KlasorGrid({ videolar, onVideoSec }: Props) {
+export default function KlasorGrid({ videolar, onVideoSec, oneriModu = false, secilenYayinlar = [], onOneriSec }: Props) {
   const searchParams = useSearchParams();
   const urlDepartmani = DEPARTMAN_SIRA.find((key) => key === searchParams.get("departman")) ?? null;
   // undefined: kullanıcı henüz seçim yapmadı, URL'deki geçerli departman kullanılır.
@@ -85,7 +88,13 @@ export default function KlasorGrid({ videolar, onVideoSec }: Props) {
                 </div>
                 <span className="shrink-0 rounded-full bg-[#f0f5fb] px-2.5 py-1 text-[10px] font-extrabold text-[#637b99]">{b.liste.length} yayın</span>
               </div>
-              <YayindakiVideoBolumu videolar={b.liste} onVideoSec={onVideoSec} />
+              <YayindakiVideoBolumu
+                videolar={b.liste}
+                onVideoSec={onVideoSec}
+                oneriModu={oneriModu}
+                secilenYayinlar={secilenYayinlar}
+                onOneriSec={onOneriSec}
+              />
             </section>
           )
         )}

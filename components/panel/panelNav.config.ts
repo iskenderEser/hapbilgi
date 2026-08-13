@@ -56,6 +56,9 @@ export interface NavOge {
 export interface NavGrup {
   baslik: string;
   oglar: NavOge[];
+  // false yalnız ayrı kimlik kabuklarında kullanılır. İç sistem PANEL_NAV
+  // gruplarında başlık, görünür öğe sayısından bağımsız olarak daima çizilir.
+  baslikGoster?: boolean;
 }
 
 // analizRoller — Navbar hard-coded listesinin roller.ts eşleniği (admin hariç, birebir küme).
@@ -87,10 +90,10 @@ export const PANEL_NAV: NavGrup[] = [
     ],
   },
   {
-    baslik: "Öneriler",
+    baslik: "Öneri Takibi",
     oglar: [
       // BM (yönlendirici) rozetsiz; UTT/KD_UTT rozetli — badgeKey UTT için dolar.
-      { etiket: "Öneriler", path: "/oneriler", badgeKey: "oneri", gate: (c) => c.rolKucu === "bm" || TUKETICI_ROLLER.includes(c.rolKucu) },
+      { etiket: "Öneri Takibi", path: "/oneriler", badgeKey: "oneri", gate: (c) => c.rolKucu === "bm" || TUKETICI_ROLLER.includes(c.rolKucu) },
     ],
   },
   {
@@ -153,6 +156,7 @@ export const PANEL_NAV: NavGrup[] = [
 export const ECLUB_KISI_NAV: NavGrup[] = [
   {
     baslik: "E-Club Store",
+    baslikGoster: false,
     oglar: [
       { etiket: "E-Club Store", path: "/eclub/store", gate: () => true },
     ],
