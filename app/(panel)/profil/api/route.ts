@@ -6,6 +6,7 @@ import { hataYaniti, sunucuHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
 import { haftaBaslangici, ayBaslangici, yilBaslangici, aktifPeriyot } from "@/lib/zaman/kontrol";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { FIRMA_KOLONLARI } from "@/lib/firma/kolonlar";
+import { harcamaBakiyesi } from "@/lib/store/bakiye";
 
 export async function GET() {
   try {
@@ -116,9 +117,7 @@ export async function GET() {
       ? haftalikLig.find((r: { kullanici_id: string }) => r.kullanici_id === user.id)
       : null;
     // Sipariş puanı: çeyreklik harcanabilir bakiye (formül sistemde — get_harcama_bakiyesi).
-    const { data: bakiyeData } = await adminSupabase.rpc("get_harcama_bakiyesi", {
-      p_kullanici_id: user.id,
-    });
+    const siparisPuani = await harcamaBakiyesi(adminSupabase, user.id);
 
     return NextResponse.json({
       profil: profilTemel,
@@ -141,7 +140,7 @@ export async function GET() {
       navbar_ozet: {
         haftalik_puan: benimHaftalik?.toplam_puan ?? 0,
         takim_sirasi: benimHaftalik?.takim_sirasi ?? null,
-        siparis_puani: Number.isFinite(Number(bakiyeData)) ? Number(bakiyeData) : 0,
+        siparis_puani: siparisPuani,
       },
     }, { status: 200 });
 

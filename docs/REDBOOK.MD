@@ -476,29 +476,32 @@ Firmanın kendi insanları da emeklerinin karşılığını hissetmelidir. HBSto
 
 **İki taraf — alışveriş ve izleme.** Modül `app/store/` altında iki yüzü barındırır. Alışveriş tarafı (vitrin `page.tsx`, ürün detayı `[urun_id]`, adres yönetimi `adreslerim`, kendi siparişleri `siparislerim`) puan harcayabilen roller (`STORE_ALABILEN_ROLLER`: UTT/KD_UTT + BM) içindir. İzleme tarafı (`siparisler/`, filtreli tablo + hiyerarşi) ise başkalarının siparişlerini kapsam dahilinde gören roller (`STORE_GENEL_GOREN_ROLLER`) içindir: BM bölgesindeki, TM takımındaki, üretici/yönetici firma genelindeki siparişleri görür. Bu yine §2.3'teki kapsam-daralması ilkesidir.
 
-**Beş tablo.** Mağazanın veri modeli beş tablodan oluşur:
+**Global katalog, firma bazlı görünürlük.** HBStore'da her firma için ayrı mağaza veya katalog kopyası kurulmaz. `store_kategoriler` ve `store_urunler` tüm sistemin ortak kataloğudur; admin, bir global ürünün satırındaki **Firma Erişimi** yönetiminden ürünü seçili firmalarda açıp kapatır. Bu istisnalar `store_urun_firma_ayarlari` tablosunda tutulur: satır yoksa ürün firmaya açıktır, yalnız kapatma istisnası (`aktif_mi=false`) kaydedilir; `store_urunler.aktif_mi=false` ise firma ayarından bağımsız global kapatmadır. Böylece örneğin AirPods tek ürün olarak yönetilir, maliyeti uygun olmayan firmalarda kapatılır; ürün/stok/kategori kopyaları ve birbiriyle ayrışan mağazalar doğmaz.
+
+**Altı tablo.** Mağazanın veri modeli altı tablodan oluşur:
 
 | Tablo | Rol |
 |---|---|
 | `store_kategoriler` | Ürün kategorileri (`ad`, `sira`, `aktif_mi`) |
 | `store_urunler` | Ürünler (`puan_fiyati`, `stok`, `gorsel_url`, `aktif_mi`) |
+| `store_urun_firma_ayarlari` | Global ürünün firma bazlı kapatma istisnası (`urun_id`, `firma_id`, `aktif_mi`) |
 | `store_adresler` | Kullanıcı teslimat adresleri (`varsayilan_mi`) |
 | `store_siparisler` | Siparişler (`adet`, `toplam_puan`, `durum`, kargo bilgisi, `adres_snapshot`) |
 | `store_puan_harcamalari` | Puan harcama kayıtları (`puan_miktari`, `tur`, `siparis_id`) |
 
 Dikkat çeken iki tasarım detayı: `store_siparisler.adres_snapshot` sipariş anındaki adresi jsonb olarak dondurur (adres sonradan değişse bile sipariş kaydı bozulmaz), ve harcama ayrı bir tabloda (`store_puan_harcamalari`) tutulur — bu, kayıt-anı simetrisinin (§2.5) ödül tarafındaki karşılığıdır: puanın kazanımı ayrı, harcaması ayrı kayıtta durur.
 
-**Bakiye — çeyrek penceresi.** Harcanabilir puan (sipariş bakiyesi), `get_harcama_bakiyesi` RPC'siyle hesaplanır. Kritik iş kuralı: bakiye, tüm-zaman puanı değil, takvim çeyreği penceresindeki kazanımdan harcamaları düşen anlık değerdir. Bu §3.4'teki "yarış çeyrekte, takip anlık" ilkesiyle uyumludur ve UTT/BM raporlarındaki "Kalan Sipariş Puanı" gösterimini besler. Puanın hem yarışmada (lig) hem ödülde (store) değerlendirilmesi bu çeyrek penceresi üzerinden koordine edilir.
+**Bakiye — çeyrek penceresi.** Harcanabilir puan (sipariş bakiyesi), `get_harcama_bakiyesi` RPC'siyle hesaplanır. Kritik iş kuralı: bakiye, tüm-zaman puanı değil, takvim çeyreği penceresindeki kazanımdan aynı penceredeki harcamaları düşen anlık değerdir. Takvim çeyreği değiştiğinde önceki puan ve sipariş kayıtları silinmez; yeni çeyreğin hesap penceresine girmedikleri için kullanılabilir bakiye sıfırdan başlar. UTT/KD_UTT'nin firmasında HBStore açıksa Navbar'da **Sipariş Puanı** görünür; sipariş tamamlanınca kullanılan puan anında düşer, sipariş iptal edilip puan iade edilince anında yükselir. Bu §3.4'teki "yarış çeyrekte, takip anlık" ilkesiyle uyumludur ve UTT/BM raporlarındaki "Kalan Sipariş Puanı" gösterimini besler.
 
 **Sipariş yaşam döngüsü — atomik RPC'ler.** Sipariş işlemleri, tutarlılık gerektirdiği için tek tek atomik RPC'lerle yürür (`lib/store/` orkestrasyonu üzerinden):
 
-- `store_siparis_olustur` — stok kilidi + bakiye kontrolü + adres snapshot + sipariş kaydı + puan düşme + stok azaltma, hepsi tek atomik işlemde.
+- `store_siparis_olustur` — önce firmanın HBStore erişimini, global ürün aktifliğini ve firma-ürün görünürlüğünü doğrular; ardından korunmuş atomik çekirdekte stok kilidi + bakiye kontrolü + adres snapshot + sipariş kaydı + puan düşme + stok azaltma işlemlerini birlikte yürütür. Vitrini aşan doğrudan istek de kapalı ürünü satın alamaz.
 - `store_siparis_iptal` — stok iadesi + durum güncelleme (harcama kaydı iptal mantığıyla bakiyeye geri döner).
 - `store_teslim_aldim` — kargodaki siparişi teslim edildi olarak işaretler.
 
 İzleme tarafı için `get_kapsamli_siparisler` (role göre kapsamlı sipariş listesi) ve `get_siparis_filtre_hiyerarsi` (filtre dropdown'ları için takım/bölge hiyerarşisi) RPC'leri kullanılır. Lib katmanı bunları domain'lere böler: `bakiye.ts`, `siparis.ts`, `adres.ts`, `kargo.ts`, `storage.ts` (ürün görselleri), `sabitler.ts`, `tipler.ts`.
 
-**Firma bazlı aç/kapa.** HBStore firma düzeyinde `hbstore_aktif` bayrağıyla açılıp kapatılır; kapalı firmada hiçbir kullanıcı (ne alışveriş yapan ne izleyen) mağazaya erişemez — proxy bekçisi (§2.4) ve Navbar görünürlük gizlemesi birlikte çalışır.
+**Firma bazlı iki ayrı kapı.** `firmalar.hbstore_aktif`, mağazanın tamamını firma düzeyinde açıp kapatır; kapalı firmada hiçbir kullanıcı (ne alışveriş yapan ne izleyen) mağazaya erişemez — proxy bekçisi (§2.4), route doğrulaması, sidebar ve Navbar görünürlüğü birlikte çalışır. Mağaza açıkken ürün düzeyindeki daha dar kapı `store_urun_firma_ayarlari`'dır; vitrin, kategori listesi, ürün detayı ve sipariş RPC'si aynı kararı uygular.
 
 ---
 
@@ -672,7 +675,7 @@ Admin paneli, HapBilgi'nin yönetim beynidir: bir firma seçilir; o firmanın ku
 
 **Eczane onayı — E-Club sekmesinde.** `eclub_eczane_master`'a elle girilen eczanelerin onaylanması (§4.1) artık ayrı panel değil, ana kabuğun E-Club sekmesidir (M2-b taşıması; hook'lar aynı: `useEclubKayitli` + `useEclubOnaylar`). Akış firma bağımsızdır; eski `/admin/eclub` URL'si redirect'tir.
 
-**Mağaza yönetimleri — global bölümlerde paralel çift panel.** HBStore ve E-Club Store yönetimleri aynı üç sekme (Kategoriler/Ürünler/Siparişler) ve aynı hook desenini koruyarak global bölümlere gömülmüştür — §3.5/§4.5'teki ikizliğin admin yansıması. Önemli açık karar kapanmıştır (K-A2): bugünkü global katalog şeması hedefe uymuyor — **katalog firma bazlı olacak** (her firma farklı ürün yelpazesi isteyebilir); şema değişikliği gerektirdiğinden M4'ün ayrı planlanacak alt-işidir.
+**Mağaza yönetimleri — global bölümlerde paralel çift panel.** HBStore ve E-Club Store yönetimleri aynı üç sekme (Kategoriler/Ürünler/Siparişler) ve aynı hook desenini koruyarak global bölümlere gömülmüştür — §3.5/§4.5'teki ikizliğin admin yansıması. HBStore için K-A2 kararı düzeltilerek kapanmıştır: katalog firma bazında çoğaltılmaz, **global katalog + firma bazlı ürün görünürlüğü** kullanılır. Admin HBStore Ürünler tablosundaki **Firma Erişimi** ile yalnız istisnaları kapatır; ürünün global pasifliği ise tüm firmalara üstün gelir. E-Club Store'un çok-firmalı dış müşteri modeli (§4.5) bundan ayrıdır ve aynı ayar tablosunu kullanmaz.
 
 **Güvenlik — çift katman.** Tüm admin route handler'ları route-içi tek bekçiden (`adminGirisKontrol`) geçer; proxy admin bekçisi ikinci katmandır (B-26, §2.4). Sayfa kapıları `ADMIN_ROLLER` tek kaynağına bağlıdır (B-33); eski hook'lar ağ hatasına dayanıklıdır (B-32); şifre politikası tekil+topluda aynı kural kitabındandır (B-36).
 

@@ -12,8 +12,8 @@
 //   - store_siparis_iptal (yetki + 12 saat + stok iade + puan iade)
 //   - store_teslim_aldim (durum geçişi onayı)
 //
-// Firma erişim kontrolü (hbstore_aktif) proxy.ts HBStore bekçisinde merkezi
-// olarak yapılır — /store yolu kapalı firmada zaten 403 döner.
+// Firma modül ve ürün erişimi store_siparis_olustur güvenlik sarmalayıcısında
+// yeniden doğrulanır; istemci vitrinini aşan doğrudan istek sipariş oluşturamaz.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";

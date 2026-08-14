@@ -3,7 +3,8 @@
 // M2-b — HBStore yönetiminin ana panele gömülü hâli (plan A.1'deki YETİM
 // sayfanın taşınması). Eski /admin/store sayfasının kabuksuz içeriği:
 // auth ve hata konteyneri ana panelin işidir. Global bağlamdır (katalog
-// bugün firma-bağımsız — K-A2 firma bazlılık geçişi ayrı alt-iş).
+// globaldir; ürün satırındaki Firma Erişimi yalnız firma bazlı kapatma
+// istisnalarını yönetir.
 
 "use client";
 

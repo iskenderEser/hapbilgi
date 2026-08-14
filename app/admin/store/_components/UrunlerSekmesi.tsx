@@ -6,7 +6,9 @@
 
 "use client";
 
+import { useState } from "react";
 import UrunModal from "./UrunModal";
+import FirmaErisimModal from "./FirmaErisimModal";
 import type { Kategori } from "@/lib/store/tipler";
 import type { UrunGosterim } from "../_types";
 import { RENK_BORDO } from "../../_constants";
@@ -69,6 +71,8 @@ const duzenleBtnStyle: React.CSSProperties = {
 };
 
 export default function UrunlerSekmesi(p: UrunlerSekmesiProps) {
+  const [firmaErisimUrunu, setFirmaErisimUrunu] = useState<UrunGosterim | null>(null);
+
   return (
     <div style={{ marginTop: "20px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
@@ -151,6 +155,12 @@ export default function UrunlerSekmesi(p: UrunlerSekmesiProps) {
                     </span>
                   </td>
                   <td style={tdStyle}>
+                    <button
+                      onClick={() => setFirmaErisimUrunu(u)}
+                      style={{ ...duzenleBtnStyle, marginRight: "4px" }}
+                    >
+                      Firma Erişimi
+                    </button>
                     <button onClick={() => p.handleDuzenle(u)} style={duzenleBtnStyle}>
                       Düzenle
                     </button>
@@ -192,6 +202,12 @@ export default function UrunlerSekmesi(p: UrunlerSekmesiProps) {
         kategoriler={p.kategoriler}
         onKapat={p.handleModalKapat}
         onKaydedildi={p.urunleriYukle}
+        hata={p.hata}
+        basari={p.basari}
+      />
+      <FirmaErisimModal
+        urun={firmaErisimUrunu}
+        onKapat={() => setFirmaErisimUrunu(null)}
         hata={p.hata}
         basari={p.basari}
       />

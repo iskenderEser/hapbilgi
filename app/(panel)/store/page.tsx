@@ -2,8 +2,7 @@
 //
 // HBStore vitrin sayfası. UTT/KD_UTT/BM görür.
 //
-// Üç blok:
-//   - Üst banner: kullanıcı adı + harcanabilir HapPuan
+// İki blok:
 //   - Kategori filtresi: yatay scroll pill bar
 //   - Ürün grid: 1/2/3/4 responsive sütun
 //
@@ -20,6 +19,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Package } from "lucide-react";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -36,15 +36,16 @@ const SARI_TEXT = "#854d0e";
 export default function StorePage() {
   const router = useRouter();
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
-  const [yetkiKontrolEdildi, setYetkiKontrolEdildi] = useState(false);
 
   const [kategoriler, setKategoriler] = useState<Kategori[]>([]);
   const [seciliKategori, setSeciliKategori] = useState<string | null>(null);
   const [urunler, setUrunler] = useState<Urun[]>([]);
-  const [bakiye, setBakiye] = useState<number>(0);
+  const [bakiye, setBakiye] = useState<number | null>(null);
   const [yukleniyor, setYukleniyor] = useState(true);
 
   const { mesajlar, hata } = useHataMesaji();
+  const rolKucu = kullanici?.rol?.toLowerCase() ?? "";
+  const yetkili = Boolean(kullanici && STORE_ALABILEN_ROLLER.includes(rolKucu));
 
   // Auth + yetki — AuthProvider'dan gelen kullanıcı bilgisini kullan
   useEffect(() => {
@@ -55,18 +56,15 @@ export default function StorePage() {
       return;
     }
 
-    const r = kullanici.rol.toLowerCase();
-    if (!STORE_ALABILEN_ROLLER.includes(r)) {
+    if (!STORE_ALABILEN_ROLLER.includes(rolKucu)) {
       router.push("/ana-sayfa");
       return;
     }
-
-    setYetkiKontrolEdildi(true);
-  }, [kullanici, authYukleniyor, router]);
+  }, [kullanici, authYukleniyor, rolKucu, router]);
 
   // Başlangıç verileri (kategoriler + bakiye)
   useEffect(() => {
-    if (!yetkiKontrolEdildi) return;
+    if (!yetkili) return;
 
     const baslat = async () => {
       try {
@@ -97,11 +95,11 @@ export default function StorePage() {
 
     baslat();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [yetkiKontrolEdildi]);
+  }, [yetkili]);
 
   // Ürünler (kategori değiştikçe yenile)
   useEffect(() => {
-    if (!yetkiKontrolEdildi) return;
+    if (!yetkili) return;
 
     const urunleriYukle = async () => {
       setYukleniyor(true);
@@ -125,11 +123,11 @@ export default function StorePage() {
 
     urunleriYukle();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [yetkiKontrolEdildi, seciliKategori]);
+  }, [yetkili, seciliKategori]);
 
 
   // Loading — auth veya yetki hazır değilse bekle
-  if (authYukleniyor || !kullanici || !yetkiKontrolEdildi) {
+  if (authYukleniyor || !yetkili) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -160,49 +158,22 @@ export default function StorePage() {
         ))}
       </div>
 
-      <div className="max-w-6xl mx-auto px-3 py-3 md:px-4 md:py-6">
-        {/* Üst banner: bakiye + alt eylem butonları */}
-        <div
-          className="rounded-xl px-5 py-4 mb-5 text-white flex items-center justify-between gap-3 flex-wrap"
-          style={{ background: BORDO }}
-        >
-          <div>
-            <div className="text-xs uppercase tracking-wider" style={{ opacity: 0.8 }}>
-              Harcanabilir Bakiyen
-            </div>
-            <div className="text-2xl font-bold mt-1">{bakiye} HapPuan</div>
+      <div className="mx-auto max-w-6xl px-3 py-4 md:px-6 md:py-6">
+        <div className="mb-5">
+          <div className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#71859d]">
+            HBStore
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={() => router.push("/store/adreslerim")}
-              className="px-3 py-1.5 rounded-lg text-xs cursor-pointer border-none text-white"
-              style={{ background: "rgba(255,255,255,0.2)" }}
-            >
-              Adreslerim
-            </button>
-            <button
-              onClick={() => router.push("/store/siparislerim")}
-              className="px-3 py-1.5 rounded-lg text-xs cursor-pointer border-none text-white"
-              style={{ background: "rgba(255,255,255,0.2)" }}
-            >
-              Siparişlerim
-            </button>
-            
-            {kullanici.rol.toLowerCase() === "bm" && (
-              <button
-                onClick={() => router.push("/store/siparisler")}
-                className="px-3 py-1.5 rounded-lg text-xs cursor-pointer border-none text-white"
-                style={{ background: "rgba(255,255,255,0.2)" }}
-              >
-                HBStore Siparişleri
-              </button>
-            )}
-          </div>
+          <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[#203653]">
+            Mağazam
+          </h1>
+          <p className="mt-1 text-xs font-medium text-[#8190a3]">
+            Sipariş puanınızla alabileceğiniz ürünleri inceleyin.
+          </p>
         </div>
 
         {/* Kategori filtresi */}
         <div
-          className="flex gap-2 mb-5 overflow-x-auto pb-1"
+          className="mb-5 flex gap-2 overflow-x-auto rounded-2xl border border-[#dfe7f1] bg-white p-2 shadow-[0_6px_18px_rgba(31,55,90,0.035)]"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
           <KategoriButon
@@ -236,7 +207,7 @@ export default function StorePage() {
             Bu kategoride aktif ürün yok.
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {urunler.map((u) => (
               <UrunKarti
                 key={u.urun_id}
@@ -285,43 +256,41 @@ function UrunKarti({
   onTikla,
 }: {
   urun: Urun;
-  bakiye: number;
+  bakiye: number | null;
   onTikla: () => void;
 }) {
   const stokYok = urun.stok === 0;
   const stokAz = urun.stok > 0 && urun.stok <= STOK_AZ_ESIK;
-  const yetersizBakiye = bakiye < urun.puan_fiyati;
+  const yetersizBakiye = bakiye !== null && bakiye < urun.puan_fiyati;
 
   return (
-    <div
+    <button
+      type="button"
       onClick={onTikla}
-      className="bg-white border border-gray-200 rounded-xl overflow-hidden cursor-pointer transition-shadow hover:shadow-md flex flex-col"
+      className="flex w-full flex-col overflow-hidden rounded-2xl border border-[#dfe7f1] bg-white text-left shadow-[0_6px_18px_rgba(31,55,90,0.035)] transition-all hover:-translate-y-0.5 hover:border-[#cbd8e6] hover:shadow-[0_10px_24px_rgba(31,55,90,0.08)]"
       style={{ fontFamily: "'Nunito', sans-serif" }}
     >
       {/* Görsel alanı */}
       <div
-        className="w-full aspect-square flex items-center justify-center"
-        style={{ background: "#f9fafb" }}
+        className="flex aspect-[4/3] w-full items-center justify-center border-b border-[#edf1f5] bg-[linear-gradient(145deg,#f8fafc,#eef3f8)]"
       >
         {urun.gorsel_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={urun.gorsel_url}
             alt={urun.ad}
-            className="w-full h-full object-cover"
+            className="h-full w-full object-cover"
           />
         ) : (
-          <div
-            className="text-xs"
-            style={{ color: GRI_METIN }}
-          >
-            Görsel yok
+          <div className="flex flex-col items-center gap-2 text-[#9aa9b9]">
+            <Package size={28} strokeWidth={1.5} />
+            <span className="text-[11px] font-bold">Ürün görseli</span>
           </div>
         )}
       </div>
 
       {/* Bilgi alanı */}
-      <div className="px-4 py-3 flex flex-col gap-1.5 flex-1">
+      <div className="flex flex-1 flex-col gap-1.5 px-4 py-3.5">
         <div
           className="text-sm font-semibold truncate"
           style={{ color: KOYU_METIN }}
@@ -333,7 +302,7 @@ function UrunKarti({
           className="text-lg font-bold"
           style={{ color: yetersizBakiye ? GRI_METIN : BORDO }}
         >
-          {urun.puan_fiyati} HapPuan
+          {urun.puan_fiyati.toLocaleString("tr-TR")} HapPuan
         </div>
 
         {/* Durum rozetleri */}
@@ -388,6 +357,6 @@ function UrunKarti({
           )}
         </div>
       </div>
-    </div>
+    </button>
   );
 }

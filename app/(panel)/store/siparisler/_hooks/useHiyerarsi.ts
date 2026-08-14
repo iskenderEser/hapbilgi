@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { Hiyerarsi } from "../_types";
 
 interface UseHiyerarsiProps {
@@ -13,25 +13,32 @@ interface UseHiyerarsiProps {
 }
 
 export function useHiyerarsi({ hata }: UseHiyerarsiProps) {
+  const hataRef = useRef(hata);
   const [hiyerarsi, setHiyerarsi] = useState<Hiyerarsi | null>(null);
   const [yukleniyor, setYukleniyor] = useState(false);
 
-  const hiyerarsiYukle = async () => {
+  useEffect(() => { hataRef.current = hata; }, [hata]);
+
+  const hiyerarsiYukle = useCallback(async () => {
     setYukleniyor(true);
-    const res = await fetch("/store/siparisler/api/hiyerarsi");
-    const data = await res.json();
-    if (!res.ok) {
-      hata(data.hata ?? "Hiyerarşi yüklenemedi.", data.adim, data.detay);
-    } else {
+    try {
+      const res = await fetch("/store/siparisler/api/hiyerarsi");
+      const data = await res.json();
+      if (!res.ok) {
+        hataRef.current(data.hata ?? "Hiyerarşi yüklenemedi.", data.adim, data.detay);
+        return;
+      }
       setHiyerarsi(data.hiyerarsi ?? null);
+    } catch (err) {
+      hataRef.current("Hiyerarşi yüklenemedi.", "fetch", String(err));
+    } finally {
+      setYukleniyor(false);
     }
-    setYukleniyor(false);
-  };
+  }, []);
 
   useEffect(() => {
-    hiyerarsiYukle();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    void hiyerarsiYukle();
+  }, [hiyerarsiYukle]);
 
   return {
     hiyerarsi,

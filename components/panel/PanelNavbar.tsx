@@ -11,12 +11,25 @@ import { useState } from "react";
 
 const BORDO = "#bc2d0d";
 
+// Özet pill'i — gri zemin, siyah yazı, etiket üstte / değer altta.
+function OzetPill({ etiket, deger }: { etiket: string; deger: string }) {
+  return (
+    <div
+      className="flex flex-col items-center justify-center rounded-full leading-tight"
+      style={{ background: "rgba(0,0,0,0.04)", boxShadow: "inset 0 0 0 0.5px rgba(0,0,0,0.08)", padding: "5px 16px", fontFamily: "'Nunito', sans-serif" }}
+    >
+      <span style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>{etiket}</span>
+      <span style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>{deger}</span>
+    </div>
+  );
+}
+
 interface PanelNavbarProps {
   adSoyad?: string;
   email?: string;
   // Kişisel özet — yalnız UTT/KD_UTT (BM sonraya). Verilmezse özet pill'leri çizilmez.
   ozet?: { haftalikPuan: number; takimSirasi: number | null; siparisPuani: number } | null;
-  // Sipariş Puanı pill'i yalnız firmada mağaza (HBStore / E-Club Store) aktifse görünür.
+  // Sipariş Puanı pill'i yalnız kullanıcının firmasında HBStore aktifse görünür.
   siparisPuaniGoster?: boolean;
   onCikis: () => void;
   onHamburger?: () => void; // mobilde sol drawer'ı açar
@@ -50,17 +63,6 @@ export default function PanelNavbar({ adSoyad, email, ozet, siparisPuaniGoster, 
       fontFamily: "'Nunito', sans-serif",
     };
   };
-
-  // Özet pill'i — gri zemin, siyah yazı, etiket üstte / değer altta.
-  const OzetPill = ({ etiket, deger }: { etiket: string; deger: string }) => (
-    <div
-      className="flex flex-col items-center justify-center rounded-full leading-tight"
-      style={{ background: "rgba(0,0,0,0.04)", boxShadow: "inset 0 0 0 0.5px rgba(0,0,0,0.08)", padding: "5px 16px", fontFamily: "'Nunito', sans-serif" }}
-    >
-      <span style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>{etiket}</span>
-      <span style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>{deger}</span>
-    </div>
-  );
 
   const bashHarfler = adSoyad
     ? `${adSoyad.split(" ")[0]?.[0] ?? ""}${adSoyad.split(" ")[1]?.[0] ?? ""}`

@@ -110,8 +110,10 @@ export const PANEL_NAV: NavGrup[] = [
   {
     baslik: "HBStore",
     oglar: [
-      { etiket: "Mağaza",    path: "/store",            gate: (c) => c.storeAcik && STORE_ALABILEN_ROLLER.includes(c.rolKucu) },
-      { etiket: "Siparişler", path: "/store/siparisler", gate: (c) => c.storeAcik && STORE_GENEL_GOREN_ROLLER.includes(c.rolKucu) && c.rolKucu !== "bm" },
+      { etiket: "Mağazam",       path: "/store",                gate: (c) => c.storeAcik && STORE_ALABILEN_ROLLER.includes(c.rolKucu) },
+      { etiket: "Siparişlerim",  path: "/store/siparislerim",   gate: (c) => c.storeAcik && STORE_ALABILEN_ROLLER.includes(c.rolKucu) },
+      { etiket: "Adreslerim",    path: "/store/adreslerim",     gate: (c) => c.storeAcik && STORE_ALABILEN_ROLLER.includes(c.rolKucu) },
+      { etiket: "Ekip Sipariş Takibi", path: "/store/siparisler", gate: (c) => c.storeAcik && STORE_GENEL_GOREN_ROLLER.includes(c.rolKucu) },
     ],
   },
   {

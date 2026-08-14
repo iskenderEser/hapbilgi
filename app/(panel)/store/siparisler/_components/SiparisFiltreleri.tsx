@@ -29,32 +29,34 @@ interface SiparisFiltreleriProps {
 }
 
 const selectStyle: React.CSSProperties = {
-  padding: "6px 10px",
-  border: "0.5px solid #e5e7eb",
-  borderRadius: "6px",
+  width: "100%",
+  padding: "8px 10px",
+  border: "1px solid #dfe7f1",
+  borderRadius: "10px",
   fontSize: "12px",
   background: "white",
   color: "#374151",
   fontFamily: "'Nunito', sans-serif",
   cursor: "pointer",
-  minWidth: "140px",
+  minWidth: 0,
 };
 
 const inputStyle: React.CSSProperties = {
-  padding: "6px 10px",
-  border: "0.5px solid #e5e7eb",
-  borderRadius: "6px",
+  width: "100%",
+  padding: "8px 10px",
+  border: "1px solid #dfe7f1",
+  borderRadius: "10px",
   fontSize: "12px",
   background: "white",
   color: "#374151",
   fontFamily: "'Nunito', sans-serif",
-  minWidth: "140px",
+  minWidth: 0,
 };
 
 const labelStyle: React.CSSProperties = {
   fontSize: "10px",
   fontWeight: 600,
-  color: "#737373",
+  color: "#71859d",
   display: "block",
   marginBottom: "4px",
   fontFamily: "'Nunito', sans-serif",
@@ -119,22 +121,26 @@ export default function SiparisFiltreleri(p: SiparisFiltreleriProps) {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div
-      style={{
-        background: "#f9fafb",
-        border: "0.5px solid #e5e7eb",
-        borderRadius: "8px",
-        padding: "12px",
-        marginBottom: "16px",
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "12px",
-        alignItems: "flex-end",
-      }}
-    >
+    <section className="mb-4 rounded-2xl border border-[#dfe7f1] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-extrabold text-[#203653]">Filtreler</h2>
+          <p className="mt-0.5 text-[11px] font-medium text-[#8190a3]">Listeyi ekip, durum veya sipariş tarihine göre daraltın.</p>
+        </div>
+        {aktifFiltreVar && (
+          <button
+            onClick={p.filtreleriSifirla}
+            className="rounded-lg border border-[#dfe7f1] bg-white px-3 py-1.5 text-[11px] font-bold text-[#61748b] transition-colors hover:bg-[#f6f9fc]"
+          >
+            Filtreleri Temizle
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
       {/* FİRMA — sadece admin */}
       {rol === "admin" && (
-        <div>
+        <div className="min-w-0">
           <label style={labelStyle}>Firma</label>
           <select
             value={p.filtreler.firma_id}
@@ -153,7 +159,7 @@ export default function SiparisFiltreleri(p: SiparisFiltreleriProps) {
 
       {/* TAKIM — TM hariç (TM kendi takımında zaten), BM hariç (yalnız kullanıcı) */}
       {takimFiltresiGoren && (
-        <div>
+        <div className="min-w-0">
           <label style={labelStyle}>Takım</label>
           <select
             value={p.filtreler.takim_id}
@@ -173,7 +179,7 @@ export default function SiparisFiltreleri(p: SiparisFiltreleriProps) {
 
       {/* BÖLGE — BM hariç */}
       {rol !== "bm" && (
-        <div>
+        <div className="min-w-0">
           <label style={labelStyle}>Bölge</label>
           <select
             value={p.filtreler.bolge_id}
@@ -192,8 +198,8 @@ export default function SiparisFiltreleri(p: SiparisFiltreleriProps) {
       )}
 
       {/* KULLANICI */}
-      <div>
-        <label style={labelStyle}>Kullanıcı</label>
+      <div className="min-w-0">
+        <label style={labelStyle}>{rol === "bm" ? "UTT / KD_UTT" : "Kullanıcı"}</label>
         <select
           value={p.filtreler.kullanici_id}
           onChange={(e) => p.filtreDegistir("kullanici_id", e.target.value)}
@@ -210,7 +216,7 @@ export default function SiparisFiltreleri(p: SiparisFiltreleriProps) {
       </div>
 
       {/* DURUM */}
-      <div>
+      <div className="min-w-0">
         <label style={labelStyle}>Durum</label>
         <select
           value={p.filtreler.durum}
@@ -227,7 +233,7 @@ export default function SiparisFiltreleri(p: SiparisFiltreleriProps) {
       </div>
 
       {/* TARİH ARALIĞI */}
-      <div>
+      <div className="min-w-0">
         <label style={labelStyle}>Tarih başlangıç</label>
         <input
           type="date"
@@ -236,7 +242,7 @@ export default function SiparisFiltreleri(p: SiparisFiltreleriProps) {
           style={inputStyle}
         />
       </div>
-      <div>
+      <div className="min-w-0">
         <label style={labelStyle}>Tarih bitiş</label>
         <input
           type="date"
@@ -246,24 +252,7 @@ export default function SiparisFiltreleri(p: SiparisFiltreleriProps) {
         />
       </div>
 
-      {/* TEMİZLE */}
-      {aktifFiltreVar && (
-        <button
-          onClick={p.filtreleriSifirla}
-          style={{
-            padding: "6px 12px",
-            background: "white",
-            border: "0.5px solid #e5e7eb",
-            borderRadius: "6px",
-            fontSize: "11px",
-            color: "#737373",
-            cursor: "pointer",
-            fontFamily: "'Nunito', sans-serif",
-          }}
-        >
-          Filtreyi Temizle
-        </button>
-      )}
-    </div>
+      </div>
+    </section>
   );
 }

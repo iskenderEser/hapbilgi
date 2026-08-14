@@ -25,6 +25,7 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import { DURUM_ETIKETLERI, DURUM_RENKLERI, IPTAL_SURE_SAATI } from "@/lib/store/sabitler";
 import { kargoTakipUrl } from "@/lib/store/kargo";
 import type { SiparisGosterim, AdresSnapshot } from "@/lib/store/tipler";
+import { hbstoreBakiyesiDegistiBildir } from "@/lib/store/olay";
 
 const BORDO = "#bc2d0d";
 const GRI_METIN = "#737373";
@@ -108,6 +109,7 @@ export default function SiparislerimPage() {
         return;
       }
       basari("Sipariş iptal edildi. Puan iade edildi.");
+      hbstoreBakiyesiDegistiBildir();
       setIptalEdilecek(null);
       setIptalIslemi(false);
       await siparisleriYukle();

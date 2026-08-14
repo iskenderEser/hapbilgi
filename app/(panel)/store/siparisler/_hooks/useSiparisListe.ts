@@ -11,7 +11,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { Filtreler, SiparisSatiri } from "../_types";
 import { BOS_FILTRELER } from "../_types";
 
@@ -22,11 +22,14 @@ interface UseSiparisListeProps {
 }
 
 export function useSiparisListe({ hata }: UseSiparisListeProps) {
+  const hataRef = useRef(hata);
   const [filtreler, setFiltreler] = useState<Filtreler>(BOS_FILTRELER);
   const [siparisler, setSiparisler] = useState<SiparisSatiri[]>([]);
   const [toplam, setToplam] = useState(0);
   const [yukleniyor, setYukleniyor] = useState(false);
   const [dahaYukleniyor, setDahaYukleniyor] = useState(false);
+
+  useEffect(() => { hataRef.current = hata; }, [hata]);
 
   // ─── Query string oluştur ──────────────────────────────────────────────────
 
@@ -48,18 +51,22 @@ export function useSiparisListe({ hata }: UseSiparisListeProps) {
 
   const yukle = useCallback(async () => {
     setYukleniyor(true);
-    const qs = queryStringOlustur(0);
-    const res = await fetch(`/store/siparisler/api?${qs}`);
-    const data = await res.json();
-    if (!res.ok) {
-      hata(data.hata ?? "Siparişler yüklenemedi.", data.adim, data.detay);
+    try {
+      const qs = queryStringOlustur(0);
+      const res = await fetch(`/store/siparisler/api?${qs}`);
+      const data = await res.json();
+      if (!res.ok) {
+        hataRef.current(data.hata ?? "Siparişler yüklenemedi.", data.adim, data.detay);
+        return;
+      }
+      setSiparisler(data.siparisler ?? []);
+      setToplam(data.toplam ?? 0);
+    } catch (err) {
+      hataRef.current("Siparişler yüklenemedi.", "fetch", String(err));
+    } finally {
       setYukleniyor(false);
-      return;
     }
-    setSiparisler(data.siparisler ?? []);
-    setToplam(data.toplam ?? 0);
-    setYukleniyor(false);
-  }, [queryStringOlustur, hata]);
+  }, [queryStringOlustur]);
 
   // Filtre değişiminde otomatik yükleme
   useEffect(() => {
@@ -71,16 +78,20 @@ export function useSiparisListe({ hata }: UseSiparisListeProps) {
   const dahaFazlaYukle = async () => {
     if (dahaYukleniyor) return;
     setDahaYukleniyor(true);
-    const qs = queryStringOlustur(siparisler.length);
-    const res = await fetch(`/store/siparisler/api?${qs}`);
-    const data = await res.json();
-    if (!res.ok) {
-      hata(data.hata ?? "Daha fazla yüklenemedi.", data.adim, data.detay);
+    try {
+      const qs = queryStringOlustur(siparisler.length);
+      const res = await fetch(`/store/siparisler/api?${qs}`);
+      const data = await res.json();
+      if (!res.ok) {
+        hataRef.current(data.hata ?? "Daha fazla yüklenemedi.", data.adim, data.detay);
+        return;
+      }
+      setSiparisler((prev) => [...prev, ...(data.siparisler ?? [])]);
+    } catch (err) {
+      hataRef.current("Daha fazla sipariş yüklenemedi.", "fetch", String(err));
+    } finally {
       setDahaYukleniyor(false);
-      return;
     }
-    setSiparisler((prev) => [...prev, ...(data.siparisler ?? [])]);
-    setDahaYukleniyor(false);
   };
 
   // ─── Filtre değiştirici ────────────────────────────────────────────────────

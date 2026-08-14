@@ -14,7 +14,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
 import PanelNavbar from "@/components/panel/PanelNavbar";
@@ -22,6 +22,7 @@ import SolListe from "@/components/panel/SolListe";
 import MobilDrawer from "@/components/panel/MobilDrawer";
 import { PANEL_NAV, ECLUB_KISI_NAV, type NavContext } from "@/components/panel/panelNav.config";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
+import { HBSTORE_BAKIYE_DEGISTI } from "@/lib/store/olay";
 
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -46,31 +47,46 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     if (rolKucu === "admin") { router.replace("/admin"); return; }
   }, [kullanici, yukleniyor, rolKucu, router]);
 
-  // Firma aktiflik bayrakları — bir kez (mevcut Navbar useEffect'i).
-  useEffect(() => {
-    fetch("/profil/api")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.profil) {
-          setFlags({
-            storeAcik: data.profil.hbstore_aktif === true,
-            ccAcik: data.profil.cc_aktif === true,
-            eclubAcik: data.profil.eclub_aktif === true,
-            eclubStoreAcik: data.profil.eclub_store_aktif === true,
-            eczanemAcik: data.profil.eczanem_aktif === true,
-          });
-        }
-        // Navbar özeti — navbar_ozet yalnız UTT/KD_UTT payload'ında bulunur.
-        if (data.navbar_ozet) {
-          setOzet({
-            haftalikPuan: data.navbar_ozet.haftalik_puan ?? 0,
-            takimSirasi: data.navbar_ozet.takim_sirasi ?? null,
-            siparisPuani: data.navbar_ozet.siparis_puani ?? 0,
-          });
-        }
-      })
-      .catch(() => {});
+  const profilVeOzetiCek = useCallback(async () => {
+    try {
+      const res = await fetch("/profil/api", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.profil) {
+        setFlags({
+          storeAcik: data.profil.hbstore_aktif === true,
+          ccAcik: data.profil.cc_aktif === true,
+          eclubAcik: data.profil.eclub_aktif === true,
+          eclubStoreAcik: data.profil.eclub_store_aktif === true,
+          eczanemAcik: data.profil.eczanem_aktif === true,
+        });
+      }
+      if (data.navbar_ozet) {
+        setOzet({
+          haftalikPuan: data.navbar_ozet.haftalik_puan ?? 0,
+          takimSirasi: data.navbar_ozet.takim_sirasi ?? null,
+          siparisPuani: data.navbar_ozet.siparis_puani ?? 0,
+        });
+      }
+    } catch {}
   }, []);
+
+  // Firma bayrakları + Navbar özeti. Sipariş/iptal sonrası aynı oturumda bakiye
+  // yeniden okunur; sekmeye geri dönüldüğünde de eski değer ekranda kalmaz.
+  useEffect(() => {
+    const ilkYukleme = window.setTimeout(profilVeOzetiCek, 0);
+    const yenile = () => profilVeOzetiCek();
+    const gorunurluk = () => {
+      if (document.visibilityState === "visible") profilVeOzetiCek();
+    };
+    window.addEventListener(HBSTORE_BAKIYE_DEGISTI, yenile);
+    document.addEventListener("visibilitychange", gorunurluk);
+    return () => {
+      window.clearTimeout(ilkYukleme);
+      window.removeEventListener(HBSTORE_BAKIYE_DEGISTI, yenile);
+      document.removeEventListener("visibilitychange", gorunurluk);
+    };
+  }, [profilVeOzetiCek]);
 
   // Rozet çekimi (B) — bir kez burada; SolListe + MobilDrawer'a dağıtılır.
   useEffect(() => {
@@ -130,7 +146,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
 
   return (
     <div style={{ height: "100vh", background: "#f9fafb", fontFamily: "'Nunito', sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <PanelNavbar adSoyad={kullanici.adSoyad} email={kullanici.email} ozet={ozet} siparisPuaniGoster={flags.storeAcik || flags.eclubStoreAcik} onCikis={cikisYap} onHamburger={() => setDrawerAcik(true)} />
+      <PanelNavbar adSoyad={kullanici.adSoyad} email={kullanici.email} ozet={ozet} siparisPuaniGoster={flags.storeAcik} onCikis={cikisYap} onHamburger={() => setDrawerAcik(true)} />
 
       <MobilDrawer
         {...ctx}

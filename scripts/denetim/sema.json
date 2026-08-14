@@ -1,7 +1,7 @@
 {
-  "uretim_tarihi": "2026-08-14T10:10:40.815Z",
-  "tablo_sayisi": 94,
-  "rpc_sayisi": 67,
+  "uretim_tarihi": "2026-08-14T12:00:31.533Z",
+  "tablo_sayisi": 95,
+  "rpc_sayisi": 68,
   "tablolar": {
     "bildirimler": {
       "tur": "BASE TABLE",
@@ -2305,6 +2305,31 @@
         }
       }
     },
+    "store_urun_firma_ayarlari": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "urun_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "firma_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "aktif_mi": {
+          "tip": "boolean",
+          "nullable": false
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        },
+        "updated_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        }
+      }
+    },
     "store_urunler": {
       "tur": "BASE TABLE",
       "kolonlar": {
@@ -4175,6 +4200,10 @@
       "argumanlar": "p_kullanici_id uuid, p_urun_id uuid, p_adres_id uuid, p_adet integer",
       "donus": "TABLE(ok boolean, siparis_id uuid, hata text)"
     },
+    "store_siparis_olustur_cekirdek": {
+      "argumanlar": "p_kullanici_id uuid, p_urun_id uuid, p_adres_id uuid, p_adet integer",
+      "donus": "TABLE(ok boolean, siparis_id uuid, hata text)"
+    },
     "store_teslim_aldim": {
       "argumanlar": "p_siparis_id uuid, p_kullanici_id uuid",
       "donus": "TABLE(ok boolean, hata text)"
@@ -4842,6 +4871,18 @@
         "kaynak_kolon": "adres_id",
         "hedef_tablo": "store_adresler",
         "hedef_kolon": "adres_id"
+      },
+      {
+        "kaynak_kolon": "urun_id",
+        "hedef_tablo": "store_urunler",
+        "hedef_kolon": "urun_id"
+      }
+    ],
+    "store_urun_firma_ayarlari": [
+      {
+        "kaynak_kolon": "firma_id",
+        "hedef_tablo": "firmalar",
+        "hedef_kolon": "firma_id"
       },
       {
         "kaynak_kolon": "urun_id",

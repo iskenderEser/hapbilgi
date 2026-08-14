@@ -8,7 +8,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -19,15 +19,15 @@ import SiparisFiltreleri from "./_components/SiparisFiltreleri";
 import SiparisTablosu from "./_components/SiparisTablosu";
 
 const GRI_METIN = "#737373";
-const KOYU_METIN = "#111827";
 const GRI_ZEMIN = "#f9fafb";
 
 export default function SiparislerPage() {
   const router = useRouter();
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
-  const [yetkiKontrolEdildi, setYetkiKontrolEdildi] = useState(false);
 
   const { mesajlar, hata } = useHataMesaji();
+  const rolKucu = kullanici?.rol?.toLowerCase() ?? "";
+  const yetkili = Boolean(kullanici && STORE_GENEL_GOREN_ROLLER.includes(rolKucu));
 
   const { hiyerarsi, yukleniyor: hiyerarsiYukleniyor } = useHiyerarsi({ hata });
 
@@ -42,17 +42,15 @@ export default function SiparislerPage() {
       return;
     }
 
-    const rol = kullanici.rol.toLowerCase();
-    if (!STORE_GENEL_GOREN_ROLLER.includes(rol)) {
+    if (!STORE_GENEL_GOREN_ROLLER.includes(rolKucu)) {
       router.push("/ana-sayfa");
       return;
     }
 
-    setYetkiKontrolEdildi(true);
-  }, [kullanici, authYukleniyor, router]);
+  }, [kullanici, authYukleniyor, rolKucu, router]);
 
   // Loading — auth veya yetki hazır değilse bekle
-  if (authYukleniyor || !kullanici || !yetkiKontrolEdildi) {
+  if (authYukleniyor || !yetkili) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
@@ -83,14 +81,22 @@ export default function SiparislerPage() {
         ))}
       </div>
 
-      <div className="max-w-6xl mx-auto px-3 py-3 md:px-4 md:py-6">
-        {/* Başlık */}
-        <div className="mb-5">
-          <h1 className="text-xl font-bold" style={{ color: KOYU_METIN, margin: 0 }}>
-            Siparişler
-          </h1>
-          <div className="text-xs mt-1" style={{ color: GRI_METIN }}>
-            HBStore üzerinden verilen siparişlerin izlendiği panel.
+      <div className="mx-auto max-w-7xl px-3 py-4 md:px-6 md:py-6">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#71859d]">
+              HBStore
+            </div>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[#203653]">
+              Ekip Sipariş Takibi
+            </h1>
+            <p className="mt-1 text-xs font-medium text-[#8190a3]">
+              {rolKucu === "bm"
+                ? "Bölgenizdeki UTT ve KD_UTT siparişlerinin güncel durumu."
+                : rolKucu === "tm"
+                  ? "Takımınızdaki bölge ve saha siparişlerinin güncel durumu."
+                  : "Yetki kapsamınızdaki HBStore siparişlerinin güncel durumu."}
+            </p>
           </div>
         </div>
 

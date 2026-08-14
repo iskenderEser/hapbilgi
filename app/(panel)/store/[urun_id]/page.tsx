@@ -24,6 +24,7 @@ import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { STOK_AZ_ESIK } from "@/lib/store/sabitler";
 import type { Urun, Adres } from "@/lib/store/tipler";
+import { hbstoreBakiyesiDegistiBildir } from "@/lib/store/olay";
 
 interface UrunDetay extends Urun {
   kategori_adi: string | null;
@@ -162,6 +163,7 @@ export default function UrunDetayPage() {
       basari("Siparişin alındı!");
       setOnayModal(false);
       setSiparisVeriliyor(false);
+      hbstoreBakiyesiDegistiBildir();
       // Siparişlerim sayfasına yönlendir
       router.push("/store/siparislerim");
     } catch (err) {

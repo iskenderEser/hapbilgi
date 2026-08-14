@@ -9,14 +9,13 @@
 //
 // Yetki: STORE_ALABILEN_ROLLER (utt, kd_utt, bm)
 // Vitrin sadece alıcılar içindir; diğer roller /store/siparisler sayfasına yönlenir.
-// Firma erişim kontrolü (hbstore_aktif) proxy.ts HBStore bekçisinde merkezi
-// olarak yapılır — /store yolu kapalı firmada zaten 403 döner.
+// Firma modül erişimi proxy.ts bekçisine ek olarak burada da doğrulanır; ürün
+// listesi, kategori listesi ve detay firma bazlı ürün istisnasına uyar.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import {
   hataYaniti,
-  veriKontrol,
   sunucuHatasi,
   yetkiHatasi,
   rolHatasi,
@@ -24,6 +23,10 @@ import {
 } from "@/lib/utils/hataIsle";
 import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
 import { harcamaBakiyesi } from "@/lib/store/bakiye";
+import {
+  firmaKapaliUrunIdleri,
+  hbstoreFirmaBaglami,
+} from "@/lib/store/firmaUrun";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function GET(request: NextRequest) {
@@ -41,6 +44,17 @@ export async function GET(request: NextRequest) {
       return rolHatasi("HBStore'a erişim yetkiniz yok.");
     }
 
+    const firmaBaglami = await hbstoreFirmaBaglami(adminSupabase, user.id);
+    if (firmaBaglami.hata) {
+      return hataYaniti(
+        "Firma bilgisi alınamadı.",
+        "HBStore firma bağlamı",
+        firmaBaglami.hata,
+      );
+    }
+    if (!firmaBaglami.firmaId || !firmaBaglami.hbstoreAktif) {
+      return rolHatasi("Firmanız için HBStore kullanıma açık değil.");
+    }
 
     const { searchParams } = new URL(request.url);
     const tip = searchParams.get("tip") || "urunler";
@@ -65,12 +79,29 @@ export async function GET(request: NextRequest) {
         return hataYaniti("Ürünler çekilemedi.", "store_urunler SELECT", error);
       }
 
-      return NextResponse.json({ urunler: data ?? [] }, { status: 200 });
+      const urunler = data ?? [];
+      const { kapaliUrunIdleri, hata: ayarHatasi } = await firmaKapaliUrunIdleri(
+        adminSupabase,
+        firmaBaglami.firmaId,
+        urunler.map((urun) => urun.urun_id),
+      );
+      if (ayarHatasi) {
+        return hataYaniti(
+          "Firma ürün ayarları alınamadı.",
+          "store_urun_firma_ayarlari SELECT",
+          ayarHatasi,
+        );
+      }
+
+      return NextResponse.json(
+        { urunler: urunler.filter((urun) => !kapaliUrunIdleri.has(urun.urun_id)) },
+        { status: 200 },
+      );
     }
 
     // ─── tip=kategoriler ───────────────────────────────────────────────────
     if (tip === "kategoriler") {
-      const { data, error } = await adminSupabase
+      const { data: kategoriler, error } = await adminSupabase
         .from("store_kategoriler")
         .select("kategori_id, ad, sira, aktif_mi")
         .eq("aktif_mi", true)
@@ -80,7 +111,38 @@ export async function GET(request: NextRequest) {
         return hataYaniti("Kategoriler çekilemedi.", "store_kategoriler SELECT", error);
       }
 
-      return NextResponse.json({ kategoriler: data ?? [] }, { status: 200 });
+      const { data: aktifUrunler, error: urunError } = await adminSupabase
+        .from("store_urunler")
+        .select("urun_id, kategori_id")
+        .eq("aktif_mi", true);
+
+      if (urunError) {
+        return hataYaniti("Kategori ürünleri çekilemedi.", "store_urunler SELECT — kategori görünürlüğü", urunError);
+      }
+
+      const { kapaliUrunIdleri, hata: ayarHatasi } = await firmaKapaliUrunIdleri(
+        adminSupabase,
+        firmaBaglami.firmaId,
+        (aktifUrunler ?? []).map((urun) => urun.urun_id),
+      );
+      if (ayarHatasi) {
+        return hataYaniti(
+          "Firma ürün ayarları alınamadı.",
+          "store_urun_firma_ayarlari SELECT — kategori görünürlüğü",
+          ayarHatasi,
+        );
+      }
+
+      const gorunenKategoriIdleri = new Set(
+        (aktifUrunler ?? [])
+          .filter((urun) => !kapaliUrunIdleri.has(urun.urun_id))
+          .map((urun) => urun.kategori_id),
+      );
+
+      return NextResponse.json(
+        { kategoriler: (kategoriler ?? []).filter((kategori) => gorunenKategoriIdleri.has(kategori.kategori_id)) },
+        { status: 200 },
+      );
     }
 
     // ─── tip=bakiye ────────────────────────────────────────────────────────
@@ -100,16 +162,30 @@ export async function GET(request: NextRequest) {
         .from("store_urunler")
         .select("urun_id, kategori_id, ad, aciklama, gorsel_url, puan_fiyati, stok, aktif_mi, created_at")
         .eq("urun_id", urun_id)
-        .single();
+        .eq("aktif_mi", true)
+        .maybeSingle();
 
-      const kontrol = veriKontrol(
-        urun,
-        "store_urunler SELECT — urun_id kontrolü",
-        "Ürün bulunamadı."
-      );
-      if (!kontrol.gecerli) return kontrol.yanit;
       if (error) {
         return hataYaniti("Ürün çekilemedi.", "store_urunler SELECT", error);
+      }
+      if (!urun) {
+        return NextResponse.json({ hata: "Ürün bulunamadı." }, { status: 404 });
+      }
+
+      const { kapaliUrunIdleri, hata: ayarHatasi } = await firmaKapaliUrunIdleri(
+        adminSupabase,
+        firmaBaglami.firmaId,
+        [urun.urun_id],
+      );
+      if (ayarHatasi) {
+        return hataYaniti(
+          "Firma ürün ayarı alınamadı.",
+          "store_urun_firma_ayarlari SELECT — ürün detayı",
+          ayarHatasi,
+        );
+      }
+      if (kapaliUrunIdleri.has(urun.urun_id)) {
+        return NextResponse.json({ hata: "Ürün bulunamadı." }, { status: 404 });
       }
 
       // Kategori adını da getirelim
