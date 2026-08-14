@@ -1,15 +1,12 @@
 // app/eclub/oneriler/_types.ts
 
+import type { YayindakiVideo } from "@/lib/video/yayindakiVideolar";
+
 export type EclubHedefRol = "eczaci" | "eczane_teknisyeni";
 
 // Önerilebilir yayın (yayinlar GET).
-export interface OneriYayin {
-  yayin_id: string;
-  urun_adi: string | null;
-  teknik_adi: string | null;
+export interface OneriYayin extends Omit<YayindakiVideo, "hedef_rol"> {
   hedef_rol: EclubHedefRol;
-  video_url: string | null;
-  thumbnail_url: string | null;
 }
 
 // Öneri alıcısı adayı (kisiler GET'ten türetilir).
@@ -20,24 +17,15 @@ export interface OneriKisi {
   rol: EclubHedefRol;
   eczane_adi: string | null;
   aktif_mi: boolean;
+  auth_user_id: string | null;
 }
 
-// Öneri geçmişi satırı (oneriler GET).
-export interface OneriGecmis {
-  oneri_id: string;
-  yayin_id: string;
-  urun_adi: string;
-  teknik_adi: string;
-  hedef_rol: EclubHedefRol | null;
-  kisi_id: string;
-  kisi_ad: string;
-  kisi_soyad: string;
-  kisi_rol: EclubHedefRol | null;
-  eczane_adi: string;
-  oneri_baslangic: string;
-  oneri_bitis: string;
-  izlendi_mi: boolean;
-  created_at: string;
+export interface OneriLimitler {
+  aylik: {
+    kullanilan: number;
+    kota: number;
+    kalan: number;
+  };
 }
 
 // POST sonucu (atla-raporla).
@@ -58,8 +46,9 @@ export const ATLANMA_SEBEP_ETIKETLERI: Record<string, string> = {
   sahiplik_yok: "Bu kişi sizin eczanenize bağlı değil",
   pasif: "Kişi pasif durumda",
   rol_uyumsuz: "Kişinin rolü videonun hedefiyle uyuşmuyor",
-  tekrar: "Bu kişiye son 7 gün içinde zaten öneri gönderdiniz",
-  alici_limiti: "Kişinin haftalık öneri alma limiti dolu",
+  giris_hesabi_yok: "Kişinin giriş hesabı henüz hazır değil",
+  tekrar: "Bu kişi için belirlenen tekrar gönderim süresi henüz dolmadı",
+  alici_limiti: "Kişinin öneri alma limiti dolu",
   kredi_yok: "Aylık öneri krediniz yetmedi",
   kayit_hatasi: "Kayıt sırasında hata oluştu",
 };

@@ -1,102 +1,96 @@
-// app/eclub/ligi/api/export/route.ts
-//
-// E-Club Ligi Excel (.xlsx) dışa aktarım. Rol kapsamındaki TÜM takımların
-// kişi+ürün detay satırlarını tek sayfada düzleştirir.
-//   UTT/BM → kendi bölgesi; TM → firma. Eczacı/teknisyen erişemez.
-// Kapsam + periyot ana lig API'siyle aynı mantık.
-
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { ECLUB_LIGI_GOREN_ROLLER } from "@/lib/utils/roller";
-import { sunucuHatasi, yetkiHatasi, rolHatasi, hataYaniti } from "@/lib/utils/hataIsle";
-import { aktifPeriyot } from "@/lib/zaman/kontrol";
-import { ligUttToplamCagir, ligDetayCagir, type LigPeriyot, type Periyot } from "@/lib/eclub/ligRpcCagir";
 import * as XLSX from "xlsx";
+import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { eclubLiginiOlustur, type EclubRaporHamSatir } from "@/lib/eclub/rapor";
+import { eclubLigPeriyoduParse } from "@/lib/eclub/ligPeriyot";
+import { ECLUB_LIGI_GOREN_ROLLER } from "@/lib/utils/roller";
+import { ligPeriyoduAraligi } from "@/lib/zaman/kontrol";
+import { hataYaniti, rolHatasi, sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
 
-function periyotParse(sp: URLSearchParams): LigPeriyot {
-  const periyot = (sp.get("periyot") as Periyot) || "ay";
-  const { yil: bYil, ay: bAy, ceyrek: bCeyrek } = aktifPeriyot();
-  const yil = parseInt(sp.get("yil") || String(bYil), 10);
-  const ay = parseInt(sp.get("ay") || String(bAy), 10);
-  const ceyrek = parseInt(sp.get("ceyrek") || String(bCeyrek), 10);
-  return { periyot, yil, ay, ceyrek };
-}
+const rolEtiketi = (rol: string) => (
+  rol === "eczaci" ? "Eczacı" : rol === "eczane_teknisyeni" ? "Eczane Teknisyeni" : rol
+);
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
+    const adminSupabase = createAdminClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const adminSupabase = createAdminClient();
-
-    const { data: ben, error: benError } = await adminSupabase
+    const { data: kullanici, error: kullaniciError } = await adminSupabase
       .from("kullanicilar")
-      .select("kullanici_id, rol, firma_id, bolge_id")
+      .select("rol")
       .eq("kullanici_id", user.id)
       .single();
-    if (benError || !ben) return hataYaniti("Kullanıcı bulunamadı.", "kullanicilar SELECT", benError, 404);
+    if (kullaniciError || !kullanici) {
+      return hataYaniti("Kullanıcı bulunamadı.", "kullanicilar SELECT — E-Club Ligi dışa aktarım", kullaniciError, 404);
+    }
+    if (!ECLUB_LIGI_GOREN_ROLLER.includes((kullanici.rol ?? "").toLowerCase())) {
+      return rolHatasi("E-Club Ligi'ni yalnız UTT/KD_UTT dışa aktarabilir.");
+    }
 
-    const rol = (ben.rol ?? "").toLowerCase();
-    if (!ECLUB_LIGI_GOREN_ROLLER.includes(rol)) return rolHatasi("E-Club Ligi'ni görme yetkiniz yok.");
+    const periyot = eclubLigPeriyoduParse(request.nextUrl.searchParams);
+    if (!periyot) {
+      return validasyonHatasi("Geçersiz lig periyodu.", ["periyot", "yil", "ay", "ceyrek", "hafta"]);
+    }
+    const aralik = ligPeriyoduAraligi(periyot);
+    const haricBitis = new Date(new Date(aralik.bitis).getTime() + 1).toISOString();
+    const { data, error } = await adminSupabase.rpc("get_eclub_utt_rapor", {
+      p_utt_id: user.id,
+      p_baslangic: aralik.baslangic,
+      p_bitis: haricBitis,
+    });
+    if (error) return hataYaniti("E-Club Ligi verisi alınamadı.", "get_eclub_utt_rapor RPC — Excel", error);
 
-    const { searchParams } = new URL(request.url);
-    const p = periyotParse(searchParams);
-
-    // Kapsamdaki UTT'ler
-    const tumToplam = await ligUttToplamCagir(adminSupabase, p);
-    const kapsamdaki = tumToplam.filter((t) =>
-      rol === "tm" ? t.firma_id === ben.firma_id : t.bolge_id === ben.bolge_id
-    );
-
-    // Her UTT'nin detay satırlarını topla + takım (UTT adı) etiketiyle düzleştir
-    const aoa: (string | number)[][] = [[
-      "Takım (UTT)", "GLN", "Eczane", "Eczacı", "Teknisyen", "Ürün",
-      "İzleme P.", "Cevap P.", "İzlenen Video", "Doğru Cevap",
+    const lig = eclubLiginiOlustur((data ?? []) as EclubRaporHamSatir[]);
+    const siralama: (string | number)[][] = [[
+      "Sıra", "Ad Soyad", "Rol", "Eczane", "GLN", "Gönderilen", "Tamamlanan",
+      "Doğru", "Yanlış", "İzleme Puanı", "Cevaplama Puanı", "Toplam Puan",
+    ]];
+    const detay: (string | number)[][] = [[
+      "Sıra", "Ad Soyad", "Eczane", "Ürün / İçerik", "Gönderilen", "Tamamlanan",
+      "Doğru", "Yanlış", "İzleme Puanı", "Cevaplama Puanı", "Toplam Puan",
     ]];
 
-    for (const u of kapsamdaki) {
-      const detay = await ligDetayCagir(adminSupabase, u.utt_id, p);
-      const takimAdi = `${u.ad} ${u.soyad}`;
-      for (const d of detay) {
-        aoa.push([
-          takimAdi,
-          d.gln ?? "",
-          d.eczane_adi ?? "",
-          d.eczaci_ad ?? "",
-          d.teknisyen_ad ?? "",
-          d.urun_adi ?? "",
-          d.izleme_puani,
-          d.cevaplama_puani,
-          d.izlenen_video,
-          d.dogru_cevap,
+    for (const kisi of lig) {
+      siralama.push([
+        kisi.sira || "", `${kisi.ad} ${kisi.soyad}`.trim(), rolEtiketi(kisi.rol), kisi.eczane_adi,
+        kisi.gln ?? "", kisi.gonderilen_sayisi, kisi.tamamlanan_izleme, kisi.dogru_cevap,
+        kisi.yanlis_cevap, kisi.izleme_puani, kisi.cevaplama_puani, kisi.toplam_puan,
+      ]);
+      for (const icerik of kisi.icerikler) {
+        detay.push([
+          kisi.sira || "", `${kisi.ad} ${kisi.soyad}`.trim(), kisi.eczane_adi, icerik.icerik_adi,
+          icerik.gonderilen_sayisi, icerik.tamamlanan_izleme, icerik.dogru_cevap,
+          icerik.yanlis_cevap, icerik.izleme_puani, icerik.cevaplama_puani, icerik.toplam_puan,
         ]);
       }
     }
 
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws["!cols"] = [
-      { wch: 22 }, { wch: 16 }, { wch: 24 }, { wch: 20 }, { wch: 20 },
-      { wch: 18 }, { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 12 },
+    const workbook = XLSX.utils.book_new();
+    const siralamaSheet = XLSX.utils.aoa_to_sheet(siralama);
+    const detaySheet = XLSX.utils.aoa_to_sheet(detay);
+    siralamaSheet["!cols"] = [
+      { wch: 7 }, { wch: 24 }, { wch: 22 }, { wch: 28 }, { wch: 16 },
+      { wch: 12 }, { wch: 12 }, { wch: 9 }, { wch: 9 }, { wch: 14 }, { wch: 17 }, { wch: 13 },
     ];
-    XLSX.utils.book_append_sheet(wb, ws, "E-Club Ligi");
-
-    const buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
-
-    const periyotEtiket = p.periyot === "ay" ? `${p.yil}-${String(p.ay).padStart(2, "0")}`
-      : p.periyot === "donem" ? `${p.yil}-C${p.ceyrek}` : `${p.yil}`;
-    const dosyaAdi = `eclub_ligi_${periyotEtiket}.xlsx`;
+    detaySheet["!cols"] = [
+      { wch: 7 }, { wch: 24 }, { wch: 28 }, { wch: 28 }, { wch: 12 },
+      { wch: 12 }, { wch: 9 }, { wch: 9 }, { wch: 14 }, { wch: 17 }, { wch: 13 },
+    ];
+    XLSX.utils.book_append_sheet(workbook, siralamaSheet, "Takım Sıralaması");
+    XLSX.utils.book_append_sheet(workbook, detaySheet, "İçerik Detayı");
+    const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
 
     return new NextResponse(buffer, {
       status: 200,
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename="${dosyaAdi}"`,
+        "Content-Disposition": `attachment; filename="eclub_ligi_${periyot.yil}.xlsx"`,
       },
     });
-
-  } catch (err) {
-    return sunucuHatasi(err, "GET /eclub/ligi/api/export");
+  } catch (error) {
+    return sunucuHatasi(error, "GET /eclub/ligi/api/export");
   }
 }

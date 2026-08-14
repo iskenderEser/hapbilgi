@@ -53,8 +53,8 @@ export interface GlnSorguSonuc {
 }
 
 // Yeni kişi formu (eczane bloğundaki "kişi ekle" ile açılır). POST /kisiler gövdesi.
-// sifre: geçici auth için — yeni kişide zorunlu (test: UTT belirler), mevcut kişide
-// (havuzda zaten varsa) gönderilse de backend kullanmaz.
+// sifre: geçici auth için — yeni kişide ve Auth bağı eksik havuz kişisinde
+// zorunlu; giriş hesabı hazır havuz kişisinde backend kullanmaz.
 export interface YeniKisiForm {
   rol: EclubKisiRol | "";
   ad: string;

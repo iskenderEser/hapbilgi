@@ -1,8 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { ADMIN_ROLLER, ECLUB_TUKETICI_ROLLERI, MUSTERI_ROLU, TUKETICI_ROLLER, YAYINDAKI_VIDEO_GORENLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { eclubKisiErisimi } from "@/lib/eclub/kisiErisim";
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -30,6 +31,12 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
+  let eclubKisiErisimPromise: ReturnType<typeof eclubKisiErisimi> | null = null;
+  const eclubKisiErisimOku = (istemci: SupabaseClient) => {
+    if (!user) throw new Error("E-Club kişi erişimi için oturum gerekir.");
+    if (!eclubKisiErisimPromise) eclubKisiErisimPromise = eclubKisiErisimi(istemci, user.id);
+    return eclubKisiErisimPromise;
+  };
 
   // --- Admin API bekçisi ---------------------------------------------------
   // /admin/api/* (giris hariç) yalnızca rolü admin olan kullanıcıya açıktır.
@@ -228,12 +235,12 @@ export async function proxy(request: NextRequest) {
   // -------------------------------------------------------------------------
 
   // --- E-Club Store firma bekçisi ------------------------------------------
-  // /eclub/store/* (sayfa + API) yalnızca firması E-Club Store açık
+  // /eclub/store/* ve UTT ekip sipariş görünümü yalnızca firması E-Club Store açık
   // (firmalar.eclub_store_aktif = true) olan kullanıcıya açıktır. Bu bekçi
   // /eclub bekçisinden ÖNCE gelir çünkü /eclub/store aynı zamanda /eclub ile
   // başlar; store kapalı ama E-Club açık firmada yalnızca store engellenir.
   // (E-Club de kapalıysa /eclub bekçisi zaten aşağıda tüm /eclub'ı keser.)
-  if (pathname.startsWith("/eclub/store")) {
+  if (pathname.startsWith("/eclub/store") || pathname.startsWith("/eclub/siparisler")) {
     const storeApiYolu = pathname.includes("/api/") || pathname.endsWith("/api");
 
     if (!user) {
@@ -247,11 +254,16 @@ export async function proxy(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
-    const { data: esKullanici } = await esSupabase
+    const { data: esKullanici, error: esKullaniciError } = await esSupabase
       .from("kullanicilar")
       .select("firma_id")
       .eq("kullanici_id", user.id)
-      .single();
+      .maybeSingle();
+
+    if (esKullaniciError) {
+      if (storeApiYolu) return NextResponse.json({ error: "E-Club Store erişimi doğrulanamadı." }, { status: 500 });
+      return NextResponse.redirect(new URL("/profil", request.url));
+    }
 
     if (esKullanici?.firma_id) {
       const { data: esFirma } = await esSupabase
@@ -269,8 +281,22 @@ export async function proxy(request: NextRequest) {
         }
         return NextResponse.redirect(new URL("/ana-sayfa", request.url));
       }
+    } else {
+      // E-Club kişisinde firma doğrudan kimlikte değil; aktif eczane bağından çözülür.
+      try {
+        const kisiErisim = await eclubKisiErisimOku(esSupabase);
+        if (!kisiErisim.kisi || !kisiErisim.eclub_store_aktif) {
+          if (storeApiYolu) {
+            return NextResponse.json({ error: "E-Club Store bağlı olduğunuz firmalar için kapalıdır." }, { status: 403 });
+          }
+          return NextResponse.redirect(new URL(kisiErisim.eclub_aktif ? "/eclub/panel" : "/profil", request.url));
+        }
+      } catch {
+        if (storeApiYolu) return NextResponse.json({ error: "E-Club Store erişimi doğrulanamadı." }, { status: 500 });
+        return NextResponse.redirect(new URL("/profil", request.url));
+      }
     }
-    // eclub_store_aktif = true veya firma yok → geç (akış /eclub bekçisine sürer)
+    // İç kullanıcı firma kapısı veya dış müşteri çok-firmalı kapısı açık → devam.
   }
   // -------------------------------------------------------------------------
 
@@ -297,11 +323,16 @@ export async function proxy(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
-    const { data: eclubKullanici } = await eclubSupabase
+    const { data: eclubKullanici, error: eclubKullaniciError } = await eclubSupabase
       .from("kullanicilar")
       .select("firma_id")
       .eq("kullanici_id", user.id)
-      .single();
+      .maybeSingle();
+
+    if (eclubKullaniciError) {
+      if (eclubApiYolu) return NextResponse.json({ error: "E-Club erişimi doğrulanamadı." }, { status: 500 });
+      return NextResponse.redirect(new URL("/profil", request.url));
+    }
 
     if (eclubKullanici?.firma_id) {
       const { data: eclubFirma } = await eclubSupabase
@@ -319,8 +350,21 @@ export async function proxy(request: NextRequest) {
         }
         return NextResponse.redirect(new URL("/ana-sayfa", request.url));
       }
+    } else {
+      try {
+        const kisiErisim = await eclubKisiErisimOku(eclubSupabase);
+        if (!kisiErisim.kisi || !kisiErisim.eclub_aktif) {
+          if (eclubApiYolu) {
+            return NextResponse.json({ error: "E-Club bağlı olduğunuz firmalar için kapalıdır." }, { status: 403 });
+          }
+          return NextResponse.redirect(new URL("/profil", request.url));
+        }
+      } catch {
+        if (eclubApiYolu) return NextResponse.json({ error: "E-Club erişimi doğrulanamadı." }, { status: 500 });
+        return NextResponse.redirect(new URL("/profil", request.url));
+      }
     }
-    // eclub_aktif = true veya firma yok → geç
+    // İç kullanıcı firma kapısı veya dış müşteri çok-firmalı kapısı açık → geç.
   }
   // -------------------------------------------------------------------------
 

@@ -1,9 +1,10 @@
 // app/eclub/oneriler/api/yayinlar/route.ts
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
+import { sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { ECLUB_HEDEF_ROLLER, TUKETICI_ROLLER } from "@/lib/utils/roller";
+import { getYayindakiVideolar } from "@/lib/video/yayindakiVideolar";
 
 export async function GET() {
   try {
@@ -16,16 +17,14 @@ export async function GET() {
     const rol = await rolCozucu(adminSupabase, user.id);
     if (!TUKETICI_ROLLER.includes(rol)) return rolHatasi("Bu sayfaya yalnız UTT/KD_UTT erişebilir.");
 
-    const { data: yayinlar, error: yayinError } = await adminSupabase
-      .from("v_yayin_detay")
-      .select("yayin_id, urun_adi, teknik_adi, hedef_rol, video_url, thumbnail_url")
-      .eq("durum", "yayinda")
-      .in("hedef_rol", ECLUB_HEDEF_ROLLER)
-      .order("yayin_tarihi", { ascending: false });
+    // BM'nin Yayındaki Videolar ekranıyla aynı katalog sözleşmesi kullanılır;
+    // E-Club yalnız dış müşteri hedefli yayınları gösterir.
+    const yayinlar = await getYayindakiVideolar(user.id, rol, adminSupabase);
+    const eclubYayinlari = yayinlar.filter((yayin) =>
+      (ECLUB_HEDEF_ROLLER as readonly string[]).includes(yayin.hedef_rol)
+    );
 
-    if (yayinError) return hataYaniti("Yayınlar çekilemedi.", "v_yayin_detay view SELECT — eclub hedef_rol filtresi", yayinError);
-
-    return NextResponse.json({ videolar: yayinlar ?? [] }, { status: 200 });
+    return NextResponse.json({ videolar: eclubYayinlari }, { status: 200 });
 
   } catch (err) {
     return sunucuHatasi(err, "GET /eclub/oneriler/api/yayinlar");

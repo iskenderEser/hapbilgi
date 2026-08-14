@@ -39,6 +39,16 @@ interface UttKontrolBasari { firma_id: string; }
 interface UttKontrolHata { hata: NextResponse; }
 type UttKontrolSonuc = UttKontrolBasari | UttKontrolHata;
 
+interface EclubKisiKimlik {
+  kisi_id: string;
+  rol: string;
+  ad: string;
+  soyad: string;
+  eposta: string;
+  telefon: string;
+  auth_user_id: string | null;
+}
+
 async function uttKontrol(adminSupabase: SupabaseClient, userId: string): Promise<UttKontrolSonuc> {
   const { data: kullanici, error } = await adminSupabase
     .from("kullanicilar")
@@ -182,11 +192,13 @@ export async function POST(request: NextRequest) {
 
     // Eczacı ise: bu eczanede zaten aktif eczacı var mı? (tek eczacı kuralı)
     if (rolTemiz === "eczaci") {
-      const { data: mevcutBaglar } = await adminSupabase
+      const { data: mevcutBaglar, error: mevcutBaglarError } = await adminSupabase
         .from("eclub_kisi_eczane")
         .select("kisi_id, eclub_kisiler ( rol )")
         .eq("eczane_id", eczane_id)
         .eq("aktif_mi", true);
+      if (mevcutBaglarError)
+        return hataYaniti("Eczanedeki kişiler sorgulanamadı.", "eclub_kisi_eczane SELECT — eczacı kontrolü", mevcutBaglarError);
       const eczaciVar = (mevcutBaglar ?? []).some((b) => {
         const kRaw = (b as { eclub_kisiler?: { rol: string } | { rol: string }[] }).eclub_kisiler;
         const kk = Array.isArray(kRaw) ? kRaw[0] : kRaw;
@@ -195,27 +207,54 @@ export async function POST(request: NextRequest) {
       if (eczaciVar) return validasyonHatasi("Bu eczanede zaten aktif bir eczacı kayıtlı.", ["rol"]);
     }
 
-    // Kişi havuzda var mı (eposta veya telefon)?
-    const { data: mevcutKisi } = await adminSupabase
-      .from("eclub_kisiler")
-      .select("kisi_id, rol")
-      .or(`eposta.eq.${epostaTemiz},telefon.eq.${telefonTemiz}`)
-      .maybeSingle();
+    // E-posta ve telefon ayrı aranır: iki alan farklı kişilere aitse kimlikler
+    // sessizce birleştirilmez. Ayrıca dinamik `.or(...)` filtresine kullanıcı
+    // girdisi taşınmamış olur.
+    const [epostaSonucu, telefonSonucu] = await Promise.all([
+      adminSupabase
+        .from("eclub_kisiler")
+        .select("kisi_id, rol, ad, soyad, eposta, telefon, auth_user_id")
+        .eq("eposta", epostaTemiz)
+        .maybeSingle(),
+      adminSupabase
+        .from("eclub_kisiler")
+        .select("kisi_id, rol, ad, soyad, eposta, telefon, auth_user_id")
+        .eq("telefon", telefonTemiz)
+        .maybeSingle(),
+    ]);
+
+    if (epostaSonucu.error)
+      return hataYaniti("Kişi e-posta bilgisi sorgulanamadı.", "eclub_kisiler SELECT — eposta", epostaSonucu.error);
+    if (telefonSonucu.error)
+      return hataYaniti("Kişi telefon bilgisi sorgulanamadı.", "eclub_kisiler SELECT — telefon", telefonSonucu.error);
+
+    const epostaKisi = epostaSonucu.data as EclubKisiKimlik | null;
+    const telefonKisi = telefonSonucu.data as EclubKisiKimlik | null;
+    if (epostaKisi && telefonKisi && epostaKisi.kisi_id !== telefonKisi.kisi_id) {
+      return validasyonHatasi(
+        "Girilen e-posta ve telefon farklı kişilere kayıtlı. Bilgileri kontrol ediniz.",
+        ["eposta", "telefon"]
+      );
+    }
+    const mevcutKisi = epostaKisi ?? telefonKisi;
 
     let kisi_id: string;
 
     if (mevcutKisi) {
-      // Havuzda var → kimlik yaratma. Rol uyumu kontrolü.
+      // Havuzda var → rol uyumu ve tek aktif GLN kontrolü.
       if (mevcutKisi.rol !== rolTemiz)
         return validasyonHatasi(`Bu kişi sistemde farklı bir rolle (${mevcutKisi.rol}) kayıtlı.`, ["rol"]);
 
       // Tek aktif GLN kuralı: başka eczanede aktif bağı var mı?
-      const { data: aktifBag } = await adminSupabase
+      const { data: aktifBag, error: aktifBagError } = await adminSupabase
         .from("eclub_kisi_eczane")
         .select("eczane_id, eclub_eczaneler ( eclub_eczane_master ( eczane_adi ) )")
         .eq("kisi_id", mevcutKisi.kisi_id)
         .eq("aktif_mi", true)
         .maybeSingle();
+
+      if (aktifBagError)
+        return hataYaniti("Kişinin aktif eczane bağı sorgulanamadı.", "eclub_kisi_eczane SELECT — aktif bağ", aktifBagError);
 
       if (aktifBag) {
         if (aktifBag.eczane_id === eczane_id)
@@ -235,9 +274,98 @@ export async function POST(request: NextRequest) {
       }
 
       kisi_id = mevcutKisi.kisi_id;
+
+      // Eski/yarım kalmış kayıtta Auth bağı yoksa kişi eczaneye bağlanmadan
+      // önce gerçek giriş hesabı oluşturulur. Havuzdaki kanonik kimlik bilgileri
+      // korunur; form verisiyle sessiz kimlik değişikliği yapılmaz.
+      let olusturulanAuthUserId: string | null = null;
+      if (!mevcutKisi.auth_user_id) {
+        if (!sifre || typeof sifre !== "string" || sifre.length < 6)
+          return validasyonHatasi("Giriş hesabı olmayan kişi için en az 6 karakter şifre zorunludur.", ["sifre"]);
+
+        const { data: authData, error: authInsertError } = await adminSupabase.auth.admin.createUser({
+          email: mevcutKisi.eposta,
+          password: sifre,
+          user_metadata: {
+            rol: mevcutKisi.rol,
+            ad: mevcutKisi.ad,
+            soyad: mevcutKisi.soyad,
+            eclub_kisi: true,
+          },
+          email_confirm: true,
+        });
+
+        if (authInsertError || !authData.user) {
+          const benzersiz = benzersizlikHatasi(authInsertError);
+          if (benzersiz) return validasyonHatasi(benzersiz.mesaj, [benzersiz.alan]);
+          return hataYaniti("Kişi giriş hesabı oluşturulamadı.", "auth.admin.createUser — mevcut eclub kişi", authInsertError);
+        }
+
+        olusturulanAuthUserId = authData.user.id;
+        const { data: baglananKisi, error: authBagError } = await adminSupabase
+          .from("eclub_kisiler")
+          .update({ auth_user_id: olusturulanAuthUserId })
+          .eq("kisi_id", mevcutKisi.kisi_id)
+          .is("auth_user_id", null)
+          .select("kisi_id")
+          .maybeSingle();
+
+        if (authBagError || !baglananKisi) {
+          await adminSupabase.auth.admin.deleteUser(olusturulanAuthUserId);
+          return hataYaniti(
+            "Kişi giriş hesabı kimliğe bağlanamadı.",
+            "eclub_kisiler UPDATE — auth_user_id",
+            authBagError ?? new Error("Kişinin Auth bağı eşzamanlı olarak değişti.")
+          );
+        }
+      }
+
+      // Mevcut kişi için yeni eczane bağı oluştur.
+      const { error: bagError } = await adminSupabase
+        .from("eclub_kisi_eczane")
+        .insert({ kisi_id, eczane_id, aktif_mi: true });
+
+      if (bagError) {
+        if (olusturulanAuthUserId) {
+          // Bağ kurulamadıysa bu istekte yaratılan Auth bağını da geri al.
+          const { error: kimlikGeriAlmaError } = await adminSupabase
+            .from("eclub_kisiler")
+            .update({ auth_user_id: null })
+            .eq("kisi_id", kisi_id)
+            .eq("auth_user_id", olusturulanAuthUserId);
+
+          if (kimlikGeriAlmaError) {
+            return hataYaniti(
+              "Kişi eczaneye bağlanamadı ve giriş hesabı bağlantısı geri alınamadı; yönetici kontrolü gerekir.",
+              "eclub_kisi_eczane INSERT + eclub_kisiler geri alma",
+              kimlikGeriAlmaError
+            );
+          }
+
+          const { error: authGeriAlmaError } = await adminSupabase.auth.admin.deleteUser(olusturulanAuthUserId);
+          if (authGeriAlmaError) {
+            // Auth silinemediyse kimliği yeniden bağlayarak iki kaynağın ayrışmasını önle.
+            const { error: yenidenBaglamaError } = await adminSupabase
+              .from("eclub_kisiler")
+              .update({ auth_user_id: olusturulanAuthUserId })
+              .eq("kisi_id", kisi_id)
+              .is("auth_user_id", null);
+            return hataYaniti(
+              yenidenBaglamaError
+                ? "Kişi eczaneye bağlanamadı ve giriş hesabı geri alınamadı; yönetici kontrolü gerekir."
+                : "Kişi eczaneye bağlanamadı; giriş hesabı korunarak işlem durduruldu.",
+              "eclub_kisi_eczane INSERT + auth geri alma",
+              yenidenBaglamaError ?? authGeriAlmaError
+            );
+          }
+        }
+        return hataYaniti("Kişi eczaneye bağlanamadı.", "eclub_kisi_eczane INSERT", bagError);
+      }
+
+      return NextResponse.json({ mesaj: "Kişi başarıyla eklendi.", kisi_id }, { status: 201 });
     } else {
       // Havuzda yok → yeni kimlik. Önce Supabase auth hesabı, sonra eclub_kisiler.
-      // Şifre yalnızca yeni kişi için zorunlu (mevcut kişide auth zaten var).
+      // Şifre yeni kişi ve Auth hesabı eksik eski kişi için zorunludur.
       if (!sifre || typeof sifre !== "string" || sifre.length < 6)
         return validasyonHatasi("Yeni kişi için en az 6 karakter şifre zorunludur.", ["sifre"]);
 
@@ -285,15 +413,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ mesaj: "Kişi başarıyla eklendi.", kisi_id }, { status: 201 });
     }
 
-    // Mevcut kişi (havuzda vardı) → sadece yeni eczane bağı oluştur.
-    const { error: bagError } = await adminSupabase
-      .from("eclub_kisi_eczane")
-      .insert({ kisi_id, eczane_id, aktif_mi: true });
-
-    if (bagError) return hataYaniti("Kişi eczaneye bağlanamadı.", "eclub_kisi_eczane INSERT", bagError);
-
-    return NextResponse.json({ mesaj: "Kişi başarıyla eklendi.", kisi_id }, { status: 201 });
-
   } catch (err) {
     return sunucuHatasi(err, "POST /eclub/listem/api/kisiler");
   }
@@ -319,20 +438,23 @@ export async function PUT(request: NextRequest) {
     if (!(await uttEczaneSahipMi(adminSupabase, user.id, eczane_id)))
       return rolHatasi("Bu eczane listenizde değil, işlem yapamazsınız.");
 
+    // Kişi üzerinde işlem yapabilmek için kişinin de seçilen eczanede aktif
+    // olması gerekir; yalnız eczane sahipliği başka bir kişinin id'sini
+    // güncelleme yetkisi vermez.
+    const { data: bag, error: bagError } = await adminSupabase
+      .from("eclub_kisi_eczane")
+      .select("id")
+      .eq("kisi_id", kisi_id)
+      .eq("eczane_id", eczane_id)
+      .eq("aktif_mi", true)
+      .maybeSingle();
+
+    if (bagError) return hataYaniti("Kişi bağı sorgulanamadı.", "eclub_kisi_eczane SELECT — bağ kontrolü", bagError);
+    const bagKontrol = veriKontrol(bag, "eclub_kisi_eczane SELECT — bağ kontrolü", "Aktif bağ bulunamadı.");
+    if (!bagKontrol.gecerli) return bagKontrol.yanit;
+
     // ─── PASİFE AL (bağ soft delete) ───────────────────────────────────
     if (islem === "pasife_al") {
-      const { data: bag, error: bagError } = await adminSupabase
-        .from("eclub_kisi_eczane")
-        .select("id")
-        .eq("kisi_id", kisi_id)
-        .eq("eczane_id", eczane_id)
-        .eq("aktif_mi", true)
-        .maybeSingle();
-
-      const bagKontrol = veriKontrol(bag, "eclub_kisi_eczane SELECT — bağ kontrolü", "Aktif bağ bulunamadı.");
-      if (!bagKontrol.gecerli) return bagKontrol.yanit;
-      if (bagError) return hataYaniti("Bağ sorgulanamadı.", "eclub_kisi_eczane SELECT", bagError, 404);
-
       const { error: updateError } = await adminSupabase
         .from("eclub_kisi_eczane")
         .update({ aktif_mi: false, bitis_tarihi: new Date().toISOString() })
@@ -343,6 +465,22 @@ export async function PUT(request: NextRequest) {
     }
 
     // ─── BİLGİ GÜNCELLE (kimlik) ────────────────────────────────────────
+    const { data: mevcutKisi, error: mevcutKisiError } = await adminSupabase
+      .from("eclub_kisiler")
+      .select("kisi_id, rol, ad, soyad, eposta, telefon, auth_user_id")
+      .eq("kisi_id", kisi_id)
+      .maybeSingle();
+
+    if (mevcutKisiError)
+      return hataYaniti("Kişi bilgisi sorgulanamadı.", "eclub_kisiler SELECT — güncelleme öncesi", mevcutKisiError);
+    const kisiKontrol = veriKontrol(
+      mevcutKisi as EclubKisiKimlik | null,
+      "eclub_kisiler SELECT — güncelleme öncesi",
+      "Kişi bulunamadı."
+    );
+    if (!kisiKontrol.gecerli) return kisiKontrol.yanit;
+    const eskiKisi = kisiKontrol.veri;
+
     const guncellenecek: Record<string, unknown> = {};
     if (ad !== undefined) {
       if (typeof ad !== "string" || ad.trim().length === 0) return validasyonHatasi("Ad zorunludur.", ["ad"]);
@@ -371,15 +509,73 @@ export async function PUT(request: NextRequest) {
     if (Object.keys(guncellenecek).length === 0)
       return validasyonHatasi("Güncellenecek alan zorunludur.", ["ad", "soyad", "eposta", "telefon", "islem"]);
 
-    const { error: updateError } = await adminSupabase
+    const epostaDegisti = typeof guncellenecek.eposta === "string"
+      && guncellenecek.eposta !== eskiKisi.eposta.toLowerCase();
+    const adDegisti = typeof guncellenecek.ad === "string" && guncellenecek.ad !== eskiKisi.ad;
+    const soyadDegisti = typeof guncellenecek.soyad === "string" && guncellenecek.soyad !== eskiKisi.soyad;
+    const authDegisecek = !!eskiKisi.auth_user_id && (epostaDegisti || adDegisti || soyadDegisti);
+
+    let eskiAuthEposta: string | undefined;
+    let eskiAuthMetadata: Record<string, unknown> | undefined;
+    if (authDegisecek && eskiKisi.auth_user_id) {
+      const { data: authData, error: authOkumaError } = await adminSupabase.auth.admin.getUserById(eskiKisi.auth_user_id);
+      if (authOkumaError || !authData.user) {
+        return hataYaniti(
+          "Kişinin giriş hesabı doğrulanamadığı için bilgi güncellenmedi.",
+          "auth.admin.getUserById — eclub kişi",
+          authOkumaError
+        );
+      }
+
+      eskiAuthEposta = authData.user.email;
+      eskiAuthMetadata = authData.user.user_metadata;
+      const { error: authGuncellemeError } = await adminSupabase.auth.admin.updateUserById(eskiKisi.auth_user_id, {
+        ...(epostaDegisti ? { email: guncellenecek.eposta as string, email_confirm: true } : {}),
+        user_metadata: {
+          ...eskiAuthMetadata,
+          rol: eskiKisi.rol,
+          ad: (guncellenecek.ad as string | undefined) ?? eskiKisi.ad,
+          soyad: (guncellenecek.soyad as string | undefined) ?? eskiKisi.soyad,
+          eclub_kisi: true,
+        },
+      });
+
+      if (authGuncellemeError) {
+        const mesaj = /already|registered|exists/i.test(authGuncellemeError.message)
+          ? "Bu e-posta başka bir giriş hesabında kayıtlı."
+          : "Kişinin giriş bilgileri güncellenemedi.";
+        return validasyonHatasi(mesaj, epostaDegisti ? ["eposta"] : ["ad", "soyad"]);
+      }
+    }
+
+    const { data: guncellenenKisi, error: updateError } = await adminSupabase
       .from("eclub_kisiler")
       .update(guncellenecek)
-      .eq("kisi_id", kisi_id);
+      .eq("kisi_id", kisi_id)
+      .select("kisi_id")
+      .maybeSingle();
 
-    if (updateError) {
+    if (updateError || !guncellenenKisi) {
+      if (authDegisecek && eskiKisi.auth_user_id) {
+        const { error: authGeriAlmaError } = await adminSupabase.auth.admin.updateUserById(eskiKisi.auth_user_id, {
+          ...(eskiAuthEposta ? { email: eskiAuthEposta, email_confirm: true } : {}),
+          ...(eskiAuthMetadata ? { user_metadata: eskiAuthMetadata } : {}),
+        });
+        if (authGeriAlmaError) {
+          return hataYaniti(
+            "Kişi bilgisi güncellenemedi ve giriş bilgileri geri alınamadı; yönetici kontrolü gerekir.",
+            "eclub_kisiler UPDATE + Auth geri alma",
+            authGeriAlmaError
+          );
+        }
+      }
       const benzersiz = benzersizlikHatasi(updateError);
       if (benzersiz) return validasyonHatasi(benzersiz.mesaj, [benzersiz.alan]);
-      return hataYaniti("Kişi güncellenemedi.", "eclub_kisiler UPDATE", updateError);
+      return hataYaniti(
+        "Kişi güncellenemedi.",
+        "eclub_kisiler UPDATE",
+        updateError ?? new Error("Güncellenecek kişi bulunamadı.")
+      );
     }
 
     return NextResponse.json({ mesaj: "Kişi başarıyla güncellendi." }, { status: 200 });

@@ -1,7 +1,7 @@
 {
-  "uretim_tarihi": "2026-08-14T12:00:31.533Z",
+  "uretim_tarihi": "2026-08-14T17:36:43.697Z",
   "tablo_sayisi": 95,
-  "rpc_sayisi": 68,
+  "rpc_sayisi": 72,
   "tablolar": {
     "bildirimler": {
       "tur": "BASE TABLE",
@@ -534,6 +534,18 @@
         },
         "oneri_id": {
           "tip": "uuid",
+          "nullable": true
+        },
+        "soru_hakki_var_mi": {
+          "tip": "boolean",
+          "nullable": true
+        },
+        "soru_hakki_nedeni": {
+          "tip": "text",
+          "nullable": true
+        },
+        "soru_indeksleri": {
+          "tip": "ARRAY",
           "nullable": true
         }
       }
@@ -3972,6 +3984,14 @@
       "argumanlar": "",
       "donus": "integer"
     },
+    "eclub_cevaplari_kaydet": {
+      "argumanlar": "p_izleme_id uuid, p_kisi_id uuid, p_sonuclar jsonb",
+      "donus": "TABLE(kazanilan_puan integer)"
+    },
+    "eclub_izleme_tamamla": {
+      "argumanlar": "p_izleme_id uuid, p_kisi_id uuid, p_tur_baslangic timestamp with time zone, p_soru_indeksleri integer[]",
+      "donus": "TABLE(yeni_tamamlandi boolean, puan_kazanildi boolean, izleme_puani integer, soru_gosterilecek boolean, soru_hakki_nedeni text)"
+    },
     "eclub_store_siparis_iptal": {
       "argumanlar": "p_siparis_id uuid, p_iptal_eden_kisi_id uuid, p_is_admin boolean, p_sebep text",
       "donus": "TABLE(ok boolean, hata text)"
@@ -4063,6 +4083,14 @@
     "get_eclub_store_firma_bakiye": {
       "argumanlar": "p_kisi_id uuid",
       "donus": "TABLE(firma_id uuid, firma_adi character varying, kazanilan bigint, harcanan bigint, bakiye bigint)"
+    },
+    "get_eclub_utt_rapor": {
+      "argumanlar": "p_utt_id uuid, p_baslangic timestamp with time zone, p_bitis timestamp with time zone",
+      "donus": "TABLE(eczane_id uuid, gln character varying, eczane_adi character varying, kisi_id uuid, kisi_ad character varying, kisi_soyad character varying, kisi_rol character varying, icerik_anahtari text, icerik_adi text, gonderilen_sayisi bigint, tamamlanan_izleme bigint, dogru_cevap bigint, yanlis_cevap bigint, izleme_puani bigint, cevaplama_puani bigint)"
+    },
+    "get_eclub_utt_siparisler": {
+      "argumanlar": "p_utt_id uuid, p_eczane_id uuid, p_kisi_id uuid, p_durum text, p_tarih_baslangic timestamp with time zone, p_tarih_bitis timestamp with time zone, p_offset integer, p_limit integer",
+      "donus": "jsonb"
     },
     "get_harcama_bakiyesi": {
       "argumanlar": "p_kullanici_id uuid",

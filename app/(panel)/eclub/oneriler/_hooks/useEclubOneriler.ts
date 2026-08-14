@@ -2,7 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { OneriYayin, OneriKisi, OneriGecmis, OneriGonderSonuc } from "../_types";
+import type { OneriYayin, OneriKisi, OneriGonderSonuc, OneriLimitler } from "../_types";
 
 interface UseArgs {
   hazir: boolean;
@@ -13,21 +13,21 @@ interface UseArgs {
 export function useEclubOneriler({ hazir, hata, basari }: UseArgs) {
   const [yayinlar, setYayinlar] = useState<OneriYayin[]>([]);
   const [kisiler, setKisiler] = useState<OneriKisi[]>([]);
-  const [gecmis, setGecmis] = useState<OneriGecmis[]>([]);
+  const [limitler, setLimitler] = useState<OneriLimitler | null>(null);
   const [loading, setLoading] = useState(true);
   const [gonderLoading, setGonderLoading] = useState(false);
 
   const veriCek = useCallback(async () => {
     setLoading(true);
     try {
-      const [yayinRes, kisiRes, gecmisRes] = await Promise.all([
+      const [yayinRes, kisiRes, limitRes] = await Promise.all([
         fetch("/eclub/oneriler/api/yayinlar"),
         fetch("/eclub/listem/api/kisiler"),
-        fetch("/eclub/oneriler/api"),
+        fetch("/eclub/oneriler/api?yalniz_limit=1"),
       ]);
       const yayinData = await yayinRes.json();
       const kisiData = await kisiRes.json();
-      const gecmisData = await gecmisRes.json();
+      const limitData = await limitRes.json();
 
       if (!yayinRes.ok) hata(yayinData.hata ?? "Yayınlar yüklenemedi.", yayinData.adim, yayinData.detay);
       else setYayinlar(yayinData.videolar ?? []);
@@ -35,10 +35,10 @@ export function useEclubOneriler({ hazir, hata, basari }: UseArgs) {
       if (!kisiRes.ok) hata(kisiData.hata ?? "Kişiler yüklenemedi.", kisiData.adim, kisiData.detay);
       else setKisiler(kisiData.kisiler ?? []);
 
-      if (!gecmisRes.ok) hata(gecmisData.hata ?? "Geçmiş yüklenemedi.", gecmisData.adim, gecmisData.detay);
-      else setGecmis(gecmisData.oneriler ?? []);
-    } catch (err: any) {
-      hata("Veri yüklenirken hata oluştu.", "useEclubOneriler veriCek", err?.message);
+      if (!limitRes.ok) hata(limitData.hata ?? "Gönderim limiti yüklenemedi.", limitData.adim, limitData.detay);
+      else setLimitler(limitData.limitler ?? null);
+    } catch (err: unknown) {
+      hata("Veri yüklenirken hata oluştu.", "useEclubOneriler veriCek", err instanceof Error ? err.message : undefined);
     } finally {
       setLoading(false);
     }
@@ -68,13 +68,13 @@ export function useEclubOneriler({ hazir, hata, basari }: UseArgs) {
       basari(d.mesaj ?? `${d.gonderilen_sayisi} öneri gönderildi.`);
       await veriCek();
       return d as OneriGonderSonuc;
-    } catch (err: any) {
-      hata("Öneri gönderilirken hata oluştu.", "oneriGonder", err?.message);
+    } catch (err: unknown) {
+      hata("Öneri gönderilirken hata oluştu.", "oneriGonder", err instanceof Error ? err.message : undefined);
       return null;
     } finally {
       setGonderLoading(false);
     }
   }, [hata, basari, veriCek]);
 
-  return { yayinlar, kisiler, gecmis, loading, gonderLoading, veriCek, oneriGonder };
+  return { yayinlar, kisiler, limitler, loading, gonderLoading, veriCek, oneriGonder };
 }

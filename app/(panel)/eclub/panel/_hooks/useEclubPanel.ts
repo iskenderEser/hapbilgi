@@ -13,7 +13,10 @@ export interface PanelOneri {
   video_url: string | null;
   thumbnail_url: string | null;
   icerik_turu: string | null;
+  oneri_baslangic: string;
   oneri_bitis: string;
+  oneri_durumu: "aktif" | "suresi_gecmis";
+  kalan_gun: number;
   izlendi_mi: boolean;
   created_at: string;
 }

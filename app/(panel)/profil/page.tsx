@@ -17,6 +17,8 @@ interface Profil {
   takim_adi: string | null;
   bolge_adi: string | null;
   fotograf_url: string | null;
+  telefon?: string | null;
+  eczane_adi?: string | null;
 }
 
 interface Izleme {
@@ -129,6 +131,7 @@ export default function ProfilPage() {
   };
 
   const isUTT = TUKETICI_ROLLER.includes((kullanici?.rol ?? "").toLowerCase());
+  const isEclubKisi = kullanici?.kimlik_turu === "eclub_kisi";
 
   if (authYukleniyor || !kullanici || loading) {
     return (
@@ -142,7 +145,7 @@ export default function ProfilPage() {
   }
 
   const SolPanel = () => (
-    <div className="w-full md:w-72 flex-shrink-0 p-6 flex flex-col border-b md:border-b-0 border-gray-100">
+    <div className={`w-full flex-shrink-0 p-6 flex flex-col border-b md:border-b-0 border-gray-100 ${isEclubKisi ? "md:w-full" : "md:w-72"}`}>
       <div className="text-sm font-semibold text-gray-900 mb-5">Profil Ayarları</div>
 
       {/* Fotoğraf + bilgiler */}
@@ -163,24 +166,28 @@ export default function ProfilPage() {
               {profil?.ad?.[0]}{profil?.soyad?.[0]}
             </div>
           )}
-          <div
-            onClick={() => dosyaInputRef.current?.click()}
-            className="absolute bottom-0 right-0 w-6 h-6 rounded-full flex items-center justify-center border-2 border-white"
-            style={{
-              background: fotografLoading ? "#9ca3af" : "#56aeff",
-              cursor: fotografLoading ? "wait" : "pointer",
-            }}
-          >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="17 8 12 3 7 8"/>
-              <line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-          </div>
-          <input ref={dosyaInputRef} type="file" accept=".jpg,.jpeg,.png" onChange={handleFotografSec} className="hidden" />
+          {!isEclubKisi && (
+            <>
+              <div
+                onClick={() => dosyaInputRef.current?.click()}
+                className="absolute bottom-0 right-0 w-6 h-6 rounded-full flex items-center justify-center border-2 border-white"
+                style={{
+                  background: fotografLoading ? "#9ca3af" : "#56aeff",
+                  cursor: fotografLoading ? "wait" : "pointer",
+                }}
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+              </div>
+              <input ref={dosyaInputRef} type="file" accept=".jpg,.jpeg,.png" onChange={handleFotografSec} className="hidden" />
+            </>
+          )}
         </div>
 
-        {profil?.fotograf_url && (
+        {!isEclubKisi && profil?.fotograf_url && (
           <div
             onClick={handleFotografSil}
             className="text-xs underline cursor-pointer"
@@ -199,14 +206,26 @@ export default function ProfilPage() {
           className="text-[10px] px-3 py-0.5 rounded-full"
           style={{ background: "rgba(188,45,13,0.08)", color: "#bc2d0d", border: "0.5px solid rgba(188,45,13,0.25)" }}
         >
-          {profil?.rol}
+          {profil?.rol === "eczaci" ? "Eczacı" : profil?.rol === "eczane_teknisyeni" ? "Eczane Teknisyeni" : profil?.rol}
         </div>
 
         <div className="w-full flex flex-col gap-2 mt-1">
           {profil?.firma_adi && (
-            <div className="flex justify-between">
+            <div className="flex justify-between gap-4">
               <span className="text-xs text-gray-500">Firma</span>
-              <span className="text-xs font-semibold text-gray-900">{profil.firma_adi}</span>
+              <span className="text-xs font-semibold text-gray-900 text-right">{profil.firma_adi}</span>
+            </div>
+          )}
+          {profil?.eczane_adi && (
+            <div className="flex justify-between gap-4">
+              <span className="text-xs text-gray-500">Eczane</span>
+              <span className="text-xs font-semibold text-gray-900 text-right">{profil.eczane_adi}</span>
+            </div>
+          )}
+          {profil?.telefon && (
+            <div className="flex justify-between gap-4">
+              <span className="text-xs text-gray-500">Telefon</span>
+              <span className="text-xs font-semibold text-gray-900">{profil.telefon}</span>
             </div>
           )}
           {profil?.takim_adi && (
@@ -225,14 +244,14 @@ export default function ProfilPage() {
       </div>
 
       {/* Fotoğraf kuralları */}
-      <div className="border-t border-gray-100 pt-5 mb-6">
+      {!isEclubKisi && <div className="border-t border-gray-100 pt-5 mb-6">
         <div className="text-xs font-semibold text-gray-900 mb-2">Fotoğraf kuralları</div>
         <div className="flex flex-col gap-1">
           {["300×300 piksel veya üzeri", "Beyaz veya şeffaf arka plan", "Maksimum 2 MB", "JPG veya PNG formatı", "Yüz net görünmeli"].map(k => (
             <div key={k} className="text-xs text-gray-500">• {k}</div>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* Şifre değiştir */}
       <div className="border-t border-gray-100 pt-5 flex-1 flex flex-col">
@@ -357,11 +376,11 @@ export default function ProfilPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <div className="max-w-5xl mx-auto px-3 py-3 pb-20 md:px-6 md:py-6 md:pb-6">
+      <div className={`${isEclubKisi ? "max-w-xl" : "max-w-5xl"} mx-auto px-3 py-3 pb-20 md:px-6 md:py-6 md:pb-6`}>
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col md:flex-row md:min-h-[600px]">
-          <SolPanel />
-          <div className="hidden md:block w-px bg-gray-100 flex-shrink-0" />
-          <SagPanel />
+          {SolPanel()}
+          {!isEclubKisi && <div className="hidden md:block w-px bg-gray-100 flex-shrink-0" />}
+          {!isEclubKisi && SagPanel()}
         </div>
       </div>
 

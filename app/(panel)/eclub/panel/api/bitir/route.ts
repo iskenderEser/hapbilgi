@@ -1,15 +1,16 @@
-// app/eclub/panel/api/bitir/route.ts
-// E-Club izleme — BİTİR. İzlemeyi tamamlar + izleme puanı yazar.
-// Kural: öneri süresi (oneri_bitis > now) geçmişse PUAN yok (izleme yine tamamlanır).
-// TUR BAZLI ilk izleme: geçerli turda tamamlanan ilk izleme + video_puani>0 ise
-// eclub_kazanilan_puanlar'a 'izleme' puanı; UTT +10 da aynı koşulda yeniden doğar.
+// E-Club izleme — BİTİR.
+// Tamamlama, izleme puanı, UTT GönderiPuanı ve soru hakkı tek DB işlemiyle yazılır.
+// Süresi geçmiş öneri tamamlanır; puan ve soru hakkı doğurmaz.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
-import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
-import { eclubPuanKaydet, eclubUttPuanKaydet } from "@/lib/puan/eclubKayit";
+import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
+import { olayIdGecerliMi } from "@/lib/izleme/baslat";
+import { eclubIzlemeHaklari, eclubSoruIndeksleri } from "@/lib/eclub/izlemeKurali";
 import { gecerliTur } from "@/lib/tur/kayit";
+
+const VARSAYILAN_SORU_SAYISI = 2;
 
 export async function PUT(request: NextRequest) {
   try {
@@ -18,8 +19,6 @@ export async function PUT(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const adminSupabase = createAdminClient();
-
-    // Kişi kimliği
     const { data: kisi, error: kisiError } = await adminSupabase
       .from("eclub_kisiler")
       .select("kisi_id, rol")
@@ -33,128 +32,83 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { izleme_id } = body;
     if (!izleme_id) return validasyonHatasi("izleme_id zorunludur.", ["izleme_id"]);
+    if (!olayIdGecerliMi(izleme_id)) return validasyonHatasi("Geçersiz izleme kimliği gönderildi.", ["izleme_id"]);
 
-    // İzleme kaydını bul (kişiye ait, tamamlanmamış)
     const { data: izleme, error: izlemeError } = await adminSupabase
       .from("eclub_izleme_kayitlari")
-      .select("izleme_id, yayin_id, kisi_id, oneri_id, tamamlandi_mi")
+      .select("izleme_id, yayin_id, kisi_id, oneri_id")
       .eq("izleme_id", izleme_id)
       .single();
 
+    if (izlemeError) return hataYaniti("İzleme sorgulanamadı.", "eclub_izleme_kayitlari SELECT", izlemeError, 404);
     const izlemeKontrol = veriKontrol(izleme, "eclub_izleme_kayitlari SELECT — izleme_id", "İzleme kaydı bulunamadı.");
     if (!izlemeKontrol.gecerli) return izlemeKontrol.yanit;
-    if (izlemeError) return hataYaniti("İzleme sorgulanamadı.", "eclub_izleme_kayitlari SELECT", izlemeError, 404);
     if (izleme.kisi_id !== kisi.kisi_id) return rolHatasi("Bu izleme kaydına erişim yetkiniz yok.");
-    if (izleme.tamamlandi_mi) return isKuraluHatasi("Bu izleme zaten tamamlanmış.");
+    if (!izleme.oneri_id) return hataYaniti("İzleme öneri kaydına bağlı değil.", "eclub_izleme_kayitlari.oneri_id", null);
 
-    // İzlemeyi tamamla
-    const { error: updateError } = await adminSupabase
-      .from("eclub_izleme_kayitlari")
-      .update({ tamamlandi_mi: true, izleme_bitis: new Date().toISOString() })
-      .eq("izleme_id", izleme_id);
+    const { data: oneri, error: oneriError } = await adminSupabase
+      .from("eclub_oneri_kayitlari")
+      .select("oneri_baslangic, oneri_bitis")
+      .eq("oneri_id", izleme.oneri_id)
+      .single();
+    if (oneriError || !oneri) return hataYaniti("Öneri kaydı doğrulanamadı.", "eclub_oneri_kayitlari SELECT — izleme tamamlama", oneriError, 404);
 
-    if (updateError) return hataYaniti("İzleme tamamlanamadı.", "eclub_izleme_kayitlari UPDATE — tamamlandi_mi", updateError);
+    const haklar = eclubIzlemeHaklari(oneri.oneri_baslangic, oneri.oneri_bitis);
+    let soruIndeksleri: number[] = [];
+    let turBaslangic = "2000-01-01T00:00:00Z";
 
-    // Süre kontrolü: öneri hâlâ geçerli mi (oneri_bitis > now)? Geçmişse puan YOK.
-    let puanVerildi = false;
-    // B-08: puan yazım hataları yutulmaz — loglanır VE yanıtta bildirilir.
-    const puanUyarilari: string[] = [];
-    let puanDegeri = 0;
-
-    if (izleme.oneri_id) {
-      const { data: oneri } = await adminSupabase
-        .from("eclub_oneri_kayitlari")
-        .select("oneri_id, oneri_bitis, izlendi_mi, oneren_id")
-        .eq("oneri_id", izleme.oneri_id)
-        .maybeSingle();
-
-      const simdi = new Date();
-      const sureGecerli = !!oneri && new Date(oneri.oneri_bitis) > simdi;
-
-      if (sureGecerli) {
-        // Geçerli tur — ilk izleme tekilliğinin alt sınırı (tur bazlı tekillik).
-        // Periyot dolmuşsa gecerliTur yeni turu burada açar (otomatik mekanizma).
-        // Başarısızlıkta güvenli geri düşüş: epoch alt sınırı = eski (ömür boyu) davranış.
-        const turSonuc = await gecerliTur(adminSupabase, izleme.yayin_id);
-        if (!turSonuc.ok) {
-          console.error("[UYARI] Geçerli tur çözülemedi, ömür boyu tekillik uygulanacak:", { yayin_id: izleme.yayin_id, hata: turSonuc.error });
-        }
-        const turBaslangic = turSonuc.tur?.baslangic_tarihi ?? "2000-01-01T00:00:00Z";
-
-        // İlk izleme puanı mı? — TUR BAZLI: bu turda 'izleme' türünde puan var mı?
-        const { data: oncekiPuan } = await adminSupabase
-          .from("eclub_kazanilan_puanlar")
-          .select("kazanilan_puan_id")
+    if (haklar.soruGoster) {
+      const [{ data: yayinDetay, error: detayError }, turSonuc] = await Promise.all([
+        adminSupabase
+          .from("v_yayin_detay")
+          .select("sorular, video_basi_soru_sayisi")
           .eq("yayin_id", izleme.yayin_id)
-          .eq("kisi_id", kisi.kisi_id)
-          .eq("puan_turu", "izleme")
-          .gte("created_at", turBaslangic)
-          .limit(1);
-
-        const ilkIzleme = (oncekiPuan ?? []).length === 0;
-
-        if (ilkIzleme) {
-          // video_puani → v_yayin_detay
-          const { data: yayinDetay } = await adminSupabase
-            .from("v_yayin_detay")
-            .select("video_puani")
-            .eq("yayin_id", izleme.yayin_id)
-            .single();
-
-          const video_puani = yayinDetay?.video_puani ?? 0;
-
-          if (video_puani > 0) {
-            const sonuc = await eclubPuanKaydet(adminSupabase, {
-              kisi_id: kisi.kisi_id,
-              yayin_id: izleme.yayin_id,
-              izleme_id,
-              puan_turu: "izleme",
-              puan: video_puani,
-            });
-            if (sonuc.ok) {
-              puanVerildi = true;
-              puanDegeri = video_puani;
-            } else {
-              console.error("[UYARI] E-Club izleme puanı kaydedilemedi:", { izleme_id, hata: sonuc.error });
-              puanUyarilari.push("İzleme puanı kaydedilemedi. Videoyu yeniden izlerseniz puan yeniden değerlendirilir.");
-            }
-          }
-
-          // UTT +10 (GönderiPuanı): takım üyesi izleyince öneriyi gönderen UTT'ye.
-          // Tur bazlı ilk izleme + süre geçerli koşulunda — yeni turda yeniden doğar.
-          if (oneri.oneren_id) {
-            const uttSonuc = await eclubUttPuanKaydet(adminSupabase, {
-              utt_id: oneri.oneren_id,
-              kisi_id: kisi.kisi_id,
-              yayin_id: izleme.yayin_id,
-              izleme_id,
-              oneri_id: oneri.oneri_id,
-            });
-            if (!uttSonuc.ok) {
-              console.error("[UYARI] E-Club UTT +10 kaydedilemedi:", { izleme_id, hata: uttSonuc.error });
-              puanUyarilari.push("Öneriyi gönderen temsilcinin puanı kaydedilemedi.");
-            }
-          }
-        }
+          .single(),
+        gecerliTur(adminSupabase, izleme.yayin_id),
+      ]);
+      if (detayError || !yayinDetay) {
+        return hataYaniti("Yayın soru bilgisi alınamadı.", "v_yayin_detay SELECT — E-Club izleme tamamlama", detayError, 404);
       }
+      if (!turSonuc.ok) {
+        console.error("[UYARI] E-Club geçerli tur çözülemedi; ömür boyu tekillik uygulanacak:", {
+          yayin_id: izleme.yayin_id,
+          hata: turSonuc.error,
+        });
+      }
+      turBaslangic = turSonuc.tur?.baslangic_tarihi ?? turBaslangic;
 
-      // Öneriyi izlendi işaretle (süre geçmiş olsa da izleme gerçekleşti)
-      if (oneri && !oneri.izlendi_mi) {
-        await adminSupabase
-          .from("eclub_oneri_kayitlari")
-          .update({ izlendi_mi: true })
-          .eq("oneri_id", oneri.oneri_id);
+      const sorular = Array.isArray(yayinDetay.sorular) ? yayinDetay.sorular : [];
+      const soruSayisi = yayinDetay.video_basi_soru_sayisi ?? VARSAYILAN_SORU_SAYISI;
+      if (soruSayisi > 0 && sorular.length >= soruSayisi) {
+        soruIndeksleri = eclubSoruIndeksleri(sorular.length, soruSayisi, izleme_id);
       }
     }
 
-    return NextResponse.json({
-      mesaj: "İzleme tamamlandı.",
-      puan_kazanildi: puanVerildi,
-      izleme_puani: puanDegeri,
-      puan_uyarisi: puanUyarilari.length > 0 ? puanUyarilari.join(" ") : null,
-      soru_gosterilecek: true,
-    }, { status: 200 });
+    const { data: tamamlamaSatirlari, error: tamamlamaError } = await adminSupabase.rpc("eclub_izleme_tamamla", {
+      p_izleme_id: izleme_id,
+      p_kisi_id: kisi.kisi_id,
+      p_tur_baslangic: turBaslangic,
+      p_soru_indeksleri: soruIndeksleri,
+    });
+    if (tamamlamaError) return hataYaniti("İzleme tamamlanamadı.", "eclub_izleme_tamamla RPC", tamamlamaError);
 
+    const tamamlama = tamamlamaSatirlari?.[0] as {
+      yeni_tamamlandi: boolean;
+      puan_kazanildi: boolean;
+      izleme_puani: number;
+      soru_gosterilecek: boolean;
+      soru_hakki_nedeni: string;
+    } | undefined;
+    if (!tamamlama) return hataYaniti("İzleme tamamlandı ancak sonuç alınamadı.", "eclub_izleme_tamamla RPC — dönen veri", null);
+
+    return NextResponse.json({
+      mesaj: tamamlama.yeni_tamamlandi ? "İzleme tamamlandı." : "Tamamlanmış izleme açıldı.",
+      puan_kazanildi: tamamlama.puan_kazanildi,
+      izleme_puani: tamamlama.izleme_puani,
+      puan_uyarisi: null,
+      soru_gosterilecek: tamamlama.soru_gosterilecek,
+      soru_hakki_nedeni: tamamlama.soru_hakki_nedeni,
+    }, { status: 200 });
   } catch (err) {
     return sunucuHatasi(err, "PUT /eclub/panel/api/bitir");
   }

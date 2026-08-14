@@ -21,8 +21,6 @@ import {
   STORE_ALABILEN_ROLLER,
   STORE_GENEL_GOREN_ROLLER,
   ECLUB_GOREN_ROLLER,
-  ECLUB_LIGI_GOREN_ROLLER,
-  ECLUB_STORE_RAPOR_GOREN_ROLLER,
   TUKETICI_ROLLER,
 } from "@/lib/utils/roller";
 
@@ -44,6 +42,7 @@ export interface NavOge {
   path: string | ((ctx: NavContext) => string);
   badgeKey?: string;             // bildirimler/api "sayilar" anahtarı (talep/senaryo/…)
   yayinBekleyenRozeti?: boolean; // Yayın Yönetimi rozeti bildirim değil, canlı kuyruk sayısı
+  tamEslesme?: boolean;          // Alt rotalarda başka menü öğesini de aktif göstermemek için
   gate: (ctx: NavContext) => boolean;
 }
 
@@ -104,13 +103,12 @@ export const PANEL_NAV: NavGrup[] = [
     oglar: [
       { etiket: "HBLigi",      path: "/hbligi",     gate: () => true },
       { etiket: "CC Ligi",     path: "/cc-ligi",    gate: (c) => c.ccAcik && CCLIGI_GORENLERLER.includes(c.rolKucu) },
-      { etiket: "E-Club Ligi", path: "/eclub/ligi", gate: (c) => c.eclubAcik && ECLUB_LIGI_GOREN_ROLLER.includes(c.rolKucu) },
     ],
   },
   {
     baslik: "HBStore",
     oglar: [
-      { etiket: "Mağazam",       path: "/store",                gate: (c) => c.storeAcik && STORE_ALABILEN_ROLLER.includes(c.rolKucu) },
+      { etiket: "Mağazam",       path: "/store", tamEslesme: true, gate: (c) => c.storeAcik && STORE_ALABILEN_ROLLER.includes(c.rolKucu) },
       { etiket: "Siparişlerim",  path: "/store/siparislerim",   gate: (c) => c.storeAcik && STORE_ALABILEN_ROLLER.includes(c.rolKucu) },
       { etiket: "Adreslerim",    path: "/store/adreslerim",     gate: (c) => c.storeAcik && STORE_ALABILEN_ROLLER.includes(c.rolKucu) },
       { etiket: "Ekip Sipariş Takibi", path: "/store/siparisler", gate: (c) => c.storeAcik && STORE_GENEL_GOREN_ROLLER.includes(c.rolKucu) },
@@ -119,8 +117,10 @@ export const PANEL_NAV: NavGrup[] = [
   {
     baslik: "E-Club",
     oglar: [
-      { etiket: "E-Club",       path: "/eclub/listem",     gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
-      { etiket: "E-Club Store", path: "/eclub/store/rapor", gate: (c) => c.eclubStoreAcik && ECLUB_STORE_RAPOR_GOREN_ROLLER.includes(c.rolKucu) },
+      { etiket: "Videolar ve Eczanelerim", path: "/eclub/listem",     gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
+      { etiket: "Raporlar",                 path: "/eclub/raporlar",  gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
+      { etiket: "E-Club Ligi",              path: "/eclub/ligi",      gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
+      { etiket: "Siparişler",               path: "/eclub/siparisler", gate: (c) => c.eclubAcik && c.eclubStoreAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
     ],
   },
   {
@@ -137,16 +137,21 @@ export const PANEL_NAV: NavGrup[] = [
   },
 ];
 
-// eclub_kisi (eczacı/teknisyen) dar gezinmesi — KARAR-4 (B kararı: tek kaynak).
-// Mevcut Navbar'ın kimlikTuru==='eclub_kisi' → yalnız "E-Club Store" pill'inin
-// karşılığı. Koşulsuz (mevcut davranışta da eclubStoreAcik kontrolü yoktu).
-// Aynı SolListe / MobilDrawer bileşenleri bu ağacı da çizer.
+// eclub_kisi (eczacı/teknisyen) dar gezinmesi — kişi paneli + kendi mağaza yolları.
+// Çok-firmalı erişim bayrakları aktif eczane→firma zincirinden profil API'sinde çözülür.
 export const ECLUB_KISI_NAV: NavGrup[] = [
   {
-    baslik: "E-Club Store",
-    baslikGoster: false,
+    baslik: "E-Club",
     oglar: [
-      { etiket: "E-Club Store", path: "/eclub/store", gate: () => true },
+      { etiket: "Videolarım", path: "/eclub/panel", gate: (c) => c.eclubAcik },
+    ],
+  },
+  {
+    baslik: "E-Club Store",
+    oglar: [
+      { etiket: "Mağazam", path: "/eclub/store", tamEslesme: true, gate: (c) => c.eclubAcik && c.eclubStoreAcik },
+      { etiket: "Siparişlerim", path: "/eclub/store/siparislerim", gate: (c) => c.eclubAcik && c.eclubStoreAcik },
+      { etiket: "Adreslerim", path: "/eclub/store/adreslerim", gate: (c) => c.eclubAcik && c.eclubStoreAcik },
     ],
   },
 ];

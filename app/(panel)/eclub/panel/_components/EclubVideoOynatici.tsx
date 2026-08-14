@@ -3,7 +3,7 @@
 // E-Club kişi (eczacı/teknisyen) izleme oynatıcısı — panel içinde açılır.
 // CC/UTT oynatıcısının sade hali: ileri sarma YOK, extra YOK, challenge YOK,
 // kayıp puan YOK. Akış: baslat → video oynat → bitince bitir → sorular → cevapla.
-// Süre geçmiş öneride izleme olur ama puan yazılmaz (API'ler karar verir).
+// Süresi geçmiş öneride izleme olur; puan ve soru açılmaz (API'ler karar verir).
 
 "use client";
 
@@ -164,10 +164,7 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
     }
     if (d.puan_uyarisi) hata(d.puan_uyarisi, "puan kaydı"); // B-08: yazım hatası kullanıcıya görünür
 
-    // Sorular — v_yayin_detay.sorular panel API'den değil, ayrı sorular endpoint'i yok;
-    // izleme bitince soruları göstermek için bitir sonrası cevapla ekranına geçiyoruz.
-    // Soruları göstermek için sorular verisini panel API zaten sağlamıyor; bu yüzden
-    // sorular cevapla API'sinin döndüğü sonuçlarla değil, ayrı çekilmeli.
+    // Sorular tamamlama anında bu izlemeye sabitlenir ve ayrı uçtan güvenli biçimde çekilir.
     if (d.soru_gosterilecek === true) {
       const sRes = await fetch(`/eclub/panel/api/sorular?izleme_id=${id}`);
       const sData = await sRes.json();

@@ -131,24 +131,10 @@ export const ECLUB_GOREN_ROLLER = [
   ...TUKETICI_ROLLER,  // utt, kd_utt
 ];
 
-// ECLUB_LIGI_GOREN_ROLLER: E-Club Ligi sayfasını (/eclub/ligi) Navbar'da görüp
-// erişebilen roller. Liste yönetiminden farklı olarak BM ve TM de görür (cascade
-// lig sıralaması). Eczacı/teknisyen ligi GÖRMEZ (kendi bireysel puanlarını görür).
+// ECLUB_LIGI_GOREN_ROLLER: E-Club ana modülüyle aynı rol sözleşmesini kullanır.
+// UTT/KD_UTT kendi E-Club ekibindeki eczacı ve teknisyenlerin sıralamasını görür.
 export const ECLUB_LIGI_GOREN_ROLLER = [
-  ...TUKETICI_ROLLER,  // utt, kd_utt
-  "bm",
-  "tm",
-];
-
-// ECLUB_STORE_RAPOR_GOREN_ROLLER: E-Club Store raporunu (kimin ne aldığını)
-// Navbar'da görüp erişebilen firma rolleri. Bu roller alışveriş yapmaz; sadece
-// kendi kapsamındaki E-Club Store sipariş/harcama raporunu görüntüler.
-// Eczacı/teknisyen (alışveriş yapan kişiler) bu listede DEĞİL — onların erişimi
-// ayrı bir kimlik düzleminde (eclub_kisiler) çözülür.
-export const ECLUB_STORE_RAPOR_GOREN_ROLLER = [
-  ...TUKETICI_ROLLER,  // utt, kd_utt
-  "bm",
-  "tm",
+  ...ECLUB_GOREN_ROLLER,
 ];
 
 // ECLUB_TUKETICI_ROLLERI: E-Club içeriğini tüketen roller — eczacı ve eczane teknisyeni.

@@ -2,73 +2,71 @@
 //
 // E-Club öneri limit ve kredi kontrolleri.
 //
-// Kurallar (v45 kararları + 09.07.2026 ayar taşıması):
-//  1. AYLIK KREDİ: UTT bir takvim ayında toplam ECLUB_AYLIK_KREDI öneri
-//     gönderebilir. Kredi gönderimde düşer, izlenmese de geri gelmez,
-//     devirsizdir, her takvim ayının 1'inde 100'e sıfırlanır.
+// Kurallar (v45 kararları + admin ayar yönetimi):
+//  1. AYLIK KREDİ: UTT bir takvim ayında ayarlanan sayıda öneri gönderebilir.
+//     Kredi gönderimde düşer, izlenmese de geri gelmez ve devirsizdir.
 //  2. AYNI KİŞİYE TEKRAR (kayan pencere): Aynı UTT, aynı kişiye
 //     sistem_ayarlari.eclub_gonderim_araligi_gun (varsayılan 7) gün içinde
 //     ikinci kez öneri gönderemez. Aynı firmada FARKLI UTT aynı kişiye
 //     gönderebilir (limit oneren bazında). Süre ADMIN AYARIDIR (§9.3) —
 //     tüm firmalara aynı uygulanır.
-//  3. ALICI KORUMASI (kayan hafta, global): Bir kişi tüm firmalar/UTT'lerden
-//     toplam son 7 günde en fazla sistem_ayarlari.eclub_alici_haftalik_limit
-//     (varsayılan 20) öneri alabilir. Sayı ADMIN AYARIDIR (§9.3).
+//  3. ALICI KORUMASI (kayan pencere, global): Bir kişi tüm firmalar/UTT'lerden
+//     ayarlanan gün aralığında ayarlanan sayıda öneri alabilir.
+//  4. ÖNERİ GEÇERLİLİĞİ: İzleme/soru/puan penceresi admin tarafından gün
+//     cinsinden yönetilir.
 //
 // Ayar okuma hatasında güvenli geri düşüş: VARSAYILAN sabitler kullanılır,
 // gönderim akışı kilitlenmez (UYARI loglanır).
 //
-// Öneri süresi (kazanım penceresi, 7 gün) ve aylık kredi (100) ayar DEĞİLDİR —
-// §9.3 kapsamı dışında, sabit.
-//
-// Hafta = kayan 7 gün (şu andan 7 gün öncesi). Takvim haftası DEĞİL.
+// Alıcı penceresi kayan süredir; takvim haftası değildir.
 // Ay = takvim ayı (lib/zaman/kontrol.ts ayBaslangici ile uyumlu).
 // Günlük tavan YOK.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ayBaslangici } from "@/lib/zaman/kontrol";
-
-// ─── Sabitler (ayar okunamazsa geri düşülen varsayılanlar) ───────────────────
-export const ECLUB_AYLIK_KREDI = 100;
-export const ECLUB_ALICI_HAFTALIK = 20;
-// Aynı UTT aynı kişiye kayan pencerede bu kadar öneri (tekrar yok = 1):
-export const ECLUB_UTT_KISI_HAFTALIK = 1;
-// Öneri süresi: iletildiği andan itibaren 7 gün (kayan). Alıcı bu süre içinde
-// izlerse/cevaplarsa puan kazanır.
-export const ECLUB_ONERI_GUN_SAYISI = 7;
+import {
+  eclubGonderiAyariVarsayilani,
+  type EclubGonderiAyariAnahtari,
+} from "@/lib/eclub/gonderiAyarlari";
 
 // ─── Ayar okuyucuları (sistem_ayarlari — tek kaynak, §9.3) ───────────────────
 
-/** sistem_ayarlari.eclub_gonderim_araligi_gun — aynı UTT→aynı kişi gönderim aralığı. */
-export async function eclubGonderimAraligiGun(supabase: SupabaseClient): Promise<number> {
+async function pozitifTamSayiAyari(
+  supabase: SupabaseClient,
+  anahtar: EclubGonderiAyariAnahtari,
+): Promise<number> {
   const { data, error } = await supabase
     .from("sistem_ayarlari")
     .select("deger")
-    .eq("anahtar", "eclub_gonderim_araligi_gun")
+    .eq("anahtar", anahtar)
     .single();
 
   const deger = Number(data?.deger);
-  if (error || !Number.isFinite(deger) || deger <= 0) {
-    console.error("[UYARI] eclub_gonderim_araligi_gun okunamadı, varsayılan kullanılıyor:", error?.message ?? data?.deger);
-    return ECLUB_ONERI_GUN_SAYISI;
+  if (error || !Number.isInteger(deger) || deger <= 0) {
+    console.error(`[UYARI] ${anahtar} okunamadı, varsayılan kullanılıyor:`, error?.message ?? data?.deger);
+    return eclubGonderiAyariVarsayilani(anahtar);
   }
   return deger;
 }
 
-/** sistem_ayarlari.eclub_alici_haftalik_limit — kişinin haftalık toplam kabul limiti. */
-export async function eclubAliciHaftalikLimit(supabase: SupabaseClient): Promise<number> {
-  const { data, error } = await supabase
-    .from("sistem_ayarlari")
-    .select("deger")
-    .eq("anahtar", "eclub_alici_haftalik_limit")
-    .single();
+export async function eclubAylikGonderimLimiti(supabase: SupabaseClient): Promise<number> {
+  return pozitifTamSayiAyari(supabase, "eclub_aylik_gonderim_limiti");
+}
 
-  const deger = Number(data?.deger);
-  if (error || !Number.isFinite(deger) || deger <= 0) {
-    console.error("[UYARI] eclub_alici_haftalik_limit okunamadı, varsayılan kullanılıyor:", error?.message ?? data?.deger);
-    return ECLUB_ALICI_HAFTALIK;
-  }
-  return deger;
+export async function eclubOneriGecerlilikGun(supabase: SupabaseClient): Promise<number> {
+  return pozitifTamSayiAyari(supabase, "eclub_oneri_gecerlilik_gun");
+}
+
+export async function eclubGonderimAraligiGun(supabase: SupabaseClient): Promise<number> {
+  return pozitifTamSayiAyari(supabase, "eclub_gonderim_araligi_gun");
+}
+
+export async function eclubAliciPencereGun(supabase: SupabaseClient): Promise<number> {
+  return pozitifTamSayiAyari(supabase, "eclub_alici_pencere_gun");
+}
+
+export async function eclubAliciHaftalikLimit(supabase: SupabaseClient): Promise<number> {
+  return pozitifTamSayiAyari(supabase, "eclub_alici_haftalik_limit");
 }
 
 // ─── Zaman yardımcıları ──────────────────────────────────────────────────────
@@ -78,14 +76,9 @@ export function kayanPencereBasi(gun: number, now: Date = new Date()): Date {
   return new Date(now.getTime() - gun * 24 * 60 * 60 * 1000);
 }
 
-/** Şu andan ECLUB_ONERI_GUN_SAYISI (7) gün öncesi — kayan hafta penceresi başı. */
-export function kayanHaftaBasi(now: Date = new Date()): Date {
-  return kayanPencereBasi(ECLUB_ONERI_GUN_SAYISI, now);
-}
-
-/** Öneri bitiş zamanı: baslangic + 7 gün. */
-export function oneriBitisHesapla(baslangic: Date): Date {
-  return new Date(baslangic.getTime() + ECLUB_ONERI_GUN_SAYISI * 24 * 60 * 60 * 1000);
+/** Öneri bitiş zamanı: başlangıç + admin tarafından ayarlanan gün sayısı. */
+export function oneriBitisHesapla(baslangic: Date, gunSayisi: number): Date {
+  return new Date(baslangic.getTime() + gunSayisi * 24 * 60 * 60 * 1000);
 }
 
 // ─── Sonuç tipleri ───────────────────────────────────────────────────────────
@@ -111,7 +104,7 @@ export interface TekrarSonuc {
 
 /**
  * UTT'nin bu ay kullandığı krediyi sayar, istenen sayı kotaya sığıyor mu bakar.
- * Kota = ECLUB_AYLIK_KREDI (100). Pencere: takvim ayı başından şimdiye.
+ * Kota admin ayarından gelir. Pencere: takvim ayı başından şimdiye.
  */
 export async function aylikKrediKontrol(
   supabase: SupabaseClient,
@@ -119,27 +112,30 @@ export async function aylikKrediKontrol(
   istenen: number,
 ): Promise<AylikKrediSonuc> {
   const ay_basi = ayBaslangici();
-  const { count, error } = await supabase
-    .from("eclub_oneri_kayitlari")
-    .select("oneri_id", { count: "exact", head: true })
-    .eq("oneren_id", oneren_id)
-    .gte("created_at", ay_basi.toISOString());
+  const [kota, sayim] = await Promise.all([
+    eclubAylikGonderimLimiti(supabase),
+    supabase
+      .from("eclub_oneri_kayitlari")
+      .select("oneri_id", { count: "exact", head: true })
+      .eq("oneren_id", oneren_id)
+      .gte("created_at", ay_basi.toISOString()),
+  ]);
 
-  if (error) throw new Error(`eclub_oneri_kayitlari SELECT — aylık kredi: ${error.message}`);
+  if (sayim.error) throw new Error(`eclub_oneri_kayitlari SELECT — aylık kredi: ${sayim.error.message}`);
 
-  const kullanilan = count ?? 0;
-  const kalan = Math.max(0, ECLUB_AYLIK_KREDI - kullanilan);
+  const kullanilan = sayim.count ?? 0;
+  const kalan = Math.max(0, kota - kullanilan);
   return {
-    geciyor: kullanilan + istenen <= ECLUB_AYLIK_KREDI,
+    geciyor: kullanilan + istenen <= kota,
     kullanilan,
     kalan,
     istenen,
-    kota: ECLUB_AYLIK_KREDI,
+    kota,
   };
 }
 
 /**
- * Verilen alıcıların her biri için son 7 günde toplam kaç öneri aldığını sayar
+ * Verilen alıcıların her biri için ayarlanan kayan pencerede kaç öneri aldığını sayar
  * (tüm UTT'ler/firmalar — global, oneren filtresi YOK). Limiti dolacak olanları
  * döndürür (mevcut + 1 > eclub_alici_haftalik_limit — ayardan, §9.3).
  */
@@ -149,19 +145,22 @@ export async function aliciLimitKontrol(
 ): Promise<AliciLimitSonuc> {
   if (kisi_idler.length === 0) return { hepsi_geciyor: true, dolu_kisiler: [] };
 
-  const limit = await eclubAliciHaftalikLimit(supabase);
-  const hafta_basi = kayanHaftaBasi();
+  const [limit, pencereGun] = await Promise.all([
+    eclubAliciHaftalikLimit(supabase),
+    eclubAliciPencereGun(supabase),
+  ]);
+  const pencere_basi = kayanPencereBasi(pencereGun);
   const { data, error } = await supabase
     .from("eclub_oneri_kayitlari")
     .select("kisi_id")
     .in("kisi_id", kisi_idler)
-    .gte("created_at", hafta_basi.toISOString());
+    .gte("created_at", pencere_basi.toISOString());
 
   if (error) throw new Error(`eclub_oneri_kayitlari SELECT — alıcı limiti: ${error.message}`);
 
   const sayim: Record<string, number> = {};
-  for (const r of data ?? []) {
-    const id = (r as any).kisi_id;
+  for (const r of (data ?? []) as { kisi_id: string }[]) {
+    const id = r.kisi_id;
     sayim[id] = (sayim[id] ?? 0) + 1;
   }
 
@@ -196,6 +195,6 @@ export async function tekrarKontrol(
 
   if (error) throw new Error(`eclub_oneri_kayitlari SELECT — tekrar kontrolü: ${error.message}`);
 
-  const cakisan = [...new Set((data ?? []).map((r: any) => r.kisi_id))];
+  const cakisan = [...new Set(((data ?? []) as { kisi_id: string }[]).map((r) => r.kisi_id))];
   return { cakisan_kisiler: cakisan };
 }

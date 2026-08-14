@@ -1,5 +1,5 @@
 // lib/eczanem/kazanim.ts
-// Eczanem kazanım ledger'ının tek kaynağı (İP-§6/§7). lib/puan/eclubKayit.ts
+// Eczanem kazanım ledger'ının tek kaynağı (İP-§6/§7).
 // ile simetrik ama üç kritik farkla:
 //  1. KAYIPSIZ MODEL (İP-§6.1): ileri sarma / yanlış cevap KAYBI yok; yalnız
 //     kazanım (izleme + cevap) yazılır. Yanlış cevap hiç kayıt üretmez.
@@ -57,7 +57,7 @@ export async function kazanimVarMi(
   return (data ?? []).length > 0;
 }
 
-// Yayından urun_id (üretimle ortak RPC — eclubKayit deseni).
+// Yayından urun_id (üretimle ortak RPC).
 async function yayindanUrunId(adminSupabase: SupabaseClient, yayin_id: string): Promise<string | null> {
   const { data, error } = await adminSupabase.rpc("get_urun_from_yayin", { p_yayin_id: yayin_id });
   if (error) {

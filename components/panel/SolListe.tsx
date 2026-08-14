@@ -46,7 +46,7 @@ export default function SolListe(props: SolListeProps) {
 
   const Satir = ({ oge, girintili = false }: { oge: NavOge; girintili?: boolean }) => {
     const path = cozPath(oge);
-    const aktif = pathname.startsWith(path);
+    const aktif = oge.tamEslesme ? pathname === path : pathname === path || pathname.startsWith(`${path}/`);
     const isHover = hover === oge.etiket;
     const sayi = rozetSayisi(oge);
     return (

@@ -1,15 +1,12 @@
-// app/eclub/panel/api/sorular/route.ts
-// E-Club izleme sonrası soruları döndürür (video başı N soru, rastgele).
-// Üretim izle/api/sorular deseni; kişi (eclub_kisiler) + eclub_izleme_kayitlari.
-// 'dogru' alanı client'a SIZDIRILMAZ — sadece harf+metin döner.
+// E-Club izleme sonrası, tamamlama anında izlemeye atanmış sabit soruları döndürür.
+// Süresi geçmiş öneri için bu uç hiçbir koşulda soru açmaz.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
-import { rastgeleSoruSec } from "@/lib/soru/secim";
-
-const VARSAYILAN_SORU_SAYISI = 2;
+import { olayIdGecerliMi } from "@/lib/izleme/baslat";
+import { eclubIzlemeHaklari } from "@/lib/eclub/izlemeKurali";
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,8 +15,6 @@ export async function GET(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const adminSupabase = createAdminClient();
-
-    // Kişi kimliği
     const { data: kisi, error: kisiError } = await adminSupabase
       .from("eclub_kisiler")
       .select("kisi_id, rol")
@@ -33,61 +28,73 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const izleme_id = searchParams.get("izleme_id");
     if (!izleme_id) return validasyonHatasi("izleme_id zorunludur.", ["izleme_id"]);
+    if (!olayIdGecerliMi(izleme_id)) return validasyonHatasi("Geçersiz izleme kimliği gönderildi.", ["izleme_id"]);
 
-    // İzleme kaydı (kişiye ait, tamamlanmış)
     const { data: izleme, error: izlemeError } = await adminSupabase
       .from("eclub_izleme_kayitlari")
-      .select("izleme_id, yayin_id, kisi_id, tamamlandi_mi")
+      .select("izleme_id, yayin_id, kisi_id, oneri_id, tamamlandi_mi, soru_hakki_var_mi, soru_hakki_nedeni, soru_indeksleri")
       .eq("izleme_id", izleme_id)
       .single();
 
+    if (izlemeError) return hataYaniti("İzleme sorgulanamadı.", "eclub_izleme_kayitlari SELECT", izlemeError, 404);
     const izlemeKontrol = veriKontrol(izleme, "eclub_izleme_kayitlari SELECT — izleme_id", "İzleme kaydı bulunamadı.");
     if (!izlemeKontrol.gecerli) return izlemeKontrol.yanit;
-    if (izlemeError) return hataYaniti("İzleme sorgulanamadı.", "eclub_izleme_kayitlari SELECT", izlemeError, 404);
     if (izleme.kisi_id !== kisi.kisi_id) return rolHatasi("Bu izleme kaydına erişim yetkiniz yok.");
     if (!izleme.tamamlandi_mi) return isKuraluHatasi("Sorular ancak video tamamlandıktan sonra gösterilebilir.");
-
-    // Bu izleme için cevaplama zaten yapıldı mı?
-    const { data: oncekiCevaplama } = await adminSupabase
-      .from("eclub_kazanilan_puanlar")
-      .select("kazanilan_puan_id")
-      .eq("izleme_id", izleme_id)
-      .eq("puan_turu", "cevaplama")
-      .limit(1);
-
-    if ((oncekiCevaplama ?? []).length > 0) return isKuraluHatasi("Bu izleme için sorular zaten cevaplandı.");
-
-    // Sorular + video_basi_soru_sayisi → v_yayin_detay
-    const { data: yayin, error: yayinError } = await adminSupabase
-      .from("v_yayin_detay")
-      .select("sorular, video_basi_soru_sayisi")
-      .eq("yayin_id", izleme.yayin_id)
-      .single();
-
-    if (yayinError || !yayin) return hataYaniti("Yayın bilgisi alınamadı.", "v_yayin_detay SELECT", yayinError, 404);
-
-    const videoBasiSoruSayisi = yayin.video_basi_soru_sayisi ?? VARSAYILAN_SORU_SAYISI;
-
-    if (!yayin.sorular || yayin.sorular.length < videoBasiSoruSayisi) {
-      return hataYaniti(
-        `Soru setinde yeterli soru bulunamadı. Gerekli: ${videoBasiSoruSayisi}, mevcut: ${yayin.sorular?.length ?? 0}`,
-        "v_yayin_detay — sorular kontrolü",
-        null,
-        404
-      );
+    if (!izleme.soru_hakki_var_mi) {
+      return isKuraluHatasi(`Bu izleme için soru hakkı bulunmuyor (${izleme.soru_hakki_nedeni ?? "uygun_degil"}).`);
     }
 
-    // Rastgele seçim (orijinalIndex → soru_index). 'dogru' alanı düşürülür.
-    const secilenler = rastgeleSoruSec(yayin.sorular as unknown[], videoBasiSoruSayisi);
+    const soruIndeksleri = izleme.soru_indeksleri as number[] | null;
+    if (!Array.isArray(soruIndeksleri) || soruIndeksleri.length === 0) {
+      return hataYaniti("İzlemeye atanmış soru seti bulunamadı.", "eclub_izleme_kayitlari.soru_indeksleri", null);
+    }
 
-    const secilenSorular = (secilenler as Array<{ orijinalIndex: number; soru_metni: string; secenekler: Array<{ harf: string; metin: string }> }>).map((s) => ({
-      soru_index: s.orijinalIndex,
-      soru_metni: s.soru_metni,
-      secenekler: s.secenekler.map((se) => ({ harf: se.harf, metin: se.metin })),
-    }));
+    const { data: oneri, error: oneriError } = await adminSupabase
+      .from("eclub_oneri_kayitlari")
+      .select("oneri_baslangic, oneri_bitis")
+      .eq("oneri_id", izleme.oneri_id)
+      .single();
+    if (oneriError || !oneri) return hataYaniti("Öneri kaydı doğrulanamadı.", "eclub_oneri_kayitlari SELECT — soru hakkı", oneriError, 404);
+    if (!eclubIzlemeHaklari(oneri.oneri_baslangic, oneri.oneri_bitis).soruGoster) {
+      return isKuraluHatasi("Süresi geçmiş öneride soru gösterilmez.");
+    }
+
+    const [{ data: oncekiDogru, error: dogruError }, { data: oncekiYanlis, error: yanlisError }] = await Promise.all([
+      adminSupabase.from("eclub_dogru_cevap_kayitlari").select("kayit_id").eq("izleme_id", izleme_id).limit(1),
+      adminSupabase.from("eclub_yanlis_cevap_kayitlari").select("kayit_id").eq("izleme_id", izleme_id).limit(1),
+    ]);
+    if (dogruError || yanlisError) return hataYaniti("Önceki cevaplar kontrol edilemedi.", "E-Club cevap kayıtları SELECT", dogruError ?? yanlisError);
+    if ((oncekiDogru?.length ?? 0) > 0 || (oncekiYanlis?.length ?? 0) > 0) {
+      return isKuraluHatasi("Bu izleme için sorular zaten cevaplandı.");
+    }
+
+    const { data: yayin, error: yayinError } = await adminSupabase
+      .from("v_yayin_detay")
+      .select("sorular")
+      .eq("yayin_id", izleme.yayin_id)
+      .single();
+    if (yayinError || !yayin || !Array.isArray(yayin.sorular)) {
+      return hataYaniti("Yayın soru seti alınamadı.", "v_yayin_detay SELECT — sabit E-Club soruları", yayinError, 404);
+    }
+
+    const secilenSorular = soruIndeksleri.map((soru_index) => {
+      const soru = yayin.sorular?.[soru_index];
+      if (!soru || !Array.isArray(soru.secenekler)) return null;
+      return {
+        soru_index,
+        soru_metni: soru.soru_metni,
+        secenekler: soru.secenekler.map((secenek: { harf: string; metin: string }) => ({
+          harf: secenek.harf,
+          metin: secenek.metin,
+        })),
+      };
+    });
+    if (secilenSorular.some((soru) => soru === null)) {
+      return hataYaniti("Atanmış sorulardan biri güncel soru setinde bulunamadı.", "eclub_izleme_kayitlari.soru_indeksleri", null);
+    }
 
     return NextResponse.json({ sorular: secilenSorular }, { status: 200 });
-
   } catch (err) {
     return sunucuHatasi(err, "GET /eclub/panel/api/sorular");
   }

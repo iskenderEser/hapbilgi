@@ -10,12 +10,12 @@
 //   - deger jsonb: sayı ya da sayı dizisi kabul edilir (mevcut anahtarların tümü böyle).
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { hataYaniti, sunucuHatasi, validasyonHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/server";
+import { hataYaniti, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
+import { eclubGonderiAyariMi } from "@/lib/eclub/gonderiAyarlari";
 
-async function adminKontrol(_supabase: SupabaseClient, _adminSupabase: SupabaseClient): Promise<NextResponse | null> {
+async function adminKontrol(): Promise<NextResponse | null> {
   // B-26: tek bekçi — adminGirisKontrol (yerel kopya kaldırıldı).
   const kontrol = await adminGirisKontrol();
   return kontrol.gecerli ? null : kontrol.yanit;
@@ -32,10 +32,9 @@ function degerGecerliMi(deger: unknown): boolean {
 
 export async function GET() {
   try {
-    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const guard = await adminKontrol(supabase, adminSupabase);
+    const guard = await adminKontrol();
     if (guard) return guard;
 
     const { data: ayarlar, error } = await adminSupabase
@@ -54,10 +53,9 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const adminSupabase = createAdminClient();
 
-    const guard = await adminKontrol(supabase, adminSupabase);
+    const guard = await adminKontrol();
     if (guard) return guard;
 
     const body = await request.json();
@@ -66,6 +64,9 @@ export async function PUT(request: NextRequest) {
     if (!anahtar || typeof anahtar !== "string") return validasyonHatasi("anahtar zorunludur.", ["anahtar"]);
     if (!degerGecerliMi(deger)) {
       return validasyonHatasi("deger pozitif bir sayı ya da pozitif sayılardan oluşan bir dizi olmalıdır.", ["deger"]);
+    }
+    if (eclubGonderiAyariMi(anahtar) && (typeof deger !== "number" || !Number.isInteger(deger))) {
+      return validasyonHatasi("E-Club gönderi limitleri pozitif tam sayı olmalıdır.", ["deger"]);
     }
 
     // Yalnızca mevcut anahtar güncellenir (yeni anahtar = migration işi).

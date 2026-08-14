@@ -1,0 +1,479 @@
+.page {
+  min-height: 100%;
+  background:
+    radial-gradient(circle at 84% 2%, rgba(86, 174, 255, 0.12), transparent 25%),
+    linear-gradient(145deg, #f8fbff 0%, #f5f7fa 48%, #fbfcfe 100%);
+  color: #10213d;
+}
+
+.container {
+  width: 100%;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.headerActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.teamLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin-top: 4px;
+  color: #78889d;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.teamButton {
+  border: 1px solid #dce5ee;
+  border-radius: 8px;
+  padding: 3px 7px;
+  color: #5d7897;
+  background: #fff;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.teamEditor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.teamInput {
+  width: min(230px, 58vw);
+  border: 1px solid #d9e4ef;
+  border-radius: 9px;
+  padding: 6px 9px;
+  color: #30475f;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  outline: none;
+}
+
+.teamInput:focus {
+  border-color: #56aeff;
+  box-shadow: 0 0 0 3px rgba(86, 174, 255, 0.12);
+}
+
+.editorAction,
+.excelButton {
+  border-radius: 9px;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.editorAction {
+  border: 1px solid #dce5ee;
+  color: #5d7897;
+  background: #fff;
+}
+
+.editorPrimary {
+  border-color: #237ac8;
+  color: #fff;
+  background: #237ac8;
+}
+
+.excelButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #cfe8d9;
+  color: #16865f;
+  background: #effaf4;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.statCard,
+.panel {
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 28px rgba(36, 64, 98, 0.055);
+}
+
+.statCard {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.statIcon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 12px;
+  color: #237ac8;
+  background: #edf6ff;
+}
+
+.statLabel {
+  color: #7d8ea2;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.statValue {
+  margin-top: 2px;
+  color: #20324c;
+  font-size: 20px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.statDetail {
+  margin-top: 3px;
+  color: #91a0b1;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.panel {
+  margin-bottom: 14px;
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+.panelHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 17px 19px;
+  border-bottom: 1px solid #edf1f5;
+}
+
+.eyebrow {
+  color: #66809f;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.panelTitle {
+  margin-top: 2px;
+  color: #20324c;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.panelDescription {
+  margin-top: 2px;
+  color: #8190a3;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 12px;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 20px 18px 22px;
+}
+
+.podiumPerson {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.avatar {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  color: #38516e;
+  background: #edf3f9;
+  box-shadow: 0 5px 15px rgba(36, 64, 98, 0.12);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.podiumName {
+  width: 100%;
+  overflow: hidden;
+  margin-top: 7px;
+  color: #30475f;
+  font-size: 11px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.podiumPharmacy {
+  width: 100%;
+  overflow: hidden;
+  margin-top: 2px;
+  color: #91a0b1;
+  font-size: 8px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.podiumBase {
+  display: flex;
+  width: 100%;
+  min-height: 62px;
+  margin-top: 8px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 13px 13px 5px 5px;
+  color: #526b85;
+  background: linear-gradient(180deg, #eff4f8, #e6edf4);
+}
+
+.podiumFirst {
+  min-height: 88px;
+  color: #9a5b08;
+  background: linear-gradient(180deg, #fff7e5, #ffecc6);
+}
+
+.podiumSecond {
+  min-height: 72px;
+  color: #2b6fa9;
+  background: linear-gradient(180deg, #edf6ff, #dceeff);
+}
+
+.podiumRank {
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.podiumScore {
+  margin-top: 2px;
+  font-size: 20px;
+  font-weight: 950;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.table th {
+  padding: 10px 12px;
+  color: #7d8ea2;
+  background: #f7f9fc;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.table td {
+  padding: 11px 12px;
+  border-top: 1px solid #edf1f5;
+  color: #40556d;
+  font-weight: 750;
+}
+
+.openRow {
+  background: #f8fbfe;
+}
+
+.rankBadge {
+  display: inline-grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border-radius: 9px;
+  color: #4881b0;
+  background: #edf6fd;
+  font-size: 9px;
+  font-weight: 950;
+}
+
+.personButton {
+  position: relative;
+  display: flex;
+  min-width: 180px;
+  flex-direction: column;
+  padding: 0 25px 0 0;
+  border: 0;
+  color: #40556d;
+  background: transparent;
+  text-align: left;
+}
+
+.personButton strong {
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.personButton small {
+  margin-top: 2px;
+  color: #91a0b1;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.chevron {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  color: #6f91ad;
+  transform: translateY(-50%);
+  transition: transform 0.18s ease;
+}
+
+.chevronOpen {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.positive {
+  color: #208a66 !important;
+}
+
+.negative {
+  color: #d45c4b !important;
+}
+
+.score {
+  color: #217bc3 !important;
+  font-weight: 950 !important;
+}
+
+.detailCell {
+  padding: 0 12px 12px !important;
+  border-top: 0 !important;
+}
+
+.detailWrap {
+  overflow: hidden;
+  border: 1px solid #dfe8f1;
+  border-radius: 13px;
+  background: #fff;
+}
+
+.detailHeader,
+.detailRow {
+  display: grid;
+  min-width: 720px;
+  grid-template-columns: minmax(190px, 1.5fr) repeat(6, minmax(72px, 0.65fr));
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+}
+
+.detailHeader {
+  color: #7d8ea2;
+  background: #f4f8fc;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.detailRow {
+  color: #40556d;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.detailRow + .detailRow {
+  border-top: 1px solid #edf1f5;
+}
+
+.detailName {
+  overflow: hidden;
+  color: #30475f;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty {
+  padding: 34px 18px;
+  color: #8a9aab;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .container {
+    padding: 14px;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .headerActions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 560px) {
+  .container {
+    padding: 12px;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .podium {
+    gap: 6px;
+    padding-inline: 10px;
+  }
+
+  .podiumName {
+    font-size: 9px;
+  }
+
+  .headerActions :global(.hb-ligi-periyot-secici) {
+    width: 100%;
+  }
+}

@@ -3,13 +3,21 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
     const adminSupabase = createAdminClient();
+
+    const { data: ben, error: benError } = await adminSupabase
+      .from("kullanicilar")
+      .select("rol")
+      .eq("kullanici_id", user.id)
+      .single();
+    if (benError || !ben) return hataYaniti("Kullanıcı bulunamadı.", "kullanicilar SELECT", benError, 404);
+    if (!TUKETICI_ROLLER.includes((ben.rol ?? "").toLowerCase())) return rolHatasi("Sadece UTT takım adını görebilir.");
 
     const { data, error } = await adminSupabase
       .from("eclub_takim_adlari")

@@ -10,6 +10,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
+import { eclubIzlemeHaklari } from "@/lib/eclub/izlemeKurali";
+import { olayIdGecerliMi } from "@/lib/izleme/baslat";
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,6 +35,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { oneri_id } = body;
     if (!oneri_id) return validasyonHatasi("oneri_id zorunludur.", ["oneri_id"]);
+    if (!olayIdGecerliMi(oneri_id)) return validasyonHatasi("Geçersiz öneri kimliği gönderildi.", ["oneri_id"]);
 
     // Öneri geçerli mi: kişiye ait mi?
     const { data: oneri, error: oneriError } = await adminSupabase
@@ -41,34 +44,44 @@ export async function POST(request: NextRequest) {
       .eq("oneri_id", oneri_id)
       .single();
 
+    if (oneriError) return hataYaniti("Öneri sorgulanamadı.", "eclub_oneri_kayitlari SELECT", oneriError, 404);
     const oneriKontrol = veriKontrol(oneri, "eclub_oneri_kayitlari SELECT — oneri_id", "Öneri bulunamadı.");
     if (!oneriKontrol.gecerli) return oneriKontrol.yanit;
-    if (oneriError) return hataYaniti("Öneri sorgulanamadı.", "eclub_oneri_kayitlari SELECT", oneriError, 404);
     if (oneri.kisi_id !== kisi.kisi_id) return rolHatasi("Bu öneri size ait değil.");
+    const izlemeHaklari = eclubIzlemeHaklari(oneri.oneri_baslangic, oneri.oneri_bitis);
+    if (!izlemeHaklari.izlenebilir) return isKuraluHatasi("Bu önerinin izleme süresi henüz başlamadı.");
 
-    // Yayın hâlâ yayında mı?
+    // Yayın hâlâ yayında ve kişinin rolüne mi açık?
     const { data: yayin, error: yayinError } = await adminSupabase
-      .from("yayin_yonetimi")
-      .select("yayin_id, durum")
+      .from("v_yayin_detay")
+      .select("yayin_id, durum, hedef_rol")
       .eq("yayin_id", oneri.yayin_id)
       .single();
 
-    const yayinKontrol = veriKontrol(yayin, "yayin_yonetimi SELECT — yayin_id", "Yayın bulunamadı.");
+    if (yayinError) return hataYaniti("Yayın sorgulanamadı.", "v_yayin_detay SELECT — E-Club izleme", yayinError, 404);
+    const yayinKontrol = veriKontrol(yayin, "v_yayin_detay SELECT — yayin_id", "Yayın bulunamadı.");
     if (!yayinKontrol.gecerli) return yayinKontrol.yanit;
-    if (yayinError) return hataYaniti("Yayın sorgulanamadı.", "yayin_yonetimi SELECT", yayinError, 404);
     if (yayin.durum !== "yayinda") return isKuraluHatasi(`Video şu an yayında değil. Mevcut durum: ${yayin.durum}`);
+    if (yayin.hedef_rol !== kisi.rol) return rolHatasi("Bu yayın kişi rolünüze açık değil.");
 
-    // Zaten açık (tamamlanmamış) bir izleme kaydı var mı? Varsa onu döndür (tekrar açma).
-    const { data: acikIzleme } = await adminSupabase
+    // Bir öneri tek öğrenme olayıdır. Tamamlanmış kayıt da yeniden kullanılır;
+    // böylece tekrar oynatma ikinci puan veya ikinci soru hakkı doğurmaz.
+    const { data: mevcutIzleme, error: mevcutError } = await adminSupabase
       .from("eclub_izleme_kayitlari")
-      .select("izleme_id, yayin_id, oneri_id, izleme_baslangic")
+      .select("izleme_id, yayin_id, oneri_id, izleme_baslangic, tamamlandi_mi")
       .eq("kisi_id", kisi.kisi_id)
       .eq("oneri_id", oneri_id)
-      .eq("tamamlandi_mi", false)
+      .order("created_at", { ascending: true })
+      .limit(1)
       .maybeSingle();
 
-    if (acikIzleme) {
-      return NextResponse.json({ mesaj: "İzleme zaten açık.", izleme: acikIzleme }, { status: 200 });
+    if (mevcutError) return hataYaniti("Mevcut izleme sorgulanamadı.", "eclub_izleme_kayitlari SELECT — oneri_id", mevcutError);
+    if (mevcutIzleme) {
+      return NextResponse.json({
+        mesaj: mevcutIzleme.tamamlandi_mi ? "Video yeniden oynatılıyor." : "İzleme zaten açık.",
+        izleme: mevcutIzleme,
+        tekrar_izleme: mevcutIzleme.tamamlandi_mi === true,
+      }, { status: 200 });
     }
 
     // Yeni izleme kaydı (öneriye bağlı)
@@ -85,12 +98,24 @@ export async function POST(request: NextRequest) {
       .select("izleme_id, yayin_id, oneri_id, izleme_baslangic")
       .single();
 
+    if (izlemeError?.code === "23505") {
+      const { data: cakisaniOku, error: cakismaOkumaError } = await adminSupabase
+        .from("eclub_izleme_kayitlari")
+        .select("izleme_id, yayin_id, oneri_id, izleme_baslangic, tamamlandi_mi")
+        .eq("kisi_id", kisi.kisi_id)
+        .eq("oneri_id", oneri_id)
+        .maybeSingle();
+      if (cakismaOkumaError || !cakisaniOku) {
+        return hataYaniti("İzleme başlatılamadı.", "eclub_izleme_kayitlari INSERT çakışması", cakismaOkumaError ?? izlemeError);
+      }
+      return NextResponse.json({ mesaj: "Mevcut izleme açıldı.", izleme: cakisaniOku, tekrar_izleme: cakisaniOku.tamamlandi_mi === true }, { status: 200 });
+    }
     if (izlemeError) return hataYaniti("İzleme başlatılamadı.", "eclub_izleme_kayitlari INSERT", izlemeError);
 
     const izlemeKontrol = veriKontrol(yeniIzleme, "eclub_izleme_kayitlari INSERT — dönen veri", "İzleme başlatıldı ancak veri döndürülemedi.");
     if (!izlemeKontrol.gecerli) return izlemeKontrol.yanit;
 
-    return NextResponse.json({ mesaj: "İzleme başlatıldı.", izleme: yeniIzleme }, { status: 201 });
+    return NextResponse.json({ mesaj: "İzleme başlatıldı.", izleme: yeniIzleme, tekrar_izleme: false }, { status: 201 });
 
   } catch (err) {
     return sunucuHatasi(err, "POST /eclub/panel/api/baslat");

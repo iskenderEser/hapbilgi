@@ -2,11 +2,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
-import { hataYaniti, sunucuHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
+import { hataYaniti, sunucuHatasi, yetkiHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { haftaBaslangici, ayBaslangici, yilBaslangici, aktifPeriyot } from "@/lib/zaman/kontrol";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { FIRMA_KOLONLARI } from "@/lib/firma/kolonlar";
 import { harcamaBakiyesi } from "@/lib/store/bakiye";
+import { eclubKisiErisimi } from "@/lib/eclub/kisiErisim";
+import { eclubStoreToplamBakiye } from "@/lib/eclub/store/eclubStoreBakiye";
 
 export async function GET() {
   try {
@@ -15,6 +17,61 @@ export async function GET() {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
+
+    // Dış müşteri ayrı kimlik düzlemindedir; v_kullanici_detay'da aranmaz.
+    const eclubErisim = await eclubKisiErisimi(adminSupabase, user.id);
+    if (eclubErisim.kisi) {
+      const kisi = eclubErisim.kisi;
+      const eczaneAdlari: string[] = [];
+      if (eclubErisim.eczane_idler.length > 0) {
+        const { data: eczaneler, error: eczaneError } = await adminSupabase
+          .from("eclub_eczaneler")
+          .select("gln")
+          .in("eczane_id", eclubErisim.eczane_idler);
+        if (eczaneError) return hataYaniti("Eczane bilgileri alınamadı.", "eclub_eczaneler SELECT — profil", eczaneError);
+        const glnler = [...new Set((eczaneler ?? []).map((eczane) => eczane.gln))];
+        if (glnler.length > 0) {
+          const { data: master, error: masterError } = await adminSupabase
+            .from("eclub_eczane_master")
+            .select("eczane_adi")
+            .in("gln", glnler);
+          if (masterError) return hataYaniti("Eczane adları alınamadı.", "eclub_eczane_master SELECT — profil", masterError);
+          eczaneAdlari.push(...[...new Set((master ?? []).map((eczane) => eczane.eczane_adi))]);
+        }
+      }
+
+      const aktifFirmaAdlari = eclubErisim.firmalar
+        .filter((firma) => firma.aktif !== false && firma.eclub_aktif === true)
+        .map((firma) => firma.firma_adi);
+      const storePuani = eclubErisim.eclub_store_aktif
+        ? await eclubStoreToplamBakiye(adminSupabase, kisi.kisi_id)
+        : 0;
+
+      return NextResponse.json({
+        profil: {
+          kullanici_id: kisi.kisi_id,
+          ad: kisi.ad,
+          soyad: kisi.soyad,
+          eposta: kisi.eposta,
+          telefon: kisi.telefon,
+          rol: kisi.rol,
+          firma_id: null,
+          firma_adi: aktifFirmaAdlari.length > 0 ? aktifFirmaAdlari.join(", ") : null,
+          takim_id: null,
+          takim_adi: null,
+          bolge_id: null,
+          bolge_adi: null,
+          eczane_adi: eczaneAdlari.length > 0 ? eczaneAdlari.join(", ") : null,
+          fotograf_url: null,
+          hbstore_aktif: false,
+          cc_aktif: false,
+          eclub_aktif: eclubErisim.eclub_aktif,
+          eclub_store_aktif: eclubErisim.eclub_store_aktif,
+          eczanem_aktif: false,
+        },
+        eclub_navbar_ozet: { store_puani: storePuani },
+      }, { status: 200 });
+    }
 
     const rol = await rolCozucu(adminSupabase, user.id);
 
@@ -161,6 +218,14 @@ export async function PUT(request: NextRequest) {
     const { fotograf_url, mevcut_sifre, yeni_sifre } = body;
 
     if (fotograf_url !== undefined) {
+      const { data: kimlik, error: kimlikError } = await adminSupabase
+        .from("v_auth_kimlik_admin")
+        .select("kimlik_turu")
+        .eq("auth_id", user.id)
+        .maybeSingle();
+      if (kimlikError || !kimlik) return hataYaniti("Kimlik bilgisi alınamadı.", "v_auth_kimlik_admin SELECT — profil güncelleme", kimlikError);
+      if (kimlik.kimlik_turu !== "kullanici") return isKuraluHatasi("E-Club profilinde fotoğraf yönetimi henüz bulunmuyor.");
+
       const { error: updateError } = await adminSupabase
         .from("kullanicilar")
         .update({ fotograf_url })

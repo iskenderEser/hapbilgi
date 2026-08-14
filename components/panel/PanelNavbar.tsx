@@ -31,6 +31,9 @@ interface PanelNavbarProps {
   ozet?: { haftalikPuan: number; takimSirasi: number | null; siparisPuani: number } | null;
   // Sipariş Puanı pill'i yalnız kullanıcının firmasında HBStore aktifse görünür.
   siparisPuaniGoster?: boolean;
+  // Dış müşteri ana sayfası /eclub/panel'dir; iç kullanıcıda varsayılan korunur.
+  anaSayfaYolu?: string;
+  eclubStorePuani?: number | null;
   onCikis: () => void;
   onHamburger?: () => void; // mobilde sol drawer'ı açar
 }
@@ -44,7 +47,7 @@ const BILGI_PILLERI: { key: string; etiket: string; path: string }[] = [
   { key: "iletisim", etiket: "İletişim", path: "/iletisim" },
 ];
 
-export default function PanelNavbar({ adSoyad, email, ozet, siparisPuaniGoster, onCikis, onHamburger }: PanelNavbarProps) {
+export default function PanelNavbar({ adSoyad, email, ozet, siparisPuaniGoster, anaSayfaYolu = "/ana-sayfa", eclubStorePuani, onCikis, onHamburger }: PanelNavbarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [hover, setHover] = useState<string | null>(null);
@@ -86,11 +89,11 @@ export default function PanelNavbar({ adSoyad, email, ozet, siparisPuaniGoster, 
           {BILGI_PILLERI.map((p) => (
             <button
               key={p.key}
-              onClick={() => router.push(p.path)}
+              onClick={() => router.push(p.key === "ana-sayfa" ? anaSayfaYolu : p.path)}
               onMouseEnter={() => setHover(p.key)}
               onMouseLeave={() => setHover(null)}
-              className={pillClass(isAktif(p.path))}
-              style={pillStyle(p.key, isAktif(p.path))}
+              className={pillClass(isAktif(p.key === "ana-sayfa" ? anaSayfaYolu : p.path))}
+              style={pillStyle(p.key, isAktif(p.key === "ana-sayfa" ? anaSayfaYolu : p.path))}
             >
               {p.etiket}
             </button>
@@ -104,6 +107,12 @@ export default function PanelNavbar({ adSoyad, email, ozet, siparisPuaniGoster, 
               {siparisPuaniGoster && (
                 <OzetPill etiket="Sipariş Puanı" deger={ozet.siparisPuani.toLocaleString("tr-TR")} />
               )}
+            </>
+          )}
+          {eclubStorePuani !== null && eclubStorePuani !== undefined && (
+            <>
+              <div style={{ width: 1, alignSelf: "stretch", background: "rgba(0,0,0,0.18)", margin: "4px 6px" }} />
+              <OzetPill etiket="Store Puanı" deger={eclubStorePuani.toLocaleString("tr-TR")} />
             </>
           )}
         </div>

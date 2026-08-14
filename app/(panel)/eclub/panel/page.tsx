@@ -43,11 +43,6 @@ export default function EclubPanelPage() {
     );
   }
 
-  const gunKalan = (bitis: string): number => {
-    const fark = new Date(bitis).getTime() - Date.now();
-    return Math.max(0, Math.ceil(fark / (1000 * 60 * 60 * 24)));
-  };
-
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <div className="max-w-3xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
@@ -79,7 +74,7 @@ export default function EclubPanelPage() {
 
             {oneriler.length === 0 ? (
               <div className="bg-white border border-gray-200 rounded-xl px-5 py-10 text-center">
-                <p className="text-sm text-gray-400 m-0">Şu anda size önerilen aktif video yok.</p>
+                <p className="text-sm text-gray-400 m-0">Şu anda size önerilmiş video yok.</p>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
@@ -104,9 +99,15 @@ export default function EclubPanelPage() {
                       </div>
 
                       <div className="flex items-center gap-2 flex-wrap mt-auto">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #93c5fd" }}>
-                          {gunKalan(o.oneri_bitis)} gün kaldı
-                        </span>
+                        {o.oneri_durumu === "aktif" ? (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #93c5fd" }}>
+                            {o.kalan_gun} gün kaldı
+                          </span>
+                        ) : (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "#fff7ed", color: "#9a3412", border: "0.5px solid #fdba74" }}>
+                            Süresi geçti · puansız izleme
+                          </span>
+                        )}
                         {o.izlendi_mi && (
                           <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "#eaf7e4", color: "#166534", border: "0.5px solid #7ed957" }}>
                             İzlendi
@@ -120,7 +121,7 @@ export default function EclubPanelPage() {
                           className="text-xs px-4 py-2 rounded-lg border-none text-white font-semibold cursor-pointer"
                           style={{ background: "#56aeff", fontFamily: "'Nunito', sans-serif" }}
                         >
-                          İzle
+                          {o.izlendi_mi ? "Tekrar İzle" : "İzle"}
                         </button>
                       </div>
                     </div>

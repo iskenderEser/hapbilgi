@@ -26,6 +26,7 @@ type MobilDrawerProps = NavContext & {
   onCikis: () => void;
   badge: Record<string, number>;
   yayinBekleyen: number;
+  anaSayfaYolu?: string;
   // Çizilecek ağaç — layout verir (eclub_kisi'de ECLUB_KISI_NAV). Varsayılan PANEL_NAV.
   gruplar?: NavGrup[];
 };
@@ -52,8 +53,8 @@ export default function MobilDrawer(props: MobilDrawerProps) {
   const rozetSayisi = (oge: NavOge) =>
     oge.yayinBekleyenRozeti ? props.yayinBekleyen : oge.badgeKey ? (props.badge[oge.badgeKey] ?? 0) : 0;
 
-  const Satir = ({ etiket, path, sayi, girintili = false }: { etiket: string; path: string; sayi?: number; girintili?: boolean }) => {
-    const aktif = pathname.startsWith(path);
+  const Satir = ({ etiket, path, sayi, girintili = false, tamEslesme = false }: { etiket: string; path: string; sayi?: number; girintili?: boolean; tamEslesme?: boolean }) => {
+    const aktif = tamEslesme ? pathname === path : pathname === path || pathname.startsWith(`${path}/`);
     return (
       <button
         onClick={() => git(path)}
@@ -105,7 +106,7 @@ export default function MobilDrawer(props: MobilDrawerProps) {
         {/* Bilgi pilleri */}
         <div className="flex flex-col gap-1">
           {BILGI_PILLERI.map((p) => (
-            <Satir key={p.path} etiket={p.etiket} path={p.path} />
+            <Satir key={p.path} etiket={p.etiket} path={p.etiket === "Ana Sayfa" ? (props.anaSayfaYolu ?? p.path) : p.path} />
           ))}
         </div>
 
@@ -121,7 +122,7 @@ export default function MobilDrawer(props: MobilDrawerProps) {
               return (
                 <div key={grup.baslik} className="flex flex-col gap-1">
                   {gorunur.map((oge) => (
-                    <Satir key={oge.etiket} etiket={oge.etiket} path={cozPath(oge)} sayi={rozetSayisi(oge)} />
+                    <Satir key={oge.etiket} etiket={oge.etiket} path={cozPath(oge)} sayi={rozetSayisi(oge)} tamEslesme={oge.tamEslesme} />
                   ))}
                 </div>
               );
@@ -135,7 +136,7 @@ export default function MobilDrawer(props: MobilDrawerProps) {
                   {grup.baslik}
                 </span>
                 {gorunur.map((oge) => (
-                  <Satir key={oge.etiket} etiket={oge.etiket} path={cozPath(oge)} sayi={rozetSayisi(oge)} girintili />
+                  <Satir key={oge.etiket} etiket={oge.etiket} path={cozPath(oge)} sayi={rozetSayisi(oge)} girintili tamEslesme={oge.tamEslesme} />
                 ))}
               </div>
             );

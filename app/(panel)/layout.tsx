@@ -36,9 +36,11 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   const [drawerAcik, setDrawerAcik] = useState(false);
   // Navbar kişisel özeti — yalnız UTT/KD_UTT için profil/api döndürür (BM sonraya).
   const [ozet, setOzet] = useState<{ haftalikPuan: number; takimSirasi: number | null; siparisPuani: number } | null>(null);
+  const [eclubStorePuani, setEclubStorePuani] = useState<number | null>(null);
 
   const rolKucu = kullanici?.rol?.trim().toLowerCase() ?? "";
   const isUretici = URETICI_ROLLER.includes(rolKucu);
+  const isEclubKisi = kullanici?.kimlik_turu === "eclub_kisi";
 
   // Guard — tek yerde (ana-sayfa'dan birebir; ROLE_MAP kontrolü sayfada kalır).
   useEffect(() => {
@@ -67,7 +69,8 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
           takimSirasi: data.navbar_ozet.takim_sirasi ?? null,
           siparisPuani: data.navbar_ozet.siparis_puani ?? 0,
         });
-      }
+      } else setOzet(null);
+      setEclubStorePuani(data.eclub_navbar_ozet?.store_puani ?? null);
     } catch {}
   }, []);
 
@@ -90,7 +93,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
 
   // Rozet çekimi (B) — bir kez burada; SolListe + MobilDrawer'a dağıtılır.
   useEffect(() => {
-    if (!rolKucu) return;
+    if (!rolKucu || isEclubKisi) return;
     const badgelariCek = async () => {
       try {
         const res = await fetch("/bildirimler/api");
@@ -119,7 +122,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
       clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [rolKucu, isUretici]);
+  }, [rolKucu, isUretici, isEclubKisi]);
 
   if (yukleniyor || !kullanici) {
     return (
@@ -143,10 +146,20 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   };
   // eclub_kisi (KARAR-4) dar gezinme; diğer herkes tam ağaç.
   const gruplar = kullanici.kimlik_turu === "eclub_kisi" ? ECLUB_KISI_NAV : PANEL_NAV;
+  const anaSayfaYolu = isEclubKisi ? "/eclub/panel" : "/ana-sayfa";
 
   return (
     <div style={{ height: "100vh", background: "#f9fafb", fontFamily: "'Nunito', sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <PanelNavbar adSoyad={kullanici.adSoyad} email={kullanici.email} ozet={ozet} siparisPuaniGoster={flags.storeAcik} onCikis={cikisYap} onHamburger={() => setDrawerAcik(true)} />
+      <PanelNavbar
+        adSoyad={kullanici.adSoyad}
+        email={kullanici.email}
+        ozet={isEclubKisi ? null : ozet}
+        siparisPuaniGoster={!isEclubKisi && flags.storeAcik}
+        anaSayfaYolu={anaSayfaYolu}
+        eclubStorePuani={isEclubKisi && flags.eclubStoreAcik ? eclubStorePuani : null}
+        onCikis={cikisYap}
+        onHamburger={() => setDrawerAcik(true)}
+      />
 
       <MobilDrawer
         {...ctx}
@@ -156,6 +169,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         acik={drawerAcik}
         onKapat={() => setDrawerAcik(false)}
         onCikis={cikisYap}
+        anaSayfaYolu={anaSayfaYolu}
       />
 
       <div className="flex flex-1" style={{ minHeight: 0 }}>

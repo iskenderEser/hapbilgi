@@ -9,6 +9,10 @@ import { useEclubListem } from "./_hooks/useEclubListem";
 import { EczaneBlogu } from "./_components/EczaneBlogu";
 import { glnGecerliMi, KISI_ROL_ETIKETLERI, type GlnSorguSonuc } from "./_types";
 import { ECLUB_GOREN_ROLLER } from "@/lib/utils/roller";
+import { useEclubOneriler } from "../oneriler/_hooks/useEclubOneriler";
+import { OneriGonder } from "../oneriler/_components/OneriGonder";
+
+type Gorunum = "videolar" | "eczaneler";
 
 export default function EclubListemPage() {
   const router = useRouter();
@@ -19,9 +23,18 @@ export default function EclubListemPage() {
   const hazir = !authYukleniyor && rolUygun;
 
   const {
-    eczaneler, kisiler, loading, islemLoading,
+    eczaneler, kisiler, loading: listeLoading, islemLoading,
     glnSorgula, eczaneEkle, eczaneListedenCikar, kisiEkle, kisiGuncelle, kisiPasifeAl,
   } = useEclubListem({ hazir, hata, basari });
+  const {
+    yayinlar,
+    kisiler: oneriKisileri,
+    limitler,
+    loading: videoLoading,
+    gonderLoading,
+    oneriGonder,
+  } = useEclubOneriler({ hazir, hata, basari });
+  const [gorunum, setGorunum] = useState<Gorunum>("videolar");
 
   // Yeni eczane formu (ana "+") — GLN-öncelikli, master otomatik doldurma
   const [eczaneFormAcik, setEczaneFormAcik] = useState(false);
@@ -85,7 +98,7 @@ export default function EclubListemPage() {
     if (ok) formTemizle();
   };
 
-  if (authYukleniyor || !kullanici || loading) {
+  if (authYukleniyor || !kullanici || listeLoading || videoLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
@@ -101,13 +114,43 @@ export default function EclubListemPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <div className="max-w-4xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
+      <div className="mx-auto flex max-w-[1480px] flex-col gap-4 px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
 
-        <div className="flex flex-col gap-1">
-          <h1 className="text-lg font-semibold text-gray-900 m-0">E-Club Listem</h1>
-          <p className="text-sm text-gray-500 m-0">Eczaneleri ve eczacı/teknisyen kişilerini buradan yönetin.</p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">Dış müşteri öğrenme yönetimi</p>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">Videolar ve Eczanelerim</h1>
+            <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">E‑Club videolarını inceleyin, eczanelerinizi yönetin ve uygun içeriği eczacı ya da teknisyeninize önerin.</p>
+          </div>
+          <div className="flex w-fit gap-1 rounded-xl border border-[#dfe7f1] bg-white p-1 shadow-[0_4px_14px_rgba(31,55,90,0.035)]" aria-label="Videolar ve Eczanelerim görünümü">
+            {([[
+              "videolar", "Videolar",
+            ], [
+              "eczaneler", "Eczanelerim",
+            ]] as [Gorunum, string][]).map(([anahtar, etiket]) => (
+              <button
+                key={anahtar}
+                type="button"
+                onClick={() => setGorunum(anahtar)}
+                aria-pressed={gorunum === anahtar}
+                className={`rounded-lg px-3 py-2 text-xs font-extrabold transition-colors ${gorunum === anahtar ? "bg-[#2f7fc7] text-white" : "bg-white text-[#617894] hover:bg-[#f5f8fc]"}`}
+              >
+                {etiket}
+              </button>
+            ))}
+          </div>
         </div>
 
+        {gorunum === "videolar" ? (
+          <OneriGonder
+            yayinlar={yayinlar}
+            kisiler={oneriKisileri}
+            limitler={limitler}
+            gonderLoading={gonderLoading}
+            onGonder={oneriGonder}
+          />
+        ) : (
+          <div className="mx-auto flex w-full max-w-4xl flex-col gap-4">
         {eczaneler.length === 0 && !eczaneFormAcik && (
           <div className="bg-white border border-gray-200 rounded-xl px-5 py-8 text-center">
             <p className="text-sm text-gray-400 m-0">Henüz eczane eklenmedi. Aşağıdaki düğmeyle başlayın.</p>
@@ -228,6 +271,8 @@ export default function EclubListemPage() {
               className="px-5 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-600 text-sm font-semibold cursor-pointer hover:bg-gray-50 transition-colors">
               + Yeni Eczane Ekle
             </button>
+          </div>
+        )}
           </div>
         )}
       </div>

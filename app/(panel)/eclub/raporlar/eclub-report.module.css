@@ -1,0 +1,82 @@
+.personList {
+  overflow: hidden;
+  border: 1px solid #dfe8f1;
+  border-radius: 13px;
+  background: #fff;
+}
+
+.personHeader,
+.personRow {
+  display: grid;
+  min-width: 680px;
+  grid-template-columns: minmax(190px, 1.4fr) repeat(5, minmax(76px, 0.7fr));
+  align-items: center;
+  gap: 8px;
+}
+
+.personHeader {
+  padding: 8px 10px;
+  color: #7d8ea2;
+  background: #f4f8fc;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.personRow {
+  padding: 10px;
+  color: #40556d;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.personRow + .personRow {
+  border-top: 1px solid #edf1f5;
+}
+
+.personIdentity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.personIdentity strong {
+  overflow: hidden;
+  color: #30475f;
+  font-size: 10px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.personIdentity small {
+  margin-top: 2px;
+  color: #91a0b1;
+  font-size: 8px;
+  font-weight: 750;
+}
+
+.positive {
+  color: #208a66;
+}
+
+.negative {
+  color: #d45c4b;
+}
+
+.score {
+  color: #217bc3;
+  font-weight: 950;
+}
+
+.empty {
+  border: 1px dashed #dce5ee;
+  border-radius: 13px;
+  padding: 18px;
+  color: #8a9aab;
+  background: #fafcfe;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
