@@ -21,6 +21,7 @@ import {
   STORE_ALABILEN_ROLLER,
   STORE_GENEL_GOREN_ROLLER,
   ECLUB_GOREN_ROLLER,
+  ECLUB_YONETIM_ROLLERI,
   TUKETICI_ROLLER,
 } from "@/lib/utils/roller";
 
@@ -118,9 +119,9 @@ export const PANEL_NAV: NavGrup[] = [
     baslik: "E-Club",
     oglar: [
       { etiket: "Videolar ve Eczanelerim", path: "/eclub/listem",     gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
-      { etiket: "Raporlar",                 path: "/eclub/raporlar",  gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
-      { etiket: "E-Club Ligi",              path: "/eclub/ligi",      gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
-      { etiket: "Siparişler",               path: "/eclub/siparisler", gate: (c) => c.eclubAcik && c.eclubStoreAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
+      { etiket: "Raporlar",                 path: "/eclub/raporlar",  gate: (c) => c.eclubAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },
+      { etiket: "E-Club Ligi",              path: "/eclub/ligi",      gate: (c) => c.eclubAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },
+      { etiket: "Siparişler",               path: "/eclub/siparisler", gate: (c) => c.eclubAcik && c.eclubStoreAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },
     ],
   },
   {

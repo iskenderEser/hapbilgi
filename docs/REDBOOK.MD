@@ -207,10 +207,11 @@ Sistemdeki tüm rol tanımları ve yetki kümeleri tek bir dosyada, `lib/utils/r
 | `CCLIGI_GORENLERLER` | Challenge Club Ligi: BM (asıl) + TM/üretici/yönetici/admin (gözlemci) |
 | `STORE_ALABILEN_ROLLER` | HBStore'dan puan harcayabilen: UTT/KD_UTT + BM |
 | `STORE_GORENLERLER` / `STORE_GENEL_GOREN_ROLLER` | HBStore sipariş görüntüleme; kapsam role göre daralır (kendi / takım / firma) |
-| `ECLUB_GOREN_ROLLER` | UTT E-Club çalışma grubu (Videolar ve Eczanelerim / Raporlar / Lig / Siparişler): UTT/KD_UTT |
-| `ECLUB_LIGI_GOREN_ROLLER` | E-Club ana modülüyle aynı UTT/KD_UTT kapsamı; route yetkisinde adlandırılmış karşılık |
+| `ECLUB_GOREN_ROLLER` | E-Club çalışma/yönetme yüzeyi (Videolar ve Eczanelerim): UTT/KD_UTT |
+| `ECLUB_YONETIM_ROLLERI` | E-Club Raporlar / Lig / Siparişler: UTT/KD_UTT, BM, TM, üretici ve yönetici roller |
+| `ECLUB_LIGI_GOREN_ROLLER` | E-Club yönetim sözleşmesiyle aynı kapsamın lig route'undaki adlandırılmış karşılığı |
 
-Bu kümelerin çoğunda ortak desen, kapsamın role göre daralmasıdır: aynı sayfayı gören iki rol farklı genişlikte veri görür (UTT kendi verisini, BM bölgesini, TM takımını, yönetici tüm firmayı). E-Club'ın UTT çalışma grubu bilinçli istisnadır; dört iç sayfa yalnız UTT/KD_UTT'nin kendi eczane/kişi kapsamına aittir.
+Bu kümelerin çoğunda ortak desen, kapsamın role göre daralmasıdır: aynı sayfayı gören iki rol farklı genişlikte veri görür (UTT kendi verisini, BM bölgesini, TM takımını, yönetici tüm firmayı). E-Club'da video gönderme ve eczane/kişi bağını yönetme yalnız UTT/KD_UTT'dedir; rapor, lig ve sipariş izleme ise bu UTT yapraklarını yetkili yönetim hiyerarşisinde toplar.
 
 **Yetki bayrakları — role dik kesen izinler.** Rol grubuna ek olarak, `kullanicilar` tablosundaki iki boolean kolon (`yetki_kullanici_yonetim`, `yetki_aktif_pasif`) belirli işlemleri role dik biçimde açar: bir kullanıcının kullanıcı ekleme/silme veya aktif/pasif yapma yetkisi, rolünden bağımsız olarak bu bayraklarla verilir. Böylece aynı roldeki iki kişiden yalnızca birine yönetim yetkisi tanınabilir.
 
@@ -528,9 +529,9 @@ Dış müşteri döngüsü, bir eczanenin ve içindeki kişilerin sisteme tanıt
 
 **Bağ kuralları.** Modelin tuttuğu iş kuralları: bir eczacı tek bir eczaneye aktif bağlıdır; bir eczanede tek eczacı ama birden çok teknisyen olabilir; pasife alma kişiyi silmez, yalnızca `eclub_kisi_eczane.aktif_mi`'yi `false` yapar (kişinin puanları `kisi_id`'de kaldığı için korunur). Elle girilen eczaneler (master'da olmayan) admin onayına düşer (`eclub_eczane_master.onay_durumu`, §6.1).
 
-**Görünürlük ve açık iş.** Şu an listeyi yalnızca ekleyen UTT görür (`ECLUB_GOREN_ROLLER`: utt/kd_utt). BM/TM'in altındaki UTT'lerin listelerini görebildiği cascade liste görünümü henüz kurulmamıştır; bu bir açık iştir (§6.4). Rapor ve lig de aynı bilinçli UTT kapsamını kullanır; başka UTT'nin eczane/kişisi kapsama karışmaz.
+**Görünürlük ayrımı.** Eczane/kişi listesini ve video gönderimini yalnızca ekleyen UTT görür (`ECLUB_GOREN_ROLLER`: utt/kd_utt); üst roller UTT adına bağ veya öneri yönetemez. Buna karşılık Raporlar, E-Club Ligi ve Siparişler üst rollerde yönetim hiyerarşisiyle açılır. Her UTT yaprağı yine kendi aktif eczane/kişi kapsamından hesaplanır; üst toplamlar bu güvenli yaprakların birleşimidir ve başka hiyerarşideki UTT kapsama karışmaz.
 
-**UTT çalışma yüzeyi — tek E-Club grubu, dört görev.** İç kullanıcı sidebar'ında E-Club yalnız UTT/KD_UTT için açılır ve dört sayfayı sabit sırayla sunar: **Videolar ve Eczanelerim**, **Raporlar**, **E-Club Ligi**, **Siparişler**. İlk sayfa iki görünümü tek yerde birleştirir: UTT yayındaki uygun videoları izler/önerir ve kendi eczane–eczacı–teknisyen bağlarını yönetir. Raporlar periyot bazlı eczane→kişi öğrenme sonuçlarını, lig UTT'nin kendi dış müşteri takımını, Siparişler ise yalnız UTT'nin bağladığı eczanelerden doğan E-Club Store siparişlerini gösterir. Bu dört sayfa birbirinin tekrarı değildir; yönetme, ölçme, sıralama ve sipariş izleme görevlerini ayırır.
+**İç kullanıcı çalışma yüzeyi — tek E-Club grubu, dört görev.** UTT/KD_UTT sidebar'ında E-Club dört sayfayı sabit sırayla sunar: **Videolar ve Eczanelerim**, **Raporlar**, **E-Club Ligi**, **Siparişler**. İlk sayfa iki görünümü tek yerde birleştirir: UTT yayındaki uygun videoları izler/önerir ve kendi eczane–eczacı–teknisyen bağlarını yönetir. BM, TM, üretici ve yönetici roller bu yönetme sayfasını görmez; E-Club altında Raporlar, E-Club Ligi ve Store açıksa Siparişler'i görür. Raporlar periyot bazlı eczane→kişi öğrenme sonuçlarını, lig dış müşteri sıralamasını, Siparişler ise firma payıyla doğan siparişleri rol kapsamına göre BM→UTT veya Takım→BM→UTT hiyerarşisinde gösterir. Bu dört sayfa birbirinin tekrarı değildir; yönetme, ölçme, sıralama ve sipariş izleme görevlerini ayırır.
 
 ### 4.2 E-Club — Öneri ve tüketim (izleme/puanlama)
 
@@ -571,21 +572,21 @@ Dış müşterinin sisteme girişi, iç kullanıcılardan farklı bir yol izler:
 
 **Bildirim.** UTT bir öneri gönderdiğinde, kişiye bir bildirim yazılır: `eclub_bildirimler` tablosuna (`alici_kisi_id`, `gonderen_id`, `kayit_turu`, `mesaj`, `goruldu_mu`) `lib/utils/eclubBildirim.ts` üzerinden kayıt düşülür (tekil ve çoklu bildirim fonksiyonları). Mevcut durumun dürüst tespiti: **bildirim yazılıyor ama kişi tarafında henüz gösterilmiyor.** Öneri zaten panelde göründüğü için ayrı bir zil/rozet gösterimi kurulmamıştır; okundu işaretleme mekanizması ve harici kanal (WhatsApp/SMS) bildirimi de henüz yoktur. Bunlar açık işlerdir (§6.4). Yani altyapı (tablo + yazım) hazırdır; görüntüleme katmanı eksiktir.
 
-### 4.4 E-Club Ligi (UTT'nin dış müşteri takım sıralaması)
+### 4.4 E-Club Ligi (dış müşteri takım sıralaması ve yönetim hiyerarşisi)
 
-E-Club Ligi, yalnız UTT/KD_UTT'nin gördüğü kendi dış müşteri takım sıralamasıdır. Yarışanlar bu UTT'nin aktif bağlı eczanelerindeki eczacı ve teknisyenlerdir; başka UTT'nin eczanesi veya kişisi kapsama giremez. Ana sıralama kişinin izleme ve doğru cevap puanından oluşur; UTT'nin GönderiPuanı ise Raporlar'da UTT katkısını ölçen ayrı metriktir ve kişi sırasına eklenmez.
+E-Club Ligi'nin çekirdeği UTT/KD_UTT'nin kendi dış müşteri takım sıralamasıdır. Yarışanlar bu UTT'nin aktif bağlı eczanelerindeki eczacı ve teknisyenlerdir; başka UTT'nin eczanesi veya kişisi UTT kapsamına giremez. BM kendi UTT'lerini, TM kendi BM→UTT hattını, üretici ve yönetici roller ise yetkili takım/firma kapsamını aynı verinin üstten toplamı olarak görür. Hiyerarşi adla değil `firma_id`, `takim_id` ve `bolge_id` kimlikleriyle kurulur; aynı adlı bölgeler birbirine karışmaz. Ana sıralama kişinin izleme ve doğru cevap puanından oluşur; UTT'nin GönderiPuanı ise Raporlar'da UTT katkısını ölçen ayrı metriktir ve kişi sırasına eklenmez.
 
 **Sıralamanın temeli.** Puan = kişinin geçerli sürede kazandığı izleme puanı + doğru cevap puanı. Yanlış cevap kayıp üretmez. Eşit puanlar eşit sıra alır; puan kazanmayan kişiye yapay sıra verilmez. Kişi satırı açıldığında puanını oluşturan ürün/içerik dökümü görünür.
 
 **Tek rapor kaynağı.** Raporlar ve lig ayrı hesaplar üretmez; ikisi de `get_eclub_utt_rapor(p_utt_id, p_baslangic, p_bitis)` RPC'sinin kişi×içerik satırlarını kullanır. `lib/eclub/rapor.ts` aynı ham veriyi raporda eczane→kişi ve içerik dağılımına, ligde kişi→içerik sırasına toplar. Böylece aynı periyotta rapor toplamı ile lig toplamının ayrışması önlenir. Lig haftalık, aylık, dönemlik ve yıllık seçilebilir; zaman aralığı `lib/eclub/ligPeriyot.ts` ve ortak zaman yardımcılarından gelir.
 
-**Takım adı ve dışa aktarma.** `eclub_takim_adlari` tablosu UTT'nin kendi dış müşteri takımına verdiği adı tutar (`app/eclub/ligi/api/takim-adi`). `api/export` endpoint'i aynı UTT kapsamını Excel'e döker. Firma bazında `eclub_aktif` kapalıysa lig görünmez; görünürlük, route yetkisi ve proxy aynı `ECLUB_GOREN_ROLLER`/modül kapısını uygular.
+**Takım adı ve dışa aktarma.** `eclub_takim_adlari` tablosu UTT'nin kendi dış müşteri takımına verdiği adı tutar (`app/eclub/ligi/api/takim-adi`); üst roller bu adı değiştiremez. `api/export` endpoint'i oturum kullanıcısının yetkili hiyerarşisini Takım→BM→Bölge→UTT kolonlarıyla Excel'e döker. Firma bazında `eclub_aktif` kapalıysa lig görünmez; UTT'nin video/eczane yönetimi `ECLUB_GOREN_ROLLER`, rapor-lig-sipariş yönetimi ise `ECLUB_YONETIM_ROLLERI` sözleşmesini kullanır.
 
 **Canlı hesap.** E-Club Ligi ayrı bir sıralama tablosu tutmaz; `eclub_kazanilan_puanlar` ve cevap kayıtları `get_eclub_utt_rapor` tarafından periyot penceresiyle canlı toplanır. Tutarlılık ve anlık takip aynı kaynaktan gelir (§2.5).
 
 ### 4.5 E-Club Store (dış ödül, çok-firmalı bakiye)
 
-E-Club Store, dış müşterinin öğrenme emeğinin karşılık bulduğu mağazadır — §3.5'teki HBStore'un dış müşteri katmanındaki ikizi. Kişi, izleme ve doğru cevaplarla kazandığı puanı ürünlere dönüştürür. Modül `app/eclub/store/` altında yaşar: vitrin (`page.tsx`), adres yönetimi (`adreslerim`) ve kendi siparişleri (`siparislerim`) kişi tarafıdır. UTT tarafındaki kanonik izleme yüzeyi `/eclub/siparisler`'dir; `get_eclub_utt_siparisler` yalnız o UTT'nin aktif bağladığı eczanelerdeki eczacı/teknisyen siparişlerini, firma puan kullanımını, filtreleri ve sayfalamayı döndürür. Eski `/eclub/store/rapor` yolu bu sayfaya yönlenir.
+E-Club Store, dış müşterinin öğrenme emeğinin karşılık bulduğu mağazadır — §3.5'teki HBStore'un dış müşteri katmanındaki ikizi. Kişi, izleme ve doğru cevaplarla kazandığı puanı ürünlere dönüştürür. Modül `app/eclub/store/` altında yaşar: vitrin (`page.tsx`), adres yönetimi (`adreslerim`) ve kendi siparişleri (`siparislerim`) kişi tarafıdır. İç kullanıcıların kanonik izleme yüzeyi `/eclub/siparisler`'dir; `get_eclub_utt_siparisler` her UTT için yalnız o UTT'nin aktif bağladığı eczanelerdeki eczacı/teknisyen siparişlerini ve firmanın puan kullanımını döndürür. Yönetim API'si bu güvenli UTT parçalarını oturum kapsamına göre birleştirir: BM→UTT, TM→BM→UTT, firma düzeyi→Takım→BM→UTT. Eski `/eclub/store/rapor` yolu kanonik sayfaya yönlenir.
 
 **Yapısal paralellik, tek kritik fark.** Beş tablo HBStore'un birebir karşılığıdır (`eclub_store_kategoriler`, `urunler`, `adresler`, `siparisler` — aynı kolon deseni, `kisi_id` ile). Ama bir tablo fazladır ve bu fazlalık E-Club Store'un asıl mimari sorununu çözer: `eclub_store_siparis_firma_puan` (`siparis_id`, `firma_id`, `kullanilan_puan`). Bu tablonun varlığı, dış müşterinin **çok firmalı** olmasının (§1.2) ödül tarafındaki doğrudan sonucudur.
 
@@ -595,7 +596,7 @@ E-Club Store, dış müşterinin öğrenme emeğinin karşılık bulduğu mağaz
 
 **Sipariş yaşam döngüsü.** Geri kalan akış HBStore ile aynıdır: `eclub_store_siparis_olustur` (stok + bakiye kontrolü + adres snapshot + firma_puan dağılımı, atomik), `eclub_store_siparis_iptal` (stok iadesi + firma bazlı puan iadesi), `eclub_store_teslim_aldim`. Lib katmanı `lib/eclub/store/` altında `eclubStoreBakiye.ts`, `eclubStoreSiparis.ts`, `eclubStoreStorage.ts` (ürün görselleri), `eclubStoreTipler.ts` olarak sadeleşmiş biçimde durur.
 
-**Sipariş görünürlüğü — UTT'nin eczaneleri + firma payı.** UTT, `/eclub/siparisler` sayfasında yalnızca kendisinin aktif bağladığı eczanelerdeki kişilerin siparişlerini görür. Görülen siparişte de yalnız UTT'nin firmasından kullanılan puan raporlanır; aynı siparişin başka firmalardan gelen payı açığa çıkmaz. Bu iki koşul birlikte uygulanır: eczane sahipliği kapsamı belirler, `eclub_store_siparis_firma_puan` ise görünür mali payı belirler. Eski rapor yolu yalnız kanonik sayfaya yönlendirme amacıyla korunur.
+**Sipariş görünürlüğü — UTT'nin eczaneleri + firma payı.** Her yaprakta yalnız ilgili UTT'nin aktif bağladığı eczanelerdeki kişilerin siparişleri görünür. Üst rol bu yaprakları yalnız kendi yetkili hiyerarşisi içinde toplar; istemciden gelen `utt_id` kapsam dışında ise reddedilir. Görülen siparişte de yalnız iç kullanıcının firmasından kullanılan puan raporlanır; aynı siparişin başka firmalardan gelen payı açığa çıkmaz. Bu koşullar birlikte uygulanır: oturum hiyerarşisi UTT kapsamını, eczane sahipliği kişileri, `eclub_store_siparis_firma_puan` ise görünür mali payı belirler.
 
 ---
 

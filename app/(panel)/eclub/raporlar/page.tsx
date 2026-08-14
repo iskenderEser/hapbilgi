@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useCallback, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -15,8 +15,10 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import DagilimGrafik from "@/components/raporlar/DagilimGrafik";
+import EclubYonetimHiyerarsisi from "@/components/eclub/EclubYonetimHiyerarsisi";
 import { useRapor } from "@/hooks/useRapor";
 import type { EclubRaporEczane, EclubRaporIcerik, EclubRaporOzet } from "@/lib/eclub/rapor";
+import type { EclubKapsamUtt, EclubYonetimKapsami } from "@/lib/eclub/yonetimKapsami";
 import { formatPuan, GRI_METIN, KIRMIZI, PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
 import styles from "@/app/(panel)/raporlar/utt/utt-report.module.css";
 import bmStyles from "@/app/(panel)/raporlar/bm/bm-report.module.css";
@@ -37,6 +39,11 @@ interface RaporData {
   ozet: EclubRaporOzet;
   eczaneler: EclubRaporEczane[];
   icerikler: EclubRaporIcerik[];
+  kapsam: EclubYonetimKapsami;
+  utt_raporlari: Array<{
+    utt: EclubKapsamUtt;
+    rapor: { ozet: EclubRaporOzet; eczaneler: EclubRaporEczane[]; icerikler: EclubRaporIcerik[] };
+  }>;
 }
 
 const rolEtiketi = (rol: string) => (
@@ -45,11 +52,43 @@ const rolEtiketi = (rol: string) => (
 
 const cevapOzeti = (dogru: number, yanlis: number) => `${dogru}/${dogru + yanlis}`;
 
+function UttRaporDetayi({ rapor }: { rapor: RaporData["utt_raporlari"][number]["rapor"] }) {
+  if (rapor.eczaneler.length === 0) {
+    return <div className={reportStyles.empty}>Bu UTT’ye bağlı aktif E‑Club eczanesi bulunmuyor.</div>;
+  }
+  return (
+    <div className="grid gap-2.5">
+      {rapor.eczaneler.map((eczane) => (
+        <article key={eczane.eczane_id} className="rounded-xl border border-[#e3eaf2] bg-[#fbfcfe] p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div><strong className="block text-xs text-[#203653]">{eczane.eczane_adi}</strong><small className="text-[10px] font-semibold text-[#8190a3]">{eczane.gln ? `GLN ${eczane.gln}` : "GLN bulunmuyor"} · {eczane.kisiler.length} kişi</small></div>
+            <div className="flex gap-2 text-[10px] font-bold text-[#60758e]"><span>{eczane.gonderilen_sayisi} gönderi</span><span>{eczane.tamamlanan_izleme} izleme</span><span>{formatPuan(eczane.toplam_puan)} puan</span></div>
+          </div>
+          {eczane.kisiler.length > 0 && (
+            <div className="mt-2 grid gap-1.5 border-t border-[#e5ecf3] pt-2">
+              {eczane.kisiler.map((kisi) => (
+                <div key={kisi.kisi_id} className="grid grid-cols-[minmax(0,1fr)_repeat(3,auto)] items-center gap-2 rounded-lg bg-white px-2.5 py-2 text-[10px]">
+                  <span className="min-w-0"><strong className="block truncate text-[#30475f]">{kisi.ad} {kisi.soyad}</strong><small className="text-[#8190a3]">{rolEtiketi(kisi.rol)}</small></span>
+                  <span className="tabular-nums text-[#60758e]">{kisi.tamamlanan_izleme} izleme</span>
+                  <span className="tabular-nums text-[#16865f]">{kisi.dogru_cevap} doğru</span>
+                  <strong className="tabular-nums text-[#237ac8]">{formatPuan(kisi.toplam_puan)} p</strong>
+                </div>
+              ))}
+            </div>
+          )}
+        </article>
+      ))}
+    </div>
+  );
+}
+
 export default function EclubRaporlarPage() {
   const { kullanici, yukleniyor } = useAuth();
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
   const [acikEczane, setAcikEczane] = useState<string | null>(null);
   const [seciliIcerik, setSeciliIcerik] = useState<string | null>(null);
+  const [seciliUtt, setSeciliUtt] = useState<string | null>(null);
+  const uttSec = useCallback((uttId: string | null) => setSeciliUtt(uttId), []);
   const { data, loading, error } = useRapor<RaporData>(
     "/eclub/raporlar/api",
     periyot,
@@ -65,13 +104,22 @@ export default function EclubRaporlarPage() {
   if (!kullanici || !data) return null;
 
   const seciliIcerikSatiri = data.icerikler.find((icerik) => icerik.icerik_anahtari === seciliIcerik) ?? null;
+  const uttRaporHaritasi = new Map(data.utt_raporlari.map((satir) => [satir.utt.utt_id, satir.rapor]));
+  const uttOzetleri = Object.fromEntries(data.utt_raporlari.map(({ utt, rapor }) => [utt.utt_id, [
+    { etiket: "Eczane", deger: rapor.ozet.aktif_eczane },
+    { etiket: "Gönderi", deger: rapor.ozet.gonderilen_sayisi },
+    { etiket: "İzleme", deger: rapor.ozet.tamamlanan_izleme },
+    { etiket: "Puan", deger: formatPuan(rapor.ozet.toplam_puan) },
+  ]]));
 
   return (
     <div className={styles.page} style={{ fontFamily: "'Nunito', sans-serif" }}>
       <div className={styles.container}>
-        <Link href="/eclub/listem" className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-[#7890aa] hover:text-[#237ac8]">
-          <ArrowLeft className="h-3.5 w-3.5" /> Videolar ve Eczanelerim
-        </Link>
+        {data.kapsam.gorunum === "utt" && (
+          <Link href="/eclub/listem" className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-[#7890aa] hover:text-[#237ac8]">
+            <ArrowLeft className="h-3.5 w-3.5" /> Videolar ve Eczanelerim
+          </Link>
+        )}
 
         <header className={styles.header}>
           <div>
@@ -106,7 +154,7 @@ export default function EclubRaporlarPage() {
             <div className="relative z-10 min-w-0">
               <h2 className="text-base font-extrabold text-[#20324c]">Eczanelerinizde öğrenme akışı</h2>
               <p className="mt-1 text-xs font-medium leading-relaxed text-[#718198]">
-                {data.ozet.aktif_eczane} eczanede {data.ozet.aktif_kisi} aktif eczacı/teknisyen bulunuyor; {data.ozet.izleyen_kisi} kişi bu periyotta en az bir videoyu tamamladı.
+                {data.kapsam.gorunum === "utt" ? "Ekibinizde" : "Yetkili hiyerarşinizde"} {data.ozet.aktif_eczane} eczanede {data.ozet.aktif_kisi} aktif eczacı/teknisyen bulunuyor; {data.ozet.izleyen_kisi} kişi bu periyotta en az bir videoyu tamamladı.
               </p>
               <div className={styles.metricGrid}>
                 <div className={styles.metric}>
@@ -152,6 +200,24 @@ export default function EclubRaporlarPage() {
           </section>
         </div>
 
+        {data.kapsam.gorunum !== "utt" && (
+          <div className="mb-4">
+            <EclubYonetimHiyerarsisi
+              kapsam={data.kapsam}
+              uttOzetleri={uttOzetleri}
+              seciliUttId={seciliUtt}
+              onUttSecimi={uttSec}
+              baslik="E‑Club Rapor Hiyerarşisi"
+              aciklama="BM ve UTT satırlarını açarak eczane, izleme ve cevaplama sonuçlarını görün."
+              renderUttDetayi={(utt) => {
+                const rapor = uttRaporHaritasi.get(utt.utt_id);
+                return rapor ? <UttRaporDetayi rapor={rapor} /> : null;
+              }}
+            />
+          </div>
+        )}
+
+        {data.kapsam.gorunum === "utt" && (
         <section className={`${styles.panel} ${styles.section}`}>
           <div className={styles.sectionHeader}>
             <div>
@@ -230,6 +296,7 @@ export default function EclubRaporlarPage() {
             <div className={reportStyles.empty}>Raporlanacak aktif eczane bulunmuyor.</div>
           )}
         </section>
+        )}
 
         {data.icerikler.length > 0 && (
           <section className={`${styles.panel} ${styles.section}`}>

@@ -131,10 +131,19 @@ export const ECLUB_GOREN_ROLLER = [
   ...TUKETICI_ROLLER,  // utt, kd_utt
 ];
 
-// ECLUB_LIGI_GOREN_ROLLER: E-Club ana modülüyle aynı rol sözleşmesini kullanır.
-// UTT/KD_UTT kendi E-Club ekibindeki eczacı ve teknisyenlerin sıralamasını görür.
+// ECLUB_YONETIM_ROLLERI: E-Club rapor, lig ve sipariş görünümünü izleyen iç roller.
+// UTT kendi dış müşteri ekibini; BM kendi UTT'lerini; TM kendi BM→UTT hattını;
+// üretici/yönetici roller ise yetkili takım/firma hiyerarşisini görür.
+export const ECLUB_YONETIM_ROLLERI = [
+  ...TUKETICI_ROLLER,
+  ...YONLENDIRICI_ROLLER,
+  ...URETICI_ROLLER,
+  ...YONETICI_ROLLER,
+];
+
+// ECLUB_LIGI_GOREN_ROLLER: yönetim görünümüyle aynı rol sözleşmesini kullanır.
 export const ECLUB_LIGI_GOREN_ROLLER = [
-  ...ECLUB_GOREN_ROLLER,
+  ...ECLUB_YONETIM_ROLLERI,
 ];
 
 // ECLUB_TUKETICI_ROLLERI: E-Club içeriğini tüketen roller — eczacı ve eczane teknisyeni.

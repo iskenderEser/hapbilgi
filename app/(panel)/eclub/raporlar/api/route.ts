@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { eclubRaporunuTopla, type EclubRaporHamSatir } from "@/lib/eclub/rapor";
-import { ECLUB_GOREN_ROLLER } from "@/lib/utils/roller";
+import { eclubYonetimKapsaminiGetir } from "@/lib/eclub/yonetimKapsami";
+import { ECLUB_YONETIM_ROLLERI } from "@/lib/utils/roller";
 import { hataYaniti, rolHatasi, sunucuHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
 import { tarihAraligi } from "@/lib/utils/tarihAraligi";
 
@@ -23,21 +24,35 @@ export async function GET(request: Request) {
     }
 
     const rol = (kullanici.rol ?? "").toLowerCase();
-    if (!ECLUB_GOREN_ROLLER.includes(rol)) {
-      return rolHatasi("E-Club raporunu yalnız UTT/KD_UTT görüntüleyebilir.");
+    if (!ECLUB_YONETIM_ROLLERI.includes(rol)) {
+      return rolHatasi("E-Club raporuna erişim yetkiniz yok.");
     }
 
     const { searchParams } = new URL(request.url);
     const { baslangic, bitis } = tarihAraligi(searchParams.get("periyot") ?? "bu_ay");
-    const { data, error } = await adminSupabase.rpc("get_eclub_utt_rapor", {
-      p_utt_id: user.id,
-      p_baslangic: baslangic,
-      p_bitis: bitis,
-    });
-
-    if (error) {
-      return hataYaniti("E-Club rapor verisi alınamadı.", "get_eclub_utt_rapor RPC", error);
+    const kapsam = await eclubYonetimKapsaminiGetir(adminSupabase, kullanici);
+    const sonuclar = await Promise.all(kapsam.uttler.map(async (utt) => ({
+      utt,
+      sonuc: await adminSupabase.rpc("get_eclub_utt_rapor", {
+        p_utt_id: utt.utt_id,
+        p_baslangic: baslangic,
+        p_bitis: bitis,
+      }),
+    })));
+    const hatali = sonuclar.find(({ sonuc }) => sonuc.error);
+    if (hatali?.sonuc.error) {
+      return hataYaniti(
+        "E-Club rapor verisi alınamadı.",
+        `get_eclub_utt_rapor RPC — ${hatali.utt.utt_adi}`,
+        hatali.sonuc.error,
+      );
     }
+
+    const uttRaporlari = sonuclar.map(({ utt, sonuc }) => {
+      const satirlar = (sonuc.data ?? []) as EclubRaporHamSatir[];
+      return { utt, rapor: eclubRaporunuTopla(satirlar), satirlar };
+    });
+    const tumSatirlar = uttRaporlari.flatMap((rapor) => rapor.satirlar);
 
     return NextResponse.json({
       success: true,
@@ -48,7 +63,9 @@ export async function GET(request: Request) {
           rol: kullanici.rol,
         },
         aralik: { baslangic, bitis },
-        ...eclubRaporunuTopla((data ?? []) as EclubRaporHamSatir[]),
+        kapsam,
+        utt_raporlari: uttRaporlari.map(({ utt, rapor }) => ({ utt, rapor })),
+        ...eclubRaporunuTopla(tumSatirlar),
       },
     });
   } catch (error) {

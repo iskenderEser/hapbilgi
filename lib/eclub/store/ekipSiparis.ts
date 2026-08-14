@@ -38,6 +38,11 @@ export interface EclubSiparisAdresSnapshot {
 }
 
 export interface EclubEkipSiparisSatiri {
+  utt_id?: string;
+  utt_adi?: string;
+  bm_adi?: string;
+  takim_adi?: string;
+  bolge_adi?: string;
   siparis_id: string;
   kisi_id: string;
   eczane_id: string;
@@ -97,6 +102,7 @@ export interface EclubSiparisApiData {
 }
 
 export interface EclubSiparisSorgusu {
+  uttId: string | null;
   eczaneId: string | null;
   kisiId: string | null;
   durum: EclubSiparisDurum | null;
@@ -127,6 +133,7 @@ function pozitifTamSayi(deger: string | null, varsayilan: number): number | null
 }
 
 export function eclubSiparisSorgusunuParse(searchParams: URLSearchParams): EclubSiparisSorguSonucu {
+  const uttId = searchParams.get("utt_id") || null;
   const eczaneId = searchParams.get("eczane_id") || null;
   const kisiId = searchParams.get("kisi_id") || null;
   const durumHam = searchParams.get("durum") || null;
@@ -135,6 +142,7 @@ export function eclubSiparisSorgusunuParse(searchParams: URLSearchParams): Eclub
   const offset = pozitifTamSayi(searchParams.get("offset"), 0);
   const limitHam = pozitifTamSayi(searchParams.get("limit"), 30);
 
+  if (uttId && !UUID_DESENI.test(uttId)) return { ok: false, hata: "Geçersiz UTT.", alanlar: ["utt_id"] };
   if (eczaneId && !UUID_DESENI.test(eczaneId)) return { ok: false, hata: "Geçersiz eczane.", alanlar: ["eczane_id"] };
   if (kisiId && !UUID_DESENI.test(kisiId)) return { ok: false, hata: "Geçersiz kişi.", alanlar: ["kisi_id"] };
   if (durumHam && !ECLUB_SIPARIS_DURUMLARI.includes(durumHam as EclubSiparisDurum)) {
@@ -155,6 +163,7 @@ export function eclubSiparisSorgusunuParse(searchParams: URLSearchParams): Eclub
   return {
     ok: true,
     sorgu: {
+      uttId,
       eczaneId,
       kisiId,
       durum: durumHam as EclubSiparisDurum | null,

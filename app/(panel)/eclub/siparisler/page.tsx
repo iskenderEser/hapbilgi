@@ -16,6 +16,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
+import EclubYonetimHiyerarsisi from "@/components/eclub/EclubYonetimHiyerarsisi";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import {
   ECLUB_SIPARIS_DURUMLARI,
@@ -25,11 +26,13 @@ import {
   type EclubSiparisApiData,
   type EclubSiparisDurum,
 } from "@/lib/eclub/store/ekipSiparis";
-import { ECLUB_GOREN_ROLLER } from "@/lib/utils/roller";
+import type { EclubYonetimKapsami } from "@/lib/eclub/yonetimKapsami";
+import { ECLUB_YONETIM_ROLLERI } from "@/lib/utils/roller";
 
 const SAYFA_BOYUTU = 30;
 
 interface Filtreler {
+  utt_id: string;
   eczane_id: string;
   kisi_id: string;
   durum: string;
@@ -38,6 +41,7 @@ interface Filtreler {
 }
 
 const BOS_FILTRELER: Filtreler = {
+  utt_id: "",
   eczane_id: "",
   kisi_id: "",
   durum: "",
@@ -45,11 +49,18 @@ const BOS_FILTRELER: Filtreler = {
   tarih_bitis: "",
 };
 
-const BOS_DATA: EclubSiparisApiData = {
+interface EclubSiparisSayfaData extends EclubSiparisApiData {
+  kapsam_hiyerarsi: EclubYonetimKapsami | null;
+  utt_ozetleri: Array<{ utt_id: string; ozet: EclubSiparisApiData["ozet"] }>;
+}
+
+const BOS_DATA: EclubSiparisSayfaData = {
   siparisler: [],
   toplam: 0,
   ozet: { toplam: 0, islemde: 0, kargoda: 0, teslim_edildi: 0, iptal: 0, firma_kullanilan_puan: 0 },
   kapsam: { eczaneler: [], kisiler: [] },
+  kapsam_hiyerarsi: null,
+  utt_ozetleri: [],
 };
 
 const selectSinifi = "w-full min-w-0 rounded-xl border border-[#dfe7f1] bg-white px-3 py-2 text-xs font-semibold text-[#40556d] outline-none transition focus:border-[#8abde8] focus:ring-2 focus:ring-[#dceefa]";
@@ -103,6 +114,7 @@ function Alici({ siparis }: { siparis: EclubEkipSiparisSatiri }) {
     <div className="min-w-0">
       <div className="truncate text-xs font-extrabold text-[#203653]">{siparis.kisi_ad} {siparis.kisi_soyad}</div>
       <div className="mt-0.5 truncate text-[10px] font-semibold text-[#8190a3]">{rolEtiketi(siparis.kisi_rol)} · {siparis.eczane_adi}</div>
+      {siparis.bm_adi && siparis.bm_adi !== "—" && <div className="mt-0.5 truncate text-[9px] font-bold text-[#3589d8]">UTT: {siparis.utt_adi} · BM: {siparis.bm_adi}</div>}
     </div>
   );
 }
@@ -256,7 +268,7 @@ export default function EclubSiparislerPage() {
   const { mesajlar, hata } = useHataMesaji();
   const hataRef = useRef(hata);
   const [filtreler, setFiltreler] = useState<Filtreler>(BOS_FILTRELER);
-  const [data, setData] = useState<EclubSiparisApiData>(BOS_DATA);
+  const [data, setData] = useState<EclubSiparisSayfaData>(BOS_DATA);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [dahaYukleniyor, setDahaYukleniyor] = useState(false);
 
@@ -279,7 +291,14 @@ export default function EclubSiparislerPage() {
         hataRef.current(sonuc.hata ?? "E-Club siparişleri yüklenemedi.", sonuc.adim, sonuc.detay);
         return;
       }
-      setData({ ...BOS_DATA, ...sonuc, ozet: { ...BOS_DATA.ozet, ...(sonuc.ozet ?? {}) }, kapsam: { ...BOS_DATA.kapsam, ...(sonuc.kapsam ?? {}) } });
+      setData({
+        ...BOS_DATA,
+        ...sonuc,
+        ozet: { ...BOS_DATA.ozet, ...(sonuc.ozet ?? {}) },
+        kapsam: { ...BOS_DATA.kapsam, ...(sonuc.kapsam ?? {}) },
+        kapsam_hiyerarsi: sonuc.kapsam_hiyerarsi ?? null,
+        utt_ozetleri: sonuc.utt_ozetleri ?? [],
+      });
     } catch (error) {
       hataRef.current("E-Club siparişleri yüklenemedi.", "GET /eclub/siparisler/api", String(error));
     } finally {
@@ -290,7 +309,7 @@ export default function EclubSiparislerPage() {
   useEffect(() => {
     if (authYukleniyor) return;
     if (!kullanici) { router.replace("/login"); return; }
-    if (!ECLUB_GOREN_ROLLER.includes((kullanici.rol ?? "").toLowerCase())) { router.replace("/ana-sayfa"); return; }
+    if (!ECLUB_YONETIM_ROLLERI.includes((kullanici.rol ?? "").toLowerCase())) { router.replace("/ana-sayfa"); return; }
     yukle();
   }, [authYukleniyor, kullanici, router, yukle]);
 
@@ -316,6 +335,20 @@ export default function EclubSiparislerPage() {
     () => data.kapsam.kisiler.filter((kisi) => !filtreler.eczane_id || kisi.eczane_id === filtreler.eczane_id),
     [data.kapsam.kisiler, filtreler.eczane_id],
   );
+  const uttOzetleri = useMemo(() => Object.fromEntries(data.utt_ozetleri.map(({ utt_id, ozet }) => [utt_id, [
+    { etiket: "Sipariş", deger: ozet.toplam },
+    { etiket: "İşlemde", deger: ozet.islemde },
+    { etiket: "Kargoda", deger: ozet.kargoda },
+    { etiket: "Teslim", deger: ozet.teslim_edildi },
+  ]])), [data.utt_ozetleri]);
+  const uttSec = useCallback((uttId: string | null) => {
+    setFiltreler((onceki) => ({
+      ...onceki,
+      utt_id: uttId ?? "",
+      eczane_id: "",
+      kisi_id: "",
+    }));
+  }, []);
   const aktifFiltreVar = Object.values(filtreler).some(Boolean);
 
   const filtreDegistir = (alan: keyof Filtreler, deger: string) => {
@@ -344,7 +377,11 @@ export default function EclubSiparislerPage() {
           <div>
             <div className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">E‑Club</div>
             <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.03em] text-[#203653]">Siparişler</h1>
-            <p className="mt-1 text-xs font-semibold text-[#8190a3]">Eczanelerinizdeki eczacı ve teknisyenlerin, firmanızın puanını kullandığı siparişleri izleyin.</p>
+            <p className="mt-1 text-xs font-semibold text-[#8190a3]">
+              {data.kapsam_hiyerarsi?.gorunum === "utt"
+                ? "Eczanelerinizdeki eczacı ve teknisyenlerin, firmanızın puanını kullandığı siparişleri izleyin."
+                : `${data.kapsam_hiyerarsi?.kapsam_adi ?? "Yetkili kapsam"} içindeki E‑Club siparişlerini takım, BM ve UTT hattında izleyin.`}
+            </p>
           </div>
           <div className="flex items-center gap-2 rounded-2xl border border-[#cfe3f4] bg-[#eef7fd] px-4 py-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[#16865f]"><Coins size={17} /></span>
@@ -368,6 +405,19 @@ export default function EclubSiparislerPage() {
             );
           })}
         </section>
+
+        {data.kapsam_hiyerarsi && data.kapsam_hiyerarsi.gorunum !== "utt" && (
+          <div className="mb-4">
+            <EclubYonetimHiyerarsisi
+              kapsam={data.kapsam_hiyerarsi}
+              uttOzetleri={uttOzetleri}
+              seciliUttId={filtreler.utt_id || null}
+              onUttSecimi={uttSec}
+              baslik="E‑Club Sipariş Hiyerarşisi"
+              aciklama="Takım ve BM satırlarını açın; bir UTT seçerek sipariş listesini daraltın."
+            />
+          </div>
+        )}
 
         <section className="mb-4 rounded-2xl border border-[#dfe7f1] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
           <div className="mb-3 flex items-center justify-between gap-3">

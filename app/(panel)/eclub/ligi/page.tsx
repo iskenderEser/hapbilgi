@@ -4,8 +4,10 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Award, CheckCircle2, ChevronDown, Download, Eye, Sparkles, Trophy, Users } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
+import EclubYonetimHiyerarsisi from "@/components/eclub/EclubYonetimHiyerarsisi";
 import HbLigiPeriyotSecici, { type Periyot } from "@/components/hbligi/HbLigiPeriyotSecici";
 import type { EclubLigSatiri } from "@/lib/eclub/rapor";
+import type { EclubKapsamUtt, EclubYonetimKapsami } from "@/lib/eclub/yonetimKapsami";
 import { aktifPeriyot } from "@/lib/zaman/kontrol";
 import styles from "./eclub-league.module.css";
 
@@ -14,6 +16,8 @@ interface LigData {
   takim_adi: string | null;
   aralik: { baslangic: string; bitis: string };
   lig: EclubLigSatiri[];
+  kapsam: EclubYonetimKapsami;
+  utt_ligleri: Array<{ utt: EclubKapsamUtt; lig: EclubLigSatiri[] }>;
 }
 
 const rolEtiketi = (rol: string) => (
@@ -21,6 +25,30 @@ const rolEtiketi = (rol: string) => (
 );
 
 const harfler = (ad: string, soyad: string) => `${ad[0] ?? ""}${soyad[0] ?? ""}`.toLocaleUpperCase("tr");
+
+function UttLigDetayi({ lig }: { lig: EclubLigSatiri[] }) {
+  if (lig.length === 0) return <div className={styles.empty}>Bu UTT’nin E‑Club ekibinde aktif eczacı veya teknisyen bulunmuyor.</div>;
+  return (
+    <div className="grid gap-2.5">
+      {lig.map((kisi) => (
+        <article key={kisi.kisi_id} className="rounded-xl border border-[#e1e9f1] bg-[#fbfcfe] p-3">
+          <div className="grid gap-2 md:grid-cols-[minmax(180px,1.4fr)_repeat(4,minmax(70px,auto))] md:items-center">
+            <div className="min-w-0"><strong className="block truncate text-xs text-[#203653]">{kisi.sira ? `${kisi.sira}. ` : ""}{kisi.ad} {kisi.soyad}</strong><small className="block truncate text-[10px] font-semibold text-[#8190a3]">{rolEtiketi(kisi.rol)} · {kisi.eczane_adi}</small></div>
+            <span className="text-[10px] font-bold text-[#60758e]">{kisi.tamamlanan_izleme} izleme</span>
+            <span className="text-[10px] font-bold text-[#16865f]">{kisi.dogru_cevap} doğru</span>
+            <span className="text-[10px] font-bold text-[#237ac8]">+{kisi.izleme_puani} izleme p.</span>
+            <strong className="text-xs tabular-nums text-[#203653]">{kisi.toplam_puan.toLocaleString("tr-TR")} p</strong>
+          </div>
+          {kisi.icerikler.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5 border-t border-[#e5ecf3] pt-2">
+              {kisi.icerikler.map((icerik) => <span key={icerik.icerik_anahtari} className="rounded-lg bg-white px-2 py-1 text-[9px] font-bold text-[#61748b]">{icerik.icerik_adi} · {icerik.toplam_puan} p</span>)}
+            </div>
+          )}
+        </article>
+      ))}
+    </div>
+  );
+}
 
 export default function EclubLigiPage() {
   const router = useRouter();
@@ -35,6 +63,8 @@ export default function EclubLigiPage() {
   const [loading, setLoading] = useState(true);
   const [hata, setHata] = useState<string | null>(null);
   const [acikKisi, setAcikKisi] = useState<string | null>(null);
+  const [seciliUtt, setSeciliUtt] = useState<string | null>(null);
+  const uttSec = useCallback((uttId: string | null) => setSeciliUtt(uttId), []);
   const [takimDuzenleniyor, setTakimDuzenleniyor] = useState(false);
   const [takimTaslak, setTakimTaslak] = useState("");
   const [takimKaydediliyor, setTakimKaydediliyor] = useState(false);
@@ -117,6 +147,18 @@ export default function EclubLigiPage() {
   const aktifKisi = data.lig.filter((kisi) => kisi.toplam_puan > 0).length;
   const top3 = data.lig.filter((kisi) => kisi.toplam_puan > 0).slice(0, 3);
   const podiumDuzeni = [top3[1], top3[0], top3[2]].filter(Boolean) as EclubLigSatiri[];
+  const uttLigHaritasi = new Map(data.utt_ligleri.map((satir) => [satir.utt.utt_id, satir.lig]));
+  const uttOzetleri = Object.fromEntries(data.utt_ligleri.map(({ utt, lig }) => {
+    const uttTamamlanan = lig.reduce((toplam, kisi) => toplam + kisi.tamamlanan_izleme, 0);
+    const uttDogru = lig.reduce((toplam, kisi) => toplam + kisi.dogru_cevap, 0);
+    const uttPuan = lig.reduce((toplam, kisi) => toplam + kisi.toplam_puan, 0);
+    return [utt.utt_id, [
+      { etiket: "Üye", deger: lig.length },
+      { etiket: "İzleme", deger: uttTamamlanan },
+      { etiket: "Doğru", deger: uttDogru },
+      { etiket: "Puan", deger: uttPuan.toLocaleString("tr-TR") },
+    ]];
+  }));
 
   const periyotSecici = (
     <HbLigiPeriyotSecici
@@ -142,7 +184,9 @@ export default function EclubLigiPage() {
               <Sparkles className="h-3.5 w-3.5" /> E-Club takım görünümü
             </div>
             <h1 className="m-0 text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">E‑Club Ligi</h1>
-            {takimDuzenleniyor ? (
+            {data.kapsam.gorunum !== "utt" ? (
+              <div className={styles.teamLine}><span>{data.kapsam.kapsam_adi} · {data.kullanici.ad} {data.kullanici.soyad}</span></div>
+            ) : takimDuzenleniyor ? (
               <div className={`${styles.teamLine} ${styles.teamEditor}`}>
                 <input className={styles.teamInput} value={takimTaslak} onChange={(event) => setTakimTaslak(event.target.value)} maxLength={100} placeholder="Takım adı" autoFocus />
                 <button type="button" className={`${styles.editorAction} ${styles.editorPrimary}`} onClick={() => void takimAdiKaydet()} disabled={takimKaydediliyor || !takimTaslak.trim()}>Kaydet</button>
@@ -165,9 +209,9 @@ export default function EclubLigiPage() {
 
         <section className={styles.statsGrid} aria-label="E-Club Ligi özeti">
           {[
-            { label: "Takım puanı", value: toplamPuan.toLocaleString("tr-TR"), detail: "İzleme + doğru cevap", icon: Trophy },
+            { label: data.kapsam.gorunum === "utt" ? "Takım puanı" : "Kapsam puanı", value: toplamPuan.toLocaleString("tr-TR"), detail: "İzleme + doğru cevap", icon: Trophy },
             { label: "Aktif üye", value: `${aktifKisi} / ${data.lig.length}`, detail: "Bu periyotta puan kazanan", icon: Users },
-            { label: "Tamamlanan izleme", value: tamamlanan.toLocaleString("tr-TR"), detail: "Takım toplamı", icon: Eye },
+            { label: "Tamamlanan izleme", value: tamamlanan.toLocaleString("tr-TR"), detail: data.kapsam.gorunum === "utt" ? "Takım toplamı" : "Kapsam toplamı", icon: Eye },
             { label: "Doğru cevap oranı", value: `%${cevapOrani}`, detail: `${dogru}/${dogru + yanlis} cevap`, icon: CheckCircle2 },
           ].map(({ label, value, detail, icon: Icon }) => (
             <article key={label} className={styles.statCard}>
@@ -199,7 +243,22 @@ export default function EclubLigiPage() {
           </section>
         )}
 
-        <section className={styles.panel}>
+        {data.kapsam.gorunum !== "utt" && (
+          <EclubYonetimHiyerarsisi
+            kapsam={data.kapsam}
+            uttOzetleri={uttOzetleri}
+            seciliUttId={seciliUtt}
+            onUttSecimi={uttSec}
+            baslik="E‑Club Lig Hiyerarşisi"
+            aciklama="Takım, BM ve UTT satırlarını açarak dış müşteri sıralamasını inceleyin."
+            renderUttDetayi={(utt) => {
+              const lig = uttLigHaritasi.get(utt.utt_id);
+              return lig ? <UttLigDetayi lig={lig} /> : null;
+            }}
+          />
+        )}
+
+        {data.kapsam.gorunum === "utt" && <section className={styles.panel}>
           <div className={styles.panelHeader}>
             <div>
               <div className={styles.eyebrow}>Eczacı ve teknisyenler</div>
@@ -254,7 +313,7 @@ export default function EclubLigiPage() {
               </table>
             </div>
           ) : <div className={styles.empty}>Takımınıza bağlı aktif eczacı veya teknisyen bulunmuyor.</div>}
-        </section>
+        </section>}
       </div>
     </div>
   );

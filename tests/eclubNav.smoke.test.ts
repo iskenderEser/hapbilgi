@@ -26,11 +26,16 @@ test("UTT E-Club altında kararlaştırılan dört sayfayı doğru sırada gör�
   );
 });
 
-test("BM iç E-Club sayfalarını, UTT ise Ligler altında yinelenen E-Club Ligi bağlantısını görmez", () => {
+test("BM, TM, üretici ve yönetici E-Club yönetim sayfalarını görür; video yönetimini görmez", () => {
   const eclub = PANEL_NAV.find((grup) => grup.baslik === "E-Club");
   const ligler = PANEL_NAV.find((grup) => grup.baslik === "Ligler");
   assert.ok(eclub);
   assert.ok(ligler);
-  assert.equal(eclub.oglar.some((oge) => oge.gate({ ...uttBaglami, rolKucu: "bm" })), false);
+  for (const rolKucu of ["bm", "tm", "pm", "gm"]) {
+    assert.deepEqual(
+      eclub.oglar.filter((oge) => oge.gate({ ...uttBaglami, rolKucu })).map((oge) => oge.etiket),
+      ["Raporlar", "E-Club Ligi", "Siparişler"],
+    );
+  }
   assert.equal(ligler.oglar.some((oge) => oge.etiket === "E-Club Ligi"), false);
 });
