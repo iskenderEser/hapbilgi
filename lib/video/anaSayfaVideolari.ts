@@ -6,14 +6,14 @@
 //  - Tür kapısı: gorunenTurler(rol) — rol hangi türleri görüyorsa onlar.
 //  - Konum: geniş roller → kendi firmalarındaki TÜM takımlar; dar roller → yalnız kendi takımı.
 //    (Çok-firmalı yapı: başka firmanın videosu sızmaz.)
-//  - BM özel görünümü: UTT ile eş katalog için kendi takımı + firma geneli ve
+//  - BM/TM saha yönetimi görünümü: UTT ile eş katalog için kendi takımı + firma geneli ve
 //    yalnız hedef_rol='utt' yayınlar.
 //
 // Varsayılan ortak çağrıda firma-geneli (takim_id NULL) içerik dışarıdadır;
 // yalnız bunu açıkça isteyen rol çağrıları firma sınırı korunarak dahil eder.
 //  - Tüketiciye özgü kişisel izleme/puan durumu: UTT/KD_UTT kendi sayfasını
-//    (getUttAnaSayfaVeri) kullanmaya devam ediyor. BM rafları için gereken
-//    toplu etkileşim sayıları getBmAnaSayfaVideolari tarafından ayrıca eklenir.
+//    (getUttAnaSayfaVeri) kullanmaya devam ediyor. BM/TM rafları için gereken
+//    toplu etkileşim sayıları getSahaAnaSayfaVideolari tarafından ayrıca eklenir.
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import { IcerikTuru } from "./icerikTuru";
@@ -33,7 +33,7 @@ export interface AnaSayfaVideo {
   ileri_sarma_acik: boolean; // yalnız-izleme modunda kullanılmaz; oynatıcı tipiyle uyum için
 }
 
-export interface BmAnaSayfaVideo extends AnaSayfaVideo {
+export interface SahaAnaSayfaVideo extends AnaSayfaVideo {
   izlenme_sayisi: number;
   begeni_sayisi: number;
   favori_sayisi: number;
@@ -118,15 +118,16 @@ export async function getAnaSayfaVideolari(
 }
 
 /**
- * BM ana sayfasındaki kategori raflarının kullandığı etkileşimli video verisi.
+ * BM/TM ana sayfasındaki kategori raflarının kullandığı etkileşimli video verisi.
  * Görünür video kapsamı getAnaSayfaVideolari'nden gelir; burada yalnız raf
  * sıralaması için gereken tamamlanmış izleme, beğeni ve favori sayıları eklenir.
  */
-export async function getBmAnaSayfaVideolari(
+export async function getSahaAnaSayfaVideolari(
   userId: string,
+  rol: "bm" | "tm",
   adminSupabase: SupabaseClient,
-): Promise<BmAnaSayfaVideo[]> {
-  const videolar = await getAnaSayfaVideolari(userId, "bm", adminSupabase, {
+): Promise<SahaAnaSayfaVideo[]> {
+  const videolar = await getAnaSayfaVideolari(userId, rol, adminSupabase, {
     hedefRol: "utt",
     firmaGeneliDahil: true,
   });
@@ -151,7 +152,7 @@ export async function getBmAnaSayfaVideolari(
   ]);
 
   if (begeniSonucu.error || favoriSonucu.error || izlemeSonucu.error) {
-    throw new Error("BM video etkileşim sayıları çekilemedi.");
+    throw new Error("Saha yöneticisi video etkileşim sayıları çekilemedi.");
   }
 
   const say = (satirlar: { yayin_id: string }[]) => {

@@ -1,15 +1,15 @@
 "use client";
 
 import { useMemo, useRef, useState, type ReactNode } from "react";
-import type { BmAnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
+import type { SahaAnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 import { anaSayfaRaflari } from "@/lib/video/anaSayfaRaflari";
 import { TUR_BASLIK } from "@/lib/video/icerikTuru";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 import { talepIdGoster } from "@/lib/utils/talepId";
 
 interface Props {
-  videolar: BmAnaSayfaVideo[];
-  onVideoSec: (video: BmAnaSayfaVideo) => void;
+  videolar: SahaAnaSayfaVideo[];
+  onVideoSec: (video: SahaAnaSayfaVideo) => void;
 }
 
 const GRADYANLAR = [
@@ -23,7 +23,7 @@ const GRADYANLAR = [
 const tarih = (deger: string) =>
   new Date(deger).toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" });
 
-function BmVideoKarti({ video, onVideoSec }: { video: BmAnaSayfaVideo; onVideoSec: Props["onVideoSec"] }) {
+function SahaVideoKarti({ video, onVideoSec }: { video: SahaAnaSayfaVideo; onVideoSec: Props["onVideoSec"] }) {
   const kapak = video.thumbnail_url ?? thumbnailUrlUret(video.video_url);
   const gradyan = GRADYANLAR[Math.abs(video.yayin_id.charCodeAt(0)) % GRADYANLAR.length];
 
@@ -73,7 +73,7 @@ function BmVideoKarti({ video, onVideoSec }: { video: BmAnaSayfaVideo; onVideoSe
   );
 }
 
-function KayanRaf({ baslik, videolar, onVideoSec }: { baslik: ReactNode; videolar: BmAnaSayfaVideo[]; onVideoSec: Props["onVideoSec"] }) {
+function KayanRaf({ baslik, videolar, onVideoSec }: { baslik: ReactNode; videolar: SahaAnaSayfaVideo[]; onVideoSec: Props["onVideoSec"] }) {
   const raf = useRef<HTMLDivElement>(null);
   const kaydir = (yon: number) => raf.current?.scrollBy({ left: yon * raf.current.clientWidth * 0.85, behavior: "smooth" });
 
@@ -87,7 +87,7 @@ function KayanRaf({ baslik, videolar, onVideoSec }: { baslik: ReactNode; videola
         <div ref={raf} className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {videolar.map((video) => (
             <div key={video.yayin_id} className="w-40 flex-shrink-0 snap-start sm:w-44 md:w-52">
-              <BmVideoKarti video={video} onVideoSec={onVideoSec} />
+              <SahaVideoKarti video={video} onVideoSec={onVideoSec} />
             </div>
           ))}
         </div>
@@ -99,19 +99,19 @@ function KayanRaf({ baslik, videolar, onVideoSec }: { baslik: ReactNode; videola
   );
 }
 
-function SabitBolum({ baslik, videolar, onVideoSec }: { baslik: string; videolar: BmAnaSayfaVideo[]; onVideoSec: Props["onVideoSec"] }) {
+function SabitBolum({ baslik, videolar, onVideoSec }: { baslik: string; videolar: SahaAnaSayfaVideo[]; onVideoSec: Props["onVideoSec"] }) {
   if (videolar.length === 0) return null;
   return (
     <section className="mb-6">
       <h2 className="mb-2.5 text-base font-bold text-gray-900 md:text-lg">{baslik}</h2>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        {videolar.map((video) => <BmVideoKarti key={video.yayin_id} video={video} onVideoSec={onVideoSec} />)}
+        {videolar.map((video) => <SahaVideoKarti key={video.yayin_id} video={video} onVideoSec={onVideoSec} />)}
       </div>
     </section>
   );
 }
 
-export default function BmVideoRaflari({ videolar, onVideoSec }: Props) {
+export default function SahaVideoRaflari({ videolar, onVideoSec }: Props) {
   const [tohum] = useState(() => Date.now());
   const raflar = useMemo(() => anaSayfaRaflari(videolar, tohum), [videolar, tohum]);
   const enCokIzlenen = useMemo(

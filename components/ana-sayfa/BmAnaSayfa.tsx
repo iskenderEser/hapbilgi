@@ -7,8 +7,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useHataMesaji } from "@/components/HataMesaji";
 import VideoOynatici from "@/components/izle/VideoOynatici";
-import BmVideoRaflari from "@/components/ana-sayfa/BmVideoRaflari";
-import { BmAnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
+import SahaVideoRaflari from "@/components/ana-sayfa/SahaVideoRaflari";
+import { SahaAnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 
 interface BmVeri {
   istatistikler: {
@@ -17,7 +17,7 @@ interface BmVeri {
     suresi_gecmis: number;
     utt_sayisi: number;
   };
-  videolar?: BmAnaSayfaVideo[];
+  videolar?: SahaAnaSayfaVideo[];
 }
 
 interface Props {
@@ -29,7 +29,7 @@ export default function BmAnaSayfa({ user, adSoyad }: Props) {
   const router = useRouter();
   const [bmVeri, setBmVeri] = useState<BmVeri | null>(null);
   const [loading, setLoading] = useState(true);
-  const [aktifVideo, setAktifVideo] = useState<BmAnaSayfaVideo | null>(null);
+  const [aktifVideo, setAktifVideo] = useState<SahaAnaSayfaVideo | null>(null);
   const { hata } = useHataMesaji();
 
   useEffect(() => {
@@ -136,7 +136,7 @@ export default function BmAnaSayfa({ user, adSoyad }: Props) {
 
       {/* Videolar */}
       <div>
-        <BmVideoRaflari videolar={bmVeri?.videolar ?? []} onVideoSec={setAktifVideo} />
+        <SahaVideoRaflari videolar={bmVeri?.videolar ?? []} onVideoSec={setAktifVideo} />
       </div>
     </div>
   );

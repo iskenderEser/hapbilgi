@@ -17,6 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import EChart from "@/components/grafik/EChart";
+import BmPerformansGorunumu from "@/components/raporlar/BmPerformansGorunumu";
 import type {
   SahaBirimTuru,
   SahaLigKullanici,
@@ -188,6 +189,7 @@ export default function FieldLeaguePage({
   );
   const ozet = useMemo(() => ozetle(odakSatirlari), [odakSatirlari]);
   const uttler = useMemo(() => uttSirala(odakSatirlari), [odakSatirlari]);
+
   const seciliBirimAdi = secilenBirim
     ? birimler.find((birim) => birim.id === secilenBirim)?.ad ?? veri.kapsam_adi
     : veri.kapsam_adi;
@@ -227,6 +229,87 @@ export default function FieldLeaguePage({
   const seciliBirim = birimler.find((birim) => birim.id === secilenBirim);
   const liderFarki = seciliBirim && lider && seciliBirim.id !== lider.id ? lider.net - seciliBirim.net : 0;
   const aktifOrani = ozet.toplamUtt > 0 ? Math.round((ozet.aktifUtt / ozet.toplamUtt) * 100) : 0;
+
+  // ─── BM dışındaki iç roller ────────────────────────────────────────────────
+  // Lig Görünümü kartı yok; Raporlar ile ortak BM→UTT performans kartı stat
+  // kartların hemen altında; Puan Bileşimi ve Saha Sinyalleri en altta yan yana.
+  if (veri.gorunum !== "bm") {
+    return (
+      <div className={styles.shell}>
+        <div className={styles.dashboard}>
+          <header className={styles.header}>
+            <div>
+              <div className={styles.eyebrow}><Sparkles className="h-3.5 w-3.5" /> Saha gelişim merkezi</div>
+              <h1>HBLigi — Saha Perspektifi</h1>
+              <p><strong>{veri.kapsam_adi}</strong> · {veri.kapsam_aciklamasi}</p>
+            </div>
+            <div className={styles.headerActions}>{periyotSecici}</div>
+          </header>
+
+          <section className={styles.statsGrid} aria-label="Saha özeti">
+            <StatCard eyebrow="Net saha puanı" value={ozet.net.toLocaleString("tr-TR")} detail={`${seciliBirimAdi} görünümü`} tone="blue" icon={Gauge} />
+            <StatCard eyebrow="Aktif UTT" value={`${ozet.aktifUtt} / ${ozet.toplamUtt}`} detail={`Katılım oranı %${aktifOrani}`} tone="violet" icon={Users} />
+            <StatCard eyebrow="Kazanılan puan" value={`+${ozet.kazanim.toLocaleString("tr-TR")}`} detail={ozet.kazanim > 0 ? `${enGuclu.ad} ana katkı` : "Henüz kazanım oluşmadı"} tone="green" icon={ArrowUpRight} />
+            <StatCard eyebrow="Gerçekleşmiş kayıp" value={ozet.kayip > 0 ? `−${ozet.kayip.toLocaleString("tr-TR")}` : "0"} detail={ozet.kayip > 0 ? `${enBuyukKayip.ad} ana neden` : "Kayıp oluşmadı"} tone="red" icon={ArrowDownRight} />
+          </section>
+
+          <BmPerformansGorunumu
+            bmPerformans={veri.bm_performans ?? []}
+            aciklama={`${veri.kapsam_adi} kapsamındaki BM’lerin bölge toplamları ve puan sonucu`}
+          />
+
+          <div className={styles.bottomGrid}>
+            <section className={styles.panel}>
+              <div className={styles.panelHeader}>
+                <div>
+                  <span className={styles.panelEyebrow}>Gerçek puan akışı</span>
+                  <h2>Puan Bileşimi</h2>
+                </div>
+                <div className={styles.iconBubble}><Target className="h-4 w-4" /></div>
+              </div>
+              <div className={styles.composition}>
+                <div className={styles.donut}>
+                  <EChart option={grafikOption} height={126} />
+                  <div className={styles.donutCenter}><small>Net</small><strong>{ozet.net}</strong></div>
+                </div>
+                <div className={styles.legend}>
+                  {puanKalemleri.map((kalem) => (
+                    <div key={kalem.ad}>
+                      <span style={{ background: kalem.renk }} />
+                      <small>{kalem.ad}</small>
+                      <strong>{kalem.ad === "Kayıplar" && kalem.deger > 0 ? "−" : ""}{kalem.deger}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className={styles.dataNote}>
+                {ozet.kazanim > 0
+                  ? `Kazanımda %${Math.round((enGuclu.deger / ozet.kazanim) * 100)} oranında ${enGuclu.ad.toLocaleLowerCase("tr-TR")} puanı etkili.`
+                  : "Seçili kapsamda henüz puan hareketi oluşmadı."}
+              </div>
+            </section>
+
+            <section className={styles.panel}>
+              <div className={styles.panelHeader}>
+                <div>
+                  <span className={styles.panelEyebrow}>Karar desteği</span>
+                  <h2>Saha Sinyalleri</h2>
+                </div>
+                <div className={styles.iconBubble}><Activity className="h-4 w-4" /></div>
+              </div>
+              <div className={styles.signals}>
+                <div><span className={styles.signalGreen}><Award /></span><p><small>En güçlü kazanım</small><strong>{ozet.kazanim > 0 ? enGuclu.ad : "Kazanım oluşmadı"}</strong><em>{ozet.kazanim > 0 ? `+${enGuclu.deger} puan` : "Henüz katkı kaydı yok"}</em></p></div>
+                <div><span className={styles.signalRed}><CircleAlert /></span><p><small>En büyük kayıp nedeni</small><strong>{enBuyukKayip.deger > 0 ? enBuyukKayip.ad : "Kayıp oluşmadı"}</strong><em>{enBuyukKayip.deger > 0 ? `−${enBuyukKayip.deger} puan` : "Temiz saha davranışı"}</em></p></div>
+                <div><span className={styles.signalBlue}><Eye /></span><p><small>Katılım görünümü</small><strong>{ozet.toplamUtt - ozet.aktifUtt} UTT henüz aktif değil</strong><em>%{aktifOrani} saha katılımı</em></p></div>
+                <div><span className={styles.signalGold}><Trophy /></span><p><small>Lig mesafesi</small><strong>{liderFarki > 0 ? `Lidere ${liderFarki} puan` : "Lider konumda"}</strong><em>{lider?.ad ?? "Lig oluşmadı"}</em></p></div>
+              </div>
+              <div className={styles.truthNote}><Medal className="h-4 w-4" /> Tüm sinyaller seçili periyodun gerçek kazanım ve kayıp kayıtlarından hesaplanır.</div>
+            </section>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.shell}>

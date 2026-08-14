@@ -25,6 +25,7 @@ import {
   aktifPeriyot,
   yilinHaftalari,
   ayKaydir,
+  ligPeriyoduAraligi,
 } from "../lib/zaman/kontrol.ts";
 
 test("mutlu: gun ici bir an dogru TR gunune ve periyoda cozulur", () => {
@@ -41,6 +42,11 @@ test("mutlu: gun ici bir an dogru TR gunune ve periyoda cozulur", () => {
   assert.equal(p.yil, 2026);
   assert.equal(p.ay, 8);
   assert.equal(p.ceyrek, 3);
+
+  assert.deepEqual(
+    ligPeriyoduAraligi({ periyot: "donem", yil: 2026, ay: 1, ceyrek: 3, hafta: 1 }),
+    { baslangic: "2026-06-30T21:00:00.000Z", bitis: "2026-09-30T20:59:59.999Z" },
+  );
 });
 
 test("sinir: pazar, gece yarisi sonrasi ve periyot gecisleri TR'ye sadik kalir", () => {
@@ -80,4 +86,10 @@ test("sinir: pazar, gece yarisi sonrasi ve periyot gecisleri TR'ye sadik kalir",
   assert.equal(trGunu(ayKaydir(new Date("2026-12-15T12:00:00+03:00"), 1)), "2027-01-01");
   assert.equal(trGunu(ayKaydir(new Date("2026-08-15T12:00:00+03:00"), 2)), "2026-10-01");
   assert.equal(trGunu(ayKaydir(new Date("2026-01-10T12:00:00+03:00"), -1)), "2025-12-01");
+
+  // 8) HBLigi hafta aralığı SQL sözleşmesiyle aynı Pazartesi sınırını kullanır.
+  assert.deepEqual(
+    ligPeriyoduAraligi({ periyot: "hafta", yil: 2026, ay: 1, ceyrek: 1, hafta: 1 }),
+    { baslangic: "2025-12-28T21:00:00.000Z", bitis: "2026-01-04T20:59:59.999Z" },
+  );
 });

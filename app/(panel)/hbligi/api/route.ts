@@ -8,11 +8,13 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { getUttLig } from "@/lib/hbligi_v2/getUttLig";
 import { getSahaLig, type SahaGorunumu } from "@/lib/hbligi_v2/getSahaLig";
+import { getBmPerformans } from "@/lib/hbligi_v2/getBmPerformans";
 import type { LigPeriyot } from "@/lib/hbligi_v2/ligRpcCagir";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { ureticiYetenegi, type RaporScope } from "@/lib/uretici/yetenekler";
 import {
   ADMIN_ROLLER,
+  IU_ROLU,
   TUKETICI_ROLLER,
   URETICI_ROLLER,
   YONETICI_ROLLER,
@@ -56,9 +58,6 @@ export async function GET(request: NextRequest) {
 
     const rol = await rolCozucu(adminSupabase, user.id);
 
-    // IU'nun HBLigi ile ilgisi yok — erişim yok (E4).
-    if (rol === "iu") return yetkiHatasi();
-
     // Periyot parametrelerini oku + doğrula
     const { searchParams } = new URL(request.url);
     const periyot = periyotParse(searchParams);
@@ -98,6 +97,7 @@ export async function GET(request: NextRequest) {
       }
       else if (YONETICI_ROLLER.includes(rol)) gorunum = "yonetici";
       else if (ADMIN_ROLLER.includes(rol)) gorunum = "admin";
+      else if (rol === IU_ROLU) gorunum = "admin";
 
       if (!gorunum) return yetkiHatasi();
 
@@ -108,6 +108,20 @@ export async function GET(request: NextRequest) {
         bolge_id: kullanici.bolge_id,
         uretici_scope: ureticiScope,
       }, periyot);
+
+      if (gorunum !== "bm") {
+        const takimKapsamli = gorunum === "tm"
+          || (gorunum === "uretici" && ureticiScope === "takim");
+        sonuc.bm_performans = await getBmPerformans(
+          adminSupabase,
+          {
+            firma_id: gorunum === "admin" ? null : kullanici.firma_id,
+            takim_id: takimKapsamli ? kullanici.takim_id : null,
+          },
+          periyot,
+        );
+      }
+
       return NextResponse.json(sonuc, { status: 200 });
 
     } catch (err) {

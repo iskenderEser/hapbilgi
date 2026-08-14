@@ -271,6 +271,42 @@ function yilinIlkHaftaPazartesi(yil: number): Date {
 }
 
 /**
+ * HBLigi'nin seçilebilir tarih periyodunu, rapor RPC'lerinin kapsayıcı
+ * timestamptz aralığına çevirir. Sınırlar HBLigi SQL'iyle aynı TR takvimidir.
+ */
+export function ligPeriyoduAraligi(p: {
+  periyot: "ay" | "donem" | "yil" | "hafta";
+  yil: number;
+  ay: number;
+  ceyrek: number;
+  hafta: number;
+}): { baslangic: string; bitis: string } {
+  let baslangic: Date;
+  let haricBitis: Date;
+
+  if (p.periyot === "ay") {
+    baslangic = trAnUtc(p.yil, p.ay, 1);
+    haricBitis = trAnUtc(p.yil, p.ay + 1, 1);
+  } else if (p.periyot === "donem") {
+    const baslangicAyi = (p.ceyrek - 1) * 3 + 1;
+    baslangic = trAnUtc(p.yil, baslangicAyi, 1);
+    haricBitis = trAnUtc(p.yil, baslangicAyi + 3, 1);
+  } else if (p.periyot === "yil") {
+    baslangic = trAnUtc(p.yil, 1, 1);
+    haricBitis = trAnUtc(p.yil + 1, 1, 1);
+  } else {
+    const ilkPazartesi = yilinIlkHaftaPazartesi(p.yil);
+    baslangic = new Date(ilkPazartesi.getTime() + (p.hafta - 1) * HAFTA_MS);
+    haricBitis = new Date(baslangic.getTime() + HAFTA_MS);
+  }
+
+  return {
+    baslangic: baslangic.toISOString(),
+    bitis: new Date(haricBitis.getTime() - 1).toISOString(),
+  };
+}
+
+/**
  * Verilen anın TR hafta numarası (Pazartesi bazlı, 1 Ocak'ı içeren hafta = 1).
  * Lig periyot seçicileri ve haftalık lig RPC'si bu numarayı kullanır.
  */

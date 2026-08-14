@@ -5,6 +5,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ligRpcCagir, type LigPeriyot } from "@/lib/hbligi_v2/ligRpcCagir";
+import type { BmPerformansDetay } from "@/lib/rapor/paylasilan/bmPerformansTipleri";
 import type { RaporScope } from "@/lib/uretici/yetenekler";
 
 export type SahaGorunumu = "bm" | "tm" | "uretici" | "yonetici" | "admin";
@@ -38,6 +39,8 @@ export interface SahaLigSonuc {
   ana_birim: SahaBirimTuru;
   odak_birim_id: string | null;
   lig: SahaLigKullanici[];
+  // BM dışındaki iç roller: Raporlar ile aynı bm_id tabanlı BM→UTT yapısı.
+  bm_performans?: BmPerformansDetay[];
 }
 
 export interface SahaLigKapsami {

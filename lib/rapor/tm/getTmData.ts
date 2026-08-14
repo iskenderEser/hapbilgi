@@ -6,51 +6,12 @@ import type {
   KullaniciUrunDagilimi,
 } from '@/lib/rapor/bm/getBmData';
 import { hataYaniti } from '@/lib/utils/hataIsle';
+import type { BmPerformans, BmUttPerformans } from '@/lib/rapor/paylasilan/bmPerformansTipleri';
 
 interface Kullanici {
   kullanici_id: string;
   takim_id: string;
   firma_id: string;
-}
-
-export interface TmBmPerformans {
-  bm_id: string;
-  bm_adi: string;
-  bolge_id: string;
-  bolge_adi: string;
-  toplam_utt: number;
-  aktif_utt: number;
-  tamamlanan_izleme: number;
-  benzersiz_yayin: number;
-  izleme_puani: number;
-  cevaplama_puani: number;
-  oneri_puani: number;
-  extra_puan: number;
-  ileri_sarma_kaybi: number;
-  yanlis_cevap_kaybi: number;
-  oneri_kaybi: number;
-  kazanilan_toplam: number;
-  kaybedilen_toplam: number;
-  net_puan: number;
-}
-
-export interface TmUttPerformans {
-  bm_id: string;
-  kullanici_id: string;
-  ad: string;
-  soyad: string;
-  tamamlanan_izleme: number;
-  benzersiz_yayin: number;
-  izleme_puani: number;
-  cevaplama_puani: number;
-  oneri_puani: number;
-  extra_puan: number;
-  ileri_sarma_kaybi: number;
-  yanlis_cevap_kaybi: number;
-  oneri_kaybi: number;
-  kazanilan_toplam: number;
-  kaybedilen_toplam: number;
-  net_puan: number;
 }
 
 export interface TmEtkilesim {
@@ -65,8 +26,8 @@ interface TmData {
   hata: NextResponse | null;
   takim: { takim_adi: string } | null;
   firma: { firma_adi: string } | null;
-  bmPerformans: TmBmPerformans[];
-  uttPerformans: TmUttPerformans[];
+  bmPerformans: BmPerformans[];
+  uttPerformans: BmUttPerformans[];
   takimOzet: KullaniciOzetSatiri[];
   kategoriDagilimi: KullaniciKategoriDagilimi[];
   urunDagilimi: KullaniciUrunDagilimi[];
@@ -153,7 +114,7 @@ export async function getTmData(
   if (sirketOzetRes.error) return { ...bos, hata: hataYaniti('Şirket puanı çekilemedi', 'get_kullanici_ozet (firma)', sirketOzetRes.error) };
   if (etkilesimRes.error) return { ...bos, hata: hataYaniti('TM etkileşimleri çekilemedi', 'get_tm_etkilesim_v2', etkilesimRes.error) };
 
-  const bmPerformans = (bmPerformansRes.data ?? []) as TmBmPerformans[];
+  const bmPerformans = (bmPerformansRes.data ?? []) as BmPerformans[];
   const uttPerformansSonuclari = await Promise.all(
     bmPerformans.map(async bm => ({
       bm,
@@ -177,7 +138,7 @@ export async function getTmData(
     }
   }
   const uttPerformans = uttPerformansSonuclari.flatMap(({ bm, sonuc }) =>
-    ((sonuc.data ?? []) as Omit<TmUttPerformans, 'bm_id'>[]).map(utt => ({
+    ((sonuc.data ?? []) as Omit<BmUttPerformans, 'bm_id'>[]).map(utt => ({
       ...utt,
       bm_id: bm.bm_id,
     }))
