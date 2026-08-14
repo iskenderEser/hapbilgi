@@ -275,7 +275,7 @@ Yeni tablolar (adlar öneri; KONTROL'lerde mevcut adlandırma diliyle son hâli 
 - **UTT ekranı:** "Eczanem" pill/sayfası — Eczanem yayınları + listesindeki eczaneler + aktif üye sayısı + eşik durumu; eşik altına gönderim server tarafında da reddedilir (İP-§5.2). Gönderim `eczanem_eczane_gonderimleri`'ne UNIQUE ile yazılır.
 - **Eczane paneli (eczacı/teknisyen):** gelen videolar, üye listesi (yalnız son-4-hane), davet formu, tekil/toplu müşteri gönderimi (İP-§5.5 — toplu gönderim tek istekte, UNIQUE çakışmaları sessizce atlanır), sipariş onay kuyruğu (Faz 4), işlem dökümü.
 - **Müşteri paneli:** kendine gönderilen videolar, izleme + soru akışı (mevcut izleme bileşenlerinin sade uyarlaması — kayıp yok, ileri sarma yok, İP-§6.1), bakiye ekranı (Eczane > Firma > Ürün kırılımı), fişler, "İndirim kullan", profil/silme.
-- **İzlenme metriği HİÇBİR katmanda üretilmez** (İP-§6.2) — rapor/analiz veri katmanlarına Eczanem izleme verisi bilinçli olarak BAĞLANMAZ; bu bir eksik değil karardır, koda yorum olarak da yazılır.
+- **İzlenme metriği HİÇBİR katmanda üretilmez** (İP-§6.2) — rapor veri katmanına Eczanem izleme verisi bilinçli olarak BAĞLANMAZ; bu bir eksik değil karardır, koda yorum olarak da yazılır.
 
 ## 6. Kasa akışı — atomik düşüm
 

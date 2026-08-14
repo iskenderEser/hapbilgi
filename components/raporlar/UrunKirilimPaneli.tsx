@@ -3,7 +3,7 @@
 // Ürün dağılımı — master-detail: solda ürün butonları (nav), ortada seçili ürünün
 // PUAN KIRILIMI grafiği (Video/Doğru Cevap/Öneri/Extra yeşil + kayıplar kırmızı, negatif).
 // Görünüm Sütun/Çizgi/Tablo (pasta yok — net puan negatif olabilir), PNG indir.
-// Teknik dağılımı burada YOK (Analiz'e ait). Grafik gövdesi DagilimGrafik.
+// Teknik dağılımı burada YOK. Grafik gövdesi DagilimGrafik.
 
 "use client";
 

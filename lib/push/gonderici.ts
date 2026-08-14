@@ -23,8 +23,7 @@ export interface PushHedefi {
   auth: string;
 }
 
-// denemeliFetch deseni (lib/utils/aiIstemci.ts): geçici hatalarda exponential
-// backoff, kalıcı hatalarda ilk denemede dön.
+// Geçici hatalarda exponential backoff, kalıcı hatalarda ilk denemede dön.
 const GECICI_HATA_KODLARI = new Set([429, 500, 502, 503, 504]);
 const OLU_ABONELIK_KODLARI = new Set([404, 410]); // K-P5
 const MAX_DENEME = 3;

@@ -20,13 +20,11 @@
   - [2.4 Erişim & güvenlik mimarisi](#24-erişim--güvenlik-mimarisi)
   - [2.5 Veri modeli felsefesi](#25-veri-modeli-felsefesi)
   - [2.6 Katman ayrımı — route = orkestrasyon, lib = iş mantığı](#26-katman-ayrımı--route--orkestrasyon-lib--iş-mantığı)
-  - [2.7 Ortak servis soyutlamaları — provider-agnostik video ve AI](#27-ortak-servis-soyutlamaları--provider-agnostik-video-ve-ai)
+  - [2.7 Ortak servis soyutlamaları — provider-agnostik video](#27-ortak-servis-soyutlamaları--provider-agnostik-video)
   - [2.8 İçerik Üretim Hattı — üç katmanı besleyen tek motor](#28-i̇çerik-üretim-hattı--üç-katmanı-besleyen-tek-motor)
 - [3. İç Müşteri Katmanı — Saha Ekibi (UTT + BM)](#3-i̇ç-müşteri-katmanı--saha-ekibi-utt--bm)
   - [3.1 Tüketim — izleme, puanlama, öneri](#31-tüketim--izleme-puanlama-öneri)
-  - [3.2 Rapor & Analiz](#32-rapor--analiz)
-    - [3.2.1 Rol bazlı raporlar (UTT / BM / TM / üretici / yönetici)](#321-rol-bazlı-raporlar-utt--bm--tm--üretici--yönetici)
-    - [3.2.2 Analiz (kombinasyon + AI yorum)](#322-analiz-kombinasyon--ai-yorum)
+  - [3.2 Raporlar — rol bazlı ölçüm](#32-raporlar--rol-bazlı-ölçüm)
   - [3.3 Challenge Club (yönetici öğrenmesi — BM)](#33-challenge-club-yönetici-öğrenmesi--bm)
   - [3.4 Ligler — HBLigi ve Challenge Club Ligi](#34-ligler--hbligi-ve-challenge-club-ligi)
   - [3.5 HBStore (iç ödül)](#35-hbstore-iç-ödül)
@@ -122,7 +120,7 @@ Sonuçta ortaya çıkan bir yazılım değil bir kültürdür: öğrenmenin sür
 
 Bu rapor HapBilgi'nin güncel teknik yapısını — veritabanı, backend ve frontend katmanlarını — belgeler. Ancak amaç yalnızca bir tablo, dosya ve endpoint listesi çıkarmak değil; sistemi kendi çalışma mantığına, yani iki müşteri katmanlı öğrenme ekosistemine sadık biçimde anlatmaktır. Bu nedenle rapor teknik envanteri modüllerin işlevi etrafında örgütler.
 
-**Yapı.** Rapor iki müşteri katmanını omurga alır. Önce her iki katmanın üzerinde durduğu **ortak temel** (altyapı, kimlik, güvenlik, veri modeli felsefesi ve iki katmanı birden besleyen içerik üretim hattı) gelir. Ardından **iç müşteri katmanı** (saha ekibinin tüketim, rapor-analiz, challenge, lig ve store modülleri) ve **dış müşteri katmanı** (eczane tarafının E-Club modülleri) ayrı ayrı ele alınır. En sonda iki katmana birden hizmet eden **kesişen/operasyonel** konular (yönetim paneli, kalite-denetim altyapısı, dağıtım, açık işler) yer alır.
+**Yapı.** Rapor iki müşteri katmanını omurga alır. Önce her iki katmanın üzerinde durduğu **ortak temel** (altyapı, kimlik, güvenlik, veri modeli felsefesi ve iki katmanı birden besleyen içerik üretim hattı) gelir. Ardından **iç müşteri katmanı** (saha ekibinin tüketim, rapor, challenge, lig ve store modülleri) ve **dış müşteri katmanı** (eczane tarafının E-Club modülleri) ayrı ayrı ele alınır. En sonda iki katmana birden hizmet eden **kesişen/operasyonel** konular (yönetim paneli, kalite-denetim altyapısı, dağıtım, açık işler) yer alır.
 
 **Referans hiyerarşisi.** Rapor canlı sistemi yansıtmayı hedefler. Kaynaklar arasında çelişki olduğunda öncelik sırası şudur: gerçek veritabanı şeması > gerçek proje dosya dizini > doğrulanmış iş akışı > geçmiş belgeler. Yani bu rapor, tarihsel devir notlarını değil, sistemin bugünkü fiili durumunu esas alır.
 
@@ -145,15 +143,14 @@ HapBilgi, tek bir Next.js uygulaması içinde hem frontend'i hem backend'i (API 
 | Dil | TypeScript | 5.x | `strict: true`; tip güvenliği zorunlu |
 | Stil | TailwindCSS | 4.x | `@theme` tabanlı kurumsal renk sistemi |
 | Veritabanı & Auth | Supabase (PostgreSQL) | `@supabase/ssr` + `@supabase/supabase-js` | Frankfurt bölgesi; kimlik doğrulama + veri |
-| Grafik | Recharts | 3.8.1 | Analiz/rapor grafikleri |
+| Grafik | ECharts | 6.1.0 | Rapor ve lig grafikleri |
 | Elektronik tablo | SheetJS (xlsx) | 0.18.5 | Excel dışa aktarma (firma yaşam döngüsü, E-Club Ligi) |
 | Video CDN | Bunny.net | (SDK yok — env/HTTP) | Video barındırma ve oynatma |
-| AI yorum | Provider-agnostik (Gemini vb.) | (SDK yok — env/HTTP) | Analiz sayfası AI yorumu |
 | Dağıtım | Vercel | — | Production deploy |
 
 **Yapılandırma notları.** Proje `reactCompiler: true` ile React Compiler'ı etkinleştirir; bunun dışında `next.config.ts` sade tutulmuştur. TypeScript tarafında `strict` mod açık, modül çözümlemesi `bundler`, ve `@/*` path alias'ı proje köküne işaret eder (`@/lib/...`, `@/components/...` importlarının temeli). Kök dizinde Next.js 16 middleware'i `proxy.ts` olarak bulunur (Edge değil, Node.js runtime) ve tüm erişim kontrolünün merkezidir (bkz. §2.4).
 
-**Bağımlılık felsefesi — ince dış bağımlılık.** Dikkat çeken nokta, üçüncü taraf servislerin (Bunny.net video, AI sağlayıcıları) npm bağımlılığı olarak **bulunmamasıdır**. Bu servisler SDK ile değil, kendi soyutlama katmanları üzerinden env değişkenleri ve HTTP çağrılarıyla kullanılır (bkz. §2.7). Bu bilinçli tercih, sağlayıcı değişiminde uygulamayı bir kütüphaneye kilitlenmekten korur.
+**Bağımlılık felsefesi — ince dış bağımlılık.** Dikkat çeken nokta, Bunny.net video servisinin npm bağımlılığı olarak **bulunmamasıdır**. Servis, SDK ile değil kendi soyutlama katmanı üzerinden env değişkenleri ve HTTP çağrılarıyla kullanılır (bkz. §2.7). Bu bilinçli tercih, sağlayıcı değişiminde uygulamayı bir kütüphaneye kilitlenmekten korur.
 
 **Kalite araçları.** `package.json` script'leri, standart `dev`/`build`/`start`/`lint`'e ek olarak projeye özgü iki denetim katmanı tanımlar: `denetim` (kod ile canlı DB şeması tutarlılığını `ts-morph` + `pg` ile karşılaştırır) ve `lint:mimari` (özel ESLint mimari kurallarını çalıştırır). Bu araçlar §6.2'de ayrıntılandırılır; burada stack'in bir parçası olarak `devDependencies` içinde `pg`, `ts-morph` ve `dotenv` ile temsil edildiklerini not etmek yeterli.
 
@@ -194,7 +191,7 @@ Sistemdeki tüm rol tanımları ve yetki kümeleri tek bir dosyada, `lib/utils/r
 | Grup | Roller | İşlev / hiyerarşi seviyesi |
 |---|---|---|
 | `URETICI_ROLLER` | pm, jr_pm, kd_pm, med_md, egt_md, egt_yrd_md, egt_yon, egt_uz, ik_drk, ik_md, ik_yrd_md, ik_uz, ik_per (13 rol) | İçerik üretir: talep açar, senaryo/video/soru seti onaylar, yayınlar (takım seviyesi) |
-| `YONETICI_ROLLER` | gm, gm_yrd, drk, paz_md, blm_md, grp_pm, sm | Yönetici raporu + analiz erişimi (firma seviyesi) |
+| `YONETICI_ROLLER` | gm, gm_yrd, drk, paz_md, blm_md, grp_pm, sm | Yönetici raporu erişimi (firma seviyesi) |
 | `ADMIN_ROLLER` | admin | Tüm firmalar + admin paneli + tüm raporlar |
 | `YONLENDIRICI_ROLLER` | tm, bm | UTT performansını hiyerarşik olarak izler; öneri gönderme yetkisi yalnız BM’dedir (BM bölge, TM takım görünümü) |
 | `TUKETICI_ROLLER` | utt, kd_utt | Sahada video tüketir, soru cevaplar, puan kazanır (bölge seviyesi) |
@@ -207,7 +204,6 @@ Sistemdeki tüm rol tanımları ve yetki kümeleri tek bir dosyada, `lib/utils/r
 | Küme | Kapsam |
 |---|---|
 | `URETIM_HATTI_GORENLER` | Üretim hattı sayfaları (talepler/senaryolar/videolar/soru-setleri): üretici roller + İU |
-| `ANALIZ_TUKETICI/URETICI/YONETICI_ROLLERI` | Analiz sayfası 3 kategorisi; `analizRolKategorisi()` helper'ı rolü kategoriye dispatch eder (İK hariç, admin yönetici sayılır) |
 | `CCLIGI_GORENLERLER` | Challenge Club Ligi: BM (asıl) + TM/üretici/yönetici/admin (gözlemci) |
 | `STORE_ALABILEN_ROLLER` | HBStore'dan puan harcayabilen: UTT/KD_UTT + BM |
 | `STORE_GORENLERLER` / `STORE_GENEL_GOREN_ROLLER` | HBStore sipariş görüntüleme; kapsam role göre daralır (kendi / takım / firma) |
@@ -298,7 +294,6 @@ HapBilgi'nin backend'i iki katmana ayrılır ve bu ayrım projenin en tutarlı u
 | `lib/tur/` | Tur katmanı — `ayarlar.ts` (periyot seçenekleri okuyucu) + `kayit.ts` (`turKaydiAc` tek-kaynak yazım, `gecerliTur` otomatik açılış, `gecerliTurBaslangiclari` toplu salt-okur hesap; ikisi de ortak `hizaliBaslangic()` takvim formülünü kullanır) |
 | `lib/utils/anaSayfa/` | Ana sayfa veri katmanı — rol başına dosya (`bm`, `utt`, `tm`, `iu`, `uretici`, `yonetici` + `bmAktivite`). Eski tek dosya `anaSayfaVeri.ts` (542 satır, altı rolün fonksiyonu) bölünüp silindi; tek tüketici `app/ana-sayfa/api` doğrudan rol dosyalarından import eder. Üreticideki döngü-içi sıralı sorgu (N+1) deseni ayrı bir performans işi olarak ertelenmiş, 27.07.2026'da kapanmıştır: zincir `v_uretici_icerik_takip` view'ine taşındı, maliyet talep sayısından bağımsız sabit iki sorgudur (§6.4) |
 | `lib/rapor/` | Rol bazlı rapor veri katmanı (`utt`, `bm`, `tm`, `uretici`, `yonetici` + `paylasilan`) |
-| `lib/analiz/` | Analiz veri katmanı (aynı rol bölünmesi + `paylasilan` prompt/kombinasyon) |
 | `lib/cc/` | Challenge Club (`izleme`, `puan`, `soru` alt katmanları) |
 | `lib/eclub/` | E-Club iş mantığı (`store` alt katmanı dahil) |
 | `lib/uretici/` | Üretici rol yetenek profilleri (§2.8) |
@@ -307,13 +302,13 @@ HapBilgi'nin backend'i iki katmana ayrılır ve bu ayrım projenin en tutarlı u
 
 **Örnek desen — `lib/puan/`.** Puan katmanının dört dosyaya bölünmesi ayrımı somutlaştırır: `tipler.ts` (parametre tipleri), `strateji.ts` (izleme/extra kararı, eşik mantığı), `kayit.ts` (iç müşteri kazanım + kayıp INSERT fonksiyonları), `eclubKayit.ts` (dış müşteri karşılığı). İzleme akışındaki `bitir` route'u puanı kendisi hesaplamaz; `strateji.ts`'e "bu izleme puan getirir mi" diye sorar, sonra `kayit.ts`'in ilgili fonksiyonunu çağırır. Puan formülü yarın değişirse route'a dokunulmaz — yalnızca bu iki dosya güncellenir. Aynı ikizlik iç/dış müşteri arasında da korunur: `kayit.ts` ile `eclubKayit.ts` paralel yapıdadır, çünkü iki katman aynı öğrenme iskeletini ayrı düzlemlerde yaşar (§1.2).
 
-**Rapor ve analiz'de tekrarlanan alt-desen.** `lib/rapor/` ve `lib/analiz/` altında her rolün kendi klasörü (`bm`, `tm`, `uretici`, `yonetici`, `utt`) ve bir `paylasilan/` klasörü bulunur. Bu, "her rol kendi veri kaynağından beslenir, ortak hesaplar tek yerde" ilkesinin klasör düzeyindeki karşılığıdır; ayrıntısı §3.2'de ele alınır.
+**Raporlarda tekrarlanan alt-desen.** `lib/rapor/` altında her rolün kendi klasörü (`bm`, `tm`, `uretici`, `yonetici`, `utt`) ve bir `paylasilan/` klasörü bulunur. Bu, "her rol kendi veri kaynağından beslenir, ortak hesaplar tek yerde" ilkesinin klasör düzeyindeki karşılığıdır; ayrıntısı §3.2'de ele alınır.
 
 **Arayüz merkezleri — rozet ve liste (27.07.2026).** Katman ayrımı yalnız route/lib ekseninde değil, arayüzde de uygulanır: tekrar eden görsel davranışlar sayfalarda değil merkezlerde yaşar. **Pill merkezi** (`components/pill/`) rozetin *şeklini* sahiplenir — tarama 118 pill ve 32 farklı ölçü imzası bulmuştu; ölçü artık tek satırda tanımlıdır (10px yazı, `px-2 py-0.5` dolgu, 0.5px kenar, tight satır yüksekliği). Sınır bilinçlidir: merkez şekli tutar, **anlamı tutmaz** — renk durum sözlüğünden (`lib/utils/durum/mesaj.ts`) ve rol tasarımından gelir. Anlam sarmalayıcıları `AsamaPill`, `DurumPill`, `VaryantPill`, `HedefRolPill`, `TeknikPill` rengi kaynağından alır, ölçüye hiç karışmaz. **Liste merkezi** (`components/liste/`) arama ve kademeli listelemeyi taşır (`useListe` + `ListeArama` + `DahaFazlaGoster`); aranabilir alanları sayfa tanımlar, merkez "talep no" gibi bir alan adı bilmez — böylece 40 liste ekranı aynı davranışı paylaşır.
 
-### 2.7 Ortak servis soyutlamaları — provider-agnostik video ve AI
+### 2.7 Ortak servis soyutlamaları — provider-agnostik video
 
-HapBilgi, dış servislere bağımlılığını iki soyutlama katmanıyla yönetir. Ortak felsefe şudur: tüketici kod belirli bir sağlayıcıya (Bunny.net, Gemini vb.) değil, bir *arayüze* bağlanır. Bu, §2.1'de not edilen "ince dış bağımlılık" tercihinin — sağlayıcı SDK'ları yerine kendi soyutlamaları — teknik karşılığıdır ve sistemi tek bir sağlayıcıya kilitlenmekten korur.
+HapBilgi, video servisine bağımlılığını bir soyutlama katmanıyla yönetir. Tüketici kod belirli bir sağlayıcıya değil, bir *arayüze* bağlanır. Bu, §2.1'de not edilen "ince dış bağımlılık" tercihinin — sağlayıcı SDK'sı yerine kendi soyutlaması — teknik karşılığıdır ve sistemi tek bir sağlayıcıya kilitlenmekten korur.
 
 **Video oynatıcı — `lib/video/videoPlayer.ts`.** Video oynatma teknik detayları (script yükleme, `postMessage` protokolü, event isimleri, URL format dönüşümü) tüketici bileşenden (VideoOynatici) tamamen soyutlanır. Mimari üç parçadır:
 
@@ -324,12 +319,6 @@ HapBilgi, dış servislere bağımlılığını iki soyutlama katmanıyla yönet
 Yeni bir sağlayıcı (Mux, Cloudflare Stream, Vimeo, YouTube, JW Player, Wistia) eklemek üç adımdır: URL desenini tanıt, arayüzü uygulayan adapter'ı yaz, fabrikaya `case` ekle. VideoOynatici'ye hiç dokunulmaz. Bu genişleme noktaları dosyanın başında yorum olarak hazır bekler — ama kod yazılmamıştır; ilkesi, "test edilemeyen sağlayıcı için kod yazmak sahte güvence yaratır" olarak benimsenmiştir.
 
 Soyutlamanın bir önemli tasarım notu: `onEnded` event'ı bazı sağlayıcılar tarafından her zaman gönderilmez. Bu yüzden tüketici kod, kritik iş mantığını (izleme tamamlandı mı) yalnızca sağlayıcının gönüllü event'ına bağlamaz; `timeupdate` + `duration` ile kendi manuel bitiş tespitini de yapar. İlke: kritik iş mantığı üçüncü taraf sağlayıcının davranışına emanet edilmez, sağlayıcı event'ları yalnızca yedektir.
-
-**AI istemcisi — `lib/utils/aiIstemci.ts`.** Analiz sayfasındaki AI yorumu, sağlayıcı bağımsız bir servisten geçer. Dört sağlayıcı desteklenir (anthropic, openai, gemini, deepseek); seçim ve yapılandırma `.env.local` üzerinden yapılır (`AI_PROVIDER`, ilgili `_API_KEY` ve `_MODEL` değişkenleri). Sağlayıcı değiştirmek için kod değişikliği gerekmez — yalnızca env.
-
-İstemcinin ikinci katmanı dayanıklılıktır: tüm sağlayıcı çağrıları `denemeliFetch()` sarmalayıcısından geçer. Geçici hatalarda (429, 500, 502, 503, 504 ve ağ hataları) exponential backoff ile otomatik yeniden deneme yapılır (3 deneme: 500ms, 1000ms); kalıcı hatalarda (400/401/403/404) yeniden deneme yapılmaz, ilk yanıt döner. Bu, bir AI sağlayıcısının geçici kesintisinin analiz sayfasını çökertmesini önler.
-
-**Ortak ilke.** İki soyutlama da aynı deseni izler: sağlayıcıya özel her şey tek bir dosyada izole edilir, geri kalan sistem yalnızca arayüzü görür. Video tarafında bu bir sınıf hiyerarşisi (adapter), AI tarafında bir fonksiyon fabrikası (provider dispatch) olarak somutlaşır; ama mantık aynıdır — değişebilir olanı değişmez olandan ayırmak.
 
 **Doğrudan yükleme — vezne modeli (19.07.2026).** Video dosyası Supabase storage'a hiç girmez ve uygulama sunucusuna uğramaz. Akış üç adımdır: (1) **vezne** ucu kimlik ve sıra kontrolü yapar, Bunny'de kaydı **sistem** açar, adı **sistem** koyar (`urunadi_vN`), istemciye tek videoya özel iki saatlik TUS imzası döner — imza formülü `sha256(library_id + api_key + expiration + video_guid)`; (2) dosya tarayıcıdan `tus-js-client` ile **doğrudan** Bunny'ye gider, kesintiden kaldığı yerden devam eder; (3) kanonik embed adresini sistem yazar — istemci URL kurmaz. **API anahtarı istemciye asla inmez.** Çekirdek sunucu tarafındadır (`lib/video/bunnyYukleme.ts`), istemci yardımcısı ayrı dosyadadır (`lib/video/bunnyTusIstemci.ts`) ve çekirdeğe import etmez. Encode durumu kart açılışında sorgulanır (`GET /videolar/api/bunny-durum`) ve sınırlı süreli tekrar-sorguyla izlenir (15 sn aralık, 5 dk tavan — sonsuz polling yoktur). Yarım kalan yüklemenin Bunny'de bıraktığı **yetim kayıt** `bunny-yukleme-iptal` ile silinir; güvenlik kuralı nettir — bir kayda bağlanmış GUID silinmez, yalnız yetim silinir.
 
@@ -417,11 +406,9 @@ Tüm puan yazımları route içinde inline değil, `lib/puan/kayit.ts`'teki `kaz
 
 **Yayındaki Videolar — üretim tarafının izleme yüzeyi (23.07.2026).** Üretici, yönetici ve yönlendirici roller yayındaki tüm videoları ayrı bir sayfadan izleyebilir (`YAYINDAKI_VIDEO_GORENLER`; içerik üreticisi ve tüketici roller hariçtir). Videolar üreten rolün **departmanına** göre klasörlenir (Ürün / Medikal / Eğitim / İK); kartta favori, beğeni ve üreten bilgisi görünür, karta tıklanınca video tam sayfa açılır. Bu yüzey **yalnız-izlemedir**: puan verilmez, soru sorulmaz — tüketim akışının kendisi değil, üretim tarafının kendi çıktısını görme yoludur.
 
-### 3.2 Rapor & Analiz
+### 3.2 Raporlar — rol bazlı ölçüm
 
-Öğrenme ölçülemezse geliştirilemez. Bu iki modül — Rapor ve Analiz — §1.3'teki "ölçüm" halkasının teknik karşılığıdır: kimin ne kadar öğrendiğini, nerede güçlü nerede desteğe ihtiyaç olduğunu görünür kılar. İkisi ayrı sayfalardır ve farklı sorulara cevap verir: Rapor "kim ne yaptı, kim nerede duruyor" (kişi/kapsam bazlı performans), Analiz ise "hangi değişken hangi sonucu üretiyor" (metrik kombinasyonu + yorum).
-
-#### 3.2.1 Rol bazlı raporlar (UTT / BM / TM / üretici / yönetici)
+Öğrenme ölçülemezse geliştirilemez. Raporlar ve ligler, §1.3'teki "ölçüm" halkasının teknik karşılığıdır: raporlar kişi ve kapsam bazında ne yapıldığını, ligler ise kullanıcının karşılaştırmalı konumunu görünür kılar.
 
 Rapor modülü beş rol için beş ayrı sayfadan oluşur (`app/raporlar/` altında `utt`, `bm`, `tm`, `uretici`, `yonetici`). Mimarinin temel ilkesi şudur: **her rol kendi veri kaynağından beslenir; üst seviye, alt seviyenin verisini frontend'de toplamaz.** UTT raporu UTT RPC'sinden, BM raporu BM RPC'sinden, TM raporu TM RPC'sinden beslenir. Bir üst seviyenin alt seviyenin ham verisini çekip tarayıcıda toplaması yanlış mimari sayılır; her seviye kendi kapsamına uygun sorgudan gelir.
 
@@ -442,29 +429,6 @@ Rapor modülü beş rol için beş ayrı sayfadan oluşur (`app/raporlar/` altı
 Bir yüzde formülü değişirse beş rolde ayrı ayrı değil, bu tek dosyada değişir. Veri katmanı (`get<Rol>Data.ts`, ham veri çekme) ile hesap katmanı (`paylasilan/`, dönüşüm) bilinçli olarak ayrı sorumluluklardır.
 
 **Yönetici raporunun lazy-load akordeonu.** Yönetici raporu tüm firmayı kapsadığı için en geniş veri hacmine sahiptir; bu yüzden Takım → Bölge → UTT kırılımı tek seferde değil, katman katman (kullanıcı bir düğümü açtıkça) `app/raporlar/api/yonetici/akordeon/route.ts` üzerinden çekilir. Bu, büyük firmalarda ilk yükleme maliyetini düşürür ve raporu ölçeklenebilir tutar.
-
-#### 3.2.2 Analiz (kombinasyon + AI yorum)
-
-Analiz modülü, raporun "kim ne yaptı" sorusunu bir adım öteye taşır: "hangi değişkenler bir araya geldiğinde hangi sonuç çıkıyor, ve bu ne anlama geliyor?" Kullanıcı, önceden tanımlı değişkenleri (pill'ler) seçer; sistem o kombinasyona karşılık gelen sayısal sonucu getirir, grafiğe döker ve bir AI yorumuyla yorumlar. Modül dört rol için ayrı sayfadan oluşur (`app/analiz/` altında `yonetici`, `uretici`, `tm`, `bm`); UTT/KD_UTT ve İK rolleri analiz sayfası görmez (kendi performanslarını rapor üzerinden görürler).
-
-**Rol → sayfa dağılımı.** §2.3'teki `analizRolKategorisi()` helper'ı rolü üç kategoriye ayırır ve her kategori kendi sayfasına gider: yönetici (gm/gm_yrd/direktör vb. + admin, tüm firma), üretici (pm/med_md/egt_* — takım-bağlı olan kendi takımını, takım-bağımsız olan firmayı görür), TM (takımı) ve BM (bölgesi). Yönetici ve üretici hem üretim hem tüketim metriklerini görür; TM ve BM yalnızca tüketim görür (üretim varlığı bu roller için anlamlı değildir).
-
-**DB tabanlı kombinasyon mimarisi — çekirdek karar.** Analiz'in en özgün yanı, hangi değişkenlerin var olduğu ve hangi kombinasyonların anlamlı olduğu bilgisinin koda değil **veritabanına** gömülü olmasıdır. Dört tablo bunu taşır:
-
-| Tablo | İçerik |
-|---|---|
-| `analiz_uretim_degiskenleri` | Üretim tarafı pill'leri (`degisken_id`, `ad`, `sira`) |
-| `analiz_uretim_kombinasyonlari` | Anlamlı üretim kombinasyonları (`degisken_idleri` uuid[], `boyut`, `tanim`, `tamamlayici_mi`) |
-| `analiz_tuketim_degiskenleri` | Tüketim pill'leri (+ `alt_kategori` ile kazanım/kayıp ayrımı, `kombinasyon_havuzunda`) |
-| `analiz_tuketim_kombinasyonlari` | Anlamlı tüketim kombinasyonları (aynı yapı) |
-
-Bunun sonucu şudur: yeni bir pill veya kombinasyon eklemek için kod değişikliği gerekmez — DB'ye satır eklenir. Bir kombinasyon seçildiğinde, `degisken_idleri` dizisiyle eşleşen tanım ve grafik türü (`tamamlayici_mi` — tamamlayıcı metrik mi, bağımsız mı) DB'den okunur ve bu bilgi hem sorguya hem AI prompt'una beslenir. Bu erişim `lib/analiz/paylasilan/kombinasyonlar.ts` üzerinden yapılır.
-
-**Sorgu akışı — kapsam + sorgu ikilisi.** Her rolün iki route'u vardır. `kapsam/route.ts` filtre dropdown'larını dolduran listeleri (takımlar, bölgeler, ürünler, UTT'ler, eğitim türleri) döndürür — role göre daralmış olarak (BM yalnızca kendi bölgesinin UTT'lerini görür). `sorgu/route.ts` ise seçilen kombinasyon + filtreler için sayısal sonucu üretir. Sonuç veri katmanı `lib/analiz/<rol>/get<Rol>AnalizData.ts`'te, kayıt-anı simetrisine sadık biçimde (kazanım tablosu + üç kayıp tablosundan SUM) hesaplanır. Kombinasyon tabloları rol-bağımsız paylaşımlıdır: aynı pill kombinasyonu BM için "bölgemdeki", TM için "takımımdaki", yönetici için "firmadaki" anlamına gelir — pill semantiği değişmez, bağlam değişir.
-
-**AI yorum — paylaşımlı endpoint, rol-aware prompt.** Sonuç üretildikten sonra bir de metinsel yorum üretilir. Bu, tüm roller için tek paylaşımlı endpoint (`app/analiz/api/yorumla/route.ts`) üzerinden çalışır; ama prompt role duyarlıdır: `lib/analiz/paylasilan/promptOlustur.ts`, role (yönetici/üretici/TM/BM), kapsama, periyoda ve seçilen ürün/takım/bölge adlarına göre prompt'ı oluşturur, DB'den gelen kombinasyon tanımını yoruma katar. AI çağrısının kendisi §2.7'deki provider-agnostik `aiIstemci.ts` üzerinden gider (retry korumalı, sağlayıcı env ile seçilir). Sonuç, sayfadaki `SonucGrafigi` (Recharts çizgi/bar karma) ve `AiYorum` bileşenlerinde gösterilir.
-
-**Ortak bileşen katmanı.** Dört rol sayfası, beş paylaşımlı bileşeni (`UretimKart`, `TuketimKart`, `FiltreBari`, `SonucGrafigi`, `AiYorum`) yeniden kullanır. Rol farkları prop'larla verilir: örneğin `FiltreBari`, sabit kapsam için opsiyonel prop'lar alır (TM'de takım kilitli, BM'de takım+bölge kilitli). Böylece dört sayfa aynı bileşen setinden, farklı kısıtlarla türer.
 
 ### 3.3 Challenge Club (yönetici öğrenmesi — BM)
 
@@ -496,7 +460,7 @@ Bu ayrımın gerekçesi, BM'in challenge performansının saha (UTT) performans�
 
 Öğrenme, tek başına yürünen bir yol olduğunda yorucudur; paylaşılan bir yolculuğa dönüştüğünde anlam kazanır. Ligler, §1.3'teki "ödül" halkasının motivasyon boyutudur: her bireyin öğrenme emeğini ait olduğu topluluk içinde görünür kılar ve sağlıklı bir gelişim rekabetine çevirir. İç müşteri tarafında iki lig vardır: **HBLigi** (UTT'lerin sahnesi) ve **Challenge Club Ligi** (BM'lerin sahnesi).
 
-**Önceden hesaplanmış özet mimarisi (E9, 31.07.2026).** İki ligde de sıralama, kişi × gün bazında önceden hesaplanmış bir **özet tablodan** okunur: HBLigi `hb_ligi_ozet_v2`, CC Ligi `cc_ligi_ozet`. Özet, kayıt-anı simetrisine sadık biçimde besleyen olay tablolarından bir **`AFTER INSERT` trigger** ile günlük kovaya toplanır (HBLigi: `kazanilan_puanlar`'ın dört kazanım türü — izleme/cevaplama/oneri/extra — + üç kayıp tablosu; CC: BM rolü, izleme/cevaplama/extra/cc_gonderme/cc_referral + challenge kaybı). Okuma anında `v_hbligi_sirali`/RPC'ler bu günlük kovaları seçilen tarih aralığıyla toplar, net puanı (`toplam_puan`) çıkarır, kullanıcıyı firma/takım/bölge ile birleştirir ve sıra kolonlarını (`firma_sirasi`, `bolge_sirasi`, `takim_sirasi`) okuma anında `row_number`/`RANK` ile üretir. Bu, E9 öncesi **her sorguda kayıt tablolarından sıfırdan SUM yapan** "canlı hesap" yaklaşımının yerini aldı; sebep ölçekti (hedef 100k) — ilkel tam-tarama her okumada tekrarlanıyordu. Tutarlılık korunur: özet aynı olay tablolarından türetilir, geçişte canlı-SUM ile birebir doğrulandı (fark 0), ve trigger her yazımı anında kovaya işlediğinden çift sayım/bayat snapshot yapısal olarak yoktur — bir UTT'nin raporundaki net puanı ile lig sıralamasındaki puanı **aynı kaynaktan** gelir. Tekrar Gönderim Modeli'yle uyum sürer: puanlar tur bazlı çoğaldığında yeni kayıtlar aynı tablolara yazılır, trigger özeti günceller; türetilmiş rapor/analiz katmanları (`getUttData.ts` dahil) doğru kalır. Store bakiyelerinin puan artışıyla büyümesi iş modelinin doğal sonucudur, teknik sorun değildir. *(Not: özeti besleyen öneri kaybı yazımı E9 öncesi eksikti — `oneri_kaybi_tara()` fonksiyonu aynı çalışmada kuruldu; bkz. §7.)*
+**Önceden hesaplanmış özet mimarisi (E9, 31.07.2026).** İki ligde de sıralama, kişi × gün bazında önceden hesaplanmış bir **özet tablodan** okunur: HBLigi `hb_ligi_ozet_v2`, CC Ligi `cc_ligi_ozet`. Özet, kayıt-anı simetrisine sadık biçimde besleyen olay tablolarından bir **`AFTER INSERT` trigger** ile günlük kovaya toplanır (HBLigi: `kazanilan_puanlar`'ın dört kazanım türü — izleme/cevaplama/oneri/extra — + üç kayıp tablosu; CC: BM rolü, izleme/cevaplama/extra/cc_gonderme/cc_referral + challenge kaybı). Okuma anında `v_hbligi_sirali`/RPC'ler bu günlük kovaları seçilen tarih aralığıyla toplar, net puanı (`toplam_puan`) çıkarır, kullanıcıyı firma/takım/bölge ile birleştirir ve sıra kolonlarını (`firma_sirasi`, `bolge_sirasi`, `takim_sirasi`) okuma anında `row_number`/`RANK` ile üretir. Bu, E9 öncesi **her sorguda kayıt tablolarından sıfırdan SUM yapan** "canlı hesap" yaklaşımının yerini aldı; sebep ölçekti (hedef 100k) — ilkel tam-tarama her okumada tekrarlanıyordu. Tutarlılık korunur: özet aynı olay tablolarından türetilir, geçişte canlı-SUM ile birebir doğrulandı (fark 0), ve trigger her yazımı anında kovaya işlediğinden çift sayım/bayat snapshot yapısal olarak yoktur — bir UTT'nin raporundaki net puanı ile lig sıralamasındaki puanı **aynı kaynaktan** gelir. Tekrar Gönderim Modeli'yle uyum sürer: puanlar tur bazlı çoğaldığında yeni kayıtlar aynı tablolara yazılır, trigger özeti günceller; türetilmiş rapor katmanı (`getUttData.ts` dahil) doğru kalır. Store bakiyelerinin puan artışıyla büyümesi iş modelinin doğal sonucudur, teknik sorun değildir. *(Not: özeti besleyen öneri kaybı yazımı E9 öncesi eksikti — `oneri_kaybi_tara()` fonksiyonu aynı çalışmada kuruldu; bkz. §7.)*
 
 **Periyot boyutu — parametreli RPC ailesi.** Lig, sabit bir "tüm zamanlar" sıralaması değildir; **dört periyotta** görülebilir: haftalık, aylık, dönemlik (çeyrek), yıllık. Her lig için dört RPC vardır: `get_hb_ligi_haftalik/aylik/donemlik/yillik` (ve CC tarafında `get_cc_ligi_*` + dönem/yıl lideri fonksiyonları). Hepsi özet tablonun günlük kovalarını seçilen tarih aralığıyla toplar (haftalık Pazartesi bazlı, `date_trunc('week')`). Sayfa bir periyot seçici sunar; seçime göre `lib/hbligi_v2/ligRpcCagir.ts` (CC: api içi dispatch) doğru RPC'yi çağırır. Bu, "yarış periyotta, takip anlık" ilkesini uygular: profil ve UTT raporundaki anlık puan tüm-zaman görünümünden beslenirken, lig sıralaması seçilen periyodun penceresinden hesaplanır.
 
@@ -660,7 +624,7 @@ Katman beş yeni yapı taşı getirmiştir: **(a)** üçüncü kimlik düzlemi (
 
 ### 5.3 Tüketim ve puan — kayıpsız model, dörtlü kilit, 180 gün + FIFO
 
-**Kayıpsız izleme (İP-§6.1).** Müşteri paneli, E-Club oynatıcısının sade uyarlamasıdır: izle → tamamla → soruları cevapla. İç müşterinin kayıp mekanizmaları (ileri sarma, yanlış cevap) burada YOKTUR — yanlış cevap hiç kayıt üretmez, yalnız doğru cevap kazandırır. Kazanım puanları yayın başına PM ailesince belirlenir (K-E4: mevcut `video_puani` + soru puanları; sistem ayarı değil). **İzlenme metriği hiçbir katmanda üretilmez** (İP-§6.2): Eczanem izleme verisi rapor/analiz katmanlarına bilinçli olarak bağlanmaz — eksik değil, karardır.
+**Kayıpsız izleme (İP-§6.1).** Müşteri paneli, E-Club oynatıcısının sade uyarlamasıdır: izle → tamamla → soruları cevapla. İç müşterinin kayıp mekanizmaları (ileri sarma, yanlış cevap) burada YOKTUR — yanlış cevap hiç kayıt üretmez, yalnız doğru cevap kazandırır. Kazanım puanları yayın başına PM ailesince belirlenir (K-E4: mevcut `video_puani` + soru puanları; sistem ayarı değil). **İzlenme metriği hiçbir katmanda üretilmez** (İP-§6.2): Eczanem izleme verisi rapor katmanına bilinçli olarak bağlanmaz — eksik değil, karardır.
 
 **Kazanım ledger'ı — dörtlü kilit.** `lib/eczanem/kazanim.ts` tek yazım noktasıdır: her kazanım `eczanem_puan_kayitlari`'na **kişi + eczane + firma + ürün** dörtlüsü kayıt anında denormalize edilerek yazılır (§2.5 İlke 2'nin genişlemesi). Puan başka eczaneye/firmaya/ürüne yapısal olarak sızamaz (İP-§7.1). Kayıt `kalan_puan` taşır: kazanımda `puan`'a eşit doğar, harcamayla azalır.
 
@@ -752,7 +716,7 @@ Bu kuralların ortak paydası, §2.5'teki "tek kaynak" ilkesini derleme zamanın
 
 **Vercel — varsayılan yapılandırma.** Proje, özel bir `vercel.json` taşımaz; `.vercel/project.json` yalnızca Vercel CLI'nin projeyi bağladığı kaydı tutar. Bu, Next.js App Router'ın Vercel'in varsayılan build/deploy algılamasıyla ek yapılandırma gerektirmeden çalıştığı anlamına gelir — route'lar, ortam değişkenleri ve build adımı platformun standart davranışına bırakılmıştır.
 
-**Ortam değişkenleri.** Sistemin dış bağımlılıkları (Supabase, Bunny.net, AI sağlayıcı) env üzerinden yönetilir; yerelde `dotenvx` (`.env.local`, `devDependencies`'te görülen `dotenv`, §2.1) ile enjekte edilir. Production'da bu değerlerin Vercel proje ayarlarında tanımlı olması gerekir; anahtar değişken grupları şunlardır: Supabase (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`), AI sağlayıcı (`AI_PROVIDER` + ilgili `_API_KEY`/`_MODEL`, §2.7), Web Push VAPID (`NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_SUBJECT` her ortamda; `VAPID_PRIVATE_KEY` YALNIZ production — K-P7 çift kilidi, push iş planı).
+**Ortam değişkenleri.** Sistemin dış bağımlılıkları (Supabase, Bunny.net, Web Push) env üzerinden yönetilir; yerelde `dotenvx` (`.env.local`, `devDependencies`'te görülen `dotenv`, §2.1) ile enjekte edilir. Production'da bu değerlerin Vercel proje ayarlarında tanımlı olması gerekir; anahtar değişken grupları şunlardır: Supabase (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`), Bunny.net (`BUNNY_LIBRARY_ID`, `BUNNY_API_KEY`, `NEXT_PUBLIC_BUNNY_PULL_ZONE`) ve Web Push VAPID (`NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_SUBJECT` her ortamda; `VAPID_PRIVATE_KEY` YALNIZ production — K-P7 çift kilidi, push iş planı).
 
 **Commit disiplini.** Proje geçmişi, tutarlı ve tek-amaçlı commit mesajları izler (`refactor:`, `feat:`, `fix:` önekleriyle, Türkçe açıklama) — örneğin `refactor: FIRMA_KOLONLARI lib/firma/kolonlar.ts'e tasindi (tek-kaynak)` ya da `fix: CC ileri_sarma_acik/extra_puan v_yayin_detay yerine yayin_yonetimi`. Bu commit'ler, raporun kendisinde de tekrar tekrar görülen "tek kaynak" ve "doğru veri kaynağından okuma" ilkelerinin geçmişte de aktif olarak düzeltildiğinin izidir.
 
@@ -813,11 +777,11 @@ Bölüm 1–6 sistemin **bugününü** anlatır; bu bölüm o bugüne **nasıl g
 
 ### Kuruluş — ilk yapı (20.03–29.04.2026)
 
-*Kaynak: commit kayıtları.* Proje Next.js iskeletiyle açıldı (`8bd9d4c`), ilk bütün yapı 23.04'te geldi (`d888365`). Bu dönemin kalıcı bir kararı erişim kontrolünün konumudur: middleware dosyası önce `proxy.ts`, sonra `middleware.ts`, sonra tekrar `proxy.ts` olarak adlandırıldı ve Node.js runtime'a sabitlendi (25.04, dört commit) — bugünkü tek merkezli bekçi zincirinin (§2.4) yerleşim kararı burada verildi. 27.04'te analiz modülü, raporlar navbar'ı ve admin ürün/teknik yönetimi eklendi; aynı gün beğeni/favori raporları ve BM eğitim sistemiyle birlikte **Challenge Club** ilk hâlini aldı. 28–29.04 responsive protokolüne ayrıldı: tüm sayfalar, Navbar, ana sayfa bileşenleri ve login Tailwind responsive'e çevrildi.
+*Kaynak: commit kayıtları.* Proje Next.js iskeletiyle açıldı (`8bd9d4c`), ilk bütün yapı 23.04'te geldi (`d888365`). Bu dönemin kalıcı bir kararı erişim kontrolünün konumudur: middleware dosyası önce `proxy.ts`, sonra `middleware.ts`, sonra tekrar `proxy.ts` olarak adlandırıldı ve Node.js runtime'a sabitlendi (25.04, dört commit) — bugünkü tek merkezli bekçi zincirinin (§2.4) yerleşim kararı burada verildi. 27.04'te raporlar navbar'ı ve admin ürün/teknik yönetimi eklendi; aynı gün beğeni/favori raporları ve BM eğitim sistemiyle birlikte **Challenge Club** ilk hâlini aldı. 28–29.04 responsive protokolüne ayrıldı: tüm sayfalar, Navbar, ana sayfa bileşenleri ve login Tailwind responsive'e çevrildi.
 
 ### Genel Sistem'e geçiş ve eğitim türü ayrımı (01.05.2026)
 
-*Kaynak: commit kayıtları.* Üç iş aynı gün yapıldı. **v21** kategorileri, `PM_ROLLERI` sabitini, hazır soru seti kavramını, dinamik soru sayısını ve AI yorum servisini getirdi. **v22 — Genel Sistem'e geçiş** yapısal olanıydı: `bm_*` önekli ayrık yapı kaldırıldı, yerine `hedef_roller` dizisi geldi ve yayına almada hedef kitle seçimi devreye alındı — bugünkü "tek motor, hedefe göre dallanma" mimarisinin (§2.8) temeli budur. Aynı gün **Genel Eğitim / Ürün Eğitimi ayrımı** için `egitim_turu` kolonu eklendi, talep formuna seçim kartları ve listeye görünüm ayrımı kondu.
+*Kaynak: commit kayıtları.* Üç iş aynı gün yapıldı. **v21** kategorileri, `PM_ROLLERI` sabitini, hazır soru seti kavramını ve dinamik soru sayısını getirdi. **v22 — Genel Sistem'e geçiş** yapısal olanıydı: `bm_*` önekli ayrık yapı kaldırıldı, yerine `hedef_roller` dizisi geldi ve yayına almada hedef kitle seçimi devreye alındı — bugünkü "tek motor, hedefe göre dallanma" mimarisinin (§2.8) temeli budur. Aynı gün **Genel Eğitim / Ürün Eğitimi ayrımı** için `egitim_turu` kolonu eklendi, talep formuna seçim kartları ve listeye görünüm ayrımı kondu.
 
 ### Rol sisteminin merkezîleştirilmesi (06.05.2026)
 
@@ -982,6 +946,10 @@ Dokuz adım tek tek yürüdü; her biri üçlü doğrulama (tsc + denetim + lint
 *Kaynak: BM/TM/PM/GM fiziksel rol turu + kanonik SQL doğrulamaları.* Üst rol HBLigi ekranlarının eski ortak "genel" kolu RPC'nin sistem genelindeki bütün UTT satırlarını doğrudan istemciye veriyor, firma/takım/bölge filtrelerini URL'ye yazmasına rağmen API bu parametreleri hiç uygulamıyordu. Canlı turda PM ve GM'nin üç firmadaki **19 UTT'yi**, TM'nin de başka firmalara ait aynı adlı takımları gördüğü kanıtlandı; BM'nin kendi bölge toplamı doğruydu. Önce veri motoru ayrıştırıldı: Q3'te altı hepifarma UTT'sinin bütün kazanım/kayıp bileşenleri olay tablolarıyla birebir çıktı; rol kapsamı sayımları BM=3, TM=6, üretici=6, yönetici=6 olarak doğrulandı; hafta/ay/çeyrek/yıl dört RPC'sinde kanonik toplam ile fark **0** bulundu. Dolayısıyla DB ve günlük özet değiştirilmedi.
 
 Kapsam hatası `getSahaLig` ile sunucu tarafında kapatıldı: rolün firma/takım/bölge kimlikleri oturum kullanıcısından alınır, RPC sistem genelini döndürse bile yalnız yetkili karşılaştırma havuzu response'a çıkar; eski `getBmLig`/`getTmLig`/`getGenelLig` ve istemci filtresi yolu emekliye ayrıldı. Üst rol arayüzü UTT'nin güçlü dashboard çizgisini ayrı bir **HBLigi — Saha Perspektifi** yüzeyine taşır: net saha puanı, aktif/kapsam UTT, kazanım, gerçekleşmiş kayıp, birim ligi, gerçek puan bileşimi, UTT detayları ve veri-türevli saha sinyalleri. Kişisel Liderlik DNA/skor/hedef stub'ları bu yüzeye taşınmaz. Ürün kararları: üretici kapsamı kendi takımıdır; eşit net puan aynı sırayı paylaşır; sıfır puanlı saha görünür kalır.
+
+### Analiz modülünün emekliye ayrılması (14.08.2026)
+
+*Kaynak: ürün değerlendirmesi ve canlı kullanım kapsamı.* Analiz modülü; raporlar ve liglerin zaten sağladığı güçlü ölçüm yüzeyleriyle çakışması, anlamlı yorum üretecek değişken havuzunun sınırlı kalması ve erişebilen sınırlı kullanıcı grubuna karşılık platforma ek bakım/yük getirmesi nedeniyle tamamen kaldırıldı. Sayfalar, API uçları, veri katmanı, AI istemcisi, rol ve menü kuralları, analiz tabloları/RPC'leri ve kurulum SQL'leri sistemden çıkarıldı. Ölçüm mimarisinin aktif kaynakları rol bazlı **Raporlar** ile karşılaştırmalı **Ligler**dir; ayrı bir analiz fonksiyonu bulunmaz.
 
 ---
 

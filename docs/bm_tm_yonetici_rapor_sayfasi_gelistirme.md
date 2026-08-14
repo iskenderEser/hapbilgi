@@ -6,8 +6,6 @@ BM, TM ve yönetici raporları aynı tasarım ailesine taşınacak; ancak her ro
 
 - **Raporlar:** Saha ne yaptı, hangi sonuçları üretti?
 - **HBLigi:** Saha diğerlerine göre nerede, ilerlemek için hangi farkı kapatmalı?
-- **Analiz:** Hangi değişkenler bu sonucu doğurdu?
-
 Bu ayrım nedeniyle raporlardaki mükerrer HBLigi tabloları kaldırılacak; yerlerine kısa bir durum özeti ve **HBLigi'nde İncele** bağlantısı konacaktır.
 
 ## 2. Güvenli başlangıç ve mevcut durum kaydı

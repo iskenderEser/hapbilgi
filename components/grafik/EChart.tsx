@@ -1,7 +1,7 @@
 // components/grafik/EChart.tsx
 //
 // Projenin TEK grafik sarmalayıcısı (ECharts). Recharts emekliye ayrılıyor —
-// karma/veri-yoğun (Analiz) ve az-veri/animasyonlu (raporlar) tüm grafikler buradan.
+// veri-yoğun ve az-veri/animasyonlu (raporlar, ligler) tüm grafikler buradan.
 //
 // Neden custom wrapper: echarts-for-react yerine ince bir sarmalayıcı — sürüm/
 // peer-dependency riski yok (echarts/core React'a bağımlı değil), tree-shake ile

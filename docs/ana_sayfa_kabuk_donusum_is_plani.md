@@ -83,7 +83,7 @@ sürdürülebilir / kaliteli / verimli) uyan tek yol budur.
 | **Üretim** | Talepler · Senaryolar · Videolar · Soru Setleri | üretim hattı rolleri |
 | **Yayın** | Yayın Yönetimi · Yayındaki Videolar · Onaylanan Talepler | üretici / İÜ |
 | **Öneriler** | Öneriler | BM · UTT |
-| **Raporlama** | Raporlar · Analiz | İÜ hariç / analiz rolleri |
+| **Raporlama** | Raporlar | rapor rolleri |
 | **Ligler** | HBLigi · CC Ligi · E-Club Ligi | ilgili roller |
 | **HBStore** | Mağaza · Siparişler | store rolleri |
 | **E-Club** | E-Club · E-Club Store | e-club rolleri |
@@ -124,7 +124,7 @@ Sayfalar gruplar hâlinde `app/(panel)/` altına taşınır; her sayfadan `<Navb
 `tsc`+denetim+`lint:mimari` → 1 smoke → commit.
 
 1. ✅ **Üretim hattı:** talepler(+[id]), senaryolar(+[id]), videolar(+[id]), soru-setleri(+[id]), yayin-yonetimi, onaylanan-talepler (10 sayfa taşındı+sadeleşti; tsc+denetim+lint temiz)
-2. ✅ **Raporlar + Analiz:** raporlar/{utt,bm,tm,uretici,yonetici}, analiz/{bm,tm,uretici,yonetici} (9 sayfa taşındı+sadeleşti; tsc+denetim+lint temiz)
+2. ✅ **Raporlar:** raporlar/{utt,bm,tm,uretici,yonetici} (5 sayfa taşındı+sadeleşti; tsc+denetim+lint temiz)
 3. ✅ **Ligler + Öneriler:** hbligi, cc-ligi, oneriler, challenge-club (+ challenge-club/izle) taşındı+sadeleşti; tsc+denetim+lint temiz
 4. ✅ **HBStore:** store(+[urun_id]), store/siparisler, store/adreslerim, store/siparislerim (5 sayfa taşındı+sadeleşti; tsc+denetim+lint temiz)
 5. ✅ **E-Club (saha):** eclub/listem, oneriler, panel, ligi + store/rapor (28 dosya taşındı+sadeleşti; tsc+denetim+lint temiz)
@@ -205,14 +205,9 @@ her batch tsc'si erken yakalar.
   özel) korundu. **challenge-club/izle** immersive değil, Navbar'sız → trim yok, sadece taşındı.
   Ayrıca taşımadan önce **4 ölü kalem** silindi (İskender onayı): oneriler `createClient`+`formatTarih`,
   cc-ligi `BORDO`+`basari`. tsc + no-unused-vars + denetim + lint:mimari temiz.
-- **02.08.2026** — Faz 2 Batch 2 (raporlar + analiz) tamamlandı: 2 dizin / 9 sayfa `(panel)`'e
-  taşındı. Bu batch deseni Batch 1'den farklıydı (tam okundu): Navbar `handleCikis` yerine doğrudan
-  `cikisYap`, guard ayrı bir useEffect (`if (!yukleniyor && kullanici === null) router.replace('/login')`),
-  analiz sayfalarında **2 Navbar** (hata-render + ana-render), zaten `if (!kullanici …) return null`
-  daraltması var. Çıkarılanlar: Navbar + useRouter + router + cikisYap + genel guard useEffect.
-  Sayfaya özel korunanlar: veri useEffect'leri, `if (!kullanici) return` veri guard'ları, spinner,
-  hata-render, index dispatcher'lar (analiz/page, raporlar/page — Navbar'sız redirect). Wrapper'lar
-  korundu (çok-return'lü analiz'de fragment riski). tsc + denetim + lint:mimari temiz.
+- **02.08.2026** — Faz 2 Batch 2 (raporlar) tamamlandı: rapor sayfaları `(panel)`'e taşındı.
+  Navbar ve genel guard kaldırıldı; veri guard'ları, spinner, hata render'ları ve rapor index
+  yönlendirmesi korundu. tsc + denetim + lint:mimari temiz.
 - **02.08.2026** — Faz 2 Batch 1 (üretim hattı) tamamlandı: 6 dizin (10 sayfa) `(panel)`'e
   taşındı, her sayfadan Navbar+genel guard çıkarıldı (sayfaya özel yönlendirme/erişim korundu),
   `kullanici` null daralması için spinner guard'ına `!kullanici` eklendi. Taşınan `@/app/talepler/*`

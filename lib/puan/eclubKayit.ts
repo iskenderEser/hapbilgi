@@ -132,7 +132,7 @@ export async function eclubYanlisCevapKaydet(
 /**
  * eclub_dogru_cevap_kayitlari tablosuna INSERT.
  * Doğru cevap kaydı — lig'de "doğru cevap sayısı" bu tablodan sayılır.
- * kazanilan_puan: o sorunun soru_puani (rapor/analiz için satırda tutulur).
+ * kazanilan_puan: o sorunun soru_puani (rapor için satırda tutulur).
  */
 export async function eclubDogruCevapKaydet(
   supabase: SupabaseClient,

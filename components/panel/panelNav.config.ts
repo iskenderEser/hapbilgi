@@ -11,9 +11,6 @@
 //   • Koşullar rolKucu üzerinden çözülür (setler küçük harf). Mevcut Navbar üretim
 //     hattı koşulunda ham `rol` kullanıyordu; sistemde roller küçük harf olduğundan
 //     rolKucu ile birebir aynıdır.
-//   • analiz koşulu Navbar'daki hard-coded listenin roller.ts eşleniğidir:
-//     ANALIZ_TUKETICI (bm,tm) + ANALIZ_URETICI (İK hariç üretici) + YONETICI — admin
-//     hariç (admin panele girmez). Küme birebir aynıdır.
 
 import {
   URETICI_ROLLER,
@@ -27,9 +24,6 @@ import {
   ECLUB_LIGI_GOREN_ROLLER,
   ECLUB_STORE_RAPOR_GOREN_ROLLER,
   TUKETICI_ROLLER,
-  ANALIZ_TUKETICI_ROLLERI,
-  ANALIZ_URETICI_ROLLERI,
-  YONETICI_ROLLER,
 } from "@/lib/utils/roller";
 
 // Gezinme bağlamı — layout'un profil/api + kimlikten türettiği değerler.
@@ -60,13 +54,6 @@ export interface NavGrup {
   // gruplarında başlık, görünür öğe sayısından bağımsız olarak daima çizilir.
   baslikGoster?: boolean;
 }
-
-// analizRoller — Navbar hard-coded listesinin roller.ts eşleniği (admin hariç, birebir küme).
-const ANALIZ_GOREN_ROLLER = [
-  ...ANALIZ_TUKETICI_ROLLERI,
-  ...ANALIZ_URETICI_ROLLERI,
-  ...YONETICI_ROLLER,
-];
 
 export const PANEL_NAV: NavGrup[] = [
   {
@@ -110,7 +97,6 @@ export const PANEL_NAV: NavGrup[] = [
         },
         gate: (c) => c.rolKucu !== "iu",
       },
-      { etiket: "Analiz", path: "/analiz", gate: (c) => ANALIZ_GOREN_ROLLER.includes(c.rolKucu) },
     ],
   },
   {

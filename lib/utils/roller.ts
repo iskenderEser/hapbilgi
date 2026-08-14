@@ -9,7 +9,7 @@ export const URETICI_ROLLER = [
   "ik_drk", "ik_md", "ik_yrd_md", "ik_uz", "ik_per",
 ];
 
-// YONETICI_ROLLER: Yönetici raporu ve analiz sayfasına erişim yetkisine sahip roller.
+// YONETICI_ROLLER: Yönetici raporuna erişim yetkisine sahip roller.
 export const YONETICI_ROLLER = [
   "gm", "gm_yrd", "drk", "paz_md", "blm_md", "grp_pm", "sm",
 ];
@@ -65,43 +65,6 @@ export const YAYINDAKI_VIDEO_GORENLER = [
   ...YONETICI_ROLLER,      // gm, gm_yrd, drk, paz_md, blm_md, grp_pm, sm
   ...YONLENDIRICI_ROLLER,  // tm, bm
 ];
-
-// ───────────────────────────────────────────────────────────────────────────
-// Analiz sayfasına özel rol kategorileri (Faz 1)
-// ───────────────────────────────────────────────────────────────────────────
-// Analiz sayfası 3 kategori bileşeni üzerinden çalışır: tüketici / üretici / yönetici.
-// Her kategori, ait olan rolleri için kendi pill setini ve kategori adlarını barındırır.
-// URETICI_ROLLER ve YONETICI_ROLLER doğrudan kullanılamaz çünkü:
-//   - URETICI_ROLLER İK rollerini içerir; analiz sayfası İK için açılmaz.
-//   - Analiz yöneticileri, YONETICI_ROLLER'a ek olarak ADMIN_ROLLER'ı da kapsar.
-
-// ANALIZ_TUKETICI_ROLLERI: BM ve TM. UTT/KD_UTT analiz sayfasına dahil değildir;
-// kendi puan/performans verilerini UTT raporu üzerinden görürler.
-export const ANALIZ_TUKETICI_ROLLERI = ["bm", "tm"];
-
-// ANALIZ_URETICI_ROLLERI: İK hariç tüm üretici roller (ürün/medikal/eğitim).
-// İK kullanıcılarının analiz sayfası açılmaz.
-export const ANALIZ_URETICI_ROLLERI = URETICI_ROLLER.filter(
-  (r) => !["ik_drk", "ik_md", "ik_yrd_md", "ik_uz", "ik_per"].includes(r),
-);
-
-// ANALIZ_YONETICI_ROLLERI: Yönetici rolleri + admin. Tüm firma kapsamında analiz görürler.
-export const ANALIZ_YONETICI_ROLLERI = [...YONETICI_ROLLER, ...ADMIN_ROLLER];
-
-/**
- * Verilen rolün analiz sayfasındaki kategorisini döndürür.
- * - null: rol analiz sayfasına yetkili değil (utt, kd_utt, iu, İK rolleri, geçersiz rol).
- * - 'tuketici' | 'uretici' | 'yonetici': ilgili kategori bileşenine dispatch edilir.
- */
-export function analizRolKategorisi(
-  rol: string | null | undefined,
-): "tuketici" | "uretici" | "yonetici" | null {
-  if (!rol) return null;
-  if (ANALIZ_TUKETICI_ROLLERI.includes(rol)) return "tuketici";
-  if (ANALIZ_URETICI_ROLLERI.includes(rol)) return "uretici";
-  if (ANALIZ_YONETICI_ROLLERI.includes(rol)) return "yonetici";
-  return null;
-}
 
 // ───────────────────────────────────────────────────────────────────────────
 // Challenge Club / CC Ligi rol kategorileri
