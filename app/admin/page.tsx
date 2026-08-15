@@ -35,6 +35,7 @@ import SistemAyarlari from "./_components/SistemAyarlari";
 import HbStorePaneli from "./_components/global/HbStorePaneli";
 import EclubStorePaneli from "./_components/global/EclubStorePaneli";
 import EclubYonetimPaneli from "./eclub/_components/EclubYonetimPaneli";
+import UretimAtamaPaneli from "./_components/global/UretimAtamaPaneli";
 
 import type { GlobalBolumId, ModulSekmeId } from "./_constants";
 import type { Firma } from "./_types";
@@ -162,6 +163,8 @@ export default function AdminPanel() {
             <HbStorePaneli hata={admin.hata} basari={admin.basari} />
           ) : globalBolum === "eclubstore" ? (
             <EclubStorePaneli hata={admin.hata} basari={admin.basari} />
+          ) : globalBolum === "uretim" ? (
+            <UretimAtamaPaneli hata={admin.hata} basari={admin.basari} />
           ) : !f ? (
             <p style={{ fontSize: "13px", color: "#737373" }}>Soldan bir firma seçin.</p>
           ) : (

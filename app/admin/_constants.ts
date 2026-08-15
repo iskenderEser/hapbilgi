@@ -121,7 +121,7 @@ export const MODUL_SEKMELERI: ModulSekme[] = [
   { id: "eczanem", etiket: "Eczanem", grup: "modul", firmaAdminGorur: true },
 ];
 
-export type GlobalBolumId = "hbstore" | "eclubstore" | "sistem";
+export type GlobalBolumId = "hbstore" | "eclubstore" | "uretim" | "sistem";
 
 export interface GlobalBolum {
   id: GlobalBolumId;
@@ -132,5 +132,6 @@ export interface GlobalBolum {
 export const GLOBAL_BOLUMLER: GlobalBolum[] = [
   { id: "hbstore", etiket: "HBStore", firmaAdminGorur: false },
   { id: "eclubstore", etiket: "E-Club Store", firmaAdminGorur: false },
+  { id: "uretim", etiket: "İçerik Üretimi", firmaAdminGorur: false },
   { id: "sistem", etiket: "Sistem Ayarları", firmaAdminGorur: false },
 ];

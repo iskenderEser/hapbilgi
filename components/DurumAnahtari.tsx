@@ -1,7 +1,8 @@
 // components/DurumAnahtari.tsx
 //
 // Üretim hattı sayfalarının (Senaryolar / Videolar / Soru Setleri) durum anahtarı.
-// TEK SEÇİM: aynı anda bir durum aktiftir; sayfa "onay bekleyen" ile açılır.
+// TEK SEÇİM: aynı anda bir durum aktiftir; ilk durum rolün aksiyon önceliğine ve
+// sayfadaki dolu kayıtlara göre ortak filtre çözücüsü tarafından belirlenir.
 // Pill'ler tek düz şeritte durur (26.07: bekleyen/takip/arşiv bölge etiketleri ve
 // ayraçları kaldırıldı — anlamsız bulundu).
 //
@@ -14,6 +15,7 @@
 "use client";
 
 import { durumMesaji, type Asama, type DurumKodu } from "@/lib/utils/durum/mesaj";
+import { uretimDurumSirasi } from "@/lib/utils/durum/filtre";
 
 interface PillTanim {
   kod: DurumKodu;
@@ -21,15 +23,20 @@ interface PillTanim {
   yalnizKayitVarsa?: boolean;
 }
 
-const PILLLER: PillTanim[] = [
-  { kod: "onay_bekleniyor" },
-  { kod: "iu_iletildi", yalnizKayitVarsa: true },
-  { kod: "iu_hazirliyor", yalnizKayitVarsa: true },
-  { kod: "iu_duzeltiyor" },
-  { kod: "onaylandi" },
-  { kod: "iptal" },
-  { kod: "sistem_hatasi", yalnizKayitVarsa: true },
-];
+const PILL_TANIMLARI: Record<DurumKodu, PillTanim> = {
+  iu_iletildi: { kod: "iu_iletildi", yalnizKayitVarsa: true },
+  iu_hazirliyor: { kod: "iu_hazirliyor", yalnizKayitVarsa: true },
+  iu_duzeltiyor: { kod: "iu_duzeltiyor" },
+  onay_bekleniyor: { kod: "onay_bekleniyor" },
+  onaylandi: { kod: "onaylandi" },
+  iptal: { kod: "iptal" },
+  sistem_hatasi: { kod: "sistem_hatasi", yalnizKayitVarsa: true },
+  video_bekleniyor: { kod: "video_bekleniyor", yalnizKayitVarsa: true },
+  yayin_bekleniyor: { kod: "yayin_bekleniyor", yalnizKayitVarsa: true },
+  planlandi: { kod: "planlandi", yalnizKayitVarsa: true },
+  yayinda: { kod: "yayinda", yalnizKayitVarsa: true },
+  yayin_durduruldu: { kod: "yayin_durduruldu", yalnizKayitVarsa: true },
+};
 
 interface Props {
   baslik: string;
@@ -42,6 +49,7 @@ interface Props {
 }
 
 export default function DurumAnahtari({ baslik, rol, asama, aktif, onSec, sayim }: Props) {
+  const piller = uretimDurumSirasi(rol).map((kod) => PILL_TANIMLARI[kod]);
   // Filtreler HER ZAMAN tek satır (25.07): başlık ve kayıt sayacı kendi satırında
   // durur, filtre şeridi kartın TAM genişliğini kullanır — pill'ler ne alt satıra
   // kayar ne de kırpılır. Çok dar ekranda şerit yatay kaydırılır.
@@ -53,7 +61,7 @@ export default function DurumAnahtari({ baslik, rol, asama, aktif, onSec, sayim 
       </div>
       <div className="min-w-0">
         <div className="flex flex-nowrap items-center gap-2 overflow-x-auto">
-          {PILLLER.filter((p) => !(p.yalnizKayitVarsa && (sayim[p.kod] ?? 0) === 0)).map((p) => {
+          {piller.filter((p) => !(p.yalnizKayitVarsa && (sayim[p.kod] ?? 0) === 0 && aktif !== p.kod)).map((p) => {
             const secili = aktif === p.kod;
             const n = sayim[p.kod] ?? 0;
             const m = durumMesaji(p.kod, rol, { asama });

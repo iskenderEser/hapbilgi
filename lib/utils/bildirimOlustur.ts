@@ -28,8 +28,14 @@ interface BildirimParams {
   gonderen_id?: string | null;
   kayit_turu: KayitTuru;
   kayit_id: string;
+  talep_id?: string | null;
+  gorev_id?: string | null;
   mesaj: string;
 }
+
+export type BildirimSonucu =
+  | { ok: true }
+  | { ok: false; hata: string };
 
 /**
  * Verilen kayit_turu + kayit_id'den, bağlı olduğu talep_id'yi bulur.
@@ -42,7 +48,23 @@ async function talepIdBul(
   kayit_id: string
 ): Promise<string | null> {
   try {
-    if (kayit_turu === "talep") return kayit_id;
+    if (kayit_turu === "talep") {
+      const { data: talep } = await adminSupabase
+        .from("talepler")
+        .select("talep_id")
+        .eq("talep_id", kayit_id)
+        .maybeSingle();
+      if (talep?.talep_id) return talep.talep_id;
+
+      // Tarihî üretim route'ları "talep" türüyle artifact kimliği yazıyordu.
+      // Geçiş süresinde bu çağrıları da kanonik talebe çözer.
+      const [senaryo, video, set] = await Promise.all([
+        adminSupabase.from("senaryolar").select("talep_id").eq("senaryo_id", kayit_id).maybeSingle(),
+        adminSupabase.from("videolar").select("talep_id").eq("video_id", kayit_id).maybeSingle(),
+        adminSupabase.from("soru_setleri").select("talep_id").eq("soru_seti_id", kayit_id).maybeSingle(),
+      ]);
+      return senaryo.data?.talep_id ?? video.data?.talep_id ?? set.data?.talep_id ?? null;
+    }
     if (kayit_turu === "senaryo") {
       const b = await talepBilgisiSenaryo(adminSupabase, kayit_id);
       return b?.talep_id ?? null;
@@ -72,55 +94,11 @@ async function gonderenTalepBildirimleriOkunduYap(
   talep_id: string
 ): Promise<void> {
   try {
-    const ilgili_idler: string[] = [talep_id];
-
-    const { data: senaryolar } = await adminSupabase
-      .from("senaryolar")
-      .select("senaryo_id")
-      .eq("talep_id", talep_id);
-    const senaryo_idler = (senaryolar ?? []).map((s: any) => s.senaryo_id);
-    ilgili_idler.push(...senaryo_idler);
-
-    // Video id'leri — talebe DOĞRUDAN bağlı (talep_id). Eski senaryo_durum_id zinciri
-    // hazır videoda (senaryosuz) ilk adımda kopuyor, video/soru seti id'leri hiç
-    // toplanamıyor, badge temizlenmiyordu — talep_id yolu hazırda da çalışır.
-    const { data: videolar } = await adminSupabase
-      .from("videolar")
-      .select("video_id")
-      .eq("talep_id", talep_id);
-    ilgili_idler.push(...(videolar ?? []).map((v: any) => v.video_id));
-
-    // Soru seti id'leri — talebe DOĞRUDAN bağlı (talep_id).
-    const { data: soruSetleri } = await adminSupabase
-      .from("soru_setleri")
-      .select("soru_seti_id")
-      .eq("talep_id", talep_id);
-    const soru_seti_idler = (soruSetleri ?? []).map((s: any) => s.soru_seti_id);
-    ilgili_idler.push(...soru_seti_idler);
-
-    // Yayın id'leri — soru seti durumu üstünden.
-    if (soru_seti_idler.length > 0) {
-      const { data: soruSetiDurumlari } = await adminSupabase
-        .from("soru_seti_durumu")
-        .select("soru_seti_durum_id")
-        .in("soru_seti_id", soru_seti_idler);
-      const soru_seti_durum_idler = (soruSetiDurumlari ?? []).map((s: any) => s.soru_seti_durum_id);
-      if (soru_seti_durum_idler.length > 0) {
-        const { data: yayinlar } = await adminSupabase
-          .from("yayin_yonetimi")
-          .select("yayin_id")
-          .in("soru_seti_durum_id", soru_seti_durum_idler);
-        ilgili_idler.push(...(yayinlar ?? []).map((y: any) => y.yayin_id));
-      }
-    }
-
-    if (ilgili_idler.length === 0) return;
-
     const { error } = await adminSupabase
       .from("bildirimler")
       .update({ goruldu_mu: true })
       .eq("alici_id", gonderen_id)
-      .in("kayit_id", ilgili_idler)
+      .eq("talep_id", talep_id)
       .eq("goruldu_mu", false);
 
     if (error) {
@@ -161,24 +139,38 @@ export async function gonderenBildirimleriOkunduIsaretle(
   await gonderenBildirimleriOkunduYap(adminSupabase, gonderen_id, kayit_turu, kayit_id);
 }
 
-export async function bildirimOlustur(params: BildirimParams): Promise<void> {
+export async function bildirimOlustur(params: BildirimParams): Promise<BildirimSonucu> {
   try {
-    const { adminSupabase, alici_id, gonderen_id, kayit_turu, kayit_id, mesaj } = params;
+    const { adminSupabase, alici_id, gonderen_id, kayit_turu, kayit_id, gorev_id, mesaj } = params;
+    const talep_id = params.talep_id ?? await talepIdBul(adminSupabase, kayit_turu, kayit_id);
+    const kanonikKayitId = kayit_turu === "talep" && talep_id ? talep_id : kayit_id;
 
     if (gonderen_id) {
-      await gonderenBildirimleriOkunduYap(adminSupabase, gonderen_id, kayit_turu, kayit_id);
+      if (talep_id) await gonderenTalepBildirimleriOkunduYap(adminSupabase, gonderen_id, talep_id);
     }
 
-    const { error } = await adminSupabase
-      .from("bildirimler")
-      .insert({
-        alici_id,
-        gonderen_id: gonderen_id ?? null,
-        kayit_turu,
-        kayit_id,
-        mesaj,
-        goruldu_mu: false,
-      });
+    const { error } = talep_id
+      ? await adminSupabase.rpc("uretim_bildirim_yaz", {
+          p_alici_id: alici_id,
+          p_gonderen_id: gonderen_id ?? null,
+          p_kayit_turu: kayit_turu,
+          p_kayit_id: kanonikKayitId,
+          p_talep_id: talep_id,
+          p_gorev_id: gorev_id ?? null,
+          p_mesaj: mesaj,
+        })
+      : await adminSupabase
+          .from("bildirimler")
+          .insert({
+            alici_id,
+            gonderen_id: gonderen_id ?? null,
+            kayit_turu,
+            kayit_id: kanonikKayitId,
+            talep_id: null,
+            gorev_id: gorev_id ?? null,
+            mesaj,
+            goruldu_mu: false,
+          });
 
     if (error) {
       console.error("[BİLDİRİM] Bildirim oluşturulamadı:", {
@@ -187,12 +179,14 @@ export async function bildirimOlustur(params: BildirimParams): Promise<void> {
         kayit_id,
         hata: error.message,
       });
-      return; // in-app yazılamadıysa push da gitmez (K-P3 — in-app asıl kayıt)
+      return { ok: false, hata: error.message }; // in-app yazılamadıysa push da gitmez
     }
 
     pushYayinlaArkada(adminSupabase, PUSH_OLAY_ESLEME[kayit_turu], [alici_id]);
+    return { ok: true };
   } catch (err) {
     console.error("[BİLDİRİM] Beklenmeyen hata:", err);
+    return { ok: false, hata: err instanceof Error ? err.message : "Bilinmeyen bildirim hatası." };
   }
 }
 
@@ -202,31 +196,47 @@ interface CokluBildirimParams {
   gonderen_id?: string | null;
   kayit_turu: KayitTuru;
   kayit_id: string;
+  talep_id?: string | null;
+  gorev_id?: string | null;
   mesaj: string;
 }
 
-export async function cokluBildirimOlustur(params: CokluBildirimParams): Promise<void> {
+export async function cokluBildirimOlustur(params: CokluBildirimParams): Promise<BildirimSonucu> {
   try {
-    const { adminSupabase, alici_idler, gonderen_id, kayit_turu, kayit_id, mesaj } = params;
+    const { adminSupabase, alici_idler, gonderen_id, kayit_turu, kayit_id, gorev_id, mesaj } = params;
 
-    if (alici_idler.length === 0) return;
+    if (alici_idler.length === 0) return { ok: true };
+
+    const talep_id = params.talep_id ?? await talepIdBul(adminSupabase, kayit_turu, kayit_id);
+    const kanonikKayitId = kayit_turu === "talep" && talep_id ? talep_id : kayit_id;
 
     if (gonderen_id) {
-      await gonderenBildirimleriOkunduYap(adminSupabase, gonderen_id, kayit_turu, kayit_id);
+      if (talep_id) await gonderenTalepBildirimleriOkunduYap(adminSupabase, gonderen_id, talep_id);
     }
 
-    const kayitlar = alici_idler.map(alici_id => ({
-      alici_id,
-      gonderen_id: gonderen_id ?? null,
-      kayit_turu,
-      kayit_id,
-      mesaj,
-      goruldu_mu: false,
-    }));
-
-    const { error } = await adminSupabase
-      .from("bildirimler")
-      .insert(kayitlar);
+    const yazimSonuclari = talep_id
+      ? await Promise.all(alici_idler.map((alici_id) => adminSupabase.rpc("uretim_bildirim_yaz", {
+          p_alici_id: alici_id,
+          p_gonderen_id: gonderen_id ?? null,
+          p_kayit_turu: kayit_turu,
+          p_kayit_id: kanonikKayitId,
+          p_talep_id: talep_id,
+          p_gorev_id: gorev_id ?? null,
+          p_mesaj: mesaj,
+        })))
+      : [await adminSupabase
+          .from("bildirimler")
+          .insert(alici_idler.map((alici_id) => ({
+            alici_id,
+            gonderen_id: gonderen_id ?? null,
+            kayit_turu,
+            kayit_id: kanonikKayitId,
+            talep_id: null,
+            gorev_id: gorev_id ?? null,
+            mesaj,
+            goruldu_mu: false,
+          })))];
+    const error = yazimSonuclari.find((sonuc) => sonuc.error)?.error ?? null;
 
     if (error) {
       console.error("[BİLDİRİM] Çoklu bildirim oluşturulamadı:", {
@@ -235,11 +245,13 @@ export async function cokluBildirimOlustur(params: CokluBildirimParams): Promise
         kayit_id,
         hata: error.message,
       });
-      return; // in-app yazılamadıysa push da gitmez (K-P3)
+      return { ok: false, hata: error.message }; // in-app yazılamadıysa push da gitmez
     }
 
     pushYayinlaArkada(adminSupabase, PUSH_OLAY_ESLEME[kayit_turu], alici_idler);
+    return { ok: true };
   } catch (err) {
     console.error("[BİLDİRİM] Beklenmeyen hata:", err);
+    return { ok: false, hata: err instanceof Error ? err.message : "Bilinmeyen bildirim hatası." };
   }
 }

@@ -202,6 +202,17 @@ export function kayitDurumKodu(sonDurum: string | null | undefined, iuIdVarMi: b
   return "sistem_hatasi";
 }
 
+/** Yeni görev kaydının durumu → mevcut ortak ekran sözlüğü. */
+export function gorevDurumKodu(durum: string): DurumKodu {
+  if (durum === "atama_bekliyor") return "iu_iletildi";
+  if (durum === "hazirlaniyor") return "iu_hazirliyor";
+  if (durum === "inceleme_bekliyor") return "onay_bekleniyor";
+  if (durum === "revizyon_bekliyor") return "iu_duzeltiyor";
+  if (durum === "tamamlandi") return "onaylandi";
+  if (durum === "iptal") return "iptal";
+  return "sistem_hatasi";
+}
+
 /** yayin_yonetimi.durum → durum kodu. Kayıt yoksa yayına alma üreticidedir. */
 export function yayinDurumKodu(durum: string | null | undefined): DurumKodu {
   if (!durum) return "yayin_bekleniyor";
