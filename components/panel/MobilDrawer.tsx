@@ -25,7 +25,6 @@ type MobilDrawerProps = NavContext & {
   onKapat: () => void;
   onCikis: () => void;
   badge: Record<string, number>;
-  yayinBekleyen: number;
   anaSayfaYolu?: string;
   // Çizilecek ağaç — layout verir (eclub_kisi'de ECLUB_KISI_NAV). Varsayılan PANEL_NAV.
   gruplar?: NavGrup[];
@@ -50,8 +49,7 @@ export default function MobilDrawer(props: MobilDrawerProps) {
   const git = (path: string) => { router.push(path); props.onKapat(); };
   const cikis = () => { props.onKapat(); props.onCikis(); };
   const cozPath = (oge: NavOge) => (typeof oge.path === "function" ? oge.path(props) : oge.path);
-  const rozetSayisi = (oge: NavOge) =>
-    oge.yayinBekleyenRozeti ? props.yayinBekleyen : oge.badgeKey ? (props.badge[oge.badgeKey] ?? 0) : 0;
+  const rozetSayisi = (oge: NavOge) => oge.badgeKey ? (props.badge[oge.badgeKey] ?? 0) : 0;
 
   const Satir = ({ etiket, path, sayi, girintili = false, tamEslesme = false }: { etiket: string; path: string; sayi?: number; girintili?: boolean; tamEslesme?: boolean }) => {
     const aktif = tamEslesme ? pathname === path : pathname === path || pathname.startsWith(`${path}/`);

@@ -22,7 +22,6 @@ import { PANEL_NAV, type NavContext, type NavGrup, type NavOge } from "./panelNa
 
 type SolListeProps = NavContext & {
   badge: Record<string, number>;
-  yayinBekleyen: number;
   // Çizilecek ağaç — layout verir (eclub_kisi'de ECLUB_KISI_NAV). Varsayılan PANEL_NAV.
   gruplar?: NavGrup[];
 };
@@ -41,8 +40,7 @@ export default function SolListe(props: SolListeProps) {
     });
 
   const cozPath = (oge: NavOge) => (typeof oge.path === "function" ? oge.path(props) : oge.path);
-  const rozetSayisi = (oge: NavOge) =>
-    oge.yayinBekleyenRozeti ? props.yayinBekleyen : oge.badgeKey ? (props.badge[oge.badgeKey] ?? 0) : 0;
+  const rozetSayisi = (oge: NavOge) => oge.badgeKey ? (props.badge[oge.badgeKey] ?? 0) : 0;
 
   const Satir = ({ oge, girintili = false }: { oge: NavOge; girintili?: boolean }) => {
     const path = cozPath(oge);

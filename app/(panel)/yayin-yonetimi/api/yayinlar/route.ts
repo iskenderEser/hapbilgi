@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { cokluBildirimOlustur } from "@/lib/utils/bildirimOlustur";
-import { URETICI_ROLLER } from "@/lib/utils/roller";
+import { URETICI_ROLLER, yalnizEclubHedefliMi } from "@/lib/utils/roller";
 import { talepBilgisiSoruSeti } from "@/lib/utils/talepZinciri";
 import { tekrarPeriyotSecenekleri } from "@/lib/tur/ayarlar";
 import { turKaydiAc } from "@/lib/tur/kayit";
@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
 
     // Eczanem yayını mı? Hedef rol talepten türer — forma güvenmez (sunucu tarafı).
     const eczanemHedefi = hedefRoller.includes("eczanem");
+    const eclubHedefi = yalnizEclubHedefliMi(hedefRoller);
 
     let eczanemUrunId: string | null = null;
     if (eczanemHedefi) {
@@ -107,9 +108,13 @@ export async function POST(request: NextRequest) {
       eczanemUrunId = talepUrun?.urun_id ?? null;
       if (!eczanemUrunId) return isKuraluHatasi("Eczanem yayınının ürünü bulunamadı — tarife yazılamaz.");
     } else {
-      // Standart yayın: extra puan zorunlu (5-10); tekrar periyodu opsiyonel ama
-      // verilirse sistem_ayarlari.tekrar_periyot_secenekleri listesinde olmalı.
-      if (!extra_puan || extra_puan < 5 || extra_puan > 10) {
+      // E-Club kişileri yalnız tam izleme + doğru cevap puanı kazanır; bu hedefte
+      // extra puan sözleşmenin parçası değildir. Saha yayınlarında ise zorunludur.
+      if (eclubHedefi) {
+        if (extra_puan !== undefined && extra_puan !== null) {
+          return validasyonHatasi("Eczacı/Eczane Teknisyeni yayınında Extra puan bulunmaz.", ["extra_puan"]);
+        }
+      } else if (!extra_puan || extra_puan < 5 || extra_puan > 10) {
         return validasyonHatasi("Extra puan 5-10 arasında olmalıdır.", ["extra_puan"]);
       }
       if (tekrar_periyot_gun !== undefined && tekrar_periyot_gun !== null) {
@@ -204,9 +209,10 @@ export async function POST(request: NextRequest) {
         uretici_id: user.id,
         durum: planliTarih ? "planlandi" : "yayinda",
         yayin_tarihi: planliTarih ? planliTarih.toISOString() : simdi,
-        // Eczanem yayınında ileri sarma / extra puan / tekrar periyodu yoktur.
-        ileri_sarma_acik: eczanemHedefi ? false : (ileri_sarma_acik ?? false),
-        extra_puan: eczanemHedefi ? null : extra_puan,
+        // E-Club'da ileri sarma puan kayıplı olarak açıktır; Extra puan yoktur.
+        // Eczanem'de her ikisi de kapalı, saha yayınlarında mevcut karar korunur.
+        ileri_sarma_acik: eczanemHedefi ? false : eclubHedefi ? true : (ileri_sarma_acik ?? false),
+        extra_puan: eczanemHedefi || eclubHedefi ? null : extra_puan,
         hedef_roller: hedefRoller,
         tekrar_periyot_gun: eczanemHedefi ? null : (tekrar_periyot_gun ?? null),
       })

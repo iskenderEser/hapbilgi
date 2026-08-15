@@ -16,8 +16,8 @@
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import type { HedefRol } from "@/app/(panel)/talepler/_types";
-import { hedefRolleriOku } from "@/lib/utils/roller";
-import type { Bekleyen, Yayin } from "../_types";
+import { hedefRolleriOku, yalnizEclubHedefliMi } from "@/lib/utils/roller";
+import type { Bekleyen, BekleyenHedefSayilari, Yayin } from "../_types";
 import { gecerliTurBaslangiclari, type HesaplananTur } from "@/lib/tur/kayit";
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
 
@@ -35,6 +35,13 @@ type YayinApiSatiri = Omit<Yayin, "hedef_roller" | "turu_adi"> & {
 
 export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: UseYayinYonetimiArgs) {
   const [bekleyenler, setBekleyenler] = useState<Bekleyen[]>([]);
+  const [bekleyenHedefSayilari, setBekleyenHedefSayilari] = useState<BekleyenHedefSayilari>({
+    utt: 0,
+    bm: 0,
+    eczaci: 0,
+    eczane_teknisyeni: 0,
+    eczanem: 0,
+  });
   const [yayinlar, setYayinlar] = useState<Yayin[]>([]);
   const [loading, setLoading] = useState(true);
   const [islemLoading, setIslemLoading] = useState<string | null>(null);
@@ -86,6 +93,13 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     } else {
       const bekleyenlerData = bData.bekleyenler ?? [];
       setBekleyenler(bekleyenlerData);
+      setBekleyenHedefSayilari({
+        utt: Number(bData.sayilar?.utt ?? 0),
+        bm: Number(bData.sayilar?.bm ?? 0),
+        eczaci: Number(bData.sayilar?.eczaci ?? 0),
+        eczane_teknisyeni: Number(bData.sayilar?.eczane_teknisyeni ?? 0),
+        eczanem: Number(bData.sayilar?.eczanem ?? 0),
+      });
       const yeniSoruPuanlari: Record<string, Record<number, number>> = {};
       for (const b of bekleyenlerData) {
         yeniSoruPuanlari[b.soru_seti_durum_id] = {};
@@ -160,11 +174,12 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
   const tumPuanlarAtandiMi = (b: Bekleyen): boolean => {
     const vp = videoPuanlari[b.soru_seti_durum_id] ?? b.video_puani;
     if (!vp) return false;
+    const eclub = yalnizEclubHedefliMi(b.hedef_roller);
     if (b.hedef_roller.includes("eczanem")) {
       // Eczanem: extra puan yok; barkod + Karşılık (puan ve TL) zorunlu.
       if (!barkodlar[b.soru_seti_durum_id]?.trim()) return false;
       if (!karsilikPuanlar[b.soru_seti_durum_id] || !karsilikTllar[b.soru_seti_durum_id]) return false;
-    } else if (!extraPuanlar[b.soru_seti_durum_id]) {
+    } else if (!eclub && !extraPuanlar[b.soru_seti_durum_id]) {
       return false;
     }
     for (let i = 0; i < b.sorular.length; i++) {
@@ -199,6 +214,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     // Hedef dizisi backend'de talebin hedef_roller alanından türetilir.
     // Eczanem yayınında ileri sarma / extra puan / tekrar periyodu yok; barkod + Karşılık var.
     const eczanem = b.hedef_roller.includes("eczanem");
+    const eclub = yalnizEclubHedefliMi(b.hedef_roller);
     const res = await fetch("/yayin-yonetimi/api/yayinlar", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -211,7 +227,11 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
               karsilik_puan: karsilikPuanlar[b.soru_seti_durum_id] ?? null,
               karsilik_tl: karsilikTllar[b.soru_seti_durum_id] ?? null,
             }
-          : {
+          : eclub
+            ? {
+                tekrar_periyot_gun: tekrarPeriyotlari[b.soru_seti_durum_id] ?? null,
+              }
+            : {
               extra_puan: extraPuanlar[b.soru_seti_durum_id] ?? null,
               tekrar_periyot_gun: tekrarPeriyotlari[b.soru_seti_durum_id] ?? null,
             }),
@@ -252,7 +272,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
 
   return {
     // state
-    bekleyenler, yayinlar, loading, islemLoading,
+    bekleyenler, bekleyenHedefSayilari, yayinlar, loading, islemLoading,
     videoPuanlari, setVideoPuanlari,
     soruPuanlari,
     extraPuanlar, setExtraPuanlar,

@@ -2,13 +2,14 @@
 
 import type { HedefRol } from "@/app/(panel)/talepler/_types";
 import { HEDEF_ROL_TASARIM } from "@/app/(panel)/talepler/_types";
-import type { AltSekme } from "../_types";
+import type { AltSekme, BekleyenHedefSayilari } from "../_types";
 import { ANA_SEKMELER, ANA_SEKME_ETIKETLERI } from "../_types";
 
 interface Props {
   aktifHedef: HedefRol;
   aktifDurum: AltSekme;
   bekleyen: number;
+  bekleyenHedefSayilari: BekleyenHedefSayilari;
   canli: number;
   planli: number;
   durdurulan: number;
@@ -20,6 +21,7 @@ export function YayinKumandaPaneli({
   aktifHedef,
   aktifDurum,
   bekleyen,
+  bekleyenHedefSayilari,
   canli,
   planli,
   durdurulan,
@@ -81,7 +83,7 @@ export function YayinKumandaPaneli({
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
             <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#7a8da8]">Yayın kitlesi</p>
-            <p className="mt-0.5 text-xs text-[#8090a7]">Yönetmek istediğiniz hedef kitleyi seçin.</p>
+            <p className="mt-0.5 text-xs text-[#8090a7]">Rozetler yayına hazır içerik sayısını gösterir.</p>
           </div>
           <span
             className="hidden rounded-full px-2.5 py-1 text-[10px] font-extrabold sm:inline"
@@ -94,6 +96,7 @@ export function YayinKumandaPaneli({
           {ANA_SEKMELER.map((hedef) => {
             const tasarim = HEDEF_ROL_TASARIM[hedef];
             const aktif = hedef === aktifHedef;
+            const bekleyenSayi = bekleyenHedefSayilari[hedef];
             return (
               <button
                 type="button"
@@ -108,7 +111,17 @@ export function YayinKumandaPaneli({
                   boxShadow: aktif ? `inset 0 0 0 1px ${tasarim.renk}20` : undefined,
                 }}
               >
-                {ANA_SEKME_ETIKETLERI[hedef]}
+                <span className="flex items-center justify-between gap-2">
+                  <span>{ANA_SEKME_ETIKETLERI[hedef]}</span>
+                  {bekleyenSayi > 0 && (
+                    <span
+                      aria-label={`${bekleyenSayi} yayına hazır içerik`}
+                      className="inline-flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-[#bc2d0d] px-[5px] text-[10px] font-bold leading-none text-white"
+                    >
+                      {bekleyenSayi}
+                    </span>
+                  )}
+                </span>
               </button>
             );
           })}

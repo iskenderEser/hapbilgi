@@ -117,6 +117,7 @@ export default function YayinYonetimiPage() {
           aktifHedef={aktifAnaSekme}
           aktifDurum={aktifSekme}
           bekleyen={yy.bekleyenler.length}
+          bekleyenHedefSayilari={yy.bekleyenHedefSayilari}
           canli={canliSayisi}
           planli={planliSayisi}
           durdurulan={durdurulular.length}

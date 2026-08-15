@@ -14,7 +14,6 @@
 
 import {
   URETICI_ROLLER,
-  URETIM_HATTI_GORENLER,
   IU_ROLU,
   YAYINDAKI_VIDEO_GORENLER,
   CCLIGI_GORENLERLER,
@@ -42,7 +41,6 @@ export interface NavOge {
   // (mevcut Navbar.raporaGit birebir).
   path: string | ((ctx: NavContext) => string);
   badgeKey?: string;             // bildirimler/api "sayilar" anahtarı (talep/senaryo/…)
-  yayinBekleyenRozeti?: boolean; // Yayın Yönetimi rozeti bildirim değil, canlı kuyruk sayısı
   tamEslesme?: boolean;          // Alt rotalarda başka menü öğesini de aktif göstermemek için
   gate: (ctx: NavContext) => boolean;
 }
@@ -59,9 +57,9 @@ export const PANEL_NAV: NavGrup[] = [
   {
     baslik: "Üretim",
     oglar: [
-      // Birleşme (03.08): tek /talepler rotası; deneyim role göre sayfa içinde dallanır
-      // (üretici → talep-merkezli, İÜ → klasik). Rol ayrımı artık page.tsx'te.
-      { etiket: "Talepler",     path: "/talepler", badgeKey: "talep", gate: (c) => URETIM_HATTI_GORENLER.includes(c.rolKucu) },
+      // Talep Merkezi talebi açan üreticiye aittir. İÜ işi talep üzerinden değil,
+      // kendisine atanmış Senaryo / Video / Soru Seti görevlerinden yürütür.
+      { etiket: "Talepler",     path: "/talepler", badgeKey: "talep", gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
       // Ayrı üretim sayfaları yalnız İÜ'ye — üretici bu üç aşamayı v2 şeridinde görür.
       { etiket: "Senaryolar",   path: "/senaryolar",   badgeKey: "senaryo",   gate: (c) => c.rolKucu === IU_ROLU },
       { etiket: "Videolar",     path: "/videolar",     badgeKey: "video",     gate: (c) => c.rolKucu === IU_ROLU },
@@ -71,7 +69,7 @@ export const PANEL_NAV: NavGrup[] = [
   {
     baslik: "Yayın",
     oglar: [
-      { etiket: "Yayın Yönetimi",    path: "/yayin-yonetimi",     yayinBekleyenRozeti: true, gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
+      { etiket: "Yayın Yönetimi",    path: "/yayin-yonetimi",     badgeKey: "yayin", gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
       { etiket: "Yayındaki Videolar", path: "/yayindaki-videolar",                            gate: (c) => YAYINDAKI_VIDEO_GORENLER.includes(c.rolKucu) },
       { etiket: "Onaylanan Talepler", path: "/onaylanan-talepler",                            gate: (c) => c.rolKucu === "iu" },
     ],

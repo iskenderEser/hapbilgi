@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
-import { URETICI_ROLLER } from "@/lib/utils/roller";
+import { TUM_HEDEF_ROLLER, URETICI_ROLLER, type HedefRol } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
@@ -71,8 +71,17 @@ export async function GET(request: NextRequest) {
       (ss: any) => !yayindakiIds.has(ss.soru_seti_durum_id)
     );
 
+    const bosHedefSayilari = Object.fromEntries(
+      TUM_HEDEF_ROLLER.map((hedef) => [hedef, 0])
+    ) as Record<HedefRol, number>;
+
     if (bekleyenler.length === 0) {
-      return NextResponse.json(sayiModu ? { sayi: 0 } : { bekleyenler: [] }, { status: 200 });
+      return NextResponse.json(
+        sayiModu
+          ? { sayi: 0, sayilar: bosHedefSayilari }
+          : { bekleyenler: [], sayilar: bosHedefSayilari },
+        { status: 200 }
+      );
     }
 
     // Soru puanlarını tek sorguda çek
@@ -141,15 +150,25 @@ export async function GET(request: NextRequest) {
           onay_tarihi: ss.created_at,
         };
       })
-      .filter(Boolean);
+      .filter((kayit): kayit is NonNullable<typeof kayit> => kayit !== null);
 
       // Query parametresine göre filtrele (varsa)
+    const hedefSayilari = TUM_HEDEF_ROLLER.reduce<Record<HedefRol, number>>(
+      (sayilar, hedef) => {
+        sayilar[hedef] = sonuc.filter((b) => b.hedef_roller.includes(hedef)).length;
+        return sayilar;
+      },
+      { ...bosHedefSayilari }
+    );
+
     const filtrelenmis = hedefRolFiltresi
-      ? sonuc.filter((b: any) => b.hedef_roller.includes(hedefRolFiltresi))
+      ? sonuc.filter((b) => b.hedef_roller.some((hedef) => hedef === hedefRolFiltresi))
       : sonuc;
 
-    if (sayiModu) return NextResponse.json({ sayi: filtrelenmis.length }, { status: 200 });
-    return NextResponse.json({ bekleyenler: filtrelenmis }, { status: 200 });
+    if (sayiModu) {
+      return NextResponse.json({ sayi: filtrelenmis.length, sayilar: hedefSayilari }, { status: 200 });
+    }
+    return NextResponse.json({ bekleyenler: filtrelenmis, sayilar: hedefSayilari }, { status: 200 });
 
   } catch (err) {
     return sunucuHatasi(err, "GET /yayin-yonetimi/api/bekleyenler");

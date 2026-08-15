@@ -55,6 +55,10 @@ export interface Yayin {
 // Alt sekme (durum filtresi) tipi.
 export type AltSekme = "bekleyen" | "yayinda" | "durdurulan";
 
+// Yayına hazır içeriklerin hedef kitle bazındaki canlı dağılımı.
+// Sidebar toplam sayıyı, Yayın Merkezi ise bu dağılımı gösterir.
+export type BekleyenHedefSayilari = Record<HedefRol, number>;
+
 // ============================================================================
 // Sabitler
 // ============================================================================

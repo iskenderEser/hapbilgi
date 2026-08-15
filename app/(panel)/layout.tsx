@@ -21,8 +21,8 @@ import PanelNavbar from "@/components/panel/PanelNavbar";
 import SolListe from "@/components/panel/SolListe";
 import MobilDrawer from "@/components/panel/MobilDrawer";
 import { PANEL_NAV, ECLUB_KISI_NAV, type NavContext } from "@/components/panel/panelNav.config";
-import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { HBSTORE_BAKIYE_DEGISTI } from "@/lib/store/olay";
+import { BILDIRIM_ROZETLERI_DEGISTI } from "@/lib/bildirimler/rozet";
 
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -32,14 +32,12 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     storeAcik: false, ccAcik: false, eclubAcik: false, eclubStoreAcik: false, eczanemAcik: false,
   });
   const [badge, setBadge] = useState<Record<string, number>>({});
-  const [yayinBekleyen, setYayinBekleyen] = useState(0);
   const [drawerAcik, setDrawerAcik] = useState(false);
   // Navbar kişisel özeti — yalnız UTT/KD_UTT için profil/api döndürür (BM sonraya).
   const [ozet, setOzet] = useState<{ haftalikPuan: number; takimSirasi: number | null; siparisPuani: number } | null>(null);
   const [eclubStorePuani, setEclubStorePuani] = useState<number | null>(null);
 
   const rolKucu = kullanici?.rol?.trim().toLowerCase() ?? "";
-  const isUretici = URETICI_ROLLER.includes(rolKucu);
   const isEclubKisi = kullanici?.kimlik_turu === "eclub_kisi";
 
   // Guard — tek yerde (ana-sayfa'dan birebir; ROLE_MAP kontrolü sayfada kalır).
@@ -96,33 +94,24 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     if (!rolKucu || isEclubKisi) return;
     const badgelariCek = async () => {
       try {
-        const res = await fetch("/bildirimler/api");
+        const res = await fetch("/bildirimler/api", { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setBadge(data.sayilar ?? {});
         }
       } catch {}
-      if (isUretici) {
-        try {
-          const res = await fetch("/yayin-yonetimi/api/bekleyenler?sayi=1");
-          if (res.ok) {
-            const data = await res.json();
-            setYayinBekleyen(data.sayi ?? 0);
-          }
-        } catch {}
-      }
     };
     badgelariCek();
-    const interval = setInterval(badgelariCek, 30000);
     const handleVisibility = () => {
       if (document.visibilityState === "visible") badgelariCek();
     };
+    window.addEventListener(BILDIRIM_ROZETLERI_DEGISTI, badgelariCek);
     document.addEventListener("visibilitychange", handleVisibility);
     return () => {
-      clearInterval(interval);
+      window.removeEventListener(BILDIRIM_ROZETLERI_DEGISTI, badgelariCek);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, [rolKucu, isUretici, isEclubKisi]);
+  }, [rolKucu, isEclubKisi]);
 
   if (yukleniyor || !kullanici) {
     return (
@@ -165,7 +154,6 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         {...ctx}
         gruplar={gruplar}
         badge={badge}
-        yayinBekleyen={yayinBekleyen}
         acik={drawerAcik}
         onKapat={() => setDrawerAcik(false)}
         onCikis={cikisYap}
@@ -173,7 +161,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
       />
 
       <div className="flex flex-1" style={{ minHeight: 0 }}>
-        <SolListe {...ctx} gruplar={gruplar} badge={badge} yayinBekleyen={yayinBekleyen} />
+        <SolListe {...ctx} gruplar={gruplar} badge={badge} />
         <main className="flex-1 overflow-y-auto" style={{ minWidth: 0 }}>{children}</main>
       </div>
     </div>
