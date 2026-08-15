@@ -1,5 +1,5 @@
 {
-  "uretim_tarihi": "2026-08-15T08:22:32.477Z",
+  "uretim_tarihi": "2026-08-15T09:27:11.000Z",
   "tablo_sayisi": 95,
   "rpc_sayisi": 74,
   "tablolar": {
@@ -2487,10 +2487,6 @@
           "tip": "uuid",
           "nullable": false
         },
-        "hedef_rol": {
-          "tip": "text",
-          "nullable": false
-        },
         "talep_no": {
           "tip": "integer",
           "nullable": false
@@ -3651,10 +3647,6 @@
           "tip": "text",
           "nullable": true
         },
-        "hedef_rol": {
-          "tip": "text",
-          "nullable": true
-        },
         "talep_no": {
           "tip": "integer",
           "nullable": true
@@ -3705,10 +3697,6 @@
           "nullable": true
         },
         "egitim_turu": {
-          "tip": "text",
-          "nullable": true
-        },
-        "hedef_rol": {
           "tip": "text",
           "nullable": true
         },

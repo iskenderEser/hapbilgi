@@ -21,10 +21,13 @@ test("tek yayın iki E-Club rolüne de açılır; farklı bir role açılmaz", (
 
 test("çoğul hedef migration'ı tek yayın ve kişi bazlı öğrenme tekilliklerini korur", () => {
   const hedefSql = readFileSync("scripts/sql/talepler_hedef_roller.sql", "utf8");
+  const temizlikSql = readFileSync("scripts/sql/talepler_hedef_rol_temizle.sql", "utf8");
   const izlemeSql = readFileSync("scripts/sql/eclub_izleme_tekillik.sql", "utf8");
   const yayinRoute = readFileSync("app/(panel)/yayin-yonetimi/api/yayinlar/route.ts", "utf8");
 
   assert.match(hedefSql, /ARRAY\['eczaci',\s*'eczane_teknisyeni'\]::text\[\]/);
+  assert.match(temizlikSql, /DROP COLUMN hedef_rol/);
+  assert.doesNotMatch(temizlikSql, /\bDROP\b[^;]*\bCASCADE\b/i);
   assert.match(yayinRoute, /hedef_roller:\s*hedefRoller/);
   assert.match(izlemeSql, /eclub_izleme_oneri_uq[\s\S]*\(oneri_id\)/);
   assert.match(izlemeSql, /eclub_puan_izleme_tur_uq[\s\S]*\(izleme_id, puan_turu\)/);

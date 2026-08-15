@@ -22,8 +22,6 @@ async function main() {
                ARRAY['eczaci']::text[], ARRAY['eczane_teknisyeni']::text[],
                ARRAY['eczaci','eczane_teknisyeni']::text[]
              ))::int AS gecersiz_talep,
-        (SELECT count(*) FROM public.talepler
-          WHERE hedef_rol IS DISTINCT FROM hedef_roller[1])::int AS gecis_uyumsuzlugu,
         (SELECT count(*) FROM public.yayin_yonetimi
           WHERE hedef_roller IS NULL OR hedef_roller = '{}'
              OR hedef_roller NOT IN (
@@ -51,7 +49,12 @@ async function main() {
       SELECT
         EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_talepler_hedef_roller') AS talep_kisiti,
         EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'chk_yayin_yonetimi_hedef_roller') AS yayin_kisiti,
-        EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'talepler_hedef_roller_esitle_trg' AND NOT tgisinternal) AS gecis_tetikleyicisi,
+        NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'talepler' AND column_name = 'hedef_rol') AS eski_kolon_kaldirildi,
+        NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'talepler_hedef_roller_esitle_trg' AND NOT tgisinternal) AS gecis_tetikleyicisi_kaldirildi,
+        NOT EXISTS (
+          SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+          WHERE n.nspname = 'public' AND p.proname = 'talepler_hedef_roller_esitle'
+        ) AS gecis_fonksiyonu_kaldirildi,
         EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'eclub_izleme_oneri_uq') AS izleme_tekilligi,
         EXISTS (SELECT 1 FROM pg_indexes WHERE schemaname = 'public' AND indexname = 'eclub_puan_izleme_tur_uq') AS puan_tekilligi,
         EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'v_yayin_detay' AND column_name = 'hedef_roller') AS detay_view_cogul,
@@ -64,13 +67,13 @@ async function main() {
   const sonuc = rows[0];
   const temiz =
     sonuc.gecersiz_talep === 0 &&
-    sonuc.gecis_uyumsuzlugu === 0 &&
     sonuc.gecersiz_yayin === 0 &&
     sonuc.mukerrer_oneri_izlemesi === 0 &&
     sonuc.mukerrer_puan === 0 &&
     sonuc.mukerrer_dogru_cevap === 0 &&
     sonuc.mukerrer_yanlis_cevap === 0 &&
-    sonuc.talep_kisiti && sonuc.yayin_kisiti && sonuc.gecis_tetikleyicisi &&
+    sonuc.talep_kisiti && sonuc.yayin_kisiti && sonuc.eski_kolon_kaldirildi &&
+    sonuc.gecis_tetikleyicisi_kaldirildi && sonuc.gecis_fonksiyonu_kaldirildi &&
     sonuc.izleme_tekilligi && sonuc.puan_tekilligi &&
     sonuc.detay_view_cogul && sonuc.kunye_view_cogul;
 

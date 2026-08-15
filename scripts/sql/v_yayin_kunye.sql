@@ -33,7 +33,6 @@ SELECT
   t.teknik_id,
   t.icerik_turu,
   t.egitim_turu,
-  t.hedef_rol,
   t.firma_id,
   t.takim_id,
   t.uretici_id,
