@@ -14,8 +14,8 @@
 "use client";
 
 import type { useTalepFormu } from "@/app/(panel)/talepler/_hooks/useTalepFormu";
-import { HEDEF_ROL_TASARIM, type HedefRol } from "@/app/(panel)/talepler/_types";
-import { TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
+import { HEDEF_ROL_TASARIM } from "@/app/(panel)/talepler/_types";
+import { ECLUB_HEDEF_ROLLER, TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
 import { TALEP_TURU_ALT_ACIKLAMA, TUM_TURLER } from "@/app/(panel)/talepler/_types";
 import { UrunTeknikSecici } from "@/app/(panel)/talepler/_components/UrunTeknikSecici";
@@ -38,7 +38,7 @@ const secimKutusu = (secili: boolean, renk?: string) => ({
 export function YeniTalepFormV2({ formu }: Props) {
   if (!formu.isUretici || !formu.yetenek) return null;
 
-  const formAktif = formu.hedefRol !== null;
+  const formAktif = formu.hedefRoller.length > 0;
   const ikiliHazir = formu.hazirVideo && formu.hazirSoruSeti;
 
   // Eczanem hedefi yalnız ürün müdürü ailesine sunulur (İP-§4.1).
@@ -125,7 +125,8 @@ export function YeniTalepFormV2({ formu }: Props) {
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {hedefRoller.map((rolKey) => {
                 const tasarim = HEDEF_ROL_TASARIM[rolKey];
-                const secili = formu.hedefRol === rolKey;
+                const eclubSecenegi = ECLUB_HEDEF_ROLLER.includes(rolKey);
+                const secili = formu.hedefRoller.includes(rolKey);
                 return (
                   <label
                     key={rolKey}
@@ -136,11 +137,11 @@ export function YeniTalepFormV2({ formu }: Props) {
                     }}
                   >
                     <input
-                      type="radio"
-                      name="hedef_rol_v2"
+                      type={eclubSecenegi ? "checkbox" : "radio"}
+                      name="hedef_roller_v2"
                       value={rolKey}
                       checked={secili}
-                      onChange={() => formu.setHedefRol(rolKey)}
+                      onChange={() => eclubSecenegi ? formu.eclubHedefDegistir(rolKey) : formu.setHedefRol(rolKey)}
                       className="cursor-pointer"
                       style={{ accentColor: tasarim.renk }}
                     />

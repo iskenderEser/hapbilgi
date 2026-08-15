@@ -24,3 +24,11 @@ export function HedefRolPill({ hedefRol, className }: { hedefRol: HedefRol; clas
     </Pill>
   );
 }
+
+export function HedefRolPilleri({ hedefRoller, className }: { hedefRoller: readonly HedefRol[]; className?: string }) {
+  return (
+    <span className={`inline-flex flex-wrap items-center justify-center gap-1 ${className ?? ""}`}>
+      {hedefRoller.map((hedefRol) => <HedefRolPill key={hedefRol} hedefRol={hedefRol} />)}
+    </span>
+  );
+}

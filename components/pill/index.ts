@@ -9,6 +9,6 @@
 export { Pill, PillButon, NOTR_RENK, type PillRenk } from "./Pill";
 export { AsamaPill, type PillAsama } from "./AsamaPill";
 export { DurumPill } from "./DurumPill";
-export { HedefRolPill } from "./HedefRolPill";
+export { HedefRolPill, HedefRolPilleri } from "./HedefRolPill";
 export { VaryantPill } from "./VaryantPill";
 export { TeknikPill } from "./TeknikPill";

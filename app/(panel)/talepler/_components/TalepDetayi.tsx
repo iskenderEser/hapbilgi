@@ -17,7 +17,7 @@ import { talepIdGoster } from "@/lib/utils/talepId";
 import { adimlariCoz } from "@/lib/utils/uretimSeridi";
 import { ureticiDurumMesaji } from "@/lib/utils/durum/mesaj";
 import { useBunnyIslemeDurumu } from "@/hooks/useBunnyIslemeDurumu";
-import { TeknikPill, VaryantPill, HedefRolPill } from "@/components/pill";
+import { TeknikPill, VaryantPill, HedefRolPilleri } from "@/components/pill";
 import { UretimSeridi } from "./UretimSeridi";
 import { AdimIcerigi } from "./AdimIcerigi";
 import { AksiyonSeridi } from "./AksiyonSeridi";
@@ -127,7 +127,7 @@ export function TalepDetayi({
           </span>
           <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
             <TeknikPill teknikAdi={talep.teknik_adi} />
-            <HedefRolPill hedefRol={talep.hedef_rol} />
+            <HedefRolPilleri hedefRoller={talep.hedef_roller} />
             <VaryantPill
               hazirVideo={talep.hazir_video}
               hazirSoruSeti={talep.hazir_soru_seti}

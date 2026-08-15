@@ -1,7 +1,7 @@
 // app/oneriler/api/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { TUKETICI_ROLLER, YONLENDIRICI_ROLLER } from "@/lib/utils/roller";
+import { TUKETICI_ROLLER, YONLENDIRICI_ROLLER, hedefRolleriOku, type HedefRoller } from "@/lib/utils/roller";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { bildirimOlustur } from "@/lib/utils/bildirimOlustur";
 import { oneriTarihKurali } from "@/lib/oneri/tarihKurali";
@@ -322,14 +322,14 @@ export async function POST(request: NextRequest) {
     const yayinIds = [...new Set(oneriler.map((oneri) => oneri.yayin_id))];
     const { data: yayinlar, error: yayinError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, durum, urun_adi, hedef_rol, firma_id, takim_id")
+      .select("yayin_id, durum, urun_adi, hedef_roller, firma_id, takim_id")
       .in("yayin_id", yayinIds);
 
     if (yayinError) return hataYaniti("Yayınlar sorgulanırken hata oluştu.", "v_yayin_detay view SELECT", yayinError);
 
-    const yayinMap = new Map<string, { durum: string; urun_adi: string | null; hedef_rol: string | null; firma_id: string | null; takim_id: string | null }>();
+    const yayinMap = new Map<string, { durum: string; urun_adi: string | null; hedef_roller: HedefRoller; firma_id: string | null; takim_id: string | null }>();
     for (const y of yayinlar ?? []) {
-      yayinMap.set(y.yayin_id, y);
+      yayinMap.set(y.yayin_id, { ...y, hedef_roller: hedefRolleriOku(y) });
     }
 
     for (const oneri of oneriler) {
@@ -340,7 +340,7 @@ export async function POST(request: NextRequest) {
       if (y.durum !== "yayinda") {
         return isKuraluHatasi(`yayin_id ${oneri.yayin_id} şu an yayında değil. Durum: ${y.durum}`);
       }
-      if (y.hedef_rol !== "utt") {
+      if (!y.hedef_roller.includes("utt")) {
         return isKuraluHatasi("Yalnızca UTT/KD_UTT hedefli yayınlar önerilebilir.");
       }
       const bmKapsaminda = y.firma_id === bm.firma_id && (y.takim_id === null || y.takim_id === bm.takim_id);

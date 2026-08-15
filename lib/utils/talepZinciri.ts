@@ -9,7 +9,7 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import type { TalepTuru } from "@/lib/uretici/yetenekler";
-import { ROL_ADLARI, type HedefRol } from "@/lib/utils/roller";
+import { ROL_ADLARI, hedefRolleriOku, type HedefRoller } from "@/lib/utils/roller";
 import { departmanKey, type DepartmanKey } from "@/lib/video/departman";
 
 export interface TalepBilgisi {
@@ -29,7 +29,7 @@ export interface TalepBilgisi {
   urun_adi: string;
   teknik_adi: string;
   egitim_turu: TalepTuru;
-  hedef_rol: HedefRol;
+  hedef_roller: HedefRoller;
   icerik_turu: string | null;
   aciklama: string | null;
   dosya_urls: any[] | null;
@@ -58,7 +58,7 @@ export const TALEP_ALANLARI = `
   talep_no,
   uretici_id,
   egitim_turu,
-  hedef_rol,
+  hedef_roller,
   icerik_turu,
   aciklama,
   dosya_urls,
@@ -92,7 +92,7 @@ export function haritalaTalep(talep: any): TalepBilgisi {
     urun_adi: talep.urunler?.urun_adi ?? talep.urun_adi ?? "-",
     teknik_adi: talep.teknikler?.teknik_adi ?? talep.teknik_adi ?? "-",
     egitim_turu: (talep.egitim_turu ?? "urun_egitimi") as TalepTuru,
-    hedef_rol: (talep.hedef_rol ?? "utt") as HedefRol,
+    hedef_roller: hedefRolleriOku(talep),
     icerik_turu: talep.icerik_turu ?? null,
     aciklama: talep.aciklama ?? null,
     dosya_urls: talep.dosya_urls ?? null,

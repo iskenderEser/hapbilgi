@@ -11,7 +11,7 @@ import {
 } from "@/lib/eclub/oneriLimit";
 import { eclubBildirimOlustur } from "@/lib/utils/eclubBildirim";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { ECLUB_HEDEF_ROLLER, TUKETICI_ROLLER } from "@/lib/utils/roller";
+import { ECLUB_HEDEF_ROLLER, TUKETICI_ROLLER, hedefRolleriOku, type HedefRoller } from "@/lib/utils/roller";
 import { eclubYayinKapsamindaMi } from "@/lib/eclub/oneriKapsam";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -34,7 +34,7 @@ interface YayinAdiSatiri {
   yayin_id: string;
   urun_adi: string | null;
   teknik_adi: string | null;
-  hedef_rol: string | null;
+  hedef_roller: unknown;
 }
 interface EclubKisiSatiri { kisi_id: string; rol: string; auth_user_id: string | null; }
 interface EczaneSahiplikSatiri { eczane_id: string; }
@@ -142,11 +142,11 @@ export async function GET(request: NextRequest) {
 
     // Yayın adlarını toplu çek (v_yayin_detay)
     const yayinIds = [...new Set(oneriSatirlari.map((o) => o.yayin_id))];
-    const yayinAdiMap = new Map<string, { urun_adi: string | null; teknik_adi: string | null; hedef_rol: string | null }>();
+    const yayinAdiMap = new Map<string, { urun_adi: string | null; teknik_adi: string | null; hedef_roller: HedefRoller }>();
     if (yayinIds.length > 0) {
       const { data: yayinlar, error: yayinlarError } = await adminSupabase
         .from("v_yayin_detay")
-        .select("yayin_id, urun_adi, teknik_adi, hedef_rol")
+        .select("yayin_id, urun_adi, teknik_adi, hedef_roller")
         .in("yayin_id", yayinIds);
       if (yayinlarError)
         return hataYaniti("Öneri yayın bilgileri çekilemedi.", "v_yayin_detay SELECT — öneri geçmişi", yayinlarError);
@@ -154,20 +154,20 @@ export async function GET(request: NextRequest) {
         yayinAdiMap.set(y.yayin_id, {
           urun_adi: y.urun_adi,
           teknik_adi: y.teknik_adi,
-          hedef_rol: y.hedef_rol,
+          hedef_roller: hedefRolleriOku(y),
         });
       }
     }
 
     const sonuc = oneriSatirlari.map((o) => {
       const kisi = tekilIliski(o.eclub_kisiler);
-      const yayin = yayinAdiMap.get(o.yayin_id) ?? { urun_adi: null, teknik_adi: null, hedef_rol: null };
+      const yayin = yayinAdiMap.get(o.yayin_id) ?? { urun_adi: null, teknik_adi: null, hedef_roller: [] };
       return {
         oneri_id: o.oneri_id,
         yayin_id: o.yayin_id,
         urun_adi: yayin.urun_adi ?? "-",
         teknik_adi: yayin.teknik_adi ?? "-",
-        hedef_rol: yayin.hedef_rol,
+        hedef_roller: yayin.hedef_roller,
         kisi_id: o.kisi_id,
         kisi_ad: kisi?.ad ?? "-",
         kisi_soyad: kisi?.soyad ?? "-",
@@ -233,17 +233,19 @@ export async function POST(request: NextRequest) {
     if (uttError || !utt?.firma_id)
       return hataYaniti("UTT yayın kapsamı alınamadı.", "kullanicilar SELECT — E-Club öneri kapsamı", uttError, 404);
 
-    // 3. Yayın geçerli mi (yayında + eclub hedef_rol)
+    // 3. Yayın geçerli mi (yayında + en az bir E-Club hedef rolü)
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, durum, hedef_rol, urun_adi, firma_id, takim_id")
+      .select("yayin_id, durum, hedef_roller, urun_adi, firma_id, takim_id")
       .eq("yayin_id", yayin_id)
       .maybeSingle();
 
     if (yayinError) return hataYaniti("Yayın sorgulanamadı.", "v_yayin_detay SELECT — yayin_id", yayinError);
     if (!yayin) return hataYaniti("Yayın bulunamadı.", "v_yayin_detay — yayin_id yok", null, 404);
     if (yayin.durum !== "yayinda") return isKuraluHatasi(`Bu yayın şu an yayında değil. Durum: ${yayin.durum}`);
-    if (!ECLUB_HEDEF_ROLLER.includes(yayin.hedef_rol)) return isKuraluHatasi("Bu yayın E-Club için uygun değil (hedef rol eczacı/teknisyen değil).");
+    const yayinHedefRolleri = hedefRolleriOku(yayin);
+    if (!yayinHedefRolleri.some((hedefRol) => ECLUB_HEDEF_ROLLER.includes(hedefRol)))
+      return isKuraluHatasi("Bu yayın E-Club için uygun değil (hedef rol eczacı/teknisyen değil).");
     if (!eclubYayinKapsamindaMi(utt, yayin))
       return isKuraluHatasi("Yayın, UTT'nin erişebildiği firma/takım kataloğu kapsamında değil.");
 
@@ -319,7 +321,7 @@ export async function POST(request: NextRequest) {
       if (!k) { atlanan.push({ kisi_id: kid, sebep: "bulunamadi" }); continue; }
       if (!k.aktif_mi) { atlanan.push({ kisi_id: kid, sebep: "pasif" }); continue; }
       if (!k.sahip_mi) { atlanan.push({ kisi_id: kid, sebep: "sahiplik_yok" }); continue; }
-      if (k.rol !== yayin.hedef_rol) { atlanan.push({ kisi_id: kid, sebep: "rol_uyumsuz" }); continue; }
+      if (!yayinHedefRolleri.includes(k.rol as (typeof yayinHedefRolleri)[number])) { atlanan.push({ kisi_id: kid, sebep: "rol_uyumsuz" }); continue; }
       if (!k.auth_var) { atlanan.push({ kisi_id: kid, sebep: "giris_hesabi_yok" }); continue; }
       adaylar.push(kid);
     }

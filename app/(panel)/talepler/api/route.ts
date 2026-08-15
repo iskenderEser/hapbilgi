@@ -9,8 +9,7 @@ import {
   TALEP_TURU_SIRA,
   type TalepTuru,
 } from "@/lib/uretici/yetenekler";
-import type { HedefRol } from "@/app/(panel)/talepler/_types";
-import { ECZANEM_TALEP_ACAN_ROLLER, ECLUB_HEDEF_ROLLER, TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
+import { ECZANEM_TALEP_ACAN_ROLLER, ECLUB_HEDEF_ROLLER, hedefRolleriDogrula } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
 import { zincirHaritasi, asamaCoz, uretimBittiMi, iptalEdildiMi } from "@/lib/utils/uretimZinciri";
@@ -18,11 +17,6 @@ import { hazirParametreKontrol } from "@/lib/uretim/parametreKontrol";
 
 // Talep formu ve raporlarla ortak kanonik eğitim türü sırası.
 const GECERLI_TALEP_TURLERI = TALEP_TURU_SIRA;
-
-// Formun sunduğu beş hedefin tamamı kabul edilir (B-05: eczaci/eczane_teknisyeni
-// daha önce listede yoktu, form-API tutarsızlığı üretiyordu). Tek kaynak roller.ts;
-// 'eczanem' için ek şart: yalnız ürün müdürü ailesi açabilir (İP-§4.1, aşağıda).
-const GECERLI_HEDEF_ROLLER: HedefRol[] = TUM_HEDEF_ROLLER;
 
 export async function GET() {
   try {
@@ -162,7 +156,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       egitim_turu,
-      hedef_rol,
+      hedef_roller,
       urun_id, teknik_id, urun_adi, aciklama,
       hazir_video, hazir_soru_seti, hazir_soru_seti_verisi,
       soru_seti_buyuklugu, secenek_sayisi, video_basi_soru_sayisi,
@@ -174,15 +168,14 @@ export async function POST(request: NextRequest) {
       return validasyonHatasi("Eğitim türü geçersiz.", ["egitim_turu"]);
     }
 
-    // hedef_rol validasyonu — geçerli alt küme kontrolü.
-    const hedefRol = hedef_rol as HedefRol;
-    if (!hedefRol || !GECERLI_HEDEF_ROLLER.includes(hedefRol)) {
-      return validasyonHatasi("Hedef rol seçimi zorunludur.", ["hedef_rol"]);
+    const hedefRoller = hedefRolleriDogrula(hedef_roller);
+    if (!hedefRoller) {
+      return validasyonHatasi("Hedef kitle seçimi geçersizdir.", ["hedef_roller"]);
     }
 
     // Eczanem hedefli talebi yalnızca ürün müdürü ailesi açabilir (İP-§4.1) —
     // form seçeneği zaten gizlidir, bu sunucu tarafı doğrulamasıdır.
-    if (hedefRol === "eczanem" && !ECZANEM_TALEP_ACAN_ROLLER.includes(rol)) {
+    if (hedefRoller.includes("eczanem") && !ECZANEM_TALEP_ACAN_ROLLER.includes(rol)) {
       return rolHatasi("Eczanem hedefli talebi yalnızca Ürün Müdürü açabilir.");
     }
 
@@ -202,7 +195,7 @@ export async function POST(request: NextRequest) {
 
     // Ürün ve teknik zorunluluğu — TALEP_TURU_KURALLARI'ndan okunur.
     const turKurali = TALEP_TURU_KURALLARI[egitimTuru];
-    const eczanemHedefi = hedefRol === "eczanem";
+    const eczanemHedefi = hedefRoller.includes("eczanem");
 
     if (turKurali.urun === "zorunlu" && !urun_id) {
       return validasyonHatasi("Ürün seçimi zorunludur.", ["urun_id"]);
@@ -215,7 +208,7 @@ export async function POST(request: NextRequest) {
     // Teknik, teknik-siz hedeflerde (Eczanem + E-Club: eczaci/eczane_teknisyeni)
     // zorunlu değildir: son tüketiciye/eczacıya satış tekniği anlatılmaz, alan
     // formda gizlidir (useTalepFormu teknikGosterilsin ile simetri — B-05).
-    const tekniksizHedef = eczanemHedefi || ECLUB_HEDEF_ROLLER.includes(hedefRol);
+    const tekniksizHedef = eczanemHedefi || hedefRoller.some((hedef) => ECLUB_HEDEF_ROLLER.includes(hedef));
     if (!tekniksizHedef && turKurali.teknik === "zorunlu" && !teknik_id) {
       return validasyonHatasi("Teknik seçimi zorunludur.", ["teknik_id"]);
     }
@@ -265,7 +258,7 @@ export async function POST(request: NextRequest) {
         firma_id: kullaniciKaydi.firma_id,
         takim_id: kullaniciKaydi.takim_id ?? null,
         egitim_turu: egitimTuru,
-        hedef_rol: hedefRol,
+        hedef_roller: hedefRoller,
         icerik_turu: icerikTuru,
         urun_id: insertUrunId,
         teknik_id: insertTeknikId,

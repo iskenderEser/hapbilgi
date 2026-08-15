@@ -12,9 +12,9 @@ import { createClient } from "@/lib/supabase/client";
 import { Fragment, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
-import { HedefRolPill } from "@/components/HedefRolBant";
+import { HedefRolPilleri } from "@/components/HedefRolBant";
 import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
-import type { HedefRol } from "@/app/(panel)/talepler/_types";
+import type { HedefRoller } from "@/app/(panel)/talepler/_types";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import VideoOnizleme from "@/components/video/VideoOnizleme";
@@ -36,7 +36,7 @@ interface OnayliTalep {
   departman: DepartmanKey;
   urun_adi: string;
   teknik_adi: string;
-  hedef_rol: HedefRol;
+  hedef_roller: HedefRoller;
   talep_tarihi: string | null;
   onay_tarihi: string;
   senaryo_metni: string;
@@ -146,7 +146,7 @@ export default function OnaylananTaleplerPage() {
         departman: talep.departman,
         urun_adi: talep.urun_adi,
         teknik_adi: talep.teknik_adi,
-        hedef_rol: talep.hedef_rol,
+        hedef_roller: talep.hedef_roller,
         talep_tarihi: talep.created_at,
         onay_tarihi: o.created_at,
         senaryo_metni: senaryo.senaryo_metni,
@@ -183,7 +183,7 @@ export default function OnaylananTaleplerPage() {
           <span className="text-sm font-semibold text-gray-900">{k.urun_adi}</span>
           <span className="text-xs text-gray-500">{k.teknik_adi}</span>
         </div>
-        <HedefRolPill hedefRol={k.hedef_rol} />
+        <HedefRolPilleri hedefRoller={k.hedef_roller} />
       </div>
 
       <div>

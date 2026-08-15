@@ -5,9 +5,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useHataMesaji } from "@/components/HataMesaji";
-import { HedefRolPill, VaryantPill, AsamaPill, DurumPill, Pill, type PillAsama, type PillRenk } from "@/components/pill";
+import { HedefRolPilleri, VaryantPill, AsamaPill, DurumPill, Pill, type PillAsama, type PillRenk } from "@/components/pill";
 import { useListe, ListeArama, DahaFazlaGoster } from "@/components/liste";
-import type { HedefRol } from "@/lib/utils/roller";
+import type { HedefRoller } from "@/lib/utils/roller";
 import { ROL_ADLARI } from "@/lib/utils/roller";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import { rolTeknikKullanirMi } from "@/lib/uretici/yetenekler";
@@ -20,7 +20,7 @@ interface TakipSatiri {
   firma_adi: string;
   urun_adi: string;
   teknik_adi: string;
-  hedef_rol: HedefRol;
+  hedef_roller: HedefRoller;
   hazir_video: boolean;
   hazir_soru_seti: boolean;
   asama: PillAsama;
@@ -289,7 +289,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
                   <div className="flex gap-2 items-center flex-wrap">
                     <DurumPill kod={s.durum_kodu} rol={rol} tarih={s.tarih} />
                     <AsamaPill asama={s.asama} />
-                    <HedefRolPill hedefRol={s.hedef_rol} />
+                    <HedefRolPilleri hedefRoller={s.hedef_roller} />
                     {teknikGoster && <span className="text-xs text-gray-500">{s.teknik_adi}</span>}
                   </div>
                   <div className="text-xs text-gray-400 mt-1">{formatTarih(s.tarih)}</div>
@@ -329,7 +329,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
                   </div>
                   {teknikGoster && <div className="text-xs text-gray-500 truncate text-center">{s.teknik_adi}</div>}
                   <div className="flex justify-center"><VaryantPill hazirVideo={s.hazir_video} hazirSoruSeti={s.hazir_soru_seti} kendiSatirinda={false} /></div>
-                  <div className="text-center"><HedefRolPill hedefRol={s.hedef_rol} /></div>
+                  <div className="text-center"><HedefRolPilleri hedefRoller={s.hedef_roller} /></div>
                   <div className="text-center"><AsamaPill asama={s.asama} /></div>
                   <div className="text-center"><DurumPill kod={s.durum_kodu} rol={rol} tarih={s.tarih} /></div>
                   <span className="text-xs text-gray-400 whitespace-nowrap text-center">{formatTarih(s.tarih)}</span>

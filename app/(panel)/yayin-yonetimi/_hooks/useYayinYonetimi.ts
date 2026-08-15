@@ -16,6 +16,7 @@
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 import type { HedefRol } from "@/app/(panel)/talepler/_types";
+import { hedefRolleriOku } from "@/lib/utils/roller";
 import type { Bekleyen, Yayin } from "../_types";
 import { gecerliTurBaslangiclari, type HesaplananTur } from "@/lib/tur/kayit";
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
@@ -27,8 +28,8 @@ interface UseYayinYonetimiArgs {
   basari: (mesaj: string) => void;
 }
 
-type YayinApiSatiri = Omit<Yayin, "hedef_rol" | "turu_adi"> & {
-  hedef_rol: string | null;
+type YayinApiSatiri = Omit<Yayin, "hedef_roller" | "turu_adi"> & {
+  hedef_roller: string[] | null;
   egitim_turu: string | null;
 };
 
@@ -78,7 +79,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     const supabase = createClient();
 
     // Bekleyenler: ana sekmeye göre filtreli çek
-    const bRes = await fetch(`/yayin-yonetimi/api/bekleyenler?hedef_rol=${aktifAnaSekme}`);
+    const bRes = await fetch(`/yayin-yonetimi/api/bekleyenler?hedef=${aktifAnaSekme}`);
     const bData = await bRes.json();
     if (!bRes.ok) {
       hata(bData.hata ?? "Bekleyenler yüklenemedi.", bData.adim, bData.detay);
@@ -109,7 +110,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     if ((yayinlarData ?? []).length > 0) {
       setYayinlar((yayinlarData ?? []).map(y => ({
         ...y,
-        hedef_rol: (y.hedef_rol ?? "utt") as HedefRol,
+        hedef_roller: hedefRolleriOku(y),
         turu_adi: (y as any).egitim_turu ? (TALEP_TURU_KURALLARI[(y as any).egitim_turu as TalepTuru]?.ad ?? null) : null,
       })));
 
@@ -159,7 +160,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
   const tumPuanlarAtandiMi = (b: Bekleyen): boolean => {
     const vp = videoPuanlari[b.soru_seti_durum_id] ?? b.video_puani;
     if (!vp) return false;
-    if (b.hedef_rol === "eczanem") {
+    if (b.hedef_roller.includes("eczanem")) {
       // Eczanem: extra puan yok; barkod + Karşılık (puan ve TL) zorunlu.
       if (!barkodlar[b.soru_seti_durum_id]?.trim()) return false;
       if (!karsilikPuanlar[b.soru_seti_durum_id] || !karsilikTllar[b.soru_seti_durum_id]) return false;
@@ -195,9 +196,9 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
       if (!res.ok) { const d = await res.json(); hata(d.hata ?? "Soru puanları kaydedilemedi.", d.adim, d.detay); setIslemLoading(null); return; }
     }
 
-    // POST'a artık hedef_roller gönderilmiyor — backend talepler.hedef_rol'den türetiyor.
+    // Hedef dizisi backend'de talebin hedef_roller alanından türetilir.
     // Eczanem yayınında ileri sarma / extra puan / tekrar periyodu yok; barkod + Karşılık var.
-    const eczanem = b.hedef_rol === "eczanem";
+    const eczanem = b.hedef_roller.includes("eczanem");
     const res = await fetch("/yayin-yonetimi/api/yayinlar", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

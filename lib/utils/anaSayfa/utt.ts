@@ -57,8 +57,8 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
       .or(`takim_id.eq.${bolge?.takim_id},and(takim_id.is.null,firma_id.eq.${takim?.firma_id})`)
       // Pozitif hedef süzgeci: UTT ana sayfası yalnız 'utt' hedefli yayınları
       // listeler. Süzgeçsiz hâli bm/eczaci/eczanem hedefli yayınları da
-      // sızdırırdı (v_yayin_detay tüm hedef_rol satırlarını içerir).
-      .eq("hedef_rol", "utt")
+      // sızdırırdı (v_yayin_detay tüm hedef kitleleri içerir).
+      .contains("hedef_roller", ["utt"])
       .order("yayin_tarihi", { ascending: false }),
     adminSupabase
       .from("izleme_kayitlari")

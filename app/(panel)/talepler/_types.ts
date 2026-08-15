@@ -3,8 +3,8 @@
 // Talepler sayfasının paylaşılan tip sözleşmeleri, sabitler ve helper'lar.
 // Bu dosyaya tüm bileşenler ve hook'lar import eder — bu sayfanın kontrat dosyasıdır.
 
-import { TALEP_TURU_KURALLARI, TALEP_TURU_SIRA, type TalepTuru } from "@/lib/uretici/yetenekler";
-import type { HedefRol } from "@/lib/utils/roller";
+import { TALEP_TURU_SIRA, type TalepTuru } from "@/lib/uretici/yetenekler";
+import type { HedefRol, HedefRoller } from "@/lib/utils/roller";
 import type { ZincirAsama } from "@/lib/utils/uretimZinciri";
 import type { DurumKodu } from "@/lib/utils/durum/mesaj";
 
@@ -14,7 +14,7 @@ import type { DurumKodu } from "@/lib/utils/durum/mesaj";
 
 // Hedef rol tipinin tek kaynağı lib/utils/roller.ts'tir (U0 — Eczanem zemini).
 // Bu re-export, sayfa-içi bileşenlerin mevcut import yolunu korur.
-export type { HedefRol };
+export type { HedefRol, HedefRoller };
 
 export interface Talep {
   talep_id: string;
@@ -26,7 +26,7 @@ export interface Talep {
   urun_adi: string;
   teknik_adi: string;
   egitim_turu: TalepTuru;
-  hedef_rol: HedefRol;
+  hedef_roller: HedefRoller;
   aciklama: string;
   created_at: string;
   hazir_video: boolean;

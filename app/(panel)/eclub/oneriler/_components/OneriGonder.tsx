@@ -33,10 +33,12 @@ export function OneriGonder({ yayinlar, kisiler, limitler, gonderLoading, onGond
   });
 
   const seciliYayin = yayinlar.find((yayin) => yayin.yayin_id === seciliYayinId) ?? null;
+  const hedefRolEtiketi = (video: OneriYayin) =>
+    video.hedef_roller.map((hedefRol) => ROL_ETIKETLERI[hedefRol]).join(" ve ");
   const uygunKisiler = useMemo(() => {
     if (!seciliYayin) return [];
     return kisiler
-      .filter((kisi) => kisi.aktif_mi && !!kisi.auth_user_id && kisi.rol === seciliYayin.hedef_rol)
+      .filter((kisi) => kisi.aktif_mi && !!kisi.auth_user_id && seciliYayin.hedef_roller.includes(kisi.rol))
       .sort((a, b) => {
         const eczaneSirasi = (a.eczane_adi ?? "").localeCompare(b.eczane_adi ?? "", "tr");
         return eczaneSirasi || `${a.ad} ${a.soyad}`.localeCompare(`${b.ad} ${b.soyad}`, "tr");
@@ -176,7 +178,7 @@ export function OneriGonder({ yayinlar, kisiler, limitler, gonderLoading, onGond
                   <button type="button" onClick={() => setAktifVideo(seciliYayin)} className="min-w-0 flex-1 text-left">
                     <strong className="block truncate text-sm text-[#2e4663]">{seciliYayin.urun_adi}</strong>
                     <small className="mt-0.5 block truncate text-[11px] text-[#7a8da5]">{seciliYayin.teknik_adi || "Teknik belirtilmedi"}</small>
-                    <span className="mt-1 inline-block rounded-md bg-[#eef5fd] px-2 py-0.5 text-[10px] font-bold text-[#4d79aa]">{ROL_ETIKETLERI[seciliYayin.hedef_rol]}</span>
+                    <span className="mt-1 inline-block rounded-md bg-[#eef5fd] px-2 py-0.5 text-[10px] font-bold text-[#4d79aa]">{hedefRolEtiketi(seciliYayin)}</span>
                   </button>
                   <button type="button" onClick={() => yayinSec(seciliYayin)} aria-label="Video seçimini kaldır" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold text-[#8a9bb0] hover:bg-white hover:text-[#bc2d0d]">×</button>
                 </article>
@@ -186,7 +188,7 @@ export function OneriGonder({ yayinlar, kisiler, limitler, gonderLoading, onGond
             <div className="grid gap-3 rounded-xl bg-[#f7f9fc] p-3">
               <label>
                 <span className="mb-1 block text-[11px] font-extrabold text-[#566d88]">
-                  {seciliYayin ? `Önerilecek ${ROL_ETIKETLERI[seciliYayin.hedef_rol]}` : "Önerilecek kişi"}
+                  {seciliYayin ? `Önerilecek ${hedefRolEtiketi(seciliYayin)}` : "Önerilecek kişi"}
                 </span>
                 <select value={aliciId} onChange={(event) => setAliciId(event.target.value)} disabled={!seciliYayin || uygunKisiler.length === 0} required className="w-full rounded-lg border border-[#d5e0eb] bg-white px-3 py-2 text-xs font-semibold text-[#2d4562] outline-none disabled:bg-[#edf2f7] focus:border-[#56aeff]">
                   <option value="">{!seciliYayin ? "Önce video seçin" : uygunKisiler.length === 0 ? "Uygun alıcı bulunmuyor" : "Eczane ve kişi seçin"}</option>

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { TUKETICI_ROLLER } from "@/lib/utils/roller";
+import { TUKETICI_ROLLER, hedefRolleriOku } from "@/lib/utils/roller";
 
 export async function GET(
   request: NextRequest,
@@ -25,7 +25,7 @@ export async function GET(
     // v_yayin_detay view ile tek sorguda tüm yayın detayları — 9 sorgu → 1 sorgu
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, durum, yayin_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, hedef_rol")
+      .select("yayin_id, durum, yayin_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, hedef_roller")
       .eq("yayin_id", yayin_id)
       .single();
 
@@ -34,8 +34,7 @@ export async function GET(
 
     // Pozitif hedef süzgeci (B-03): hedefi utt olmayan yayının detayı/video_url'i
     // ID bilinse dahi utt/kd_utt'ye dönmez (baslat'taki B-02 süzgecinin okuma tarafı).
-    // v_yayin_detay.hedef_rol talep hedefidir; hedef_roller = [hedef_rol] (tek kaynak).
-    if ((yayin.hedef_rol ?? "utt") !== "utt") {
+    if (!hedefRolleriOku(yayin).includes("utt")) {
       return rolHatasi("Bu video sizin rolünüze yönelik değil.");
     }
 

@@ -1,7 +1,7 @@
 {
-  "uretim_tarihi": "2026-08-14T17:36:43.697Z",
+  "uretim_tarihi": "2026-08-15T08:22:32.477Z",
   "tablo_sayisi": 95,
-  "rpc_sayisi": 72,
+  "rpc_sayisi": 74,
   "tablolar": {
     "bildirimler": {
       "tur": "BASE TABLE",
@@ -2498,6 +2498,10 @@
         "secenek_sayisi": {
           "tip": "smallint",
           "nullable": false
+        },
+        "hedef_roller": {
+          "tip": "ARRAY",
+          "nullable": false
         }
       }
     },
@@ -3666,6 +3670,10 @@
         "firma_id": {
           "tip": "uuid",
           "nullable": true
+        },
+        "hedef_roller": {
+          "tip": "ARRAY",
+          "nullable": true
         }
       }
     },
@@ -3714,6 +3722,10 @@
         },
         "uretici_id": {
           "tip": "uuid",
+          "nullable": true
+        },
+        "hedef_roller": {
+          "tip": "ARRAY",
           "nullable": true
         }
       }
@@ -4004,6 +4016,10 @@
       "argumanlar": "p_siparis_id uuid, p_kisi_id uuid",
       "donus": "TABLE(ok boolean, hata text)"
     },
+    "eclub_test_veri_islem": {
+      "argumanlar": "p_islem text",
+      "donus": "jsonb"
+    },
     "eczanem_siparis_onayla": {
       "argumanlar": "p_siparis_id uuid",
       "donus": "TABLE(ok boolean, hata text, islem_kodu text, indirim_tl numeric, kullanilan_puan integer)"
@@ -4237,6 +4253,10 @@
       "donus": "TABLE(ok boolean, hata text)"
     },
     "talep_no_ata": {
+      "argumanlar": "",
+      "donus": "trigger"
+    },
+    "talepler_hedef_roller_esitle": {
       "argumanlar": "",
       "donus": "trigger"
     },

@@ -7,4 +7,4 @@
 // Tarihçe: 25.07'de <HedefRolBant> (sayfa üstündeki geniş bant) kaldırılmıştı;
 // geriye yalnız pill kalmıştı, o da artık pill ailesinin bir üyesi.
 
-export { HedefRolPill } from "@/components/pill";
+export { HedefRolPill, HedefRolPilleri } from "@/components/pill";

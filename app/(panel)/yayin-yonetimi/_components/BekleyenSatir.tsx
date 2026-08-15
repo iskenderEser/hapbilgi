@@ -10,7 +10,7 @@
 
 import type { Bekleyen } from "../_types";
 import { VIDEO_PUAN_SECENEKLERI, EXTRA_PUAN_SECENEKLERI } from "../_types";
-import { HedefRolPill } from "@/components/HedefRolBant";
+import { HedefRolPilleri } from "@/components/HedefRolBant";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import { VideoThumb } from "./Yardimcilar";
 import { SoruListesi } from "./SoruListesi";
@@ -59,7 +59,7 @@ export function BekleyenSatir({
   const bugun = new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD (yerel)
   // Eczanem yayınında extra puan / tekrar periyodu / ileri sarma YOKTUR (İP §4.4);
   // yerine barkod + Karşılık (puan ↔ TL) alanları girilir (U5, K-E3).
-  const eczanem = b.hedef_rol === "eczanem";
+  const eczanem = b.hedef_roller.includes("eczanem");
   const videoPuaniHazir = !!(videoPuanlari[b.soru_seti_durum_id] ?? b.video_puani);
   const puanlananSoru = b.sorular.filter((_, i) => !!getSoruPuani(b.soru_seti_durum_id, i)).length;
   const soruPuaniHazir = b.sorular.length > 0 && puanlananSoru === b.sorular.length;
@@ -77,7 +77,7 @@ export function BekleyenSatir({
         <div className="order-1 min-w-0 sm:order-2">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="truncate text-base font-extrabold text-[#213754]">{b.urun_adi}</span>
-            <HedefRolPill hedefRol={b.hedef_rol} />
+            <HedefRolPilleri hedefRoller={b.hedef_roller} />
             <span className="rounded-full border border-[#fed7cc] bg-[#fff7ed] px-2 py-0.5 text-[10px] font-extrabold text-[#c2410c]">Yayın kararı bekliyor</span>
           </div>
           <span className="mt-1 block text-[11px] font-semibold text-[#8494aa]">{talepIdGoster(b.firma_adi, b.talep_no)}</span>

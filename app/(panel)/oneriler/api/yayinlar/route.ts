@@ -17,7 +17,7 @@ export async function GET() {
     if (rol !== "bm") return rolHatasi("Sadece bm erişebilir.");
 
     const yayinlar = (await getYayindakiVideolar(user.id, rol, adminSupabase))
-      .filter((yayin) => yayin.hedef_rol === "utt");
+      .filter((yayin) => yayin.hedef_roller.includes("utt"));
 
     return NextResponse.json({ videolar: yayinlar }, { status: 200 });
 

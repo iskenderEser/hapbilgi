@@ -28,7 +28,7 @@ export async function uygunVideoListesi(
       .from("v_yayin_detay")
       .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url")
       .eq("durum", "yayinda")
-      .eq("hedef_rol", "bm"),
+      .contains("hedef_roller", ["bm"]),
     supabase
       .from("cc_izleme_kayitlari")
       .select("yayin_id")

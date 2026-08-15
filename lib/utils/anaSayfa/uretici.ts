@@ -24,7 +24,7 @@
 // kolda işletilir; video her iki kolda da talep_id ile bulunur.
 
 import { SupabaseClient } from "@supabase/supabase-js";
-import type { HedefRol } from "@/lib/utils/roller";
+import type { HedefRoller } from "@/lib/utils/roller";
 import { type DurumKodu } from "@/lib/utils/durum/mesaj";
 import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
 // Zincir okuma ve aşama kaskadı ortak dosyada (27.07): aynı soruyu Talepler
@@ -43,7 +43,7 @@ interface TakipSatiri {
   firma_adi: string;
   urun_adi: string;
   teknik_adi: string;
-  hedef_rol: HedefRol;
+  hedef_roller: HedefRoller;
   hazir_video: boolean;
   hazir_soru_seti: boolean;
   asama: Asama;
@@ -74,7 +74,7 @@ function kategoriBul(kod: DurumKodu): TakipKategori {
 
 /** Satırın künye alanları — talepten gelir, zincirden değil. */
 type TalepKunye = Pick<TakipSatiri,
-  "talep_id" | "talep_no" | "firma_adi" | "urun_adi" | "teknik_adi" | "hedef_rol" | "hazir_video" | "hazir_soru_seti">;
+  "talep_id" | "talep_no" | "firma_adi" | "urun_adi" | "teknik_adi" | "hedef_roller" | "hazir_video" | "hazir_soru_seti">;
 
 export async function getUreticiAnaSayfaVeri(userId: string, adminSupabase: SupabaseClient) {
   // İki sorgu paralel: künye/adlar ∥ zincir. İkisi de uretici_id süzgeçli.
@@ -108,7 +108,7 @@ export async function getUreticiAnaSayfaVeri(userId: string, adminSupabase: Supa
       firma_adi: talep.firma_adi,
       urun_adi: talep.urun_adi,
       teknik_adi: talep.teknik_adi,
-      hedef_rol: talep.hedef_rol,
+      hedef_roller: talep.hedef_roller,
       hazir_video: talep.hazir_video,
       hazir_soru_seti: talep.hazir_soru_seti,
     };

@@ -3,7 +3,7 @@
 // Yayın yönetimi sayfasının paylaşılan tip sözleşmeleri ve sabitleri.
 // page.tsx, hook ve alt bileşenler buradan import eder.
 
-import type { HedefRol } from "@/app/(panel)/talepler/_types";
+import type { HedefRol, HedefRoller } from "@/app/(panel)/talepler/_types";
 import { TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
 
 // ============================================================================
@@ -26,7 +26,7 @@ export interface Bekleyen {
   urun_adi: string;
   teknik_adi: string;
   turu_adi: string | null; // içerik/eğitim türü etiketi ("Medikal Eğitim" vb.)
-  hedef_rol: HedefRol;
+  hedef_roller: HedefRoller;
   soru_seti_buyuklugu: number | null;
   video_basi_soru_sayisi: number | null;
   onay_tarihi: string;
@@ -49,7 +49,7 @@ export interface Yayin {
   video_puani: number | null;
   soru_puani: number | null;
   sorular: any[];
-  hedef_rol: HedefRol;
+  hedef_roller: HedefRoller;
 }
 
 // Alt sekme (durum filtresi) tipi.

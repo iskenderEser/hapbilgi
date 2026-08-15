@@ -11,7 +11,7 @@
 
 import type { useTalepFormu } from "../_hooks/useTalepFormu";
 import { HEDEF_ROL_TASARIM, type HedefRol } from "../_types";
-import { TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
+import { ECLUB_HEDEF_ROLLER, TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
 import { TalepTuruTablari } from "./TalepTuruTablari";
 import { UrunTeknikSecici } from "./UrunTeknikSecici";
 import { SoruSetiAyarlari } from "./SoruSetiAyarlari";
@@ -27,7 +27,7 @@ interface YeniTalepFormProps {
 export function YeniTalepForm({ formu }: YeniTalepFormProps) {
   if (!formu.isUretici || !formu.yetenek) return null;
 
-  const formAktif = formu.hedefRol !== null;
+  const formAktif = formu.hedefRoller.length > 0;
   // Hazır video + hazır soru seti ikilisinde açıklama ve ek dosya girişi kapatılır.
   const ikiliHazir = formu.hazirVideo && formu.hazirSoruSeti;
 
@@ -88,7 +88,8 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
             (r) => r !== "eczanem" || formu.eczanemSecilebilir,
           ).map((rolKey: HedefRol) => {
             const tasarim = HEDEF_ROL_TASARIM[rolKey];
-            const secili = formu.hedefRol === rolKey;
+            const eclubSecenegi = ECLUB_HEDEF_ROLLER.includes(rolKey);
+            const secili = formu.hedefRoller.includes(rolKey);
             return (
               <label
                 key={rolKey}
@@ -99,11 +100,11 @@ export function YeniTalepForm({ formu }: YeniTalepFormProps) {
                 }}
               >
                 <input
-                  type="radio"
-                  name="hedef_rol"
+                  type={eclubSecenegi ? "checkbox" : "radio"}
+                  name="hedef_roller"
                   value={rolKey}
                   checked={secili}
-                  onChange={() => formu.setHedefRol(rolKey)}
+                  onChange={() => eclubSecenegi ? formu.eclubHedefDegistir(rolKey) : formu.setHedefRol(rolKey)}
                   className="cursor-pointer"
                   style={{ accentColor: tasarim.renk }}
                 />

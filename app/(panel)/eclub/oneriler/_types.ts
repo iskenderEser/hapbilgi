@@ -5,8 +5,8 @@ import type { YayindakiVideo } from "@/lib/video/yayindakiVideolar";
 export type EclubHedefRol = "eczaci" | "eczane_teknisyeni";
 
 // Önerilebilir yayın (yayinlar GET).
-export interface OneriYayin extends Omit<YayindakiVideo, "hedef_rol"> {
-  hedef_rol: EclubHedefRol;
+export interface OneriYayin extends Omit<YayindakiVideo, "hedef_roller"> {
+  hedef_roller: EclubHedefRol[];
 }
 
 // Öneri alıcısı adayı (kisiler GET'ten türetilir).

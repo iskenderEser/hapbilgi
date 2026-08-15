@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
-import type { HedefRol } from "@/app/(panel)/talepler/_types";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
@@ -18,9 +17,9 @@ export async function GET(request: NextRequest) {
     const rol = await rolCozucu(adminSupabase, user.id);
     if (!URETICI_ROLLER.includes(rol)) return rolHatasi("Sadece yetkili roller bekleyen videoları görebilir.");
 
-    // Opsiyonel filtre: ?hedef_rol=utt veya ?hedef_rol=bm
+    // Opsiyonel sekme filtresi: çoğul hedef dizisinde üyelik aranır.
     const { searchParams } = new URL(request.url);
-    const hedefRolFiltresi = searchParams.get("hedef_rol");
+    const hedefRolFiltresi = searchParams.get("hedef");
     const sayiModu = searchParams.get("sayi") === "1";
 
     // Zaten yayında olan soru_seti_durum_id'leri çek
@@ -118,7 +117,7 @@ export async function GET(request: NextRequest) {
         const videoPuan = videoDurum?.video_puanlari;
 
         const egitimTuru = talep?.egitim_turu ?? "urun_egitimi";
-        const hedefRol = talep?.hedef_rol ?? ("utt" as HedefRol);
+        const hedefRoller = talep?.hedef_roller ?? ["utt"];
 
         return {
           soru_seti_durum_id: ss.soru_seti_durum_id,
@@ -136,7 +135,7 @@ export async function GET(request: NextRequest) {
           teknik_adi: talep?.teknik_adi ?? "-",
           turu_adi: TALEP_TURU_KURALLARI[egitimTuru as TalepTuru]?.ad ?? null,
           egitim_turu: egitimTuru,
-          hedef_rol: hedefRol,
+          hedef_roller: hedefRoller,
           soru_seti_buyuklugu: talep?.soru_seti_buyuklugu ?? null,
           video_basi_soru_sayisi: talep?.video_basi_soru_sayisi ?? null,
           onay_tarihi: ss.created_at,
@@ -146,7 +145,7 @@ export async function GET(request: NextRequest) {
 
       // Query parametresine göre filtrele (varsa)
     const filtrelenmis = hedefRolFiltresi
-      ? sonuc.filter((b: any) => b.hedef_rol === hedefRolFiltresi)
+      ? sonuc.filter((b: any) => b.hedef_roller.includes(hedefRolFiltresi))
       : sonuc;
 
     if (sayiModu) return NextResponse.json({ sayi: filtrelenmis.length }, { status: 200 });

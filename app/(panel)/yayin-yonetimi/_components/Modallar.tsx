@@ -10,7 +10,7 @@
 
 import { useEffect } from "react";
 import type { Bekleyen } from "../_types";
-import { HedefRolPill } from "@/components/HedefRolBant";
+import { HedefRolPilleri } from "@/components/HedefRolBant";
 import VideoOnizleme from "@/components/video/VideoOnizleme";
 
 function useEscapeKapat(onKapat: () => void) {
@@ -52,7 +52,7 @@ export function YayinOnayModal({ bekleyen, onIptal, onYayinla }: {
           <strong>{bekleyen.urun_adi}</strong> ürünü yayınlanacaktır.
         </div>
         <div className="flex items-center gap-2 mb-5">
-          <HedefRolPill hedefRol={bekleyen.hedef_rol} />
+          <HedefRolPilleri hedefRoller={bekleyen.hedef_roller} />
           <span className="text-xs text-gray-400">hedef kitleye yayınlanacak.</span>
         </div>
         <div className="flex gap-2.5 justify-end">

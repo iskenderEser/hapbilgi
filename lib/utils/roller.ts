@@ -158,15 +158,17 @@ export const ECLUB_TUKETICI_ROLLERI = ["eczaci", "eczane_teknisyeni"];
 export const MUSTERI_ROLU = "musteri";
 
 // ============================================================================
-// HEDEF ROL — üretim hattının hedef kitle ekseni (talepler.hedef_rol)
+// HEDEF ROL — üretim hattının hedef kitle ekseni (talepler.hedef_roller)
 // ============================================================================
 // DİKKAT: Bunlar kullanıcı rolleri değil, üretilen içeriğin hedef kitle
 // değerleridir; bu yüzden TUM_ROLLER'dan ayrı yaşar.
 //   'utt' / 'bm'                    → iç müşteri (saha)
 //   'eczaci' / 'eczane_teknisyeni'  → dış müşteri (E-Club)
 //   'eczanem'                       → eczanenin kendi müşterisi (üçüncü katman)
-// DB: talepler.hedef_rol CHECK constraint'i ile birebir.
+// DB: talepler.hedef_roller CHECK constraint'i ile birebir. Saha/Eczanem hedefleri
+// tekildir; yalnız Eczacı + Eczane Teknisyeni birlikte seçilebilir.
 export type HedefRol = "utt" | "bm" | "eczaci" | "eczane_teknisyeni" | "eczanem";
+export type HedefRoller = HedefRol[];
 
 export const TUM_HEDEF_ROLLER: HedefRol[] = ["utt", "bm", "eczaci", "eczane_teknisyeni", "eczanem"];
 
@@ -174,6 +176,29 @@ export const TUM_HEDEF_ROLLER: HedefRol[] = ["utt", "bm", "eczaci", "eczane_tekn
 // (ECLUB_TUKETICI_ROLLERI ile değerleri aynıdır ama kavram farklıdır:
 // o kişilerin rolü, bu içeriğin hedefi. İkisi bilinçli olarak ayrı durur.)
 export const ECLUB_HEDEF_ROLLER: HedefRol[] = ["eczaci", "eczane_teknisyeni"];
+
+export function hedefRolleriDogrula(deger: unknown): HedefRoller | null {
+  if (!Array.isArray(deger) || deger.length === 0) return null;
+  const benzersiz = [...new Set(deger)];
+  if (!benzersiz.every((rol): rol is HedefRol => typeof rol === "string" && TUM_HEDEF_ROLLER.includes(rol as HedefRol))) {
+    return null;
+  }
+  const sirali = TUM_HEDEF_ROLLER.filter((rol) => benzersiz.includes(rol));
+  if (sirali.length === 1) return sirali;
+  if (sirali.length === 2 && ECLUB_HEDEF_ROLLER.every((rol) => sirali.includes(rol))) {
+    return [...ECLUB_HEDEF_ROLLER];
+  }
+  return null;
+}
+
+export function hedefRolleriOku(kayit: { hedef_roller?: unknown }): HedefRoller {
+  const cogul = hedefRolleriDogrula(kayit.hedef_roller);
+  return cogul ?? ["utt"];
+}
+
+export function hedefRolVarMi(hedefRoller: readonly string[] | null | undefined, rol: HedefRol): boolean {
+  return (hedefRoller ?? []).includes(rol);
+}
 
 // PM_AILESI_ROLLER: Ürün Müdürü ailesi (pm/jr_pm/kd_pm). "Yalnızca PM" gerektiren
 // kararların tek kaynağı — talep dosyası yükleme/silme, Eczanem talebi açma vb.

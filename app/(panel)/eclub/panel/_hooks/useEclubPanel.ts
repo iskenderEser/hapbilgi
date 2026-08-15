@@ -7,12 +7,20 @@ export interface PanelOneri {
   oneri_id: string;
   yayin_id: string;
   talep_no?: number | null;
+  firma_id: string | null;
   firma_adi?: string | null;
   urun_adi: string;
   teknik_adi: string | null;
   video_url: string | null;
   thumbnail_url: string | null;
   icerik_turu: string | null;
+  video_puani: number;
+  soru_puani: number;
+  soru_sayisi: number;
+  kazanilan_izleme_puani: number;
+  kazanilan_cevaplama_puani: number;
+  dogru_cevap: number;
+  yanlis_cevap: number;
   oneri_baslangic: string;
   oneri_bitis: string;
   oneri_durumu: "aktif" | "suresi_gecmis";
@@ -27,6 +35,20 @@ export interface PanelKisi {
   rol: string;
 }
 
+export interface PanelFirmaOzeti {
+  firma_id: string;
+  firma_adi: string;
+  kazanilan_puan: number;
+  harcanabilir_puan: number;
+  video_sayisi: number;
+}
+
+export interface PanelOzet {
+  toplam_kazanilan_puan: number;
+  harcanabilir_puan: number;
+  dogru_cevap: number;
+}
+
 interface UseEclubPanelArgs {
   hazir: boolean;
   hata: (mesaj: string, adim?: string, detay?: string) => void;
@@ -35,6 +57,8 @@ interface UseEclubPanelArgs {
 export function useEclubPanel({ hazir, hata }: UseEclubPanelArgs) {
   const [kisi, setKisi] = useState<PanelKisi | null>(null);
   const [oneriler, setOneriler] = useState<PanelOneri[]>([]);
+  const [firmaOzetleri, setFirmaOzetleri] = useState<PanelFirmaOzeti[]>([]);
+  const [ozet, setOzet] = useState<PanelOzet>({ toplam_kazanilan_puan: 0, harcanabilir_puan: 0, dogru_cevap: 0 });
   const [loading, setLoading] = useState(true);
 
   const veriCek = useCallback(async () => {
@@ -47,6 +71,12 @@ export function useEclubPanel({ hazir, hata }: UseEclubPanelArgs) {
       } else {
         setKisi(d.kisi ?? null);
         setOneriler(d.oneriler ?? []);
+        setFirmaOzetleri(d.firma_ozetleri ?? []);
+        setOzet({
+          toplam_kazanilan_puan: d.ozet?.toplam_kazanilan_puan ?? 0,
+          harcanabilir_puan: d.ozet?.harcanabilir_puan ?? 0,
+          dogru_cevap: d.ozet?.dogru_cevap ?? 0,
+        });
       }
     } catch (err) {
       hata("Veri yüklenirken hata oluştu.", "useEclubPanel veriCek", err instanceof Error ? err.message : undefined);
@@ -59,5 +89,5 @@ export function useEclubPanel({ hazir, hata }: UseEclubPanelArgs) {
     if (hazir) veriCek();
   }, [hazir, veriCek]);
 
-  return { kisi, oneriler, loading, veriCek };
+  return { kisi, oneriler, firmaOzetleri, ozet, loading, veriCek };
 }

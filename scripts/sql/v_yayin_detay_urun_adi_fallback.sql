@@ -39,7 +39,9 @@ CREATE OR REPLACE VIEW public.v_yayin_detay AS
     t.hedef_rol,
     t.talep_no,
     f.firma_adi,
-    t.egitim_turu
+    t.egitim_turu,
+    t.firma_id,
+    ym.hedef_roller
    FROM yayin_yonetimi ym
      JOIN soru_seti_durumu ssd ON ssd.soru_seti_durum_id = ym.soru_seti_durum_id
      JOIN soru_setleri ss ON ss.soru_seti_id = ssd.soru_seti_id
@@ -57,4 +59,5 @@ CREATE OR REPLACE VIEW public.v_yayin_detay AS
     u.urun_adi, t.urun_adi, tek.teknik_adi, t.takim_id, t.uretici_id, t.video_basi_soru_sayisi,
     t.soru_seti_buyuklugu, v.video_url, v.thumbnail_url, vp.video_puani, ss.sorular,
     s.senaryo_metni, s.senaryo_id, sd.senaryo_durum_id, vd.video_durum_id, ssd.soru_seti_id,
-    t.icerik_turu, t.egitim_turu, t.hedef_rol, t.talep_no, f.firma_adi;
+    t.icerik_turu, t.egitim_turu, t.hedef_rol, t.talep_no, f.firma_adi, t.firma_id,
+    ym.hedef_roller;

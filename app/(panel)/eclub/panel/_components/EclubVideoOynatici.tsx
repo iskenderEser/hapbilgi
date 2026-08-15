@@ -8,6 +8,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, CheckCircle2, HelpCircle, Send } from "lucide-react";
 import { createVideoPlayer, type VideoPlayer } from "@/lib/video/videoPlayer";
 import VideoCercevesi from "@/components/video/VideoCercevesi";
 import { useVideoEtkilesimKatmani } from "@/components/video/useVideoEtkilesimKatmani";
@@ -209,23 +210,21 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
   return (
     <div className="flex flex-col gap-4">
       <button
+        type="button"
         onClick={onKapat}
-        className="flex items-center gap-1.5 bg-transparent border-none cursor-pointer text-gray-500 text-sm p-0 w-fit"
+        className="flex w-fit items-center gap-1.5 rounded-lg px-1 py-1 text-xs font-extrabold text-[#71859d] hover:text-[#237ac8]"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-          <path d="M15 19l-7-7 7-7" />
-        </svg>
-        Panele dön
+        <ArrowLeft size={15} /> Videolarıma dön
       </button>
 
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-        <div className="px-4 md:px-5 py-4 border-b border-gray-100">
-          <div className="text-base font-semibold text-gray-900">{oneri.urun_adi}</div>
-          {oneri.teknik_adi && <div className="text-xs text-gray-500 mt-1">{oneri.teknik_adi}</div>}
+      <div className="overflow-hidden rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_8px_26px_rgba(31,55,90,0.06)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e7edf4] px-4 py-4 md:px-5">
+          <div><div className="text-base font-extrabold text-[#203653]">{oneri.urun_adi}</div>{oneri.teknik_adi && <div className="mt-0.5 text-xs font-semibold text-[#8190a3]">{oneri.teknik_adi}</div>}</div>
+          <span className="rounded-full border border-[#bfdbfe] bg-[#eff6ff] px-2.5 py-1 text-[9px] font-extrabold text-[#2563a8]">Video ve Soru Akışı</span>
         </div>
 
         {oneri.video_url && (
-          <div className="border-b border-gray-100">
+          <div className="border-b border-[#e7edf4] bg-[#10213d]">
             {/* Kutu videonun oranına göre çizilir (26.07). iframe burada kalır — ref playerjs'e bağlı. */}
             <VideoCercevesi
               videoUrl={oneri.video_url}
@@ -246,28 +245,22 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
           </div>
         )}
 
-        <div className="px-4 md:px-5 py-4">
+        <div className="px-4 py-4 md:px-5 md:py-5">
           {izlemeTamamlandi && soruGosterilecek && sorular.length > 0 && cevapSonuclari.length === 0 && (
             <div className="flex flex-col gap-4">
-              <div className="text-sm font-semibold text-gray-900">Soruları Cevapla</div>
+              <div className="flex items-center gap-2"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#f2efff] text-[#7358c7]"><HelpCircle size={16} /></span><div><div className="text-sm font-extrabold text-[#203653]">Soruları Cevapla</div><div className="text-[10px] font-semibold text-[#8190a3]">Tüm soruları yanıtladıktan sonra cevaplarınızı gönderin.</div></div></div>
               {sorular.map((soru, i) => (
-                <div key={soru.soru_index} className="px-3 py-3.5 bg-gray-50 rounded-xl border border-gray-200">
-                  <p className="text-sm text-gray-700 font-semibold mb-3">{i + 1}. {soru.soru_metni}</p>
-                  <div className="flex flex-col gap-2">
+                <div key={soru.soru_index} className="rounded-2xl border border-[#e1e9f1] bg-[#f8fafc] px-3.5 py-4">
+                  <p className="mb-3 text-sm font-bold leading-5 text-[#30475f]">{i + 1}. {soru.soru_metni}</p>
+                  <div className="grid gap-2">
                     {soru.secenekler.map((s) => (
                       <button
+                        type="button"
                         key={s.harf}
                         onClick={() => setCevaplar((prev) => ({ ...prev, [soru.soru_index]: s.harf }))}
-                        className="px-3 py-2.5 rounded-lg text-sm text-left cursor-pointer transition-colors"
-                        style={{
-                          border: cevaplar[soru.soru_index] === s.harf ? "1.5px solid #56aeff" : "0.5px solid #e5e7eb",
-                          background: cevaplar[soru.soru_index] === s.harf ? "#e6f1fb" : "white",
-                          color: cevaplar[soru.soru_index] === s.harf ? "#56aeff" : "#374151",
-                          fontWeight: cevaplar[soru.soru_index] === s.harf ? 600 : 400,
-                          fontFamily: "'Nunito', sans-serif",
-                        }}
+                        className={`rounded-xl border px-3 py-2.5 text-left text-xs font-semibold transition ${cevaplar[soru.soru_index] === s.harf ? "border-[#8abde8] bg-[#eaf5fc] text-[#237ac8] ring-1 ring-[#b9d9ef]" : "border-[#dfe7f1] bg-white text-[#40556d] hover:border-[#b9d7ee]"}`}
                       >
-                        {s.harf}. {s.metin}
+                        <strong className="mr-1.5">{s.harf}.</strong> {s.metin}
                       </button>
                     ))}
                   </div>
@@ -275,16 +268,12 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
               ))}
               <div className="flex justify-end">
                 <button
+                  type="button"
                   onClick={handleCevapGonder}
                   disabled={Object.keys(cevaplar).length < sorular.length || islemLoading}
-                  className="text-white border-none rounded-lg px-6 py-2.5 text-xs font-semibold cursor-pointer"
-                  style={{
-                    background: "#56aeff",
-                    opacity: Object.keys(cevaplar).length < sorular.length ? 0.5 : 1,
-                    fontFamily: "'Nunito', sans-serif",
-                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#237ac8] px-5 py-2.5 text-xs font-extrabold text-white shadow-sm hover:bg-[#1d69aa] disabled:cursor-not-allowed disabled:opacity-45"
                 >
-                  {islemLoading ? "..." : "Cevapla"}
+                  <Send size={13} /> {islemLoading ? "Gönderiliyor..." : "Cevapları Gönder"}
                 </button>
               </div>
             </div>
@@ -292,25 +281,21 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
 
           {cevapSonuclari.length > 0 && (
             <div className="flex flex-col gap-3">
-              <div className="text-sm font-semibold text-gray-900">Sonuçlar</div>
+              <div className="flex items-center gap-2 text-sm font-extrabold text-[#203653]"><CheckCircle2 size={17} className="text-[#16865f]" /> Cevap Sonuçları</div>
               {cevapSonuclari.map((s) => (
                 <div
                   key={s.soru_index}
-                  className="px-3 py-2.5 rounded-lg"
-                  style={{
-                    background: s.dogru_mu ? "#f0fdf4" : "#fef2f2",
-                    border: `0.5px solid ${s.dogru_mu ? "#bbf7d0" : "#fecaca"}`,
-                  }}
+                  className={`rounded-xl border px-3.5 py-3 ${s.dogru_mu ? "border-[#bce8d4] bg-[#effaf5]" : "border-[#fecaca] bg-[#fff7f7]"}`}
                 >
-                  <span className="text-xs font-semibold" style={{ color: s.dogru_mu ? "#16a34a" : "#bc2d0d" }}>
+                  <span className={`text-xs font-bold ${s.dogru_mu ? "text-[#16865f]" : "text-[#b23b31]"}`}>
                     {s.dogru_mu ? "✓ Doğru" : `✗ Yanlış — Doğru cevap: ${s.dogru_cevap ?? "-"}`}
                   </span>
                 </div>
               ))}
               <button
+                type="button"
                 onClick={onKapat}
-                className="text-white border-none rounded-lg px-6 py-2.5 text-xs font-semibold cursor-pointer self-end"
-                style={{ background: "#56aeff", fontFamily: "'Nunito', sans-serif" }}
+                className="self-end rounded-xl bg-[#237ac8] px-5 py-2.5 text-xs font-extrabold text-white hover:bg-[#1d69aa]"
               >
                 Panele dön
               </button>
@@ -318,8 +303,8 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
           )}
 
           {izlemeTamamlandi && !soruGosterilecek && cevapSonuclari.length === 0 && (
-            <div className="px-4 py-3.5 rounded-xl border text-center" style={{ background: "#e6f1fb", border: "0.5px solid #bfdbfe" }}>
-              <span className="text-sm font-semibold" style={{ color: "#1d4ed8" }}>İzleme tamamlandı.</span>
+            <div className="rounded-xl border border-[#bfdbfe] bg-[#eff6ff] px-4 py-4 text-center">
+              <span className="text-sm font-extrabold text-[#2563a8]">İzleme tamamlandı.</span>
             </div>
           )}
         </div>

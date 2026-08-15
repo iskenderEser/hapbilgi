@@ -1,139 +1,211 @@
-// app/eclub/panel/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  Building2,
+  CheckCircle2,
+  CirclePlay,
+  Clock3,
+  Coins,
+  Play,
+  ShoppingBag,
+  Sparkles,
+  Trophy,
+  Video,
+} from "lucide-react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
+import {
+  EclubKisiBaslik,
+  EclubKisiBosDurum,
+  EclubKisiSayfa,
+  EclubKisiStat,
+  EclubKisiYukleniyor,
+} from "@/components/eclub/EclubKisiSayfa";
 import { useEclubPanel, type PanelOneri } from "./_hooks/useEclubPanel";
 import EclubVideoOynatici from "./_components/EclubVideoOynatici";
-import { talepIdGoster } from "@/lib/utils/talepId";
 
 const KISI_ROL_ETIKETLERI: Record<string, string> = {
   eczaci: "Eczacı",
   eczane_teknisyeni: "Eczane Teknisyeni",
 };
 
+type VideoFiltresi = "tumu" | "bekleyen" | "tamamlanan" | "suresi_gecmis";
+
+const FILTRELER: Array<{ key: VideoFiltresi; etiket: string }> = [
+  { key: "tumu", etiket: "Tümü" },
+  { key: "bekleyen", etiket: "Bekleyen" },
+  { key: "tamamlanan", etiket: "Tamamlanan" },
+  { key: "suresi_gecmis", etiket: "Süresi Geçen" },
+];
+
+function videoDurumu(oneri: PanelOneri): Exclude<VideoFiltresi, "tumu"> {
+  if (oneri.izlendi_mi) return "tamamlanan";
+  return oneri.oneri_durumu === "suresi_gecmis" ? "suresi_gecmis" : "bekleyen";
+}
+
+function VideoKart({ oneri, onIzle }: { oneri: PanelOneri; onIzle: () => void }) {
+  const durum = videoDurumu(oneri);
+  const kazanilan = oneri.kazanilan_izleme_puani + oneri.kazanilan_cevaplama_puani;
+  const durumStili = durum === "tamamlanan"
+    ? "border-[#bce8d4] bg-[#effaf5] text-[#16865f]"
+    : durum === "suresi_gecmis"
+      ? "border-[#fed7aa] bg-[#fff7ed] text-[#b45309]"
+      : "border-[#bfdbfe] bg-[#eff6ff] text-[#2563a8]";
+
+  return (
+    <article className="overflow-hidden rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
+      <div className="grid md:grid-cols-[180px_minmax(0,1fr)]">
+        <button type="button" onClick={onIzle} className="group relative min-h-[150px] overflow-hidden bg-[#edf3f8] text-left">
+          {oneri.thumbnail_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={oneri.thumbnail_url} alt={oneri.urun_adi} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
+          ) : (
+            <span className="flex h-full min-h-[150px] items-center justify-center text-[#9babbc]"><Video size={28} /></span>
+          )}
+          <span className="absolute inset-0 flex items-center justify-center bg-[#10213d]/10 transition group-hover:bg-[#10213d]/20">
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-[#237ac8] shadow-lg"><Play size={18} fill="currentColor" /></span>
+          </span>
+        </button>
+
+        <div className="flex min-w-0 flex-col gap-3 p-4">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="min-w-0">
+              <h3 className="truncate text-sm font-extrabold text-[#203653]">{oneri.urun_adi}</h3>
+              <p className="mt-0.5 truncate text-[11px] font-semibold text-[#8190a3]">{oneri.teknik_adi || "Ürün eğitimi"}</p>
+            </div>
+            <span className={`rounded-full border px-2.5 py-1 text-[9px] font-extrabold ${durumStili}`}>
+              {durum === "tamamlanan" ? "Tamamlandı" : durum === "suresi_gecmis" ? "Süresi Geçti" : `${oneri.kalan_gun} Gün Kaldı`}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="rounded-xl bg-[#f5f8fb] px-2.5 py-2"><small className="block text-[9px] font-bold text-[#8190a3]">Video Puanı</small><strong className="mt-0.5 block text-xs text-[#237ac8]">+{oneri.video_puani}</strong></div>
+            <div className="rounded-xl bg-[#f5f8fb] px-2.5 py-2"><small className="block text-[9px] font-bold text-[#8190a3]">Soru Puanı</small><strong className="mt-0.5 block text-xs text-[#7358c7]">+{oneri.soru_puani} / soru</strong></div>
+            <div className="rounded-xl bg-[#f5f8fb] px-2.5 py-2"><small className="block text-[9px] font-bold text-[#8190a3]">Cevaplar</small><strong className="mt-0.5 block text-xs text-[#40556d]">{oneri.dogru_cevap} doğru · {oneri.yanlis_cevap} yanlış</strong></div>
+            <div className="rounded-xl bg-[#eef9f4] px-2.5 py-2"><small className="block text-[9px] font-bold text-[#6b907f]">Kazanılan</small><strong className="mt-0.5 block text-xs text-[#16865f]">+{kazanilan} puan</strong></div>
+          </div>
+
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-[#edf1f5] pt-3">
+            <span className="text-[10px] font-semibold text-[#8a99aa]">
+              {oneri.soru_sayisi > 0 ? `${oneri.soru_sayisi} soru` : "Soru bulunmuyor"}
+              {oneri.oneri_durumu === "suresi_gecmis" ? " · Puansız tekrar izleme" : ""}
+            </span>
+            <button type="button" onClick={onIzle} className="inline-flex items-center gap-1.5 rounded-xl bg-[#237ac8] px-4 py-2 text-xs font-extrabold text-white shadow-sm hover:bg-[#1d69aa]">
+              <CirclePlay size={14} /> {oneri.izlendi_mi ? "Tekrar İzle" : "İzle"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function EclubPanelPage() {
   const router = useRouter();
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
-
   const eclubKisi = !!kullanici && kullanici.kimlik_turu === "eclub_kisi";
   const hazir = !authYukleniyor && eclubKisi;
-
-  const { kisi, oneriler, loading, veriCek } = useEclubPanel({ hazir, hata });
-
+  const { kisi, oneriler, firmaOzetleri, ozet, loading, veriCek } = useEclubPanel({ hazir, hata });
   const [seciliOneri, setSeciliOneri] = useState<PanelOneri | null>(null);
+  const [filtre, setFiltre] = useState<VideoFiltresi>("tumu");
 
   useEffect(() => {
     if (authYukleniyor) return;
     if (!kullanici) { router.replace("/login"); return; }
-    if (!eclubKisi) { router.replace("/ana-sayfa"); return; }
+    if (!eclubKisi) { router.replace("/ana-sayfa"); }
   }, [kullanici, authYukleniyor, eclubKisi, router]);
 
-  if (authYukleniyor || !kullanici || loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
-          <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
-      </div>
-    );
-  }
+  const filtreliOneriler = useMemo(() => (
+    filtre === "tumu" ? oneriler : oneriler.filter((oneri) => videoDurumu(oneri) === filtre)
+  ), [filtre, oneriler]);
+  const firmaGruplari = useMemo(() => firmaOzetleri.map((firma) => ({
+    ...firma,
+    oneriler: filtreliOneriler.filter((oneri) => oneri.firma_id === firma.firma_id),
+  })).filter((firma) => firma.oneriler.length > 0 || filtre === "tumu"), [filtre, filtreliOneriler, firmaOzetleri]);
+
+  if (authYukleniyor || !kullanici || loading) return <EclubKisiYukleniyor />;
+
+  const bekleyen = oneriler.filter((oneri) => videoDurumu(oneri) === "bekleyen").length;
+  const tamamlanan = oneriler.filter((oneri) => videoDurumu(oneri) === "tamamlanan").length;
 
   return (
-    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <div className="max-w-3xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-4">
-
-        {seciliOneri ? (
-          <EclubVideoOynatici
-            oneri={{
-              oneri_id: seciliOneri.oneri_id,
-              yayin_id: seciliOneri.yayin_id,
-              urun_adi: seciliOneri.urun_adi,
-              teknik_adi: seciliOneri.teknik_adi,
-              video_url: seciliOneri.video_url,
-            }}
-            onKapat={() => { setSeciliOneri(null); veriCek(); }}
-            onTamamlandi={veriCek}
-            hata={hata}
-            basari={basari}
-          />
-        ) : (
-          <>
-            <div className="flex flex-col gap-1">
-              <h1 className="text-lg font-semibold text-gray-900 m-0">
-                Merhaba{kisi ? `, ${kisi.ad}` : ""}
-              </h1>
-              <p className="text-sm text-gray-500 m-0">
-                {kisi ? KISI_ROL_ETIKETLERI[kisi.rol] ?? kisi.rol : ""} · Size önerilen videolar
-              </p>
-            </div>
-
-            {oneriler.length === 0 ? (
-              <div className="bg-white border border-gray-200 rounded-xl px-5 py-10 text-center">
-                <p className="text-sm text-gray-400 m-0">Şu anda size önerilmiş video yok.</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {oneriler.map((o) => (
-                  <div key={o.oneri_id} className="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col sm:flex-row">
-                    <div className="sm:w-48 flex-shrink-0 bg-gray-100 flex items-center justify-center" style={{ minHeight: "120px" }}>
-                      {o.thumbnail_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={o.thumbnail_url} alt={o.urun_adi} className="w-full h-full object-cover" style={{ maxHeight: "160px" }} />
-                      ) : (
-                        <span className="text-xs text-gray-400">Görsel yok</span>
-                      )}
-                    </div>
-
-                    <div className="flex-1 p-4 flex flex-col gap-2">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-sm font-semibold text-gray-900">{o.urun_adi}</span>
-                        {o.teknik_adi && <span className="text-xs text-gray-500">{o.teknik_adi}</span>}
-                        {o.talep_no != null && (
-                          <span className="text-[10px] text-gray-400 font-mono">{talepIdGoster(o.firma_adi, o.talep_no)}</span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2 flex-wrap mt-auto">
-                        {o.oneri_durumu === "aktif" ? (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #93c5fd" }}>
-                            {o.kalan_gun} gün kaldı
-                          </span>
-                        ) : (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "#fff7ed", color: "#9a3412", border: "0.5px solid #fdba74" }}>
-                            Süresi geçti · puansız izleme
-                          </span>
-                        )}
-                        {o.izlendi_mi && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "#eaf7e4", color: "#166534", border: "0.5px solid #7ed957" }}>
-                            İzlendi
-                          </span>
-                        )}
-                      </div>
-
-                      <div>
-                        <button
-                          onClick={() => setSeciliOneri(o)}
-                          className="text-xs px-4 py-2 rounded-lg border-none text-white font-semibold cursor-pointer"
-                          style={{ background: "#56aeff", fontFamily: "'Nunito', sans-serif" }}
-                        >
-                          {o.izlendi_mi ? "Tekrar İzle" : "İzle"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+    <EclubKisiSayfa>
+      {seciliOneri ? (
+        <EclubVideoOynatici
+          oneri={{
+            oneri_id: seciliOneri.oneri_id,
+            yayin_id: seciliOneri.yayin_id,
+            urun_adi: seciliOneri.urun_adi,
+            teknik_adi: seciliOneri.teknik_adi,
+            video_url: seciliOneri.video_url,
+          }}
+          onKapat={() => { setSeciliOneri(null); void veriCek(); }}
+          onTamamlandi={veriCek}
+          hata={hata}
+          basari={basari}
+        />
+      ) : (
+        <>
+          <EclubKisiBaslik
+            ikon={Sparkles}
+            baslik={`Merhaba${kisi ? `, ${kisi.ad}` : ""}`}
+            aciklama={`${kisi ? KISI_ROL_ETIKETLERI[kisi.rol] ?? kisi.rol : ""} · Firmalarınızın sizin için seçtiği videoları izleyin, soruları yanıtlayın ve puan kazanın.`}
+            aksiyon={(
+              <Link href="/eclub/store" className="inline-flex items-center gap-2 rounded-xl border border-[#cfe3f4] bg-white px-4 py-2.5 text-xs font-extrabold text-[#237ac8] shadow-sm hover:bg-[#f4f9fd]">
+                <ShoppingBag size={15} /> Mağazaya Git
+              </Link>
             )}
-          </>
-        )}
-      </div>
+          />
 
+          <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <EclubKisiStat ikon={Clock3} etiket="Bekleyen Video" deger={bekleyen} detay="Süresi devam eden" renk="#d78022" zemin="#fff6e8" />
+            <EclubKisiStat ikon={CheckCircle2} etiket="Tamamlanan" deger={tamamlanan} detay="İzlediğiniz videolar" renk="#16865f" zemin="#ebf8f2" />
+            <EclubKisiStat ikon={Trophy} etiket="Kazanılan Puan" deger={ozet.toplam_kazanilan_puan.toLocaleString("tr-TR")} detay={`${ozet.dogru_cevap} doğru cevap`} renk="#7358c7" zemin="#f2efff" />
+            <EclubKisiStat ikon={Coins} etiket="Kullanılabilir Puan" deger={ozet.harcanabilir_puan.toLocaleString("tr-TR")} detay="E‑Club Store bakiyesi" />
+          </section>
+
+          <section className="rounded-2xl border border-[#dfe7f1] bg-white p-2 shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
+            <div className="flex gap-1 overflow-x-auto">
+              {FILTRELER.map((secenek) => (
+                <button key={secenek.key} type="button" onClick={() => setFiltre(secenek.key)} className={`whitespace-nowrap rounded-xl px-3.5 py-2 text-[11px] font-extrabold transition ${filtre === secenek.key ? "bg-[#237ac8] text-white shadow-sm" : "text-[#71859d] hover:bg-[#f3f7fa]"}`}>
+                  {secenek.etiket}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {firmaGruplari.length === 0 ? (
+            <EclubKisiBosDurum ikon={Video} baslik="Bu bölümde video bulunmuyor" aciklama="Yeni bir video gönderildiğinde veya filtreyi değiştirdiğinizde burada görüntülenecek." />
+          ) : (
+            <div className="grid gap-4">
+              {firmaGruplari.map((firma, index) => (
+                <details key={firma.firma_id} className="group overflow-hidden rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_7px_22px_rgba(31,55,90,0.04)]" open={index === 0 ? true : undefined}>
+                  <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 px-4 py-4 marker:hidden md:px-5">
+                    <span className="flex min-w-0 items-center gap-3">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#edf6fd] text-[#237ac8]"><Building2 size={18} /></span>
+                      <span className="min-w-0"><strong className="block truncate text-sm text-[#203653]">{firma.firma_adi}</strong><small className="mt-0.5 block text-[10px] font-semibold text-[#8190a3]">{firma.oneriler.length} video</small></span>
+                    </span>
+                    <span className="grid grid-cols-2 gap-2">
+                      <span className="rounded-xl bg-[#f5f8fb] px-3 py-1.5 text-right"><small className="block text-[9px] font-bold text-[#8190a3]">Kazanılan</small><strong className="text-xs text-[#7358c7]">{firma.kazanilan_puan.toLocaleString("tr-TR")} p</strong></span>
+                      <span className="rounded-xl bg-[#eef9f4] px-3 py-1.5 text-right"><small className="block text-[9px] font-bold text-[#6b907f]">Kullanılabilir</small><strong className="text-xs text-[#16865f]">{firma.harcanabilir_puan.toLocaleString("tr-TR")} p</strong></span>
+                    </span>
+                  </summary>
+                  <div className="grid gap-3 border-t border-[#e7edf4] bg-[#f7f9fc] p-3 md:p-4">
+                    {firma.oneriler.length > 0
+                      ? firma.oneriler.map((oneri) => <VideoKart key={oneri.oneri_id} oneri={oneri} onIzle={() => setSeciliOneri(oneri)} />)
+                      : <div className="py-6 text-center text-xs font-semibold text-[#8190a3]">Bu firmadan gösterilecek video bulunmuyor.</div>}
+                  </div>
+                </details>
+              ))}
+            </div>
+          )}
+        </>
+      )}
       <HataMesajiContainer mesajlar={mesajlar} />
-    </div>
+    </EclubKisiSayfa>
   );
 }

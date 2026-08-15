@@ -35,7 +35,7 @@ import type {
 } from "../_types";
 import { type SoruTaslagi, taslaklariBoyutla, taslaklariDogrula, taslaklardanSorular } from "@/lib/soru/taslak";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { URETIM_HATTI_GORENLER, ECZANEM_TALEP_ACAN_ROLLER } from "@/lib/utils/roller";
+import { URETIM_HATTI_GORENLER, ECZANEM_TALEP_ACAN_ROLLER, ECLUB_HEDEF_ROLLER } from "@/lib/utils/roller";
 import { guvenliDosyaAdi } from "@/lib/utils/guvenliDosyaAdi";
 import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
 
@@ -63,7 +63,21 @@ export function useTalepFormu() {
   // ============================================================================
   // Form state
   // ============================================================================
-  const [hedefRol, setHedefRol] = useState<HedefRol | null>(null);
+  const [hedefRoller, setHedefRoller] = useState<HedefRol[]>([]);
+  const hedefRol = hedefRoller[0] ?? null;
+  const setHedefRol = useCallback((yeniRol: HedefRol | null) => {
+    setHedefRoller(yeniRol ? [yeniRol] : []);
+  }, []);
+  const eclubHedefDegistir = useCallback((rol: HedefRol) => {
+    if (!ECLUB_HEDEF_ROLLER.includes(rol)) return;
+    setHedefRoller((mevcut) => {
+      const eclubSecimi = mevcut.every((hedef) => ECLUB_HEDEF_ROLLER.includes(hedef)) ? mevcut : [];
+      const sonraki = eclubSecimi.includes(rol)
+        ? eclubSecimi.filter((hedef) => hedef !== rol)
+        : [...eclubSecimi, rol];
+      return ECLUB_HEDEF_ROLLER.filter((hedef) => sonraki.includes(hedef));
+    });
+  }, []);
   const [egitimTuru, setEgitimTuru] = useState<TalepTuru>("urun_egitimi");
   const [urunler, setUrunler] = useState<Urun[]>([]);
   const [seciliUrunId, setSeciliUrunId] = useState("");
@@ -91,7 +105,7 @@ export function useTalepFormu() {
   const turKurali = TALEP_TURU_KURALLARI[egitimTuru];
   const urunGosterilsin = turKurali.urun !== "yok";
   // E-Club hedefi (eczacı / eczane teknisyeni) ise teknik gizlenir.
-  const eclubHedef = hedefRol === "eczaci" || hedefRol === "eczane_teknisyeni";
+  const eclubHedef = hedefRoller.some((hedef) => ECLUB_HEDEF_ROLLER.includes(hedef));
   // Eczanem hedefinde de teknik gizlenir: son tüketiciye satış tekniği
   // anlatılmaz, içerik ürün odaklıdır (İP-§4.2 — zincir aynı, teknik yok).
   const eczanemHedef = hedefRol === "eczanem";
@@ -417,7 +431,7 @@ export function useTalepFormu() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         egitim_turu: egitimTuru,
-        hedef_rol: hedefRol,
+        hedef_roller: hedefRoller,
         // Eczanem'de ürün, tür kuralından bağımsız olarak gönderilir (dörtlü kilit).
         urun_id: (turKurali.urun !== "yok" || eczanemHedef) ? seciliUrunId || null : null,
         // Teknik-siz hedeflerde (E-Club / Eczanem) teknik her hâlükârda null gönderilir.
@@ -442,7 +456,7 @@ export function useTalepFormu() {
     return d.talep.talep_id as string;
   }, [
     egitimTuru,
-    hedefRol,
+    hedefRoller,
     eclubHedef,
     eczanemHedef,
     turKurali,
@@ -557,7 +571,7 @@ export function useTalepFormu() {
   );
 
   const resetForm = useCallback(() => {
-    setHedefRol(null);
+    setHedefRoller([]);
     if (yetenek) setEgitimTuru(yetenek.acabilecegiTalepTurleri[0]);
     setSeciliUrunId("");
     setSeciliTeknikId("");
@@ -671,7 +685,9 @@ export function useTalepFormu() {
 
     // form: hedef rol seçimi
     hedefRol,
+    hedefRoller,
     setHedefRol,
+    eclubHedefDegistir,
     eczanemHedef,
     eczanemSecilebilir,
 

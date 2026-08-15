@@ -7,7 +7,7 @@
 //  - Konum: geniş roller → kendi firmalarındaki TÜM takımlar; dar roller → yalnız kendi takımı.
 //    (Çok-firmalı yapı: başka firmanın videosu sızmaz.)
 //  - BM/TM saha yönetimi görünümü: UTT ile eş katalog için kendi takımı + firma geneli ve
-//    yalnız hedef_rol='utt' yayınlar.
+//    yalnız hedef_roller içinde 'utt' bulunan yayınlar.
 //
 // Varsayılan ortak çağrıda firma-geneli (takim_id NULL) içerik dışarıdadır;
 // yalnız bunu açıkça isteyen rol çağrıları firma sınırı korunarak dahil eder.
@@ -69,7 +69,7 @@ export async function getAnaSayfaVideolari(
     .order("yayin_tarihi", { ascending: false });
 
   if (secenekler.hedefRol) {
-    query = query.eq("hedef_rol", secenekler.hedefRol);
+    query = query.contains("hedef_roller", [secenekler.hedefRol]);
   }
 
   if (kapsamGenisMi(rol)) {

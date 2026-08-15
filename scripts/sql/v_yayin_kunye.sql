@@ -36,7 +36,8 @@ SELECT
   t.hedef_rol,
   t.firma_id,
   t.takim_id,
-  t.uretici_id
+  t.uretici_id,
+  ym.hedef_roller
 FROM yayin_yonetimi ym
 JOIN soru_seti_durumu ssd ON ssd.soru_seti_durum_id = ym.soru_seti_durum_id
 JOIN soru_setleri ss      ON ss.soru_seti_id        = ssd.soru_seti_id

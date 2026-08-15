@@ -7,7 +7,7 @@ import { useRouter, useParams } from "next/navigation";
 import TalepSahibiKarti from "@/components/TalepSahibiKarti";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { IU_ROLU, URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
-import { HedefRolPill } from "@/components/HedefRolBant";
+import { HedefRolPilleri } from "@/components/HedefRolBant";
 import { TeknikPill } from "@/components/TeknikPill";
 import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -58,7 +58,7 @@ export default function SoruSetiAkisPage() {
   const soruSetiBuyuklugu = talep?.soru_seti_buyuklugu ?? 25;
   const secenekSayisi = talep?.secenek_sayisi ?? 2;
   const videoBasiSoruSayisi = talep?.video_basi_soru_sayisi ?? 2;
-  const hedefRol = talep?.hedef_rol ?? null;
+  const hedefRoller = talep?.hedef_roller ?? [];
   // Ç-7: karar butonlarını yalnız talebi açan üreticiye göstermek için.
   const ureticiId = talep?.uretici_id ?? null;
   const [loading, setLoading] = useState(true);
@@ -300,7 +300,7 @@ export default function SoruSetiAkisPage() {
               </span>
             )}
             <TeknikPill teknikAdi={teknikAdi} />
-            {hedefRol && <HedefRolPill hedefRol={hedefRol} />}
+            {hedefRoller.length > 0 && <HedefRolPilleri hedefRoller={hedefRoller} />}
           </div>
           {isIU && (
             <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100">

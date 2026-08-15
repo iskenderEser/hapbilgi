@@ -14,6 +14,7 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import { pushYayinlaEczanemMusterilereArkada } from "@/lib/push/orkestrasyon";
+import { hedefRolleriOku } from "@/lib/utils/roller";
 
 // Ayar okunamazsa güvenli geri düşüş (davet.ts DAVET_GECERLILIK deseni).
 // Canlı seed değeri 10; bu sabit yalnız okuma hatasında devreye girer.
@@ -146,7 +147,7 @@ export async function uttEczanemVerisi(
     .from("v_yayin_detay")
     .select("yayin_id, urun_adi, teknik_adi, yayin_tarihi")
     .eq("durum", "yayinda")
-    .eq("hedef_rol", "eczanem")
+    .contains("hedef_roller", ["eczanem"])
     .order("yayin_tarihi", { ascending: false });
   if (takimId) yayinQuery = yayinQuery.eq("takim_id", takimId);
   const { data: yayinRaw } = await yayinQuery;
@@ -213,11 +214,11 @@ export async function eczaneyeGonder(
   // Yayın geçerli mi (Eczanem + yayında)
   const { data: yayin } = await adminSupabase
     .from("v_yayin_detay")
-    .select("yayin_id, durum, hedef_rol")
+    .select("yayin_id, durum, hedef_roller")
     .eq("yayin_id", yayinId)
     .maybeSingle();
   if (!yayin) return { ok: false, hata: "Yayın bulunamadı." };
-  if (yayin.hedef_rol !== "eczanem") return { ok: false, hata: "Bu yayın Eczanem kanalına ait değil." };
+  if (!hedefRolleriOku(yayin).includes("eczanem")) return { ok: false, hata: "Bu yayın Eczanem kanalına ait değil." };
   if (yayin.durum !== "yayinda") return { ok: false, hata: "Bu yayın şu an yayında değil." };
 
   // Eczane bu UTT'ye ait mi (aktif sahiplik)

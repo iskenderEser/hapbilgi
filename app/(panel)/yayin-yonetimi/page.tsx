@@ -77,8 +77,8 @@ export default function YayinYonetimiPage() {
     await yy.handleYayinla(b);
   };
 
-  // Yayınları hedef_rol'e göre filtrele (client-side)
-  const yayinlarFiltreli = yy.yayinlar.filter(y => y.hedef_rol === aktifAnaSekme);
+  // İki E-Club hedefli tek yayın, iki ilgili sekmede aynı yayin_id ile görünür.
+  const yayinlarFiltreli = yy.yayinlar.filter(y => y.hedef_roller.includes(aktifAnaSekme));
   // Planlanmış yayınlar "Yayında" sekmesinde listelenir (Planlandı rozetiyle);
   // tarihi gelince cron aktive eder, rozet kendiliğinden "Yayında"ya döner.
   const yayindakiler = yayinlarFiltreli.filter(y => y.durum === "yayinda" || y.durum === "planlandi");

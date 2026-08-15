@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import TalepSahibiKarti from "@/components/TalepSahibiKarti";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
-import { HedefRolPill } from "@/components/HedefRolBant";
+import { HedefRolPilleri } from "@/components/HedefRolBant";
 import { TeknikPill } from "@/components/TeknikPill";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { IU_ROLU, URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
@@ -330,7 +330,7 @@ export default function SenaryolarPage() {
               <span className="text-base font-semibold text-gray-900">{talep.urun_adi}</span>
               <div className="flex items-center gap-2 flex-wrap">
                 <TeknikPill teknikAdi={talep.teknik_adi} />
-                <HedefRolPill hedefRol={talep.hedef_rol} />
+                <HedefRolPilleri hedefRoller={talep.hedef_roller} />
               </div>
               {talep.aciklama && <p className="text-sm text-gray-700 mt-2 leading-relaxed">{talep.aciklama}</p>}
               {(talep.dosya_urls?.length ?? 0) > 0 && (

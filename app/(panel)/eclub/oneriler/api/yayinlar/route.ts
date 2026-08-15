@@ -21,7 +21,7 @@ export async function GET() {
     // E-Club yalnız dış müşteri hedefli yayınları gösterir.
     const yayinlar = await getYayindakiVideolar(user.id, rol, adminSupabase);
     const eclubYayinlari = yayinlar.filter((yayin) =>
-      (ECLUB_HEDEF_ROLLER as readonly string[]).includes(yayin.hedef_rol)
+      yayin.hedef_roller.some((hedefRol) => ECLUB_HEDEF_ROLLER.includes(hedefRol))
     );
 
     return NextResponse.json({ videolar: eclubYayinlari }, { status: 200 });

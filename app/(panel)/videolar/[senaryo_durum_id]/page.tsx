@@ -9,7 +9,7 @@ import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { IU_ROLU, URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 import VideoOnizleme from "@/components/video/VideoOnizleme";
-import { HedefRolPill } from "@/components/HedefRolBant";
+import { HedefRolPilleri } from "@/components/HedefRolBant";
 import { TeknikPill } from "@/components/TeknikPill";
 import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -277,7 +277,7 @@ export default function VideoAkisPage() {
               <span className="text-base font-semibold text-gray-900">{talep?.urun_adi ?? "-"}</span>
               <div className="flex items-center gap-2 flex-wrap">
                 <TeknikPill teknikAdi={talep?.teknik_adi} />
-                {talep?.hedef_rol && <HedefRolPill hedefRol={talep.hedef_rol} />}
+                {talep?.hedef_roller && <HedefRolPilleri hedefRoller={talep.hedef_roller} />}
               </div>
             </div>
             <p className="text-sm text-gray-700 leading-relaxed m-0 whitespace-pre-wrap">{senaryo.senaryo_metni}</p>

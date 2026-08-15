@@ -10,7 +10,7 @@ import { turKaydiAc } from "@/lib/tur/kayit";
 import { tarifeVeBarkodYaz } from "@/lib/eczanem/tarife";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
-const YAYIN_LISTE_ALANLARI = "yayin_id, soru_seti_durum_id, durum, yayin_tarihi, durdurma_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, sorular, hedef_rol, talep_no, firma_adi, egitim_turu";
+const YAYIN_LISTE_ALANLARI = "yayin_id, soru_seti_durum_id, durum, yayin_tarihi, durdurma_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, sorular, hedef_roller, talep_no, firma_adi, egitim_turu";
 
 export async function GET() {
   try {
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const { soru_seti_durum_id, ileri_sarma_acik, extra_puan, tekrar_periyot_gun, barkod, karsilik_puan, karsilik_tl } = body;
 
     if (!soru_seti_durum_id) return validasyonHatasi("soru_seti_durum_id zorunludur.", ["soru_seti_durum_id"]);
-    // Extra puan / tekrar periyodu doğrulaması hedef_rol türetildikten SONRA yapılır:
+    // Extra puan / tekrar periyodu doğrulaması hedef kitleler türetildikten SONRA yapılır:
     // eczanem yayınında bu alanlar yoktur, barkod + Karşılık zorunludur (aşağıda).
 
     const { data: soruSetiDurum, error: ssError } = await adminSupabase
@@ -79,10 +79,10 @@ export async function POST(request: NextRequest) {
     const talepBilgisi = await talepBilgisiSoruSeti(adminSupabase, soruSeti.soru_seti_id);
     if (!talepBilgisi) return hataYaniti("Talep bilgisi bulunamadı, hedef rol türetilemedi.", "talepBilgisiSoruSeti", null);
     if (talepBilgisi.uretici_id !== user.id) return rolHatasi("Yalnız kendi içeriğinizi yayına alabilirsiniz.");
-    const hedefRoller: string[] = [talepBilgisi.hedef_rol];
+    const hedefRoller = talepBilgisi.hedef_roller;
 
     // Eczanem yayını mı? Hedef rol talepten türer — forma güvenmez (sunucu tarafı).
-    const eczanemHedefi = talepBilgisi.hedef_rol === "eczanem";
+    const eczanemHedefi = hedefRoller.includes("eczanem");
 
     let eczanemUrunId: string | null = null;
     if (eczanemHedefi) {

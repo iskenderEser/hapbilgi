@@ -11,7 +11,7 @@
 import { useState } from "react";
 import type { Yayin } from "../_types";
 import type { HesaplananTur } from "@/lib/tur/kayit";
-import { HedefRolPill } from "@/components/HedefRolBant";
+import { HedefRolPilleri } from "@/components/HedefRolBant";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import { ureticiDurumMesaji, yayinDurumKodu } from "@/lib/utils/durum/mesaj";
 import { VideoThumb } from "./Yardimcilar";
@@ -62,7 +62,7 @@ export function YayinSatir({
         <div className="order-1 min-w-0 sm:order-2">
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="truncate text-base font-extrabold text-[#213754]">{y.urun_adi}</span>
-            <HedefRolPill hedefRol={y.hedef_rol} />
+            <HedefRolPilleri hedefRoller={y.hedef_roller} />
             {/* Metin ve renk tek sözlükten (25.07) — yayın durumu ana sayfada ne
                 yazıyorsa burada da aynısını yazar. Yalnız üretici görür. */}
             <span className="rounded-full px-2 py-0.5 text-[10px] font-bold leading-tight"

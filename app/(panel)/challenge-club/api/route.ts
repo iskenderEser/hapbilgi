@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
           .from("v_yayin_detay")
           .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi")
           .eq("durum", "yayinda")
-          .eq("hedef_rol", "bm")
+          .contains("hedef_roller", ["bm"])
           .order("yayin_tarihi", { ascending: false }),
         adminSupabase
           .from("cc_izleme_kayitlari")
@@ -265,13 +265,13 @@ export async function POST(request: NextRequest) {
     // Yayın kontrolü
     const { data: yayin, error: yError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, urun_adi, teknik_adi, durum, hedef_rol")
+      .select("yayin_id, urun_adi, teknik_adi, durum, hedef_roller")
       .eq("yayin_id", yayin_id)
       .single();
 
     if (yError || !yayin) return isKuraluHatasi("Yayın bulunamadı.");
     if (yayin.durum !== "yayinda") return isKuraluHatasi("Yayın aktif değil.");
-    if (yayin.hedef_rol !== "bm") return isKuraluHatasi("Sadece CC yayınları challenge'a alınabilir.");
+    if (!(yayin.hedef_roller ?? []).includes("bm")) return isKuraluHatasi("Sadece CC yayınları challenge'a alınabilir.");
 
     // İş kuralı 1: Aylık kota kontrolü
     const aylikKota = await aylikKotaKontrol(adminSupabase, kullanici.kullanici_id);

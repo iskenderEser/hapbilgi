@@ -1,6 +1,6 @@
 // app/challenge-club/izle/api/baslat/route.ts
 // CC izleme oturumu başlatır. Sadece BM rolü için.
-// Kanal ayrımı: yalnızca CC yayınlarını (hedef_rol='bm') işler.
+// Kanal ayrımı: yalnızca hedef_roller içinde 'bm' bulunan CC yayınlarını işler.
 //
 // İzleme türü mantığı:
 //   - challenge_id geldiyse → 'challenge' türü, challenge doğrulanır
@@ -48,10 +48,10 @@ export async function POST(request: NextRequest) {
       return validasyonHatasi("yayin_id zorunludur.", ["yayin_id"]);
     }
 
-    // 4. Yayın çekme + hedef_rol='bm' kanal kontrolü
+    // 4. Yayın çekme + hedef_roller içinde 'bm' kanal kontrolü
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, durum, hedef_rol")
+      .select("yayin_id, durum, hedef_roller")
       .eq("yayin_id", yayin_id)
       .single();
 
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (yayin.hedef_rol !== "bm") {
+    if (!(yayin.hedef_roller ?? []).includes("bm")) {
       return isKuraluHatasi(
         "Bu yayın Challenge Club kanalı için değil. UTT yayınları kendi izleme kanalından açılmalıdır."
       );

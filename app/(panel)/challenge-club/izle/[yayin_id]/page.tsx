@@ -63,7 +63,7 @@ export default function CcIzlemePage() {
       const { data, error } = await supabase
         .from("v_yayin_detay")
         .select(
-          "yayin_id, urun_adi, teknik_adi, video_url, hedef_rol, durum"
+          "yayin_id, urun_adi, teknik_adi, video_url, hedef_roller, durum"
         )
         .eq("yayin_id", yayin_id)
         .single();
@@ -75,7 +75,7 @@ export default function CcIzlemePage() {
       }
 
       // Kanal kontrolü — sadece CC yayını
-      if (data.hedef_rol !== "bm") {
+      if (!(data.hedef_roller ?? []).includes("bm")) {
         hata(
           "Bu yayın Challenge Club kanalı için değil.",
           "kanal kontrolü"

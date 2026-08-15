@@ -60,7 +60,7 @@ export default function YayindakiVideolarPage() {
   const [secilenYayinlar, setSecilenYayinlar] = useState<YayindakiVideo[]>([]);
   const rolKucu = (kullanici?.rol ?? "").trim().toLowerCase();
   const bmMi = rolKucu === "bm";
-  const katalogVideolari = oneriModu ? videolar.filter((video) => video.hedef_rol === "utt") : videolar;
+  const katalogVideolari = oneriModu ? videolar.filter((video) => video.hedef_roller.includes("utt")) : videolar;
 
   // Yalnız ARAMA (İskender kararı 27.07): ekran klasör + kart ızgarası, satır
   // listesi değil; kademeli açma ızgarada ayrı bir iş. adim: Infinity → dilimleme yok.

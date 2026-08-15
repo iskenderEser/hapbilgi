@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
+import { ECLUB_TUKETICI_ROLLERI, hedefRolleriOku } from "@/lib/utils/roller";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { eclubIzlemeHaklari } from "@/lib/eclub/izlemeKurali";
 import { olayIdGecerliMi } from "@/lib/izleme/baslat";
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     // Yayın hâlâ yayında ve kişinin rolüne mi açık?
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, durum, hedef_rol")
+      .select("yayin_id, durum, hedef_roller")
       .eq("yayin_id", oneri.yayin_id)
       .single();
 
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     const yayinKontrol = veriKontrol(yayin, "v_yayin_detay SELECT — yayin_id", "Yayın bulunamadı.");
     if (!yayinKontrol.gecerli) return yayinKontrol.yanit;
     if (yayin.durum !== "yayinda") return isKuraluHatasi(`Video şu an yayında değil. Mevcut durum: ${yayin.durum}`);
-    if (yayin.hedef_rol !== kisi.rol) return rolHatasi("Bu yayın kişi rolünüze açık değil.");
+    if (!hedefRolleriOku(yayin).includes(kisi.rol)) return rolHatasi("Bu yayın kişi rolünüze açık değil.");
 
     // Bir öneri tek öğrenme olayıdır. Tamamlanmış kayıt da yeniden kullanılır;
     // böylece tekrar oynatma ikinci puan veya ikinci soru hakkı doğurmaz.

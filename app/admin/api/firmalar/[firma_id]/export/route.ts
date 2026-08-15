@@ -121,7 +121,7 @@ export async function GET(
     // --- Talepler (firma) --------------------------------------------------
     const { data: talepler, error: taleplerHata } = await adminSupabase
       .from("talepler")
-      .select("talep_id, urun_adi, urun_id, teknik_adi, teknik_id, egitim_turu, icerik_turu, hedef_rol, takim_id, created_at")
+      .select("talep_id, urun_adi, urun_id, teknik_adi, teknik_id, egitim_turu, icerik_turu, hedef_roller, takim_id, created_at")
       .eq("firma_id", firma_id);
     if (taleplerHata) return sorguHatasi("talepler", taleplerHata);
     const talepListesi = talepler ?? [];
@@ -354,7 +354,7 @@ export async function GET(
       ["Ürün", "Teknik", "Eğitim Türü", "İçerik Türü", "Hedef Rol", "Takım", "Tarih"],
       ...talepListesi.map(t => [
         t.urun_adi ?? "", t.teknik_adi ?? "", t.egitim_turu ?? "",
-        t.icerik_turu ?? "", t.hedef_rol ?? "",
+        t.icerik_turu ?? "", (t.hedef_roller ?? []).join(", "),
         t.takim_id ? (takimAdMap.get(t.takim_id) ?? "") : "",
         t.created_at ? new Date(t.created_at).toLocaleDateString("tr-TR") : "",
       ]),

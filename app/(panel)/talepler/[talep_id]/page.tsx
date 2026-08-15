@@ -7,7 +7,7 @@ import { useRouter, useParams } from "next/navigation";
 import TalepSahibiKarti from "@/components/TalepSahibiKarti";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
-import { HedefRolPill } from "@/components/HedefRolBant";
+import { HedefRolPilleri } from "@/components/HedefRolBant";
 import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
 import { TeknikPill } from "@/components/TeknikPill";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -233,7 +233,7 @@ export default function TalepDetayPage() {
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <TeknikPill teknikAdi={talep.teknik_adi} />
-                <HedefRolPill hedefRol={talep.hedef_rol} />
+                <HedefRolPilleri hedefRoller={talep.hedef_roller} />
               </div>
             </div>
             <span className="text-xs text-gray-400 whitespace-nowrap">{talep.created_at ? formatTarih(talep.created_at) : "-"}</span>
