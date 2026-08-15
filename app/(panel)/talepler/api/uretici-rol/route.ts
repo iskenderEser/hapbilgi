@@ -21,6 +21,7 @@ import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
 import { zincirHaritasi, asamaCoz, uretimBittiMi, iptalEdildiMi } from "@/lib/utils/uretimZinciri";
+import { gorevDurumKodu } from "@/lib/utils/durum/mesaj";
 
 export async function GET() {
   try {
@@ -60,10 +61,24 @@ export async function GET() {
       if (z) durumlar.set(t.talep_id, asamaCoz(t, z));
     }
 
+    const talepIdler = kunyeler.map((t) => t.talep_id);
+    const { data: aktifGorevler, error: gorevError } = talepIdler.length > 0
+      ? await adminSupabase
+          .from("uretim_gorevleri")
+          .select("gorev_id, talep_id, asama, atanan_iu_id, durum")
+          .in("talep_id", talepIdler)
+          .in("durum", ["atama_bekliyor", "hazirlaniyor", "inceleme_bekliyor", "revizyon_bekliyor"])
+      : { data: [], error: null };
+    if (gorevError) return hataYaniti("Üretim görevleri çekilemedi.", "uretim_gorevleri SELECT — üretici listesi", gorevError);
+    const gorevMap = new Map((aktifGorevler ?? []).map((g) => [g.talep_id, g]));
+
     // İçerik üreticisi adı — iptal tablosunda "iş kimdeydi" görünsün diye. Tek
     // toplu sorgu; talep başına ad çözmek N+1 olurdu.
     const iuIdler = [...new Set(
-      [...durumlar.values()].map((d) => d.iu_id).filter((id): id is string => !!id),
+      [
+        ...[...durumlar.values()].map((d) => d.iu_id),
+        ...(aktifGorevler ?? []).map((g) => g.atanan_iu_id),
+      ].filter((id): id is string => !!id),
     )];
     const iuAdlari = new Map<string, string>();
     if (iuIdler.length > 0) {
@@ -78,13 +93,17 @@ export async function GET() {
       // Zincir satırı yoksa talep henüz hiçbir aşamaya girmemiş sayılır; sessizce
       // düşürmek yerine "devam eden" kabul edilir — liste kayıt kaybetmemeli.
       const durum = durumlar.get(t.talep_id);
+      const gorev = gorevMap.get(t.talep_id);
+      const gorevAsamasi = gorev?.asama === "soru_seti" ? "Soru Seti" : gorev?.asama === "video" ? "Video" : gorev?.asama === "senaryo" ? "Senaryo" : null;
+      const iuId = gorev?.atanan_iu_id ?? durum?.iu_id ?? null;
       return {
         ...t,
-        asama: durum?.asama ?? "Senaryo",
-        durum_kodu: durum?.durum_kodu ?? "iu_iletildi",
+        asama: gorevAsamasi ?? durum?.asama ?? "Senaryo",
+        durum_kodu: gorev ? gorevDurumKodu(gorev.durum) : (durum?.durum_kodu ?? "iu_iletildi"),
         uretim_bitti: durum ? uretimBittiMi(durum) : false,
         iptal_edildi: durum ? iptalEdildiMi(durum) : false,
-        iu_ad_soyad: durum?.iu_id ? (iuAdlari.get(durum.iu_id) ?? null) : null,
+        iu_ad_soyad: iuId ? (iuAdlari.get(iuId) ?? null) : null,
+        aktif_gorev_id: gorev?.gorev_id ?? null,
         // Şeridin girdisi: beş adımın halini bu satırdan türetiriz (A-3).
         zincir: zincirler.get(t.talep_id) ?? null,
       };

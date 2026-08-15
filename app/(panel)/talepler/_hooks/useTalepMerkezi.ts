@@ -16,14 +16,8 @@ import { useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { uretimToast, toastVaryant, type ToastAsama, type ToastOlay } from "@/lib/uretim/toastMesaj";
 import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
+import { bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
 import type { TalepDetay, TalepSatiri } from "../_ureticiRolTypes";
-
-/** Aktif adım → hangi ucun hangi kimlikle çağrılacağı. Üç uç da mevcut, değiştirilmiyor. */
-const KARAR_UCU: Record<ToastAsama, { yol: string; anahtar: string }> = {
-  senaryo: { yol: "/senaryolar/api/durum", anahtar: "senaryo_id" },
-  video: { yol: "/videolar/api/durum", anahtar: "video_id" },
-  soru_seti: { yol: "/soru-setleri/api/durum", anahtar: "soru_seti_id" },
-};
 
 export type KararDurumu = "onaylandi" | "revizyon bekleniyor" | "Iptal Edildi";
 
@@ -117,6 +111,11 @@ export function useTalepMerkezi() {
         setDetay(null);
       } else {
         setDetay(data);
+          void fetch("/bildirimler/api", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ talep_id: seciliTalepId }),
+          }).then((yanit) => { if (yanit.ok) bildirimRozetleriniYenile(); });
       }
       setDetayYukleniyor(false);
     })();
@@ -140,11 +139,10 @@ export function useTalepMerkezi() {
 
       setKararYukleniyor(true);
       try {
-        const uc = KARAR_UCU[hedef.asama];
-        const res = await fetch(uc.yol, {
+        const res = await fetch("/uretim/api/karar", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ [uc.anahtar]: hedef.id, durum, notlar }),
+          body: JSON.stringify({ gorev_id: hedef.id, karar: durum, notlar, islem_anahtari: crypto.randomUUID() }),
         });
         const d = await res.json();
         if (!res.ok) {
@@ -165,6 +163,10 @@ export function useTalepMerkezi() {
           varyant: toastVaryant(talep.hazir_video, talep.hazir_soru_seti),
           rolAdi: talep.uretici_rol_adi,
         }));
+
+        if (durum === "onaylandi" && hedef.asama === "soru_seti") {
+          bildirimRozetleriniYenile();
+        }
 
         setDetayTetik((x) => x + 1);
         await veriCek();
@@ -203,8 +205,8 @@ export function useTalepMerkezi() {
 
         try {
           await bunnyTusYukle(dosya, izin, setVideoYuzdesi);
-        } catch (err: any) {
-          hata("Video Bunny'ye yüklenemedi.", "TUS yükleme", err?.message);
+        } catch (err: unknown) {
+          hata("Video Bunny'ye yüklenemedi.", "TUS yükleme", err instanceof Error ? err.message : undefined);
           fetch("/videolar/api/bunny-yukleme-iptal", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -213,14 +215,19 @@ export function useTalepMerkezi() {
           return;
         }
 
-        const res2 = await fetch("/talepler/api/hazir-video", {
+        const res2 = await fetch("/uretim/api/hazir-video", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ talep_id: talep.talep_id, hazir_video_url: izin.embed_url }),
+          body: JSON.stringify({ talep_id: talep.talep_id, video_url: izin.embed_url, islem_anahtari: crypto.randomUUID() }),
         });
         const d2 = await res2.json();
         if (!res2.ok) {
           hata(d2.hata ?? "Video adresi kaydedilemedi.", d2.adim, d2.detay);
+          await fetch("/videolar/api/bunny-yukleme-iptal", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ video_guid: izin.video_guid }),
+          }).catch(() => undefined);
           return;
         }
 

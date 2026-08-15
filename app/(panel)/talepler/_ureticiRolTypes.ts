@@ -19,6 +19,8 @@ export interface TalepSatiri extends TalepBilgisi {
   iptal_edildi: boolean;
   /** İşi o an üstlenen içerik üreticisinin adı — iptal tablosunda gösterilir. */
   iu_ad_soyad: string | null;
+  /** Karar ve bildirimlerin kanonik görev kimliği. */
+  aktif_gorev_id: string | null;
   /** Şeridin girdisi (A-3'teki adimlariCoz). View satırı yoksa null. */
   zincir: ZincirSatiri | null;
 }

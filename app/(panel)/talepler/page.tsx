@@ -1,20 +1,25 @@
 // app/talepler/page.tsx
 //
-// Talepler route'unun tek girişi — role göre iki deneyime dallanır (03.08 birleşme):
-//   üretici rolleri → UreticiRolGorunum   (talep-merkezli tek sayfa üretim, eski v2)
-//   İÜ + diğerleri  → IcerikUreticiGorunum (klasik geniş sayfa, eski v1)
-// Eski paralel /talepler-v2 rotası kaldırıldı; v2 davranışı aynen bu route altında yaşar.
-// Auth guard layout'ta; burada yalnız kullanıcı yüklenene kadar spinner.
+// Talep Merkezi yalnız talebi açan üretici rollere aittir. İçerik üreticisi
+// kendisine atanmış işi aşama sayfalarından yürütür; talep listesine düşmez.
 
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
-import { IcerikUreticiGorunum } from "./_components/IcerikUreticiGorunum";
 import { UreticiRolGorunum } from "./_components/UreticiRolGorunum";
 
 export default function TaleplerPage() {
+  const router = useRouter();
   const { kullanici, yukleniyor } = useAuth();
+
+  useEffect(() => {
+    if (!yukleniyor && kullanici && !URETICI_ROLLER.includes((kullanici.rol ?? "").toLowerCase())) {
+      router.replace("/ana-sayfa");
+    }
+  }, [kullanici, router, yukleniyor]);
 
   if (yukleniyor || !kullanici) {
     return (
@@ -27,7 +32,6 @@ export default function TaleplerPage() {
     );
   }
 
-  return URETICI_ROLLER.includes((kullanici.rol ?? "").toLowerCase())
-    ? <UreticiRolGorunum />
-    : <IcerikUreticiGorunum />;
+  if (!URETICI_ROLLER.includes((kullanici.rol ?? "").toLowerCase())) return null;
+  return <UreticiRolGorunum />;
 }

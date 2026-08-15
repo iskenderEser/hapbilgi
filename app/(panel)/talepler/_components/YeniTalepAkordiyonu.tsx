@@ -6,8 +6,7 @@
 // KURALLAR KOPYALANMAZ: useTalepFormu aynen kullanılır — hedef rol kapısı,
 // tür-ürün-teknik zorunlulukları, Eczanem dörtlü kilidi, hazır set parametre
 // kilidi ve dört varyantlı onay modalı o hook'ta yaşar, dokunulmadı.
-// YERLEŞİM ise v2'ye özeldir (YeniTalepFormV2, dört sütun — İskender kararı
-// 28.07): ortak YeniTalepForm değiştirilseydi /talepler sayfası da değişirdi.
+// Yerleşim YeniTalepFormV2 içinde, kurallar ise useTalepFormu'nda tek kaynaktır.
 //
 // TALEP OLUŞTUĞUNU NASIL ANLIYORUZ: paylaşılan hook'ta "talep oluşturuldu"
 // bildirimi yok ve o dosyaya dokunulmuyor. Form kendi listesini tazelediği için
@@ -16,7 +15,7 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { useTalepFormu } from "@/app/(panel)/talepler/_hooks/useTalepFormu";
 import { HataMesajiContainer } from "@/components/HataMesaji";
 import { YeniTalepFormV2 } from "./YeniTalepFormV2";
@@ -27,24 +26,12 @@ interface Props {
 }
 
 export function YeniTalepAkordiyonu({ onTalepOlusturuldu }: Props) {
-  const formu = useTalepFormu();
   const [acik, setAcik] = useState(false);
-  const oncekiSayi = useRef<number | null>(null);
-
-  useEffect(() => {
-    // İlk yükleme bitmeden sayım anlamlı değil (0 → N sıçraması yeni talep değildir).
-    if (formu.loading) return;
-    const sayi = formu.talepler.length;
-    if (oncekiSayi.current === null) {
-      oncekiSayi.current = sayi;
-      return;
-    }
-    if (sayi > oncekiSayi.current) {
-      setAcik(false);
-      onTalepOlusturuldu();
-    }
-    oncekiSayi.current = sayi;
-  }, [formu.loading, formu.talepler, onTalepOlusturuldu]);
+  const talepOlustu = useCallback(async () => {
+    setAcik(false);
+    await onTalepOlusturuldu();
+  }, [onTalepOlusturuldu]);
+  const formu = useTalepFormu(talepOlustu);
 
   if (!formu.isUretici) return null;
 

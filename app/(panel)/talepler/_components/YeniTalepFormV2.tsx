@@ -7,9 +7,8 @@
 //
 // KURAL KOPYALANMIYOR: bu dosya yalnız YERLEŞİMDİR. Hedef rol kapısı, tür-ürün-
 // teknik zorunlulukları, Eczanem dörtlü kilidi, hazır set parametre kilidi,
-// doğrulama sırası ve onay modalının dört varyantı useTalepFormu'da kalır —
-// oraya dokunulmadı. Ortak YeniTalepForm da olduğu gibi duruyor; /talepler
-// sayfası onu kullanmaya devam ediyor (S-5'ten sapma, İskender onayı 28.07: "b").
+// doğrulama sırası ve onay modalının dört varyantı useTalepFormu'da kalır;
+// bu bileşen yalnız Talep Merkezi'nin form yerleşimini taşır.
 
 "use client";
 
@@ -39,6 +38,12 @@ export function YeniTalepFormV2({ formu }: Props) {
   if (!formu.isUretici || !formu.yetenek) return null;
 
   const formAktif = formu.hedefRoller.length > 0;
+  const ucuncuAdimAktif = formAktif && formu.egitimTuruSecildiMi;
+  const eclubHedef = formu.hedefRoller.some((hedef) => ECLUB_HEDEF_ROLLER.includes(hedef));
+  const urunAdimiTamam = (formu.turKurali.urun !== "zorunlu" && !formu.eczanemHedef) || !!formu.seciliUrunId;
+  const teknikAdimiTamam = eclubHedef || formu.eczanemHedef || formu.turKurali.teknik !== "zorunlu" || !!formu.seciliTeknikId;
+  const serbestAdTamam = !formu.serbestAdGoster || !!formu.serbestAd.trim();
+  const dorduncuAdimAktif = ucuncuAdimAktif && urunAdimiTamam && teknikAdimiTamam && serbestAdTamam;
   const ikiliHazir = formu.hazirVideo && formu.hazirSoruSeti;
 
   // Eczanem hedefi yalnız ürün müdürü ailesine sunulur (İP-§4.1).
@@ -98,15 +103,6 @@ export function YeniTalepFormV2({ formu }: Props) {
               "Videonuzu yükledikten sonra hazır soru setinizle devam edebilir ya da içerik üreticisinden talep edebilirsiniz."}
             {!formu.hazirVideo && formu.hazirSoruSeti &&
               "Hazır soru seti ile talep oluşturuyorsunuz. Video için senaryo yazılmasını ve videonun oluşturulmasını içerik üreticiniz yapacaktır."}
-          </div>
-        )}
-
-        {!formAktif && (
-          <div className="flex items-center gap-2 rounded-xl border border-[#cfe3fb] bg-[#eef7ff] px-3.5 py-2.5 text-xs font-bold text-[#397bbd]">
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 shrink-0">
-              <path d="M12 8v4m0 4h.01M10.3 3.6 2.4 17.3A2 2 0 0 0 4.1 20h15.8a2 2 0 0 0 1.7-2.7L13.7 3.6a2 2 0 0 0-3.4 0Z" />
-            </svg>
-            Önce hedef kitleyi seçin. Diğer talep ayarları seçiminizden sonra etkinleşecektir.
           </div>
         )}
 
@@ -175,20 +171,17 @@ export function YeniTalepFormV2({ formu }: Props) {
               </div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {TUM_TURLER.map((tur: TalepTuru) => {
-                  const acabilir = formu.yetenek!.acabilecegiTalepTurleri.includes(tur);
-                  const secili = formu.egitimTuru === tur;
+                  const secili = formu.egitimTuruSecildiMi && formu.egitimTuru === tur;
                   return (
                     <button
                       type="button"
                       key={tur}
-                      onClick={() => acabilir && formu.handleEgitimTuruDegis(tur)}
-                      disabled={!acabilir}
+                      onClick={() => formu.handleEgitimTuruDegis(tur)}
                       aria-pressed={secili}
                       className="min-h-[58px] rounded-xl border px-3 py-2 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff] focus-visible:ring-offset-1"
                       style={{
                         ...secimKutusu(secili),
-                        cursor: acabilir ? "pointer" : "not-allowed",
-                        opacity: acabilir ? 1 : 0.45,
+                        cursor: "pointer",
                       }}
                       title={TALEP_TURU_ALT_ACIKLAMA[tur]}
                     >
@@ -204,10 +197,10 @@ export function YeniTalepFormV2({ formu }: Props) {
 
             {/* 3 — Ürün + teknik. Ürünsüz+tekniksiz türlerde yeri serbest ada geçer. */}
             <fieldset
-              disabled={!formAktif}
-              aria-disabled={!formAktif}
+              disabled={!ucuncuAdimAktif}
+              aria-disabled={!ucuncuAdimAktif}
               className="rounded-2xl border border-[#dfe8f3] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)] transition-opacity"
-              style={{ opacity: formAktif ? 1 : 0.58, pointerEvents: formAktif ? "auto" : "none" }}
+              style={{ opacity: ucuncuAdimAktif ? 1 : 0.58, pointerEvents: ucuncuAdimAktif ? "auto" : "none" }}
             >
               <legend className="sr-only">Ürün ve Teknik</legend>
               <div className="mb-3 flex items-start gap-3">
@@ -261,16 +254,16 @@ export function YeniTalepFormV2({ formu }: Props) {
                 dar olduğu için yön sarmalayıcıda `!flex-col` ile zorlanır —
                 UrunTeknikSecici'de olduğu gibi, ortak bileşene dokunulmaz. */}
             <fieldset
-              disabled={!formAktif}
-              aria-disabled={!formAktif}
+              disabled={!dorduncuAdimAktif}
+              aria-disabled={!dorduncuAdimAktif}
               className="rounded-2xl border border-[#dfe8f3] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)] transition-opacity [&>div:last-child]:!flex-col"
-              style={{ opacity: formAktif ? 1 : 0.58, pointerEvents: formAktif ? "auto" : "none" }}
+              style={{ opacity: dorduncuAdimAktif ? 1 : 0.58, pointerEvents: dorduncuAdimAktif ? "auto" : "none" }}
             >
-              <legend className="sr-only">Ölçme Ayarları</legend>
+              <legend className="sr-only">Sorular ve Seçenekler</legend>
               <div className="mb-3 flex items-start gap-3">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#fff3e8] text-xs font-extrabold text-[#d66b16]">4</span>
                 <div>
-                  <h3 className="text-sm font-extrabold text-[#263b58]">Ölçme Ayarları</h3>
+                  <h3 className="text-sm font-extrabold text-[#263b58]">Sorular ve Seçenekler</h3>
                   <p className="mt-0.5 text-xs text-[#7a8ca5]">Soru setinin kapsamını ve yoğunluğunu belirleyin.</p>
                 </div>
               </div>
@@ -363,8 +356,9 @@ export function YeniTalepFormV2({ formu }: Props) {
       {/* Gönderim ancak modaldaki Evet ile başlar (F-01/4) — modal ortak. */}
       <TalepOnayModal
         acik={formu.onayModalAcik}
-        iuSoruSeti={formu.hazirVideo && !formu.hazirSoruSeti}
         ozet={{
+          hedefKitle: formu.hedefRoller.map((rol) => HEDEF_ROL_TASARIM[rol].tamEtiket).join(", "),
+          icerikTuru: TALEP_TURU_KURALLARI[formu.egitimTuru].ad,
           urunAdi: formu.serbestAdGoster
             ? (formu.serbestAd.trim() || null)
             : formu.urunler.find((u) => u.urun_id === formu.seciliUrunId)?.urun_adi ?? null,
@@ -372,10 +366,8 @@ export function YeniTalepFormV2({ formu }: Props) {
             ? formu.teknikler.find((t) => t.teknik_id === formu.seciliTeknikId)?.teknik_adi ?? null
             : null,
           soruAdedi: formu.soruSetiBuyuklugu,
+          secenekSayisi: formu.secenekSayisi,
           videoBasiSoru: formu.videoBasiSoruSayisi,
-          aciklama: formu.aciklama,
-          dosyaAdlari: formu.bekleyenDosyalar.map((d) => d.preview.dosya_adi),
-          videoAdi: formu.bekleyenVideo?.preview.dosya_adi ?? null,
         }}
         onEvet={formu.handleOnayEvet}
         onHayir={formu.handleOnayHayir}

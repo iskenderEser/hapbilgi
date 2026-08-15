@@ -42,6 +42,15 @@ export async function POST(request: NextRequest) {
     if (!videoKontrol.gecerli) return videoKontrol.yanit;
     if (videoError) return hataYaniti("Video sorgulanamadı.", "videolar tablosu SELECT", videoError, 404);
 
+    const { data: gorev, error: gorevError } = await adminSupabase
+      .from("uretim_gorevleri")
+      .select("gorev_id, atanan_iu_id, durum")
+      .eq("video_id", video_id)
+      .maybeSingle();
+    if (gorevError) return hataYaniti("Video görevi sorgulanamadı.", "uretim_gorevleri SELECT — video sahipliği", gorevError);
+    if (!gorev || gorev.atanan_iu_id !== user.id) return rolHatasi("Bu video görevi size atanmamış.");
+    if (!['hazirlaniyor', 'revizyon_bekliyor'].includes(gorev.durum)) return validasyonHatasi("Bu videonun yükleme sırası değil.", ["video_id"]);
+
     if (video.video_url) {
       const { data: sonDurum, error: durumError } = await adminSupabase
         .from("video_durumu")

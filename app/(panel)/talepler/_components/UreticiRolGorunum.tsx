@@ -6,8 +6,8 @@
 // çıkmadan tüm üretim sürecini yönetir; Senaryolar / Videolar / Soru Setleri
 // sayfalarına gitmez.
 //
-// /talepler route'u role göre bu görünümü veya IcerikUreticiGorunum'u render eder
-// (page.tsx). Rol ayrımı orada yapıldığı için burada yönlendirme guard'ı yok.
+// /talepler route'u yalnız üretici rollerde bu görünümü render eder. IU üretim
+// görevlerini Senaryolar / Videolar / Soru Setleri sayfalarında yürütür.
 
 "use client";
 

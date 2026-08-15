@@ -21,11 +21,9 @@ import {
   TALEP_TURU_KURALLARI,
   type TalepTuru,
 } from "@/lib/uretici/yetenekler";
-import { useOkunmamisIdler } from "@/hooks/useOkunmamisIdler";
 import { useHataMesaji } from "@/components/HataMesaji";
 import { uretimToast, toastVaryant } from "@/lib/uretim/toastMesaj";
 import type {
-  Talep,
   Urun,
   Teknik,
   Takim,
@@ -35,27 +33,25 @@ import type {
 } from "../_types";
 import { type SoruTaslagi, taslaklariBoyutla, taslaklariDogrula, taslaklardanSorular } from "@/lib/soru/taslak";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { URETIM_HATTI_GORENLER, ECZANEM_TALEP_ACAN_ROLLER, ECLUB_HEDEF_ROLLER } from "@/lib/utils/roller";
+import { URETICI_ROLLER, ECZANEM_TALEP_ACAN_ROLLER, ECLUB_HEDEF_ROLLER } from "@/lib/utils/roller";
 import { guvenliDosyaAdi } from "@/lib/utils/guvenliDosyaAdi";
 import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
 
-export function useTalepFormu() {
+export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
   const router = useRouter();
   const { mesajlar, hata, basari, uyari } = useHataMesaji();
-  const okunmamisIdler = useOkunmamisIdler("talep");
   // Y-2: hazır soru seti yapısal form kartlarıyla girilir (textarea/parse kapısı kalktı).
   const [soruTaslaklari, setSoruTaslaklari] = useState<SoruTaslagi[]>([]);
 
   // ============================================================================
   // Auth + kullanıcı
   // ============================================================================
-  const { kullanici, yukleniyor: authYukleniyor, cikisYap } = useAuth();
+  const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const [kullaniciBilgi, setKullaniciBilgi] = useState<KullaniciBilgi | null>(null);
 
   // ============================================================================
   // Liste + yükleme durumları
   // ============================================================================
-  const [talepler, setTalepler] = useState<Talep[]>([]);
   const [loading, setLoading] = useState(true);
   const [formLoading, setFormLoading] = useState(false);
   const [dosyaYukleniyor, setDosyaYukleniyor] = useState(false);
@@ -79,6 +75,7 @@ export function useTalepFormu() {
     });
   }, []);
   const [egitimTuru, setEgitimTuru] = useState<TalepTuru>("urun_egitimi");
+  const [egitimTuruSecildiMi, setEgitimTuruSecildiMi] = useState(false);
   const [urunler, setUrunler] = useState<Urun[]>([]);
   const [seciliUrunId, setSeciliUrunId] = useState("");
   const [teknikler, setTeknikler] = useState<Teknik[]>([]);
@@ -125,21 +122,11 @@ export function useTalepFormu() {
       router.push("/login");
       return;
     }
-    if (!URETIM_HATTI_GORENLER.includes(kullanici.rol)) {
+    if (!URETICI_ROLLER.includes(kullanici.rol)) {
       router.push("/ana-sayfa");
       return;
     }
   }, [kullanici, authYukleniyor, router]);
-
-  // yetenek yüklendiğinde egitimTuru'yu rolün ilk açabildiği türe ayarla.
-  // Dependency'e egitimTuru eklenmez — sonsuz döngü olur; sadece yetenek değişiminde tetiklenmeli.
-  useEffect(() => {
-    if (!yetenek) return;
-    if (!yetenek.acabilecegiTalepTurleri.includes(egitimTuru)) {
-      setEgitimTuru(yetenek.acabilecegiTalepTurleri[0]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [yetenek]);
 
   // videoBasiSoruSayisi clamp — büyüklük küçüldüğünde geçerli aralığa çek.
   useEffect(() => {
@@ -157,15 +144,6 @@ export function useTalepFormu() {
   // ============================================================================
   // Veri çekme
   // ============================================================================
-  const veriCek = useCallback(async () => {
-    setLoading(true);
-    const res = await fetch("/talepler/api");
-    const data = await res.json();
-    if (!res.ok) hata(data.hata ?? "Talepler yüklenemedi.", data.adim, data.detay);
-    else setTalepler(data.talepler ?? []);
-    setLoading(false);
-  }, [hata]);
-
   // kullaniciBilgi cache'lenir — bir kere fetch, sonra state'ten okunur.
   const fetchKullaniciBilgi = useCallback(async (): Promise<KullaniciBilgi | null> => {
     if (kullaniciBilgi) return kullaniciBilgi;
@@ -200,39 +178,20 @@ export function useTalepFormu() {
     []
   );
 
-  // Initial fetch — kullanici + isUretici hazır olduğunda.
+  // Form sözlükleri kullanıcı ve rol hazır olduğunda bir kez yüklenir.
   useEffect(() => {
     if (!kullanici) return;
-    veriCek();
-    if (isUretici) {
-      fetchKullaniciBilgi().then((data) => {
-        if (data?.firma_id) fetchUreticiVerileri(data.firma_id, data.takim_id ?? null);
-      });
-    }
-  }, [kullanici, isUretici, veriCek, fetchKullaniciBilgi, fetchUreticiVerileri]);
-
-  // ============================================================================
-  // Yardımcılar
-  // ============================================================================
-  const formatTarih = useCallback((tarih: string) => {
-    return new Date(tarih).toLocaleDateString("tr-TR", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }, []);
-
-  const handleTalepClick = useCallback(
-    (talep_id: string) => router.push(`/talepler/${talep_id}`),
-    [router]
-  );
-
-  const handleCikis = useCallback(async () => {
-    await cikisYap();
-    router.push("/login");
-  }, [cikisYap, router]);
+    let aktif = true;
+    (async () => {
+      setLoading(true);
+      if (isUretici) {
+        const data = await fetchKullaniciBilgi();
+        if (data?.firma_id) await fetchUreticiVerileri(data.firma_id, data.takim_id ?? null);
+      }
+      if (aktif) setLoading(false);
+    })();
+    return () => { aktif = false; };
+  }, [kullanici, isUretici, fetchKullaniciBilgi, fetchUreticiVerileri]);
 
   // ============================================================================
   // Form handler'ları
@@ -240,6 +199,7 @@ export function useTalepFormu() {
   const handleEgitimTuruDegis = useCallback((tur: TalepTuru) => {
     const kural = TALEP_TURU_KURALLARI[tur];
     setEgitimTuru(tur);
+    setEgitimTuruSecildiMi(true);
     if (kural.urun === "yok") setSeciliUrunId("");
     if (kural.teknik === "yok") setSeciliTeknikId("");
     // Serbest ad yalnız ürün+teknik yoksa anlamlı; değilse temizle (submit'e sızmasın).
@@ -365,6 +325,10 @@ export function useTalepFormu() {
       hata("Hedef rol seçimi zorunludur.", "form kontrolü", undefined);
       return false;
     }
+    if (!egitimTuruSecildiMi) {
+      hata("İçerik türü seçimi zorunludur.", "form kontrolü", undefined);
+      return false;
+    }
     if (turKurali.urun === "zorunlu" && !seciliUrunId) {
       hata("Ürün seçimi zorunludur.", "form kontrolü", undefined);
       return false;
@@ -408,6 +372,7 @@ export function useTalepFormu() {
     return true;
   }, [
     hedefRol,
+    egitimTuruSecildiMi,
     eclubHedef,
     eczanemHedef,
     turKurali,
@@ -421,7 +386,6 @@ export function useTalepFormu() {
     soruTaslaklari,
     videoBasiSoruSayisi,
     soruSetiBuyuklugu,
-    secenekSayisi,
     hata,
   ]);
 
@@ -499,8 +463,8 @@ export function useTalepFormu() {
         // 2) Doğrudan Bunny'ye — dosya bizim sunucuya uğramaz
         try {
           await bunnyTusYukle(bekleyenVideo.dosya, d, setVideoYuklemeYuzdesi);
-        } catch (err: any) {
-          hata("Video Bunny'ye yüklenemedi.", "TUS yükleme", err?.message);
+        } catch (err: unknown) {
+          hata("Video Bunny'ye yüklenemedi.", "TUS yükleme", err instanceof Error ? err.message : undefined);
           // Telafi: vezneden açılan ama hiçbir kayda bağlanmayan Bunny kaydını temizle.
           fetch("/videolar/api/bunny-yukleme-iptal", {
             method: "POST",
@@ -511,14 +475,19 @@ export function useTalepFormu() {
         }
 
         // 3) Kanonik embed adresini sistem yazar (adres vezneden geldi, istemci URL kurmaz)
-        const res2 = await fetch("/talepler/api/hazir-video", {
+        const res2 = await fetch("/uretim/api/hazir-video", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ talep_id, hazir_video_url: d.embed_url }),
+          body: JSON.stringify({ talep_id, video_url: d.embed_url, islem_anahtari: crypto.randomUUID() }),
         });
         const d2 = await res2.json();
         if (!res2.ok) {
           hata(d2.hata ?? "Video adresi kaydedilemedi.", d2.adim, d2.detay);
+          await fetch("/videolar/api/bunny-yukleme-iptal", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ video_guid: d.video_guid }),
+          }).catch(() => undefined);
           return false;
         }
         return true;
@@ -572,7 +541,8 @@ export function useTalepFormu() {
 
   const resetForm = useCallback(() => {
     setHedefRoller([]);
-    if (yetenek) setEgitimTuru(yetenek.acabilecegiTalepTurleri[0]);
+    setEgitimTuru("urun_egitimi");
+    setEgitimTuruSecildiMi(false);
     setSeciliUrunId("");
     setSeciliTeknikId("");
     setSerbestAd("");
@@ -590,6 +560,7 @@ export function useTalepFormu() {
   // F-01/4: Gönderim iki aşamalı — "Talep Oluştur" validasyondan geçirir ve onay
   // modalını açar; asıl gönderim (gonderimiCalistir) yalnız modaldaki Evet'le başlar.
   const [onayModalAcik, setOnayModalAcik] = useState(false);
+  const onayTercihAnahtari = `hapbilgi:talep-onay-modalini-atla:${kullanici?.id ?? "anonim"}`;
 
   const gonderimiCalistir = useCallback(
     async () => {
@@ -627,7 +598,7 @@ export function useTalepFormu() {
           );
         }
         resetForm();
-        await veriCek();
+        await onTalepOlusturuldu?.();
       } finally {
         setFormLoading(false);
       }
@@ -643,7 +614,7 @@ export function useTalepFormu() {
       basari,
       uyari,
       resetForm,
-      veriCek,
+      onTalepOlusturuldu,
     ]
   );
 
@@ -651,15 +622,20 @@ export function useTalepFormu() {
     (e: React.FormEvent) => {
       e.preventDefault();
       if (!validateForm()) return;
+      if (window.localStorage.getItem(onayTercihAnahtari) === "1") {
+        void gonderimiCalistir();
+        return;
+      }
       setOnayModalAcik(true);
     },
-    [validateForm]
+    [validateForm, onayTercihAnahtari, gonderimiCalistir]
   );
 
-  const handleOnayEvet = useCallback(async () => {
+  const handleOnayEvet = useCallback(async (birDahaHatirlatma: boolean) => {
+    if (birDahaHatirlatma) window.localStorage.setItem(onayTercihAnahtari, "1");
     setOnayModalAcik(false);
     await gonderimiCalistir();
-  }, [gonderimiCalistir]);
+  }, [gonderimiCalistir, onayTercihAnahtari]);
 
   // Hayır: modal kapanır, form ve girdiler aynen kalır — hiçbir şey gönderilmez.
   const handleOnayHayir = useCallback(() => setOnayModalAcik(false), []);
@@ -674,14 +650,7 @@ export function useTalepFormu() {
     rol,
     isUretici,
     yetenek,
-    handleCikis,
-
-    // liste
-    talepler,
     loading,
-    okunmamisIdler,
-    formatTarih,
-    handleTalepClick,
 
     // form: hedef rol seçimi
     hedefRol,
@@ -693,6 +662,7 @@ export function useTalepFormu() {
 
     // form: eğitim türü + türetilmiş
     egitimTuru,
+    egitimTuruSecildiMi,
     handleEgitimTuruDegis,
     turKurali,
     urunGosterilsin,

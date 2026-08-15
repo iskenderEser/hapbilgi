@@ -108,8 +108,8 @@ export function TalepDetayi({
     talep.uretici_id === kullaniciId;
 
   const kararHedefi =
-    aktif && blok && aktif.durum_kodu === "onay_bekleniyor" && talep.uretici_id === kullaniciId
-      ? { asama: aktif.anahtar as ToastAsama, id: blok.id, revizyonSayisi: blok.revizyon_sayisi }
+    aktif && blok && talep.aktif_gorev_id && aktif.durum_kodu === "onay_bekleniyor" && talep.uretici_id === kullaniciId
+      ? { asama: aktif.anahtar as ToastAsama, id: talep.aktif_gorev_id, revizyonSayisi: blok.revizyon_sayisi }
       : null;
 
   return (

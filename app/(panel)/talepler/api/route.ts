@@ -2,7 +2,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
-import { cokluBildirimOlustur } from "@/lib/utils/bildirimOlustur";
 import {
   ureticiYetenegi,
   TALEP_TURU_KURALLARI,
@@ -12,112 +11,10 @@ import {
 import { ECZANEM_TALEP_ACAN_ROLLER, ECLUB_HEDEF_ROLLER, hedefRolleriDogrula } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
-import { zincirHaritasi, asamaCoz, uretimBittiMi, iptalEdildiMi } from "@/lib/utils/uretimZinciri";
 import { hazirParametreKontrol } from "@/lib/uretim/parametreKontrol";
 
 // Talep formu ve raporlarla ortak kanonik eğitim türü sırası.
 const GECERLI_TALEP_TURLERI = TALEP_TURU_SIRA;
-
-export async function GET() {
-  try {
-    const supabase = await createClient();
-    const adminSupabase = createAdminClient();
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return yetkiHatasi();
-
-    const rol = await rolCozucu(adminSupabase, user.id);
-    const isIU = rol === "iu";
-    const yetenek = ureticiYetenegi(rol);
-
-    if (!yetenek && !isIU) {
-      return rolHatasi("Sadece üretici roller ve IU taleplerine erişebilir.");
-    }
-
-    let query = supabase
-      .from("talepler")
-      // Künye alanları ortak listeden; kalanlar bu listeye özel.
-      .select(`
-        ${TALEP_ALANLARI},
-        takim_id, firma_id, urun_id, teknik_id, hazir_video_url
-      `)
-      .order("created_at", { ascending: false });
-
-    // Görünürlük RLS'te (Adım 4): üretici yalnız kendi talebini, İU hepsini —
-    // bu yüzden okuma OTURUMLA yapılır, elle uretici_id süzgeci kalktı (Adım 5).
-    // İU istisnası (V1-5, İskender 21.07) İŞ KURALI olarak KALIR: hazır video
-    // talepleri İU'nun Talepler listesinde görünmez (İU için tek görünüm Soru
-    // Setleri kaydıdır). Bu bir görünürlük/sahiplik kuralı değil, liste kuralıdır;
-    // RLS'e girmez, burada durur.
-    if (isIU) {
-      query = query.eq("hazir_video", false);
-    }
-
-    const { data: talepler, error } = await query;
-    if (error) return hataYaniti("Talepler çekilemedi.", "talepler tablosu SELECT", error);
-
-    // Künye ortak çeviriciden (25.07, Aşama 3): ad kuralı ve varsayılanlar tek
-    // yerde. Bu listeye özel alanlar (takım, firma/ürün/teknik kimlikleri, hazır
-    // video adresi) künyenin üstüne eklenir — künyeye girmezler, yalnız burada
-    // ve talep formunda kullanılırlar.
-    const kunyeler = (talepler ?? []).map((t: any) => ({
-      ...haritalaTalep(t),
-      takim_id: t.takim_id,
-      firma_id: t.firma_id,
-      urun_id: t.urun_id,
-      teknik_id: t.teknik_id,
-      hazir_video_url: t.hazir_video_url,
-    }));
-
-    // Zincir durumu (27.07): sayfa artık talepleri "devam eden" ve "iptal edilen"
-    // diye ayırıyor, bitmiş olanları hiç göstermiyor (onlar Yayın Listesi'nde).
-    // Bu ayrım ancak talebin üretim zincirinin nerede olduğu bilinirse yapılabilir.
-    // Kaskad ortak dosyada — ana sayfayla aynı cevabı vermesi böyle garanti edilir.
-    // View service_role yetkilidir; oturum istemcisiyle değil adminSupabase ile okunur.
-    const zincirler = await zincirHaritasi(adminSupabase, {
-      talepIdler: kunyeler.map((t) => t.talep_id),
-    });
-
-    const durumlar = new Map<string, ReturnType<typeof asamaCoz>>();
-    for (const t of kunyeler) {
-      const z = zincirler.get(t.talep_id);
-      if (z) durumlar.set(t.talep_id, asamaCoz(t, z));
-    }
-
-    // İÇERİK ÜRETİCİSİ ADI: iptal tablosunda "iş kimdeydi" görünsün. Tek toplu
-    // sorgu — talep başına ad çözmek N+1 olurdu (üretici ana sayfasının dersi).
-    const iuIdler = [...new Set(
-      [...durumlar.values()].map((d) => d.iu_id).filter((id): id is string => !!id),
-    )];
-    const iuAdlari = new Map<string, string>();
-    if (iuIdler.length > 0) {
-      const { data: iular } = await adminSupabase
-        .from("kullanicilar")
-        .select("kullanici_id, ad, soyad")
-        .in("kullanici_id", iuIdler);
-      for (const k of iular ?? []) iuAdlari.set(k.kullanici_id, `${k.ad ?? ""} ${k.soyad ?? ""}`.trim());
-    }
-
-    const sonuc = kunyeler.map((t) => {
-      // Zincir satırı yoksa talep henüz hiçbir aşamaya girmemiş sayılır; sessizce
-      // düşürmek yerine "devam eden" kabul edilir — liste kayıt kaybetmemeli.
-      const durum = durumlar.get(t.talep_id);
-      return {
-        ...t,
-        asama: durum?.asama ?? "Senaryo",
-        durum_kodu: durum?.durum_kodu ?? "iu_iletildi",
-        uretim_bitti: durum ? uretimBittiMi(durum) : false,
-        iptal_edildi: durum ? iptalEdildiMi(durum) : false,
-        iu_ad_soyad: durum?.iu_id ? (iuAdlari.get(durum.iu_id) ?? null) : null,
-      };
-    });
-
-    return NextResponse.json({ talepler: sonuc }, { status: 200 });
-
-  } catch (err) {
-    return sunucuHatasi(err, "GET /talepler/api");
-  }
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -280,45 +177,39 @@ export async function POST(request: NextRequest) {
 
     if (error) return hataYaniti("Talep oluşturulamadı.", "talepler tablosu INSERT", error);
 
-    // Bildirim mesajı — künyedeki ad kuralı ürünlü/ürünsüz ayrımını zaten çözer;
-    // hiçbiri yoksa tür adına düşer.
-    const turAdi = TALEP_TURU_KURALLARI[egitimTuru].ad;
     const yeniKunye = haritalaTalep(yeniTalep);
-    const bildirimBasligi = yeniKunye.urun_adi !== "-" ? yeniKunye.urun_adi : turAdi;
 
-    // G-3 (İskender kararı 19.07): hazır video taleplerinde açılış bildirimi gitmez —
-    // IU'nun işi ya hiç yoktur (video+set hazır) ya da video yüklemesi tamamlanınca
-    // doğar (yalnız video hazır; bildirim o anda gider — hazır zincir modülü, G-2;
-    // V1-5/V1-6 ile onay ara adımı kalktı, tetik yükleme anıdır).
-    if (!hazir_video) {
-      // Tüm IU kullanıcılarına bildirim gönder
-      const { data: iuKullanicilar } = await adminSupabase
-        .from("kullanicilar")
-        .select("kullanici_id")
-        .eq("rol", "iu")
-        .eq("aktif_mi", true);
-
-      const iuIdler = (iuKullanicilar ?? []).map((k: any) => k.kullanici_id);
-
-      await cokluBildirimOlustur({
-        adminSupabase,
-        alici_idler: iuIdler,
-        gonderen_id: user.id,
-        kayit_turu: "talep",
-        kayit_id: (yeniTalep as any).talep_id,
-        mesaj: `Yeni talep: ${bildirimBasligi}`,
-      });
+    const { error: gorevError } = await adminSupabase.rpc("uretim_talep_ilk_gorevini_ac", {
+      p_talep_id: yeniKunye.talep_id,
+      p_uretici_id: user.id,
+      p_islem_anahtari: crypto.randomUUID(),
+    });
+    if (gorevError) {
+      const { error: geriAlmaError } = await adminSupabase.from("talepler").delete().eq("talep_id", yeniKunye.talep_id);
+      return hataYaniti(
+        geriAlmaError ? "Talep oluşturuldu ancak üretim görevi açılamadı; kayıt otomatik geri alınamadı." : "Üretim görevi açılamadığı için talep oluşturma geri alındı.",
+        "uretim_talep_ilk_gorevini_ac RPC",
+        gorevError,
+      );
     }
+
+    const ozelAlanlar = yeniTalep as unknown as {
+      takim_id: string | null;
+      firma_id: string;
+      urun_id: string | null;
+      teknik_id: string | null;
+      hazir_soru_seti_verisi: unknown;
+    };
 
     return NextResponse.json({
       mesaj: "Talep oluşturuldu.",
       talep: {
         ...yeniKunye,
-        takim_id: (yeniTalep as any).takim_id,
-        firma_id: (yeniTalep as any).firma_id,
-        urun_id: (yeniTalep as any).urun_id,
-        teknik_id: (yeniTalep as any).teknik_id,
-        hazir_soru_seti_verisi: (yeniTalep as any).hazir_soru_seti_verisi ?? null,
+        takim_id: ozelAlanlar.takim_id,
+        firma_id: ozelAlanlar.firma_id,
+        urun_id: ozelAlanlar.urun_id,
+        teknik_id: ozelAlanlar.teknik_id,
+        hazir_soru_seti_verisi: ozelAlanlar.hazir_soru_seti_verisi ?? null,
       }
     }, { status: 201 });
 
