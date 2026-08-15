@@ -22,6 +22,7 @@
 --   düşerdi ve o puan hiçbir firmanın bakiyesine yazılmazdı (sessiz kayıp).
 --   Künye üzerinden firma her zaman çözülür.
 --
+-- İleri sarma kayıpları brüt kazançtan, sipariş harcamasından önce düşülür.
 -- Dönüş sözleşmesi ve sıralama AYNEN korunmuştur.
 -- KOŞUM: İskender, Supabase SQL editöründe. CREATE OR REPLACE → tekrar güvenli.
 
@@ -37,6 +38,13 @@ AS $function$
     WHERE kp.kisi_id = p_kisi_id
     GROUP BY ky.firma_id
   ),
+  kayip AS (
+    SELECT ky.firma_id, COALESCE(SUM(ks.kaybedilen_puan), 0) AS kaybedilen
+    FROM eclub_ileri_sarma_kayitlari ks
+    JOIN v_yayin_kunye ky ON ky.yayin_id = ks.yayin_id
+    WHERE ks.kisi_id = p_kisi_id
+    GROUP BY ky.firma_id
+  ),
   harcama AS (
     SELECT sfp.firma_id, COALESCE(SUM(sfp.kullanilan_puan), 0) AS harcanan
     FROM eclub_store_siparis_firma_puan sfp
@@ -50,11 +58,20 @@ AS $function$
     f.firma_adi,
     COALESCE(k.kazanilan, 0),
     COALESCE(h.harcanan, 0),
-    (COALESCE(k.kazanilan, 0) - COALESCE(h.harcanan, 0)) AS bakiye
+    (
+      COALESCE(k.kazanilan, 0)
+      - COALESCE(ka.kaybedilen, 0)
+      - COALESCE(h.harcanan, 0)
+    ) AS bakiye
   FROM firmalar f
   JOIN kazanc k ON k.firma_id = f.firma_id
+  LEFT JOIN kayip ka ON ka.firma_id = f.firma_id
   LEFT JOIN harcama h ON h.firma_id = f.firma_id
   WHERE f.eclub_store_aktif = true
-    AND (COALESCE(k.kazanilan, 0) - COALESCE(h.harcanan, 0)) > 0
+    AND (
+      COALESCE(k.kazanilan, 0)
+      - COALESCE(ka.kaybedilen, 0)
+      - COALESCE(h.harcanan, 0)
+    ) > 0
   ORDER BY bakiye DESC;
 $function$;

@@ -1,8 +1,8 @@
 // app/eclub/panel/_components/EclubVideoOynatici.tsx
 //
 // E-Club kişi (eczacı/teknisyen) izleme oynatıcısı — panel içinde açılır.
-// CC/UTT oynatıcısının sade hali: ileri sarma YOK, extra YOK, challenge YOK,
-// kayıp puan YOK. Akış: baslat → video oynat → bitince bitir → sorular → cevapla.
+// Extra/challenge yoktur. İlk izleme ileri sarılırsa atlanan süre kadar video
+// puanı kaybedilir ve soru hakkı kapanır.
 // Süresi geçmiş öneride izleme olur; puan ve soru açılmaz (API'ler karar verir).
 
 "use client";
@@ -39,9 +39,10 @@ interface Props {
   onTamamlandi: () => void | Promise<void>;
   hata: (mesaj: string, adim?: string, detay?: string) => void;
   basari: (mesaj: string) => void;
+  uyari: (mesaj: string, adim?: string) => void;
 }
 
-export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata, basari }: Props) {
+export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata, basari, uyari }: Props) {
   const [izlemeId, setIzlemeId] = useState<string | null>(null);
   const [izlemeBasladi, setIzlemeBasladi] = useState(false);
   const [izlemeTamamlandi, setIzlemeTamamlandi] = useState(false);
@@ -50,10 +51,15 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
   const [cevaplar, setCevaplar] = useState<Record<number, string>>({});
   const [cevapSonuclari, setCevapSonuclari] = useState<CevapSonucu[]>([]);
   const [islemLoading, setIslemLoading] = useState(false);
+  const [ileriSarmaModal, setIleriSarmaModal] = useState(false);
+  const [bekleyenSeekBitis, setBekleyenSeekBitis] = useState<number | null>(null);
 
+  const maxIzlenenRef = useRef<number>(0);
   const izlemeIdRef = useRef<string | null>(null);
   const izlemeBitirildiRef = useRef<boolean>(false);
+  const tekrarIzlemeRef = useRef<boolean>(false);
   const baslatTetiklendiRef = useRef<string | null>(null);
+  const ileriSarmaOlayIdRef = useRef<string | null>(null);
   const videoSuresiRef = useRef<number>(0);
   const playerRef = useRef<VideoPlayer | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -71,7 +77,18 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
 
     izlemeIdRef.current = null;
     izlemeBitirildiRef.current = false;
+    tekrarIzlemeRef.current = false;
+    ileriSarmaOlayIdRef.current = null;
+    maxIzlenenRef.current = 0;
     videoSuresiRef.current = 0;
+    setIzlemeBasladi(false);
+    setIzlemeTamamlandi(false);
+    setSorular([]);
+    setSoruGosterilecek(false);
+    setCevaplar({});
+    setCevapSonuclari([]);
+    setIleriSarmaModal(false);
+    setBekleyenSeekBitis(null);
 
     handleBaslat();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -96,7 +113,14 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
         if (sure && sure > 0) videoSuresiRef.current = sure;
       });
 
-      player.onTimeUpdate((data: { seconds: number }) => {
+      player.onTimeUpdate((data: { seconds: number; duration?: number }) => {
+        if (data.duration && data.duration > 0) videoSuresiRef.current = data.duration;
+
+        const ilerleme = data.seconds - maxIzlenenRef.current;
+        if (ilerleme > 0 && ilerleme < 1.5) {
+          maxIzlenenRef.current = data.seconds;
+        }
+
         if (
           !izlemeBitirildiRef.current &&
           videoSuresiRef.current > 0 &&
@@ -105,6 +129,24 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
           izlemeBitirildiRef.current = true;
           handleBitir();
         }
+      });
+
+      // Tamamlanmış videonun puansız tekrarında kısıt uygulanmaz. İlk gerçek
+      // izleme ileri alınırsa kullanıcıdan açık onay alınmadan konum değiştirilmez.
+      player.onSeeked(() => {
+        if (tekrarIzlemeRef.current) return;
+        player.getCurrentTime((current: number) => {
+          if (!izlemeIdRef.current) {
+            player.setCurrentTime(0);
+            return;
+          }
+          if (current > maxIzlenenRef.current + 1) {
+            setBekleyenSeekBitis(current);
+            ileriSarmaOlayIdRef.current = crypto.randomUUID();
+            setIleriSarmaModal(true);
+            player.setCurrentTime(maxIzlenenRef.current);
+          }
+        });
       });
 
       player.onEnded(() => {
@@ -136,8 +178,56 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
     }
     setIzlemeId(d.izleme.izleme_id);
     izlemeIdRef.current = d.izleme.izleme_id;
+    tekrarIzlemeRef.current = d.tekrar_izleme === true;
     setIzlemeBasladi(true);
     setIslemLoading(false);
+  };
+
+  const handleIleriSarmaOnayla = async () => {
+    const id = izlemeIdRef.current ?? izlemeId;
+    if (!id || bekleyenSeekBitis === null) return;
+
+    setIleriSarmaModal(false);
+    setIslemLoading(true);
+    ileriSarmaOlayIdRef.current ??= crypto.randomUUID();
+    try {
+      const res = await fetch("/eclub/panel/api/ileri-sarma", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          izleme_id: id,
+          olay_id: ileriSarmaOlayIdRef.current,
+          atlama_baslangic: maxIzlenenRef.current,
+          atlama_bitis: bekleyenSeekBitis,
+        }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        hata(d.hata ?? "İleri sarma kaydedilemedi.", d.adim, d.detay);
+        setIleriSarmaModal(true);
+        return;
+      }
+
+      playerRef.current?.setCurrentTime(bekleyenSeekBitis);
+      maxIzlenenRef.current = bekleyenSeekBitis;
+      const kayip = Number(d.kaybedilen_puan ?? 0);
+      uyari(kayip > 0
+        ? `İleri sarma kaydedildi: ${kayip} puan kaybettiniz ve soru hakkınız kapandı.`
+        : "İleri sarma kaydedildi; bu izleme sonunda sorular gösterilmeyecek.");
+      setBekleyenSeekBitis(null);
+      ileriSarmaOlayIdRef.current = null;
+    } catch (err) {
+      hata("İleri sarma kaydedilemedi.", "POST /eclub/panel/api/ileri-sarma", err instanceof Error ? err.message : undefined);
+      setIleriSarmaModal(true);
+    } finally {
+      setIslemLoading(false);
+    }
+  };
+
+  const handleIleriSarmaReddet = () => {
+    setIleriSarmaModal(false);
+    setBekleyenSeekBitis(null);
+    ileriSarmaOlayIdRef.current = null;
   };
 
   const handleBitir = async () => {
@@ -152,6 +242,7 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
     });
     const d = await res.json();
     if (!res.ok) {
+      izlemeBitirildiRef.current = false;
       hata(d.hata ?? "İzleme tamamlanamadı.", d.adim, d.detay);
       setIslemLoading(false);
       return;
@@ -160,10 +251,15 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
     setIzlemeTamamlandi(true);
     setSoruGosterilecek(d.soru_gosterilecek === true);
 
-    if (d.puan_kazanildi && d.izleme_puani > 0) {
+    // Tamamlanmış videonun tekrar oynatılması yeni puan doğurmaz; mevcut defter
+    // satırı dönse bile başarı mesajı yalnız ilk atomik tamamlamada gösterilir.
+    if (d.yeni_tamamlandi && d.puan_kazanildi && d.izleme_puani > 0) {
       basari(`+${d.izleme_puani} izleme puanı kazandınız!`);
     }
     if (d.puan_uyarisi) hata(d.puan_uyarisi, "puan kaydı"); // B-08: yazım hatası kullanıcıya görünür
+    if (!d.soru_gosterilecek && d.soru_hakki_nedeni === "ileri_sarma") {
+      uyari("Video ileri sarıldığı için bu izleme sonunda sorular gösterilmeyecek.");
+    }
 
     // Sorular tamamlama anında bu izlemeye sabitlenir ve ayrı uçtan güvenli biçimde çekilir.
     if (d.soru_gosterilecek === true) {
@@ -309,6 +405,27 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
           )}
         </div>
       </div>
+
+      {ileriSarmaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-11/12 max-w-md rounded-2xl border border-[#dfe7f1] bg-white p-6 shadow-xl">
+            <div className="mb-3 text-sm font-extrabold text-[#203653]">İleri sarmak istiyor musunuz?</div>
+            <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm leading-relaxed text-[#66788f]">
+              İleri sarılan süre kadar <strong className="text-[#b23b31]">puan kaybedersiniz</strong> ve bu izleme sonunda sorular gösterilmez.
+            </div>
+            <div className="flex justify-end gap-2.5">
+              <button type="button" onClick={handleIleriSarmaReddet} disabled={islemLoading}
+                className="rounded-xl border border-[#dfe7f1] bg-white px-4 py-2 text-xs font-bold text-[#617590] disabled:opacity-50">
+                İptal
+              </button>
+              <button type="button" onClick={handleIleriSarmaOnayla} disabled={islemLoading}
+                className="rounded-xl bg-[#b23b31] px-4 py-2 text-xs font-extrabold text-white disabled:opacity-50">
+                {islemLoading ? "Kaydediliyor..." : "Anladım, İleri Sar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

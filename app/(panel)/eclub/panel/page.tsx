@@ -49,6 +49,7 @@ function videoDurumu(oneri: PanelOneri): Exclude<VideoFiltresi, "tumu"> {
 function VideoKart({ oneri, onIzle }: { oneri: PanelOneri; onIzle: () => void }) {
   const durum = videoDurumu(oneri);
   const kazanilan = oneri.kazanilan_izleme_puani + oneri.kazanilan_cevaplama_puani;
+  const netPuan = Math.max(0, kazanilan - oneri.ileri_sarma_kaybi);
   const durumStili = durum === "tamamlanan"
     ? "border-[#bce8d4] bg-[#effaf5] text-[#16865f]"
     : durum === "suresi_gecmis"
@@ -85,7 +86,7 @@ function VideoKart({ oneri, onIzle }: { oneri: PanelOneri; onIzle: () => void })
             <div className="rounded-xl bg-[#f5f8fb] px-2.5 py-2"><small className="block text-[9px] font-bold text-[#8190a3]">Video Puanı</small><strong className="mt-0.5 block text-xs text-[#237ac8]">+{oneri.video_puani}</strong></div>
             <div className="rounded-xl bg-[#f5f8fb] px-2.5 py-2"><small className="block text-[9px] font-bold text-[#8190a3]">Soru Puanı</small><strong className="mt-0.5 block text-xs text-[#7358c7]">+{oneri.soru_puani} / soru</strong></div>
             <div className="rounded-xl bg-[#f5f8fb] px-2.5 py-2"><small className="block text-[9px] font-bold text-[#8190a3]">Cevaplar</small><strong className="mt-0.5 block text-xs text-[#40556d]">{oneri.dogru_cevap} doğru · {oneri.yanlis_cevap} yanlış</strong></div>
-            <div className="rounded-xl bg-[#eef9f4] px-2.5 py-2"><small className="block text-[9px] font-bold text-[#6b907f]">Kazanılan</small><strong className="mt-0.5 block text-xs text-[#16865f]">+{kazanilan} puan</strong></div>
+            <div className="rounded-xl bg-[#eef9f4] px-2.5 py-2"><small className="block text-[9px] font-bold text-[#6b907f]">Net Puan</small><strong className="mt-0.5 block text-xs text-[#16865f]">{netPuan} puan</strong>{oneri.ileri_sarma_kaybi > 0 && <small className="mt-0.5 block text-[9px] font-bold text-[#b23b31]">−{oneri.ileri_sarma_kaybi} ileri sarma</small>}</div>
           </div>
 
           <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-[#edf1f5] pt-3">
@@ -106,7 +107,7 @@ function VideoKart({ oneri, onIzle }: { oneri: PanelOneri; onIzle: () => void })
 export default function EclubPanelPage() {
   const router = useRouter();
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
-  const { mesajlar, hata, basari } = useHataMesaji();
+  const { mesajlar, hata, basari, uyari } = useHataMesaji();
   const eclubKisi = !!kullanici && kullanici.kimlik_turu === "eclub_kisi";
   const hazir = !authYukleniyor && eclubKisi;
   const { kisi, oneriler, firmaOzetleri, ozet, loading, veriCek } = useEclubPanel({ hazir, hata });
@@ -147,6 +148,7 @@ export default function EclubPanelPage() {
           onTamamlandi={veriCek}
           hata={hata}
           basari={basari}
+          uyari={uyari}
         />
       ) : (
         <>
@@ -164,7 +166,7 @@ export default function EclubPanelPage() {
           <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <EclubKisiStat ikon={Clock3} etiket="Bekleyen Video" deger={bekleyen} detay="Süresi devam eden" renk="#d78022" zemin="#fff6e8" />
             <EclubKisiStat ikon={CheckCircle2} etiket="Tamamlanan" deger={tamamlanan} detay="İzlediğiniz videolar" renk="#16865f" zemin="#ebf8f2" />
-            <EclubKisiStat ikon={Trophy} etiket="Kazanılan Puan" deger={ozet.toplam_kazanilan_puan.toLocaleString("tr-TR")} detay={`${ozet.dogru_cevap} doğru cevap`} renk="#7358c7" zemin="#f2efff" />
+            <EclubKisiStat ikon={Trophy} etiket="Net Puan" deger={Math.max(0, ozet.toplam_kazanilan_puan - ozet.ileri_sarma_kaybi).toLocaleString("tr-TR")} detay={`${ozet.dogru_cevap} doğru · ${ozet.ileri_sarma_kaybi} ileri sarma kaybı`} renk="#7358c7" zemin="#f2efff" />
             <EclubKisiStat ikon={Coins} etiket="Kullanılabilir Puan" deger={ozet.harcanabilir_puan.toLocaleString("tr-TR")} detay="E‑Club Store bakiyesi" />
           </section>
 
@@ -190,7 +192,7 @@ export default function EclubPanelPage() {
                       <span className="min-w-0"><strong className="block truncate text-sm text-[#203653]">{firma.firma_adi}</strong><small className="mt-0.5 block text-[10px] font-semibold text-[#8190a3]">{firma.oneriler.length} video</small></span>
                     </span>
                     <span className="grid grid-cols-2 gap-2">
-                      <span className="rounded-xl bg-[#f5f8fb] px-3 py-1.5 text-right"><small className="block text-[9px] font-bold text-[#8190a3]">Kazanılan</small><strong className="text-xs text-[#7358c7]">{firma.kazanilan_puan.toLocaleString("tr-TR")} p</strong></span>
+                      <span className="rounded-xl bg-[#f5f8fb] px-3 py-1.5 text-right"><small className="block text-[9px] font-bold text-[#8190a3]">Net</small><strong className="text-xs text-[#7358c7]">{Math.max(0, firma.kazanilan_puan - firma.kaybedilen_puan).toLocaleString("tr-TR")} p</strong></span>
                       <span className="rounded-xl bg-[#eef9f4] px-3 py-1.5 text-right"><small className="block text-[9px] font-bold text-[#6b907f]">Kullanılabilir</small><strong className="text-xs text-[#16865f]">{firma.harcanabilir_puan.toLocaleString("tr-TR")} p</strong></span>
                     </span>
                   </summary>

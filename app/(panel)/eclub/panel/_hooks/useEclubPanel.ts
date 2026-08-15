@@ -19,6 +19,7 @@ export interface PanelOneri {
   soru_sayisi: number;
   kazanilan_izleme_puani: number;
   kazanilan_cevaplama_puani: number;
+  ileri_sarma_kaybi: number;
   dogru_cevap: number;
   yanlis_cevap: number;
   oneri_baslangic: string;
@@ -39,12 +40,14 @@ export interface PanelFirmaOzeti {
   firma_id: string;
   firma_adi: string;
   kazanilan_puan: number;
+  kaybedilen_puan: number;
   harcanabilir_puan: number;
   video_sayisi: number;
 }
 
 export interface PanelOzet {
   toplam_kazanilan_puan: number;
+  ileri_sarma_kaybi: number;
   harcanabilir_puan: number;
   dogru_cevap: number;
 }
@@ -58,7 +61,7 @@ export function useEclubPanel({ hazir, hata }: UseEclubPanelArgs) {
   const [kisi, setKisi] = useState<PanelKisi | null>(null);
   const [oneriler, setOneriler] = useState<PanelOneri[]>([]);
   const [firmaOzetleri, setFirmaOzetleri] = useState<PanelFirmaOzeti[]>([]);
-  const [ozet, setOzet] = useState<PanelOzet>({ toplam_kazanilan_puan: 0, harcanabilir_puan: 0, dogru_cevap: 0 });
+  const [ozet, setOzet] = useState<PanelOzet>({ toplam_kazanilan_puan: 0, ileri_sarma_kaybi: 0, harcanabilir_puan: 0, dogru_cevap: 0 });
   const [loading, setLoading] = useState(true);
 
   const veriCek = useCallback(async () => {
@@ -74,6 +77,7 @@ export function useEclubPanel({ hazir, hata }: UseEclubPanelArgs) {
         setFirmaOzetleri(d.firma_ozetleri ?? []);
         setOzet({
           toplam_kazanilan_puan: d.ozet?.toplam_kazanilan_puan ?? 0,
+          ileri_sarma_kaybi: d.ozet?.ileri_sarma_kaybi ?? 0,
           harcanabilir_puan: d.ozet?.harcanabilir_puan ?? 0,
           dogru_cevap: d.ozet?.dogru_cevap ?? 0,
         });

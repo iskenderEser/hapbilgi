@@ -45,7 +45,7 @@ export async function GET() {
 
     if (oneriError) return hataYaniti("Öneriler çekilemedi.", "eclub_oneri_kayitlari SELECT — kisi_id", oneriError);
 
-    const [izlemeSonucu, puanSonucu, dogruSonucu, yanlisSonucu, firmaBakiyeleri] = await Promise.all([
+    const [izlemeSonucu, puanSonucu, kayipSonucu, dogruSonucu, yanlisSonucu, firmaBakiyeleri] = await Promise.all([
       adminSupabase
         .from("eclub_izleme_kayitlari")
         .select("izleme_id, oneri_id, yayin_id, tamamlandi_mi")
@@ -53,6 +53,10 @@ export async function GET() {
       adminSupabase
         .from("eclub_kazanilan_puanlar")
         .select("yayin_id, izleme_id, puan_turu, puan")
+        .eq("kisi_id", kisi.kisi_id),
+      adminSupabase
+        .from("eclub_ileri_sarma_kayitlari")
+        .select("yayin_id, izleme_id, kaybedilen_puan")
         .eq("kisi_id", kisi.kisi_id),
       adminSupabase
         .from("eclub_dogru_cevap_kayitlari")
@@ -66,6 +70,7 @@ export async function GET() {
     ]);
     if (izlemeSonucu.error) return hataYaniti("İzleme özeti alınamadı.", "eclub_izleme_kayitlari SELECT — kişi paneli", izlemeSonucu.error);
     if (puanSonucu.error) return hataYaniti("Puan özeti alınamadı.", "eclub_kazanilan_puanlar SELECT — kişi paneli", puanSonucu.error);
+    if (kayipSonucu.error) return hataYaniti("İleri sarma kaybı alınamadı.", "eclub_ileri_sarma_kayitlari SELECT — kişi paneli", kayipSonucu.error);
     if (dogruSonucu.error) return hataYaniti("Doğru cevap özeti alınamadı.", "eclub_dogru_cevap_kayitlari SELECT — kişi paneli", dogruSonucu.error);
     if (yanlisSonucu.error) return hataYaniti("Yanlış cevap özeti alınamadı.", "eclub_yanlis_cevap_kayitlari SELECT — kişi paneli", yanlisSonucu.error);
 
@@ -105,9 +110,9 @@ export async function GET() {
     const izlemeOneriHaritasi = new Map(
       (izlemeSonucu.data ?? []).map((izleme) => [izleme.izleme_id, izleme.oneri_id]),
     );
-    const oneriPerformansi = new Map<string, { izleme: number; cevaplama: number; dogru: number; yanlis: number }>();
+    const oneriPerformansi = new Map<string, { izleme: number; cevaplama: number; kayip: number; dogru: number; yanlis: number }>();
     const performans = (oneriId: string) => {
-      const mevcut = oneriPerformansi.get(oneriId) ?? { izleme: 0, cevaplama: 0, dogru: 0, yanlis: 0 };
+      const mevcut = oneriPerformansi.get(oneriId) ?? { izleme: 0, cevaplama: 0, kayip: 0, dogru: 0, yanlis: 0 };
       oneriPerformansi.set(oneriId, mevcut);
       return mevcut;
     };
@@ -117,6 +122,10 @@ export async function GET() {
       const kayit = performans(oneriId);
       if (puan.puan_turu === "izleme") kayit.izleme += Number(puan.puan ?? 0);
       if (puan.puan_turu === "cevaplama") kayit.cevaplama += Number(puan.puan ?? 0);
+    }
+    for (const kayip of kayipSonucu.data ?? []) {
+      const oneriId = izlemeOneriHaritasi.get(kayip.izleme_id);
+      if (oneriId) performans(oneriId).kayip += Number(kayip.kaybedilen_puan ?? 0);
     }
     for (const cevap of dogruSonucu.data ?? []) {
       const oneriId = izlemeOneriHaritasi.get(cevap.izleme_id);
@@ -132,7 +141,7 @@ export async function GET() {
       const y = yayinMap.get(oo.yayin_id);
       // İkinci güvenlik filtresi: hedef rol ve yayın durumu kişi panelinde de doğrulanır.
       if (!y || !y.hedef_roller.includes(kisi.rol) || y.durum !== "yayinda") return [];
-      const kazanilan = oneriPerformansi.get(oo.oneri_id) ?? { izleme: 0, cevaplama: 0, dogru: 0, yanlis: 0 };
+      const kazanilan = oneriPerformansi.get(oo.oneri_id) ?? { izleme: 0, cevaplama: 0, kayip: 0, dogru: 0, yanlis: 0 };
       return [{
         oneri_id: oo.oneri_id,
         yayin_id: oo.yayin_id,
@@ -149,6 +158,7 @@ export async function GET() {
         soru_sayisi: Number(y?.video_basi_soru_sayisi ?? 0),
         kazanilan_izleme_puani: kazanilan.izleme,
         kazanilan_cevaplama_puani: kazanilan.cevaplama,
+        ileri_sarma_kaybi: kazanilan.kayip,
         dogru_cevap: kazanilan.dogru,
         yanlis_cevap: kazanilan.yanlis,
         oneri_baslangic: oo.oneri_baslangic,
@@ -164,6 +174,7 @@ export async function GET() {
       firma_id: string;
       firma_adi: string;
       kazanilan_puan: number;
+      kaybedilen_puan: number;
       harcanabilir_puan: number;
       video_sayisi: number;
     }>();
@@ -172,6 +183,7 @@ export async function GET() {
         firma_id: firmaId,
         firma_adi: firmaAdi,
         kazanilan_puan: 0,
+        kaybedilen_puan: 0,
         harcanabilir_puan: 0,
         video_sayisi: 0,
       };
@@ -182,6 +194,11 @@ export async function GET() {
       const yayin = yayinMap.get(puan.yayin_id);
       if (!yayin?.firma_id) continue;
       firmaOzetiniAl(yayin.firma_id, yayin.firma_adi ?? "Firma").kazanilan_puan += Number(puan.puan ?? 0);
+    }
+    for (const kayip of kayipSonucu.data ?? []) {
+      const yayin = yayinMap.get(kayip.yayin_id);
+      if (!yayin?.firma_id) continue;
+      firmaOzetiniAl(yayin.firma_id, yayin.firma_adi ?? "Firma").kaybedilen_puan += Number(kayip.kaybedilen_puan ?? 0);
     }
     for (const bakiye of firmaBakiyeleri) {
       firmaOzetiniAl(bakiye.firma_id, bakiye.firma_adi).harcanabilir_puan = Number(bakiye.bakiye ?? 0);
@@ -197,6 +214,7 @@ export async function GET() {
       firma_ozetleri: [...firmaOzetleri.values()].sort((a, b) => a.firma_adi.localeCompare(b.firma_adi, "tr")),
       ozet: {
         toplam_kazanilan_puan: puanlar.reduce((toplam, puan) => toplam + Number(puan.puan ?? 0), 0),
+        ileri_sarma_kaybi: (kayipSonucu.data ?? []).reduce((toplam, kayip) => toplam + Number(kayip.kaybedilen_puan ?? 0), 0),
         harcanabilir_puan: firmaBakiyeleri.reduce((toplam, firma) => toplam + Number(firma.bakiye ?? 0), 0),
         dogru_cevap: (dogruSonucu.data ?? []).length,
       },

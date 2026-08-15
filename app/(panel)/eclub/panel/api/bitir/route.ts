@@ -103,6 +103,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({
       mesaj: tamamlama.yeni_tamamlandi ? "İzleme tamamlandı." : "Tamamlanmış izleme açıldı.",
+      yeni_tamamlandi: tamamlama.yeni_tamamlandi,
       puan_kazanildi: tamamlama.puan_kazanildi,
       izleme_puani: tamamlama.izleme_puani,
       puan_uyarisi: null,

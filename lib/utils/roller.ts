@@ -177,6 +177,14 @@ export const TUM_HEDEF_ROLLER: HedefRol[] = ["utt", "bm", "eczaci", "eczane_tekn
 // o kişilerin rolü, bu içeriğin hedefi. İkisi bilinçli olarak ayrı durur.)
 export const ECLUB_HEDEF_ROLLER: HedefRol[] = ["eczaci", "eczane_teknisyeni"];
 
+/** Yayının yalnız E-Club dış müşterilerine (eczacı/teknisyen) yönelik olduğunu doğrular. */
+export function yalnizEclubHedefliMi(hedefRoller: readonly string[] | null | undefined): boolean {
+  return Boolean(
+    hedefRoller?.length
+    && hedefRoller.every((rol) => ECLUB_HEDEF_ROLLER.includes(rol as HedefRol))
+  );
+}
+
 export function hedefRolleriDogrula(deger: unknown): HedefRoller | null {
   if (!Array.isArray(deger) || deger.length === 0) return null;
   const benzersiz = [...new Set(deger)];

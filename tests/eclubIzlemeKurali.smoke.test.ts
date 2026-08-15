@@ -6,6 +6,8 @@ import {
   eclubIzlemeHaklari,
   eclubSoruIndeksleri,
 } from "@/lib/eclub/izlemeKurali";
+import { eclubIleriSarmaKaybiHesapla, eclubIleriSarmaKonumuDogrula } from "@/lib/eclub/ileriSarma";
+import { yalnizEclubHedefliMi } from "@/lib/utils/roller";
 
 test("mutlu: aktif öneri puan ve soru hakkı verir; soru kümesi sabittir", () => {
   const simdi = new Date("2026-08-14T10:00:00Z");
@@ -25,4 +27,18 @@ test("sınır: süresi geçmiş öneri izlenir ama puan/soru vermez; farklı cev
 
   assert.deepEqual(haklar, { durum: "suresi_gecmis", izlenebilir: true, puanli: false, soruGoster: false });
   assert.equal(cevaplarAtananSorularlaEslesiyorMu([{ soru_index: 0, verilen_cevap: "A" }], [0, 2]), false);
+});
+
+test("mutlu: E-Club ileri sarma kaybı atlanan sürenin video puanındaki karşılığıdır", () => {
+  const konum = eclubIleriSarmaKonumuDogrula(20.2, 50.4, 120);
+  assert.deepEqual(konum, { baslangic: 20, bitis: 50, atlananSure: 30 });
+  assert.equal(eclubIleriSarmaKaybiHesapla({ videoPuani: 40, videoSuresi: 120, atlananSure: 30, puanli: true }), 10);
+  assert.equal(yalnizEclubHedefliMi(["eczaci", "eczane_teknisyeni"]), true);
+});
+
+test("sınır: geri/taşan sarma reddedilir; süresi geçen öneride puan kaybı doğmaz", () => {
+  assert.equal(eclubIleriSarmaKonumuDogrula(50, 20, 120), null);
+  assert.equal(eclubIleriSarmaKonumuDogrula(50, 121, 120), null);
+  assert.equal(eclubIleriSarmaKaybiHesapla({ videoPuani: 40, videoSuresi: 120, atlananSure: 30, puanli: false }), 0);
+  assert.equal(yalnizEclubHedefliMi(["utt", "eczaci"]), false);
 });

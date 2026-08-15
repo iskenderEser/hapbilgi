@@ -95,6 +95,7 @@ DECLARE
   v_urun_id uuid;
   v_video_puani integer := 0;
   v_pencere_acik boolean := false;
+  v_ileri_sarildi boolean := false;
   v_yeni boolean := false;
 BEGIN
   SELECT ik.* INTO v_izleme
@@ -115,17 +116,33 @@ BEGIN
 
   v_pencere_acik := clock_timestamp() BETWEEN v_oneri.oneri_baslangic AND v_oneri.oneri_bitis;
 
+  -- Bu temel paket ileri-sarma migrasyonundan önce de kurulabilir. Tablo varsa
+  -- soru kilidi uygulanır; yoksa sonradan eclub_ileri_sarma_kurali.sql fonksiyonu
+  -- aynı sözleşmeyle yeniler.
+  IF to_regclass('public.eclub_ileri_sarma_kayitlari') IS NOT NULL THEN
+    EXECUTE
+      'SELECT EXISTS (SELECT 1 FROM public.eclub_ileri_sarma_kayitlari WHERE izleme_id = $1)'
+      INTO v_ileri_sarildi
+      USING p_izleme_id;
+  END IF;
+
   IF NOT COALESCE(v_izleme.tamamlandi_mi, false) THEN
     UPDATE public.eclub_izleme_kayitlari ik
     SET tamamlandi_mi = true,
         izleme_bitis = clock_timestamp(),
-        soru_hakki_var_mi = v_pencere_acik AND COALESCE(cardinality(p_soru_indeksleri), 0) > 0,
+        soru_hakki_var_mi = v_pencere_acik
+          AND NOT v_ileri_sarildi
+          AND COALESCE(cardinality(p_soru_indeksleri), 0) > 0,
         soru_hakki_nedeni = CASE
           WHEN NOT v_pencere_acik THEN 'sure_gecmis'
+          WHEN v_ileri_sarildi THEN 'ileri_sarma'
           WHEN COALESCE(cardinality(p_soru_indeksleri), 0) = 0 THEN 'soru_yok'
           ELSE 'hak_var'
         END,
-        soru_indeksleri = CASE WHEN v_pencere_acik THEN p_soru_indeksleri ELSE NULL END
+        soru_indeksleri = CASE
+          WHEN v_pencere_acik AND NOT v_ileri_sarildi THEN p_soru_indeksleri
+          ELSE NULL
+        END
     WHERE ik.izleme_id = p_izleme_id
     RETURNING ik.* INTO v_izleme;
     v_yeni := true;
