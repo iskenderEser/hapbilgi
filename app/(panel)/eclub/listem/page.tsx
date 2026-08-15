@@ -3,7 +3,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Building2, LoaderCircle, Plus, Search } from "lucide-react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useEclubListem } from "./_hooks/useEclubListem";
 import { EczaneBlogu } from "./_components/EczaneBlogu";
@@ -172,54 +178,73 @@ export default function EclubListemPage() {
 
         {/* Yeni eczane formu — GLN-öncelikli, master otomatik doldurma */}
         {eczaneFormAcik ? (
-          <div className="bg-white border border-gray-200 rounded-xl px-4 md:px-5 py-4 flex flex-col gap-3">
-            <p className="text-sm font-semibold text-gray-900 m-0">Yeni Eczane</p>
+          <Card className="gap-0 overflow-hidden rounded-2xl border-[#dfe7f1] py-0 shadow-[0_7px_22px_rgba(31,55,90,0.04)]">
+            <CardHeader className="border-b border-[#e8eef4] bg-[#f8fafc] px-4 py-4 md:px-5">
+              <div className="flex items-center gap-3">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#eaf4fd] text-[#237ac8]">
+                  <Building2 className="size-5" />
+                </span>
+                <div>
+                  <CardTitle className="text-sm font-extrabold text-[#203653]">Yeni Eczane</CardTitle>
+                  <CardDescription className="mt-1 text-[11px] font-semibold text-[#7b8da5]">13 haneli GLN ile eczaneyi sorgulayın ve listenize ekleyin.</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
 
-            <div>
-              <label className="text-xs text-gray-500 block mb-1">GLN (13 hane)</label>
-              <input value={yeniGln} onChange={(e) => glnDegisti(e.target.value)}
-                placeholder="GLN girin, otomatik sorgulanır" maxLength={13} autoFocus
-                className="border rounded-lg px-3 py-2 text-sm w-full md:w-72 box-border"
-                style={{ fontFamily: "'Nunito', sans-serif", borderColor: yeniGln && !glnTamam ? "#fca5a5" : "#e5e7eb" }} />
-              {yeniGln && !glnTamam && <p className="text-xs mt-1" style={{ color: "#bc2d0d" }}>GLN 13 haneli sayı olmalıdır.</p>}
-            </div>
+            <CardContent className="grid gap-4 px-4 py-4 md:px-5">
+              <div className="grid max-w-md gap-1.5">
+                <Label htmlFor="yeni-eczane-gln" className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#71859d]">GLN</Label>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#8ea0b4]" />
+                  <Input
+                    id="yeni-eczane-gln"
+                    value={yeniGln}
+                    onChange={(e) => glnDegisti(e.target.value)}
+                    placeholder="13 haneli GLN girin"
+                    maxLength={13}
+                    inputMode="numeric"
+                    autoFocus
+                    aria-invalid={!!yeniGln && !glnTamam}
+                    className="h-10 rounded-lg border-[#d8e2ed] bg-white pl-9 font-mono text-[#324b68] shadow-none focus-visible:border-[#79add8] focus-visible:ring-[#d9ebfa]"
+                  />
+                </div>
+                {yeniGln && !glnTamam && <p className="text-[11px] font-semibold text-[#bc2d0d]">GLN 13 haneli sayı olmalıdır.</p>}
+              </div>
 
-            {glnTamam && sorguLoading && <p className="text-xs text-gray-400 m-0">Sorgulanıyor…</p>}
+              {glnTamam && sorguLoading && (
+                <div className="flex items-center gap-2 text-xs font-semibold text-[#7b8da5]">
+                  <LoaderCircle className="size-4 animate-spin" /> GLN sorgulanıyor…
+                </div>
+              )}
 
             {/* DURUM 1: Master'da onaylı — otomatik doldurma */}
             {glnTamam && !sorguLoading && sorguSonuc?.var && sorguSonuc.eczane && (
-              <div className="rounded-lg border border-gray-200 p-3 bg-gray-50 flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <span className="text-sm font-semibold text-gray-900">{sorguSonuc.eczane.eczane_adi}</span>
-                  <span className="text-xs text-gray-400 font-mono">{sorguSonuc.eczane.gln}</span>
+              <div className="flex flex-col gap-3 rounded-xl border border-[#dfe8f1] bg-[#f8fbfe] p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <span className="text-sm font-extrabold text-[#203653]">{sorguSonuc.eczane.eczane_adi}</span>
+                    <p className="mt-1 text-[11px] font-semibold text-[#71859d]">{sorguSonuc.eczane.il}{sorguSonuc.eczane.ilce ? ` / ${sorguSonuc.eczane.ilce}` : ""}</p>
+                  </div>
+                  <Badge variant="outline" className="border-[#d9e5f0] bg-white font-mono text-[#60758d]">GLN {sorguSonuc.eczane.gln}</Badge>
                 </div>
-                <span className="text-xs text-gray-500">
-                  {sorguSonuc.eczane.il}{sorguSonuc.eczane.ilce ? ` / ${sorguSonuc.eczane.ilce}` : ""}
-                </span>
                 {(sorguSonuc.eczaci || (sorguSonuc.teknisyenler?.length ?? 0) > 0) ? (
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-wrap gap-2">
                     {sorguSonuc.eczaci && (
-                      <span className="text-xs text-gray-600">
-                        <span className="text-red-600 font-medium">{KISI_ROL_ETIKETLERI.eczaci}:</span> {sorguSonuc.eczaci.ad} {sorguSonuc.eczaci.soyad}
-                      </span>
+                      <Badge variant="outline" className="border-red-200 bg-red-50 text-red-700">{KISI_ROL_ETIKETLERI.eczaci}: {sorguSonuc.eczaci.ad} {sorguSonuc.eczaci.soyad}</Badge>
                     )}
                     {(sorguSonuc.teknisyenler ?? []).map((t) => (
-                      <span key={t.kisi_id} className="text-xs text-gray-600">
-                        <span className="font-medium" style={{ color: "#10304a" }}>{KISI_ROL_ETIKETLERI.eczane_teknisyeni}:</span> {t.ad} {t.soyad}
-                      </span>
+                      <Badge key={t.kisi_id} variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700">{KISI_ROL_ETIKETLERI.eczane_teknisyeni}: {t.ad} {t.soyad}</Badge>
                     ))}
                   </div>
                 ) : (
-                  <span className="text-xs text-gray-400">Bu eczanede kayıtlı kişi yok.</span>
+                  <span className="text-[11px] font-semibold text-[#8a99aa]">Bu eczanede kayıtlı kişi yok.</span>
                 )}
                 {sorguSonuc.listede ? (
-                  <span className="text-xs text-gray-400">Bu eczane zaten listenizde.</span>
+                  <span className="text-xs font-semibold text-[#7b8da5]">Bu eczane zaten listenizde.</span>
                 ) : (
-                  <div className="flex gap-2">
-                    <button onClick={listemeEkle} disabled={islemLoading}
-                      className="px-4 py-2 rounded-lg border-none bg-green-700 text-white text-sm font-semibold cursor-pointer">Listeme ekle</button>
-                    <button onClick={formTemizle}
-                      className="px-4 py-2 rounded-lg border border-gray-200 bg-transparent text-gray-500 text-sm cursor-pointer">Vazgeç</button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button onClick={listemeEkle} disabled={islemLoading} className="bg-[#2f7fc7] font-extrabold hover:bg-[#256daf]">Listeme ekle</Button>
+                    <Button variant="outline" onClick={formTemizle} className="border-[#d8e2ed] text-[#60758d]">Vazgeç</Button>
                   </div>
                 )}
               </div>
@@ -227,50 +252,39 @@ export default function EclubListemPage() {
 
             {/* DURUM 2: Master'da onay bekliyor */}
             {glnTamam && !sorguLoading && sorguSonuc && !sorguSonuc.var && sorguSonuc.onay_bekliyor && (
-              <div className="rounded-lg border p-3 flex flex-col gap-1" style={{ borderColor: "#fde68a", background: "#fefce8" }}>
-                <span className="text-sm font-medium" style={{ color: "#854d0e" }}>Bu eczane admin onayı bekliyor.</span>
-                <span className="text-xs" style={{ color: "#854d0e" }}>Onaylanınca listenize ekleyebilirsiniz.</span>
-                <button onClick={formTemizle} className="text-xs mt-1 self-start px-3 py-1.5 rounded-lg border border-gray-200 bg-transparent text-gray-500 cursor-pointer">Kapat</button>
+              <div className="flex flex-col gap-1.5 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <span className="text-sm font-extrabold text-amber-800">Bu eczane admin onayı bekliyor.</span>
+                <span className="text-xs font-semibold text-amber-700">Onaylandığında listenize ekleyebilirsiniz.</span>
+                <Button variant="outline" size="sm" onClick={formTemizle} className="mt-1 w-fit border-amber-200 bg-white text-amber-800">Kapat</Button>
               </div>
             )}
 
             {/* DURUM 3: Master'da yok — elle ekleme (admin onayına) */}
             {glnTamam && !sorguLoading && sorguSonuc && !sorguSonuc.var && sorguSonuc.master_yok && (
-              <div className="flex flex-col gap-2">
-                <p className="text-xs text-gray-500 m-0">Bu GLN resmi listede yok. Elle eklerseniz admin onayına gönderilir.</p>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <input value={elleAd} onChange={(e) => setElleAd(e.target.value)}
-                    placeholder="Eczane adı" maxLength={200}
-                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm flex-1 min-w-40" style={{ fontFamily: "'Nunito', sans-serif" }} />
-                  <input value={elleIl} onChange={(e) => setElleIl(e.target.value)}
-                    placeholder="İl" maxLength={100}
-                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm w-32" style={{ fontFamily: "'Nunito', sans-serif" }} />
-                  <input value={elleIlce} onChange={(e) => setElleIlce(e.target.value)}
-                    placeholder="İlçe" maxLength={100}
-                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm w-32" style={{ fontFamily: "'Nunito', sans-serif" }} />
+              <div className="grid gap-3 rounded-xl border border-[#dfe8f1] bg-[#f8fbfe] p-4">
+                <div><p className="text-sm font-extrabold text-[#203653]">Eczane bilgilerini tamamlayın</p><p className="mt-1 text-[11px] font-semibold text-[#7b8da5]">Bu GLN resmi listede bulunamadı; kayıt admin onayına gönderilecektir.</p></div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="grid gap-1.5 md:col-span-2"><Label className="text-[10px] text-[#71859d]">Eczane adı</Label><Input value={elleAd} onChange={(e) => setElleAd(e.target.value)} maxLength={200} className="border-[#d8e2ed] bg-white shadow-none" /></div>
+                  <div className="grid gap-1.5"><Label className="text-[10px] text-[#71859d]">İl</Label><Input value={elleIl} onChange={(e) => setElleIl(e.target.value)} maxLength={100} className="border-[#d8e2ed] bg-white shadow-none" /></div>
+                  <div className="grid gap-1.5"><Label className="text-[10px] text-[#71859d]">İlçe</Label><Input value={elleIlce} onChange={(e) => setElleIlce(e.target.value)} maxLength={100} className="border-[#d8e2ed] bg-white shadow-none" /></div>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={onayaGonder} disabled={islemLoading || !elleGecerli}
-                    className="px-4 py-2 rounded-lg border-none bg-green-700 text-white text-sm font-semibold cursor-pointer"
-                    style={{ opacity: !elleGecerli ? 0.5 : 1 }}>Onaya gönder</button>
-                  <button onClick={formTemizle}
-                    className="px-4 py-2 rounded-lg border border-gray-200 bg-transparent text-gray-500 text-sm cursor-pointer">Vazgeç</button>
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={onayaGonder} disabled={islemLoading || !elleGecerli} className="bg-[#2f7fc7] font-extrabold hover:bg-[#256daf]">Onaya gönder</Button>
+                  <Button variant="outline" onClick={formTemizle} className="border-[#d8e2ed] text-[#60758d]">Vazgeç</Button>
                 </div>
               </div>
             )}
 
             {!glnTamam && (
               <div className="flex justify-start">
-                <button onClick={formTemizle} className="px-4 py-2 rounded-lg border border-gray-200 bg-transparent text-gray-500 text-sm cursor-pointer">Vazgeç</button>
+                <Button variant="outline" onClick={formTemizle} className="border-[#d8e2ed] text-[#60758d]">Vazgeç</Button>
               </div>
             )}
-          </div>
+            </CardContent>
+          </Card>
         ) : (
           <div className="flex justify-center">
-            <button onClick={() => setEczaneFormAcik(true)}
-              className="px-5 py-2.5 rounded-lg border border-gray-200 bg-white text-gray-600 text-sm font-semibold cursor-pointer hover:bg-gray-50 transition-colors">
-              + Yeni Eczane Ekle
-            </button>
+            <Button onClick={() => setEczaneFormAcik(true)} className="rounded-xl bg-[#2f7fc7] px-5 font-extrabold shadow-sm hover:bg-[#256daf]"><Plus />Yeni Eczane Ekle</Button>
           </div>
         )}
           </div>
