@@ -14,11 +14,7 @@ import { useEclubTestEczaneler } from "../_hooks/useEclubTestEczaneler";
 import { useEclubTestTemizlik } from "../_hooks/useEclubTestTemizlik";
 import { RENK_BORDO, RENK_BORDO_ZEMIN } from "../../_constants";
 import { TEST_TEMIZLIK_ONAYI } from "@/lib/eclub/testGln";
-
-const KISI_ROL_ETIKETLERI: Record<string, string> = {
-  eczaci: "Eczacı",
-  eczane_teknisyeni: "Eczane Teknisyeni",
-};
+import { eclubKisiRolEtiketi } from "@/lib/utils/roller";
 
 interface EclubYonetimPaneliProps {
   hata: (mesaj: string, adim?: string, detay?: string) => void;
@@ -323,7 +319,7 @@ export default function EclubYonetimPaneli({ hata, basari }: EclubYonetimPaneliP
                             <div className="flex flex-col gap-0.5">
                               <span className="text-sm text-gray-900">{k.ad} {k.soyad}</span>
                               <span className="text-xs text-gray-400">
-                                {KISI_ROL_ETIKETLERI[k.rol] ?? k.rol} · {k.aktif_mi ? "aktif" : "pasif"}
+                                {eclubKisiRolEtiketi(k.rol)} · {k.aktif_mi ? "aktif" : "pasif"}
                               </span>
                             </div>
                           </div>

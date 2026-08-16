@@ -4,13 +4,9 @@ import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { eclubLiginiOlustur, type EclubRaporHamSatir } from "@/lib/eclub/rapor";
 import { eclubYonetimKapsaminiGetir } from "@/lib/eclub/yonetimKapsami";
 import { eclubLigPeriyoduParse } from "@/lib/eclub/ligPeriyot";
-import { ECLUB_LIGI_GOREN_ROLLER } from "@/lib/utils/roller";
+import { ECLUB_LIGI_GOREN_ROLLER, eclubKisiRolEtiketi } from "@/lib/utils/roller";
 import { ligPeriyoduAraligi } from "@/lib/zaman/kontrol";
 import { hataYaniti, rolHatasi, sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
-
-const rolEtiketi = (rol: string) => (
-  rol === "eczaci" ? "Eczacı" : rol === "eczane_teknisyeni" ? "Eczane Teknisyeni" : rol
-);
 
 export async function GET(request: NextRequest) {
   try {
@@ -68,7 +64,7 @@ export async function GET(request: NextRequest) {
       for (const kisi of lig) {
         siralama.push([
           utt.takim_adi, utt.bm_adi, utt.bolge_adi, utt.utt_adi,
-          kisi.sira || "", `${kisi.ad} ${kisi.soyad}`.trim(), rolEtiketi(kisi.rol), kisi.eczane_adi,
+          kisi.sira || "", `${kisi.ad} ${kisi.soyad}`.trim(), eclubKisiRolEtiketi(kisi.rol), kisi.eczane_adi,
           kisi.gln ?? "", kisi.gonderilen_sayisi, kisi.tamamlanan_izleme, kisi.dogru_cevap,
           kisi.yanlis_cevap, kisi.izleme_puani, kisi.cevaplama_puani, kisi.toplam_puan,
         ]);

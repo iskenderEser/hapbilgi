@@ -71,7 +71,7 @@ export default function LoginPage() {
   const [sifirlamaGonderiliyor, setSifirlamaGonderiliyor] = useState(false);
   const [sifirlamaMesaj, setSifirlamaMesaj] = useState("");
   const router = useRouter();
-  const { kullanici, yukleniyor } = useAuth();
+  const { kullanici, yukleniyor, cikisYap } = useAuth();
 
   useEffect(() => {
     if (yukleniyor) return;
@@ -105,7 +105,7 @@ export default function LoginPage() {
           .single();
 
         if (firma && firma.aktif === false) {
-          await supabase.auth.signOut();
+          await cikisYap();
           setHata("Firmanızın sisteme erişimi şu anda kapalıdır. Lütfen yöneticinizle görüşün.");
           return;
         }
@@ -114,7 +114,7 @@ export default function LoginPage() {
       router.replace(kullanici.rol === "admin" ? "/admin" : "/ana-sayfa");
     };
     yonlendir();
-  }, [kullanici, yukleniyor]);
+  }, [cikisYap, kullanici, router, yukleniyor]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

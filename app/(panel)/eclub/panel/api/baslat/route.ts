@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { ECLUB_TUKETICI_ROLLERI, hedefRolleriOku } from "@/lib/utils/roller";
+import { ECLUB_TUKETICI_ROLLERI, eclubKisiHedefRolu, hedefRolleriOku } from "@/lib/utils/roller";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { eclubIzlemeHaklari } from "@/lib/eclub/izlemeKurali";
 import { olayIdGecerliMi } from "@/lib/izleme/baslat";
@@ -62,7 +62,8 @@ export async function POST(request: NextRequest) {
     const yayinKontrol = veriKontrol(yayin, "v_yayin_detay SELECT — yayin_id", "Yayın bulunamadı.");
     if (!yayinKontrol.gecerli) return yayinKontrol.yanit;
     if (yayin.durum !== "yayinda") return isKuraluHatasi(`Video şu an yayında değil. Mevcut durum: ${yayin.durum}`);
-    if (!hedefRolleriOku(yayin).includes(kisi.rol)) return rolHatasi("Bu yayın kişi rolünüze açık değil.");
+    const hedefRol = eclubKisiHedefRolu(kisi.rol);
+    if (!hedefRol || !hedefRolleriOku(yayin).includes(hedefRol)) return rolHatasi("Bu yayın kişi unvanınıza açık değil.");
 
     // Bir öneri tek öğrenme olayıdır. Tamamlanmış kayıt da yeniden kullanılır;
     // böylece tekrar oynatma ikinci puan veya ikinci soru hakkı doğurmaz.

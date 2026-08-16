@@ -146,11 +146,13 @@ export const ECLUB_LIGI_GOREN_ROLLER = [
   ...ECLUB_YONETIM_ROLLERI,
 ];
 
-// ECLUB_TUKETICI_ROLLERI: E-Club içeriğini tüketen roller — eczacı ve eczane teknisyeni.
+// ECLUB_TUKETICI_ROLLERI: E-Club içeriğini tüketen eczane unvanları.
 // DİKKAT: Bu roller kullanicilar tablosunda DEĞİL, eclub_kisiler tablosunda yaşar.
 // Bu yüzden bilinçli olarak TUM_ROLLER'a dahil EDİLMEZ (TUM_ROLLER kullanicilar
 // rol validasyonu içindir). E-Club kişileri ayrı bir kimlik/yetki düzleminde tutulur.
-export const ECLUB_TUKETICI_ROLLERI = ["eczaci", "eczane_teknisyeni"];
+export type EclubKisiRol = "eczaci" | "ikinci_eczaci" | "yardimci_eczaci" | "eczane_teknisyeni";
+export const ECLUB_ECZACI_UNVANLARI: EclubKisiRol[] = ["eczaci", "ikinci_eczaci", "yardimci_eczaci"];
+export const ECLUB_TUKETICI_ROLLERI: string[] = [...ECLUB_ECZACI_UNVANLARI, "eczane_teknisyeni"];
 
 // MUSTERI_ROLU: Eczanem müşterisi — üçüncü kimlik düzlemi (eczanem_musteriler).
 // ECLUB_TUKETICI_ROLLERI gibi TUM_ROLLER'a dahil EDİLMEZ; rolCozucu bu değeri
@@ -176,6 +178,13 @@ export const TUM_HEDEF_ROLLER: HedefRol[] = ["utt", "bm", "eczaci", "eczane_tekn
 // (ECLUB_TUKETICI_ROLLERI ile değerleri aynıdır ama kavram farklıdır:
 // o kişilerin rolü, bu içeriğin hedefi. İkisi bilinçli olarak ayrı durur.)
 export const ECLUB_HEDEF_ROLLER: HedefRol[] = ["eczaci", "eczane_teknisyeni"];
+
+/** Kişinin unvanını yayın hedef kitlesindeki iki kanonik rolden birine eşler. */
+export function eclubKisiHedefRolu(rol: string): "eczaci" | "eczane_teknisyeni" | null {
+  if (ECLUB_ECZACI_UNVANLARI.includes(rol as EclubKisiRol)) return "eczaci";
+  if (rol === "eczane_teknisyeni") return "eczane_teknisyeni";
+  return null;
+}
 
 /** Yayının yalnız E-Club dış müşterilerine (eczacı/teknisyen) yönelik olduğunu doğrular. */
 export function yalnizEclubHedefliMi(hedefRoller: readonly string[] | null | undefined): boolean {
@@ -248,6 +257,19 @@ export const ROL_ADLARI: Record<string, string> = {
   ik_uz: "İK Uzmanı",
   ik_per: "İK Personeli",
   eczaci: "Eczacı",
+  ikinci_eczaci: "İkinci Eczacı",
+  yardimci_eczaci: "Yardımcı Eczacı",
   eczane_teknisyeni: "Eczane Teknisyeni",
   musteri: "Müşteri",
 };
+
+export const ECLUB_KISI_ROL_ETIKETLERI: Record<EclubKisiRol, string> = {
+  eczaci: ROL_ADLARI.eczaci,
+  ikinci_eczaci: ROL_ADLARI.ikinci_eczaci,
+  yardimci_eczaci: ROL_ADLARI.yardimci_eczaci,
+  eczane_teknisyeni: ROL_ADLARI.eczane_teknisyeni,
+};
+
+export function eclubKisiRolEtiketi(rol: string): string {
+  return ROL_ADLARI[rol] ?? rol;
+}

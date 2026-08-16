@@ -8,6 +8,7 @@ import EclubYonetimHiyerarsisi from "@/components/eclub/EclubYonetimHiyerarsisi"
 import HbLigiPeriyotSecici, { type Periyot } from "@/components/hbligi/HbLigiPeriyotSecici";
 import type { EclubLigSatiri } from "@/lib/eclub/rapor";
 import type { EclubKapsamUtt, EclubYonetimKapsami } from "@/lib/eclub/yonetimKapsami";
+import { eclubKisiRolEtiketi } from "@/lib/utils/roller";
 import { aktifPeriyot } from "@/lib/zaman/kontrol";
 import styles from "./eclub-league.module.css";
 
@@ -20,10 +21,6 @@ interface LigData {
   utt_ligleri: Array<{ utt: EclubKapsamUtt; lig: EclubLigSatiri[] }>;
 }
 
-const rolEtiketi = (rol: string) => (
-  rol === "eczaci" ? "Eczacı" : rol === "eczane_teknisyeni" ? "Eczane Teknisyeni" : rol
-);
-
 const harfler = (ad: string, soyad: string) => `${ad[0] ?? ""}${soyad[0] ?? ""}`.toLocaleUpperCase("tr");
 
 function UttLigDetayi({ lig }: { lig: EclubLigSatiri[] }) {
@@ -33,7 +30,7 @@ function UttLigDetayi({ lig }: { lig: EclubLigSatiri[] }) {
       {lig.map((kisi) => (
         <article key={kisi.kisi_id} className="rounded-xl border border-[#e1e9f1] bg-[#fbfcfe] p-3">
           <div className="grid gap-2 md:grid-cols-[minmax(180px,1.4fr)_repeat(4,minmax(70px,auto))] md:items-center">
-            <div className="min-w-0"><strong className="block truncate text-xs text-[#203653]">{kisi.sira ? `${kisi.sira}. ` : ""}{kisi.ad} {kisi.soyad}</strong><small className="block truncate text-[10px] font-semibold text-[#8190a3]">{rolEtiketi(kisi.rol)} · {kisi.eczane_adi}</small></div>
+            <div className="min-w-0"><strong className="block truncate text-xs text-[#203653]">{kisi.sira ? `${kisi.sira}. ` : ""}{kisi.ad} {kisi.soyad}</strong><small className="block truncate text-[10px] font-semibold text-[#8190a3]">{eclubKisiRolEtiketi(kisi.rol)} · {kisi.eczane_adi}</small></div>
             <span className="text-[10px] font-bold text-[#60758e]">{kisi.tamamlanan_izleme} izleme</span>
             <span className="text-[10px] font-bold text-[#16865f]">{kisi.dogru_cevap} doğru</span>
             <span className="text-[10px] font-bold text-[#237ac8]">+{kisi.izleme_puani} izleme p.</span>
@@ -261,7 +258,7 @@ export default function EclubLigiPage() {
         {data.kapsam.gorunum === "utt" && <section className={styles.panel}>
           <div className={styles.panelHeader}>
             <div>
-              <div className={styles.eyebrow}>Eczacı ve teknisyenler</div>
+              <div className={styles.eyebrow}>Eczane çalışanları</div>
               <h2 className={styles.panelTitle}>Takım Sıralaması</h2>
               <p className={styles.panelDescription}>Bir üyeyi açarak puanını oluşturan ürün ve içerik ayrıntılarını görün.</p>
             </div>
@@ -281,7 +278,7 @@ export default function EclubLigiPage() {
                           <td>
                             <button type="button" className={styles.personButton} onClick={() => setAcikKisi(acik ? null : kisi.kisi_id)} aria-expanded={acik}>
                               <strong>{kisi.ad} {kisi.soyad}</strong>
-                              <small>{rolEtiketi(kisi.rol)}</small>
+                              <small>{eclubKisiRolEtiketi(kisi.rol)}</small>
                               <ChevronDown className={`${styles.chevron} ${acik ? styles.chevronOpen : ""}`} size={14} />
                             </button>
                           </td>

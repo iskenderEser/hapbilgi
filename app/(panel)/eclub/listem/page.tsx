@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { eclubKisiHedefRolu } from "@/lib/utils/roller";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useEclubListem } from "./_hooks/useEclubListem";
 import { EczaneBlogu } from "./_components/EczaneBlogu";
@@ -227,13 +228,13 @@ export default function EclubListemPage() {
                   </div>
                   <Badge variant="outline" className="border-[#d9e5f0] bg-white font-mono text-[#60758d]">GLN {sorguSonuc.eczane.gln}</Badge>
                 </div>
-                {(sorguSonuc.eczaci || (sorguSonuc.teknisyenler?.length ?? 0) > 0) ? (
+                {(sorguSonuc.eczaci || (sorguSonuc.diger_kisiler?.length ?? 0) > 0) ? (
                   <div className="flex flex-wrap gap-2">
                     {sorguSonuc.eczaci && (
                       <Badge variant="outline" className="border-red-200 bg-red-50 text-red-700">{KISI_ROL_ETIKETLERI.eczaci}: {sorguSonuc.eczaci.ad} {sorguSonuc.eczaci.soyad}</Badge>
                     )}
-                    {(sorguSonuc.teknisyenler ?? []).map((t) => (
-                      <Badge key={t.kisi_id} variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700">{KISI_ROL_ETIKETLERI.eczane_teknisyeni}: {t.ad} {t.soyad}</Badge>
+                    {(sorguSonuc.diger_kisiler ?? []).map((kisi) => (
+                      <Badge key={kisi.kisi_id} variant="outline" className={eclubKisiHedefRolu(kisi.rol) === "eczaci" ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}>{KISI_ROL_ETIKETLERI[kisi.rol]}: {kisi.ad} {kisi.soyad}</Badge>
                     ))}
                   </div>
                 ) : (

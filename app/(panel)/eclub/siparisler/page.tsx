@@ -27,7 +27,7 @@ import {
   type EclubSiparisDurum,
 } from "@/lib/eclub/store/ekipSiparis";
 import type { EclubYonetimKapsami } from "@/lib/eclub/yonetimKapsami";
-import { ECLUB_YONETIM_ROLLERI } from "@/lib/utils/roller";
+import { ECLUB_YONETIM_ROLLERI, eclubKisiRolEtiketi } from "@/lib/utils/roller";
 
 const SAYFA_BOYUTU = 30;
 
@@ -76,10 +76,6 @@ function tarihFormatla(iso: string | null): string {
   });
 }
 
-function rolEtiketi(rol: string): string {
-  return rol === "eczaci" ? "Eczacı" : rol === "eczane_teknisyeni" ? "Eczane Teknisyeni" : rol;
-}
-
 function DurumRozeti({ durum }: { durum: EclubSiparisDurum }) {
   const renk = ECLUB_SIPARIS_DURUM_RENKLERI[durum];
   return (
@@ -113,7 +109,7 @@ function Alici({ siparis }: { siparis: EclubEkipSiparisSatiri }) {
   return (
     <div className="min-w-0">
       <div className="truncate text-xs font-extrabold text-[#203653]">{siparis.kisi_ad} {siparis.kisi_soyad}</div>
-      <div className="mt-0.5 truncate text-[10px] font-semibold text-[#8190a3]">{rolEtiketi(siparis.kisi_rol)} · {siparis.eczane_adi}</div>
+      <div className="mt-0.5 truncate text-[10px] font-semibold text-[#8190a3]">{eclubKisiRolEtiketi(siparis.kisi_rol)} · {siparis.eczane_adi}</div>
       {siparis.bm_adi && siparis.bm_adi !== "—" && <div className="mt-0.5 truncate text-[9px] font-bold text-[#3589d8]">UTT: {siparis.utt_adi} · BM: {siparis.bm_adi}</div>}
     </div>
   );
@@ -379,7 +375,7 @@ export default function EclubSiparislerPage() {
             <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.03em] text-[#203653]">Siparişler</h1>
             <p className="mt-1 text-xs font-semibold text-[#8190a3]">
               {data.kapsam_hiyerarsi?.gorunum === "utt"
-                ? "Eczanelerinizdeki eczacı ve teknisyenlerin, firmanızın puanını kullandığı siparişleri izleyin."
+                ? "Eczanelerinizdeki çalışanların, firmanızın puanını kullandığı siparişleri izleyin."
                 : `${data.kapsam_hiyerarsi?.kapsam_adi ?? "Yetkili kapsam"} içindeki E‑Club siparişlerini takım, BM ve UTT hattında izleyin.`}
             </p>
           </div>
@@ -428,7 +424,7 @@ export default function EclubSiparislerPage() {
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <label className="min-w-0"><span className="mb-1 flex items-center gap-1 text-[10px] font-extrabold text-[#71859d]"><Store size={11} /> Eczane</span><select className={selectSinifi} value={filtreler.eczane_id} onChange={(e) => filtreDegistir("eczane_id", e.target.value)}><option value="">Tüm eczaneler</option>{data.kapsam.eczaneler.map((eczane) => <option key={eczane.eczane_id} value={eczane.eczane_id}>{eczane.eczane_adi}</option>)}</select></label>
-            <label className="min-w-0"><span className="mb-1 flex items-center gap-1 text-[10px] font-extrabold text-[#71859d]"><UserRound size={11} /> Eczacı / teknisyen</span><select className={selectSinifi} value={filtreler.kisi_id} onChange={(e) => filtreDegistir("kisi_id", e.target.value)}><option value="">Tüm kişiler</option>{kisiler.map((kisi) => <option key={kisi.kisi_id} value={kisi.kisi_id}>{kisi.ad} {kisi.soyad} · {rolEtiketi(kisi.rol)}</option>)}</select></label>
+            <label className="min-w-0"><span className="mb-1 flex items-center gap-1 text-[10px] font-extrabold text-[#71859d]"><UserRound size={11} /> Eczane çalışanı</span><select className={selectSinifi} value={filtreler.kisi_id} onChange={(e) => filtreDegistir("kisi_id", e.target.value)}><option value="">Tüm kişiler</option>{kisiler.map((kisi) => <option key={kisi.kisi_id} value={kisi.kisi_id}>{kisi.ad} {kisi.soyad} · {eclubKisiRolEtiketi(kisi.rol)}</option>)}</select></label>
             <label className="min-w-0"><span className="mb-1 block text-[10px] font-extrabold text-[#71859d]">Durum</span><select className={selectSinifi} value={filtreler.durum} onChange={(e) => filtreDegistir("durum", e.target.value)}><option value="">Tüm durumlar</option>{ECLUB_SIPARIS_DURUMLARI.map((durum) => <option key={durum} value={durum}>{ECLUB_SIPARIS_DURUM_ETIKETLERI[durum]}</option>)}</select></label>
             <label className="min-w-0"><span className="mb-1 flex items-center gap-1 text-[10px] font-extrabold text-[#71859d]"><CalendarRange size={11} /> Başlangıç</span><input type="date" className={selectSinifi} value={filtreler.tarih_baslangic} max={filtreler.tarih_bitis || undefined} onChange={(e) => filtreDegistir("tarih_baslangic", e.target.value)} /></label>
             <label className="min-w-0"><span className="mb-1 flex items-center gap-1 text-[10px] font-extrabold text-[#71859d]"><CalendarRange size={11} /> Bitiş</span><input type="date" className={selectSinifi} value={filtreler.tarih_bitis} min={filtreler.tarih_baslangic || undefined} onChange={(e) => filtreDegistir("tarih_bitis", e.target.value)} /></label>

@@ -1,5 +1,5 @@
 -- E-Club Siparişler — UTT'nin kendi aktif eczaneleri ve bu eczanelerdeki
--- aktif eczacı/teknisyenlerin, yalnız UTT firmasının puan kullandığı siparişleri.
+-- aktif E-Club eczane çalışanlarının, yalnız UTT firmasının puan kullandığı siparişleri.
 -- Uygulama adımı: E-Club DB aktivasyonu sırasında SQL editöründe çalıştırılır.
 
 CREATE OR REPLACE FUNCTION public.get_eclub_utt_siparisler(
@@ -52,7 +52,7 @@ AS $function$
      AND kke.aktif_mi = true
     JOIN public.eclub_kisiler k
       ON k.kisi_id = kke.kisi_id
-     AND lower(k.rol) IN ('eczaci', 'eczane_teknisyeni')
+     AND lower(k.rol) IN ('eczaci', 'ikinci_eczaci', 'yardimci_eczaci', 'eczane_teknisyeni')
     ORDER BY k.kisi_id, kke.baslangic_tarihi DESC NULLS LAST, kke.created_at DESC NULLS LAST
   ),
   firma_payi AS (

@@ -1,6 +1,7 @@
 // app/eclub/oneriler/_types.ts
 
 import type { YayindakiVideo } from "@/lib/video/yayindakiVideolar";
+import { ECLUB_KISI_ROL_ETIKETLERI, type EclubKisiRol } from "@/lib/utils/roller";
 
 export type EclubHedefRol = "eczaci" | "eczane_teknisyeni";
 
@@ -14,7 +15,7 @@ export interface OneriKisi {
   kisi_id: string;
   ad: string;
   soyad: string;
-  rol: EclubHedefRol;
+  rol: EclubKisiRol;
   eczane_adi: string | null;
   aktif_mi: boolean;
   auth_user_id: string | null;
@@ -35,9 +36,8 @@ export interface OneriGonderSonuc {
   atlanan: { kisi_id: string; sebep: string }[];
 }
 
-export const ROL_ETIKETLERI: Record<EclubHedefRol, string> = {
-  eczaci: "Eczacı",
-  eczane_teknisyeni: "Eczane Teknisyeni",
+export const ROL_ETIKETLERI: Record<EclubHedefRol | EclubKisiRol, string> = {
+  ...ECLUB_KISI_ROL_ETIKETLERI,
 };
 
 // Atlanma sebebi → kullanıcıya gösterilecek açıklama.

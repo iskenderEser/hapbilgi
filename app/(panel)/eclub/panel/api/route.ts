@@ -9,7 +9,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { ECLUB_TUKETICI_ROLLERI, hedefRolleriOku, type HedefRoller } from "@/lib/utils/roller";
+import { ECLUB_TUKETICI_ROLLERI, eclubKisiHedefRolu, hedefRolleriOku, type HedefRoller } from "@/lib/utils/roller";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { eclubOneriDurumu } from "@/lib/eclub/izlemeKurali";
 import { eclubStoreFirmaBakiye } from "@/lib/eclub/store/eclubStoreBakiye";
@@ -140,7 +140,8 @@ export async function GET() {
       const oo = o as { oneri_id: string; yayin_id: string; oneri_baslangic: string; oneri_bitis: string; izlendi_mi: boolean; created_at: string };
       const y = yayinMap.get(oo.yayin_id);
       // İkinci güvenlik filtresi: hedef rol ve yayın durumu kişi panelinde de doğrulanır.
-      if (!y || !y.hedef_roller.includes(kisi.rol) || y.durum !== "yayinda") return [];
+      const hedefRol = eclubKisiHedefRolu(kisi.rol);
+      if (!y || !hedefRol || !y.hedef_roller.includes(hedefRol) || y.durum !== "yayinda") return [];
       const kazanilan = oneriPerformansi.get(oo.oneri_id) ?? { izleme: 0, cevaplama: 0, kayip: 0, dogru: 0, yanlis: 0 };
       return [{
         oneri_id: oo.oneri_id,

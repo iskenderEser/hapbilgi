@@ -7,6 +7,7 @@ import { ListeArama, useListe } from "@/components/liste";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 import type { OneriYayin, OneriKisi, OneriGonderSonuc, OneriLimitler } from "../_types";
 import { ATLANMA_SEBEP_ETIKETLERI, ROL_ETIKETLERI } from "../_types";
+import { eclubKisiHedefRolu } from "@/lib/utils/roller";
 
 interface Props {
   yayinlar: OneriYayin[];
@@ -38,7 +39,10 @@ export function OneriGonder({ yayinlar, kisiler, limitler, gonderLoading, onGond
   const uygunKisiler = useMemo(() => {
     if (!seciliYayin) return [];
     return kisiler
-      .filter((kisi) => kisi.aktif_mi && !!kisi.auth_user_id && seciliYayin.hedef_roller.includes(kisi.rol))
+      .filter((kisi) => {
+        const hedefRol = eclubKisiHedefRolu(kisi.rol);
+        return kisi.aktif_mi && !!kisi.auth_user_id && !!hedefRol && seciliYayin.hedef_roller.includes(hedefRol);
+      })
       .sort((a, b) => {
         const eczaneSirasi = (a.eczane_adi ?? "").localeCompare(b.eczane_adi ?? "", "tr");
         return eczaneSirasi || `${a.ad} ${a.soyad}`.localeCompare(`${b.ad} ${b.soyad}`, "tr");
@@ -124,7 +128,7 @@ export function OneriGonder({ yayinlar, kisiler, limitler, gonderLoading, onGond
         <div>
           <h2 id="eclub-video-katalogu-baslik" className="text-base font-extrabold text-[#203653]">Video Kütüphanesi</h2>
           <p className="mt-0.5 text-xs text-[#7b8da5]">
-            {oneriModu ? "Önereceğiniz videoyu seçin." : "Videoları inceleyin veya eczacı ve teknisyenlerinize önerin."}
+            {oneriModu ? "Önereceğiniz videoyu seçin." : "Videoları inceleyin veya eczane çalışanlarınıza önerin."}
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

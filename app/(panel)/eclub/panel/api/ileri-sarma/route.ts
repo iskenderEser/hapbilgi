@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
     if (kisiError) return hataYaniti("Kişi bilgisi alınamadı.", "eclub_kisiler SELECT — ileri sarma", kisiError);
     if (!kisi || !ECLUB_TUKETICI_ROLLERI.includes(kisi.rol)) {
-      return rolHatasi("Bu işlem yalnız E-Club eczacı ve teknisyenlerine açıktır.");
+      return rolHatasi("Bu işlem yalnız E-Club eczane çalışanlarına açıktır.");
     }
 
     const body = await request.json();

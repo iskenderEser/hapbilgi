@@ -9,6 +9,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { guvenliCikisYap } from "@/lib/auth/guvenliCikis";
 import { useEffect, useState } from "react";
 
 const BORDO = "#bc2d0d";
@@ -72,7 +73,7 @@ export default function SifreYenilePage() {
     setTamamlandi(true);
     setKaydediliyor(false);
     // Kurtarma oturumu kapatılır; AuthProvider SIGNED_OUT ile /login'e yönlendirir.
-    setTimeout(() => supabase.auth.signOut(), 2500);
+    setTimeout(() => { void guvenliCikisYap(supabase); }, 2500);
   };
 
   return (

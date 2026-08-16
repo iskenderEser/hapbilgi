@@ -49,7 +49,7 @@ interface KisiKayit {
 async function eczaneKisileri(
   adminSupabase: SupabaseClient,
   eczane_id: string
-): Promise<{ eczaci: KisiKayit | null; teknisyenler: KisiKayit[] }> {
+): Promise<{ eczaci: KisiKayit | null; digerKisiler: KisiKayit[] }> {
   const { data: baglar } = await adminSupabase
     .from("eclub_kisi_eczane")
     .select("kisi_id, aktif_mi, eclub_kisiler ( kisi_id, rol, ad, soyad, eposta, telefon, auth_user_id )")
@@ -57,7 +57,7 @@ async function eczaneKisileri(
     .eq("aktif_mi", true);
 
   let eczaci: KisiKayit | null = null;
-  const teknisyenler: KisiKayit[] = [];
+  const digerKisiler: KisiKayit[] = [];
   for (const b of baglar ?? []) {
     const kRaw = (b as { eclub_kisiler?: KisiKayit | KisiKayit[] }).eclub_kisiler;
     const k = Array.isArray(kRaw) ? kRaw[0] : kRaw;
@@ -67,9 +67,9 @@ async function eczaneKisileri(
       eposta: k.eposta, telefon: k.telefon, auth_user_id: k.auth_user_id ?? null,
     };
     if (k.rol === "eczaci") { if (!eczaci) eczaci = kayit; }
-    else teknisyenler.push(kayit);
+    else digerKisiler.push(kayit);
   }
-  return { eczaci, teknisyenler };
+  return { eczaci, digerKisiler };
 }
 
 export async function GET(request: NextRequest) {
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
         .maybeSingle();
 
       let eczaci: KisiKayit | null = null;
-      let teknisyenler: KisiKayit[] = [];
+      let digerKisiler: KisiKayit[] = [];
       let listede = false;
       let eczane_id: string | null = null;
 
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
         eczane_id = havuz.eczane_id;
         const kisiler = await eczaneKisileri(adminSupabase, havuz.eczane_id);
         eczaci = kisiler.eczaci;
-        teknisyenler = kisiler.teknisyenler;
+        digerKisiler = kisiler.digerKisiler;
 
         const { data: iliski } = await adminSupabase
           .from("eclub_eczane_firma")
@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
         listede,
         eczane: { eczane_id, gln: master.gln, eczane_adi: master.eczane_adi, il: master.il, ilce: master.ilce },
         eczaci,
-        teknisyenler,
+        diger_kisiler: digerKisiler,
       }, { status: 200 });
     }
 
@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
       if (!e) continue;
       const mRaw = e.eclub_eczane_master;
       const m = Array.isArray(mRaw) ? mRaw[0] : mRaw;
-      const { eczaci, teknisyenler } = await eczaneKisileri(adminSupabase, e.eczane_id);
+      const { eczaci, digerKisiler } = await eczaneKisileri(adminSupabase, e.eczane_id);
       sonuc.push({
         eczane_id: e.eczane_id,
         gln: e.gln,
@@ -170,8 +170,8 @@ export async function GET(request: NextRequest) {
         ilce: m?.ilce ?? null,
         created_at: (il as { created_at: string }).created_at,
         eczaci_var: !!eczaci,
-        teknisyen_sayisi: teknisyenler.length,
-        toplam_kisi: (eczaci ? 1 : 0) + teknisyenler.length,
+        teknisyen_sayisi: digerKisiler.filter((kisi) => kisi.rol === "eczane_teknisyeni").length,
+        toplam_kisi: (eczaci ? 1 : 0) + digerKisiler.length,
       });
     }
 

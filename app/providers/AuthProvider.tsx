@@ -10,11 +10,12 @@
 
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { AuthKullanici, KimlikTuru } from "@/types/auth";
 import { oturumDusurulmeliMi, beniHatirlaTemizle } from "@/lib/utils/beniHatirla";
+import { guvenliCikisYap } from "@/lib/auth/guvenliCikis";
 
 interface AuthContextTipi {
   kullanici: AuthKullanici | null;
@@ -61,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // açılmış (oturum işaret çerezi ölmüş) — oturum düşürülür.
           if (oturumDusurulmeliMi()) {
             beniHatirlaTemizle();
-            await supabase.auth.signOut();
+            await guvenliCikisYap(supabase);
             setKullanici(null);
             setYukleniyor(false);
             return;
@@ -94,10 +95,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
 
           setYukleniyor(false);
-        } catch (err: any) {
+        } catch (err: unknown) {
           // AbortError gibi bir yarış geçişi (savunma katmanı) gelirse sessizce geç,
           // single-flight zaten bunu engelliyor ama yine de güvenlik için.
-          if (err?.name === "AbortError") return;
+          if (err instanceof Error && err.name === "AbortError") return;
           console.error("[AuthProvider] kullaniciyiYukle hatası:", err);
           setKullanici(null);
           setYukleniyor(false);
@@ -131,10 +132,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const cikisYap = async () => {
+  const cikisYap = useCallback(async () => {
     const supabase = createClient();
-    await supabase.auth.signOut();
-  };
+    beniHatirlaTemizle();
+    await guvenliCikisYap(supabase);
+    setKullanici(null);
+    setYukleniyor(false);
+    const yol = typeof window !== "undefined" ? window.location.pathname : "";
+    router.replace(yol.startsWith("/eczanem") && !yol.startsWith("/eczanem/eczane") ? "/eczanem/giris" : "/login");
+  }, [router]);
 
   return (
     <AuthContext.Provider value={{ kullanici, yukleniyor, cikisYap }}>

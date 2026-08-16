@@ -333,7 +333,7 @@ WHERE cardinality(y.hedef_roller) > 0
   AND NOT EXISTS (
     SELECT 1
     FROM unnest(y.hedef_roller) AS hedef(rol)
-    WHERE hedef.rol NOT IN ('eczaci', 'eczane_teknisyeni')
+    WHERE hedef.rol NOT IN ('eczaci', 'ikinci_eczaci', 'yardimci_eczaci', 'eczane_teknisyeni')
   );
 
 REVOKE ALL ON FUNCTION public.eclub_ileri_sarma_kaydet(uuid, uuid, uuid, integer, integer, integer)
@@ -357,5 +357,5 @@ WHERE cardinality(y.hedef_roller) > 0
   AND NOT EXISTS (
     SELECT 1
     FROM unnest(y.hedef_roller) AS hedef(rol)
-    WHERE hedef.rol NOT IN ('eczaci', 'eczane_teknisyeni')
+    WHERE hedef.rol NOT IN ('eczaci', 'ikinci_eczaci', 'yardimci_eczaci', 'eczane_teknisyeni')
   );

@@ -1,7 +1,8 @@
 // app/eclub/listem/_types.ts
 
-// E-Club kişi rolü — eczacı veya eczane teknisyeni.
-export type EclubKisiRol = "eczaci" | "eczane_teknisyeni";
+import { ECLUB_KISI_ROL_ETIKETLERI, type EclubKisiRol } from "@/lib/utils/roller";
+
+export type { EclubKisiRol };
 
 // Eczane satırı (liste). GET /eclub/listem/api/eczaneler'den gelir.
 // Üç katmanlı model: firma/UTT bağı ilişki tablosunda; burada kimlik + türetilmiş sayılar.
@@ -49,7 +50,7 @@ export interface GlnSorguSonuc {
   listede?: boolean;          // bu firmanın aktif listesinde mi
   eczane?: { eczane_id: string | null; gln: string; eczane_adi: string; il: string; ilce: string | null };
   eczaci?: GlnKisi | null;
-  teknisyenler?: GlnKisi[];
+  diger_kisiler?: GlnKisi[];
 }
 
 // Yeni kişi formu (eczane bloğundaki "kişi ekle" ile açılır). POST /kisiler gövdesi.
@@ -66,8 +67,7 @@ export interface YeniKisiForm {
 
 // Rol etiketleri (görüntüleme).
 export const KISI_ROL_ETIKETLERI: Record<EclubKisiRol, string> = {
-  eczaci: "Eczacı",
-  eczane_teknisyeni: "Eczane Teknisyeni",
+  ...ECLUB_KISI_ROL_ETIKETLERI,
 };
 
 // GLN 13 hane ön-kontrolü (nihai kontrol backend'de). Anında geri bildirim için.

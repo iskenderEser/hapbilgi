@@ -19,6 +19,7 @@ import EclubYonetimHiyerarsisi from "@/components/eclub/EclubYonetimHiyerarsisi"
 import { useRapor } from "@/hooks/useRapor";
 import type { EclubRaporEczane, EclubRaporIcerik, EclubRaporOzet } from "@/lib/eclub/rapor";
 import type { EclubKapsamUtt, EclubYonetimKapsami } from "@/lib/eclub/yonetimKapsami";
+import { eclubKisiRolEtiketi } from "@/lib/utils/roller";
 import { formatPuan, GRI_METIN, KIRMIZI, PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
 import styles from "@/app/(panel)/raporlar/utt/utt-report.module.css";
 import bmStyles from "@/app/(panel)/raporlar/bm/bm-report.module.css";
@@ -46,10 +47,6 @@ interface RaporData {
   }>;
 }
 
-const rolEtiketi = (rol: string) => (
-  rol === "eczaci" ? "Eczacı" : rol === "eczane_teknisyeni" ? "Eczane Teknisyeni" : rol
-);
-
 const cevapOzeti = (dogru: number, yanlis: number) => `${dogru}/${dogru + yanlis}`;
 
 function UttRaporDetayi({ rapor }: { rapor: RaporData["utt_raporlari"][number]["rapor"] }) {
@@ -68,7 +65,7 @@ function UttRaporDetayi({ rapor }: { rapor: RaporData["utt_raporlari"][number]["
             <div className="mt-2 grid gap-1.5 border-t border-[#e5ecf3] pt-2">
               {eczane.kisiler.map((kisi) => (
                 <div key={kisi.kisi_id} className="grid grid-cols-[minmax(0,1fr)_repeat(3,auto)] items-center gap-2 rounded-lg bg-white px-2.5 py-2 text-[10px]">
-                  <span className="min-w-0"><strong className="block truncate text-[#30475f]">{kisi.ad} {kisi.soyad}</strong><small className="text-[#8190a3]">{rolEtiketi(kisi.rol)}</small></span>
+                  <span className="min-w-0"><strong className="block truncate text-[#30475f]">{kisi.ad} {kisi.soyad}</strong><small className="text-[#8190a3]">{eclubKisiRolEtiketi(kisi.rol)}</small></span>
                   <span className="tabular-nums text-[#60758e]">{kisi.tamamlanan_izleme} izleme</span>
                   <span className="tabular-nums text-[#16865f]">{kisi.dogru_cevap} doğru</span>
                   <strong className="tabular-nums text-[#237ac8]">{formatPuan(kisi.toplam_puan)} p</strong>
@@ -270,7 +267,7 @@ export default function EclubRaporlarPage() {
                                     <div key={kisi.kisi_id} className={reportStyles.personRow}>
                                       <span className={reportStyles.personIdentity}>
                                         <strong>{kisi.ad} {kisi.soyad}</strong>
-                                        <small>{rolEtiketi(kisi.rol)}</small>
+                                        <small>{eclubKisiRolEtiketi(kisi.rol)}</small>
                                       </span>
                                       <span>{kisi.gonderilen_sayisi}</span>
                                       <span>{kisi.tamamlanan_izleme}</span>

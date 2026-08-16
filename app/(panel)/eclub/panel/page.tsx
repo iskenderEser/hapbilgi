@@ -26,11 +26,7 @@ import {
 } from "@/components/eclub/EclubKisiSayfa";
 import { useEclubPanel, type PanelOneri } from "./_hooks/useEclubPanel";
 import EclubVideoOynatici from "./_components/EclubVideoOynatici";
-
-const KISI_ROL_ETIKETLERI: Record<string, string> = {
-  eczaci: "Eczacı",
-  eczane_teknisyeni: "Eczane Teknisyeni",
-};
+import { eclubKisiRolEtiketi } from "@/lib/utils/roller";
 
 type VideoFiltresi = "tumu" | "bekleyen" | "tamamlanan" | "suresi_gecmis";
 
@@ -155,7 +151,7 @@ export default function EclubPanelPage() {
           <EclubKisiBaslik
             ikon={Sparkles}
             baslik={`Merhaba${kisi ? `, ${kisi.ad}` : ""}`}
-            aciklama={`${kisi ? KISI_ROL_ETIKETLERI[kisi.rol] ?? kisi.rol : ""} · Firmalarınızın sizin için seçtiği videoları izleyin, soruları yanıtlayın ve puan kazanın.`}
+            aciklama={`${kisi ? eclubKisiRolEtiketi(kisi.rol) : ""} · Firmalarınızın sizin için seçtiği videoları izleyin, soruları yanıtlayın ve puan kazanın.`}
             aksiyon={(
               <Link href="/eclub/store" className="inline-flex items-center gap-2 rounded-xl border border-[#cfe3f4] bg-white px-4 py-2.5 text-xs font-extrabold text-[#237ac8] shadow-sm hover:bg-[#f4f9fd]">
                 <ShoppingBag size={15} /> Mağazaya Git

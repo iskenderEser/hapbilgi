@@ -11,7 +11,7 @@ import {
 } from "@/lib/eclub/oneriLimit";
 import { eclubBildirimOlustur } from "@/lib/utils/eclubBildirim";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { ECLUB_HEDEF_ROLLER, TUKETICI_ROLLER, hedefRolleriOku, type HedefRoller } from "@/lib/utils/roller";
+import { ECLUB_HEDEF_ROLLER, TUKETICI_ROLLER, eclubKisiHedefRolu, hedefRolleriOku, type HedefRoller } from "@/lib/utils/roller";
 import { eclubYayinKapsamindaMi } from "@/lib/eclub/oneriKapsam";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -321,7 +321,8 @@ export async function POST(request: NextRequest) {
       if (!k) { atlanan.push({ kisi_id: kid, sebep: "bulunamadi" }); continue; }
       if (!k.aktif_mi) { atlanan.push({ kisi_id: kid, sebep: "pasif" }); continue; }
       if (!k.sahip_mi) { atlanan.push({ kisi_id: kid, sebep: "sahiplik_yok" }); continue; }
-      if (!yayinHedefRolleri.includes(k.rol as (typeof yayinHedefRolleri)[number])) { atlanan.push({ kisi_id: kid, sebep: "rol_uyumsuz" }); continue; }
+      const hedefRol = eclubKisiHedefRolu(k.rol);
+      if (!hedefRol || !yayinHedefRolleri.includes(hedefRol)) { atlanan.push({ kisi_id: kid, sebep: "rol_uyumsuz" }); continue; }
       if (!k.auth_var) { atlanan.push({ kisi_id: kid, sebep: "giris_hesabi_yok" }); continue; }
       adaylar.push(kid);
     }

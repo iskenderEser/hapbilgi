@@ -2,7 +2,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { TUKETICI_ROLLER } from "@/lib/utils/roller";
+import { TUKETICI_ROLLER, eclubKisiRolEtiketi } from "@/lib/utils/roller";
 import { useEffect, useState, useRef } from "react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -206,7 +206,7 @@ export default function ProfilPage() {
           className="text-[10px] px-3 py-0.5 rounded-full"
           style={{ background: "rgba(188,45,13,0.08)", color: "#bc2d0d", border: "0.5px solid rgba(188,45,13,0.25)" }}
         >
-          {profil?.rol === "eczaci" ? "Eczacı" : profil?.rol === "eczane_teknisyeni" ? "Eczane Teknisyeni" : profil?.rol}
+          {profil?.rol ? eclubKisiRolEtiketi(profil.rol) : ""}
         </div>
 
         <div className="w-full flex flex-col gap-2 mt-1">
