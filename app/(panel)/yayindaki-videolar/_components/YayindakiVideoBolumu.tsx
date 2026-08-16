@@ -38,9 +38,19 @@ interface Props {
   oneriModu?: boolean;
   secilenYayinlar?: string[];
   onOneriSec?: (video: YayindakiVideo) => void;
+  hedefRolEtiketiGoster?: boolean;
 }
 
-export default function YayindakiVideoBolumu({ videolar, onVideoSec, oneriModu = false, secilenYayinlar = [], onOneriSec }: Props) {
+function hedefKitleEtiketi(hedefRoller: string[]): string | null {
+  const eczaci = hedefRoller.includes("eczaci");
+  const teknisyen = hedefRoller.includes("eczane_teknisyeni");
+  if (eczaci && teknisyen) return "Eczacı ve Teknisyen";
+  if (eczaci) return "Eczacı";
+  if (teknisyen) return "Eczane Teknisyeni";
+  return null;
+}
+
+export default function YayindakiVideoBolumu({ videolar, onVideoSec, oneriModu = false, secilenYayinlar = [], onOneriSec, hedefRolEtiketiGoster = false }: Props) {
   if (videolar.length === 0) return null;
 
   const formatTarih = (tarih: string) =>
@@ -51,6 +61,7 @@ export default function YayindakiVideoBolumu({ videolar, onVideoSec, oneriModu =
       {videolar.map((v) => {
         const thumb = v.thumbnail_url ?? thumbnailUrlUret(v.video_url);
         const secili = secilenYayinlar.includes(v.yayin_id);
+        const hedefEtiketi = hedefRolEtiketiGoster ? hedefKitleEtiketi(v.hedef_roller) : null;
         return (
           <article
             key={v.yayin_id}
@@ -68,6 +79,11 @@ export default function YayindakiVideoBolumu({ videolar, onVideoSec, oneriModu =
                   : <div className="w-full h-full" style={{ background: GRADYANLAR[Math.abs(v.yayin_id.charCodeAt(0)) % GRADYANLAR.length] }} />
                 }
                 <div className="absolute inset-0 bg-gradient-to-t from-[#10233a]/45 via-transparent to-transparent" />
+                {hedefEtiketi && (
+                  <span className="absolute right-2 top-2 rounded-full border border-white/35 bg-[#10233a]/75 px-2 py-1 text-[9px] font-extrabold text-white shadow-sm backdrop-blur-sm">
+                    {hedefEtiketi}
+                  </span>
+                )}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-[#10233a]/65 shadow-lg backdrop-blur-sm transition-transform group-hover:scale-105">
                     <svg aria-hidden="true" width="10" height="12" viewBox="0 0 10 12" fill="white"><path d="M0 0l10 6-10 6z" /></svg>

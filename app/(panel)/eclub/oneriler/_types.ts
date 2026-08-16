@@ -29,6 +29,11 @@ export interface OneriLimitler {
   };
 }
 
+export interface OneriGecmisKaydi {
+  yayin_id: string;
+  created_at: string;
+}
+
 // POST sonucu (atla-raporla).
 export interface OneriGonderSonuc {
   gonderilen_sayisi: number;

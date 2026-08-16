@@ -37,6 +37,7 @@ export default function EclubListemPage() {
     yayinlar,
     kisiler: oneriKisileri,
     limitler,
+    sonOneriYayinIdleri,
     loading: videoLoading,
     gonderLoading,
     oneriGonder,
@@ -153,6 +154,7 @@ export default function EclubListemPage() {
             yayinlar={yayinlar}
             kisiler={oneriKisileri}
             limitler={limitler}
+            sonOneriYayinIdleri={sonOneriYayinIdleri}
             gonderLoading={gonderLoading}
             onGonder={oneriGonder}
           />

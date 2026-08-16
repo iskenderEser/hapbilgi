@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
-import KlasorGrid from "@/app/(panel)/yayindaki-videolar/_components/KlasorGrid";
+import { useMemo, useState } from "react";
+import YayindakiVideoBolumu from "@/app/(panel)/yayindaki-videolar/_components/YayindakiVideoBolumu";
 import VideoOynatici from "@/components/izle/VideoOynatici";
 import { ListeArama, useListe } from "@/components/liste";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
@@ -13,11 +13,12 @@ interface Props {
   yayinlar: OneriYayin[];
   kisiler: OneriKisi[];
   limitler: OneriLimitler | null;
+  sonOneriYayinIdleri: string[];
   gonderLoading: boolean;
   onGonder: (yayin_id: string, kisi_idler: string[]) => Promise<OneriGonderSonuc | null>;
 }
 
-export function OneriGonder({ yayinlar, kisiler, limitler, gonderLoading, onGonder }: Props) {
+export function OneriGonder({ yayinlar, kisiler, limitler, sonOneriYayinIdleri, gonderLoading, onGonder }: Props) {
   const [oneriModu, setOneriModu] = useState(false);
   const [seciliYayinId, setSeciliYayinId] = useState<string | null>(null);
   const [aliciId, setAliciId] = useState("");
@@ -34,6 +35,32 @@ export function OneriGonder({ yayinlar, kisiler, limitler, gonderLoading, onGond
   });
 
   const seciliYayin = yayinlar.find((yayin) => yayin.yayin_id === seciliYayinId) ?? null;
+  const videoRaflari = useMemo(() => {
+    const gorunenler = liste.gorunen;
+    const gorunenHarita = new Map(gorunenler.map((video) => [video.yayin_id, video]));
+    return [
+      {
+        baslik: "En Son Önerdiklerim",
+        aciklama: "En son önerdiğiniz beş farklı video",
+        videolar: sonOneriYayinIdleri.map((yayinId) => gorunenHarita.get(yayinId)).filter((video): video is OneriYayin => !!video),
+      },
+      {
+        baslik: "Eczacılara Özel",
+        aciklama: "Yalnızca eczacılara önerilebilen videolar",
+        videolar: gorunenler.filter((video) => video.hedef_roller.includes("eczaci") && !video.hedef_roller.includes("eczane_teknisyeni")),
+      },
+      {
+        baslik: "Eczane Teknisyenlerine Özel",
+        aciklama: "Yalnızca eczane teknisyenlerine önerilebilen videolar",
+        videolar: gorunenler.filter((video) => !video.hedef_roller.includes("eczaci") && video.hedef_roller.includes("eczane_teknisyeni")),
+      },
+      {
+        baslik: "Eczacılar ve Teknisyenler İçin",
+        aciklama: "Her iki hedef kitleye de önerilebilen videolar",
+        videolar: gorunenler.filter((video) => video.hedef_roller.includes("eczaci") && video.hedef_roller.includes("eczane_teknisyeni")),
+      },
+    ];
+  }, [liste.gorunen, sonOneriYayinIdleri]);
   const hedefRolEtiketi = (video: OneriYayin) =>
     video.hedef_roller.map((hedefRol) => ROL_ETIKETLERI[hedefRol]).join(" ve ");
   const uygunKisiler = useMemo(() => {
@@ -230,15 +257,33 @@ export function OneriGonder({ yayinlar, kisiler, limitler, gonderLoading, onGond
           {yayinlar.length === 0 ? "Önerilebilecek E‑Club videosu yok." : "Aramanıza uyan video bulunamadı."}
         </div>
       ) : (
-        <Suspense fallback={null}>
-          <KlasorGrid
-            videolar={liste.gorunen}
-            onVideoSec={(video) => setAktifVideo(video as OneriYayin)}
-            oneriModu={oneriModu}
-            secilenYayinlar={seciliYayinId ? [seciliYayinId] : []}
-            onOneriSec={(video) => yayinSec(video as OneriYayin)}
-          />
-        </Suspense>
+        <div className="flex flex-col gap-4">
+          {videoRaflari.map((raf) => (
+            <section key={raf.baslik} className="rounded-2xl border border-[#dfe7f1] bg-white p-3.5 shadow-[0_6px_18px_rgba(31,55,90,0.035)] md:p-4">
+              <div className="mb-3 flex items-end justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-extrabold text-[#243957]">{raf.baslik}</h3>
+                  <p className="mt-0.5 text-[11px] text-[#7b8ca5]">{raf.aciklama}</p>
+                </div>
+                <span className="shrink-0 rounded-full bg-[#f0f5fb] px-2.5 py-1 text-[10px] font-extrabold text-[#637b99]">{raf.videolar.length} video</span>
+              </div>
+              {raf.videolar.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-[#d7e1ec] bg-[#f9fbfd] px-4 py-7 text-center text-xs font-semibold text-[#8293a8]">
+                  {raf.baslik === "En Son Önerdiklerim" ? "Henüz önerdiğiniz bir video yok." : "Bu hedef kitle için yayın bulunmuyor."}
+                </div>
+              ) : (
+                <YayindakiVideoBolumu
+                  videolar={raf.videolar}
+                  onVideoSec={(video) => setAktifVideo(video as OneriYayin)}
+                  oneriModu={oneriModu}
+                  secilenYayinlar={seciliYayinId ? [seciliYayinId] : []}
+                  onOneriSec={(video) => yayinSec(video as OneriYayin)}
+                  hedefRolEtiketiGoster
+                />
+              )}
+            </section>
+          ))}
+        </div>
       )}
     </section>
   );

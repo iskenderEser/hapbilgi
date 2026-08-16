@@ -2,7 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { OneriYayin, OneriKisi, OneriGonderSonuc, OneriLimitler } from "../_types";
+import type { OneriYayin, OneriKisi, OneriGonderSonuc, OneriLimitler, OneriGecmisKaydi } from "../_types";
 
 interface UseArgs {
   hazir: boolean;
@@ -14,20 +14,21 @@ export function useEclubOneriler({ hazir, hata, basari }: UseArgs) {
   const [yayinlar, setYayinlar] = useState<OneriYayin[]>([]);
   const [kisiler, setKisiler] = useState<OneriKisi[]>([]);
   const [limitler, setLimitler] = useState<OneriLimitler | null>(null);
+  const [sonOneriYayinIdleri, setSonOneriYayinIdleri] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [gonderLoading, setGonderLoading] = useState(false);
 
   const veriCek = useCallback(async () => {
     setLoading(true);
     try {
-      const [yayinRes, kisiRes, limitRes] = await Promise.all([
+      const [yayinRes, kisiRes, gecmisRes] = await Promise.all([
         fetch("/eclub/oneriler/api/yayinlar"),
         fetch("/eclub/listem/api/kisiler"),
-        fetch("/eclub/oneriler/api?yalniz_limit=1"),
+        fetch("/eclub/oneriler/api"),
       ]);
       const yayinData = await yayinRes.json();
       const kisiData = await kisiRes.json();
-      const limitData = await limitRes.json();
+      const gecmisData = await gecmisRes.json();
 
       if (!yayinRes.ok) hata(yayinData.hata ?? "Yayınlar yüklenemedi.", yayinData.adim, yayinData.detay);
       else setYayinlar(yayinData.videolar ?? []);
@@ -35,8 +36,14 @@ export function useEclubOneriler({ hazir, hata, basari }: UseArgs) {
       if (!kisiRes.ok) hata(kisiData.hata ?? "Kişiler yüklenemedi.", kisiData.adim, kisiData.detay);
       else setKisiler(kisiData.kisiler ?? []);
 
-      if (!limitRes.ok) hata(limitData.hata ?? "Gönderim limiti yüklenemedi.", limitData.adim, limitData.detay);
-      else setLimitler(limitData.limitler ?? null);
+      if (!gecmisRes.ok) hata(gecmisData.hata ?? "Öneri geçmişi yüklenemedi.", gecmisData.adim, gecmisData.detay);
+      else {
+        setLimitler(gecmisData.limitler ?? null);
+        const benzersizYayinlar = [...new Set(
+          ((gecmisData.oneriler ?? []) as OneriGecmisKaydi[]).map((oneri) => oneri.yayin_id)
+        )].slice(0, 5);
+        setSonOneriYayinIdleri(benzersizYayinlar);
+      }
     } catch (err: unknown) {
       hata("Veri yüklenirken hata oluştu.", "useEclubOneriler veriCek", err instanceof Error ? err.message : undefined);
     } finally {
@@ -76,5 +83,5 @@ export function useEclubOneriler({ hazir, hata, basari }: UseArgs) {
     }
   }, [hata, basari, veriCek]);
 
-  return { yayinlar, kisiler, limitler, loading, gonderLoading, veriCek, oneriGonder };
+  return { yayinlar, kisiler, limitler, sonOneriYayinIdleri, loading, gonderLoading, veriCek, oneriGonder };
 }
