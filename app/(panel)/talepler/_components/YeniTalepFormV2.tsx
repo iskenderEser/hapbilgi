@@ -106,19 +106,17 @@ export function YeniTalepFormV2({ formu }: Props) {
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-3.5 xl:grid-cols-2 xl:items-start">
+        <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 lg:grid-cols-4 lg:items-stretch">
           {/* 1 — Hedef rol. Formun ilk karar noktası; seçilmeden alt alanlar pasif. */}
-          <section className="rounded-2xl border border-[#dfe8f3] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
-            <div className="mb-3 flex items-start gap-3">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#eaf4ff] text-xs font-extrabold text-[#2483e2]">1</span>
-              <div>
-                <h3 className="text-sm font-extrabold text-[#263b58]">
-                  Hedef Kitle <span className="text-red-500">*</span>
-                </h3>
-                <p className="mt-0.5 text-xs text-[#7a8ca5]">Bu içerik kimin gelişimi için hazırlanacak?</p>
-              </div>
+          <section className="min-w-0 rounded-2xl border border-[#dfe8f3] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
+            <div className="mb-3">
+              <span className="inline-flex h-7 items-center justify-center rounded-lg bg-[#eaf4ff] px-2.5 text-xs font-extrabold text-[#2483e2]">1. Adım</span>
+              <h3 className="mt-2 text-sm font-extrabold text-[#263b58]">
+                Hedef Kitle <span className="text-red-500">*</span>
+              </h3>
+              <p className="mt-0.5 text-xs text-[#7a8ca5]">Bu içerik kimin gelişimi için hazırlanacak?</p>
             </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2">
               {hedefRoller.map((rolKey) => {
                 const tasarim = HEDEF_ROL_TASARIM[rolKey];
                 const eclubSecenegi = ECLUB_HEDEF_ROLLER.includes(rolKey);
@@ -158,18 +156,16 @@ export function YeniTalepFormV2({ formu }: Props) {
             <fieldset
               disabled={!formAktif}
               aria-disabled={!formAktif}
-              className="rounded-2xl border border-[#dfe8f3] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)] transition-opacity"
+              className="min-w-0 rounded-2xl border border-[#dfe8f3] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)] transition-opacity"
               style={{ opacity: formAktif ? 1 : 0.58, pointerEvents: formAktif ? "auto" : "none" }}
             >
               <legend className="sr-only">İçerik Türü</legend>
-              <div className="mb-3 flex items-start gap-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#f0edff] text-xs font-extrabold text-[#7557d5]">2</span>
-                <div>
-                  <h3 className="text-sm font-extrabold text-[#263b58]">İçerik Türü</h3>
-                  <p className="mt-0.5 text-xs text-[#7a8ca5]">Talebin eğitim odağını belirleyin.</p>
-                </div>
+              <div className="mb-3">
+                <span className="inline-flex h-7 items-center justify-center rounded-lg bg-[#f0edff] px-2.5 text-xs font-extrabold text-[#7557d5]">2. Adım</span>
+                <h3 className="mt-2 text-sm font-extrabold text-[#263b58]">İçerik Türü</h3>
+                <p className="mt-0.5 text-xs text-[#7a8ca5]">Talebin eğitim odağını belirleyin.</p>
               </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-2">
                 {TUM_TURLER.map((tur: TalepTuru) => {
                   const secili = formu.egitimTuruSecildiMi && formu.egitimTuru === tur;
                   return (
@@ -199,16 +195,14 @@ export function YeniTalepFormV2({ formu }: Props) {
             <fieldset
               disabled={!ucuncuAdimAktif}
               aria-disabled={!ucuncuAdimAktif}
-              className="rounded-2xl border border-[#dfe8f3] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)] transition-opacity"
+              className="min-w-0 rounded-2xl border border-[#dfe8f3] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)] transition-opacity"
               style={{ opacity: ucuncuAdimAktif ? 1 : 0.58, pointerEvents: ucuncuAdimAktif ? "auto" : "none" }}
             >
               <legend className="sr-only">Ürün ve Teknik</legend>
-              <div className="mb-3 flex items-start gap-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#e9f8f1] text-xs font-extrabold text-[#159463]">3</span>
-                <div>
-                  <h3 className="text-sm font-extrabold text-[#263b58]">Ürün ve Teknik</h3>
-                  <p className="mt-0.5 text-xs text-[#7a8ca5]">İçeriğin ticari ve davranışsal bağlamını seçin.</p>
-                </div>
+              <div className="mb-3">
+                <span className="inline-flex h-7 items-center justify-center rounded-lg bg-[#e9f8f1] px-2.5 text-xs font-extrabold text-[#159463]">3. Adım</span>
+                <h3 className="mt-2 text-sm font-extrabold text-[#263b58]">Ürün ve Teknik</h3>
+                <p className="mt-0.5 text-xs text-[#7a8ca5]">İçeriğin ticari ve davranışsal bağlamını seçin.</p>
               </div>
               {/* UrunTeknikSecici kendi içinde md+ ekranda ürün ve tekniği YAN YANA
                   diziyor (flex-row). Burada sütun dar olduğu için ikisi alt alta
@@ -256,16 +250,14 @@ export function YeniTalepFormV2({ formu }: Props) {
             <fieldset
               disabled={!dorduncuAdimAktif}
               aria-disabled={!dorduncuAdimAktif}
-              className="rounded-2xl border border-[#dfe8f3] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)] transition-opacity [&>div:last-child]:!flex-col"
+              className="min-w-0 rounded-2xl border border-[#dfe8f3] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)] transition-opacity [&>div:last-child]:!flex-col"
               style={{ opacity: dorduncuAdimAktif ? 1 : 0.58, pointerEvents: dorduncuAdimAktif ? "auto" : "none" }}
             >
               <legend className="sr-only">Sorular ve Seçenekler</legend>
-              <div className="mb-3 flex items-start gap-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#fff3e8] text-xs font-extrabold text-[#d66b16]">4</span>
-                <div>
-                  <h3 className="text-sm font-extrabold text-[#263b58]">Sorular ve Seçenekler</h3>
-                  <p className="mt-0.5 text-xs text-[#7a8ca5]">Soru setinin kapsamını ve yoğunluğunu belirleyin.</p>
-                </div>
+              <div className="mb-3">
+                <span className="inline-flex h-7 items-center justify-center rounded-lg bg-[#fff3e8] px-2.5 text-xs font-extrabold text-[#d66b16]">4. Adım</span>
+                <h3 className="mt-2 text-sm font-extrabold text-[#263b58]">Sorular ve Seçenekler</h3>
+                <p className="mt-0.5 text-xs text-[#7a8ca5]">Soru setinin kapsamını ve yoğunluğunu belirleyin.</p>
               </div>
               <SoruSetiAyarlari
                 buyukluk={formu.soruSetiBuyuklugu}

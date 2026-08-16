@@ -36,6 +36,7 @@ export default function UretimGorevDetayPage() {
   const [revizyonAcik, setRevizyonAcik] = useState(false);
   const [revizyonNotu, setRevizyonNotu] = useState("");
   const [videoYuzdesi, setVideoYuzdesi] = useState<number | null>(null);
+  const [yuklenenVideo, setYuklenenVideo] = useState<{ video_url: string; dosya_adi: string } | null>(null);
 
   useEffect(() => {
     if (authYukleniyor) return;
@@ -119,7 +120,7 @@ export default function UretimGorevDetayPage() {
     void teslimEt({ sorular: taslaklardanSorular(taslaklar) });
   };
 
-  const videoGonder = async (dosya: File) => {
+  const videoYukle = async (dosya: File) => {
     if (!gorev?.video_id) return hata("Göreve bağlı video kaydı bulunamadı.", "video görevi");
     setIslem(true); setVideoYuzdesi(0);
     let videoGuid: string | null = null;
@@ -129,11 +130,8 @@ export default function UretimGorevDetayPage() {
       if (!izinRes.ok) return hata(izin.hata ?? "Video yüklemesi başlatılamadı.", izin.adim, izin.detay);
       videoGuid = izin.video_guid;
       await bunnyTusYukle(dosya, izin, setVideoYuzdesi);
-      const teslimBasarili = await teslimEt({ video_url: izin.embed_url, thumbnail_url: null });
-      if (!teslimBasarili) {
-        await fetch("/videolar/api/bunny-yukleme-iptal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ video_guid: videoGuid }) });
-        return;
-      }
+      setYuklenenVideo({ video_url: izin.embed_url, dosya_adi: dosya.name });
+      basari("Video yüklendi. Göndermek için Gönder butonuna basın.");
       videoGuid = null;
     } catch (err) {
       if (videoGuid) void fetch("/videolar/api/bunny-yukleme-iptal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ video_guid: videoGuid }) });
@@ -141,6 +139,12 @@ export default function UretimGorevDetayPage() {
     } finally {
       setVideoYuzdesi(null); setIslem(false);
     }
+  };
+
+  const videoTeslimEt = async () => {
+    if (!yuklenenVideo) return;
+    const teslimBasarili = await teslimEt({ video_url: yuklenenVideo.video_url, thumbnail_url: null });
+    if (teslimBasarili) setYuklenenVideo(null);
   };
 
   const kararVer = async (karar: "onaylandi" | "revizyon bekleniyor" | "Iptal Edildi", notlar?: string) => {
@@ -184,7 +188,7 @@ export default function UretimGorevDetayPage() {
             {(gorev.durum_gecmisi ?? []).filter((d) => d.durum === "revizyon bekleniyor" && d.notlar).map((d, i) => <div key={`${d.created_at}-${i}`} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"><strong>Revizyon notu:</strong> {d.notlar}</div>)}
 
             {iuTeslimEdebilir && gorev.asama === "senaryo" && <div className="border-t border-gray-100 pt-4"><textarea value={senaryoMetni} onChange={(e) => setSenaryoMetni(e.target.value)} rows={14} placeholder="Senaryoyu yazın..." className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm leading-6 outline-none focus:border-[#56aeff]" /><div className="mt-3 flex justify-end"><button type="button" onClick={senaryoGonder} disabled={islem || !senaryoMetni.trim()} className="rounded-lg border-0 bg-[#56aeff] px-5 py-2.5 text-xs font-semibold text-white disabled:opacity-50">İncelemeye Gönder</button></div></div>}
-            {iuTeslimEdebilir && gorev.asama === "video" && <div className="border-t border-gray-100 pt-4"><label className="flex cursor-pointer flex-col items-center rounded-xl border border-dashed border-[#56aeff] bg-[#f6faff] px-5 py-8 text-center"><span className="text-sm font-semibold text-[#287fce]">{videoYuzdesi === null ? "Video dosyasını seçin" : `Yükleniyor: %${videoYuzdesi}`}</span><span className="mt-1 text-xs text-gray-400">Dosya doğrudan Bunny’ye yüklenir.</span><input type="file" accept="video/*" disabled={islem} className="hidden" onChange={(e) => { const dosya = e.target.files?.[0]; if (dosya) void videoGonder(dosya); e.currentTarget.value = ""; }} /></label></div>}
+            {iuTeslimEdebilir && gorev.asama === "video" && <div className="border-t border-gray-100 pt-4">{yuklenenVideo ? <div className="flex flex-col gap-3"><VideoOnizleme videoUrl={yuklenenVideo.video_url} className="rounded-xl" ariaLabel="Yüklenen videoyu oynat" /><div className="flex flex-col gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><p className="truncate text-xs font-semibold text-green-800">{yuklenenVideo.dosya_adi}</p><p className="mt-0.5 text-[11px] text-green-700">Video yüklendi; henüz üretici incelemesine gönderilmedi.</p></div><button type="button" onClick={() => void videoTeslimEt()} disabled={islem} className="shrink-0 rounded-lg border-0 bg-[#56aeff] px-5 py-2.5 text-xs font-semibold text-white disabled:opacity-50">Gönder</button></div></div> : <label className="flex cursor-pointer flex-col items-center rounded-xl border border-dashed border-[#56aeff] bg-[#f6faff] px-5 py-8 text-center"><span className="text-sm font-semibold text-[#287fce]">{videoYuzdesi === null ? "Video dosyasını seçin" : `Yükleniyor: %${videoYuzdesi}`}</span><span className="mt-1 text-xs text-gray-400">Dosya yüklendikten sonra Gönder butonuyla incelemeye iletilir.</span><input type="file" accept="video/*" disabled={islem} className="hidden" onChange={(e) => { const dosya = e.target.files?.[0]; if (dosya) void videoYukle(dosya); e.currentTarget.value = ""; }} /></label>}</div>}
             {iuTeslimEdebilir && gorev.asama === "soru_seti" && <div className="border-t border-gray-100 pt-4"><SoruIceAktar secenekSayisi={gorev.talep?.secenek_sayisi ?? 4} onDoldur={(yeni, mesaj) => { setTaslaklar(taslaklariBoyutla(yeni, gorev.talep?.soru_seti_buyuklugu ?? 25, gorev.talep?.secenek_sayisi ?? 4)); if (mesaj) uyari(mesaj); }} /><SoruSetiFormu taslaklar={taslaklar} onDegis={setTaslaklar} buyukluk={gorev.talep?.soru_seti_buyuklugu ?? 25} secenekSayisi={gorev.talep?.secenek_sayisi ?? 4} /><div className="mt-3 flex justify-end"><button type="button" onClick={soruSetiGonder} disabled={islem} className="rounded-lg border-0 bg-[#56aeff] px-5 py-2.5 text-xs font-semibold text-white disabled:opacity-50">İncelemeye Gönder</button></div></div>}
 
             {ureticiKararVerebilir && <div className="border-t border-gray-100 pt-4">{revizyonAcik ? <div className="flex flex-col gap-2"><textarea value={revizyonNotu} onChange={(e) => setRevizyonNotu(e.target.value)} rows={3} placeholder="Revizyon notunu yazın..." className="rounded-lg border border-amber-200 px-3 py-2 text-sm outline-none" /><div className="flex justify-end gap-2"><button type="button" onClick={() => { setRevizyonAcik(false); setRevizyonNotu(""); }} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500">Vazgeç</button><button type="button" disabled={islem || !revizyonNotu.trim()} onClick={() => void kararVer("revizyon bekleniyor", revizyonNotu)} className="rounded-lg border-0 bg-amber-500 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Revizyon Gönder</button></div></div> : <div className="flex flex-wrap justify-end gap-2"><button type="button" disabled={islem} onClick={() => void kararVer("onaylandi")} className="rounded-lg border-0 bg-green-700 px-3 py-2 text-xs font-semibold text-white">Onayla</button>{gorev.revizyon_sayisi < 2 && <button type="button" disabled={islem} onClick={() => setRevizyonAcik(true)} className="rounded-lg border-0 bg-amber-500 px-3 py-2 text-xs font-semibold text-white">Revizyon İste</button>}<button type="button" disabled={islem} onClick={() => void kararVer("Iptal Edildi")} className="rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-[#bc2d0d]">İptal Et</button></div>}</div>}
