@@ -20,7 +20,7 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import PanelNavbar from "@/components/panel/PanelNavbar";
 import SolListe from "@/components/panel/SolListe";
 import MobilDrawer from "@/components/panel/MobilDrawer";
-import { PANEL_NAV, ECLUB_KISI_NAV, type NavContext } from "@/components/panel/panelNav.config";
+import { PANEL_NAV, eclubKisiNavOlustur, type NavContext } from "@/components/panel/panelNav.config";
 import { HBSTORE_BAKIYE_DEGISTI } from "@/lib/store/olay";
 import { BILDIRIM_ROZETLERI_DEGISTI } from "@/lib/bildirimler/rozet";
 
@@ -36,6 +36,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   // Navbar kişisel özeti — yalnız UTT/KD_UTT için profil/api döndürür (BM sonraya).
   const [ozet, setOzet] = useState<{ haftalikPuan: number; takimSirasi: number | null; siparisPuani: number } | null>(null);
   const [eclubStorePuani, setEclubStorePuani] = useState<number | null>(null);
+  const [eclubFirmalar, setEclubFirmalar] = useState<Array<{ firma_id: string; firma_adi: string }>>([]);
 
   const rolKucu = kullanici?.rol?.trim().toLowerCase() ?? "";
   const isEclubKisi = kullanici?.kimlik_turu === "eclub_kisi";
@@ -69,6 +70,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         });
       } else setOzet(null);
       setEclubStorePuani(data.eclub_navbar_ozet?.store_puani ?? null);
+      setEclubFirmalar(data.eclub_firmalar ?? []);
     } catch {}
   }, []);
 
@@ -134,7 +136,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     eczanemAcik: flags.eczanemAcik,
   };
   // eclub_kisi (KARAR-4) dar gezinme; diğer herkes tam ağaç.
-  const gruplar = kullanici.kimlik_turu === "eclub_kisi" ? ECLUB_KISI_NAV : PANEL_NAV;
+  const gruplar = kullanici.kimlik_turu === "eclub_kisi" ? eclubKisiNavOlustur(eclubFirmalar) : PANEL_NAV;
   const anaSayfaYolu = isEclubKisi ? "/eclub/panel" : "/ana-sayfa";
 
   return (

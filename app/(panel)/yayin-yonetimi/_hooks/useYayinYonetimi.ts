@@ -15,15 +15,14 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
-import type { HedefRol } from "@/app/(panel)/talepler/_types";
-import { hedefRolleriOku, yalnizEclubHedefliMi } from "@/lib/utils/roller";
+import { ECLUB_ORTAK_YAYIN_GRUBU, hedefRolleriOku, yalnizEclubHedefliMi, type YayinHedefGrubu } from "@/lib/utils/roller";
 import type { Bekleyen, BekleyenHedefSayilari, Yayin } from "../_types";
 import { gecerliTurBaslangiclari, type HesaplananTur } from "@/lib/tur/kayit";
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
 
 interface UseYayinYonetimiArgs {
   kullaniciVar: boolean;
-  aktifAnaSekme: HedefRol;
+  aktifAnaSekme: YayinHedefGrubu;
   hata: (mesaj: string, adim?: string, detay?: string) => void;
   basari: (mesaj: string) => void;
 }
@@ -40,6 +39,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     bm: 0,
     eczaci: 0,
     eczane_teknisyeni: 0,
+    [ECLUB_ORTAK_YAYIN_GRUBU]: 0,
     eczanem: 0,
   });
   const [yayinlar, setYayinlar] = useState<Yayin[]>([]);
@@ -98,6 +98,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
         bm: Number(bData.sayilar?.bm ?? 0),
         eczaci: Number(bData.sayilar?.eczaci ?? 0),
         eczane_teknisyeni: Number(bData.sayilar?.eczane_teknisyeni ?? 0),
+        [ECLUB_ORTAK_YAYIN_GRUBU]: Number(bData.sayilar?.[ECLUB_ORTAK_YAYIN_GRUBU] ?? 0),
         eczanem: Number(bData.sayilar?.eczanem ?? 0),
       });
       const yeniSoruPuanlari: Record<string, Record<number, number>> = {};

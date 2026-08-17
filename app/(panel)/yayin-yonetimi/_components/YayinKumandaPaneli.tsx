@@ -1,19 +1,19 @@
 "use client";
 
-import type { HedefRol } from "@/app/(panel)/talepler/_types";
 import { HEDEF_ROL_TASARIM } from "@/app/(panel)/talepler/_types";
+import { ECLUB_ORTAK_YAYIN_GRUBU, type YayinHedefGrubu } from "@/lib/utils/roller";
 import type { AltSekme, BekleyenHedefSayilari } from "../_types";
 import { ANA_SEKMELER, ANA_SEKME_ETIKETLERI } from "../_types";
 
 interface Props {
-  aktifHedef: HedefRol;
+  aktifHedef: YayinHedefGrubu;
   aktifDurum: AltSekme;
   bekleyen: number;
   bekleyenHedefSayilari: BekleyenHedefSayilari;
   canli: number;
   planli: number;
   durdurulan: number;
-  onHedefDegistir: (hedef: HedefRol) => void;
+  onHedefDegistir: (hedef: YayinHedefGrubu) => void;
   onDurumDegistir: (durum: AltSekme) => void;
 }
 
@@ -28,7 +28,9 @@ export function YayinKumandaPaneli({
   onHedefDegistir,
   onDurumDegistir,
 }: Props) {
-  const hedefTasarimi = HEDEF_ROL_TASARIM[aktifHedef];
+  const hedefTasarimi = aktifHedef === ECLUB_ORTAK_YAYIN_GRUBU
+    ? { renk: "#5367c7", bg: "#f0f1ff" }
+    : HEDEF_ROL_TASARIM[aktifHedef];
   const durumlar: {
     anahtar: AltSekme;
     etiket: string;
@@ -92,9 +94,11 @@ export function YayinKumandaPaneli({
             {ANA_SEKME_ETIKETLERI[aktifHedef]}
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
           {ANA_SEKMELER.map((hedef) => {
-            const tasarim = HEDEF_ROL_TASARIM[hedef];
+            const tasarim = hedef === ECLUB_ORTAK_YAYIN_GRUBU
+              ? { renk: "#5367c7", bg: "#f0f1ff" }
+              : HEDEF_ROL_TASARIM[hedef];
             const aktif = hedef === aktifHedef;
             const bekleyenSayi = bekleyenHedefSayilari[hedef];
             return (

@@ -4,7 +4,7 @@ import type { EclubStoreGorselSonuc } from "./eclubStoreTipler";
 
 const BUCKET = "eclub-store-urun-gorselleri";
 const IZINLI_TIPLER = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-const MAX_BOYUT = 5 * 1024 * 1024;
+const MAX_BOYUT = 2 * 1024 * 1024;
 
 export async function eclubStoreGorselYukle(
   supabase: SupabaseClient,
@@ -16,7 +16,7 @@ export async function eclubStoreGorselYukle(
     return { ok: false, error: "Yalnız JPEG, PNG veya WEBP görsel yüklenebilir." };
   }
   if (dosya.size > MAX_BOYUT) {
-    return { ok: false, error: "Görsel en fazla 5 MB olabilir." };
+    return { ok: false, error: "Görsel en fazla 2 MB olabilir." };
   }
 
   const uzanti = orijinalAd.split(".").pop()?.toLowerCase() ?? "jpg";

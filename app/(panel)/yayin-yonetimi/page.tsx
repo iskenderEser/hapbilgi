@@ -12,7 +12,7 @@
 import { useState, type ReactNode } from "react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
-import type { HedefRol } from "@/app/(panel)/talepler/_types";
+import { yayinHedefGrubuBelirle, type YayinHedefGrubu } from "@/lib/utils/roller";
 import type { Bekleyen, AltSekme } from "./_types";
 import { useYayinYonetimi } from "./_hooks/useYayinYonetimi";
 import { BekleyenSatir } from "./_components/BekleyenSatir";
@@ -51,7 +51,7 @@ export default function YayinYonetimiPage() {
   const { kullanici } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
 
-  const [aktifAnaSekme, setAktifAnaSekme] = useState<HedefRol>("utt");
+  const [aktifAnaSekme, setAktifAnaSekme] = useState<YayinHedefGrubu>("utt");
   const [aktifSekme, setAktifSekme] = useState<AltSekme>("bekleyen");
 
   // Saf UI state (modallar + akordiyon + video önizleme) — sayfada kalır.
@@ -77,8 +77,9 @@ export default function YayinYonetimiPage() {
     await yy.handleYayinla(b);
   };
 
-  // İki E-Club hedefli tek yayın, iki ilgili sekmede aynı yayin_id ile görünür.
-  const yayinlarFiltreli = yy.yayinlar.filter(y => y.hedef_roller.includes(aktifAnaSekme));
+  const yayinlarFiltreli = yy.yayinlar.filter(
+    (y) => yayinHedefGrubuBelirle(y.hedef_roller) === aktifAnaSekme,
+  );
   // Planlanmış yayınlar "Yayında" sekmesinde listelenir (Planlandı rozetiyle);
   // tarihi gelince cron aktive eder, rozet kendiliğinden "Yayında"ya döner.
   const yayindakiler = yayinlarFiltreli.filter(y => y.durum === "yayinda" || y.durum === "planlandi");
@@ -166,18 +167,23 @@ export default function YayinYonetimiPage() {
         {aktifSekme === "yayinda" && (
           yayindaListe.toplam === 0
             ? <BosListe mesaj={yayindakiler.length === 0 ? "Bu hedef kitle için aktif yayın yok." : "Aramanıza uyan kayıt bulunamadı."} />
-            : yayindaListe.gorunen.map(y => (
-              <YayinSatir key={y.yayin_id} y={y}
-                islemLoading={yy.islemLoading}
-                acikAkordiyon={acikAkordiyon} setAcikAkordiyon={setAcikAkordiyon}
-                formatTarih={formatTarih}
-                tekrarBilgi={yy.tekrarBilgi[y.yayin_id]}
-                getSoruPuani={yy.getSoruPuani} setSoruPuani={yy.setSoruPuani} hepsineAyniPuanAta={yy.hepsineAyniPuanAta}
-                onVideoAc={setAcikVideo}
-                onDurumDegistir={yy.handleDurumDegistir}
-                onPlanIslem={yy.handlePlanIslem}
-              />
-            ))
+            : (
+              <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                {yayindaListe.gorunen.map(y => (
+                  <YayinSatir key={y.yayin_id} y={y}
+                    kartGorunumu
+                    islemLoading={yy.islemLoading}
+                    acikAkordiyon={acikAkordiyon} setAcikAkordiyon={setAcikAkordiyon}
+                    formatTarih={formatTarih}
+                    tekrarBilgi={yy.tekrarBilgi[y.yayin_id]}
+                    getSoruPuani={yy.getSoruPuani} setSoruPuani={yy.setSoruPuani} hepsineAyniPuanAta={yy.hepsineAyniPuanAta}
+                    onVideoAc={setAcikVideo}
+                    onDurumDegistir={yy.handleDurumDegistir}
+                    onPlanIslem={yy.handlePlanIslem}
+                  />
+                ))}
+              </div>
+            )
         )}
 
         {aktifSekme === "yayinda" && (

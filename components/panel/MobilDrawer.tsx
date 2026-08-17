@@ -18,6 +18,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
+import { useState } from "react";
 import { PANEL_NAV, type NavContext, type NavGrup, type NavOge } from "./panelNav.config";
 
 type MobilDrawerProps = NavContext & {
@@ -42,13 +43,14 @@ const BILGI_PILLERI: { etiket: string; path: string }[] = [
 export default function MobilDrawer(props: MobilDrawerProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const [acikAltOgeler, setAcikAltOgeler] = useState<Set<string>>(new Set());
 
   if (!props.acik) return null;
 
   const gruplar = props.gruplar ?? PANEL_NAV;
   const git = (path: string) => { router.push(path); props.onKapat(); };
   const cikis = () => { props.onKapat(); props.onCikis(); };
-  const cozPath = (oge: NavOge) => (typeof oge.path === "function" ? oge.path(props) : oge.path);
+  const cozPath = (oge: NavOge) => typeof oge.path === "function" ? oge.path(props) : (oge.path ?? "");
   const rozetSayisi = (oge: NavOge) => oge.badgeKey ? (props.badge[oge.badgeKey] ?? 0) : 0;
 
   const Satir = ({ etiket, path, sayi, girintili = false, tamEslesme = false }: { etiket: string; path: string; sayi?: number; girintili?: boolean; tamEslesme?: boolean }) => {
@@ -76,6 +78,42 @@ export default function MobilDrawer(props: MobilDrawerProps) {
           </span>
         ) : null}
       </button>
+    );
+  };
+
+  const OgeBlogu = ({ oge, girintili = false }: { oge: NavOge; girintili?: boolean }) => {
+    const altOglar = (oge.altOglar ?? []).filter((altOge) => altOge.gate(props));
+    if (altOglar.length === 0) {
+      return <Satir etiket={oge.etiket} path={cozPath(oge)} sayi={rozetSayisi(oge)} girintili={girintili} tamEslesme={oge.tamEslesme} />;
+    }
+    const altAktif = altOglar.some((altOge) => {
+      const path = cozPath(altOge);
+      return altOge.tamEslesme ? pathname === path : pathname === path || pathname.startsWith(`${path}/`);
+    });
+    const altAcik = acikAltOgeler.has(oge.etiket);
+    return (
+      <div className="flex flex-col gap-0.5">
+        <button
+          type="button"
+          onClick={() => setAcikAltOgeler((onceki) => {
+            const yeni = new Set(onceki);
+            if (yeni.has(oge.etiket)) yeni.delete(oge.etiket); else yeni.add(oge.etiket);
+            return yeni;
+          })}
+          className="flex w-full cursor-pointer items-center justify-between border-none bg-transparent text-left"
+          style={{ padding: girintili ? "10px 12px 4px 20px" : "10px 12px 4px", fontSize: "14px", fontWeight: 700, color: altAktif ? "#185fa5" : "#374151", fontFamily: "'Nunito', sans-serif" }}
+        >
+          <span>{oge.etiket}</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} style={{ transform: altAcik ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" /></svg>
+        </button>
+        {altAcik && (
+          <div className="flex flex-col gap-0.5 pl-3">
+            {altOglar.map((altOge) => (
+              <Satir key={altOge.etiket} etiket={altOge.etiket} path={cozPath(altOge)} sayi={rozetSayisi(altOge)} girintili tamEslesme={altOge.tamEslesme} />
+            ))}
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -119,9 +157,7 @@ export default function MobilDrawer(props: MobilDrawerProps) {
             if (grup.baslikGoster === false) {
               return (
                 <div key={grup.baslik} className="flex flex-col gap-1">
-                  {gorunur.map((oge) => (
-                    <Satir key={oge.etiket} etiket={oge.etiket} path={cozPath(oge)} sayi={rozetSayisi(oge)} tamEslesme={oge.tamEslesme} />
-                  ))}
+                  {gorunur.map((oge) => <OgeBlogu key={oge.etiket} oge={oge} />)}
                 </div>
               );
             }
@@ -129,13 +165,11 @@ export default function MobilDrawer(props: MobilDrawerProps) {
             return (
               <div key={grup.baslik} className="flex flex-col gap-1">
                 <span
-                  style={{ fontSize: "12px", fontWeight: 800, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", padding: "0 12px 2px", fontFamily: "'Nunito', sans-serif" }}
+                  style={{ fontSize: "12px", fontWeight: 800, color: "#111827", textTransform: "uppercase", letterSpacing: "0.06em", padding: "0 12px 2px", fontFamily: "'Nunito', sans-serif" }}
                 >
                   {grup.baslik}
                 </span>
-                {gorunur.map((oge) => (
-                  <Satir key={oge.etiket} etiket={oge.etiket} path={cozPath(oge)} sayi={rozetSayisi(oge)} girintili tamEslesme={oge.tamEslesme} />
-                ))}
+                {gorunur.map((oge) => <OgeBlogu key={oge.etiket} oge={oge} girintili />)}
               </div>
             );
           })}

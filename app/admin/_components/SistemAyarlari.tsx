@@ -117,10 +117,10 @@ export default function SistemAyarlari({ hata, basari }: SistemAyarlariProps) {
         }}
       >
         <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 800, color: "#111" }}>
-          E-Club’ta Gönderi Sayısı Limitleri
+          E-Club Video Gönderim Ayarları
         </h3>
         <p style={{ margin: "4px 0 14px", fontSize: "12px", color: "#737373" }}>
-          UTT gönderim kapasitesi, öneri süresi ve alıcı koruma kuralları tüm firmalar için buradan yönetilir.
+          Öneri izleme süresi ve aynı videonun aynı kişiye tekrar gönderim süresi tüm firmalar için buradan yönetilir.
         </p>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "10px" }}>

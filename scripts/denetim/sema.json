@@ -1,7 +1,7 @@
 {
-  "uretim_tarihi": "2026-08-15T14:04:19.291Z",
-  "tablo_sayisi": 101,
-  "rpc_sayisi": 91,
+  "uretim_tarihi": "2026-08-17T11:45:42.049Z",
+  "tablo_sayisi": 102,
+  "rpc_sayisi": 92,
   "tablolar": {
     "bildirimler": {
       "tur": "BASE TABLE",
@@ -781,6 +781,10 @@
         "created_at": {
           "tip": "timestamp with time zone",
           "nullable": true
+        },
+        "video_id": {
+          "tip": "uuid",
+          "nullable": false
         }
       }
     },
@@ -941,6 +945,31 @@
         "teslim_alma_at": {
           "tip": "timestamp with time zone",
           "nullable": true
+        }
+      }
+    },
+    "eclub_store_urun_firma_ayarlari": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "urun_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "firma_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "aktif_mi": {
+          "tip": "boolean",
+          "nullable": false
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        },
+        "updated_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
         }
       }
     },
@@ -4310,6 +4339,10 @@
       "argumanlar": "p_izleme_id uuid, p_kisi_id uuid, p_tur_baslangic timestamp with time zone, p_soru_indeksleri integer[]",
       "donus": "TABLE(yeni_tamamlandi boolean, puan_kazanildi boolean, izleme_puani integer, soru_gosterilecek boolean, soru_hakki_nedeni text)"
     },
+    "eclub_oneri_atomik_kaydet": {
+      "argumanlar": "p_yayin_id uuid, p_oneren_id uuid, p_kisi_id uuid, p_video_id uuid, p_oneri_baslangic timestamp with time zone, p_oneri_bitis timestamp with time zone",
+      "donus": "TABLE(oneri_id uuid, kaydedildi boolean, sebep text, yeniden_gonderilebilir_at timestamp with time zone)"
+    },
     "eclub_store_siparis_iptal": {
       "argumanlar": "p_siparis_id uuid, p_iptal_eden_kisi_id uuid, p_is_admin boolean, p_sebep text",
       "donus": "TABLE(ok boolean, hata text)"
@@ -4650,12 +4683,12 @@
   "fk": {
     "bildirimler": [
       {
-        "kaynak_kolon": "gonderen_id",
+        "kaynak_kolon": "alici_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "alici_id",
+        "kaynak_kolon": "gonderen_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
@@ -4931,6 +4964,11 @@
         "hedef_kolon": "kullanici_id"
       },
       {
+        "kaynak_kolon": "video_id",
+        "hedef_tablo": "videolar",
+        "hedef_kolon": "video_id"
+      },
+      {
         "kaynak_kolon": "yayin_id",
         "hedef_tablo": "yayin_yonetimi",
         "hedef_kolon": "yayin_id"
@@ -4970,6 +5008,18 @@
         "kaynak_kolon": "urun_id",
         "hedef_tablo": "eclub_store_urunler",
         "hedef_kolon": "urun_id"
+      }
+    ],
+    "eclub_store_urun_firma_ayarlari": [
+      {
+        "kaynak_kolon": "urun_id",
+        "hedef_tablo": "eclub_store_urunler",
+        "hedef_kolon": "urun_id"
+      },
+      {
+        "kaynak_kolon": "firma_id",
+        "hedef_tablo": "firmalar",
+        "hedef_kolon": "firma_id"
       }
     ],
     "eclub_store_urunler": [
@@ -5132,12 +5182,12 @@
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "atayan_id",
+        "kaynak_kolon": "iu_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "iu_id",
+        "kaynak_kolon": "atayan_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       }
@@ -5149,12 +5199,12 @@
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "pasife_alan_id",
+        "kaynak_kolon": "iu_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "iu_id",
+        "kaynak_kolon": "pasife_alan_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },

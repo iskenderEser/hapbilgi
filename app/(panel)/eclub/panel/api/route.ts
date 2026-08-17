@@ -48,7 +48,7 @@ export async function GET() {
     const [izlemeSonucu, puanSonucu, kayipSonucu, dogruSonucu, yanlisSonucu, firmaBakiyeleri] = await Promise.all([
       adminSupabase
         .from("eclub_izleme_kayitlari")
-        .select("izleme_id, oneri_id, yayin_id, tamamlandi_mi")
+        .select("izleme_id, oneri_id, yayin_id, tamamlandi_mi, izleme_baslangic, izleme_bitis, created_at")
         .eq("kisi_id", kisi.kisi_id),
       adminSupabase
         .from("eclub_kazanilan_puanlar")
@@ -107,8 +107,29 @@ export async function GET() {
       }
     }
 
+    const [begeniSonucu, favoriSonucu] = await Promise.all([
+      yayinIds.length > 0
+        ? adminSupabase.from("video_begeniler").select("yayin_id").in("yayin_id", yayinIds)
+        : Promise.resolve({ data: [], error: null }),
+      yayinIds.length > 0
+        ? adminSupabase.from("video_favoriler").select("yayin_id").in("yayin_id", yayinIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+    if (begeniSonucu.error) return hataYaniti("Beğeni bilgileri alınamadı.", "video_begeniler SELECT — E-Club panel", begeniSonucu.error);
+    if (favoriSonucu.error) return hataYaniti("Favori bilgileri alınamadı.", "video_favoriler SELECT — E-Club panel", favoriSonucu.error);
+    const sayimHaritasi = (satirlar: Array<{ yayin_id: string }>) => {
+      const harita = new Map<string, number>();
+      for (const satir of satirlar) harita.set(satir.yayin_id, (harita.get(satir.yayin_id) ?? 0) + 1);
+      return harita;
+    };
+    const begeniler = sayimHaritasi((begeniSonucu.data ?? []) as Array<{ yayin_id: string }>);
+    const favoriler = sayimHaritasi((favoriSonucu.data ?? []) as Array<{ yayin_id: string }>);
+
     const izlemeOneriHaritasi = new Map(
       (izlemeSonucu.data ?? []).map((izleme) => [izleme.izleme_id, izleme.oneri_id]),
+    );
+    const izlemeDetayHaritasi = new Map(
+      (izlemeSonucu.data ?? []).filter((izleme) => izleme.oneri_id).map((izleme) => [izleme.oneri_id!, izleme]),
     );
     const oneriPerformansi = new Map<string, { izleme: number; cevaplama: number; kayip: number; dogru: number; yanlis: number }>();
     const performans = (oneriId: string) => {
@@ -143,6 +164,7 @@ export async function GET() {
       const hedefRol = eclubKisiHedefRolu(kisi.rol);
       if (!y || !hedefRol || !y.hedef_roller.includes(hedefRol) || y.durum !== "yayinda") return [];
       const kazanilan = oneriPerformansi.get(oo.oneri_id) ?? { izleme: 0, cevaplama: 0, kayip: 0, dogru: 0, yanlis: 0 };
+      const izleme = izlemeDetayHaritasi.get(oo.oneri_id);
       return [{
         oneri_id: oo.oneri_id,
         yayin_id: oo.yayin_id,
@@ -167,6 +189,11 @@ export async function GET() {
         oneri_durumu: eclubOneriDurumu(oo.oneri_baslangic, oo.oneri_bitis),
         kalan_gun: Math.max(0, Math.ceil((new Date(oo.oneri_bitis).getTime() - new Date(simdi).getTime()) / (1000 * 60 * 60 * 24))),
         izlendi_mi: oo.izlendi_mi,
+        izleme_baslangic: izleme?.izleme_baslangic ?? izleme?.created_at ?? null,
+        izleme_bitis: izleme?.izleme_bitis ?? null,
+        izleme_tamamlandi_mi: izleme?.tamamlandi_mi === true,
+        begeni_sayisi: begeniler.get(oo.yayin_id) ?? 0,
+        favori_sayisi: favoriler.get(oo.yayin_id) ?? 0,
         created_at: oo.created_at,
       }];
     });

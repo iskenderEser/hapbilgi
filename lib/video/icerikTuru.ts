@@ -17,7 +17,7 @@ export const TUR_BASLIK: Record<IcerikTuru, string> = {
   urun: "Ürün Eğitimleri",
   urun_medikal: "Ürün Medikal Eğitimleri",
   medikal: "Medikal Eğitimler",
-  egitim: "Eğitim Müdürlüğü Eğitimleri",
+  egitim: "Satış Eğitimleri",
   ik: "İK Eğitimleri",
 };
 

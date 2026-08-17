@@ -66,7 +66,7 @@ export async function PUT(request: NextRequest) {
       return validasyonHatasi("deger pozitif bir sayı ya da pozitif sayılardan oluşan bir dizi olmalıdır.", ["deger"]);
     }
     if (eclubGonderiAyariMi(anahtar) && (typeof deger !== "number" || !Number.isInteger(deger))) {
-      return validasyonHatasi("E-Club gönderi limitleri pozitif tam sayı olmalıdır.", ["deger"]);
+      return validasyonHatasi("E-Club gönderi ayarları pozitif tam sayı olmalıdır.", ["deger"]);
     }
 
     // Yalnızca mevcut anahtar güncellenir (yeni anahtar = migration işi).

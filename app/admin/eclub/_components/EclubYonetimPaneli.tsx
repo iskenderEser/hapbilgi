@@ -40,7 +40,7 @@ export default function EclubYonetimPaneli({ hata, basari }: EclubYonetimPaneliP
 
   const [reddetOnay, setReddetOnay] = useState<string | null>(null);
   const [pasifeOnay, setPasifeOnay] = useState<string | null>(null);
-  const [testAdet, setTestAdet] = useState(30);
+  const [testAdet, setTestAdet] = useState<number | "">("");
   const [testSilOnay, setTestSilOnay] = useState(false);
   const [testTemizlikOnayi, setTestTemizlikOnayi] = useState("");
 
@@ -70,17 +70,17 @@ export default function EclubYonetimPaneli({ hata, basari }: EclubYonetimPaneliP
                 min={1}
                 max={100}
                 value={testAdet}
-                onChange={(e) => setTestAdet(Number(e.target.value))}
+                onChange={(e) => setTestAdet(e.target.value === "" ? "" : Number(e.target.value))}
                 className="w-28 border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 outline-none"
               />
             </label>
             <button
-              onClick={() => testEczaneOlustur(testAdet)}
-              disabled={testIslemLoading || !Number.isInteger(testAdet) || testAdet < 1 || testAdet > 100}
+              onClick={() => testAdet !== "" && testEczaneOlustur(testAdet)}
+              disabled={testIslemLoading || testAdet === "" || !Number.isInteger(testAdet) || testAdet < 1 || testAdet > 100}
               className="px-4 py-2 rounded-lg border-none text-white text-xs font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
               style={{ background: RENK_BORDO }}
             >
-              {testIslemLoading ? "İşleniyor..." : `${testAdet || 0} Test Eczanesi Oluştur`}
+              {testIslemLoading ? "İşleniyor..." : testAdet === "" ? "Test Eczanesi Oluştur" : `${testAdet} Test Eczanesi Oluştur`}
             </button>
 
             {testEczaneler.some((eczane) => !eczane.kullaniliyor_mu) && (

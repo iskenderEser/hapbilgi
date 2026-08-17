@@ -3,9 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import {
-  aylikKrediKontrol,
-  aliciLimitKontrol,
-  tekrarKontrol,
+  ayniVideoTekrarAcikZamani,
+  eclubAyniVideoTekrarBeklemeGun,
   oneriBitisHesapla,
   eclubOneriGecerlilikGun,
 } from "@/lib/eclub/oneriLimit";
@@ -23,6 +22,7 @@ interface OneriKisiKimlik { ad: string | null; soyad: string | null; rol: string
 interface OneriKayitSatiri {
   oneri_id: string;
   yayin_id: string;
+  video_id: string;
   kisi_id: string;
   oneri_baslangic: string;
   oneri_bitis: string;
@@ -34,10 +34,18 @@ interface YayinAdiSatiri {
   yayin_id: string;
   urun_adi: string | null;
   teknik_adi: string | null;
+  talep_no: number | null;
+  firma_adi: string | null;
   hedef_roller: unknown;
 }
 interface EclubKisiSatiri { kisi_id: string; rol: string; auth_user_id: string | null; }
 interface EczaneSahiplikSatiri { eczane_id: string; }
+interface AtomikOneriSatiri {
+  oneri_id: string | null;
+  kaydedildi: boolean;
+  sebep: string | null;
+  yeniden_gonderilebilir_at: string | null;
+}
 
 function tekilIliski<T>(deger: T | T[] | null | undefined): T | null {
   if (!deger) return null;
@@ -113,11 +121,12 @@ export async function GET(request: NextRequest) {
     if (!TUKETICI_ROLLER.includes(rol)) return rolHatasi("Bu sayfaya yalnız UTT/KD_UTT erişebilir.");
 
     if (request.nextUrl.searchParams.get("yalniz_limit") === "1") {
-      const kredi = await aylikKrediKontrol(adminSupabase, user.id, 0);
+      const [gecerlilikGun, tekrarBeklemeGun] = await Promise.all([
+        eclubOneriGecerlilikGun(adminSupabase),
+        eclubAyniVideoTekrarBeklemeGun(adminSupabase),
+      ]);
       return NextResponse.json({
-        limitler: {
-          aylik: { kullanilan: kredi.kullanilan, kota: kredi.kota, kalan: kredi.kalan },
-        },
+        limitler: { gecerlilik_gun: gecerlilikGun, ayni_video_tekrar_bekleme_gun: tekrarBeklemeGun },
       }, { status: 200 });
     }
 
@@ -127,7 +136,7 @@ export async function GET(request: NextRequest) {
     const { data: oneriler, error } = await adminSupabase
       .from("eclub_oneri_kayitlari")
       .select(`
-        oneri_id, yayin_id, kisi_id, oneri_baslangic, oneri_bitis, izlendi_mi, created_at,
+        oneri_id, yayin_id, video_id, kisi_id, oneri_baslangic, oneri_bitis, izlendi_mi, created_at,
         eclub_kisiler ( ad, soyad, rol )
       `)
       .eq("oneren_id", user.id)
@@ -142,11 +151,11 @@ export async function GET(request: NextRequest) {
 
     // Yayın adlarını toplu çek (v_yayin_detay)
     const yayinIds = [...new Set(oneriSatirlari.map((o) => o.yayin_id))];
-    const yayinAdiMap = new Map<string, { urun_adi: string | null; teknik_adi: string | null; hedef_roller: HedefRoller }>();
+    const yayinAdiMap = new Map<string, { urun_adi: string | null; teknik_adi: string | null; talep_no: number | null; firma_adi: string | null; hedef_roller: HedefRoller }>();
     if (yayinIds.length > 0) {
       const { data: yayinlar, error: yayinlarError } = await adminSupabase
         .from("v_yayin_detay")
-        .select("yayin_id, urun_adi, teknik_adi, hedef_roller")
+        .select("yayin_id, urun_adi, teknik_adi, talep_no, firma_adi, hedef_roller")
         .in("yayin_id", yayinIds);
       if (yayinlarError)
         return hataYaniti("Öneri yayın bilgileri çekilemedi.", "v_yayin_detay SELECT — öneri geçmişi", yayinlarError);
@@ -154,6 +163,8 @@ export async function GET(request: NextRequest) {
         yayinAdiMap.set(y.yayin_id, {
           urun_adi: y.urun_adi,
           teknik_adi: y.teknik_adi,
+          talep_no: y.talep_no,
+          firma_adi: y.firma_adi,
           hedef_roller: hedefRolleriOku(y),
         });
       }
@@ -161,12 +172,15 @@ export async function GET(request: NextRequest) {
 
     const sonuc = oneriSatirlari.map((o) => {
       const kisi = tekilIliski(o.eclub_kisiler);
-      const yayin = yayinAdiMap.get(o.yayin_id) ?? { urun_adi: null, teknik_adi: null, hedef_roller: [] };
+      const yayin = yayinAdiMap.get(o.yayin_id) ?? { urun_adi: null, teknik_adi: null, talep_no: null, firma_adi: null, hedef_roller: [] };
       return {
         oneri_id: o.oneri_id,
         yayin_id: o.yayin_id,
+        video_id: o.video_id,
         urun_adi: yayin.urun_adi ?? "-",
         teknik_adi: yayin.teknik_adi ?? "-",
+        talep_no: yayin.talep_no,
+        firma_adi: yayin.firma_adi,
         hedef_roller: yayin.hedef_roller,
         kisi_id: o.kisi_id,
         kisi_ad: kisi?.ad ?? "-",
@@ -180,17 +194,30 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    const kredi = await aylikKrediKontrol(adminSupabase, user.id, 0);
+    const [gecerlilikGun, tekrarBeklemeGun] = await Promise.all([
+      eclubOneriGecerlilikGun(adminSupabase),
+      eclubAyniVideoTekrarBeklemeGun(adminSupabase),
+    ]);
+    const simdi = Date.now();
+    const tekrarEngeliMap = new Map<string, { video_id: string; kisi_id: string; yeniden_gonderilebilir_at: string }>();
+    for (const oneri of sonuc) {
+      const yenidenGonderilebilirAt = ayniVideoTekrarAcikZamani(new Date(oneri.oneri_bitis), tekrarBeklemeGun).toISOString();
+      if (new Date(yenidenGonderilebilirAt).getTime() <= simdi) continue;
+      const anahtar = `${oneri.video_id}:${oneri.kisi_id}`;
+      const mevcut = tekrarEngeliMap.get(anahtar);
+      if (!mevcut || mevcut.yeniden_gonderilebilir_at < yenidenGonderilebilirAt) {
+        tekrarEngeliMap.set(anahtar, {
+          video_id: oneri.video_id,
+          kisi_id: oneri.kisi_id,
+          yeniden_gonderilebilir_at: yenidenGonderilebilirAt,
+        });
+      }
+    }
 
     return NextResponse.json({
       oneriler: sonuc,
-      limitler: {
-        aylik: {
-          kullanilan: kredi.kullanilan,
-          kota: kredi.kota,
-          kalan: kredi.kalan,
-        },
-      },
+      tekrar_engelleri: [...tekrarEngeliMap.values()],
+      limitler: { gecerlilik_gun: gecerlilikGun, ayni_video_tekrar_bekleme_gun: tekrarBeklemeGun },
     }, { status: 200 });
 
   } catch (err) {
@@ -236,7 +263,7 @@ export async function POST(request: NextRequest) {
     // 3. Yayın geçerli mi (yayında + en az bir E-Club hedef rolü)
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, durum, hedef_roller, urun_adi, firma_id, takim_id")
+      .select("yayin_id, durum, hedef_roller, urun_adi, firma_id, takim_id, video_durum_id")
       .eq("yayin_id", yayin_id)
       .maybeSingle();
 
@@ -248,6 +275,16 @@ export async function POST(request: NextRequest) {
       return isKuraluHatasi("Bu yayın E-Club için uygun değil (hedef rol eczacı/teknisyen değil).");
     if (!eclubYayinKapsamindaMi(utt, yayin))
       return isKuraluHatasi("Yayın, UTT'nin erişebildiği firma/takım kataloğu kapsamında değil.");
+
+    if (!yayin.video_durum_id)
+      return hataYaniti("Yayının video kimliği çözülemedi.", "v_yayin_detay — video_durum_id yok", null, 500);
+    const { data: videoDurum, error: videoDurumError } = await adminSupabase
+      .from("video_durumu")
+      .select("video_id")
+      .eq("video_durum_id", yayin.video_durum_id)
+      .maybeSingle();
+    if (videoDurumError || !videoDurum?.video_id)
+      return hataYaniti("Yayının video kimliği çözülemedi.", "video_durumu SELECT — E-Club gönderim", videoDurumError, 500);
 
     // 4+5. Kişileri çek: rol (eclub_kisiler) + aktiflik & sahiplik.
     // Aktiflik eclub_kisi_eczane.aktif_mi'de; sahiplik (baglayan_utt_id) o eczanenin
@@ -300,7 +337,7 @@ export async function POST(request: NextRequest) {
     }
 
     // kisiMap: kişi başına rol, giriş hesabı, aktif bağ ve bu UTT'nin sahipliği.
-    const atlanan: { kisi_id: string; sebep: string }[] = [];
+    const atlanan: { kisi_id: string; sebep: string; yeniden_gonderilebilir_at?: string }[] = [];
     const kisiMap = new Map<string, { rol: string; auth_var: boolean; aktif_mi: boolean; sahip_mi: boolean }>();
     for (const kid of benzersizKisiler) {
       const kimlik = kimlikMap.get(kid);
@@ -315,7 +352,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Aday listesi: her kişi için sahiplik + aktiflik + rol uyumu
-    let adaylar: string[] = [];
+    const adaylar: string[] = [];
     for (const kid of benzersizKisiler) {
       const k = kisiMap.get(kid);
       if (!k) { atlanan.push({ kisi_id: kid, sebep: "bulunamadi" }); continue; }
@@ -327,64 +364,35 @@ export async function POST(request: NextRequest) {
       adaylar.push(kid);
     }
 
-    // 6. Tekrar kontrolü (aynı UTT → kişi, son 7 gün)
-    if (adaylar.length > 0) {
-      const { cakisan_kisiler } = await tekrarKontrol(adminSupabase, user.id, adaylar);
-      const cakisanSet = new Set(cakisan_kisiler);
-      const kalan: string[] = [];
-      for (const kid of adaylar) {
-        if (cakisanSet.has(kid)) atlanan.push({ kisi_id: kid, sebep: "tekrar" });
-        else kalan.push(kid);
-      }
-      adaylar = kalan;
-    }
-
-    // 7. Alıcı haftalık limiti (global, son 7 gün, 20)
-    if (adaylar.length > 0) {
-      const { dolu_kisiler } = await aliciLimitKontrol(adminSupabase, adaylar);
-      const doluSet = new Set(dolu_kisiler.map((d) => d.kisi_id));
-      const kalan: string[] = [];
-      for (const kid of adaylar) {
-        if (doluSet.has(kid)) atlanan.push({ kisi_id: kid, sebep: "alici_limiti" });
-        else kalan.push(kid);
-      }
-      adaylar = kalan;
-    }
-
-    // 8. Aylık kredi (kısmi): kalan krediye göre kes
-    if (adaylar.length > 0) {
-      const kredi = await aylikKrediKontrol(adminSupabase, user.id, adaylar.length);
-      if (kredi.kalan <= 0) {
-        for (const kid of adaylar) atlanan.push({ kisi_id: kid, sebep: "kredi_yok" });
-        adaylar = [];
-      } else if (adaylar.length > kredi.kalan) {
-        const gidecek = adaylar.slice(0, kredi.kalan);
-        const kesilenler = adaylar.slice(kredi.kalan);
-        for (const kid of kesilenler) atlanan.push({ kisi_id: kid, sebep: "kredi_yok" });
-        adaylar = gidecek;
-      }
-    }
-
-    // 9. INSERT (bitiş, admin tarafından yönetilen geçerlilik süresine göre)
+    // Atomik kayıt: yalnız aynı UTT + aynı kişi + aynı gerçek video tekrarını engeller.
     const gonderilen: string[] = [];
     const now = new Date();
     const gecerlilikGun = await eclubOneriGecerlilikGun(adminSupabase);
     const bitis = oneriBitisHesapla(now, gecerlilikGun);
     for (const kid of adaylar) {
-      const { data: yeniOneri, error: insertError } = await adminSupabase
-        .from("eclub_oneri_kayitlari")
-        .insert({
-          yayin_id,
-          oneren_id: user.id,
-          kisi_id: kid,
-          oneri_baslangic: now.toISOString(),
-          oneri_bitis: bitis.toISOString(),
-          izlendi_mi: false,
+      const { data: rpcSonucu, error: insertError } = await adminSupabase
+        .rpc("eclub_oneri_atomik_kaydet", {
+          p_yayin_id: yayin_id,
+          p_oneren_id: user.id,
+          p_kisi_id: kid,
+          p_video_id: videoDurum.video_id,
+          p_oneri_baslangic: now.toISOString(),
+          p_oneri_bitis: bitis.toISOString(),
         })
-        .select("oneri_id")
         .single();
-      if (insertError || !yeniOneri) {
+      if (insertError || !rpcSonucu) {
         atlanan.push({ kisi_id: kid, sebep: "kayit_hatasi" });
+        continue;
+      }
+      const atomikSonuc = rpcSonucu as AtomikOneriSatiri;
+      if (!atomikSonuc.kaydedildi || !atomikSonuc.oneri_id) {
+        atlanan.push({
+          kisi_id: kid,
+          sebep: atomikSonuc.sebep ?? "kayit_hatasi",
+          ...(atomikSonuc.yeniden_gonderilebilir_at
+            ? { yeniden_gonderilebilir_at: atomikSonuc.yeniden_gonderilebilir_at }
+            : {}),
+        });
         continue;
       }
       gonderilen.push(kid);
@@ -396,7 +404,7 @@ export async function POST(request: NextRequest) {
         alici_kisi_id: kid,
         gonderen_id: user.id,
         kayit_turu: "oneri",
-        kayit_id: yeniOneri.oneri_id,
+        kayit_id: atomikSonuc.oneri_id,
         mesaj: `Size yeni bir video önerildi: ${yayin.urun_adi}`,
       });
     }

@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
-import { ADMIN_ROLLER, ECLUB_TUKETICI_ROLLERI, MUSTERI_ROLU, TUKETICI_ROLLER, YAYINDAKI_VIDEO_GORENLER } from "@/lib/utils/roller";
+import { ADMIN_ROLLER, ECLUB_TUKETICI_ROLLERI, MUSTERI_ROLU, TUKETICI_ROLLER, URETICI_ROLLER, YAYINDAKI_VIDEO_GORENLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { eclubKisiErisimi } from "@/lib/eclub/kisiErisim";
 
@@ -178,6 +178,21 @@ export async function proxy(request: NextRequest) {
 
     if (!YAYINDAKI_VIDEO_GORENLER.includes(yvRol)) {
       if (yvApiYolu) return NextResponse.json({ error: "Bu sayfaya erişim yetkiniz yok." }, { status: 403 });
+      return NextResponse.redirect(new URL("/ana-sayfa", request.url));
+    }
+  }
+  // -------------------------------------------------------------------------
+
+  // --- Üretici yayın katalogları bekçisi -----------------------------------
+  if (pathname.startsWith("/sizin-yayinlariniz") || pathname.startsWith("/tum-yayinlar")) {
+    if (!user) return NextResponse.redirect(new URL("/login", request.url));
+
+    const katalogSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const katalogRol = await rolCozucu(katalogSupabase, user.id);
+    if (!URETICI_ROLLER.includes(katalogRol)) {
       return NextResponse.redirect(new URL("/ana-sayfa", request.url));
     }
   }

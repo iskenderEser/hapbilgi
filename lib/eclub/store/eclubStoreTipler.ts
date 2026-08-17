@@ -16,6 +16,7 @@ export interface EclubStoreUrun {
   puan_fiyat: number;
   stok: number;
   aktif_mi: boolean;
+  kullanilabilir_puan?: number;
 }
 
 export interface EclubStoreAdres {

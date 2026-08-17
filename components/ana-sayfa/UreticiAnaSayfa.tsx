@@ -12,7 +12,6 @@ import { ROL_ADLARI } from "@/lib/utils/roller";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import { rolTeknikKullanirMi } from "@/lib/uretici/yetenekler";
 import { type DurumKodu } from "@/lib/utils/durum/mesaj";
-import { departmanKey } from "@/lib/video/departman";
 
 interface TakipSatiri {
   talep_id: string;
@@ -77,10 +76,10 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
 
   // Yayın Listesi üretimi biten kayıtları gösterir; hedef ekranı ise yayın durumu
   // belirler. Yalnız canlı yayınlar salt-izleme kataloğuna, diğerleri mevcut yayın
-  // yönetimi akışına gider. Departman rolün tek kanonik eşlemesinden türetilir.
+  // yönetimi akışına gider. Canlı yayın üreticinin kendi hedef-kitle kataloğunda açılır.
   const satirYolu = (satir: TakipSatiri) =>
     satir.durum_kodu === "yayinda"
-      ? `/yayindaki-videolar?departman=${departmanKey(rol)}`
+      ? "/sizin-yayinlariniz"
       : satir.yol;
 
   const bugunTarih = () =>

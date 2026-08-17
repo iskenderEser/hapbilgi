@@ -25,13 +25,13 @@ interface Props {
 
 interface FormState {
   ad: string;
-  sira: number;
+  sira: number | "";
   aktif_mi: boolean;
 }
 
 const BOS_FORM: FormState = {
   ad: "",
-  sira: 0,
+  sira: "",
   aktif_mi: true,
 };
 
@@ -75,9 +75,10 @@ export default function KategoriModal({
     setKaydediliyor(true);
     try {
       const yontem = mevcutKategori ? "PATCH" : "POST";
+      const sayisalForm = { ...form, sira: form.sira === "" ? 0 : form.sira };
       const body = mevcutKategori
-        ? { kategori_id: mevcutKategori.kategori_id, ...form }
-        : form;
+        ? { kategori_id: mevcutKategori.kategori_id, ...sayisalForm }
+        : sayisalForm;
 
       const res = await fetch("/admin/store/api/kategori", {
         method: yontem,
@@ -159,7 +160,7 @@ export default function KategoriModal({
               type="number"
               min={0}
               value={form.sira}
-              onChange={(e) => handleChange("sira", Number(e.target.value))}
+              onChange={(e) => handleChange("sira", e.target.value === "" ? "" : Number(e.target.value))}
               disabled={kaydediliyor}
               className="w-full px-3 py-2 text-sm rounded-lg bg-white"
               style={inputStili}

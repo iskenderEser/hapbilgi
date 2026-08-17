@@ -2,7 +2,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
-import { TUM_HEDEF_ROLLER, URETICI_ROLLER, type HedefRol } from "@/lib/utils/roller";
+import {
+  ECLUB_ORTAK_YAYIN_GRUBU,
+  TUM_HEDEF_ROLLER,
+  URETICI_ROLLER,
+  yayinHedefGrubuBelirle,
+  type YayinHedefGrubu,
+} from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
@@ -72,8 +78,8 @@ export async function GET(request: NextRequest) {
     );
 
     const bosHedefSayilari = Object.fromEntries(
-      TUM_HEDEF_ROLLER.map((hedef) => [hedef, 0])
-    ) as Record<HedefRol, number>;
+      [...TUM_HEDEF_ROLLER, ECLUB_ORTAK_YAYIN_GRUBU].map((hedef) => [hedef, 0])
+    ) as Record<YayinHedefGrubu, number>;
 
     if (bekleyenler.length === 0) {
       return NextResponse.json(
@@ -153,16 +159,14 @@ export async function GET(request: NextRequest) {
       .filter((kayit): kayit is NonNullable<typeof kayit> => kayit !== null);
 
       // Query parametresine göre filtrele (varsa)
-    const hedefSayilari = TUM_HEDEF_ROLLER.reduce<Record<HedefRol, number>>(
-      (sayilar, hedef) => {
-        sayilar[hedef] = sonuc.filter((b) => b.hedef_roller.includes(hedef)).length;
-        return sayilar;
-      },
-      { ...bosHedefSayilari }
-    );
+    const hedefSayilari = sonuc.reduce<Record<YayinHedefGrubu, number>>((sayilar, kayit) => {
+      const grup = yayinHedefGrubuBelirle(kayit.hedef_roller);
+      if (grup) sayilar[grup] += 1;
+      return sayilar;
+    }, { ...bosHedefSayilari });
 
     const filtrelenmis = hedefRolFiltresi
-      ? sonuc.filter((b) => b.hedef_roller.some((hedef) => hedef === hedefRolFiltresi))
+      ? sonuc.filter((b) => yayinHedefGrubuBelirle(b.hedef_roller) === hedefRolFiltresi)
       : sonuc;
 
     if (sayiModu) {

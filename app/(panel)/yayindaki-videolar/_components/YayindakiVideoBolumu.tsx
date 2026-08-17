@@ -6,6 +6,7 @@
 
 "use client";
 
+import type { RefObject } from "react";
 import type { YayindakiVideo } from "@/lib/video/yayindakiVideolar";
 import type { AnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
@@ -39,6 +40,8 @@ interface Props {
   secilenYayinlar?: string[];
   onOneriSec?: (video: YayindakiVideo) => void;
   hedefRolEtiketiGoster?: boolean;
+  yatayMi?: boolean;
+  rafRef?: RefObject<HTMLDivElement | null>;
 }
 
 function hedefKitleEtiketi(hedefRoller: string[]): string | null {
@@ -50,14 +53,17 @@ function hedefKitleEtiketi(hedefRoller: string[]): string | null {
   return null;
 }
 
-export default function YayindakiVideoBolumu({ videolar, onVideoSec, oneriModu = false, secilenYayinlar = [], onOneriSec, hedefRolEtiketiGoster = false }: Props) {
+export default function YayindakiVideoBolumu({ videolar, onVideoSec, oneriModu = false, secilenYayinlar = [], onOneriSec, hedefRolEtiketiGoster = false, yatayMi = false, rafRef }: Props) {
   if (videolar.length === 0) return null;
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" });
 
   return (
-    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <div ref={rafRef} className={yatayMi
+      ? "flex snap-x gap-2.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      : "grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+    }>
       {videolar.map((v) => {
         const thumb = v.thumbnail_url ?? thumbnailUrlUret(v.video_url);
         const secili = secilenYayinlar.includes(v.yayin_id);
@@ -65,7 +71,7 @@ export default function YayindakiVideoBolumu({ videolar, onVideoSec, oneriModu =
         return (
           <article
             key={v.yayin_id}
-            className={`group overflow-hidden rounded-xl border bg-white transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(31,55,90,0.10)] ${secili ? "border-[#2f7fc7] ring-2 ring-[#b9d8f3]" : "border-[#dfe7f1] hover:border-[#b9d5f0]"}`}
+            className={`group overflow-hidden rounded-xl border bg-white transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(31,55,90,0.10)] ${yatayMi ? "w-40 shrink-0 snap-start sm:w-44 md:w-52" : ""} ${secili ? "border-[#2f7fc7] ring-2 ring-[#b9d8f3]" : "border-[#dfe7f1] hover:border-[#b9d5f0]"}`}
           >
             <button
               type="button"

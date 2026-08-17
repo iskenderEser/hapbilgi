@@ -27,6 +27,11 @@ export interface PanelOneri {
   oneri_durumu: "aktif" | "suresi_gecmis";
   kalan_gun: number;
   izlendi_mi: boolean;
+  izleme_baslangic: string | null;
+  izleme_bitis: string | null;
+  izleme_tamamlandi_mi: boolean;
+  begeni_sayisi: number;
+  favori_sayisi: number;
   created_at: string;
 }
 

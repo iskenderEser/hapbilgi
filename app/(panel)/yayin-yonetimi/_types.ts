@@ -3,8 +3,8 @@
 // Yayın yönetimi sayfasının paylaşılan tip sözleşmeleri ve sabitleri.
 // page.tsx, hook ve alt bileşenler buradan import eder.
 
-import type { HedefRol, HedefRoller } from "@/app/(panel)/talepler/_types";
-import { TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
+import type { HedefRoller } from "@/app/(panel)/talepler/_types";
+import { ECLUB_ORTAK_YAYIN_GRUBU, type YayinHedefGrubu } from "@/lib/utils/roller";
 
 // ============================================================================
 // Tipler
@@ -57,7 +57,7 @@ export type AltSekme = "bekleyen" | "yayinda" | "durdurulan";
 
 // Yayına hazır içeriklerin hedef kitle bazındaki canlı dağılımı.
 // Sidebar toplam sayıyı, Yayın Merkezi ise bu dağılımı gösterir.
-export type BekleyenHedefSayilari = Record<HedefRol, number>;
+export type BekleyenHedefSayilari = Record<YayinHedefGrubu, number>;
 
 // ============================================================================
 // Sabitler
@@ -70,14 +70,22 @@ export const EXTRA_PUAN_SECENEKLERI = [5, 6, 7, 8, 9, 10];
 // Ana sekme (hedef rol) etiketleri. Renkler HEDEF_ROL_TASARIM'dan gelir;
 // etiketler bu sayfaya özgü tam isimlerdir (kisaEtiket'ten türetilemez —
 // örn. teknisyen için "Ecz. Tek." değil "Eczane Teknisyeni" istenir).
-export const ANA_SEKME_ETIKETLERI: Record<HedefRol, string> = {
+export const ANA_SEKME_ETIKETLERI: Record<YayinHedefGrubu, string> = {
   utt: "UTT Yayınları",
   bm: "BM Yayınları",
   eczaci: "Eczacı Yayınları",
   eczane_teknisyeni: "Eczane Teknisyeni Yayınları",
+  [ECLUB_ORTAK_YAYIN_GRUBU]: "Eczacı ve Eczane Teknisyeni Ortak Yayınları",
   eczanem: "Eczanem Yayınları",
 };
 
 // Ana sekmelerin gösterim sırası. Eczanem sekmesi U5'te açıldı — PM eczanem
 // bekleyen videolarını buradan yayına alır (barkod + Karşılık formu satır içinde).
-export const ANA_SEKMELER: HedefRol[] = TUM_HEDEF_ROLLER;
+export const ANA_SEKMELER: YayinHedefGrubu[] = [
+  "utt",
+  "bm",
+  "eczaci",
+  "eczane_teknisyeni",
+  ECLUB_ORTAK_YAYIN_GRUBU,
+  "eczanem",
+];

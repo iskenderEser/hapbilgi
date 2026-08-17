@@ -38,8 +38,8 @@ interface FormState {
   ad: string;
   aciklama: string;
   gorsel_url: string | null;
-  puan_fiyati: number;
-  stok: number;
+  puan_fiyati: number | "";
+  stok: number | "";
   aktif_mi: boolean;
 }
 
@@ -48,8 +48,8 @@ const BOS_FORM: FormState = {
   ad: "",
   aciklama: "",
   gorsel_url: null,
-  puan_fiyati: 1,
-  stok: 0,
+  puan_fiyati: "",
+  stok: "",
   aktif_mi: true,
 };
 
@@ -166,7 +166,9 @@ export default function UrunModal({
       hata("Ürün adı zorunludur.", "validasyon", undefined);
       return;
     }
-    if (form.puan_fiyati <= 0) {
+    const puanFiyati = form.puan_fiyati === "" ? 0 : form.puan_fiyati;
+    const stok = form.stok === "" ? 0 : form.stok;
+    if (puanFiyati <= 0) {
       hata("Puan fiyatı 0'dan büyük olmalı.", "validasyon", undefined);
       return;
     }
@@ -174,9 +176,10 @@ export default function UrunModal({
     setKaydediliyor(true);
     try {
       const yontem = mevcutUrun ? "PATCH" : "POST";
+      const sayisalForm = { ...form, puan_fiyati: puanFiyati, stok };
       const body = mevcutUrun
-        ? { urun_id: mevcutUrun.urun_id, ...form }
-        : form;
+        ? { urun_id: mevcutUrun.urun_id, ...sayisalForm }
+        : sayisalForm;
 
       const res = await fetch("/admin/store/api/urun", {
         method: yontem,
@@ -372,7 +375,7 @@ export default function UrunModal({
                 type="number"
                 min={1}
                 value={form.puan_fiyati}
-                onChange={(e) => handleChange("puan_fiyati", Number(e.target.value))}
+                onChange={(e) => handleChange("puan_fiyati", e.target.value === "" ? "" : Number(e.target.value))}
                 disabled={islemSuruyor}
                 className="w-full px-3 py-2 text-sm rounded-lg bg-white"
                 style={inputStili}
@@ -386,7 +389,7 @@ export default function UrunModal({
                 type="number"
                 min={0}
                 value={form.stok}
-                onChange={(e) => handleChange("stok", Number(e.target.value))}
+                onChange={(e) => handleChange("stok", e.target.value === "" ? "" : Number(e.target.value))}
                 disabled={islemSuruyor}
                 className="w-full px-3 py-2 text-sm rounded-lg bg-white"
                 style={inputStili}

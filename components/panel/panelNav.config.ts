@@ -23,6 +23,7 @@ import {
   ECLUB_YONETIM_ROLLERI,
   TUKETICI_ROLLER,
 } from "@/lib/utils/roller";
+import { UTT_VIDEO_KATEGORILERI } from "@/lib/video/uttVideoKategorileri";
 
 // Gezinme bağlamı — layout'un profil/api + kimlikten türettiği değerler.
 export interface NavContext {
@@ -39,7 +40,8 @@ export interface NavOge {
   etiket: string;
   // Sabit yol; Raporlar rol-bazlı yönlendiği için çözücü fonksiyon da olabilir
   // (mevcut Navbar.raporaGit birebir).
-  path: string | ((ctx: NavContext) => string);
+  path?: string | ((ctx: NavContext) => string);
+  altOglar?: NavOge[];
   badgeKey?: string;             // bildirimler/api "sayilar" anahtarı (talep/senaryo/…)
   tamEslesme?: boolean;          // Alt rotalarda başka menü öğesini de aktif göstermemek için
   gate: (ctx: NavContext) => boolean;
@@ -54,6 +56,14 @@ export interface NavGrup {
 }
 
 export const PANEL_NAV: NavGrup[] = [
+  {
+    baslik: "Videolarım",
+    oglar: UTT_VIDEO_KATEGORILERI.map((kategori) => ({
+      etiket: kategori.etiket,
+      path: `/videolarim/${kategori.slug}`,
+      gate: (c) => TUKETICI_ROLLER.includes(c.rolKucu),
+    })),
+  },
   {
     baslik: "Üretim",
     oglar: [
@@ -70,7 +80,9 @@ export const PANEL_NAV: NavGrup[] = [
     baslik: "Yayın",
     oglar: [
       { etiket: "Yayın Yönetimi",    path: "/yayin-yonetimi",     badgeKey: "yayin", gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
-      { etiket: "Yayındaki Videolar", path: "/yayindaki-videolar",                            gate: (c) => YAYINDAKI_VIDEO_GORENLER.includes(c.rolKucu) },
+      { etiket: "Sizin Yayınlarınız", path: "/sizin-yayinlariniz",                            gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
+      { etiket: "Tüm Yayınlar",       path: "/tum-yayinlar",                                  gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
+      { etiket: "Yayındaki Videolar", path: "/yayindaki-videolar",                            gate: (c) => YAYINDAKI_VIDEO_GORENLER.includes(c.rolKucu) && !URETICI_ROLLER.includes(c.rolKucu) },
       { etiket: "Onaylanan Talepler", path: "/onaylanan-talepler",                            gate: (c) => c.rolKucu === "iu" },
     ],
   },
@@ -116,7 +128,15 @@ export const PANEL_NAV: NavGrup[] = [
   {
     baslik: "E-Club",
     oglar: [
-      { etiket: "Videolar ve Eczanelerim", path: "/eclub/listem",     gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
+      { etiket: "Eczanelerim",              path: "/eclub/eczanelerim",            gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
+      {
+        etiket: "Video Yönetimi",
+        gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu),
+        altOglar: [
+          { etiket: "Gönderilecek Videolar", path: "/eclub/videolarim",          gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
+          { etiket: "Gönderilen Videolar",   path: "/eclub/gonderilen-videolar", gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
+        ],
+      },
       { etiket: "Raporlar",                 path: "/eclub/raporlar",  gate: (c) => c.eclubAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },
       { etiket: "E-Club Ligi",              path: "/eclub/ligi",      gate: (c) => c.eclubAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },
       { etiket: "Siparişler",               path: "/eclub/siparisler", gate: (c) => c.eclubAcik && c.eclubStoreAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },
@@ -138,11 +158,21 @@ export const PANEL_NAV: NavGrup[] = [
 
 // eclub_kisi (eczacı/teknisyen) dar gezinmesi — kişi paneli + kendi mağaza yolları.
 // Çok-firmalı erişim bayrakları aktif eczane→firma zincirinden profil API'sinde çözülür.
-export const ECLUB_KISI_NAV: NavGrup[] = [
+export function eclubKisiNavOlustur(firmalar: Array<{ firma_id: string; firma_adi: string }>): NavGrup[] {
+  return [
   {
     baslik: "E-Club",
     oglar: [
-      { etiket: "Videolarım", path: "/eclub/panel", gate: (c) => c.eclubAcik },
+      {
+        etiket: "Firma Videoları",
+        path: "/eclub/panel",
+        gate: (c) => c.eclubAcik,
+        altOglar: firmalar.map((firma) => ({
+          etiket: firma.firma_adi,
+          path: `/eclub/panel/firma/${firma.firma_id}`,
+          gate: (c) => c.eclubAcik,
+        })),
+      },
     ],
   },
   {
@@ -153,4 +183,7 @@ export const ECLUB_KISI_NAV: NavGrup[] = [
       { etiket: "Adreslerim", path: "/eclub/store/adreslerim", gate: (c) => c.eclubAcik && c.eclubStoreAcik },
     ],
   },
-];
+  ];
+}
+
+export const ECLUB_KISI_NAV: NavGrup[] = eclubKisiNavOlustur([]);

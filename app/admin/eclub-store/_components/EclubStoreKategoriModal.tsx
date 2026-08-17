@@ -15,7 +15,7 @@ interface Props {
 
 export default function EclubStoreKategoriModal({ duzenlenecek, onKapat, onKaydedildi, hata, basari }: Props) {
   const [ad, setAd] = useState("");
-  const [sira, setSira] = useState(0);
+  const [sira, setSira] = useState<number | "">("");
   const [aktifMi, setAktifMi] = useState(true);
   const [loading, setLoading] = useState(false);
 
@@ -25,7 +25,7 @@ export default function EclubStoreKategoriModal({ duzenlenecek, onKapat, onKayde
       setSira(duzenlenecek.sira);
       setAktifMi(duzenlenecek.aktif_mi);
     } else {
-      setAd(""); setSira(0); setAktifMi(true);
+      setAd(""); setSira(""); setAktifMi(true);
     }
   }, [duzenlenecek]);
 
@@ -33,9 +33,10 @@ export default function EclubStoreKategoriModal({ duzenlenecek, onKapat, onKayde
     if (!ad.trim()) { hata("Kategori adı zorunludur.", "validasyon"); return; }
     setLoading(true);
     const metod = duzenlenecek ? "PUT" : "POST";
+    const sayisalSira = sira === "" ? 0 : sira;
     const body = duzenlenecek
-      ? { kategori_id: duzenlenecek.kategori_id, ad, sira, aktif_mi: aktifMi }
-      : { ad, sira, aktif_mi: aktifMi };
+      ? { kategori_id: duzenlenecek.kategori_id, ad, sira: sayisalSira, aktif_mi: aktifMi }
+      : { ad, sira: sayisalSira, aktif_mi: aktifMi };
     const res = await fetch("/admin/eclub-store/api/kategori", {
       method: metod, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
     });
@@ -64,7 +65,7 @@ export default function EclubStoreKategoriModal({ duzenlenecek, onKapat, onKayde
 
         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
           <label style={{ fontSize: "12px", color: "#6b7280" }}>Sıra</label>
-          <input style={inputCls} type="number" value={sira} onChange={(e) => setSira(Number(e.target.value))} />
+          <input style={inputCls} type="number" value={sira} onChange={(e) => setSira(e.target.value === "" ? "" : Number(e.target.value))} />
         </div>
 
         <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "#374151" }}>

@@ -113,8 +113,8 @@ export default function EclubRaporlarPage() {
     <div className={styles.page} style={{ fontFamily: "'Nunito', sans-serif" }}>
       <div className={styles.container}>
         {data.kapsam.gorunum === "utt" && (
-          <Link href="/eclub/listem" className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-[#7890aa] hover:text-[#237ac8]">
-            <ArrowLeft className="h-3.5 w-3.5" /> Videolar ve Eczanelerim
+          <Link href="/eclub/videolarim" className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-[#7890aa] hover:text-[#237ac8]">
+            <ArrowLeft className="h-3.5 w-3.5" /> Videolarım
           </Link>
         )}
 

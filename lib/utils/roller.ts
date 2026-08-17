@@ -122,7 +122,7 @@ export const STORE_GENEL_GOREN_ROLLER = [
 // E-Club rol kategorileri (Faz 2)
 // ───────────────────────────────────────────────────────────────────────────
 
-// ECLUB_GOREN_ROLLER: E-Club liste yönetim sayfasını (/eclub/listem) Navbar'da
+// ECLUB_GOREN_ROLLER: E-Club yönetim sayfalarını Navbar'da
 // görüp erişebilen roller — eczane/kişi listesini yöneten saha rolleri.
 // ŞİMDİLİK sadece UTT/KD_UTT. Cascade süreci ile birlikte (teknik borç) BM/TM/firma
 // yöneticileri ve E-Club'ın kendi tüketici rolleri (eczaci/eczane_teknisyeni)
@@ -179,6 +179,11 @@ export const TUM_HEDEF_ROLLER: HedefRol[] = ["utt", "bm", "eczaci", "eczane_tekn
 // o kişilerin rolü, bu içeriğin hedefi. İkisi bilinçli olarak ayrı durur.)
 export const ECLUB_HEDEF_ROLLER: HedefRol[] = ["eczaci", "eczane_teknisyeni"];
 
+// Yayın Yönetimi hedef grubu; kullanıcı rolü değildir. İki E-Club hedefini
+// taşıyan tek yayının ayrı sekme/rozet altında sınıflandırılmasını sağlar.
+export const ECLUB_ORTAK_YAYIN_GRUBU = "eczaci_ve_eczane_teknisyeni" as const;
+export type YayinHedefGrubu = HedefRol | typeof ECLUB_ORTAK_YAYIN_GRUBU;
+
 /** Kişinin unvanını yayın hedef kitlesindeki iki kanonik rolden birine eşler. */
 export function eclubKisiHedefRolu(rol: string): "eczaci" | "eczane_teknisyeni" | null {
   if (ECLUB_ECZACI_UNVANLARI.includes(rol as EclubKisiRol)) return "eczaci";
@@ -206,6 +211,18 @@ export function hedefRolleriDogrula(deger: unknown): HedefRoller | null {
     return [...ECLUB_HEDEF_ROLLER];
   }
   return null;
+}
+
+/** Yayını, hedef rollerini çoğaltmadan tek ve dışlayıcı bir yönetim grubuna bağlar. */
+export function yayinHedefGrubuBelirle(
+  hedefRoller: readonly string[] | null | undefined,
+): YayinHedefGrubu | null {
+  const roller = hedefRolleriDogrula(hedefRoller);
+  if (!roller) return null;
+  if (roller.length === 2 && ECLUB_HEDEF_ROLLER.every((rol) => roller.includes(rol))) {
+    return ECLUB_ORTAK_YAYIN_GRUBU;
+  }
+  return roller[0] ?? null;
 }
 
 export function hedefRolleriOku(kayit: { hedef_roller?: unknown }): HedefRoller {

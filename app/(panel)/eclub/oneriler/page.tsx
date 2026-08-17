@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function EclubOnerilerPage() {
-  redirect("/eclub/listem");
+  redirect("/eclub/videolarim");
 }

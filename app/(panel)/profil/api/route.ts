@@ -43,6 +43,9 @@ export async function GET() {
       const aktifFirmaAdlari = eclubErisim.firmalar
         .filter((firma) => firma.aktif !== false && firma.eclub_aktif === true)
         .map((firma) => firma.firma_adi);
+      const aktifFirmalar = eclubErisim.firmalar
+        .filter((firma) => firma.aktif !== false && firma.eclub_aktif === true)
+        .map((firma) => ({ firma_id: firma.firma_id, firma_adi: firma.firma_adi }));
       const storePuani = eclubErisim.eclub_store_aktif
         ? await eclubStoreToplamBakiye(adminSupabase, kisi.kisi_id)
         : 0;
@@ -69,6 +72,7 @@ export async function GET() {
           eclub_store_aktif: eclubErisim.eclub_store_aktif,
           eczanem_aktif: false,
         },
+        eclub_firmalar: aktifFirmalar,
         eclub_navbar_ozet: { store_puani: storePuani },
       }, { status: 200 });
     }

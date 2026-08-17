@@ -44,7 +44,8 @@ interface UreticiSatiri {
 export async function getYayindakiVideolar(
   userId: string,
   rol: string,
-  adminSupabase: SupabaseClient
+  adminSupabase: SupabaseClient,
+  kapsam: "tumu" | "benim" | "digerleri" = "tumu",
 ): Promise<YayindakiVideo[]> {
   const { data: kullanici, error: kError } = await adminSupabase
     .from("kullanicilar")
@@ -81,7 +82,12 @@ export async function getYayindakiVideolar(
 
   const { data: videolar, error } = await query;
   if (error) throw new Error("Videolar çekilemedi.");
-  const satirlar = (videolar ?? []) as YayinSatiri[];
+  const tumSatirlar = (videolar ?? []) as YayinSatiri[];
+  const satirlar = kapsam === "benim"
+    ? tumSatirlar.filter((video) => video.uretici_id === userId)
+    : kapsam === "digerleri"
+      ? tumSatirlar.filter((video) => video.uretici_id !== userId)
+      : tumSatirlar;
   if (satirlar.length === 0) return [];
 
   // Üreten kişi/rol — uretici_id seti tek sorguda çözülür (N+1 yok).

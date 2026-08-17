@@ -5,6 +5,36 @@ import { useState, useEffect } from "react";
 import type { EclubStoreUrunDetay, EclubStoreKategori } from "@/lib/eclub/store/eclubStoreTipler";
 import { RENK_BORDO } from "../../_constants";
 
+const MAKS_YUKLEME_BOYUTU = 2 * 1024 * 1024;
+const MAKS_GORSEL_KENARI = 1200;
+const IZINLI_GORSEL_TIPLERI = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
+async function gorseliOptimizeEt(dosya: File): Promise<File> {
+  const bitmap = await createImageBitmap(dosya);
+  const oran = Math.min(1, MAKS_GORSEL_KENARI / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * oran));
+  canvas.height = Math.max(1, Math.round(bitmap.height * oran));
+  canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", 0.82));
+  if (!blob) throw new Error("Görsel optimize edilemedi.");
+  if (blob.size > MAKS_YUKLEME_BOYUTU) throw new Error("Optimize edilen görsel 2 MB sınırını aşıyor.");
+
+  const temelAd = dosya.name.replace(/\.[^.]+$/, "") || "urun-gorseli";
+  return new File([blob], `${temelAd}.webp`, { type: "image/webp" });
+}
+
+function gorselAdresiDogrula(url: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const gorsel = new Image();
+    gorsel.onload = () => resolve();
+    gorsel.onerror = () => reject(new Error("Yüklenen görselin kalıcı adresine erişilemiyor."));
+    gorsel.src = url;
+  });
+}
+
 interface Props {
   duzenlenecek: EclubStoreUrunDetay | null;
   kategoriler: EclubStoreKategori[];
@@ -20,8 +50,9 @@ export default function EclubStoreUrunModal({ duzenlenecek, kategoriler, onKapat
   const [ad, setAd] = useState("");
   const [aciklama, setAciklama] = useState("");
   const [gorselUrl, setGorselUrl] = useState<string | null>(null);
-  const [puanFiyat, setPuanFiyat] = useState(0);
-  const [stok, setStok] = useState(0);
+  const [gorselOnizleme, setGorselOnizleme] = useState<string | null>(null);
+  const [puanFiyat, setPuanFiyat] = useState<number | "">("");
+  const [stok, setStok] = useState<number | "">("");
   const [aktifMi, setAktifMi] = useState(true);
   const [loading, setLoading] = useState(false);
   const [gorselYukleniyor, setGorselYukleniyor] = useState(false);
@@ -32,32 +63,61 @@ export default function EclubStoreUrunModal({ duzenlenecek, kategoriler, onKapat
       setAd(duzenlenecek.ad);
       setAciklama(duzenlenecek.aciklama ?? "");
       setGorselUrl(duzenlenecek.gorsel_url);
+      setGorselOnizleme(null);
       setPuanFiyat(duzenlenecek.puan_fiyat);
       setStok(duzenlenecek.stok);
       setAktifMi(duzenlenecek.aktif_mi);
     } else {
       setKategoriId(""); setAd(""); setAciklama(""); setGorselUrl(null);
-      setPuanFiyat(0); setStok(0); setAktifMi(true);
+      setGorselOnizleme(null);
+      setPuanFiyat(""); setStok(""); setAktifMi(true);
     }
   }, [duzenlenecek]);
 
   const dosyaSecildi = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const dosya = e.target.files?.[0];
     if (!dosya) return;
+
+    if (!IZINLI_GORSEL_TIPLERI.includes(dosya.type.toLowerCase())) {
+      hata("Yalnız JPEG, PNG veya WEBP görsel yüklenebilir.", "görsel seçimi");
+      e.target.value = "";
+      return;
+    }
+
+    const yerelOnizleme = URL.createObjectURL(dosya);
+    setGorselOnizleme(yerelOnizleme);
+
     setGorselYukleniyor(true);
-    const url = await gorselYukle(dosya);
-    setGorselYukleniyor(false);
-    if (url) setGorselUrl(url);
+    try {
+      const optimizeDosya = await gorseliOptimizeEt(dosya);
+      const url = await gorselYukle(optimizeDosya);
+      if (url) {
+        await gorselAdresiDogrula(url);
+        setGorselUrl(url);
+      }
+    } catch (err) {
+      hata(
+        err instanceof Error ? err.message : "Görsel hazırlanamadı.",
+        "görsel optimizasyonu"
+      );
+    } finally {
+      setGorselOnizleme(null);
+      URL.revokeObjectURL(yerelOnizleme);
+      setGorselYukleniyor(false);
+      e.target.value = "";
+    }
   };
 
   const kaydet = async () => {
     if (!ad.trim()) { hata("Ürün adı zorunludur.", "validasyon"); return; }
-    if (puanFiyat <= 0) { hata("Puan fiyatı pozitif olmalı.", "validasyon"); return; }
+    const sayisalPuanFiyat = puanFiyat === "" ? 0 : puanFiyat;
+    const sayisalStok = stok === "" ? 0 : stok;
+    if (sayisalPuanFiyat <= 0) { hata("Puan fiyatı pozitif olmalı.", "validasyon"); return; }
     setLoading(true);
     const metod = duzenlenecek ? "PUT" : "POST";
     const body: Record<string, unknown> = {
       kategori_id: kategoriId || null, ad, aciklama, gorsel_url: gorselUrl,
-      puan_fiyat: puanFiyat, stok, aktif_mi: aktifMi,
+      puan_fiyat: sayisalPuanFiyat, stok: sayisalStok, aktif_mi: aktifMi,
     };
     if (duzenlenecek) body.urun_id = duzenlenecek.urun_id;
     const res = await fetch("/admin/eclub-store/api/urun", {
@@ -102,27 +162,27 @@ export default function EclubStoreUrunModal({ duzenlenecek, kategoriler, onKapat
 
         <div style={{ display: "flex", gap: "10px" }}>
           <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
-            <label style={label}>Puan Fiyatı</label>
-            <input style={inputCls} type="number" value={puanFiyat} onChange={(e) => setPuanFiyat(Number(e.target.value))} />
+            <label style={label}>Puan</label>
+            <input style={inputCls} type="number" value={puanFiyat} onChange={(e) => setPuanFiyat(e.target.value === "" ? "" : Number(e.target.value))} />
           </div>
           <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
             <label style={label}>Stok</label>
-            <input style={inputCls} type="number" value={stok} onChange={(e) => setStok(Number(e.target.value))} />
+            <input style={inputCls} type="number" value={stok} onChange={(e) => setStok(e.target.value === "" ? "" : Number(e.target.value))} />
           </div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
           <label style={label}>Görsel</label>
-          {gorselUrl && (
+          {(gorselOnizleme || gorselUrl) && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={gorselUrl} alt="önizleme" style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "6px", border: "0.5px solid #e5e7eb" }} />
+            <img src={gorselOnizleme || gorselUrl || ""} alt="Ürün görseli önizlemesi" style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "6px", border: "0.5px solid #e5e7eb" }} />
           )}
           {/* Native input gizli; görünen buton modalın kendi buton stilinde
               (tarayıcının ham "Dosya Seç" kontrolü yerine — UX düzenlemesi). */}
           <input
             id="eclub-store-gorsel-input"
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             onChange={dosyaSecildi}
             disabled={gorselYukleniyor}
             style={{ display: "none" }}
@@ -141,7 +201,7 @@ export default function EclubStoreUrunModal({ duzenlenecek, kategoriler, onKapat
               pointerEvents: gorselYukleniyor ? "none" : "auto",
             }}
           >
-            {gorselUrl ? "Görseli Değiştir" : "Görsel Seç"}
+            {(gorselOnizleme || gorselUrl) ? "Görseli Değiştir" : "Görsel Seç"}
           </label>
           {gorselYukleniyor && <span style={{ fontSize: "12px", color: "#9ca3af" }}>Yükleniyor...</span>}
         </div>

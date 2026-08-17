@@ -37,7 +37,7 @@ export default function EclubStorePaneli({ hata, basari }: EclubStorePaneliProps
       </h2>
       <EclubStoreSekmeBari aktifSekme={aktifSekme} setAktifSekme={setAktifSekme} />
 
-      {aktifSekme === "urunler" && <EclubStoreUrunlerSekmesi {...urun} hata={hata} basari={basari} />}
+      {aktifSekme === "urunler" && <EclubStoreUrunlerSekmesi {...urun} kategoriler={kategori.kategoriler} hata={hata} basari={basari} />}
       {aktifSekme === "kategoriler" && <EclubStoreKategorilerSekmesi {...kategori} hata={hata} basari={basari} />}
       {aktifSekme === "siparisler" && <EclubStoreSiparislerSekmesi {...siparis} />}
     </div>

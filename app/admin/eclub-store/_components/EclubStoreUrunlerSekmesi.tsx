@@ -1,8 +1,10 @@
 // app/admin/eclub-store/_components/EclubStoreUrunlerSekmesi.tsx
 "use client";
 
+import { useState } from "react";
 import type { EclubStoreUrunDetay, EclubStoreKategori } from "@/lib/eclub/store/eclubStoreTipler";
 import EclubStoreUrunModal from "./EclubStoreUrunModal";
+import EclubStoreFirmaErisimModal from "./EclubStoreFirmaErisimModal";
 import { RENK_BORDO } from "../../_constants";
 
 interface Props {
@@ -28,6 +30,7 @@ export default function EclubStoreUrunlerSekmesi(props: Props) {
   const { urunler, kategoriler, yukleniyor, urunleriYukle, modalAcik, duzenlenecek,
     handleYeniEkle, handleDuzenle, handleModalKapat,
     silinecek, setSilinecek, silmeIslemi, handleSilOnayla, gorselYukle, hata, basari } = props;
+  const [firmaErisimUrunu, setFirmaErisimUrunu] = useState<EclubStoreUrunDetay | null>(null);
 
   return (
     <div style={{ fontFamily: "'Nunito', sans-serif" }}>
@@ -44,10 +47,10 @@ export default function EclubStoreUrunlerSekmesi(props: Props) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "12px" }}>
           {urunler.map((u) => (
             <div key={u.urun_id} style={{ border: "0.5px solid #e5e7eb", borderRadius: "10px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-              <div style={{ height: "120px", background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ height: "180px", padding: "12px", boxSizing: "border-box", background: "#f9fafb", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {u.gorsel_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={u.gorsel_url} alt={u.ad} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={u.gorsel_url} alt={u.ad} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
                 ) : (
                   <span style={{ fontSize: "12px", color: "#9ca3af" }}>Görsel yok</span>
                 )}
@@ -60,6 +63,7 @@ export default function EclubStoreUrunlerSekmesi(props: Props) {
                 <span style={{ fontSize: "12px", color: "#9ca3af" }}>{u.kategori_adi ?? "Kategorisiz"}</span>
                 <span style={{ fontSize: "13px", fontWeight: 600, color: "#16a34a" }}>{u.puan_fiyat} puan · Stok: {u.stok}</span>
                 <div style={{ display: "flex", gap: "6px", marginTop: "auto", paddingTop: "6px" }}>
+                  <button onClick={() => setFirmaErisimUrunu(u)} style={{ flex: 1, padding: "5px", background: "transparent", border: "0.5px solid #bfdbfe", borderRadius: "6px", fontSize: "12px", color: "#1d4f7a", cursor: "pointer" }}>Firma Erişimi</button>
                   <button onClick={() => handleDuzenle(u)} style={{ flex: 1, padding: "5px", background: "transparent", border: "0.5px solid #d1d5db", borderRadius: "6px", fontSize: "12px", color: "#374151", cursor: "pointer" }}>Düzenle</button>
                   <button onClick={() => setSilinecek(u)} style={{ flex: 1, padding: "5px", background: "transparent", border: "0.5px solid #fecaca", borderRadius: "6px", fontSize: "12px", color: "#bc2d0d", cursor: "pointer" }}>Sil</button>
                 </div>
@@ -92,6 +96,8 @@ export default function EclubStoreUrunlerSekmesi(props: Props) {
           </div>
         </div>
       )}
+
+      {firmaErisimUrunu && <EclubStoreFirmaErisimModal key={firmaErisimUrunu.urun_id} urun={firmaErisimUrunu} onKapat={() => setFirmaErisimUrunu(null)} hata={hata} basari={basari} />}
     </div>
   );
 }

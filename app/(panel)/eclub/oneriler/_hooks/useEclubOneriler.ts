@@ -2,7 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { OneriYayin, OneriKisi, OneriGonderSonuc, OneriLimitler, OneriGecmisKaydi } from "../_types";
+import type { OneriYayin, OneriKisi, OneriGonderSonuc, OneriLimitler, OneriGecmisKaydi, OneriTekrarEngeli } from "../_types";
 
 interface UseArgs {
   hazir: boolean;
@@ -14,6 +14,7 @@ export function useEclubOneriler({ hazir, hata, basari }: UseArgs) {
   const [yayinlar, setYayinlar] = useState<OneriYayin[]>([]);
   const [kisiler, setKisiler] = useState<OneriKisi[]>([]);
   const [limitler, setLimitler] = useState<OneriLimitler | null>(null);
+  const [tekrarEngelleri, setTekrarEngelleri] = useState<OneriTekrarEngeli[]>([]);
   const [sonOneriYayinIdleri, setSonOneriYayinIdleri] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [gonderLoading, setGonderLoading] = useState(false);
@@ -39,6 +40,7 @@ export function useEclubOneriler({ hazir, hata, basari }: UseArgs) {
       if (!gecmisRes.ok) hata(gecmisData.hata ?? "Öneri geçmişi yüklenemedi.", gecmisData.adim, gecmisData.detay);
       else {
         setLimitler(gecmisData.limitler ?? null);
+        setTekrarEngelleri(gecmisData.tekrar_engelleri ?? []);
         const benzersizYayinlar = [...new Set(
           ((gecmisData.oneriler ?? []) as OneriGecmisKaydi[]).map((oneri) => oneri.yayin_id)
         )].slice(0, 5);
@@ -83,5 +85,5 @@ export function useEclubOneriler({ hazir, hata, basari }: UseArgs) {
     }
   }, [hata, basari, veriCek]);
 
-  return { yayinlar, kisiler, limitler, sonOneriYayinIdleri, loading, gonderLoading, veriCek, oneriGonder };
+  return { yayinlar, kisiler, limitler, tekrarEngelleri, sonOneriYayinIdleri, loading, gonderLoading, veriCek, oneriGonder };
 }

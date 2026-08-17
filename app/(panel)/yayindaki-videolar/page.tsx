@@ -16,7 +16,7 @@ import VideoOynatici from "@/components/izle/VideoOynatici";
 import { AnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 import { YayindakiVideo } from "@/lib/video/yayindakiVideolar";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { YAYINDAKI_VIDEO_GORENLER } from "@/lib/utils/roller";
+import { URETICI_ROLLER, YAYINDAKI_VIDEO_GORENLER } from "@/lib/utils/roller";
 import { departmanKey } from "@/lib/video/departman";
 import BmOneriPaneli from "./_components/BmOneriPaneli";
 
@@ -110,6 +110,7 @@ export default function YayindakiVideolarPage() {
     if (!kullanici) { router.replace("/login"); return; }
     const rol = kullanici.rol?.trim().toLowerCase();
     if (!rol || !YAYINDAKI_VIDEO_GORENLER.includes(rol)) { router.replace("/ana-sayfa"); return; }
+    if (URETICI_ROLLER.includes(rol)) { router.replace("/tum-yayinlar"); return; }
 
     const veriCek = async () => {
       setLoading(true);
