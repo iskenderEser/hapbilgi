@@ -176,6 +176,8 @@ DECLARE
   v_oneri public.eclub_oneri_kayitlari%ROWTYPE;
   v_urun_id uuid;
   v_video_puani integer := 0;
+  v_video_suresi integer := 0;
+  v_onayli_atlanan_sure integer := 0;
   v_pencere_acik boolean := false;
   v_ileri_sarildi boolean := false;
   v_yeni boolean := false;
@@ -203,6 +205,28 @@ BEGIN
   ) INTO v_ileri_sarildi;
 
   IF NOT COALESCE(v_izleme.tamamlandi_mi, false) THEN
+    SELECT COALESCE(v.video_suresi_saniye, 0)
+    INTO v_video_suresi
+    FROM public.v_yayin_detay vyd
+    JOIN public.video_durumu vd ON vd.video_durum_id = vyd.video_durum_id
+    JOIN public.videolar v ON v.video_id = vd.video_id
+    WHERE vyd.yayin_id = v_izleme.yayin_id;
+
+    IF v_video_suresi <= 0 THEN
+      RAISE EXCEPTION 'Video süresi doğrulanmamış.' USING ERRCODE = '22023';
+    END IF;
+
+    SELECT COALESCE(SUM(k.atlanan_sure), 0)::integer
+    INTO v_onayli_atlanan_sure
+    FROM public.eclub_ileri_sarma_kayitlari k
+    WHERE k.izleme_id = p_izleme_id;
+
+    IF EXTRACT(EPOCH FROM (clock_timestamp() - v_izleme.izleme_baslangic))
+         + v_onayli_atlanan_sure
+         < GREATEST(0, v_video_suresi - 2) THEN
+      RAISE EXCEPTION 'Video henüz tamamlanabilecek kadar oynatılmadı.' USING ERRCODE = 'P0001';
+    END IF;
+
     UPDATE public.eclub_izleme_kayitlari ik
     SET tamamlandi_mi = true,
         izleme_bitis = clock_timestamp(),

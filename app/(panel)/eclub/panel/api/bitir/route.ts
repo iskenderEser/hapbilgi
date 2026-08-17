@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
-import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
+import { hataYaniti, isKuraluHatasi, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { olayIdGecerliMi } from "@/lib/izleme/baslat";
 import { eclubIzlemeHaklari, eclubSoruIndeksleri } from "@/lib/eclub/izlemeKurali";
 import { gecerliTur } from "@/lib/tur/kayit";
@@ -90,7 +90,12 @@ export async function PUT(request: NextRequest) {
       p_tur_baslangic: turBaslangic,
       p_soru_indeksleri: soruIndeksleri,
     });
-    if (tamamlamaError) return hataYaniti("İzleme tamamlanamadı.", "eclub_izleme_tamamla RPC", tamamlamaError);
+    if (tamamlamaError) {
+      if (tamamlamaError.code === "P0001") {
+        return isKuraluHatasi("Video henüz tamamlanabilecek kadar oynatılmadı.");
+      }
+      return hataYaniti("İzleme tamamlanamadı.", "eclub_izleme_tamamla RPC", tamamlamaError);
+    }
 
     const tamamlama = tamamlamaSatirlari?.[0] as {
       yeni_tamamlandi: boolean;
@@ -101,11 +106,26 @@ export async function PUT(request: NextRequest) {
     } | undefined;
     if (!tamamlama) return hataYaniti("İzleme tamamlandı ancak sonuç alınamadı.", "eclub_izleme_tamamla RPC — dönen veri", null);
 
+    const { data: ileriSarmalar, error: ileriSarmaError } = await adminSupabase
+      .from("eclub_ileri_sarma_kayitlari")
+      .select("kaybedilen_puan")
+      .eq("izleme_id", izleme_id);
+    if (ileriSarmaError) {
+      return hataYaniti("İleri sarma kaybı alınamadı.", "eclub_ileri_sarma_kayitlari SELECT — izleme tamamlama", ileriSarmaError);
+    }
+    const ileriSarmaKaybi = (ileriSarmalar ?? []).reduce(
+      (toplam, kayit) => toplam + Number(kayit.kaybedilen_puan ?? 0),
+      0,
+    );
+    const netIzlemePuani = Math.max(0, Number(tamamlama.izleme_puani ?? 0) - ileriSarmaKaybi);
+
     return NextResponse.json({
       mesaj: tamamlama.yeni_tamamlandi ? "İzleme tamamlandı." : "Tamamlanmış izleme açıldı.",
       yeni_tamamlandi: tamamlama.yeni_tamamlandi,
       puan_kazanildi: tamamlama.puan_kazanildi,
       izleme_puani: tamamlama.izleme_puani,
+      ileri_sarma_kaybi: ileriSarmaKaybi,
+      net_izleme_puani: netIzlemePuani,
       puan_uyarisi: null,
       soru_gosterilecek: tamamlama.soru_gosterilecek,
       soru_hakki_nedeni: tamamlama.soru_hakki_nedeni,

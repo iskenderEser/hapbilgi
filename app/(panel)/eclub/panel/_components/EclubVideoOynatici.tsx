@@ -11,7 +11,6 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, HelpCircle, Send } from "lucide-react";
 import { createVideoPlayer, type VideoPlayer } from "@/lib/video/videoPlayer";
 import VideoCercevesi from "@/components/video/VideoCercevesi";
-import { useVideoEtkilesimKatmani } from "@/components/video/useVideoEtkilesimKatmani";
 
 interface OynaticiOneri {
   oneri_id: string;
@@ -44,7 +43,6 @@ interface Props {
 
 export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata, basari, uyari }: Props) {
   const [izlemeId, setIzlemeId] = useState<string | null>(null);
-  const [izlemeBasladi, setIzlemeBasladi] = useState(false);
   const [izlemeTamamlandi, setIzlemeTamamlandi] = useState(false);
   const [sorular, setSorular] = useState<Soru[]>([]);
   const [soruGosterilecek, setSoruGosterilecek] = useState(false);
@@ -59,17 +57,14 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
   const izlemeBitirildiRef = useRef<boolean>(false);
   const tekrarIzlemeRef = useRef<boolean>(false);
   const baslatTetiklendiRef = useRef<string | null>(null);
+  const baslatiliyorRef = useRef<boolean>(false);
+  const ileriSarmaBekliyorRef = useRef<boolean>(false);
   const ileriSarmaOlayIdRef = useRef<string | null>(null);
   const videoSuresiRef = useRef<number>(0);
   const playerRef = useRef<VideoPlayer | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const videoEtkilesimi = useVideoEtkilesimKatmani({
-    anahtar: oneri.oneri_id,
-    playerRef,
-    etkin: Boolean(oneri.video_url),
-  });
 
-  // İzleme başlat — öneri değiştiğinde
+  // Öneri değiştiğinde temiz başlangıç; izleme ilk gerçek oynatmada açılır.
   useEffect(() => {
     if (!oneri.oneri_id) return;
     if (baslatTetiklendiRef.current === oneri.oneri_id) return;
@@ -78,10 +73,12 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
     izlemeIdRef.current = null;
     izlemeBitirildiRef.current = false;
     tekrarIzlemeRef.current = false;
+    baslatiliyorRef.current = false;
+    ileriSarmaBekliyorRef.current = false;
     ileriSarmaOlayIdRef.current = null;
     maxIzlenenRef.current = 0;
     videoSuresiRef.current = 0;
-    setIzlemeBasladi(false);
+    setIzlemeId(null);
     setIzlemeTamamlandi(false);
     setSorular([]);
     setSoruGosterilecek(false);
@@ -89,14 +86,11 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
     setCevapSonuclari([]);
     setIleriSarmaModal(false);
     setBekleyenSeekBitis(null);
-
-    handleBaslat();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [oneri.oneri_id]);
 
   // Player bağlantısı
   useEffect(() => {
-    if (!izlemeBasladi || !iframeRef.current || !oneri.video_url) return;
+    if (!iframeRef.current || !oneri.video_url) return;
 
     let player: VideoPlayer;
     try {
@@ -108,12 +102,25 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
     playerRef.current = player;
 
     player.onReady(() => {
-      videoEtkilesimi.oynaticiHazir(player);
+      player.setCurrentTime(0);
+
+      const gercekOynatmayiBaslat = () => {
+        if (izlemeIdRef.current || baslatiliyorRef.current) return;
+        player.pause();
+        player.setCurrentTime(0);
+        void handleBaslat(player);
+      };
+
+      player.onPlay(gercekOynatmayiBaslat);
       player.getDuration((sure: number) => {
         if (sure && sure > 0) videoSuresiRef.current = sure;
       });
 
       player.onTimeUpdate((data: { seconds: number; duration?: number }) => {
+        if (!izlemeIdRef.current) {
+          if (data.seconds > 0) gercekOynatmayiBaslat();
+          return;
+        }
         if (data.duration && data.duration > 0) videoSuresiRef.current = data.duration;
 
         const ilerleme = data.seconds - maxIzlenenRef.current;
@@ -121,8 +128,18 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
           maxIzlenenRef.current = data.seconds;
         }
 
+        const onaysizSonAtlama = !tekrarIzlemeRef.current
+          && ilerleme >= 1.5
+          && videoSuresiRef.current > 0
+          && data.seconds >= videoSuresiRef.current - 0.5;
+        if (onaysizSonAtlama) {
+          ileriSarmaBekliyorRef.current = true;
+          return;
+        }
+
         if (
           !izlemeBitirildiRef.current &&
+          !ileriSarmaBekliyorRef.current &&
           videoSuresiRef.current > 0 &&
           data.seconds >= videoSuresiRef.current - 0.5
         ) {
@@ -141,6 +158,7 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
             return;
           }
           if (current > maxIzlenenRef.current + 1) {
+            ileriSarmaBekliyorRef.current = true;
             setBekleyenSeekBitis(current);
             ileriSarmaOlayIdRef.current = crypto.randomUUID();
             setIleriSarmaModal(true);
@@ -150,9 +168,12 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
       });
 
       player.onEnded(() => {
-        if (izlemeBitirildiRef.current) return;
-        izlemeBitirildiRef.current = true;
-        handleBitir();
+        if (!izlemeIdRef.current || izlemeBitirildiRef.current || ileriSarmaBekliyorRef.current) return;
+        player.getDuration((sure: number) => {
+          if (izlemeBitirildiRef.current || ileriSarmaBekliyorRef.current || maxIzlenenRef.current < sure - 0.5) return;
+          izlemeBitirildiRef.current = true;
+          handleBitir();
+        });
       });
     });
 
@@ -161,26 +182,36 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
       if (playerRef.current === player) playerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [izlemeBasladi, oneri.oneri_id]);
+  }, [oneri.oneri_id]);
 
-  const handleBaslat = async () => {
+  const handleBaslat = async (player: VideoPlayer) => {
+    if (izlemeIdRef.current || baslatiliyorRef.current) return;
+    baslatiliyorRef.current = true;
     setIslemLoading(true);
-    const res = await fetch("/eclub/panel/api/baslat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ oneri_id: oneri.oneri_id }),
-    });
-    const d = await res.json();
-    if (!res.ok) {
-      hata(d.hata ?? "İzleme başlatılamadı.", d.adim, d.detay);
+    try {
+      const res = await fetch("/eclub/panel/api/baslat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oneri_id: oneri.oneri_id }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        hata(d.hata ?? "İzleme başlatılamadı.", d.adim, d.detay);
+        player.setCurrentTime(0);
+        return;
+      }
+      setIzlemeId(d.izleme.izleme_id);
+      izlemeIdRef.current = d.izleme.izleme_id;
+      tekrarIzlemeRef.current = d.tekrar_izleme === true;
+      player.setCurrentTime(0);
+      player.play();
+    } catch (err) {
+      hata("İzleme başlatılamadı.", "POST /eclub/panel/api/baslat", err instanceof Error ? err.message : undefined);
+      player.setCurrentTime(0);
+    } finally {
+      baslatiliyorRef.current = false;
       setIslemLoading(false);
-      return;
     }
-    setIzlemeId(d.izleme.izleme_id);
-    izlemeIdRef.current = d.izleme.izleme_id;
-    tekrarIzlemeRef.current = d.tekrar_izleme === true;
-    setIzlemeBasladi(true);
-    setIslemLoading(false);
   };
 
   const handleIleriSarmaOnayla = async () => {
@@ -208,8 +239,9 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
         return;
       }
 
-      playerRef.current?.setCurrentTime(bekleyenSeekBitis);
       maxIzlenenRef.current = bekleyenSeekBitis;
+      ileriSarmaBekliyorRef.current = false;
+      playerRef.current?.setCurrentTime(bekleyenSeekBitis);
       const kayip = Number(d.kaybedilen_puan ?? 0);
       uyari(kayip > 0
         ? `İleri sarma kaydedildi: ${kayip} puan kaybettiniz ve soru hakkınız kapandı.`
@@ -225,55 +257,66 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
   };
 
   const handleIleriSarmaReddet = () => {
+    ileriSarmaBekliyorRef.current = false;
     setIleriSarmaModal(false);
     setBekleyenSeekBitis(null);
     ileriSarmaOlayIdRef.current = null;
   };
 
   const handleBitir = async () => {
+    if (ileriSarmaBekliyorRef.current) return;
     const id = izlemeIdRef.current ?? izlemeId;
     if (!id) return;
 
     setIslemLoading(true);
-    const res = await fetch("/eclub/panel/api/bitir", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ izleme_id: id }),
-    });
-    const d = await res.json();
-    if (!res.ok) {
-      izlemeBitirildiRef.current = false;
-      hata(d.hata ?? "İzleme tamamlanamadı.", d.adim, d.detay);
-      setIslemLoading(false);
-      return;
-    }
-
-    setIzlemeTamamlandi(true);
-    setSoruGosterilecek(d.soru_gosterilecek === true);
-
-    // Tamamlanmış videonun tekrar oynatılması yeni puan doğurmaz; mevcut defter
-    // satırı dönse bile başarı mesajı yalnız ilk atomik tamamlamada gösterilir.
-    if (d.yeni_tamamlandi && d.puan_kazanildi && d.izleme_puani > 0) {
-      basari(`+${d.izleme_puani} izleme puanı kazandınız!`);
-    }
-    if (d.puan_uyarisi) hata(d.puan_uyarisi, "puan kaydı"); // B-08: yazım hatası kullanıcıya görünür
-    if (!d.soru_gosterilecek && d.soru_hakki_nedeni === "ileri_sarma") {
-      uyari("Video ileri sarıldığı için bu izleme sonunda sorular gösterilmeyecek.");
-    }
-
-    // Sorular tamamlama anında bu izlemeye sabitlenir ve ayrı uçtan güvenli biçimde çekilir.
-    if (d.soru_gosterilecek === true) {
-      const sRes = await fetch(`/eclub/panel/api/sorular?izleme_id=${id}`);
-      const sData = await sRes.json();
-      if (!sRes.ok) {
-        hata(sData.hata ?? "Sorular yüklenemedi.", sData.adim, sData.detay);
-      } else {
-        setSorular(sData.sorular ?? []);
+    try {
+      const res = await fetch("/eclub/panel/api/bitir", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ izleme_id: id }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        izlemeBitirildiRef.current = false;
+        hata(d.hata ?? "İzleme tamamlanamadı.", d.adim, d.detay);
+        return;
       }
-    }
 
-    setIslemLoading(false);
-    await onTamamlandi();
+      setIzlemeTamamlandi(true);
+      setSoruGosterilecek(d.soru_gosterilecek === true);
+
+      // Tamamlanmış videonun tekrar oynatılması yeni puan doğurmaz; mevcut defter
+      // satırı dönse bile başarı mesajı yalnız ilk atomik tamamlamada gösterilir.
+      if (d.yeni_tamamlandi && d.puan_kazanildi && d.izleme_puani > 0) {
+        const netPuan = Number(d.net_izleme_puani ?? d.izleme_puani);
+        const ileriSarmaKaybi = Number(d.ileri_sarma_kaybi ?? 0);
+        basari(ileriSarmaKaybi > 0
+          ? `+${netPuan} net izleme puanı kazandınız! (${d.izleme_puani} brüt - ${ileriSarmaKaybi} ileri sarma kaybı)`
+          : `+${netPuan} net izleme puanı kazandınız!`);
+      }
+      if (d.puan_uyarisi) hata(d.puan_uyarisi, "puan kaydı"); // B-08: yazım hatası kullanıcıya görünür
+      if (!d.soru_gosterilecek && d.soru_hakki_nedeni === "ileri_sarma") {
+        uyari("Video ileri sarıldığı için bu izleme sonunda sorular gösterilmeyecek.");
+      }
+
+      // Sorular tamamlama anında bu izlemeye sabitlenir ve ayrı uçtan güvenli biçimde çekilir.
+      if (d.soru_gosterilecek === true) {
+        const sRes = await fetch(`/eclub/panel/api/sorular?izleme_id=${id}`);
+        const sData = await sRes.json();
+        if (!sRes.ok) {
+          hata(sData.hata ?? "Sorular yüklenemedi.", sData.adim, sData.detay);
+        } else {
+          setSorular(sData.sorular ?? []);
+        }
+      }
+
+      await onTamamlandi();
+    } catch (err) {
+      izlemeBitirildiRef.current = false;
+      hata("İzleme tamamlanamadı; yeniden denenecek.", "PUT /eclub/panel/api/bitir", err instanceof Error ? err.message : undefined);
+    } finally {
+      setIslemLoading(false);
+    }
   };
 
   const handleCevapGonder = async () => {
@@ -322,13 +365,7 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
         {oneri.video_url && (
           <div className="border-b border-[#e7edf4] bg-[#10213d]">
             {/* Kutu videonun oranına göre çizilir (26.07). iframe burada kalır — ref playerjs'e bağlı. */}
-            <VideoCercevesi
-              videoUrl={oneri.video_url}
-              etkilesimKatmani={videoEtkilesimi.katmanAcik ? {
-                ariaLabel: `${oneri.urun_adi} videosunu oynat`,
-                onClick: videoEtkilesimi.oynat,
-              } : null}
-            >
+            <VideoCercevesi videoUrl={oneri.video_url}>
               <iframe
                 key={oneri.oneri_id}
                 ref={iframeRef}

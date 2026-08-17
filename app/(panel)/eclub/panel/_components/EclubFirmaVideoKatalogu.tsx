@@ -2,6 +2,8 @@
 
 import { useMemo, useRef, useState } from "react";
 import { Heart, Play, Star, Video } from "lucide-react";
+import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { talepIdGoster } from "@/lib/utils/talepId";
 import type { PanelOneri } from "../_hooks/useEclubPanel";
 
 interface Props {
@@ -38,13 +40,15 @@ function SecimKarti({ etiket, deger, detay, aktif, onClick, ikon: Ikon = Video }
 }
 
 function VideoKarti({ oneri, onSec }: { oneri: PanelOneri; onSec: () => void }) {
+  const thumbnail = oneri.thumbnail_url ?? thumbnailUrlUret(oneri.video_url);
+
   return (
     <article className="group w-40 shrink-0 snap-start overflow-hidden rounded-xl border border-[#dfe7f1] bg-white transition hover:-translate-y-0.5 hover:border-[#b9d5f0] hover:shadow-[0_10px_24px_rgba(31,55,90,0.10)] sm:w-44 md:w-52">
       <button type="button" onClick={onSec} className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#56aeff]">
         <div className="relative aspect-video overflow-hidden bg-[#edf3f8]">
-          {oneri.thumbnail_url
+          {thumbnail
             // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={oneri.thumbnail_url} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
+            ? <img src={thumbnail} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
             : <span className="flex h-full items-center justify-center text-[#9babbc]"><Video size={26} /></span>}
           <div className="absolute inset-0 bg-gradient-to-t from-[#10233a]/45 via-transparent to-transparent" />
           <span className="absolute inset-0 flex items-center justify-center">
@@ -57,6 +61,7 @@ function VideoKarti({ oneri, onSec }: { oneri: PanelOneri; onSec: () => void }) 
         <div className="p-3">
           <div className="truncate text-sm font-extrabold text-[#243957]">{oneri.urun_adi}</div>
           <div className="mt-1 truncate text-[10px] font-bold text-[#7b8ca5]">{oneri.teknik_adi || "Ürün eğitimi"}</div>
+          {oneri.talep_no != null && <div className="mt-1 truncate font-mono text-[9px] text-[#bc2d0d]">{talepIdGoster(oneri.firma_adi, oneri.talep_no)}</div>}
           <div className="mt-2 grid grid-cols-3 gap-1 rounded-lg bg-[#f7f9fc] px-2 py-1.5 text-[10px] text-[#70849d]">
             <span className="text-center"><b className="text-[#314a68]">+{oneri.video_puani}</b> puan</span>
             <span className="flex items-center justify-center gap-1 border-x border-[#e2e9f1]"><Heart size={11} /><b className="text-[#314a68]">{oneri.begeni_sayisi}</b></span>

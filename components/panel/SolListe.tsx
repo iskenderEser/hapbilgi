@@ -85,6 +85,7 @@ export default function SolListe(props: SolListeProps) {
       return altOge.tamEslesme ? pathname === path : pathname === path || pathname.startsWith(`${path}/`);
     });
     const altAcik = acikAltOgeler.has(oge.etiket);
+    const sayi = rozetSayisi(oge);
     return (
       <div className="flex flex-col gap-0.5">
         <button
@@ -98,7 +99,14 @@ export default function SolListe(props: SolListeProps) {
           style={{ padding: `7px 10px 3px ${10 + seviye * 8}px`, fontSize: "14px", fontWeight: 700, color: altAktif ? "#185fa5" : "#374151", fontFamily: "'Nunito', sans-serif" }}
         >
           <span>{oge.etiket}</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} style={{ transform: altAcik ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" /></svg>
+          <span className="flex items-center gap-2">
+            {sayi > 0 && (
+              <span className="flex items-center justify-center rounded-full text-white" style={{ minWidth: "18px", height: "18px", padding: "0 5px", background: "#bc2d0d", fontSize: "10px", fontWeight: 700, lineHeight: 1 }}>
+                {sayi > 99 ? "99+" : sayi}
+              </span>
+            )}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} style={{ transform: altAcik ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" /></svg>
+          </span>
         </button>
         {altAcik && (
           <div className="flex flex-col gap-0.5">
@@ -112,7 +120,7 @@ export default function SolListe(props: SolListeProps) {
   return (
     <aside
       className="hidden md:block flex-shrink-0 overflow-y-auto"
-      style={{ width: "220px", borderRight: "0.5px solid #e5e7eb", padding: "16px 12px", background: "#ffffff" }}
+      style={{ width: "240px", borderRight: "0.5px solid #e5e7eb", padding: "16px 12px", background: "#ffffff" }}
     >
       <div className="flex flex-col gap-4">
         {gruplar.map((grup) => {

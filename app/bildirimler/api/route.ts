@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { uuidGecerliMi } from "@/lib/uretim/rpc";
+import { ECLUB_HEDEF_ROLLER, TUKETICI_ROLLER, hedefRolleriOku } from "@/lib/utils/roller";
 
 const GECERLI_KAYIT_TURLERI = ["talep", "senaryo", "video", "soru_seti", "yayin", "oneri", "challenge"];
 
@@ -62,6 +63,47 @@ export async function GET() {
       sayilar[b.kayit_turu] = (sayilar[b.kayit_turu] ?? 0) + 1;
     }
     sayilar.yayin = yayinBekleyenSayisi;
+
+    const { data: kullanici, error: kullaniciError } = await adminSupabase
+      .from("kullanicilar")
+      .select("rol, firma_id, takim_id")
+      .eq("kullanici_id", user.id)
+      .maybeSingle();
+
+    if (kullaniciError) return hataYaniti("E-Club rozet kapsamı alınamadı.", "kullanicilar SELECT — E-Club rozeti", kullaniciError);
+
+    if (kullanici?.firma_id && TUKETICI_ROLLER.includes(kullanici.rol ?? "")) {
+      let eclubYayinQuery = adminSupabase
+        .from("v_yayin_detay")
+        .select("yayin_id, hedef_roller")
+        .eq("durum", "yayinda")
+        .eq("firma_id", kullanici.firma_id);
+
+      eclubYayinQuery = kullanici.takim_id
+        ? eclubYayinQuery.or(`takim_id.eq.${kullanici.takim_id},takim_id.is.null`)
+        : eclubYayinQuery.is("takim_id", null);
+
+      const { data: eclubYayinlar, error: eclubYayinError } = await eclubYayinQuery;
+      if (eclubYayinError) return hataYaniti("E-Club rozet yayınları alınamadı.", "v_yayin_detay SELECT — E-Club rozeti", eclubYayinError);
+
+      const gonderilebilirYayinIdleri = [...new Set((eclubYayinlar ?? [])
+        .filter((yayin) => hedefRolleriOku(yayin).some((rol) => ECLUB_HEDEF_ROLLER.includes(rol)))
+        .map((yayin) => yayin.yayin_id))];
+
+      if (gonderilebilirYayinIdleri.length > 0) {
+        const { data: gonderilenler, error: gonderilenError } = await adminSupabase
+          .from("eclub_oneri_kayitlari")
+          .select("yayin_id")
+          .eq("oneren_id", user.id)
+          .in("yayin_id", gonderilebilirYayinIdleri);
+
+        if (gonderilenError) return hataYaniti("E-Club gönderim geçmişi alınamadı.", "eclub_oneri_kayitlari SELECT — E-Club rozeti", gonderilenError);
+        const gonderilenYayinIdleri = new Set((gonderilenler ?? []).map((kayit) => kayit.yayin_id));
+        sayilar.eclub_gonderilecek = gonderilebilirYayinIdleri.filter((yayinId) => !gonderilenYayinIdleri.has(yayinId)).length;
+      } else {
+        sayilar.eclub_gonderilecek = 0;
+      }
+    }
 
     return NextResponse.json({
       bildirimler: bildirimler ?? [],

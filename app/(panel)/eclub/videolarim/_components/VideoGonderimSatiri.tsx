@@ -13,6 +13,7 @@ interface Props {
   kisiler: OneriKisi[];
   limitler: OneriLimitler | null;
   tekrarEngelleri: ReadonlyMap<string, string>;
+  gonderilenKisiIdleri: readonly string[];
   gonderLoading: boolean;
   onVideoAc: (video: OneriYayin) => void;
   onGonder: (yayinId: string, kisiIdler: string[]) => Promise<OneriGonderSonuc | null>;
@@ -22,7 +23,7 @@ const tarihSaat = (tarih: Date) => tarih.toLocaleString("tr-TR", {
   day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
 });
 
-export function VideoGonderimSatiri({ video, kisiler, limitler, tekrarEngelleri, gonderLoading, onVideoAc, onGonder }: Props) {
+export function VideoGonderimSatiri({ video, kisiler, limitler, tekrarEngelleri, gonderilenKisiIdleri, gonderLoading, onVideoAc, onGonder }: Props) {
   const [listeAcik, setListeAcik] = useState(false);
   const [seciliKisiler, setSeciliKisiler] = useState<string[]>([]);
   const [sonuc, setSonuc] = useState<OneriGonderSonuc | null>(null);
@@ -95,7 +96,7 @@ export function VideoGonderimSatiri({ video, kisiler, limitler, tekrarEngelleri,
             ["İzleme başlangıcı", tarihAraligi.baslangic],
             ["İzleme bitişi", tarihAraligi.bitis],
             ["Video puanı", video.video_puani == null ? "—" : `${video.video_puani} puan`],
-            ["Soru sayısı", video.soru_sayisi == null ? "—" : `${video.soru_sayisi} soru`],
+            ["Gönderilen Kişi", `${gonderilenKisiIdleri.length}/${uygunKisiler.length} gönderilen`],
           ].map(([etiket, deger]) => (
             <div key={etiket} className="min-w-0"><span className="block text-[9px] font-bold uppercase tracking-wide text-[#8a99aa]">{etiket}</span><strong className="mt-1 block truncate text-[11px] text-[#405976]">{deger}</strong></div>
           ))}

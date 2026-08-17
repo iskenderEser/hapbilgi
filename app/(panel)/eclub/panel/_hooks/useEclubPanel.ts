@@ -69,8 +69,8 @@ export function useEclubPanel({ hazir, hata }: UseEclubPanelArgs) {
   const [ozet, setOzet] = useState<PanelOzet>({ toplam_kazanilan_puan: 0, ileri_sarma_kaybi: 0, harcanabilir_puan: 0, dogru_cevap: 0 });
   const [loading, setLoading] = useState(true);
 
-  const veriCek = useCallback(async () => {
-    setLoading(true);
+  const veriCek = useCallback(async (sessiz = false) => {
+    if (!sessiz) setLoading(true);
     try {
       const res = await fetch("/eclub/panel/api");
       const d = await res.json();
@@ -90,7 +90,7 @@ export function useEclubPanel({ hazir, hata }: UseEclubPanelArgs) {
     } catch (err) {
       hata("Veri yüklenirken hata oluştu.", "useEclubPanel veriCek", err instanceof Error ? err.message : undefined);
     } finally {
-      setLoading(false);
+      if (!sessiz) setLoading(false);
     }
   }, [hata]);
 

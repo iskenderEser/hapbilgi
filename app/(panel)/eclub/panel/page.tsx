@@ -60,7 +60,7 @@ export default function EclubPanelPage() {
             video_url: seciliOneri.video_url,
           }}
           onKapat={() => { setSeciliOneri(null); void veriCek(); }}
-          onTamamlandi={veriCek}
+          onTamamlandi={() => veriCek(true)}
           hata={hata}
           basari={basari}
           uyari={uyari}

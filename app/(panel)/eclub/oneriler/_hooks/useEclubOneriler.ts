@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { OneriYayin, OneriKisi, OneriGonderSonuc, OneriLimitler, OneriGecmisKaydi, OneriTekrarEngeli } from "../_types";
+import { bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
 
 interface UseArgs {
   hazir: boolean;
@@ -15,7 +16,8 @@ export function useEclubOneriler({ hazir, hata, basari }: UseArgs) {
   const [kisiler, setKisiler] = useState<OneriKisi[]>([]);
   const [limitler, setLimitler] = useState<OneriLimitler | null>(null);
   const [tekrarEngelleri, setTekrarEngelleri] = useState<OneriTekrarEngeli[]>([]);
-  const [sonOneriYayinIdleri, setSonOneriYayinIdleri] = useState<string[]>([]);
+  const [gonderilenYayinIdleri, setGonderilenYayinIdleri] = useState<string[]>([]);
+  const [gonderilenKisiler, setGonderilenKisiler] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [gonderLoading, setGonderLoading] = useState(false);
 
@@ -41,10 +43,16 @@ export function useEclubOneriler({ hazir, hata, basari }: UseArgs) {
       else {
         setLimitler(gecmisData.limitler ?? null);
         setTekrarEngelleri(gecmisData.tekrar_engelleri ?? []);
-        const benzersizYayinlar = [...new Set(
-          ((gecmisData.oneriler ?? []) as OneriGecmisKaydi[]).map((oneri) => oneri.yayin_id)
-        )].slice(0, 5);
-        setSonOneriYayinIdleri(benzersizYayinlar);
+        const gecmis = (gecmisData.oneriler ?? []) as OneriGecmisKaydi[];
+        const benzersizYayinlar = [...new Set(gecmis.map((oneri) => oneri.yayin_id))];
+        setGonderilenYayinIdleri(benzersizYayinlar);
+        const kisiMap = new Map<string, Set<string>>();
+        for (const oneri of gecmis) {
+          const kisiler = kisiMap.get(oneri.yayin_id) ?? new Set<string>();
+          kisiler.add(oneri.kisi_id);
+          kisiMap.set(oneri.yayin_id, kisiler);
+        }
+        setGonderilenKisiler(Object.fromEntries([...kisiMap].map(([yayinId, kisiler]) => [yayinId, [...kisiler]])));
       }
     } catch (err: unknown) {
       hata("Veri yüklenirken hata oluştu.", "useEclubOneriler veriCek", err instanceof Error ? err.message : undefined);
@@ -76,6 +84,7 @@ export function useEclubOneriler({ hazir, hata, basari }: UseArgs) {
       }
       basari(d.mesaj ?? `${d.gonderilen_sayisi} öneri gönderildi.`);
       await veriCek();
+      if (d.gonderilen_sayisi > 0) bildirimRozetleriniYenile();
       return d as OneriGonderSonuc;
     } catch (err: unknown) {
       hata("Öneri gönderilirken hata oluştu.", "oneriGonder", err instanceof Error ? err.message : undefined);
@@ -85,5 +94,5 @@ export function useEclubOneriler({ hazir, hata, basari }: UseArgs) {
     }
   }, [hata, basari, veriCek]);
 
-  return { yayinlar, kisiler, limitler, tekrarEngelleri, sonOneriYayinIdleri, loading, gonderLoading, veriCek, oneriGonder };
+  return { yayinlar, kisiler, limitler, tekrarEngelleri, gonderilenYayinIdleri, gonderilenKisiler, loading, gonderLoading, veriCek, oneriGonder };
 }

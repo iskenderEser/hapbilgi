@@ -91,6 +91,7 @@ export default function MobilDrawer(props: MobilDrawerProps) {
       return altOge.tamEslesme ? pathname === path : pathname === path || pathname.startsWith(`${path}/`);
     });
     const altAcik = acikAltOgeler.has(oge.etiket);
+    const sayi = rozetSayisi(oge);
     return (
       <div className="flex flex-col gap-0.5">
         <button
@@ -104,7 +105,14 @@ export default function MobilDrawer(props: MobilDrawerProps) {
           style={{ padding: girintili ? "10px 12px 4px 20px" : "10px 12px 4px", fontSize: "14px", fontWeight: 700, color: altAktif ? "#185fa5" : "#374151", fontFamily: "'Nunito', sans-serif" }}
         >
           <span>{oge.etiket}</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} style={{ transform: altAcik ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" /></svg>
+          <span className="flex items-center gap-2">
+            {sayi > 0 && (
+              <span className="flex items-center justify-center rounded-full text-white" style={{ minWidth: "18px", height: "18px", padding: "0 5px", background: "#bc2d0d", fontSize: "10px", fontWeight: 700, lineHeight: 1 }}>
+                {sayi > 99 ? "99+" : sayi}
+              </span>
+            )}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} style={{ transform: altAcik ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" /></svg>
+          </span>
         </button>
         {altAcik && (
           <div className="flex flex-col gap-0.5 pl-3">
