@@ -23,6 +23,14 @@ function videoDurumu(oneri: PanelOneri): "bekleyen" | "tamamlanan" | "suresi_gec
   return oneri.oneri_durumu === "suresi_gecmis" ? "suresi_gecmis" : "bekleyen";
 }
 
+function firmaYonelme(firmaAdi: string): string {
+  const kucukAd = firmaAdi.toLocaleLowerCase("tr-TR");
+  const sonUnlu = [...kucukAd].reverse().find((harf) => "aeıioöuü".includes(harf));
+  const inceMi = !!sonUnlu && "eiöü".includes(sonUnlu);
+  const kaynastirma = "aeıioöuü".includes(kucukAd.at(-1) ?? "") ? "y" : "";
+  return `${firmaAdi}'${kaynastirma}${inceMi ? "e" : "a"}`;
+}
+
 export default function EclubPanelPage() {
   const router = useRouter();
   const params = useParams<{ firma_id?: string }>();
@@ -30,7 +38,7 @@ export default function EclubPanelPage() {
   const { mesajlar, hata, basari, uyari } = useHataMesaji();
   const eclubKisi = !!kullanici && kullanici.kimlik_turu === "eclub_kisi";
   const hazir = !authYukleniyor && eclubKisi;
-  const { kisi, oneriler, firmaOzetleri, ozet, loading, veriCek } = useEclubPanel({ hazir, hata });
+  const { kisi, oneriler, firmaOzetleri, ozet, loading, veriCek, etkilesimGuncelle } = useEclubPanel({ hazir, hata });
   const [seciliOneri, setSeciliOneri] = useState<PanelOneri | null>(null);
 
   useEffect(() => {
@@ -44,9 +52,41 @@ export default function EclubPanelPage() {
   const rotaFirmaId = params.firma_id ?? null;
   const aktifFirmaId = firmaOzetleri.some((firma) => firma.firma_id === rotaFirmaId)
     ? rotaFirmaId
-    : firmaOzetleri[0]?.firma_id ?? null;
-  const bekleyen = oneriler.filter((oneri) => videoDurumu(oneri) === "bekleyen").length;
-  const tamamlanan = oneriler.filter((oneri) => videoDurumu(oneri) === "tamamlanan").length;
+    : null;
+  const aktifFirmaAdi = firmaOzetleri.find((firma) => firma.firma_id === aktifFirmaId)?.firma_adi ?? null;
+  const aktifFirmaOzeti = firmaOzetleri.find((firma) => firma.firma_id === aktifFirmaId) ?? null;
+  const karsilamaBasligi = aktifFirmaAdi
+    ? `${firmaYonelme(aktifFirmaAdi)} Hoş Geldin${kisi ? ` ${kisi.ad}` : ""}`
+    : `Merhaba${kisi ? ` ${kisi.ad}` : ""}`;
+  const statOnerileri = aktifFirmaId ? oneriler.filter((oneri) => oneri.firma_id === aktifFirmaId) : oneriler;
+  const bekleyen = statOnerileri.filter((oneri) => videoDurumu(oneri) === "bekleyen").length;
+  const tamamlanan = statOnerileri.filter((oneri) => videoDurumu(oneri) === "tamamlanan").length;
+  const statOzeti = aktifFirmaOzeti
+    ? {
+        toplam_kazanilan_puan: aktifFirmaOzeti.kazanilan_puan,
+        ileri_sarma_kaybi: aktifFirmaOzeti.kaybedilen_puan,
+        harcanabilir_puan: aktifFirmaOzeti.harcanabilir_puan,
+        dogru_cevap: aktifFirmaOzeti.dogru_cevap,
+      }
+    : ozet;
+
+  const etkilesimDegistir = async (tur: "begeni" | "favori", yayinId: string) => {
+    try {
+      const res = await fetch(`/izle/api/${tur}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ yayin_id: yayinId }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        hata(d.hata ?? `${tur === "begeni" ? "Beğeni" : "Favori"} işlemi tamamlanamadı.`, d.adim, d.detay);
+        return;
+      }
+      etkilesimGuncelle(tur, yayinId, tur === "begeni" ? d.begeni_mi === true : d.favori_mi === true);
+    } catch (err) {
+      hata("Video etkileşimi kaydedilemedi.", `POST /izle/api/${tur}`, err instanceof Error ? err.message : undefined);
+    }
+  };
 
   return (
     <EclubKisiSayfa>
@@ -69,7 +109,7 @@ export default function EclubPanelPage() {
         <>
           <EclubKisiBaslik
             ikon={Sparkles}
-            baslik={`Merhaba${kisi ? `, ${kisi.ad}` : ""}`}
+            baslik={karsilamaBasligi}
             aciklama={`${kisi ? eclubKisiRolEtiketi(kisi.rol) : ""} · Firmalarınızın sizin için seçtiği videoları izleyin, soruları yanıtlayın ve puan kazanın.`}
             aksiyon={(
               <Link href="/eclub/store" className="inline-flex items-center gap-2 rounded-xl border border-[#cfe3f4] bg-white px-4 py-2.5 text-xs font-extrabold text-[#237ac8] shadow-sm hover:bg-[#f4f9fd]">
@@ -81,8 +121,8 @@ export default function EclubPanelPage() {
           <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <EclubKisiStat ikon={Clock3} etiket="Bekleyen Video" deger={bekleyen} detay="Süresi devam eden" renk="#d78022" zemin="#fff6e8" />
             <EclubKisiStat ikon={CheckCircle2} etiket="Tamamlanan" deger={tamamlanan} detay="İzlediğiniz videolar" renk="#16865f" zemin="#ebf8f2" />
-            <EclubKisiStat ikon={Trophy} etiket="Net Puan" deger={Math.max(0, ozet.toplam_kazanilan_puan - ozet.ileri_sarma_kaybi).toLocaleString("tr-TR")} detay={`${ozet.dogru_cevap} doğru · ${ozet.ileri_sarma_kaybi} ileri sarma kaybı`} renk="#7358c7" zemin="#f2efff" />
-            <EclubKisiStat ikon={Coins} etiket="Kullanılabilir Puan" deger={ozet.harcanabilir_puan.toLocaleString("tr-TR")} detay="E‑Club Store bakiyesi" />
+            <EclubKisiStat ikon={Trophy} etiket="Net Puan" deger={Math.max(0, statOzeti.toplam_kazanilan_puan - statOzeti.ileri_sarma_kaybi).toLocaleString("tr-TR")} detay={`${statOzeti.dogru_cevap} doğru · ${statOzeti.ileri_sarma_kaybi} ileri sarma kaybı`} renk="#7358c7" zemin="#f2efff" />
+            <EclubKisiStat ikon={Coins} etiket="Kullanılabilir Puan" deger={statOzeti.harcanabilir_puan.toLocaleString("tr-TR")} detay="E‑Club Store bakiyesi" />
           </section>
 
           {firmaOzetleri.length === 0 ? (
@@ -92,7 +132,10 @@ export default function EclubPanelPage() {
               key={aktifFirmaId}
               oneriler={oneriler}
               seciliFirmaId={aktifFirmaId}
+              seciliFirmaAdi={aktifFirmaAdi}
               onVideoSec={setSeciliOneri}
+              onBegeni={(yayinId) => void etkilesimDegistir("begeni", yayinId)}
+              onFavori={(yayinId) => void etkilesimDegistir("favori", yayinId)}
             />
           )}
         </>

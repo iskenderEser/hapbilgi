@@ -205,6 +205,11 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
     .sort((a, b) => b.begeni_sayisi - a.begeni_sayisi)
     .slice(0, 5);
 
+  const enCokFavorilenen = [...tumVideolar]
+    .filter(v => v.favori_sayisi > 0)
+    .sort((a, b) => b.favori_sayisi - a.favori_sayisi)
+    .slice(0, 5);
+
   if (kategori) {
     const kategoriVideolari = tumVideolar
       .filter((video) => video.icerik_turu === kategori)
@@ -372,6 +377,17 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}
               onFavori={handleFavori}
+              etkilesimAktif={false}
+            />
+          )}
+          {enCokFavorilenen.length > 0 && (
+            <KayanRaf
+              baslik={<h2 className="text-base font-bold text-gray-900 md:text-lg">En Çok Favorilenenler</h2>}
+              videolar={enCokFavorilenen}
+              onVideoClick={handleVideoClick}
+              onBegeni={handleBegeni}
+              onFavori={handleFavori}
+              etkilesimAktif={false}
             />
           )}
           {enCokIzlenen.length > 0 && (

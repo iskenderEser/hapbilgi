@@ -80,10 +80,6 @@ export default function SolListe(props: SolListeProps) {
   const OgeBlogu = ({ oge, seviye = 0 }: { oge: NavOge; seviye?: number }) => {
     const altOglar = (oge.altOglar ?? []).filter((altOge) => altOge.gate(props));
     if (altOglar.length === 0) return <Satir oge={oge} seviye={seviye} />;
-    const altAktif = altOglar.some((altOge) => {
-      const path = cozPath(altOge);
-      return altOge.tamEslesme ? pathname === path : pathname === path || pathname.startsWith(`${path}/`);
-    });
     const altAcik = acikAltOgeler.has(oge.etiket);
     const sayi = rozetSayisi(oge);
     return (
@@ -96,7 +92,7 @@ export default function SolListe(props: SolListeProps) {
             return yeni;
           })}
           className="flex w-full cursor-pointer items-center justify-between border-none bg-transparent text-left"
-          style={{ padding: `7px 10px 3px ${10 + seviye * 8}px`, fontSize: "14px", fontWeight: 700, color: altAktif ? "#185fa5" : "#374151", fontFamily: "'Nunito', sans-serif" }}
+          style={{ padding: `7px 10px 3px ${10 + seviye * 8}px`, fontSize: "14px", fontWeight: 700, color: "#374151", fontFamily: "'Nunito', sans-serif" }}
         >
           <span>{oge.etiket}</span>
           <span className="flex items-center gap-2">

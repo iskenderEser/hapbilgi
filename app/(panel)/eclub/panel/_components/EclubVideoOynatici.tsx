@@ -51,6 +51,7 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
   const [islemLoading, setIslemLoading] = useState(false);
   const [ileriSarmaModal, setIleriSarmaModal] = useState(false);
   const [bekleyenSeekBitis, setBekleyenSeekBitis] = useState<number | null>(null);
+  const [ilkOynatmaIstendi, setIlkOynatmaIstendi] = useState(false);
 
   const maxIzlenenRef = useRef<number>(0);
   const izlemeIdRef = useRef<string | null>(null);
@@ -62,6 +63,8 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
   const ileriSarmaOlayIdRef = useRef<string | null>(null);
   const videoSuresiRef = useRef<number>(0);
   const playerRef = useRef<VideoPlayer | null>(null);
+  const playerHazirRef = useRef(false);
+  const ilkOynatmaIstendiRef = useRef(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Öneri değiştiğinde temiz başlangıç; izleme ilk gerçek oynatmada açılır.
@@ -78,6 +81,8 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
     ileriSarmaOlayIdRef.current = null;
     maxIzlenenRef.current = 0;
     videoSuresiRef.current = 0;
+    playerHazirRef.current = false;
+    ilkOynatmaIstendiRef.current = false;
     setIzlemeId(null);
     setIzlemeTamamlandi(false);
     setSorular([]);
@@ -86,6 +91,7 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
     setCevapSonuclari([]);
     setIleriSarmaModal(false);
     setBekleyenSeekBitis(null);
+    setIlkOynatmaIstendi(false);
   }, [oneri.oneri_id]);
 
   // Player bağlantısı
@@ -102,9 +108,16 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
     playerRef.current = player;
 
     player.onReady(() => {
+      playerHazirRef.current = true;
+      player.pause();
       player.setCurrentTime(0);
 
       const gercekOynatmayiBaslat = () => {
+        if (!ilkOynatmaIstendiRef.current) {
+          player.pause();
+          player.setCurrentTime(0);
+          return;
+        }
         if (izlemeIdRef.current || baslatiliyorRef.current) return;
         player.pause();
         player.setCurrentTime(0);
@@ -175,14 +188,24 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
           handleBitir();
         });
       });
+
+      if (ilkOynatmaIstendiRef.current) void handleBaslat(player);
     });
 
     return () => {
+      playerHazirRef.current = false;
       player.destroy();
       if (playerRef.current === player) playerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [oneri.oneri_id]);
+
+  const handleIlkOynatma = () => {
+    if (ilkOynatmaIstendiRef.current) return;
+    ilkOynatmaIstendiRef.current = true;
+    setIlkOynatmaIstendi(true);
+    if (playerHazirRef.current && playerRef.current) void handleBaslat(playerRef.current);
+  };
 
   const handleBaslat = async (player: VideoPlayer) => {
     if (izlemeIdRef.current || baslatiliyorRef.current) return;
@@ -365,7 +388,10 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
         {oneri.video_url && (
           <div className="border-b border-[#e7edf4] bg-[#10213d]">
             {/* Kutu videonun oranına göre çizilir (26.07). iframe burada kalır — ref playerjs'e bağlı. */}
-            <VideoCercevesi videoUrl={oneri.video_url}>
+            <VideoCercevesi
+              videoUrl={oneri.video_url}
+              etkilesimKatmani={!ilkOynatmaIstendi ? { ariaLabel: "Videoyu oynat", onClick: handleIlkOynatma } : null}
+            >
               <iframe
                 key={oneri.oneri_id}
                 ref={iframeRef}

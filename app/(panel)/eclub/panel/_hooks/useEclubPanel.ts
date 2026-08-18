@@ -32,6 +32,8 @@ export interface PanelOneri {
   izleme_tamamlandi_mi: boolean;
   begeni_sayisi: number;
   favori_sayisi: number;
+  begeni_mi: boolean;
+  favori_mi: boolean;
   created_at: string;
 }
 
@@ -47,6 +49,7 @@ export interface PanelFirmaOzeti {
   kazanilan_puan: number;
   kaybedilen_puan: number;
   harcanabilir_puan: number;
+  dogru_cevap: number;
   video_sayisi: number;
 }
 
@@ -98,5 +101,14 @@ export function useEclubPanel({ hazir, hata }: UseEclubPanelArgs) {
     if (hazir) veriCek();
   }, [hazir, veriCek]);
 
-  return { kisi, oneriler, firmaOzetleri, ozet, loading, veriCek };
+  const etkilesimGuncelle = (tur: "begeni" | "favori", yayinId: string, aktif: boolean) => {
+    setOneriler((mevcut) => mevcut.map((oneri) => {
+      if (oneri.yayin_id !== yayinId) return oneri;
+      return tur === "begeni"
+        ? { ...oneri, begeni_mi: aktif, begeni_sayisi: Math.max(0, oneri.begeni_sayisi + (aktif ? 1 : -1)) }
+        : { ...oneri, favori_mi: aktif, favori_sayisi: Math.max(0, oneri.favori_sayisi + (aktif ? 1 : -1)) };
+    }));
+  };
+
+  return { kisi, oneriler, firmaOzetleri, ozet, loading, veriCek, etkilesimGuncelle };
 }

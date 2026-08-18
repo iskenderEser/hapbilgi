@@ -5,6 +5,7 @@ import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi } from "@/lib/u
 import { FIRMA_KOLONLARI } from "@/lib/firma/kolonlar";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 import { firmaninEksikKullanicilari } from "@/lib/admin/kullaniciDogrulama";
+import { firmaAdiBicimle } from "@/lib/utils/firmaAdiBicimle";
 
 
 export async function GET(
@@ -59,7 +60,7 @@ export async function PUT(
 
     const { data: guncellenen, error } = await adminSupabase
       .from("firmalar")
-      .update({ firma_adi: firma_adi.trim() })
+      .update({ firma_adi: firmaAdiBicimle(firma_adi) })
       .eq("firma_id", firma_id)
       .select(FIRMA_KOLONLARI)
       .single();

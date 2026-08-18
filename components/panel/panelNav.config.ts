@@ -165,7 +165,7 @@ export function eclubKisiNavOlustur(firmalar: Array<{ firma_id: string; firma_ad
     baslik: "E-Club",
     oglar: [
       {
-        etiket: "Firma Videoları",
+        etiket: "Firmaların Videoları",
         path: "/eclub/panel",
         gate: (c) => c.eclubAcik,
         altOglar: firmalar.map((firma) => ({

@@ -107,23 +107,25 @@ export async function GET() {
       }
     }
 
-    const [begeniSonucu, favoriSonucu] = await Promise.all([
+    const [eclubBegeniSonucu, eclubFavoriSonucu] = await Promise.all([
       yayinIds.length > 0
-        ? adminSupabase.from("video_begeniler").select("yayin_id").in("yayin_id", yayinIds)
+        ? adminSupabase.from("eclub_video_begeniler").select("yayin_id, kisi_id").in("yayin_id", yayinIds)
         : Promise.resolve({ data: [], error: null }),
       yayinIds.length > 0
-        ? adminSupabase.from("video_favoriler").select("yayin_id").in("yayin_id", yayinIds)
+        ? adminSupabase.from("eclub_video_favoriler").select("yayin_id, kisi_id").in("yayin_id", yayinIds)
         : Promise.resolve({ data: [], error: null }),
     ]);
-    if (begeniSonucu.error) return hataYaniti("Beğeni bilgileri alınamadı.", "video_begeniler SELECT — E-Club panel", begeniSonucu.error);
-    if (favoriSonucu.error) return hataYaniti("Favori bilgileri alınamadı.", "video_favoriler SELECT — E-Club panel", favoriSonucu.error);
+    if (eclubBegeniSonucu.error) return hataYaniti("Beğeni bilgileri alınamadı.", "eclub_video_begeniler SELECT — E-Club panel", eclubBegeniSonucu.error);
+    if (eclubFavoriSonucu.error) return hataYaniti("Favori bilgileri alınamadı.", "eclub_video_favoriler SELECT — E-Club panel", eclubFavoriSonucu.error);
     const sayimHaritasi = (satirlar: Array<{ yayin_id: string }>) => {
       const harita = new Map<string, number>();
       for (const satir of satirlar) harita.set(satir.yayin_id, (harita.get(satir.yayin_id) ?? 0) + 1);
       return harita;
     };
-    const begeniler = sayimHaritasi((begeniSonucu.data ?? []) as Array<{ yayin_id: string }>);
-    const favoriler = sayimHaritasi((favoriSonucu.data ?? []) as Array<{ yayin_id: string }>);
+    const begeniler = sayimHaritasi((eclubBegeniSonucu.data ?? []) as Array<{ yayin_id: string }>);
+    const favoriler = sayimHaritasi((eclubFavoriSonucu.data ?? []) as Array<{ yayin_id: string }>);
+    const begenilenler = new Set((eclubBegeniSonucu.data ?? []).filter((satir) => satir.kisi_id === kisi.kisi_id).map((satir) => satir.yayin_id));
+    const favorilenenler = new Set((eclubFavoriSonucu.data ?? []).filter((satir) => satir.kisi_id === kisi.kisi_id).map((satir) => satir.yayin_id));
 
     const izlemeOneriHaritasi = new Map(
       (izlemeSonucu.data ?? []).map((izleme) => [izleme.izleme_id, izleme.oneri_id]),
@@ -194,6 +196,8 @@ export async function GET() {
         izleme_tamamlandi_mi: izleme?.tamamlandi_mi === true,
         begeni_sayisi: begeniler.get(oo.yayin_id) ?? 0,
         favori_sayisi: favoriler.get(oo.yayin_id) ?? 0,
+        begeni_mi: begenilenler.has(oo.yayin_id),
+        favori_mi: favorilenenler.has(oo.yayin_id),
         created_at: oo.created_at,
       }];
     });
@@ -204,6 +208,7 @@ export async function GET() {
       kazanilan_puan: number;
       kaybedilen_puan: number;
       harcanabilir_puan: number;
+      dogru_cevap: number;
       video_sayisi: number;
     }>();
     const firmaOzetiniAl = (firmaId: string, firmaAdi: string) => {
@@ -213,6 +218,7 @@ export async function GET() {
         kazanilan_puan: 0,
         kaybedilen_puan: 0,
         harcanabilir_puan: 0,
+        dogru_cevap: 0,
         video_sayisi: 0,
       };
       firmaOzetleri.set(firmaId, mevcut);
@@ -227,6 +233,11 @@ export async function GET() {
       const yayin = yayinMap.get(kayip.yayin_id);
       if (!yayin?.firma_id) continue;
       firmaOzetiniAl(yayin.firma_id, yayin.firma_adi ?? "Firma").kaybedilen_puan += Number(kayip.kaybedilen_puan ?? 0);
+    }
+    for (const cevap of dogruSonucu.data ?? []) {
+      const yayin = yayinMap.get(cevap.yayin_id);
+      if (!yayin?.firma_id) continue;
+      firmaOzetiniAl(yayin.firma_id, yayin.firma_adi ?? "Firma").dogru_cevap += 1;
     }
     for (const bakiye of firmaBakiyeleri) {
       firmaOzetiniAl(bakiye.firma_id, bakiye.firma_adi).harcanabilir_puan = Number(bakiye.bakiye ?? 0);

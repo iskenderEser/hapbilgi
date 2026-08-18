@@ -52,7 +52,7 @@ export default function PanelNavbar({ adSoyad, email, ozet, siparisPuaniGoster, 
   const pathname = usePathname();
   const [hover, setHover] = useState<string | null>(null);
 
-  const isAktif = (path: string) => pathname.startsWith(path);
+  const isAktif = (path: string) => pathname === path;
 
   const pillClass = (aktif: boolean) =>
     `relative inline-flex items-center justify-center px-3 md:px-4 py-1 rounded-full border-none cursor-pointer text-xs md:text-sm font-medium transition-all duration-200 whitespace-nowrap ${aktif ? "font-semibold" : ""}`;
@@ -60,9 +60,9 @@ export default function PanelNavbar({ adSoyad, email, ozet, siparisPuaniGoster, 
   const pillStyle = (key: string, aktif: boolean): React.CSSProperties => {
     const isHover = hover === key;
     return {
-      color: aktif ? "#185fa5" : "#374151",
-      background: aktif ? "rgba(86,174,255,0.12)" : isHover ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.04)",
-      boxShadow: aktif ? "inset 0 0 0 1.5px #56aeff" : "inset 0 0 0 0.5px rgba(0,0,0,0.08)",
+      color: aktif ? BORDO : "#374151",
+      background: aktif ? "#fef2f2" : isHover ? "rgba(188,45,13,0.07)" : "rgba(0,0,0,0.04)",
+      boxShadow: aktif ? "inset 0 0 0 1px #fecaca" : "inset 0 0 0 0.5px rgba(0,0,0,0.08)",
       fontFamily: "'Nunito', sans-serif",
     };
   };

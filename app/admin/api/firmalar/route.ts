@@ -5,6 +5,7 @@ import { hataYaniti, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle
 import { FIRMA_KOLONLARI } from "@/lib/firma/kolonlar";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 import { eksikSayilariCikar } from "@/lib/admin/kullaniciDogrulama";
+import { firmaAdiBicimle } from "@/lib/utils/firmaAdiBicimle";
 
 
 export async function GET() {
@@ -60,11 +61,13 @@ export async function POST(request: NextRequest) {
       return validasyonHatasi("Firma adı zorunludur.", ["firma_adi"]);
     }
 
+    const bicimliFirmaAdi = firmaAdiBicimle(firma_adi);
+
     // Aynı isimde firma var mı kontrol et
     const { data: mevcutFirma, error: mevcutError } = await adminSupabase
       .from("firmalar")
       .select("firma_id")
-      .eq("firma_adi", firma_adi.trim())
+      .eq("firma_adi", bicimliFirmaAdi)
       .single();
 
     if (mevcutError && mevcutError.code !== "PGRST116") {
@@ -77,7 +80,7 @@ export async function POST(request: NextRequest) {
 
     const { data: yeniFirma, error } = await adminSupabase
       .from("firmalar")
-      .insert({ firma_adi: firma_adi.trim() })
+      .insert({ firma_adi: bicimliFirmaAdi })
       .select(FIRMA_KOLONLARI)
 
       .single();

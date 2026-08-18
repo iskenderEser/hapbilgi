@@ -86,10 +86,6 @@ export default function MobilDrawer(props: MobilDrawerProps) {
     if (altOglar.length === 0) {
       return <Satir etiket={oge.etiket} path={cozPath(oge)} sayi={rozetSayisi(oge)} girintili={girintili} tamEslesme={oge.tamEslesme} />;
     }
-    const altAktif = altOglar.some((altOge) => {
-      const path = cozPath(altOge);
-      return altOge.tamEslesme ? pathname === path : pathname === path || pathname.startsWith(`${path}/`);
-    });
     const altAcik = acikAltOgeler.has(oge.etiket);
     const sayi = rozetSayisi(oge);
     return (
@@ -102,7 +98,7 @@ export default function MobilDrawer(props: MobilDrawerProps) {
             return yeni;
           })}
           className="flex w-full cursor-pointer items-center justify-between border-none bg-transparent text-left"
-          style={{ padding: girintili ? "10px 12px 4px 20px" : "10px 12px 4px", fontSize: "14px", fontWeight: 700, color: altAktif ? "#185fa5" : "#374151", fontFamily: "'Nunito', sans-serif" }}
+          style={{ padding: girintili ? "10px 12px 4px 20px" : "10px 12px 4px", fontSize: "14px", fontWeight: 700, color: "#374151", fontFamily: "'Nunito', sans-serif" }}
         >
           <span>{oge.etiket}</span>
           <span className="flex items-center gap-2">
@@ -150,7 +146,7 @@ export default function MobilDrawer(props: MobilDrawerProps) {
         {/* Bilgi pilleri */}
         <div className="flex flex-col gap-1">
           {BILGI_PILLERI.map((p) => (
-            <Satir key={p.path} etiket={p.etiket} path={p.etiket === "Ana Sayfa" ? (props.anaSayfaYolu ?? p.path) : p.path} />
+            <Satir key={p.path} etiket={p.etiket} path={p.etiket === "Ana Sayfa" ? (props.anaSayfaYolu ?? p.path) : p.path} tamEslesme />
           ))}
         </div>
 

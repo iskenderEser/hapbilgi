@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 import { Heart, Play, Star, Video } from "lucide-react";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 import { talepIdGoster } from "@/lib/utils/talepId";
@@ -9,37 +9,25 @@ import type { PanelOneri } from "../_hooks/useEclubPanel";
 interface Props {
   oneriler: PanelOneri[];
   seciliFirmaId: string | null;
+  seciliFirmaAdi: string | null;
   onVideoSec: (oneri: PanelOneri) => void;
+  onBegeni: (yayinId: string) => void;
+  onFavori: (yayinId: string) => void;
 }
 
-function SecimKarti({ etiket, deger, detay, aktif, onClick, ikon: Ikon = Video }: {
-  etiket: string;
-  deger: number;
-  detay: string;
-  aktif: boolean;
-  onClick: () => void;
-  ikon?: typeof Video;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={aktif}
-      className={`rounded-2xl border border-l-[3px] border-l-[#237ac8] bg-white p-3.5 text-left shadow-[0_5px_16px_rgba(31,55,90,0.035)] transition hover:-translate-y-0.5 hover:shadow-md ${aktif ? "border-[#9bc6eb] ring-2 ring-[#d8eafa]" : "border-[#dfe7f1]"}`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="truncate text-[10px] font-extrabold uppercase tracking-[0.05em] text-[#8190a3]">{etiket}</div>
-          <div className="mt-1 text-2xl font-black tabular-nums text-[#237ac8]">{deger}</div>
-          <div className="mt-0.5 truncate text-[10px] font-semibold text-[#8796a8]">{detay}</div>
-        </div>
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#edf6fd] text-[#237ac8]"><Ikon size={16} /></span>
-      </div>
-    </button>
-  );
+function firmaIyelik(firmaAdi: string): string {
+  const sonUnlu = [...firmaAdi.toLocaleLowerCase("tr-TR")].reverse().find((harf) => "aeıioöuü".includes(harf));
+  const ek = sonUnlu && "aı".includes(sonUnlu)
+    ? "ın"
+    : sonUnlu && "ou".includes(sonUnlu)
+      ? "un"
+      : sonUnlu && "öü".includes(sonUnlu)
+        ? "ün"
+        : "in";
+  return `${firmaAdi}'${ek}`;
 }
 
-function VideoKarti({ oneri, onSec }: { oneri: PanelOneri; onSec: () => void }) {
+function VideoKarti({ oneri, onSec, onBegeni, onFavori, etkilesimAktif }: { oneri: PanelOneri; onSec: () => void; onBegeni: () => void; onFavori: () => void; etkilesimAktif: boolean }) {
   const thumbnail = oneri.thumbnail_url ?? thumbnailUrlUret(oneri.video_url);
 
   return (
@@ -58,22 +46,31 @@ function VideoKarti({ oneri, onSec }: { oneri: PanelOneri; onSec: () => void }) 
             {oneri.izlendi_mi ? "Tamamlandı" : oneri.oneri_durumu === "suresi_gecmis" ? "Süresi Geçti" : `${oneri.kalan_gun} gün`}
           </span>
         </div>
-        <div className="p-3">
+        <div className="px-3 pt-3">
           <div className="truncate text-sm font-extrabold text-[#243957]">{oneri.urun_adi}</div>
           <div className="mt-1 truncate text-[10px] font-bold text-[#7b8ca5]">{oneri.teknik_adi || "Ürün eğitimi"}</div>
           {oneri.talep_no != null && <div className="mt-1 truncate font-mono text-[9px] text-[#bc2d0d]">{talepIdGoster(oneri.firma_adi, oneri.talep_no)}</div>}
-          <div className="mt-2 grid grid-cols-3 gap-1 rounded-lg bg-[#f7f9fc] px-2 py-1.5 text-[10px] text-[#70849d]">
-            <span className="text-center"><b className="text-[#314a68]">+{oneri.video_puani}</b> puan</span>
-            <span className="flex items-center justify-center gap-1 border-x border-[#e2e9f1]"><Heart size={11} /><b className="text-[#314a68]">{oneri.begeni_sayisi}</b></span>
-            <span className="flex items-center justify-center gap-1"><Star size={11} /><b className="text-[#314a68]">{oneri.favori_sayisi}</b></span>
-          </div>
         </div>
       </button>
+      <div className="m-3 mt-2 grid grid-cols-3 gap-1 rounded-lg bg-[#f7f9fc] px-2 py-1.5 text-[10px] text-[#70849d]">
+        <span className="text-center"><b className="text-[#314a68]">+{oneri.video_puani}</b> puan</span>
+        {etkilesimAktif ? (
+          <>
+            <button type="button" onClick={onBegeni} aria-label={oneri.begeni_mi ? "Beğeniyi kaldır" : "Beğen"} className={`flex items-center justify-center gap-1 border-x border-[#e2e9f1] ${oneri.begeni_mi ? "text-red-500" : "hover:text-red-500"}`}><Heart size={11} fill={oneri.begeni_mi ? "currentColor" : "none"} /><b>{oneri.begeni_sayisi}</b></button>
+            <button type="button" onClick={onFavori} aria-label={oneri.favori_mi ? "Favoriden kaldır" : "Favoriye ekle"} className={`flex items-center justify-center gap-1 ${oneri.favori_mi ? "text-blue-500" : "hover:text-blue-500"}`}><Star size={11} fill={oneri.favori_mi ? "currentColor" : "none"} /><b>{oneri.favori_sayisi}</b></button>
+          </>
+        ) : (
+          <>
+            <span className="flex items-center justify-center gap-1 border-x border-[#e2e9f1] text-red-500"><Heart size={11} fill="currentColor" /><b>{oneri.begeni_sayisi}</b></span>
+            <span className="flex items-center justify-center gap-1 text-blue-500"><Star size={11} fill="currentColor" /><b>{oneri.favori_sayisi}</b></span>
+          </>
+        )}
+      </div>
     </article>
   );
 }
 
-function VideoRafi({ baslik, videolar, onVideoSec }: { baslik: string; videolar: PanelOneri[]; onVideoSec: (oneri: PanelOneri) => void }) {
+function VideoRafi({ baslik, videolar, onVideoSec, onBegeni, onFavori, etkilesimAktif }: { baslik: string; videolar: PanelOneri[]; onVideoSec: (oneri: PanelOneri) => void; onBegeni: (yayinId: string) => void; onFavori: (yayinId: string) => void; etkilesimAktif: boolean }) {
   const raf = useRef<HTMLDivElement>(null);
   const kaydir = (yon: number) => raf.current?.scrollBy({ left: yon * raf.current.clientWidth * 0.85, behavior: "smooth" });
 
@@ -89,7 +86,7 @@ function VideoRafi({ baslik, videolar, onVideoSec }: { baslik: string; videolar:
         <div className="group relative">
           <button type="button" aria-label={`${baslik} rafını sola kaydır`} onClick={() => kaydir(-1)} className="absolute inset-y-0 left-0 z-10 hidden w-12 items-center justify-start bg-gradient-to-r from-[#f7f9fc] to-transparent opacity-0 transition group-hover:opacity-100 md:flex">‹</button>
           <div ref={raf} className="flex snap-x gap-2.5 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {videolar.map((oneri) => <VideoKarti key={oneri.oneri_id} oneri={oneri} onSec={() => onVideoSec(oneri)} />)}
+            {videolar.map((oneri) => <VideoKarti key={oneri.oneri_id} oneri={oneri} onSec={() => onVideoSec(oneri)} onBegeni={() => onBegeni(oneri.yayin_id)} onFavori={() => onFavori(oneri.yayin_id)} etkilesimAktif={etkilesimAktif} />)}
           </div>
           <button type="button" aria-label={`${baslik} rafını sağa kaydır`} onClick={() => kaydir(1)} className="absolute inset-y-0 right-0 z-10 hidden w-12 items-center justify-end bg-gradient-to-l from-[#f7f9fc] to-transparent text-xl opacity-0 transition group-hover:opacity-100 md:flex">›</button>
         </div>
@@ -98,43 +95,26 @@ function VideoRafi({ baslik, videolar, onVideoSec }: { baslik: string; videolar:
   );
 }
 
-export default function EclubFirmaVideoKatalogu({ oneriler, seciliFirmaId, onVideoSec }: Props) {
-  const [seciliUrun, setSeciliUrun] = useState<string | null>(null);
+export default function EclubFirmaVideoKatalogu({ oneriler, seciliFirmaId, seciliFirmaAdi, onVideoSec, onBegeni, onFavori }: Props) {
   const firmaVideolari = useMemo(
-    () => oneriler.filter((oneri) => oneri.firma_id === seciliFirmaId),
+    () => seciliFirmaId ? oneriler.filter((oneri) => oneri.firma_id === seciliFirmaId) : oneriler,
     [oneriler, seciliFirmaId],
   );
-  const urunler = useMemo(() => [...new Set(firmaVideolari.map((oneri) => oneri.urun_adi))].sort((a, b) => a.localeCompare(b, "tr")), [firmaVideolari]);
-  const urunVideolari = useMemo(() => firmaVideolari.filter((oneri) => oneri.urun_adi === seciliUrun), [firmaVideolari, seciliUrun]);
-  const enSonIzlenen = useMemo(() => [...urunVideolari].filter((oneri) => oneri.izleme_baslangic).sort((a, b) => new Date(b.izleme_baslangic!).getTime() - new Date(a.izleme_baslangic!).getTime()), [urunVideolari]);
-  const enCokBegenilen = useMemo(() => [...urunVideolari].filter((oneri) => oneri.begeni_sayisi > 0).sort((a, b) => b.begeni_sayisi - a.begeni_sayisi), [urunVideolari]);
-  const enCokFavorilenen = useMemo(() => [...urunVideolari].filter((oneri) => oneri.favori_sayisi > 0).sort((a, b) => b.favori_sayisi - a.favori_sayisi), [urunVideolari]);
-  const yaridaBirakilan = useMemo(() => urunVideolari.filter((oneri) => oneri.izleme_baslangic && !oneri.izleme_tamamlandi_mi), [urunVideolari]);
+  const enCokBegenilen = useMemo(() => [...firmaVideolari]
+    .filter((oneri) => oneri.begeni_sayisi > 0)
+    .sort((a, b) => b.begeni_sayisi - a.begeni_sayisi || a.urun_adi.localeCompare(b.urun_adi, "tr"))
+    .slice(0, 10), [firmaVideolari]);
+  const enCokFavorilenen = useMemo(() => [...firmaVideolari]
+    .filter((oneri) => oneri.favori_sayisi > 0)
+    .sort((a, b) => b.favori_sayisi - a.favori_sayisi || a.urun_adi.localeCompare(b.urun_adi, "tr"))
+    .slice(0, 10), [firmaVideolari]);
+  const firmaBasligi = seciliFirmaAdi ? firmaIyelik(seciliFirmaAdi) : null;
 
   return (
     <div className="flex flex-col gap-6">
-      {seciliFirmaId && (
-        <>
-          <VideoRafi baslik="Tümü" videolar={firmaVideolari} onVideoSec={onVideoSec} />
-          <section>
-            <h2 className="mb-2.5 text-base font-extrabold text-[#243957] md:text-lg">Ürünler</h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {urunler.map((urun) => (
-                <SecimKarti key={urun} etiket={urun} deger={firmaVideolari.filter((oneri) => oneri.urun_adi === urun).length} detay="Ürün videosu" aktif={seciliUrun === urun} onClick={() => setSeciliUrun(urun)} />
-              ))}
-            </div>
-          </section>
-        </>
-      )}
-
-      {seciliUrun && (
-        <div className="flex flex-col gap-6">
-          <VideoRafi baslik="Yarıda Bıraktıklarınız" videolar={yaridaBirakilan} onVideoSec={onVideoSec} />
-          <VideoRafi baslik="En Son İzledikleriniz" videolar={enSonIzlenen} onVideoSec={onVideoSec} />
-          <VideoRafi baslik="En Çok Beğenilenler" videolar={enCokBegenilen} onVideoSec={onVideoSec} />
-          <VideoRafi baslik="En Çok Favorilenenler" videolar={enCokFavorilenen} onVideoSec={onVideoSec} />
-        </div>
-      )}
+      <VideoRafi baslik={firmaBasligi ? `${firmaBasligi} Tüm Videoları` : "Tüm Firmaların Videoları"} videolar={firmaVideolari} onVideoSec={onVideoSec} onBegeni={onBegeni} onFavori={onFavori} etkilesimAktif />
+      <VideoRafi baslik={firmaBasligi ? `${firmaBasligi} En Çok Beğenilenleri` : "En Çok Beğenilenler"} videolar={enCokBegenilen} onVideoSec={onVideoSec} onBegeni={onBegeni} onFavori={onFavori} etkilesimAktif={false} />
+      <VideoRafi baslik={firmaBasligi ? `${firmaBasligi} En Çok Favorilenenleri` : "En Çok Favorilenenler"} videolar={enCokFavorilenen} onVideoSec={onVideoSec} onBegeni={onBegeni} onFavori={onFavori} etkilesimAktif={false} />
     </div>
   );
 }
