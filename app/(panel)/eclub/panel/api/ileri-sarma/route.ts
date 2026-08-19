@@ -10,7 +10,6 @@ import {
   yetkiHatasi,
 } from "@/lib/utils/hataIsle";
 import { olayIdGecerliMi } from "@/lib/izleme/baslat";
-import { bunnyVideoDurumu, embedUrlGuidCikar } from "@/lib/video/bunnyYukleme";
 import { eclubIzlemeHaklari } from "@/lib/eclub/izlemeKurali";
 import { eclubIleriSarmaKaybiHesapla, eclubIleriSarmaKonumuDogrula } from "@/lib/eclub/ileriSarma";
 
@@ -80,23 +79,11 @@ export async function POST(request: NextRequest) {
       .single();
     if (videoError || !video) return hataYaniti("Video bulunamadı.", "videolar SELECT — E-Club ileri sarma", videoError, 404);
 
-    let videoSuresi = Number(video.video_suresi_saniye ?? 0);
+    // Tek yazıcı ilkesi (Faz 3): süreyi burada yazmıyoruz — garanti edilmiş olmalı.
+    // Boşsa (beklenmez) yazmak yerine reddedilir.
+    const videoSuresi = Number(video.video_suresi_saniye ?? 0);
     if (videoSuresi <= 0) {
-      const guid = embedUrlGuidCikar(video.video_url ?? yayin.video_url);
-      if (!guid) return isKuraluHatasi("Video süresi güvenilir kaynaktan doğrulanamadı.");
-      const bunnyDurum = await bunnyVideoDurumu(guid);
-      if (!bunnyDurum.ok) {
-        return hataYaniti(bunnyDurum.hata, bunnyDurum.adim, bunnyDurum.detay ? { message: bunnyDurum.detay } : null);
-      }
-      if (!bunnyDurum.hazir || bunnyDurum.videoSuresiSaniye === null) {
-        return isKuraluHatasi("Video henüz puanlı izlemeye hazır değil; süre doğrulanamadı.");
-      }
-      videoSuresi = bunnyDurum.videoSuresiSaniye;
-      const { error: sureError } = await adminSupabase
-        .from("videolar")
-        .update({ video_suresi_saniye: videoSuresi })
-        .eq("video_id", video.video_id);
-      if (sureError) return hataYaniti("Video süresi kaydedilemedi.", "videolar UPDATE — E-Club video süresi", sureError);
+      return isKuraluHatasi("Video henüz puanlı izlemeye hazır değil; süre doğrulanamadı.");
     }
 
     const konum = eclubIleriSarmaKonumuDogrula(atlama_baslangic, atlama_bitis, videoSuresi);

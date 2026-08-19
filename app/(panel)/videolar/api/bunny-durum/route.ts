@@ -64,16 +64,8 @@ export async function GET(request: NextRequest) {
     const durum = await bunnyVideoDurumu(guid);
     if (!durum.ok) return hataYaniti(durum.hata, durum.adim, durum.detay ? { message: durum.detay } : null);
 
-    if (video_id && durum.videoSuresiSaniye !== null) {
-      const { error: sureError } = await adminSupabase
-        .from("videolar")
-        .update({ video_suresi_saniye: durum.videoSuresiSaniye })
-        .eq("video_id", video_id);
-      if (sureError) {
-        return hataYaniti("Video süresi kaydedilemedi.", "videolar tablosu UPDATE — Bunny video süresi", sureError);
-      }
-    }
-
+    // Tek yazıcı ilkesi (Faz 3): süreyi burada YAZMIYORUZ. Bu uç yalnız işlenme
+    // durumunu (rozet) döndürür; süreyi yayın‑kapısı + webhook + backfill yazar.
     return NextResponse.json({
       hazir: durum.hazir,
       hatali: durum.hatali,

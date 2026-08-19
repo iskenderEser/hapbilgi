@@ -13,7 +13,6 @@ import { oneriPenceresiAcik } from "@/lib/oneri/pencereKontrol";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { baslatOlayIdGecerliMi, izlemeTuruBelirle } from "@/lib/izleme/baslat";
-import { bunnyVideoDurumu, embedUrlGuidCikar } from "@/lib/video/bunnyYukleme";
 import { gecerliTur } from "@/lib/tur/kayit";
 
 const IZLEME_SELECT = "izleme_id, yayin_id, kullanici_id, izleme_turu, oneri_id, izleme_baslangic, video_suresi_saniye, gercek_oynatma_mi" as const;
@@ -130,27 +129,13 @@ export async function POST(request: NextRequest) {
       return hataYaniti("Video kaydı bulunamadı.", "videolar SELECT — video süresi", videoError, 404);
     }
 
-    let videoSuresiSaniye = videoKaydi.video_suresi_saniye as number | null;
-    if (videoSuresiSaniye === null) {
-      const guid = embedUrlGuidCikar(videoKaydi.video_url ?? detay.video_url);
-      if (!guid) return isKuraluHatasi("Video süresi güvenilir kaynaktan doğrulanamadı.");
-
-      const bunnyDurum = await bunnyVideoDurumu(guid);
-      if (!bunnyDurum.ok) {
-        return hataYaniti(bunnyDurum.hata, bunnyDurum.adim, bunnyDurum.detay ? { message: bunnyDurum.detay } : null);
-      }
-      if (!bunnyDurum.hazir || bunnyDurum.videoSuresiSaniye === null) {
-        return isKuraluHatasi("Video henüz puanlı izlemeye hazır değil; süre doğrulanamadı.");
-      }
-
-      videoSuresiSaniye = bunnyDurum.videoSuresiSaniye;
-      const { error: sureYazmaError } = await adminSupabase
-        .from("videolar")
-        .update({ video_suresi_saniye: videoSuresiSaniye })
-        .eq("video_id", videoKaydi.video_id);
-      if (sureYazmaError) {
-        return hataYaniti("Video süresi kaydedilemedi.", "videolar UPDATE — video süresi", sureYazmaError);
-      }
+    // Tek yazıcı ilkesi (Faz 3): süreyi burada yazmıyoruz — yayın‑kapısı + webhook +
+    // backfill süreyi videolar'a garantiliyor, görünürlük kapısı da süresi olmayan
+    // videoyu listeye düşürmüyor. Buraya süresi boş bir video ulaşırsa (beklenmez)
+    // yazmak yerine hazırlık kapısıyla reddedilir.
+    const videoSuresiSaniye = videoKaydi.video_suresi_saniye as number | null;
+    if (videoSuresiSaniye === null || videoSuresiSaniye <= 0) {
+      return isKuraluHatasi("Video henüz puanlı izlemeye hazır değil; süre doğrulanamadı.");
     }
 
     const turSonuc = await gecerliTur(adminSupabase, yayin_id);

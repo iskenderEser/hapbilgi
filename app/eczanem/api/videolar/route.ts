@@ -36,7 +36,9 @@ export async function GET() {
       const { data: yayinlar } = await adminSupabase
         .from("v_yayin_detay")
         .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, durum, talep_no, firma_adi")
-        .in("yayin_id", yayinIdler);
+        .in("yayin_id", yayinIdler)
+        // Görünürlük kapısı (Faz 1): süresi hazır olmayan video izleyiciye gösterilmez.
+        .gt("video_suresi_saniye", 0);
       for (const y of yayinlar ?? []) yayinMap.set((y as any).yayin_id, y);
     }
 

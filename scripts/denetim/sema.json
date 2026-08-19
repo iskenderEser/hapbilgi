@@ -1,6 +1,6 @@
 {
-  "uretim_tarihi": "2026-08-17T11:45:42.049Z",
-  "tablo_sayisi": 102,
+  "uretim_tarihi": "2026-08-19T07:10:43.437Z",
+  "tablo_sayisi": 104,
   "rpc_sayisi": 92,
   "tablolar": {
     "bildirimler": {
@@ -604,6 +604,10 @@
         "soru_indeksleri": {
           "tip": "ARRAY",
           "nullable": true
+        },
+        "video_suresi_saniye": {
+          "tip": "integer",
+          "nullable": true
         }
       }
     },
@@ -1072,6 +1076,48 @@
         },
         "puan": {
           "tip": "integer",
+          "nullable": false
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": true
+        }
+      }
+    },
+    "eclub_video_begeniler": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "begeni_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "kisi_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "yayin_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": true
+        }
+      }
+    },
+    "eclub_video_favoriler": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "favori_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "kisi_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "yayin_id": {
+          "tip": "uuid",
           "nullable": false
         },
         "created_at": {
@@ -4009,6 +4055,10 @@
         "hedef_roller": {
           "tip": "ARRAY",
           "nullable": true
+        },
+        "video_suresi_saniye": {
+          "tip": "integer",
+          "nullable": true
         }
       }
     },
@@ -5036,6 +5086,30 @@
         "hedef_kolon": "kullanici_id"
       }
     ],
+    "eclub_video_begeniler": [
+      {
+        "kaynak_kolon": "kisi_id",
+        "hedef_tablo": "eclub_kisiler",
+        "hedef_kolon": "kisi_id"
+      },
+      {
+        "kaynak_kolon": "yayin_id",
+        "hedef_tablo": "yayin_yonetimi",
+        "hedef_kolon": "yayin_id"
+      }
+    ],
+    "eclub_video_favoriler": [
+      {
+        "kaynak_kolon": "kisi_id",
+        "hedef_tablo": "eclub_kisiler",
+        "hedef_kolon": "kisi_id"
+      },
+      {
+        "kaynak_kolon": "yayin_id",
+        "hedef_tablo": "yayin_yonetimi",
+        "hedef_kolon": "yayin_id"
+      }
+    ],
     "eclub_yanlis_cevap_kayitlari": [
       {
         "kaynak_kolon": "izleme_id",
@@ -5177,12 +5251,12 @@
     ],
     "iu_genel_atamalari": [
       {
-        "kaynak_kolon": "pasife_alan_id",
+        "kaynak_kolon": "iu_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "iu_id",
+        "kaynak_kolon": "pasife_alan_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
@@ -5294,12 +5368,12 @@
     ],
     "oneri_kayitlari": [
       {
-        "kaynak_kolon": "kullanici_id",
+        "kaynak_kolon": "oneren_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "oneren_id",
+        "kaynak_kolon": "kullanici_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },

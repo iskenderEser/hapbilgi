@@ -9,6 +9,7 @@ import { tekrarPeriyotSecenekleri } from "@/lib/tur/ayarlar";
 import { turKaydiAc } from "@/lib/tur/kayit";
 import { tarifeVeBarkodYaz } from "@/lib/eczanem/tarife";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { bunnyVideoDurumu, embedUrlGuidCikar } from "@/lib/video/bunnyYukleme";
 
 const YAYIN_LISTE_ALANLARI = "yayin_id, soru_seti_durum_id, durum, yayin_tarihi, durdurma_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, sorular, hedef_roller, talep_no, firma_adi, egitim_turu";
 
@@ -199,6 +200,34 @@ export async function POST(request: NextRequest) {
         olusturan_id: user.id,
       });
       if (!tarifeSonuc.ok) return isKuraluHatasi(tarifeSonuc.hata ?? "Barkod/Karşılık yazılamadı.");
+    }
+
+    // Faz 1 — Yayın anında video süresini garanti et: tüketici hiçbir zaman NULL süreye
+    // düşmesin. Video Bunny'de encode'u bitmişse süreyi videolar.video_suresi_saniye'ye
+    // yazar; bitmemişse DOKUNMAZ (bloklamaz — yayın normal ilerler, bekleyenin terfisi
+    // sonraki fazın görünürlük‑kapısı + tetikleyici adımında çözülür).
+    const { data: videoDurumu } = await adminSupabase
+      .from("video_durumu")
+      .select("video_id")
+      .eq("video_durum_id", soruSeti.video_durum_id)
+      .single();
+    if (videoDurumu?.video_id) {
+      const { data: videoKaydi } = await adminSupabase
+        .from("videolar")
+        .select("video_id, video_url, video_suresi_saniye")
+        .eq("video_id", videoDurumu.video_id)
+        .single();
+      const sureBos = !videoKaydi?.video_suresi_saniye || videoKaydi.video_suresi_saniye <= 0;
+      const guid = videoKaydi?.video_url ? embedUrlGuidCikar(videoKaydi.video_url) : null;
+      if (videoKaydi && sureBos && guid) {
+        const durum = await bunnyVideoDurumu(guid);
+        if (durum.ok && durum.hazir && durum.videoSuresiSaniye != null && durum.videoSuresiSaniye > 0) {
+          await adminSupabase
+            .from("videolar")
+            .update({ video_suresi_saniye: durum.videoSuresiSaniye })
+            .eq("video_id", videoKaydi.video_id);
+        }
+      }
     }
 
     const simdi = new Date().toISOString();

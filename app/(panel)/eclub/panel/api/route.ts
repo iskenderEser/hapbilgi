@@ -92,7 +92,9 @@ export async function GET() {
       const { data: yayinlar, error: yayinError } = await adminSupabase
         .from("v_yayin_detay")
         .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, icerik_turu, talep_no, firma_id, firma_adi, hedef_roller, durum, video_puani, soru_puani, video_basi_soru_sayisi")
-        .in("yayin_id", yayinIds);
+        .in("yayin_id", yayinIds)
+        // Görünürlük kapısı (Faz 1): süresi hazır olmayan video izleyiciye gösterilmez.
+        .gt("video_suresi_saniye", 0);
       if (yayinError) return hataYaniti("Yayın detayları alınamadı.", "v_yayin_detay SELECT — E-Club panel", yayinError);
       for (const y of yayinlar ?? []) {
         const yy = y as { yayin_id: string } & YayinDetay;
