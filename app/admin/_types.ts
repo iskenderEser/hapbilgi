@@ -8,6 +8,7 @@ export interface Firma {
   cc_aktif: boolean;
   eclub_aktif: boolean;
   eclub_store_aktif: boolean;
+  eczanem_aktif: boolean;
   son_export_at: string | null;
   created_at: string;
   // T-2: GET /admin/api/firmalar hesaplayıp ekler (eksik tanımı kullaniciEksikMi);

@@ -215,6 +215,35 @@ export function useAdminPanel() {
     }
   };
 
+  // Firmanın Eczanem erişimini aç/kapat (PATCH /admin/api/firmalar/[firma_id]).
+  // Kapalıyken o firmanın eczacı/teknisyenlerinde Eczanem sekmesi görünmez
+  // (profil/api → eclubKisiErisimi.eczanem_aktif → sidebar gate).
+  const handleEczanemToggle = async (f: Firma) => {
+    try {
+    const yeniDurum = !f.eczanem_aktif;
+    const res = await fetch(`/admin/api/firmalar/${f.firma_id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eczanem_aktif: yeniDurum }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      hata(data.hata ?? "Eczanem durumu güncellenemedi.", data.adim, data.detay);
+      return;
+    }
+    basari(yeniDurum ? "Eczanem açıldı." : "Eczanem kapatıldı.");
+    setFirmalar(prev =>
+      prev.map(x => (x.firma_id === f.firma_id ? { ...x, eczanem_aktif: yeniDurum } : x))
+    );
+    setSeciliFirma(prev =>
+      prev && prev.firma_id === f.firma_id ? { ...prev, eczanem_aktif: yeniDurum } : prev
+    );
+    } catch (err) {
+      // B-32: ağ hatasında sessiz çökme yok — kullanıcı bilgilendirilir.
+      hata("Eczanem durumu güncellenemedi — bağlantı hatası.", "handleEczanemToggle", String(err));
+    }
+  };
+
   // Firmanın aktif/pasif durumunu değiştir (PATCH /admin/api/firmalar/[firma_id])
   // Pasif firma → o firmanın tüm kullanıcıları giriş yapamaz (login kontrolü).
   const handleFirmaToggle = async (f: Firma) => {
@@ -339,6 +368,7 @@ export function useAdminPanel() {
     handleCcToggle,
     handleEclubToggle,
     handleEclubStoreToggle,
+    handleEczanemToggle,
     handleFirmaToggle,
     handleFirmaSil,
     handleExport,

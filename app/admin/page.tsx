@@ -108,6 +108,7 @@ export default function AdminPanel() {
     ? [
         ...(f.cc_aktif ? [] : ["cclub" as const]),
         ...(f.eclub_aktif ? [] : ["eclub" as const]),
+        ...(f.eczanem_aktif ? [] : ["eczanem" as const]),
       ]
     : [];
 
@@ -149,6 +150,7 @@ export default function AdminPanel() {
           handleCcToggle={admin.handleCcToggle}
           handleEclubToggle={admin.handleEclubToggle}
           handleEclubStoreToggle={admin.handleEclubStoreToggle}
+          handleEczanemToggle={admin.handleEczanemToggle}
           handleFirmaToggle={admin.handleFirmaToggle}
           handleFirmaSil={admin.handleFirmaSil}
           onVeriSil={setVeriSilFirma}
@@ -232,8 +234,9 @@ export default function AdminPanel() {
               {seciliSekme === "eczanem" && (
                 <ModulDurumKarti
                   baslik="Eczanem"
-                  acik={null}
-                  aciklama="Eczanenin danışanlarının bilgilenme modülü — gönderimler, üyeler, siparişler ve tarifeler. Firma bayrağı (eczanem_aktif) admin yönetimine M4'te bağlanacak."
+                  acik={f.eczanem_aktif}
+                  onToggle={() => admin.handleEczanemToggle(f)}
+                  aciklama="Eczanenin danışanlarının bilgilenme modülü — davetler, gönderimler, üyeler, siparişler ve tarifeler. Kapalıyken bu firmanın eczacı/teknisyenleri Eczanem sekmesini görmez."
                 />
               )}
             </>

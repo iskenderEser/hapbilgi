@@ -22,6 +22,7 @@ interface FirmaSidebarProps {
   handleCcToggle: (f: Firma) => void | Promise<void>;
   handleEclubToggle: (f: Firma) => void | Promise<void>;
   handleEclubStoreToggle: (f: Firma) => void | Promise<void>;
+  handleEczanemToggle: (f: Firma) => void | Promise<void>;
   handleFirmaToggle: (f: Firma) => void | Promise<void>;
   handleFirmaSil: (f: Firma) => Promise<boolean>;
   onVeriSil: (f: Firma) => void;
@@ -85,6 +86,7 @@ export default function FirmaSidebar({
   handleCcToggle,
   handleEclubToggle,
   handleEclubStoreToggle,
+  handleEczanemToggle,
   handleFirmaToggle,
   handleFirmaSil,
   onVeriSil,
@@ -278,6 +280,16 @@ export default function FirmaSidebar({
                       baslik={f.eclub_store_aktif ? "E-Club Store açık — kapatmak için tıkla" : "E-Club Store kapalı — açmak için tıkla"}
                     />
                     E-Club Store
+                  </span>
+
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "12px", color: "#737373", fontFamily: "'Nunito', sans-serif" }}>
+                    <Switch
+                      acik={f.eczanem_aktif}
+                      renk="#b45309"
+                      onClick={() => handleEczanemToggle(f)}
+                      baslik={f.eczanem_aktif ? "Eczanem açık — kapatmak için tıkla" : "Eczanem kapalı — açmak için tıkla"}
+                    />
+                    Eczanem
                   </span>
 
                   <button

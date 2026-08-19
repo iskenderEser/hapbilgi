@@ -97,7 +97,7 @@ export async function PATCH(
     const adminSupabase = createAdminClient();
 
     const body = await request.json();
-    const { hbstore_aktif, aktif, cc_aktif, eclub_aktif, eclub_store_aktif } = body;
+    const { hbstore_aktif, aktif, cc_aktif, eclub_aktif, eclub_store_aktif, eczanem_aktif } = body;
 
     // Güncellenecek alanları topla (yalnızca gönderilenler)
     const guncelleme: Record<string, boolean> = {};
@@ -106,11 +106,12 @@ export async function PATCH(
     if (typeof cc_aktif === "boolean") guncelleme.cc_aktif = cc_aktif;
     if (typeof eclub_aktif === "boolean") guncelleme.eclub_aktif = eclub_aktif;
     if (typeof eclub_store_aktif === "boolean") guncelleme.eclub_store_aktif = eclub_store_aktif;
+    if (typeof eczanem_aktif === "boolean") guncelleme.eczanem_aktif = eczanem_aktif;
 
     if (Object.keys(guncelleme).length === 0) {
       return validasyonHatasi(
-        "Güncellenecek alan yok. hbstore_aktif, aktif, cc_aktif veya eclub_aktif (true/false) gönderin.",
-        ["hbstore_aktif", "aktif", "cc_aktif", "eclub_aktif", "eclub_store_aktif"]
+        "Güncellenecek alan yok. hbstore_aktif, aktif, cc_aktif, eclub_aktif, eclub_store_aktif veya eczanem_aktif (true/false) gönderin.",
+        ["hbstore_aktif", "aktif", "cc_aktif", "eclub_aktif", "eclub_store_aktif", "eczanem_aktif"]
       );
     }
 
@@ -154,6 +155,8 @@ export async function PATCH(
       mesaj = guncelleme.eclub_aktif ? "E-Club açıldı." : "E-Club kapatıldı.";
     } else if (tekAlan && "eclub_store_aktif" in guncelleme) {
       mesaj = guncelleme.eclub_store_aktif ? "E-Club Store açıldı." : "E-Club Store kapatıldı.";
+    } else if (tekAlan && "eczanem_aktif" in guncelleme) {
+      mesaj = guncelleme.eczanem_aktif ? "Eczanem açıldı." : "Eczanem kapatıldı.";
     }
 
     return NextResponse.json({ mesaj, firma: guncellenen }, { status: 200 });
