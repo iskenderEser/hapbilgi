@@ -97,6 +97,7 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
   const [islemLoading, setIslemLoading] = useState(false);
   const [ileriSarmaModal, setIleriSarmaModal] = useState(false);
   const [bekleyenSeekBitis, setBekleyenSeekBitis] = useState<number | null>(null);
+  const [ilkOynatmaIstendi, setIlkOynatmaIstendi] = useState(false);
 
   const maxIzlenenRef = useRef<number>(0);
   const izlemeIdRef = useRef<string | null>(null);
@@ -108,6 +109,8 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
   const videoSuresiRef = useRef<number>(0);
   const playerRef = useRef<VideoPlayer | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const ilkOynatmaIstendiRef = useRef(false);
+  const playerHazirRef = useRef(false);
   const onizlemeEtkilesimi = useVideoEtkilesimKatmani({
     anahtar: video.yayin_id,
     playerRef,
@@ -132,6 +135,8 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
     setCevaplar({});
     setCevapSonuclari([]);
     setKazanilanPuan(null);
+    setIlkOynatmaIstendi(false);
+    ilkOynatmaIstendiRef.current = false;
     setIleriSarmaModal(false);
     setBekleyenSeekBitis(null);
 
@@ -188,11 +193,18 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
     maxIzlenenRef.current = 0;
 
     player.onReady(() => {
+      playerHazirRef.current = true;
       // Provider önceki konumu hatırlasa dahi her gerçek deneme sıfırdan başlar.
       // Bu sistem sıfırlaması ileri sarma sayılmaz.
       player.setCurrentTime(0);
 
       const gercekOynatmayiBaslat = () => {
+        // Play kapısı (tüketici): play'e basılmadan otomatik başlamaz.
+        if (tuketici && !ilkOynatmaIstendiRef.current) {
+          player.pause();
+          player.setCurrentTime(0);
+          return;
+        }
         if (!oynatmaBaslatilmaliMi({
           tuketici,
           izlemeId: izlemeIdRef.current,
@@ -270,10 +282,14 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
         izlemeBitirildiRef.current = true;
         handleIzlemeBitir();
       });
+
+      // Play butonuna player hazır olmadan basıldıysa, hazır olunca başlat.
+      if (ilkOynatmaIstendiRef.current) void handleIzlemeBaslat(player);
     });
 
     return () => {
       // Bileşen unmount veya dependency değişimi: player'ı temizle
+      playerHazirRef.current = false;
       player.destroy();
       if (playerRef.current === player) playerRef.current = null;
     };
@@ -328,6 +344,14 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
     setIleriSarmaModal(false);
     setBekleyenSeekBitis(null);
     ileriSarmaOlayIdRef.current = null;
+  };
+
+  // Play kapısı: kullanıcı oynat overlay'ine bastığında izleme başlatılır.
+  const handleIlkOynatma = () => {
+    if (ilkOynatmaIstendiRef.current) return;
+    ilkOynatmaIstendiRef.current = true;
+    setIlkOynatmaIstendi(true);
+    if (playerHazirRef.current && playerRef.current) void handleIzlemeBaslat(playerRef.current);
   };
 
   const handleIzlemeBaslat = async (player: VideoPlayer) => {
@@ -466,10 +490,13 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
                 width/height nitelikleri kalktı — ölçüyü CSS veriyor. */}
             <VideoCercevesi
               videoUrl={video.video_url}
-              etkilesimKatmani={onizlemeEtkilesimi.katmanAcik ? {
-                ariaLabel: `${video.urun_adi} videosunu oynat`,
-                onClick: onizlemeEtkilesimi.oynat,
-              } : null}
+              etkilesimKatmani={
+                onizlemeEtkilesimi.katmanAcik
+                  ? { ariaLabel: `${video.urun_adi} videosunu oynat`, onClick: onizlemeEtkilesimi.oynat }
+                  : tuketici && !ilkOynatmaIstendi
+                    ? { ariaLabel: `${video.urun_adi} videosunu oynat`, onClick: handleIlkOynatma }
+                    : null
+              }
             >
               <iframe key={video.yayin_id} ref={iframeRef} src={video.video_url}
                 frameBorder="0" allowFullScreen
