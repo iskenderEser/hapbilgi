@@ -176,6 +176,7 @@ export default function CcVideoOynatici({
               setBekleyenSeekBitis(current);
               setIleriSarmaModal(true);
               player.setCurrentTime(maxIzlenenRef.current);
+              player.pause(); // ileri sarma algılandı: karar verilene kadar video durur
             }
           });
         });
@@ -321,6 +322,7 @@ export default function CcVideoOynatici({
     if (playerRef.current) {
       playerRef.current.setCurrentTime(bekleyenSeekBitis);
       maxIzlenenRef.current = bekleyenSeekBitis;
+      playerRef.current.play(); // onay: sarılan noktadan devam et
     }
     setBekleyenSeekBitis(null);
   };
@@ -328,6 +330,7 @@ export default function CcVideoOynatici({
   const handleIleriSarmaReddet = () => {
     setIleriSarmaModal(false);
     setBekleyenSeekBitis(null);
+    playerRef.current?.play(); // ret: kaldığı yerden (maxIzlenen) devam et
   };
 
   // ─── Render ────────────────────────────────────────────────────────────────

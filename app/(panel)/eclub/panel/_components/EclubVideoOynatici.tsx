@@ -176,6 +176,7 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
             ileriSarmaOlayIdRef.current = crypto.randomUUID();
             setIleriSarmaModal(true);
             player.setCurrentTime(maxIzlenenRef.current);
+            player.pause(); // ileri sarma algılandı: karar verilene kadar video durur
           }
         });
       });
@@ -265,6 +266,7 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
       maxIzlenenRef.current = bekleyenSeekBitis;
       ileriSarmaBekliyorRef.current = false;
       playerRef.current?.setCurrentTime(bekleyenSeekBitis);
+      playerRef.current?.play(); // onay: sarılan noktadan devam et
       const kayip = Number(d.kaybedilen_puan ?? 0);
       uyari(kayip > 0
         ? `İleri sarma kaydedildi: ${kayip} puan kaybettiniz ve soru hakkınız kapandı.`
@@ -284,6 +286,7 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
     setIleriSarmaModal(false);
     setBekleyenSeekBitis(null);
     ileriSarmaOlayIdRef.current = null;
+    playerRef.current?.play(); // ret: kaldığı yerden (maxIzlenen) devam et
   };
 
   const handleBitir = async () => {

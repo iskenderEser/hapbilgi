@@ -272,6 +272,7 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
             ileriSarmaOlayIdRef.current = crypto.randomUUID();
             setIleriSarmaModal(true);
             player.setCurrentTime(maxIzlenenRef.current);
+            player.pause(); // ileri sarma algılandı: karar verilene kadar video durur
           }
         });
       });
@@ -324,6 +325,7 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
       if (playerRef.current) {
         playerRef.current.setCurrentTime(bekleyenSeekBitis);
         maxIzlenenRef.current = bekleyenSeekBitis;
+        playerRef.current.play(); // onay: sarılan noktadan devam et
       }
       if ((d.kaybedilen_puan ?? 0) > 0) {
         uyari(`İleri sarma kaydedildi: ${d.kaybedilen_puan} puan kaybettiniz.`);
@@ -344,6 +346,7 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
     setIleriSarmaModal(false);
     setBekleyenSeekBitis(null);
     ileriSarmaOlayIdRef.current = null;
+    playerRef.current?.play(); // ret: kaldığı yerden (maxIzlenen) devam et
   };
 
   // Play kapısı: kullanıcı oynat overlay'ine bastığında izleme başlatılır.
