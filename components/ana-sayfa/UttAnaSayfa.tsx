@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import VideoOynatici from "@/components/izle/VideoOynatici";
+import { hbstoreBakiyesiDegistiBildir } from "@/lib/store/olay";
 import {
   UttKayanVideoRafi as KayanRaf,
   UttVideoKarti as VideoKart,
@@ -163,7 +164,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
           tuketici={true}
           oneri_id={aktifOneriId}
           onKapat={handleVideoKapat}
-          onVeriYenile={() => veriCek(true)}
+          onVeriYenile={() => { void veriCek(true); hbstoreBakiyesiDegistiBildir(); }}
           hata={hata}
           basari={basari}
           uyari={uyari}

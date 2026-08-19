@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, Clock3, Coins, ShoppingBag, Sparkles, Trophy, Video } from "lucide-react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -16,6 +16,7 @@ import {
 import { useEclubPanel, type PanelOneri } from "./_hooks/useEclubPanel";
 import EclubVideoOynatici from "./_components/EclubVideoOynatici";
 import EclubFirmaVideoKatalogu from "./_components/EclubFirmaVideoKatalogu";
+import { hbstoreBakiyesiDegistiBildir } from "@/lib/store/olay";
 import { eclubKisiRolEtiketi } from "@/lib/utils/roller";
 
 function videoDurumu(oneri: PanelOneri): "bekleyen" | "tamamlanan" | "suresi_gecmis" {
@@ -33,6 +34,8 @@ function firmaYonelme(firmaAdi: string): string {
 
 export default function EclubPanelPage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const params = useParams<{ firma_id?: string }>();
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const { mesajlar, hata, basari, uyari } = useHataMesaji();
@@ -46,6 +49,16 @@ export default function EclubPanelPage() {
     if (!kullanici) { router.replace("/login"); return; }
     if (!eclubKisi) { router.replace("/ana-sayfa"); }
   }, [kullanici, authYukleniyor, eclubKisi, router]);
+
+  // Açık video adresin kendisinde taşınır (?oneri_id=...). Böylece navbar'daki
+  // "Ana Sayfa" parametresiz adrese gittiğinde bu etki videoyu kapatır — aynı
+  // rotada takılı kalma sorunu (kullanıcı listeye dönemiyordu) böyle çözülür.
+  useEffect(() => {
+    const oneriId = searchParams.get("oneri_id");
+    if (!oneriId) { setSeciliOneri(null); return; }
+    const hedef = oneriler.find((o) => o.oneri_id === oneriId);
+    if (hedef) setSeciliOneri(hedef);
+  }, [oneriler, searchParams]);
 
   if (authYukleniyor || !kullanici || loading) return <EclubKisiYukleniyor />;
 
@@ -88,6 +101,12 @@ export default function EclubPanelPage() {
     }
   };
 
+  const handleVideoSec = (oneri: PanelOneri) => {
+    setSeciliOneri(oneri);
+    // Adrese yaz — "Ana Sayfa" parametresiz adrese gidince video kapansın.
+    router.push(`${pathname}?oneri_id=${oneri.oneri_id}`, { scroll: false });
+  };
+
   return (
     <EclubKisiSayfa>
       {seciliOneri ? (
@@ -99,8 +118,8 @@ export default function EclubPanelPage() {
             teknik_adi: seciliOneri.teknik_adi,
             video_url: seciliOneri.video_url,
           }}
-          onKapat={() => { setSeciliOneri(null); void veriCek(); }}
-          onTamamlandi={() => veriCek(true)}
+          onKapat={() => { setSeciliOneri(null); router.push(pathname, { scroll: false }); void veriCek(); }}
+          onTamamlandi={() => { void veriCek(true); hbstoreBakiyesiDegistiBildir(); }}
           hata={hata}
           basari={basari}
           uyari={uyari}
@@ -133,7 +152,7 @@ export default function EclubPanelPage() {
               oneriler={oneriler}
               seciliFirmaId={aktifFirmaId}
               seciliFirmaAdi={aktifFirmaAdi}
-              onVideoSec={setSeciliOneri}
+              onVideoSec={handleVideoSec}
               onBegeni={(yayinId) => void etkilesimDegistir("begeni", yayinId)}
               onFavori={(yayinId) => void etkilesimDegistir("favori", yayinId)}
             />
