@@ -184,6 +184,15 @@ export function eclubKisiNavOlustur(firmalar: Array<{ firma_id: string; firma_ad
       { etiket: "Adreslerim", path: "/eclub/store/adreslerim", gate: (c) => c.eclubAcik && c.eclubStoreAcik },
     ],
   },
+  {
+    baslik: "Eczanem",
+    oglar: [
+      { etiket: "Müşterilerim",     path: "/eczanem/eczane/musterilerim", gate: (c) => c.eczanemAcik },
+      { etiket: "Video Dağıtımı",   path: "/eczanem/eczane/dagitim",      gate: (c) => c.eczanemAcik },
+      { etiket: "Sipariş Onayları", path: "/eczanem/eczane/siparisler",   gate: (c) => c.eczanemAcik },
+      { etiket: "İşlem Dökümü",     path: "/eczanem/eczane/dokum",        gate: (c) => c.eczanemAcik },
+    ],
+  },
   ];
 }
 

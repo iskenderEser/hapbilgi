@@ -70,7 +70,7 @@ export async function GET() {
           cc_aktif: false,
           eclub_aktif: eclubErisim.eclub_aktif,
           eclub_store_aktif: eclubErisim.eclub_store_aktif,
-          eczanem_aktif: false,
+          eczanem_aktif: eclubErisim.eczanem_aktif,
         },
         eclub_firmalar: aktifFirmalar,
         eclub_navbar_ozet: { store_puani: storePuani },
