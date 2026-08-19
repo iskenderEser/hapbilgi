@@ -119,43 +119,52 @@ export function BekleyenSatir({
             </div>
           );
 
-          const yayinGunuVeYayinla = (
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-              <div className="grid min-w-0 grid-rows-[18px_36px] gap-2">
-                <span className="block whitespace-nowrap text-xs font-bold leading-[18px] text-[#566b87]">Yayın günü <span className="font-normal text-[#9aa7b7]">(boş = hemen)</span></span>
-                <input type="date" value={secilenGun} min={bugun}
-                  onChange={(e) => {
-                    const deger = e.target.value;
-                    setYayinGunleri(prev => {
-                      const yeni = { ...prev };
-                      if (deger === "") delete yeni[b.soru_seti_durum_id];
-                      else yeni[b.soru_seti_durum_id] = deger;
-                      return yeni;
-                    });
-                  }}
-                  aria-label={`${b.urun_adi} yayın günü`}
-                  className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900"
-                  style={{ fontFamily: "'Nunito', sans-serif" }} />
-              </div>
-              <button type="button" onClick={() => onYayinlaClick(b)} disabled={!hazir || islemLoading === b.soru_seti_durum_id}
-                className="h-9 min-w-[96px] shrink-0 rounded-xl border-none px-4 text-xs font-extrabold shadow-[0_7px_16px_rgba(37,131,226,0.16)] disabled:shadow-none"
-                style={{ background: hazir ? "#2583e2" : "#eef1f5", color: hazir ? "white" : "#9aa7b7", cursor: hazir ? "pointer" : "not-allowed", fontFamily: "'Nunito', sans-serif" }}>
-                {islemLoading === b.soru_seti_durum_id ? "..." : secilenGun ? "Planla" : "Yayınla"}
-              </button>
+          const yayinGunuAlani = (
+            <div className="grid min-w-0 grid-rows-[18px_36px] gap-2">
+              <span className="block whitespace-nowrap text-xs font-bold leading-[18px] text-[#566b87]">Yayın günü <span className="font-normal text-[#9aa7b7]">(boş = hemen)</span></span>
+              <input type="date" value={secilenGun} min={bugun}
+                onChange={(e) => {
+                  const deger = e.target.value;
+                  setYayinGunleri(prev => {
+                    const yeni = { ...prev };
+                    if (deger === "") delete yeni[b.soru_seti_durum_id];
+                    else yeni[b.soru_seti_durum_id] = deger;
+                    return yeni;
+                  });
+                }}
+                aria-label={`${b.urun_adi} yayın günü`}
+                className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900"
+                style={{ fontFamily: "'Nunito', sans-serif" }} />
             </div>
           );
 
-          // Eczanem: iki sütun — sol yayınla ilgili değerler, sağ barkod + puan karşılığı.
+          const yayinlaButonu = (
+            <button type="button" onClick={() => onYayinlaClick(b)} disabled={!hazir || islemLoading === b.soru_seti_durum_id}
+              className="h-9 min-w-[96px] shrink-0 rounded-xl border-none px-4 text-xs font-extrabold shadow-[0_7px_16px_rgba(37,131,226,0.16)] disabled:shadow-none"
+              style={{ background: hazir ? "#2583e2" : "#eef1f5", color: hazir ? "white" : "#9aa7b7", cursor: hazir ? "pointer" : "not-allowed", fontFamily: "'Nunito', sans-serif" }}>
+              {islemLoading === b.soru_seti_durum_id ? "..." : secilenGun ? "Planla" : "Yayınla"}
+            </button>
+          );
+
+          const yayinGunuVeYayinla = (
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+              {yayinGunuAlani}
+              {yayinlaButonu}
+            </div>
+          );
+
+          // Eczanem: iki satır — 1) puanlama/video/gün kompakt yan yana,
+          //                       2) barkod + puan karşılığı, sonda Yayınla.
           if (eczanem) {
             return (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:items-start">
-                <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
                   {soruBtn}
-                  {videoPuaniAlani}
-                  {yayinGunuVeYayinla}
+                  <div className="w-full sm:w-36">{videoPuaniAlani}</div>
+                  <div className="w-full sm:w-40">{yayinGunuAlani}</div>
                 </div>
-                <div className="flex flex-col gap-3">
-                  <div className="grid grid-rows-[18px_36px] gap-2">
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+                  <div className="grid w-full grid-rows-[18px_36px] gap-2 sm:w-44">
                     <span className="block text-xs font-bold leading-[18px] text-[#566b87]">Barkod <span className="text-red-500">*</span></span>
                     <input type="text" inputMode="numeric" value={barkodlar[b.soru_seti_durum_id] ?? ""}
                       onChange={(e) => setBarkodlar(prev => ({ ...prev, [b.soru_seti_durum_id]: e.target.value }))}
@@ -164,18 +173,34 @@ export function BekleyenSatir({
                       className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900"
                       style={{ fontFamily: "'Nunito', sans-serif" }} />
                   </div>
-                  <div className="grid grid-rows-[18px_36px] gap-2">
+                  <div className="grid w-full grid-rows-[18px_36px] gap-2 sm:w-56">
                     <span className="block text-xs font-bold leading-[18px] text-[#566b87]">Puan karşılığı <span className="text-red-500">*</span></span>
                     <div className="flex h-9 items-center gap-1">
                       <input type="number" min={1} value={karsilikPuanlar[b.soru_seti_durum_id] ?? ""}
-                        onChange={(e) => setKarsilikPuanlar(prev => ({ ...prev, [b.soru_seti_durum_id]: Number(e.target.value) }))}
+                        onChange={(e) => {
+                          const deger = e.target.value;
+                          setKarsilikPuanlar(prev => {
+                            const yeni = { ...prev };
+                            if (deger === "") delete yeni[b.soru_seti_durum_id];
+                            else yeni[b.soru_seti_durum_id] = Number(deger);
+                            return yeni;
+                          });
+                        }}
                         placeholder="puan"
                         aria-label="Karşılık puanı"
-                        className="h-9 min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900"
+                        className="h-9 min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         style={{ fontFamily: "'Nunito', sans-serif" }} />
                       <span className="text-xs text-gray-400">=</span>
                       <input type="number" min={0} step="0.01" value={karsilikTllar[b.soru_seti_durum_id] ?? ""}
-                        onChange={(e) => setKarsilikTllar(prev => ({ ...prev, [b.soru_seti_durum_id]: Number(e.target.value) }))}
+                        onChange={(e) => {
+                          const deger = e.target.value;
+                          setKarsilikTllar(prev => {
+                            const yeni = { ...prev };
+                            if (deger === "") delete yeni[b.soru_seti_durum_id];
+                            else yeni[b.soru_seti_durum_id] = Number(deger);
+                            return yeni;
+                          });
+                        }}
                         placeholder="TL"
                         aria-label="Türk lirası karşılığı"
                         className="h-9 min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900"
@@ -183,6 +208,7 @@ export function BekleyenSatir({
                       <span className="text-xs text-gray-400">TL</span>
                     </div>
                   </div>
+                  <div className="sm:ml-auto">{yayinlaButonu}</div>
                 </div>
               </div>
             );
