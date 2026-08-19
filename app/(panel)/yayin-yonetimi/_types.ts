@@ -3,7 +3,7 @@
 // Yayın yönetimi sayfasının paylaşılan tip sözleşmeleri ve sabitleri.
 // page.tsx, hook ve alt bileşenler buradan import eder.
 
-import type { HedefRoller } from "@/app/(panel)/talepler/_types";
+import type { HedefRoller, Soru } from "@/app/(panel)/talepler/_types";
 import { ECLUB_ORTAK_YAYIN_GRUBU, type YayinHedefGrubu } from "@/lib/utils/roller";
 
 // ============================================================================
@@ -15,7 +15,7 @@ export interface Bekleyen {
   soru_seti_durum_id: string;
   soru_seti_id: string;
   video_durum_id: string;
-  sorular: any[];
+  sorular: Soru[];
   video_url: string | null;
   thumbnail_url: string | null;
   video_puan_id: string | null;
@@ -48,7 +48,7 @@ export interface Yayin {
   thumbnail_url: string | null;
   video_puani: number | null;
   soru_puani: number | null;
-  sorular: any[];
+  sorular: Soru[];
   hedef_roller: HedefRoller;
 }
 
