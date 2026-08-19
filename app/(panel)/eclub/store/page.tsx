@@ -19,10 +19,10 @@ import type { EclubStoreUrun } from "@/lib/eclub/store/eclubStoreTipler";
 function UrunKart({ urun, onSiparis }: { urun: EclubStoreUrun; onSiparis: () => void }) {
   return (
     <article className="group overflow-hidden rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
-      <div className="relative flex h-36 items-center justify-center overflow-hidden bg-[#f1f5f8]">
+      <div className="relative box-border flex h-[180px] items-center justify-center overflow-hidden bg-[#f9fafb] p-3">
         {urun.gorsel_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={urun.gorsel_url} alt={urun.ad} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
+          <img src={urun.gorsel_url} alt={urun.ad} className="h-full w-full object-contain" />
         ) : <Package size={27} className="text-[#9cadbd]" />}
         {urun.stok <= 0 && <span className="absolute right-2 top-2 rounded-full bg-[#203653]/85 px-2.5 py-1 text-[9px] font-extrabold text-white">Stok Yok</span>}
       </div>
