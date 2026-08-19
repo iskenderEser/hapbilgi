@@ -9,7 +9,7 @@
 "use client";
 
 import type { Bekleyen } from "../_types";
-import { VIDEO_PUAN_SECENEKLERI, EXTRA_PUAN_SECENEKLERI } from "../_types";
+import { VIDEO_PUAN_SECENEKLERI, VIDEO_PUAN_SECENEKLERI_ECZANEM, EXTRA_PUAN_SECENEKLERI } from "../_types";
 import { HedefRolPilleri } from "@/components/HedefRolBant";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import { VideoThumb } from "./Yardimcilar";
@@ -105,6 +105,8 @@ export function BekleyenSatir({
             </div>
           ) : null;
 
+          // Eczanem yayınları farklı video puanı skalası kullanır; diğer dallar mevcut listeyi.
+          const videoPuanSecenekleri = eczanem ? VIDEO_PUAN_SECENEKLERI_ECZANEM : VIDEO_PUAN_SECENEKLERI;
           const videoPuaniAlani = (
             <div className="grid grid-rows-[18px_36px] gap-2">
               <span className="block text-xs font-bold leading-[18px] text-[#566b87]">Video puanı</span>
@@ -114,7 +116,7 @@ export function BekleyenSatir({
                 className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900"
                 style={{ fontFamily: "'Nunito', sans-serif" }}>
                 <option value="">Seçiniz</option>
-                {VIDEO_PUAN_SECENEKLERI.map(p => <option key={p} value={p}>{p} puan</option>)}
+                {videoPuanSecenekleri.map(p => <option key={p} value={p}>{p} puan</option>)}
               </select>
             </div>
           );

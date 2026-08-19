@@ -64,7 +64,11 @@ export type BekleyenHedefSayilari = Record<YayinHedefGrubu, number>;
 // ============================================================================
 
 export const VIDEO_PUAN_SECENEKLERI = [40, 45, 50, 55, 60, 65, 70];
+// Eczanem yayınları için ayrı video puanı skalası (50–500, 25'er artan).
+export const VIDEO_PUAN_SECENEKLERI_ECZANEM = [50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375, 400, 425, 450, 475, 500];
 export const SORU_PUAN_SECENEKLERI = [3, 4, 5, 6, 7];
+// Eczanem yayınları için ayrı soru puanı skalası (10–100, 10'ar artan).
+export const SORU_PUAN_SECENEKLERI_ECZANEM = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 export const EXTRA_PUAN_SECENEKLERI = [5, 6, 7, 8, 9, 10];
 
 // Ana sekme (hedef rol) etiketleri. Renkler HEDEF_ROL_TASARIM'dan gelir;

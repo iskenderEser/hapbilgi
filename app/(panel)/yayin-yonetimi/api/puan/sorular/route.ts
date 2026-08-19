@@ -25,15 +25,6 @@ export async function POST(request: NextRequest) {
       return validasyonHatasi("puanlar dizisi zorunludur.", ["puanlar"]);
     }
 
-    for (const p of puanlar) {
-      if (p.soru_index === undefined || p.soru_index === null) {
-        return validasyonHatasi("Her puan için soru_index zorunludur.", ["soru_index"]);
-      }
-      if (!p.soru_puani || p.soru_puani < 3 || p.soru_puani > 7 || !Number.isInteger(p.soru_puani)) {
-        return validasyonHatasi(`Soru puanı 3-7 arasında tam sayı olmalıdır. soru_index: ${p.soru_index}, girilen: ${p.soru_puani}`, ["soru_puani"]);
-      }
-    }
-
     const { data: sahipSeti, error: sahipSetiError } = await adminSupabase
       .from("soru_seti_durumu")
       .select("soru_seti_id")
@@ -45,6 +36,22 @@ export async function POST(request: NextRequest) {
     const talepBilgisi = await talepBilgisiSoruSeti(adminSupabase, sahipSeti.soru_seti_id);
     if (!talepBilgisi) return hataYaniti("Talep bilgisi bulunamadı.", "soru_seti_id → talep sahipliği", null, 404);
     if (talepBilgisi.uretici_id !== user.id) return rolHatasi("Yalnız kendi içeriğinizin soru puanlarını değiştirebilirsiniz.");
+
+    // Eczanem yayınları farklı soru puanı skalası kullanır (10–100, 10'un katı);
+    // diğer hedefler mevcut kuralda kalır (3–7 tam sayı).
+    const eczanem = talepBilgisi.hedef_roller.includes("eczanem");
+    for (const p of puanlar) {
+      if (p.soru_index === undefined || p.soru_index === null) {
+        return validasyonHatasi("Her puan için soru_index zorunludur.", ["soru_index"]);
+      }
+      if (eczanem) {
+        if (!p.soru_puani || p.soru_puani < 10 || p.soru_puani > 100 || p.soru_puani % 10 !== 0) {
+          return validasyonHatasi(`Soru puanı 10-100 arasında ve 10'un katı olmalıdır. soru_index: ${p.soru_index}, girilen: ${p.soru_puani}`, ["soru_puani"]);
+        }
+      } else if (!p.soru_puani || p.soru_puani < 3 || p.soru_puani > 7 || !Number.isInteger(p.soru_puani)) {
+        return validasyonHatasi(`Soru puanı 3-7 arasında tam sayı olmalıdır. soru_index: ${p.soru_index}, girilen: ${p.soru_puani}`, ["soru_puani"]);
+      }
+    }
 
     // Yayında mı kontrol et
     const { data: yayin, error: yayinError } = await adminSupabase

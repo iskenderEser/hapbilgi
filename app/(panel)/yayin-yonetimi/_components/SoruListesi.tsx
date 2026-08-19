@@ -9,7 +9,7 @@
 "use client";
 
 import type { Bekleyen } from "../_types";
-import { SORU_PUAN_SECENEKLERI } from "../_types";
+import { SORU_PUAN_SECENEKLERI, SORU_PUAN_SECENEKLERI_ECZANEM } from "../_types";
 
 interface SoruListesiProps {
   sorular: any[];
@@ -28,6 +28,11 @@ export function SoruListesi({
   setSoruPuani,
   hepsineAyniPuanAta,
 }: SoruListesiProps) {
+  // Eczanem yayınlarında soru puanı skalası farklıdır; diğer hedeflerde mevcut liste.
+  const soruPuanSecenekleri = bekleyen && bekleyen.hedef_roller.includes("eczanem")
+    ? SORU_PUAN_SECENEKLERI_ECZANEM
+    : SORU_PUAN_SECENEKLERI;
+
   return (
     <div className="border-t border-[#e3eaf2] bg-[#fafcfe] px-3.5 py-3.5 md:px-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -43,7 +48,7 @@ export function SoruListesi({
             className="rounded-lg border border-blue-200 bg-white px-2 py-1 text-xs text-blue-700"
             style={{ fontFamily: "'Nunito', sans-serif", width: 90 }}>
             <option value="">Seçiniz</option>
-            {SORU_PUAN_SECENEKLERI.map(p => <option key={p} value={p}>{p} puan</option>)}
+            {soruPuanSecenekleri.map(p => <option key={p} value={p}>{p} puan</option>)}
           </select>
         </div>
       )}
@@ -71,7 +76,7 @@ export function SoruListesi({
                   className="rounded-lg border border-gray-200 bg-white px-1.5 py-1 text-xs text-gray-900"
                   style={{ fontFamily: "'Nunito', sans-serif", width: 80 }}>
                   <option value="">-</option>
-                  {SORU_PUAN_SECENEKLERI.map(p => <option key={p} value={p}>{p} puan</option>)}
+                  {soruPuanSecenekleri.map(p => <option key={p} value={p}>{p} puan</option>)}
                 </select>
               </div>
             ) : (

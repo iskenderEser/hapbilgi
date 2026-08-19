@@ -22,13 +22,21 @@ export async function POST(request: NextRequest) {
 
     if (!video_durum_id) return validasyonHatasi("video_durum_id zorunludur.", ["video_durum_id"]);
     if (video_puani === undefined || video_puani === null) return validasyonHatasi("video_puani zorunludur.", ["video_puani"]);
-    if (video_puani < 40 || video_puani > 70 || video_puani % 5 !== 0) {
-      return validasyonHatasi(`Video puanı 40-70 arasında ve 5'in katı olmalıdır. Girilen değer: ${video_puani}`, ["video_puani"]);
-    }
 
     const talepBilgisi = await talepBilgisiVideoDurum(adminSupabase, video_durum_id);
     if (!talepBilgisi) return hataYaniti("Talep bilgisi bulunamadı.", "video_durum_id → talep sahipliği", null, 404);
     if (talepBilgisi.uretici_id !== user.id) return rolHatasi("Yalnız kendi içeriğinizin video puanını değiştirebilirsiniz.");
+
+    // Eczanem yayınları farklı video puanı skalası kullanır (50–500, 25'in katı);
+    // diğer hedefler mevcut kuralda kalır (40–70, 5'in katı).
+    const eczanem = talepBilgisi.hedef_roller.includes("eczanem");
+    if (eczanem) {
+      if (video_puani < 50 || video_puani > 500 || video_puani % 25 !== 0) {
+        return validasyonHatasi(`Video puanı 50-500 arasında ve 25'in katı olmalıdır. Girilen değer: ${video_puani}`, ["video_puani"]);
+      }
+    } else if (video_puani < 40 || video_puani > 70 || video_puani % 5 !== 0) {
+      return validasyonHatasi(`Video puanı 40-70 arasında ve 5'in katı olmalıdır. Girilen değer: ${video_puani}`, ["video_puani"]);
+    }
 
     // Daha önce puan atanmış mı kontrol et
     const { data: mevcutPuan, error: mevcutError } = await adminSupabase
