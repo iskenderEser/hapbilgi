@@ -79,9 +79,11 @@ export default function EczanemGirisPage() {
             <label className="block text-xs text-gray-600 mb-1">Cep Telefonu</label>
             <input
               type="tel"
+              inputMode="numeric"
+              maxLength={11}
               value={telefon}
-              onChange={(e) => setTelefon(e.target.value)}
-              placeholder="05xx xxx xx xx"
+              onChange={(e) => setTelefon(e.target.value.replace(/\D/g, ""))}
+              placeholder="05XXXXXXXXX"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-5"
               required
             />

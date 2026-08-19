@@ -94,9 +94,11 @@ export default function EczanemMusterilerimPage() {
           />
           <input
             type="tel"
+            inputMode="numeric"
+            maxLength={11}
             value={telefon}
-            onChange={(e) => setTelefon(e.target.value)}
-            placeholder="05xx xxx xx xx"
+            onChange={(e) => setTelefon(e.target.value.replace(/\D/g, ""))}
+            placeholder="05XXXXXXXXX"
             className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
             required
           />
