@@ -4,7 +4,7 @@
 // page.tsx, hook ve alt bileşenler buradan import eder.
 
 import type { HedefRoller, Soru } from "@/app/(panel)/talepler/_types";
-import { ECLUB_ORTAK_YAYIN_GRUBU, type YayinHedefGrubu } from "@/lib/utils/roller";
+import { ECLUB_ORTAK_YAYIN_GRUBU, YAYIN_HEDEF_GRUP_SIRASI, type YayinHedefGrubu } from "@/lib/utils/roller";
 
 // ============================================================================
 // Tipler
@@ -79,13 +79,7 @@ export const ANA_SEKME_ETIKETLERI: Record<YayinHedefGrubu, string> = {
   eczanem: "Eczanem Yayınları",
 };
 
-// Ana sekmelerin gösterim sırası. Eczanem sekmesi U5'te açıldı — PM eczanem
-// bekleyen videolarını buradan yayına alır (barkod + Karşılık formu satır içinde).
-export const ANA_SEKMELER: YayinHedefGrubu[] = [
-  "utt",
-  "bm",
-  "eczaci",
-  "eczane_teknisyeni",
-  ECLUB_ORTAK_YAYIN_GRUBU,
-  "eczanem",
-];
+// Ana sekmelerin gösterim sırası. Sıra tek kaynakta (roller.ts) tutulur.
+// Eczanem sekmesi U5'te açıldı — PM eczanem bekleyen videolarını buradan yayına
+// alır (barkod + Karşılık formu satır içinde).
+export const ANA_SEKMELER: YayinHedefGrubu[] = YAYIN_HEDEF_GRUP_SIRASI;

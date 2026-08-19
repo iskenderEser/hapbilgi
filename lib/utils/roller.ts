@@ -184,6 +184,17 @@ export const ECLUB_HEDEF_ROLLER: HedefRol[] = ["eczaci", "eczane_teknisyeni"];
 export const ECLUB_ORTAK_YAYIN_GRUBU = "eczaci_ve_eczane_teknisyeni" as const;
 export type YayinHedefGrubu = HedefRol | typeof ECLUB_ORTAK_YAYIN_GRUBU;
 
+// Yayın Yönetimi ana sekmelerinin gösterim sırası (tek kaynak). ECLUB ortak
+// grubu, eczaci ile eczane_teknisyeni sekmelerinden sonra gelir; eczanem sonda.
+export const YAYIN_HEDEF_GRUP_SIRASI: YayinHedefGrubu[] = [
+  "utt",
+  "bm",
+  "eczaci",
+  "eczane_teknisyeni",
+  ECLUB_ORTAK_YAYIN_GRUBU,
+  "eczanem",
+];
+
 /** Kişinin unvanını yayın hedef kitlesindeki iki kanonik rolden birine eşler. */
 export function eclubKisiHedefRolu(rol: string): "eczaci" | "eczane_teknisyeni" | null {
   if (ECLUB_ECZACI_UNVANLARI.includes(rol as EclubKisiRol)) return "eczaci";
