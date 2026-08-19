@@ -84,11 +84,15 @@ function VideoRafi({ baslik, videolar, onVideoSec, onBegeni, onFavori, etkilesim
         <div className="rounded-2xl border border-dashed border-[#d8e2ec] bg-white px-4 py-7 text-center text-xs font-semibold text-[#8a99aa]">Bu rafta henüz video bulunmuyor.</div>
       ) : (
         <div className="group relative">
-          <button type="button" aria-label={`${baslik} rafını sola kaydır`} onClick={() => kaydir(-1)} className="absolute inset-y-0 left-0 z-10 hidden w-12 items-center justify-start bg-gradient-to-r from-[#f7f9fc] to-transparent opacity-0 transition group-hover:opacity-100 md:flex">‹</button>
+          <button type="button" aria-label={`${baslik} rafını sola kaydır`} onClick={() => kaydir(-1)} className="absolute inset-y-0 left-0 z-10 flex w-16 cursor-pointer items-center justify-start bg-gradient-to-r from-gray-50 via-gray-50/70 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
+            <svg className="h-7 w-7 text-gray-800 drop-shadow-sm" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+          </button>
           <div ref={raf} className="flex snap-x gap-2.5 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {videolar.map((oneri) => <VideoKarti key={oneri.oneri_id} oneri={oneri} onSec={() => onVideoSec(oneri)} onBegeni={() => onBegeni(oneri.yayin_id)} onFavori={() => onFavori(oneri.yayin_id)} etkilesimAktif={etkilesimAktif} />)}
           </div>
-          <button type="button" aria-label={`${baslik} rafını sağa kaydır`} onClick={() => kaydir(1)} className="absolute inset-y-0 right-0 z-10 hidden w-12 items-center justify-end bg-gradient-to-l from-[#f7f9fc] to-transparent text-xl opacity-0 transition group-hover:opacity-100 md:flex">›</button>
+          <button type="button" aria-label={`${baslik} rafını sağa kaydır`} onClick={() => kaydir(1)} className="absolute inset-y-0 right-0 z-10 flex w-16 cursor-pointer items-center justify-end bg-gradient-to-l from-gray-50 via-gray-50/70 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
+            <svg className="h-7 w-7 text-gray-800 drop-shadow-sm" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+          </button>
         </div>
       )}
     </section>
