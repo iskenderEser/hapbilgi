@@ -7,6 +7,19 @@ import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { musteriKimligi } from "@/lib/eczanem/oturum";
+import { eczaneAdMap } from "@/lib/eczanem/gonderim";
+
+interface YayinDetaySatiri {
+  yayin_id: string;
+  urun_adi: string | null;
+  teknik_adi: string | null;
+  video_url: string | null;
+  thumbnail_url: string | null;
+  durum: string | null;
+  talep_no: number | null;
+  firma_adi: string | null;
+  firma_id: string | null;
+}
 
 export async function GET() {
   try {
@@ -19,60 +32,74 @@ export async function GET() {
     if (!kimlik.ok) return rolHatasi(kimlik.hata ?? "Müşteri doğrulanamadı.");
     const musteriId = kimlik.musteriId!;
 
-    // Gönderilen videolar
+    // Yalnız hâlen aktif üyeliğin bulunduğu eczanelerin gönderimleri görünür.
+    const { data: uyelikler, error: uyelikError } = await adminSupabase
+      .from("eczanem_uyelikler")
+      .select("eczane_id")
+      .eq("musteri_id", musteriId)
+      .eq("aktif_mi", true)
+      .in("eczane_id", kimlik.eczaneIdler!);
+    if (uyelikError) return hataYaniti("Eczane üyelikleri çekilemedi.", "eczanem_uyelikler SELECT — aktif video kapısı", uyelikError);
+
+    const aktifEczaneIdler = [...new Set((uyelikler ?? []).map((u) => u.eczane_id))];
+    if (aktifEczaneIdler.length === 0) {
+      return NextResponse.json({ videolar: [] }, { status: 200 });
+    }
+
     const { data: gonderimler, error: gError } = await adminSupabase
       .from("eczanem_gonderimler")
       .select("gonderim_id, yayin_id, eczane_id, created_at")
       .eq("musteri_id", musteriId)
+      .in("eczane_id", aktifEczaneIdler)
       .order("created_at", { ascending: false });
 
     if (gError) return hataYaniti("Videolar çekilemedi.", "eczanem_gonderimler SELECT — musteri_id", gError);
     const rows = gonderimler ?? [];
 
     // Yayın detayları (yalnız yayında olanları göster)
-    const yayinIdler = [...new Set(rows.map((g: any) => g.yayin_id))];
-    const yayinMap = new Map<string, any>();
+    const yayinIdler = [...new Set(rows.map((g) => g.yayin_id))];
+    const yayinMap = new Map<string, YayinDetaySatiri>();
     if (yayinIdler.length > 0) {
       const { data: yayinlar } = await adminSupabase
         .from("v_yayin_detay")
-        .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, durum, talep_no, firma_adi")
+        .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, durum, talep_no, firma_adi, firma_id")
         .in("yayin_id", yayinIdler)
+        .in("firma_id", kimlik.firmaIdler!)
         // Görünürlük kapısı (Faz 1): süresi hazır olmayan video izleyiciye gösterilmez.
         .gt("video_suresi_saniye", 0);
-      for (const y of yayinlar ?? []) yayinMap.set((y as any).yayin_id, y);
+      for (const y of yayinlar ?? []) yayinMap.set(y.yayin_id, y as YayinDetaySatiri);
     }
 
-    // İzleme durumu: tamamlanan izlemelerin yayınları
-    const { data: izlemeler } = await adminSupabase
-      .from("eczanem_izleme_kayitlari")
-      .select("izleme_id, yayin_id, tamamlandi_mi")
-      .eq("musteri_id", musteriId);
-    const tamamlananYayin = new Set((izlemeler ?? []).filter((i: any) => i.tamamlandi_mi).map((i: any) => i.yayin_id));
+    // Durum yayın bazında değil gönderim bazındadır; aynı yayın iki eczaneden
+    // geldiğinde her eczanenin izleme, soru ve puan akışı bağımsız kalır.
+    const gonderimIdler = rows.map((g) => g.gonderim_id);
+    const { data: izlemeler, error: izlemeError } = gonderimIdler.length > 0
+      ? await adminSupabase
+        .from("eczanem_izleme_kayitlari")
+        .select("gonderim_id, tamamlandi_mi, cevaplandi_mi")
+        .eq("musteri_id", musteriId)
+        .in("gonderim_id", gonderimIdler)
+      : { data: [], error: null };
+    if (izlemeError) return hataYaniti("İzleme durumları çekilemedi.", "eczanem_izleme_kayitlari SELECT — gönderim durumu", izlemeError);
 
-    // Cevap durumu: cevap kazanımı olan yayınlar (izleme_id → yayin_id köprüsü)
-    const izlemeYayin = new Map<string, string>();
-    for (const i of izlemeler ?? []) izlemeYayin.set((i as any).izleme_id, (i as any).yayin_id);
-    const cevaplananYayin = new Set<string>();
-    const izlemeIdler = [...izlemeYayin.keys()];
-    if (izlemeIdler.length > 0) {
-      const { data: cevapKazanim } = await adminSupabase
-        .from("eczanem_puan_kayitlari")
-        .select("izleme_id")
-        .eq("puan_turu", "cevap")
-        .in("izleme_id", izlemeIdler);
-      for (const c of cevapKazanim ?? []) {
-        const y = izlemeYayin.get((c as any).izleme_id);
-        if (y) cevaplananYayin.add(y);
-      }
+    const izlemeDurumu = new Map<string, { tamamlandi_mi: boolean; cevaplandi_mi: boolean }>();
+    for (const izleme of izlemeler ?? []) {
+      izlemeDurumu.set(izleme.gonderim_id, {
+        tamamlandi_mi: Boolean(izleme.tamamlandi_mi),
+        cevaplandi_mi: Boolean(izleme.cevaplandi_mi),
+      });
     }
+    const eczaneAdlari = await eczaneAdMap(adminSupabase, aktifEczaneIdler);
 
     const videolar = rows
-      .filter((g: any) => yayinMap.get(g.yayin_id)?.durum === "yayinda")
-      .map((g: any) => {
+      .filter((g) => yayinMap.get(g.yayin_id)?.durum === "yayinda")
+      .map((g) => {
         const y = yayinMap.get(g.yayin_id);
         return {
           gonderim_id: g.gonderim_id,
           yayin_id: g.yayin_id,
+          eczane_id: g.eczane_id,
+          eczane_adi: eczaneAdlari.get(g.eczane_id) ?? "(isimsiz eczane)",
           talep_no: y?.talep_no ?? null,
           firma_adi: y?.firma_adi ?? null,
           urun_adi: y?.urun_adi ?? "-",
@@ -80,8 +107,8 @@ export async function GET() {
           video_url: y?.video_url ?? null,
           thumbnail_url: y?.thumbnail_url ?? null,
           gelis_tarihi: g.created_at,
-          izlendi: tamamlananYayin.has(g.yayin_id),
-          cevaplandi: cevaplananYayin.has(g.yayin_id),
+          izlendi: izlemeDurumu.get(g.gonderim_id)?.tamamlandi_mi ?? false,
+          cevaplandi: izlemeDurumu.get(g.gonderim_id)?.cevaplandi_mi ?? false,
         };
       });
 

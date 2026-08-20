@@ -2,7 +2,7 @@
 -- bulunmayanlar; (b) dörtlü kilit kolonlarında NULL. Boş dönüş = temiz.
 WITH beklenen(tablo, tanim) AS (VALUES
   ('yayin_tekrar_kayitlari',      'UNIQUE (yayin_id, tur_no)'),
-  ('eczanem_gonderimler',         'UNIQUE (yayin_id, musteri_id)'),
+  ('eczanem_gonderimler',         'UNIQUE (yayin_id, musteri_id, eczane_id)'),
   ('eczanem_eczane_gonderimleri', 'UNIQUE (yayin_id, eczane_id)'),
   ('eczanem_uyelikler',           'UNIQUE (musteri_id, eczane_id)'),
   ('eczanem_musteriler',          'UNIQUE (telefon)'),
@@ -21,3 +21,17 @@ WHERE NOT EXISTS (
 SELECT 'dortlu_kilit_null' AS tip, kayit_id::text, NULL AS tanim
 FROM eczanem_puan_kayitlari
 WHERE musteri_id IS NULL OR eczane_id IS NULL OR firma_id IS NULL OR urun_id IS NULL;
+
+SELECT 'eksik_kosullu_unique' AS tip,
+       'eczanem_siparisler' AS tablo,
+       'UNIQUE (musteri_id, eczane_id, urun_id) WHERE durum = bekliyor' AS tanim
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM pg_indexes
+  WHERE schemaname = 'public'
+    AND tablename = 'eczanem_siparisler'
+    AND indexname = 'ux_eczanem_siparis_tek_bekleyen'
+    AND indexdef ILIKE '%UNIQUE%'
+    AND indexdef ILIKE '%musteri_id%eczane_id%urun_id%'
+    AND indexdef ILIKE '%durum%bekliyor%'
+);

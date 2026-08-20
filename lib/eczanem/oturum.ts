@@ -5,19 +5,22 @@
 // route'larının ortak girişi olan aktif müşteri çözümünü sağlar.
 
 import { SupabaseClient } from "@supabase/supabase-js";
+import { ECZANEM_KAPALI_MESAJI, musteriEczanemErisimi } from "@/lib/eczanem/erisim";
 
 // auth kullanıcısından aktif müşteri kimliğini çözer (izleme/kazanım
 // route'larının ortak girişi). Pasif/kayıtsız → reddedilir.
 export async function musteriKimligi(
   adminSupabase: SupabaseClient,
   authUserId: string
-): Promise<{ ok: boolean; musteriId?: string; hata?: string }> {
-  const { data, error } = await adminSupabase
-    .from("eczanem_musteriler")
-    .select("musteri_id, aktif_mi")
-    .eq("auth_user_id", authUserId)
-    .maybeSingle();
-  if (error || !data) return { ok: false, hata: "Müşteri kaydınız bulunamadı." };
-  if (!data.aktif_mi) return { ok: false, hata: "Üyeliğiniz aktif değil." };
-  return { ok: true, musteriId: data.musteri_id };
+): Promise<{ ok: boolean; musteriId?: string; firmaIdler?: string[]; eczaneIdler?: string[]; hata?: string }> {
+  const erisim = await musteriEczanemErisimi(adminSupabase, authUserId);
+  if (!erisim.ok) return { ok: false, hata: erisim.hata ?? "Müşteri erişimi doğrulanamadı." };
+  if (!erisim.musteriId) return { ok: false, hata: "Müşteri kaydınız bulunamadı." };
+  if (!erisim.acik) return { ok: false, hata: ECZANEM_KAPALI_MESAJI };
+  return {
+    ok: true,
+    musteriId: erisim.musteriId,
+    firmaIdler: erisim.firmaIdler,
+    eczaneIdler: erisim.eczaneIdler,
+  };
 }

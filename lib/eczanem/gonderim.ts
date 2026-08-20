@@ -5,7 +5,7 @@
 //
 // İlkeler:
 //  - Teklikler YAPISAL: UNIQUE(yayin_id, eczane_id) ve UNIQUE(yayin_id,
-//    musteri_id). Çakışma (23505) hata değil, "zaten gönderilmiş" demektir.
+//    musteri_id, eczane_id). Çakışma (23505) "zaten gönderilmiş" demektir.
 //  - Eşik ön koşulu (İP-§5.2): UTT ekranında gösterilir, gönderimde server
 //    tarafında YENİDEN doğrulanır (istemciye güvenilmez).
 //  - İzlenme takibi YOK (İP-§6.2): gönderim kaydı bildirim/metrik üretmez.
@@ -15,6 +15,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { pushYayinlaEczanemMusterilereArkada } from "@/lib/push/orkestrasyon";
 import { hedefRolleriOku } from "@/lib/utils/roller";
+import { eczaneEczanemFirmaIdleri, eczaneYayinErisimiDogrula } from "@/lib/eczanem/erisim";
 
 // Ayar okunamazsa güvenli geri düşüş (davet.ts DAVET_GECERLILIK deseni).
 // Canlı seed değeri 10; bu sabit yalnız okuma hatasında devreye girer.
@@ -39,14 +40,20 @@ export async function aktifUyeEsigi(adminSupabase: SupabaseClient): Promise<numb
 // ── Ortak yardımcı: yayın kimliklerinden ad haritası (v_yayin_detay) ────────
 async function yayinAdMap(
   adminSupabase: SupabaseClient,
-  yayinIdler: string[]
+  yayinIdler: string[],
+  firmaIdler?: string[],
 ): Promise<Map<string, { urun_adi: string; teknik_adi: string; yayin_tarihi: string | null }>> {
   const map = new Map<string, { urun_adi: string; teknik_adi: string; yayin_tarihi: string | null }>();
   if (yayinIdler.length === 0) return map;
-  const { data } = await adminSupabase
+  let sorgu = adminSupabase
     .from("v_yayin_detay")
     .select("yayin_id, urun_adi, teknik_adi, yayin_tarihi")
     .in("yayin_id", yayinIdler);
+  if (firmaIdler) {
+    if (firmaIdler.length === 0) return map;
+    sorgu = sorgu.in("firma_id", firmaIdler);
+  }
+  const { data } = await sorgu;
   for (const y of data ?? []) {
     map.set((y as any).yayin_id, {
       urun_adi: (y as any).urun_adi ?? "-",
@@ -268,6 +275,8 @@ export interface EczaneUye {
   telefon_maskeli: string;
 }
 
+interface EczaneGonderimSatiri { yayin_id: string; created_at: string; }
+
 function telefonMaskele(telefon: string): string {
   return `••• ••• ${(telefon ?? "").slice(-4)}`;
 }
@@ -283,15 +292,17 @@ export async function eczaneGelenVideolar(
     .eq("eczane_id", eczaneId)
     .order("created_at", { ascending: false });
 
-  const rows = gnd ?? [];
-  const adMap = await yayinAdMap(adminSupabase, [...new Set(rows.map((g: any) => g.yayin_id))]);
-  return rows.map((g: any) => {
-    const ad = adMap.get(g.yayin_id);
+  const rows = (gnd ?? []) as EczaneGonderimSatiri[];
+  const erisim = await eczaneEczanemFirmaIdleri(adminSupabase, eczaneId);
+  if (!erisim.ok || !erisim.acik) return [];
+  const adMap = await yayinAdMap(adminSupabase, [...new Set(rows.map((gonderim) => gonderim.yayin_id))], erisim.firmaIdler);
+  return rows.filter((gonderim) => adMap.has(gonderim.yayin_id)).map((gonderim) => {
+    const ad = adMap.get(gonderim.yayin_id);
     return {
-      yayin_id: g.yayin_id,
+      yayin_id: gonderim.yayin_id,
       urun_adi: ad?.urun_adi ?? "-",
       teknik_adi: ad?.teknik_adi ?? "-",
-      gelis_tarihi: g.created_at,
+      gelis_tarihi: gonderim.created_at,
     };
   });
 }
@@ -330,7 +341,7 @@ export interface MusteriGonderimSonuc {
 
 // Eczane → müşteri gönderimi (İP-§5.5): tekil veya toplu, tek istekte.
 // Kurallar: (1) video eczaneye gerçekten gelmiş olmalı — gelmeyeni dağıtamaz;
-// (2) yalnız bu eczanenin aktif üyesine; (3) UNIQUE(yayin_id, musteri_id)
+// (2) yalnız bu eczanenin aktif üyesine; (3) UNIQUE(yayin_id, musteri_id, eczane_id)
 // çakışmaları sessizce atlanır (zaten gönderilmiş). Atlananlar raporlanır.
 export async function musteriyeGonder(
   adminSupabase: SupabaseClient,
@@ -351,6 +362,10 @@ export async function musteriyeGonder(
     .eq("yayin_id", yayinId)
     .maybeSingle();
   if (!gelen) return { ok: false, hata: "Bu video eczanenize gönderilmemiş.", gonderilen: 0, atlanan: 0 };
+  const yayinErisimi = await eczaneYayinErisimiDogrula(adminSupabase, eczaneId, yayinId);
+  if (!yayinErisimi.ok) {
+    return { ok: false, hata: yayinErisimi.hata ?? "Eczanem erişimi doğrulanamadı.", gonderilen: 0, atlanan: 0 };
+  }
 
   // 2. İstenenlerden bu eczanenin aktif üyesi olanlar
   const { data: uyeler } = await adminSupabase
@@ -366,6 +381,7 @@ export async function musteriyeGonder(
     .from("eczanem_gonderimler")
     .select("musteri_id")
     .eq("yayin_id", yayinId)
+    .eq("eczane_id", eczaneId)
     .in("musteri_id", istenen);
   const gonderilmisSet = new Set((mevcut ?? []).map((g: any) => g.musteri_id));
 

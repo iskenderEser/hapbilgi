@@ -1,7 +1,7 @@
 // app/(panel)/eczanem/eczane/api/musteriler/route.ts
 // Eczacı/teknisyen — eczaneye bağlı müşteriler.
-//   GET    → liste (aktif + pasif; durum eczanem_musteriler.aktif_mi'den)
-//   PUT    → durum değiştir (aktif/pasif = eczanem_musteriler.aktif_mi)
+//   GET    → liste (aktif + pasif; durum eczanem_uyelikler.aktif_mi'den)
+//   PUT    → bu eczanedeki üyelik durumunu değiştir
 //   DELETE → listeden sil (üyelik bağı silinir + eczanem_silinen_musteriler'e log;
 //            müşteri kaydı ve auth hesabı SİLİNMEZ — kalıcı silme yok)
 // Telefon son-4-hane ile maskeli döner (İP-§9.2: görüntüleme katmanı tam numara taşımaz).
@@ -55,54 +55,24 @@ export async function GET() {
     const ctx = await eczaciBaglami(adminSupabase, user.id);
     if ("hata" in ctx) return ctx.hata;
 
-    // Eczanenin üyelik bağları (sil edilenler zaten satır olarak yok).
-    const { data: uyelikler, error: uyelikHatasi } = await adminSupabase
-      .from("eczanem_uyelikler")
-      .select("musteri_id, created_at")
+    // Uygulama görünümü üyelik + müşteri + auth.users e-postasını tek sorguda
+    // birleştirir. Böylece müşteri başına auth.admin.getUserById çağrısı yoktur.
+    const { data: kayitlar, error: listeHatasi } = await adminSupabase
+      .from("v_eczanem_musteri_liste_admin")
+      .select("musteri_id, ad_soyad, telefon, eposta, aktif_mi, created_at")
       .eq("eczane_id", ctx.eczaneId)
       .order("created_at", { ascending: false });
 
-    if (uyelikHatasi) return hataYaniti("Müşteriler çekilemedi.", "eczanem_uyelikler SELECT — eczane_id", uyelikHatasi);
+    if (listeHatasi) return hataYaniti("Müşteriler çekilemedi.", "v_eczanem_musteri_liste_admin SELECT — eczane_id", listeHatasi);
 
-    const musteriIdler = (uyelikler ?? []).map((u) => u.musteri_id);
-    if (musteriIdler.length === 0) return NextResponse.json({ musteriler: [] }, { status: 200 });
-
-    // Bağlı müşterilerin kimliği — pasifler de dahil (durum sütunu için).
-    const { data: kayitlar, error: musteriHatasi } = await adminSupabase
-      .from("eczanem_musteriler")
-      .select("musteri_id, ad_soyad, telefon, aktif_mi, auth_user_id")
-      .in("musteri_id", musteriIdler);
-
-    if (musteriHatasi) return hataYaniti("Müşteriler çekilemedi.", "eczanem_musteriler SELECT — musteri_id", musteriHatasi);
-
-    const kimlikMap = new Map((kayitlar ?? []).map((k) => [k.musteri_id, k]));
-
-    // E-posta eczanem_musteriler'de değil auth.users'da tutulur; auth_user_id'den çekilir.
-    const epostaMap = new Map<string, string | null>();
-    await Promise.all(
-      (kayitlar ?? [])
-        .filter((k) => k.auth_user_id)
-        .map(async (k) => {
-          const { data: authData } = await adminSupabase.auth.admin.getUserById(k.auth_user_id as string);
-          epostaMap.set(k.musteri_id, authData?.user?.email ?? null);
-        })
-    );
-
-    // Bağ sırasını (created_at desc) koru; kimliği olmayanı atla.
-    const musteriler = (uyelikler ?? [])
-      .map((u) => {
-        const k = kimlikMap.get(u.musteri_id);
-        if (!k) return null;
-        return {
-          musteri_id: k.musteri_id,
-          ad_soyad: k.ad_soyad,
-          telefon: telefonMaskele(k.telefon),
-          eposta: epostaMap.get(k.musteri_id) ?? null,
-          aktif_mi: k.aktif_mi,
-          created_at: u.created_at,
-        };
-      })
-      .filter((m): m is NonNullable<typeof m> => m !== null);
+    const musteriler = (kayitlar ?? []).map((kayit) => ({
+      musteri_id: kayit.musteri_id,
+      ad_soyad: kayit.ad_soyad,
+      telefon: telefonMaskele(kayit.telefon),
+      eposta: kayit.eposta ?? null,
+      aktif_mi: kayit.aktif_mi,
+      created_at: kayit.created_at,
+    }));
 
     return NextResponse.json({ musteriler }, { status: 200 });
   } catch (err) {
@@ -126,16 +96,18 @@ export async function PUT(request: NextRequest) {
     if (!musteriId) return validasyonHatasi("musteri_id zorunludur.", ["musteri_id"]);
     if (typeof body?.aktif_mi !== "boolean") return validasyonHatasi("aktif_mi (true/false) zorunludur.", ["aktif_mi"]);
 
-    // Yetki sınırı: müşteri bu eczaneye bağlı olmalı.
-    if (!(await uyelikVarMi(adminSupabase, musteriId, ctx.eczaneId)))
-      return rolHatasi("Bu müşteri listenizde değil.");
-
-    const { error: updateHatasi } = await adminSupabase
-      .from("eczanem_musteriler")
+    // Durum eczane bağına aittir. Aynı müşterinin başka eczanedeki
+    // üyeliği ve genel giriş hesabı bu işlemden etkilenmez.
+    const { data: guncellenenUyelik, error: updateHatasi } = await adminSupabase
+      .from("eczanem_uyelikler")
       .update({ aktif_mi: body.aktif_mi })
-      .eq("musteri_id", musteriId);
+      .eq("musteri_id", musteriId)
+      .eq("eczane_id", ctx.eczaneId)
+      .select("uyelik_id")
+      .maybeSingle();
 
-    if (updateHatasi) return hataYaniti("Durum güncellenemedi.", "eczanem_musteriler UPDATE — aktif_mi", updateHatasi);
+    if (updateHatasi) return hataYaniti("Durum güncellenemedi.", "eczanem_uyelikler UPDATE — aktif_mi", updateHatasi);
+    if (!guncellenenUyelik) return rolHatasi("Bu müşteri listenizde değil.");
 
     return NextResponse.json({ ok: true, mesaj: body.aktif_mi ? "Müşteri aktifleştirildi." : "Müşteri pasife alındı." }, { status: 200 });
   } catch (err) {
@@ -176,27 +148,16 @@ export async function DELETE(request: NextRequest) {
       eposta = authData?.user?.email ?? null;
     }
 
-    // 1) Log: silinen müşteriler tablosuna kayıt (kalıcı silme yok, iz bırakılır).
-    const { error: logHatasi } = await adminSupabase
-      .from("eczanem_silinen_musteriler")
-      .insert({
-        musteri_id: musteri.musteri_id,
-        ad_soyad: musteri.ad_soyad,
-        telefon: musteri.telefon,
-        eposta,
-        eczane_id: ctx.eczaneId,
-        silen_kisi_id: ctx.kisiId,
-      });
-    if (logHatasi) return hataYaniti("Silme kaydı oluşturulamadı.", "eczanem_silinen_musteriler INSERT", logHatasi);
+    // Üyelik bağını silme + silme günlüğü tek PostgreSQL transaction'ında.
+    // RPC içindeki iki adımdan biri hata verirse ikisi de geri alınır.
+    const { error: silHatasi } = await adminSupabase.rpc("eczanem_uyelik_listeden_sil", {
+      p_musteri_id: musteriId,
+      p_eczane_id: ctx.eczaneId,
+      p_silen_kisi_id: ctx.kisiId,
+      p_eposta: eposta,
+    });
 
-    // 2) Üyelik bağını sil (listeden düşer). Müşteri kaydı ve auth hesabı korunur.
-    const { error: silHatasi } = await adminSupabase
-      .from("eczanem_uyelikler")
-      .delete()
-      .eq("musteri_id", musteriId)
-      .eq("eczane_id", ctx.eczaneId);
-
-    if (silHatasi) return hataYaniti("Müşteri listeden silinemedi.", "eczanem_uyelikler DELETE", silHatasi);
+    if (silHatasi) return hataYaniti("Müşteri listeden silinemedi.", "eczanem_uyelik_listeden_sil RPC", silHatasi);
 
     return NextResponse.json({ ok: true, mesaj: "Müşteri listeden silindi." }, { status: 200 });
   } catch (err) {

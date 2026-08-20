@@ -14,6 +14,7 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import { guncelTarife } from "@/lib/eczanem/tarife";
+import { ECZANEM_KAPALI_MESAJI, eczaneEczanemFirmaIdleri } from "@/lib/eczanem/erisim";
 import {
   pushYayinlaEczaneKisilerineArkada,
   pushYayinlaEczanemMusterilereArkada,
@@ -25,13 +26,19 @@ export const PUAN_OMRU_GUN_VARSAYILAN = 180;
 // eczane adı). Ad gln → eclub_eczane_master zinciriyle (ayrı sorgu + Map).
 export async function musteriEczaneleri(
   adminSupabase: SupabaseClient,
-  musteriId: string
+  musteriId: string,
+  izinliEczaneIdler?: string[],
 ): Promise<Array<{ eczane_id: string; eczane_adi: string }>> {
-  const { data: uyelikler } = await adminSupabase
+  let uyelikSorgusu = adminSupabase
     .from("eczanem_uyelikler")
     .select("eczane_id")
     .eq("musteri_id", musteriId)
     .eq("aktif_mi", true);
+  if (izinliEczaneIdler) {
+    if (izinliEczaneIdler.length === 0) return [];
+    uyelikSorgusu = uyelikSorgusu.in("eczane_id", izinliEczaneIdler);
+  }
+  const { data: uyelikler } = await uyelikSorgusu;
 
   const eczaneIdler = [...new Set((uyelikler ?? []).map((u: any) => u.eczane_id))];
   if (eczaneIdler.length === 0) return [];
@@ -135,10 +142,16 @@ export async function barkodHesap(
   // Barkod → ürün
   const { data: urun } = await adminSupabase
     .from("urunler")
-    .select("urun_id, urun_adi")
+    .select("urun_id, urun_adi, firma_id")
     .eq("barkod", temizBarkod)
     .maybeSingle();
   if (!urun) return { ok: false, hata: "Bu barkoda ait Eczanem ürünü bulunamadı." };
+
+  const firmaErisimi = await eczaneEczanemFirmaIdleri(adminSupabase, eczaneId);
+  if (!firmaErisimi.ok) return { ok: false, hata: firmaErisimi.hata ?? "Eczanem erişimi doğrulanamadı." };
+  if (!urun.firma_id || !firmaErisimi.firmaIdler.includes(urun.firma_id)) {
+    return { ok: false, hata: ECZANEM_KAPALI_MESAJI };
+  }
 
   const tarife = await guncelTarife(adminSupabase, urun.urun_id);
   if (!tarife) return { ok: false, hata: "Bu ürünün Karşılık tanımı yok." };
@@ -205,6 +218,11 @@ export async function siparisOlustur(
     .select("siparis_id")
     .single();
 
+  // Asıl yarış koruması DB'deki koşullu UNIQUE indextir. Yukarıdaki kontrol
+  // yalnız hızlı/okunaklı hata içindir; eşzamanlı iki INSERT'ten biri 23505 alır.
+  if (error?.code === "23505") {
+    return { ok: false, hata: "Bu ürün için onay bekleyen bir siparişiniz zaten var." };
+  }
   if (error || !yeni) return { ok: false, hata: "Sipariş oluşturulamadı." };
 
   // Push — K-P3 Eczanem istisnası: eczanenin aktif kişilerine "onay bekliyor".

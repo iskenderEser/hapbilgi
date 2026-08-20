@@ -40,3 +40,38 @@ export function rastgeleSoruSec<T>(
 
   return karisik.slice(0, secilecekAdet);
 }
+
+function metinTohumu(metin: string): number {
+  let sonuc = 2166136261;
+  for (let i = 0; i < metin.length; i += 1) {
+    sonuc ^= metin.charCodeAt(i);
+    sonuc = Math.imul(sonuc, 16777619);
+  }
+  return sonuc >>> 0;
+}
+
+function sonrakiRastgele(durum: { deger: number }): number {
+  let x = durum.deger || 0x9e3779b9;
+  x ^= x << 13;
+  x ^= x >>> 17;
+  x ^= x << 5;
+  durum.deger = x >>> 0;
+  return durum.deger / 0x100000000;
+}
+
+/** Aynı kayıt kimliği için her çağrıda aynı, tekil soru kümesini üretir. */
+export function sabitSoruIndeksleri(
+  toplamSoru: number,
+  gosterilecekSoru: number,
+  kayitId: string
+): number[] {
+  if (toplamSoru <= 0 || gosterilecekSoru <= 0) return [];
+
+  const indeksler = Array.from({ length: toplamSoru }, (_, index) => index);
+  const durum = { deger: metinTohumu(kayitId) };
+  for (let i = indeksler.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(sonrakiRastgele(durum) * (i + 1));
+    [indeksler[i], indeksler[j]] = [indeksler[j], indeksler[i]];
+  }
+  return indeksler.slice(0, Math.min(gosterilecekSoru, toplamSoru));
+}

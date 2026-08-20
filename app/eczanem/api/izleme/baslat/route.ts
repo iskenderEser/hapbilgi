@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { musteriKimligi } from "@/lib/eczanem/oturum";
+import { olayIdGecerliMi } from "@/lib/izleme/baslat";
+import { aktifGonderimUyeliginiDogrula } from "@/lib/eczanem/aktifUyelik";
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,18 +24,21 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { gonderim_id } = body;
     if (!gonderim_id) return validasyonHatasi("gonderim_id zorunludur.", ["gonderim_id"]);
+    if (!olayIdGecerliMi(gonderim_id)) return validasyonHatasi("Geçersiz gönderim kimliği gönderildi.", ["gonderim_id"]);
 
     // Gönderim müşteriye ait mi?
     const { data: gonderim, error: gonderimError } = await adminSupabase
       .from("eczanem_gonderimler")
-      .select("gonderim_id, yayin_id, musteri_id")
+      .select("gonderim_id, yayin_id, musteri_id, eczane_id")
       .eq("gonderim_id", gonderim_id)
       .single();
 
+    if (gonderimError) return hataYaniti("Gönderim sorgulanamadı.", "eczanem_gonderimler SELECT", gonderimError, 404);
     const gonderimKontrol = veriKontrol(gonderim, "eczanem_gonderimler SELECT — gonderim_id", "Gönderim bulunamadı.");
     if (!gonderimKontrol.gecerli) return gonderimKontrol.yanit;
-    if (gonderimError) return hataYaniti("Gönderim sorgulanamadı.", "eczanem_gonderimler SELECT", gonderimError, 404);
     if (gonderim.musteri_id !== musteriId) return rolHatasi("Bu video size gönderilmemiş.");
+    const uyelik = await aktifGonderimUyeliginiDogrula(adminSupabase, musteriId, gonderim.gonderim_id);
+    if (!uyelik.ok) return isKuraluHatasi(uyelik.hata ?? "Bu eczanedeki üyeliğiniz aktif değil.");
 
     // Yayın hâlâ yayında mı?
     const { data: yayin, error: yayinError } = await adminSupabase
@@ -42,22 +47,34 @@ export async function POST(request: NextRequest) {
       .eq("yayin_id", gonderim.yayin_id)
       .single();
 
+    if (yayinError) return hataYaniti("Yayın sorgulanamadı.", "yayin_yonetimi SELECT", yayinError, 404);
     const yayinKontrol = veriKontrol(yayin, "yayin_yonetimi SELECT — yayin_id", "Yayın bulunamadı.");
     if (!yayinKontrol.gecerli) return yayinKontrol.yanit;
-    if (yayinError) return hataYaniti("Yayın sorgulanamadı.", "yayin_yonetimi SELECT", yayinError, 404);
     if (yayin.durum !== "yayinda") return isKuraluHatasi(`Video şu an yayında değil. Mevcut durum: ${yayin.durum}`);
 
-    // Açık (tamamlanmamış) izleme varsa onu döndür (tekrar açma).
-    const { data: acikIzleme } = await adminSupabase
-      .from("eczanem_izleme_kayitlari")
-      .select("izleme_id, yayin_id, gonderim_id, izleme_baslangic")
-      .eq("musteri_id", musteriId)
-      .eq("gonderim_id", gonderim_id)
-      .eq("tamamlandi_mi", false)
-      .maybeSingle();
+    const { data: yayinDetay, error: detayError } = await adminSupabase
+      .from("v_yayin_detay")
+      .select("video_suresi_saniye")
+      .eq("yayin_id", gonderim.yayin_id)
+      .single();
+    if (detayError || !yayinDetay) {
+      return hataYaniti("Yayın detayı alınamadı.", "v_yayin_detay SELECT — Eczanem izleme başlangıcı", detayError, 404);
+    }
+    const videoSuresi = Number(yayinDetay.video_suresi_saniye ?? 0);
+    if (!Number.isFinite(videoSuresi) || videoSuresi <= 0) {
+      return isKuraluHatasi("Video süresi doğrulanmamış.");
+    }
 
-    if (acikIzleme) {
-      return NextResponse.json({ mesaj: "İzleme zaten açık.", izleme: acikIzleme }, { status: 200 });
+    // Tamamlanmış kayıt dahil bu gönderimin tek izleme oturumunu yeniden kullan.
+    const { data: mevcutIzleme, error: mevcutError } = await adminSupabase
+      .from("eczanem_izleme_kayitlari")
+      .select("izleme_id, yayin_id, gonderim_id, izleme_baslangic, tamamlandi_mi")
+      .eq("gonderim_id", gonderim_id)
+      .maybeSingle();
+    if (mevcutError) return hataYaniti("İzleme kaydı sorgulanamadı.", "eczanem_izleme_kayitlari SELECT — gonderim_id", mevcutError);
+
+    if (mevcutIzleme) {
+      return NextResponse.json({ mesaj: "Gönderimin izleme kaydı açıldı.", izleme: mevcutIzleme }, { status: 200 });
     }
 
     const { data: yeniIzleme, error: izlemeError } = await adminSupabase
@@ -68,10 +85,23 @@ export async function POST(request: NextRequest) {
         yayin_id: gonderim.yayin_id,
         tamamlandi_mi: false,
         izleme_baslangic: new Date().toISOString(),
+        video_suresi_saniye: Math.ceil(videoSuresi),
       })
-      .select("izleme_id, yayin_id, gonderim_id, izleme_baslangic")
+      .select("izleme_id, yayin_id, gonderim_id, izleme_baslangic, tamamlandi_mi")
       .single();
 
+    if (izlemeError?.code === "23505") {
+      // Eşzamanlı iki başlangıçta unique kilidini kazanan kaydı döndür.
+      const { data: yaristaOlusan, error: yarisError } = await adminSupabase
+        .from("eczanem_izleme_kayitlari")
+        .select("izleme_id, yayin_id, gonderim_id, izleme_baslangic, tamamlandi_mi")
+        .eq("gonderim_id", gonderim_id)
+        .single();
+      if (yarisError || !yaristaOlusan) {
+        return hataYaniti("İzleme başlatılamadı.", "eczanem_izleme_kayitlari INSERT — eşzamanlı başlangıç", yarisError ?? izlemeError);
+      }
+      return NextResponse.json({ mesaj: "Gönderimin izleme kaydı açıldı.", izleme: yaristaOlusan }, { status: 200 });
+    }
     if (izlemeError) return hataYaniti("İzleme başlatılamadı.", "eczanem_izleme_kayitlari INSERT", izlemeError);
 
     const yeniKontrol = veriKontrol(yeniIzleme, "eczanem_izleme_kayitlari INSERT — dönen veri", "İzleme başlatıldı ancak veri döndürülemedi.");

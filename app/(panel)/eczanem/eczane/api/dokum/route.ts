@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     const periyot = request.nextUrl.searchParams.get("periyot") || "bu_ay";
     const { baslangic, bitis } = tarihAraligi(periyot);
 
-    const dokum = await eczaneDokumu(adminSupabase, eden.eczaneId!, baslangic, bitis);
+    const dokum = await eczaneDokumu(adminSupabase, eden.eczaneId!, baslangic, bitis, eden.firmaIdler);
     return NextResponse.json(dokum, { status: 200 });
   } catch (err) {
     return sunucuHatasi(err, "GET /eczanem/eczane/api/dokum");

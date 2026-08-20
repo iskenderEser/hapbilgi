@@ -29,22 +29,32 @@ export interface KazanimSonuc {
   error?: string;
 }
 
-// Ömür boyu teklik (İP-§5.5): bu müşteri bu YAYINDAN daha önce bu türde
-// (izleme/cevap) kazanım aldı mı? Ledger urun_id tutar, yayin_id tutmaz —
-// bağ izleme_id üzerinden kurulur (müşterinin bu yayına ait izlemeleri).
+// Eczane ekseninde teklik: aynı müşteri/yayın başka bir eczanede bağımsızdır.
+// Ledger yayın tutmadığı için gönderim → izleme köprüsü kullanılır.
 export async function kazanimVarMi(
   adminSupabase: SupabaseClient,
   musteriId: string,
   yayinId: string,
+  eczaneId: string,
   puanTuru: EczanemPuanTuru
 ): Promise<boolean> {
+  const { data: gonderimler } = await adminSupabase
+    .from("eczanem_gonderimler")
+    .select("gonderim_id")
+    .eq("musteri_id", musteriId)
+    .eq("yayin_id", yayinId)
+    .eq("eczane_id", eczaneId);
+  const gonderimIdler = (gonderimler ?? []).map((g) => g.gonderim_id);
+  if (gonderimIdler.length === 0) return false;
+
   const { data: izlemeler } = await adminSupabase
     .from("eczanem_izleme_kayitlari")
     .select("izleme_id")
     .eq("musteri_id", musteriId)
-    .eq("yayin_id", yayinId);
+    .eq("yayin_id", yayinId)
+    .in("gonderim_id", gonderimIdler);
 
-  const izlemeIdler = (izlemeler ?? []).map((i: any) => i.izleme_id);
+  const izlemeIdler = (izlemeler ?? []).map((i) => i.izleme_id);
   if (izlemeIdler.length === 0) return false;
 
   const { data } = await adminSupabase

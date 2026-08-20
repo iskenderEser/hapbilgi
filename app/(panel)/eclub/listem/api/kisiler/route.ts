@@ -13,6 +13,11 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ECLUB_TUKETICI_ROLLERI, ECLUB_GOREN_ROLLER } from "@/lib/utils/roller";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  ECZANEM_MUSTERISI_ECLUB_UYESI_OLAMAZ_MESAJI,
+  eczanemMusterisiTelefonMu,
+} from "@/lib/eczanem/eclubUyesiKontrol";
+import { authTelafisiYap, provizyonBaslat, provizyonDurumuYaz } from "@/lib/kimlik/provizyon";
 
 function epostaGecerliMi(eposta: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(eposta);
@@ -186,6 +191,14 @@ export async function POST(request: NextRequest) {
     const telefonTemiz = telefon.trim();
     if (!telefonGecerliMi(telefonTemiz)) return validasyonHatasi("Telefon 11 haneli sayı olmalıdır.", ["telefon"]);
 
+    const musteriKontrol = await eczanemMusterisiTelefonMu(adminSupabase, telefonTemiz);
+    if (!musteriKontrol.ok) {
+      return hataYaniti("Eczanem müşteri kimliği doğrulanamadı.", "eczanem_musteriler SELECT — E-Club telefon kontrolü", musteriKontrol.hata);
+    }
+    if (musteriKontrol.musteriMi) {
+      return validasyonHatasi(ECZANEM_MUSTERISI_ECLUB_UYESI_OLAMAZ_MESAJI, ["telefon"]);
+    }
+
     // Sahiplik: UTT bu eczaneyi listesine almış mı?
     if (!(await uttEczaneSahipMi(adminSupabase, user.id, eczane_id)))
       return rolHatasi("Bu eczane listenizde değil, kişi ekleyemezsiniz.");
@@ -275,13 +288,17 @@ export async function POST(request: NextRequest) {
 
       kisi_id = mevcutKisi.kisi_id;
 
-      // Eski/yarım kalmış kayıtta Auth bağı yoksa kişi eczaneye bağlanmadan
-      // önce gerçek giriş hesabı oluşturulur. Havuzdaki kanonik kimlik bilgileri
-      // korunur; form verisiyle sessiz kimlik değişikliği yapılmaz.
-      let olusturulanAuthUserId: string | null = null;
+      // Eski/yarım kalmış kayıtta Auth bağı yoksa Auth dış kaynağı ile kimlik+bağ
+      // RPC'si izlenen saga olarak çalışır. RPC içindeki iki DB yazımı atomiktir;
+      // başarısızlıkta Auth telafisinin sonucu provizyon günlüğüne kaydedilir.
       if (!mevcutKisi.auth_user_id) {
         if (!sifre || typeof sifre !== "string" || sifre.length < 6)
           return validasyonHatasi("Giriş hesabı olmayan kişi için en az 6 karakter şifre zorunludur.", ["sifre"]);
+
+        const provizyon = await provizyonBaslat(adminSupabase, "eclub_kisi");
+        if (!provizyon.ok || !provizyon.islemId) {
+          return hataYaniti("Kişi oluşturma işlemi başlatılamadı.", "kimlik_provizyon_islemleri INSERT", provizyon.hata);
+        }
 
         const { data: authData, error: authInsertError } = await adminSupabase.auth.admin.createUser({
           email: mevcutKisi.eposta,
@@ -296,28 +313,45 @@ export async function POST(request: NextRequest) {
         });
 
         if (authInsertError || !authData.user) {
+          await provizyonDurumuYaz(adminSupabase, provizyon.islemId, "basarisiz", { hata: authInsertError?.message ?? "Auth kullanıcısı oluşmadı." });
           const benzersiz = benzersizlikHatasi(authInsertError);
           if (benzersiz) return validasyonHatasi(benzersiz.mesaj, [benzersiz.alan]);
           return hataYaniti("Kişi giriş hesabı oluşturulamadı.", "auth.admin.createUser — mevcut eclub kişi", authInsertError);
         }
 
-        olusturulanAuthUserId = authData.user.id;
-        const { data: baglananKisi, error: authBagError } = await adminSupabase
-          .from("eclub_kisiler")
-          .update({ auth_user_id: olusturulanAuthUserId })
-          .eq("kisi_id", mevcutKisi.kisi_id)
-          .is("auth_user_id", null)
-          .select("kisi_id")
-          .maybeSingle();
+        const olusturulanAuthUserId = authData.user.id;
+        const authKaydi = await provizyonDurumuYaz(adminSupabase, provizyon.islemId, "auth_olustu", { authUserId: olusturulanAuthUserId });
+        if (!authKaydi.ok) {
+          await authTelafisiYap(adminSupabase, provizyon.islemId, olusturulanAuthUserId, authKaydi.hata);
+          return hataYaniti("Kişi oluşturma işlemi kaydedilemedi.", "kimlik_provizyon_islemleri UPDATE — auth_olustu", authKaydi.hata);
+        }
 
-        if (authBagError || !baglananKisi) {
-          await adminSupabase.auth.admin.deleteUser(olusturulanAuthUserId);
+        const { data: baglananKisiId, error: provizyonError } = await adminSupabase.rpc("eclub_mevcut_kisi_provizyonu", {
+          p_kisi_id: mevcutKisi.kisi_id,
+          p_auth_user_id: olusturulanAuthUserId,
+          p_eczane_id: eczane_id,
+        });
+        if (provizyonError || !baglananKisiId) {
+          const telafi = await authTelafisiYap(
+            adminSupabase,
+            provizyon.islemId,
+            olusturulanAuthUserId,
+            provizyonError ?? new Error("Kişi provizyonu sonuç döndürmedi."),
+          );
           return hataYaniti(
-            "Kişi giriş hesabı kimliğe bağlanamadı.",
-            "eclub_kisiler UPDATE — auth_user_id",
-            authBagError ?? new Error("Kişinin Auth bağı eşzamanlı olarak değişti.")
+            telafi.geriAlindi
+              ? "Kişi giriş hesabı kimliğe bağlanamadı; oluşturulan giriş hesabı geri alındı."
+              : "Kişi giriş hesabı kimliğe bağlanamadı; yönetici kontrolü gerekir.",
+            "eclub_mevcut_kisi_provizyonu RPC",
+            telafi.hata ?? provizyonError,
           );
         }
+
+        await provizyonDurumuYaz(adminSupabase, provizyon.islemId, "tamamlandi", {
+          authUserId: olusturulanAuthUserId,
+          hedefKayitId: String(baglananKisiId),
+        });
+        return NextResponse.json({ mesaj: "Kişi başarıyla eklendi.", kisi_id }, { status: 201 });
       }
 
       // Mevcut kişi için yeni eczane bağı oluştur.
@@ -325,49 +359,18 @@ export async function POST(request: NextRequest) {
         .from("eclub_kisi_eczane")
         .insert({ kisi_id, eczane_id, aktif_mi: true });
 
-      if (bagError) {
-        if (olusturulanAuthUserId) {
-          // Bağ kurulamadıysa bu istekte yaratılan Auth bağını da geri al.
-          const { error: kimlikGeriAlmaError } = await adminSupabase
-            .from("eclub_kisiler")
-            .update({ auth_user_id: null })
-            .eq("kisi_id", kisi_id)
-            .eq("auth_user_id", olusturulanAuthUserId);
-
-          if (kimlikGeriAlmaError) {
-            return hataYaniti(
-              "Kişi eczaneye bağlanamadı ve giriş hesabı bağlantısı geri alınamadı; yönetici kontrolü gerekir.",
-              "eclub_kisi_eczane INSERT + eclub_kisiler geri alma",
-              kimlikGeriAlmaError
-            );
-          }
-
-          const { error: authGeriAlmaError } = await adminSupabase.auth.admin.deleteUser(olusturulanAuthUserId);
-          if (authGeriAlmaError) {
-            // Auth silinemediyse kimliği yeniden bağlayarak iki kaynağın ayrışmasını önle.
-            const { error: yenidenBaglamaError } = await adminSupabase
-              .from("eclub_kisiler")
-              .update({ auth_user_id: olusturulanAuthUserId })
-              .eq("kisi_id", kisi_id)
-              .is("auth_user_id", null);
-            return hataYaniti(
-              yenidenBaglamaError
-                ? "Kişi eczaneye bağlanamadı ve giriş hesabı geri alınamadı; yönetici kontrolü gerekir."
-                : "Kişi eczaneye bağlanamadı; giriş hesabı korunarak işlem durduruldu.",
-              "eclub_kisi_eczane INSERT + auth geri alma",
-              yenidenBaglamaError ?? authGeriAlmaError
-            );
-          }
-        }
-        return hataYaniti("Kişi eczaneye bağlanamadı.", "eclub_kisi_eczane INSERT", bagError);
-      }
+      if (bagError) return hataYaniti("Kişi eczaneye bağlanamadı.", "eclub_kisi_eczane INSERT", bagError);
 
       return NextResponse.json({ mesaj: "Kişi başarıyla eklendi.", kisi_id }, { status: 201 });
     } else {
-      // Havuzda yok → yeni kimlik. Önce Supabase auth hesabı, sonra eclub_kisiler.
-      // Şifre yeni kişi ve Auth hesabı eksik eski kişi için zorunludur.
+      // Havuzda yok → Auth dış kaynağı + atomik kimlik/bağ RPC'si.
       if (!sifre || typeof sifre !== "string" || sifre.length < 6)
         return validasyonHatasi("Yeni kişi için en az 6 karakter şifre zorunludur.", ["sifre"]);
+
+      const provizyon = await provizyonBaslat(adminSupabase, "eclub_kisi");
+      if (!provizyon.ok || !provizyon.islemId) {
+        return hataYaniti("Kişi oluşturma işlemi başlatılamadı.", "kimlik_provizyon_islemleri INSERT", provizyon.hata);
+      }
 
       const { data: authData, error: authInsertError } = await adminSupabase.auth.admin.createUser({
         email: epostaTemiz,
@@ -377,38 +380,43 @@ export async function POST(request: NextRequest) {
       });
 
       if (authInsertError || !authData.user) {
+        await provizyonDurumuYaz(adminSupabase, provizyon.islemId, "basarisiz", { hata: authInsertError?.message ?? "Auth kullanıcısı oluşmadı." });
         const benzersiz = benzersizlikHatasi(authInsertError);
         if (benzersiz) return validasyonHatasi(benzersiz.mesaj, [benzersiz.alan]);
         return hataYaniti("Kişi auth hesabı oluşturulamadı.", "auth.admin.createUser — eclub kişi", authInsertError);
       }
 
       const authUserId = authData.user.id;
+      const authKaydi = await provizyonDurumuYaz(adminSupabase, provizyon.islemId, "auth_olustu", { authUserId });
+      if (!authKaydi.ok) {
+        await authTelafisiYap(adminSupabase, provizyon.islemId, authUserId, authKaydi.hata);
+        return hataYaniti("Kişi oluşturma işlemi kaydedilemedi.", "kimlik_provizyon_islemleri UPDATE — auth_olustu", authKaydi.hata);
+      }
 
-      const { data: yeniKisi, error: kisiInsertError } = await adminSupabase
-        .from("eclub_kisiler")
-        .insert({ rol: rolTemiz, ad: ad.trim(), soyad: soyad.trim(), eposta: epostaTemiz, telefon: telefonTemiz, auth_user_id: authUserId })
-        .select("kisi_id")
-        .single();
-
-      if (kisiInsertError || !yeniKisi) {
-        // Rollback: kimlik yazılamadıysa auth kaydını geri al (yetim auth kalmasın).
-        await adminSupabase.auth.admin.deleteUser(authUserId);
+      const { data: yeniKisiId, error: kisiInsertError } = await adminSupabase.rpc("eclub_yeni_kisi_provizyonu", {
+        p_rol: rolTemiz,
+        p_ad: ad.trim(),
+        p_soyad: soyad.trim(),
+        p_eposta: epostaTemiz,
+        p_telefon: telefonTemiz,
+        p_auth_user_id: authUserId,
+        p_eczane_id: eczane_id,
+      });
+      if (kisiInsertError || !yeniKisiId) {
+        const telafi = await authTelafisiYap(adminSupabase, provizyon.islemId, authUserId, kisiInsertError ?? new Error("Kişi provizyonu sonuç döndürmedi."));
+        if (telafi.geriAlindi && kisiInsertError?.message?.includes("Eczanem müşterisi")) {
+          return validasyonHatasi(ECZANEM_MUSTERISI_ECLUB_UYESI_OLAMAZ_MESAJI, ["telefon"]);
+        }
         const benzersiz = benzersizlikHatasi(kisiInsertError);
-        if (benzersiz) return validasyonHatasi(benzersiz.mesaj, [benzersiz.alan]);
-        return hataYaniti("Kişi kaydedilemedi.", "eclub_kisiler INSERT", kisiInsertError);
+        if (benzersiz && telafi.geriAlindi) return validasyonHatasi(benzersiz.mesaj, [benzersiz.alan]);
+        return hataYaniti(
+          telafi.geriAlindi ? "Kişi kaydedilemedi; oluşturulan giriş hesabı geri alındı." : "Kişi kaydedilemedi; yönetici kontrolü gerekir.",
+          "eclub_yeni_kisi_provizyonu RPC",
+          telafi.hata ?? kisiInsertError,
+        );
       }
-      kisi_id = yeniKisi.kisi_id;
-
-      // Kişi-eczane bağı oluştur (aktif). Başarısızsa hem kimlik hem auth geri alınır.
-      const { error: yeniBagError } = await adminSupabase
-        .from("eclub_kisi_eczane")
-        .insert({ kisi_id, eczane_id, aktif_mi: true });
-
-      if (yeniBagError) {
-        await adminSupabase.from("eclub_kisiler").delete().eq("kisi_id", kisi_id);
-        await adminSupabase.auth.admin.deleteUser(authUserId);
-        return hataYaniti("Kişi eczaneye bağlanamadı.", "eclub_kisi_eczane INSERT — yeni kişi", yeniBagError);
-      }
+      kisi_id = String(yeniKisiId);
+      await provizyonDurumuYaz(adminSupabase, provizyon.islemId, "tamamlandi", { authUserId, hedefKayitId: kisi_id });
 
       return NextResponse.json({ mesaj: "Kişi başarıyla eklendi.", kisi_id }, { status: 201 });
     }
@@ -503,6 +511,13 @@ export async function PUT(request: NextRequest) {
       if (typeof telefon !== "string" || telefon.trim().length === 0) return validasyonHatasi("Telefon zorunludur.", ["telefon"]);
       const telefonTemiz = telefon.trim();
       if (!telefonGecerliMi(telefonTemiz)) return validasyonHatasi("Telefon 11 haneli sayı olmalıdır.", ["telefon"]);
+      const musteriKontrol = await eczanemMusterisiTelefonMu(adminSupabase, telefonTemiz);
+      if (!musteriKontrol.ok) {
+        return hataYaniti("Eczanem müşteri kimliği doğrulanamadı.", "eczanem_musteriler SELECT — E-Club telefon güncelleme kontrolü", musteriKontrol.hata);
+      }
+      if (musteriKontrol.musteriMi) {
+        return validasyonHatasi(ECZANEM_MUSTERISI_ECLUB_UYESI_OLAMAZ_MESAJI, ["telefon"]);
+      }
       guncellenecek.telefon = telefonTemiz;
     }
 

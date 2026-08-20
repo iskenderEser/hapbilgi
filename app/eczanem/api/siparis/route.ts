@@ -8,6 +8,21 @@ import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isK
 import { musteriKimligi } from "@/lib/eczanem/oturum";
 import { musteriEczaneleri, siparisOlustur } from "@/lib/eczanem/kasa";
 
+interface SiparisSatiri {
+  siparis_id: string;
+  eczane_id: string;
+  urun_id: string;
+  adet: number;
+  kullanilan_puan: number;
+  indirim_tl: number | string;
+  durum: string;
+  islem_kodu: string | null;
+  onay_tarihi: string | null;
+  created_at: string;
+}
+
+interface UrunSatiri { urun_id: string; urun_adi: string; firma_id: string; }
+
 export async function GET() {
   try {
     const supabase = await createClient();
@@ -19,7 +34,7 @@ export async function GET() {
     if (!kimlik.ok) return rolHatasi(kimlik.hata ?? "Müşteri doğrulanamadı.");
     const musteriId = kimlik.musteriId!;
 
-    const eczaneler = await musteriEczaneleri(adminSupabase, musteriId);
+    const eczaneler = await musteriEczaneleri(adminSupabase, musteriId, kimlik.eczaneIdler);
 
     const { data: siparislerRaw, error: sError } = await adminSupabase
       .from("eczanem_siparisler")
@@ -30,26 +45,32 @@ export async function GET() {
 
     if (sError) return hataYaniti("Siparişler çekilemedi.", "eczanem_siparisler SELECT — musteri_id", sError);
 
-    const rows = siparislerRaw ?? [];
-    const urunIdler = [...new Set(rows.map((s: any) => s.urun_id))];
+    const rows = (siparislerRaw ?? []) as SiparisSatiri[];
+    const urunIdler = [...new Set(rows.map((siparis) => siparis.urun_id))];
     const urunAd = new Map<string, string>();
+    const izinliUrunIdler = new Set<string>();
     if (urunIdler.length > 0) {
-      const { data: urunler } = await adminSupabase.from("urunler").select("urun_id, urun_adi").in("urun_id", urunIdler);
-      for (const u of urunler ?? []) urunAd.set((u as any).urun_id, (u as any).urun_adi);
+      const { data: urunler } = await adminSupabase.from("urunler").select("urun_id, urun_adi, firma_id").in("urun_id", urunIdler);
+      for (const urunRaw of urunler ?? []) {
+        const urun = urunRaw as UrunSatiri;
+        if (!kimlik.firmaIdler!.includes(urun.firma_id)) continue;
+        urunAd.set(urun.urun_id, urun.urun_adi);
+        izinliUrunIdler.add(urun.urun_id);
+      }
     }
     const eczaneAd = new Map(eczaneler.map((e) => [e.eczane_id, e.eczane_adi]));
 
-    const siparisler = rows.map((s: any) => ({
-      siparis_id: s.siparis_id,
-      urun_adi: urunAd.get(s.urun_id) ?? "-",
-      eczane_adi: eczaneAd.get(s.eczane_id) ?? "-",
-      adet: s.adet,
-      kullanilan_puan: s.kullanilan_puan,
-      indirim_tl: Number(s.indirim_tl),
-      durum: s.durum,
-      islem_kodu: s.islem_kodu,
-      onay_tarihi: s.onay_tarihi,
-      created_at: s.created_at,
+    const siparisler = rows.filter((siparis) => izinliUrunIdler.has(siparis.urun_id)).map((siparis) => ({
+      siparis_id: siparis.siparis_id,
+      urun_adi: urunAd.get(siparis.urun_id) ?? "-",
+      eczane_adi: eczaneAd.get(siparis.eczane_id) ?? "-",
+      adet: siparis.adet,
+      kullanilan_puan: siparis.kullanilan_puan,
+      indirim_tl: Number(siparis.indirim_tl),
+      durum: siparis.durum,
+      islem_kodu: siparis.islem_kodu,
+      onay_tarihi: siparis.onay_tarihi,
+      created_at: siparis.created_at,
     }));
 
     return NextResponse.json({ eczaneler, siparisler }, { status: 200 });

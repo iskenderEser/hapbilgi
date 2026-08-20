@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { ADMIN_ROLLER, ECLUB_TUKETICI_ROLLERI, MUSTERI_ROLU, TUKETICI_ROLLER, URETICI_ROLLER, YAYINDAKI_VIDEO_GORENLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { eclubKisiErisimi } from "@/lib/eclub/kisiErisim";
+import { ECZANEM_KAPALI_MESAJI, eczanemRolErisimi } from "@/lib/eczanem/erisim";
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -384,10 +385,10 @@ export async function proxy(request: NextRequest) {
   // -------------------------------------------------------------------------
 
   // --- Eczanem bekçisi (beşinci) --------------------------------------------
-  // Eczanem bağımsız modüldür ve ROL tabanlı korunur: ne müşterinin ne
-  // eczacının firma_id'si vardır, bu yüzden diğer bekçilerdeki firma-bayrağı
-  // deseni burada uygulanamaz (eczanem_aktif bayrağı UTT ekranlarında, iç
-  // uygulama tarafında devreye girer). Rol, tek kaynak rolCozucu'dan okunur.
+  // Önce rol, ardından rolün ilişki zincirindeki firmalar doğrulanır. UTT kendi
+  // firmasından; eczacı aktif eczane→firma; müşteri aktif üyelik→eczane→firma
+  // zincirinden geçer. Böylece admin toggle'ı yalnız pill'i gizlemez, doğrudan
+  // sayfa/API erişimini de sunucuda kapatır.
   //
   // İki dal — sıralama kritiktir (/eclub/store dersi): önce özel prefix
   // /eczanem/eczane (eczacı/teknisyen, E-Club oturumu), sonra genel /eczanem
@@ -420,9 +421,11 @@ export async function proxy(request: NextRequest) {
         process.env.SUPABASE_SERVICE_ROLE_KEY!
       );
       const rol = await rolCozucu(eczanemSupabase, user.id);
+      let rolUygun = true;
 
       if (eczaneDali) {
         if (!ECLUB_TUKETICI_ROLLERI.includes(rol)) {
+          rolUygun = false;
           if (apiYolu) {
             return NextResponse.json({ error: "Bu bölüm eczacı/teknisyene açıktır." }, { status: 403 });
           }
@@ -430,6 +433,7 @@ export async function proxy(request: NextRequest) {
         }
       } else if (uttDali) {
         if (!TUKETICI_ROLLER.includes(rol)) {
+          rolUygun = false;
           if (apiYolu) {
             return NextResponse.json({ error: "Bu bölüm UTT'ye açıktır." }, { status: 403 });
           }
@@ -438,6 +442,7 @@ export async function proxy(request: NextRequest) {
           );
         }
       } else if (rol !== MUSTERI_ROLU) {
+        rolUygun = false;
         if (apiYolu) {
           return NextResponse.json({ error: "Bu bölüm Eczanem üyelerine açıktır." }, { status: 403 });
         }
@@ -445,7 +450,23 @@ export async function proxy(request: NextRequest) {
           new URL(ECLUB_TUKETICI_ROLLERI.includes(rol) ? "/eczanem/eczane" : "/ana-sayfa", request.url)
         );
       }
-      // Rol uygun → geç
+
+      // KVKK tam silme ve kapalı-bilgi ekranı firma modülü kapalı olsa bile
+      // erişilebilir kalır; müşteri giriş→panel yönlendirmesi döngüye girmez.
+      const modulKapisiMuaf =
+        pathname.startsWith("/eczanem/api/hesabimi-sil") ||
+        pathname.startsWith("/eczanem/kapali");
+      if (rolUygun && !modulKapisiMuaf) {
+        const erisim = await eczanemRolErisimi(eczanemSupabase, user.id, rol);
+        if (!erisim.ok) {
+          if (apiYolu) return NextResponse.json({ error: erisim.hata ?? "Eczanem erişimi doğrulanamadı." }, { status: 500 });
+          return NextResponse.redirect(new URL(icUygulamaDali ? "/profil" : "/eczanem/kapali", request.url));
+        }
+        if (!erisim.acik) {
+          if (apiYolu) return NextResponse.json({ error: ECZANEM_KAPALI_MESAJI }, { status: 403 });
+          return NextResponse.redirect(new URL(icUygulamaDali ? "/profil" : "/eczanem/kapali", request.url));
+        }
+      }
     }
   }
   // -------------------------------------------------------------------------

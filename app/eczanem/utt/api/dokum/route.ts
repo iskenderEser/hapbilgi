@@ -5,11 +5,12 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
+import { sunucuHatasi, yetkiHatasi, rolHatasi, hataYaniti } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { tarihAraligi } from "@/lib/utils/tarihAraligi";
 import { uttDokumu } from "@/lib/eczanem/dokum";
+import { ECZANEM_KAPALI_MESAJI, uttEczanemErisimi } from "@/lib/eczanem/erisim";
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,6 +21,9 @@ export async function GET(request: NextRequest) {
 
     const rol = await rolCozucu(adminSupabase, user.id);
     if (!TUKETICI_ROLLER.includes(rol)) return rolHatasi("Bu sayfaya yalnız UTT erişebilir.");
+    const erisim = await uttEczanemErisimi(adminSupabase, user.id);
+    if (!erisim.ok) return hataYaniti(erisim.hata ?? "Firma erişimi doğrulanamadı.", "Eczanem UTT firma kapısı", null);
+    if (!erisim.acik) return rolHatasi(ECZANEM_KAPALI_MESAJI);
 
     const periyot = request.nextUrl.searchParams.get("periyot") || "bu_ay";
     const { baslangic, bitis } = tarihAraligi(periyot);

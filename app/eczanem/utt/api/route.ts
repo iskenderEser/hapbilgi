@@ -9,20 +9,7 @@ import { sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi,
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { uttEczanemVerisi, eczaneyeGonder } from "@/lib/eczanem/gonderim";
-
-// UTT'nin takımını çözer (kullanici_id = auth id).
-async function uttTakimi(
-  adminSupabase: ReturnType<typeof createAdminClient>,
-  authUserId: string
-): Promise<{ ok: boolean; takimId?: string | null; hata?: string }> {
-  const { data: kullanici, error } = await adminSupabase
-    .from("kullanicilar")
-    .select("kullanici_id, takim_id")
-    .eq("kullanici_id", authUserId)
-    .maybeSingle();
-  if (error || !kullanici) return { ok: false, hata: "Kullanıcı kaydınız bulunamadı." };
-  return { ok: true, takimId: kullanici.takim_id ?? null };
-}
+import { ECZANEM_KAPALI_MESAJI, uttEczanemErisimi } from "@/lib/eczanem/erisim";
 
 export async function GET() {
   try {
@@ -35,10 +22,11 @@ export async function GET() {
     const rol = await rolCozucu(adminSupabase, user.id);
     if (!TUKETICI_ROLLER.includes(rol)) return rolHatasi("Bu sayfaya yalnız UTT erişebilir.");
 
-    const takim = await uttTakimi(adminSupabase, user.id);
-    if (!takim.ok) return hataYaniti(takim.hata ?? "Takım bulunamadı.", "kullanicilar SELECT — takim_id", null, 404);
+    const erisim = await uttEczanemErisimi(adminSupabase, user.id);
+    if (!erisim.ok) return hataYaniti(erisim.hata ?? "Firma erişimi doğrulanamadı.", "Eczanem UTT firma kapısı", null);
+    if (!erisim.acik) return rolHatasi(ECZANEM_KAPALI_MESAJI);
 
-    const veri = await uttEczanemVerisi(adminSupabase, user.id, takim.takimId ?? null);
+    const veri = await uttEczanemVerisi(adminSupabase, user.id, erisim.takimId ?? null);
     return NextResponse.json(veri, { status: 200 });
   } catch (err) {
     return sunucuHatasi(err, "GET /eczanem/utt/api");
@@ -55,6 +43,9 @@ export async function POST(request: NextRequest) {
 
     const rol = await rolCozucu(adminSupabase, user.id);
     if (!TUKETICI_ROLLER.includes(rol)) return rolHatasi("Sadece UTT gönderim yapabilir.");
+    const erisim = await uttEczanemErisimi(adminSupabase, user.id);
+    if (!erisim.ok) return hataYaniti(erisim.hata ?? "Firma erişimi doğrulanamadı.", "Eczanem UTT firma kapısı", null);
+    if (!erisim.acik) return rolHatasi(ECZANEM_KAPALI_MESAJI);
 
     const body = await request.json();
     const yayinId = body?.yayin_id;

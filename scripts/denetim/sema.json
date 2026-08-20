@@ -1,7 +1,7 @@
 {
-  "uretim_tarihi": "2026-08-20T14:39:24.695Z",
-  "tablo_sayisi": 103,
-  "rpc_sayisi": 92,
+  "uretim_tarihi": "2026-08-20T20:59:22.546Z",
+  "tablo_sayisi": 106,
+  "rpc_sayisi": 105,
   "tablolar": {
     "bildirimler": {
       "tur": "BASE TABLE",
@@ -1272,6 +1272,18 @@
         "izleme_bitis": {
           "tip": "timestamp with time zone",
           "nullable": true
+        },
+        "video_suresi_saniye": {
+          "tip": "integer",
+          "nullable": true
+        },
+        "soru_indeksleri": {
+          "tip": "ARRAY",
+          "nullable": true
+        },
+        "cevaplandi_mi": {
+          "tip": "boolean",
+          "nullable": false
         }
       }
     },
@@ -1497,6 +1509,23 @@
         },
         "aktif_mi": {
           "tip": "boolean",
+          "nullable": false
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        }
+      }
+    },
+    "egitimler": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "egitim_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "egitim_adi": {
+          "tip": "text",
           "nullable": false
         },
         "created_at": {
@@ -1901,6 +1930,43 @@
         },
         "urun_id": {
           "tip": "uuid",
+          "nullable": true
+        }
+      }
+    },
+    "kimlik_provizyon_islemleri": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "islem_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "hedef": {
+          "tip": "text",
+          "nullable": false
+        },
+        "durum": {
+          "tip": "text",
+          "nullable": false
+        },
+        "auth_user_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "hedef_kayit_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "hata": {
+          "tip": "text",
+          "nullable": true
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        },
+        "tamamlandi_at": {
+          "tip": "timestamp with time zone",
           "nullable": true
         }
       }
@@ -2695,6 +2761,14 @@
         "hedef_roller": {
           "tip": "ARRAY",
           "nullable": false
+        },
+        "egitim_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "talep_no_goster": {
+          "tip": "text",
+          "nullable": true
         }
       }
     },
@@ -3073,6 +3147,39 @@
           "nullable": true
         },
         "izleme_tarihi": {
+          "tip": "timestamp with time zone",
+          "nullable": true
+        }
+      }
+    },
+    "v_eczanem_musteri_liste_admin": {
+      "tur": "VIEW",
+      "kolonlar": {
+        "eczane_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "musteri_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "ad_soyad": {
+          "tip": "character varying",
+          "nullable": true
+        },
+        "telefon": {
+          "tip": "character varying",
+          "nullable": true
+        },
+        "eposta": {
+          "tip": "text",
+          "nullable": true
+        },
+        "aktif_mi": {
+          "tip": "boolean",
+          "nullable": true
+        },
+        "created_at": {
           "tip": "timestamp with time zone",
           "nullable": true
         }
@@ -4348,6 +4455,10 @@
       "argumanlar": "p_izleme_id uuid, p_kisi_id uuid, p_tur_baslangic timestamp with time zone, p_soru_indeksleri integer[]",
       "donus": "TABLE(yeni_tamamlandi boolean, puan_kazanildi boolean, izleme_puani integer, soru_gosterilecek boolean, soru_hakki_nedeni text)"
     },
+    "eclub_mevcut_kisi_provizyonu": {
+      "argumanlar": "p_kisi_id uuid, p_auth_user_id uuid, p_eczane_id uuid",
+      "donus": "uuid"
+    },
     "eclub_oneri_atomik_kaydet": {
       "argumanlar": "p_yayin_id uuid, p_oneren_id uuid, p_kisi_id uuid, p_video_id uuid, p_oneri_baslangic timestamp with time zone, p_oneri_bitis timestamp with time zone",
       "donus": "TABLE(oneri_id uuid, kaydedildi boolean, sebep text, yeniden_gonderilebilir_at timestamp with time zone)"
@@ -4368,9 +4479,41 @@
       "argumanlar": "p_islem text",
       "donus": "jsonb"
     },
+    "eclub_yeni_kisi_provizyonu": {
+      "argumanlar": "p_rol text, p_ad text, p_soyad text, p_eposta text, p_telefon text, p_auth_user_id uuid, p_eczane_id uuid",
+      "donus": "uuid"
+    },
+    "eczanem_cevaplari_kaydet": {
+      "argumanlar": "p_izleme_id uuid, p_musteri_id uuid, p_sonuclar jsonb",
+      "donus": "TABLE(kazanilan_puan integer)"
+    },
+    "eczanem_izleme_aktif_uyelik_kapisi": {
+      "argumanlar": "",
+      "donus": "trigger"
+    },
+    "eczanem_izleme_tamamla": {
+      "argumanlar": "p_izleme_id uuid, p_musteri_id uuid, p_soru_indeksleri integer[]",
+      "donus": "TABLE(yeni_tamamlandi boolean, puan_kazanildi boolean, izleme_puani integer, soru_gosterilecek boolean)"
+    },
+    "eczanem_musteri_kendini_tam_sil": {
+      "argumanlar": "p_musteri_id uuid, p_auth_user_id uuid",
+      "donus": "boolean"
+    },
+    "eczanem_puan_aktif_uyelik_kapisi": {
+      "argumanlar": "",
+      "donus": "trigger"
+    },
     "eczanem_siparis_onayla": {
       "argumanlar": "p_siparis_id uuid",
       "donus": "TABLE(ok boolean, hata text, islem_kodu text, indirim_tl numeric, kullanilan_puan integer)"
+    },
+    "eczanem_uyelik_listeden_sil": {
+      "argumanlar": "p_musteri_id uuid, p_eczane_id uuid, p_silen_kisi_id uuid, p_eposta text",
+      "donus": "boolean"
+    },
+    "eczanem_yeni_musteri_provizyonu": {
+      "argumanlar": "p_telefon text, p_ad_soyad text, p_auth_user_id uuid, p_eczane_id uuid",
+      "donus": "uuid"
     },
     "firma_no_ata": {
       "argumanlar": "",
@@ -4572,6 +4715,14 @@
       "argumanlar": "p_firma_id uuid",
       "donus": "TABLE(konu_adi text, icerik_turu text, uretilen_video_sayisi integer, kendi_izleme_sayisi integer, oneri_sayisi integer, extra_izleme_sayisi integer, toplam_izleme_sayisi integer)"
     },
+    "hapbilgi_kimlik_telefon_ayir_trg": {
+      "argumanlar": "",
+      "donus": "trigger"
+    },
+    "hapbilgi_telefon_normalize": {
+      "argumanlar": "p_telefon text",
+      "donus": "text"
+    },
     "hb_ligi_ozet_v2_guncelle": {
       "argumanlar": "",
       "donus": "trigger"
@@ -4609,6 +4760,14 @@
       "donus": "TABLE(ok boolean, hata text)"
     },
     "talep_no_ata": {
+      "argumanlar": "",
+      "donus": "trigger"
+    },
+    "talep_no_goster_ata": {
+      "argumanlar": "",
+      "donus": "trigger"
+    },
+    "talep_no_goster_firma_sync": {
       "argumanlar": "",
       "donus": "trigger"
     },
@@ -5198,24 +5357,24 @@
     ],
     "iu_genel_atamalari": [
       {
+        "kaynak_kolon": "atayan_id",
+        "hedef_tablo": "kullanicilar",
+        "hedef_kolon": "kullanici_id"
+      },
+      {
         "kaynak_kolon": "pasife_alan_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
         "kaynak_kolon": "iu_id",
-        "hedef_tablo": "kullanicilar",
-        "hedef_kolon": "kullanici_id"
-      },
-      {
-        "kaynak_kolon": "atayan_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       }
     ],
     "iu_urun_atamalari": [
       {
-        "kaynak_kolon": "iu_id",
+        "kaynak_kolon": "atayan_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
@@ -5225,7 +5384,7 @@
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "atayan_id",
+        "kaynak_kolon": "iu_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
@@ -5465,6 +5624,11 @@
       }
     ],
     "talepler": [
+      {
+        "kaynak_kolon": "egitim_id",
+        "hedef_tablo": "egitimler",
+        "hedef_kolon": "egitim_id"
+      },
       {
         "kaynak_kolon": "firma_id",
         "hedef_tablo": "firmalar",

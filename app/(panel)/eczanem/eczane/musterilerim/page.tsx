@@ -39,6 +39,8 @@ export default function EczanemMusterilerimPage() {
   const [kSifre, setKSifre] = useState("");
   const [kSifreGoster, setKSifreGoster] = useState(false);
   const [kGonderiliyor, setKGonderiliyor] = useState(false);
+  const [baglaTel, setBaglaTel] = useState("");
+  const [baglaniyor, setBaglaniyor] = useState(false);
 
   // Müşteri listesi.
   const [musteriler, setMusteriler] = useState<MusteriSatiri[]>([]);
@@ -59,6 +61,26 @@ export default function EczanemMusterilerimPage() {
   }, [hata]);
 
   useEffect(() => { musterileriCek(); }, [musterileriCek]);
+
+  const kayitliMusteriyiBagla = async () => {
+    setBaglaniyor(true);
+    try {
+      const res = await fetch("/eczanem/eczane/api/musteri-ekle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ islem: "bagla", telefon: baglaTel }),
+      });
+      const data = await res.json();
+      if (!res.ok) { hata(data.hata ?? "Müşteri bağlanamadı.", "kayıtlı müşteri bağı"); return; }
+      basari(data.mesaj ?? "Kayıtlı müşteri eczanenize bağlandı.");
+      setBaglaTel("");
+      void musterileriCek();
+    } catch {
+      hata("Müşteri bağlanamadı.", "kayıtlı müşteri bağı");
+    } finally {
+      setBaglaniyor(false);
+    }
+  };
 
   const musteriKaydet = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,7 +149,36 @@ export default function EczanemMusterilerimPage() {
         aciklama="Sözlü rızasını aldığınız müşterilerinizi kaydedin; kayıtlı müşterilerinizi görüntüleyin."
       />
 
-      {/* Üst: müşteri kayıt kartı */}
+      {/* Üst: kayıtlı müşteriyi bağlama */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="text-sm font-semibold text-gray-700 mb-2">Kayıtlı Müşteriyi Eczaneme Bağla</div>
+        <div className="text-xs text-gray-500 mb-4">
+          Müşteri daha önce başka bir eczanede kaydolduysa yalnız cep telefonuyla eczanenize bağlayın. Mevcut e-posta ve şifresi değişmez.
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <input
+            type="tel"
+            inputMode="numeric"
+            maxLength={11}
+            value={baglaTel}
+            onChange={(e) => setBaglaTel(e.target.value.replace(/\D/g, ""))}
+            placeholder="05XXXXXXXXX"
+            aria-label="Kayıtlı müşteri cep telefonu"
+            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          />
+          <button
+            type="button"
+            onClick={kayitliMusteriyiBagla}
+            disabled={baglaniyor || baglaTel.length !== 11}
+            className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
+            style={{ background: "#b45309" }}
+          >
+            {baglaniyor ? "Bağlanıyor…" : "Kayıtlı Müşteriyi Bağla"}
+          </button>
+        </div>
+      </div>
+
+      {/* Yeni müşteri kayıt kartı */}
       <form onSubmit={musteriKaydet} className="bg-white rounded-xl border border-gray-200 p-5">
         <div className="text-sm font-semibold text-gray-700 mb-2">Yeni Müşteri Kaydı</div>
         <div className="text-xs text-gray-500 mb-4">
@@ -229,7 +280,6 @@ export default function EczanemMusterilerimPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs font-semibold text-gray-500 border-b border-gray-200">
-                  <th className="py-2 pr-3 font-semibold whitespace-nowrap">Müşteri Numarası</th>
                   <th className="py-2 pr-3 font-semibold">Müşteri</th>
                   <th className="py-2 pr-3 font-semibold">Cep Tel</th>
                   <th className="py-2 pr-3 font-semibold">E-posta</th>
@@ -240,7 +290,6 @@ export default function EczanemMusterilerimPage() {
               <tbody className="divide-y divide-gray-100">
                 {musteriler.map((m) => (
                   <tr key={m.musteri_id} className={m.aktif_mi ? "" : "bg-gray-50"}>
-                    <td className="py-2.5 pr-3 text-gray-400 font-mono text-xs whitespace-nowrap">{m.musteri_id}</td>
                     <td className="py-2.5 pr-3 text-gray-800">{ilkHarfleriBuyut(m.ad_soyad)}</td>
                     <td className="py-2.5 pr-3 text-gray-600 whitespace-nowrap">{m.telefon}</td>
                     <td className="py-2.5 pr-3 text-gray-600">{m.eposta ?? "—"}</td>

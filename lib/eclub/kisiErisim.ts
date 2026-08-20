@@ -27,10 +27,11 @@ export interface EclubKisiErisimSonucu {
 }
 
 export function eclubKisiModulDurumu(firmalar: EclubFirmaModulSatiri[]) {
-  const aktifFirmalar = firmalar.filter((firma) => firma.aktif !== false && firma.eclub_aktif === true);
+  const aktifFirmalar = firmalar.filter((firma) => firma.aktif !== false);
+  const eclubFirmalari = aktifFirmalar.filter((firma) => firma.eclub_aktif === true);
   return {
-    eclub_aktif: aktifFirmalar.length > 0,
-    eclub_store_aktif: aktifFirmalar.some((firma) => firma.eclub_store_aktif === true),
+    eclub_aktif: eclubFirmalari.length > 0,
+    eclub_store_aktif: eclubFirmalari.some((firma) => firma.eclub_store_aktif === true),
     eczanem_aktif: aktifFirmalar.some((firma) => firma.eczanem_aktif === true),
   };
 }

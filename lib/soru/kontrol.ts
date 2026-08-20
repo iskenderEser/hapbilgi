@@ -38,3 +38,27 @@ export function cevapDogruMu(
   const dogru_mu = dogru_secenek === verilen_cevap;
   return { dogru_mu, dogru_secenek };
 }
+
+export function cevaplarAtananSorularlaEslesiyorMu(
+  cevaplar: unknown,
+  atananIndeksler: number[]
+): cevaplar is Array<{ soru_index: number; verilen_cevap: string }> {
+  if (!Array.isArray(cevaplar) || cevaplar.length !== atananIndeksler.length) return false;
+
+  const beklenen = new Set(atananIndeksler);
+  const gelen = new Set<number>();
+  for (const cevap of cevaplar) {
+    if (!cevap || typeof cevap !== "object") return false;
+    const { soru_index, verilen_cevap } = cevap as Record<string, unknown>;
+    if (
+      typeof soru_index !== "number"
+      || !Number.isInteger(soru_index)
+      || !beklenen.has(soru_index)
+      || gelen.has(soru_index)
+      || typeof verilen_cevap !== "string"
+      || verilen_cevap.trim().length === 0
+    ) return false;
+    gelen.add(soru_index);
+  }
+  return gelen.size === beklenen.size;
+}

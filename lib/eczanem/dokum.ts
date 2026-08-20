@@ -174,9 +174,19 @@ export async function eczaneDokumu(
   adminSupabase: SupabaseClient,
   eczaneId: string,
   baslangic: string,
-  bitis: string
+  bitis: string,
+  firmaIdler?: string[],
 ): Promise<EczaneDokum> {
-  const rows = await onayliSiparisler(adminSupabase, { eczaneIdler: [eczaneId] }, baslangic, bitis);
+  let urunIdler: string[] | undefined;
+  if (firmaIdler) {
+    if (firmaIdler.length === 0) return { satirlar: [], toplam_kutu: 0, toplam_tl: 0 };
+    const { data: urunler } = await adminSupabase
+      .from("urunler")
+      .select("urun_id")
+      .in("firma_id", firmaIdler);
+    urunIdler = (urunler ?? []).map((urun) => urun.urun_id);
+  }
+  const rows = await onayliSiparisler(adminSupabase, { eczaneIdler: [eczaneId], urunIdler }, baslangic, bitis);
   const adMap = await urunAdMap(adminSupabase, [...new Set(rows.map((r) => r.urun_id))]);
   const satirlar = urunBazindaTopla(rows, adMap);
   return {

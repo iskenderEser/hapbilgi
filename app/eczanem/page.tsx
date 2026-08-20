@@ -16,6 +16,8 @@ import { MUSTERI_ROLU } from "@/lib/utils/roller";
 interface VideoSatiri {
   gonderim_id: string;
   yayin_id: string;
+  eczane_id: string;
+  eczane_adi: string;
   talep_no?: number | null;
   firma_adi?: string | null;
   urun_adi: string;
@@ -38,6 +40,10 @@ export default function EczanemPanelPage() {
   const [videolar, setVideolar] = useState<VideoSatiri[]>([]);
   const [videoYukleniyor, setVideoYukleniyor] = useState(true);
   const [seciliVideo, setSeciliVideo] = useState<VideoSatiri | null>(null);
+  const [silmeModalAcik, setSilmeModalAcik] = useState(false);
+  const [silmeSifresi, setSilmeSifresi] = useState("");
+  const [silmeHatasi, setSilmeHatasi] = useState<string | null>(null);
+  const [siliniyor, setSiliniyor] = useState(false);
 
   const videolariCek = useCallback(async () => {
     try {
@@ -58,6 +64,36 @@ export default function EczanemPanelPage() {
     if (!musteri) { router.replace("/ana-sayfa"); return; }
     videolariCek();
   }, [kullanici, yukleniyor, musteri, router, videolariCek]);
+
+  const silmeModaliniKapat = () => {
+    if (siliniyor) return;
+    setSilmeModalAcik(false);
+    setSilmeSifresi("");
+    setSilmeHatasi(null);
+  };
+
+  const hesabimiSil = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSilmeHatasi(null);
+    setSiliniyor(true);
+    try {
+      const res = await fetch("/eczanem/api/hesabimi-sil", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sifre: silmeSifresi }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSilmeHatasi(data.hata ?? "Hesabınız silinemedi.");
+        return;
+      }
+      await cikisYap();
+    } catch {
+      setSilmeHatasi("Hesabınız silinemedi; yeniden deneyin.");
+    } finally {
+      setSiliniyor(false);
+    }
+  };
 
   if (yukleniyor || !kullanici || !musteri) {
     return (
@@ -117,6 +153,7 @@ export default function EczanemPanelPage() {
                     <div className="min-w-0">
                       <div className="text-sm font-medium text-gray-800 truncate">{v.urun_adi}</div>
                       {v.teknik_adi && <div className="text-xs text-gray-400 truncate">{v.teknik_adi}</div>}
+                      <div className="text-[11px] text-gray-500 truncate">{v.eczane_adi}</div>
                       {v.talep_no != null && (
                         <div className="text-[10px] text-gray-400 font-mono">{talepIdGoster(v.firma_adi, v.talep_no)}</div>
                       )}
@@ -143,11 +180,75 @@ export default function EczanemPanelPage() {
         {/* Profil */}
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="text-sm font-semibold text-gray-700 mb-2">Profil</div>
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-gray-500 mb-4">
             Telefon: {kullanici.telefon ? `••• ••• ${kullanici.telefon.slice(-4)}` : "-"}
           </div>
+          <button
+            type="button"
+            onClick={() => setSilmeModalAcik(true)}
+            className="text-xs font-semibold text-red-600 hover:text-red-800"
+          >
+            Hesabımı Kalıcı Olarak Sil
+          </button>
         </div>
       </div>
+
+      {silmeModalAcik && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="hesap-silme-baslik"
+        >
+          <form onSubmit={hesabimiSil} className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h2 id="hesap-silme-baslik" className="text-lg font-bold text-gray-900">
+              Hesabınızı silmek istediğinize emin misiniz?
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-gray-600">
+              Bu işlem geri alınamaz. Hesabınız, puanlarınız, siparişleriniz ve HapBilgi’deki tüm kayıtlarınız kalıcı olarak silinir.
+            </p>
+
+            <label className="mt-5 block text-xs font-semibold text-gray-700" htmlFor="hesap-silme-sifre">
+              Mevcut şifreniz
+            </label>
+            <input
+              id="hesap-silme-sifre"
+              type="password"
+              value={silmeSifresi}
+              onChange={(event) => setSilmeSifresi(event.target.value)}
+              autoComplete="current-password"
+              required
+              disabled={siliniyor}
+              className="mt-2 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-red-500 disabled:bg-gray-100"
+              placeholder="Şifrenizi girin"
+            />
+
+            {silmeHatasi && (
+              <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                {silmeHatasi}
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={silmeModaliniKapat}
+                disabled={siliniyor}
+                className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 disabled:opacity-50"
+              >
+                Vazgeç
+              </button>
+              <button
+                type="submit"
+                disabled={siliniyor || !silmeSifresi}
+                className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {siliniyor ? "Siliniyor…" : "Evet, hesabımı sil"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

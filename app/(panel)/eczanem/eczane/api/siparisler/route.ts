@@ -11,6 +11,23 @@ import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
 import { eczaciAktifEczanesi } from "@/lib/eczanem/eczaci";
 import { siparisOnayla, siparisReddet } from "@/lib/eczanem/kasa";
 
+interface SiparisSatiri {
+  siparis_id: string;
+  musteri_id: string | null;
+  musteri_etiket: string | null;
+  urun_id: string;
+  adet: number;
+  kullanilan_puan: number;
+  indirim_tl: number | string;
+  durum: string;
+  islem_kodu: string | null;
+  onay_tarihi: string | null;
+  created_at: string;
+}
+
+interface UrunSatiri { urun_id: string; urun_adi: string; firma_id: string; }
+interface MusteriSatiri { musteri_id: string; telefon: string; }
+
 export async function GET() {
   try {
     const supabase = await createClient();
@@ -32,37 +49,46 @@ export async function GET() {
       .limit(100);
 
     if (error) return hataYaniti("Siparişler çekilemedi.", "eczanem_siparisler SELECT — eczane_id", error);
-    const siparisler = rows ?? [];
+    const siparisler = (rows ?? []) as SiparisSatiri[];
 
     // Ürün adları
-    const urunIdler = [...new Set(siparisler.map((s: any) => s.urun_id))];
+    const urunIdler = [...new Set(siparisler.map((siparis) => siparis.urun_id))];
     const urunAd = new Map<string, string>();
+    const izinliUrunIdler = new Set<string>();
     if (urunIdler.length > 0) {
-      const { data: urunler } = await adminSupabase.from("urunler").select("urun_id, urun_adi").in("urun_id", urunIdler);
-      for (const u of urunler ?? []) urunAd.set((u as any).urun_id, (u as any).urun_adi);
+      const { data: urunler } = await adminSupabase.from("urunler").select("urun_id, urun_adi, firma_id").in("urun_id", urunIdler);
+      for (const urunRaw of urunler ?? []) {
+        const urun = urunRaw as UrunSatiri;
+        if (!eden.firmaIdler!.includes(urun.firma_id)) continue;
+        urunAd.set(urun.urun_id, urun.urun_adi);
+        izinliUrunIdler.add(urun.urun_id);
+      }
     }
 
     // Müşteri son-4-hane (İP-§9.2: ad-soyad ASLA; yalnız maske). Silinmişse musteri_etiket.
-    const musteriIdler = [...new Set(siparisler.map((s: any) => s.musteri_id).filter(Boolean))];
+    const musteriIdler = [...new Set(siparisler.map((siparis) => siparis.musteri_id).filter((id): id is string => Boolean(id)))];
     const musteriTel = new Map<string, string>();
     if (musteriIdler.length > 0) {
       const { data: musteriler } = await adminSupabase.from("eczanem_musteriler").select("musteri_id, telefon").in("musteri_id", musteriIdler);
-      for (const m of musteriler ?? []) musteriTel.set((m as any).musteri_id, (m as any).telefon);
+      for (const musteriRaw of musteriler ?? []) {
+        const musteri = musteriRaw as MusteriSatiri;
+        musteriTel.set(musteri.musteri_id, musteri.telefon);
+      }
     }
 
-    const sonuc = siparisler.map((s: any) => ({
-      siparis_id: s.siparis_id,
-      musteri_maskeli: s.musteri_id
-        ? `••• ••• ${(musteriTel.get(s.musteri_id) ?? "").slice(-4)}`
-        : (s.musteri_etiket ?? "Silinmiş müşteri"),
-      urun_adi: urunAd.get(s.urun_id) ?? "-",
-      adet: s.adet,
-      kullanilan_puan: s.kullanilan_puan,
-      indirim_tl: Number(s.indirim_tl),
-      durum: s.durum,
-      islem_kodu: s.islem_kodu,
-      onay_tarihi: s.onay_tarihi,
-      created_at: s.created_at,
+    const sonuc = siparisler.filter((siparis) => izinliUrunIdler.has(siparis.urun_id)).map((siparis) => ({
+      siparis_id: siparis.siparis_id,
+      musteri_maskeli: siparis.musteri_id
+        ? `••• ••• ${(musteriTel.get(siparis.musteri_id) ?? "").slice(-4)}`
+        : (siparis.musteri_etiket ?? "Silinmiş müşteri"),
+      urun_adi: urunAd.get(siparis.urun_id) ?? "-",
+      adet: siparis.adet,
+      kullanilan_puan: siparis.kullanilan_puan,
+      indirim_tl: Number(siparis.indirim_tl),
+      durum: siparis.durum,
+      islem_kodu: siparis.islem_kodu,
+      onay_tarihi: siparis.onay_tarihi,
+      created_at: siparis.created_at,
     }));
 
     return NextResponse.json({ siparisler: sonuc }, { status: 200 });
@@ -92,7 +118,7 @@ export async function POST(request: NextRequest) {
     // Sipariş bu eczaneye mi ait?
     const { data: siparis } = await adminSupabase
       .from("eczanem_siparisler")
-      .select("siparis_id, eczane_id, durum")
+      .select("siparis_id, eczane_id, urun_id, durum")
       .eq("siparis_id", siparis_id)
       .maybeSingle();
     if (!siparis) return hataYaniti("Sipariş bulunamadı.", "eczanem_siparisler SELECT — siparis_id", null, 404);
@@ -102,6 +128,15 @@ export async function POST(request: NextRequest) {
       const r = await siparisReddet(adminSupabase, siparis_id);
       if (!r.ok) return isKuraluHatasi(r.hata ?? "Reddedilemedi.");
       return NextResponse.json({ ok: true, mesaj: "Sipariş düşürüldü." }, { status: 200 });
+    }
+
+    const { data: urun } = await adminSupabase
+      .from("urunler")
+      .select("firma_id")
+      .eq("urun_id", siparis.urun_id)
+      .maybeSingle();
+    if (!urun?.firma_id || !eden.firmaIdler!.includes(urun.firma_id)) {
+      return rolHatasi("Bu siparişin firması için Eczanem kapalıdır.");
     }
 
     // onayla — atomik FIFO düşüm RPC'si
