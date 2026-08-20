@@ -29,7 +29,7 @@ interface VideoSatiri {
 
 export default function EczanemPanelPage() {
   const router = useRouter();
-  const { kullanici, yukleniyor } = useAuth();
+  const { kullanici, yukleniyor, cikisYap } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
 
   const musteri = !!kullanici && kullanici.kimlik_turu === MUSTERI_ROLU;
@@ -130,9 +130,18 @@ export default function EczanemPanelPage() {
     <div className="min-h-screen bg-gray-50">
       <HataMesajiContainer mesajlar={mesajlar} />
       <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-xl font-bold text-gray-900">Hoş geldiniz{kullanici.ad ? `, ${kullanici.ad}` : ""}</h1>
-          <div className="text-xs text-gray-500 mt-1">HapBilgi Eczanem — eczanenizin size gönderdiği videolar ve puanlarınız.</div>
+        <div className="mb-6 flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Hoş geldiniz{kullanici.ad ? `, ${kullanici.ad}` : ""}</h1>
+            <div className="text-xs text-gray-500 mt-1">HapBilgi Eczanem — eczanenizin size gönderdiği videolar ve puanlarınız.</div>
+          </div>
+          <button
+            type="button"
+            onClick={() => cikisYap()}
+            className="shrink-0 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50"
+          >
+            Çıkış
+          </button>
         </div>
 
         {/* Videolarım — izleme + soru akışı (U7). Bakiye/indirim U8'de eklenir. */}
