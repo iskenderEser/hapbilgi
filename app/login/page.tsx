@@ -120,8 +120,34 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setHata("");
+
+    // Kimlik alanı e-posta VEYA cep telefonu kabul eder. Telefon (yalın rakam,
+    // '@' yok) girildiyse Eczanem müşterisidir: Supabase'e telefonla doğrudan
+    // giriş olmadığından sunucu ucu telefon→e-postaya çözüp oturumu açar.
+    const kimlik = email.trim();
+    const telefonMu = !kimlik.includes("@") && kimlik.replace(/\D/g, "").length >= 10;
+
+    if (telefonMu) {
+      try {
+        const res = await fetch("/eczanem/api/giris/sifre", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ telefon: kimlik, sifre }),
+        });
+        const data = await res.json();
+        if (!res.ok) { setHata(data.hata ?? "Telefon veya şifre hatalı."); setLoading(false); return; }
+        beniHatirlaKaydet(beniHatirla);
+        // Tam sayfa geçiş: AuthProvider yeni oturumu temiz durumla yüklesin.
+        window.location.href = data.yonlendir ?? "/eczanem";
+      } catch {
+        setHata("Giriş yapılamadı; yeniden deneyin.");
+        setLoading(false);
+      }
+      return;
+    }
+
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password: sifre });
+    const { error } = await supabase.auth.signInWithPassword({ email: kimlik, password: sifre });
     if (error) {
       setHata("E-posta veya şifre hatalı.");
       setLoading(false);
@@ -261,14 +287,14 @@ export default function LoginPage() {
           ) : (
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">E-posta</label>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">E-posta veya Cep Telefonu</label>
               <input
-                type="email"
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="username"
-                placeholder="ornek@sirket.com"
+                placeholder="E-posta ya da cep telefon numarası"
                 className="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm bg-white text-gray-900 outline-none box-border transition-shadow focus:border-[#bc2d0d] focus:ring-2 focus:ring-[#bc2d0d]/15"
                 style={{ fontFamily: "'Nunito', sans-serif" }}
               />
