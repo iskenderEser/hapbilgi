@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import bmStyles from "@/app/(panel)/raporlar/bm/bm-report.module.css";
 
 interface Props {
-  sira: number;
   eczane: Eczane;
   kisiler: Kisi[];
   islemLoading: boolean;
@@ -27,7 +26,7 @@ const BOS_KISI: YeniKisiForm = { rol: "", ad: "", soyad: "", eposta: "", telefon
 const ROL_SIRASI: Record<Kisi["rol"], number> = { eczaci: 0, ikinci_eczaci: 1, yardimci_eczaci: 2, eczane_teknisyeni: 3 };
 const KISI_GRID = { gridTemplateColumns: "minmax(180px,1.2fr) minmax(120px,.7fr) minmax(180px,1fr) minmax(110px,.65fr) minmax(170px,.8fr)" };
 
-export function EczaneBlogu({ sira, eczane, kisiler, islemLoading, onListedenCikar, onKisiEkle, onKisiGuncelle, onKisiPasifeAl }: Props) {
+export function EczaneBlogu({ eczane, kisiler, islemLoading, onListedenCikar, onKisiEkle, onKisiGuncelle, onKisiPasifeAl }: Props) {
   const [acik, setAcik] = useState(false);
   const [kisiFormAcik, setKisiFormAcik] = useState(false);
   const [yeniKisi, setYeniKisi] = useState<YeniKisiForm>(BOS_KISI);
@@ -52,7 +51,6 @@ export function EczaneBlogu({ sira, eczane, kisiler, islemLoading, onListedenCik
     <Fragment>
       <tr className={acik ? bmStyles.openRow : undefined}>
         <td>
-          <span className={bmStyles.rank}>{sira}</span>
           <button type="button" className={bmStyles.uttToggle} onClick={() => setAcik(!acik)} aria-expanded={acik}>
             <strong>{eczane.eczane_adi}</strong>
             <small>{eczane.toplam_kisi} kayıtlı kişi</small>

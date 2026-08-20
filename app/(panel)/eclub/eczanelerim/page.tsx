@@ -117,8 +117,8 @@ export default function EclubEczanelerimPage() {
               <table className={bmStyles.table}>
                 <thead><tr><th>Eczane</th><th>GLN</th><th>Eczacı</th><th>Teknisyen</th><th>Toplam kişi</th><th>Yönetim</th></tr></thead>
                 <tbody>
-                  {eczaneler.map((eczane, index) => (
-                    <EczaneBlogu key={eczane.eczane_id} sira={index + 1} eczane={eczane} kisiler={kisilerByEczane.get(eczane.eczane_id) ?? []} islemLoading={islemLoading} onListedenCikar={eczaneListedenCikar} onKisiEkle={kisiEkle} onKisiGuncelle={kisiGuncelle} onKisiPasifeAl={kisiPasifeAl} />
+                  {eczaneler.map((eczane) => (
+                    <EczaneBlogu key={eczane.eczane_id} eczane={eczane} kisiler={kisilerByEczane.get(eczane.eczane_id) ?? []} islemLoading={islemLoading} onListedenCikar={eczaneListedenCikar} onKisiEkle={kisiEkle} onKisiGuncelle={kisiGuncelle} onKisiPasifeAl={kisiPasifeAl} />
                   ))}
                 </tbody>
               </table>
