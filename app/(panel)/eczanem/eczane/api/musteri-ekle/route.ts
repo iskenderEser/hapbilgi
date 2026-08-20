@@ -1,7 +1,7 @@
 // app/(panel)/eczanem/eczane/api/musteri-ekle/route.ts
-// Eczacı/teknisyen — doğrudan müşteri kaydı (şifreli): SMS'li davet akışının
-// yanında ikinci yol. Eczacı müşterinin Ad Soyad / Cep Tel / E-posta / Şifre
-// bilgisini girer; müşteri bu bilgilerle /login'den giriş yapar.
+// Eczacı/teknisyen — müşteri kaydı (tek kayıt yolu). Eczacı müşterinin
+// Ad Soyad / Cep Tel / E-posta / Şifre bilgisini girer; müşteri bu bilgilerle
+// /login'den (e-posta veya telefon + şifre) giriş yapar.
 //
 // UTT'nin eczacıyı kaydetme deseninin (auth.admin.createUser + kimlik + bağ,
 // atomik geri alma) müşteri tarafına uygulanmış halidir. Gerçek e-posta ve
@@ -12,7 +12,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { sunucuHatasi, validasyonHatasi, yetkiHatasi, rolHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
-import { davetEdenEczanesi } from "@/lib/eczanem/davet";
+import { eczaciAktifEczanesi } from "@/lib/eczanem/eczaci";
 import { telefonNormalize } from "@/lib/eczanem/telefon";
 
 function epostaGecerliMi(eposta: string): boolean {
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     if (!ECLUB_TUKETICI_ROLLERI.includes(rol))
       return rolHatasi("Müşteri kaydı yalnızca eczacı/teknisyen tarafından yapılabilir.");
 
-    const eden = await davetEdenEczanesi(adminSupabase, user.id);
+    const eden = await eczaciAktifEczanesi(adminSupabase, user.id);
     if (!eden.ok) return isKuraluHatasi(eden.hata ?? "Aktif eczane bağınız bulunamadı.");
 
     const body = await request.json();

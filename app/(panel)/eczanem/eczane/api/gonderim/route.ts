@@ -7,7 +7,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
-import { davetEdenEczanesi } from "@/lib/eczanem/davet";
+import { eczaciAktifEczanesi } from "@/lib/eczanem/eczaci";
 import { eczaneGelenVideolar, eczaneAktifUyeler, musteriyeGonder } from "@/lib/eczanem/gonderim";
 
 export async function GET() {
@@ -21,7 +21,7 @@ export async function GET() {
     const rol = await rolCozucu(adminSupabase, user.id);
     if (!ECLUB_TUKETICI_ROLLERI.includes(rol)) return rolHatasi("Bu sayfaya yalnız eczacı/teknisyen erişebilir.");
 
-    const eden = await davetEdenEczanesi(adminSupabase, user.id);
+    const eden = await eczaciAktifEczanesi(adminSupabase, user.id);
     if (!eden.ok) return isKuraluHatasi(eden.hata ?? "Eczane bağı bulunamadı.");
 
     const [videolar, uyeler] = await Promise.all([
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     const rol = await rolCozucu(adminSupabase, user.id);
     if (!ECLUB_TUKETICI_ROLLERI.includes(rol)) return rolHatasi("Sadece eczacı/teknisyen gönderim yapabilir.");
 
-    const eden = await davetEdenEczanesi(adminSupabase, user.id);
+    const eden = await eczaciAktifEczanesi(adminSupabase, user.id);
     if (!eden.ok) return isKuraluHatasi(eden.hata ?? "Eczane bağı bulunamadı.");
 
     const body = await request.json();

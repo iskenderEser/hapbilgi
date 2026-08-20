@@ -1,5 +1,5 @@
 // app/eczanem/page.tsx
-// Müşteri paneli: hoş geldin + videolarım (izleme/soru akışı, U7) + profil/silme.
+// Müşteri paneli: hoş geldin + videolarım (izleme/soru akışı, U7) + profil.
 // Bakiye/fişler Faz 4'te (U8) bu iskelete oturur. Bekçi /eczanem'i korur;
 // sayfa yine de kimlik_turu doğrular.
 "use client";
@@ -34,12 +34,6 @@ export default function EczanemPanelPage() {
 
   const musteri = !!kullanici && kullanici.kimlik_turu === MUSTERI_ROLU;
 
-  // Silme akışı durumu: kapali → kod-istendi → (API) → silindi
-  const [silmeAdimi, setSilmeAdimi] = useState<"kapali" | "kod" | "silindi">("kapali");
-  const [silmeOtp, setSilmeOtp] = useState("");
-  const [silmeMesaji, setSilmeMesaji] = useState<string | null>(null);
-  const [isleniyor, setIsleniyor] = useState(false);
-
   // Videolar + oynatıcı
   const [videolar, setVideolar] = useState<VideoSatiri[]>([]);
   const [videoYukleniyor, setVideoYukleniyor] = useState(true);
@@ -60,60 +54,10 @@ export default function EczanemPanelPage() {
 
   useEffect(() => {
     if (yukleniyor) return;
-    if (!kullanici) { router.replace("/eczanem/giris"); return; }
+    if (!kullanici) { router.replace("/login"); return; }
     if (!musteri) { router.replace("/ana-sayfa"); return; }
     videolariCek();
   }, [kullanici, yukleniyor, musteri, router, videolariCek]);
-
-  const silmeKoduIste = async () => {
-    setSilmeMesaji(null);
-    setIsleniyor(true);
-    try {
-      const res = await fetch("/eczanem/api/silme-otp", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) { setSilmeMesaji(data.hata ?? "Kod gönderilemedi."); return; }
-      setSilmeAdimi("kod");
-    } catch {
-      setSilmeMesaji("Kod gönderilemedi; yeniden deneyin.");
-    } finally {
-      setIsleniyor(false);
-    }
-  };
-
-  const uyeligiSil = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSilmeMesaji(null);
-    setIsleniyor(true);
-    try {
-      const res = await fetch("/eczanem/api/sil", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ otp: silmeOtp }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setSilmeMesaji(data.hata ?? "Silme tamamlanamadı."); return; }
-      setSilmeAdimi("silindi");
-    } catch {
-      setSilmeMesaji("Silme tamamlanamadı; yeniden deneyin.");
-    } finally {
-      setIsleniyor(false);
-    }
-  };
-
-  if (silmeAdimi === "silindi") {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-8 max-w-sm text-center">
-          <div className="text-3xl mb-3">👋</div>
-          <div className="text-lg font-bold text-gray-900 mb-2">Üyeliğiniz silindi</div>
-          <div className="text-sm text-gray-500">
-            Kişisel verileriniz kalıcı olarak silindi. Dilerseniz eczanenizden
-            yeni bir davetle tekrar üye olabilirsiniz.
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (yukleniyor || !kullanici || !musteri) {
     return (
@@ -196,61 +140,12 @@ export default function EczanemPanelPage() {
         {/* İndirim kullan + siparişler/fişler (İP-§8) */}
         {!seciliVideo && <EczanemKasa hata={hata} basari={basari} />}
 
-        {/* Profil / KVKK silme (İP-§3.6) */}
+        {/* Profil */}
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="text-sm font-semibold text-gray-700 mb-2">Profil</div>
-          <div className="text-xs text-gray-500 mb-4">
+          <div className="text-xs text-gray-500">
             Telefon: {kullanici.telefon ? `••• ••• ${kullanici.telefon.slice(-4)}` : "-"}
           </div>
-
-          {silmeMesaji && (
-            <div className="mb-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-              {silmeMesaji}
-            </div>
-          )}
-
-          {silmeAdimi === "kapali" ? (
-            <button
-              onClick={silmeKoduIste}
-              disabled={isleniyor}
-              className="text-xs text-red-600 hover:text-red-800 disabled:opacity-50"
-            >
-              {isleniyor ? "Bekleyin…" : "Üyeliğimi kalıcı olarak silmek istiyorum"}
-            </button>
-          ) : (
-            <form onSubmit={uyeligiSil} className="border border-red-200 bg-red-50 rounded-lg p-3">
-              <div className="text-xs text-red-700 mb-2">
-                Bu işlem geri alınamaz: puanlarınız dahil tüm kişisel verileriniz silinir.
-                Telefonunuza gönderilen teyit kodunu girerek onaylayın.
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={silmeOtp}
-                  onChange={(e) => setSilmeOtp(e.target.value.replace(/\D/g, ""))}
-                  placeholder="••••••"
-                  className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm tracking-widest"
-                  required
-                />
-                <button
-                  type="submit"
-                  disabled={isleniyor}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-red-600 disabled:opacity-50"
-                >
-                  {isleniyor ? "Siliniyor…" : "Kalıcı Olarak Sil"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setSilmeAdimi("kapali"); setSilmeOtp(""); setSilmeMesaji(null); }}
-                  className="px-3 py-1.5 rounded-lg text-xs text-gray-600 border border-gray-300"
-                >
-                  Vazgeç
-                </button>
-              </div>
-            </form>
-          )}
         </div>
       </div>
     </div>

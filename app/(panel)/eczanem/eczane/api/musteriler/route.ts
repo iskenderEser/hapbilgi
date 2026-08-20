@@ -1,14 +1,14 @@
 // app/(panel)/eczanem/eczane/api/musteriler/route.ts
-// Eczacı/teknisyen — eczaneye bağlı aktif müşterilerin listesi (davetle veya
-// doğrudan kayıtla gelen fark etmez; tek kaynak eczanem_uyelikler bağıdır).
-// Telefon son-4-hane ile maskeli döner (İP-§9.2: görüntüleme katmanı tam numara taşımaz).
+// Eczacı/teknisyen — eczaneye bağlı aktif müşterilerin listesi.
+// Tek kaynak eczanem_uyelikler bağıdır; telefon son-4-hane ile maskeli döner
+// (İP-§9.2: görüntüleme katmanı tam numara taşımaz).
 
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
-import { davetEdenEczanesi } from "@/lib/eczanem/davet";
+import { eczaciAktifEczanesi } from "@/lib/eczanem/eczaci";
 
 function telefonMaskele(telefon: string): string {
   return `••• ••• ${telefon.slice(-4)}`;
@@ -25,7 +25,7 @@ export async function GET() {
     const rol = await rolCozucu(adminSupabase, user.id);
     if (!ECLUB_TUKETICI_ROLLERI.includes(rol)) return rolHatasi("Bu sayfaya yalnız eczacı/teknisyen erişebilir.");
 
-    const eden = await davetEdenEczanesi(adminSupabase, user.id);
+    const eden = await eczaciAktifEczanesi(adminSupabase, user.id);
     if (!eden.ok) return isKuraluHatasi(eden.hata ?? "Eczane bağı bulunamadı.");
 
     // Eczanenin aktif üyelik bağları.
@@ -52,20 +52,14 @@ export async function GET() {
 
     const kimlikMap = new Map((kayitlar ?? []).map((k) => [k.musteri_id, k]));
 
-    // E-posta eczanem_musteriler'de değil auth.users'da tutulur; auth_user_id'den
-    // çekilir. Kayıt türü de buradan ayrışır: davet akışı sentetik adres
-    // (@musteri.hapbilgi.app) üretir, doğrudan kayıt gerçek e-posta kullanır.
+    // E-posta eczanem_musteriler'de değil auth.users'da tutulur; auth_user_id'den çekilir.
     const epostaMap = new Map<string, string | null>();
-    const turMap = new Map<string, "davet" | "dogrudan">();
     await Promise.all(
       (kayitlar ?? [])
         .filter((k) => k.auth_user_id)
         .map(async (k) => {
           const { data: authData } = await adminSupabase.auth.admin.getUserById(k.auth_user_id as string);
-          const eposta = authData?.user?.email ?? null;
-          const sentetik = !eposta || eposta.endsWith("@musteri.hapbilgi.app");
-          epostaMap.set(k.musteri_id, sentetik ? null : eposta);
-          turMap.set(k.musteri_id, sentetik ? "davet" : "dogrudan");
+          epostaMap.set(k.musteri_id, authData?.user?.email ?? null);
         })
     );
 
@@ -79,7 +73,6 @@ export async function GET() {
           ad_soyad: k.ad_soyad,
           telefon: telefonMaskele(k.telefon),
           eposta: epostaMap.get(k.musteri_id) ?? null,
-          kayit_turu: turMap.get(k.musteri_id) ?? "davet",
           created_at: u.created_at,
         };
       })

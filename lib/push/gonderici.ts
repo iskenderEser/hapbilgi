@@ -1,6 +1,6 @@
 // lib/push/gonderici.ts
 //
-// Provider-agnostik push gönderimi (P4 — lib/sms/gonderici.ts'in ikizi, §2.7).
+// Provider-agnostik push gönderimi (P4, §2.7).
 // `web-push` bir sağlayıcı SDK'sı değil, açık standart uygulamasıdır
 // (RFC 8030 protokol, RFC 8292 VAPID imza, RFC 8291 yük şifreleme — K-P4);
 // yine de transport bu dosyanın arkasında kalır: çağıranlar (orkestrasyon)

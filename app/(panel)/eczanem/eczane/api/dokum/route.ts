@@ -9,7 +9,7 @@ import { sunucuHatasi, yetkiHatasi, rolHatasi, isKuraluHatasi } from "@/lib/util
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
 import { tarihAraligi } from "@/lib/utils/tarihAraligi";
-import { davetEdenEczanesi } from "@/lib/eczanem/davet";
+import { eczaciAktifEczanesi } from "@/lib/eczanem/eczaci";
 import { eczaneDokumu } from "@/lib/eczanem/dokum";
 
 export async function GET(request: NextRequest) {
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const rol = await rolCozucu(adminSupabase, user.id);
     if (!ECLUB_TUKETICI_ROLLERI.includes(rol)) return rolHatasi("Bu sayfaya yalnız eczacı/teknisyen erişebilir.");
 
-    const eden = await davetEdenEczanesi(adminSupabase, user.id);
+    const eden = await eczaciAktifEczanesi(adminSupabase, user.id);
     if (!eden.ok) return isKuraluHatasi(eden.hata ?? "Eczane bağı bulunamadı.");
 
     const periyot = request.nextUrl.searchParams.get("periyot") || "bu_ay";

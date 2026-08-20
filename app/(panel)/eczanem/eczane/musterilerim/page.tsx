@@ -1,7 +1,7 @@
 // app/(panel)/eczanem/eczane/musterilerim/page.tsx
 // Eczacı/teknisyen Eczanem — Müşteri Yönetimi: iki sekme.
-//   • Yeni Müşteri Kaydı: doğrudan (şifreli) kayıt + SMS'li davet + davet durumları.
-//   • Müşteri Listesi: eczaneye bağlı aktif müşteriler (davet/doğrudan fark etmez).
+//   • Yeni Müşteri Kaydı: müşterinin Ad Soyad / Cep Tel / E-posta / Şifre bilgisiyle kaydı.
+//   • Müşteri Listesi: eczaneye bağlı aktif müşteriler.
 // Sidebar kabuğu (panel) layout'undan gelir; başlık/zemin EclubKisiSayfa desenidir.
 "use client";
 
@@ -14,8 +14,7 @@ interface MusteriSatiri {
   musteri_id: string;
   ad_soyad: string;
   telefon: string; // maskeli gelir (son-4-hane)
-  eposta: string | null; // sentetik davet adresleri null gelir
-  kayit_turu: "davet" | "dogrudan";
+  eposta: string | null;
   created_at: string;
 }
 
@@ -26,13 +25,7 @@ export default function EczanemMusterilerimPage() {
 
   const [sekme, setSekme] = useState<Sekme>("kayit");
 
-  // Yeni Davet (SMS) formu.
-  const [dAd, setDAd] = useState("");
-  const [dSoyad, setDSoyad] = useState("");
-  const [telefon, setTelefon] = useState("");
-  const [gonderiliyor, setGonderiliyor] = useState(false);
-
-  // Doğrudan (şifreli) kayıt formu — müşteri /login ile girer.
+  // Müşteri kayıt formu — müşteri /login ile (e-posta/telefon + şifre) girer.
   const [kAd, setKAd] = useState("");
   const [kSoyad, setKSoyad] = useState("");
   const [kTel, setKTel] = useState("");
@@ -59,28 +52,6 @@ export default function EczanemMusterilerimPage() {
   }, [hata]);
 
   useEffect(() => { if (sekme === "liste") musterileriCek(); }, [sekme, musterileriCek]);
-
-  const davetGonder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setGonderiliyor(true);
-    try {
-      const res = await fetch("/eczanem/eczane/api/davetler", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ad_soyad: `${dAd} ${dSoyad}`.trim(), telefon }),
-      });
-      const data = await res.json();
-      if (!res.ok) { hata(data.hata ?? "Davet gönderilemedi.", "davet"); return; }
-      basari("Davet gönderildi — müşterinize SMS ile kod iletildi.");
-      setDAd("");
-      setDSoyad("");
-      setTelefon("");
-    } catch {
-      hata("Davet gönderilemedi.", "davet");
-    } finally {
-      setGonderiliyor(false);
-    }
-  };
 
   const musteriKaydet = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,7 +90,7 @@ export default function EczanemMusterilerimPage() {
         ikon={Users}
         ustEtiket="Eczanem"
         baslik="Müşteri Yönetimi"
-        aciklama="Sözlü rızasını aldığınız müşterilerinizi kaydedin veya davet edin; kayıtlı müşterilerinizi görüntüleyin."
+        aciklama="Sözlü rızasını aldığınız müşterilerinizi kaydedin; kayıtlı müşterilerinizi görüntüleyin."
       />
 
       {/* Sekme barı */}
@@ -146,92 +117,25 @@ export default function EczanemMusterilerimPage() {
       </div>
 
       {sekme === "kayit" ? (
-        <>
-          <form onSubmit={musteriKaydet} className="bg-white rounded-xl border border-gray-200 p-5">
-            <div className="text-sm font-semibold text-gray-700 mb-3">Doğrudan Kayıt</div>
-            <div className="text-xs text-gray-500 mb-4">
-              Sözlü rızasını aldığınız müşterinizin bilgilerini girip bir şifre belirleyin; müşteri
-              bu cep telefonu (veya e-posta) ve şifreyle giriş yapar.
-            </div>
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <input
-                  type="text"
-                  value={kAd}
-                  onChange={(e) => setKAd(e.target.value)}
-                  placeholder="Ad"
-                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                  required
-                />
-                <input
-                  type="text"
-                  value={kSoyad}
-                  onChange={(e) => setKSoyad(e.target.value)}
-                  placeholder="Soyad"
-                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                  required
-                />
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  maxLength={11}
-                  value={kTel}
-                  onChange={(e) => setKTel(e.target.value.replace(/\D/g, ""))}
-                  placeholder="05XXXXXXXXX"
-                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                  required
-                />
-              </div>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <input
-                  type="email"
-                  value={kEposta}
-                  onChange={(e) => setKEposta(e.target.value)}
-                  placeholder="E-posta"
-                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                  required
-                />
-                <input
-                  type="password"
-                  value={kSifre}
-                  onChange={(e) => setKSifre(e.target.value)}
-                  placeholder="Şifre (en az 6 karakter)"
-                  minLength={6}
-                  autoComplete="new-password"
-                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                  required
-                />
-                <button
-                  type="submit"
-                  disabled={kGonderiliyor}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
-                  style={{ background: "#b45309" }}
-                >
-                  {kGonderiliyor ? "Kaydediliyor…" : "Kaydet"}
-                </button>
-              </div>
-            </div>
-          </form>
-
-          <form onSubmit={davetGonder} className="bg-white rounded-xl border border-gray-200 p-5">
-            <div className="text-sm font-semibold text-gray-700 mb-3">SMS ile Davet</div>
-            <div className="text-xs text-gray-500 mb-4">
-              Sözlü rızasını aldığınız müşterinizin adını ve cep telefonunu girin; kendisine SMS ile
-              tek kullanımlık kod ve üyelik bağlantısı gönderilir.
-            </div>
+        <form onSubmit={musteriKaydet} className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="text-xs text-gray-500 mb-4">
+            Sözlü rızasını aldığınız müşterinizin bilgilerini girip bir şifre belirleyin; müşteri
+            bu cep telefonu (veya e-posta) ve şifreyle giriş yapar.
+          </div>
+          <div className="flex flex-col gap-3">
             <div className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
-                value={dAd}
-                onChange={(e) => setDAd(e.target.value)}
+                value={kAd}
+                onChange={(e) => setKAd(e.target.value)}
                 placeholder="Ad"
                 className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 required
               />
               <input
                 type="text"
-                value={dSoyad}
-                onChange={(e) => setDSoyad(e.target.value)}
+                value={kSoyad}
+                onChange={(e) => setKSoyad(e.target.value)}
                 placeholder="Soyad"
                 className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 required
@@ -240,23 +144,43 @@ export default function EczanemMusterilerimPage() {
                 type="tel"
                 inputMode="numeric"
                 maxLength={11}
-                value={telefon}
-                onChange={(e) => setTelefon(e.target.value.replace(/\D/g, ""))}
+                value={kTel}
+                onChange={(e) => setKTel(e.target.value.replace(/\D/g, ""))}
                 placeholder="05XXXXXXXXX"
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                required
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="email"
+                value={kEposta}
+                onChange={(e) => setKEposta(e.target.value)}
+                placeholder="E-posta"
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                required
+              />
+              <input
+                type="password"
+                value={kSifre}
+                onChange={(e) => setKSifre(e.target.value)}
+                placeholder="Şifre (en az 6 karakter)"
+                minLength={6}
+                autoComplete="new-password"
                 className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 required
               />
               <button
                 type="submit"
-                disabled={gonderiliyor}
+                disabled={kGonderiliyor}
                 className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
                 style={{ background: "#b45309" }}
               >
-                {gonderiliyor ? "Gönderiliyor…" : "Davet Gönder"}
+                {kGonderiliyor ? "Kaydediliyor…" : "Kaydet"}
               </button>
             </div>
-          </form>
-        </>
+          </div>
+        </form>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="text-sm font-semibold text-gray-700 mb-3">
@@ -274,32 +198,18 @@ export default function EczanemMusterilerimPage() {
                     <th className="py-2 pr-3 font-semibold">Müşteri</th>
                     <th className="py-2 pr-3 font-semibold">Cep Tel</th>
                     <th className="py-2 pr-3 font-semibold">E-posta</th>
-                    <th className="py-2 pr-3 font-semibold whitespace-nowrap">Kayıt Türü</th>
                     <th className="py-2 font-semibold whitespace-nowrap">Kayıt Tarihi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {musteriler.map((m) => {
-                    const dogrudan = m.kayit_turu === "dogrudan";
-                    return (
+                  {musteriler.map((m) => (
                     <tr key={m.musteri_id}>
                       <td className="py-2.5 pr-3 text-gray-800">{m.ad_soyad}</td>
                       <td className="py-2.5 pr-3 text-gray-600 whitespace-nowrap">{m.telefon}</td>
                       <td className="py-2.5 pr-3 text-gray-600">{m.eposta ?? "—"}</td>
-                      <td className="py-2.5 pr-3 whitespace-nowrap">
-                        <span
-                          className="inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                          style={dogrudan
-                            ? { background: "#e6f0fa", color: "#3589d8" }
-                            : { background: "#fdf1e3", color: "#b45309" }}
-                        >
-                          {dogrudan ? "Doğrudan Kayıt" : "Davet"}
-                        </span>
-                      </td>
                       <td className="py-2.5 text-gray-500 whitespace-nowrap">{new Date(m.created_at).toLocaleDateString("tr-TR")}</td>
                     </tr>
-                    );
-                  })}
+                  ))}
                 </tbody>
               </table>
             </div>

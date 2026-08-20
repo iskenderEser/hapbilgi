@@ -118,9 +118,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") {
         setKullanici(null);
-        // Eczanem müşterisi kendi giriş ekranına döner; diğer kimlikler /login'e.
-        const yol = typeof window !== "undefined" ? window.location.pathname : "";
-        router.push(yol.startsWith("/eczanem") && !yol.startsWith("/eczanem/eczane") ? "/eczanem/giris" : "/login");
+        // Tüm kimlikler (müşteri dahil) /login üzerinden giriş yapar.
+        router.push("/login");
       } else if (event === "SIGNED_IN") {
         // Token yenilemesi de SIGNED_IN'i tetikler. Single-flight devam eden
         // yükleme varsa onu bekler, ayrı bir getUser çağrısı yapmaz.
@@ -138,8 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await guvenliCikisYap(supabase);
     setKullanici(null);
     setYukleniyor(false);
-    const yol = typeof window !== "undefined" ? window.location.pathname : "";
-    router.replace(yol.startsWith("/eczanem") && !yol.startsWith("/eczanem/eczane") ? "/eczanem/giris" : "/login");
+    router.replace("/login");
   }, [router]);
 
   return (
