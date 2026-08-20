@@ -91,7 +91,8 @@ async function onayliSiparisler(
   if (filtre.eczaneIdler) query = query.in("eczane_id", filtre.eczaneIdler);
   if (filtre.urunIdler) query = query.in("urun_id", filtre.urunIdler);
 
-  const { data } = await query;
+  const { data, error } = await query;
+  if (error) throw new Error("Eczanem onaylı siparişleri okunamadı.");
   return (data ?? []).map((s: any) => ({
     eczane_id: s.eczane_id,
     urun_id: s.urun_id,
@@ -106,10 +107,11 @@ async function urunAdMap(
 ): Promise<Map<string, string>> {
   const map = new Map<string, string>();
   if (urunIdler.length === 0) return map;
-  const { data } = await adminSupabase
+  const { data, error } = await adminSupabase
     .from("urunler")
     .select("urun_id, urun_adi")
     .in("urun_id", urunIdler);
+  if (error) throw new Error("Eczanem ürün bilgileri okunamadı.");
   for (const u of data ?? []) map.set((u as any).urun_id, (u as any).urun_adi);
   return map;
 }
@@ -205,11 +207,12 @@ export async function uttDokumu(
   bitis: string
 ): Promise<EczaneUrunDokum> {
   // UTT'nin aktif bağladığı eczaneler (U6 gonderim.ts deseni)
-  const { data: baglar } = await adminSupabase
+  const { data: baglar, error } = await adminSupabase
     .from("eclub_eczane_firma")
     .select("eczane_id")
     .eq("baglayan_utt_id", uttAuthId)
     .eq("aktif_mi", true);
+  if (error) throw new Error("UTT mutabakat kapsamı okunamadı.");
   const eczaneIdler = [...new Set((baglar ?? []).map((b: any) => b.eczane_id))];
   return eczaneUrunDokumu(adminSupabase, eczaneIdler, null, baslangic, bitis);
 }

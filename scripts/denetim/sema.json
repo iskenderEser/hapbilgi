@@ -1,7 +1,7 @@
 {
-  "uretim_tarihi": "2026-08-20T20:59:22.546Z",
+  "uretim_tarihi": "2026-08-20T21:27:49.451Z",
   "tablo_sayisi": 106,
-  "rpc_sayisi": 105,
+  "rpc_sayisi": 106,
   "tablolar": {
     "bildirimler": {
       "tur": "BASE TABLE",
@@ -4506,6 +4506,10 @@
     "eczanem_siparis_onayla": {
       "argumanlar": "p_siparis_id uuid",
       "donus": "TABLE(ok boolean, hata text, islem_kodu text, indirim_tl numeric, kullanilan_puan integer)"
+    },
+    "eczanem_utt_eczaneye_gonder": {
+      "argumanlar": "p_utt_id uuid, p_yayin_id uuid, p_eczane_id uuid",
+      "donus": "TABLE(ok boolean, hata text, gonderim_id uuid)"
     },
     "eczanem_uyelik_listeden_sil": {
       "argumanlar": "p_musteri_id uuid, p_eczane_id uuid, p_silen_kisi_id uuid, p_eposta text",

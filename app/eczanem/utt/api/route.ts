@@ -26,7 +26,9 @@ export async function GET() {
     if (!erisim.ok) return hataYaniti(erisim.hata ?? "Firma erişimi doğrulanamadı.", "Eczanem UTT firma kapısı", null);
     if (!erisim.acik) return rolHatasi(ECZANEM_KAPALI_MESAJI);
 
-    const veri = await uttEczanemVerisi(adminSupabase, user.id, erisim.takimId ?? null);
+    const firmaId = erisim.firmaIdler[0];
+    if (!firmaId) return hataYaniti("Firma kapsamı çözülemedi.", "Eczanem UTT firma kapsamı", null);
+    const veri = await uttEczanemVerisi(adminSupabase, user.id, firmaId, erisim.takimId ?? null);
     return NextResponse.json(veri, { status: 200 });
   } catch (err) {
     return sunucuHatasi(err, "GET /eczanem/utt/api");
