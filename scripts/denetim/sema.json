@@ -1,6 +1,6 @@
 {
-  "uretim_tarihi": "2026-08-19T07:10:43.437Z",
-  "tablo_sayisi": 104,
+  "uretim_tarihi": "2026-08-20T14:39:24.695Z",
+  "tablo_sayisi": 103,
   "rpc_sayisi": 92,
   "tablolar": {
     "bildirimler": {
@@ -1163,51 +1163,6 @@
         }
       }
     },
-    "eczanem_davetler": {
-      "tur": "BASE TABLE",
-      "kolonlar": {
-        "davet_id": {
-          "tip": "uuid",
-          "nullable": false
-        },
-        "eczane_id": {
-          "tip": "uuid",
-          "nullable": false
-        },
-        "davet_eden_kisi_id": {
-          "tip": "uuid",
-          "nullable": false
-        },
-        "telefon": {
-          "tip": "character varying",
-          "nullable": false
-        },
-        "ad_soyad": {
-          "tip": "character varying",
-          "nullable": false
-        },
-        "otp_hash": {
-          "tip": "character varying",
-          "nullable": true
-        },
-        "son_gecerlilik": {
-          "tip": "timestamp with time zone",
-          "nullable": false
-        },
-        "durum": {
-          "tip": "character varying",
-          "nullable": false
-        },
-        "created_at": {
-          "tip": "timestamp with time zone",
-          "nullable": false
-        },
-        "deneme_sayisi": {
-          "tip": "integer",
-          "nullable": false
-        }
-      }
-    },
     "eczanem_eczane_gonderimleri": {
       "tur": "BASE TABLE",
       "kolonlar": {
@@ -1225,39 +1180,6 @@
         },
         "gonderen_utt_id": {
           "tip": "uuid",
-          "nullable": false
-        },
-        "created_at": {
-          "tip": "timestamp with time zone",
-          "nullable": false
-        }
-      }
-    },
-    "eczanem_giris_otp": {
-      "tur": "BASE TABLE",
-      "kolonlar": {
-        "otp_id": {
-          "tip": "uuid",
-          "nullable": false
-        },
-        "telefon": {
-          "tip": "text",
-          "nullable": false
-        },
-        "otp_hash": {
-          "tip": "text",
-          "nullable": false
-        },
-        "son_gecerlilik": {
-          "tip": "timestamp with time zone",
-          "nullable": false
-        },
-        "deneme_sayisi": {
-          "tip": "integer",
-          "nullable": false
-        },
-        "kullanildi_mi": {
-          "tip": "boolean",
           "nullable": false
         },
         "created_at": {
@@ -1426,6 +1348,43 @@
           "nullable": false
         },
         "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        }
+      }
+    },
+    "eczanem_silinen_musteriler": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "musteri_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "ad_soyad": {
+          "tip": "character varying",
+          "nullable": false
+        },
+        "telefon": {
+          "tip": "character varying",
+          "nullable": false
+        },
+        "eposta": {
+          "tip": "character varying",
+          "nullable": true
+        },
+        "eczane_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "silen_kisi_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "silme_tarihi": {
           "tip": "timestamp with time zone",
           "nullable": false
         }
@@ -5127,18 +5086,6 @@
         "hedef_kolon": "yayin_id"
       }
     ],
-    "eczanem_davetler": [
-      {
-        "kaynak_kolon": "eczane_id",
-        "hedef_tablo": "eclub_eczaneler",
-        "hedef_kolon": "eczane_id"
-      },
-      {
-        "kaynak_kolon": "davet_eden_kisi_id",
-        "hedef_tablo": "eclub_kisiler",
-        "hedef_kolon": "kisi_id"
-      }
-    ],
     "eczanem_eczane_gonderimleri": [
       {
         "kaynak_kolon": "eczane_id",
@@ -5251,12 +5198,12 @@
     ],
     "iu_genel_atamalari": [
       {
-        "kaynak_kolon": "iu_id",
+        "kaynak_kolon": "pasife_alan_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "pasife_alan_id",
+        "kaynak_kolon": "iu_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
@@ -5268,17 +5215,17 @@
     ],
     "iu_urun_atamalari": [
       {
-        "kaynak_kolon": "atayan_id",
-        "hedef_tablo": "kullanicilar",
-        "hedef_kolon": "kullanici_id"
-      },
-      {
         "kaynak_kolon": "iu_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
         "kaynak_kolon": "pasife_alan_id",
+        "hedef_tablo": "kullanicilar",
+        "hedef_kolon": "kullanici_id"
+      },
+      {
+        "kaynak_kolon": "atayan_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
