@@ -5,12 +5,13 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { sunucuHatasi, yetkiHatasi, rolHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
+import { sunucuHatasi, yetkiHatasi, rolHatasi, isKuraluHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
 import { tarihAraligi } from "@/lib/utils/tarihAraligi";
 import { eczaciAktifEczanesi } from "@/lib/eczanem/eczaci";
 import { eczaneDokumu } from "@/lib/eczanem/dokum";
+import { PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,10 +27,13 @@ export async function GET(request: NextRequest) {
     if (!eden.ok) return isKuraluHatasi(eden.hata ?? "Eczane bağı bulunamadı.");
 
     const periyot = request.nextUrl.searchParams.get("periyot") || "bu_ay";
+    if (!PERIYOTLAR.some((secenek) => secenek.key === periyot)) {
+      return validasyonHatasi("Geçersiz rapor dönemi.", ["periyot"]);
+    }
     const { baslangic, bitis } = tarihAraligi(periyot);
 
     const dokum = await eczaneDokumu(adminSupabase, eden.eczaneId!, baslangic, bitis, eden.firmaIdler);
-    return NextResponse.json(dokum, { status: 200 });
+    return NextResponse.json({ ...dokum, periyot: periyot as Periyot, baslangic, bitis }, { status: 200 });
   } catch (err) {
     return sunucuHatasi(err, "GET /eczanem/eczane/api/dokum");
   }

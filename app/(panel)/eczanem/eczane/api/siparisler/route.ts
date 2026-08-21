@@ -10,6 +10,7 @@ import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
 import { eczaciAktifEczanesi } from "@/lib/eczanem/eczaci";
 import { siparisOnayla, siparisReddet } from "@/lib/eczanem/kasa";
+import { gunBaslangici } from "@/lib/zaman/kontrol";
 
 interface SiparisSatiri {
   siparis_id: string;
@@ -22,13 +23,15 @@ interface SiparisSatiri {
   durum: string;
   islem_kodu: string | null;
   onay_tarihi: string | null;
+  karar_tarihi: string | null;
+  islem_yapan_kisi_id: string | null;
   created_at: string;
 }
 
 interface UrunSatiri { urun_id: string; urun_adi: string; firma_id: string; }
 interface MusteriSatiri { musteri_id: string; telefon: string; }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     const adminSupabase = createAdminClient();
@@ -41,22 +44,51 @@ export async function GET() {
     const eden = await eczaciAktifEczanesi(adminSupabase, user.id);
     if (!eden.ok) return isKuraluHatasi(eden.hata ?? "Eczane bağı bulunamadı.");
 
-    const { data: rows, error } = await adminSupabase
-      .from("eczanem_siparisler")
-      .select("siparis_id, musteri_id, musteri_etiket, urun_id, adet, kullanilan_puan, indirim_tl, durum, islem_kodu, onay_tarihi, created_at")
-      .eq("eczane_id", eden.eczaneId!)
-      .order("created_at", { ascending: false })
-      .limit(100);
+    const bekleyenSayfa = Math.max(1, Number.parseInt(request.nextUrl.searchParams.get("bekleyen_sayfa") ?? "1", 10) || 1);
+    const gecmisSayfa = Math.max(1, Number.parseInt(request.nextUrl.searchParams.get("gecmis_sayfa") ?? "1", 10) || 1);
+    const limit = Math.min(50, Math.max(10, Number.parseInt(request.nextUrl.searchParams.get("limit") ?? "20", 10) || 20));
+    const gecmisDurum = request.nextUrl.searchParams.get("durum") ?? "tumu";
+    if (!['tumu', 'onaylandi', 'dustu'].includes(gecmisDurum)) return validasyonHatasi("Geçersiz sipariş durumu.", ["durum"]);
 
-    if (error) return hataYaniti("Siparişler çekilemedi.", "eczanem_siparisler SELECT — eczane_id", error);
-    const siparisler = (rows ?? []) as SiparisSatiri[];
+    const secim = "siparis_id, musteri_id, musteri_etiket, urun_id, adet, kullanilan_puan, indirim_tl, durum, islem_kodu, onay_tarihi, karar_tarihi, islem_yapan_kisi_id, created_at";
+    const bekleyenBaslangic = (bekleyenSayfa - 1) * limit;
+    const gecmisBaslangic = (gecmisSayfa - 1) * limit;
+    const bugun = gunBaslangici(new Date()).toISOString();
+
+    const bekleyenSorgusu = adminSupabase
+      .from("eczanem_siparisler")
+      .select(secim, { count: "exact" })
+      .eq("eczane_id", eden.eczaneId!)
+      .eq("durum", "bekliyor")
+      .order("created_at", { ascending: true })
+      .range(bekleyenBaslangic, bekleyenBaslangic + limit - 1);
+    let gecmisSorgusu = adminSupabase
+      .from("eczanem_siparisler")
+      .select(secim, { count: "exact" })
+      .eq("eczane_id", eden.eczaneId!)
+      .neq("durum", "bekliyor")
+      .order("karar_tarihi", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .range(gecmisBaslangic, gecmisBaslangic + limit - 1);
+    if (gecmisDurum !== "tumu") gecmisSorgusu = gecmisSorgusu.eq("durum", gecmisDurum);
+
+    const [bekleyenSonucu, gecmisSonucu, bugunOnaySonucu] = await Promise.all([
+      bekleyenSorgusu,
+      gecmisSorgusu,
+      adminSupabase.from("eczanem_siparisler").select("siparis_id", { count: "exact", head: true })
+        .eq("eczane_id", eden.eczaneId!).eq("durum", "onaylandi").gte("onay_tarihi", bugun),
+    ]);
+    const okumaHatasi = bekleyenSonucu.error ?? gecmisSonucu.error ?? bugunOnaySonucu.error;
+    if (okumaHatasi) return hataYaniti("Siparişler çekilemedi.", "eczanem_siparisler SELECT — kuyruk/geçmiş", okumaHatasi);
+    const siparisler = [...(bekleyenSonucu.data ?? []), ...(gecmisSonucu.data ?? [])] as SiparisSatiri[];
 
     // Ürün adları
     const urunIdler = [...new Set(siparisler.map((siparis) => siparis.urun_id))];
     const urunAd = new Map<string, string>();
     const izinliUrunIdler = new Set<string>();
     if (urunIdler.length > 0) {
-      const { data: urunler } = await adminSupabase.from("urunler").select("urun_id, urun_adi, firma_id").in("urun_id", urunIdler);
+      const { data: urunler, error: urunHatasi } = await adminSupabase.from("urunler").select("urun_id, urun_adi, firma_id").in("urun_id", urunIdler);
+      if (urunHatasi) return hataYaniti("Sipariş ürünleri çekilemedi.", "urunler SELECT — sipariş kuyruğu", urunHatasi);
       for (const urunRaw of urunler ?? []) {
         const urun = urunRaw as UrunSatiri;
         if (!eden.firmaIdler!.includes(urun.firma_id)) continue;
@@ -69,11 +101,20 @@ export async function GET() {
     const musteriIdler = [...new Set(siparisler.map((siparis) => siparis.musteri_id).filter((id): id is string => Boolean(id)))];
     const musteriTel = new Map<string, string>();
     if (musteriIdler.length > 0) {
-      const { data: musteriler } = await adminSupabase.from("eczanem_musteriler").select("musteri_id, telefon").in("musteri_id", musteriIdler);
+      const { data: musteriler, error: musteriHatasi } = await adminSupabase.from("eczanem_musteriler").select("musteri_id, telefon").in("musteri_id", musteriIdler);
+      if (musteriHatasi) return hataYaniti("Sipariş müşteri etiketleri çekilemedi.", "eczanem_musteriler SELECT — sipariş kuyruğu", musteriHatasi);
       for (const musteriRaw of musteriler ?? []) {
         const musteri = musteriRaw as MusteriSatiri;
         musteriTel.set(musteri.musteri_id, musteri.telefon);
       }
+    }
+
+    const kisiIdler = [...new Set(siparisler.map((siparis) => siparis.islem_yapan_kisi_id).filter((id): id is string => Boolean(id)))];
+    const kisiAd = new Map<string, string>();
+    if (kisiIdler.length > 0) {
+      const { data: kisiler, error: kisiHatasi } = await adminSupabase.from("eclub_kisiler").select("kisi_id, ad, soyad").in("kisi_id", kisiIdler);
+      if (kisiHatasi) return hataYaniti("İşlem personeli çekilemedi.", "eclub_kisiler SELECT — sipariş geçmişi", kisiHatasi);
+      for (const kisi of kisiler ?? []) kisiAd.set(kisi.kisi_id, `${kisi.ad ?? ""} ${kisi.soyad ?? ""}`.trim());
     }
 
     const sonuc = siparisler.filter((siparis) => izinliUrunIdler.has(siparis.urun_id)).map((siparis) => ({
@@ -88,10 +129,24 @@ export async function GET() {
       durum: siparis.durum,
       islem_kodu: siparis.islem_kodu,
       onay_tarihi: siparis.onay_tarihi,
+      karar_tarihi: siparis.karar_tarihi,
+      islem_yapan: siparis.islem_yapan_kisi_id ? kisiAd.get(siparis.islem_yapan_kisi_id) ?? null : null,
       created_at: siparis.created_at,
     }));
 
-    return NextResponse.json({ siparisler: sonuc }, { status: 200 });
+    const bekleyen = sonuc.filter((siparis) => siparis.durum === "bekliyor");
+    const gecmis = sonuc.filter((siparis) => siparis.durum !== "bekliyor");
+    const bekleyenToplam = bekleyenSonucu.count ?? 0;
+    const gecmisToplam = gecmisSonucu.count ?? 0;
+    return NextResponse.json({
+      bekleyen,
+      gecmis,
+      ozet: { bekleyen: bekleyenToplam, bugun_onaylanan: bugunOnaySonucu.count ?? 0, gecmis: gecmisToplam },
+      sayfalama: {
+        bekleyen: { sayfa: bekleyenSayfa, toplam: bekleyenToplam, toplam_sayfa: Math.max(1, Math.ceil(bekleyenToplam / limit)) },
+        gecmis: { sayfa: gecmisSayfa, toplam: gecmisToplam, toplam_sayfa: Math.max(1, Math.ceil(gecmisToplam / limit)) },
+      },
+    }, { status: 200 });
   } catch (err) {
     return sunucuHatasi(err, "GET /eczanem/eczane/api/siparisler");
   }
@@ -125,7 +180,7 @@ export async function POST(request: NextRequest) {
     if (siparis.eczane_id !== eden.eczaneId) return rolHatasi("Bu sipariş sizin eczanenize ait değil.");
 
     if (aksiyon === "reddet") {
-      const r = await siparisReddet(adminSupabase, siparis_id);
+      const r = await siparisReddet(adminSupabase, siparis_id, eden.eczaneId!, eden.kisiId!);
       if (!r.ok) return isKuraluHatasi(r.hata ?? "Reddedilemedi.");
       return NextResponse.json({ ok: true, mesaj: "Sipariş düşürüldü." }, { status: 200 });
     }
@@ -140,7 +195,7 @@ export async function POST(request: NextRequest) {
     }
 
     // onayla — atomik FIFO düşüm RPC'si
-    const onay = await siparisOnayla(adminSupabase, siparis_id);
+    const onay = await siparisOnayla(adminSupabase, siparis_id, eden.eczaneId!, eden.kisiId!);
     if (!onay.ok) return isKuraluHatasi(onay.hata ?? "Onaylanamadı.");
     return NextResponse.json({
       ok: true,

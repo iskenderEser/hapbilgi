@@ -179,18 +179,20 @@ export async function eczaneDokumu(
   bitis: string,
   firmaIdler?: string[],
 ): Promise<EczaneDokum> {
-  let urunIdler: string[] | undefined;
-  if (firmaIdler) {
-    if (firmaIdler.length === 0) return { satirlar: [], toplam_kutu: 0, toplam_tl: 0 };
-    const { data: urunler } = await adminSupabase
-      .from("urunler")
-      .select("urun_id")
-      .in("firma_id", firmaIdler);
-    urunIdler = (urunler ?? []).map((urun) => urun.urun_id);
-  }
-  const rows = await onayliSiparisler(adminSupabase, { eczaneIdler: [eczaneId], urunIdler }, baslangic, bitis);
-  const adMap = await urunAdMap(adminSupabase, [...new Set(rows.map((r) => r.urun_id))]);
-  const satirlar = urunBazindaTopla(rows, adMap);
+  if (firmaIdler && firmaIdler.length === 0) return { satirlar: [], toplam_kutu: 0, toplam_tl: 0 };
+  const { data, error } = await adminSupabase.rpc("eczanem_eczane_dokumu", {
+    p_eczane_id: eczaneId,
+    p_baslangic: baslangic,
+    p_bitis: bitis,
+    p_firma_idler: firmaIdler ?? null,
+  });
+  if (error) throw new Error("Eczane işlem dökümü veritabanında hesaplanamadı.");
+  const satirlar: UrunToplam[] = (data ?? []).map((satir: any) => ({
+    urun_id: satir.urun_id,
+    urun_adi: satir.urun_adi ?? "-",
+    kutu: Number(satir.kutu) || 0,
+    indirim_tl: Number(satir.indirim_tl) || 0,
+  }));
   return {
     satirlar,
     toplam_kutu: satirlar.reduce((a, u) => a + u.kutu, 0),

@@ -41,12 +41,12 @@ async function yayinAdMap(
   adminSupabase: SupabaseClient,
   yayinIdler: string[],
   firmaIdler?: string[],
-): Promise<Map<string, { urun_adi: string; teknik_adi: string; yayin_tarihi: string | null }>> {
-  const map = new Map<string, { urun_adi: string; teknik_adi: string; yayin_tarihi: string | null }>();
+): Promise<Map<string, { urun_adi: string; teknik_adi: string; video_url: string | null; thumbnail_url: string | null; yayin_tarihi: string | null }>> {
+  const map = new Map<string, { urun_adi: string; teknik_adi: string; video_url: string | null; thumbnail_url: string | null; yayin_tarihi: string | null }>();
   if (yayinIdler.length === 0) return map;
   let sorgu = adminSupabase
     .from("v_yayin_detay")
-    .select("yayin_id, urun_adi, teknik_adi, yayin_tarihi")
+    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, yayin_tarihi")
     .in("yayin_id", yayinIdler);
   if (firmaIdler) {
     if (firmaIdler.length === 0) return map;
@@ -58,6 +58,8 @@ async function yayinAdMap(
     map.set((y as any).yayin_id, {
       urun_adi: (y as any).urun_adi ?? "-",
       teknik_adi: (y as any).teknik_adi ?? "-",
+      video_url: (y as any).video_url ?? null,
+      thumbnail_url: (y as any).thumbnail_url ?? null,
       yayin_tarihi: (y as any).yayin_tarihi ?? null,
     });
   }
@@ -255,11 +257,15 @@ export interface EczaneGelenVideo {
   yayin_id: string;
   urun_adi: string;
   teknik_adi: string;
+  video_url: string | null;
+  thumbnail_url: string | null;
   gelis_tarihi: string;
 }
 export interface EczaneUye {
   musteri_id: string;
+  ad_soyad: string;
   telefon_maskeli: string;
+  gonderildi_mi: boolean;
 }
 
 interface EczaneGonderimSatiri { yayin_id: string; created_at: string; }
@@ -273,11 +279,12 @@ export async function eczaneGelenVideolar(
   adminSupabase: SupabaseClient,
   eczaneId: string
 ): Promise<EczaneGelenVideo[]> {
-  const { data: gnd } = await adminSupabase
+  const { data: gnd, error: gonderimHatasi } = await adminSupabase
     .from("eczanem_eczane_gonderimleri")
     .select("yayin_id, created_at")
     .eq("eczane_id", eczaneId)
     .order("created_at", { ascending: false });
+  if (gonderimHatasi) throw new Error("Eczaneye gelen videolar okunamadı.");
 
   const rows = (gnd ?? []) as EczaneGonderimSatiri[];
   const erisim = await eczaneEczanemFirmaIdleri(adminSupabase, eczaneId);
@@ -289,6 +296,8 @@ export async function eczaneGelenVideolar(
       yayin_id: gonderim.yayin_id,
       urun_adi: ad?.urun_adi ?? "-",
       teknik_adi: ad?.teknik_adi ?? "-",
+      video_url: ad?.video_url ?? null,
+      thumbnail_url: ad?.thumbnail_url ?? null,
       gelis_tarihi: gonderim.created_at,
     };
   });
@@ -297,26 +306,46 @@ export async function eczaneGelenVideolar(
 // Eczanenin aktif üyeleri (yalnız son-4-hane — İP-§9.2; ad-soyad hiç akmaz).
 export async function eczaneAktifUyeler(
   adminSupabase: SupabaseClient,
-  eczaneId: string
+  eczaneId: string,
+  yayinId?: string,
 ): Promise<EczaneUye[]> {
-  const { data: uyelikler } = await adminSupabase
+  const { data: uyelikler, error: uyelikHatasi } = await adminSupabase
     .from("eczanem_uyelikler")
     .select("musteri_id")
     .eq("eczane_id", eczaneId)
     .eq("aktif_mi", true);
+  if (uyelikHatasi) throw new Error("Eczane aktif üyelikleri okunamadı.");
 
   const musteriIdler = [...new Set((uyelikler ?? []).map((uyelik) => uyelik.musteri_id))];
   if (musteriIdler.length === 0) return [];
 
-  const { data: musteriler } = await adminSupabase
+  const { data: musteriler, error: musteriHatasi } = await adminSupabase
     .from("eczanem_musteriler")
-    .select("musteri_id, telefon")
+    .select("musteri_id, ad_soyad, telefon")
     .in("musteri_id", musteriIdler)
     .eq("aktif_mi", true);
+  if (musteriHatasi) throw new Error("Eczane müşterileri okunamadı.");
+
+  const gonderilen = new Set<string>();
+  if (yayinId) {
+    const { data: gonderimler, error: gonderimHatasi } = await adminSupabase
+      .from("eczanem_gonderimler")
+      .select("musteri_id")
+      .eq("eczane_id", eczaneId)
+      .eq("yayin_id", yayinId)
+      .in("musteri_id", musteriIdler);
+    if (gonderimHatasi) throw new Error("Müşteri video gönderim durumları okunamadı.");
+    for (const gonderim of gonderimler ?? []) gonderilen.add(gonderim.musteri_id);
+  }
 
   return (musteriler ?? [])
-    .map((m: any) => ({ musteri_id: m.musteri_id, telefon_maskeli: telefonMaskele(m.telefon) }))
-    .sort((a, b) => a.telefon_maskeli.localeCompare(b.telefon_maskeli, "tr"));
+    .map((m: any) => ({
+      musteri_id: m.musteri_id,
+      ad_soyad: m.ad_soyad,
+      telefon_maskeli: telefonMaskele(m.telefon),
+      gonderildi_mi: gonderilen.has(m.musteri_id),
+    }))
+    .sort((a, b) => a.ad_soyad.localeCompare(b.ad_soyad, "tr"));
 }
 
 export interface MusteriGonderimSonuc {
@@ -340,6 +369,7 @@ export async function musteriyeGonder(
   const istenen = [...new Set((musteriIdler ?? []).filter((m) => typeof m === "string"))];
   if (!yayinId) return { ok: false, hata: "Video seçilmedi.", gonderilen: 0, atlanan: 0 };
   if (istenen.length === 0) return { ok: false, hata: "En az bir müşteri seçin.", gonderilen: 0, atlanan: 0 };
+  if (istenen.length > 100) return { ok: false, hata: "Tek işlemde en fazla 100 müşteriye gönderim yapılabilir.", gonderilen: 0, atlanan: istenen.length };
 
   // 1. Video bu eczaneye gelmiş mi (yalnız geleni dağıtabilir)
   const { data: gelen } = await adminSupabase
@@ -354,46 +384,26 @@ export async function musteriyeGonder(
     return { ok: false, hata: yayinErisimi.hata ?? "Eczanem erişimi doğrulanamadı.", gonderilen: 0, atlanan: 0 };
   }
 
-  // 2. İstenenlerden bu eczanenin aktif üyesi olanlar
-  const { data: uyeler } = await adminSupabase
-    .from("eczanem_uyelikler")
-    .select("musteri_id")
-    .eq("eczane_id", eczaneId)
-    .eq("aktif_mi", true)
-    .in("musteri_id", istenen);
-  const uyeSet = new Set((uyeler ?? []).map((u: any) => u.musteri_id));
-
-  // 3. Zaten gönderilmiş olanlar (UNIQUE çakışacaklar) — önceden ele
-  const { data: mevcut } = await adminSupabase
-    .from("eczanem_gonderimler")
-    .select("musteri_id")
-    .eq("yayin_id", yayinId)
-    .eq("eczane_id", eczaneId)
-    .in("musteri_id", istenen);
-  const gonderilmisSet = new Set((mevcut ?? []).map((g: any) => g.musteri_id));
-
-  const yeni = istenen.filter((m) => uyeSet.has(m) && !gonderilmisSet.has(m));
-  const atlanan = istenen.length - yeni.length;
-
-  if (yeni.length === 0) return { ok: true, gonderilen: 0, atlanan };
-
-  const satirlar = yeni.map((m) => ({
-    yayin_id: yayinId,
-    eczane_id: eczaneId,
-    musteri_id: m,
-    gonderen_kisi_id: gonderenKisiId,
-  }));
-
-  const { error } = await adminSupabase.from("eczanem_gonderimler").insert(satirlar);
-  if (error) {
-    // Yarışan istek UNIQUE'e takılabilir — tümü tek işlem, tekrar denenebilir.
-    if (error.code === "23505") return { ok: false, hata: "Gönderim çakışması; tekrar deneyin.", gonderilen: 0, atlanan };
-    return { ok: false, hata: "Gönderim kaydedilemedi.", gonderilen: 0, atlanan };
-  }
+  const { data, error } = await adminSupabase.rpc("eczanem_musterilere_video_gonder", {
+    p_eczane_id: eczaneId,
+    p_gonderen_kisi_id: gonderenKisiId,
+    p_yayin_id: yayinId,
+    p_musteri_idler: istenen,
+  });
+  if (error) return { ok: false, hata: "Gönderim veritabanında tamamlanamadı.", gonderilen: 0, atlanan: 0 };
+  const sonuc = Array.isArray(data) ? data[0] : data;
+  if (!sonuc?.ok) return { ok: false, hata: sonuc?.hata ?? "Gönderim tamamlanamadı.", gonderilen: 0, atlanan: Number(sonuc?.atlanan) || 0 };
+  const gonderilen = Number(sonuc.gonderilen) || 0;
+  const atlanan = Number(sonuc.atlanan) || 0;
+  const bildirimHedefleri = Array.isArray(sonuc.gonderilen_musteri_idler)
+    ? sonuc.gonderilen_musteri_idler.filter((id: unknown): id is string => typeof id === "string")
+    : [];
 
   // Push — K-P3 Eczanem istisnası: in-app bildirim katmanı olmadığından
   // doğrudan iş olayından tetiklenir; yükte kişi verisi yoktur (K-P6).
-  pushYayinlaEczanemMusterilereArkada(adminSupabase, "eczanem_gonderim", yeni);
+  if (bildirimHedefleri.length > 0) {
+    pushYayinlaEczanemMusterilereArkada(adminSupabase, "eczanem_gonderim", bildirimHedefleri);
+  }
 
-  return { ok: true, gonderilen: yeni.length, atlanan };
+  return { ok: true, gonderilen, atlanan };
 }

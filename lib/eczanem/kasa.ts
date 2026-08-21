@@ -237,8 +237,22 @@ export async function siparisOlustur(
 // Sahiplik/rol kontrolü çağıran route'ta yapılır.
 export async function siparisReddet(
   adminSupabase: SupabaseClient,
-  siparisId: string
+  siparisId: string,
+  eczaneId?: string,
+  islemYapanKisiId?: string,
 ): Promise<{ ok: boolean; hata?: string }> {
+  if (eczaneId && islemYapanKisiId) {
+    const { data, error } = await adminSupabase.rpc("eczanem_siparis_personel_islemi", {
+      p_siparis_id: siparisId,
+      p_eczane_id: eczaneId,
+      p_islem_yapan_kisi_id: islemYapanKisiId,
+      p_aksiyon: "reddet",
+    });
+    if (error) return { ok: false, hata: "Sipariş reddi veritabanında tamamlanamadı." };
+    const sonuc = Array.isArray(data) ? data[0] : data;
+    return { ok: Boolean(sonuc?.ok), hata: sonuc?.hata ?? undefined };
+  }
+
   const { data, error } = await adminSupabase
     .from("eczanem_siparisler")
     .update({ durum: "dustu" })
@@ -263,11 +277,18 @@ export interface OnaySonuc {
 // RPC TABLE döner (store deseni): ilk satır ok/hata/islem_kodu/indirim_tl.
 export async function siparisOnayla(
   adminSupabase: SupabaseClient,
-  siparisId: string
+  siparisId: string,
+  eczaneId: string,
+  islemYapanKisiId: string,
 ): Promise<OnaySonuc> {
-  const { data, error } = await adminSupabase.rpc("eczanem_siparis_onayla", { p_siparis_id: siparisId });
+  const { data, error } = await adminSupabase.rpc("eczanem_siparis_personel_islemi", {
+    p_siparis_id: siparisId,
+    p_eczane_id: eczaneId,
+    p_islem_yapan_kisi_id: islemYapanKisiId,
+    p_aksiyon: "onayla",
+  });
   if (error) {
-    console.error("[lib/eczanem/kasa] eczanem_siparis_onayla RPC hatası:", error.message);
+    console.error("[lib/eczanem/kasa] eczanem_siparis_personel_islemi RPC hatası:", error.message);
     return { ok: false, hata: error.message };
   }
   const ilk = Array.isArray(data) && data.length > 0 ? data[0] : null;

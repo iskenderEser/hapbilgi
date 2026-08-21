@@ -10,7 +10,9 @@ import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
 import { eczaciAktifEczanesi } from "@/lib/eczanem/eczaci";
 import { eczaneGelenVideolar, eczaneAktifUyeler, musteriyeGonder } from "@/lib/eczanem/gonderim";
 
-export async function GET() {
+const UUID_DESENI = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     const adminSupabase = createAdminClient();
@@ -24,12 +26,25 @@ export async function GET() {
     const eden = await eczaciAktifEczanesi(adminSupabase, user.id);
     if (!eden.ok) return isKuraluHatasi(eden.hata ?? "Eczane bağı bulunamadı.");
 
+    const yayinId = request.nextUrl.searchParams.get("yayin_id") ?? undefined;
+    if (yayinId && !UUID_DESENI.test(yayinId)) return validasyonHatasi("Geçersiz yayın kimliği.", ["yayin_id"]);
+
     const [videolar, uyeler] = await Promise.all([
       eczaneGelenVideolar(adminSupabase, eden.eczaneId!),
-      eczaneAktifUyeler(adminSupabase, eden.eczaneId!),
+      eczaneAktifUyeler(adminSupabase, eden.eczaneId!, yayinId),
     ]);
 
-    return NextResponse.json({ videolar, uyeler }, { status: 200 });
+    const gonderilen = uyeler.filter((uye) => uye.gonderildi_mi).length;
+    return NextResponse.json({
+      videolar,
+      uyeler,
+      ozet: {
+        video_sayisi: videolar.length,
+        aktif_uye_sayisi: uyeler.length,
+        gonderilen_uye_sayisi: gonderilen,
+        gonderilebilir_uye_sayisi: uyeler.length - gonderilen,
+      },
+    }, { status: 200 });
   } catch (err) {
     return sunucuHatasi(err, "GET /eczanem/eczane/api/gonderim");
   }
@@ -52,9 +67,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const yayinId = body?.yayin_id;
     const musteriIdler = body?.musteri_idler;
-    if (typeof yayinId !== "string" || !yayinId) return validasyonHatasi("yayin_id zorunludur.", ["yayin_id"]);
+    if (typeof yayinId !== "string" || !UUID_DESENI.test(yayinId)) return validasyonHatasi("Geçerli bir yayin_id zorunludur.", ["yayin_id"]);
     if (!Array.isArray(musteriIdler) || musteriIdler.length === 0) {
       return validasyonHatasi("En az bir müşteri seçilmelidir.", ["musteri_idler"]);
+    }
+    if (musteriIdler.length > 100 || musteriIdler.some((id) => typeof id !== "string" || !UUID_DESENI.test(id))) {
+      return validasyonHatasi("Tek işlemde en fazla 100 geçerli müşteri seçilebilir.", ["musteri_idler"]);
     }
 
     const sonuc = await musteriyeGonder(adminSupabase, eden.eczaneId!, eden.kisiId!, yayinId, musteriIdler);

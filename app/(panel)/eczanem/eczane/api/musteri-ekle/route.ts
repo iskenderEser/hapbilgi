@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
     if (eclubKontrol.uyeMi) return isKuraluHatasi(ECLUB_UYESI_MUSTERI_OLAMAZ_MESAJI);
 
-    const islem = body?.islem === "bagla" ? "bagla" : "kaydet";
+    const islem = body?.islem === "sorgula" ? "sorgula" : body?.islem === "bagla" ? "bagla" : "kaydet";
 
     // Telefon = tek kimlik, eczane bağı = çoklu (REDBOOK §5.1). Mevcut
     // müşterinin auth hesabına ve kimlik bilgilerine ikinci eczane dokunamaz.
@@ -63,6 +63,32 @@ export async function POST(request: NextRequest) {
       .eq("telefon", telefon)
       .maybeSingle();
     if (mevcutHatasi) return sunucuHatasi(mevcutHatasi, "eczanem_musteriler SELECT — telefon");
+
+    if (islem === "sorgula") {
+      if (!mevcut) {
+        return NextResponse.json({ ok: true, durum: "yeni", mesaj: "Bu telefonla kayıtlı Eczanem müşterisi bulunamadı." }, { status: 200 });
+      }
+      if (!mevcut.aktif_mi || !mevcut.auth_user_id) {
+        return isKuraluHatasi("Müşterinin genel hesabı aktif değil; yeni eczane üyeliği kurulamaz.");
+      }
+
+      const { data: uyelik, error: uyelikHatasi } = await adminSupabase
+        .from("eczanem_uyelikler")
+        .select("uyelik_id, aktif_mi")
+        .eq("musteri_id", mevcut.musteri_id)
+        .eq("eczane_id", eden.eczaneId!)
+        .maybeSingle();
+      if (uyelikHatasi) return sunucuHatasi(uyelikHatasi, "eczanem_uyelikler SELECT — müşteri sorgulama");
+
+      return NextResponse.json({
+        ok: true,
+        durum: uyelik?.aktif_mi ? "zaten_bagli" : "kayitli",
+        yeniden_aktif: Boolean(uyelik && !uyelik.aktif_mi),
+        mesaj: uyelik?.aktif_mi
+          ? "Bu müşteri zaten eczanenize bağlı."
+          : "Müşterinin mevcut Eczanem kaydı bulundu.",
+      }, { status: 200 });
+    }
 
     if (islem === "bagla") {
       if (!mevcut) return validasyonHatasi("Bu telefonla kayıtlı bir müşteri bulunamadı.", ["telefon"]);
@@ -81,20 +107,19 @@ export async function POST(request: NextRequest) {
         return validasyonHatasi("Bu müşteri zaten eczanenizin aktif üyesi.", ["telefon"]);
       }
 
-      // Pasif bağı yeniden açar; bağ yoksa oluşturur. UNIQUE(musteri_id,
-      // eczane_id) üzerinden upsert, eşzamanlı iki isteği de tek satırda tutar.
-      const { error: bagHatasi } = await adminSupabase
-        .from("eczanem_uyelikler")
-        .upsert(
-          { musteri_id: mevcut.musteri_id, eczane_id: eden.eczaneId!, aktif_mi: true },
-          { onConflict: "musteri_id,eczane_id" },
-        );
-      if (bagHatasi) return sunucuHatasi(bagHatasi, "eczanem_uyelikler UPSERT — mevcut müşteri bağı");
+      const { data: bagSonucu, error: bagHatasi } = await adminSupabase.rpc("eczanem_musteri_bagla_atomik", {
+        p_musteri_id: mevcut.musteri_id,
+        p_eczane_id: eden.eczaneId!,
+        p_islem_yapan_kisi_id: eden.kisiId!,
+      });
+      if (bagHatasi) return sunucuHatasi(bagHatasi, "eczanem_musteri_bagla_atomik RPC");
+      const bag = Array.isArray(bagSonucu) ? bagSonucu[0] : bagSonucu;
+      if (!bag?.ok) return isKuraluHatasi(bag?.hata ?? "Müşteri eczanenize bağlanamadı.");
 
       return NextResponse.json({
         ok: true,
         mevcut_musteri: true,
-        mesaj: mevcutUyelik ? "Müşterinin eczane üyeliği yeniden aktifleştirildi." : "Kayıtlı müşteri eczanenize bağlandı.",
+        mesaj: bag.yeniden_aktif ? "Müşterinin eczane üyeliği yeniden aktifleştirildi." : "Kayıtlı müşteri eczanenize bağlandı.",
       }, { status: 200 });
     }
 
@@ -140,11 +165,12 @@ export async function POST(request: NextRequest) {
       return hataYaniti("Müşteri oluşturma işlemi kaydedilemedi.", "kimlik_provizyon_islemleri UPDATE — auth_olustu", authKaydi.hata);
     }
 
-    const { data: yeniMusteriId, error: musteriHatasi } = await adminSupabase.rpc("eczanem_yeni_musteri_provizyonu", {
+    const { data: yeniMusteriId, error: musteriHatasi } = await adminSupabase.rpc("eczanem_yeni_musteri_provizyonu_izli", {
       p_telefon: telefon,
       p_ad_soyad: adSoyad,
       p_auth_user_id: authUserId,
       p_eczane_id: eden.eczaneId!,
+      p_islem_yapan_kisi_id: eden.kisiId!,
     });
     if (musteriHatasi || !yeniMusteriId) {
       const telafi = await authTelafisiYap(
@@ -163,7 +189,7 @@ export async function POST(request: NextRequest) {
         telafi.geriAlindi
           ? "Müşteri kaydedilemedi; oluşturulan giriş hesabı geri alındı."
           : "Müşteri kaydedilemedi; yönetici kontrolü gerekir.",
-        "eczanem_yeni_musteri_provizyonu RPC",
+        "eczanem_yeni_musteri_provizyonu_izli RPC",
         telafi.hata ?? musteriHatasi,
       );
     }

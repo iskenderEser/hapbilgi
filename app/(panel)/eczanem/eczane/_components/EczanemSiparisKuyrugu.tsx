@@ -1,12 +1,14 @@
-// app/eczanem/eczane/_components/EczanemSiparisKuyrugu.tsx
-// Eczacı sipariş onay kuyruğu (İP-§8.1.4): bekleyen siparişler (müşteri son-4-
-// hane, ürün, adet, indirim) → Onayla (atomik FIFO düşüm) / Reddet (düşür).
-// Onay sonrası fiş bilgisi (işlem kodu) müşteri panelinde de görünür.
-
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { CheckCircle2, ClipboardCheck, ClipboardList, Clock3, History, XCircle } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
+import { EczanemBosDurum, EczanemEczaneBaslik, EczanemOzetKarti, EczanemPanel, EczanemSayfalama, EczanemYukleniyor } from "./EczanemEczaneArayuz";
 
 interface Siparis {
   siparis_id: string;
@@ -18,122 +20,102 @@ interface Siparis {
   durum: string;
   islem_kodu: string | null;
   onay_tarihi: string | null;
+  karar_tarihi: string | null;
+  islem_yapan: string | null;
   created_at: string;
 }
 
-interface Props {
-  hata: (mesaj: string, adim?: string) => void;
-  basari: (mesaj: string) => void;
+interface SiparisVerisi {
+  bekleyen: Siparis[];
+  gecmis: Siparis[];
+  ozet: { bekleyen: number; bugun_onaylanan: number; gecmis: number };
+  sayfalama: {
+    bekleyen: { sayfa: number; toplam: number; toplam_sayfa: number };
+    gecmis: { sayfa: number; toplam: number; toplam_sayfa: number };
+  };
 }
 
-const DURUM: Record<string, { etiket: string; renk: string }> = {
-  onaylandi: { etiket: "Onaylandı", renk: "#15803d" },
-  dustu: { etiket: "Düştü", renk: "#737373" },
-};
+interface Props { hata: (mesaj: string, adim?: string) => void; basari: (mesaj: string) => void; }
+
+const BOS_VERI: SiparisVerisi = { bekleyen: [], gecmis: [], ozet: { bekleyen: 0, bugun_onaylanan: 0, gecmis: 0 }, sayfalama: { bekleyen: { sayfa: 1, toplam: 0, toplam_sayfa: 1 }, gecmis: { sayfa: 1, toplam: 0, toplam_sayfa: 1 } } };
+
+const tarihSaatYaz = (deger: string | null) => deger ? new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(deger)) : "—";
+const paraYaz = (deger: number) => new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(deger);
 
 export default function EczanemSiparisKuyrugu({ hata, basari }: Props) {
-  const [siparisler, setSiparisler] = useState<Siparis[]>([]);
-  const [isliyor, setIsliyor] = useState<string | null>(null);
+  const [veri, setVeri] = useState<SiparisVerisi>(BOS_VERI);
+  const [sekme, setSekme] = useState<"bekleyen" | "gecmis">("bekleyen");
+  const [bekleyenSayfa, setBekleyenSayfa] = useState(1);
+  const [gecmisSayfa, setGecmisSayfa] = useState(1);
+  const [durum, setDurum] = useState("tumu");
+  const [ilkYukleme, setIlkYukleme] = useState(true);
   const [yenileniyor, setYenileniyor] = useState(false);
+  const [isliyor, setIsliyor] = useState(false);
+  const [onayHedefi, setOnayHedefi] = useState<{ siparis: Siparis; aksiyon: "onayla" | "reddet" } | null>(null);
+  const istekRef = useRef<AbortController | null>(null);
 
   const cek = useCallback(async (elle = false) => {
+    istekRef.current?.abort();
+    const controller = new AbortController();
+    istekRef.current = controller;
     if (elle) setYenileniyor(true);
+    const params = new URLSearchParams({ bekleyen_sayfa: String(bekleyenSayfa), gecmis_sayfa: String(gecmisSayfa), durum, limit: "20" });
     try {
-      const res = await fetch("/eczanem/eczane/api/siparisler");
-      const d = await res.json();
-      if (!res.ok) { hata(d.hata ?? "Siparişler yüklenemedi.", "sipariş"); return; }
-      setSiparisler(d.siparisler ?? []);
-    } catch { hata("Siparişler yüklenemedi.", "sipariş"); }
-    finally { if (elle) setYenileniyor(false); }
-  }, [hata]);
+      const res = await fetch(`/eczanem/eczane/api/siparisler?${params}`, { cache: "no-store", signal: controller.signal });
+      const data = await res.json();
+      if (!res.ok) { hata(data.hata ?? "Siparişler yüklenemedi.", "sipariş kuyruğu"); return; }
+      setVeri(data);
+    } catch (err) {
+      if (!(err instanceof DOMException && err.name === "AbortError")) hata("Siparişler yüklenemedi.", "sipariş kuyruğu");
+    } finally {
+      if (istekRef.current === controller) { setIlkYukleme(false); setYenileniyor(false); }
+    }
+  }, [bekleyenSayfa, durum, gecmisSayfa, hata]);
 
-  useEffect(() => { cek(); }, [cek]);
+  useEffect(() => { void cek(); return () => istekRef.current?.abort(); }, [cek]);
+  useEffect(() => {
+    const zamanlayici = window.setInterval(() => { if (document.visibilityState === "visible" && !isliyor) void cek(); }, 30000);
+    return () => window.clearInterval(zamanlayici);
+  }, [cek, isliyor]);
 
-  const islem = async (siparis_id: string, aksiyon: "onayla" | "reddet") => {
-    setIsliyor(siparis_id);
+  const islem = async () => {
+    if (!onayHedefi) return;
+    const { siparis, aksiyon } = onayHedefi;
+    setIsliyor(true); setOnayHedefi(null);
     try {
-      const res = await fetch("/eczanem/eczane/api/siparisler", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ siparis_id, aksiyon }),
-      });
-      const d = await res.json();
-      if (!res.ok) { hata(d.hata ?? "İşlem başarısız.", "sipariş"); return; }
-      basari(aksiyon === "onayla" ? `Onaylandı — indirim ${Number(d.indirim_tl).toFixed(2)} TL (${d.islem_kodu}).` : "Sipariş düşürüldü.");
-      cek();
-    } catch { hata("İşlem başarısız.", "sipariş"); }
-    finally { setIsliyor(null); }
+      const res = await fetch("/eczanem/eczane/api/siparisler", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ siparis_id: siparis.siparis_id, aksiyon }) });
+      const data = await res.json();
+      if (!res.ok) { hata(data.hata ?? "Sipariş işlemi tamamlanamadı.", "sipariş"); return; }
+      basari(aksiyon === "onayla" ? `Sipariş onaylandı — ${paraYaz(Number(data.indirim_tl))} indirim (${data.islem_kodu}).` : "Sipariş reddedildi; müşteri puanı düşürülmedi.");
+      await cek(true);
+    } catch { hata("Sipariş işlemi tamamlanamadı.", "sipariş"); }
+    finally { setIsliyor(false); }
   };
 
-  const bekleyen = siparisler.filter((s) => s.durum === "bekliyor");
-  const gecmis = siparisler.filter((s) => s.durum !== "bekliyor");
+  return <>
+    <EczanemEczaneBaslik ikon={ClipboardList} baslik="Sipariş Onayı" aciklama="Müşteriden gelen kasa taleplerini inceleyin; onayda puan atomik düşer, red işleminde müşteri puanı korunur." aksiyon={<YenileButonu yenileniyor={yenileniyor} onYenile={() => cek(true)} disabled={isliyor} />} />
 
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="text-sm font-semibold text-gray-700 mb-1">Sipariş Onay Kuyruğu</div>
-          <div className="max-w-3xl text-xs text-gray-500">
-            Müşteri barkod okutup sipariş gönderdiğinde burada belirir. Onayladığınızda puan
-            o anda atomik olarak düşer ve fiş kesinleşir; reddederseniz sipariş düşer, puan düşmez.
-          </div>
-        </div>
-        <YenileButonu yenileniyor={yenileniyor} onYenile={() => cek(true)} disabled={!!isliyor} />
+    <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
+      <EczanemOzetKarti ikon={Clock3} etiket="Onay bekleyen" deger={veri.ozet.bekleyen} detay="En eski talep önce" renk="#b7791f" zemin="#fff7e8" />
+      <EczanemOzetKarti ikon={ClipboardCheck} etiket="Bugün onaylanan" deger={veri.ozet.bugun_onaylanan} detay="Kesinleşen işlem" renk="#16865f" zemin="#edf9f4" />
+      <EczanemOzetKarti ikon={History} etiket="İşlem geçmişi" deger={veri.ozet.gecmis} detay="Seçili durum kapsamı" renk="#6550b9" zemin="#f2effc" />
+    </section>
+
+    <EczanemPanel>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e7edf4] bg-[#fbfcfe] p-2">
+        <div className="flex gap-1"><Button type="button" variant={sekme === "bekleyen" ? "default" : "ghost"} onClick={() => setSekme("bekleyen")} className={sekme === "bekleyen" ? "bg-[#237ac8] text-xs font-extrabold hover:bg-[#1d69ad]" : "text-xs font-extrabold text-[#60758c]"}><Clock3 /> Onay Bekleyenler <Badge className="ml-1 bg-white/20 text-white">{veri.ozet.bekleyen}</Badge></Button><Button type="button" variant={sekme === "gecmis" ? "default" : "ghost"} onClick={() => setSekme("gecmis")} className={sekme === "gecmis" ? "bg-[#237ac8] text-xs font-extrabold hover:bg-[#1d69ad]" : "text-xs font-extrabold text-[#60758c]"}><History /> Geçmiş</Button></div>
+        {sekme === "gecmis" && <Select value={durum} onValueChange={(deger) => { setDurum(deger); setGecmisSayfa(1); }}><SelectTrigger className="h-8 w-40 border-[#d7e1eb] bg-white text-xs"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="tumu">Tüm işlemler</SelectItem><SelectItem value="onaylandi">Onaylanan</SelectItem><SelectItem value="dustu">Reddedilen/Düşen</SelectItem></SelectContent></Select>}
       </div>
 
-      {bekleyen.length === 0 ? (
-        <div className="text-sm text-gray-400 mb-2">Onay bekleyen sipariş yok.</div>
-      ) : (
-        <div className="divide-y divide-gray-100 mb-3">
-          {bekleyen.map((s) => (
-            <div key={s.siparis_id} className="py-3 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="text-sm text-gray-800 truncate">{s.urun_adi} <span className="text-xs text-gray-400">×{s.adet}</span></div>
-                <div className="text-xs text-gray-400">{s.musteri_maskeli} • {s.indirim_tl.toFixed(2)} TL indirim</div>
-              </div>
-              <div className="flex gap-2 whitespace-nowrap">
-                <button
-                  onClick={() => islem(s.siparis_id, "onayla")}
-                  disabled={isliyor === s.siparis_id}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-40"
-                  style={{ background: "#15803d" }}
-                >
-                  {isliyor === s.siparis_id ? "…" : "Onayla"}
-                </button>
-                <button
-                  onClick={() => islem(s.siparis_id, "reddet")}
-                  disabled={isliyor === s.siparis_id}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 border border-gray-300 disabled:opacity-40"
-                >
-                  Reddet
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {ilkYukleme ? <EczanemYukleniyor metin="Siparişler yükleniyor…" /> : sekme === "bekleyen" ? <>
+        {veri.bekleyen.length === 0 ? <EczanemBosDurum ikon={CheckCircle2} baslik="Onay bekleyen sipariş yok" aciklama="Yeni bir kasa talebi geldiğinde otomatik olarak bu listede görünecek." /> : <div className="divide-y divide-[#e7edf4]">{veri.bekleyen.map((siparis) => <article key={siparis.siparis_id} className="grid gap-4 p-4 md:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(100px,0.65fr))_auto] md:items-center md:px-5"><div className="min-w-0"><strong className="block truncate text-sm text-[#263e5b]">{siparis.urun_adi}</strong><span className="mt-1 block text-[11px] font-semibold text-[#71859d]">{siparis.musteri_maskeli} · {tarihSaatYaz(siparis.created_at)}</span></div><div><span className="block text-[9px] font-bold uppercase tracking-wide text-[#96a3b2]">Kutu</span><strong className="mt-1 block text-sm text-[#405976]">{siparis.adet}</strong></div><div><span className="block text-[9px] font-bold uppercase tracking-wide text-[#96a3b2]">Kullanılacak puan</span><strong className="mt-1 block text-sm text-[#405976]">{siparis.kullanilan_puan.toLocaleString("tr-TR")}</strong></div><div><span className="block text-[9px] font-bold uppercase tracking-wide text-[#96a3b2]">İndirim</span><strong className="mt-1 block text-sm text-[#16865f]">{paraYaz(siparis.indirim_tl)}</strong></div><div className="flex gap-2 md:justify-end"><Button type="button" size="sm" disabled={isliyor} onClick={() => setOnayHedefi({ siparis, aksiyon: "onayla" })} className="flex-1 bg-[#16865f] text-xs font-extrabold hover:bg-[#116d4d] md:flex-none"><CheckCircle2 /> Onayla</Button><Button type="button" size="sm" variant="outline" disabled={isliyor} onClick={() => setOnayHedefi({ siparis, aksiyon: "reddet" })} className="flex-1 border-[#efd1d1] text-xs font-extrabold text-[#b84444] hover:bg-[#fff5f5] hover:text-[#a33434] md:flex-none"><XCircle /> Reddet</Button></div></article>)}</div>}
+        <EczanemSayfalama sayfa={veri.sayfalama.bekleyen.sayfa} toplamSayfa={veri.sayfalama.bekleyen.toplam_sayfa} onDegistir={setBekleyenSayfa} disabled={yenileniyor || isliyor} />
+      </> : <>
+        {veri.gecmis.length === 0 ? <EczanemBosDurum ikon={History} baslik="İşlem geçmişi bulunamadı" aciklama="Seçtiğiniz duruma ait sonuç bulunmuyor." /> : <><div className="hidden md:block"><Table><TableHeader className="bg-[#f6f9fc]"><TableRow className="hover:bg-[#f6f9fc]"><TableHead className="px-5 text-[10px] font-extrabold uppercase tracking-wide text-[#8090a4]">Sipariş</TableHead><TableHead className="text-[10px] font-extrabold uppercase tracking-wide text-[#8090a4]">Kutu / İndirim</TableHead><TableHead className="text-[10px] font-extrabold uppercase tracking-wide text-[#8090a4]">Durum</TableHead><TableHead className="text-[10px] font-extrabold uppercase tracking-wide text-[#8090a4]">İşlemi yapan</TableHead><TableHead className="px-5 text-right text-[10px] font-extrabold uppercase tracking-wide text-[#8090a4]">Karar zamanı</TableHead></TableRow></TableHeader><TableBody>{veri.gecmis.map((siparis) => <TableRow key={siparis.siparis_id} className="border-[#edf1f5] hover:bg-[#fbfdff]"><TableCell className="px-5 py-4"><strong className="block text-sm text-[#30475f]">{siparis.urun_adi}</strong><span className="mt-1 block text-[11px] font-semibold text-[#8796a8]">{siparis.musteri_maskeli}{siparis.islem_kodu ? ` · ${siparis.islem_kodu}` : ""}</span></TableCell><TableCell className="text-xs font-bold text-[#60758c]">{siparis.adet} kutu · {paraYaz(siparis.indirim_tl)}</TableCell><TableCell>{siparis.durum === "onaylandi" ? <Badge className="border border-[#bde5d5] bg-[#edf9f4] font-bold text-[#157254]"><CheckCircle2 /> Onaylandı</Badge> : <Badge variant="outline" className="border-[#efd1d1] bg-[#fff5f5] font-bold text-[#a74646]"><XCircle /> Düştü</Badge>}</TableCell><TableCell className="text-xs font-semibold text-[#60758c]">{siparis.islem_yapan ?? "Kayıt yok"}</TableCell><TableCell className="px-5 text-right text-xs font-semibold text-[#71859d]">{tarihSaatYaz(siparis.karar_tarihi ?? siparis.onay_tarihi ?? siparis.created_at)}</TableCell></TableRow>)}</TableBody></Table></div><div className="divide-y divide-[#edf1f5] md:hidden">{veri.gecmis.map((siparis) => <article key={siparis.siparis_id} className="p-4"><div className="flex items-start justify-between gap-3"><div><strong className="text-sm text-[#30475f]">{siparis.urun_adi}</strong><p className="mt-1 text-[11px] font-semibold text-[#8796a8]">{siparis.adet} kutu · {paraYaz(siparis.indirim_tl)}</p></div>{siparis.durum === "onaylandi" ? <Badge className="bg-[#edf9f4] text-[#157254]">Onaylandı</Badge> : <Badge variant="outline" className="border-[#efd1d1] text-[#a74646]">Düştü</Badge>}</div><p className="mt-3 text-[11px] font-semibold text-[#71859d]">{siparis.islem_yapan ?? "İşlem personeli kaydı yok"} · {tarihSaatYaz(siparis.karar_tarihi ?? siparis.onay_tarihi ?? siparis.created_at)}</p></article>)}</div></>}
+        <EczanemSayfalama sayfa={veri.sayfalama.gecmis.sayfa} toplamSayfa={veri.sayfalama.gecmis.toplam_sayfa} onDegistir={setGecmisSayfa} disabled={yenileniyor || isliyor} />
+      </>}
+    </EczanemPanel>
 
-      {gecmis.length > 0 && (
-        <div className="border-t border-gray-100 pt-3">
-          <div className="text-xs font-semibold text-gray-500 mb-2">Geçmiş</div>
-          <div className="divide-y divide-gray-100">
-            {gecmis.map((s) => {
-              const d = DURUM[s.durum] ?? { etiket: s.durum, renk: "#737373" };
-              return (
-                <div key={s.siparis_id} className="py-2 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-sm text-gray-700 truncate">{s.urun_adi} <span className="text-xs text-gray-400">×{s.adet}</span></div>
-                    <div className="text-xs text-gray-400 truncate">
-                      {s.musteri_maskeli}
-                      {s.durum === "onaylandi" && s.islem_kodu && ` • ${s.indirim_tl.toFixed(2)} TL • ${s.islem_kodu}`}
-                    </div>
-                  </div>
-                  <span className="text-xs font-semibold whitespace-nowrap" style={{ color: d.renk }}>{d.etiket}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+    <AlertDialog open={!!onayHedefi} onOpenChange={(acik) => { if (!acik && !isliyor) setOnayHedefi(null); }}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{onayHedefi?.aksiyon === "onayla" ? "Siparişi onaylamak istediğinize emin misiniz?" : "Siparişi reddetmek istediğinize emin misiniz?"}</AlertDialogTitle><AlertDialogDescription>{onayHedefi?.siparis.urun_adi ?? "Sipariş"} için {onayHedefi?.siparis.adet ?? 0} kutu ve {paraYaz(onayHedefi?.siparis.indirim_tl ?? 0)} indirim talebi. {onayHedefi?.aksiyon === "onayla" ? "Onayla birlikte müşterinin kullanılabilir puanı atomik olarak düşer ve fiş kesinleşir." : "Red işleminde sipariş düşer; müşterinin puanı değişmez."}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Vazgeç</AlertDialogCancel><AlertDialogAction onClick={(event) => { event.preventDefault(); void islem(); }} className={onayHedefi?.aksiyon === "onayla" ? "bg-[#16865f] hover:bg-[#116d4d]" : "bg-[#b84444] hover:bg-[#9f3636]"}>{onayHedefi?.aksiyon === "onayla" ? <CheckCircle2 /> : <XCircle />} {onayHedefi?.aksiyon === "onayla" ? "Siparişi onayla" : "Siparişi reddet"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+  </>;
 }

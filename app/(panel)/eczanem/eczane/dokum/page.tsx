@@ -4,24 +4,17 @@
 // bilgisi bu bölümde YOKTUR — toplam görünür, kişi gizli.
 "use client";
 
-import { BarChart3 } from "lucide-react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
-import { EclubKisiSayfa, EclubKisiBaslik } from "@/components/eclub/EclubKisiSayfa";
+import { EczanemEczaneSayfa } from "../_components/EczanemEczaneArayuz";
 import EczanemDokum from "../_components/EczanemDokum";
 
 export default function EczanemDokumPage() {
   const { mesajlar, hata } = useHataMesaji();
 
   return (
-    <EclubKisiSayfa>
+    <EczanemEczaneSayfa>
       <HataMesajiContainer mesajlar={mesajlar} />
-      <EclubKisiBaslik
-        ikon={BarChart3}
-        ustEtiket="Eczanem"
-        baslik="İşlem Dökümü"
-        aciklama="Onaylanan siparişlerin ürün bazında kutu ve indirim TL toplamı — firma mutabakatının eczane tarafındaki karşılığı."
-      />
       <EczanemDokum hata={hata} />
-    </EclubKisiSayfa>
+    </EczanemEczaneSayfa>
   );
 }

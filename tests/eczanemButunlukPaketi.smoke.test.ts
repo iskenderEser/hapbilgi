@@ -17,7 +17,7 @@ test("mutlu: firma kapısı, atomik provizyon, sipariş tekilliği ve tek-sorgu 
   assert.match(proxy, /await eczanemRolErisimi\(eczanemSupabase, user\.id, rol\)/);
   assert.match(erisim, /\.eq\("eczanem_aktif", true\)/);
   assert.match(eclubRoute, /rpc\("eclub_yeni_kisi_provizyonu"/);
-  assert.match(musteriRoute, /rpc\("eczanem_yeni_musteri_provizyonu"/);
+  assert.match(musteriRoute, /rpc\("eczanem_yeni_musteri_provizyonu_izli"/);
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.kimlik_provizyon_islemleri/);
   assert.match(sql, /CREATE UNIQUE INDEX IF NOT EXISTS ux_eczanem_siparis_tek_bekleyen/);
   assert.match(kasa, /error\?\.code === "23505"/);

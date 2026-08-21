@@ -12,13 +12,14 @@ const uttBaglami: NavContext = {
   eczanemAcik: true,
 };
 
-test("UTT E-Club altında kararlaştırılan dört sayfayı doğru sırada görür", () => {
+test("UTT E-Club altında kararlaştırılan yönetim alanlarını doğru sırada görür", () => {
   const eclub = PANEL_NAV.find((grup) => grup.baslik === "E-Club");
   assert.ok(eclub);
   assert.deepEqual(
     eclub.oglar.filter((oge) => oge.gate(uttBaglami)).map((oge) => [oge.etiket, oge.path]),
     [
-      ["Videolar ve Eczanelerim", "/eclub/listem"],
+      ["Eczanelerim", "/eclub/eczanelerim"],
+      ["Video Yönetimi", undefined],
       ["Raporlar", "/eclub/raporlar"],
       ["E-Club Ligi", "/eclub/ligi"],
       ["Siparişler", "/eclub/siparisler"],

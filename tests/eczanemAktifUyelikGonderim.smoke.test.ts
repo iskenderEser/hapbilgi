@@ -5,15 +5,14 @@ import { readFileSync } from "node:fs";
 const gonderim = readFileSync("lib/eczanem/gonderim.ts", "utf8");
 const videolar = readFileSync("app/eczanem/api/videolar/route.ts", "utf8");
 const sql = readFileSync("scripts/sql/eczanem_coklu_eczane_aktif_uyelik.sql", "utf8");
+const yonetimSql = readFileSync("scripts/sql/eczanem_eczane_yonetim_paketi.sql", "utf8");
 const izlemeRotalari = ["baslat", "bitir", "sorular", "cevapla"]
   .map((ad) => readFileSync(`app/eczanem/api/izleme/${ad}/route.ts`, "utf8"));
 
 test("mutlu: aynı yayın gönderim ve ilerleme durumunu eczane/gönderim ekseninde ayırır", () => {
   assert.match(sql, /UNIQUE \(yayin_id, musteri_id, eczane_id\)/);
-  assert.match(
-    gonderim,
-    /from\("eczanem_gonderimler"\)[\s\S]*?\.eq\("yayin_id", yayinId\)[\s\S]*?\.eq\("eczane_id", eczaneId\)[\s\S]*?\.in\("musteri_id", istenen\)/,
-  );
+  assert.match(gonderim, /rpc\("eczanem_musterilere_video_gonder"/);
+  assert.match(yonetimSql, /ON CONFLICT \(yayin_id, musteri_id, eczane_id\) DO NOTHING/);
   assert.match(videolar, /izlemeDurumu\.get\(g\.gonderim_id\)/);
   assert.match(videolar, /eczane_adi: eczaneAdlari\.get\(g\.eczane_id\)/);
 });
