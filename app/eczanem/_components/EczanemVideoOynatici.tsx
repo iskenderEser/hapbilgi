@@ -53,6 +53,7 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
   const izlemeBitirildiRef = useRef(false);
   const baslatiliyorRef = useRef(false);
   const videoSuresiRef = useRef(0);
+  const maxIzlenenRef = useRef(0);
   const sonKonumRef = useRef(0);
   const sonGonderilenKonumRef = useRef(0);
   const playerRef = useRef<VideoPlayer | null>(null);
@@ -69,6 +70,7 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
     izlemeBitirildiRef.current = false;
     baslatiliyorRef.current = false;
     videoSuresiRef.current = 0;
+    maxIzlenenRef.current = 0;
     sonKonumRef.current = 0;
     sonGonderilenKonumRef.current = 0;
     setIzlemeId(null);
@@ -109,7 +111,6 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
       const d = await res.json();
       if (!res.ok) {
         const mesaj = d.hata ?? "İzleme tamamlanamadı.";
-        izlemeBitirildiRef.current = false;
         setTamamlamaHatasi(mesaj);
         hata(mesaj, d.adim, d.detay);
         return;
@@ -132,7 +133,6 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
       }
       await onTamamlandi();
     } catch {
-      izlemeBitirildiRef.current = false;
       setTamamlamaHatasi("İzleme tamamlanamadı; bağlantınızı kontrol edip yeniden deneyin.");
       hata("İzleme tamamlanamadı.", "izleme tamamlama");
     } finally {
@@ -157,17 +157,37 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
         if (sure > 0) videoSuresiRef.current = sure;
       });
       player.onTimeUpdate((data: { seconds: number }) => {
+        if (izlemeIdRef.current && data.seconds > maxIzlenenRef.current + 1.5) {
+          player.setCurrentTime(maxIzlenenRef.current);
+          return;
+        }
+        if (data.seconds > maxIzlenenRef.current) maxIzlenenRef.current = data.seconds;
         sonKonumRef.current = data.seconds;
         ilerlemeKaydet();
-        if (!izlemeBitirildiRef.current && videoSuresiRef.current > 0 && data.seconds >= videoSuresiRef.current - 0.5) {
+        if (!izlemeBitirildiRef.current && videoSuresiRef.current > 0 && maxIzlenenRef.current >= videoSuresiRef.current - 0.5) {
           izlemeBitirildiRef.current = true;
           void handleBitir();
         }
       });
+      player.onSeeked(() => {
+        player.getCurrentTime((current: number) => {
+          if (izlemeIdRef.current && current > maxIzlenenRef.current + 1) {
+            player.setCurrentTime(maxIzlenenRef.current);
+          }
+        });
+      });
       player.onEnded(() => {
         if (izlemeBitirildiRef.current) return;
-        izlemeBitirildiRef.current = true;
-        void handleBitir();
+        player.getDuration((sure: number) => {
+          if (izlemeBitirildiRef.current) return;
+          if (maxIzlenenRef.current < sure - 0.5) {
+            player.setCurrentTime(maxIzlenenRef.current);
+            player.play();
+            return;
+          }
+          izlemeBitirildiRef.current = true;
+          void handleBitir();
+        });
       });
     });
 
@@ -209,6 +229,7 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
       const kaldigiKonum = Math.max(0, Number(d.izleme?.son_konum_saniye ?? video.son_konum_saniye ?? 0));
       sonKonumRef.current = kaldigiKonum;
       sonGonderilenKonumRef.current = kaldigiKonum;
+      maxIzlenenRef.current = kaldigiKonum;
       if (kaldigiKonum > 0) playerRef.current?.setCurrentTime(kaldigiKonum);
       oynat();
     } catch {
@@ -269,7 +290,7 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
         )}
 
         <CardContent className="p-4 md:p-5">
-          {!izlemeBasladi && !izlemeTamamlandi && !tamamlamaHatasi && <div className="flex items-start gap-2 rounded-xl border border-[#dce8f2] bg-[#f5f9fc] p-3 text-xs font-semibold leading-5 text-[#60758c]"><CircleHelp className="mt-0.5 size-4 shrink-0 text-[#4d8fc8]" /><p>İzleme kaydı yalnız yukarıdaki Play düğmesine bastığınızda başlar. Videoyu ileri sarmadan tamamladığınızda puanınız otomatik eklenir.</p></div>}
+          {!izlemeBasladi && !izlemeTamamlandi && !tamamlamaHatasi && <div className="flex items-start gap-2 rounded-xl border border-[#dce8f2] bg-[#f5f9fc] p-3 text-xs font-semibold leading-5 text-[#60758c]"><CircleHelp className="mt-0.5 size-4 shrink-0 text-[#4d8fc8]" /><p>İzleme kaydı yalnız yukarıdaki Play düğmesine bastığınızda başlar. Müşteri izlemesinde ileri sarma kapalıdır; videoyu tamamladığınızda puanınız otomatik eklenir.</p></div>}
 
           {tamamlamaHatasi && <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#efcaca] bg-[#fff5f5] p-3 text-[#a74646]"><div className="flex items-start gap-2"><CircleAlert className="mt-0.5 size-4 shrink-0" /><p className="text-xs font-bold leading-5">{tamamlamaHatasi}</p></div><Button type="button" size="sm" variant="outline" onClick={() => void handleBitir()} disabled={islemLoading} className="h-8 border-[#e4b6b6] bg-white text-xs font-extrabold text-[#a74646]">Tamamlamayı yeniden dene</Button></div>}
 

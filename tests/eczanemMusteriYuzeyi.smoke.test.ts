@@ -44,6 +44,11 @@ test("mutlu: müşteri ana sayfası belirlenen altı dijital kanal rafını ve a
   assert.match(raf, /son_konum_saniye/);
   assert.match(oynatici, /\/eczanem\/api\/izleme\/ilerleme/);
   assert.match(oynatici, /setCurrentTime\(kaldigiKonum\)/);
+  assert.match(oynatici, /maxIzlenenRef/);
+  assert.match(oynatici, /player\.onSeeked/);
+  assert.match(oynatici, /current > maxIzlenenRef\.current \+ 1/);
+  assert.match(oynatici, /Müşteri izlemesinde ileri sarma kapalıdır/);
+  assert.doesNotMatch(oynatici, /if \(!res\.ok\)[\s\S]{0,320}izlemeBitirildiRef\.current = false/);
   assert.match(ilerlemeRoute, /\.eq\("musteri_id", kimlik\.musteriId!\)/);
   assert.match(ilerlemeRoute, /\.eq\("tamamlandi_mi", false\)/);
   assert.match(navbar, /href: "\/eczanem\/puanlarim", etiket: "Puanlarım"/);
