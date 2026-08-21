@@ -37,6 +37,10 @@ test("mutlu: müşteri ana sayfası belirlenen altı dijital kanal rafını ve a
   assert.match(raf, /videosunu sayfaya yerleştir/);
   assert.match(raf, /onBegeni/);
   assert.match(raf, /onFavori/);
+  assert.match(raf, /video\.video_puani/);
+  assert.match(raf, /video\.soru_sayisi/);
+  assert.match(raf, /video\.soru_puani/);
+  assert.match(raf, /Her Doğru/);
   assert.match(raf, /son_konum_saniye/);
   assert.match(oynatici, /\/eczanem\/api\/izleme\/ilerleme/);
   assert.match(oynatici, /setCurrentTime\(kaldigiKonum\)/);

@@ -62,6 +62,11 @@ export default function EczanemVideoRafi({ baslik, videolar, bosMesaj, onVideoSe
                         <button type="button" disabled={isliyor} onClick={() => void onFavori(video)} aria-label={video.favori_mi ? "Favoriden çıkar" : "Favoriye ekle"} className={`ml-1 rounded-full p-1 transition ${video.favori_mi ? "text-[#d49a1d]" : "text-[#a6b1bd] hover:text-[#d49a1d]"}`}><Star className={`size-3.5 ${video.favori_mi ? "fill-current" : ""}`} /></button><span className="text-[9px] font-bold text-[#7f8fa1]">{video.favori_sayisi}</span>
                       </div>
                     </div>
+                    <div className="mt-2.5 grid grid-cols-3 divide-x divide-[#e3e9ef] rounded-xl border border-[#e5ebf1] bg-[#f7f9fb] px-1 py-2 text-center">
+                      <div className="px-1"><span className="block text-[7px] font-extrabold uppercase tracking-wide text-[#8a99aa]">İzleme</span><strong className="mt-0.5 block text-[11px] font-black tabular-nums text-[#286fae]">{Number(video.video_puani ?? 0).toLocaleString("tr-TR")} puan</strong></div>
+                      <div className="px-1"><span className="block text-[7px] font-extrabold uppercase tracking-wide text-[#8a99aa]">Soru</span><strong className="mt-0.5 block text-[11px] font-black tabular-nums text-[#654db0]">{Number(video.soru_sayisi ?? 0).toLocaleString("tr-TR")} adet</strong></div>
+                      <div className="px-1"><span className="block text-[7px] font-extrabold uppercase tracking-wide text-[#8a99aa]">Her Doğru</span><strong className="mt-0.5 block text-[11px] font-black tabular-nums text-[#16865f]">{Number(video.soru_puani ?? 0).toLocaleString("tr-TR")} puan</strong></div>
+                    </div>
                     <div className="mt-2 flex items-center justify-between gap-2 text-[9px] font-bold text-[#8998a9]"><span className="truncate">{video.eczane_adi}</span><span className="shrink-0">{video.izlenme_sayisi} izlenme</span></div>
                     <div className="mt-2 flex items-center justify-between gap-2 border-t border-[#edf1f5] pt-2"><span className="text-[9px] font-semibold text-[#9aa6b4]">{tarihYaz(video.gelis_tarihi)}</span>{video.talep_no != null && <span className="truncate font-mono text-[9px] font-bold text-[#bc2d0d]">{talepIdGoster(video.firma_adi, video.talep_no)}</span>}</div>
                   </div>
