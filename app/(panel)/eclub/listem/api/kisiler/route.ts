@@ -15,6 +15,7 @@ import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi, yetkiHatasi, r
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   ECZANEM_MUSTERISI_ECLUB_UYESI_OLAMAZ_MESAJI,
+  eczanemMusterisiBul,
   eczanemMusterisiTelefonMu,
 } from "@/lib/eczanem/eclubUyesiKontrol";
 import { authTelafisiYap, provizyonBaslat, provizyonDurumuYaz } from "@/lib/kimlik/provizyon";
@@ -114,7 +115,7 @@ export async function GET() {
       if (m) eczaneAdiMap.set(eczane_id, m.eczane_adi);
     }
 
-    if (eczaneIdler.length === 0) return NextResponse.json({ kisiler: [] }, { status: 200 });
+    if (eczaneIdler.length === 0) return NextResponse.json({ kisiler: [], gecis_talepleri: [] }, { status: 200 });
 
     // Bu eczanelerdeki aktif kişi bağları + kimlik
     const { data: baglar, error: bagError } = await adminSupabase
@@ -151,7 +152,16 @@ export async function GET() {
       });
     }
 
-    return NextResponse.json({ kisiler: sonuc }, { status: 200 });
+    const { data: gecisTalepleri, error: gecisHatasi } = await adminSupabase
+      .from("eczanem_eclub_gecis_talepleri")
+      .select("gecis_id, eczane_id, rol, ad, soyad, eposta, telefon, durum, created_at")
+      .in("eczane_id", eczaneIdler)
+      .order("created_at", { ascending: false });
+    if (gecisHatasi && gecisHatasi.code !== "42P01") {
+      return hataYaniti("E-Club geçiş talepleri çekilemedi.", "eczanem_eclub_gecis_talepleri SELECT", gecisHatasi);
+    }
+
+    return NextResponse.json({ kisiler: sonuc, gecis_talepleri: gecisTalepleri ?? [] }, { status: 200 });
 
   } catch (err) {
     return sunucuHatasi(err, "GET /eclub/listem/api/kisiler");
@@ -191,14 +201,6 @@ export async function POST(request: NextRequest) {
     const telefonTemiz = telefon.trim();
     if (!telefonGecerliMi(telefonTemiz)) return validasyonHatasi("Telefon 11 haneli sayı olmalıdır.", ["telefon"]);
 
-    const musteriKontrol = await eczanemMusterisiTelefonMu(adminSupabase, telefonTemiz);
-    if (!musteriKontrol.ok) {
-      return hataYaniti("Eczanem müşteri kimliği doğrulanamadı.", "eczanem_musteriler SELECT — E-Club telefon kontrolü", musteriKontrol.hata);
-    }
-    if (musteriKontrol.musteriMi) {
-      return validasyonHatasi(ECZANEM_MUSTERISI_ECLUB_UYESI_OLAMAZ_MESAJI, ["telefon"]);
-    }
-
     // Sahiplik: UTT bu eczaneyi listesine almış mı?
     if (!(await uttEczaneSahipMi(adminSupabase, user.id, eczane_id)))
       return rolHatasi("Bu eczane listenizde değil, kişi ekleyemezsiniz.");
@@ -218,6 +220,42 @@ export async function POST(request: NextRequest) {
         return kk?.rol === "eczaci";
       });
       if (eczaciVar) return validasyonHatasi("Bu eczanede zaten aktif bir eczacı kayıtlı.", ["rol"]);
+    }
+
+    // Eczanem müşterisi artık körlemesine reddedilmez. Müşterinin açık kararı
+    // beklenen kontrollü geçiş talebi açılır; o ana kadar E-Club kimliği ve
+    // eczane bağı oluşmaz, mevcut Auth hesabı korunur.
+    const musteriKontrol = await eczanemMusterisiBul(adminSupabase, telefonTemiz);
+    if (!musteriKontrol.ok) {
+      return hataYaniti("Eczanem müşteri kimliği doğrulanamadı.", "eczanem_musteriler SELECT — E-Club telefon kontrolü", musteriKontrol.hata);
+    }
+    if (musteriKontrol.musteri) {
+      if (!musteriKontrol.musteri.aktif_mi || !musteriKontrol.musteri.auth_user_id) {
+        return validasyonHatasi("Müşterinin aktif giriş hesabı olmadığı için E-Club geçişi başlatılamaz.", ["telefon"]);
+      }
+
+      const { data: gecisSonucu, error: gecisHatasi } = await adminSupabase.rpc("eczanem_eclub_gecis_talebi_olustur", {
+        p_musteri_id: musteriKontrol.musteri.musteri_id,
+        p_auth_user_id: musteriKontrol.musteri.auth_user_id,
+        p_eczane_id: eczane_id,
+        p_rol: rolTemiz,
+        p_ad: ad.trim(),
+        p_soyad: soyad.trim(),
+        p_eposta: epostaTemiz,
+        p_telefon: telefonTemiz,
+        p_talep_eden_utt_id: user.id,
+      });
+      if (gecisHatasi) {
+        if (gecisHatasi.code === "P0001" || gecisHatasi.code === "23505") {
+          return validasyonHatasi(gecisHatasi.message, ["telefon", "eposta"]);
+        }
+        return hataYaniti("E-Club geçiş talebi oluşturulamadı.", "eczanem_eclub_gecis_talebi_olustur RPC", gecisHatasi);
+      }
+      return NextResponse.json({
+        mesaj: "Eczanem müşterisine E-Club geçiş talebi gönderildi. Müşteri puan kararını verdiğinde üyelik tamamlanacak.",
+        gecis_bekliyor: true,
+        gecis_id: (gecisSonucu as { gecis_id?: string } | null)?.gecis_id ?? null,
+      }, { status: 202 });
     }
 
     // E-posta ve telefon ayrı aranır: iki alan farklı kişilere aitse kimlikler

@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, CircleDollarSign, PackageCheck, ReceiptText } from "lucide-react";
+import { ChevronDown, ChevronRight, CircleAlert, CircleDollarSign, PackageCheck, ReceiptText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +26,7 @@ export default function UttEczanemDokum({ hata }: Props) {
   const [periyot, setPeriyot] = useState<Periyot>("bu_ay");
   const [dokum, setDokum] = useState<Dokum | null>(null);
   const [yukleniyor, setYukleniyor] = useState(true);
+  const [veriHatasi, setVeriHatasi] = useState<string | null>(null);
   const [yenileniyor, setYenileniyor] = useState(false);
   const [acikEczane, setAcikEczane] = useState<string | null>(null);
   const istekRef = useRef<AbortController | null>(null);
@@ -37,6 +38,7 @@ export default function UttEczanemDokum({ hata }: Props) {
     if (ilkYukleme) {
       setYukleniyor(true);
       setDokum(null);
+      setVeriHatasi(null);
       setAcikEczane(null);
     } else setYenileniyor(true);
 
@@ -45,10 +47,13 @@ export default function UttEczanemDokum({ hata }: Props) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.hata ?? data.error ?? "Mutabakat dökümü yüklenemedi.");
       setDokum(data);
+      setVeriHatasi(null);
       if (!ilkYukleme) setAcikEczane((mevcut) => mevcut && data.eczaneler?.some((eczane: EczaneSatir) => eczane.eczane_id === mevcut) ? mevcut : null);
     } catch (err) {
       if (controller.signal.aborted) return;
-      hata(err instanceof Error ? err.message : "Mutabakat dökümü yüklenemedi.", "Eczanem mutabakatı");
+      const mesaj = err instanceof Error ? err.message : "Mutabakat dökümü yüklenemedi.";
+      setVeriHatasi(mesaj);
+      hata(mesaj, "Eczanem mutabakatı");
     } finally {
       if (!controller.signal.aborted) {
         if (ilkYukleme) setYukleniyor(false);
@@ -94,9 +99,17 @@ export default function UttEczanemDokum({ hata }: Props) {
       </CardHeader>
 
       <CardContent className="p-0">
+        {veriHatasi && dokum && <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#f1d3d3] bg-[#fff7f7] px-4 py-3 text-[#a74646]"><div className="flex items-start gap-2"><CircleAlert className="mt-0.5 size-4 shrink-0" /><div><p className="text-xs font-extrabold">Güncel mutabakat verisi alınamadı; son başarılı döküm gösteriliyor.</p><p className="mt-0.5 text-[10px] font-semibold opacity-80">{veriHatasi}</p></div></div><Button type="button" size="sm" variant="outline" onClick={() => void cek()} disabled={yenileniyor} className="h-8 border-[#e8bcbc] bg-white text-xs font-extrabold text-[#a74646] hover:bg-[#fff1f1] hover:text-[#913737]">Tekrar dene</Button></div>}
         {yukleniyor ? (
           <div className="flex min-h-40 items-center justify-center gap-2 text-xs font-bold text-[#8190a3]">
             <span className="size-4 animate-spin rounded-full border-2 border-[#d7e4ef] border-t-[#3589d8]" /> Döküm hazırlanıyor...
+          </div>
+        ) : veriHatasi && !dokum ? (
+          <div className="px-5 py-12 text-center">
+            <span className="mx-auto flex size-11 items-center justify-center rounded-2xl bg-[#fff0f0] text-[#b84444]"><CircleAlert className="size-5" /></span>
+            <p className="mt-3 text-sm font-extrabold text-[#8f3636]">Mutabakat dökümü görüntülenemedi</p>
+            <p className="mx-auto mt-1 max-w-lg text-xs font-semibold leading-5 text-[#9a6969]">{veriHatasi}</p>
+            <Button type="button" size="sm" onClick={() => void cek(true)} disabled={yukleniyor} className="mt-4 bg-[#237ac8] text-xs font-extrabold hover:bg-[#1d69ad]">Tekrar dene</Button>
           </div>
         ) : !dokum || dokum.eczaneler.length === 0 ? (
           <div className="px-5 py-12 text-center">

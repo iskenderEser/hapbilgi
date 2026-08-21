@@ -2,7 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { Eczane, Kisi, YeniKisiForm, GlnSorguSonuc } from "../_types";
+import type { Eczane, Kisi, YeniKisiForm, GlnSorguSonuc, EclubGecisTalebi } from "../_types";
 
 interface UseEclubListemArgs {
   hazir: boolean; // auth doğrulandıktan sonra true
@@ -13,6 +13,7 @@ interface UseEclubListemArgs {
 export function useEclubListem({ hazir, hata, basari }: UseEclubListemArgs) {
   const [eczaneler, setEczaneler] = useState<Eczane[]>([]);
   const [kisiler, setKisiler] = useState<Kisi[]>([]);
+  const [gecisTalepleri, setGecisTalepleri] = useState<EclubGecisTalebi[]>([]);
   const [loading, setLoading] = useState(true);
   const [yenileniyor, setYenileniyor] = useState(false);
   const [islemLoading, setIslemLoading] = useState(false);
@@ -32,7 +33,10 @@ export function useEclubListem({ hazir, hata, basari }: UseEclubListemArgs) {
       else setEczaneler(eczaneData.eczaneler ?? []);
 
       if (!kisiRes.ok) hata(kisiData.hata ?? "Kişiler yüklenemedi.", kisiData.adim, kisiData.detay);
-      else setKisiler(kisiData.kisiler ?? []);
+      else {
+        setKisiler(kisiData.kisiler ?? []);
+        setGecisTalepleri(kisiData.gecis_talepleri ?? []);
+      }
     } catch (err) {
       hata("Veri yüklenirken hata oluştu.", "useEclubListem veriCek", err instanceof Error ? err.message : undefined);
     } finally {
@@ -210,6 +214,7 @@ export function useEclubListem({ hazir, hata, basari }: UseEclubListemArgs) {
   return {
     eczaneler,
     kisiler,
+    gecisTalepleri,
     loading,
     yenileniyor,
     islemLoading,

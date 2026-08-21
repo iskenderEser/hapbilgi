@@ -50,6 +50,35 @@ export async function GET(request: NextRequest) {
     const gecmisDurum = request.nextUrl.searchParams.get("durum") ?? "tumu";
     if (!['tumu', 'onaylandi', 'dustu'].includes(gecmisDurum)) return validasyonHatasi("Geçersiz sipariş durumu.", ["durum"]);
 
+    // Kuyruk, sayfalama ve sayaçlar yalnız eczanede Eczanem'i açan firmaların
+    // ürünlerinden oluşmalı. Sonradan satır süzmek toplamları ve sayfa sayısını
+    // görünür listeyle ayrıştırır; bu nedenle kapsam sipariş sorgusuna girer.
+    const { data: urunler, error: urunHatasi } = await adminSupabase
+      .from("urunler")
+      .select("urun_id, urun_adi, firma_id")
+      .in("firma_id", eden.firmaIdler!);
+    if (urunHatasi) return hataYaniti("Sipariş ürünleri çekilemedi.", "urunler SELECT — sipariş firma kapsamı", urunHatasi);
+
+    const urunAd = new Map<string, string>();
+    const izinliUrunIdler: string[] = [];
+    for (const urunRaw of urunler ?? []) {
+      const urun = urunRaw as UrunSatiri;
+      urunAd.set(urun.urun_id, urun.urun_adi);
+      izinliUrunIdler.push(urun.urun_id);
+    }
+
+    if (izinliUrunIdler.length === 0) {
+      return NextResponse.json({
+        bekleyen: [],
+        gecmis: [],
+        ozet: { bekleyen: 0, bugun_onaylanan: 0, gecmis: 0 },
+        sayfalama: {
+          bekleyen: { sayfa: bekleyenSayfa, toplam: 0, toplam_sayfa: 1 },
+          gecmis: { sayfa: gecmisSayfa, toplam: 0, toplam_sayfa: 1 },
+        },
+      }, { status: 200 });
+    }
+
     const secim = "siparis_id, musteri_id, musteri_etiket, urun_id, adet, kullanilan_puan, indirim_tl, durum, islem_kodu, onay_tarihi, karar_tarihi, islem_yapan_kisi_id, created_at";
     const bekleyenBaslangic = (bekleyenSayfa - 1) * limit;
     const gecmisBaslangic = (gecmisSayfa - 1) * limit;
@@ -59,6 +88,7 @@ export async function GET(request: NextRequest) {
       .from("eczanem_siparisler")
       .select(secim, { count: "exact" })
       .eq("eczane_id", eden.eczaneId!)
+      .in("urun_id", izinliUrunIdler)
       .eq("durum", "bekliyor")
       .order("created_at", { ascending: true })
       .range(bekleyenBaslangic, bekleyenBaslangic + limit - 1);
@@ -66,6 +96,7 @@ export async function GET(request: NextRequest) {
       .from("eczanem_siparisler")
       .select(secim, { count: "exact" })
       .eq("eczane_id", eden.eczaneId!)
+      .in("urun_id", izinliUrunIdler)
       .neq("durum", "bekliyor")
       .order("karar_tarihi", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
@@ -76,26 +107,11 @@ export async function GET(request: NextRequest) {
       bekleyenSorgusu,
       gecmisSorgusu,
       adminSupabase.from("eczanem_siparisler").select("siparis_id", { count: "exact", head: true })
-        .eq("eczane_id", eden.eczaneId!).eq("durum", "onaylandi").gte("onay_tarihi", bugun),
+        .eq("eczane_id", eden.eczaneId!).in("urun_id", izinliUrunIdler).eq("durum", "onaylandi").gte("onay_tarihi", bugun),
     ]);
     const okumaHatasi = bekleyenSonucu.error ?? gecmisSonucu.error ?? bugunOnaySonucu.error;
     if (okumaHatasi) return hataYaniti("Siparişler çekilemedi.", "eczanem_siparisler SELECT — kuyruk/geçmiş", okumaHatasi);
     const siparisler = [...(bekleyenSonucu.data ?? []), ...(gecmisSonucu.data ?? [])] as SiparisSatiri[];
-
-    // Ürün adları
-    const urunIdler = [...new Set(siparisler.map((siparis) => siparis.urun_id))];
-    const urunAd = new Map<string, string>();
-    const izinliUrunIdler = new Set<string>();
-    if (urunIdler.length > 0) {
-      const { data: urunler, error: urunHatasi } = await adminSupabase.from("urunler").select("urun_id, urun_adi, firma_id").in("urun_id", urunIdler);
-      if (urunHatasi) return hataYaniti("Sipariş ürünleri çekilemedi.", "urunler SELECT — sipariş kuyruğu", urunHatasi);
-      for (const urunRaw of urunler ?? []) {
-        const urun = urunRaw as UrunSatiri;
-        if (!eden.firmaIdler!.includes(urun.firma_id)) continue;
-        urunAd.set(urun.urun_id, urun.urun_adi);
-        izinliUrunIdler.add(urun.urun_id);
-      }
-    }
 
     // Müşteri son-4-hane (İP-§9.2: ad-soyad ASLA; yalnız maske). Silinmişse musteri_etiket.
     const musteriIdler = [...new Set(siparisler.map((siparis) => siparis.musteri_id).filter((id): id is string => Boolean(id)))];
@@ -117,7 +133,7 @@ export async function GET(request: NextRequest) {
       for (const kisi of kisiler ?? []) kisiAd.set(kisi.kisi_id, `${kisi.ad ?? ""} ${kisi.soyad ?? ""}`.trim());
     }
 
-    const sonuc = siparisler.filter((siparis) => izinliUrunIdler.has(siparis.urun_id)).map((siparis) => ({
+    const sonuc = siparisler.map((siparis) => ({
       siparis_id: siparis.siparis_id,
       musteri_maskeli: siparis.musteri_id
         ? `••• ••• ${(musteriTel.get(siparis.musteri_id) ?? "").slice(-4)}`
@@ -179,12 +195,8 @@ export async function POST(request: NextRequest) {
     if (!siparis) return hataYaniti("Sipariş bulunamadı.", "eczanem_siparisler SELECT — siparis_id", null, 404);
     if (siparis.eczane_id !== eden.eczaneId) return rolHatasi("Bu sipariş sizin eczanenize ait değil.");
 
-    if (aksiyon === "reddet") {
-      const r = await siparisReddet(adminSupabase, siparis_id, eden.eczaneId!, eden.kisiId!);
-      if (!r.ok) return isKuraluHatasi(r.hata ?? "Reddedilemedi.");
-      return NextResponse.json({ ok: true, mesaj: "Sipariş düşürüldü." }, { status: 200 });
-    }
-
+    // Firma kapısı onay ve red için aynıdır. Kuyrukta görünmeyen/erişimi kapanmış
+    // bir firmanın siparişi, kimliği bilinerek POST üzerinden işlenemez.
     const { data: urun } = await adminSupabase
       .from("urunler")
       .select("firma_id")
@@ -192,6 +204,12 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
     if (!urun?.firma_id || !eden.firmaIdler!.includes(urun.firma_id)) {
       return rolHatasi("Bu siparişin firması için Eczanem kapalıdır.");
+    }
+
+    if (aksiyon === "reddet") {
+      const r = await siparisReddet(adminSupabase, siparis_id, eden.eczaneId!, eden.kisiId!);
+      if (!r.ok) return isKuraluHatasi(r.hata ?? "Reddedilemedi.");
+      return NextResponse.json({ ok: true, mesaj: "Sipariş düşürüldü." }, { status: 200 });
     }
 
     // onayla — atomik FIFO düşüm RPC'si

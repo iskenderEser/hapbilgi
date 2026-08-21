@@ -24,7 +24,7 @@ export default function EclubEczanelerimPage() {
   const rolUygun = !!kullanici && ECLUB_GOREN_ROLLER.includes((kullanici.rol ?? "").toLowerCase());
   const hazir = !authYukleniyor && rolUygun;
   const {
-    eczaneler, kisiler, loading, yenileniyor, islemLoading, veriCek,
+    eczaneler, kisiler, gecisTalepleri, loading, yenileniyor, islemLoading, veriCek,
     glnSorgula, eczaneEkle, eczaneListedenCikar, kisiEkle, kisiGuncelle, kisiPasifeAl,
   } = useEclubListem({ hazir, hata, basari });
 
@@ -56,6 +56,16 @@ export default function EclubEczanelerimPage() {
     }
     return map;
   }, [kisiler]);
+
+  const gecislerByEczane = useMemo(() => {
+    const map = new Map<string, typeof gecisTalepleri>();
+    for (const talep of gecisTalepleri) {
+      const grup = map.get(talep.eczane_id) ?? [];
+      grup.push(talep);
+      map.set(talep.eczane_id, grup);
+    }
+    return map;
+  }, [gecisTalepleri]);
 
   const formTemizle = () => {
     setEczaneFormAcik(false);
@@ -122,7 +132,7 @@ export default function EclubEczanelerimPage() {
                 <thead><tr><th>Eczane</th><th>GLN</th><th>Eczacı</th><th>Teknisyen</th><th>Toplam kişi</th><th>Yönetim</th></tr></thead>
                 <tbody>
                   {eczaneler.map((eczane) => (
-                    <EczaneBlogu key={eczane.eczane_id} eczane={eczane} kisiler={kisilerByEczane.get(eczane.eczane_id) ?? []} islemLoading={islemLoading} onListedenCikar={eczaneListedenCikar} onKisiEkle={kisiEkle} onKisiGuncelle={kisiGuncelle} onKisiPasifeAl={kisiPasifeAl} />
+                    <EczaneBlogu key={eczane.eczane_id} eczane={eczane} kisiler={kisilerByEczane.get(eczane.eczane_id) ?? []} gecisTalepleri={gecislerByEczane.get(eczane.eczane_id) ?? []} islemLoading={islemLoading} onListedenCikar={eczaneListedenCikar} onKisiEkle={kisiEkle} onKisiGuncelle={kisiGuncelle} onKisiPasifeAl={kisiPasifeAl} />
                   ))}
                 </tbody>
               </table>

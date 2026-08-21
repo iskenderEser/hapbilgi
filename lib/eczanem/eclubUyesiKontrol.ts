@@ -33,19 +33,32 @@ export async function eczanemMusterisiTelefonMu(
   adminSupabase: SupabaseClient,
   telefon: string,
 ): Promise<{ ok: boolean; musteriMi: boolean; hata?: unknown }> {
+  const sonuc = await eczanemMusterisiBul(adminSupabase, telefon);
+  return { ok: sonuc.ok, musteriMi: !!sonuc.musteri, hata: sonuc.hata };
+}
+
+/** Kontrollü Eczanem → E-Club geçişi için müşteri kimliğini döndürür. */
+export async function eczanemMusterisiBul(
+  adminSupabase: SupabaseClient,
+  telefon: string,
+): Promise<{
+  ok: boolean;
+  musteri?: { musteri_id: string; auth_user_id: string | null; aktif_mi: boolean } | null;
+  hata?: unknown;
+}> {
   const rakamlar = telefon.replace(/\D/g, "");
   const kanonik = rakamlar.startsWith("90") && rakamlar.length === 12
     ? rakamlar.slice(2)
     : rakamlar.startsWith("0") && rakamlar.length === 11
       ? rakamlar.slice(1)
       : rakamlar;
-  if (!/^5\d{9}$/.test(kanonik)) return { ok: true, musteriMi: false };
+  if (!/^5\d{9}$/.test(kanonik)) return { ok: true, musteri: null };
 
   const { data, error } = await adminSupabase
     .from("eczanem_musteriler")
-    .select("musteri_id")
+    .select("musteri_id, auth_user_id, aktif_mi")
     .eq("telefon", kanonik)
-    .limit(1);
-  if (error) return { ok: false, musteriMi: false, hata: error };
-  return { ok: true, musteriMi: (data?.length ?? 0) > 0 };
+    .maybeSingle();
+  if (error) return { ok: false, musteri: null, hata: error };
+  return { ok: true, musteri: data ?? null };
 }

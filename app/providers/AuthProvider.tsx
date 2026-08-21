@@ -88,7 +88,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             rol: data.rol,
             ad: data.ad,
             soyad: data.soyad,
-            adSoyad: `${data.ad} ${data.soyad}`.trim(),
+            adSoyad: [data.ad, data.soyad]
+              .filter((parca): parca is string => typeof parca === "string" && parca.trim().length > 0)
+              .map((parca) => parca.trim())
+              .join(" "),
             firma_id: data.firma_id ?? null,
             kimlik_turu: data.kimlik_turu as KimlikTuru,
             telefon: data.telefon ?? null,

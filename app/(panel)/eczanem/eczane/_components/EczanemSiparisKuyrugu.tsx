@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CheckCircle2, ClipboardCheck, ClipboardList, Clock3, History, XCircle } from "lucide-react";
+import { CheckCircle2, CircleAlert, ClipboardCheck, ClipboardList, Clock3, History, XCircle } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ interface SiparisVerisi {
 }
 
 interface Props { hata: (mesaj: string, adim?: string) => void; basari: (mesaj: string) => void; }
+interface VeriHatasi { mesaj: string; adim?: string; detay?: string; }
 
 const BOS_VERI: SiparisVerisi = { bekleyen: [], gecmis: [], ozet: { bekleyen: 0, bugun_onaylanan: 0, gecmis: 0 }, sayfalama: { bekleyen: { sayfa: 1, toplam: 0, toplam_sayfa: 1 }, gecmis: { sayfa: 1, toplam: 0, toplam_sayfa: 1 } } };
 
@@ -49,12 +50,15 @@ export default function EczanemSiparisKuyrugu({ hata, basari }: Props) {
   const [gecmisSayfa, setGecmisSayfa] = useState(1);
   const [durum, setDurum] = useState("tumu");
   const [ilkYukleme, setIlkYukleme] = useState(true);
+  const [veriHazir, setVeriHazir] = useState(false);
+  const [veriHatasi, setVeriHatasi] = useState<VeriHatasi | null>(null);
   const [yenileniyor, setYenileniyor] = useState(false);
   const [isliyor, setIsliyor] = useState(false);
   const [onayHedefi, setOnayHedefi] = useState<{ siparis: Siparis; aksiyon: "onayla" | "reddet" } | null>(null);
   const istekRef = useRef<AbortController | null>(null);
+  const hataGosterildiRef = useRef(false);
 
-  const cek = useCallback(async (elle = false) => {
+  const cek = useCallback(async (elle = false, sessiz = false) => {
     istekRef.current?.abort();
     const controller = new AbortController();
     istekRef.current = controller;
@@ -63,10 +67,28 @@ export default function EczanemSiparisKuyrugu({ hata, basari }: Props) {
     try {
       const res = await fetch(`/eczanem/eczane/api/siparisler?${params}`, { cache: "no-store", signal: controller.signal });
       const data = await res.json();
-      if (!res.ok) { hata(data.hata ?? "Siparişler yüklenemedi.", "sipariş kuyruğu"); return; }
+      if (!res.ok) {
+        const yeniHata: VeriHatasi = {
+          mesaj: data.hata ?? "Siparişler yüklenemedi.",
+          adim: data.adim ?? "sipariş kuyruğu",
+          detay: data.detay,
+        };
+        setVeriHatasi(yeniHata);
+        if (elle || !sessiz || !hataGosterildiRef.current) hata(yeniHata.mesaj, yeniHata.adim);
+        hataGosterildiRef.current = true;
+        return;
+      }
       setVeri(data);
+      setVeriHazir(true);
+      setVeriHatasi(null);
+      hataGosterildiRef.current = false;
     } catch (err) {
-      if (!(err instanceof DOMException && err.name === "AbortError")) hata("Siparişler yüklenemedi.", "sipariş kuyruğu");
+      if (!(err instanceof DOMException && err.name === "AbortError")) {
+        const yeniHata = { mesaj: "Siparişler yüklenemedi.", adim: "sipariş kuyruğu" };
+        setVeriHatasi(yeniHata);
+        if (elle || !sessiz || !hataGosterildiRef.current) hata(yeniHata.mesaj, yeniHata.adim);
+        hataGosterildiRef.current = true;
+      }
     } finally {
       if (istekRef.current === controller) { setIlkYukleme(false); setYenileniyor(false); }
     }
@@ -74,7 +96,7 @@ export default function EczanemSiparisKuyrugu({ hata, basari }: Props) {
 
   useEffect(() => { void cek(); return () => istekRef.current?.abort(); }, [cek]);
   useEffect(() => {
-    const zamanlayici = window.setInterval(() => { if (document.visibilityState === "visible" && !isliyor) void cek(); }, 30000);
+    const zamanlayici = window.setInterval(() => { if (document.visibilityState === "visible" && !isliyor) void cek(false, true); }, 30000);
     return () => window.clearInterval(zamanlayici);
   }, [cek, isliyor]);
 
@@ -95,19 +117,20 @@ export default function EczanemSiparisKuyrugu({ hata, basari }: Props) {
   return <>
     <EczanemEczaneBaslik ikon={ClipboardList} baslik="Sipariş Onayı" aciklama="Müşteriden gelen kasa taleplerini inceleyin; onayda puan atomik düşer, red işleminde müşteri puanı korunur." aksiyon={<YenileButonu yenileniyor={yenileniyor} onYenile={() => cek(true)} disabled={isliyor} />} />
 
-    <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
+    {veriHazir && <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
       <EczanemOzetKarti ikon={Clock3} etiket="Onay bekleyen" deger={veri.ozet.bekleyen} detay="En eski talep önce" renk="#b7791f" zemin="#fff7e8" />
       <EczanemOzetKarti ikon={ClipboardCheck} etiket="Bugün onaylanan" deger={veri.ozet.bugun_onaylanan} detay="Kesinleşen işlem" renk="#16865f" zemin="#edf9f4" />
       <EczanemOzetKarti ikon={History} etiket="İşlem geçmişi" deger={veri.ozet.gecmis} detay="Seçili durum kapsamı" renk="#6550b9" zemin="#f2effc" />
-    </section>
+    </section>}
 
     <EczanemPanel>
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e7edf4] bg-[#fbfcfe] p-2">
+      {veriHatasi && veriHazir && <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#f1d3d3] bg-[#fff7f7] px-4 py-3 text-[#a74646] md:px-5"><div className="flex min-w-0 items-start gap-2"><CircleAlert className="mt-0.5 size-4 shrink-0" /><div><p className="text-xs font-extrabold">Güncel sipariş verisi alınamadı; son başarılı kayıtlar gösteriliyor.</p><p className="mt-0.5 text-[10px] font-semibold opacity-80">{veriHatasi.mesaj}{veriHatasi.adim ? ` · ${veriHatasi.adim}` : ""}</p></div></div><Button type="button" size="sm" variant="outline" onClick={() => void cek(true)} disabled={yenileniyor || isliyor} className="h-8 border-[#e8bcbc] bg-white text-xs font-extrabold text-[#a74646] hover:bg-[#fff1f1] hover:text-[#913737]">Tekrar dene</Button></div>}
+      {veriHazir && <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e7edf4] bg-[#fbfcfe] p-2">
         <div className="flex gap-1"><Button type="button" variant={sekme === "bekleyen" ? "default" : "ghost"} onClick={() => setSekme("bekleyen")} className={sekme === "bekleyen" ? "bg-[#237ac8] text-xs font-extrabold hover:bg-[#1d69ad]" : "text-xs font-extrabold text-[#60758c]"}><Clock3 /> Onay Bekleyenler <Badge className="ml-1 bg-white/20 text-white">{veri.ozet.bekleyen}</Badge></Button><Button type="button" variant={sekme === "gecmis" ? "default" : "ghost"} onClick={() => setSekme("gecmis")} className={sekme === "gecmis" ? "bg-[#237ac8] text-xs font-extrabold hover:bg-[#1d69ad]" : "text-xs font-extrabold text-[#60758c]"}><History /> Geçmiş</Button></div>
         {sekme === "gecmis" && <Select value={durum} onValueChange={(deger) => { setDurum(deger); setGecmisSayfa(1); }}><SelectTrigger className="h-8 w-40 border-[#d7e1eb] bg-white text-xs"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="tumu">Tüm işlemler</SelectItem><SelectItem value="onaylandi">Onaylanan</SelectItem><SelectItem value="dustu">Reddedilen/Düşen</SelectItem></SelectContent></Select>}
-      </div>
+      </div>}
 
-      {ilkYukleme ? <EczanemYukleniyor metin="Siparişler yükleniyor…" /> : sekme === "bekleyen" ? <>
+      {ilkYukleme ? <EczanemYukleniyor metin="Siparişler yükleniyor…" /> : !veriHazir && veriHatasi ? <div className="px-5 py-12 text-center"><span className="mx-auto flex size-11 items-center justify-center rounded-2xl bg-[#fff0f0] text-[#b84444]"><CircleAlert className="size-5" /></span><h3 className="mt-3 text-sm font-extrabold text-[#8f3636]">Sipariş kuyruğu görüntülenemedi</h3><p className="mx-auto mt-1 max-w-lg text-xs font-semibold leading-5 text-[#9a6969]">{veriHatasi.mesaj}</p>{veriHatasi.adim && <p className="mt-1 text-[10px] font-bold text-[#ad7b7b]">Adım: {veriHatasi.adim}</p>}<Button type="button" size="sm" onClick={() => void cek(true)} disabled={yenileniyor} className="mt-4 bg-[#237ac8] text-xs font-extrabold hover:bg-[#1d69ad]">Tekrar dene</Button></div> : sekme === "bekleyen" ? <>
         {veri.bekleyen.length === 0 ? <EczanemBosDurum ikon={CheckCircle2} baslik="Onay bekleyen sipariş yok" aciklama="Yeni bir kasa talebi geldiğinde otomatik olarak bu listede görünecek." /> : <div className="divide-y divide-[#e7edf4]">{veri.bekleyen.map((siparis) => <article key={siparis.siparis_id} className="grid gap-4 p-4 md:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(100px,0.65fr))_auto] md:items-center md:px-5"><div className="min-w-0"><strong className="block truncate text-sm text-[#263e5b]">{siparis.urun_adi}</strong><span className="mt-1 block text-[11px] font-semibold text-[#71859d]">{siparis.musteri_maskeli} · {tarihSaatYaz(siparis.created_at)}</span></div><div><span className="block text-[9px] font-bold uppercase tracking-wide text-[#96a3b2]">Kutu</span><strong className="mt-1 block text-sm text-[#405976]">{siparis.adet}</strong></div><div><span className="block text-[9px] font-bold uppercase tracking-wide text-[#96a3b2]">Kullanılacak puan</span><strong className="mt-1 block text-sm text-[#405976]">{siparis.kullanilan_puan.toLocaleString("tr-TR")}</strong></div><div><span className="block text-[9px] font-bold uppercase tracking-wide text-[#96a3b2]">İndirim</span><strong className="mt-1 block text-sm text-[#16865f]">{paraYaz(siparis.indirim_tl)}</strong></div><div className="flex gap-2 md:justify-end"><Button type="button" size="sm" disabled={isliyor} onClick={() => setOnayHedefi({ siparis, aksiyon: "onayla" })} className="flex-1 bg-[#16865f] text-xs font-extrabold hover:bg-[#116d4d] md:flex-none"><CheckCircle2 /> Onayla</Button><Button type="button" size="sm" variant="outline" disabled={isliyor} onClick={() => setOnayHedefi({ siparis, aksiyon: "reddet" })} className="flex-1 border-[#efd1d1] text-xs font-extrabold text-[#b84444] hover:bg-[#fff5f5] hover:text-[#a33434] md:flex-none"><XCircle /> Reddet</Button></div></article>)}</div>}
         <EczanemSayfalama sayfa={veri.sayfalama.bekleyen.sayfa} toplamSayfa={veri.sayfalama.bekleyen.toplam_sayfa} onDegistir={setBekleyenSayfa} disabled={yenileniyor || isliyor} />
       </> : <>

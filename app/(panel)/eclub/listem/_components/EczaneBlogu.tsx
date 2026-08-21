@@ -1,8 +1,8 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import { ChevronDown, Pencil, Plus, UserRoundX } from "lucide-react";
-import type { Eczane, Kisi, YeniKisiForm } from "../_types";
+import { ChevronDown, Clock3, Pencil, Plus, UserRoundX } from "lucide-react";
+import type { EclubGecisTalebi, Eczane, Kisi, YeniKisiForm } from "../_types";
 import { KISI_ROL_ETIKETLERI, epostaGecerliMi, telefonGecerliMi } from "../_types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import bmStyles from "@/app/(panel)/raporlar/bm/bm-report.module.css";
 interface Props {
   eczane: Eczane;
   kisiler: Kisi[];
+  gecisTalepleri: EclubGecisTalebi[];
   islemLoading: boolean;
   onListedenCikar: (eczaneId: string) => Promise<boolean>;
   onKisiEkle: (eczaneId: string, form: YeniKisiForm) => Promise<boolean>;
@@ -26,7 +27,7 @@ const BOS_KISI: YeniKisiForm = { rol: "", ad: "", soyad: "", eposta: "", telefon
 const ROL_SIRASI: Record<Kisi["rol"], number> = { eczaci: 0, ikinci_eczaci: 1, yardimci_eczaci: 2, eczane_teknisyeni: 3 };
 const KISI_GRID = { gridTemplateColumns: "minmax(180px,1.2fr) minmax(120px,.7fr) minmax(180px,1fr) minmax(110px,.65fr) minmax(170px,.8fr)" };
 
-export function EczaneBlogu({ eczane, kisiler, islemLoading, onListedenCikar, onKisiEkle, onKisiGuncelle, onKisiPasifeAl }: Props) {
+export function EczaneBlogu({ eczane, kisiler, gecisTalepleri, islemLoading, onListedenCikar, onKisiEkle, onKisiGuncelle, onKisiPasifeAl }: Props) {
   const [acik, setAcik] = useState(false);
   const [kisiFormAcik, setKisiFormAcik] = useState(false);
   const [yeniKisi, setYeniKisi] = useState<YeniKisiForm>(BOS_KISI);
@@ -107,6 +108,28 @@ export function EczaneBlogu({ eczane, kisiler, islemLoading, onListedenCikar, on
                 </div>
               ) : <div className={bmStyles.empty}>Bu eczanede kayıtlı kişi bulunmuyor.</div>}
 
+              {gecisTalepleri.length > 0 && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4">
+                  <div className="mb-3 flex items-start gap-2">
+                    <Clock3 className="mt-0.5 size-4 shrink-0 text-amber-700" />
+                    <div>
+                      <h3 className="text-sm font-extrabold text-amber-900">E-Club üyelik geçişi bekleyenler</h3>
+                      <p className="mt-1 text-[11px] font-semibold leading-5 text-amber-800">Bu kayıtlar henüz aktif değildir. Müşteri mevcut puanı için karar verdiğinde aynı giriş hesabıyla E-Club üyeliği etkinleştirilecektir.</p>
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    {gecisTalepleri.map((talep) => (
+                      <div key={talep.gecis_id} className="grid gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2.5 md:grid-cols-[minmax(160px,1fr)_minmax(130px,.7fr)_minmax(190px,1fr)_auto] md:items-center">
+                        <div><strong className="block text-xs text-[#30475f]">{talep.ad} {talep.soyad}</strong><span className="text-[10px] font-semibold text-[#8796a8]">{talep.telefon}</span></div>
+                        <Badge variant="outline" className="w-fit border-amber-200 bg-amber-50 text-amber-800">{KISI_ROL_ETIKETLERI[talep.rol]}</Badge>
+                        <span className="truncate text-xs font-semibold text-[#60758c]">{talep.eposta}</span>
+                        <Badge className="w-fit bg-amber-100 text-amber-800 hover:bg-amber-100">{talep.durum === "puan_kullaniliyor" ? "Puan kullanımı bekleniyor" : "Müşteri kararı bekleniyor"}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {kisiFormAcik ? (
                 <div className="rounded-xl border bg-white p-4">
                   <div className="mb-3"><h3 className="text-sm font-bold">Yeni kişi bilgileri</h3><p className="text-[11px] text-muted-foreground">Kişinin unvanını ve giriş bilgilerini tanımlayın.</p></div>
@@ -116,7 +139,7 @@ export function EczaneBlogu({ eczane, kisiler, islemLoading, onListedenCikar, on
                     <div><Label>Soyad</Label><Input value={yeniKisi.soyad} onChange={(e) => setYeniKisi((form) => ({ ...form, soyad: e.target.value }))} /></div>
                     <div><Label>E‑posta</Label><Input type="email" value={yeniKisi.eposta} onChange={(e) => setYeniKisi((form) => ({ ...form, eposta: e.target.value }))} /></div>
                     <div><Label>Telefon</Label><Input value={yeniKisi.telefon} onChange={(e) => setYeniKisi((form) => ({ ...form, telefon: e.target.value.replace(/\D/g, "") }))} maxLength={11} /></div>
-                    <div><Label>Geçici şifre</Label><Input value={yeniKisi.sifre} onChange={(e) => setYeniKisi((form) => ({ ...form, sifre: e.target.value }))} /></div>
+                    <div><Label>Geçici şifre</Label><Input type="password" value={yeniKisi.sifre} onChange={(e) => setYeniKisi((form) => ({ ...form, sifre: e.target.value }))} /><p className="mt-1 text-[10px] text-muted-foreground">Yalnız yeni giriş hesabı oluşturulursa kullanılır.</p></div>
                   </div>
                   <div className="mt-4 flex justify-end gap-2"><Button variant="outline" size="sm" onClick={() => { setKisiFormAcik(false); setYeniKisi(BOS_KISI); }}>Vazgeç</Button><Button size="sm" disabled={islemLoading || !yeniKisiGecerli} onClick={() => void kisiKaydet()}>{islemLoading ? "Kaydediliyor…" : "Kişiyi kaydet"}</Button></div>
                 </div>

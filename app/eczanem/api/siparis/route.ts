@@ -36,31 +36,41 @@ export async function GET() {
 
     const eczaneler = await musteriEczaneleri(adminSupabase, musteriId, kimlik.eczaneIdler);
 
+    // Sayfalama/limit uygulanmadan önce geçerli firma ve eczane kapsamını sipariş
+    // sorgusuna taşı. Sonradan süzme eski/pasif kayıtların güncel fişleri gizlemesine
+    // ve hata halinde eksik listenin başarılı görünmesine neden oluyordu.
+    const { data: urunler, error: urunError } = await adminSupabase
+      .from("urunler")
+      .select("urun_id, urun_adi, firma_id")
+      .in("firma_id", kimlik.firmaIdler!);
+    if (urunError) return hataYaniti("Sipariş ürünleri çekilemedi.", "urunler SELECT — müşteri sipariş kapsamı", urunError);
+
+    const urunAd = new Map<string, string>();
+    const izinliUrunIdler: string[] = [];
+    for (const urunRaw of urunler ?? []) {
+      const urun = urunRaw as UrunSatiri;
+      urunAd.set(urun.urun_id, urun.urun_adi);
+      izinliUrunIdler.push(urun.urun_id);
+    }
+    if (izinliUrunIdler.length === 0 || kimlik.eczaneIdler!.length === 0) {
+      return NextResponse.json({ eczaneler, siparisler: [] }, { status: 200 });
+    }
+
     const { data: siparislerRaw, error: sError } = await adminSupabase
       .from("eczanem_siparisler")
       .select("siparis_id, eczane_id, urun_id, adet, kullanilan_puan, indirim_tl, durum, islem_kodu, onay_tarihi, created_at")
       .eq("musteri_id", musteriId)
+      .in("eczane_id", kimlik.eczaneIdler!)
+      .in("urun_id", izinliUrunIdler)
       .order("created_at", { ascending: false })
       .limit(50);
 
     if (sError) return hataYaniti("Siparişler çekilemedi.", "eczanem_siparisler SELECT — musteri_id", sError);
 
     const rows = (siparislerRaw ?? []) as SiparisSatiri[];
-    const urunIdler = [...new Set(rows.map((siparis) => siparis.urun_id))];
-    const urunAd = new Map<string, string>();
-    const izinliUrunIdler = new Set<string>();
-    if (urunIdler.length > 0) {
-      const { data: urunler } = await adminSupabase.from("urunler").select("urun_id, urun_adi, firma_id").in("urun_id", urunIdler);
-      for (const urunRaw of urunler ?? []) {
-        const urun = urunRaw as UrunSatiri;
-        if (!kimlik.firmaIdler!.includes(urun.firma_id)) continue;
-        urunAd.set(urun.urun_id, urun.urun_adi);
-        izinliUrunIdler.add(urun.urun_id);
-      }
-    }
     const eczaneAd = new Map(eczaneler.map((e) => [e.eczane_id, e.eczane_adi]));
 
-    const siparisler = rows.filter((siparis) => izinliUrunIdler.has(siparis.urun_id)).map((siparis) => ({
+    const siparisler = rows.map((siparis) => ({
       siparis_id: siparis.siparis_id,
       urun_adi: urunAd.get(siparis.urun_id) ?? "-",
       eczane_adi: eczaneAd.get(siparis.eczane_id) ?? "-",
@@ -94,6 +104,7 @@ export async function POST(request: NextRequest) {
     const { eczane_id, barkod, adet } = body;
     if (typeof eczane_id !== "string" || !eczane_id) return validasyonHatasi("eczane_id zorunludur.", ["eczane_id"]);
     if (typeof barkod !== "string" || !barkod.trim()) return validasyonHatasi("barkod zorunludur.", ["barkod"]);
+    if (!kimlik.eczaneIdler!.includes(eczane_id)) return rolHatasi("Bu eczanede aktif üyeliğiniz bulunmuyor.");
 
     const sonuc = await siparisOlustur(adminSupabase, musteriId, eczane_id, barkod, Number(adet ?? 1));
     if (!sonuc.ok) return isKuraluHatasi(sonuc.hata ?? "Sipariş oluşturulamadı.");

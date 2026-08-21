@@ -15,6 +15,9 @@ interface YayinDetaySatiri {
   teknik_adi: string | null;
   video_url: string | null;
   thumbnail_url: string | null;
+  video_puani: number | null;
+  soru_puani: number | null;
+  video_basi_soru_sayisi: number | null;
   durum: string | null;
   talep_no: number | null;
   firma_adi: string | null;
@@ -60,13 +63,14 @@ export async function GET() {
     const yayinIdler = [...new Set(rows.map((g) => g.yayin_id))];
     const yayinMap = new Map<string, YayinDetaySatiri>();
     if (yayinIdler.length > 0) {
-      const { data: yayinlar } = await adminSupabase
+      const { data: yayinlar, error: yayinError } = await adminSupabase
         .from("v_yayin_detay")
-        .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, durum, talep_no, firma_adi, firma_id")
+        .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, video_basi_soru_sayisi, durum, talep_no, firma_adi, firma_id")
         .in("yayin_id", yayinIdler)
         .in("firma_id", kimlik.firmaIdler!)
         // Görünürlük kapısı (Faz 1): süresi hazır olmayan video izleyiciye gösterilmez.
         .gt("video_suresi_saniye", 0);
+      if (yayinError) return hataYaniti("Video yayın bilgileri çekilemedi.", "v_yayin_detay SELECT — müşteri videoları", yayinError);
       for (const y of yayinlar ?? []) yayinMap.set(y.yayin_id, y as YayinDetaySatiri);
     }
 
@@ -106,6 +110,9 @@ export async function GET() {
           teknik_adi: y?.teknik_adi ?? "-",
           video_url: y?.video_url ?? null,
           thumbnail_url: y?.thumbnail_url ?? null,
+          video_puani: y?.video_puani ?? null,
+          soru_puani: y?.soru_puani ?? null,
+          soru_sayisi: y?.video_basi_soru_sayisi ?? null,
           gelis_tarihi: g.created_at,
           izlendi: izlemeDurumu.get(g.gonderim_id)?.tamamlandi_mi ?? false,
           cevaplandi: izlemeDurumu.get(g.gonderim_id)?.cevaplandi_mi ?? false,

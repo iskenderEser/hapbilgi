@@ -31,6 +31,18 @@ export interface Kisi {
   created_at: string;
 }
 
+export interface EclubGecisTalebi {
+  gecis_id: string;
+  eczane_id: string;
+  rol: EclubKisiRol;
+  ad: string;
+  soyad: string;
+  eposta: string;
+  telefon: string;
+  durum: "karar_bekliyor" | "puan_kullaniliyor";
+  created_at: string;
+}
+
 // GLN sorgu sonucundaki kişi (havuzdan gelen eczacı/teknisyen).
 export interface GlnKisi {
   kisi_id: string;

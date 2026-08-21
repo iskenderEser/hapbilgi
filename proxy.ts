@@ -455,6 +455,7 @@ export async function proxy(request: NextRequest) {
       // erişilebilir kalır; müşteri giriş→panel yönlendirmesi döngüye girmez.
       const modulKapisiMuaf =
         pathname.startsWith("/eczanem/api/hesabimi-sil") ||
+        pathname.startsWith("/eczanem/api/eclub-gecisi") ||
         pathname.startsWith("/eczanem/kapali");
       if (rolUygun && !modulKapisiMuaf) {
         const erisim = await eczanemRolErisimi(eczanemSupabase, user.id, rol);

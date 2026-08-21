@@ -21,7 +21,7 @@ test("mutlu: global E-Club kontrolü kanonik ve mevcut telefon biçimlerini kaps
 
 test("red: E-Club üyesi yeni kayıt ve mevcut müşteri bağından önce kesin mesajla reddedilir", () => {
   const kontrolSirasi = route.indexOf("if (eclubKontrol.uyeMi)");
-  const islemSirasi = route.indexOf('const islem = body?.islem === "bagla"');
+  const islemSirasi = route.indexOf("const islem =");
   assert.ok(kontrolSirasi >= 0 && islemSirasi > kontrolSirasi);
   assert.equal(
     ECLUB_UYESI_MUSTERI_OLAMAZ_MESAJI,

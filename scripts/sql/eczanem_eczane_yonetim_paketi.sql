@@ -43,6 +43,21 @@ ALTER TABLE public.eczanem_siparisler
   ADD COLUMN IF NOT EXISTS islem_yapan_kisi_id uuid NULL,
   ADD COLUMN IF NOT EXISTS karar_tarihi timestamptz NULL;
 
+-- Bu üç tablo sunucu orkestrasyonu ve atomik RPC dışında doğrudan erişime
+-- kapalıdır. Canlı denetimde anon/authenticated rollerinde TRUNCATE dahil geniş
+-- varsayılan yetkiler görüldü; RLS bu tablo-geneli yetkiyi engellemez.
+REVOKE ALL ON TABLE
+  public.eczanem_siparisler,
+  public.eczanem_puan_kayitlari,
+  public.eczanem_harcama_kayitlari
+FROM PUBLIC, anon, authenticated, service_role;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE
+  public.eczanem_siparisler,
+  public.eczanem_puan_kayitlari,
+  public.eczanem_harcama_kayitlari
+TO service_role;
+
 REVOKE ALL ON TABLE public.eczanem_personel_islemleri FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT ON TABLE public.eczanem_personel_islemleri TO service_role;
 
@@ -415,6 +430,9 @@ REVOKE ALL ON FUNCTION public.eczanem_yeni_musteri_provizyonu_izli(text, text, u
 REVOKE ALL ON FUNCTION public.eczanem_siparis_personel_islemi(uuid, uuid, uuid, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.eczanem_eczane_dokumu(uuid, timestamptz, timestamptz, uuid[]) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.eczanem_musterilere_video_gonder(uuid, uuid, uuid, uuid[]) FROM PUBLIC, anon, authenticated;
+-- Çekirdek FIFO RPC yalnız yukarıdaki kişi/eczane doğrulamalı sarmalayıcıdan
+-- çağrılır. Doğrudan istemci çağrısı personel izini ve eczane yetkisini atlayamaz.
+REVOKE ALL ON FUNCTION public.eczanem_siparis_onayla(uuid) FROM PUBLIC, anon, authenticated;
 
 GRANT EXECUTE ON FUNCTION public.eczanem_personel_eczane_yetkili_mi(uuid, uuid) TO service_role;
 GRANT EXECUTE ON FUNCTION public.eczanem_musteri_bagla_atomik(uuid, uuid, uuid) TO service_role;
@@ -423,5 +441,32 @@ GRANT EXECUTE ON FUNCTION public.eczanem_yeni_musteri_provizyonu_izli(text, text
 GRANT EXECUTE ON FUNCTION public.eczanem_siparis_personel_islemi(uuid, uuid, uuid, text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.eczanem_eczane_dokumu(uuid, timestamptz, timestamptz, uuid[]) TO service_role;
 GRANT EXECUTE ON FUNCTION public.eczanem_musterilere_video_gonder(uuid, uuid, uuid, uuid[]) TO service_role;
+GRANT EXECUTE ON FUNCTION public.eczanem_siparis_onayla(uuid) TO service_role;
+
+-- Paket eksik bir nesneyle yarım kalırsa transaction bütünüyle geri alınır.
+DO $dogrulama$
+BEGIN
+  IF to_regclass('public.eczanem_personel_islemleri') IS NULL
+     OR NOT EXISTS (
+       SELECT 1 FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = 'eczanem_siparisler'
+         AND column_name = 'islem_yapan_kisi_id'
+     )
+     OR NOT EXISTS (
+       SELECT 1 FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = 'eczanem_siparisler'
+         AND column_name = 'karar_tarihi'
+     )
+     OR to_regprocedure('public.eczanem_siparis_personel_islemi(uuid,uuid,uuid,text)') IS NULL
+     OR to_regprocedure('public.eczanem_eczane_dokumu(uuid,timestamptz,timestamptz,uuid[])') IS NULL
+     OR to_regprocedure('public.eczanem_musterilere_video_gonder(uuid,uuid,uuid,uuid[])') IS NULL
+  THEN
+    RAISE EXCEPTION 'Eczanem eczane yönetim paketi eksik kuruldu; işlem geri alındı.';
+  END IF;
+END;
+$dogrulama$;
+
+-- PostgREST yeni kolon ve fonksiyon imzalarını commit sonrasında yeniden okur.
+NOTIFY pgrst, 'reload schema';
 
 COMMIT;

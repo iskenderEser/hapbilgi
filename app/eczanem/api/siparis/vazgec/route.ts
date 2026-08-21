@@ -23,11 +23,12 @@ export async function POST(request: NextRequest) {
     if (typeof siparis_id !== "string" || !siparis_id) return validasyonHatasi("siparis_id zorunludur.", ["siparis_id"]);
 
     // Sahiplik: sipariş müşteriye ait mi?
-    const { data: siparis } = await adminSupabase
+    const { data: siparis, error: siparisHatasi } = await adminSupabase
       .from("eczanem_siparisler")
       .select("siparis_id, musteri_id")
       .eq("siparis_id", siparis_id)
       .maybeSingle();
+    if (siparisHatasi) return hataYaniti("Sipariş sorgulanamadı.", "eczanem_siparisler SELECT — müşteri vazgeçme", siparisHatasi);
     if (!siparis) return hataYaniti("Sipariş bulunamadı.", "eczanem_siparisler SELECT — siparis_id", null, 404);
     if (siparis.musteri_id !== kimlik.musteriId) return rolHatasi("Bu sipariş size ait değil.");
 

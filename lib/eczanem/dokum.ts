@@ -70,6 +70,21 @@ export type CascadeKapsam =
 // ── İç yardımcılar ──────────────────────────────────────────────────────────
 
 interface SiparisSatiri { eczane_id: string; urun_id: string; adet: number; indirim_tl: number; }
+interface SiparisDbSatiri { eczane_id: string; urun_id: string; adet: number | string | null; indirim_tl: number | string | null; }
+interface UrunAdDbSatiri { urun_id: string; urun_adi: string | null; }
+interface EczaneDokumDbSatiri extends UrunAdDbSatiri { kutu: number | string | null; indirim_tl: number | string | null; }
+interface EczaneIdDbSatiri { eczane_id: string; }
+interface KullaniciAdDbSatiri { kullanici_id: string; ad: string | null; soyad: string | null; }
+interface EczaneUttDbSatiri extends EczaneIdDbSatiri { baglayan_utt_id: string; }
+interface PmUrunDbSatiri extends UrunAdDbSatiri { firma_id: string; }
+interface UttBilgiDbSatiri extends KullaniciAdDbSatiri { bolge_id: string | null; }
+interface BolgeDbSatiri { bolge_id: string; bolge_adi: string; }
+
+// PostgreSQL numeric tutarlarını JS kayan noktasında üst üste eklemek kuruş
+// sapması üretebilir. Mutabakatın her katmanı toplamı tam kuruş üzerinden yapar.
+function paraTopla(degerler: number[]): number {
+  return degerler.reduce((toplamKurus, deger) => toplamKurus + Math.round(deger * 100), 0) / 100;
+}
 
 // Onaylı siparişler — dökümün tek veri kaynağı. musteri_id BİLİNÇLİ dışarıda.
 async function onayliSiparisler(
@@ -93,7 +108,7 @@ async function onayliSiparisler(
 
   const { data, error } = await query;
   if (error) throw new Error("Eczanem onaylı siparişleri okunamadı.");
-  return (data ?? []).map((s: any) => ({
+  return (data ?? []).map((s: SiparisDbSatiri) => ({
     eczane_id: s.eczane_id,
     urun_id: s.urun_id,
     adet: Number(s.adet) || 0,
@@ -112,7 +127,10 @@ async function urunAdMap(
     .select("urun_id, urun_adi")
     .in("urun_id", urunIdler);
   if (error) throw new Error("Eczanem ürün bilgileri okunamadı.");
-  for (const u of data ?? []) map.set((u as any).urun_id, (u as any).urun_adi);
+  for (const hamUrun of data ?? []) {
+    const urun = hamUrun as UrunAdDbSatiri;
+    map.set(urun.urun_id, urun.urun_adi ?? "-");
+  }
   return map;
 }
 
@@ -128,7 +146,7 @@ function urunBazindaTopla(rows: SiparisSatiri[], adMap: Map<string, string>): Ur
       indirim_tl: 0,
     };
     mevcut.kutu += r.adet;
-    mevcut.indirim_tl += r.indirim_tl;
+    mevcut.indirim_tl = paraTopla([mevcut.indirim_tl, r.indirim_tl]);
     grup.set(r.urun_id, mevcut);
   }
   return [...grup.values()].sort((a, b) => b.indirim_tl - a.indirim_tl);
@@ -140,9 +158,10 @@ async function eczaneUrunDokumu(
   eczaneIdler: string[],
   uttAdiMap: Map<string, string> | null, // eczane_id → utt adı (cascade'de dolu)
   baslangic: string,
-  bitis: string
+  bitis: string,
+  urunIdler?: string[],
 ): Promise<EczaneUrunDokum> {
-  const rows = await onayliSiparisler(adminSupabase, { eczaneIdler }, baslangic, bitis);
+  const rows = await onayliSiparisler(adminSupabase, { eczaneIdler, urunIdler }, baslangic, bitis);
   if (rows.length === 0) return { eczaneler: [], toplam_kutu: 0, toplam_tl: 0 };
 
   const satisliEczaneler = [...new Set(rows.map((r) => r.eczane_id))];
@@ -159,14 +178,14 @@ async function eczaneUrunDokumu(
       utt_adi: uttAdiMap?.get(ez) ?? null,
       urunler,
       toplam_kutu: urunler.reduce((a, u) => a + u.kutu, 0),
-      toplam_tl: urunler.reduce((a, u) => a + u.indirim_tl, 0),
+      toplam_tl: paraTopla(urunler.map((urun) => urun.indirim_tl)),
     };
   }).sort((a, b) => b.toplam_tl - a.toplam_tl);
 
   return {
     eczaneler,
     toplam_kutu: eczaneler.reduce((a, e) => a + e.toplam_kutu, 0),
-    toplam_tl: eczaneler.reduce((a, e) => a + e.toplam_tl, 0),
+    toplam_tl: paraTopla(eczaneler.map((eczane) => eczane.toplam_tl)),
   };
 }
 
@@ -187,7 +206,7 @@ export async function eczaneDokumu(
     p_firma_idler: firmaIdler ?? null,
   });
   if (error) throw new Error("Eczane işlem dökümü veritabanında hesaplanamadı.");
-  const satirlar: UrunToplam[] = (data ?? []).map((satir: any) => ({
+  const satirlar: UrunToplam[] = (data ?? []).map((satir: EczaneDokumDbSatiri) => ({
     urun_id: satir.urun_id,
     urun_adi: satir.urun_adi ?? "-",
     kutu: Number(satir.kutu) || 0,
@@ -196,7 +215,7 @@ export async function eczaneDokumu(
   return {
     satirlar,
     toplam_kutu: satirlar.reduce((a, u) => a + u.kutu, 0),
-    toplam_tl: satirlar.reduce((a, u) => a + u.indirim_tl, 0),
+    toplam_tl: paraTopla(satirlar.map((urun) => urun.indirim_tl)),
   };
 }
 
@@ -205,18 +224,30 @@ export async function eczaneDokumu(
 export async function uttDokumu(
   adminSupabase: SupabaseClient,
   uttAuthId: string,
+  firmaIdler: string[],
   baslangic: string,
   bitis: string
 ): Promise<EczaneUrunDokum> {
+  if (firmaIdler.length === 0) return { eczaneler: [], toplam_kutu: 0, toplam_tl: 0 };
+
   // UTT'nin aktif bağladığı eczaneler (U6 gonderim.ts deseni)
   const { data: baglar, error } = await adminSupabase
     .from("eclub_eczane_firma")
     .select("eczane_id")
     .eq("baglayan_utt_id", uttAuthId)
+    .in("firma_id", firmaIdler)
     .eq("aktif_mi", true);
   if (error) throw new Error("UTT mutabakat kapsamı okunamadı.");
-  const eczaneIdler = [...new Set((baglar ?? []).map((b: any) => b.eczane_id))];
-  return eczaneUrunDokumu(adminSupabase, eczaneIdler, null, baslangic, bitis);
+  const eczaneIdler = [...new Set((baglar ?? []).map((bag: EczaneIdDbSatiri) => bag.eczane_id))];
+
+  const { data: urunler, error: urunHatasi } = await adminSupabase
+    .from("urunler")
+    .select("urun_id")
+    .in("firma_id", firmaIdler);
+  if (urunHatasi) throw new Error("UTT mutabakat ürün kapsamı okunamadı.");
+  const urunIdler = [...new Set((urunler ?? []).map((urun: Pick<UrunAdDbSatiri, "urun_id">) => urun.urun_id))];
+
+  return eczaneUrunDokumu(adminSupabase, eczaneIdler, null, baslangic, bitis, urunIdler);
 }
 
 // ── Katman 3: BM/TM/yönetici cascade — kapsam daralması (İP-§9.2) ──────────
@@ -233,11 +264,14 @@ export async function cascadeDokumu(
     .select("kullanici_id, ad, soyad")
     .in("rol", TUKETICI_ROLLER)
     .eq(kapsam.alan, kapsam.deger);
-  const uttIdler = (uttler ?? []).map((u: any) => u.kullanici_id);
+  const uttIdler = (uttler ?? []).map((utt: KullaniciAdDbSatiri) => utt.kullanici_id);
   if (uttIdler.length === 0) return { eczaneler: [], toplam_kutu: 0, toplam_tl: 0 };
 
   const uttAd = new Map<string, string>();
-  for (const u of uttler ?? []) uttAd.set((u as any).kullanici_id, `${(u as any).ad} ${(u as any).soyad}`);
+  for (const hamUtt of uttler ?? []) {
+    const utt = hamUtt as KullaniciAdDbSatiri;
+    uttAd.set(utt.kullanici_id, `${utt.ad ?? ""} ${utt.soyad ?? ""}`.trim());
+  }
 
   const { data: baglar } = await adminSupabase
     .from("eclub_eczane_firma")
@@ -246,9 +280,10 @@ export async function cascadeDokumu(
     .eq("aktif_mi", true);
 
   const eczaneUtt = new Map<string, string>(); // eczane_id → utt adı
-  for (const b of baglar ?? []) {
-    const ad = uttAd.get((b as any).baglayan_utt_id);
-    if (ad) eczaneUtt.set((b as any).eczane_id, ad);
+  for (const hamBag of baglar ?? []) {
+    const bag = hamBag as EczaneUttDbSatiri;
+    const ad = uttAd.get(bag.baglayan_utt_id);
+    if (ad) eczaneUtt.set(bag.eczane_id, ad);
   }
 
   return eczaneUrunDokumu(adminSupabase, [...eczaneUtt.keys()], eczaneUtt, baslangic, bitis);
@@ -268,12 +303,12 @@ export async function pmUrunDokumu(
     .from("urunler")
     .select("urun_id, urun_adi, firma_id")
     .eq("takim_id", takimId);
-  const urunListesi = urunler ?? [];
+  const urunListesi = (urunler ?? []) as PmUrunDbSatiri[];
   if (urunListesi.length === 0) return { urunler: [] };
 
   const rows = await onayliSiparisler(
     adminSupabase,
-    { urunIdler: urunListesi.map((u: any) => u.urun_id) },
+    { urunIdler: urunListesi.map((urun) => urun.urun_id) },
     baslangic,
     bitis
   );
@@ -282,7 +317,7 @@ export async function pmUrunDokumu(
   // Kırılım tesisatı: eczane → UTT (ürünün firması üzerinden aktif bağ),
   // UTT → bölge. Bağı çözülemeyen eczane '—' düğümünde toplanır (veri kaybolmaz).
   const eczaneIdler = [...new Set(rows.map((r) => r.eczane_id))];
-  const firmaId = (urunListesi[0] as any).firma_id; // tek takım = tek firma
+  const firmaId = urunListesi[0].firma_id; // tek takım = tek firma
 
   const [{ data: baglar }, ezAdMap] = await Promise.all([
     adminSupabase
@@ -295,7 +330,10 @@ export async function pmUrunDokumu(
   ]);
 
   const eczaneUttId = new Map<string, string>();
-  for (const b of baglar ?? []) eczaneUttId.set((b as any).eczane_id, (b as any).baglayan_utt_id);
+  for (const hamBag of baglar ?? []) {
+    const bag = hamBag as EczaneUttDbSatiri;
+    eczaneUttId.set(bag.eczane_id, bag.baglayan_utt_id);
+  }
 
   const uttIdler = [...new Set([...eczaneUttId.values()])];
   const uttBilgi = new Map<string, { ad: string; bolge_id: string | null }>();
@@ -304,10 +342,11 @@ export async function pmUrunDokumu(
       .from("kullanicilar")
       .select("kullanici_id, ad, soyad, bolge_id")
       .in("kullanici_id", uttIdler);
-    for (const u of uttler ?? []) {
-      uttBilgi.set((u as any).kullanici_id, {
-        ad: `${(u as any).ad} ${(u as any).soyad}`,
-        bolge_id: (u as any).bolge_id ?? null,
+    for (const hamUtt of uttler ?? []) {
+      const utt = hamUtt as UttBilgiDbSatiri;
+      uttBilgi.set(utt.kullanici_id, {
+        ad: `${utt.ad ?? ""} ${utt.soyad ?? ""}`.trim(),
+        bolge_id: utt.bolge_id,
       });
     }
   }
@@ -319,13 +358,16 @@ export async function pmUrunDokumu(
       .from("bolgeler")
       .select("bolge_id, bolge_adi")
       .in("bolge_id", bolgeIdler);
-    for (const b of bolgeler ?? []) bolgeAd.set((b as any).bolge_id, (b as any).bolge_adi);
+    for (const hamBolge of bolgeler ?? []) {
+      const bolge = hamBolge as BolgeDbSatiri;
+      bolgeAd.set(bolge.bolge_id, bolge.bolge_adi);
+    }
   }
 
   // urun → bolge → utt → eczane toplama (tek geçiş, Map ağacı)
   const sonuc: PmUrunSatir[] = [];
   for (const u of urunListesi) {
-    const urunRows = rows.filter((r) => r.urun_id === (u as any).urun_id);
+    const urunRows = rows.filter((r) => r.urun_id === u.urun_id);
     if (urunRows.length === 0) continue;
 
     // bolgeAdi → uttAdi → eczaneAdi → {kutu, tl}
@@ -344,13 +386,13 @@ export async function pmUrunDokumu(
       const uttDali = bolgeDali.get(uttAdi) ?? new Map();
       const hucre = uttDali.get(eczaneAdi) ?? { kutu: 0, tl: 0 };
       hucre.kutu += r.adet;
-      hucre.tl += r.indirim_tl;
+      hucre.tl = paraTopla([hucre.tl, r.indirim_tl]);
       uttDali.set(eczaneAdi, hucre);
       bolgeDali.set(uttAdi, uttDali);
       agac.set(bolgeAdi, bolgeDali);
 
       urunKutu += r.adet;
-      urunTl += r.indirim_tl;
+      urunTl = paraTopla([urunTl, r.indirim_tl]);
     }
 
     const bolgeler: PmBolgeSatir[] = [...agac.entries()].map(([bolgeAdi, uttMap]) => {
@@ -361,21 +403,21 @@ export async function pmUrunDokumu(
         return {
           utt_adi: uttAdi,
           kutu: eczaneler.reduce((a, e) => a + e.kutu, 0),
-          indirim_tl: eczaneler.reduce((a, e) => a + e.indirim_tl, 0),
+          indirim_tl: paraTopla(eczaneler.map((eczane) => eczane.indirim_tl)),
           eczaneler,
         };
       }).sort((a, b) => b.indirim_tl - a.indirim_tl);
       return {
         bolge_adi: bolgeAdi,
         kutu: uttler.reduce((a, u2) => a + u2.kutu, 0),
-        indirim_tl: uttler.reduce((a, u2) => a + u2.indirim_tl, 0),
+        indirim_tl: paraTopla(uttler.map((utt) => utt.indirim_tl)),
         uttler,
       };
     }).sort((a, b) => b.indirim_tl - a.indirim_tl);
 
     sonuc.push({
-      urun_id: (u as any).urun_id,
-      urun_adi: (u as any).urun_adi,
+      urun_id: u.urun_id,
+      urun_adi: u.urun_adi ?? "-",
       kutu: urunKutu,
       indirim_tl: urunTl,
       bolgeler,

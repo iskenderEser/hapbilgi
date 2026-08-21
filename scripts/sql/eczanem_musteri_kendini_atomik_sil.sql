@@ -33,6 +33,10 @@ BEGIN
     RAISE EXCEPTION 'Müşteri ve giriş hesabı bağı doğrulanamadı.' USING ERRCODE = 'P0002';
   END IF;
 
+  -- Kontrollü E-Club geçişi açık olsa bile müşterinin KVKK tam silme hakkı
+  -- engellenmez. Üyelik dondurma tetikleyicisi yalnız bu transaction'da aşılır.
+  PERFORM set_config('hapbilgi.eclub_gecis_tamamlaniyor', '1', true);
+
   -- Harcama tablosunda musteri_id bulunmadığı için iki kaynak bağı üzerinden
   -- önce temizlenir. OR kullanımı aynı satırı yalnız bir kez siler.
   DELETE FROM public.eczanem_harcama_kayitlari hk

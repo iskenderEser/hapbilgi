@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/app/providers/AuthProvider";
+import EclubGecisKarti from "../_components/EclubGecisKarti";
 
 export default function EczanemKapaliPage() {
   const { cikisYap } = useAuth();
@@ -9,6 +10,7 @@ export default function EczanemKapaliPage() {
   const [sifre, setSifre] = useState("");
   const [hata, setHata] = useState("");
   const [siliniyor, setSiliniyor] = useState(false);
+  const [bilgi, setBilgi] = useState("");
 
   const hesabimiSil = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -35,7 +37,10 @@ export default function EczanemKapaliPage() {
 
   return (
     <main className="min-h-screen bg-gray-50 px-4 py-16">
-      <section className="mx-auto max-w-md rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="mx-auto max-w-md">
+      <EclubGecisKarti hata={(mesaj) => setHata(mesaj)} basari={(mesaj) => setBilgi(mesaj)} />
+      {bilgi && <p className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-800">{bilgi}</p>}
+      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
         <h1 className="text-lg font-bold text-gray-900">Eczanem şu anda kapalı</h1>
         <p className="mt-2 text-sm leading-6 text-gray-600">
           Eczanem, bağlı olduğunuz firmalar için şu anda kullanıma açık değildir.
@@ -83,6 +88,7 @@ export default function EczanemKapaliPage() {
           </form>
         )}
       </section>
+      </div>
     </main>
   );
 }

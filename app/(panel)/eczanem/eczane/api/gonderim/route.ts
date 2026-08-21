@@ -8,7 +8,7 @@ import { sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi 
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
 import { eczaciAktifEczanesi } from "@/lib/eczanem/eczaci";
-import { eczaneGelenVideolar, eczaneAktifUyeler, musteriyeGonder } from "@/lib/eczanem/gonderim";
+import { eczaneGelenVideolar, eczaneAktifUyeler, eczaneVideoGonderimOzetleri, musteriyeGonder } from "@/lib/eczanem/gonderim";
 
 const UUID_DESENI = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -33,11 +33,13 @@ export async function GET(request: NextRequest) {
       eczaneGelenVideolar(adminSupabase, eden.eczaneId!),
       eczaneAktifUyeler(adminSupabase, eden.eczaneId!, yayinId),
     ]);
+    const videoOzetleri = await eczaneVideoGonderimOzetleri(adminSupabase, eden.eczaneId!, videolar, uyeler);
 
     const gonderilen = uyeler.filter((uye) => uye.gonderildi_mi).length;
     return NextResponse.json({
       videolar,
       uyeler,
+      video_ozetleri: videoOzetleri,
       ozet: {
         video_sayisi: videolar.length,
         aktif_uye_sayisi: uyeler.length,

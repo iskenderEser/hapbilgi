@@ -267,6 +267,12 @@ export interface EczaneUye {
   telefon_maskeli: string;
   gonderildi_mi: boolean;
 }
+export interface EczaneVideoGonderimOzeti {
+  yayin_id: string;
+  aktif_uye_sayisi: number;
+  gonderilen_uye_sayisi: number;
+  gonderilebilir_uye_sayisi: number;
+}
 
 interface EczaneGonderimSatiri { yayin_id: string; created_at: string; }
 
@@ -326,6 +332,13 @@ export async function eczaneAktifUyeler(
     .eq("aktif_mi", true);
   if (musteriHatasi) throw new Error("Eczane müşterileri okunamadı.");
 
+  const { data: gecisler, error: gecisHatasi } = await adminSupabase
+    .from("eczanem_eclub_gecis_talepleri")
+    .select("musteri_id")
+    .in("musteri_id", musteriIdler);
+  if (gecisHatasi && gecisHatasi.code !== "42P01") throw new Error("E-Club geçiş talepleri okunamadı.");
+  const gecistekiMusteriler = new Set((gecisler ?? []).map((gecis) => gecis.musteri_id));
+
   const gonderilen = new Set<string>();
   if (yayinId) {
     const { data: gonderimler, error: gonderimHatasi } = await adminSupabase
@@ -339,13 +352,53 @@ export async function eczaneAktifUyeler(
   }
 
   return (musteriler ?? [])
-    .map((m: any) => ({
+    .filter((musteri) => !gecistekiMusteriler.has(musteri.musteri_id))
+    .map((m) => ({
       musteri_id: m.musteri_id,
       ad_soyad: m.ad_soyad,
       telefon_maskeli: telefonMaskele(m.telefon),
       gonderildi_mi: gonderilen.has(m.musteri_id),
     }))
     .sort((a, b) => a.ad_soyad.localeCompare(b.ad_soyad, "tr"));
+}
+
+// Eczacı dağıtım listesindeki her video için gönderim ilerlemesi. Aktif üyelikten
+// çıkmış veya E-Club geçişine alınmış müşterilerin eski gönderimleri özeti şişirmez.
+export async function eczaneVideoGonderimOzetleri(
+  adminSupabase: SupabaseClient,
+  eczaneId: string,
+  videolar: EczaneGelenVideo[],
+  aktifUyeler: EczaneUye[],
+): Promise<EczaneVideoGonderimOzeti[]> {
+  const aktifMusteriIdleri = new Set(aktifUyeler.map((uye) => uye.musteri_id));
+  const yayinIdler = [...new Set(videolar.map((video) => video.yayin_id))];
+  const gonderilenler = new Map<string, Set<string>>();
+
+  if (yayinIdler.length > 0 && aktifMusteriIdleri.size > 0) {
+    const { data, error } = await adminSupabase
+      .from("eczanem_gonderimler")
+      .select("yayin_id, musteri_id")
+      .eq("eczane_id", eczaneId)
+      .in("yayin_id", yayinIdler);
+    if (error) throw new Error("Müşteri video gönderim özetleri okunamadı.");
+
+    for (const gonderim of data ?? []) {
+      if (!aktifMusteriIdleri.has(gonderim.musteri_id)) continue;
+      const musteriler = gonderilenler.get(gonderim.yayin_id) ?? new Set<string>();
+      musteriler.add(gonderim.musteri_id);
+      gonderilenler.set(gonderim.yayin_id, musteriler);
+    }
+  }
+
+  return videolar.map((video) => {
+    const gonderilen = gonderilenler.get(video.yayin_id)?.size ?? 0;
+    return {
+      yayin_id: video.yayin_id,
+      aktif_uye_sayisi: aktifMusteriIdleri.size,
+      gonderilen_uye_sayisi: gonderilen,
+      gonderilebilir_uye_sayisi: Math.max(aktifMusteriIdleri.size - gonderilen, 0),
+    };
+  });
 }
 
 export interface MusteriGonderimSonuc {
