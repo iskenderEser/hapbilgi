@@ -147,6 +147,13 @@ export async function GET(request: NextRequest) {
       onay_tarihi: siparis.onay_tarihi,
       karar_tarihi: siparis.karar_tarihi,
       islem_yapan: siparis.islem_yapan_kisi_id ? kisiAd.get(siparis.islem_yapan_kisi_id) ?? null : null,
+      sonuc_durumu: siparis.durum === "onaylandi"
+        ? "onaylandi"
+        : siparis.durum === "bekliyor"
+          ? "bekliyor"
+          : siparis.islem_yapan_kisi_id
+            ? "onaylanmadi"
+            : "iptal_edildi",
       created_at: siparis.created_at,
     }));
 
@@ -208,8 +215,8 @@ export async function POST(request: NextRequest) {
 
     if (aksiyon === "reddet") {
       const r = await siparisReddet(adminSupabase, siparis_id, eden.eczaneId!, eden.kisiId!);
-      if (!r.ok) return isKuraluHatasi(r.hata ?? "Reddedilemedi.");
-      return NextResponse.json({ ok: true, mesaj: "Sipariş düşürüldü." }, { status: 200 });
+      if (!r.ok) return isKuraluHatasi(r.hata ?? "İndirim talebi sonuçlandırılamadı.");
+      return NextResponse.json({ ok: true, mesaj: "İndirim talebi onaylanmadı." }, { status: 200 });
     }
 
     // onayla — atomik FIFO düşüm RPC'si

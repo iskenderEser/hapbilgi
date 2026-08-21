@@ -96,6 +96,8 @@ const KORUMALI_TABLOLAR = new Set([
   "eczanem_harcama_kayitlari",
   "eczanem_siparisler",
   "eczanem_urun_tarifeleri",
+  "eczanem_video_begeniler",
+  "eczanem_video_favoriler",
   "push_abonelikleri",
   "push_gonderim_kayitlari",
   "hb_ligi_ozet_v2",

@@ -1,55 +1,87 @@
-// Müşteri yüzeyi tasarım ve izleme/indirim güvenlik sözleşmesi.
-// Tavan: bir mutlu yol ve bir red senaryosu.
+// Müşteri ana sayfası rafları ile Puanlarım çift taraflı onay sözleşmesi.
+// Tavan: iki mutlu yol ve bir red senaryosu.
 
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const sayfa = readFileSync("app/eczanem/page.tsx", "utf8");
+const navbar = readFileSync("app/eczanem/_components/EczanemMusteriNavbar.tsx", "utf8");
+const raf = readFileSync("app/eczanem/_components/EczanemVideoRafi.tsx", "utf8");
 const oynatici = readFileSync("app/eczanem/_components/EczanemVideoOynatici.tsx", "utf8");
-const kasa = readFileSync("app/eczanem/_components/EczanemKasa.tsx", "utf8");
 const videolarRoute = readFileSync("app/eczanem/api/videolar/route.ts", "utf8");
-const siparisRoute = readFileSync("app/eczanem/api/siparis/route.ts", "utf8");
-const hesapRoute = readFileSync("app/eczanem/api/siparis/hesap/route.ts", "utf8");
-const authProvider = readFileSync("app/providers/AuthProvider.tsx", "utf8");
+const ilerlemeRoute = readFileSync("app/eczanem/api/izleme/ilerleme/route.ts", "utf8");
+const etkilesimRoute = readFileSync("app/eczanem/api/etkilesim/route.ts", "utf8");
+const etkilesimSql = readFileSync("scripts/sql/eczanem_musteri_video_etkilesimleri.sql", "utf8");
+const puanSayfasi = readFileSync("app/eczanem/puanlarim/page.tsx", "utf8");
 const puanlar = readFileSync("app/eczanem/_components/EczanemPuanlarim.tsx", "utf8");
 const puanlarRoute = readFileSync("app/eczanem/api/puanlar/route.ts", "utf8");
+const siparisRoute = readFileSync("app/eczanem/api/siparis/route.ts", "utf8");
+const hesapRoute = readFileSync("app/eczanem/api/siparis/hesap/route.ts", "utf8");
 
-test("mutlu: müşteri videosunu Play ile başlatır ve puanını onaylı indirim talebine dönüştürür", () => {
-  assert.match(sayfa, /HapBilgi Eczanem/);
-  assert.match(sayfa, /videosunu sayfaya yerleştir/);
-  assert.match(sayfa, /thumbnailUrlUret\(video\.video_url\)/);
-  assert.match(sayfa, /video\.video_puani/);
-  assert.match(sayfa, /video\.soru_sayisi/);
-  assert.match(sayfa, /video\.soru_puani/);
-  assert.match(kasa, /Puanla indirim/);
-  assert.match(sayfa, /<EczanemPuanlarim/);
-  assert.match(puanlar, /Puanlarım/);
-  assert.match(puanlar, /İzlemeden kalan/);
-  assert.match(puanlar, /Doğru cevaptan kalan/);
-  assert.match(puanlar, /En yakın son kullanım/);
-  assert.match(sayfa, /aria-label="Sayfayı yenile"/);
-  assert.doesNotMatch(puanlar, /YenileButonu/);
-  assert.doesNotMatch(kasa, /YenileButonu/);
-  assert.match(puanlarRoute, /const grupAnahtari = \(eczaneId: string, urunId: string\)/);
-  assert.doesNotMatch(authProvider, /`\$\{data\.ad\} \$\{data\.soyad\}`/);
-  assert.match(oynatici, /ilkOynatmaZorunlu: true/);
-  assert.match(oynatici, /handleOynat[\s\S]*\/eczanem\/api\/izleme\/baslat[\s\S]*oynat\(\)/);
-  assert.match(kasa, /İndirim talebini eczanenize gönderelim mi/);
-  assert.match(kasa, /Puanınız şimdi düşmez; eczaneniz onayladığında işlem kesinleşir/);
+test("mutlu: müşteri ana sayfası belirlenen altı dijital kanal rafını ve ayrı Puanlarım sayfasını sunar", () => {
+  const basliklar = [
+    "Yeni Videolarım",
+    "Yarım Bıraktıklarım",
+    "En Son İzlediklerim",
+    "En Çok Beğenilenler",
+    "En Çok Favorilenenler",
+    "En Çok İzlenenler",
+  ];
+  for (const baslik of basliklar) assert.match(sayfa, new RegExp(`baslik=\"${baslik}\"`));
+
+  assert.match(sayfa, /video\.izleme_basladi && !video\.izlendi/);
+  assert.match(sayfa, /puanaGore\("begeni_sayisi"\)/);
+  assert.match(sayfa, /puanaGore\("favori_sayisi"\)/);
+  assert.match(sayfa, /puanaGore\("izlenme_sayisi"\)/);
+  assert.match(raf, /videosunu sayfaya yerleştir/);
+  assert.match(raf, /onBegeni/);
+  assert.match(raf, /onFavori/);
+  assert.match(raf, /son_konum_saniye/);
+  assert.match(oynatici, /\/eczanem\/api\/izleme\/ilerleme/);
+  assert.match(oynatici, /setCurrentTime\(kaldigiKonum\)/);
+  assert.match(ilerlemeRoute, /\.eq\("musteri_id", kimlik\.musteriId!\)/);
+  assert.match(ilerlemeRoute, /\.eq\("tamamlandi_mi", false\)/);
+  assert.match(navbar, /href: "\/eczanem\/puanlarim", etiket: "Puanlarım"/);
+  assert.match(puanSayfasi, /<EczanemPuanlarim/);
+  assert.doesNotMatch(sayfa, /<EczanemPuanlarim/);
+
+  assert.match(videolarRoute, /get_eczanem_musteri_video_etkilesimleri/);
+  assert.match(videolarRoute, /\.eq\("musteri_id", musteriId\)[\s\S]*\.in\("eczane_id", aktifEczaneIdler\)/);
+  assert.match(etkilesimRoute, /Bu video size gönderilmemiş/);
+  assert.match(etkilesimSql, /CREATE TABLE IF NOT EXISTS public\.eczanem_video_begeniler/);
+  assert.match(etkilesimSql, /CREATE TABLE IF NOT EXISTS public\.eczanem_video_favoriler/);
+  assert.match(etkilesimSql, /pg_advisory_xact_lock/);
+  assert.match(etkilesimSql, /ADD COLUMN IF NOT EXISTS son_konum_saniye/);
 });
 
-test("red: kart açılışı izleme yazamaz; API hatası boş veri ve kapsam dışı eczane başarılı görünemez", () => {
+test("mutlu: ürün puanı 1 kutuluk talebe dönüşür, onayda kullanılan puanlara taşınır", () => {
+  assert.match(puanlar, /Ürün \/ Barkod/);
+  assert.match(puanlar, /İzleme/);
+  assert.match(puanlar, /Cevaplama/);
+  assert.match(puanlar, /Toplam Puan/);
+  assert.match(puanlar, /İndirim/);
+  assert.match(puanlar, /Puanı Kullan/);
+  assert.match(puanlar, /Kullanılan Puanlar/);
+  assert.match(puanlar, /adet: 1/);
+  assert.match(puanlar, /puanınız eczane onaylayana kadar düşmez/);
+  assert.match(puanlarRoute, /indirimHesapla\(ozet\.kullanilabilir_puan/);
+  assert.match(puanlarRoute, /siparis\.durum === "onaylandi"/);
+  assert.match(siparisRoute, /İndirim talebi gönderildi — eczane onayı bekleniyor/);
+});
+
+test("red: kart açılışı izleme yazamaz; kapsam dışı talep ve belirsiz durum dili geri gelemez", () => {
   assert.doesNotMatch(oynatici, /useEffect\([\s\S]{0,500}handleBaslat/);
-  assert.match(sayfa, /!videoHazir && videoHatasi/);
-  assert.match(kasa, /!veriHazir && veriHatasi/);
+  assert.match(oynatici, /ilkOynatmaZorunlu: true/);
+  assert.match(oynatici, /handleOynat[\s\S]*\/eczanem\/api\/izleme\/baslat[\s\S]*oynat\(\)/);
   assert.match(videolarRoute, /if \(yayinError\) return hataYaniti/);
-  assert.match(videolarRoute, /video_puani, soru_puani, video_basi_soru_sayisi/);
   assert.match(siparisRoute, /\.in\("eczane_id", kimlik\.eczaneIdler!\)[\s\S]*\.in\("urun_id", izinliUrunIdler\)/);
   assert.match(siparisRoute, /if \(!kimlik\.eczaneIdler!\.includes\(eczane_id\)\) return rolHatasi/);
   assert.match(hesapRoute, /if \(!kimlik\.eczaneIdler!\.includes\(eczane_id\)\) return rolHatasi/);
   assert.match(puanlarRoute, /\.in\("eczane_id", eczaneIdler\)/);
   assert.match(puanlarRoute, /\.in\("firma_id", firmaIdler\)/);
   assert.match(puanlarRoute, /\.gte\("created_at", altSinir\)/);
-  assert.doesNotMatch(puanlarRoute, /groupBy\(["']urun_id["']\)/);
+  assert.match(puanlar, /Onaylanmadı/);
+  assert.match(puanlar, /İptal Edildi/);
+  assert.doesNotMatch([sayfa, navbar, raf, puanSayfasi, puanlar].join("\n"), /Düştü|Reddedildi|Reddedilen\/Düşen/);
 });

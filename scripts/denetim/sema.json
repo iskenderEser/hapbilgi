@@ -1,7 +1,7 @@
 {
-  "uretim_tarihi": "2026-08-21T11:43:28.252Z",
-  "tablo_sayisi": 110,
-  "rpc_sayisi": 118,
+  "uretim_tarihi": "2026-08-21T15:23:06.643Z",
+  "tablo_sayisi": 112,
+  "rpc_sayisi": 120,
   "tablolar": {
     "bildirimler": {
       "tur": "BASE TABLE",
@@ -1435,6 +1435,10 @@
         "cevaplandi_mi": {
           "tip": "boolean",
           "nullable": false
+        },
+        "son_konum_saniye": {
+          "tip": "integer",
+          "nullable": false
         }
       }
     },
@@ -1718,6 +1722,48 @@
         "son_islem_tarihi": {
           "tip": "timestamp with time zone",
           "nullable": true
+        }
+      }
+    },
+    "eczanem_video_begeniler": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "begeni_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "musteri_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "yayin_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        }
+      }
+    },
+    "eczanem_video_favoriler": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "favori_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "musteri_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "yayin_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
         }
       }
     },
@@ -4735,6 +4781,10 @@
       "argumanlar": "p_musteri_id uuid, p_auth_user_id uuid",
       "donus": "boolean"
     },
+    "eczanem_musteri_video_etkilesim_degistir": {
+      "argumanlar": "p_musteri_id uuid, p_yayin_id uuid, p_tur text",
+      "donus": "TABLE(aktif boolean, sayi integer)"
+    },
     "eczanem_musterilere_video_gonder": {
       "argumanlar": "p_eczane_id uuid, p_gonderen_kisi_id uuid, p_yayin_id uuid, p_musteri_idler uuid[]",
       "donus": "TABLE(ok boolean, hata text, gonderilen integer, atlanan integer, gonderilen_musteri_idler uuid[])"
@@ -4854,6 +4904,10 @@
     "get_eclub_utt_siparisler": {
       "argumanlar": "p_utt_id uuid, p_eczane_id uuid, p_kisi_id uuid, p_durum text, p_tarih_baslangic timestamp with time zone, p_tarih_bitis timestamp with time zone, p_offset integer, p_limit integer",
       "donus": "jsonb"
+    },
+    "get_eczanem_musteri_video_etkilesimleri": {
+      "argumanlar": "p_musteri_id uuid, p_yayin_idler uuid[]",
+      "donus": "TABLE(yayin_id uuid, begeni_sayisi integer, favori_sayisi integer, izlenme_sayisi integer, begeni_mi boolean, favori_mi boolean)"
     },
     "get_harcama_bakiyesi": {
       "argumanlar": "p_kullanici_id uuid",
@@ -5624,6 +5678,30 @@
         "kaynak_kolon": "musteri_id",
         "hedef_tablo": "eczanem_musteriler",
         "hedef_kolon": "musteri_id"
+      }
+    ],
+    "eczanem_video_begeniler": [
+      {
+        "kaynak_kolon": "musteri_id",
+        "hedef_tablo": "eczanem_musteriler",
+        "hedef_kolon": "musteri_id"
+      },
+      {
+        "kaynak_kolon": "yayin_id",
+        "hedef_tablo": "yayin_yonetimi",
+        "hedef_kolon": "yayin_id"
+      }
+    ],
+    "eczanem_video_favoriler": [
+      {
+        "kaynak_kolon": "musteri_id",
+        "hedef_tablo": "eczanem_musteriler",
+        "hedef_kolon": "musteri_id"
+      },
+      {
+        "kaynak_kolon": "yayin_id",
+        "hedef_tablo": "yayin_yonetimi",
+        "hedef_kolon": "yayin_id"
       }
     ],
     "hb_ligi_ozet_v2": [

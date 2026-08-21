@@ -1,7 +1,8 @@
 // app/eczanem/api/videolar/route.ts
-// Müşteri paneli video listesi: kendisine gönderilen videolar (eczanem_gonderimler)
-// + izleme/soru durumu. İzlenme METRİĞİ üretilmez (İP-§6.2) — bu durum yalnız
-// müşterinin KENDİ ilerlemesi içindir, hiçbir rapor katmanına akmaz.
+// Müşteri dijital kanal video listesi: kendisine gönderilen videolar
+// (eczanem_gonderimler) + kendi ilerlemesi + müşteri-geneli etkileşim sayıları.
+// Global sayılar yalnız müşteri ana sayfasındaki keşif raflarını sıralar; firma,
+// UTT veya mutabakat raporlarına bağlanmaz.
 
 import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
@@ -22,6 +23,15 @@ interface YayinDetaySatiri {
   talep_no: number | null;
   firma_adi: string | null;
   firma_id: string | null;
+}
+
+interface EtkilesimSatiri {
+  yayin_id: string;
+  begeni_sayisi: number | string | null;
+  favori_sayisi: number | string | null;
+  izlenme_sayisi: number | string | null;
+  begeni_mi: boolean | null;
+  favori_mi: boolean | null;
 }
 
 export async function GET() {
@@ -80,18 +90,34 @@ export async function GET() {
     const { data: izlemeler, error: izlemeError } = gonderimIdler.length > 0
       ? await adminSupabase
         .from("eczanem_izleme_kayitlari")
-        .select("gonderim_id, tamamlandi_mi, cevaplandi_mi")
+        .select("gonderim_id, tamamlandi_mi, cevaplandi_mi, izleme_baslangic, izleme_bitis, son_konum_saniye")
         .eq("musteri_id", musteriId)
         .in("gonderim_id", gonderimIdler)
       : { data: [], error: null };
     if (izlemeError) return hataYaniti("İzleme durumları çekilemedi.", "eczanem_izleme_kayitlari SELECT — gönderim durumu", izlemeError);
 
-    const izlemeDurumu = new Map<string, { tamamlandi_mi: boolean; cevaplandi_mi: boolean }>();
+    const izlemeDurumu = new Map<string, { tamamlandi_mi: boolean; cevaplandi_mi: boolean; izleme_baslangic: string | null; izleme_bitis: string | null; son_konum_saniye: number }>();
     for (const izleme of izlemeler ?? []) {
       izlemeDurumu.set(izleme.gonderim_id, {
         tamamlandi_mi: Boolean(izleme.tamamlandi_mi),
         cevaplandi_mi: Boolean(izleme.cevaplandi_mi),
+        izleme_baslangic: izleme.izleme_baslangic ?? null,
+        izleme_bitis: izleme.izleme_bitis ?? null,
+        son_konum_saniye: Number(izleme.son_konum_saniye ?? 0),
       });
+    }
+
+    const { data: etkilesimler, error: etkilesimError } = yayinIdler.length > 0
+      ? await adminSupabase.rpc("get_eczanem_musteri_video_etkilesimleri", {
+        p_musteri_id: musteriId,
+        p_yayin_idler: yayinIdler,
+      })
+      : { data: [], error: null };
+    if (etkilesimError) return hataYaniti("Video etkileşimleri çekilemedi.", "get_eczanem_musteri_video_etkilesimleri RPC", etkilesimError);
+    const etkilesimMap = new Map<string, EtkilesimSatiri>();
+    for (const hamEtkilesim of etkilesimler ?? []) {
+      const etkilesim = hamEtkilesim as EtkilesimSatiri;
+      etkilesimMap.set(etkilesim.yayin_id, etkilesim);
     }
     const eczaneAdlari = await eczaneAdMap(adminSupabase, aktifEczaneIdler);
 
@@ -99,6 +125,8 @@ export async function GET() {
       .filter((g) => yayinMap.get(g.yayin_id)?.durum === "yayinda")
       .map((g) => {
         const y = yayinMap.get(g.yayin_id);
+        const izleme = izlemeDurumu.get(g.gonderim_id);
+        const etkilesim = etkilesimMap.get(g.yayin_id);
         return {
           gonderim_id: g.gonderim_id,
           yayin_id: g.yayin_id,
@@ -114,8 +142,17 @@ export async function GET() {
           soru_puani: y?.soru_puani ?? null,
           soru_sayisi: y?.video_basi_soru_sayisi ?? null,
           gelis_tarihi: g.created_at,
-          izlendi: izlemeDurumu.get(g.gonderim_id)?.tamamlandi_mi ?? false,
-          cevaplandi: izlemeDurumu.get(g.gonderim_id)?.cevaplandi_mi ?? false,
+          izleme_basladi: Boolean(izleme),
+          izlendi: izleme?.tamamlandi_mi ?? false,
+          cevaplandi: izleme?.cevaplandi_mi ?? false,
+          izleme_baslangic: izleme?.izleme_baslangic ?? null,
+          izleme_bitis: izleme?.izleme_bitis ?? null,
+          son_konum_saniye: izleme?.son_konum_saniye ?? 0,
+          begeni_sayisi: Number(etkilesim?.begeni_sayisi ?? 0),
+          favori_sayisi: Number(etkilesim?.favori_sayisi ?? 0),
+          izlenme_sayisi: Number(etkilesim?.izlenme_sayisi ?? 0),
+          begeni_mi: Boolean(etkilesim?.begeni_mi),
+          favori_mi: Boolean(etkilesim?.favori_mi),
         };
       });
 

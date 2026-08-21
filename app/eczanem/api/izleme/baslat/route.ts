@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     // Tamamlanmış kayıt dahil bu gönderimin tek izleme oturumunu yeniden kullan.
     const { data: mevcutIzleme, error: mevcutError } = await adminSupabase
       .from("eczanem_izleme_kayitlari")
-      .select("izleme_id, yayin_id, gonderim_id, izleme_baslangic, tamamlandi_mi")
+      .select("izleme_id, yayin_id, gonderim_id, izleme_baslangic, tamamlandi_mi, son_konum_saniye")
       .eq("gonderim_id", gonderim_id)
       .maybeSingle();
     if (mevcutError) return hataYaniti("İzleme kaydı sorgulanamadı.", "eczanem_izleme_kayitlari SELECT — gonderim_id", mevcutError);
@@ -87,14 +87,14 @@ export async function POST(request: NextRequest) {
         izleme_baslangic: new Date().toISOString(),
         video_suresi_saniye: Math.ceil(videoSuresi),
       })
-      .select("izleme_id, yayin_id, gonderim_id, izleme_baslangic, tamamlandi_mi")
+      .select("izleme_id, yayin_id, gonderim_id, izleme_baslangic, tamamlandi_mi, son_konum_saniye")
       .single();
 
     if (izlemeError?.code === "23505") {
       // Eşzamanlı iki başlangıçta unique kilidini kazanan kaydı döndür.
       const { data: yaristaOlusan, error: yarisError } = await adminSupabase
         .from("eczanem_izleme_kayitlari")
-        .select("izleme_id, yayin_id, gonderim_id, izleme_baslangic, tamamlandi_mi")
+        .select("izleme_id, yayin_id, gonderim_id, izleme_baslangic, tamamlandi_mi, son_konum_saniye")
         .eq("gonderim_id", gonderim_id)
         .single();
       if (yarisError || !yaristaOlusan) {

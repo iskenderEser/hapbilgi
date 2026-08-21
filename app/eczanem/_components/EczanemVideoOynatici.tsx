@@ -18,6 +18,7 @@ interface OynaticiVideo {
   teknik_adi: string | null;
   video_url: string | null;
   eczane_adi?: string;
+  son_konum_saniye?: number;
 }
 interface Soru {
   soru_index: number;
@@ -52,6 +53,8 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
   const izlemeBitirildiRef = useRef(false);
   const baslatiliyorRef = useRef(false);
   const videoSuresiRef = useRef(0);
+  const sonKonumRef = useRef(0);
+  const sonGonderilenKonumRef = useRef(0);
   const playerRef = useRef<VideoPlayer | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const { katmanAcik, oynaticiHazir, oynat } = useVideoEtkilesimKatmani({
@@ -66,6 +69,8 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
     izlemeBitirildiRef.current = false;
     baslatiliyorRef.current = false;
     videoSuresiRef.current = 0;
+    sonKonumRef.current = 0;
+    sonGonderilenKonumRef.current = 0;
     setIzlemeId(null);
     setIzlemeBasladi(false);
     setIzlemeTamamlandi(false);
@@ -75,6 +80,20 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
     setCevapSonuclari([]);
     setTamamlamaHatasi(null);
   }, [video.gonderim_id]);
+
+  const ilerlemeKaydet = useCallback((zorla = false) => {
+    const id = izlemeIdRef.current;
+    const konum = Math.max(0, Math.floor(sonKonumRef.current));
+    if (!id || izlemeBitirildiRef.current || konum < 1) return;
+    if (!zorla && Math.abs(konum - sonGonderilenKonumRef.current) < 5) return;
+    sonGonderilenKonumRef.current = konum;
+    void fetch("/eczanem/api/izleme/ilerleme", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ izleme_id: id, konum_saniye: konum }),
+      keepalive: zorla,
+    }).catch(() => { /* İlerleme bir sonraki zaman güncellemesinde yeniden yazılır. */ });
+  }, []);
 
   const handleBitir = useCallback(async () => {
     const id = izlemeIdRef.current;
@@ -138,6 +157,8 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
         if (sure > 0) videoSuresiRef.current = sure;
       });
       player.onTimeUpdate((data: { seconds: number }) => {
+        sonKonumRef.current = data.seconds;
+        ilerlemeKaydet();
         if (!izlemeBitirildiRef.current && videoSuresiRef.current > 0 && data.seconds >= videoSuresiRef.current - 0.5) {
           izlemeBitirildiRef.current = true;
           void handleBitir();
@@ -151,10 +172,11 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
     });
 
     return () => {
+      ilerlemeKaydet(true);
       player.destroy();
       if (playerRef.current === player) playerRef.current = null;
     };
-  }, [handleBitir, hata, oynaticiHazir, video.gonderim_id, video.video_url]);
+  }, [handleBitir, hata, ilerlemeKaydet, oynaticiHazir, video.gonderim_id, video.video_url]);
 
   const handleOynat = async () => {
     if (!video.video_url || baslatiliyorRef.current) return;
@@ -184,6 +206,10 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
       setIzlemeId(yeniIzlemeId);
       izlemeIdRef.current = yeniIzlemeId;
       setIzlemeBasladi(true);
+      const kaldigiKonum = Math.max(0, Number(d.izleme?.son_konum_saniye ?? video.son_konum_saniye ?? 0));
+      sonKonumRef.current = kaldigiKonum;
+      sonGonderilenKonumRef.current = kaldigiKonum;
+      if (kaldigiKonum > 0) playerRef.current?.setCurrentTime(kaldigiKonum);
       oynat();
     } catch {
       hata("İzleme başlatılamadı; bağlantınızı kontrol edip yeniden deneyin.", "izleme başlangıcı");

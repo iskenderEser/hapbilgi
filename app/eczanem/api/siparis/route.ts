@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     const sonuc = await siparisOlustur(adminSupabase, musteriId, eczane_id, barkod, Number(adet ?? 1));
     if (!sonuc.ok) return isKuraluHatasi(sonuc.hata ?? "Sipariş oluşturulamadı.");
 
-    return NextResponse.json({ ok: true, siparis_id: sonuc.siparis_id, mesaj: "Sipariş gönderildi — eczacı onayı bekleniyor." }, { status: 201 });
+    return NextResponse.json({ ok: true, siparis_id: sonuc.siparis_id, mesaj: "İndirim talebi gönderildi — eczane onayı bekleniyor." }, { status: 201 });
   } catch (err) {
     return sunucuHatasi(err, "POST /eczanem/api/siparis");
   }

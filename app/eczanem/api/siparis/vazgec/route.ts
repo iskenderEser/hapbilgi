@@ -33,9 +33,9 @@ export async function POST(request: NextRequest) {
     if (siparis.musteri_id !== kimlik.musteriId) return rolHatasi("Bu sipariş size ait değil.");
 
     const sonuc = await siparisReddet(adminSupabase, siparis_id);
-    if (!sonuc.ok) return isKuraluHatasi(sonuc.hata ?? "Vazgeçilemedi.");
+    if (!sonuc.ok) return isKuraluHatasi(sonuc.hata ?? "İndirim talebi iptal edilemedi.");
 
-    return NextResponse.json({ ok: true, mesaj: "Siparişten vazgeçildi." }, { status: 200 });
+    return NextResponse.json({ ok: true, mesaj: "İndirim talebi iptal edildi." }, { status: 200 });
   } catch (err) {
     return sunucuHatasi(err, "POST /eczanem/api/siparis/vazgec");
   }

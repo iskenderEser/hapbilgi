@@ -22,6 +22,10 @@ import {
 
 export const PUAN_OMRU_GUN_VARSAYILAN = 180;
 
+interface EczaneSatiri { eczane_id: string; gln: string | null; }
+interface EczaneMasterSatiri { gln: string; eczane_adi: string | null; }
+interface PuanBakiyesiSatiri { kalan_puan: number | null; }
+
 // Müşterinin aktif üye olduğu eczaneler (İndirim kullan eczane seçimi + fiş
 // eczane adı). Ad gln → eclub_eczane_master zinciriyle (ayrı sorgu + Map).
 export async function musteriEczaneleri(
@@ -40,7 +44,7 @@ export async function musteriEczaneleri(
   }
   const { data: uyelikler } = await uyelikSorgusu;
 
-  const eczaneIdler = [...new Set((uyelikler ?? []).map((u: any) => u.eczane_id))];
+  const eczaneIdler = [...new Set((uyelikler ?? []).map((u) => u.eczane_id))];
   if (eczaneIdler.length === 0) return [];
 
   const { data: eczaneler } = await adminSupabase
@@ -48,14 +52,20 @@ export async function musteriEczaneleri(
     .select("eczane_id, gln")
     .in("eczane_id", eczaneIdler);
   const eczaneGln = new Map<string, string>();
-  for (const e of eczaneler ?? []) eczaneGln.set((e as any).eczane_id, (e as any).gln);
+  for (const hamEczane of eczaneler ?? []) {
+    const eczane = hamEczane as EczaneSatiri;
+    if (eczane.gln) eczaneGln.set(eczane.eczane_id, eczane.gln);
+  }
 
-  const glnler = [...new Set((eczaneler ?? []).map((e: any) => e.gln).filter(Boolean))];
+  const glnler = [...new Set((eczaneler ?? []).map((hamEczane) => (hamEczane as EczaneSatiri).gln).filter((gln): gln is string => Boolean(gln)))];
   const { data: masterlar } = glnler.length
     ? await adminSupabase.from("eclub_eczane_master").select("gln, eczane_adi").in("gln", glnler)
-    : { data: [] as any[] };
+    : { data: [] as EczaneMasterSatiri[] };
   const glnAd = new Map<string, string>();
-  for (const m of masterlar ?? []) glnAd.set((m as any).gln, (m as any).eczane_adi);
+  for (const hamMaster of masterlar ?? []) {
+    const master = hamMaster as EczaneMasterSatiri;
+    if (master.eczane_adi) glnAd.set(master.gln, master.eczane_adi);
+  }
 
   return eczaneIdler
     .map((ez) => ({ eczane_id: ez, eczane_adi: glnAd.get(eczaneGln.get(ez) ?? "") ?? "(isimsiz eczane)" }))
@@ -98,7 +108,7 @@ export async function urunBakiyesi(
     .eq("eczane_id", eczaneId)
     .eq("urun_id", urunId)
     .gte("created_at", altSinir);
-  return (data ?? []).reduce((acc: number, r: any) => acc + (r.kalan_puan ?? 0), 0);
+  return (data ?? []).reduce((acc: number, hamKayit) => acc + ((hamKayit as PuanBakiyesiSatiri).kalan_puan ?? 0), 0);
 }
 
 // puan → TL (tarife oranı). İki ondalıkta yuvarlanır (para).
@@ -260,8 +270,8 @@ export async function siparisReddet(
     .eq("durum", "bekliyor")
     .select("siparis_id")
     .maybeSingle();
-  if (error) return { ok: false, hata: "Sipariş düşürülemedi." };
-  if (!data) return { ok: false, hata: "Sipariş zaten işlenmiş." };
+  if (error) return { ok: false, hata: "İndirim talebi iptal edilemedi." };
+  if (!data) return { ok: false, hata: "İndirim talebi daha önce sonuçlandırılmış." };
   return { ok: true };
 }
 
