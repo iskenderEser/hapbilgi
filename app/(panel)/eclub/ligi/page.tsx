@@ -11,6 +11,7 @@ import type { EclubKapsamUtt, EclubYonetimKapsami } from "@/lib/eclub/yonetimKap
 import { eclubKisiRolEtiketi } from "@/lib/utils/roller";
 import { aktifPeriyot } from "@/lib/zaman/kontrol";
 import styles from "./eclub-league.module.css";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 
 interface LigData {
   kullanici: { ad: string; soyad: string; rol: string };
@@ -58,6 +59,7 @@ export default function EclubLigiPage() {
   const [hafta, setHafta] = useState(bugun.hafta);
   const [data, setData] = useState<LigData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [yenileniyor, setYenileniyor] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
   const [acikKisi, setAcikKisi] = useState<string | null>(null);
   const [seciliUtt, setSeciliUtt] = useState<string | null>(null);
@@ -79,10 +81,14 @@ export default function EclubLigiPage() {
     return params.toString();
   }, [periyot, yil, ay, ceyrek, hafta]);
 
-  const veriCek = useCallback(async () => {
+  const veriCek = useCallback(async (ilkYukleme = false) => {
     if (!kullanici) return;
-    setLoading(true);
-    setHata(null);
+    if (ilkYukleme) {
+      setLoading(true);
+      setHata(null);
+    } else {
+      setYenileniyor(true);
+    }
     setAcikKisi(null);
     try {
       const response = await fetch(`/eclub/ligi/api?${query}`);
@@ -91,14 +97,17 @@ export default function EclubLigiPage() {
       setData(payload as LigData);
       setTakimTaslak((payload as LigData).takim_adi ?? "");
     } catch (error) {
-      setData(null);
-      setHata(error instanceof Error ? error.message : "E-Club Ligi verisi alınamadı.");
+      if (ilkYukleme) {
+        setData(null);
+        setHata(error instanceof Error ? error.message : "E-Club Ligi verisi alınamadı.");
+      }
     } finally {
-      setLoading(false);
+      if (ilkYukleme) setLoading(false);
+      else setYenileniyor(false);
     }
   }, [kullanici, query]);
 
-  useEffect(() => { void veriCek(); }, [veriCek]);
+  useEffect(() => { void veriCek(true); }, [veriCek]);
 
   const takimAdiKaydet = async () => {
     const takimAdi = takimTaslak.trim();
@@ -130,7 +139,7 @@ export default function EclubLigiPage() {
         <div className="max-w-md rounded-2xl border border-red-100 bg-white p-6 text-center shadow-sm">
           <div className="text-sm font-extrabold text-[#a43737]">E-Club Ligi yüklenemedi</div>
           <p className="mt-1 text-xs font-semibold text-[#7d8ba0]">{hata ?? "Beklenmeyen bir hata oluştu."}</p>
-          <button type="button" onClick={() => void veriCek()} className="mt-4 rounded-xl bg-[#2f9ae9] px-4 py-2 text-xs font-extrabold text-white">Yeniden dene</button>
+          <button type="button" onClick={() => void veriCek(true)} className="mt-4 rounded-xl bg-[#2f9ae9] px-4 py-2 text-xs font-extrabold text-white">Yeniden dene</button>
         </div>
       </div>
     );
@@ -198,6 +207,7 @@ export default function EclubLigiPage() {
           </div>
           <div className={`${styles.headerActions} [&_.hb-ligi-periyot-secici]:mb-0`}>
             {periyotSecici}
+            <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} disabled={takimDuzenleniyor || takimKaydediliyor} />
             <button type="button" className={styles.excelButton} onClick={() => window.open(`/eclub/ligi/api/export?${query}`, "_blank")}>
               <Download className="h-3.5 w-3.5" /> Excel
             </button>

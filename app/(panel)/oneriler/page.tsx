@@ -10,6 +10,7 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import BmOneriTakibi, { type OneriKaydi } from "./_components/BmOneriTakibi";
 import TmOneriTakibi, { type TmBmKaydi, type TmOneriKaydi } from "./_components/TmOneriTakibi";
 import type { Periyot } from "@/lib/utils/raporUtils";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 
 export default function OnerilerPage() {
   const router = useRouter();
@@ -18,6 +19,8 @@ export default function OnerilerPage() {
   const [tmOneriler, setTmOneriler] = useState<TmOneriKaydi[]>([]);
   const [tmBmler, setTmBmler] = useState<TmBmKaydi[]>([]);
   const [loading, setLoading] = useState(true);
+  const [yenileniyor, setYenileniyor] = useState(false);
+  const [yenileTetik, setYenileTetik] = useState(0);
   const [periyot, setPeriyot] = useState<Periyot>("bu_ay");
   const { mesajlar, hata } = useHataMesaji();
   const hataRef = useRef(hata);
@@ -60,10 +63,11 @@ export default function OnerilerPage() {
         setOneriler(data.oneriler ?? []);
       }
       setLoading(false);
+      setYenileniyor(false);
     };
     void veriCek();
     return () => { aktif = false; };
-  }, [isBM, isTM, kullanici?.id, periyot]);
+  }, [isBM, isTM, kullanici?.id, periyot, yenileTetik]);
 
   const handlePeriyotDegistir = (yeniPeriyot: Periyot) => {
     if (yeniPeriyot === periyot) return;
@@ -112,6 +116,10 @@ export default function OnerilerPage() {
     <div className="min-h-screen bg-gray-50 pb-20 md:pb-0" style={{ fontFamily: "'Nunito', sans-serif" }}>
 
       <div className={isBM || isTM ? "" : "max-w-5xl mx-auto px-3 py-4 md:px-6 md:py-6 flex flex-col gap-5"}>
+
+        <div className={isBM || isTM ? "mx-auto flex max-w-[1480px] justify-end px-3 pt-4 md:px-6 lg:px-8" : "flex justify-end"}>
+          <YenileButonu yenileniyor={yenileniyor} onYenile={() => { setYenileniyor(true); setYenileTetik((deger) => deger + 1); }} />
+        </div>
 
         {isBM && (
           <BmOneriTakibi

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useRapor } from '@/hooks/useRapor';
+import { YenileButonu } from '@/components/ui/yenile-butonu';
 import { formatPuan, PERIYOTLAR, type Periyot } from '@/lib/utils/raporUtils';
 import DagilimGrafik from '@/components/raporlar/DagilimGrafik';
 import EczanemDokumBolumu from '@/components/raporlar/EczanemDokumBolumu';
@@ -83,7 +84,7 @@ export default function YoneticiRaporPage() {
   const { kullanici, yukleniyor } = useAuth();
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
   const [seciliEgitimTuru, setSeciliEgitimTuru] = useState<string | null>(null);
-  const { data, loading, error } = useRapor<RaporData>('/raporlar/api/yonetici', periyot, kullanici?.id);
+  const { data, loading, yenileniyor, error, yenile } = useRapor<RaporData>('/raporlar/api/yonetici', periyot, kullanici?.id);
 
   const puanAkisi = useMemo(() => data ? [
     { ad: 'İzleme', puan: data.performans.izleme_puani, renk: '#2f8ed8' },
@@ -123,7 +124,7 @@ export default function YoneticiRaporPage() {
         <h1>{data.kullanici.firma_adi} Performans Raporu</h1>
         <p>{data.kullanici.ad} {data.kullanici.soyad} · Üretimin sahada nasıl karşılık bulduğunu gör, açığı belirle ve doğru müdahaleyi seç.</p>
       </div>
-      <div className={styles.periods}>{PERIYOTLAR.map(x => <button type="button" key={x.key} onClick={() => setPeriyot(x.key)} className={`${styles.periodButton} ${periyot === x.key ? styles.periodActive : ''}`}>{x.label}</button>)}</div>
+      <div className={styles.periods}>{PERIYOTLAR.map(x => <button type="button" key={x.key} onClick={() => setPeriyot(x.key)} className={`${styles.periodButton} ${periyot === x.key ? styles.periodActive : ''}`}>{x.label}</button>)}<YenileButonu yenileniyor={yenileniyor} onYenile={yenile} /></div>
     </header>
 
     <div className={styles.heroGrid}>

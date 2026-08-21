@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import VideoOynatici from "@/components/izle/VideoOynatici";
 import { HEDEF_ROL_TASARIM } from "@/app/(panel)/talepler/_types";
@@ -179,6 +180,7 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
   const hataRef = useRef(hata);
   const [videolar, setVideolar] = useState<YayindakiVideo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [yenileniyor, setYenileniyor] = useState(false);
   const [aktifVideo, setAktifVideo] = useState<YayindakiVideo | null>(null);
   const [aktifHedef, setAktifHedef] = useState<HedefRol>("utt");
   const [aktifDepartman, setAktifDepartman] = useState<DepartmanKey | null>(null);
@@ -186,6 +188,29 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
   useEffect(() => {
     hataRef.current = hata;
   }, [hata]);
+
+  const veriCek = useCallback(async (ilkYukleme = false) => {
+    if (ilkYukleme) setLoading(true);
+    else setYenileniyor(true);
+    try {
+      const res = await fetch(`/yayindaki-videolar/api?kapsam=${kapsam}`);
+      const data = await res.json();
+      if (!res.ok) {
+        hataRef.current(data.hata ?? "Yayınlar yüklenemedi.", data.adim, data.detay);
+        return;
+      }
+      const gelen = (data.videolar ?? []) as YayindakiVideo[];
+      setVideolar(gelen);
+      if (kapsam === "benim") {
+        setAktifHedef(TUM_HEDEF_ROLLER.find((hedef) => gelen.some((video) => video.hedef_roller.includes(hedef))) ?? "utt");
+      }
+    } catch {
+      hataRef.current("Yayınlar yüklenemedi.");
+    } finally {
+      if (ilkYukleme) setLoading(false);
+      else setYenileniyor(false);
+    }
+  }, [kapsam]);
 
   useEffect(() => {
     if (yukleniyor) return;
@@ -195,28 +220,8 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
       return;
     }
 
-    const veriCek = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/yayindaki-videolar/api?kapsam=${kapsam}`);
-        const data = await res.json();
-        if (!res.ok) {
-          hataRef.current(data.hata ?? "Yayınlar yüklenemedi.", data.adim, data.detay);
-          return;
-        }
-        const gelen = (data.videolar ?? []) as YayindakiVideo[];
-        setVideolar(gelen);
-        if (kapsam === "benim") {
-          setAktifHedef(TUM_HEDEF_ROLLER.find((hedef) => gelen.some((video) => video.hedef_roller.includes(hedef))) ?? "utt");
-        }
-      } catch {
-        hataRef.current("Yayınlar yüklenemedi.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    void veriCek();
-  }, [kapsam, kullanici, yukleniyor, router]);
+    void veriCek(true);
+  }, [kullanici, yukleniyor, router, veriCek]);
 
   useEffect(() => {
     if (aktifVideo) window.scrollTo({ top: 0, behavior: "auto" });
@@ -258,10 +263,13 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
   return (
     <div className="min-h-full bg-[#f5f8fc]" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <div className="mx-auto flex max-w-[1480px] flex-col gap-5 px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
-        <header>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">Yayın kataloğu</p>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">{baslik}</h1>
-          <p className="mt-1 text-sm text-[#6b7f9b]">{aciklama}</p>
+        <header className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">Yayın kataloğu</p>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">{baslik}</h1>
+            <p className="mt-1 text-sm text-[#6b7f9b]">{aciklama}</p>
+          </div>
+          <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} />
         </header>
 
         {loading ? (

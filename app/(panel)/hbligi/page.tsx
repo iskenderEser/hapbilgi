@@ -8,6 +8,7 @@ import HbLigiPeriyotSecici, { type Periyot } from "@/components/hbligi/HbLigiPer
 import LeaguePage from "@/components/hbligi/league/LeaguePage";
 import FieldLeaguePage from "@/components/hbligi/field/FieldLeaguePage";
 import type { SahaLigSonuc } from "@/lib/hbligi_v2/getSahaLig";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 
 interface UttSatiri {
   sira: number;
@@ -34,6 +35,7 @@ export default function HBLigiPage() {
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const [veri, setVeri] = useState<HBLigiVeri | null>(null);
   const [loading, setLoading] = useState(true);
+  const [yenileniyor, setYenileniyor] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
 
   const buPeriyot = aktifPeriyot();
@@ -49,10 +51,14 @@ export default function HBLigiPage() {
     }
   }, [kullanici, authYukleniyor, router]);
 
-  const veriCek = useCallback(async () => {
+  const veriCek = useCallback(async (ilkYukleme = false) => {
     if (!kullanici) return;
-    setLoading(true);
-    setHata(null);
+    if (ilkYukleme) {
+      setLoading(true);
+      setHata(null);
+    } else {
+      setYenileniyor(true);
+    }
     try {
       const params = new URLSearchParams({
         periyot,
@@ -69,30 +75,36 @@ export default function HBLigiPage() {
       }
       setVeri(payload as HBLigiVeri);
     } catch (error) {
-      setVeri(null);
-      setHata(error instanceof Error ? error.message : "HBLigi verisi alınamadı.");
+      if (ilkYukleme) {
+        setVeri(null);
+        setHata(error instanceof Error ? error.message : "HBLigi verisi alınamadı.");
+      }
     } finally {
-      setLoading(false);
+      if (ilkYukleme) setLoading(false);
+      else setYenileniyor(false);
     }
   }, [kullanici, periyot, yil, ay, ceyrek, hafta]);
 
   useEffect(() => {
-    void veriCek();
+    void veriCek(true);
   }, [veriCek]);
 
   const periyotSecici = (
-    <HbLigiPeriyotSecici
-      periyot={periyot}
-      yil={yil}
-      ay={ay}
-      ceyrek={ceyrek}
-      hafta={hafta}
-      onPeriyotChange={setPeriyot}
-      onYilChange={setYil}
-      onAyChange={setAy}
-      onCeyrekChange={setCeyrek}
-      onHaftaChange={setHafta}
-    />
+    <div className="flex flex-wrap items-start gap-2 [&_.hb-ligi-periyot-secici]:mb-0">
+      <HbLigiPeriyotSecici
+        periyot={periyot}
+        yil={yil}
+        ay={ay}
+        ceyrek={ceyrek}
+        hafta={hafta}
+        onPeriyotChange={setPeriyot}
+        onYilChange={setYil}
+        onAyChange={setAy}
+        onCeyrekChange={setCeyrek}
+        onHaftaChange={setHafta}
+      />
+      <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} />
+    </div>
   );
 
   if (authYukleniyor || !kullanici || loading) {
@@ -112,7 +124,7 @@ export default function HBLigiPage() {
         <div className="max-w-md rounded-2xl border border-red-100 bg-white p-6 text-center shadow-sm">
           <div className="text-sm font-extrabold text-[#a43737]">HBLigi yüklenemedi</div>
           <p className="mt-1 text-xs font-semibold text-[#7d8ba0]">{hata ?? "Beklenmeyen bir hata oluştu."}</p>
-          <button type="button" onClick={() => void veriCek()} className="mt-4 rounded-xl bg-[#2f9ae9] px-4 py-2 text-xs font-extrabold text-white">
+          <button type="button" onClick={() => void veriCek(true)} className="mt-4 rounded-xl bg-[#2f9ae9] px-4 py-2 text-xs font-extrabold text-white">
             Yeniden dene
           </button>
         </div>

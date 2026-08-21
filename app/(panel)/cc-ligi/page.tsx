@@ -31,6 +31,8 @@ import CcLigiBanner from "@/components/cc-ligi/CcLigiBanner";
 import CcLigiPeriyotSecici, { type Periyot } from "@/components/cc-ligi/CcLigiPeriyotSecici";
 import CcLigiTablosu, { type LigSatiri } from "@/components/cc-ligi/CcLigiTablosu";
 import CcChallengeListesi from "@/components/cc-ligi/CcChallengeListesi";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
+import type { AuthKullanici } from "@/types/auth";
 
 const GRI_METIN = "#737373";
 const KOYU_METIN = "#111827";
@@ -38,7 +40,7 @@ const GRI_ZEMIN = "#f9fafb";
 
 export default function CcLigiPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<AuthKullanici | null>(null);
   const [yetkiKontrolEdildi, setYetkiKontrolEdildi] = useState(false);
 
   // Periyot state
@@ -52,6 +54,8 @@ export default function CcLigiPage() {
   // Lig tablosu state
   const [ligSatirlari, setLigSatirlari] = useState<LigSatiri[]>([]);
   const [ligYukleniyor, setLigYukleniyor] = useState(true);
+  const [yenileniyor, setYenileniyor] = useState(false);
+  const [yenilemeAnahtari, setYenilemeAnahtari] = useState(0);
 
   const { mesajlar, hata } = useHataMesaji();
   const { kullanici, yukleniyor: kimlikYukleniyor } = useAuth();
@@ -77,8 +81,9 @@ export default function CcLigiPage() {
   }, [kullanici, kimlikYukleniyor]);
 
   // Lig verisini çek (periyot/yil/ay/ceyrek değiştiğinde)
-  const ligiYukle = useCallback(async () => {
-    setLigYukleniyor(true);
+  const ligiYukle = useCallback(async (ilkYukleme = false) => {
+    if (ilkYukleme) setLigYukleniyor(true);
+    else setYenileniyor(true);
     try {
       let url = `/cc-ligi/api?tip=lig&periyot=${periyot}&yil=${yil}`;
       if (periyot === "ay") url += `&ay=${ay}`;
@@ -89,19 +94,20 @@ export default function CcLigiPage() {
       const d = await res.json();
       if (!res.ok) {
         hata(d.hata ?? "Lig verisi çekilemedi.", d.adim, d.detay);
-        setLigYukleniyor(false);
         return;
       }
       setLigSatirlari(d.lig ?? []);
     } catch (err) {
       hata("Lig verisi yüklenemedi.", "fetch", String(err));
+    } finally {
+      if (ilkYukleme) setLigYukleniyor(false);
+      else setYenileniyor(false);
     }
-    setLigYukleniyor(false);
   }, [periyot, yil, ay, ceyrek, hafta, hata]);
 
   useEffect(() => {
     if (!yetkiKontrolEdildi) return;
-    ligiYukle();
+    void ligiYukle(true);
   }, [yetkiKontrolEdildi, ligiYukle]);
 
   // Loading
@@ -143,6 +149,11 @@ export default function CcLigiPage() {
   const cListYil = buPeriyot.yil;
   const cListAy = buPeriyot.ay;
 
+  const tumunuYenile = async () => {
+    setYenilemeAnahtari((deger) => deger + 1);
+    await ligiYukle();
+  };
+
   return (
     <div
       className="min-h-screen pb-20 md:pb-0"
@@ -181,20 +192,23 @@ export default function CcLigiPage() {
         </button>
 
         {/* Başlık */}
-        <div className="mb-5">
-          <h1
-            className="text-xl font-bold"
-            style={{ color: KOYU_METIN, margin: 0 }}
-          >
-            CC Ligi
-          </h1>
-          <div className="text-xs mt-1" style={{ color: GRI_METIN }}>
-            Challenge Club bölge müdürlerinin öğrenme yarışı.
+        <div className="mb-5 flex items-start justify-between gap-3">
+          <div>
+            <h1
+              className="text-xl font-bold"
+              style={{ color: KOYU_METIN, margin: 0 }}
+            >
+              CC Ligi
+            </h1>
+            <div className="text-xs mt-1" style={{ color: GRI_METIN }}>
+              Challenge Club bölge müdürlerinin öğrenme yarışı.
+            </div>
           </div>
+          <YenileButonu yenileniyor={yenileniyor} onYenile={tumunuYenile} />
         </div>
 
         {/* Banner */}
-        <CcLigiBanner yil={yil} ceyrek={bannerCeyrek} hata={hata} />
+        <CcLigiBanner key={`banner-${yenilemeAnahtari}`} yil={yil} ceyrek={bannerCeyrek} hata={hata} />
 
         {/* Periyot seçici */}
         <CcLigiPeriyotSecici
@@ -214,7 +228,7 @@ export default function CcLigiPage() {
         <CcLigiTablosu satirlar={ligSatirlari} yukleniyor={ligYukleniyor} />
 
         {/* Challenge listesi (her zaman bu ay) */}
-        <CcChallengeListesi yil={cListYil} ay={cListAy} hata={hata} />
+        <CcChallengeListesi key={`challenge-${yenilemeAnahtari}`} yil={cListYil} ay={cListAy} hata={hata} />
       </div>
     </div>
   );

@@ -17,6 +17,7 @@ import { useHiyerarsi } from "./_hooks/useHiyerarsi";
 import { useSiparisListe } from "./_hooks/useSiparisListe";
 import SiparisFiltreleri from "./_components/SiparisFiltreleri";
 import SiparisTablosu from "./_components/SiparisTablosu";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 
 const GRI_METIN = "#737373";
 const GRI_ZEMIN = "#f9fafb";
@@ -29,7 +30,7 @@ export default function SiparislerPage() {
   const rolKucu = kullanici?.rol?.toLowerCase() ?? "";
   const yetkili = Boolean(kullanici && STORE_GENEL_GOREN_ROLLER.includes(rolKucu));
 
-  const { hiyerarsi, yukleniyor: hiyerarsiYukleniyor } = useHiyerarsi({ hata });
+  const { hiyerarsi, yukleniyor: hiyerarsiYukleniyor, yenileniyor: hiyerarsiYenileniyor, hiyerarsiYukle } = useHiyerarsi({ hata });
 
   const liste = useSiparisListe({ hata });
 
@@ -98,6 +99,7 @@ export default function SiparislerPage() {
                   : "Yetki kapsamınızdaki HBStore siparişlerinin güncel durumu."}
             </p>
           </div>
+          <YenileButonu yenileniyor={liste.yenileniyor || hiyerarsiYenileniyor} onYenile={() => Promise.all([liste.yukle(true), hiyerarsiYukle(true)]).then(() => undefined)} disabled={liste.dahaYukleniyor} />
         </div>
 
         {/* Filtreler */}

@@ -125,6 +125,9 @@ async function aktifUyeSayilari(
 export interface UttEczanemYayin {
   yayin_id: string;
   urun_adi: string;
+  teknik_adi: string;
+  video_url: string | null;
+  thumbnail_url: string | null;
   yayin_tarihi: string | null;
 }
 export interface UttEczanemEczane {
@@ -154,7 +157,7 @@ export async function uttEczanemVerisi(
   // 1. Eczanem yayınları (bu UTT'nin takımı, yayında)
   let yayinQuery = adminSupabase
     .from("v_yayin_detay")
-    .select("yayin_id, urun_adi, yayin_tarihi")
+    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, yayin_tarihi")
     .eq("durum", "yayinda")
     .eq("firma_id", firmaId)
     .contains("hedef_roller", ["eczanem"])
@@ -168,6 +171,9 @@ export async function uttEczanemVerisi(
   const yayinlar: UttEczanemYayin[] = (yayinRaw ?? []).map((y: any) => ({
     yayin_id: y.yayin_id,
     urun_adi: y.urun_adi ?? "-",
+    teknik_adi: y.teknik_adi ?? "",
+    video_url: y.video_url ?? null,
+    thumbnail_url: y.thumbnail_url ?? null,
     yayin_tarihi: y.yayin_tarihi ?? null,
   }));
 

@@ -14,7 +14,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ECLUB_ORTAK_YAYIN_GRUBU, hedefRolleriOku, yalnizEclubHedefliMi, type YayinHedefGrubu } from "@/lib/utils/roller";
 import type { Bekleyen, BekleyenHedefSayilari, Yayin } from "../_types";
 import { gecerliTurBaslangiclari, type HesaplananTur } from "@/lib/tur/kayit";
@@ -44,6 +44,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
   });
   const [yayinlar, setYayinlar] = useState<Yayin[]>([]);
   const [loading, setLoading] = useState(true);
+  const [yenileniyor, setYenileniyor] = useState(false);
   const [islemLoading, setIslemLoading] = useState<string | null>(null);
 
   const [videoPuanlari, setVideoPuanlari] = useState<Record<string, number>>({});
@@ -79,11 +80,13 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
         setTekrarSecenekleri(d.secenekler ?? []);
       }
     })();
-  }, [kullaniciVar]);
+  }, [kullaniciVar, hata]);
 
-  const veriCek = async () => {
-    setLoading(true);
-    const supabase = createClient();
+  const veriCek = useCallback(async (ilkYukleme = false) => {
+    if (ilkYukleme) setLoading(true);
+    else setYenileniyor(true);
+    try {
+      const supabase = createClient();
 
     // Bekleyenler: ana sekmeye göre filtreli çek
     const bRes = await fetch(`/yayin-yonetimi/api/bekleyenler?hedef=${aktifAnaSekme}`);
@@ -91,7 +94,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     if (!bRes.ok) {
       hata(bData.hata ?? "Bekleyenler yüklenemedi.", bData.adim, bData.detay);
     } else {
-      const bekleyenlerData = bData.bekleyenler ?? [];
+      const bekleyenlerData = (bData.bekleyenler ?? []) as Bekleyen[];
       setBekleyenler(bekleyenlerData);
       setBekleyenHedefSayilari({
         utt: Number(bData.sayilar?.utt ?? 0),
@@ -105,7 +108,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
       for (const b of bekleyenlerData) {
         yeniSoruPuanlari[b.soru_seti_durum_id] = {};
         for (const [idx, puan] of Object.entries(b.soru_puan_map ?? {})) {
-          yeniSoruPuanlari[b.soru_seti_durum_id][Number(idx)] = (puan as any).soru_puani;
+          yeniSoruPuanlari[b.soru_seti_durum_id][Number(idx)] = puan.soru_puani;
         }
       }
       setSoruPuanlari(yeniSoruPuanlari);
@@ -117,7 +120,6 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     const yayinData = await yayinRes.json();
     if (!yayinRes.ok) {
       hata(yayinData.hata ?? "Yayınlar yüklenemedi.", yayinData.adim, yayinData.detay);
-      setLoading(false);
       return;
     }
     const yayinlarData = (yayinData.yayinlar ?? []) as YayinApiSatiri[];
@@ -126,7 +128,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
       setYayinlar((yayinlarData ?? []).map(y => ({
         ...y,
         hedef_roller: hedefRolleriOku(y),
-        turu_adi: (y as any).egitim_turu ? (TALEP_TURU_KURALLARI[(y as any).egitim_turu as TalepTuru]?.ad ?? null) : null,
+        turu_adi: y.egitim_turu ? (TALEP_TURU_KURALLARI[y.egitim_turu as TalepTuru]?.ad ?? null) : null,
       })));
 
       // Tur bilgisi — sayaç rozeti (salt-okur toplu hesap; satır açmaz).
@@ -152,10 +154,15 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
       setTekrarBilgi({});
     }
 
-    setLoading(false);
-  };
+    } catch (err) {
+      hata("Yayın yönetimi verileri yüklenemedi.", "Yayın Yönetimi", err instanceof Error ? err.message : undefined);
+    } finally {
+      if (ilkYukleme) setLoading(false);
+      else setYenileniyor(false);
+    }
+  }, [aktifAnaSekme, hata]);
 
-  useEffect(() => { if (kullaniciVar) veriCek(); }, [kullaniciVar, aktifAnaSekme]);
+  useEffect(() => { if (kullaniciVar) void veriCek(true); }, [kullaniciVar, veriCek]);
 
   // ─── Puan yardımcıları ──────────────────────────────────────────────────
 
@@ -166,7 +173,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     setSoruPuanlari(prev => ({ ...prev, [soru_seti_durum_id]: { ...(prev[soru_seti_durum_id] ?? {}), [soru_index]: puan } }));
   };
 
-  const hepsineAyniPuanAta = (soru_seti_durum_id: string, sorular: any[], puan: number) => {
+  const hepsineAyniPuanAta = (soru_seti_durum_id: string, sorular: Bekleyen["sorular"], puan: number) => {
     const yeni: Record<number, number> = {};
     sorular.forEach((_, i) => { yeni[i] = puan; });
     setSoruPuanlari(prev => ({ ...prev, [soru_seti_durum_id]: yeni }));
@@ -273,7 +280,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
 
   return {
     // state
-    bekleyenler, bekleyenHedefSayilari, yayinlar, loading, islemLoading,
+    bekleyenler, bekleyenHedefSayilari, yayinlar, loading, yenileniyor, islemLoading,
     videoPuanlari, setVideoPuanlari,
     soruPuanlari,
     extraPuanlar, setExtraPuanlar,

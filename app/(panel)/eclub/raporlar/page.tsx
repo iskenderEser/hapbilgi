@@ -17,6 +17,7 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import DagilimGrafik from "@/components/raporlar/DagilimGrafik";
 import EclubYonetimHiyerarsisi from "@/components/eclub/EclubYonetimHiyerarsisi";
 import { useRapor } from "@/hooks/useRapor";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 import type { EclubRaporEczane, EclubRaporIcerik, EclubRaporOzet } from "@/lib/eclub/rapor";
 import type { EclubKapsamUtt, EclubYonetimKapsami } from "@/lib/eclub/yonetimKapsami";
 import { eclubKisiRolEtiketi } from "@/lib/utils/roller";
@@ -86,7 +87,7 @@ export default function EclubRaporlarPage() {
   const [seciliIcerik, setSeciliIcerik] = useState<string | null>(null);
   const [seciliUtt, setSeciliUtt] = useState<string | null>(null);
   const uttSec = useCallback((uttId: string | null) => setSeciliUtt(uttId), []);
-  const { data, loading, error } = useRapor<RaporData>(
+  const { data, loading, yenileniyor, error, yenile } = useRapor<RaporData>(
     "/eclub/raporlar/api",
     periyot,
     kullanici?.id,
@@ -139,6 +140,7 @@ export default function EclubRaporlarPage() {
                 {secenek.label}
               </button>
             ))}
+            <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} />
           </div>
         </header>
 

@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 import { DURUM_ETIKETLERI, DURUM_RENKLERI, IPTAL_SURE_SAATI } from "@/lib/store/sabitler";
 import { kargoTakipUrl } from "@/lib/store/kargo";
 import type { SiparisGosterim, AdresSnapshot } from "@/lib/store/tipler";
@@ -39,6 +40,7 @@ export default function SiparislerimPage() {
 
   const [siparisler, setSiparisler] = useState<SiparisGosterim[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
+  const [yenileniyor, setYenileniyor] = useState(false);
 
   const [iptalEdilecek, setIptalEdilecek] = useState<SiparisGosterim | null>(null);
   const [iptalIslemi, setIptalIslemi] = useState(false);
@@ -67,21 +69,24 @@ export default function SiparislerimPage() {
   }, [kullanici, authYukleniyor, router]);
 
   // Sipariş listesi
-  const siparisleriYukle = async () => {
-    setYukleniyor(true);
+  const siparisleriYukle = async (sessiz = false) => {
+    if (sessiz) setYenileniyor(true);
+    else setYukleniyor(true);
     try {
       const res = await fetch("/store/api/siparis");
       const d = await res.json();
       if (!res.ok) {
         hata(d.hata ?? "Siparişler yüklenemedi.", d.adim, d.detay);
-        setYukleniyor(false);
+        if (sessiz) setYenileniyor(false);
+        else setYukleniyor(false);
         return;
       }
       setSiparisler(d.siparisler ?? []);
     } catch (err) {
       hata("Siparişler yüklenirken hata oluştu.", "fetch", String(err));
     }
-    setYukleniyor(false);
+    if (sessiz) setYenileniyor(false);
+    else setYukleniyor(false);
   };
 
   useEffect(() => {
@@ -215,13 +220,16 @@ export default function SiparislerimPage() {
         </button>
 
         {/* Başlık */}
-        <div className="mb-5">
-          <h1 className="text-xl font-bold" style={{ color: KOYU_METIN, margin: 0 }}>
-            Siparişlerim
-          </h1>
-          <div className="text-xs mt-1" style={{ color: GRI_METIN }}>
-            Verdiğin tüm siparişlerin geçmişi ve durumu.
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold" style={{ color: KOYU_METIN, margin: 0 }}>
+              Siparişlerim
+            </h1>
+            <div className="text-xs mt-1" style={{ color: GRI_METIN }}>
+              Verdiğin tüm siparişlerin geçmişi ve durumu.
+            </div>
           </div>
+          <YenileButonu yenileniyor={yenileniyor} onYenile={() => siparisleriYukle(true)} disabled={iptalIslemi || teslimIslemi} />
         </div>
 
         {/* Sipariş listesi */}

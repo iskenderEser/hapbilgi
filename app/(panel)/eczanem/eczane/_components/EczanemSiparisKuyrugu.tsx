@@ -6,6 +6,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 
 interface Siparis {
   siparis_id: string;
@@ -33,14 +34,17 @@ const DURUM: Record<string, { etiket: string; renk: string }> = {
 export default function EczanemSiparisKuyrugu({ hata, basari }: Props) {
   const [siparisler, setSiparisler] = useState<Siparis[]>([]);
   const [isliyor, setIsliyor] = useState<string | null>(null);
+  const [yenileniyor, setYenileniyor] = useState(false);
 
-  const cek = useCallback(async () => {
+  const cek = useCallback(async (elle = false) => {
+    if (elle) setYenileniyor(true);
     try {
       const res = await fetch("/eczanem/eczane/api/siparisler");
       const d = await res.json();
       if (!res.ok) { hata(d.hata ?? "Siparişler yüklenemedi.", "sipariş"); return; }
       setSiparisler(d.siparisler ?? []);
     } catch { hata("Siparişler yüklenemedi.", "sipariş"); }
+    finally { if (elle) setYenileniyor(false); }
   }, [hata]);
 
   useEffect(() => { cek(); }, [cek]);
@@ -65,10 +69,15 @@ export default function EczanemSiparisKuyrugu({ hata, basari }: Props) {
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-      <div className="text-sm font-semibold text-gray-700 mb-1">Sipariş Onay Kuyruğu</div>
-      <div className="text-xs text-gray-500 mb-4">
-        Müşteri barkod okutup sipariş gönderdiğinde burada belirir. Onayladığınızda puan
-        o anda atomik olarak düşer ve fiş kesinleşir; reddederseniz sipariş düşer, puan düşmez.
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-semibold text-gray-700 mb-1">Sipariş Onay Kuyruğu</div>
+          <div className="max-w-3xl text-xs text-gray-500">
+            Müşteri barkod okutup sipariş gönderdiğinde burada belirir. Onayladığınızda puan
+            o anda atomik olarak düşer ve fiş kesinleşir; reddederseniz sipariş düşer, puan düşmez.
+          </div>
+        </div>
+        <YenileButonu yenileniyor={yenileniyor} onYenile={() => cek(true)} disabled={!!isliyor} />
       </div>
 
       {bekleyen.length === 0 ? (

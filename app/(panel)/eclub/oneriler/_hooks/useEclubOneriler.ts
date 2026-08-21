@@ -19,10 +19,12 @@ export function useEclubOneriler({ hazir, hata, basari }: UseArgs) {
   const [gonderilenYayinIdleri, setGonderilenYayinIdleri] = useState<string[]>([]);
   const [gonderilenKisiler, setGonderilenKisiler] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
+  const [yenileniyor, setYenileniyor] = useState(false);
   const [gonderLoading, setGonderLoading] = useState(false);
 
-  const veriCek = useCallback(async () => {
-    setLoading(true);
+  const veriCek = useCallback(async (ilkYukleme = false) => {
+    if (ilkYukleme) setLoading(true);
+    else setYenileniyor(true);
     try {
       const [yayinRes, kisiRes, gecmisRes] = await Promise.all([
         fetch("/eclub/oneriler/api/yayinlar"),
@@ -57,12 +59,13 @@ export function useEclubOneriler({ hazir, hata, basari }: UseArgs) {
     } catch (err: unknown) {
       hata("Veri yüklenirken hata oluştu.", "useEclubOneriler veriCek", err instanceof Error ? err.message : undefined);
     } finally {
-      setLoading(false);
+      if (ilkYukleme) setLoading(false);
+      else setYenileniyor(false);
     }
   }, [hata]);
 
   useEffect(() => {
-    if (hazir) veriCek();
+    if (hazir) void veriCek(true);
   }, [hazir, veriCek]);
 
   // Tek video → çok kişi. Dönüş: sonuç (atla-raporla) ya da null (hata).
@@ -94,5 +97,5 @@ export function useEclubOneriler({ hazir, hata, basari }: UseArgs) {
     }
   }, [hata, basari, veriCek]);
 
-  return { yayinlar, kisiler, limitler, tekrarEngelleri, gonderilenYayinIdleri, gonderilenKisiler, loading, gonderLoading, veriCek, oneriGonder };
+  return { yayinlar, kisiler, limitler, tekrarEngelleri, gonderilenYayinIdleri, gonderilenKisiler, loading, yenileniyor, gonderLoading, veriCek, oneriGonder };
 }

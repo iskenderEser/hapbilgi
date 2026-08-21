@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Send } from "lucide-react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { EclubKisiSayfa, EclubKisiBaslik } from "@/components/eclub/EclubKisiSayfa";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 
 interface GelenVideo {
   yayin_id: string;
@@ -28,17 +29,25 @@ export default function EczanemDagitimPage() {
   const [seciliVideo, setSeciliVideo] = useState<string | null>(null);
   const [seciliUyeler, setSeciliUyeler] = useState<Set<string>>(new Set());
   const [dagitiliyor, setDagitiliyor] = useState(false);
+  const [yenileniyor, setYenileniyor] = useState(false);
 
-  const dagitimCek = useCallback(async () => {
+  const dagitimCek = useCallback(async (elle = false) => {
+    if (elle) setYenileniyor(true);
     try {
       const res = await fetch("/eczanem/eczane/api/gonderim");
       const data = await res.json();
       if (!res.ok) { hata(data.hata ?? "Gönderim verisi yüklenemedi.", "gönderim"); return; }
-      setVideolar(data.videolar ?? []);
-      setUyeler(data.uyeler ?? []);
-      setSeciliVideo((onceki) => onceki ?? data.videolar?.[0]?.yayin_id ?? null);
+      const yeniVideolar = (data.videolar ?? []) as GelenVideo[];
+      const yeniUyeler = (data.uyeler ?? []) as Uye[];
+      setVideolar(yeniVideolar);
+      setUyeler(yeniUyeler);
+      setSeciliVideo((onceki) => onceki && yeniVideolar.some((video) => video.yayin_id === onceki) ? onceki : yeniVideolar[0]?.yayin_id ?? null);
+      const uyeIdleri = new Set(yeniUyeler.map((uye) => uye.musteri_id));
+      setSeciliUyeler((onceki) => new Set([...onceki].filter((musteriId) => uyeIdleri.has(musteriId))));
     } catch {
       hata("Gönderim verisi yüklenemedi.", "gönderim");
+    } finally {
+      if (elle) setYenileniyor(false);
     }
   }, [hata]);
 
@@ -87,6 +96,7 @@ export default function EczanemDagitimPage() {
         ustEtiket="Eczanem"
         baslik="Video Dağıtımı"
         aciklama="Size gelen bir videoyu üyelerinizden seçtiklerinize gönderin. Aynı video bir müşteriye yalnızca bir kez gider; zaten gönderilmiş olanlar atlanır."
+        aksiyon={<YenileButonu yenileniyor={yenileniyor} onYenile={() => dagitimCek(true)} disabled={dagitiliyor} />}
       />
 
       <div className="bg-white rounded-xl border border-gray-200 p-5">

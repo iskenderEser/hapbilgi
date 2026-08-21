@@ -16,11 +16,13 @@ export function useHiyerarsi({ hata }: UseHiyerarsiProps) {
   const hataRef = useRef(hata);
   const [hiyerarsi, setHiyerarsi] = useState<Hiyerarsi | null>(null);
   const [yukleniyor, setYukleniyor] = useState(false);
+  const [yenileniyor, setYenileniyor] = useState(false);
 
   useEffect(() => { hataRef.current = hata; }, [hata]);
 
-  const hiyerarsiYukle = useCallback(async () => {
-    setYukleniyor(true);
+  const hiyerarsiYukle = useCallback(async (sessiz = false) => {
+    if (sessiz) setYenileniyor(true);
+    else setYukleniyor(true);
     try {
       const res = await fetch("/store/siparisler/api/hiyerarsi");
       const data = await res.json();
@@ -32,7 +34,8 @@ export function useHiyerarsi({ hata }: UseHiyerarsiProps) {
     } catch (err) {
       hataRef.current("Hiyerarşi yüklenemedi.", "fetch", String(err));
     } finally {
-      setYukleniyor(false);
+      if (sessiz) setYenileniyor(false);
+      else setYukleniyor(false);
     }
   }, []);
 
@@ -43,6 +46,7 @@ export function useHiyerarsi({ hata }: UseHiyerarsiProps) {
   return {
     hiyerarsi,
     yukleniyor,
+    yenileniyor,
     hiyerarsiYukle,
   };
 }

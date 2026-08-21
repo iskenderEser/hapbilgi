@@ -1,11 +1,12 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, CircleDollarSign, PackageCheck, ReceiptText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 import { PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
 
 interface UrunSatir { urun_id: string; urun_adi: string; kutu: number; indirim_tl: number; }
@@ -25,57 +26,69 @@ export default function UttEczanemDokum({ hata }: Props) {
   const [periyot, setPeriyot] = useState<Periyot>("bu_ay");
   const [dokum, setDokum] = useState<Dokum | null>(null);
   const [yukleniyor, setYukleniyor] = useState(true);
+  const [yenileniyor, setYenileniyor] = useState(false);
   const [acikEczane, setAcikEczane] = useState<string | null>(null);
+  const istekRef = useRef<AbortController | null>(null);
+
+  const cek = useCallback(async (ilkYukleme = false) => {
+    istekRef.current?.abort();
+    const controller = new AbortController();
+    istekRef.current = controller;
+    if (ilkYukleme) {
+      setYukleniyor(true);
+      setDokum(null);
+      setAcikEczane(null);
+    } else setYenileniyor(true);
+
+    try {
+      const res = await fetch(`/eczanem/utt/api/dokum?periyot=${periyot}`, { cache: "no-store", signal: controller.signal });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.hata ?? data.error ?? "Mutabakat dökümü yüklenemedi.");
+      setDokum(data);
+      if (!ilkYukleme) setAcikEczane((mevcut) => mevcut && data.eczaneler?.some((eczane: EczaneSatir) => eczane.eczane_id === mevcut) ? mevcut : null);
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      hata(err instanceof Error ? err.message : "Mutabakat dökümü yüklenemedi.", "Eczanem mutabakatı");
+    } finally {
+      if (!controller.signal.aborted) {
+        if (ilkYukleme) setYukleniyor(false);
+        else setYenileniyor(false);
+      }
+    }
+  }, [hata, periyot]);
 
   useEffect(() => {
-    const controller = new AbortController();
-    let aktif = true;
-    setYukleniyor(true);
-    setDokum(null);
-    setAcikEczane(null);
-
-    const cek = async () => {
-      try {
-        const res = await fetch(`/eczanem/utt/api/dokum?periyot=${periyot}`, { cache: "no-store", signal: controller.signal });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.hata ?? data.error ?? "Mutabakat dökümü yüklenemedi.");
-        if (aktif) setDokum(data);
-      } catch (err) {
-        if (controller.signal.aborted) return;
-        hata(err instanceof Error ? err.message : "Mutabakat dökümü yüklenemedi.", "Eczanem mutabakatı");
-      } finally {
-        if (aktif) setYukleniyor(false);
-      }
-    };
-
-    cek();
-    return () => { aktif = false; controller.abort(); };
-  }, [hata, periyot]);
+    void cek(true);
+    return () => istekRef.current?.abort();
+  }, [cek]);
 
   return (
     <Card className="gap-0 overflow-hidden border-[#dfe7f1] py-0 shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
       <CardHeader className="gap-3 border-b border-[#e5ecf4] px-4 py-4 md:px-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <CardTitle className="flex items-center gap-2 text-sm font-extrabold text-[#203653]"><ReceiptText className="size-4 text-[#7c5ce7]" /> Mutabakat Dökümü</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-sm font-extrabold text-[#203653]"><ReceiptText className="size-4 text-[#7c5ce7]" /> Dönem İşlemleri</CardTitle>
             <CardDescription className="mt-1 max-w-2xl text-[11px] font-semibold leading-5 text-[#7b8da5]">
               Onaylanan siparişlerin eczane ve ürün toplamları. Müşteri bilgisi bu döküme dahil edilmez.
             </CardDescription>
           </div>
-          <div className="flex flex-wrap gap-1" aria-label="Mutabakat dönemi">
-            {PERIYOTLAR.map((secenek) => (
-              <Button
-                type="button"
-                key={secenek.key}
-                variant="outline"
-                size="sm"
-                aria-pressed={periyot === secenek.key}
-                onClick={() => setPeriyot(secenek.key)}
-                className={`h-7 rounded-full px-2.5 text-[10px] font-bold ${periyot === secenek.key ? "border-[#237ac8] bg-[#237ac8] text-white hover:bg-[#1d69ad] hover:text-white" : "border-[#dce5ed] bg-white text-[#6f8298] hover:bg-[#f5f8fb]"}`}
-              >
-                {secenek.label}
-              </Button>
-            ))}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <div className="flex flex-wrap gap-1" aria-label="Mutabakat dönemi">
+              {PERIYOTLAR.map((secenek) => (
+                <Button
+                  type="button"
+                  key={secenek.key}
+                  variant="outline"
+                  size="sm"
+                  aria-pressed={periyot === secenek.key}
+                  onClick={() => setPeriyot(secenek.key)}
+                  className={`h-7 rounded-full px-2.5 text-[10px] font-bold ${periyot === secenek.key ? "border-[#237ac8] bg-[#237ac8] text-white hover:bg-[#1d69ad] hover:text-white" : "border-[#dce5ed] bg-white text-[#6f8298] hover:bg-[#f5f8fb]"}`}
+                >
+                  {secenek.label}
+                </Button>
+              ))}
+            </div>
+            <YenileButonu yenileniyor={yenileniyor} onYenile={() => cek()} disabled={yukleniyor} />
           </div>
         </div>
       </CardHeader>

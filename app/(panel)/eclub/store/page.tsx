@@ -15,6 +15,7 @@ import {
 } from "@/components/eclub/EclubKisiSayfa";
 import { useEclubStore } from "./_hooks/useEclubStore";
 import type { EclubStoreUrun } from "@/lib/eclub/store/eclubStoreTipler";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 
 function UrunKart({ urun, onSiparis }: { urun: EclubStoreUrun; onSiparis: () => void }) {
   return (
@@ -42,7 +43,7 @@ export default function EclubStorePage() {
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
   const eclubKisi = !!kullanici && kullanici.kimlik_turu === "eclub_kisi";
-  const { kategoriler, urunler, firmaBakiye, toplamBakiye, adresler, loading, siparisVer } = useEclubStore({ hata, basari });
+  const { kategoriler, urunler, firmaBakiye, toplamBakiye, adresler, loading, yenileniyor, yenile, siparisVer } = useEclubStore({ hata, basari });
   const [seciliUrun, setSeciliUrun] = useState<EclubStoreUrun | null>(null);
   const [seciliAdresId, setSeciliAdresId] = useState("");
   const [adet, setAdet] = useState(1);
@@ -79,7 +80,7 @@ export default function EclubStorePage() {
         ikon={Store}
         baslik="Mağazam"
         aciklama="Farklı firmalardan kazandığınız puanları tek bakiyede birleştirerek E‑Club Store ürünlerinden sipariş verin."
-        aksiyon={<div className="flex gap-2"><Link href="/eclub/store/siparislerim" className="rounded-xl border border-[#d7e1ec] bg-white px-3.5 py-2 text-xs font-extrabold text-[#45627f] hover:bg-[#f6f9fc]">Siparişlerim</Link><Link href="/eclub/store/adreslerim" className="rounded-xl border border-[#d7e1ec] bg-white px-3.5 py-2 text-xs font-extrabold text-[#45627f] hover:bg-[#f6f9fc]">Adreslerim</Link></div>}
+        aksiyon={<div className="flex gap-2"><YenileButonu yenileniyor={yenileniyor} onYenile={yenile} disabled={Boolean(seciliUrun) || islemLoading} /><Link href="/eclub/store/siparislerim" className="rounded-xl border border-[#d7e1ec] bg-white px-3.5 py-2 text-xs font-extrabold text-[#45627f] hover:bg-[#f6f9fc]">Siparişlerim</Link><Link href="/eclub/store/adreslerim" className="rounded-xl border border-[#d7e1ec] bg-white px-3.5 py-2 text-xs font-extrabold text-[#45627f] hover:bg-[#f6f9fc]">Adreslerim</Link></div>}
       />
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-3">

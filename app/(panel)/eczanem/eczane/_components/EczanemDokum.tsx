@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { PERIYOTLAR, Periyot } from "@/lib/utils/raporUtils";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 
 interface UrunSatir {
   urun_id: string;
@@ -27,37 +28,43 @@ interface Props {
 export default function EczanemDokum({ hata }: Props) {
   const [periyot, setPeriyot] = useState<Periyot>("bu_ay");
   const [dokum, setDokum] = useState<Dokum | null>(null);
+  const [yenileniyor, setYenileniyor] = useState(false);
 
-  const cek = useCallback(async () => {
+  const cek = useCallback(async (elle = false) => {
+    if (elle) setYenileniyor(true);
     try {
       const res = await fetch(`/eczanem/eczane/api/dokum?periyot=${periyot}`);
       const d = await res.json();
       if (!res.ok) { hata(d.hata ?? "Döküm yüklenemedi.", "döküm"); return; }
       setDokum(d);
     } catch { hata("Döküm yüklenemedi.", "döküm"); }
+    finally { if (elle) setYenileniyor(false); }
   }, [hata, periyot]);
 
   useEffect(() => { cek(); }, [cek]);
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
         <div className="text-sm font-semibold text-gray-700">İşlem Dökümü</div>
-        <div className="flex gap-1">
-          {PERIYOTLAR.map((p) => (
-            <button
-              key={p.key}
-              onClick={() => setPeriyot(p.key)}
-              className="px-2 py-0.5 rounded-full text-[10px] border transition"
-              style={{
-                background: periyot === p.key ? "#b45309" : "transparent",
-                color: periyot === p.key ? "#fff" : "#6b7280",
-                borderColor: periyot === p.key ? "#b45309" : "#e5e7eb",
-              }}
-            >
-              {p.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="flex gap-1">
+            {PERIYOTLAR.map((p) => (
+              <button
+                key={p.key}
+                onClick={() => setPeriyot(p.key)}
+                className="px-2 py-0.5 rounded-full text-[10px] border transition"
+                style={{
+                  background: periyot === p.key ? "#b45309" : "transparent",
+                  color: periyot === p.key ? "#fff" : "#6b7280",
+                  borderColor: periyot === p.key ? "#b45309" : "#e5e7eb",
+                }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          <YenileButonu yenileniyor={yenileniyor} onYenile={() => cek(true)} />
         </div>
       </div>
       <div className="text-xs text-gray-500 mb-4">

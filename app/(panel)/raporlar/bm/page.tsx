@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Activity, ArrowLeft, BarChart3, BookOpenCheck, ChevronDown, CircleMinus, CirclePlus, Gauge, Layers3, Sparkles, Users } from 'lucide-react';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useRapor } from '@/hooks/useRapor';
+import { YenileButonu } from '@/components/ui/yenile-butonu';
 import { KIRMIZI, GRI_METIN, KOYU_METIN, formatPuan, PERIYOTLAR, type Periyot } from '@/lib/utils/raporUtils';
 import { TUR_RAPOR_ADI, TUR_SIRA, isIcerikTuru } from '@/lib/video/icerikTuru';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
@@ -107,7 +108,7 @@ export default function BmRaporPage() {
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
   const [acikKategori, setAcikKategori] = useState<string | null>(null);
   const [acikUtt, setAcikUtt] = useState<string | null>(null);
-  const { data, loading, error } = useRapor<RaporData>('/raporlar/api/bm', periyot, kullanici?.id);
+  const { data, loading, yenileniyor, error, yenile } = useRapor<RaporData>('/raporlar/api/bm', periyot, kullanici?.id);
 
   if (yukleniyor || loading) return (
     <div className="flex min-h-screen items-center justify-center">
@@ -176,6 +177,7 @@ export default function BmRaporPage() {
                 {secenek.label}
               </button>
             ))}
+            <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} />
           </div>
         </header>
 

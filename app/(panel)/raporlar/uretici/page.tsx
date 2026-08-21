@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useRapor } from '@/hooks/useRapor';
+import { YenileButonu } from '@/components/ui/yenile-butonu';
 import { formatPuan, GRI_METIN, KIRMIZI, PERIYOTLAR, type Periyot } from '@/lib/utils/raporUtils';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
 import styles from './uretici-report.module.css';
@@ -68,7 +69,7 @@ interface RaporData {
 export default function UreticiRaporPage() {
   const { kullanici, yukleniyor } = useAuth();
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
-  const { data, loading, error } = useRapor<RaporData>('/raporlar/api/uretici', periyot, kullanici?.id);
+  const { data, loading, yenileniyor, error, yenile } = useRapor<RaporData>('/raporlar/api/uretici', periyot, kullanici?.id);
 
   if (yukleniyor || loading) {
     return (
@@ -172,6 +173,7 @@ export default function UreticiRaporPage() {
                 {secenek.label}
               </button>
             ))}
+            <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} />
           </div>
         </header>
 

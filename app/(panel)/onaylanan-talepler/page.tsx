@@ -9,7 +9,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { HedefRolPilleri } from "@/components/HedefRolBant";
@@ -21,10 +21,26 @@ import VideoOnizleme from "@/components/video/VideoOnizleme";
 import TalepKlasorleri from "@/components/talep/TalepKlasorleri";
 import { useListe, ListeArama } from "@/components/liste";
 import type { DepartmanKey } from "@/lib/video/departman";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 
 interface SoruKaydi {
   soru_metni: string;
   secenekler: { harf: string; metin: string; dogru: boolean }[];
+}
+
+interface SenaryoOnayiSatiri {
+  senaryo_durum_id: string;
+  created_at: string;
+  senaryolar: { talep_id: string; senaryo_metni: string } | null;
+}
+
+interface VideoOnayiSatiri {
+  video_durum_id: string;
+  videolar: { video_url: string | null; senaryo_durum_id: string | null } | null;
+}
+
+interface SoruSetiOnayiSatiri {
+  soru_setleri: { video_durum_id: string | null; sorular: SoruKaydi[] | null } | null;
 }
 
 // Klasörleme alanları (firma_adi, departman, urun_adi) künyeden gelir ve
@@ -50,6 +66,7 @@ export default function OnaylananTaleplerPage() {
   const [kayitlar, setKayitlar] = useState<OnayliTalep[]>([]);
   const [acikTalep, setAcikTalep] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [yenileniyor, setYenileniyor] = useState(false);
   const { mesajlar, hata } = useHataMesaji();
 
   // Yalnız ARAMA (İskender kararı 27.07): sayfada klasör kırılımı var, klasör
@@ -77,9 +94,11 @@ export default function OnaylananTaleplerPage() {
     }
   }, [kullanici, authYukleniyor, router]);
 
-  const veriCek = async () => {
-    setLoading(true);
-    const supabase = createClient();
+  const veriCek = useCallback(async (ilkYukleme = false) => {
+    if (ilkYukleme) setLoading(true);
+    else setYenileniyor(true);
+    try {
+      const supabase = createClient();
 
     // Onaylı senaryolar (talep + firma bilgisiyle)
     const { data: senaryoOnaylari, error: sErr } = await supabase
@@ -89,7 +108,6 @@ export default function OnaylananTaleplerPage() {
       .order("created_at", { ascending: false });
     if (sErr) {
       hata("Onaylı senaryolar yüklenemedi.", "senaryo_durumu SELECT — onaylandi", sErr.message);
-      setLoading(false);
       return;
     }
 
@@ -106,7 +124,8 @@ export default function OnaylananTaleplerPage() {
       .eq("durum", "onaylandi");
 
     const videoMap = new Map<string, { video_url: string; video_durum_id: string }>();
-    (videoOnaylari ?? []).forEach((v: any) => {
+    const videoOnayiSatirlari = (videoOnaylari ?? []) as unknown as VideoOnayiSatiri[];
+    videoOnayiSatirlari.forEach((v) => {
       const video = v.videolar;
       if (video?.senaryo_durum_id && video.video_url) {
         videoMap.set(video.senaryo_durum_id, { video_url: video.video_url, video_durum_id: v.video_durum_id });
@@ -114,14 +133,17 @@ export default function OnaylananTaleplerPage() {
     });
 
     const setMap = new Map<string, SoruKaydi[]>();
-    (setOnaylari ?? []).forEach((s: any) => {
+    const soruSetiOnayiSatirlari = (setOnaylari ?? []) as unknown as SoruSetiOnayiSatiri[];
+    soruSetiOnayiSatirlari.forEach((s) => {
       const set = s.soru_setleri;
       if (set?.video_durum_id && set.sorular?.length) setMap.set(set.video_durum_id, set.sorular);
     });
 
     // Talep künyeleri TEK KAPIDAN, toplu (25.07, Aşama 3).
     const talepIdler = Array.from(new Set(
-      (senaryoOnaylari ?? []).map((o: any) => o.senaryolar?.talep_id).filter(Boolean)
+      ((senaryoOnaylari ?? []) as unknown as SenaryoOnayiSatiri[])
+        .map((o) => o.senaryolar?.talep_id)
+        .filter(Boolean)
     )) as string[];
     const kunyeMap = new Map<string, TalepBilgisi>();
     if (talepIdler.length > 0) {
@@ -133,10 +155,11 @@ export default function OnaylananTaleplerPage() {
     // Talep başına EN SON onaylı senaryo esas alınır (sıralama zaten yeni→eski).
     const gorulen = new Set<string>();
     const liste: OnayliTalep[] = [];
-    (senaryoOnaylari ?? []).forEach((o: any) => {
+    ((senaryoOnaylari ?? []) as unknown as SenaryoOnayiSatiri[]).forEach((o) => {
       const senaryo = o.senaryolar;
-      const talep = kunyeMap.get(senaryo?.talep_id);
-      if (!senaryo || !talep || gorulen.has(talep.talep_id)) return;
+      if (!senaryo) return;
+      const talep = kunyeMap.get(senaryo.talep_id);
+      if (!talep || gorulen.has(talep.talep_id)) return;
       gorulen.add(talep.talep_id);
       const video = videoMap.get(o.senaryo_durum_id) ?? null;
       liste.push({
@@ -155,11 +178,16 @@ export default function OnaylananTaleplerPage() {
       });
     });
 
-    setKayitlar(liste);
-    setLoading(false);
-  };
+      setKayitlar(liste);
+    } catch (err) {
+      hata("Onaylanan talepler yüklenemedi.", "Onaylanan Talepler", err instanceof Error ? err.message : undefined);
+    } finally {
+      if (ilkYukleme) setLoading(false);
+      else setYenileniyor(false);
+    }
+  }, [hata]);
 
-  useEffect(() => { if (kullanici) veriCek(); }, [kullanici]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (kullanici) void veriCek(true); }, [kullanici, veriCek]);
 
   const formatTarih = (tarih: string | null) =>
     tarih ? new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "-";
@@ -229,7 +257,10 @@ export default function OnaylananTaleplerPage() {
   return (
     <>
       <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7 flex flex-col gap-4">
-        <h1 className="text-lg font-bold text-gray-900 m-0">Onaylanan Talepler</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-lg font-bold text-gray-900 m-0">Onaylanan Talepler</h1>
+          <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} />
+        </div>
 
         <div className="mb-3 flex justify-end"><ListeArama arama={liste.arama} /></div>
 

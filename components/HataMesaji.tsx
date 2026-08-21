@@ -1,7 +1,7 @@
 // components/HataMesaji.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export type HataTuru = "hata" | "basari" | "uyari" | "bilgi";
 
@@ -107,7 +107,7 @@ export function HataMesajiContainer({ mesajlar }: { mesajlar: HataMesajiProps[] 
 export function useHataMesaji() {
   const [mesajlar, setMesajlar] = useState<HataMesajiProps[]>([]);
 
-  const ekle = (mesaj: Omit<HataMesajiProps, "onKapat">) => {
+  const ekle = useCallback((mesaj: Omit<HataMesajiProps, "onKapat">) => {
     const yeni: HataMesajiProps = {
       ...mesaj,
       onKapat: () => {
@@ -115,23 +115,23 @@ export function useHataMesaji() {
       },
     };
     setMesajlar((prev) => [...prev, yeni]);
-  };
+  }, []);
 
-  const hata = (mesaj: string, adim?: string, detay?: string) =>
-    ekle({ mesaj, tur: "hata", adim, detay });
+  const hata = useCallback((mesaj: string, adim?: string, detay?: string) =>
+    ekle({ mesaj, tur: "hata", adim, detay }), [ekle]);
 
-  const basari = (mesaj: string) =>
-    ekle({ mesaj, tur: "basari" });
+  const basari = useCallback((mesaj: string) =>
+    ekle({ mesaj, tur: "basari" }), [ekle]);
 
   // kalici: true → otomatik kapanmaz, kullanıcı elle kapatır (kısmi başarısızlık raporu gibi
   // kaybolmaması gereken mesajlar için — F-01/3).
-  const uyari = (mesaj: string, adim?: string, kalici?: boolean) =>
-    ekle({ mesaj, tur: "uyari", adim, otomatikKapat: !kalici });
+  const uyari = useCallback((mesaj: string, adim?: string, kalici?: boolean) =>
+    ekle({ mesaj, tur: "uyari", adim, otomatikKapat: !kalici }), [ekle]);
 
-  const bilgi = (mesaj: string) =>
-    ekle({ mesaj, tur: "bilgi" });
+  const bilgi = useCallback((mesaj: string) =>
+    ekle({ mesaj, tur: "bilgi" }), [ekle]);
 
-  const temizle = () => setMesajlar([]);
+  const temizle = useCallback(() => setMesajlar([]), []);
 
   return { mesajlar, hata, basari, uyari, bilgi, temizle };
 }

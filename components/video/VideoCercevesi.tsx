@@ -45,6 +45,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Play } from "lucide-react";
 import { enBoyOrani, dikeyMi } from "@/lib/video/enBoyOrani";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 
@@ -66,6 +67,8 @@ interface Props {
   etkilesimKatmani?: {
     ariaLabel: string;
     onClick: () => void;
+    /** İlk oynatmayı tüm yüzeye değil yalnızca görünür Play düğmesine bağlar. */
+    yalnizPlayButonu?: boolean;
   } | null;
 }
 
@@ -105,15 +108,11 @@ export default function VideoCercevesi({
   className = "",
   etkilesimKatmani = null,
 }: Props) {
-  const [olculen, setOlculen] = useState<{ g: number; y: number } | null>(null);
+  const [olculen, setOlculen] = useState<{ videoUrl: string | null; g: number; y: number } | null>(null);
 
   useEffect(() => {
     // Ölçü dışarıdan geldiyse kapağa hiç gidilmez.
     if (genislik && yukseklik) return;
-
-    // Video değiştiyse önceki ölçü SIFIRLANIR: eski videonun oranı yenisinin
-    // kutusunu çizerse yanlış çerçeve kalıcı olur — tek karelik 16:9 daha ucuz.
-    setOlculen(null);
 
     const kapak = thumbnailUrlUret(videoUrl);
     if (!kapak) return; // Bunny dışı / eski / bozuk URL → 16:9 yedeği
@@ -123,7 +122,7 @@ export default function VideoCercevesi({
     img.onload = () => {
       // 0 ölçü gelirse yazma: enBoyOrani zaten yakalar ama state'i kirletmenin anlamı yok.
       if (aktif && img.naturalWidth > 0 && img.naturalHeight > 0) {
-        setOlculen({ g: img.naturalWidth, y: img.naturalHeight });
+        setOlculen({ videoUrl: videoUrl ?? null, g: img.naturalWidth, y: img.naturalHeight });
       }
     };
     // onerror bilinçli olarak boş: kapak 403/404 olsa da 16:9 yedeği zaten devrede.
@@ -132,7 +131,9 @@ export default function VideoCercevesi({
     return () => { aktif = false; }; // unmount sonrası setState yarışını kapatır
   }, [videoUrl, genislik, yukseklik]);
 
-  const oran = enBoyOrani(genislik ?? olculen?.g, yukseklik ?? olculen?.y);
+  // Önceki URL'nin geç tamamlanan kapak ölçümü yeni videonun oranına taşınmaz.
+  const gecerliOlcum = olculen?.videoUrl === (videoUrl ?? null) ? olculen : null;
+  const oran = enBoyOrani(genislik ?? gecerliOlcum?.g, yukseklik ?? gecerliOlcum?.y);
   const dikey = dikeyMi(oran);
 
   // Dikey/masaüstü: yükseklik tavana sabitlenir, genişliği oran türetir (mx-auto ortalar).
@@ -146,7 +147,19 @@ export default function VideoCercevesi({
         style={{ aspectRatio: oran }}
       >
         {children}
-        {etkilesimKatmani && (
+        {etkilesimKatmani?.yalnizPlayButonu ? (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#10233a]/20">
+            <button
+              type="button"
+              onClick={etkilesimKatmani.onClick}
+              aria-label={etkilesimKatmani.ariaLabel}
+              data-etkilesimli="true"
+              className="flex size-14 items-center justify-center rounded-full border-0 bg-[#10233a]/80 text-white shadow-lg transition hover:scale-105 hover:bg-[#10233a]/95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            >
+              <Play className="ml-0.5 size-6 fill-current" />
+            </button>
+          </div>
+        ) : etkilesimKatmani ? (
           <button
             type="button"
             onClick={etkilesimKatmani.onClick}
@@ -154,7 +167,7 @@ export default function VideoCercevesi({
             data-etkilesimli="true"
             className="absolute inset-0 z-10 border-0 bg-transparent p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#56aeff]"
           />
-        )}
+        ) : null}
       </div>
     </div>
   );

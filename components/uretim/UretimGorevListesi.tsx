@@ -6,6 +6,7 @@ import DurumAnahtari from "@/components/DurumAnahtari";
 import UretimVaryantiRozet from "@/components/UretimVaryantiRozet";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { DahaFazlaGoster, ListeArama, useListe } from "@/components/liste";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useOkunmamisIdler } from "@/hooks/useOkunmamisIdler";
 import { useUretimDurumFiltresi } from "@/hooks/useUretimDurumFiltresi";
@@ -31,6 +32,7 @@ export default function UretimGorevListesi({ asama, baslik, asamaEtiketi, bosMes
   const { mesajlar, hata } = useHataMesaji();
   const [gorevler, setGorevler] = useState<UretimGorevi[]>([]);
   const [loading, setLoading] = useState(true);
+  const [yenileniyor, setYenileniyor] = useState(false);
   const okunmamisIdler = useOkunmamisIdler(KAYIT_TURU[asama]);
 
   useEffect(() => {
@@ -39,24 +41,26 @@ export default function UretimGorevListesi({ asama, baslik, asamaEtiketi, bosMes
     if (!URETIM_HATTI_GORENLER.includes(kullanici.rol)) router.push("/ana-sayfa");
   }, [authYukleniyor, kullanici, router]);
 
-  const veriCek = useCallback(async () => {
-    setLoading(true);
+  const veriCek = useCallback(async (ilkYukleme = false) => {
+    if (ilkYukleme) setLoading(true);
+    else setYenileniyor(true);
     try {
       const res = await fetch(`/uretim/api/gorevler?asama=${asama}`);
       const veri = await res.json();
       if (!res.ok) {
         hata(veri.hata ?? `${baslik} yüklenemedi.`, veri.adim, veri.detay);
-        setGorevler([]);
+        if (ilkYukleme) setGorevler([]);
       } else setGorevler(veri.gorevler ?? []);
     } catch (err) {
       hata(`${baslik} yüklenemedi.`, "üretim görevleri API", err instanceof Error ? err.message : undefined);
-      setGorevler([]);
+      if (ilkYukleme) setGorevler([]);
     } finally {
-      setLoading(false);
+      if (ilkYukleme) setLoading(false);
+      else setYenileniyor(false);
     }
   }, [asama, baslik, hata]);
 
-  useEffect(() => { if (kullanici) void veriCek(); }, [kullanici, veriCek]);
+  useEffect(() => { if (kullanici) void veriCek(true); }, [kullanici, veriCek]);
 
   const sayim = useMemo(() => {
     const sonuc: Partial<Record<DurumKodu, number>> = {};
@@ -89,7 +93,7 @@ export default function UretimGorevListesi({ asama, baslik, asamaEtiketi, bosMes
       <div className="mx-auto max-w-6xl px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
           <DurumAnahtari baslik={baslik} rol={kullanici.rol} asama={asamaEtiketi} aktif={aktifDurum} onSec={durumSec} sayim={sayim} />
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-3"><span className="text-xs text-gray-500">{liste.toplam} kayıt</span><ListeArama arama={liste.arama} /></div>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-3"><span className="text-xs text-gray-500">{liste.toplam} kayıt</span><div className="flex flex-wrap items-center justify-end gap-2"><ListeArama arama={liste.arama} /><YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} /></div></div>
           {liste.toplam === 0 ? <div className="p-10 text-center text-sm text-gray-400">{gorevler.length === 0 ? bosMesaj : liste.hamToplam === 0 ? "Bu durumda görev yok." : "Aramanıza uyan kayıt bulunamadı."}</div> : (
             <>
               <div className="md:hidden">{liste.gorunen.map((gorev) => {

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 import { ECLUB_GOREN_ROLLER, eclubKisiHedefRolu } from "@/lib/utils/roller";
 import { EczaneBlogu } from "../listem/_components/EczaneBlogu";
 import { useEclubListem } from "../listem/_hooks/useEclubListem";
@@ -23,7 +24,7 @@ export default function EclubEczanelerimPage() {
   const rolUygun = !!kullanici && ECLUB_GOREN_ROLLER.includes((kullanici.rol ?? "").toLowerCase());
   const hazir = !authYukleniyor && rolUygun;
   const {
-    eczaneler, kisiler, loading, islemLoading,
+    eczaneler, kisiler, loading, yenileniyor, islemLoading, veriCek,
     glnSorgula, eczaneEkle, eczaneListedenCikar, kisiEkle, kisiGuncelle, kisiPasifeAl,
   } = useEclubListem({ hazir, hata, basari });
 
@@ -103,10 +104,13 @@ export default function EclubEczanelerimPage() {
   return (
     <div className="min-h-full bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <div className="mx-auto flex max-w-[1480px] flex-col gap-4 px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
-        <header>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">E‑Club eczane ağı</p>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">Eczanelerim</h1>
-          <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">E‑Club listenizdeki eczaneleri, eczacıları ve eczane teknisyenlerini yönetin.</p>
+        <header className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">E‑Club eczane ağı</p>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">Eczanelerim</h1>
+            <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">E‑Club listenizdeki eczaneleri, eczacıları ve eczane teknisyenlerini yönetin.</p>
+          </div>
+          <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} disabled={eczaneFormAcik || islemLoading} />
         </header>
 
         <div className="flex w-full flex-col gap-4">

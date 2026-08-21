@@ -27,6 +27,7 @@ export function useTalepMerkezi() {
 
   const [talepler, setTalepler] = useState<TalepSatiri[]>([]);
   const [loading, setLoading] = useState(true);
+  const [yenileniyor, setYenileniyor] = useState(false);
   const [seciliTalepId, setSeciliTalepId] = useState<string | null>(null);
 
   // Derin veri yalnız SEÇİLEN talep için gelir — liste hafif kalsın diye (A-5).
@@ -44,24 +45,29 @@ export function useTalepMerkezi() {
   // bilinemez, seçim de o anda yapılmalı.
   const enYeniyiSec = useRef(false);
 
-  const veriCek = useCallback(async () => {
-    setLoading(true);
-    const res = await fetch("/talepler/api/uretici-rol");
-    const data = await res.json();
-    if (!res.ok) {
-      hata(data.hata ?? "Talepler yüklenemedi.", data.adim, data.detay);
-    } else {
-      const gelen: TalepSatiri[] = data.talepler ?? [];
-      setTalepler(gelen);
-      if (enYeniyiSec.current) {
-        // Uç created_at'e göre yeniden eskiye sıralı döner; devam edenlerin ilki
-        // az önce açılan taleptir.
-        const yeni = gelen.find((t) => !t.uretim_bitti && !t.iptal_edildi);
-        if (yeni) setSeciliTalepId(yeni.talep_id);
-        enYeniyiSec.current = false;
+  const veriCek = useCallback(async (ilkYukleme = false) => {
+    if (ilkYukleme) setLoading(true);
+    else setYenileniyor(true);
+    try {
+      const res = await fetch("/talepler/api/uretici-rol");
+      const data = await res.json();
+      if (!res.ok) {
+        hata(data.hata ?? "Talepler yüklenemedi.", data.adim, data.detay);
+      } else {
+        const gelen: TalepSatiri[] = data.talepler ?? [];
+        setTalepler(gelen);
+        if (enYeniyiSec.current) {
+          const yeni = gelen.find((t) => !t.uretim_bitti && !t.iptal_edildi);
+          if (yeni) setSeciliTalepId(yeni.talep_id);
+          enYeniyiSec.current = false;
+        }
       }
+    } catch (err) {
+      hata("Talepler yüklenemedi.", "Talep Merkezi", err instanceof Error ? err.message : undefined);
+    } finally {
+      if (ilkYukleme) setLoading(false);
+      else setYenileniyor(false);
     }
-    setLoading(false);
   }, [hata]);
 
   /** Yeni Talep akordiyonu talep açtığında çağrılır (A-10). */
@@ -71,7 +77,7 @@ export function useTalepMerkezi() {
   }, [veriCek]);
 
   useEffect(() => {
-    if (kullanici) veriCek();
+    if (kullanici) void veriCek(true);
   }, [kullanici, veriCek]);
 
   // D-4: yalnız üretimi devam edenler solda; iptaller kendi akordiyonunda (A-11);
@@ -266,6 +272,7 @@ export function useTalepMerkezi() {
   return {
     kullanici,
     loading,
+    yenileniyor,
     talepler,
     devamEdenler,
     iptalEdilenler,

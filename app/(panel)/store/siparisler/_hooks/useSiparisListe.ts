@@ -27,6 +27,7 @@ export function useSiparisListe({ hata }: UseSiparisListeProps) {
   const [siparisler, setSiparisler] = useState<SiparisSatiri[]>([]);
   const [toplam, setToplam] = useState(0);
   const [yukleniyor, setYukleniyor] = useState(false);
+  const [yenileniyor, setYenileniyor] = useState(false);
   const [dahaYukleniyor, setDahaYukleniyor] = useState(false);
 
   useEffect(() => { hataRef.current = hata; }, [hata]);
@@ -49,8 +50,9 @@ export function useSiparisListe({ hata }: UseSiparisListeProps) {
 
   // ─── İlk yükleme / filtre değişimi ─────────────────────────────────────────
 
-  const yukle = useCallback(async () => {
-    setYukleniyor(true);
+  const yukle = useCallback(async (sessiz = false) => {
+    if (sessiz) setYenileniyor(true);
+    else setYukleniyor(true);
     try {
       const qs = queryStringOlustur(0);
       const res = await fetch(`/store/siparisler/api?${qs}`);
@@ -64,7 +66,8 @@ export function useSiparisListe({ hata }: UseSiparisListeProps) {
     } catch (err) {
       hataRef.current("Siparişler yüklenemedi.", "fetch", String(err));
     } finally {
-      setYukleniyor(false);
+      if (sessiz) setYenileniyor(false);
+      else setYukleniyor(false);
     }
   }, [queryStringOlustur]);
 
@@ -132,6 +135,7 @@ export function useSiparisListe({ hata }: UseSiparisListeProps) {
 
     // Yükleme durumları
     yukleniyor,
+    yenileniyor,
     dahaYukleniyor,
 
     // Filtreler

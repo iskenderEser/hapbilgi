@@ -17,7 +17,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Package } from "lucide-react";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
@@ -25,6 +25,7 @@ import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
 import { useAuth } from "@/app/providers/AuthProvider";
 import type { Urun, Kategori } from "@/lib/store/tipler";
 import { STOK_AZ_ESIK } from "@/lib/store/sabitler";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 
 const BORDO = "#bc2d0d";
 const GRI_METIN = "#737373";
@@ -42,6 +43,7 @@ export default function StorePage() {
   const [urunler, setUrunler] = useState<Urun[]>([]);
   const [bakiye, setBakiye] = useState<number | null>(null);
   const [yukleniyor, setYukleniyor] = useState(true);
+  const [yenileniyor, setYenileniyor] = useState(false);
 
   const { mesajlar, hata } = useHataMesaji();
   const rolKucu = kullanici?.rol?.toLowerCase() ?? "";
@@ -62,11 +64,7 @@ export default function StorePage() {
     }
   }, [kullanici, authYukleniyor, rolKucu, router]);
 
-  // Başlangıç verileri (kategoriler + bakiye)
-  useEffect(() => {
-    if (!yetkili) return;
-
-    const baslat = async () => {
+  const baslangicYukle = useCallback(async () => {
       try {
         const [katRes, bakRes] = await Promise.all([
           fetch("/store/api?tip=kategoriler"),
@@ -91,18 +89,15 @@ export default function StorePage() {
       } catch (err) {
         hata("Veriler yüklenirken hata oluştu.", "fetch", String(err));
       }
-    };
+  }, [hata]);
 
-    baslat();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [yetkili]);
-
-  // Ürünler (kategori değiştikçe yenile)
+  // Başlangıç verileri (kategoriler + bakiye)
   useEffect(() => {
-    if (!yetkili) return;
+    if (yetkili) void baslangicYukle();
+  }, [yetkili, baslangicYukle]);
 
-    const urunleriYukle = async () => {
-      setYukleniyor(true);
+  const urunleriYukle = useCallback(async (ilkYukleme = false) => {
+      if (ilkYukleme) setYukleniyor(true);
       try {
         let url = "/store/api?tip=urunler";
         if (seciliKategori) url += `&kategori_id=${seciliKategori}`;
@@ -111,19 +106,29 @@ export default function StorePage() {
         const d = await res.json();
         if (!res.ok) {
           hata(d.hata ?? "Ürünler yüklenemedi.", d.adim, d.detay);
-          setYukleniyor(false);
           return;
         }
         setUrunler(d.urunler ?? []);
       } catch (err) {
         hata("Ürünler yüklenirken hata oluştu.", "fetch", String(err));
+      } finally {
+        if (ilkYukleme) setYukleniyor(false);
       }
-      setYukleniyor(false);
-    };
+  }, [seciliKategori, hata]);
 
-    urunleriYukle();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [yetkili, seciliKategori]);
+  // Ürünler (kategori değiştikçe yenile)
+  useEffect(() => {
+    if (yetkili) void urunleriYukle(true);
+  }, [yetkili, urunleriYukle]);
+
+  const tumunuYenile = async () => {
+    setYenileniyor(true);
+    try {
+      await Promise.all([baslangicYukle(), urunleriYukle()]);
+    } finally {
+      setYenileniyor(false);
+    }
+  };
 
 
   // Loading — auth veya yetki hazır değilse bekle
@@ -159,16 +164,19 @@ export default function StorePage() {
       </div>
 
       <div className="mx-auto max-w-6xl px-3 py-4 md:px-6 md:py-6">
-        <div className="mb-5">
-          <div className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#71859d]">
-            HBStore
+        <div className="mb-5 flex items-start justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#71859d]">
+              HBStore
+            </div>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[#203653]">
+              Mağazam
+            </h1>
+            <p className="mt-1 text-xs font-medium text-[#8190a3]">
+              Sipariş puanınızla alabileceğiniz ürünleri inceleyin.
+            </p>
           </div>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[#203653]">
-            Mağazam
-          </h1>
-          <p className="mt-1 text-xs font-medium text-[#8190a3]">
-            Sipariş puanınızla alabileceğiniz ürünleri inceleyin.
-          </p>
+          <YenileButonu yenileniyor={yenileniyor} onYenile={tumunuYenile} />
         </div>
 
         {/* Kategori filtresi */}

@@ -14,10 +14,12 @@ export function useEclubListem({ hazir, hata, basari }: UseEclubListemArgs) {
   const [eczaneler, setEczaneler] = useState<Eczane[]>([]);
   const [kisiler, setKisiler] = useState<Kisi[]>([]);
   const [loading, setLoading] = useState(true);
+  const [yenileniyor, setYenileniyor] = useState(false);
   const [islemLoading, setIslemLoading] = useState(false);
 
-  const veriCek = useCallback(async () => {
-    setLoading(true);
+  const veriCek = useCallback(async (ilkYukleme = false) => {
+    if (ilkYukleme) setLoading(true);
+    else setYenileniyor(true);
     try {
       const [eczaneRes, kisiRes] = await Promise.all([
         fetch("/eclub/listem/api/eczaneler"),
@@ -34,12 +36,13 @@ export function useEclubListem({ hazir, hata, basari }: UseEclubListemArgs) {
     } catch (err) {
       hata("Veri yüklenirken hata oluştu.", "useEclubListem veriCek", err instanceof Error ? err.message : undefined);
     } finally {
-      setLoading(false);
+      if (ilkYukleme) setLoading(false);
+      else setYenileniyor(false);
     }
   }, [hata]);
 
   useEffect(() => {
-    if (hazir) veriCek();
+    if (hazir) void veriCek(true);
   }, [hazir, veriCek]);
 
   // GLN sorgu (debounce'lu çağrılır). Havuzda var mı, varsa eczane+kişiler döner.
@@ -208,6 +211,7 @@ export function useEclubListem({ hazir, hata, basari }: UseEclubListemArgs) {
     eczaneler,
     kisiler,
     loading,
+    yenileniyor,
     islemLoading,
     veriCek,
     glnSorgula,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown, Play } from "lucide-react";
+import { ChevronDown, Film } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
@@ -83,10 +83,16 @@ export function VideoGonderimSatiri({ video, kisiler, limitler, tekrarEngelleri,
     <article className="border-b border-[#e7edf4] p-3 last:border-b-0 md:p-4">
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-[minmax(230px,1.35fr)_repeat(4,minmax(105px,0.7fr))_minmax(230px,1fr)] lg:items-center">
         <div className="flex min-w-0 gap-3 md:col-span-2 lg:col-span-1">
-          <button type="button" onClick={() => onVideoAc(video)} className="group relative h-16 w-28 shrink-0 overflow-hidden rounded-lg bg-[#d9e8f7]" aria-label={`${video.urun_adi} videosunu aç`}>
+          <button
+            type="button"
+            onClick={() => onVideoAc(video)}
+            disabled={!video.video_url}
+            className="group relative flex h-16 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg border-0 bg-[#d9e8f7] p-0 text-[#237ac8] transition hover:ring-2 hover:ring-[#78b4e7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#237ac8] disabled:cursor-not-allowed disabled:opacity-45"
+            aria-label={video.video_url ? `${video.urun_adi} videosunu sayfaya yerleştir` : `${video.urun_adi} videosu hazır değil`}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            {thumbnail && <img src={thumbnail} alt="" className="h-full w-full object-cover" />}
-            <span className="absolute inset-0 flex items-center justify-center bg-[#10233a]/25"><span className="flex size-7 items-center justify-center rounded-full bg-[#10233a]/70 text-white transition-transform group-hover:scale-105"><Play className="size-3 fill-current" /></span></span>
+            {thumbnail ? <img src={thumbnail} alt="" className="h-full w-full object-cover" /> : <Film className="size-6" />}
+            <span className="pointer-events-none absolute inset-0 bg-[#10233a]/0 transition group-hover:bg-[#10233a]/10" />
           </button>
           <div className="min-w-0 self-center"><strong className="block truncate text-sm text-[#263e5b]">{video.urun_adi}</strong><span className="mt-1 block truncate text-[11px] font-semibold text-[#71859d]">{video.teknik_adi || "Teknik belirtilmedi"}</span></div>
         </div>

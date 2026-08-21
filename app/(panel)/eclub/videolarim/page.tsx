@@ -2,9 +2,12 @@
 
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
-import VideoOynatici from "@/components/izle/VideoOynatici";
+import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
+import VideoOnizleme from "@/components/video/VideoOnizleme";
 import { HEDEF_ROL_TASARIM } from "@/app/(panel)/talepler/_types";
 import { ECLUB_GOREN_ROLLER } from "@/lib/utils/roller";
 import { useEclubOneriler } from "../oneriler/_hooks/useEclubOneriler";
@@ -32,7 +35,7 @@ export default function EclubVideolarimPage() {
   const { mesajlar, hata, basari } = useHataMesaji();
   const rolUygun = !!kullanici && ECLUB_GOREN_ROLLER.includes((kullanici.rol ?? "").toLowerCase());
   const hazir = !authYukleniyor && rolUygun;
-  const { yayinlar, kisiler, limitler, tekrarEngelleri, gonderilenYayinIdleri, gonderilenKisiler, loading, gonderLoading, oneriGonder } = useEclubOneriler({ hazir, hata, basari });
+  const { yayinlar, kisiler, limitler, tekrarEngelleri, gonderilenYayinIdleri, gonderilenKisiler, loading, yenileniyor, gonderLoading, veriCek, oneriGonder } = useEclubOneriler({ hazir, hata, basari });
   const [aktifHedef, setAktifHedef] = useState<HedefGrubu>("eczaci");
   const [aktifVideo, setAktifVideo] = useState<OneriYayin | null>(null);
 
@@ -62,10 +65,26 @@ export default function EclubVideolarimPage() {
     return <div className="flex min-h-full items-center justify-center bg-gray-50"><svg className="size-6 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg></div>;
   }
 
-  if (aktifVideo) {
+  if (aktifVideo?.video_url) {
     return (
       <div className="mx-auto flex max-w-[1480px] flex-col gap-4 px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
-        <VideoOynatici key={aktifVideo.yayin_id} video={aktifVideo} tuketici={false} onizlemeYuzeyi onKapat={() => setAktifVideo(null)} onVeriYenile={() => {}} hata={() => {}} basari={() => {}} uyari={() => {}} />
+        <button type="button" onClick={() => setAktifVideo(null)} className="flex w-fit items-center gap-1.5 border-0 bg-transparent p-0 text-sm font-semibold text-gray-500 hover:text-gray-700">
+          <ChevronLeft className="size-4" /> Videolar
+        </button>
+        <Card className="gap-0 overflow-hidden border-gray-200 py-0 shadow-sm">
+          <div className="border-b border-gray-100 px-4 py-4 md:px-5">
+            <CardTitle className="text-base text-gray-900">{aktifVideo.urun_adi}</CardTitle>
+            <CardDescription className="mt-1">{aktifVideo.teknik_adi || "Teknik belirtilmedi"}</CardDescription>
+          </div>
+          <VideoOnizleme
+            key={aktifVideo.yayin_id}
+            videoUrl={aktifVideo.video_url}
+            ariaLabel={`${aktifVideo.urun_adi} önizlemesini oynat`}
+            yalnizPlayButonu
+            onBitti={() => setAktifVideo(null)}
+            bitisGecikmesiMs={1500}
+          />
+        </Card>
         <HataMesajiContainer mesajlar={mesajlar} />
       </div>
     );
@@ -74,10 +93,13 @@ export default function EclubVideolarimPage() {
   return (
     <div className="min-h-full bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <div className="mx-auto flex max-w-[1480px] flex-col gap-5 px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
-        <header>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">E‑Club video gönderimi</p>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">Gönderilecek Videolar</h1>
-          <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">Hedef kitleye uygun videoyu seçin ve eczane çalışanlarınıza gönderin.</p>
+        <header className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">E‑Club video gönderimi</p>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">Gönderilecek Videolar</h1>
+            <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">Hedef kitleye uygun videoyu seçin ve eczane çalışanlarınıza gönderin.</p>
+          </div>
+          <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} />
         </header>
 
         <section aria-label="E-Club video hedefleri" className="grid grid-cols-2 gap-2 md:grid-cols-3">

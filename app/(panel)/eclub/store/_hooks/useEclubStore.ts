@@ -18,9 +18,11 @@ export function useEclubStore({ hata, basari }: Args) {
   const [toplamBakiye, setToplamBakiye] = useState(0);
   const [adresler, setAdresler] = useState<EclubStoreAdres[]>([]);
   const [loading, setLoading] = useState(true);
+  const [yenileniyor, setYenileniyor] = useState(false);
 
-  const vitrinCek = useCallback(async () => {
-    setLoading(true);
+  const vitrinCek = useCallback(async (sessiz = false) => {
+    if (sessiz) setYenileniyor(true);
+    else setLoading(true);
     try {
       const res = await fetch("/eclub/store/api");
       const d = await res.json();
@@ -32,7 +34,8 @@ export function useEclubStore({ hata, basari }: Args) {
     } catch (err) {
       hata("Mağaza yüklenirken hata oluştu.", "vitrinCek", err instanceof Error ? err.message : undefined);
     } finally {
-      setLoading(false);
+      if (sessiz) setYenileniyor(false);
+      else setLoading(false);
     }
   }, [hata]);
 
@@ -48,6 +51,10 @@ export function useEclubStore({ hata, basari }: Args) {
   }, [hata]);
 
   useEffect(() => { vitrinCek(); adresCek(); }, [vitrinCek, adresCek]);
+
+  const yenile = useCallback(async () => {
+    await Promise.all([vitrinCek(true), adresCek()]);
+  }, [vitrinCek, adresCek]);
 
   const adresEkle = useCallback(async (payload: Omit<EclubStoreAdres, "adres_id" | "kisi_id">) => {
     const res = await fetch("/eclub/store/api/adres", {
@@ -79,12 +86,12 @@ export function useEclubStore({ hata, basari }: Args) {
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "Sipariş verilemedi.", d.adim, d.detay); return false; }
     basari("Siparişiniz alındı.");
-    await vitrinCek();
+    await vitrinCek(true);
     return true;
   }, [hata, basari, vitrinCek]);
 
   return {
-    kategoriler, urunler, firmaBakiye, toplamBakiye, adresler, loading,
-    vitrinCek, adresEkle, adresSil, siparisVer,
+    kategoriler, urunler, firmaBakiye, toplamBakiye, adresler, loading, yenileniyor,
+    vitrinCek, yenile, adresEkle, adresSil, siparisVer,
   };
 }

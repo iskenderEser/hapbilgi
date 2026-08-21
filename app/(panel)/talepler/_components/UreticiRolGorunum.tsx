@@ -12,6 +12,7 @@
 "use client";
 
 import { HataMesajiContainer } from "@/components/HataMesaji";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { ureticiDurumMesaji } from "@/lib/utils/durum/mesaj";
 import { useTalepMerkezi } from "../_hooks/useTalepMerkezi";
@@ -94,9 +95,7 @@ export function UreticiRolGorunum() {
                 İçerik taleplerinizi oluşturun, üretim akışını izleyin ve sizden beklenen kararları tek yerden yönetin.
               </p>
             </div>
-            <p className="hidden text-xs font-semibold text-[#8091aa] md:block">
-              Güncel iş yükünüz
-            </p>
+            <YenileButonu yenileniyor={merkez.yenileniyor} onYenile={() => merkez.veriCek()} disabled={merkez.kararYukleniyor || merkez.videoYuzdesi !== null} />
           </div>
 
           <div aria-label="Talep operasyon özeti" className="grid grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-3">

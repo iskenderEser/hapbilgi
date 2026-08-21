@@ -3,11 +3,12 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useListe, ListeArama, DahaFazlaGoster } from "@/components/liste";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { ADMIN_ROLLER, TUM_ROLLER } from "@/lib/utils/roller";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 
 interface Kullanici {
   kullanici_id: string;
@@ -41,6 +42,7 @@ export default function KullanicilarPage() {
   const [kullanicilar, setKullanicilar] = useState<Kullanici[]>([]);
   const [hiyerarsi, setHiyerarsi] = useState<Hiyerarsi>({ firmalar: [], takimlar: [], bolgeler: [] });
   const [loading, setLoading] = useState(true);
+  const [yenileniyor, setYenileniyor] = useState(false);
   const [formAcik, setFormAcik] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [duzenle, setDuzenle] = useState<Kullanici | null>(null);
@@ -66,30 +68,37 @@ export default function KullanicilarPage() {
     }
   }, [oturumKullanici, authYukleniyor, router]);
 
-  const veriCek = async () => {
-    setLoading(true);
-    const supabase = createClient();
+  const veriCek = useCallback(async (ilkYukleme = false) => {
+    if (ilkYukleme) setLoading(true);
+    else setYenileniyor(true);
+    try {
+      const supabase = createClient();
 
-    const res = await fetch("/kullanicilar/api");
-    const data = await res.json();
-    if (!res.ok) { hata(data.hata ?? "Kullanıcılar yüklenemedi.", data.adim, data.detay); }
-    else { setKullanicilar(data.kullanicilar ?? []); }
+      const res = await fetch("/kullanicilar/api");
+      const data = await res.json();
+      if (!res.ok) { hata(data.hata ?? "Kullanıcılar yüklenemedi.", data.adim, data.detay); }
+      else { setKullanicilar(data.kullanicilar ?? []); }
 
-    const { data: firmalar, error: fError } = await supabase.from("firmalar").select("firma_id, firma_adi").order("firma_adi");
-    const { data: takimlar, error: tError } = await supabase.from("takimlar").select("takim_id, takim_adi, firma_id").order("takim_adi");
-    const { data: bolgeler, error: bError } = await supabase.from("bolgeler").select("bolge_id, bolge_adi, takim_id").order("bolge_adi");
+      const { data: firmalar, error: fError } = await supabase.from("firmalar").select("firma_id, firma_adi").order("firma_adi");
+      const { data: takimlar, error: tError } = await supabase.from("takimlar").select("takim_id, takim_adi, firma_id").order("takim_adi");
+      const { data: bolgeler, error: bError } = await supabase.from("bolgeler").select("bolge_id, bolge_adi, takim_id").order("bolge_adi");
 
-    if (fError) hata("Firmalar yüklenemedi.", "firmalar tablosu SELECT", fError.message);
-    if (tError) hata("Takımlar yüklenemedi.", "takimlar tablosu SELECT", tError.message);
-    if (bError) hata("Bölgeler yüklenemedi.", "bolgeler tablosu SELECT", bError.message);
+      if (fError) hata("Firmalar yüklenemedi.", "firmalar tablosu SELECT", fError.message);
+      if (tError) hata("Takımlar yüklenemedi.", "takimlar tablosu SELECT", tError.message);
+      if (bError) hata("Bölgeler yüklenemedi.", "bolgeler tablosu SELECT", bError.message);
 
-    setHiyerarsi({ firmalar: firmalar ?? [], takimlar: takimlar ?? [], bolgeler: bolgeler ?? [] });
-    setLoading(false);
-  };
+      setHiyerarsi({ firmalar: firmalar ?? [], takimlar: takimlar ?? [], bolgeler: bolgeler ?? [] });
+    } catch (err) {
+      hata("Kullanıcılar yüklenemedi.", "Kullanıcı Yönetimi", err instanceof Error ? err.message : undefined);
+    } finally {
+      if (ilkYukleme) setLoading(false);
+      else setYenileniyor(false);
+    }
+  }, [hata]);
 
   useEffect(() => {
-    if (oturumKullanici) veriCek();
-  }, [oturumKullanici]);
+    if (oturumKullanici) void veriCek(true);
+  }, [oturumKullanici, veriCek]);
 
   const filtreliTakimlar = hiyerarsi.takimlar.filter(t => !secilenFirma || t.firma_id === secilenFirma);
   const filtreliBolgeler = hiyerarsi.bolgeler.filter(b => !secilenTakim || b.takim_id === secilenTakim);
@@ -240,7 +249,10 @@ export default function KullanicilarPage() {
               <span className="text-sm font-semibold text-gray-900">Kullanıcılar</span>
               <span className="text-xs text-gray-400">{liste.toplam} kayıt</span>
             </div>
-            <ListeArama arama={liste.arama} />
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <ListeArama arama={liste.arama} />
+              <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} disabled={formAcik || formLoading} />
+            </div>
           </div>
 
           {liste.toplam === 0 ? (

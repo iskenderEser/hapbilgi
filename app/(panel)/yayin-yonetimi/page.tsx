@@ -20,6 +20,7 @@ import { YayinSatir } from "./_components/YayinSatir";
 import { useListe, ListeArama, DahaFazlaGoster } from "@/components/liste";
 import { VideoOnizlemeModal, YayinOnayModal } from "./_components/Modallar";
 import { YayinKumandaPaneli } from "./_components/YayinKumandaPaneli";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 
 function ListeBasligi({ baslik, aciklama, sayi, arama }: { baslik: string; aciklama: string; sayi: number; arama: ReactNode }) {
   return (
@@ -124,6 +125,7 @@ export default function YayinYonetimiPage() {
           durdurulan={durdurulular.length}
           onHedefDegistir={setAktifAnaSekme}
           onDurumDegistir={setAktifSekme}
+          aksiyon={<YenileButonu yenileniyor={yy.yenileniyor} onYenile={() => yy.veriCek()} disabled={!!acikAkordiyon || !!yy.islemLoading} />}
         />
 
         {aktifSekme === "bekleyen" && (

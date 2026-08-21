@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 import { ECLUB_GOREN_ROLLER, ECLUB_KISI_ROL_ETIKETLERI } from "@/lib/utils/roller";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import type { OneriGecmisKaydi } from "../oneriler/_types";
@@ -27,7 +28,9 @@ export default function GonderilenVideolarPage() {
   const [kayitlar, setKayitlar] = useState<OneriGecmisKaydi[]>([]);
   const [acikYayinId, setAcikYayinId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [yenileniyor, setYenileniyor] = useState(false);
   const [hata, setHata] = useState<string | null>(null);
+  const istekRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (authYukleniyor) return;
@@ -35,32 +38,37 @@ export default function GonderilenVideolarPage() {
     if (!rolUygun) router.push("/ana-sayfa");
   }, [kullanici, authYukleniyor, rolUygun, router]);
 
+  const veriCek = useCallback(async (ilkYukleme = false) => {
+    istekRef.current?.abort();
+    const controller = new AbortController();
+    istekRef.current = controller;
+    if (ilkYukleme) setLoading(true);
+    else setYenileniyor(true);
+    setHata(null);
+    try {
+      const response = await fetch("/eclub/oneriler/api", { signal: controller.signal });
+      const data = await response.json() as GecmisYaniti;
+      if (!response.ok) throw new Error(data.hata ?? "Gönderilen videolar alınamadı.");
+      const oneriler = data.oneriler ?? [];
+      setKayitlar(oneriler);
+      setAcikYayinId((mevcut) => mevcut && oneriler.some((oneri) => oneri.yayin_id === mevcut) ? mevcut : oneriler[0]?.yayin_id ?? null);
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === "AbortError")) {
+        setHata(error instanceof Error ? error.message : "Gönderilen videolar alınamadı.");
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        if (ilkYukleme) setLoading(false);
+        else setYenileniyor(false);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (authYukleniyor || !rolUygun) return;
-    const controller = new AbortController();
-
-    const veriCek = async () => {
-      setLoading(true);
-      setHata(null);
-      try {
-        const response = await fetch("/eclub/oneriler/api", { signal: controller.signal });
-        const data = await response.json() as GecmisYaniti;
-        if (!response.ok) throw new Error(data.hata ?? "Gönderilen videolar alınamadı.");
-        const oneriler = data.oneriler ?? [];
-        setKayitlar(oneriler);
-        setAcikYayinId((mevcut) => mevcut ?? oneriler[0]?.yayin_id ?? null);
-      } catch (error) {
-        if (!(error instanceof DOMException && error.name === "AbortError")) {
-          setHata(error instanceof Error ? error.message : "Gönderilen videolar alınamadı.");
-        }
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
-      }
-    };
-
-    void veriCek();
-    return () => controller.abort();
-  }, [authYukleniyor, rolUygun]);
+    void veriCek(true);
+    return () => istekRef.current?.abort();
+  }, [authYukleniyor, rolUygun, veriCek]);
 
   const yayinGruplari = useMemo(() => {
     const gruplar = new Map<string, OneriGecmisKaydi[]>();
@@ -82,17 +90,19 @@ export default function GonderilenVideolarPage() {
   return (
     <div className="min-h-full bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <div className="mx-auto flex max-w-[1480px] flex-col gap-5 px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
-        <header>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">E‑Club gönderim geçmişi</p>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">Gönderilen Videolar</h1>
-          <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">Ürün satırlarını açarak videonun gönderildiği kişileri inceleyin.</p>
+        <header className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">E‑Club gönderim geçmişi</p>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">Gönderilen Videolar</h1>
+            <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">Ürün satırlarını açarak videonun gönderildiği kişileri inceleyin.</p>
+          </div>
+          <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} />
         </header>
 
-        {hata ? (
-          <Card className="border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">{hata}</Card>
-        ) : yayinGruplari.length === 0 ? (
+        {hata && <Card className="border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">{hata}</Card>}
+        {!hata && yayinGruplari.length === 0 ? (
           <Card className="py-16 text-center text-sm font-semibold text-[#8090a4]">Henüz gönderilmiş video bulunmuyor.</Card>
-        ) : (
+        ) : yayinGruplari.length > 0 ? (
           <section className="flex flex-col gap-3" aria-label="Gönderilen videolar">
             {yayinGruplari.map(({ yayinId, yayin, oneriler }) => {
               const acik = acikYayinId === yayinId;
@@ -140,7 +150,7 @@ export default function GonderilenVideolarPage() {
               );
             })}
           </section>
-        )}
+        ) : null}
       </div>
     </div>
   );

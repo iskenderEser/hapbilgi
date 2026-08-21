@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Users } from "lucide-react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { EclubKisiSayfa, EclubKisiBaslik } from "@/components/eclub/EclubKisiSayfa";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 
 interface MusteriSatiri {
   musteri_id: string;
@@ -45,9 +46,11 @@ export default function EczanemMusterilerimPage() {
   // Müşteri listesi.
   const [musteriler, setMusteriler] = useState<MusteriSatiri[]>([]);
   const [listeYukleniyor, setListeYukleniyor] = useState(true);
+  const [yenileniyor, setYenileniyor] = useState(false);
 
-  const musterileriCek = useCallback(async () => {
-    setListeYukleniyor(true);
+  const musterileriCek = useCallback(async (ilkYukleme = false) => {
+    if (ilkYukleme) setListeYukleniyor(true);
+    else setYenileniyor(true);
     try {
       const res = await fetch("/eczanem/eczane/api/musteriler");
       const data = await res.json();
@@ -56,11 +59,12 @@ export default function EczanemMusterilerimPage() {
     } catch {
       hata("Müşteriler yüklenemedi.", "müşteri listesi");
     } finally {
-      setListeYukleniyor(false);
+      if (ilkYukleme) setListeYukleniyor(false);
+      else setYenileniyor(false);
     }
   }, [hata]);
 
-  useEffect(() => { musterileriCek(); }, [musterileriCek]);
+  useEffect(() => { void musterileriCek(true); }, [musterileriCek]);
 
   const kayitliMusteriyiBagla = async () => {
     setBaglaniyor(true);
@@ -147,6 +151,7 @@ export default function EczanemMusterilerimPage() {
         ustEtiket="Eczanem"
         baslik="Müşteri Yönetimi"
         aciklama="Sözlü rızasını aldığınız müşterilerinizi kaydedin; kayıtlı müşterilerinizi görüntüleyin."
+        aksiyon={<YenileButonu yenileniyor={yenileniyor} onYenile={() => musterileriCek()} disabled={baglaniyor || kGonderiliyor} />}
       />
 
       {/* Üst: kayıtlı müşteriyi bağlama */}

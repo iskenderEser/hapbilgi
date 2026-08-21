@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { HEDEF_ROL_TASARIM } from "@/app/(panel)/talepler/_types";
 import { ECLUB_ORTAK_YAYIN_GRUBU, type YayinHedefGrubu } from "@/lib/utils/roller";
 import type { AltSekme, BekleyenHedefSayilari } from "../_types";
@@ -15,6 +16,7 @@ interface Props {
   durdurulan: number;
   onHedefDegistir: (hedef: YayinHedefGrubu) => void;
   onDurumDegistir: (durum: AltSekme) => void;
+  aksiyon?: ReactNode;
 }
 
 export function YayinKumandaPaneli({
@@ -27,6 +29,7 @@ export function YayinKumandaPaneli({
   durdurulan,
   onHedefDegistir,
   onDurumDegistir,
+  aksiyon,
 }: Props) {
   const hedefTasarimi = aktifHedef === ECLUB_ORTAK_YAYIN_GRUBU
     ? { renk: "#5367c7", bg: "#f0f1ff" }
@@ -69,16 +72,19 @@ export function YayinKumandaPaneli({
 
   return (
     <section aria-labelledby="yayin-merkezi-baslik" className="flex flex-col gap-4">
-      <div>
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">
-          İçerik yaşam döngüsü
-        </p>
-        <h1 id="yayin-merkezi-baslik" className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">
-          Yayın Merkezi
-        </h1>
-        <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">
-          Hazır içerikleri puanlayın, doğru zamanda yayınlayın ve yayın yaşam döngüsünü tek yerden yönetin.
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">
+            İçerik yaşam döngüsü
+          </p>
+          <h1 id="yayin-merkezi-baslik" className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">
+            Yayın Merkezi
+          </h1>
+          <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">
+            Hazır içerikleri puanlayın, doğru zamanda yayınlayın ve yayın yaşam döngüsünü tek yerden yönetin.
+          </p>
+        </div>
+        {aksiyon}
       </div>
 
       <div className="rounded-2xl border border-[#dfe8f3] bg-white p-3 shadow-[0_8px_24px_rgba(31,55,90,0.045)] md:p-4">

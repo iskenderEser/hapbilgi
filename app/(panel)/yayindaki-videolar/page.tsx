@@ -7,7 +7,7 @@
 
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import KlasorGrid from "./_components/KlasorGrid";
@@ -19,6 +19,7 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import { URETICI_ROLLER, YAYINDAKI_VIDEO_GORENLER } from "@/lib/utils/roller";
 import { departmanKey } from "@/lib/video/departman";
 import BmOneriPaneli from "./_components/BmOneriPaneli";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 
 function OzetKarti({
   etiket,
@@ -55,6 +56,7 @@ export default function YayindakiVideolarPage() {
   const router = useRouter();
   const { kullanici, yukleniyor } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
+  const hataRef = useRef(hata);
   const [videolar, setVideolar] = useState<YayindakiVideo[]>([]);
   const [oneriModu, setOneriModu] = useState(false);
   const [secilenYayinlar, setSecilenYayinlar] = useState<YayindakiVideo[]>([]);
@@ -76,12 +78,18 @@ export default function YayindakiVideolarPage() {
   });
   const [aktifVideo, setAktifVideo] = useState<AnaSayfaVideo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [yenileniyor, setYenileniyor] = useState(false);
+  const [yenileTetik, setYenileTetik] = useState(0);
 
   const ureticiBirimSayisi = new Set(videolar.map((video) => departmanKey(video.ureten_rol))).size;
   const toplamIzlenme = videolar.reduce((toplam, video) => toplam + video.izlenme_sayisi, 0);
   const toplamEtkilesim = videolar.reduce((toplam, video) => toplam + video.begeni_sayisi + video.favori_sayisi, 0);
   const toplamBegeni = videolar.reduce((toplam, video) => toplam + video.begeni_sayisi, 0);
   const toplamFavori = videolar.reduce((toplam, video) => toplam + video.favori_sayisi, 0);
+
+  useEffect(() => {
+    hataRef.current = hata;
+  }, [hata]);
 
   const oneriVideoSec = (video: YayindakiVideo) => {
     setSecilenYayinlar((mevcut) => {
@@ -113,15 +121,23 @@ export default function YayindakiVideolarPage() {
     if (URETICI_ROLLER.includes(rol)) { router.replace("/tum-yayinlar"); return; }
 
     const veriCek = async () => {
-      setLoading(true);
-      const res = await fetch("/yayindaki-videolar/api");
-      const data = await res.json();
-      if (!res.ok) hata(data.hata ?? "Videolar yüklenemedi.", data.adim, data.detay);
-      else setVideolar(data.videolar ?? []);
-      setLoading(false);
+      const ilkYukleme = yenileTetik === 0;
+      if (ilkYukleme) setLoading(true);
+      else setYenileniyor(true);
+      try {
+        const res = await fetch("/yayindaki-videolar/api");
+        const data = await res.json();
+        if (!res.ok) hataRef.current(data.hata ?? "Videolar yüklenemedi.", data.adim, data.detay);
+        else setVideolar(data.videolar ?? []);
+      } catch (err) {
+        hataRef.current("Videolar yüklenemedi.", "Yayın Kataloğu", err instanceof Error ? err.message : undefined);
+      } finally {
+        if (ilkYukleme) setLoading(false);
+        else setYenileniyor(false);
+      }
     };
-    veriCek();
-  }, [kullanici, yukleniyor, router]);
+    void veriCek();
+  }, [kullanici, yukleniyor, router, yenileTetik]);
 
   if (yukleniyor || !kullanici) {
     return (
@@ -218,6 +234,7 @@ export default function YayindakiVideolarPage() {
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               {!loading && <span className="w-fit rounded-full bg-[#eef5fd] px-2.5 py-1 text-[10px] font-extrabold text-[#4479b7]">{liste.toplam} yayın</span>}
               <ListeArama arama={liste.arama} />
+              <YenileButonu yenileniyor={yenileniyor} onYenile={() => setYenileTetik((deger) => deger + 1)} disabled={oneriModu} />
               {bmMi && (
                 <button
                   type="button"

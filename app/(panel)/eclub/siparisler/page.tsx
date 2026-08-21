@@ -18,6 +18,7 @@ import {
 import { useAuth } from "@/app/providers/AuthProvider";
 import EclubYonetimHiyerarsisi from "@/components/eclub/EclubYonetimHiyerarsisi";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 import {
   ECLUB_SIPARIS_DURUMLARI,
   ECLUB_SIPARIS_DURUM_ETIKETLERI,
@@ -266,6 +267,7 @@ export default function EclubSiparislerPage() {
   const [filtreler, setFiltreler] = useState<Filtreler>(BOS_FILTRELER);
   const [data, setData] = useState<EclubSiparisSayfaData>(BOS_DATA);
   const [yukleniyor, setYukleniyor] = useState(true);
+  const [yenileniyor, setYenileniyor] = useState(false);
   const [dahaYukleniyor, setDahaYukleniyor] = useState(false);
 
   useEffect(() => { hataRef.current = hata; }, [hata]);
@@ -278,8 +280,9 @@ export default function EclubSiparislerPage() {
     return params.toString();
   }, [filtreler]);
 
-  const yukle = useCallback(async () => {
-    setYukleniyor(true);
+  const yukle = useCallback(async (sessiz = false) => {
+    if (sessiz) setYenileniyor(true);
+    else setYukleniyor(true);
     try {
       const response = await fetch(`/eclub/siparisler/api?${queryOlustur(0)}`);
       const sonuc = await response.json();
@@ -298,7 +301,8 @@ export default function EclubSiparislerPage() {
     } catch (error) {
       hataRef.current("E-Club siparişleri yüklenemedi.", "GET /eclub/siparisler/api", String(error));
     } finally {
-      setYukleniyor(false);
+      if (sessiz) setYenileniyor(false);
+      else setYukleniyor(false);
     }
   }, [queryOlustur]);
 
@@ -379,11 +383,14 @@ export default function EclubSiparislerPage() {
                 : `${data.kapsam_hiyerarsi?.kapsam_adi ?? "Yetkili kapsam"} içindeki E‑Club siparişlerini takım, BM ve UTT hattında izleyin.`}
             </p>
           </div>
-          <div className="flex items-center gap-2 rounded-2xl border border-[#cfe3f4] bg-[#eef7fd] px-4 py-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[#16865f]"><Coins size={17} /></span>
-            <div>
-              <div className="text-[9px] font-extrabold uppercase tracking-[0.08em] text-[#71859d]">Firmamızdan kullanılan</div>
-              <div className="text-lg font-black tabular-nums text-[#16865f]">{data.ozet.firma_kullanilan_puan.toLocaleString("tr-TR")} <small className="text-[10px]">puan</small></div>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <YenileButonu yenileniyor={yenileniyor} onYenile={() => yukle(true)} disabled={dahaYukleniyor} />
+            <div className="flex items-center gap-2 rounded-2xl border border-[#cfe3f4] bg-[#eef7fd] px-4 py-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[#16865f]"><Coins size={17} /></span>
+              <div>
+                <div className="text-[9px] font-extrabold uppercase tracking-[0.08em] text-[#71859d]">Firmamızdan kullanılan</div>
+                <div className="text-lg font-black tabular-nums text-[#16865f]">{data.ozet.firma_kullanilan_puan.toLocaleString("tr-TR")} <small className="text-[10px]">puan</small></div>
+              </div>
             </div>
           </div>
         </header>
