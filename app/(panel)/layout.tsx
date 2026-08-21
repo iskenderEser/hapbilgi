@@ -92,11 +92,14 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   }, [profilVeOzetiCek]);
 
   // Rozet çekimi (B) — bir kez burada; SolListe + MobilDrawer'a dağıtılır.
+  // E-Club kişisinde genel üretim bildirimleri yerine yalnız aktif eczanenin
+  // bekleyen indirim talepleri okunur; açık oturum 30 saniyede bir tazelenir.
   useEffect(() => {
-    if (!rolKucu || isEclubKisi) return;
+    if (!rolKucu) return;
     const badgelariCek = async () => {
       try {
-        const res = await fetch("/bildirimler/api", { cache: "no-store" });
+        const adres = isEclubKisi ? "/eczanem/eczane/api/rozet" : "/bildirimler/api";
+        const res = await fetch(adres, { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           setBadge(data.sayilar ?? {});
@@ -107,9 +110,15 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     const handleVisibility = () => {
       if (document.visibilityState === "visible") badgelariCek();
     };
+    const zamanlayici = isEclubKisi
+      ? window.setInterval(() => {
+          if (document.visibilityState === "visible") badgelariCek();
+        }, 30000)
+      : null;
     window.addEventListener(BILDIRIM_ROZETLERI_DEGISTI, badgelariCek);
     document.addEventListener("visibilitychange", handleVisibility);
     return () => {
+      if (zamanlayici !== null) window.clearInterval(zamanlayici);
       window.removeEventListener(BILDIRIM_ROZETLERI_DEGISTI, badgelariCek);
       document.removeEventListener("visibilitychange", handleVisibility);
     };

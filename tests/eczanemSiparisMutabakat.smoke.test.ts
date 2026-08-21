@@ -8,6 +8,9 @@ import { readFileSync } from "node:fs";
 const sql = readFileSync("scripts/sql/eczanem_eczane_yonetim_paketi.sql", "utf8");
 const siparisRoute = readFileSync("app/(panel)/eczanem/eczane/api/siparisler/route.ts", "utf8");
 const siparisKuyrugu = readFileSync("app/(panel)/eczanem/eczane/_components/EczanemSiparisKuyrugu.tsx", "utf8");
+const siparisRozeti = readFileSync("app/(panel)/eczanem/eczane/api/rozet/route.ts", "utf8");
+const panelLayout = readFileSync("app/(panel)/layout.tsx", "utf8");
+const panelNav = readFileSync("components/panel/panelNav.config.ts", "utf8");
 const dokumLib = readFileSync("lib/eczanem/dokum.ts", "utf8");
 const uttDokumRoute = readFileSync("app/eczanem/utt/api/dokum/route.ts", "utf8");
 const uttDokum = readFileSync("app/(panel)/eczanem/utt/_components/UttEczanemDokum.tsx", "utf8");
@@ -21,6 +24,11 @@ test("mutlu: yetkili personel kararı aynı firma kapsamındaki UTT mutabakatın
   assert.match(dokumLib, /eczaneUrunDokumu\(adminSupabase, eczaneIdler, null, baslangic, bitis, urunIdler\)/);
   assert.match(uttDokumRoute, /uttDokumu\(adminSupabase, user\.id, erisim\.firmaIdler, baslangic, bitis\)/);
   assert.match(dokumLib, /function paraTopla/);
+  assert.match(siparisRozeti, /\.eq\("eczane_id", eden\.eczaneId!\)[\s\S]*\.eq\("durum", "bekliyor"\)/);
+  assert.match(siparisRozeti, /eczanem_siparis_bekleyen/);
+  assert.match(panelNav, /Sipariş Onayı[\s\S]*badgeKey: "eczanem_siparis_bekleyen"/);
+  assert.match(panelLayout, /isEclubKisi \? "\/eczanem\/eczane\/api\/rozet" : "\/bildirimler\/api"/);
+  assert.match(siparisKuyrugu, /bildirimRozetleriniYenile\(\)/);
 });
 
 test("red: doğrudan FIFO onayı, geçersiz dönem ve veri hatasının boş sonuç gibi sunulması geri gelemez", () => {
@@ -35,4 +43,5 @@ test("red: doğrudan FIFO onayı, geçersiz dönem ve veri hatasının boş sonu
   assert.match(siparisKuyrugu, /son başarılı kayıtlar gösteriliyor/);
   assert.match(uttDokum, /veriHatasi && !dokum/);
   assert.match(uttDokum, /son başarılı döküm gösteriliyor/);
+  assert.doesNotMatch(siparisRozeti, /\.select\("musteri_id|musteri_etiket|telefon/);
 });

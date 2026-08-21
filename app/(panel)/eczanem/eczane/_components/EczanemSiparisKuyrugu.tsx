@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
+import { bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
 import { EczanemBosDurum, EczanemEczaneBaslik, EczanemOzetKarti, EczanemPanel, EczanemSayfalama, EczanemYukleniyor } from "./EczanemEczaneArayuz";
 
 interface Siparis {
@@ -111,6 +112,7 @@ export default function EczanemSiparisKuyrugu({ hata, basari }: Props) {
       if (!res.ok) { hata(data.hata ?? "Sipariş işlemi tamamlanamadı.", "sipariş"); return; }
       basari(aksiyon === "onayla" ? `Sipariş onaylandı — ${paraYaz(Number(data.indirim_tl))} indirim (${data.islem_kodu}).` : "İndirim talebi onaylanmadı; müşteri puanı korunuyor.");
       await cek(true);
+      bildirimRozetleriniYenile();
     } catch { hata("Sipariş işlemi tamamlanamadı.", "sipariş"); }
     finally { setIsliyor(false); }
   };
