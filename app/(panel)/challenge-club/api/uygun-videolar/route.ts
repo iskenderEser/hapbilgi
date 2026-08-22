@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import {
+  hataYaniti,
   sunucuHatasi,
   yetkiHatasi,
   rolHatasi,
@@ -31,8 +32,25 @@ export async function GET(_request: NextRequest) {
       return rolHatasi("Sadece BM rolü Challenge Club gönderebilir.");
     }
 
+    const { data: kullanici, error: kullaniciError } = await adminSupabase
+      .from("kullanicilar")
+      .select("firma_id, aktif_mi")
+      .eq("kullanici_id", user.id)
+      .single();
+    if (kullaniciError || !kullanici?.firma_id || !kullanici.aktif_mi) {
+      return hataYaniti("Aktif kullanıcı ve firma bilgisi alınamadı.", "kullanicilar SELECT — CC uygun videolar", kullaniciError);
+    }
+
+    const { data: firma, error: firmaError } = await adminSupabase
+      .from("firmalar")
+      .select("aktif, cc_aktif")
+      .eq("firma_id", kullanici.firma_id)
+      .single();
+    if (firmaError || !firma) return hataYaniti("Firma bilgisi alınamadı.", "firmalar SELECT — CC uygun videolar", firmaError);
+    if (!firma.aktif || !firma.cc_aktif) return rolHatasi("Firmanızda C-Club erişimi kapalıdır.");
+
     // 3. Lib'e delege et
-    const videolar = await uygunVideoListesi(adminSupabase, user.id);
+    const videolar = await uygunVideoListesi(adminSupabase, user.id, kullanici.firma_id);
 
     return NextResponse.json({ videolar }, { status: 200 });
   } catch (err) {

@@ -3,14 +3,13 @@
 -- CC Ligi ölçek — günlük özet tablosu + bakım trigger'ı.
 -- (HBLigi E9+Faz6 deseninin CC'ye uyarlaması, 31.07.2026.)
 --
--- CC lig (rol='bm') 4 tablodan canlı-SUM yapıyordu; özet tabloya geçiriliyor.
+-- CC lig (rol='bm') kendi 4 puan/kayıp tablosundan günlük özete aktarılır.
 -- Kova: kişi × gün (tüm periyotlar — hafta/ay/çeyrek/yıl/tüm-zaman — günden türer).
 --
--- Besleyen tablolar (get_cc_ligi_aylik gövdesinden):
---   kazanilan_puanlar: izleme/cevaplama/extra/cc_gonderme/cc_referral
---   ileri_sarma_kayitlari, yanlis_cevap_kayitlari (paylaşımlı), challenge_kayip_kayitlari
--- İlk 3 tablo HBLigi ile paylaşımlı → aynı tablolarda ikinci trigger (Postgres
--- ikisini de tetikler). CC trigger'ı yalnız CC puan türlerini eşler; kalanı atlar.
+-- Besleyen tablolar:
+--   cc_kazanilan_puanlar: izleme/cevaplama/extra/cc_gonderme/cc_referral
+--   cc_ileri_sarma_kayitlari, cc_yanlis_cevap_kayitlari, challenge_kayip_kayitlari
+-- HBLigi tabloları bu akışa dahil değildir.
 --
 -- Yazım tek noktadan (trigger); uygulama koduna dokunulmaz. KORUMALI'ya eklenecek.
 -- RLS geliştirme boyunca kapalı (genel kural).
@@ -42,11 +41,14 @@ SECURITY DEFINER
 SET search_path TO 'public'
 AS $fonk$
 DECLARE
-  v_tarih date := (NEW.created_at AT TIME ZONE 'Europe/Istanbul')::date;
-  v_kol   text;
-  v_delta integer;
+  v_tarih        date;
+  v_kullanici_id uuid;
+  v_kol          text;
+  v_delta        integer;
 BEGIN
-  IF TG_TABLE_NAME = 'kazanilan_puanlar' THEN
+  IF TG_TABLE_NAME = 'cc_kazanilan_puanlar' THEN
+    v_tarih := (NEW.created_at AT TIME ZONE 'Europe/Istanbul')::date;
+    v_kullanici_id := NEW.bm_id;
     v_delta := NEW.puan;
     v_kol := CASE NEW.puan_turu
       WHEN 'izleme'      THEN 'izleme_puani'
@@ -55,15 +57,21 @@ BEGIN
       WHEN 'cc_gonderme' THEN 'cc_gonderme_puani'
       WHEN 'cc_referral' THEN 'cc_referral_puani'
       ELSE NULL END;
-  ELSIF TG_TABLE_NAME = 'ileri_sarma_kayitlari' THEN
+  ELSIF TG_TABLE_NAME = 'cc_ileri_sarma_kayitlari' THEN
+    v_tarih := (NEW.created_at AT TIME ZONE 'Europe/Istanbul')::date;
+    v_kullanici_id := NEW.bm_id;
     v_delta := NEW.kaybedilen_puan; v_kol := 'ileri_sarma_kaybi';
-  ELSIF TG_TABLE_NAME = 'yanlis_cevap_kayitlari' THEN
+  ELSIF TG_TABLE_NAME = 'cc_yanlis_cevap_kayitlari' THEN
+    v_tarih := (NEW.created_at AT TIME ZONE 'Europe/Istanbul')::date;
+    v_kullanici_id := NEW.bm_id;
     v_delta := NEW.kaybedilen_puan; v_kol := 'yanlis_cevap_kaybi';
   ELSIF TG_TABLE_NAME = 'challenge_kayip_kayitlari' THEN
+    v_tarih := (COALESCE(NEW.created_at, now()) AT TIME ZONE 'Europe/Istanbul')::date;
+    v_kullanici_id := NEW.kullanici_id;
     v_delta := NEW.kaybedilen_puan; v_kol := 'challenge_kaybi';
   END IF;
 
-  IF v_kol IS NULL OR v_delta IS NULL THEN
+  IF v_kullanici_id IS NULL OR v_tarih IS NULL OR v_kol IS NULL OR v_delta IS NULL THEN
     RETURN NULL;
   END IF;
 
@@ -73,24 +81,34 @@ BEGIN
      ON CONFLICT (kullanici_id, tarih)
      DO UPDATE SET %1$I = cc_ligi_ozet.%1$I + EXCLUDED.%1$I, guncellenme = now()',
     v_kol
-  ) USING NEW.kullanici_id, v_tarih, v_delta;
+  ) USING v_kullanici_id, v_tarih, v_delta;
 
   RETURN NULL;
 END;
 $fonk$;
 
+-- Eski, hatalı HBLigi bağlantılarını kaldır.
 DROP TRIGGER IF EXISTS trg_cc_ozet_kazanim ON public.kazanilan_puanlar;
-CREATE TRIGGER trg_cc_ozet_kazanim AFTER INSERT ON public.kazanilan_puanlar
-  FOR EACH ROW EXECUTE FUNCTION public.cc_ligi_ozet_guncelle();
-
 DROP TRIGGER IF EXISTS trg_cc_ozet_ileri_sarma ON public.ileri_sarma_kayitlari;
-CREATE TRIGGER trg_cc_ozet_ileri_sarma AFTER INSERT ON public.ileri_sarma_kayitlari
+DROP TRIGGER IF EXISTS trg_cc_ozet_yanlis_cevap ON public.yanlis_cevap_kayitlari;
+
+DROP TRIGGER IF EXISTS trg_cc_ozet_kazanim ON public.cc_kazanilan_puanlar;
+CREATE TRIGGER trg_cc_ozet_kazanim AFTER INSERT ON public.cc_kazanilan_puanlar
   FOR EACH ROW EXECUTE FUNCTION public.cc_ligi_ozet_guncelle();
 
-DROP TRIGGER IF EXISTS trg_cc_ozet_yanlis_cevap ON public.yanlis_cevap_kayitlari;
-CREATE TRIGGER trg_cc_ozet_yanlis_cevap AFTER INSERT ON public.yanlis_cevap_kayitlari
+DROP TRIGGER IF EXISTS trg_cc_ozet_ileri_sarma ON public.cc_ileri_sarma_kayitlari;
+CREATE TRIGGER trg_cc_ozet_ileri_sarma AFTER INSERT ON public.cc_ileri_sarma_kayitlari
+  FOR EACH ROW EXECUTE FUNCTION public.cc_ligi_ozet_guncelle();
+
+DROP TRIGGER IF EXISTS trg_cc_ozet_yanlis_cevap ON public.cc_yanlis_cevap_kayitlari;
+CREATE TRIGGER trg_cc_ozet_yanlis_cevap AFTER INSERT ON public.cc_yanlis_cevap_kayitlari
   FOR EACH ROW EXECUTE FUNCTION public.cc_ligi_ozet_guncelle();
 
 DROP TRIGGER IF EXISTS trg_cc_ozet_challenge_kayip ON public.challenge_kayip_kayitlari;
 CREATE TRIGGER trg_cc_ozet_challenge_kayip AFTER INSERT ON public.challenge_kayip_kayitlari
   FOR EACH ROW EXECUTE FUNCTION public.cc_ligi_ozet_guncelle();
+
+REVOKE ALL ON FUNCTION public.cc_ligi_ozet_guncelle()
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.cc_ligi_ozet_guncelle()
+  TO service_role;

@@ -13,9 +13,20 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { CheckCircle2 } from "lucide-react";
 import { createVideoPlayer, type VideoPlayer } from "@/lib/video/videoPlayer";
 import VideoCercevesi from "@/components/video/VideoCercevesi";
 import { useVideoEtkilesimKatmani } from "@/components/video/useVideoEtkilesimKatmani";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface OynaticiVideo {
   yayin_id: string;
@@ -62,7 +73,6 @@ export default function CcVideoOynatici({
   // ─── State ─────────────────────────────────────────────────────────────────
   const [izlemeId, setIzlemeId] = useState<string | null>(null);
   const [izlemeTuru, setIzlemeTuru] = useState<"kendi_izleme" | "challenge" | "extra" | null>(null);
-  const [izlemeBasladi, setIzlemeBasladi] = useState(false);
   const [izlemeTamamlandi, setIzlemeTamamlandi] = useState(false);
 
   const [sorular, setSorular] = useState<Soru[]>([]);
@@ -74,6 +84,8 @@ export default function CcVideoOynatici({
   const [netPuan, setNetPuan] = useState<number | null>(null);
 
   const [islemLoading, setIslemLoading] = useState(false);
+  const [mesaiDisiModal, setMesaiDisiModal] = useState(false);
+  const [bitisAsamasi, setBitisAsamasi] = useState<"yok" | "mesaj" | "kayboluyor">("yok");
   const [ileriSarmaModal, setIleriSarmaModal] = useState(false);
   const [bekleyenSeekBitis, setBekleyenSeekBitis] = useState<number | null>(null);
 
@@ -86,21 +98,21 @@ export default function CcVideoOynatici({
   const videoSuresiRef = useRef<number>(0);
   const playerRef = useRef<VideoPlayer | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const bitisZamanlayicilariRef = useRef<number[]>([]);
   const videoEtkilesimi = useVideoEtkilesimKatmani({
     anahtar: video.yayin_id,
     playerRef,
     etkin: Boolean(video.video_url),
+    ilkOynatmaZorunlu: true,
   });
 
   // ─── İzleme başlatma — video değiştiğinde tüm state sıfırlanır ─────────────
   useEffect(() => {
     if (!video.yayin_id) return;
-    if (baslatTetiklendiRef.current === video.yayin_id) return;
 
     // State sıfırla
     setIzlemeId(null);
     setIzlemeTuru(null);
-    setIzlemeBasladi(false);
     setIzlemeTamamlandi(false);
     setSorular([]);
     setSoruGosterilecek(false);
@@ -108,6 +120,8 @@ export default function CcVideoOynatici({
     setCevapSonuclari([]);
     setKazanilanPuan(null);
     setNetPuan(null);
+    setMesaiDisiModal(false);
+    setBitisAsamasi("yok");
     setIleriSarmaModal(false);
     setBekleyenSeekBitis(null);
 
@@ -124,15 +138,15 @@ export default function CcVideoOynatici({
       playerRef.current = null;
     }
 
-    baslatTetiklendiRef.current = video.yayin_id;
+    bitisZamanlayicilariRef.current.forEach((zamanlayici) => window.clearTimeout(zamanlayici));
+    bitisZamanlayicilariRef.current = [];
 
-    handleIzlemeBaslat();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    baslatTetiklendiRef.current = null;
   }, [video.yayin_id]);
 
   // ─── Player bağlantısı ─────────────────────────────────────────────────────
   useEffect(() => {
-    if (!izlemeBasladi || !iframeRef.current || !video.video_url) return;
+    if (!iframeRef.current || !video.video_url) return;
 
     let player: VideoPlayer;
     try {
@@ -164,6 +178,10 @@ export default function CcVideoOynatici({
           data.seconds >= videoSuresiRef.current - 0.5
         ) {
           izlemeBitirildiRef.current = true;
+          if (!izlemeIdRef.current) {
+            handleMesaiDisiVideoBitti();
+            return;
+          }
           handleIzlemeBitir();
         }
       });
@@ -186,40 +204,57 @@ export default function CcVideoOynatici({
       player.onEnded(() => {
         if (izlemeBitirildiRef.current) return;
         izlemeBitirildiRef.current = true;
+        if (!izlemeIdRef.current) {
+          handleMesaiDisiVideoBitti();
+          return;
+        }
         handleIzlemeBitir();
       });
     });
 
     return () => {
+      bitisZamanlayicilariRef.current.forEach((zamanlayici) => window.clearTimeout(zamanlayici));
+      bitisZamanlayicilariRef.current = [];
       player.destroy();
       if (playerRef.current === player) playerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [izlemeBasladi, video.yayin_id, video.ileri_sarma_acik]);
+  }, [video.yayin_id, video.ileri_sarma_acik]);
 
   // ─── API çağrıları ─────────────────────────────────────────────────────────
 
   const handleIzlemeBaslat = async () => {
+    if (izlemeIdRef.current) return { puanliZaman: true };
+    if (baslatTetiklendiRef.current === video.yayin_id) return null;
+    baslatTetiklendiRef.current = video.yayin_id;
     setIslemLoading(true);
-    const res = await fetch("/challenge-club/izle/api/baslat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        yayin_id: video.yayin_id,
-        challenge_id: challenge_id ?? undefined,
-      }),
-    });
-    const d = await res.json();
-    if (!res.ok) {
-      hata(d.hata ?? "İzleme başlatılamadı.", d.adim, d.detay);
+    try {
+      const res = await fetch("/challenge-club/izle/api/baslat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          yayin_id: video.yayin_id,
+          challenge_id: challenge_id ?? undefined,
+        }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        hata(d.hata ?? "İzleme başlatılamadı.", d.adim, d.detay);
+        return null;
+      }
+
+      const yeniIzlemeId = d.izleme?.izleme_id ?? null;
+      setIzlemeId(yeniIzlemeId);
+      setIzlemeTuru(d.izleme?.izleme_turu ?? null);
+      izlemeIdRef.current = yeniIzlemeId;
+      return { puanliZaman: d.puanli_zaman === true };
+    } catch (err) {
+      hata("İzleme başlatılamadı.", "C-Club izleme başlangıcı", err instanceof Error ? err.message : undefined);
+      return null;
+    } finally {
+      if (!izlemeIdRef.current) baslatTetiklendiRef.current = null;
       setIslemLoading(false);
-      return;
     }
-    setIzlemeId(d.izleme.izleme_id);
-    setIzlemeTuru(d.izleme.izleme_turu);
-    izlemeIdRef.current = d.izleme.izleme_id;
-    setIzlemeBasladi(true);
-    setIslemLoading(false);
   };
 
   const handleIzlemeBitir = async () => {
@@ -333,6 +368,29 @@ export default function CcVideoOynatici({
     playerRef.current?.play(); // ret: kaldığı yerden (maxIzlenen) devam et
   };
 
+  const handleOynat = async () => {
+    const baslangic = await handleIzlemeBaslat();
+    if (!baslangic) return;
+    if (!baslangic.puanliZaman) {
+      setMesaiDisiModal(true);
+      return;
+    }
+    videoEtkilesimi.oynat();
+  };
+
+  const handleMesaiDisiOnayla = () => {
+    setMesaiDisiModal(false);
+    videoEtkilesimi.oynat();
+  };
+
+  const handleMesaiDisiVideoBitti = () => {
+    setBitisAsamasi("mesaj");
+    bitisZamanlayicilariRef.current.push(
+      window.setTimeout(() => setBitisAsamasi("kayboluyor"), 1220)
+    );
+    bitisZamanlayicilariRef.current.push(window.setTimeout(() => onKapat(), 1500));
+  };
+
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -419,23 +477,35 @@ export default function CcVideoOynatici({
         {/* Video */}
         {video.video_url && (
           <div className="border-b border-gray-100">
-            {/* Kutu videonun oranına göre çizilir (26.07). iframe burada kalır — ref playerjs'e bağlı. */}
-            <VideoCercevesi
-              videoUrl={video.video_url}
-              etkilesimKatmani={videoEtkilesimi.katmanAcik ? {
-                ariaLabel: `${video.urun_adi} videosunu oynat`,
-                onClick: videoEtkilesimi.oynat,
-              } : null}
-            >
-              <iframe
-                key={video.yayin_id}
-                ref={iframeRef}
-                src={video.video_url}
-                frameBorder="0"
-                allowFullScreen
-                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-              />
-            </VideoCercevesi>
+            <div className={`relative transition-opacity duration-300 ${bitisAsamasi === "kayboluyor" ? "opacity-0" : "opacity-100"}`}>
+              {/* Kutu videonun oranına göre çizilir (26.07). iframe burada kalır — ref playerjs'e bağlı. */}
+              <VideoCercevesi
+                videoUrl={video.video_url}
+                etkilesimKatmani={videoEtkilesimi.katmanAcik ? {
+                  ariaLabel: `${video.urun_adi} videosunu oynat`,
+                  onClick: handleOynat,
+                  yalnizPlayButonu: true,
+                } : null}
+              >
+                <iframe
+                  key={video.yayin_id}
+                  ref={iframeRef}
+                  src={video.video_url}
+                  frameBorder="0"
+                  allowFullScreen
+                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                />
+              </VideoCercevesi>
+              {bitisAsamasi !== "yok" && (
+                <div className="absolute inset-0 z-20 flex animate-in items-center justify-center bg-[#10233a]/75 text-white fade-in duration-200">
+                  <div className="flex flex-col items-center text-center">
+                    <CheckCircle2 className="size-10" />
+                    <strong className="mt-3 text-base">Video tamamlandı</strong>
+                    <span className="mt-1 text-xs font-semibold text-white/75">Listeye dönülüyor…</span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -582,6 +652,23 @@ export default function CcVideoOynatici({
             )}
         </div>
       </div>
+
+      <AlertDialog open={mesaiDisiModal} onOpenChange={setMesaiDisiModal}>
+        <AlertDialogContent className="max-w-sm border-[#dbe5ef] bg-white text-center">
+          <AlertDialogHeader className="items-center text-center sm:text-center">
+            <AlertDialogTitle className="text-[#203653]">Bilgilendirme</AlertDialogTitle>
+            <AlertDialogDescription className="mx-auto max-w-[280px] text-center leading-6 text-[#687b90]">
+              Mesai saatleri dışında izleme puanı verilmez ve sorular gösterilmez.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-center">
+            <AlertDialogCancel>Vazgeç</AlertDialogCancel>
+            <AlertDialogAction onClick={handleMesaiDisiOnayla} className="bg-[#237ac8] hover:bg-[#1d69ad]">
+              Onayla
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* İleri sarma uyarı modal */}
       {ileriSarmaModal && (

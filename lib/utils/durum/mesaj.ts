@@ -45,6 +45,9 @@ export type DurumKodu =
   | "planlandi"          // ileri tarihli yayın, sistem açacak
   | "yayinda"            // canlı
   | "yayin_durduruldu"   // yayın durduruldu
+  | "yayin_siliniyor"    // yayın öncesi kalıcı silme devam ediyor
+  | "yayin_silme_hatasi" // dış depolama/DB telafisi yeniden denenecek
+  | "yayin_oncesi_silindi" // yayın öncesi silindi; İÜ işi salt-okur arşivdir
   | "iptal"              // iş iptal edildi
   | "sistem_hatasi";     // zincir kurulamadı ya da tanınmayan durum — insan müdahalesi
 
@@ -73,6 +76,9 @@ const URETICI_DURUM: Record<DurumKodu, DurumMesaji> = {
   planlandi:        { metin: "Yayınını Planladınız",   top: "sistem",           renk: PLANLI },
   yayinda:          { metin: "Yayına Aldınız",         top: "kapali",           renk: CANLI },
   yayin_durduruldu: { metin: "Yayını Durdurdunuz",          top: "uretici",          renk: HATA },
+  yayin_siliniyor:  { metin: "Yayın Siliniyor",             top: "sistem",           renk: BEKLEME },
+  yayin_silme_hatasi: { metin: "Silme Tamamlanamadı",       top: "uretici",          renk: HATA },
+  yayin_oncesi_silindi: { metin: "Yayın Öncesi Silindi",    top: "kapali",           renk: BEKLEME },
   iptal:            { metin: "İptal Ettiniz",               top: "kapali",           renk: BEKLEME },
   sistem_hatasi:    { metin: "Sistem Hatası",               top: "sistem",           renk: HATA },
 };
@@ -131,6 +137,9 @@ function iuMetin(kod: DurumKodu, g: IuMesajGirdi): string {
     case "planlandi":        return "Yayın Planlandı";
     case "yayinda":          return "Yayında";
     case "yayin_durduruldu": return "Yayın Durduruldu";
+    case "yayin_siliniyor": return "Yayın Siliniyor";
+    case "yayin_silme_hatasi": return "Silme Tamamlanamadı";
+    case "yayin_oncesi_silindi": return "Yayın Öncesi Silindi";
     case "sistem_hatasi":    return "Sistem Hatası";
   }
 }
@@ -147,6 +156,9 @@ const IU_RENK: Record<DurumKodu, { top: DurumTopu; renk: DurumRenk }> = {
   planlandi:        { top: "sistem",           renk: PLANLI },
   yayinda:          { top: "kapali",           renk: CANLI },
   yayin_durduruldu: { top: "uretici",          renk: HATA },
+  yayin_siliniyor:  { top: "sistem",           renk: BEKLEME },
+  yayin_silme_hatasi: { top: "uretici",        renk: HATA },
+  yayin_oncesi_silindi: { top: "kapali",       renk: BEKLEME },
   iptal:            { top: "kapali",           renk: BEKLEME },
   sistem_hatasi:    { top: "sistem",           renk: HATA },
 };

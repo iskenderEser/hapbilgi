@@ -9,16 +9,16 @@
 
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { yayinHedefGrubuBelirle, type YayinHedefGrubu } from "@/lib/utils/roller";
+import { YAYIN_HEDEF_GRUP_SIRASI, yayinHedefGrubuBelirle, type YayinHedefGrubu } from "@/lib/utils/roller";
 import type { Bekleyen, AltSekme } from "./_types";
 import { useYayinYonetimi } from "./_hooks/useYayinYonetimi";
 import { BekleyenSatir } from "./_components/BekleyenSatir";
 import { YayinSatir } from "./_components/YayinSatir";
 import { useListe, ListeArama, DahaFazlaGoster } from "@/components/liste";
-import { VideoOnizlemeModal, YayinOnayModal } from "./_components/Modallar";
+import { VideoOnizlemeModal, YayinOnayModal, YayinSilmeModal } from "./_components/Modallar";
 import { YayinKumandaPaneli } from "./_components/YayinKumandaPaneli";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 
@@ -50,18 +50,48 @@ function BosListe({ mesaj }: { mesaj: string }) {
 
 export default function YayinYonetimiPage() {
   const { kullanici } = useAuth();
+  const kullaniciId = kullanici?.id;
   const { mesajlar, hata, basari } = useHataMesaji();
 
   const [aktifAnaSekme, setAktifAnaSekme] = useState<YayinHedefGrubu>("utt");
   const [aktifSekme, setAktifSekme] = useState<AltSekme>("bekleyen");
+  const [ilkHedefHazir, setIlkHedefHazir] = useState(false);
 
   // Saf UI state (modallar + akordiyon + video önizleme) — sayfada kalır.
   const [acikAkordiyon, setAcikAkordiyon] = useState<string | null>(null);
   const [acikVideo, setAcikVideo] = useState<string | null>(null);
   const [onayModal, setOnayModal] = useState<Bekleyen | null>(null);
+  const [silmeModal, setSilmeModal] = useState<Bekleyen | null>(null);
+
+  useEffect(() => {
+    if (!kullaniciId) {
+      setIlkHedefHazir(false);
+      return;
+    }
+
+    let aktif = true;
+    void (async () => {
+      try {
+        const res = await fetch("/yayin-yonetimi/api/bekleyenler?sayi=1");
+        const data = await res.json();
+        if (aktif && res.ok) {
+          const ilkBekleyenHedef = YAYIN_HEDEF_GRUP_SIRASI.find(
+            (hedef) => Number(data.sayilar?.[hedef] ?? 0) > 0,
+          );
+          setAktifAnaSekme(ilkBekleyenHedef ?? "utt");
+        }
+      } catch {
+        // Asıl veri çağrısı aşağıdaki hook tarafından hata mesajıyla yönetilir.
+      } finally {
+        if (aktif) setIlkHedefHazir(true);
+      }
+    })();
+
+    return () => { aktif = false; };
+  }, [kullaniciId]);
 
   const yy = useYayinYonetimi({
-    kullaniciVar: !!kullanici,
+    kullaniciVar: !!kullaniciId && ilkHedefHazir,
     aktifAnaSekme,
     hata,
     basari,
@@ -76,6 +106,13 @@ export default function YayinYonetimiPage() {
     const b = onayModal;
     setOnayModal(null);
     await yy.handleYayinla(b);
+  };
+
+  const handleYayinSilOnayla = async () => {
+    if (!silmeModal) return;
+    const b = silmeModal;
+    await yy.handleYayinSil(b);
+    setSilmeModal(null);
   };
 
   const yayinlarFiltreli = yy.yayinlar.filter(
@@ -100,7 +137,7 @@ export default function YayinYonetimiPage() {
   const durdurulanListe = useListe({ veri: durdurulular, aramaAlanlari: ARAMA_ALANLARI });
 
   // Auth guard layout'ta; burada yalnız veri yükleme spinner'ı.
-  if (yy.loading) {
+  if (!ilkHedefHazir || yy.loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
@@ -150,6 +187,7 @@ export default function YayinYonetimiPage() {
                 getSoruPuani={yy.getSoruPuani} setSoruPuani={yy.setSoruPuani} hepsineAyniPuanAta={yy.hepsineAyniPuanAta}
                 onVideoAc={setAcikVideo}
                 onYayinlaClick={setOnayModal}
+                onYayinSilClick={setSilmeModal}
               />
             ))
         )}
@@ -231,6 +269,15 @@ export default function YayinYonetimiPage() {
 
       {onayModal && (
         <YayinOnayModal bekleyen={onayModal} onIptal={() => setOnayModal(null)} onYayinla={handleYayinlaOnayla} />
+      )}
+
+      {silmeModal && (
+        <YayinSilmeModal
+          bekleyen={silmeModal}
+          islemde={yy.islemLoading === silmeModal.soru_seti_durum_id}
+          onIptal={() => setSilmeModal(null)}
+          onSil={handleYayinSilOnayla}
+        />
       )}
 
       <HataMesajiContainer mesajlar={mesajlar} />

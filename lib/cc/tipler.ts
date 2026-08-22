@@ -98,4 +98,5 @@ export interface UygunAlici {
 export interface KayitSonuc {
   ok: boolean;
   error?: string;
+  code?: string;
 }

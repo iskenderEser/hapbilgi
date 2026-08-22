@@ -43,6 +43,7 @@ interface Challenge {
   son_tarih: string;
   created_at: string;
   izlendi_mi: boolean;
+  durum: "bekliyor" | "izlendi" | "suresi_doldu";
   gonderen?: { ad: string; soyad: string };
   alan?: { ad: string; soyad: string };
   urun_adi?: string;
@@ -296,7 +297,7 @@ export default function ChallengeClubPage() {
             aktif={aktifTab === "bekleyen"}
             onClick={() => setAktifTab("bekleyen")}
             etiket="Gelen Challenge'lar"
-            rozet={bekleyenler.length > 0 ? bekleyenler.length : undefined}
+            rozet={bekleyenler.filter((challenge) => challenge.durum === "bekliyor").length || undefined}
           />
           <TabButton
             aktif={aktifTab === "gonderdiklerim"}
@@ -488,16 +489,21 @@ function BekleyenListesi({
               {c.teknik_adi}
             </div>
             <div className="text-xs mt-1" style={{ color: BORDO }}>
-              {c.gonderen?.ad} {c.gonderen?.soyad} · {kalanGun(c.son_tarih)}
+              {c.gonderen?.ad} {c.gonderen?.soyad}
+              {c.durum === "bekliyor" ? ` · ${kalanGun(c.son_tarih)}` : ""}
             </div>
           </div>
-          <button
-            onClick={() => onIzle(c.yayin_id, c.challenge_id)}
-            className="px-4 py-1.5 rounded-lg border-none text-xs font-medium cursor-pointer flex-shrink-0 text-white"
-            style={{ background: BORDO, fontFamily: "'Nunito', sans-serif" }}
-          >
-            İzle
-          </button>
+          {c.durum === "bekliyor" ? (
+            <button
+              onClick={() => onIzle(c.yayin_id, c.challenge_id)}
+              className="px-4 py-1.5 rounded-lg border-none text-xs font-medium cursor-pointer flex-shrink-0 text-white"
+              style={{ background: BORDO, fontFamily: "'Nunito', sans-serif" }}
+            >
+              İzle
+            </button>
+          ) : (
+            <ChallengeDurumPili durum={c.durum} />
+          )}
         </div>
       ))}
     </div>
@@ -520,31 +526,9 @@ function GonderdiklerimListesi({
     );
   }
 
-  const durumBilgisi = (c: Challenge) => {
-    if (c.izlendi_mi) {
-      return { metin: "İzlendi", arka: "#f0fdf4", renk: YESIL, kenar: "#bbf7d0" };
-    }
-    const suresi = new Date(c.son_tarih).getTime() < Date.now();
-    if (suresi) {
-      return {
-        metin: "Süresi Doldu",
-        arka: "#fef2f2",
-        renk: BORDO,
-        kenar: "#fecaca",
-      };
-    }
-    return {
-      metin: "Bekliyor",
-      arka: "#fefce8",
-      renk: SARI_TEXT,
-      kenar: "#fde68a",
-    };
-  };
-
   return (
     <div className="flex flex-col gap-2.5">
       {gonderdiklerim.map((c) => {
-        const d = durumBilgisi(c);
         return (
           <div
             key={c.challenge_id}
@@ -564,19 +548,27 @@ function GonderdiklerimListesi({
                 {c.alan?.ad} {c.alan?.soyad}
               </div>
             </div>
-            <div
-              className="px-3 py-1 rounded-full text-[10px] font-medium flex-shrink-0 border"
-              style={{
-                background: d.arka,
-                color: d.renk,
-                borderColor: d.kenar,
-              }}
-            >
-              {d.metin}
-            </div>
+            <ChallengeDurumPili durum={c.durum} />
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function ChallengeDurumPili({ durum }: { durum: Challenge["durum"] }) {
+  const stiller = durum === "izlendi"
+    ? { metin: "İzlendi", arka: "#f0fdf4", renk: YESIL, kenar: "#bbf7d0" }
+    : durum === "suresi_doldu"
+      ? { metin: "Süresi Doldu", arka: "#fef2f2", renk: BORDO, kenar: "#fecaca" }
+      : { metin: "Bekliyor", arka: "#fefce8", renk: SARI_TEXT, kenar: "#fde68a" };
+
+  return (
+    <div
+      className="px-3 py-1 rounded-full text-[10px] font-medium flex-shrink-0 border"
+      style={{ background: stiller.arka, color: stiller.renk, borderColor: stiller.kenar }}
+    >
+      {stiller.metin}
     </div>
   );
 }

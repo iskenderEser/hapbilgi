@@ -55,6 +55,8 @@ export interface ZincirTalebi {
   talep_id: string;
   hazir_video: boolean;
   created_at: string | null;
+  yayin_oncesi_silme_durumu?: "isleniyor" | "tamamlandi" | "hata" | null;
+  yayin_oncesi_silme_tarihi?: string | null;
 }
 
 // Kolonlar açık yazılır (select("*") DEĞİL): denetim aracı yıldızı atlar, açık
@@ -102,6 +104,21 @@ export async function zincirHaritasi(
  * yapılır — durum ikisinde de NULL'dur, ayrımı id verir.
  */
 export function asamaCoz(talep: ZincirTalebi, z: ZincirSatiri): ZincirDurumu {
+  if (talep.yayin_oncesi_silme_durumu) {
+    const kod: DurumKodu = talep.yayin_oncesi_silme_durumu === "tamamlandi"
+      ? "yayin_oncesi_silindi"
+      : talep.yayin_oncesi_silme_durumu === "hata"
+        ? "yayin_silme_hatasi"
+        : "yayin_siliniyor";
+    return {
+      asama: "Tamamlandı",
+      durum_kodu: kod,
+      tarih: talep.yayin_oncesi_silme_tarihi ?? talep.created_at ?? "",
+      yol: "/yayin-yonetimi",
+      iu_id: z.soru_seti_iu_id,
+    };
+  }
+
   let oncekiTarih: string = talep.created_at ?? "";
 
   // ── Senaryo: yalnız normal kol. Hazır video senaryosuz, bu aşamayı atlar. ──

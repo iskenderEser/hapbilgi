@@ -3,28 +3,34 @@ import test from "node:test";
 import {
   TALEP_TURU_KURALLARI,
   TALEP_TURU_SIRA,
+  URETICI_YETENEKLERI,
   isTalepTuru,
   talepTuruAdi,
 } from "@/lib/uretici/yetenekler";
 
-test("eğitim türü sözleşmesi beş kanonik türü doğru sırada tutar", () => {
+test("eğitim türü sözleşmesi altı kanonik türü ve üretici rol yetkilerini doğru tutar", () => {
   assert.deepEqual(TALEP_TURU_SIRA, [
     "urun_egitimi",
     "satis_teknikleri",
+    "yonetim_egitimi",
     "medikal_egitim",
     "urun_medikal_egitim",
     "ik_egitimi",
   ]);
-  assert.equal(new Set(TALEP_TURU_SIRA).size, 5);
+  assert.equal(new Set(TALEP_TURU_SIRA).size, 6);
   assert.ok(TALEP_TURU_SIRA.every((tur) => isTalepTuru(tur)));
+  assert.ok(URETICI_YETENEKLERI.egt_md.acabilecegiTalepTurleri.includes("yonetim_egitimi"));
+  assert.ok(URETICI_YETENEKLERI.ik_md.acabilecegiTalepTurleri.includes("yonetim_egitimi"));
+  assert.equal(URETICI_YETENEKLERI.pm.acabilecegiTalepTurleri.includes("yonetim_egitimi"), false);
 });
 
-test("beş eğitim türü beş ayrı içerik kategorisine ve kullanıcı adına bağlanır", () => {
+test("altı eğitim türü altı ayrı içerik kategorisine ve kullanıcı adına bağlanır", () => {
   const kategoriler = TALEP_TURU_SIRA.map((tur) => TALEP_TURU_KURALLARI[tur].icerikTuru);
   assert.equal(new Set(kategoriler).size, 5);
   assert.deepEqual(TALEP_TURU_SIRA.map(talepTuruAdi), [
     "Ürün Eğitimi",
     "Satış Teknikleri",
+    "Yönetim Eğitimleri",
     "Medikal Eğitim",
     "Ürün-Medikal Eğitim",
     "İK Eğitimi/Bilgilendirme",

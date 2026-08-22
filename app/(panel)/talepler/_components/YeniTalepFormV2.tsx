@@ -14,7 +14,7 @@
 
 import type { useTalepFormu } from "@/app/(panel)/talepler/_hooks/useTalepFormu";
 import { HEDEF_ROL_TASARIM } from "@/app/(panel)/talepler/_types";
-import { ECLUB_HEDEF_ROLLER, TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
+import { ECLUB_HEDEF_ROLLER, hedefRolIkUreticisineAcikMi, TUM_HEDEF_ROLLER } from "@/lib/utils/roller";
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
 import { TALEP_TURU_ALT_ACIKLAMA, TUM_TURLER } from "@/app/(panel)/talepler/_types";
 import { UrunTeknikSecici } from "@/app/(panel)/talepler/_components/UrunTeknikSecici";
@@ -23,6 +23,14 @@ import { HazirSoruSetiBlogu } from "@/app/(panel)/talepler/_components/HazirSoru
 import { VideoYukleme } from "@/app/(panel)/talepler/_components/VideoYukleme";
 import { EkDosyaYukleme } from "@/app/(panel)/talepler/_components/EkDosyaYukleme";
 import { TalepOnayModal } from "@/app/(panel)/talepler/_components/TalepOnayModal";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Progress } from "@/components/ui/progress";
 
 interface Props {
   formu: ReturnType<typeof useTalepFormu>;
@@ -35,7 +43,8 @@ const secimKutusu = (secili: boolean, renk?: string) => ({
 });
 
 export function YeniTalepFormV2({ formu }: Props) {
-  if (!formu.isUretici || !formu.yetenek) return null;
+  const yetenek = formu.yetenek;
+  if (!formu.isUretici || !yetenek) return null;
 
   const formAktif = formu.hedefRoller.length > 0;
   const ucuncuAdimAktif = formAktif && formu.egitimTuruSecildiMi;
@@ -45,10 +54,11 @@ export function YeniTalepFormV2({ formu }: Props) {
   const serbestAdTamam = !formu.serbestAdGoster || !!formu.serbestAd.trim();
   const dorduncuAdimAktif = ucuncuAdimAktif && urunAdimiTamam && teknikAdimiTamam && serbestAdTamam;
   const ikiliHazir = formu.hazirVideo && formu.hazirSoruSeti;
+  const videoIslemModalAcik = formu.videoYuklemeYuzdesi !== null || formu.videoIslemeBekleniyor;
 
   // Eczanem hedefi yalnız ürün müdürü ailesine sunulur (İP-§4.1).
   const hedefRoller = TUM_HEDEF_ROLLER.filter(
-    (r) => r !== "eczanem" || formu.eczanemSecilebilir,
+    (r) => (r !== "eczanem" || formu.eczanemSecilebilir) && hedefRolIkUreticisineAcikMi(formu.rol, r),
   );
 
   return (
@@ -168,16 +178,19 @@ export function YeniTalepFormV2({ formu }: Props) {
               <div className="grid grid-cols-1 gap-2">
                 {TUM_TURLER.map((tur: TalepTuru) => {
                   const secili = formu.egitimTuruSecildiMi && formu.egitimTuru === tur;
+                  const secilebilir = yetenek.acabilecegiTalepTurleri.includes(tur);
                   return (
                     <button
                       type="button"
                       key={tur}
+                      disabled={!secilebilir}
                       onClick={() => formu.handleEgitimTuruDegis(tur)}
                       aria-pressed={secili}
                       className="min-h-[58px] rounded-xl border px-3 py-2 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff] focus-visible:ring-offset-1"
                       style={{
                         ...secimKutusu(secili),
-                        cursor: "pointer",
+                        cursor: secilebilir ? "pointer" : "not-allowed",
+                        opacity: secilebilir ? 1 : 0.42,
                       }}
                       title={TALEP_TURU_ALT_ACIKLAMA[tur]}
                     >
@@ -333,8 +346,8 @@ export function YeniTalepFormV2({ formu }: Props) {
             }}
           >
             {formu.dosyaYukleniyor
-              ? formu.videoYuklemeYuzdesi !== null
-                ? `Video yükleniyor... %${formu.videoYuklemeYuzdesi}`
+              ? formu.hazirVideo
+                ? "Gönderiliyor..."
                 : "Dosyalar yükleniyor..."
               : formu.formLoading
               ? "Gönderiliyor..."
@@ -364,6 +377,31 @@ export function YeniTalepFormV2({ formu }: Props) {
         onEvet={formu.handleOnayEvet}
         onHayir={formu.handleOnayHayir}
       />
+
+      <AlertDialog open={videoIslemModalAcik}>
+        <AlertDialogContent
+          className="max-w-sm border-[#dbe5ef] bg-white text-center"
+          onEscapeKeyDown={(event) => event.preventDefault()}
+        >
+          <AlertDialogHeader className="items-center text-center sm:text-center">
+            <span
+              aria-hidden="true"
+              className="h-9 w-9 animate-spin rounded-full border-[3px] border-[#dcecff] border-t-[#56aeff]"
+            />
+            <AlertDialogTitle className="text-[#203653]">
+              {formu.videoIslemeBekleniyor ? "Video işleniyor" : "Video yükleniyor"}
+            </AlertDialogTitle>
+            <AlertDialogDescription className={formu.videoIslemeBekleniyor ? "sr-only" : "text-[#687b90]"}>
+              {formu.videoIslemeBekleniyor
+                ? "Video işleniyor"
+                : `%${formu.videoYuklemeYuzdesi ?? 0}`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {!formu.videoIslemeBekleniyor && (
+            <Progress value={formu.videoYuklemeYuzdesi ?? 0} className="bg-[#dcecff] [&>div]:bg-[#56aeff]" />
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

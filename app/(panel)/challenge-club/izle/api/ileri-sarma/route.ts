@@ -41,8 +41,6 @@ export async function POST(request: NextRequest) {
       izleme_id,
       atlama_baslangic,
       atlama_bitis,
-      atlanan_sure,
-      video_suresi,
     } = body;
 
     if (!izleme_id) {
@@ -51,31 +49,19 @@ export async function POST(request: NextRequest) {
     if (
       typeof atlama_baslangic !== "number" ||
       typeof atlama_bitis !== "number" ||
-      typeof atlanan_sure !== "number" ||
-      typeof video_suresi !== "number"
+      !Number.isFinite(atlama_baslangic) ||
+      !Number.isFinite(atlama_bitis)
     ) {
       return validasyonHatasi(
-        "atlama_baslangic, atlama_bitis, atlanan_sure ve video_suresi number olmalıdır.",
-        ["atlama_baslangic", "atlama_bitis", "atlanan_sure", "video_suresi"]
-      );
-    }
-    if (atlanan_sure <= 0) {
-      return validasyonHatasi(
-        "atlanan_sure pozitif olmalıdır.",
-        ["atlanan_sure"]
-      );
-    }
-    if (video_suresi <= 0) {
-      return validasyonHatasi(
-        "video_suresi pozitif olmalıdır.",
-        ["video_suresi"]
+        "atlama_baslangic ve atlama_bitis geçerli sayı olmalıdır.",
+        ["atlama_baslangic", "atlama_bitis"]
       );
     }
 
     // 4. İzleme kaydını çek + sahiplik kontrolü
     const { data: izleme, error: izlemeError } = await adminSupabase
       .from("cc_izleme_kayitlari")
-      .select("izleme_id, bm_id, yayin_id")
+      .select("izleme_id, bm_id, yayin_id, tamamlandi_mi, video_suresi_saniye")
       .eq("izleme_id", izleme_id)
       .single();
 
@@ -97,6 +83,17 @@ export async function POST(request: NextRequest) {
     if (izleme.bm_id !== user.id) {
       return rolHatasi("Bu izleme size ait değil.");
     }
+    if (izleme.tamamlandi_mi) {
+      return validasyonHatasi("Tamamlanmış izlemeye ileri sarma kaydı eklenemez.", ["izleme_id"]);
+    }
+
+    const videoSuresi = Number(izleme.video_suresi_saniye ?? 0);
+    const baslangic = Math.round(atlama_baslangic);
+    const bitis = Math.round(atlama_bitis);
+    const atlananSure = bitis - baslangic;
+    if (videoSuresi <= 0 || baslangic < 0 || atlananSure <= 0 || bitis > videoSuresi + 1) {
+      return validasyonHatasi("İleri sarma aralığı video süresiyle uyuşmuyor.", ["atlama_baslangic", "atlama_bitis"]);
+    }
 
     // 5. Yayının video_puani'sını çek (saniye başı puan hesabı için)
     const { data: yayin, error: yayinError } = await adminSupabase
@@ -117,17 +114,17 @@ export async function POST(request: NextRequest) {
     const video_puani = yayin.video_puani ?? 0;
 
     // 6. Kayıp puan hesabı — saniye başı puan × atlanan_sure (yuvarla)
-    const saniyeBasiPuan = video_puani / video_suresi;
-    const kaybedilen_puan = Math.max(1, Math.round(saniyeBasiPuan * atlanan_sure));
+    const saniyeBasiPuan = video_puani / videoSuresi;
+    const kaybedilen_puan = Math.max(1, Math.round(saniyeBasiPuan * atlananSure));
 
     // 7. Kayıp kaydını yaz (lib)
     const kayit = await ileriSarmaKaybiKaydet(adminSupabase, {
       bm_id: user.id,
       yayin_id: izleme.yayin_id,
       izleme_id,
-      atlama_baslangic: Math.round(atlama_baslangic),
-      atlama_bitis: Math.round(atlama_bitis),
-      atlanan_sure: Math.round(atlanan_sure),
+      atlama_baslangic: baslangic,
+      atlama_bitis: bitis,
+      atlanan_sure: atlananSure,
       kaybedilen_puan,
     });
 

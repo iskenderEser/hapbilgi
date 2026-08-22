@@ -7,8 +7,17 @@ import { eczaciAktifEczanesi } from "@/lib/eczanem/eczaci";
 import { hataYaniti, isKuraluHatasi, rolHatasi, sunucuHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
+import { eczaneAktifUyeler, eczaneGelenVideolar, eczaneVideoGonderimOzetleri } from "@/lib/eczanem/gonderim";
 
-const ROZET_ANAHTARI = "eczanem_siparis_bekleyen";
+const SIPARIS_ROZET_ANAHTARI = "eczanem_siparis_bekleyen";
+const VIDEO_ROZET_ANAHTARI = "eczanem_video_gonderilecek";
+
+function bosRozetler() {
+  return {
+    [SIPARIS_ROZET_ANAHTARI]: 0,
+    [VIDEO_ROZET_ANAHTARI]: 0,
+  };
+}
 
 export async function GET() {
   try {
@@ -25,7 +34,7 @@ export async function GET() {
     const eden = await eczaciAktifEczanesi(adminSupabase, user.id);
     if (!eden.ok) return isKuraluHatasi(eden.hata ?? "Eczane bağı bulunamadı.");
     if (!eden.firmaIdler?.length) {
-      return NextResponse.json({ sayilar: { [ROZET_ANAHTARI]: 0 } }, { status: 200 });
+      return NextResponse.json({ sayilar: bosRozetler() }, { status: 200 });
     }
 
     const { data: urunler, error: urunHatasi } = await adminSupabase
@@ -37,21 +46,33 @@ export async function GET() {
     }
 
     const urunIdler = (urunler ?? []).map((urun) => urun.urun_id);
-    if (urunIdler.length === 0) {
-      return NextResponse.json({ sayilar: { [ROZET_ANAHTARI]: 0 } }, { status: 200 });
+    let bekleyenSiparisSayisi = 0;
+    if (urunIdler.length > 0) {
+      const { count, error: sayimHatasi } = await adminSupabase
+        .from("eczanem_siparisler")
+        .select("siparis_id", { count: "exact", head: true })
+        .eq("eczane_id", eden.eczaneId!)
+        .in("urun_id", urunIdler)
+        .eq("durum", "bekliyor");
+      if (sayimHatasi) {
+        return hataYaniti("Bekleyen sipariş rozeti alınamadı.", "eczanem_siparisler COUNT — sipariş rozeti", sayimHatasi);
+      }
+      bekleyenSiparisSayisi = count ?? 0;
     }
 
-    const { count, error: sayimHatasi } = await adminSupabase
-      .from("eczanem_siparisler")
-      .select("siparis_id", { count: "exact", head: true })
-      .eq("eczane_id", eden.eczaneId!)
-      .in("urun_id", urunIdler)
-      .eq("durum", "bekliyor");
-    if (sayimHatasi) {
-      return hataYaniti("Bekleyen sipariş rozeti alınamadı.", "eczanem_siparisler COUNT — sipariş rozeti", sayimHatasi);
-    }
+    const [videolar, aktifUyeler] = await Promise.all([
+      eczaneGelenVideolar(adminSupabase, eden.eczaneId!),
+      eczaneAktifUyeler(adminSupabase, eden.eczaneId!),
+    ]);
+    const videoOzetleri = await eczaneVideoGonderimOzetleri(adminSupabase, eden.eczaneId!, videolar, aktifUyeler);
+    const gonderilecekVideoSayisi = videoOzetleri.filter((ozet) => ozet.gonderilebilir_uye_sayisi > 0).length;
 
-    return NextResponse.json({ sayilar: { [ROZET_ANAHTARI]: count ?? 0 } }, { status: 200 });
+    return NextResponse.json({
+      sayilar: {
+        [SIPARIS_ROZET_ANAHTARI]: bekleyenSiparisSayisi,
+        [VIDEO_ROZET_ANAHTARI]: gonderilecekVideoSayisi,
+      },
+    }, { status: 200 });
   } catch (err) {
     return sunucuHatasi(err, "GET /eczanem/eczane/api/rozet");
   }

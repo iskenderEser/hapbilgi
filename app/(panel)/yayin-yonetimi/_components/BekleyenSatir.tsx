@@ -43,6 +43,7 @@ interface BekleyenSatirProps {
   hepsineAyniPuanAta: (soru_seti_durum_id: string, sorular: any[], puan: number) => void;
   onVideoAc: (url: string) => void;
   onYayinlaClick: (b: Bekleyen) => void;
+  onYayinSilClick: (b: Bekleyen) => void;
 }
 
 export function BekleyenSatir({
@@ -53,9 +54,12 @@ export function BekleyenSatir({
   yayinGunleri, setYayinGunleri,
   tumPuanlarAtandiMi,
   getSoruPuani, setSoruPuani, hepsineAyniPuanAta,
-  onVideoAc, onYayinlaClick,
+  onVideoAc, onYayinlaClick, onYayinSilClick,
 }: BekleyenSatirProps) {
-  const hazir = tumPuanlarAtandiMi(b);
+  const silmeDevamEdiyor = b.yayin_oncesi_silme_durumu === "isleniyor";
+  const silmeHatali = b.yayin_oncesi_silme_durumu === "hata";
+  const silmeBaslatilmis = silmeDevamEdiyor || silmeHatali;
+  const hazir = !silmeBaslatilmis && tumPuanlarAtandiMi(b);
   const secilenGun = yayinGunleri[b.soru_seti_durum_id] ?? "";
   const bugun = new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD (yerel)
   // Eczanem yayınında extra puan / tekrar periyodu / ileri sarma YOKTUR (İP §4.4);
@@ -78,25 +82,23 @@ export function BekleyenSatir({
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-1.5">
             <HedefRolPilleri hedefRoller={b.hedef_roller} />
-            <span className="rounded-full border border-[#fed7cc] bg-[#fff7ed] px-2 py-0.5 text-[10px] font-extrabold text-[#c2410c]">Yayın kararı bekliyor</span>
+            <span className={`rounded-full border px-2 py-0.5 text-[10px] font-extrabold ${silmeHatali ? "border-red-200 bg-red-50 text-red-700" : silmeDevamEdiyor ? "border-gray-200 bg-gray-50 text-gray-600" : "border-[#fed7cc] bg-[#fff7ed] text-[#c2410c]"}`}>
+              {silmeHatali ? "Silme tamamlanamadı" : silmeDevamEdiyor ? "Yayın siliniyor" : "Yayın kararı bekliyor"}
+            </span>
           </div>
         </div>
       </div>
 
       <div className="border-t border-[#e8eef5] bg-[#fafcfe] px-3.5 py-3.5 lg:border-l lg:border-t-0 lg:px-4">
-        <div className="mb-3">
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#7189a7]">Yayın ayarları</p>
-          <p className="mt-0.5 text-[11px] text-[#8796aa]">Puanları tamamlayın; tekrar ve yayın zamanı isteğe bağlıdır.</p>
-        </div>
+        <p className="mb-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#7189a7]">Yayın Ayarları</p>
         {(() => {
           const soruBtn = b.sorular?.length > 0 ? (
-            <div className="grid grid-rows-[18px_36px] gap-2">
-              <span aria-hidden="true" />
+            <div>
               <button type="button" aria-expanded={acikAkordiyon === b.soru_seti_durum_id}
                 onClick={() => setAcikAkordiyon(acikAkordiyon === b.soru_seti_durum_id ? null : b.soru_seti_durum_id)}
-                className="flex h-9 shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap rounded-xl border border-[#dbe5ef] bg-white px-3 text-xs font-bold text-[#536984]"
+                className="flex h-9 min-h-9 max-h-9 w-full shrink-0 box-border cursor-pointer items-center justify-between gap-1 whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3 text-left text-xs font-normal text-[#9aa7b7]"
                 style={{ fontFamily: "'Nunito', sans-serif" }}>
-                Sorulara Puan Veriniz
+                Cevap Puanlarını Girin
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
                   style={{ transform: acikAkordiyon === b.soru_seti_durum_id ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
                   <path d="M6 9l6 6 6-6" />
@@ -107,23 +109,29 @@ export function BekleyenSatir({
 
           // Eczanem yayınları farklı video puanı skalası kullanır; diğer dallar mevcut listeyi.
           const videoPuanSecenekleri = eczanem ? VIDEO_PUAN_SECENEKLERI_ECZANEM : VIDEO_PUAN_SECENEKLERI;
+          const seciliVideoPuani = videoPuanlari[b.soru_seti_durum_id] ?? b.video_puani ?? "";
           const videoPuaniAlani = (
-            <div className="grid grid-rows-[18px_36px] gap-2">
-              <span className="block text-xs font-bold leading-[18px] text-[#566b87]">Video puanı</span>
-              <select value={videoPuanlari[b.soru_seti_durum_id] ?? b.video_puani ?? ""}
+            <div>
+              <select value={seciliVideoPuani}
                 onChange={(e) => setVideoPuanlari(prev => ({ ...prev, [b.soru_seti_durum_id]: Number(e.target.value) }))}
                 aria-label={`${b.urun_adi} video puanı`}
-                className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900"
+                className={`h-9 min-h-9 max-h-9 w-full box-border rounded-lg border border-gray-200 bg-white px-2 text-xs ${typeof seciliVideoPuani === "number" ? "text-gray-900" : "text-[#9aa7b7]"}`}
                 style={{ fontFamily: "'Nunito', sans-serif" }}>
-                <option value="">Seçiniz</option>
+                <option value="" className="text-[#9aa7b7]">Video Puanını Seçin</option>
                 {videoPuanSecenekleri.map(p => <option key={p} value={p}>{p} puan</option>)}
               </select>
             </div>
           );
 
           const yayinGunuAlani = (
-            <div className="grid min-w-0 grid-rows-[18px_36px] gap-2">
-              <span className="block whitespace-nowrap text-xs font-bold leading-[18px] text-[#566b87]">Yayın günü <span className="font-normal text-[#9aa7b7]">(boş = hemen)</span></span>
+            <div className="relative h-9 min-h-9 max-h-9 min-w-0 box-border rounded-lg border border-gray-200 bg-white focus-within:border-[#56aeff]">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-xs text-[#9aa7b7]">
+                {secilenGun ? new Date(`${secilenGun}T00:00:00`).toLocaleDateString("tr-TR") : "Bugün"}
+              </span>
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7e8fa5]">
+                <path d="M6 3v3M18 3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z" />
+              </svg>
               <input type="date" value={secilenGun} min={bugun}
                 onChange={(e) => {
                   const deger = e.target.value;
@@ -135,7 +143,7 @@ export function BekleyenSatir({
                   });
                 }}
                 aria-label={`${b.urun_adi} yayın günü`}
-                className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900"
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                 style={{ fontFamily: "'Nunito', sans-serif" }} />
             </div>
           );
@@ -148,35 +156,39 @@ export function BekleyenSatir({
             </button>
           );
 
-          const yayinGunuVeYayinla = (
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-              {yayinGunuAlani}
-              {yayinlaButonu}
-            </div>
+          const silButonu = (
+            <button type="button" onClick={() => onYayinSilClick(b)}
+              disabled={islemLoading === b.soru_seti_durum_id}
+              className="h-9 shrink-0 rounded-xl border border-red-200 bg-white px-3 text-xs font-extrabold text-red-700 disabled:cursor-not-allowed disabled:opacity-50">
+              {islemLoading === b.soru_seti_durum_id
+                ? "..."
+                : silmeHatali
+                  ? "Silmeyi Yeniden Dene"
+                  : silmeDevamEdiyor
+                    ? "Silmeyi Yeniden Dene"
+                    : "Yayını Sil"}
+            </button>
           );
 
-          // Eczanem: iki satır — 1) puanlama/video/gün kompakt yan yana,
-          //                       2) barkod + puan karşılığı, sonda Yayınla.
+          // Eczanem: puanlama alanları, barkod/karşılık ve alt işlem satırı.
           if (eczanem) {
             return (
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-                  {soruBtn}
-                  <div className="w-full sm:w-36">{videoPuaniAlani}</div>
-                  <div className="w-full sm:w-40">{yayinGunuAlani}</div>
+                  <div className="w-[180px]">{soruBtn}</div>
+                  <div className="w-[180px]">{videoPuaniAlani}</div>
+                  <div className="w-[180px]">{yayinGunuAlani}</div>
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-                  <div className="grid w-full grid-rows-[18px_36px] gap-2 sm:w-44">
-                    <span className="block text-xs font-bold leading-[18px] text-[#566b87]">Barkod <span className="text-red-500">*</span></span>
+                  <div className="w-[180px]">
                     <input type="text" inputMode="numeric" value={barkodlar[b.soru_seti_durum_id] ?? ""}
                       onChange={(e) => setBarkodlar(prev => ({ ...prev, [b.soru_seti_durum_id]: e.target.value }))}
                       placeholder="Barkod"
                       aria-label={`${b.urun_adi} barkodu`}
-                      className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900"
+                      className="h-9 min-h-9 max-h-9 w-full box-border rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900"
                       style={{ fontFamily: "'Nunito', sans-serif" }} />
                   </div>
-                  <div className="grid w-full grid-rows-[18px_36px] gap-2 sm:w-56">
-                    <span className="block text-xs font-bold leading-[18px] text-[#566b87]">Puan karşılığı <span className="text-red-500">*</span></span>
+                  <div>
                     <div className="flex h-9 items-center gap-1">
                       <input type="number" min={1} value={karsilikPuanlar[b.soru_seti_durum_id] ?? ""}
                         onChange={(e) => {
@@ -188,9 +200,9 @@ export function BekleyenSatir({
                             return yeni;
                           });
                         }}
-                        placeholder="puan"
+                        placeholder="Puan"
                         aria-label="Karşılık puanı"
-                        className="h-9 min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        className="h-9 min-h-9 max-h-9 w-[180px] flex-none box-border rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         style={{ fontFamily: "'Nunito', sans-serif" }} />
                       <span className="text-xs text-gray-400">=</span>
                       <input type="number" min={0} step="0.01" value={karsilikTllar[b.soru_seti_durum_id] ?? ""}
@@ -205,37 +217,37 @@ export function BekleyenSatir({
                         }}
                         placeholder="TL"
                         aria-label="Türk lirası karşılığı"
-                        className="h-9 min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900"
+                        className="h-9 min-h-9 max-h-9 w-[180px] flex-none box-border rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900"
                         style={{ fontFamily: "'Nunito', sans-serif" }} />
-                      <span className="text-xs text-gray-400">TL</span>
                     </div>
                   </div>
-                  <div className="sm:ml-auto">{yayinlaButonu}</div>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  {silButonu}
+                  {yayinlaButonu}
                 </div>
               </div>
             );
           }
 
-          // E-Club / normal: mevcut tek satır grid düzeni (değişmedi).
+          // E-Club / normal: alan sırası korunur; işlemler alt satırdadır.
           return (
             <div className={`grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 ${eclub ? "xl:grid-cols-[auto_repeat(2,minmax(0,1fr))_minmax(280px,1.35fr)]" : "xl:grid-cols-[auto_repeat(3,minmax(0,1fr))_minmax(280px,1.35fr)]"}`}>
               {soruBtn}
               {videoPuaniAlani}
               {!eclub && (
-                <div className="grid grid-rows-[18px_36px] gap-2">
-                  <span className="block text-xs font-bold leading-[18px] text-[#566b87]">Extra puan</span>
+                <div>
                   <select value={extraPuanlar[b.soru_seti_durum_id] ?? ""}
                     onChange={(e) => setExtraPuanlar(prev => ({ ...prev, [b.soru_seti_durum_id]: Number(e.target.value) }))}
                     aria-label={`${b.urun_adi} extra puanı`}
                     className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900"
                     style={{ fontFamily: "'Nunito', sans-serif" }}>
-                    <option value="">Seçiniz</option>
+                    <option value="">Extra Puanı Seçin</option>
                     {EXTRA_PUAN_SECENEKLERI.map(p => <option key={p} value={p}>{p} puan</option>)}
                   </select>
                 </div>
               )}
-              <div className="grid grid-rows-[18px_36px] gap-2">
-                <span className="block text-xs font-bold leading-[18px] text-[#566b87]">Tekrar periyodu</span>
+              <div>
                 <select value={tekrarPeriyotlari[b.soru_seti_durum_id] ?? ""}
                   onChange={(e) => {
                     const deger = e.target.value;
@@ -253,7 +265,11 @@ export function BekleyenSatir({
                   {tekrarSecenekleri.map(g => <option key={g} value={g}>{g} gün</option>)}
                 </select>
               </div>
-              {yayinGunuVeYayinla}
+              {yayinGunuAlani}
+              <div className="flex items-center justify-between gap-3 sm:col-span-2 xl:col-span-full">
+                {silButonu}
+                {yayinlaButonu}
+              </div>
             </div>
           );
         })()}

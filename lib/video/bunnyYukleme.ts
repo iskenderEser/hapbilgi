@@ -115,6 +115,11 @@ export function bunnyVideoSuresiCoz(video: unknown): number | null {
   return length;
 }
 
+/** Yayın/üretim kapısının tek hazır olma sözleşmesi: Ready durum + pozitif süre. */
+export function bunnyVideoKullanimaHazirMi(bunnyDurum: number, videoSuresiSaniye: number | null): boolean {
+  return bunnyDurum === 4 && videoSuresiSaniye != null && videoSuresiSaniye > 0;
+}
+
 /** A3: videonun Bunny tarafındaki işlenme durumu (kart açılışında sorgulanır, polling yok). */
 export async function bunnyVideoDurumu(videoGuid: string): Promise<BunnyVideoDurum | BunnyHata> {
   const ortam = ortamDegerleri();
@@ -134,12 +139,13 @@ export async function bunnyVideoDurumu(videoGuid: string): Promise<BunnyVideoDur
   }
   const video = await yanit.json();
   const durum = typeof video?.status === "number" ? video.status : -1;
+  const videoSuresiSaniye = bunnyVideoSuresiCoz(video);
   return {
     ok: true,
-    hazir: durum === 4,
+    hazir: bunnyVideoKullanimaHazirMi(durum, videoSuresiSaniye),
     hatali: durum === 5 || durum === 6,
     bunnyDurum: durum,
-    videoSuresiSaniye: bunnyVideoSuresiCoz(video),
+    videoSuresiSaniye,
   };
 }
 
@@ -152,7 +158,9 @@ export async function bunnyVideoSil(videoGuid: string): Promise<boolean> {
       method: "DELETE",
       headers: { AccessKey: ortam.apiKey },
     });
-    return yanit.ok;
+    // Aynı silme, dış sistem başarılı olup DB yanıtı kaybolduğunda yeniden
+    // denenebilir. Bunny'de artık bulunmayan video bu nedenle başarıdır.
+    return yanit.ok || yanit.status === 404;
   } catch {
     return false;
   }

@@ -1,7 +1,7 @@
 {
-  "uretim_tarihi": "2026-08-21T15:23:06.643Z",
+  "uretim_tarihi": "2026-08-22T11:16:41.362Z",
   "tablo_sayisi": 112,
-  "rpc_sayisi": 120,
+  "rpc_sayisi": 128,
   "tablolar": {
     "bildirimler": {
       "tur": "BASE TABLE",
@@ -151,6 +151,18 @@
         },
         "created_at": {
           "tip": "timestamp with time zone",
+          "nullable": false
+        },
+        "video_suresi_saniye": {
+          "tip": "integer",
+          "nullable": true
+        },
+        "soru_indeksleri": {
+          "tip": "ARRAY",
+          "nullable": true
+        },
+        "cevaplandi_mi": {
+          "tip": "boolean",
           "nullable": false
         }
       }
@@ -3019,6 +3031,22 @@
         "talep_no_goster": {
           "tip": "text",
           "nullable": true
+        },
+        "yayin_oncesi_silme_durumu": {
+          "tip": "text",
+          "nullable": true
+        },
+        "yayin_oncesi_silme_anahtari": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "yayin_oncesi_silen_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "yayin_oncesi_silme_tarihi": {
+          "tip": "timestamp with time zone",
+          "nullable": true
         }
       }
     },
@@ -4685,6 +4713,22 @@
       "argumanlar": "p_bas date, p_bit date",
       "donus": "TABLE(kullanici_id uuid, rol text, izleme_puani integer, cevaplama_puani integer, oneri_puani integer, extra_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, oneri_kaybi integer, toplam_puan integer, ad text, soyad text, eposta text, firma_id uuid, firma_adi text, takim_id uuid, takim_adi text, bolge_id uuid, bolge_adi text, firma_sirasi bigint, bolge_sirasi bigint, takim_sirasi bigint)"
     },
+    "cc_cevaplari_kaydet": {
+      "argumanlar": "p_izleme_id uuid, p_bm_id uuid, p_cevaplar jsonb",
+      "donus": "TABLE(toplam_kazanim integer, toplam_kayip integer, referral_yazildi boolean, referral_gonderen_id uuid, referral_puani integer)"
+    },
+    "cc_challenge_gonder": {
+      "argumanlar": "p_gonderen_id uuid, p_alan_id uuid, p_yayin_id uuid, p_son_tarih timestamp with time zone",
+      "donus": "TABLE(challenge_id uuid, gonderme_puani integer)"
+    },
+    "cc_challenge_tamamlaninca_bildirim_kapat": {
+      "argumanlar": "",
+      "donus": "trigger"
+    },
+    "cc_izleme_tamamla": {
+      "argumanlar": "p_izleme_id uuid, p_bm_id uuid, p_soru_indeksleri integer[], p_extra_alt_sinir timestamp with time zone",
+      "donus": "TABLE(yeni_tamamlandi boolean, kazanilan_puan integer, soru_gosterilecek boolean, ileri_sarildi boolean, izleme_turu text)"
+    },
     "cc_ligi_ozet_guncelle": {
       "argumanlar": "",
       "donus": "trigger"
@@ -5153,6 +5197,22 @@
       "argumanlar": "p_izleme_id uuid, p_kullanici_id uuid, p_soru_hakki_var_mi boolean, p_soru_hakki_nedeni text, p_soru_indeksleri integer[]",
       "donus": "TABLE(izleme_id uuid, tamamlandi_mi boolean, yeni_tamamlandi boolean, soru_hakki_var_mi boolean, soru_hakki_nedeni text, soru_indeksleri integer[], izleme_bitis timestamp with time zone)"
     },
+    "yayin_oncesi_silme_baslat": {
+      "argumanlar": "p_soru_seti_durum_id uuid, p_uretici_id uuid, p_islem_anahtari uuid",
+      "donus": "jsonb"
+    },
+    "yayin_oncesi_silme_hata": {
+      "argumanlar": "p_talep_id uuid, p_uretici_id uuid, p_islem_anahtari uuid",
+      "donus": "void"
+    },
+    "yayin_oncesi_silme_tamamla": {
+      "argumanlar": "p_talep_id uuid, p_soru_seti_durum_id uuid, p_uretici_id uuid, p_islem_anahtari uuid",
+      "donus": "jsonb"
+    },
+    "yayin_oncesi_silme_yayin_kapisi": {
+      "argumanlar": "",
+      "donus": "trigger"
+    },
     "yayin_planlananlari_aktive": {
       "argumanlar": "p_yayin_id uuid",
       "donus": "integer"
@@ -5161,12 +5221,12 @@
   "fk": {
     "bildirimler": [
       {
-        "kaynak_kolon": "alici_id",
+        "kaynak_kolon": "gonderen_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "gonderen_id",
+        "kaynak_kolon": "alici_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
@@ -5292,12 +5352,12 @@
     ],
     "challenge_kayitlari": [
       {
-        "kaynak_kolon": "alan_id",
+        "kaynak_kolon": "gonderen_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "gonderen_id",
+        "kaynak_kolon": "alan_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
@@ -5720,17 +5780,17 @@
     ],
     "iu_genel_atamalari": [
       {
-        "kaynak_kolon": "atayan_id",
-        "hedef_tablo": "kullanicilar",
-        "hedef_kolon": "kullanici_id"
-      },
-      {
         "kaynak_kolon": "pasife_alan_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
         "kaynak_kolon": "iu_id",
+        "hedef_tablo": "kullanicilar",
+        "hedef_kolon": "kullanici_id"
+      },
+      {
+        "kaynak_kolon": "atayan_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       }
@@ -5742,12 +5802,12 @@
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "pasife_alan_id",
+        "kaynak_kolon": "iu_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "iu_id",
+        "kaynak_kolon": "pasife_alan_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
@@ -5998,6 +6058,11 @@
         "hedef_kolon": "firma_id"
       },
       {
+        "kaynak_kolon": "yayin_oncesi_silen_id",
+        "hedef_tablo": "kullanicilar",
+        "hedef_kolon": "kullanici_id"
+      },
+      {
         "kaynak_kolon": "uretici_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
@@ -6049,12 +6114,12 @@
     ],
     "uretim_gorevleri": [
       {
-        "kaynak_kolon": "atayan_id",
+        "kaynak_kolon": "atanan_iu_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "atanan_iu_id",
+        "kaynak_kolon": "atayan_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },

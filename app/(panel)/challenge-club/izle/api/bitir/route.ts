@@ -16,12 +16,10 @@ import {
   validasyonHatasi,
   isKuraluHatasi,
 } from "@/lib/utils/hataIsle";
-import { izlemeTamamla } from "@/lib/cc/izleme/bitir";
-import { izlemePuaniKaydet, extraPuaniKaydet } from "@/lib/cc/puan/kazanim";
-import { extraPuanHakEdildiMi } from "@/lib/cc/izleme/extraKontrol";
 import { gecerliTur } from "@/lib/tur/kayit";
 import { ayBaslangici } from "@/lib/zaman/kontrol";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { sabitSoruIndeksleri } from "@/lib/soru/secim";
 
 export async function PUT(request: NextRequest) {
   try {
@@ -41,22 +39,16 @@ export async function PUT(request: NextRequest) {
 
     // 3. Body parametreleri
     const body = await request.json();
-    const { izleme_id, ileri_sarildi_mi } = body;
+    const { izleme_id } = body;
 
     if (!izleme_id) {
       return validasyonHatasi("izleme_id zorunludur.", ["izleme_id"]);
-    }
-    if (typeof ileri_sarildi_mi !== "boolean") {
-      return validasyonHatasi(
-        "ileri_sarildi_mi boolean olmalıdır.",
-        ["ileri_sarildi_mi"]
-      );
     }
 
     // 4. İzleme kaydını çek + sahiplik kontrolü
     const { data: izleme, error: izlemeError } = await adminSupabase
       .from("cc_izleme_kayitlari")
-      .select("izleme_id, bm_id, yayin_id, izleme_turu, tamamlandi_mi")
+      .select("izleme_id, bm_id, yayin_id, izleme_turu, tamamlandi_mi, ileri_sarildi_mi, soru_indeksleri, cevaplandi_mi")
       .eq("izleme_id", izleme_id)
       .single();
 
@@ -79,138 +71,65 @@ export async function PUT(request: NextRequest) {
       return rolHatasi("Bu izleme size ait değil.");
     }
 
-    if (izleme.tamamlandi_mi) {
-      return isKuraluHatasi("Bu izleme zaten tamamlanmış.");
-    }
-
-    // 5. İzlemeyi tamamla (lib)
-    const tamamlaSonuc = await izlemeTamamla(adminSupabase, {
-      izleme_id,
-      ileri_sarildi_mi,
-    });
-
-    if (!tamamlaSonuc.ok) {
-      return hataYaniti(
-        tamamlaSonuc.error ?? "İzleme tamamlanamadı.",
-        "lib/cc/izleme/bitir — izlemeTamamla",
-        null
-      );
-    }
-
-    // 6. Puan yazma — ileri sarılmamışsa
-    let kazanilan_puan = 0;
-    let soru_gosterilecek = false;
-
-    if (!ileri_sarildi_mi) {
-      // video_puani v_yayin_detay view'ından (orada hesaplanır).
-      const { data: yayin, error: yayinError } = await adminSupabase
+    // Sorular yalnız ilk izleme/challenge ve ileri sarılmamış oturumlarda sabitlenir.
+    let soruIndeksleri = Array.isArray(izleme.soru_indeksleri)
+      ? izleme.soru_indeksleri as number[]
+      : [];
+    if (!izleme.tamamlandi_mi && !izleme.ileri_sarildi_mi
+        && ["kendi_izleme", "challenge"].includes(izleme.izleme_turu)) {
+      const { data: yayinDetay, error: detayError } = await adminSupabase
         .from("v_yayin_detay")
-        .select("video_puani")
+        .select("sorular, video_basi_soru_sayisi")
         .eq("yayin_id", izleme.yayin_id)
         .single();
-
-      if (yayinError || !yayin) {
-        return hataYaniti(
-          "Yayın puanları çekilemedi.",
-          "v_yayin_detay SELECT — video_puani",
-          yayinError,
-          404
-        );
+      if (detayError || !yayinDetay || !Array.isArray(yayinDetay.sorular)) {
+        return hataYaniti("Yayın soruları alınamadı.", "v_yayin_detay SELECT — CC soru seçimi", detayError, 404);
       }
-
-      // extra_puan üreticinin yayın anında yazdığı değerdir; kaynak tablosu
-      // yayin_yonetimi'dir (v_yayin_detay bu alanı içermez). UTT bitir akışıyla
-      // aynı desen: puan kaynağı doğrudan yayin_yonetimi.
-      const { data: yayinYonetimi, error: yyError } = await adminSupabase
-        .from("yayin_yonetimi")
-        .select("extra_puan")
-        .eq("yayin_id", izleme.yayin_id)
-        .single();
-
-      if (yyError || !yayinYonetimi) {
-        return hataYaniti(
-          "Yayın extra puanı çekilemedi.",
-          "yayin_yonetimi SELECT — extra_puan",
-          yyError,
-          404
-        );
+      const soruSayisi = Math.max(0, Number(yayinDetay.video_basi_soru_sayisi ?? 2));
+      if (yayinDetay.sorular.length < soruSayisi) {
+        return isKuraluHatasi(`Soru setinde yeterli soru yok. Gerekli: ${soruSayisi}, mevcut: ${yayinDetay.sorular.length}`);
       }
-
-      // İzleme türüne göre puan yaz
-      if (izleme.izleme_turu === "kendi_izleme") {
-        const puan = yayin.video_puani ?? 0;
-        if (puan > 0) {
-          const kayit = await izlemePuaniKaydet(adminSupabase, {
-            bm_id: user.id,
-            yayin_id: izleme.yayin_id,
-            izleme_id,
-            puan,
-          });
-          if (!kayit.ok) {
-            return hataYaniti(
-              kayit.error ?? "İzleme puanı yazılamadı.",
-              "lib/cc/puan/kazanim — izlemePuaniKaydet",
-              null
-            );
-          }
-          kazanilan_puan = puan;
-        }
-        // Sorular gösterilecek (ileri sarılmamış kendi_izleme)
-        soru_gosterilecek = true;
-      } else if (izleme.izleme_turu === "extra") {
-        // Extra hak kontrolü — alt sınır: max(ay başı, geçerli tur başı).
-        // Kural: takvim ayı içinde 2. tam tekrarın sonunda TEK extra;
-        // 1. tekrarda henüz yok, 3.+ tekrarlarda artık yok (sayı === eşik).
-        // Tur çözülemezse güvenli geri düşüş: yalnızca ay başı sınırı.
-        const turSonuc = await gecerliTur(adminSupabase, izleme.yayin_id);
-        if (!turSonuc.ok) {
-          console.error("[UYARI] Geçerli tur çözülemedi, yalnızca ay sınırı uygulanacak:", {
-            yayin_id: izleme.yayin_id,
-            hata: turSonuc.error,
-          });
-        }
-        const ayBasi = ayBaslangici();
-        const turBasi = new Date(turSonuc.tur?.baslangic_tarihi ?? "2000-01-01T00:00:00Z");
-        const altSinir = new Date(Math.max(ayBasi.getTime(), turBasi.getTime()));
-
-        const hak = await extraPuanHakEdildiMi(
-          adminSupabase,
-          user.id,
-          izleme.yayin_id,
-          altSinir.toISOString()
-        );
-
-        if (hak.hak_edildi) {
-          const puan = yayinYonetimi.extra_puan ?? 0;
-          if (puan > 0) {
-            const kayit = await extraPuaniKaydet(adminSupabase, {
-              bm_id: user.id,
-              yayin_id: izleme.yayin_id,
-              izleme_id,
-              puan,
-            });
-            if (!kayit.ok) {
-              return hataYaniti(
-                kayit.error ?? "Extra puan yazılamadı.",
-                "lib/cc/puan/kazanim — extraPuaniKaydet",
-                null
-              );
-            }
-            kazanilan_puan = puan;
-          }
-        }
-        // Extra izlemede soru gösterilmez
-        soru_gosterilecek = false;
-      }
+      soruIndeksleri = sabitSoruIndeksleri(yayinDetay.sorular.length, soruSayisi, izleme_id);
     }
+
+    const turSonuc = await gecerliTur(adminSupabase, izleme.yayin_id);
+    if (!turSonuc.ok) {
+      console.error("[UYARI] Geçerli tur çözülemedi, yalnızca ay sınırı uygulanacak:", {
+        yayin_id: izleme.yayin_id,
+        hata: turSonuc.error,
+      });
+    }
+    const ayBasi = ayBaslangici();
+    const turBasi = new Date(turSonuc.tur?.baslangic_tarihi ?? "2000-01-01T00:00:00Z");
+    const altSinir = new Date(Math.max(ayBasi.getTime(), turBasi.getTime()));
+
+    const { data: tamamlamaSatirlari, error: tamamlamaError } = await adminSupabase.rpc("cc_izleme_tamamla", {
+      p_izleme_id: izleme_id,
+      p_bm_id: user.id,
+      p_soru_indeksleri: soruIndeksleri,
+      p_extra_alt_sinir: altSinir.toISOString(),
+    });
+    if (tamamlamaError?.code === "P0001" || tamamlamaError?.code === "22023") {
+      return isKuraluHatasi(tamamlamaError.message);
+    }
+    if (tamamlamaError) {
+      return hataYaniti("İzleme tamamlanamadı.", "cc_izleme_tamamla RPC", tamamlamaError);
+    }
+    const tamamlama = (tamamlamaSatirlari?.[0] ?? null) as {
+      kazanilan_puan: number;
+      soru_gosterilecek: boolean;
+      ileri_sarildi: boolean;
+      izleme_turu: string;
+    } | null;
+    if (!tamamlama) return hataYaniti("İzleme tamamlandı ancak sonuç alınamadı.", "cc_izleme_tamamla RPC", null);
 
     return NextResponse.json(
       {
         mesaj: "CC izleme tamamlandı.",
-        kazanilan_puan,
-        soru_gosterilecek,
-        ileri_sarildi: ileri_sarildi_mi,
-        izleme_turu: izleme.izleme_turu,
+        kazanilan_puan: tamamlama.kazanilan_puan,
+        soru_gosterilecek: tamamlama.soru_gosterilecek,
+        ileri_sarildi: tamamlama.ileri_sarildi,
+        izleme_turu: tamamlama.izleme_turu,
       },
       { status: 200 }
     );

@@ -36,6 +36,10 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import { URETICI_ROLLER, ECZANEM_TALEP_ACAN_ROLLER, ECLUB_HEDEF_ROLLER } from "@/lib/utils/roller";
 import { guvenliDosyaAdi } from "@/lib/utils/guvenliDosyaAdi";
 import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
+import { SORGU_ARALIGI_MS, TAVAN_SANIYE } from "@/lib/video/islemeDurumu";
+import { bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
+
+type VideoYuklemeSonucu = "tamamlandi" | "isleniyor" | "basarisiz";
 
 export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
   const router = useRouter();
@@ -197,6 +201,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
   // Form handler'ları
   // ============================================================================
   const handleEgitimTuruDegis = useCallback((tur: TalepTuru) => {
+    if (!yetenek?.acabilecegiTalepTurleri.includes(tur)) return;
     const kural = TALEP_TURU_KURALLARI[tur];
     setEgitimTuru(tur);
     setEgitimTuruSecildiMi(true);
@@ -204,7 +209,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     if (kural.teknik === "yok") setSeciliTeknikId("");
     // Serbest ad yalnız ürün+teknik yoksa anlamlı; değilse temizle (submit'e sızmasın).
     if (!(kural.urun === "yok" && kural.teknik === "yok")) setSerbestAd("");
-  }, []);
+  }, [yetenek]);
 
   const toggleHazirVideo = useCallback(() => {
     setHazirVideo((prev) => !prev);
@@ -329,6 +334,10 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
       hata("İçerik türü seçimi zorunludur.", "form kontrolü", undefined);
       return false;
     }
+    if (!yetenek?.acabilecegiTalepTurleri.includes(egitimTuru)) {
+      hata("Bu içerik türünü oluşturma yetkiniz bulunmuyor.", "form kontrolü", undefined);
+      return false;
+    }
     if (turKurali.urun === "zorunlu" && !seciliUrunId) {
       hata("Ürün seçimi zorunludur.", "form kontrolü", undefined);
       return false;
@@ -373,6 +382,8 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
   }, [
     hedefRol,
     egitimTuruSecildiMi,
+    egitimTuru,
+    yetenek,
     eclubHedef,
     eczanemHedef,
     turKurali,
@@ -440,13 +451,16 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
 
   // A4 — hazır video Supabase storage'a hiç girmez: (1) vezneden izin (kimlik +
   // sıra kontrolü, kaydı sistem açar), (2) dosya tarayıcıdan DOĞRUDAN Bunny'ye
-  // TUS ile, (3) kanonik embed adresini sistem yazar. IU'nun indir-yükle adımı kalktı.
+  // TUS ile, (3) kanonik embed adresi talebe bağlanır, Bunny hazır olana kadar
+  // beklenir. Yalnız Ready + pozitif süre doğrulanınca üretim zinciri açılır.
   const [videoYuklemeYuzdesi, setVideoYuklemeYuzdesi] = useState<number | null>(null);
+  const [videoIslemeBekleniyor, setVideoIslemeBekleniyor] = useState(false);
 
   const uploadVideo = useCallback(
-    async (talep_id: string): Promise<boolean> => {
-      if (!bekleyenVideo) return true;
+    async (talep_id: string): Promise<VideoYuklemeSonucu> => {
+      if (!bekleyenVideo) return "tamamlandi";
       setDosyaYukleniyor(true);
+      setVideoYuklemeYuzdesi(0);
       try {
         // 1) Vezne: izin + Bunny kaydı + süreli imza
         const res = await fetch("/talepler/api/bunny-yukleme-baslat", {
@@ -457,7 +471,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
         const d = await res.json();
         if (!res.ok) {
           hata(d.hata ?? "Video yüklemesi başlatılamadı.", d.adim, d.detay);
-          return false;
+          return "basarisiz";
         }
 
         // 2) Doğrudan Bunny'ye — dosya bizim sunucuya uğramaz
@@ -471,27 +485,35 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ video_guid: d.video_guid }),
           }).catch(() => {});
-          return false;
+          return "basarisiz";
         }
 
-        // 3) Kanonik embed adresini sistem yazar (adres vezneden geldi, istemci URL kurmaz)
-        const res2 = await fetch("/uretim/api/hazir-video", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ talep_id, video_url: d.embed_url, islem_anahtari: crypto.randomUUID() }),
-        });
-        const d2 = await res2.json();
-        if (!res2.ok) {
-          hata(d2.hata ?? "Video adresi kaydedilemedi.", d2.adim, d2.detay);
-          await fetch("/videolar/api/bunny-yukleme-iptal", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ video_guid: d.video_guid }),
-          }).catch(() => undefined);
-          return false;
+        // 3) Sunucu Bunny'yi otoritatif olarak doğrular. Processing yanıtında aynı
+        // idempotent anahtarla sınırlı polling yapılır; tarayıcı kapanırsa webhook
+        // talebe bağlanan URL üzerinden zinciri tamamlar.
+        setVideoIslemeBekleniyor(true);
+        const baslangic = Date.now();
+        while (Date.now() - baslangic < TAVAN_SANIYE * 1000) {
+          try {
+            const res2 = await fetch("/uretim/api/hazir-video", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ talep_id, video_url: d.embed_url, islem_anahtari: d.video_guid }),
+            });
+            const d2 = await res2.json();
+            if (res2.ok && res2.status !== 202) return "tamamlandi";
+            if (res2.status !== 202 && res2.status < 500) {
+              hata(d2.hata ?? "Video doğrulanamadı.", d2.adim, d2.detay);
+              return "basarisiz";
+            }
+          } catch {
+            // Geçici ağ hatası Processing ile aynı korumalı bekleme davranışındadır.
+          }
+          await new Promise((coz) => setTimeout(coz, SORGU_ARALIGI_MS));
         }
-        return true;
+        return "isleniyor";
       } finally {
+        setVideoIslemeBekleniyor(false);
         setDosyaYukleniyor(false);
         setVideoYuklemeYuzdesi(null);
       }
@@ -573,14 +595,22 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
         // (Eski akış video hatasında sessizce dönüyordu; yeniden "Gönder" ise
         // aynı talebi ikinci kez yaratırdı — form artık her durumda sıfırlanır.)
         const basarisizlar: string[] = [];
+        let videoIsleniyor = false;
         if (hazirVideo && bekleyenVideo) {
-          const ok = await uploadVideo(talep_id);
-          if (!ok) basarisizlar.push(`${bekleyenVideo.preview.dosya_adi} (video)`);
+          const sonuc = await uploadVideo(talep_id);
+          if (sonuc === "basarisiz") basarisizlar.push(`${bekleyenVideo.preview.dosya_adi} (video)`);
+          if (sonuc === "isleniyor") videoIsleniyor = true;
         }
         if (bekleyenDosyalar.length > 0) {
           basarisizlar.push(...(await uploadDosyalar(talep_id)));
         }
-        if (basarisizlar.length === 0) {
+        if (basarisizlar.length === 0 && videoIsleniyor) {
+          uyari(
+            "Video işleniyor",
+            undefined,
+            true
+          );
+        } else if (basarisizlar.length === 0) {
           // Metin varyanttan çözülür (26.07): talep açmak bir aşama kapatmaz,
           // yalnız doğan işi ve sahibini ilan eder. Hazır videoda zincir yükleme
           // biter bitmez kurulduğu için ilan edilen iş senaryo değil soru setidir;
@@ -589,6 +619,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
             { rol: "uretici", olay: "talep_gonderildi" },
             { varyant: toastVaryant(hazirVideo, hazirSoruSeti) },
           ));
+          if (hazirVideo && hazirSoruSeti) bildirimRozetleriniYenile();
         } else {
           uyari(
             `Talep oluşturuldu ancak şu dosyalar yüklenemedi: ${basarisizlar.join(", ")}. ` +
@@ -702,6 +733,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     handleVideoSec,
     handleBekleyenVideoSil,
     videoYuklemeYuzdesi,
+    videoIslemeBekleniyor,
 
     // form: hazır soru seti
     hazirSoruSeti,

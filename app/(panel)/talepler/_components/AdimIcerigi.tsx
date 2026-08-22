@@ -26,6 +26,7 @@ interface Props {
   bunnyIslemeDurumu: IslemeDurumu;
   /** Hazır video yükleme alanı görünsün mü (V2/V4, video yok, sıra üreticide). */
   videoYuklenebilir: boolean;
+  videoIsleniyor: boolean;
   videoYuzdesi: number | null;
   formatTarih: (tarih: string | null) => string;
   onHata: (mesaj: string, adim?: string, detay?: string) => void;
@@ -80,7 +81,7 @@ function KunyeParametreleri({ talep }: { talep: TalepSatiri }) {
 
 export function AdimIcerigi({
   anahtar, talep, detay, detayYukleniyor, bunnyIslemeDurumu,
-  videoYuklenebilir, videoYuzdesi, formatTarih, onHata, onVideoYukle,
+  videoYuklenebilir, videoIsleniyor, videoYuzdesi, formatTarih, onHata, onVideoYukle,
 }: Props) {
   if (anahtar !== "talep" && detayYukleniyor) {
     return <Bos metin="Yükleniyor..." />;
@@ -116,6 +117,13 @@ export function AdimIcerigi({
     // ── Video: oynatıcı + Bunny işlenme rozeti + revizyon notu ─────────────
     case "video": {
       const v = detay?.video;
+      if (videoIsleniyor) {
+        return (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-3">
+            <p className="m-0 text-sm font-semibold text-blue-800">Video işleniyor</p>
+          </div>
+        );
+      }
       // V2/V4: video henüz yokken sıra ÜRETİCİDEDİR — yükleme alanı burada açılır,
       // talep sayfasından çıkmaya gerek kalmaz.
       if (videoYuklenebilir) {
@@ -135,7 +143,7 @@ export function AdimIcerigi({
           {bunnyIslemeDurumu === "isleniyor" && (
             <div className="mb-2.5 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
               <p className="text-xs text-blue-800 m-0">
-                Video işleniyor — kapak ve izleme kısa süre içinde hazır olur.
+                Video işleniyor
               </p>
             </div>
           )}

@@ -16,6 +16,7 @@ import { useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { uretimToast, toastVaryant, type ToastAsama, type ToastOlay } from "@/lib/uretim/toastMesaj";
 import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
+import { SORGU_ARALIGI_MS, TAVAN_SANIYE } from "@/lib/video/islemeDurumu";
 import { bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
 import type { TalepDetay, TalepSatiri } from "../_ureticiRolTypes";
 
@@ -23,7 +24,7 @@ export type KararDurumu = "onaylandi" | "revizyon bekleniyor" | "Iptal Edildi";
 
 export function useTalepMerkezi() {
   const { kullanici } = useAuth();
-  const { mesajlar, hata, basari } = useHataMesaji();
+  const { mesajlar, hata, basari, uyari } = useHataMesaji();
 
   const [talepler, setTalepler] = useState<TalepSatiri[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,6 +129,48 @@ export function useTalepMerkezi() {
     return () => { aktif = false; };
   }, [seciliTalepId, detayTetik, hata]);
 
+  // Hazır video talebe bağlandıktan sonra arka planda işlenirken yükleme alanını
+  // yeniden açma. Webhook zinciri tamamlayınca seçili talebi ve listeyi tazele.
+  useEffect(() => {
+    if (!seciliTalepId || !detay?.video_isleniyor) return;
+
+    let aktif = true;
+    let istekDevamEdiyor = false;
+    const baslangic = Date.now();
+
+    const durumuYenile = async () => {
+      if (!aktif || istekDevamEdiyor) return;
+      if (Date.now() - baslangic >= TAVAN_SANIYE * 1000) {
+        window.clearInterval(zamanlayici);
+        return;
+      }
+
+      istekDevamEdiyor = true;
+      try {
+        const res = await fetch(`/talepler/api/detay?talep_id=${seciliTalepId}`, { cache: "no-store" });
+        const data = await res.json();
+        if (!aktif || !res.ok) return;
+
+        setDetay(data);
+        if (!data.video_isleniyor) {
+          window.clearInterval(zamanlayici);
+          if (seciliTalep?.hazir_soru_seti) bildirimRozetleriniYenile();
+          await veriCek();
+        }
+      } catch {
+        // Geçici bağlantı hatasında bir sonraki sınırlı sorgu denenir.
+      } finally {
+        istekDevamEdiyor = false;
+      }
+    };
+
+    const zamanlayici = window.setInterval(() => void durumuYenile(), SORGU_ARALIGI_MS);
+    return () => {
+      aktif = false;
+      window.clearInterval(zamanlayici);
+    };
+  }, [seciliTalepId, seciliTalep?.hazir_soru_seti, detay?.video_isleniyor, veriCek]);
+
   /**
    * Üreticinin kararı: onay / revizyon / iptal. Hedef uç aktif adımdan çözülür.
    * Kural kontrolleri (revizyon tavanı, notun zorunluluğu, sahiplik) hem burada
@@ -187,7 +230,8 @@ export function useTalepMerkezi() {
    * Hazır video yüklemesi (V2/V4) — mevcut üç uç aynen kullanılır:
    *   1) vezne izin verir (kimlik + sıra kontrolü, Bunny kaydını SİSTEM açar),
    *   2) dosya tarayıcıdan DOĞRUDAN Bunny'ye gider (sunucumuza uğramaz),
-   *   3) kanonik embed adresini sistem yazar ve zinciri kurar.
+   *   3) kanonik embed adresi talebe bağlanır; Bunny Ready + pozitif süre
+   *      doğrulayınca zincir kurulur.
    * TUS patlarsa vezneden açılmış ama hiçbir kayda bağlanmamış Bunny kaydı
    * temizlenir — yetim kayıt bırakılmaz.
    */
@@ -221,19 +265,37 @@ export function useTalepMerkezi() {
           return;
         }
 
-        const res2 = await fetch("/uretim/api/hazir-video", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ talep_id: talep.talep_id, video_url: izin.embed_url, islem_anahtari: crypto.randomUUID() }),
-        });
-        const d2 = await res2.json();
-        if (!res2.ok) {
-          hata(d2.hata ?? "Video adresi kaydedilemedi.", d2.adim, d2.detay);
-          await fetch("/videolar/api/bunny-yukleme-iptal", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ video_guid: izin.video_guid }),
-          }).catch(() => undefined);
+        let tamamlandi = false;
+        const baslangic = Date.now();
+        while (Date.now() - baslangic < TAVAN_SANIYE * 1000) {
+          try {
+            const res2 = await fetch("/uretim/api/hazir-video", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ talep_id: talep.talep_id, video_url: izin.embed_url, islem_anahtari: izin.video_guid }),
+            });
+            const d2 = await res2.json();
+            if (res2.ok && res2.status !== 202) {
+              tamamlandi = true;
+              break;
+            }
+            if (res2.status !== 202 && res2.status < 500) {
+              hata(d2.hata ?? "Video doğrulanamadı.", d2.adim, d2.detay);
+              return;
+            }
+          } catch {
+            // Geçici ağ hatası Processing ile aynı korumalı bekleme davranışındadır.
+          }
+          await new Promise((coz) => setTimeout(coz, SORGU_ARALIGI_MS));
+        }
+        if (!tamamlandi) {
+          uyari(
+            "Video işleniyor",
+            undefined,
+            true
+          );
+          setDetayTetik((x) => x + 1);
+          await veriCek();
           return;
         }
 
@@ -250,7 +312,7 @@ export function useTalepMerkezi() {
         setVideoYuzdesi(null);
       }
     },
-    [talepler, seciliTalepId, hata, basari, veriCek],
+    [talepler, seciliTalepId, hata, basari, uyari, veriCek],
   );
 
   // Biçim /talepler sayfasıyla AYNI (28.07 düzeltmesi): burada saat/dakika yoktu,

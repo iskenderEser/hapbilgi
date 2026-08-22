@@ -20,15 +20,21 @@ import type { UygunVideo } from "@/lib/cc/tipler";
  */
 export async function uygunVideoListesi(
   supabase: SupabaseClient,
-  bmId: string
+  bmId: string,
+  firmaId: string
 ): Promise<UygunVideo[]> {
+  const simdi = new Date().toISOString();
   // Paralel: (1) Yayında olan CC yayınları, (2) BM'in tamamladığı izlemeler
   const [yayinlarRes, izlemelerRes] = await Promise.all([
     supabase
       .from("v_yayin_detay")
       .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url")
       .eq("durum", "yayinda")
-      .contains("hedef_roller", ["bm"]),
+      .eq("firma_id", firmaId)
+      .contains("hedef_roller", ["bm"])
+      .lte("yayin_tarihi", simdi)
+      .or(`durdurma_tarihi.is.null,durdurma_tarihi.gt.${simdi}`)
+      .gt("video_suresi_saniye", 0),
     supabase
       .from("cc_izleme_kayitlari")
       .select("yayin_id")

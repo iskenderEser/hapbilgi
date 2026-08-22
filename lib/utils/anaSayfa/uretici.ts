@@ -66,6 +66,7 @@ function kategoriBul(kod: DurumKodu): TakipKategori {
     case "yayinda": return "yayinda";
     case "planlandi": return "planlanan";
     case "yayin_durduruldu": return "durdurulan";
+    case "yayin_silme_hatasi": return "hata";
     case "iptal": return "iptal";
     case "sistem_hatasi": return "hata";
     default: return "devam";

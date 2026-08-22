@@ -28,6 +28,15 @@ import { ayBaslangici } from "@/lib/zaman/kontrol";
 import { gecerliTurBaslangiclari } from "@/lib/tur/kayit";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
+type ChallengeDurumu = "bekliyor" | "izlendi" | "suresi_doldu";
+
+function challengeDurumu(challenge: { izlendi_mi: boolean; son_tarih: string }): ChallengeDurumu {
+  if (challenge.izlendi_mi) return "izlendi";
+  return new Date(challenge.son_tarih).getTime() <= Date.now()
+    ? "suresi_doldu"
+    : "bekliyor";
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -47,18 +56,31 @@ export async function GET(request: NextRequest) {
 
     if (kError || !kullanici) return hataYaniti("Kullanıcı bilgisi alınamadı.", "kullanicilar SELECT", kError);
 
+    const { data: firma, error: firmaError } = await adminSupabase
+      .from("firmalar")
+      .select("cc_aktif")
+      .eq("firma_id", kullanici.firma_id)
+      .single();
+
+    if (firmaError || !firma) return hataYaniti("Firma bilgisi alınamadı.", "firmalar SELECT — C-Club erişimi", firmaError);
+    if (firma.cc_aktif !== true) return rolHatasi("Firmanızda C-Club erişimi kapalıdır.");
+
     const { searchParams } = new URL(request.url);
     const tip = searchParams.get("tip") || "izlenecek-videolar";
 
     // ─── tip=izlenecek-videolar ────────────────────────────────────────────
     // BM'in geçerli turda henüz tamamlamadığı CC yayınları. Önce kendisi izleyebilsin.
     if (tip === "izlenecek-videolar") {
+      const simdi = new Date().toISOString();
       const [yayinlarRes, izlemelerRes] = await Promise.all([
         adminSupabase
           .from("v_yayin_detay")
           .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi")
           .eq("durum", "yayinda")
+          .eq("firma_id", kullanici.firma_id)
           .contains("hedef_roller", ["bm"])
+          .lte("yayin_tarihi", simdi)
+          .or(`durdurma_tarihi.is.null,durdurma_tarihi.gt.${simdi}`)
           .order("yayin_tarihi", { ascending: false }),
         adminSupabase
           .from("cc_izleme_kayitlari")
@@ -96,7 +118,7 @@ export async function GET(request: NextRequest) {
     }
 
     // ─── tip=bekleyen ──────────────────────────────────────────────────────
-    // BM'e gelen, izlenmemiş, süresi geçmemiş challenge'lar.
+    // BM'e gelen challenge'lar; durum gönderen tarafıyla aynı sözleşmeden üretilir.
     if (tip === "bekleyen") {
       const { data: challengeler, error: cError } = await adminSupabase
         .from("challenge_kayitlari")
@@ -105,8 +127,6 @@ export async function GET(request: NextRequest) {
           gonderen:kullanicilar!gonderen_id(ad, soyad)
         `)
         .eq("alan_id", kullanici.kullanici_id)
-        .eq("izlendi_mi", false)
-        .gte("son_tarih", new Date().toISOString())
         .order("created_at", { ascending: false });
 
       if (cError) return hataYaniti("Bekleyen challenge'lar çekilemedi.", "challenge_kayitlari SELECT", cError);
@@ -130,6 +150,7 @@ export async function GET(request: NextRequest) {
 
       const sonuc = (challengeler ?? []).map((c: any) => ({
         ...c,
+        durum: challengeDurumu(c),
         urun_adi: yayinMap[c.yayin_id]?.urun_adi ?? "-",
         teknik_adi: yayinMap[c.yayin_id]?.teknik_adi ?? "-",
         thumbnail_url: yayinMap[c.yayin_id]?.thumbnail_url ?? null,
@@ -173,6 +194,7 @@ export async function GET(request: NextRequest) {
 
       const sonuc = (challengeler ?? []).map((c: any) => ({
         ...c,
+        durum: challengeDurumu(c),
         urun_adi: yayinMap[c.yayin_id]?.urun_adi ?? "-",
         teknik_adi: yayinMap[c.yayin_id]?.teknik_adi ?? "-",
       }));
@@ -330,6 +352,9 @@ export async function POST(request: NextRequest) {
     );
 
     if (!sonuc.ok) {
+      if (["P0001", "22023", "23505", "42501"].includes(sonuc.code ?? "")) {
+        return isKuraluHatasi(sonuc.error ?? "Challenge gönderilemedi.");
+      }
       return hataYaniti(sonuc.error ?? "Challenge oluşturulamadı.", "challengeOlustur", null);
     }
 

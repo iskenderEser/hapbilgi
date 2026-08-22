@@ -38,7 +38,7 @@ export async function ileriSarmaKaybiKaydet(
     kaybedilen_puan: number;
   }
 ): Promise<KayitSonuc> {
-  const { error } = await supabase.from("cc_ileri_sarma_kayitlari").insert({
+  const { error } = await supabase.from("cc_ileri_sarma_kayitlari").upsert({
     bm_id: params.bm_id,
     yayin_id: params.yayin_id,
     izleme_id: params.izleme_id,
@@ -46,6 +46,9 @@ export async function ileriSarmaKaybiKaydet(
     atlama_bitis: params.atlama_bitis,
     atlanan_sure: params.atlanan_sure,
     kaybedilen_puan: params.kaybedilen_puan,
+  }, {
+    onConflict: "izleme_id,atlama_baslangic,atlama_bitis",
+    ignoreDuplicates: true,
   });
 
   if (error) {

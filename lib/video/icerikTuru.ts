@@ -18,11 +18,12 @@ export const TUR_BASLIK: Record<IcerikTuru, string> = {
   urun_medikal: "Ürün Medikal Eğitimleri",
   medikal: "Medikal Eğitimler",
   egitim: "Satış Eğitimleri",
+  yonetim: "Yönetim Eğitimleri",
   ik: "İK Eğitimleri",
 };
 
 // Ana sayfada bölümlerin gösterim sırası (ve geçerli tür listesi).
-export const TUR_SIRA: IcerikTuru[] = ["urun", "urun_medikal", "medikal", "egitim", "ik"];
+export const TUR_SIRA: IcerikTuru[] = ["urun", "urun_medikal", "medikal", "egitim", "yonetim", "ik"];
 
 // Rapor kırılımlarında kategori adı — üretim hattındaki talep türü adının
 // aynısıdır ("Ürün Eğitimi", "Satış Teknikleri", ...). Elle yazılmaz;

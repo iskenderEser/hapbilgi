@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
     // Sahiplik kapısı: oturum istemcisiyle okunur, RLS süzer.
     const { data: talep, error: talepError } = await supabase
       .from("talepler")
-      .select("talep_id")
+      .select("talep_id, hazir_video, hazir_video_url")
       .eq("talep_id", talep_id)
       .maybeSingle();
     if (talepError) return hataYaniti("Talep sorgulanamadı.", "talepler tablosu SELECT — talep_id", talepError);
@@ -174,7 +174,9 @@ export async function GET(request: NextRequest) {
         }
       : null;
 
-    return NextResponse.json({ talep_id, senaryo, video, soru_seti }, { status: 200 });
+    const video_isleniyor = talep.hazir_video === true && Boolean(talep.hazir_video_url) && !video;
+
+    return NextResponse.json({ talep_id, senaryo, video, soru_seti, video_isleniyor }, { status: 200 });
 
   } catch (err) {
     return sunucuHatasi(err, "GET /talepler/api/detay");

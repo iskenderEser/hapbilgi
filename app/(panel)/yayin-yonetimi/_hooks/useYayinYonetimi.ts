@@ -256,6 +256,29 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     setIslemLoading(null);
   };
 
+  const handleYayinSil = async (b: Bekleyen) => {
+    setIslemLoading(b.soru_seti_durum_id);
+    try {
+      const res = await fetch("/yayin-yonetimi/api/bekleyenler/sil", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          soru_seti_durum_id: b.soru_seti_durum_id,
+          islem_anahtari: crypto.randomUUID(),
+        }),
+      });
+      const d = await res.json();
+      if (!res.ok) hata(d.hata ?? "Yayın adayı silinemedi.", d.adim, d.detay);
+      else basari(d.mesaj ?? "Yayın adayı kalıcı olarak silindi.");
+      await veriCek();
+    } catch (err) {
+      hata("Yayın adayı silinemedi.", "Yayın öncesi silme", err instanceof Error ? err.message : undefined);
+      await veriCek();
+    } finally {
+      setIslemLoading(null);
+    }
+  };
+
   // Planlanmış yayın aksiyonları (İş 2): tarih_degistir | hemen_yayinla | plan_iptal.
   const handlePlanIslem = async (yayin_id: string, islem: string, yayin_gunu?: string) => {
     setIslemLoading(yayin_id);
@@ -296,6 +319,6 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     // puan yardımcıları
     getSoruPuani, setSoruPuani, hepsineAyniPuanAta, tumPuanlarAtandiMi,
     // handler'lar
-    handleYayinla, handleDurumDegistir, handlePlanIslem,
+    handleYayinla, handleYayinSil, handleDurumDegistir, handlePlanIslem,
   };
 }

@@ -26,7 +26,7 @@ export async function uygunAliciListesi(
   const ayBas = ayBaslangici().toISOString();
 
   // Paralel: 4 sorgu birbirinden bağımsız
-  const [bmlerRes, gonderdiklerimRes, aldiklarimRes, tamamlayanlarRes] = await Promise.all([
+  const [bmlerRes, gonderdiklerimRes, aldiklarimRes, tamamlayanlarRes, ayniVideoRes] = await Promise.all([
     // 1) Aktif diğer BM'ler (aynı firma, kendisi hariç)
     supabase
       .from("kullanicilar")
@@ -57,10 +57,18 @@ export async function uygunAliciListesi(
       .select("bm_id")
       .eq("yayin_id", yayinId)
       .eq("tamamlandi_mi", true),
+
+    // 5) Aynı videonun daha önce gönderildiği alıcılar (ömür boyu mükerrerlik)
+    supabase
+      .from("challenge_kayitlari")
+      .select("alan_id")
+      .eq("gonderen_id", gonderenId)
+      .eq("yayin_id", yayinId),
   ]);
 
-  // BM listesi alınamadıysa boş array döner
-  if (bmlerRes.error || !bmlerRes.data) return [];
+  // Kontrollerden biri okunamadıysa güvenli biçimde hiçbir alıcıyı açma.
+  if (bmlerRes.error || gonderdiklerimRes.error || aldiklarimRes.error
+      || tamamlayanlarRes.error || ayniVideoRes.error || !bmlerRes.data) return [];
 
   // Set'ler — O(1) lookup
   const gonderilmisAliciSet = new Set<string>(
@@ -71,6 +79,9 @@ export async function uygunAliciListesi(
   );
   const videoyuIzlemisSet = new Set<string>(
     (tamamlayanlarRes.data ?? []).map((iz: { bm_id: string }) => iz.bm_id)
+  );
+  const ayniVideoGonderilmisSet = new Set<string>(
+    (ayniVideoRes.data ?? []).map((c: { alan_id: string }) => c.alan_id)
   );
 
   // Aylık kota — gönderenin bu ay toplam kaç gönderim yaptığı
@@ -118,6 +129,15 @@ export async function uygunAliciListesi(
         ...temelBilgi,
         gonderilebilir: false,
         sebep: "Bu BM seçilen videoyu zaten izlemiş.",
+      };
+    }
+
+    // Öncelik 5: Aynı video bu BM'ye daha önce gönderildi mi?
+    if (ayniVideoGonderilmisSet.has(bm.kullanici_id)) {
+      return {
+        ...temelBilgi,
+        gonderilebilir: false,
+        sebep: "Aynı video bu BM'ye daha önce gönderilmiş.",
       };
     }
 

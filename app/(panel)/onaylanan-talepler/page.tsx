@@ -58,6 +58,7 @@ interface OnayliTalep {
   senaryo_metni: string;
   video_url: string | null;
   sorular: SoruKaydi[] | null;
+  yayin_oncesi_silindi: boolean;
 }
 
 export default function OnaylananTaleplerPage() {
@@ -175,6 +176,7 @@ export default function OnaylananTaleplerPage() {
         senaryo_metni: senaryo.senaryo_metni,
         video_url: video?.video_url ?? null,
         sorular: video ? (setMap.get(video.video_durum_id) ?? null) : null,
+        yayin_oncesi_silindi: talep.yayin_oncesi_silme_durumu === "tamamlandi",
       });
     });
 
@@ -212,6 +214,9 @@ export default function OnaylananTaleplerPage() {
           <span className="text-xs text-gray-500">{k.teknik_adi}</span>
         </div>
         <HedefRolPilleri hedefRoller={k.hedef_roller} />
+        {k.yayin_oncesi_silindi && (
+          <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-bold text-gray-600">Yayın öncesi silindi</span>
+        )}
       </div>
 
       <div>
@@ -219,7 +224,7 @@ export default function OnaylananTaleplerPage() {
         <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap m-0">{k.senaryo_metni}</p>
       </div>
 
-      {k.video_url && (
+      {k.video_url && !k.yayin_oncesi_silindi && (
         <div>
           <div className="text-xs font-semibold text-gray-500 mb-1.5">Onaylı Video</div>
           <VideoOnizleme
@@ -285,6 +290,7 @@ export default function OnaylananTaleplerPage() {
                     <div className="flex flex-col min-w-0">
                       <span className="text-xs text-gray-400">{k.talep_no_goster}</span>
                       <span className="text-sm font-semibold text-gray-900 truncate">{k.urun_adi}</span>
+                      {k.yayin_oncesi_silindi && <span className="mt-1 w-fit rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-bold text-gray-600">Yayın öncesi silindi</span>}
                       <span className="text-xs text-gray-500">{formatTarih(k.talep_tarihi)} → {formatTarih(k.onay_tarihi)}</span>
                     </div>
                     <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" width="14" height="14" className="flex-shrink-0"
@@ -318,7 +324,10 @@ export default function OnaylananTaleplerPage() {
                       <tr onClick={() => setAcikTalep(acikTalep === k.talep_id ? null : k.talep_id)}
                         className="border-b border-gray-50 cursor-pointer hover:bg-gray-50 transition-colors duration-100">
                         <td className="px-5 py-3 text-gray-700 font-semibold">{k.talep_no_goster}</td>
-                        <td className="px-3 py-3 text-gray-900">{k.urun_adi}</td>
+                        <td className="px-3 py-3 text-gray-900">
+                          <div>{k.urun_adi}</div>
+                          {k.yayin_oncesi_silindi && <span className="mt-1 inline-flex rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[10px] font-bold text-gray-600">Yayın öncesi silindi</span>}
+                        </td>
                         <td className="px-3 py-3 text-gray-500 text-xs">{formatTarih(k.talep_tarihi)}</td>
                         <td className="px-3 py-3 text-gray-500 text-xs">{formatTarih(k.onay_tarihi)}</td>
                         <td className="px-5 py-3">

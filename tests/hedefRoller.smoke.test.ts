@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { hedefRolleriDogrula, hedefRolleriOku } from "@/lib/utils/roller";
+import { hedefRolIkUreticisineAcikMi, hedefRolleriDogrula, hedefRolleriOku } from "@/lib/utils/roller";
 
 test("hedef kitle sözleşmesi Eczacı ve Teknisyeni tekil ya da birlikte kabul eder", () => {
   assert.deepEqual(hedefRolleriDogrula(["eczaci"]), ["eczaci"]);
@@ -10,6 +10,10 @@ test("hedef kitle sözleşmesi Eczacı ve Teknisyeni tekil ya da birlikte kabul 
   assert.deepEqual(hedefRolleriDogrula(["eczane_teknisyeni", "eczaci"]), ["eczaci", "eczane_teknisyeni"]);
   assert.equal(hedefRolleriDogrula(["utt", "eczaci"]), null);
   assert.equal(hedefRolleriDogrula([]), null);
+  assert.equal(hedefRolIkUreticisineAcikMi("ik_md", "utt"), true);
+  assert.equal(hedefRolIkUreticisineAcikMi("ik_uz", "eczaci"), false);
+  assert.equal(hedefRolIkUreticisineAcikMi("ik_drk", "eczane_teknisyeni"), false);
+  assert.equal(hedefRolIkUreticisineAcikMi("egt_md", "eczaci"), true);
 });
 
 test("tek yayın iki E-Club rolüne de açılır; farklı bir role açılmaz", () => {
@@ -17,6 +21,13 @@ test("tek yayın iki E-Club rolüne de açılır; farklı bir role açılmaz", (
   assert.equal(hedefler.includes("eczaci"), true);
   assert.equal(hedefler.includes("eczane_teknisyeni"), true);
   assert.equal(hedefler.includes("utt"), false);
+});
+
+test("Yayın Yönetimi ilk açılışta bekleyen hedef rol kartını seçer", () => {
+  const sayfa = readFileSync("app/(panel)/yayin-yonetimi/page.tsx", "utf8");
+  assert.match(sayfa, /bekleyenler\?sayi=1/);
+  assert.match(sayfa, /YAYIN_HEDEF_GRUP_SIRASI\.find[\s\S]*?data\.sayilar/);
+  assert.match(sayfa, /setAktifAnaSekme\(ilkBekleyenHedef \?\? "utt"\)/);
 });
 
 test("çoğul hedef migration'ı tek yayın ve kişi bazlı öğrenme tekilliklerini korur", () => {

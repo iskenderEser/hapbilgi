@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 import VideoOnizleme from "@/components/video/VideoOnizleme";
+import { bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
 import {
   EczanemVideoGonderimSatiri,
   type EczaneDagitimUyesi,
@@ -156,6 +157,7 @@ export default function EczanemDagitimPage() {
       basari(data.mesaj ?? "Video müşterilere gönderildi.");
       setSeciliUyeler(new Set());
       await dagitimCek(true, seciliVideoId, true);
+      bildirimRozetleriniYenile();
     } catch {
       hata("Video gönderilemedi.", "video dağıtımı");
     } finally {

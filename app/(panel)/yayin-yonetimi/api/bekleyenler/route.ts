@@ -73,9 +73,11 @@ export async function GET(request: NextRequest) {
     if (onayError) return hataYaniti("Onaylanan soru seti durumları çekilemedi.", "soru_seti_durumu join SELECT", onayError);
 
     // Henüz yayına alınmayanları filtrele
-    const bekleyenler = (onaylananlar ?? []).filter(
-      (ss: any) => !yayindakiIds.has(ss.soru_seti_durum_id)
-    );
+    const bekleyenler = (onaylananlar ?? []).filter((ss: any) => {
+      const talep = ss.soru_setleri?.video_durumu?.videolar?.talepler;
+      return !yayindakiIds.has(ss.soru_seti_durum_id)
+        && talep?.yayin_oncesi_silme_durumu !== "tamamlandi";
+    });
 
     const bosHedefSayilari = Object.fromEntries(
       [...TUM_HEDEF_ROLLER, ECLUB_ORTAK_YAYIN_GRUBU].map((hedef) => [hedef, 0])
@@ -154,6 +156,8 @@ export async function GET(request: NextRequest) {
           soru_seti_buyuklugu: talep?.soru_seti_buyuklugu ?? null,
           video_basi_soru_sayisi: talep?.video_basi_soru_sayisi ?? null,
           onay_tarihi: ss.created_at,
+          yayin_oncesi_silme_durumu: talep.yayin_oncesi_silme_durumu,
+          yayin_oncesi_silme_tarihi: talep.yayin_oncesi_silme_tarihi,
         };
       })
       .filter((kayit): kayit is NonNullable<typeof kayit> => kayit !== null);

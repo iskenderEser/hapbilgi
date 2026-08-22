@@ -8,7 +8,7 @@ import {
   TALEP_TURU_SIRA,
   type TalepTuru,
 } from "@/lib/uretici/yetenekler";
-import { ECZANEM_TALEP_ACAN_ROLLER, ECLUB_HEDEF_ROLLER, hedefRolleriDogrula } from "@/lib/utils/roller";
+import { ECZANEM_TALEP_ACAN_ROLLER, ECLUB_HEDEF_ROLLER, hedefRolIkUreticisineAcikMi, hedefRolleriDogrula } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
 import { hazirParametreKontrol } from "@/lib/uretim/parametreKontrol";
@@ -68,6 +68,10 @@ export async function POST(request: NextRequest) {
     const hedefRoller = hedefRolleriDogrula(hedef_roller);
     if (!hedefRoller) {
       return validasyonHatasi("Hedef kitle seçimi geçersizdir.", ["hedef_roller"]);
+    }
+
+    if (hedefRoller.some((hedef) => !hedefRolIkUreticisineAcikMi(rol, hedef))) {
+      return rolHatasi("İK rolleri Eczacı veya Eczane Teknisyeni hedefli talep oluşturamaz.");
     }
 
     // Eczanem hedefli talebi yalnızca ürün müdürü ailesi açabilir (İP-§4.1) —

@@ -48,7 +48,7 @@
  * ve DONAR — kullanıcının rolü sonradan değişse bile içeriğin türü
  * değişmez (tarihsel kayıt korunur).
  */
-export type IcerikTuru = "ik" | "medikal" | "egitim" | "urun" | "urun_medikal";
+export type IcerikTuru = "ik" | "medikal" | "egitim" | "yonetim" | "urun" | "urun_medikal";
 
 /**
  * Talep türü — bir talebin sınıfı.
@@ -60,6 +60,7 @@ export type IcerikTuru = "ik" | "medikal" | "egitim" | "urun" | "urun_medikal";
 export type TalepTuru =
   | "urun_egitimi"
   | "satis_teknikleri"
+  | "yonetim_egitimi"
   | "medikal_egitim"
   | "urun_medikal_egitim"
   | "ik_egitimi";
@@ -72,6 +73,7 @@ export type TalepTuru =
 export const TALEP_TURU_SIRA: readonly TalepTuru[] = [
   "urun_egitimi",
   "satis_teknikleri",
+  "yonetim_egitimi",
   "medikal_egitim",
   "urun_medikal_egitim",
   "ik_egitimi",
@@ -109,6 +111,12 @@ export const TALEP_TURU_KURALLARI: Record<TalepTuru, TalepTuruKurali> = {
     teknik: "zorunlu",
     ad: "Satış Teknikleri",
     icerikTuru: "egitim",
+  },
+  yonetim_egitimi: {
+    urun: "yok",
+    teknik: "yok",
+    ad: "Yönetim Eğitimleri",
+    icerikTuru: "yonetim",
   },
   medikal_egitim: {
     urun: "yok",
@@ -226,25 +234,25 @@ export const URETICI_YETENEKLERI: Record<string, UreticiYetenek> = {
   // ===== Eğitim Rolleri (firma seviyesi, satış teknikleri) =====
   egt_md: {
     takimZorunlu: false,
-    acabilecegiTalepTurleri: ["satis_teknikleri"],
+    acabilecegiTalepTurleri: ["satis_teknikleri", "yonetim_egitimi"],
     raporScope: "firma",
     icerikTuru: "egitim",
   },
   egt_yrd_md: {
     takimZorunlu: false,
-    acabilecegiTalepTurleri: ["satis_teknikleri"],
+    acabilecegiTalepTurleri: ["satis_teknikleri", "yonetim_egitimi"],
     raporScope: "firma",
     icerikTuru: "egitim",
   },
   egt_yon: {
     takimZorunlu: false,
-    acabilecegiTalepTurleri: ["satis_teknikleri"],
+    acabilecegiTalepTurleri: ["satis_teknikleri", "yonetim_egitimi"],
     raporScope: "firma",
     icerikTuru: "egitim",
   },
   egt_uz: {
     takimZorunlu: false,
-    acabilecegiTalepTurleri: ["satis_teknikleri"],
+    acabilecegiTalepTurleri: ["satis_teknikleri", "yonetim_egitimi"],
     raporScope: "firma",
     icerikTuru: "egitim",
   },
@@ -252,31 +260,31 @@ export const URETICI_YETENEKLERI: Record<string, UreticiYetenek> = {
   // ===== İK Rolleri (firma seviyesi, İK eğitimi/bilgilendirme) =====
   ik_drk: {
     takimZorunlu: false,
-    acabilecegiTalepTurleri: ["ik_egitimi"],
+    acabilecegiTalepTurleri: ["ik_egitimi", "yonetim_egitimi"],
     raporScope: "firma",
     icerikTuru: "ik",
   },
   ik_md: {
     takimZorunlu: false,
-    acabilecegiTalepTurleri: ["ik_egitimi"],
+    acabilecegiTalepTurleri: ["ik_egitimi", "yonetim_egitimi"],
     raporScope: "firma",
     icerikTuru: "ik",
   },
   ik_yrd_md: {
     takimZorunlu: false,
-    acabilecegiTalepTurleri: ["ik_egitimi"],
+    acabilecegiTalepTurleri: ["ik_egitimi", "yonetim_egitimi"],
     raporScope: "firma",
     icerikTuru: "ik",
   },
   ik_uz: {
     takimZorunlu: false,
-    acabilecegiTalepTurleri: ["ik_egitimi"],
+    acabilecegiTalepTurleri: ["ik_egitimi", "yonetim_egitimi"],
     raporScope: "firma",
     icerikTuru: "ik",
   },
   ik_per: {
     takimZorunlu: false,
-    acabilecegiTalepTurleri: ["ik_egitimi"],
+    acabilecegiTalepTurleri: ["ik_egitimi", "yonetim_egitimi"],
     raporScope: "firma",
     icerikTuru: "ik",
   },

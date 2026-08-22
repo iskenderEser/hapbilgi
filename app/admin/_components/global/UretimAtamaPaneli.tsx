@@ -14,6 +14,7 @@ interface GenelAtama { atama_id: string; iu_id: string; egitim_turu: string; akt
 const GENEL_TURLER = [
   ["urun_egitimi", "Ürün Eğitimi"],
   ["satis_teknikleri", "Satış Teknikleri"],
+  ["yonetim_egitimi", "Yönetim Eğitimleri"],
   ["medikal_egitim", "Medikal Eğitim"],
   ["urun_medikal_egitim", "Ürün-Medikal Eğitim"],
   ["ik_egitimi", "İK Eğitimi"],

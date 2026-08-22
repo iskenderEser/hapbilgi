@@ -66,6 +66,7 @@ export interface TalepDetay {
   senaryo: SenaryoBlogu | null;
   video: VideoBlogu | null;
   soru_seti: SoruSetiBlogu | null;
+  video_isleniyor: boolean;
 }
 
 /** Sol listedeki aşama süzgeci. "Yayın" yok: o aşamaya gelen talep listede durmuyor (D-4). */

@@ -117,9 +117,10 @@ SELECT
   END AS durum,
   (
     SELECT ik.izleme_bitis
-    FROM public.izleme_kayitlari ik
-    WHERE ik.kullanici_id = ck.alan_id
+    FROM public.cc_izleme_kayitlari ik
+    WHERE ik.bm_id = ck.alan_id
       AND ik.yayin_id = ck.yayin_id
+      AND ik.challenge_id = ck.challenge_id
       AND ik.tamamlandi_mi = true
     ORDER BY ik.izleme_bitis
     LIMIT 1

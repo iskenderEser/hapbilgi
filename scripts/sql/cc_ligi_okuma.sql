@@ -107,3 +107,84 @@ AS $function$
     (date_trunc('week', make_date(p_yil, 1, 1))::date + (p_hafta - 1) * 7 + 7)
   );
 $function$;
+
+-- Çeyrek lideri — lig tablosuyla aynı CC özet kaynağını kullanır.
+CREATE OR REPLACE FUNCTION public.get_cc_ligi_donem_lideri(p_yil integer, p_ceyrek integer)
+ RETURNS TABLE(kullanici_id uuid, ad text, soyad text, toplam_net_puan integer)
+ LANGUAGE sql
+ STABLE
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  WITH lig AS (
+    SELECT * FROM public.get_cc_ligi_donemlik(p_yil, p_ceyrek)
+  ),
+  en_yuksek AS (
+    SELECT MAX(lig.toplam_net_puan) AS puan FROM lig
+  )
+  SELECT lig.kullanici_id, lig.ad, lig.soyad, lig.toplam_net_puan
+  FROM lig
+  CROSS JOIN en_yuksek
+  WHERE en_yuksek.puan > 0
+    AND lig.toplam_net_puan = en_yuksek.puan
+  ORDER BY lig.ad, lig.soyad;
+$function$;
+
+-- Yıl lideri — lig tablosuyla aynı CC özet kaynağını kullanır.
+CREATE OR REPLACE FUNCTION public.get_cc_ligi_yil_lideri(p_yil integer)
+ RETURNS TABLE(kullanici_id uuid, ad text, soyad text, toplam_net_puan integer)
+ LANGUAGE sql
+ STABLE
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  WITH lig AS (
+    SELECT * FROM public.get_cc_ligi_yillik(p_yil)
+  ),
+  en_yuksek AS (
+    SELECT MAX(lig.toplam_net_puan) AS puan FROM lig
+  )
+  SELECT lig.kullanici_id, lig.ad, lig.soyad, lig.toplam_net_puan
+  FROM lig
+  CROSS JOIN en_yuksek
+  WHERE en_yuksek.puan > 0
+    AND lig.toplam_net_puan = en_yuksek.puan
+  ORDER BY lig.ad, lig.soyad;
+$function$;
+
+-- Challenge listesi yalnız challenge'a bağlı CC izleme kaydını kullanır.
+CREATE OR REPLACE VIEW public.v_cc_challenge_listesi AS
+SELECT
+  ck.challenge_id,
+  ck.gonderen_id,
+  (g.ad::text || ' '::text) || g.soyad::text AS challenger_adi,
+  ck.alan_id,
+  (a.ad::text || ' '::text) || a.soyad::text AS challengee_adi,
+  ck.yayin_id,
+  vyd.urun_adi,
+  vyd.teknik_adi,
+  ck.created_at AS challenge_tarihi,
+  ck.son_tarih,
+  ck.izlendi_mi,
+  CASE
+    WHEN ck.izlendi_mi = true THEN 'İzlendi'::text
+    WHEN ck.son_tarih > now() THEN 'Bekliyor'::text
+    ELSE 'Süresi Doldu'::text
+  END AS durum,
+  (
+    SELECT ik.izleme_bitis
+    FROM public.cc_izleme_kayitlari ik
+    WHERE ik.bm_id = ck.alan_id
+      AND ik.yayin_id = ck.yayin_id
+      AND ik.challenge_id = ck.challenge_id
+      AND ik.tamamlandi_mi = true
+    ORDER BY ik.izleme_bitis
+    LIMIT 1
+  ) AS izleme_tarihi
+FROM public.challenge_kayitlari ck
+JOIN public.kullanicilar g ON g.kullanici_id = ck.gonderen_id
+JOIN public.kullanicilar a ON a.kullanici_id = ck.alan_id
+JOIN public.v_yayin_detay vyd ON vyd.yayin_id = ck.yayin_id;
+
+REVOKE ALL ON public.v_cc_challenge_listesi FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON public.v_cc_challenge_listesi TO service_role;

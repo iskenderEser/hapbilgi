@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     // 4. Gönderenin firma_id'sini çek (uygunAliciListesi firma içi BM'leri istiyor)
     const { data: kullanici, error: kullaniciError } = await adminSupabase
       .from("kullanicilar")
-      .select("firma_id")
+      .select("firma_id, aktif_mi")
       .eq("kullanici_id", user.id)
       .single();
 
@@ -71,6 +71,15 @@ export async function GET(request: NextRequest) {
         null
       );
     }
+    if (!kullanici.aktif_mi) return rolHatasi("Aktif olmayan kullanıcı challenge gönderemez.");
+
+    const { data: firma, error: firmaError } = await adminSupabase
+      .from("firmalar")
+      .select("aktif, cc_aktif")
+      .eq("firma_id", kullanici.firma_id)
+      .single();
+    if (firmaError || !firma) return hataYaniti("Firma bilgisi alınamadı.", "firmalar SELECT — CC uygun alıcılar", firmaError);
+    if (!firma.aktif || !firma.cc_aktif) return rolHatasi("Firmanızda C-Club erişimi kapalıdır.");
 
     // 5. Lib'e delege et
     const aliciler = await uygunAliciListesi(

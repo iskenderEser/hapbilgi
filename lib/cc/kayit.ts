@@ -24,7 +24,7 @@ import type {
   ChallengeKayipParams,
   KayitSonuc,
 } from "@/lib/cc/tipler";
-import { ccGondermePuaniKaydet, ccReferralPuaniKaydet } from "@/lib/cc/puan/kazanim";
+import { ccReferralPuaniKaydet } from "@/lib/cc/puan/kazanim";
 import { bildirimOlustur } from "@/lib/utils/bildirimOlustur";
 import { ccReferralPuani, IS_GUNU_SURE } from "@/lib/cc/sabitler";
 import { isGunuEkle } from "@/lib/zaman/kontrol";
@@ -40,13 +40,8 @@ import {
  * challenge_kayitlari'a INSERT, gönderene cc_gonderme puanı (cc_kazanilan_puanlar'a),
  * alıcıya bildirim.
  *
- * Hata politikası:
- *  - challenge INSERT patlarsa: { ok: false }, hiçbir şey yazılmamış
- *  - puan INSERT patlarsa: challenge geri alınır (rollback), { ok: false }
- *  - bildirim hatası: log'lanır ama akış başarılı sayılır (bildirim non-critical)
- *
- * Arayan kod (route) önce kota/karşılıklılık/tekrar izleme kontrollerini geçirmiş
- * olmalı. Bu fonksiyon kontrol yapmaz, sadece kaydeder.
+ * Challenge ve gönderme puanı cc_challenge_gonder RPC'sinde tek transaction
+ * içinde yazılır. Bildirim bu işlemin ardından non-critical yan etki olarak oluşur.
  */
 export async function challengeOlustur(
   supabase: SupabaseClient,
@@ -59,43 +54,24 @@ export async function challengeOlustur(
   // 1. son_tarih hesabı (5 iş günü sonrası)
   const sonTarih = isGunuEkle(new Date(), IS_GUNU_SURE);
 
-  // 2. challenge_kayitlari'a INSERT
-  const { data: challenge, error: insertError } = await supabase
-    .from("challenge_kayitlari")
-    .insert({
-      gonderen_id: params.gonderen_id,
-      alan_id: params.alan_id,
-      yayin_id: params.yayin_id,
-      son_tarih: sonTarih.toISOString(),
-      izlendi_mi: false,
-    })
-    .select("challenge_id")
-    .single();
-
-  if (insertError || !challenge) {
-    console.error("[lib/cc/kayit] challengeOlustur INSERT hatası:", insertError?.message);
-    return { ok: false, error: insertError?.message ?? "Challenge oluşturulamadı." };
-  }
-
-  // 3. Gönderene cc_gonderme puanı yaz (CC ekosistemi)
-  const puanSonuc = await ccGondermePuaniKaydet(supabase, {
-    bm_id: params.gonderen_id,
-    yayin_id: params.yayin_id,
-    challenge_id: challenge.challenge_id,
+  // 2. Tüm kuralları tekrar doğrula; challenge + puanı atomik yaz.
+  const { data: satirlar, error: rpcError } = await supabase.rpc("cc_challenge_gonder", {
+    p_gonderen_id: params.gonderen_id,
+    p_alan_id: params.alan_id,
+    p_yayin_id: params.yayin_id,
+    p_son_tarih: sonTarih.toISOString(),
   });
-
-  // 4. Puan yazılamadıysa challenge'ı geri al
-  if (!puanSonuc.ok) {
-    await supabase
-      .from("challenge_kayitlari")
-      .delete()
-      .eq("challenge_id", challenge.challenge_id);
-
-    console.error("[lib/cc/kayit] challengeOlustur puan hatası, rollback:", puanSonuc.error);
-    return { ok: false, error: "Challenge oluşturuldu ama puan eklenemedi. İşlem geri alındı." };
+  const challenge = (satirlar?.[0] ?? null) as { challenge_id: string } | null;
+  if (rpcError || !challenge) {
+    console.error("[lib/cc/kayit] cc_challenge_gonder hatası:", rpcError?.message);
+    return {
+      ok: false,
+      error: rpcError?.message ?? "Challenge oluşturulamadı.",
+      code: rpcError?.code,
+    };
   }
 
-  // 5. Alıcıya bildirim oluştur (non-critical)
+  // 3. Alıcıya bildirim oluştur (non-critical)
   await bildirimOlustur({
     adminSupabase: supabase,
     alici_id: params.alan_id,

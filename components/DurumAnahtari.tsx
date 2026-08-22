@@ -36,6 +36,9 @@ const PILL_TANIMLARI: Record<DurumKodu, PillTanim> = {
   planlandi: { kod: "planlandi", yalnizKayitVarsa: true },
   yayinda: { kod: "yayinda", yalnizKayitVarsa: true },
   yayin_durduruldu: { kod: "yayin_durduruldu", yalnizKayitVarsa: true },
+  yayin_siliniyor: { kod: "yayin_siliniyor", yalnizKayitVarsa: true },
+  yayin_silme_hatasi: { kod: "yayin_silme_hatasi", yalnizKayitVarsa: true },
+  yayin_oncesi_silindi: { kod: "yayin_oncesi_silindi", yalnizKayitVarsa: true },
 };
 
 interface Props {

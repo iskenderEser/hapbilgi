@@ -173,16 +173,16 @@ BEGIN
     SUM(t.izleme), SUM(t.cevaplama), SUM(t.extra), SUM(t.ccg), SUM(t.ccr),
     SUM(t.ileri), SUM(t.yanlis), SUM(t.challenge), now()
   FROM (
-    SELECT kullanici_id, created_at,
+    SELECT bm_id, created_at,
       CASE WHEN puan_turu='izleme' THEN puan ELSE 0 END,
       CASE WHEN puan_turu='cevaplama' THEN puan ELSE 0 END,
       CASE WHEN puan_turu='extra' THEN puan ELSE 0 END,
       CASE WHEN puan_turu='cc_gonderme' THEN puan ELSE 0 END,
       CASE WHEN puan_turu='cc_referral' THEN puan ELSE 0 END, 0,0,0
-    FROM kazanilan_puanlar
-    UNION ALL SELECT kullanici_id, created_at, 0,0,0,0,0, kaybedilen_puan,0,0 FROM ileri_sarma_kayitlari
-    UNION ALL SELECT kullanici_id, created_at, 0,0,0,0,0, 0,kaybedilen_puan,0 FROM yanlis_cevap_kayitlari
-    UNION ALL SELECT kullanici_id, created_at, 0,0,0,0,0, 0,0,kaybedilen_puan FROM challenge_kayip_kayitlari
+    FROM cc_kazanilan_puanlar
+    UNION ALL SELECT bm_id, created_at, 0,0,0,0,0, kaybedilen_puan,0,0 FROM cc_ileri_sarma_kayitlari
+    UNION ALL SELECT bm_id, created_at, 0,0,0,0,0, 0,kaybedilen_puan,0 FROM cc_yanlis_cevap_kayitlari
+    UNION ALL SELECT kullanici_id, COALESCE(created_at, now()), 0,0,0,0,0, 0,0,kaybedilen_puan FROM challenge_kayip_kayitlari
   ) t(kullanici_id, created_at, izleme, cevaplama, extra, ccg, ccr, ileri, yanlis, challenge)
   GROUP BY t.kullanici_id, (t.created_at AT TIME ZONE 'Europe/Istanbul')::date;
 

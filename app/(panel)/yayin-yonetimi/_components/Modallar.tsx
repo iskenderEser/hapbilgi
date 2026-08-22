@@ -67,3 +67,29 @@ export function YayinOnayModal({ bekleyen, onIptal, onYayinla }: {
     </div>
   );
 }
+
+export function YayinSilmeModal({ bekleyen, islemde, onIptal, onSil }: {
+  bekleyen: Bekleyen;
+  islemde: boolean;
+  onIptal: () => void;
+  onSil: () => void;
+}) {
+  useEscapeKapat(islemde ? () => undefined : onIptal);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div role="dialog" aria-modal="true" aria-labelledby="yayin-silme-baslik" className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl">
+        <div id="yayin-silme-baslik" className="mb-2.5 text-base font-extrabold text-[#243957]">Yayını Sil</div>
+        <p className="mb-2 text-sm font-semibold text-gray-700">{bekleyen.urun_adi}</p>
+        <p className="mb-5 text-sm leading-relaxed text-gray-500">Bu yayın onayınızla kalıcı olarak silinecektir. Onaylıyor musunuz?</p>
+        <div className="flex justify-end gap-2.5">
+          <button type="button" onClick={onIptal} disabled={islemde}
+            className="rounded-lg border border-gray-200 bg-transparent px-4 py-2 text-xs text-gray-500 disabled:opacity-50">İptal</button>
+          <button type="button" onClick={onSil} disabled={islemde}
+            className="rounded-lg border-none bg-red-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">
+            {islemde ? "Siliniyor..." : "Kalıcı Olarak Sil"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

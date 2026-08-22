@@ -179,6 +179,11 @@ export const TUM_HEDEF_ROLLER: HedefRol[] = ["utt", "bm", "eczaci", "eczane_tekn
 // o kişilerin rolü, bu içeriğin hedefi. İkisi bilinçli olarak ayrı durur.)
 export const ECLUB_HEDEF_ROLLER: HedefRol[] = ["eczaci", "eczane_teknisyeni"];
 
+/** İK üretici rolleri E-Club hedeflerine içerik talep edemez. */
+export function hedefRolIkUreticisineAcikMi(ureticiRol: string, hedefRol: HedefRol): boolean {
+  return !(ureticiRol.trim().toLowerCase().startsWith("ik_") && ECLUB_HEDEF_ROLLER.includes(hedefRol));
+}
+
 // Yayın Yönetimi hedef grubu; kullanıcı rolü değildir. İki E-Club hedefini
 // taşıyan tek yayının ayrı sekme/rozet altında sınıflandırılmasını sağlar.
 export const ECLUB_ORTAK_YAYIN_GRUBU = "eczaci_ve_eczane_teknisyeni" as const;

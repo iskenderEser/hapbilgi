@@ -20,11 +20,12 @@ interface IzlemeBaslatParams {
   yayin_id: string;
   izleme_turu: "kendi_izleme" | "challenge" | "extra";
   challenge_id?: string | null;
+  video_suresi_saniye: number;
 }
 
 type IzlemeBaslatSonuc =
   | { ok: true; izleme_id: string }
-  | { ok: false; error: string };
+  | { ok: false; error: string; code?: string };
 
 /**
  * Yeni izleme oturumu başlatır.
@@ -45,6 +46,7 @@ export async function izlemeBaslat(
       yayin_id: params.yayin_id,
       izleme_turu: params.izleme_turu,
       challenge_id: params.challenge_id ?? null,
+      video_suresi_saniye: params.video_suresi_saniye,
       tamamlandi_mi: false,
       ileri_sarildi_mi: false,
     })
@@ -53,7 +55,7 @@ export async function izlemeBaslat(
 
   if (error || !data) {
     console.error("[lib/cc/izleme/baslat] izlemeBaslat hatası:", error?.message);
-    return { ok: false, error: error?.message ?? "İzleme oturumu başlatılamadı." };
+    return { ok: false, error: error?.message ?? "İzleme oturumu başlatılamadı.", code: error?.code };
   }
 
   return { ok: true, izleme_id: data.izleme_id };

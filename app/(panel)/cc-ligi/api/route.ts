@@ -23,6 +23,7 @@ import {
 } from "@/lib/utils/hataIsle";
 import { CCLIGI_GORENLERLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { ligPeriyoduAraligi } from "@/lib/zaman/kontrol";
 
 // ─── Yardımcı: periyot parametresi doğrulama ─────────────────────────────────
 
@@ -248,15 +249,20 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      // Ay başlangıç ve bitiş tarihleri (UTC)
-      const ayBas = new Date(Date.UTC(periyot.yil, periyot.ay - 1, 1));
-      const ayBitis = new Date(Date.UTC(periyot.yil, periyot.ay, 1));
+      // Lig özetindeki gün kovalarıyla aynı Türkiye takvimini kullanır.
+      const ayAraligi = ligPeriyoduAraligi({
+        periyot: "ay",
+        yil: periyot.yil,
+        ay: periyot.ay,
+        ceyrek: 1,
+        hafta: 1,
+      });
 
       const { data, error } = await adminSupabase
         .from("v_cc_challenge_listesi")
         .select("*")
-        .gte("challenge_tarihi", ayBas.toISOString())
-        .lt("challenge_tarihi", ayBitis.toISOString())
+        .gte("challenge_tarihi", ayAraligi.baslangic)
+        .lte("challenge_tarihi", ayAraligi.bitis)
         .order("challenge_tarihi", { ascending: false });
 
       if (error) {

@@ -96,6 +96,7 @@ export const SORU_SETI_BUYUKLUGU_SECENEKLERI = [10, 15, 20, 25];
 export const TALEP_TURU_ALT_ACIKLAMA: Record<TalepTuru, string> = {
   urun_egitimi: "Ürün + teknik bilgisi videosu",
   satis_teknikleri: "Satış becerisi (ürün tercihli)",
+  yonetim_egitimi: "Yönetim eğitimleri",
   medikal_egitim: "Genel medikal içerik",
   urun_medikal_egitim: "Ürünün medikal yönü",
   ik_egitimi: "İK bilgilendirme, KVKK, etik",
@@ -108,6 +109,7 @@ export const TUM_TURLER = [...TALEP_TURU_SIRA];
 export const TUR_ROZET: Record<TalepTuru, { bg: string; renk: string; border: string; etiket: string }> = {
   urun_egitimi: { bg: "transparent", renk: "transparent", border: "transparent", etiket: "" }, // ürün adı zaten gösteriliyor, rozet yok
   satis_teknikleri: { bg: "#eff6ff", renk: "#1d4ed8", border: "#bfdbfe", etiket: "Satış Teknikleri" },
+  yonetim_egitimi: { bg: "#f5f3ff", renk: "#6d28d9", border: "#ddd6fe", etiket: "Yönetim Eğitimleri" },
   medikal_egitim: { bg: "#fef2f2", renk: "#bc2d0d", border: "#fecaca", etiket: "Medikal Eğitim" },
   urun_medikal_egitim: { bg: "#fdf4ff", renk: "#7e22ce", border: "#e9d5ff", etiket: "Ürün-Medikal" },
   ik_egitimi: { bg: "#f0fdf4", renk: "#15803d", border: "#bbf7d0", etiket: "İK Eğitimi" },

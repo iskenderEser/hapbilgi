@@ -30,6 +30,8 @@ export interface Bekleyen {
   soru_seti_buyuklugu: number | null;
   video_basi_soru_sayisi: number | null;
   onay_tarihi: string;
+  yayin_oncesi_silme_durumu: "isleniyor" | "hata" | null;
+  yayin_oncesi_silme_tarihi: string | null;
 }
 
 // Yayin: yayınlanmış (yayında veya durdurulmuş) içerik.

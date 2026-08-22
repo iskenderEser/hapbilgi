@@ -104,6 +104,7 @@ export function TalepDetayi({
   const videoYuklenebilir =
     talep.hazir_video &&
     !detay?.video?.video_url &&
+    !detay?.video_isleniyor &&
     adimlar.find((a) => a.anahtar === "video")?.durum_kodu === "video_bekleniyor" &&
     talep.uretici_id === kullaniciId;
 
@@ -174,6 +175,7 @@ export function TalepDetayi({
               detayYukleniyor={detayYukleniyor}
               bunnyIslemeDurumu={bunnyIslemeDurumu}
               videoYuklenebilir={videoYuklenebilir}
+              videoIsleniyor={detay?.video_isleniyor ?? false}
               videoYuzdesi={videoYuzdesi}
               formatTarih={formatTarih}
               onHata={onHata}

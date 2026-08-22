@@ -39,6 +39,8 @@ export interface TalepBilgisi {
   secenek_sayisi: number;
   video_basi_soru_sayisi: number;
   created_at: string | null;
+  yayin_oncesi_silme_durumu: "isleniyor" | "tamamlandi" | "hata" | null;
+  yayin_oncesi_silme_tarihi: string | null;
 }
 
 // talepler embed'i için ortak alan listesi ve haritalama — üç giriş de aynı.
@@ -68,6 +70,8 @@ export const TALEP_ALANLARI = `
   secenek_sayisi,
   video_basi_soru_sayisi,
   created_at,
+  yayin_oncesi_silme_durumu,
+  yayin_oncesi_silme_tarihi,
   urun_adi,
   teknik_adi,
   urunler ( urun_adi ),
@@ -102,6 +106,8 @@ export function haritalaTalep(talep: any): TalepBilgisi {
     secenek_sayisi: talep.secenek_sayisi ?? 2,
     video_basi_soru_sayisi: talep.video_basi_soru_sayisi ?? 2,
     created_at: talep.created_at ?? null,
+    yayin_oncesi_silme_durumu: talep.yayin_oncesi_silme_durumu ?? null,
+    yayin_oncesi_silme_tarihi: talep.yayin_oncesi_silme_tarihi ?? null,
   };
 }
 
