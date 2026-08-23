@@ -62,7 +62,10 @@ export async function POST(request: NextRequest) {
       if (!guid) { detaylar.push({ talep_id: talep.talep_id, sonuc: "guid-yok" }); continue; }
 
       const durum = await bunnyVideoDurumu(guid);
-      if (!durum.ok) { detaylar.push({ talep_id: talep.talep_id, sonuc: "bunny-erisilemedi" }); continue; }
+      if (!durum.ok) {
+        detaylar.push({ talep_id: talep.talep_id, sonuc: `bunny-erisilemedi: ${durum.adim ?? "?"} — ${durum.detay ?? durum.hata ?? "?"} (guid=${guid})` });
+        continue;
+      }
 
       if (durum.hatali) {
         await adminSupabase.from("talepler").update({ hazir_video_url: null })
