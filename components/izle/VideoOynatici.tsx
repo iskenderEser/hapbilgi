@@ -101,6 +101,9 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
 
   const maxIzlenenRef = useRef<number>(0);
   const izlemeIdRef = useRef<string | null>(null);
+  // Mesai dışı: sunucu kayıt açmaz (izleme_id null). Bu modda video serbest oynar;
+  // oturum kurma/sıfırlama döngüsü devre dışıdır (kayıt/puan/soru yok).
+  const kayitsizModRef = useRef<boolean>(false);
   const izlemeBitirildiRef = useRef<boolean>(false);
   const baslatTetiklendiRef = useRef<string | null>(null);
   const baslatiliyorRef = useRef<boolean>(false);
@@ -141,6 +144,7 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
     setBekleyenSeekBitis(null);
 
     izlemeIdRef.current = null;
+    kayitsizModRef.current = false;
     izlemeBitirildiRef.current = false;
     baslatiliyorRef.current = false;
     baslatOlayIdRef.current = null;
@@ -205,6 +209,8 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
           player.setCurrentTime(0);
           return;
         }
+        // Mesai dışı kayıtsız mod: oturum kurulmaz, video serbest oynar.
+        if (kayitsizModRef.current) return;
         if (!oynatmaBaslatilmaliMi({
           tuketici,
           izlemeId: izlemeIdRef.current,
@@ -228,6 +234,7 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
         // Bazı provider/sürümlerde play olayı kaçarsa ilk gerçek ilerleme güvenli
         // yedektir; oturum açılana kadar konumu sıfıra geri alır.
         if (!izlemeIdRef.current) {
+          if (kayitsizModRef.current) return; // mesai dışı: serbest oynar, sıfırlama yok
           if (data.seconds > 0) gercekOynatmayiBaslat();
           return;
         }
@@ -383,6 +390,14 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
       if (!res.ok) {
         hata(d.hata ?? "İzleme başlatılamadı.", d.adim, d.detay);
         player.setCurrentTime(0);
+        return;
+      }
+
+      // Mesai dışı: sunucu kayıt açmadı (izleme_id null). Video kayıtsız modda
+      // serbest oynar; puan/soru/kayıt yoktur.
+      if (!d.izleme?.izleme_id) {
+        kayitsizModRef.current = true;
+        player.play();
         return;
       }
 

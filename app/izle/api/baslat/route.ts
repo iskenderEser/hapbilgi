@@ -14,6 +14,7 @@ import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { baslatOlayIdGecerliMi, izlemeTuruBelirle } from "@/lib/izleme/baslat";
 import { gecerliTur } from "@/lib/tur/kayit";
+import { puanKazanilabilirMi } from "@/lib/zaman/kontrol";
 
 const IZLEME_SELECT = "izleme_id, yayin_id, kullanici_id, izleme_turu, oneri_id, izleme_baslangic, video_suresi_saniye, gercek_oynatma_mi" as const;
 
@@ -136,6 +137,16 @@ export async function POST(request: NextRequest) {
     const videoSuresiSaniye = videoKaydi.video_suresi_saniye as number | null;
     if (videoSuresiSaniye === null || videoSuresiSaniye <= 0) {
       return isKuraluHatasi("Video henüz puanlı izlemeye hazır değil; süre doğrulanamadı.");
+    }
+
+    // Mesai günü/saati dışında UTT izlemesi görüntülenebilir ama KAYIT TUTULMAZ:
+    // tam ya da yarım hiçbir izleme satırı açılmaz (puansız-sorusuz büyük kuralı,
+    // mesai dışı satırların soru hakkını yakan tutarsızlığı köke kapatır).
+    if (!puanKazanilabilirMi(new Date())) {
+      return NextResponse.json(
+        { mesaj: "Mesai dışı — izleme kaydı tutulmuyor.", puanli_zaman: false, izleme: { izleme_id: null } },
+        { status: 200 }
+      );
     }
 
     const turSonuc = await gecerliTur(adminSupabase, yayin_id);
