@@ -1,32 +1,43 @@
 // app/challenge-club/page.tsx
 //
-// Challenge Club ana sayfası. BM rolündeki kullanıcı buraya geldiğinde üç kolu
-// da görür:
-//   - İzlenecek Videolar (Kol 1) → /challenge-club/izle/[yayin_id]
-//   - Gelen Challenge'lar  (Kol 3) → /challenge-club/izle/[yayin_id]?challenge_id=X
-//   - Gönderdiklerim       (Kol 2) → durum: Bekliyor / İzlendi
-//
-// Sağ üstte "Challenge Gönder" butonu: ChallengeGonderModal'ı açar.
-// Buton içinde kompakt kota rozeti ("Challenge Gönder · 2 hak kaldı").
+// Challenge Club ana sayfası (BM). Stat kartları + iki sekme:
+//   - Challenge Gönder   → Gönderilecek Videolar yapısı (ChallengeGonderPaneli):
+//                          tamamlanan CC videoları + çok BM'ye gönderim (atla-raporla).
+//   - Gelen Challenge'lar → BM'e gelen challenge'lar; kart düzeni İzlenecek ile aynı,
+//                          tıkla → /challenge-club/izle/[yayin_id]?challenge_id=X.
 
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Inbox, Play, Send, Swords, Ticket, Video, type LucideIcon } from "lucide-react";
+import { Inbox, Send, Swords, Ticket, Video, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
-import ChallengeGonderModal from "@/components/challenge-club/ChallengeGonderModal";
-import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import ChallengeGonderPaneli, { type GonderSonuc } from "@/components/challenge-club/ChallengeGonderPaneli";
+import { UttVideoKarti, type UttVideo } from "@/components/video/UttVideoKarti";
 
 const BORDO = "#bc2d0d";
 const GRI_METIN = "#737373";
 const KOYU_METIN = "#111827";
 const GRI_ZEMIN = "#f9fafb";
 
-type Tab = "izlenecek" | "bekleyen" | "gonderdiklerim";
+type Tab = "gonder" | "bekleyen";
 
-interface Video {
+// UTT kartıyla ortak alt bilgiler (extra, izlenme, beğeni/favori, talep, içerik türü).
+interface KartMetrik {
+  extra_puan?: number;
+  izlenme_sayisi?: number;
+  begeni_sayisi?: number;
+  favori_sayisi?: number;
+  begeni_mi?: boolean;
+  favori_mi?: boolean;
+  daha_once_izledi?: boolean;
+  talep_no?: number | null;
+  firma_adi?: string | null;
+  icerik_turu?: string | null;
+}
+
+interface Video extends KartMetrik {
   yayin_id: string;
   urun_adi: string;
   teknik_adi: string;
@@ -38,7 +49,7 @@ interface Video {
   sonraki_tur_tarihi?: string | null;
 }
 
-interface Challenge {
+interface Challenge extends KartMetrik {
   challenge_id: string;
   yayin_id: string;
   son_tarih: string;
@@ -51,6 +62,40 @@ interface Challenge {
   teknik_adi?: string;
   video_url?: string | null;
   thumbnail_url?: string | null;
+  video_puani?: number | null;
+  yayin_tarihi?: string;
+}
+
+// CC verisini UTT kartının beklediği şekle eşler (doku birebir aynı olsun diye).
+function metrikTaban(x: KartMetrik) {
+  return {
+    talep_no: x.talep_no ?? null,
+    firma_adi: x.firma_adi ?? null,
+    extra_puan: x.extra_puan ?? 0,
+    izlenme_sayisi: x.izlenme_sayisi ?? 0,
+    begeni_sayisi: x.begeni_sayisi ?? 0,
+    favori_sayisi: x.favori_sayisi ?? 0,
+    begeni_mi: x.begeni_mi ?? false,
+    favori_mi: x.favori_mi ?? false,
+    daha_once_izledi: x.daha_once_izledi ?? false,
+    icerik_turu: (x.icerik_turu ?? null) as UttVideo["icerik_turu"],
+    ileri_sarma_acik: false,
+  };
+}
+
+function challengeyiUttKarta(c: Challenge): UttVideo {
+  return {
+    ...metrikTaban(c),
+    yayin_id: c.yayin_id,
+    urun_adi: c.urun_adi ?? "Video",
+    teknik_adi: c.teknik_adi ?? "-",
+    video_url: c.video_url ?? null,
+    thumbnail_url: c.thumbnail_url ?? null,
+    video_puani: c.video_puani ?? null,
+    yayin_tarihi: c.yayin_tarihi ?? c.created_at,
+    sonraki_tur_tarihi: null,
+    durum: c.izlendi_mi ? "tamamlanan" : "yeni",
+  };
 }
 
 interface Quota {
@@ -65,14 +110,12 @@ export default function ChallengeClubPage() {
   const [user, setUser] = useState<any>(null);
   const [rol, setRol] = useState("");
   const [loading, setLoading] = useState(true);
-  const [aktifTab, setAktifTab] = useState<Tab>("izlenecek");
+  const [aktifTab, setAktifTab] = useState<Tab>("gonder");
 
   const [videolar, setVideolar] = useState<Video[]>([]);
   const [bekleyenler, setBekleyenler] = useState<Challenge[]>([]);
   const [gonderdiklerim, setGonderdiklerim] = useState<Challenge[]>([]);
   const [quota, setQuota] = useState<Quota | null>(null);
-
-  const [modalAcik, setModalAcik] = useState(false);
 
   const { mesajlar, hata, basari } = useHataMesaji();
   const { kullanici, yukleniyor: kimlikYukleniyor } = useAuth();
@@ -150,18 +193,62 @@ export default function ChallengeClubPage() {
     setLoading(false);
   };
 
-  const handleVideoIzle = (yayin_id: string) => {
-    router.push(`/challenge-club/izle/${yayin_id}`);
-  };
-
   const handleChallengeIzle = (yayin_id: string, challenge_id: string) => {
     router.push(`/challenge-club/izle/${yayin_id}?challenge_id=${challenge_id}`);
   };
 
-  const handleGonderildi = async () => {
-    await verileriCek();
-    setAktifTab("gonderdiklerim");
+  // Çoklu alıcıya challenge gönder (atla-raporla). Sonrasında veriyi yeniler.
+  const handleCokluGonder = async (yayin_id: string, alan_idler: string[]): Promise<GonderSonuc | null> => {
+    try {
+      const res = await fetch("/challenge-club/api", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ yayin_id, alan_idler }),
+      });
+      const d = await res.json();
+      if (!res.ok) { hata(d.hata ?? "Challenge gönderilemedi.", d.adim, d.detay); return null; }
+      if ((d.gonderilen_sayisi ?? 0) > 0) basari(`${d.gonderilen_sayisi} challenge gönderildi.`);
+      await verileriCek();
+      return { gonderilen_sayisi: d.gonderilen_sayisi ?? 0, atlanan: d.atlanan ?? [] };
+    } catch (err) {
+      hata("Gönderim sırasında hata oluştu.", "fetch", String(err));
+      return null;
+    }
   };
+
+  // Beğeni/favori — UTT ile aynı uçlar (/izle/api/begeni|favori); BM'e açıldı.
+  const etkilesim = async (
+    tur: "begeni" | "favori",
+    e: MouseEvent,
+    yayin_id: string
+  ) => {
+    e.stopPropagation();
+    try {
+      const res = await fetch(`/izle/api/${tur}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ yayin_id }),
+      });
+      const d = await res.json();
+      if (!res.ok) return;
+      const aktif = tur === "begeni" ? d.begeni_mi === true : d.favori_mi === true;
+      const guncelle = <T extends KartMetrik & { yayin_id: string }>(liste: T[]): T[] =>
+        liste.map((x) => {
+          if (x.yayin_id !== yayin_id) return x;
+          if (tur === "begeni") {
+            return { ...x, begeni_mi: aktif, begeni_sayisi: (x.begeni_sayisi ?? 0) + (aktif ? 1 : -1) };
+          }
+          return { ...x, favori_mi: aktif, favori_sayisi: (x.favori_sayisi ?? 0) + (aktif ? 1 : -1) };
+        });
+      setVideolar((prev) => guncelle(prev));
+      setBekleyenler((prev) => guncelle(prev));
+      setGonderdiklerim((prev) => guncelle(prev));
+    } catch {
+      hata(`${tur === "begeni" ? "Beğeni" : "Favori"} işlemi başarısız.`);
+    }
+  };
+  const handleBegeni = (e: MouseEvent, yayin_id: string) => etkilesim("begeni", e, yayin_id);
+  const handleFavori = (e: MouseEvent, yayin_id: string) => etkilesim("favori", e, yayin_id);
 
   const kalanGun = (son_tarih: string) => {
     const fark = new Date(son_tarih).getTime() - new Date().getTime();
@@ -200,14 +287,6 @@ export default function ChallengeClubPage() {
       </div>
     );
   }
-
-  // Buton rengi/durumu
-  const butonDevreDisi = !quota || quota.dolu_mu;
-  const butonRozetMetni = quota
-    ? quota.dolu_mu
-      ? "Kota dolu"
-      : `${quota.kalan} hak kaldı`
-    : "";
 
   // Hero + stat türevleri
   const ad = (user?.adSoyad ?? "").split(" ")[0] || "";
@@ -250,8 +329,8 @@ export default function ChallengeClubPage() {
           Ana Sayfa
         </button>
 
-        {/* Hero başlık + Challenge Gönder butonu */}
-        <header className="flex flex-wrap items-end justify-between gap-3 mb-5">
+        {/* Hero başlık */}
+        <header className="mb-5">
           <div className="min-w-0">
             <div
               className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em]"
@@ -269,28 +348,6 @@ export default function ChallengeClubPage() {
               {"BM · Diğer BM'lere video önerin, size gelen challenge'ları izleyin ve puan kazanın."}
             </p>
           </div>
-          <button
-            onClick={() => setModalAcik(true)}
-            disabled={butonDevreDisi}
-            className="inline-flex items-center gap-2 rounded-xl border-none px-4 py-2.5 text-xs font-extrabold text-white shadow-sm"
-            style={{
-              background: BORDO,
-              opacity: butonDevreDisi ? 0.5 : 1,
-              fontFamily: "'Nunito', sans-serif",
-              cursor: butonDevreDisi ? "not-allowed" : "pointer",
-            }}
-          >
-            <Send size={15} />
-            <span>Challenge Gönder</span>
-            {quota && (
-              <span
-                className="text-xs px-2 py-0.5 rounded-full"
-                style={{ background: "rgba(255,255,255,0.25)", fontWeight: 600 }}
-              >
-                {butonRozetMetni}
-              </span>
-            )}
-          </button>
         </header>
 
         {/* Stat kartlar */}
@@ -307,9 +364,9 @@ export default function ChallengeClubPage() {
           style={{ WebkitOverflowScrolling: "touch" }}
         >
           <TabButton
-            aktif={aktifTab === "izlenecek"}
-            onClick={() => setAktifTab("izlenecek")}
-            etiket="İzlenecek Videolar"
+            aktif={aktifTab === "gonder"}
+            onClick={() => setAktifTab("gonder")}
+            etiket="Challenge Gönder"
           />
           <TabButton
             aktif={aktifTab === "bekleyen"}
@@ -317,16 +374,16 @@ export default function ChallengeClubPage() {
             etiket="Gelen Challenge'lar"
             rozet={bekleyenler.filter((challenge) => challenge.durum === "bekliyor").length || undefined}
           />
-          <TabButton
-            aktif={aktifTab === "gonderdiklerim"}
-            onClick={() => setAktifTab("gonderdiklerim")}
-            etiket="Gönderdiklerim"
-          />
         </div>
 
         {/* Tab içerikleri */}
-        {aktifTab === "izlenecek" && (
-          <VideoListesi videolar={videolar} onIzle={handleVideoIzle} />
+        {aktifTab === "gonder" && (
+          <ChallengeGonderPaneli
+            videolar={videolar}
+            kalanKota={quota?.kalan ?? 0}
+            hata={hata}
+            onGonder={handleCokluGonder}
+          />
         )}
 
         {aktifTab === "bekleyen" && (
@@ -334,22 +391,11 @@ export default function ChallengeClubPage() {
             bekleyenler={bekleyenler}
             onIzle={handleChallengeIzle}
             kalanGun={kalanGun}
+            onBegeni={handleBegeni}
+            onFavori={handleFavori}
           />
         )}
-
-        {aktifTab === "gonderdiklerim" && (
-          <GonderdiklerimListesi gonderdiklerim={gonderdiklerim} />
-        )}
       </div>
-
-      {/* Challenge gönder modalı */}
-      <ChallengeGonderModal
-        acik={modalAcik}
-        onKapat={() => setModalAcik(false)}
-        onGonderildi={handleGonderildi}
-        hata={hata}
-        basari={basari}
-      />
     </div>
   );
 }
@@ -418,56 +464,22 @@ function CcRaf({ children }: { children: ReactNode }) {
   );
 }
 
-function CcVideoKarti({
-  thumbnail,
-  baslik,
-  altBaslik,
-  rozet,
-  altSerit,
-  onClick,
-}: {
-  thumbnail: string | null;
-  baslik: string;
-  altBaslik?: string;
-  rozet?: string;
-  altSerit?: ReactNode;
-  onClick?: () => void;
-}) {
-  const tiklanabilir = !!onClick;
+type EtkilesimHandler = (e: MouseEvent, yayin_id: string) => void;
+
+// UTT kartını CC rafında UTT ile aynı ölçüde saran kapsayıcı.
+function KartSarici({ children }: { children: ReactNode }) {
+  return <div className="flex w-40 flex-shrink-0 snap-start flex-col gap-1 sm:w-44 md:w-52">{children}</div>;
+}
+
+// Kart altı challenge meta şeridi (gönderen/alıcı + durum).
+function KartMeta({ children, renk }: { children: ReactNode; renk?: string }) {
   return (
-    <article
-      className={`group w-40 shrink-0 snap-start overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition sm:w-44 md:w-52 ${tiklanabilir ? "hover:-translate-y-0.5 hover:border-[#e6b3a6] hover:shadow-[0_10px_24px_rgba(188,45,13,0.10)]" : ""}`}
+    <span
+      className="truncate rounded-lg px-2 py-1 text-center text-[10px] font-semibold"
+      style={{ background: "#f7f9fc", color: renk ?? "#70849d", border: "0.5px solid #e5e7eb" }}
     >
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={!tiklanabilir}
-        className={`w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#bc2d0d] ${tiklanabilir ? "cursor-pointer" : "cursor-default"}`}
-      >
-        <div className="relative aspect-video overflow-hidden bg-[#f1f1f1]">
-          {thumbnail ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={thumbnail} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" loading="lazy" />
-          ) : (
-            <span className="flex h-full items-center justify-center text-gray-400"><Video size={26} /></span>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#10233a]/45 via-transparent to-transparent" />
-          {tiklanabilir && (
-            <span className="absolute inset-0 flex items-center justify-center">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-[#10233a]/65 text-white shadow-lg backdrop-blur-sm transition-transform group-hover:scale-105"><Play size={14} fill="currentColor" /></span>
-            </span>
-          )}
-          {rozet && (
-            <span className="absolute right-2 top-2 rounded-full border border-white/30 bg-[#10233a]/70 px-2 py-1 text-[9px] font-extrabold text-white backdrop-blur-sm">{rozet}</span>
-          )}
-        </div>
-        <div className="px-3 pt-3">
-          <div className="truncate text-sm font-extrabold text-[#243957]">{baslik}</div>
-          {altBaslik && <div className="mt-1 truncate text-[10px] font-bold text-[#7b8ca5]">{altBaslik}</div>}
-        </div>
-      </button>
-      {altSerit && <div className="m-3 mt-2 rounded-lg bg-[#f7f9fc] px-2 py-1.5 text-[10px] text-[#70849d]">{altSerit}</div>}
-    </article>
+      {children}
+    </span>
   );
 }
 
@@ -511,51 +523,18 @@ function TabButton({
   );
 }
 
-function VideoListesi({
-  videolar,
-  onIzle,
-}: {
-  videolar: Video[];
-  onIzle: (yayin_id: string) => void;
-}) {
-  if (videolar.length === 0) {
-    return <BosDurum ikon={Video} metin="Henüz yayında olan CC videosu yok." />;
-  }
-
-  return (
-    <CcRaf>
-      {videolar.map((v) => (
-        <CcVideoKarti
-          key={v.yayin_id}
-          thumbnail={v.thumbnail_url || thumbnailUrlUret(v.video_url)}
-          baslik={v.urun_adi}
-          altBaslik={v.teknik_adi}
-          rozet={v.tamamlandi_mi ? "✓ İzlendi" : undefined}
-          onClick={() => onIzle(v.yayin_id)}
-          altSerit={
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-bold text-yellow-600">★ {v.video_puani} puan</span>
-              {v.tamamlandi_mi && v.sonraki_tur_tarihi && (
-                <span className="text-[#237ac8]">
-                  {Math.max(0, Math.ceil((new Date(v.sonraki_tur_tarihi).getTime() - Date.now()) / (24 * 60 * 60 * 1000)))} gün sonra puanlı
-                </span>
-              )}
-            </div>
-          }
-        />
-      ))}
-    </CcRaf>
-  );
-}
-
 function BekleyenListesi({
   bekleyenler,
   onIzle,
   kalanGun,
+  onBegeni,
+  onFavori,
 }: {
   bekleyenler: Challenge[];
   onIzle: (yayin_id: string, challenge_id: string) => void;
   kalanGun: (son_tarih: string) => string;
+  onBegeni: EtkilesimHandler;
+  onFavori: EtkilesimHandler;
 }) {
   if (bekleyenler.length === 0) {
     return <BosDurum ikon={Inbox} metin="Bekleyen challenge yok." />;
@@ -565,63 +544,26 @@ function BekleyenListesi({
     <CcRaf>
       {bekleyenler.map((c) => {
         const bekliyor = c.durum === "bekliyor";
-        const rozet = bekliyor
-          ? kalanGun(c.son_tarih)
-          : c.durum === "izlendi"
-            ? "✓ İzlendi"
-            : "Süresi Doldu";
-        return (
-          <CcVideoKarti
-            key={c.challenge_id}
-            thumbnail={c.thumbnail_url || thumbnailUrlUret(c.video_url)}
-            baslik={c.urun_adi ?? "Video"}
-            altBaslik={c.teknik_adi}
-            rozet={rozet}
-            onClick={bekliyor ? () => onIzle(c.yayin_id, c.challenge_id) : undefined}
-            altSerit={
-              <span className="font-bold" style={{ color: BORDO }}>
-                {c.gonderen?.ad} {c.gonderen?.soyad}
-              </span>
-            }
-          />
-        );
-      })}
-    </CcRaf>
-  );
-}
-
-function GonderdiklerimListesi({
-  gonderdiklerim,
-}: {
-  gonderdiklerim: Challenge[];
-}) {
-  if (gonderdiklerim.length === 0) {
-    return <BosDurum ikon={Send} metin="Bu ay challenge göndermediniz." />;
-  }
-
-  return (
-    <CcRaf>
-      {gonderdiklerim.map((c) => {
-        const rozet = c.durum === "izlendi"
-          ? "✓ İzlendi"
+        const durumMetni = c.durum === "izlendi"
+          ? "İzlendi"
           : c.durum === "suresi_doldu"
-            ? "Süresi Doldu"
-            : "Bekliyor";
+            ? "Süresi doldu"
+            : kalanGun(c.son_tarih);
         return (
-          <CcVideoKarti
-            key={c.challenge_id}
-            thumbnail={c.thumbnail_url || thumbnailUrlUret(c.video_url)}
-            baslik={c.urun_adi ?? "Video"}
-            altBaslik={c.teknik_adi}
-            rozet={rozet}
-            altSerit={
-              <span>
-                Alıcı: <b className="text-[#314a68]">{c.alan?.ad} {c.alan?.soyad}</b>
-              </span>
-            }
-          />
+          <KartSarici key={c.challenge_id}>
+            <UttVideoKarti
+              video={challengeyiUttKarta(c)}
+              onVideoClick={() => { if (bekliyor) onIzle(c.yayin_id, c.challenge_id); }}
+              onBegeni={onBegeni}
+              onFavori={onFavori}
+            />
+            <KartMeta renk={BORDO}>
+              {c.gonderen?.ad} {c.gonderen?.soyad} · {durumMetni}
+            </KartMeta>
+          </KartSarici>
         );
       })}
     </CcRaf>
   );
 }
+

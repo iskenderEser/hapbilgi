@@ -28,7 +28,7 @@ export async function uygunVideoListesi(
   const [yayinlarRes, izlemelerRes] = await Promise.all([
     supabase
       .from("v_yayin_detay")
-      .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url")
+      .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani")
       .eq("durum", "yayinda")
       .eq("firma_id", firmaId)
       .contains("hedef_roller", ["bm"])
@@ -59,6 +59,7 @@ export async function uygunVideoListesi(
       teknik_adi: y.teknik_adi ?? "-",
       video_url: y.video_url ?? null,
       thumbnail_url: y.thumbnail_url ?? null,
+      video_puani: y.video_puani ?? null,
     }));
 
   return sonuc;

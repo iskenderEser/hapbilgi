@@ -74,6 +74,7 @@ export interface UygunVideo {
   teknik_adi: string;
   video_url: string | null;
   thumbnail_url: string | null;
+  video_puani: number | null;
 }
 
 /**

@@ -20,8 +20,11 @@ export async function POST(request: NextRequest) {
       .select("kisi_id, rol")
       .eq("auth_user_id", user.id)
       .maybeSingle();
-    const eclubKisisiMi = !TUKETICI_ROLLER.includes(rol) && ECLUB_TUKETICI_ROLLERI.includes(eclubKisi?.rol ?? "");
-    if (!TUKETICI_ROLLER.includes(rol) && !eclubKisisiMi) {
+    // BM, Challenge Club kartlarında beğeni yapabilir; UTT/KD_UTT ile aynı iç
+    // izleyici tablosuna (video_begeniler) yazar.
+    const iciIzleyici = TUKETICI_ROLLER.includes(rol) || rol === "bm";
+    const eclubKisisiMi = !iciIzleyici && ECLUB_TUKETICI_ROLLERI.includes(eclubKisi?.rol ?? "");
+    if (!iciIzleyici && !eclubKisisiMi) {
       return rolHatasi("Bu kullanıcı beğeni yapamaz.");
     }
     const tablo = eclubKisisiMi ? "eclub_video_begeniler" : "video_begeniler";
