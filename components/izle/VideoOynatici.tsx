@@ -17,6 +17,16 @@ import { createVideoPlayer, type VideoPlayer } from "@/lib/video/videoPlayer";
 import { oynatmaBaslatilmaliMi } from "@/lib/izleme/baslat";
 import VideoCercevesi from "@/components/video/VideoCercevesi";
 import { useVideoEtkilesimKatmani } from "@/components/video/useVideoEtkilesimKatmani";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface OynaticiVideo {
   yayin_id: string;
@@ -98,6 +108,7 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
   const [ileriSarmaModal, setIleriSarmaModal] = useState(false);
   const [bekleyenSeekBitis, setBekleyenSeekBitis] = useState<number | null>(null);
   const [ilkOynatmaIstendi, setIlkOynatmaIstendi] = useState(false);
+  const [mesaiDisiModal, setMesaiDisiModal] = useState(false);
 
   const maxIzlenenRef = useRef<number>(0);
   const izlemeIdRef = useRef<string | null>(null);
@@ -393,11 +404,10 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
         return;
       }
 
-      // Mesai dışı: sunucu kayıt açmadı (izleme_id null). Video kayıtsız modda
-      // serbest oynar; puan/soru/kayıt yoktur.
+      // Mesai dışı: sunucu kayıt açmadı (izleme_id null). Önce bilgilendirme
+      // modalı çıkar; video oynatılmaz — kullanıcı Onayla derse kayıtsız oynar.
       if (!d.izleme?.izleme_id) {
-        kayitsizModRef.current = true;
-        player.play();
+        setMesaiDisiModal(true);
         return;
       }
 
@@ -412,6 +422,13 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
       baslatiliyorRef.current = false;
       setIslemLoading(false);
     }
+  };
+
+  // Mesai dışı modalı: Onayla → kayıtsız modda serbest oynat; Vazgeç → oynatma.
+  const handleMesaiDisiOnayla = () => {
+    setMesaiDisiModal(false);
+    kayitsizModRef.current = true;
+    playerRef.current?.play();
   };
 
   const handleIzlemeBitir = async () => {
@@ -620,6 +637,23 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
           </div>
         </div>
       )}
+
+      <AlertDialog open={mesaiDisiModal} onOpenChange={setMesaiDisiModal}>
+        <AlertDialogContent className="max-w-sm border-[#dbe5ef] bg-white text-center">
+          <AlertDialogHeader className="items-center text-center sm:text-center">
+            <AlertDialogTitle className="text-[#203653]">Bilgilendirme</AlertDialogTitle>
+            <AlertDialogDescription className="mx-auto max-w-[280px] text-center leading-6 text-[#687b90]">
+              Mesai saatleri dışında izleme puanı verilmez ve sorular gösterilmez.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-center">
+            <AlertDialogCancel>Vazgeç</AlertDialogCancel>
+            <AlertDialogAction onClick={handleMesaiDisiOnayla} className="bg-[#237ac8] hover:bg-[#1d69ad]">
+              Onayla
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

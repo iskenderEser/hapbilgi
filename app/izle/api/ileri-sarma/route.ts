@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
     }
 
     const atlananSure = bitis - baslangic;
-    const puanliZaman = izlemePuanZamaniAktifMi(new Date(izleme.izleme_baslangic));
+    const puanliZaman = await izlemePuanZamaniAktifMi(adminSupabase, new Date(izleme.izleme_baslangic));
     const kaybedilenPuan = ileriSarmaKaybiHesapla({
       videoPuani: yayinDetay.video_puani ?? 0,
       videoSuresi: izleme.video_suresi_saniye,

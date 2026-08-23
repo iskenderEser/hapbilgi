@@ -26,6 +26,8 @@ export default function SistemAyarlari({ hata, basari }: SistemAyarlariProps) {
   const [duzenlenen, setDuzenlenen] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [kaydeden, setKaydeden] = useState<string | null>(null);
+  const [mesaiBypass, setMesaiBypass] = useState<boolean | null>(null);
+  const [bypassKaydediliyor, setBypassKaydediliyor] = useState(false);
 
   const degerMetni = (deger: number | number[]): string =>
     Array.isArray(deger) ? deger.join(", ") : String(deger);
@@ -49,6 +51,33 @@ export default function SistemAyarlari({ hata, basari }: SistemAyarlariProps) {
   // İlk yükleme yalnızca bileşen açıldığında yapılır; veriCek kaydetme sonrasında da kullanılır.
   // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => { void veriCek(); }, []);
+
+  // Mesai bypass düğmesinin mevcut durumu (test aracı).
+  useEffect(() => {
+    void (async () => {
+      const res = await fetch("/admin/api/mesai-bypass");
+      const d = await res.json();
+      if (res.ok) setMesaiBypass(d.aktif === true);
+    })();
+  }, []);
+
+  const handleMesaiBypassToggle = async () => {
+    const yeni = !(mesaiBypass ?? false);
+    setBypassKaydediliyor(true);
+    const res = await fetch("/admin/api/mesai-bypass", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ aktif: yeni }),
+    });
+    const d = await res.json();
+    if (!res.ok) {
+      hata(d.hata ?? "Mesai bypass güncellenemedi.", d.adim, d.detay);
+    } else {
+      setMesaiBypass(yeni);
+      basari(yeni ? "Mesai bypass AÇILDI (test modu)." : "Mesai bypass KAPATILDI (gerçek kural).");
+    }
+    setBypassKaydediliyor(false);
+  };
 
   // Metni deger'e çevirir: mevcut değer dizi ise virgüllü sayı dizisi, değilse tek sayı.
   const metniDegereCevir = (ayar: SistemAyari, metin: string): number | number[] | null => {
@@ -105,6 +134,60 @@ export default function SistemAyarlari({ hata, basari }: SistemAyarlariProps) {
       <p style={{ fontSize: "12px", color: "#737373", marginBottom: "16px" }}>
         Değerler tüm firmalara aynı uygulanır. Yeni ayar eklemek migration işidir; buradan yalnızca mevcut değerler güncellenir.
       </p>
+
+      {/* Test aracı — Mesai bypass düğmesi (production'da dinlenmez) */}
+      <section
+        style={{
+          maxWidth: 980,
+          marginBottom: "24px",
+          padding: "16px",
+          border: "0.5px solid #fde68a",
+          borderRadius: "12px",
+          background: "#fffbeb",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
+          <div style={{ minWidth: 0 }}>
+            <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 800, color: "#111" }}>
+              Test: Mesai kuralını atla
+            </h3>
+            <p style={{ margin: "4px 0 0", fontSize: "12px", lineHeight: 1.5, color: "#737373" }}>
+              Açıkken mesai günü/saati kuralı atlanır — izleme her zaman kayıt olur, puan ve sorular çalışır.
+              Kapalıyken gerçek kural işler (mesai dışı → kayıt yok, bilgilendirme modalı). Yalnız test/geliştirme içindir; canlıda etkisizdir.
+            </p>
+          </div>
+          <button
+            onClick={handleMesaiBypassToggle}
+            disabled={mesaiBypass === null || bypassKaydediliyor}
+            aria-pressed={mesaiBypass === true}
+            style={{
+              flexShrink: 0,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 14px",
+              border: "none",
+              borderRadius: "999px",
+              fontSize: "13px",
+              fontWeight: 800,
+              cursor: mesaiBypass === null || bypassKaydediliyor ? "not-allowed" : "pointer",
+              background: mesaiBypass ? "#16a34a" : "#e5e7eb",
+              color: mesaiBypass ? "white" : "#6b7280",
+              fontFamily: "'Nunito', sans-serif",
+            }}
+          >
+            <span
+              style={{
+                width: "9px",
+                height: "9px",
+                borderRadius: "999px",
+                background: mesaiBypass ? "white" : "#9ca3af",
+              }}
+            />
+            {mesaiBypass === null ? "..." : bypassKaydediliyor ? "..." : mesaiBypass ? "AÇIK" : "KAPALI"}
+          </button>
+        </div>
+      </section>
 
       <section
         style={{

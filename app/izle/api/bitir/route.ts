@@ -49,7 +49,7 @@ export async function PUT(request: NextRequest) {
     if (!izleme.gercek_oynatma_mi) return isKuraluHatasi("Gerçek oynatma başlamadan izleme tamamlanamaz.");
 
     const baslangicTarihi = new Date(izleme.izleme_baslangic);
-    const puanliZaman = izlemePuanZamaniAktifMi(baslangicTarihi);
+    const puanliZaman = await izlemePuanZamaniAktifMi(adminSupabase, baslangicTarihi);
 
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("yayin_yonetimi")
