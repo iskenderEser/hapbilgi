@@ -11,18 +11,18 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { Inbox, Play, Send, Swords, Ticket, Video, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import ChallengeGonderModal from "@/components/challenge-club/ChallengeGonderModal";
+import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 
 const BORDO = "#bc2d0d";
 const GRI_METIN = "#737373";
 const KOYU_METIN = "#111827";
 const GRI_ZEMIN = "#f9fafb";
-const YESIL = "#16a34a";
-const SARI_TEXT = "#854d0e";
 
 type Tab = "izlenecek" | "bekleyen" | "gonderdiklerim";
 
@@ -30,6 +30,7 @@ interface Video {
   yayin_id: string;
   urun_adi: string;
   teknik_adi: string;
+  video_url: string | null;
   thumbnail_url: string | null;
   video_puani: number;
   yayin_tarihi: string;
@@ -48,6 +49,7 @@ interface Challenge {
   alan?: { ad: string; soyad: string };
   urun_adi?: string;
   teknik_adi?: string;
+  video_url?: string | null;
   thumbnail_url?: string | null;
 }
 
@@ -207,6 +209,10 @@ export default function ChallengeClubPage() {
       : `${quota.kalan} hak kaldı`
     : "";
 
+  // Hero + stat türevleri
+  const ad = (user?.adSoyad ?? "").split(" ")[0] || "";
+  const bekleyenSayisi = bekleyenler.filter((c) => c.durum === "bekliyor").length;
+
   return (
     <div
       className="min-h-screen pb-20 md:pb-0"
@@ -220,7 +226,7 @@ export default function ChallengeClubPage() {
         ))}
       </div>
 
-      <div className="max-w-3xl mx-auto px-3 py-3 md:px-4 md:py-6">
+      <div className="max-w-6xl mx-auto px-3 py-4 pb-20 md:px-6 md:py-6">
         {/* Geri linki */}
         <button
           onClick={() => router.push("/ana-sayfa")}
@@ -244,23 +250,29 @@ export default function ChallengeClubPage() {
           Ana Sayfa
         </button>
 
-        {/* Başlık + Challenge Gönder butonu */}
-        <div className="flex items-start justify-between gap-3 mb-5 flex-wrap">
-          <div>
-            <h1
-              className="text-xl font-bold"
-              style={{ color: KOYU_METIN, margin: 0 }}
+        {/* Hero başlık + Challenge Gönder butonu */}
+        <header className="flex flex-wrap items-end justify-between gap-3 mb-5">
+          <div className="min-w-0">
+            <div
+              className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em]"
+              style={{ color: BORDO }}
             >
-              Challenge Club
-            </h1>
-            <div className="text-xs mt-1" style={{ color: GRI_METIN }}>
-              Diğer BM'lere video önerin, kendinize gelenleri izleyin.
+              <Swords size={14} /> Challenge Club
             </div>
+            <h1
+              className="m-0 text-2xl font-extrabold tracking-[-0.03em]"
+              style={{ color: "#203653" }}
+            >
+              Merhaba {ad}
+            </h1>
+            <p className="mt-1 max-w-2xl text-xs font-semibold leading-5" style={{ color: "#8190a3" }}>
+              {"BM · Diğer BM'lere video önerin, size gelen challenge'ları izleyin ve puan kazanın."}
+            </p>
           </div>
           <button
             onClick={() => setModalAcik(true)}
             disabled={butonDevreDisi}
-            className="px-4 py-2 rounded-lg border-none text-white text-xs cursor-pointer flex items-center gap-2"
+            className="inline-flex items-center gap-2 rounded-xl border-none px-4 py-2.5 text-xs font-extrabold text-white shadow-sm"
             style={{
               background: BORDO,
               opacity: butonDevreDisi ? 0.5 : 1,
@@ -268,20 +280,26 @@ export default function ChallengeClubPage() {
               cursor: butonDevreDisi ? "not-allowed" : "pointer",
             }}
           >
-            <span className="font-semibold">Challenge Gönder</span>
+            <Send size={15} />
+            <span>Challenge Gönder</span>
             {quota && (
               <span
                 className="text-xs px-2 py-0.5 rounded-full"
-                style={{
-                  background: "rgba(255,255,255,0.25)",
-                  fontWeight: 500,
-                }}
+                style={{ background: "rgba(255,255,255,0.25)", fontWeight: 600 }}
               >
                 {butonRozetMetni}
               </span>
             )}
           </button>
-        </div>
+        </header>
+
+        {/* Stat kartlar */}
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+          <StatKart ikon={Video} etiket="İzlenecek Video" deger={videolar.length} detay="Yayındaki CC videosu" renk={BORDO} zemin="#fdece8" />
+          <StatKart ikon={Inbox} etiket="Gelen Challenge" deger={bekleyenSayisi} detay="Süresi devam eden" renk="#d78022" zemin="#fff6e8" />
+          <StatKart ikon={Send} etiket="Gönderdiğim" deger={gonderdiklerim.length} detay="Bu ay" renk="#16865f" zemin="#ebf8f2" />
+          <StatKart ikon={Ticket} etiket="Kalan Hak" deger={quota?.kalan ?? 0} detay="Aylık gönderim kotası" renk="#237ac8" zemin="#edf6fd" />
+        </section>
 
         {/* Tab — yatay scroll mobile */}
         <div
@@ -338,6 +356,121 @@ export default function ChallengeClubPage() {
 
 // ─── Alt bileşenler ──────────────────────────────────────────────────────────
 
+function StatKart({
+  ikon: Icon,
+  etiket,
+  deger,
+  detay,
+  renk,
+  zemin,
+}: {
+  ikon: LucideIcon;
+  etiket: string;
+  deger: string | number;
+  detay?: string;
+  renk: string;
+  zemin: string;
+}) {
+  return (
+    <article className="rounded-2xl border border-[#dfe7f1] bg-white p-3.5 shadow-[0_5px_16px_rgba(31,55,90,0.035)]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-[10px] font-extrabold uppercase tracking-[0.05em] text-[#8190a3]">{etiket}</div>
+          <div className="mt-1 text-2xl font-black tabular-nums" style={{ color: renk }}>
+            {typeof deger === "number" ? deger.toLocaleString("tr-TR") : deger}
+          </div>
+          {detay && <div className="mt-0.5 truncate text-[10px] font-semibold text-[#8796a8]">{detay}</div>}
+        </div>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl" style={{ color: renk, background: zemin }}>
+          <Icon size={16} />
+        </span>
+      </div>
+    </article>
+  );
+}
+
+function BosDurum({ ikon: Icon, metin }: { ikon: LucideIcon; metin: string }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-[#d8e2ec] bg-white px-5 py-12 text-center">
+      <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f1f6fa] text-[#8ba0b5]">
+        <Icon size={20} />
+      </span>
+      <h2 className="mt-3 text-sm font-extrabold text-[#40556d]">{metin}</h2>
+    </div>
+  );
+}
+
+function CcRaf({ children }: { children: ReactNode }) {
+  const raf = useRef<HTMLDivElement>(null);
+  const kaydir = (yon: number) => raf.current?.scrollBy({ left: yon * raf.current.clientWidth * 0.85, behavior: "smooth" });
+  return (
+    <div className="group relative">
+      <button type="button" aria-label="Sola kaydır" onClick={() => kaydir(-1)} className="absolute inset-y-0 left-0 z-10 flex w-16 cursor-pointer items-center justify-start bg-gradient-to-r from-[#f9fafb] via-[#f9fafb]/70 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
+        <svg className="h-7 w-7 text-gray-800 drop-shadow-sm" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+      </button>
+      <div ref={raf} className="flex snap-x gap-2.5 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {children}
+      </div>
+      <button type="button" aria-label="Sağa kaydır" onClick={() => kaydir(1)} className="absolute inset-y-0 right-0 z-10 flex w-16 cursor-pointer items-center justify-end bg-gradient-to-l from-[#f9fafb] via-[#f9fafb]/70 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
+        <svg className="h-7 w-7 text-gray-800 drop-shadow-sm" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+      </button>
+    </div>
+  );
+}
+
+function CcVideoKarti({
+  thumbnail,
+  baslik,
+  altBaslik,
+  rozet,
+  altSerit,
+  onClick,
+}: {
+  thumbnail: string | null;
+  baslik: string;
+  altBaslik?: string;
+  rozet?: string;
+  altSerit?: ReactNode;
+  onClick?: () => void;
+}) {
+  const tiklanabilir = !!onClick;
+  return (
+    <article
+      className={`group w-40 shrink-0 snap-start overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition sm:w-44 md:w-52 ${tiklanabilir ? "hover:-translate-y-0.5 hover:border-[#e6b3a6] hover:shadow-[0_10px_24px_rgba(188,45,13,0.10)]" : ""}`}
+    >
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={!tiklanabilir}
+        className={`w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#bc2d0d] ${tiklanabilir ? "cursor-pointer" : "cursor-default"}`}
+      >
+        <div className="relative aspect-video overflow-hidden bg-[#f1f1f1]">
+          {thumbnail ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={thumbnail} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" loading="lazy" />
+          ) : (
+            <span className="flex h-full items-center justify-center text-gray-400"><Video size={26} /></span>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#10233a]/45 via-transparent to-transparent" />
+          {tiklanabilir && (
+            <span className="absolute inset-0 flex items-center justify-center">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-[#10233a]/65 text-white shadow-lg backdrop-blur-sm transition-transform group-hover:scale-105"><Play size={14} fill="currentColor" /></span>
+            </span>
+          )}
+          {rozet && (
+            <span className="absolute right-2 top-2 rounded-full border border-white/30 bg-[#10233a]/70 px-2 py-1 text-[9px] font-extrabold text-white backdrop-blur-sm">{rozet}</span>
+          )}
+        </div>
+        <div className="px-3 pt-3">
+          <div className="truncate text-sm font-extrabold text-[#243957]">{baslik}</div>
+          {altBaslik && <div className="mt-1 truncate text-[10px] font-bold text-[#7b8ca5]">{altBaslik}</div>}
+        </div>
+      </button>
+      {altSerit && <div className="m-3 mt-2 rounded-lg bg-[#f7f9fc] px-2 py-1.5 text-[10px] text-[#70849d]">{altSerit}</div>}
+    </article>
+  );
+}
+
 function TabButton({
   aktif,
   onClick,
@@ -352,7 +485,7 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className="px-4 py-1.5 rounded-full text-[10px] cursor-pointer border whitespace-nowrap flex items-center gap-1.5 flex-shrink-0"
+      className="px-4 py-2 rounded-full text-xs font-bold cursor-pointer border whitespace-nowrap flex items-center gap-1.5 flex-shrink-0"
       style={{
         fontFamily: "'Nunito', sans-serif",
         background: aktif ? BORDO : "white",
@@ -386,70 +519,32 @@ function VideoListesi({
   onIzle: (yayin_id: string) => void;
 }) {
   if (videolar.length === 0) {
-    return (
-      <div
-        className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm"
-        style={{ color: GRI_METIN }}
-      >
-        Henüz yayında olan CC videosu yok.
-      </div>
-    );
+    return <BosDurum ikon={Video} metin="Henüz yayında olan CC videosu yok." />;
   }
 
   return (
-    <div className="flex flex-col gap-2.5">
+    <CcRaf>
       {videolar.map((v) => (
-        <div
+        <CcVideoKarti
           key={v.yayin_id}
-          className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-3"
-        >
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <div
-                className="text-sm font-semibold"
-                style={{ color: KOYU_METIN }}
-              >
-                {v.urun_adi}
-              </div>
-              {v.tamamlandi_mi && (
-                <span
-                  className="text-[10px] px-2 py-0.5 rounded-full"
-                  style={{
-                    color: YESIL,
-                    background: "#f0fdf4",
-                    border: "0.5px solid #bbf7d0",
-                  }}
-                >
-                  Tamamlandı
-                </span>
-              )}
+          thumbnail={v.thumbnail_url || thumbnailUrlUret(v.video_url)}
+          baslik={v.urun_adi}
+          altBaslik={v.teknik_adi}
+          rozet={v.tamamlandi_mi ? "✓ İzlendi" : undefined}
+          onClick={() => onIzle(v.yayin_id)}
+          altSerit={
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-bold text-yellow-600">★ {v.video_puani} puan</span>
               {v.tamamlandi_mi && v.sonraki_tur_tarihi && (
-                <span
-                  className="text-[10px] px-2 py-0.5 rounded-full"
-                  style={{
-                    color: "#1d4ed8",
-                    background: "#eff6ff",
-                    border: "0.5px solid #bfdbfe",
-                  }}
-                >
-                  {Math.max(0, Math.ceil((new Date(v.sonraki_tur_tarihi).getTime() - Date.now()) / (24 * 60 * 60 * 1000)))} gün sonra yeniden puanlı
+                <span className="text-[#237ac8]">
+                  {Math.max(0, Math.ceil((new Date(v.sonraki_tur_tarihi).getTime() - Date.now()) / (24 * 60 * 60 * 1000)))} gün sonra puanlı
                 </span>
               )}
             </div>
-            <div className="text-xs mt-0.5" style={{ color: GRI_METIN }}>
-              {v.teknik_adi}
-            </div>
-          </div>
-          <button
-            onClick={() => onIzle(v.yayin_id)}
-            className="px-4 py-1.5 rounded-lg border-none text-xs font-medium cursor-pointer flex-shrink-0 text-white"
-            style={{ background: BORDO, fontFamily: "'Nunito', sans-serif" }}
-          >
-            {v.tamamlandi_mi ? "Tekrar İzle" : "İzle"}
-          </button>
-        </div>
+          }
+        />
       ))}
-    </div>
+    </CcRaf>
   );
 }
 
@@ -463,50 +558,35 @@ function BekleyenListesi({
   kalanGun: (son_tarih: string) => string;
 }) {
   if (bekleyenler.length === 0) {
-    return (
-      <div
-        className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm"
-        style={{ color: GRI_METIN }}
-      >
-        Bekleyen challenge yok.
-      </div>
-    );
+    return <BosDurum ikon={Inbox} metin="Bekleyen challenge yok." />;
   }
 
   return (
-    <div className="flex flex-col gap-2.5">
-      {bekleyenler.map((c) => (
-        <div
-          key={c.challenge_id}
-          className="bg-white rounded-xl px-4 py-3 flex items-center gap-3"
-          style={{ border: `0.5px solid ${BORDO}` }}
-        >
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold" style={{ color: KOYU_METIN }}>
-              {c.urun_adi ?? "Video"}
-            </div>
-            <div className="text-xs" style={{ color: GRI_METIN }}>
-              {c.teknik_adi}
-            </div>
-            <div className="text-xs mt-1" style={{ color: BORDO }}>
-              {c.gonderen?.ad} {c.gonderen?.soyad}
-              {c.durum === "bekliyor" ? ` · ${kalanGun(c.son_tarih)}` : ""}
-            </div>
-          </div>
-          {c.durum === "bekliyor" ? (
-            <button
-              onClick={() => onIzle(c.yayin_id, c.challenge_id)}
-              className="px-4 py-1.5 rounded-lg border-none text-xs font-medium cursor-pointer flex-shrink-0 text-white"
-              style={{ background: BORDO, fontFamily: "'Nunito', sans-serif" }}
-            >
-              İzle
-            </button>
-          ) : (
-            <ChallengeDurumPili durum={c.durum} />
-          )}
-        </div>
-      ))}
-    </div>
+    <CcRaf>
+      {bekleyenler.map((c) => {
+        const bekliyor = c.durum === "bekliyor";
+        const rozet = bekliyor
+          ? kalanGun(c.son_tarih)
+          : c.durum === "izlendi"
+            ? "✓ İzlendi"
+            : "Süresi Doldu";
+        return (
+          <CcVideoKarti
+            key={c.challenge_id}
+            thumbnail={c.thumbnail_url || thumbnailUrlUret(c.video_url)}
+            baslik={c.urun_adi ?? "Video"}
+            altBaslik={c.teknik_adi}
+            rozet={rozet}
+            onClick={bekliyor ? () => onIzle(c.yayin_id, c.challenge_id) : undefined}
+            altSerit={
+              <span className="font-bold" style={{ color: BORDO }}>
+                {c.gonderen?.ad} {c.gonderen?.soyad}
+              </span>
+            }
+          />
+        );
+      })}
+    </CcRaf>
   );
 }
 
@@ -516,59 +596,32 @@ function GonderdiklerimListesi({
   gonderdiklerim: Challenge[];
 }) {
   if (gonderdiklerim.length === 0) {
-    return (
-      <div
-        className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm"
-        style={{ color: GRI_METIN }}
-      >
-        Bu ay challenge göndermediniz.
-      </div>
-    );
+    return <BosDurum ikon={Send} metin="Bu ay challenge göndermediniz." />;
   }
 
   return (
-    <div className="flex flex-col gap-2.5">
+    <CcRaf>
       {gonderdiklerim.map((c) => {
+        const rozet = c.durum === "izlendi"
+          ? "✓ İzlendi"
+          : c.durum === "suresi_doldu"
+            ? "Süresi Doldu"
+            : "Bekliyor";
         return (
-          <div
+          <CcVideoKarti
             key={c.challenge_id}
-            className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-3"
-          >
-            <div className="flex-1 min-w-0">
-              <div
-                className="text-sm font-semibold"
-                style={{ color: KOYU_METIN }}
-              >
-                {c.urun_adi ?? "Video"}
-              </div>
-              <div className="text-xs" style={{ color: GRI_METIN }}>
-                {c.teknik_adi}
-              </div>
-              <div className="text-xs mt-1" style={{ color: GRI_METIN }}>
-                {c.alan?.ad} {c.alan?.soyad}
-              </div>
-            </div>
-            <ChallengeDurumPili durum={c.durum} />
-          </div>
+            thumbnail={c.thumbnail_url || thumbnailUrlUret(c.video_url)}
+            baslik={c.urun_adi ?? "Video"}
+            altBaslik={c.teknik_adi}
+            rozet={rozet}
+            altSerit={
+              <span>
+                Alıcı: <b className="text-[#314a68]">{c.alan?.ad} {c.alan?.soyad}</b>
+              </span>
+            }
+          />
         );
       })}
-    </div>
-  );
-}
-
-function ChallengeDurumPili({ durum }: { durum: Challenge["durum"] }) {
-  const stiller = durum === "izlendi"
-    ? { metin: "İzlendi", arka: "#f0fdf4", renk: YESIL, kenar: "#bbf7d0" }
-    : durum === "suresi_doldu"
-      ? { metin: "Süresi Doldu", arka: "#fef2f2", renk: BORDO, kenar: "#fecaca" }
-      : { metin: "Bekliyor", arka: "#fefce8", renk: SARI_TEXT, kenar: "#fde68a" };
-
-  return (
-    <div
-      className="px-3 py-1 rounded-full text-[10px] font-medium flex-shrink-0 border"
-      style={{ background: stiller.arka, color: stiller.renk, borderColor: stiller.kenar }}
-    >
-      {stiller.metin}
-    </div>
+    </CcRaf>
   );
 }

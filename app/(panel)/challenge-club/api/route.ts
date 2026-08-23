@@ -133,16 +133,17 @@ export async function GET(request: NextRequest) {
 
       // Yayın bilgilerini ayrıca çek
       const yayinIdler = [...new Set((challengeler ?? []).map((c: any) => c.yayin_id))];
-      const yayinMap: Record<string, { urun_adi: string; teknik_adi: string; thumbnail_url: string | null }> = {};
+      const yayinMap: Record<string, { urun_adi: string; teknik_adi: string; video_url: string | null; thumbnail_url: string | null }> = {};
       if (yayinIdler.length > 0) {
         const { data: yayinlar } = await adminSupabase
           .from("v_yayin_detay")
-          .select("yayin_id, urun_adi, teknik_adi, thumbnail_url")
+          .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url")
           .in("yayin_id", yayinIdler);
         for (const y of yayinlar ?? []) {
           yayinMap[y.yayin_id] = {
             urun_adi: y.urun_adi ?? "-",
             teknik_adi: y.teknik_adi ?? "-",
+            video_url: y.video_url ?? null,
             thumbnail_url: y.thumbnail_url ?? null,
           };
         }
@@ -153,6 +154,7 @@ export async function GET(request: NextRequest) {
         durum: challengeDurumu(c),
         urun_adi: yayinMap[c.yayin_id]?.urun_adi ?? "-",
         teknik_adi: yayinMap[c.yayin_id]?.teknik_adi ?? "-",
+        video_url: yayinMap[c.yayin_id]?.video_url ?? null,
         thumbnail_url: yayinMap[c.yayin_id]?.thumbnail_url ?? null,
       }));
 
@@ -178,16 +180,18 @@ export async function GET(request: NextRequest) {
 
       // Yayın bilgilerini ayrıca çek
       const yayinIdler = [...new Set((challengeler ?? []).map((c: any) => c.yayin_id))];
-      const yayinMap: Record<string, { urun_adi: string; teknik_adi: string }> = {};
+      const yayinMap: Record<string, { urun_adi: string; teknik_adi: string; video_url: string | null; thumbnail_url: string | null }> = {};
       if (yayinIdler.length > 0) {
         const { data: yayinlar } = await adminSupabase
           .from("v_yayin_detay")
-          .select("yayin_id, urun_adi, teknik_adi")
+          .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url")
           .in("yayin_id", yayinIdler);
         for (const y of yayinlar ?? []) {
           yayinMap[y.yayin_id] = {
             urun_adi: y.urun_adi ?? "-",
             teknik_adi: y.teknik_adi ?? "-",
+            video_url: y.video_url ?? null,
+            thumbnail_url: y.thumbnail_url ?? null,
           };
         }
       }
@@ -197,6 +201,8 @@ export async function GET(request: NextRequest) {
         durum: challengeDurumu(c),
         urun_adi: yayinMap[c.yayin_id]?.urun_adi ?? "-",
         teknik_adi: yayinMap[c.yayin_id]?.teknik_adi ?? "-",
+        video_url: yayinMap[c.yayin_id]?.video_url ?? null,
+        thumbnail_url: yayinMap[c.yayin_id]?.thumbnail_url ?? null,
       }));
 
       return NextResponse.json({ challengeler: sonuc }, { status: 200 });

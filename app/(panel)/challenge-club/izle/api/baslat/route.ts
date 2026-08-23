@@ -23,7 +23,6 @@ import { dahaOnceTamamlandiMi } from "@/lib/cc/izleme/extraKontrol";
 import { izlemeBaslat } from "@/lib/cc/izleme/baslat";
 import { gecerliTur } from "@/lib/tur/kayit";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { puanKazanilabilirMi } from "@/lib/zaman/kontrol";
 
 export async function POST(request: NextRequest) {
   try {
@@ -121,7 +120,6 @@ export async function POST(request: NextRequest) {
     // 5. İzleme türü kararı — challenge_id varsa çağırma akışı
     let izleme_turu: "kendi_izleme" | "challenge" | "extra";
     let kullanilacakChallengeId: string | null = null;
-    const puanliZaman = puanKazanilabilirMi(new Date());
 
     if (challenge_id) {
       // 5a. Challenge doğrulama — kayıt var mı, BM'e mi gelmiş, izlenmemiş mi, süresi geçmemiş mi
@@ -166,8 +164,6 @@ export async function POST(request: NextRequest) {
 
       izleme_turu = "challenge";
       kullanilacakChallengeId = challenge_id;
-    } else if (!puanliZaman) {
-      izleme_turu = "kendi_izleme";
     } else {
       // 5b. Challenge yok — extra mı kendi izleme mi karar ver (TUR BAZLI).
       // Geçerli tur çözülür; periyot dolmuşsa yeni tur burada açılır.
@@ -188,19 +184,6 @@ export async function POST(request: NextRequest) {
         turBaslangic
       );
       izleme_turu = dahaOnceTamamlandi ? "extra" : "kendi_izleme";
-    }
-
-    // Mesai dışı izleme görüntülenebilir ancak tamamlanma, ilk izleme, extra ve
-    // challenge haklarını tüketmez. Bu nedenle kalıcı izleme satırı açılmaz.
-    if (!puanliZaman) {
-      return NextResponse.json(
-        {
-          mesaj: "Mesai dışı izleme kayıtsız başlatıldı.",
-          puanli_zaman: false,
-          izleme: { izleme_id: null, izleme_turu },
-        },
-        { status: 200 }
-      );
     }
 
     // 6. İzleme başlat (lib)
