@@ -488,32 +488,45 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
           return "basarisiz";
         }
 
-        // 3) Sunucu Bunny'yi otoritatif olarak doğrular. Processing yanıtında aynı
-        // idempotent anahtarla sınırlı polling yapılır; tarayıcı kapanırsa webhook
-        // talebe bağlanan URL üzerinden zinciri tamamlar.
-        setVideoIslemeBekleniyor(true);
-        const baslangic = Date.now();
-        while (Date.now() - baslangic < TAVAN_SANIYE * 1000) {
-          try {
-            const res2 = await fetch("/uretim/api/hazir-video", {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ talep_id, video_url: d.embed_url, islem_anahtari: d.video_guid }),
-            });
-            const d2 = await res2.json();
-            if (res2.ok && res2.status !== 202) return "tamamlandi";
-            if (res2.status !== 202 && res2.status < 500) {
-              hata(d2.hata ?? "Video doğrulanamadı.", d2.adim, d2.detay);
-              return "basarisiz";
-            }
-          } catch {
-            // Geçici ağ hatası Processing ile aynı korumalı bekleme davranışındadır.
+        // 3) Decouple: kullanıcıyı encode boyunca bekletme. Bir kez dener — Bunny
+        // zaten hazırsa anında tamamlanır; değilse "işleniyor" döner ve tamamlamayı
+        // ARKA PLANA devreder (aynı idempotent uç). Tarayıcı kapansa da prod'da
+        // webhook + mutabakat zinciri tamamlar.
+        const denemePut = async () => {
+          const res2 = await fetch("/uretim/api/hazir-video", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ talep_id, video_url: d.embed_url, islem_anahtari: d.video_guid }),
+          });
+          const d2 = await res2.json().catch(() => ({}));
+          return { status: res2.status, ok: res2.ok, d2 };
+        };
+
+        try {
+          const ilk = await denemePut();
+          if (ilk.ok && ilk.status !== 202) return "tamamlandi";
+          if (ilk.status !== 202 && ilk.status < 500) {
+            hata(ilk.d2.hata ?? "Video doğrulanamadı.", ilk.d2.adim, ilk.d2.detay);
+            return "basarisiz";
           }
-          await new Promise((coz) => setTimeout(coz, SORGU_ARALIGI_MS));
+        } catch {
+          // Geçici hata → arka plana devret.
         }
+
+        // Henüz hazır değil → kullanıcıyı bekletme; tamamlamayı arka planda sürdür.
+        void (async () => {
+          const baslangic = Date.now();
+          while (Date.now() - baslangic < TAVAN_SANIYE * 1000) {
+            await new Promise((coz) => setTimeout(coz, SORGU_ARALIGI_MS));
+            try {
+              const t = await denemePut();
+              if (t.ok && t.status !== 202) return; // tamamlandı
+              if (t.status !== 202 && t.status < 500) return; // kalıcı hata — webhook/mutabakat toplar
+            } catch { /* geçici hata; sonraki tur */ }
+          }
+        })();
         return "isleniyor";
       } finally {
-        setVideoIslemeBekleniyor(false);
         setDosyaYukleniyor(false);
         setVideoYuklemeYuzdesi(null);
       }
@@ -606,7 +619,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
         }
         if (basarisizlar.length === 0 && videoIsleniyor) {
           uyari(
-            "Video işleniyor",
+            "Video yüklendi — hazır olunca otomatik yayına alınacak.",
             undefined,
             true
           );

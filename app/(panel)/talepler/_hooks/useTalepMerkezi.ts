@@ -265,32 +265,45 @@ export function useTalepMerkezi() {
           return;
         }
 
+        // Decouple: encode boyunca bekletme. Bir kez dener — hazırsa anında
+        // tamamlanır; değilse tamamlamayı ARKA PLANA devreder (aynı idempotent uç;
+        // prod'da webhook + mutabakat da toplar).
+        const denemePut = async () => {
+          const res2 = await fetch("/uretim/api/hazir-video", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ talep_id: talep.talep_id, video_url: izin.embed_url, islem_anahtari: izin.video_guid }),
+          });
+          const d2 = await res2.json().catch(() => ({}));
+          return { status: res2.status, ok: res2.ok, d2 };
+        };
+
         let tamamlandi = false;
-        const baslangic = Date.now();
-        while (Date.now() - baslangic < TAVAN_SANIYE * 1000) {
-          try {
-            const res2 = await fetch("/uretim/api/hazir-video", {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ talep_id: talep.talep_id, video_url: izin.embed_url, islem_anahtari: izin.video_guid }),
-            });
-            const d2 = await res2.json();
-            if (res2.ok && res2.status !== 202) {
-              tamamlandi = true;
-              break;
-            }
-            if (res2.status !== 202 && res2.status < 500) {
-              hata(d2.hata ?? "Video doğrulanamadı.", d2.adim, d2.detay);
-              return;
-            }
-          } catch {
-            // Geçici ağ hatası Processing ile aynı korumalı bekleme davranışındadır.
+        try {
+          const ilk = await denemePut();
+          if (ilk.ok && ilk.status !== 202) tamamlandi = true;
+          else if (ilk.status !== 202 && ilk.status < 500) {
+            hata(ilk.d2.hata ?? "Video doğrulanamadı.", ilk.d2.adim, ilk.d2.detay);
+            return;
           }
-          await new Promise((coz) => setTimeout(coz, SORGU_ARALIGI_MS));
+        } catch {
+          // Geçici hata → arka plana devret.
         }
+
         if (!tamamlandi) {
+          void (async () => {
+            const baslangic = Date.now();
+            while (Date.now() - baslangic < TAVAN_SANIYE * 1000) {
+              await new Promise((coz) => setTimeout(coz, SORGU_ARALIGI_MS));
+              try {
+                const t = await denemePut();
+                if (t.ok && t.status !== 202) return;
+                if (t.status !== 202 && t.status < 500) return;
+              } catch { /* geçici hata; sonraki tur */ }
+            }
+          })();
           uyari(
-            "Video işleniyor",
+            "Video yüklendi — hazır olunca otomatik yayına alınacak.",
             undefined,
             true
           );
