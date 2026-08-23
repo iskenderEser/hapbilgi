@@ -21,7 +21,7 @@ const GRI_METIN = "#737373";
 const KOYU_METIN = "#111827";
 const GRI_ZEMIN = "#f9fafb";
 
-type Tab = "gonder" | "bekleyen";
+type Tab = "izlenecek" | "gonder" | "bekleyen" | "gonderilen";
 
 // UTT kartıyla ortak alt bilgiler (extra, izlenme, beğeni/favori, talep, içerik türü).
 interface KartMetrik {
@@ -83,6 +83,21 @@ function metrikTaban(x: KartMetrik) {
   };
 }
 
+function videoyuUttKarta(v: Video): UttVideo {
+  return {
+    ...metrikTaban(v),
+    yayin_id: v.yayin_id,
+    urun_adi: v.urun_adi,
+    teknik_adi: v.teknik_adi,
+    video_url: v.video_url,
+    thumbnail_url: v.thumbnail_url,
+    video_puani: v.video_puani,
+    yayin_tarihi: v.yayin_tarihi,
+    sonraki_tur_tarihi: v.sonraki_tur_tarihi ?? null,
+    durum: v.tamamlandi_mi ? "tamamlanan" : "yeni",
+  };
+}
+
 function challengeyiUttKarta(c: Challenge): UttVideo {
   return {
     ...metrikTaban(c),
@@ -110,7 +125,7 @@ export default function ChallengeClubPage() {
   const [user, setUser] = useState<any>(null);
   const [rol, setRol] = useState("");
   const [loading, setLoading] = useState(true);
-  const [aktifTab, setAktifTab] = useState<Tab>("gonder");
+  const [aktifTab, setAktifTab] = useState<Tab>("izlenecek");
 
   const [videolar, setVideolar] = useState<Video[]>([]);
   const [bekleyenler, setBekleyenler] = useState<Challenge[]>([]);
@@ -191,6 +206,10 @@ export default function ChallengeClubPage() {
       hata("Veri çekilirken hata oluştu.", "fetch", String(err));
     }
     setLoading(false);
+  };
+
+  const handleVideoIzle = (yayin_id: string) => {
+    router.push(`/challenge-club/izle/${yayin_id}`);
   };
 
   const handleChallengeIzle = (yayin_id: string, challenge_id: string) => {
@@ -364,9 +383,19 @@ export default function ChallengeClubPage() {
           style={{ WebkitOverflowScrolling: "touch" }}
         >
           <TabButton
+            aktif={aktifTab === "izlenecek"}
+            onClick={() => setAktifTab("izlenecek")}
+            etiket="İzlenecek Videolar"
+          />
+          <TabButton
             aktif={aktifTab === "gonder"}
             onClick={() => setAktifTab("gonder")}
             etiket="Challenge Gönder"
+          />
+          <TabButton
+            aktif={aktifTab === "gonderilen"}
+            onClick={() => setAktifTab("gonderilen")}
+            etiket="Gönderilen Challenge'lar"
           />
           <TabButton
             aktif={aktifTab === "bekleyen"}
@@ -377,9 +406,13 @@ export default function ChallengeClubPage() {
         </div>
 
         {/* Tab içerikleri */}
+        {aktifTab === "izlenecek" && (
+          <VideoListesi videolar={videolar} onIzle={handleVideoIzle} onBegeni={handleBegeni} onFavori={handleFavori} />
+        )}
+
         {aktifTab === "gonder" && (
           <ChallengeGonderPaneli
-            videolar={videolar}
+            videolar={videolar.filter((v) => v.tamamlandi_mi)}
             kalanKota={quota?.kalan ?? 0}
             hata={hata}
             onGonder={handleCokluGonder}
@@ -394,6 +427,10 @@ export default function ChallengeClubPage() {
             onBegeni={handleBegeni}
             onFavori={handleFavori}
           />
+        )}
+
+        {aktifTab === "gonderilen" && (
+          <GonderilenListesi gonderdiklerim={gonderdiklerim} onBegeni={handleBegeni} onFavori={handleFavori} />
         )}
       </div>
     </div>
@@ -520,6 +557,76 @@ function TabButton({
         </span>
       )}
     </button>
+  );
+}
+
+function VideoListesi({
+  videolar,
+  onIzle,
+  onBegeni,
+  onFavori,
+}: {
+  videolar: Video[];
+  onIzle: (yayin_id: string) => void;
+  onBegeni: EtkilesimHandler;
+  onFavori: EtkilesimHandler;
+}) {
+  if (videolar.length === 0) {
+    return <BosDurum ikon={Video} metin="Henüz yayında olan CC videosu yok." />;
+  }
+
+  return (
+    <CcRaf>
+      {videolar.map((v) => (
+        <KartSarici key={v.yayin_id}>
+          <UttVideoKarti
+            video={videoyuUttKarta(v)}
+            onVideoClick={(vid) => onIzle(vid.yayin_id)}
+            onBegeni={onBegeni}
+            onFavori={onFavori}
+          />
+        </KartSarici>
+      ))}
+    </CcRaf>
+  );
+}
+
+function GonderilenListesi({
+  gonderdiklerim,
+  onBegeni,
+  onFavori,
+}: {
+  gonderdiklerim: Challenge[];
+  onBegeni: EtkilesimHandler;
+  onFavori: EtkilesimHandler;
+}) {
+  if (gonderdiklerim.length === 0) {
+    return <BosDurum ikon={Send} metin="Bu ay challenge göndermediniz." />;
+  }
+
+  return (
+    <CcRaf>
+      {gonderdiklerim.map((c) => {
+        const durumMetni = c.durum === "izlendi"
+          ? "İzlendi"
+          : c.durum === "suresi_doldu"
+            ? "Süresi doldu"
+            : "Bekliyor";
+        return (
+          <KartSarici key={c.challenge_id}>
+            <UttVideoKarti
+              video={challengeyiUttKarta(c)}
+              onVideoClick={() => {}}
+              onBegeni={onBegeni}
+              onFavori={onFavori}
+            />
+            <KartMeta>
+              Alıcı: {c.alan?.ad} {c.alan?.soyad} · {durumMetni}
+            </KartMeta>
+          </KartSarici>
+        );
+      })}
+    </CcRaf>
   );
 }
 
