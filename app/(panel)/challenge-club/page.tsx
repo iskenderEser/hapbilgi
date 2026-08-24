@@ -16,7 +16,7 @@ import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import ChallengeGonderPaneli, { type GonderSonuc } from "@/components/challenge-club/ChallengeGonderPaneli";
 import { UttVideoKarti, type UttVideo } from "@/components/video/UttVideoKarti";
 
-const BORDO = "#bc2d0d";
+const CC_RENK = "#237ac8";
 const GRI_METIN = "#737373";
 const KOYU_METIN = "#111827";
 const GRI_ZEMIN = "#f9fafb";
@@ -47,15 +47,18 @@ interface Video extends KartMetrik {
   yayin_tarihi: string;
   tamamlandi_mi: boolean;
   sonraki_tur_tarihi?: string | null;
+  kilitli?: boolean;
+  gelen_challenge_id?: string | null;
+  challenge_gonderen_adi?: string | null;
 }
 
 interface Challenge extends KartMetrik {
   challenge_id: string;
   yayin_id: string;
-  son_tarih: string;
+  son_tarih?: string;
   created_at: string;
   izlendi_mi: boolean;
-  durum: "bekliyor" | "izlendi" | "suresi_doldu";
+  durum: "bekliyor" | "izlendi";
   gonderen?: { ad: string; soyad: string };
   alan?: { ad: string; soyad: string };
   urun_adi?: string;
@@ -212,8 +215,12 @@ export default function ChallengeClubPage() {
     router.push(`/challenge-club/izle/${yayin_id}`);
   };
 
-  const handleChallengeIzle = (yayin_id: string, challenge_id: string) => {
-    router.push(`/challenge-club/izle/${yayin_id}?challenge_id=${challenge_id}`);
+  const handleChallengeIzle = (yayin_id: string, challenge_id?: string) => {
+    if (challenge_id) {
+      router.push(`/challenge-club/izle/${yayin_id}?challenge_id=${challenge_id}`);
+    } else {
+      router.push(`/challenge-club/izle/${yayin_id}`);
+    }
   };
 
   // Çoklu alıcıya challenge gönder (atla-raporla). Sonrasında veriyi yeniler.
@@ -353,7 +360,7 @@ export default function ChallengeClubPage() {
           <div className="min-w-0">
             <div
               className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em]"
-              style={{ color: BORDO }}
+              style={{ color: CC_RENK }}
             >
               <Swords size={14} /> Challenge Club
             </div>
@@ -371,7 +378,7 @@ export default function ChallengeClubPage() {
 
         {/* Stat kartlar */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-          <StatKart ikon={Video} etiket="İzlenecek Video" deger={videolar.length} detay="Yayındaki CC videosu" renk={BORDO} zemin="#fdece8" />
+          <StatKart ikon={Video} etiket="İzlenecek Video" deger={videolar.length} detay="Yayındaki CC videosu" renk={CC_RENK} zemin="#edf6fd" />
           <StatKart ikon={Inbox} etiket="Gelen Challenge" deger={bekleyenSayisi} detay="Süresi devam eden" renk="#d78022" zemin="#fff6e8" />
           <StatKart ikon={Send} etiket="Gönderdiğim" deger={gonderdiklerim.length} detay="Bu ay" renk="#16865f" zemin="#ebf8f2" />
           <StatKart ikon={Ticket} etiket="Kalan Hak" deger={quota?.kalan ?? 0} detay="Aylık gönderim kotası" renk="#237ac8" zemin="#edf6fd" />
@@ -407,7 +414,13 @@ export default function ChallengeClubPage() {
 
         {/* Tab içerikleri */}
         {aktifTab === "izlenecek" && (
-          <VideoListesi videolar={videolar} onIzle={handleVideoIzle} onBegeni={handleBegeni} onFavori={handleFavori} />
+          <VideoListesi
+            videolar={videolar}
+            onIzle={handleVideoIzle}
+            onKilitliGecis={() => setAktifTab("bekleyen")}
+            onBegeni={handleBegeni}
+            onFavori={handleFavori}
+          />
         )}
 
         {aktifTab === "gonder" && (
@@ -423,14 +436,18 @@ export default function ChallengeClubPage() {
           <BekleyenListesi
             bekleyenler={bekleyenler}
             onIzle={handleChallengeIzle}
-            kalanGun={kalanGun}
             onBegeni={handleBegeni}
             onFavori={handleFavori}
           />
         )}
 
         {aktifTab === "gonderilen" && (
-          <GonderilenListesi gonderdiklerim={gonderdiklerim} onBegeni={handleBegeni} onFavori={handleFavori} />
+          <GonderilenListesi
+            gonderdiklerim={gonderdiklerim}
+            onIzle={handleVideoIzle}
+            onBegeni={handleBegeni}
+            onFavori={handleFavori}
+          />
         )}
       </div>
     </div>
@@ -537,9 +554,9 @@ function TabButton({
       className="px-4 py-2 rounded-full text-xs font-bold cursor-pointer border whitespace-nowrap flex items-center gap-1.5 flex-shrink-0"
       style={{
         fontFamily: "'Nunito', sans-serif",
-        background: aktif ? BORDO : "white",
+        background: aktif ? CC_RENK : "white",
         color: aktif ? "white" : KOYU_METIN,
-        borderColor: aktif ? BORDO : "#e5e7eb",
+        borderColor: aktif ? CC_RENK : "#e5e7eb",
       }}
     >
       {etiket}
@@ -547,7 +564,7 @@ function TabButton({
         <span
           className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
           style={{
-            background: aktif ? "rgba(255,255,255,0.25)" : BORDO,
+            background: aktif ? "rgba(255,255,255,0.25)" : CC_RENK,
             color: aktif ? "white" : "white",
             minWidth: "18px",
             textAlign: "center",
@@ -563,11 +580,13 @@ function TabButton({
 function VideoListesi({
   videolar,
   onIzle,
+  onKilitliGecis,
   onBegeni,
   onFavori,
 }: {
   videolar: Video[];
   onIzle: (yayin_id: string) => void;
+  onKilitliGecis: () => void;
   onBegeni: EtkilesimHandler;
   onFavori: EtkilesimHandler;
 }) {
@@ -579,12 +598,25 @@ function VideoListesi({
     <CcRaf>
       {videolar.map((v) => (
         <KartSarici key={v.yayin_id}>
-          <UttVideoKarti
-            video={videoyuUttKarta(v)}
-            onVideoClick={(vid) => onIzle(vid.yayin_id)}
-            onBegeni={onBegeni}
-            onFavori={onFavori}
-          />
+          <div className={v.kilitli ? "opacity-85" : ""}>
+            <UttVideoKarti
+              video={videoyuUttKarta(v)}
+              onVideoClick={(vid) => {
+                if (v.kilitli) {
+                  onKilitliGecis();
+                } else {
+                  onIzle(vid.yayin_id);
+                }
+              }}
+              onBegeni={onBegeni}
+              onFavori={onFavori}
+            />
+          </div>
+          {v.kilitli ? (
+            <KartMeta renk={CC_RENK}>
+              🔒 Bu video için gelen challenge var. &quot;Gelenler&quot;den izleyin.
+            </KartMeta>
+          ) : null}
         </KartSarici>
       ))}
     </CcRaf>
@@ -593,10 +625,12 @@ function VideoListesi({
 
 function GonderilenListesi({
   gonderdiklerim,
+  onIzle,
   onBegeni,
   onFavori,
 }: {
   gonderdiklerim: Challenge[];
+  onIzle: (yayin_id: string) => void;
   onBegeni: EtkilesimHandler;
   onFavori: EtkilesimHandler;
 }) {
@@ -607,16 +641,12 @@ function GonderilenListesi({
   return (
     <CcRaf>
       {gonderdiklerim.map((c) => {
-        const durumMetni = c.durum === "izlendi"
-          ? "İzlendi"
-          : c.durum === "suresi_doldu"
-            ? "Süresi doldu"
-            : "Bekliyor";
+        const durumMetni = c.durum === "izlendi" ? "İzlendi" : "Bekliyor";
         return (
           <KartSarici key={c.challenge_id}>
             <UttVideoKarti
               video={challengeyiUttKarta(c)}
-              onVideoClick={() => {}}
+              onVideoClick={() => onIzle(c.yayin_id)}
               onBegeni={onBegeni}
               onFavori={onFavori}
             />
@@ -633,13 +663,11 @@ function GonderilenListesi({
 function BekleyenListesi({
   bekleyenler,
   onIzle,
-  kalanGun,
   onBegeni,
   onFavori,
 }: {
   bekleyenler: Challenge[];
-  onIzle: (yayin_id: string, challenge_id: string) => void;
-  kalanGun: (son_tarih: string) => string;
+  onIzle: (yayin_id: string, challenge_id?: string) => void;
   onBegeni: EtkilesimHandler;
   onFavori: EtkilesimHandler;
 }) {
@@ -651,20 +679,23 @@ function BekleyenListesi({
     <CcRaf>
       {bekleyenler.map((c) => {
         const bekliyor = c.durum === "bekliyor";
-        const durumMetni = c.durum === "izlendi"
-          ? "İzlendi"
-          : c.durum === "suresi_doldu"
-            ? "Süresi doldu"
-            : kalanGun(c.son_tarih);
+        const durumMetni = c.durum === "izlendi" ? "İzlendi" : "Bekliyor";
         return (
           <KartSarici key={c.challenge_id}>
             <UttVideoKarti
               video={challengeyiUttKarta(c)}
-              onVideoClick={() => { if (bekliyor) onIzle(c.yayin_id, c.challenge_id); }}
+              onVideoClick={() => {
+                if (bekliyor) {
+                  onIzle(c.yayin_id, c.challenge_id);
+                } else {
+                  // İzlendi durumundaki challenge kartına tıklandığında genel video izleme/tekrar olarak aç
+                  onIzle(c.yayin_id);
+                }
+              }}
               onBegeni={onBegeni}
               onFavori={onFavori}
             />
-            <KartMeta renk={BORDO}>
+            <KartMeta renk={CC_RENK}>
               {c.gonderen?.ad} {c.gonderen?.soyad} · {durumMetni}
             </KartMeta>
           </KartSarici>

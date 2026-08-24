@@ -84,7 +84,6 @@ export default function CcVideoOynatici({
   const [netPuan, setNetPuan] = useState<number | null>(null);
 
   const [islemLoading, setIslemLoading] = useState(false);
-  const [mesaiDisiModal, setMesaiDisiModal] = useState(false);
   const [bitisAsamasi, setBitisAsamasi] = useState<"yok" | "mesaj" | "kayboluyor">("yok");
   const [ileriSarmaModal, setIleriSarmaModal] = useState(false);
   const [bekleyenSeekBitis, setBekleyenSeekBitis] = useState<number | null>(null);
@@ -120,7 +119,6 @@ export default function CcVideoOynatici({
     setCevapSonuclari([]);
     setKazanilanPuan(null);
     setNetPuan(null);
-    setMesaiDisiModal(false);
     setBitisAsamasi("yok");
     setIleriSarmaModal(false);
     setBekleyenSeekBitis(null);
@@ -178,10 +176,6 @@ export default function CcVideoOynatici({
           data.seconds >= videoSuresiRef.current - 0.5
         ) {
           izlemeBitirildiRef.current = true;
-          if (!izlemeIdRef.current) {
-            handleMesaiDisiVideoBitti();
-            return;
-          }
           handleIzlemeBitir();
         }
       });
@@ -204,10 +198,6 @@ export default function CcVideoOynatici({
       player.onEnded(() => {
         if (izlemeBitirildiRef.current) return;
         izlemeBitirildiRef.current = true;
-        if (!izlemeIdRef.current) {
-          handleMesaiDisiVideoBitti();
-          return;
-        }
         handleIzlemeBitir();
       });
     });
@@ -299,6 +289,17 @@ export default function CcVideoOynatici({
       } else {
         setSorular(sData.sorular ?? []);
       }
+    } else {
+      // Soru gösterilmeyecekse video bitiminde otomatik listeye dönüş
+      bitisZamanlayicilariRef.current.push(
+        window.setTimeout(() => setBitisAsamasi("mesaj"), 800)
+      );
+      bitisZamanlayicilariRef.current.push(
+        window.setTimeout(() => setBitisAsamasi("kayboluyor"), 2200)
+      );
+      bitisZamanlayicilariRef.current.push(
+        window.setTimeout(() => onKapat(), 2500)
+      );
     }
 
     setIslemLoading(false);
@@ -330,6 +331,18 @@ export default function CcVideoOynatici({
     } else if (d.net < 0) {
       uyari(`Net ${d.net} puan kaybettiniz.`);
     }
+
+    // Sorular cevaplandıktan sonra kullanıcıya sonuçları gösterip otomatik listeye dönüş
+    bitisZamanlayicilariRef.current.push(
+      window.setTimeout(() => setBitisAsamasi("mesaj"), 1200)
+    );
+    bitisZamanlayicilariRef.current.push(
+      window.setTimeout(() => setBitisAsamasi("kayboluyor"), 2600)
+    );
+    bitisZamanlayicilariRef.current.push(
+      window.setTimeout(() => onKapat(), 2900)
+    );
+
     setIslemLoading(false);
     await onVeriYenile();
   };
@@ -371,24 +384,7 @@ export default function CcVideoOynatici({
   const handleOynat = async () => {
     const baslangic = await handleIzlemeBaslat();
     if (!baslangic) return;
-    if (!baslangic.puanliZaman) {
-      setMesaiDisiModal(true);
-      return;
-    }
     videoEtkilesimi.oynat();
-  };
-
-  const handleMesaiDisiOnayla = () => {
-    setMesaiDisiModal(false);
-    videoEtkilesimi.oynat();
-  };
-
-  const handleMesaiDisiVideoBitti = () => {
-    setBitisAsamasi("mesaj");
-    bitisZamanlayicilariRef.current.push(
-      window.setTimeout(() => setBitisAsamasi("kayboluyor"), 1220)
-    );
-    bitisZamanlayicilariRef.current.push(window.setTimeout(() => onKapat(), 1500));
   };
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -426,11 +422,11 @@ export default function CcVideoOynatici({
           <div className="flex items-center gap-2">
             {izlemeTuru === "challenge" && (
               <span
-                className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full"
+                className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full font-bold"
                 style={{
-                  color: "#bc2d0d",
-                  background: "rgba(188,45,13,0.08)",
-                  border: "0.5px solid rgba(188,45,13,0.3)",
+                  color: "#237ac8",
+                  background: "#edf6fd",
+                  border: "0.5px solid #bfdbfe",
                 }}
               >
                 Challenge
@@ -438,7 +434,7 @@ export default function CcVideoOynatici({
             )}
             {izlemeTuru === "extra" && (
               <span
-                className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full"
+                className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full font-bold"
                 style={{
                   color: "#7c3aed",
                   background: "rgba(124,58,237,0.08)",
@@ -450,11 +446,11 @@ export default function CcVideoOynatici({
             )}
             {video.ileri_sarma_acik && (
               <span
-                className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full"
+                className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full font-bold"
                 style={{
-                  color: "#bc2d0d",
-                  background: "rgba(188,45,13,0.08)",
-                  border: "0.5px solid rgba(188,45,13,0.3)",
+                  color: "#237ac8",
+                  background: "#edf6fd",
+                  border: "0.5px solid #bfdbfe",
                 }}
               >
                 <svg
@@ -462,7 +458,7 @@ export default function CcVideoOynatici({
                   height="10"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#bc2d0d"
+                  stroke="#237ac8"
                   strokeWidth="2.5"
                 >
                   <polygon points="5 4 15 12 5 20 5 4" />
@@ -497,11 +493,13 @@ export default function CcVideoOynatici({
                 />
               </VideoCercevesi>
               {bitisAsamasi !== "yok" && (
-                <div className="absolute inset-0 z-20 flex animate-in items-center justify-center bg-[#10233a]/75 text-white fade-in duration-200">
+                <div className="absolute inset-0 z-20 flex animate-in items-center justify-center bg-[#10233a]/80 text-white fade-in duration-200">
                   <div className="flex flex-col items-center text-center">
-                    <CheckCircle2 className="size-10" />
-                    <strong className="mt-3 text-base">Video tamamlandı</strong>
-                    <span className="mt-1 text-xs font-semibold text-white/75">Listeye dönülüyor…</span>
+                    <CheckCircle2 className="size-10 text-emerald-400" />
+                    <strong className="mt-3 text-base">
+                      {cevapSonuclari.length > 0 ? "Cevaplar kaydedildi" : "Video tamamlandı"}
+                    </strong>
+                    <span className="mt-1 text-xs font-semibold text-white/80">Listeye dönülüyor…</span>
                   </div>
                 </div>
               )}
@@ -542,15 +540,15 @@ export default function CcVideoOynatici({
                           style={{
                             border:
                               cevaplar[soru.soru_index] === s.harf
-                                ? "1.5px solid #56aeff"
+                                ? "1.5px solid #237ac8"
                                 : "0.5px solid #e5e7eb",
                             background:
                               cevaplar[soru.soru_index] === s.harf
-                                ? "#e6f1fb"
+                                ? "#edf6fd"
                                 : "white",
                             color:
                               cevaplar[soru.soru_index] === s.harf
-                                ? "#56aeff"
+                                ? "#237ac8"
                                 : "#374151",
                             fontWeight:
                               cevaplar[soru.soru_index] === s.harf ? 600 : 400,
@@ -570,9 +568,9 @@ export default function CcVideoOynatici({
                       Object.keys(cevaplar).length < sorular.length ||
                       islemLoading
                     }
-                    className="text-white border-none rounded-lg px-6 py-2.5 text-xs font-semibold cursor-pointer"
+                    className="text-white border-none rounded-lg px-6 py-2.5 text-xs font-semibold cursor-pointer transition-colors hover:bg-[#1d69aa]"
                     style={{
-                      background: "#56aeff",
+                      background: "#237ac8",
                       opacity:
                         Object.keys(cevaplar).length < sorular.length ? 0.5 : 1,
                       fontFamily: "'Nunito', sans-serif",
@@ -601,7 +599,7 @@ export default function CcVideoOynatici({
                 >
                   <span
                     className="text-xs font-semibold"
-                    style={{ color: s.dogru_mu ? "#16a34a" : "#bc2d0d" }}
+                    style={{ color: s.dogru_mu ? "#16a34a" : "#dc2626" }}
                   >
                     {s.dogru_mu
                       ? `✓ Doğru — +${s.kazanilan_puan} puan`
@@ -613,15 +611,15 @@ export default function CcVideoOynatici({
                 <div
                   className="px-4 py-3.5 rounded-xl border text-center"
                   style={{
-                    background: netPuan >= 0 ? "#e6f1fb" : "#fef2f2",
+                    background: netPuan >= 0 ? "#f0fdf4" : "#fef2f2",
                     border: `0.5px solid ${
-                      netPuan >= 0 ? "#bfdbfe" : "#fecaca"
+                      netPuan >= 0 ? "#bbf7d0" : "#fecaca"
                     }`,
                   }}
                 >
                   <span
                     className="text-sm font-bold"
-                    style={{ color: netPuan >= 0 ? "#1d4ed8" : "#bc2d0d" }}
+                    style={{ color: netPuan >= 0 ? "#16a34a" : "#dc2626" }}
                   >
                     {netPuan >= 0
                       ? `Net +${netPuan} puan kazandınız!`
@@ -629,46 +627,52 @@ export default function CcVideoOynatici({
                   </span>
                 </div>
               )}
+              {/* Akışın sonu — sonuçların altında listeye dönme butonu */}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={onKapat}
+                  className="text-white border-none rounded-lg px-6 py-2.5 text-xs font-semibold cursor-pointer transition-colors hover:bg-[#1d69aa]"
+                  style={{ background: "#237ac8", fontFamily: "'Nunito', sans-serif" }}
+                >
+                  Videolara dön
+                </button>
+              </div>
             </div>
           )}
 
-          {/* Soru yok ama puan var (extra izleme) */}
+          {/* Soru yok ama puan var (extra izleme veya soru seti olmayan izleme) */}
           {izlemeTamamlandi &&
             !soruGosterilecek &&
-            kazanilanPuan !== null &&
-            kazanilanPuan > 0 &&
             cevapSonuclari.length === 0 && (
-              <div
-                className="px-4 py-3.5 rounded-xl border text-center"
-                style={{
-                  background: "#e6f1fb",
-                  border: "0.5px solid #bfdbfe",
-                }}
-              >
-                <span className="text-sm font-bold" style={{ color: "#1d4ed8" }}>
-                  +{kazanilanPuan} puan kazandınız!
-                </span>
+              <div className="flex flex-col gap-3">
+                {kazanilanPuan !== null && kazanilanPuan > 0 && (
+                  <div
+                    className="px-4 py-3.5 rounded-xl border text-center"
+                    style={{
+                      background: "#f0fdf4",
+                      border: "0.5px solid #bbf7d0",
+                    }}
+                  >
+                    <span className="text-sm font-bold" style={{ color: "#16a34a" }}>
+                      +{kazanilanPuan} puan kazandınız!
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={onKapat}
+                    className="text-white border-none rounded-lg px-6 py-2.5 text-xs font-semibold cursor-pointer transition-colors hover:bg-[#1d69aa]"
+                    style={{ background: "#237ac8", fontFamily: "'Nunito', sans-serif" }}
+                  >
+                    Videolara dön
+                  </button>
+                </div>
               </div>
             )}
         </div>
       </div>
-
-      <AlertDialog open={mesaiDisiModal} onOpenChange={setMesaiDisiModal}>
-        <AlertDialogContent className="max-w-sm border-[#dbe5ef] bg-white text-center">
-          <AlertDialogHeader className="items-center text-center sm:text-center">
-            <AlertDialogTitle className="text-[#203653]">Bilgilendirme</AlertDialogTitle>
-            <AlertDialogDescription className="mx-auto max-w-[280px] text-center leading-6 text-[#687b90]">
-              Mesai saatleri dışında izleme puanı verilmez ve sorular gösterilmez.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="sm:justify-center">
-            <AlertDialogCancel>Vazgeç</AlertDialogCancel>
-            <AlertDialogAction onClick={handleMesaiDisiOnayla} className="bg-[#237ac8] hover:bg-[#1d69ad]">
-              Onayla
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* İleri sarma uyarı modal */}
       {ileriSarmaModal && (

@@ -18,6 +18,7 @@ import {
 } from "@/lib/utils/hataIsle";
 import { uygunAliciListesi } from "@/lib/cc/uygunAliciListesi";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { gecerliTur } from "@/lib/tur/kayit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -81,15 +82,21 @@ export async function GET(request: NextRequest) {
     if (firmaError || !firma) return hataYaniti("Firma bilgisi alınamadı.", "firmalar SELECT — CC uygun alıcılar", firmaError);
     if (!firma.aktif || !firma.cc_aktif) return rolHatasi("Firmanızda C-Club erişimi kapalıdır.");
 
+    // Geçerli tur başlangıcını çöz
+    const turSonuc = await gecerliTur(adminSupabase, yayin_id);
+    const turBaslangici = turSonuc.tur?.baslangic_tarihi;
+
     // 5. Lib'e delege et
     const aliciler = await uygunAliciListesi(
       adminSupabase,
       user.id,
       kullanici.firma_id,
-      yayin_id
+      yayin_id,
+      turBaslangici
     );
 
     return NextResponse.json({ aliciler }, { status: 200 });
+
   } catch (err) {
     return sunucuHatasi(err, "GET /challenge-club/api/uygun-aliciler");
   }

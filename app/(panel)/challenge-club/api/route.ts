@@ -20,7 +20,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi, sunucuHatasi } from "@/lib/utils/hataIsle";
 import { uygunAliciListesi } from "@/lib/cc/uygunAliciListesi";
-import { aylikKotaKontrol, aliciAylikKontrol, karsiliklilikKilidi } from "@/lib/cc/kotaKontrol";
+import { aylikKotaKontrol, aliciAylikKontrol } from "@/lib/cc/kotaKontrol";
 import { tekrarIzlemeKontrol } from "@/lib/cc/tekrarIzlemeKontrol";
 import { challengeOlustur } from "@/lib/cc/kayit";
 import { AYLIK_MAX_GONDERIM } from "@/lib/cc/sabitler";
@@ -29,14 +29,12 @@ import { gecerliTurBaslangiclari } from "@/lib/tur/kayit";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { ccKartMetrikleri } from "@/lib/cc/kartDetaylari";
 
-type ChallengeDurumu = "bekliyor" | "izlendi" | "suresi_doldu";
+type ChallengeDurumu = "bekliyor" | "izlendi";
 
-function challengeDurumu(challenge: { izlendi_mi: boolean; son_tarih: string }): ChallengeDurumu {
-  if (challenge.izlendi_mi) return "izlendi";
-  return new Date(challenge.son_tarih).getTime() <= Date.now()
-    ? "suresi_doldu"
-    : "bekliyor";
+function challengeDurumu(challenge: { izlendi_mi: boolean }): ChallengeDurumu {
+  return challenge.izlendi_mi ? "izlendi" : "bekliyor";
 }
+
 
 export async function GET(request: NextRequest) {
   try {
@@ -73,7 +71,7 @@ export async function GET(request: NextRequest) {
     // BM'in geçerli turda henüz tamamlamadığı CC yayınları. Önce kendisi izleyebilsin.
     if (tip === "izlenecek-videolar") {
       const simdi = new Date().toISOString();
-      const [yayinlarRes, izlemelerRes] = await Promise.all([
+      const [yayinlarRes, izlemelerRes, gelenChallengelerRes] = await Promise.all([
         adminSupabase
           .from("v_yayin_detay")
           .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, talep_no, firma_adi, icerik_turu")
@@ -88,6 +86,11 @@ export async function GET(request: NextRequest) {
           .select("yayin_id, izleme_baslangic")
           .eq("bm_id", kullanici.kullanici_id)
           .eq("tamamlandi_mi", true),
+        adminSupabase
+          .from("challenge_kayitlari")
+          .select("challenge_id, yayin_id, created_at, gonderen:kullanicilar!gonderen_id(ad, soyad)")
+          .eq("alan_id", kullanici.kullanici_id)
+          .eq("izlendi_mi", false),
       ]);
 
       if (yayinlarRes.error) return hataYaniti("Yayınlar çekilemedi.", "v_yayin_detay SELECT", yayinlarRes.error);
@@ -107,16 +110,34 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      // Gelen bekleyen challenge haritası (kilitli kartlar için)
+      const gelenChallengeMap: Record<string, { challenge_id: string; gonderen_adi: string }> = {};
+      for (const c of (gelenChallengelerRes.data ?? []) as any[]) {
+        const turBaslangic = turMap[c.yayin_id]?.baslangic_tarihi ?? "2000-01-01T00:00:00Z";
+        if (new Date(c.created_at) >= new Date(turBaslangic)) {
+          gelenChallengeMap[c.yayin_id] = {
+            challenge_id: c.challenge_id,
+            gonderen_adi: c.gonderen ? `${c.gonderen.ad} ${c.gonderen.soyad}` : "Bir Bölge Müdürü",
+          };
+        }
+      }
+
       // UTT kartı alt bilgileri (extra, izlenme, beğeni/favori, daha_once_izledi).
       const metrikler = await ccKartMetrikleri(adminSupabase, yayinIdler, kullanici.kullanici_id);
 
       // Önce tamamlanmamışlar, sonra tamamlananlar
-      const tumVideolar = (yayinlarRes.data ?? []).map((y: any) => ({
-        ...y,
-        tamamlandi_mi: tamamlananSet.has(y.yayin_id),
-        sonraki_tur_tarihi: turMap[y.yayin_id]?.sonraki_tur_tarihi ?? null,
-        ...(metrikler[y.yayin_id] ?? {}),
-      }));
+      const tumVideolar = (yayinlarRes.data ?? []).map((y: any) => {
+        const gelenChallenge = gelenChallengeMap[y.yayin_id];
+        return {
+          ...y,
+          tamamlandi_mi: tamamlananSet.has(y.yayin_id),
+          sonraki_tur_tarihi: turMap[y.yayin_id]?.sonraki_tur_tarihi ?? null,
+          kilitli: !!gelenChallenge,
+          gelen_challenge_id: gelenChallenge?.challenge_id ?? null,
+          challenge_gonderen_adi: gelenChallenge?.gonderen_adi ?? null,
+          ...(metrikler[y.yayin_id] ?? {}),
+        };
+      });
       tumVideolar.sort((a: any, b: any) => Number(a.tamamlandi_mi) - Number(b.tamamlandi_mi));
 
       return NextResponse.json({ videolar: tumVideolar }, { status: 200 });
@@ -354,14 +375,11 @@ export async function POST(request: NextRequest) {
       const aliciKota = await aliciAylikKontrol(adminSupabase, kullanici.kullanici_id, alan_id);
       if (!aliciKota.gecerli) { atlanan.push({ alan_id, sebep: aliciKota.sebep ?? "Bu alıcıya bu ay zaten gönderildi." }); continue; }
 
-      // İş kuralı 3: Karşılıklılık kilidi
-      const karsiliklilik = await karsiliklilikKilidi(adminSupabase, kullanici.kullanici_id, alan_id);
-      if (!karsiliklilik.gecerli) { atlanan.push({ alan_id, sebep: karsiliklilik.sebep ?? "Karşılıklılık engeli." }); continue; }
-
-      // İş kuralı 4: Tekrar izleme (alıcı bu videoyu izlemiş mi)
+      // İş kuralı 3: Tekrar izleme (alıcı bu videoyu izlemiş mi)
       const alanAdi = `${alanKullanici.ad} ${alanKullanici.soyad}`;
       const tekrar = await tekrarIzlemeKontrol(adminSupabase, alan_id, alanAdi, yayin_id);
       if (!tekrar.izlenmemis) { atlanan.push({ alan_id, sebep: `${tekrar.izleyenAdi} bu videoyu zaten izlemiş.` }); continue; }
+
 
       // Oluştur
       const sonuc = await challengeOlustur(

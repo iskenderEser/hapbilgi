@@ -155,19 +155,16 @@ export async function POST(request: NextRequest) {
       }
 
       if (challenge.izlendi_mi) {
-        return isKuraluHatasi("Bu challenge zaten izlenmiş.");
+        // Challenge zaten tamamlanmışsa kullanıcı videoyu tekrar izlemek istiyor: extra moduna geçir
+        izleme_turu = "extra";
+        kullanilacakChallengeId = null;
+      } else {
+        izleme_turu = "challenge";
+        kullanilacakChallengeId = challenge_id;
       }
-
-      if (new Date(challenge.son_tarih) < new Date()) {
-        return isKuraluHatasi("Bu challenge'ın süresi dolmuş.");
-      }
-
-      izleme_turu = "challenge";
-      kullanilacakChallengeId = challenge_id;
     } else {
       // 5b. Challenge yok — extra mı kendi izleme mi karar ver (TUR BAZLI).
       // Geçerli tur çözülür; periyot dolmuşsa yeni tur burada açılır.
-      // Başarısızlıkta güvenli geri düşüş: epoch alt sınırı = eski (ömür boyu) davranış.
       const turSonuc = await gecerliTur(adminSupabase, yayin_id);
       if (!turSonuc.ok) {
         console.error("[UYARI] Geçerli tur çözülemedi, ömür boyu tekillik uygulanacak:", {
@@ -176,6 +173,22 @@ export async function POST(request: NextRequest) {
         });
       }
       const turBaslangic = turSonuc.tur?.baslangic_tarihi ?? "2000-01-01T00:00:00Z";
+
+      // Kendi kendine izleme kilidi: Bu BM'ye bu video için gelen bekleyen challenge varsa kendi kendine izleme kilitlenir.
+      const { data: bekleyenChallenge } = await adminSupabase
+        .from("challenge_kayitlari")
+        .select("challenge_id")
+        .eq("alan_id", user.id)
+        .eq("yayin_id", yayin_id)
+        .eq("izlendi_mi", false)
+        .gte("created_at", turBaslangic)
+        .maybeSingle();
+
+      if (bekleyenChallenge) {
+        return isKuraluHatasi(
+          "Bu video için bekleyen bir challenge'ınız bulunmaktadır. Lütfen Gelen Challenge'lar sekmesinden izleyiniz."
+        );
+      }
 
       const dahaOnceTamamlandi = await dahaOnceTamamlandiMi(
         adminSupabase,

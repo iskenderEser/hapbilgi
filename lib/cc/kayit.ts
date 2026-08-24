@@ -51,15 +51,11 @@ export async function challengeOlustur(
     videoAdi: string;        // bildirim mesajı için (urun_adi veya teknik_adi)
   }
 ): Promise<KayitSonuc> {
-  // 1. son_tarih hesabı (5 iş günü sonrası)
-  const sonTarih = isGunuEkle(new Date(), IS_GUNU_SURE);
-
-  // 2. Tüm kuralları tekrar doğrula; challenge + puanı atomik yaz.
+  // 1. Tüm kuralları doğrula; challenge + puanı atomik yaz.
   const { data: satirlar, error: rpcError } = await supabase.rpc("cc_challenge_gonder", {
     p_gonderen_id: params.gonderen_id,
     p_alan_id: params.alan_id,
     p_yayin_id: params.yayin_id,
-    p_son_tarih: sonTarih.toISOString(),
   });
   const challenge = (satirlar?.[0] ?? null) as { challenge_id: string } | null;
   if (rpcError || !challenge) {
@@ -71,7 +67,7 @@ export async function challengeOlustur(
     };
   }
 
-  // 3. Alıcıya bildirim oluştur (non-critical)
+  // 2. Alıcıya bildirim oluştur (non-critical)
   await bildirimOlustur({
     adminSupabase: supabase,
     alici_id: params.alan_id,

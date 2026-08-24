@@ -18,6 +18,6 @@ test("red: öz-gönderim, uygunsuz alıcı/yayın ve mükerrer video gönderimi 
   assert.match(sql, /Kendinize challenge gönderemezsiniz/);
   assert.match(sql, /Alıcı aktif bir BM değil/);
   assert.match(sql, /Bu videoyu önce kendiniz tamamlamalısınız/);
-  assert.match(sql, /challenge_gonderen_alici_yayin_uq/);
-  assert.match(uygunAlicilar, /ayniVideoGonderilmisSet[\s\S]*?daha önce gönderilmiş/);
+  assert.match(uygunAlicilar, /ayniVideoGonderilmisSet[\s\S]*?zaten gönderilmiş/);
 });
+

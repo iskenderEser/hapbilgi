@@ -82,38 +82,16 @@ export async function aliciAylikKontrol(
   return { gecerli: true };
 }
 
-// ─── 3. KARŞILIKLILIK KİLİDİ ─────────────────────────────────────────────────
+// ─── 3. KARŞILIKLILIK KONTROLÜ (KALDIRILDI / HER ZAMAN GEÇERLİ) ────────────────
 
 /**
- * Alıcı BM, bu ay göndericiye daha önce challenge göndermiş mi?
- * Göndermişse karşılıklılık kilidi devreye girer — A bu ay B'ye gönderemez.
- *
- * Yön burada ters: alan_id'den gelen → gönderen_id parametresine giden.
+ * Karşılıklılık kilidi kaldırılmıştır.
+ * BM'ler arasında karşılıklı challenge gönderimi serbesttir.
  */
 export async function karsiliklilikKilidi(
-  supabase: SupabaseClient,
-  gonderenId: string,
-  alanId: string
+  _supabase: SupabaseClient,
+  _gonderenId: string,
+  _alanId: string
 ): Promise<KotaSonuc> {
-  const ayBas = ayBaslangici().toISOString();
-
-  const { count, error } = await supabase
-    .from("challenge_kayitlari")
-    .select("challenge_id", { count: "exact", head: true })
-    .eq("gonderen_id", alanId)
-    .eq("alan_id", gonderenId)
-    .gte("created_at", ayBas);
-
-  if (error) {
-    return { gecerli: false, sebep: "Karşılıklılık kontrolü yapılamadı." };
-  }
-
-  if ((count ?? 0) > 0) {
-    return {
-      gecerli: false,
-      sebep: "Bu BM bu ay size challenge gönderdi. Karşılıklılık kuralı gereği aynı ay içinde geri gönderim yapamazsınız.",
-    };
-  }
-
   return { gecerli: true };
 }

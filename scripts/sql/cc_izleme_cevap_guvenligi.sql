@@ -244,7 +244,7 @@ BEGIN
   RETURNING ik.* INTO v_izleme;
   v_yeni := true;
 
-  IF NOT v_izleme.ileri_sarildi_mi AND v_izleme.izleme_turu = 'kendi_izleme' THEN
+  IF NOT v_izleme.ileri_sarildi_mi AND v_izleme.izleme_turu IN ('kendi_izleme', 'challenge') THEN
     IF v_video_puani > 0 THEN
       INSERT INTO public.cc_kazanilan_puanlar
         (bm_id, yayin_id, izleme_id, puan_turu, puan)

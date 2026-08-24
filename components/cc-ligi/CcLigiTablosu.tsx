@@ -26,7 +26,6 @@ export interface LigSatiri {
   cc_referral_puani: number;
   ileri_sarma_kaybi: number;
   yanlis_cevap_kaybi: number;
-  challenge_kaybi: number;
   toplam_net_puan: number;
   genel_sira: number;
   firma_sirasi: number;
@@ -58,7 +57,7 @@ export default function CcLigiTablosu({ satirlar, yukleniyor }: Props) {
     s.cc_referral_puani;
 
   const toplamKayip = (s: LigSatiri) =>
-    s.ileri_sarma_kaybi + s.yanlis_cevap_kaybi + s.challenge_kaybi;
+    s.ileri_sarma_kaybi + s.yanlis_cevap_kaybi;
 
   if (yukleniyor) {
     return (
@@ -185,7 +184,6 @@ export default function CcLigiTablosu({ satirlar, yukleniyor }: Props) {
                     </div>
                     <DetaySatiri etiket="İleri Sarma" deger={s.ileri_sarma_kaybi} />
                     <DetaySatiri etiket="Yanlış Cevap" deger={s.yanlis_cevap_kaybi} />
-                    <DetaySatiri etiket="Challenge" deger={s.challenge_kaybi} />
                   </div>
                 </div>
               )}
@@ -208,7 +206,6 @@ export default function CcLigiTablosu({ satirlar, yukleniyor }: Props) {
               <th className="text-right px-2 py-2.5 text-xs font-semibold border-b" style={{ borderColor: "#e5e7eb", color: YESIL, background: YESIL_ARKA }}>Referral</th>
               <th className="text-right px-2 py-2.5 text-xs font-semibold border-b" style={{ borderColor: "#e5e7eb", color: BORDO, background: KIRMIZI_ARKA }}>İleri Sarma</th>
               <th className="text-right px-2 py-2.5 text-xs font-semibold border-b" style={{ borderColor: "#e5e7eb", color: BORDO, background: KIRMIZI_ARKA }}>Yanlış Cevap</th>
-              <th className="text-right px-2 py-2.5 text-xs font-semibold border-b" style={{ borderColor: "#e5e7eb", color: BORDO, background: KIRMIZI_ARKA }}>Challenge Kaybı</th>
               <th className="text-right px-3 py-2.5 text-xs font-bold border-b" style={{ borderColor: "#e5e7eb" }}>Net</th>
             </tr>
           </thead>
@@ -230,13 +227,13 @@ export default function CcLigiTablosu({ satirlar, yukleniyor }: Props) {
                 <td className="px-2 py-2.5 text-right" style={{ color: YESIL }}>{s.cc_referral_puani}</td>
                 <td className="px-2 py-2.5 text-right" style={{ color: BORDO }}>{s.ileri_sarma_kaybi}</td>
                 <td className="px-2 py-2.5 text-right" style={{ color: BORDO }}>{s.yanlis_cevap_kaybi}</td>
-                <td className="px-2 py-2.5 text-right" style={{ color: BORDO }}>{s.challenge_kaybi}</td>
                 <td className="px-3 py-2.5 text-right font-bold">{s.toplam_net_puan}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
 
       {/* Media query stillemesi */}
      

@@ -17,18 +17,7 @@ test("mutlu: C-Club tamamlama, soru, puan ve challenge sonucu atomik sözleşmey
   assert.match(sql, /FOR UPDATE[\s\S]*?cevaplandi_mi = true[\s\S]*?izlendi_mi = true/);
   assert.match(sql, /cc_puan_referral_challenge_uq/);
   assert.match(oynatici, /ilkOynatmaZorunlu:\s*true/);
-  assert.match(
-    baslat,
-    /puanKazanilabilirMi\(new Date\(\)\)[\s\S]*?if \(!puanliZaman\)[\s\S]*?izleme_id: null/
-  );
-  assert.match(
-    oynatici,
-    /handleIzlemeBaslat\(\)[\s\S]*?Mesai saatleri dışında izleme puanı verilmez ve sorular gösterilmez\.[\s\S]*?handleMesaiDisiOnayla/
-  );
-  assert.match(
-    oynatici,
-    /handleMesaiDisiVideoBitti[\s\S]*?1220[\s\S]*?onKapat\(\), 1500/
-  );
+  assert.match(baslat, /puanli_zaman:\s*true/);
   assert.match(oynatici, /Video tamamlandı[\s\S]*?Listeye dönülüyor…/);
 });
 
