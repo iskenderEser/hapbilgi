@@ -449,7 +449,13 @@ $cron$;
 
 
 
--- 4. _cc_ligi_aralik fonksiyonunu güncelle (challenge_kaybi net puandan çıkarıldı)
+-- 4. _cc_ligi_aralik ve get_cc_ligi_* fonksiyonlarını güncelle (challenge_kaybi net puandan çıkarıldığı için önce DROP edilir)
+DROP FUNCTION IF EXISTS public.get_cc_ligi_aylik(integer, integer);
+DROP FUNCTION IF EXISTS public.get_cc_ligi_donemlik(integer, integer);
+DROP FUNCTION IF EXISTS public.get_cc_ligi_yillik(integer);
+DROP FUNCTION IF EXISTS public.get_cc_ligi_haftalik(integer, integer);
+DROP FUNCTION IF EXISTS public._cc_ligi_aralik(date, date);
+
 CREATE OR REPLACE FUNCTION public._cc_ligi_aralik(p_bas date, p_bit date)
  RETURNS TABLE(kullanici_id uuid, ad text, soyad text, firma_id uuid, takim_id uuid, bolge_id uuid, izleme_puani integer, cevaplama_puani integer, extra_puani integer, cc_gonderme_puani integer, cc_referral_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, toplam_net_puan integer, genel_sira bigint, firma_sirasi bigint, takim_sirasi bigint, bolge_sirasi bigint)
  LANGUAGE plpgsql
@@ -544,7 +550,9 @@ AS $function$
   );
 $function$;
 
--- 5. v_cc_challenge_listesi görünümünü güncelle (firma_id eklendi, durum sadeleştirildi)
+-- 7. v_cc_challenge_listesi görünümünü güncelle (kolon yapısı değiştiği için önce DROP edilir)
+DROP VIEW IF EXISTS public.v_cc_challenge_listesi CASCADE;
+
 CREATE OR REPLACE VIEW public.v_cc_challenge_listesi AS
 SELECT
   ck.challenge_id,
