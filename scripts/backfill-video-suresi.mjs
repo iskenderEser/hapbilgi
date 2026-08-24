@@ -12,9 +12,10 @@
 
 import { createRequire } from "module";
 import { readFileSync } from "fs";
+import path from "path";
 
-const KOK = "/Users/iskendereser/Desktop/hapbilgi";
-const require = createRequire(KOK + "/package.json");
+const KOK = process.cwd();
+const require = createRequire(path.join(KOK, "package.json"));
 const { Client } = require("pg");
 
 const env = readFileSync(KOK + "/.env.local", "utf8");

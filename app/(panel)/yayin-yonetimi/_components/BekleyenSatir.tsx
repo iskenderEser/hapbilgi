@@ -10,7 +10,7 @@
 
 import type { Bekleyen } from "../_types";
 import { VIDEO_PUAN_SECENEKLERI, VIDEO_PUAN_SECENEKLERI_ECZANEM, EXTRA_PUAN_SECENEKLERI } from "../_types";
-import { HedefRolPilleri } from "@/components/HedefRolBant";
+import { HedefRolPilleri } from "@/components/pill";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import { VideoThumb } from "./Yardimcilar";
 import { SoruListesi } from "./SoruListesi";

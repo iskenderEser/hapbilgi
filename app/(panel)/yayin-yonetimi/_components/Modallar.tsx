@@ -10,7 +10,7 @@
 
 import { useEffect } from "react";
 import type { Bekleyen } from "../_types";
-import { HedefRolPilleri } from "@/components/HedefRolBant";
+import { HedefRolPilleri } from "@/components/pill";
 import VideoOnizleme from "@/components/video/VideoOnizleme";
 
 function useEscapeKapat(onKapat: () => void) {

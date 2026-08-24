@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import DurumAnahtari from "@/components/DurumAnahtari";
-import UretimVaryantiRozet from "@/components/UretimVaryantiRozet";
+import { VaryantPill } from "@/components/pill";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { DahaFazlaGoster, ListeArama, useListe } from "@/components/liste";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
@@ -85,7 +85,7 @@ export default function UretimGorevListesi({ asama, baslik, asamaEtiketi, bosMes
 
   const SatirBasligi = ({ gorev }: { gorev: UretimGorevi }) => {
     const okunmamis = okunmamisIdler.has(gorev.gorev_id);
-    return <div className="flex items-center gap-1.5 flex-wrap">{okunmamis && <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[#bc2d0d]" />}<span style={{ fontWeight: okunmamis ? 700 : 500 }}>{gorev.talep?.urun_adi ?? "-"}</span><UretimVaryantiRozet hazirVideo={gorev.talep?.hazir_video ?? false} hazirSoruSeti={gorev.talep?.hazir_soru_seti ?? false} /></div>;
+    return <div className="flex items-center gap-1.5 flex-wrap">{okunmamis && <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[#bc2d0d]" />}<span style={{ fontWeight: okunmamis ? 700 : 500 }}>{gorev.talep?.urun_adi ?? "-"}</span><VaryantPill hazirVideo={gorev.talep?.hazir_video ?? false} hazirSoruSeti={gorev.talep?.hazir_soru_seti ?? false} /></div>;
   };
 
   return (

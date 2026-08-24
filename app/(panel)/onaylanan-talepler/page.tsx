@@ -12,7 +12,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
-import { HedefRolPilleri } from "@/components/HedefRolBant";
+import { HedefRolPilleri } from "@/components/pill";
 import type { TalepBilgisi } from "@/lib/utils/talepZinciri";
 import type { HedefRoller } from "@/app/(panel)/talepler/_types";
 import { useAuth } from "@/app/providers/AuthProvider";
