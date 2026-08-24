@@ -16,7 +16,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import type { Urun, Kategori } from "@/lib/store/tipler";
+import type { Urun, Kategori } from "@/lib/tclub/store/tipler";
 import { RENK_BORDO } from "../../_constants";
 
 interface UrunGosterim extends Urun {

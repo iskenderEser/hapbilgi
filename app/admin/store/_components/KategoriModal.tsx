@@ -11,7 +11,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Kategori } from "@/lib/store/tipler";
+import type { Kategori } from "@/lib/tclub/store/tipler";
 import { RENK_BORDO } from "../../_constants";
 
 interface Props {

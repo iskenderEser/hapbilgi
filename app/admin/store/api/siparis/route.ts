@@ -24,8 +24,8 @@ import {
   isKuraluHatasi,
 } from "@/lib/utils/hataIsle";
 import { ADMIN_ROLLER } from "@/lib/utils/roller";
-import { siparisIptal } from "@/lib/store/siparis";
-import { KARGO_FIRMA_ADLARI } from "@/lib/store/kargo";
+import { siparisIptal } from "@/lib/tclub/store/siparis";
+import { KARGO_FIRMA_ADLARI } from "@/lib/tclub/store/kargo";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 

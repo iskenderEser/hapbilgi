@@ -8,7 +8,7 @@ import {
   validasyonHatasi,
   isKuraluHatasi,
 } from "@/lib/utils/hataIsle";
-import { ileriSarmaKaybiKaydet } from "@/lib/puan/kayit";
+import { ileriSarmaKaybiKaydet } from "@/lib/tclub/puan/kayit";
 import { ileriSarmaKaybiHesapla } from "@/lib/izleme/karar";
 import { olayIdGecerliMi } from "@/lib/izleme/baslat";
 import { izlemePuanZamaniAktifMi } from "@/lib/izleme/puanZamani";

@@ -2,7 +2,7 @@
 //
 // HBStore genel sipariş listesi sayfasının ortak tipleri.
 
-import type { SiparisDurum, AdresSnapshot } from "@/lib/store/tipler";
+import type { SiparisDurum, AdresSnapshot } from "@/lib/tclub/store/tipler";
 
 // ─── SİPARİŞ SATIRI ──────────────────────────────────────────────────────────
 

@@ -1,7 +1,7 @@
-// lib/hbligi_v2/ligRpcCagir.ts
+// lib/hbligi/ligRpcCagir.ts
 //
-// HB Ligi RPC seçim katmanı (tek kaynak) — v2 kopyası.
-// Periyota göre üç RPC'den birini çağırır:
+// HB Ligi RPC seçim katmanı (tek kaynak).
+// Periyota göre dört RPC'den birini çağırır:
 //   - ay    → get_hb_ligi_aylik_v2(yil, ay)
 //   - donem → get_hb_ligi_donemlik_v2(yil, ceyrek)
 //   - yil   → get_hb_ligi_yillik_v2(yil)

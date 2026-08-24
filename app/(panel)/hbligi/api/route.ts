@@ -6,10 +6,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
-import { getUttLig } from "@/lib/hbligi_v2/getUttLig";
-import { getSahaLig, type SahaGorunumu } from "@/lib/hbligi_v2/getSahaLig";
-import { getBmPerformans } from "@/lib/hbligi_v2/getBmPerformans";
-import type { LigPeriyot } from "@/lib/hbligi_v2/ligRpcCagir";
+import { getUttLig } from "@/lib/tclub/hbligi/getUttLig";
+import { getSahaLig, type SahaGorunumu } from "@/lib/tclub/hbligi/getSahaLig";
+import { getBmPerformans } from "@/lib/tclub/hbligi/getBmPerformans";
+import type { LigPeriyot } from "@/lib/tclub/hbligi/ligRpcCagir";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { ureticiYetenegi, type RaporScope } from "@/lib/uretici/yetenekler";
 import {

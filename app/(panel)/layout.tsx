@@ -21,7 +21,7 @@ import PanelNavbar from "@/components/panel/PanelNavbar";
 import SolListe from "@/components/panel/SolListe";
 import MobilDrawer from "@/components/panel/MobilDrawer";
 import { PANEL_NAV, eclubKisiNavOlustur, type NavContext } from "@/components/panel/panelNav.config";
-import { HBSTORE_BAKIYE_DEGISTI } from "@/lib/store/olay";
+import { HBSTORE_BAKIYE_DEGISTI } from "@/lib/tclub/store/olay";
 import { BILDIRIM_ROZETLERI_DEGISTI } from "@/lib/bildirimler/rozet";
 
 export default function PanelLayout({ children }: { children: React.ReactNode }) {

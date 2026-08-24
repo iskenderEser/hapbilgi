@@ -9,7 +9,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Kategori } from "@/lib/store/tipler";
+import type { Kategori } from "@/lib/tclub/store/tipler";
 
 interface UseKategoriYonetimiProps {
   hata: (mesaj: string, adim?: string, detay?: string) => void;

@@ -22,8 +22,8 @@ import type {
   SahaBirimTuru,
   SahaLigKullanici,
   SahaLigSonuc,
-} from "@/lib/hbligi_v2/getSahaLig";
-import { esitPuanEsitSira } from "@/lib/hbligi_v2/siralama";
+} from "@/lib/tclub/hbligi/getSahaLig";
+import { esitPuanEsitSira } from "@/lib/tclub/hbligi/siralama";
 import styles from "./field.module.css";
 
 interface BirimSatiri {

@@ -3,7 +3,7 @@
 // HBStore admin panelinde ortak kullanılan tipler.
 // Hook'lar ve sekme bileşenleri arasında paylaşılır.
 
-import type { Urun, Siparis } from "@/lib/store/tipler";
+import type { Urun, Siparis } from "@/lib/tclub/store/tipler";
 
 // ─── ÜRÜN (kategori adı join'li) ─────────────────────────────────────────────
 

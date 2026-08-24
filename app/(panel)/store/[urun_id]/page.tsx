@@ -22,9 +22,9 @@ import { useRouter, useParams } from "next/navigation";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { STOK_AZ_ESIK } from "@/lib/store/sabitler";
-import type { Urun, Adres } from "@/lib/store/tipler";
-import { hbstoreBakiyesiDegistiBildir } from "@/lib/store/olay";
+import { STOK_AZ_ESIK } from "@/lib/tclub/store/sabitler";
+import type { Urun, Adres } from "@/lib/tclub/store/tipler";
+import { hbstoreBakiyesiDegistiBildir } from "@/lib/tclub/store/olay";
 
 interface UrunDetay extends Urun {
   kategori_adi: string | null;

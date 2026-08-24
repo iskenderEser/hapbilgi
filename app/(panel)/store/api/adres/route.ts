@@ -31,8 +31,8 @@ import {
   adresGuncelle,
   adresSil,
   varsayilanYap,
-} from "@/lib/store/adres";
-import type { AdresInput } from "@/lib/store/tipler";
+} from "@/lib/tclub/store/adres";
+import type { AdresInput } from "@/lib/tclub/store/tipler";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 // ─── Yardımcı: rol kontrolü ──────────────────────────────────────────────────

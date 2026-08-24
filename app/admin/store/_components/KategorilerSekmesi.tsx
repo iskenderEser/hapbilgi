@@ -7,7 +7,7 @@
 
 import { useState } from "react";
 import KategoriModal from "./KategoriModal";
-import type { Kategori } from "@/lib/store/tipler";
+import type { Kategori } from "@/lib/tclub/store/tipler";
 import { RENK_BORDO } from "../../_constants";
 
 interface KategorilerSekmesiProps {

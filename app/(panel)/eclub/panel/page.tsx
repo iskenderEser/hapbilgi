@@ -16,7 +16,7 @@ import {
 import { useEclubPanel, type PanelOneri } from "./_hooks/useEclubPanel";
 import EclubVideoOynatici from "./_components/EclubVideoOynatici";
 import EclubFirmaVideoKatalogu from "./_components/EclubFirmaVideoKatalogu";
-import { hbstoreBakiyesiDegistiBildir } from "@/lib/store/olay";
+import { hbstoreBakiyesiDegistiBildir } from "@/lib/tclub/store/olay";
 import { eclubKisiRolEtiketi } from "@/lib/utils/roller";
 
 function videoDurumu(oneri: PanelOneri): "bekleyen" | "tamamlanan" | "suresi_gecmis" {

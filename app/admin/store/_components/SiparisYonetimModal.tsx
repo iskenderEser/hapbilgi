@@ -10,7 +10,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { KARGO_FIRMA_ADLARI } from "@/lib/store/kargo";
+import { KARGO_FIRMA_ADLARI } from "@/lib/tclub/store/kargo";
 import { RENK_BORDO } from "../../_constants";
 
 export type SiparisYonetimModu = "kargola" | "iptal";

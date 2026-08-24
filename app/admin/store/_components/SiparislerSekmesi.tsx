@@ -11,10 +11,10 @@
 "use client";
 
 import SiparisYonetimModal, { type SiparisYonetimModu } from "./SiparisYonetimModal";
-import { DURUM_ETIKETLERI, DURUM_RENKLERI } from "@/lib/store/sabitler";
-import { kargoTakipUrl } from "@/lib/store/kargo";
+import { DURUM_ETIKETLERI, DURUM_RENKLERI } from "@/lib/tclub/store/sabitler";
+import { kargoTakipUrl } from "@/lib/tclub/store/kargo";
 import type { SiparisGosterim } from "../_types";
-import type { AdresSnapshot } from "@/lib/store/tipler";
+import type { AdresSnapshot } from "@/lib/tclub/store/tipler";
 import { RENK_BORDO } from "../../_constants";
 
 interface SiparislerSekmesiProps {

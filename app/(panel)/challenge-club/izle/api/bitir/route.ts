@@ -16,7 +16,7 @@ import {
   validasyonHatasi,
   isKuraluHatasi,
 } from "@/lib/utils/hataIsle";
-import { gecerliTur } from "@/lib/tur/kayit";
+import { gecerliTur } from "@/lib/tclub/tur/kayit";
 import { ayBaslangici } from "@/lib/zaman/kontrol";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { sabitSoruIndeksleri } from "@/lib/soru/secim";

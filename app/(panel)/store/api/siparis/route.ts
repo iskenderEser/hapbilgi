@@ -30,7 +30,7 @@ import {
   siparisOlustur,
   siparisIptal,
   teslimAldim,
-} from "@/lib/store/siparis";
+} from "@/lib/tclub/store/siparis";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 

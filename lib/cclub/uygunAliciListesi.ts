@@ -13,8 +13,8 @@
 // İlgili dokümantasyon: Karar Belgesi 5 (lib katmanı), iş kuralı 1-4. maddeler.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { UygunAlici } from "@/lib/cc/tipler";
-import { AYLIK_MAX_GONDERIM } from "@/lib/cc/sabitler";
+import type { UygunAlici } from "@/lib/cclub/tipler";
+import { AYLIK_MAX_GONDERIM } from "@/lib/cclub/sabitler";
 import { ayBaslangici } from "@/lib/zaman/kontrol";
 
 export async function uygunAliciListesi(

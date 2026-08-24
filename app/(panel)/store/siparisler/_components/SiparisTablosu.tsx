@@ -6,9 +6,9 @@
 import { useState } from "react";
 import { ChevronDown, MapPin, Package, Truck } from "lucide-react";
 import type { SiparisSatiri } from "../_types";
-import type { AdresSnapshot } from "@/lib/store/tipler";
-import { DURUM_ETIKETLERI, DURUM_RENKLERI } from "@/lib/store/sabitler";
-import { kargoTakipUrl } from "@/lib/store/kargo";
+import type { AdresSnapshot } from "@/lib/tclub/store/tipler";
+import { DURUM_ETIKETLERI, DURUM_RENKLERI } from "@/lib/tclub/store/sabitler";
+import { kargoTakipUrl } from "@/lib/tclub/store/kargo";
 
 interface SiparisTablosuProps {
   siparisler: SiparisSatiri[];

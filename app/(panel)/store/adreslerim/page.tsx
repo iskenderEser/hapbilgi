@@ -19,7 +19,7 @@ import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
 import { useAuth } from "@/app/providers/AuthProvider";
 import AdresModal from "@/components/store/AdresModal";
-import type { Adres } from "@/lib/store/tipler";
+import type { Adres } from "@/lib/tclub/store/tipler";
 
 const BORDO = "#bc2d0d";
 const MAVI = "#56aeff";

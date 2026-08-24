@@ -8,7 +8,7 @@ import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, yetkiHatasi, rolHatasi, sunucuHatasi } from "@/lib/utils/hataIsle";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
-import { tekrarPeriyotSecenekleri } from "@/lib/tur/ayarlar";
+import { tekrarPeriyotSecenekleri } from "@/lib/tclub/tur/ayarlar";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function GET() {

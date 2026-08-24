@@ -19,15 +19,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi, sunucuHatasi } from "@/lib/utils/hataIsle";
-import { uygunAliciListesi } from "@/lib/cc/uygunAliciListesi";
-import { aylikKotaKontrol, aliciAylikKontrol } from "@/lib/cc/kotaKontrol";
-import { tekrarIzlemeKontrol } from "@/lib/cc/tekrarIzlemeKontrol";
-import { challengeOlustur } from "@/lib/cc/kayit";
-import { AYLIK_MAX_GONDERIM } from "@/lib/cc/sabitler";
+import { uygunAliciListesi } from "@/lib/cclub/uygunAliciListesi";
+import { aylikKotaKontrol, aliciAylikKontrol } from "@/lib/cclub/kotaKontrol";
+import { tekrarIzlemeKontrol } from "@/lib/cclub/tekrarIzlemeKontrol";
+import { challengeOlustur } from "@/lib/cclub/kayit";
+import { AYLIK_MAX_GONDERIM } from "@/lib/cclub/sabitler";
 import { ayBaslangici } from "@/lib/zaman/kontrol";
-import { gecerliTurBaslangiclari } from "@/lib/tur/kayit";
+import { gecerliTurBaslangiclari } from "@/lib/tclub/tur/kayit";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { ccKartMetrikleri } from "@/lib/cc/kartDetaylari";
+import { ccKartMetrikleri } from "@/lib/cclub/kartDetaylari";
 
 type ChallengeDurumu = "bekliyor" | "izlendi";
 

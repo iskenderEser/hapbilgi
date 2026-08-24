@@ -9,7 +9,7 @@
 import { useState } from "react";
 import UrunModal from "./UrunModal";
 import FirmaErisimModal from "./FirmaErisimModal";
-import type { Kategori } from "@/lib/store/tipler";
+import type { Kategori } from "@/lib/tclub/store/tipler";
 import type { UrunGosterim } from "../_types";
 import { RENK_BORDO } from "../../_constants";
 

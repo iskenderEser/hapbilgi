@@ -4,7 +4,7 @@
 // bu katmanın dışına yalnız yetkili karşılaştırma havuzu çıkar.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ligRpcCagir, type LigPeriyot } from "@/lib/hbligi_v2/ligRpcCagir";
+import { ligRpcCagir, type LigPeriyot } from "@/lib/tclub/hbligi/ligRpcCagir";
 import type { BmPerformansDetay } from "@/lib/rapor/paylasilan/bmPerformansTipleri";
 import type { RaporScope } from "@/lib/uretici/yetenekler";
 

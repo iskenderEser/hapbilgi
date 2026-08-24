@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 
-const kayit = readFileSync("lib/cc/kayit.ts", "utf8");
-const uygunVideolar = readFileSync("lib/cc/uygunVideoListesi.ts", "utf8");
-const uygunAlicilar = readFileSync("lib/cc/uygunAliciListesi.ts", "utf8");
+const kayit = readFileSync("lib/cclub/kayit.ts", "utf8");
+const uygunVideolar = readFileSync("lib/cclub/uygunVideoListesi.ts", "utf8");
+const uygunAlicilar = readFileSync("lib/cclub/uygunAliciListesi.ts", "utf8");
 const sql = readFileSync("scripts/sql/cc_challenge_gonderim_guvenligi.sql", "utf8");
 
 test("mutlu: challenge ile gönderme puanı tek atomik RPC içinde oluşturulur", () => {

@@ -14,7 +14,7 @@ import {
   rolHatasi,
   validasyonHatasi,
 } from "@/lib/utils/hataIsle";
-import { ileriSarmaKaybiKaydet } from "@/lib/cc/puan/kayip";
+import { ileriSarmaKaybiKaydet } from "@/lib/cclub/puan/kayip";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function POST(request: NextRequest) {
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
     if (!kayit.ok) {
       return hataYaniti(
         kayit.error ?? "İleri sarma kaybı yazılamadı.",
-        "lib/cc/puan/kayip — ileriSarmaKaybiKaydet",
+        "lib/cclub/puan/kayip — ileriSarmaKaybiKaydet",
         null
       );
     }

@@ -17,7 +17,7 @@
 // lib/cc/kayit.ts dosyasında tutulur.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { KayitSonuc } from "@/lib/cc/tipler";
+import type { KayitSonuc } from "@/lib/cclub/tipler";
 
 // ─── 1. İLERİ SARMA KAYBI ────────────────────────────────────────────────────
 

@@ -6,7 +6,7 @@ import { hataYaniti, sunucuHatasi, yetkiHatasi, isKuraluHatasi } from "@/lib/uti
 import { haftaBaslangici, ayBaslangici, yilBaslangici, aktifPeriyot } from "@/lib/zaman/kontrol";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { FIRMA_KOLONLARI } from "@/lib/firma/kolonlar";
-import { harcamaBakiyesi } from "@/lib/store/bakiye";
+import { harcamaBakiyesi } from "@/lib/tclub/store/bakiye";
 import { eclubKisiErisimi } from "@/lib/eclub/kisiErisim";
 import { eclubStoreToplamBakiye } from "@/lib/eclub/store/eclubStoreBakiye";
 

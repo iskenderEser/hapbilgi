@@ -3,7 +3,7 @@
 //
 // Kod sabitleri: deploy gerektirir değişimi.
 
-import type { SiparisDurum } from "@/lib/store/tipler";
+import type { SiparisDurum } from "@/lib/tclub/store/tipler";
 
 // ─── KOD SABİTLERİ ───────────────────────────────────────────────────────────
 

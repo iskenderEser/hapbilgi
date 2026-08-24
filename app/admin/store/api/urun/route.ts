@@ -25,7 +25,7 @@ import {
   isKuraluHatasi,
 } from "@/lib/utils/hataIsle";
 import { ADMIN_ROLLER } from "@/lib/utils/roller";
-import { gorselSil, urlDenYolCikar } from "@/lib/store/storage";
+import { gorselSil, urlDenYolCikar } from "@/lib/tclub/store/storage";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 

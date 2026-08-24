@@ -8,7 +8,7 @@ import { hataYaniti, isKuraluHatasi, sunucuHatasi, yetkiHatasi, rolHatasi, valid
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { cevapDogruMu, cevaplarAtananSorularlaEslesiyorMu, type Soru } from "@/lib/soru/kontrol";
 import { bildirimOlustur } from "@/lib/utils/bildirimOlustur";
-import { challengeIzlendiMesaji } from "@/lib/cc/bildirimMesajlari";
+import { challengeIzlendiMesaji } from "@/lib/cclub/bildirimMesajlari";
 
 interface CevapGirisi {
   soru_index: number;

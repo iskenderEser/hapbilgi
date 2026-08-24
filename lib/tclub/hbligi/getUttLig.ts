@@ -1,8 +1,8 @@
-// lib/hbligi_v2/getUttLig.ts
+// lib/hbligi/getUttLig.ts
 //
-// UTT/KD_UTT rolü için HBLigi verisi — v2 kopyası.
+// UTT/KD_UTT rolü için HBLigi verisi.
 // Kullanıcının kendi bölgesindeki UTT'leri toplam puana göre sıralı döner.
-// Dönem: çağıran tarafından geçilen periyot (ay/donem/yil) — ligRpcCagir helper'ı.
+// Dönem: çağıran tarafından geçilen periyot (ay/donem/yil/hafta) — ligRpcCagir helper'ı.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ligRpcCagir, type LigPeriyot } from "./ligRpcCagir";
@@ -36,7 +36,7 @@ export interface UttLigSonuc {
  * @param supabase Admin client
  * @param kullanici_id Giriş yapan kullanıcının ID'si
  * @param bolge_id Kullanıcının bölgesi
- * @param periyot Periyot + tarih bilgisi (ay/donem/yil)
+ * @param periyot Periyot + tarih bilgisi (ay/donem/yil/hafta)
  * @throws Hata mesajı string olarak fırlatır; çağıran endpoint hataYaniti ile sarar
  */
 export async function getUttLig(

@@ -8,7 +8,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { oneriTarihKurali } from "../lib/oneri/tarihKurali.ts";
+import { oneriTarihKurali } from "@/lib/tclub/oneri/tarihKurali";
 
 // Ambient saati sabitler — varsayılan "bugün" gerçek saatten okunduğu için
 // deterministik ölçüm ancak zamanı dondurarak yapılır.

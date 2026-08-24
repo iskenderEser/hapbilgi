@@ -13,7 +13,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Kategori } from "@/lib/store/tipler";
+import type { Kategori } from "@/lib/tclub/store/tipler";
 import type { UrunGosterim } from "../_types";
 
 interface UseUrunYonetimiProps {

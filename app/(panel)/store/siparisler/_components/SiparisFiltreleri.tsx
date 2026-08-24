@@ -18,7 +18,7 @@ import type {
   HiyerarsiBolge,
   HiyerarsiKullanici,
 } from "../_types";
-import { DURUM_ETIKETLERI } from "@/lib/store/sabitler";
+import { DURUM_ETIKETLERI } from "@/lib/tclub/store/sabitler";
 import { STORE_GENEL_GOREN_ROLLER } from "@/lib/utils/roller";
 
 interface SiparisFiltreleriProps {

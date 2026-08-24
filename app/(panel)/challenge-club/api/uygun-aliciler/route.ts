@@ -16,9 +16,9 @@ import {
   rolHatasi,
   validasyonHatasi,
 } from "@/lib/utils/hataIsle";
-import { uygunAliciListesi } from "@/lib/cc/uygunAliciListesi";
+import { uygunAliciListesi } from "@/lib/cclub/uygunAliciListesi";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { gecerliTur } from "@/lib/tur/kayit";
+import { gecerliTur } from "@/lib/tclub/tur/kayit";
 
 export async function GET(request: NextRequest) {
   try {

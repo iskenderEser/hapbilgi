@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { firmaIcinUrunAktifMi } from "@/lib/store/firmaUrun";
+import { firmaIcinUrunAktifMi } from "@/lib/tclub/store/firmaUrun";
 
 test("mutlu: global aktif ürün varsayılan veya açık firma ayarında görünür", () => {
   assert.equal(firmaIcinUrunAktifMi(true, undefined), true);

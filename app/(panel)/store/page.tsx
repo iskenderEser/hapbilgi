@@ -23,8 +23,8 @@ import { Package } from "lucide-react";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
 import { useAuth } from "@/app/providers/AuthProvider";
-import type { Urun, Kategori } from "@/lib/store/tipler";
-import { STOK_AZ_ESIK } from "@/lib/store/sabitler";
+import type { Urun, Kategori } from "@/lib/tclub/store/tipler";
+import { STOK_AZ_ESIK } from "@/lib/tclub/store/sabitler";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 
 const BORDO = "#bc2d0d";

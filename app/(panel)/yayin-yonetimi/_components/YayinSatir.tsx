@@ -10,7 +10,7 @@
 
 import { useState } from "react";
 import type { Yayin } from "../_types";
-import type { HesaplananTur } from "@/lib/tur/kayit";
+import type { HesaplananTur } from "@/lib/tclub/tur/kayit";
 import { HedefRolPilleri } from "@/components/HedefRolBant";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import { ureticiDurumMesaji, yayinDurumKodu } from "@/lib/utils/durum/mesaj";

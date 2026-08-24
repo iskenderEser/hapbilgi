@@ -9,7 +9,7 @@
 // 5 fonksiyon: listele, ekle, guncelle, sil, varsayilanYap
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Adres, AdresInput, KayitSonuc } from "@/lib/store/tipler";
+import type { Adres, AdresInput, KayitSonuc } from "@/lib/tclub/store/tipler";
 
 // ─── 1. LİSTELE ──────────────────────────────────────────────────────────────
 

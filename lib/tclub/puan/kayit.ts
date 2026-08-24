@@ -17,26 +17,8 @@ import {
   OneriKayipParams,
   KayitSonuc,
 } from './tipler';
+import { yayindanUrunId } from '@/lib/utils/yayinUrun';
 
-/**
- * Verilen yayın için urun_id'yi DB function'ı ile çeker.
- * Internal helper — her kayıt fonksiyonu kayıt öncesinde bunu çağırır.
- *
- * NULL dönmesi bir hata DEĞİLDİR (05.08.2026): puan yayına aittir, ürün yayının
- * varsa taşıdığı etikettir. Ürünsüz içerik (medikal, İK) meşrudur ve puan yazar;
- * o kayıtlarda urun_id boş kalır. Kayıt fonksiyonları bu yüzden NULL'da durmaz.
- */
-async function yayindanUrunId(
-  supabase: SupabaseClient,
-  yayin_id: string
-): Promise<string | null> {
-  const { data, error } = await supabase.rpc('get_urun_from_yayin', { p_yayin_id: yayin_id });
-  if (error) {
-    console.error('[lib/puan] get_urun_from_yayin hatası:', { yayin_id, hata: error.message });
-    return null;
-  }
-  return (data as string) ?? null;
-}
 
 /**
  * kazanilan_puanlar tablosuna INSERT.

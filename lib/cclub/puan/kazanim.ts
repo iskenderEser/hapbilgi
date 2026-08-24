@@ -11,8 +11,8 @@
 // Yan etkiler (bildirim, challenge_kayitlari.izlendi_mi update vs) çağıran katmanın sorumluluğunda.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { KayitSonuc } from "@/lib/cc/tipler";
-import { ccGondermePuani, ccReferralPuani } from "@/lib/cc/sabitler";
+import type { KayitSonuc } from "@/lib/cclub/tipler";
+import { ccGondermePuani, ccReferralPuani } from "@/lib/cclub/sabitler";
 
 // ─── 1. İZLEME PUANI ─────────────────────────────────────────────────────────
 

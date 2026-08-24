@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getSahaLig, type SahaLigKapsami } from "@/lib/hbligi_v2/getSahaLig";
-import { esitPuanEsitSira } from "@/lib/hbligi_v2/siralama";
+import { getSahaLig, type SahaLigKapsami } from "@/lib/tclub/hbligi/getSahaLig";
+import { esitPuanEsitSira } from "@/lib/tclub/hbligi/siralama";
 
 const PERIYOT = { periyot: "donem" as const, yil: 2026, ay: 1, ceyrek: 3, hafta: 1 };
 

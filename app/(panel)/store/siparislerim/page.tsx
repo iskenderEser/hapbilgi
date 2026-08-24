@@ -23,10 +23,10 @@ import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
-import { DURUM_ETIKETLERI, DURUM_RENKLERI, IPTAL_SURE_SAATI } from "@/lib/store/sabitler";
-import { kargoTakipUrl } from "@/lib/store/kargo";
-import type { SiparisGosterim, AdresSnapshot } from "@/lib/store/tipler";
-import { hbstoreBakiyesiDegistiBildir } from "@/lib/store/olay";
+import { DURUM_ETIKETLERI, DURUM_RENKLERI, IPTAL_SURE_SAATI } from "@/lib/tclub/store/sabitler";
+import { kargoTakipUrl } from "@/lib/tclub/store/kargo";
+import type { SiparisGosterim, AdresSnapshot } from "@/lib/tclub/store/tipler";
+import { hbstoreBakiyesiDegistiBildir } from "@/lib/tclub/store/olay";
 
 const BORDO = "#bc2d0d";
 const GRI_METIN = "#737373";

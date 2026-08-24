@@ -10,7 +10,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Adres, AdresInput } from "@/lib/store/tipler";
+import type { Adres, AdresInput } from "@/lib/tclub/store/tipler";
 
 interface Props {
   acik: boolean;

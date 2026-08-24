@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { LigPeriyot } from "@/lib/hbligi_v2/ligRpcCagir";
+import type { LigPeriyot } from "@/lib/tclub/hbligi/ligRpcCagir";
 import type {
   BmPerformansDetay,
   BmUttPerformans,

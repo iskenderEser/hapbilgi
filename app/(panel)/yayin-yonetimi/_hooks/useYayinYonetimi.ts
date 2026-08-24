@@ -17,7 +17,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useCallback, useEffect, useState } from "react";
 import { ECLUB_ORTAK_YAYIN_GRUBU, hedefRolleriOku, yalnizEclubHedefliMi, type YayinHedefGrubu } from "@/lib/utils/roller";
 import type { Bekleyen, BekleyenHedefSayilari, Yayin } from "../_types";
-import { gecerliTurBaslangiclari, type HesaplananTur } from "@/lib/tur/kayit";
+import { gecerliTurBaslangiclari, type HesaplananTur } from "@/lib/tclub/tur/kayit";
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
 
 interface UseYayinYonetimiArgs {

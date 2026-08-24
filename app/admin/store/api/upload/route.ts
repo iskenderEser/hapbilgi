@@ -20,7 +20,7 @@ import {
   validasyonHatasi,
 } from "@/lib/utils/hataIsle";
 import { ADMIN_ROLLER } from "@/lib/utils/roller";
-import { gorselYukle } from "@/lib/store/storage";
+import { gorselYukle } from "@/lib/tclub/store/storage";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 

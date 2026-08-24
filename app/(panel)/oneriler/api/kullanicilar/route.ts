@@ -13,7 +13,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
-import { AYLIK_KOTA_KATSAYI, MAKS_ALICI_HAFTA } from "@/lib/oneri/limitKontrol";
+import { AYLIK_KOTA_KATSAYI, MAKS_ALICI_HAFTA } from "@/lib/tclub/oneri/limitKontrol";
 import { ayBaslangici, haftaBaslangici } from "@/lib/zaman/kontrol";
 
 export async function GET() {

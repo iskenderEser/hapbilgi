@@ -12,8 +12,8 @@
 // İlgili dokümantasyon: Karar Belgesi 5, iş kuralı maddeleri 1-3.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { KotaSonuc } from "@/lib/cc/tipler";
-import { AYLIK_MAX_GONDERIM } from "@/lib/cc/sabitler";
+import type { KotaSonuc } from "@/lib/cclub/tipler";
+import { AYLIK_MAX_GONDERIM } from "@/lib/cclub/sabitler";
 import { ayBaslangici } from "@/lib/zaman/kontrol";
 
 // ─── 1. AYLIK KOTA KONTROLÜ ──────────────────────────────────────────────────

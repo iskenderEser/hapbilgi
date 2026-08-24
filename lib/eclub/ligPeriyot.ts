@@ -1,4 +1,4 @@
-import type { LigPeriyot } from "@/lib/hbligi_v2/ligRpcCagir";
+import type { LigPeriyot } from "@/lib/tclub/hbligi/ligRpcCagir";
 
 export function eclubLigPeriyoduParse(searchParams: URLSearchParams): LigPeriyot | null {
   const periyot = (searchParams.get("periyot") ?? "ay") as LigPeriyot["periyot"];

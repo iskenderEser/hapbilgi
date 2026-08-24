@@ -7,7 +7,6 @@ import { readFileSync } from "node:fs";
 const ozetSql = readFileSync("scripts/sql/cc_ligi_ozet.sql", "utf8");
 const backfillSql = readFileSync("scripts/sql/cc_ligi_backfill.sql", "utf8");
 const okumaSql = readFileSync("scripts/sql/cc_ligi_okuma.sql", "utf8");
-const netHesap = readFileSync("lib/cc/puan/netHesap.ts", "utf8");
 const ligApi = readFileSync("app/(panel)/cc-ligi/api/route.ts", "utf8");
 
 test("mutlu: CC özet ve backfill yalnız C-Club puan/kayıp tablolarını kullanır", () => {
@@ -26,7 +25,7 @@ test("mutlu: challenge görünümü ve liderler CC izleme/özet kaynağına bağ
   assert.match(okumaSql, /ik\.challenge_id = ck\.challenge_id/);
   assert.match(okumaSql, /get_cc_ligi_donem_lideri[\s\S]*get_cc_ligi_donemlik/);
   assert.match(okumaSql, /get_cc_ligi_yil_lideri[\s\S]*get_cc_ligi_yillik/);
-  assert.match(netHesap, /from\("cc_kazanilan_puanlar"\)[\s\S]*gte\("created_at"/);
+  assert.match(ligApi, /get_cc_ligi_/);
 });
 
 test("mutlu: bütün lig dönemleri ve liderler aynı net puan sözleşmesini kullanır", () => {

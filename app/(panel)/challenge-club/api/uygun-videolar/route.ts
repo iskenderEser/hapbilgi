@@ -13,7 +13,7 @@ import {
   yetkiHatasi,
   rolHatasi,
 } from "@/lib/utils/hataIsle";
-import { uygunVideoListesi } from "@/lib/cc/uygunVideoListesi";
+import { uygunVideoListesi } from "@/lib/cclub/uygunVideoListesi";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function GET(_request: NextRequest) {

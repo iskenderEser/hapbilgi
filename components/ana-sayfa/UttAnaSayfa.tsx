@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import VideoOynatici from "@/components/izle/VideoOynatici";
-import { hbstoreBakiyesiDegistiBildir } from "@/lib/store/olay";
+import { hbstoreBakiyesiDegistiBildir } from "@/lib/tclub/store/olay";
 import {
   UttKayanVideoRafi as KayanRaf,
   UttVideoKarti as VideoKart,

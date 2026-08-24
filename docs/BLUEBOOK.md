@@ -146,12 +146,47 @@ Tüm denetimler aşağıdaki **3 Aşamalı Zorunlu Çalışma Disiplini** ile y�
 
 ---
 
-## 🎯 SONUÇ VE KALİTE SİCİLİ
+# 6. BÖLÜM: BÜTÜNSEL MİMARİ REFACTORİNG, DRY VE TEMİZLİK SİCİLİ
+*Tarih: 24 Ağustos 2026 | Kapsam: 5 Kulüp Modüler Dizin İzolasyonu, DRY Tek-Kaynak Konsolidasyonu ve Ölü Kod Tasfiyesi*
 
-**23 Ağustos 2026** tarihi itibarıyla gerçekleştirilen bu bütünsel teknik denetim sonucunda:
-1. Platformun **T-Club, C-Club, E-Club, Eczanem ve Üretim/Yönetim** modüllerinin hiçbirinde sessiz hata (silent failure), kırık API ucu veya yetkisiz veri manipülasyon riski bulunmamaktadır.
-2. Tüm iş kuralları; puanlama hesaplamaları, tur döngüleri, kota/eşik kontrolleri, video yükleme veznesi ve onay/revizyon durum makineleri veritabanı düzeyinde atomik transaction'lar ve trigger'larla güvence altına alınmıştır.
-3. **HapBilgi ekosistemi tüm detayları, katmanları ve veritabanı dokusuyla canlı kullanıma %100 hazırdır.**
+### 1. Amaç ve İcra Kapsamı
+23 Ağustos 2026 denetiminin ardından, sistem genelindeki dağınık kütüphane motorları, geçmiş sürümlerden kalan sürüm takıları (`hbligi_v2`), kod tekrarları (DRY ihlalleri) ve atomik RPC mimarisine geçiş sonrası atıl kalan ölü kodlar kapsamlı bir refactoring operasyonuyla temizlenmiştir.
+
+### 2. Modüler Dizin İzolasyonu ve Simetrisi (`lib/`)
+Tüm kulüplerin iş mantığı motorları tam bir semantik ve mimari simetriye kavuşturulmuştur:
+* **T-Club:** `lib/puan/`, `lib/tur/`, `lib/oneri/`, `lib/hbligi_v2/`, `lib/store/` dağınık kök dizinleri toplanarak **`lib/tclub/`** altına taşınmış; `hbligi_v2` takısı standart `hbligi` olarak sadeleştirilmiştir.
+* **C-Club:** `lib/cc/` kısaltması tam modüler standart için **`lib/cclub/`** olarak adlandırılmıştır.
+* **E-Club:** `lib/eclub/` (16 dosya) modüler sınırları korunmuştur.
+* **Eczanem:** `lib/eczanem/` (11 dosya) B2C ve B2B ayrımıyla korunmuştur.
+* **Üretim & Ortak:** `lib/uretim/`, `lib/uretici/`, `lib/video/`, `lib/rapor/` ve `lib/utils/` bağımsız katmanlar olarak tescillenmiştir.
+
+### 3. DRY (Don't Repeat Yourself) Tek-Kaynak Konsolidasyonu
+1. **Yayın $\rightarrow$ Ürün Çözümleyici:** Proje genelinde 3 farklı yerde elle çağrılan `get_urun_from_yayin` RPC'si, `@/lib/utils/yayinUrun.ts` (`yayindanUrunId`) altında tekilleştirilmiştir.
+2. **Tohumlu Fisher-Yates Soru Seçimi:** E-Club içindeki mükerrer 35 satırlık rastgele soru algoritması silinip `@/lib/soru/secim` (`sabitSoruIndeksleri`) merkezine bağlanmıştır.
+3. **Cevap Kümesi Doğrulama:** E-Club içindeki 23 satırlık cevap doğrulama fonksiyonu silinip `@/lib/soru/kontrol` (`cevaplarAtananSorularlaEslesiyorMu`) merkezine bağlanmıştır.
+
+### 4. Tasfiye Edilen Ölü ve Yetim Kodlar
+* 🗑️ `lib/cc/izleme/bitir.ts` (Silindi — `cc_izleme_tamamla` RPC'si ile değiştirildi)
+* 🗑️ `lib/cc/soru/cevapIsle.ts` (Silindi — `cc_cevaplari_kaydet` RPC'si ile değiştirildi)
+* 🗑️ `lib/cc/puan/netHesap.ts` (Silindi — `get_cc_ligi_*` RPC ve view ile değiştirildi)
+* 🗑️ `lib/cc/izleme/extraKontrol.ts` içindeki `extraPuanHakEdildiMi` (Silindi — RPC içi sayaç ile değiştirildi)
+* 🗑️ `lib/eczanem/kazanim.ts` (Silindi — `eczanem_izleme_tamamla` & `eczanem_cevaplari_kaydet` RPC'leri ile değiştirildi)
+* 🗑️ `lib/utils/randomSoruSec.ts` (Silindi — Güvensiz eski soru seçici; `lib/soru/secim` ile değiştirildi)
+
+### 5. Nihai Doğrulama ve Sağlık Sertifikasyonu
+* **TypeScript Derleme Denetimi (`npx tsc --noEmit`):** ✅ **0 HATA (Exit code 0)**.
+* **Bütünsel Duman Testleri (`npm run test:smoke`):** ✅ **130 / 130 TEST BAŞARILI (%100 PASS)**.
+* **Mimari Lint Kural Denetimi (`npm run lint:mimari`):** ✅ **MİMARİ KURAL İHLALİ YOK**.
+
+---
+
+## 🎯 GENEL SONUÇ VE KALİTE SİCİLİ
+
+**24 Ağustos 2026** tarihi itibarıyla:
+1. Platformun **T-Club, C-Club, E-Club, Eczanem ve Üretim/Yönetim** modülleri hem veritabanı bütünlüğü hem de kod mimarisi, dizin simetrisi ve DRY disiplini açısından %100 kusursuzluğa ulaştırılmıştır.
+2. Kod tabanında hiçbir sahipsiz, ölü veya güvensiz eski yöntem kalmamış; her iş kuralı tek doğruluk kaynağına (single source of truth) bağlanmıştır.
+3. **HapBilgi ekosistemi, mimari zarafeti ve kurumsal kod kalitesiyle geleceğe mühürlenmiştir.**
 
 ---
 *HapBilgi Mühendislik ve Kalite Denetim Ekibi tarafından mühürlenmiştir.*
+

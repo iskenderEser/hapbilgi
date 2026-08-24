@@ -116,7 +116,16 @@ const kayitTekKaynak = {
   create(context) {
     const dosya = context.filename ?? context.getFilename?.() ?? "";
     const yol = dosya.replace(/\\/g, "/");
-    if (yol.includes("/lib/puan/") || yol.includes("/lib/tur/") || yol.includes("/lib/eczanem/") || yol.includes("/lib/push/")) return {};
+    if (
+      yol.includes("/lib/puan/") ||
+      yol.includes("/lib/tclub/puan/") ||
+      yol.includes("/lib/tur/") ||
+      yol.includes("/lib/tclub/tur/") ||
+      yol.includes("/lib/eczanem/") ||
+      yol.includes("/lib/cclub/") ||
+      yol.includes("/lib/cc/") ||
+      yol.includes("/lib/push/")
+    ) return {};
 
     return {
       CallExpression(node) {

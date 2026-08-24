@@ -7,7 +7,7 @@ import { aktifPeriyot } from "@/lib/zaman/kontrol";
 import HbLigiPeriyotSecici, { type Periyot } from "@/components/hbligi/HbLigiPeriyotSecici";
 import LeaguePage from "@/components/hbligi/league/LeaguePage";
 import FieldLeaguePage from "@/components/hbligi/field/FieldLeaguePage";
-import type { SahaLigSonuc } from "@/lib/hbligi_v2/getSahaLig";
+import type { SahaLigSonuc } from "@/lib/tclub/hbligi/getSahaLig";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 
 interface UttSatiri {

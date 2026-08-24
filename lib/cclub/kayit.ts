@@ -23,16 +23,17 @@ import type {
   ReferralPuaniParams,
   ChallengeKayipParams,
   KayitSonuc,
-} from "@/lib/cc/tipler";
-import { ccReferralPuaniKaydet } from "@/lib/cc/puan/kazanim";
+} from "@/lib/cclub/tipler";
+import { ccReferralPuaniKaydet } from "@/lib/cclub/puan/kazanim";
 import { bildirimOlustur } from "@/lib/utils/bildirimOlustur";
-import { ccReferralPuani, IS_GUNU_SURE } from "@/lib/cc/sabitler";
+import { ccReferralPuani, IS_GUNU_SURE } from "@/lib/cclub/sabitler";
 import { isGunuEkle } from "@/lib/zaman/kontrol";
+import { yayindanUrunId } from "@/lib/utils/yayinUrun";
 import {
   challengeGeldiMesaji,
   challengeIzlendiMesaji,
   challengeSuresiDolduMesaji,
-} from "@/lib/cc/bildirimMesajlari";
+} from "@/lib/cclub/bildirimMesajlari";
 
 // ─── 1. CHALLENGE OLUŞTUR ────────────────────────────────────────────────────
 
@@ -149,19 +150,8 @@ export async function challengeKaybiKaydet(
     videoAdi: string; // bildirim mesajı için
   }
 ): Promise<KayitSonuc> {
-  // 1. urun_id çek — BOŞ DÖNMESİ HATA DEĞİLDİR (05.08.2026).
-  // Puan yayına aittir; ürün, yayının varsa taşıdığı etikettir. Ürünsüz içerik
-  // (medikal, İK) meşrudur ve kayıp yazar; o kayıtlarda urun_id boş kalır.
-  const { data: urunIdData, error: urunIdError } = await supabase.rpc(
-    "get_urun_from_yayin",
-    { p_yayin_id: params.yayin_id }
-  );
-
-  if (urunIdError) {
-    console.error("[lib/cc/kayit] challengeKaybiKaydet urun_id hatası:", urunIdError.message);
-  }
-
-  const urun_id = (urunIdData as string | null) ?? null;
+  // 1. urun_id çek (merkezi yayindanUrunId helper'ı)
+  const urun_id = await yayindanUrunId(supabase, params.yayin_id, "lib/cclub/kayit");
 
   // 2. challenge_kayip_kayitlari'a INSERT
   const { error: insertError } = await supabase

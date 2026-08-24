@@ -12,7 +12,7 @@
 // İlgili dokümantasyon: Karar Belgesi 5 (lib katmanı), iş kuralı 6. madde.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { UygunVideo } from "@/lib/cc/tipler";
+import type { UygunVideo } from "@/lib/cclub/tipler";
 
 /**
  * BM'in gönderebileceği CC videolarını döndürür.

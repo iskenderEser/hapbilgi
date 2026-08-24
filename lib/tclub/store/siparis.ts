@@ -15,7 +15,7 @@ import type {
   SiparisOlusturSonuc,
   SiparisIptalParams,
   KayitSonuc,
-} from "@/lib/store/tipler";
+} from "@/lib/tclub/store/tipler";
 
 // ─── 1. SİPARİŞ OLUŞTUR ──────────────────────────────────────────────────────
 

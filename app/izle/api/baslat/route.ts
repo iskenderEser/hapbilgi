@@ -9,11 +9,11 @@ import {
   validasyonHatasi,
   isKuraluHatasi,
 } from "@/lib/utils/hataIsle";
-import { oneriPenceresiAcik } from "@/lib/oneri/pencereKontrol";
+import { oneriPenceresiAcik } from "@/lib/tclub/oneri/pencereKontrol";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { baslatOlayIdGecerliMi, izlemeTuruBelirle } from "@/lib/izleme/baslat";
-import { gecerliTur } from "@/lib/tur/kayit";
+import { gecerliTur } from "@/lib/tclub/tur/kayit";
 import { izlemePuanZamaniAktifMi } from "@/lib/izleme/puanZamani";
 
 const IZLEME_SELECT = "izleme_id, yayin_id, kullanici_id, izleme_turu, oneri_id, izleme_baslangic, video_suresi_saniye, gercek_oynatma_mi" as const;

@@ -8,7 +8,7 @@ import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
 import { hataYaniti, isKuraluHatasi, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { olayIdGecerliMi } from "@/lib/izleme/baslat";
 import { eclubIzlemeHaklari, eclubSoruIndeksleri } from "@/lib/eclub/izlemeKurali";
-import { gecerliTur } from "@/lib/tur/kayit";
+import { gecerliTur } from "@/lib/tclub/tur/kayit";
 
 const VARSAYILAN_SORU_SAYISI = 2;
 

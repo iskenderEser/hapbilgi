@@ -9,12 +9,12 @@ import {
   validasyonHatasi,
   isKuraluHatasi,
 } from "@/lib/utils/hataIsle";
-import { kazanilanPuanKaydet } from "@/lib/puan/kayit";
+import { kazanilanPuanKaydet } from "@/lib/tclub/puan/kayit";
 import { izlemePuanZamaniAktifMi } from "@/lib/izleme/puanZamani";
-import { extraPuanEsikKarsilandi } from "@/lib/puan/strateji";
-import { tamTekrarSayisi } from "@/lib/puan/tekrarSayim";
-import { oneriPenceresiAcik } from "@/lib/oneri/pencereKontrol";
-import { gecerliTur } from "@/lib/tur/kayit";
+import { extraPuanEsikKarsilandi } from "@/lib/tclub/puan/strateji";
+import { tamTekrarSayisi } from "@/lib/tclub/puan/tekrarSayim";
+import { oneriPenceresiAcik } from "@/lib/tclub/oneri/pencereKontrol";
+import { gecerliTur } from "@/lib/tclub/tur/kayit";
 import { izlemeKazanimKarariBelirle, soruHakkiBelirle } from "@/lib/izleme/karar";
 import { rastgeleSoruSec } from "@/lib/soru/secim";
 import { rolCozucu } from "@/lib/utils/rolCozucu";

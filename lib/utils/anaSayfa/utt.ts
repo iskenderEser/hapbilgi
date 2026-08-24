@@ -2,9 +2,9 @@
 // UTT / KD_UTT ana sayfa verisi. (R0: lib/utils/anaSayfaVeri.ts'ten saf taşıma — davranış değişmedi.)
 
 import { SupabaseClient } from "@supabase/supabase-js";
-import { gecerliTurBaslangiclari } from "@/lib/tur/kayit";
-import { tamTekrarSayilari } from "@/lib/puan/tekrarSayim";
-import { EXTRA_PUAN_TEKRAR_ESIGI } from "@/lib/puan/strateji";
+import { gecerliTurBaslangiclari } from "@/lib/tclub/tur/kayit";
+import { tamTekrarSayilari } from "@/lib/tclub/puan/tekrarSayim";
+import { EXTRA_PUAN_TEKRAR_ESIGI } from "@/lib/tclub/puan/strateji";
 import { haftaBaslangici } from "@/lib/zaman/kontrol";
 
 export async function getUttAnaSayfaVeri(userId: string, adminSupabase: SupabaseClient) {

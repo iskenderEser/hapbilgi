@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
-import { kazanilanPuanKaydet, yanlisCevapKaybiKaydet } from "@/lib/puan/kayit";
+import { kazanilanPuanKaydet, yanlisCevapKaybiKaydet } from "@/lib/tclub/puan/kayit";
 import { cevapDogruMu } from "@/lib/soru/kontrol";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";

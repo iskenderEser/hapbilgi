@@ -7,7 +7,7 @@
 // İlgili dokümantasyon: Karar Belgesi 5 (lib katmanı), iş kuralı 4. madde.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { TekrarIzlemeSonuc } from "@/lib/cc/tipler";
+import type { TekrarIzlemeSonuc } from "@/lib/cclub/tipler";
 
 /**
  * Alıcı BM bu videoyu izleyip tamamlamış mı kontrol eder.

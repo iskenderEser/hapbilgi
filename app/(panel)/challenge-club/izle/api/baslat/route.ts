@@ -19,9 +19,9 @@ import {
   validasyonHatasi,
   isKuraluHatasi,
 } from "@/lib/utils/hataIsle";
-import { dahaOnceTamamlandiMi } from "@/lib/cc/izleme/extraKontrol";
-import { izlemeBaslat } from "@/lib/cc/izleme/baslat";
-import { gecerliTur } from "@/lib/tur/kayit";
+import { dahaOnceTamamlandiMi } from "@/lib/cclub/izleme/extraKontrol";
+import { izlemeBaslat } from "@/lib/cclub/izleme/baslat";
+import { gecerliTur } from "@/lib/tclub/tur/kayit";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 export async function POST(request: NextRequest) {
@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
       }
       return hataYaniti(
         sonuc.error,
-        "lib/cc/izleme/baslat — izlemeBaslat",
+        "lib/cclub/izleme/baslat — izlemeBaslat",
         null
       );
     }

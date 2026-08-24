@@ -5,8 +5,8 @@ import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasy
 import { cokluBildirimOlustur } from "@/lib/utils/bildirimOlustur";
 import { URETICI_ROLLER, yalnizEclubHedefliMi } from "@/lib/utils/roller";
 import { talepBilgisiSoruSeti } from "@/lib/utils/talepZinciri";
-import { tekrarPeriyotSecenekleri } from "@/lib/tur/ayarlar";
-import { turKaydiAc } from "@/lib/tur/kayit";
+import { tekrarPeriyotSecenekleri } from "@/lib/tclub/tur/ayarlar";
+import { turKaydiAc } from "@/lib/tclub/tur/kayit";
 import { tarifeVeBarkodYaz } from "@/lib/eczanem/tarife";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { bunnyVideoDurumu, embedUrlGuidCikar } from "@/lib/video/bunnyYukleme";
