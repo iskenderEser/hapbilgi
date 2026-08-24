@@ -86,7 +86,11 @@ export default function MobilDrawer(props: MobilDrawerProps) {
     if (altOglar.length === 0) {
       return <Satir etiket={oge.etiket} path={cozPath(oge)} sayi={rozetSayisi(oge)} girintili={girintili} tamEslesme={oge.tamEslesme} />;
     }
-    const altAcik = acikAltOgeler.has(oge.etiket);
+    const altAktif = altOglar.some((alt) => {
+      const p = cozPath(alt);
+      return alt.tamEslesme ? pathname === p : pathname.startsWith(p);
+    });
+    const altAcik = acikAltOgeler.has(oge.etiket) || altAktif;
     const sayi = rozetSayisi(oge);
     return (
       <div className="flex flex-col gap-0.5">
@@ -94,7 +98,7 @@ export default function MobilDrawer(props: MobilDrawerProps) {
           type="button"
           onClick={() => setAcikAltOgeler((onceki) => {
             const yeni = new Set(onceki);
-            if (yeni.has(oge.etiket)) yeni.delete(oge.etiket); else yeni.add(oge.etiket);
+            if (altAcik) yeni.delete(oge.etiket); else yeni.add(oge.etiket);
             return yeni;
           })}
           className="flex w-full cursor-pointer items-center justify-between border-none bg-transparent text-left"

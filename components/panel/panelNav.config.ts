@@ -22,6 +22,8 @@ import {
   ECLUB_GOREN_ROLLER,
   ECLUB_YONETIM_ROLLERI,
   TUKETICI_ROLLER,
+  ECZANEM_TALEP_ACAN_ROLLER,
+  ECZANEM_RAPOR_GOREN_ROLLER,
 } from "@/lib/utils/roller";
 import { UTT_VIDEO_KATEGORILERI } from "@/lib/video/uttVideoKategorileri";
 
@@ -56,46 +58,37 @@ export interface NavGrup {
 }
 
 export const PANEL_NAV: NavGrup[] = [
+  // ─── 1. ÜRETİM & YAYIN (Üretici ve İçerik Üreticisi) ─────────────────────
   {
-    baslik: "Videolarım",
-    oglar: UTT_VIDEO_KATEGORILERI.map((kategori) => ({
-      etiket: kategori.etiket,
-      path: `/videolarim/${kategori.slug}`,
-      gate: (c) => TUKETICI_ROLLER.includes(c.rolKucu),
-    })),
-  },
-  {
-    baslik: "Üretim",
+    baslik: "Üretim & Yayın",
     oglar: [
-      // Talep Merkezi talebi açan üreticiye aittir. İÜ işi talep üzerinden değil,
-      // kendisine atanmış Senaryo / Video / Soru Seti görevlerinden yürütür.
-      { etiket: "Talepler",     path: "/talepler", badgeKey: "talep", gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
-      // Ayrı üretim sayfaları yalnız İÜ'ye — üretici bu üç aşamayı v2 şeridinde görür.
-      { etiket: "Senaryolar",   path: "/senaryolar",   badgeKey: "senaryo",   gate: (c) => c.rolKucu === IU_ROLU },
-      { etiket: "Videolar",     path: "/videolar",     badgeKey: "video",     gate: (c) => c.rolKucu === IU_ROLU },
-      { etiket: "Soru Setleri", path: "/soru-setleri", badgeKey: "soru_seti", gate: (c) => c.rolKucu === IU_ROLU },
+      { etiket: "Talepler",          path: "/talepler",           badgeKey: "talep",     gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
+      { etiket: "Yayın Yönetimi",    path: "/yayin-yonetimi",     badgeKey: "yayin",     gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
+      { etiket: "Sizin Yayınlarınız", path: "/sizin-yayinlariniz",                       gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
+      { etiket: "Tüm Yayınlar",       path: "/tum-yayinlar",                             gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
+      { etiket: "Senaryolar",        path: "/senaryolar",         badgeKey: "senaryo",   gate: (c) => c.rolKucu === IU_ROLU },
+      { etiket: "Videolar",          path: "/videolar",           badgeKey: "video",     gate: (c) => c.rolKucu === IU_ROLU },
+      { etiket: "Soru Setleri",      path: "/soru-setleri",       badgeKey: "soru_seti", gate: (c) => c.rolKucu === IU_ROLU },
+      { etiket: "Onaylanan Talepler", path: "/onaylanan-talepler",                       gate: (c) => c.rolKucu === IU_ROLU },
     ],
   },
+
+  // ─── 2. T-CLUB (Saha & Temsilci Kulübü) ──────────────────────────────────
   {
-    baslik: "Yayın",
+    baslik: "T-Club",
     oglar: [
-      { etiket: "Yayın Yönetimi",    path: "/yayin-yonetimi",     badgeKey: "yayin", gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
-      { etiket: "Sizin Yayınlarınız", path: "/sizin-yayinlariniz",                            gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
-      { etiket: "Tüm Yayınlar",       path: "/tum-yayinlar",                                  gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
-      { etiket: "Yayındaki Videolar", path: "/yayindaki-videolar",                            gate: (c) => YAYINDAKI_VIDEO_GORENLER.includes(c.rolKucu) && !URETICI_ROLLER.includes(c.rolKucu) },
-      { etiket: "Onaylanan Talepler", path: "/onaylanan-talepler",                            gate: (c) => c.rolKucu === "iu" },
-    ],
-  },
-  {
-    baslik: "Öneri Takibi",
-    oglar: [
-      // TM/BM (yönlendirici) rozetsiz; UTT/KD_UTT rozetli — badgeKey UTT için dolar.
-      { etiket: "Öneri Takibi", path: "/oneriler", badgeKey: "oneri", gate: (c) => c.rolKucu === "tm" || c.rolKucu === "bm" || TUKETICI_ROLLER.includes(c.rolKucu) },
-    ],
-  },
-  {
-    baslik: "Raporlama",
-    oglar: [
+      { etiket: "Öneri Takibi",       path: "/oneriler",           badgeKey: "oneri", gate: (c) => c.rolKucu === "tm" || c.rolKucu === "bm" || TUKETICI_ROLLER.includes(c.rolKucu) },
+      {
+        etiket: "Eğitim Yayınları",
+        gate: (c: NavContext) => TUKETICI_ROLLER.includes(c.rolKucu),
+        altOglar: UTT_VIDEO_KATEGORILERI.map((kategori) => ({
+          etiket: kategori.etiket,
+          path: `/videolarim/${kategori.slug}`,
+          gate: (c: NavContext) => TUKETICI_ROLLER.includes(c.rolKucu),
+        })),
+      },
+      { etiket: "Yayındaki Videolar", path: "/yayindaki-videolar", gate: (c) => YAYINDAKI_VIDEO_GORENLER.includes(c.rolKucu) && !URETICI_ROLLER.includes(c.rolKucu) },
+      { etiket: "T-Club Ligi",        path: "/hbligi",             gate: () => true },
       {
         etiket: "Raporlar",
         path: (c) => {
@@ -107,28 +100,33 @@ export const PANEL_NAV: NavGrup[] = [
         },
         gate: (c) => c.rolKucu !== "iu",
       },
+      // UTT HBStore (kendi puanı)
+      { etiket: "Mağazam",           path: "/store",              tamEslesme: true, gate: (c) => c.storeAcik && TUKETICI_ROLLER.includes(c.rolKucu) },
+      { etiket: "Siparişlerim",      path: "/store/siparislerim",                   gate: (c) => c.storeAcik && TUKETICI_ROLLER.includes(c.rolKucu) },
+      { etiket: "Adreslerim",        path: "/store/adreslerim",                     gate: (c) => c.storeAcik && TUKETICI_ROLLER.includes(c.rolKucu) },
+      // BM / TM / Yönetici (Ekip Takibi — Üretici hariç)
+      { etiket: "Ekip Mağaza Siparişleri", path: "/store/siparisler",               gate: (c) => c.storeAcik && STORE_GENEL_GOREN_ROLLER.includes(c.rolKucu) && !URETICI_ROLLER.includes(c.rolKucu) },
     ],
   },
+
+  // ─── 3. C-CLUB (Challenge Club) ──────────────────────────────────────────
   {
-    baslik: "Ligler",
+    baslik: "C-Club",
     oglar: [
-      { etiket: "HBLigi",      path: "/hbligi",     gate: () => true },
-      { etiket: "CC Ligi",     path: "/cc-ligi",    gate: (c) => c.ccAcik && CCLIGI_GORENLERLER.includes(c.rolKucu) },
+      { etiket: "Challenge Club",    path: "/challenge-club",     gate: (c) => c.ccAcik && c.rolKucu === "bm" },
+      { etiket: "C-Club Ligi",       path: "/cc-ligi",            gate: (c) => c.ccAcik && CCLIGI_GORENLERLER.includes(c.rolKucu) },
+      // BM Kişisel Mağazam (C-Club puanlarıyla alışveriş)
+      { etiket: "Mağazam",           path: "/store",              tamEslesme: true, gate: (c) => c.storeAcik && c.ccAcik && c.rolKucu === "bm" },
+      { etiket: "Siparişlerim",      path: "/store/siparislerim",                   gate: (c) => c.storeAcik && c.ccAcik && c.rolKucu === "bm" },
+      { etiket: "Adreslerim",        path: "/store/adreslerim",                     gate: (c) => c.storeAcik && c.ccAcik && c.rolKucu === "bm" },
     ],
   },
-  {
-    baslik: "HBStore",
-    oglar: [
-      { etiket: "Mağazam",       path: "/store", tamEslesme: true, gate: (c) => c.storeAcik && STORE_ALABILEN_ROLLER.includes(c.rolKucu) },
-      { etiket: "Siparişlerim",  path: "/store/siparislerim",   gate: (c) => c.storeAcik && STORE_ALABILEN_ROLLER.includes(c.rolKucu) },
-      { etiket: "Adreslerim",    path: "/store/adreslerim",     gate: (c) => c.storeAcik && STORE_ALABILEN_ROLLER.includes(c.rolKucu) },
-      { etiket: "Ekip Sipariş Takibi", path: "/store/siparisler", gate: (c) => c.storeAcik && STORE_GENEL_GOREN_ROLLER.includes(c.rolKucu) },
-    ],
-  },
+
+  // ─── 4. E-CLUB (Eczane Kulübü) ───────────────────────────────────────────
   {
     baslik: "E-Club",
     oglar: [
-      { etiket: "Eczanelerim",              path: "/eclub/eczanelerim",            gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
+      { etiket: "Eczanelerim",       path: "/eclub/eczanelerim",  gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
       {
         etiket: "Video Yönetimi",
         badgeKey: "eclub_gonderilecek",
@@ -138,22 +136,18 @@ export const PANEL_NAV: NavGrup[] = [
           { etiket: "Gönderilen Videolar",   path: "/eclub/gonderilen-videolar", gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
         ],
       },
-      { etiket: "Raporlar",                 path: "/eclub/raporlar",  gate: (c) => c.eclubAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },
-      { etiket: "E-Club Ligi",              path: "/eclub/ligi",      gate: (c) => c.eclubAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },
-      { etiket: "Siparişler",               path: "/eclub/siparisler", gate: (c) => c.eclubAcik && c.eclubStoreAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },
+      { etiket: "E-Club Raporları",  path: "/eclub/raporlar",     gate: (c) => c.eclubAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },
+      { etiket: "E-Club Ligi",       path: "/eclub/ligi",         gate: (c) => c.eclubAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },
     ],
   },
+
+  // ─── 5. ECZANEM (Nihai Tüketici Katmanı) ─────────────────────────────────
   {
     baslik: "Eczanem",
     oglar: [
-      { etiket: "Video Dağıtımı", path: "/eczanem/utt", tamEslesme: true, gate: (c) => c.eczanemAcik && TUKETICI_ROLLER.includes(c.rolKucu) },
-      { etiket: "Mutabakat Dökümü", path: "/eczanem/utt/mutabakat", gate: (c) => c.eczanemAcik && TUKETICI_ROLLER.includes(c.rolKucu) },
-    ],
-  },
-  {
-    baslik: "Challenge Club",
-    oglar: [
-      { etiket: "Challenge Club", path: "/challenge-club", gate: (c) => c.ccAcik && c.rolKucu === "bm" },
+      { etiket: "Video Dağıtımı",    path: "/eczanem/utt",        tamEslesme: true, gate: (c) => c.eczanemAcik && TUKETICI_ROLLER.includes(c.rolKucu) },
+      { etiket: "Mutabakat Dökümü",  path: "/eczanem/utt/mutabakat",                gate: (c) => c.eczanemAcik && TUKETICI_ROLLER.includes(c.rolKucu) },
+      { etiket: "Eczanem Raporları", path: "/raporlar/eczanem",                     gate: (c) => c.eczanemAcik && ECZANEM_RAPOR_GOREN_ROLLER.includes(c.rolKucu) },
     ],
   },
 ];

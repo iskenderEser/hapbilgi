@@ -26,7 +26,7 @@ test("eğitim türü sözleşmesi altı kanonik türü ve üretici rol yetkileri
 
 test("altı eğitim türü altı ayrı içerik kategorisine ve kullanıcı adına bağlanır", () => {
   const kategoriler = TALEP_TURU_SIRA.map((tur) => TALEP_TURU_KURALLARI[tur].icerikTuru);
-  assert.equal(new Set(kategoriler).size, 5);
+  assert.equal(new Set(kategoriler).size, 6);
   assert.deepEqual(TALEP_TURU_SIRA.map(talepTuruAdi), [
     "Ürün Eğitimi",
     "Satış Teknikleri",
