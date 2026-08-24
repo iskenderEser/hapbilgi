@@ -1,6 +1,6 @@
 {
-  "uretim_tarihi": "2026-08-22T11:16:41.362Z",
-  "tablo_sayisi": 112,
+  "uretim_tarihi": "2026-08-24T21:19:58.456Z",
+  "tablo_sayisi": 102,
   "rpc_sayisi": 128,
   "tablolar": {
     "bildirimler": {
@@ -1779,23 +1779,6 @@
         }
       }
     },
-    "egitimler": {
-      "tur": "BASE TABLE",
-      "kolonlar": {
-        "egitim_id": {
-          "tip": "uuid",
-          "nullable": false
-        },
-        "egitim_adi": {
-          "tip": "text",
-          "nullable": false
-        },
-        "created_at": {
-          "tip": "timestamp with time zone",
-          "nullable": false
-        }
-      }
-    },
     "firmalar": {
       "tur": "BASE TABLE",
       "kolonlar": {
@@ -3380,6 +3363,10 @@
           "tip": "uuid",
           "nullable": true
         },
+        "firma_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
         "gonderen_id": {
           "tip": "uuid",
           "nullable": true
@@ -3556,111 +3543,6 @@
         }
       }
     },
-    "v_izleme_ozet": {
-      "tur": "VIEW",
-      "kolonlar": {
-        "izleme_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "kullanici_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "yayin_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "izleme_turu": {
-          "tip": "character varying",
-          "nullable": true
-        },
-        "tamamlandi_mi": {
-          "tip": "boolean",
-          "nullable": true
-        },
-        "izleme_baslangic": {
-          "tip": "timestamp with time zone",
-          "nullable": true
-        },
-        "izleme_bitis": {
-          "tip": "timestamp with time zone",
-          "nullable": true
-        },
-        "ad": {
-          "tip": "character varying",
-          "nullable": true
-        },
-        "soyad": {
-          "tip": "character varying",
-          "nullable": true
-        },
-        "rol": {
-          "tip": "character varying",
-          "nullable": true
-        },
-        "firma_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "firma_adi": {
-          "tip": "character varying",
-          "nullable": true
-        },
-        "takim_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "takim_adi": {
-          "tip": "character varying",
-          "nullable": true
-        },
-        "bolge_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "bolge_adi": {
-          "tip": "character varying",
-          "nullable": true
-        },
-        "urun_adi": {
-          "tip": "character varying",
-          "nullable": true
-        },
-        "teknik_adi": {
-          "tip": "character varying",
-          "nullable": true
-        },
-        "izleme_puani": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "cevaplama_puani": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "oneri_puani": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "extra_puani": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "toplam_puan": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "cevaplanan_soru_sayisi": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "dogru_cevap_sayisi": {
-          "tip": "bigint",
-          "nullable": true
-        }
-      }
-    },
     "v_kullanici_detay": {
       "tur": "VIEW",
       "kolonlar": {
@@ -3784,425 +3666,6 @@
         }
       }
     },
-    "v_rapor_bolge": {
-      "tur": "VIEW",
-      "kolonlar": {
-        "bolge_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "bolge_adi": {
-          "tip": "character varying",
-          "nullable": true
-        },
-        "takim_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "toplam_utt": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "aktif_utt": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "hic_izlememis_utt": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "toplam_puan": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "ortalama_puan": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "izleme_puani": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "cevaplama_puani": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "oneri_puani": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "extra_puani": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "ileri_sarma_kaybi": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "yanlis_cevap_kaybi": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "oneri_kaybi": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "toplam_izleme": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "toplam_oneri": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "tamamlanan_oneri": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "bekleyen_oneri": {
-          "tip": "numeric",
-          "nullable": true
-        }
-      }
-    },
-    "v_rapor_sirket": {
-      "tur": "VIEW",
-      "kolonlar": {
-        "firma_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "firma_adi": {
-          "tip": "character varying",
-          "nullable": true
-        },
-        "toplam_takim": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "toplam_utt": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "aktif_utt": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "hic_izlememis_utt": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "toplam_puan": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "ortalama_puan_takim": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "izleme_puani": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "cevaplama_puani": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "oneri_puani": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "extra_puani": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "ileri_sarma_kaybi": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "yanlis_cevap_kaybi": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "oneri_kaybi": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "toplam_izleme": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "toplam_oneri": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "tamamlanan_oneri": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "bekleyen_oneri": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "toplam_yayin": {
-          "tip": "bigint",
-          "nullable": true
-        }
-      }
-    },
-    "v_rapor_takim": {
-      "tur": "VIEW",
-      "kolonlar": {
-        "takim_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "takim_adi": {
-          "tip": "character varying",
-          "nullable": true
-        },
-        "firma_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "toplam_bolge": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "toplam_utt": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "aktif_utt": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "hic_izlememis_utt": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "toplam_puan": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "ortalama_puan_bolge": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "izleme_puani": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "cevaplama_puani": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "oneri_puani": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "extra_puani": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "ileri_sarma_kaybi": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "yanlis_cevap_kaybi": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "oneri_kaybi": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "toplam_izleme": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "toplam_oneri": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "tamamlanan_oneri": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "bekleyen_oneri": {
-          "tip": "numeric",
-          "nullable": true
-        }
-      }
-    },
-    "v_rapor_urun_izlenme": {
-      "tur": "VIEW",
-      "kolonlar": {
-        "urun_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "urun_adi": {
-          "tip": "text",
-          "nullable": true
-        },
-        "firma_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "takim_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "teknik_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "teknik_adi": {
-          "tip": "text",
-          "nullable": true
-        },
-        "yayin_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "kullanici_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "bolge_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "utt_takim_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "izlenme_sayisi": {
-          "tip": "bigint",
-          "nullable": true
-        }
-      }
-    },
-    "v_rapor_utt": {
-      "tur": "VIEW",
-      "kolonlar": {
-        "kullanici_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "ad": {
-          "tip": "character varying",
-          "nullable": true
-        },
-        "soyad": {
-          "tip": "character varying",
-          "nullable": true
-        },
-        "bolge_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "takim_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "firma_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "toplam_puan": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "izleme_puani": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "cevaplama_puani": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "oneri_puani": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "extra_puani": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "ileri_sarma_kaybi": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "yanlis_cevap_kaybi": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "oneri_kaybi": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "tamamlanan_izleme": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "toplam_izleme": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "toplam_izleme_suresi": {
-          "tip": "numeric",
-          "nullable": true
-        },
-        "alinan_oneri": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "tamamlanan_oneri": {
-          "tip": "bigint",
-          "nullable": true
-        },
-        "bekleyen_oneri": {
-          "tip": "bigint",
-          "nullable": true
-        }
-      }
-    },
-    "v_senaryo_son_durum": {
-      "tur": "VIEW",
-      "kolonlar": {
-        "senaryo_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "durum": {
-          "tip": "character varying",
-          "nullable": true
-        },
-        "created_at": {
-          "tip": "timestamp with time zone",
-          "nullable": true
-        }
-      }
-    },
-    "v_soru_seti_son_durum": {
-      "tur": "VIEW",
-      "kolonlar": {
-        "soru_seti_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "durum": {
-          "tip": "character varying",
-          "nullable": true
-        },
-        "created_at": {
-          "tip": "timestamp with time zone",
-          "nullable": true
-        }
-      }
-    },
     "v_uretici_icerik_takip": {
       "tur": "VIEW",
       "kolonlar": {
@@ -4267,23 +3730,6 @@
           "nullable": true
         },
         "yayin_tarihi": {
-          "tip": "timestamp with time zone",
-          "nullable": true
-        }
-      }
-    },
-    "v_video_son_durum": {
-      "tur": "VIEW",
-      "kolonlar": {
-        "video_id": {
-          "tip": "uuid",
-          "nullable": true
-        },
-        "durum": {
-          "tip": "character varying",
-          "nullable": true
-        },
-        "created_at": {
           "tip": "timestamp with time zone",
           "nullable": true
         }
@@ -4707,7 +4153,7 @@
   "rpc": {
     "_cc_ligi_aralik": {
       "argumanlar": "p_bas date, p_bit date",
-      "donus": "TABLE(kullanici_id uuid, ad text, soyad text, firma_id uuid, takim_id uuid, bolge_id uuid, izleme_puani integer, cevaplama_puani integer, extra_puani integer, cc_gonderme_puani integer, cc_referral_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, challenge_kaybi integer, toplam_net_puan integer, genel_sira bigint, firma_sirasi bigint, takim_sirasi bigint, bolge_sirasi bigint)"
+      "donus": "TABLE(kullanici_id uuid, ad text, soyad text, firma_id uuid, takim_id uuid, bolge_id uuid, izleme_puani integer, cevaplama_puani integer, extra_puani integer, cc_gonderme_puani integer, cc_referral_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, toplam_net_puan integer, genel_sira bigint, firma_sirasi bigint, takim_sirasi bigint, bolge_sirasi bigint)"
     },
     "_hb_ligi_v2_aralik": {
       "argumanlar": "p_bas date, p_bit date",
@@ -4891,7 +4337,7 @@
     },
     "get_cc_ligi_aylik": {
       "argumanlar": "p_yil integer, p_ay integer",
-      "donus": "TABLE(kullanici_id uuid, ad text, soyad text, firma_id uuid, takim_id uuid, bolge_id uuid, izleme_puani integer, cevaplama_puani integer, extra_puani integer, cc_gonderme_puani integer, cc_referral_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, challenge_kaybi integer, toplam_net_puan integer, genel_sira bigint, firma_sirasi bigint, takim_sirasi bigint, bolge_sirasi bigint)"
+      "donus": "TABLE(kullanici_id uuid, ad text, soyad text, firma_id uuid, takim_id uuid, bolge_id uuid, izleme_puani integer, cevaplama_puani integer, extra_puani integer, cc_gonderme_puani integer, cc_referral_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, toplam_net_puan integer, genel_sira bigint, firma_sirasi bigint, takim_sirasi bigint, bolge_sirasi bigint)"
     },
     "get_cc_ligi_donem_lideri": {
       "argumanlar": "p_yil integer, p_ceyrek integer",
@@ -4899,11 +4345,11 @@
     },
     "get_cc_ligi_donemlik": {
       "argumanlar": "p_yil integer, p_ceyrek integer",
-      "donus": "TABLE(kullanici_id uuid, ad text, soyad text, firma_id uuid, takim_id uuid, bolge_id uuid, izleme_puani integer, cevaplama_puani integer, extra_puani integer, cc_gonderme_puani integer, cc_referral_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, challenge_kaybi integer, toplam_net_puan integer, genel_sira bigint, firma_sirasi bigint, takim_sirasi bigint, bolge_sirasi bigint)"
+      "donus": "TABLE(kullanici_id uuid, ad text, soyad text, firma_id uuid, takim_id uuid, bolge_id uuid, izleme_puani integer, cevaplama_puani integer, extra_puani integer, cc_gonderme_puani integer, cc_referral_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, toplam_net_puan integer, genel_sira bigint, firma_sirasi bigint, takim_sirasi bigint, bolge_sirasi bigint)"
     },
     "get_cc_ligi_haftalik": {
       "argumanlar": "p_yil integer, p_hafta integer",
-      "donus": "TABLE(kullanici_id uuid, ad text, soyad text, firma_id uuid, takim_id uuid, bolge_id uuid, izleme_puani integer, cevaplama_puani integer, extra_puani integer, cc_gonderme_puani integer, cc_referral_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, challenge_kaybi integer, toplam_net_puan integer, genel_sira bigint, firma_sirasi bigint, takim_sirasi bigint, bolge_sirasi bigint)"
+      "donus": "TABLE(kullanici_id uuid, ad text, soyad text, firma_id uuid, takim_id uuid, bolge_id uuid, izleme_puani integer, cevaplama_puani integer, extra_puani integer, cc_gonderme_puani integer, cc_referral_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, toplam_net_puan integer, genel_sira bigint, firma_sirasi bigint, takim_sirasi bigint, bolge_sirasi bigint)"
     },
     "get_cc_ligi_yil_lideri": {
       "argumanlar": "p_yil integer",
@@ -4911,7 +4357,7 @@
     },
     "get_cc_ligi_yillik": {
       "argumanlar": "p_yil integer",
-      "donus": "TABLE(kullanici_id uuid, ad text, soyad text, firma_id uuid, takim_id uuid, bolge_id uuid, izleme_puani integer, cevaplama_puani integer, extra_puani integer, cc_gonderme_puani integer, cc_referral_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, challenge_kaybi integer, toplam_net_puan integer, genel_sira bigint, firma_sirasi bigint, takim_sirasi bigint, bolge_sirasi bigint)"
+      "donus": "TABLE(kullanici_id uuid, ad text, soyad text, firma_id uuid, takim_id uuid, bolge_id uuid, izleme_puani integer, cevaplama_puani integer, extra_puani integer, cc_gonderme_puani integer, cc_referral_puani integer, ileri_sarma_kaybi integer, yanlis_cevap_kaybi integer, toplam_net_puan integer, genel_sira bigint, firma_sirasi bigint, takim_sirasi bigint, bolge_sirasi bigint)"
     },
     "get_eclub_ligi_detay_aylik": {
       "argumanlar": "p_utt_id uuid, p_yil integer, p_ay integer",
@@ -5797,12 +5243,12 @@
     ],
     "iu_urun_atamalari": [
       {
-        "kaynak_kolon": "atayan_id",
+        "kaynak_kolon": "iu_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "iu_id",
+        "kaynak_kolon": "atayan_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
@@ -5897,12 +5343,12 @@
     ],
     "oneri_kayitlari": [
       {
-        "kaynak_kolon": "oneren_id",
+        "kaynak_kolon": "kullanici_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "kullanici_id",
+        "kaynak_kolon": "oneren_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
@@ -6048,11 +5494,6 @@
     ],
     "talepler": [
       {
-        "kaynak_kolon": "egitim_id",
-        "hedef_tablo": "egitimler",
-        "hedef_kolon": "egitim_id"
-      },
-      {
         "kaynak_kolon": "firma_id",
         "hedef_tablo": "firmalar",
         "hedef_kolon": "firma_id"
@@ -6092,17 +5533,17 @@
     ],
     "uretim_gorev_atama_gecmisi": [
       {
-        "kaynak_kolon": "islemi_yapan_id",
-        "hedef_tablo": "kullanicilar",
-        "hedef_kolon": "kullanici_id"
-      },
-      {
         "kaynak_kolon": "onceki_iu_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
         "kaynak_kolon": "yeni_iu_id",
+        "hedef_tablo": "kullanicilar",
+        "hedef_kolon": "kullanici_id"
+      },
+      {
+        "kaynak_kolon": "islemi_yapan_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
@@ -6114,12 +5555,12 @@
     ],
     "uretim_gorevleri": [
       {
-        "kaynak_kolon": "atanan_iu_id",
+        "kaynak_kolon": "atayan_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
       {
-        "kaynak_kolon": "atayan_id",
+        "kaynak_kolon": "atanan_iu_id",
         "hedef_tablo": "kullanicilar",
         "hedef_kolon": "kullanici_id"
       },
