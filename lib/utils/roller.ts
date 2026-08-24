@@ -260,6 +260,14 @@ export const PM_AILESI_ROLLER = ["pm", "jr_pm", "kd_pm"];
 // Kavram birebir "PM ailesi"dir — tek kaynak PM_AILESI_ROLLER.
 export const ECZANEM_TALEP_ACAN_ROLLER = PM_AILESI_ROLLER;
 
+// Eczanem Raporu görebilen roller: PM ailesi (ürün ekseni), BM (bölge ekseni), TM (takım ekseni), Yöneticiler (firma ekseni)
+export const ECZANEM_RAPOR_GOREN_ROLLER = [
+  ...PM_AILESI_ROLLER,
+  "bm",
+  "tm",
+  ...YONETICI_ROLLER,
+];
+
 // ROL_ADLARI: Rol kısaltmalarının Türkçe karşılıkları.
 // Yalnızca görüntüleme katmanında kullanılır — veritabanında hiçbir şey değişmez.
 // Kullanım: ROL_ADLARI[rol] ?? rol

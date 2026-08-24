@@ -24,7 +24,7 @@ export async function GET(request: Request) {
 
   const { data: kullanici, error: kullaniciError } = await adminSupabase
     .from("kullanicilar")
-    .select("kullanici_id, rol, bolge_id, takim_id, firma_id")
+    .select("kullanici_id, ad, soyad, rol, bolge_id, takim_id, firma_id")
     .eq("eposta", user.email)
     .single();
 
@@ -33,6 +33,22 @@ export async function GET(request: Request) {
   }
 
   const rol = (kullanici.rol ?? "").toLowerCase();
+
+  // Kullanıcı hiyerarşi adları (rapor başlığı ve kimlik satırı için)
+  const [bolgeRes, takimRes, firmaRes] = await Promise.all([
+    kullanici.bolge_id ? adminSupabase.from("bolgeler").select("bolge_adi").eq("bolge_id", kullanici.bolge_id).single() : { data: null },
+    kullanici.takim_id ? adminSupabase.from("takimlar").select("takim_adi").eq("takim_id", kullanici.takim_id).single() : { data: null },
+    kullanici.firma_id ? adminSupabase.from("firmalar").select("firma_adi").eq("firma_id", kullanici.firma_id).single() : { data: null },
+  ]);
+
+  const kullaniciBilgisi = {
+    ad: kullanici.ad ?? "",
+    soyad: kullanici.soyad ?? "",
+    rol: kullanici.rol ?? "",
+    bolge_adi: bolgeRes.data?.bolge_adi ?? null,
+    takim_adi: takimRes.data?.takim_adi ?? null,
+    firma_adi: firmaRes.data?.firma_adi ?? null,
+  };
 
   // Firma bayrağı — Eczanem kapalı firmada bölüm hiç görünmez (K6 kararı:
   // bekçi rol tabanlı, bayrak iç uygulama ekranlarında devreye girer).
@@ -43,17 +59,17 @@ export async function GET(request: Request) {
       .eq("firma_id", kullanici.firma_id)
       .single();
     if (firma && firma.eczanem_aktif !== true) {
-      return NextResponse.json({ success: true, data: { aktif: false } });
+      return NextResponse.json({ success: true, data: { aktif: false, kullanici: kullaniciBilgisi } });
     }
   }
 
   // PM ailesi — ürün ekseni (İP-§9.2: hiyerarşi değil ürün)
   if (ECZANEM_TALEP_ACAN_ROLLER.includes(rol)) {
     if (!kullanici.takim_id) {
-      return NextResponse.json({ success: true, data: { aktif: true, tip: "pm", urunler: [] } });
+      return NextResponse.json({ success: true, data: { aktif: true, tip: "pm", kullanici: kullaniciBilgisi, urunler: [] } });
     }
     const dokum = await pmUrunDokumu(adminSupabase, kullanici.takim_id, baslangic, bitis);
-    return NextResponse.json({ success: true, data: { aktif: true, tip: "pm", ...dokum } });
+    return NextResponse.json({ success: true, data: { aktif: true, tip: "pm", kullanici: kullaniciBilgisi, ...dokum } });
   }
 
   // Cascade — kapsam daralması (İP-§9.2)
@@ -65,5 +81,5 @@ export async function GET(request: Request) {
   if (!kapsam) return yetkiHatasi("Bu rapora erişim yetkiniz yok");
 
   const dokum = await cascadeDokumu(adminSupabase, kapsam, baslangic, bitis);
-  return NextResponse.json({ success: true, data: { aktif: true, tip: "cascade", ...dokum } });
+  return NextResponse.json({ success: true, data: { aktif: true, tip: "cascade", kullanici: kullaniciBilgisi, ...dokum } });
 }
