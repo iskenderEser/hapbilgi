@@ -141,7 +141,7 @@ function ChallengeGonderSatiri({ video, hata, onGonder }: { video: GonderVideo; 
                 ) : (
                   <>
                     <div className="border-b border-[#e5ecf4] p-1.5">
-                      <button type="button" onClick={tumSecim} disabled={gonderilebilirler.length === 0} className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs font-extrabold text-[#bc2d0d] hover:bg-[#fdf0ec] disabled:cursor-not-allowed disabled:opacity-50">
+                      <button type="button" onClick={tumSecim} disabled={gonderilebilirler.length === 0} className="flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs font-extrabold text-[#237ac8] hover:bg-[#edf6fd] disabled:cursor-not-allowed disabled:opacity-50">
                         <span>{tumuSecili ? "Seçimleri Kaldır" : "Tümünü Seç"}</span>
                         <span className="text-[10px] text-[#71859d]">{gonderilebilirler.length} BM</span>
                       </button>
@@ -150,9 +150,9 @@ function ChallengeGonderSatiri({ video, hata, onGonder }: { video: GonderVideo; 
                       {(aliciler ?? []).map((a) => {
                         const secili = secililer.includes(a.kullanici_id);
                         return (
-                          <button key={a.kullanici_id} type="button" onClick={() => { if (a.gonderilebilir) secimDegistir(a.kullanici_id); }} disabled={!a.gonderilebilir} title={a.sebep} className={`flex w-full items-center justify-between gap-3 rounded-lg border px-2.5 py-2 text-left transition-colors ${!a.gonderilebilir ? "cursor-not-allowed border-transparent bg-[#f5f7fa] opacity-60" : secili ? "cursor-pointer border-[#e6b3a6] bg-[#fdf0ec]" : "cursor-pointer border-transparent hover:bg-[#f5f8fc]"}`}>
+                          <button key={a.kullanici_id} type="button" onClick={() => { if (a.gonderilebilir) secimDegistir(a.kullanici_id); }} disabled={!a.gonderilebilir} title={a.sebep} className={`flex w-full items-center justify-between gap-3 rounded-lg border px-2.5 py-2 text-left transition-colors ${!a.gonderilebilir ? "cursor-not-allowed border-transparent bg-[#f5f7fa] opacity-60" : secili ? "cursor-pointer border-[#bfdbfe] bg-[#edf6fd]" : "cursor-pointer border-transparent hover:bg-[#f5f8fc]"}`}>
                             <span className="min-w-0"><strong className="block truncate text-xs text-[#304963]">{a.ad} {a.soyad}</strong>{!a.gonderilebilir && a.sebep && <small className="mt-0.5 block truncate text-[10px] font-semibold text-[#8090a3]">{a.sebep}</small>}</span>
-                            {secili && a.gonderilebilir && <span className="shrink-0 rounded-full bg-[#bc2d0d] px-2 py-0.5 text-[9px] font-extrabold text-white">Seçildi</span>}
+                            {secili && a.gonderilebilir && <span className="shrink-0 rounded-full bg-[#237ac8] px-2 py-0.5 text-[9px] font-extrabold text-white">Seçildi</span>}
                           </button>
                         );
                       })}
@@ -161,7 +161,7 @@ function ChallengeGonderSatiri({ video, hata, onGonder }: { video: GonderVideo; 
                 )}
               </CollapsibleContent>
             </div>
-            <Button type="button" onClick={() => void gonder()} disabled={secililer.length === 0 || gonderiliyor} className="w-full shrink-0 bg-[#bc2d0d] text-xs font-extrabold hover:bg-[#a52810] sm:w-auto">
+            <Button type="button" onClick={() => void gonder()} disabled={secililer.length === 0 || gonderiliyor} className="w-full shrink-0 bg-[#237ac8] text-xs font-extrabold hover:bg-[#1d69aa] sm:w-auto">
               {gonderiliyor ? "Gönderiliyor…" : `${secililer.length || ""} ${secililer.length ? "BM'ye Gönder" : "Gönder"}`}
             </Button>
           </div>

@@ -75,8 +75,8 @@ export default function CcLigiBanner({ yil, ceyrek, hata }: Props) {
 
   return (
     <div
-      className="rounded-xl px-5 py-4 mb-4 text-white"
-      style={{ background: "#bc2d0d" }}
+      className="rounded-xl px-5 py-4 mb-4 text-white shadow-sm"
+      style={{ background: "linear-gradient(135deg, #237ac8 0%, #10213d 100%)" }}
     >
       <div className="flex flex-col gap-2.5">
         {/* Çeyrek lideri */}
