@@ -23,6 +23,10 @@ import MobilDrawer from "@/components/panel/MobilDrawer";
 import { PANEL_NAV, eclubKisiNavOlustur, type NavContext } from "@/components/panel/panelNav.config";
 import { HBSTORE_BAKIYE_DEGISTI } from "@/lib/tclub/store/olay";
 import { BILDIRIM_ROZETLERI_DEGISTI } from "@/lib/bildirimler/rozet";
+import { HapbiProvider } from "@/components/hapbi/HapbiProvider";
+import HapbiMaskot from "@/components/hapbi/HapbiMaskot";
+import HapbiChatModal from "@/components/hapbi/HapbiChatModal";
+import HapbiSpotlight from "@/components/hapbi/HapbiSpotlight";
 
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -149,32 +153,39 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   const anaSayfaYolu = isEclubKisi ? "/eclub/panel" : "/ana-sayfa";
 
   return (
-    <div style={{ height: "100vh", background: "#f9fafb", fontFamily: "'Nunito', sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <PanelNavbar
-        adSoyad={kullanici.adSoyad}
-        email={kullanici.email}
-        ozet={isEclubKisi ? null : ozet}
-        siparisPuaniGoster={!isEclubKisi && flags.storeAcik}
-        anaSayfaYolu={anaSayfaYolu}
-        eclubStorePuani={isEclubKisi && flags.eclubStoreAcik ? eclubStorePuani : null}
-        onCikis={cikisYap}
-        onHamburger={() => setDrawerAcik(true)}
-      />
+    <HapbiProvider>
+      <div style={{ height: "100vh", background: "#f9fafb", fontFamily: "'Nunito', sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <PanelNavbar
+          adSoyad={kullanici.adSoyad}
+          email={kullanici.email}
+          ozet={isEclubKisi ? null : ozet}
+          siparisPuaniGoster={!isEclubKisi && flags.storeAcik}
+          anaSayfaYolu={anaSayfaYolu}
+          eclubStorePuani={isEclubKisi && flags.eclubStoreAcik ? eclubStorePuani : null}
+          onCikis={cikisYap}
+          onHamburger={() => setDrawerAcik(true)}
+        />
 
-      <MobilDrawer
-        {...ctx}
-        gruplar={gruplar}
-        badge={badge}
-        acik={drawerAcik}
-        onKapat={() => setDrawerAcik(false)}
-        onCikis={cikisYap}
-        anaSayfaYolu={anaSayfaYolu}
-      />
+        <MobilDrawer
+          {...ctx}
+          gruplar={gruplar}
+          badge={badge}
+          acik={drawerAcik}
+          onKapat={() => setDrawerAcik(false)}
+          onCikis={cikisYap}
+          anaSayfaYolu={anaSayfaYolu}
+        />
 
-      <div className="flex flex-1" style={{ minHeight: 0 }}>
-        <SolListe {...ctx} gruplar={gruplar} badge={badge} />
-        <main className="flex-1 overflow-y-auto" style={{ minWidth: 0 }}>{children}</main>
+        <div className="flex flex-1" style={{ minHeight: 0 }}>
+          <SolListe {...ctx} gruplar={gruplar} badge={badge} />
+          <main className="flex-1 overflow-y-auto" style={{ minWidth: 0 }}>{children}</main>
+        </div>
+
+        {/* Canlı 3D Hapbi Maskotu ve İnteraktif Tur Bileşenleri */}
+        <HapbiMaskot />
+        <HapbiChatModal />
+        <HapbiSpotlight />
       </div>
-    </div>
+    </HapbiProvider>
   );
 }
