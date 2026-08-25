@@ -96,7 +96,7 @@ export default function UretimRaporlariPage() {
   const [seciliEgitimTuru, setSeciliEgitimTuru] = useState<string | null>(null);
 
   const { data, loading, yenileniyor, error, yenile } = useRapor<RaporData>(
-    '/raporlar/api/yonetici',
+    '/raporlar/api/uretim',
     periyot,
     kullanici?.id,
   );
