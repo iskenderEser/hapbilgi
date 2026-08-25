@@ -113,12 +113,15 @@ HapBilgi, ilaç ve sağlık sektörüne özgü, video tabanlı ve kural-korumal�
 ---
 
 # 3. BÖLÜM: E-CLUB (Eczane Kulübü — Dış Müşteri Katmanı)
-*Eczacı ve Eczane Teknisyenleri Çok-Firmalı Tüketim ve Ödül Katmanı*
+*Eczacı ve Eczane Teknisyenleri Çok-Firmalı Tüketim, Takım Ligi ve Ödül Katmanı*
 
 ### 1. Aşama: Rol ve Görev Tanımları
+* **3 Temel Sütunlu E-Club Mimarisi:**
+  1. **E-Club Takımım (`/eclub/eczanelerim`):** UTT, takımına özel bir isim verir (`eclub_takim_adlari`), GLN ile resmi eczaneleri bağlar, eczacı ve teknisyenleri ekleyerek takım kadrosunu inşa eder ve video önerilerini yönetir.
+  2. **E-Club Ligi (`/eclub/ligi` — Büyük Şampiyona):** Firma genelindeki tüm UTT Takımlarının dönemlik yarıştığı lig tablosudur. En iyi 3 takım podyumu (1. Altın, 2. Gümüş, 3. Bronz), genel sıralama tablosu ve UTT'nin kendi takımının ("Benim Takımım") vurgulu sırasını sunar.
+  3. **E-Club Takım Raporlarım (`/eclub/raporlar`):** Takım içindeki eczacı ve teknisyenlerin iç karnesidir; kimin ne kadar izlediğini, ne kadar doğru cevap verdiğini ve takıma ne kadar puan kazandırdığını detaylandırır.
 * **4 Katmanlı Eczane Mimarisi:**
   * `eclub_eczane_master` (Resmi GLN Havuzu) $\rightarrow$ `eclub_eczaneler` (Firma Eczanesi) $\rightarrow$ `eclub_eczane_firma` (Firma-UTT Bağı) $\rightarrow$ `eclub_kisi_eczane` (Kişi İlişkisi).
-* **UTT Portföy Yönetimi:** GLN ile eczane bağlama, eczacı ve teknisyen kaydı açma, video önerme.
 * **Eczacı & Teknisyen Tüketimi:**
   * Firma bazlı katalogdan (`/eclub/panel/firma/[firma_id]`) önerilen/açık videoları izleme, soru çözme.
   * İleri sarma oransal puan kaybı üretir (firma bakiyesinden düşer); yanlış cevap cezasızdır.
@@ -624,6 +627,12 @@ Tüm admin API rotaları taranmış; açık giriş ucu (`/admin/api/giris`) dı�
 |---|:---:|---|
 | `route.ts` | TypeScript / Lib | İlgili rotanın HTTP isteklerini (GET, POST, PUT, DELETE) işleyen ve veritabanı işlemlerini yürüten API uç noktası. |
 
+### 📁 app/(panel)/eclub/eczanelerim/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | UTT'nin takımına özel isim verdiği, GLN ile eczane bağladığı, eczacı ve teknisyen kadrosunu yönettiği E-Club Takımım sayfası. |
+
 ### 📁 app/(panel)/eclub/panel/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
@@ -666,7 +675,7 @@ Tüm admin API rotaları taranmış; açık giriş ucu (`/admin/api/giris`) dı�
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `eclub-league.module.css` | Stil / CSS | İlgili bileşene veya sayfaya özel stil kurallarını içeren CSS modül dosyası. |
-| `page.tsx` | UI / React | E-Club eczane takımlarının puan, izlenme ve doğru cevap sıralamalarını gösteren lig sayfası. |
+| `page.tsx` | UI / React | Firma genelindeki tüm UTT takımlarının dönemlik şampiyonluk podyumunu ve puan sıralamasını sunan büyük E-Club Takımlar Ligi sayfası. |
 
 ### 📁 app/(panel)/eclub/ligi/api/
 
@@ -679,7 +688,7 @@ Tüm admin API rotaları taranmış; açık giriş ucu (`/admin/api/giris`) dı�
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `eclub-report.module.css` | Stil / CSS | İlgili bileşene veya sayfaya özel stil kurallarını içeren CSS modül dosyası. |
-| `page.tsx` | UI / React | Firma yöneticileri ve UTT'ler için E-Club eczane penetrasyonu ve izlenme istatistiklerini sunan raporlama sayfası. |
+| `page.tsx` | UI / React | UTT'ler ve yöneticiler için E-Club takımındaki eczacı ve teknisyenlerin izleme, doğru cevap ve puan katkı karnesini sunan E-Club Takım Raporlarım sayfası. |
 
 ### 📁 app/(panel)/eclub/raporlar/api/
 

@@ -122,9 +122,11 @@ export default function EclubRaporlarPage() {
         <header className={styles.header}>
           <div>
             <div className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">
-              <Sparkles className="h-3.5 w-3.5" /> Dış müşteri öğrenme görünümü
+              <Sparkles className="h-3.5 w-3.5" /> {data.kapsam.gorunum === "utt" ? "E-Club Takım Performans Karnesi" : "Dış müşteri öğrenme görünümü"}
             </div>
-            <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">E‑Club Raporlar</h1>
+            <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">
+              {data.kapsam.gorunum === "utt" ? "E‑Club Takım Raporlarım" : "E‑Club Raporları"}
+            </h1>
             <p className="mt-0.5 text-xs font-semibold text-[#78889d]">
               {data.kullanici.ad} {data.kullanici.soyad} · {data.kullanici.rol.toUpperCase()}
             </p>

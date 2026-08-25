@@ -126,7 +126,7 @@ export const PANEL_NAV: NavGrup[] = [
   {
     baslik: "E-Club",
     oglar: [
-      { etiket: "Eczanelerim",       path: "/eclub/eczanelerim",  gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
+      { etiket: "E-Club Takımım",    path: "/eclub/eczanelerim",  gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
       {
         etiket: "Video Yönetimi",
         badgeKey: "eclub_gonderilecek",
@@ -136,7 +136,7 @@ export const PANEL_NAV: NavGrup[] = [
           { etiket: "Gönderilen Videolar",   path: "/eclub/gonderilen-videolar", gate: (c) => c.eclubAcik && ECLUB_GOREN_ROLLER.includes(c.rolKucu) },
         ],
       },
-      { etiket: "E-Club Raporları",  path: "/eclub/raporlar",     gate: (c) => c.eclubAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },
+      { etiket: "E-Club Takım Raporlarım", path: "/eclub/raporlar", gate: (c) => c.eclubAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },
       { etiket: "E-Club Ligi",       path: "/eclub/ligi",         gate: (c) => c.eclubAcik && ECLUB_YONETIM_ROLLERI.includes(c.rolKucu) },
     ],
   },

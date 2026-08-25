@@ -292,3 +292,71 @@ export function eclubLiginiOlustur(satirlar: EclubRaporHamSatir[]): EclubLigSati
     return { ...kisi, sira };
   });
 }
+
+export interface EclubTakimLigSatiri extends EclubRaporMetrikleri {
+  sira: number;
+  utt_id: string;
+  utt_adi: string;
+  takim_adi: string;
+  bolge_adi: string;
+  takim_id: string | null;
+  uye_sayisi: number;
+  aktif_uye: number;
+  dogru_cevap_orani: number;
+  benim_takimim?: boolean;
+}
+
+export interface EclubTakimGirdi {
+  utt_id: string;
+  utt_adi: string;
+  takim_adi?: string | null;
+  bolge_adi: string;
+  takim_id?: string | null;
+  satirlar: EclubRaporHamSatir[];
+}
+
+/** Firma genelindeki tüm UTT E-Club takımlarını puanlarına göre lig sıralamasına koyar. */
+export function eclubTakimlarLiginiOlustur(takimlar: EclubTakimGirdi[], aktifUttId?: string): EclubTakimLigSatiri[] {
+  const sirasiz = takimlar.map((takim) => {
+    const rapor = eclubRaporunuTopla(takim.satirlar);
+    const toplamCevap = rapor.ozet.dogru_cevap + rapor.ozet.yanlis_cevap;
+    return {
+      utt_id: takim.utt_id,
+      utt_adi: takim.utt_adi,
+      takim_adi: takim.takim_adi?.trim() || `${takim.utt_adi} Takımı`,
+      bolge_adi: takim.bolge_adi,
+      takim_id: takim.takim_id ?? null,
+      uye_sayisi: rapor.ozet.aktif_kisi,
+      aktif_uye: rapor.ozet.izleyen_kisi,
+      gonderilen_sayisi: rapor.ozet.gonderilen_sayisi,
+      tamamlanan_izleme: rapor.ozet.tamamlanan_izleme,
+      dogru_cevap: rapor.ozet.dogru_cevap,
+      yanlis_cevap: rapor.ozet.yanlis_cevap,
+      izleme_puani: rapor.ozet.izleme_puani,
+      cevaplama_puani: rapor.ozet.cevaplama_puani,
+      toplam_puan: rapor.ozet.toplam_puan,
+      dogru_cevap_orani: toplamCevap > 0 ? Math.round((rapor.ozet.dogru_cevap / toplamCevap) * 100) : 0,
+      benim_takimim: aktifUttId ? takim.utt_id === aktifUttId : false,
+      sira: 0,
+    };
+  });
+
+  const sirali = sirasiz.sort((a, b) => (
+    b.toplam_puan - a.toplam_puan
+    || b.tamamlanan_izleme - a.tamamlanan_izleme
+    || b.aktif_uye - a.aktif_uye
+    || a.takim_adi.localeCompare(b.takim_adi, "tr")
+  ));
+
+  let sira = 0;
+  let sonPuan: number | null = null;
+  return sirali.map((takim) => {
+    if (takim.toplam_puan <= 0) return { ...takim, sira: 0 };
+    if (sonPuan === null || takim.toplam_puan !== sonPuan) {
+      sira += 1;
+      sonPuan = takim.toplam_puan;
+    }
+    return { ...takim, sira };
+  });
+}
+

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, LoaderCircle, Plus, Search } from "lucide-react";
+import { Building2, CheckCircle2, Edit3, LoaderCircle, Plus, Search, Sparkles, Trophy, Users, UserCheck } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { Badge } from "@/components/ui/badge";
@@ -37,11 +37,54 @@ export default function EclubEczanelerimPage() {
   const [elleIlce, setElleIlce] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Takım Adı Yönetimi
+  const [takimAdi, setTakimAdi] = useState<string | null>(null);
+  const [takimDuzenleniyor, setTakimDuzenleniyor] = useState(false);
+  const [takimTaslak, setTakimTaslak] = useState("");
+  const [takimKaydediliyor, setTakimKaydediliyor] = useState(false);
+
+  const takimAdiCek = useCallback(async () => {
+    if (!kullanici) return;
+    try {
+      const res = await fetch("/eclub/ligi/api/takim-adi");
+      const d = await res.json();
+      if (res.ok && d.takim_adi) {
+        setTakimAdi(d.takim_adi);
+        setTakimTaslak(d.takim_adi);
+      }
+    } catch {
+      // sessiz
+    }
+  }, [kullanici]);
+
+  const takimAdiKaydet = async () => {
+    const yeniAd = takimTaslak.trim();
+    if (!yeniAd || takimKaydediliyor) return;
+    setTakimKaydediliyor(true);
+    try {
+      const res = await fetch("/eclub/ligi/api/takim-adi", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ takim_adi: yeniAd }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.hata ?? "Takım adı kaydedilemedi.");
+      setTakimAdi(yeniAd);
+      setTakimDuzenleniyor(false);
+      basari("Takım adı kaydedildi.");
+    } catch (err) {
+      hata(err instanceof Error ? err.message : "Takım adı kaydedilemedi.");
+    } finally {
+      setTakimKaydediliyor(false);
+    }
+  };
+
   useEffect(() => {
     if (authYukleniyor) return;
     if (!kullanici) { router.push("/login"); return; }
     if (!rolUygun) router.push("/ana-sayfa");
-  }, [kullanici, authYukleniyor, rolUygun, router]);
+    void takimAdiCek();
+  }, [kullanici, authYukleniyor, rolUygun, router, takimAdiCek]);
 
   useEffect(() => () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -56,6 +99,9 @@ export default function EclubEczanelerimPage() {
     }
     return map;
   }, [kisiler]);
+
+  const toplamEczaci = useMemo(() => kisiler.filter(k => eclubKisiHedefRolu(k.rol) === "eczaci").length, [kisiler]);
+  const toplamTeknisyen = useMemo(() => kisiler.filter(k => eclubKisiHedefRolu(k.rol) === "eczane_teknisyeni").length, [kisiler]);
 
   const gecislerByEczane = useMemo(() => {
     const map = new Map<string, typeof gecisTalepleri>();
@@ -113,15 +159,75 @@ export default function EclubEczanelerimPage() {
 
   return (
     <div className="min-h-full bg-gray-50" style={{ fontFamily: "'Nunito', sans-serif" }}>
+      <HataMesajiContainer mesajlar={mesajlar} />
       <div className="mx-auto flex max-w-[1480px] flex-col gap-4 px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">E‑Club eczane ağı</p>
-            <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">Eczanelerim</h1>
-            <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">E‑Club listenizdeki eczaneleri, eczacıları ve eczane teknisyenlerini yönetin.</p>
+            <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#3589d8]">
+              <Sparkles className="size-3.5" /> E‑Club Takım Oluşturma ve Yönetim
+            </div>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">E-Club Takımım</h1>
+            
+            {takimDuzenleniyor ? (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <input
+                  className="h-8 rounded-lg border border-[#3b82f6] bg-white px-3 text-xs font-bold text-[#1e3a8a] outline-none ring-2 ring-blue-100"
+                  value={takimTaslak}
+                  onChange={(e) => setTakimTaslak(e.target.value)}
+                  maxLength={100}
+                  placeholder="Takım adı yazın (Örn: Ege Yıldızları)"
+                  autoFocus
+                />
+                <Button size="sm" onClick={() => void takimAdiKaydet()} disabled={takimKaydediliyor || !takimTaslak.trim()} className="h-8 bg-[#237ac8] text-xs font-bold hover:bg-[#1d69ad]">Kaydet</Button>
+                <Button size="sm" variant="ghost" onClick={() => { setTakimDuzenleniyor(false); setTakimTaslak(takimAdi ?? ""); }} className="h-8 text-xs font-bold text-[#6b7f9b]">Vazgeç</Button>
+              </div>
+            ) : (
+              <div className="mt-2 flex items-center gap-2 text-sm text-[#4b5563]">
+                <span className="font-extrabold text-[#1e3a8a]">{takimAdi || "Takımım"}</span>
+                <span className="text-[#9ca3af]">·</span>
+                <span className="font-semibold text-[#6b7280]">{kullanici.ad} {kullanici.soyad}</span>
+                <button
+                  type="button"
+                  onClick={() => setTakimDuzenleniyor(true)}
+                  className="ml-1 inline-flex items-center gap-1 rounded-md bg-[#eef6ff] px-2 py-0.5 text-[10px] font-extrabold text-[#2563eb] hover:bg-[#dbeafe]"
+                >
+                  <Edit3 size={11} />
+                  {takimAdi ? "Takım adını düzenle" : "Takım adı ver"}
+                </button>
+              </div>
+            )}
+            <p className="mt-1 max-w-3xl text-xs leading-5 text-[#6b7f9b]">E‑Club takımınızı oluşturun; eczaneleri bağlayarak eczacı ve teknisyen kadronuzu yönetin.</p>
           </div>
-          <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} disabled={eczaneFormAcik || islemLoading} />
+          <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} disabled={eczaneFormAcik || islemLoading || takimDuzenleniyor} />
         </header>
+
+        {/* Takım Özeti Kartları */}
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-xl border border-[#dfe7f1] bg-white p-3.5 shadow-sm">
+            <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wide text-[#7b8da5]">
+              <Building2 className="size-3.5 text-[#2563eb]" /> Bağlı Eczane
+            </div>
+            <strong className="mt-1 block text-2xl font-black text-[#1e293b]">{eczaneler.length}</strong>
+          </div>
+          <div className="rounded-xl border border-[#dfe7f1] bg-white p-3.5 shadow-sm">
+            <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wide text-[#7b8da5]">
+              <UserCheck className="size-3.5 text-[#dc2626]" /> Eczacı
+            </div>
+            <strong className="mt-1 block text-2xl font-black text-[#1e293b]">{toplamEczaci}</strong>
+          </div>
+          <div className="rounded-xl border border-[#dfe7f1] bg-white p-3.5 shadow-sm">
+            <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wide text-[#7b8da5]">
+              <Users className="size-3.5 text-[#16a34a]" /> Teknisyen
+            </div>
+            <strong className="mt-1 block text-2xl font-black text-[#1e293b]">{toplamTeknisyen}</strong>
+          </div>
+          <div className="rounded-xl border border-[#b9d7ee] bg-[#f0f7fe] p-3.5 shadow-sm">
+            <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wide text-[#1d4ed8]">
+              <Trophy className="size-3.5 text-[#d97706]" /> Takım Kadrosu
+            </div>
+            <strong className="mt-1 block text-2xl font-black text-[#1e3a8a]">{kisiler.length} kişi</strong>
+          </div>
+        </section>
 
         <div className="flex w-full flex-col gap-4">
           {eczaneler.length === 0 && !eczaneFormAcik && <div className="rounded-xl border border-gray-200 bg-white px-5 py-8 text-center"><p className="m-0 text-sm text-gray-400">Henüz eczane eklenmedi. Aşağıdaki düğmeyle başlayın.</p></div>}
