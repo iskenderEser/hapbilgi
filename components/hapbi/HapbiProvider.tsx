@@ -161,7 +161,10 @@ export function HapbiProvider({ children }: { children: React.ReactNode }) {
       let fallbackAksiyon: HapbiMesaj["aksiyon"] | undefined;
 
       const q = soruMetni.toLowerCase();
-      if (q.includes("store") || q.includes("sipariş") || q.includes("hediye") || q.includes("mağaza")) {
+      if (q.includes("bağla") || q.includes("ekle") || q.includes("davet") || q.includes("eczanelerim") || q.includes("takımım")) {
+        fallbackMetin = "E-Club'a eczane eklemek ve takımındaki eczaneleri yönetmek için 'E-Club Takımım' sayfasını kullanabilirsin. Buradan anlaşmalı eczanelerini sisteme bağlayabilirsin.";
+        fallbackAksiyon = { etiket: "E-Club Takımıma Git 🤝", url: "/eclub/eczanelerim" };
+      } else if (q.includes("store") || q.includes("sipariş") || q.includes("hediye") || q.includes("mağaza")) {
         fallbackMetin = "HBStore, kazandığın HapPuan'ları harcayabileceğin ödül mağazasıdır. Ürünler adresine kargolanır ve ilk 12 saat içinde siparişini iptal etme hakkın vardır.";
         fallbackAksiyon = { etiket: "HBStore Turunu Başlat 🎁", turId: "store_tur", url: "/store" };
       } else if (q.includes("lig") || q.includes("puan") || q.includes("sıra") || q.includes("t-club")) {
@@ -170,9 +173,12 @@ export function HapbiProvider({ children }: { children: React.ReactNode }) {
       } else if (q.includes("12 saat") || q.includes("iptal")) {
         fallbackMetin = "12 Saat İptal Kuralı: HBStore'dan verdiğin siparişleri, lojistik süreci başlamadan önce 'Siparişlerim' sayfasından ilk 12 saat içinde tek tıkla cezasız iptal edebilirsin.";
         fallbackAksiyon = { etiket: "Siparişlerime Git 📦", url: "/store/siparislerim" };
+      } else if (q.includes("mutabakat") || q.includes("döküm")) {
+        fallbackMetin = "Eczanelerle yapılan indirimli satış mutabakatlarını ve onaylanan dökümleri 'Mutabakat Dökümü' sayfasından kontrol edebilirsin.";
+        fallbackAksiyon = { etiket: "Mutabakat Dökümüne Git 📑", url: "/eczanem/utt/mutabakat" };
       } else if (q.includes("eczane") || q.includes("e-club") || q.includes("danışan") || q.includes("indirim")) {
         fallbackMetin = "E-Club, eczacıların ekiplerini eğittiği ve danışanlarına avantajlı ürün indirimleri sunarak mutabakat sağladığı özel kulüptür.";
-        fallbackAksiyon = { etiket: "E-Club Paneline Git 💊", url: "/eczanem/utt" };
+        fallbackAksiyon = { etiket: "E-Club Takımıma Git 💊", url: "/eclub/eczanelerim" };
       }
 
       setMesajlar((prev) => [
