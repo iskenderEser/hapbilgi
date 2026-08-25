@@ -43,7 +43,14 @@ Sayfa Rotaları:
 - /store/siparislerim: Verilen siparişlerin takibi ve 12 saat kuralı iptal alanı.
 - /store/adreslerim: Teslimat adresleri yönetimi.
 - /oneri-takibi: Üretici firmaya yeni eğitim videosu önerisi verme ve takip etme.
-- /eclub/panel veya /eczanem/utt: E-Club ve Eczane operasyonları.
+- /eclub/eczanelerim: E-Club Takımım (Temsilcinin eczaneleri bağladığı, yeni eczane eklediği ve yönettiği ana alan).
+- /eclub/videolarim: E-Club Gönderilecek Videolar.
+- /eclub/gonderilen-videolar: E-Club Gönderilen Videolar arşivi.
+- /eclub/raporlar: E-Club Takım Raporları.
+- /eclub/ligi: E-Club Ligi.
+- /eczanem/utt: Eczanem Video Dağıtımı (Nihai tüketiciye indirimli video dağıtımı).
+- /eczanem/utt/mutabakat: Eczanem Mutabakat Dökümü (Onaylanan indirimli satışlar).
+- /raporlar/eczanem: Eczanem Raporları.
 `;
 
 export const HAPBI_CANLI_TURLAR: Record<string, WalkthroughTur> = {
