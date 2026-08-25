@@ -10,7 +10,7 @@ c. **Tespite ve Talimata Birebir Sadakat:** Tespit ve emirler kesin talimattır;
 
 ### Kural 2. Proje Dokümantasyonu, Genel Kaynaklar ve Bilgi Notları
 
-a. **Referans Belgeler ve Kaynak Disiplini:** Sistem geneline ilişkin konularda ana referans docs/REDBOOK.MD belgesidir (açık işler için §6.4 çalışma nüshası); docs/ altındaki belgeler kesin kararları içerir, kararlar yeniden sorgulanmaz ve çalışma kuralları (Claude.md) her oturumda eksiksiz uygulanır.
+a. **Referans Belgeler ve Kaynak Disiplini:** Sistem geneline ilişkin konularda ana referans docs/BLUEBOOK.md belgesidir; docs/ altındaki belgeler kesin kararları içerir, kararlar yeniden sorgulanmaz ve çalışma kuralları (Claude.md) her oturumda eksiksiz uygulanır.
 b. **Modül Ön İnceleme Zorunluluğu:** Talepler sayfasına ilişkin her çalışma öncesinde; 21 dosya, form alanları, sıralama, doğrulama kuralları, detay sayfası bölümleri ve API uçlarını içeren tam künye eksiksiz okunur.
 c. **Proje Çekirdeği ve Kod Bütünlüğü:** Çekirdeğin (UTT izler-puan-lig, BM önerir-puan) zamanla genişlemesiyle ortaya çıkan dosya asimetrilerine dikkat edilir; kodun sadece "çalışıyor" görünmesi yeterli sayılmayıp mimari yapı korunur.
 
