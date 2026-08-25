@@ -13,6 +13,7 @@ import { talepIdGoster } from "@/lib/utils/talepId";
 import { rolTeknikKullanirMi } from "@/lib/uretici/yetenekler";
 import { type DurumKodu } from "@/lib/utils/durum/mesaj";
 import type { AuthKullanici } from "@/types/auth";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 
 interface TakipSatiri {
   talep_id: string;
@@ -248,7 +249,10 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
 
       {/* İçerik tablosu başlık */}
       <div className="flex items-center justify-between mb-3">
-        <span className="text-base font-bold text-gray-900">Yayın Listesi</span>
+        <div className="inline-flex items-center">
+          <span className="text-base font-bold text-gray-900">Yayın Listesi</span>
+          <SayfaRehberi anahtar="uretici-yayin-listesi" className="ml-1.5 -translate-y-1.5" />
+        </div>
         <div className="flex items-center gap-2">
           {aktifFiltre !== "tumu" && (
             <button

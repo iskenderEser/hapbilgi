@@ -4,6 +4,7 @@ import { Fragment, useMemo, useState } from "react";
 import { ChevronDown, Users } from "lucide-react";
 import type { BmPerformansDetay } from "@/lib/rapor/paylasilan/bmPerformansTipleri";
 import { formatPuan } from "@/lib/utils/raporUtils";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import styles from "@/app/(panel)/raporlar/utt/utt-report.module.css";
 import bmStyles from "@/app/(panel)/raporlar/bm/bm-report.module.css";
 
@@ -34,7 +35,10 @@ export default function BmPerformansGorunumu({
       <div className={styles.sectionHeader}>
         <div>
           <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">Saha nabzı</div>
-          <h2 className="text-base font-extrabold text-[#20324c]">BM performans görünümü</h2>
+          <div className="inline-flex items-center">
+            <h2 className="text-base font-extrabold text-[#20324c]">BM performans görünümü</h2>
+            <SayfaRehberi anahtar="bm-performans-gorunumu" className="ml-1.5 -translate-y-1.5" />
+          </div>
           <p className="mt-0.5 text-[11px] font-medium text-[#8190a3]">{aciklama}</p>
         </div>
         <div className={styles.sectionIcon}><Users className="h-4 w-4" /></div>

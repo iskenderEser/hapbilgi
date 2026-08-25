@@ -90,7 +90,7 @@ export default function HBLigiPage() {
   }, [veriCek]);
 
   const periyotSecici = (
-    <div className="flex flex-wrap items-start gap-2 [&_.hb-ligi-periyot-secici]:mb-0">
+    <div className="flex flex-wrap items-center gap-2 [&_.hb-ligi-periyot-secici]:mb-0">
       <HbLigiPeriyotSecici
         periyot={periyot}
         yil={yil}

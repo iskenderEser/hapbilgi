@@ -78,7 +78,7 @@ export function YayinKumandaPaneli({
             İçerik yaşam döngüsü
           </p>
           <h1 id="yayin-merkezi-baslik" className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">
-            Yayın Merkezi
+            Yayın Yönetimi
           </h1>
           <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">
             Hazır içerikleri puanlayın, doğru zamanda yayınlayın ve yayın yaşam döngüsünü tek yerden yönetin.

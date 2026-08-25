@@ -10,7 +10,6 @@ import { KIRMIZI, GRI_METIN, KOYU_METIN, formatPuan, PERIYOTLAR, type Periyot } 
 import { TUR_RAPOR_ADI, TUR_SIRA, isIcerikTuru } from '@/lib/video/icerikTuru';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
 import DagilimGrafik from '@/components/raporlar/DagilimGrafik';
-import EczanemDokumBolumu from '@/components/raporlar/EczanemDokumBolumu';
 import UrunKirilimPaneli from '@/components/raporlar/UrunKirilimPaneli';
 import BmPerformansGorunumu from '@/components/raporlar/BmPerformansGorunumu';
 import type { BmPerformansDetay } from '@/lib/rapor/paylasilan/bmPerformansTipleri';
@@ -265,7 +264,6 @@ export default function TmRaporPage() {
         </div>
 
         <BegeniFavoriListesi begeniListesi={data.begeni_listesi ?? []} favoriListesi={data.favori_listesi ?? []} modern />
-        <EczanemDokumBolumu />
       </div>
     </div>
   );

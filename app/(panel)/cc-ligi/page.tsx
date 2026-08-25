@@ -25,13 +25,15 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
-import { CCLIGI_GORENLERLER } from "@/lib/utils/roller";
+import { CCLIGI_GORENLERLER, YONETICI_ROLLER, ADMIN_ROLLER } from "@/lib/utils/roller";
 import { aktifPeriyot } from "@/lib/zaman/kontrol";
 import CcLigiBanner from "@/components/cc-ligi/CcLigiBanner";
 import CcLigiPeriyotSecici, { type Periyot } from "@/components/cc-ligi/CcLigiPeriyotSecici";
 import CcLigiTablosu, { type LigSatiri } from "@/components/cc-ligi/CcLigiTablosu";
+import CcTakimLigAkordeonu from "@/components/cc-ligi/CcTakimLigAkordeonu";
 import CcChallengeListesi from "@/components/cc-ligi/CcChallengeListesi";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import type { AuthKullanici } from "@/types/auth";
 
 const GRI_METIN = "#737373";
@@ -195,10 +197,11 @@ export default function CcLigiPage() {
         <div className="mb-5 flex items-start justify-between gap-3">
           <div>
             <h1
-              className="text-xl font-bold"
+              className="text-xl font-bold inline-flex items-center flex-wrap"
               style={{ color: KOYU_METIN, margin: 0 }}
             >
-              CC Ligi
+              <span>C-Club Ligi</span>
+              <SayfaRehberi anahtar="cclub-ligi" className="ml-1.5 -translate-y-1" />
             </h1>
             <div className="text-xs mt-1" style={{ color: GRI_METIN }}>
               Challenge Club bölge müdürlerinin öğrenme yarışı.
@@ -224,8 +227,12 @@ export default function CcLigiPage() {
           onHaftaChange={setHafta}
         />
 
-        {/* Lig tablosu */}
-        <CcLigiTablosu satirlar={ligSatirlari} yukleniyor={ligYukleniyor} />
+        {/* Lig tablosu veya Takımlar Akordiyonu */}
+        {user && (YONETICI_ROLLER.includes((user.rol ?? "").toLowerCase()) || ADMIN_ROLLER.includes((user.rol ?? "").toLowerCase())) ? (
+          <CcTakimLigAkordeonu satirlar={ligSatirlari} yukleniyor={ligYukleniyor} />
+        ) : (
+          <CcLigiTablosu satirlar={ligSatirlari} yukleniyor={ligYukleniyor} />
+        )}
 
         {/* Challenge listesi (her zaman bu ay) */}
         <CcChallengeListesi key={`challenge-${yenilemeAnahtari}`} yil={cListYil} ay={cListAy} hata={hata} />

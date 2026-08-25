@@ -12,6 +12,7 @@ import { anaSayfaRaflari } from "@/lib/video/anaSayfaRaflari";
 import { DEPARTMAN_ETIKET, DEPARTMAN_RENK, DEPARTMAN_SIRA, departmanKey, type DepartmanKey } from "@/lib/video/departman";
 import type { YayindakiVideo } from "@/lib/video/yayindakiVideolar";
 import YayindakiVideoBolumu from "./YayindakiVideoBolumu";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 
 type Kapsam = "benim" | "digerleri";
 
@@ -99,28 +100,38 @@ function HedefKitleKartlari({ videolar, aktifHedef, onSec }: {
   onSec: (hedef: HedefRol) => void;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
       {TUM_HEDEF_ROLLER.map((hedef) => {
         const tasarim = HEDEF_ROL_TASARIM[hedef];
         const sayi = videolar.filter((video) => video.hedef_roller.includes(hedef)).length;
         const aktif = aktifHedef === hedef;
-        const ortakSinif = "bg-white border border-gray-200 border-l-[3px] [border-left-color:var(--stat-renk)] rounded-xl p-3 text-left md:p-5 transition-all";
-        const ortakStil = {
-          "--stat-renk": tasarim.renk,
-          boxShadow: aktif ? `0 0 0 2px ${tasarim.renk}22` : "none",
-        } as React.CSSProperties;
+
         return (
           <button
             type="button"
             key={hedef}
             onClick={() => onSec(hedef)}
             aria-pressed={aktif}
-            className={`${ortakSinif} cursor-pointer hover:-translate-y-0.5 hover:shadow-md`}
-            style={ortakStil}
+            className="flex min-h-[92px] flex-col justify-between rounded-xl border border-gray-200 border-l-[3px] bg-white p-3 text-left transition-all duration-150 cursor-pointer md:p-4 hover:-translate-y-0.5 hover:shadow-md"
+            style={{
+              borderLeftColor: tasarim.renk,
+              boxShadow: aktif ? `0 0 0 2px ${tasarim.renk}33` : undefined,
+            }}
           >
-            <div className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">{tasarim.tamEtiket}</div>
-            <div className="text-2xl font-extrabold leading-none text-gray-900 md:text-3xl">{sayi.toLocaleString("tr-TR")}</div>
-            <div className="mt-1.5 hidden text-xs text-gray-500 md:block">Yayındaki içerik</div>
+            <div
+              className="truncate text-xs font-bold uppercase tracking-wide text-gray-400"
+              title={tasarim.tamEtiket}
+            >
+              {tasarim.tamEtiket}
+            </div>
+            <div>
+              <div className="text-2xl font-extrabold leading-none text-gray-900 md:text-3xl">
+                {sayi.toLocaleString("tr-TR")}
+              </div>
+              <div className="mt-1 hidden text-xs text-gray-500 md:block">
+                Yayındaki içerik
+              </div>
+            </div>
           </button>
         );
       })}
@@ -266,7 +277,13 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
         <header className="flex items-start justify-between gap-3">
           <div>
             <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">Yayın kataloğu</p>
-            <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">{baslik}</h1>
+            <div className="inline-flex items-center">
+              <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">{baslik}</h1>
+              <SayfaRehberi
+                anahtar={kapsam === "benim" ? "sizin-yayinlariniz-katalog" : "tum-yayinlar-katalog"}
+                className="ml-1.5 -translate-y-2"
+              />
+            </div>
             <p className="mt-1 text-sm text-[#6b7f9b]">{aciklama}</p>
           </div>
           <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} />

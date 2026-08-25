@@ -20,6 +20,7 @@ import { IsListesi } from "./IsListesi";
 import { TalepDetayi } from "./TalepDetayi";
 import { YeniTalepAkordiyonu } from "./YeniTalepAkordiyonu";
 import { IptalAkordiyonu } from "./IptalAkordiyonu";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 
 export function UreticiRolGorunum() {
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
@@ -88,9 +89,12 @@ export function UreticiRolGorunum() {
               <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">
                 İçerik operasyon merkezi
               </p>
-              <h1 id="talep-merkezi-baslik" className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">
-                Talep Merkezi
-              </h1>
+              <div className="inline-flex items-center">
+                <h1 id="talep-merkezi-baslik" className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">
+                  Talep Merkezi
+                </h1>
+                <SayfaRehberi anahtar="talep-merkezi" className="ml-1.5 -translate-y-2" />
+              </div>
               <p className="mt-1 max-w-2xl text-sm leading-5 text-[#6b7f9b]">
                 İçerik taleplerinizi oluşturun, üretim akışını izleyin ve sizden beklenen kararları tek yerden yönetin.
               </p>

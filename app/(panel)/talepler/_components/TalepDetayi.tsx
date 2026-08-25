@@ -21,6 +21,7 @@ import { TeknikPill, VaryantPill, HedefRolPilleri } from "@/components/pill";
 import { UretimSeridi } from "./UretimSeridi";
 import { AdimIcerigi } from "./AdimIcerigi";
 import { AksiyonSeridi } from "./AksiyonSeridi";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import type { ToastAsama } from "@/lib/uretim/toastMesaj";
 import type { KararDurumu } from "../_hooks/useTalepMerkezi";
 import type { TalepDetay, TalepSatiri } from "../_ureticiRolTypes";
@@ -61,7 +62,10 @@ export function TalepDetayi({
       <div className="overflow-hidden rounded-2xl border border-[#dfe7f2] bg-white shadow-[0_10px_28px_rgba(31,55,90,0.045)]">
         <div className="border-b border-[#e8eef5] px-5 py-4">
           <p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#7390b3]">Üretim görünümü</p>
-          <h2 className="mt-0.5 text-base font-extrabold text-[#203653]">Talep Takibi</h2>
+          <div className="inline-flex items-center">
+            <h2 className="mt-0.5 text-base font-extrabold text-[#203653]">Talep Takibi</h2>
+            <SayfaRehberi anahtar="talepler-uretim-gorunumu" className="ml-1.5 -translate-y-1.5" />
+          </div>
         </div>
         <div className="px-6 py-14 text-center">
           <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef6ff] text-[#4b91d8]">
@@ -117,7 +121,10 @@ export function TalepDetayi({
     <section aria-labelledby="talep-takip-baslik" className="overflow-hidden rounded-2xl border border-[#dfe7f2] bg-white shadow-[0_10px_28px_rgba(31,55,90,0.045)]">
       <div className="border-b border-[#e8eef5] px-4 py-4 md:px-5">
         <p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#7390b3]">Üretim görünümü</p>
-        <h2 id="talep-takip-baslik" className="mt-0.5 text-base font-extrabold text-[#203653]">Talep Takibi</h2>
+        <div className="inline-flex items-center">
+          <h2 id="talep-takip-baslik" className="mt-0.5 text-base font-extrabold text-[#203653]">Talep Takibi</h2>
+          <SayfaRehberi anahtar="talepler-uretim-gorunumu" className="ml-1.5 -translate-y-1.5" />
+        </div>
       </div>
       {/* Künye */}
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#e8eef5] px-4 py-4 md:px-5">

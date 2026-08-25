@@ -19,6 +19,7 @@ import { useRapor } from '@/hooks/useRapor';
 import { YenileButonu } from '@/components/ui/yenile-butonu';
 import { formatPuan, GRI_METIN, KIRMIZI, PERIYOTLAR, type Periyot } from '@/lib/utils/raporUtils';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
+import SayfaRehberi from '@/components/rehber/SayfaRehberi';
 import styles from './uretici-report.module.css';
 
 const DEFAULT_PERIYOT: Periyot = 'bu_ay';
@@ -156,7 +157,10 @@ export default function UreticiRaporPage() {
             <div className={styles.eyebrow}>
               <Sparkles className="h-3.5 w-3.5" /> Üretim ve saha etkisi
             </div>
-            <h1 className={styles.title}>Raporlar</h1>
+            <h1 className={`${styles.title} inline-flex items-center flex-wrap`}>
+              <span>Raporlarım</span>
+              <SayfaRehberi anahtar="raporlar-uretici" className="ml-1.5 -translate-y-1.5" />
+            </h1>
             <p className={styles.identity}>
               {data.kullanici.ad} {data.kullanici.soyad} · {data.kullanici.rol.toUpperCase()} · {data.kullanici.takim_adi} · {data.kullanici.firma_adi}
             </p>

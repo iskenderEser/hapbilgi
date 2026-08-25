@@ -22,6 +22,7 @@ import type { EclubRaporEczane, EclubRaporIcerik, EclubRaporOzet } from "@/lib/e
 import type { EclubKapsamUtt, EclubYonetimKapsami } from "@/lib/eclub/yonetimKapsami";
 import { eclubKisiRolEtiketi } from "@/lib/utils/roller";
 import { formatPuan, GRI_METIN, KIRMIZI, PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import styles from "@/app/(panel)/raporlar/utt/utt-report.module.css";
 import bmStyles from "@/app/(panel)/raporlar/bm/bm-report.module.css";
 import reportStyles from "./eclub-report.module.css";
@@ -124,8 +125,9 @@ export default function EclubRaporlarPage() {
             <div className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">
               <Sparkles className="h-3.5 w-3.5" /> {data.kapsam.gorunum === "utt" ? "E-Club Takım Performans Karnesi" : "Dış müşteri öğrenme görünümü"}
             </div>
-            <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">
-              {data.kapsam.gorunum === "utt" ? "E‑Club Takım Raporlarım" : "E‑Club Raporları"}
+            <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d] inline-flex items-center flex-wrap">
+              <span>E-Club Takım Raporlarım</span>
+              <SayfaRehberi anahtar="eclub-takim-raporlar" className="ml-1.5 -translate-y-1.5" />
             </h1>
             <p className="mt-0.5 text-xs font-semibold text-[#78889d]">
               {data.kullanici.ad} {data.kullanici.soyad} · {data.kullanici.rol.toUpperCase()}

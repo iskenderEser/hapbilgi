@@ -92,8 +92,13 @@ export async function GET(request: NextRequest) {
     // periyot=ay     → get_cc_ligi_aylik(yil, ay)
     // periyot=donem  → get_cc_ligi_donemlik(yil, ceyrek)
     // periyot=yil    → get_cc_ligi_yillik(yil)
+    // ─── tip=lig ───────────────────────────────────────────────────────────
+    // periyot=ay     → get_cc_ligi_aylik(yil, ay)
+    // periyot=donem  → get_cc_ligi_donemlik(yil, ceyrek)
+    // periyot=yil    → get_cc_ligi_yillik(yil)
     if (tip === "lig") {
       const periyot = searchParams.get("periyot") || "ay";
+      let hamData: unknown[] = [];
 
       if (periyot === "ay") {
         const p = yilAyParse(searchParams);
@@ -114,10 +119,8 @@ export async function GET(request: NextRequest) {
             error
           );
         }
-        return NextResponse.json({ lig: data ?? [], periyot: "ay" }, { status: 200 });
-      }
-
-      if (periyot === "donem") {
+        hamData = data ?? [];
+      } else if (periyot === "donem") {
         const p = yilCeyrekParse(searchParams);
         if (!p) {
           return validasyonHatasi(
@@ -136,10 +139,8 @@ export async function GET(request: NextRequest) {
             error
           );
         }
-        return NextResponse.json({ lig: data ?? [], periyot: "donem" }, { status: 200 });
-      }
-
-      if (periyot === "yil") {
+        hamData = data ?? [];
+      } else if (periyot === "yil") {
         const p = yilParse(searchParams);
         if (!p) {
           return validasyonHatasi(
@@ -157,10 +158,8 @@ export async function GET(request: NextRequest) {
             error
           );
         }
-        return NextResponse.json({ lig: data ?? [], periyot: "yil" }, { status: 200 });
-      }
-
-      if (periyot === "hafta") {
+        hamData = data ?? [];
+      } else if (periyot === "hafta") {
         const p = yilHaftaParse(searchParams);
         if (!p) {
           return validasyonHatasi(
@@ -179,13 +178,36 @@ export async function GET(request: NextRequest) {
             error
           );
         }
-        return NextResponse.json({ lig: data ?? [], periyot: "hafta" }, { status: 200 });
+        hamData = data ?? [];
+      } else {
+        return validasyonHatasi(
+          `Geçersiz periyot parametresi: ${periyot} (geçerli: ay, donem, yil, hafta)`,
+          ["periyot"]
+        );
       }
 
-      return validasyonHatasi(
-        `Geçersiz periyot parametresi: ${periyot} (geçerli: ay, donem, yil, hafta)`,
-        ["periyot"]
-      );
+      // Kullanıcının firma_id bilgisi ve ad zenginleştirmesi
+      const [{ data: kullanici }, { data: takimlar }, { data: bolgeler }] = await Promise.all([
+        adminSupabase.from("kullanicilar").select("firma_id").eq("kullanici_id", user.id).maybeSingle(),
+        adminSupabase.from("takimlar").select("takim_id, takim_adi"),
+        adminSupabase.from("bolgeler").select("bolge_id, bolge_adi"),
+      ]);
+
+      const takimMap = new Map((takimlar ?? []).map((t) => [t.takim_id, t.takim_adi]));
+      const bolgeMap = new Map((bolgeler ?? []).map((b) => [b.bolge_id, b.bolge_adi]));
+
+      let filtrelenmis = hamData as Array<Record<string, unknown>>;
+      if (kullanici?.firma_id && rol !== "admin") {
+        filtrelenmis = filtrelenmis.filter((r) => r.firma_id === kullanici.firma_id);
+      }
+
+      const zenginlesmisLig = filtrelenmis.map((satir) => ({
+        ...satir,
+        takim_adi: (satir.takim_id ? takimMap.get(String(satir.takim_id)) : null) ?? "Genel Takım",
+        bolge_adi: (satir.bolge_id ? bolgeMap.get(String(satir.bolge_id)) : null) ?? "Genel Bölge",
+      }));
+
+      return NextResponse.json({ lig: zenginlesmisLig, periyot }, { status: 200 });
     }
 
     // ─── tip=donem-lideri ──────────────────────────────────────────────────

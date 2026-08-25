@@ -10,7 +10,6 @@ import { KIRMIZI, GRI_METIN, KOYU_METIN, formatPuan, PERIYOTLAR, type Periyot } 
 import { TUR_RAPOR_ADI, TUR_SIRA, isIcerikTuru } from '@/lib/video/icerikTuru';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
 import DagilimGrafik from '@/components/raporlar/DagilimGrafik';
-import EczanemDokumBolumu from '@/components/raporlar/EczanemDokumBolumu';
 import UrunKirilimPaneli from '@/components/raporlar/UrunKirilimPaneli';
 import styles from '../utt/utt-report.module.css';
 import bmStyles from './bm-report.module.css';
@@ -366,7 +365,6 @@ export default function BmRaporPage() {
         </div>
 
         <BegeniFavoriListesi begeniListesi={data.begeni_listesi ?? []} favoriListesi={data.favori_listesi ?? []} modern />
-        <EczanemDokumBolumu />
       </div>
     </div>
   );

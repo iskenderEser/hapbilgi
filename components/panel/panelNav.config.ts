@@ -14,6 +14,7 @@
 
 import {
   URETICI_ROLLER,
+  YONETICI_ROLLER,
   IU_ROLU,
   YAYINDAKI_VIDEO_GORENLER,
   CCLIGI_GORENLERLER,
@@ -66,6 +67,7 @@ export const PANEL_NAV: NavGrup[] = [
       { etiket: "Yayın Yönetimi",    path: "/yayin-yonetimi",     badgeKey: "yayin",     gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
       { etiket: "Sizin Yayınlarınız", path: "/sizin-yayinlariniz",                       gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
       { etiket: "Tüm Yayınlar",       path: "/tum-yayinlar",                             gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
+      { etiket: "Üretim Raporları",   path: "/raporlar/uretim",                          gate: (c) => URETICI_ROLLER.includes(c.rolKucu) || YONETICI_ROLLER.includes(c.rolKucu) || c.rolKucu === "admin" },
       { etiket: "Senaryolar",        path: "/senaryolar",         badgeKey: "senaryo",   gate: (c) => c.rolKucu === IU_ROLU },
       { etiket: "Videolar",          path: "/videolar",           badgeKey: "video",     gate: (c) => c.rolKucu === IU_ROLU },
       { etiket: "Soru Setleri",      path: "/soru-setleri",       badgeKey: "soru_seti", gate: (c) => c.rolKucu === IU_ROLU },
@@ -90,12 +92,12 @@ export const PANEL_NAV: NavGrup[] = [
       { etiket: "Yayındaki Videolar", path: "/yayindaki-videolar", gate: (c) => YAYINDAKI_VIDEO_GORENLER.includes(c.rolKucu) && !URETICI_ROLLER.includes(c.rolKucu) },
       { etiket: "T-Club Ligi",        path: "/hbligi",             gate: () => true },
       {
-        etiket: "Raporlar",
+        etiket: "T-Club Raporları",
         path: (c) => {
           if (TUKETICI_ROLLER.includes(c.rolKucu)) return "/raporlar/utt";
           if (c.rolKucu === "bm") return "/raporlar/bm";
           if (c.rolKucu === "tm") return "/raporlar/tm";
-          if (URETICI_ROLLER.includes(c.rolKucu)) return "/raporlar/uretici";
+          if (URETICI_ROLLER.includes(c.rolKucu)) return "/raporlar/tclub-uretici";
           return "/raporlar/yonetici";
         },
         gate: (c) => c.rolKucu !== "iu",

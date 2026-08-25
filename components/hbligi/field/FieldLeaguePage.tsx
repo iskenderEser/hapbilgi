@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import EChart from "@/components/grafik/EChart";
 import BmPerformansGorunumu from "@/components/raporlar/BmPerformansGorunumu";
+import TakimLigAkordeonu from "./TakimLigAkordeonu";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import type {
   SahaBirimTuru,
   SahaLigKullanici,
@@ -240,7 +242,10 @@ export default function FieldLeaguePage({
           <header className={styles.header}>
             <div>
               <div className={styles.eyebrow}><Sparkles className="h-3.5 w-3.5" /> Saha gelişim merkezi</div>
-              <h1>HBLigi — Saha Perspektifi</h1>
+              <h1 className="inline-flex items-center flex-wrap">
+                <span>T-Club Ligi — Saha Perspektifi</span>
+                <SayfaRehberi anahtar="tclub-ligi-saha" className="ml-1.5 -translate-y-1.5" />
+              </h1>
               <p><strong>{veri.kapsam_adi}</strong> · {veri.kapsam_aciklamasi}</p>
             </div>
             <div className={styles.headerActions}>{periyotSecici}</div>
@@ -253,10 +258,17 @@ export default function FieldLeaguePage({
             <StatCard eyebrow="Gerçekleşmiş kayıp" value={ozet.kayip > 0 ? `−${ozet.kayip.toLocaleString("tr-TR")}` : "0"} detail={ozet.kayip > 0 ? `${enBuyukKayip.ad} ana neden` : "Kayıp oluşmadı"} tone="red" icon={ArrowDownRight} />
           </section>
 
-          <BmPerformansGorunumu
-            bmPerformans={veri.bm_performans ?? []}
-            aciklama={`${veri.kapsam_adi} kapsamındaki BM’lerin bölge toplamları ve puan sonucu`}
-          />
+          {veri.gorunum === "yonetici" || veri.gorunum === "admin" ? (
+            <TakimLigAkordeonu
+              satirlar={veri.lig}
+              aciklama={`${veri.kapsam_adi} kapsamındaki takımların, bağlı bölgelerin ve UTT'lerin hiyerarşik lig sıralaması`}
+            />
+          ) : (
+            <BmPerformansGorunumu
+              bmPerformans={veri.bm_performans ?? []}
+              aciklama={`${veri.kapsam_adi} kapsamındaki BM’lerin bölge toplamları ve puan sonucu`}
+            />
+          )}
 
           <div className={styles.bottomGrid}>
             <section className={styles.panel}>
@@ -317,7 +329,10 @@ export default function FieldLeaguePage({
         <header className={styles.header}>
           <div>
             <div className={styles.eyebrow}><Sparkles className="h-3.5 w-3.5" /> Saha gelişim merkezi</div>
-            <h1>HBLigi — Saha Perspektifi</h1>
+            <h1 className="inline-flex items-center flex-wrap">
+              <span>T-Club Ligi — Saha Perspektifi</span>
+              <SayfaRehberi anahtar="tclub-ligi-saha" className="ml-1.5 -translate-y-1.5" />
+            </h1>
             <p><strong>{veri.kapsam_adi}</strong> · {veri.kapsam_aciklamasi}</p>
           </div>
           <div className={styles.headerActions}>{periyotSecici}</div>
