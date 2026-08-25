@@ -1,25 +1,22 @@
-// app/store/[urun_id]/page.tsx
+// app/(panel)/store/[urun_id]/page.tsx
 //
 // Ürün detay + satın alma akışı sayfası.
-//
-// İki bölüm:
-//   - Üst: ürün görseli + ad + fiyat + stok + açıklama
-//   - Alt: satın alma kartı (adet seç + adres seç + satın al butonu)
-//
-// Satın alma akışı:
-//   1. Kullanıcı adet ve adresi seçer
-//   2. "Satın Al" tıklar → onay modalı çıkar
-//   3. Onaylar → POST /store/api/siparis
-//   4. Başarılıysa /store/siparislerim sayfasına yönlendirilir
-//   5. Hata varsa banner gösterilir
-//
-// Firma erişim kontrolü (hbstore_aktif) proxy.ts HBStore bekçisinde merkezi olarak yapılır.
+// Genel site dokusuna (1480px, Nunito, kurumsal tasarım dili) uygun olarak modernize edilmiştir.
 
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
-import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
+import {
+  ChevronLeft,
+  Minus,
+  Package,
+  Plus,
+  ShoppingBag,
+  Sparkles,
+} from "lucide-react";
+import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { STOK_AZ_ESIK } from "@/lib/tclub/store/sabitler";
@@ -29,13 +26,6 @@ import { hbstoreBakiyesiDegistiBildir } from "@/lib/tclub/store/olay";
 interface UrunDetay extends Urun {
   kategori_adi: string | null;
 }
-
-const BORDO = "#bc2d0d";
-const GRI_METIN = "#737373";
-const KOYU_METIN = "#111827";
-const GRI_ZEMIN = "#f9fafb";
-const YESIL = "#16a34a";
-const SARI_TEXT = "#854d0e";
 
 export default function UrunDetayPage() {
   const router = useRouter();
@@ -58,7 +48,6 @@ export default function UrunDetayPage() {
 
   const { mesajlar, hata, basari } = useHataMesaji();
 
-  // Auth + yetki — AuthProvider'dan gelen kullanıcı bilgisini kullan
   useEffect(() => {
     if (authYukleniyor) return;
 
@@ -76,7 +65,6 @@ export default function UrunDetayPage() {
     setYetkiKontrolEdildi(true);
   }, [kullanici, authYukleniyor, router]);
 
-  // Veri yükleme
   const verileriYukle = async () => {
     setYukleniyor(true);
     try {
@@ -98,7 +86,6 @@ export default function UrunDetayPage() {
         const d = await adresRes.json();
         const adresListesi = d.adresler ?? [];
         setAdresler(adresListesi);
-        // Varsayılan adresi seçili yap
         const varsayilan = adresListesi.find((a: Adres) => a.varsayilan_mi);
         if (varsayilan) {
           setSeciliAdresId(varsayilan.adres_id);
@@ -118,23 +105,30 @@ export default function UrunDetayPage() {
   };
 
   useEffect(() => {
-    if (!yetkiKontrolEdildi || !urun_id) return;
+    if (!yetkiKontrolEdildi) return;
     verileriYukle();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [yetkiKontrolEdildi, urun_id]);
 
+  const toplamPuan = (urun?.puan_fiyati ?? 0) * adet;
+  const seciliAdres = adresler.find((a) => a.adres_id === seciliAdresId);
+
   const handleSatinAl = () => {
     if (!urun) return;
-    if (!seciliAdresId) {
-      hata("Lütfen bir teslimat adresi seçiniz.", "validasyon", undefined);
+    if (adresler.length === 0) {
+      hata("Sipariş vermeden önce teslimat adresi eklemelisin.", "adres");
       return;
     }
-    if (adet > urun.stok) {
-      hata("Stok yetersiz.", "validasyon", undefined);
+    if (!seciliAdresId) {
+      hata("Lütfen bir teslimat adresi seçin.", "adres");
       return;
     }
     if (toplamPuan > bakiye) {
-      hata("Puanınız yetersiz.", "validasyon", undefined);
+      hata("Bu sipariş için yeterli bakiyeniz bulunmuyor.", "bakiye");
+      return;
+    }
+    if (adet > urun.stok) {
+      hata(`Maksimum ${urun.stok} adet sipariş verebilirsin.`, "stok");
       return;
     }
     setOnayModal(true);
@@ -143,49 +137,42 @@ export default function UrunDetayPage() {
   const handleOnayla = async () => {
     if (!urun || !seciliAdresId) return;
     setSiparisVeriliyor(true);
+
     try {
       const res = await fetch("/store/api/siparis", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           urun_id: urun.urun_id,
-          adres_id: seciliAdresId,
           adet,
+          adres_id: seciliAdresId,
         }),
       });
+
       const d = await res.json();
+
       if (!res.ok) {
-        hata(d.hata ?? "Sipariş oluşturulamadı.", d.adim, d.detay);
+        hata(d.hata ?? "Sipariş verilemedi.", d.adim, d.detay);
         setSiparisVeriliyor(false);
+        setOnayModal(false);
         return;
       }
 
-      basari("Siparişiniz alındı.");
-      setOnayModal(false);
-      setSiparisVeriliyor(false);
+      basari("Siparişiniz başarıyla alındı.");
       hbstoreBakiyesiDegistiBildir();
-      // Siparişlerim sayfasına yönlendir
       router.push("/store/siparislerim");
     } catch (err) {
-      hata("Sipariş sırasında hata oluştu.", "fetch", String(err));
+      hata("Sipariş verilirken hata oluştu.", "fetch", String(err));
       setSiparisVeriliyor(false);
+      setOnayModal(false);
     }
   };
 
-  // Hesaplama
-  const toplamPuan = urun ? urun.puan_fiyati * adet : 0;
-  const seciliAdres = adresler.find((a) => a.adres_id === seciliAdresId);
-
-  // Loading — auth veya yetki hazır değilse bekle
-  if (authYukleniyor || !kullanici || !yetkiKontrolEdildi) {
+  if (authYukleniyor || !yetkiKontrolEdildi) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: GRI_ZEMIN }}
-      >
+      <div className="flex min-h-screen items-center justify-center bg-[#f7f9fc]">
         <svg
-          className="animate-spin w-6 h-6"
-          style={{ color: GRI_METIN }}
+          className="h-6 w-6 animate-spin text-[#7a8da5]"
           fill="none"
           viewBox="0 0 24 24"
         >
@@ -197,158 +184,132 @@ export default function UrunDetayPage() {
   }
 
   return (
-    <div
-      className="min-h-screen pb-20 md:pb-0"
-      style={{ background: GRI_ZEMIN, fontFamily: "'Nunito', sans-serif" }}
-    >
+    <div className="min-h-full bg-[#f7f9fc] pb-20 md:pb-8" style={{ fontFamily: "'Nunito', sans-serif" }}>
+      <HataMesajiContainer mesajlar={mesajlar} />
 
-      <div className="fixed top-20 right-4 z-40 flex flex-col gap-2 max-w-sm">
-        {mesajlar.map((m, i) => (
-          <HataMesaji key={i} {...m} />
-        ))}
-      </div>
-
-      <div className="max-w-4xl mx-auto px-3 py-3 md:px-4 md:py-6">
-        {/* Geri */}
-        <button
-          onClick={() => router.push("/store")}
-          className="flex items-center gap-1.5 text-xs mb-4 bg-transparent border-none cursor-pointer"
-          style={{ color: GRI_METIN, fontFamily: "'Nunito', sans-serif" }}
+      <main className="mx-auto flex w-full max-w-5xl flex-col gap-5 px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
+        {/* Geri Dönüş Linki */}
+        <Link
+          href="/store"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#71859d] transition-colors hover:text-[#237ac8]"
         >
-          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          HBStore
-        </button>
+          <ChevronLeft size={16} /> HBStore Mağazaya Dön
+        </Link>
 
         {yukleniyor ? (
-          <div
-            className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm"
-            style={{ color: GRI_METIN }}
-          >
-            Yükleniyor...
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-[#dfe7f1] bg-white py-20 text-center shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
+            <svg
+              className="h-7 w-7 animate-spin text-[#237ac8]"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <p className="mt-3 text-xs font-extrabold text-[#627791]">Ürün detayları yükleniyor...</p>
           </div>
         ) : !urun ? (
-          <div
-            className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm"
-            style={{ color: GRI_METIN }}
-          >
-            Ürün bulunamadı.
+          <div className="rounded-2xl border border-[#dfe7f1] bg-white p-12 text-center shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
+            <h3 className="text-base font-extrabold text-[#203653]">Ürün bulunamadı</h3>
+            <p className="mt-1 text-xs font-semibold text-[#8090a4]">İstediğiniz ürün mevcut değil veya kaldırılmış olabilir.</p>
+            <Link
+              href="/store"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#237ac8] px-4 py-2 text-xs font-extrabold text-white hover:bg-[#1d69aa]"
+            >
+              Mağazaya Dön
+            </Link>
           </div>
         ) : !urun.aktif_mi ? (
-          <div
-            className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm"
-            style={{ color: GRI_METIN }}
-          >
-            Bu ürün şu an satışta değil.
+          <div className="rounded-2xl border border-[#dfe7f1] bg-white p-12 text-center shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
+            <h3 className="text-base font-extrabold text-[#203653]">Bu ürün şu an satışta değil</h3>
+            <p className="mt-1 text-xs font-semibold text-[#8090a4]">Ürün geçici olarak siparişe kapatılmıştır.</p>
+            <Link
+              href="/store"
+              className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#237ac8] px-4 py-2 text-xs font-extrabold text-white hover:bg-[#1d69aa]"
+            >
+              Diğer Ürünlere Göz At
+            </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* Sol: görsel */}
-            <div
-              className="bg-white border border-gray-200 rounded-xl overflow-hidden flex items-center justify-center"
-              style={{ aspectRatio: "1 / 1" }}
-            >
-              {urun.gorsel_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={urun.gorsel_url}
-                  alt={urun.ad}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="text-sm" style={{ color: GRI_METIN }}>
-                  Görsel yok
-                </div>
-              )}
-            </div>
-
-            {/* Sağ: bilgi + satın alma */}
-            <div className="flex flex-col gap-4">
-              {/* Bilgi kartı */}
-              <div className="bg-white border border-gray-200 rounded-xl p-4">
-                {urun.kategori_adi && (
-                  <div className="text-xs mb-1.5" style={{ color: GRI_METIN }}>
-                    {urun.kategori_adi}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
+            {/* Sol: Görsel */}
+            <div className="flex flex-col gap-3 md:col-span-6">
+              <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-2xl border border-[#dfe7f1] bg-white p-6 shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
+                {urun.gorsel_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={urun.gorsel_url}
+                    alt={urun.ad}
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center gap-2 text-[#9aa9b9]">
+                    <Package size={48} strokeWidth={1.5} />
+                    <span className="text-xs font-bold">Görsel Yok</span>
                   </div>
                 )}
-                <h1
-                  className="text-xl font-bold mb-2"
-                  style={{ color: KOYU_METIN, margin: 0 }}
-                >
-                  {urun.ad}
-                </h1>
-                <div
-                  className="text-2xl font-bold mb-3"
-                  style={{ color: BORDO }}
-                >
-                  {urun.puan_fiyati} HapPuan
-                </div>
 
-                {/* Stok durumu */}
-                <div className="mb-3">
+                {/* Stok Rozeti */}
+                <div className="absolute right-3.5 top-3.5">
                   {urun.stok === 0 ? (
-                    <span
-                      className="text-[10px] px-2.5 py-1 rounded-full"
-                      style={{
-                        color: BORDO,
-                        background: "#fef2f2",
-                        border: "0.5px solid #fecaca",
-                      }}
-                    >
-                      Stok yok
+                    <span className="rounded-full bg-[#b42318] px-3 py-1 text-[10px] font-black text-white shadow-sm">
+                      Tükendi
                     </span>
                   ) : urun.stok <= STOK_AZ_ESIK ? (
-                    <span
-                      className="text-[10px] px-2.5 py-1 rounded-full"
-                      style={{
-                        color: SARI_TEXT,
-                        background: "#fefce8",
-                        border: "0.5px solid #fde68a",
-                      }}
-                    >
-                      Son {urun.stok} adet
+                    <span className="rounded-full bg-[#fef3c7] px-3 py-1 text-[10px] font-extrabold text-[#92400e] shadow-sm">
+                      Son {urun.stok} Ürün
                     </span>
                   ) : (
-                    <span
-                      className="text-[10px] px-2.5 py-1 rounded-full"
-                      style={{
-                        color: YESIL,
-                        background: "#f0fdf4",
-                        border: "0.5px solid #bbf7d0",
-                      }}
-                    >
-                      Stokta
+                    <span className="rounded-full bg-[#ecfdf3] px-3 py-1 text-[10px] font-extrabold text-[#027a48] shadow-sm">
+                      Stokta Var
                     </span>
                   )}
                 </div>
+              </div>
+            </div>
 
-                {/* Açıklama */}
+            {/* Sağ: Bilgi & Satın Alma */}
+            <div className="flex flex-col gap-4 md:col-span-6">
+              {/* Ürün Tanım Kartı */}
+              <div className="flex flex-col gap-3 rounded-2xl border border-[#dfe7f1] bg-white p-5 shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
+                {urun.kategori_adi && (
+                  <span className="w-fit rounded-lg bg-[#eef6fd] px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#237ac8]">
+                    {urun.kategori_adi}
+                  </span>
+                )}
+                <h1 className="text-xl font-black text-[#1a2d42] md:text-2xl">
+                  {urun.ad}
+                </h1>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-[#16865f]">
+                    {urun.puan_fiyati.toLocaleString("tr-TR")}
+                  </span>
+                  <span className="text-sm font-extrabold text-[#16865f]">HapPuan</span>
+                </div>
+
                 {urun.aciklama && (
-                  <div
-                    className="text-sm whitespace-pre-line"
-                    style={{ color: GRI_METIN, lineHeight: 1.6 }}
-                  >
+                  <div className="border-t border-[#f0f4f8] pt-3 text-xs font-semibold leading-relaxed text-[#6c7f96] whitespace-pre-line">
                     {urun.aciklama}
                   </div>
                 )}
               </div>
 
-              {/* Satın alma kartı */}
+              {/* Satın Alma Form Kartı */}
               {urun.stok > 0 && (
-                <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-3">
-                  {/* Adet seçici */}
+                <div className="flex flex-col gap-4 rounded-2xl border border-[#dfe7f1] bg-white p-5 shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
+                  {/* Adet Seçici */}
                   <div>
-                    <label className="text-xs font-semibold text-gray-700 block mb-1.5">
-                      Adet
+                    <label className="mb-1.5 block text-xs font-extrabold uppercase tracking-wider text-[#7a8da5]">
+                      Sipariş Adedi
                     </label>
                     <div className="flex items-center gap-2">
                       <button
+                        type="button"
                         onClick={() => setAdet((a) => Math.max(1, a - 1))}
-                        className="w-8 h-8 rounded-lg border bg-white cursor-pointer text-sm"
-                        style={{ border: "0.5px solid #e5e7eb", color: KOYU_METIN }}
+                        disabled={adet <= 1}
+                        className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#dce5ee] bg-[#f8fafc] text-sm font-bold text-[#475b75] hover:bg-[#edf3f8] disabled:opacity-40"
                       >
-                        −
+                        <Minus size={14} />
                       </button>
                       <input
                         type="number"
@@ -361,187 +322,149 @@ export default function UrunDetayPage() {
                             setAdet(v);
                           }
                         }}
-                        className="w-16 text-center px-2 py-1 text-sm rounded-lg bg-white"
-                        style={{
-                          border: "0.5px solid #e5e7eb",
-                          color: KOYU_METIN,
-                          fontFamily: "'Nunito', sans-serif",
-                        }}
+                        className="h-9 w-16 rounded-xl border border-[#dce5ee] bg-white text-center text-sm font-black text-[#1f334d] focus:border-[#237ac8] focus:outline-none"
                       />
                       <button
+                        type="button"
                         onClick={() => setAdet((a) => Math.min(urun.stok, a + 1))}
-                        className="w-8 h-8 rounded-lg border bg-white cursor-pointer text-sm"
-                        style={{ border: "0.5px solid #e5e7eb", color: KOYU_METIN }}
+                        disabled={adet >= urun.stok}
+                        className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#dce5ee] bg-[#f8fafc] text-sm font-bold text-[#475b75] hover:bg-[#edf3f8] disabled:opacity-40"
                       >
-                        +
+                        <Plus size={14} />
                       </button>
-                      <span className="text-xs ml-1" style={{ color: GRI_METIN }}>
-                        / {urun.stok} stok
+                      <span className="ml-2 text-xs font-semibold text-[#8a9bb0]">
+                        (Maks. {urun.stok} stok)
                       </span>
                     </div>
                   </div>
 
-                  {/* Adres seçici */}
+                  {/* Adres Seçici */}
                   <div>
-                    <label className="text-xs font-semibold text-gray-700 block mb-1.5">
-                      Teslimat Adresi
-                    </label>
-                    {adresler.length === 0 ? (
-                      <div
-                        className="text-xs px-3 py-2.5 rounded-lg"
-                        style={{
-                          background: "#fefce8",
-                          border: "0.5px solid #fde68a",
-                          color: SARI_TEXT,
-                        }}
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <label className="block text-xs font-extrabold uppercase tracking-wider text-[#7a8da5]">
+                        Teslimat Adresi
+                      </label>
+                      <Link
+                        href="/store/adreslerim"
+                        className="text-xs font-bold text-[#237ac8] hover:underline"
                       >
-                        Hiç adresin yok.{" "}
-                        <button
-                          onClick={() => router.push("/store/adreslerim")}
-                          className="font-semibold underline bg-transparent border-none cursor-pointer"
-                          style={{ color: SARI_TEXT }}
-                        >
-                          Adres ekle
-                        </button>
+                        Adresleri Yönet
+                      </Link>
+                    </div>
+
+                    {adresler.length === 0 ? (
+                      <div className="rounded-xl border border-[#fde68a] bg-[#fefce8] p-3 text-xs font-semibold text-[#92400e]">
+                        Kayıtlı teslimat adresiniz bulunmuyor.{" "}
+                        <Link href="/store/adreslerim" className="font-extrabold underline">
+                          Adres ekleyin
+                        </Link>
                       </div>
                     ) : (
                       <select
                         value={seciliAdresId}
                         onChange={(e) => setSeciliAdresId(e.target.value)}
-                        className="w-full px-3 py-2 text-sm rounded-lg bg-white cursor-pointer"
-                        style={{
-                          border: "0.5px solid #e5e7eb",
-                          fontFamily: "'Nunito', sans-serif",
-                          color: KOYU_METIN,
-                        }}
+                        className="w-full rounded-xl border border-[#dce5ee] bg-[#f8fafc] px-3.5 py-2.5 text-xs font-bold text-[#1f334d] transition-colors focus:border-[#237ac8] focus:bg-white focus:outline-none"
                       >
                         {adresler.map((a) => (
                           <option key={a.adres_id} value={a.adres_id}>
-                            {a.baslik} — {a.ilce} / {a.il}
-                            {a.varsayilan_mi ? " (varsayılan)" : ""}
+                            {a.baslik} — {a.ilce} / {a.il} {a.varsayilan_mi ? "★ (Varsayılan)" : ""}
                           </option>
                         ))}
                       </select>
                     )}
                   </div>
 
-                  {/* Toplam + bakiye */}
-                  <div
-                    className="rounded-lg px-3 py-2.5 flex flex-col gap-1"
-                    style={{ background: GRI_ZEMIN }}
-                  >
-                    <div className="flex justify-between items-center text-xs" style={{ color: GRI_METIN }}>
-                      <span>Toplam</span>
-                      <span className="font-semibold" style={{ color: KOYU_METIN }}>
-                        {toplamPuan} HapPuan
-                      </span>
+                  {/* Özet Şerit */}
+                  <div className="flex flex-col gap-2 rounded-xl bg-[#f8fafc] p-3.5 text-xs">
+                    <div className="flex items-center justify-between text-[#7b8da5]">
+                      <span className="font-semibold">Toplam Tutar:</span>
+                      <strong className="text-sm font-black text-[#1a2d42]">
+                        {toplamPuan.toLocaleString("tr-TR")} Puan
+                      </strong>
                     </div>
-                    <div className="flex justify-between items-center text-xs" style={{ color: GRI_METIN }}>
-                      <span>Mevcut Bakiyeniz</span>
-                      <span
-                        className="font-semibold"
-                        style={{ color: toplamPuan > bakiye ? BORDO : YESIL }}
-                      >
-                        {bakiye} HapPuan
-                      </span>
+                    <div className="flex items-center justify-between text-[#7b8da5]">
+                      <span className="font-semibold">Mevcut Bakiyeniz:</span>
+                      <strong className={`font-black ${toplamPuan > bakiye ? "text-[#b42318]" : "text-[#16865f]"}`}>
+                        {bakiye.toLocaleString("tr-TR")} Puan
+                      </strong>
                     </div>
                   </div>
 
-                  {/* Satın al butonu */}
+                  {/* Satın Alma Butonu */}
                   <button
+                    type="button"
                     onClick={handleSatinAl}
-                    disabled={
-                      adresler.length === 0 ||
-                      !seciliAdresId ||
+                    disabled={adresler.length === 0 || !seciliAdresId || toplamPuan > bakiye}
+                    className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 text-xs font-extrabold transition-colors ${
                       toplamPuan > bakiye
-                    }
-                    className="w-full px-4 py-2.5 rounded-lg text-white text-sm font-semibold cursor-pointer border-none"
-                    style={{
-                      background: BORDO,
-                      opacity:
-                        adresler.length === 0 ||
-                        !seciliAdresId ||
-                        toplamPuan > bakiye
-                          ? 0.5
-                          : 1,
-                      fontFamily: "'Nunito', sans-serif",
-                    }}
+                        ? "cursor-not-allowed bg-[#fee4e2] text-[#b42318]"
+                        : adresler.length === 0
+                        ? "cursor-not-allowed bg-[#e2e8f0] text-[#94a3b8]"
+                        : "bg-[#237ac8] text-white shadow-sm hover:bg-[#1d69aa]"
+                    }`}
                   >
-                    {toplamPuan > bakiye ? "Yetersiz Bakiye" : "Satın Al"}
+                    <ShoppingBag size={16} />
+                    {toplamPuan > bakiye
+                      ? "Yetersiz Bakiye"
+                      : adresler.length === 0
+                      ? "Teslimat Adresi Gerekli"
+                      : "Siparişi Onayla & Satın Al"}
                   </button>
                 </div>
               )}
             </div>
           </div>
         )}
-      </div>
+      </main>
 
-      {/* Onay modalı */}
+      {/* Onay Modalı */}
       {onayModal && urun && seciliAdres && (
-        <div
-          className="fixed inset-0 flex items-center justify-center z-50 p-4"
-          style={{ background: "rgba(0,0,0,0.5)" }}
-        >
-          <div
-            className="bg-white rounded-xl border border-gray-200 shadow-lg w-full max-w-md p-5 flex flex-col gap-3"
-            style={{ fontFamily: "'Nunito', sans-serif" }}
-          >
-            <div className="text-base font-semibold" style={{ color: KOYU_METIN }}>
-              Siparişi Onayla
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="flex w-full max-w-md flex-col gap-4 rounded-2xl border border-[#dfe7f1] bg-white p-6 shadow-2xl">
+            <div>
+              <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#3589d8]">
+                <Sparkles size={14} /> Sipariş Onayı
+              </div>
+              <h2 className="mt-1 text-lg font-extrabold text-[#1a2d42]">
+                Siparişi Tamamlamak İstiyor Musunuz?
+              </h2>
             </div>
 
-            <div className="text-sm" style={{ color: GRI_METIN, lineHeight: 1.6 }}>
-              <strong style={{ color: KOYU_METIN }}>
-                {adet} adet {urun.ad}
-              </strong>{" "}
-              için{" "}
-              <strong style={{ color: BORDO }}>{toplamPuan} HapPuan</strong>{" "}
-              düşülecek.
-            </div>
+            <p className="text-xs font-semibold leading-relaxed text-[#627791]">
+              <strong className="text-[#1a2d42]">{adet} adet {urun.ad}</strong> için toplam{" "}
+              <strong className="text-[#16865f]">{toplamPuan.toLocaleString("tr-TR")} HapPuan</strong> bakiyenizden düşülecektir.
+            </p>
 
-            <div
-              className="rounded-lg px-3 py-2.5 text-xs"
-              style={{ background: GRI_ZEMIN, color: GRI_METIN }}
-            >
-              <div className="font-semibold mb-0.5" style={{ color: KOYU_METIN }}>
+            <div className="rounded-xl border border-[#e4ecf3] bg-[#f8fafc] p-3.5 text-xs text-[#5f738c]">
+              <span className="block text-[10px] font-extrabold uppercase tracking-wider text-[#8a9bb0]">
                 Teslimat Adresi
-              </div>
-              <div>
-                {seciliAdres.alici_adi} · {seciliAdres.telefon}
-              </div>
-              <div className="mt-0.5">{seciliAdres.adres_detay}</div>
-              <div>
-                {seciliAdres.ilce} / {seciliAdres.il}
-              </div>
+              </span>
+              <strong className="mt-1 block text-sm text-[#1e3450]">{seciliAdres.alici_adi}</strong>
+              <span className="block text-[11px] font-medium text-[#7b8ca5]">{seciliAdres.telefon}</span>
+              <p className="mt-1 text-xs text-[#475b75]">{seciliAdres.adres_detay}</p>
+              <span className="mt-0.5 block text-xs font-bold text-[#203653]">{seciliAdres.ilce} / {seciliAdres.il}</span>
             </div>
 
-            <div className="text-xs" style={{ color: GRI_METIN }}>
-              Siparişin 12 saat içinde iptal edebilirsin. Bu süreden sonra
-              veya sipariş kargoya verildikten sonra iptal mümkün olmayacak.
-            </div>
+            <p className="text-[11px] font-semibold text-[#8a9bb0]">
+              ℹ️ Siparişinizi 12 saat içinde iptal edebilirsiniz. Kargo sürecine geçtikten sonra iptal işlemi yapılamaz.
+            </p>
 
-            <div className="flex gap-2.5 justify-end mt-1">
+            <div className="flex gap-2.5 justify-end pt-2">
               <button
+                type="button"
                 onClick={() => setOnayModal(false)}
                 disabled={siparisVeriliyor}
-                className="px-4 py-2 rounded-lg border bg-transparent text-gray-500 text-xs cursor-pointer"
-                style={{
-                  border: "0.5px solid #e5e7eb",
-                  opacity: siparisVeriliyor ? 0.4 : 1,
-                }}
+                className="rounded-xl border border-[#dce5ee] bg-white px-4 py-2.5 text-xs font-extrabold text-[#5f738c] hover:bg-[#f8fafc]"
               >
                 Vazgeç
               </button>
               <button
+                type="button"
                 onClick={handleOnayla}
                 disabled={siparisVeriliyor}
-                className="px-5 py-2 rounded-lg border-none text-white text-xs font-semibold cursor-pointer"
-                style={{
-                  background: BORDO,
-                  opacity: siparisVeriliyor ? 0.5 : 1,
-                }}
+                className="rounded-xl bg-[#237ac8] px-5 py-2.5 text-xs font-extrabold text-white shadow-sm hover:bg-[#1d69aa] disabled:opacity-50"
               >
-                {siparisVeriliyor ? "İşleniyor..." : "Onayla ve Sipariş Ver"}
+                {siparisVeriliyor ? "Sipariş Veriliyor..." : "Onayla ve Siparişi Tamamla"}
               </button>
             </div>
           </div>

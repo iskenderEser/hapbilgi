@@ -1,32 +1,30 @@
-// app/store/adreslerim/page.tsx
+// app/(panel)/store/adreslerim/page.tsx
 //
 // Kullanıcının adres yönetimi sayfası. UTT/KD_UTT/BM görür.
-//
-// İşlevler:
-//   - Adresleri listeler (varsayılan üstte)
-//   - Yeni adres ekle (modal)
-//   - Düzenle (modal)
-//   - Sil (onaylı)
-//   - Varsayılan yap
-//
-// Firma erişim kontrolü (hbstore_aktif) proxy.ts HBStore bekçisinde merkezi olarak yapılır.
+// Genel site dokusuna (1480px, Nunito, kurumsal kartlar) uygun olarak modernize edilmiştir.
 
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
+import {
+  Check,
+  Edit2,
+  MapPin,
+  Package,
+  Plus,
+  ShoppingBag,
+  Sparkles,
+  Star,
+  Trash2,
+  XCircle,
+} from "lucide-react";
+import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { STORE_ALABILEN_ROLLER } from "@/lib/utils/roller";
 import { useAuth } from "@/app/providers/AuthProvider";
 import AdresModal from "@/components/store/AdresModal";
 import type { Adres } from "@/lib/tclub/store/tipler";
-
-const BORDO = "#bc2d0d";
-const MAVI = "#56aeff";
-const GRI_METIN = "#737373";
-const KOYU_METIN = "#111827";
-const GRI_ZEMIN = "#f9fafb";
-const YESIL = "#16a34a";
 
 export default function AdreslerimPage() {
   const router = useRouter();
@@ -43,7 +41,6 @@ export default function AdreslerimPage() {
 
   const { mesajlar, hata, basari } = useHataMesaji();
 
-  // Auth + yetki — AuthProvider'dan gelen kullanıcı bilgisini kullan
   useEffect(() => {
     if (authYukleniyor) return;
 
@@ -61,7 +58,6 @@ export default function AdreslerimPage() {
     setYetkiKontrolEdildi(true);
   }, [kullanici, authYukleniyor, router]);
 
-  // Adres listesi
   const adresleriYukle = async () => {
     setYukleniyor(true);
     try {
@@ -82,7 +78,6 @@ export default function AdreslerimPage() {
   useEffect(() => {
     if (!yetkiKontrolEdildi) return;
     adresleriYukle();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [yetkiKontrolEdildi]);
 
   const handleYeniEkle = () => {
@@ -103,15 +98,15 @@ export default function AdreslerimPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           adres_id: adres.adres_id,
-          sadece_varsayilan_yap: true,
+          varsayilan_mi: true,
         }),
       });
       const d = await res.json();
       if (!res.ok) {
-        hata(d.hata ?? "Varsayılan ayarlanamadı.", d.adim, d.detay);
+        hata(d.hata ?? "Varsayılan adres güncellenemedi.", d.adim, d.detay);
         return;
       }
-      basari("Varsayılan adres güncellendi.");
+      basari("Varsayılan teslimat adresi güncellendi.");
       await adresleriYukle();
     } catch (err) {
       hata("İşlem sırasında hata oluştu.", "fetch", String(err));
@@ -122,17 +117,16 @@ export default function AdreslerimPage() {
     if (!silinecek) return;
     setSilmeIslemi(true);
     try {
-      const res = await fetch(
-        `/store/api/adres?adres_id=${silinecek.adres_id}`,
-        { method: "DELETE" }
-      );
+      const res = await fetch(`/store/api/adres?adres_id=${silinecek.adres_id}`, {
+        method: "DELETE",
+      });
       const d = await res.json();
       if (!res.ok) {
         hata(d.hata ?? "Adres silinemedi.", d.adim, d.detay);
         setSilmeIslemi(false);
         return;
       }
-      basari("Adres silindi.");
+      basari("Adres başarıyla silindi.");
       setSilinecek(null);
       setSilmeIslemi(false);
       await adresleriYukle();
@@ -142,16 +136,11 @@ export default function AdreslerimPage() {
     }
   };
 
-  // Loading — auth veya yetki hazır değilse bekle
-  if (authYukleniyor || !kullanici || !yetkiKontrolEdildi) {
+  if (authYukleniyor || !yetkiKontrolEdildi) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: GRI_ZEMIN }}
-      >
+      <div className="flex min-h-screen items-center justify-center bg-[#f7f9fc]">
         <svg
-          className="animate-spin w-6 h-6"
-          style={{ color: GRI_METIN }}
+          className="h-6 w-6 animate-spin text-[#7a8da5]"
           fill="none"
           viewBox="0 0 24 24"
         >
@@ -163,155 +152,152 @@ export default function AdreslerimPage() {
   }
 
   return (
-    <div
-      className="min-h-screen pb-20 md:pb-0"
-      style={{ background: GRI_ZEMIN, fontFamily: "'Nunito', sans-serif" }}
-    >
+    <div className="min-h-full bg-[#f7f9fc] pb-20 md:pb-8" style={{ fontFamily: "'Nunito', sans-serif" }}>
+      <HataMesajiContainer mesajlar={mesajlar} />
 
-      {/* Hata/başarı mesajları */}
-      <div className="fixed top-20 right-4 z-40 flex flex-col gap-2 max-w-sm">
-        {mesajlar.map((m, i) => (
-          <HataMesaji key={i} {...m} />
-        ))}
-      </div>
-
-      <div className="max-w-3xl mx-auto px-3 py-3 md:px-4 md:py-6">
-        {/* Geri linki */}
-        <button
-          onClick={() => router.push("/store")}
-          className="flex items-center gap-1.5 text-xs mb-4 bg-transparent border-none cursor-pointer"
-          style={{ color: GRI_METIN, fontFamily: "'Nunito', sans-serif" }}
-        >
-          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          HBStore
-        </button>
-
-        {/* Başlık + Yeni Ekle butonu */}
-        <div className="flex items-start justify-between gap-3 mb-5 flex-wrap">
-          <div>
-            <h1 className="text-xl font-bold" style={{ color: KOYU_METIN, margin: 0 }}>
+      <main className="mx-auto flex w-full max-w-[1480px] flex-col gap-5 px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
+        <header className="flex flex-wrap items-end justify-between gap-4">
+          <div className="min-w-0">
+            <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">
+              <Sparkles className="size-3.5" /> HBStore · Adres Yönetimi
+            </p>
+            <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">
               Adreslerim
             </h1>
-            <div className="text-xs mt-1" style={{ color: GRI_METIN }}>
-              Sipariş verirken kullanacağın teslimat adreslerini yönet.
-            </div>
+            <p className="mt-1 max-w-3xl text-xs font-semibold leading-5 text-[#7b8da3] md:text-sm">
+              Siparişlerinizde kullanacağınız teslimat adreslerini yönetin ve varsayılan adresinizi belirleyin.
+            </p>
           </div>
-          <button
-            onClick={handleYeniEkle}
-            className="px-4 py-2 rounded-lg border-none text-white text-xs font-semibold cursor-pointer"
-            style={{ background: MAVI, fontFamily: "'Nunito', sans-serif" }}
-          >
-            + Yeni Adres
-          </button>
-        </div>
 
-        {/* Adres listesi */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleYeniEkle}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#237ac8] px-4 py-2 text-xs font-extrabold text-white shadow-sm transition-colors hover:bg-[#1d69aa]"
+            >
+              <Plus size={15} /> Yeni Adres Ekle
+            </button>
+            <Link
+              href="/store"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#d7e1ec] bg-white px-3.5 py-2 text-xs font-extrabold text-[#45627f] shadow-sm transition-colors hover:bg-[#f6f9fc]"
+            >
+              <ShoppingBag size={14} /> Mağaza
+            </Link>
+            <Link
+              href="/store/siparislerim"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#d7e1ec] bg-white px-3.5 py-2 text-xs font-extrabold text-[#45627f] shadow-sm transition-colors hover:bg-[#f6f9fc]"
+            >
+              <Package size={14} /> Siparişlerim
+            </Link>
+          </div>
+        </header>
+
         {yukleniyor ? (
-          <div
-            className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm"
-            style={{ color: GRI_METIN }}
-          >
-            Yükleniyor...
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-[#dfe7f1] bg-white py-20 text-center shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
+            <svg
+              className="h-7 w-7 animate-spin text-[#237ac8]"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <p className="mt-3 text-xs font-extrabold text-[#627791]">Adresler yükleniyor...</p>
           </div>
         ) : adresler.length === 0 ? (
-          <div
-            className="bg-white border border-gray-200 rounded-xl p-10 text-center text-sm"
-            style={{ color: GRI_METIN }}
-          >
-            Henüz adres eklemedin. Sipariş verebilmek için en az bir adres eklemen gerekir.
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-[#dfe7f1] bg-white py-16 text-center shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
+            <span className="flex size-12 items-center justify-center rounded-2xl bg-[#f0f4f9] text-[#7a8da5]">
+              <MapPin size={24} />
+            </span>
+            <h3 className="mt-3 text-sm font-extrabold text-[#203653]">Kayıtlı adresiniz bulunmuyor</h3>
+            <p className="mt-1 max-w-sm text-xs font-semibold text-[#7b8da5]">
+              Mağazadan sipariş verebilmek için teslimat adresi tanımlamanız gerekir.
+            </p>
+            <button
+              type="button"
+              onClick={handleYeniEkle}
+              className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#237ac8] px-4 py-2 text-xs font-extrabold text-white shadow-sm hover:bg-[#1d69aa]"
+            >
+              <Plus size={15} /> İlk Adresinizi Ekleyin
+            </button>
           </div>
         ) : (
-          <div className="flex flex-col gap-2.5">
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {adresler.map((a) => (
-              <div
+              <article
                 key={a.adres_id}
-                className="bg-white rounded-xl px-4 py-3"
-                style={{
-                  border: a.varsayilan_mi
-                    ? `0.5px solid ${YESIL}`
-                    : "0.5px solid #e5e7eb",
-                }}
+                className={`flex flex-col justify-between overflow-hidden rounded-2xl border bg-white p-5 shadow-[0_6px_18px_rgba(31,55,90,0.035)] transition-all ${
+                  a.varsayilan_mi
+                    ? "border-[#a3d3be] ring-2 ring-[#e2f5ec]"
+                    : "border-[#dfe7f1] hover:border-[#cbd8e6]"
+                }`}
               >
-                <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <div
-                        className="text-sm font-semibold"
-                        style={{ color: KOYU_METIN }}
-                      >
+                <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <MapPin size={16} className={a.varsayilan_mi ? "text-[#16865f]" : "text-[#237ac8]"} />
+                      <strong className="text-base font-extrabold text-[#1a2d42]">
                         {a.baslik}
-                      </div>
-                      {a.varsayilan_mi && (
-                        <span
-                          className="text-[10px] px-2 py-0.5 rounded-full"
-                          style={{
-                            color: YESIL,
-                            background: "#f0fdf4",
-                            border: "0.5px solid #bbf7d0",
-                          }}
-                        >
-                          Varsayılan
-                        </span>
-                      )}
+                      </strong>
                     </div>
-                    <div className="text-sm" style={{ color: KOYU_METIN }}>
-                      {a.alici_adi} · {a.telefon}
-                    </div>
-                    <div className="text-xs mt-1" style={{ color: GRI_METIN }}>
-                      {a.adres_detay}
-                    </div>
-                    <div className="text-xs mt-0.5" style={{ color: GRI_METIN }}>
-                      {a.ilce} / {a.il}{a.posta_kodu ? ` · ${a.posta_kodu}` : ""}
-                    </div>
+
+                    {a.varsayilan_mi && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#ecfdf3] px-2.5 py-0.5 text-[9px] font-black text-[#027a48] shadow-sm">
+                        <Check size={10} strokeWidth={3} /> Varsayılan
+                      </span>
+                    )}
                   </div>
 
-                  <div className="flex flex-col gap-1.5 flex-shrink-0">
-                    {!a.varsayilan_mi && (
-                      <button
-                        onClick={() => handleVarsayilanYap(a)}
-                        className="px-3 py-1 rounded-lg border text-xs cursor-pointer bg-white"
-                        style={{
-                          border: "0.5px solid #e5e7eb",
-                          color: GRI_METIN,
-                          fontFamily: "'Nunito', sans-serif",
-                        }}
-                      >
-                        Varsayılan Yap
-                      </button>
-                    )}
+                  <div className="mt-3 flex flex-col gap-1 text-xs">
+                    <span className="font-extrabold text-[#243a53]">{a.alici_adi}</span>
+                    <span className="font-medium text-[#7b8da5]">{a.telefon}</span>
+                    <p className="mt-1 text-[#50637a] leading-relaxed">{a.adres_detay}</p>
+                    <span className="mt-1 font-bold text-[#203653]">
+                      {a.ilce} / {a.il} {a.posta_kodu ? `(${a.posta_kodu})` : ""}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between border-t border-[#edf1f5] pt-3">
+                  {!a.varsayilan_mi ? (
                     <button
-                      onClick={() => handleDuzenle(a)}
-                      className="px-3 py-1 rounded-lg border text-xs cursor-pointer bg-white"
-                      style={{
-                        border: "0.5px solid #e5e7eb",
-                        color: KOYU_METIN,
-                        fontFamily: "'Nunito', sans-serif",
-                      }}
+                      type="button"
+                      onClick={() => handleVarsayilanYap(a)}
+                      className="inline-flex items-center gap-1 text-xs font-extrabold text-[#237ac8] hover:underline"
                     >
-                      Düzenle
+                      <Star size={12} /> Varsayılan Yap
+                    </button>
+                  ) : (
+                    <span className="text-[11px] font-semibold text-[#8a9bb0]">
+                      Ana Teslimat Adresi
+                    </span>
+                  )}
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleDuzenle(a)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#dce5ee] bg-[#f8fafc] text-[#556987] hover:bg-[#edf3f8]"
+                      title="Düzenle"
+                    >
+                      <Edit2 size={13} />
                     </button>
                     <button
+                      type="button"
                       onClick={() => setSilinecek(a)}
-                      className="px-3 py-1 rounded-lg border text-xs cursor-pointer bg-white"
-                      style={{
-                        border: `0.5px solid ${BORDO}`,
-                        color: BORDO,
-                        fontFamily: "'Nunito', sans-serif",
-                      }}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#fbd5d5] bg-[#fff5f5] text-[#b42318] hover:bg-[#fee2e2]"
+                      title="Sil"
                     >
-                      Sil
+                      <Trash2 size={13} />
                     </button>
                   </div>
                 </div>
-              </div>
+              </article>
             ))}
-          </div>
+          </section>
         )}
-      </div>
+      </main>
 
-      {/* Ekle/düzenle modalı */}
       <AdresModal
         acik={modalAcik}
         mevcutAdres={duzenlenecek}
@@ -324,48 +310,38 @@ export default function AdreslerimPage() {
         basari={basari}
       />
 
-      {/* Silme onay modalı */}
       {silinecek && (
-        <div
-          className="fixed inset-0 flex items-center justify-center z-50 p-4"
-          style={{ background: "rgba(0,0,0,0.5)" }}
-        >
-          <div
-            className="bg-white rounded-xl border border-gray-200 shadow-lg w-full max-w-sm p-5"
-            style={{ fontFamily: "'Nunito', sans-serif" }}
-          >
-            <div className="text-base font-semibold mb-2" style={{ color: KOYU_METIN }}>
-              Adresi sil
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-[#dfe7f1] bg-white p-6 shadow-2xl">
+            <div>
+              <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[#b42318]">
+                <XCircle size={14} /> Adres Silme
+              </div>
+              <h2 className="mt-1 text-lg font-extrabold text-[#1a2d42]">
+                Adresi Silmek İstiyor Musunuz?
+              </h2>
             </div>
-            <div className="text-sm mb-5" style={{ color: GRI_METIN }}>
-              <span className="font-semibold" style={{ color: KOYU_METIN }}>
-                {silinecek.baslik}
-              </span>{" "}
-              başlıklı adresi silmek istediğine emin misin? Bu işlem geri alınamaz.
-            </div>
-            <div className="flex gap-2.5 justify-end">
+
+            <p className="text-xs font-semibold leading-relaxed text-[#627791]">
+              <strong className="text-[#1a2d42]">{silinecek.baslik}</strong> başlıklı adres kalıcı olarak silinecektir. Bu işlem geri alınamaz.
+            </p>
+
+            <div className="flex gap-2.5 justify-end pt-2">
               <button
+                type="button"
                 onClick={() => setSilinecek(null)}
                 disabled={silmeIslemi}
-                className="px-4 py-2 rounded-lg border bg-transparent text-xs cursor-pointer"
-                style={{
-                  border: "0.5px solid #e5e7eb",
-                  color: GRI_METIN,
-                  opacity: silmeIslemi ? 0.4 : 1,
-                }}
+                className="rounded-xl border border-[#dce5ee] bg-white px-4 py-2.5 text-xs font-extrabold text-[#5f738c] hover:bg-[#f8fafc]"
               >
-                İptal
+                Vazgeç
               </button>
               <button
+                type="button"
                 onClick={handleSilOnayla}
                 disabled={silmeIslemi}
-                className="px-4 py-2 rounded-lg border-none text-white text-xs font-semibold cursor-pointer"
-                style={{
-                  background: BORDO,
-                  opacity: silmeIslemi ? 0.5 : 1,
-                }}
+                className="rounded-xl bg-[#b42318] px-5 py-2.5 text-xs font-extrabold text-white shadow-sm hover:bg-[#991b1b] disabled:opacity-50"
               >
-                {silmeIslemi ? "Siliniyor..." : "Sil"}
+                {silmeIslemi ? "Siliniyor..." : "Evet, Sil"}
               </button>
             </div>
           </div>

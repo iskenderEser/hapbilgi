@@ -10,11 +10,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MapPin, X } from "lucide-react";
 import type { Adres, AdresInput } from "@/lib/tclub/store/tipler";
 
 interface Props {
   acik: boolean;
-  mevcutAdres: Adres | null;  // null → ekleme modu; dolu → düzenleme modu
+  mevcutAdres: Adres | null;
   onKapat: () => void;
   onKaydedildi: () => void | Promise<void>;
   hata: (mesaj: string, adim?: string, detay?: string) => void;
@@ -43,7 +44,6 @@ export default function AdresModal({
   const [form, setForm] = useState<AdresInput>(BOS_INPUT);
   const [kaydediliyor, setKaydediliyor] = useState(false);
 
-  // Modal her açılışta state'i sıfırla / dolu hale getir
   useEffect(() => {
     if (!acik) return;
     if (mevcutAdres) {
@@ -67,7 +67,6 @@ export default function AdresModal({
   };
 
   const handleKaydet = async () => {
-    // Basit validasyon
     const zorunlular: (keyof AdresInput)[] = [
       "baslik", "alici_adi", "telefon", "il", "ilce", "adres_detay",
     ];
@@ -99,7 +98,7 @@ export default function AdresModal({
         return;
       }
 
-      basari(mevcutAdres ? "Adres güncellendi." : "Adres eklendi.");
+      basari(mevcutAdres ? "Adres güncellendi." : "Adres başarıyla eklendi.");
       setKaydediliyor(false);
       await onKaydedildi();
       onKapat();
@@ -111,83 +110,79 @@ export default function AdresModal({
 
   if (!acik) return null;
 
-  const inputStili: React.CSSProperties = {
-    border: "0.5px solid #e5e7eb",
-    fontFamily: "'Nunito', sans-serif",
-    color: "#374151",
-  };
-
   return (
-    <div
-      className="fixed inset-0 flex items-center justify-center z-50 p-4"
-      style={{ background: "rgba(0,0,0,0.5)" }}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div
-        className="bg-white rounded-xl border border-gray-200 shadow-lg w-full max-w-md flex flex-col"
-        style={{ maxHeight: "90vh" }}
+        className="flex w-full max-w-lg flex-col rounded-2xl border border-[#dfe7f1] bg-white shadow-2xl"
+        style={{ maxHeight: "90vh", fontFamily: "'Nunito', sans-serif" }}
       >
         {/* Başlık */}
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <div className="text-base font-semibold text-gray-900">
-            {mevcutAdres ? "Adres Düzenle" : "Yeni Adres Ekle"}
+        <div className="flex items-center justify-between border-b border-[#edf1f5] px-6 py-4">
+          <div className="flex items-center gap-2">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-[#edf6fd] text-[#237ac8]">
+              <MapPin size={16} />
+            </div>
+            <div>
+              <h2 className="text-base font-extrabold text-[#1a2d42]">
+                {mevcutAdres ? "Adresi Düzenle" : "Yeni Teslimat Adresi Ekle"}
+              </h2>
+            </div>
           </div>
           <button
+            type="button"
             onClick={onKapat}
             disabled={kaydediliyor}
-            className="text-gray-500 text-lg cursor-pointer border-none bg-transparent p-1"
-            style={{ opacity: kaydediliyor ? 0.4 : 1 }}
+            className="flex size-8 items-center justify-center rounded-lg text-[#7b8da5] hover:bg-[#f0f4f9] disabled:opacity-40"
           >
-            ✕
+            <X size={18} />
           </button>
         </div>
 
-        {/* Form */}
-        <div className="px-5 py-4 flex flex-col gap-3 overflow-y-auto">
-          <FormAlani label="Başlık (örn. Ev, Ofis)">
+        {/* Form Alanı */}
+        <div className="flex flex-col gap-3.5 overflow-y-auto px-6 py-4">
+          <FormAlani label="Adres Başlığı (örn. Evim, Eczane, Ofis)">
             <input
               type="text"
               value={form.baslik}
               onChange={(e) => handleChange("baslik", e.target.value)}
               disabled={kaydediliyor}
-              className="w-full px-3 py-2 text-sm rounded-lg bg-white"
-              style={inputStili}
-              placeholder="Ev"
+              className="w-full rounded-xl border border-[#dce5ee] bg-[#f8fafc] px-3.5 py-2 text-xs font-bold text-[#1f334d] placeholder-[#95a6bb] focus:border-[#237ac8] focus:bg-white focus:outline-none"
+              placeholder="Örn: Ev Adresim"
             />
           </FormAlani>
 
-          <FormAlani label="Alıcı Adı Soyadı">
-            <input
-              type="text"
-              value={form.alici_adi}
-              onChange={(e) => handleChange("alici_adi", e.target.value)}
-              disabled={kaydediliyor}
-              className="w-full px-3 py-2 text-sm rounded-lg bg-white"
-              style={inputStili}
-              placeholder="Ad Soyad"
-            />
-          </FormAlani>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <FormAlani label="Alıcı Adı Soyadı">
+              <input
+                type="text"
+                value={form.alici_adi}
+                onChange={(e) => handleChange("alici_adi", e.target.value)}
+                disabled={kaydediliyor}
+                className="w-full rounded-xl border border-[#dce5ee] bg-[#f8fafc] px-3.5 py-2 text-xs font-bold text-[#1f334d] placeholder-[#95a6bb] focus:border-[#237ac8] focus:bg-white focus:outline-none"
+                placeholder="Ad Soyad"
+              />
+            </FormAlani>
 
-          <FormAlani label="Telefon">
-            <input
-              type="tel"
-              value={form.telefon}
-              onChange={(e) => handleChange("telefon", e.target.value)}
-              disabled={kaydediliyor}
-              className="w-full px-3 py-2 text-sm rounded-lg bg-white"
-              style={inputStili}
-              placeholder="05XX XXX XX XX"
-            />
-          </FormAlani>
+            <FormAlani label="İletişim Telefonu">
+              <input
+                type="tel"
+                value={form.telefon}
+                onChange={(e) => handleChange("telefon", e.target.value)}
+                disabled={kaydediliyor}
+                className="w-full rounded-xl border border-[#dce5ee] bg-[#f8fafc] px-3.5 py-2 text-xs font-bold text-[#1f334d] placeholder-[#95a6bb] focus:border-[#237ac8] focus:bg-white focus:outline-none"
+                placeholder="05XX XXX XX XX"
+              />
+            </FormAlani>
+          </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormAlani label="İl">
               <input
                 type="text"
                 value={form.il}
                 onChange={(e) => handleChange("il", e.target.value)}
                 disabled={kaydediliyor}
-                className="w-full px-3 py-2 text-sm rounded-lg bg-white"
-                style={inputStili}
+                className="w-full rounded-xl border border-[#dce5ee] bg-[#f8fafc] px-3.5 py-2 text-xs font-bold text-[#1f334d] placeholder-[#95a6bb] focus:border-[#237ac8] focus:bg-white focus:outline-none"
                 placeholder="İstanbul"
               />
             </FormAlani>
@@ -198,82 +193,71 @@ export default function AdresModal({
                 value={form.ilce}
                 onChange={(e) => handleChange("ilce", e.target.value)}
                 disabled={kaydediliyor}
-                className="w-full px-3 py-2 text-sm rounded-lg bg-white"
-                style={inputStili}
+                className="w-full rounded-xl border border-[#dce5ee] bg-[#f8fafc] px-3.5 py-2 text-xs font-bold text-[#1f334d] placeholder-[#95a6bb] focus:border-[#237ac8] focus:bg-white focus:outline-none"
                 placeholder="Kadıköy"
               />
             </FormAlani>
           </div>
 
-          <FormAlani label="Açık Adres">
+          <FormAlani label="Açık Adres (Mahalle, cadde, sokak, bina ve daire no)">
             <textarea
               value={form.adres_detay}
               onChange={(e) => handleChange("adres_detay", e.target.value)}
               disabled={kaydediliyor}
-              className="w-full px-3 py-2 text-sm rounded-lg bg-white resize-none"
-              style={{ ...inputStili, minHeight: "70px" }}
-              placeholder="Mahalle, sokak, bina no, daire..."
+              rows={3}
+              className="w-full rounded-xl border border-[#dce5ee] bg-[#f8fafc] px-3.5 py-2 text-xs font-bold text-[#1f334d] placeholder-[#95a6bb] focus:border-[#237ac8] focus:bg-white focus:outline-none"
+              placeholder="Mahalle, sokak, bina no, daire no..."
             />
           </FormAlani>
 
-          <FormAlani label="Posta Kodu (opsiyonel)">
+          <FormAlani label="Posta Kodu (Opsiyonel)">
             <input
               type="text"
               value={form.posta_kodu ?? ""}
               onChange={(e) => handleChange("posta_kodu", e.target.value)}
               disabled={kaydediliyor}
-              className="w-full px-3 py-2 text-sm rounded-lg bg-white"
-              style={inputStili}
+              className="w-full rounded-xl border border-[#dce5ee] bg-[#f8fafc] px-3.5 py-2 text-xs font-bold text-[#1f334d] placeholder-[#95a6bb] focus:border-[#237ac8] focus:bg-white focus:outline-none"
               placeholder="34000"
             />
           </FormAlani>
 
-          <label className="flex items-center gap-2 cursor-pointer mt-1">
+          <label className="mt-1 flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
               checked={Boolean(form.varsayilan_mi)}
               onChange={(e) => handleChange("varsayilan_mi", e.target.checked)}
               disabled={kaydediliyor}
+              className="size-4 rounded text-[#237ac8] focus:ring-[#237ac8]"
             />
-            <span className="text-xs" style={{ color: "#374151" }}>
-              Varsayılan adres olarak ayarla
+            <span className="text-xs font-extrabold text-[#3a516b]">
+              Bu adresi varsayılan teslimat adresi olarak ayarla
             </span>
           </label>
         </div>
 
-        {/* Aksiyon */}
-        <div className="px-5 py-4 border-t border-gray-100 flex gap-2.5 justify-end">
+        {/* Aksiyon Butonları */}
+        <div className="flex items-center justify-end gap-2.5 border-t border-[#edf1f5] px-6 py-4">
           <button
+            type="button"
             onClick={onKapat}
             disabled={kaydediliyor}
-            className="px-4 py-2 rounded-lg border bg-transparent text-gray-500 text-xs cursor-pointer"
-            style={{
-              border: "0.5px solid #e5e7eb",
-              fontFamily: "'Nunito', sans-serif",
-              opacity: kaydediliyor ? 0.4 : 1,
-            }}
+            className="rounded-xl border border-[#dce5ee] bg-white px-4 py-2.5 text-xs font-extrabold text-[#5f738c] hover:bg-[#f8fafc]"
           >
-            İptal
+            Vazgeç
           </button>
           <button
+            type="button"
             onClick={handleKaydet}
             disabled={kaydediliyor}
-            className="px-5 py-2 rounded-lg border-none text-white text-xs font-semibold cursor-pointer"
-            style={{
-              background: "#56aeff",
-              opacity: kaydediliyor ? 0.5 : 1,
-              fontFamily: "'Nunito', sans-serif",
-            }}
+            className="rounded-xl bg-[#237ac8] px-5 py-2.5 text-xs font-extrabold text-white shadow-sm hover:bg-[#1d69aa] disabled:opacity-50"
           >
-            {kaydediliyor ? "Kaydediliyor..." : "Kaydet"}
+            {kaydediliyor ? "Kaydediliyor..." : "Adresi Kaydet"}
           </button>
         </div>
       </div>
     </div>
   );
 }
-
-// ─── Yardımcı: form alanı + label ────────────────────────────────────────────
 
 function FormAlani({
   label,
@@ -283,8 +267,8 @@ function FormAlani({
   children: React.ReactNode;
 }) {
   return (
-    <div>
-      <label className="text-xs font-semibold text-gray-700 block mb-1.5">
+    <div className="flex flex-col gap-1">
+      <label className="text-[11px] font-extrabold uppercase tracking-wider text-[#7a8da5]">
         {label}
       </label>
       {children}
