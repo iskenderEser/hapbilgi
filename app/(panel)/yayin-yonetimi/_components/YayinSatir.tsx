@@ -10,6 +10,7 @@
 
 import { useState } from "react";
 import type { Yayin } from "../_types";
+import type { Soru } from "@/app/(panel)/talepler/_types";
 import type { HesaplananTur } from "@/lib/tclub/tur/kayit";
 import { HedefRolPilleri } from "@/components/pill";
 import { talepIdGoster } from "@/lib/utils/talepId";
@@ -27,7 +28,7 @@ interface YayinSatirProps {
   tekrarBilgi?: HesaplananTur;
   getSoruPuani: (soru_seti_durum_id: string, soru_index: number) => number | "";
   setSoruPuani: (soru_seti_durum_id: string, soru_index: number, puan: number) => void;
-  hepsineAyniPuanAta: (soru_seti_durum_id: string, sorular: any[], puan: number) => void;
+  hepsineAyniPuanAta: (soru_seti_durum_id: string, sorular: Soru[], puan: number) => void;
   onVideoAc: (url: string) => void;
   onDurumDegistir: (yayin_id: string, mevcutDurum: string) => void;
   kartGorunumu?: boolean;

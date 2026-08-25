@@ -8,9 +8,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useHataMesaji } from "@/components/HataMesaji";
 import type { IuAnaSayfaVeri } from "@/lib/utils/anaSayfa/iu";
+import type { AuthKullanici } from "@/types/auth";
 
 interface Props {
-  user: any;
+  user: AuthKullanici;
   adSoyad: string;
 }
 

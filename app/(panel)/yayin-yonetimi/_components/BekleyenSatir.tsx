@@ -9,6 +9,7 @@
 "use client";
 
 import { AlertCircle, CheckCircle2 } from "lucide-react";
+import type { Soru } from "@/app/(panel)/talepler/_types";
 import type { Bekleyen } from "../_types";
 import { VIDEO_PUAN_SECENEKLERI, VIDEO_PUAN_SECENEKLERI_ECZANEM, EXTRA_PUAN_SECENEKLERI } from "../_types";
 import { HedefRolPilleri } from "@/components/pill";
@@ -41,7 +42,7 @@ interface BekleyenSatirProps {
   tumPuanlarAtandiMi: (b: Bekleyen) => boolean;
   getSoruPuani: (soru_seti_durum_id: string, soru_index: number) => number | "";
   setSoruPuani: (soru_seti_durum_id: string, soru_index: number, puan: number) => void;
-  hepsineAyniPuanAta: (soru_seti_durum_id: string, sorular: any[], puan: number) => void;
+  hepsineAyniPuanAta: (soru_seti_durum_id: string, sorular: Soru[], puan: number) => void;
   onVideoAc: (url: string) => void;
   onYayinlaClick: (b: Bekleyen) => void;
   onYayinSilClick: (b: Bekleyen) => void;

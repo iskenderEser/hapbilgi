@@ -36,6 +36,25 @@ export async function aktifUyeEsigi(adminSupabase: SupabaseClient): Promise<numb
   return deger;
 }
 
+interface VYayinAdDetay {
+  yayin_id: string;
+  urun_adi?: string | null;
+  teknik_adi?: string | null;
+  video_url?: string | null;
+  thumbnail_url?: string | null;
+  yayin_tarihi?: string | null;
+}
+
+interface EclubEczaneRow {
+  eczane_id: string;
+  gln?: string | null;
+}
+
+interface EclubMasterRow {
+  gln: string;
+  eczane_adi?: string | null;
+}
+
 // ── Ortak yardımcı: yayın kimliklerinden ad haritası (v_yayin_detay) ────────
 async function yayinAdMap(
   adminSupabase: SupabaseClient,
@@ -54,13 +73,13 @@ async function yayinAdMap(
   }
   const { data, error } = await sorgu;
   if (error) throw new Error("Eczanem yayın bilgileri okunamadı.");
-  for (const y of data ?? []) {
-    map.set((y as any).yayin_id, {
-      urun_adi: (y as any).urun_adi ?? "-",
-      teknik_adi: (y as any).teknik_adi ?? "-",
-      video_url: (y as any).video_url ?? null,
-      thumbnail_url: (y as any).thumbnail_url ?? null,
-      yayin_tarihi: (y as any).yayin_tarihi ?? null,
+  for (const y of (data as VYayinAdDetay[] | null) ?? []) {
+    map.set(y.yayin_id, {
+      urun_adi: y.urun_adi ?? "-",
+      teknik_adi: y.teknik_adi ?? "-",
+      video_url: y.video_url ?? null,
+      thumbnail_url: y.thumbnail_url ?? null,
+      yayin_tarihi: y.yayin_tarihi ?? null,
     });
   }
   return map;
@@ -82,16 +101,20 @@ export async function eczaneAdMap(
   if (eczaneError) throw new Error("Eczane bilgileri okunamadı.");
 
   const eczaneGln = new Map<string, string>();
-  for (const e of eczaneler ?? []) eczaneGln.set((e as any).eczane_id, (e as any).gln);
+  for (const e of (eczaneler as EclubEczaneRow[] | null) ?? []) {
+    if (e.gln) eczaneGln.set(e.eczane_id, e.gln);
+  }
 
-  const glnler = [...new Set((eczaneler ?? []).map((e: any) => e.gln).filter(Boolean))];
+  const glnler = [...new Set(((eczaneler as EclubEczaneRow[] | null) ?? []).map(e => e.gln).filter((g): g is string => Boolean(g)))];
   const { data: masterlar, error: masterError } = glnler.length
     ? await adminSupabase.from("eclub_eczane_master").select("gln, eczane_adi").in("gln", glnler)
-    : { data: [] as any[], error: null };
+    : { data: [] as EclubMasterRow[], error: null };
   if (masterError) throw new Error("Eczane adları okunamadı.");
 
   const glnAd = new Map<string, string>();
-  for (const m of masterlar ?? []) glnAd.set((m as any).gln, (m as any).eczane_adi);
+  for (const m of (masterlar as EclubMasterRow[] | null) ?? []) {
+    if (m.eczane_adi) glnAd.set(m.gln, m.eczane_adi);
+  }
 
   for (const [ez, gln] of eczaneGln) {
     const ad = glnAd.get(gln);
@@ -113,8 +136,8 @@ async function aktifUyeSayilari(
     .in("eczane_id", eczaneIdler)
     .eq("aktif_mi", true);
   if (error) throw new Error("Eczane aktif üye sayıları okunamadı.");
-  for (const u of data ?? []) {
-    const ez = (u as any).eczane_id;
+  for (const u of (data as Array<{ eczane_id: string }> | null) ?? []) {
+    const ez = u.eczane_id;
     map.set(ez, (map.get(ez) ?? 0) + 1);
   }
   return map;
@@ -170,7 +193,7 @@ export async function uttEczanemVerisi(
   const { data: yayinRaw, error: yayinError } = await yayinQuery;
   if (yayinError) throw new Error("Eczanem yayınları okunamadı.");
 
-  const yayinlar: UttEczanemYayin[] = (yayinRaw ?? []).map((y: any) => ({
+  const yayinlar: UttEczanemYayin[] = ((yayinRaw as VYayinAdDetay[] | null) ?? []).map(y => ({
     yayin_id: y.yayin_id,
     urun_adi: y.urun_adi ?? "-",
     teknik_adi: y.teknik_adi ?? "",
@@ -188,7 +211,7 @@ export async function uttEczanemVerisi(
     .eq("aktif_mi", true);
   if (bagError) throw new Error("UTT eczane bağlantıları okunamadı.");
 
-  const eczaneIdler = [...new Set((baglar ?? []).map((b: any) => b.eczane_id))];
+  const eczaneIdler = [...new Set(((baglar as Array<{ eczane_id: string }> | null) ?? []).map(b => b.eczane_id))];
   const [adMap, sayiMap] = await Promise.all([
     eczaneAdMap(adminSupabase, eczaneIdler),
     aktifUyeSayilari(adminSupabase, eczaneIdler),

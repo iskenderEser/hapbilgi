@@ -280,13 +280,13 @@ export async function POST(request: NextRequest) {
     // Tur-1 kaydı — yayının ilk turu (tek kaynak: lib/tur/kayit.ts).
     // Başarısızlıkta yayın geri alınmaz; gecerliTur() eksik tur-1'i kendini onararak açar (U3).
     const turSonuc = await turKaydiAc(adminSupabase, {
-      yayin_id: (yeniYayin as any).yayin_id,
+      yayin_id: yeniYayin.yayin_id,
       tur_no: 1,
       acilis_turu: "ilk_yayin",
       baslangic_tarihi: simdi,
     });
     if (!turSonuc.ok) {
-      console.error("[UYARI] Tur-1 kaydı açılamadı:", { yayin_id: (yeniYayin as any).yayin_id, hata: turSonuc.error });
+      console.error("[UYARI] Tur-1 kaydı açılamadı:", { yayin_id: yeniYayin.yayin_id, hata: turSonuc.error });
     }
 
     // Hedef rollerdeki kullanıcılara bildirim gönder
@@ -295,7 +295,7 @@ export async function POST(request: NextRequest) {
       const { data: yayinDetay } = await adminSupabase
         .from("v_yayin_detay")
         .select("takim_id, urun_adi")
-        .eq("yayin_id", (yeniYayin as any).yayin_id)
+        .eq("yayin_id", yeniYayin.yayin_id)
         .single();
 
       const urun_adi = yayinDetay?.urun_adi ?? "-";
@@ -306,7 +306,7 @@ export async function POST(request: NextRequest) {
           .select("bolge_id")
           .eq("takim_id", yayinDetay.takim_id);
 
-        const bolgeIdler = (bolgeler ?? []).map((b: any) => b.bolge_id);
+        const bolgeIdler = (bolgeler ?? []).map(b => b.bolge_id);
 
         if (bolgeIdler.length > 0) {
           const { data: hedefKullanicilar } = await adminSupabase
@@ -316,14 +316,14 @@ export async function POST(request: NextRequest) {
             .in("rol", hedefRoller)
             .eq("aktif_mi", true);
 
-          const hedefIdler = (hedefKullanicilar ?? []).map((k: any) => k.kullanici_id);
+          const hedefIdler = (hedefKullanicilar ?? []).map(k => k.kullanici_id);
 
           await cokluBildirimOlustur({
             adminSupabase,
             alici_idler: hedefIdler,
             gonderen_id: user.id,
             kayit_turu: "yayin",
-            kayit_id: (yeniYayin as any).yayin_id,
+            kayit_id: yeniYayin.yayin_id,
             mesaj: `Yeni video yayında: ${urun_adi}`,
           });
         }

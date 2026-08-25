@@ -112,7 +112,7 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
-    const guncelDosyalar = (talep.dosya_urls ?? []).filter((d: any) => d.url !== url);
+    const guncelDosyalar = ((talep.dosya_urls as Array<{ url: string }> | null) ?? []).filter(d => d.url !== url);
 
     const { error: updateError } = await adminSupabase
       .from("talepler")

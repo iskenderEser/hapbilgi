@@ -118,6 +118,27 @@ export function bunnyEmbedUrl(url: string): string {
   return url;
 }
 
+export interface PlayerJsInstance {
+  on(event: string, callback: (data?: unknown) => void): void;
+  off?(event: string, callback?: (data?: unknown) => void): void;
+  getDuration(callback: (duration: number) => void): void;
+  getCurrentTime(callback: (current: number) => void): void;
+  setCurrentTime(seconds: number): void;
+  play(): void;
+  pause(): void;
+  destroy?(): void;
+}
+
+export interface PlayerJsGlobal {
+  Player: new (element: HTMLIFrameElement | HTMLElement) => PlayerJsInstance;
+}
+
+declare global {
+  interface Window {
+    playerjs?: PlayerJsGlobal;
+  }
+}
+
 const PLAYERJS_URL = "https://assets.mediadelivery.net/playerjs/playerjs-latest.min.js";
 
 /** playerjs script'inin tek seferlik yüklenmesi için promise — birden çok adapter aynı script'i bekler. */
@@ -127,7 +148,7 @@ function playerjsYukle(): Promise<void> {
   if (typeof window === "undefined") return Promise.reject(new Error("playerjs server tarafında yüklenemez."));
 
   // Zaten yüklü mü?
-  if ((window as any).playerjs) return Promise.resolve();
+  if (window.playerjs) return Promise.resolve();
 
   // Yüklenme zaten başlamış mı?
   if (playerjsYukleniyor) return playerjsYukleniyor;
@@ -137,7 +158,7 @@ function playerjsYukle(): Promise<void> {
   if (mevcut) {
     playerjsYukleniyor = new Promise((resolve) => {
       const interval = setInterval(() => {
-        if ((window as any).playerjs) {
+        if (window.playerjs) {
           clearInterval(interval);
           resolve();
         }
@@ -152,7 +173,7 @@ function playerjsYukle(): Promise<void> {
     script.src = PLAYERJS_URL;
     script.async = true;
     script.onload = () => {
-      if ((window as any).playerjs) resolve();
+      if (window.playerjs) resolve();
       else reject(new Error("playerjs script yüklendi ama window.playerjs tanımsız."));
     };
     script.onerror = () => reject(new Error("playerjs script yüklenemedi."));
@@ -171,7 +192,7 @@ function playerjsYukle(): Promise<void> {
  */
 class BunnyAdapter implements VideoPlayer {
   private iframe: HTMLIFrameElement;
-  private player: any = null;
+  private player: PlayerJsInstance | null = null;
   private hazirCallback: (() => void) | null = null;
   private bekleyenEventler: Array<() => void> = [];
 
@@ -187,7 +208,8 @@ class BunnyAdapter implements VideoPlayer {
     // playerjs'i yükle, sonra player'ı kur
     playerjsYukle()
       .then(() => {
-        this.player = new (window as any).playerjs.Player(this.iframe);
+        if (!window.playerjs) return;
+        this.player = new window.playerjs.Player(this.iframe);
         this.player.on("ready", () => {
           // ready callback'i kuruluyse çağır
           if (this.hazirCallback) this.hazirCallback();
@@ -205,8 +227,8 @@ class BunnyAdapter implements VideoPlayer {
     this.hazirCallback = callback;
   }
 
-  onTimeUpdate(callback: (data: { seconds: number }) => void): void {
-    const kur = () => this.player?.on("timeupdate", callback);
+  onTimeUpdate(callback: (data: { seconds: number; duration?: number }) => void): void {
+    const kur = () => this.player?.on("timeupdate", (d) => callback(d as { seconds: number; duration?: number }));
     if (this.player) kur();
     else this.bekleyenEventler.push(kur);
   }
@@ -252,11 +274,11 @@ class BunnyAdapter implements VideoPlayer {
   destroy(): void {
     // playerjs'in resmi destroy metodu yok; off ile event'leri kaldırırız.
     try {
-      this.player?.off("ready");
-      this.player?.off("timeupdate");
-      this.player?.off("play");
-      this.player?.off("ended");
-      this.player?.off("seeked");
+      this.player?.off?.("ready");
+      this.player?.off?.("timeupdate");
+      this.player?.off?.("play");
+      this.player?.off?.("ended");
+      this.player?.off?.("seeked");
     } catch (e) {
       // playerjs sürümüne göre off metodu davranışı değişebilir; sessiz geç.
     }

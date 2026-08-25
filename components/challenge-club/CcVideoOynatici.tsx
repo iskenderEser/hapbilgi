@@ -56,7 +56,7 @@ interface Props {
   challenge_id?: string | null;
   onKapat: () => void;
   onVeriYenile: () => void | Promise<void>;
-  hata: (mesaj: string, adim?: string, detay?: any) => void;
+  hata: (mesaj: string, adim?: string, detay?: string) => void;
   basari: (mesaj: string) => void;
   uyari: (mesaj: string) => void;
 }
@@ -149,8 +149,9 @@ export default function CcVideoOynatici({
     let player: VideoPlayer;
     try {
       player = createVideoPlayer(iframeRef.current, video.video_url);
-    } catch (err: any) {
-      hata(err?.message ?? "Video oynatıcı kurulamadı.", "createVideoPlayer", err);
+    } catch (err: unknown) {
+      const mesaj = err instanceof Error ? err.message : "Video oynatıcı kurulamadı.";
+      hata(mesaj, "createVideoPlayer", err instanceof Error ? err.stack : String(err));
       return;
     }
     playerRef.current = player;

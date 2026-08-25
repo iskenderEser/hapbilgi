@@ -20,6 +20,28 @@ export interface LigPeriyot {
   hafta: number;  // 1-53  (periyot=hafta için)
 }
 
+export interface HbLigiHamSatir {
+  bolge_sirasi?: number;
+  sira?: number;
+  kullanici_id: string;
+  ad: string;
+  soyad?: string;
+  rol: string;
+  bolge_id?: string;
+  bolge_adi?: string;
+  takim_id?: string;
+  takim_adi?: string;
+  izleme_puani: number;
+  cevaplama_puani: number;
+  oneri_puani: number;
+  extra_puani: number;
+  ileri_sarma_kaybi: number;
+  yanlis_cevap_kaybi: number;
+  oneri_kaybi: number;
+  toplam_puan: number;
+  [key: string]: unknown;
+}
+
 /**
  * Periyota göre ilgili HB Ligi RPC'sini çağırır, ham satır dizisini döndürür.
  * Hata durumunda açıklayıcı mesajla throw eder (çağıran sarar).
@@ -27,7 +49,7 @@ export interface LigPeriyot {
 export async function ligRpcCagir(
   supabase: SupabaseClient,
   p: LigPeriyot
-): Promise<any[]> {
+): Promise<HbLigiHamSatir[]> {
   if (p.periyot === "ay") {
     const { data, error } = await supabase.rpc("get_hb_ligi_aylik_v2", {
       p_yil: p.yil,

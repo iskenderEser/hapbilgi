@@ -7,6 +7,7 @@ import { useHataMesaji } from "@/components/HataMesaji";
 import VideoOynatici from "@/components/izle/VideoOynatici";
 import SahaVideoRaflari from "@/components/ana-sayfa/SahaVideoRaflari";
 import type { SahaAnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
+import type { AuthKullanici } from "@/types/auth";
 
 interface TmVeri {
   istatistikler: {
@@ -19,7 +20,7 @@ interface TmVeri {
 }
 
 interface Props {
-  user: any;
+  user: AuthKullanici;
   adSoyad: string;
 }
 

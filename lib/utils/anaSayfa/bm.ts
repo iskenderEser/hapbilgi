@@ -27,7 +27,7 @@ export async function getBmAnaSayfaVeri(userId: string, adminSupabase: SupabaseC
     .in("rol", TUKETICI_ROLLER)
     .eq("aktif_mi", true);
 
-  const uttIdler = (uttler ?? []).map((u: any) => u.kullanici_id);
+  const uttIdler = (uttler ?? []).map(u => u.kullanici_id);
 
   // Ana sayfa öneri özeti, BM Öneri Takibi ile aynı periyot ve durum
   // kaynağını kullanır. Böylece iki ekrandaki rakamlar birbirinden sapmaz.

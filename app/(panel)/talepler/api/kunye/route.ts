@@ -36,6 +36,7 @@ import {
   talepBilgisiVideoDurum,
   talepBilgisiSoruSeti,
   talepBilgileriCoklu,
+  type TalepBilgisi,
 } from "@/lib/utils/talepZinciri";
 
 export async function GET(request: NextRequest) {
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Tekil: ekranın elindeki kimlik hangisiyse o çözücü çalışır.
-    const tekil: [string, (id: string) => Promise<any>][] = [
+    const tekil: [string, (id: string) => Promise<TalepBilgisi | null>][] = [
       ["talep_id",         id => talepBilgisiTalep(adminSupabase, id)],
       ["senaryo_durum_id", id => talepBilgisiSenaryoDurum(adminSupabase, id)],
       ["video_durum_id",   id => talepBilgisiVideoDurum(adminSupabase, id)],

@@ -22,7 +22,7 @@ export async function GET() {
 
     const rol = await rolCozucu(adminSupabase, user.id);
 
-    let veri: any;
+    let veri: Record<string, unknown>;
 
     if (rol === "bm") {
       veri = await getBmAnaSayfaVeri(user.id, adminSupabase);
@@ -31,7 +31,7 @@ export async function GET() {
     } else if (TUKETICI_ROLLER.includes(rol)) {
       veri = await getUttAnaSayfaVeri(user.id, adminSupabase);
     } else if (rol === IU_ROLU) {
-      veri = await getIuAnaSayfaVeri(user.id, adminSupabase);
+      veri = (await getIuAnaSayfaVeri(user.id, adminSupabase)) as unknown as Record<string, unknown>;
     } else if (URETICI_ROLLER.includes(rol)) {
       veri = await getUreticiAnaSayfaVeri(user.id, adminSupabase);
     } else if (YONETICI_ROLLER.includes(rol)) {

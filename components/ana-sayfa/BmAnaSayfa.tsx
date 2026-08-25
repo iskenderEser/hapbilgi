@@ -10,6 +10,8 @@ import VideoOynatici from "@/components/izle/VideoOynatici";
 import SahaVideoRaflari from "@/components/ana-sayfa/SahaVideoRaflari";
 import { SahaAnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 
+import type { AuthKullanici } from "@/types/auth";
+
 interface BmVeri {
   istatistikler: {
     bu_ay_gonderilen: number;
@@ -21,7 +23,7 @@ interface BmVeri {
 }
 
 interface Props {
-  user: any;
+  user: AuthKullanici;
   adSoyad: string;
 }
 

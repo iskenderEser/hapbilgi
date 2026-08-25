@@ -115,7 +115,7 @@ export async function PATCH(request: NextRequest) {
       return validasyonHatasi("kategori_id zorunludur.", ["kategori_id"]);
     }
 
-    const guncellenecek: Record<string, any> = {};
+    const guncellenecek: Record<string, unknown> = {};
     if (ad !== undefined) {
       if (typeof ad !== "string" || ad.trim() === "") {
         return validasyonHatasi("Kategori adı boş olamaz.", ["ad"]);

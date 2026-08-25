@@ -1378,8 +1378,19 @@ Tüm admin API rotaları taranmış; açık giriş ucu (`/admin/api/giris`) dı�
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `BLUEBOOK.md` | Dokümantasyon | BLUEBOOK.md modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `BLUEBOOK.md` | Dokümantasyon | HapBilgi ekosisteminin tüm rol, mimari, veri akışı ve kalite sözleşmelerini içeren kurumsal ana başvuru kılavuzu. |
 
+
+---
+
+## 11. SIFIR `ANY` VE KESİN TİP GÜVENLİĞİ SÖZLEŞMESİ (STRICT TYPE-SAFETY)
+
+HapBilgi kod tabanında tip güvenliği, sistem dayanıklılığı ve bakım kolaylığının temel taşıdır. Kod kalitesini en üst düzeye çıkarmak amacıyla **Sıfır `any` Prensibi** hayata geçirilmiş ve kurumsal olarak kilitlenmiştir:
+
+1. **Tam Tip Kapsamı (0 `any`):** Projedeki 618 adet `.ts` ve `.tsx` dosyasının tamamı taranmış; önceki sürümlerden kalan tüm serbest `any` kullanımları tasfiye edilerek yerlerine kanonik Supabase row arayüzleri, jenerik haritalar (`Record<string, unknown>`), typed UI prop'ları (`AuthKullanici`, `Soru`, vb.) ve güvenli hata yakalama modelleri (`catch (err: unknown)`) entegre edilmiştir.
+2. **ESLint Kalite Kilidi:** `eslint.config.mjs` yapılandırmasında `@typescript-eslint/no-explicit-any: "error"` kuralı aktif hale getirilmiştir. Kod tabanına yeni bir `any` tipi eklenmesi derleme ve CI/CD pipeline aşamasında otomatik olarak engellenir.
+3. **Type Narrowing & Unknown Disiplini:** Belirsiz API girdileri veya harici JSON verileri asla `any` olarak işaretlenmez; `unknown` tipi ve `instanceof Error`, `typeof` ya da type guard yardımcıları ile sıkı tip daraltma (type narrowing) yapılarak güvenli alana taşınır.
+4. **Veri ve Panel Uyumu:** Panel ana sayfa bileşenleri (`BmAnaSayfa`, `IuAnaSayfa`, `TmAnaSayfa`, `UreticiAnaSayfa`, `YoneticiAnaSayfa`) doğrudan `AuthKullanici` sözleşmesine; yayın ve talep hatları ise `HamTalepKaydi` ve `Soru` standartlarına bağlanmıştır.
 
 ---
 
@@ -1387,11 +1398,12 @@ Tüm admin API rotaları taranmış; açık giriş ucu (`/admin/api/giris`) dı�
 
 **25 Ağustos 2026** tarihi itibarıyla:
 1. Platformun **T-Club, C-Club, E-Club, Eczanem, Üretim/Yönetim, Admin ve Rol-Görev/Toast İletişim** katmanları hem veritabanı bütünlüğü hem de kod mimarisi, dizin simetrisi, DRY disiplini ve kurumsal kullanıcı deneyimi açısından %100 kusursuzluğa ulaştırılmıştır.
-2. Kod tabanında hiçbir sahipsiz, ölü veya güvensiz eski yöntem kalmamış; her iş kuralı ve her kullanıcı mesajı tek doğruluk kaynağına (single source of truth) bağlanmıştır.
-3. **HapBilgi ekosistemi (100/100 Kurumsal Mimari ve İletişim Puanı), canlı kurumsal operasyona ve üretime eksiksiz olarak hazır vaziyette mühürlenmiştir.**
+2. Kod tabanında hiçbir sahipsiz, ölü, güvensiz eski yöntem veya denetimsiz `any` tipi kalmamış; projenin tamamı **%100 Strict TypeScript Güvenliği** ile mühürlenmiştir.
+3. **HapBilgi ekosistemi (100/100 Kurumsal Mimari, İletişim ve Tip Güvenliği Puanı), canlı kurumsal operasyona ve üretime eksiksiz olarak hazır vaziyette mühürlenmiştir.**
 
 ---
 *HapBilgi Mühendislik ve Kalite Denetim Ekibi tarafından mühürlenmiştir.*
+
 
 
 

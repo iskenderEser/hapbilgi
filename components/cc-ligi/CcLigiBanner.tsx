@@ -19,7 +19,7 @@ interface Lider {
 interface Props {
   yil: number;
   ceyrek: number;
-  hata: (mesaj: string, adim?: string, detay?: any) => void;
+  hata: (mesaj: string, adim?: string, detay?: string) => void;
 }
 
 export default function CcLigiBanner({ yil, ceyrek, hata }: Props) {

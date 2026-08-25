@@ -91,7 +91,7 @@ interface Props {
   oneri_id?: string | null;          // öneri akışından geliyorsa öneri kimliği; yoksa null/undefined
   onKapat: () => void;
   onVeriYenile: () => void | Promise<void>;
-  hata: (mesaj: string, adim?: string, detay?: any) => void;
+  hata: (mesaj: string, adim?: string, detay?: string) => void;
   basari: (mesaj: string) => void;
   uyari: (mesaj: string) => void;
 }
@@ -188,8 +188,9 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
     let player: VideoPlayer;
     try {
       player = createVideoPlayer(iframeRef.current, video.video_url);
-    } catch (err: any) {
-      hata(err?.message ?? "Video oynatıcı kurulamadı.", "createVideoPlayer", err);
+    } catch (err: unknown) {
+      const mesaj = err instanceof Error ? err.message : "Video oynatıcı kurulamadı.";
+      hata(mesaj, "createVideoPlayer", err instanceof Error ? err.stack : String(err));
       return;
     }
     playerRef.current = player;
@@ -353,7 +354,7 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
       setBekleyenSeekBitis(null);
       ileriSarmaOlayIdRef.current = null;
     } catch (err) {
-      hata("İleri sarma kaydedilemedi.", "POST /izle/api/ileri-sarma", err);
+      hata("İleri sarma kaydedilemedi.", "POST /izle/api/ileri-sarma", err instanceof Error ? err.stack : String(err));
       setIleriSarmaModal(true);
     } finally {
       setIslemLoading(false);
@@ -416,7 +417,7 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
       player.setCurrentTime(0);
       player.play();
     } catch (err) {
-      hata("İzleme başlatılamadı.", "POST /izle/api/baslat", err);
+      hata("İzleme başlatılamadı.", "POST /izle/api/baslat", err instanceof Error ? err.stack : String(err));
       player.setCurrentTime(0);
     } finally {
       baslatiliyorRef.current = false;
@@ -473,7 +474,7 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
       }
     } catch (err) {
       izlemeBitirildiRef.current = false;
-      hata("İzleme tamamlanamadı; yeniden denenecek.", "PUT /izle/api/bitir", err);
+      hata("İzleme tamamlanamadı; yeniden denenecek.", "PUT /izle/api/bitir", err instanceof Error ? err.stack : String(err));
     } finally {
       setIslemLoading(false);
     }

@@ -48,12 +48,12 @@ export async function getUttLig(
   const tumUttler = await ligRpcCagir(supabase, periyot);
 
   // RPC tüm bölgeleri döndürür; UTT yalnız kendi bölgesini görür.
-  const filtreli = tumUttler.filter((l: any) => l.bolge_id === bolge_id);
+  const filtreli = tumUttler.filter(l => l.bolge_id === bolge_id);
 
-  const lig: UttLigSatiri[] = filtreli.map((l: any) => ({
-    sira: l.bolge_sirasi,
+  const lig: UttLigSatiri[] = filtreli.map(l => ({
+    sira: l.bolge_sirasi ?? 0,
     kullanici_id: l.kullanici_id,
-    ad: `${l.ad} ${l.soyad}`,
+    ad: `${l.ad} ${l.soyad ?? ""}`.trim(),
     rol: l.rol,
     bolge: l.bolge_adi ?? "-",
     takim: l.takim_adi ?? "-",

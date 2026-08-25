@@ -163,7 +163,7 @@ export async function PATCH(request: NextRequest) {
       return isKuraluHatasi("Ürün bulunamadı.");
     }
 
-    const guncellenecek: Record<string, any> = {};
+    const guncellenecek: Record<string, unknown> = {};
     if (kategori_id !== undefined) guncellenecek.kategori_id = kategori_id;
     if (ad !== undefined) {
       if (typeof ad !== "string" || ad.trim() === "") {

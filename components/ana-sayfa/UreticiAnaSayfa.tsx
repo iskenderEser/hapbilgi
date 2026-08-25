@@ -12,6 +12,7 @@ import { ROL_ADLARI } from "@/lib/utils/roller";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import { rolTeknikKullanirMi } from "@/lib/uretici/yetenekler";
 import { type DurumKodu } from "@/lib/utils/durum/mesaj";
+import type { AuthKullanici } from "@/types/auth";
 
 interface TakipSatiri {
   talep_id: string;
@@ -40,7 +41,7 @@ interface PMVeri {
 }
 
 interface Props {
-  user: any;
+  user: AuthKullanici;
   rol: string;
   adSoyad: string;
 }

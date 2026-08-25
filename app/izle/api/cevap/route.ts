@@ -42,8 +42,13 @@ export async function POST(request: NextRequest) {
       return isKuraluHatasi(`Bu izleme için soru hakkı bulunmuyor (${izleme.soru_hakki_nedeni ?? "uygun_degil"}).`);
     }
 
+    interface GelenCevapItem {
+      soru_index?: number;
+      verilen_cevap?: string;
+    }
+    const gelenCevaplar = (Array.isArray(cevaplar) ? cevaplar : []) as GelenCevapItem[];
     const atanmisIndeksler = izleme.soru_indeksleri as number[] | null;
-    const gelenIndeksler = cevaplar.map((cevap: any) => cevap?.soru_index);
+    const gelenIndeksler = gelenCevaplar.map(cevap => cevap?.soru_index);
     const gelenBenzersiz = new Set(gelenIndeksler);
     if (
       !Array.isArray(atanmisIndeksler)
@@ -51,7 +56,7 @@ export async function POST(request: NextRequest) {
       || gelenBenzersiz.size !== gelenIndeksler.length
       || gelenIndeksler.length !== atanmisIndeksler.length
       || gelenIndeksler.some((indeks: unknown) => typeof indeks !== "number" || !atanmisIndeksler.includes(indeks))
-      || cevaplar.some((cevap: any) => typeof cevap?.verilen_cevap !== "string" || cevap.verilen_cevap.trim().length === 0)
+      || gelenCevaplar.some(cevap => typeof cevap?.verilen_cevap !== "string" || cevap.verilen_cevap.trim().length === 0)
     ) {
       return validasyonHatasi("Cevaplar, izlemeye atanmış soru kümesiyle birebir eşleşmelidir.", ["cevaplar"]);
     }

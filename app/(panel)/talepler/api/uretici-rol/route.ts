@@ -19,7 +19,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
+import { TALEP_ALANLARI, haritalaTalep, type HamTalepKaydi } from "@/lib/utils/talepZinciri";
 import { zincirHaritasi, asamaCoz, uretimBittiMi, iptalEdildiMi } from "@/lib/utils/uretimZinciri";
 import { gorevDurumKodu } from "@/lib/utils/durum/mesaj";
 
@@ -46,7 +46,7 @@ export async function GET() {
 
     if (error) return hataYaniti("Talepler çekilemedi.", "talepler tablosu SELECT", error);
 
-    const kunyeler = (talepler ?? []).map((t: any) => ({
+    const kunyeler = ((talepler as Array<HamTalepKaydi & { hazir_video_url?: string | null }> | null) ?? []).map(t => ({
       ...haritalaTalep(t),
       hazir_video_url: t.hazir_video_url ?? null,
     }));

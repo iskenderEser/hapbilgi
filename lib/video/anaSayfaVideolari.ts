@@ -79,7 +79,7 @@ export async function getAnaSayfaVideolari(
       .select("takim_id")
       .eq("firma_id", kullanici.firma_id);
 
-    const takimIdler = (takimlar ?? []).map((t: any) => t.takim_id);
+    const takimIdler = (takimlar ?? []).map(t => t.takim_id);
     if (secenekler.firmaGeneliDahil) {
       const takimListe = takimIdler.length > 0 ? takimIdler.join(",") : "00000000-0000-0000-0000-000000000000";
       query = query.or(`takim_id.in.(${takimListe}),and(takim_id.is.null,firma_id.eq.${kullanici.firma_id})`);
@@ -102,7 +102,20 @@ export async function getAnaSayfaVideolari(
   const { data: videolar, error } = await query;
   if (error) throw new Error("Videolar çekilemedi.");
 
-  return (videolar ?? []).map((v: any) => ({
+  type VYayinDetayRow = {
+    yayin_id: string;
+    talep_no?: number | null;
+    firma_adi?: string | null;
+    urun_adi?: string | null;
+    teknik_adi?: string | null;
+    video_url?: string | null;
+    thumbnail_url?: string | null;
+    video_puani?: number | null;
+    yayin_tarihi: string;
+    icerik_turu?: string | null;
+  };
+
+  return ((videolar as VYayinDetayRow[] | null) ?? []).map(v => ({
     yayin_id: v.yayin_id,
     talep_no: v.talep_no ?? null,
     firma_adi: v.firma_adi ?? null,

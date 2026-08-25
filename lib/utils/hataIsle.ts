@@ -25,11 +25,16 @@ export interface HataDetay {
 /**
  * Supabase hatasını ayrıştırır ve kullanıcı dostu mesaja çevirir.
  */
-export function supabaseHatasiniCoz(error: any): string {
+export function supabaseHatasiniCoz(error: unknown): string {
   if (!error) return "Bilinmeyen hata.";
-  const kod = error.code ?? "";
-  if (SUPABASE_HATA_KODLARI[kod]) return SUPABASE_HATA_KODLARI[kod];
-  return error.message ?? "Veritabanı hatası.";
+  if (typeof error === "object" && error !== null) {
+    const errObj = error as { code?: string; message?: string };
+    const kod = errObj.code ?? "";
+    if (kod && SUPABASE_HATA_KODLARI[kod]) return SUPABASE_HATA_KODLARI[kod];
+    return errObj.message ?? "Veritabanı hatası.";
+  }
+  if (typeof error === "string") return error;
+  return "Veritabanı hatası.";
 }
 
 /**
@@ -42,7 +47,7 @@ export function supabaseHatasiniCoz(error: any): string {
 export function hataYaniti(
   hata: string,
   adim?: string,
-  error?: any,
+  error?: unknown,
   status: number = 500
 ): NextResponse {
   const detay: HataDetay = { hata };
@@ -51,15 +56,18 @@ export function hataYaniti(
 
   if (error) {
     detay.detay = supabaseHatasiniCoz(error);
-    if (error.code) detay.kod = error.code;
+    if (typeof error === "object" && error !== null && "code" in error) {
+      detay.kod = String((error as { code?: unknown }).code);
+    }
   }
 
   // Konsola detaylı log
+  const errObj = typeof error === "object" && error !== null ? (error as { message?: string; code?: string; hint?: string; details?: string }) : undefined;
   console.error(`[HATA] ${adim ?? "bilinmeyen adım"}: ${hata}`, {
-    detay: error?.message,
-    kod: error?.code,
-    hint: error?.hint,
-    details: error?.details,
+    detay: errObj?.message,
+    kod: errObj?.code,
+    hint: errObj?.hint,
+    details: errObj?.details,
   });
 
   return NextResponse.json(detay, { status });

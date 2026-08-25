@@ -10,14 +10,15 @@
 
 import type { Bekleyen } from "../_types";
 import { SORU_PUAN_SECENEKLERI, SORU_PUAN_SECENEKLERI_ECZANEM } from "../_types";
+import type { Soru } from "@/app/(panel)/talepler/_types";
 
 interface SoruListesiProps {
-  sorular: any[];
+  sorular: Soru[];
   soru_seti_durum_id: string;
   bekleyen?: Bekleyen | false;
   getSoruPuani: (soru_seti_durum_id: string, soru_index: number) => number | "";
   setSoruPuani: (soru_seti_durum_id: string, soru_index: number, puan: number) => void;
-  hepsineAyniPuanAta: (soru_seti_durum_id: string, sorular: any[], puan: number) => void;
+  hepsineAyniPuanAta: (soru_seti_durum_id: string, sorular: Soru[], puan: number) => void;
 }
 
 export function SoruListesi({
@@ -54,7 +55,7 @@ export function SoruListesi({
       )}
       </div>
       <div className="flex max-h-[520px] flex-col gap-2 overflow-y-auto pr-1">
-        {sorular.map((soru: any, i: number) => {
+        {sorular.map((soru: Soru, i: number) => {
           const sp = getSoruPuani(soru_seti_durum_id, i);
           const puanDolu = typeof sp === "number" && sp > 0;
           return (
@@ -67,7 +68,7 @@ export function SoruListesi({
               <div className="flex-1 min-w-0">
                 <div className="mb-2 text-xs font-bold leading-relaxed text-[#3f526c]">{soru.soru_metni}</div>
                 <div className="flex flex-col gap-1">
-                  {soru.secenekler?.map((s: any, j: number) => (
+                  {soru.secenekler?.map((s, j: number) => (
                     <span key={j} className="w-fit rounded-full px-2.5 py-1 text-[10px]"
                       style={{ border: s.dogru ? "0.5px solid #56aeff" : "0.5px solid #e5e7eb", color: s.dogru ? "#56aeff" : "#737373", background: s.dogru ? "#e6f1fb" : "white" }}>
                       {s.harf}. {s.metin}

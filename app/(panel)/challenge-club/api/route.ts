@@ -35,6 +35,35 @@ function challengeDurumu(challenge: { izlendi_mi: boolean }): ChallengeDurumu {
   return challenge.izlendi_mi ? "izlendi" : "bekliyor";
 }
 
+interface ChallengeYayinSatiri {
+  yayin_id: string;
+  urun_adi?: string | null;
+  teknik_adi?: string | null;
+  video_url?: string | null;
+  thumbnail_url?: string | null;
+  video_puani?: number | null;
+  yayin_tarihi?: string | null;
+  talep_no?: number | null;
+  firma_adi?: string | null;
+  icerik_turu?: string | null;
+}
+
+interface GelenChallengeRaw {
+  challenge_id: string;
+  yayin_id: string;
+  created_at: string;
+  gonderen?: { ad?: string; soyad?: string } | Array<{ ad?: string; soyad?: string }> | null;
+}
+
+interface ChallengeListKaydi {
+  challenge_id: string;
+  yayin_id: string;
+  son_tarih?: string | null;
+  created_at: string;
+  izlendi_mi: boolean;
+  gonderen?: { ad?: string; soyad?: string } | null;
+  alan?: { ad?: string; soyad?: string } | null;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -98,7 +127,8 @@ export async function GET(request: NextRequest) {
       // Geçerli tur başlangıçları — SALT-OKUR toplu hesap (lib/tur/kayit.ts).
       // Tur bazlı bayrak: yalnızca geçerli turda tamamlanan izlemeler videoyu
       // "tamamlandı" işaretler; önceki turun izlemeleri işaretlemez (§4.1b).
-      const yayinIdler = (yayinlarRes.data ?? []).map((y: any) => y.yayin_id);
+      const yayinListesi = (yayinlarRes.data as ChallengeYayinSatiri[] | null) ?? [];
+      const yayinIdler = yayinListesi.map(y => y.yayin_id);
       const turMap = await gecerliTurBaslangiclari(adminSupabase, yayinIdler);
 
       const tamamlananSet = new Set<string>();
@@ -112,12 +142,13 @@ export async function GET(request: NextRequest) {
 
       // Gelen bekleyen challenge haritası (kilitli kartlar için)
       const gelenChallengeMap: Record<string, { challenge_id: string; gonderen_adi: string }> = {};
-      for (const c of (gelenChallengelerRes.data ?? []) as any[]) {
+      for (const c of (gelenChallengelerRes.data as GelenChallengeRaw[] | null) ?? []) {
         const turBaslangic = turMap[c.yayin_id]?.baslangic_tarihi ?? "2000-01-01T00:00:00Z";
         if (new Date(c.created_at) >= new Date(turBaslangic)) {
+          const gonderenObj = Array.isArray(c.gonderen) ? c.gonderen[0] : c.gonderen;
           gelenChallengeMap[c.yayin_id] = {
             challenge_id: c.challenge_id,
-            gonderen_adi: c.gonderen ? `${c.gonderen.ad} ${c.gonderen.soyad}` : "Bir Bölge Müdürü",
+            gonderen_adi: gonderenObj ? `${gonderenObj.ad ?? ""} ${gonderenObj.soyad ?? ""}`.trim() : "Bir Bölge Müdürü",
           };
         }
       }
@@ -126,7 +157,7 @@ export async function GET(request: NextRequest) {
       const metrikler = await ccKartMetrikleri(adminSupabase, yayinIdler, kullanici.kullanici_id);
 
       // Önce tamamlanmamışlar, sonra tamamlananlar
-      const tumVideolar = (yayinlarRes.data ?? []).map((y: any) => {
+      const tumVideolar = yayinListesi.map(y => {
         const gelenChallenge = gelenChallengeMap[y.yayin_id];
         return {
           ...y,
@@ -138,7 +169,7 @@ export async function GET(request: NextRequest) {
           ...(metrikler[y.yayin_id] ?? {}),
         };
       });
-      tumVideolar.sort((a: any, b: any) => Number(a.tamamlandi_mi) - Number(b.tamamlandi_mi));
+      tumVideolar.sort((a, b) => Number(a.tamamlandi_mi) - Number(b.tamamlandi_mi));
 
       return NextResponse.json({ videolar: tumVideolar }, { status: 200 });
     }
@@ -157,24 +188,21 @@ export async function GET(request: NextRequest) {
 
       if (cError) return hataYaniti("Bekleyen challenge'lar çekilemedi.", "challenge_kayitlari SELECT", cError);
 
+      const challengeListesi = (challengeler as ChallengeListKaydi[] | null) ?? [];
+
       // Yayın bilgilerini ve UTT kartı alt bilgilerini ayrıca çek
-      const yayinIdler = [...new Set((challengeler ?? []).map((c: any) => c.yayin_id))] as string[];
-      const yayinMap: Record<string, {
-        urun_adi: string | null; teknik_adi: string | null;
-        video_url: string | null; thumbnail_url: string | null;
-        video_puani: number | null; yayin_tarihi: string | null;
-        talep_no: number | null; firma_adi: string | null; icerik_turu: string | null;
-      }> = {};
+      const yayinIdler = [...new Set(challengeListesi.map(c => c.yayin_id))];
+      const yayinMap: Record<string, ChallengeYayinSatiri> = {};
       if (yayinIdler.length > 0) {
         const { data: yayinlar } = await adminSupabase
           .from("v_yayin_detay")
           .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, talep_no, firma_adi, icerik_turu")
           .in("yayin_id", yayinIdler);
-        for (const y of yayinlar ?? []) yayinMap[y.yayin_id] = y;
+        for (const y of (yayinlar as ChallengeYayinSatiri[] | null) ?? []) yayinMap[y.yayin_id] = y;
       }
       const metrikler = await ccKartMetrikleri(adminSupabase, yayinIdler, kullanici.kullanici_id);
 
-      const sonuc = (challengeler ?? []).map((c: any) => ({
+      const sonuc = challengeListesi.map(c => ({
         ...c,
         durum: challengeDurumu(c),
         urun_adi: yayinMap[c.yayin_id]?.urun_adi ?? "-",
@@ -209,24 +237,21 @@ export async function GET(request: NextRequest) {
 
       if (cError) return hataYaniti("Gönderdiğin challenge'lar çekilemedi.", "challenge_kayitlari SELECT", cError);
 
+      const challengeListesi = (challengeler as ChallengeListKaydi[] | null) ?? [];
+
       // Yayın bilgilerini ve UTT kartı alt bilgilerini ayrıca çek
-      const yayinIdler = [...new Set((challengeler ?? []).map((c: any) => c.yayin_id))] as string[];
-      const yayinMap: Record<string, {
-        urun_adi: string | null; teknik_adi: string | null;
-        video_url: string | null; thumbnail_url: string | null;
-        video_puani: number | null; yayin_tarihi: string | null;
-        talep_no: number | null; firma_adi: string | null; icerik_turu: string | null;
-      }> = {};
+      const yayinIdler = [...new Set(challengeListesi.map(c => c.yayin_id))];
+      const yayinMap: Record<string, ChallengeYayinSatiri> = {};
       if (yayinIdler.length > 0) {
         const { data: yayinlar } = await adminSupabase
           .from("v_yayin_detay")
           .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, talep_no, firma_adi, icerik_turu")
           .in("yayin_id", yayinIdler);
-        for (const y of yayinlar ?? []) yayinMap[y.yayin_id] = y;
+        for (const y of (yayinlar as ChallengeYayinSatiri[] | null) ?? []) yayinMap[y.yayin_id] = y;
       }
       const metrikler = await ccKartMetrikleri(adminSupabase, yayinIdler, kullanici.kullanici_id);
 
-      const sonuc = (challengeler ?? []).map((c: any) => ({
+      const sonuc = challengeListesi.map(c => ({
         ...c,
         durum: challengeDurumu(c),
         urun_adi: yayinMap[c.yayin_id]?.urun_adi ?? "-",

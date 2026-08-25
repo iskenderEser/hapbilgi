@@ -29,6 +29,35 @@ interface DurumSatiri {
   created_at: string;
 }
 
+interface SenaryoRow {
+  senaryo_id: string;
+  senaryo_metni?: string | null;
+  iu_id?: string | null;
+  created_at: string;
+}
+
+interface VideoRow {
+  video_id: string;
+  video_url?: string | null;
+  thumbnail_url?: string | null;
+  iu_id?: string | null;
+  created_at: string;
+}
+
+interface SoruSetiRow {
+  soru_seti_id: string;
+  sorular?: unknown;
+  iu_id?: string | null;
+  created_at: string;
+}
+
+interface DurumGecmisRow {
+  durum: string;
+  notlar: string | null;
+  created_at: string;
+  [key: string]: unknown;
+}
+
 /** Bir kaydın durum geçmişinden son durumu, revizyon turu sayısını ve notlarını çıkarır. */
 function durumOzeti(gecmis: DurumSatiri[]) {
   // Geçmiş eskiden yeniye gelir; son eleman en güncel durumdur.
@@ -44,12 +73,12 @@ function durumOzeti(gecmis: DurumSatiri[]) {
 }
 
 /** Kayıt kimliği → o kaydın durum geçmişi. Tek .in() sorgusundan dağıtılır. */
-function gecmisHaritasi(satirlar: any[] | null, anahtar: string): Map<string, DurumSatiri[]> {
+function gecmisHaritasi<T extends Record<string, unknown>>(satirlar: T[] | null, anahtar: keyof T): Map<string, DurumSatiri[]> {
   const harita = new Map<string, DurumSatiri[]>();
   for (const s of satirlar ?? []) {
-    const id = s[anahtar] as string;
+    const id = String(s[anahtar]);
     const liste = harita.get(id) ?? [];
-    liste.push({ durum: s.durum, notlar: s.notlar ?? null, created_at: s.created_at });
+    liste.push({ durum: String(s.durum), notlar: (s.notlar as string | null) ?? null, created_at: String(s.created_at) });
     harita.set(id, liste);
   }
   return harita;
@@ -87,18 +116,19 @@ export async function GET(request: NextRequest) {
       .eq("talep_id", talep_id)
       .order("created_at", { ascending: true });
 
-    const senaryoIdler = (senaryolar ?? []).map((s: any) => s.senaryo_id);
+    const senaryoListesi = (senaryolar as SenaryoRow[] | null) ?? [];
+    const senaryoIdler = senaryoListesi.map(s => s.senaryo_id);
     const { data: senaryoDurumlari } = senaryoIdler.length
       ? await adminSupabase
           .from("senaryo_durumu")
           .select("senaryo_id, durum, notlar, created_at")
           .in("senaryo_id", senaryoIdler)
           .order("created_at", { ascending: true })
-      : { data: [] as any[] };
+      : { data: [] as DurumGecmisRow[] };
 
-    const senaryoGecmis = gecmisHaritasi(senaryoDurumlari, "senaryo_id");
-    const sonSenaryo = (senaryolar ?? []).at(-1) as any | undefined;
-    const oncekiSenaryo = (senaryolar ?? []).length > 1 ? ((senaryolar ?? []).at(-2) as any) : null;
+    const senaryoGecmis = gecmisHaritasi(senaryoDurumlari as DurumGecmisRow[] | null, "senaryo_id");
+    const sonSenaryo = senaryoListesi.at(-1);
+    const oncekiSenaryo = senaryoListesi.length > 1 ? senaryoListesi.at(-2) : null;
 
     // Notlar TÜM turlardan toplanır: revizyon notu hangi versiyona bağlı olursa
     // olsun kronolojik tek listede gösterilir (senaryo sayfasının G-5 kararı).
@@ -124,17 +154,18 @@ export async function GET(request: NextRequest) {
       .eq("talep_id", talep_id)
       .order("created_at", { ascending: true });
 
-    const videoIdler = (videolar ?? []).map((v: any) => v.video_id);
+    const videoListesi = (videolar as VideoRow[] | null) ?? [];
+    const videoIdler = videoListesi.map(v => v.video_id);
     const { data: videoDurumlari } = videoIdler.length
       ? await adminSupabase
           .from("video_durumu")
           .select("video_id, durum, notlar, created_at")
           .in("video_id", videoIdler)
           .order("created_at", { ascending: true })
-      : { data: [] as any[] };
+      : { data: [] as DurumGecmisRow[] };
 
-    const videoGecmis = gecmisHaritasi(videoDurumlari, "video_id");
-    const sonVideo = (videolar ?? []).at(-1) as any | undefined;
+    const videoGecmis = gecmisHaritasi(videoDurumlari as DurumGecmisRow[] | null, "video_id");
+    const sonVideo = videoListesi.at(-1);
 
     const video = sonVideo
       ? {
@@ -153,17 +184,18 @@ export async function GET(request: NextRequest) {
       .eq("talep_id", talep_id)
       .order("created_at", { ascending: true });
 
-    const setIdler = (setler ?? []).map((s: any) => s.soru_seti_id);
+    const setListesi = (setler as SoruSetiRow[] | null) ?? [];
+    const setIdler = setListesi.map(s => s.soru_seti_id);
     const { data: setDurumlari } = setIdler.length
       ? await adminSupabase
           .from("soru_seti_durumu")
           .select("soru_seti_id, durum, notlar, created_at")
           .in("soru_seti_id", setIdler)
           .order("created_at", { ascending: true })
-      : { data: [] as any[] };
+      : { data: [] as DurumGecmisRow[] };
 
-    const setGecmis = gecmisHaritasi(setDurumlari, "soru_seti_id");
-    const sonSet = (setler ?? []).at(-1) as any | undefined;
+    const setGecmis = gecmisHaritasi(setDurumlari as DurumGecmisRow[] | null, "soru_seti_id");
+    const sonSet = setListesi.at(-1);
 
     const soru_seti = sonSet
       ? {

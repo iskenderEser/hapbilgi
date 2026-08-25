@@ -10,7 +10,7 @@ import {
   type YayinHedefGrubu,
 } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
+import { TALEP_ALANLARI, haritalaTalep, type HamTalepKaydi } from "@/lib/utils/talepZinciri";
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
 export async function GET(request: NextRequest) {
   try {
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     if (yayinError) return hataYaniti("Yayınlar çekilemedi.", "yayin_yonetimi tablosu SELECT", yayinError);
 
-    const yayindakiIds = new Set((yayinlar ?? []).map((y: any) => y.soru_seti_durum_id));
+    const yayindakiIds = new Set(((yayinlar as Array<{ soru_seti_durum_id: string }> | null) ?? []).map(y => y.soru_seti_durum_id));
 
     // Tek join query ile zinciri çek. Talebe videolar → talepler (talep_id) ile
     // DOĞRUDAN ulaşılır (Adım 5 modeli); eski senaryo_durumu→senaryolar hopları
@@ -72,11 +72,53 @@ export async function GET(request: NextRequest) {
 
     if (onayError) return hataYaniti("Onaylanan soru seti durumları çekilemedi.", "soru_seti_durumu join SELECT", onayError);
 
+    type SoruSetiDurumJoinRow = {
+      soru_seti_durum_id: string;
+      soru_seti_id: string;
+      created_at: string;
+      soru_setleri?: {
+        soru_seti_id: string;
+        video_durum_id: string;
+        sorular?: unknown;
+        video_durumu?: {
+          video_durum_id: string;
+          video_id: string;
+          video_puanlari?: { video_puan_id: string; video_puani: number } | Array<{ video_puan_id: string; video_puani: number }> | null;
+          videolar?: {
+            video_id: string;
+            video_url?: string | null;
+            thumbnail_url?: string | null;
+            talepler?: unknown;
+          } | Array<{
+            video_id: string;
+            video_url?: string | null;
+            thumbnail_url?: string | null;
+            talepler?: unknown;
+          }> | null;
+        } | Array<{
+          video_durum_id: string;
+          video_id: string;
+          video_puanlari?: { video_puan_id: string; video_puani: number } | Array<{ video_puan_id: string; video_puani: number }> | null;
+          videolar?: unknown;
+        }> | null;
+      } | Array<{
+        soru_seti_id: string;
+        video_durum_id: string;
+        sorular?: unknown;
+        video_durumu?: unknown;
+      }> | null;
+    };
+
+    const onaylananListesi = (onaylananlar as unknown as SoruSetiDurumJoinRow[] | null) ?? [];
+
     // Henüz yayına alınmayanları filtrele
-    const bekleyenler = (onaylananlar ?? []).filter((ss: any) => {
-      const talep = ss.soru_setleri?.video_durumu?.videolar?.talepler;
+    const bekleyenler = onaylananListesi.filter(ss => {
+      const soruSeti = Array.isArray(ss.soru_setleri) ? ss.soru_setleri[0] : ss.soru_setleri;
+      const videoDurum = Array.isArray(soruSeti?.video_durumu) ? soruSeti.video_durumu[0] : soruSeti?.video_durumu;
+      const video = Array.isArray(videoDurum?.videolar) ? videoDurum?.videolar[0] : videoDurum?.videolar;
+      const taleplerRaw = Array.isArray(video?.talepler) ? video?.talepler[0] : video?.talepler;
       return !yayindakiIds.has(ss.soru_seti_durum_id)
-        && talep?.yayin_oncesi_silme_durumu !== "tamamlandi";
+        && (taleplerRaw as { yayin_oncesi_silme_durumu?: string })?.yayin_oncesi_silme_durumu !== "tamamlandi";
     });
 
     const bosHedefSayilari = Object.fromEntries(
@@ -93,7 +135,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Soru puanlarını tek sorguda çek
-    const bekleyenDurumIdler = bekleyenler.map((ss: any) => ss.soru_seti_durum_id);
+    const bekleyenDurumIdler = bekleyenler.map(ss => ss.soru_seti_durum_id);
 
     const { data: tumSoruPuanlari, error: spError } = await adminSupabase
       .from("soru_seti_puanlari")
@@ -119,19 +161,21 @@ export async function GET(request: NextRequest) {
 
     // Join sonucundan response yapısını oluştur
     const sonuc = bekleyenler
-      .map((ss: any) => {
-        const soruSeti = ss.soru_setleri;
+      .map(ss => {
+        const soruSeti = Array.isArray(ss.soru_setleri) ? ss.soru_setleri[0] : ss.soru_setleri;
         if (!soruSeti) {
           console.error("[UYARI] Soru seti join verisi eksik:", { soru_seti_durum_id: ss.soru_seti_durum_id });
           return null;
         }
 
-        const videoDurum = soruSeti.video_durumu;
-        const video = videoDurum?.videolar;
+        const videoDurum = Array.isArray(soruSeti.video_durumu) ? soruSeti.video_durumu[0] : soruSeti.video_durumu;
+        const video = Array.isArray(videoDurum?.videolar) ? videoDurum?.videolar[0] : videoDurum?.videolar;
         // Künye ortak çeviriciden (25.07, Aşama 3): ad kuralı ve varsayılanlar tek yerde.
-        const talep = video?.talepler ? haritalaTalep(video.talepler) : null;
+        const taleplerRaw = Array.isArray(video?.talepler) ? video?.talepler[0] : video?.talepler;
+        const talep = taleplerRaw ? haritalaTalep(taleplerRaw as HamTalepKaydi) : null;
         if (!talep || talep.uretici_id !== user.id) return null;
-        const videoPuan = videoDurum?.video_puanlari;
+        const videoPuanlarRaw = videoDurum?.video_puanlari;
+        const videoPuan = Array.isArray(videoPuanlarRaw) ? videoPuanlarRaw[0] : videoPuanlarRaw;
 
         const egitimTuru = talep?.egitim_turu ?? "urun_egitimi";
         const hedefRoller = talep?.hedef_roller ?? ["utt"];

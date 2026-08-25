@@ -11,6 +11,8 @@ import VideoBolumu from "@/components/ana-sayfa/VideoBolumu";
 import { AnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 import { haftaBaslangici } from "@/lib/zaman/kontrol";
 
+import type { AuthKullanici } from "@/types/auth";
+
 interface HaftaninEni {
   kullanici_id: string;
   ad: string;
@@ -33,7 +35,7 @@ interface YoneticiVeri {
 }
 
 interface Props {
-  user: any;
+  user: AuthKullanici;
   rol: string;
   adSoyad: string;
 }

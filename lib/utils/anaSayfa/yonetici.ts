@@ -43,20 +43,27 @@ export async function getYoneticiAnaSayfaVeri(userId: string, adminSupabase: Sup
 
   const stat = (ozet && ozet.length > 0) ? ozet[0] : null;
 
-  const uttIdSet = new Set((firmaUttler ?? []).map((u: any) => u.kullanici_id));
+  const uttIdSet = new Set((firmaUttler ?? []).map(u => u.kullanici_id));
   const fotoMap: Record<string, string | null> = {};
   for (const u of firmaUttler ?? []) fotoMap[u.kullanici_id] = u.fotograf_url;
 
+  interface KullaniciOzetRow {
+    kullanici_id: string;
+    ad?: string;
+    soyad?: string;
+    toplam_net_puan?: number;
+  }
+
   // Top 5 UTT (firma içi UTT/KD_UTT + puanı > 0, net puan DESC)
-  const top5 = (haftaUttler ?? [])
-    .filter((u: any) => uttIdSet.has(u.kullanici_id) && (u.toplam_net_puan ?? 0) > 0)
-    .sort((a: any, b: any) => (b.toplam_net_puan ?? 0) - (a.toplam_net_puan ?? 0))
+  const top5 = ((haftaUttler as KullaniciOzetRow[] | null) ?? [])
+    .filter(u => uttIdSet.has(u.kullanici_id) && (u.toplam_net_puan ?? 0) > 0)
+    .sort((a, b) => (b.toplam_net_puan ?? 0) - (a.toplam_net_puan ?? 0))
     .slice(0, 5);
 
-  const haftanin_enleri = top5.map((u: any) => ({
+  const haftanin_enleri = top5.map(u => ({
     kullanici_id: u.kullanici_id,
-    ad: u.ad,
-    soyad: u.soyad,
+    ad: u.ad ?? "",
+    soyad: u.soyad ?? "",
     fotograf_url: fotoMap[u.kullanici_id] ?? null,
     toplam_puan: u.toplam_net_puan ?? 0,
   }));

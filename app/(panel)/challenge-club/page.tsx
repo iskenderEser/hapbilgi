@@ -123,9 +123,11 @@ interface Quota {
   dolu_mu: boolean;
 }
 
+import type { AuthKullanici } from "@/types/auth";
+
 export default function ChallengeClubPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<AuthKullanici | null>(null);
   const [rol, setRol] = useState("");
   const [loading, setLoading] = useState(true);
   const [aktifTab, setAktifTab] = useState<Tab>("izlenecek");

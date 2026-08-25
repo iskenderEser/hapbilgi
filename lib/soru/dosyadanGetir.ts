@@ -184,7 +184,8 @@ async function pdften(dosya: File, secenekSayisi: number): Promise<DosyaGetirmeS
     // Aynı y-koordinatındaki parçalar tek satırdır — pdf metni satırlara böyle toplanır.
     let sonY: number | null = null;
     let satir = "";
-    for (const oge of icerik.items as any[]) {
+    type PdfMetinOgesi = { str?: string; transform?: number[] };
+    for (const oge of icerik.items as Array<PdfMetinOgesi>) {
       const y = Math.round(oge.transform?.[5] ?? 0);
       if (sonY !== null && Math.abs(y - sonY) > 2) {
         if (satir.trim()) satirlar.push(satir.trim());

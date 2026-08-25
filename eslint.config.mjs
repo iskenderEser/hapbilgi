@@ -18,6 +18,7 @@ const eslintConfig = defineConfig([
     files: ["app/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}", "components/**/*.{ts,tsx}"],
     plugins: { "hapbilgi-mimari": hapbilgiMimari },
     rules: {
+      "@typescript-eslint/no-explicit-any": "error",
       "hapbilgi-mimari/olu-rpc": "warn",
       "hapbilgi-mimari/firma-kolonlari": "warn",
       "hapbilgi-mimari/kayit-tek-kaynak": "warn",

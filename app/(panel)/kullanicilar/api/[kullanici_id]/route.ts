@@ -55,7 +55,7 @@ export async function PUT(
     const body = await request.json();
     const { ad, soyad, kullanici_rol, firma_id, takim_id, bolge_id, aktif_mi } = body;
 
-    const guncellenecek: any = {};
+    const guncellenecek: Record<string, unknown> = {};
     if (ad) guncellenecek.ad = ad.trim();
     if (soyad) guncellenecek.soyad = soyad.trim();
     if (kullanici_rol) guncellenecek.rol = kullanici_rol;

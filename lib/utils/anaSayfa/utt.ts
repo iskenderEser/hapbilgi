@@ -7,6 +7,19 @@ import { tamTekrarSayilari } from "@/lib/tclub/puan/tekrarSayim";
 import { EXTRA_PUAN_TEKRAR_ESIGI } from "@/lib/tclub/puan/strateji";
 import { haftaBaslangici } from "@/lib/zaman/kontrol";
 
+export interface VYayinSatiri {
+  yayin_id: string;
+  urun_adi?: string | null;
+  teknik_adi?: string | null;
+  video_puani?: number | null;
+  yayin_tarihi: string;
+  thumbnail_url?: string | null;
+  video_url?: string | null;
+  icerik_turu?: string | null;
+  talep_no?: number | null;
+  firma_adi?: string | null;
+}
+
 export async function getUttAnaSayfaVeri(userId: string, adminSupabase: SupabaseClient) {
   const { data: kullanici, error: kullaniciError } = await adminSupabase
     .from("kullanicilar")
@@ -79,13 +92,14 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
     }),
   ]);
 
-  if (yayinError) throw new Error("Yayınlar çekilemedi.")
+  if (yayinError) throw new Error("Yayınlar çekilemedi.");
 
   // Geçerli tur başlangıçları — SALT-OKUR toplu hesap (lib/tur/kayit.ts).
   // Tur bazlı süzgeç: yalnızca geçerli turda tamamlanan/devam eden izlemeler
   // videoyu "yeni videolar"dan düşürür; önceki turun izlemeleri düşürmez —
   // periyodu dolan video kendiliğinden "yeni"ye döner (§9.1).
-  const yayinIdler = (yayinlar ?? []).map((y: any) => y.yayin_id);
+  const yayinListesi = (yayinlar as VYayinSatiri[] | null) ?? [];
+  const yayinIdler = yayinListesi.map(y => y.yayin_id);
   const turMap = await gecerliTurBaslangiclari(adminSupabase, yayinIdler);
 
   const tamamlananMap: Record<string, boolean> = {};       // tur bazlı
@@ -172,10 +186,10 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
     izlenmeSayiMap[iz.yayin_id] = (izlenmeSayiMap[iz.yayin_id] ?? 0) + 1;
   }
 
-  const kullaniciBegeniSet = new Set((kullaniciBegeni ?? []).map((b: any) => b.yayin_id));
-  const kullaniciFavoriSet = new Set((kullaniciFavori ?? []).map((f: any) => f.yayin_id));
+  const kullaniciBegeniSet = new Set((kullaniciBegeni ?? []).map(b => b.yayin_id));
+  const kullaniciFavoriSet = new Set((kullaniciFavori ?? []).map(f => f.yayin_id));
 
-  const videoToItem = (y: any) => ({
+  const videoToItem = (y: VYayinSatiri) => ({
     yayin_id: y.yayin_id,
     talep_no: y.talep_no ?? null,
     firma_adi: y.firma_adi ?? null,
@@ -202,14 +216,14 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
         : "yeni",
   });
 
-  const yeni_videolar = (yayinlar ?? []).filter((y: any) => !tamamlananMap[y.yayin_id] && !devamEdenMap[y.yayin_id]).map(videoToItem);
-  const devam_edenler = (yayinlar ?? []).filter((y: any) => devamEdenMap[y.yayin_id] && !tamamlananMap[y.yayin_id]).map(videoToItem);
-  const tamamlananlar = (yayinlar ?? []).filter((y: any) => tamamlananMap[y.yayin_id]).map(videoToItem);
+  const yeni_videolar = yayinListesi.filter(y => !tamamlananMap[y.yayin_id] && !devamEdenMap[y.yayin_id]).map(videoToItem);
+  const devam_edenler = yayinListesi.filter(y => devamEdenMap[y.yayin_id] && !tamamlananMap[y.yayin_id]).map(videoToItem);
+  const tamamlananlar = yayinListesi.filter(y => tamamlananMap[y.yayin_id]).map(videoToItem);
 
   // En Son İzlediklerim: tamamlanan izlemeler, en geç tamamlanma anına göre (desc), ilk 5.
-  const son_izlediklerim = (yayinlar ?? [])
-    .filter((y: any) => sonIzlemeMap[y.yayin_id])
-    .sort((a: any, b: any) => new Date(sonIzlemeMap[b.yayin_id]).getTime() - new Date(sonIzlemeMap[a.yayin_id]).getTime())
+  const son_izlediklerim = yayinListesi
+    .filter(y => sonIzlemeMap[y.yayin_id])
+    .sort((a, b) => new Date(sonIzlemeMap[b.yayin_id]).getTime() - new Date(sonIzlemeMap[a.yayin_id]).getTime())
     .slice(0, 5)
     .map(videoToItem);
 
@@ -219,14 +233,14 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
   // toplu, N+1 yok); "bu ay kazanıldı" durumu sayıdan türer (sayi >= eşik).
   // Sayım hatasında güvenli davranış: sayilar boş harita döner → kalan = eşik
   // görünür, puan kararı etkilenmez (görüntü katmanı).
-  const ekstraAdaylar = (yayinlar ?? []).filter((y: any) => (omurBoyuIzlemeSayiMap[y.yayin_id] ?? 0) >= 2);
-  const sayim = await tamTekrarSayilari(adminSupabase, userId, ekstraAdaylar.map((y: any) => y.yayin_id), turMap);
+  const ekstraAdaylar = yayinListesi.filter(y => (omurBoyuIzlemeSayiMap[y.yayin_id] ?? 0) >= 2);
+  const sayim = await tamTekrarSayilari(adminSupabase, userId, ekstraAdaylar.map(y => y.yayin_id), turMap);
   if (!sayim.ok) {
     console.error("[UYARI] Ekstra İzlediklerim tam tekrar sayımı yapılamadı:", { hata: sayim.error });
   }
 
   const ekstra_izlediklerim = ekstraAdaylar
-    .map((y: any) => {
+    .map(y => {
       const tamTekrar = sayim.sayilar[y.yayin_id] ?? 0;
       return {
         ...videoToItem(y),
@@ -237,7 +251,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
       };
     })
     // K-A4: extra'ya yakın önce; "bu ay kazanıldı" satırları altta; ikincil: toplam izleme (çoktan aza)
-    .sort((a: any, b: any) => {
+    .sort((a, b) => {
       const aK = a.bu_ay_extra_kazanildi ? 1 : 0;
       const bK = b.bu_ay_extra_kazanildi ? 1 : 0;
       if (aK !== bK) return aK - bK;

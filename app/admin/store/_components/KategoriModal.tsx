@@ -19,7 +19,7 @@ interface Props {
   mevcutKategori: Kategori | null;
   onKapat: () => void;
   onKaydedildi: () => void | Promise<void>;
-  hata: (mesaj: string, adim?: string, detay?: any) => void;
+  hata: (mesaj: string, adim?: string, detay?: string) => void;
   basari: (mesaj: string) => void;
 }
 

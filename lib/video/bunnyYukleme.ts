@@ -54,8 +54,8 @@ export async function bunnyYuklemeBaslat(baslik: string): Promise<BunnyVideoKayd
       headers: { AccessKey: ortam.apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({ title: baslik }),
     });
-  } catch (err: any) {
-    return { ok: false, hata: "Bunny'ye ulaşılamadı.", adim: "Bunny video kaydı POST", detay: err?.message };
+  } catch (err: unknown) {
+    return { ok: false, hata: "Bunny'ye ulaşılamadı.", adim: "Bunny video kaydı POST", detay: err instanceof Error ? err.message : String(err) };
   }
 
   if (!yanit.ok) {
@@ -131,8 +131,8 @@ export async function bunnyVideoDurumu(videoGuid: string): Promise<BunnyVideoDur
     yanit = await fetch(`${BUNNY_API}/library/${ortam.libraryId}/videos/${videoGuid}`, {
       headers: { AccessKey: ortam.apiKey },
     });
-  } catch (err: any) {
-    return { ok: false, hata: "Bunny'ye ulaşılamadı.", adim: "Bunny video durum GET", detay: err?.message };
+  } catch (err: unknown) {
+    return { ok: false, hata: "Bunny'ye ulaşılamadı.", adim: "Bunny video durum GET", detay: err instanceof Error ? err.message : String(err) };
   }
   if (!yanit.ok) {
     return { ok: false, hata: "Bunny video durumu alınamadı.", adim: "Bunny video durum GET", detay: `HTTP ${yanit.status}` };

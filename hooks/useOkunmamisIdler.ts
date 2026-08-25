@@ -26,10 +26,14 @@ export function useOkunmamisIdler(kayit_turu: KayitTuru): Set<string> {
         const res = await fetch("/bildirimler/api");
         if (!res.ok) return;
         const data = await res.json();
-        if (!aktif) return;
-        const ilgili = (data.bildirimler ?? [])
-          .filter((b: any) => b.kayit_turu === kayit_turu)
-          .map((b: any) => b.kayit_id);
+        interface BildirimItem {
+          kayit_turu: string;
+          kayit_id: string;
+        }
+        const bildirimler = (data.bildirimler ?? []) as BildirimItem[];
+        const ilgili = bildirimler
+          .filter(b => b.kayit_turu === kayit_turu)
+          .map(b => b.kayit_id);
         setIdler(new Set(ilgili));
       } catch {}
     };

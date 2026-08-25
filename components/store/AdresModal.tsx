@@ -17,7 +17,7 @@ interface Props {
   mevcutAdres: Adres | null;  // null → ekleme modu; dolu → düzenleme modu
   onKapat: () => void;
   onKaydedildi: () => void | Promise<void>;
-  hata: (mesaj: string, adim?: string, detay?: any) => void;
+  hata: (mesaj: string, adim?: string, detay?: string) => void;
   basari: (mesaj: string) => void;
 }
 
@@ -74,7 +74,7 @@ export default function AdresModal({
     for (const alan of zorunlular) {
       const deger = form[alan];
       if (!deger || typeof deger !== "string" || deger.trim() === "") {
-        hata(`${alan} alanı zorunludur.`, "validasyon", null);
+        hata(`${alan} alanı zorunludur.`, "validasyon");
         return;
       }
     }

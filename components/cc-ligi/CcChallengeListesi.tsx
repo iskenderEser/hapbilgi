@@ -31,7 +31,7 @@ interface ChallengeKaydi {
 interface Props {
   yil: number;
   ay: number;
-  hata: (mesaj: string, adim?: string, detay?: any) => void;
+  hata: (mesaj: string, adim?: string, detay?: string) => void;
 }
 
 const BORDO = "#bc2d0d";

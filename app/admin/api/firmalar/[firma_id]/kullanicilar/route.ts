@@ -43,25 +43,45 @@ export async function GET(
       .eq("firma_id", firma_id)
       .order("ad", { ascending: true });
 
-    if (error) return hataYaniti("Kullanıcılar çekilemedi.", "kullanicilar tablosu SELECT — firma_id filtresi", error);
+    interface AdminKullaniciRow {
+      kullanici_id: string;
+      ad: string;
+      soyad: string;
+      eposta: string;
+      telefon?: string | null;
+      rol: string;
+      firma_id: string;
+      takim_id?: string | null;
+      bolge_id?: string | null;
+      aktif_mi: boolean;
+      yetki_kullanici_yonetim?: boolean | null;
+      yetki_aktif_pasif?: boolean | null;
+      created_at?: string | null;
+      takimlar?: { takim_adi?: string | null } | Array<{ takim_adi?: string | null }> | null;
+      bolgeler?: { bolge_adi?: string | null } | Array<{ bolge_adi?: string | null }> | null;
+    }
 
-    const sonuc = (kullanicilar ?? []).map((k: any) => ({
-      kullanici_id: k.kullanici_id,
-      ad: k.ad,
-      soyad: k.soyad,
-      eposta: k.eposta,
-      telefon: k.telefon ?? null,
-      rol: k.rol,
-      firma_id: k.firma_id,
-      takim_id: k.takim_id,
-      bolge_id: k.bolge_id,
-      aktif_mi: k.aktif_mi,
-      yetki_kullanici_yonetim: k.yetki_kullanici_yonetim,
-      yetki_aktif_pasif: k.yetki_aktif_pasif,
-      created_at: k.created_at,
-      takim_adi: k.takimlar?.takim_adi ?? null,
-      bolge_adi: k.bolgeler?.bolge_adi ?? null,
-    }));
+    const sonuc = ((kullanicilar as unknown as AdminKullaniciRow[] | null) ?? []).map(k => {
+      const takimObj = Array.isArray(k.takimlar) ? k.takimlar[0] : k.takimlar;
+      const bolgeObj = Array.isArray(k.bolgeler) ? k.bolgeler[0] : k.bolgeler;
+      return {
+        kullanici_id: k.kullanici_id,
+        ad: k.ad,
+        soyad: k.soyad,
+        eposta: k.eposta,
+        telefon: k.telefon ?? null,
+        rol: k.rol,
+        firma_id: k.firma_id,
+        takim_id: k.takim_id,
+        bolge_id: k.bolge_id,
+        aktif_mi: k.aktif_mi,
+        yetki_kullanici_yonetim: k.yetki_kullanici_yonetim,
+        yetki_aktif_pasif: k.yetki_aktif_pasif,
+        created_at: k.created_at,
+        takim_adi: takimObj?.takim_adi ?? null,
+        bolge_adi: bolgeObj?.bolge_adi ?? null,
+      };
+    });
 
     return NextResponse.json({ kullanicilar: sonuc }, { status: 200 });
 

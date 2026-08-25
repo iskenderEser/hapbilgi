@@ -32,7 +32,7 @@ export interface TalepBilgisi {
   hedef_roller: HedefRoller;
   icerik_turu: string | null;
   aciklama: string | null;
-  dosya_urls: any[] | null;
+  dosya_urls: unknown[] | null;
   hazir_video: boolean;
   hazir_soru_seti: boolean;
   soru_seti_buyuklugu: number;
@@ -41,6 +41,31 @@ export interface TalepBilgisi {
   created_at: string | null;
   yayin_oncesi_silme_durumu: "isleniyor" | "tamamlandi" | "hata" | null;
   yayin_oncesi_silme_tarihi: string | null;
+}
+
+export interface HamTalepKaydi {
+  talep_id: string;
+  talep_no?: number | null;
+  uretici_id?: string | null;
+  egitim_turu?: string | null;
+  hedef_roller?: unknown;
+  icerik_turu?: string | null;
+  aciklama?: string | null;
+  dosya_urls?: unknown[] | null;
+  hazir_video?: boolean | null;
+  hazir_soru_seti?: boolean | null;
+  soru_seti_buyuklugu?: number | null;
+  secenek_sayisi?: number | null;
+  video_basi_soru_sayisi?: number | null;
+  created_at?: string | null;
+  yayin_oncesi_silme_durumu?: "isleniyor" | "tamamlandi" | "hata" | null;
+  yayin_oncesi_silme_tarihi?: string | null;
+  urun_adi?: string | null;
+  teknik_adi?: string | null;
+  urunler?: { urun_adi?: string | null } | Array<{ urun_adi?: string | null }> | null;
+  teknikler?: { teknik_adi?: string | null } | Array<{ teknik_adi?: string | null }> | null;
+  firmalar?: { firma_adi?: string | null } | Array<{ firma_adi?: string | null }> | null;
+  kullanicilar?: { rol?: string | null } | Array<{ rol?: string | null }> | null;
 }
 
 // talepler embed'i için ortak alan listesi ve haritalama — üç giriş de aynı.
@@ -80,21 +105,21 @@ export const TALEP_ALANLARI = `
   kullanicilar!uretici_id ( rol )
 `;
 
-export function haritalaTalep(talep: any): TalepBilgisi {
+export function haritalaTalep(talep: HamTalepKaydi): TalepBilgisi {
+  const firmalar = Array.isArray(talep.firmalar) ? talep.firmalar[0] : talep.firmalar;
+  const urunler = Array.isArray(talep.urunler) ? talep.urunler[0] : talep.urunler;
+  const teknikler = Array.isArray(talep.teknikler) ? talep.teknikler[0] : talep.teknikler;
+  const kullanicilar = Array.isArray(talep.kullanicilar) ? talep.kullanicilar[0] : talep.kullanicilar;
+
   return {
     talep_id: talep.talep_id,
     talep_no: talep.talep_no ?? null,
-    firma_adi: talep.firmalar?.firma_adi ?? "",
+    firma_adi: firmalar?.firma_adi ?? "",
     uretici_id: talep.uretici_id ?? null,
-    // Unvan tek yerden çözülür (ROL_ADLARI). Eskiden liste ekranları bunu ayrı bir
-    // kullanicilar sorgusuyla, üç sayfada tekrarlanan kodla hesaplıyordu; detay
-    // ekranlarında ise hiç yoktu — orada metinlere sabit "PM" yazılmıştı.
-    uretici_rol_adi: talep.kullanicilar?.rol ? (ROL_ADLARI[talep.kullanicilar.rol] ?? talep.kullanicilar.rol) : null,
-    // Aynı ham rolden iki ayrı çıktı: unvan (metin) ve departman (gruplama).
-    // Sorguya dokunulmadı — kullanicilar.rol zaten TALEP_ALANLARI içinde geliyordu.
-    departman: departmanKey(talep.kullanicilar?.rol),
-    urun_adi: talep.urunler?.urun_adi ?? talep.urun_adi ?? "-",
-    teknik_adi: talep.teknikler?.teknik_adi ?? talep.teknik_adi ?? "-",
+    uretici_rol_adi: kullanicilar?.rol ? (ROL_ADLARI[kullanicilar.rol] ?? kullanicilar.rol) : null,
+    departman: departmanKey(kullanicilar?.rol),
+    urun_adi: urunler?.urun_adi ?? talep.urun_adi ?? "-",
+    teknik_adi: teknikler?.teknik_adi ?? talep.teknik_adi ?? "-",
     egitim_turu: (talep.egitim_turu ?? "urun_egitimi") as TalepTuru,
     hedef_roller: hedefRolleriOku(talep),
     icerik_turu: talep.icerik_turu ?? null,
@@ -122,8 +147,9 @@ export async function talepBilgisiSenaryo(
     .eq("senaryo_id", senaryo_id)
     .single();
 
-  if (!data?.talepler) return null;
-  return haritalaTalep(data.talepler);
+  const talep = Array.isArray(data?.talepler) ? data?.talepler[0] : data?.talepler;
+  if (!talep) return null;
+  return haritalaTalep(talep as unknown as HamTalepKaydi);
 }
 
 // videolar → talep (doğrudan talep_id; hazır videoda da çalışır)
@@ -137,8 +163,9 @@ export async function talepBilgisiVideo(
     .eq("video_id", video_id)
     .single();
 
-  if (!data?.talepler) return null;
-  return haritalaTalep(data.talepler);
+  const talep = Array.isArray(data?.talepler) ? data?.talepler[0] : data?.talepler;
+  if (!talep) return null;
+  return haritalaTalep(talep as unknown as HamTalepKaydi);
 }
 
 // soru_setleri → talep (doğrudan talep_id; hazır sette de çalışır)
@@ -152,8 +179,9 @@ export async function talepBilgisiSoruSeti(
     .eq("soru_seti_id", soru_seti_id)
     .single();
 
-  if (!data?.talepler) return null;
-  return haritalaTalep(data.talepler);
+  const talep = Array.isArray(data?.talepler) ? data?.talepler[0] : data?.talepler;
+  if (!talep) return null;
+  return haritalaTalep(talep as unknown as HamTalepKaydi);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -178,7 +206,7 @@ export async function talepBilgisiTalep(
     .maybeSingle();
 
   if (!data) return null;
-  return haritalaTalep(data);
+  return haritalaTalep(data as unknown as HamTalepKaydi);
 }
 
 // senaryo_durumu → senaryolar → talep (video detay ekranının anahtarı)
@@ -192,9 +220,10 @@ export async function talepBilgisiSenaryoDurum(
     .eq("senaryo_durum_id", senaryo_durum_id)
     .maybeSingle();
 
-  const talep = (data as any)?.senaryolar?.talepler;
+  const senaryolar = Array.isArray(data?.senaryolar) ? data.senaryolar[0] : data?.senaryolar;
+  const talep = Array.isArray(senaryolar?.talepler) ? senaryolar?.talepler[0] : senaryolar?.talepler;
   if (!talep) return null;
-  return haritalaTalep(talep);
+  return haritalaTalep(talep as unknown as HamTalepKaydi);
 }
 
 // video_durumu → videolar → talep (soru seti detay ekranının anahtarı).
@@ -209,9 +238,10 @@ export async function talepBilgisiVideoDurum(
     .eq("video_durum_id", video_durum_id)
     .maybeSingle();
 
-  const talep = (data as any)?.videolar?.talepler;
+  const videolar = Array.isArray(data?.videolar) ? data.videolar[0] : data?.videolar;
+  const talep = Array.isArray(videolar?.talepler) ? videolar?.talepler[0] : videolar?.talepler;
   if (!talep) return null;
-  return haritalaTalep(talep);
+  return haritalaTalep(talep as unknown as HamTalepKaydi);
 }
 
 // Çoklu talep → künye listesi (liste ekranları: tek sorgu, N+1 yok).
@@ -227,5 +257,5 @@ export async function talepBilgileriCoklu(
     .select(TALEP_ALANLARI)
     .in("talep_id", talep_idler);
 
-  return (data ?? []).map(haritalaTalep);
+  return ((data as HamTalepKaydi[] | null) ?? []).map(haritalaTalep);
 }

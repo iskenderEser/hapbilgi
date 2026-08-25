@@ -51,7 +51,7 @@ export async function POST(
     const workbook = XLSX.read(buffer, { type: "array" });
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
-    const hamSatirlar: any[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+    const hamSatirlar: Record<string, unknown>[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
     if (hamSatirlar.length === 0) return validasyonHatasi("Dosya en az 1 veri satırı içermelidir.", ["dosya"]);
 
