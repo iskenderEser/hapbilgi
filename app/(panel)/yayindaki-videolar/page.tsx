@@ -20,6 +20,7 @@ import { URETICI_ROLLER, YAYINDAKI_VIDEO_GORENLER } from "@/lib/utils/roller";
 import { departmanKey } from "@/lib/video/departman";
 import BmOneriPaneli from "./_components/BmOneriPaneli";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 
 function OzetKarti({
   etiket,
@@ -178,9 +179,12 @@ export default function YayindakiVideolarPage() {
           <section aria-labelledby="sirket-yayinlari-baslik" className="flex flex-col gap-4">
             <div>
               <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">Ortak içerik kütüphanesi</p>
-              <h1 id="sirket-yayinlari-baslik" className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">
-                Şirket Yayınları
-              </h1>
+              <div className="inline-flex items-center">
+                <h1 id="sirket-yayinlari-baslik" className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">
+                  Şirket Yayınları
+                </h1>
+                <SayfaRehberi anahtar="yayindaki-videolar" className="ml-1.5 -translate-y-1.5" />
+              </div>
               <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">
                 Tüm üretici birimlerin yayındaki içeriklerini keşfedin; izlenme ve etkileşim eğilimlerini tek katalogda görün.
               </p>

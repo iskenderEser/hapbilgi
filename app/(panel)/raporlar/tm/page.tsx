@@ -13,6 +13,7 @@ import DagilimGrafik from '@/components/raporlar/DagilimGrafik';
 import UrunKirilimPaneli from '@/components/raporlar/UrunKirilimPaneli';
 import BmPerformansGorunumu from '@/components/raporlar/BmPerformansGorunumu';
 import type { BmPerformansDetay } from '@/lib/rapor/paylasilan/bmPerformansTipleri';
+import SayfaRehberi from '@/components/rehber/SayfaRehberi';
 import styles from '../utt/utt-report.module.css';
 
 const DEFAULT_PERIYOT: Periyot = 'bu_ay';
@@ -129,9 +130,12 @@ export default function TmRaporPage() {
             <div className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">
               <Sparkles className="h-3.5 w-3.5" /> Takım performans analizi
             </div>
-            <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">
-              {data.kullanici.takim_adi} Takımı
-            </h1>
+            <div className="inline-flex items-center">
+              <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">
+                {data.kullanici.takim_adi} Takımı
+              </h1>
+              <SayfaRehberi anahtar="raporlar-tm" className="ml-1.5 -translate-y-1" />
+            </div>
             <p className="mt-0.5 text-xs font-semibold text-[#78889d]">
               {data.kullanici.rol.toUpperCase()} · {data.kullanici.ad} {data.kullanici.soyad} · {data.kullanici.firma_adi}
             </p>

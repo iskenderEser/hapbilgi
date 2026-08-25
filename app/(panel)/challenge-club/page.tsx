@@ -15,6 +15,7 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import ChallengeGonderPaneli, { type GonderSonuc } from "@/components/challenge-club/ChallengeGonderPaneli";
 import { UttVideoKarti, type UttVideo } from "@/components/video/UttVideoKarti";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 
 const CC_RENK = "#237ac8";
 const GRI_METIN = "#737373";
@@ -366,12 +367,15 @@ export default function ChallengeClubPage() {
             >
               <Swords size={14} /> Challenge Club
             </div>
-            <h1
-              className="m-0 text-2xl font-extrabold tracking-[-0.03em]"
-              style={{ color: "#203653" }}
-            >
-              Merhaba {ad}
-            </h1>
+            <div className="inline-flex items-center">
+              <h1
+                className="m-0 text-2xl font-extrabold tracking-[-0.03em]"
+                style={{ color: "#203653" }}
+              >
+                Challenge Club
+              </h1>
+              <SayfaRehberi anahtar="challenge-club" className="ml-1.5 -translate-y-1" />
+            </div>
             <p className="mt-1 max-w-2xl text-xs font-semibold leading-5" style={{ color: "#8190a3" }}>
               {"BM · Diğer BM'lere video önerin, size gelen challenge'ları izleyin ve puan kazanın."}
             </p>

@@ -26,6 +26,7 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import type { Urun, Kategori } from "@/lib/tclub/store/tipler";
 import { STOK_AZ_ESIK } from "@/lib/tclub/store/sabitler";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 
 const BORDO = "#bc2d0d";
 const GRI_METIN = "#737373";
@@ -169,9 +170,12 @@ export default function StorePage() {
             <div className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#71859d]">
               HBStore
             </div>
-            <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[#203653]">
-              Mağazam
-            </h1>
+            <div className="inline-flex items-center">
+              <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[#203653]">
+                Mağazam
+              </h1>
+              <SayfaRehberi anahtar="store-magaza" className="ml-1.5 -translate-y-1" />
+            </div>
             <p className="mt-1 text-xs font-medium text-[#8190a3]">
               Sipariş puanınızla alabileceğiniz ürünleri inceleyin.
             </p>

@@ -18,6 +18,7 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 import { ECZANEM_RAPOR_GOREN_ROLLER, ECZANEM_TALEP_ACAN_ROLLER, YONETICI_ROLLER, ROL_ADLARI } from "@/lib/utils/roller";
 import { GRI_METIN, KIRMIZI, PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import styles from "../utt/utt-report.module.css";
 
 const DEFAULT_PERIYOT: Periyot = "bu_ay";
@@ -259,9 +260,12 @@ export default function EczanemRaporPage() {
             <div className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">
               <Sparkles className="h-3.5 w-3.5" /> {eyebrowMetni}
             </div>
-            <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">
-              {baslikMetni}
-            </h1>
+            <div className="inline-flex items-center">
+              <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">
+                {baslikMetni}
+              </h1>
+              <SayfaRehberi anahtar="raporlar-eczanem" className="ml-1.5 -translate-y-1" />
+            </div>
             <p className="mt-0.5 text-xs font-semibold text-[#78889d]">
               {kimlikMetni}
             </p>

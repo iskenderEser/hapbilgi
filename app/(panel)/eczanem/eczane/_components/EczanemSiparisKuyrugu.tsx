@@ -117,8 +117,15 @@ export default function EczanemSiparisKuyrugu({ hata, basari }: Props) {
     finally { setIsliyor(false); }
   };
 
-  return <>
-    <EczanemEczaneBaslik ikon={ClipboardList} baslik="Sipariş Onayı" aciklama="Müşteriden gelen indirim taleplerini inceleyin; onayda puan atomik olarak kullanılır, onaylanmayan talepte müşteri puanı korunur." aksiyon={<YenileButonu yenileniyor={yenileniyor} onYenile={() => cek(true)} disabled={isliyor} />} />
+  return (
+    <>
+      <EczanemEczaneBaslik
+        ikon={ClipboardList}
+        baslik="Sipariş Onayı"
+        rehberAnahtar="eczanem-eczane-siparisler"
+        aciklama="Müşteriden gelen indirim taleplerini inceleyin; onayda puan atomik olarak kullanılır, onaylanmayan talepte müşteri puanı korunur."
+        aksiyon={<YenileButonu yenileniyor={yenileniyor} onYenile={() => cek(true)} disabled={isliyor} />}
+      />
 
     {veriHazir && <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
       <EczanemOzetKarti ikon={Clock3} etiket="Onay bekleyen" deger={veri.ozet.bekleyen} detay="En eski talep önce" renk="#b7791f" zemin="#fff7e8" />
@@ -143,5 +150,6 @@ export default function EczanemSiparisKuyrugu({ hata, basari }: Props) {
     </EczanemPanel>
 
     <AlertDialog open={!!onayHedefi} onOpenChange={(acik) => { if (!acik && !isliyor) setOnayHedefi(null); }}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{onayHedefi?.aksiyon === "onayla" ? "Siparişi onaylamak istediğinize emin misiniz?" : "İndirim talebini onaylamamak istediğinize emin misiniz?"}</AlertDialogTitle><AlertDialogDescription>{onayHedefi?.siparis.urun_adi ?? "Sipariş"} için {onayHedefi?.siparis.adet ?? 0} kutu ve {paraYaz(onayHedefi?.siparis.indirim_tl ?? 0)} indirim talebi. {onayHedefi?.aksiyon === "onayla" ? "Onayla birlikte müşterinin kullanılabilir puanı atomik olarak düşer ve fiş kesinleşir." : "Talep onaylanmaz; müşterinin puanı değişmeden kalır."}</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Vazgeç</AlertDialogCancel><AlertDialogAction onClick={(event) => { event.preventDefault(); void islem(); }} className={onayHedefi?.aksiyon === "onayla" ? "bg-[#16865f] hover:bg-[#116d4d]" : "bg-[#b84444] hover:bg-[#9f3636]"}>{onayHedefi?.aksiyon === "onayla" ? <CheckCircle2 /> : <XCircle />} {onayHedefi?.aksiyon === "onayla" ? "Siparişi onayla" : "Onaylama"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-  </>;
+    </>
+  );
 }

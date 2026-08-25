@@ -41,8 +41,15 @@ export default function EczanemDokum({ hata }: Props) {
 
   useEffect(() => { void cek(); return () => istekRef.current?.abort(); }, [cek]);
 
-  return <>
-    <EczanemEczaneBaslik ikon={BarChart3} baslik="İşlem Dökümü" aciklama="Onaylanan siparişlerin ürün, kutu ve indirim toplamlarını mutabakat dönemine göre inceleyin. Müşteri kimliği bu rapora dahil edilmez." aksiyon={<YenileButonu yenileniyor={yenileniyor} onYenile={() => cek(true)} />} />
+  return (
+    <>
+      <EczanemEczaneBaslik
+        ikon={BarChart3}
+        baslik="İşlem Dökümü"
+        rehberAnahtar="eczanem-eczane-dokum"
+        aciklama="Onaylanan siparişlerin ürün, kutu ve indirim toplamlarını mutabakat dönemine göre inceleyin. Müşteri kimliği bu rapora dahil edilmez."
+        aksiyon={<YenileButonu yenileniyor={yenileniyor} onYenile={() => cek(true)} />}
+      />
 
     <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
       <EczanemOzetKarti ikon={Boxes} etiket="Toplam kutu" deger={(dokum?.toplam_kutu ?? 0).toLocaleString("tr-TR")} detay="Onaylanan siparişler" />
@@ -59,5 +66,6 @@ export default function EczanemDokum({ hata }: Props) {
     </EczanemPanel>
 
     <div className="flex items-start gap-2 rounded-xl border border-[#dce8f2] bg-[#f5f9fc] p-3 text-xs font-semibold leading-5 text-[#60758c]"><CalendarRange className="mt-0.5 size-4 shrink-0 text-[#237ac8]" /> İşlem dökümü yalnız onaylanmış siparişleri ürün bazında toplar. Müşteri adı, telefonu veya müşteri bazlı hareket bilgisi bu alana taşınmaz.</div>
-  </>;
+    </>
+  );
 }

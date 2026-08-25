@@ -8,6 +8,8 @@ import VideoOnizleme from "@/components/video/VideoOnizleme";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 import { PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
 import reportStyles from "@/app/(panel)/raporlar/utt/utt-report.module.css";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
 
 export interface OneriKaydi {
   oneri_id: string;
@@ -57,9 +59,17 @@ interface Props {
   oneriler: OneriKaydi[];
   periyot: Periyot;
   onPeriyotDegistir: (periyot: Periyot) => void;
+  yenileniyor?: boolean;
+  onYenile?: () => void;
 }
 
-export default function BmOneriTakibi({ oneriler, periyot, onPeriyotDegistir }: Props) {
+export default function BmOneriTakibi({
+  oneriler,
+  periyot,
+  onPeriyotDegistir,
+  yenileniyor = false,
+  onYenile,
+}: Props) {
   const router = useRouter();
   const [konuFiltresi, setKonuFiltresi] = useState("");
   const [uttFiltresi, setUttFiltresi] = useState("");
@@ -121,22 +131,28 @@ export default function BmOneriTakibi({ oneriler, periyot, onPeriyotDegistir }: 
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">Saha gelişim desteği</p>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">Öneri Takibi</h1>
+          <div className="inline-flex items-center">
+            <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">Öneri Takibi</h1>
+            <SayfaRehberi anahtar="oneriler-bm" className="ml-1.5 -translate-y-1.5" />
+          </div>
           <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">Bölgenizdeki UTT’lere gönderdiğiniz video önerilerini ve izlenme durumlarını takip edin.</p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
-          <div className={reportStyles.periods} aria-label="Öneri takip dönemi">
-            {PERIYOTLAR.map((secenek) => (
-              <button
-                type="button"
-                key={secenek.key}
-                onClick={() => onPeriyotDegistir(secenek.key)}
-                aria-pressed={periyot === secenek.key}
-                className={`${reportStyles.periodButton} ${periyot === secenek.key ? reportStyles.periodActive : ""}`}
-              >
-                {secenek.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <div className={reportStyles.periods} aria-label="Öneri takip dönemi">
+              {PERIYOTLAR.map((secenek) => (
+                <button
+                  type="button"
+                  key={secenek.key}
+                  onClick={() => onPeriyotDegistir(secenek.key)}
+                  aria-pressed={periyot === secenek.key}
+                  className={`${reportStyles.periodButton} ${periyot === secenek.key ? reportStyles.periodActive : ""}`}
+                >
+                  {secenek.label}
+                </button>
+              ))}
+            </div>
+            {onYenile && <YenileButonu yenileniyor={yenileniyor} onYenile={onYenile} />}
           </div>
           <button type="button" onClick={() => router.push("/yayindaki-videolar")} className="w-fit rounded-xl bg-[#2f7fc7] px-4 py-2.5 text-xs font-extrabold text-white shadow-sm hover:bg-[#256daf]">
             Yayındaki Videolardan Öner

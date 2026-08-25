@@ -167,7 +167,13 @@ export default function EczanemMusterilerimPage() {
   return (
     <EczanemEczaneSayfa>
       <HataMesajiContainer mesajlar={mesajlar} />
-      <EczanemEczaneBaslik ikon={Users} baslik="Müşterilerim" aciklama="Eczanenize bağlı müşterileri yönetin, kayıtlı müşteriyi bağlayın veya yeni müşteri oluşturun." aksiyon={<YenileButonu yenileniyor={yenileniyor} onYenile={() => musterileriCek(true)} disabled={baglaniyor || kGonderiliyor || !!islenenMusteri} />} />
+      <EczanemEczaneBaslik
+        ikon={Users}
+        baslik="Müşterilerim"
+        rehberAnahtar="eczanem-eczane-musterilerim"
+        aciklama="Eczanenize bağlı müşterileri yönetin, kayıtlı müşteriyi bağlayın veya yeni müşteri oluşturun."
+        aksiyon={<YenileButonu yenileniyor={yenileniyor} onYenile={() => musterileriCek(true)} disabled={baglaniyor || kGonderiliyor || !!islenenMusteri} />}
+      />
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <EczanemOzetKarti ikon={Users} etiket="Toplam müşteri" deger={veri.ozet.toplam} detay="Eczanenize bağlı" />

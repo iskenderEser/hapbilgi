@@ -79,6 +79,7 @@ export default function EclubStorePage() {
       <EclubKisiBaslik
         ikon={Store}
         baslik="Mağazam"
+        rehberAnahtar="eclub-store-magaza"
         aciklama="Farklı firmalardan kazandığınız puanları tek bakiyede birleştirerek E‑Club Store ürünlerinden sipariş verin."
         aksiyon={<div className="flex gap-2"><YenileButonu yenileniyor={yenileniyor} onYenile={yenile} disabled={Boolean(seciliUrun) || islemLoading} /><Link href="/eclub/store/siparislerim" className="rounded-xl border border-[#d7e1ec] bg-white px-3.5 py-2 text-xs font-extrabold text-[#45627f] hover:bg-[#f6f9fc]">Siparişlerim</Link><Link href="/eclub/store/adreslerim" className="rounded-xl border border-[#d7e1ec] bg-white px-3.5 py-2 text-xs font-extrabold text-[#45627f] hover:bg-[#f6f9fc]">Adreslerim</Link></div>}
       />

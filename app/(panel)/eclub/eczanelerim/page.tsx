@@ -16,6 +16,7 @@ import { EczaneBlogu } from "../listem/_components/EczaneBlogu";
 import { useEclubListem } from "../listem/_hooks/useEclubListem";
 import { glnGecerliMi, KISI_ROL_ETIKETLERI, type GlnSorguSonuc } from "../listem/_types";
 import bmStyles from "@/app/(panel)/raporlar/bm/bm-report.module.css";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 
 export default function EclubEczanelerimPage() {
   const router = useRouter();
@@ -166,7 +167,10 @@ export default function EclubEczanelerimPage() {
             <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#3589d8]">
               <Sparkles className="size-3.5" /> E‑Club Takım Oluşturma ve Yönetim
             </div>
-            <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">E-Club Takımım</h1>
+            <div className="inline-flex items-center">
+              <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">E-Club Takımım</h1>
+              <SayfaRehberi anahtar="eclub-eczanelerim" className="ml-1.5 -translate-y-1.5" />
+            </div>
             
             {takimDuzenleniyor ? (
               <div className="mt-2 flex flex-wrap items-center gap-2">

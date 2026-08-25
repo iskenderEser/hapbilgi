@@ -12,6 +12,7 @@ import { TUR_RAPOR_ADI, TUR_SIRA, isIcerikTuru } from '@/lib/video/icerikTuru';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
 import DagilimGrafik from '@/components/raporlar/DagilimGrafik';
 import UrunKirilimPaneli from '@/components/raporlar/UrunKirilimPaneli';
+import SayfaRehberi from '@/components/rehber/SayfaRehberi';
 import styles from './utt-report.module.css';
 
 const DEFAULT_PERIYOT: Periyot = 'bu_ay';
@@ -149,9 +150,12 @@ export default function UttRaporPage() {
             <div className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">
               <Sparkles className="h-3.5 w-3.5" /> Kişisel performans analizi
             </div>
-            <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">
-              {data.kullanici.ad} {data.kullanici.soyad}
-            </h1>
+            <div className="inline-flex items-center">
+              <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">
+                {data.kullanici.ad} {data.kullanici.soyad}
+              </h1>
+              <SayfaRehberi anahtar="raporlar-utt" className="ml-1.5 -translate-y-1" />
+            </div>
             <p className="mt-0.5 text-xs font-semibold text-[#78889d]">
               {data.kullanici.rol.toUpperCase()} · {data.kullanici.bolge_adi} · {data.kullanici.takim_adi}
             </p>

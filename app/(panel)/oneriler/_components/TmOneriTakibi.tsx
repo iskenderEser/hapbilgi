@@ -6,6 +6,8 @@ import { PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 import VideoOnizleme from "@/components/video/VideoOnizleme";
 import reportStyles from "@/app/(panel)/raporlar/utt/utt-report.module.css";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 
 export type TmOneriDurumu = "tamamlanan" | "bekleyen" | "suresi_gecmis";
 type TmOneriSecimi = "toplam" | TmOneriDurumu;
@@ -43,6 +45,8 @@ interface Props {
   bmler: TmBmKaydi[];
   periyot: Periyot;
   onPeriyotDegistir: (periyot: Periyot) => void;
+  yenileniyor?: boolean;
+  onYenile?: () => void;
 }
 
 const DURUM_ETIKETI: Record<TmOneriDurumu, string> = {
@@ -67,35 +71,81 @@ const tarihSaatMetni = (deger: string | null) => deger
     })
   : "—";
 
-export default function TmOneriTakibi({ oneriler, bmler, periyot, onPeriyotDegistir }: Props) {
-  const [acikDurum, setAcikDurum] = useState<TmOneriSecimi | null>("toplam");
+export default function TmOneriTakibi({
+  oneriler,
+  bmler,
+  periyot,
+  onPeriyotDegistir,
+  yenileniyor = false,
+  onYenile,
+}: Props) {
+  const [acikDurum, setAcikDurum] = useState<TmOneriSecimi | null>(null);
   const [acikBm, setAcikBm] = useState<string | null>(null);
   const [acikVideo, setAcikVideo] = useState<string | null>(null);
 
-  const sayilar = useMemo(() => ({
-    toplam: oneriler.length,
-    tamamlanan: oneriler.filter((oneri) => oneri.durum === "tamamlanan").length,
-    bekleyen: oneriler.filter((oneri) => oneri.durum === "bekleyen").length,
-    suresiGecmis: oneriler.filter((oneri) => oneri.durum === "suresi_gecmis").length,
-  }), [oneriler]);
+  const sayilar = useMemo(() => {
+    const tamamlanan = oneriler.filter((item) => item.durum === "tamamlanan").length;
+    const bekleyen = oneriler.filter((item) => item.durum === "bekleyen").length;
+    const suresiGecmis = oneriler.filter((item) => item.durum === "suresi_gecmis").length;
+    return {
+      toplam: oneriler.length,
+      tamamlanan,
+      bekleyen,
+      suresiGecmis,
+    };
+  }, [oneriler]);
 
-  const kartlar = [
-    { key: "toplam", label: "Toplam Öneri", value: sayilar.toplam, aciklama: "Takımın bütün önerileri", icon: Send, renk: "#2f7fc7" },
-    { key: "tamamlanan", label: "Tamamlanan", value: sayilar.tamamlanan, aciklama: "UTT tarafından izlendi", icon: CheckCircle2, renk: "#167453" },
-    { key: "bekleyen", label: "Bekleyen", value: sayilar.bekleyen, aciklama: "İzlenmesi bekleniyor", icon: Clock3, renk: "#9a6700" },
-    { key: "suresi_gecmis", label: "Süresi Geçmiş", value: sayilar.suresiGecmis, aciklama: "Süresinde tamamlanmadı", icon: TriangleAlert, renk: "#bc2d0d" },
-  ] as const;
+  const kartlar: {
+    key: TmOneriSecimi;
+    label: string;
+    value: number;
+    renk: string;
+    icon: typeof Send;
+    aciklama: string;
+  }[] = [
+    {
+      key: "toplam",
+      label: "Toplam Öneri",
+      value: sayilar.toplam,
+      renk: "#2f7fc7",
+      icon: Send,
+      aciklama: "Takımdaki tüm video önerileri",
+    },
+    {
+      key: "tamamlanan",
+      label: "Tamamlanan",
+      value: sayilar.tamamlanan,
+      renk: "#167453",
+      icon: CheckCircle2,
+      aciklama: "UTT’lerin izleyip tamamladığı",
+    },
+    {
+      key: "bekleyen",
+      label: "Bekleyen",
+      value: sayilar.bekleyen,
+      renk: "#476b96",
+      icon: Clock3,
+      aciklama: "Henüz izlenmemiş açık öneriler",
+    },
+    {
+      key: "suresi_gecmis",
+      label: "Süresi Geçmiş",
+      value: sayilar.suresiGecmis,
+      renk: "#bc2d0d",
+      icon: TriangleAlert,
+      aciklama: "Süre bitimine kadar izlenmeyen",
+    },
+  ];
 
-  const seciliOneriler = useMemo(() => acikDurum === null
-    ? []
-    : acikDurum === "toplam"
-      ? oneriler
-      : oneriler.filter((oneri) => oneri.durum === acikDurum), [acikDurum, oneriler]);
+  const seciliOneriler = useMemo(() => {
+    if (!acikDurum || acikDurum === "toplam") return oneriler;
+    return oneriler.filter((item) => item.durum === acikDurum);
+  }, [acikDurum, oneriler]);
 
   const seciliBmOnerileri = useMemo(() => bmler
     .map((bm) => ({
       ...bm,
-      oneriler: seciliOneriler.filter((oneri) => oneri.bm_id === bm.bm_id),
+      oneriler: seciliOneriler.filter((item) => item.bm_id === bm.bm_id),
     }))
     .sort((a, b) => b.oneriler.length - a.oneriler.length || a.bm_adi.localeCompare(b.bm_adi, "tr")), [bmler, seciliOneriler]);
 
@@ -106,21 +156,27 @@ export default function TmOneriTakibi({ oneriler, bmler, periyot, onPeriyotDegis
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">Takım gelişim desteği</p>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">Öneri Takibi</h1>
+          <div className="inline-flex items-center">
+            <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">Öneri Takibi</h1>
+            <SayfaRehberi anahtar="oneriler-tm" className="ml-1.5 -translate-y-1.5" />
+          </div>
           <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">Takımınızdaki BM’lerin UTT ve KD_UTT’lere gönderdiği önerileri izleyin.</p>
         </div>
-        <div className={reportStyles.periods} aria-label="Öneri takip dönemi">
-          {PERIYOTLAR.map((secenek) => (
-            <button
-              type="button"
-              key={secenek.key}
-              onClick={() => onPeriyotDegistir(secenek.key)}
-              aria-pressed={periyot === secenek.key}
-              className={`${reportStyles.periodButton} ${periyot === secenek.key ? reportStyles.periodActive : ""}`}
-            >
-              {secenek.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <div className={reportStyles.periods} aria-label="Öneri takip dönemi">
+            {PERIYOTLAR.map((secenek) => (
+              <button
+                type="button"
+                key={secenek.key}
+                onClick={() => onPeriyotDegistir(secenek.key)}
+                aria-pressed={periyot === secenek.key}
+                className={`${reportStyles.periodButton} ${periyot === secenek.key ? reportStyles.periodActive : ""}`}
+              >
+                {secenek.label}
+              </button>
+            ))}
+          </div>
+          {onYenile && <YenileButonu yenileniyor={yenileniyor} onYenile={onYenile} />}
         </div>
       </header>
 

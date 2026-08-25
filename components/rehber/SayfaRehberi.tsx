@@ -120,13 +120,13 @@ export default function SayfaRehberi({
     setAktifAltModal(null);
   };
 
-  // Açıklama içindeki link kelimeyi tıklanabilir hale getiren yardımcı
-  const aciklamaFormatla = (m: RehberMadde): ReactNode => {
-    if (!m.linkKelime || !m.altModal || !m.aciklama.includes(m.linkKelime)) {
-      return m.aciklama;
+  // Açıklama veya özet içindeki link kelimeyi tıklanabilir hale getiren yardımcı
+  const metinFormatla = (metin: string, linkKelime?: string, altModal?: AltModalBilgisi): ReactNode => {
+    if (!linkKelime || !altModal || !metin.includes(linkKelime)) {
+      return metin;
     }
 
-    const parcalar = m.aciklama.split(m.linkKelime);
+    const parcalar = metin.split(linkKelime);
     return (
       <>
         {parcalar[0]}
@@ -134,13 +134,13 @@ export default function SayfaRehberi({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            setAktifAltModal(m.altModal!);
+            setAktifAltModal(altModal);
           }}
           className="font-bold text-blue-600 hover:text-blue-800 underline underline-offset-2 inline cursor-pointer"
         >
-          {m.linkKelime}
+          {linkKelime}
         </button>
-        {parcalar.slice(1).join(m.linkKelime)}
+        {parcalar.slice(1).join(linkKelime)}
       </>
     );
   };
@@ -257,23 +257,6 @@ export default function SayfaRehberi({
                   ))}
                 </div>
 
-                {/* Alt Kapatma Çubuğu */}
-                <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
-                  <button
-                    type="button"
-                    onClick={() => setAktifAltModal(null)}
-                    className="text-xs font-bold text-gray-600 hover:text-gray-900 transition-colors cursor-pointer"
-                  >
-                    ← Ana Rehbere Dön
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleKapat}
-                    className="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-lg transition-colors cursor-pointer"
-                  >
-                    Anladım
-                  </button>
-                </div>
               </div>
             ) : (
               /* --- ANA REHBER GÖRÜNÜMÜ --- */
@@ -305,7 +288,7 @@ export default function SayfaRehberi({
 
                 {/* Özet Açıklama */}
                 <p className="text-xs sm:text-[13px] text-gray-600 leading-relaxed mt-3">
-                  {rehber.ozet}
+                  {metinFormatla(rehber.ozet, rehber.linkKelime, rehber.altModal)}
                 </p>
 
                 {/* Maddeler / Ne Nerede Yapılır? */}
@@ -327,7 +310,7 @@ export default function SayfaRehberi({
                             {m.baslik}
                           </strong>
                           <span className="text-gray-600">
-                            {aciklamaFormatla(m)}
+                            {metinFormatla(m.aciklama, m.linkKelime, m.altModal)}
                           </span>
                         </div>
                       </div>
@@ -345,18 +328,6 @@ export default function SayfaRehberi({
                     </div>
                   </div>
                 )}
-
-                {/* Alt Kapatma Çubuğu */}
-                <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-400">
-                  <span>[✕] ile veya dışarı tıklayarak kapatabilirsiniz</span>
-                  <button
-                    type="button"
-                    onClick={handleKapat}
-                    className="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-lg transition-colors cursor-pointer"
-                  >
-                    Anladım
-                  </button>
-                </div>
               </div>
             )}
           </div>,

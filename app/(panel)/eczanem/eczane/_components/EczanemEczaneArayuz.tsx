@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 
 export function EczanemEczaneSayfa({ children }: { children: ReactNode }) {
   return (
@@ -15,11 +16,12 @@ export function EczanemEczaneSayfa({ children }: { children: ReactNode }) {
   );
 }
 
-export function EczanemEczaneBaslik({ ikon: Icon, baslik, aciklama, aksiyon }: {
+export function EczanemEczaneBaslik({ ikon: Icon, baslik, aciklama, aksiyon, rehberAnahtar }: {
   ikon: LucideIcon;
   baslik: string;
   aciklama: string;
   aksiyon?: ReactNode;
+  rehberAnahtar?: string;
 }) {
   return (
     <header className="flex flex-wrap items-end justify-between gap-4">
@@ -27,7 +29,10 @@ export function EczanemEczaneBaslik({ ikon: Icon, baslik, aciklama, aksiyon }: {
         <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">
           <Icon className="size-3.5" /> Eczanem
         </p>
-        <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">{baslik}</h1>
+        <div className="inline-flex items-center">
+          <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">{baslik}</h1>
+          {rehberAnahtar && <SayfaRehberi anahtar={rehberAnahtar} className="ml-1.5 -translate-y-1.5" />}
+        </div>
         <p className="mt-1 max-w-3xl text-xs font-semibold leading-5 text-[#7b8da3] md:text-sm">{aciklama}</p>
       </div>
       {aksiyon}

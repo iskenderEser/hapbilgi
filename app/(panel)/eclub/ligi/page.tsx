@@ -11,6 +11,7 @@ import type { EclubKapsamUtt, EclubYonetimKapsami } from "@/lib/eclub/yonetimKap
 import { aktifPeriyot } from "@/lib/zaman/kontrol";
 import styles from "./eclub-league.module.css";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 
 interface LigData {
   kullanici: { ad: string; soyad: string; rol: string };
@@ -157,7 +158,10 @@ export default function EclubLigiPage() {
             <div className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">
               <Sparkles className="h-3.5 w-3.5" /> E-Club Şampiyonası · Takımlar Ligi
             </div>
-            <h1 className="m-0 text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">E‑Club Ligi</h1>
+            <div className="inline-flex items-center">
+              <h1 className="m-0 text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">E‑Club Ligi</h1>
+              <SayfaRehberi anahtar="eclub-ligi" className="ml-1.5 -translate-y-1" />
+            </div>
             
             {takimDuzenleniyor ? (
               <div className={`${styles.teamLine} ${styles.teamEditor}`}>

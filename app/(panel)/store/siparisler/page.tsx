@@ -18,6 +18,7 @@ import { useSiparisListe } from "./_hooks/useSiparisListe";
 import SiparisFiltreleri from "./_components/SiparisFiltreleri";
 import SiparisTablosu from "./_components/SiparisTablosu";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 
 const GRI_METIN = "#737373";
 const GRI_ZEMIN = "#f9fafb";
@@ -88,9 +89,12 @@ export default function SiparislerPage() {
             <div className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#71859d]">
               HBStore
             </div>
-            <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[#203653]">
-              Ekip Sipariş Takibi
-            </h1>
+            <div className="inline-flex items-center">
+              <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[#203653]">
+                Ekip Sipariş Takibi
+              </h1>
+              <SayfaRehberi anahtar="store-siparisler" className="ml-1.5 -translate-y-1" />
+            </div>
             <p className="mt-1 text-xs font-medium text-[#8190a3]">
               {rolKucu === "bm"
                 ? "Bölgenizdeki UTT ve KD_UTT siparişlerinin güncel durumu."

@@ -129,6 +129,7 @@ export default function EclubPanelPage() {
           <EclubKisiBaslik
             ikon={Sparkles}
             baslik={karsilamaBasligi}
+            rehberAnahtar="eclub-panel"
             aciklama={`${kisi ? eclubKisiRolEtiketi(kisi.rol) : ""} · Firmalarınızın sizin için seçtiği videoları izleyin, soruları yanıtlayın ve puan kazanın.`}
             aksiyon={(
               <Link href="/eclub/store" className="inline-flex items-center gap-2 rounded-xl border border-[#cfe3f4] bg-white px-4 py-2.5 text-xs font-extrabold text-[#237ac8] shadow-sm hover:bg-[#f4f9fd]">

@@ -17,6 +17,7 @@ import {
   type UttVideoVeri as UttVeri,
 } from "@/components/video/UttVideoKarti";
 import type { IcerikTuru } from "@/lib/video/icerikTuru";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 
 interface Props {
   user: AuthKullanici;
@@ -219,7 +220,10 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
     return (
       <div className="mx-auto max-w-6xl px-3 py-4 pb-20 md:px-6 md:py-5 md:pb-5 lg:px-8 lg:py-7">
         <header className="mb-5">
-          <h1 className="m-0 text-xl font-extrabold text-gray-900 md:text-2xl">{kategoriBaslik}</h1>
+          <div className="inline-flex items-center">
+            <h1 className="m-0 text-xl font-extrabold text-gray-900 md:text-2xl">{kategoriBaslik}</h1>
+            <SayfaRehberi anahtar="videolarim-kategori" className="ml-1.5 -translate-y-0.5" />
+          </div>
           <p className="mt-1 text-xs font-semibold text-gray-500">{kategoriVideolari.length} video</p>
         </header>
         {kategoriVideolari.length === 0 ? (

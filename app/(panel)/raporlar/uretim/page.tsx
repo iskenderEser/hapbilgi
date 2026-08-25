@@ -154,7 +154,7 @@ export default function UretimRaporlariPage() {
             </div>
             <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d] inline-flex items-center">
               <span>{data.kullanici.firma_adi} · Üretim Raporları</span>
-              <SayfaRehberi anahtar="raporlar-uretici" className="ml-1.5 -translate-y-1.5" />
+              <SayfaRehberi anahtar="raporlar-uretim" className="ml-1.5 -translate-y-1.5" />
             </h1>
             <p className="mt-0.5 text-xs font-semibold text-[#78889d]">
               {data.kullanici.rol.toUpperCase()} · {data.kullanici.ad} {data.kullanici.soyad}

@@ -6,6 +6,8 @@ import { ECLUB_ORTAK_YAYIN_GRUBU, type YayinHedefGrubu } from "@/lib/utils/rolle
 import type { AltSekme, BekleyenHedefSayilari } from "../_types";
 import { ANA_SEKMELER, ANA_SEKME_ETIKETLERI } from "../_types";
 
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
+
 interface Props {
   aktifHedef: YayinHedefGrubu;
   aktifDurum: AltSekme;
@@ -77,9 +79,12 @@ export function YayinKumandaPaneli({
           <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">
             İçerik yaşam döngüsü
           </p>
-          <h1 id="yayin-merkezi-baslik" className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">
-            Yayın Yönetimi
-          </h1>
+          <div className="inline-flex items-center">
+            <h1 id="yayin-merkezi-baslik" className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">
+              Yayın Yönetimi
+            </h1>
+            <SayfaRehberi anahtar="yayin-yonetimi" className="ml-1.5 -translate-y-1.5" />
+          </div>
           <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">
             Hazır içerikleri puanlayın, doğru zamanda yayınlayın ve yayın yaşam döngüsünü tek yerden yönetin.
           </p>

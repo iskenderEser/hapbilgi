@@ -11,6 +11,7 @@ import { TUR_RAPOR_ADI, TUR_SIRA, isIcerikTuru } from '@/lib/video/icerikTuru';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
 import DagilimGrafik from '@/components/raporlar/DagilimGrafik';
 import UrunKirilimPaneli from '@/components/raporlar/UrunKirilimPaneli';
+import SayfaRehberi from '@/components/rehber/SayfaRehberi';
 import styles from '../utt/utt-report.module.css';
 import bmStyles from './bm-report.module.css';
 
@@ -158,9 +159,12 @@ export default function BmRaporPage() {
             <div className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">
               <Sparkles className="h-3.5 w-3.5" /> Bölge performans analizi
             </div>
-            <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">
-              {data.kullanici.bolge_adi} Bölgesi
-            </h1>
+            <div className="inline-flex items-center">
+              <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">
+                {data.kullanici.bolge_adi} Bölgesi
+              </h1>
+              <SayfaRehberi anahtar="raporlar-bm" className="ml-1.5 -translate-y-1" />
+            </div>
             <p className="mt-0.5 text-xs font-semibold text-[#78889d]">
               {data.kullanici.rol.toUpperCase()} · {data.kullanici.ad} {data.kullanici.soyad} · {data.kullanici.takim_adi}
             </p>
