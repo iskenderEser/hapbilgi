@@ -54,39 +54,53 @@ export function SoruListesi({
       )}
       </div>
       <div className="flex max-h-[520px] flex-col gap-2 overflow-y-auto pr-1">
-        {sorular.map((soru: any, i: number) => (
-          <div key={i} className="flex items-start gap-2.5 rounded-xl border border-[#e0e7f0] bg-white px-3 py-3">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#eef5fd] text-[10px] font-extrabold text-[#4c7fb8]">{i + 1}</span>
-            <div className="flex-1 min-w-0">
-              <div className="mb-2 text-xs font-bold leading-relaxed text-[#3f526c]">{soru.soru_metni}</div>
-              <div className="flex flex-col gap-1">
-                {soru.secenekler?.map((s: any, j: number) => (
-                  <span key={j} className="w-fit rounded-full px-2.5 py-1 text-[10px]"
-                    style={{ border: s.dogru ? "0.5px solid #56aeff" : "0.5px solid #e5e7eb", color: s.dogru ? "#56aeff" : "#737373", background: s.dogru ? "#e6f1fb" : "white" }}>
-                    {s.harf}. {s.metin}
+        {sorular.map((soru: any, i: number) => {
+          const sp = getSoruPuani(soru_seti_durum_id, i);
+          const puanDolu = typeof sp === "number" && sp > 0;
+          return (
+            <div key={i} className={`flex items-start gap-2.5 rounded-xl border px-3 py-3 transition ${
+              puanDolu ? "border-[#bfdbfe] bg-[#f8fbfe] shadow-sm" : "border-[#e0e7f0] bg-white"
+            }`}>
+              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-[10px] font-extrabold transition ${
+                puanDolu ? "bg-[#2583e2] text-white" : "bg-[#eef5fd] text-[#4c7fb8]"
+              }`}>{i + 1}</span>
+              <div className="flex-1 min-w-0">
+                <div className="mb-2 text-xs font-bold leading-relaxed text-[#3f526c]">{soru.soru_metni}</div>
+                <div className="flex flex-col gap-1">
+                  {soru.secenekler?.map((s: any, j: number) => (
+                    <span key={j} className="w-fit rounded-full px-2.5 py-1 text-[10px]"
+                      style={{ border: s.dogru ? "0.5px solid #56aeff" : "0.5px solid #e5e7eb", color: s.dogru ? "#56aeff" : "#737373", background: s.dogru ? "#e6f1fb" : "white" }}>
+                      {s.harf}. {s.metin}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              {bekleyen ? (
+                <div className="flex-shrink-0 flex flex-col items-end gap-1">
+                  <span className={`text-[10px] font-extrabold ${puanDolu ? "text-[#1d4ed8]" : "text-[#8292a7]"}`}>
+                    {puanDolu ? "✓ Puan" : "Puan"}
                   </span>
-                ))}
-              </div>
+                  <select value={sp} onChange={(e) => setSoruPuani(soru_seti_durum_id, i, Number(e.target.value))}
+                    aria-label={`${i + 1}. soru puanı`}
+                    className={`rounded-lg border px-1.5 py-1 text-xs outline-none transition ${
+                      puanDolu
+                        ? "border-[#93c5fd] bg-[#eff6ff] font-extrabold text-[#1e3a8a] shadow-sm"
+                        : "border-gray-200 bg-white font-medium text-gray-900 hover:border-gray-300"
+                    }`}
+                    style={{ fontFamily: "'Nunito', sans-serif", width: 85 }}>
+                    <option value="">-</option>
+                    {soruPuanSecenekleri.map(p => <option key={p} value={p}>{p} puan</option>)}
+                  </select>
+                </div>
+              ) : (
+                <div className="flex shrink-0 flex-col items-end gap-0.5 rounded-lg bg-[#eef6ff] px-2 py-1.5">
+                  <span className="text-[9px] font-bold uppercase text-[#7c98b8]">Puan</span>
+                  <span className="text-xs font-extrabold text-[#2583e2]">{sp || "—"}</span>
+                </div>
+              )}
             </div>
-            {bekleyen ? (
-              <div className="flex-shrink-0 flex flex-col items-end gap-1">
-                <span className="text-[10px] font-bold text-[#8292a7]">Puan</span>
-                <select value={getSoruPuani(soru_seti_durum_id, i)} onChange={(e) => setSoruPuani(soru_seti_durum_id, i, Number(e.target.value))}
-                  aria-label={`${i + 1}. soru puanı`}
-                  className="rounded-lg border border-gray-200 bg-white px-1.5 py-1 text-xs text-gray-900"
-                  style={{ fontFamily: "'Nunito', sans-serif", width: 80 }}>
-                  <option value="">-</option>
-                  {soruPuanSecenekleri.map(p => <option key={p} value={p}>{p} puan</option>)}
-                </select>
-              </div>
-            ) : (
-              <div className="flex shrink-0 flex-col items-end gap-0.5 rounded-lg bg-[#eef6ff] px-2 py-1.5">
-                <span className="text-[9px] font-bold uppercase text-[#7c98b8]">Puan</span>
-                <span className="text-xs font-extrabold text-[#2583e2]">{getSoruPuani(soru_seti_durum_id, i) || "—"}</span>
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

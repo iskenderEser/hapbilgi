@@ -8,6 +8,7 @@
 
 "use client";
 
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 import type { Bekleyen } from "../_types";
 import { VIDEO_PUAN_SECENEKLERI, VIDEO_PUAN_SECENEKLERI_ECZANEM, EXTRA_PUAN_SECENEKLERI } from "../_types";
 import { HedefRolPilleri } from "@/components/pill";
@@ -62,10 +63,43 @@ export function BekleyenSatir({
   const hazir = !silmeBaslatilmis && tumPuanlarAtandiMi(b);
   const secilenGun = yayinGunleri[b.soru_seti_durum_id] ?? "";
   const bugun = new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD (yerel)
+  
   // Eczanem yayınında extra puan / tekrar periyodu / ileri sarma YOKTUR (İP §4.4);
   // yerine barkod + Karşılık (puan ↔ TL) alanları girilir (U5, K-E3).
   const eczanem = b.hedef_roller.includes("eczanem");
   const eclub = yalnizEclubHedefliMi(b.hedef_roller);
+
+  // Soru puanlama metrikleri
+  const toplamSoru = b.sorular?.length ?? 0;
+  const atananSoruSayisi = b.sorular?.filter((_, i) => {
+    const p = getSoruPuani(b.soru_seti_durum_id, i);
+    return typeof p === "number" && p > 0;
+  }).length ?? 0;
+  const toplamSoruPuani = b.sorular?.reduce((acc, _, i) => {
+    const p = getSoruPuani(b.soru_seti_durum_id, i);
+    return acc + (typeof p === "number" ? p : 0);
+  }, 0) ?? 0;
+  const tumSorularPuanlandi = toplamSoru > 0 && atananSoruSayisi === toplamSoru;
+  const kismiSoruPuanlandi = atananSoruSayisi > 0 && atananSoruSayisi < toplamSoru;
+
+  // Video puanı durumu
+  const videoPuanSecenekleri = eczanem ? VIDEO_PUAN_SECENEKLERI_ECZANEM : VIDEO_PUAN_SECENEKLERI;
+  const seciliVideoPuani = videoPuanlari[b.soru_seti_durum_id] ?? b.video_puani ?? "";
+  const videoPuaniDolu = typeof seciliVideoPuani === "number" && seciliVideoPuani > 0;
+
+  // Extra puan durumu
+  const seciliExtra = extraPuanlar[b.soru_seti_durum_id];
+  const extraDolu = typeof seciliExtra === "number" && seciliExtra > 0;
+
+  // Tekrar periyodu durumu
+  const seciliTekrar = tekrarPeriyotlari[b.soru_seti_durum_id];
+  const tekrarDolu = typeof seciliTekrar === "number" && seciliTekrar > 0;
+
+  // Eczanem durumları
+  const seciliBarkod = barkodlar[b.soru_seti_durum_id]?.trim();
+  const seciliKarsilikPuan = karsilikPuanlar[b.soru_seti_durum_id];
+  const seciliKarsilikTl = karsilikTllar[b.soru_seti_durum_id];
+
   return (
     <article className="mb-3 overflow-hidden rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_8px_22px_rgba(31,55,90,0.045)]">
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(310px,0.7fr)_minmax(0,1.3fr)]">
@@ -96,10 +130,31 @@ export function BekleyenSatir({
             <div>
               <button type="button" aria-expanded={acikAkordiyon === b.soru_seti_durum_id}
                 onClick={() => setAcikAkordiyon(acikAkordiyon === b.soru_seti_durum_id ? null : b.soru_seti_durum_id)}
-                className="flex h-9 min-h-9 max-h-9 w-full shrink-0 box-border cursor-pointer items-center justify-between gap-1 whitespace-nowrap rounded-lg border border-gray-200 bg-white px-3 text-left text-xs font-normal text-[#9aa7b7]"
+                className={`flex h-9 min-h-9 max-h-9 w-full shrink-0 box-border cursor-pointer items-center justify-between gap-1.5 whitespace-nowrap rounded-lg border px-2.5 text-left text-xs transition ${
+                  tumSorularPuanlandi
+                    ? "border-[#93c5fd] bg-[#eff6ff] font-extrabold text-[#1e3a8a] shadow-sm"
+                    : kismiSoruPuanlandi
+                      ? "border-[#fde68a] bg-[#fffbeb] font-bold text-[#92400e]"
+                      : "border-gray-200 bg-white font-medium text-[#9aa7b7] hover:border-gray-300"
+                }`}
                 style={{ fontFamily: "'Nunito', sans-serif" }}>
-                Cevap Puanlarını Girin
+                <span className="flex items-center gap-1.5 truncate">
+                  {tumSorularPuanlandi ? (
+                    <>
+                      <CheckCircle2 size={13} className="text-[#2563eb] shrink-0" />
+                      <span className="truncate">{toplamSoru} Soru ({toplamSoruPuani} p)</span>
+                    </>
+                  ) : kismiSoruPuanlandi ? (
+                    <>
+                      <AlertCircle size={13} className="text-[#d97706] shrink-0" />
+                      <span className="truncate">{atananSoruSayisi}/{toplamSoru} Soru Puanlandı</span>
+                    </>
+                  ) : (
+                    <span className="truncate">Cevap Puanlarını Girin</span>
+                  )}
+                </span>
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  className="shrink-0"
                   style={{ transform: acikAkordiyon === b.soru_seti_durum_id ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
                   <path d="M6 9l6 6 6-6" />
                 </svg>
@@ -107,15 +162,16 @@ export function BekleyenSatir({
             </div>
           ) : null;
 
-          // Eczanem yayınları farklı video puanı skalası kullanır; diğer dallar mevcut listeyi.
-          const videoPuanSecenekleri = eczanem ? VIDEO_PUAN_SECENEKLERI_ECZANEM : VIDEO_PUAN_SECENEKLERI;
-          const seciliVideoPuani = videoPuanlari[b.soru_seti_durum_id] ?? b.video_puani ?? "";
           const videoPuaniAlani = (
             <div>
               <select value={seciliVideoPuani}
                 onChange={(e) => setVideoPuanlari(prev => ({ ...prev, [b.soru_seti_durum_id]: Number(e.target.value) }))}
                 aria-label={`${b.urun_adi} video puanı`}
-                className={`h-9 min-h-9 max-h-9 w-full box-border rounded-lg border border-gray-200 bg-white px-2 text-xs ${typeof seciliVideoPuani === "number" ? "text-gray-900" : "text-[#9aa7b7]"}`}
+                className={`h-9 min-h-9 max-h-9 w-full box-border rounded-lg border px-2 text-xs transition outline-none ${
+                  videoPuaniDolu
+                    ? "border-[#93c5fd] bg-[#eff6ff] font-extrabold text-[#1e3a8a] shadow-sm"
+                    : "border-gray-200 bg-white font-medium text-[#9aa7b7] hover:border-gray-300"
+                }`}
                 style={{ fontFamily: "'Nunito', sans-serif" }}>
                 <option value="" className="text-[#9aa7b7]">Video Puanını Seçin</option>
                 {videoPuanSecenekleri.map(p => <option key={p} value={p}>{p} puan</option>)}
@@ -124,12 +180,20 @@ export function BekleyenSatir({
           );
 
           const yayinGunuAlani = (
-            <div className="relative h-9 min-h-9 max-h-9 min-w-0 box-border rounded-lg border border-gray-200 bg-white focus-within:border-[#56aeff]">
-              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-xs text-[#9aa7b7]">
-                {secilenGun ? new Date(`${secilenGun}T00:00:00`).toLocaleDateString("tr-TR") : "Bugün"}
+            <div className={`relative h-9 min-h-9 max-h-9 min-w-0 box-border rounded-lg border transition ${
+              secilenGun
+                ? "border-[#a7f3d0] bg-[#ecfdf5] shadow-sm focus-within:border-[#10b981]"
+                : "border-gray-200 bg-white hover:border-gray-300 focus-within:border-[#56aeff]"
+            }`}>
+              <span className={`pointer-events-none absolute inset-y-0 left-3 flex items-center text-xs ${
+                secilenGun ? "font-extrabold text-[#065f46]" : "font-medium text-[#64748b]"
+              }`}>
+                {secilenGun ? `📅 ${new Date(`${secilenGun}T00:00:00`).toLocaleDateString("tr-TR")}` : "Bugün (Hemen)"}
               </span>
               <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
-                className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7e8fa5]">
+                className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 ${
+                  secilenGun ? "text-[#059669]" : "text-[#7e8fa5]"
+                }`}>
                 <path d="M6 3v3M18 3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z" />
               </svg>
               <input type="date" value={secilenGun} min={bugun}
@@ -150,8 +214,12 @@ export function BekleyenSatir({
 
           const yayinlaButonu = (
             <button type="button" onClick={() => onYayinlaClick(b)} disabled={!hazir || islemLoading === b.soru_seti_durum_id}
-              className="h-9 min-w-[96px] shrink-0 rounded-xl border-none px-4 text-xs font-extrabold shadow-[0_7px_16px_rgba(37,131,226,0.16)] disabled:shadow-none"
-              style={{ background: hazir ? "#2583e2" : "#eef1f5", color: hazir ? "white" : "#9aa7b7", cursor: hazir ? "pointer" : "not-allowed", fontFamily: "'Nunito', sans-serif" }}>
+              className={`h-9 min-w-[96px] shrink-0 rounded-xl border-none px-4 text-xs font-extrabold transition ${
+                hazir
+                  ? "bg-[#2583e2] text-white shadow-[0_7px_16px_rgba(37,131,226,0.22)] cursor-pointer hover:bg-[#1d6fc2]"
+                  : "bg-[#eef1f5] text-[#9aa7b7] cursor-not-allowed shadow-none"
+              }`}
+              style={{ fontFamily: "'Nunito', sans-serif" }}>
               {islemLoading === b.soru_seti_durum_id ? "..." : secilenGun ? "Planla" : "Yayınla"}
             </button>
           );
@@ -159,7 +227,7 @@ export function BekleyenSatir({
           const silButonu = (
             <button type="button" onClick={() => onYayinSilClick(b)}
               disabled={islemLoading === b.soru_seti_durum_id}
-              className="h-9 shrink-0 rounded-xl border border-red-200 bg-white px-3 text-xs font-extrabold text-red-700 disabled:cursor-not-allowed disabled:opacity-50">
+              className="h-9 shrink-0 rounded-xl border border-red-200 bg-white px-3 text-xs font-extrabold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">
               {islemLoading === b.soru_seti_durum_id
                 ? "..."
                 : silmeHatali
@@ -185,7 +253,11 @@ export function BekleyenSatir({
                       onChange={(e) => setBarkodlar(prev => ({ ...prev, [b.soru_seti_durum_id]: e.target.value }))}
                       placeholder="Barkod"
                       aria-label={`${b.urun_adi} barkodu`}
-                      className="h-9 min-h-9 max-h-9 w-full box-border rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900"
+                      className={`h-9 min-h-9 max-h-9 w-full box-border rounded-lg border px-2 text-xs transition outline-none ${
+                        seciliBarkod
+                          ? "border-[#93c5fd] bg-[#eff6ff] font-extrabold text-[#1e3a8a] shadow-sm"
+                          : "border-gray-200 bg-white font-medium text-gray-900 hover:border-gray-300"
+                      }`}
                       style={{ fontFamily: "'Nunito', sans-serif" }} />
                   </div>
                   <div>
@@ -202,7 +274,11 @@ export function BekleyenSatir({
                         }}
                         placeholder="Puan"
                         aria-label="Karşılık puanı"
-                        className="h-9 min-h-9 max-h-9 w-[180px] flex-none box-border rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        className={`h-9 min-h-9 max-h-9 w-[180px] flex-none box-border rounded-lg border px-2 text-xs [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none transition outline-none ${
+                          seciliKarsilikPuan
+                            ? "border-[#93c5fd] bg-[#eff6ff] font-extrabold text-[#1e3a8a] shadow-sm"
+                            : "border-gray-200 bg-white font-medium text-gray-900 hover:border-gray-300"
+                        }`}
                         style={{ fontFamily: "'Nunito', sans-serif" }} />
                       <span className="text-xs text-gray-400">=</span>
                       <input type="number" min={0} step="0.01" value={karsilikTllar[b.soru_seti_durum_id] ?? ""}
@@ -217,7 +293,11 @@ export function BekleyenSatir({
                         }}
                         placeholder="TL"
                         aria-label="Türk lirası karşılığı"
-                        className="h-9 min-h-9 max-h-9 w-[180px] flex-none box-border rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900"
+                        className={`h-9 min-h-9 max-h-9 w-[180px] flex-none box-border rounded-lg border px-2 text-xs transition outline-none ${
+                          seciliKarsilikTl
+                            ? "border-[#93c5fd] bg-[#eff6ff] font-extrabold text-[#1e3a8a] shadow-sm"
+                            : "border-gray-200 bg-white font-medium text-gray-900 hover:border-gray-300"
+                        }`}
                         style={{ fontFamily: "'Nunito', sans-serif" }} />
                     </div>
                   </div>
@@ -237,18 +317,22 @@ export function BekleyenSatir({
               {videoPuaniAlani}
               {!eclub && (
                 <div>
-                  <select value={extraPuanlar[b.soru_seti_durum_id] ?? ""}
+                  <select value={seciliExtra ?? ""}
                     onChange={(e) => setExtraPuanlar(prev => ({ ...prev, [b.soru_seti_durum_id]: Number(e.target.value) }))}
                     aria-label={`${b.urun_adi} extra puanı`}
-                    className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900"
+                    className={`h-9 w-full rounded-lg border px-2 text-xs transition outline-none ${
+                      extraDolu
+                        ? "border-[#c4b5fd] bg-[#f5f3ff] font-extrabold text-[#5b21b6] shadow-sm"
+                        : "border-gray-200 bg-white font-medium text-[#9aa7b7] hover:border-gray-300"
+                    }`}
                     style={{ fontFamily: "'Nunito', sans-serif" }}>
                     <option value="">Extra Puanı Seçin</option>
-                    {EXTRA_PUAN_SECENEKLERI.map(p => <option key={p} value={p}>{p} puan</option>)}
+                    {EXTRA_PUAN_SECENEKLERI.map(p => <option key={p} value={p}>+{p} extra puan</option>)}
                   </select>
                 </div>
               )}
               <div>
-                <select value={tekrarPeriyotlari[b.soru_seti_durum_id] ?? ""}
+                <select value={seciliTekrar ?? ""}
                   onChange={(e) => {
                     const deger = e.target.value;
                     setTekrarPeriyotlari(prev => {
@@ -259,10 +343,14 @@ export function BekleyenSatir({
                     });
                   }}
                   aria-label={`${b.urun_adi} tekrar periyodu`}
-                  className="h-9 w-full rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-900"
+                  className={`h-9 w-full rounded-lg border px-2 text-xs transition outline-none ${
+                    tekrarDolu
+                      ? "border-[#cbd5e1] bg-[#f8fafc] font-extrabold text-[#334155] shadow-sm"
+                      : "border-gray-200 bg-white font-medium text-[#9aa7b7] hover:border-gray-300"
+                  }`}
                   style={{ fontFamily: "'Nunito', sans-serif" }}>
                   <option value="">Tekrar yok</option>
-                  {tekrarSecenekleri.map(g => <option key={g} value={g}>{g} gün</option>)}
+                  {tekrarSecenekleri.map(g => <option key={g} value={g}>{g} gün tekrar</option>)}
                 </select>
               </div>
               {yayinGunuAlani}

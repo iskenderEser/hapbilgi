@@ -62,7 +62,7 @@ export const PANEL_NAV: NavGrup[] = [
   {
     baslik: "Üretim & Yayın",
     oglar: [
-      { etiket: "Talepler",          path: "/talepler",           badgeKey: "talep",     gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
+      { etiket: "Talepler ve Yeni Talep", path: "/talepler", badgeKey: "talep", gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
       { etiket: "Yayın Yönetimi",    path: "/yayin-yonetimi",     badgeKey: "yayin",     gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
       { etiket: "Sizin Yayınlarınız", path: "/sizin-yayinlariniz",                       gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
       { etiket: "Tüm Yayınlar",       path: "/tum-yayinlar",                             gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
