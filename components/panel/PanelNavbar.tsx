@@ -43,8 +43,6 @@ const BILGI_PILLERI: { key: string; etiket: string; path: string }[] = [
   { key: "ana-sayfa", etiket: "Ana Sayfa", path: "/ana-sayfa" },
   { key: "hapbilgi-nedir", etiket: "HapBilgi Nedir", path: "/hapbilgi-nedir" },
   { key: "nasil-calisir", etiket: "Nasıl Çalışır", path: "/nasil-calisir" },
-  { key: "sozlesmeler", etiket: "Sözleşmeler", path: "/sozlesmeler" },
-  { key: "iletisim", etiket: "İletişim", path: "/iletisim" },
 ];
 
 export default function PanelNavbar({ adSoyad, email, ozet, siparisPuaniGoster, anaSayfaYolu = "/ana-sayfa", eclubStorePuani, onCikis, onHamburger }: PanelNavbarProps) {
@@ -77,15 +75,18 @@ export default function PanelNavbar({ adSoyad, email, ozet, siparisPuaniGoster, 
       style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderBottomColor: "#e5e7eb" }}
     >
       <div className="flex items-center justify-between gap-4">
-        <img
-          src="/logo.png"
-          alt="hapbilgi"
-          className="h-10 md:h-14 lg:h-20 cursor-pointer flex-shrink-0"
-          onClick={() => router.push("/")}
-        />
+        {/* Sol Kolon: Logo (Sidebar genişliği 240px ile tam hizalı: px-6 = 24px + 216px = 240px) */}
+        <div className="flex items-center md:w-[216px] flex-shrink-0">
+          <img
+            src="/logo.png"
+            alt="hapbilgi"
+            className="h-10 md:h-14 lg:h-16 cursor-pointer"
+            onClick={() => router.push("/")}
+          />
+        </div>
 
-        {/* Orta: bilgi pill'leri + (özet varsa) dikey çizgi + özet pill'leri */}
-        <div className="hidden md:flex items-center gap-2 flex-wrap justify-center">
+        {/* Orta-Sol: Bilgi Pill'leri (Sidebar sınırından hemen sonra başlar) */}
+        <div className="hidden md:flex items-center gap-2 flex-1 min-w-0 pl-1">
           {BILGI_PILLERI.map((p) => (
             <button
               key={p.key}
@@ -98,47 +99,48 @@ export default function PanelNavbar({ adSoyad, email, ozet, siparisPuaniGoster, 
               {p.etiket}
             </button>
           ))}
+        </div>
 
+        {/* Sağ Kolon: Puan/Sıra Pill'leri + Kullanıcı Profili (Dengeli ferah mesafe) */}
+        <div className="hidden md:flex items-center gap-10 lg:gap-14 flex-shrink-0" style={{ marginRight: 48 }}>
           {ozet && (
-            <>
-              <div style={{ width: 1, alignSelf: "stretch", background: "rgba(0,0,0,0.18)", margin: "4px 6px" }} />
+            <div className="flex items-center gap-2">
               <OzetPill etiket="Takım Sırası" deger={ozet.takimSirasi ? `${ozet.takimSirasi}` : "-"} />
               <OzetPill etiket="Haftalık Puan" deger={ozet.haftalikPuan.toLocaleString("tr-TR")} />
               {siparisPuaniGoster && (
                 <OzetPill etiket="Sipariş Puanı" deger={ozet.siparisPuani.toLocaleString("tr-TR")} />
               )}
-            </>
+            </div>
           )}
           {eclubStorePuani !== null && eclubStorePuani !== undefined && (
-            <>
-              <div style={{ width: 1, alignSelf: "stretch", background: "rgba(0,0,0,0.18)", margin: "4px 6px" }} />
+            <div className="flex items-center gap-2">
               <OzetPill etiket="Store Puanı" deger={eclubStorePuani.toLocaleString("tr-TR")} />
-            </>
-          )}
-        </div>
-
-        {/* Sağ: ad-soyad (bordo) + avatar; Çıkış altında */}
-        <div className="hidden md:flex flex-col items-end gap-1 flex-shrink-0" style={{ marginRight: 48 }}>
-          <div className="flex items-center gap-2.5">
-            {adSoyad && <span className="text-base font-bold" style={{ color: "#374151" }}>{adSoyad}</span>}
-            <div
-              onClick={() => router.push("/profil")}
-              className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold cursor-pointer"
-              style={{ background: "#d4d4d4", color: "#374151", border: "1px solid #c9c9c9" }}
-            >
-              {bashHarfler}
             </div>
+          )}
+
+          {/* Kullanıcı Adı + Avatar + Çıkış */}
+          <div className="flex flex-col items-end gap-0.5">
+            <div className="flex items-center gap-2.5">
+              {adSoyad && <span className="text-sm font-bold" style={{ color: "#374151" }}>{adSoyad}</span>}
+              <div
+                onClick={() => router.push("/profil")}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold cursor-pointer"
+                style={{ background: "#d4d4d4", color: "#374151", border: "1px solid #c9c9c9" }}
+              >
+                {bashHarfler}
+              </div>
+            </div>
+            <button
+              onClick={onCikis}
+              className="flex items-center gap-1 text-xs font-semibold cursor-pointer bg-transparent border-none"
+              style={{ color: BORDO }}
+            >
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Çıkış
+            </button>
           </div>
-          <button
-            onClick={onCikis}
-            className="flex items-center gap-1 text-sm font-semibold cursor-pointer bg-transparent border-none"
-            style={{ color: BORDO }}
-          >
-            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            Çıkış
-          </button>
         </div>
 
         {/* Mobil: avatar + hamburger (sol drawer'ı açar). */}

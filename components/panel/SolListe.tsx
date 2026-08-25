@@ -17,7 +17,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PANEL_NAV, type NavContext, type NavGrup, type NavOge } from "./panelNav.config";
 
 type SolListeProps = NavContext & {
@@ -30,18 +30,60 @@ export default function SolListe(props: SolListeProps) {
   const gruplar = props.gruplar ?? PANEL_NAV;
   const router = useRouter();
   const pathname = usePathname();
+
+  const cozPath = (oge: NavOge) => typeof oge.path === "function" ? oge.path(props) : (oge.path ?? "");
+  const rozetSayisi = (oge: NavOge) => oge.badgeKey ? (props.badge[oge.badgeKey] ?? 0) : 0;
+
+  const grupAktifMi = (grup: NavGrup) => {
+    return grup.oglar.some((oge) => {
+      if (!oge.gate(props)) return false;
+      const p = cozPath(oge);
+      if (p && (oge.tamEslesme ? pathname === p : pathname === p || pathname.startsWith(`${p}/`))) {
+        return true;
+      }
+      if (oge.altOglar) {
+        return oge.altOglar.some((alt) => {
+          if (!alt.gate(props)) return false;
+          const ap = cozPath(alt);
+          return ap && (alt.tamEslesme ? pathname === ap : pathname.startsWith(ap));
+        });
+      }
+      return false;
+    });
+  };
+
   const [hover, setHover] = useState<string | null>(null);
-  const [kapaliGruplar, setKapaliGruplar] = useState<Set<string>>(new Set());
+  const [kapaliGruplar, setKapaliGruplar] = useState<Set<string>>(() => {
+    const gorunurGruplar = gruplar.filter((g) => g.oglar.some((o) => o.gate(props)));
+    const kapali = new Set<string>();
+    gorunurGruplar.forEach((g, index) => {
+      if (index === 0) return; // İlk ana sekme daima açık başlar
+      if (grupAktifMi(g)) return; // Aktif sayfanın grubu açık başlar
+      kapali.add(g.baslik);
+    });
+    return kapali;
+  });
   const [acikAltOgeler, setAcikAltOgeler] = useState<Set<string>>(new Set());
+
+  // Sayfa değiştiğinde aktif sayfanın grubu kapalıysa aç
+  useEffect(() => {
+    const aktifGrup = gruplar.find((g) => grupAktifMi(g));
+    if (aktifGrup && kapaliGruplar.has(aktifGrup.baslik)) {
+      setKapaliGruplar((onceki) => {
+        const yeni = new Set(onceki);
+        yeni.delete(aktifGrup.baslik);
+        return yeni;
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
   const grupToggle = (baslik: string) =>
     setKapaliGruplar((onceki) => {
       const yeni = new Set(onceki);
       if (yeni.has(baslik)) yeni.delete(baslik); else yeni.add(baslik);
       return yeni;
     });
-
-  const cozPath = (oge: NavOge) => typeof oge.path === "function" ? oge.path(props) : (oge.path ?? "");
-  const rozetSayisi = (oge: NavOge) => oge.badgeKey ? (props.badge[oge.badgeKey] ?? 0) : 0;
 
   const Satir = ({ oge, seviye = 0 }: { oge: NavOge; seviye?: number }) => {
     const path = cozPath(oge);

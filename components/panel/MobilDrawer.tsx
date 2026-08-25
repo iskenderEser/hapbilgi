@@ -36,22 +36,57 @@ const BILGI_PILLERI: { etiket: string; path: string }[] = [
   { etiket: "Ana Sayfa", path: "/ana-sayfa" },
   { etiket: "HapBilgi Nedir", path: "/hapbilgi-nedir" },
   { etiket: "Nasıl Çalışır", path: "/nasil-calisir" },
-  { etiket: "Sözleşmeler", path: "/sozlesmeler" },
-  { etiket: "İletişim", path: "/iletisim" },
 ];
 
 export default function MobilDrawer(props: MobilDrawerProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const gruplar = props.gruplar ?? PANEL_NAV;
+
+  const cozPath = (oge: NavOge) => typeof oge.path === "function" ? oge.path(props) : (oge.path ?? "");
+  const rozetSayisi = (oge: NavOge) => oge.badgeKey ? (props.badge[oge.badgeKey] ?? 0) : 0;
+
+  const grupAktifMi = (grup: NavGrup) => {
+    return grup.oglar.some((oge) => {
+      if (!oge.gate(props)) return false;
+      const p = cozPath(oge);
+      if (p && (oge.tamEslesme ? pathname === p : pathname === p || pathname.startsWith(`${p}/`))) {
+        return true;
+      }
+      if (oge.altOglar) {
+        return oge.altOglar.some((alt) => {
+          if (!alt.gate(props)) return false;
+          const ap = cozPath(alt);
+          return ap && (alt.tamEslesme ? pathname === ap : pathname.startsWith(ap));
+        });
+      }
+      return false;
+    });
+  };
+
+  const [kapaliGruplar, setKapaliGruplar] = useState<Set<string>>(() => {
+    const gorunurGruplar = gruplar.filter((g) => g.oglar.some((o) => o.gate(props)));
+    const kapali = new Set<string>();
+    gorunurGruplar.forEach((g, index) => {
+      if (index === 0) return; // İlk ana sekme açık başlar
+      if (grupAktifMi(g)) return; // Aktif sayfanın grubu açık başlar
+      kapali.add(g.baslik);
+    });
+    return kapali;
+  });
   const [acikAltOgeler, setAcikAltOgeler] = useState<Set<string>>(new Set());
+
+  const grupToggle = (baslik: string) =>
+    setKapaliGruplar((onceki) => {
+      const yeni = new Set(onceki);
+      if (yeni.has(baslik)) yeni.delete(baslik); else yeni.add(baslik);
+      return yeni;
+    });
 
   if (!props.acik) return null;
 
-  const gruplar = props.gruplar ?? PANEL_NAV;
   const git = (path: string) => { router.push(path); props.onKapat(); };
   const cikis = () => { props.onKapat(); props.onCikis(); };
-  const cozPath = (oge: NavOge) => typeof oge.path === "function" ? oge.path(props) : (oge.path ?? "");
-  const rozetSayisi = (oge: NavOge) => oge.badgeKey ? (props.badge[oge.badgeKey] ?? 0) : 0;
 
   const Satir = ({ etiket, path, sayi, girintili = false, tamEslesme = false }: { etiket: string; path: string; sayi?: number; girintili?: boolean; tamEslesme?: boolean }) => {
     const aktif = tamEslesme ? pathname === path : pathname === path || pathname.startsWith(`${path}/`);
@@ -170,14 +205,22 @@ export default function MobilDrawer(props: MobilDrawerProps) {
               );
             }
 
+            const acik = !kapaliGruplar.has(grup.baslik);
             return (
               <div key={grup.baslik} className="flex flex-col gap-1">
-                <span
-                  style={{ fontSize: "12px", fontWeight: 800, color: "#111827", textTransform: "uppercase", letterSpacing: "0.06em", padding: "0 12px 2px", fontFamily: "'Nunito', sans-serif" }}
+                <button
+                  type="button"
+                  onClick={() => grupToggle(grup.baslik)}
+                  className="flex w-full cursor-pointer items-center justify-between border-none bg-transparent"
+                  style={{ fontSize: "12px", fontWeight: 800, color: "#111827", textTransform: "uppercase", letterSpacing: "0.06em", padding: "2px 12px 4px", fontFamily: "'Nunito', sans-serif" }}
                 >
-                  {grup.baslik}
-                </span>
-                {gorunur.map((oge) => <OgeBlogu key={oge.etiket} oge={oge} girintili />)}
+                  <span>{grup.baslik}</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111827" strokeWidth={2.5}
+                    style={{ transform: acik ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+                {acik && gorunur.map((oge) => <OgeBlogu key={oge.etiket} oge={oge} girintili />)}
               </div>
             );
           })}
