@@ -216,7 +216,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ soru_seti_durum_id: b.soru_seti_durum_id, puanlar }),
       });
-      if (!res.ok) { const d = await res.json(); hata(d.hata ?? "Soru puanları kaydedilemedi.", d.adim, d.detay); setIslemLoading(null); return; }
+      if (!res.ok) { const d = await res.json(); hata(d.hata ?? "Doğru cevap puanları kaydedilemedi.", d.adim, d.detay); setIslemLoading(null); return; }
     }
 
     // Hedef dizisi backend'de talebin hedef_roller alanından türetilir.

@@ -135,7 +135,7 @@ export default function UretimGorevDetayPage() {
       videoGuid = null;
     } catch (err) {
       if (videoGuid) void fetch("/videolar/api/bunny-yukleme-iptal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ video_guid: videoGuid }) });
-      hata("Video Bunny'ye yüklenemedi.", "TUS yükleme", err instanceof Error ? err.message : undefined);
+      hata("Video yüklenemedi.", "TUS yükleme", err instanceof Error ? err.message : undefined);
     } finally {
       setVideoYuzdesi(null); setIslem(false);
     }

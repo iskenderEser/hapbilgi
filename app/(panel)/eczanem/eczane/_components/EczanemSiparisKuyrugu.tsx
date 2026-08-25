@@ -110,7 +110,7 @@ export default function EczanemSiparisKuyrugu({ hata, basari }: Props) {
       const res = await fetch("/eczanem/eczane/api/siparisler", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ siparis_id: siparis.siparis_id, aksiyon }) });
       const data = await res.json();
       if (!res.ok) { hata(data.hata ?? "Sipariş işlemi tamamlanamadı.", "sipariş"); return; }
-      basari(aksiyon === "onayla" ? `Sipariş onaylandı — ${paraYaz(Number(data.indirim_tl))} indirim (${data.islem_kodu}).` : "İndirim talebi onaylanmadı; müşteri puanı korunuyor.");
+      basari(aksiyon === "onayla" ? `Sipariş onaylandı — ${paraYaz(Number(data.indirim_tl))} indirim (${data.islem_kodu}).` : "İndirim talebi onaylanmadı.");
       await cek(true);
       bildirimRozetleriniYenile();
     } catch { hata("Sipariş işlemi tamamlanamadı.", "sipariş"); }

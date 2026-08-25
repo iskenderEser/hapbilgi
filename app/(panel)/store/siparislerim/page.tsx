@@ -432,9 +432,9 @@ export default function SiparislerimPage() {
               <strong style={{ color: KOYU_METIN }}>
                 {iptalEdilecek.store_urunler?.ad ?? "Ürün"}
               </strong>{" "}
-              siparişini iptal etmek istediğine emin misin?{" "}
+              siparişinizi iptal etmek istediğinize emin misiniz?{" "}
               <strong style={{ color: BORDO }}>{iptalEdilecek.toplam_puan} HapPuan</strong>{" "}
-              bakiyene iade edilecek.
+              bakiyenize iade edilecek.
             </div>
             <div className="flex gap-2.5 justify-end">
               <button

@@ -256,7 +256,7 @@ export function useTalepMerkezi() {
         try {
           await bunnyTusYukle(dosya, izin, setVideoYuzdesi);
         } catch (err: unknown) {
-          hata("Video Bunny'ye yüklenemedi.", "TUS yükleme", err instanceof Error ? err.message : undefined);
+          hata("Video yüklenemedi.", "TUS yükleme", err instanceof Error ? err.message : undefined);
           fetch("/videolar/api/bunny-yukleme-iptal", {
             method: "POST",
             headers: { "Content-Type": "application/json" },

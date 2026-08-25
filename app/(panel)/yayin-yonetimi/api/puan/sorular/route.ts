@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       .upsert(kayitlar, { onConflict: "soru_seti_durum_id,soru_index" });
 
     if (upsertError) {
-      return hataYaniti("Soru puanları kaydedilemedi.", "soru_seti_puanlari tablosu UPSERT", upsertError);
+      return hataYaniti("Doğru cevap puanları kaydedilemedi.", "soru_seti_puanlari tablosu UPSERT", upsertError);
     }
 
     return NextResponse.json({ mesaj: `${puanlar.length} soru puanı kaydedildi.` }, { status: 200 });

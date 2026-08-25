@@ -78,7 +78,7 @@ export function useEclubPanel({ hazir, hata }: UseEclubPanelArgs) {
       const res = await fetch("/eclub/panel/api");
       const d = await res.json();
       if (!res.ok) {
-        hata(d.hata ?? "Panel yüklenemedi.", d.adim, d.detay);
+        hata(d.hata ?? "E-Club Panel Verileri Yüklenemedi.", d.adim, d.detay);
       } else {
         setKisi(d.kisi ?? null);
         setOneriler(d.oneriler ?? []);

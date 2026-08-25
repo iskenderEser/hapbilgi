@@ -61,7 +61,7 @@ export default function BmOneriPaneli({ videolar, onVideoSec, onVideoKaldir, onV
         const yanit = await fetch("/oneriler/api/kullanicilar");
         const veri = await yanit.json();
         if (!yanit.ok) {
-          hataRef.current(veri.hata ?? "Öneri alıcıları alınamadı.", veri.adim, veri.detay);
+          hataRef.current(veri.hata ?? "Öneri alıcı listesi yüklenemedi.", veri.adim, veri.detay);
           return;
         }
         if (aktif) {
@@ -69,7 +69,7 @@ export default function BmOneriPaneli({ videolar, onVideoSec, onVideoKaldir, onV
           setLimitler(veri.limitler ?? null);
         }
       } catch {
-        hataRef.current("Öneri alıcıları alınamadı.");
+        hataRef.current("Öneri alıcı listesi yüklenemedi.");
       } finally {
         if (aktif) setYukleniyor(false);
       }

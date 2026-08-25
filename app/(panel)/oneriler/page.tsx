@@ -55,7 +55,7 @@ export default function OnerilerPage() {
       const res = await fetch(url);
       const data = await res.json();
       if (!aktif) return;
-      if (!res.ok) hataRef.current(data.hata ?? "Öneriler yüklenemedi.", data.adim, data.detay);
+      if (!res.ok) hataRef.current(data.hata ?? "Öneri takip listesi yüklenemedi.", data.adim, data.detay);
       else if (isTM) {
         setTmOneriler(data.oneriler ?? []);
         setTmBmler(data.bm_listesi ?? []);

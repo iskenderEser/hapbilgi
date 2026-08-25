@@ -478,7 +478,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
         try {
           await bunnyTusYukle(bekleyenVideo.dosya, d, setVideoYuklemeYuzdesi);
         } catch (err: unknown) {
-          hata("Video Bunny'ye yüklenemedi.", "TUS yükleme", err instanceof Error ? err.message : undefined);
+          hata("Video yüklenemedi.", "TUS yükleme", err instanceof Error ? err.message : undefined);
           // Telafi: vezneden açılan ama hiçbir kayda bağlanmayan Bunny kaydını temizle.
           fetch("/videolar/api/bunny-yukleme-iptal", {
             method: "POST",

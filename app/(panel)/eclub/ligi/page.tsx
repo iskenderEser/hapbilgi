@@ -93,13 +93,13 @@ export default function EclubLigiPage() {
     try {
       const response = await fetch(`/eclub/ligi/api?${query}`);
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.hata ?? "E-Club Ligi verisi alınamadı.");
+      if (!response.ok) throw new Error(payload.hata ?? "E-Club Lig Verileri Yüklenemedi.");
       setData(payload as LigData);
       setTakimTaslak((payload as LigData).takim_adi ?? "");
     } catch (error) {
       if (ilkYukleme) {
         setData(null);
-        setHata(error instanceof Error ? error.message : "E-Club Ligi verisi alınamadı.");
+        setHata(error instanceof Error ? error.message : "E-Club Lig Verileri Yüklenemedi.");
       }
     } finally {
       if (ilkYukleme) setLoading(false);

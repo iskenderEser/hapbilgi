@@ -126,7 +126,7 @@ export default function UrunDetayPage() {
   const handleSatinAl = () => {
     if (!urun) return;
     if (!seciliAdresId) {
-      hata("Lütfen bir teslimat adresi seç.", "validasyon", undefined);
+      hata("Lütfen bir teslimat adresi seçiniz.", "validasyon", undefined);
       return;
     }
     if (adet > urun.stok) {
@@ -134,7 +134,7 @@ export default function UrunDetayPage() {
       return;
     }
     if (toplamPuan > bakiye) {
-      hata("Bakiyen yetmiyor.", "validasyon", undefined);
+      hata("Puanınız yetersiz.", "validasyon", undefined);
       return;
     }
     setOnayModal(true);
@@ -160,7 +160,7 @@ export default function UrunDetayPage() {
         return;
       }
 
-      basari("Siparişin alındı!");
+      basari("Siparişiniz alındı.");
       setOnayModal(false);
       setSiparisVeriliyor(false);
       hbstoreBakiyesiDegistiBildir();
@@ -437,7 +437,7 @@ export default function UrunDetayPage() {
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-xs" style={{ color: GRI_METIN }}>
-                      <span>Mevcut Bakiyen</span>
+                      <span>Mevcut Bakiyeniz</span>
                       <span
                         className="font-semibold"
                         style={{ color: toplamPuan > bakiye ? BORDO : YESIL }}
