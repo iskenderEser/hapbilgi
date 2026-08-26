@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { beniHatirlaKaydet } from "@/lib/utils/beniHatirla";
+import Footer from "@/components/footer/Footer";
 
 const BORDO = "#bc2d0d";
 // F-04 (18.07.2026): giriş ekranı renk/yerleşim talebi — sol %50 açık zemin
@@ -181,15 +182,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row" style={{ fontFamily: "'Nunito', sans-serif" }}>
-
-      {/* Sol panel — marka anlatısı (F-04): %50 genişlik, açık zemin #f3f4f7,
-          logo sol üst-orta, metin ve ikonlar #737373 (Eczanem kalbi bordo) */}
-      <div className="md:w-1/2 flex items-center justify-center px-6 py-10 md:px-12 lg:px-16"
-        style={{ background: "#f3f4f7" }}>
-        {/* F-04 hizalama: masaüstünde sol blok 3cm yukarı, sağ blok 3cm aşağı —
-            metin alanının orta çizgisi giriş alanının ekseniyle çakışır (İskender, ekran görseliyle) */}
-        <div className="max-w-md w-full md:-translate-y-[75px]">
+    <div className="min-h-screen flex flex-col justify-between" style={{ fontFamily: "'Nunito', sans-serif" }}>
+      <div className="flex-1 flex flex-col md:flex-row">
+        {/* Sol panel — marka anlatısı (F-04): %50 genişlik, açık zemin #f3f4f7,
+            logo sol üst-orta, metin ve ikonlar #737373 (Eczanem kalbi bordo) */}
+        <div className="md:w-1/2 flex items-center justify-center px-6 py-10 md:px-12 lg:px-16"
+          style={{ background: "#f3f4f7" }}>
+          {/* F-04 hizalama: masaüstünde sol blok 3cm yukarı, sağ blok 3cm aşağı —
+              metin alanının orta çizgisi giriş alanının ekseniyle çakışır (İskender, ekran görseliyle) */}
+          <div className="max-w-md w-full md:-translate-y-[75px]">
           {/* F-04: şeffaf zeminli varyant — beyaz gömülü logo.png açık zeminde
               kutu gibi görünüyordu; logo.png beyaz zeminli sayfalarda kalmaya devam eder */}
           {/* ?v=4: 3D Gri baykuşlu yeni kurumsal marka logosu */}
@@ -390,12 +391,10 @@ export default function LoginPage() {
           </form>
           )}
 
-          <div className="text-center mt-10">
-            <span className="text-xs text-gray-400">© 2026 HapBilgi · Tüm hakları saklıdır.</span>
-          </div>
         </div>
       </div>
-
+      </div>
+      <Footer />
     </div>
   );
 }
