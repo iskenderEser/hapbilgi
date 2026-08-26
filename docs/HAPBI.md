@@ -4,9 +4,19 @@
 
 ## Akış
 
-Oturum → yetkili kimlik/kapsam → imzalı sohbet kontrolü → Gemini araç seçimi → sunucuda araç/yetki/parametre denetimi → mevcut veri servisi → kaynaklı cevap → yanıt denetimi → arayüz.
+**Serbest soru:** Oturum → yetkili kimlik/kapsam → imzalı sohbet kontrolü → Gemini araç seçimi → sunucuda araç/yetki/parametre denetimi → mevcut veri servisi → kaynaklı cevap → yanıt denetimi → arayüz.
+
+**Hazır soru:** Oturum → yetkili kimlik/kapsam → istemcinin `hizli: true` işareti → sunucuda rol+soru metninin kesin eşleşmesi → doğrulanmış tek araç ve parametre planı → mevcut veri servisi → yalnız cevabı sunan tek Gemini çağrısı → aynı kaynak/sayı/eğitim/yönlendirme denetimi → arayüz.
 
 Model kullanıcı/firma kimliği, tablo, SQL veya URL seçemez. Yalnız konusu ve dönem parametreleri doğrulanmış araçları kullanır. Kaynak ve eylem linkleri sunucuda üretilir. Kişisel sayılar için önceki sohbet yerine güncel veri okunur.
+
+## Doğrulanmış hazır soru yolu
+
+Role özel hazır sorular ve bunların araç planları `lib/hapbi/hizliSorgu.ts` içinde tek kaynakta tutulur. Bir metnin hazır soru gibi görünmesi hızlı yolu açmaz: istek açıkça `hizli: true` taşımalı, oturum rolü ve soru metni sunucudaki sabit eşlemeyle bire bir uyuşmalıdır. Kullanıcının forma yazdığı serbest metin, hazır soruyla aynı olsa bile tam araç seçimi akışında kalır.
+
+Hazır plan aksi açıkça yazmadıkça güncel Türkiye haftasını ve doğru kapsamı taşır. UTT kişisel, BM kişisel veya bölge, TM/üretici/yönetici ekip kapsamına bağlanır. Eczacı/teknisyen planları `eclub_kisisel_durum` aracını kullanır; lig veya dönem parametresi üretmez. Eczanem müşterisinde Hapbi arayüzü kapalıdır.
+
+Planlanan canlı araç önce sunucuda çalışır. Gemini'ye yalnız bu doğrulanmış sonuç ve `yaniti_sun` işlevi verilir; `gemini-3*` modellerinde gecikmeyi azaltmak için `thinkingLevel: minimal` kullanılır. Üretilen cevap tam akışla aynı `sonYanitiDogrula` denetiminden geçer. Sağlayıcı HTTP, bağlantı veya zaman aşımı hatası ikinci bir model çağrısıyla yinelenmez. Kaynak/yanıt doğrulamasındaki diğer sorunlarda güvenli tam araç döngüsüne dönülebilir; bu geçiş günlükte hızlı yol kullanıldı diye kaydedilmez.
 
 ## Faz 2 kapsamı
 
@@ -19,7 +29,7 @@ Model kullanıcı/firma kimliği, tablo, SQL veya URL seçemez. Yalnız konusu v
 
 Öneri kaybına yönelik adımlar rolün gerçek ekran erişimine göre üretilir: UTT/KD_UTT, BM ve TM Öneri Takibi ekranını kullanabilir; üretici/yönetici ise kendi T-Club raporundaki kaybı ilgili TM/BM ile değerlendirir. Raporu görmek kişisel işlem ekranına erişim sağlamaz; yönetici challenge toplamı kişinin gelen challenge kaydı değildir.
 
-İç kullanıcı rehberlik yanıtı, okunmuş `gelisim_rehberi` kaynağı gerektirir. Eczacı ve eczane teknisyeni için kişisel E-Club özeti `eclub_kisisel_durum` aracından okunur; bu kapsam lig veya dönem bilgisi içermez. Model gözlem → gerekçe → adım şeklinde kısa açıklama üretir. Kaynak/rol/parametre hatasında hazır öneriye veya uydurma eksiklik teşhisine geçilmez. Eczanem müşterisi ve İÜ için kişisel canlı veri araçları bu kapsamda eklenmemiştir; bu roller genel platform rehberliği alır.
+İç kullanıcı rehberlik yanıtı, okunmuş `gelisim_rehberi` kaynağı gerektirir. Eczacı ve eczane teknisyeni için kişisel E-Club özeti `eclub_kisisel_durum` aracından okunur; bu kapsam lig veya dönem bilgisi içermez. Model gözlem → gerekçe → adım şeklinde kısa açıklama üretir. Kaynak/rol/parametre hatasında hazır öneriye veya uydurma eksiklik teşhisine geçilmez. Eczanem müşterisi için kişisel canlı veri aracı yoktur ve Hapbi arayüzü kapalıdır. İÜ bu sürümde yalnız genel platform rehberliği alır; kişisel üretim görev aracı yoktur.
 
 Eğitim kaynağı kullanıcıya **Eğitim Yayınları** adıyla gösterilir. UTT kategori menüsünün `/videolarim` kök sayfası yoktur; bu kaynak etiketi tıklanabilir değildir. Önerilen eğitimler ayrı bağlantılardır: UTT/KD_UTT için mevcut kategori sayfası + `yayin_id`, BM için C-Club izleme sayfası + varsa güncel gelen `challenge_id`. Model yalnız bu istekte okunmuş ve kaynak gösterilmiş eğitim kimliklerini seçebilir; başlık ve adres sunucudan gelir. Etikette eğitim adı, varsa teknik ve kategori bulunur.
 
@@ -47,6 +57,8 @@ Lig/rapor dönemi hafta, ay, çeyrek veya yıldır; mevcut Türkiye takvim yard�
 
 Ham DB satırları filtrelenmeden modele gönderilmez. Lig listesi en çok 40, normal eğitim listesi en çok 20 satırdır; kapsam toplamı ve kesilme bilgisi ayrı tutulur. Rehber tüm adayları sunucuda sıralayıp en çok üç öneri verir. Eğitim/kendi izleme/challenge sorgusunda 1.000 satıra ulaşılırsa eksik veriyle değerlendirme yapmak yerine hata döner; daha büyük katalog ve geçmiş için sayfalama ayrıca gereklidir. Eğitimlerde medya dosyası URL'si ve cevap anahtarları; E-Club'da GLN ve kişi iletişim bilgileri gönderilmez. Senaryo içeriği ayrı araçla okunabilir; okunmadan başlıktan içerik anlatılamaz.
 
+Araç şemaları `aracTanimlari.ts` içinde veri okuyucularından bağımsızdır. `araclar.ts`, doğrulanmış ortak bağlamı kurar ve yalnız çağrılan alanı dinamik yükler. `aracMotorlari/` altında platform, eğitim, gelişim, saha, üretim ve E-Club alanları ayrılmış; dönem doğrulama ve güvenli satır yardımcıları `ortak.ts` içinde paylaşılmıştır. Bu bölünme mevcut lig/rapor/puan motorlarının davranışını değiştirmez; Hapbi'nin bunlara erişen adaptörlerini üretim paketinde küçük ve izole modüller hâline getirir.
+
 ## Konuşma, hata ve maliyet
 
 - `GEMINI_MODEL` önceliklidir. Tanımlı model hata verirse gizlice başka modele veya hazır cevaba geçilmez.
@@ -54,7 +66,7 @@ Ham DB satırları filtrelenmeden modele gönderilmez. Lig listesi en çok 40, n
 - `HAPBI_SOHBET_SECRET` isteğe bağlı ayrı imza anahtarıdır. Yoksa sunucudaki service-role anahtarı amaç ayrımlı HMAC için kullanılır; istemciye anahtar gönderilmez.
 - Sohbet token'ı imzalıdır, **şifreli değildir**; yalnız kullanıcının kendi soru/cevapları ve kapsamını taşır. İstemci belleğinde tutulur, kalıcı depolanmaz. Son 12 mesaj / 18.000 karakter / 30 dakika; yeni sohbet veya kapsam değişiminde yenilenir.
 - Hata, boş kayıt ve gerçek sıfır farklıdır. Kaynakta olmayan sıra/puan varsayılmaz. Sayı denetimi, seçilen kaynakta bulunmayan rakamları engeller ve sınırlı düzeltme turu açar. Aynı sayının yanlış kişiye/ölçüte atfedilmesini tek başına çözmez; bu anlamsal değerlendirme gerektirir.
-- Model: en çok 5 çağrı ve 8 araç seçimi. Gelişim aracı bir rapor + kişisel kapsamda katalog, karşılaştırma aracı iki rapor okur; iç okuma sayısı bu nedenle model araç sayısıyla aynı değildir. İstek: en çok 2.000 karakter soru / 70 KB gövde. Sunucu veri/model akışına zaman aşımı uygular.
+- Serbest soru modeli: en çok 5 çağrı ve 8 araç seçimi. Doğrulanmış hazır soru: tek canlı araç + yalnız son cevabı sunan tek model çağrısı. Gelişim aracı bir rapor + kişisel kapsamda katalog, karşılaştırma aracı iki rapor okur; iç okuma sayısı bu nedenle model araç sayısıyla aynı değildir. İstek: en çok 2.000 karakter soru / 70 KB gövde. Sunucu veri/model akışına zaman aşımı uygular.
 - Süreç içi kullanıcı başına tek eşzamanlı istek ve dakikada 8 istek. Çok örnekli üretimde ortak Redis/DB limit deposu ve toplam maliyet alarmı eklenmeden bu sınır küresel kabul edilmemelidir.
 - Günlükler yalnız istek kimliği, durum/hata kodu, yapılandırılmış model, araç adları, toplam token kullanımı ve süre içerir. Token sayısı fiyat değildir.
 
@@ -86,7 +98,7 @@ Başlangıç sürümü: `5392271`. İlk kontrolde yalnız UTT oturumu açıktı;
 | 4. Yönetici | Yetkili firma raporu, katılım verisi ve dönem karşılaştırması; firma dışı veri talebinin reddi | GM Murat Aydın / Hepifarma ana akışları canlı kontrol edildi; eşit süre aynı-aralık doğrulaması açık |
 | 5. E-Club yönetim kapsamı | Modül açıkken ilgili rolün kendi E-Club raporuyla yanıtın karşılaştırılması; kapsam dışı erişimin reddi | BM, TM, PM ve GM aylık raporları ekranla eşleşti; diğer roller bekliyor |
 
-Her hesapta oturum rolü, firma/takım/bölge kapsamı, seçilen dönem, soru, ekran ölçümü ve hapbi yanıtı karşılaştırılır. Güncel raporla bugünü dışlayan eşit süre kıyası aynı aralık sanılmaz; eşit süre için aynı bitmiş gün aralığı doğrulanamıyorsa sayısal kıyas testi geçmiş sayılmaz. Eğitim bağlantıları açılır ama video/challenge başlatılmaz. Kaynak yokluğu gerçek sıfırdan ayrılır; mesajla rol yükseltme talebinin yetkiyi değiştirmediği kontrol edilir. Eczacı/teknisyen/Eczanem kişisel veri araçları ve İÜ görev araçları bu fazda tamamlanmış özellik sayılmaz.
+Her hesapta oturum rolü, firma/takım/bölge kapsamı, seçilen dönem, soru, ekran ölçümü ve hapbi yanıtı karşılaştırılır. Güncel raporla bugünü dışlayan eşit süre kıyası aynı aralık sanılmaz; eşit süre için aynı bitmiş gün aralığı doğrulanamıyorsa sayısal kıyas testi geçmiş sayılmaz. Eğitim bağlantıları açılır ama video/challenge başlatılmaz. Kaynak yokluğu gerçek sıfırdan ayrılır; mesajla rol yükseltme talebinin yetkiyi değiştirmediği kontrol edilir. Eczacı kişisel E-Club aracı canlı doğrulanmıştır; teknisyen aynı araç sözleşmesiyle otomatik test edilmiş ancak ayrı hesapla canlı test edilmemiştir. Eczanem müşterisi kapalıdır; İÜ kişisel görev aracı bu fazda yoktur.
 
 #### BM oturumu: canlı sonuçlar
 
@@ -194,7 +206,26 @@ GM dışındaki yönetici unvanlarının ayrı oturum testi yapılmadı. Firma t
 
 Eczacı/teknisyen hızlı soruları kişisel eğitim ve puan kapsamına çevrildi; genel karşılama metninden lig ifadesi çıkarıldı. Aynı E-Club kişi aracı eczane teknisyeni hedef rolüyle otomatik test edildi. Müşteri kimliği bu aracı veritabanı sorgusundan önce reddeder ve müşteri arayüzünde Hapbi render edilmez. Ayrı teknisyen hesabıyla canlı uçtan uca kontrol henüz yapılmadı.
 
-Değişiklik sonrası 31 hapbi testi ve tam 166 smoke testi UTC ile Pacific/Kiritimati altında geçti. Değişen dosyaların TypeScript denetimi ve hedefli lint hata vermedi; sohbet bileşenindeki önceden var olan iki `img` uyarısı sürüyor.
+Eczacı kişisel araç geliştirmesi sonrasında 31 Hapbi testi ve 166 smoke testi geçmişti. Hazır soru hızlandırması ve modüler araç mimarisi eklendikten sonraki son doğrulamada 33 Hapbi testi ve tam 168 smoke testi geçti. Bağımsız üretim TypeScript denetimi ve `git diff --check` başarılı oldu; hedefli lintte hata oluşmadı, sohbet bileşenindeki önceden var olan iki `img` uyarısı sürüyor.
+
+### Hazır soru yolu: dört rolde canlı süre ve kapsam doğrulaması
+
+26 Ağustos 2026 tarihinde aynı role özel hazır sorular, değişiklik öncesi ve sonrası gerçek oturum/veri/Gemini akışıyla karşılaştırıldı. Süreler tek yerel ölçümdür; ağ ve sağlayıcı yükü için garanti edilen SLA değildir.
+
+| Rol / hesap | Hazır soru ve doğrulanan kapsam | Önce | Sonra | Sonuç |
+|---|---|---:|---:|---|
+| UTT / Berk | Kişisel gelişim ve eğitim önceliği; `Kişisel gelişim değerlendirmesi · 2026 / hafta: 35` | 38,3 sn | 3,7 sn | Kişisel kapsam, güncel tur ifadesi ve üç gerçek eğitim bağlantısı korundu; eski katalog fallback'i oluşmadı |
+| BM / Selin | Bölgesel gelişim; `Ekip gelişim değerlendirmesi · 2026 / hafta: 35` | 11,6 sn | 3,5 sn | Bölge kapsamı ile 70 net / 60 izleme / 10 cevaplama ölçümleri korundu |
+| PM / Merve | Ekip gelişimi; `Ekip gelişim değerlendirmesi · 2026 / hafta: 35` | 42,0 sn | 3,6 sn | Üretim aşaması ve 70 net ürün eğitimi ölçümü şirket/ekip kapsamında kaldı |
+| Eczacı / Adil | Kişisel E-Club eğitim ve puan özeti | 11,9 sn | 8,6 sn | 3 tamamlanan, 165 net/kullanılabilir puan ve 4 süresi geçmiş eğitim korundu; lig veya dönem eklenmedi |
+
+Hazır soruların her rolde aynı aracı kullanması amaçlanmaz; rol ve soru eşleşmesi farklı doğrulanmış araç planlarına gider. Bu nedenle roller arası mutlak süreler kalite karşılaştırması değildir. Serbest soruların muhakeme ve çoklu araç kapasitesi azaltılmadı.
+
+### Üretim derlemesi ve deployment
+
+Hapbi araç adaptörleri `aracMotorlari/` altında alanlara ayrıldı; `aracTanimlari.ts` hafif şema katmanı, `araclar.ts` dinamik dağıtıcı oldu. `typecheck:build`, önce `next typegen` ardından `tsconfig.build.json` ile artımsız üretim tip kontrolü çalıştırır; test dosyaları bu üretim kontrolünün dışında kalır. `npm run build` bu denetimi bir kez zorunlu çalıştırır ve yalnız bu başarı işaretiyle Next.js'in mükerrer tip taramasını atlar. Doğrudan `next build` tip kontrolünü atlamaz.
+
+Bu düzeni ve hızlı sorgu yolunu içeren `0399488` commit'i GitHub `main` dalına gönderildi. GitHub'a otomatik bağlı Vercel deployment'ı 26 Ağustos 2026 tarihinde 1 dakika 42 saniyede **Ready** oldu. Bu kayıt tek deployment sonucudur; sonraki deployment süreleri için garanti değildir.
 
 ## Sonraki kapsam / üretime geçiş kontrolü
 

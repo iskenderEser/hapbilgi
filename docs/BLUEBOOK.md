@@ -408,14 +408,16 @@ Tüm admin API rotaları taranmış; açık giriş ucu (`/admin/api/giris`) dı�
 ---
 
 # 8.1. BÖLÜM: HAPBI — KAYNAKLI AI ASİSTANI
-*Tarih: 26 Ağustos 2026 | Faz 2 — kişiye ve role uygun rehberlik, salt-okur*
+*Tarih: 26 Ağustos 2026 | Faz 2 — kişiye ve role uygun rehberlik, doğrulanmış hızlı sorgu yolu, salt-okur*
 
 ### 1. Cevap motoru
-`app/api/hapbi/sor/route.ts` oturumu doğrular; `rolCozucu` ve organizasyon hiyerarşisiyle kapsam çözer. Anonim devam, sabit cevap fallback'i ve her soruya aynı veri paketini gönderme kaldırılmıştır. `lib/hapbi/gemini.ts` gerçek Gemini function calling döngüsünü yürütür. `GEMINI_MODEL` önceliklidir; yoksa `gemini-flash-latest` kullanılır. Yerel ortamda `gemini-3.5-flash` ile gerçek araç çağrısı doğrulanmıştır; canlı ortamdaki ayarlar ayrıca doğrulanmalıdır.
+`app/api/hapbi/sor/route.ts` oturumu doğrular; `rolCozucu` ve organizasyon hiyerarşisiyle kapsam çözer. Anonim devam, sabit cevap fallback'i ve her soruya aynı veri paketini gönderme kaldırılmıştır. Cevap motoru iki güvenli yol kullanır: kullanıcı arayüzündeki role özel hazır sorular, yalnız istemcinin `hizli: true` işareti ile rol+soru metni sunucudaki kesin eşlemeyle uyuşursa doğrulanmış tek aracı doğrudan çalıştırır ve Gemini'yi yalnız kaynaklı cevabı sunmak için bir kez çağırır; serbest yazılan sorular mevcut çok araçlı Gemini function calling döngüsünde kalır. Hızlı yolun araç sonucu da aynı kaynak, sayı, eğitim ve yönlendirme denetimlerinden geçer. `GEMINI_MODEL` önceliklidir; yoksa `gemini-flash-latest` kullanılır. Yerel ortamda `gemini-3.5-flash` ile gerçek araç çağrısı doğrulanmıştır; canlı ortamdaki ayarlar ayrıca doğrulanmalıdır.
 
 ### 2. Kaynaklar ve kapsam
 * `bilgiKaynaklari.ts`: Bluebook ve kodla karşılaştırılmış, sürümlü kullanıcı rehberi. Ham Bluebook otomatik okunmaz; teknik bilgiler ve doğrulanmamış kurallar modele gönderilmez. Rehber değişiklikleri kod incelemesiyle yapılır.
-* `araclar.ts`: HB Ligi için mevcut `getUttLig/getSahaLig`; CC için mevcut dönem RPC'leri; rol raporları için ilgili mevcut rapor RPC'leri ve toplama fonksiyonları; E-Club için mevcut yetki kapsamı/rapor servisi.
+* `aracTanimlari.ts`: Gemini'ye sunulan salt-okur araç şemalarının hafif ve veri motorlarından bağımsız tek kaynağıdır.
+* `araclar.ts` ve `aracMotorlari/`: `araclar.ts` yalnız doğrulanmış bağlamı kuran ve istenen alan motorunu dinamik yükleyen hafif dağıtıcıdır. Platform, eğitim, gelişim, saha, üretim ve E-Club okuyucuları ayrı motorlara bölünmüştür; mevcut lig/rapor/puan servisleri yeniden yazılmadan adaptör olarak kullanılır.
+* `hizliSorgu.ts`: Role uygun hazır soru metinlerinin ve bunların doğrulanmış araç/parametre planlarının tek kaynağıdır. Hazır sorular aksi açıkça yazılmadıkça güncel Türkiye haftasını kullanır; eczacı/teknisyen kişisel E-Club sorguları dönem veya lig parametresi taşımaz.
 * `uretim_raporu`: `/raporlar/uretim` API'siyle ortak `lib/rapor/uretim/getUretimData.ts` üzerinden kendi firmasının yayın portföyünü okur. Üreticinin kişisel talep özetiyle karıştırılmaz. Varyantlar dönemde yayına alınanlara aittir; anlık canlı stok dağılımı değildir. Mevcut RPC için aktif yönetici yalnız aynı firmadan çözülür; kapsam/sorgu hatası sıfıra çevrilmez.
 * `egitim.ts`: UTT/KD_UTT ve BM kataloglarını kendi kayıtlarıyla okur; ortak `gecerliTurBaslangiclari` hesabını kullanır. Kategori/tur katılımı hesaplanır. Ayrı `egitim_icerigi` aracı yalnız bu istekte erişilmiş yayının senaryosunu, görünürlüğü yeniden doğrulayarak okur; bu metin video transkripti veya test cevap anahtarı değildir.
 * `rehberlik.ts`: `gelisim_rehberi` için gerçek rapor ölçümleri ve katalog üzerinden gerekçeli önceliklendirme; `donem_karsilastir` için sunucuda fark/yüzde hesabı. Öğrenme ve puan hedefi ayrıdır; kategori kaybı belirli eğitimde hata veya yetkinlik eksikliği diye yorumlanmaz. Rehberlik cevabı, okunmuş gelişim kaynağı gerektirir.
@@ -425,24 +427,26 @@ Tüm admin API rotaları taranmış; açık giriş ucu (`/admin/api/giris`) dı�
 * BM'nin kişisel öğrenme/lig puanı C-Club'dır; bölgesinin T-Club saha performansıyla karıştırılmaz. Veri hatası/boş sonuç/sıfır ayrı durumdur. Eksik sıra veya video puanı doldurulmaz.
 * BM/TM canlı doğrulamasında T-Club öneri kaybı ile C-Club challenge kaybı için ayrı rehberlik bulguları eklendi. Geçmiş kayıp telafisi/iadesi vaat edilmez; öneriler sonraki çalışmalarda yeni kayıpları azaltmaya yöneliktir. Eğitimlerin geçerli turdaki tamamlanması raporun hafta/ay filtresiyle aynı dönem sayılmaz; ekip aracındaki boş kişisel eğitim listesi de uygun eğitim olmadığı anlamına gelmez. TM'nin kişisel öğrenme kapsamı reddi, firma C-Club ligini veya kapsamındaki E-Club raporunu görüntüleme yetkisinin olmadığı şeklinde genellenmez; her araç kendi yetkisini denetler.
 * GM canlı doğrulamasında öneri kaybına yönelik adımlar ekran yetkisine göre ayrıldı: Öneri Takibi UTT/KD_UTT/BM/TM'ye açık; üretici/yönetici kendi T-Club raporundan ilgili TM/BM ile takip eder. Rapor toplamını görmek, kişisel öneri/challenge işlem ekranına erişim anlamına gelmez.
-* Eczane ve Eczanem müşteri kimlikleri için bu sürümde genel platform rehberliği vardır; kişisel canlı veri araçları henüz yoktur. İÜ için üretim iş listesi, sipariş/bakiye sorgusu, E-Club takım ligi, yazma/onay/iptal işlemleri sonraki kapsamdır.
+* Eczacı ve eczane teknisyeni kendi E-Club eğitim durumu, tamamlanan/süresi geçmiş eğitimleri, net ve kullanılabilir puanı için `eclub_kisisel_durum` aracını kullanır; bu araç lig veya dönem bilgisi içermez. Eczanem müşterisinde Hapbi kapalıdır ve kişisel canlı veri aracı yoktur. İÜ için üretim iş listesi, sipariş/bakiye sorgusu, E-Club takım ligi, yazma/onay/iptal işlemleri sonraki kapsamdır.
 
 ### 3. Sohbet ve güvenlik
 İstemci ham sohbet geçmişi veya rol/firma parametresi göndermez. Sunucuda imzalanmış sohbet token'ı kullanıcı+rol+firma+takım+bölge+modül kapsamına bağlıdır; son 12 mesaj, en çok 18.000 karakter ve 30 dakika geçerlilik taşır. Tarayıcıda kalıcı saklanmaz. Yeni sohbet ve kimlik değişimi bağlamı temizler. Her yeni sayısal soruda araç yeniden çağrılır; eski yanıt güncel veri kaynağı değildir.
 
 Model yalnız tanımlı okuma araçlarını çağırabilir; serbest SQL/URL/tablo erişimi yoktur. Araç parametreleri sunucuda doğrulanır. Cevap kaynakları ve yönlendirmeler yalnız okunmuş kaynak kimliklerinden seçilir. Bilgi cevabı kaynak gerektirir; cevapta bulunan rakamların seçilen kaynakta bulunması kontrol edilir. Bu sayısal kontrol anlamsal doğruluk garantisi değildir; rol ve görev senaryolarıyla değerlendirme gerektirir.
 
-Soru başına en çok 5 model çağrısı, 8 araç seçimi; zaman aşımı ve süreç içi kullanıcı başına eşzamanlılık/hız sınırı vardır. Gelişim aracı bir rapor ve kişisel kapsamda katalog, karşılaştırma aracı iki rapor okur. Senaryo 10.000 karakterle sınırlandırılır. Eğitim/kendi izleme/challenge sorgusu 1.000 satıra ulaşırsa eksik veriden öneri üretilmez. Çok örnekli üretimde ortak rate-limit deposu ayrıca gerekir. Günlükler soru, cevap, kişi adı veya anahtar içermez; istek kimliği, model, araç adları, token ve süre kaydedilir. Sağlayıcı hatası AI cevabı gibi gizlenmez.
+Serbest soru yolunda soru başına en çok 5 model çağrısı ve 8 araç seçimi vardır. Doğrulanmış hızlı soru yolunda önce tek canlı araç çalışır, ardından yalnız `yaniti_sun` şemasıyla tek Gemini çağrısı yapılır; `gemini-3*` modellerinde düşük gecikme için `thinkingLevel: minimal` kullanılır. Sağlayıcı bağlantı/HTTP/zaman aşımı hataları ikinci bir model çağrısıyla yinelenmeden kullanıcıya iletilir; kaynak veya yanıt doğrulamasındaki diğer sorunlarda güvenli tam araç döngüsü kullanılabilir. Her iki yolda da zaman aşımı ve süreç içi kullanıcı başına eşzamanlılık/hız sınırı vardır. Gelişim aracı bir rapor ve kişisel kapsamda katalog, karşılaştırma aracı iki rapor okur. Senaryo 10.000 karakterle sınırlandırılır. Eğitim/kendi izleme/challenge sorgusu 1.000 satıra ulaşırsa eksik veriden öneri üretilmez. Çok örnekli üretimde ortak rate-limit deposu ayrıca gerekir. Günlükler soru, cevap, kişi adı veya anahtar içermez; istek kimliği, model, araç adları, hızlı yol kullanımı, token ve süre kaydedilir. Sağlayıcı hatası AI cevabı gibi gizlenmez.
 
 ### 4. Arayüz ve doğrulama
-Mevcut sohbet boyutları/renkleri ve maskot korunmuştur; avatar zemini beyaz, başlık `hapbi`dir. Cevaplarda kaynak/dönem bağlantıları, role uygun hızlı sorular ve yeni sohbet düğmesi bulunur. Kaynak bağlantısı sayfanın dönem filtresini otomatik değiştirmez; aynı dönem seçilmelidir. Eğitim kaynağının adı **Eğitim Yayınları**dır; öneriler sunucuda doğrulanmış eğitim bağlantılarıyla ayrı gösterilir. UTT kategori menüsü olmayan `/videolarim` köküne bağlanmaz; öneri doğrudan kategori sayfasındaki yayını açar. BM bağlantılarında güncel gelen challenge bağlamı korunur. Eski UTT ekran turları korunur, AI cevaplarının yerine çalıştırılmaz.
+Mevcut sohbet boyutları/renkleri ve maskot korunmuştur; avatar zemini beyaz, başlık `hapbi`dir. Cevaplarda kaynak/dönem bağlantıları, role uygun hızlı sorular ve yeni sohbet düğmesi bulunur. Sorguların içeriğe ve AI yanıt süresine göre zaman alabileceğini belirten kırmızı bilgi notu sohbet alanının altında gösterilir. Kaynak bağlantısı sayfanın dönem filtresini otomatik değiştirmez; aynı dönem seçilmelidir. Eğitim kaynağının adı **Eğitim Yayınları**dır; öneriler sunucuda doğrulanmış eğitim bağlantılarıyla ayrı gösterilir. UTT kategori menüsü olmayan `/videolarim` köküne bağlanmaz; öneri doğrudan kategori sayfasındaki yayını açar. BM bağlantılarında güncel gelen challenge bağlamı korunur. Eski UTT ekran turları korunur, AI cevaplarının yerine çalıştırılmaz.
 
 `tests/hapbi.smoke.test.ts` kimlik/kapsam, veri doğruluğu, sohbet imzası, Gemini araç döngüsü ve hata yollarını sınar. Gerçek Gemini ve oturum açık UTT ekranında lig, takip sorusu, eğitim, puan raporu ve E-Club raporu akışı kontrol edilmiştir; E-Club yanıtı haftalık rapor ekranıyla karşılaştırılmıştır. BM oturumunda kişisel C-Club, bölgesel T-Club, eğitim önerileri/bağlantıları, takvim karşılaştırması, E-Club aylık raporu ve mesajla rol yükseltme talebinin reddi kontrol edildi. TM oturumunda takım raporu/rehberliği, takvim karşılaştırması, firma C-Club ligi, E-Club raporu, kişisel öğrenme sınırı ve firma dışı erişim talebinin reddi kontrol edildi. GM Murat Aydın oturumunda yönetici firma raporu, güncel tur/dönem ayrımı, rehberlik, takvim kıyası, üretim portföyü, firma C-Club, E-Club ve firma dışı erişim reddi canlı kontrol edildi. Kişisel C-Club kapsamı için erişilemeyen verinin yok sayılmaması ve Öneri Takibi yönlendirmesinin rol yetkisine uyması sağlandı. PM Merve Duran oturumunda şirket üretim portföyü ile kişisel talep kaynağının karışması düzeltildi; üretim/saha, takvim kıyası, kişisel öğrenme sınırı, firma C-Club, E-Club ve firma dışı erişim reddi canlı kontrol edildi. BM gelen challenge bağlantısı ve BM/TM/PM eşit sürenin bağımsız aynı-aralık sayısal doğrulaması açık; diğer yönetici unvanları ve diğer üretici kapsamlarının canlı testleri bekliyor. Bütün roller için canlı uçtan uca doğrulama tamamlanmış sayılmaz. Ayrıntılar: `docs/HAPBI.md`.
+
+Hızlı yol sonrasında aynı role özel hazır sorularla canlı süre ve kaynak doğrulaması yapıldı: UTT Berk kişisel gelişim rehberi 38,3 saniyeden 3,7 saniyeye; BM Selin bölgesel gelişim rehberi 11,6 saniyeden 3,5 saniyeye; PM Merve ekip gelişim rehberi 42,0 saniyeden 3,6 saniyeye; Eczacı Adil kişisel E-Club özeti 11,9 saniyeden 8,6 saniyeye indi. UTT, BM ve PM yanıtları 2026/35. hafta kaynağını ve doğru kişisel/bölge/ekip kapsamını; Eczacı yanıtı dönem/lig kullanmadan kendi E-Club verisini korudu. Son doğrulamada 33 Hapbi testi ve tam 168 smoke testi geçti; bağımsız üretim tip kontrolü başarılı oldu. Araç motorlarının dinamik modüllere ayrılması ve `tsconfig.build.json` ile test dosyalarının üretim tip kontrolünden ayrılması sonrasında `0399488` commit'inin Vercel deployment'ı 1 dakika 42 saniyede **Ready** oldu.
 
 ---
 
 # 9. BÖLÜM: BÜTÜNSEL DOSYA VE DİZİN ENVANTERİ (CANONICAL FILE MANIFEST)
-*Tarih: 25 Ağustos 2026 | Kapsam: Projedeki Tüm Klasörler, Dosyalar ve 1-2 Cümlelik Fonksiyonel Görev Tanımları*
+*Tarih: 26 Ağustos 2026 | Kapsam: Projedeki Tüm Klasörler, Dosyalar ve 1-2 Cümlelik Fonksiyonel Görev Tanımları*
 
 ## 1. KÖK DİZİN (ROOT & CONFIG)
 
@@ -458,12 +462,13 @@ Mevcut sohbet boyutları/renkleri ve maskot korunmuştur; avatar zemini beyaz, b
 | `components.json` | JSON / Veri | components.json modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
 | `eslint.config.mjs` | Yapılandırma | Kod kalitesi ve projenin özel mimari kural denetimlerini (katman izolasyonu, import yasakları) denetleyen ESLint ayarı. |
 | `next-env.d.ts` | TypeScript / Lib | next-env.d.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `next.config.ts` | TypeScript / Lib | Next.js sunucu ayarlarını, güvenlik başlıklarını ve CDN görsel izinlerini yöneten yapılandırma. |
+| `next.config.ts` | TypeScript / Lib | React Compiler ve üretim derlemesinde bağımsız tip kontrolünün ikinci kez çalışmasını önleyen kontrollü Next.js ayarlarını tanımlar. Doğrudan `next build` çağrısında tip kontrolü korunur. |
 | `package-lock.json` | JSON / Veri | package-lock.json modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
 | `package.json` | JSON / Veri | Projenin bağımlılıklarını, çalıştırma, derleme ve test betiklerini tanımlayan ana paket yapılandırması. |
 | `postcss.config.mjs` | Yapılandırma | Tailwind CSS ve modern CSS dönüştürücü eklentilerini derleme sürecine bağlayan PostCSS ayarı. |
 | `proxy.ts` | TypeScript / Lib | Gelen tüm HTTP isteklerini karşılayan, 6 güvenlik ve modül bekçisini (admin, cc, store, eclub, eczanem) işleten merkezi ara yazılım. |
 | `tsconfig.json` | JSON / Veri | TypeScript derleme kurallarını, modül alias eşlemelerini ve strict tip denetimlerini belirleyen yapılandırma. |
+| `tsconfig.build.json` | JSON / Veri | Üretim kaynaklarını bağımsız ve artımsız denetleyen; test dosyalarını Vercel üretim tip kontrolünden ayıran TypeScript yapılandırması. |
 | `tsconfig.tsbuildinfo` | Yapılandırma | tsconfig.tsbuildinfo modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
 
 ## 2. APP PROVİDERS & ORTAK ROTALAR
@@ -947,7 +952,7 @@ Mevcut sohbet boyutları/renkleri ve maskot korunmuştur; avatar zemini beyaz, b
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `route.ts` | API Ucu | Google Gemini LLM API entegrasyonu, oturum bağlamı enjeksiyonu ve dinamik aksiyon butonu üreten uç nokta. |
+| `route.ts` | API Ucu | Oturum ve rol kapsamını doğrulayan; kesin eşleşmiş hazır soruları tek araçlı hızlı yola, serbest soruları tam Gemini araç döngüsüne yönlendiren kaynaklı sohbet uç noktası. |
 
 ## 7. LİB ÇEKİRDEK İŞ MANTIĞI VE MOTORLAR
 
@@ -1139,15 +1144,30 @@ Mevcut sohbet boyutları/renkleri ve maskot korunmuştur; avatar zemini beyaz, b
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `hapbiBilgiTabani.ts` | TypeScript / Lib | Role uygun hızlı sorular ve mevcut UTT ekran turları. AI bilgi kaynağı değildir. |
+| `hapbiBilgiTabani.ts` | TypeScript / Lib | Mevcut UTT ekran turlarını taşır; AI bilgi kaynağı veya hazır soru tanımı değildir. |
 | `hapbiKullaniciBaglami.ts` | TypeScript / Lib | Yetkili kimlik, organizasyon ve modül kapsamını doğrular; sayı veya varsayılan rol üretmez. |
-| `araclar.ts` | TypeScript / Lib | Gemini araç tanımları, parametre doğrulama ve mevcut lig/rapor kaynaklarına salt-okur adaptörler. |
+| `aracTanimlari.ts` | TypeScript / Lib | Gemini işlev şemalarını veri motorlarından bağımsız tutan hafif ve kanonik araç tanımı modülü. |
+| `araclar.ts` | TypeScript / Lib | Doğrulanmış bağlamı kuran ve yalnız çağrılan alan motorunu dinamik yükleyen hafif araç dağıtıcısı. |
 | `bilgiKaynaklari.ts` | TypeScript / Lib | Bluebook/kod dayanaklı sürümlü kullanıcı rehberi. |
+| `eclubKisi.ts` | TypeScript / Lib | Oturum sahibinin E-Club kişi/eczane/firma erişimini, eğitim durumunu ve puan özetini iletişim verisi taşımadan okuyan kişisel veri servisi. |
 | `egitim.ts` | TypeScript / Lib | Rol, yayın görünürlüğü ve geçerli tur üzerinden eğitim adaylarını okur. |
 | `gemini.ts` | TypeScript / Lib | Sınırlı Gemini araç döngüsü, kaynaklı yanıt ve sayısal tutarlılık denetimi. |
+| `hizliSorgu.ts` | TypeScript / Lib | Role özel hazır soru metinlerini kesin araç/parametre planlarına bağlar; varsayılan haftayı ve E-Club dönem dışı kapsamını korur. |
 | `rehberlik.ts` | TypeScript / Lib | Faz 2: kapsamlı rapor ölçümlerinden gelişim gözlemleri, gerekçeli eğitim öncelikleri ve dönem fark/yüzde hesabı. |
 | `sohbet.ts` | TypeScript / Lib | Kapsama bağlı imzalı sohbet bağlamı ve süreç içi istek sınırı. |
 | `sozlesme.ts` | TypeScript / Lib | Kaynak, yanıt ve hata sözleşmeleri. |
+
+### 📁 lib/hapbi/aracMotorlari/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `ortak.ts` | TypeScript / Lib | Araç bağlamı, dönem doğrulama ve güvenli satır yardımcılarını paylaşan ortak çekirdek. |
+| `platform.ts` | TypeScript / Lib | Sürümlü HapBilgi platform rehberini salt-okur araç sonucuna dönüştürür. |
+| `egitim.ts` | TypeScript / Lib | Yetkili eğitim kataloğu ve yayın senaryosu araçlarını çalıştırır. |
+| `gelisim.ts` | TypeScript / Lib | Gelişim rehberi ve eşit süre/takvim karşılaştırması araçlarını çalıştırır. |
+| `saha.ts` | TypeScript / Lib | HB/CC ligleri ile role göre T-Club performans raporu adaptörlerini çalıştırır. |
+| `uretim.ts` | TypeScript / Lib | Yetkili firmanın mevcut üretim raporu okuyucusunu Hapbi araç sözleşmesine bağlar. |
+| `eclub.ts` | TypeScript / Lib | Eczacı/teknisyen kişisel E-Club durumu ile iç kullanıcı E-Club raporunu ayrı yetki sınırlarında çalıştırır. |
 
 ## 8. COMPONENTS GÖRSEL VE ETKİLEŞİM KATMANI
 
@@ -1222,9 +1242,9 @@ Mevcut sohbet boyutları/renkleri ve maskot korunmuştur; avatar zemini beyaz, b
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `HapbiChatModal.tsx` | UI / React | Kullanıcıyla doğal dilde sohbet eden, akıllı aksiyon yönlendirmeleri sunan AI modal penceresi. |
+| `HapbiChatModal.tsx` | UI / React | Serbest soruları ve role özel hazır soru seçimlerini ayıran; kaynakları, aksiyonları ve sorgu süresi bilgi notunu gösteren AI sohbet modalı. |
 | `HapbiMaskot.tsx` | UI / React | Sağ altta süzülen, online rozetli, hover'da göz kırpan interaktif 3D maskot bileşeni. |
-| `HapbiProvider.tsx` | UI / React | Panel genelinde walkthrough tur ve sohbet durumunu yöneten global Context sağlayıcısı. |
+| `HapbiProvider.tsx` | UI / React | Panel genelinde tur/sohbet durumunu yöneten; yalnız hazır soru tıklamalarında sunucuya doğrulanabilir hızlı sorgu işareti gönderen Context sağlayıcısı. |
 | `HapbiSpotlight.tsx` | UI / React | Kullanıcıyı adım adım ilgili sayfa ve butonlara odaklayan etkileşimli ekran karartma/rehberlik bileşeni. |
 
 ### 📁 components/ui/
