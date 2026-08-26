@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { beniHatirlaKaydet } from "@/lib/utils/beniHatirla";
+import { mobilKarsilamaYonlendiricisiOlustur } from "@/lib/auth/mobilKarsilama";
 import GirisAltBilgileri from "./_components/GirisAltBilgileri";
 
 const BORDO = "#bc2d0d";
@@ -73,15 +74,18 @@ export default function LoginPage() {
   const [sifirlamaMesaj, setSifirlamaMesaj] = useState("");
   const router = useRouter();
   const { kullanici, yukleniyor, cikisYap } = useAuth();
+  const [mobilGirisYolunuCoz] = useState(mobilKarsilamaYonlendiricisiOlustur);
 
   useEffect(() => {
     if (yukleniyor) return;
     if (!kullanici) return;
     if (kullanici.rol === undefined) return;
+    let iptalEdildi = false;
 
     // E-Club kişisi (eczacı/teknisyen) → kendi paneline; Eczanem müşterisi →
     // /eczanem paneline (müşteri de bu sayfadan e-posta/telefon + şifre ile girer);
     // admin → /admin; diğerleri → firma-aktif kontrolünden geçip /ana-sayfa.
+    // Ana Sayfa kullanıcılarının ilk mobil girişi /hapbilgi-nedir ile karşılanır.
     // Kimlik kaynağı useAuth'tur (B-06/D3 — user_metadata okuması kaldırıldı:
     // metadata girişte iliştirilir ve bayatlayabilir, rolCozucu dersi).
     const yonlendir = async () => {
@@ -105,6 +109,7 @@ export default function LoginPage() {
           .eq("firma_id", kullanici.firma_id)
           .single();
 
+        if (iptalEdildi) return;
         if (firma && firma.aktif === false) {
           await cikisYap();
           setHata("Firmanızın sisteme erişimi şu anda kapalıdır. Lütfen yöneticinizle görüşün.");
@@ -112,10 +117,17 @@ export default function LoginPage() {
         }
       }
 
-      router.replace(kullanici.rol === "admin" ? "/admin" : "/ana-sayfa");
+      const hedef = await mobilGirisYolunuCoz(
+        createClient().auth,
+        kullanici.id,
+        window.matchMedia("(max-width: 767px)").matches,
+        kullanici.rol === "admin" ? "/admin" : "/ana-sayfa",
+      );
+      if (!iptalEdildi) router.replace(hedef);
     };
     yonlendir();
-  }, [cikisYap, kullanici, router, yukleniyor]);
+    return () => { iptalEdildi = true; };
+  }, [cikisYap, kullanici, mobilGirisYolunuCoz, router, yukleniyor]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
