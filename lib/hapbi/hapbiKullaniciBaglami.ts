@@ -1,6 +1,6 @@
 // lib/hapbi/hapbiKullaniciBaglami.ts
 //
-// Hapbi AI Platform Danışmanı için 5 Boyutlu Canlı Kullanıcı, Lig, Video Kataloğu ve Performans Bağlam Toplayıcısı.
+// Hapbi AI Platform Danışmanı için 5 Boyutlu Canlı Kullanıcı, Lig, Role Özgü Video Kataloğu ve Performans Bağlam Toplayıcısı.
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import { aktifPeriyot } from "@/lib/zaman/kontrol";
@@ -34,7 +34,7 @@ export interface HapbiKullaniciBaglami {
   ileriSarmaKaybi: number;
   yanlisCevapKaybi: number;
   siparisPuani: number;
-  // Video İstatistikleri ve Detaylı Liste
+  // Video İstatistikleri ve Role Özgü Detaylı Liste
   tamamlananVideoSayisi: number;
   izlenmeyenVideoSayisi: number;
   izlenmeyenVideolar: OnerilenVideoBilgisi[];
@@ -53,11 +53,29 @@ export async function getHapbiKullaniciBaglami(
     // 1. Kullanıcı profil detayları
     const { data: kullanici } = await supabase
       .from("v_kullanici_detay")
-      .select("kullanici_id, ad, soyad, eposta, rol, firma_adi, takim_adi, bolge_adi, firma_id, bolge_id")
+      .select("kullanici_id, ad, soyad, eposta, rol, firma_adi, takim_adi, bolge_adi, firma_id, bolge_id, takim_id")
       .eq("kullanici_id", userId)
       .maybeSingle();
 
     if (!kullanici) return null;
+
+    const userRole = (kullanici.rol ?? "utt").trim().toLowerCase();
+
+    // Bölge ve Takım/Firma çözümleme
+    let userTakimId = kullanici.takim_id;
+    let userFirmaId = kullanici.firma_id;
+
+    if (kullanici.bolge_id && (!userTakimId || !userFirmaId)) {
+      const { data: bolge } = await supabase
+        .from("bolgeler")
+        .select("takim_id, takimlar(firma_id)")
+        .eq("bolge_id", kullanici.bolge_id)
+        .maybeSingle();
+      if (bolge) {
+        userTakimId = bolge.takim_id;
+        userFirmaId = (bolge.takimlar as unknown as { firma_id: string })?.firma_id ?? userFirmaId;
+      }
+    }
 
     // 2. Sıralama ve Puan Dağılımı (v_hbligi_sirali_v2)
     const { data: siralama } = await supabase
@@ -90,7 +108,19 @@ export async function getHapbiKullaniciBaglami(
       siparisPuani = 0;
     }
 
-    // 5. İzleme Kayıtları ve Yayındaki Videolar
+    // 5. Role Özgü Yayındaki Videoları Çek (hedef_roller ve takım/firma süzgeci)
+    let yayinQuery = supabase
+      .from("v_yayin_detay")
+      .select("yayin_id, urun_adi, teknik_adi, video_puani, yayin_tarihi, icerik_turu, firma_adi, hedef_roller")
+      .eq("durum", "yayinda")
+      .gt("video_suresi_saniye", 0)
+      .contains("hedef_roller", [userRole])
+      .order("yayin_tarihi", { ascending: false });
+
+    if (userTakimId && userFirmaId) {
+      yayinQuery = yayinQuery.or(`takim_id.eq.${userTakimId},and(takim_id.is.null,firma_id.eq.${userFirmaId})`);
+    }
+
     const [
       { data: izlemeler },
       { data: yayinlar },
@@ -100,12 +130,7 @@ export async function getHapbiKullaniciBaglami(
         .from("izleme_kayitlari")
         .select("yayin_id, tamamlandi_mi, created_at")
         .eq("kullanici_id", userId),
-      supabase
-        .from("v_yayin_detay")
-        .select("yayin_id, urun_adi, teknik_adi, video_puani, yayin_tarihi, icerik_turu, firma_adi")
-        .eq("durum", "yayinda")
-        .gt("video_suresi_saniye", 0)
-        .order("yayin_tarihi", { ascending: false }),
+      yayinQuery,
       supabase
         .from("eclub_eczaneler")
         .select("eczane_id", { count: "exact", head: true }),
@@ -142,16 +167,16 @@ export async function getHapbiKullaniciBaglami(
     const izlenmeyenVideoMetni = izlenmeyenVideolar.slice(0, 10).map((v) => {
       const yeniEtiketi = v.yeniMi ? " [YENİ YAYINDA]" : "";
       const teknik = v.teknikAdi ? ` - ${v.teknikAdi}` : "";
-      return `• ${v.urunAdi}${teknik} | Kategori: ${v.kategori} | Değer: ${v.puan} Puan${yeniEtiketi}`;
+      return `• ${v.urunAdi}${teknik} | Tür: ${v.kategori} | Değer: ${v.puan} Puan${yeniEtiketi}`;
     }).join("\n");
 
     const adSoyad = `${kullanici.ad ?? ""} ${kullanici.soyad ?? ""}`.trim();
 
     const canliVeriMetni = `
 === KULLANICININ ANLIK CANLI VERİTABANI TABLOSU ===
-1. KİMLİK & TAKIM:
+1. KİMLİK & ROL:
 - Kullanıcı: ${adSoyad} (Hitap: ${kullanici.ad ?? "Kullanıcı"} Bey/Hanım)
-- Rol: ${kullanici.rol?.toUpperCase() ?? "UTT"}
+- Rol: ${kullanici.rol?.toUpperCase() ?? "UTT"} (Yalnızca bu role uygun sahada geçerli içerikler listelenmiştir)
 - Firma: ${kullanici.firma_adi ?? "Hepifarma"} | Takım: ${kullanici.takim_adi ?? "Bilinmiyor"} | Bölge: ${kullanici.bolge_adi ?? "Bilinmiyor"}
 
 2. LİG & PUAN DURUMU:
@@ -161,10 +186,10 @@ export async function getHapbiKullaniciBaglami(
 - Cezalar/Kayıplar: İleri Sarma Kaybı (-${siralama?.ileri_sarma_kaybi ?? 0} Puan) | Test Yanlış Cevap Kaybı (-${siralama?.yanlis_cevap_kaybi ?? 0} Puan)
 - HBStore Cüzdan Bakiyesi: ${siparisPuani} Puan
 
-3. VİDEO EĞİTİM DURUMU:
-- Tamamlanan Video: ${tamamlananVideolarOzet.length} / Toplam: ${(yayinlar || []).length} (Kalan: ${izlenmeyenVideolar.length} Video)
-- KULLANICININ HENÜZ İZLEMEDİĞİ ÖRNEK AKTİF VİDEOLAR (Tavsiye ederken bu gerçek başlıkları ve puanları kullan):
-${izlenmeyenVideoMetni || "Tüm videolar tamamlandı."}
+3. ${kullanici.rol?.toUpperCase() ?? "UTT"} ROLÜNE ÖZEL VİDEO EĞİTİM DURUMU:
+- Tamamlanan Video: ${tamamlananVideolarOzet.length} / Toplam Yetkili Video: ${(yayinlar || []).length} (Kalan: ${izlenmeyenVideolar.length} Video)
+- KULLANICININ İZLEME YETKİSİ OLAN VE HENÜZ İZLEMEDİĞİ AKTİF VİDEOLAR:
+${izlenmeyenVideoMetni || "Tüm yetkili videolar tamamlandı."}
 
 4. E-CLUB & SAHA AĞI:
 - Takımındaki Bağlı Eczane Sayısı: ${eczaneCount ?? 0}
