@@ -83,7 +83,8 @@ export const HAPBI_CANLI_TURLAR: Record<string, WalkthroughTur> = {
 export function hizliSorular(rol: string) {
   if (TUKETICI_ROLLER.includes(rol)) return ["Gelişmek için hangi eğitimlere öncelik vermeliyim?", "Geçen haftaya göre durumum nasıl?", "Bu hafta ligde durumum nasıl?"];
   if (rol === "bm") return ["Kendi öğrenmem için hangi eğitimlere öncelik vermeliyim?", "Bölgemde gelişim için neye odaklanmalıyım?", "C-Club puanımı geçen haftayla karşılaştır."];
-  if ([...ECLUB_TUKETICI_ROLLERI, MUSTERI_ROLU].includes(rol)) return ["HapBilgi nedir?", "E-Club ile Eczanem arasındaki fark nedir?"];
+  if (ECLUB_TUKETICI_ROLLERI.includes(rol)) return ["Eğitim durumum ve puanlarım nedir?", "Hangi eğitimleri inceleyebilirim?", "Tamamladığım eğitimler hangileri?"];
+  if (rol === MUSTERI_ROLU) return ["HapBilgi nedir?", "E-Club ile Eczanem arasındaki fark nedir?"];
   if (rol === "iu") return ["İçerik üretim süreci nasıl çalışır?", "HapBilgi nedir?"];
   return ["Ekibimde gelişim için neye odaklanmalıyım?", "Saha performansını geçen haftayla karşılaştır.", "HapBilgi nedir?"];
 }

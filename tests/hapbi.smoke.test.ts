@@ -65,7 +65,7 @@ test("hapbi: haftalık sıfır korunur, eksik sıra ve kayıt birinciliğe çevr
   const r = await hapbiAraclariniOlustur(db, K).calistir("lig_durumu", { ...P, lig: "hb" });
   const veri = r.veri as { kendi_kaydim: { toplam_puan: number; sira: null }; satirlar: unknown[] };
   assert.equal(veri.kendi_kaydim.toplam_puan, 0); assert.equal(veri.kendi_kaydim.sira, null);
-  assert.equal(veri.satirlar.length, 1); assert.doesNotMatch(JSON.stringify(r), /Gizli|730|kullanici_id/);
+  assert.equal(veri.satirlar.length, 1); assert.doesNotMatch(JSON.stringify(r), /Gizli|"toplam_puan":730|"kullanici_id":/);
   assert.equal(kayitlar[0].ad, "get_hb_ligi_haftalik_v2");
   assert.deepEqual(kayitlar[0].args, { p_yil: 2026, p_hafta: 35 });
   const bos = await hapbiAraclariniOlustur(dbOlustur(() => ({ data: [] })).db, K).calistir("lig_durumu", { ...P, lig: "hb" });
@@ -242,6 +242,62 @@ test("hapbi: dış kimliklerin iç kullanıcı araçlarına erişimi yok", async
   }
   assert.equal((await a.calistir("platform_bilgisi", { konu: "cclub" })).durum, "ok");
   assert.equal(kayitlar.length, 0);
+});
+
+test("hapbi: eczacı/teknisyen yalnız kendi E-Club özetini ve eğitim bağlantılarını okur", async () => {
+  const eclubVerisi = (rol: string) => dbOlustur(k => ({ data: k.ad === "eclub_kisiler"
+    ? { kisi_id: "ek1", rol, ad: "Adil", soyad: "Test", eposta: "gizli@example.com", telefon: "555" }
+    : k.ad === "eclub_kisi_eczane" ? [{ eczane_id: "ecz1" }]
+    : k.ad === "eclub_eczane_firma" ? [{ firma_id: "f1" }]
+    : k.ad === "firmalar" ? [{ firma_id: "f1", firma_adi: "Hepifarma", aktif: true, eclub_aktif: true, eclub_store_aktif: true, eczanem_aktif: true }]
+    : k.ad === "eclub_oneri_kayitlari" ? [
+      { oneri_id: "o1", yayin_id: "y1", oneri_baslangic: "2026-08-20", oneri_bitis: "2026-08-30", izlendi_mi: false },
+      { oneri_id: "o2", yayin_id: "y2", oneri_baslangic: "2026-08-01", oneri_bitis: "2026-08-20", izlendi_mi: true },
+      { oneri_id: "o3", yayin_id: "y3", oneri_baslangic: "2026-08-01", oneri_bitis: "2026-08-20", izlendi_mi: false },
+      { oneri_id: "gizli", yayin_id: "yg", oneri_baslangic: "2026-08-20", oneri_bitis: "2026-08-30", izlendi_mi: false },
+    ] : k.ad === "eclub_kazanilan_puanlar" ? [{ yayin_id: "y1", puan: 100 }, { yayin_id: "y2", puan: 70 }, { yayin_id: "yg", puan: 999 }]
+    : k.ad === "eclub_ileri_sarma_kayitlari" ? [{ yayin_id: "y1", kaybedilen_puan: 5 }, { yayin_id: "yg", kaybedilen_puan: 999 }]
+    : k.ad === "eclub_dogru_cevap_kayitlari" ? [{ yayin_id: "y1" }, { yayin_id: "y2" }, { yayin_id: "yg" }]
+    : k.ad === "get_eclub_store_firma_bakiye" ? [{ firma_id: "f1", bakiye: 165 }, { firma_id: "f2", bakiye: 999 }]
+    : k.ad === "v_yayin_detay" ? [
+      { yayin_id: "y1", firma_id: "f1", firma_adi: "Hepifarma", urun_adi: "Laropen", teknik_adi: "İtirazı Karşılama", hedef_roller: [rol === "eczane_teknisyeni" ? "eczane_teknisyeni" : "eczaci"], durum: "yayinda", video_puani: 50, soru_puani: 10 },
+      { yayin_id: "y2", firma_id: "f1", firma_adi: "Hepifarma", urun_adi: "Abilon", teknik_adi: null, hedef_roller: [rol === "eczane_teknisyeni" ? "eczane_teknisyeni" : "eczaci"], durum: "yayinda", video_puani: 40, soru_puani: 10 },
+      { yayin_id: "y3", firma_id: "f1", firma_adi: "Hepifarma", urun_adi: "Eski", teknik_adi: null, hedef_roller: [rol === "eczane_teknisyeni" ? "eczane_teknisyeni" : "eczaci"], durum: "yayinda", video_puani: 30, soru_puani: 10 },
+      { yayin_id: "yg", firma_id: "f2", firma_adi: "Gizli Firma", urun_adi: "Gizli Eğitim", teknik_adi: null, hedef_roller: ["eczaci", "eczane_teknisyeni"], durum: "yayinda", video_puani: 999, soru_puani: 999 },
+    ] : [] }));
+
+  for (const rol of ["eczaci", "eczane_teknisyeni"]) {
+    const { db, kayitlar } = eclubVerisi(rol);
+    const arac = hapbiAraclariniOlustur(db, { ...K, rol, kimlik_turu: "eclub_kisi", firma_id: null, takim_id: null, bolge_id: null }, SIMDI);
+    const sonuc = await arac.calistir("eclub_kisisel_durum", { liste: "tumu" });
+    assert.equal(sonuc.durum, "ok"); assert.equal(sonuc.tur, "rehberlik");
+    const veri = sonuc.veri as { ozet: Record<string, number>; egitimler: Array<{ baslik: string; egitim_id: string }> };
+    assert.deepEqual(veri.ozet, {
+      bekleyen_egitim: 1, tamamlanan_egitim: 1, suresi_gecmis_egitim: 1,
+      toplam_kazanilan_puan: 170, ileri_sarma_kaybi: 5, net_puan: 165,
+      kullanilabilir_puan: 165, dogru_cevap: 2,
+    });
+    assert.deepEqual(veri.egitimler.map(e => e.baslik), ["Laropen", "Abilon", "Eski"]);
+    assert.equal(sonuc.egitimler?.[0].url, "/eclub/panel?oneri_id=o1");
+    assert.doesNotMatch(JSON.stringify(sonuc), /Gizli|999|eposta|telefon|"kisi_id":|"firma_id":|"oneri_id":|"yayin_id":/);
+    assert.ok(kayitlar.find(k => k.ad === "eclub_oneri_kayitlari")?.filtreler.some(f => f[1] === "kisi_id" && f[2] === "ek1"));
+    assert.ok(kayitlar.find(k => k.ad === "v_yayin_detay")?.filtreler.some(f => f[0] === "in" && f[1] === "firma_id" && JSON.stringify(f[2]) === '["f1"]'));
+    const yanit = sonYanitiDogrula({ yanit_turu: "rehberlik", cevap: "Laropen eğitimine öncelik verebilirsiniz.", kaynak_idleri: [sonuc.kaynak!.id], egitim_idleri: [veri.egitimler[0].egitim_id] }, [sonuc], "model");
+    assert.equal(yanit.egitimler?.[0].url, "/eclub/panel?oneri_id=o1");
+    const gecmis = await arac.calistir("eclub_kisisel_durum", { liste: "suresi_gecmis" });
+    assert.deepEqual((gecmis.veri as { egitimler: Array<{ baslik: string }> }).egitimler.map(e => e.baslik), ["Eski"]);
+    assert.match(gecmis.egitimler?.[0].gerekce ?? "", /Tamamlanmadan süresi geçmiş/);
+    const tekKaynak = sonYanitiDogrula({ yanit_turu: "rehberlik", cevap: "E-Club eğitimlerinizi yeniden inceleyebilirsiniz.", kaynak_idleri: [sonuc.kaynak!.id, gecmis.kaynak!.id] }, [sonuc, gecmis], "model");
+    assert.equal(tekKaynak.kaynaklar.length, 1);
+  }
+});
+
+test("hapbi: müşteri ve iç kullanıcı E-Club kişi aracında sorgudan önce reddedilir", async () => {
+  for (const baglam of [{ ...K }, { ...K, rol: "musteri", kimlik_turu: "musteri", firma_id: null }]) {
+    const { db, kayitlar } = dbOlustur(() => { throw new Error("Sorgu çalışmamalı"); });
+    assert.equal((await hapbiAraclariniOlustur(db, baglam, SIMDI).calistir("eclub_kisisel_durum", {})).durum, "yetkisiz");
+    assert.equal(kayitlar.length, 0);
+  }
 });
 
 test("hapbi Faz 2: tam katalog öğrenme ihtiyacına göre sıralanır; puan hedefi ayrı değerlendirilir", async () => {

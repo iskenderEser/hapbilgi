@@ -19,7 +19,7 @@ Model kullanıcı/firma kimliği, tablo, SQL veya URL seçemez. Yalnız konusu v
 
 Öneri kaybına yönelik adımlar rolün gerçek ekran erişimine göre üretilir: UTT/KD_UTT, BM ve TM Öneri Takibi ekranını kullanabilir; üretici/yönetici ise kendi T-Club raporundaki kaybı ilgili TM/BM ile değerlendirir. Raporu görmek kişisel işlem ekranına erişim sağlamaz; yönetici challenge toplamı kişinin gelen challenge kaydı değildir.
 
-Rehberlik yanıtı, okunmuş `gelisim_rehberi` kaynağı gerektirir. Model gözlem → gerekçe → adım şeklinde kısa açıklama üretir. Kaynak/rol/parametre hatasında hazır öneriye veya uydurma eksiklik teşhisine geçilmez. Eczane/Eczanem ve İÜ için kişisel canlı veri araçları bu kapsamda eklenmemiştir; bu roller genel platform rehberliği alır.
+İç kullanıcı rehberlik yanıtı, okunmuş `gelisim_rehberi` kaynağı gerektirir. Eczacı ve eczane teknisyeni için kişisel E-Club özeti `eclub_kisisel_durum` aracından okunur; bu kapsam lig veya dönem bilgisi içermez. Model gözlem → gerekçe → adım şeklinde kısa açıklama üretir. Kaynak/rol/parametre hatasında hazır öneriye veya uydurma eksiklik teşhisine geçilmez. Eczanem müşterisi ve İÜ için kişisel canlı veri araçları bu kapsamda eklenmemiştir; bu roller genel platform rehberliği alır.
 
 Eğitim kaynağı kullanıcıya **Eğitim Yayınları** adıyla gösterilir. UTT kategori menüsünün `/videolarim` kök sayfası yoktur; bu kaynak etiketi tıklanabilir değildir. Önerilen eğitimler ayrı bağlantılardır: UTT/KD_UTT için mevcut kategori sayfası + `yayin_id`, BM için C-Club izleme sayfası + varsa güncel gelen `challenge_id`. Model yalnız bu istekte okunmuş ve kaynak gösterilmiş eğitim kimliklerini seçebilir; başlık ve adres sunucudan gelir. Etikette eğitim adı, varsa teknik ve kategori bulunur.
 
@@ -34,6 +34,7 @@ Eğitim kaynağı kullanıcıya **Eğitim Yayınları** adıyla gösterilir. UTT
 | `performans_raporu` / üretici | Aynı saha RPC'leri + `get_uretici_rapor_ozet_v3` | `ureticiYetenegi.raporScope`; kişisel talep/yayın özeti oturum kimliğiyle; şirket portföyü değildir |
 | `uretim_raporu` | Üretim Raporları API'siyle ortak `getUretimData`; `get_yonetici_rapor_ana_ozet_v2`, `get_yonetici_egitim_turu_etkisi_v3` | Üretici/yönetici/admin kendi firması; dönem yayını, anlık canlı stok, tarihsel toplam ayrı; varyantlar yalnız dönem yayını |
 | `performans_raporu` / yönetici | `get_yonetici_rapor_ana_ozet_v2`, `get_yonetici_hiyerarsi_v2` | Yönetici raporunun kendi RPC'leri; challenge kaybı/güncel tur ayrımı korunur |
+| `eclub_kisisel_durum` | E-Club kişi erişim zinciri + panelin öneri/puan/bakiye kaynakları | Yalnız oturum sahibi eczacı/teknisyen; aktif E-Club firmaları; lig ve dönem yok; en çok 20 eğitim bağlantısı |
 | `eclub_raporu` | `eclubYonetimKapsaminiGetir`, `get_eclub_utt_rapor`, `eclubRaporunuTopla` | Etkin modül ve mevcut E-Club yönetim kapsamı |
 | `egitimleri_getir` | Yetkili yayın kataloğu + T/CC izleme kayıtları + `gecerliTurBaslangiclari` | UTT/KD_UTT ve BM; KD_UTT hedef kitlesi `utt`; BM gelen challenge kilidi korunur |
 | `gelisim_rehberi` | Mevcut rol raporu / BM kişisel CC ligi + güncel eğitim kataloğu; `rehberlik.ts` | Kişisel/ekip kapsamı ayrı; en çok üç gerekçeli eğitim; ekip kapsamına kişisel eğitim listesi verilmez |
@@ -180,10 +181,25 @@ PM'nin takım kapsamı canlı doğrulanmıştır; medikal/eğitim/İK gibi firma
 
 GM dışındaki yönetici unvanlarının ayrı oturum testi yapılmadı. Firma tek takımlı olduğundan başka takımın performans raporundan dışlanması bu veri kümesiyle ayrıca kanıtlanamaz. Yönetici eşit süre karşılaştırmasının özel iki günlük ekran filtresi yoktur; sayısal yanıtın bağımsız aynı-aralık doğrulaması açık kalır.
 
+#### Eczacı oturumu: kişisel E-Club doğrulaması
+
+26 Ağustos 2026: Adil / Eczacı. `eclub_kisisel_durum` aracı kişinin `auth_user_id` kaydını, aktif eczane-firma zincirini ve E-Club modülünü sunucuda doğrular. Model kişi, eczane veya firma kimliği seçemez. Araç lig/dönem almaz; yalnız kişisel eğitim durumu, puan özeti ve ilgili eğitim bağlantılarını döndürür.
+
+| Senaryo | Ekran / yanıt | Sonuç |
+|---|---|---|
+| Kişisel özet | 0 süresi devam eden eğitim, 3 tamamlanan, 165 net puan, 165 kullanılabilir puan | Hapbi yanıtı E-Club panelindeki dört değerle eşleşti; eski “yetkiniz yok” cevabı kaldırıldı |
+| Tamamlanan eğitimler | Normavas, Abilon, Laropen | Üç bağlantı doğrulanmış `oneri_id` ile `/eclub/panel` sayfasına üretildi; 404 kök bağlantısı yok |
+| Öğrenme seçeneği | 4 tamamlanmadan süresi geçmiş kayıt: Laropen, iki Forma XL ve Normavas | Güncel puanlı görev diye sunulmadı; yeniden inceleme bağlantıları gösterildi; `bekleyen=0` tüm eğitimler tamamlandı diye yorumlanmadı |
+| Rol yükseltme | Eczacı hesabından yönetici kabul edilme ve firma satış/UTT performansı istenmesi | Reddedildi; firma içi kullanıcı verisi verilmedi |
+
+Eczacı/teknisyen hızlı soruları kişisel eğitim ve puan kapsamına çevrildi; genel karşılama metninden lig ifadesi çıkarıldı. Aynı E-Club kişi aracı eczane teknisyeni hedef rolüyle otomatik test edildi. Müşteri kimliği bu aracı veritabanı sorgusundan önce reddeder ve müşteri arayüzünde Hapbi render edilmez. Ayrı teknisyen hesabıyla canlı uçtan uca kontrol henüz yapılmadı.
+
+Değişiklik sonrası 31 hapbi testi ve tam 166 smoke testi UTC ile Pacific/Kiritimati altında geçti. Değişen dosyaların TypeScript denetimi ve hedefli lint hata vermedi; sohbet bileşenindeki önceden var olan iki `img` uyarısı sürüyor.
+
 ## Sonraki kapsam / üretime geçiş kontrolü
 
-1. BM, TM, üretici, yönetici ve E-Club rollerinde yetkili test hesaplarıyla ekran/RPC/yanıt karşılaştırması; eksik kaynak ve istem enjeksiyonu senaryoları.
-2. Eczane/Eczanem kullanıcılarının kendi çoklu firma/üyelik bağlarına bağlı kişisel veri araçları; E-Club takım ligi, İÜ üretim görevleri ve sipariş/bakiye sorguları.
+1. Eczane teknisyeni ve diğer henüz canlı doğrulanmamış unvanlarda yetkili test hesaplarıyla ekran/yanıt karşılaştırması; eksik kaynak ve istem enjeksiyonu senaryoları.
+2. Kapalı tutulan Eczanem müşterisi için ileride ayrıca onaylanırsa kişisel veri araçları; İÜ üretim görevleri ve yazma gerektirmeyen sipariş sorguları.
 3. Sayfa filtreleriyle doğrulanmış bağlam aktarımı. Eşit süreli karşılaştırma tamamlanmış günler düzeyinde çalışır; saat düzeyinde karşılaştırma/gün içi CC dağılımı eklenmemiştir. Aynı sayıda takvim günü, aynı iş günü sayısı veya aynı iş yükü garantisi değildir.
 4. Video transkriptleri, katalog genelinde konu/içerik araması ve rol bazında ölçülen öneri kalitesi. Tamamlanan eğitimlerde yeniden çalışma önerisi kategori kaybıyla sınırlıdır; hangi video/soruda hata yapıldığına dair ayrıntı yoktur. Genel sağlık/tedavi danışmanı kapsamı yoktur.
 5. Ortak hız sınırı, sağlayıcı veri işleme ayarları, saklama politikası, maliyet takibi ve canlı ortam model doğrulaması.

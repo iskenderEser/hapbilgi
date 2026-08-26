@@ -102,7 +102,7 @@ export default function HapbiChatModal() {
                 <p className="whitespace-pre-line font-medium">{m.metin}</p>
                 {!!m.egitimler?.length && (
                   <div className="mt-2 flex flex-col gap-1 border-t border-gray-100 pt-2">
-                    <span className="text-[10px] font-semibold text-gray-400">Önerilen eğitimler</span>
+                    <span className="text-[10px] font-semibold text-gray-400">İlgili eğitimler</span>
                     {m.egitimler.map(e => (
                       <div key={e.id}>
                         <Link href={e.url} className="text-[11px] text-[#185fa5] hover:underline">{e.etiket}</Link>

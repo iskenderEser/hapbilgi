@@ -50,7 +50,7 @@ const HapbiContext = createContext<HapbiContextTuru | null>(null);
 const ILK_KARSILAMA_MESAJI: HapbiMesaj = {
   id: "karsilama",
   rol: "hapbi",
-  metin: "Merhaba, ben hapbi. HapBilgi'nin işleyişini açıklayabilir, erişiminiz kapsamındaki lig, rapor ve eğitim bilgilerini incelemenize yardımcı olabilirim.",
+  metin: "Merhaba, ben hapbi. HapBilgi'nin işleyişini açıklayabilir, erişiminiz kapsamındaki performans ve eğitim bilgilerini incelemenize yardımcı olabilirim.",
   zaman: "Şimdi",
 };
 
