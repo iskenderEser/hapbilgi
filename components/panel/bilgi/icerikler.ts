@@ -2,8 +2,8 @@
 export const BILGI_SAYFALARI = {
   hakkinda: {
     etiket: "HapBilgi Nedir?",
-    baslik: "Bir öğrenme zinciri",
-    vurgu: "Uçtan uca",
+    baslik: "Uçtan uca",
+    vurgu: "öğrenme zinciri",
     aciklama:
       "Öğrenmeyi ölçerek rekabeti, rekabeti ödüllendirerek öğrenmenin sürekliliğini destekler.",
   },
