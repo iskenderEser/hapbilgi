@@ -12,6 +12,7 @@ import { ozetToplami, kategorileriTopla } from "@/lib/rapor/bm/toplamlar";
 import { egitimleriOku, egitimIceriginiOku } from "@/lib/hapbi/egitim";
 import { gelisimiDegerlendir, olcumleriKarsilastir, raporOlcumleri } from "@/lib/hapbi/rehberlik";
 import { TUR_SIRA } from "@/lib/video/icerikTuru";
+import { getUretimData, uretimRaporunuGorebilir } from "@/lib/rapor/uretim/getUretimData";
 
 const periyotOzellikleri = {
   periyot: { type: "STRING", enum: ["hafta", "ay", "donem", "yil"] },
@@ -28,7 +29,8 @@ export const ARAC_TANIMLARI = [
   tanim("lig_durumu", "Dönemin gerçek HB veya CC lig verisi. BM kişisel puanı CC, saha ekibi HB. E-Club ligi bu araçta yok. Kimlik/kapsam sunucudan gelir.", {
     lig: { type: "STRING", enum: ["hb", "cc"] }, ...periyotOzellikleri,
   }, ["lig", "periyot", "yil"]),
-  tanim("performans_raporu", "Role göre gerçek rapor: UTT kişisel, BM bölge, TM takım; üretici üretim ve saha, yönetici firma raporu. BM'nin kendi C-Club puanı için lig_durumu kullan. Dönem karşılaştırması için iki defa çağır.", periyotOzellikleri, ["periyot", "yil"]),
+  tanim("performans_raporu", "Role göre T-Club saha raporu: UTT kişisel, BM bölge, TM takım; üretici kendi talep özeti ve yetkili saha kapsamı, yönetici firma raporu. Üreticinin tamamlanan talebi yayına alma değildir; bu kaynak şirket Üretim Raporları değildir. Şirket yayın hacmi/varyantları için uretim_raporu kullan. BM kişisel CC için lig_durumu, dönem kıyası için donem_karsilastir kullan.", periyotOzellikleri, ["periyot", "yil"]),
+  tanim("uretim_raporu", "Üretim Raporları ekranıyla aynı firma portföyü: dönemde yayına alınan içerik, şu anda canlı/tarihsel yayın ve eğitim türü saha etkisi. Varyantlar yalnız DÖNEMDE YAYINA ALINAN içeriklerin dağılımıdır; canlı stokun varyant dağılımı okunmaz. Üretici/yönetici/admin kendi firması; kişisel talepler veya takım raporu değildir.", periyotOzellikleri, ["periyot", "yil"]),
   tanim("egitimleri_getir", "UTT/KD_UTT veya BM'nin Eğitim Yayınları. Varsayılan geçerli turda tamamlanmamış olanlar; tekrar/içerik sorusunda tamamlama=tumu kullanılabilir. Belirli veya önceki yanıttaki eğitimi okumak için arama ile ad/teknik ara; tüm güncel yayınlar içinde arar, en çok 20 sonuç verir. Önerdiğin her eğitimin egitim_id değerini yaniti_sun.egitim_idleri içinde seç. Senaryo ayrı egitim_icerigi aracındadır.", {
     arama: { type: "STRING", description: "İsteğe bağlı eğitim adı/teknik, örneğin Abilon FAST. Serbest SQL değil, katalogda metin filtresi; en çok 120 karakter." },
     kategori: { type: "STRING", enum: ["tumu", ...TUR_SIRA] },
@@ -142,10 +144,10 @@ export function hapbiAraclariniOlustur(db: SupabaseClient, k: HapbiKullaniciBagl
     if (ozet.error || kategoriler.error || uretim.error) throw new Error("Performans raporu okunamadı.");
     const rows = ozet.data ?? [];
     const raporRol = utt ? "utt" : uretici ? "uretici" : k.rol;
-    return { durum: rows.length || uretim.data?.length ? "ok" : "bos", kaynak: kaynak(uretici ? "Üretici üretim ve saha raporu" : "T-Club performans raporu", `/raporlar/${raporRol}`, p),
+    return { durum: rows.length || uretim.data?.length ? "ok" : "bos", kaynak: kaynak(uretici ? "Kişisel üretim ve saha raporu" : "T-Club performans raporu", `/raporlar/${raporRol}`, p),
       veri: { aralik, kapsam: utt ? "kişisel" : k.rol === "bm" ? "bölge" : "yetkili takım/firma", ozet: rows.length ? ozetToplami(rows) : null,
         ...(uretici ? { uretim: guvenliSatirlar(uretim.data ?? [], ["toplam_talep", "tamamlanan_talep", "yayindaki_video", "durdurulan_video"])[0] ?? null } : {}),
-        kategoriler: kategorileriTopla(kategoriler.data ?? []), not: "Seçilen rapor aralığı. Rapor ekranında aynı dönemi seçin; geçmiş dönem aralığı bu kaynak etiketinde belirtilir. BM için kendi CC puanı değil, UTT saha performansıdır." } };
+        kategoriler: kategorileriTopla(kategoriler.data ?? []), not: "Seçilen rapor aralığı. Rapor ekranında aynı dönemi seçin; geçmiş dönem aralığı bu kaynak etiketinde belirtilir. BM için kendi CC puanı değil, UTT saha performansıdır. Üreticinin uretim alanı yalnız kendi oluşturduğu talepler/yayınlar; ozet ve kategoriler ise yetkili saha kapsamıdır. Şirket Üretim Raporları toplamı/varyantları için uretim_raporu gerekir; tamamlanan talep yayına alınan içerik değildir." } };
   }
 
   const araclar = {
@@ -207,7 +209,7 @@ export function hapbiAraclariniOlustur(db: SupabaseClient, k: HapbiKullaniciBagl
           if (calisma === "tekrar" && (a.hedef !== "ogrenme" || a.kapsam !== "kisisel")) return { durum: "desteklenmiyor", aciklama: "Yeniden çalışma kişisel öğrenme içindir; tekrar/extra puan kazanımını bu araç hesaplamaz. Ekip raporu kişisel eğitim geçmişi değildir." };
           const [rapor, katalog] = await Promise.all([raporOku(p), a.kapsam === "kisisel" ? egitimleriOku(db, k, { tumAdaylar: true, tamamlananlarDahil: a.hedef === "ogrenme" }) : Promise.resolve(null)]);
           if (!["ok", "bos"].includes(rapor.durum)) throw new Error("Gelişim raporu okunamadı.");
-          const degerlendirme = gelisimiDegerlendir(rapor, katalog, a.hedef as "ogrenme" | "puan", String(a.kategori), ccKisisel, calisma as "genel" | "tekrar");
+          const degerlendirme = gelisimiDegerlendir(rapor, katalog, a.hedef as "ogrenme" | "puan", String(a.kategori), ccKisisel, calisma as "genel" | "tekrar", k.rol);
           const gelisimKaynagi = kaynak(a.kapsam === "kisisel" ? "Kişisel gelişim değerlendirmesi" : "Ekip gelişim değerlendirmesi", rapor.kaynak?.url, p);
           const egitimler = degerlendirme.oneriler.map((v, i) => egitimBagla(`${gelisimKaynagi.id}-e${i + 1}`, v, v.gerekce));
           return { durum: "ok", tur: "rehberlik", kaynak: gelisimKaynagi, egitimler,
@@ -247,13 +249,31 @@ export function hapbiAraclariniOlustur(db: SupabaseClient, k: HapbiKullaniciBagl
               durum: v.durum, sonraki_tur: v.sonraki_tur, egitim_id: egitimler[i].id,
             })) } };
         }
-        if (!["lig_durumu", "performans_raporu", "eclub_raporu"].includes(ad)) {
+        if (!["lig_durumu", "performans_raporu", "uretim_raporu", "eclub_raporu"].includes(ad)) {
           return { durum: "desteklenmiyor", aciklama: "Bu araç mevcut değil." };
         }
         alanlariDogrula(a, ad === "lig_durumu" ? [...periyotAlanlari, "lig"] : periyotAlanlari);
         const p = periyoduDogrula(a);
         const aralik = ligPeriyoduAraligi(p);
         if (!icKullanici) return reddet();
+
+        if (ad === "uretim_raporu") {
+          if (!k.firma_id || !uretimRaporunuGorebilir(k.rol)) return reddet();
+          const rapor = await getUretimData(db, k, aralik.baslangic, aralik.bitis);
+          return { durum: "ok", kaynak: kaynak("Üretim Raporları · firma portföyü", "/raporlar/uretim", p),
+            veri: { aralik, kapsam: "kendi firmasının üretim portföyü",
+              uretim: { toplam_yayina_alma: rapor.uretim.toplam_yayina_alma,
+                donemde_yayina_alinan: rapor.uretim.donemde_yayina_alinan, su_an_yayinda: rapor.uretim.su_an_yayinda,
+                donemde_yayina_alinan_turleri: rapor.uretim.turler,
+                donemde_yayina_alinan_varyantlari: rapor.uretim.varyantlar,
+                canli_yayin_varyant_dagilimi: null },
+              egitim_turu_etkisi: rapor.egitim_turu_etkisi.map(tur => ({
+                ...guvenliSatirlar([tur], ["egitim_turu", "egitim_adi", "donemde_yayina_alinan", "tamamlanan_izleme", "kazanilan_toplam", "kaybedilen_toplam", "net_puan", "begeni_sayisi", "favori_sayisi", "extra_izleme_sayisi"])[0],
+                urun_dagilimi: guvenliSatirlar(tur.urun_dagilimi, ["urun_adi", "kazanilan_toplam", "kaybedilen_toplam", "net_puan"]),
+                toplam_urun: tur.urun_dagilimi.length,
+              })),
+              not: "Şirket portföyü kişisel talep/takım raporu değildir. donemde_yayina_alinan dönem hareketi, su_an_yayinda anlık stok, toplam_yayina_alma tarihsel toplamdır. Varyant adetleri yalnız dönemde yayına alınanlara aittir; canlıdaki yayınların dağılımı bilinmiyor. Bir dönem varyantının sıfır olması o varyantta hiç canlı yayın olmadığı anlamına gelmez. Saha izleme/puanı önceki dönem yayınlarından da gelebilir; yeni yayınların sebep olduğu başarı diye anlatma. Ürün listeleri tür başına en çok 40 satırdır; kesik listeyi toplama." } };
+        }
 
         if (ad === "lig_durumu") {
           if (a.lig === "cc") {

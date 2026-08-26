@@ -25,6 +25,7 @@ function dbOlustur(cevap: (k: Kayit) => { data?: unknown; error?: unknown }) {
       or: (...args: unknown[]) => { k.filtreler.push(["or", ...args]); return q; },
       gt: (...args: unknown[]) => { k.filtreler.push(["gt", ...args]); return q; },
       lte: (...args: unknown[]) => { k.filtreler.push(["lte", ...args]); return q; },
+      limit: (...args: unknown[]) => { k.filtreler.push(["limit", ...args]); return q; },
       order: () => q, single: () => q, maybeSingle: () => q,
       then: (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) => Promise.resolve({ data: null, error: null, ...cevap(k) }).then(resolve, reject),
     };
@@ -85,6 +86,13 @@ test("hapbi: CC firma kapsamı, rol/modül denetimi ve parametre enjeksiyonu", a
   assert.equal((await hapbiAraclariniOlustur(db, K).calistir("lig_durumu", { ...P, lig: "cc" })).durum, "yetkisiz");
   assert.equal((await hapbiAraclariniOlustur(db, { ...K, rol: "bm", cc_aktif: false }).calistir("lig_durumu", { ...P, lig: "cc" })).durum, "yetkisiz");
   assert.equal(kayitlar.length, n);
+  // TM'nin kişisel rehberlik reddi, modül açıkken firma CC ligini okumayı kapatmaz.
+  const tm = hapbiAraclariniOlustur(db, { ...K, rol: "tm" });
+  assert.equal((await tm.calistir("gelisim_rehberi", G)).durum, "yetkisiz");
+  assert.equal(kayitlar.length, n);
+  const tmLig = await tm.calistir("lig_durumu", { ...P, lig: "cc" });
+  assert.equal(tmLig.durum, "ok");
+  assert.doesNotMatch(JSON.stringify(tmLig), /Gizli|800/);
 });
 
 test("hapbi: rapor kaynak hatası sıfıra dönüşmez; BM kapsamı bölge, üretici kapsamı yeteneğidir", async () => {
@@ -101,6 +109,61 @@ test("hapbi: rapor kaynak hatası sıfıra dönüşmez; BM kapsamı bölge, üre
   const eksik = dbOlustur(() => { throw new Error("Sorgu çalışmamalı"); });
   assert.equal((await hapbiAraclariniOlustur(eksik.db, { ...K, rol: "bm", bolge_id: null }).calistir("performans_raporu", P)).durum, "yetkisiz");
   assert.equal(eksik.kayitlar.length, 0);
+});
+
+test("hapbi: üretim portföyü ekran kaynağını, firma sınırını ve yayın/talep ayrımını korur", async () => {
+  for (const rol of ["pm", "med_md", "gm", "admin"]) {
+    const { db, kayitlar } = dbOlustur(k => ({ data: k.ad === "kullanicilar" ? { kullanici_id: "firm-manager" }
+      : k.ad === "get_yonetici_rapor_ana_ozet_v2" ? [{ donemde_yayina_alinan: 22, su_an_yayinda: 47,
+        toplam_yayina_alma: 47, donem_normal_uretim: 5, donem_hazir_video: 2,
+        donem_hazir_soru_seti: 0, donem_hazir_video_ve_soru_seti: 15, secret: "gizli" }]
+      : k.ad === "get_yonetici_egitim_turu_etkisi_v3" ? [{ egitim_turu: "urun_egitimi",
+        donemde_yayina_alinan: 18, tamamlanan_izleme: 13, net_puan: 605,
+        urun_dagilimi: Array.from({ length: 41 }, (_, i) => ({ urun_id: `secret-${i}`, urun_adi: `Ürün ${i}`, net_puan: i, gizli: "gizli" })) }] : [] }));
+    const r = await hapbiAraclariniOlustur(db, { ...K, rol }, SIMDI).calistir("uretim_raporu", { periyot: "ay", yil: 2026, ay: 8 });
+    assert.equal(r.durum, "ok"); assert.equal(r.kaynak?.url, "/raporlar/uretim");
+    const v = r.veri as { uretim: { donemde_yayina_alinan: number; su_an_yayinda: number; donemde_yayina_alinan_varyantlari: { adet: number }[] }; egitim_turu_etkisi: { toplam_urun: number; urun_dagilimi: unknown[]; net_puan: number }[] };
+    assert.equal(v.uretim.donemde_yayina_alinan, 22); assert.equal(v.uretim.su_an_yayinda, 47);
+    assert.deepEqual(v.uretim.donemde_yayina_alinan_varyantlari.map(x => x.adet), [5, 2, 0, 15]);
+    assert.equal(v.egitim_turu_etkisi[0].net_puan, 605);
+    assert.equal(v.egitim_turu_etkisi[0].toplam_urun, 41); assert.equal(v.egitim_turu_etkisi[0].urun_dagilimi.length, 40);
+    assert.doesNotMatch(JSON.stringify(r), /secret|gizli|firm-manager|urun_id|tamamlanan_talep/);
+    const scope = kayitlar.filter(k => k.tur === "from");
+    assert.equal(scope.length, rol === "gm" ? 0 : 1);
+    if (rol !== "gm") {
+      assert.ok(scope[0].filtreler.some(f => f[0] === "eq" && f[1] === "firma_id" && f[2] === "f1"));
+      assert.ok(scope[0].filtreler.some(f => f[0] === "eq" && f[1] === "aktif_mi" && f[2] === true));
+      assert.ok(scope[0].filtreler.some(f => f[0] === "in" && f[1] === "rol"));
+    }
+    const rpc = kayitlar.filter(k => k.tur === "rpc");
+    assert.deepEqual(rpc.map(k => k.ad), ["get_yonetici_rapor_ana_ozet_v2", "get_yonetici_egitim_turu_etkisi_v3"]);
+    assert.ok(rpc.every(k => k.args.p_yonetici_id === (rol === "gm" ? "u1" : "firm-manager")));
+    assert.ok(rpc.every(k => k.args.p_baslangic === "2026-07-31T21:00:00.000Z"));
+  }
+});
+
+test("hapbi: üretim erişim/eksik kapsam/kaynak hatası sıfır yayına dönüşmez", async () => {
+  const yasak = dbOlustur(() => { throw new Error("Sorgu çalışmamalı"); });
+  for (const k of [{ ...K }, { ...K, rol: "tm" }, { ...K, rol: "pm", firma_id: null }, { ...K, rol: "pm", kimlik_turu: "eclub_kisi" }]) {
+    assert.equal((await hapbiAraclariniOlustur(yasak.db, k).calistir("uretim_raporu", P)).durum, "yetkisiz");
+  }
+  const pm = hapbiAraclariniOlustur(yasak.db, { ...K, rol: "pm" });
+  for (const ek of [{ firma_id: "other" }, { p_yonetici_id: "other" }, { kullanici_id: "other" }]) {
+    assert.equal((await pm.calistir("uretim_raporu", { ...P, ...ek })).durum, "hata");
+  }
+  assert.equal(yasak.kayitlar.length, 0);
+  const eksikKapsam = dbOlustur(() => ({ data: null }));
+  assert.equal((await hapbiAraclariniOlustur(eksikKapsam.db, { ...K, rol: "pm" }).calistir("uretim_raporu", P)).durum, "hata");
+  assert.equal(eksikKapsam.kayitlar.length, 1); // Temsilci yokken başka firma/RPC denenmez.
+  for (const hatali of ["kullanicilar", "get_yonetici_rapor_ana_ozet_v2", "get_yonetici_egitim_turu_etkisi_v3", "bos_ozet"]) {
+    const { db } = dbOlustur(k => k.ad === hatali ? { error: { message: "secret-details" } }
+      : { data: k.ad === "kullanicilar" ? { kullanici_id: "manager" }
+        : k.ad === "get_yonetici_rapor_ana_ozet_v2" && hatali !== "bos_ozet" ? [{ donemde_yayina_alinan: 0 }] : [] });
+    const r = await hapbiAraclariniOlustur(db, { ...K, rol: "pm" }).calistir("uretim_raporu", P);
+    assert.equal(r.durum, "hata"); assert.equal(r.veri, undefined); assert.doesNotMatch(JSON.stringify(r), /secret-details/);
+  }
+  const sifir = dbOlustur(k => ({ data: k.ad === "get_yonetici_rapor_ana_ozet_v2" ? [{ donemde_yayina_alinan: 0, su_an_yayinda: 0 }] : [] }));
+  assert.equal((await hapbiAraclariniOlustur(sifir.db, { ...K, rol: "gm" }).calistir("uretim_raporu", P)).durum, "ok");
 });
 
 test("hapbi: dönem eksik/geçersiz olduğunda başka döneme sessiz geçiş yok", () => {
@@ -174,7 +237,7 @@ test("hapbi: CC eğitim bağlantısı güncel gelen challenge bağlamını korur
 test("hapbi: dış kimliklerin iç kullanıcı araçlarına erişimi yok", async () => {
   const { db, kayitlar } = dbOlustur(() => { throw new Error("Sorgu çalışmamalı"); });
   const a = hapbiAraclariniOlustur(db, { ...K, rol: "eczaci", kimlik_turu: "eclub_kisi" });
-  for (const ad of ["lig_durumu", "performans_raporu", "eclub_raporu"]) {
+  for (const ad of ["lig_durumu", "performans_raporu", "uretim_raporu", "eclub_raporu"]) {
     assert.equal((await a.calistir(ad, ad === "lig_durumu" ? { ...P, lig: "hb" } : P)).durum, "yetkisiz");
   }
   assert.equal((await a.calistir("platform_bilgisi", { konu: "cclub" })).durum, "ok");
@@ -212,25 +275,40 @@ test("hapbi Faz 2: tam katalog öğrenme ihtiyacına göre sıralanır; puan hed
 
 test("hapbi Faz 2: BM kişisel CC, ekip bölge raporu; yönetici ve üretici kapsamı ayrılır", async () => {
   const { db, kayitlar } = dbOlustur(k => ({ data: k.ad.startsWith("get_cc_ligi") ? [
-    { kullanici_id: K.kullanici_id, firma_id: K.firma_id, toplam_net_puan: 27, yanlis_cevap_kaybi: 4 },
+    { kullanici_id: K.kullanici_id, firma_id: K.firma_id, toplam_net_puan: 27, yanlis_cevap_kaybi: 4, challenge_kaybi: 7 },
     { kullanici_id: "diger", firma_id: K.firma_id, ad: "GizliAyrinti", toplam_net_puan: 900 },
-  ] : k.ad === "get_kullanici_ozet" ? [{ toplam_net_puan: 150 }]
-    : k.ad === "get_yonetici_rapor_ana_ozet_v2" ? [{ net_puan: 250, toplam_utt: 10, aktif_utt: 4 }]
+  ] : k.ad === "get_kullanici_ozet" ? [{ toplam_net_puan: 150, ileri_sarma_kaybi: 140, oneri_kaybi: 40 }]
+    : k.ad === "get_yonetici_rapor_ana_ozet_v2" ? [{ net_puan: 250, toplam_utt: 10, aktif_utt: 4, oneri_kaybi: 40, challenge_kaybi: 7 }]
     : k.ad === "get_uretici_rapor_ozet_v3" ? [{ toplam_talep: 8, tamamlanan_talep: 3 }] : [] }));
   const bm = hapbiAraclariniOlustur(db, { ...K, rol: "bm" }, SIMDI);
   const kisisel = await bm.calistir("gelisim_rehberi", G);
   assert.match(JSON.stringify(kisisel.veri), /C-Club kişisel/);
+  const bulgular = (r: HapbiAracSonucu) => (r.veri as { bulgular: { gozlem: string; adim: string }[] }).bulgular;
+  assert.ok(bulgular(kisisel).some(b => /C-Club challenge.*7 puan/.test(b.gozlem) && /C-Club gelen challenge/.test(b.adim)));
+  assert.ok(!bulgular(kisisel).some(b => /T-Club önerilerinden/.test(b.gozlem)));
+  assert.ok(bulgular(kisisel).some(b => /yanlış cevaplardan 4 puan/.test(b.gozlem) && /yeni yanlış cevap kayıplarını azaltmak/.test(b.adim) && /geçmiş puan kaybı telafi veya iade edilmiş olmaz/.test(b.adim)));
   assert.doesNotMatch(JSON.stringify(kisisel), /GizliAyrinti|900/);
   assert.ok(!kayitlar.some(k => k.ad === "get_kullanici_ozet"));
   const ekip = await bm.calistir("gelisim_rehberi", { ...G, kapsam: "ekip" });
   assert.equal(ekip.durum, "ok"); assert.deepEqual(ekip.egitimler, []);
+  assert.ok(bulgular(ekip).some(b => /T-Club önerilerinden 40 puan/.test(b.gozlem) && /T-Club Öneri Takibi/.test(b.adim)));
+  assert.ok(!bulgular(ekip).some(b => /C-Club challenge kayıtlarından/.test(b.gozlem)));
+  assert.ok(bulgular(ekip).some(b => /ileri sarmadan 140 puan/.test(b.gozlem) && /Sonraki eğitimlerde yeni kayıpları azaltmak/.test(b.adim) && /iade edileceği bu veriden çıkarılamaz/.test(b.adim)));
   assert.equal(kayitlar.find(k => k.ad === "get_kullanici_ozet")?.args.p_bolge_id, K.bolge_id);
   const yonetici = await hapbiAraclariniOlustur(db, { ...K, rol: "gm" }, SIMDI).calistir("gelisim_rehberi", { ...G, kapsam: "ekip" });
   assert.match(JSON.stringify(yonetici.veri), /10 UTT.*4 aktif UTT/);
+  assert.ok(bulgular(yonetici).some(b => /T-Club önerilerinden 40 puan/.test(b.gozlem)));
+  assert.ok(bulgular(yonetici).some(b => /C-Club challenge kayıtlarından 7 puan/.test(b.gozlem)));
+  assert.ok(bulgular(yonetici).some(b => /ilgili TM\/BM/.test(b.adim) && /doğrudan erişim yoktur/.test(b.adim)));
+  assert.ok(bulgular(yonetici).some(b => /challenge kaybını ilgili saha yöneticileriyle/.test(b.adim)));
+  assert.ok(!bulgular(yonetici).some(b => /Öneri Takibi ekranında|C-Club gelen challenge kayıtlarını/.test(b.adim)));
   const uretici = await hapbiAraclariniOlustur(db, { ...K, rol: "pm" }, SIMDI).calistir("gelisim_rehberi", { ...G, kapsam: "ekip" });
   assert.match(JSON.stringify(uretici.veri), /8 talebin 3 tanesi/);
+  assert.ok(bulgular(uretici).some(b => /ilgili TM\/BM/.test(b.adim)));
+  assert.ok(!bulgular(uretici).some(b => /Öneri Takibi ekranında/.test(b.adim)));
   const tm = await hapbiAraclariniOlustur(db, { ...K, rol: "tm" }, SIMDI).calistir("gelisim_rehberi", { ...G, kapsam: "ekip" });
   assert.equal(tm.durum, "ok");
+  assert.ok(bulgular(tm).some(b => /Öneri Takibi ekranında/.test(b.adim)));
   assert.equal(kayitlar.filter(k => k.ad === "get_kullanici_ozet").at(-1)?.args.p_takim_id, K.takim_id);
 });
 

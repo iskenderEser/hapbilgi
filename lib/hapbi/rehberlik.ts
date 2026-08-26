@@ -1,6 +1,7 @@
 import type { HapbiAracSonucu } from "@/lib/hapbi/sozlesme";
 import type { egitimleriOku } from "@/lib/hapbi/egitim";
 import { isIcerikTuru, TUR_BASLIK } from "@/lib/video/icerikTuru";
+import { TUKETICI_ROLLER, YONLENDIRICI_ROLLER } from "@/lib/utils/roller";
 
 type Katalog = Awaited<ReturnType<typeof egitimleriOku>>;
 export type GelisimHedefi = "ogrenme" | "puan";
@@ -39,7 +40,7 @@ export function olcumleriKarsilastir(onceki: ReturnType<typeof raporOlcumleri>, 
 }
 
 // Öncelikler uygulama verisinden hesaplanır; klinik/saha yetkinliği veya başarı puanı değildir.
-export function gelisimiDegerlendir(rapor: HapbiAracSonucu, katalog: Katalog | null, hedef: GelisimHedefi, kategori: string, ccKisisel = false, calisma: "genel" | "tekrar" = "genel") {
+export function gelisimiDegerlendir(rapor: HapbiAracSonucu, katalog: Katalog | null, hedef: GelisimHedefi, kategori: string, ccKisisel = false, calisma: "genel" | "tekrar" = "genel", rol = "") {
   const veri = kayit(rapor.veri);
   const olcumler = raporOlcumleri(rapor, ccKisisel);
   const kategoriler = (Array.isArray(veri.kategoriler) ? veri.kategoriler : []).map(kayit);
@@ -47,15 +48,25 @@ export function gelisimiDegerlendir(rapor: HapbiAracSonucu, katalog: Katalog | n
   const bulgular: { gozlem: string; adim: string }[] = [];
   if ((olcumler.yanlis_cevap_kaybi ?? 0) > 0) bulgular.push({
     gozlem: `Seçilen dönemde yanlış cevaplardan ${olcumler.yanlis_cevap_kaybi} puan kaybı kaydedilmiş.`,
-    adim: "İlgili eğitimleri yeniden çalışın; bu değer yanlış cevap sayısı veya bilgi eksikliği ölçümü değildir.",
+    adim: "Sonraki çalışmalarda yeni yanlış cevap kayıplarını azaltmak için ilgili eğitimleri yeniden çalışın; geçmiş puan kaybı telafi veya iade edilmiş olmaz. Bu değer yanlış cevap sayısı veya bilgi eksikliği ölçümü değildir.",
   });
   if ((olcumler.ileri_sarma_kaybi ?? 0) > 0) bulgular.push({
     gozlem: `Seçilen dönemde ileri sarmadan ${olcumler.ileri_sarma_kaybi} puan kaybı kaydedilmiş.`,
-    adim: "Eğitimleri ileri sarmadan tamamlamaya odaklanın; bu kayıp öğrenme düzeyinizi göstermez.",
+    adim: "Sonraki eğitimlerde yeni kayıpları azaltmak için ileri sarmadan tamamlamaya odaklanın. Geçmiş kayıpların iade edileceği bu veriden çıkarılamaz; kayıp öğrenme düzeyinizi göstermez.",
   });
-  if ((olcumler.oneri_kaybi ?? 0) > 0 || (olcumler.challenge_kaybi ?? 0) > 0) bulgular.push({
-    gozlem: "Seçilen dönemde öneri veya challenge kaybı bulunuyor.",
-    adim: "Gelen öneri/challenge kayıtlarını ve uygulamadaki sürelerini kontrol edin; yeni bir süre veya kota varsaymayın.",
+  if ((olcumler.oneri_kaybi ?? 0) > 0) bulgular.push({
+    gozlem: `Seçilen dönemde T-Club önerilerinden ${olcumler.oneri_kaybi} puan kaybı kaydedilmiş.`,
+    adim: (TUKETICI_ROLLER.includes(rol) || YONLENDIRICI_ROLLER.includes(rol)
+      ? "T-Club Öneri Takibi ekranında önerilerin izlenme durumunu ve sürelerini kontrol edin."
+      : "Kapsamınızdaki T-Club raporundan öneri kaybını takip edin; önerilerin izlenme durumlarını ve sürelerini ilgili TM/BM ile değerlendirin. Bu rolde Öneri Takibi ekranına doğrudan erişim yoktur.")
+      + " Bu kalem C-Club challenge kaybı değildir. Sonraki çalışmalardaki yeni kayıpları azaltmayı hedefleyin; yeni süre, kota veya geçmiş kayıp iadesi varsaymayın.",
+  });
+  if ((olcumler.challenge_kaybi ?? 0) > 0) bulgular.push({
+    gozlem: `Seçilen dönemde C-Club challenge kayıtlarından ${olcumler.challenge_kaybi} puan kaybı kaydedilmiş.`,
+    adim: (ccKisisel && rol === "bm"
+      ? "C-Club gelen challenge kayıtlarını ve uygulamadaki sürelerini kontrol edin."
+      : "Rapordaki challenge kaybını ilgili saha yöneticileriyle değerlendirin; bunu sizin kişisel gelen challenge kaydınız gibi sunmayın.")
+      + " Bu kalem T-Club öneri kaybı değildir. Yeni bir süre, kota veya geçmiş kayıp iadesi varsaymayın.",
   });
   const ozet = kayit(veri.ozet);
   const toplamUtt = sayi(ozet.toplam_utt), aktifUtt = sayi(ozet.aktif_utt);
