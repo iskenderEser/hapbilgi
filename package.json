@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "typecheck:build": "next typegen && tsc -p tsconfig.build.json --noEmit --incremental false",
+    "build": "npm run typecheck:build && HAPBILGI_TYPES_CHECKED=1 next build",
     "start": "next start",
     "lint": "eslint",
     "lint:mimari": "eslint app lib components | grep -A1 hapbilgi-mimari || echo 'Mimari kural ihlali yok.'",

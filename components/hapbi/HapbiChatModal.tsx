@@ -167,7 +167,7 @@ export default function HapbiChatModal() {
             key={i}
             type="button"
             disabled={yukleniyor}
-            onClick={() => soruSor(soru)}
+            onClick={() => soruSor(soru, true)}
             className="flex-shrink-0 text-[11px] font-bold text-[#185fa5] bg-white hover:bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-full cursor-pointer transition-all shadow-2xs whitespace-nowrap"
           >
             {soru}
@@ -178,7 +178,7 @@ export default function HapbiChatModal() {
       {/* Soru Giriş Alanı */}
       <form
         onSubmit={handleSubmit}
-        className="p-3 bg-white border-t border-gray-100 flex items-center gap-2"
+        className="px-3 pt-3 pb-2 bg-white border-t border-gray-100 flex items-center gap-2"
       >
         <input
           type="text"
@@ -198,6 +198,9 @@ export default function HapbiChatModal() {
           Gönder
         </button>
       </form>
+      <p className="px-3 pb-2.5 bg-white text-center text-[10px] leading-snug font-semibold text-red-600">
+        Yaptığınız sorgulamalar, içeriğe ve AI’ın yanıt süresine bağlı olarak zaman alabilir.
+      </p>
     </div>
   );
 }

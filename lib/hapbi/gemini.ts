@@ -1,4 +1,4 @@
-import { ARAC_TANIMLARI } from "@/lib/hapbi/araclar";
+import { ARAC_TANIMLARI } from "@/lib/hapbi/aracTanimlari";
 import { alanlariDogrula, HapbiHata, nesne, type HapbiAracSonucu, type HapbiGecmisMesaji, type HapbiKaynak, type HapbiYanit } from "@/lib/hapbi/sozlesme";
 
 type Part = { text?: string; thought?: boolean; functionCall?: { id?: string; name: string; args: unknown }; [key: string]: unknown };
@@ -10,6 +10,18 @@ interface MotorGirdisi {
   takvim: object;
   gecmis: HapbiGecmisMesaji[];
   arac: (ad: string, args: unknown) => Promise<HapbiAracSonucu>;
+  apiKey: string;
+  model: string;
+  signal?: AbortSignal;
+  fetcher?: typeof fetch;
+}
+
+interface HizliMotorGirdisi {
+  soru: string;
+  pathname: string;
+  rol: string;
+  aracAdi: string;
+  aracSonucu: HapbiAracSonucu;
   apiKey: string;
   model: string;
   signal?: AbortSignal;
@@ -42,6 +54,13 @@ Kullanıcıya eğitim kataloğunu Eğitim Yayınları adıyla anlat; "yetkili e�
 Bu sürüm salt okunur: kayıt, onay, sipariş, iptal veya gönderim yapamaz. Yapılmış gibi söyleme. Henüz araçla desteklenmeyen rollerin kişisel verisini bildiğini iddia etme.
 Dönem kıyaslamasında donem_karsilastir kullan; fark/yüzdeyi kendin hesaplama. Adil kıyas için varsayılan esit_sure iki dönemin başından eşit sayıda TAMAMLANMIŞ gün alır, bugünü içermez: cevapta gün sayısını ve bugünün dahil olmadığını açıkça belirt. Bu değerleri tam hafta/ay toplamı diye sunma. Kullanıcı anlık/tam dönem toplamı isterse yontem=takvim; devam eden dönem ile tam önceki dönem farklı uzunluktadır, gerileme/ilerleme teşhisi koyma. Eşit süre olsa da puan farkı satış başarısı veya bilgi düzeyi ölçümü değildir. Henüz tamamlanmış gün yoksa kıyas uydurma. Yüzde null ise eksik/sıfır/negatif baz nedeniyle hesaplanamadığını söyle; yüzde uydurma.
 Son yanıtı mutlaka yaniti_sun ile gönder. Yalnız bu istekteki kaynak id'lerini seç. Kişisel/ekip önerilerinde yanit_turu=rehberlik ve gelisim_rehberi kaynağı; diğer somut bilgi yanıtında yanit_turu=bilgi ve kaynak zorunludur. Eğitim içerik açıklamasında okunan senaryo kaynağını da seç. Selamlaşma, açıklama sorusu, kapsam dışı talep veya erişim/hata bildirimi yanit_turu=aciklama ile kaynaksız olabilir. Rakamları yalnız seçtiğin kaynakta mevcut değerlerle kullan. Numaralı liste yerine kısa paragraflar kullan. Bağlantıları metne yazma; yönlendirme için kaynak id'si seç. Kaynak bağlantısı sayfanın dönem filtresini otomatik değiştirmez. Düz metin kullan; 2–5 cümle genellikle yeterlidir.`;
+
+const HAPBI_HIZLI_SISTEM_ISTEMI = `Sen hapbi, HapBilgi'nin Türkçe asistanısın. Sunucu hazır sorunun rolünü, kapsamını ve canlı veri aracını doğruladı. Yalnız verilen araç sonucunu kullan ve yalnız yaniti_sun aracını çağır.
+Kısa, sıcak ve açık Türkçe ile kullanıcıya siz diye hitap et. Düz metin ve 2–5 cümle kullan. Kaynakta olmayan sayı, neden, yetkinlik, başarı veya kazanç sonucu üretme. Puan ve tamamlama mesleki yetkinlik ya da satış başarısı değildir.
+Araç sonucu rehberlik ise yanit_turu=rehberlik, diğer kaynaklı sonuçlarda yanit_turu=bilgi kullan. Kaynak kimliğini kaynak_idleri içinde seç. Cevapta önerdiğin her eğitimin egitim_id değerini egitim_idleri içinde seç; URL yazma.
+Dönem karşılaştırmasında eşit gün sayısını ve bugünün dahil edilmediğini açıkla. Raporun hafta/ay filtresi eğitimlerin tamamlanma dönemi değildir; eğitim durumunu yalnız "bu turda" diye anlat, eğitim önerisinde hafta/ay ifadesi kullanma. E-Club kişisel verisini lig veya dönem gibi anlatma; süresi geçmiş eğitimi puanlı güncel görev olarak sunma. Veri boşsa veya erişilemiyorsa bunu açıkça söyle, sıfır ya da tamamlandı sonucuna çevirme.`;
+
+const YANITI_SUN_TANIMI = ARAC_TANIMLARI.find(tanim => tanim.name === "yaniti_sun");
 
 // Ek bir tutarlılık kapısıdır; anlamsal doğruluk/atfetme için senaryo testlerinin
 // yerini tutmaz. Sayıları yalnız yanıtın seçtiği kaynakların değerlerinden kabul eder.
@@ -167,4 +186,53 @@ export async function hapbiYanitUret(g: MotorGirdisi): Promise<HapbiYanit & { ar
     contents.push({ role: "user", parts });
   }
   throw new HapbiHata("DONGU_SINIRI", 502, "Sorgu tamamlanamadı. Lütfen sorunuzu daraltın.");
+}
+
+export async function hapbiHizliYanitUret(g: HizliMotorGirdisi): Promise<HapbiYanit & { araclar: string[]; tokenSayisi: number }> {
+  if (!g.apiKey || !/^[a-zA-Z0-9._-]+$/.test(g.model) || !YANITI_SUN_TANIMI) {
+    throw new HapbiHata("MODEL_AYARI", 503, "hapbi'nin AI bağlantısı yapılandırılmamış.");
+  }
+  if (!g.aracSonucu.kaynak || !["ok", "bos"].includes(g.aracSonucu.durum)) {
+    throw new HapbiHata("HIZLI_KAYNAK", 502, "Hazır sorgunun canlı kaynağı doğrulanamadı.");
+  }
+  const fetcher = g.fetcher ?? fetch;
+  const signal = g.signal ? AbortSignal.any([g.signal, AbortSignal.timeout(45000)]) : AbortSignal.timeout(45000);
+  let res: Response;
+  try {
+    res = await fetcher(`https://generativelanguage.googleapis.com/v1beta/models/${g.model}:generateContent`, {
+      method: "POST", signal, cache: "no-store",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": g.apiKey },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: HAPBI_HIZLI_SISTEM_ISTEMI }] },
+        contents: [{ role: "user", parts: [{ text: JSON.stringify({
+          soru: g.soru, sayfa: g.pathname, rol: g.rol, arac: g.aracAdi, sonuc: g.aracSonucu,
+        }) }] }],
+        tools: [{ functionDeclarations: [YANITI_SUN_TANIMI] }],
+        toolConfig: { functionCallingConfig: { mode: "ANY", allowedFunctionNames: ["yaniti_sun"] } },
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 1400,
+          ...(g.model.startsWith("gemini-3") ? { thinkingConfig: { thinkingLevel: "minimal" } } : {}),
+        },
+      }),
+    });
+  } catch {
+    throw new HapbiHata(signal.aborted ? "ZAMAN_ASIMI" : "MODEL_BAGLANTISI", 503, "AI servisine şu anda ulaşılamıyor. Lütfen tekrar deneyin.");
+  }
+  if (!res.ok) throw new HapbiHata(`MODEL_HTTP_${res.status}`, 503, "AI servisi şu anda yanıt veremiyor. Lütfen tekrar deneyin.");
+  const body = await res.json();
+  const aday = body.candidates?.[0];
+  if (aday?.finishReason && aday.finishReason !== "STOP") {
+    throw new HapbiHata("MODEL_EKSIK_YANIT", 502, "AI yanıtı tamamlanamadı. Lütfen tekrar deneyin.");
+  }
+  const content = aday?.content as Content | undefined;
+  const calls = content?.parts?.flatMap(p => p.functionCall ? [p.functionCall] : []) ?? [];
+  if (calls.length !== 1 || calls[0].name !== "yaniti_sun") {
+    throw new HapbiHata("MODEL_ARACSIZ", 502, "AI yanıtı kaynaklarla doğrulanamadı.");
+  }
+  return {
+    ...sonYanitiDogrula(calls[0].args, [g.aracSonucu], g.model),
+    araclar: [g.aracAdi],
+    tokenSayisi: Number(body.usageMetadata?.totalTokenCount ?? 0),
+  };
 }

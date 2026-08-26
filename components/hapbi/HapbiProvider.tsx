@@ -8,7 +8,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { useAuth } from "@/app/providers/AuthProvider";
 import type { HapbiKaynak, HapbiEgitimBaglantisi } from "@/lib/hapbi/sozlesme";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
-import { hizliSorular } from "@/lib/hapbi/hapbiBilgiTabani";
+import { hizliSorular } from "@/lib/hapbi/hizliSorgu";
 import { useRouter, usePathname } from "next/navigation";
 import { HAPBI_CANLI_TURLAR, type WalkthroughTur, type WalkthroughAdim } from "@/lib/hapbi/hapbiBilgiTabani";
 
@@ -28,13 +28,13 @@ export interface HapbiMesaj {
 }
 
 interface HapbiContextTuru {
-  hizliSorular: string[];
+  hizliSorular: readonly string[];
   chatAcik: boolean;
   setChatAcik: (acik: boolean) => void;
   toggleChat: () => void;
   mesajlar: HapbiMesaj[];
   yukleniyor: boolean;
-  soruSor: (soru: string) => Promise<void>;
+  soruSor: (soru: string, hizliMi?: boolean) => Promise<void>;
   temizle: () => void;
   // Walkthrough Tur Durumları
   aktifTur: WalkthroughTur | null;
@@ -139,7 +139,7 @@ function HapbiOturumProvider({ children, rol }: { children: React.ReactNode; rol
   }, []);
 
   // Sunucuda imzalanmış sohbet bağlamı; hazır cevap veya anahtar kelime motoru yok.
-  const soruSor = useCallback(async (soruMetni: string) => {
+  const soruSor = useCallback(async (soruMetni: string, hizliMi = false) => {
     const soru = soruMetni.trim();
     if (!soru || soru.length > 2000 || istekRef.current) return;
     const controller = new AbortController();
@@ -151,7 +151,7 @@ function HapbiOturumProvider({ children, rol }: { children: React.ReactNode; rol
       const res = await fetch("/api/hapbi/sor", {
         method: "POST", headers: { "Content-Type": "application/json" },
         signal: controller.signal,
-        body: JSON.stringify({ soru, pathname, sohbet: sohbetRef.current }),
+        body: JSON.stringify({ soru, pathname, sohbet: sohbetRef.current, hizli: hizliMi }),
       });
       const data = await res.json();
       if (controller.signal.aborted) return;

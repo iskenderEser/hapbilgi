@@ -4,10 +4,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { hapbiAraclariniOlustur, periyoduDogrula } from "@/lib/hapbi/araclar";
 import { getHapbiKullaniciBaglami, hapbiKapsamAnahtari, type HapbiKullaniciBaglami } from "@/lib/hapbi/hapbiKullaniciBaglami";
 import { sohbetiAc, sohbetiPaketle, istekSinirlayiciOlustur } from "@/lib/hapbi/sohbet";
-import { hapbiYanitUret, sonYanitiDogrula } from "@/lib/hapbi/gemini";
+import { hapbiHizliYanitUret, hapbiYanitUret, sonYanitiDogrula } from "@/lib/hapbi/gemini";
 import { egitimleriOku } from "@/lib/hapbi/egitim";
 import type { HapbiAracSonucu } from "@/lib/hapbi/sozlesme";
 import { raporOlcumleri, olcumleriKarsilastir } from "@/lib/hapbi/rehberlik";
+import { hizliSorguPlani } from "@/lib/hapbi/hizliSorgu";
 
 const K: HapbiKullaniciBaglami = { kullanici_id: "u1", rol: "utt", kimlik_turu: "kullanici", firma_id: "f1", takim_id: "t1", bolge_id: "b1", cc_aktif: true, eclub_aktif: true };
 const P = { periyot: "hafta", yil: 2026, hafta: 35 };
@@ -536,6 +537,44 @@ test("hapbi: eşzamanlı istek ve dakika sınırı kontrollü serbest bırakıl�
 const KAYNAK: HapbiAracSonucu = { durum: "ok", kaynak: { id: "k1", baslik: "Lig", url: "/hbligi", zaman: "2026-08-26" }, veri: { puan: 0 } };
 const modelCevabi = (parts: unknown[]) => Response.json({ candidates: [{ finishReason: "STOP", content: { role: "model", parts } }], usageMetadata: { totalTokenCount: 10 } });
 const finalArgs = { yanit_turu: "bilgi", cevap: "Bu hafta puanınız 0.", kaynak_idleri: ["k1"] };
+
+test("hapbi: hazır sorular role göre kesin ve dar bir hızlı plana dönüşür", () => {
+  const takvim = { yil: 2026, ay: 8, ceyrek: 3, hafta: 35 };
+  assert.deepEqual(hizliSorguPlani("utt", "Gelişmek için hangi eğitimlere öncelik vermeliyim?", takvim), {
+    arac: "gelisim_rehberi", parametre: { ...takvim, periyot: "hafta", kapsam: "kisisel", hedef: "ogrenme", kategori: "tumu" },
+  });
+  assert.deepEqual(hizliSorguPlani("bm", "Bölgemde gelişim için neye odaklanmalıyım?", takvim), {
+    arac: "gelisim_rehberi", parametre: { ...takvim, periyot: "hafta", kapsam: "ekip", hedef: "ogrenme", kategori: "tumu" },
+  });
+  assert.deepEqual(hizliSorguPlani("eczaci", "Tamamladığım eğitimler hangileri?", P), {
+    arac: "eclub_kisisel_durum", parametre: { liste: "tamamlanan" },
+  });
+  assert.equal(hizliSorguPlani("utt", "Benzer ama serbest bir soru", P), null);
+  assert.equal(hizliSorguPlani("utt", "Bölgemde gelişim için neye odaklanmalıyım?", P), null);
+});
+
+test("hapbi: hızlı yol canlı sonucu tek Gemini çağrısında doğrulanmış yanıta dönüştürür", async () => {
+  let istek = 0;
+  const r = await hapbiHizliYanitUret({
+    soru: "Bu hafta ligde durumum nasıl?", pathname: "/ana-sayfa", rol: "utt",
+    aracAdi: "lig_durumu", aracSonucu: KAYNAK, apiKey: "test", model: "gemini-3.5-flash",
+    fetcher: (async (_url, init) => {
+      istek++;
+      const govde = JSON.parse(String(init?.body));
+      assert.deepEqual(govde.toolConfig.functionCallingConfig.allowedFunctionNames, ["yaniti_sun"]);
+      assert.deepEqual(govde.tools[0].functionDeclarations.map((t: { name: string }) => t.name), ["yaniti_sun"]);
+      assert.equal(govde.contents.length, 1);
+      assert.equal(govde.generationConfig.thinkingConfig.thinkingLevel, "minimal");
+      return modelCevabi([{ functionCall: { name: "yaniti_sun", args: finalArgs } }]);
+    }) as typeof fetch,
+  });
+  assert.equal(istek, 1); assert.deepEqual(r.araclar, ["lig_durumu"]); assert.equal(r.cevap, finalArgs.cevap);
+  await assert.rejects(() => hapbiHizliYanitUret({
+    soru: "Soru", pathname: "/", rol: "utt", aracAdi: "lig_durumu",
+    aracSonucu: { durum: "hata" }, apiKey: "test", model: "gemini-3.5-flash",
+    fetcher: (async () => { throw new Error("çağrılmamalı"); }) as typeof fetch,
+  }), /kaynağı doğrulanamadı/);
+});
 
 test("hapbi: Gemini araç döngüsü sonucu ve thoughtSignature bozulmadan taşınır", async () => {
   const istekler: Record<string, unknown>[] = [];

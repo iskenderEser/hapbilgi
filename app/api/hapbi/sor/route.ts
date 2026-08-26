@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getHapbiKullaniciBaglami, hapbiKapsamAnahtari } from "@/lib/hapbi/hapbiKullaniciBaglami";
 import { hapbiAraclariniOlustur } from "@/lib/hapbi/araclar";
-import { hapbiYanitUret } from "@/lib/hapbi/gemini";
+import { hapbiHizliYanitUret, hapbiYanitUret } from "@/lib/hapbi/gemini";
 import { HapbiHata, nesne, alanlariDogrula } from "@/lib/hapbi/sozlesme";
 import { sohbetiAc, sohbetiPaketle, istekSinirlayiciOlustur } from "@/lib/hapbi/sohbet";
+import { hizliSorguPlani } from "@/lib/hapbi/hizliSorgu";
 
 export const maxDuration = 60;
 const sinirla = istekSinirlayiciOlustur();
@@ -42,9 +43,12 @@ export async function POST(req: Request) {
     if (error || !user) throw new HapbiHata("OTURUM", 401, "hapbi'yi kullanmak için oturum açın.");
     serbestBirak = sinirla(user.id);
     const body = await govdeyiOku(req);
-    alanlariDogrula(body, ["soru", "pathname", "sohbet"]);
+    alanlariDogrula(body, ["soru", "pathname", "sohbet", "hizli"]);
     if (typeof body.soru !== "string" || !body.soru.trim() || body.soru.length > 2000) {
       throw new HapbiHata("SORU", 400, "Lütfen 1–2000 karakter arasında bir soru yazın.");
+    }
+    if (body.hizli !== undefined && typeof body.hizli !== "boolean") {
+      throw new HapbiHata("HIZLI_SORGU", 400, "Hazır sorgu bilgisi geçersiz.");
     }
     const pathname = typeof body.pathname === "string" && /^\/[a-zA-Z0-9/_-]*$/.test(body.pathname) && body.pathname.length <= 200 ? body.pathname : "/";
     const signal = AbortSignal.any([req.signal, AbortSignal.timeout(50000)]);
@@ -54,15 +58,31 @@ export async function POST(req: Request) {
     const imzaAnahtari = process.env.HAPBI_SOHBET_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
     const gecmis = sohbetiAc(body.sohbet, kapsam, imzaAnahtari);
     const araclar = hapbiAraclariniOlustur(db, baglam);
-    const sonuc = await hapbiYanitUret({
-      soru: body.soru.trim(), pathname, rol: baglam.rol, takvim: araclar.takvim, gecmis,
-      arac: araclar.calistir, apiKey: (process.env.GEMINI_API_KEY ?? "").trim(),
-      model: (process.env.GEMINI_MODEL || "gemini-flash-latest").trim(), signal,
+    const soru = body.soru.trim();
+    const apiKey = (process.env.GEMINI_API_KEY ?? "").trim();
+    const model = (process.env.GEMINI_MODEL || "gemini-flash-latest").trim();
+    const plan = body.hizli === true ? hizliSorguPlani(baglam.rol, soru, araclar.takvim) : null;
+    let hizliKullanildi = false;
+    let sonuc;
+    if (plan) {
+      const aracSonucu = await araclar.calistir(plan.arac, plan.parametre);
+      try {
+        sonuc = await hapbiHizliYanitUret({
+          soru, pathname, rol: baglam.rol, aracAdi: plan.arac, aracSonucu, apiKey, model, signal,
+        });
+        hizliKullanildi = true;
+      } catch (hizliHata) {
+        if (!(hizliHata instanceof HapbiHata) || hizliHata.kod.startsWith("MODEL_HTTP_") || ["MODEL_BAGLANTISI", "ZAMAN_ASIMI"].includes(hizliHata.kod)) throw hizliHata;
+      }
+    }
+    sonuc ??= await hapbiYanitUret({
+      soru, pathname, rol: baglam.rol, takvim: araclar.takvim, gecmis,
+      arac: araclar.calistir, apiKey, model, signal,
     });
     const sohbet = sohbetiPaketle([...gecmis,
       { rol: "user", metin: body.soru.trim() }, { rol: "model", metin: sonuc.cevap },
     ], kapsam, imzaAnahtari);
-    console.info("[hapbi]", { istekId, durum: "ok", model: sonuc.model, araclar: sonuc.araclar, tokenSayisi: sonuc.tokenSayisi, sureMs: Date.now() - baslangic });
+    console.info("[hapbi]", { istekId, durum: "ok", hizli: hizliKullanildi, model: sonuc.model, araclar: sonuc.araclar, tokenSayisi: sonuc.tokenSayisi, sureMs: Date.now() - baslangic });
     return NextResponse.json({ cevap: sonuc.cevap, kaynaklar: sonuc.kaynaklar, egitimler: sonuc.egitimler, aksiyon: sonuc.aksiyon, model: sonuc.model, sohbet, istekId }, { headers });
   } catch (error) {
     const hata = error instanceof HapbiHata ? error : new HapbiHata("SUNUCU", 503, "hapbi şu anda yanıt veremiyor. Lütfen tekrar deneyin.");
