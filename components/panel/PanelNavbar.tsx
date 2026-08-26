@@ -71,19 +71,19 @@ export default function PanelNavbar({ adSoyad, email, ozet, siparisPuaniGoster, 
 
   return (
     <nav
-      className="sticky top-0 z-50 border-b border-gray-200 px-3 py-2 md:px-6 md:py-2.5"
+      className="sticky top-0 z-50 border-b border-gray-200 px-3 py-3 md:px-6 md:py-3.5 min-h-[76px] flex flex-col justify-center"
       style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderBottomColor: "#e5e7eb" }}
     >
       <div className="flex items-center justify-between gap-4">
-        {/* Sol Kolon: Logo (Sidebar genişliği 240px ile tam hizalı: px-6 = 24px + 216px = 240px) */}
+        {/* Sol Kolon: Logo (Hapbi maskot ebatlarıyla tam uyumlu 3D yatay logo) */}
         <div
           onClick={() => router.push(anaSayfaYolu)}
           className="flex items-center md:w-[216px] flex-shrink-0 cursor-pointer group select-none"
         >
           <img
-            src="/logo-yatay.png?v=1"
+            src="/logo-yatay.png?v=2"
             alt="hapbilgi"
-            className="h-9 md:h-11 w-auto object-contain transition-transform duration-200 group-hover:scale-105 drop-shadow-sm"
+            className="h-12 md:h-14 lg:h-[62px] w-auto object-contain transition-transform duration-200 group-hover:scale-105 drop-shadow-sm"
           />
         </div>
 
