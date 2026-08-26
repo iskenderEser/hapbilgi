@@ -83,7 +83,7 @@ export default function PanelNavbar({ adSoyad, email, ozet, siparisPuaniGoster, 
           <img
             src="/logo-yatay.png?v=2"
             alt="hapbilgi"
-            className="h-12 md:h-14 lg:h-[62px] w-auto object-contain transition-transform duration-200 group-hover:scale-105 drop-shadow-sm"
+            className="h-9 md:h-11 lg:h-[48px] w-auto object-contain transition-transform duration-200 group-hover:scale-105 drop-shadow-sm"
           />
         </div>
 
