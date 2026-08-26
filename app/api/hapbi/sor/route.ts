@@ -31,34 +31,7 @@ export async function POST(req: Request) {
     const apiKey = (process.env.GEMINI_API_KEY ?? "").trim();
     const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
 
-    // Kullanıcı Bağlam Metni
-    const baglamMetni = kullaniciBaglami
-      ? `
-KULLANICININ ANLIK CANLI VERİLERİ (GİZLİ SİSTEM BİLGİSİ - DOĞRUDAN KULLAN):
-- Adı Soyadı: ${kullaniciBaglami.adSoyad} (Hitap ederken bu adı kullan: örneğin "${kullaniciBaglami.adSoyad.split(" ")[0]} Bey/Hanım")
-- Rolü: ${kullaniciBaglami.rol.toUpperCase()}
-- Firması: ${kullaniciBaglami.firmaAdi ?? "Bilinmiyor"}
-- Takımı: ${kullaniciBaglami.takimAdi ?? "Bilinmiyor"}
-- Bölgesi: ${kullaniciBaglami.bolgeAdi ?? "Bilinmiyor"}
-- Bu Haftaki Puanı: ${kullaniciBaglami.haftalikPuan} Puan
-- Toplam Lig Puanı: ${kullaniciBaglami.toplamPuan} Puan
-- Lig Sıralamaları:
-  * Takım İçi Sırası: ${kullaniciBaglami.takimSirasi ?? 1}. sıra
-  * Firma İçi Sırası: ${kullaniciBaglami.firmaSirasi ?? 1}. sıra
-  * Bölge İçi Sırası: ${kullaniciBaglami.bolgeSirasi ?? 1}. sıra
-- Puan Kaynakları ve Kayıplar:
-  * Video İzleme Puanı: +${kullaniciBaglami.izlemePuani} Puan
-  * Quiz / Soru Cevaplama Puanı: +${kullaniciBaglami.cevaplamaPuani} Puan
-  * Video Öneri Puanı: +${kullaniciBaglami.oneriPuani} Puan
-  * İleri Sarma Kaybı (Ceza): -${kullaniciBaglami.ileriSarmaKaybi} Puan
-  * Test Yanlış Cevap Kaybı: -${kullaniciBaglami.yanlisCevapKaybi} Puan
-- HBStore Cüzdan (Sipariş) Bakiyesi: ${kullaniciBaglami.siparisPuani} Puan
-- Eğitim Durumu: Tamamlanan Video: ${kullaniciBaglami.tamamlananVideoSayisi} / Toplam Yayındaki Video: ${kullaniciBaglami.toplamVideoSayisi}
-- E-Club Eczane Durumu: Bağlı Eczane Sayısı: ${kullaniciBaglami.bagliEczaneSayisi}
-`
-      : `
-Kullanıcı Anonim veya oturum açılmamış. Genel kurumsal rehberlik yap.
-`;
+    const baglamMetni = kullaniciBaglami?.canliVeriMetni ?? "Kullanıcı oturumu anonim. Genel kurumsal rehberlik yap.";
 
     // Eğer Gemini API anahtarı varsa Gemini ile çağrı yapalım
     if (apiKey) {
@@ -71,13 +44,12 @@ ${baglamMetni}
 Kullanıcının o an bulunduğu sayfa: ${pathname ?? "/ana-sayfa"}
 Kullanıcının Sorusu: "${soru}"
 
-ÖZEL TALİMATLAR:
-1. Eğer soru lig, puan veya sıralama ile ilgiliyse ("kaçıncı sıradayım?", "puanım kaç?" vb.): Kullanıcının canlı verilerindeki güncel puanını ve sırasını söyle.
-2. Eğer soru kişisel gelişim veya koçluk ile ilgiliyse ("kendimi nerede geliştirmeliyim?", "ne yapmalıyım?" vb.):
-   - Kullanıcının puan kayıplarını (varsa ileri sarma kaybı ve test yanlışları),
-   - İzlemediği kalan videoları,
-   - Eczane ve öneri fırsatlarını analiz ederek 3 somut maddelik profesyonel bir gelişim tavsiyesi ver.
-3. Yanıtı gereksiz uzatmadan, net maddelerle ver ve cevabın yarım kesilmeyeceğinden emin ol.
+TEMEL YÖNERGELER:
+- Kullanıcının sorusuna yukarıdaki canlı veritabanı tablosuna dayanarak DOĞAL, DİNAMİK ve NOKTA ATIŞI cevap ver.
+- ASLA ezbere kalıp veya zoraki 3 madde şablonu kullanma; kullanıcının sorusu tam olarak neyi hedefliyorsa yalnızca ona odaklan.
+- Eğer kullanıcı "hangi videoları izleyeyim / video önerisi" soruyorsa; tablodaki "HENÜZ İZLEMEDİĞİ AKTİF VİDEOLAR" listesindeki GERÇEK video/ürün isimlerini, kategorilerini, puanlarını ve yeni olma durumunu referans vererek en mantıklı videoları öner. Konu dışına çıkıp eczane veya öneri anlatma.
+- Eğer kullanıcı lig sırasını veya puanını soruyorsa; tablodaki güncel puanını ve sırasını söyle.
+- Yanıtını kurumsal, net, maddelerle okunabilir ve tam bir şekilde tamamla.
 `;
 
         const geminiRes = await fetch(
@@ -93,7 +65,7 @@ Kullanıcının Sorusu: "${soru}"
                 },
               ],
               generationConfig: {
-                temperature: 0.5,
+                temperature: 0.4,
                 maxOutputTokens: 2000,
               },
             }),
@@ -107,10 +79,10 @@ Kullanıcının Sorusu: "${soru}"
             // Soruya uygun akıllı aksiyon türetelim
             let aksiyon;
             const q = soru.toLowerCase();
-            if (q.includes("lig") || q.includes("sıra") || q.includes("kaçıncı") || q.includes("puan")) {
+            if (q.includes("video") || q.includes("izle") || q.includes("hangi")) {
+              aksiyon = { etiket: "Tüm Videolarıma Git 🎬", turId: "video_tur", url: "/videolarim" };
+            } else if (q.includes("lig") || q.includes("sıra") || q.includes("kaçıncı") || q.includes("puan")) {
               aksiyon = { etiket: "T-Club Ligi Tablosuna Git 🏆", turId: "lig_tur", url: "/hbligi" };
-            } else if (q.includes("geliştir") || q.includes("video") || q.includes("izle") || q.includes("eksik")) {
-              aksiyon = { etiket: "Eğitim Videolarına Git 🎬", turId: "video_tur", url: "/videolarim" };
             } else if (q.includes("bağla") || q.includes("ekle") || q.includes("davet") || q.includes("eczanelerim") || q.includes("takımım") || q.includes("eczane")) {
               aksiyon = { etiket: "E-Club Takımıma Git 🤝", url: "/eclub/eczanelerim" };
             } else if (q.includes("store") || q.includes("sipariş") || q.includes("hediye") || q.includes("mağaza")) {
@@ -133,23 +105,9 @@ Kullanıcının Sorusu: "${soru}"
     }
 
     // Yerel Kural Motoru (Fallback)
-    const q = soru.toLowerCase();
-    let cevap = "HapBilgi eğitim ve ödül ekosistemidir. Sorularınızı yanıtlamaktan memnuniyet duyarım.";
-    let aksiyon;
-
-    if (q.includes("sıra") || q.includes("lig") || q.includes("kaçıncı") || q.includes("puan")) {
-      const p = kullaniciBaglami?.haftalikPuan ?? 0;
-      const s = kullaniciBaglami?.takimSirasi ?? 1;
-      cevap = `Şu an takımınızda ${p} puanla ${s}. sıradasınız. Detaylı haftalık lig sıralamanızı ve rakiplerinizi görmek için lig tablosunu ziyaret edebilirsiniz.`;
-      aksiyon = { etiket: "T-Club Ligi'ne Git 🏆", url: "/hbligi" };
-    } else if (q.includes("bağla") || q.includes("ekle") || q.includes("davet") || q.includes("eczanelerim")) {
-      cevap = "E-Club'a eczane eklemek ve takımınızdaki eczaneleri yönetmek için 'E-Club Takımım' sayfasını kullanabilirsiniz.";
-      aksiyon = { etiket: "E-Club Takımıma Git 🤝", url: "/eclub/eczanelerim" };
-    }
-
     return NextResponse.json({
-      cevap,
-      aksiyon,
+      cevap: "HapBilgi eğitim ve ödül ekosistemidir. Sorularınızı yanıtlamaktan memnuniyet duyarım.",
+      aksiyon: { etiket: "Ana Sayfaya Git 🏠", url: "/ana-sayfa" },
     });
   } catch (error) {
     console.error("Hapbi API hatası:", error);
