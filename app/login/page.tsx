@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { beniHatirlaKaydet } from "@/lib/utils/beniHatirla";
+import GirisAltBilgileri from "./_components/GirisAltBilgileri";
 
 const BORDO = "#bc2d0d";
 // F-04 (18.07.2026): giriş ekranı renk/yerleşim talebi — sol %50 açık zemin
@@ -190,10 +191,8 @@ export default function LoginPage() {
           {/* F-04 hizalama: masaüstünde sol blok 3cm yukarı, sağ blok 3cm aşağı —
               metin alanının orta çizgisi giriş alanının ekseniyle çakışır (İskender, ekran görseliyle) */}
           <div className="max-w-md w-full md:-translate-y-[75px]">
-          {/* F-04: şeffaf zeminli varyant — beyaz gömülü logo.png açık zeminde
-              kutu gibi görünüyordu; logo.png beyaz zeminli sayfalarda kalmaya devam eder */}
-          {/* ?v=4: 3D Gri baykuşlu yeni kurumsal marka logosu */}
-          <img src="/logo-acik-zemin.png?v=4" alt="hapbilgi" className="object-contain mx-auto mb-8" style={{ height: 150 }} />
+          {/* Şeffaf kenarlar mevcut 150 × 150 logo alanına sığdırılır; yerleşim korunur. */}
+          <img src="/hapbilgi-dikey-gri-bordo.png" alt="hapbilgi" className="object-cover mx-auto mb-8" style={{ width: 150, height: 150 }} />
 
           {/* Positioning-why cümlesi (İskender, 18.07.2026): "Öğrenmenin V Hali" kalktı,
               slogan başlık oldu. "Kazanmak" tanımı: docs/fiziksel_tespitler_ve_cozumler.md F-04 Ek 3. */}
@@ -390,9 +389,7 @@ export default function LoginPage() {
           </form>
           )}
 
-          <div className="text-center mt-10">
-            <span className="text-xs text-gray-400">© 2026 HapBilgi · Tüm hakları saklıdır.</span>
-          </div>
+          <GirisAltBilgileri />
         </div>
       </div>
     </div>

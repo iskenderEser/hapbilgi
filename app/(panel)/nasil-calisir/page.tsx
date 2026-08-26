@@ -1,6 +1,10 @@
-// app/(panel)/nasil-calisir/page.tsx — bilgi sayfası (Faz 1 / Adım 1.6).
-import BilgiSayfa from "@/components/panel/BilgiSayfa";
+import BilgiSayfaCercevesi from "@/components/panel/bilgi/BilgiSayfaCercevesi";
+import OgrenmeDongusu from "@/components/panel/bilgi/OgrenmeDongusu";
 
 export default function NasilCalisirSayfasi() {
-  return <BilgiSayfa baslik="Nasıl Çalışır" />;
+  return (
+    <BilgiSayfaCercevesi tur="isleyis">
+      <OgrenmeDongusu />
+    </BilgiSayfaCercevesi>
+  );
 }

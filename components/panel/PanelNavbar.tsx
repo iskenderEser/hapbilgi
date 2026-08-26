@@ -81,9 +81,9 @@ export default function PanelNavbar({ adSoyad, email, ozet, siparisPuaniGoster, 
           className="flex items-center md:w-[216px] flex-shrink-0 cursor-pointer group select-none"
         >
           <img
-            src="/logo-yatay.png?v=2"
+            src="/hapbilgi-yatay-gri-bordo.png"
             alt="hapbilgi"
-            className="h-12 md:h-14 lg:h-[62px] w-auto object-contain transition-transform duration-200 group-hover:scale-105 drop-shadow-sm"
+            className="h-12 md:h-14 lg:h-[62px] w-auto aspect-[901/340] object-cover transition-transform duration-200 group-hover:scale-105 drop-shadow-sm"
           />
         </div>
 

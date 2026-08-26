@@ -1,6 +1,10 @@
-// app/(panel)/hapbilgi-nedir/page.tsx — bilgi sayfası (Faz 1 / Adım 1.6).
-import BilgiSayfa from "@/components/panel/BilgiSayfa";
+import BilgiSayfaCercevesi from "@/components/panel/bilgi/BilgiSayfaCercevesi";
+import OgrenmeZinciri from "@/components/panel/bilgi/OgrenmeZinciri";
 
 export default function HapBilgiNedirSayfasi() {
-  return <BilgiSayfa baslik="HapBilgi Nedir" />;
+  return (
+    <BilgiSayfaCercevesi tur="hakkinda">
+      <OgrenmeZinciri />
+    </BilgiSayfaCercevesi>
+  );
 }
