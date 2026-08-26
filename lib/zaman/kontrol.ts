@@ -358,3 +358,28 @@ export function aktifPeriyot(tarih: Date = new Date()): {
     hafta: haftaNo(tarih),
   };
 }
+
+/** Aynı türde önceki lig dönemi; yıl/ay/hafta geçişi mevcut TR takviminden çözülür. */
+export function oncekiLigPeriyodu(p: Parameters<typeof ligPeriyoduAraligi>[0]): Parameters<typeof ligPeriyoduAraligi>[0] {
+  const oncekiAn = new Date(new Date(ligPeriyoduAraligi(p).baslangic).getTime() - 1);
+  return { periyot: p.periyot, ...aktifPeriyot(oncekiAn) };
+}
+
+/** İki dönemin başlangıcından eşit sayıda tamamlanmış TR günü.
+ * Bugünün kısmi verisi alınmaz; günlük CC özeti ve T-Club aynı pencereyle okunur.
+ * Ay/çeyrek/yıl uzunlukları farklıysa kısa dönem kadar gün karşılaştırılır.
+ */
+export function esitSureliLigAraliklari(p: Parameters<typeof ligPeriyoduAraligi>[0], simdi = new Date()) {
+  const mevcut = ligPeriyoduAraligi(p);
+  const oncekiPeriyot = oncekiLigPeriyodu(p);
+  const onceki = ligPeriyoduAraligi(oncekiPeriyot);
+  const bas = new Date(mevcut.baslangic).getTime();
+  const oncekiBas = new Date(onceki.baslangic).getTime();
+  const mevcutTamGun = Math.max(0, Math.floor((Math.min(gunBaslangici(simdi).getTime(), new Date(mevcut.bitis).getTime() + 1) - bas) / GUN_MS));
+  const oncekiGun = Math.floor((new Date(onceki.bitis).getTime() + 1 - oncekiBas) / GUN_MS);
+  const gunSayisi = Math.min(mevcutTamGun, oncekiGun);
+  if (gunSayisi <= 0) return null;
+  return { gunSayisi, oncekiPeriyot,
+    mevcut: { baslangic: mevcut.baslangic, bitis: new Date(bas + gunSayisi * GUN_MS - 1).toISOString() },
+    onceki: { baslangic: onceki.baslangic, bitis: new Date(oncekiBas + gunSayisi * GUN_MS - 1).toISOString() } };
+}

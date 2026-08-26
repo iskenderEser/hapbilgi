@@ -26,6 +26,8 @@ import {
   yilinHaftalari,
   ayKaydir,
   ligPeriyoduAraligi,
+  oncekiLigPeriyodu,
+  esitSureliLigAraliklari,
 } from "../lib/zaman/kontrol.ts";
 
 test("mutlu: gun ici bir an dogru TR gunune ve periyoda cozulur", () => {
@@ -76,6 +78,24 @@ test("sinir: pazar, gece yarisi sonrasi ve periyot gecisleri TR'ye sadik kalir",
   assert.equal(haftaNo(ocak1), 1);
   assert.equal(haftaNo(new Date("2026-01-08T12:00:00+03:00")), 2);
   assert.equal(yilinHaftalari(2026)[0].no, 1);
+  // Önceki dönem aynı TR takvimine bağlıdır; yıl/hafta geçişinde çakışmaz.
+  for (const periyot of ["hafta", "ay", "donem", "yil"] as const) {
+    const ilk = { periyot, yil: 2026, ay: 1, ceyrek: 1, hafta: 1 };
+    const onceki = oncekiLigPeriyodu(ilk);
+    assert.equal(onceki.yil, 2025);
+    assert.equal(new Date(ligPeriyoduAraligi(onceki).bitis).getTime() + 1, new Date(ligPeriyoduAraligi(ilk).baslangic).getTime());
+  }
+  const hafta = { periyot: "hafta" as const, yil: 2026, hafta: 35, ay: 8, ceyrek: 3 };
+  const esit = esitSureliLigAraliklari(hafta, new Date("2026-08-26T01:00:00+03:00"))!;
+  assert.equal(esit.gunSayisi, 2);
+  assert.deepEqual(esit.mevcut, { baslangic: "2026-08-23T21:00:00.000Z", bitis: "2026-08-25T20:59:59.999Z" });
+  assert.deepEqual(esit.onceki, { baslangic: "2026-08-16T21:00:00.000Z", bitis: "2026-08-18T20:59:59.999Z" });
+  assert.equal(esitSureliLigAraliklari(hafta, new Date("2026-08-24T23:00:00+03:00")), null);
+  const mart = esitSureliLigAraliklari({ ...hafta, periyot: "ay", ay: 3 }, new Date("2026-04-01T01:00:00+03:00"))!;
+  assert.equal(mart.gunSayisi, 28); // Mart'ın 31 günü Şubat'ın 28 günüyle eşitlenir.
+  assert.equal(trGunu(new Date(mart.mevcut.bitis)), "2026-03-28");
+  const artik = esitSureliLigAraliklari({ ...hafta, yil: 2024, periyot: "ay", ay: 2 }, new Date("2024-03-01T01:00:00+03:00"))!;
+  assert.equal(artik.gunSayisi, 29);
 
   // 6) Gün dizesi aritmetiği ay ve yıl taşmasını normalize eder.
   assert.equal(trGunEkle("2026-08-31", 1), "2026-09-01");

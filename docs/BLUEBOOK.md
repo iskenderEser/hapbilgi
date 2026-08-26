@@ -407,36 +407,34 @@ Tüm admin API rotaları taranmış; açık giriş ucu (`/admin/api/giris`) dı�
 
 ---
 
-# 8.1. BÖLÜM: HAPBI AI DANIŞMANI, KİŞİSEL PERFORMANS KOÇLUĞU VE SPOTLIGHT MOTORU
-*Tarih: 26 Ağustos 2026 | Kapsam: Canlı 3D Maskot Mimarisi, Google Gemini LLM Entegrasyonu, 5 Boyutlu Kullanıcı Bağlam Toplayıcısı ve Kurumsal Marka Standartları*
+# 8.1. BÖLÜM: HAPBI — KAYNAKLI AI ASİSTANI
+*Tarih: 26 Ağustos 2026 | Faz 2 — kişiye ve role uygun rehberlik, salt-okur*
 
-### 1. Amaç ve Mimari Felsefe
-HapBilgi ekosisteminde kullanıcı deneyimini statik bir panelden çıkarıp proaktif, canlı ve yol gösterici bir öğrenme ortamına dönüştürmek amacıyla **Hapbi AI Asistanı & Kişisel Performans Koçluğu Sistemi** geliştirilmiştir. Sistem yalnızca genel yardım sağlayan bir sohbet robotu değil; kullanıcının veritabanındaki tüm anlık puanlarına, sıralamalarına, ceza kesintilerine ve rol yetkilerine hakim gerçek bir dijital koçtur.
+### 1. Cevap motoru
+`app/api/hapbi/sor/route.ts` oturumu doğrular; `rolCozucu` ve organizasyon hiyerarşisiyle kapsam çözer. Anonim devam, sabit cevap fallback'i ve her soruya aynı veri paketini gönderme kaldırılmıştır. `lib/hapbi/gemini.ts` gerçek Gemini function calling döngüsünü yürütür. `GEMINI_MODEL` önceliklidir; yoksa `gemini-flash-latest` kullanılır. Yerel ortamda `gemini-3.5-flash` ile gerçek araç çağrısı doğrulanmıştır; canlı ortamdaki ayarlar ayrıca doğrulanmalıdır.
 
-### 2. Bileşen Mimarisi (`components/hapbi/`)
-* **`HapbiMaskot.tsx`:** Sağ altta süzülen (`animate-hapbi-float`), çevrimiçi yeşil rozetli, hover durumunda göz kırpan (`hapbi-wink.png`) ve konuşma balonuyla etkileşime davet eden interaktif 3D maskot düğmesi (Standart ebat: `57px × 57px`).
-* **`HapbiChatModal.tsx`:** Kullanıcının doğal dilde sorular yönelttiği, hızlı soru hapları barındıran, markdown formatlı akıllı cevaplar ve sayfalar arası tek tıkla geçiş sağlayan aksiyon butonları sunan sohbet penceresi.
-* **`HapbiSpotlight.tsx`:** Platforma yeni katılan veya belirli sayfaları öğrenmek isteyen kullanıcılara adım adım ekranı karartıp ilgili butonu/alanı ışıkla vurgulayan (Spotlight / Walkthrough) akıllı tur asistanı.
-* **`HapbiProvider.tsx`:** Tüm panel genelinde (`app/(panel)/layout.tsx`) modal, sohbet ve interaktif tur durumlarını yöneten global React Context sağlayıcısı.
+### 2. Kaynaklar ve kapsam
+* `bilgiKaynaklari.ts`: Bluebook ve kodla karşılaştırılmış, sürümlü kullanıcı rehberi. Ham Bluebook otomatik okunmaz; teknik bilgiler ve doğrulanmamış kurallar modele gönderilmez. Rehber değişiklikleri kod incelemesiyle yapılır.
+* `araclar.ts`: HB Ligi için mevcut `getUttLig/getSahaLig`; CC için mevcut dönem RPC'leri; rol raporları için ilgili mevcut rapor RPC'leri ve toplama fonksiyonları; E-Club için mevcut yetki kapsamı/rapor servisi.
+* `egitim.ts`: UTT/KD_UTT ve BM kataloglarını kendi kayıtlarıyla okur; ortak `gecerliTurBaslangiclari` hesabını kullanır. Kategori/tur katılımı hesaplanır. Ayrı `egitim_icerigi` aracı yalnız bu istekte erişilmiş yayının senaryosunu, görünürlüğü yeniden doğrulayarak okur; bu metin video transkripti veya test cevap anahtarı değildir.
+* `rehberlik.ts`: `gelisim_rehberi` için gerçek rapor ölçümleri ve katalog üzerinden gerekçeli önceliklendirme; `donem_karsilastir` için sunucuda fark/yüzde hesabı. Öğrenme ve puan hedefi ayrıdır; kategori kaybı belirli eğitimde hata veya yetkinlik eksikliği diye yorumlanmaz. Rehberlik cevabı, okunmuş gelişim kaynağı gerektirir.
+* Faz 2 kişisel rehberliği UTT/KD_UTT ve BM’ye; ekip rehberliğini BM/TM/üretici/yöneticiye kendi mevcut rapor kapsamıyla verir. Eğitim önerilerinde önce gelen challenge ve yarım kalan eğitim, sonra seçilen hedefe göre kategori verisi veya kayıtlı video puanı dikkate alınır. En çok üç öneri ve sunucuda üretilmiş gerekçeleri gösterilir.
+* Dönem karşılaştırmasında varsayılan eşit süre yöntemi, ortak TR takviminde iki dönemin başından eşit sayıda tamamlanmış gün alır; bugün dahil değildir. Ay uzunluğu farkında kısa dönem sınır olur; ilk gün kıyas yapılmaz. Tam takvim toplamları ayrıca seçilebilir. BM kişisel eşit süre hesabı mevcut `_cc_ligi_aralik` günlük motorunu kişi/firma süzgeciyle kullanır. Eksik ölçüm veya sıfır/negatif yüzde bazı korunur; puan değişimi mesleki başarı teşhisi değildir.
+* Tamamlanmış eğitimler, yanlış cevap kaybı görülen kategorilerde öğrenme amacıyla yeniden çalışma adayı olabilir; yeni puan kazanımı gibi sunulmaz. Kullanıcı açıkça tekrar isterse ayrı `calisma=tekrar` seçeneği yalnız tamamlananları ele alır; kayıp yoksa gerekçe kullanıcının isteğidir, öğrenme eksikliği uydurulmaz. Eğitim araması kalan/tamamlanan/tümü filtresiyle güncel yayınlarda çalışır. Tekrar puanı/extra eşikleri bu öneriden çıkarılmaz.
+* BM'nin kişisel öğrenme/lig puanı C-Club'dır; bölgesinin T-Club saha performansıyla karıştırılmaz. Veri hatası/boş sonuç/sıfır ayrı durumdur. Eksik sıra veya video puanı doldurulmaz.
+* Eczane ve Eczanem müşteri kimlikleri için bu sürümde genel platform rehberliği vardır; kişisel canlı veri araçları henüz yoktur. İÜ için üretim iş listesi, sipariş/bakiye sorgusu, E-Club takım ligi, yazma/onay/iptal işlemleri sonraki kapsamdır.
 
-### 3. Google Gemini LLM Entegrasyonu & Sistem İstemi Kuralları (`app/api/hapbi/sor/`)
-* **Model ve API:** `GEMINI_API_KEY` üzerinden `gemini-flash-latest` modeline bağlanır.
-* **Üslup ve Ton Disiplini (`HAPBI_SISTEM_ISTEMI`):** Çocuksu ünlemler ("Hoo-hoo" vb.) ve yapay kalıplar kesinlikle yasaktır; doğrudan, profesyonel, maddeler halinde net ve kurumsal bir dil zorunludur.
-* **Akıllı Aksiyon Yönlendirme:** Kullanıcının sorusuna ve niyetine göre cevabın altında ilgili sayfaya (`/videolarim`, `/hbligi`, `/eclub/eczanelerim`, `/store`, `/oneri-takibi`) doğrudan yönlendiren interaktif butonlar üretilir.
+### 3. Sohbet ve güvenlik
+İstemci ham sohbet geçmişi veya rol/firma parametresi göndermez. Sunucuda imzalanmış sohbet token'ı kullanıcı+rol+firma+takım+bölge+modül kapsamına bağlıdır; son 12 mesaj, en çok 18.000 karakter ve 30 dakika geçerlilik taşır. Tarayıcıda kalıcı saklanmaz. Yeni sohbet ve kimlik değişimi bağlamı temizler. Her yeni sayısal soruda araç yeniden çağrılır; eski yanıt güncel veri kaynağı değildir.
 
-### 4. 5 Boyutlu Canlı Bağlam ve Rol Filtresi (`lib/hapbi/hapbiKullaniciBaglami.ts`)
-Yapay zeka hiçbir zaman soyut veya ezbere konuşmaz; her istekte PostgreSQL'den toplanan 5 boyutlu canlı bağlam tablosu ile beslenir:
-1. **Kimlik & Takım:** Kullanıcının adı, soyadı, rolü (UTT, BM vb.), firması, takımı ve bölgesi.
-2. **Lig & Puan Durumu:** Anlık haftalık puanı, toplam lig puanı, takım/firma/bölge sıralamaları, cüzdan bakiyesi.
-3. **Ceza ve Kayıp Analizi:** İleri sarma puan cezası (`-N puan`) ve test yanlış cevap kaybı (`-N puan`).
-4. **Rol Bazlı Video Kataloğu (`hedef_roller`):** Yalnızca kullanıcının rolüne (`utt`, `bm`, vb.) ve takım/firma yetki kapsamına uygun, henüz izlenmemiş aktif videoların listesi (Başlık, Kategori, Temel Puan, Extra Puan, Yeni İçerik Etiketi). BM yönetim eğitimleri UTT kullanıcısına sızdırılmaz.
-5. **E-Club & Saha Ağı:** Takımındaki bağlı eczane sayısı ve dağıtım durumu.
+Model yalnız tanımlı okuma araçlarını çağırabilir; serbest SQL/URL/tablo erişimi yoktur. Araç parametreleri sunucuda doğrulanır. Cevap kaynakları ve yönlendirmeler yalnız okunmuş kaynak kimliklerinden seçilir. Bilgi cevabı kaynak gerektirir; cevapta bulunan rakamların seçilen kaynakta bulunması kontrol edilir. Bu sayısal kontrol anlamsal doğruluk garantisi değildir; rol ve görev senaryolarıyla değerlendirme gerektirir.
 
-### 5. Kurumsal Marka ve Logo Standartları
-* **Dikey Kurumsal Logo (`public/logo.png` & `public/logo-acik-zemin.png`):** 3D antrasit/gri baykuş kafası ve altındaki 3D parlak bordo "hapbilgi" tipografisi. Giriş sayfasında (`/login`) %100 şeffaf zemin üzerinde kullanılır.
-* **Yatay Kurumsal Logo (`public/logo-yatay.png`):** Üst bar için özel olarak hazırlanmış, solda 3D antrasit baykuş ve sağında "hapbilgi" metni bulunan yatay kompozisyon ("v-learning" ibaresi kaldırılmıştır).
-* **Panel Navbar Standartı (`PanelNavbar.tsx`):** Navbar dikey yüksekliği ferah kullanım için **%20 artırılarak `min-h-[76px]`** olarak kilitlenmiştir.
-* **Maskot & Logo Rol Ayrımı:** Kurumsal marka logosu 3D antrasit/gri renk tonlarında tescillenmiş; sağ alttaki canlı yapay zeka asistanı ise sıcaklık ve ayrışma sağlamak adına **3D Turuncu** olarak korunmuştur.
+Soru başına en çok 5 model çağrısı, 8 araç seçimi; zaman aşımı ve süreç içi kullanıcı başına eşzamanlılık/hız sınırı vardır. Gelişim aracı bir rapor ve kişisel kapsamda katalog, karşılaştırma aracı iki rapor okur. Senaryo 10.000 karakterle sınırlandırılır. Eğitim/kendi izleme/challenge sorgusu 1.000 satıra ulaşırsa eksik veriden öneri üretilmez. Çok örnekli üretimde ortak rate-limit deposu ayrıca gerekir. Günlükler soru, cevap, kişi adı veya anahtar içermez; istek kimliği, model, araç adları, token ve süre kaydedilir. Sağlayıcı hatası AI cevabı gibi gizlenmez.
+
+### 4. Arayüz ve doğrulama
+Mevcut sohbet boyutları/renkleri ve maskot korunmuştur; avatar zemini beyaz, başlık `hapbi`dir. Cevaplarda kaynak/dönem bağlantıları, role uygun hızlı sorular ve yeni sohbet düğmesi bulunur. Kaynak bağlantısı sayfanın dönem filtresini otomatik değiştirmez; aynı dönem seçilmelidir. Eğitim kaynağının adı **Eğitim Yayınları**dır; öneriler sunucuda doğrulanmış eğitim bağlantılarıyla ayrı gösterilir. UTT kategori menüsü olmayan `/videolarim` köküne bağlanmaz; öneri doğrudan kategori sayfasındaki yayını açar. BM bağlantılarında güncel gelen challenge bağlamı korunur. Eski UTT ekran turları korunur, AI cevaplarının yerine çalıştırılmaz.
+
+`tests/hapbi.smoke.test.ts` kimlik/kapsam, veri doğruluğu, sohbet imzası, Gemini araç döngüsü ve hata yollarını sınar. Gerçek Gemini ve oturum açık UTT ekranında lig, takip sorusu, eğitim, puan raporu ve E-Club raporu akışı kontrol edilmiştir; E-Club yanıtı haftalık rapor ekranıyla karşılaştırılmıştır. Bütün roller için canlı uçtan uca doğrulama tamamlanmış sayılmaz. Ayrıntılar: `docs/HAPBI.md`.
 
 ---
 
@@ -1138,8 +1136,15 @@ Yapay zeka hiçbir zaman soyut veya ezbere konuşmaz; her istekte PostgreSQL'den
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `hapbiBilgiTabani.ts` | TypeScript / Lib | Hapbi AI sistem istemi, kurumsal üslup anayasası, platform rota haritası ve tur tanımları. |
-| `hapbiKullaniciBaglami.ts` | TypeScript / Lib | Kullanıcının anlık lig sırası, ceza puanları, rol bazlı video kataloğu ve cüzdan bakiyesini toplayan 5 boyutlu analiz motoru. |
+| `hapbiBilgiTabani.ts` | TypeScript / Lib | Role uygun hızlı sorular ve mevcut UTT ekran turları. AI bilgi kaynağı değildir. |
+| `hapbiKullaniciBaglami.ts` | TypeScript / Lib | Yetkili kimlik, organizasyon ve modül kapsamını doğrular; sayı veya varsayılan rol üretmez. |
+| `araclar.ts` | TypeScript / Lib | Gemini araç tanımları, parametre doğrulama ve mevcut lig/rapor kaynaklarına salt-okur adaptörler. |
+| `bilgiKaynaklari.ts` | TypeScript / Lib | Bluebook/kod dayanaklı sürümlü kullanıcı rehberi. |
+| `egitim.ts` | TypeScript / Lib | Rol, yayın görünürlüğü ve geçerli tur üzerinden eğitim adaylarını okur. |
+| `gemini.ts` | TypeScript / Lib | Sınırlı Gemini araç döngüsü, kaynaklı yanıt ve sayısal tutarlılık denetimi. |
+| `rehberlik.ts` | TypeScript / Lib | Faz 2: kapsamlı rapor ölçümlerinden gelişim gözlemleri, gerekçeli eğitim öncelikleri ve dönem fark/yüzde hesabı. |
+| `sohbet.ts` | TypeScript / Lib | Kapsama bağlı imzalı sohbet bağlamı ve süreç içi istek sınırı. |
+| `sozlesme.ts` | TypeScript / Lib | Kaynak, yanıt ve hata sözleşmeleri. |
 
 ## 8. COMPONENTS GÖRSEL VE ETKİLEŞİM KATMANI
 
@@ -1459,8 +1464,4 @@ HapBilgi kod tabanında tip güvenliği, sistem dayanıklılığı ve bakım kol
 
 ---
 *HapBilgi Mühendislik ve Kalite Denetim Ekibi tarafından mühürlenmiştir.*
-
-
-
-
 

@@ -174,7 +174,8 @@ export async function gecerliTur(
  */
 export async function gecerliTurBaslangiclari(
   adminSupabase: SupabaseClient,
-  yayin_idler: string[]
+  yayin_idler: string[],
+  hataFirlat = false,
 ): Promise<Record<string, HesaplananTur>> {
   const sonuc: Record<string, HesaplananTur> = {};
   if (yayin_idler.length === 0) return sonuc;
@@ -191,6 +192,7 @@ export async function gecerliTurBaslangiclari(
   ]);
 
   if (yError || tError) {
+    if (hataFirlat) throw new Error("Geçerli eğitim turu okunamadı.");
     console.error("[UYARI] gecerliTurBaslangiclari sorgu hatası:", yError?.message ?? tError?.message);
     return sonuc; // boş harita — çağıran eski davranışa düşer
   }

@@ -27,10 +27,15 @@ export async function createClient() {
   );
 }
 
-export function createAdminClient() {
+export function createAdminClient(signal?: AbortSignal) {
   return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
+    {
+      auth: { autoRefreshToken: false, persistSession: false },
+      ...(signal ? { global: { fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, {
+        ...init, signal: init?.signal ? AbortSignal.any([signal, init.signal]) : signal,
+      }) } } : {}),
+    }
   );
 }

@@ -4,7 +4,11 @@
 
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
+import { useAuth } from "@/app/providers/AuthProvider";
+import type { HapbiKaynak, HapbiEgitimBaglantisi } from "@/lib/hapbi/sozlesme";
+import { TUKETICI_ROLLER } from "@/lib/utils/roller";
+import { hizliSorular } from "@/lib/hapbi/hapbiBilgiTabani";
 import { useRouter, usePathname } from "next/navigation";
 import { HAPBI_CANLI_TURLAR, type WalkthroughTur, type WalkthroughAdim } from "@/lib/hapbi/hapbiBilgiTabani";
 
@@ -13,6 +17,9 @@ export interface HapbiMesaj {
   rol: "user" | "hapbi";
   metin: string;
   zaman: string;
+  kaynaklar?: HapbiKaynak[];
+  egitimler?: HapbiEgitimBaglantisi[];
+  hata?: boolean;
   aksiyon?: {
     etiket: string;
     url?: string;
@@ -21,6 +28,7 @@ export interface HapbiMesaj {
 }
 
 interface HapbiContextTuru {
+  hizliSorular: string[];
   chatAcik: boolean;
   setChatAcik: (acik: boolean) => void;
   toggleChat: () => void;
@@ -42,15 +50,17 @@ const HapbiContext = createContext<HapbiContextTuru | null>(null);
 const ILK_KARSILAMA_MESAJI: HapbiMesaj = {
   id: "karsilama",
   rol: "hapbi",
-  metin: "Merhaba! Ben Hapbi 🦉 HapBilgi platformuyla ilgili aklına takılan her şeyi bana sorabilirsin. İstersen seni ilgili sayfaya bizzat götürüp adım adım da rehberlik edebilirim!",
+  metin: "Merhaba, ben hapbi. HapBilgi'nin işleyişini açıklayabilir, erişiminiz kapsamındaki lig, rapor ve eğitim bilgilerini incelemenize yardımcı olabilirim.",
   zaman: "Şimdi",
-  aksiyon: {
-    etiket: "HBStore'u Tanıt 🎁",
-    turId: "store_tur",
-  },
 };
 
 export function HapbiProvider({ children }: { children: React.ReactNode }) {
+  const { kullanici } = useAuth();
+  const anahtar = [kullanici?.id, kullanici?.rol, kullanici?.firma_id, kullanici?.kimlik_turu].join(":");
+  return <HapbiOturumProvider key={anahtar} rol={kullanici?.rol ?? ""}>{children}</HapbiOturumProvider>;
+}
+
+function HapbiOturumProvider({ children, rol }: { children: React.ReactNode; rol: string }) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -66,7 +76,15 @@ export function HapbiProvider({ children }: { children: React.ReactNode }) {
     setChatAcik((prev) => !prev);
   }, []);
 
+  const sohbetRef = useRef<string | undefined>(undefined);
+  const istekRef = useRef<AbortController | null>(null);
+  useEffect(() => () => { istekRef.current?.abort(); }, []);
+
   const temizle = useCallback(() => {
+    istekRef.current?.abort();
+    istekRef.current = null;
+    sohbetRef.current = undefined;
+    setYukleniyor(false);
     setMesajlar([ILK_KARSILAMA_MESAJI]);
   }, []);
 
@@ -74,6 +92,8 @@ export function HapbiProvider({ children }: { children: React.ReactNode }) {
   const turBaslat = useCallback((turId: string) => {
     const tur = HAPBI_CANLI_TURLAR[turId];
     if (!tur || tur.adimlar.length === 0) return;
+    // Mevcut turlar T-Club tüketici ekranlarına özeldir.
+    if (!TUKETICI_ROLLER.includes(rol)) return;
 
     setAktifTur(tur);
     setMevcutAdimIndex(0);
@@ -83,7 +103,7 @@ export function HapbiProvider({ children }: { children: React.ReactNode }) {
     if (ilkAdim.hedefUrl && pathname !== ilkAdim.hedefUrl) {
       router.push(ilkAdim.hedefUrl);
     }
-  }, [pathname, router]);
+  }, [pathname, router, rol]);
 
   // Tur İlerleme
   const turIlerle = useCallback(() => {
@@ -118,81 +138,39 @@ export function HapbiProvider({ children }: { children: React.ReactNode }) {
     setMevcutAdimIndex(0);
   }, []);
 
-  // Soru Sorma (API + Yerel Akıllı Fallback)
+  // Sunucuda imzalanmış sohbet bağlamı; hazır cevap veya anahtar kelime motoru yok.
   const soruSor = useCallback(async (soruMetni: string) => {
-    if (!soruMetni.trim()) return;
-
-    const yeniKullaniciMesaji: HapbiMesaj = {
-      id: String(Date.now()),
-      rol: "user",
-      metin: soruMetni.trim(),
-      zaman: new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }),
-    };
-
-    setMesajlar((prev) => [...prev, yeniKullaniciMesaji]);
+    const soru = soruMetni.trim();
+    if (!soru || soru.length > 2000 || istekRef.current) return;
+    const controller = new AbortController();
+    istekRef.current = controller;
+    const zaman = () => new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+    setMesajlar(prev => [...prev, { id: crypto.randomUUID(), rol: "user", metin: soru, zaman: zaman() }]);
     setYukleniyor(true);
-
     try {
       const res = await fetch("/api/hapbi/sor", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          soru: soruMetni.trim(),
-          pathname,
-        }),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({ soru, pathname, sohbet: sohbetRef.current }),
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        const hapbiCevabi: HapbiMesaj = {
-          id: String(Date.now() + 1),
-          rol: "hapbi",
-          metin: data.cevap,
-          zaman: new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }),
-          aksiyon: data.aksiyon,
-        };
-        setMesajlar((prev) => [...prev, hapbiCevabi]);
-      } else {
-        throw new Error("API Hatası");
+      const data = await res.json();
+      if (controller.signal.aborted) return;
+      if (!res.ok) {
+        if (data.kod === "SOHBET_YENILE") sohbetRef.current = undefined;
+        throw new Error(data.error || "hapbi şu anda yanıt veremiyor. Lütfen tekrar deneyin.");
       }
-    } catch {
-      // Yerel Akıllı Fallback
-      let fallbackMetin = "HapBilgi'de video izleyerek puan toplayabilir, liglerde yarışabilir ve HBStore'dan dilediğin hediyeyi sipariş edebilirsin.";
-      let fallbackAksiyon: HapbiMesaj["aksiyon"] | undefined;
-
-      const q = soruMetni.toLowerCase();
-      if (q.includes("bağla") || q.includes("ekle") || q.includes("davet") || q.includes("eczanelerim") || q.includes("takımım")) {
-        fallbackMetin = "E-Club'a eczane eklemek ve takımındaki eczaneleri yönetmek için 'E-Club Takımım' sayfasını kullanabilirsin. Buradan anlaşmalı eczanelerini sisteme bağlayabilirsin.";
-        fallbackAksiyon = { etiket: "E-Club Takımıma Git 🤝", url: "/eclub/eczanelerim" };
-      } else if (q.includes("store") || q.includes("sipariş") || q.includes("hediye") || q.includes("mağaza")) {
-        fallbackMetin = "HBStore, kazandığın HapPuan'ları harcayabileceğin ödül mağazasıdır. Ürünler adresine kargolanır ve ilk 12 saat içinde siparişini iptal etme hakkın vardır.";
-        fallbackAksiyon = { etiket: "HBStore Turunu Başlat 🎁", turId: "store_tur", url: "/store" };
-      } else if (q.includes("lig") || q.includes("puan") || q.includes("sıra") || q.includes("t-club")) {
-        fallbackMetin = "T-Club Ligi, haftalık izlediğin videolar ve tamamladığın görevlerle yükseldiğin rekabet alanıdır. Sıralaman her hafta yenilenir!";
-        fallbackAksiyon = { etiket: "Lig Tablosuna Git 🏆", turId: "lig_tur", url: "/hbligi" };
-      } else if (q.includes("12 saat") || q.includes("iptal")) {
-        fallbackMetin = "12 Saat İptal Kuralı: HBStore'dan verdiğin siparişleri, lojistik süreci başlamadan önce 'Siparişlerim' sayfasından ilk 12 saat içinde tek tıkla cezasız iptal edebilirsin.";
-        fallbackAksiyon = { etiket: "Siparişlerime Git 📦", url: "/store/siparislerim" };
-      } else if (q.includes("mutabakat") || q.includes("döküm")) {
-        fallbackMetin = "Eczanelerle yapılan indirimli satış mutabakatlarını ve onaylanan dökümleri 'Mutabakat Dökümü' sayfasından kontrol edebilirsin.";
-        fallbackAksiyon = { etiket: "Mutabakat Dökümüne Git 📑", url: "/eczanem/utt/mutabakat" };
-      } else if (q.includes("eczane") || q.includes("e-club") || q.includes("danışan") || q.includes("indirim")) {
-        fallbackMetin = "E-Club, eczacıların ekiplerini eğittiği ve danışanlarına avantajlı ürün indirimleri sunarak mutabakat sağladığı özel kulüptür.";
-        fallbackAksiyon = { etiket: "E-Club Takımıma Git 💊", url: "/eclub/eczanelerim" };
-      }
-
-      setMesajlar((prev) => [
-        ...prev,
-        {
-          id: String(Date.now() + 1),
-          rol: "hapbi",
-          metin: fallbackMetin,
-          zaman: new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }),
-          aksiyon: fallbackAksiyon,
-        },
-      ]);
+      sohbetRef.current = data.sohbet;
+      setMesajlar(prev => [...prev, {
+        id: crypto.randomUUID(), rol: "hapbi", metin: data.cevap, zaman: zaman(),
+        aksiyon: data.aksiyon, kaynaklar: data.kaynaklar, egitimler: data.egitimler,
+      }]);
+    } catch (error) {
+      if (!controller.signal.aborted) setMesajlar(prev => [...prev, {
+        id: crypto.randomUUID(), rol: "hapbi", hata: true, zaman: zaman(),
+        metin: error instanceof Error ? error.message : "Bağlantı kurulamadı. Lütfen tekrar deneyin.",
+      }]);
     } finally {
-      setYukleniyor(false);
+      if (istekRef.current === controller) { istekRef.current = null; setYukleniyor(false); }
     }
   }, [pathname]);
 
@@ -201,6 +179,7 @@ export function HapbiProvider({ children }: { children: React.ReactNode }) {
   return (
     <HapbiContext.Provider
       value={{
+        hizliSorular: hizliSorular(rol),
         chatAcik,
         setChatAcik,
         toggleChat,

@@ -5,7 +5,7 @@
 // Dönem: çağıran tarafından geçilen periyot (ay/donem/yil/hafta) — ligRpcCagir helper'ı.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ligRpcCagir, type LigPeriyot } from "./ligRpcCagir";
+import { ligRpcCagir, type LigPeriyot } from "@/lib/tclub/hbligi/ligRpcCagir";
 
 export interface UttLigSatiri {
   sira: number;
