@@ -192,8 +192,8 @@ export default function LoginPage() {
         <div className="max-w-md w-full md:-translate-y-[75px]">
           {/* F-04: şeffaf zeminli varyant — beyaz gömülü logo.png açık zeminde
               kutu gibi görünüyordu; logo.png beyaz zeminli sayfalarda kalmaya devam eder */}
-          {/* ?v=2: v-learning'siz sürüm — sorgu imi tarayıcı önbelleğindeki eski kopyayı devre dışı bırakır */}
-          <img src="/logo-acik-zemin.png?v=2" alt="hapbilgi" className="object-contain mx-auto mb-8" style={{ height: 144 }} />
+          {/* ?v=4: 3D Gri baykuşlu yeni kurumsal marka logosu */}
+          <img src="/logo-acik-zemin.png?v=4" alt="hapbilgi" className="object-contain mx-auto mb-8" style={{ height: 150 }} />
 
           {/* Positioning-why cümlesi (İskender, 18.07.2026): "Öğrenmenin V Hali" kalktı,
               slogan başlık oldu. "Kazanmak" tanımı: docs/fiziksel_tespitler_ve_cozumler.md F-04 Ek 3. */}

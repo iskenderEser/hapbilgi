@@ -82,7 +82,7 @@ export default function PanelNavbar({ adSoyad, email, ozet, siparisPuaniGoster, 
         >
           <div className="relative w-11 h-11 md:w-13 md:h-13 flex-shrink-0 transition-transform duration-200 group-hover:scale-110">
             <img
-              src="/hapbi.png"
+              src="/logo-head.png?v=1"
               alt="HapBilgi"
               className="w-full h-full object-contain drop-shadow-sm"
             />
