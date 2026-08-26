@@ -43,8 +43,8 @@ export default function HapbiMaskot() {
         aria-label="Hapbi AI Asistanı"
         className="relative group cursor-pointer border-none bg-transparent p-0 transition-transform duration-300 hover:scale-110 active:scale-95 focus:outline-none"
         style={{
-          width: "76px",
-          height: "76px",
+          width: "57px",
+          height: "57px",
           animation: "hapbi-float 3s ease-in-out infinite",
         }}
       >
