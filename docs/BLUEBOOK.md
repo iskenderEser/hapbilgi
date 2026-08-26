@@ -407,6 +407,36 @@ Tüm admin API rotaları taranmış; açık giriş ucu (`/admin/api/giris`) dı�
 
 ---
 
+# 8.1. BÖLÜM: HAPBI AI DANIŞMANI, KİŞİSEL PERFORMANS KOÇLUĞU VE SPOTLIGHT MOTORU
+*Tarih: 26 Ağustos 2026 | Kapsam: Canlı 3D Maskot Mimarisi, Google Gemini LLM Entegrasyonu, 5 Boyutlu Kullanıcı Bağlam Toplayıcısı ve Kurumsal Marka Standartları*
+
+### 1. Amaç ve Mimari Felsefe
+HapBilgi ekosisteminde kullanıcı deneyimini statik bir panelden çıkarıp proaktif, canlı ve yol gösterici bir öğrenme ortamına dönüştürmek amacıyla **Hapbi AI Asistanı & Kişisel Performans Koçluğu Sistemi** geliştirilmiştir. Sistem yalnızca genel yardım sağlayan bir sohbet robotu değil; kullanıcının veritabanındaki tüm anlık puanlarına, sıralamalarına, ceza kesintilerine ve rol yetkilerine hakim gerçek bir dijital koçtur.
+
+### 2. Bileşen Mimarisi (`components/hapbi/`)
+* **`HapbiMaskot.tsx`:** Sağ altta süzülen (`animate-hapbi-float`), çevrimiçi yeşil rozetli, hover durumunda göz kırpan (`hapbi-wink.png`) ve konuşma balonuyla etkileşime davet eden interaktif 3D maskot düğmesi (Standart ebat: `57px × 57px`).
+* **`HapbiChatModal.tsx`:** Kullanıcının doğal dilde sorular yönelttiği, hızlı soru hapları barındıran, markdown formatlı akıllı cevaplar ve sayfalar arası tek tıkla geçiş sağlayan aksiyon butonları sunan sohbet penceresi.
+* **`HapbiSpotlight.tsx`:** Platforma yeni katılan veya belirli sayfaları öğrenmek isteyen kullanıcılara adım adım ekranı karartıp ilgili butonu/alanı ışıkla vurgulayan (Spotlight / Walkthrough) akıllı tur asistanı.
+* **`HapbiProvider.tsx`:** Tüm panel genelinde (`app/(panel)/layout.tsx`) modal, sohbet ve interaktif tur durumlarını yöneten global React Context sağlayıcısı.
+
+### 3. Google Gemini LLM Entegrasyonu & Sistem İstemi Kuralları (`app/api/hapbi/sor/`)
+* **Model ve API:** `GEMINI_API_KEY` üzerinden `gemini-flash-latest` modeline bağlanır.
+* **Üslup ve Ton Disiplini (`HAPBI_SISTEM_ISTEMI`):** Çocuksu ünlemler ("Hoo-hoo" vb.) ve yapay kalıplar kesinlikle yasaktır; doğrudan, profesyonel, maddeler halinde net ve kurumsal bir dil zorunludur.
+* **Akıllı Aksiyon Yönlendirme:** Kullanıcının sorusuna ve niyetine göre cevabın altında ilgili sayfaya (`/videolarim`, `/hbligi`, `/eclub/eczanelerim`, `/store`, `/oneri-takibi`) doğrudan yönlendiren interaktif butonlar üretilir.
+
+### 4. 5 Boyutlu Canlı Bağlam ve Rol Filtresi (`lib/hapbi/hapbiKullaniciBaglami.ts`)
+Yapay zeka hiçbir zaman soyut veya ezbere konuşmaz; her istekte PostgreSQL'den toplanan 5 boyutlu canlı bağlam tablosu ile beslenir:
+1. **Kimlik & Takım:** Kullanıcının adı, soyadı, rolü (UTT, BM vb.), firması, takımı ve bölgesi.
+2. **Lig & Puan Durumu:** Anlık haftalık puanı, toplam lig puanı, takım/firma/bölge sıralamaları, cüzdan bakiyesi.
+3. **Ceza ve Kayıp Analizi:** İleri sarma puan cezası (`-N puan`) ve test yanlış cevap kaybı (`-N puan`).
+4. **Rol Bazlı Video Kataloğu (`hedef_roller`):** Yalnızca kullanıcının rolüne (`utt`, `bm`, vb.) ve takım/firma yetki kapsamına uygun, henüz izlenmemiş aktif videoların listesi (Başlık, Kategori, Temel Puan, Extra Puan, Yeni İçerik Etiketi). BM yönetim eğitimleri UTT kullanıcısına sızdırılmaz.
+5. **E-Club & Saha Ağı:** Takımındaki bağlı eczane sayısı ve dağıtım durumu.
+
+### 5. Kurumsal Marka ve Logo Standartları
+* **Dikey Kurumsal Logo (`public/logo.png` & `public/logo-acik-zemin.png`):** 3D antrasit/gri baykuş kafası ve altındaki 3D parlak bordo "hapbilgi" tipografisi. Giriş sayfasında (`/login`) %100 şeffaf zemin üzerinde kullanılır.
+* **Yatay Kurumsal Logo (`public/logo-yatay.png`):** Üst bar için özel olarak hazırlanmış, solda 3D antrasit baykuş ve sağında "hapbilgi" metni bulunan yatay kompozisyon ("v-learning" ibaresi kaldırılmıştır).
+* **Panel Navbar Standartı (`PanelNavbar.tsx`):** Navbar dikey yüksekliği ferah kullanım için **%20 artırılarak `min-h-[76px]`** olarak kilitlenmiştir.
+* **Maskot & Logo Rol Ayrımı:** Kurumsal marka logosu 3D antrasit/gri renk tonlarında tescillenmiş; sağ alttaki canlı yapay zeka asistanı ise sıcaklık ve ayrışma sağlamak adına **3D Turuncu** olarak korunmuştur.
 
 ---
 
@@ -912,6 +942,12 @@ Tüm admin API rotaları taranmış; açık giriş ucu (`/admin/api/giris`) dı�
 |---|:---:|---|
 | `route.ts` | TypeScript / Lib | İlgili rotanın HTTP isteklerini (GET, POST, PUT, DELETE) işleyen ve veritabanı işlemlerini yürüten API uç noktası. |
 
+### 📁 app/api/hapbi/sor/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API Ucu | Google Gemini LLM API entegrasyonu, oturum bağlamı enjeksiyonu ve dinamik aksiyon butonu üreten uç nokta. |
+
 ## 7. LİB ÇEKİRDEK İŞ MANTIĞI VE MOTORLAR
 
 ### 📁 lib/tclub/puan/
@@ -1098,6 +1134,13 @@ Tüm admin API rotaları taranmış; açık giriş ucu (`/admin/api/giris`) dı�
 | `uretimZinciri.ts` | TypeScript / Lib | uretimZinciri.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
 | `yayinUrun.ts` | TypeScript / Lib | Yayın kaydından ürün ID'sini çözen ve tekilleştiren DRY yardımcı fonksiyonu. |
 
+### 📁 lib/hapbi/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `hapbiBilgiTabani.ts` | TypeScript / Lib | Hapbi AI sistem istemi, kurumsal üslup anayasası, platform rota haritası ve tur tanımları. |
+| `hapbiKullaniciBaglami.ts` | TypeScript / Lib | Kullanıcının anlık lig sırası, ceza puanları, rol bazlı video kataloğu ve cüzdan bakiyesini toplayan 5 boyutlu analiz motoru. |
+
 ## 8. COMPONENTS GÖRSEL VE ETKİLEŞİM KATMANI
 
 ### 📁 components/
@@ -1166,6 +1209,15 @@ Tüm admin API rotaları taranmış; açık giriş ucu (`/admin/api/giris`) dı�
 | `PanelNavbar.tsx` | UI / React | PanelNavbar.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
 | `SolListe.tsx` | UI / React | SolListe.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
 | `panelNav.config.ts` | TypeScript / Lib | panelNav.config.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+
+### 📁 components/hapbi/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `HapbiChatModal.tsx` | UI / React | Kullanıcıyla doğal dilde sohbet eden, akıllı aksiyon yönlendirmeleri sunan AI modal penceresi. |
+| `HapbiMaskot.tsx` | UI / React | Sağ altta süzülen, online rozetli, hover'da göz kırpan interaktif 3D maskot bileşeni. |
+| `HapbiProvider.tsx` | UI / React | Panel genelinde walkthrough tur ve sohbet durumunu yöneten global Context sağlayıcısı. |
+| `HapbiSpotlight.tsx` | UI / React | Kullanıcıyı adım adım ilgili sayfa ve butonlara odaklayan etkileşimli ekran karartma/rehberlik bileşeni. |
 
 ### 📁 components/ui/
 
@@ -1367,12 +1419,16 @@ Tüm admin API rotaları taranmış; açık giriş ucu (`/admin/api/giris`) dı�
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `icon-192.png` | Yapılandırma | icon-192.png modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `icon-512.png` | Yapılandırma | icon-512.png modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `logo-acik-zemin.png` | Yapılandırma | logo-acik-zemin.png modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `logo.png` | Yapılandırma | logo.png modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `manifest.json` | JSON / Veri | manifest.json modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `sw.js` | Yapılandırma | sw.js modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `hapbi.png` | Görsel / Maskot | 3D Turuncu Hapbi AI asistanının ana (idle) maskot görseli. |
+| `hapbi-wink.png` | Görsel / Maskot | 3D Turuncu Hapbi AI asistanının üzerine gelindiğinde (hover) göz kırpan interaktif maskot görseli. |
+| `icon-192.png` | Yapılandırma | PWA ve mobil cihazlar için 192x192 uygulama ikonu. |
+| `icon-512.png` | Yapılandırma | PWA ve mobil cihazlar için 512x512 yüksek çözünürlüklü uygulama ikonu. |
+| `logo-acik-zemin.png` | Görsel / Logo | Giriş sayfası (/login) için %100 şeffaf zeminli 3D gri baykuş ve bordo tipografili dikey logo. |
+| `logo.png` | Görsel / Logo | Kurumsal dikey 3D gri marka logosu. |
+| `logo-yatay.png` | Görsel / Logo | Panel üst navbarı için optimize edilmiş, solda 3D gri baykuş ve sağda "hapbilgi" metninden oluşan yatay logo. |
+| `logo-head.png` | Görsel / Logo | 3D gri baykuş başı ikon varyantı. |
+| `manifest.json` | JSON / Veri | Web uygulaması manifest ve PWA yapılandırma dosyası. |
+| `sw.js` | Yapılandırma | Çevrimdışı önbellekleme ve servis işçisi (Service Worker) betiği. |
 
 ### 📁 docs/
 
