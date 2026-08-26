@@ -78,23 +78,13 @@ export default function PanelNavbar({ adSoyad, email, ozet, siparisPuaniGoster, 
         {/* Sol Kolon: Logo (Sidebar genişliği 240px ile tam hizalı: px-6 = 24px + 216px = 240px) */}
         <div
           onClick={() => router.push(anaSayfaYolu)}
-          className="flex items-center gap-2.5 md:w-[216px] flex-shrink-0 cursor-pointer group select-none"
+          className="flex items-center md:w-[216px] flex-shrink-0 cursor-pointer group select-none"
         >
-          <div className="relative w-11 h-11 md:w-13 md:h-13 flex-shrink-0 transition-transform duration-200 group-hover:scale-110">
-            <img
-              src="/logo-head.png?v=1"
-              alt="HapBilgi"
-              className="w-full h-full object-contain drop-shadow-sm"
-            />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xl md:text-2xl font-black tracking-tight text-[#bc2d0d] leading-none" style={{ fontFamily: "'Nunito', sans-serif" }}>
-              hapbilgi
-            </span>
-            <span className="text-[10px] font-extrabold text-gray-400 tracking-wider uppercase leading-tight mt-0.5">
-              v-learning
-            </span>
-          </div>
+          <img
+            src="/logo-yatay.png?v=1"
+            alt="hapbilgi"
+            className="h-9 md:h-11 w-auto object-contain transition-transform duration-200 group-hover:scale-105 drop-shadow-sm"
+          />
         </div>
 
         {/* Orta-Sol: Bilgi Pill'leri (Sidebar sınırından hemen sonra başlar) */}
