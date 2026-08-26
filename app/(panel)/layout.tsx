@@ -27,7 +27,6 @@ import { HapbiProvider } from "@/components/hapbi/HapbiProvider";
 import HapbiMaskot from "@/components/hapbi/HapbiMaskot";
 import HapbiChatModal from "@/components/hapbi/HapbiChatModal";
 import HapbiSpotlight from "@/components/hapbi/HapbiSpotlight";
-import Footer from "@/components/footer/Footer";
 
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -179,9 +178,8 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
 
         <div className="flex flex-1" style={{ minHeight: 0 }}>
           <SolListe {...ctx} gruplar={gruplar} badge={badge} />
-          <main className="flex-1 overflow-y-auto flex flex-col justify-between" style={{ minWidth: 0 }}>
-            <div className="flex-1">{children}</div>
-            <Footer />
+          <main className="flex-1 overflow-y-auto" style={{ minWidth: 0 }}>
+            {children}
           </main>
         </div>
 

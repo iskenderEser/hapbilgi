@@ -1219,14 +1219,6 @@ Yapay zeka hiçbir zaman soyut veya ezbere konuşmaz; her istekte PostgreSQL'den
 | `HapbiProvider.tsx` | UI / React | Panel genelinde walkthrough tur ve sohbet durumunu yöneten global Context sağlayıcısı. |
 | `HapbiSpotlight.tsx` | UI / React | Kullanıcıyı adım adım ilgili sayfa ve butonlara odaklayan etkileşimli ekran karartma/rehberlik bileşeni. |
 
-### 📁 components/footer/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `Footer.tsx` | UI / React | Kurumsal altbilgi bileşeni: 3D logo, ETBİS karekodu, yasal sözleşmeler ve şirket künyesi barındırır. |
-| `SozlesmeModal.tsx` | UI / React | Yasal sözleşmeleri (Gizlilik, KVKK, Çerez, Mesafeli Satış) erişilebilir bir diyalog penceresinde açan modal bileşeni. |
-| `sozlesmelerData.ts` | TypeScript / Lib | Kurumsal gizlilik, KVKK, çerez ve mesafeli satış sözleşmelerinin kanonik içerik metinleri. |
-
 ### 📁 components/ui/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
@@ -1427,7 +1419,6 @@ Yapay zeka hiçbir zaman soyut veya ezbere konuşmaz; her istekte PostgreSQL'den
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `etbis-karekod.png` | Görsel / Rozet | T.C. Ticaret Bakanlığı ETBİS kayıtlı site karekod doğrulama rozeti. |
 | `hapbi.png` | Görsel / Maskot | 3D Turuncu Hapbi AI asistanının ana (idle) maskot görseli. |
 | `hapbi-wink.png` | Görsel / Maskot | 3D Turuncu Hapbi AI asistanının üzerine gelindiğinde (hover) göz kırpan interaktif maskot görseli. |
 | `icon-192.png` | Yapılandırma | PWA ve mobil cihazlar için 192x192 uygulama ikonu. |

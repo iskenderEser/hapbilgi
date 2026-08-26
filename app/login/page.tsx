@@ -12,7 +12,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { beniHatirlaKaydet } from "@/lib/utils/beniHatirla";
-import Footer from "@/components/footer/Footer";
 
 const BORDO = "#bc2d0d";
 // F-04 (18.07.2026): giriş ekranı renk/yerleşim talebi — sol %50 açık zemin
@@ -391,10 +390,12 @@ export default function LoginPage() {
           </form>
           )}
 
+          <div className="text-center mt-10">
+            <span className="text-xs text-gray-400">© 2026 HapBilgi · Tüm hakları saklıdır.</span>
+          </div>
         </div>
       </div>
-      </div>
-      <Footer />
+    </div>
     </div>
   );
 }
