@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/infra/**/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -19,6 +20,9 @@
 
 # production
 /build
+/media
+/uploads
+/public/ogrenme-araclari-medya
 
 # misc
 .DS_Store

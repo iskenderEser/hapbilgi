@@ -1,0 +1,15 @@
+{
+  "name": "hapbilgi-ogrenme-araci-upload",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bunny.net/edgescript-sdk": "0.12.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.37",
+    "typescript": "5.9.3"
+  }
+}

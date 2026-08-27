@@ -34,7 +34,7 @@ Bu belge, projenin uygulama ve ilerleme takibindeki tek kontrol kaynağıdır. A
 | Faz | Ad | Durum | Yapıldı |
 |---:|---|---|---|
 | 1 | Kararların ve mevcut davranışın sabitlenmesi | Tamamlandı | Evet |
-| 2 | Ortak teknik omurganın kurulması | Bekliyor | Hayır |
+| 2 | Ortak teknik omurganın kurulması | Tamamlandı | Evet |
 | 3 | Podcast'in uçtan uca geliştirilmesi | Bekliyor | Hayır |
 | 4 | Görselin uçtan uca geliştirilmesi | Bekliyor | Hayır |
 | 5 | Flip PDF'nin uçtan uca geliştirilmesi | Bekliyor | Hayır |
@@ -101,70 +101,82 @@ Bu belge, projenin uygulama ve ilerleme takibindeki tek kontrol kaynağıdır. A
 
 ## Faz 2 — Ortak Teknik Omurganın Kurulması
 
-**Durum:** Bekliyor
-**Yapıldı:** Hayır
+**Durum:** Tamamlandı
+**Yapıldı:** Evet
 **Teknik plan karşılığı:** Bölüm 3, 4, 7, 8 ve 13.4
 
 ### Veri Modeli ve Geriye Dönük Uyumluluk
 
-- [ ] `ogrenme_araclari` ana veri modeli eklemeli migration ile oluşturuldu.
-- [ ] Araç durum geçmişi araçtan bağımsız yapıda tanımlandı.
-- [ ] Öğrenme aracı puanı araçtan bağımsız yapıda tanımlandı.
-- [ ] `talepler` kaydı öğrenme aracı türünü taşıyacak biçimde genişletildi.
-- [ ] Soru seti, üretim görevi ve yayın bağlantıları yeni araç kimliklerini taşıyacak biçimde genişletildi.
-- [ ] Yayın detay kaynağı araç türü ve doğrulanmış metadata döndürecek biçimde genişletildi.
-- [ ] Mevcut videolar `arac_turu=video` kabulüyle geri dolduruldu.
-- [ ] Eski video kimlikleri uyumluluk süresince korundu.
-- [ ] Migration ve puan yazma işlemlerinin idempotentliği doğrulandı.
+- [x] `ogrenme_araclari` ana veri modeli eklemeli migration ile oluşturuldu.
+- [x] Araç durum geçmişi araçtan bağımsız yapıda tanımlandı.
+- [x] Öğrenme aracı puanı araçtan bağımsız yapıda tanımlandı.
+- [x] `talepler` kaydı öğrenme aracı türünü taşıyacak biçimde genişletildi.
+- [x] Soru seti, üretim görevi ve yayın bağlantıları yeni araç kimliklerini taşıyacak biçimde genişletildi.
+- [x] Yayın detay kaynağı araç türü ve doğrulanmış metadata döndürecek biçimde genişletildi.
+- [x] Mevcut videolar `arac_turu=video` kabulüyle geri dolduruldu.
+- [x] Eski video kimlikleri uyumluluk süresince korundu.
+- [x] Migration ve puan yazma işlemlerinin idempotentliği doğrulandı.
 
 ### Bunny Depolama ve Erişim
 
-- [ ] HapBilgi öğrenme araçları için Bunny Storage Zone hazırlandı.
-- [ ] Bunny Pull Zone/CDN bağlantısı hazırlandı.
-- [ ] Storage erişim anahtarlarının yalnız sunucu tarafında kalması sağlandı.
-- [ ] Medya nesne yolu ve dosya adı üretimi sunucu denetimine alındı.
-- [ ] Süreli/tokenlı medya erişim sözleşmesi uygulandı.
-- [ ] Medya dosyalarının repo, `public` klasörü ve Vercel çıktısına girmediği doğrulandı.
+- [x] HapBilgi öğrenme araçları için Bunny Storage Zone hazırlandı.
+- [x] Bunny Pull Zone/CDN bağlantısı hazırlandı.
+- [x] Storage erişim anahtarlarının yalnız sunucu tarafında kalması sağlandı.
+- [x] Medya nesne yolu ve dosya adı üretimi sunucu denetimine alındı.
+- [x] Süreli/tokenlı medya erişim sözleşmesi uygulandı.
+- [x] Medya dosyalarının repo, `public` klasörü ve Vercel çıktısına girmediği doğrulandı.
 
 ### Ortak Yükleme ve Güvenlik
 
-- [ ] Yüklemeyi başlatma API'si oluşturuldu.
-- [ ] Yüklemeyi tamamlama API'si oluşturuldu.
-- [ ] Araç durumunu okuma API'si oluşturuldu.
-- [ ] Yetkili erişim adresi üretme API'si oluşturuldu.
-- [ ] MIME türü ve dosya imzası sunucuda doğrulandı.
-- [ ] Dosya boyutu ve araca özel metadata sunucuda doğrulandı.
-- [ ] Yükleme tamamlanmadan onaylı araç kaydı oluşması engellendi.
-- [ ] Başka kullanıcı veya kuruma ait medya yoluna erişim engellendi.
+- [x] Yüklemeyi başlatma API'si oluşturuldu.
+- [x] Yüklemeyi tamamlama API'si oluşturuldu.
+- [x] Araç durumunu okuma API'si oluşturuldu.
+- [x] Yetkili erişim adresi üretme API'si oluşturuldu.
+- [x] MIME türü ve dosya imzası sunucuda doğrulandı.
+- [x] Dosya boyutu ve araca özel metadata sunucuda doğrulandı.
+- [x] Yükleme tamamlanmadan onaylı araç kaydı oluşması engellendi.
+- [x] Başka kullanıcı veya kuruma ait medya yoluna erişim engellendi.
 
 ### Ortak Yayın ve Tüketim Çekirdeği
 
-- [ ] Yayın kapıları araçtan bağımsız ortak sözleşmeye taşındı.
-- [ ] Araç onayı, metadata, soru seti ve puan kontrolleri ortaklaştırıldı.
-- [ ] Araç türünün yayın aşamasında değiştirilmesi engellendi.
-- [ ] Ortak öğrenme aracı sunucusu/oynatıcı arabirimi oluşturuldu.
-- [ ] `baslat`, `ilerlemeKaydet`, `tamamlanabilirMi` ve `tamamla` davranışları tanımlandı.
-- [ ] `soruHakkiKaniti`, `kaldigiYerdenDevam` ve `kapakVeMetadata` davranışları tanımlandı.
-- [ ] Araç türüne göre tamamlanma kanıtı kabul edecek sunucu sınırı kuruldu.
-- [ ] Her araç için bağımsız açma/kapama bayrağı eklendi.
+- [x] Yayın kapıları araçtan bağımsız ortak sözleşmeye taşındı.
+- [x] Araç onayı, metadata, soru seti ve puan kontrolleri ortaklaştırıldı.
+- [x] Araç türünün yayın aşamasında değiştirilmesi engellendi.
+- [x] Ortak öğrenme aracı sunucusu/oynatıcı arabirimi oluşturuldu.
+- [x] `baslat`, `ilerlemeKaydet`, `tamamlanabilirMi` ve `tamamla` davranışları tanımlandı.
+- [x] `soruHakkiKaniti`, `kaldigiYerdenDevam` ve `kapakVeMetadata` davranışları tanımlandı.
+- [x] Araç türüne göre tamamlanma kanıtı kabul edecek sunucu sınırı kuruldu.
+- [x] Her araç için bağımsız açma/kapama bayrağı eklendi.
 
 ### Video Regresyonu
 
-- [ ] Eski video talepleri aynı biçimde oluşturulabiliyor.
-- [ ] Eski video üretim görevleri aynı biçimde tamamlanabiliyor.
-- [ ] Eski video yayınları aynı biçimde açılabiliyor.
-- [ ] Beş tüketici rolündeki video erişim ve puan davranışı değişmedi.
-- [ ] Video rapor, lig ve ödül kayıtları değişmedi.
-- [ ] Yeni ortak katman deployment paketini kabul edilemez ölçüde büyütmedi.
+- [x] Eski video talepleri aynı biçimde oluşturulabiliyor.
+- [x] Eski video üretim görevleri aynı biçimde tamamlanabiliyor.
+- [x] Eski video yayınları aynı biçimde açılabiliyor.
+- [x] Beş tüketici rolündeki video erişim ve puan davranışı değişmedi.
+- [x] Video rapor, lig ve ödül kayıtları değişmedi.
+- [x] Yeni ortak katman deployment paketini kabul edilemez ölçüde büyütmedi.
+
+### Faz 2 Doğrulama Kaydı
+
+- [x] Canlı eklemeli migration tamamlandı: 47 öğrenme aracı, 64 durum kaydı ve 47 puan kaydı doğrulandı.
+- [x] Migration dry-run/rollback ve tekrar çalıştırma kontrollerinde eksik veya çoğaltılmış kayıt oluşmadı.
+- [x] Bunny `hapbilgi-learning` Storage Zone, `hapbilgilearning` Pull Zone ve `hapbilgi-learning-upload` Edge Script hazırlandı.
+- [x] Canlı Bunny zinciri doğrulandı: yükleme `201`, Storage `200`, imzalı CDN `200`, imzasız CDN `403`, geçersiz origin `403`.
+- [x] Faz odaklı smoke testleri: 23/23 başarılı.
+- [x] Tam smoke test paketi: 196/196 başarılı.
+- [x] Uygulama build typecheck ve Bunny Edge SDK typecheck başarılı.
+- [x] Medya, Edge SDK bağımlılıkları ve altyapı çalışma klasörleri Git/Vercel paketinin dışında tutuldu.
+- [x] Yerel production build denemesi bilinen sessiz bekleme davranışı nedeniyle sonuçlandırılmadı; başarı sonucu yazılmadı.
 
 ### Faz 2 Çıkış Ölçütleri
 
-- [ ] Ortak omurga yeni araçlar kapalıyken mevcut video sistemini kesintisiz çalıştırıyor.
-- [ ] Veri, depolama, erişim ve yetkilendirme kontrolleri başarıyla tamamlandı.
-- [ ] Video regresyon kontrolleri geçti.
-- [ ] Faz kapsamındaki kontroller tamamlandı.
-- [ ] **Yapıldı** alanı `Evet` olarak güncellendi.
-- [ ] Faz kapanış commit kapsamı hazırlandı.
+- [x] Ortak omurga yeni araçlar kapalıyken mevcut video sistemini kesintisiz çalıştırıyor.
+- [x] Veri, depolama, erişim ve yetkilendirme kontrolleri başarıyla tamamlandı.
+- [x] Video regresyon kontrolleri geçti.
+- [x] Faz kapsamındaki kontroller tamamlandı.
+- [x] **Yapıldı** alanı `Evet` olarak güncellendi.
+- [x] Faz kapanış commit kapsamı hazırlandı.
 
 ---
 

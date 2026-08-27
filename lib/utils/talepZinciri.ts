@@ -9,6 +9,7 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import type { TalepTuru } from "@/lib/uretici/yetenekler";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 import { ROL_ADLARI, hedefRolleriOku, type HedefRoller } from "@/lib/utils/roller";
 import { departmanKey, type DepartmanKey } from "@/lib/video/departman";
 
@@ -29,6 +30,7 @@ export interface TalepBilgisi {
   urun_adi: string;
   teknik_adi: string;
   egitim_turu: TalepTuru;
+  ogrenme_araci_turu: OgrenmeAraciTuru;
   hedef_roller: HedefRoller;
   icerik_turu: string | null;
   aciklama: string | null;
@@ -48,6 +50,7 @@ export interface HamTalepKaydi {
   talep_no?: number | null;
   uretici_id?: string | null;
   egitim_turu?: string | null;
+  ogrenme_araci_turu?: string | null;
   hedef_roller?: unknown;
   icerik_turu?: string | null;
   aciklama?: string | null;
@@ -85,6 +88,7 @@ export const TALEP_ALANLARI = `
   talep_no,
   uretici_id,
   egitim_turu,
+  ogrenme_araci_turu,
   hedef_roller,
   icerik_turu,
   aciklama,
@@ -121,6 +125,9 @@ export function haritalaTalep(talep: HamTalepKaydi): TalepBilgisi {
     urun_adi: urunler?.urun_adi ?? talep.urun_adi ?? "-",
     teknik_adi: teknikler?.teknik_adi ?? talep.teknik_adi ?? "-",
     egitim_turu: (talep.egitim_turu ?? "urun_egitimi") as TalepTuru,
+    ogrenme_araci_turu: talep.ogrenme_araci_turu === "podcast" || talep.ogrenme_araci_turu === "gorsel" || talep.ogrenme_araci_turu === "flip_pdf"
+      ? talep.ogrenme_araci_turu
+      : "video",
     hedef_roller: hedefRolleriOku(talep),
     icerik_turu: talep.icerik_turu ?? null,
     aciklama: talep.aciklama ?? null,
