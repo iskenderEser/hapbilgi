@@ -5,6 +5,7 @@ export const UTT_VIDEO_KATEGORILERI = [
   { slug: "medikal", icerikTuru: "medikal", etiket: "Medikal Eğitimler" },
   { slug: "urun-medikal", icerikTuru: "urun_medikal", etiket: "Ürün-Medikal Eğitimleri" },
   { slug: "satis", icerikTuru: "egitim", etiket: "Satış Eğitimleri" },
+  { slug: "yonetim", icerikTuru: "yonetim", etiket: "Yönetim Eğitimleri" },
   { slug: "ik", icerikTuru: "ik", etiket: "İK Eğitimleri" },
 ] as const satisfies ReadonlyArray<{ slug: string; icerikTuru: IcerikTuru; etiket: string }>;
 

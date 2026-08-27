@@ -164,35 +164,6 @@ export function yilBaslangici(tarih: Date = new Date()): Date {
 }
 
 /**
- * Verilen tarihe N iş günü ekler. Hafta sonları (Cumartesi, Pazar — TR) atlanır.
- *
- * Saat bileşeni korunur — Pazartesi 09:30'a +5 iş günü eklenirse sonuç bir
- * sonraki haftanın Pazartesi 09:30'u olur. Gün atlaması ve hafta günü kontrolü
- * TR saatine göre yapılır (Türkiye DST kullanmadığı için +24 saat, duvar saatini korur).
- *
- * Challenge Club: alıcı BM'in challenge'ı izlemesi için verilen son_tarih
- * hesabında kullanılır.
- *
- * @param tarih Başlangıç tarihi
- * @param gun Eklenecek iş günü sayısı (pozitif tam sayı)
- * @returns Hafta sonları atlanmış, N iş günü ileri tarih
- */
-export function isGunuEkle(tarih: Date, gun: number): Date {
-  let sonuc = new Date(tarih);
-  let eklenen = 0;
-
-  while (eklenen < gun) {
-    sonuc = new Date(sonuc.getTime() + GUN_MS);
-    const { haftaGunu } = trParcalari(sonuc);
-    if (haftaGunu !== 0 && haftaGunu !== 6) {
-      eklenen++;
-    }
-  }
-
-  return sonuc;
-}
-
-/**
  * İçinde bulunulan takvim çeyreğini (TR) döndürür.
  * Çeyrekler: Q1=Oca-Mar, Q2=Nis-Haz, Q3=Tem-Eyl, Q4=Eki-Ara.
  * Lig RPC'leri (get_hb_ligi_donemlik / get_cc_ligi_donemlik) için kullanılır.

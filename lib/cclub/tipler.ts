@@ -12,7 +12,6 @@
 /**
  * challengeOlustur fonksiyonuna verilen parametreler.
  * BM-A, BM-B'ye yayın_id'li bir video gönderir.
- * son_tarih kayit.ts içinde isGunuEkle(now(), IS_GUNU_SURE) ile hesaplanır.
  */
 export interface ChallengeOlusturParams {
   gonderen_id: string;
@@ -22,24 +21,12 @@ export interface ChallengeOlusturParams {
 
 /**
  * referralPuaniKaydet fonksiyonuna verilen parametreler.
- * Alıcı BM bir challenge'ı izlediğinde, gönderen BM'ye +10 puan yazılır.
+ * Alıcı BM bir challenge'ı izlediğinde, gönderen BM'ye sistem ayarındaki referral puanı yazılır.
  */
 export interface ReferralPuaniParams {
   gonderen_id: string;       // referral puanını kazanacak BM
   yayin_id: string;          // hangi video için referral
   izleme_id?: string | null; // alıcının izleme kaydı
-}
-
-/**
- * challengeKaybiKaydet fonksiyonuna verilen parametreler.
- * pg_cron + manuel çağrım yolları için. Alıcı BM 5 iş günü içinde izlemediğinde,
- * o BM'den video puanı kadar kayıp yazılır.
- */
-export interface ChallengeKayipParams {
-  kullanici_id: string;     // kayıp yazılan BM (alıcı)
-  yayin_id: string;
-  challenge_id: string;
-  kaybedilen_puan: number;
 }
 
 // ─── KOTA / KONTROL SONUÇ TİPLERİ ────────────────────────────────────────────

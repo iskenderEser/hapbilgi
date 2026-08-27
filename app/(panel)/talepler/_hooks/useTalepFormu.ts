@@ -555,7 +555,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
           const { data: urlData } = supabase.storage
             .from("talep-dosyalari")
             .getPublicUrl(dosyaYolu);
-          await fetch("/talepler/api/dosyalar", {
+          const metadataRes = await fetch("/talepler/api/dosyalar", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -565,6 +565,20 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
               boyut: dosya.size,
             }),
           });
+          if (!metadataRes.ok) {
+            const metadataHatasi = await metadataRes.json().catch(() => ({})) as {
+              hata?: string;
+              adim?: string;
+              detay?: string;
+            };
+            await supabase.storage.from("talep-dosyalari").remove([dosyaYolu]);
+            hata(
+              metadataHatasi.hata ?? `${dosya.name} talebe bağlanamadı.`,
+              metadataHatasi.adim ?? "talep dosyası metadata kaydı",
+              metadataHatasi.detay,
+            );
+            basarisizlar.push(dosya.name);
+          }
         }
         return basarisizlar;
       } finally {

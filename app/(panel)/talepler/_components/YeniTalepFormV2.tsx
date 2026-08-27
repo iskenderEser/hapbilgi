@@ -110,7 +110,7 @@ export function YeniTalepFormV2({ formu }: Props) {
             {formu.hazirVideo && formu.hazirSoruSeti &&
               "Hazır video ve soru seti talebi oluşturuyorsunuz. Video ve soru setinizi yükledikten sonra yayın yönetimi aşamasındaki işlemler sonrası yayına açabilirsiniz."}
             {formu.hazirVideo && !formu.hazirSoruSeti &&
-              "Videonuzu yükledikten sonra hazır soru setinizle devam edebilir ya da içerik üreticisinden talep edebilirsiniz."}
+              "Hazır videonuzu yükledikten sonra soru seti İçerik Üreticisinden talep edilecektir."}
             {!formu.hazirVideo && formu.hazirSoruSeti &&
               "Hazır soru seti ile talep oluşturuyorsunuz. Video için senaryo yazılmasını ve videonun oluşturulmasını içerik üreticiniz yapacaktır."}
           </div>
@@ -361,6 +361,7 @@ export function YeniTalepFormV2({ formu }: Props) {
       {/* Gönderim ancak modaldaki Evet ile başlar (F-01/4) — modal ortak. */}
       <TalepOnayModal
         acik={formu.onayModalAcik}
+        sonrakiAdim={ikiliHazir ? "yayin_yonetimi" : "icerik_ureticisi"}
         ozet={{
           hedefKitle: formu.hedefRoller.map((rol) => HEDEF_ROL_TASARIM[rol].tamEtiket).join(", "),
           icerikTuru: TALEP_TURU_KURALLARI[formu.egitimTuru].ad,

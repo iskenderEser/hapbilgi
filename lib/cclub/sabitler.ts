@@ -2,18 +2,13 @@
 // Challenge Club sabitleri ve sistem_ayarlari okuyucuları.
 //
 // İki tür içerik:
-//  1) Kod sabitleri (IS_GUNU_SURE, AYLIK_MAX_GONDERIM) — deploy gerektirir değişimi.
+//  1) Kod sabitleri (AYLIK_MAX_GONDERIM) — deploy gerektirir değişimi.
 //  2) DB sabitleri (cc_gonderme_puani, cc_referral_puani) — sistem_ayarlari'ndan okunur,
 //     admin değiştirebilir, kod deploy gerekmez.
-//
-// İlgili dokümantasyon: Karar Belgesi 3 (puan ekonomisi), Karar 1 (5 iş günü süresi).
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 // ─── KOD SABİTLERİ ───────────────────────────────────────────────────────────
-
-/** Alıcı BM'in challenge'ı izlemesi için verilen iş günü süresi. */
-export const IS_GUNU_SURE = 5;
 
 /** Bir BM'in ay içinde toplamda gönderebileceği maksimum challenge sayısı. */
 export const AYLIK_MAX_GONDERIM = 3;

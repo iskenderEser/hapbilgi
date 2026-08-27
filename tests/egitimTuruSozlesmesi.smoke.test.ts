@@ -7,6 +7,7 @@ import {
   isTalepTuru,
   talepTuruAdi,
 } from "@/lib/uretici/yetenekler";
+import { UTT_VIDEO_KATEGORILERI } from "@/lib/video/uttVideoKategorileri";
 
 test("eğitim türü sözleşmesi altı kanonik türü ve üretici rol yetkilerini doğru tutar", () => {
   assert.deepEqual(TALEP_TURU_SIRA, [
@@ -42,4 +43,13 @@ test("departman anahtarları eğitim türü kabul edilmez", () => {
   assert.equal(isTalepTuru("medikal"), false);
   assert.equal(isTalepTuru("egitim"), false);
   assert.equal(isTalepTuru("ik"), false);
+});
+
+test("UTT navigasyonu hedeflenebilen altı eğitim kategorisinin tamamını taşır", () => {
+  assert.equal(UTT_VIDEO_KATEGORILERI.length, 6);
+  assert.deepEqual(
+    UTT_VIDEO_KATEGORILERI.map((kategori) => kategori.icerikTuru),
+    ["urun", "medikal", "urun_medikal", "egitim", "yonetim", "ik"],
+  );
+  assert.equal(UTT_VIDEO_KATEGORILERI.find((kategori) => kategori.slug === "yonetim")?.etiket, "Yönetim Eğitimleri");
 });

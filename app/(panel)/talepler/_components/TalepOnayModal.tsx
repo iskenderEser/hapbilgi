@@ -14,6 +14,7 @@ export interface TalepOzet {
 
 interface TalepOnayModalProps {
   acik: boolean;
+  sonrakiAdim: "icerik_ureticisi" | "yayin_yonetimi";
   ozet: TalepOzet;
   onEvet: (birDahaHatirlatma: boolean) => void;
   onHayir: () => void;
@@ -28,7 +29,7 @@ function OzetKarti({ baslik, children }: { baslik: string; children: React.React
   );
 }
 
-export function TalepOnayModal({ acik, ozet, onEvet, onHayir }: TalepOnayModalProps) {
+export function TalepOnayModal({ acik, sonrakiAdim, ozet, onEvet, onHayir }: TalepOnayModalProps) {
   const [birDahaHatirlatma, setBirDahaHatirlatma] = useState(false);
   if (!acik) return null;
 
@@ -70,7 +71,11 @@ export function TalepOnayModal({ acik, ozet, onEvet, onHayir }: TalepOnayModalPr
 
         <div className="flex justify-end gap-2.5">
           <button type="button" onClick={iptalEt} className="cursor-pointer rounded-lg border border-gray-200 bg-white px-5 py-2 text-xs font-bold text-gray-700">İptal</button>
-          <button type="button" onClick={onayla} className="cursor-pointer rounded-lg border-none bg-[#56aeff] px-5 py-2 text-xs font-bold text-white">Onayla ve İçerik Üreticisine Gönder</button>
+          <button type="button" onClick={onayla} className="cursor-pointer rounded-lg border-none bg-[#56aeff] px-5 py-2 text-xs font-bold text-white">
+            {sonrakiAdim === "yayin_yonetimi"
+              ? "Onayla ve Yayın Yönetimine Gönder"
+              : "Onayla ve İçerik Üreticisine Gönder"}
+          </button>
         </div>
       </div>
     </div>

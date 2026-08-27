@@ -1,5 +1,7 @@
--- Süresi geçmiş ve tamamlanmamış Challenge kayıtlarının kaybını bir kez yazar.
--- Supabase SQL Editor'da İskender tarafından bir kez çalıştırılır.
+-- TARİHSEL / DEVRE DIŞI PAKET — UYGULANMAMALIDIR.
+-- Güncel C-Club modelinde challenge süresi ve süre aşımı kaybı yoktur.
+-- `scripts/sql/cc_yeni_puanlama_modeli.sql` bu fonksiyonu ve cron görevini kapatır.
+-- Dosya yalnız geçmiş şema değişikliğinin kaydı olarak tutulur.
 
 BEGIN;
 

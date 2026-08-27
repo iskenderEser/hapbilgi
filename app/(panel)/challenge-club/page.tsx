@@ -56,7 +56,6 @@ interface Video extends KartMetrik {
 interface Challenge extends KartMetrik {
   challenge_id: string;
   yayin_id: string;
-  son_tarih?: string;
   created_at: string;
   izlendi_mi: boolean;
   durum: "bekliyor" | "izlendi";
@@ -278,13 +277,6 @@ export default function ChallengeClubPage() {
   };
   const handleBegeni = (e: MouseEvent, yayin_id: string) => etkilesim("begeni", e, yayin_id);
   const handleFavori = (e: MouseEvent, yayin_id: string) => etkilesim("favori", e, yayin_id);
-
-  const kalanGun = (son_tarih: string) => {
-    const fark = new Date(son_tarih).getTime() - new Date().getTime();
-    const gun = Math.ceil(fark / (1000 * 60 * 60 * 24));
-    if (gun <= 0) return "Süresi doldu";
-    return `${gun} gün kaldı`;
-  };
 
   // Loading
   if (loading || !user) {
@@ -710,4 +702,3 @@ function BekleyenListesi({
     </CcRaf>
   );
 }
-

@@ -122,10 +122,10 @@ export async function POST(request: NextRequest) {
     let kullanilacakChallengeId: string | null = null;
 
     if (challenge_id) {
-      // 5a. Challenge doğrulama — kayıt var mı, BM'e mi gelmiş, izlenmemiş mi, süresi geçmemiş mi
+      // 5a. Challenge doğrulama — kayıt var mı, BM'e mi gelmiş ve tamamlanmış mı?
       const { data: challenge, error: challengeError } = await adminSupabase
         .from("challenge_kayitlari")
-        .select("challenge_id, alan_id, yayin_id, izlendi_mi, son_tarih")
+        .select("challenge_id, alan_id, yayin_id, izlendi_mi")
         .eq("challenge_id", challenge_id)
         .single();
 

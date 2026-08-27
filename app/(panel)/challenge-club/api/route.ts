@@ -58,7 +58,6 @@ interface GelenChallengeRaw {
 interface ChallengeListKaydi {
   challenge_id: string;
   yayin_id: string;
-  son_tarih?: string | null;
   created_at: string;
   izlendi_mi: boolean;
   gonderen?: { ad?: string; soyad?: string } | null;
@@ -180,7 +179,7 @@ export async function GET(request: NextRequest) {
       const { data: challengeler, error: cError } = await adminSupabase
         .from("challenge_kayitlari")
         .select(`
-          challenge_id, yayin_id, son_tarih, created_at, izlendi_mi,
+          challenge_id, yayin_id, created_at, izlendi_mi,
           gonderen:kullanicilar!gonderen_id(ad, soyad)
         `)
         .eq("alan_id", kullanici.kullanici_id)
@@ -228,7 +227,7 @@ export async function GET(request: NextRequest) {
       const { data: challengeler, error: cError } = await adminSupabase
         .from("challenge_kayitlari")
         .select(`
-          challenge_id, yayin_id, son_tarih, created_at, izlendi_mi,
+          challenge_id, yayin_id, created_at, izlendi_mi,
           alan:kullanicilar!alan_id(ad, soyad)
         `)
         .eq("gonderen_id", kullanici.kullanici_id)

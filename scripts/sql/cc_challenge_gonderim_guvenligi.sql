@@ -1,5 +1,7 @@
--- BM -> BM Challenge gönderimini tek transaction içinde doğrular ve kaydeder.
--- Supabase SQL Editor'da İskender tarafından bir kez çalıştırılır.
+-- TARİHSEL PAKET — TEK BAŞINA UYGULANMAMALIDIR.
+-- Güncel üç parametreli ve süresiz RPC sözleşmesi
+-- `scripts/sql/cc_yeni_puanlama_modeli.sql` içinde tanımlanır.
+-- Dosya yalnız atomik gönderim güvenliğinin ilk geçiş kaydı olarak tutulur.
 
 BEGIN;
 

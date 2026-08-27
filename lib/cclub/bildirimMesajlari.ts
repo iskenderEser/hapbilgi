@@ -1,5 +1,5 @@
 // lib/cc/bildirimMesajlari.ts
-// Challenge Club bildirim mesajları (3 olay).
+// Challenge Club bildirim mesajları (2 olay).
 //
 // Mesajlar bildirimler tablosuna 'mesaj' alanı olarak yazılır.
 // Tek noktada tutulması ileride dil/ton değişimi için kolaylık sağlar.
@@ -26,15 +26,4 @@ export function challengeIzlendiMesaji(
   referralPuani: number
 ): string {
   return `${alanAdi} sana gönderdiğin challenge'ı izledi. +${referralPuani} referral puanı kazandın.`;
-}
-
-/**
- * 5 iş günü dolmasına rağmen izlenmemiş challenge için kayıp bildirimi.
- * Alıcı (BM-B) görür.
- */
-export function challengeSuresiDolduMesaji(
-  videoAdi: string,
-  kayipPuan: number
-): string {
-  return `${videoAdi} challenge'ını süresi içinde izlemedin. ${kayipPuan} puan kaybettin.`;
 }

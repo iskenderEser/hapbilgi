@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { PM_AILESI_ROLLER, IU_ROLU } from "@/lib/utils/roller";
+import { IU_ROLU, URETICI_ROLLER, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,11 +14,42 @@ export async function GET(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (![...PM_AILESI_ROLLER, IU_ROLU].includes(rol)) return rolHatasi("Bu dosyaya erişim yetkiniz yok.");
+    if (!URETIM_HATTI_GORENLER.includes(rol)) return rolHatasi("Bu dosyaya erişim yetkiniz yok.");
 
     const { searchParams } = new URL(request.url);
     const dosyaYolu = searchParams.get("yol");
     if (!dosyaYolu) return validasyonHatasi("Dosya yolu zorunludur.", ["yol"]);
+
+    const talepId = dosyaYolu.split("/")[0];
+    if (!talepId) return validasyonHatasi("Dosya yolu geçersizdir.", ["yol"]);
+
+    const { data: talep, error: talepError } = await adminSupabase
+      .from("talepler")
+      .select("talep_id, uretici_id, dosya_urls")
+      .eq("talep_id", talepId)
+      .maybeSingle();
+    if (talepError) return hataYaniti("Talep sorgulanamadı.", "talepler tablosu SELECT — dosya erişimi", talepError);
+    if (!talep) return NextResponse.json({ hata: "Talep bulunamadı." }, { status: 404 });
+
+    const dosyaTalebeBagli = ((talep.dosya_urls as Array<{ url?: string }> | null) ?? []).some(
+      (dosya) => dosya.url?.split("/talep-dosyalari/")[1] === dosyaYolu,
+    );
+    if (!dosyaTalebeBagli) return NextResponse.json({ hata: "Dosya talebe bağlı değil." }, { status: 404 });
+
+    if (URETICI_ROLLER.includes(rol) && talep.uretici_id !== user.id) {
+      return rolHatasi("Bu talebin dosyasını görüntüleme yetkiniz yok.");
+    }
+    if (rol === IU_ROLU) {
+      const { data: gorev, error: gorevError } = await adminSupabase
+        .from("uretim_gorevleri")
+        .select("gorev_id")
+        .eq("talep_id", talepId)
+        .eq("atanan_iu_id", user.id)
+        .limit(1)
+        .maybeSingle();
+      if (gorevError) return hataYaniti("Görev yetkisi doğrulanamadı.", "uretim_gorevleri SELECT — dosya erişimi", gorevError);
+      if (!gorev) return rolHatasi("Bu talebin dosyasını görüntüleme yetkiniz yok.");
+    }
 
     const { data, error } = await adminSupabase.storage
       .from("talep-dosyalari")
@@ -42,7 +73,7 @@ export async function POST(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (!PM_AILESI_ROLLER.includes(rol)) return rolHatasi("Sadece PM dosya yükleyebilir.");
+    if (!URETICI_ROLLER.includes(rol)) return rolHatasi("Yalnız talep açabilen üretici roller dosya yükleyebilir.");
 
     const body = await request.json();
     const { talep_id, dosya_adi, url, boyut } = body;
@@ -85,7 +116,7 @@ export async function DELETE(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const rol = await rolCozucu(adminSupabase, user.id);
-    if (!PM_AILESI_ROLLER.includes(rol)) return rolHatasi("Sadece PM dosya silebilir.");
+    if (!URETICI_ROLLER.includes(rol)) return rolHatasi("Yalnız talep açabilen üretici roller dosya silebilir.");
 
     const body = await request.json();
     const { talep_id, url } = body;

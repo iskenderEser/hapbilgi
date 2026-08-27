@@ -36,7 +36,7 @@ HapBilgi, ilaç ve sağlık sektörüne özgü, video tabanlı ve kural-korumal�
   * `YONETICI_ROLLER`: `gm`, `gm_yrd`, `drk`, `paz_md`, `sat_md`, `saha_md`, `blm_md`, `grp_pm`, `sm` (Firma seviyesinde konsolide rapor izler).
   * `YONLENDIRICI_ROLLER`: `tm` (Takım görünümü), `bm` (Bölge öneri ve koçluk yetkisi).
   * `TUKETICI_ROLLER`: `utt`, `kd_utt` (Bölge seviyesi tüketim, soru, lig, mağaza).
-  * `IU_ROLU`: `iu` (İçerik Uzmanı — talep üzerine senaryo, video ve soru seti üretir).
+  * `IU_ROLU`: `iu` (İçerik Üreticisi — talep üzerine senaryo, video ve soru seti üretir).
   * `ECLUB_TUKETICI_ROLLERI`: `eczaci`, `eczane_teknisyeni` (Dış müşteri tüketimi).
   * `MUSTERI_ROLU`: `musteri` (Eczanem B2C tüketicisi).
 * **HBStore Satın Alma Yetki Ayrımı:**
@@ -67,7 +67,7 @@ HapBilgi, ilaç ve sağlık sektörüne özgü, video tabanlı ve kural-korumal�
 
 ### 1. Aşama: Rol ve Görev Tanımları
 * **UTT / KD_UTT (Uzman Tıbbi Tanıtım Temsilcisi):**
-  * 5 kategoride eğitim tüketimi (`/videolarim/[urun|medikal|urun-medikal|satis|ik]`).
+  * 6 kategoride eğitim tüketimi (`/videolarim/[urun|medikal|urun-medikal|satis|yonetim|ik]`).
   * Hafta içi 07:00–20:29 puanlı izleme, temiz tamamlamada soru çözümü.
   * İleri sarma tespiti ve oransal puan kaybı (`ileri_sarma_kayitlari`).
   * Ayda 3. tam temiz tekrarda extra puan kazanımı (`tamTekrarSayisi`).
@@ -93,10 +93,10 @@ HapBilgi, ilaç ve sağlık sektörüne özgü, video tabanlı ve kural-korumal�
 
 ### 1. Aşama: Rol ve Görev Tanımları
 * **BM $\rightarrow$ BM Meydan Okuma (Challenge):**
-  * Aylık 3 gönderme kotası (`MAKS_GONDERIM_AYLIK = 3`).
-  * Challenge gönderen BM anında +10 puan kazanır (`cc_challenge_gonder` RPC).
-  * Karşı taraf izleyip soruları tamamlarsa: Alıcı video/soru puanı alır, Gönderene +40 referral puanı gider.
-  * 15 gün içinde izlenmezse challenge süresi dolar (`cc_challenge_kaybi_tara` cron).
+  * Aylık 3 gönderme kotası (`AYLIK_MAX_GONDERIM = 3`).
+  * Challenge gönderen BM, `sistem_ayarlari.cc_gonderme_puani` değerini kazanır; ayar yoksa 10 puan kullanılır (`cc_challenge_gonder` RPC).
+  * Karşı taraf izleyip soruları tamamlarsa alıcı video/soru puanı alır; gönderen `sistem_ayarlari.cc_referral_puani` değerini kazanır, ayar yoksa 10 puan kullanılır.
+  * Challenge için süre sonu veya süre aşımı kaybı yoktur; kayıt tamamlanana kadar bekler. Eski `son_tarih` alanı yalnız geriye dönük uyumluluk içindir ve `challenge_kaybi_tara` cron'u kapalıdır.
   * C-Club Ligi (`/cc-ligi`) ve C-Club puanlarıyla HBStore alışverişi.
 
 ### 2. Aşama: Kod Taraması ve Görev İlişki Matrisi
@@ -123,7 +123,7 @@ HapBilgi, ilaç ve sağlık sektörüne özgü, video tabanlı ve kural-korumal�
 * **4 Katmanlı Eczane Mimarisi:**
   * `eclub_eczane_master` (Resmi GLN Havuzu) $\rightarrow$ `eclub_eczaneler` (Firma Eczanesi) $\rightarrow$ `eclub_eczane_firma` (Firma-UTT Bağı) $\rightarrow$ `eclub_kisi_eczane` (Kişi İlişkisi).
 * **Eczacı & Teknisyen Tüketimi:**
-  * Firma bazlı katalogdan (`/eclub/panel/firma/[firma_id]`) önerilen/açık videoları izleme, soru çözme.
+  * Puanlı tüketim, UTT'nin kişiye gönderdiği `eclub_oneri_kayitlari` kaydına bağlıdır. Kişi `/eclub/panel` içinde önerilerini izler ve soruları çözer; süresi geçmiş öneriyi yeniden izleyebilir ancak puan ve soru hakkı kazanmaz.
   * İleri sarma oransal puan kaybı üretir (firma bakiyesinden düşer); yanlış cevap cezasızdır.
   * **E-Club Store & Çok Firmalı Puan Birleştirme:** Farklı firmalardan kazanılan puanlar tek bir sepette birleştirilebilir (`get_eclub_store_firma_bakiye`); puanlar en yüksek bakiyeli firmadan kademeli olarak düşülür (`eclub_store_siparis_firma_puan`).
 
@@ -147,7 +147,7 @@ HapBilgi, ilaç ve sağlık sektörüne özgü, video tabanlı ve kural-korumal�
   1. **UTT $\rightarrow$ Eczane:** UTT, asgari 10 aktif üye eşiğini geçen bağlı eczanelerine OTC videosu dağıtır (`eczanem_utt_eczaneye_gonder` RPC).
   2. **Eczane $\rightarrow$ Müşteri:** Eczacı, gelen videoyu kendi aktif üyelerine gönderir (`eczanem_musterilere_video_gonder` RPC); müşteriye Web Push/E-posta iletilir ve portal rafı açılır.
 * **Kayıpsız Model & Dörtlü Kilit:**
-  * İleri sarma ve yanlış cevap kaybı yoktur.
+  * İleri sarma kapalıdır; oynatıcı kullanıcıyı son doğrulanmış konuma döndürür. Bu nedenle ileri sarma kaybı oluşmaz. Yanlış cevap kaybı da yoktur.
   * Puan `musteri_id + eczane_id + firma_id + urun_id` dörtlü kilidiyle ve 180 gün FIFO kuralıyla saklanır (`eczanem_puan_kayitlari`).
 * **Kasa Mutabakatı:** Kasada barkod okutulduğunda indirim hesaplanır (`/api/siparis/hesap`), sipariş açılır; onaylandığında puan düşülür. İptal edilirse puan serbest kalır.
 
@@ -296,7 +296,7 @@ Tüm admin API rotaları taranmış; açık giriş ucu (`/admin/api/giris`) dı�
 | **Yayına Alındı** | `basari` | `"[urun_adi] yayına alındı."` | Saha / Eczane |
 | **Doğru Cevap Puanı Hatası** | `hata` | `"Doğru cevap puanları kaydedilemedi."` | PM |
 
-#### 2.2. İçerik Uzmanı (`iu`)
+#### 2.2. İçerik Üreticisi (`iu`)
 * **Yetki Sınırları:** Firma bağımsız merkezi içerik fabrikası uzmanı (`IU_ROLU`). Taleplere cevaben senaryo yazar, Bunny TUS ile video yükler, soru seti hazırlar.
 
 | Aşama / Eylem | Tür | Toast Mesajı | Sıra Kimde |
@@ -555,7 +555,7 @@ Hızlı yol sonrasında aynı role özel hazır sorularla canlı süre ve kaynak
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `page.tsx` | UI / React | İçerik Uzmanından gelen senaryoların canlı görsel diff editörüyle incelendiği ve onaylandığı senaryo karar sayfası. |
+| `page.tsx` | UI / React | İçerik Üreticisinden gelen senaryoların canlı görsel diff editörüyle incelendiği ve onaylandığı senaryo karar sayfası. |
 
 ### 📁 app/(panel)/videolar/
 
@@ -609,7 +609,7 @@ Hızlı yol sonrasında aynı role özel hazır sorularla canlı süre ve kaynak
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `page.tsx` | UI / React | İçerik Uzmanının seçili görev için senaryo yazdığı, Bunny TUS ile video yüklediği ve soru seti teslim ettiği üretim atölyesi. |
+| `page.tsx` | UI / React | İçerik Üreticisinin seçili görev için senaryo yazdığı, Bunny TUS ile video yüklediği ve soru seti teslim ettiği üretim atölyesi. |
 
 ### 📁 app/(panel)/yayindaki-videolar/
 

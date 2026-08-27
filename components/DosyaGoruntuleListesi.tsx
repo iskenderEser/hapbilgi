@@ -4,7 +4,7 @@
 // paylaşılan bileşen (G-3 — docs/talep_senaryo_is_sureci_gelistirme_is_plani.md).
 // Yükleme/silme yetkisi burada yok; ekrana özel aksiyonlar (örn. PM'in silme
 // ikonu) `sagAksiyon` render prop'uyla eklenir. Görüntüleme ucu (imzalı URL)
-// app/talepler/api/dosyalar zaten tüm URETIM_HATTI_GORENLER için açık.
+// app/talepler/api/dosyalar üretici sahipliğini veya atanmış İÜ görevini doğrular.
 
 "use client";
 

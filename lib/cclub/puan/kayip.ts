@@ -8,13 +8,6 @@
 //     Bu dosya sadece kaydeder.
 //
 // Yan etki yok: bildirim göndermez, başka tablo güncellemez, puan hesabı yapmaz.
-//
-// NOT: 5 iş günü içinde alıcının izlememesi sonucu oluşan challenge kaybı BURADA DEĞİL,
-// lib/cc/kayit.ts içindeki challengeKaybiKaydet fonksiyonunda yazılır.
-// Sebebi: o kayıp bir izleme oturumuna bağlı değil (oturum hiç başlamamış olduğu için),
-// challenge yaşam döngüsüne bağlı bir olay. Tetikleyicisi kullanıcı eylemi değil, pg_cron
-// job ile zaman geçişiyle taranır. Bu nedenle challenge yaşam döngüsünü yöneten
-// lib/cc/kayit.ts dosyasında tutulur.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { KayitSonuc } from "@/lib/cclub/tipler";
