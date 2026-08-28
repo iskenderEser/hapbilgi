@@ -44,6 +44,7 @@ test("Eczanem bildirimi kesin gönderimi açar", () => {
   assert.match(push, /eczanem\?gonderim_id=/);
   assert.match(eczanem, /searchParams\.get\("gonderim_id"\)/);
   assert.match(eczanem, /video\.gonderim_id === gonderimId/);
+  assert.match(eczanem, /<Suspense[\s\S]*<EczanemPanelIcerik \/>[\s\S]*<\/Suspense>/);
 });
 
 test("ortak beğeni ve favori yetkisi dört öğrenme aracını kabul eder", () => {

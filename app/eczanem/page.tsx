@@ -2,7 +2,7 @@
 // hesap güvenliği. Puan/indirim işlemleri navbar'daki ayrı Puanlarım sayfasıdır.
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ShieldCheck, Sparkles, Trash2, UserRound } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -27,7 +27,7 @@ const tariheGoreAzalan = (alan: "gelis_tarihi" | "izleme_baslangic" | "izleme_bi
   new Date(b[alan] ?? 0).getTime() - new Date(a[alan] ?? 0).getTime()
 );
 
-export default function EczanemPanelPage() {
+function EczanemPanelIcerik() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { kullanici, yukleniyor, cikisYap } = useAuth();
@@ -170,5 +170,13 @@ export default function EczanemPanelPage() {
       </main>
       <AlertDialog open={silmeModalAcik} onOpenChange={(acik) => { if (!acik) silmeModaliniKapat(); }}><AlertDialogContent><form onSubmit={hesabimiSil}><AlertDialogHeader><AlertDialogTitle className="text-[#8f3030]">Hesabınızı silmek istediğinize emin misiniz?</AlertDialogTitle><AlertDialogDescription className="leading-6">Bu işlem geri alınamaz. Hesabınız, puanlarınız, siparişleriniz ve HapBilgi’deki tüm kayıtlarınız kalıcı olarak silinir.</AlertDialogDescription></AlertDialogHeader><label className="mt-5 block text-xs font-extrabold text-[#536981]" htmlFor="hesap-silme-sifre">Mevcut şifreniz</label><Input id="hesap-silme-sifre" type="password" value={silmeSifresi} onChange={(event) => setSilmeSifresi(event.target.value)} autoComplete="current-password" required disabled={siliniyor} className="mt-2 h-10 focus-visible:border-[#b84444] focus-visible:ring-[#b84444]/20" placeholder="Şifrenizi girin" />{silmeHatasi && <div className="mt-3 rounded-xl border border-[#efcaca] bg-[#fff3f3] px-3 py-2 text-xs font-bold text-[#a43f3f]">{silmeHatasi}</div>}<AlertDialogFooter className="mt-6"><AlertDialogCancel type="button" onClick={silmeModaliniKapat} disabled={siliniyor}>Vazgeç</AlertDialogCancel><Button type="submit" disabled={siliniyor || !silmeSifresi} className="bg-[#b84444] font-extrabold hover:bg-[#9f3636]">{siliniyor ? "Siliniyor…" : "Evet, hesabımı sil"}</Button></AlertDialogFooter></form></AlertDialogContent></AlertDialog>
     </div>
+  );
+}
+
+export default function EczanemPanelPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#f5f8fb]"><span className="size-7 animate-spin rounded-full border-2 border-[#d8e5f0] border-t-[#237ac8]" aria-label="Sayfa yükleniyor" /></div>}>
+      <EczanemPanelIcerik />
+    </Suspense>
   );
 }
