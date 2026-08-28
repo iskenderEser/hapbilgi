@@ -15,12 +15,12 @@ Bu çalışma, HapBilgi'deki her rolün görev tanımı içinde bulunan bütün 
 7. Auth, Bunny veya benzeri işlem dışı sistemlere dokunan testlerde telafi edici silme uygulanır.
 8. Rollback sonrasında test öncesi ve test sonrası kayıt sayıları, ilişkiler, dosyalar, puanlar, bakiyeler ve yetkiler karşılaştırılır.
 9. Bir test ancak beklenen sonuç, güvenlik sonucu ve sıfır kalıntı kontrolü kaydedildikten sonra yapılmış sayılır.
-10. Checkbox testin **uygulandığını** gösterir; testin başarılı, hatalı veya düzeltme sonrası başarılı olduğu ayrıca Sonuç Kayıtları bölümünde belirtilir.
+10. Checkbox testin **uygulandığını** gösterir; testin başarılı, hatalı veya düzeltme sonrası başarılı olduğu aynı test maddesinin hemen altında belirtilir.
 
 ## Çıktıların Yönetimi
 
 - Her tamamlanan testin checkbox'ı `[x]` yapılır.
-- Sonuç Kayıtları bölümüne test kodu, tarih, kullanılan rol, beklenen sonuç, gerçekleşen sonuç ve rollback sonucu yazılır.
+- Test kodu, tarih, kullanılan rol, beklenen sonuç, gerçekleşen sonuç ve rollback sonucu ilgili test maddesinin hemen altına yazılır.
 - Başarılı testler `Başarılı`, açık veren testler `Hata`, düzeltilip yeniden doğrulanan testler `Giderildi` durumuyla kaydedilir.
 - Hata çıkan her test için hatanın ne olduğu ve etkisi **2-3 cümleyle** yazılır.
 - Aynı kayıtta uygulanacak çözüm ve doğrulama yöntemi **2-3 cümleyle** yazılır.
@@ -33,6 +33,19 @@ Bu çalışma, HapBilgi'deki her rolün görev tanımı içinde bulunan bütün 
 ### Admin
 
 - [x] **ADM-01 — Firma ve hiyerarşi:** Firma, takım, bölge ve kullanıcı oluşturma sırasında işlem yarıda kesilip tekrar gönderilecek; eksik hiyerarşi, mükerrer kayıt ve yetim Auth hesabı oluşmayacak.
+
+  - **Tarih:** 28 Ağustos 2026
+  - **Rol ve hesap:** Admin / service-role ile izole `ZZ_ADM01` test verisi
+  - **Durum:** Hata
+  - **Beklenen sonuç:** Eşzamanlı oluşturma isteklerinden yalnız biri kabul edilmeli, hiyerarşide mükerrer ad oluşmamalı ve rollback sonrasında test kalıntısı bulunmamalıydı.
+  - **Gerçekleşen sonuç:** İki işlem de ön kontrolde kayıt bulamadı; aynı firmaya aynı adlı iki takım ve aynı takıma aynı adlı iki bölge eklemeyi başardı.
+  - **Rollback sonucu:** Başarılı
+  - **Kalan kayıt veya dosya:** Yok — kalan test kaydı `0`
+
+  **Hata ve etkisi:** Takım adında firma kapsamında, bölge adında takım kapsamında veritabanı tekillik kapısı bulunmuyor; API'deki kontrol-sonra-ekle sırası eşzamanlı iki istekte yarış koşuluna açık. Bunun sonucunda aynı hiyerarşi altında mükerrer takım ve bölge oluşabiliyor; rapor, kullanıcı ataması ve kapsam çözümü belirsizleşebiliyor.
+
+  **Çözüm ve doğrulama:** Firma adı, firma içindeki takım adı ve takım içindeki bölge adı için normalize edilmiş veritabanı benzersiz indeksleri eklenmeli; route'lar `23505` yarış sonucunu kontrollü ve anlaşılır yanıtlamalı. `firma_no_ata()` içindeki `MAX+1` üretimi sequence/identity yapısına taşınmalı; ardından aynı iki oturumlu test tekrar çalıştırılarak tek kaydın kabul edildiği ve rollback sonrası sıfır kalıntı kaldığı doğrulanmalı.
+
 - [ ] **ADM-02 — Toplu kullanıcı yükleme:** Aynı e-posta, farklı rol, bozuk takım ve geçerli satırlar tek dosyada gönderilecek; yalnız geçerli bütün paket kabul edilecek veya tamamı geri alınacak.
 - [ ] **ADM-03 — Rol değiştirme:** Kullanıcının aktif görevi, puanı, siparişi ve rapor kaydı varken rolü eşzamanlı değiştirilecek; eski ve yeni yetkiler karışmayacak.
 - [ ] **ADM-04 — Silme işlemleri:** Bağlı kullanıcı, yayın, sipariş ve rapor bulunan hiyerarşi silinmeye çalışılacak; veri kaybı yaratmadan engellenecek.
@@ -185,39 +198,3 @@ Bu çalışma, HapBilgi'deki her rolün görev tanımı içinde bulunan bütün 
 - [ ] **MUS-06 — E-Club geçişi:** Aynı telefonla eşzamanlı E-Club geçiş talebi ve yeni müşteri kaydı yapılacak; çift kimlik oluşmayacak.
 - [ ] **MUS-07 — Hesap silme:** İzleme ve puan işlemi sürerken hesap silinecek; kişisel veriler atomik temizlenecek ve yetim kayıt kalmayacak.
 - [ ] **MUS-08 — Hapbi:** Doğrudan API ve arayüz yollarından çağrılacak; Müşteri rolünde kesin olarak kapalı kalacak.
-
-## Sonuç Kayıtları
-
-### ADM-01 — Firma ve hiyerarşi
-
-- **Tarih:** 28 Ağustos 2026
-- **Rol ve hesap:** Admin / service-role ile izole `ZZ_ADM01` test verisi
-- **Durum:** Hata
-- **Beklenen sonuç:** Eşzamanlı oluşturma isteklerinden yalnız biri kabul edilmeli, hiyerarşide mükerrer ad oluşmamalı ve rollback sonrasında test kalıntısı bulunmamalıydı.
-- **Gerçekleşen sonuç:** İki işlem de ön kontrolde kayıt bulamadı; aynı firmaya aynı adlı iki takım ve aynı takıma aynı adlı iki bölge eklemeyi başardı.
-- **Rollback sonucu:** Başarılı
-- **Kalan kayıt veya dosya:** Yok — kalan test kaydı `0`
-
-**Hata ve etkisi — 2-3 cümle:**  
-Takım adında firma kapsamında, bölge adında takım kapsamında veritabanı tekillik kapısı bulunmuyor; API'deki kontrol-sonra-ekle sırası eşzamanlı iki istekte yarış koşuluna açık. Bunun sonucunda aynı hiyerarşi altında mükerrer takım ve bölge oluşabiliyor; rapor, kullanıcı ataması ve kapsam çözümü belirsizleşebiliyor.
-
-**Çözüm ve doğrulama — 2-3 cümle:**  
-Firma adı, firma içindeki takım adı ve takım içindeki bölge adı için normalize edilmiş veritabanı benzersiz indeksleri eklenmeli; route'lar `23505` yarış sonucunu kontrollü ve anlaşılır yanıtlamalı. `firma_no_ata()` içindeki `MAX+1` üretimi sequence/identity yapısına taşınmalı; ardından aynı iki oturumlu test tekrar çalıştırılarak tek kaydın kabul edildiği ve rollback sonrası sıfır kalıntı kaldığı doğrulanmalı.
-
-Her test tamamlandığında aşağıdaki şablon çoğaltılır.
-
-### TEST-KODU — Test Adı
-
-- **Tarih:**
-- **Rol ve hesap:**
-- **Durum:** Başarılı / Hata / Giderildi
-- **Beklenen sonuç:**
-- **Gerçekleşen sonuç:**
-- **Rollback sonucu:** Başarılı / Başarısız
-- **Kalan kayıt veya dosya:** Yok / Ayrıntı
-
-**Hata ve etkisi — 2-3 cümle:**  
-Testte ortaya çıkan hata, etkilenen fonksiyon ve oluşturduğu risk yazılır.
-
-**Çözüm ve doğrulama — 2-3 cümle:**  
-Uygulanacak kod veya veri düzeltmesi ile aynı zor senaryonun nasıl yeniden doğrulanacağı yazılır.
