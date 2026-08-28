@@ -185,9 +185,9 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
   };
   const aktifDurumVideolari = aktifDurumFiltresi ? durumListeleri[aktifDurumFiltresi] : [];
   const durumBasliklari: Record<VideoDurumu, string> = {
-    yeni: "Yeni Videolar",
-    devam: "Yarım Kalan Videolar",
-    tamamlanan: "Tamamlanan Videolar",
+    yeni: "Yeni Öğrenme İçerikleri",
+    devam: "Yarım Kalan Öğrenme İçerikleri",
+    tamamlanan: "Tamamlanan Öğrenme İçerikleri",
   };
 
   const tumVideolar = [
@@ -224,10 +224,10 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
             <h1 className="m-0 text-xl font-extrabold text-gray-900 md:text-2xl">{kategoriBaslik}</h1>
             <SayfaRehberi anahtar="videolarim-kategori" className="ml-1.5 -translate-y-0.5" />
           </div>
-          <p className="mt-1 text-xs font-semibold text-gray-500">{kategoriVideolari.length} video</p>
+          <p className="mt-1 text-xs font-semibold text-gray-500">{kategoriVideolari.length} içerik</p>
         </header>
         {kategoriVideolari.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-400">Bu kategoride yayınlanmış video bulunmuyor.</div>
+          <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-400">Bu kategoride yayınlanmış öğrenme içeriği bulunmuyor.</div>
         ) : (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {kategoriVideolari.map((video) => <VideoKart key={video.yayin_id} video={video} onVideoClick={handleVideoClick} onBegeni={handleBegeni} onFavori={handleFavori} />)}
@@ -255,7 +255,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
       {/* Stat kartlar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
         {[
-          { label: "Yeni Videolar", value: istat.yeni, sub: "Henüz izlenmedi", renk: "#bc2d0d", filtre: "yeni" as VideoDurumu },
+          { label: "Yeni İçerikler", value: istat.yeni, sub: "Henüz tamamlanmadı", renk: "#bc2d0d", filtre: "yeni" as VideoDurumu },
           { label: "Devam Eden", value: istat.devam, sub: "Yarıda bırakılan", renk: "#f59e0b", filtre: "devam" as VideoDurumu },
           { label: "Tamamlanan", value: istat.tamamlanan, sub: "İzlendi ve tamamlandı", renk: "#16a34a", filtre: "tamamlanan" as VideoDurumu },
           { label: "Bu Haftaki Puan", value: istat.hafta_puani, sub: `Toplam: ${istat.toplam_puan.toLocaleString("tr-TR")} p`, renk: "#56aeff", filtre: null },
@@ -302,8 +302,8 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
               <h2 className="m-0 text-base font-extrabold text-gray-900 md:text-lg">{durumBasliklari[aktifDurumFiltresi]}</h2>
               <p className="mt-1 text-xs text-gray-500">
                 {aktifDurumFiltresi === "devam"
-                  ? "Yarım kalan videolar yeniden açıldığında baştan başlar."
-                  : `${aktifDurumVideolari.length} video`}
+                  ? "Yarım kalan öğrenme içerikleri yeniden açıldığında baştan başlar."
+                  : `${aktifDurumVideolari.length} içerik`}
               </p>
             </div>
             <button
@@ -316,7 +316,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
           </div>
           {aktifDurumVideolari.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-400">
-              Bu durumda video bulunmuyor.
+              Bu durumda öğrenme içeriği bulunmuyor.
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -345,7 +345,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
           )}
           {(uttVeri?.yeni_videolar ?? []).length > 0 && (
             <KayanRaf
-              baslik={<h2 className="text-base font-bold text-gray-900 md:text-lg">Yeni Videolar</h2>}
+              baslik={<h2 className="text-base font-bold text-gray-900 md:text-lg">Yeni Öğrenme İçerikleri</h2>}
               videolar={uttVeri?.yeni_videolar ?? []}
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}

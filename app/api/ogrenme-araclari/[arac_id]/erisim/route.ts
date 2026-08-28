@@ -15,6 +15,7 @@ import { bunnyCdnImzaliUrl } from "@/lib/ogrenmeAraci/bunnyStorage";
 import { ogrenmeAraciAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
 import { ogrenmeAraciTuruMu } from "@/lib/ogrenmeAraci/sozlesme";
 import { uretimAraciYetkisiniDogrula } from "@/lib/ogrenmeAraci/yetki";
+import { eclubKisiErisimi } from "@/lib/eclub/kisiErisim";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ arac_id: string }> }) {
   try {
@@ -61,10 +62,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       const bagId = request.nextUrl.searchParams.get("bag_id");
 
       if (TUKETICI_ROLLER.some((tuketiciRolu) => tuketiciRolu === rol) || rol === "bm") {
-        const { data: kullanici } = await db.from("kullanicilar").select("firma_id, takim_id").eq("kullanici_id", user.id).maybeSingle();
+        const { data: kullanici } = await db.from("kullanicilar").select("firma_id, takim_id, aktif_mi").eq("kullanici_id", user.id).maybeSingle();
+        const { data: firma } = kullanici?.firma_id
+          ? await db.from("firmalar").select("aktif, cc_aktif").eq("firma_id", kullanici.firma_id).maybeSingle()
+          : { data: null };
         const hedefRol: "utt" | "bm" = rol === "bm" ? "bm" : "utt";
         erisimVar = Boolean(
-          kullanici?.firma_id
+          kullanici?.aktif_mi
+          && kullanici.firma_id
+          && firma?.aktif
+          && (rol !== "bm" || firma.cc_aktif)
           && detay
           && detay.firma_id === kullanici.firma_id
           && hedefRolleriOku(yayin).includes(hedefRol)
@@ -85,20 +92,24 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           );
         }
       } else if (ECLUB_TUKETICI_ROLLERI.includes(rol)) {
-        const { data: kisi } = await db.from("eclub_kisiler").select("kisi_id, rol").eq("auth_user_id", user.id).maybeSingle();
+        const kisiErisimi = await eclubKisiErisimi(db, user.id);
+        const kisi = kisiErisimi.kisi;
         const { data: oneri } = bagId
           ? await db.from("eclub_oneri_kayitlari").select("oneri_id, kisi_id, yayin_id, oneri_baslangic, oneri_bitis").eq("oneri_id", bagId).maybeSingle()
           : { data: null };
         const hedefRol = kisi ? eclubKisiHedefRolu(kisi.rol) : null;
         const simdi = Date.now();
+        const firmaIdler = new Set(kisiErisimi.firmalar.filter((firma) => firma.aktif !== false && firma.eclub_aktif === true).map((firma) => firma.firma_id));
         erisimVar = Boolean(
           kisi && oneri
+          && kisiErisimi.eclub_aktif
+          && detay?.firma_id
+          && firmaIdler.has(detay.firma_id)
           && oneri.kisi_id === kisi.kisi_id
           && oneri.yayin_id === yayin.yayin_id
           && hedefRol
           && hedefRolleriOku(yayin).includes(hedefRol)
-          && new Date(oneri.oneri_baslangic).getTime() <= simdi
-          && new Date(oneri.oneri_bitis).getTime() >= simdi,
+          && new Date(oneri.oneri_baslangic).getTime() <= simdi,
         );
       } else if (rol === MUSTERI_ROLU) {
         const kimlik = await musteriKimligi(db, user.id);

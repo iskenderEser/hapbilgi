@@ -78,10 +78,10 @@ function VideoRafi({ baslik, videolar, onVideoSec, onBegeni, onFavori, etkilesim
     <section>
       <div className="mb-2.5 flex items-center justify-between gap-3">
         <h2 className="text-base font-extrabold text-[#243957] md:text-lg">{baslik}</h2>
-        <span className="text-[11px] font-bold text-[#7b8ca5]">{videolar.length} video</span>
+        <span className="text-[11px] font-bold text-[#7b8ca5]">{videolar.length} içerik</span>
       </div>
       {videolar.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-[#d8e2ec] bg-white px-4 py-7 text-center text-xs font-semibold text-[#8a99aa]">Bu rafta henüz video bulunmuyor.</div>
+        <div className="rounded-2xl border border-dashed border-[#d8e2ec] bg-white px-4 py-7 text-center text-xs font-semibold text-[#8a99aa]">Bu rafta henüz öğrenme içeriği bulunmuyor.</div>
       ) : (
         <div className="group relative">
           <button type="button" aria-label={`${baslik} rafını sola kaydır`} onClick={() => kaydir(-1)} className="absolute inset-y-0 left-0 z-10 flex w-16 cursor-pointer items-center justify-start bg-gradient-to-r from-gray-50 via-gray-50/70 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
@@ -116,7 +116,7 @@ export default function EclubFirmaVideoKatalogu({ oneriler, seciliFirmaId, secil
 
   return (
     <div className="flex flex-col gap-6">
-      <VideoRafi baslik={firmaBasligi ? `${firmaBasligi} Tüm Videoları` : "Tüm Firmaların Videoları"} videolar={firmaVideolari} onVideoSec={onVideoSec} onBegeni={onBegeni} onFavori={onFavori} etkilesimAktif />
+      <VideoRafi baslik={firmaBasligi ? `${firmaBasligi} Tüm İçerikleri` : "Tüm Firmaların İçerikleri"} videolar={firmaVideolari} onVideoSec={onVideoSec} onBegeni={onBegeni} onFavori={onFavori} etkilesimAktif />
       <VideoRafi baslik={firmaBasligi ? `${firmaBasligi} En Çok Beğenilenleri` : "En Çok Beğenilenler"} videolar={enCokBegenilen} onVideoSec={onVideoSec} onBegeni={onBegeni} onFavori={onFavori} etkilesimAktif={false} />
       <VideoRafi baslik={firmaBasligi ? `${firmaBasligi} En Çok Favorilenenleri` : "En Çok Favorilenenler"} videolar={enCokFavorilenen} onVideoSec={onVideoSec} onBegeni={onBegeni} onFavori={onFavori} etkilesimAktif={false} />
     </div>

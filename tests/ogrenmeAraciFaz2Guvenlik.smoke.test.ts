@@ -50,7 +50,8 @@ test("yükleme tamamlama gerçek boyut, imza ve checksum doğrulamasından sonra
   assert.match(tamamla, /dosyaImzasiDogrula\(arac\.arac_turu, nesne\.ilkBaytlar\)/);
   assert.match(tamamla, /nesne\.checksumSha256 !== beyanChecksum/);
   assert.match(tamamla, /durum: "dogrulama_bekliyor"/);
-  assert.match(tamamla, /metadata_dogrulandi: false/);
+  assert.match(tamamla, /rpc\([\s\S]*"ogrenme_araci_yukleme_dogrulama_kaydet"/);
+  assert.match(tamamla, /\.eq\("metadata_dogrulandi", false\)/);
 });
 
 test("durum ve erişim API'leri sahiplik ve hedef bağını sunucuda sınar", () => {

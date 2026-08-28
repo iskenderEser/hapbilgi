@@ -7,6 +7,7 @@ import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { olayIdGecerliMi } from "@/lib/izleme/baslat";
 import { eclubIzlemeHaklari } from "@/lib/eclub/izlemeKurali";
+import { eclubAktifYayinYetkisi } from "@/lib/eclub/aktifYayinYetkisi";
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,6 +41,7 @@ export async function GET(request: NextRequest) {
     const izlemeKontrol = veriKontrol(izleme, "eclub_izleme_kayitlari SELECT — izleme_id", "İzleme kaydı bulunamadı.");
     if (!izlemeKontrol.gecerli) return izlemeKontrol.yanit;
     if (izleme.kisi_id !== kisi.kisi_id) return rolHatasi("Bu izleme kaydına erişim yetkiniz yok.");
+    if (!(await eclubAktifYayinYetkisi(adminSupabase, user.id, izleme.yayin_id))) return rolHatasi("Aktif E-Club firma bağlantısı bulunamadı.");
     if (!izleme.tamamlandi_mi) return isKuraluHatasi("Sorular ancak video tamamlandıktan sonra gösterilebilir.");
     if (!izleme.soru_hakki_var_mi) {
       return isKuraluHatasi(`Bu izleme için soru hakkı bulunmuyor (${izleme.soru_hakki_nedeni ?? "uygun_degil"}).`);

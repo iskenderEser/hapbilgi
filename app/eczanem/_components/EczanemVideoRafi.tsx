@@ -29,7 +29,7 @@ export default function EczanemVideoRafi({ baslik, videolar, bosMesaj, onVideoSe
     <section aria-labelledby={`raf-${baslik.replaceAll(" ", "-").toLocaleLowerCase("tr-TR")}`} className="min-w-0">
       <div className="mb-2.5 flex items-center justify-between gap-3">
         <h2 id={`raf-${baslik.replaceAll(" ", "-").toLocaleLowerCase("tr-TR")}`} className="text-base font-black tracking-[-0.015em] text-[#203653] md:text-lg">{baslik}</h2>
-        {videolar.length > 0 && <span className="text-[10px] font-extrabold text-[#93a1b1]">{videolar.length} video</span>}
+        {videolar.length > 0 && <span className="text-[10px] font-extrabold text-[#93a1b1]">{videolar.length} içerik</span>}
       </div>
 
       {videolar.length === 0 ? (

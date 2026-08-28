@@ -76,7 +76,7 @@ export function YeniTalepFormV2({ formu }: Props) {
         </div>
         <div className="flex flex-col gap-2 rounded-xl border border-[#e2e9f2] bg-white px-3 py-2.5">
           <div className="flex flex-wrap gap-2" aria-label="Öğrenme aracı seçimi">
-            {(["video", "podcast", "gorsel", "flip_pdf"] as const).map((tur) => (
+            {(["video", "podcast", "gorsel", "flip_pdf"] as const).filter((tur) => formu.ogrenmeAraciBayraklari[tur]).map((tur) => (
               <button
                 key={tur}
                 type="button"
@@ -437,6 +437,33 @@ export function YeniTalepFormV2({ formu }: Props) {
           {!formu.videoIslemeBekleniyor && (
             <Progress value={formu.videoYuklemeYuzdesi ?? 0} className="bg-[#dcecff] [&>div]:bg-[#56aeff]" />
           )}
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={formu.aracYuklemeBilgisi !== null}>
+        <AlertDialogContent
+          className="max-w-sm border-[#dbe5ef] bg-white text-center"
+          onEscapeKeyDown={(event) => event.preventDefault()}
+        >
+          <AlertDialogHeader className="items-center text-center sm:text-center">
+            <AlertDialogTitle className="text-[#203653]">Öğrenme aracı hazırlanıyor</AlertDialogTitle>
+            <AlertDialogDescription className="text-[#687b90]">
+              {formu.aracYuklemeBilgisi?.asama === "checksum"
+                ? "Dosya doğrulanıyor"
+                : formu.aracYuklemeBilgisi?.asama === "dogrulama"
+                  ? "Yükleme doğrulanıyor"
+                  : formu.aracYuklemeBilgisi?.asama === "hazirlama"
+                    ? "Dosya hazırlanıyor"
+                    : `${formu.aracYuklemeBilgisi?.dosyaRolu ?? "Dosya"} yükleniyor`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Progress value={formu.aracYuklemeBilgisi?.yuzde ?? 0} className="bg-[#dcecff] [&>div]:bg-[#56aeff]" />
+          <button
+            type="button"
+            onClick={formu.ogrenmeAraciYuklemeyiIptalEt}
+            className="mx-auto rounded-lg border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-600"
+          >
+            İptal Et
+          </button>
         </AlertDialogContent>
       </AlertDialog>
     </div>

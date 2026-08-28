@@ -11,6 +11,7 @@ import { hataYaniti, yetkiHatasi } from "@/lib/utils/hataIsle";
 import { tarihAraligi } from "@/lib/utils/tarihAraligi";
 import { YONETICI_ROLLER, ECZANEM_TALEP_ACAN_ROLLER } from "@/lib/utils/roller";
 import { cascadeDokumu, pmUrunDokumu, CascadeKapsam } from "@/lib/eczanem/dokum";
+import { aracTuruDagilimi } from "@/lib/rapor/paylasilan/aracTuruDagilimi";
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -63,13 +64,20 @@ export async function GET(request: Request) {
     }
   }
 
+  const aracTurleri = await aracTuruDagilimi(adminSupabase, {
+    baslangic,
+    bitis,
+    takimId: kullanici.takim_id,
+    firmaId: kullanici.firma_id,
+  });
+
   // PM ailesi — ürün ekseni (İP-§9.2: hiyerarşi değil ürün)
   if (ECZANEM_TALEP_ACAN_ROLLER.includes(rol)) {
     if (!kullanici.takim_id) {
-      return NextResponse.json({ success: true, data: { aktif: true, tip: "pm", kullanici: kullaniciBilgisi, urunler: [] } });
+      return NextResponse.json({ success: true, data: { aktif: true, tip: "pm", kullanici: kullaniciBilgisi, urunler: [], arac_turu_dagilimi: aracTurleri } });
     }
     const dokum = await pmUrunDokumu(adminSupabase, kullanici.takim_id, baslangic, bitis);
-    return NextResponse.json({ success: true, data: { aktif: true, tip: "pm", kullanici: kullaniciBilgisi, ...dokum } });
+    return NextResponse.json({ success: true, data: { aktif: true, tip: "pm", kullanici: kullaniciBilgisi, arac_turu_dagilimi: aracTurleri, ...dokum } });
   }
 
   // Cascade — kapsam daralması (İP-§9.2)
@@ -81,5 +89,5 @@ export async function GET(request: Request) {
   if (!kapsam) return yetkiHatasi("Bu rapora erişim yetkiniz yok");
 
   const dokum = await cascadeDokumu(adminSupabase, kapsam, baslangic, bitis);
-  return NextResponse.json({ success: true, data: { aktif: true, tip: "cascade", kullanici: kullaniciBilgisi, ...dokum } });
+  return NextResponse.json({ success: true, data: { aktif: true, tip: "cascade", kullanici: kullaniciBilgisi, arac_turu_dagilimi: aracTurleri, ...dokum } });
 }

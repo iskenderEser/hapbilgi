@@ -13,7 +13,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -39,7 +39,12 @@ import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
 import { SORGU_ARALIGI_MS, TAVAN_SANIYE } from "@/lib/video/islemeDurumu";
 import { bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
-import { hazirFlipPdfYukle, hazirGorselYukle, hazirPodcastYukle } from "@/lib/ogrenmeAraci/bunnyYuklemeIstemci";
+import {
+  hazirFlipPdfYukle,
+  hazirGorselYukle,
+  hazirPodcastYukle,
+  type YuklemeAsamasi,
+} from "@/lib/ogrenmeAraci/bunnyYuklemeIstemci";
 
 type VideoYuklemeSonucu = "tamamlandi" | "isleniyor" | "basarisiz";
 
@@ -96,12 +101,20 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
   const [hazirVideo, setHazirVideo] = useState(false);
   const [hazirSoruSeti, setHazirSoruSeti] = useState(false);
   const [ogrenmeAraciTuru, setOgrenmeAraciTuru] = useState<OgrenmeAraciTuru>("video");
+  const [ogrenmeAraciBayraklari, setOgrenmeAraciBayraklari] = useState<Record<OgrenmeAraciTuru, boolean>>({ video: true, podcast: false, gorsel: false, flip_pdf: false });
   const [podcastAnlatimTuru, setPodcastAnlatimTuru] = useState<"monolog" | "diyalog">("monolog");
   const [bekleyenPodcast, setBekleyenPodcast] = useState<BekleyenDosya | null>(null);
   const [bekleyenPodcastKapak, setBekleyenPodcastKapak] = useState<BekleyenDosya | null>(null);
   const [bekleyenPodcastTranskript, setBekleyenPodcastTranskript] = useState<BekleyenDosya | null>(null);
   const [bekleyenGorsel, setBekleyenGorsel] = useState<BekleyenDosya | null>(null);
   const [bekleyenFlipPdf, setBekleyenFlipPdf] = useState<BekleyenDosya | null>(null);
+  const ogrenmeAraciYuklemeRef = useRef<AbortController | null>(null);
+  const [aracYuklemeBilgisi, setAracYuklemeBilgisi] = useState<{
+    asama: YuklemeAsamasi;
+    yuzde: number;
+    dosyaRolu: string;
+    deneme: number;
+  } | null>(null);
   // Ürün de teknik de olmayan türlerde (medikal_egitim, ik_egitimi) izleyiciye
   // görünecek serbest "Eğitim/İçerik Adı" — talepler.urun_adi'na yazılır (İskender 24.07).
   const [serbestAd, setSerbestAd] = useState("");
@@ -205,6 +218,18 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     })();
     return () => { aktif = false; };
   }, [kullanici, isUretici, fetchKullaniciBilgi, fetchUreticiVerileri]);
+
+  useEffect(() => {
+    if (!kullanici || !isUretici) return;
+    void fetch("/api/ogrenme-araclari/bayraklar", { cache: "no-store" })
+      .then(async (response) => response.ok ? response.json() : null)
+      .then((data) => { if (data?.bayraklar) setOgrenmeAraciBayraklari(data.bayraklar); })
+      .catch(() => undefined);
+  }, [kullanici, isUretici]);
+
+  useEffect(() => () => {
+    ogrenmeAraciYuklemeRef.current?.abort();
+  }, []);
 
   // ============================================================================
   // Form handler'ları
@@ -441,6 +466,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     serbestAd,
     hazirVideo,
     ogrenmeAraciTuru,
+    ogrenmeAraciBayraklari,
     bekleyenVideo,
     bekleyenPodcast,
     bekleyenPodcastKapak,
@@ -679,6 +705,17 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
   const gonderimiCalistir = useCallback(
     async () => {
       setFormLoading(true);
+      const yeniAracYuklenecek = hazirVideo && ogrenmeAraciTuru !== "video";
+      const yuklemeDenetleyicisi = yeniAracYuklenecek ? new AbortController() : null;
+      if (yuklemeDenetleyicisi) {
+        ogrenmeAraciYuklemeRef.current?.abort();
+        ogrenmeAraciYuklemeRef.current = yuklemeDenetleyicisi;
+      }
+      const kontrol = yuklemeDenetleyicisi ? {
+        signal: yuklemeDenetleyicisi.signal,
+        onIlerleme: setAracYuklemeBilgisi,
+        onUyari: (mesaj: string) => uyari(mesaj),
+      } : undefined;
       try {
         const talep_id = await submitTalep();
         if (!talep_id) return;
@@ -700,6 +737,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
               ses: bekleyenPodcast.dosya,
               kapak: bekleyenPodcastKapak.dosya,
               transkript: bekleyenPodcastTranskript.dosya,
+              kontrol,
             });
           } catch (error) {
             hata("Podcast dosyaları yüklenemedi.", "podcast yükleme", error instanceof Error ? error.message : undefined);
@@ -708,7 +746,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
         }
         if (hazirVideo && ogrenmeAraciTuru === "gorsel" && bekleyenGorsel) {
           try {
-            await hazirGorselYukle({ talepId: talep_id, gorsel: bekleyenGorsel.dosya });
+            await hazirGorselYukle({ talepId: talep_id, gorsel: bekleyenGorsel.dosya, kontrol });
           } catch (error) {
             hata("Görsel yüklenemedi.", "görsel yükleme", error instanceof Error ? error.message : undefined);
             basarisizlar.push(`${bekleyenGorsel.preview.dosya_adi} (görsel)`);
@@ -716,7 +754,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
         }
         if (hazirVideo && ogrenmeAraciTuru === "flip_pdf" && bekleyenFlipPdf) {
           try {
-            await hazirFlipPdfYukle({ talepId: talep_id, pdf: bekleyenFlipPdf.dosya });
+            await hazirFlipPdfYukle({ talepId: talep_id, pdf: bekleyenFlipPdf.dosya, kontrol });
           } catch (error) {
             hata("Flip PDF yüklenemedi.", "PDF yükleme", error instanceof Error ? error.message : undefined);
             basarisizlar.push(`${bekleyenFlipPdf.preview.dosya_adi} (Flip PDF)`);
@@ -752,6 +790,10 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
         resetForm();
         await onTalepOlusturuldu?.();
       } finally {
+        if (ogrenmeAraciYuklemeRef.current === yuklemeDenetleyicisi) {
+          ogrenmeAraciYuklemeRef.current = null;
+        }
+        setAracYuklemeBilgisi(null);
         setFormLoading(false);
       }
     },
@@ -798,6 +840,9 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
 
   // Hayır: modal kapanır, form ve girdiler aynen kalır — hiçbir şey gönderilmez.
   const handleOnayHayir = useCallback(() => setOnayModalAcik(false), []);
+  const ogrenmeAraciYuklemeyiIptalEt = useCallback(() => {
+    ogrenmeAraciYuklemeRef.current?.abort();
+  }, []);
 
   // ============================================================================
   // Public API
@@ -855,6 +900,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     setAciklama,
 
     // form: öğrenme aracı + hazır araç
+    ogrenmeAraciBayraklari,
     ogrenmeAraciTuru,
     handleOgrenmeAraciTuruDegis,
     hazirVideo,
@@ -864,6 +910,8 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     handleBekleyenVideoSil,
     videoYuklemeYuzdesi,
     videoIslemeBekleniyor,
+    aracYuklemeBilgisi,
+    ogrenmeAraciYuklemeyiIptalEt,
 
     // form: podcast
     podcastAnlatimTuru,

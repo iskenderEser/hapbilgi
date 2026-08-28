@@ -23,6 +23,8 @@ import type { EclubKapsamUtt, EclubYonetimKapsami } from "@/lib/eclub/yonetimKap
 import { eclubKisiRolEtiketi } from "@/lib/utils/roller";
 import { formatPuan, GRI_METIN, KIRMIZI, PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
+import OgrenmeAraciPerformansi from "@/components/raporlar/OgrenmeAraciPerformansi";
+import type { AracTuruRaporSatiri } from "@/lib/rapor/paylasilan/aracTuruDagilimi";
 import styles from "@/app/(panel)/raporlar/utt/utt-report.module.css";
 import bmStyles from "@/app/(panel)/raporlar/bm/bm-report.module.css";
 import reportStyles from "./eclub-report.module.css";
@@ -37,6 +39,7 @@ const PERIYOT_ADI: Record<Periyot, string> = {
 };
 
 interface RaporData {
+  arac_turu_dagilimi: AracTuruRaporSatiri[];
   kullanici: { ad: string; soyad: string; rol: string };
   aralik: { baslangic: string; bitis: string };
   ozet: EclubRaporOzet;
@@ -147,6 +150,7 @@ export default function EclubRaporlarPage() {
             <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} />
           </div>
         </header>
+        <OgrenmeAraciPerformansi dagilim={data.arac_turu_dagilimi} />
 
         <div className={styles.heroGrid}>
           <section className={`${styles.panel} ${styles.scoreHero}`}>

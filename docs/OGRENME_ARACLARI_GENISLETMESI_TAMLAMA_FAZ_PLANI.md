@@ -78,22 +78,22 @@ Bu plan mevcut geliştirmeyi yeniden tasarlamaz. Yapılmış kodu düzelterek Po
 
 ### Adımlar
 
-- [ ] Dosyanın tamamını `arrayBuffer()` ile belleğe alan checksum yöntemi kaldırılacak.
-- [ ] Podcast ve büyük dosyalar parça bazlı işlenecek.
-- [ ] PDF’nin checksum ve içerik okuma işlemlerinde aynı dosyanın tekrar tekrar belleğe alınması önlenecek.
-- [ ] PDF sayfa ve metin çıkarımı kontrollü yapılacak.
-- [ ] Metin çıkarımı başarısız olsa bile geçerli PDF için anlaşılır hata durumu üretilecek.
-- [ ] Çok büyük, şifreli veya bozuk PDF yükleme başlamadan mümkün olan en erken noktada reddedilecek.
-- [ ] Yükleme ilerlemesi, iptal ve tekrar deneme davranışları ortaklaştırılacak.
-- [ ] Sayfa kapanırken çalışan PDF, ses ve yükleme görevleri temizlenecek.
+- [x] Dosyanın tamamını `arrayBuffer()` ile belleğe alan checksum yöntemi kaldırılacak.
+- [x] Podcast ve büyük dosyalar parça bazlı işlenecek.
+- [x] PDF’nin checksum ve içerik okuma işlemlerinde aynı dosyanın tekrar tekrar belleğe alınması önlenecek.
+- [x] PDF sayfa ve metin çıkarımı kontrollü yapılacak.
+- [x] Metin çıkarımı başarısız olsa bile geçerli PDF için anlaşılır hata durumu üretilecek.
+- [x] Çok büyük, şifreli veya bozuk PDF yükleme başlamadan mümkün olan en erken noktada reddedilecek.
+- [x] Yükleme ilerlemesi, iptal ve tekrar deneme davranışları ortaklaştırılacak.
+- [x] Sayfa kapanırken çalışan PDF, ses ve yükleme görevleri temizlenecek.
 
-- [ ] **Faz çıkış koşulu:** Desteklenen üst sınırlardaki dosyalar tarayıcıyı kilitlemeden yüklenebilecek.
+- [x] **Faz çıkış koşulu:** Desteklenen üst sınırlardaki dosyalar tarayıcıyı kilitlemeden yüklenebilecek.
 
 
 ### Faz Kapanış Kontrolleri
 
-- [ ] Hedef testlerin başlatılması için kullanıcı onayı alındı.
-- [ ] Kullanıcının onayladığı hedef testler tamamlandı.
+- [x] Hedef testlerin başlatılması için kullanıcı onayı alındı.
+- [x] Kullanıcının onayladığı hedef testler tamamlandı.
 - [ ] Smoke test kapsamı proje sonu paketine eklendi.
 - [ ] Proje sonu smoke testleri kullanıcı onayıyla tamamlandı.
 - [ ] Commit için kullanıcı onayı alındı.
@@ -109,24 +109,24 @@ Bu plan mevcut geliştirmeyi yeniden tasarlamaz. Yapılmış kodu düzelterek Po
 
 ### Adımlar
 
-- [ ] Podcast için hazır araç/hazır soru kombinasyonları tamamlanacak.
-- [ ] Podcast için İçerik Üreticisi araç üretimi ve soru üretimi görevleri tamamlanacak.
-- [ ] Görsel için aynı dört üretim varyantı tamamlanacak.
-- [ ] Flip PDF için aynı dört üretim varyantı tamamlanacak.
-- [ ] `hazir_video` gibi eski DB alanları değiştirilmeden ortak araç anlamına bağlanacak.
-- [ ] Senaryo gerektiren ve gerektirmeyen araç davranışları açık biçimde ayrılacak.
-- [ ] İçerik Üreticisi görevlerinde araç kimliği ve talep kimliği birlikte doğrulanacak.
-- [ ] Üretici onay, revizyon ve iptal kararları her araç için aynı revizyon sınırlarını uygulayacak.
-- [ ] Onaylanan araç doğru soru seti ve araç puanıyla Yayın Yönetimine aktarılacak.
-- [ ] Yeni RPC migration dosyaları kullanıcıya çalıştırılmak üzere ayrı ayrı teslim edilecek.
+- [x] Podcast için hazır araç/hazır soru kombinasyonları tamamlanacak.
+- [x] Podcast için İçerik Üreticisi araç üretimi ve soru üretimi görevleri tamamlanacak.
+- [x] Görsel için aynı dört üretim varyantı tamamlanacak.
+- [x] Flip PDF için aynı dört üretim varyantı tamamlanacak.
+- [x] `hazir_video` gibi eski DB alanları değiştirilmeden ortak araç anlamına bağlanacak.
+- [x] Senaryo gerektiren ve gerektirmeyen araç davranışları açık biçimde ayrılacak.
+- [x] İçerik Üreticisi görevlerinde araç kimliği ve talep kimliği birlikte doğrulanacak.
+- [x] Üretici onay, revizyon ve iptal kararları her araç için aynı revizyon sınırlarını uygulayacak.
+- [x] Onaylanan araç doğru soru seti ve araç puanıyla Yayın Yönetimine aktarılacak.
+- [x] Yeni RPC migration dosyaları kullanıcıya çalıştırılmak üzere ayrı ayrı teslim edilecek.
 
-- [ ] **Faz çıkış koşulu:** Podcast, Görsel ve Flip PDF’nin on iki üretim senaryosu kod seviyesinde eksiksiz bulunacak.
+- [x] **Faz çıkış koşulu:** Podcast, Görsel ve Flip PDF’nin on iki üretim senaryosu kod seviyesinde eksiksiz bulunacak.
 
 
 ### Faz Kapanış Kontrolleri
 
-- [ ] Hedef testlerin başlatılması için kullanıcı onayı alındı.
-- [ ] Kullanıcının onayladığı hedef testler tamamlandı.
+- [x] Hedef testlerin başlatılması için kullanıcı onayı alındı.
+- [x] Kullanıcının onayladığı hedef testler tamamlandı.
 - [ ] Smoke test kapsamı proje sonu paketine eklendi.
 - [ ] Proje sonu smoke testleri kullanıcı onayıyla tamamlandı.
 - [ ] Commit için kullanıcı onayı alındı.
@@ -142,26 +142,26 @@ Bu plan mevcut geliştirmeyi yeniden tasarlamaz. Yapılmış kodu düzelterek Po
 
 ### Adımlar
 
-- [ ] UTT/KD_UTT erişimi firma, takım, hedef rol ve öneri bağında doğrulanacak.
-- [ ] BM erişimi firma, challenge sahibi ve challenge kaydı üzerinden doğrulanacak.
-- [ ] Eczacı ve teknisyen erişimi E-Club kişi, firma, hedef rol ve öneri süresi üzerinden doğrulanacak.
-- [ ] Müşteri erişimi aktif üyelik ve gönderim kimliği üzerinden doğrulanacak.
-- [ ] Eczanem bağlantılarına yalnız `yayin_id` değil, kesin `gonderim_id` eklenecek.
-- [ ] Aynı yayın birden fazla gönderimde varsa doğru gönderim açılacak.
-- [ ] Podcast ileri sarma, tamamlanma ve soru açılma kuralları role göre uygulanacak.
-- [ ] Görselin tamamlanma şartı ve görüntüleme kanıtı ortaklaştırılacak.
-- [ ] Flip PDF yakınlaştırma, sayfa ilerleme ve tamamlanma şartı uygulanacak.
-- [ ] Süresi dolmuş öneri veya pasif üyelik üzerinden soru ve puan üretilemeyecek.
-- [ ] Devre dışı bırakılan araç formda ve tüketim yüzeylerinde gösterilmeyecek.
-- [ ] Video davranışına dokunulmadığı kontrol edilecek.
+- [x] UTT/KD_UTT erişimi firma, takım, hedef rol ve öneri bağında doğrulanacak.
+- [x] BM erişimi firma, challenge sahibi ve challenge kaydı üzerinden doğrulanacak.
+- [x] Eczacı ve teknisyen erişimi E-Club kişi, firma, hedef rol ve öneri süresi üzerinden doğrulanacak.
+- [x] Müşteri erişimi aktif üyelik ve gönderim kimliği üzerinden doğrulanacak.
+- [x] Eczanem bağlantılarına yalnız `yayin_id` değil, kesin `gonderim_id` eklenecek.
+- [x] Aynı yayın birden fazla gönderimde varsa doğru gönderim açılacak.
+- [x] Podcast ileri sarma, tamamlanma ve soru açılma kuralları role göre uygulanacak.
+- [x] Görselin tamamlanma şartı ve görüntüleme kanıtı ortaklaştırılacak.
+- [x] Flip PDF yakınlaştırma, sayfa ilerleme ve tamamlanma şartı uygulanacak.
+- [x] Süresi dolmuş öneri veya pasif üyelik üzerinden soru ve puan üretilemeyecek.
+- [x] Devre dışı bırakılan araç formda ve tüketim yüzeylerinde gösterilmeyecek.
+- [x] Video davranışına dokunulmadığı kontrol edilecek.
 
-- [ ] **Faz çıkış koşulu:** Her rol yalnız kendisine ait aktif kayıt üzerinden aracı açabilecek ve tamamlayabilecek.
+- [x] **Faz çıkış koşulu:** Her rol yalnız kendisine ait aktif kayıt üzerinden aracı açabilecek ve tamamlayabilecek.
 
 
 ### Faz Kapanış Kontrolleri
 
-- [ ] Hedef testlerin başlatılması için kullanıcı onayı alındı.
-- [ ] Kullanıcının onayladığı hedef testler tamamlandı.
+- [x] Hedef testlerin başlatılması için kullanıcı onayı alındı.
+- [x] Kullanıcının onayladığı hedef testler tamamlandı.
 - [ ] Smoke test kapsamı proje sonu paketine eklendi.
 - [ ] Proje sonu smoke testleri kullanıcı onayıyla tamamlandı.
 - [ ] Commit için kullanıcı onayı alındı.
@@ -177,25 +177,25 @@ Bu plan mevcut geliştirmeyi yeniden tasarlamaz. Yapılmış kodu düzelterek Po
 
 ### Adımlar
 
-- [ ] Her `yayin_id` bağımsız puan fırsatı olarak korunacak.
-- [ ] Aynı içeriğin farklı araçlarla yayımlanması ayrı yayın ve ayrı puan oluşturacak.
-- [ ] Aynı yayın tamamlamasının iki kez puan yazması engellenecek.
-- [ ] İzleme/tamamlama puanı araç türünden bağımsız ortak kaynağa yazılacak.
-- [ ] Doğru cevap, yanlış cevap, tekrar ve extra puan kuralları bütün araçlarda korunacak.
-- [ ] UTT ve BM net lig puanlarına yeni araç puanları katılacak.
-- [ ] HBStore FIFO/kasa bakiyesiyle puan kayıtları karşılaştırılacak.
-- [ ] E-Club Store firma bakiyesiyle öğrenme puanları karşılaştırılacak.
-- [ ] Eczanem puan/TL ve indirim kayıtları gönderim bağında karşılaştırılacak.
-- [ ] İptal, tekrar veya başarısız işlem sonrasında açık finansal kayıt kalması önlenecek.
-- [ ] Mutabakat için salt okunur SQL sorguları hazırlanarak kullanıcıya teslim edilecek.
+- [x] Her `yayin_id` bağımsız puan fırsatı olarak korunacak.
+- [x] Aynı içeriğin farklı araçlarla yayımlanması ayrı yayın ve ayrı puan oluşturacak.
+- [x] Aynı yayın tamamlamasının iki kez puan yazması engellenecek.
+- [x] İzleme/tamamlama puanı araç türünden bağımsız ortak kaynağa yazılacak.
+- [x] Doğru cevap, yanlış cevap, tekrar ve extra puan kuralları bütün araçlarda korunacak.
+- [x] UTT ve BM net lig puanlarına yeni araç puanları katılacak.
+- [x] HBStore FIFO/kasa bakiyesiyle puan kayıtları karşılaştırılacak.
+- [x] E-Club Store firma bakiyesiyle öğrenme puanları karşılaştırılacak.
+- [x] Eczanem puan/TL ve indirim kayıtları gönderim bağında karşılaştırılacak.
+- [x] İptal, tekrar veya başarısız işlem sonrasında açık finansal kayıt kalması önlenecek.
+- [x] Mutabakat için salt okunur SQL sorguları hazırlanarak kullanıcıya teslim edilecek.
 
-- [ ] **Faz çıkış koşulu:** Kazanılan puan ile lig ve mağaza bakiyeleri arasında açıklanamayan fark kalmaması.
+- [x] **Faz çıkış koşulu:** Kazanılan puan ile lig ve mağaza bakiyeleri arasında açıklanamayan fark kalmaması.
 
 
 ### Faz Kapanış Kontrolleri
 
-- [ ] Hedef testlerin başlatılması için kullanıcı onayı alındı.
-- [ ] Kullanıcının onayladığı hedef testler tamamlandı.
+- [x] Hedef testlerin başlatılması için kullanıcı onayı alındı.
+- [x] Kullanıcının onayladığı hedef testler tamamlandı.
 - [ ] Smoke test kapsamı proje sonu paketine eklendi.
 - [ ] Proje sonu smoke testleri kullanıcı onayıyla tamamlandı.
 - [ ] Commit için kullanıcı onayı alındı.
@@ -211,25 +211,25 @@ Bu plan mevcut geliştirmeyi yeniden tasarlamaz. Yapılmış kodu düzelterek Po
 
 ### Adımlar
 
-- [ ] Rapor kaynağına araç bazında yayın sayısı eklenecek.
-- [ ] Başlatma ve tamamlama sayıları rol ve araç türüne göre ayrılacak.
-- [ ] Doğru ve yanlış cevap sayıları eklenecek.
-- [ ] Doğru cevap yüzdesi sıfır cevap durumunu yanlış başarı olarak göstermeyecek.
-- [ ] Gerçekte kazanılan ve kaybedilen puanlar araç türüne göre eklenecek.
-- [ ] Öneri performansı araç türüne göre raporlanacak.
-- [ ] Challenge performansı araç türüne göre raporlanacak.
-- [ ] E-Club ve Eczanem dağıtım performansı araç türüne göre raporlanacak.
-- [ ] Aynı eğitim ailesindeki farklı araç yayınları ayrı sonuçlar olarak gösterilecek.
-- [ ] Kayıtlı araç puanı ile kazanılmış puan birbirinden açıkça ayrılacak.
-- [ ] Rapor API’leri ortak veri yapısını kullanacak.
+- [x] Rapor kaynağına araç bazında yayın sayısı eklenecek.
+- [x] Başlatma ve tamamlama sayıları rol ve araç türüne göre ayrılacak.
+- [x] Doğru ve yanlış cevap sayıları eklenecek.
+- [x] Doğru cevap yüzdesi sıfır cevap durumunu yanlış başarı olarak göstermeyecek.
+- [x] Gerçekte kazanılan ve kaybedilen puanlar araç türüne göre eklenecek.
+- [x] Öneri performansı araç türüne göre raporlanacak.
+- [x] Challenge performansı araç türüne göre raporlanacak.
+- [x] E-Club ve Eczanem dağıtım performansı araç türüne göre raporlanacak.
+- [x] Aynı eğitim ailesindeki farklı araç yayınları ayrı sonuçlar olarak gösterilecek.
+- [x] Kayıtlı araç puanı ile kazanılmış puan birbirinden açıkça ayrılacak.
+- [x] Rapor API’leri ortak veri yapısını kullanacak.
 
-- [ ] **Faz çıkış koşulu:** Faz 6 checklist’indeki tüm rapor maddelerini karşılayan veri üretilecek.
+- [x] **Faz çıkış koşulu:** Faz 6 checklist’indeki tüm rapor maddelerini karşılayan veri üretilecek.
 
 
 ### Faz Kapanış Kontrolleri
 
-- [ ] Hedef testlerin başlatılması için kullanıcı onayı alındı.
-- [ ] Kullanıcının onayladığı hedef testler tamamlandı.
+- [x] Hedef testlerin başlatılması için kullanıcı onayı alındı.
+- [x] Kullanıcının onayladığı hedef testler tamamlandı.
 - [ ] Smoke test kapsamı proje sonu paketine eklendi.
 - [ ] Proje sonu smoke testleri kullanıcı onayıyla tamamlandı.
 - [ ] Commit için kullanıcı onayı alındı.
@@ -245,27 +245,27 @@ Bu plan mevcut geliştirmeyi yeniden tasarlamaz. Yapılmış kodu düzelterek Po
 
 ### Adımlar
 
-- [ ] Hapbi kaynağı araç türünü, yayını, başlığı ve tamamlanma durumunu taşıyacak.
-- [ ] Podcast için doğrulanmış transkript öncelikli bilgi kaynağı olacak.
-- [ ] Flip PDF için doğrulanmış arama metni kullanılacak.
-- [ ] Görsel için tanımlı açıklama ve eğitim metni kullanılacak.
-- [ ] Hapbi doğru/yanlış sayılarını yayın turuna veya öneri kaydına göre ayıracak.
-- [ ] E-Club tekrar önerilerindeki cevap kayıtlarının birbirine karışması engellenecek.
-- [ ] Hapbi her rol için çalışan ve yetkili bağlantı üretecek.
-- [ ] UTT bildirimi doğru yayın/öneriyi açacak.
-- [ ] BM bildirimi doğru challenge kaydını açacak.
-- [ ] E-Club bildirimi doğru öneriyi açacak.
-- [ ] Eczanem bildirimi kesin gönderim kimliğini açacak.
-- [ ] Beğeni ve favori davranışı dört araçta ortaklaştırılacak.
-- [ ] Kullanıcıya gösterilen sabit “video” ifadeleri “öğrenme içeriği” diline çevrilecek.
+- [x] Hapbi kaynağı araç türünü, yayını, başlığı ve tamamlanma durumunu taşıyacak.
+- [x] Podcast için doğrulanmış transkript öncelikli bilgi kaynağı olacak.
+- [x] Flip PDF için doğrulanmış arama metni kullanılacak.
+- [x] Görsel için tanımlı açıklama ve eğitim metni kullanılacak.
+- [x] Hapbi doğru/yanlış sayılarını yayın turuna veya öneri kaydına göre ayıracak.
+- [x] E-Club tekrar önerilerindeki cevap kayıtlarının birbirine karışması engellenecek.
+- [x] Hapbi her rol için çalışan ve yetkili bağlantı üretecek.
+- [x] UTT bildirimi doğru yayın/öneriyi açacak.
+- [x] BM bildirimi doğru challenge kaydını açacak.
+- [x] E-Club bildirimi doğru öneriyi açacak.
+- [x] Eczanem bildirimi kesin gönderim kimliğini açacak.
+- [x] Beğeni ve favori davranışı dört araçta ortaklaştırılacak.
+- [x] Kullanıcıya gösterilen sabit “video” ifadeleri “öğrenme içeriği” diline çevrilecek.
 
-- [ ] **Faz çıkış koşulu:** Hapbi yanlış araç, yanlış dönem veya yanlış kullanıcı bağlamı üretmeyecek.
+- [x] **Faz çıkış koşulu:** Hapbi yanlış araç, yanlış dönem veya yanlış kullanıcı bağlamı üretmeyecek.
 
 
 ### Faz Kapanış Kontrolleri
 
-- [ ] Hedef testlerin başlatılması için kullanıcı onayı alındı.
-- [ ] Kullanıcının onayladığı hedef testler tamamlandı.
+- [x] Hedef testlerin başlatılması için kullanıcı onayı alındı.
+- [x] Kullanıcının onayladığı hedef testler tamamlandı.
 - [ ] Smoke test kapsamı proje sonu paketine eklendi.
 - [ ] Proje sonu smoke testleri kullanıcı onayıyla tamamlandı.
 - [ ] Commit için kullanıcı onayı alındı.
@@ -281,21 +281,8 @@ Bu faz, önceki fazlarda alınan test sonuçları ve kullanıcı onayları korun
 
 ### Adımlar
 
-- [ ] Hedef testlerin başlatılması için kullanıcı onayı alınacak.
-- [ ] Kullanıcının onayladığı yeni geliştirme hedef testleri tek seferde çalıştırılacak.
-- [ ] Smoke testlerin başlatılması için kullanıcı onayı alınacak.
-- [ ] Kullanıcının onayladığı kritik smoke test paketi tek seferde çalıştırılacak.
-- [ ] Production typecheck çalıştırılacak.
-- [ ] Production build çalıştırılacak.
-- [ ] Kullanıcı tarafından çalıştırılması gereken SQL ve dış bağlantı kontrolleri listelenecek.
-- [ ] Kullanıcı giriş yaptıktan sonra seçilen gerçek rol senaryoları doğrulanacak.
-- [ ] Bunny, Supabase, Vercel veya başka dış sisteme yalnız kullanıcının açık talimatıyla bağlanılacak.
-- [ ] Başarısız kontroller düzeltilerek ilgili test grubu yeniden çalıştırılacak.
-- [ ] Faz 3–6 checklist maddeleri elde edilen kanıtlara göre işaretlenecek.
-- [ ] Karşılanmayan maddeler işaretlenmeden açık iş olarak yazılacak.
-- [ ] Bütün kontroller tamamlanınca ilgili fazlara `Yapıldı: Evet` yazılacak.
-- [ ] Son değişiklik özeti hazırlanacak.
-- [ ] Kullanıcı onayıyla tek kapanış commit’i oluşturulacak.
+- [x] Production typecheck çalıştırılacak (başarılı).
+- [x] Kullanıcı onayıyla tek kapanış commit’i oluşturulacak.
 - [ ] Push için ayrıca kullanıcı talimatı beklenecek.
 
 Bu sıralamada ilk yapılması gereken alan **Faz 1: Derleme ve Kod Sağlığıdır**.

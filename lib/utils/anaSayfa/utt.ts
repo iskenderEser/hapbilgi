@@ -6,6 +6,7 @@ import { gecerliTurBaslangiclari } from "@/lib/tclub/tur/kayit";
 import { tamTekrarSayilari } from "@/lib/tclub/puan/tekrarSayim";
 import { EXTRA_PUAN_TEKRAR_ESIGI } from "@/lib/tclub/puan/strateji";
 import { haftaBaslangici } from "@/lib/zaman/kontrol";
+import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
 
 export interface VYayinSatiri {
   yayin_id: string;
@@ -62,6 +63,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
       .from("v_yayin_detay")
       .select("yayin_id, urun_adi, teknik_adi, video_puani, yayin_tarihi, thumbnail_url, video_url, icerik_turu, talep_no, firma_adi")
       .eq("durum", "yayinda")
+      .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))
       // Görünürlük kapısı (Faz 1): süresi hazır olmayan (encode bitmemiş) video
       // izleyiciye gösterilmez — webhook süreyi doldurunca listede çıkar.
       .or("arac_turu.in.(gorsel,flip_pdf),video_suresi_saniye.gt.0")

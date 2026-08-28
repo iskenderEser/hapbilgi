@@ -9,6 +9,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { musteriKimligi } from "@/lib/eczanem/oturum";
 import { eczaneAdMap } from "@/lib/eczanem/gonderim";
+import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
 
 interface YayinDetaySatiri {
   yayin_id: string;
@@ -79,6 +80,7 @@ export async function GET() {
         .from("v_yayin_detay")
         .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, video_basi_soru_sayisi, durum, talep_no, firma_adi, firma_id, arac_id, arac_turu")
         .in("yayin_id", yayinIdler)
+        .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))
         .in("firma_id", kimlik.firmaIdler!)
         // Görünürlük kapısı (Faz 1): süresi hazır olmayan video izleyiciye gösterilmez.
         .or("arac_turu.in.(gorsel,flip_pdf),video_suresi_saniye.gt.0");

@@ -26,6 +26,7 @@ export interface FlipPdfIlerlemesi extends Record<string, unknown> {
   aktifSayfaSaniyeleri: Record<string, number>;
   sonSayfa: number;
   kuralSnapshot: { sayfaBasiSaniye: number; toplamSayfa: number };
+  sonKayitMs?: number;
 }
 
 abstract class TemelArac<TIlerleme extends Record<string, unknown>> implements OgrenmeAraciSunucusu<TIlerleme> {
@@ -112,6 +113,7 @@ class FlipPdfAraci extends TemelArac<FlipPdfIlerlemesi> {
       aktifSayfaSaniyeleri: Object.fromEntries(Object.entries({ ...(onceki?.aktifSayfaSaniyeleri ?? {}), ...yeni.aktifSayfaSaniyeleri }).map(([sayfa, sure]) => [sayfa, Math.max(Number(onceki?.aktifSayfaSaniyeleri?.[sayfa] ?? 0), Number(sure))])),
       sonSayfa: yeni.sonSayfa,
       kuralSnapshot: onceki?.kuralSnapshot ?? yeni.kuralSnapshot,
+      sonKayitMs: yeni.sonKayitMs ?? onceki?.sonKayitMs,
     };
   }
   async tamamlanabilirMi(arac: OgrenmeAraciKaydi, ilerleme: FlipPdfIlerlemesi) {

@@ -37,7 +37,12 @@ export async function GET(request: Request) {
 
   // Veri
   const d = await getUttData(adminSupabase, kullanici, baslangic, bitis);
-  const aracTurleri = await aracTuruDagilimi(adminSupabase, { baslangic, bitis, takimId: kullanici.takim_id });
+  const aracTurleri = await aracTuruDagilimi(adminSupabase, {
+    baslangic,
+    bitis,
+    takimId: kullanici.takim_id,
+    aktorId: kullanici.kullanici_id,
+  });
 
   // ─── İstatistikler — RPC çıktısından doğrudan ────────────────────────────
   const ozet = d.ozet ?? {

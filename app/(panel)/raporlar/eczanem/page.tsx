@@ -19,6 +19,8 @@ import { YenileButonu } from "@/components/ui/yenile-butonu";
 import { ECZANEM_RAPOR_GOREN_ROLLER, ECZANEM_TALEP_ACAN_ROLLER, YONETICI_ROLLER, ROL_ADLARI } from "@/lib/utils/roller";
 import { GRI_METIN, KIRMIZI, PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
+import OgrenmeAraciPerformansi from "@/components/raporlar/OgrenmeAraciPerformansi";
+import type { AracTuruRaporSatiri } from "@/lib/rapor/paylasilan/aracTuruDagilimi";
 import styles from "../utt/utt-report.module.css";
 
 const DEFAULT_PERIYOT: Periyot = "bu_ay";
@@ -85,6 +87,7 @@ interface CascadeEczaneSatiri {
 }
 
 interface RaporApiData {
+  arac_turu_dagilimi?: AracTuruRaporSatiri[];
   aktif: boolean;
   tip?: "cascade" | "pm";
   kullanici?: KullaniciBilgisi;
@@ -285,6 +288,7 @@ export default function EczanemRaporPage() {
             <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek(true)} />
           </div>
         </header>
+        <OgrenmeAraciPerformansi dagilim={data.arac_turu_dagilimi} />
 
         {/* Metrik Özet Kartları */}
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-5">

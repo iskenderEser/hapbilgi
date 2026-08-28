@@ -26,7 +26,7 @@ test("bildirimler rolün doğru öğrenme oynatıcısına yönlenir", () => {
   assert.match(kaynak, /\/ana-sayfa\?yayin_id=/);
   assert.match(kaynak, /\/challenge-club\/izle\//);
   assert.match(kaynak, /\/eclub\/panel\?oneri_id=/);
-  assert.match(kaynak, /\/eczanem\?yayin_id=/);
+  assert.match(kaynak, /\/eczanem\?gonderim_id=/);
 });
 
 test("Hapbi araç türü, cevap başarısı ve çalışan yayın bağlantısını taşır", () => {

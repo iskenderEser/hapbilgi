@@ -13,6 +13,8 @@ import { ECLUB_TUKETICI_ROLLERI, eclubKisiHedefRolu, hedefRolleriOku, type Hedef
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { eclubOneriDurumu } from "@/lib/eclub/izlemeKurali";
 import { eclubStoreFirmaBakiye } from "@/lib/eclub/store/eclubStoreBakiye";
+import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
+import { eclubKisiErisimi } from "@/lib/eclub/kisiErisim";
 
 export async function GET() {
   try {
@@ -22,16 +24,12 @@ export async function GET() {
 
     const adminSupabase = createAdminClient();
 
-    // auth_user_id → eclub_kisiler (kimlik)
-    const { data: kisi, error: kisiError } = await adminSupabase
-      .from("eclub_kisiler")
-      .select("kisi_id, rol, ad, soyad")
-      .eq("auth_user_id", user.id)
-      .maybeSingle();
-
-    if (kisiError) return hataYaniti("Kişi bilgisi alınamadı.", "eclub_kisiler SELECT — auth_user_id", kisiError);
+    // auth_user_id → aktif kişi, eczane ve firma zinciri
+    const kisiErisimi = await eclubKisiErisimi(adminSupabase, user.id);
+    const kisi = kisiErisimi.kisi;
     if (!kisi) return rolHatasi("Bu sayfa yalnız E-Club kişilerine açıktır.");
     if (!ECLUB_TUKETICI_ROLLERI.includes(kisi.rol)) return rolHatasi("Geçersiz kişi rolü.");
+    if (!kisiErisimi.eclub_aktif) return rolHatasi("Aktif E-Club firma bağlantısı bulunamadı.");
 
     const simdi = new Date().toISOString();
 
@@ -94,6 +92,8 @@ export async function GET() {
         .from("v_yayin_detay")
         .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, icerik_turu, talep_no, firma_id, firma_adi, hedef_roller, durum, video_puani, soru_puani, video_basi_soru_sayisi, arac_id, arac_turu")
         .in("yayin_id", yayinIds)
+        .in("firma_id", kisiErisimi.firmalar.filter((firma) => firma.aktif !== false && firma.eclub_aktif === true).map((firma) => firma.firma_id))
+        .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))
         // Görünürlük kapısı (Faz 1): süresi hazır olmayan video izleyiciye gösterilmez.
         .or("arac_turu.in.(gorsel,flip_pdf),video_suresi_saniye.gt.0");
       if (yayinError) return hataYaniti("Yayın detayları alınamadı.", "v_yayin_detay SELECT — E-Club panel", yayinError);

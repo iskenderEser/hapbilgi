@@ -15,6 +15,7 @@ export interface EclubKisiHapbiEgitimi {
   durum: "bekleyen" | "tamamlanan" | "suresi_gecmis";
   kalan_gun: number | null;
   kayitli_video_puani: number;
+  kayitli_arac_puani: number;
   kayitli_soru_puani: number;
   arac_turu: "video" | "podcast" | "gorsel" | "flip_pdf";
   dogru_cevap: number;
@@ -86,18 +87,19 @@ export async function eclubKisiHapbiOzeti(
   if (!firmaIdler.length) throw new Error("Aktif E-Club firma erişimi doğrulanamadı.");
 
   const simdiIso = simdi.toISOString();
-  const [oneriSonucu, puanSonucu, kayipSonucu, dogruSonucu, yanlisSonucu, bakiyeSonucu] = await Promise.all([
+  const [oneriSonucu, izlemeSonucu, puanSonucu, kayipSonucu, dogruSonucu, yanlisSonucu, bakiyeSonucu] = await Promise.all([
     db.from("eclub_oneri_kayitlari")
       .select("oneri_id, yayin_id, oneri_baslangic, oneri_bitis, izlendi_mi")
       .eq("kisi_id", kisi.kisi_id).lte("oneri_baslangic", simdiIso)
       .order("created_at", { ascending: false }),
+    db.from("eclub_izleme_kayitlari").select("izleme_id, oneri_id").eq("kisi_id", kisi.kisi_id),
     db.from("eclub_kazanilan_puanlar").select("yayin_id, puan").eq("kisi_id", kisi.kisi_id),
     db.from("eclub_ileri_sarma_kayitlari").select("yayin_id, kaybedilen_puan").eq("kisi_id", kisi.kisi_id),
-    db.from("eclub_dogru_cevap_kayitlari").select("yayin_id").eq("kisi_id", kisi.kisi_id),
-    db.from("eclub_yanlis_cevap_kayitlari").select("yayin_id").eq("kisi_id", kisi.kisi_id),
+    db.from("eclub_dogru_cevap_kayitlari").select("yayin_id, izleme_id").eq("kisi_id", kisi.kisi_id),
+    db.from("eclub_yanlis_cevap_kayitlari").select("yayin_id, izleme_id").eq("kisi_id", kisi.kisi_id),
     db.rpc("get_eclub_store_firma_bakiye", { p_kisi_id: kisi.kisi_id }),
   ]);
-  if (oneriSonucu.error || puanSonucu.error || kayipSonucu.error || dogruSonucu.error || yanlisSonucu.error || bakiyeSonucu.error) {
+  if (oneriSonucu.error || izlemeSonucu.error || puanSonucu.error || kayipSonucu.error || dogruSonucu.error || yanlisSonucu.error || bakiyeSonucu.error) {
     throw new Error("E-Club kişisel özeti okunamadı.");
   }
 
@@ -124,6 +126,17 @@ export async function eclubKisiHapbiOzeti(
   const yayinMap = new Map(yayinlar
     .filter((yayin) => yayin.durum === "yayinda" && yayinAraciKullanimaAcikMi(yayin.arac_turu) && hedefRol && hedefRolleriOku(yayin).includes(hedefRol))
     .map((yayin) => [yayin.yayin_id, yayin]));
+  const izlemeOnerisi = new Map((izlemeSonucu.data ?? []).map((izleme) => [izleme.izleme_id, izleme.oneri_id]));
+  const cevapSayilari = (satirlar: Array<{ izleme_id: string }>) => {
+    const sonuc = new Map<string, number>();
+    for (const satir of satirlar) {
+      const oneriId = izlemeOnerisi.get(satir.izleme_id);
+      if (oneriId) sonuc.set(oneriId, (sonuc.get(oneriId) ?? 0) + 1);
+    }
+    return sonuc;
+  };
+  const dogruSayilari = cevapSayilari(dogruSonucu.data ?? []);
+  const yanlisSayilari = cevapSayilari(yanlisSonucu.data ?? []);
   const gorunenOneriler = oneriler.flatMap((oneri) => {
     const yayin = yayinMap.get(oneri.yayin_id);
     if (!yayin || !firmaIdler.includes(String(yayin.firma_id))) return [];
@@ -132,8 +145,8 @@ export async function eclubKisiHapbiOzeti(
       : eclubOneriDurumu(oneri.oneri_baslangic, oneri.oneri_bitis, simdi) === "aktif"
         ? "bekleyen" as const
         : "suresi_gecmis" as const;
-    const dogruCevap = (dogruSonucu.data ?? []).filter((cevap) => cevap.yayin_id === oneri.yayin_id).length;
-    const yanlisCevap = (yanlisSonucu.data ?? []).filter((cevap) => cevap.yayin_id === oneri.yayin_id).length;
+    const dogruCevap = dogruSayilari.get(oneri.oneri_id) ?? 0;
+    const yanlisCevap = yanlisSayilari.get(oneri.oneri_id) ?? 0;
     return [{
       oneri_id: oneri.oneri_id,
       baslik: yayin.urun_adi ?? "Eğitim",
@@ -144,6 +157,7 @@ export async function eclubKisiHapbiOzeti(
         ? Math.max(0, Math.ceil((new Date(oneri.oneri_bitis).getTime() - simdi.getTime()) / 86_400_000))
         : null,
       kayitli_video_puani: sayi(yayin.video_puani),
+      kayitli_arac_puani: sayi(yayin.video_puani),
       kayitli_soru_puani: sayi(yayin.soru_puani),
       arac_turu: yayin.arac_turu,
       dogru_cevap: dogruCevap,

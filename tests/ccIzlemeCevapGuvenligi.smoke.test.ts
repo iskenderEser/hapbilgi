@@ -18,7 +18,7 @@ test("mutlu: C-Club tamamlama, soru, puan ve challenge sonucu atomik sözleşmey
   assert.match(sql, /cc_puan_referral_challenge_uq/);
   assert.match(oynatici, /ilkOynatmaZorunlu:\s*true/);
   assert.match(baslat, /puanli_zaman:\s*true/);
-  assert.match(oynatici, /Video tamamlandı[\s\S]*?Listeye dönülüyor…/);
+  assert.match(oynatici, /Öğrenme içeriği tamamlandı[\s\S]*?Listeye dönülüyor…/);
 });
 
 test("red: süresiz video, erken bitirme, mükerrer cevap ve atanmış küme dışı cevap reddedilir", () => {

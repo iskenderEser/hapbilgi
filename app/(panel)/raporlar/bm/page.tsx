@@ -12,6 +12,8 @@ import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
 import DagilimGrafik from '@/components/raporlar/DagilimGrafik';
 import UrunKirilimPaneli from '@/components/raporlar/UrunKirilimPaneli';
 import SayfaRehberi from '@/components/rehber/SayfaRehberi';
+import OgrenmeAraciPerformansi from '@/components/raporlar/OgrenmeAraciPerformansi';
+import type { AracTuruRaporSatiri } from '@/lib/rapor/paylasilan/aracTuruDagilimi';
 import styles from '../utt/utt-report.module.css';
 import bmStyles from './bm-report.module.css';
 
@@ -65,6 +67,7 @@ interface UttPerformans {
 }
 
 interface RaporData {
+  arac_turu_dagilimi: AracTuruRaporSatiri[];
   kullanici: {
     ad: string;
     soyad: string;
@@ -183,6 +186,7 @@ export default function BmRaporPage() {
             <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} />
           </div>
         </header>
+        <OgrenmeAraciPerformansi dagilim={data.arac_turu_dagilimi} />
 
         <div className={styles.heroGrid}>
           <section className={`${styles.panel} ${styles.scoreHero}`}>

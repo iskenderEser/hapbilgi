@@ -14,6 +14,7 @@ import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
 import { hazirParametreKontrol } from "@/lib/uretim/parametreKontrol";
 import { ogrenmeAraciAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
 import { ogrenmeAraciTuruMu } from "@/lib/ogrenmeAraci/sozlesme";
+import { ogrenmeAraciUretimAkisi } from "@/lib/ogrenmeAraci/uretimAkisi";
 
 // Talep formu ve raporlarla ortak kanonik eğitim türü sırası.
 const GECERLI_TALEP_TURLERI = TALEP_TURU_SIRA;
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
     if (typeof hazir_video !== "boolean" || typeof hazir_soru_seti !== "boolean") {
       return validasyonHatasi("Üretim varyantı seçimleri geçersiz.", ["hazir_video", "hazir_soru_seti"]);
     }
+    const uretimAkisi = ogrenmeAraciUretimAkisi(ogrenme_araci_turu, hazir_video, hazir_soru_seti);
     const aracTercihleri = ogrenme_araci_turu === "podcast"
       ? ogrenme_araci_tercihleri as { anlatim_turu?: unknown }
       : {};
@@ -228,6 +230,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       mesaj: "Talep oluşturuldu.",
+      uretim_akisi: uretimAkisi,
       talep: {
         ...yeniKunye,
         takim_id: ozelAlanlar.takim_id,

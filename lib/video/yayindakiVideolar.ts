@@ -11,6 +11,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { AnaSayfaVideo } from "./anaSayfaVideolari";
 import { kapsamGenisMi } from "./gorunurluk";
 import { hedefRolleriOku, type HedefRoller } from "@/lib/utils/roller";
+import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
 
 export interface YayindakiVideo extends AnaSayfaVideo {
   hedef_roller: HedefRoller;
@@ -58,6 +59,7 @@ export async function getYayindakiVideolar(
     .from("v_yayin_detay")
     .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, icerik_turu, hedef_roller, takim_id, uretici_id")
     .eq("durum", "yayinda")
+    .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))
     .order("yayin_tarihi", { ascending: false });
 
   // Kapsam: takıma bağlı içerik + firma geneli (takımsız, takim_id NULL) içerik.

@@ -16,6 +16,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!uuidGecerliMi(arac_id) || !uuidGecerliMi(body.islem_anahtari)) return validasyonHatasi("Araç veya işlem anahtarı geçersiz.", ["arac_id", "islem_anahtari"]);
     if (!Number.isSafeInteger(body.sayfa_sayisi) || body.sayfa_sayisi <= 0) return validasyonHatasi("PDF sayfa sayısı geçersiz.", ["sayfa_sayisi"]);
     if (typeof body.arama_metni !== "string" || body.arama_metni.length > 100000) return validasyonHatasi("PDF arama metni geçersiz.", ["arama_metni"]);
+    if (!["tam", "kismi", "metin_yok"].includes(body.arama_metni_durumu)) {
+      return validasyonHatasi("PDF metin çıkarma durumu geçersiz.", ["arama_metni_durumu"]);
+    }
     if (body.gorev_id != null && !uuidGecerliMi(body.gorev_id)) return validasyonHatasi("Görev kimliği geçersiz.", ["gorev_id"]);
     const db = createAdminClient();
     const { data: arac } = await db.from("ogrenme_araclari").select("talep_id, arac_turu, dosya_yolu").eq("arac_id", arac_id).maybeSingle();
@@ -34,9 +37,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     });
     if (rpcError) return uretimRpcHataYaniti("Flip PDF doğrulanamadı.", "uretim_flip_pdf_dogrula RPC", rpcError);
     const { data: guncel } = await db.from("ogrenme_araclari").select("metadata").eq("arac_id", arac_id).maybeSingle();
-    const metadata = { ...((guncel?.metadata as Record<string, unknown> | null) ?? {}), arama_metni: body.arama_metni.trim(), arama_metni_dogrulandi: true };
+    const metadata = {
+      ...((guncel?.metadata as Record<string, unknown> | null) ?? {}),
+      arama_metni: body.arama_metni.trim(),
+      arama_metni_durumu: body.arama_metni_durumu,
+      arama_metni_dogrulandi: body.arama_metni_durumu === "tam",
+    };
     const { error: metadataHatasi } = await db.from("ogrenme_araclari").update({ metadata }).eq("arac_id", arac_id);
     if (metadataHatasi) return NextResponse.json({ hata: "Flip PDF arama metni kaydedilemedi." }, { status: 500 });
-    return NextResponse.json({ mesaj: "Flip PDF üretim zincirine alındı.", sonuc }, { status: 201 });
+    return NextResponse.json({
+      mesaj: "Flip PDF üretim zincirine alındı.",
+      sonuc,
+      uyari: body.arama_metni_durumu === "tam"
+        ? null
+        : "PDF geçerli ancak aranabilir metnin tamamı çıkarılamadı.",
+    }, { status: 201 });
   } catch (error) { return sunucuHatasi(error, "POST Flip PDF doğrula"); }
 }

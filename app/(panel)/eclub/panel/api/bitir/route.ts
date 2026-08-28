@@ -11,6 +11,7 @@ import { eclubIzlemeHaklari, eclubSoruIndeksleri } from "@/lib/eclub/izlemeKural
 import { gecerliTur } from "@/lib/tclub/tur/kayit";
 import { tamamlamaKanitiDogrula } from "@/lib/ogrenmeAraci/sozlesme";
 import { yayinAraciKullanimaAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
+import { eclubAktifYayinYetkisi } from "@/lib/eclub/aktifYayinYetkisi";
 
 const VARSAYILAN_SORU_SAYISI = 2;
 
@@ -46,6 +47,7 @@ export async function PUT(request: NextRequest) {
     const izlemeKontrol = veriKontrol(izleme, "eclub_izleme_kayitlari SELECT — izleme_id", "İzleme kaydı bulunamadı.");
     if (!izlemeKontrol.gecerli) return izlemeKontrol.yanit;
     if (izleme.kisi_id !== kisi.kisi_id) return rolHatasi("Bu izleme kaydına erişim yetkiniz yok.");
+    if (!(await eclubAktifYayinYetkisi(adminSupabase, user.id, izleme.yayin_id))) return rolHatasi("Aktif E-Club firma bağlantısı bulunamadı.");
     if (!izleme.oneri_id) return hataYaniti("İzleme öneri kaydına bağlı değil.", "eclub_izleme_kayitlari.oneri_id", null);
     const { data: aracDetay } = await adminSupabase.from("v_yayin_detay").select("arac_turu, durum").eq("yayin_id", izleme.yayin_id).maybeSingle();
     if (!aracDetay || aracDetay.durum !== "yayinda") return isKuraluHatasi("Yayın artık aktif değil.");

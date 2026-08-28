@@ -282,7 +282,7 @@ export default function CcVideoOynatici({
     }
 
     if (d.ileri_sarildi) {
-      uyari("Video ileri sarıldığı için sorular gösterilmeyecek.");
+      uyari("Öğrenme içeriğinde ileri gidildiği için sorular gösterilmeyecek.");
     }
 
     if (d.soru_gosterilecek) {
@@ -477,7 +477,7 @@ export default function CcVideoOynatici({
         </div>
 
         {/* Video */}
-        {video.arac_turu === "podcast" && video.arac_id && <div className="border-b border-gray-100 p-4"><PodcastOynatici aracId={video.arac_id} yayinId={video.yayin_id} bagId={challenge_id} hata={hata} baslat={async () => { const r = await fetch("/challenge-club/izle/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id: video.yayin_id, challenge_id: challenge_id ?? undefined }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Podcast dinlemesi başlatılamadı."); izlemeIdRef.current = d.izleme.izleme_id; setIzlemeId(d.izleme.izleme_id); setIzlemeTuru(d.izleme.izleme_turu ?? null); return { izlemeId: d.izleme.izleme_id, ilerleme: d.izleme.ilerleme_durumu }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleIzlemeBitir(); }} onTamamlandi={onVeriYenile} /></div>}
+        {video.arac_turu === "podcast" && video.arac_id && <div className="border-b border-gray-100 p-4"><PodcastOynatici aracId={video.arac_id} yayinId={video.yayin_id} bagId={challenge_id} ileriSarmaAcik={video.ileri_sarma_acik} hata={hata} baslat={async () => { const r = await fetch("/challenge-club/izle/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id: video.yayin_id, challenge_id: challenge_id ?? undefined }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Podcast dinlemesi başlatılamadı."); izlemeIdRef.current = d.izleme.izleme_id; setIzlemeId(d.izleme.izleme_id); setIzlemeTuru(d.izleme.izleme_turu ?? null); return { izlemeId: d.izleme.izleme_id, ilerleme: d.izleme.ilerleme_durumu }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleIzlemeBitir(); }} onTamamlandi={onVeriYenile} /></div>}
         {video.arac_turu === "gorsel" && video.arac_id && <div className="border-b border-gray-100 p-4"><GorselOynatici aracId={video.arac_id} yayinId={video.yayin_id} bagId={challenge_id} hata={hata} baslat={async () => { const r = await fetch("/challenge-club/izle/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id: video.yayin_id, challenge_id: challenge_id ?? undefined }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Görsel incelemesi başlatılamadı."); izlemeIdRef.current = d.izleme.izleme_id; setIzlemeId(d.izleme.izleme_id); setIzlemeTuru(d.izleme.izleme_turu ?? null); return { izlemeId: d.izleme.izleme_id }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleIzlemeBitir(); }} onTamamlandi={onVeriYenile} /></div>}
         {video.arac_turu === "flip_pdf" && video.arac_id && <div className="border-b border-gray-100 p-4"><FlipPdfOynatici aracId={video.arac_id} yayinId={video.yayin_id} bagId={challenge_id} hata={hata} baslat={async () => { const r = await fetch("/challenge-club/izle/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id: video.yayin_id, challenge_id: challenge_id ?? undefined }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Flip PDF okuması başlatılamadı."); izlemeIdRef.current = d.izleme.izleme_id; setIzlemeId(d.izleme.izleme_id); setIzlemeTuru(d.izleme.izleme_turu ?? null); return { izlemeId: d.izleme.izleme_id, ilerleme: d.izleme.ilerleme_durumu }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleIzlemeBitir(); }} onTamamlandi={onVeriYenile} /></div>}
         {!(["podcast", "gorsel", "flip_pdf"].includes(video.arac_turu ?? "video")) && video.video_url && (
@@ -506,7 +506,7 @@ export default function CcVideoOynatici({
                   <div className="flex flex-col items-center text-center">
                     <CheckCircle2 className="size-10 text-emerald-400" />
                     <strong className="mt-3 text-base">
-                      {cevapSonuclari.length > 0 ? "Cevaplar kaydedildi" : "Video tamamlandı"}
+                      {cevapSonuclari.length > 0 ? "Cevaplar kaydedildi" : "Öğrenme içeriği tamamlandı"}
                     </strong>
                     <span className="mt-1 text-xs font-semibold text-white/80">Listeye dönülüyor…</span>
                   </div>

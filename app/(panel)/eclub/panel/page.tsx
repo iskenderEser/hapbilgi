@@ -97,7 +97,7 @@ export default function EclubPanelPage() {
       }
       etkilesimGuncelle(tur, yayinId, tur === "begeni" ? d.begeni_mi === true : d.favori_mi === true);
     } catch (err) {
-      hata("Video etkileşimi kaydedilemedi.", `POST /izle/api/${tur}`, err instanceof Error ? err.message : undefined);
+      hata("İçerik etkileşimi kaydedilemedi.", `POST /izle/api/${tur}`, err instanceof Error ? err.message : undefined);
     }
   };
 
@@ -141,14 +141,14 @@ export default function EclubPanelPage() {
           />
 
           <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <EclubKisiStat ikon={Clock3} etiket="Bekleyen Video" deger={bekleyen} detay="Süresi devam eden" renk="#d78022" zemin="#fff6e8" />
-            <EclubKisiStat ikon={CheckCircle2} etiket="Tamamlanan" deger={tamamlanan} detay="İzlediğiniz videolar" renk="#16865f" zemin="#ebf8f2" />
+            <EclubKisiStat ikon={Clock3} etiket="Bekleyen İçerik" deger={bekleyen} detay="Süresi devam eden" renk="#d78022" zemin="#fff6e8" />
+            <EclubKisiStat ikon={CheckCircle2} etiket="Tamamlanan" deger={tamamlanan} detay="Tamamladığınız içerikler" renk="#16865f" zemin="#ebf8f2" />
             <EclubKisiStat ikon={Trophy} etiket="Net Puan" deger={Math.max(0, statOzeti.toplam_kazanilan_puan - statOzeti.ileri_sarma_kaybi).toLocaleString("tr-TR")} detay={`${statOzeti.dogru_cevap} doğru · ${statOzeti.ileri_sarma_kaybi} ileri sarma kaybı`} renk="#7358c7" zemin="#f2efff" />
             <EclubKisiStat ikon={Coins} etiket="Kullanılabilir Puan" deger={statOzeti.harcanabilir_puan.toLocaleString("tr-TR")} detay="E‑Club Store bakiyesi" />
           </section>
 
           {firmaOzetleri.length === 0 ? (
-            <EclubKisiBosDurum ikon={Video} baslik="Firma videosu bulunmuyor" aciklama="Firmanız size video gönderdiğinde burada görüntülenecek." />
+            <EclubKisiBosDurum ikon={Video} baslik="Firma içeriği bulunmuyor" aciklama="Firmanız size öğrenme içeriği gönderdiğinde burada görüntülenecek." />
           ) : (
             <EclubFirmaVideoKatalogu
               key={aktifFirmaId}

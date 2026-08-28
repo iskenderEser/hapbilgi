@@ -31,6 +31,8 @@ import DagilimGrafik from '@/components/raporlar/DagilimGrafik';
 import UrunKirilimPaneli, { type UrunKirilim } from '@/components/raporlar/UrunKirilimPaneli';
 import TakimBolgeUttAkordeon, { type HiyerarsiSatiri } from './_components/TakimBolgeUttAkordeon';
 import SayfaRehberi from '@/components/rehber/SayfaRehberi';
+import OgrenmeAraciPerformansi from '@/components/raporlar/OgrenmeAraciPerformansi';
+import type { AracTuruRaporSatiri } from '@/lib/rapor/paylasilan/aracTuruDagilimi';
 import styles from '../utt/utt-report.module.css';
 
 const DEFAULT_PERIYOT: Periyot = 'bu_ay';
@@ -87,6 +89,7 @@ interface EgitimTuruEtkisiSatiri {
 }
 
 interface RaporData {
+  arac_turu_dagilimi: AracTuruRaporSatiri[];
   kullanici: {
     ad: string;
     soyad: string;
@@ -296,6 +299,7 @@ export default function YoneticiRaporPage() {
             <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} />
           </div>
         </header>
+        <OgrenmeAraciPerformansi dagilim={data.arac_turu_dagilimi} />
 
         {/* Hero Grid: Şirket Net Puanı + Güncel Kapsama */}
         <div className={styles.heroGrid}>

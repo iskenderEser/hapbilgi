@@ -58,7 +58,7 @@ export function icerikUret(olayTuru: PushOlayTuru, aliciRol: string, baglam: Pus
 
     case "eczanem_gonderim":
       if (aliciRol === MUSTERI_ROLU) {
-        return { baslik: "Eczanem", govde: "Eczanenizden yeni bir öğrenme içeriği var.", url: baglam.yayinId ? `/eczanem?yayin_id=${encodeURIComponent(baglam.yayinId)}` : "/eczanem" };
+        return { baslik: "Eczanem", govde: "Eczanenizden yeni bir öğrenme içeriği var.", url: baglam.bagId ? `/eczanem?gonderim_id=${encodeURIComponent(baglam.bagId)}` : "/eczanem" };
       }
       return null;
 

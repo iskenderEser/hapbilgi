@@ -25,6 +25,8 @@ import { useRapor } from '@/hooks/useRapor';
 import { YenileButonu } from '@/components/ui/yenile-butonu';
 import { formatPuan, GRI_METIN, KIRMIZI, PERIYOTLAR, type Periyot } from '@/lib/utils/raporUtils';
 import SayfaRehberi from '@/components/rehber/SayfaRehberi';
+import OgrenmeAraciPerformansi from '@/components/raporlar/OgrenmeAraciPerformansi';
+import type { AracTuruRaporSatiri } from '@/lib/rapor/paylasilan/aracTuruDagilimi';
 import styles from '../utt/utt-report.module.css';
 
 const DEFAULT_PERIYOT: Periyot = 'bu_ay';
@@ -74,6 +76,7 @@ interface EgitimTuruEtkisiSatiri {
 }
 
 interface RaporData {
+  arac_turu_dagilimi: AracTuruRaporSatiri[];
   kullanici: {
     ad: string;
     soyad: string;
@@ -174,6 +177,7 @@ export default function UretimRaporlariPage() {
             <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} />
           </div>
         </header>
+        <OgrenmeAraciPerformansi dagilim={data.arac_turu_dagilimi} />
 
         {/* Üretim Hero Grid */}
         <div className={styles.heroGrid}>

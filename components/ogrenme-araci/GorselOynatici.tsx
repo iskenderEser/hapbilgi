@@ -25,7 +25,7 @@ export default function GorselOynatici({
   const [izlemeId, setIzlemeId] = useState<string | null>(null);
   const [saniye, setSaniye] = useState(0);
   const [islem, setIslem] = useState(false);
-  const baslangicRef = useRef(0);
+  const sonTikRef = useRef(0);
 
   useEffect(() => {
     const q = bagId ? `?bag_id=${encodeURIComponent(bagId)}` : "";
@@ -36,7 +36,7 @@ export default function GorselOynatici({
         setUrl(data.erisim_url);
         const oturum = await baslat();
         setIzlemeId(oturum.izlemeId);
-        baslangicRef.current = Date.now();
+        sonTikRef.current = performance.now();
       })
       .catch((error) => hata(
         "Görsel açılamadı.",
@@ -49,9 +49,12 @@ export default function GorselOynatici({
   useEffect(() => {
     if (!url) return;
     const sayac = window.setInterval(() => {
+      const simdi = performance.now();
       if (document.visibilityState === "visible") {
-        setSaniye(Math.floor((Date.now() - baslangicRef.current) / 1000));
+        const fark = sonTikRef.current > 0 ? Math.min(1.5, (simdi - sonTikRef.current) / 1000) : 0;
+        setSaniye((onceki) => onceki + fark);
       }
+      sonTikRef.current = simdi;
     }, 1000);
     return () => window.clearInterval(sayac);
   }, [url]);

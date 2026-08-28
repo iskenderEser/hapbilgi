@@ -6,19 +6,21 @@ interface Props {
   aracId: string;
   yayinId: string;
   bagId?: string | null;
+  ileriSarmaAcik?: boolean;
   baslat: () => Promise<{ izlemeId: string; ilerleme?: { sonKonumSaniye?: number } | null }>;
   bitir: (izlemeId: string) => Promise<void>;
   onTamamlandi?: () => void | Promise<void>;
   hata: (mesaj: string, adim?: string, detay?: string) => void;
 }
 
-export default function PodcastOynatici({ aracId, yayinId, bagId, baslat, bitir, onTamamlandi, hata }: Props) {
+export default function PodcastOynatici({ aracId, yayinId, bagId, ileriSarmaAcik = false, baslat, bitir, onTamamlandi, hata }: Props) {
   const [erisim, setErisim] = useState<{ erisim_url: string; kapak_url: string | null; transkript_url: string | null } | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const izlemeIdRef = useRef<string | null>(null);
   const sonTikRef = useRef(0);
   const aktifRef = useRef(0);
   const bitiyorRef = useRef(false);
+  const izinliKonumRef = useRef(0);
 
   useEffect(() => {
     const q = bagId ? `?bag_id=${encodeURIComponent(bagId)}` : "";
@@ -49,13 +51,22 @@ export default function PodcastOynatici({ aracId, yayinId, bagId, baslat, bitir,
     if (!izlemeIdRef.current) {
       const acilis = await baslat();
       izlemeIdRef.current = acilis.izlemeId;
-      if (acilis.ilerleme?.sonKonumSaniye && audioRef.current) audioRef.current.currentTime = acilis.ilerleme.sonKonumSaniye;
+      if (acilis.ilerleme?.sonKonumSaniye && audioRef.current) {
+        audioRef.current.currentTime = acilis.ilerleme.sonKonumSaniye;
+        izinliKonumRef.current = acilis.ilerleme.sonKonumSaniye;
+      }
     }
     sonTikRef.current = performance.now();
   };
 
   const zamanGuncellendi = () => {
-    if (document.visibilityState !== "visible" || audioRef.current?.paused) return;
+    const audio = audioRef.current;
+    if (!audio || document.visibilityState !== "visible" || audio.paused) return;
+    if (!ileriSarmaAcik && audio.currentTime > izinliKonumRef.current + 2) {
+      audio.currentTime = izinliKonumRef.current;
+      return;
+    }
+    izinliKonumRef.current = Math.max(izinliKonumRef.current, audio.currentTime);
     const simdi = performance.now();
     if (sonTikRef.current > 0) aktifRef.current += Math.min(1.5, (simdi - sonTikRef.current) / 1000);
     sonTikRef.current = simdi;
@@ -108,6 +119,12 @@ export default function PodcastOynatici({ aracId, yayinId, bagId, baslat, bitir,
         className="w-full"
         onPlay={() => void oynatildi()}
         onTimeUpdate={zamanGuncellendi}
+        onSeeking={() => {
+          const audio = audioRef.current;
+          if (audio && !ileriSarmaAcik && audio.currentTime > izinliKonumRef.current + 2) {
+            audio.currentTime = izinliKonumRef.current;
+          }
+        }}
         onPause={() => void ilerlemeKaydet().catch(() => undefined)}
         onEnded={() => void sonaErdi()}
       />

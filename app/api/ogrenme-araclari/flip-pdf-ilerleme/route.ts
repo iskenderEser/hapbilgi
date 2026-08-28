@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     const { tablo, sahipKolon, sahipId } = sahip;
     const { data: izleme } = await db
       .from(tablo)
-      .select("izleme_id, yayin_id, tamamlandi_mi, ilerleme_durumu")
+      .select("izleme_id, yayin_id, tamamlandi_mi, ilerleme_durumu, izleme_baslangic")
       .eq("izleme_id", body.izleme_id)
       .eq(sahipKolon, sahipId)
       .maybeSingle();
@@ -50,11 +50,17 @@ export async function POST(request: NextRequest) {
     const onceki = (izleme.ilerleme_durumu ?? null) as FlipPdfIlerlemesi | null;
     const ham = body.sayfa_sureleri && typeof body.sayfa_sureleri === "object" ? body.sayfa_sureleri as Record<string, unknown> : {};
     const sureler: Record<string, number> = { ...(onceki?.aktifSayfaSaniyeleri ?? {}) };
+    const simdi = Date.now();
+    const oncekiKayit = Number(onceki?.sonKayitMs ?? new Date(izleme.izleme_baslangic).getTime());
+    let kalanArtis = Math.min(30, Math.max(0, Math.ceil((simdi - oncekiKayit) / 1000) * 2 + 2));
     for (const [anahtar, deger] of Object.entries(ham)) {
       const sayfaNo = Number(anahtar);
       const saniye = Math.floor(Number(deger));
       if (Number.isInteger(sayfaNo) && sayfaNo >= 1 && sayfaNo <= toplam && saniye >= 0) {
-        sureler[anahtar] = Math.min(3600, Math.max(sureler[anahtar] ?? 0, saniye));
+        const eski = sureler[anahtar] ?? 0;
+        const artis = Math.min(kalanArtis, Math.max(0, saniye - eski));
+        sureler[anahtar] = Math.min(3600, eski + artis);
+        kalanArtis -= artis;
       }
     }
     const okunan = Array.from({ length: toplam }, (_, i) => i + 1).filter((n) => Number(sureler[String(n)] ?? 0) >= SAYFA_BASI_SANIYE);
@@ -68,6 +74,7 @@ export async function POST(request: NextRequest) {
         sayfaBasiSaniye: SAYFA_BASI_SANIYE,
         toplamSayfa: toplam,
       },
+      sonKayitMs: simdi,
     });
     let kanit = null;
     if (body.tamamla === true) {

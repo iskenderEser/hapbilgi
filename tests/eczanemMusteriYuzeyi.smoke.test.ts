@@ -21,12 +21,12 @@ const hesapRoute = readFileSync("app/eczanem/api/siparis/hesap/route.ts", "utf8"
 
 test("mutlu: müşteri ana sayfası belirlenen altı dijital kanal rafını ve ayrı Puanlarım sayfasını sunar", () => {
   const basliklar = [
-    "Yeni Videolarım",
+    "Yeni Öğrenme İçeriklerim",
     "Yarım Bıraktıklarım",
-    "En Son İzlediklerim",
+    "En Son Tamamladıklarım",
     "En Çok Beğenilenler",
     "En Çok Favorilenenler",
-    "En Çok İzlenenler",
+    "En Çok Tamamlananlar",
   ];
   for (const baslik of basliklar) assert.match(sayfa, new RegExp(`baslik=\"${baslik}\"`));
 
@@ -47,7 +47,8 @@ test("mutlu: müşteri ana sayfası belirlenen altı dijital kanal rafını ve a
   assert.match(oynatici, /maxIzlenenRef/);
   assert.match(oynatici, /player\.onSeeked/);
   assert.match(oynatici, /current > maxIzlenenRef\.current \+ 1/);
-  assert.match(oynatici, /Müşteri izlemesinde ileri sarma kapalıdır/);
+  assert.match(oynatici, /Kayıt yalnız yukarıdaki başlatma düğmesine bastığınızda başlar/);
+  assert.match(oynatici, /İçeriği tamamladığınızda puanınız otomatik eklenir/);
   assert.doesNotMatch(oynatici, /if \(!res\.ok\)[\s\S]{0,320}izlemeBitirildiRef\.current = false/);
   assert.match(ilerlemeRoute, /\.eq\("musteri_id", kimlik\.musteriId!\)/);
   assert.match(ilerlemeRoute, /\.eq\("tamamlandi_mi", false\)/);

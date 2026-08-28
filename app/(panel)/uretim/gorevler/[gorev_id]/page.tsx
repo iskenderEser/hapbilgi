@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
@@ -16,7 +16,12 @@ import { talepIdGoster } from "@/lib/utils/talepId";
 import { uretimToast, toastVaryant, type ToastAsama, type ToastOlay } from "@/lib/uretim/toastMesaj";
 import type { UretimGorevIcerigi, UretimGorevi } from "@/lib/uretim/gorevTipleri";
 import { bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
-import { hazirFlipPdfYukle, hazirGorselYukle, hazirPodcastYukle } from "@/lib/ogrenmeAraci/bunnyYuklemeIstemci";
+import {
+  hazirFlipPdfYukle,
+  hazirGorselYukle,
+  hazirPodcastYukle,
+  type OgrenmeAraciYuklemeKontrolu,
+} from "@/lib/ogrenmeAraci/bunnyYuklemeIstemci";
 
 const ASAMA: Record<ToastAsama, { etiket: Asama; liste: string }> = {
   senaryo: { etiket: "Senaryo", liste: "/senaryolar" },
@@ -41,6 +46,8 @@ export default function UretimGorevDetayPage() {
   const [podcastDosyalari, setPodcastDosyalari] = useState<{ ses?: File; kapak?: File; transkript?: File }>({});
   const [gorselDosyasi, setGorselDosyasi] = useState<File | null>(null);
   const [flipPdfDosyasi, setFlipPdfDosyasi] = useState<File | null>(null);
+  const aracYuklemeRef = useRef<AbortController | null>(null);
+  const [aracYuklemeBilgisi, setAracYuklemeBilgisi] = useState<{ yuzde: number; dosyaRolu: string } | null>(null);
 
   useEffect(() => {
     if (authYukleniyor) return;
@@ -79,6 +86,7 @@ export default function UretimGorevDetayPage() {
   }, [hata, params.gorev_id]);
 
   useEffect(() => { if (kullanici) void veriCek(); }, [kullanici, veriCek]);
+  useEffect(() => () => aracYuklemeRef.current?.abort(), []);
 
   const asama = gorev ? ASAMA[gorev.asama] : null;
   const isIU = kullanici?.rol === IU_ROLU;
@@ -151,9 +159,26 @@ export default function UretimGorevDetayPage() {
     if (teslimBasarili) setYuklenenVideo(null);
   };
 
+  const aracYuklemeKontroluOlustur = (): OgrenmeAraciYuklemeKontrolu => {
+    aracYuklemeRef.current?.abort();
+    const denetleyici = new AbortController();
+    aracYuklemeRef.current = denetleyici;
+    return {
+      signal: denetleyici.signal,
+      onIlerleme: ({ yuzde, dosyaRolu }) => setAracYuklemeBilgisi({ yuzde, dosyaRolu }),
+      onUyari: (mesaj) => uyari(mesaj),
+    };
+  };
+
+  const aracYuklemeyiBitir = () => {
+    aracYuklemeRef.current = null;
+    setAracYuklemeBilgisi(null);
+  };
+
   const podcastYukle = async () => {
     if (!gorev || !podcastDosyalari.ses || !podcastDosyalari.kapak || !podcastDosyalari.transkript) return;
     setIslem(true);
+    const kontrol = aracYuklemeKontroluOlustur();
     try {
       await hazirPodcastYukle({
         talepId: gorev.talep_id,
@@ -163,6 +188,7 @@ export default function UretimGorevDetayPage() {
         kaynak: "iu",
         gorevId: gorev.gorev_id,
         aracId: gorev.arac_id ?? undefined,
+        kontrol,
       });
       basari("Podcast üretici incelemesine gönderildi.");
       setPodcastDosyalari({});
@@ -170,6 +196,7 @@ export default function UretimGorevDetayPage() {
     } catch (err) {
       hata("Podcast yüklenemedi.", "podcast yükleme", err instanceof Error ? err.message : undefined);
     } finally {
+      aracYuklemeyiBitir();
       setIslem(false);
     }
   };
@@ -177,27 +204,29 @@ export default function UretimGorevDetayPage() {
   const gorselYukle = async () => {
     if (!gorev || !gorselDosyasi) return;
     setIslem(true);
+    const kontrol = aracYuklemeKontroluOlustur();
     try {
-      await hazirGorselYukle({ talepId: gorev.talep_id, gorsel: gorselDosyasi, kaynak: "iu", gorevId: gorev.gorev_id, aracId: gorev.arac_id ?? undefined });
+      await hazirGorselYukle({ talepId: gorev.talep_id, gorsel: gorselDosyasi, kaynak: "iu", gorevId: gorev.gorev_id, aracId: gorev.arac_id ?? undefined, kontrol });
       basari("Görsel üretici incelemesine gönderildi.");
       setGorselDosyasi(null);
       await veriCek();
     } catch (err) {
       hata("Görsel yüklenemedi.", "görsel yükleme", err instanceof Error ? err.message : undefined);
-    } finally { setIslem(false); }
+    } finally { aracYuklemeyiBitir(); setIslem(false); }
   };
 
   const flipPdfYukle = async () => {
     if (!gorev || !flipPdfDosyasi) return;
     setIslem(true);
+    const kontrol = aracYuklemeKontroluOlustur();
     try {
-      await hazirFlipPdfYukle({ talepId: gorev.talep_id, pdf: flipPdfDosyasi, kaynak: "iu", gorevId: gorev.gorev_id, aracId: gorev.arac_id ?? undefined });
+      await hazirFlipPdfYukle({ talepId: gorev.talep_id, pdf: flipPdfDosyasi, kaynak: "iu", gorevId: gorev.gorev_id, aracId: gorev.arac_id ?? undefined, kontrol });
       basari("Flip PDF üretici incelemesine gönderildi.");
       setFlipPdfDosyasi(null);
       await veriCek();
     } catch (err) {
       hata("Flip PDF yüklenemedi.", "PDF yükleme", err instanceof Error ? err.message : undefined);
-    } finally { setIslem(false); }
+    } finally { aracYuklemeyiBitir(); setIslem(false); }
   };
 
   const kararVer = async (karar: "onaylandi" | "revizyon bekleniyor" | "Iptal Edildi", notlar?: string) => {
@@ -234,6 +263,7 @@ export default function UretimGorevDetayPage() {
           <div className="flex flex-wrap gap-2 border-b border-gray-100 px-4 py-3 md:px-5"><TeknikPill teknikAdi={gorev.talep?.teknik_adi ?? "-"} /><HedefRolPilleri hedefRoller={gorev.talep?.hedef_roller ?? []} /><VaryantPill hazirVideo={gorev.talep?.hazir_video ?? false} hazirSoruSeti={gorev.talep?.hazir_soru_seti ?? false} kendiSatirinda={false} />{gorev.atanan_iu && <span className="rounded-full border border-gray-200 px-2.5 py-1 text-[10px] text-gray-500">İçerik Üreticisi: {gorev.atanan_iu.ad_soyad}</span>}</div>
 
           <div className="flex flex-col gap-4 px-4 py-4 md:px-5">
+            {aracYuklemeBilgisi && <div className="flex items-center gap-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2"><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-blue-800">{aracYuklemeBilgisi.dosyaRolu}: %{aracYuklemeBilgisi.yuzde}</p><div className="mt-1 h-1.5 overflow-hidden rounded-full bg-blue-100"><div className="h-full bg-[#56aeff]" style={{ width: `${aracYuklemeBilgisi.yuzde}%` }} /></div></div><button type="button" onClick={() => aracYuklemeRef.current?.abort()} className="rounded-md border border-blue-200 bg-white px-2.5 py-1 text-xs text-blue-700">İptal Et</button></div>}
             {icerik?.asama === "senaryo" && icerik.senaryo_metni && <div className="whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-700">{icerik.senaryo_metni}</div>}
             {icerik?.asama === "video" && icerik.video_url && <VideoOnizleme videoUrl={icerik.video_url} className="rounded-xl" ariaLabel="Üretim videosunu oynat" />}
             {icerik?.asama === "podcast" && <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4"><img src={icerik.kapak_url} alt="Podcast kapağı" className="mx-auto aspect-square w-full max-w-56 rounded-xl object-cover" /><audio controls preload="metadata" src={icerik.ses_url} className="w-full" /><a href={icerik.transkript_url} target="_blank" rel="noreferrer" className="text-center text-sm font-semibold text-[#287fce]">Transkripti aç</a></div>}

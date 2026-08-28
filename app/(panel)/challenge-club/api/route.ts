@@ -28,6 +28,7 @@ import { ayBaslangici } from "@/lib/zaman/kontrol";
 import { gecerliTurBaslangiclari } from "@/lib/tclub/tur/kayit";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { ccKartMetrikleri } from "@/lib/cclub/kartDetaylari";
+import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
 
 type ChallengeDurumu = "bekliyor" | "izlendi";
 
@@ -104,6 +105,7 @@ export async function GET(request: NextRequest) {
           .from("v_yayin_detay")
           .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, talep_no, firma_adi, icerik_turu")
           .eq("durum", "yayinda")
+          .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))
           .eq("firma_id", kullanici.firma_id)
           .contains("hedef_roller", ["bm"])
           .lte("yayin_tarihi", simdi)
@@ -196,7 +198,8 @@ export async function GET(request: NextRequest) {
         const { data: yayinlar } = await adminSupabase
           .from("v_yayin_detay")
           .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, talep_no, firma_adi, icerik_turu")
-          .in("yayin_id", yayinIdler);
+          .in("yayin_id", yayinIdler)
+          .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur));
         for (const y of (yayinlar as ChallengeYayinSatiri[] | null) ?? []) yayinMap[y.yayin_id] = y;
       }
       const metrikler = await ccKartMetrikleri(adminSupabase, yayinIdler, kullanici.kullanici_id);
@@ -245,7 +248,8 @@ export async function GET(request: NextRequest) {
         const { data: yayinlar } = await adminSupabase
           .from("v_yayin_detay")
           .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, talep_no, firma_adi, icerik_turu")
-          .in("yayin_id", yayinIdler);
+          .in("yayin_id", yayinIdler)
+          .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur));
         for (const y of (yayinlar as ChallengeYayinSatiri[] | null) ?? []) yayinMap[y.yayin_id] = y;
       }
       const metrikler = await ccKartMetrikleri(adminSupabase, yayinIdler, kullanici.kullanici_id);
@@ -347,12 +351,13 @@ export async function POST(request: NextRequest) {
     // Yayın kontrolü (bir kez)
     const { data: yayin, error: yError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, urun_adi, teknik_adi, durum, hedef_roller")
+      .select("yayin_id, urun_adi, teknik_adi, durum, hedef_roller, arac_turu")
       .eq("yayin_id", yayin_id)
       .single();
 
     if (yError || !yayin) return isKuraluHatasi("Yayın bulunamadı.");
     if (yayin.durum !== "yayinda") return isKuraluHatasi("Yayın aktif değil.");
+    if (!ogrenmeAraciBayraklari()[yayin.arac_turu as keyof ReturnType<typeof ogrenmeAraciBayraklari>]) return isKuraluHatasi("Bu öğrenme aracı kullanıma kapalı.");
     if (!(yayin.hedef_roller ?? []).includes("bm")) return isKuraluHatasi("Sadece CC yayınları challenge'a alınabilir.");
 
     // İş kuralı 5 (global): BM kendisi bu videoyu izlemiş mi? (önce kendisi izlemeli)

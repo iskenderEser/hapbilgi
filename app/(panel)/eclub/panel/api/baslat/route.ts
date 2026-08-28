@@ -13,6 +13,7 @@ import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasy
 import { eclubIzlemeHaklari } from "@/lib/eclub/izlemeKurali";
 import { olayIdGecerliMi } from "@/lib/izleme/baslat";
 import { yayinAraciKullanimaAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
+import { eclubKisiErisimi } from "@/lib/eclub/kisiErisim";
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,16 +23,12 @@ export async function POST(request: NextRequest) {
 
     const adminSupabase = createAdminClient();
 
-    // auth_user_id → kişi kimliği
-    const { data: kisi, error: kisiError } = await adminSupabase
-      .from("eclub_kisiler")
-      .select("kisi_id, rol")
-      .eq("auth_user_id", user.id)
-      .maybeSingle();
-
-    if (kisiError) return hataYaniti("Kişi bilgisi alınamadı.", "eclub_kisiler SELECT — auth_user_id", kisiError);
+    // auth_user_id → aktif kişi, eczane ve firma zinciri
+    const kisiErisimi = await eclubKisiErisimi(adminSupabase, user.id);
+    const kisi = kisiErisimi.kisi;
     if (!kisi) return rolHatasi("Bu işlem yalnız E-Club kişilerine açıktır.");
     if (!ECLUB_TUKETICI_ROLLERI.includes(kisi.rol)) return rolHatasi("Geçersiz kişi rolü.");
+    if (!kisiErisimi.eclub_aktif) return rolHatasi("Aktif E-Club firma bağlantısı bulunamadı.");
 
     const body = await request.json();
     const { oneri_id } = body;
@@ -55,7 +52,7 @@ export async function POST(request: NextRequest) {
     // Yayın hâlâ yayında ve kişinin rolüne mi açık?
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, durum, hedef_roller, video_suresi_saniye, arac_turu")
+      .select("yayin_id, firma_id, durum, hedef_roller, video_suresi_saniye, arac_turu")
       .eq("yayin_id", oneri.yayin_id)
       .single();
 
@@ -63,6 +60,8 @@ export async function POST(request: NextRequest) {
     const yayinKontrol = veriKontrol(yayin, "v_yayin_detay SELECT — yayin_id", "Yayın bulunamadı.");
     if (!yayinKontrol.gecerli) return yayinKontrol.yanit;
     if (yayin.durum !== "yayinda") return isKuraluHatasi(`Video şu an yayında değil. Mevcut durum: ${yayin.durum}`);
+    const aktifFirmaIdler = new Set(kisiErisimi.firmalar.filter((firma) => firma.aktif !== false && firma.eclub_aktif === true).map((firma) => firma.firma_id));
+    if (!yayin.firma_id || !aktifFirmaIdler.has(yayin.firma_id)) return rolHatasi("Yayın aktif E-Club firma bağlantınıza ait değil.");
     if (!yayinAraciKullanimaAcikMi(yayin.arac_turu)) return isKuraluHatasi("Bu öğrenme aracı kullanıma kapalı.");
     const hedefRol = eclubKisiHedefRolu(kisi.rol);
     if (!hedefRol || !hedefRolleriOku(yayin).includes(hedefRol)) return rolHatasi("Bu yayın kişi unvanınıza açık değil.");

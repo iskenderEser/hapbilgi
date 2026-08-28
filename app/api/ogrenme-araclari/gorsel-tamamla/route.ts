@@ -24,12 +24,16 @@ export async function POST(request: NextRequest) {
     const { tablo, sahipKolon, sahipId } = sahip;
     const { data: izleme } = await db
       .from(tablo)
-      .select("izleme_id, yayin_id, tamamlandi_mi, ilerleme_durumu")
+      .select("izleme_id, yayin_id, tamamlandi_mi, ilerleme_durumu, izleme_baslangic")
       .eq("izleme_id", body.izleme_id)
       .eq(sahipKolon, sahipId)
       .maybeSingle();
     if (!izleme || izleme.yayin_id !== body.yayin_id) {
       return NextResponse.json({ hata: "İzleme oturumuna erişim yok." }, { status: 403 });
+    }
+    const baslangictanBeri = (Date.now() - new Date(izleme.izleme_baslangic).getTime()) / 1000;
+    if (!Number.isFinite(baslangictanBeri) || baslangictanBeri < 3) {
+      return validasyonHatasi("Görsel en az 3 saniye aktif incelenmelidir.", ["aktif_saniye"]);
     }
     const { data: yayin } = await db
       .from("v_yayin_detay")
