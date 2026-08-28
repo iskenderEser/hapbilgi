@@ -205,9 +205,9 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     if (vp) {
       const res = await fetch("/yayin-yonetimi/api/puan/video", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ video_durum_id: b.video_durum_id, video_puani: vp }),
+        body: JSON.stringify({ video_durum_id: b.video_durum_id || null, arac_durum_id: b.arac_durum_id ?? null, video_puani: vp }),
       });
-      if (!res.ok) { const d = await res.json(); hata(d.hata ?? "Video puanı kaydedilemedi.", d.adim, d.detay); setIslemLoading(null); return; }
+      if (!res.ok) { const d = await res.json(); hata(d.hata ?? "Öğrenme aracı puanı kaydedilemedi.", d.adim, d.detay); setIslemLoading(null); return; }
     }
 
     const puanlar = b.sorular.map((_, i) => ({ soru_index: i, soru_puani: soruPuanlari[b.soru_seti_durum_id]?.[i] })).filter(p => p.soru_puani);

@@ -103,10 +103,10 @@ export function gelisimiDegerlendir(rapor: HapbiAracSonucu, katalog: Katalog | n
     if (v.durum === "gelen_challenge_uzerinden_izlenmeli") gerekce = "Bu eğitim için gelen, henüz tamamlanmamış bir challenge var; bağlantı bu challenge üzerinden açılır.";
     else if (v.durum === "devam_ediyor") gerekce = "Bu turda başladığınız ve henüz tamamlamadığınız eğitim; önce yarım kalan çalışmanızı tamamlayabilirsiniz.";
     else if (v.durum === "bu_turda_tamamlandi") gerekce = (kayiplar.get(tur) ?? 0) > 0
-      ? `Bu eğitimi bu turda tamamladınız. ${ad} kategorisinde ${kayiplar.get(tur)} puan yanlış cevap kaybı görüldüğü için yeniden çalışma seçeneğidir; kayıp bu videoya atfedilemez ve tekrar puanı garanti edilmez.`
+      ? `Bu eğitimi bu turda tamamladınız. ${ad} kategorisinde ${kayiplar.get(tur)} puan yanlış cevap kaybı görüldüğü için yeniden çalışma seçeneğidir; kayıp bu öğrenme aracına atfedilemez ve tekrar puanı garanti edilmez.`
       : "Bu eğitimi bu turda tamamladınız. Yeniden çalışma isteğiniz doğrultusunda önerildi; bu bir bilgi eksiği tespiti değildir ve tekrar puanı garanti edilmez.";
-    else if (hedef === "puan" && sayi(v.video_puani) !== null) gerekce = `Puan hedefinize göre öne çıktı: kayıtlı video puanı ${v.video_puani}. Kazanım izleme ve puan koşullarına bağlıdır.`;
-    else if ((kayiplar.get(tur) ?? 0) > 0) gerekce = `${ad} kategorisinde seçilen dönemde ${kayiplar.get(tur)} puan yanlış cevap kaybı var; bu kategoriyi çalışmak için bir adaydır, bu videoda hata yaptığınız anlamına gelmez.`;
+    else if (hedef === "puan" && sayi(v.video_puani) !== null) gerekce = `Puan hedefinize göre öne çıktı: kayıtlı öğrenme aracı puanı ${v.video_puani}. Kazanım tamamlama ve puan koşullarına bağlıdır.`;
+    else if ((kayiplar.get(tur) ?? 0) > 0) gerekce = `${ad} kategorisinde seçilen dönemde ${kayiplar.get(tur)} puan yanlış cevap kaybı var; bu kategoriyi çalışmak için bir adaydır, bu öğrenme aracında hata yaptığınız anlamına gelmez.`;
     else gerekce = k ? `${ad} kategorisinde bu turda ${k.toplam} eğitimin ${k.tamamlanan} tanesi tamamlanmış; öğrenme kapsamınızı genişletmek için önerildi.` : "Bu turda henüz tamamlamadığınız bir eğitim.";
     return { ...v, gerekce };
   });
@@ -119,7 +119,7 @@ export function gelisimiDegerlendir(rapor: HapbiAracSonucu, katalog: Katalog | n
     degerlendirme: { hedef, kategori, calisma, aday_sayisi: adaylar.length,
       rapor_durumu: rapor.durum, kategori_olcumu_var: !ccKisisel && kategoriler.length > 0,
       oncelik: "Genel çalışmada gelen challenge, devam eden eğitim, kategori yanlış cevap kaybı ve tur katılımı; aynı kayıp kategorisinde önce tamamlanmamış eğitim. Tamamlanan eğitim genel çalışmada yalnız kayıplı kategoride adaydır; açık tekrar isteğinde yalnız tamamlananlar değerlendirilir. Puan hedefinde tamamlananlar elenir. Eşitlikte yayın tarihi.",
-      sinir: "Puan ve tamamlama, mesleki yetkinlik veya saha satış başarısı ölçümü değildir. Kategori kaybı belirli bir videoya/konuya atfedilemez. Senaryo okunmadan eğitim içeriği anlatılamaz. Rapor seçilen döneme, eğitim kataloğu ise şu anki geçerli tura aittir.",
+      sinir: "Puan ve tamamlama, mesleki yetkinlik veya saha satış başarısı ölçümü değildir. Kategori kaybı belirli bir öğrenme aracına/konuya atfedilemez. Kaynak okunmadan eğitim içeriği anlatılamaz. Rapor seçilen döneme, eğitim kataloğu ise şu anki geçerli tura aittir.",
       veri_yetersiz: olcumler.net_puan === null,
     } };
 }

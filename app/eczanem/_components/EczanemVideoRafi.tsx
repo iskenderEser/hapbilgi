@@ -44,7 +44,7 @@ export default function EczanemVideoRafi({ baslik, videolar, bosMesaj, onVideoSe
               const isliyor = etkilesimIsliyor === video.yayin_id;
               return (
                 <article key={`${baslik}-${video.gonderim_id}`} className="group/kart w-[178px] shrink-0 snap-start overflow-hidden rounded-2xl border border-[#dfe7ef] bg-white shadow-[0_4px_16px_rgba(31,63,96,0.06)] transition hover:-translate-y-0.5 hover:border-[#b9d4ea] hover:shadow-[0_10px_24px_rgba(31,73,112,0.11)] sm:w-[205px] md:w-[230px]">
-                  <button type="button" onClick={() => onVideoSec(video)} disabled={!video.video_url} aria-label={`${video.urun_adi} videosunu sayfaya yerleştir`} className="relative block aspect-video w-full overflow-hidden bg-[linear-gradient(135deg,#dceaf6,#9fc5e1)] text-left disabled:cursor-not-allowed disabled:opacity-60">
+                  <button type="button" onClick={() => onVideoSec(video)} disabled={!video.video_url && !["podcast", "gorsel", "flip_pdf"].includes(video.arac_turu)} aria-label={`${video.urun_adi} içeriğini sayfaya yerleştir`} className="relative block aspect-video w-full overflow-hidden bg-[linear-gradient(135deg,#dceaf6,#9fc5e1)] text-left disabled:cursor-not-allowed disabled:opacity-60">
                     {/* Uzak video sağlayıcılarının değişken thumbnail adresleri next/image allowlist'ine bağlı değildir. */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     {thumbnail && <img src={thumbnail} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover/kart:scale-[1.035]" onError={(event) => { event.currentTarget.style.display = "none"; }} />}

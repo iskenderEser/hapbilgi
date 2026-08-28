@@ -261,10 +261,10 @@ test("hapbi: eczacı/teknisyen yalnız kendi E-Club özetini ve eğitim bağlant
     : k.ad === "eclub_dogru_cevap_kayitlari" ? [{ yayin_id: "y1" }, { yayin_id: "y2" }, { yayin_id: "yg" }]
     : k.ad === "get_eclub_store_firma_bakiye" ? [{ firma_id: "f1", bakiye: 165 }, { firma_id: "f2", bakiye: 999 }]
     : k.ad === "v_yayin_detay" ? [
-      { yayin_id: "y1", firma_id: "f1", firma_adi: "Hepifarma", urun_adi: "Laropen", teknik_adi: "İtirazı Karşılama", hedef_roller: [rol === "eczane_teknisyeni" ? "eczane_teknisyeni" : "eczaci"], durum: "yayinda", video_puani: 50, soru_puani: 10 },
-      { yayin_id: "y2", firma_id: "f1", firma_adi: "Hepifarma", urun_adi: "Abilon", teknik_adi: null, hedef_roller: [rol === "eczane_teknisyeni" ? "eczane_teknisyeni" : "eczaci"], durum: "yayinda", video_puani: 40, soru_puani: 10 },
-      { yayin_id: "y3", firma_id: "f1", firma_adi: "Hepifarma", urun_adi: "Eski", teknik_adi: null, hedef_roller: [rol === "eczane_teknisyeni" ? "eczane_teknisyeni" : "eczaci"], durum: "yayinda", video_puani: 30, soru_puani: 10 },
-      { yayin_id: "yg", firma_id: "f2", firma_adi: "Gizli Firma", urun_adi: "Gizli Eğitim", teknik_adi: null, hedef_roller: ["eczaci", "eczane_teknisyeni"], durum: "yayinda", video_puani: 999, soru_puani: 999 },
+      { yayin_id: "y1", firma_id: "f1", firma_adi: "Hepifarma", urun_adi: "Laropen", teknik_adi: "İtirazı Karşılama", hedef_roller: [rol === "eczane_teknisyeni" ? "eczane_teknisyeni" : "eczaci"], durum: "yayinda", video_puani: 50, soru_puani: 10, arac_turu: "video" },
+      { yayin_id: "y2", firma_id: "f1", firma_adi: "Hepifarma", urun_adi: "Abilon", teknik_adi: null, hedef_roller: [rol === "eczane_teknisyeni" ? "eczane_teknisyeni" : "eczaci"], durum: "yayinda", video_puani: 40, soru_puani: 10, arac_turu: "video" },
+      { yayin_id: "y3", firma_id: "f1", firma_adi: "Hepifarma", urun_adi: "Eski", teknik_adi: null, hedef_roller: [rol === "eczane_teknisyeni" ? "eczane_teknisyeni" : "eczaci"], durum: "yayinda", video_puani: 30, soru_puani: 10, arac_turu: "video" },
+      { yayin_id: "yg", firma_id: "f2", firma_adi: "Gizli Firma", urun_adi: "Gizli Eğitim", teknik_adi: null, hedef_roller: ["eczaci", "eczane_teknisyeni"], durum: "yayinda", video_puani: 999, soru_puani: 999, arac_turu: "video" },
     ] : [] }));
 
   for (const rol of ["eczaci", "eczane_teknisyeni"]) {
@@ -276,7 +276,7 @@ test("hapbi: eczacı/teknisyen yalnız kendi E-Club özetini ve eğitim bağlant
     assert.deepEqual(veri.ozet, {
       bekleyen_egitim: 1, tamamlanan_egitim: 1, suresi_gecmis_egitim: 1,
       toplam_kazanilan_puan: 170, ileri_sarma_kaybi: 5, net_puan: 165,
-      kullanilabilir_puan: 165, dogru_cevap: 2,
+      kullanilabilir_puan: 165, dogru_cevap: 2, yanlis_cevap: 0, dogru_cevap_yuzdesi: 100,
     });
     assert.deepEqual(veri.egitimler.map(e => e.baslik), ["Laropen", "Abilon", "Eski"]);
     assert.equal(sonuc.egitimler?.[0].url, "/eclub/panel?oneri_id=o1");
@@ -314,7 +314,7 @@ test("hapbi Faz 2: tam katalog öğrenme ihtiyacına göre sıralanır; puan hed
   const r = await a.calistir("gelisim_rehberi", G);
   assert.equal(r.durum, "ok"); assert.equal(r.tur, "rehberlik");
   assert.match(r.egitimler![0].etiket, /Devam eden/); assert.match(r.egitimler![0].gerekce!, /başladığınız/);
-  assert.match(r.egitimler![1].etiket, /Medikal/); assert.match(r.egitimler![1].gerekce!, /12 puan.*bu videoda hata yaptığınız anlamına gelmez/);
+  assert.match(r.egitimler![1].etiket, /Medikal/); assert.match(r.egitimler![1].gerekce!, /12 puan.*bu öğrenme aracında hata yaptığınız anlamına gelmez/);
   const puan = await a.calistir("gelisim_rehberi", { ...G, hedef: "puan" });
   assert.match(puan.egitimler![1].etiket, /Puan/); assert.match(puan.egitimler![1].gerekce!, /80.*koşullarına bağlıdır/);
   const ik = await a.calistir("gelisim_rehberi", { ...G, kategori: "ik" });

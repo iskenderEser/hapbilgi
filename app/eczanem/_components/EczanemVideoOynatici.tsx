@@ -10,6 +10,9 @@ import { useVideoEtkilesimKatmani } from "@/components/video/useVideoEtkilesimKa
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import PodcastOynatici from "@/components/ogrenme-araci/PodcastOynatici";
+import GorselOynatici from "@/components/ogrenme-araci/GorselOynatici";
+import FlipPdfOynatici from "@/components/ogrenme-araci/FlipPdfOynatici";
 
 interface OynaticiVideo {
   gonderim_id: string;
@@ -19,6 +22,8 @@ interface OynaticiVideo {
   video_url: string | null;
   eczane_adi?: string;
   son_konum_saniye?: number;
+  arac_id?: string | null;
+  arac_turu?: "video" | "podcast" | "gorsel" | "flip_pdf";
 }
 interface Soru {
   soru_index: number;
@@ -278,7 +283,13 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
           <Badge variant="outline" className={izlemeTamamlandi ? "border-[#bde5d5] bg-[#edf9f4] font-extrabold text-[#157254]" : izlemeBasladi ? "border-[#c9dff1] bg-[#edf6fd] font-extrabold text-[#286fae]" : "border-[#e0e7ee] bg-[#f7f9fb] font-extrabold text-[#71849a]"}>{izlemeTamamlandi ? <BadgeCheck /> : <Play />}{izlemeTamamlandi ? "Tamamlandı" : izlemeBasladi ? "İzleniyor" : "Play ile başlayın"}</Badge>
         </CardHeader>
 
-        {!video.video_url ? (
+        {video.arac_turu === "podcast" && video.arac_id ? (
+          <div className="border-b border-[#e7edf3] p-4"><PodcastOynatici aracId={video.arac_id} yayinId={video.yayin_id} bagId={video.gonderim_id} hata={hata} baslat={async () => { const r = await fetch("/eczanem/api/izleme/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ gonderim_id: video.gonderim_id }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Podcast dinlemesi başlatılamadı."); izlemeIdRef.current = d.izleme.izleme_id; setIzlemeId(d.izleme.izleme_id); setIzlemeBasladi(true); return { izlemeId: d.izleme.izleme_id, ilerleme: d.izleme.ilerleme_durumu }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleBitir(); }} onTamamlandi={onTamamlandi} /></div>
+        ) : video.arac_turu === "gorsel" && video.arac_id ? (
+          <div className="border-b border-[#e7edf3] p-4"><GorselOynatici aracId={video.arac_id} yayinId={video.yayin_id} bagId={video.gonderim_id} hata={hata} baslat={async () => { const r = await fetch("/eczanem/api/izleme/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ gonderim_id: video.gonderim_id }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Görsel incelemesi başlatılamadı."); izlemeIdRef.current = d.izleme.izleme_id; setIzlemeId(d.izleme.izleme_id); setIzlemeBasladi(true); return { izlemeId: d.izleme.izleme_id }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleBitir(); }} onTamamlandi={onTamamlandi} /></div>
+        ) : video.arac_turu === "flip_pdf" && video.arac_id ? (
+          <div className="border-b border-[#e7edf3] p-4"><FlipPdfOynatici aracId={video.arac_id} yayinId={video.yayin_id} bagId={video.gonderim_id} hata={hata} baslat={async () => { const r = await fetch("/eczanem/api/izleme/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ gonderim_id: video.gonderim_id }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Flip PDF okuması başlatılamadı."); izlemeIdRef.current = d.izleme.izleme_id; setIzlemeId(d.izleme.izleme_id); setIzlemeBasladi(true); return { izlemeId: d.izleme.izleme_id, ilerleme: d.izleme.ilerleme_durumu }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleBitir(); }} onTamamlandi={onTamamlandi} /></div>
+        ) : !video.video_url ? (
           <div className="px-5 py-12 text-center"><CircleAlert className="mx-auto size-8 text-[#b84c4c]" /><h3 className="mt-3 text-sm font-extrabold text-[#8f3636]">Video kaynağı bulunamadı</h3><p className="mt-1 text-xs font-semibold text-[#9a6969]">Eczanenizle iletişime geçin.</p></div>
         ) : (
           <div className="relative border-b border-[#e7edf3] bg-[#10233a]">

@@ -117,6 +117,8 @@ export default function EclubPanelPage() {
             urun_adi: seciliOneri.urun_adi,
             teknik_adi: seciliOneri.teknik_adi,
             video_url: seciliOneri.video_url,
+            arac_id: seciliOneri.arac_id,
+            arac_turu: seciliOneri.arac_turu,
           }}
           onKapat={() => { setSeciliOneri(null); router.push(pathname, { scroll: false }); void veriCek(); }}
           onTamamlandi={() => { void veriCek(true); hbstoreBakiyesiDegistiBildir(); }}

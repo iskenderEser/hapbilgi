@@ -85,7 +85,9 @@ export const gelisimAraciniCalistir: HapbiAlanCalistirici = async (baglam, ad, a
       degerlendirme: degerlendirme.degerlendirme, olcumler: degerlendirme.olcumler,
       bulgular: degerlendirme.bulgular, kategori_olcumleri: degerlendirme.kategori_olcumleri,
       egitim_durumu: katalog ? { toplam: katalog.toplam_yayin, tamamlanan: katalog.bu_turda_tamamlanan, kalan: katalog.kalan, kategoriler: katalog.kategoriler } : null,
-      oneriler: degerlendirme.oneriler.map((v, i) => ({ egitim_id: egitimler[i].id, baslik: v.baslik, teknik: v.teknik, tur: v.tur, durum: v.durum, video_puani: v.video_puani, gerekce: v.gerekce })),
+      oneriler: degerlendirme.oneriler.map((v, i) => ({ egitim_id: egitimler[i].id, baslik: v.baslik, teknik: v.teknik,
+        tur: v.tur, arac_turu: v.arac_turu, durum: v.durum, video_puani: v.video_puani,
+        dogru_cevap: v.dogru_cevap, yanlis_cevap: v.yanlis_cevap, dogru_cevap_yuzdesi: v.dogru_cevap_yuzdesi, gerekce: v.gerekce })),
       dayanak: rapor.kaynak },
   };
 };

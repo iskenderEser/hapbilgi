@@ -50,11 +50,17 @@ export interface PushYuku {
   icon?: string;
 }
 
+export interface PushBaglami {
+  yayinId?: string | null;
+  bagId?: string | null;
+}
+
 // icerik.ts eşlemesinin imzası: (olay, gönderim anındaki rol) → yük (K-P10).
 // Rol tanımadığı olaya null döner — o alıcıya push gitmez.
 export type IcerikUretici = (
   olayTuru: PushOlayTuru,
-  aliciRol: string
+  aliciRol: string,
+  baglam?: PushBaglami
 ) => PushYuku | null;
 
 // push_gonderim_kayitlari.durum değerleri (C.2).

@@ -5,6 +5,7 @@ import { tarihAraligi } from '@/lib/utils/tarihAraligi';
 import { getBmData } from '@/lib/rapor/bm/getBmData';
 import { kategorileriTopla, ozetToplami, urunleriTopla } from '@/lib/rapor/bm/toplamlar';
 import { katkiYuzdesi } from '@/lib/rapor/paylasilan/oran';
+import { aracTuruDagilimi } from '@/lib/rapor/paylasilan/aracTuruDagilimi';
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -31,6 +32,7 @@ export async function GET(request: Request) {
 
   const d = await getBmData(adminSupabase, kullanici, baslangic, bitis);
   if (d.hata) return d.hata;
+  const aracTurleri = await aracTuruDagilimi(adminSupabase, { baslangic, bitis, takimId: kullanici.takim_id, firmaId: kullanici.firma_id });
 
   const genel = ozetToplami(d.bolgeOzet);
   const kategoriDagilimi = kategorileriTopla(d.kategoriDagilimi);
@@ -65,6 +67,7 @@ export async function GET(request: Request) {
       },
       utt_performans: d.uttPerformans,
       istatistikler,
+      arac_turu_dagilimi: aracTurleri,
       kategori_dagilimi: kategoriDagilimi,
       urun_dagilimi: urunDagilimi,
       begeni_listesi: d.etkilesim

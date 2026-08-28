@@ -64,7 +64,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
       .eq("durum", "yayinda")
       // Görünürlük kapısı (Faz 1): süresi hazır olmayan (encode bitmemiş) video
       // izleyiciye gösterilmez — webhook süreyi doldurunca listede çıkar.
-      .gt("video_suresi_saniye", 0)
+      .or("arac_turu.in.(gorsel,flip_pdf),video_suresi_saniye.gt.0")
       // Takım süzgeci: kendi takımının içeriği VEYA firma-geneli (takımsız +
       // aynı firma) içerik. Firma seviyeli üreticiler (med_md/egt_*/ik_*)
       // taleplerini takim_id = NULL ile açar; tam-eşleşme bu içeriği eliyordu

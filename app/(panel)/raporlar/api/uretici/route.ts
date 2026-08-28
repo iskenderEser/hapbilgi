@@ -4,6 +4,7 @@ import { hataYaniti, yetkiHatasi } from '@/lib/utils/hataIsle';
 import { tarihAraligi } from '@/lib/utils/tarihAraligi';
 import { ureticiYetenegi } from '@/lib/uretici/yetenekler';
 import { getUreticiData } from '@/lib/rapor/uretici/getUreticiData';
+import { aracTuruDagilimi } from '@/lib/rapor/paylasilan/aracTuruDagilimi';
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -30,6 +31,7 @@ export async function GET(request: Request) {
 
   const d = await getUreticiData(adminSupabase, kullanici, yetenek, baslangic, bitis);
   if (d.hata) return d.hata;
+  const aracTurleri = await aracTuruDagilimi(adminSupabase, { baslangic, bitis, ureticiId: kullanici.kullanici_id });
 
   const saha = d.sahaOzetleri.reduce(
     (toplam, satir) => ({
@@ -63,6 +65,7 @@ export async function GET(request: Request) {
       },
       uretim_ozeti: d.raporOzet,
       saha_etkisi: saha,
+      arac_turu_dagilimi: aracTurleri,
       begeni_listesi: d.begeniRaw.map(satir => ({
         yayin_id: satir.yayin_id,
         ...etkilesimAdi(satir.urun_adi, satir.teknik_adi),

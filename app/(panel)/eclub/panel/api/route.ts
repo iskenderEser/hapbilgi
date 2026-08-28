@@ -81,6 +81,7 @@ export async function GET() {
       talep_no: number | null; firma_adi: string | null;
       firma_id: string | null; hedef_roller: HedefRoller; durum: string | null;
       video_puani: number | null; soru_puani: number | null; video_basi_soru_sayisi: number | null;
+      arac_id: string | null; arac_turu: "video" | "podcast" | "gorsel" | "flip_pdf";
     }
     const puanlar = puanSonucu.data ?? [];
     const yayinIds = [...new Set([
@@ -91,10 +92,10 @@ export async function GET() {
     if (yayinIds.length > 0) {
       const { data: yayinlar, error: yayinError } = await adminSupabase
         .from("v_yayin_detay")
-        .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, icerik_turu, talep_no, firma_id, firma_adi, hedef_roller, durum, video_puani, soru_puani, video_basi_soru_sayisi")
+        .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, icerik_turu, talep_no, firma_id, firma_adi, hedef_roller, durum, video_puani, soru_puani, video_basi_soru_sayisi, arac_id, arac_turu")
         .in("yayin_id", yayinIds)
         // Görünürlük kapısı (Faz 1): süresi hazır olmayan video izleyiciye gösterilmez.
-        .gt("video_suresi_saniye", 0);
+        .or("arac_turu.in.(gorsel,flip_pdf),video_suresi_saniye.gt.0");
       if (yayinError) return hataYaniti("Yayın detayları alınamadı.", "v_yayin_detay SELECT — E-Club panel", yayinError);
       for (const y of yayinlar ?? []) {
         const yy = y as { yayin_id: string } & YayinDetay;
@@ -105,6 +106,7 @@ export async function GET() {
           firma_id: yy.firma_id, hedef_roller: hedefRolleriOku(yy), durum: yy.durum,
           video_puani: yy.video_puani, soru_puani: yy.soru_puani,
           video_basi_soru_sayisi: yy.video_basi_soru_sayisi,
+          arac_id: yy.arac_id, arac_turu: yy.arac_turu,
         });
       }
     }
@@ -180,6 +182,8 @@ export async function GET() {
         video_url: y?.video_url ?? null,
         thumbnail_url: y?.thumbnail_url ?? null,
         icerik_turu: y?.icerik_turu ?? null,
+        arac_id: y?.arac_id ?? null,
+        arac_turu: y?.arac_turu ?? "video",
         video_puani: Number(y?.video_puani ?? 0),
         soru_puani: Number(y?.soru_puani ?? 0),
         soru_sayisi: Number(y?.video_basi_soru_sayisi ?? 0),

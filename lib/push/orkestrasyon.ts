@@ -18,7 +18,7 @@ import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { aktifAbonelikleriGetir } from "./abonelik";
 import { pushGonder } from "./gonderici";
 import { icerikUret } from "./icerik";
-import type { PushGonderimDurumu, PushOlayTuru } from "./tipler";
+import type { PushBaglami, PushGonderimDurumu, PushOlayTuru } from "./tipler";
 
 const VARSAYILAN_TTL_SANIYE = 259200; // 3 gün — sistem_ayarlari yoksa güvenli varsayılan
 
@@ -62,7 +62,8 @@ async function ayarlariOku(
 export async function pushYayinla(
   adminSupabase: SupabaseClient,
   olayTuru: PushOlayTuru,
-  aliciAuthIdler: (string | null | undefined)[]
+  aliciAuthIdler: (string | null | undefined)[],
+  baglam: PushBaglami = {}
 ): Promise<void> {
   try {
     const alicilar = [...new Set(aliciAuthIdler.filter((id): id is string => !!id))];
@@ -80,7 +81,7 @@ export async function pushYayinla(
 
     for (const alici of alicilar) {
       const rol = await rolCozucu(adminSupabase, alici);
-      const yuk = icerikUret(olayTuru, rol);
+      const yuk = icerikUret(olayTuru, rol, baglam);
       if (!yuk) continue; // rol bu olayı almaz (icerik.ts tek kaynak — K-P10)
 
       const abonelikler = await aktifAbonelikleriGetir(adminSupabase, alici);
@@ -119,19 +120,21 @@ function arkada(is: () => Promise<void>): void {
 export function pushYayinlaArkada(
   adminSupabase: SupabaseClient,
   olayTuru: PushOlayTuru,
-  aliciAuthIdler: (string | null | undefined)[]
+  aliciAuthIdler: (string | null | undefined)[],
+  baglam: PushBaglami = {}
 ): void {
-  arkada(() => pushYayinla(adminSupabase, olayTuru, aliciAuthIdler));
+  arkada(() => pushYayinla(adminSupabase, olayTuru, aliciAuthIdler, baglam));
 }
 
 /** E-Club kişi id'leriyle yayın: kisi_id → auth_user_id köprüsü içeride kurulur. */
 export function pushYayinlaEclubKisilereArkada(
   adminSupabase: SupabaseClient,
   olayTuru: PushOlayTuru,
-  kisiIdler: string[]
+  kisiIdler: string[],
+  baglam: PushBaglami = {}
 ): void {
   arkada(async () =>
-    pushYayinla(adminSupabase, olayTuru, await eclubKisiAuthIdCoz(adminSupabase, kisiIdler))
+    pushYayinla(adminSupabase, olayTuru, await eclubKisiAuthIdCoz(adminSupabase, kisiIdler), baglam)
   );
 }
 
@@ -139,10 +142,11 @@ export function pushYayinlaEclubKisilereArkada(
 export function pushYayinlaEczanemMusterilereArkada(
   adminSupabase: SupabaseClient,
   olayTuru: PushOlayTuru,
-  musteriIdler: string[]
+  musteriIdler: string[],
+  baglam: PushBaglami = {}
 ): void {
   arkada(async () =>
-    pushYayinla(adminSupabase, olayTuru, await eczanemMusteriAuthIdCoz(adminSupabase, musteriIdler))
+    pushYayinla(adminSupabase, olayTuru, await eczanemMusteriAuthIdCoz(adminSupabase, musteriIdler), baglam)
   );
 }
 

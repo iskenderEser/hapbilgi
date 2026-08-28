@@ -15,6 +15,8 @@ export interface Bekleyen {
   soru_seti_durum_id: string;
   soru_seti_id: string;
   video_durum_id: string;
+  arac_durum_id?: string | null;
+  arac_turu?: "video" | "podcast" | "gorsel" | "flip_pdf";
   sorular: Soru[];
   video_url: string | null;
   thumbnail_url: string | null;

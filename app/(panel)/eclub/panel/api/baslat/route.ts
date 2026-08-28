@@ -12,6 +12,7 @@ import { ECLUB_TUKETICI_ROLLERI, eclubKisiHedefRolu, hedefRolleriOku } from "@/l
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { eclubIzlemeHaklari } from "@/lib/eclub/izlemeKurali";
 import { olayIdGecerliMi } from "@/lib/izleme/baslat";
+import { yayinAraciKullanimaAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
     // Yayın hâlâ yayında ve kişinin rolüne mi açık?
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, durum, hedef_roller, video_suresi_saniye")
+      .select("yayin_id, durum, hedef_roller, video_suresi_saniye, arac_turu")
       .eq("yayin_id", oneri.yayin_id)
       .single();
 
@@ -62,13 +63,14 @@ export async function POST(request: NextRequest) {
     const yayinKontrol = veriKontrol(yayin, "v_yayin_detay SELECT — yayin_id", "Yayın bulunamadı.");
     if (!yayinKontrol.gecerli) return yayinKontrol.yanit;
     if (yayin.durum !== "yayinda") return isKuraluHatasi(`Video şu an yayında değil. Mevcut durum: ${yayin.durum}`);
+    if (!yayinAraciKullanimaAcikMi(yayin.arac_turu)) return isKuraluHatasi("Bu öğrenme aracı kullanıma kapalı.");
     const hedefRol = eclubKisiHedefRolu(kisi.rol);
     if (!hedefRol || !hedefRolleriOku(yayin).includes(hedefRol)) return rolHatasi("Bu yayın kişi unvanınıza açık değil.");
 
     // UTT deseni: süreyi başlangıçta izleme kaydına snapshot'la. Süre yoksa (encode
     // bitmemiş — beklenmez, görünürlük kapısı zaten gizler) izlemeyi BAŞTA reddet;
     // böylece kişi videoyu izleyip sonda reddedilmez ve tamamlama snapshot'tan yargılanır.
-    const videoSuresiSaniye = yayin.video_suresi_saniye as number | null;
+    const videoSuresiSaniye = ["gorsel", "flip_pdf"].includes(yayin.arac_turu) ? 1 : yayin.video_suresi_saniye as number | null;
     if (videoSuresiSaniye === null || videoSuresiSaniye <= 0) {
       return isKuraluHatasi("Video henüz puanlı izlemeye hazır değil; süre doğrulanamadı.");
     }
@@ -77,7 +79,7 @@ export async function POST(request: NextRequest) {
     // böylece tekrar oynatma ikinci puan veya ikinci soru hakkı doğurmaz.
     const { data: mevcutIzleme, error: mevcutError } = await adminSupabase
       .from("eclub_izleme_kayitlari")
-      .select("izleme_id, yayin_id, oneri_id, izleme_baslangic, tamamlandi_mi")
+      .select("izleme_id, yayin_id, oneri_id, izleme_baslangic, tamamlandi_mi, ilerleme_durumu")
       .eq("kisi_id", kisi.kisi_id)
       .eq("oneri_id", oneri_id)
       .order("created_at", { ascending: true })
@@ -105,7 +107,7 @@ export async function POST(request: NextRequest) {
         oneri_id: oneri.oneri_id,
         video_suresi_saniye: videoSuresiSaniye,
       })
-      .select("izleme_id, yayin_id, oneri_id, izleme_baslangic")
+      .select("izleme_id, yayin_id, oneri_id, izleme_baslangic, ilerleme_durumu")
       .single();
 
     if (izlemeError?.code === "23505") {

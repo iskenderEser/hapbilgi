@@ -31,6 +31,7 @@ export interface TalepBilgisi {
   teknik_adi: string;
   egitim_turu: TalepTuru;
   ogrenme_araci_turu: OgrenmeAraciTuru;
+  ogrenme_araci_tercihleri: Record<string, unknown>;
   hedef_roller: HedefRoller;
   icerik_turu: string | null;
   aciklama: string | null;
@@ -51,6 +52,7 @@ export interface HamTalepKaydi {
   uretici_id?: string | null;
   egitim_turu?: string | null;
   ogrenme_araci_turu?: string | null;
+  ogrenme_araci_tercihleri?: Record<string, unknown> | null;
   hedef_roller?: unknown;
   icerik_turu?: string | null;
   aciklama?: string | null;
@@ -89,6 +91,7 @@ export const TALEP_ALANLARI = `
   uretici_id,
   egitim_turu,
   ogrenme_araci_turu,
+  ogrenme_araci_tercihleri,
   hedef_roller,
   icerik_turu,
   aciklama,
@@ -128,6 +131,7 @@ export function haritalaTalep(talep: HamTalepKaydi): TalepBilgisi {
     ogrenme_araci_turu: talep.ogrenme_araci_turu === "podcast" || talep.ogrenme_araci_turu === "gorsel" || talep.ogrenme_araci_turu === "flip_pdf"
       ? talep.ogrenme_araci_turu
       : "video",
+    ogrenme_araci_tercihleri: talep.ogrenme_araci_tercihleri ?? {},
     hedef_roller: hedefRolleriOku(talep),
     icerik_turu: talep.icerik_turu ?? null,
     aciklama: talep.aciklama ?? null,

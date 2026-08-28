@@ -32,17 +32,17 @@ export async function POST(request: NextRequest) {
       .in("eczane_id", kimlik.eczaneIdler!)
       .limit(1)
       .maybeSingle();
-    if (gonderimError) return hataYaniti("Video gönderimi doğrulanamadı.", "eczanem_gonderimler SELECT — müşteri etkileşimi", gonderimError);
-    if (!gonderim) return rolHatasi("Bu video size gönderilmemiş.");
+    if (gonderimError) return hataYaniti("Öğrenme yayını gönderimi doğrulanamadı.", "eczanem_gonderimler SELECT — müşteri etkileşimi", gonderimError);
+    if (!gonderim) return rolHatasi("Bu öğrenme yayını size gönderilmemiş.");
 
     const { data, error } = await adminSupabase.rpc("eczanem_musteri_video_etkilesim_degistir", {
       p_musteri_id: kimlik.musteriId!,
       p_yayin_id: yayinId,
       p_tur: tur,
     });
-    if (error) return hataYaniti("Video etkileşimi kaydedilemedi.", "eczanem_musteri_video_etkilesim_degistir RPC", error);
+    if (error) return hataYaniti("Öğrenme yayını etkileşimi kaydedilemedi.", "eczanem_musteri_video_etkilesim_degistir RPC", error);
     const sonuc = Array.isArray(data) ? data[0] : data;
-    if (!sonuc) return hataYaniti("Video etkileşim sonucu alınamadı.", "eczanem_musteri_video_etkilesim_degistir RPC — dönen veri", null);
+    if (!sonuc) return hataYaniti("Öğrenme yayını etkileşim sonucu alınamadı.", "eczanem_musteri_video_etkilesim_degistir RPC — dönen veri", null);
 
     return NextResponse.json({
       ok: true,

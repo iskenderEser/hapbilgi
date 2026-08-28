@@ -16,6 +16,9 @@ import { useEffect, useState, useRef } from "react";
 import { createVideoPlayer, type VideoPlayer } from "@/lib/video/videoPlayer";
 import { oynatmaBaslatilmaliMi } from "@/lib/izleme/baslat";
 import VideoCercevesi from "@/components/video/VideoCercevesi";
+import PodcastOynatici from "@/components/ogrenme-araci/PodcastOynatici";
+import GorselOynatici from "@/components/ogrenme-araci/GorselOynatici";
+import FlipPdfOynatici from "@/components/ogrenme-araci/FlipPdfOynatici";
 import { useVideoEtkilesimKatmani } from "@/components/video/useVideoEtkilesimKatmani";
 import {
   AlertDialog,
@@ -35,6 +38,8 @@ interface OynaticiVideo {
   video_url: string | null;
   video_puani: number | null;
   ileri_sarma_acik: boolean;
+  arac_id?: string | null;
+  arac_turu?: "video" | "podcast" | "gorsel" | "flip_pdf";
 }
 
 interface Soru {
@@ -519,7 +524,12 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
         </div>
 
         {/* Video */}
-        {video.video_url && (
+        {video.arac_turu === "podcast" && video.arac_id && (
+          <div className="border-b border-gray-100 p-4"><PodcastOynatici aracId={video.arac_id} yayinId={video.yayin_id} bagId={oneri_id} hata={hata} baslat={async () => { const r = await fetch("/izle/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id: video.yayin_id, oneri_id: oneri_id ?? null, baslat_olay_id: crypto.randomUUID() }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Podcast dinlemesi başlatılamadı."); setIzlemeId(d.izleme.izleme_id); izlemeIdRef.current = d.izleme.izleme_id; return { izlemeId: d.izleme.izleme_id, ilerleme: d.izleme.ilerleme_durumu }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleIzlemeBitir(); }} onTamamlandi={onVeriYenile} /></div>
+        )}
+        {video.arac_turu === "gorsel" && video.arac_id && <div className="border-b border-gray-100 p-4"><GorselOynatici aracId={video.arac_id} yayinId={video.yayin_id} bagId={oneri_id} hata={hata} baslat={async () => { const r = await fetch("/izle/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id: video.yayin_id, oneri_id: oneri_id ?? null, baslat_olay_id: crypto.randomUUID() }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Görsel incelemesi başlatılamadı."); setIzlemeId(d.izleme.izleme_id); izlemeIdRef.current = d.izleme.izleme_id; return { izlemeId: d.izleme.izleme_id }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleIzlemeBitir(); }} onTamamlandi={onVeriYenile} /></div>}
+        {video.arac_turu === "flip_pdf" && video.arac_id && <div className="border-b border-gray-100 p-4"><FlipPdfOynatici aracId={video.arac_id} yayinId={video.yayin_id} bagId={oneri_id} hata={hata} baslat={async () => { const r = await fetch("/izle/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id: video.yayin_id, oneri_id: oneri_id ?? null, baslat_olay_id: crypto.randomUUID() }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Flip PDF okuması başlatılamadı."); setIzlemeId(d.izleme.izleme_id); izlemeIdRef.current = d.izleme.izleme_id; return { izlemeId: d.izleme.izleme_id, ilerleme: d.izleme.ilerleme_durumu }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleIzlemeBitir(); }} onTamamlandi={onVeriYenile} /></div>}
+        {!(["podcast", "gorsel", "flip_pdf"].includes(video.arac_turu ?? "video")) && video.video_url && (
           <div className="border-b border-gray-100">
             {/* Kutu artık videonun oranına göre çizilir (26.07 — VideoCercevesi).
                 iframe burada kalır: ref playerjs'e bağlı, sarmalayıcı yalnız kutuyu kurar.

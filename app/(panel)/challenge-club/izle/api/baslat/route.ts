@@ -23,6 +23,7 @@ import { dahaOnceTamamlandiMi } from "@/lib/cclub/izleme/extraKontrol";
 import { izlemeBaslat } from "@/lib/cclub/izleme/baslat";
 import { gecerliTur } from "@/lib/tclub/tur/kayit";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { yayinAraciKullanimaAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
 
 export async function POST(request: NextRequest) {
   try {
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
     // 4. Yayın çekme + hedef_roller içinde 'bm' kanal kontrolü
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, firma_id, durum, hedef_roller, video_suresi_saniye")
+      .select("yayin_id, firma_id, durum, hedef_roller, video_suresi_saniye, arac_turu")
       .eq("yayin_id", yayin_id)
       .single();
 
@@ -109,8 +110,9 @@ export async function POST(request: NextRequest) {
         `Video şu an yayında değil. Mevcut durum: ${yayin.durum}`
       );
     }
+    if (!yayinAraciKullanimaAcikMi(yayin.arac_turu)) return isKuraluHatasi("Bu öğrenme aracı kullanıma kapalı.");
 
-    const videoSuresiSaniye = Number(yayin.video_suresi_saniye ?? 0);
+    const videoSuresiSaniye = ["gorsel", "flip_pdf"].includes(yayin.arac_turu) ? 1 : Number(yayin.video_suresi_saniye ?? 0);
     if (!Number.isFinite(videoSuresiSaniye) || videoSuresiSaniye <= 0) {
       return isKuraluHatasi(
         "Video henüz puanlı izlemeye hazır değil; süre doğrulanamadı."
@@ -212,7 +214,7 @@ export async function POST(request: NextRequest) {
       if (sonuc.code === "23505" && kullanilacakChallengeId) {
         const { data: mevcut, error: mevcutError } = await adminSupabase
           .from("cc_izleme_kayitlari")
-          .select("izleme_id, izleme_turu")
+          .select("izleme_id, izleme_turu, ilerleme_durumu")
           .eq("challenge_id", kullanilacakChallengeId)
           .eq("bm_id", user.id)
           .maybeSingle();
@@ -230,12 +232,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { data: acilanIzleme } = await adminSupabase.from("cc_izleme_kayitlari")
+      .select("ilerleme_durumu").eq("izleme_id", sonuc.izleme_id).maybeSingle();
     return NextResponse.json(
       {
         mesaj: "CC izleme başlatıldı.",
         izleme: {
           izleme_id: sonuc.izleme_id,
           izleme_turu,
+          ilerleme_durumu: acilanIzleme?.ilerleme_durumu ?? null,
         },
         puanli_zaman: true,
       },

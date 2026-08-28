@@ -19,6 +19,8 @@ import { izlemeKazanimKarariBelirle, soruHakkiBelirle } from "@/lib/izleme/karar
 import { rastgeleSoruSec } from "@/lib/soru/secim";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
+import { tamamlamaKanitiDogrula } from "@/lib/ogrenmeAraci/sozlesme";
+import { yayinAraciKullanimaAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
 
 const VARSAYILAN_SORU_SAYISI = 2;
 
@@ -38,7 +40,7 @@ export async function PUT(request: NextRequest) {
 
     const { data: izleme, error: izlemeError } = await adminSupabase
       .from("izleme_kayitlari")
-      .select("izleme_id, yayin_id, kullanici_id, izleme_turu, oneri_id, tamamlandi_mi, gercek_oynatma_mi, izleme_baslangic, video_suresi_saniye, soru_hakki_var_mi, soru_hakki_nedeni, soru_indeksleri")
+      .select("izleme_id, yayin_id, kullanici_id, izleme_turu, oneri_id, tamamlandi_mi, gercek_oynatma_mi, izleme_baslangic, video_suresi_saniye, soru_hakki_var_mi, soru_hakki_nedeni, soru_indeksleri, tamamlama_kaniti")
       .eq("izleme_id", izleme_id)
       .single();
 
@@ -53,21 +55,26 @@ export async function PUT(request: NextRequest) {
 
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("yayin_yonetimi")
-      .select("soru_seti_durum_id, extra_puan")
+      .select("soru_seti_durum_id, extra_puan, durum")
       .eq("yayin_id", izleme.yayin_id)
       .single();
     if (yayinError || !yayin) {
       return hataYaniti("Yayın bilgisi alınamadı.", "yayin_yonetimi SELECT — izleme tamamlama", yayinError, 404);
     }
+    if (yayin.durum !== "yayinda") return isKuraluHatasi("Yayın artık aktif değil.");
 
     const { data: yayinDetay, error: detayError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("video_puani, sorular, video_basi_soru_sayisi")
+      .select("video_puani, sorular, video_basi_soru_sayisi, arac_turu")
       .eq("yayin_id", izleme.yayin_id)
       .single();
     if (detayError || !yayinDetay) {
       return hataYaniti("Yayın puan ve soru bilgisi alınamadı.", "v_yayin_detay SELECT — izleme tamamlama", detayError, 404);
     }
+    if (!yayinAraciKullanimaAcikMi(yayinDetay.arac_turu)) return isKuraluHatasi("Bu öğrenme aracı kullanıma kapalı.");
+    if (yayinDetay.arac_turu === "podcast" && !tamamlamaKanitiDogrula("podcast", izleme.tamamlama_kaniti)) return isKuraluHatasi("Podcast tamamlanma kanıtı doğrulanamadı.");
+    if (yayinDetay.arac_turu === "gorsel" && !tamamlamaKanitiDogrula("gorsel", izleme.tamamlama_kaniti)) return isKuraluHatasi("Görsel tamamlanma kanıtı doğrulanamadı.");
+    if (yayinDetay.arac_turu === "flip_pdf" && !tamamlamaKanitiDogrula("flip_pdf", izleme.tamamlama_kaniti)) return isKuraluHatasi("Flip PDF tamamlanma kanıtı doğrulanamadı.");
 
     const turSonuc = await gecerliTur(adminSupabase, izleme.yayin_id);
     if (!turSonuc.ok) {

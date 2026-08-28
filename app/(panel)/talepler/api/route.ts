@@ -12,6 +12,8 @@ import { ECZANEM_TALEP_ACAN_ROLLER, ECLUB_HEDEF_ROLLER, hedefRolIkUreticisineAci
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
 import { hazirParametreKontrol } from "@/lib/uretim/parametreKontrol";
+import { ogrenmeAraciAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
+import { ogrenmeAraciTuruMu } from "@/lib/ogrenmeAraci/sozlesme";
 
 // Talep formu ve raporlarla ortak kanonik eğitim türü sırası.
 const GECERLI_TALEP_TURLERI = TALEP_TURU_SIRA;
@@ -55,9 +57,26 @@ export async function POST(request: NextRequest) {
       egitim_turu,
       hedef_roller,
       urun_id, teknik_id, urun_adi, aciklama,
+      ogrenme_araci_turu, ogrenme_araci_tercihleri,
       hazir_video, hazir_soru_seti, hazir_soru_seti_verisi,
       soru_seti_buyuklugu, secenek_sayisi, video_basi_soru_sayisi,
     } = body;
+
+    if (!ogrenmeAraciTuruMu(ogrenme_araci_turu) || !["video", "podcast", "gorsel", "flip_pdf"].includes(ogrenme_araci_turu)) {
+      return validasyonHatasi("Öğrenme aracı seçimi geçersiz.", ["ogrenme_araci_turu"]);
+    }
+    if (!ogrenmeAraciAcikMi(ogrenme_araci_turu)) {
+      return NextResponse.json({ hata: "Bu öğrenme aracı henüz kullanıma açık değil." }, { status: 423 });
+    }
+    if (typeof hazir_video !== "boolean" || typeof hazir_soru_seti !== "boolean") {
+      return validasyonHatasi("Üretim varyantı seçimleri geçersiz.", ["hazir_video", "hazir_soru_seti"]);
+    }
+    const aracTercihleri = ogrenme_araci_turu === "podcast"
+      ? ogrenme_araci_tercihleri as { anlatim_turu?: unknown }
+      : {};
+    if (ogrenme_araci_turu === "podcast" && !["monolog", "diyalog"].includes(String(aracTercihleri?.anlatim_turu))) {
+      return validasyonHatasi("Podcast anlatım türü monolog veya diyalog olmalıdır.", ["ogrenme_araci_tercihleri.anlatim_turu"]);
+    }
 
     // egitim_turu validasyonu — tip kontrolü
     const egitimTuru = egitim_turu as TalepTuru;
@@ -161,6 +180,8 @@ export async function POST(request: NextRequest) {
         egitim_turu: egitimTuru,
         hedef_roller: hedefRoller,
         icerik_turu: icerikTuru,
+        ogrenme_araci_turu,
+        ogrenme_araci_tercihleri: aracTercihleri,
         urun_id: insertUrunId,
         teknik_id: insertTeknikId,
         urun_adi: insertUrunAdi,

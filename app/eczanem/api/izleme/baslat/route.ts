@@ -9,6 +9,7 @@ import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasy
 import { musteriKimligi } from "@/lib/eczanem/oturum";
 import { olayIdGecerliMi } from "@/lib/izleme/baslat";
 import { aktifGonderimUyeliginiDogrula } from "@/lib/eczanem/aktifUyelik";
+import { yayinAraciKullanimaAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,13 +55,14 @@ export async function POST(request: NextRequest) {
 
     const { data: yayinDetay, error: detayError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("video_suresi_saniye")
+      .select("video_suresi_saniye, arac_turu")
       .eq("yayin_id", gonderim.yayin_id)
       .single();
     if (detayError || !yayinDetay) {
       return hataYaniti("Yayın detayı alınamadı.", "v_yayin_detay SELECT — Eczanem izleme başlangıcı", detayError, 404);
     }
-    const videoSuresi = Number(yayinDetay.video_suresi_saniye ?? 0);
+    if (!yayinAraciKullanimaAcikMi(yayinDetay.arac_turu)) return isKuraluHatasi("Bu öğrenme aracı kullanıma kapalı.");
+    const videoSuresi = ["gorsel", "flip_pdf"].includes(yayinDetay.arac_turu) ? 1 : Number(yayinDetay.video_suresi_saniye ?? 0);
     if (!Number.isFinite(videoSuresi) || videoSuresi <= 0) {
       return isKuraluHatasi("Video süresi doğrulanmamış.");
     }
@@ -68,7 +70,7 @@ export async function POST(request: NextRequest) {
     // Tamamlanmış kayıt dahil bu gönderimin tek izleme oturumunu yeniden kullan.
     const { data: mevcutIzleme, error: mevcutError } = await adminSupabase
       .from("eczanem_izleme_kayitlari")
-      .select("izleme_id, yayin_id, gonderim_id, izleme_baslangic, tamamlandi_mi, son_konum_saniye")
+      .select("izleme_id, yayin_id, gonderim_id, izleme_baslangic, tamamlandi_mi, son_konum_saniye, ilerleme_durumu")
       .eq("gonderim_id", gonderim_id)
       .maybeSingle();
     if (mevcutError) return hataYaniti("İzleme kaydı sorgulanamadı.", "eczanem_izleme_kayitlari SELECT — gonderim_id", mevcutError);
@@ -87,7 +89,7 @@ export async function POST(request: NextRequest) {
         izleme_baslangic: new Date().toISOString(),
         video_suresi_saniye: Math.ceil(videoSuresi),
       })
-      .select("izleme_id, yayin_id, gonderim_id, izleme_baslangic, tamamlandi_mi, son_konum_saniye")
+      .select("izleme_id, yayin_id, gonderim_id, izleme_baslangic, tamamlandi_mi, son_konum_saniye, ilerleme_durumu")
       .single();
 
     if (izlemeError?.code === "23505") {

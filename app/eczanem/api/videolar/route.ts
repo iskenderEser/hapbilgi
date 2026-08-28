@@ -23,6 +23,8 @@ interface YayinDetaySatiri {
   talep_no: number | null;
   firma_adi: string | null;
   firma_id: string | null;
+  arac_id: string | null;
+  arac_turu: "video" | "podcast" | "gorsel" | "flip_pdf";
 }
 
 interface EtkilesimSatiri {
@@ -75,11 +77,11 @@ export async function GET() {
     if (yayinIdler.length > 0) {
       const { data: yayinlar, error: yayinError } = await adminSupabase
         .from("v_yayin_detay")
-        .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, video_basi_soru_sayisi, durum, talep_no, firma_adi, firma_id")
+        .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, video_basi_soru_sayisi, durum, talep_no, firma_adi, firma_id, arac_id, arac_turu")
         .in("yayin_id", yayinIdler)
         .in("firma_id", kimlik.firmaIdler!)
         // Görünürlük kapısı (Faz 1): süresi hazır olmayan video izleyiciye gösterilmez.
-        .gt("video_suresi_saniye", 0);
+        .or("arac_turu.in.(gorsel,flip_pdf),video_suresi_saniye.gt.0");
       if (yayinError) return hataYaniti("Video yayın bilgileri çekilemedi.", "v_yayin_detay SELECT — müşteri videoları", yayinError);
       for (const y of yayinlar ?? []) yayinMap.set(y.yayin_id, y as YayinDetaySatiri);
     }
@@ -137,6 +139,8 @@ export async function GET() {
           urun_adi: y?.urun_adi ?? "-",
           teknik_adi: y?.teknik_adi ?? "-",
           video_url: y?.video_url ?? null,
+          arac_id: y?.arac_id ?? null,
+          arac_turu: y?.arac_turu ?? "video",
           thumbnail_url: y?.thumbnail_url ?? null,
           video_puani: y?.video_puani ?? null,
           soru_puani: y?.soru_puani ?? null,

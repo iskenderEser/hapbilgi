@@ -23,6 +23,9 @@ import { HazirSoruSetiBlogu } from "@/app/(panel)/talepler/_components/HazirSoru
 import { VideoYukleme } from "@/app/(panel)/talepler/_components/VideoYukleme";
 import { EkDosyaYukleme } from "@/app/(panel)/talepler/_components/EkDosyaYukleme";
 import { TalepOnayModal } from "@/app/(panel)/talepler/_components/TalepOnayModal";
+import { PodcastTalepAlanlari } from "@/app/(panel)/talepler/_components/PodcastTalepAlanlari";
+import { GorselTalepAlanlari } from "@/app/(panel)/talepler/_components/GorselTalepAlanlari";
+import { FlipPdfTalepAlanlari } from "@/app/(panel)/talepler/_components/FlipPdfTalepAlanlari";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -71,13 +74,27 @@ export function YeniTalepFormV2({ formu }: Props) {
             Önce hedef kitleyi seçin; içerik ve üretim seçenekleri buna göre açılır.
           </p>
         </div>
-        <div className="rounded-xl border border-[#e2e9f2] bg-white px-3 py-2.5">
+        <div className="flex flex-col gap-2 rounded-xl border border-[#e2e9f2] bg-white px-3 py-2.5">
+          <div className="flex flex-wrap gap-2" aria-label="Öğrenme aracı seçimi">
+            {(["video", "podcast", "gorsel", "flip_pdf"] as const).map((tur) => (
+              <button
+                key={tur}
+                type="button"
+                aria-pressed={formu.ogrenmeAraciTuru === tur}
+                onClick={() => formu.handleOgrenmeAraciTuruDegis(tur)}
+                className="cursor-pointer rounded-lg border px-3 py-1.5 text-xs font-extrabold"
+                style={secimKutusu(formu.ogrenmeAraciTuru === tur)}
+              >
+                {tur === "video" ? "Video" : tur === "podcast" ? "Podcast" : tur === "gorsel" ? "Görsel" : "Flip PDF"}
+              </button>
+            ))}
+          </div>
           <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#7a8da8]">
             Elimde hazır içerik var
           </p>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {[
-            { etiket: "Hazır video", acik: formu.hazirVideo, degistir: formu.toggleHazirVideo },
+            { etiket: formu.ogrenmeAraciTuru === "podcast" ? "Hazır podcast" : formu.ogrenmeAraciTuru === "gorsel" ? "Hazır görsel" : formu.ogrenmeAraciTuru === "flip_pdf" ? "Hazır PDF" : "Hazır video", acik: formu.hazirVideo, degistir: formu.toggleHazirVideo },
             { etiket: "Hazır soru seti", acik: formu.hazirSoruSeti, degistir: formu.toggleHazirSoruSeti },
           ].map((a) => (
             <div key={a.etiket} className="flex items-center gap-2">
@@ -108,11 +125,11 @@ export function YeniTalepFormV2({ formu }: Props) {
         {(formu.hazirVideo || formu.hazirSoruSeti) && (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs leading-relaxed text-amber-900">
             {formu.hazirVideo && formu.hazirSoruSeti &&
-              "Hazır video ve soru seti talebi oluşturuyorsunuz. Video ve soru setinizi yükledikten sonra yayın yönetimi aşamasındaki işlemler sonrası yayına açabilirsiniz."}
+              `Hazır ${formu.ogrenmeAraciTuru === "podcast" ? "podcast" : formu.ogrenmeAraciTuru === "gorsel" ? "görsel" : formu.ogrenmeAraciTuru === "flip_pdf" ? "PDF" : "video"} ve soru seti talebi oluşturuyorsunuz. Dosyalarınızı yükledikten sonra yayın yönetimi aşamasındaki işlemler sonrası yayına açabilirsiniz.`}
             {formu.hazirVideo && !formu.hazirSoruSeti &&
-              "Hazır videonuzu yükledikten sonra soru seti İçerik Üreticisinden talep edilecektir."}
+              `Hazır ${formu.ogrenmeAraciTuru === "podcast" ? "podcast'inizi" : formu.ogrenmeAraciTuru === "gorsel" ? "görselinizi" : formu.ogrenmeAraciTuru === "flip_pdf" ? "PDF'nizi" : "videonuzu"} yükledikten sonra soru seti İçerik Üreticisinden talep edilecektir.`}
             {!formu.hazirVideo && formu.hazirSoruSeti &&
-              "Hazır soru seti ile talep oluşturuyorsunuz. Video için senaryo yazılmasını ve videonun oluşturulmasını içerik üreticiniz yapacaktır."}
+              `Hazır soru seti ile talep oluşturuyorsunuz. ${formu.ogrenmeAraciTuru === "podcast" ? "Podcast konuşma metni ve ses üretimini" : formu.ogrenmeAraciTuru === "gorsel" ? "Görsel üretimini" : formu.ogrenmeAraciTuru === "flip_pdf" ? "Flip PDF üretimini" : "Video için senaryo ve video üretimini"} içerik üreticiniz yapacaktır.`}
           </div>
         )}
 
@@ -280,11 +297,30 @@ export function YeniTalepFormV2({ formu }: Props) {
                 onVideoBasiChange={formu.setVideoBasiSoruSayisi}
                 onSecenekChange={formu.setSecenekSayisi}
                 buyuklukEtiketi="Soru sayısı"
-                videoBasiEtiketi="Video başına soru adedi"
+                videoBasiEtiketi={`${formu.ogrenmeAraciTuru === "podcast" ? "Podcast" : formu.ogrenmeAraciTuru === "gorsel" ? "Görsel" : formu.ogrenmeAraciTuru === "flip_pdf" ? "Flip PDF" : "Video"} başına soru adedi`}
               />
             </fieldset>
           </>
         </div>
+
+        {formu.ogrenmeAraciTuru === "podcast" && (
+          <PodcastTalepAlanlari
+            anlatimTuru={formu.podcastAnlatimTuru}
+            onAnlatimTuruDegis={formu.setPodcastAnlatimTuru}
+            hazir={formu.hazirVideo}
+            ses={formu.bekleyenPodcast}
+            kapak={formu.bekleyenPodcastKapak}
+            transkript={formu.bekleyenPodcastTranskript}
+            onSesSec={formu.handlePodcastSec}
+            onKapakSec={formu.handlePodcastKapakSec}
+            onTranskriptSec={formu.handlePodcastTranskriptSec}
+            onSesSil={formu.handleBekleyenPodcastSil}
+            onKapakSil={formu.handleBekleyenPodcastKapakSil}
+            onTranskriptSil={formu.handleBekleyenPodcastTranskriptSil}
+          />
+        )}
+        {formu.ogrenmeAraciTuru === "gorsel" && <GorselTalepAlanlari hazir={formu.hazirVideo} gorsel={formu.bekleyenGorsel} onSec={formu.handleGorselSec} onSil={formu.handleBekleyenGorselSil} />}
+        {formu.ogrenmeAraciTuru === "flip_pdf" && <FlipPdfTalepAlanlari hazir={formu.hazirVideo} pdf={formu.bekleyenFlipPdf} onSec={formu.handleFlipPdfSec} onSil={formu.handleBekleyenFlipPdfSil} />}
 
         {/* Açıklama — dört sütunun altında, tam genişlik */}
         <div className="rounded-2xl border border-[#dfe8f3] bg-white p-4" style={{ opacity: formAktif ? 1 : 0.58, pointerEvents: formAktif ? "auto" : "none" }}>
@@ -305,7 +341,7 @@ export function YeniTalepFormV2({ formu }: Props) {
           className="flex flex-col gap-3"
           style={{ opacity: formAktif ? 1 : 0.4, pointerEvents: formAktif ? "auto" : "none" }}
         >
-          {formu.hazirVideo && (
+          {formu.hazirVideo && formu.ogrenmeAraciTuru === "video" && (
             <VideoYukleme
               bekleyen={formu.bekleyenVideo}
               onSec={formu.handleVideoSec}

@@ -11,6 +11,9 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, HelpCircle, Send } from "lucide-react";
 import { createVideoPlayer, type VideoPlayer } from "@/lib/video/videoPlayer";
 import VideoCercevesi from "@/components/video/VideoCercevesi";
+import PodcastOynatici from "@/components/ogrenme-araci/PodcastOynatici";
+import GorselOynatici from "@/components/ogrenme-araci/GorselOynatici";
+import FlipPdfOynatici from "@/components/ogrenme-araci/FlipPdfOynatici";
 
 interface OynaticiOneri {
   oneri_id: string;
@@ -18,6 +21,8 @@ interface OynaticiOneri {
   urun_adi: string;
   teknik_adi: string | null;
   video_url: string | null;
+  arac_id?: string | null;
+  arac_turu?: "video" | "podcast" | "gorsel" | "flip_pdf";
 }
 
 interface Soru {
@@ -388,7 +393,10 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
           <span className="rounded-full border border-[#bfdbfe] bg-[#eff6ff] px-2.5 py-1 text-[9px] font-extrabold text-[#2563a8]">Video ve Soru Akışı</span>
         </div>
 
-        {oneri.video_url && (
+        {oneri.arac_turu === "podcast" && oneri.arac_id && <PodcastOynatici aracId={oneri.arac_id} yayinId={oneri.yayin_id} bagId={oneri.oneri_id} hata={hata} baslat={async () => { const r = await fetch("/eclub/panel/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oneri_id: oneri.oneri_id }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Podcast dinlemesi başlatılamadı."); izlemeIdRef.current = d.izleme.izleme_id; setIzlemeId(d.izleme.izleme_id); return { izlemeId: d.izleme.izleme_id, ilerleme: d.izleme.ilerleme_durumu }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleBitir(); }} onTamamlandi={onTamamlandi} />}
+        {oneri.arac_turu === "gorsel" && oneri.arac_id && <GorselOynatici aracId={oneri.arac_id} yayinId={oneri.yayin_id} bagId={oneri.oneri_id} hata={hata} baslat={async () => { const r = await fetch("/eclub/panel/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oneri_id: oneri.oneri_id }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Görsel incelemesi başlatılamadı."); izlemeIdRef.current = d.izleme.izleme_id; setIzlemeId(d.izleme.izleme_id); return { izlemeId: d.izleme.izleme_id }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleBitir(); }} onTamamlandi={onTamamlandi} />}
+        {oneri.arac_turu === "flip_pdf" && oneri.arac_id && <FlipPdfOynatici aracId={oneri.arac_id} yayinId={oneri.yayin_id} bagId={oneri.oneri_id} hata={hata} baslat={async () => { const r = await fetch("/eclub/panel/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oneri_id: oneri.oneri_id }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Flip PDF okuması başlatılamadı."); izlemeIdRef.current = d.izleme.izleme_id; setIzlemeId(d.izleme.izleme_id); return { izlemeId: d.izleme.izleme_id, ilerleme: d.izleme.ilerleme_durumu }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleBitir(); }} onTamamlandi={onTamamlandi} />}
+        {!(["podcast", "gorsel", "flip_pdf"].includes(oneri.arac_turu ?? "video")) && oneri.video_url && (
           <div className="border-b border-[#e7edf4] bg-[#10213d]">
             {/* Kutu videonun oranına göre çizilir (26.07). iframe burada kalır — ref playerjs'e bağlı. */}
             <VideoCercevesi

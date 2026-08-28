@@ -12,6 +12,8 @@ export interface PanelOneri {
   urun_adi: string;
   teknik_adi: string | null;
   video_url: string | null;
+  arac_id: string | null;
+  arac_turu: "video" | "podcast" | "gorsel" | "flip_pdf";
   thumbnail_url: string | null;
   icerik_turu: string | null;
   video_puani: number;

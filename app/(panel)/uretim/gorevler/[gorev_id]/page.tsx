@@ -16,6 +16,7 @@ import { talepIdGoster } from "@/lib/utils/talepId";
 import { uretimToast, toastVaryant, type ToastAsama, type ToastOlay } from "@/lib/uretim/toastMesaj";
 import type { UretimGorevIcerigi, UretimGorevi } from "@/lib/uretim/gorevTipleri";
 import { bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
+import { hazirFlipPdfYukle, hazirGorselYukle, hazirPodcastYukle } from "@/lib/ogrenmeAraci/bunnyYuklemeIstemci";
 
 const ASAMA: Record<ToastAsama, { etiket: Asama; liste: string }> = {
   senaryo: { etiket: "Senaryo", liste: "/senaryolar" },
@@ -37,6 +38,9 @@ export default function UretimGorevDetayPage() {
   const [revizyonNotu, setRevizyonNotu] = useState("");
   const [videoYuzdesi, setVideoYuzdesi] = useState<number | null>(null);
   const [yuklenenVideo, setYuklenenVideo] = useState<{ video_url: string; dosya_adi: string } | null>(null);
+  const [podcastDosyalari, setPodcastDosyalari] = useState<{ ses?: File; kapak?: File; transkript?: File }>({});
+  const [gorselDosyasi, setGorselDosyasi] = useState<File | null>(null);
+  const [flipPdfDosyasi, setFlipPdfDosyasi] = useState<File | null>(null);
 
   useEffect(() => {
     if (authYukleniyor) return;
@@ -147,6 +151,55 @@ export default function UretimGorevDetayPage() {
     if (teslimBasarili) setYuklenenVideo(null);
   };
 
+  const podcastYukle = async () => {
+    if (!gorev || !podcastDosyalari.ses || !podcastDosyalari.kapak || !podcastDosyalari.transkript) return;
+    setIslem(true);
+    try {
+      await hazirPodcastYukle({
+        talepId: gorev.talep_id,
+        ses: podcastDosyalari.ses,
+        kapak: podcastDosyalari.kapak,
+        transkript: podcastDosyalari.transkript,
+        kaynak: "iu",
+        gorevId: gorev.gorev_id,
+        aracId: gorev.arac_id ?? undefined,
+      });
+      basari("Podcast üretici incelemesine gönderildi.");
+      setPodcastDosyalari({});
+      await veriCek();
+    } catch (err) {
+      hata("Podcast yüklenemedi.", "podcast yükleme", err instanceof Error ? err.message : undefined);
+    } finally {
+      setIslem(false);
+    }
+  };
+
+  const gorselYukle = async () => {
+    if (!gorev || !gorselDosyasi) return;
+    setIslem(true);
+    try {
+      await hazirGorselYukle({ talepId: gorev.talep_id, gorsel: gorselDosyasi, kaynak: "iu", gorevId: gorev.gorev_id, aracId: gorev.arac_id ?? undefined });
+      basari("Görsel üretici incelemesine gönderildi.");
+      setGorselDosyasi(null);
+      await veriCek();
+    } catch (err) {
+      hata("Görsel yüklenemedi.", "görsel yükleme", err instanceof Error ? err.message : undefined);
+    } finally { setIslem(false); }
+  };
+
+  const flipPdfYukle = async () => {
+    if (!gorev || !flipPdfDosyasi) return;
+    setIslem(true);
+    try {
+      await hazirFlipPdfYukle({ talepId: gorev.talep_id, pdf: flipPdfDosyasi, kaynak: "iu", gorevId: gorev.gorev_id, aracId: gorev.arac_id ?? undefined });
+      basari("Flip PDF üretici incelemesine gönderildi.");
+      setFlipPdfDosyasi(null);
+      await veriCek();
+    } catch (err) {
+      hata("Flip PDF yüklenemedi.", "PDF yükleme", err instanceof Error ? err.message : undefined);
+    } finally { setIslem(false); }
+  };
+
   const kararVer = async (karar: "onaylandi" | "revizyon bekleniyor" | "Iptal Edildi", notlar?: string) => {
     if (!gorev) return;
     setIslem(true);
@@ -183,12 +236,18 @@ export default function UretimGorevDetayPage() {
           <div className="flex flex-col gap-4 px-4 py-4 md:px-5">
             {icerik?.asama === "senaryo" && icerik.senaryo_metni && <div className="whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-700">{icerik.senaryo_metni}</div>}
             {icerik?.asama === "video" && icerik.video_url && <VideoOnizleme videoUrl={icerik.video_url} className="rounded-xl" ariaLabel="Üretim videosunu oynat" />}
+            {icerik?.asama === "podcast" && <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4"><img src={icerik.kapak_url} alt="Podcast kapağı" className="mx-auto aspect-square w-full max-w-56 rounded-xl object-cover" /><audio controls preload="metadata" src={icerik.ses_url} className="w-full" /><a href={icerik.transkript_url} target="_blank" rel="noreferrer" className="text-center text-sm font-semibold text-[#287fce]">Transkripti aç</a></div>}
+            {icerik?.asama === "gorsel" && <div className="rounded-xl border border-gray-200 bg-gray-50 p-4"><img src={icerik.gorsel_url} alt="Üretim görseli" className="mx-auto max-h-[70vh] max-w-full rounded-xl object-contain" /><p className="mt-2 text-center text-xs text-gray-500">{icerik.genislik} × {icerik.yukseklik} px</p></div>}
+            {icerik?.asama === "flip_pdf" && <div className="rounded-xl border border-gray-200 bg-gray-50 p-4"><iframe src={icerik.pdf_url} title="Flip PDF ön izlemesi" className="h-[70vh] w-full rounded-xl border border-gray-200 bg-white" /><p className="mt-2 text-center text-xs text-gray-500">{icerik.sayfa_sayisi} sayfa</p></div>}
             {icerik?.asama === "soru_seti" && icerik.sorular.length > 0 && <div className="flex flex-col gap-2">{icerik.sorular.map((soru, i) => <div key={i} className="rounded-lg border border-gray-200 bg-gray-50 p-3"><p className="text-sm font-semibold text-gray-800">{i + 1}. {soru.soru_metni}</p><div className="mt-2 flex flex-wrap gap-1.5">{soru.secenekler.map((secenek) => <span key={secenek.harf} className={`rounded-full border px-2 py-1 text-xs ${secenek.dogru ? "border-green-200 bg-green-50 text-green-700" : "border-gray-200 bg-white text-gray-500"}`}>{secenek.harf}. {secenek.metin}</span>)}</div></div>)}</div>}
 
             {(gorev.durum_gecmisi ?? []).filter((d) => d.durum === "revizyon bekleniyor" && d.notlar).map((d, i) => <div key={`${d.created_at}-${i}`} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"><strong>Revizyon notu:</strong> {d.notlar}</div>)}
 
             {iuTeslimEdebilir && gorev.asama === "senaryo" && <div className="border-t border-gray-100 pt-4"><textarea value={senaryoMetni} onChange={(e) => setSenaryoMetni(e.target.value)} rows={14} placeholder="Senaryoyu yazın..." className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm leading-6 outline-none focus:border-[#56aeff]" /><div className="mt-3 flex justify-end"><button type="button" onClick={senaryoGonder} disabled={islem || !senaryoMetni.trim()} className="rounded-lg border-0 bg-[#56aeff] px-5 py-2.5 text-xs font-semibold text-white disabled:opacity-50">İncelemeye Gönder</button></div></div>}
-            {iuTeslimEdebilir && gorev.asama === "video" && <div className="border-t border-gray-100 pt-4">{yuklenenVideo ? <div className="flex flex-col gap-3"><VideoOnizleme videoUrl={yuklenenVideo.video_url} className="rounded-xl" ariaLabel="Yüklenen videoyu oynat" /><div className="flex flex-col gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><p className="truncate text-xs font-semibold text-green-800">{yuklenenVideo.dosya_adi}</p><p className="mt-0.5 text-[11px] text-green-700">Video yüklendi; henüz üretici incelemesine gönderilmedi.</p></div><button type="button" onClick={() => void videoTeslimEt()} disabled={islem} className="shrink-0 rounded-lg border-0 bg-[#56aeff] px-5 py-2.5 text-xs font-semibold text-white disabled:opacity-50">Gönder</button></div></div> : <label className="flex cursor-pointer flex-col items-center rounded-xl border border-dashed border-[#56aeff] bg-[#f6faff] px-5 py-8 text-center"><span className="text-sm font-semibold text-[#287fce]">{videoYuzdesi === null ? "Video dosyasını seçin" : `Yükleniyor: %${videoYuzdesi}`}</span><span className="mt-1 text-xs text-gray-400">Dosya yüklendikten sonra Gönder butonuyla incelemeye iletilir.</span><input type="file" accept="video/*" disabled={islem} className="hidden" onChange={(e) => { const dosya = e.target.files?.[0]; if (dosya) void videoYukle(dosya); e.currentTarget.value = ""; }} /></label>}</div>}
+            {iuTeslimEdebilir && gorev.asama === "video" && gorev.talep?.ogrenme_araci_turu === "video" && <div className="border-t border-gray-100 pt-4">{yuklenenVideo ? <div className="flex flex-col gap-3"><VideoOnizleme videoUrl={yuklenenVideo.video_url} className="rounded-xl" ariaLabel="Yüklenen videoyu oynat" /><div className="flex flex-col gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0"><p className="truncate text-xs font-semibold text-green-800">{yuklenenVideo.dosya_adi}</p><p className="mt-0.5 text-[11px] text-green-700">Video yüklendi; henüz üretici incelemesine gönderilmedi.</p></div><button type="button" onClick={() => void videoTeslimEt()} disabled={islem} className="shrink-0 rounded-lg border-0 bg-[#56aeff] px-5 py-2.5 text-xs font-semibold text-white disabled:opacity-50">Gönder</button></div></div> : <label className="flex cursor-pointer flex-col items-center rounded-xl border border-dashed border-[#56aeff] bg-[#f6faff] px-5 py-8 text-center"><span className="text-sm font-semibold text-[#287fce]">{videoYuzdesi === null ? "Video dosyasını seçin" : `Yükleniyor: %${videoYuzdesi}`}</span><span className="mt-1 text-xs text-gray-400">Dosya yüklendikten sonra Gönder butonuyla incelemeye iletilir.</span><input type="file" accept="video/*" disabled={islem} className="hidden" onChange={(e) => { const dosya = e.target.files?.[0]; if (dosya) void videoYukle(dosya); e.currentTarget.value = ""; }} /></label>}</div>}
+            {iuTeslimEdebilir && gorev.asama === "video" && gorev.talep?.ogrenme_araci_turu === "podcast" && <div className="flex flex-col gap-3 border-t border-gray-100 pt-4"><label className="rounded-lg border border-dashed border-gray-300 p-3 text-sm">Ses dosyası<input type="file" accept="audio/*" className="mt-2 block w-full text-xs" onChange={(e) => setPodcastDosyalari((d) => ({ ...d, ses: e.target.files?.[0] }))} /></label><label className="rounded-lg border border-dashed border-gray-300 p-3 text-sm">Kapak görseli<input type="file" accept="image/jpeg,image/png,image/webp" className="mt-2 block w-full text-xs" onChange={(e) => setPodcastDosyalari((d) => ({ ...d, kapak: e.target.files?.[0] }))} /></label><label className="rounded-lg border border-dashed border-gray-300 p-3 text-sm">Transkript<input type="file" accept=".pdf,.txt,.doc,.docx" className="mt-2 block w-full text-xs" onChange={(e) => setPodcastDosyalari((d) => ({ ...d, transkript: e.target.files?.[0] }))} /></label><button type="button" onClick={() => void podcastYukle()} disabled={islem || !podcastDosyalari.ses || !podcastDosyalari.kapak || !podcastDosyalari.transkript} className="self-end rounded-lg border-0 bg-[#56aeff] px-5 py-2.5 text-xs font-semibold text-white disabled:opacity-50">İncelemeye Gönder</button></div>}
+            {iuTeslimEdebilir && gorev.asama === "video" && gorev.talep?.ogrenme_araci_turu === "gorsel" && <div className="flex flex-col gap-3 border-t border-gray-100 pt-4"><label className="rounded-lg border border-dashed border-gray-300 p-3 text-sm">Nihai görsel<input type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" className="mt-2 block w-full text-xs" onChange={(e) => setGorselDosyasi(e.target.files?.[0] ?? null)} /></label><button type="button" onClick={() => void gorselYukle()} disabled={islem || !gorselDosyasi} className="self-end rounded-lg border-0 bg-[#56aeff] px-5 py-2.5 text-xs font-semibold text-white disabled:opacity-50">İncelemeye Gönder</button></div>}
+            {iuTeslimEdebilir && gorev.asama === "video" && gorev.talep?.ogrenme_araci_turu === "flip_pdf" && <div className="flex flex-col gap-3 border-t border-gray-100 pt-4"><label className="rounded-lg border border-dashed border-gray-300 p-3 text-sm">Nihai Flip PDF<input type="file" accept=".pdf,application/pdf" className="mt-2 block w-full text-xs" onChange={(e) => setFlipPdfDosyasi(e.target.files?.[0] ?? null)} /></label><button type="button" onClick={() => void flipPdfYukle()} disabled={islem || !flipPdfDosyasi} className="self-end rounded-lg border-0 bg-[#56aeff] px-5 py-2.5 text-xs font-semibold text-white disabled:opacity-50">İncelemeye Gönder</button></div>}
             {iuTeslimEdebilir && gorev.asama === "soru_seti" && <div className="border-t border-gray-100 pt-4"><SoruIceAktar secenekSayisi={gorev.talep?.secenek_sayisi ?? 4} onDoldur={(yeni, mesaj) => { setTaslaklar(taslaklariBoyutla(yeni, gorev.talep?.soru_seti_buyuklugu ?? 25, gorev.talep?.secenek_sayisi ?? 4)); if (mesaj) uyari(mesaj); }} /><SoruSetiFormu taslaklar={taslaklar} onDegis={setTaslaklar} buyukluk={gorev.talep?.soru_seti_buyuklugu ?? 25} secenekSayisi={gorev.talep?.secenek_sayisi ?? 4} /><div className="mt-3 flex justify-end"><button type="button" onClick={soruSetiGonder} disabled={islem} className="rounded-lg border-0 bg-[#56aeff] px-5 py-2.5 text-xs font-semibold text-white disabled:opacity-50">İncelemeye Gönder</button></div></div>}
 
             {ureticiKararVerebilir && <div className="border-t border-gray-100 pt-4">{revizyonAcik ? <div className="flex flex-col gap-2"><textarea value={revizyonNotu} onChange={(e) => setRevizyonNotu(e.target.value)} rows={3} placeholder="Revizyon notunu yazın..." className="rounded-lg border border-amber-200 px-3 py-2 text-sm outline-none" /><div className="flex justify-end gap-2"><button type="button" onClick={() => { setRevizyonAcik(false); setRevizyonNotu(""); }} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500">Vazgeç</button><button type="button" disabled={islem || !revizyonNotu.trim()} onClick={() => void kararVer("revizyon bekleniyor", revizyonNotu)} className="rounded-lg border-0 bg-amber-500 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Revizyon Gönder</button></div></div> : <div className="flex flex-wrap justify-end gap-2"><button type="button" disabled={islem} onClick={() => void kararVer("onaylandi")} className="rounded-lg border-0 bg-green-700 px-3 py-2 text-xs font-semibold text-white">Onayla</button>{gorev.revizyon_sayisi < 2 && <button type="button" disabled={islem} onClick={() => setRevizyonAcik(true)} className="rounded-lg border-0 bg-amber-500 px-3 py-2 text-xs font-semibold text-white">Revizyon İste</button>}<button type="button" disabled={islem} onClick={() => void kararVer("Iptal Edildi")} className="rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-[#bc2d0d]">İptal Et</button></div>}</div>}

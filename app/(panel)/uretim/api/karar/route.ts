@@ -22,14 +22,21 @@ export async function POST(request: NextRequest) {
     if (!["onaylandi", "revizyon bekleniyor", "Iptal Edildi"].includes(karar)) return validasyonHatasi("Geçersiz üretici kararı.", ["karar"]);
     if (karar === "revizyon bekleniyor" && (typeof notlar !== "string" || !notlar.trim())) return validasyonHatasi("Revizyon notu zorunludur.", ["notlar"]);
 
-    const { data: sonuc, error } = await adminSupabase.rpc("uretim_uretici_karar_ver", {
+    const { data: gorevBilgisi } = await adminSupabase.from("uretim_gorevleri").select("asama, talep_id").eq("gorev_id", gorev_id).maybeSingle();
+    const { data: talepBilgisi } = gorevBilgisi
+      ? await adminSupabase.from("talepler").select("ogrenme_araci_turu").eq("talep_id", gorevBilgisi.talep_id).maybeSingle()
+      : { data: null };
+    const aracTuru = talepBilgisi?.ogrenme_araci_turu;
+    const ortakAracKarari = ["podcast", "gorsel", "flip_pdf"].includes(aracTuru ?? "") && gorevBilgisi?.asama !== "soru_seti";
+    const rpcAdi = !ortakAracKarari ? "uretim_uretici_karar_ver" : aracTuru === "gorsel" ? "uretim_gorsel_uretici_karar_ver" : aracTuru === "flip_pdf" ? "uretim_flip_pdf_uretici_karar_ver" : "uretim_podcast_uretici_karar_ver";
+    const { data: sonuc, error } = await adminSupabase.rpc(rpcAdi, {
       p_gorev_id: gorev_id,
       p_uretici_id: user.id,
       p_karar: karar,
       p_notlar: typeof notlar === "string" ? notlar : null,
       p_islem_anahtari: islem_anahtari,
     });
-    if (error) return uretimRpcHataYaniti("Üretici kararı kaydedilemedi.", "uretim_uretici_karar_ver RPC", error);
+    if (error) return uretimRpcHataYaniti("Üretici kararı kaydedilemedi.", `${rpcAdi} RPC`, error);
 
     const sonucNesnesi = sonuc as { sonraki?: { atanan_iu_id?: string } | null } | null;
     let pushAlici: string | null = sonucNesnesi?.sonraki?.atanan_iu_id ?? null;
@@ -44,4 +51,3 @@ export async function POST(request: NextRequest) {
     return sunucuHatasi(err, "POST /uretim/api/karar");
   }
 }
-

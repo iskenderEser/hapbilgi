@@ -70,6 +70,33 @@ export function dosyaImzasiDogrula(aracTuru: YeniOgrenmeAraciTuru, ilkBaytlar: U
   return id3 || mp3Frame || mp4;
 }
 
+export type PodcastDestekDosyasiRolu = "kapak" | "transkript";
+
+export function podcastDestekDosyasiDogrula(girdi: {
+  rol: PodcastDestekDosyasiRolu;
+  dosyaAdi: string;
+  mimeType: string;
+  dosyaBoyutu: number;
+}): { ok: true; uzanti: string } | { ok: false; hata: string } {
+  const uzanti = girdi.dosyaAdi.trim().toLowerCase().split(".").pop() ?? "";
+  const mime = girdi.mimeType.toLowerCase();
+  const gecerli = girdi.rol === "kapak"
+    ? (["jpg", "jpeg", "png"].includes(uzanti) && ["image/jpeg", "image/png"].includes(mime) && girdi.dosyaBoyutu <= 20 * 1024 * 1024)
+    : (["txt", "pdf", "docx"].includes(uzanti)
+      && ["text/plain", "application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"].includes(mime)
+      && girdi.dosyaBoyutu <= 20 * 1024 * 1024);
+  return Number.isSafeInteger(girdi.dosyaBoyutu) && girdi.dosyaBoyutu > 0 && gecerli
+    ? { ok: true, uzanti }
+    : { ok: false, hata: "Podcast destek dosyası türü veya boyutu geçersiz." };
+}
+
+export function podcastDestekDosyasiImzasiDogrula(rol: PodcastDestekDosyasiRolu, uzanti: string, ilkBaytlar: Uint8Array): boolean {
+  if (rol === "kapak") return dosyaImzasiDogrula("gorsel", ilkBaytlar);
+  if (uzanti === "txt") return ilkBaytlar.length > 0 && !ilkBaytlar.slice(0, 32).includes(0);
+  if (uzanti === "pdf") return dosyaImzasiDogrula("flip_pdf", ilkBaytlar);
+  return ilkBaytlar.length >= 4 && ilkBaytlar[0] === 0x50 && ilkBaytlar[1] === 0x4b && ilkBaytlar[2] === 0x03 && ilkBaytlar[3] === 0x04;
+}
+
 export function metadataDogrula(aracTuru: OgrenmeAraciTuru, metadata: OgrenmeAraciMetadata): boolean {
   if (!metadata.mimeType || !metadata.dosyaBoyutu || metadata.dosyaBoyutu <= 0) return false;
   if (metadata.checksumSha256 && !/^[0-9a-f]{64}$/.test(metadata.checksumSha256)) return false;

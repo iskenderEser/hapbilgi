@@ -7,6 +7,7 @@ import {
 } from "./talepZinciri";
 import { pushYayinlaArkada } from "@/lib/push/orkestrasyon";
 import type { PushOlayTuru } from "@/lib/push/tipler";
+import type { PushBaglami } from "@/lib/push/tipler";
 
 type KayitTuru = "talep" | "senaryo" | "video" | "soru_seti" | "yayin" | "oneri" | "challenge";
 
@@ -21,6 +22,19 @@ const PUSH_OLAY_ESLEME: Record<KayitTuru, PushOlayTuru> = {
   oneri: "video_onerisi",
   challenge: "challenge",
 };
+
+async function pushBaglamiBul(adminSupabase: SupabaseClient, kayitTuru: KayitTuru, kayitId: string): Promise<PushBaglami> {
+  if (kayitTuru === "yayin") return { yayinId: kayitId };
+  if (kayitTuru === "oneri") {
+    const { data } = await adminSupabase.from("oneri_kayitlari").select("yayin_id").eq("oneri_id", kayitId).maybeSingle();
+    return { yayinId: data?.yayin_id, bagId: kayitId };
+  }
+  if (kayitTuru === "challenge") {
+    const { data } = await adminSupabase.from("challenge_kayitlari").select("yayin_id").eq("challenge_id", kayitId).maybeSingle();
+    return { yayinId: data?.yayin_id, bagId: kayitId };
+  }
+  return {};
+}
 
 interface BildirimParams {
   adminSupabase: SupabaseClient;
@@ -182,7 +196,7 @@ export async function bildirimOlustur(params: BildirimParams): Promise<BildirimS
       return { ok: false, hata: error.message }; // in-app yazılamadıysa push da gitmez
     }
 
-    pushYayinlaArkada(adminSupabase, PUSH_OLAY_ESLEME[kayit_turu], [alici_id]);
+    pushYayinlaArkada(adminSupabase, PUSH_OLAY_ESLEME[kayit_turu], [alici_id], await pushBaglamiBul(adminSupabase, kayit_turu, kanonikKayitId));
     return { ok: true };
   } catch (err) {
     console.error("[BİLDİRİM] Beklenmeyen hata:", err);
@@ -248,7 +262,7 @@ export async function cokluBildirimOlustur(params: CokluBildirimParams): Promise
       return { ok: false, hata: error.message }; // in-app yazılamadıysa push da gitmez
     }
 
-    pushYayinlaArkada(adminSupabase, PUSH_OLAY_ESLEME[kayit_turu], alici_idler);
+    pushYayinlaArkada(adminSupabase, PUSH_OLAY_ESLEME[kayit_turu], alici_idler, await pushBaglamiBul(adminSupabase, kayit_turu, kanonikKayitId));
     return { ok: true };
   } catch (err) {
     console.error("[BİLDİRİM] Beklenmeyen hata:", err);

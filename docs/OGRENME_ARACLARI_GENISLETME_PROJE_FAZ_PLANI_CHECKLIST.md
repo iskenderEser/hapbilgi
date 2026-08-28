@@ -35,7 +35,7 @@ Bu belge, projenin uygulama ve ilerleme takibindeki tek kontrol kaynağıdır. A
 |---:|---|---|---|
 | 1 | Kararların ve mevcut davranışın sabitlenmesi | Tamamlandı | Evet |
 | 2 | Ortak teknik omurganın kurulması | Tamamlandı | Evet |
-| 3 | Podcast'in uçtan uca geliştirilmesi | Bekliyor | Hayır |
+| 3 | Podcast'in uçtan uca geliştirilmesi | Devam Ediyor | Hayır |
 | 4 | Görselin uçtan uca geliştirilmesi | Bekliyor | Hayır |
 | 5 | Flip PDF'nin uçtan uca geliştirilmesi | Bekliyor | Hayır |
 | 6 | Ortak sistemlerin birleştirilmesi ve mutabakat | Bekliyor | Hayır |
@@ -182,7 +182,7 @@ Bu belge, projenin uygulama ve ilerleme takibindeki tek kontrol kaynağıdır. A
 
 ## Faz 3 — Podcast'in Uçtan Uca Geliştirilmesi
 
-**Durum:** Bekliyor
+**Durum:** Devam Ediyor
 **Yapıldı:** Hayır
 **Teknik plan karşılığı:** Bölüm 5–12.2 ve 13
 

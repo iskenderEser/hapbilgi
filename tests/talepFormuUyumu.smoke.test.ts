@@ -19,7 +19,7 @@ test("mutlu: referans dosyası bütün üretici rollerinde sahiplik ve görev ba
 });
 
 test("mutlu: V2 açıklaması ve V4 onayı gerçek sonraki adımı gösterir", () => {
-  assert.match(form, /Hazır videonuzu yükledikten sonra soru seti İçerik Üreticisinden talep edilecektir/);
+  assert.match(form, /İçerik Üreticisinden talep edilecektir/);
   assert.doesNotMatch(form, /hazır soru setinizle devam edebilir ya da/);
   assert.match(form, /sonrakiAdim=\{ikiliHazir \? "yayin_yonetimi" : "icerik_ureticisi"\}/);
   assert.match(modal, /Onayla ve Yayın Yönetimine Gönder/);

@@ -3,7 +3,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ShieldCheck, Sparkles, Trash2, UserRound } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
@@ -29,6 +29,7 @@ const tariheGoreAzalan = (alan: "gelis_tarihi" | "izleme_baslangic" | "izleme_bi
 
 export default function EczanemPanelPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { kullanici, yukleniyor, cikisYap } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
   const musteri = !!kullanici && kullanici.kimlik_turu === MUSTERI_ROLU;
@@ -90,6 +91,13 @@ export default function EczanemPanelPage() {
     };
   }, [videoHazir, videolar]);
 
+  useEffect(() => {
+    const yayinId = searchParams.get("yayin_id");
+    if (!yayinId || !videoHazir) return;
+    const hedef = videolar.find((video) => video.yayin_id === yayinId);
+    if (hedef) setSeciliVideo(hedef);
+  }, [searchParams, videoHazir, videolar]);
+
   const etkilesimDegistir = async (video: EczanemMusteriVideo, tur: "begeni" | "favori") => {
     if (etkilesimIsliyor) return;
     setEtkilesimIsliyor(video.yayin_id);
@@ -144,14 +152,14 @@ export default function EczanemPanelPage() {
         {videoYukleniyor && !videoHazir ? (
           <div className="flex min-h-72 items-center justify-center gap-2 text-xs font-extrabold text-[#8190a3]"><span className="size-4 animate-spin rounded-full border-2 border-[#d7e4ef] border-t-[#3589d8]" /> Video rafları hazırlanıyor…</div>
         ) : seciliVideo ? (
-          <EczanemVideoOynatici video={seciliVideo} onKapat={() => { setSeciliVideo(null); void videolariCek(); }} onTamamlandi={() => videolariCek()} hata={hata} basari={basari} />
+          <EczanemVideoOynatici video={seciliVideo} onKapat={() => { setSeciliVideo(null); router.push("/eczanem", { scroll: false }); void videolariCek(); }} onTamamlandi={() => videolariCek()} hata={hata} basari={basari} />
         ) : (
           <div className="flex flex-col gap-7">
             <EczanemVideoRafi baslik="Yeni Videolarım" videolar={raflar.yeni_videolarim} bosMesaj="Yeni videonuz bulunmuyor." {...rafOrtak} />
             <EczanemVideoRafi baslik="Yarım Bıraktıklarım" videolar={raflar.yarim_biraktiklarim} bosMesaj="Yarım bıraktığınız video bulunmuyor." {...rafOrtak} />
             <EczanemVideoRafi baslik="En Son İzlediklerim" videolar={raflar.en_son_izlediklerim} bosMesaj="Henüz tamamladığınız bir video bulunmuyor." {...rafOrtak} />
-            <EczanemVideoRafi baslik="En Çok Beğenilenler" videolar={raflar.en_cok_begenilenler} bosMesaj="Henüz müşteriler tarafından beğenilmiş bir video bulunmuyor." {...rafOrtak} />
-            <EczanemVideoRafi baslik="En Çok Favorilenenler" videolar={raflar.en_cok_favorilenenler} bosMesaj="Henüz müşteriler tarafından favorilenmiş bir video bulunmuyor." {...rafOrtak} />
+            <EczanemVideoRafi baslik="En Çok Beğenilenler" videolar={raflar.en_cok_begenilenler} bosMesaj="Henüz müşteriler tarafından beğenilmiş bir öğrenme yayını bulunmuyor." {...rafOrtak} />
+            <EczanemVideoRafi baslik="En Çok Favorilenenler" videolar={raflar.en_cok_favorilenenler} bosMesaj="Henüz müşteriler tarafından favorilenmiş bir öğrenme yayını bulunmuyor." {...rafOrtak} />
             <EczanemVideoRafi baslik="En Çok İzlenenler" videolar={raflar.en_cok_izlenenler} bosMesaj="Henüz müşteriler tarafından tamamlanmış bir video bulunmuyor." {...rafOrtak} />
           </div>
         )}

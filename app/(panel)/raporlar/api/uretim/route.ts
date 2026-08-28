@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server';
 import { hataYaniti, yetkiHatasi } from '@/lib/utils/hataIsle';
 import { tarihAraligi } from '@/lib/utils/tarihAraligi';
 import { getUretimData, uretimRaporunuGorebilir } from '@/lib/rapor/uretim/getUretimData';
+import { aracTuruDagilimi } from '@/lib/rapor/paylasilan/aracTuruDagilimi';
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -47,6 +48,7 @@ export async function GET(request: Request) {
 
   try {
     const rapor = await getUretimData(adminSupabase, { ...kullanici, rol }, baslangic, bitis);
+    const aracTurleri = await aracTuruDagilimi(adminSupabase, { baslangic, bitis, firmaId: kullanici.firma_id });
     return NextResponse.json({
       success: true,
       data: {
@@ -55,6 +57,7 @@ export async function GET(request: Request) {
           firma_adi: firma?.firma_adi ?? '—',
         },
         ...rapor,
+        arac_turu_dagilimi: aracTurleri,
       },
     });
   } catch (error) {

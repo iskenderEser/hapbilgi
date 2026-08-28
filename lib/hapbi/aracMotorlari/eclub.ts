@@ -27,6 +27,8 @@ export const eclubAraciniCalistir: HapbiAlanCalistirici = async (baglam, ad, a) 
         egitim_id: egitimler[i].id, baslik: egitim.baslik, teknik: egitim.teknik,
         firma: egitim.firma, durum: egitim.durum, kalan_gun: egitim.kalan_gun,
         kayitli_video_puani: egitim.kayitli_video_puani, kayitli_soru_puani: egitim.kayitli_soru_puani,
+        arac_turu: egitim.arac_turu, dogru_cevap: egitim.dogru_cevap,
+        yanlis_cevap: egitim.yanlis_cevap, dogru_cevap_yuzdesi: egitim.dogru_cevap_yuzdesi,
       })) },
     };
   }

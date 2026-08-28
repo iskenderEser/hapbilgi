@@ -49,6 +49,16 @@ export function bunnyNesneYoluOlustur(girdi: {
   return [girdi.firmaId, girdi.talepId, girdi.aracTuru, `${girdi.aracId}.${girdi.uzanti}`].join("/");
 }
 
+export function bunnyPodcastDestekYoluOlustur(girdi: {
+  firmaId: string;
+  talepId: string;
+  aracId: string;
+  rol: "kapak" | "transkript";
+  uzanti: string;
+}): string {
+  return [girdi.firmaId, girdi.talepId, "podcast", girdi.aracId, `${girdi.rol}.${girdi.uzanti}`].join("/");
+}
+
 function base64Url(buffer: Buffer): string {
   return buffer.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
@@ -137,4 +147,14 @@ export async function bunnyNesneBilgisi(dosyaYolu: string): Promise<BunnyNesneBi
     checksumSha256: checksum && /^[0-9a-f]{64}$/i.test(checksum) ? checksum.toLowerCase() : null,
     ilkBaytlar: new Uint8Array(await yanit.arrayBuffer()),
   };
+}
+
+export async function bunnyPdfKuyrukDogrula(dosyaYolu: string): Promise<{ sifreli: boolean; eofVar: boolean } | null> {
+  const ortam = bunnyStorageOrtami();
+  if (!ortam) return null;
+  const url = `https://${ortam.storageHost}/${encodeURIComponent(ortam.storageZone)}/${segmentleriKodla(dosyaYolu)}`;
+  const yanit = await fetch(url, { headers: { AccessKey: ortam.storageAccessKey, Range: "bytes=-65536" }, cache: "no-store" });
+  if (!yanit.ok) return null;
+  const metin = new TextDecoder("latin1").decode(await yanit.arrayBuffer());
+  return { sifreli: /\/Encrypt\b/.test(metin), eofVar: /%%EOF\s*$/.test(metin.trimEnd()) };
 }

@@ -8,6 +8,8 @@ import { musteriKimligi } from "@/lib/eczanem/oturum";
 import { olayIdGecerliMi } from "@/lib/izleme/baslat";
 import { sabitSoruIndeksleri } from "@/lib/soru/secim";
 import { aktifGonderimUyeliginiDogrula } from "@/lib/eczanem/aktifUyelik";
+import { tamamlamaKanitiDogrula } from "@/lib/ogrenmeAraci/sozlesme";
+import { yayinAraciKullanimaAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
 
 const VARSAYILAN_SORU_SAYISI = 2;
 
@@ -29,7 +31,7 @@ export async function PUT(request: NextRequest) {
 
     const { data: izleme, error: izlemeError } = await adminSupabase
       .from("eczanem_izleme_kayitlari")
-      .select("izleme_id, yayin_id, musteri_id, gonderim_id")
+      .select("izleme_id, yayin_id, musteri_id, gonderim_id, tamamlama_kaniti")
       .eq("izleme_id", izleme_id)
       .single();
     if (izlemeError) return hataYaniti("İzleme sorgulanamadı.", "eczanem_izleme_kayitlari SELECT", izlemeError, 404);
@@ -41,12 +43,17 @@ export async function PUT(request: NextRequest) {
 
     const { data: yayinDetay, error: detayError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("sorular, video_basi_soru_sayisi")
+      .select("sorular, video_basi_soru_sayisi, arac_turu, durum")
       .eq("yayin_id", izleme.yayin_id)
       .single();
     if (detayError || !yayinDetay) {
       return hataYaniti("Yayın soru bilgisi alınamadı.", "v_yayin_detay SELECT — Eczanem izleme tamamlama", detayError, 404);
     }
+    if (yayinDetay.durum !== "yayinda") return isKuraluHatasi("Yayın artık aktif değil.");
+    if (!yayinAraciKullanimaAcikMi(yayinDetay.arac_turu)) return isKuraluHatasi("Bu öğrenme aracı kullanıma kapalı.");
+    if (yayinDetay.arac_turu === "podcast" && !tamamlamaKanitiDogrula("podcast", izleme.tamamlama_kaniti)) return isKuraluHatasi("Podcast tamamlanma kanıtı doğrulanamadı.");
+    if (yayinDetay.arac_turu === "gorsel" && !tamamlamaKanitiDogrula("gorsel", izleme.tamamlama_kaniti)) return isKuraluHatasi("Görsel tamamlanma kanıtı doğrulanamadı.");
+    if (yayinDetay.arac_turu === "flip_pdf" && !tamamlamaKanitiDogrula("flip_pdf", izleme.tamamlama_kaniti)) return isKuraluHatasi("Flip PDF tamamlanma kanıtı doğrulanamadı.");
 
     const sorular = Array.isArray(yayinDetay.sorular) ? yayinDetay.sorular : [];
     const soruSayisi = Math.max(0, yayinDetay.video_basi_soru_sayisi ?? VARSAYILAN_SORU_SAYISI);

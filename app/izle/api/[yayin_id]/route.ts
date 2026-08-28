@@ -25,7 +25,7 @@ export async function GET(
     // v_yayin_detay view ile tek sorguda tüm yayın detayları — 9 sorgu → 1 sorgu
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, durum, yayin_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, hedef_roller")
+      .select("yayin_id, durum, yayin_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, hedef_roller, arac_id, arac_turu")
       .eq("yayin_id", yayin_id)
       .single();
 
@@ -57,6 +57,8 @@ export async function GET(
         video_puani: yayin.video_puani ?? null,
         yayin_tarihi: yayin.yayin_tarihi,
         daha_once_izledi: (izleme ?? []).length > 0,
+        arac_id: yayin.arac_id ?? null,
+        arac_turu: yayin.arac_turu ?? "video",
       }
     }, { status: 200 });
 

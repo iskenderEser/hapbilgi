@@ -2,6 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { eclubKisiErisimi } from "@/lib/eclub/kisiErisim";
 import { eclubOneriDurumu } from "@/lib/eclub/izlemeKurali";
 import { ECLUB_TUKETICI_ROLLERI, eclubKisiHedefRolu, hedefRolleriOku } from "@/lib/utils/roller";
+import { yayinAraciKullanimaAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
+import { tamamlanmaOrani } from "@/lib/rapor/paylasilan/oran";
 
 export type EclubKisiListeFiltresi = "bekleyen" | "tamamlanan" | "suresi_gecmis" | "tumu";
 
@@ -14,6 +16,10 @@ export interface EclubKisiHapbiEgitimi {
   kalan_gun: number | null;
   kayitli_video_puani: number;
   kayitli_soru_puani: number;
+  arac_turu: "video" | "podcast" | "gorsel" | "flip_pdf";
+  dogru_cevap: number;
+  yanlis_cevap: number;
+  dogru_cevap_yuzdesi: number;
   url: string;
 }
 
@@ -28,6 +34,8 @@ export interface EclubKisiHapbiSonucu {
     net_puan: number;
     kullanilabilir_puan: number;
     dogru_cevap: number;
+    yanlis_cevap: number;
+    dogru_cevap_yuzdesi: number;
   };
   gelisim_durumu: { gozlem: string; adim: string; sinir: string };
   liste: { filtre: EclubKisiListeFiltresi; toplam: number; kesildi: boolean };
@@ -44,6 +52,7 @@ interface EclubYayinDetayi {
   durum: string | null;
   video_puani: number | null;
   soru_puani: number | null;
+  arac_turu: "video" | "podcast" | "gorsel" | "flip_pdf";
 }
 
 interface EclubOneriSatiri {
@@ -77,7 +86,7 @@ export async function eclubKisiHapbiOzeti(
   if (!firmaIdler.length) throw new Error("Aktif E-Club firma erişimi doğrulanamadı.");
 
   const simdiIso = simdi.toISOString();
-  const [oneriSonucu, puanSonucu, kayipSonucu, dogruSonucu, bakiyeSonucu] = await Promise.all([
+  const [oneriSonucu, puanSonucu, kayipSonucu, dogruSonucu, yanlisSonucu, bakiyeSonucu] = await Promise.all([
     db.from("eclub_oneri_kayitlari")
       .select("oneri_id, yayin_id, oneri_baslangic, oneri_bitis, izlendi_mi")
       .eq("kisi_id", kisi.kisi_id).lte("oneri_baslangic", simdiIso)
@@ -85,9 +94,10 @@ export async function eclubKisiHapbiOzeti(
     db.from("eclub_kazanilan_puanlar").select("yayin_id, puan").eq("kisi_id", kisi.kisi_id),
     db.from("eclub_ileri_sarma_kayitlari").select("yayin_id, kaybedilen_puan").eq("kisi_id", kisi.kisi_id),
     db.from("eclub_dogru_cevap_kayitlari").select("yayin_id").eq("kisi_id", kisi.kisi_id),
+    db.from("eclub_yanlis_cevap_kayitlari").select("yayin_id").eq("kisi_id", kisi.kisi_id),
     db.rpc("get_eclub_store_firma_bakiye", { p_kisi_id: kisi.kisi_id }),
   ]);
-  if (oneriSonucu.error || puanSonucu.error || kayipSonucu.error || dogruSonucu.error || bakiyeSonucu.error) {
+  if (oneriSonucu.error || puanSonucu.error || kayipSonucu.error || dogruSonucu.error || yanlisSonucu.error || bakiyeSonucu.error) {
     throw new Error("E-Club kişisel özeti okunamadı.");
   }
 
@@ -104,15 +114,15 @@ export async function eclubKisiHapbiOzeti(
   let yayinlar: EclubYayinDetayi[] = [];
   if (yayinIdler.length) {
     const yayinSonucu = await db.from("v_yayin_detay")
-      .select("yayin_id, firma_id, firma_adi, urun_adi, teknik_adi, hedef_roller, durum, video_puani, soru_puani")
-      .in("yayin_id", yayinIdler).in("firma_id", firmaIdler).gt("video_suresi_saniye", 0);
+      .select("yayin_id, firma_id, firma_adi, urun_adi, teknik_adi, hedef_roller, durum, video_puani, soru_puani, arac_turu")
+      .in("yayin_id", yayinIdler).in("firma_id", firmaIdler).or("arac_turu.in.(gorsel,flip_pdf),video_suresi_saniye.gt.0");
     if (yayinSonucu.error) throw new Error("E-Club yayınları okunamadı.");
     yayinlar = (yayinSonucu.data ?? []) as EclubYayinDetayi[];
   }
 
   const hedefRol = eclubKisiHedefRolu(kisi.rol);
   const yayinMap = new Map(yayinlar
-    .filter((yayin) => yayin.durum === "yayinda" && hedefRol && hedefRolleriOku(yayin).includes(hedefRol))
+    .filter((yayin) => yayin.durum === "yayinda" && yayinAraciKullanimaAcikMi(yayin.arac_turu) && hedefRol && hedefRolleriOku(yayin).includes(hedefRol))
     .map((yayin) => [yayin.yayin_id, yayin]));
   const gorunenOneriler = oneriler.flatMap((oneri) => {
     const yayin = yayinMap.get(oneri.yayin_id);
@@ -122,6 +132,8 @@ export async function eclubKisiHapbiOzeti(
       : eclubOneriDurumu(oneri.oneri_baslangic, oneri.oneri_bitis, simdi) === "aktif"
         ? "bekleyen" as const
         : "suresi_gecmis" as const;
+    const dogruCevap = (dogruSonucu.data ?? []).filter((cevap) => cevap.yayin_id === oneri.yayin_id).length;
+    const yanlisCevap = (yanlisSonucu.data ?? []).filter((cevap) => cevap.yayin_id === oneri.yayin_id).length;
     return [{
       oneri_id: oneri.oneri_id,
       baslik: yayin.urun_adi ?? "Eğitim",
@@ -133,6 +145,10 @@ export async function eclubKisiHapbiOzeti(
         : null,
       kayitli_video_puani: sayi(yayin.video_puani),
       kayitli_soru_puani: sayi(yayin.soru_puani),
+      arac_turu: yayin.arac_turu,
+      dogru_cevap: dogruCevap,
+      yanlis_cevap: yanlisCevap,
+      dogru_cevap_yuzdesi: tamamlanmaOrani(dogruCevap, dogruCevap + yanlisCevap),
       url: `/eclub/panel?oneri_id=${encodeURIComponent(oneri.oneri_id)}`,
     }];
   });
@@ -154,6 +170,8 @@ export async function eclubKisiHapbiOzeti(
   const kullanilabilirPuan = bakiyeler
     .filter((bakiye) => firmaIdler.includes(bakiye.firma_id))
     .reduce((toplam, bakiye) => toplam + sayi(bakiye.bakiye), 0);
+  const toplamDogru = (dogruSonucu.data ?? []).filter((cevap) => firmaIdler.includes(String(yayinMap.get(cevap.yayin_id)?.firma_id ?? ""))).length;
+  const toplamYanlis = (yanlisSonucu.data ?? []).filter((cevap) => firmaIdler.includes(String(yayinMap.get(cevap.yayin_id)?.firma_id ?? ""))).length;
 
   return {
     kisi: { rol: kisi.rol },
@@ -165,8 +183,9 @@ export async function eclubKisiHapbiOzeti(
       ileri_sarma_kaybi: ileriSarmaKaybi,
       net_puan: Math.max(0, toplamKazanilan - ileriSarmaKaybi),
       kullanilabilir_puan: kullanilabilirPuan,
-      dogru_cevap: (dogruSonucu.data ?? [])
-        .filter((cevap) => firmaIdler.includes(String(yayinMap.get(cevap.yayin_id)?.firma_id ?? ""))).length,
+      dogru_cevap: toplamDogru,
+      yanlis_cevap: toplamYanlis,
+      dogru_cevap_yuzdesi: tamamlanmaOrani(toplamDogru, toplamDogru + toplamYanlis),
     },
     gelisim_durumu: {
       gozlem: bekleyen.length

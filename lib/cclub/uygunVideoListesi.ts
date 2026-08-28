@@ -34,7 +34,7 @@ export async function uygunVideoListesi(
       .contains("hedef_roller", ["bm"])
       .lte("yayin_tarihi", simdi)
       .or(`durdurma_tarihi.is.null,durdurma_tarihi.gt.${simdi}`)
-      .gt("video_suresi_saniye", 0),
+      .or("arac_turu.in.(gorsel,flip_pdf),video_suresi_saniye.gt.0"),
     supabase
       .from("cc_izleme_kayitlari")
       .select("yayin_id")

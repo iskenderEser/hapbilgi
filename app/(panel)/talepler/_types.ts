@@ -7,6 +7,7 @@ import { TALEP_TURU_SIRA, type TalepTuru } from "@/lib/uretici/yetenekler";
 import type { HedefRol, HedefRoller } from "@/lib/utils/roller";
 import type { ZincirAsama } from "@/lib/utils/uretimZinciri";
 import type { DurumKodu } from "@/lib/utils/durum/mesaj";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 
 // ============================================================================
 // Tipler
@@ -26,6 +27,7 @@ export interface Talep {
   urun_adi: string;
   teknik_adi: string;
   egitim_turu: TalepTuru;
+  ogrenme_araci_turu: OgrenmeAraciTuru;
   hedef_roller: HedefRoller;
   aciklama: string;
   created_at: string;
@@ -88,6 +90,10 @@ export interface BekleyenDosya {
 // ============================================================================
 
 export const DESTEKLENEN_FORMATLAR = ".pdf,.docx,.pptx,.xlsx,.txt,.png,.jpg,.jpeg,.mp4,.mov,.avi,.mkv,.webm";
+export const PODCAST_FORMATLAR = ".mp3,.m4a,.aac,audio/mpeg,audio/mp4,audio/aac,audio/x-m4a";
+export const GORSEL_FORMATLAR = ".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp";
+export const PODCAST_KAPAK_FORMATLARI = ".png,.jpg,.jpeg,image/png,image/jpeg";
+export const TRANSKRIPT_FORMATLARI = ".txt,.docx,.pdf,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 export const VIDEO_FORMATLAR = ".mp4,.mov,.avi,.mkv,.webm";
 export const EK_DOSYA_FORMATLAR = ".pdf,.docx,.pptx,.xlsx,.txt,.png,.jpg,.jpeg";
 export const SORU_SETI_BUYUKLUGU_SECENEKLERI = [10, 15, 20, 25];

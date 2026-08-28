@@ -27,7 +27,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const { data: arac, error: aracError } = await db
       .from("ogrenme_araclari")
-      .select("arac_id, talep_id, arac_turu, dosya_yolu, kapak_yolu, mime_type, dosya_boyutu, sure_saniye, sayfa_sayisi, genislik, yukseklik, metadata, metadata_dogrulandi")
+      .select("arac_id, talep_id, arac_turu, dosya_yolu, kapak_yolu, transkript_yolu, mime_type, dosya_boyutu, sure_saniye, sayfa_sayisi, genislik, yukseklik, metadata, metadata_dogrulandi")
       .eq("arac_id", arac_id)
       .maybeSingle();
     if (aracError || !arac) return NextResponse.json({ hata: "Öğrenme aracı bulunamadı." }, { status: 404 });
@@ -57,32 +57,50 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         .eq("arac_durum_id", sonDurum.arac_durum_id)
         .maybeSingle();
       if (yayinError || !yayin || yayin.durum !== "yayinda") return NextResponse.json({ hata: "Öğrenme aracı yayında değil." }, { status: 403 });
-      const { data: detay } = await db.from("v_yayin_detay").select("firma_id").eq("yayin_id", yayin.yayin_id).maybeSingle();
+      const { data: detay } = await db.from("v_yayin_detay").select("firma_id, takim_id").eq("yayin_id", yayin.yayin_id).maybeSingle();
+      const bagId = request.nextUrl.searchParams.get("bag_id");
 
       if (TUKETICI_ROLLER.some((tuketiciRolu) => tuketiciRolu === rol) || rol === "bm") {
-        const { data: kullanici } = await db.from("kullanicilar").select("firma_id").eq("kullanici_id", user.id).maybeSingle();
+        const { data: kullanici } = await db.from("kullanicilar").select("firma_id, takim_id").eq("kullanici_id", user.id).maybeSingle();
         const hedefRol: "utt" | "bm" = rol === "bm" ? "bm" : "utt";
         erisimVar = Boolean(
           kullanici?.firma_id
-          && detay?.firma_id === kullanici.firma_id
-          && hedefRolleriOku(yayin).includes(hedefRol),
+          && detay
+          && detay.firma_id === kullanici.firma_id
+          && hedefRolleriOku(yayin).includes(hedefRol)
+          && (rol === "bm" || detay.takim_id === null || detay.takim_id === kullanici.takim_id),
         );
+        if (erisimVar && bagId && rol === "bm") {
+          const { data: challenge } = await db.from("challenge_kayitlari").select("challenge_id, alan_id, yayin_id").eq("challenge_id", bagId).maybeSingle();
+          erisimVar = Boolean(challenge && challenge.alan_id === user.id && challenge.yayin_id === yayin.yayin_id);
+        } else if (erisimVar && bagId) {
+          const { data: oneri } = await db.from("oneri_kayitlari").select("oneri_id, kullanici_id, yayin_id, oneri_baslangic, oneri_bitis").eq("oneri_id", bagId).maybeSingle();
+          const simdi = Date.now();
+          erisimVar = Boolean(
+            oneri
+            && oneri.kullanici_id === user.id
+            && oneri.yayin_id === yayin.yayin_id
+            && new Date(oneri.oneri_baslangic).getTime() <= simdi
+            && new Date(oneri.oneri_bitis).getTime() >= simdi,
+          );
+        }
       } else if (ECLUB_TUKETICI_ROLLERI.includes(rol)) {
-        const bagId = request.nextUrl.searchParams.get("bag_id");
         const { data: kisi } = await db.from("eclub_kisiler").select("kisi_id, rol").eq("auth_user_id", user.id).maybeSingle();
         const { data: oneri } = bagId
-          ? await db.from("eclub_oneri_kayitlari").select("oneri_id, kisi_id, yayin_id").eq("oneri_id", bagId).maybeSingle()
+          ? await db.from("eclub_oneri_kayitlari").select("oneri_id, kisi_id, yayin_id, oneri_baslangic, oneri_bitis").eq("oneri_id", bagId).maybeSingle()
           : { data: null };
         const hedefRol = kisi ? eclubKisiHedefRolu(kisi.rol) : null;
+        const simdi = Date.now();
         erisimVar = Boolean(
           kisi && oneri
           && oneri.kisi_id === kisi.kisi_id
           && oneri.yayin_id === yayin.yayin_id
           && hedefRol
-          && hedefRolleriOku(yayin).includes(hedefRol),
+          && hedefRolleriOku(yayin).includes(hedefRol)
+          && new Date(oneri.oneri_baslangic).getTime() <= simdi
+          && new Date(oneri.oneri_bitis).getTime() >= simdi,
         );
       } else if (rol === MUSTERI_ROLU) {
-        const bagId = request.nextUrl.searchParams.get("bag_id");
         const kimlik = await musteriKimligi(db, user.id);
         const { data: gonderim } = bagId && kimlik.ok
           ? await db.from("eczanem_gonderimler").select("gonderim_id, musteri_id, yayin_id").eq("gonderim_id", bagId).maybeSingle()
@@ -97,12 +115,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!erisimVar) return NextResponse.json({ hata: "Bu öğrenme aracına erişim yetkiniz yok." }, { status: 403 });
     const erisimUrl = bunnyCdnImzaliUrl(arac.dosya_yolu);
     if (!erisimUrl) return NextResponse.json({ hata: "Bunny CDN erişimi yapılandırılmamış." }, { status: 503 });
+    const kapakUrl = arac.kapak_yolu ? bunnyCdnImzaliUrl(arac.kapak_yolu) : null;
+    const transkriptUrl = arac.transkript_yolu ? bunnyCdnImzaliUrl(arac.transkript_yolu) : null;
 
     return NextResponse.json({
       arac_id,
       arac_turu: arac.arac_turu,
       erisim_url: erisimUrl,
-      kapak_yolu: arac.kapak_yolu,
+      kapak_url: kapakUrl,
+      transkript_url: transkriptUrl,
       mime_type: arac.mime_type,
       dosya_boyutu: arac.dosya_boyutu,
       sure_saniye: arac.sure_saniye,

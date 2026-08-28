@@ -20,6 +20,8 @@ interface Yayin {
   teknik_adi: string;
   video_url: string | null;
   ileri_sarma_acik: boolean;
+  arac_id: string | null;
+  arac_turu: "video" | "podcast" | "gorsel" | "flip_pdf";
 }
 
 export default function CcIzlemePage() {
@@ -63,7 +65,7 @@ export default function CcIzlemePage() {
       const { data, error } = await supabase
         .from("v_yayin_detay")
         .select(
-          "yayin_id, urun_adi, teknik_adi, video_url, hedef_roller, durum"
+          "yayin_id, urun_adi, teknik_adi, video_url, hedef_roller, durum, arac_id, arac_turu"
         )
         .eq("yayin_id", yayin_id)
         .single();
@@ -109,6 +111,8 @@ export default function CcIzlemePage() {
         teknik_adi: data.teknik_adi,
         video_url: data.video_url,
         ileri_sarma_acik: yayinYonetimi.ileri_sarma_acik ?? false,
+        arac_id: data.arac_id ?? null,
+        arac_turu: data.arac_turu ?? "video",
       });
       setLoading(false);
     };

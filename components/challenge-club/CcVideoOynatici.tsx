@@ -16,6 +16,9 @@ import { useEffect, useState, useRef } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { createVideoPlayer, type VideoPlayer } from "@/lib/video/videoPlayer";
 import VideoCercevesi from "@/components/video/VideoCercevesi";
+import PodcastOynatici from "@/components/ogrenme-araci/PodcastOynatici";
+import GorselOynatici from "@/components/ogrenme-araci/GorselOynatici";
+import FlipPdfOynatici from "@/components/ogrenme-araci/FlipPdfOynatici";
 import { useVideoEtkilesimKatmani } from "@/components/video/useVideoEtkilesimKatmani";
 import {
   AlertDialog,
@@ -34,6 +37,8 @@ interface OynaticiVideo {
   teknik_adi: string;
   video_url: string | null;
   ileri_sarma_acik: boolean;
+  arac_id?: string | null;
+  arac_turu?: "video" | "podcast" | "gorsel" | "flip_pdf";
 }
 
 interface Soru {
@@ -472,7 +477,10 @@ export default function CcVideoOynatici({
         </div>
 
         {/* Video */}
-        {video.video_url && (
+        {video.arac_turu === "podcast" && video.arac_id && <div className="border-b border-gray-100 p-4"><PodcastOynatici aracId={video.arac_id} yayinId={video.yayin_id} bagId={challenge_id} hata={hata} baslat={async () => { const r = await fetch("/challenge-club/izle/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id: video.yayin_id, challenge_id: challenge_id ?? undefined }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Podcast dinlemesi başlatılamadı."); izlemeIdRef.current = d.izleme.izleme_id; setIzlemeId(d.izleme.izleme_id); setIzlemeTuru(d.izleme.izleme_turu ?? null); return { izlemeId: d.izleme.izleme_id, ilerleme: d.izleme.ilerleme_durumu }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleIzlemeBitir(); }} onTamamlandi={onVeriYenile} /></div>}
+        {video.arac_turu === "gorsel" && video.arac_id && <div className="border-b border-gray-100 p-4"><GorselOynatici aracId={video.arac_id} yayinId={video.yayin_id} bagId={challenge_id} hata={hata} baslat={async () => { const r = await fetch("/challenge-club/izle/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id: video.yayin_id, challenge_id: challenge_id ?? undefined }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Görsel incelemesi başlatılamadı."); izlemeIdRef.current = d.izleme.izleme_id; setIzlemeId(d.izleme.izleme_id); setIzlemeTuru(d.izleme.izleme_turu ?? null); return { izlemeId: d.izleme.izleme_id }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleIzlemeBitir(); }} onTamamlandi={onVeriYenile} /></div>}
+        {video.arac_turu === "flip_pdf" && video.arac_id && <div className="border-b border-gray-100 p-4"><FlipPdfOynatici aracId={video.arac_id} yayinId={video.yayin_id} bagId={challenge_id} hata={hata} baslat={async () => { const r = await fetch("/challenge-club/izle/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id: video.yayin_id, challenge_id: challenge_id ?? undefined }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Flip PDF okuması başlatılamadı."); izlemeIdRef.current = d.izleme.izleme_id; setIzlemeId(d.izleme.izleme_id); setIzlemeTuru(d.izleme.izleme_turu ?? null); return { izlemeId: d.izleme.izleme_id, ilerleme: d.izleme.ilerleme_durumu }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleIzlemeBitir(); }} onTamamlandi={onVeriYenile} /></div>}
+        {!(["podcast", "gorsel", "flip_pdf"].includes(video.arac_turu ?? "video")) && video.video_url && (
           <div className="border-b border-gray-100">
             <div className={`relative transition-opacity duration-300 ${bitisAsamasi === "kayboluyor" ? "opacity-0" : "opacity-100"}`}>
               {/* Kutu videonun oranına göre çizilir (26.07). iframe burada kalır — ref playerjs'e bağlı. */}

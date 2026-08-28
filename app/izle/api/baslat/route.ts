@@ -15,8 +15,9 @@ import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { baslatOlayIdGecerliMi, izlemeTuruBelirle } from "@/lib/izleme/baslat";
 import { gecerliTur } from "@/lib/tclub/tur/kayit";
 import { izlemePuanZamaniAktifMi } from "@/lib/izleme/puanZamani";
+import { yayinAraciKullanimaAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
 
-const IZLEME_SELECT = "izleme_id, yayin_id, kullanici_id, izleme_turu, oneri_id, izleme_baslangic, video_suresi_saniye, gercek_oynatma_mi" as const;
+const IZLEME_SELECT = "izleme_id, yayin_id, kullanici_id, izleme_turu, oneri_id, izleme_baslangic, video_suresi_saniye, gercek_oynatma_mi, ilerleme_durumu" as const;
 
 export async function POST(request: NextRequest) {
   try {
@@ -105,36 +106,44 @@ export async function POST(request: NextRequest) {
     // Yayının gerçek video kaydını çözüp güvenilir süreyi sunucu kaynağından al.
     const { data: detay, error: detayError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("video_durum_id, video_url")
+      .select("video_durum_id, video_url, arac_id, arac_turu, arac_sure_saniye")
       .eq("yayin_id", yayin_id)
       .single();
-    if (detayError || !detay?.video_durum_id) {
+    if (detayError || !detay) {
       return hataYaniti("Yayının video bağlantısı çözülemedi.", "v_yayin_detay SELECT — video süresi", detayError);
     }
-
-    const { data: videoDurum, error: videoDurumError } = await adminSupabase
+    if (!yayinAraciKullanimaAcikMi(detay.arac_turu)) return isKuraluHatasi("Bu öğrenme aracı kullanıma kapalı.");
+    let videoSuresiSaniye: number | null = null;
+    if (detay.arac_turu === "gorsel" || detay.arac_turu === "flip_pdf") {
+      videoSuresiSaniye = 1;
+    } else if (detay.arac_turu === "podcast") {
+      videoSuresiSaniye = Number(detay.arac_sure_saniye ?? 0);
+    } else {
+      if (!detay.video_durum_id) return hataYaniti("Yayının video bağlantısı çözülemedi.", "v_yayin_detay SELECT — video süresi", null);
+      const { data: videoDurum, error: videoDurumError } = await adminSupabase
       .from("video_durumu")
       .select("video_id")
       .eq("video_durum_id", detay.video_durum_id)
       .single();
-    if (videoDurumError || !videoDurum) {
+      if (videoDurumError || !videoDurum) {
       return hataYaniti("Yayının video kaydı çözülemedi.", "video_durumu SELECT — video süresi", videoDurumError);
-    }
+      }
 
-    const { data: videoKaydi, error: videoError } = await adminSupabase
+      const { data: videoKaydi, error: videoError } = await adminSupabase
       .from("videolar")
       .select("video_id, video_url, video_suresi_saniye")
       .eq("video_id", videoDurum.video_id)
       .single();
-    if (videoError || !videoKaydi) {
+      if (videoError || !videoKaydi) {
       return hataYaniti("Video kaydı bulunamadı.", "videolar SELECT — video süresi", videoError, 404);
+      }
+      videoSuresiSaniye = videoKaydi.video_suresi_saniye as number | null;
     }
 
     // Tek yazıcı ilkesi (Faz 3): süreyi burada yazmıyoruz — yayın‑kapısı + webhook +
     // backfill süreyi videolar'a garantiliyor, görünürlük kapısı da süresi olmayan
     // videoyu listeye düşürmüyor. Buraya süresi boş bir video ulaşırsa (beklenmez)
     // yazmak yerine hazırlık kapısıyla reddedilir.
-    const videoSuresiSaniye = videoKaydi.video_suresi_saniye as number | null;
     if (videoSuresiSaniye === null || videoSuresiSaniye <= 0) {
       return isKuraluHatasi("Video henüz puanlı izlemeye hazır değil; süre doğrulanamadı.");
     }

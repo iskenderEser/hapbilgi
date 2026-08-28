@@ -40,7 +40,9 @@ export const egitimAraciniCalistir: HapbiAlanCalistirici = async (baglam, ad, a)
     durum: eslesen.length ? "ok" : "bos", kaynak: egitimKaynagi, egitimler,
     veri: { ...veri, videolar: veri.videolar.map((v, i) => ({
       baslik: v.baslik, teknik: v.teknik, tur: v.tur, video_puani: v.video_puani,
-      durum: v.durum, sonraki_tur: v.sonraki_tur, egitim_id: egitimler[i].id,
+      arac_turu: v.arac_turu, durum: v.durum, sonraki_tur: v.sonraki_tur,
+      dogru_cevap: v.dogru_cevap, yanlis_cevap: v.yanlis_cevap, dogru_cevap_yuzdesi: v.dogru_cevap_yuzdesi,
+      egitim_id: egitimler[i].id,
     })) },
   };
 };

@@ -51,7 +51,14 @@ export async function GET(request: NextRequest) {
         soru_setleri (
           soru_seti_id,
           video_durum_id,
+          arac_durum_id,
           sorular,
+          talepler ( ${TALEP_ALANLARI} ),
+          ogrenme_araci_durumu (
+            arac_durum_id,
+            ogrenme_araci_puanlari ( arac_puan_id, arac_puani ),
+            ogrenme_araclari ( arac_id, arac_turu, kapak_yolu, talep_id )
+          ),
           video_durumu (
             video_durum_id,
             video_id,
@@ -79,7 +86,14 @@ export async function GET(request: NextRequest) {
       soru_setleri?: {
         soru_seti_id: string;
         video_durum_id: string;
+        arac_durum_id?: string | null;
         sorular?: unknown;
+        talepler?: unknown;
+        ogrenme_araci_durumu?: {
+          arac_durum_id: string;
+          ogrenme_araci_puanlari?: { arac_puan_id: string; arac_puani: number } | Array<{ arac_puan_id: string; arac_puani: number }> | null;
+          ogrenme_araclari?: { arac_id: string; arac_turu: string; kapak_yolu: string | null; talep_id: string } | Array<{ arac_id: string; arac_turu: string; kapak_yolu: string | null; talep_id: string }> | null;
+        } | Array<unknown> | null;
         video_durumu?: {
           video_durum_id: string;
           video_id: string;
@@ -104,7 +118,10 @@ export async function GET(request: NextRequest) {
       } | Array<{
         soru_seti_id: string;
         video_durum_id: string;
+        arac_durum_id?: string | null;
         sorular?: unknown;
+        talepler?: unknown;
+        ogrenme_araci_durumu?: unknown;
         video_durumu?: unknown;
       }> | null;
     };
@@ -116,7 +133,8 @@ export async function GET(request: NextRequest) {
       const soruSeti = Array.isArray(ss.soru_setleri) ? ss.soru_setleri[0] : ss.soru_setleri;
       const videoDurum = Array.isArray(soruSeti?.video_durumu) ? soruSeti.video_durumu[0] : soruSeti?.video_durumu;
       const video = Array.isArray(videoDurum?.videolar) ? videoDurum?.videolar[0] : videoDurum?.videolar;
-      const taleplerRaw = Array.isArray(video?.talepler) ? video?.talepler[0] : video?.talepler;
+      const taleplerRaw = Array.isArray(soruSeti?.talepler) ? soruSeti?.talepler[0] : soruSeti?.talepler
+        ?? (Array.isArray(video?.talepler) ? video?.talepler[0] : video?.talepler);
       return !yayindakiIds.has(ss.soru_seti_durum_id)
         && (taleplerRaw as { yayin_oncesi_silme_durumu?: string })?.yayin_oncesi_silme_durumu !== "tamamlandi";
     });
@@ -171,11 +189,16 @@ export async function GET(request: NextRequest) {
         const videoDurum = Array.isArray(soruSeti.video_durumu) ? soruSeti.video_durumu[0] : soruSeti.video_durumu;
         const video = Array.isArray(videoDurum?.videolar) ? videoDurum?.videolar[0] : videoDurum?.videolar;
         // Künye ortak çeviriciden (25.07, Aşama 3): ad kuralı ve varsayılanlar tek yerde.
-        const taleplerRaw = Array.isArray(video?.talepler) ? video?.talepler[0] : video?.talepler;
+        const taleplerRaw = Array.isArray(soruSeti.talepler) ? soruSeti.talepler[0] : soruSeti.talepler
+          ?? (Array.isArray(video?.talepler) ? video?.talepler[0] : video?.talepler);
         const talep = taleplerRaw ? haritalaTalep(taleplerRaw as HamTalepKaydi) : null;
         if (!talep || talep.uretici_id !== user.id) return null;
         const videoPuanlarRaw = videoDurum?.video_puanlari;
         const videoPuan = Array.isArray(videoPuanlarRaw) ? videoPuanlarRaw[0] : videoPuanlarRaw;
+        const aracDurumHam = Array.isArray(soruSeti.ogrenme_araci_durumu) ? soruSeti.ogrenme_araci_durumu[0] : soruSeti.ogrenme_araci_durumu;
+        const aracDurum = aracDurumHam as { arac_durum_id?: string; ogrenme_araci_puanlari?: { arac_puan_id: string; arac_puani: number } | Array<{ arac_puan_id: string; arac_puani: number }>; ogrenme_araclari?: { arac_id: string; arac_turu: string; kapak_yolu: string | null } | Array<{ arac_id: string; arac_turu: string; kapak_yolu: string | null }> } | undefined;
+        const aracPuanHam = Array.isArray(aracDurum?.ogrenme_araci_puanlari) ? aracDurum.ogrenme_araci_puanlari[0] : aracDurum?.ogrenme_araci_puanlari;
+        const aracHam = Array.isArray(aracDurum?.ogrenme_araclari) ? aracDurum.ogrenme_araclari[0] : aracDurum?.ogrenme_araclari;
 
         const egitimTuru = talep?.egitim_turu ?? "urun_egitimi";
         const hedefRoller = talep?.hedef_roller ?? ["utt"];
@@ -184,11 +207,13 @@ export async function GET(request: NextRequest) {
           soru_seti_durum_id: ss.soru_seti_durum_id,
           soru_seti_id: ss.soru_seti_id,
           video_durum_id: soruSeti.video_durum_id,
+          arac_durum_id: soruSeti.arac_durum_id ?? null,
+          arac_turu: aracHam?.arac_turu ?? "video",
           sorular: soruSeti.sorular ?? [],
           video_url: video?.video_url ?? null,
-          thumbnail_url: video?.thumbnail_url ?? null,
-          video_puan_id: videoPuan?.video_puan_id ?? null,
-          video_puani: videoPuan?.video_puani ?? null,
+          thumbnail_url: video?.thumbnail_url ?? (aracHam?.kapak_yolu ?? null),
+          video_puan_id: videoPuan?.video_puan_id ?? aracPuanHam?.arac_puan_id ?? null,
+          video_puani: videoPuan?.video_puani ?? aracPuanHam?.arac_puani ?? null,
           soru_puan_map: soruPuanlarByDurumId[ss.soru_seti_durum_id] ?? {},
           talep_no: talep?.talep_no ?? 0,
           firma_adi: talep?.firma_adi ?? "",

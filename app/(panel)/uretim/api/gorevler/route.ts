@@ -4,6 +4,7 @@ import { sunucuHatasi, yetkiHatasi, rolHatasi, hataYaniti, validasyonHatasi } fr
 import { ADMIN_ROLLER, IU_ROLU, ROL_ADLARI, URETICI_ROLLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { uuidGecerliMi } from "@/lib/uretim/rpc";
+import { bunnyCdnImzaliUrl } from "@/lib/ogrenmeAraci/bunnyStorage";
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
 
     let query = adminSupabase
       .from("uretim_gorevleri")
-      .select("gorev_id, talep_id, asama, senaryo_id, video_id, soru_seti_id, atanan_iu_id, durum, atama_kaynagi, atama_tarihi, baslama_tarihi, inceleme_tarihi, tamamlanma_tarihi, iptal_tarihi, surum, created_at, updated_at")
+      .select("gorev_id, talep_id, asama, senaryo_id, video_id, arac_id, soru_seti_id, atanan_iu_id, durum, atama_kaynagi, atama_tarihi, baslama_tarihi, inceleme_tarihi, tamamlanma_tarihi, iptal_tarihi, surum, created_at, updated_at")
       .order("updated_at", { ascending: false });
 
     if (rol === IU_ROLU) query = query.eq("atanan_iu_id", user.id);
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
     const iuIdler = [...new Set(gorevListesi.map((g) => g.atanan_iu_id).filter((id): id is string => !!id))];
 
     const talepSonucu = kapsamTalepIdler.length > 0
-      ? await adminSupabase.from("talepler").select("talep_id, talep_no, uretici_id, firma_id, urun_id, urun_adi, teknik_id, teknik_adi, egitim_turu, hedef_roller, hazir_video, hazir_soru_seti, soru_seti_buyuklugu, secenek_sayisi, video_basi_soru_sayisi, created_at").in("talep_id", kapsamTalepIdler)
+      ? await adminSupabase.from("talepler").select("talep_id, talep_no, uretici_id, firma_id, urun_id, urun_adi, teknik_id, teknik_adi, egitim_turu, hedef_roller, hazir_video, hazir_soru_seti, soru_seti_buyuklugu, secenek_sayisi, video_basi_soru_sayisi, ogrenme_araci_turu, ogrenme_araci_tercihleri, created_at").in("talep_id", kapsamTalepIdler)
       : { data: [], error: null };
     if (talepSonucu.error) return hataYaniti("Görev talepleri alınamadı.", "talepler SELECT — görev künyesi", talepSonucu.error);
 
@@ -97,6 +98,43 @@ export async function GET(request: NextRequest) {
         ]);
         if (icerik.error || gecmis.error) return hataYaniti("Senaryo detayı alınamadı.", "senaryo görev detayı", icerik.error ?? gecmis.error);
         detayIcerigi = { asama: "senaryo", senaryo_metni: icerik.data?.senaryo_metni ?? "" };
+        durumGecmisi = gecmis.data ?? [];
+      } else if (gorev.asama === "video" && gorev.arac_id && talepMap.get(gorev.talep_id)?.ogrenme_araci_turu === "flip_pdf") {
+        const { data: pdf, error } = await adminSupabase.from("ogrenme_araclari").select("dosya_yolu, sayfa_sayisi").eq("arac_id", gorev.arac_id).eq("arac_turu", "flip_pdf").maybeSingle();
+        if (error || !pdf?.dosya_yolu) return hataYaniti("Flip PDF detayı alınamadı.", "Flip PDF görev detayı", error);
+        const pdfUrl = bunnyCdnImzaliUrl(pdf.dosya_yolu);
+        if (!pdfUrl) return NextResponse.json({ hata: "Flip PDF CDN erişimi yapılandırılmamış." }, { status: 503 });
+        detayIcerigi = { asama: "flip_pdf", pdf_url: pdfUrl, sayfa_sayisi: pdf.sayfa_sayisi ?? 0 };
+        const gecmis = await adminSupabase.from("ogrenme_araci_durumu").select("durum, notlar, created_at").eq("arac_id", gorev.arac_id).order("created_at");
+        if (gecmis.error) return hataYaniti("Flip PDF geçmişi alınamadı.", "Flip PDF görev geçmişi", gecmis.error);
+        durumGecmisi = gecmis.data ?? [];
+      } else if (gorev.asama === "video" && gorev.arac_id && talepMap.get(gorev.talep_id)?.ogrenme_araci_turu === "gorsel") {
+        const { data: gorsel, error } = await adminSupabase.from("ogrenme_araclari").select("dosya_yolu, genislik, yukseklik").eq("arac_id", gorev.arac_id).eq("arac_turu", "gorsel").maybeSingle();
+        if (error || !gorsel?.dosya_yolu) return hataYaniti("Görsel detayı alınamadı.", "görsel görev detayı", error);
+        const gorselUrl = bunnyCdnImzaliUrl(gorsel.dosya_yolu);
+        if (!gorselUrl) return NextResponse.json({ hata: "Görsel CDN erişimi yapılandırılmamış." }, { status: 503 });
+        detayIcerigi = { asama: "gorsel", gorsel_url: gorselUrl, genislik: gorsel.genislik ?? 0, yukseklik: gorsel.yukseklik ?? 0 };
+        const gecmis = await adminSupabase.from("ogrenme_araci_durumu").select("durum, notlar, created_at").eq("arac_id", gorev.arac_id).order("created_at");
+        if (gecmis.error) return hataYaniti("Görsel geçmişi alınamadı.", "görsel görev geçmişi", gecmis.error);
+        durumGecmisi = gecmis.data ?? [];
+      } else if (gorev.asama === "video" && gorev.arac_id) {
+        const { data: podcast, error } = await adminSupabase.from("ogrenme_araclari")
+          .select("dosya_yolu, kapak_yolu, transkript_yolu, sure_saniye")
+          .eq("arac_id", gorev.arac_id).eq("arac_turu", "podcast").maybeSingle();
+        if (error || !podcast?.dosya_yolu || !podcast.kapak_yolu || !podcast.transkript_yolu) return hataYaniti("Podcast detayı alınamadı.", "podcast görev detayı", error);
+        const sesUrl = bunnyCdnImzaliUrl(podcast.dosya_yolu);
+        const kapakUrl = bunnyCdnImzaliUrl(podcast.kapak_yolu);
+        const transkriptUrl = bunnyCdnImzaliUrl(podcast.transkript_yolu);
+        if (!sesUrl || !kapakUrl || !transkriptUrl) return NextResponse.json({ hata: "Podcast CDN erişimi yapılandırılmamış." }, { status: 503 });
+        detayIcerigi = {
+          asama: "podcast",
+          ses_url: sesUrl,
+          kapak_url: kapakUrl,
+          transkript_url: transkriptUrl,
+          sure_saniye: podcast.sure_saniye ?? 0,
+        };
+        const gecmis = await adminSupabase.from("ogrenme_araci_durumu").select("durum, notlar, created_at").eq("arac_id", gorev.arac_id).order("created_at");
+        if (gecmis.error) return hataYaniti("Podcast geçmişi alınamadı.", "podcast görev geçmişi", gecmis.error);
         durumGecmisi = gecmis.data ?? [];
       } else if (gorev.asama === "video" && gorev.video_id) {
         const [icerik, gecmis] = await Promise.all([

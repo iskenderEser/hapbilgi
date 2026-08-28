@@ -14,6 +14,12 @@ export function ogrenmeAraciAcikMi(aracTuru: OgrenmeAraciTuru): boolean {
   return acikMi(process.env.OGRENME_ARACI_FLIP_PDF_AKTIF, false);
 }
 
+export function yayinAraciKullanimaAcikMi(aracTuru: unknown): boolean {
+  return typeof aracTuru === "string"
+    && ["video", "podcast", "gorsel", "flip_pdf"].includes(aracTuru)
+    && ogrenmeAraciAcikMi(aracTuru as OgrenmeAraciTuru);
+}
+
 export function ogrenmeAraciBayraklari(): Record<OgrenmeAraciTuru, boolean> {
   return {
     video: ogrenmeAraciAcikMi("video"),

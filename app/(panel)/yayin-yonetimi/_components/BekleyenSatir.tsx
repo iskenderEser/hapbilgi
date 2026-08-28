@@ -83,7 +83,7 @@ export function BekleyenSatir({
   const tumSorularPuanlandi = toplamSoru > 0 && atananSoruSayisi === toplamSoru;
   const kismiSoruPuanlandi = atananSoruSayisi > 0 && atananSoruSayisi < toplamSoru;
 
-  // Video puanı durumu
+  // Öğrenme aracı puanı durumu
   const videoPuanSecenekleri = eczanem ? VIDEO_PUAN_SECENEKLERI_ECZANEM : VIDEO_PUAN_SECENEKLERI;
   const seciliVideoPuani = videoPuanlari[b.soru_seti_durum_id] ?? b.video_puani ?? "";
   const videoPuaniDolu = typeof seciliVideoPuani === "number" && seciliVideoPuani > 0;
@@ -167,14 +167,14 @@ export function BekleyenSatir({
             <div>
               <select value={seciliVideoPuani}
                 onChange={(e) => setVideoPuanlari(prev => ({ ...prev, [b.soru_seti_durum_id]: Number(e.target.value) }))}
-                aria-label={`${b.urun_adi} video puanı`}
+                aria-label={`${b.urun_adi} öğrenme aracı puanı`}
                 className={`h-9 min-h-9 max-h-9 w-full box-border rounded-lg border px-2 text-xs transition outline-none ${
                   videoPuaniDolu
                     ? "border-[#93c5fd] bg-[#eff6ff] font-extrabold text-[#1e3a8a] shadow-sm"
                     : "border-gray-200 bg-white font-medium text-[#9aa7b7] hover:border-gray-300"
                 }`}
                 style={{ fontFamily: "'Nunito', sans-serif" }}>
-                <option value="" className="text-[#9aa7b7]">Video Puanını Seçin</option>
+                <option value="" className="text-[#9aa7b7]">Öğrenme Aracı Puanını Seçin</option>
                 {videoPuanSecenekleri.map(p => <option key={p} value={p}>{p} puan</option>)}
               </select>
             </div>

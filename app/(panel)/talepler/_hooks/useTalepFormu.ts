@@ -38,6 +38,8 @@ import { guvenliDosyaAdi } from "@/lib/utils/guvenliDosyaAdi";
 import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
 import { SORGU_ARALIGI_MS, TAVAN_SANIYE } from "@/lib/video/islemeDurumu";
 import { bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
+import { hazirFlipPdfYukle, hazirGorselYukle, hazirPodcastYukle } from "@/lib/ogrenmeAraci/bunnyYuklemeIstemci";
 
 type VideoYuklemeSonucu = "tamamlandi" | "isleniyor" | "basarisiz";
 
@@ -93,6 +95,13 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
   const [bekleyenVideo, setBekleyenVideo] = useState<BekleyenDosya | null>(null);
   const [hazirVideo, setHazirVideo] = useState(false);
   const [hazirSoruSeti, setHazirSoruSeti] = useState(false);
+  const [ogrenmeAraciTuru, setOgrenmeAraciTuru] = useState<OgrenmeAraciTuru>("video");
+  const [podcastAnlatimTuru, setPodcastAnlatimTuru] = useState<"monolog" | "diyalog">("monolog");
+  const [bekleyenPodcast, setBekleyenPodcast] = useState<BekleyenDosya | null>(null);
+  const [bekleyenPodcastKapak, setBekleyenPodcastKapak] = useState<BekleyenDosya | null>(null);
+  const [bekleyenPodcastTranskript, setBekleyenPodcastTranskript] = useState<BekleyenDosya | null>(null);
+  const [bekleyenGorsel, setBekleyenGorsel] = useState<BekleyenDosya | null>(null);
+  const [bekleyenFlipPdf, setBekleyenFlipPdf] = useState<BekleyenDosya | null>(null);
   // Ürün de teknik de olmayan türlerde (medikal_egitim, ik_egitimi) izleyiciye
   // görünecek serbest "Eğitim/İçerik Adı" — talepler.urun_adi'na yazılır (İskender 24.07).
   const [serbestAd, setSerbestAd] = useState("");
@@ -214,6 +223,22 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
   const toggleHazirVideo = useCallback(() => {
     setHazirVideo((prev) => !prev);
     setBekleyenVideo(null);
+    setBekleyenPodcast(null);
+    setBekleyenPodcastKapak(null);
+    setBekleyenPodcastTranskript(null);
+    setBekleyenGorsel(null);
+    setBekleyenFlipPdf(null);
+  }, []);
+
+  const handleOgrenmeAraciTuruDegis = useCallback((tur: OgrenmeAraciTuru) => {
+    setOgrenmeAraciTuru(tur);
+    setHazirVideo(false);
+    setBekleyenVideo(null);
+    setBekleyenPodcast(null);
+    setBekleyenPodcastKapak(null);
+    setBekleyenPodcastTranskript(null);
+    setBekleyenGorsel(null);
+    setBekleyenFlipPdf(null);
   }, []);
 
   const toggleHazirSoruSeti = useCallback(() => {
@@ -322,6 +347,17 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
 
   const handleBekleyenVideoSil = useCallback(() => setBekleyenVideo(null), []);
 
+  const podcastDosyasiSec = useCallback((setter: (dosya: BekleyenDosya | null) => void, e: React.ChangeEvent<HTMLInputElement>) => {
+    const dosya = e.target.files?.[0];
+    if (!dosya) return;
+    setter({ dosya, preview: { dosya_adi: dosya.name, url: "", boyut: dosya.size, yuklenme_tarihi: new Date().toISOString() } });
+  }, []);
+  const handlePodcastSec = useCallback((e: React.ChangeEvent<HTMLInputElement>) => podcastDosyasiSec(setBekleyenPodcast, e), [podcastDosyasiSec]);
+  const handlePodcastKapakSec = useCallback((e: React.ChangeEvent<HTMLInputElement>) => podcastDosyasiSec(setBekleyenPodcastKapak, e), [podcastDosyasiSec]);
+  const handlePodcastTranskriptSec = useCallback((e: React.ChangeEvent<HTMLInputElement>) => podcastDosyasiSec(setBekleyenPodcastTranskript, e), [podcastDosyasiSec]);
+  const handleGorselSec = useCallback((e: React.ChangeEvent<HTMLInputElement>) => podcastDosyasiSec(setBekleyenGorsel, e), [podcastDosyasiSec]);
+  const handleFlipPdfSec = useCallback((e: React.ChangeEvent<HTMLInputElement>) => podcastDosyasiSec(setBekleyenFlipPdf, e), [podcastDosyasiSec]);
+
   // ============================================================================
   // Submit pipeline — 5 alt fonksiyon + orchestration
   // ============================================================================
@@ -359,8 +395,20 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
       hata("Eğitim/İçerik adı zorunludur.", "form kontrolü", undefined);
       return false;
     }
-    if (hazirVideo && !bekleyenVideo) {
+    if (hazirVideo && ogrenmeAraciTuru === "video" && !bekleyenVideo) {
       hata("Hazır video talebi için video dosyası zorunludur.", "video dosyası kontrolü", undefined);
+      return false;
+    }
+    if (hazirVideo && ogrenmeAraciTuru === "podcast" && (!bekleyenPodcast || !bekleyenPodcastKapak || !bekleyenPodcastTranskript)) {
+      hata("Hazır podcast talebi için ses, kapak ve transkript dosyaları zorunludur.", "podcast dosyası kontrolü", undefined);
+      return false;
+    }
+    if (hazirVideo && ogrenmeAraciTuru === "gorsel" && !bekleyenGorsel) {
+      hata("Hazır görsel talebi için görsel dosyası zorunludur.", "görsel dosyası kontrolü", undefined);
+      return false;
+    }
+    if (hazirVideo && ogrenmeAraciTuru === "flip_pdf" && !bekleyenFlipPdf) {
+      hata("Hazır Flip PDF talebi için PDF dosyası zorunludur.", "PDF dosyası kontrolü", undefined);
       return false;
     }
     if (hazirSoruSeti) {
@@ -392,7 +440,13 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     serbestAdGoster,
     serbestAd,
     hazirVideo,
+    ogrenmeAraciTuru,
     bekleyenVideo,
+    bekleyenPodcast,
+    bekleyenPodcastKapak,
+    bekleyenPodcastTranskript,
+    bekleyenGorsel,
+    bekleyenFlipPdf,
     hazirSoruSeti,
     soruTaslaklari,
     videoBasiSoruSayisi,
@@ -414,6 +468,8 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
         // Ürünsüz+tekniksiz türlerde izleyici adı; diğer türlerde ad urun_id'den gelir.
         urun_adi: serbestAdGoster ? serbestAd.trim() : null,
         aciklama,
+        ogrenme_araci_turu: ogrenmeAraciTuru,
+        ogrenme_araci_tercihleri: ogrenmeAraciTuru === "podcast" ? { anlatim_turu: podcastAnlatimTuru } : {},
         hazir_video: hazirVideo,
         hazir_soru_seti: hazirSoruSeti,
         hazir_soru_seti_verisi:
@@ -440,6 +496,8 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     serbestAdGoster,
     serbestAd,
     aciklama,
+    ogrenmeAraciTuru,
+    podcastAnlatimTuru,
     hazirVideo,
     hazirSoruSeti,
     soruTaslaklari,
@@ -598,6 +656,13 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     setAciklama("");
     setBekleyenDosyalar([]);
     setBekleyenVideo(null);
+    setOgrenmeAraciTuru("video");
+    setPodcastAnlatimTuru("monolog");
+    setBekleyenPodcast(null);
+    setBekleyenPodcastKapak(null);
+    setBekleyenPodcastTranskript(null);
+    setBekleyenGorsel(null);
+    setBekleyenFlipPdf(null);
     setHazirVideo(false);
     setHazirSoruSeti(false);
     setSoruTaslaklari([]);
@@ -623,10 +688,39 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
         // aynı talebi ikinci kez yaratırdı — form artık her durumda sıfırlanır.)
         const basarisizlar: string[] = [];
         let videoIsleniyor = false;
-        if (hazirVideo && bekleyenVideo) {
+        if (hazirVideo && ogrenmeAraciTuru === "video" && bekleyenVideo) {
           const sonuc = await uploadVideo(talep_id);
           if (sonuc === "basarisiz") basarisizlar.push(`${bekleyenVideo.preview.dosya_adi} (video)`);
           if (sonuc === "isleniyor") videoIsleniyor = true;
+        }
+        if (hazirVideo && ogrenmeAraciTuru === "podcast" && bekleyenPodcast && bekleyenPodcastKapak && bekleyenPodcastTranskript) {
+          try {
+            await hazirPodcastYukle({
+              talepId: talep_id,
+              ses: bekleyenPodcast.dosya,
+              kapak: bekleyenPodcastKapak.dosya,
+              transkript: bekleyenPodcastTranskript.dosya,
+            });
+          } catch (error) {
+            hata("Podcast dosyaları yüklenemedi.", "podcast yükleme", error instanceof Error ? error.message : undefined);
+            basarisizlar.push(`${bekleyenPodcast.preview.dosya_adi} (podcast)`);
+          }
+        }
+        if (hazirVideo && ogrenmeAraciTuru === "gorsel" && bekleyenGorsel) {
+          try {
+            await hazirGorselYukle({ talepId: talep_id, gorsel: bekleyenGorsel.dosya });
+          } catch (error) {
+            hata("Görsel yüklenemedi.", "görsel yükleme", error instanceof Error ? error.message : undefined);
+            basarisizlar.push(`${bekleyenGorsel.preview.dosya_adi} (görsel)`);
+          }
+        }
+        if (hazirVideo && ogrenmeAraciTuru === "flip_pdf" && bekleyenFlipPdf) {
+          try {
+            await hazirFlipPdfYukle({ talepId: talep_id, pdf: bekleyenFlipPdf.dosya });
+          } catch (error) {
+            hata("Flip PDF yüklenemedi.", "PDF yükleme", error instanceof Error ? error.message : undefined);
+            basarisizlar.push(`${bekleyenFlipPdf.preview.dosya_adi} (Flip PDF)`);
+          }
         }
         if (bekleyenDosyalar.length > 0) {
           basarisizlar.push(...(await uploadDosyalar(talep_id)));
@@ -664,12 +758,19 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     [
       submitTalep,
       hazirVideo,
+      ogrenmeAraciTuru,
       hazirSoruSeti,
       bekleyenVideo,
+      bekleyenPodcast,
+      bekleyenPodcastKapak,
+      bekleyenPodcastTranskript,
+      bekleyenGorsel,
+      bekleyenFlipPdf,
       uploadVideo,
       bekleyenDosyalar.length,
       uploadDosyalar,
       basari,
+      hata,
       uyari,
       resetForm,
       onTalepOlusturuldu,
@@ -753,7 +854,9 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     aciklama,
     setAciklama,
 
-    // form: hazır video
+    // form: öğrenme aracı + hazır araç
+    ogrenmeAraciTuru,
+    handleOgrenmeAraciTuruDegis,
     hazirVideo,
     toggleHazirVideo,
     bekleyenVideo,
@@ -761,6 +864,29 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     handleBekleyenVideoSil,
     videoYuklemeYuzdesi,
     videoIslemeBekleniyor,
+
+    // form: podcast
+    podcastAnlatimTuru,
+    setPodcastAnlatimTuru,
+    bekleyenPodcast,
+    bekleyenPodcastKapak,
+    bekleyenPodcastTranskript,
+    handlePodcastSec,
+    handlePodcastKapakSec,
+    handlePodcastTranskriptSec,
+    handleBekleyenPodcastSil: () => setBekleyenPodcast(null),
+    handleBekleyenPodcastKapakSil: () => setBekleyenPodcastKapak(null),
+    handleBekleyenPodcastTranskriptSil: () => setBekleyenPodcastTranskript(null),
+
+    // form: görsel
+    bekleyenGorsel,
+    handleGorselSec,
+    handleBekleyenGorselSil: () => setBekleyenGorsel(null),
+
+    // form: Flip PDF
+    bekleyenFlipPdf,
+    handleFlipPdfSec,
+    handleBekleyenFlipPdfSil: () => setBekleyenFlipPdf(null),
 
     // form: hazır soru seti
     hazirSoruSeti,

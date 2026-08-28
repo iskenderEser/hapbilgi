@@ -478,7 +478,7 @@ export async function musteriyeGonder(
   // Push — K-P3 Eczanem istisnası: in-app bildirim katmanı olmadığından
   // doğrudan iş olayından tetiklenir; yükte kişi verisi yoktur (K-P6).
   if (bildirimHedefleri.length > 0) {
-    pushYayinlaEczanemMusterilereArkada(adminSupabase, "eczanem_gonderim", bildirimHedefleri);
+    pushYayinlaEczanemMusterilereArkada(adminSupabase, "eczanem_gonderim", bildirimHedefleri, { yayinId });
   }
 
   return { ok: true, gonderilen, atlanan };

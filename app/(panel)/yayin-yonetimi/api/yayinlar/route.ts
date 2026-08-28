@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     const { data: soruSeti, error: soruSetiError } = await adminSupabase
       .from("soru_setleri")
-      .select("soru_seti_id, video_durum_id, sorular")
+      .select("soru_seti_id, video_durum_id, arac_durum_id, sorular")
       .eq("soru_seti_id", soruSetiDurum.soru_seti_id)
       .single();
 
@@ -132,17 +132,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const { data: videoPuan, error: vpError } = await adminSupabase
-      .from("video_puanlari")
-      .select("video_puani")
-      .eq("video_durum_id", soruSeti.video_durum_id)
-      .single();
+    const puanSorgusu = soruSeti.arac_durum_id
+      ? adminSupabase.from("ogrenme_araci_puanlari").select("arac_puani").eq("arac_durum_id", soruSeti.arac_durum_id).maybeSingle()
+      : adminSupabase.from("video_puanlari").select("video_puani").eq("video_durum_id", soruSeti.video_durum_id).maybeSingle();
+    const { data: videoPuan, error: vpError } = await puanSorgusu;
 
     if (vpError && vpError.code !== "PGRST116") {
-      return hataYaniti("Video puanı sorgulanırken hata oluştu.", "video_puanlari tablosu SELECT — video_durum_id kontrolü", vpError);
+      return hataYaniti("Öğrenme aracı puanı sorgulanırken hata oluştu.", "öğrenme aracı puanı SELECT", vpError);
     }
-    if (!videoPuan || videoPuan.video_puani === null) {
-      return isKuraluHatasi("Video puanı tanımlanmadan yayına alınamaz. Önce video puanını tanımlayın.");
+    const aracPuani = videoPuan && ("arac_puani" in videoPuan ? videoPuan.arac_puani : videoPuan.video_puani);
+    if (aracPuani === null || aracPuani === undefined) {
+      return isKuraluHatasi("Öğrenme aracı puanı tanımlanmadan yayına alınamaz.");
     }
 
     const soruSayisi = soruSeti.sorular?.length ?? 0;
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
     if (myError && myError.code !== "PGRST116") {
       return hataYaniti("Yayın durumu sorgulanırken hata oluştu.", "yayin_yonetimi tablosu SELECT — mevcut yayın kontrolü", myError);
     }
-    if (mevcutYayin) return isKuraluHatasi("Bu video zaten yayına alınmış.");
+    if (mevcutYayin) return isKuraluHatasi("Bu öğrenme içeriği zaten yayına alınmış.");
 
     // Tarih bazlı yayın (opsiyonel): gün seçildiyse yayın 'planlandi' doğar,
     // yayin_tarihi = o gün 07:00 TR (puan penceresi açılışı; TR sabit UTC+3).
@@ -193,6 +193,27 @@ export async function POST(request: NextRequest) {
     // Yayın kapısı: TUS aktarımı ya da geçmiş bir onay kaydı yeterli değildir.
     // Bunny videoyu şu anda Ready olarak doğrulamadan ve pozitif süre vermeden
     // hiçbir yayın/tarife yan etkisi oluşturulmaz.
+    if (soruSeti.arac_durum_id) {
+      const { data: aracDurum, error: aracDurumError } = await adminSupabase.from("ogrenme_araci_durumu")
+        .select("durum, ogrenme_araclari!inner(arac_turu, dosya_yolu, kapak_yolu, transkript_yolu, sure_saniye, sayfa_sayisi, genislik, yukseklik, metadata_dogrulandi)")
+        .eq("arac_durum_id", soruSeti.arac_durum_id).maybeSingle();
+      const arac = Array.isArray(aracDurum?.ogrenme_araclari) ? aracDurum.ogrenme_araclari[0] : aracDurum?.ogrenme_araclari;
+      if (aracDurumError || aracDurum?.durum !== "onaylandi" || !arac || !arac.metadata_dogrulandi || !arac.dosya_yolu) {
+        return isKuraluHatasi("Öğrenme aracı onayı ve dosya doğrulaması tamamlanmadan yayımlanamaz.");
+      }
+      if (arac.arac_turu === "podcast" && (!arac.kapak_yolu || !arac.transkript_yolu || Number(arac.sure_saniye) <= 0)) {
+        return isKuraluHatasi("Podcast ses, kapak, transkript ve süre doğrulaması tamamlanmadan yayımlanamaz.");
+      }
+      if (arac.arac_turu === "gorsel" && (Number(arac.genislik) <= 0 || Number(arac.yukseklik) <= 0)) {
+        return isKuraluHatasi("Görsel dosyası ve ölçüleri doğrulanmadan yayımlanamaz.");
+      }
+      if (arac.arac_turu === "flip_pdf" && Number(arac.sayfa_sayisi) <= 0) {
+        return isKuraluHatasi("Flip PDF dosyası ve sayfa sayısı doğrulanmadan yayımlanamaz.");
+      }
+      if (arac.arac_turu !== "podcast" && arac.arac_turu !== "gorsel" && arac.arac_turu !== "flip_pdf") {
+        return isKuraluHatasi("Bu öğrenme aracı türü henüz yayına alınamaz.");
+      }
+    } else {
     const { data: videoDurumu, error: videoDurumuError } = await adminSupabase
       .from("video_durumu")
       .select("video_id")
@@ -231,6 +252,7 @@ export async function POST(request: NextRequest) {
       // kayıt güvenli biçimde durdurulur.
       return isKuraluHatasi("Video süresi doğrulanmadan yayına alınamaz.");
     }
+    }
 
     // Eczanem: barkod + Karşılık yalnız video kapıyı geçtikten sonra yazılır.
     if (eczanemHedefi && eczanemUrunId) {
@@ -249,6 +271,7 @@ export async function POST(request: NextRequest) {
       .from("yayin_yonetimi")
       .insert({
         soru_seti_durum_id,
+        arac_durum_id: soruSeti.arac_durum_id ?? null,
         uretici_id: user.id,
         durum: planliTarih ? "planlandi" : "yayinda",
         yayin_tarihi: planliTarih ? planliTarih.toISOString() : simdi,
@@ -324,7 +347,7 @@ export async function POST(request: NextRequest) {
             gonderen_id: user.id,
             kayit_turu: "yayin",
             kayit_id: yeniYayin.yayin_id,
-            mesaj: `Yeni video yayında: ${urun_adi}`,
+            mesaj: `Yeni öğrenme içeriği yayında: ${urun_adi}`,
           });
         }
       }
@@ -332,7 +355,7 @@ export async function POST(request: NextRequest) {
       console.error("[UYARI] Yayın bildirimleri gönderilemedi:", bildirimHatasi);
     }
 
-    return NextResponse.json({ mesaj: "Video yayına alındı.", yayin: yeniYayin }, { status: 201 });
+    return NextResponse.json({ mesaj: "Öğrenme içeriği yayına alındı.", yayin: yeniYayin }, { status: 201 });
 
   } catch (err) {
     return sunucuHatasi(err, "POST /yayin-yonetimi/api/yayinlar");

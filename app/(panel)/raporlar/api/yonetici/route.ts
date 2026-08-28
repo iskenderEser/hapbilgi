@@ -4,6 +4,7 @@ import { hataYaniti, yetkiHatasi } from '@/lib/utils/hataIsle';
 import { getYoneticiData } from '@/lib/rapor/yonetici/getYoneticiData';
 import { YONETICI_ROLLER } from '@/lib/utils/roller';
 import { tarihAraligi } from '@/lib/utils/tarihAraligi';
+import { aracTuruDagilimi } from '@/lib/rapor/paylasilan/aracTuruDagilimi';
 import {
   TALEP_TURU_SIRA,
   isTalepTuru,
@@ -37,6 +38,7 @@ export async function GET(request: Request) {
 
   const d = await getYoneticiData(adminSupabase, kullanici, baslangic, bitis);
   if (d.hata) return d.hata;
+  const aracTurleri = await aracTuruDagilimi(adminSupabase, { baslangic, bitis, firmaId: kullanici.firma_id });
   const o = d.ozet ?? {};
   const egitimHaritasi = new Map<TalepTuru, Record<string, unknown>>();
   for (const ham of d.egitimTurleri as Record<string, unknown>[]) {
@@ -89,6 +91,7 @@ export async function GET(request: Request) {
         kaybedilen_toplam: sayi(o.kaybedilen_toplam),
         net_puan: sayi(o.net_puan),
       },
+      arac_turu_dagilimi: aracTurleri,
       kapsam: {
         toplam_takim: sayi(o.toplam_takim),
         toplam_bolge: sayi(o.toplam_bolge),

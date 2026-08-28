@@ -1,7 +1,7 @@
 {
   "uretim_tarihi": "2026-08-27T15:31:28.512Z",
-  "tablo_sayisi": 105,
-  "rpc_sayisi": 137,
+  "tablo_sayisi": 106,
+  "rpc_sayisi": 144,
   "tablolar": {
     "bildirimler": {
       "tur": "BASE TABLE",
@@ -2469,6 +2469,10 @@
         "updated_at": {
           "tip": "timestamp with time zone",
           "nullable": false
+        },
+        "transkript_yolu": {
+          "tip": "text",
+          "nullable": true
         }
       }
     },
@@ -3232,6 +3236,10 @@
         },
         "ogrenme_araci_turu": {
           "tip": "text",
+          "nullable": false
+        },
+        "ogrenme_araci_tercihleri": {
+          "tip": "jsonb",
           "nullable": false
         }
       }
@@ -4431,6 +4439,87 @@
           "nullable": true
         }
       }
+    },
+    "v_rapor_arac_turu_ozet": {
+      "tur": "VIEW",
+      "kolonlar": {
+        "yayin_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "yayin_tarihi": {
+          "tip": "timestamp with time zone",
+          "nullable": true
+        },
+        "durum": {
+          "tip": "text",
+          "nullable": true
+        },
+        "firma_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "takim_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "uretici_id": {
+          "tip": "uuid",
+          "nullable": true
+        },
+        "icerik_turu": {
+          "tip": "text",
+          "nullable": true
+        },
+        "arac_turu": {
+          "tip": "text",
+          "nullable": true
+        },
+        "arac_puani": {
+          "tip": "integer",
+          "nullable": true
+        },
+        "utt_baslatma": {
+          "tip": "integer",
+          "nullable": true
+        },
+        "utt_tamamlama": {
+          "tip": "integer",
+          "nullable": true
+        },
+        "bm_baslatma": {
+          "tip": "integer",
+          "nullable": true
+        },
+        "bm_tamamlama": {
+          "tip": "integer",
+          "nullable": true
+        },
+        "eclub_baslatma": {
+          "tip": "integer",
+          "nullable": true
+        },
+        "eclub_tamamlama": {
+          "tip": "integer",
+          "nullable": true
+        },
+        "eczanem_baslatma": {
+          "tip": "integer",
+          "nullable": true
+        },
+        "eczanem_tamamlama": {
+          "tip": "integer",
+          "nullable": true
+        },
+        "toplam_baslatma": {
+          "tip": "integer",
+          "nullable": true
+        },
+        "toplam_tamamlama": {
+          "tip": "integer",
+          "nullable": true
+        }
+      }
     }
   },
   "rpc": {
@@ -4981,6 +5070,34 @@
     "yayin_planlananlari_aktive": {
       "argumanlar": "p_yayin_id uuid",
       "donus": "integer"
+    },
+    "uretim_podcast_soru_zinciri_ac": {
+      "argumanlar": "p_talep_id uuid, p_arac_durum_id uuid, p_uretici_id uuid, p_oncelikli_iu_id uuid",
+      "donus": "jsonb"
+    },
+    "uretim_podcast_dogrula": {
+      "argumanlar": "p_arac_id uuid, p_kullanici_id uuid, p_gorev_id uuid, p_sure_saniye integer, p_islem_anahtari uuid",
+      "donus": "jsonb"
+    },
+    "uretim_podcast_uretici_karar_ver": {
+      "argumanlar": "p_gorev_id uuid, p_uretici_id uuid, p_karar text, p_notlar text, p_islem_anahtari uuid",
+      "donus": "jsonb"
+    },
+    "uretim_gorsel_dogrula": {
+      "argumanlar": "p_arac_id uuid, p_kullanici_id uuid, p_gorev_id uuid, p_genislik integer, p_yukseklik integer, p_islem_anahtari uuid",
+      "donus": "jsonb"
+    },
+    "uretim_gorsel_uretici_karar_ver": {
+      "argumanlar": "p_gorev_id uuid, p_uretici_id uuid, p_karar text, p_notlar text, p_islem_anahtari uuid",
+      "donus": "jsonb"
+    },
+    "uretim_flip_pdf_dogrula": {
+      "argumanlar": "p_arac_id uuid, p_kullanici_id uuid, p_gorev_id uuid, p_sayfa_sayisi integer, p_islem_anahtari uuid",
+      "donus": "jsonb"
+    },
+    "uretim_flip_pdf_uretici_karar_ver": {
+      "argumanlar": "p_gorev_id uuid, p_uretici_id uuid, p_karar text, p_notlar text, p_islem_anahtari uuid",
+      "donus": "jsonb"
     }
   },
   "fk": {

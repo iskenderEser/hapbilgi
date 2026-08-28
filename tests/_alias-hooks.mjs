@@ -10,6 +10,9 @@ import { dirname, join } from "node:path";
 const kok = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 export async function resolve(specifier, context, nextResolve) {
+  if (specifier === "server-only") {
+    return { url: "data:text/javascript,export%20default%20undefined", shortCircuit: true };
+  }
   if (specifier.startsWith("@/")) {
     const taban = join(kok, specifier.slice(2));
     // Node uzantısız import'u çözemez; tsc/Next gibi .ts/.tsx/index denemesi yap.

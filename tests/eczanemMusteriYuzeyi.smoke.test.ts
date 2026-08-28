@@ -34,7 +34,7 @@ test("mutlu: müşteri ana sayfası belirlenen altı dijital kanal rafını ve a
   assert.match(sayfa, /puanaGore\("begeni_sayisi"\)/);
   assert.match(sayfa, /puanaGore\("favori_sayisi"\)/);
   assert.match(sayfa, /puanaGore\("izlenme_sayisi"\)/);
-  assert.match(raf, /videosunu sayfaya yerleştir/);
+  assert.match(raf, /içeriğini sayfaya yerleştir/);
   assert.match(raf, /onBegeni/);
   assert.match(raf, /onFavori/);
   assert.match(raf, /video\.video_puani/);
@@ -57,7 +57,7 @@ test("mutlu: müşteri ana sayfası belirlenen altı dijital kanal rafını ve a
 
   assert.match(videolarRoute, /get_eczanem_musteri_video_etkilesimleri/);
   assert.match(videolarRoute, /\.eq\("musteri_id", musteriId\)[\s\S]*\.in\("eczane_id", aktifEczaneIdler\)/);
-  assert.match(etkilesimRoute, /Bu video size gönderilmemiş/);
+  assert.match(etkilesimRoute, /Bu öğrenme yayını size gönderilmemiş/);
   assert.match(etkilesimSql, /CREATE TABLE IF NOT EXISTS public\.eczanem_video_begeniler/);
   assert.match(etkilesimSql, /CREATE TABLE IF NOT EXISTS public\.eczanem_video_favoriler/);
   assert.match(etkilesimSql, /pg_advisory_xact_lock/);

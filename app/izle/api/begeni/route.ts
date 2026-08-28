@@ -4,6 +4,8 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { ECLUB_TUKETICI_ROLLERI, TUKETICI_ROLLER } from "@/lib/utils/roller";
+import { etkilesimYayinYetkisi } from "@/lib/etkilesim/yayinYetkisi";
+import { uuidGecerliMi } from "@/lib/uretim/rpc";
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,7 +35,8 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { yayin_id } = body;
-    if (!yayin_id) return validasyonHatasi("yayin_id zorunludur.", ["yayin_id"]);
+    if (!uuidGecerliMi(yayin_id)) return validasyonHatasi("yayin_id geçersizdir.", ["yayin_id"]);
+    if (!(await etkilesimYayinYetkisi(adminSupabase, { userId: user.id, rol, yayinId: yayin_id, eclubKisi }))) return rolHatasi("Bu öğrenme yayınına beğeni ekleme yetkiniz yok.");
 
     const { data: mevcut } = await adminSupabase
       .from(tablo)
@@ -48,14 +51,14 @@ export async function POST(request: NextRequest) {
         .delete()
         .eq("begeni_id", mevcut.begeni_id);
 
-      if (deleteError) return hataYaniti("Beğeni kaldırılamadı.", "video_begeniler tablosu DELETE", deleteError);
+      if (deleteError) return hataYaniti("Beğeni kaldırılamadı.", "öğrenme yayını beğenisi DELETE", deleteError);
       return NextResponse.json({ begeni_mi: false }, { status: 200 });
     } else {
       const { error: insertError } = await adminSupabase
         .from(tablo)
         .insert({ [kimlikKolonu]: kimlikId, yayin_id });
 
-      if (insertError) return hataYaniti("Beğeni kaydedilemedi.", "video_begeniler tablosu INSERT", insertError);
+      if (insertError) return hataYaniti("Beğeni kaydedilemedi.", "öğrenme yayını beğenisi INSERT", insertError);
       return NextResponse.json({ begeni_mi: true }, { status: 200 });
     }
 

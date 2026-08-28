@@ -9,6 +9,8 @@ import { hataYaniti, isKuraluHatasi, veriKontrol, sunucuHatasi, yetkiHatasi, rol
 import { olayIdGecerliMi } from "@/lib/izleme/baslat";
 import { eclubIzlemeHaklari, eclubSoruIndeksleri } from "@/lib/eclub/izlemeKurali";
 import { gecerliTur } from "@/lib/tclub/tur/kayit";
+import { tamamlamaKanitiDogrula } from "@/lib/ogrenmeAraci/sozlesme";
+import { yayinAraciKullanimaAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
 
 const VARSAYILAN_SORU_SAYISI = 2;
 
@@ -36,7 +38,7 @@ export async function PUT(request: NextRequest) {
 
     const { data: izleme, error: izlemeError } = await adminSupabase
       .from("eclub_izleme_kayitlari")
-      .select("izleme_id, yayin_id, kisi_id, oneri_id")
+      .select("izleme_id, yayin_id, kisi_id, oneri_id, tamamlama_kaniti")
       .eq("izleme_id", izleme_id)
       .single();
 
@@ -45,6 +47,12 @@ export async function PUT(request: NextRequest) {
     if (!izlemeKontrol.gecerli) return izlemeKontrol.yanit;
     if (izleme.kisi_id !== kisi.kisi_id) return rolHatasi("Bu izleme kaydına erişim yetkiniz yok.");
     if (!izleme.oneri_id) return hataYaniti("İzleme öneri kaydına bağlı değil.", "eclub_izleme_kayitlari.oneri_id", null);
+    const { data: aracDetay } = await adminSupabase.from("v_yayin_detay").select("arac_turu, durum").eq("yayin_id", izleme.yayin_id).maybeSingle();
+    if (!aracDetay || aracDetay.durum !== "yayinda") return isKuraluHatasi("Yayın artık aktif değil.");
+    if (!yayinAraciKullanimaAcikMi(aracDetay.arac_turu)) return isKuraluHatasi("Bu öğrenme aracı kullanıma kapalı.");
+    if (aracDetay?.arac_turu === "podcast" && !tamamlamaKanitiDogrula("podcast", izleme.tamamlama_kaniti)) return isKuraluHatasi("Podcast tamamlanma kanıtı doğrulanamadı.");
+    if (aracDetay?.arac_turu === "gorsel" && !tamamlamaKanitiDogrula("gorsel", izleme.tamamlama_kaniti)) return isKuraluHatasi("Görsel tamamlanma kanıtı doğrulanamadı.");
+    if (aracDetay?.arac_turu === "flip_pdf" && !tamamlamaKanitiDogrula("flip_pdf", izleme.tamamlama_kaniti)) return isKuraluHatasi("Flip PDF tamamlanma kanıtı doğrulanamadı.");
 
     const { data: oneri, error: oneriError } = await adminSupabase
       .from("eclub_oneri_kayitlari")

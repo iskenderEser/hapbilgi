@@ -108,7 +108,7 @@ export function YayinSatir({
 
           <div className="grid grid-cols-2 gap-1 rounded-lg bg-[#f7f9fc] px-2 py-1.5">
             <span className="flex items-center justify-center gap-1 text-[10px] text-[#70849d]">
-              Video puanı <b className="text-[#314a68]">{y.video_puani ?? "—"}</b>
+              Öğrenme aracı puanı <b className="text-[#314a68]">{y.video_puani ?? "—"}</b>
             </span>
             <span className="flex items-center justify-center gap-1 border-l border-[#e2e9f1] text-[10px] text-[#70849d]">
               Soru <b className="text-[#314a68]">{y.sorular?.length ?? 0}</b>
@@ -202,7 +202,7 @@ export function YayinSatir({
 
         <div className="order-3 flex flex-col gap-2 sm:col-span-2 sm:grid sm:grid-cols-[1fr_auto] sm:items-center lg:col-span-1 lg:flex lg:items-stretch">
           <div className="flex flex-wrap items-center gap-2 rounded-xl bg-[#f6f9fc] px-3 py-2">
-            <span className="text-[10px] font-bold text-[#8797ac]">Video puanı</span>
+            <span className="text-[10px] font-bold text-[#8797ac]">Öğrenme aracı puanı</span>
             <strong className="text-sm text-[#2b405c]">{y.video_puani ?? "—"}</strong>
             <span className="h-4 w-px bg-[#dde5ee]" />
             <span className="text-[10px] font-bold text-[#8797ac]">Soru</span>
