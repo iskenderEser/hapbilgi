@@ -11,11 +11,11 @@ const bunny = oku("lib/ogrenmeAraci/bunnyStorage.ts");
 const edge = oku("infra/bunny/ogrenme-araci-upload/index.ts");
 const bayraklar = oku("lib/ogrenmeAraci/bayraklar.ts");
 
-test("yeni araçlar varsayılan kapalı, video varsayılan açıktır", () => {
+test("tamamlanan öğrenme araçları varsayılan açıktır", () => {
   assert.match(bayraklar, /OGRENME_ARACI_VIDEO_AKTIF, true/);
-  assert.match(bayraklar, /OGRENME_ARACI_PODCAST_AKTIF, false/);
-  assert.match(bayraklar, /OGRENME_ARACI_GORSEL_AKTIF, false/);
-  assert.match(bayraklar, /OGRENME_ARACI_FLIP_PDF_AKTIF, false/);
+  assert.match(bayraklar, /OGRENME_ARACI_PODCAST_AKTIF, true/);
+  assert.match(bayraklar, /OGRENME_ARACI_GORSEL_AKTIF, true/);
+  assert.match(bayraklar, /OGRENME_ARACI_FLIP_PDF_AKTIF, true/);
 });
 
 test("Storage anahtarları istemciye ve NEXT_PUBLIC alanına açılmaz", () => {

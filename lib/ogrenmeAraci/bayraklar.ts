@@ -9,9 +9,9 @@ function acikMi(deger: string | undefined, varsayilan: boolean): boolean {
 
 export function ogrenmeAraciAcikMi(aracTuru: OgrenmeAraciTuru): boolean {
   if (aracTuru === "video") return acikMi(process.env.OGRENME_ARACI_VIDEO_AKTIF, true);
-  if (aracTuru === "podcast") return acikMi(process.env.OGRENME_ARACI_PODCAST_AKTIF, false);
-  if (aracTuru === "gorsel") return acikMi(process.env.OGRENME_ARACI_GORSEL_AKTIF, false);
-  return acikMi(process.env.OGRENME_ARACI_FLIP_PDF_AKTIF, false);
+  if (aracTuru === "podcast") return acikMi(process.env.OGRENME_ARACI_PODCAST_AKTIF, true);
+  if (aracTuru === "gorsel") return acikMi(process.env.OGRENME_ARACI_GORSEL_AKTIF, true);
+  return acikMi(process.env.OGRENME_ARACI_FLIP_PDF_AKTIF, true);
 }
 
 export function yayinAraciKullanimaAcikMi(aracTuru: unknown): boolean {
