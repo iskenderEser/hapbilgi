@@ -85,7 +85,7 @@ export function YeniTalepFormV2({ formu }: Props) {
                 className="cursor-pointer rounded-lg border px-3 py-1.5 text-xs font-extrabold"
                 style={secimKutusu(formu.ogrenmeAraciTuru === tur)}
               >
-                {tur === "video" ? "Video" : tur === "podcast" ? "Podcast" : tur === "gorsel" ? "Görsel" : "Flip PDF"}
+                {tur === "video" ? "Video" : tur === "podcast" ? "Podcast" : tur === "gorsel" ? "Tek Sayfalı Broşür" : "Çok Sayfalı Broşür"}
               </button>
             ))}
           </div>
