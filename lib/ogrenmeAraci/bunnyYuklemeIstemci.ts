@@ -5,6 +5,11 @@ interface YuklemeBilgisi {
   yukleme: { endpoint: string; headers: Record<string, string> };
 }
 
+interface YuklemeMakbuzu {
+  tamamlandi: true;
+  yukleme_makbuzu: string;
+}
+
 async function sha256(dosya: File): Promise<string> {
   const ozet = await crypto.subtle.digest("SHA-256", await dosya.arrayBuffer());
   return Array.from(new Uint8Array(ozet)).map((bayt) => bayt.toString(16).padStart(2, "0")).join("");
@@ -17,9 +22,17 @@ async function jsonIstek(url: string, body: Record<string, unknown>) {
   return veri;
 }
 
-async function bunnyyeGonder(dosya: File, yukleme: YuklemeBilgisi["yukleme"]) {
+async function bunnyyeGonder(
+  dosya: File,
+  yukleme: YuklemeBilgisi["yukleme"],
+): Promise<YuklemeMakbuzu> {
   const yanit = await fetch(yukleme.endpoint, { method: "PUT", headers: yukleme.headers, body: dosya });
   if (!yanit.ok) throw new Error("Öğrenme aracı dosyası Bunny Storage'a yüklenemedi.");
+  const veri = await yanit.json().catch(() => ({}));
+  if (veri.tamamlandi !== true || typeof veri.yukleme_makbuzu !== "string") {
+    throw new Error("Öğrenme aracı yükleme makbuzu alınamadı.");
+  }
+  return veri as YuklemeMakbuzu;
 }
 
 async function sesSuresiniOku(dosya: File): Promise<number> {
@@ -60,8 +73,11 @@ export async function hazirPodcastYukle(girdi: {
     checksum_sha256: sesChecksum,
     arac_id: girdi.aracId ?? null,
   }) as YuklemeBilgisi;
-  await bunnyyeGonder(girdi.ses, baslangic.yukleme);
-  await jsonIstek("/api/ogrenme-araclari/yukleme-tamamla", { arac_id: baslangic.arac_id });
+  const sesMakbuzu = await bunnyyeGonder(girdi.ses, baslangic.yukleme);
+  await jsonIstek("/api/ogrenme-araclari/yukleme-tamamla", {
+    arac_id: baslangic.arac_id,
+    yukleme_makbuzu: sesMakbuzu.yukleme_makbuzu,
+  });
 
   for (const [dosya_rolu, dosya] of [["kapak", girdi.kapak], ["transkript", girdi.transkript]] as const) {
     const checksum_sha256 = await sha256(dosya);
@@ -72,7 +88,7 @@ export async function hazirPodcastYukle(girdi: {
       dosya_boyutu: dosya.size,
       checksum_sha256,
     }) as YuklemeBilgisi & { dosya_yolu: string; yukleme_token: string };
-    await bunnyyeGonder(dosya, destek.yukleme);
+    const destekMakbuzu = await bunnyyeGonder(dosya, destek.yukleme);
     await jsonIstek(`/api/ogrenme-araclari/${baslangic.arac_id}/destek-yukleme-tamamla`, {
       dosya_rolu,
       dosya_yolu: destek.dosya_yolu,
@@ -81,6 +97,7 @@ export async function hazirPodcastYukle(girdi: {
       dosya_boyutu: dosya.size,
       checksum_sha256,
       yukleme_token: destek.yukleme_token,
+      yukleme_makbuzu: destekMakbuzu.yukleme_makbuzu,
     });
   }
   await jsonIstek(`/api/ogrenme-araclari/${baslangic.arac_id}/podcast-dogrula`, {
@@ -115,8 +132,11 @@ export async function hazirGorselYukle(girdi: { talepId: string; gorsel: File; k
     dosya_adi: girdi.gorsel.name, mime_type: girdi.gorsel.type, dosya_boyutu: girdi.gorsel.size,
     checksum_sha256: checksum, arac_id: girdi.aracId ?? null,
   }) as YuklemeBilgisi;
-  await bunnyyeGonder(girdi.gorsel, baslangic.yukleme);
-  await jsonIstek("/api/ogrenme-araclari/yukleme-tamamla", { arac_id: baslangic.arac_id });
+  const makbuz = await bunnyyeGonder(girdi.gorsel, baslangic.yukleme);
+  await jsonIstek("/api/ogrenme-araclari/yukleme-tamamla", {
+    arac_id: baslangic.arac_id,
+    yukleme_makbuzu: makbuz.yukleme_makbuzu,
+  });
   await jsonIstek(`/api/ogrenme-araclari/${baslangic.arac_id}/gorsel-dogrula`, {
     gorev_id: girdi.gorevId ?? null, genislik: olcu.genislik, yukseklik: olcu.yukseklik,
     islem_anahtari: crypto.randomUUID(),
@@ -156,8 +176,11 @@ export async function hazirFlipPdfYukle(girdi: { talepId: string; pdf: File; kay
     dosya_adi: girdi.pdf.name, mime_type: girdi.pdf.type || "application/pdf", dosya_boyutu: girdi.pdf.size,
     checksum_sha256: checksum, arac_id: girdi.aracId ?? null,
   }) as YuklemeBilgisi;
-  await bunnyyeGonder(girdi.pdf, baslangic.yukleme);
-  await jsonIstek("/api/ogrenme-araclari/yukleme-tamamla", { arac_id: baslangic.arac_id });
+  const makbuz = await bunnyyeGonder(girdi.pdf, baslangic.yukleme);
+  await jsonIstek("/api/ogrenme-araclari/yukleme-tamamla", {
+    arac_id: baslangic.arac_id,
+    yukleme_makbuzu: makbuz.yukleme_makbuzu,
+  });
   await jsonIstek(`/api/ogrenme-araclari/${baslangic.arac_id}/flip-pdf-dogrula`, {
     gorev_id: girdi.gorevId ?? null, sayfa_sayisi: pdfBilgisi.sayfaSayisi, arama_metni: pdfBilgisi.metin, islem_anahtari: crypto.randomUUID(),
   });

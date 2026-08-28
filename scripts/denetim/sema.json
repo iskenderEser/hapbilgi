@@ -1,7 +1,7 @@
 {
   "uretim_tarihi": "2026-08-27T15:31:28.512Z",
-  "tablo_sayisi": 106,
-  "rpc_sayisi": 144,
+  "tablo_sayisi": 107,
+  "rpc_sayisi": 145,
   "tablolar": {
     "bildirimler": {
       "tur": "BASE TABLE",
@@ -4520,6 +4520,55 @@
           "nullable": true
         }
       }
+    },
+    "ogrenme_araci_depolama_temizleme_kuyrugu": {
+      "tur": "BASE TABLE",
+      "kolonlar": {
+        "temizleme_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "arac_id": {
+          "tip": "uuid",
+          "nullable": false
+        },
+        "dosya_yolu": {
+          "tip": "text",
+          "nullable": false
+        },
+        "dosya_rolu": {
+          "tip": "text",
+          "nullable": true
+        },
+        "sebep": {
+          "tip": "text",
+          "nullable": false
+        },
+        "durum": {
+          "tip": "text",
+          "nullable": false
+        },
+        "deneme_sayisi": {
+          "tip": "integer",
+          "nullable": false
+        },
+        "son_hata": {
+          "tip": "text",
+          "nullable": true
+        },
+        "created_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        },
+        "updated_at": {
+          "tip": "timestamp with time zone",
+          "nullable": false
+        },
+        "tamamlanma_tarihi": {
+          "tip": "timestamp with time zone",
+          "nullable": true
+        }
+      }
     }
   },
   "rpc": {
@@ -5097,6 +5146,10 @@
     },
     "uretim_flip_pdf_uretici_karar_ver": {
       "argumanlar": "p_gorev_id uuid, p_uretici_id uuid, p_karar text, p_notlar text, p_islem_anahtari uuid",
+      "donus": "jsonb"
+    },
+    "ogrenme_araci_yukleme_dogrulama_kaydet": {
+      "argumanlar": "p_arac_id uuid, p_degistiren_id uuid, p_mime_type text, p_dosya_boyutu bigint, p_checksum_sha256 text, p_metadata jsonb",
       "donus": "jsonb"
     }
   },
@@ -6210,6 +6263,13 @@
         "kaynak_kolon": "soru_seti_durum_id",
         "hedef_tablo": "soru_seti_durumu",
         "hedef_kolon": "soru_seti_durum_id"
+      }
+    ],
+    "ogrenme_araci_depolama_temizleme_kuyrugu": [
+      {
+        "kaynak_kolon": "arac_id",
+        "hedef_tablo": "ogrenme_araclari",
+        "hedef_kolon": "arac_id"
       }
     ]
   }

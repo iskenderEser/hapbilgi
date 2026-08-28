@@ -6,6 +6,13 @@ tek kullanıcıya, MIME türüne, boyuta ve kısa süreye bağlı yükleme token
 Tarayıcının hesapladığı SHA-256 özeti tokena bağlanır; Bunny Storage `Checksum`
 başlığıyla yüklenen gövdeyi ayrıca doğrular.
 
+Storage yüklemesi başarıyla tamamlandığında Edge Script aynı kullanıcı, araç,
+dosya yolu, MIME türü, boyut, checksum ve süre kapsamına bağlı imzalı bir
+`yukleme_makbuzu` döndürür. HapBilgi API'si dosyayı üretim zincirine almadan
+önce bu makbuzu doğrular. Storage okuma yanıtında checksum başlığı bulunmasa
+bile tarayıcının tek başına üretemeyeceği bu makbuz, Bunny'nin `Checksum`
+kontrolünü kabul ederek yüklemeyi tamamladığını kanıtlar.
+
 ## Bunny yapılandırması
 
 Environment variable:

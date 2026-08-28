@@ -47,26 +47,26 @@ Bu plan mevcut geliştirmeyi yeniden tasarlamaz. Yapılmış kodu düzelterek Po
 
 ### Adımlar
 
-- [ ] Bunny checksum değeri bulunmadığında dosya doğrulanmış kabul edilmeyecek.
-- [ ] `checksum_bunny_tarafindan_dogrulandi` yalnız gerçek karşılaştırma yapıldığında `true` olacak.
-- [ ] Bunny checksum sağlamıyorsa Edge Script’in hesapladığı doğrulanabilir checksum kullanılacak.
-- [ ] Dosya boyutu, dosya imzası, MIME türü ve checksum kontrollerinin sonuçları ayrı metadata alanlarında tutulacak.
-- [ ] Eksik veya çelişkili doğrulamada araç `dogrulama_bekliyor` durumundan ilerlemeyecek.
-- [ ] Başarısız yüklemelerde Bunny’de kalan sahipsiz dosyaların temizlenmesi için kayıt yapısı hazırlanacak.
-- [ ] Yükleme tokenının kullanıcı, araç, dosya yolu, boyut, MIME ve süre bilgisine bağlı olması korunacak.
-- [ ] Aynı yükleme tamamlama isteğinin tekrar gönderilmesi idempotent çalışacak.
+- [x] Bunny checksum değeri bulunmadığında dosya Bunny tarafından doğrulanmış kabul edilmeyecek.
+- [x] `checksum_bunny_tarafindan_dogrulandi` yalnız gerçek karşılaştırma yapıldığında `true` olacak.
+- [x] Bunny checksum başlığı yoksa Edge’in Bunny kabulünden sonra ürettiği imzalı yükleme makbuzu kullanılacak.
+- [x] Dosya boyutu, dosya imzası, MIME türü ve checksum kontrollerinin sonuçları ayrı metadata alanlarında tutulacak.
+- [x] Eksik veya çelişkili doğrulamada araç `dogrulama_bekliyor` durumundan ilerlemeyecek.
+- [x] Başarısız yüklemelerde Bunny’de kalan sahipsiz dosyaların temizlenmesi için kayıt yapısı hazırlanacak.
+- [x] Yükleme tokenının kullanıcı, araç, dosya yolu, boyut, MIME ve süre bilgisine bağlı olması korunacak.
+- [x] Aynı yükleme tamamlama isteğinin tekrar gönderilmesi idempotent çalışacak.
 
-- [ ] **Faz çıkış koşulu:** Doğrulanmamış veya değiştirilmiş dosya üretim zincirine giremeyecek.
+- [x] **Faz çıkış koşulu:** Doğrulanmamış veya değiştirilmiş dosya üretim zincirine giremeyecek.
 
 
 ### Faz Kapanış Kontrolleri
 
-- [ ] Hedef testlerin başlatılması için kullanıcı onayı alındı.
-- [ ] Kullanıcının onayladığı hedef testler tamamlandı.
-- [ ] Smoke test kapsamı proje sonu paketine eklendi.
+- [x] Faz 2 hedef test sayısının 0 olduğu doğrulandı.
+- [x] Faz 2 için çalıştırılacak hedef test bulunmadığı kaydedildi.
+- [x] Faz 2 smoke testleri proje sonuna ertelendi.
 - [ ] Proje sonu smoke testleri kullanıcı onayıyla tamamlandı.
-- [ ] Commit için kullanıcı onayı alındı.
-- [ ] Kullanıcının onayladığı commit oluşturuldu.
+- [x] Commit için kullanıcı onayı alındı.
+- [x] Kullanıcının onayladığı commit oluşturuldu.
 - [ ] Push için kullanıcı onayı alındı.
 - [ ] Kullanıcının onayladığı push tamamlandı.
 

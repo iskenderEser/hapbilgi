@@ -109,6 +109,41 @@ export function yuklemeYetkisiDogrula(girdi: {
   return Boolean(imza) && sabitKarsilastir(imza, beklenen);
 }
 
+export function yuklemeMakbuzuDogrula(girdi: {
+  makbuz: string;
+  aracId: string;
+  kullaniciId: string;
+  dosyaYolu: string;
+  dosyaBoyutu: number;
+  mimeType: string;
+  checksumSha256: string;
+}, simdiMs = Date.now()): boolean {
+  const ortam = bunnyStorageOrtami();
+  if (!ortam) return false;
+  const [sonKullanmaHam, imza, fazla] = girdi.makbuz.split(".");
+  const sonKullanma = Number(sonKullanmaHam);
+  if (
+    fazla !== undefined
+    || !Number.isSafeInteger(sonKullanma)
+    || sonKullanma < Math.floor(simdiMs / 1000)
+  ) return false;
+  const mesaj = [
+    girdi.aracId,
+    girdi.kullaniciId,
+    girdi.dosyaYolu,
+    girdi.dosyaBoyutu,
+    girdi.mimeType,
+    girdi.checksumSha256,
+    sonKullanma,
+  ].join("\n");
+  const beklenen = base64Url(
+    createHmac("sha256", ortam.uploadSharedSecret)
+      .update(`tamamlandi\n${mesaj}`)
+      .digest(),
+  );
+  return Boolean(imza) && sabitKarsilastir(imza, beklenen);
+}
+
 export function bunnyUploadBilgisi(): { endpoint: string } | null {
   const ortam = bunnyStorageOrtami();
   return ortam ? { endpoint: ortam.uploadEndpoint } : null;

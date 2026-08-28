@@ -110,7 +110,16 @@ BunnySDK.net.http.serve(async (request: Request): Promise<Response> => {
   });
   if (!storageYaniti.ok) return json("Bunny Storage yüklemesi tamamlanamadı.", 502, origin);
 
-  return new Response(JSON.stringify({ tamamlandi: true }), {
+  // Makbuz yalnız Bunny, Checksum başlığını kabul edip yüklemeyi başarıyla
+  // tamamladıktan sonra üretilir. Vercel bu imzayı aynı yükleme bağlamıyla
+  // doğrulayarak Storage GET yanıtında checksum başlığı olmasa da zincirin
+  // bütünlüğünü kanıtlar.
+  const makbuzImzasi = await hmac(uploadSecret, `tamamlandi\n${mesaj}`);
+
+  return new Response(JSON.stringify({
+    tamamlandi: true,
+    yukleme_makbuzu: `${sonKullanma}.${makbuzImzasi}`,
+  }), {
     status: 201,
     headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": origin, ...izinBasliklari },
   });
