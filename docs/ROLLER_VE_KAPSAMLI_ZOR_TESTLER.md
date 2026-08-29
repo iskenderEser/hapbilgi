@@ -294,16 +294,32 @@ Bu çalışma, HapBilgi'deki her rolün görev tanımı içinde bulunan bütün 
   - **Smoke testi:** Tam smoke paketi `209/209` başarılı; hata, iptal ve atlanan test yoktur.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **PM-06 — Onay ve revizyon:** Aynı teslim eşzamanlı onaylanıp revizyona gönderilecek; yalnız tek geçerli karar kalacak.
+- [x] **PM-06 — Güncelliğini yitirmiş teslim ekranından karar verme:** PM, İÜ'nün ilk teslimini iki ayrı cihaz veya oturumda açacak. İlk oturumdan revizyon istenecek ve İÜ ikinci sürümü teslim edecek; ilk sürümü göstermeye devam eden eski oturumdan onay verilmeye çalışıldığında karar reddedilecek, PM güncel sürümü yeniden incelemeye yönlendirilecek ve eski ekrandan sonraki üretim görevi ya da yayın kaydı oluşturulmayacak.
+  - **Geliştirme:** Görevde zaten bulunan `surum` değeri karar isteğine eklendi. Dört öğrenme aracı karar RPC'sinin önüne satır kilitli sürüm kapısı konuldu; eski sürüm kararı hiçbir durum veya sonraki görev kaydı oluşturmadan reddedilir.
+  - **Kod hedef testi:** Ekranın gördüğü sürümü taşıması, dört karar motorunun ortak sürüm kapısından geçmesi ve kullanıcıya güncel sürüm yönlendirmesi `3/3` başarılıdır.
+  - **Supabase hedef testi:** Video, podcast, dijital broşür ve PDF karar motorlarının eski sürümü reddetmesi ile görev durumu ve sürümünün değişmeden kalması `5/5` başarılıdır. Reddedilen denemeler işlem kaydı veya sonraki görev üretmedi; test yalnız oturuma bağlı geçici fonksiyonla çalıştırıldı ve kalıcı test verisi bırakmadı.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **PM-07 — Yayın yönetimi:** Puan tanımlama, yayınlama, silme ve iptal işlemleri eşzamanlı yürütülecek; puansız, sorusuz veya yarım yayın oluşmayacak.
+- [x] **PM-07 — Yayın yönetimi:** Test, sahada karşılığı bulunmadığı için İskender'in kararıyla iptal edildi.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **PM-08 — Kataloglar:** Başka üreticinin talep ve dosya kimlikleri kullanılarak değiştirme ve silme denenecek; yalnız kendi üretimi değiştirilebilecek.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
+- [x] **PM-09 — Eczanem üretimi:** Eczanem yayını dağıtılırken yayın durdurulacak; yeni gönderimler engellenecek, mevcut kayıtlar bozulmayacak.
 
-- [ ] **PM-09 — Eczanem üretimi:** Eczanem yayını dağıtılırken yayın geri çekilecek; yeni gönderimler engellenecek, mevcut kayıtlar bozulmayacak.
+  - **Tarih:** 29 Ağustos 2026
+  - **Rol ve hesap:** PM / canlı Eczanem yayını üzerinde transaction içi izole test
+  - **Durum:** Giderildi
+  - **Beklenen sonuç:** Yayın durdurulduktan sonra UTT→eczane ve eczane→müşteri gönderimleri reddedilmeli; mevcut gönderimler korunmalıydı.
+  - **Gerçekleşen sonuç:** UTT→eczane gönderimi `Bu yayın şu an yayında değil` yanıtıyla doğru biçimde reddedildi. Eczane→müşteri gönderimi ise durdurulmuş yayına rağmen kabul edildi ve test transaction'ında `1` yeni gönderim kaydı oluşturdu; mevcut eczane gönderimi korundu.
+  - **Rollback sonucu:** Başarılı
+  - **Kalan kayıt veya dosya:** Yok — yayın yeniden `yayinda`, yeni gönderim kalıntısı `0`
+
+  **Hata ve etkisi:** `eczanem_musterilere_video_gonder` RPC'si yayın durumunu işlem anında doğrulamıyor; uygulama katmanındaki ön kontrol de yalnız eczane/firma erişimini doğruluyor. Bu nedenle durdurulmuş bir yayın müşterilere gönderilebiliyor ve durdurma kararı Eczanem dağıtımında etkisiz kalabiliyor.
+
+  **Çözüm ve doğrulama:** UTT→eczane ve eczane→müşteri gönderim RPC'leri yayın satırını kilitleyip `yayinda` durumunu aynı transaction içinde doğrulamalıdır; böylece gönderim ile durdurma tek bir işlem sırasına oturur. Düzeltme sonrasında aynı rollback testi yeniden çalıştırılarak iki yeni gönderimin de reddedildiği, mevcut kayıtların korunduğu ve kalıntı oluşmadığı doğrulanmalıdır.
+
+  **Düzeltme — 29 Ağustos 2026:** İki Eczanem gönderim RPC'si `yayin_yonetimi` satırını `FOR UPDATE` ile kilitleyip `yayinda` durumunu aynı transaction içinde doğrulayacak biçimde güncellendi. Böylece gönderim ile PM'nin durdurma işlemi aynı yayın satırı üzerinden kesin sıraya alınır.
+
+  **Düzeltme sonrası test:** UTT→eczane ve eczane→müşteri gönderimleri `Bu yayın şu an yayında değil` yanıtıyla reddedildi; yeni gönderim sayısı `0`, mevcut eczane gönderimi korunmuş durumdadır. Kod hedef testleri `2/2` başarılı; rollback sonrasında yayın `yayinda`, gönderim kalıntısı `0` olarak doğrulandı.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
 - [ ] **PM-10 — Rapor ve Hapbi:** Takım dışı ürün, yayın ve performans bilgisi istenecek; yalnız PM'in takım kapsamı dönecek.

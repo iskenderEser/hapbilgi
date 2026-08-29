@@ -16,9 +16,10 @@ export async function POST(request: NextRequest) {
     if (!URETICI_ROLLER.includes(rol)) return rolHatasi("Yalnız talebin üretici rolü karar verebilir.");
 
     const body = await request.json();
-    const { gorev_id, karar, notlar, islem_anahtari } = body;
+    const { gorev_id, karar, notlar, beklenen_surum, islem_anahtari } = body;
     if (!uuidGecerliMi(gorev_id)) return validasyonHatasi("gorev_id geçerli bir UUID olmalıdır.", ["gorev_id"]);
     if (!uuidGecerliMi(islem_anahtari)) return validasyonHatasi("islem_anahtari geçerli bir UUID olmalıdır.", ["islem_anahtari"]);
+    if (!Number.isInteger(beklenen_surum) || beklenen_surum < 1) return validasyonHatasi("beklenen_surum pozitif bir tam sayı olmalıdır.", ["beklenen_surum"]);
     if (!["onaylandi", "revizyon bekleniyor", "Iptal Edildi"].includes(karar)) return validasyonHatasi("Geçersiz üretici kararı.", ["karar"]);
     if (karar === "revizyon bekleniyor" && (typeof notlar !== "string" || !notlar.trim())) return validasyonHatasi("Revizyon notu zorunludur.", ["notlar"]);
 
@@ -34,8 +35,12 @@ export async function POST(request: NextRequest) {
       p_uretici_id: user.id,
       p_karar: karar,
       p_notlar: typeof notlar === "string" ? notlar : null,
+      p_beklenen_surum: beklenen_surum,
       p_islem_anahtari: islem_anahtari,
     });
+    if (error?.code === "23514" && error.message?.includes("güncelliğini yitirdi")) {
+      return validasyonHatasi("İncelediğiniz teslim güncelliğini yitirdi. Lütfen sayfayı yenileyerek güncel sürümü yeniden inceleyin.", ["beklenen_surum"]);
+    }
     if (error) return uretimRpcHataYaniti("Üretici kararı kaydedilemedi.", `${rpcAdi} RPC`, error);
 
     const sonucNesnesi = sonuc as { sonraki?: { atanan_iu_id?: string } | null } | null;

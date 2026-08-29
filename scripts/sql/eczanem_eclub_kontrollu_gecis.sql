@@ -95,6 +95,7 @@ DECLARE
   v_istenen integer;
   v_gonderilen integer;
   v_gonderilen_musteri_idler uuid[];
+  v_yayin_durum text;
 BEGIN
   SELECT count(*)::integer INTO v_istenen
   FROM (SELECT DISTINCT unnest(p_musteri_idler) AS musteri_id) x;
@@ -116,6 +117,21 @@ BEGIN
     WHERE eg.eczane_id = p_eczane_id AND eg.yayin_id = p_yayin_id
   ) THEN
     RETURN QUERY SELECT false, 'Bu video eczanenize gönderilmemiş.', 0, v_istenen, ARRAY[]::uuid[];
+    RETURN;
+  END IF;
+
+  SELECT yy.durum
+  INTO v_yayin_durum
+  FROM public.yayin_yonetimi yy
+  WHERE yy.yayin_id = p_yayin_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT false, 'Yayın bulunamadı.', 0, v_istenen, ARRAY[]::uuid[];
+    RETURN;
+  END IF;
+  IF v_yayin_durum IS DISTINCT FROM 'yayinda' THEN
+    RETURN QUERY SELECT false, 'Bu yayın şu an yayında değil.', 0, v_istenen, ARRAY[]::uuid[];
     RETURN;
   END IF;
 

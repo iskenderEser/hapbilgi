@@ -233,7 +233,7 @@ export default function UretimGorevDetayPage() {
     if (!gorev) return;
     setIslem(true);
     try {
-      const res = await fetch("/uretim/api/karar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ gorev_id: gorev.gorev_id, karar, notlar, islem_anahtari: crypto.randomUUID() }) });
+      const res = await fetch("/uretim/api/karar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ gorev_id: gorev.gorev_id, karar, notlar, beklenen_surum: gorev.surum, islem_anahtari: crypto.randomUUID() }) });
       const veri = await res.json();
       if (!res.ok) return hata(veri.hata ?? "Karar kaydedilemedi.", veri.adim, veri.detay);
       const olay: ToastOlay = karar === "onaylandi" ? { rol: "uretici", olay: "onay", asama: gorev.asama, revize: gorev.revizyon_sayisi > 0 } : karar === "revizyon bekleniyor" ? { rol: "uretici", olay: "revizyon", asama: gorev.asama } : { rol: "uretici", olay: "iptal", asama: gorev.asama };
