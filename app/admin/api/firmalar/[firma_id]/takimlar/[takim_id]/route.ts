@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
+import { hiyerarsiAdiBicimle, tekillikIhlaliMi } from "@/lib/admin/hiyerarsiTekillik";
 
 export async function GET(
   request: NextRequest,
@@ -53,15 +54,16 @@ export async function PUT(
     const body = await request.json();
     const { takim_adi } = body;
 
-    if (!takim_adi || takim_adi.trim() === "") {
+    if (typeof takim_adi !== "string" || takim_adi.trim() === "") {
       return validasyonHatasi("Takım adı zorunludur.", ["takim_adi"]);
     }
+    const bicimliTakimAdi = hiyerarsiAdiBicimle(takim_adi);
 
     const { data: mevcutTakim, error: kontrolError } = await adminSupabase
       .from("takimlar")
       .select("takim_id")
       .eq("firma_id", firma_id)
-      .eq("takim_adi", takim_adi.trim())
+      .eq("takim_adi", bicimliTakimAdi)
       .neq("takim_id", takim_id)
       .single();
 
@@ -72,12 +74,15 @@ export async function PUT(
 
     const { data: guncellenen, error } = await adminSupabase
       .from("takimlar")
-      .update({ takim_adi: takim_adi.trim() })
+      .update({ takim_adi: bicimliTakimAdi })
       .eq("takim_id", takim_id)
       .eq("firma_id", firma_id)
       .select("takim_id, firma_id, takim_adi, created_at")
       .single();
 
+    if (tekillikIhlaliMi(error)) {
+      return hataYaniti("Bu firmada aynı isimde takım zaten mevcut.", "takimlar tablosu UPDATE — tekillik kapısı", null, 422);
+    }
     if (error) return hataYaniti("Takım güncellenemedi.", "takimlar tablosu UPDATE", error);
 
     const guncellenenKontrol = veriKontrol(guncellenen, "takimlar tablosu UPDATE — dönen veri", "Takım güncellendi ancak veri döndürülemedi.");

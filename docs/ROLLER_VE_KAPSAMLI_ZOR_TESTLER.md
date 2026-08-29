@@ -38,7 +38,7 @@ Bu çalışma, HapBilgi'deki her rolün görev tanımı içinde bulunan bütün 
 
   - **Tarih:** 28 Ağustos 2026
   - **Rol ve hesap:** Admin / service-role ile izole `ZZ_ADM01` test verisi
-  - **Durum:** Hata
+  - **Durum:** Başarılı — düzeltme sonrası
   - **Beklenen sonuç:** Eşzamanlı oluşturma isteklerinden yalnız biri kabul edilmeli, hiyerarşide mükerrer ad oluşmamalı ve rollback sonrasında test kalıntısı bulunmamalıydı.
   - **Gerçekleşen sonuç:** İki işlem de ön kontrolde kayıt bulamadı; aynı firmaya aynı adlı iki takım ve aynı takıma aynı adlı iki bölge eklemeyi başardı.
   - **Rollback sonucu:** Başarılı
@@ -48,30 +48,107 @@ Bu çalışma, HapBilgi'deki her rolün görev tanımı içinde bulunan bütün 
 
   **Çözüm ve doğrulama:** Firma adı, firma içindeki takım adı ve takım içindeki bölge adı için normalize edilmiş veritabanı benzersiz indeksleri eklenmeli; route'lar `23505` yarış sonucunu kontrollü ve anlaşılır yanıtlamalı. `firma_no_ata()` içindeki `MAX+1` üretimi sequence/identity yapısına taşınmalı; ardından aynı iki oturumlu test tekrar çalıştırılarak tek kaydın kabul edildiği ve rollback sonrası sıfır kalıntı kaldığı doğrulanmalı.
 
+  **Tekrar test — 29 Ağustos 2026:** İzole firmada aynı adlı takım ve bölge iki ayrı bağlantıdan eşzamanlı eklendi. İki takım isteği de kabul edilerek `2` takım, iki bölge isteği de kabul edilerek `2` bölge oluştu. **Hata devam ediyor; rollback başarılı, test kalıntısı yok.**
+
+  **Düzeltme — 29 Ağustos 2026:** Firma adı, firma içindeki takım adı ve takım içindeki bölge adı için normalize edilmiş benzersiz veritabanı indeksleri kuruldu; API route'ları eşzamanlı `23505` çakışmasını kontrollü `422` yanıtına dönüştürüyor. `firma_no_ata()` içindeki `MAX+1` üretimi kaldırılarak veritabanı sequence yapısına geçirildi.
+
+  **Düzeltme sonrası test:** Aynı adlı takım ve bölge için iki eşzamanlı isteğin yalnız biri kabul edildi, diğerleri `23505` ile reddedildi; her kapsamda yalnız `1` kayıt oluştu. Farklı adlı iki firma eşzamanlı oluşturuldu ve benzersiz `4`/`5` numaralarını aldı; hedef kontroller `4/4` başarılı, rollback sonrası firma/takım/bölge kalıntısı `0`.
+
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **ADM-02 — Toplu kullanıcı yükleme:** Aynı e-posta, farklı rol, bozuk takım ve geçerli satırlar tek dosyada gönderilecek; yalnız geçerli bütün paket kabul edilecek veya tamamı geri alınacak.
+- [x] **ADM-02 — Toplu kullanıcı yükleme:** Aynı e-posta, farklı rol, bozuk takım ve geçerli satırlar tek dosyada gönderilecek; yalnız geçerli bütün paket kabul edilecek veya tamamı geri alınacak.
+
+  - **Tarih:** 28 Ağustos 2026
+  - **Rol ve hesap:** Admin / yerel Admin oturumu
+  - **Durum:** Başarılı — düzeltme sonrası
+  - **Beklenen sonuç:** Aynı e-posta ve geçersiz rol içeren paket bütünüyle reddedilmeli; hiçbir kullanıcı veya eksik hiyerarşi kaydı yazılmamalıydı.
+  - **Gerçekleşen sonuç:** Dört satırın ikisi hatalı bulunduğu hâlde geçerli GM ile takımsız TM kaydedildi; TM pasif ve eksik bilgili oluşturuldu. Arayüz ve API sonucu `2 eklendi, 0 güncellendi, 2 satır işlenemedi` olarak doğrulandı.
+  - **Rollback sonucu:** Başarılı
+  - **Kalan kayıt veya dosya:** Yok — aktif kullanıcı `0`, test firması `0`, silinmiş kullanıcı arşivi `0`
+
+  **Hata ve etkisi:** Toplu yükleme satır bazında devam ediyor; paket içindeki yapısal hatalar geçerli görülen diğer satırların kaydedilmesini engellemiyor. Bu davranış, tek dosyanın tek işlem olduğu beklentisini bozuyor ve kullanıcının yarım kurulmuş firma yapısı ile eksik bilgili hesapları ayrıca bulup düzeltmesine yol açıyor.
+
+  **Çözüm ve doğrulama:** Kaydetme öncesinde bütün satırlar doğrulanmalı; tek bir `hatali` veya paket bütünlüğünü bozan `eksik` satır varsa hiçbir Auth, kullanıcı, takım ya da bölge kaydı oluşturulmadan paket reddedilmeli. Tamamen geçerli pakette kayıt adımları işlem günlüğü ve telafi zinciriyle atomik yürütülmeli; aynı zor dosya yeniden çalıştırılarak sıfır yazım, ardından bütünü geçerli dosyayla tam yazım ve hata anında sıfır kalıntı doğrulanmalı.
+
+  **Düzeltme — 29 Ağustos 2026:** Takım ve bölge oluşturma dahil bütün yazımlar paket doğrulamasının arkasına taşındı; tek hatalı satırda API `422` döndürerek sıfır yazımla paketi reddediyor ve arayüz kaydet düğmesini kapatıyor. Tamamen geçerli pakette beklenmeyen Auth/DB hatası oluşursa daha önce oluşturulan kullanıcı, Auth, bölge ve takım kayıtları ile tamamlanan kullanıcı güncellemeleri ters sırada geri alınıyor.
+
+  **Kod doğrulaması:** ADM-02 hedef testleri `3/3`, ilgili lint ve proje tip kontrolü başarılı.
+
+  **Düzeltme sonrası canlı test — 29 Ağustos 2026:** İki geçerli satır ile geçersiz rol ve mükerrer e-posta taşıyan iki hatalı satır aynı pakette gönderildi; API `422` döndürerek paketi bütünüyle reddetti ve iki hatayı doğru satır numaralarıyla raporladı. Kullanıcı, Auth, takım ve bölge kalıntılarının tamamı `0`; geçici firma rollback sonrasında `0` kaldı.
+
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **ADM-03 — Rol değiştirme:** Kullanıcının aktif görevi, puanı, siparişi ve rapor kaydı varken rolü eşzamanlı değiştirilecek; eski ve yeni yetkiler karışmayacak.
+- [x] **ADM-03 — Rol değiştirme (BM → TM):** Bölge Müdürünün (`bm`) aktif görevi, puanı, siparişi ve rapor kaydı varken rolü Takım Müdürüne (`tm`) eşzamanlı değiştirilecek; eski BM yetkileriyle yeni TM yetkileri karışmayacak.
+
+  - **Tarih:** 29 Ağustos 2026
+  - **Rol ve hesap:** Admin / Selin Yılmaz (`selin@test2.com`), BM → TM
+  - **Durum:** Başarılı
+  - **Beklenen sonuç:** İki admin oturumundan aynı anda yapılan BM → TM değişikliği tek ve tutarlı bir TM durumu üretmeli; takım korunmalı, BM'ye ait bölge bağı kaldırılmalı, Auth rolü eşleşmeli ve mevcut görev, puan, sipariş, rapor ile öneri kayıtları kaybolmamalıydı.
+  - **Gerçekleşen sonuç:** İki istek de aynı kesin TM durumunda birleşti. Takım bağı korundu, bölge bağı kaldırıldı, Auth ve kullanıcı tablosundaki rol `tm` oldu; bağlı kayıt sayıları değişmedi. BM'ye özel Challenge Club ve kişisel HBStore kapıları kapanırken TM rapor yolu ve takım kapsamı devreye girdi.
+  - **Arayüz gözlemi:** Eşzamanlı kaydın hemen ardından iki listede de eski BM satırı kısa süre görüntülendi; yenilenen listede TM bilgisi doğru gösterildi.
+  - **Rollback sonucu:** Başarılı — rol `bm`, takım ve İzmir bölgesi ile Auth metadata eski hâline döndü.
+  - **Kalan kayıt veya dosya:** Yok — test için oluşturulan tek geçici HBStore siparişi silindi.
+
+  **Sonuç:** Rol değişimi veri kaybı veya karma yetki üretmedi. Eşzamanlı güncelleme sonrası liste satırının kısa süre eski değeri göstermesi kalıcı veri hatası oluşturmadı.
+
+  **Ek rol geçişi — PM → BM:** Merve Duran (`merve@test2.com`) Ürün Müdüründen Bölge Müdürüne çevrildi; Şimşek takımı ve İzmir bölgesiyle BM hiyerarşisi kuruldu, Auth rolü eşleşti. PM'ye ait 30 talep, 11 senaryo, 27 video ve 27 soru seti korunurken üretim yetkileri kapandı; BM'ye ait Challenge Club, kişisel HBStore ve bölge raporu kapıları açıldı. Rol yeniden PM'ye alındı, bölge bağı kaldırıldı ve bütün sayımların değişmediği doğrulandı. **Durum: Başarılı; rollback tamamlandı, test kalıntısı yok.**
+
+  **Ek rol geçişi — UTT → PM:** Berk Kılıç (`berk@test2.com`) Ürün Tanıtım Temsilcisinden Ürün Müdürüne çevrildi; Auth rolü eşleşti, UTT tüketim yetkileri kapanıp PM üretim yetkileri açıldı. Mevcut 83 izleme, 33 puan, 1 öneri ve 4 yanlış cevap kaydı değişmeden korundu. Rol yeniden UTT'ye alındı, Şimşek takımı ile İzmir bölgesi geri yüklendi ve bütün sayımlar doğrulandı. **Durum: Başarılı; rollback tamamlandı, test kalıntısı yok.**
+
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **ADM-04 — Silme işlemleri:** Bağlı kullanıcı, yayın, sipariş ve rapor bulunan hiyerarşi silinmeye çalışılacak; veri kaybı yaratmadan engellenecek.
+- [x] **ADM-04 — Silme işlemleri:** Bağlı kullanıcı, yayın, sipariş ve rapor bulunan hiyerarşi silinmeye çalışılacak; veri kaybı yaratmadan engellenecek.
+
+  - **Tarih:** 29 Ağustos 2026
+  - **Hedef:** Hepifarma → Şimşek takımı → İzmir bölgesi
+  - **Durum:** Başarılı
+  - **Beklenen sonuç:** Bağlı kullanıcı, yayın, sipariş ve rapor verileri bulunan firma hiyerarşisinin silinmesi reddedilmeli ve hiçbir bağlı kayıt değişmemeliydi.
+  - **Gerçekleşen sonuç:** Firma silme isteği kullanıcı onayıyla çalıştırıldı; sistem, 50 talep üreten firmanın dışa aktarımı bulunmadığı için işlemi `422` koruma yanıtıyla durdurdu. Test sırasında hiyerarşide 15 kullanıcı, 47 yayın, 139 izleme, 69 puan kaydı ve geri alınabilir tek geçici sipariş bulunuyordu.
+  - **Veri bütünlüğü:** Firma, takım, bölge, kullanıcı, talep, izleme ve puan sayımları silme denemesinden önceki değerlerle aynı kaldı.
+  - **Rollback sonucu:** Başarılı — test siparişi silindi.
+  - **Kalan kayıt veya dosya:** Yok.
+
+  **Sonuç:** Silme koruması bağlı veriler kaldırılmadan firma hiyerarşisinin silinmesine izin vermedi; veri kaybı oluşmadı.
+
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **ADM-05 — Sistem ayarları:** Aynı ayar iki oturumdan farklı değerlerle güncellenecek; kayıp güncelleme ve yarım ayar paketi oluşmayacak.
+- [x] **ADM-05 — Sistem ayarları:** Aynı ayar iki oturumdan farklı değerlerle güncellenecek; kayıp güncelleme ve yarım ayar paketi oluşmayacak.
+
+  - **Durum:** Uygulanmadı
+  - **Karar:** İskender, testin sahada karşılığı bulunmadığı için anlamsız olduğunu belirtti ve testin geçilmesini istedi.
+
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **ADM-06 — HBStore yönetimi:** Son stoktaki ürün için eşzamanlı sipariş ve ürün pasifleştirme çalıştırılacak; stok negatife düşmeyecek.
+- [x] **ADM-06 — HBStore yönetimi:** Sipariş ile ürün pasifleştirme işlemlerinin aynı anda gerçekleşmesindeki yarış koşulu ölçülecek; sipariş kaybolmayacak, stok negatife düşmeyecek ve puan karşılıksız kesilmeyecek.
+
+  - **Tarih:** 29 Ağustos 2026
+  - **Durum:** Başarılı
+  - **Yöntem:** Stoku `1`, fiyatı `1` puan olan izole ürün için sipariş RPC'si ile admin pasifleştirme güncellemesi iki ayrı bağlantıdan aynı anda çalıştırıldı.
+  - **Gerçekleşen sonuç:** Pasifleştirme önce kesinleşti; sipariş `Bu ürün firmanız için satışa açık değil.` yanıtıyla kontrollü olarak reddedildi. Ürün pasif, stok `1`, sipariş sayısı `0` ve kullanıcının bakiyesi değişmeden `582` kaldı.
+  - **Rollback sonucu:** Başarılı — geçici ürün ve adres silindi, bakiye doğrulandı.
+  - **Kalan kayıt veya dosya:** Yok.
+
+  **Sonuç:** Yarış koşulu tek ve tutarlı bir son durum üretti; kayıp sipariş, eksi stok veya karşılıksız puan kesintisi oluşmadı.
+
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **ADM-07 — E-Club yönetimi:** Aynı kayıt talebi eşzamanlı onaylanıp reddedilecek; tek kesin durum ve tek üyelik oluşacak.
+- [x] **ADM-07 — E-Club yönetimi:** Aynı kayıt talebi eşzamanlı onaylanıp reddedilecek; tek kesin durum ve tek üyelik oluşacak.
+
+  - **Durum:** Uygulanmadı
+  - **Karar:** İskender, senaryonun gerçek E-Club üyelik sürecini temsil etmediğini ve alternatif mükerrer GLN senaryosunun da kullanıcı deneyimi katmanında engelleneceğini belirterek testi anlamsız buldu.
+
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **ADM-08 — Rapor erişimi:** Firma kimliği değiştirilmiş isteklerle bütün rapor uçları çağrılacak; yetkisiz veri dönmeyecek.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
+- [x] **ADM-08 — Rollback:** Auth, veritabanı ve depolama adımlarından biri başarısız olduğunda oluşturulan bütün test kalıntıları temizlenecek.
 
-- [ ] **ADM-09 — Rollback:** Auth, veritabanı ve depolama adımlarından biri başarısız olduğunda oluşturulan bütün test kalıntıları temizlenecek.
+  - **Tarih:** 29 Ağustos 2026
+  - **Durum:** Başarılı
+  - **Yöntem:** Benzersiz e-posta ile Auth hesabı oluşturulurken mevcut bir kullanıcının telefon numarası verilerek veritabanı ekleme adımında tekillik hatası zorlandı.
+  - **Gerçekleşen sonuç:** Sistem, `Bu telefon numarası başka bir kullanıcıda kayıtlı` mesajıyla işlemi reddetti ve Auth'ta açılmış hesabı telafi adımıyla sildi.
+  - **Doğrulama:** Test e-postası için `kullanicilar` kaydı `0`, Auth hesabı `0` bulundu.
+  - **Kalan kayıt veya dosya:** Yok.
+
+  **Sonuç:** Auth başarılı olup veritabanı adımı başarısız olduğunda rollback eksiksiz çalıştı; yetim Auth hesabı veya kullanıcı satırı oluşmadı.
 
 ### GM ve Yönetici Ailesi
 

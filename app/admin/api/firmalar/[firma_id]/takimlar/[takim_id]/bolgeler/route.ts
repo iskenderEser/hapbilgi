@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
+import { hiyerarsiAdiBicimle, tekillikIhlaliMi } from "@/lib/admin/hiyerarsiTekillik";
 
 export async function GET(
   request: NextRequest,
@@ -62,9 +63,10 @@ export async function POST(
     const body = await request.json();
     const { bolge_adi } = body;
 
-    if (!bolge_adi || bolge_adi.trim() === "") {
+    if (typeof bolge_adi !== "string" || bolge_adi.trim() === "") {
       return validasyonHatasi("Bölge adı zorunludur.", ["bolge_adi"]);
     }
+    const bicimliBolgeAdi = hiyerarsiAdiBicimle(bolge_adi);
 
     // Takım var mı ve bu firmaya mı ait kontrol et
     const { data: takim, error: takimError } = await adminSupabase
@@ -83,7 +85,7 @@ export async function POST(
       .from("bolgeler")
       .select("bolge_id")
       .eq("takim_id", takim_id)
-      .eq("bolge_adi", bolge_adi.trim())
+      .eq("bolge_adi", bicimliBolgeAdi)
       .single();
 
     if (kontrolError && kontrolError.code !== "PGRST116") {
@@ -93,10 +95,13 @@ export async function POST(
 
     const { data: yeniBolge, error: insertError } = await adminSupabase
       .from("bolgeler")
-      .insert({ takim_id, bolge_adi: bolge_adi.trim() })
+      .insert({ takim_id, bolge_adi: bicimliBolgeAdi })
       .select("bolge_id, takim_id, bolge_adi, created_at")
       .single();
 
+    if (tekillikIhlaliMi(insertError)) {
+      return hataYaniti("Bu takımda aynı isimde bölge zaten mevcut.", "bolgeler tablosu INSERT — tekillik kapısı", null, 422);
+    }
     if (insertError) return hataYaniti("Bölge eklenemedi.", "bolgeler tablosu INSERT", insertError);
 
     const bolgeKontrol = veriKontrol(yeniBolge, "bolgeler tablosu INSERT — dönen veri", "Bölge eklendi ancak veri döndürülemedi.");

@@ -6,6 +6,7 @@ import { FIRMA_KOLONLARI } from "@/lib/firma/kolonlar";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 import { firmaninEksikKullanicilari } from "@/lib/admin/kullaniciDogrulama";
 import { firmaAdiBicimle } from "@/lib/utils/firmaAdiBicimle";
+import { tekillikIhlaliMi } from "@/lib/admin/hiyerarsiTekillik";
 
 
 export async function GET(
@@ -54,7 +55,7 @@ export async function PUT(
     const body = await request.json();
     const { firma_adi } = body;
 
-    if (!firma_adi || firma_adi.trim() === "") {
+    if (typeof firma_adi !== "string" || firma_adi.trim() === "") {
       return validasyonHatasi("Firma adı zorunludur.", ["firma_adi"]);
     }
 
@@ -65,6 +66,9 @@ export async function PUT(
       .select(FIRMA_KOLONLARI)
       .single();
 
+    if (tekillikIhlaliMi(error)) {
+      return hataYaniti("Bu isimde bir firma zaten mevcut.", "firmalar tablosu UPDATE — tekillik kapısı", null, 422);
+    }
     if (error) return hataYaniti("Firma güncellenemedi.", "firmalar tablosu UPDATE", error);
 
     const guncellenenKontrol = veriKontrol(guncellenen, "firmalar tablosu UPDATE — dönen veri", "Firma güncellendi ancak veri döndürülemedi.");

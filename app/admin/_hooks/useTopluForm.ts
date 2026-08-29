@@ -18,8 +18,7 @@ interface UseTopluFormProps {
   basari: (mesaj: string) => void;
 }
 
-// Kaydet sonucunun dürüst özeti (B-17): route satır bazında devam eder ve
-// upsert kırılımını döner; UI bunu olduğu gibi gösterir.
+// Atomik kaydet sonucunun upsert kırılımı.
 export interface TopluKaydetSonucu {
   eklenen: number;
   guncellenen: number;
@@ -86,7 +85,7 @@ export function useTopluForm({ seciliFirma, refreshKullanicilar, refreshTakimlar
       const data = await res.json();
       if (!res.ok) { hata(data.hata ?? "Toplu yükleme başarısız.", data.adim, data.detay); }
       else {
-        // B-17: sonuç OLDUĞU GİBİ raporlanır — kısmi başarısızlık gizlenmez.
+        // Başarılı atomik paketin sonucu olduğu gibi raporlanır.
         const sonuc: TopluKaydetSonucu = {
           eklenen: data.eklenen ?? 0,
           guncellenen: data.guncellenen ?? 0,
@@ -105,11 +104,7 @@ export function useTopluForm({ seciliFirma, refreshKullanicilar, refreshTakimlar
           setTopluDosya(null);
           setOnizlemeSatirlari(null);
           setOnizlemeKurulum(null);
-        } else {
-          // Kısmi başarısızlıkta önizleme ekranda kalır; hatalı satır listesi
-          // kaydetSonucu üzerinden görünür biçimde basılır (TopluGirisFormu).
-          hata(`${sonuc.eklenen} eklendi, ${sonuc.guncellenen} güncellendi, ${sonuc.hatali} satır işlenemedi.`, "toplu kaydet");
-        }
+        } else hata("Paket bütünlüğü korunamadı; hiçbir kayıt oluşturulmadı.", "toplu kaydet");
         refreshKullanicilar();
       }
     } catch (err) {

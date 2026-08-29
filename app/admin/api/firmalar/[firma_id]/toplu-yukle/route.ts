@@ -14,6 +14,8 @@ import {
   type MevcutKullanici,
 } from "@/lib/admin/kullaniciDogrulama";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
+import { hiyerarsiAdiBicimle, tekillikIhlaliMi } from "@/lib/admin/hiyerarsiTekillik";
+import { topluPaketHatalari } from "@/lib/admin/topluPaketButunlugu";
 import * as XLSX from "xlsx";
 
 export async function POST(
@@ -99,7 +101,12 @@ export async function POST(
     // B-22: bölgeler firma kapsamında yüklenir).
     const yapiSonuc = await firmaYapisiYukle(adminSupabase, firma_id);
     if (!yapiSonuc.ok) return hataYaniti(yapiSonuc.hata, "firmaYapisiYukle — toplu yükleme", null);
-    const yapi = yapiSonuc.yapi;
+    const gercekYapi = yapiSonuc.yapi;
+    const yapi = {
+      ...gercekYapi,
+      takimlar: [...gercekYapi.takimlar],
+      bolgeler: [...gercekYapi.bolgeler],
+    };
 
     // K-A8 — organizasyonun dosyadan kurulması: dosyada adı geçen ama firmada
     // olmayan takım/bölge "eksik" değil, kurulum planıdır. Önizlemede satırlar
@@ -115,42 +122,14 @@ export async function POST(
     let olusturulanTakim = 0;
     let olusturulanBolge = 0;
 
-    if (mod === "onizle") {
-      // Sanal yapı: kurulacaklar çözüme eklenir — satır eksik uyarısı üretmez.
-      for (const takimAdi of kurulum.yeniTakimlar) {
-        yapi.takimlar.push({ takim_id: `yeni:${adKatla(takimAdi)}`, takim_adi: takimAdi });
-      }
-      for (const b of kurulum.yeniBolgeler) {
-        const takim = yapi.takimlar.find((t) => adKatla(t.takim_adi) === adKatla(b.takim_adi));
-        if (takim) yapi.bolgeler.push({ bolge_id: `yeni:${adKatla(b.bolge_adi)}`, bolge_adi: b.bolge_adi, takim_id: takim.takim_id });
-      }
-    } else {
-      for (const takimAdi of kurulum.yeniTakimlar) {
-        const { data: yeniTakim, error: takimInsertError } = await adminSupabase
-          .from("takimlar")
-          .insert({ firma_id, takim_adi: takimAdi })
-          .select("takim_id, takim_adi")
-          .single();
-        if (takimInsertError || !yeniTakim) {
-          return hataYaniti(`"${takimAdi}" takımı oluşturulamadı.`, "takimlar tablosu INSERT — K-A8 kurulum", takimInsertError);
-        }
-        yapi.takimlar.push(yeniTakim);
-        olusturulanTakim++;
-      }
-      for (const b of kurulum.yeniBolgeler) {
-        const takim = yapi.takimlar.find((t) => adKatla(t.takim_adi) === adKatla(b.takim_adi));
-        if (!takim) continue; // planda bölgenin takımı ya mevcuttur ya yukarıda açıldı
-        const { data: yeniBolge, error: bolgeInsertError } = await adminSupabase
-          .from("bolgeler")
-          .insert({ takim_id: takim.takim_id, bolge_adi: b.bolge_adi })
-          .select("bolge_id, bolge_adi, takim_id")
-          .single();
-        if (bolgeInsertError || !yeniBolge) {
-          return hataYaniti(`"${b.bolge_adi}" bölgesi oluşturulamadı.`, "bolgeler tablosu INSERT — K-A8 kurulum", bolgeInsertError);
-        }
-        yapi.bolgeler.push(yeniBolge);
-        olusturulanBolge++;
-      }
+    // Kurulacak organizasyon, önizleme ve kayıt doğrulamasında yalnız sanal
+    // yapıya eklenir. Paket bütünü doğrulanmadan DB'ye hiçbir şey yazılmaz.
+    for (const takimAdi of kurulum.yeniTakimlar) {
+      yapi.takimlar.push({ takim_id: `yeni:${adKatla(takimAdi)}`, takim_adi: takimAdi });
+    }
+    for (const b of kurulum.yeniBolgeler) {
+      const takim = yapi.takimlar.find((t) => adKatla(t.takim_adi) === adKatla(b.takim_adi));
+      if (takim) yapi.bolgeler.push({ bolge_id: `yeni:${adKatla(b.bolge_adi)}`, bolge_adi: b.bolge_adi, takim_id: takim.takim_id });
     }
 
     // Upsert modeli: satırlar firmanın MEVCUT kullanıcılarıyla eşleştirilir
@@ -323,18 +302,154 @@ export async function POST(
       return NextResponse.json({ satirlar: satirSonuclari, kurulum }, { status: 200 });
     }
 
+    // ADM-02 — paket kapısı: tek bir hatalı satır varsa takım, bölge, Auth
+    // veya kullanıcı yazımına başlanmaz. Dosya ya bütünüyle işlenir ya hiç işlenmez.
+    const paketHatalari = topluPaketHatalari(satirSonuclari);
+    if (paketHatalari.length > 0) {
+      return NextResponse.json({
+        hata: `Paket kaydedilmedi: ${paketHatalari.length} hatalı satırın tamamını düzeltin.`,
+        adim: "toplu yükleme — paket bütünlüğü doğrulaması",
+        hatali: paketHatalari.length,
+        hatalar: paketHatalari,
+        eklenen: 0,
+        guncellenen: 0,
+        olusturulanTakim: 0,
+        olusturulanBolge: 0,
+      }, { status: 422 });
+    }
+
+    const olusturulanTakimIdler: string[] = [];
+    const olusturulanBolgeIdler: string[] = [];
+    const olusturulanKullaniciIdler: string[] = [];
+    const tamamlananGuncellemeler: {
+      eski: MevcutKullanici;
+      epostaDegisti: boolean;
+      metadataDegisti: boolean;
+    }[] = [];
+    const sanalIdEsleme = new Map<string, string>();
+
+    const paketiGeriAl = async (): Promise<string[]> => {
+      const telafiHatalari: string[] = [];
+
+      for (const kullaniciId of [...olusturulanKullaniciIdler].reverse()) {
+        const { error: dbSilError } = await adminSupabase
+          .from("kullanicilar")
+          .delete()
+          .eq("kullanici_id", kullaniciId)
+          .eq("firma_id", firma_id);
+        if (dbSilError) telafiHatalari.push(`Kullanıcı DB rollback: ${dbSilError.message}`);
+        const { error: authSilError } = await adminSupabase.auth.admin.deleteUser(kullaniciId);
+        if (authSilError) telafiHatalari.push(`Kullanıcı Auth rollback: ${authSilError.message}`);
+      }
+
+      for (const kayit of [...tamamlananGuncellemeler].reverse()) {
+        const { eski } = kayit;
+        const { error: dbGeriError } = await adminSupabase
+          .from("kullanicilar")
+          .update({
+            ad: eski.ad,
+            soyad: eski.soyad,
+            eposta: eski.eposta,
+            telefon: eski.telefon,
+            rol: eski.rol,
+            takim_id: eski.takim_id,
+            bolge_id: eski.bolge_id,
+            aktif_mi: eski.aktif_mi,
+          })
+          .eq("kullanici_id", eski.kullanici_id)
+          .eq("firma_id", firma_id);
+        if (dbGeriError) telafiHatalari.push(`Kullanıcı DB güncelleme rollback: ${dbGeriError.message}`);
+
+        if (kayit.epostaDegisti || kayit.metadataDegisti) {
+          const { error: authGeriError } = await adminSupabase.auth.admin.updateUserById(eski.kullanici_id, {
+            ...(kayit.epostaDegisti ? { email: eski.eposta } : {}),
+            ...(kayit.metadataDegisti ? { user_metadata: { rol: eski.rol, ad: eski.ad, soyad: eski.soyad } } : {}),
+          });
+          if (authGeriError) telafiHatalari.push(`Kullanıcı Auth güncelleme rollback: ${authGeriError.message}`);
+        }
+      }
+
+      for (const bolgeId of [...olusturulanBolgeIdler].reverse()) {
+        const { error } = await adminSupabase.from("bolgeler").delete().eq("bolge_id", bolgeId);
+        if (error) telafiHatalari.push(`Bölge rollback: ${error.message}`);
+      }
+      for (const takimId of [...olusturulanTakimIdler].reverse()) {
+        const { error } = await adminSupabase.from("takimlar").delete().eq("takim_id", takimId);
+        if (error) telafiHatalari.push(`Takım rollback: ${error.message}`);
+      }
+      return telafiHatalari;
+    };
+
+    const paketYazmaHatasi = async (mesaj: string, status = 500) => {
+      const telafiHatalari = await paketiGeriAl();
+      return NextResponse.json({
+        hata: mesaj,
+        adim: "toplu yükleme — atomik kayıt",
+        rollback: telafiHatalari.length === 0 ? "başarılı" : "hatalı",
+        ...(telafiHatalari.length > 0 ? { rollback_hatalari: telafiHatalari } : {}),
+      }, { status });
+    };
+
+    // Paket doğrulandıktan sonra organizasyon gerçekten oluşturulur.
+    for (const takimAdi of kurulum.yeniTakimlar) {
+      const bicimliTakimAdi = hiyerarsiAdiBicimle(takimAdi);
+      const { data: yeniTakim, error: takimInsertError } = await adminSupabase
+        .from("takimlar")
+        .insert({ firma_id, takim_adi: bicimliTakimAdi })
+        .select("takim_id, takim_adi")
+        .single();
+      if (takimInsertError || !yeniTakim) {
+        const mesaj = tekillikIhlaliMi(takimInsertError)
+          ? `"${bicimliTakimAdi}" takımı eşzamanlı başka bir işlemde oluşturuldu; paket kaydedilmedi.`
+          : `"${bicimliTakimAdi}" takımı oluşturulamadı; paket kaydedilmedi.`;
+        return paketYazmaHatasi(mesaj, tekillikIhlaliMi(takimInsertError) ? 422 : 500);
+      }
+      gercekYapi.takimlar.push(yeniTakim);
+      olusturulanTakimIdler.push(yeniTakim.takim_id);
+      sanalIdEsleme.set(`yeni:${adKatla(takimAdi)}`, yeniTakim.takim_id);
+      olusturulanTakim++;
+    }
+
+    for (const b of kurulum.yeniBolgeler) {
+      const takim = gercekYapi.takimlar.find((t) => adKatla(t.takim_adi) === adKatla(b.takim_adi));
+      if (!takim) return paketYazmaHatasi(`"${b.bolge_adi}" bölgesinin takımı çözülemedi; paket kaydedilmedi.`);
+      const bicimliBolgeAdi = hiyerarsiAdiBicimle(b.bolge_adi);
+      const { data: yeniBolge, error: bolgeInsertError } = await adminSupabase
+        .from("bolgeler")
+        .insert({ takim_id: takim.takim_id, bolge_adi: bicimliBolgeAdi })
+        .select("bolge_id, bolge_adi, takim_id")
+        .single();
+      if (bolgeInsertError || !yeniBolge) {
+        const mesaj = tekillikIhlaliMi(bolgeInsertError)
+          ? `"${bicimliBolgeAdi}" bölgesi eşzamanlı başka bir işlemde oluşturuldu; paket kaydedilmedi.`
+          : `"${bicimliBolgeAdi}" bölgesi oluşturulamadı; paket kaydedilmedi.`;
+        return paketYazmaHatasi(mesaj, tekillikIhlaliMi(bolgeInsertError) ? 422 : 500);
+      }
+      gercekYapi.bolgeler.push(yeniBolge);
+      olusturulanBolgeIdler.push(yeniBolge.bolge_id);
+      sanalIdEsleme.set(`yeni:${adKatla(b.bolge_adi)}`, yeniBolge.bolge_id);
+      olusturulanBolge++;
+    }
+
+    const gercekId = (id: string | null | undefined): string | null | undefined =>
+      id?.startsWith("yeni:") ? sanalIdEsleme.get(id) : id;
+    for (const satir of satirSonuclari) {
+      satir.takim_id = gercekId(satir.takim_id);
+      satir.bolge_id = gercekId(satir.bolge_id);
+      if (satir.guncelleme?.takim_id) satir.guncelleme.takim_id = gercekId(satir.guncelleme.takim_id) ?? null;
+      if (satir.guncelleme?.bolge_id) satir.guncelleme.bolge_id = gercekId(satir.guncelleme.bolge_id) ?? null;
+    }
+
     let eklenen = 0;
     let guncellenen = 0;
     let degismeyen = 0;
     let eksikli = 0; // işlenen ama eksik bilgili (K-A6) satır sayısı
-    let hatali = 0;
+    const hatali = 0;
     const hatalar: string[] = [];
 
     for (const satir of satirSonuclari) {
       if (satir.durum === "hatali") {
-        hatali++;
-        hatalar.push(`Satır ${satir.index} — ${satir.hata_mesaji}`);
-        continue;
+        return paketYazmaHatasi(`Satır ${satir.index} doğrulama sonrasında hatalı duruma geçti; paket kaydedilmedi.`);
       }
 
       if (satir.islem === "degisiklik-yok") {
@@ -356,9 +471,7 @@ export async function POST(
             authDegisiklik
           );
           if (authGuncelleError) {
-            hatalar.push(`Satır ${satir.index} — Auth güncellenemedi: ${authGuncelleError.message}`);
-            hatali++;
-            continue;
+            return paketYazmaHatasi(`Satır ${satir.index} Auth güncellenemedi; paket kaydedilmedi.`);
           }
         }
 
@@ -377,13 +490,16 @@ export async function POST(
             });
           }
           const mesaj = updateError.code === "23505" && updateError.message.includes("telefon")
-            ? `Bu telefon numarası başka bir kullanıcıda kayıtlı (${satir.telefon}).`
-            : `DB güncelleme hatası: ${updateError.message}`;
-          hatalar.push(`Satır ${satir.index} — ${mesaj}`);
-          hatali++;
-          continue;
+            ? `Satır ${satir.index}: Bu telefon numarası başka bir kullanıcıda kayıtlı (${satir.telefon}); paket kaydedilmedi.`
+            : `Satır ${satir.index} DB güncellenemedi; paket kaydedilmedi.`;
+          return paketYazmaHatasi(mesaj, updateError.code === "23505" ? 422 : 500);
         }
 
+        tamamlananGuncellemeler.push({
+          eski: mevcutMap.get(satir.hedef_kullanici_id!)!,
+          epostaDegisti: Boolean(authDegisiklik.email),
+          metadataDegisti: Boolean(authDegisiklik.user_metadata),
+        });
         guncellenen++;
         if (satir.durum === "eksik") eksikli++;
         continue;
@@ -401,10 +517,9 @@ export async function POST(
       });
 
       if (authError || !authData.user) {
-        hatalar.push(`Satır ${satir.index} — Auth hatası: ${authError?.message}`);
-        hatali++;
-        continue;
+        return paketYazmaHatasi(`Satır ${satir.index} Auth hesabı oluşturulamadı; paket kaydedilmedi.`);
       }
+      olusturulanKullaniciIdler.push(authData.user.id);
 
       const { error: insertError } = await adminSupabase
         .from("kullanicilar")
@@ -424,14 +539,11 @@ export async function POST(
         });
 
       if (insertError) {
-        await adminSupabase.auth.admin.deleteUser(authData.user.id);
         // 23505 = benzersizlik ihlali; telefon index'ine takılan satır Türkçe raporlanır.
         const mesaj = insertError.code === "23505" && insertError.message.includes("telefon")
-          ? `Bu telefon numarası başka bir kullanıcıda kayıtlı (${satir.telefon}).`
-          : `DB kayıt hatası: ${insertError.message}`;
-        hatalar.push(`Satır ${satir.index} — ${mesaj}`);
-        hatali++;
-        continue;
+          ? `Satır ${satir.index}: Bu telefon numarası başka bir kullanıcıda kayıtlı (${satir.telefon}); paket kaydedilmedi.`
+          : `Satır ${satir.index} DB kaydı oluşturulamadı; paket kaydedilmedi.`;
+        return paketYazmaHatasi(mesaj, insertError.code === "23505" ? 422 : 500);
       }
 
       eklenen++;

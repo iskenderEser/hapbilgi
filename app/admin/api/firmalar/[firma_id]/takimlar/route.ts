@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
+import { hiyerarsiAdiBicimle, tekillikIhlaliMi } from "@/lib/admin/hiyerarsiTekillik";
 
 export async function GET(
   request: NextRequest,
@@ -58,9 +59,10 @@ export async function POST(
     const body = await request.json();
     const { takim_adi } = body;
 
-    if (!takim_adi || takim_adi.trim() === "") {
+    if (typeof takim_adi !== "string" || takim_adi.trim() === "") {
       return validasyonHatasi("Takım adı zorunludur.", ["takim_adi"]);
     }
+    const bicimliTakimAdi = hiyerarsiAdiBicimle(takim_adi);
 
     const { data: firma, error: firmaError } = await adminSupabase
       .from("firmalar")
@@ -76,7 +78,7 @@ export async function POST(
       .from("takimlar")
       .select("takim_id")
       .eq("firma_id", firma_id)
-      .eq("takim_adi", takim_adi.trim())
+      .eq("takim_adi", bicimliTakimAdi)
       .single();
 
     if (kontrolError && kontrolError.code !== "PGRST116") {
@@ -86,10 +88,13 @@ export async function POST(
 
     const { data: yeniTakim, error: insertError } = await adminSupabase
       .from("takimlar")
-      .insert({ firma_id, takim_adi: takim_adi.trim() })
+      .insert({ firma_id, takim_adi: bicimliTakimAdi })
       .select("takim_id, firma_id, takim_adi, created_at")
       .single();
 
+    if (tekillikIhlaliMi(insertError)) {
+      return hataYaniti("Bu firmada aynı isimde takım zaten mevcut.", "takimlar tablosu INSERT — tekillik kapısı", null, 422);
+    }
     if (insertError) return hataYaniti("Takım eklenemedi.", "takimlar tablosu INSERT", insertError);
 
     const takimKontrol = veriKontrol(yeniTakim, "takimlar tablosu INSERT — dönen veri", "Takım eklendi ancak veri döndürülemedi.");

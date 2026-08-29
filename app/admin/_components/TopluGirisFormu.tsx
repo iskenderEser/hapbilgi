@@ -187,21 +187,23 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
             </table>
           </div>
 
-          {/* Toplu kaydet — upsert: yeni + güncellenecek satırlar işlenir;
-              K-A6 gereği eksik bilgili satırlar da dahildir */}
+          {/* ADM-02: hatalı tek satır varsa paket kaydedilemez. K-A6 gereği
+              yalnız yapısal olarak geçerli eksik bilgili satırlar işlenebilir. */}
           <button
             onClick={p.handleTopluKaydet}
-            disabled={p.yeniSayisi + p.guncelleSayisi === 0 || p.topluKaydetLoading}
+            disabled={p.yeniSayisi + p.guncelleSayisi === 0 || p.hataliSayisi > 0 || p.topluKaydetLoading}
             style={{
               ...btnBase,
-              background: p.yeniSayisi + p.guncelleSayisi === 0 || p.topluKaydetLoading ? "#d1d5db" : RENK_BORDO,
+              background: p.yeniSayisi + p.guncelleSayisi === 0 || p.hataliSayisi > 0 || p.topluKaydetLoading ? "#d1d5db" : RENK_BORDO,
               color: "white",
               border: "none",
-              cursor: p.yeniSayisi + p.guncelleSayisi === 0 || p.topluKaydetLoading ? "not-allowed" : "pointer",
+              cursor: p.yeniSayisi + p.guncelleSayisi === 0 || p.hataliSayisi > 0 || p.topluKaydetLoading ? "not-allowed" : "pointer",
             }}
           >
             {p.topluKaydetLoading
               ? "Kaydediliyor..."
+              : p.hataliSayisi > 0
+                ? "Hatalı satırları düzeltin"
               : `${p.yeniSayisi} ekle, ${p.guncelleSayisi} güncelle${p.eksikSayisi > 0 ? ` (${p.eksikSayisi} eksik bilgili)` : ""}`}
           </button>
         </>
@@ -213,8 +215,7 @@ export default function TopluGirisFormu(p: TopluGirisFormuProps) {
         </p>
       )}
 
-      {/* Kaydet sonucu — DÜRÜST özet (B-17): kısmi başarısızlık gizlenmez,
-          hatalı satırlar görünür listelenir. */}
+      {/* Kaydet sonucu — atomik paket başarılıysa özetlenir. */}
       {p.kaydetSonucu && (
         <div
           style={{

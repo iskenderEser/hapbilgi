@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
+import { hiyerarsiAdiBicimle, tekillikIhlaliMi } from "@/lib/admin/hiyerarsiTekillik";
 
 export async function GET(
   request: NextRequest,
@@ -55,16 +56,17 @@ export async function PUT(
     const body = await request.json();
     const { bolge_adi } = body;
 
-    if (!bolge_adi || bolge_adi.trim() === "") {
+    if (typeof bolge_adi !== "string" || bolge_adi.trim() === "") {
       return validasyonHatasi("Bölge adı zorunludur.", ["bolge_adi"]);
     }
+    const bicimliBolgeAdi = hiyerarsiAdiBicimle(bolge_adi);
 
     // Aynı takımda aynı isimde başka bölge var mı kontrol et
     const { data: mevcutBolge, error: kontrolError } = await adminSupabase
       .from("bolgeler")
       .select("bolge_id")
       .eq("takim_id", takim_id)
-      .eq("bolge_adi", bolge_adi.trim())
+      .eq("bolge_adi", bicimliBolgeAdi)
       .neq("bolge_id", bolge_id)
       .single();
 
@@ -75,12 +77,15 @@ export async function PUT(
 
     const { data: guncellenen, error } = await adminSupabase
       .from("bolgeler")
-      .update({ bolge_adi: bolge_adi.trim() })
+      .update({ bolge_adi: bicimliBolgeAdi })
       .eq("bolge_id", bolge_id)
       .eq("takim_id", takim_id)
       .select("bolge_id, takim_id, bolge_adi, created_at")
       .single();
 
+    if (tekillikIhlaliMi(error)) {
+      return hataYaniti("Bu takımda aynı isimde bölge zaten mevcut.", "bolgeler tablosu UPDATE — tekillik kapısı", null, 422);
+    }
     if (error) return hataYaniti("Bölge güncellenemedi.", "bolgeler tablosu UPDATE", error);
 
     const guncellenenKontrol = veriKontrol(guncellenen, "bolgeler tablosu UPDATE — dönen veri", "Bölge güncellendi ancak veri döndürülemedi.");

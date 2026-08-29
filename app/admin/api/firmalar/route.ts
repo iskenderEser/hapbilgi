@@ -6,6 +6,7 @@ import { FIRMA_KOLONLARI } from "@/lib/firma/kolonlar";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 import { eksikSayilariCikar } from "@/lib/admin/kullaniciDogrulama";
 import { firmaAdiBicimle } from "@/lib/utils/firmaAdiBicimle";
+import { tekillikIhlaliMi } from "@/lib/admin/hiyerarsiTekillik";
 
 
 export async function GET() {
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { firma_adi } = body;
 
-    if (!firma_adi || firma_adi.trim() === "") {
+    if (typeof firma_adi !== "string" || firma_adi.trim() === "") {
       return validasyonHatasi("Firma adı zorunludur.", ["firma_adi"]);
     }
 
@@ -85,6 +86,9 @@ export async function POST(request: NextRequest) {
 
       .single();
 
+    if (tekillikIhlaliMi(error)) {
+      return hataYaniti("Bu isimde bir firma zaten mevcut.", "firmalar tablosu INSERT — tekillik kapısı", null, 422);
+    }
     if (error) return hataYaniti("Firma eklenemedi.", "firmalar tablosu INSERT", error);
 
     return NextResponse.json({ mesaj: "Firma eklendi.", firma: yeniFirma }, { status: 201 });
