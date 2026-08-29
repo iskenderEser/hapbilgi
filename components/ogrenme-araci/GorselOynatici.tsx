@@ -6,6 +6,7 @@ interface Props {
   aracId: string;
   yayinId: string;
   bagId?: string | null;
+  saltGoruntuleme?: boolean;
   baslat: () => Promise<{ izlemeId: string }>;
   bitir: (izlemeId: string) => Promise<void>;
   onTamamlandi?: () => void | Promise<void>;
@@ -16,6 +17,7 @@ export default function GorselOynatici({
   aracId,
   yayinId,
   bagId,
+  saltGoruntuleme = false,
   baslat,
   bitir,
   onTamamlandi,
@@ -34,9 +36,11 @@ export default function GorselOynatici({
         const data = await response.json();
         if (!response.ok) throw new Error(data.hata ?? "Görsel açılamadı.");
         setUrl(data.erisim_url);
-        const oturum = await baslat();
-        setIzlemeId(oturum.izlemeId);
-        sonTikRef.current = performance.now();
+        if (!saltGoruntuleme) {
+          const oturum = await baslat();
+          setIzlemeId(oturum.izlemeId);
+          sonTikRef.current = performance.now();
+        }
       })
       .catch((error) => hata(
         "Görsel açılamadı.",
@@ -47,7 +51,7 @@ export default function GorselOynatici({
   }, [aracId, bagId]);
 
   useEffect(() => {
-    if (!url) return;
+    if (!url || saltGoruntuleme) return;
     const sayac = window.setInterval(() => {
       const simdi = performance.now();
       if (document.visibilityState === "visible") {
@@ -57,7 +61,7 @@ export default function GorselOynatici({
       sonTikRef.current = simdi;
     }, 1000);
     return () => window.clearInterval(sayac);
-  }, [url]);
+  }, [url, saltGoruntuleme]);
 
   const tamamla = async () => {
     if (!izlemeId || islem) return;
@@ -101,16 +105,18 @@ export default function GorselOynatici({
       <img
         src={url}
         alt="Öğrenme görseli"
+        draggable={false}
+        onContextMenu={(event) => event.preventDefault()}
         className="mx-auto max-h-[72vh] max-w-full rounded-xl object-contain"
       />
-      <button
+      {!saltGoruntuleme && <button
         type="button"
         disabled={islem || saniye < 3}
         onClick={() => void tamamla()}
         className="self-end rounded-lg border-0 bg-[#56aeff] px-5 py-2.5 text-xs font-semibold text-white disabled:opacity-50"
       >
         İnceledim, tamamla
-      </button>
+      </button>}
     </div>
   );
 }

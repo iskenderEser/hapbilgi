@@ -255,9 +255,10 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
           key={aktifVideo.yayin_id}
           video={aktifVideo}
           tuketici={false}
+          aktifYayinDogrula
           onKapat={() => setAktifVideo(null)}
           onVeriYenile={() => {}}
-          hata={() => {}}
+          hata={hata}
           basari={() => {}}
           uyari={() => {}}
         />

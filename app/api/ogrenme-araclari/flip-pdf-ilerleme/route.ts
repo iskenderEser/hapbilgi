@@ -4,7 +4,8 @@ import { FLIP_PDF_ARACI, type FlipPdfIlerlemesi } from "@/lib/ogrenmeAraci/sunuc
 import { yayinAraciKullanimaAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
 import { ogrenmeAraciIzlemeSahibiniCoz } from "@/lib/ogrenmeAraci/izlemeSahibi";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
+import { rolHatasi, sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
+import { YONETICI_ROLLER } from "@/lib/utils/roller";
 import { uuidGecerliMi } from "@/lib/uretim/rpc";
 const SAYFA_BASI_SANIYE = 2;
 
@@ -13,10 +14,11 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) return yetkiHatasi();
-    const body = await request.json();
-    if (!uuidGecerliMi(body.izleme_id) || !uuidGecerliMi(body.yayin_id) || !uuidGecerliMi(body.arac_id)) return validasyonHatasi("İzleme, yayın veya araç kimliği geçersiz.", ["izleme_id", "yayin_id", "arac_id"]);
     const db = createAdminClient();
     const rol = await rolCozucu(db, user.id);
+    if (YONETICI_ROLLER.includes(rol)) return rolHatasi("Yönetici rolleri PDF ilerlemesi kaydedemez.");
+    const body = await request.json();
+    if (!uuidGecerliMi(body.izleme_id) || !uuidGecerliMi(body.yayin_id) || !uuidGecerliMi(body.arac_id)) return validasyonHatasi("İzleme, yayın veya araç kimliği geçersiz.", ["izleme_id", "yayin_id", "arac_id"]);
     const sahip = await ogrenmeAraciIzlemeSahibiniCoz(db, user.id, rol);
     if (!sahip) {
       return NextResponse.json({ hata: "Flip PDF tüketim yetkisi bulunamadı." }, { status: 403 });

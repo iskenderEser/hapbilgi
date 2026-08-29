@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
+import { rolHatasi, sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
+import { IU_ROLU, URETICI_ROLLER } from "@/lib/utils/roller";
 import { bunnyNesneBilgisi, yuklemeMakbuzuDogrula } from "@/lib/ogrenmeAraci/bunnyStorage";
 import { dosyaImzasiDogrula, yeniOgrenmeAraciTuruMu } from "@/lib/ogrenmeAraci/sozlesme";
 import { uretimAraciYetkisiniDogrula } from "@/lib/ogrenmeAraci/yetki";
@@ -57,10 +58,14 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
+
+    const db = createAdminClient();
+    const rol = await rolCozucu(db, user.id);
+    if (![IU_ROLU, ...URETICI_ROLLER].includes(rol)) return rolHatasi("Bu işlem üretim hattı rollerine açıktır.");
+
     const { arac_id, yukleme_makbuzu } = await request.json();
     if (typeof arac_id !== "string" || !arac_id) return validasyonHatasi("arac_id zorunludur.", ["arac_id"]);
 
-    const db = createAdminClient();
     const { data: arac, error: aracError } = await db
       .from("ogrenme_araclari")
       .select("arac_id, talep_id, arac_turu, dosya_yolu, metadata, metadata_dogrulandi, mime_type, dosya_boyutu, checksum_sha256")
@@ -71,7 +76,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ hata: "Bu kayıt ortak Storage yükleme akışına ait değil." }, { status: 422 });
     }
 
-    const rol = await rolCozucu(db, user.id);
     const yetki = await uretimAraciYetkisiniDogrula({ db, talepId: arac.talep_id, kullaniciId: user.id, rol });
     if (!yetki.ok) return NextResponse.json({ hata: yetki.hata }, { status: yetki.status });
 

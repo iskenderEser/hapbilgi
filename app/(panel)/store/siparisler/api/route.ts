@@ -22,7 +22,7 @@ import {
   rolHatasi,
   validasyonHatasi,
 } from "@/lib/utils/hataIsle";
-import { STORE_GENEL_GOREN_ROLLER } from "@/lib/utils/roller";
+import { ADMIN_ROLLER, STORE_GENEL_GOREN_ROLLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 
 const VARSAYILAN_LIMIT = 30;
@@ -48,6 +48,29 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
 
     const firma_id = searchParams.get("firma_id");
+
+    // Admin dışındaki roller yalnız bağlı oldukları firmayı filtreleyebilir.
+    // Bu kapı takım/bölge/kullanıcı kimlikleri okunmadan ve kapsam RPC'si
+    // çalıştırılmadan önce yabancı firma isteğini kesin olarak reddeder.
+    if (firma_id && !ADMIN_ROLLER.includes(rol)) {
+      const { data: firmaKullanici, error: firmaKullaniciError } = await adminSupabase
+        .from("kullanicilar")
+        .select("firma_id")
+        .eq("kullanici_id", user.id)
+        .maybeSingle();
+
+      if (firmaKullaniciError || !firmaKullanici?.firma_id) {
+        return hataYaniti(
+          "Kullanıcı firma bilgisi alınamadı.",
+          "kullanicilar SELECT — sipariş firma kapısı",
+          firmaKullaniciError
+        );
+      }
+      if (firmaKullanici.firma_id !== firma_id) {
+        return rolHatasi("Başka bir firmanın siparişlerine erişim yetkiniz yok.");
+      }
+    }
+
     const takim_id = searchParams.get("takim_id");
     const bolge_id = searchParams.get("bolge_id");
     const kullanici_id_filtre = searchParams.get("kullanici_id");

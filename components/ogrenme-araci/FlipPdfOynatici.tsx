@@ -26,6 +26,7 @@ interface Props {
   aracId: string;
   yayinId: string;
   bagId?: string | null;
+  saltGoruntuleme?: boolean;
   baslat: () => Promise<{
     izlemeId: string;
     ilerleme?: Record<string, unknown> | null;
@@ -69,6 +70,7 @@ function PdfTuval({
   return (
     <canvas
       ref={ref}
+      onContextMenu={(event) => event.preventDefault()}
       className={kucuk
         ? "h-20 max-w-full bg-white object-contain"
         : "h-auto max-w-full bg-white shadow-md"}
@@ -80,6 +82,7 @@ export default function FlipPdfOynatici({
   aracId,
   yayinId,
   bagId,
+  saltGoruntuleme = false,
   baslat,
   bitir,
   onTamamlandi,
@@ -115,11 +118,13 @@ export default function FlipPdfOynatici({
         const yuklenen = await yuklemeGorevi.promise;
         if (acik) {
           setBelge(yuklenen);
-          const oturum = await baslat();
-          const ilerleme = oturum.ilerleme as { sonSayfa?: number; aktifSayfaSaniyeleri?: Record<string, number> } | null | undefined;
-          setIzlemeId(oturum.izlemeId);
-          setSayfa(Math.min(yuklenen.numPages, Math.max(1, Number(ilerleme?.sonSayfa ?? 1))));
-          setSayfaSureleri(ilerleme?.aktifSayfaSaniyeleri ?? {});
+          if (!saltGoruntuleme) {
+            const oturum = await baslat();
+            const ilerleme = oturum.ilerleme as { sonSayfa?: number; aktifSayfaSaniyeleri?: Record<string, number> } | null | undefined;
+            setIzlemeId(oturum.izlemeId);
+            setSayfa(Math.min(yuklenen.numPages, Math.max(1, Number(ilerleme?.sonSayfa ?? 1))));
+            setSayfaSureleri(ilerleme?.aktifSayfaSaniyeleri ?? {});
+          }
         }
       })
       .catch((e) => hata(e instanceof Error ? e.message : "Flip PDF açılamadı.", "Flip PDF erişimi"))
@@ -133,7 +138,7 @@ export default function FlipPdfOynatici({
   }, [aracId, bagId]);
 
   useEffect(() => {
-    if (!belge || !izlemeId) return;
+    if (!belge || !izlemeId || saltGoruntuleme) return;
     const sayac = window.setInterval(() => {
       if (document.visibilityState !== "visible") return;
       setSayfaSureleri((onceki) => {
@@ -143,7 +148,7 @@ export default function FlipPdfOynatici({
       });
     }, 1000);
     return () => window.clearInterval(sayac);
-  }, [belge, izlemeId, sayfa, cift]);
+  }, [belge, izlemeId, sayfa, cift, saltGoruntuleme]);
 
   const ilerlemeKaydet = async (tamamla = false) => {
     if (!izlemeId) return false;
@@ -165,7 +170,7 @@ export default function FlipPdfOynatici({
   };
 
   const sayfayaGit = (hedef: number) => {
-    void ilerlemeKaydet(false).catch(() => undefined);
+    if (!saltGoruntuleme) void ilerlemeKaydet(false).catch(() => undefined);
     setSayfa(hedef);
   };
 
@@ -253,7 +258,7 @@ export default function FlipPdfOynatici({
           <ChevronLeft size={16} /> Önceki
         </button>
         <span className="text-[11px] font-bold text-slate-500">
-          {okunanSayisi}/{belge.numPages} sayfa okundu
+          {saltGoruntuleme ? "Salt görüntüleme" : `${okunanSayisi}/${belge.numPages} sayfa okundu`}
         </span>
         <button
           type="button"
@@ -283,7 +288,7 @@ export default function FlipPdfOynatici({
         ))}
       </div>
 
-      <div className="flex justify-end border-t border-slate-200 bg-white p-3">
+      {!saltGoruntuleme && <div className="flex justify-end border-t border-slate-200 bg-white p-3">
         <button
           type="button"
           disabled={islem || okunanSayisi < belge.numPages}
@@ -292,7 +297,7 @@ export default function FlipPdfOynatici({
         >
           Okumayı tamamla
         </button>
-      </div>
+      </div>}
     </div>
   );
 }

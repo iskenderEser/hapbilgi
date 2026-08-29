@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
+import { rolHatasi, sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
+import { YONETICI_ROLLER } from "@/lib/utils/roller";
 import { uuidGecerliMi } from "@/lib/uretim/rpc";
 import { PODCAST_ARACI, type SureliAracIlerlemesi } from "@/lib/ogrenmeAraci/sunucu";
 import { yayinAraciKullanimaAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
@@ -12,6 +13,9 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
+    const db = createAdminClient();
+    const rol = await rolCozucu(db, user.id);
+    if (YONETICI_ROLLER.includes(rol)) return rolHatasi("Yönetici rolleri podcast ilerlemesi kaydedemez.");
     const body = await request.json();
     if (!uuidGecerliMi(body.izleme_id) || !uuidGecerliMi(body.yayin_id) || !uuidGecerliMi(body.arac_id)) return validasyonHatasi("İzleme, yayın veya araç kimliği geçersiz.", ["izleme_id", "yayin_id", "arac_id"]);
     if (!body.sekme_aktif) return NextResponse.json({ kaydedildi: false, sebep: "arka_sekme" });
@@ -19,8 +23,6 @@ export async function POST(request: NextRequest) {
     const aktifSaniye = Number(body.aktif_saniye);
     if (!Number.isFinite(konum) || konum < 0 || !Number.isFinite(aktifSaniye) || aktifSaniye < 0) return validasyonHatasi("Podcast ilerlemesi geçersiz.", ["konum_saniye", "aktif_saniye"]);
 
-    const db = createAdminClient();
-    const rol = await rolCozucu(db, user.id);
     const sahip = await ogrenmeAraciIzlemeSahibiniCoz(db, user.id, rol);
     if (!sahip) {
       return NextResponse.json({ hata: "Podcast tüketim yetkisi bulunamadı." }, { status: 403 });

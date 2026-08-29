@@ -167,9 +167,10 @@ export default function YayindakiVideolarPage() {
             video={aktifVideo}
             tuketici={false}
             onizlemeYuzeyi={bmMi}
+            aktifYayinDogrula
             onKapat={() => setAktifVideo(null)}
             onVeriYenile={() => {}}
-            hata={() => {}}
+            hata={hata}
             basari={() => {}}
             uyari={() => {}}
           />

@@ -35,7 +35,7 @@ import { type SoruTaslagi, taslaklariBoyutla, taslaklariDogrula, taslaklardanSor
 import { useAuth } from "@/app/providers/AuthProvider";
 import { URETICI_ROLLER, ECZANEM_TALEP_ACAN_ROLLER, ECLUB_HEDEF_ROLLER } from "@/lib/utils/roller";
 import { guvenliDosyaAdi } from "@/lib/utils/guvenliDosyaAdi";
-import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
+import { bunnyTusYukle, videoYuklemeOturumuGuncelle } from "@/lib/video/bunnyTusIstemci";
 import { SORGU_ARALIGI_MS, TAVAN_SANIYE } from "@/lib/video/islemeDurumu";
 import { bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
@@ -481,37 +481,70 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
   ]);
 
   const submitTalep = useCallback(async (): Promise<string | null> => {
-    const res = await fetch("/talepler/api", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        egitim_turu: egitimTuru,
-        hedef_roller: hedefRoller,
-        // Eczanem'de ürün, tür kuralından bağımsız olarak gönderilir (dörtlü kilit).
-        urun_id: (turKurali.urun !== "yok" || eczanemHedef) ? seciliUrunId || null : null,
-        // Teknik-siz hedeflerde (E-Club / Eczanem) teknik her hâlükârda null gönderilir.
-        teknik_id: (!eclubHedef && !eczanemHedef && turKurali.teknik !== "yok") ? seciliTeknikId || null : null,
-        // Ürünsüz+tekniksiz türlerde izleyici adı; diğer türlerde ad urun_id'den gelir.
-        urun_adi: serbestAdGoster ? serbestAd.trim() : null,
-        aciklama,
-        ogrenme_araci_turu: ogrenmeAraciTuru,
-        ogrenme_araci_tercihleri: ogrenmeAraciTuru === "podcast" ? { anlatim_turu: podcastAnlatimTuru } : {},
-        hazir_video: hazirVideo,
-        hazir_soru_seti: hazirSoruSeti,
-        hazir_soru_seti_verisi:
-          hazirSoruSeti && soruTaslaklari.length > 0 ? taslaklardanSorular(soruTaslaklari) : null,
-        soru_seti_buyuklugu: soruSetiBuyuklugu,
-        secenek_sayisi: secenekSayisi,
-        video_basi_soru_sayisi: videoBasiSoruSayisi,
-      }),
-    });
+    const talepGovdesi = {
+      egitim_turu: egitimTuru,
+      hedef_roller: hedefRoller,
+      // Eczanem'de ürün, tür kuralından bağımsız olarak gönderilir (dörtlü kilit).
+      urun_id: (turKurali.urun !== "yok" || eczanemHedef) ? seciliUrunId || null : null,
+      // Teknik-siz hedeflerde (E-Club / Eczanem) teknik her hâlükârda null gönderilir.
+      teknik_id: (!eclubHedef && !eczanemHedef && turKurali.teknik !== "yok") ? seciliTeknikId || null : null,
+      // Ürünsüz+tekniksiz türlerde izleyici adı; diğer türlerde ad urun_id'den gelir.
+      urun_adi: serbestAdGoster ? serbestAd.trim() : null,
+      aciklama,
+      ogrenme_araci_turu: ogrenmeAraciTuru,
+      ogrenme_araci_tercihleri: ogrenmeAraciTuru === "podcast" ? { anlatim_turu: podcastAnlatimTuru } : {},
+      hazir_video: hazirVideo,
+      hazir_soru_seti: hazirSoruSeti,
+      hazir_soru_seti_verisi:
+        hazirSoruSeti && soruTaslaklari.length > 0 ? taslaklardanSorular(soruTaslaklari) : null,
+      soru_seti_buyuklugu: soruSetiBuyuklugu,
+      secenek_sayisi: secenekSayisi,
+      video_basi_soru_sayisi: videoBasiSoruSayisi,
+    };
+    const govdeImzasi = JSON.stringify(talepGovdesi);
+    const depoAnahtari = `hapbilgi:talep-islem:${kullanici?.id ?? "anonim"}`;
+    let islemAnahtari = crypto.randomUUID();
+    try {
+      const onceki = JSON.parse(window.sessionStorage.getItem(depoAnahtari) ?? "null") as {
+        govde_imzasi?: unknown;
+        islem_anahtari?: unknown;
+      } | null;
+      if (onceki?.govde_imzasi === govdeImzasi && typeof onceki.islem_anahtari === "string") {
+        islemAnahtari = onceki.islem_anahtari;
+      } else {
+        window.sessionStorage.setItem(depoAnahtari, JSON.stringify({ govde_imzasi: govdeImzasi, islem_anahtari: islemAnahtari }));
+      }
+    } catch {
+      // sessionStorage kapalıysa mevcut sekmedeki formLoading yine çift tıklamayı engeller;
+      // sunucu işlem anahtarı her durumda gönderilir.
+    }
+
+    let res: Response;
+    try {
+      res = await fetch("/talepler/api", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...talepGovdesi, islem_anahtari: islemAnahtari }),
+      });
+    } catch (error) {
+      hata("Talep gönderimi tamamlanamadı. Aynı formu yeniden göndererek güvenle devam edebilirsiniz.", "talep gönderimi", error instanceof Error ? error.message : undefined);
+      return null;
+    }
     const d = await res.json();
     if (!res.ok) {
       hata(d.hata ?? "Talep oluşturulamadı.", d.adim, d.detay);
       return null;
     }
+    try {
+      const kayit = JSON.parse(window.sessionStorage.getItem(depoAnahtari) ?? "null") as { islem_anahtari?: unknown } | null;
+      if (kayit?.islem_anahtari === islemAnahtari) window.sessionStorage.removeItem(depoAnahtari);
+    } catch {
+      // İstek başarıyla sonuçlandı; depo erişimi başarısızsa sonraki farklı gövde
+      // zaten yeni işlem anahtarı oluşturur.
+    }
     return d.talep.talep_id as string;
   }, [
+    kullanici?.id,
     egitimTuru,
     hedefRoller,
     eclubHedef,
@@ -529,7 +562,6 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     soruTaslaklari,
     soruSetiBuyuklugu,
     secenekSayisi,
-    videoBasiSoruSayisi,
     hata,
   ]);
 
@@ -550,7 +582,12 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
         const res = await fetch("/talepler/api/bunny-yukleme-baslat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ talep_id }),
+          body: JSON.stringify({
+            talep_id,
+            dosya_adi: bekleyenVideo.dosya.name,
+            mime_type: bekleyenVideo.dosya.type || "video/mp4",
+            dosya_boyutu: bekleyenVideo.dosya.size,
+          }),
         });
         const d = await res.json();
         if (!res.ok) {
@@ -561,14 +598,9 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
         // 2) Doğrudan Bunny'ye — dosya bizim sunucuya uğramaz
         try {
           await bunnyTusYukle(bekleyenVideo.dosya, d, setVideoYuklemeYuzdesi);
+          await videoYuklemeOturumuGuncelle(d.yukleme_id, "aktarim_tamamlandi");
         } catch (err: unknown) {
           hata("Video yüklenemedi.", "TUS yükleme", err instanceof Error ? err.message : undefined);
-          // Telafi: vezneden açılan ama hiçbir kayda bağlanmayan Bunny kaydını temizle.
-          fetch("/videolar/api/bunny-yukleme-iptal", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ video_guid: d.video_guid }),
-          }).catch(() => {});
           return "basarisiz";
         }
 
@@ -588,7 +620,10 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
 
         try {
           const ilk = await denemePut();
-          if (ilk.ok && ilk.status !== 202) return "tamamlandi";
+          if (ilk.ok && ilk.status !== 202) {
+            await videoYuklemeOturumuGuncelle(d.yukleme_id, "baglandi");
+            return "tamamlandi";
+          }
           if (ilk.status !== 202 && ilk.status < 500) {
             hata(ilk.d2.hata ?? "Video doğrulanamadı.", ilk.d2.adim, ilk.d2.detay);
             return "basarisiz";
@@ -604,7 +639,10 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
             await new Promise((coz) => setTimeout(coz, SORGU_ARALIGI_MS));
             try {
               const t = await denemePut();
-              if (t.ok && t.status !== 202) return; // tamamlandı
+              if (t.ok && t.status !== 202) {
+                await videoYuklemeOturumuGuncelle(d.yukleme_id, "baglandi").catch(() => undefined);
+                return;
+              }
               if (t.status !== 202 && t.status < 500) return; // kalıcı hata — webhook/mutabakat toplar
             } catch { /* geçici hata; sonraki tur */ }
           }

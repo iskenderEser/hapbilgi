@@ -27,6 +27,7 @@ import { HapbiProvider } from "@/components/hapbi/HapbiProvider";
 import HapbiMaskot from "@/components/hapbi/HapbiMaskot";
 import HapbiChatModal from "@/components/hapbi/HapbiChatModal";
 import HapbiSpotlight from "@/components/hapbi/HapbiSpotlight";
+import YarimYuklemeBildirimi from "@/components/ogrenme-araci/YarimYuklemeBildirimi";
 
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -187,6 +188,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         <HapbiMaskot />
         <HapbiChatModal />
         <HapbiSpotlight />
+        <YarimYuklemeBildirimi />
       </div>
     </HapbiProvider>
   );

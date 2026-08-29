@@ -7,13 +7,14 @@ interface Props {
   yayinId: string;
   bagId?: string | null;
   ileriSarmaAcik?: boolean;
+  saltGoruntuleme?: boolean;
   baslat: () => Promise<{ izlemeId: string; ilerleme?: { sonKonumSaniye?: number } | null }>;
   bitir: (izlemeId: string) => Promise<void>;
   onTamamlandi?: () => void | Promise<void>;
   hata: (mesaj: string, adim?: string, detay?: string) => void;
 }
 
-export default function PodcastOynatici({ aracId, yayinId, bagId, ileriSarmaAcik = false, baslat, bitir, onTamamlandi, hata }: Props) {
+export default function PodcastOynatici({ aracId, yayinId, bagId, ileriSarmaAcik = false, saltGoruntuleme = false, baslat, bitir, onTamamlandi, hata }: Props) {
   const [erisim, setErisim] = useState<{ erisim_url: string; kapak_url: string | null; transkript_url: string | null } | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const izlemeIdRef = useRef<string | null>(null);
@@ -48,6 +49,7 @@ export default function PodcastOynatici({ aracId, yayinId, bagId, ileriSarmaAcik
   };
 
   const oynatildi = async () => {
+    if (saltGoruntuleme) return;
     if (!izlemeIdRef.current) {
       const acilis = await baslat();
       izlemeIdRef.current = acilis.izlemeId;
@@ -60,6 +62,7 @@ export default function PodcastOynatici({ aracId, yayinId, bagId, ileriSarmaAcik
   };
 
   const zamanGuncellendi = () => {
+    if (saltGoruntuleme) return;
     const audio = audioRef.current;
     if (!audio || document.visibilityState !== "visible" || audio.paused) return;
     if (!ileriSarmaAcik && audio.currentTime > izinliKonumRef.current + 2) {
@@ -74,6 +77,7 @@ export default function PodcastOynatici({ aracId, yayinId, bagId, ileriSarmaAcik
   };
 
   const sonaErdi = async () => {
+    if (saltGoruntuleme) return;
     if (bitiyorRef.current || !izlemeIdRef.current) return;
     bitiyorRef.current = true;
     try {
@@ -107,6 +111,8 @@ export default function PodcastOynatici({ aracId, yayinId, bagId, ileriSarmaAcik
           <img
             src={erisim.kapak_url}
             alt="Podcast kapağı"
+            draggable={false}
+            onContextMenu={(event) => event.preventDefault()}
             className="mx-auto aspect-square w-full max-w-64 rounded-xl object-cover"
           />
         </>
@@ -114,18 +120,21 @@ export default function PodcastOynatici({ aracId, yayinId, bagId, ileriSarmaAcik
       <audio
         ref={audioRef}
         controls
+        controlsList="nodownload"
+        onContextMenu={(event) => event.preventDefault()}
         preload="metadata"
         src={erisim.erisim_url}
         className="w-full"
         onPlay={() => void oynatildi()}
         onTimeUpdate={zamanGuncellendi}
         onSeeking={() => {
+          if (saltGoruntuleme) return;
           const audio = audioRef.current;
           if (audio && !ileriSarmaAcik && audio.currentTime > izinliKonumRef.current + 2) {
             audio.currentTime = izinliKonumRef.current;
           }
         }}
-        onPause={() => void ilerlemeKaydet().catch(() => undefined)}
+        onPause={() => { if (!saltGoruntuleme) void ilerlemeKaydet().catch(() => undefined); }}
         onEnded={() => void sonaErdi()}
       />
       {erisim.transkript_url && (

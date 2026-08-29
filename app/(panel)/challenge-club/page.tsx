@@ -145,15 +145,16 @@ export default function ChallengeClubPage() {
   useEffect(() => {
     if (kimlikYukleniyor) return;
     if (!kullanici) {
-      router.push("/login");
+      router.replace("/login");
+      return;
+    }
+    const r = (kullanici.rol ?? "").toLowerCase();
+    if (r !== "bm") {
+      router.replace("/ana-sayfa");
       return;
     }
     setUser(kullanici);
-    const r = (kullanici.rol ?? "").toLowerCase();
     setRol(r);
-    if (r !== "bm") {
-      router.push("/ana-sayfa");
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kullanici, kimlikYukleniyor]);
 
@@ -310,7 +311,6 @@ export default function ChallengeClubPage() {
   }
 
   // Hero + stat türevleri
-  const ad = (user?.adSoyad ?? "").split(" ")[0] || "";
   const bekleyenSayisi = bekleyenler.filter((c) => c.durum === "bekliyor").length;
 
   return (

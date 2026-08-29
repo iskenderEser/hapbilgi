@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { ECLUB_TUKETICI_ROLLERI, TUKETICI_ROLLER } from "@/lib/utils/roller";
+import { ECLUB_TUKETICI_ROLLERI, TUKETICI_ROLLER, YONETICI_ROLLER } from "@/lib/utils/roller";
 import { etkilesimYayinYetkisi } from "@/lib/etkilesim/yayinYetkisi";
 import { uuidGecerliMi } from "@/lib/uretim/rpc";
 
@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
     const adminSupabase = createAdminClient();
 
     const rol = await rolCozucu(adminSupabase, user.id);
+    if (YONETICI_ROLLER.includes(rol)) return rolHatasi("Yönetici rolleri beğeni yapamaz.");
     const { data: eclubKisi } = await adminSupabase
       .from("eclub_kisiler")
       .select("kisi_id, rol")

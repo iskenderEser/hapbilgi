@@ -4,7 +4,8 @@ import { GORSEL_ARACI, type GorselIlerlemesi } from "@/lib/ogrenmeAraci/sunucu";
 import { yayinAraciKullanimaAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
 import { ogrenmeAraciIzlemeSahibiniCoz } from "@/lib/ogrenmeAraci/izlemeSahibi";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
+import { rolHatasi, sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
+import { YONETICI_ROLLER } from "@/lib/utils/roller";
 import { uuidGecerliMi } from "@/lib/uretim/rpc";
 
 export async function POST(request: NextRequest) {
@@ -12,11 +13,12 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) return yetkiHatasi();
+    const db = createAdminClient();
+    const rol = await rolCozucu(db, user.id);
+    if (YONETICI_ROLLER.includes(rol)) return rolHatasi("Yönetici rolleri görsel tamamlayamaz.");
     const body = await request.json();
     if (!uuidGecerliMi(body.izleme_id) || !uuidGecerliMi(body.yayin_id) || !uuidGecerliMi(body.arac_id)) return validasyonHatasi("İzleme, yayın veya araç kimliği geçersiz.", ["izleme_id", "yayin_id", "arac_id"]);
     if (body.sekme_aktif !== true || body.kullanici_onayi !== true || Number(body.aktif_saniye) < 3) return validasyonHatasi("Görsel en az 3 saniye aktif incelenip onaylanmalıdır.", ["aktif_saniye", "kullanici_onayi"]);
-    const db = createAdminClient();
-    const rol = await rolCozucu(db, user.id);
     const sahip = await ogrenmeAraciIzlemeSahibiniCoz(db, user.id, rol);
     if (!sahip) {
       return NextResponse.json({ hata: "Görsel tüketim yetkisi bulunamadı." }, { status: 403 });

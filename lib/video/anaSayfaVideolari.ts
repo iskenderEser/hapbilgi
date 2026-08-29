@@ -31,6 +31,8 @@ export interface AnaSayfaVideo {
   yayin_tarihi: string;
   icerik_turu: IcerikTuru | null;
   ileri_sarma_acik: boolean; // yalnız-izleme modunda kullanılmaz; oynatıcı tipiyle uyum için
+  arac_id?: string | null;
+  arac_turu?: "video" | "podcast" | "gorsel" | "flip_pdf";
 }
 
 export interface SahaAnaSayfaVideo extends AnaSayfaVideo {

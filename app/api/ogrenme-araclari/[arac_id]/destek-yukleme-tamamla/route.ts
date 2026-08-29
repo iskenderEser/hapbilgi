@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
+import { rolHatasi, sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
+import { IU_ROLU, URETICI_ROLLER } from "@/lib/utils/roller";
 import {
   bunnyNesneBilgisi,
   yuklemeMakbuzuDogrula,
@@ -15,6 +16,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
+
+    const db = createAdminClient();
+    const rol = await rolCozucu(db, user.id);
+    if (![IU_ROLU, ...URETICI_ROLLER].includes(rol)) return rolHatasi("Bu işlem üretim hattı rollerine açıktır.");
+
     const { arac_id } = await params;
     const body = await request.json();
     const rolDosya = body.dosya_rolu as PodcastDestekDosyasiRolu;
@@ -44,10 +50,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       checksumSha256: body.checksum_sha256.toLowerCase(),
     })) return NextResponse.json({ hata: "Destek dosyası yükleme makbuzu geçersiz." }, { status: 401 });
 
-    const db = createAdminClient();
     const { data: arac } = await db.from("ogrenme_araclari").select("arac_id, talep_id, arac_turu, metadata").eq("arac_id", arac_id).maybeSingle();
     if (!arac || arac.arac_turu !== "podcast") return NextResponse.json({ hata: "Podcast öğrenme aracı bulunamadı." }, { status: 404 });
-    const rol = await rolCozucu(db, user.id);
     const yetki = await uretimAraciYetkisiniDogrula({ db, talepId: arac.talep_id, kullaniciId: user.id, rol });
     if (!yetki.ok) return NextResponse.json({ hata: yetki.hata }, { status: yetki.status });
 
@@ -105,7 +109,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const destekDogrulama = (
       metadataOnceki.podcast_destek_dogrulamasi as Record<string, unknown> | undefined
     ) ?? {};
-    const metadata = {
+    const metadata: Record<string, unknown> = {
       ...metadataOnceki,
       [`${rolDosya}_dogrulandi`]: true,
       podcast_destek_dogrulamasi: {
@@ -124,6 +128,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         },
       },
     };
+    const bekleyenYollar = { ...((metadataOnceki.bekleyen_destek_yollari as Record<string, unknown> | null) ?? {}) };
+    delete bekleyenYollar[rolDosya];
+    metadata.bekleyen_destek_yollari = bekleyenYollar;
     const { error } = await db.from("ogrenme_araclari").update({ [kolon]: body.dosya_yolu, metadata }).eq("arac_id", arac_id);
     if (error) return NextResponse.json({ hata: "Podcast destek dosyası kaydedilemedi." }, { status: 500 });
     return NextResponse.json({ arac_id, dosya_rolu: rolDosya, tamamlandi: true });

@@ -12,6 +12,7 @@ import { aktifPeriyot } from "@/lib/zaman/kontrol";
 import styles from "./eclub-league.module.css";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
+import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 
 interface LigData {
   kullanici: { ad: string; soyad: string; rol: string };
@@ -129,6 +130,7 @@ export default function EclubLigiPage() {
   }
 
   const takimLigi = data.takim_ligi ?? [];
+  const takimAdiDuzenleyebilir = TUKETICI_ROLLER.includes((data.kullanici.rol ?? "").toLowerCase());
   const liderTakim = takimLigi[0];
   const toplamUye = takimLigi.reduce((toplam, t) => toplam + t.uye_sayisi, 0);
   const toplamIzleme = takimLigi.reduce((toplam, t) => toplam + t.tamamlanan_izleme, 0);
@@ -163,7 +165,7 @@ export default function EclubLigiPage() {
               <SayfaRehberi anahtar="eclub-ligi" className="ml-1.5 -translate-y-1" />
             </div>
             
-            {takimDuzenleniyor ? (
+            {takimAdiDuzenleyebilir && takimDuzenleniyor ? (
               <div className={`${styles.teamLine} ${styles.teamEditor}`}>
                 <input className={styles.teamInput} value={takimTaslak} onChange={(event) => setTakimTaslak(event.target.value)} maxLength={100} placeholder="Takımınızın adı" autoFocus />
                 <button type="button" className={`${styles.editorAction} ${styles.editorPrimary}`} onClick={() => void takimAdiKaydet()} disabled={takimKaydediliyor || !takimTaslak.trim()}>Kaydet</button>
@@ -172,7 +174,9 @@ export default function EclubLigiPage() {
             ) : (
               <div className={styles.teamLine}>
                 <span>{data.takim_adi || "Takımım"} · {data.kullanici.ad} {data.kullanici.soyad}</span>
-                <button type="button" className={styles.teamButton} onClick={() => setTakimDuzenleniyor(true)}>{data.takim_adi ? "Takım adını düzenle" : "Takım adı ver"}</button>
+                {takimAdiDuzenleyebilir && (
+                  <button type="button" className={styles.teamButton} onClick={() => setTakimDuzenleniyor(true)}>{data.takim_adi ? "Takım adını düzenle" : "Takım adı ver"}</button>
+                )}
               </div>
             )}
           </div>
@@ -318,4 +322,3 @@ export default function EclubLigiPage() {
     </div>
   );
 }
-

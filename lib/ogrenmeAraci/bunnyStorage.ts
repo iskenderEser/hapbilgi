@@ -184,6 +184,23 @@ export async function bunnyNesneBilgisi(dosyaYolu: string): Promise<BunnyNesneBi
   };
 }
 
+/** Yarım/iptal edilen Storage nesnesini idempotent siler. */
+export async function bunnyStorageNesneSil(dosyaYolu: string): Promise<boolean> {
+  const ortam = bunnyStorageOrtami();
+  if (!ortam) return false;
+  const url = `https://${ortam.storageHost}/${encodeURIComponent(ortam.storageZone)}/${segmentleriKodla(dosyaYolu)}`;
+  try {
+    const yanit = await fetch(url, {
+      method: "DELETE",
+      headers: { AccessKey: ortam.storageAccessKey },
+      cache: "no-store",
+    });
+    return yanit.ok || yanit.status === 404;
+  } catch {
+    return false;
+  }
+}
+
 export async function bunnyPdfKuyrukDogrula(dosyaYolu: string): Promise<{ sifreli: boolean; eofVar: boolean } | null> {
   const ortam = bunnyStorageOrtami();
   if (!ortam) return null;

@@ -6,6 +6,7 @@ import {
   ECLUB_TUKETICI_ROLLERI,
   MUSTERI_ROLU,
   TUKETICI_ROLLER,
+  YONETICI_ROLLER,
   eclubKisiHedefRolu,
   hedefRolleriOku,
 } from "@/lib/utils/roller";
@@ -61,7 +62,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       const { data: detay } = await db.from("v_yayin_detay").select("firma_id, takim_id").eq("yayin_id", yayin.yayin_id).maybeSingle();
       const bagId = request.nextUrl.searchParams.get("bag_id");
 
-      if (TUKETICI_ROLLER.some((tuketiciRolu) => tuketiciRolu === rol) || rol === "bm") {
+      if (YONETICI_ROLLER.includes(rol)) {
+        const { data: kullanici } = await db.from("kullanicilar").select("firma_id, aktif_mi").eq("kullanici_id", user.id).maybeSingle();
+        const { data: firma } = kullanici?.firma_id
+          ? await db.from("firmalar").select("aktif").eq("firma_id", kullanici.firma_id).maybeSingle()
+          : { data: null };
+        erisimVar = Boolean(
+          kullanici?.aktif_mi
+          && firma?.aktif
+          && detay?.firma_id
+          && detay.firma_id === kullanici.firma_id,
+        );
+      } else if (TUKETICI_ROLLER.some((tuketiciRolu) => tuketiciRolu === rol) || rol === "bm") {
         const { data: kullanici } = await db.from("kullanicilar").select("firma_id, takim_id, aktif_mi").eq("kullanici_id", user.id).maybeSingle();
         const { data: firma } = kullanici?.firma_id
           ? await db.from("firmalar").select("aktif, cc_aktif").eq("firma_id", kullanici.firma_id).maybeSingle()

@@ -8,7 +8,7 @@ import { SoruIceAktar } from "@/components/SoruIceAktar";
 import { SoruSetiFormu } from "@/components/SoruSetiFormu";
 import VideoOnizleme from "@/components/video/VideoOnizleme";
 import { TeknikPill, VaryantPill, HedefRolPilleri } from "@/components/pill";
-import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
+import { bunnyTusYukle, videoYuklemeOturumuGuncelle } from "@/lib/video/bunnyTusIstemci";
 import { type SoruTaslagi, sorulardanTaslaklar, taslaklariBoyutla, taslaklariDogrula, taslaklardanSorular } from "@/lib/soru/taslak";
 import { IU_ROLU, URETICI_ROLLER } from "@/lib/utils/roller";
 import { durumMesaji, gorevDurumKodu, type Asama } from "@/lib/utils/durum/mesaj";
@@ -42,7 +42,7 @@ export default function UretimGorevDetayPage() {
   const [revizyonAcik, setRevizyonAcik] = useState(false);
   const [revizyonNotu, setRevizyonNotu] = useState("");
   const [videoYuzdesi, setVideoYuzdesi] = useState<number | null>(null);
-  const [yuklenenVideo, setYuklenenVideo] = useState<{ video_url: string; dosya_adi: string } | null>(null);
+  const [yuklenenVideo, setYuklenenVideo] = useState<{ video_url: string; dosya_adi: string; yukleme_id?: string | null } | null>(null);
   const [podcastDosyalari, setPodcastDosyalari] = useState<{ ses?: File; kapak?: File; transkript?: File }>({});
   const [gorselDosyasi, setGorselDosyasi] = useState<File | null>(null);
   const [flipPdfDosyasi, setFlipPdfDosyasi] = useState<File | null>(null);
@@ -135,18 +135,15 @@ export default function UretimGorevDetayPage() {
   const videoYukle = async (dosya: File) => {
     if (!gorev?.video_id) return hata("Göreve bağlı video kaydı bulunamadı.", "video görevi");
     setIslem(true); setVideoYuzdesi(0);
-    let videoGuid: string | null = null;
     try {
-      const izinRes = await fetch("/videolar/api/bunny-yukleme-baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ video_id: gorev.video_id }) });
+      const izinRes = await fetch("/videolar/api/bunny-yukleme-baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ video_id: gorev.video_id, dosya_adi: dosya.name, mime_type: dosya.type || "video/mp4", dosya_boyutu: dosya.size }) });
       const izin = await izinRes.json();
       if (!izinRes.ok) return hata(izin.hata ?? "Video yüklemesi başlatılamadı.", izin.adim, izin.detay);
-      videoGuid = izin.video_guid;
       await bunnyTusYukle(dosya, izin, setVideoYuzdesi);
-      setYuklenenVideo({ video_url: izin.embed_url, dosya_adi: dosya.name });
+      await videoYuklemeOturumuGuncelle(izin.yukleme_id, "aktarim_tamamlandi");
+      setYuklenenVideo({ video_url: izin.embed_url, dosya_adi: dosya.name, yukleme_id: izin.yukleme_id });
       basari("Video yüklendi. Göndermek için Gönder butonuna basın.");
-      videoGuid = null;
     } catch (err) {
-      if (videoGuid) void fetch("/videolar/api/bunny-yukleme-iptal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ video_guid: videoGuid }) });
       hata("Video yüklenemedi.", "TUS yükleme", err instanceof Error ? err.message : undefined);
     } finally {
       setVideoYuzdesi(null); setIslem(false);
@@ -156,7 +153,10 @@ export default function UretimGorevDetayPage() {
   const videoTeslimEt = async () => {
     if (!yuklenenVideo) return;
     const teslimBasarili = await teslimEt({ video_url: yuklenenVideo.video_url, thumbnail_url: null });
-    if (teslimBasarili) setYuklenenVideo(null);
+    if (teslimBasarili) {
+      await videoYuklemeOturumuGuncelle(yuklenenVideo.yukleme_id, "baglandi").catch(() => undefined);
+      setYuklenenVideo(null);
+    }
   };
 
   const aracYuklemeKontroluOlustur = (): OgrenmeAraciYuklemeKontrolu => {
@@ -263,7 +263,7 @@ export default function UretimGorevDetayPage() {
           <div className="flex flex-wrap gap-2 border-b border-gray-100 px-4 py-3 md:px-5"><TeknikPill teknikAdi={gorev.talep?.teknik_adi ?? "-"} /><HedefRolPilleri hedefRoller={gorev.talep?.hedef_roller ?? []} /><VaryantPill hazirVideo={gorev.talep?.hazir_video ?? false} hazirSoruSeti={gorev.talep?.hazir_soru_seti ?? false} kendiSatirinda={false} />{gorev.atanan_iu && <span className="rounded-full border border-gray-200 px-2.5 py-1 text-[10px] text-gray-500">İçerik Üreticisi: {gorev.atanan_iu.ad_soyad}</span>}</div>
 
           <div className="flex flex-col gap-4 px-4 py-4 md:px-5">
-            {aracYuklemeBilgisi && <div className="flex items-center gap-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2"><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-blue-800">{aracYuklemeBilgisi.dosyaRolu}: %{aracYuklemeBilgisi.yuzde}</p><div className="mt-1 h-1.5 overflow-hidden rounded-full bg-blue-100"><div className="h-full bg-[#56aeff]" style={{ width: `${aracYuklemeBilgisi.yuzde}%` }} /></div></div><button type="button" onClick={() => aracYuklemeRef.current?.abort()} className="rounded-md border border-blue-200 bg-white px-2.5 py-1 text-xs text-blue-700">İptal Et</button></div>}
+            {aracYuklemeBilgisi && <div className="flex items-center gap-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2"><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-blue-800">{aracYuklemeBilgisi.dosyaRolu}: %{aracYuklemeBilgisi.yuzde}</p><div className="mt-1 h-1.5 overflow-hidden rounded-full bg-blue-100"><div className="h-full bg-[#56aeff]" style={{ width: `${aracYuklemeBilgisi.yuzde}%` }} /></div></div><button type="button" onClick={() => aracYuklemeRef.current?.abort()} className="rounded-md border border-blue-200 bg-white px-2.5 py-1 text-xs text-blue-700">Durdur</button></div>}
             {icerik?.asama === "senaryo" && icerik.senaryo_metni && <div className="whitespace-pre-wrap rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-700">{icerik.senaryo_metni}</div>}
             {icerik?.asama === "video" && icerik.video_url && <VideoOnizleme videoUrl={icerik.video_url} className="rounded-xl" ariaLabel="Üretim videosunu oynat" />}
             {icerik?.asama === "podcast" && <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4"><img src={icerik.kapak_url} alt="Podcast kapağı" className="mx-auto aspect-square w-full max-w-56 rounded-xl object-cover" /><audio controls preload="metadata" src={icerik.ses_url} className="w-full" /><a href={icerik.transkript_url} target="_blank" rel="noreferrer" className="text-center text-sm font-semibold text-[#287fce]">Transkripti aç</a></div>}

@@ -15,6 +15,7 @@ import { hazirParametreKontrol } from "@/lib/uretim/parametreKontrol";
 import { ogrenmeAraciAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
 import { ogrenmeAraciTuruMu } from "@/lib/ogrenmeAraci/sozlesme";
 import { ogrenmeAraciUretimAkisi } from "@/lib/ogrenmeAraci/uretimAkisi";
+import { uretimRpcHataYaniti, uuidGecerliMi } from "@/lib/uretim/rpc";
 
 // Talep formu ve raporlarla ortak kanonik eğitim türü sırası.
 const GECERLI_TALEP_TURLERI = TALEP_TURU_SIRA;
@@ -61,7 +62,12 @@ export async function POST(request: NextRequest) {
       ogrenme_araci_turu, ogrenme_araci_tercihleri,
       hazir_video, hazir_soru_seti, hazir_soru_seti_verisi,
       soru_seti_buyuklugu, secenek_sayisi, video_basi_soru_sayisi,
+      islem_anahtari,
     } = body;
+
+    if (!uuidGecerliMi(islem_anahtari)) {
+      return validasyonHatasi("Talep işlem anahtarı geçersiz.", ["islem_anahtari"]);
+    }
 
     if (!ogrenmeAraciTuruMu(ogrenme_araci_turu) || !["video", "podcast", "gorsel", "flip_pdf"].includes(ogrenme_araci_turu)) {
       return validasyonHatasi("Öğrenme aracı seçimi geçersiz.", ["ogrenme_araci_turu"]);
@@ -173,52 +179,55 @@ export async function POST(request: NextRequest) {
       if (parametreHatasi) return validasyonHatasi(parametreHatasi, ["hazir_soru_seti_verisi"]);
     }
 
+    const atomikTalepVerisi = {
+      uretici_id: user.id,
+      firma_id: kullaniciKaydi.firma_id,
+      takim_id: kullaniciKaydi.takim_id ?? null,
+      egitim_turu: egitimTuru,
+      hedef_roller: hedefRoller,
+      icerik_turu: icerikTuru,
+      ogrenme_araci_turu,
+      ogrenme_araci_tercihleri: aracTercihleri,
+      urun_id: insertUrunId,
+      teknik_id: insertTeknikId,
+      urun_adi: insertUrunAdi,
+      aciklama: aciklama?.trim() ?? null,
+      hazir_video: hazir_video ?? false,
+      hazir_soru_seti: hazir_soru_seti ?? false,
+      hazir_soru_seti_verisi: hazir_soru_seti_verisi ?? null,
+      soru_seti_buyuklugu: soruSetiBuyuklugu,
+      secenek_sayisi: secenekSayisi,
+      video_basi_soru_sayisi: videoBasisSoruSayisi,
+    };
+
+    const { data: atomikSonuc, error: atomikHata } = await adminSupabase.rpc("talep_atomik_olustur", {
+      p_uretici_id: user.id,
+      p_islem_anahtari: islem_anahtari,
+      p_talep: atomikTalepVerisi,
+    });
+    if (atomikHata) {
+      return uretimRpcHataYaniti("Talep oluşturulamadı.", "talep_atomik_olustur RPC", atomikHata);
+    }
+
+    const atomikKayit = atomikSonuc as { talep_id?: unknown; mevcut?: unknown } | null;
+    if (!uuidGecerliMi(atomikKayit?.talep_id)) {
+      return hataYaniti("Talep oluşturulamadı.", "talep_atomik_olustur RPC sonucu", { message: "Geçerli talep kimliği dönmedi." });
+    }
+
     const { data: yeniTalep, error } = await adminSupabase
       .from("talepler")
-      .insert({
-        uretici_id: user.id,
-        firma_id: kullaniciKaydi.firma_id,
-        takim_id: kullaniciKaydi.takim_id ?? null,
-        egitim_turu: egitimTuru,
-        hedef_roller: hedefRoller,
-        icerik_turu: icerikTuru,
-        ogrenme_araci_turu,
-        ogrenme_araci_tercihleri: aracTercihleri,
-        urun_id: insertUrunId,
-        teknik_id: insertTeknikId,
-        urun_adi: insertUrunAdi,
-        aciklama: aciklama?.trim() ?? null,
-        hazir_video: hazir_video ?? false,
-        hazir_soru_seti: hazir_soru_seti ?? false,
-        hazir_soru_seti_verisi: hazir_soru_seti_verisi ?? null,
-        soru_seti_buyuklugu: soruSetiBuyuklugu,
-        secenek_sayisi: secenekSayisi,
-        video_basi_soru_sayisi: videoBasisSoruSayisi,
-      })
-      // Künye alanları ortak listeden; kalanlar bu yanıta özel.
       .select(`
         ${TALEP_ALANLARI},
         takim_id, firma_id, urun_id, teknik_id, hazir_soru_seti_verisi
       `)
+      .eq("talep_id", atomikKayit.talep_id)
+      .eq("uretici_id", user.id)
+      // Künye alanları ortak listeden; kalanlar bu yanıta özel.
       .single();
 
-    if (error) return hataYaniti("Talep oluşturulamadı.", "talepler tablosu INSERT", error);
+    if (error) return hataYaniti("Talep oluşturuldu ancak sonucu okunamadı.", "talepler tablosu SELECT", error);
 
     const yeniKunye = haritalaTalep(yeniTalep);
-
-    const { error: gorevError } = await adminSupabase.rpc("uretim_talep_ilk_gorevini_ac", {
-      p_talep_id: yeniKunye.talep_id,
-      p_uretici_id: user.id,
-      p_islem_anahtari: crypto.randomUUID(),
-    });
-    if (gorevError) {
-      const { error: geriAlmaError } = await adminSupabase.from("talepler").delete().eq("talep_id", yeniKunye.talep_id);
-      return hataYaniti(
-        geriAlmaError ? "Talep oluşturuldu ancak üretim görevi açılamadı; kayıt otomatik geri alınamadı." : "Üretim görevi açılamadığı için talep oluşturma geri alındı.",
-        "uretim_talep_ilk_gorevini_ac RPC",
-        gorevError,
-      );
-    }
 
     const ozelAlanlar = yeniTalep as unknown as {
       takim_id: string | null;
@@ -229,7 +238,7 @@ export async function POST(request: NextRequest) {
     };
 
     return NextResponse.json({
-      mesaj: "Talep oluşturuldu.",
+      mesaj: atomikKayit.mevcut === true ? "Talep daha önce oluşturuldu." : "Talep oluşturuldu.",
       uretim_akisi: uretimAkisi,
       talep: {
         ...yeniKunye,
@@ -239,7 +248,7 @@ export async function POST(request: NextRequest) {
         teknik_id: ozelAlanlar.teknik_id,
         hazir_soru_seti_verisi: ozelAlanlar.hazir_soru_seti_verisi ?? null,
       }
-    }, { status: 201 });
+    }, { status: atomikKayit.mevcut === true ? 200 : 201 });
 
   } catch (err) {
     return sunucuHatasi(err, "POST /talepler/api");

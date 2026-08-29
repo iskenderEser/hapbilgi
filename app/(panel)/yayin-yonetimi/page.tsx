@@ -10,9 +10,10 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { YAYIN_HEDEF_GRUP_SIRASI, yayinHedefGrubuBelirle, type YayinHedefGrubu } from "@/lib/utils/roller";
+import { URETICI_ROLLER, YAYIN_HEDEF_GRUP_SIRASI, yayinHedefGrubuBelirle, type YayinHedefGrubu } from "@/lib/utils/roller";
 import type { Bekleyen, AltSekme } from "./_types";
 import { useYayinYonetimi } from "./_hooks/useYayinYonetimi";
 import { BekleyenSatir } from "./_components/BekleyenSatir";
@@ -49,8 +50,10 @@ function BosListe({ mesaj }: { mesaj: string }) {
 }
 
 export default function YayinYonetimiPage() {
-  const { kullanici } = useAuth();
-  const kullaniciId = kullanici?.id;
+  const router = useRouter();
+  const { kullanici, yukleniyor: kimlikYukleniyor } = useAuth();
+  const ureticiMi = !!kullanici && URETICI_ROLLER.includes((kullanici.rol ?? "").toLowerCase());
+  const kullaniciId = ureticiMi ? kullanici.id : undefined;
   const { mesajlar, hata, basari } = useHataMesaji();
 
   const [aktifAnaSekme, setAktifAnaSekme] = useState<YayinHedefGrubu>("utt");
@@ -62,6 +65,15 @@ export default function YayinYonetimiPage() {
   const [acikVideo, setAcikVideo] = useState<string | null>(null);
   const [onayModal, setOnayModal] = useState<Bekleyen | null>(null);
   const [silmeModal, setSilmeModal] = useState<Bekleyen | null>(null);
+
+  useEffect(() => {
+    if (kimlikYukleniyor) return;
+    if (!kullanici) {
+      router.replace("/login");
+      return;
+    }
+    if (!ureticiMi) router.replace("/ana-sayfa");
+  }, [kimlikYukleniyor, kullanici, router, ureticiMi]);
 
   useEffect(() => {
     if (!kullaniciId) {
@@ -137,7 +149,7 @@ export default function YayinYonetimiPage() {
   const durdurulanListe = useListe({ veri: durdurulular, aramaAlanlari: ARAMA_ALANLARI });
 
   // Auth guard layout'ta; burada yalnız veri yükleme spinner'ı.
-  if (!ilkHedefHazir || yy.loading) {
+  if (kimlikYukleniyor || !ureticiMi || !ilkHedefHazir || yy.loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">

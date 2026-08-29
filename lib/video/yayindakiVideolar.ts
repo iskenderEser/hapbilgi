@@ -33,6 +33,8 @@ interface YayinSatiri {
   icerik_turu: AnaSayfaVideo["icerik_turu"];
   hedef_roller: unknown;
   uretici_id: string | null;
+  arac_id: string | null;
+  arac_turu: "video" | "podcast" | "gorsel" | "flip_pdf";
 }
 
 interface UreticiSatiri {
@@ -57,7 +59,7 @@ export async function getYayindakiVideolar(
 
   let query = adminSupabase
     .from("v_yayin_detay")
-    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, icerik_turu, hedef_roller, takim_id, uretici_id")
+    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, icerik_turu, hedef_roller, takim_id, uretici_id, arac_id, arac_turu")
     .eq("durum", "yayinda")
     .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))
     .order("yayin_tarihi", { ascending: false });
@@ -135,6 +137,8 @@ export async function getYayindakiVideolar(
       icerik_turu: v.icerik_turu ?? null,
       hedef_roller: hedefRolleriOku(v),
       ileri_sarma_acik: false,
+      arac_id: v.arac_id,
+      arac_turu: v.arac_turu,
       ureten_ad_soyad: adSoyad || "-",
       ureten_rol: u?.rol ?? "",
       favori_sayisi: favoriSay.get(v.yayin_id) ?? 0,

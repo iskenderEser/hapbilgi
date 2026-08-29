@@ -31,6 +31,10 @@ export interface OgrenmeAraciYuklemeKontrolu {
 
 class TekrarEdilebilirYuklemeHatasi extends Error {}
 
+function yarimYuklemeBildir(): void {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("hapbilgi:yarim-yukleme-degisti"));
+}
+
 function iptalHatasi(): DOMException {
   return new DOMException("Öğrenme aracı yüklemesi iptal edildi.", "AbortError");
 }
@@ -47,7 +51,10 @@ async function jsonIstek(
     signal,
   });
   const veri = await yanit.json().catch(() => ({}));
-  if (!yanit.ok) throw new Error(veri.hata ?? "Öğrenme aracı yükleme işlemi tamamlanamadı.");
+  if (!yanit.ok) {
+    yarimYuklemeBildir();
+    throw new Error(veri.hata ?? "Öğrenme aracı yükleme işlemi tamamlanamadı.");
+  }
   return veri;
 }
 
@@ -105,7 +112,10 @@ async function bunnyyeGonder(
         }
       });
     } catch (error) {
-      if (!(error instanceof TekrarEdilebilirYuklemeHatasi) || deneme === 2) throw error;
+      if (!(error instanceof TekrarEdilebilirYuklemeHatasi) || deneme === 2) {
+        yarimYuklemeBildir();
+        throw error;
+      }
       kontrol.onIlerleme?.({ asama: "yukleme", yuzde: 0, dosyaRolu, deneme: deneme + 1 });
     }
   }

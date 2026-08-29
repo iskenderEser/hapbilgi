@@ -475,7 +475,7 @@ export function YeniTalepFormV2({ formu }: Props) {
             onClick={formu.ogrenmeAraciYuklemeyiIptalEt}
             className="mx-auto rounded-lg border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-600"
           >
-            İptal Et
+            Durdur
           </button>
         </AlertDialogContent>
       </AlertDialog>

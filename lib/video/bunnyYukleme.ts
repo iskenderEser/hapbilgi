@@ -37,6 +37,29 @@ export interface BunnyHata {
   detay?: string;
 }
 
+/** Var olan Bunny kaydı için yeni süreli TUS izni üretir; yeni video açmaz. */
+export function bunnyYuklemeIzniniYenile(
+  videoGuid: string,
+  baslik: string,
+): BunnyVideoKaydi | BunnyHata {
+  const ortam = ortamDegerleri();
+  if (!ortam) {
+    return { ok: false, hata: "Bunny yapılandırması eksik.", adim: "env kontrolü", detay: "BUNNY_LIBRARY_ID / BUNNY_API_KEY tanımsız" };
+  }
+  if (!/^[0-9a-fA-F-]{36}$/.test(videoGuid)) {
+    return { ok: false, hata: "Bunny video kimliği geçersiz.", adim: "yükleme izni yenileme" };
+  }
+  const sonKullanma = Math.floor(Date.now() / 1000) + IMZA_OMRU_SANIYE;
+  return {
+    ok: true,
+    videoGuid,
+    libraryId: ortam.libraryId,
+    imza: tusImzasiUret(ortam.libraryId, ortam.apiKey, sonKullanma, videoGuid),
+    sonKullanma,
+    embedUrl: `https://player.mediadelivery.net/embed/${ortam.libraryId}/${videoGuid}`,
+  };
+}
+
 /**
  * Bunny'de video kaydını açar ve tek videoya özel süreli TUS imzası üretir.
  * Başlığı çağıran belirler (ürün/senaryo adından) — kütüphane düzeni sisteme aittir.

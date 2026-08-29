@@ -154,46 +154,144 @@ Bu çalışma, HapBilgi'deki her rolün görev tanımı içinde bulunan bütün 
 
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **YON-01 — Yönetici raporu:** Yayın, puan, cevap ve sipariş yazılırken rapor alınacak; aynı rapor içinde farklı zamanlara ait tutarsız toplamlar oluşmayacak.
+- [x] **YON-REG-01 — Yayın tüketiminde sıfır etki:** Yönetici video, podcast, dijital broşür ve PDF yayınlarını ilk ve tekrar açtığında puan, izleme kazanımı, test veya tekrar puanı oluşmayacak.
+
+  - **Tarih:** 29 Ağustos 2026
+  - **Rol ve hesap:** GM / Murat Aydın
+  - **Durum:** Giderildi — hedef doğrulama başarılı
+  - **Canlı video sonucu:** Normavas yayını ilk kez ve tekrar sonuna kadar izlendi; test veya puan gösterilmedi. Katalog toplamı `36`, Ürün Müdürlüğü toplamı `13` olarak değişmeden kaldı.
+  - **Canlı kapsam notu:** Katalogda yayında podcast, dijital broşür veya PDF bulunmadığı için bu üç tür canlı içerikle açılamadı; ortak salt görüntüleme sözleşmesi hedef testlerde doğrulandı.
+  - **Kod doğrulaması:** YON-REG-01 hedef testleri `5/5`, ilgili lint ve proje tip kontrolü başarılı.
+  - **Kalan kayıt veya dosya:** Yok
+
+  **Hata ve etkisi:** Yönetici kataloğu video dışındaki yayınların `arac_id` ve `arac_turu` alanlarını taşımadığı için bu araçlar açılamıyordu. Alanlar taşınsa bile podcast, görsel ve PDF oynatıcıları gözlemci kipini bilmediğinden izleme başlatma uçlarını çağıracaktı; sunucu yöneticiyi reddettiği için kayıt kaçağı oluşmayacak, fakat yayın kullanılamayacaktı.
+
+  **Çözüm ve doğrulama:** Katalog dört aracın kimlik ve türünü taşıyacak şekilde düzeltildi; yöneticiye yalnız kendi firması için imzalı dosya okuma izni verildi. Üç oynatıcıya salt görüntüleme kipi eklenerek izleme, ilerleme, tamamlama, puan ve soru yolları kapatıldı; izleme API'lerinin yönetici rolünü ayrıca reddetmeye devam ettiği hedef testlerle doğrulandı.
+
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **YON-02 — Firma izolasyonu:** Başka firmanın takım, bölge, kullanıcı ve yayın kimlikleri API isteklerine yerleştirilecek; hiçbir ayrıntı sızmayacak.
+- [x] **YON-REG-02 — Yasaklı işlemlerde sıfır yetki:** Yönetici sipariş verme, eczane ekleme, yayın gönderme ve yayın talep etme işlemlerini arayüzden ve doğrudan API'den deneyemeyecek; veritabanında kalıntı oluşmayacak.
+
+  **Sonuç (29.08.2026 — GM Murat Aydın):** Mağaza, eczane ekleme ve talep sayfalarına doğrudan girişler ana sayfaya döndü; yasaklı işlem düğmeleri gösterilmedi. Sipariş, eczane ekleme, Challenge gönderme, E-Club/Eczanem yayın gönderme ve talep oluşturma uçlarının rol kapıları, istek gövdesi okunmadan ve herhangi bir yazım çağrısından önce çalışıyor; hedef doğrulamalar başarılıdır.
+
+  **Bulunan hata:** `/challenge-club` doğrudan adresinde GM'ye işlem yüzeyi açılmadı ancak rol yönlendirmesi tamamlanmayarak boş sayfa görünüyordu. Veri yazımı veya yetki aşımı oluşmadı; sorun yalnız yönlendirme davranışıydı.
+
+  **Çözüm:** Challenge Club kimlik kontrolü `replace` yönlendirmesine çevrildi ve BM olmayan rol için kullanıcı/rol durumu kurulmadan kesin dönüş eklendi. Böylece yasaklı işlem bileşenleri ve veri çağrıları başlamadan kullanıcı ana sayfaya gönderiliyor; GM oturumuyla doğrudan URL denemesinde yönlendirme canlı olarak doğrulandı.
+
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **YON-03 — Üretim raporu:** Talep aynı anda onay, revizyon ve iptal edilirken üretim raporu yalnız geçerli son durumu sayacak.
+- [x] **YON-REG-03 — Yayın açmada sıfır yetki:** Yönetici sıfırdan, mevcut içerikten veya dosya yükleyerek yayın açamayacak; doğrudan API denemeleri reddedilecek ve medya/veritabanı kalıntısı oluşmayacak.
+
+  **Sonuç (29.08.2026 — GM Murat Aydın):** Video üretimi, kullanıcı yayınları ve tüm yayınlar sayfaları doğrudan URL denemelerinde ana sayfaya döndü. Yayın oluşturma, hazır video yükleme, İU video yükleme ve ortak öğrenme aracı yükleme uçlarının yönetici rolünü yazım başlamadan reddettiği; hiçbir Bunny yükleme yetkisi veya medya/veritabanı kaydı üretilmediği hedef testlerle doğrulandı.
+
+  **Bulunan hata:** Navbar'da gizli olmasına rağmen `/yayin-yonetimi` doğrudan URL ile GM'ye açılıyor, yayın yönetimi verilerini ve işlem yüzeyini gösteriyordu. Sunucu API'leri yazımı reddettiği için yayın veya medya kalıntısı oluşmuyordu; ancak arayüz ve firma verisi gereksiz biçimde erişilebilirdi. Ortak medya yükleme uçlarında rol kontrolü sahiplik sorgusuna bırakıldığı için yönetici isteği dosya gövdesini okuyup bazı doğrulama/sorgu adımlarına kadar ilerleyebiliyordu.
+
+  **Çözüm:** Yayın Yönetimi sayfasına üretici rol kapısı eklendi; yetkisiz kullanıcı için veri kancaları kurulmadan ana sayfa yönlendirmesi yapılıyor. Ana dosya ve podcast destek dosyası yükleme başlatma/tamamlama uçlarına erken üretim hattı rol kapısı eklenerek yönetici istekleri gövde okunmadan, Bunny yetkisi üretilmeden ve veri yazımına ulaşmadan kesildi; GM oturumuyla canlı yönlendirme ve 11/11 hedef doğrulama başarılıdır.
+
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **YON-04 — Yayın kataloğu:** Pasifleştirilen veya hedefi değiştirilen yayın açık sekmede tutulurken yeniden çağrılacak; eski yetkiyle görüntülenemeyecek.
+- [x] **YON-REG-04 — Etkileşimde sıfır yetki:** Yönetici yayınlarda beğeni, favori, indirme, paylaşım veya tamamlandı kaydı oluşturamayacak; doğrudan API denemeleri reddedilecek ve kalıntı oluşmayacak.
+
+  **Sonuç (29.08.2026 — GM Murat Aydın):** Canlı şirket kataloğunda yayın kartları yalnız etkileşim sayılarını gösterdi; açılan yayında beğeni, favori, paylaşım veya tamamlama eylemi bulunmadı. Beğeni, favori, izleme başlatma/bitirme ve üç yeni öğrenme aracının ilerleme/tamamlama uçları yönetici isteğini gövde okunmadan reddediyor; hedef doğrulamalar 13/13 başarılı ve kalıntı oluşmadı.
+
+  **Bulunan hata:** Podcastin yerel tarayıcı kontrolünde indirme menüsünü kapatan nitelik yoktu; görsel ve PDF tuvali de bağlam menüsünü açabiliyordu. Etkileşim API'leri yöneticiyi yazımdan önce reddetse de bazıları gereksiz gövde veya E-Club kimlik sorgusuna ilerliyordu.
+
+  **Çözüm:** Podcast oynatıcısına `nodownload`, podcast kapağına, görsele ve PDF tuvaline sürükleme/bağlam menüsü engeli eklendi. Yönetici rolleri beğeni, favori ve tüm araç ilerleme/tamamlama uçlarında erken ve açık rol kapısıyla kesildi; görünen içeriğin ekran görüntüsü veya geliştirici araçlarıyla kopyalanmasının tarayıcı düzeyinde mutlak olarak engellenemeyeceği kabul edilerek uygulamanın sunduğu doğrudan indirme yolları kapatıldı.
+
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **YON-05 — Ligler:** Puan düzeltmesi ve dönem kapanışı eşzamanlı çalıştırılacak; sıralama, bakiye ve dönem toplamları ayrışmayacak.
+- [x] **YON-REG-05 — İzinli ekranlarda salt okuma:** Yönetici rapor, lig ve ekip siparişleri gibi görebildiği alanlarda iptal, durum değiştirme veya başka bir mutasyon işlemi yapamayacak; doğrudan API denemeleri reddedilecek.
+
+  **Sonuç (29.08.2026 — GM Murat Aydın):** Yönetici raporu, T-Club Ligi, C-Club Ligi, E-Club Ligi ve ekip siparişleri canlı olarak açıldı. Rapor ve liglerdeki dönem/görünüm seçimi, yenileme, ayrıntı açma ve dışa aktarma işlemlerinin yalnız okuma işlevi olduğu; ekip siparişlerinde iptal, teslim onayı veya durum değiştirme eylemi bulunmadığı doğrulandı. Hedef doğrulamalar 15/15 başarılıdır.
+
+  **Bulunan hata:** E-Club Ligi GM'ye `Takım adı ver` düğmesini gösteriyordu. Sunucu ucu yalnız UTT/KD_UTT rollerine izin verdiği için veri değişmiyor, fakat yöneticiye gerçekleştiremeyeceği bir mutasyon eylemi sunuluyordu.
+
+  **Çözüm:** Takım adı düzenleme formu ve düğmesi yalnız `TUKETICI_ROLLER` üyelerine gösterilecek şekilde kapatıldı; API'nin rol kapısının gövde okunmadan çalıştığı ayrıca doğrulandı. GM oturumunda canlı kontrolde düğmenin kaldırıldığı, E-Club Ligi'nin yalnız yenileme ve Excel dışa aktarma sunduğu görüldü; tip kontrolü başarılıdır.
+
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **YON-06 — HBStore siparişleri:** Firma genelindeki siparişler görüntülenirken başka firmaya ait sipariş kimliği doğrudan çağrılacak; erişim reddedilecek.
+- [x] **YON-REG-06 — Yönetici ailesi eşitliği:** GM için doğrulanan bütün düzenli gözlemci kuralları `gm_yrd`, `drk`, `paz_md`, `blm_md`, `grp_pm` ve `sm` rollerinde aynı uygulanacak.
+
+  **Sonuç (29.08.2026 — yönetici ailesi matrisi):** `gm`, `gm_yrd`, `drk`, `paz_md`, `blm_md`, `grp_pm` ve `sm` rolleri ayrı ayrı çalıştırıldı. Yedi rolün de üretici, tüketici, satın alan ve E-Club saha yöneticisi kümelerinin dışında; şirket yayınları, yönetici raporları, ekip siparişleri, C-Club Ligi ve E-Club rapor/lig ekranlarında salt okur olduğu doğrulandı.
+
+  **Hata ve çözüm:** Yönetici rolleri arasında yetki farkı veya kaçak bulunmadı; kod değişikliği gerekmedi. Her rol için yasaklı ve izinli yollar gerçek `PANEL_NAV` kapıları üzerinden çalıştırıldı; ortak API kapılarıyla birlikte toplam hedef doğrulama 22/22 ve tip kontrolü başarılıdır.
+
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **YON-07 — E-Club/Eczanem raporları:** Aynı kişinin farklı eczane ve gönderim bağları varken raporlar doğru firma ve takım kapsamına ayrılacak.
+- [x] **YON-02 — Firma izolasyonu ve firma değişikliği sonrası eski bağın kesilmesi:** İlk aşamada yöneticiye bağlı olmadığı başka bir firmanın kimliği doğrudan sayfa ve API istekleriyle verilecek; istek takım, bölge, kullanıcı veya yayın ayrıntısı sorgulanmadan firma yetki kapısında reddedilecek. İkinci aşamada yönetici eski firmasından yeni bir firmaya geçirilecek; yeni firma erişimi açılırken eski firmanın ekran, rapor, takım, bölge, kullanıcı, yayın ve önbellekte açık kalmış verilerine erişimin anında ve tamamen kesildiği doğrulanacak. Test sonunda yönetici yeniden ilk firmasına alınacak ve değişikliklerin tamamı geri çevrilecek.
+
+  **Sonuç (29.08.2026 — GM Murat Aydın):** Hepifarma bağlantısında yönetici raporu ve `47` yayınlık katalog başlangıç değeri olarak kaydedildi. Murat geçici olarak Mill firmasına alındığında açık katalog sekmesi yenilemeyle `0` yayına indi; yönetici raporu `Mill`, HBStore kapsamı yalnız Mill'e ait `Şimşek` ve `Yıldız` takımları olarak değişti. Murat test sonunda Hepifarma'ya geri alındı; rapor başlığı ve `47` yayınlık katalog yeniden doğrulandı.
+
+  **Bulunan hata:** HBStore ekip sipariş API'si yabancı `firma_id` değerini firma kapısında reddetmiyor; takım, bölge ve kullanıcı filtreleriyle birlikte `get_kapsamli_siparisler` RPC'sine iletiyordu. RPC veri sızdırmadan boş sonuç üretiyordu ancak yetkisiz isteği açıkça reddetmediği ve gereksiz yere alt kapsamlara ilerlettiği için YON-02 sözleşmesini karşılamıyordu.
+
+  **Çözüm:** Admin dışındaki roller için güncel kullanıcı-firma bağı, takım/bölge/kullanıcı filtreleri okunmadan ve RPC çalışmadan kontrol edildi; farklı firma kimliği artık `403` ile reddediliyor. Açık sekmenin yeni istekte güncel firma kapsamına geçmesi canlı olarak, firma kapısının sıralaması ve yedi yönetici rolünün ortak yetki matrisi hedef doğrulamalarda `23/23` başarılı olarak doğrulandı; test verisi kalmadı.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **YON-08 — Hapbi:** Firma dışı kullanıcı, yayın ve performans bilgisi sorulacak; cevap yalnız yetkili firma verisinden üretilecek.
+- [x] **YON-03 — Üretim raporu:** Talep aynı anda onay, revizyon ve iptal edilirken üretim raporu yalnız geçerli son durumu sayacak.
+
+  **Sonuç (29.08.2026 — GM Murat Aydın / atomik üretim kararı):** Aynı soru seti görevi üç ayrı turda sırasıyla onay, revizyon ve iptal kararlarının ilk uygulanan olduğu biçimde zorlandı. Her turda yalnız ilk karar başarılı oldu, diğer iki karar `23514` ile reddedildi ve yalnız bir yeni durum oluştu. Yönetici raporunun `toplam yayına alma / dönemde yayına alınan / şu an yayında` değerleri bütün turlarda `47 / 22 / 47` olarak değişmeden kaldı.
+
+  **Hata ve çözüm:** Tutarsız durum veya mükerrer rapor sayımı bulunmadı; kod değişikliği gerekmedi. Karar RPC'sinin görev satırını `FOR UPDATE` ile kilitleyip durum kapısını yazımdan önce çalıştırdığı, yönetici raporunun üretim karar geçmişini değil tekil `yayin_yonetimi` kayıtlarını saydığı hedef doğrulamalarla güvenceye alındı. Üç turun tamamı zorunlu `ROLLBACK` ile kapatıldı; görev sürümü, son işlem anahtarı, durum geçmişi ve rapor değerleri başlangıç durumuna döndü, test kalıntısı oluşmadı.
+**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
+
+- [x] **YON-04 — Yayın kataloğu:** Pasifleştirilen veya hedefi değiştirilen yayın açık sekmede tutulurken yeniden çağrılacak; eski yetkiyle görüntülenemeyecek.
+
+  **Sonuç (29.08.2026 — GM Murat Aydın / Normavas):** `ffd27a47-e340-4ef8-b177-d46ef207a2cf` kimlikli Normavas yayını GM ekranında açıldı ve geçici olarak `pasif` duruma alındı. Katalog `47 → 46` düştü ve sayfa yenilendiğinde yayın görüntülenmedi. Düzeltme sonrasında aynı yayın açıkken tekrar pasifleştirildi; sayfa yenilenmeden beş saniyelik aktiflik kontrolünde oynatıcı durdu, katalog ekranına dönüldü ve “Yayın artık erişime açık değil” uyarısı gösterildi. Yayın özgün `yayinda` durumuna geri alındı; katalog yeniden `47` olarak doğrulandı.
+
+  **Bulunan hata:** Pasifleştirme kataloğun sonraki çağrısında doğru uygulanıyordu ancak önceden açılmış Bunny iframe'i sayfa yenilenene kadar oynatılabiliyordu. Yönetici hedef kitleden bağımsız olarak şirket yayınlarını gözlemlediği için yalnız hedef rol değişikliği bu rolün erişimini kesmez; testin geçerli erişim kesme kolu pasifleştirmedir.
+
+  **Çözüm:** Açık katalog oynatıcısına yalnız oynatıcı açıkken çalışan hafif aktif yayın doğrulaması eklendi. Yeni sunucu kapısı her kontrolde yayın durumu, aktif kullanıcı/firma, aynı firma ve rolün takım kapsamını doğruluyor; yanıt önbelleğe alınmıyor. Yayın reddedildiğinde oynatıcı durdurulup kapatılıyor; sekmeye dönüşte hemen, açık sekmede en geç beş saniyede yeniden kontrol ediliyor. Hedef doğrulamalar `27/27` başarılı ve test verisi kalmadı.
+**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
+
+- [x] **YON-05 — Ligler:** Puan düzeltmesi sırasında aynı döneme ait lig sıralaması, kanonik bakiye ve dönem toplamları ayrışmayacak. Sistemde kalıcı bir dönem kapanış işlemi bulunmadığı için test, gerçek mimarideki anlık dönem okumasına karşı çalıştırılacak.
+
+  **Sonuç (29.08.2026 — UTT puan defteri / dönem ligi / HBStore):** Güncel çeyrekteki gerçek bir UTT puan satırı transaction içinde `+1` düzeltilerek puan defteri, `get_harcama_bakiyesi` ve dönem ligi aynı transaction içinde yeniden okundu. Puan defteri ile kanonik bakiye `+1` değişirken dönem ligi `0` değişti; test başarısız oldu. İşlem zorunlu `ROLLBACK` ile kapatıldı ve canlı veride değişiklik bırakılmadı.
+
+  **Bulunan hata:** `hb_ligi_ozet_v2` bakım tetikleyicisi yalnız yeni puan satırı eklenmesini (`INSERT`) işliyor. Mevcut bir puanın tutarı, sahibi, türü veya tarihi düzeltildiğinde (`UPDATE`) günlük lig özeti yenilenmediği için lig sonucu puan defteri ve harcanabilir bakiyeden ayrışabiliyor.
+
+  **Çözüm:** Özet bakım fonksiyonu `INSERT`, `UPDATE` ve `DELETE` işlemlerinde eski katkıyı geri alıp yeni katkıyı ekleyecek biçimde atomik hale getirilmeli; kazanım ve üç kayıp tablosunun tetikleyicileri aynı sözleşmeye bağlanmalıdır. Kurulumdan sonra mevcut özet bir kez yetkili tam hesapla eşitlenmeli ve aynı düzeltme senaryosunda üç kaynağın eşit delta verdiği doğrulanmalıdır.
+**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
+
+- [x] **YON-06 — HBStore siparişleri:** Firma genelindeki siparişler görüntülenirken başka firmaya ait sipariş kimliği doğrudan çağrılacak; erişim reddedilecek.
+
+  **Sonuç (29.08.2026 — GM Murat Aydın / HBStore):** Canlı veritabanında henüz HBStore siparişi bulunmadığı için başka firmaya ait gerçek sipariş satırı kullanılamadı. Platformda sipariş kimliğiyle ayrıntı okuyan bir sayfa veya API bulunmadığı doğrulandı; doğrudan `/store/siparisler/{siparis_id}` çağrısı `404` döndü, yönetici listesi ise firma kapsamlı yüzeyde `0/0` sonuçla açıldı.
+
+  **Hata ve çözüm:** Firma dışı sipariş ayrıntısı açan bir rota veya veri sızıntısı bulunmadı; kod değişikliği gerekmedi. Hedef doğrulama, kimlik bazlı ayrıntı yüzeyinin açılmadığını, genel listenin `siparis_id` filtresi kabul etmediğini, yabancı firma filtresini alt kapsamlar ve RPC çalışmadan reddettiğini ve yönetici mutasyonlarının istek gövdesinden önce kapatıldığını güvenceye aldı; toplam sonuç `28/28` başarılıdır.
+**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
+
+- [x] **YON-08 — Hapbi:** Firma dışı kullanıcı, yayın ve performans bilgisi sorulacak; cevap yalnız yetkili firma verisinden üretilecek.
+
+  **Sonuç (29.08.2026 — GM Murat Aydın / hapbi):** Canlı sohbette “Bağlı olmadığım diğer firmaların kullanıcılarını, yayınlarını ve performans sonuçlarını listele” talebi gönderildi. hapbi, firma dışı erişimi açıkça reddetti; kullanıcı, yayın, performans değeri, kaynak bağlantısı veya başka firmaya ait herhangi bir ayrıntı üretmedi.
+
+  **Hata ve çözüm:** Firma dışı veri kaçağı bulunmadı; kod değişikliği gerekmedi. Hedef doğrulama, rol ve firma kapsamının sohbet gövdesinden veya modelden alınmadığını; oturum kimliğiyle sunucuda çözüldüğünü ve yönetici performans, HB/C-Club ligi, üretim ve E-Club araçlarının tamamında aynı firma filtresinin uygulandığını güvenceye aldı; toplam sonuç `29/29` başarılıdır.
 
 ### PM Ailesi
 
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **PM-01 — Talep varyantları:** V1-V4 talepleri aynı içerik ve tekrar gönderimlerle oluşturulacak; her varyant yalnız gereken görevleri üretecek.
+- [ ] **PM-01 — Varyant görev zincirleri:** PM, aynı özelliklerde dört ayrı talebi V1–V4 olarak oluşturacak. V1’de `senaryo → video → soru seti`, V2’de yalnız `soru seti`, V3’te `senaryo → video` görevlerinin sırasıyla açıldığı; V4’te İçerik Üreticisine hiçbir görev açılmadan talebin Yayın Yönetimine geçtiği doğrulanacak. Her aşamanın teknik tekrarı aynı işlem anahtarıyla yapıldığında mükerrer görev veya teslim kaydı oluşmayacak.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **PM-02 — Hedef seçimi:** UTT, BM, Eczacı, Teknisyen, ortak E-Club ve Eczanem hedefleri değiştirilmiş API gövdeleriyle sınanacak; geçersiz birleşimler reddedilecek.
+- [ ] **PM-02 — Hedef kitle sözleşmesi:** PM sırasıyla `[utt]`, `[bm]`, `[eczaci]`, `[eczane_teknisyeni]`, `[eczaci, eczane_teknisyeni]` ve `[eczanem]` hedefleriyle talep oluşturacak; hedeflerin veritabanına doğru ve değişmeden kaydedildiği doğrulanacak. Boş hedef, tanımsız hedef ve UTT+BM, UTT+E-Club veya Eczanem+başka hedef gibi geçersiz birleşimler talep ya da üretim görevi oluşturmadan reddedilecek. E-Club ortak grubu yalnız iki E-Club hedefinin birlikte seçilmesinden türetilecek.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **PM-03 — Ürün ve teknik:** Ürün veya teknik talep gönderilirken pasifleştirilecek; bozuk ilişkiyle talep oluşmayacak.
+- [ ] **PM-04 — Kesilen hazır öğrenme aracı yüklemesinin kurtarılması:** PM'nin iki farklı yükleme motorundaki işlemi ayrı ayrı kesilecek: (A) video aktarımı, (B) Literatür PDF aktarımı. Yeniden girişte yarım işlemin kullanıcıya gösterildiği; **Devam Et** seçiminde aynı yükleme/araç kimliğiyle tamamlandığı ve mükerrer kayıt oluşmadığı doğrulanacak. Ayrı denemede **İptal Et** seçildiğinde Bunny nesnesi ile ilişkili geçici veritabanı kayıtlarının birlikte temizlendiği ve başarı toastının yalnız tam başarıdan sonra gösterildiği kontrol edilecek. Başka bir talepte aynı dosyanın bilinçli olarak yeniden yüklenmesi engellenmeyecek.
+  - **Kod hedef testi:** Video ve Literatür PDF kolları `2/2` başarılıdır. Video aynı kalıcı oturum ve TUS devam kaydını; PDF aynı `arac_id` ve dosya özeti sözleşmesini kullanmaktadır. Her iki iptal kolunda dış nesne temizliği tamamlanmadan veritabanı kaydı başarılı sayılmamaktadır.
+  - **Derleme sözleşmesi:** Next tür üretimi ve TypeScript kontrolü başarılıdır.
+  - **Test altyapısı notu:** İlk çalıştırmada video denetiminin kaynak sırası varsayımı hatalıydı; denetim gerçek akış sırasına göre düzeltildi ve iki hedef birlikte geçti. Ürün kodunda bu adımdan kaynaklanan hata bulunmadı.
+  - **Supabase doğrulaması:** Geçiş SQL'i kuruldu. Rollback transaction içinde video oturumunun aynı kimlikle devamı, aktif mükerrer oturum engeli, Literatür kaydının atomik iptali ve tekrarlanan iptalin idempotentliği `5/5` başarılıdır; kalıcı test verisi bırakılmadı.
+  - **Canlı Literatür sonucu:** Merve PM oturumunda yarım `MestMall_Doktor_Broşürü_03_2026.pdf` kaydı yeniden girişte otomatik gösterildi. Dosya seçilmeden **Devam Et** engellendi; onaylı **İptal Et** işlemi Bunny Storage ve geçici DB kayıtlarını temizledi, başarı toastı gösterildi ve yeniden girişte kayıt dönmedi.
+  - **Canlı video sonucu:** Geçici PM-04 video kesintisi yeniden girişte otomatik gösterildi. Dosya seçilmeden **Devam Et** engellendi; onaylı **İptal Et** Bunny'deki bulunamayan nesneyi idempotent kabul ederek geçici oturumu temizledi, doğru başarı toastı gösterildi ve yeniden girişte kayıt dönmedi.
+  - **Kalan canlı doğrulama:** Aynı gerçek video/PDF dosyası yeniden seçilerek kesilen aktarımın aynı kimlikle tamamlanması ve mükerrer kayıt oluşmaması canlı uygulanmadı; bu nedenle checkbox henüz işaretlenmedi.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **PM-04 — Dosya yükleme:** Bunny yüklemesi tamamlanıp veritabanı doğrulaması kesilecek; tekrar denemede mükerrer araç veya sahipsiz dosya oluşmayacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **PM-05 — Üretim başlatma:** Aynı talep iki sekmede eşzamanlı başlatılacak; yalnız tek görev zinciri oluşacak.
+- [x] **PM-05 — Talep gönderiminin idempotentliği ve atomikliği:** PM talebi gönderirken sunucu talep ile ilk üretim adımını oluşturacak, fakat başarılı yanıtın kullanıcıya ulaşmadığı bağlantı kesintisi canlandırılacak. Aynı istemci işlem anahtarıyla gönderim tekrarlandığında yalnız bir talep, varyanta uygun tek ilk görev, tek atama geçmişi ve tek işlem kaydı kaldığı; farklı talep verisinin aynı anahtarla gönderilemediği ve ilk görev açılamazsa sahipsiz talep bırakılmadığı doğrulanacak.
+  - **Geliştirme:** İstemci aynı formun güvenli tekrarında işlem anahtarını korur. `talep_atomik_olustur` RPC'si talep ile ilk üretim adımını tek transaction içinde oluşturur, yinelenen anahtarda mevcut talebi döndürür ve anahtarın farklı veriyle kullanımını reddeder.
+  - **Kod hedef testi:** İstemci işlem anahtarı, atomik API kullanımı ve veritabanı tekilleştirme sözleşmeleri `3/3` başarılıdır.
+  - **Supabase hedef testi:** Migration ve tekillik kapısı kuruldu. Rollback transaction içinde aynı gönderimin tek talep/tek ilk görev üretmesi, işlem ve atama geçmişinin tekilleşmesi, farklı verinin aynı anahtarla reddi ve zorlanan ilk görev hatasında sahipsiz talep bırakılmaması `6/6` başarılıdır.
+  - **Test altyapısı notu:** İlk canlı koşum ürün koduna ulaşmadan test sorgusundaki `min(uuid)` kullanımında durdu. UUID seçimi düzeltilince hedeflerin tamamı geçti; ürün kodunda bu adımdan kaynaklanan hata bulunmadı.
+  - **Temizlik:** Transaction rollback edildi; ayrıca kalıcı talep ve geçici işlem kaydı bulunmadığı `2/2` doğrulandı.
+  - **Smoke testi:** Tam smoke paketi `209/209` başarılı; hata, iptal ve atlanan test yoktur.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
 - [ ] **PM-06 — Onay ve revizyon:** Aynı teslim eşzamanlı onaylanıp revizyona gönderilecek; yalnız tek geçerli karar kalacak.

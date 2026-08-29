@@ -9,6 +9,7 @@ import * as tus from "tus-js-client";
 
 /** Vezne uçlarının (videolar/talepler bunny-yukleme-baslat) ortak yanıt sözleşmesi. */
 export interface BunnyVezneIzni {
+  yukleme_id?: string | null;
   video_guid: string;
   library_id: string | number;
   imza: string;
@@ -16,6 +17,24 @@ export interface BunnyVezneIzni {
   tus_endpoint: string;
   embed_url: string;
   baslik: string;
+}
+
+function yarimYuklemeBildir(): void {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("hapbilgi:yarim-yukleme-degisti"));
+}
+
+export async function videoYuklemeOturumuGuncelle(
+  yuklemeId: string | null | undefined,
+  islem: "aktarim_tamamlandi" | "baglandi",
+): Promise<void> {
+  if (!yuklemeId) return;
+  const yanit = await fetch("/api/ogrenme-araclari/yarim-yuklemeler", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ yukleme_id: yuklemeId, islem }),
+  });
+  const veri = await yanit.json().catch(() => ({}));
+  if (!yanit.ok) throw new Error(veri.hata ?? "Video yükleme oturumu güncellenemedi.");
 }
 
 /** Dosyayı TUS ile doğrudan Bunny'ye yükler; kesintiden kaldığı yerden devam edebilir. */
@@ -35,10 +54,20 @@ export function bunnyTusYukle(
         LibraryId: String(izin.library_id),
       },
       metadata: { filetype: dosya.type, title: izin.baslik },
-      onError: reddet,
+      onError: (error) => { yarimYuklemeBildir(); reddet(error); },
       onProgress: (yuklenen, toplam) => onYuzde(Math.round((yuklenen / toplam) * 100)),
       onSuccess: () => tamamla(),
     });
-    yukleme.start();
+    // Aynı dosya ve aynı Bunny video kimliğiyle kesilen TUS aktarımı varsa
+    // tarayıcının tuttuğu offset'ten sürdür; yoksa normal yüklemeyi başlat.
+    void yukleme.findPreviousUploads()
+      .then((oncekiler) => {
+        const ayniVideo = oncekiler.find((onceki) =>
+          onceki.metadata?.title === izin.baslik
+          && onceki.size === dosya.size);
+        if (ayniVideo) yukleme.resumeFromPreviousUpload(ayniVideo);
+        yukleme.start();
+      })
+      .catch(() => yukleme.start());
   });
 }

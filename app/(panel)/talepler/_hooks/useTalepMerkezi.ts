@@ -15,7 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { uretimToast, toastVaryant, type ToastAsama, type ToastOlay } from "@/lib/uretim/toastMesaj";
-import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
+import { bunnyTusYukle, videoYuklemeOturumuGuncelle } from "@/lib/video/bunnyTusIstemci";
 import { SORGU_ARALIGI_MS, TAVAN_SANIYE } from "@/lib/video/islemeDurumu";
 import { bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
 import type { TalepDetay, TalepSatiri } from "../_ureticiRolTypes";
@@ -245,7 +245,12 @@ export function useTalepMerkezi() {
         const res = await fetch("/talepler/api/bunny-yukleme-baslat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ talep_id: talep.talep_id }),
+          body: JSON.stringify({
+            talep_id: talep.talep_id,
+            dosya_adi: dosya.name,
+            mime_type: dosya.type || "video/mp4",
+            dosya_boyutu: dosya.size,
+          }),
         });
         const izin = await res.json();
         if (!res.ok) {
@@ -255,13 +260,9 @@ export function useTalepMerkezi() {
 
         try {
           await bunnyTusYukle(dosya, izin, setVideoYuzdesi);
+          await videoYuklemeOturumuGuncelle(izin.yukleme_id, "aktarim_tamamlandi");
         } catch (err: unknown) {
           hata("Video yüklenemedi.", "TUS yükleme", err instanceof Error ? err.message : undefined);
-          fetch("/videolar/api/bunny-yukleme-iptal", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ video_guid: izin.video_guid }),
-          }).catch(() => {});
           return;
         }
 
@@ -281,7 +282,10 @@ export function useTalepMerkezi() {
         let tamamlandi = false;
         try {
           const ilk = await denemePut();
-          if (ilk.ok && ilk.status !== 202) tamamlandi = true;
+          if (ilk.ok && ilk.status !== 202) {
+            tamamlandi = true;
+            await videoYuklemeOturumuGuncelle(izin.yukleme_id, "baglandi");
+          }
           else if (ilk.status !== 202 && ilk.status < 500) {
             hata(ilk.d2.hata ?? "Video doğrulanamadı.", ilk.d2.adim, ilk.d2.detay);
             return;
@@ -297,7 +301,10 @@ export function useTalepMerkezi() {
               await new Promise((coz) => setTimeout(coz, SORGU_ARALIGI_MS));
               try {
                 const t = await denemePut();
-                if (t.ok && t.status !== 202) return;
+                if (t.ok && t.status !== 202) {
+                  await videoYuklemeOturumuGuncelle(izin.yukleme_id, "baglandi").catch(() => undefined);
+                  return;
+                }
                 if (t.status !== 202 && t.status < 500) return;
               } catch { /* geçici hata; sonraki tur */ }
             }

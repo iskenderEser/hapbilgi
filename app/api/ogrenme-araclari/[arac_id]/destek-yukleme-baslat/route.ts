@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
+import { rolHatasi, sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
+import { IU_ROLU, URETICI_ROLLER } from "@/lib/utils/roller";
 import { bunnyPodcastDestekYoluOlustur, bunnyUploadBilgisi, yuklemeYetkisiOlustur } from "@/lib/ogrenmeAraci/bunnyStorage";
 import { podcastDestekDosyasiDogrula, type PodcastDestekDosyasiRolu } from "@/lib/ogrenmeAraci/sozlesme";
 import { uretimAraciYetkisiniDogrula } from "@/lib/ogrenmeAraci/yetki";
@@ -11,6 +12,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
+
+    const db = createAdminClient();
+    const rol = await rolCozucu(db, user.id);
+    if (![IU_ROLU, ...URETICI_ROLLER].includes(rol)) return rolHatasi("Bu işlem üretim hattı rollerine açıktır.");
+
     const { arac_id } = await params;
     const body = await request.json();
     const rolDosya = body.dosya_rolu as PodcastDestekDosyasiRolu;
@@ -24,10 +30,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return validasyonHatasi(karar.ok ? "SHA-256 dosya özeti zorunludur." : karar.hata, ["dosya_adi", "mime_type", "dosya_boyutu", "checksum_sha256"]);
     }
 
-    const db = createAdminClient();
-    const { data: arac } = await db.from("ogrenme_araclari").select("arac_id, talep_id, arac_turu").eq("arac_id", arac_id).maybeSingle();
+    const { data: arac } = await db.from("ogrenme_araclari").select("arac_id, talep_id, arac_turu, metadata").eq("arac_id", arac_id).maybeSingle();
     if (!arac || arac.arac_turu !== "podcast") return NextResponse.json({ hata: "Podcast öğrenme aracı bulunamadı." }, { status: 404 });
-    const rol = await rolCozucu(db, user.id);
     const yetki = await uretimAraciYetkisiniDogrula({ db, talepId: arac.talep_id, kullaniciId: user.id, rol });
     if (!yetki.ok) return NextResponse.json({ hata: yetki.hata }, { status: yetki.status });
 
@@ -42,6 +46,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       checksumSha256: body.checksum_sha256.toLowerCase(),
     });
     if (!upload || !yuklemeYetkisi) return NextResponse.json({ hata: "Bunny öğrenme aracı yükleme servisi yapılandırılmamış." }, { status: 503 });
+
+    // İstek Bunny'ye ulaşıp tamamlama isteği geri dönemese bile iptalde nesne
+    // yolunun bulunabilmesi için destek yolu aktarım başlamadan kalıcılaştırılır.
+    const metadata = (arac.metadata as Record<string, unknown> | null) ?? {};
+    const bekleyenYollar = (metadata.bekleyen_destek_yollari as Record<string, unknown> | null) ?? {};
+    const { error: yolHatasi } = await db.from("ogrenme_araclari").update({
+      metadata: { ...metadata, bekleyen_destek_yollari: { ...bekleyenYollar, [rolDosya]: dosyaYolu } },
+    }).eq("arac_id", arac_id);
+    if (yolHatasi) return NextResponse.json({ hata: "Podcast destek yükleme yolu kaydedilemedi." }, { status: 500 });
 
     return NextResponse.json({
       arac_id,

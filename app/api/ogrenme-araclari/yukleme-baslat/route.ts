@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
+import { rolHatasi, sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
+import { IU_ROLU, URETICI_ROLLER } from "@/lib/utils/roller";
 import { ogrenmeAraciAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
 import { bunnyNesneYoluOlustur, bunnyUploadBilgisi, yuklemeYetkisiOlustur } from "@/lib/ogrenmeAraci/bunnyStorage";
 import { dosyaBeyaniDogrula, yeniOgrenmeAraciTuruMu } from "@/lib/ogrenmeAraci/sozlesme";
@@ -13,6 +14,10 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
+
+    const db = createAdminClient();
+    const rol = await rolCozucu(db, user.id);
+    if (![IU_ROLU, ...URETICI_ROLLER].includes(rol)) return rolHatasi("Bu işlem üretim hattı rollerine açıktır.");
 
     const body = await request.json();
     const { talep_id, arac_turu, kaynak, dosya_adi, mime_type, dosya_boyutu, checksum_sha256 } = body;
@@ -36,8 +41,6 @@ export async function POST(request: NextRequest) {
     });
     if (!dosyaKarari.ok) return validasyonHatasi(dosyaKarari.hata, ["dosya_adi", "mime_type", "dosya_boyutu"]);
 
-    const db = createAdminClient();
-    const rol = await rolCozucu(db, user.id);
     const yetki = await uretimAraciYetkisiniDogrula({ db, talepId: talep_id, kullaniciId: user.id, rol });
     if (!yetki.ok) return NextResponse.json({ hata: yetki.hata }, { status: yetki.status });
 
@@ -76,10 +79,27 @@ export async function POST(request: NextRequest) {
     let satirlar: { arac_id: string; arac_durum_id: string }[] | null = null;
     let rpcError: { code?: string } | null = null;
     if (mevcutAracId) {
-      const { data: mevcut } = await db.from("ogrenme_araclari").select("arac_id, talep_id, arac_turu, kaynak, iu_id").eq("arac_id", mevcutAracId).maybeSingle();
-      const { data: sonDurum } = await db.from("ogrenme_araci_durumu").select("durum").eq("arac_id", mevcutAracId).order("created_at", { ascending: false }).limit(1).maybeSingle();
-      if (!mevcut || mevcut.talep_id !== talep_id || mevcut.arac_turu !== arac_turu || mevcut.kaynak !== "iu" || mevcut.iu_id !== user.id || sonDurum?.durum !== "revizyon bekleniyor") {
-        return NextResponse.json({ hata: "Öğrenme aracı revizyon yüklemesi geçersiz." }, { status: 409 });
+      const { data: mevcut } = await db.from("ogrenme_araclari").select("arac_id, talep_id, arac_turu, kaynak, iu_id, metadata").eq("arac_id", mevcutAracId).maybeSingle();
+      const { data: sonDurum } = await db.from("ogrenme_araci_durumu").select("arac_durum_id, durum").eq("arac_id", mevcutAracId).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      const yarimYukleme = sonDurum && ["yukleme_bekliyor", "dogrulama_bekliyor"].includes(sonDurum.durum);
+      const ayniKayit = mevcut
+        && mevcut.talep_id === talep_id
+        && mevcut.arac_turu === arac_turu
+        && mevcut.kaynak === kaynak
+        && (kaynak === "hazir" || mevcut.iu_id === user.id);
+      const revizyon = ayniKayit && mevcut?.kaynak === "iu" && mevcut.iu_id === user.id && sonDurum?.durum === "revizyon bekleniyor";
+      if (!ayniKayit || (!yarimYukleme && !revizyon)) {
+        return NextResponse.json({ hata: "Öğrenme aracı devam veya revizyon yüklemesi geçersiz." }, { status: 409 });
+      }
+      if (yarimYukleme) {
+        const oncekiBeyan = ((mevcut?.metadata as { yukleme_beyani?: Record<string, unknown> } | null)?.yukleme_beyani ?? {});
+        if (
+          oncekiBeyan.dosya_boyutu !== dosya_boyutu
+          || String(oncekiBeyan.mime_type ?? "").toLowerCase() !== mime_type.toLowerCase()
+          || String(oncekiBeyan.checksum_sha256 ?? "").toLowerCase() !== checksum_sha256.toLowerCase()
+        ) {
+          return NextResponse.json({ hata: "Devam için yarım kalan yüklemedeki aynı dosyayı seçmelisiniz." }, { status: 409 });
+        }
       }
       const { error: yenilemeHatasi } = await db.from("ogrenme_araclari").update({
         dosya_yolu: dosyaYolu, kapak_yolu: null, transkript_yolu: null,
@@ -88,19 +108,23 @@ export async function POST(request: NextRequest) {
         metadata: { yukleme_beyani: { dosya_adi, mime_type: mime_type.toLowerCase(), dosya_boyutu, checksum_sha256: checksum_sha256.toLowerCase() } },
         metadata_dogrulandi: false,
       }).eq("arac_id", mevcutAracId);
-      if (yenilemeHatasi) return NextResponse.json({ hata: "Öğrenme aracı revizyon kaydı açılamadı." }, { status: 500 });
-      const { data: yeniDurum, error: durumHatasi } = await db
-        .from("ogrenme_araci_durumu")
-        .insert({
-          arac_id: mevcutAracId,
-          durum: "yukleme_bekliyor",
-          degistiren_id: user.id,
-          notlar: "Öğrenme aracı revizyon yüklemesi başladı",
-        })
-        .select("arac_durum_id")
-        .single();
-      if (durumHatasi || !yeniDurum) return NextResponse.json({ hata: "Öğrenme aracı revizyon durumu açılamadı." }, { status: 500 });
-      satirlar = [{ arac_id: mevcutAracId, arac_durum_id: yeniDurum.arac_durum_id }];
+      if (yenilemeHatasi) return NextResponse.json({ hata: "Öğrenme aracı yükleme kaydı yeniden açılamadı." }, { status: 500 });
+      if (sonDurum?.durum === "yukleme_bekliyor") {
+        satirlar = [{ arac_id: mevcutAracId, arac_durum_id: sonDurum.arac_durum_id }];
+      } else {
+        const { data: yeniDurum, error: durumHatasi } = await db
+          .from("ogrenme_araci_durumu")
+          .insert({
+            arac_id: mevcutAracId,
+            durum: "yukleme_bekliyor",
+            degistiren_id: user.id,
+            notlar: yarimYukleme ? "Yarım kalan öğrenme aracı yüklemesine devam edildi" : "Öğrenme aracı revizyon yüklemesi başladı",
+          })
+          .select("arac_durum_id")
+          .single();
+        if (durumHatasi || !yeniDurum) return NextResponse.json({ hata: "Öğrenme aracı yükleme durumu yeniden açılamadı." }, { status: 500 });
+        satirlar = [{ arac_id: mevcutAracId, arac_durum_id: yeniDurum.arac_durum_id }];
+      }
     } else {
       const rpcSonucu = await db.rpc("ogrenme_araci_yukleme_baslat", {
       p_arac_id: aracId,
