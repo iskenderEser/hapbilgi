@@ -43,7 +43,8 @@ export async function performansRaporunuOku(
     const alanlar = ["izleme_puani", "cevaplama_puani", "oneri_puani", "extra_puani", "ileri_sarma_kaybi", "yanlis_cevap_kaybi", "oneri_kaybi", "challenge_kaybi", "kazanilan_toplam", "kaybedilen_toplam", "net_puan", "toplam_takim", "toplam_bolge", "toplam_utt", "aktif_utt", "donem_tamamlanan_izleme", "donem_benzersiz_utt_yayin", "donemde_yayina_alinan", "su_an_yayinda", "guncel_tur_toplam_firsat", "guncel_tur_tamamlanan", "guncel_tur_kalan", "guncel_tur_izlenme_orani"];
     return {
       durum: ozet.data?.length ? "ok" : "bos", kaynak: baglam.kaynak("Yönetici firma raporu", "/raporlar/yonetici", p),
-      veri: { aralik, ozet: guvenliSatirlar(ozet.data ?? [], alanlar)[0] ?? null,
+      veri: { aralik, kapsam: k.firma_adi ? `firma: ${k.firma_adi}` : "firma",
+        ozet: guvenliSatirlar(ozet.data ?? [], alanlar)[0] ?? null,
         takimlar: guvenliSatirlar(takimlar.data ?? [], ["birim_adi", "izleme_puani", "cevaplama_puani", "net_puan"]),
         toplam_takim_satiri: takimlar.data?.length ?? 0,
         not: "guncel_tur alanları anlıktır; dönem puanlarıyla karıştırılmaz. Takım listesi en çok 40 satırdır." },
@@ -65,7 +66,7 @@ export async function performansRaporunuOku(
   return {
     durum: rows.length || uretim.data?.length ? "ok" : "bos",
     kaynak: baglam.kaynak(uretici ? "Kişisel üretim ve saha raporu" : "T-Club performans raporu", `/raporlar/${raporRol}`, p),
-    veri: { aralik, kapsam: utt ? "kişisel" : k.rol === "bm" ? "bölge" : "yetkili takım/firma", ozet: rows.length ? ozetToplami(rows) : null,
+    veri: { aralik, kapsam: utt ? "kişisel" : k.rol === "bm" ? (k.bolge_adi ? `bölge: ${k.bolge_adi}` : "bölge") : (k.rol === "tm" || uretici?.raporScope === "takim") ? (k.takim_adi ? `takım: ${k.takim_adi}` : "takım") : (k.firma_adi ? `firma: ${k.firma_adi}` : "firma"), ozet: rows.length ? ozetToplami(rows) : null,
       ...(uretici ? { uretim: guvenliSatirlar(uretim.data ?? [], ["toplam_talep", "tamamlanan_talep", "yayindaki_video", "durdurulan_video"])[0] ?? null } : {}),
       kategoriler: kategorileriTopla(kategoriler.data ?? []),
       not: "Seçilen rapor aralığı. Rapor ekranında aynı dönemi seçin; geçmiş dönem aralığı bu kaynak etiketinde belirtilir. BM için kendi CC puanı değil, UTT saha performansıdır. Üreticinin uretim alanı yalnız kendi oluşturduğu talepler/yayınlar; ozet ve kategoriler ise yetkili saha kapsamıdır. Şirket Üretim Raporları toplamı/varyantları için uretim_raporu gerekir; tamamlanan talep yayına alınan içerik değildir." },

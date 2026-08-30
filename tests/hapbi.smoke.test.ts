@@ -10,7 +10,7 @@ import type { HapbiAracSonucu } from "@/lib/hapbi/sozlesme";
 import { raporOlcumleri, olcumleriKarsilastir } from "@/lib/hapbi/rehberlik";
 import { hizliSorguPlani } from "@/lib/hapbi/hizliSorgu";
 
-const K: HapbiKullaniciBaglami = { kullanici_id: "u1", rol: "utt", kimlik_turu: "kullanici", firma_id: "f1", takim_id: "t1", bolge_id: "b1", cc_aktif: true, eclub_aktif: true };
+const K: HapbiKullaniciBaglami = { kullanici_id: "u1", rol: "utt", kimlik_turu: "kullanici", firma_id: "f1", takim_id: "t1", bolge_id: "b1", firma_adi: "Firma 1", takim_adi: "Şimşek", bolge_adi: "İzmir", cc_aktif: true, eclub_aktif: true };
 const P = { periyot: "hafta", yil: 2026, hafta: 35 };
 const G = { ...P, kapsam: "kisisel", hedef: "ogrenme", kategori: "tumu" };
 const SIMDI = new Date("2026-08-26T12:00:00+03:00");
@@ -110,6 +110,16 @@ test("hapbi: rapor kaynak hatası sıfıra dönüşmez; BM kapsamı bölge, üre
   const eksik = dbOlustur(() => { throw new Error("Sorgu çalışmamalı"); });
   assert.equal((await hapbiAraclariniOlustur(eksik.db, { ...K, rol: "bm", bolge_id: null }).calistir("performans_raporu", P)).durum, "yetkisiz");
   assert.equal(eksik.kayitlar.length, 0);
+});
+
+test("hapbi: performans raporu kapsamı gerçek birim adını taşır, ad yoksa jenerik türe düşer", async () => {
+  const dolu = () => dbOlustur(() => ({ data: [{ toplam_net_puan: 10 }] }));
+  const bm = await hapbiAraclariniOlustur(dolu().db, { ...K, rol: "bm" }).calistir("performans_raporu", P);
+  assert.equal((bm.veri as { kapsam: string }).kapsam, "bölge: İzmir");
+  const tm = await hapbiAraclariniOlustur(dolu().db, { ...K, rol: "tm" }).calistir("performans_raporu", P);
+  assert.equal((tm.veri as { kapsam: string }).kapsam, "takım: Şimşek");
+  const adsiz = await hapbiAraclariniOlustur(dolu().db, { ...K, rol: "bm", bolge_adi: null }).calistir("performans_raporu", P);
+  assert.equal((adsiz.veri as { kapsam: string }).kapsam, "bölge");
 });
 
 test("hapbi: üretim portföyü ekran kaynağını, firma sınırını ve yayın/talep ayrımını korur", async () => {
