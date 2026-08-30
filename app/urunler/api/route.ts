@@ -2,9 +2,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
-import { URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
-import { urunEkleyebilirMi, ureticiYetenegi } from "@/lib/uretici/yetenekler";
+import { IU_ROLU, URETIM_HATTI_GORENLER } from "@/lib/utils/roller";
+import { urunEkleyebilirMi } from "@/lib/uretici/yetenekler";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import {
+  ureticiUrunListeKapsami,
+  ureticiUrunYazmaKapsami,
+  type UreticiUrunProfili,
+} from "@/lib/uretici/urunKapsami";
+
+async function ureticiProfiliniGetir(
+  adminSupabase: ReturnType<typeof createAdminClient>,
+  kullaniciId: string,
+  rol: string,
+): Promise<UreticiUrunProfili | null> {
+  const { data, error } = await adminSupabase
+    .from("kullanicilar")
+    .select("firma_id, takim_id, aktif_mi")
+    .eq("kullanici_id", kullaniciId)
+    .single();
+  if (error || !data) return null;
+  return { rol, firma_id: data.firma_id, takim_id: data.takim_id, aktif_mi: data.aktif_mi };
+}
+
+async function takimFirmaIcindemi(
+  adminSupabase: ReturnType<typeof createAdminClient>,
+  takimId: string,
+  firmaId: string,
+): Promise<boolean> {
+  const { data, error } = await adminSupabase
+    .from("takimlar")
+    .select("takim_id")
+    .eq("takim_id", takimId)
+    .eq("firma_id", firmaId)
+    .maybeSingle();
+  return !error && Boolean(data);
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,14 +54,27 @@ export async function GET(request: NextRequest) {
     const takim_id = searchParams.get("takim_id");
     if (!firma_id) return validasyonHatasi("firma_id zorunludur.", ["firma_id"]);
 
+    // İÜ firma bağımsız üretim göreviyle çalışır. Üretici rollerinde ise istemci
+    // firma/takım seçemez; kapsam aktif kullanıcı profilinden doğrulanır.
+    let kapsam = { firma_id, takim_id };
+    if (rol !== IU_ROLU) {
+      const profil = await ureticiProfiliniGetir(adminSupabase, user.id, rol);
+      const dogrulanmis = profil ? ureticiUrunListeKapsami(profil, firma_id, takim_id) : null;
+      if (!dogrulanmis) return yetkiHatasi("Firma veya takım kapsamı dışında ürün listesi istenemez.");
+      kapsam = dogrulanmis;
+    }
+    if (kapsam.takim_id && !(await takimFirmaIcindemi(adminSupabase, kapsam.takim_id, kapsam.firma_id))) {
+      return yetkiHatasi("Takım, doğrulanan firma kapsamında değil.");
+    }
+
     let query = adminSupabase
       .from("urunler")
       .select("urun_id, urun_adi, firma_id, takim_id, created_at")
-      .eq("firma_id", firma_id)
+      .eq("firma_id", kapsam.firma_id)
       .order("urun_adi", { ascending: true });
 
-    if (takim_id) {
-      query = query.or(`takim_id.eq.${takim_id},takim_id.is.null`);
+    if (kapsam.takim_id) {
+      query = query.or(`takim_id.eq.${kapsam.takim_id},takim_id.is.null`);
     }
 
     const { data: urunler, error } = await query;
@@ -55,17 +101,18 @@ export async function POST(request: NextRequest) {
     if (!firma_id) return validasyonHatasi("firma_id zorunludur.", ["firma_id"]);
     if (!urun_adi || urun_adi.trim().length === 0) return validasyonHatasi("Ürün adı zorunludur.", ["urun_adi"]);
 
-    // Takımsız üreticiler (med_md, egt_*) ürün eklerken takım seçmek zorunda
-    const yetenek = ureticiYetenegi(rol);
-    if (yetenek && !yetenek.takimZorunlu && !takim_id) {
-      return validasyonHatasi("Ürün eklerken takım seçimi zorunludur.", ["takim_id"]);
+    const profil = await ureticiProfiliniGetir(adminSupabase, user.id, rol);
+    const kapsam = profil ? ureticiUrunYazmaKapsami(profil, firma_id, takim_id ?? null) : null;
+    if (!kapsam) return yetkiHatasi("Firma veya takım kapsamı dışında ürün eklenemez.");
+    if (!(await takimFirmaIcindemi(adminSupabase, kapsam.takim_id!, kapsam.firma_id))) {
+      return yetkiHatasi("Takım, doğrulanan firma kapsamında değil.");
     }
 
     // Aynı firmada aynı isimde ürün var mı?
     const { data: mevcutUrun } = await adminSupabase
       .from("urunler")
       .select("urun_id")
-      .eq("firma_id", firma_id)
+      .eq("firma_id", kapsam.firma_id)
       .eq("urun_adi", urun_adi.trim())
       .maybeSingle();
 
@@ -73,7 +120,7 @@ export async function POST(request: NextRequest) {
 
     const { data: yeniUrun, error } = await adminSupabase
       .from("urunler")
-      .insert({ firma_id, takim_id: takim_id ?? null, urun_adi: urun_adi.trim() })
+      .insert({ firma_id: kapsam.firma_id, takim_id: kapsam.takim_id, urun_adi: urun_adi.trim() })
       .select("urun_id, urun_adi, firma_id, takim_id")
       .single();
 

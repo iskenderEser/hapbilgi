@@ -84,6 +84,16 @@ export async function GET() {
       const metadata = (a.metadata as Record<string, unknown> | null) ?? {};
       const beyan = (metadata.yukleme_beyani as Record<string, unknown> | null) ?? {};
       const son = sonDurumlar.get(String(a.arac_id));
+      const tamamlananParcalar: Array<"ana" | "kapak" | "transkript"> = [];
+      const anaTamamlandi = son?.durum === "dogrulama_bekliyor"
+        && Boolean(a.dosya_yolu && metadata.depolama_dogrulamasi);
+      if (anaTamamlandi) {
+        tamamlananParcalar.push("ana");
+        if (a.arac_turu === "podcast") {
+          if (a.kapak_yolu && metadata.kapak_dogrulandi === true) tamamlananParcalar.push("kapak");
+          if (a.transkript_yolu && metadata.transkript_dogrulandi === true) tamamlananParcalar.push("transkript");
+        }
+      }
       return [{
         tur: "storage" as const,
         kimlik: String(a.arac_id),
@@ -95,6 +105,10 @@ export async function GET() {
         durum: son?.durum ?? "yukleme_bekliyor",
         dosya_adi: String(beyan.dosya_adi ?? "Dosya"),
         baslik: String(talep?.urun_adi ?? `Talep #${talep?.talep_no ?? ""}`),
+        tamamlanan_parcalar: tamamlananParcalar,
+        podcast_sure_hazir: Number.isSafeInteger(metadata.sure_saniye_beyani)
+          && Number(metadata.sure_saniye_beyani) > 0,
+        podcast_transkript_bilgisi_hazir: Object.hasOwn(metadata, "transkript_metni_dogrulandi"),
         created_at: son?.created_at ?? String(a.created_at),
       }];
     });

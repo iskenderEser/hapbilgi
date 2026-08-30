@@ -144,9 +144,47 @@ export function yuklemeMakbuzuDogrula(girdi: {
   return Boolean(imza) && sabitKarsilastir(imza, beklenen);
 }
 
+export function yuklemeMakbuzuOlustur(girdi: {
+  yuklemeToken: string;
+  aracId: string;
+  kullaniciId: string;
+  dosyaYolu: string;
+  dosyaBoyutu: number;
+  mimeType: string;
+  checksumSha256: string;
+}): string | null {
+  const ortam = bunnyStorageOrtami();
+  if (!ortam) return null;
+  const [sonKullanmaHam, , fazla] = girdi.yuklemeToken.split(".");
+  const sonKullanma = Number(sonKullanmaHam);
+  if (fazla !== undefined || !Number.isSafeInteger(sonKullanma) || sonKullanma < Math.floor(Date.now() / 1000)) return null;
+  const mesaj = [girdi.aracId, girdi.kullaniciId, girdi.dosyaYolu, girdi.dosyaBoyutu, girdi.mimeType, girdi.checksumSha256, sonKullanma].join("\n");
+  const imza = base64Url(createHmac("sha256", ortam.uploadSharedSecret).update(`tamamlandi\n${mesaj}`).digest());
+  return `${sonKullanma}.${imza}`;
+}
+
 export function bunnyUploadBilgisi(): { endpoint: string } | null {
   const ortam = bunnyStorageOrtami();
-  return ortam ? { endpoint: ortam.uploadEndpoint } : null;
+  if (!ortam) return null;
+  return { endpoint: process.env.NODE_ENV === "development" ? "/api/ogrenme-araclari/yukleme-local" : ortam.uploadEndpoint };
+}
+
+export async function bunnyStorageNesneYukle(girdi: {
+  dosyaYolu: string;
+  mimeType: string;
+  checksumSha256: string;
+  govde: Uint8Array;
+}): Promise<boolean> {
+  const ortam = bunnyStorageOrtami();
+  if (!ortam) return false;
+  const url = `https://${ortam.storageHost}/${encodeURIComponent(ortam.storageZone)}/${segmentleriKodla(girdi.dosyaYolu)}`;
+  const yanit = await fetch(url, {
+    method: "PUT",
+    headers: { AccessKey: ortam.storageAccessKey, "Content-Type": girdi.mimeType, Checksum: girdi.checksumSha256 },
+    body: Buffer.from(girdi.govde),
+    cache: "no-store",
+  });
+  return yanit.ok;
 }
 
 export function bunnyCdnImzaliUrl(dosyaYolu: string, simdiMs = Date.now()): string | null {
@@ -182,6 +220,25 @@ export async function bunnyNesneBilgisi(dosyaYolu: string): Promise<BunnyNesneBi
     checksumSha256: checksum && /^[0-9a-f]{64}$/i.test(checksum) ? checksum.toLowerCase() : null,
     ilkBaytlar: new Uint8Array(await yanit.arrayBuffer()),
   };
+}
+
+/** Doğrulanmış düz metin transkriptin içeriğini doğrudan Storage nesnesinden okur. */
+export async function bunnyStorageMetinOku(dosyaYolu: string, azamiBayt = 100_000): Promise<string | null> {
+  const ortam = bunnyStorageOrtami();
+  if (!ortam || !Number.isSafeInteger(azamiBayt) || azamiBayt <= 0) return null;
+  const url = `https://${ortam.storageHost}/${encodeURIComponent(ortam.storageZone)}/${segmentleriKodla(dosyaYolu)}`;
+  try {
+    const yanit = await fetch(url, {
+      headers: { AccessKey: ortam.storageAccessKey, Range: `bytes=0-${azamiBayt - 1}` },
+      cache: "no-store",
+    });
+    if (!yanit.ok) return null;
+    const baytlar = new Uint8Array(await yanit.arrayBuffer());
+    if (baytlar.includes(0)) return null;
+    return new TextDecoder().decode(baytlar).replace(/\s+/g, " ").trim().slice(0, azamiBayt);
+  } catch {
+    return null;
+  }
 }
 
 /** Yarım/iptal edilen Storage nesnesini idempotent siler. */

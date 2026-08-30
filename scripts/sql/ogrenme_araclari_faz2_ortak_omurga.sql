@@ -148,7 +148,10 @@ SELECT
     'legacy_video_url', nullif(v.video_url, ''),
     'legacy_thumbnail_url', v.thumbnail_url
   )),
-  (nullif(v.video_url, '') IS NOT NULL AND v.video_suresi_saniye > 0),
+  COALESCE(
+    (nullif(v.video_url, '') IS NOT NULL AND v.video_suresi_saniye > 0),
+    false
+  ),
   v.video_id,
   COALESCE(v.created_at, now())
 FROM public.videolar v
@@ -234,7 +237,10 @@ BEGIN
       'legacy_video_url', nullif(NEW.video_url, ''),
       'legacy_thumbnail_url', NEW.thumbnail_url
     )),
-    (nullif(NEW.video_url, '') IS NOT NULL AND NEW.video_suresi_saniye > 0),
+    COALESCE(
+      (nullif(NEW.video_url, '') IS NOT NULL AND NEW.video_suresi_saniye > 0),
+      false
+    ),
     NEW.video_id, COALESCE(NEW.created_at, now())
   )
   ON CONFLICT (legacy_video_id) DO UPDATE SET

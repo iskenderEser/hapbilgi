@@ -9,6 +9,7 @@ import { dosyaSha256Parcali } from "@/lib/ogrenmeAraci/sha256Istemci";
 interface YuklemeBilgisi {
   arac_id: string;
   yukleme: { endpoint: string; headers: Record<string, string> };
+  tamamlanan_parcalar?: Array<"ana" | "kapak" | "transkript">;
 }
 
 interface YuklemeMakbuzu {
@@ -153,71 +154,106 @@ async function sesSuresiniOku(dosya: File, signal?: AbortSignal): Promise<number
 
 export async function hazirPodcastYukle(girdi: {
   talepId: string;
-  ses: File;
-  kapak: File;
-  transkript: File;
+  ses?: File;
+  kapak?: File;
+  transkript?: File;
+  tamamlananParcalar?: Array<"ana" | "kapak" | "transkript">;
   kaynak?: "hazir" | "iu";
   gorevId?: string;
   aracId?: string;
   kontrol?: OgrenmeAraciYuklemeKontrolu;
 }): Promise<string> {
   const kontrol = girdi.kontrol ?? {};
-  const sesKarari = dosyaBeyaniDogrula({
-    aracTuru: "podcast",
-    dosyaAdi: girdi.ses.name,
-    mimeType: girdi.ses.type,
-    dosyaBoyutu: girdi.ses.size,
-  });
-  const kapakKarari = podcastDestekDosyasiDogrula({
-    rol: "kapak",
-    dosyaAdi: girdi.kapak.name,
-    mimeType: girdi.kapak.type,
-    dosyaBoyutu: girdi.kapak.size,
-  });
-  const transkriptKarari = podcastDestekDosyasiDogrula({
-    rol: "transkript",
-    dosyaAdi: girdi.transkript.name,
-    mimeType: girdi.transkript.type,
-    dosyaBoyutu: girdi.transkript.size,
-  });
-  if (!sesKarari.ok) throw new Error(sesKarari.hata);
-  if (!kapakKarari.ok) throw new Error(kapakKarari.hata);
-  if (!transkriptKarari.ok) throw new Error(transkriptKarari.hata);
-  const transkriptMetni = girdi.transkript.name.toLowerCase().endsWith(".txt")
+  const tamamlananParcalar = new Set(girdi.tamamlananParcalar ?? []);
+  const sesGerekli = !tamamlananParcalar.has("ana");
+  const kapakGerekli = !tamamlananParcalar.has("kapak");
+  const transkriptGerekli = !tamamlananParcalar.has("transkript");
+  if (sesGerekli && !girdi.ses) throw new Error("Podcast ses dosyası zorunludur.");
+  if (kapakGerekli && !girdi.kapak) throw new Error("Podcast kapak görseli zorunludur.");
+  if (transkriptGerekli && !girdi.transkript) throw new Error("Podcast transkripti zorunludur.");
+
+  if (girdi.ses) {
+    const sesKarari = dosyaBeyaniDogrula({
+      aracTuru: "podcast", dosyaAdi: girdi.ses.name, mimeType: girdi.ses.type, dosyaBoyutu: girdi.ses.size,
+    });
+    if (!sesKarari.ok) throw new Error(sesKarari.hata);
+  }
+  if (girdi.kapak) {
+    const kapakKarari = podcastDestekDosyasiDogrula({
+      rol: "kapak", dosyaAdi: girdi.kapak.name, mimeType: girdi.kapak.type, dosyaBoyutu: girdi.kapak.size,
+    });
+    if (!kapakKarari.ok) throw new Error(kapakKarari.hata);
+  }
+  if (girdi.transkript) {
+    const transkriptKarari = podcastDestekDosyasiDogrula({
+      rol: "transkript", dosyaAdi: girdi.transkript.name, mimeType: girdi.transkript.type, dosyaBoyutu: girdi.transkript.size,
+    });
+    if (!transkriptKarari.ok) throw new Error(transkriptKarari.hata);
+  }
+
+  const transkriptMetni = girdi.transkript?.name.toLowerCase().endsWith(".txt")
     ? (await girdi.transkript.text()).replace(/\s+/g, " ").trim().slice(0, 100000)
-    : "";
-  kontrol.onIlerleme?.({ asama: "hazirlama", yuzde: 0, dosyaRolu: "ana", deneme: 1 });
-  const sureSaniye = await sesSuresiniOku(girdi.ses, kontrol.signal);
-  const sesChecksum = await dosyaSha256Parcali(girdi.ses, {
-    signal: kontrol.signal,
-    ilerleme: (oran) => kontrol.onIlerleme?.({
-      asama: "checksum", yuzde: Math.round(oran * 100), dosyaRolu: "ana", deneme: 1,
-    }),
-  });
-  const baslangic = await jsonIstek("/api/ogrenme-araclari/yukleme-baslat", {
-    talep_id: girdi.talepId,
-    arac_turu: "podcast",
-    kaynak: girdi.kaynak ?? "hazir",
-    dosya_adi: girdi.ses.name,
-    mime_type: girdi.ses.type,
-    dosya_boyutu: girdi.ses.size,
-    checksum_sha256: sesChecksum,
-    arac_id: girdi.aracId ?? null,
-  }, kontrol.signal) as YuklemeBilgisi;
-  const sesMakbuzu = await bunnyyeGonder(girdi.ses, baslangic.yukleme, kontrol, "ana");
-  await jsonIstek("/api/ogrenme-araclari/yukleme-tamamla", {
-    arac_id: baslangic.arac_id,
-    yukleme_makbuzu: sesMakbuzu.yukleme_makbuzu,
-  }, kontrol.signal);
+    : undefined;
+  let sureSaniye: number | undefined;
+  let sesChecksum: string | undefined;
+  if (girdi.ses) {
+    kontrol.onIlerleme?.({ asama: "hazirlama", yuzde: 0, dosyaRolu: "ana", deneme: 1 });
+    sureSaniye = await sesSuresiniOku(girdi.ses, kontrol.signal);
+    sesChecksum = await dosyaSha256Parcali(girdi.ses, {
+      signal: kontrol.signal,
+      ilerleme: (oran) => kontrol.onIlerleme?.({
+        asama: "checksum", yuzde: Math.round(oran * 100), dosyaRolu: "ana", deneme: 1,
+      }),
+    });
+  }
+
+  let aracId = girdi.aracId;
+  let anaYukleme: YuklemeBilgisi["yukleme"] | undefined;
+  if (!tamamlananParcalar.has("ana")) {
+    if (!girdi.ses || !sesChecksum) throw new Error("Podcast ses dosyası hazırlanamadı.");
+    const baslangic = await jsonIstek("/api/ogrenme-araclari/yukleme-baslat", {
+      talep_id: girdi.talepId,
+      arac_turu: "podcast",
+      kaynak: girdi.kaynak ?? "hazir",
+      dosya_adi: girdi.ses.name,
+      mime_type: girdi.ses.type,
+      dosya_boyutu: girdi.ses.size,
+      checksum_sha256: sesChecksum,
+      arac_id: girdi.aracId ?? null,
+    }, kontrol.signal) as YuklemeBilgisi;
+    aracId = baslangic.arac_id;
+    anaYukleme = baslangic.yukleme;
+    for (const parca of baslangic.tamamlanan_parcalar ?? []) tamamlananParcalar.add(parca);
+  }
+  if (!aracId) throw new Error("Podcast yükleme kaydı bulunamadı.");
+
+  if (!tamamlananParcalar.has("ana")) {
+    if (!girdi.ses || !anaYukleme) throw new Error("Podcast ses yükleme izni bulunamadı.");
+    const sesMakbuzu = await bunnyyeGonder(girdi.ses, anaYukleme, kontrol, "ana");
+    await jsonIstek("/api/ogrenme-araclari/yukleme-tamamla", {
+      arac_id: aracId,
+      yukleme_makbuzu: sesMakbuzu.yukleme_makbuzu,
+      sure_saniye: sureSaniye,
+    }, kontrol.signal);
+    tamamlananParcalar.add("ana");
+  } else if (sureSaniye !== undefined) {
+    // Eski yarım kayıtlarda süre ana dosyadan sonra kalıcılaşmamış olabilir.
+    await jsonIstek("/api/ogrenme-araclari/yukleme-tamamla", {
+      arac_id: aracId,
+      sure_saniye: sureSaniye,
+    }, kontrol.signal);
+  }
 
   for (const [dosya_rolu, dosya] of [["kapak", girdi.kapak], ["transkript", girdi.transkript]] as const) {
+    if (tamamlananParcalar.has(dosya_rolu)) continue;
+    if (!dosya) throw new Error(`Podcast ${dosya_rolu} dosyası zorunludur.`);
     const checksum_sha256 = await dosyaSha256Parcali(dosya, {
       signal: kontrol.signal,
       ilerleme: (oran) => kontrol.onIlerleme?.({
         asama: "checksum", yuzde: Math.round(oran * 100), dosyaRolu: dosya_rolu, deneme: 1,
       }),
     });
-    const destek = await jsonIstek(`/api/ogrenme-araclari/${baslangic.arac_id}/destek-yukleme-baslat`, {
+    const destek = await jsonIstek(`/api/ogrenme-araclari/${aracId}/destek-yukleme-baslat`, {
       dosya_rolu,
       dosya_adi: dosya.name,
       mime_type: dosya.type,
@@ -225,7 +261,7 @@ export async function hazirPodcastYukle(girdi: {
       checksum_sha256,
     }, kontrol.signal) as YuklemeBilgisi & { dosya_yolu: string; yukleme_token: string };
     const destekMakbuzu = await bunnyyeGonder(dosya, destek.yukleme, kontrol, dosya_rolu);
-    await jsonIstek(`/api/ogrenme-araclari/${baslangic.arac_id}/destek-yukleme-tamamla`, {
+    await jsonIstek(`/api/ogrenme-araclari/${aracId}/destek-yukleme-tamamla`, {
       dosya_rolu,
       dosya_yolu: destek.dosya_yolu,
       dosya_adi: dosya.name,
@@ -237,14 +273,14 @@ export async function hazirPodcastYukle(girdi: {
     }, kontrol.signal);
   }
   kontrol.onIlerleme?.({ asama: "dogrulama", yuzde: 100, dosyaRolu: "ana", deneme: 1 });
-  await jsonIstek(`/api/ogrenme-araclari/${baslangic.arac_id}/podcast-dogrula`, {
+  await jsonIstek(`/api/ogrenme-araclari/${aracId}/podcast-dogrula`, {
     gorev_id: girdi.gorevId ?? null,
     sure_saniye: sureSaniye,
     transkript_metni: transkriptMetni,
-    transkript_metni_dogrulandi: transkriptMetni.length > 0,
+    transkript_metni_dogrulandi: transkriptMetni !== undefined && transkriptMetni.length > 0,
     islem_anahtari: crypto.randomUUID(),
   }, kontrol.signal);
-  return baslangic.arac_id;
+  return aracId;
 }
 
 async function gorselOlculeriniOku(dosya: File, signal?: AbortSignal): Promise<{ genislik: number; yukseklik: number }> {
@@ -303,11 +339,13 @@ export async function hazirGorselYukle(girdi: {
     dosya_adi: girdi.gorsel.name, mime_type: girdi.gorsel.type, dosya_boyutu: girdi.gorsel.size,
     checksum_sha256: checksum, arac_id: girdi.aracId ?? null,
   }, kontrol.signal) as YuklemeBilgisi;
-  const makbuz = await bunnyyeGonder(girdi.gorsel, baslangic.yukleme, kontrol, "ana");
-  await jsonIstek("/api/ogrenme-araclari/yukleme-tamamla", {
-    arac_id: baslangic.arac_id,
-    yukleme_makbuzu: makbuz.yukleme_makbuzu,
-  }, kontrol.signal);
+  if (!baslangic.tamamlanan_parcalar?.includes("ana")) {
+    const makbuz = await bunnyyeGonder(girdi.gorsel, baslangic.yukleme, kontrol, "ana");
+    await jsonIstek("/api/ogrenme-araclari/yukleme-tamamla", {
+      arac_id: baslangic.arac_id,
+      yukleme_makbuzu: makbuz.yukleme_makbuzu,
+    }, kontrol.signal);
+  }
   await jsonIstek(`/api/ogrenme-araclari/${baslangic.arac_id}/gorsel-dogrula`, {
     gorev_id: girdi.gorevId ?? null, genislik: olcu.genislik, yukseklik: olcu.yukseklik,
     islem_anahtari: crypto.randomUUID(),
@@ -420,11 +458,13 @@ export async function hazirFlipPdfYukle(girdi: {
     dosya_adi: girdi.pdf.name, mime_type: girdi.pdf.type || "application/pdf", dosya_boyutu: girdi.pdf.size,
     checksum_sha256: checksum, arac_id: girdi.aracId ?? null,
   }, kontrol.signal) as YuklemeBilgisi;
-  const makbuz = await bunnyyeGonder(girdi.pdf, baslangic.yukleme, kontrol, "ana");
-  await jsonIstek("/api/ogrenme-araclari/yukleme-tamamla", {
-    arac_id: baslangic.arac_id,
-    yukleme_makbuzu: makbuz.yukleme_makbuzu,
-  }, kontrol.signal);
+  if (!baslangic.tamamlanan_parcalar?.includes("ana")) {
+    const makbuz = await bunnyyeGonder(girdi.pdf, baslangic.yukleme, kontrol, "ana");
+    await jsonIstek("/api/ogrenme-araclari/yukleme-tamamla", {
+      arac_id: baslangic.arac_id,
+      yukleme_makbuzu: makbuz.yukleme_makbuzu,
+    }, kontrol.signal);
+  }
   await jsonIstek(`/api/ogrenme-araclari/${baslangic.arac_id}/flip-pdf-dogrula`, {
     gorev_id: girdi.gorevId ?? null,
     sayfa_sayisi: pdfBilgisi.sayfaSayisi,

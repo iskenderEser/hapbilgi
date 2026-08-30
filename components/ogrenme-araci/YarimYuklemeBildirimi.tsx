@@ -11,12 +11,16 @@ type YarimYukleme = {
   talep_id: string;
   gorev_id: string | null;
   video_id?: string | null;
+  video_guid?: string;
   arac_turu: "video" | "podcast" | "gorsel" | "flip_pdf";
   kaynak: "hazir" | "iu";
   durum: string;
   dosya_adi: string;
   baslik: string;
   embed_url?: string;
+  tamamlanan_parcalar?: Array<"ana" | "kapak" | "transkript">;
+  podcast_sure_hazir?: boolean;
+  podcast_transkript_bilgisi_hazir?: boolean;
   created_at: string;
 };
 
@@ -65,10 +69,11 @@ export default function YarimYuklemeBildirimi() {
 
   const tamamlananKaydiKapat = async (kayit: YarimYukleme) => {
     if (kayit.kaynak === "hazir") {
+      if (!kayit.video_guid) throw new Error("Yarım video yüklemesinin Bunny video kimliği bulunamadı.");
       const sonuc = await jsonIstek("/uretim/api/hazir-video", "PUT", {
         talep_id: kayit.talep_id,
         video_url: kayit.embed_url,
-        islem_anahtari: kayit.kimlik,
+        islem_anahtari: kayit.video_guid,
       });
       if (sonuc?.hata) throw new Error(sonuc.hata);
     } else {
@@ -92,6 +97,24 @@ export default function YarimYuklemeBildirimi() {
       await tamamlananKaydiKapat(kayit);
       return;
     }
+
+    // Tarayıcı, TUS aktarımı bittikten hemen sonra kapanmış olabilir. Bu durumda
+    // oturum hâlâ "yukleniyor" görünse de Bunny'deki video tamamdır; dosyayı
+    // yeniden seçtirmeden önce sunucu otoritesinden mevcut kaydı doğrula.
+    const aktarimYanit = await fetch("/api/ogrenme-araclari/yarim-yuklemeler", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ yukleme_id: kayit.kimlik, islem: "aktarim_tamamlandi" }),
+    });
+    const aktarimSonucu = await aktarimYanit.json().catch(() => ({}));
+    if (aktarimYanit.ok) {
+      await tamamlananKaydiKapat(kayit);
+      return;
+    }
+    if (aktarimYanit.status !== 422) {
+      throw new Error(aktarimSonucu.hata ?? "Video aktarım durumu doğrulanamadı.");
+    }
+
     const dosya = dosyalar.ana;
     if (!dosya) throw new Error("Devam etmek için aynı video dosyasını yeniden seçin.");
     const adres = kayit.kaynak === "hazir" ? "/talepler/api/bunny-yukleme-baslat" : "/videolar/api/bunny-yukleme-baslat";
@@ -104,20 +127,43 @@ export default function YarimYuklemeBildirimi() {
     const { bunnyTusYukle, videoYuklemeOturumuGuncelle } = await import("@/lib/video/bunnyTusIstemci");
     await bunnyTusYukle(dosya, izin, setYuzde);
     await videoYuklemeOturumuGuncelle(izin.yukleme_id, "aktarim_tamamlandi");
-    await tamamlananKaydiKapat({ ...kayit, kimlik: izin.yukleme_id ?? kayit.kimlik, embed_url: izin.embed_url });
+    await tamamlananKaydiKapat({
+      ...kayit,
+      kimlik: izin.yukleme_id ?? kayit.kimlik,
+      video_guid: izin.video_guid,
+      embed_url: izin.embed_url,
+    });
   };
 
   const storageDevam = async (kayit: YarimYukleme) => {
-    const ana = dosyalar.ana;
-    if (!ana) throw new Error("Devam etmek için aynı dosyayı yeniden seçin.");
     const araclar = await import("@/lib/ogrenmeAraci/bunnyYuklemeIstemci");
     const kontrol = { onIlerleme: ({ yuzde: oran }: { yuzde: number }) => setYuzde(oran) };
     if (kayit.arac_turu === "podcast") {
-      if (!dosyalar.kapak || !dosyalar.transkript) throw new Error("Podcast için ses, kapak ve transkript dosyalarını seçin.");
-      await araclar.hazirPodcastYukle({ talepId: kayit.talep_id, ses: ana, kapak: dosyalar.kapak, transkript: dosyalar.transkript, kaynak: kayit.kaynak, gorevId: kayit.gorev_id ?? undefined, aracId: kayit.arac_id, kontrol });
+      const tamamlanan = new Set(kayit.tamamlanan_parcalar ?? []);
+      const sesGerekli = !tamamlanan.has("ana") || kayit.podcast_sure_hazir !== true;
+      const kapakGerekli = !tamamlanan.has("kapak");
+      const transkriptGerekli = !tamamlanan.has("transkript") || kayit.podcast_transkript_bilgisi_hazir !== true;
+      if ((sesGerekli && !dosyalar.ana) || (kapakGerekli && !dosyalar.kapak) || (transkriptGerekli && !dosyalar.transkript)) {
+        throw new Error("Podcast için yalnız eksik veya doğrulama bilgisi gereken dosyaları seçin.");
+      }
+      await araclar.hazirPodcastYukle({
+        talepId: kayit.talep_id,
+        ses: dosyalar.ana,
+        kapak: dosyalar.kapak,
+        transkript: dosyalar.transkript,
+        tamamlananParcalar: kayit.tamamlanan_parcalar,
+        kaynak: kayit.kaynak,
+        gorevId: kayit.gorev_id ?? undefined,
+        aracId: kayit.arac_id,
+        kontrol,
+      });
     } else if (kayit.arac_turu === "gorsel") {
+      const ana = dosyalar.ana;
+      if (!ana) throw new Error("Devam etmek için aynı dosyayı yeniden seçin.");
       await araclar.hazirGorselYukle({ talepId: kayit.talep_id, gorsel: ana, kaynak: kayit.kaynak, gorevId: kayit.gorev_id ?? undefined, aracId: kayit.arac_id, kontrol });
     } else {
+      const ana = dosyalar.ana;
+      if (!ana) throw new Error("Devam etmek için aynı dosyayı yeniden seçin.");
       await araclar.hazirFlipPdfYukle({ talepId: kayit.talep_id, pdf: ana, kaynak: kayit.kaynak, gorevId: kayit.gorev_id ?? undefined, aracId: kayit.arac_id, kontrol });
     }
   };
@@ -158,7 +204,14 @@ export default function YarimYuklemeBildirimi() {
     </label>
   );
 
-  const dosyaGerekli = aktif.tur === "storage" || aktif.durum !== "dogrulama_bekliyor";
+  const podcastTamamlanan = new Set(aktif.tamamlanan_parcalar ?? []);
+  const podcastSesGerekli = !podcastTamamlanan.has("ana") || aktif.podcast_sure_hazir !== true;
+  const podcastKapakGerekli = !podcastTamamlanan.has("kapak");
+  const podcastTranskriptGerekli = !podcastTamamlanan.has("transkript") || aktif.podcast_transkript_bilgisi_hazir !== true;
+  const podcastDosyaGerekli = podcastSesGerekli || podcastKapakGerekli || podcastTranskriptGerekli;
+  const dosyaGerekli = aktif.tur === "storage"
+    ? aktif.arac_turu !== "podcast" || podcastDosyaGerekli
+    : aktif.durum !== "dogrulama_bekliyor";
   return (
     <>
       <div className="fixed inset-0 z-[9500] flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="yarim-yukleme-baslik">
@@ -171,9 +224,9 @@ export default function YarimYuklemeBildirimi() {
           {dosyaGerekli && <div className="mt-4 flex flex-col gap-2">
             {aktif.arac_turu === "video" && dosyaSecici("ana", "Video dosyası", "video/*")}
             {aktif.arac_turu === "podcast" && <>
-              {dosyaSecici("ana", "Podcast ses dosyası", "audio/*")}
-              {dosyaSecici("kapak", "Podcast kapak görseli", "image/jpeg,image/png,image/webp")}
-              {dosyaSecici("transkript", "Podcast transkripti", ".pdf,.txt,.doc,.docx")}
+              {podcastSesGerekli && dosyaSecici("ana", "Podcast ses dosyası", "audio/*")}
+              {podcastKapakGerekli && dosyaSecici("kapak", "Podcast kapak görseli", "image/jpeg,image/png,image/webp")}
+              {podcastTranskriptGerekli && dosyaSecici("transkript", "Podcast transkripti", ".pdf,.txt,.docx")}
             </>}
             {aktif.arac_turu === "gorsel" && dosyaSecici("ana", "Dijital broşür", ".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp")}
             {aktif.arac_turu === "flip_pdf" && dosyaSecici("ana", "Literatür PDF", ".pdf,application/pdf")}

@@ -63,7 +63,8 @@ export async function POST(request: NextRequest) {
     const rol = await rolCozucu(db, user.id);
     if (![IU_ROLU, ...URETICI_ROLLER].includes(rol)) return rolHatasi("Bu işlem üretim hattı rollerine açıktır.");
 
-    const { arac_id, yukleme_makbuzu } = await request.json();
+    const body = await request.json();
+    const { arac_id, yukleme_makbuzu } = body;
     if (typeof arac_id !== "string" || !arac_id) return validasyonHatasi("arac_id zorunludur.", ["arac_id"]);
 
     const { data: arac, error: aracError } = await db
@@ -74,6 +75,12 @@ export async function POST(request: NextRequest) {
     if (aracError || !arac) return NextResponse.json({ hata: "Öğrenme aracı bulunamadı." }, { status: 404 });
     if (!yeniOgrenmeAraciTuruMu(arac.arac_turu) || !arac.dosya_yolu) {
       return NextResponse.json({ hata: "Bu kayıt ortak Storage yükleme akışına ait değil." }, { status: 422 });
+    }
+    const metadata = (arac.metadata as Record<string, unknown> | null) ?? {};
+    const kayitliSure = Number(metadata.sure_saniye_beyani);
+    const sureSaniye = body.sure_saniye === undefined ? kayitliSure : Number(body.sure_saniye);
+    if (arac.arac_turu === "podcast" && (!Number.isSafeInteger(sureSaniye) || sureSaniye <= 0)) {
+      return validasyonHatasi("Podcast süresi pozitif bir tam sayı olmalıdır.", ["sure_saniye"]);
     }
 
     const yetki = await uretimAraciYetkisiniDogrula({ db, talepId: arac.talep_id, kullaniciId: user.id, rol });
@@ -88,6 +95,12 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
     if (durumError || !sonDurum) return NextResponse.json({ hata: "Öğrenme aracı durumu bulunamadı." }, { status: 404 });
     if (sonDurum.durum === "dogrulama_bekliyor") {
+      if (arac.arac_turu === "podcast" && metadata.sure_saniye_beyani !== sureSaniye) {
+        const { error: sureHatasi } = await db.from("ogrenme_araclari")
+          .update({ metadata: { ...metadata, sure_saniye_beyani: sureSaniye } })
+          .eq("arac_id", arac_id);
+        if (sureHatasi) return NextResponse.json({ hata: "Podcast süre bilgisi kaydedilemedi." }, { status: 500 });
+      }
       return NextResponse.json({ arac_id, durum: sonDurum.durum, tekrar_istek: true }, { status: 200 });
     }
     if (sonDurum.durum !== "yukleme_bekliyor") {
@@ -95,7 +108,6 @@ export async function POST(request: NextRequest) {
     }
 
     const beyan = ((arac.metadata as { yukleme_beyani?: YuklemeBeyani } | null)?.yukleme_beyani ?? {});
-    const metadata = (arac.metadata as Record<string, unknown> | null) ?? {};
     const beyanChecksum = beyan.checksum_sha256?.toLowerCase() ?? "";
     if (
       typeof beyan.mime_type !== "string"
@@ -136,6 +148,7 @@ export async function POST(request: NextRequest) {
 
     const dogrulamaMetadata = {
       ...metadata,
+      ...(arac.arac_turu === "podcast" ? { sure_saniye_beyani: sureSaniye } : {}),
       depolama_dogrulamasi: {
         dosya_imzasi: { dogrulandi: true, kaynak: "storage_range" },
         dosya_boyutu: { dogrulandi: true, kaynak: "storage_content_range" },

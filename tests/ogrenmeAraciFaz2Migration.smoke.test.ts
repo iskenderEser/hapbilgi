@@ -41,6 +41,17 @@ test("eski video yazıları ortak modele aynı transaction içinde yansır", () 
   assert.match(migration, /uretim_gorevleri_arac_trg/);
 });
 
+test("süresi henüz yazılmamış video taslağı metadata doğrulamasını null bırakmaz", () => {
+  assert.match(
+    migration,
+    /COALESCE\(\s*\(nullif\(v\.video_url, ''\) IS NOT NULL AND v\.video_suresi_saniye > 0\),\s*false\s*\)/,
+  );
+  assert.match(
+    migration,
+    /COALESCE\(\s*\(nullif\(NEW\.video_url, ''\) IS NOT NULL AND NEW\.video_suresi_saniye > 0\),\s*false\s*\)/,
+  );
+});
+
 test("yayın kapısı ve araç türü değişmezliği veritabanında uygulanır", () => {
   assert.match(migration, /yayin_yonetimi_arac_kapisi_trg/);
   assert.match(migration, /v_durum <> 'onaylandi'/);
@@ -77,4 +88,3 @@ test("ön kontrol yalnız okur ve bilinmeyen tarihî durumları görünür kıla
   assert.match(onKontrol, /talebi_olmayan_tarihi_video/);
   assert.doesNotMatch(onKontrol, /INSERT|UPDATE|DELETE|ALTER|DROP|TRUNCATE/);
 });
-

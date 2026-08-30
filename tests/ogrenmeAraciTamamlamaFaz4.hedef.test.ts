@@ -8,6 +8,7 @@ const oku = (yol: string) => readFileSync(new URL(`../${yol}`, import.meta.url),
 const ortakSql = oku("scripts/sql/ogrenme_araclari_tamamlama_faz4_uretim_hatti.sql");
 const kararRoute = oku("app/(panel)/uretim/api/karar/route.ts");
 const yayinRoute = oku("app/(panel)/yayin-yonetimi/api/yayinlar/route.ts");
+const kararSurumSql = oku("scripts/sql/uretim_karar_surum_kapisi.sql");
 const migrationlar = {
   podcast: oku("scripts/sql/ogrenme_araclari_faz3_podcast_uretim.sql"),
   gorsel: oku("scripts/sql/ogrenme_araclari_faz4_gorsel_uretim.sql"),
@@ -58,6 +59,24 @@ test("üç araç aynı revizyon sınırını ve araç türüne özgü karar RPC'
     "uretim_gorsel_uretici_karar_ver",
     "uretim_flip_pdf_uretici_karar_ver",
   ]) assert.match(kararRoute, new RegExp(rpc));
+});
+
+test("sonraki görev açılmadan önce mevcut aktif görev kapanır", () => {
+  for (const [arac, sql] of Object.entries(migrationlar)) {
+    const kararGovdesi = sql.slice(sql.indexOf(`CREATE OR REPLACE FUNCTION public.uretim_${arac}_uretici_karar_ver`));
+    const goreviKapat = kararGovdesi.indexOf("UPDATE public.uretim_gorevleri SET");
+    const sonrakiGoreviAc = kararGovdesi.indexOf("v_sonraki := public.uretim_gorev_ac");
+    assert.ok(goreviKapat >= 0 && sonrakiGoreviAc > goreviKapat, `${arac} aktif görevi geç kapatıyor`);
+  }
+
+  const pdfSurumGovdesi = kararSurumSql.slice(
+    kararSurumSql.indexOf("CREATE OR REPLACE FUNCTION public.uretim_flip_pdf_uretici_karar_ver"),
+  );
+  assert.ok(
+    pdfSurumGovdesi.indexOf("UPDATE public.uretim_gorevleri")
+      < pdfSurumGovdesi.indexOf("v_sonraki := public.uretim_gorev_ac"),
+    "sürüm kapılı PDF kararı aktif görevi geç kapatıyor",
+  );
 });
 
 test("onaylı araç doğru soru bağı ve araç puanı kapısıyla Yayın Yönetimine ulaşır", () => {

@@ -157,6 +157,15 @@ BEGIN
   SELECT * INTO v_talep FROM public.talepler WHERE talep_id = v_gorev.talep_id FOR UPDATE;
   IF v_talep.uretici_id IS DISTINCT FROM p_uretici_id OR v_talep.ogrenme_araci_turu <> 'podcast' THEN RAISE EXCEPTION 'Podcast karar yetkisi yok.' USING ERRCODE = '42501'; END IF;
 
+  -- Aynı talepte yalnız bir aktif görev olabilir. Sonraki görevi açmadan önce
+  -- mevcut görevi kapat; sonraki adım hata verirse transaction bunu geri alır.
+  UPDATE public.uretim_gorevleri SET
+    durum = CASE p_karar WHEN 'onaylandi' THEN 'tamamlandi' WHEN 'revizyon bekleniyor' THEN 'revizyon_bekliyor' ELSE 'iptal' END,
+    tamamlanma_tarihi = CASE WHEN p_karar = 'onaylandi' THEN now() ELSE tamamlanma_tarihi END,
+    iptal_tarihi = CASE WHEN p_karar = 'Iptal Edildi' THEN now() ELSE iptal_tarihi END,
+    son_islem_anahtari = p_islem_anahtari, surum = surum + 1
+  WHERE gorev_id = p_gorev_id;
+
   IF v_gorev.asama = 'senaryo' THEN
     IF p_karar = 'revizyon bekleniyor' THEN
       SELECT count(*)::integer INTO v_revizyon FROM public.senaryo_durumu
@@ -185,13 +194,6 @@ BEGIN
   ELSE
     RAISE EXCEPTION 'Bu RPC yalnız podcast senaryo ve podcast üretim aşamasını işler.' USING ERRCODE = '23514';
   END IF;
-
-  UPDATE public.uretim_gorevleri SET
-    durum = CASE p_karar WHEN 'onaylandi' THEN 'tamamlandi' WHEN 'revizyon bekleniyor' THEN 'revizyon_bekliyor' ELSE 'iptal' END,
-    tamamlanma_tarihi = CASE WHEN p_karar = 'onaylandi' THEN now() ELSE tamamlanma_tarihi END,
-    iptal_tarihi = CASE WHEN p_karar = 'Iptal Edildi' THEN now() ELSE iptal_tarihi END,
-    son_islem_anahtari = p_islem_anahtari, surum = surum + 1
-  WHERE gorev_id = p_gorev_id;
 
   v_sonuc := jsonb_build_object('gorev_id', p_gorev_id, 'talep_id', v_gorev.talep_id, 'asama', v_gorev.asama, 'karar', p_karar, 'durum_id', v_durum_id, 'sonraki', v_sonraki);
   INSERT INTO public.uretim_islem_kayitlari (islem_anahtari, islem_turu, gorev_id, talep_id, sonuc)

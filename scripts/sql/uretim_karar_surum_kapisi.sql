@@ -172,6 +172,16 @@ BEGIN
     RAISE EXCEPTION 'PDF karar yetkisi yok.' USING ERRCODE = '42501';
   END IF;
 
+  -- Aynı talepte yalnız bir aktif görev olabilir. Sonraki görevi açmadan önce
+  -- mevcut görevi kapat; sonraki adım hata verirse transaction bunu geri alır.
+  UPDATE public.uretim_gorevleri
+  SET durum = CASE p_karar WHEN 'onaylandi' THEN 'tamamlandi' WHEN 'revizyon bekleniyor' THEN 'revizyon_bekliyor' ELSE 'iptal' END,
+      tamamlanma_tarihi = CASE WHEN p_karar = 'onaylandi' THEN now() ELSE tamamlanma_tarihi END,
+      iptal_tarihi = CASE WHEN p_karar = 'Iptal Edildi' THEN now() ELSE iptal_tarihi END,
+      son_islem_anahtari = p_islem_anahtari,
+      surum = surum + 1
+  WHERE gorev_id = p_gorev_id;
+
   IF v_gorev.asama = 'senaryo' THEN
     IF p_karar = 'revizyon bekleniyor' THEN
       SELECT count(*)::integer INTO v_revizyon
@@ -212,14 +222,6 @@ BEGIN
   ELSE
     RAISE EXCEPTION 'Bu RPC yalnız PDF senaryo ve üretim aşamasını işler.' USING ERRCODE = '23514';
   END IF;
-
-  UPDATE public.uretim_gorevleri
-  SET durum = CASE p_karar WHEN 'onaylandi' THEN 'tamamlandi' WHEN 'revizyon bekleniyor' THEN 'revizyon_bekliyor' ELSE 'iptal' END,
-      tamamlanma_tarihi = CASE WHEN p_karar = 'onaylandi' THEN now() ELSE tamamlanma_tarihi END,
-      iptal_tarihi = CASE WHEN p_karar = 'Iptal Edildi' THEN now() ELSE iptal_tarihi END,
-      son_islem_anahtari = p_islem_anahtari,
-      surum = surum + 1
-  WHERE gorev_id = p_gorev_id;
 
   v_sonuc := jsonb_build_object(
     'gorev_id', p_gorev_id,

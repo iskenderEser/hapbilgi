@@ -5,6 +5,7 @@ import { rolHatasi, sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/ut
 import { IU_ROLU, URETICI_ROLLER } from "@/lib/utils/roller";
 import {
   bunnyNesneBilgisi,
+  bunnyStorageMetinOku,
   yuklemeMakbuzuDogrula,
   yuklemeYetkisiDogrula,
 } from "@/lib/ogrenmeAraci/bunnyStorage";
@@ -105,6 +106,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ hata: "Podcast destek dosyası özeti eşleşmiyor." }, { status: 422 });
     }
 
+    let transkriptMetni = "";
+    if (rolDosya === "transkript" && karar.uzanti === "txt") {
+      const storageMetni = await bunnyStorageMetinOku(body.dosya_yolu);
+      if (storageMetni === null) {
+        return NextResponse.json({ hata: "Podcast transkript metni Storage dosyasından doğrulanamadı." }, { status: 422 });
+      }
+      transkriptMetni = storageMetni;
+    }
+
     const kolon = rolDosya === "kapak" ? "kapak_yolu" : "transkript_yolu";
     const destekDogrulama = (
       metadataOnceki.podcast_destek_dogrulamasi as Record<string, unknown> | undefined
@@ -112,6 +122,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const metadata: Record<string, unknown> = {
       ...metadataOnceki,
       [`${rolDosya}_dogrulandi`]: true,
+      ...(rolDosya === "transkript" ? {
+        transkript_metni: transkriptMetni,
+        transkript_metni_dogrulandi: karar.uzanti === "txt" && transkriptMetni.length > 0,
+        transkript_metni_kaynagi: "storage",
+      } : {}),
       podcast_destek_dogrulamasi: {
         ...destekDogrulama,
         [rolDosya]: {

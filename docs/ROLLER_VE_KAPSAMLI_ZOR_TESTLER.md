@@ -269,23 +269,59 @@ Bu çalışma, HapBilgi'deki her rolün görev tanımı içinde bulunan bütün 
 
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **PM-01 — Varyant görev zincirleri:** PM, aynı özelliklerde dört ayrı talebi V1–V4 olarak oluşturacak. V1’de `senaryo → video → soru seti`, V2’de yalnız `soru seti`, V3’te `senaryo → video` görevlerinin sırasıyla açıldığı; V4’te İçerik Üreticisine hiçbir görev açılmadan talebin Yayın Yönetimine geçtiği doğrulanacak. Her aşamanın teknik tekrarı aynı işlem anahtarıyla yapıldığında mükerrer görev veya teslim kaydı oluşmayacak.
+- [x] **PM-01 — Varyant görev zincirleri:** PM, aynı özelliklerde dört ayrı talebi V1–V4 olarak oluşturacak. V1’de `senaryo → video → soru seti`, V2’de yalnız `soru seti`, V3’te `senaryo → video` görevlerinin sırasıyla açıldığı; V4’te İçerik Üreticisine hiçbir görev açılmadan talebin Yayın Yönetimine geçtiği doğrulanacak. Her aşamanın teknik tekrarı aynı işlem anahtarıyla yapıldığında mükerrer görev veya teslim kaydı oluşmayacak.
+
+  - **Tarih:** 29 Ağustos 2026
+  - **Rol ve hesap:** PM / Merve Duran (`merve@test2.com`) / Şimşek / Hepifarma / canlı Supabase transaction testi
+  - **Durum:** Giderildi
+  - **Beklenen sonuç:** Aynı ürün, teknik, hedef ve soru parametreleriyle açılan V1–V4 talepleri sırasıyla `senaryo → video → soru seti`, yalnız `soru seti`, `senaryo → video` ve sıfır İÜ görevi üretmeli; dört varyant da onaylı soru setiyle Yayın Yönetimi bekleyenlerine ulaşmalı ve aynı işlem anahtarıyla tekrarlar mükerrer kayıt oluşturmamalıydı.
+  - **Gerçekleşen sonuç:** İlk ürün koşumunda V1 senaryo onayı, video taslağının ortak öğrenme aracı kaydına yansıtılması sırasında `ogrenme_araclari.metadata_dogrulandi` alanına `NULL` yazılmaya çalışıldığı için kesildi. Düzeltme sonrasında Abilon + Etkili Kapanış + `[utt]` + 10 soru + 2 seçenek + video başına 2 soru özellikleri dört talepte değişmeden korundu; V1’de `3`, V2’de `1`, V3’te `2`, V4’te `0` İÜ görevi açıldı ve zincirlerin tamamı beklenen sırayı izledi. Dört varyantın her biri Yayın Yönetimi bekleyen koşuluna ulaştı.
+  - **Rollback sonucu:** Başarılı
+  - **Kalan kayıt veya dosya:** Yok — talep `0`, görev `0`, işlem `0`, senaryo/video/soru seti toplamı `0`; dış depolamaya dosya yazılmadı
+
+  **Hata ve etkisi:** `ogrenme_video_araci_esitle` tetikleyicisindeki `video_url var AND video_suresi_saniye > 0` ifadesi, video taslağının süresi henüz yazılmamışken SQL üç değerli mantığı nedeniyle `false` yerine `NULL` üretiyordu. Zorunlu boolean sütun bu değeri reddettiği için normal video üretiminin V1 ve V3 kolları senaryo onayından video görevine geçemiyordu.
+
+  **Çözüm ve doğrulama:** Video geri doldurma sorgusu ile canlı video uyumluluk tetikleyicisindeki metadata doğrulama ifadesi `COALESCE(..., false)` ile güvenli hale getirildi. Süresi henüz bulunmayan taslak ortak modele doğrulanmamış olarak yazılıyor; URL ve pozitif süre daha sonra tamamlandığında mevcut tetikleyici alanı `true`ya yükseltiyor.
+
+  **Düzeltme — 29 Ağustos 2026:** `ogrenme_video_araci_esitle()` canlı Supabase’te transaction içinde güncellendi ve fonksiyon tanımı geri okunarak doğrulandı. Aynı güvence kaynak migration'a ve kalıcı smoke testine eklendi.
+
+  **Düzeltme sonrası test:** Form sözleşmesine uygun dört ayrı talep tek transaction içinde baştan sona yürütüldü. `18` farklı işlem anahtarının her biri iki kez çağrıldı; mükerrer görev `0`, mükerrer işlem anahtarı `0`, Yayın Yönetimi uygunluğu `4/4` bulundu. V1/V2/V3/V4 son görev sayıları sırasıyla `3/1/2/0`, atama geçmişi sayıları `3/1/2/0` oldu. Migration hedef testleri `10/10`, tam smoke paketi `214/214` başarılıdır; hata, iptal veya atlanan test yoktur.
+
+  **Genişletilmiş araç testi — 29 Ağustos 2026:** Aynı PM-01 akışı Podcast, Dijital Broşür ve Literatür PDF için de çalıştırıldı. İlk koşumda üç yeni aracın karar fonksiyonlarının mevcut aktif görevi kapatmadan sonraki görevi açtığı ve `ux_uretim_gorevleri_talep_aktif` tekillik kapısına takıldığı bulundu. Mevcut görev önce kapatılacak, ardından yeni görev açılacak şekilde üç karar motoru düzeltildi. Ayrıca kaynak kodda ve uygulama rotasında bulunmasına rağmen canlı Supabase’te kurulu olmayan `uretim_flip_pdf_dogrula` RPC’si güvenli yetkileriyle kuruldu.
+
+  **Genişletilmiş test sonucu:** Üç araç × dört varyant olmak üzere `12/12` zincir başarılıdır. Her araçta V1 `senaryo → araç → soru seti`, V2 yalnız `soru seti`, V3 `senaryo → araç`, V4 sıfır İÜ görevi üretti; Yayın Yönetimi uygunluğu `12/12` bulundu. `54` farklı işlem anahtarının ikişer çağrısında mükerrer görev `0`, mükerrer işlem anahtarı `0` kaldı. Hedef test `17/17`, tam smoke paketi `214/214` başarılıdır. Rollback sonrasında talep, görev, öğrenme aracı ve işlem kalıntıları `0`; dış depolama dosyası yoktur.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **PM-02 — Hedef kitle sözleşmesi:** PM sırasıyla `[utt]`, `[bm]`, `[eczaci]`, `[eczane_teknisyeni]`, `[eczaci, eczane_teknisyeni]` ve `[eczanem]` hedefleriyle talep oluşturacak; hedeflerin veritabanına doğru ve değişmeden kaydedildiği doğrulanacak. Boş hedef, tanımsız hedef ve UTT+BM, UTT+E-Club veya Eczanem+başka hedef gibi geçersiz birleşimler talep ya da üretim görevi oluşturmadan reddedilecek. E-Club ortak grubu yalnız iki E-Club hedefinin birlikte seçilmesinden türetilecek.
+- [x] **PM-02 — Hedef kitle sözleşmesi:** PM sırasıyla `[utt]`, `[bm]`, `[eczaci]`, `[eczane_teknisyeni]`, `[eczaci, eczane_teknisyeni]` ve `[eczanem]` hedefleriyle talep oluşturacak; hedeflerin veritabanına doğru ve değişmeden kaydedildiği doğrulanacak. Boş hedef, tanımsız hedef ve UTT+BM, UTT+E-Club veya Eczanem+başka hedef gibi geçersiz birleşimler talep ya da üretim görevi oluşturmadan reddedilecek. E-Club ortak grubu yalnız iki E-Club hedefinin birlikte seçilmesinden türetilecek.
+
+  - **Tarih:** 29 Ağustos 2026
+  - **Rol ve hesap:** PM / Merve Duran (`merve@test2.com`) / Şimşek / Hepifarma / Chrome oturumu doğrulaması + canlı Supabase transaction testi
+  - **Durum:** Başarılı
+  - **Beklenen sonuç:** Altı geçerli hedef dört öğrenme aracında değişmeden saklanıp üretim zincirini tamamlamalı; beş geçersiz hedef biçimi hiçbir talep veya görev oluşturmadan reddedilmeli; ortak E-Club grubu yalnız `[eczaci, eczane_teknisyeni]` birleşiminden türetilmeliydi.
+  - **Gerçekleşen sonuç:** Video, Podcast, Dijital Broşür ve Literatür PDF araçlarının her birinde altı hedef V1 zinciriyle tamamlandı. `24/24` talebin hedef dizisi değişmeden saklandı, toplam `72` üretim görevi beklenen sırada açıldı ve `24/24` içerik Yayın Yönetimi bekleyen koşuluna ulaştı. Boş, tanımsız, UTT+BM, UTT+E-Club ve Eczanem+başka hedef denemeleri dört araçta toplam `20/20` reddedildi; bu denemelerden talep veya görev oluşmadı. Birleşik E-Club hedefi dört araçta kanonik `[eczaci, eczane_teknisyeni]` sırasıyla saklandı ve yalnız bu birleşim ortak gruba karşılık geldi.
+  - **Rollback sonucu:** Başarılı
+  - **Kalan kayıt veya dosya:** Yok — talep `0`, görev `0`, öğrenme aracı `0`, işlem `0`; dış depolamaya dosya yazılmadı
+
+  **İdempotency ve regresyon sonucu:** Geçerli zincirlerde `168` farklı işlem anahtarının her biri iki kez çağrıldı; mükerrer görev `0`, mükerrer işlem anahtarı `0` bulundu. PM-02 yeni bir ürün hatası üretmedi. PM-01’de düzeltilen dört öğrenme aracı zinciri hedef kitle değişimlerinden etkilenmeden çalıştı; tam smoke paketi `214/214` başarılıdır.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **PM-04 — Kesilen hazır öğrenme aracı yüklemesinin kurtarılması:** PM'nin iki farklı yükleme motorundaki işlemi ayrı ayrı kesilecek: (A) video aktarımı, (B) Literatür PDF aktarımı. Yeniden girişte yarım işlemin kullanıcıya gösterildiği; **Devam Et** seçiminde aynı yükleme/araç kimliğiyle tamamlandığı ve mükerrer kayıt oluşmadığı doğrulanacak. Ayrı denemede **İptal Et** seçildiğinde Bunny nesnesi ile ilişkili geçici veritabanı kayıtlarının birlikte temizlendiği ve başarı toastının yalnız tam başarıdan sonra gösterildiği kontrol edilecek. Başka bir talepte aynı dosyanın bilinçli olarak yeniden yüklenmesi engellenmeyecek.
-  - **Kod hedef testi:** Video ve Literatür PDF kolları `2/2` başarılıdır. Video aynı kalıcı oturum ve TUS devam kaydını; PDF aynı `arac_id` ve dosya özeti sözleşmesini kullanmaktadır. Her iki iptal kolunda dış nesne temizliği tamamlanmadan veritabanı kaydı başarılı sayılmamaktadır.
+- [ ] **PM-03 — Kesilen hazır öğrenme aracı yüklemesinin kurtarılması:** PM'nin hazır Video, Podcast, Dijital Broşür ve Literatür PDF yüklemeleri ayrı ayrı yarıda kesilecek. Video TUS aktarımı sürerken; Podcastte ses aktarımı sırasında ve ses, kapak, transkript parçalarının her birinden sonra; Dijital Broşür ile Literatür PDF'de ana dosya aktarımı sırasında bağlantı veya sayfa kesintisi uygulanacak. Yeniden girişte her yarım işlem doğru araç ve talep bilgisiyle kullanıcıya gösterilecek. **Devam Et** seçiminde kullanıcıdan güvenlik gereği gereken dosyalar yeniden seçildikten sonra işlem aynı yükleme oturumu veya `arac_id` üzerinden yalnız eksik parçaları tamamlayacak; dosya, araç, görev, teslim ve işlem kayıtları mükerrer oluşmayacak. **İptal Et** seçiminde araca ait Bunny Stream/Storage nesneleri ile geçici veritabanı kayıtları birlikte ve idempotent biçimde temizlenecek; tekrar girişte yarım işlem görünmeyecek. Başarı toastı yalnız bütün zorunlu dosyalar yüklenip tür, boyut, özet, süre, boyut veya sayfa gibi araca özgü doğrulamalar tamamlandıktan sonra gösterilecek. Aynı dosyanın başka bir talepte bilinçli olarak yeniden yüklenmesi engellenmeyecek.
+  - **Oturum başlangıcı hatırlatması:** İlk Chrome oturumu açıldığında ChatGPT tarayıcı eklentisinin **Dosya URL'lerine erişime izin ver** ayarının açık olduğu kullanıcıya hatırlatılacak ve dosya seçimine başlamadan önce kontrol edilecek.
+  - **Tarih:** 29 Ağustos 2026
+  - **Rol ve hesap:** PM / Merve Duran (`merve@test2.com`) / Chrome canlı oturumu + kod ve regresyon testleri
+  - **Durum:** Devam ediyor — Chrome dosya seçici otomasyonu tetiklenmediği için dört aracın canlı **Devam Et** yüklemeleri tamamlanamadı
+  - **Kod hedef testi:** Video, Podcast, Dijital Broşür ve Literatür PDF kolları `4/4` başarılıdır. Video aynı kalıcı oturum ve TUS devam kaydını; üç Storage aracı aynı `arac_id` sözleşmesini kullanmaktadır. İptal kollarında dış nesne temizliği tamamlanmadan veritabanı kaydı başarılı sayılmamaktadır.
   - **Derleme sözleşmesi:** Next tür üretimi ve TypeScript kontrolü başarılıdır.
   - **Test altyapısı notu:** İlk çalıştırmada video denetiminin kaynak sırası varsayımı hatalıydı; denetim gerçek akış sırasına göre düzeltildi ve iki hedef birlikte geçti. Ürün kodunda bu adımdan kaynaklanan hata bulunmadı.
   - **Supabase doğrulaması:** Geçiş SQL'i kuruldu. Rollback transaction içinde video oturumunun aynı kimlikle devamı, aktif mükerrer oturum engeli, Literatür kaydının atomik iptali ve tekrarlanan iptalin idempotentliği `5/5` başarılıdır; kalıcı test verisi bırakılmadı.
   - **Canlı Literatür sonucu:** Merve PM oturumunda yarım `MestMall_Doktor_Broşürü_03_2026.pdf` kaydı yeniden girişte otomatik gösterildi. Dosya seçilmeden **Devam Et** engellendi; onaylı **İptal Et** işlemi Bunny Storage ve geçici DB kayıtlarını temizledi, başarı toastı gösterildi ve yeniden girişte kayıt dönmedi.
-  - **Canlı video sonucu:** Geçici PM-04 video kesintisi yeniden girişte otomatik gösterildi. Dosya seçilmeden **Devam Et** engellendi; onaylı **İptal Et** Bunny'deki bulunamayan nesneyi idempotent kabul ederek geçici oturumu temizledi, doğru başarı toastı gösterildi ve yeniden girişte kayıt dönmedi.
-  - **Kalan canlı doğrulama:** Aynı gerçek video/PDF dosyası yeniden seçilerek kesilen aktarımın aynı kimlikle tamamlanması ve mükerrer kayıt oluşmaması canlı uygulanmadı; bu nedenle checkbox henüz işaretlenmedi.
+  - **Canlı video sonucu:** Geçici PM-03 video kesintisi yeniden girişte otomatik gösterildi. Dosya seçilmeden **Devam Et** engellendi; onaylı **İptal Et** Bunny'deki bulunamayan nesneyi idempotent kabul ederek geçici oturumu temizledi, doğru başarı toastı gösterildi ve yeniden girişte kayıt dönmedi.
+  - **Bulunan hata ve çözüm:** Podcast yüklemesi ses tamamlandıktan sonra kapak veya transkript aşamasında kesilirse **Devam Et** işlemi tamamlanmış parçaları da yeniden yüklüyordu. Sunucu artık aynı `arac_id` içindeki doğrulanmış `ana`, `kapak` ve `transkript` parçalarını bildiriyor; istemci yalnız eksik parçaları yüklüyor. Aynı koruma Dijital Broşür ve Literatür PDF ana dosyalarına da uygulandı.
+  - **Düzeltme sonrası doğrulama:** PM-03 hedef paketi `4/4`, tam smoke paketi `214/214`, Next tür üretimi, TypeScript ve değişen dosyaların lint kontrolü başarılıdır.
+  - **Kalan canlı doğrulama:** Dört araçta gerçek dosyayla kesinti → yeniden giriş → **Devam Et** zinciri ve Podcastin üç ayrı kesinti noktası canlı tamamlanmalıdır. Dosya erişim izni açık olmasına rağmen Chrome dosya seçici otomasyonu tetiklenmedi; neden ilk oturumdaki izin kontrolünden sonra yeniden incelenecektir. Checkbox bu nedenle işaretlenmedi ve yeni test kaydı bırakılmadı.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [x] **PM-05 — Talep gönderiminin idempotentliği ve atomikliği:** PM talebi gönderirken sunucu talep ile ilk üretim adımını oluşturacak, fakat başarılı yanıtın kullanıcıya ulaşmadığı bağlantı kesintisi canlandırılacak. Aynı istemci işlem anahtarıyla gönderim tekrarlandığında yalnız bir talep, varyanta uygun tek ilk görev, tek atama geçmişi ve tek işlem kaydı kaldığı; farklı talep verisinin aynı anahtarla gönderilemediği ve ilk görev açılamazsa sahipsiz talep bırakılmadığı doğrulanacak.
+- [x] **PM-04 — Talep gönderiminin idempotentliği ve atomikliği:** PM talebi gönderirken sunucu talep ile ilk üretim adımını oluşturacak, fakat başarılı yanıtın kullanıcıya ulaşmadığı bağlantı kesintisi canlandırılacak. Aynı istemci işlem anahtarıyla gönderim tekrarlandığında yalnız bir talep, varyanta uygun tek ilk görev, tek atama geçmişi ve tek işlem kaydı kaldığı; farklı talep verisinin aynı anahtarla gönderilemediği ve ilk görev açılamazsa sahipsiz talep bırakılmadığı doğrulanacak.
   - **Geliştirme:** İstemci aynı formun güvenli tekrarında işlem anahtarını korur. `talep_atomik_olustur` RPC'si talep ile ilk üretim adımını tek transaction içinde oluşturur, yinelenen anahtarda mevcut talebi döndürür ve anahtarın farklı veriyle kullanımını reddeder.
   - **Kod hedef testi:** İstemci işlem anahtarı, atomik API kullanımı ve veritabanı tekilleştirme sözleşmeleri `3/3` başarılıdır.
   - **Supabase hedef testi:** Migration ve tekillik kapısı kuruldu. Rollback transaction içinde aynı gönderimin tek talep/tek ilk görev üretmesi, işlem ve atama geçmişinin tekilleşmesi, farklı verinin aynı anahtarla reddi ve zorlanan ilk görev hatasında sahipsiz talep bırakılmaması `6/6` başarılıdır.
@@ -294,16 +330,16 @@ Bu çalışma, HapBilgi'deki her rolün görev tanımı içinde bulunan bütün 
   - **Smoke testi:** Tam smoke paketi `209/209` başarılı; hata, iptal ve atlanan test yoktur.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [x] **PM-06 — Güncelliğini yitirmiş teslim ekranından karar verme:** PM, İÜ'nün ilk teslimini iki ayrı cihaz veya oturumda açacak. İlk oturumdan revizyon istenecek ve İÜ ikinci sürümü teslim edecek; ilk sürümü göstermeye devam eden eski oturumdan onay verilmeye çalışıldığında karar reddedilecek, PM güncel sürümü yeniden incelemeye yönlendirilecek ve eski ekrandan sonraki üretim görevi ya da yayın kaydı oluşturulmayacak.
+- [x] **PM-05 — Güncelliğini yitirmiş teslim ekranından karar verme:** PM, İÜ'nün ilk teslimini iki ayrı cihaz veya oturumda açacak. İlk oturumdan revizyon istenecek ve İÜ ikinci sürümü teslim edecek; ilk sürümü göstermeye devam eden eski oturumdan onay verilmeye çalışıldığında karar reddedilecek, PM güncel sürümü yeniden incelemeye yönlendirilecek ve eski ekrandan sonraki üretim görevi ya da yayın kaydı oluşturulmayacak.
   - **Geliştirme:** Görevde zaten bulunan `surum` değeri karar isteğine eklendi. Dört öğrenme aracı karar RPC'sinin önüne satır kilitli sürüm kapısı konuldu; eski sürüm kararı hiçbir durum veya sonraki görev kaydı oluşturmadan reddedilir.
   - **Kod hedef testi:** Ekranın gördüğü sürümü taşıması, dört karar motorunun ortak sürüm kapısından geçmesi ve kullanıcıya güncel sürüm yönlendirmesi `3/3` başarılıdır.
   - **Supabase hedef testi:** Video, podcast, dijital broşür ve PDF karar motorlarının eski sürümü reddetmesi ile görev durumu ve sürümünün değişmeden kalması `5/5` başarılıdır. Reddedilen denemeler işlem kaydı veya sonraki görev üretmedi; test yalnız oturuma bağlı geçici fonksiyonla çalıştırıldı ve kalıcı test verisi bırakmadı.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [x] **PM-07 — Yayın yönetimi:** Test, sahada karşılığı bulunmadığı için İskender'in kararıyla iptal edildi.
+- [x] **PM-06 — Yayın yönetimi:** Test, sahada karşılığı bulunmadığı için İskender'in kararıyla iptal edildi.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [x] **PM-09 — Eczanem üretimi:** Eczanem yayını dağıtılırken yayın durdurulacak; yeni gönderimler engellenecek, mevcut kayıtlar bozulmayacak.
+- [x] **PM-07 — Eczanem üretimi:** Eczanem yayını dağıtılırken yayın durdurulacak; yeni gönderimler engellenecek, mevcut kayıtlar bozulmayacak.
 
   - **Tarih:** 29 Ağustos 2026
   - **Rol ve hesap:** PM / canlı Eczanem yayını üzerinde transaction içi izole test
@@ -322,7 +358,23 @@ Bu çalışma, HapBilgi'deki her rolün görev tanımı içinde bulunan bütün 
   **Düzeltme sonrası test:** UTT→eczane ve eczane→müşteri gönderimleri `Bu yayın şu an yayında değil` yanıtıyla reddedildi; yeni gönderim sayısı `0`, mevcut eczane gönderimi korunmuş durumdadır. Kod hedef testleri `2/2` başarılı; rollback sonrasında yayın `yayinda`, gönderim kalıntısı `0` olarak doğrulandı.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **PM-10 — Rapor ve Hapbi:** Takım dışı ürün, yayın ve performans bilgisi istenecek; yalnız PM'in takım kapsamı dönecek.
+- [x] **PM-08 — Rapor ve Hapbi kapsam ayrımı:** PM'den başka takıma ait kişi ve saha performansı, başka üreticiye ait kişisel talep özeti, kendi firmasının üretim portföyü ve başka firmaya ait ürün/yayın bilgileri istenecek. PM'nin saha performansı yalnız kendi takımından, kişisel üretim özeti yalnız kendi taleplerinden dönecek; kendi firmasının üretim portföyü firma kapsamında gösterilecek; başka firma verileri reddedilecek. Hapbi bu üç kaynağı birbirine karıştırmayacak.
+
+  - **Tarih:** 29 Ağustos 2026
+  - **Rol ve hesap:** PM / Merve Duran (`merve@test2.com`) / Şimşek / Hepifarma / Chrome canlı oturumu
+  - **Durum:** Giderildi
+  - **Beklenen sonuç:** Takım saha performansı yalnız Şimşek takımından, kişisel üretim özeti yalnız Merve Duran'ın taleplerinden, şirket üretim portföyü Hepifarma firma kapsamından dönmeli; başka takım/üretici ve başka firma ürün/yayın verileri reddedilmeli; Hapbi üç kaynağı birbirine karıştırmamalıydı.
+  - **Gerçekleşen sonuç:** Rapor ekranlarında aylık takım saha puanı `1.180`; Merve'nin kişisel üretim özeti `21` talep / `18` tamamlanan / `27` yayındaki video / `0` durdurulan; Hepifarma üretim portföyü `22` dönem yayını / `47` canlı yayın olarak ayrıştı. Hapbi bu üç sonucu doğru kaynaklarla birebir döndürdü; başka takımın kişi performansı, başka üreticinin kişisel özeti ve başka firmanın ürün/yayın talebi canlı sorgularda reddedildi. Ancak hedef kod denetiminde `/urunler/api` rotasının istemciden gelen `firma_id` ve `takim_id` değerlerini oturum sahibinin kapsamıyla doğrulamadan service-role sorgusuna aktardığı görüldü.
+  - **Rollback sonucu:** Gerekmedi — canlı test yalnız okuma ve Hapbi sorgularıyla yürütüldü
+  - **Kalan kayıt veya dosya:** Test verisi yok; yalnız kalıcı kapsam düzeltmesi ve otomatik PM-08 testi eklendi
+
+  **Hata ve etkisi:** Hapbi ve rapor araçları firma sınırını korusa da ürün sözlüğü API'si ayrı bir erişim yolunda istemci kapsamına güveniyordu. PM, değiştirilmiş `firma_id` ile başka firmanın ürün adlarını okuyabilir; POST yolunda yabancı firma/takım kimliğiyle ürün yazmayı deneyebilirdi. Bu açık, sohbet reddinin tek başına veri erişim güvenliği sağlamadığını gösteriyordu.
+
+  **Çözüm ve doğrulama:** Ürün listeleme ve ekleme kapsamı aktif üretici profilinin doğrulanmış `firma_id` / `takim_id` alanlarından türetildi. Takıma bağlı PM için takım sunucuda sabitlendi; yabancı firma/takım sorguları veri sorgusundan önce reddedildi; seçilen takımın doğrulanmış firmaya ait olduğu ayrıca denetlendi. Yayın kataloğunun firma filtresi de hedef testte korundu.
+
+  **Düzeltme — 29 Ağustos 2026:** `/urunler/api` GET ve POST yolları ortak üretici ürün kapsamı motoruna bağlandı. Merve'nin normal talep ekranında Hepifarma/Şimşek kapsamındaki `5` ürün yeniden hatasız yüklendi; hiçbir talep veya ürün oluşturulmadı.
+
+  **Düzeltme sonrası test:** Canlı rapor/Hapbi kapsam denemeleri `5/5`, PM-08 ürün/yayın hedef testleri `4/4`, tam smoke paketi `213/213` başarılıdır. TypeScript üretim tip kontrolü ve değişen dosyaların lint kontrolü hata vermedi; canlı testte veri yazımı ve test kalıntısı oluşmadı.
 
 ### Medikal Müdür
 
