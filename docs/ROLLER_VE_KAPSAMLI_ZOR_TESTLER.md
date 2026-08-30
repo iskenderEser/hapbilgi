@@ -403,34 +403,9 @@ Bu çalışma, HapBilgi'deki her rolün görev tanımı içinde bulunan bütün 
 
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **BM-01 — Yayın tüketimi:** BM hedefli yayın iki cihazda eşzamanlı tamamlanacak; tek izleme ve tek puan oluşacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **BM-02 — Öneri gönderimi:** Aynı yayın aynı UTT'ye iki oturumdan eşzamanlı önerilecek; tek aktif öneri oluşacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **BM-03 — Challenge gönderimi:** Kota sınırındaki son challenge iki sekmeden gönderilecek; kota aşılmayacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
 - [ ] **BM-04 — Challenge cevaplama:** Aynı cevap tekrar gönderilip bağlantı kesilmesi simüle edilecek; puan yalnız bir kez yazılacak.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **BM-05 — Puan defteri:** Kazanç, kayıp ve düzeltme eşzamanlı çalıştırılacak; bakiye kanonik defterle eşit kalacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **BM-06 — HBStore satın alma:** Aynı bakiye ile iki son stok ürünü eşzamanlı alınacak; tek sipariş oluşacak ve bakiye negatife düşmeyecek.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **BM-07 — Adres yönetimi:** Sipariş sırasında adres silinip değiştirilecek; sipariş geçerli adres anlık görüntüsünü koruyacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **BM-08 — Ekip siparişleri:** Başka bölgenin UTT sipariş kimliği çağrılacak; erişim reddedilecek.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **BM-09 — Rapor ve lig:** Dönem kapanışı ile puan hareketi çakıştırılacak; rapor ve lig aynı sonucu gösterecek.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **BM-10 — E-Club/Eczanem:** Başka bölgenin kişi ve gönderim verileri istenecek; veri sızmayacak.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
 - [ ] **BM-11 — Hapbi:** Bölge dışı kişi, puan ve performans sorulacak; cevap yalnız bölge verisini kullanacak.
