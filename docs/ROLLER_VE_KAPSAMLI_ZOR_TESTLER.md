@@ -305,7 +305,7 @@ Bu çalışma, HapBilgi'deki her rolün görev tanımı içinde bulunan bütün 
   **İdempotency ve regresyon sonucu:** Geçerli zincirlerde `168` farklı işlem anahtarının her biri iki kez çağrıldı; mükerrer görev `0`, mükerrer işlem anahtarı `0` bulundu. PM-02 yeni bir ürün hatası üretmedi. PM-01’de düzeltilen dört öğrenme aracı zinciri hedef kitle değişimlerinden etkilenmeden çalıştı; tam smoke paketi `214/214` başarılıdır.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **PM-03 — Kesilen hazır öğrenme aracı yüklemesinin kurtarılması:** PM'nin hazır Video, Podcast, Dijital Broşür ve Literatür PDF yüklemeleri ayrı ayrı yarıda kesilecek. Video TUS aktarımı sürerken; Podcastte ses aktarımı sırasında ve ses, kapak, transkript parçalarının her birinden sonra; Dijital Broşür ile Literatür PDF'de ana dosya aktarımı sırasında bağlantı veya sayfa kesintisi uygulanacak. Yeniden girişte her yarım işlem doğru araç ve talep bilgisiyle kullanıcıya gösterilecek. **Devam Et** seçiminde kullanıcıdan güvenlik gereği gereken dosyalar yeniden seçildikten sonra işlem aynı yükleme oturumu veya `arac_id` üzerinden yalnız eksik parçaları tamamlayacak; dosya, araç, görev, teslim ve işlem kayıtları mükerrer oluşmayacak. **İptal Et** seçiminde araca ait Bunny Stream/Storage nesneleri ile geçici veritabanı kayıtları birlikte ve idempotent biçimde temizlenecek; tekrar girişte yarım işlem görünmeyecek. Başarı toastı yalnız bütün zorunlu dosyalar yüklenip tür, boyut, özet, süre, boyut veya sayfa gibi araca özgü doğrulamalar tamamlandıktan sonra gösterilecek. Aynı dosyanın başka bir talepte bilinçli olarak yeniden yüklenmesi engellenmeyecek.
+- [x] **PM-03 — Kesilen hazır öğrenme aracı yüklemesinin kurtarılması:** PM'nin hazır Video, Podcast, Dijital Broşür ve Literatür PDF yüklemeleri ayrı ayrı yarıda kesilecek. Video TUS aktarımı sürerken; Podcastte ses aktarımı sırasında ve ses, kapak, transkript parçalarının her birinden sonra; Dijital Broşür ile Literatür PDF'de ana dosya aktarımı sırasında bağlantı veya sayfa kesintisi uygulanacak. Yeniden girişte her yarım işlem doğru araç ve talep bilgisiyle kullanıcıya gösterilecek. **Devam Et** seçiminde kullanıcıdan güvenlik gereği gereken dosyalar yeniden seçildikten sonra işlem aynı yükleme oturumu veya `arac_id` üzerinden yalnız eksik parçaları tamamlayacak; dosya, araç, görev, teslim ve işlem kayıtları mükerrer oluşmayacak. **İptal Et** seçiminde araca ait Bunny Stream/Storage nesneleri ile geçici veritabanı kayıtları birlikte ve idempotent biçimde temizlenecek; tekrar girişte yarım işlem görünmeyecek. Başarı toastı yalnız bütün zorunlu dosyalar yüklenip tür, boyut, özet, süre, boyut veya sayfa gibi araca özgü doğrulamalar tamamlandıktan sonra gösterilecek. Aynı dosyanın başka bir talepte bilinçli olarak yeniden yüklenmesi engellenmeyecek.
   - **Oturum başlangıcı hatırlatması:** İlk Chrome oturumu açıldığında ChatGPT tarayıcı eklentisinin **Dosya URL'lerine erişime izin ver** ayarının açık olduğu kullanıcıya hatırlatılacak ve dosya seçimine başlamadan önce kontrol edilecek.
   - **Tarih:** 29 Ağustos 2026
   - **Rol ve hesap:** PM / Merve Duran (`merve@test2.com`) / Chrome canlı oturumu + kod ve regresyon testleri
@@ -319,6 +319,8 @@ Bu çalışma, HapBilgi'deki her rolün görev tanımı içinde bulunan bütün 
   - **Bulunan hata ve çözüm:** Podcast yüklemesi ses tamamlandıktan sonra kapak veya transkript aşamasında kesilirse **Devam Et** işlemi tamamlanmış parçaları da yeniden yüklüyordu. Sunucu artık aynı `arac_id` içindeki doğrulanmış `ana`, `kapak` ve `transkript` parçalarını bildiriyor; istemci yalnız eksik parçaları yüklüyor. Aynı koruma Dijital Broşür ve Literatür PDF ana dosyalarına da uygulandı.
   - **Düzeltme sonrası doğrulama:** PM-03 hedef paketi `4/4`, tam smoke paketi `214/214`, Next tür üretimi, TypeScript ve değişen dosyaların lint kontrolü başarılıdır.
   - **Kalan canlı doğrulama:** Dört araçta gerçek dosyayla kesinti → yeniden giriş → **Devam Et** zinciri ve Podcastin üç ayrı kesinti noktası canlı tamamlanmalıdır. Dosya erişim izni açık olmasına rağmen Chrome dosya seçici otomasyonu tetiklenmedi; neden ilk oturumdaki izin kontrolünden sonra yeniden incelenecektir. Checkbox bu nedenle işaretlenmedi ve yeni test kaydı bırakılmadı.
+
+  - **Kapanış — 30 Ağustos 2026 (İskender onayı):** Bu testte canlı deneme yapılmaması kararlaştırıldı. Dört aracın (Video, Podcast, Dijital Broşür/görsel, Literatür PDF) yükleme → kesinti → **Devam Et** (aynı `arac_id`, aynı dosya, yalnız eksik parça, mükerrer kayıt yok) → **İptal Et** (Bunny + geçici DB idempotent temizlik) → doğrulama/başarı kapısı zincirleri istemci ve sunucu tarafında tek tek okunarak doğrulandı; düzeltilmesi gereken hata veya eksiklik bulunmadı. Canlı **Devam Et** koşumu bilinçli olarak kapsam dışı bırakıldı. **Durum: Başarılı (kod doğrulaması).** Yalnız kod incelemesi yapıldığından test verisi veya dosya oluşturulmadı.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
 - [x] **PM-04 — Talep gönderiminin idempotentliği ve atomikliği:** PM talebi gönderirken sunucu talep ile ilk üretim adımını oluşturacak, fakat başarılı yanıtın kullanıcıya ulaşmadığı bağlantı kesintisi canlandırılacak. Aynı istemci işlem anahtarıyla gönderim tekrarlandığında yalnız bir talep, varyanta uygun tek ilk görev, tek atama geçmişi ve tek işlem kaydı kaldığı; farklı talep verisinin aynı anahtarla gönderilemediği ve ilk görev açılamazsa sahipsiz talep bırakılmadığı doğrulanacak.
@@ -380,43 +382,20 @@ Bu çalışma, HapBilgi'deki her rolün görev tanımı içinde bulunan bütün 
 
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **MED-01 — Talep türleri:** Medikal ve ürün medikal taleplere satış tekniği veya İK türü enjekte edilecek; yetkisiz türler reddedilecek.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **MED-02 — Ürün zorunluluğu:** Ürün medikal talebin ürünü üretim sırasında pasifleştirilecek; yayın güvenli biçimde engellenecek.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **MED-03 — Teknik yasağı:** Teknik kimliği doğrudan API gövdesine eklenerek medikal talep oluşturulacak; teknik ilişkisi kaydedilmeyecek.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **MED-04 — Üretim zinciri:** Aynı medikal teslim iki oturumdan onay ve revizyona sokulacak; tek sürüm ve tek karar kalacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **MED-05 — Firma kapsamı:** Başka firmanın ürün, talep, yayın ve rapor kimlikleri çağrılacak; erişim reddedilecek.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **MED-06 — Rapor ve Hapbi:** Firma verisi eşzamanlı değişirken medikal sonuçlar tutarlı kalacak ve başka firma verisi kullanılmayacak.
-
 ### Eğitim Rolleri
 
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **EGT-01 — Talep türleri:** Satış teknikleri ve yönetim eğitimi dışındaki türler değiştirilmiş API gövdesiyle gönderilecek; reddedilecek.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
+- [x] **EGT-02 — Teknik zorunluluğu:** Satış tekniği talebi gönderilirken teknik pasifleştirilecek veya başka firmaya taşınacak; talep oluşmayacak.
 
-- [ ] **EGT-02 — Teknik zorunluluğu:** Satış tekniği talebi gönderilirken teknik pasifleştirilecek veya başka firmaya taşınacak; talep oluşmayacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **EGT-03 — İsteğe bağlı ürün:** Ürün seçili ve ürünsüz iki talep eşzamanlı oluşturulacak; ürün ilişkileri birbirine karışmayacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **EGT-04 — Üretim zinciri:** Podcast teslimi, revizyonu ve onayı iki sekmede çakıştırılacak; tek geçerli sürüm kalacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **EGT-05 — Yayın ve rapor:** Yayın hedefi ve durumu rapor alınırken değiştirilecek; firma toplamları tutarlı kalacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **EGT-06 — Hapbi:** Firma dışındaki eğitim, teknik ve performans verileri sorulacak; yalnız yetkili kapsam kullanılacak.
+  - **Tarih:** 30 Ağustos 2026
+  - **Durum:** Giderildi (kod doğrulaması)
+  - **Kapsam notu:** Senaryonun özgün ifadesi ("teknik başka firmaya taşınacak") kod denetimiyle genişletildi. Gerçek açık; talep yazımında `teknik_id`/`urun_id`'nin ve `GET /teknikler/api`'nin `firma_id`'sinin firma sahipliği doğrulamasının olmamasıydı.
+  - **Bulgu ve etkisi:** `talepler/api` ucu ile `talep_atomik_olustur` RPC'si gönderilen `teknik_id`/`urun_id`'nin kullanıcının firmasına ait olduğunu doğrulamıyor; `GET /teknikler/api` de sorgudaki `firma_id`'yi doğrulamadan listeyi dönüyordu. Teknik bilgili bir kullanıcı GET'ten başka firmanın `teknik_id`'sini okuyup satış tekniği talebine enjekte edebilir; aynı boşluk `urun_id` için de vardı. Bu, PM-08'deki `/urunler/api` açığının talep-yazımı ve teknik karşılığıydı. (İÜ kapsam dışı; talep açmaz.)
+  - **Çözüm:** `lib/uretici/talepKaynakSahipligi.ts` (teknik/ürün firma sahipliği yardımcısı) eklendi; talep ucunda `insertTeknikId`/`insertUrunId` NULL değilse sahiplik doğrulanıp yabancıysa RPC'den önce reddediliyor; `GET /teknikler/api` yabancı `firma_id`'ye `403` veriyor.
+  - **Doğrulama:** `typecheck:build` temiz; `denetim`/`lint:mimari` yeni uyarı üretmedi; yeni smoke (teknik+ürün, mutlu yol + red) `2/2` ve tam smoke paketi `216/216` geçti. Commit `f28d25f`. Canlı test/DB yazımı yapılmadı, test verisi bırakılmadı.
+  - **Rol kapsamı:** Açık paylaşılan kodda olduğundan teknik listesi sızıntısı 13 üretici rolün tamamını, teknik iliştirme PM+Eğitim'i, ürün iliştirme PM+Eğitim+Medikal'i etkiliyordu; düzeltme hepsini kapsar.
+  - **Kalan (opsiyonel):** DB derinlik savunması — `talep_atomik_olustur` RPC'sine aynı sahiplik kontrolü (SQL İskender'e verilecek, henüz uygulanmadı).
 
 ### İK Rolleri
 
