@@ -22,6 +22,17 @@ export async function GET(request: NextRequest) {
 
     if (!firma_id) return validasyonHatasi("firma_id zorunludur.", ["firma_id"]);
 
+    // Firma sahipliği: istemciden gelen firma_id kullanıcının kendi firması
+    // olmalı; başka firmanın teknik listesi sızdırılmaz.
+    const { data: kullaniciKaydi } = await adminSupabase
+      .from("kullanicilar")
+      .select("firma_id")
+      .eq("kullanici_id", user.id)
+      .single();
+    if (!kullaniciKaydi?.firma_id || kullaniciKaydi.firma_id !== firma_id) {
+      return rolHatasi("Başka firmanın teknik listesine erişemezsiniz.");
+    }
+
     const { data: teknikler, error } = await adminSupabase
       .from("teknikler")
       .select("teknik_id, teknik_adi, firma_id, created_at")

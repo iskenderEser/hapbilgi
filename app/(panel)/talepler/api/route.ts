@@ -10,6 +10,7 @@ import {
 } from "@/lib/uretici/yetenekler";
 import { ECZANEM_TALEP_ACAN_ROLLER, ECLUB_HEDEF_ROLLER, hedefRolIkUreticisineAcikMi, hedefRolleriDogrula } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { teknikFirmayaAitMi, urunFirmayaAitMi } from "@/lib/uretici/talepKaynakSahipligi";
 import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
 import { hazirParametreKontrol } from "@/lib/uretim/parametreKontrol";
 import { ogrenmeAraciAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
@@ -145,6 +146,17 @@ export async function POST(request: NextRequest) {
     // teknik-siz hedeflerde teknik her hâlükârda NULL'dur.
     const insertUrunId = turKurali.urun === "yok" && !eczanemHedefi ? null : (urun_id ?? null);
     const insertTeknikId = turKurali.teknik === "yok" || tekniksizHedef ? null : (teknik_id ?? null);
+
+    // Enjeksiyon savunması: talebe iliştirilecek teknik/ürün kullanıcının kendi
+    // firmasına ait olmalı. Form yalnız kendi firmasının kayıtlarını sunar; gövde
+    // istemci kontrolünde olduğundan (başka firmanın id'si enjekte edilebilir)
+    // sahiplik yazımdan önce sunucuda doğrulanır.
+    if (insertTeknikId && !(await teknikFirmayaAitMi(adminSupabase, insertTeknikId, kullaniciKaydi.firma_id))) {
+      return validasyonHatasi("Seçilen teknik firmanıza ait değil.", ["teknik_id"]);
+    }
+    if (insertUrunId && !(await urunFirmayaAitMi(adminSupabase, insertUrunId, kullaniciKaydi.firma_id))) {
+      return validasyonHatasi("Seçilen ürün firmanıza ait değil.", ["urun_id"]);
+    }
 
     // Ürün de teknik de olmayan türlerde (medikal_egitim, ik_egitimi) izleyiciye
     // görünecek ad talepler.urun_adi'na yazılır (İskender 24.07). Diğer türlerde
