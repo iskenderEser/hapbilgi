@@ -1478,6 +1478,19 @@ HapBilgi kod tabanında tip güvenliği, sistem dayanıklılığı ve bakım kol
 
 ---
 
+## 12. SORU ERİŞİMİ KESİNTİ KURALI (TÜM İZLEYİCİ ROLLER)
+*Tarih: 30 Ağustos 2026 | Kapsam: UTT/KD_UTT, BM (Challenge), E-Club, Eczanem müşteri*
+
+Video tamamlanıp izleme puanı ve soru indeksleri yazıldıktan sonra kullanıcı soruları cevaplamadan çıkarsa, soru hakkının sunucuda açık kalması ve bazı akışlarda (BM challenge, E-Club, müşteri) yeniden girişte soruların tekrar açılması sorunu; dört izleme tablosuna eklenen tek tip `soru_erisimi_acik_mi` kapısıyla köke kapatıldı.
+
+* **Alan (`soru_erisimi_acik_mi boolean NOT NULL DEFAULT false`):** `izleme_kayitlari`, `cc_izleme_kayitlari`, `eclub_izleme_kayitlari`, `eczanem_izleme_kayitlari`.
+* **Durum geçişleri (tüm rollerde aynı):** ilk uygun video tamamlandı → `true` (tamamlama RPC'lerinde); cevaplar gönderildi → `false`; yayın yeniden başlatıldı → `false` (`baslat` uçlarında). Eski tamamlanmış-cevaplanmamış kayıtlar `false` kalır; geçmiş sorular açılmaz.
+* **Kilit:** dört `/sorular` ve dört cevap yolu bu kapıyı denetler; kapalıysa eski `izleme_id` ile soru alınamaz veya cevap yazılamaz (atomik; eşzamanlı ikinci isteği keser).
+* **BM challenge:** `challenge_kayitlari.izlendi_mi` artık video tamamlanınca açılır; referral yalnız cevap başarıyla kaydedilince verilir.
+* **Not:** Mevcut `soru_hakki_var_mi` (UTT/E-Club) ve `cevaplandi_mi` (BM/müşteri) alanları korunur; tek-kaynağa indirgeme teknik borcu REDBOOK §6.4 TB-01'de.
+
+---
+
 ## 🎯 GENEL SONUÇ VE KALİTE SİCİLİ
 
 **25 Ağustos 2026** tarihi itibarıyla:

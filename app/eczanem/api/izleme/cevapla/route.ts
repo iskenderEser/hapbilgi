@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     const { data: izleme, error: izlemeError } = await adminSupabase
       .from("eczanem_izleme_kayitlari")
-      .select("izleme_id, yayin_id, musteri_id, gonderim_id, tamamlandi_mi, soru_indeksleri, cevaplandi_mi")
+      .select("izleme_id, yayin_id, musteri_id, gonderim_id, tamamlandi_mi, soru_erisimi_acik_mi, soru_indeksleri, cevaplandi_mi")
       .eq("izleme_id", izleme_id)
       .single();
     if (izlemeError) return hataYaniti("İzleme sorgulanamadı.", "eczanem_izleme_kayitlari SELECT", izlemeError, 404);
@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
     if (!uyelik.ok) return isKuraluHatasi(uyelik.hata ?? "Bu eczanedeki üyeliğiniz aktif değil.");
     if (!izleme.tamamlandi_mi) return isKuraluHatasi("Önce videoyu tamamlayın.");
     if (izleme.cevaplandi_mi) return isKuraluHatasi("Bu videonun soruları zaten cevaplandı.");
+    if (!izleme.soru_erisimi_acik_mi) return isKuraluHatasi("Bu izleme için soru hakkı kapanmıştır.");
 
     const atananIndeksler = izleme.soru_indeksleri as number[] | null;
     if (!Array.isArray(atananIndeksler) || !cevaplarAtananSorularlaEslesiyorMu(cevaplar, atananIndeksler)) {

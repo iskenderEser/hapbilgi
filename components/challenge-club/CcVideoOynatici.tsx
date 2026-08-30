@@ -291,7 +291,10 @@ export default function CcVideoOynatici({
       );
       const sData = await sRes.json();
       if (!sRes.ok) {
-        hata(sData.hata ?? "Sorular yüklenemedi.", sData.adim, sData.detay);
+        // [Faz 6] Kesinti: soru hakkı kapanmışsa soru ekranını açma (hata değil bilgi).
+        setSoruGosterilecek(false);
+        if (sData.hata === "Bu izleme için soru hakkı kapanmıştır.") uyari(sData.hata);
+        else hata(sData.hata ?? "Sorular yüklenemedi.", sData.adim, sData.detay);
       } else {
         setSorular(sData.sorular ?? []);
       }

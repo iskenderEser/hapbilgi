@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     const { data: izleme, error: izlemeError } = await adminSupabase
       .from("izleme_kayitlari")
-      .select("izleme_id, yayin_id, kullanici_id, tamamlandi_mi, soru_hakki_var_mi, soru_hakki_nedeni, soru_indeksleri")
+      .select("izleme_id, yayin_id, kullanici_id, tamamlandi_mi, soru_erisimi_acik_mi, soru_hakki_var_mi, soru_hakki_nedeni, soru_indeksleri")
       .eq("izleme_id", izleme_id)
       .single();
 
@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
     if (izlemeError) return hataYaniti("İzleme kaydı sorgulanırken hata oluştu.", "izleme_kayitlari tablosu SELECT", izlemeError, 404);
     if (izleme.kullanici_id !== user.id) return rolHatasi("Bu izleme kaydına erişim yetkiniz yok.");
     if (!izleme.tamamlandi_mi) return isKuraluHatasi("Cevaplar ancak video tamamlandıktan sonra gönderilebilir.");
+    if (!izleme.soru_erisimi_acik_mi) return isKuraluHatasi("Bu izleme için soru hakkı kapanmıştır.");
     if (!izleme.soru_hakki_var_mi) {
       return isKuraluHatasi(`Bu izleme için soru hakkı bulunmuyor (${izleme.soru_hakki_nedeni ?? "uygun_degil"}).`);
     }
@@ -152,6 +153,12 @@ export async function POST(request: NextRequest) {
       if (cevapYazmaError.code === "23505") return isKuraluHatasi("Bu izleme için sorular zaten cevaplandı.");
       return hataYaniti("Cevaplar kaydedilemedi.", "soru_cevaplari toplu INSERT", cevapYazmaError);
     }
+
+    // [Faz 5] Cevaplar kaydedildi: soru hakkı kapatılır (yeniden açılamaz).
+    await adminSupabase
+      .from("izleme_kayitlari")
+      .update({ soru_erisimi_acik_mi: false })
+      .eq("izleme_id", izleme_id);
 
     let kazanilanPuan = 0;
     const puanUyarilari: string[] = [];

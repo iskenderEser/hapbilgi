@@ -177,6 +177,18 @@ export async function POST(request: NextRequest) {
       return hataYaniti("İzleme deneme sırası belirlenemedi.", "izleme_kayitlari COUNT — geçerli tur", denemeError);
     }
 
+    // [Faz 3] Yeni izleme başlıyor: bu kullanıcı+yayın için önceki tamamlanmış
+    // izlemelerin açık soru hakkı kapatılır; eski izleme_id ile soru alınamaz.
+    const { error: soruKapatmaError } = await adminSupabase
+      .from("izleme_kayitlari")
+      .update({ soru_erisimi_acik_mi: false })
+      .eq("kullanici_id", user.id)
+      .eq("yayin_id", yayin_id)
+      .eq("soru_erisimi_acik_mi", true);
+    if (soruKapatmaError) {
+      return hataYaniti("Önceki soru hakkı kapatılamadı.", "izleme_kayitlari UPDATE — soru erişimi kapatma", soruKapatmaError);
+    }
+
     const insertVeri = {
       yayin_id,
       kullanici_id: user.id,

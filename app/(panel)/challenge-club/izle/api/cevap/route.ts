@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     // 4. İzleme, sahiplik ve sabit soru kümesi kontrolü
     const { data: izleme, error: izlemeError } = await adminSupabase
       .from("cc_izleme_kayitlari")
-      .select("izleme_id, bm_id, yayin_id, challenge_id, tamamlandi_mi, ileri_sarildi_mi, soru_indeksleri, cevaplandi_mi")
+      .select("izleme_id, bm_id, yayin_id, challenge_id, tamamlandi_mi, soru_erisimi_acik_mi, ileri_sarildi_mi, soru_indeksleri, cevaplandi_mi")
       .eq("izleme_id", izleme_id)
       .single();
     if (izlemeError || !izleme) return hataYaniti("İzleme kaydı bulunamadı.", "cc_izleme_kayitlari SELECT — CC cevap", izlemeError, 404);
@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
     if (!izleme.tamamlandi_mi) return isKuraluHatasi("Cevaplar ancak video tamamlandıktan sonra gönderilebilir.");
     if (izleme.ileri_sarildi_mi) return isKuraluHatasi("İleri sarılmış izlemede cevap gönderilemez.");
     if (izleme.cevaplandi_mi) return isKuraluHatasi("Bu izleme için sorular zaten cevaplandı.");
+    if (!izleme.soru_erisimi_acik_mi) return isKuraluHatasi("Bu izleme için soru hakkı kapanmıştır.");
 
     const soruIndeksleri = izleme.soru_indeksleri as number[] | null;
     if (!Array.isArray(soruIndeksleri)

@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     const { data: izleme, error: izlemeError } = await adminSupabase
       .from("eczanem_izleme_kayitlari")
-      .select("izleme_id, yayin_id, musteri_id, gonderim_id, tamamlandi_mi, soru_indeksleri, cevaplandi_mi")
+      .select("izleme_id, yayin_id, musteri_id, gonderim_id, tamamlandi_mi, soru_erisimi_acik_mi, soru_indeksleri, cevaplandi_mi")
       .eq("izleme_id", izleme_id)
       .single();
     if (izlemeError) return hataYaniti("İzleme sorgulanamadı.", "eczanem_izleme_kayitlari SELECT", izlemeError, 404);
@@ -35,6 +35,7 @@ export async function GET(request: NextRequest) {
     const uyelik = await aktifGonderimUyeliginiDogrula(adminSupabase, musteriId, izleme.gonderim_id);
     if (!uyelik.ok) return isKuraluHatasi(uyelik.hata ?? "Bu eczanedeki üyeliğiniz aktif değil.");
     if (!izleme.tamamlandi_mi) return isKuraluHatasi("Sorular ancak video tamamlandıktan sonra gösterilebilir.");
+    if (!izleme.soru_erisimi_acik_mi) return isKuraluHatasi("Bu izleme için soru hakkı kapanmıştır.");
     if (izleme.cevaplandi_mi) return isKuraluHatasi("Bu videonun soruları zaten cevaplandı.");
 
     const soruIndeksleri = izleme.soru_indeksleri as number[] | null;

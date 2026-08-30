@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     const { data: izleme, error: izlemeError } = await adminSupabase
       .from("cc_izleme_kayitlari")
-      .select("bm_id, yayin_id, tamamlandi_mi, ileri_sarildi_mi, soru_indeksleri, cevaplandi_mi")
+      .select("bm_id, yayin_id, tamamlandi_mi, soru_erisimi_acik_mi, ileri_sarildi_mi, soru_indeksleri, cevaplandi_mi")
       .eq("izleme_id", izlemeId)
       .single();
     if (izlemeError || !izleme) {
@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
     }
     if (izleme.bm_id !== user.id) return rolHatasi("Bu izleme size ait değil.");
     if (!izleme.tamamlandi_mi) return isKuraluHatasi("Sorular ancak video tamamlandıktan sonra gösterilebilir.");
+    if (!izleme.soru_erisimi_acik_mi) return isKuraluHatasi("Bu izleme için soru hakkı kapanmıştır.");
     if (izleme.ileri_sarildi_mi) return isKuraluHatasi("İleri sarılmış izlemede soru hakkı bulunmuyor.");
     if (izleme.cevaplandi_mi) return isKuraluHatasi("Bu izleme için sorular zaten cevaplandı.");
 

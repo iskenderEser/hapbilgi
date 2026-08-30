@@ -87,6 +87,14 @@ export async function POST(request: NextRequest) {
 
     if (mevcutError) return hataYaniti("Mevcut izleme sorgulanamadı.", "eclub_izleme_kayitlari SELECT — oneri_id", mevcutError);
     if (mevcutIzleme) {
+      // [Faz 3] Yeniden giriş: tamamlanmış izlemenin açık soru hakkı kapatılır;
+      // cevap vermeden çıkıp dönende soru hakkı yanar (eski izleme_id ile soru alınamaz).
+      const { error: soruKapatmaError } = await adminSupabase
+        .from("eclub_izleme_kayitlari")
+        .update({ soru_erisimi_acik_mi: false })
+        .eq("izleme_id", mevcutIzleme.izleme_id)
+        .eq("soru_erisimi_acik_mi", true);
+      if (soruKapatmaError) return hataYaniti("Soru hakkı kapatılamadı.", "eclub_izleme_kayitlari UPDATE — soru erişimi kapatma", soruKapatmaError);
       return NextResponse.json({
         mesaj: mevcutIzleme.tamamlandi_mi ? "Video yeniden oynatılıyor." : "İzleme zaten açık.",
         izleme: mevcutIzleme,

@@ -201,6 +201,18 @@ export async function POST(request: NextRequest) {
       izleme_turu = dahaOnceTamamlandi ? "extra" : "kendi_izleme";
     }
 
+    // [Faz 3] Yeni izleme başlıyor: bu BM+yayın için önceki tamamlanmış
+    // izlemelerin açık soru hakkı kapatılır.
+    const { error: soruKapatmaError } = await adminSupabase
+      .from("cc_izleme_kayitlari")
+      .update({ soru_erisimi_acik_mi: false })
+      .eq("bm_id", user.id)
+      .eq("yayin_id", yayin_id)
+      .eq("soru_erisimi_acik_mi", true);
+    if (soruKapatmaError) {
+      return hataYaniti("Önceki soru hakkı kapatılamadı.", "cc_izleme_kayitlari UPDATE — soru erişimi kapatma", soruKapatmaError);
+    }
+
     // 6. İzleme başlat (lib)
     const sonuc = await izlemeBaslat(adminSupabase, {
       bm_id: user.id,

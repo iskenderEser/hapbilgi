@@ -130,8 +130,9 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
         const sRes = await fetch(`/eczanem/api/izleme/sorular?izleme_id=${id}`, { cache: "no-store" });
         const sData = await sRes.json();
         if (!sRes.ok) {
-          if (sData.hata) hata(sData.hata, sData.adim, sData.detay);
+          // [Faz 6] Kesinti: soru hakkı kapanmışsa soru ekranını sessizce kapat; diğer hatalarda bildir.
           setSoruGosterilecek(false);
+          if (sData.hata && sData.hata !== "Bu izleme için soru hakkı kapanmıştır.") hata(sData.hata, sData.adim, sData.detay);
         } else {
           setSorular(sData.sorular ?? []);
         }

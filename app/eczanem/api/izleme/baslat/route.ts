@@ -76,6 +76,13 @@ export async function POST(request: NextRequest) {
     if (mevcutError) return hataYaniti("İzleme kaydı sorgulanamadı.", "eczanem_izleme_kayitlari SELECT — gonderim_id", mevcutError);
 
     if (mevcutIzleme) {
+      // [Faz 3] Yeniden giriş: tamamlanmış izlemenin açık soru hakkı kapatılır.
+      const { error: soruKapatmaError } = await adminSupabase
+        .from("eczanem_izleme_kayitlari")
+        .update({ soru_erisimi_acik_mi: false })
+        .eq("izleme_id", mevcutIzleme.izleme_id)
+        .eq("soru_erisimi_acik_mi", true);
+      if (soruKapatmaError) return hataYaniti("Soru hakkı kapatılamadı.", "eczanem_izleme_kayitlari UPDATE — soru erişimi kapatma", soruKapatmaError);
       return NextResponse.json({ mesaj: "Gönderimin izleme kaydı açıldı.", izleme: mevcutIzleme }, { status: 200 });
     }
 

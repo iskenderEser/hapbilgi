@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     const { data: izleme, error: izlemeError } = await adminSupabase
       .from("eclub_izleme_kayitlari")
-      .select("izleme_id, yayin_id, kisi_id, oneri_id, tamamlandi_mi, soru_hakki_var_mi, soru_hakki_nedeni, soru_indeksleri")
+      .select("izleme_id, yayin_id, kisi_id, oneri_id, tamamlandi_mi, soru_erisimi_acik_mi, soru_hakki_var_mi, soru_hakki_nedeni, soru_indeksleri")
       .eq("izleme_id", izleme_id)
       .single();
 
@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
     if (izleme.kisi_id !== kisi.kisi_id) return rolHatasi("Bu izleme kaydına erişim yetkiniz yok.");
     if (!(await eclubAktifYayinYetkisi(adminSupabase, user.id, izleme.yayin_id))) return rolHatasi("Aktif E-Club firma bağlantısı bulunamadı.");
     if (!izleme.tamamlandi_mi) return isKuraluHatasi("Cevaplar ancak video tamamlandıktan sonra gönderilebilir.");
+    if (!izleme.soru_erisimi_acik_mi) return isKuraluHatasi("Bu izleme için soru hakkı kapanmıştır.");
     if (!izleme.soru_hakki_var_mi) {
       return isKuraluHatasi(`Bu izleme için soru hakkı bulunmuyor (${izleme.soru_hakki_nedeni ?? "uygun_degil"}).`);
     }
