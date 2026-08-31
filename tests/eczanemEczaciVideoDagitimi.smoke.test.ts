@@ -8,18 +8,19 @@ const sayfa = oku("app/(panel)/eczanem/eczane/dagitim/page.tsx");
 const satir = oku("app/(panel)/eczanem/eczane/_components/EczanemVideoGonderimSatiri.tsx");
 const api = oku("app/(panel)/eczanem/eczane/api/gonderim/route.ts");
 const gonderim = oku("lib/eczanem/gonderim.ts");
+const ortakOnizleme = oku("components/ogrenme-araci/OgrenmeAraciOnizleme.tsx");
 
 test("mutlu: eczacı dağıtımı UTT ile aynı satır içi yönetim ve önizleme akışını kullanır", () => {
-  assert.match(sayfa, /Müşterilere Gönderilecek Videolar/);
+  assert.match(sayfa, /Müşterilere Gönderilecek Öğrenme İçerikleri/);
   assert.match(sayfa, /<EczanemVideoGonderimSatiri/);
   assert.match(satir, /<Collapsible open=\{acik\}/);
   assert.match(satir, /Müşterileri Yönet/);
   assert.match(satir, /<Progress value=\{oran\}/);
   assert.match(satir, /onVideoAc\(video\)/);
   assert.doesNotMatch(satir, /<Play/);
-  assert.match(sayfa, /yalnizPlayButonu/);
+  assert.match(sayfa, /<OgrenmeAraciOnizleme/);
+  assert.match(ortakOnizleme, /yalnizPlayButonu/);
   assert.match(sayfa, /onBitti=\{\(\) => setAktifVideo\(null\)\}/);
-  assert.match(sayfa, /bitisGecikmesiMs=\{1500\}/);
 });
 
 test("mutlu: bütün video satırlarının gönderim özeti tek API yanıtında sağlanır", () => {
@@ -31,6 +32,6 @@ test("mutlu: bütün video satırlarının gönderim özeti tek API yanıtında 
 });
 
 test("red: önizleme dağıtım veya izleme kaydı yazmaz", () => {
-  const onizlemeBolumu = sayfa.slice(sayfa.indexOf("if (aktifVideo?.video_url)"), sayfa.indexOf("return (\n    <div className=\"min-h-full"));
+  const onizlemeBolumu = sayfa.slice(sayfa.indexOf("if (aktifVideo)"), sayfa.indexOf("return (\n    <div className=\"min-h-full"));
   assert.doesNotMatch(onizlemeBolumu, /fetch\(|videoDagit|\/izle\/api\//);
 });

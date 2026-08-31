@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     // 4. Yayın çekme + hedef_roller içinde 'bm' kanal kontrolü
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, firma_id, durum, hedef_roller, video_suresi_saniye, arac_turu")
+      .select("yayin_id, firma_id, durum, hedef_roller, arac_id, arac_turu, arac_sure_saniye, video_suresi_saniye")
       .eq("yayin_id", yayin_id)
       .single();
 
@@ -110,9 +110,12 @@ export async function POST(request: NextRequest) {
         `Video şu an yayında değil. Mevcut durum: ${yayin.durum}`
       );
     }
+    if (!yayin.arac_id) return isKuraluHatasi("Yayının öğrenme aracı kimliği bulunamadı.");
     if (!yayinAraciKullanimaAcikMi(yayin.arac_turu)) return isKuraluHatasi("Bu öğrenme aracı kullanıma kapalı.");
 
-    const videoSuresiSaniye = ["gorsel", "flip_pdf"].includes(yayin.arac_turu) ? 1 : Number(yayin.video_suresi_saniye ?? 0);
+    const videoSuresiSaniye = ["gorsel", "flip_pdf"].includes(yayin.arac_turu)
+      ? 1
+      : Number(yayin.arac_sure_saniye ?? yayin.video_suresi_saniye ?? 0);
     if (!Number.isFinite(videoSuresiSaniye) || videoSuresiSaniye <= 0) {
       return isKuraluHatasi(
         "Video henüz puanlı izlemeye hazır değil; süre doğrulanamadı."
@@ -127,7 +130,7 @@ export async function POST(request: NextRequest) {
       // 5a. Challenge doğrulama — kayıt var mı, BM'e mi gelmiş ve tamamlanmış mı?
       const { data: challenge, error: challengeError } = await adminSupabase
         .from("challenge_kayitlari")
-        .select("challenge_id, alan_id, yayin_id, izlendi_mi")
+        .select("challenge_id, alan_id, yayin_id, arac_id, arac_turu, izlendi_mi")
         .eq("challenge_id", challenge_id)
         .single();
 
@@ -154,6 +157,9 @@ export async function POST(request: NextRequest) {
         return isKuraluHatasi(
           "Challenge'daki yayın ile başlatılan izleme uyuşmuyor."
         );
+      }
+      if (challenge.arac_id !== yayin.arac_id || challenge.arac_turu !== yayin.arac_turu) {
+        return isKuraluHatasi("Challenge öğrenme aracı kimliği yayınla uyuşmuyor.");
       }
 
       if (challenge.izlendi_mi) {
@@ -217,6 +223,8 @@ export async function POST(request: NextRequest) {
     const sonuc = await izlemeBaslat(adminSupabase, {
       bm_id: user.id,
       yayin_id,
+      arac_id: yayin.arac_id,
+      arac_turu: yayin.arac_turu,
       izleme_turu,
       challenge_id: kullanilacakChallengeId,
       video_suresi_saniye: Math.ceil(videoSuresiSaniye),

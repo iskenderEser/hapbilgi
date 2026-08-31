@@ -56,32 +56,17 @@ export async function POST(request: NextRequest) {
         .single(),
       adminSupabase
         .from("v_yayin_detay")
-        .select("yayin_id, video_durum_id, video_url, video_puani")
+        .select("yayin_id, arac_turu, video_suresi_saniye, video_puani")
         .eq("yayin_id", izleme.yayin_id)
         .single(),
     ]);
     if (oneriError || !oneri) return hataYaniti("Öneri kaydı doğrulanamadı.", "eclub_oneri_kayitlari SELECT — ileri sarma", oneriError, 404);
-    if (yayinError || !yayin?.video_durum_id) return hataYaniti("Yayın videosu çözülemedi.", "v_yayin_detay SELECT — ileri sarma", yayinError, 404);
-
-    const { data: videoDurum, error: videoDurumError } = await adminSupabase
-      .from("video_durumu")
-      .select("video_id")
-      .eq("video_durum_id", yayin.video_durum_id)
-      .single();
-    if (videoDurumError || !videoDurum?.video_id) {
-      return hataYaniti("Video kaydı çözülemedi.", "video_durumu SELECT — E-Club ileri sarma", videoDurumError, 404);
-    }
-
-    const { data: video, error: videoError } = await adminSupabase
-      .from("videolar")
-      .select("video_id, video_url, video_suresi_saniye")
-      .eq("video_id", videoDurum.video_id)
-      .single();
-    if (videoError || !video) return hataYaniti("Video bulunamadı.", "videolar SELECT — E-Club ileri sarma", videoError, 404);
+    if (yayinError || !yayin) return hataYaniti("Yayın çözülemedi.", "v_yayin_detay SELECT — ileri sarma", yayinError, 404);
+    if (yayin.arac_turu !== "video") return isKuraluHatasi("Bu ileri sarma işlemi yalnız video öğrenme aracı için kullanılabilir.");
 
     // Tek yazıcı ilkesi (Faz 3): süreyi burada yazmıyoruz — garanti edilmiş olmalı.
     // Boşsa (beklenmez) yazmak yerine reddedilir.
-    const videoSuresi = Number(video.video_suresi_saniye ?? 0);
+    const videoSuresi = Number(yayin.video_suresi_saniye ?? 0);
     if (videoSuresi <= 0) {
       return isKuraluHatasi("Video henüz puanlı izlemeye hazır değil; süre doğrulanamadı.");
     }

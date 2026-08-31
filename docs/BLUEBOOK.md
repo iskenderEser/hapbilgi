@@ -1291,6 +1291,10 @@ Hızlı yol sonrasında aynı role özel hazır sorularla canlı süre ve kaynak
 | `eclub_izleme_suresi_snapshot.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
 | `eclub_izleme_tekillik.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
 | `eclub_kisi_unvanlari.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
+| `eclub_ogrenme_araci_tamamlama.sql` | SQL / DDL | E-Club tamamlamasını video, podcast, görsel ve Flip PDF kanıtlarına göre ortak yayın/arac kimliğiyle doğrular. |
+| `eclub_ogrenme_araci_yayin_kimligi.sql` | SQL / DDL | E-Club önerilerini `yayin_id`, `arac_id` ve `arac_turu` ortak öğrenme aracı kimliğine geçirir. |
+| `cc_ogrenme_araci_tamamlama.sql` | SQL / DDL | C-Club tamamlamasını dört araç türü için ortak kanıt, puan ve soru sözleşmesine geçirir. |
+| `cc_ogrenme_araci_yayin_kimligi.sql` | SQL / DDL | C-Club challenge ve BM izleme kayıtlarına ortak yayın/araç kimliğini ekler. |
 | `eclub_oneri_atomik_kaydet.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
 | `eclub_oneri_video_kimligi.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
 | `eclub_store_firma_urun_gorunurlugu.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
@@ -1301,6 +1305,8 @@ Hızlı yol sonrasında aynı role özel hazır sorularla canlı süre ve kaynak
 | `eczanem_butunluk_paketi_on_kontrol.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
 | `eczanem_coklu_eczane_aktif_uyelik.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
 | `eczanem_eclub_kontrollu_gecis.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
+| `eczanem_ogrenme_araci_tamamlama.sql` | SQL / DDL | Eczanem müşteri tamamlamasını dört araç türü için ortak kanıt ve puan sözleşmesine geçirir. |
+| `eczanem_ogrenme_araci_yayin_kimligi.sql` | SQL / DDL | UTT→eczane ve eczane→müşteri dağıtımlarına ortak yayın/araç kimliğini ekler. |
 | `eczanem_eczane_yonetim_paketi.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
 | `eczanem_izleme_cevap_guvenligi.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
 | `eczanem_musteri_kendini_atomik_sil.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
@@ -1372,11 +1378,11 @@ Hızlı yol sonrasında aynı role özel hazır sorularla canlı süre ve kaynak
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `denetim-sonuc.json` | JSON / Veri | denetim-sonuc.json modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `denetle.js` | Yapılandırma | denetle.js modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `hedef-roller-dogrula.js` | Yapılandırma | hedef-roller-dogrula.js modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `kod-tara.js` | Yapılandırma | kod-tara.js modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `denetle.cjs` | Yapılandırma | denetle.cjs modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `hedef-roller-dogrula.cjs` | Yapılandırma | hedef-roller-dogrula.cjs modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `kod-tara.cjs` | Yapılandırma | kod-tara.cjs modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
 | `kullanim.json` | JSON / Veri | kullanim.json modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `sema-cek.js` | Yapılandırma | sema-cek.js modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `sema-cek.cjs` | Yapılandırma | sema-cek.cjs modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
 | `sema.json` | JSON / Veri | sema.json modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
 
 ### 📁 tests/

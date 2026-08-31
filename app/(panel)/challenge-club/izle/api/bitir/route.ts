@@ -50,7 +50,7 @@ export async function PUT(request: NextRequest) {
     // 4. İzleme kaydını çek + sahiplik kontrolü
     const { data: izleme, error: izlemeError } = await adminSupabase
       .from("cc_izleme_kayitlari")
-      .select("izleme_id, bm_id, yayin_id, izleme_turu, tamamlandi_mi, ileri_sarildi_mi, soru_indeksleri, cevaplandi_mi, tamamlama_kaniti")
+      .select("izleme_id, bm_id, yayin_id, arac_id, arac_turu, izleme_turu, tamamlandi_mi, ileri_sarildi_mi, soru_indeksleri, cevaplandi_mi, tamamlama_kaniti")
       .eq("izleme_id", izleme_id)
       .single();
 
@@ -72,8 +72,9 @@ export async function PUT(request: NextRequest) {
     if (izleme.bm_id !== user.id) {
       return rolHatasi("Bu izleme size ait değil.");
     }
-    const { data: aracDetay } = await adminSupabase.from("v_yayin_detay").select("arac_turu, durum").eq("yayin_id", izleme.yayin_id).maybeSingle();
+    const { data: aracDetay } = await adminSupabase.from("v_yayin_detay").select("arac_id, arac_turu, durum").eq("yayin_id", izleme.yayin_id).maybeSingle();
     if (!aracDetay || aracDetay.durum !== "yayinda") return isKuraluHatasi("Yayın artık aktif değil.");
+    if (izleme.arac_id !== aracDetay.arac_id || izleme.arac_turu !== aracDetay.arac_turu) return isKuraluHatasi("İzleme öğrenme aracı kimliği yayınla uyuşmuyor.");
     if (!yayinAraciKullanimaAcikMi(aracDetay.arac_turu)) return isKuraluHatasi("Bu öğrenme aracı kullanıma kapalı.");
     if (aracDetay?.arac_turu === "podcast" && !tamamlamaKanitiDogrula("podcast", izleme.tamamlama_kaniti)) return isKuraluHatasi("Podcast tamamlanma kanıtı doğrulanamadı.");
     if (aracDetay?.arac_turu === "gorsel" && !tamamlamaKanitiDogrula("gorsel", izleme.tamamlama_kaniti)) return isKuraluHatasi("Görsel tamamlanma kanıtı doğrulanamadı.");

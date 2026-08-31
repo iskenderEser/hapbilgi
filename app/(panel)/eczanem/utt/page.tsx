@@ -16,7 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
-import VideoOnizleme from "@/components/video/VideoOnizleme";
+import OgrenmeAraciOnizleme from "@/components/ogrenme-araci/OgrenmeAraciOnizleme";
 import { UttVideoGonderimSatiri } from "./_components/UttVideoGonderimSatiri";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import type { UttEczanemGonderim, UttEczanemOnayHedefi, UttEczanemVeri, UttEczanemYayin } from "./_types";
@@ -103,11 +103,11 @@ export default function UttEczanemPage() {
         body: JSON.stringify({ yayin_id: yayin.yayin_id, eczane_id: eczane.eczane_id }),
       });
       const data = await res.json();
-      if (!res.ok) { hata(data.hata ?? data.error ?? "Video gönderilemedi.", "Eczanem gönderimi"); return; }
-      basari(data.mesaj ?? "Video eczaneye gönderildi.");
+      if (!res.ok) { hata(data.hata ?? data.error ?? "Öğrenme içeriği gönderilemedi.", "Eczanem gönderimi"); return; }
+      basari(data.mesaj ?? "Öğrenme içeriği eczaneye gönderildi.");
       await veriCek();
     } catch {
-      hata("Video gönderilemedi.", "Eczanem gönderimi");
+      hata("Öğrenme içeriği gönderilemedi.", "Eczanem gönderimi");
     } finally {
       setGonderilenHedef(null);
     }
@@ -117,24 +117,26 @@ export default function UttEczanemPage() {
     return <div className="flex min-h-full items-center justify-center bg-gray-50"><span className="size-6 animate-spin rounded-full border-2 border-[#d7e4ef] border-t-[#3589d8]" /></div>;
   }
 
-  if (aktifVideo?.video_url) {
+  if (aktifVideo) {
     return (
       <div className="mx-auto flex max-w-[1480px] flex-col gap-4 px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
         <button type="button" onClick={() => setAktifVideo(null)} className="flex w-fit items-center gap-1.5 border-0 bg-transparent p-0 text-sm font-semibold text-gray-500 hover:text-gray-700">
-          <ChevronLeft className="size-4" /> Videolar
+          <ChevronLeft className="size-4" /> Öğrenme içerikleri
         </button>
         <Card className="gap-0 overflow-hidden border-gray-200 py-0 shadow-sm">
           <div className="border-b border-gray-100 px-4 py-4 md:px-5">
             <CardTitle className="text-base text-gray-900">{aktifVideo.urun_adi}</CardTitle>
-            <CardDescription className="mt-1">{aktifVideo.teknik_adi || "Eczanem ürün videosu"}</CardDescription>
+            <CardDescription className="mt-1">{aktifVideo.teknik_adi || "Eczanem öğrenme içeriği"}</CardDescription>
           </div>
-          <VideoOnizleme
+          <OgrenmeAraciOnizleme
             key={aktifVideo.yayin_id}
+            yayinId={aktifVideo.yayin_id}
+            aracId={aktifVideo.arac_id}
+            aracTuru={aktifVideo.arac_turu}
             videoUrl={aktifVideo.video_url}
-            ariaLabel={`${aktifVideo.urun_adi} önizlemesini oynat`}
-            yalnizPlayButonu
+            urunAdi={aktifVideo.urun_adi}
+            hata={hata}
             onBitti={() => setAktifVideo(null)}
-            bitisGecikmesiMs={1500}
           />
         </Card>
         <HataMesajiContainer mesajlar={mesajlar} />
@@ -147,12 +149,12 @@ export default function UttEczanemPage() {
       <div className="mx-auto flex max-w-[1480px] flex-col gap-5 px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]"><Sparkles className="size-3.5" /> Eczanem video gönderimi</p>
+            <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]"><Sparkles className="size-3.5" /> Eczanem öğrenme içeriği gönderimi</p>
             <div className="inline-flex items-center">
-              <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">Video Dağıtımı</h1>
+              <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">Öğrenme İçeriği Dağıtımı</h1>
               <SayfaRehberi anahtar="eczanem-utt-dagitim" className="ml-1.5 -translate-y-1.5" />
             </div>
-            <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">Eczanem hedefli videoları inceleyin ve üyelik eşiğini tamamlayan eczanelerinize gönderin.</p>
+            <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">Eczanem hedefli öğrenme içeriklerini inceleyin ve üyelik eşiğini tamamlayan eczanelerinize gönderin.</p>
           </div>
           <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} />
         </header>
@@ -168,8 +170,8 @@ export default function UttEczanemPage() {
           </Card>
         ) : (
           <>
-            <section aria-label="Eczanem video özeti" className="grid grid-cols-2 gap-2 md:grid-cols-3">
-              <OzetKarti ikon={Film} etiket="Gönderilecek Video" deger={gonderilecekVideoSayisi} detay={`${yayinlar.length} yayın dağıtıma açık`} renk="#237ac8" zemin="#edf6fd" />
+            <section aria-label="Eczanem öğrenme içeriği özeti" className="grid grid-cols-2 gap-2 md:grid-cols-3">
+              <OzetKarti ikon={Film} etiket="Gönderilecek İçerik" deger={gonderilecekVideoSayisi} detay={`${yayinlar.length} yayın dağıtıma açık`} renk="#237ac8" zemin="#edf6fd" />
               <OzetKarti ikon={CheckCircle2} etiket="Gönderime Hazır Eczane" deger={hazirEczaneler.length} detay={`En az ${esik} aktif üyesi bulunan`} renk="#16865f" zemin="#eaf7f2" />
               <OzetKarti ikon={UsersRound} etiket="Eşik Altındaki Eczane" deger={esikAltiSayisi} detay="Üyelik gelişimi gereken" renk="#b7791f" zemin="#fff7e6" />
             </section>
@@ -177,13 +179,13 @@ export default function UttEczanemPage() {
             <section className="overflow-visible rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e5ecf4] px-4 py-3.5">
                 <div>
-                  <h2 className="text-base font-extrabold text-[#203653]">Eczanelere Gönderilecek Videolar</h2>
+                  <h2 className="text-base font-extrabold text-[#203653]">Eczanelere Gönderilecek Öğrenme İçerikleri</h2>
                   <p className="mt-0.5 text-[11px] font-semibold text-[#7b8da5]">{yayinlar.length} yayın gösteriliyor</p>
                 </div>
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-[#7b8da5]"><Building2 className="size-3.5" /> {eczaneler.length} bağlı eczane</span>
               </div>
               {yayinlar.length === 0 ? (
-                <div className="px-4 py-14 text-center text-sm font-semibold text-[#8090a4]">Dağıtıma hazır Eczanem videosu bulunmuyor.</div>
+                <div className="px-4 py-14 text-center text-sm font-semibold text-[#8090a4]">Dağıtıma hazır Eczanem öğrenme içeriği bulunmuyor.</div>
               ) : yayinlar.map((yayin) => (
                 <UttVideoGonderimSatiri
                   key={yayin.yayin_id}
@@ -205,9 +207,9 @@ export default function UttEczanemPage() {
       <AlertDialog open={!!onayHedefi} onOpenChange={(acik) => { if (!acik) setOnayHedefi(null); }}>
         <AlertDialogContent className="border-[#dbe5ef] bg-white">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-[#203653]">Videoyu eczaneye gönderelim mi?</AlertDialogTitle>
+            <AlertDialogTitle className="text-[#203653]">Öğrenme içeriğini eczaneye gönderelim mi?</AlertDialogTitle>
             <AlertDialogDescription className="leading-6 text-[#687b90]">
-              <strong className="text-[#30475f]">{onayHedefi?.yayin.urun_adi}</strong> videosu <strong className="text-[#30475f]">{onayHedefi?.eczane.eczane_adi}</strong> eczanesine gönderilecek. Aynı video aynı eczaneye yeniden gönderilemez.
+              <strong className="text-[#30475f]">{onayHedefi?.yayin.urun_adi}</strong> içeriği <strong className="text-[#30475f]">{onayHedefi?.eczane.eczane_adi}</strong> eczanesine gönderilecek. Aynı içerik aynı eczaneye yeniden gönderilemez.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

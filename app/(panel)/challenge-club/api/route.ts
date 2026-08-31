@@ -47,6 +47,8 @@ interface ChallengeYayinSatiri {
   talep_no?: number | null;
   firma_adi?: string | null;
   icerik_turu?: string | null;
+  arac_id?: string | null;
+  arac_turu?: "video" | "podcast" | "gorsel" | "flip_pdf";
 }
 
 interface GelenChallengeRaw {
@@ -103,7 +105,7 @@ export async function GET(request: NextRequest) {
       const [yayinlarRes, izlemelerRes, gelenChallengelerRes] = await Promise.all([
         adminSupabase
           .from("v_yayin_detay")
-          .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, talep_no, firma_adi, icerik_turu")
+          .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, talep_no, firma_adi, icerik_turu, arac_id, arac_turu")
           .eq("durum", "yayinda")
           .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))
           .eq("firma_id", kullanici.firma_id)
@@ -197,7 +199,7 @@ export async function GET(request: NextRequest) {
       if (yayinIdler.length > 0) {
         const { data: yayinlar } = await adminSupabase
           .from("v_yayin_detay")
-          .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, talep_no, firma_adi, icerik_turu")
+          .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, talep_no, firma_adi, icerik_turu, arac_id, arac_turu")
           .in("yayin_id", yayinIdler)
           .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur));
         for (const y of (yayinlar as ChallengeYayinSatiri[] | null) ?? []) yayinMap[y.yayin_id] = y;
@@ -216,6 +218,8 @@ export async function GET(request: NextRequest) {
         talep_no: yayinMap[c.yayin_id]?.talep_no ?? null,
         firma_adi: yayinMap[c.yayin_id]?.firma_adi ?? null,
         icerik_turu: yayinMap[c.yayin_id]?.icerik_turu ?? null,
+        arac_id: yayinMap[c.yayin_id]?.arac_id ?? null,
+        arac_turu: yayinMap[c.yayin_id]?.arac_turu ?? "video",
         ...(metrikler[c.yayin_id] ?? {}),
       }));
 
@@ -247,7 +251,7 @@ export async function GET(request: NextRequest) {
       if (yayinIdler.length > 0) {
         const { data: yayinlar } = await adminSupabase
           .from("v_yayin_detay")
-          .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, talep_no, firma_adi, icerik_turu")
+          .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, talep_no, firma_adi, icerik_turu, arac_id, arac_turu")
           .in("yayin_id", yayinIdler)
           .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur));
         for (const y of (yayinlar as ChallengeYayinSatiri[] | null) ?? []) yayinMap[y.yayin_id] = y;
@@ -266,6 +270,8 @@ export async function GET(request: NextRequest) {
         talep_no: yayinMap[c.yayin_id]?.talep_no ?? null,
         firma_adi: yayinMap[c.yayin_id]?.firma_adi ?? null,
         icerik_turu: yayinMap[c.yayin_id]?.icerik_turu ?? null,
+        arac_id: yayinMap[c.yayin_id]?.arac_id ?? null,
+        arac_turu: yayinMap[c.yayin_id]?.arac_turu ?? "video",
         ...(metrikler[c.yayin_id] ?? {}),
       }));
 
@@ -351,31 +357,33 @@ export async function POST(request: NextRequest) {
     // Yayın kontrolü (bir kez)
     const { data: yayin, error: yError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, urun_adi, teknik_adi, durum, hedef_roller, arac_turu")
+      .select("yayin_id, urun_adi, teknik_adi, durum, hedef_roller, arac_id, arac_turu")
       .eq("yayin_id", yayin_id)
       .single();
 
     if (yError || !yayin) return isKuraluHatasi("Yayın bulunamadı.");
+    if (!yayin.arac_id) return isKuraluHatasi("Yayının öğrenme aracı kimliği bulunamadı.");
     if (yayin.durum !== "yayinda") return isKuraluHatasi("Yayın aktif değil.");
     if (!ogrenmeAraciBayraklari()[yayin.arac_turu as keyof ReturnType<typeof ogrenmeAraciBayraklari>]) return isKuraluHatasi("Bu öğrenme aracı kullanıma kapalı.");
     if (!(yayin.hedef_roller ?? []).includes("bm")) return isKuraluHatasi("Sadece CC yayınları challenge'a alınabilir.");
 
-    // İş kuralı 5 (global): BM kendisi bu videoyu izlemiş mi? (önce kendisi izlemeli)
+    // İş kuralı 5 (global): BM kendisi bu öğrenme aracını tamamlamış mı?
     const { data: kendiIzleme } = await adminSupabase
       .from("cc_izleme_kayitlari")
       .select("izleme_id")
       .eq("bm_id", kullanici.kullanici_id)
       .eq("yayin_id", yayin_id)
+      .eq("arac_id", yayin.arac_id)
       .eq("tamamlandi_mi", true)
       .limit(1)
       .maybeSingle();
 
     if (!kendiIzleme) {
-      return isKuraluHatasi("Bu videoyu önce kendiniz izlemeden challenge'a alamazsınız.");
+      return isKuraluHatasi("Bu öğrenme aracını önce kendiniz tamamlamadan challenge'a alamazsınız.");
     }
 
     const gonderenAdi = `${kullanici.ad} ${kullanici.soyad}`;
-    const videoAdi = yayin.urun_adi ?? yayin.teknik_adi ?? "video";
+    const videoAdi = yayin.urun_adi ?? yayin.teknik_adi ?? "öğrenme aracı";
 
     // Çok alıcı → atla-raporla. Kurallar alıcı başına uygulanır; aylık kota her
     // turda yeniden okunur (başarılı gönderim kotayı tüketir).

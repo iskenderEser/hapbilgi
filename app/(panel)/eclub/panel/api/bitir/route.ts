@@ -102,7 +102,7 @@ export async function PUT(request: NextRequest) {
     });
     if (tamamlamaError) {
       if (tamamlamaError.code === "P0001") {
-        return isKuraluHatasi("Video henüz tamamlanabilecek kadar oynatılmadı.");
+        return isKuraluHatasi("Öğrenme içeriği henüz tamamlanma koşullarını karşılamıyor.");
       }
       return hataYaniti("İzleme tamamlanamadı.", "eclub_izleme_tamamla RPC", tamamlamaError);
     }

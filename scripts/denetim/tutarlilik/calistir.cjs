@@ -1,10 +1,10 @@
-// scripts/denetim/tutarlilik/calistir.js
+// scripts/denetim/tutarlilik/calistir.cjs
 //
 // Veri tutarlılığı denetleyicisi (teknik kalite kontrol planı Q4 çıktısı).
 // Bu klasördeki td*.sql dosyalarını canlı DB'de SALT-OKUMA oturumla koşar;
 // her sorgu İHLAL SATIRI döndürür — boş dönüş temiz demektir.
 //
-// Kullanım:  npm run denetim:tutarlilik   (= node scripts/denetim/tutarlilik/calistir.js)
+// Kullanım:  npm run denetim:tutarlilik   (= node scripts/denetim/tutarlilik/calistir.cjs)
 // Gereksinim: .env.local içinde DATABASE_URL
 //
 // Güvence: oturum "default_transaction_read_only = on" ile açılır; yazan tek

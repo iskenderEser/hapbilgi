@@ -7,7 +7,7 @@ import {
   eclubGonderiAyariMi,
   eclubGonderiAyariVarsayilani,
 } from "@/lib/eclub/gonderiAyarlari";
-import { ayniVideoTekrarAcikZamani, oneriBitisHesapla } from "@/lib/eclub/oneriLimit";
+import { ayniAracTekrarAcikZamani, oneriBitisHesapla } from "@/lib/eclub/oneriLimit";
 
 test("E-Club gönderi ayarları iki pozitif tam sayı kuralını tek kaynaktan tanımlar", () => {
   assert.equal(ECLUB_GONDERI_AYARLARI.length, 2);
@@ -19,9 +19,9 @@ test("E-Club gönderi ayarları iki pozitif tam sayı kuralını tek kaynaktan t
   }
 });
 
-test("aynı video tekrar tarihi önceki öneri bitişinden sonra hesaplanır", () => {
+test("aynı öğrenme aracı tekrar tarihi önceki öneri bitişinden sonra hesaplanır", () => {
   const oncekiBitis = new Date("2026-08-21T12:00:00.000Z");
-  assert.equal(ayniVideoTekrarAcikZamani(oncekiBitis, 21).toISOString(), "2026-09-11T12:00:00.000Z");
+  assert.equal(ayniAracTekrarAcikZamani(oncekiBitis, 21).toISOString(), "2026-09-11T12:00:00.000Z");
 });
 
 test("öneri bitişi ayarlanan gün sayısını kullanır", () => {

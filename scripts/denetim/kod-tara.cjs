@@ -1,4 +1,4 @@
-// scripts/denetim/kod-tara.js
+// scripts/denetim/kod-tara.cjs
 //
 // HapBilgi kod tarayıcı.
 // ts-morph ile tüm .ts/.tsx dosyalarını gezer, Supabase çağrılarını çıkarır:
@@ -7,9 +7,9 @@
 //   .rpc("fonksiyon")     → RPC referansı
 //
 // Bu aşamada denetim YOK — sadece "kodda ne kullanılıyor" envanteri üretir.
-// Faz 1.4 (denetle.js) bunu sema.json ile karşılaştırır.
+// Faz 1.4 (denetle.cjs) bunu sema.json ile karşılaştırır.
 //
-// Kullanım:  node scripts/denetim/kod-tara.js
+// Kullanım:  node scripts/denetim/kod-tara.cjs
 // Çıktı:     scripts/denetim/kullanim.json + konsola özet
 
 const { Project, SyntaxKind } = require("ts-morph");

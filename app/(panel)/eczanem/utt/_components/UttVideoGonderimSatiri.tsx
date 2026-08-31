@@ -44,9 +44,9 @@ export function UttVideoGonderimSatiri({ yayin, eczaneler, esik, gonderimMap, go
             <button
               type="button"
               onClick={() => onVideoAc(yayin)}
-              disabled={!yayin.video_url}
+              disabled={yayin.arac_turu === "video" && !yayin.video_url}
               className="group relative flex h-16 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg border-0 bg-gradient-to-br from-[#dcecf9] to-[#edf5fb] p-0 text-[#237ac8] transition hover:ring-2 hover:ring-[#78b4e7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#237ac8] disabled:cursor-not-allowed disabled:opacity-45"
-              aria-label={yayin.video_url ? `${yayin.urun_adi} videosunu sayfaya yerleştir` : `${yayin.urun_adi} videosu hazır değil`}
+              aria-label={`${yayin.urun_adi} öğrenme içeriğini önizle`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {thumbnail ? <img src={thumbnail} alt="" className="h-full w-full object-cover" /> : <Film className="size-6" />}
@@ -54,7 +54,7 @@ export function UttVideoGonderimSatiri({ yayin, eczaneler, esik, gonderimMap, go
             </button>
             <div className="min-w-0">
               <strong className="block truncate text-sm text-[#263e5b]">{yayin.urun_adi}</strong>
-              <span className="mt-1 block truncate text-[11px] font-semibold text-[#71859d]">{yayin.teknik_adi || "Eczanem ürün videosu"}</span>
+              <span className="mt-1 block truncate text-[11px] font-semibold text-[#71859d]">{yayin.teknik_adi || "Eczanem öğrenme içeriği"}</span>
             </div>
           </div>
 

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 
 export interface EczaneDagitimVideosu {
   yayin_id: string;
@@ -16,6 +17,8 @@ export interface EczaneDagitimVideosu {
   video_url: string | null;
   thumbnail_url: string | null;
   gelis_tarihi: string;
+  arac_id: string;
+  arac_turu: OgrenmeAraciTuru;
 }
 
 export interface EczaneDagitimUyesi {
@@ -89,9 +92,9 @@ export function EczanemVideoGonderimSatiri({
             <button
               type="button"
               onClick={() => onVideoAc(video)}
-              disabled={!video.video_url}
+              disabled={video.arac_turu === "video" && !video.video_url}
               className="group relative flex h-16 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg border-0 bg-gradient-to-br from-[#dcecf9] to-[#edf5fb] p-0 text-[#237ac8] transition hover:ring-2 hover:ring-[#78b4e7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#237ac8] disabled:cursor-not-allowed disabled:opacity-45"
-              aria-label={video.video_url ? `${video.urun_adi} videosunu sayfaya yerleştir` : `${video.urun_adi} videosu hazır değil`}
+              aria-label={`${video.urun_adi} öğrenme içeriğini önizle`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {thumbnail ? <img src={thumbnail} alt="" className="h-full w-full object-cover" /> : <Film className="size-6" />}
@@ -99,7 +102,7 @@ export function EczanemVideoGonderimSatiri({
             </button>
             <div className="min-w-0">
               <strong className="block truncate text-sm text-[#263e5b]">{video.urun_adi}</strong>
-              <span className="mt-1 block truncate text-[11px] font-semibold text-[#71859d]">{video.teknik_adi || "Eczanem ürün videosu"}</span>
+              <span className="mt-1 block truncate text-[11px] font-semibold text-[#71859d]">{video.teknik_adi || "Eczanem öğrenme içeriği"}</span>
             </div>
           </div>
 
@@ -144,7 +147,7 @@ export function EczanemVideoGonderimSatiri({
               <span className="size-4 animate-spin rounded-full border-2 border-[#d7e4ef] border-t-[#3589d8]" /> Müşteriler yükleniyor…
             </div>
           ) : uyeler.length === 0 ? (
-            <div className="px-5 py-10 text-center text-xs font-semibold text-[#8090a4]">Video gönderilebilecek aktif müşteriniz bulunmuyor.</div>
+            <div className="px-5 py-10 text-center text-xs font-semibold text-[#8090a4]">Öğrenme içeriği gönderilebilecek aktif müşteriniz bulunmuyor.</div>
           ) : (
             <>
               <div className="flex flex-col gap-3 border-b border-[#e5ecf4] bg-white px-4 py-3 md:flex-row">

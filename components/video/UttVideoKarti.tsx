@@ -4,6 +4,7 @@ import { useRef, type MouseEvent, type ReactNode } from "react";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 import { TUR_BASLIK, type IcerikTuru } from "@/lib/video/icerikTuru";
 import { talepIdGoster } from "@/lib/utils/talepId";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 
 export type UttVideoDurumu = "yeni" | "devam" | "tamamlanan";
 
@@ -27,6 +28,8 @@ export interface UttVideo {
   favori_mi: boolean;
   daha_once_izledi: boolean;
   icerik_turu: IcerikTuru | null;
+  arac_id: string | null;
+  arac_turu: OgrenmeAraciTuru;
   durum: UttVideoDurumu;
 }
 

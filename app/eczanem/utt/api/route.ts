@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     const sonuc = await eczaneyeGonder(adminSupabase, user.id, yayinId, eczaneId);
     if (!sonuc.ok) return isKuraluHatasi(sonuc.hata ?? "Gönderim başarısız.");
 
-    return NextResponse.json({ ok: true, mesaj: "Video eczaneye gönderildi." }, { status: 201 });
+    return NextResponse.json({ ok: true, mesaj: "Öğrenme içeriği eczaneye gönderildi." }, { status: 201 });
   } catch (err) {
     return sunucuHatasi(err, "POST /eczanem/utt/api");
   }

@@ -1,13 +1,13 @@
-// scripts/denetim/sema-cek.js
+// scripts/denetim/sema-cek.cjs
 //
 // HapBilgi şema anlık görüntüsü (snapshot) üretici.
 // DB'ye bağlanıp information_schema + pg_catalog'dan tablo/view/kolon/RPC/FK
 // bilgisini çeker, scripts/denetim/sema.json'a yazar.
 //
-// Kullanım:  node scripts/denetim/sema-cek.js
+// Kullanım:  node scripts/denetim/sema-cek.cjs
 // Gereksinim: .env.local içinde DATABASE_URL
 //
-// Bu snapshot, kod↔DB tutarlılık denetleyicisinin (denetle.js) referansıdır.
+// Bu snapshot, kod↔DB tutarlılık denetleyicisinin (denetle.cjs) referansıdır.
 // DB şeması değişince yeniden çalıştırılır.
 
 require("dotenv").config({ path: ".env.local" });

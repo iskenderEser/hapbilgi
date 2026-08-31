@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     // Gönderim müşteriye ait mi?
     const { data: gonderim, error: gonderimError } = await adminSupabase
       .from("eczanem_gonderimler")
-      .select("gonderim_id, yayin_id, musteri_id, eczane_id")
+      .select("gonderim_id, yayin_id, musteri_id, eczane_id, arac_id, arac_turu")
       .eq("gonderim_id", gonderim_id)
       .single();
 
@@ -55,13 +55,16 @@ export async function POST(request: NextRequest) {
 
     const { data: yayinDetay, error: detayError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("video_suresi_saniye, arac_turu")
+      .select("video_suresi_saniye, arac_id, arac_turu")
       .eq("yayin_id", gonderim.yayin_id)
       .single();
     if (detayError || !yayinDetay) {
       return hataYaniti("Yayın detayı alınamadı.", "v_yayin_detay SELECT — Eczanem izleme başlangıcı", detayError, 404);
     }
     if (!yayinAraciKullanimaAcikMi(yayinDetay.arac_turu)) return isKuraluHatasi("Bu öğrenme aracı kullanıma kapalı.");
+    if (gonderim.arac_id !== yayinDetay.arac_id || gonderim.arac_turu !== yayinDetay.arac_turu) {
+      return isKuraluHatasi("Gönderim ile yayın öğrenme aracı bağı uyuşmuyor.");
+    }
     const videoSuresi = ["gorsel", "flip_pdf"].includes(yayinDetay.arac_turu) ? 1 : Number(yayinDetay.video_suresi_saniye ?? 0);
     if (!Number.isFinite(videoSuresi) || videoSuresi <= 0) {
       return isKuraluHatasi("Video süresi doğrulanmamış.");
@@ -95,6 +98,7 @@ export async function POST(request: NextRequest) {
         tamamlandi_mi: false,
         izleme_baslangic: new Date().toISOString(),
         video_suresi_saniye: Math.ceil(videoSuresi),
+        arac_turu: yayinDetay.arac_turu,
       })
       .select("izleme_id, yayin_id, gonderim_id, izleme_baslangic, tamamlandi_mi, son_konum_saniye, ilerleme_durumu")
       .single();

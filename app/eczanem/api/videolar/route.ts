@@ -64,7 +64,7 @@ export async function GET() {
 
     const { data: gonderimler, error: gError } = await adminSupabase
       .from("eczanem_gonderimler")
-      .select("gonderim_id, yayin_id, eczane_id, created_at")
+      .select("gonderim_id, yayin_id, eczane_id, arac_id, arac_turu, created_at")
       .eq("musteri_id", musteriId)
       .in("eczane_id", aktifEczaneIdler)
       .order("created_at", { ascending: false });
@@ -126,7 +126,12 @@ export async function GET() {
     const eczaneAdlari = await eczaneAdMap(adminSupabase, aktifEczaneIdler);
 
     const videolar = rows
-      .filter((g) => yayinMap.get(g.yayin_id)?.durum === "yayinda")
+      .filter((g) => {
+        const yayin = yayinMap.get(g.yayin_id);
+        return yayin?.durum === "yayinda"
+          && g.arac_id === yayin.arac_id
+          && g.arac_turu === yayin.arac_turu;
+      })
       .map((g) => {
         const y = yayinMap.get(g.yayin_id);
         const izleme = izlemeDurumu.get(g.gonderim_id);

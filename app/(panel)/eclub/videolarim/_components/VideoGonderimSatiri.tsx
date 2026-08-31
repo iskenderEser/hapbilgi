@@ -86,9 +86,8 @@ export function VideoGonderimSatiri({ video, kisiler, limitler, tekrarEngelleri,
           <button
             type="button"
             onClick={() => onVideoAc(video)}
-            disabled={!video.video_url}
             className="group relative flex h-16 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg border-0 bg-[#d9e8f7] p-0 text-[#237ac8] transition hover:ring-2 hover:ring-[#78b4e7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#237ac8] disabled:cursor-not-allowed disabled:opacity-45"
-            aria-label={video.video_url ? `${video.urun_adi} videosunu sayfaya yerleştir` : `${video.urun_adi} videosu hazır değil`}
+            aria-label={`${video.urun_adi} öğrenme içeriğini önizle`}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {thumbnail ? <img src={thumbnail} alt="" className="h-full w-full object-cover" /> : <Film className="size-6" />}
@@ -101,7 +100,7 @@ export function VideoGonderimSatiri({ video, kisiler, limitler, tekrarEngelleri,
           {[
             ["İzleme başlangıcı", tarihAraligi.baslangic],
             ["İzleme bitişi", tarihAraligi.bitis],
-            ["Video puanı", video.video_puani == null ? "—" : `${video.video_puani} puan`],
+            ["İçerik puanı", video.video_puani == null ? "—" : `${video.video_puani} puan`],
             ["Gönderilen Kişi", `${gonderilenKisiIdleri.length}/${uygunKisiler.length} gönderilen`],
           ].map(([etiket, deger]) => (
             <div key={etiket} className="min-w-0"><span className="block text-[9px] font-bold uppercase tracking-wide text-[#8a99aa]">{etiket}</span><strong className="mt-1 block truncate text-[11px] text-[#405976]">{deger}</strong></div>
@@ -119,7 +118,7 @@ export function VideoGonderimSatiri({ video, kisiler, limitler, tekrarEngelleri,
               </CollapsibleTrigger>
               <CollapsibleContent className="relative z-20 mt-1 w-full max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-xl border border-[#dbe5ef] bg-white shadow-lg lg:absolute lg:right-0 lg:w-80">
                 {uygunKisiler.length === 0 ? (
-                  <p className="p-4 text-center text-xs font-semibold text-[#8393a6]">Bu video için uygun aktif kişi bulunmuyor.</p>
+                  <p className="p-4 text-center text-xs font-semibold text-[#8393a6]">Bu öğrenme içeriği için uygun aktif kişi bulunmuyor.</p>
                 ) : (
                   <>
                     <div className="border-b border-[#e5ecf4] p-1.5">
@@ -146,7 +145,7 @@ export function VideoGonderimSatiri({ video, kisiler, limitler, tekrarEngelleri,
                           onClick={() => secimDegistir(kisi.kisi_id)}
                           disabled={tekrarEngelli}
                           aria-pressed={secili}
-                          title={tekrarTarihi ? `Bu video ${tarihSaat(new Date(tekrarTarihi))} tarihinde yeniden gönderilebilir.` : undefined}
+                          title={tekrarTarihi ? `Bu içerik ${tarihSaat(new Date(tekrarTarihi))} tarihinde yeniden gönderilebilir.` : undefined}
                           className={`flex w-full items-center justify-between gap-3 rounded-lg border px-2.5 py-2 text-left transition-colors ${tekrarEngelli ? "cursor-not-allowed border-transparent bg-[#f5f7fa] opacity-60" : secili ? "cursor-pointer border-[#8bbce8] bg-[#eaf4fd]" : "cursor-pointer border-transparent hover:bg-[#f5f8fc]"}`}
                         >
                           <span className="min-w-0"><strong className="block truncate text-xs text-[#304963]">{kisi.ad} {kisi.soyad}</strong><small className="mt-0.5 block truncate text-[10px] font-semibold text-[#8090a3]">{kisi.eczane_adi || "Eczane bilgisi yok"}</small></span>

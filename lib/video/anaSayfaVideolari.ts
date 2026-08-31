@@ -18,6 +18,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { IcerikTuru } from "./icerikTuru";
 import { gorunenTurler, kapsamGenisMi } from "./gorunurluk";
+import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
 
 export interface AnaSayfaVideo {
   yayin_id: string;
@@ -65,8 +66,9 @@ export async function getAnaSayfaVideolari(
 
   let query = adminSupabase
     .from("v_yayin_detay")
-    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, icerik_turu, takim_id, talep_no, firma_adi")
+    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, icerik_turu, takim_id, talep_no, firma_adi, arac_id, arac_turu")
     .eq("durum", "yayinda")
+    .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))
     .in("icerik_turu", turler)
     .order("yayin_tarihi", { ascending: false });
 
@@ -115,6 +117,8 @@ export async function getAnaSayfaVideolari(
     video_puani?: number | null;
     yayin_tarihi: string;
     icerik_turu?: string | null;
+    arac_id?: string | null;
+    arac_turu?: "video" | "podcast" | "gorsel" | "flip_pdf";
   };
 
   return ((videolar as VYayinDetayRow[] | null) ?? []).map(v => ({
@@ -128,6 +132,8 @@ export async function getAnaSayfaVideolari(
     video_puani: v.video_puani ?? null,
     yayin_tarihi: v.yayin_tarihi,
     icerik_turu: (v.icerik_turu as IcerikTuru) ?? null,
+    arac_id: v.arac_id ?? null,
+    arac_turu: v.arac_turu ?? "video",
     ileri_sarma_acik: false,
   }));
 }

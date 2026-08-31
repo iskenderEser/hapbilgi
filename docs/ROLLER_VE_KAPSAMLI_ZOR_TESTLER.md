@@ -414,49 +414,19 @@ Bu çalışma, HapBilgi'deki her rolün görev tanımı içinde bulunan bütün 
 
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **UTT-01 — Video tüketimi:** Aynı video iki cihazda ileri sarma ve sahte ilerleme istekleriyle bitirilecek; yalnız gerçek ilerleme kabul edilecek.
+- [ ] **UTT-01 — Adresler:** Sipariş oluşturma ile aynı adresi güncelleme ve silme işlemleri kontrollü olarak çakıştırılacak; sipariş önce tamamlanırsa `adres_snapshot` değişmeden korunacak, adres işlemi önce tamamlanırsa geçersiz adresle sipariş reddedilecek ve hiçbir sıralamada yarım sipariş, bozuk adres snapshot'ı veya karşılıksız puan harcaması oluşmayacak.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **UTT-02 — Podcast tüketimi:** Ses konumu geri ve ileri oynatılarak, sekme kapatılıp açılarak tamamlanacak; doğrulanmamış süre puan üretmeyecek.
+- [ ] **UTT-02 — E-Club öğrenme aracı önerisi:** Aynı UTT/KD_UTT, aynı E-Club kişisine aynı öğrenme aracı yayınını iki eşzamanlı istekle gönderecek; yalnız bir öneri kaydı oluşacak, ikinci istek `arac_id` tabanlı tekrar engeline takılacak ve `eclub_oneri_gecerlilik_gun` ile `eclub_ayni_video_tekrar_bekleme_gun` değerlerinden hesaplanan tarihler tutarlı kalacak.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **UTT-03 — Dijital broşür tüketimi:** Sekme arka plana alınarak süre gönderilecek; yalnız görünür ve aktif inceleme sayılacak.
+- [ ] **UTT-03 — Eczanem eczane dağıtımı:** Aynı UTT/KD_UTT, aynı Eczanem yayınını aynı bağlı eczaneye iki eşzamanlı istekle gönderecek; yalnız bir `eczanem_eczane_gonderimleri` kaydı oluşacak, ikinci istek daha önce gönderilmiş olarak reddedilecek ve müşteri düzeyi gönderim yapılmayacak.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **UTT-04 — Literatür tüketimi:** Sayfalar atlanıp bitirme çağrısı gönderilecek; bütün sayfalar doğrulanmadan soru açılmayacak.
+- [ ] **UTT-04 — Rapor, profil ve lig kapsam yenileme:** İki alt koşum yapılacak: (a) izleme sürerken rol UTT/KD_UTT dışına çıkarılacak ve sonraki tüketim, HBStore ve E-Club işlemlerinin eski oturumla sürdürülemediği doğrulanacak; (b) rol korunup takım değiştirilecek, kişisel tarihsel kayıtlar silinmeden profil, rapor ve takım ligi kapsamının yeni takıma göre yeniden hesaplandığı ve eski takımın yetkisiz ayrıntılarının gösterilmediği doğrulanacak.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **UTT-05 — Soru cevaplama:** Aynı soru iki cihazdan farklı cevaplarla eşzamanlı gönderilecek; yalnız ilk geçerli cevap puanlanacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **UTT-06 — Puan ve lig:** Tamamlama isteği tekrar tekrar gönderilecek; tek puan hareketi ve tek lig etkisi oluşacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **UTT-07 — Öneriler:** Süresi dolan veya başka kullanıcıya ait öneri bağlantısı kullanılacak; erişim ve puan engellenecek.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **UTT-08 — Beğeni ve favori:** Aynı yayın çok hızlı aç/kapat istekleriyle değiştirilecek; tek kesin durum kalacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **UTT-09 — HBStore:** Aynı bakiye ile eşzamanlı sipariş verilecek; tek harcama ve doğru stok oluşacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **UTT-10 — Adresler:** Sipariş anında adres güncellenip silinecek; sipariş adresi bozulmayacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **UTT-11 — E-Club kişi yönetimi:** Aynı telefon eşzamanlı Eczacı, Teknisyen ve Müşteri olarak kaydedilecek; kimlik çakışması engellenecek.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **UTT-12 — E-Club önerisi:** Aynı kişiye limit sınırında eşzamanlı yayın gönderilecek; kota ve tekrar kuralı aşılmayacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **UTT-13 — Eczanem dağıtımı:** Aynı müşteri ve yayın için eşzamanlı gönderim yapılacak; mükerrer aktif gönderim oluşmayacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **UTT-14 — Rapor, profil ve lig:** Rol veya takım izleme sırasında değiştirilecek; eski kapsam verisi gösterilmeyecek.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **UTT-15 — Hapbi:** Başka kullanıcının eğitim, puan ve önerileri sorulacak; yalnız oturum sahibinin verisi kullanılacak.
+- [ ] **UTT-05 — Hapbi:** Başka kullanıcının eğitim, puan ve önerileri sorulacak; yalnız oturum sahibinin verisi kullanılacak.
 
 ### Eczacı, İkinci Eczacı ve Yardımcı Eczacı
 

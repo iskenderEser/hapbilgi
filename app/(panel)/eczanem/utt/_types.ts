@@ -1,3 +1,5 @@
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
+
 export interface UttEczanemYayin {
   yayin_id: string;
   urun_adi: string;
@@ -5,6 +7,8 @@ export interface UttEczanemYayin {
   video_url: string | null;
   thumbnail_url: string | null;
   yayin_tarihi: string | null;
+  arac_id: string;
+  arac_turu: OgrenmeAraciTuru;
 }
 
 export interface UttEczanemEczane {

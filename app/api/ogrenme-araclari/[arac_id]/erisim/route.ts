@@ -4,6 +4,7 @@ import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { sunucuHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
 import {
   ECLUB_TUKETICI_ROLLERI,
+  ECLUB_HEDEF_ROLLER,
   MUSTERI_ROLU,
   TUKETICI_ROLLER,
   YONETICI_ROLLER,
@@ -17,6 +18,7 @@ import { ogrenmeAraciAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
 import { ogrenmeAraciTuruMu } from "@/lib/ogrenmeAraci/sozlesme";
 import { uretimAraciYetkisiniDogrula } from "@/lib/ogrenmeAraci/yetki";
 import { eclubKisiErisimi } from "@/lib/eclub/kisiErisim";
+import { eczaciAktifEczanesi } from "@/lib/eczanem/eczaci";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ arac_id: string }> }) {
   try {
@@ -79,6 +81,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           ? await db.from("firmalar").select("aktif, cc_aktif").eq("firma_id", kullanici.firma_id).maybeSingle()
           : { data: null };
         const hedefRol: "utt" | "bm" = rol === "bm" ? "bm" : "utt";
+        const yayinHedefleri = hedefRolleriOku(yayin);
+        const eclubSaltOnizleme = TUKETICI_ROLLER.includes(rol)
+          && ECLUB_HEDEF_ROLLER.some((eclubHedefi) => yayinHedefleri.includes(eclubHedefi));
+        const eczanemSaltOnizleme = TUKETICI_ROLLER.includes(rol)
+          && yayinHedefleri.includes("eczanem");
         erisimVar = Boolean(
           kullanici?.aktif_mi
           && kullanici.firma_id
@@ -86,12 +93,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           && (rol !== "bm" || firma.cc_aktif)
           && detay
           && detay.firma_id === kullanici.firma_id
-          && hedefRolleriOku(yayin).includes(hedefRol)
+          && (yayinHedefleri.includes(hedefRol) || eclubSaltOnizleme || eczanemSaltOnizleme)
           && (rol === "bm" || detay.takim_id === null || detay.takim_id === kullanici.takim_id),
         );
         if (erisimVar && bagId && rol === "bm") {
-          const { data: challenge } = await db.from("challenge_kayitlari").select("challenge_id, alan_id, yayin_id").eq("challenge_id", bagId).maybeSingle();
-          erisimVar = Boolean(challenge && challenge.alan_id === user.id && challenge.yayin_id === yayin.yayin_id);
+          const { data: challenge } = await db.from("challenge_kayitlari").select("challenge_id, alan_id, yayin_id, arac_id, arac_turu").eq("challenge_id", bagId).maybeSingle();
+          erisimVar = Boolean(
+            challenge
+            && challenge.alan_id === user.id
+            && challenge.yayin_id === yayin.yayin_id
+            && challenge.arac_id === arac_id
+            && challenge.arac_turu === arac.arac_turu,
+          );
         } else if (erisimVar && bagId) {
           const { data: oneri } = await db.from("oneri_kayitlari").select("oneri_id, kullanici_id, yayin_id, oneri_baslangic, oneri_bitis").eq("oneri_id", bagId).maybeSingle();
           const simdi = Date.now();
@@ -104,6 +117,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           );
         }
       } else if (ECLUB_TUKETICI_ROLLERI.includes(rol)) {
+        const yayinHedefleri = hedefRolleriOku(yayin);
+        if (yayinHedefleri.includes("eczanem")) {
+          const aktifEczane = await eczaciAktifEczanesi(db, user.id);
+          const { data: gelenIcerik } = aktifEczane.ok
+            ? await db.from("eczanem_eczane_gonderimleri").select("gonderim_id").eq("eczane_id", aktifEczane.eczaneId!).eq("yayin_id", yayin.yayin_id).maybeSingle()
+            : { data: null };
+          erisimVar = Boolean(aktifEczane.ok && gelenIcerik);
+        } else {
         const kisiErisimi = await eclubKisiErisimi(db, user.id);
         const kisi = kisiErisimi.kisi;
         const { data: oneri } = bagId
@@ -123,12 +144,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           && hedefRolleriOku(yayin).includes(hedefRol)
           && new Date(oneri.oneri_baslangic).getTime() <= simdi,
         );
+        }
       } else if (rol === MUSTERI_ROLU) {
         const kimlik = await musteriKimligi(db, user.id);
         const { data: gonderim } = bagId && kimlik.ok
-          ? await db.from("eczanem_gonderimler").select("gonderim_id, musteri_id, yayin_id").eq("gonderim_id", bagId).maybeSingle()
+          ? await db.from("eczanem_gonderimler").select("gonderim_id, musteri_id, yayin_id, arac_id, arac_turu").eq("gonderim_id", bagId).maybeSingle()
           : { data: null };
-        if (gonderim && kimlik.ok && gonderim.musteri_id === kimlik.musteriId && gonderim.yayin_id === yayin.yayin_id) {
+        if (gonderim && kimlik.ok && gonderim.musteri_id === kimlik.musteriId && gonderim.yayin_id === yayin.yayin_id && gonderim.arac_id === arac_id && gonderim.arac_turu === arac.arac_turu) {
           const uyelik = await aktifGonderimUyeliginiDogrula(db, kimlik.musteriId!, gonderim.gonderim_id);
           erisimVar = uyelik.ok;
         }

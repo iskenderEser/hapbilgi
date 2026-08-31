@@ -51,6 +51,8 @@ interface Video extends KartMetrik {
   kilitli?: boolean;
   gelen_challenge_id?: string | null;
   challenge_gonderen_adi?: string | null;
+  arac_id?: string | null;
+  arac_turu?: UttVideo["arac_turu"];
 }
 
 interface Challenge extends KartMetrik {
@@ -67,6 +69,8 @@ interface Challenge extends KartMetrik {
   thumbnail_url?: string | null;
   video_puani?: number | null;
   yayin_tarihi?: string;
+  arac_id?: string | null;
+  arac_turu?: UttVideo["arac_turu"];
 }
 
 // CC verisini UTT kartının beklediği şekle eşler (doku birebir aynı olsun diye).
@@ -96,6 +100,8 @@ function videoyuUttKarta(v: Video): UttVideo {
     thumbnail_url: v.thumbnail_url,
     video_puani: v.video_puani,
     yayin_tarihi: v.yayin_tarihi,
+    arac_id: v.arac_id ?? null,
+    arac_turu: v.arac_turu ?? "video",
     sonraki_tur_tarihi: v.sonraki_tur_tarihi ?? null,
     durum: v.tamamlandi_mi ? "tamamlanan" : "yeni",
   };
@@ -111,6 +117,8 @@ function challengeyiUttKarta(c: Challenge): UttVideo {
     thumbnail_url: c.thumbnail_url ?? null,
     video_puani: c.video_puani ?? null,
     yayin_tarihi: c.yayin_tarihi ?? c.created_at,
+    arac_id: c.arac_id ?? null,
+    arac_turu: c.arac_turu ?? "video",
     sonraki_tur_tarihi: null,
     durum: c.izlendi_mi ? "tamamlanan" : "yeni",
   };

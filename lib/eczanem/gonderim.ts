@@ -15,6 +15,8 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { pushYayinlaEczanemMusterilereArkada } from "@/lib/push/orkestrasyon";
 import { eczaneEczanemFirmaIdleri, eczaneYayinErisimiDogrula } from "@/lib/eczanem/erisim";
+import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 
 // Ayar okunamazsa güvenli geri düşüş (davet.ts DAVET_GECERLILIK deseni).
 // Canlı seed değeri 10; bu sabit yalnız okuma hatasında devreye girer.
@@ -43,6 +45,8 @@ interface VYayinAdDetay {
   video_url?: string | null;
   thumbnail_url?: string | null;
   yayin_tarihi?: string | null;
+  arac_id?: string | null;
+  arac_turu?: OgrenmeAraciTuru;
 }
 
 interface EclubEczaneRow {
@@ -60,13 +64,14 @@ async function yayinAdMap(
   adminSupabase: SupabaseClient,
   yayinIdler: string[],
   firmaIdler?: string[],
-): Promise<Map<string, { urun_adi: string; teknik_adi: string; video_url: string | null; thumbnail_url: string | null; yayin_tarihi: string | null }>> {
-  const map = new Map<string, { urun_adi: string; teknik_adi: string; video_url: string | null; thumbnail_url: string | null; yayin_tarihi: string | null }>();
+): Promise<Map<string, { urun_adi: string; teknik_adi: string; video_url: string | null; thumbnail_url: string | null; yayin_tarihi: string | null; arac_id: string; arac_turu: OgrenmeAraciTuru }>> {
+  const map = new Map<string, { urun_adi: string; teknik_adi: string; video_url: string | null; thumbnail_url: string | null; yayin_tarihi: string | null; arac_id: string; arac_turu: OgrenmeAraciTuru }>();
   if (yayinIdler.length === 0) return map;
   let sorgu = adminSupabase
     .from("v_yayin_detay")
-    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, yayin_tarihi")
-    .in("yayin_id", yayinIdler);
+    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, yayin_tarihi, arac_id, arac_turu")
+    .in("yayin_id", yayinIdler)
+    .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur));
   if (firmaIdler) {
     if (firmaIdler.length === 0) return map;
     sorgu = sorgu.in("firma_id", firmaIdler);
@@ -74,12 +79,15 @@ async function yayinAdMap(
   const { data, error } = await sorgu;
   if (error) throw new Error("Eczanem yayın bilgileri okunamadı.");
   for (const y of (data as VYayinAdDetay[] | null) ?? []) {
+    if (!y.arac_id || !y.arac_turu) continue;
     map.set(y.yayin_id, {
       urun_adi: y.urun_adi ?? "-",
       teknik_adi: y.teknik_adi ?? "-",
       video_url: y.video_url ?? null,
       thumbnail_url: y.thumbnail_url ?? null,
       yayin_tarihi: y.yayin_tarihi ?? null,
+      arac_id: y.arac_id,
+      arac_turu: y.arac_turu,
     });
   }
   return map;
@@ -154,6 +162,8 @@ export interface UttEczanemYayin {
   video_url: string | null;
   thumbnail_url: string | null;
   yayin_tarihi: string | null;
+  arac_id: string;
+  arac_turu: OgrenmeAraciTuru;
 }
 export interface UttEczanemEczane {
   eczane_id: string;
@@ -182,10 +192,11 @@ export async function uttEczanemVerisi(
   // 1. Eczanem yayınları (bu UTT'nin takımı, yayında)
   let yayinQuery = adminSupabase
     .from("v_yayin_detay")
-    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, yayin_tarihi")
+    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, yayin_tarihi, arac_id, arac_turu")
     .eq("durum", "yayinda")
     .eq("firma_id", firmaId)
     .contains("hedef_roller", ["eczanem"])
+    .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))
     .order("yayin_tarihi", { ascending: false });
   yayinQuery = takimId
     ? yayinQuery.or(`takim_id.is.null,takim_id.eq.${takimId}`)
@@ -193,13 +204,15 @@ export async function uttEczanemVerisi(
   const { data: yayinRaw, error: yayinError } = await yayinQuery;
   if (yayinError) throw new Error("Eczanem yayınları okunamadı.");
 
-  const yayinlar: UttEczanemYayin[] = ((yayinRaw as VYayinAdDetay[] | null) ?? []).map(y => ({
+  const yayinlar: UttEczanemYayin[] = ((yayinRaw as VYayinAdDetay[] | null) ?? []).filter((y) => Boolean(y.arac_id && y.arac_turu)).map(y => ({
     yayin_id: y.yayin_id,
     urun_adi: y.urun_adi ?? "-",
     teknik_adi: y.teknik_adi ?? "",
     video_url: y.video_url ?? null,
     thumbnail_url: y.thumbnail_url ?? null,
     yayin_tarihi: y.yayin_tarihi ?? null,
+    arac_id: y.arac_id!,
+    arac_turu: y.arac_turu!,
   }));
 
   // 2. UTT'nin bağladığı aktif eczaneler
@@ -283,6 +296,8 @@ export interface EczaneGelenVideo {
   video_url: string | null;
   thumbnail_url: string | null;
   gelis_tarihi: string;
+  arac_id: string;
+  arac_turu: OgrenmeAraciTuru;
 }
 export interface EczaneUye {
   musteri_id: string;
@@ -328,6 +343,8 @@ export async function eczaneGelenVideolar(
       video_url: ad?.video_url ?? null,
       thumbnail_url: ad?.thumbnail_url ?? null,
       gelis_tarihi: gonderim.created_at,
+      arac_id: ad!.arac_id,
+      arac_turu: ad!.arac_turu,
     };
   });
 }
@@ -443,18 +460,18 @@ export async function musteriyeGonder(
   musteriIdler: string[]
 ): Promise<MusteriGonderimSonuc> {
   const istenen = [...new Set((musteriIdler ?? []).filter((m) => typeof m === "string"))];
-  if (!yayinId) return { ok: false, hata: "Video seçilmedi.", gonderilen: 0, atlanan: 0 };
+  if (!yayinId) return { ok: false, hata: "Öğrenme içeriği seçilmedi.", gonderilen: 0, atlanan: 0 };
   if (istenen.length === 0) return { ok: false, hata: "En az bir müşteri seçin.", gonderilen: 0, atlanan: 0 };
   if (istenen.length > 100) return { ok: false, hata: "Tek işlemde en fazla 100 müşteriye gönderim yapılabilir.", gonderilen: 0, atlanan: istenen.length };
 
-  // 1. Video bu eczaneye gelmiş mi (yalnız geleni dağıtabilir)
+  // 1. Öğrenme içeriği bu eczaneye gelmiş mi (yalnız geleni dağıtabilir)
   const { data: gelen } = await adminSupabase
     .from("eczanem_eczane_gonderimleri")
     .select("gonderim_id")
     .eq("eczane_id", eczaneId)
     .eq("yayin_id", yayinId)
     .maybeSingle();
-  if (!gelen) return { ok: false, hata: "Bu video eczanenize gönderilmemiş.", gonderilen: 0, atlanan: 0 };
+  if (!gelen) return { ok: false, hata: "Bu öğrenme içeriği eczanenize gönderilmemiş.", gonderilen: 0, atlanan: 0 };
   const yayinErisimi = await eczaneYayinErisimiDogrula(adminSupabase, eczaneId, yayinId);
   if (!yayinErisimi.ok) {
     return { ok: false, hata: yayinErisimi.hata ?? "Eczanem erişimi doğrulanamadı.", gonderilen: 0, atlanan: 0 };

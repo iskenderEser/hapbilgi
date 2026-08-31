@@ -57,4 +57,3 @@ calistir().catch((hata) => {
   console.error("Faz 2 migration doğrulaması başarısız:", hata instanceof Error ? hata.message : String(hata));
   process.exitCode = 1;
 });
-

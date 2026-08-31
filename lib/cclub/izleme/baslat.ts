@@ -14,10 +14,13 @@
 // Yan etki yok: bildirim göndermez, puan yazmaz.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 
 interface IzlemeBaslatParams {
   bm_id: string;
   yayin_id: string;
+  arac_id: string;
+  arac_turu: OgrenmeAraciTuru;
   izleme_turu: "kendi_izleme" | "challenge" | "extra";
   challenge_id?: string | null;
   video_suresi_saniye: number;
@@ -44,6 +47,8 @@ export async function izlemeBaslat(
     .insert({
       bm_id: params.bm_id,
       yayin_id: params.yayin_id,
+      arac_id: params.arac_id,
+      arac_turu: params.arac_turu,
       izleme_turu: params.izleme_turu,
       challenge_id: params.challenge_id ?? null,
       video_suresi_saniye: params.video_suresi_saniye,

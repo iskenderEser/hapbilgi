@@ -1,13 +1,15 @@
 // app/eclub/oneriler/_types.ts
 
 import type { YayindakiVideo } from "@/lib/video/yayindakiVideolar";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 import { ECLUB_KISI_ROL_ETIKETLERI, type EclubKisiRol } from "@/lib/utils/roller";
 
 export type EclubHedefRol = "eczaci" | "eczane_teknisyeni";
 
 // Önerilebilir yayın (yayinlar GET).
-export interface OneriYayin extends Omit<YayindakiVideo, "hedef_roller"> {
-  video_id: string;
+export interface OneriYayin extends Omit<YayindakiVideo, "hedef_roller" | "arac_id" | "arac_turu"> {
+  arac_id: string;
+  arac_turu: OgrenmeAraciTuru;
   hedef_roller: EclubHedefRol[];
   soru_sayisi?: number | null;
 }
@@ -29,7 +31,7 @@ export interface OneriLimitler {
 }
 
 export interface OneriTekrarEngeli {
-  video_id: string;
+  arac_id: string;
   kisi_id: string;
   yeniden_gonderilebilir_at: string;
 }
@@ -37,7 +39,8 @@ export interface OneriTekrarEngeli {
 export interface OneriGecmisKaydi {
   oneri_id: string;
   yayin_id: string;
-  video_id: string;
+  arac_id: string;
+  arac_turu: OgrenmeAraciTuru;
   urun_adi: string;
   teknik_adi: string;
   talep_no: number | null;
@@ -70,7 +73,7 @@ export const ATLANMA_SEBEP_ETIKETLERI: Record<string, string> = {
   bulunamadi: "Kişi bulunamadı",
   sahiplik_yok: "Bu kişi sizin eczanenize bağlı değil",
   pasif: "Kişi pasif durumda",
-  rol_uyumsuz: "Kişinin rolü videonun hedefiyle uyuşmuyor",
+  rol_uyumsuz: "Kişinin rolü öğrenme içeriğinin hedefiyle uyuşmuyor",
   giris_hesabi_yok: "Kişinin giriş hesabı henüz hazır değil",
   tekrar: "Bu kişi için belirlenen tekrar gönderim süresi henüz dolmadı",
   kayit_hatasi: "Kayıt sırasında hata oluştu",

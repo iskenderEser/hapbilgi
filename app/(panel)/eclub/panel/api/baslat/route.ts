@@ -113,6 +113,7 @@ export async function POST(request: NextRequest) {
         izleme_baslangic: new Date().toISOString(),
         oneri_id: oneri.oneri_id,
         video_suresi_saniye: videoSuresiSaniye,
+        arac_turu: yayin.arac_turu,
       })
       .select("izleme_id, yayin_id, oneri_id, izleme_baslangic, ilerleme_durumu")
       .single();

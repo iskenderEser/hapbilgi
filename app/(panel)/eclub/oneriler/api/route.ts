@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import {
-  ayniVideoTekrarAcikZamani,
+  ayniAracTekrarAcikZamani,
   eclubAyniVideoTekrarBeklemeGun,
   oneriBitisHesapla,
   eclubOneriGecerlilikGun,
@@ -12,6 +12,8 @@ import { eclubBildirimOlustur } from "@/lib/utils/eclubBildirim";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { ECLUB_HEDEF_ROLLER, TUKETICI_ROLLER, eclubKisiHedefRolu, hedefRolleriOku, type HedefRoller } from "@/lib/utils/roller";
 import { eclubYayinKapsamindaMi } from "@/lib/eclub/oneriKapsam";
+import { yayinAraciKullanimaAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -22,7 +24,8 @@ interface OneriKisiKimlik { ad: string | null; soyad: string | null; rol: string
 interface OneriKayitSatiri {
   oneri_id: string;
   yayin_id: string;
-  video_id: string;
+  arac_id: string;
+  arac_turu: OgrenmeAraciTuru;
   kisi_id: string;
   oneri_baslangic: string;
   oneri_bitis: string;
@@ -136,7 +139,7 @@ export async function GET(request: NextRequest) {
     const { data: oneriler, error } = await adminSupabase
       .from("eclub_oneri_kayitlari")
       .select(`
-        oneri_id, yayin_id, video_id, kisi_id, oneri_baslangic, oneri_bitis, izlendi_mi, created_at,
+        oneri_id, yayin_id, arac_id, arac_turu, kisi_id, oneri_baslangic, oneri_bitis, izlendi_mi, created_at,
         eclub_kisiler ( ad, soyad, rol )
       `)
       .eq("oneren_id", user.id)
@@ -176,7 +179,8 @@ export async function GET(request: NextRequest) {
       return {
         oneri_id: o.oneri_id,
         yayin_id: o.yayin_id,
-        video_id: o.video_id,
+        arac_id: o.arac_id,
+        arac_turu: o.arac_turu,
         urun_adi: yayin.urun_adi ?? "-",
         teknik_adi: yayin.teknik_adi ?? "-",
         talep_no: yayin.talep_no,
@@ -199,15 +203,15 @@ export async function GET(request: NextRequest) {
       eclubAyniVideoTekrarBeklemeGun(adminSupabase),
     ]);
     const simdi = Date.now();
-    const tekrarEngeliMap = new Map<string, { video_id: string; kisi_id: string; yeniden_gonderilebilir_at: string }>();
+    const tekrarEngeliMap = new Map<string, { arac_id: string; kisi_id: string; yeniden_gonderilebilir_at: string }>();
     for (const oneri of sonuc) {
-      const yenidenGonderilebilirAt = ayniVideoTekrarAcikZamani(new Date(oneri.oneri_bitis), tekrarBeklemeGun).toISOString();
+      const yenidenGonderilebilirAt = ayniAracTekrarAcikZamani(new Date(oneri.oneri_bitis), tekrarBeklemeGun).toISOString();
       if (new Date(yenidenGonderilebilirAt).getTime() <= simdi) continue;
-      const anahtar = `${oneri.video_id}:${oneri.kisi_id}`;
+      const anahtar = `${oneri.arac_id}:${oneri.kisi_id}`;
       const mevcut = tekrarEngeliMap.get(anahtar);
       if (!mevcut || mevcut.yeniden_gonderilebilir_at < yenidenGonderilebilirAt) {
         tekrarEngeliMap.set(anahtar, {
-          video_id: oneri.video_id,
+          arac_id: oneri.arac_id,
           kisi_id: oneri.kisi_id,
           yeniden_gonderilebilir_at: yenidenGonderilebilirAt,
         });
@@ -263,7 +267,7 @@ export async function POST(request: NextRequest) {
     // 3. Yayın geçerli mi (yayında + en az bir E-Club hedef rolü)
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, durum, hedef_roller, urun_adi, firma_id, takim_id, video_durum_id")
+      .select("yayin_id, durum, hedef_roller, urun_adi, firma_id, takim_id, arac_id, arac_turu")
       .eq("yayin_id", yayin_id)
       .maybeSingle();
 
@@ -275,16 +279,10 @@ export async function POST(request: NextRequest) {
       return isKuraluHatasi("Bu yayın E-Club için uygun değil (hedef rol eczacı/teknisyen değil).");
     if (!eclubYayinKapsamindaMi(utt, yayin))
       return isKuraluHatasi("Yayın, UTT'nin erişebildiği firma/takım kataloğu kapsamında değil.");
-
-    if (!yayin.video_durum_id)
-      return hataYaniti("Yayının video kimliği çözülemedi.", "v_yayin_detay — video_durum_id yok", null, 500);
-    const { data: videoDurum, error: videoDurumError } = await adminSupabase
-      .from("video_durumu")
-      .select("video_id")
-      .eq("video_durum_id", yayin.video_durum_id)
-      .maybeSingle();
-    if (videoDurumError || !videoDurum?.video_id)
-      return hataYaniti("Yayının video kimliği çözülemedi.", "video_durumu SELECT — E-Club gönderim", videoDurumError, 500);
+    if (!yayinAraciKullanimaAcikMi(yayin.arac_turu))
+      return isKuraluHatasi("Bu öğrenme aracı kullanıma kapalı.");
+    if (!yayin.arac_id)
+      return hataYaniti("Yayının öğrenme aracı kimliği çözülemedi.", "v_yayin_detay — arac_id yok", null, 500);
 
     // 4+5. Kişileri çek: rol (eclub_kisiler) + aktiflik & sahiplik.
     // Aktiflik eclub_kisi_eczane.aktif_mi'de; sahiplik (baglayan_utt_id) o eczanenin
@@ -364,7 +362,7 @@ export async function POST(request: NextRequest) {
       adaylar.push(kid);
     }
 
-    // Atomik kayıt: yalnız aynı UTT + aynı kişi + aynı gerçek video tekrarını engeller.
+    // Atomik kayıt: yalnız aynı UTT + aynı kişi + aynı gerçek öğrenme aracının tekrarını engeller.
     const gonderilen: string[] = [];
     const now = new Date();
     const gecerlilikGun = await eclubOneriGecerlilikGun(adminSupabase);
@@ -375,7 +373,7 @@ export async function POST(request: NextRequest) {
           p_yayin_id: yayin_id,
           p_oneren_id: user.id,
           p_kisi_id: kid,
-          p_video_id: videoDurum.video_id,
+          p_arac_id: yayin.arac_id,
           p_oneri_baslangic: now.toISOString(),
           p_oneri_bitis: bitis.toISOString(),
         })
@@ -405,7 +403,7 @@ export async function POST(request: NextRequest) {
         gonderen_id: user.id,
         kayit_turu: "oneri",
         kayit_id: atomikSonuc.oneri_id,
-        mesaj: `Size yeni bir video önerildi: ${yayin.urun_adi}`,
+        mesaj: `Size yeni bir öğrenme içeriği önerildi: ${yayin.urun_adi}`,
       });
     }
 

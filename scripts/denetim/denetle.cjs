@@ -1,4 +1,4 @@
-// scripts/denetim/denetle.js
+// scripts/denetim/denetle.cjs
 //
 // HapBilgi kod↔DB tutarlılık denetleyicisi.
 // kullanim.json (koddaki .from/.select/.rpc) ile sema.json (gerçek DB şeması)
@@ -8,8 +8,8 @@
 //   - olmayan kolon (.select — üst seviye + nested embed)
 //   - FK'si olmayan embed (nested embed ama ilişki yok)
 //
-// Kullanım:  node scripts/denetim/denetle.js
-// Önce çalıştır: sema-cek.js (sema.json) + kod-tara.js (kullanim.json)
+// Kullanım:  node scripts/denetim/denetle.cjs
+// Önce çalıştır: sema-cek.cjs (sema.json) + kod-tara.cjs (kullanim.json)
 //
 // NOT: .from ve .select ayrı çağrılar; hangi select hangi tabloya ait olduğunu
 // AST birebir eşlemez. Bu yüzden select denetimi "embed kök tablosu"nu select

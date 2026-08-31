@@ -48,33 +48,33 @@ export function oneriBitisHesapla(baslangic: Date, gunSayisi: number): Date {
 
 // ─── Sonuç tipleri ───────────────────────────────────────────────────────────
 
-export interface AyniVideoTekrarEngeli {
+export interface AyniAracTekrarEngeli {
   kisi_id: string;
   son_oneri_bitis: string;
   yeniden_gonderilebilir_at: string;
 }
 
-export interface AyniVideoTekrarSonuc {
+export interface AyniAracTekrarSonuc {
   bekleme_gun: number;
-  engelli_kisiler: AyniVideoTekrarEngeli[];
+  engelli_kisiler: AyniAracTekrarEngeli[];
 }
 
-/** Aynı videonun tekrar gönderilebileceği ilk an: önceki öneri bitişi + bekleme süresi. */
-export function ayniVideoTekrarAcikZamani(oneriBitis: Date, beklemeGun: number): Date {
+/** Aynı öğrenme aracının tekrar gönderilebileceği ilk an: önceki öneri bitişi + bekleme süresi. */
+export function ayniAracTekrarAcikZamani(oneriBitis: Date, beklemeGun: number): Date {
   return new Date(oneriBitis.getTime() + beklemeGun * 24 * 60 * 60 * 1000);
 }
 
 /**
- * Yalnız aynı UTT + aynı alıcı + aynı gerçek video birleşimini denetler.
- * Farklı video veya farklı UTT kayıtları gönderimi engellemez.
+ * Yalnız aynı UTT + aynı alıcı + aynı gerçek öğrenme aracı birleşimini denetler.
+ * Farklı araç veya farklı UTT kayıtları gönderimi engellemez.
  */
-export async function ayniVideoTekrarKontrol(
+export async function ayniAracTekrarKontrol(
   supabase: SupabaseClient,
   oneren_id: string,
   kisi_idler: string[],
-  video_id: string,
+  arac_id: string,
   now: Date = new Date(),
-): Promise<AyniVideoTekrarSonuc> {
+): Promise<AyniAracTekrarSonuc> {
   const beklemeGun = await eclubAyniVideoTekrarBeklemeGun(supabase);
   if (kisi_idler.length === 0) return { bekleme_gun: beklemeGun, engelli_kisiler: [] };
 
@@ -82,16 +82,16 @@ export async function ayniVideoTekrarKontrol(
     .from("eclub_oneri_kayitlari")
     .select("kisi_id, oneri_bitis")
     .eq("oneren_id", oneren_id)
-    .eq("video_id", video_id)
+    .eq("arac_id", arac_id)
     .in("kisi_id", kisi_idler)
     .order("oneri_bitis", { ascending: false });
 
-  if (error) throw new Error(`eclub_oneri_kayitlari SELECT — aynı video tekrar kontrolü: ${error.message}`);
+  if (error) throw new Error(`eclub_oneri_kayitlari SELECT — aynı öğrenme aracı tekrar kontrolü: ${error.message}`);
 
   const sonKayitlar = new Map<string, { son_oneri_bitis: string; yeniden_gonderilebilir_at: string }>();
   for (const satir of (data ?? []) as { kisi_id: string; oneri_bitis: string }[]) {
     if (sonKayitlar.has(satir.kisi_id)) continue;
-    const acilis = ayniVideoTekrarAcikZamani(new Date(satir.oneri_bitis), beklemeGun);
+    const acilis = ayniAracTekrarAcikZamani(new Date(satir.oneri_bitis), beklemeGun);
     sonKayitlar.set(satir.kisi_id, {
       son_oneri_bitis: satir.oneri_bitis,
       yeniden_gonderilebilir_at: acilis.toISOString(),
