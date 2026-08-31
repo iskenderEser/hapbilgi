@@ -14,6 +14,7 @@ import { ECLUB_HEDEF_ROLLER, TUKETICI_ROLLER, eclubKisiHedefRolu, hedefRolleriOk
 import { eclubYayinKapsamindaMi } from "@/lib/eclub/oneriKapsam";
 import { yayinAraciKullanimaAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
+import { uttEczaneFirmaBaglari } from "@/lib/eclub/uttEczane";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -42,7 +43,6 @@ interface YayinAdiSatiri {
   hedef_roller: unknown;
 }
 interface EclubKisiSatiri { kisi_id: string; rol: string; auth_user_id: string | null; }
-interface EczaneSahiplikSatiri { eczane_id: string; }
 interface AtomikOneriSatiri {
   oneri_id: string | null;
   kaydedildi: boolean;
@@ -284,10 +284,8 @@ export async function POST(request: NextRequest) {
     if (!yayin.arac_id)
       return hataYaniti("Yayının öğrenme aracı kimliği çözülemedi.", "v_yayin_detay — arac_id yok", null, 500);
 
-    // 4+5. Kişileri çek: rol (eclub_kisiler) + aktiflik & sahiplik.
-    // Aktiflik eclub_kisi_eczane.aktif_mi'de; sahiplik (baglayan_utt_id) o eczanenin
-    // eclub_eczane_firma kaydındadır. Zincir embed'le tek sorguda güvenilir kurulamaz;
-    // ayrı sorgu + Map deseniyle çözülür.
+    // 4+5. Kişileri çek: rol, aktif kişi-eczane bağı ve UTT'nin bağımsız
+    // eczane üyeliği ayrı kaynaklardan doğrulanır.
 
     // 4a. Kişilerin rol bilgisi
     const { data: kisilerRol, error: kisiRolError } = await adminSupabase
@@ -318,21 +316,13 @@ export async function POST(request: NextRequest) {
     const aktifBaglar = (baglar ?? []) as KisiEczaneBagSatiri[];
     for (const b of aktifBaglar) kisiEczaneMap.set(b.kisi_id, b.eczane_id);
 
-    // 4c. Bu eczanelerin sahibi UTT'ler (eczane_id → baglayan_utt_id)
+    // 4c. Bu UTT'nin bağımsız E-Club listesine aldığı eczaneler.
     const eczaneIdler = [...new Set(aktifBaglar.map((b) => b.eczane_id))];
-    const sahipOlunanEczaneler = new Set<string>();
-    if (eczaneIdler.length > 0) {
-      const { data: firmaBaglari, error: firmaBagError } = await adminSupabase
-        .from("eclub_eczane_firma")
-        .select("eczane_id")
-        .in("eczane_id", eczaneIdler)
-        .eq("baglayan_utt_id", user.id)
-        .eq("aktif_mi", true);
-
-      if (firmaBagError) return hataYaniti("Eczane sahiplik bilgisi sorgulanamadı.", "eclub_eczane_firma SELECT — eczane_idler", firmaBagError);
-
-      for (const fb of (firmaBaglari ?? []) as EczaneSahiplikSatiri[]) sahipOlunanEczaneler.add(fb.eczane_id);
-    }
+    const uttBaglari = await uttEczaneFirmaBaglari(adminSupabase, user.id);
+    const adayEczaneSet = new Set(eczaneIdler);
+    const sahipOlunanEczaneler = new Set(
+      uttBaglari.filter((bag) => adayEczaneSet.has(bag.eczaneId)).map((bag) => bag.eczaneId)
+    );
 
     // kisiMap: kişi başına rol, giriş hesabı, aktif bağ ve bu UTT'nin sahipliği.
     const atlanan: { kisi_id: string; sebep: string; yeniden_gonderilebilir_at?: string }[] = [];

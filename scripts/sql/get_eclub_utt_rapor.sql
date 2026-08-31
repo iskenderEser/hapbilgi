@@ -30,8 +30,10 @@ SET search_path = public
 AS $function$
   WITH kapsam_eczaneler AS (
     SELECT DISTINCT ef.eczane_id
-    FROM public.eclub_eczane_firma ef
-    WHERE ef.baglayan_utt_id = p_utt_id
+    FROM public.eclub_utt_eczane ue
+    JOIN public.eclub_eczane_firma ef ON ef.id = ue.eczane_firma_id
+    WHERE ue.utt_id = p_utt_id
+      AND ue.aktif_mi = true
       AND ef.aktif_mi = true
   ),
   temel AS (

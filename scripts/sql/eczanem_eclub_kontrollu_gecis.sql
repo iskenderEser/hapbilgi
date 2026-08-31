@@ -245,9 +245,12 @@ BEGIN
   END IF;
 
   IF NOT EXISTS (
-    SELECT 1 FROM public.eclub_eczane_firma ef
-    WHERE ef.eczane_id = p_eczane_id
-      AND ef.baglayan_utt_id = p_talep_eden_utt_id
+    SELECT 1
+    FROM public.eclub_utt_eczane ue
+    JOIN public.eclub_eczane_firma ef ON ef.id = ue.eczane_firma_id
+    WHERE ue.utt_id = p_talep_eden_utt_id
+      AND ue.aktif_mi = true
+      AND ef.eczane_id = p_eczane_id
       AND ef.aktif_mi = true
   ) THEN
     RAISE EXCEPTION 'UTT ile hedef eczane bağı doğrulanamadı.' USING ERRCODE = '42501';
@@ -454,9 +457,12 @@ BEGIN
 
   PERFORM pg_advisory_xact_lock(hashtextextended(public.hapbilgi_telefon_normalize(v_gecis.telefon), 0));
   IF NOT EXISTS (
-    SELECT 1 FROM public.eclub_eczane_firma ef
-    WHERE ef.eczane_id = v_gecis.eczane_id
-      AND ef.baglayan_utt_id = v_gecis.talep_eden_utt_id
+    SELECT 1
+    FROM public.eclub_utt_eczane ue
+    JOIN public.eclub_eczane_firma ef ON ef.id = ue.eczane_firma_id
+    WHERE ue.utt_id = v_gecis.talep_eden_utt_id
+      AND ue.aktif_mi = true
+      AND ef.eczane_id = v_gecis.eczane_id
       AND ef.aktif_mi = true
   ) THEN
     RAISE EXCEPTION 'Talebi açan UTT ile hedef eczane bağı artık aktif değil.' USING ERRCODE = 'P0001';

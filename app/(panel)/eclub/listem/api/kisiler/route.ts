@@ -19,6 +19,7 @@ import {
   eczanemMusterisiTelefonMu,
 } from "@/lib/eczanem/eclubUyesiKontrol";
 import { authTelafisiYap, provizyonBaslat, provizyonDurumuYaz } from "@/lib/kimlik/provizyon";
+import { uttEczaneFirmaBaglari, uttEczaneYetkisiVarMi } from "@/lib/eclub/uttEczane";
 
 function epostaGecerliMi(eposta: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(eposta);
@@ -68,18 +69,6 @@ async function uttKontrol(adminSupabase: SupabaseClient, userId: string): Promis
   return { firma_id: kullanici.firma_id as string };
 }
 
-// UTT'nin bu eczaneyle aktif ilişkisi var mı (sahiplik)?
-async function uttEczaneSahipMi(adminSupabase: SupabaseClient, userId: string, eczane_id: string): Promise<boolean> {
-  const { data } = await adminSupabase
-    .from("eclub_eczane_firma")
-    .select("id")
-    .eq("eczane_id", eczane_id)
-    .eq("baglayan_utt_id", userId)
-    .eq("aktif_mi", true)
-    .maybeSingle();
-  return !!data;
-}
-
 export async function GET() {
   try {
     const supabase = await createClient();
@@ -91,31 +80,27 @@ export async function GET() {
     if ("hata" in k) return k.hata;
 
     // UTT'nin aktif ilişkili eczaneleri
-    const { data: iliskiler, error: iliskiError } = await adminSupabase
-      .from("eclub_eczane_firma")
-      .select("eczane_id, eclub_eczaneler ( eclub_eczane_master ( eczane_adi ) )")
-      .eq("baglayan_utt_id", user.id)
-      .eq("aktif_mi", true);
+    const uttBaglari = await uttEczaneFirmaBaglari(adminSupabase, user.id);
+    const eczaneIdler = [...new Set(uttBaglari.map((bag) => bag.eczaneId))];
+    if (eczaneIdler.length === 0) return NextResponse.json({ kisiler: [], gecis_talepleri: [] }, { status: 200 });
 
-    if (iliskiError) return hataYaniti("Eczaneler çekilemedi.", "eclub_eczane_firma SELECT — baglayan_utt_id", iliskiError);
+    const { data: eczaneler, error: eczaneError } = await adminSupabase
+      .from("eclub_eczaneler")
+      .select("eczane_id, eclub_eczane_master ( eczane_adi )")
+      .in("eczane_id", eczaneIdler);
 
-    const eczaneIdler: string[] = [];
+    if (eczaneError) return hataYaniti("Eczaneler çekilemedi.", "eclub_eczaneler SELECT — UTT üyelikleri", eczaneError);
+
     const eczaneAdiMap = new Map<string, string>();
     // eczane_adi eclub_eczaneler'de değil, bir katman derindeki eclub_eczane_master'da
     // (eclub_eczaneler.gln → eclub_eczane_master.gln FK üzerinden).
     type Master = { eczane_adi: string };
     type Eczane = { eclub_eczane_master?: Master | Master[] };
-    for (const il of iliskiler ?? []) {
-      const eczane_id = (il as { eczane_id: string }).eczane_id;
-      eczaneIdler.push(eczane_id);
-      const eRaw = (il as { eclub_eczaneler?: Eczane | Eczane[] }).eclub_eczaneler;
-      const e = Array.isArray(eRaw) ? eRaw[0] : eRaw;
-      const mRaw = e?.eclub_eczane_master;
+    for (const e of (eczaneler ?? []) as (Eczane & { eczane_id: string })[]) {
+      const mRaw = e.eclub_eczane_master;
       const m = Array.isArray(mRaw) ? mRaw[0] : mRaw;
-      if (m) eczaneAdiMap.set(eczane_id, m.eczane_adi);
+      if (m) eczaneAdiMap.set(e.eczane_id, m.eczane_adi);
     }
-
-    if (eczaneIdler.length === 0) return NextResponse.json({ kisiler: [], gecis_talepleri: [] }, { status: 200 });
 
     // Bu eczanelerdeki aktif kişi bağları + kimlik
     const { data: baglar, error: bagError } = await adminSupabase
@@ -202,7 +187,7 @@ export async function POST(request: NextRequest) {
     if (!telefonGecerliMi(telefonTemiz)) return validasyonHatasi("Telefon 11 haneli sayı olmalıdır.", ["telefon"]);
 
     // Sahiplik: UTT bu eczaneyi listesine almış mı?
-    if (!(await uttEczaneSahipMi(adminSupabase, user.id, eczane_id)))
+    if (!(await uttEczaneYetkisiVarMi(adminSupabase, user.id, eczane_id, k.firma_id)))
       return rolHatasi("Bu eczane listenizde değil, kişi ekleyemezsiniz.");
 
     // Eczacı ise: bu eczanede zaten aktif eczacı var mı? (tek eczacı kuralı)
@@ -481,7 +466,7 @@ export async function PUT(request: NextRequest) {
     if (!eczane_id) return validasyonHatasi("eczane_id zorunludur.", ["eczane_id"]);
 
     // Sahiplik: UTT bu eczaneyi listesine almış mı?
-    if (!(await uttEczaneSahipMi(adminSupabase, user.id, eczane_id)))
+    if (!(await uttEczaneYetkisiVarMi(adminSupabase, user.id, eczane_id, k.firma_id)))
       return rolHatasi("Bu eczane listenizde değil, işlem yapamazsınız.");
 
     // Kişi üzerinde işlem yapabilmek için kişinin de seçilen eczanede aktif

@@ -17,6 +17,7 @@ import { pushYayinlaEczanemMusterilereArkada } from "@/lib/push/orkestrasyon";
 import { eczaneEczanemFirmaIdleri, eczaneYayinErisimiDogrula } from "@/lib/eczanem/erisim";
 import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
+import { uttEczaneFirmaBaglari } from "@/lib/eclub/uttEczane";
 
 // Ayar okunamazsa güvenli geri düşüş (davet.ts DAVET_GECERLILIK deseni).
 // Canlı seed değeri 10; bu sabit yalnız okuma hatasında devreye girer.
@@ -178,9 +179,9 @@ export interface UttEczanemVeri {
   gonderimler: Array<{ yayin_id: string; eczane_id: string; created_at: string }>;
 }
 
-// UTT'nin takımındaki Eczanem yayınları + kendi bağladığı eczaneler
-// (aktif üye sayısı + eşik durumu) + hangi (yayın,eczane) çiftlerinin zaten
-// gönderildiği. baglayan_utt_id = kullanici_id = auth id (aynı değer).
+// UTT'nin takımındaki Eczanem yayınları + kendi bağımsız listesine aldığı
+// eczaneler (aktif üye sayısı + eşik durumu) + hangi (yayın,eczane)
+// çiftlerinin zaten gönderildiği.
 export async function uttEczanemVerisi(
   adminSupabase: SupabaseClient,
   uttAuthId: string,
@@ -216,15 +217,10 @@ export async function uttEczanemVerisi(
   }));
 
   // 2. UTT'nin bağladığı aktif eczaneler
-  const { data: baglar, error: bagError } = await adminSupabase
-    .from("eclub_eczane_firma")
-    .select("eczane_id")
-    .eq("baglayan_utt_id", uttAuthId)
-    .eq("firma_id", firmaId)
-    .eq("aktif_mi", true);
-  if (bagError) throw new Error("UTT eczane bağlantıları okunamadı.");
-
-  const eczaneIdler = [...new Set(((baglar as Array<{ eczane_id: string }> | null) ?? []).map(b => b.eczane_id))];
+  const uttBaglari = await uttEczaneFirmaBaglari(adminSupabase, uttAuthId);
+  const eczaneIdler = [...new Set(
+    uttBaglari.filter((bag) => bag.firmaId === firmaId).map((bag) => bag.eczaneId)
+  )];
   const [adMap, sayiMap] = await Promise.all([
     eczaneAdMap(adminSupabase, eczaneIdler),
     aktifUyeSayilari(adminSupabase, eczaneIdler),

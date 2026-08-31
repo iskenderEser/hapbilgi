@@ -30,9 +30,12 @@ AS $function$
       e.gln,
       COALESCE(m.eczane_adi, 'Adsız Eczane')::text AS eczane_adi
     FROM ben b
+    JOIN public.eclub_utt_eczane ue
+      ON ue.utt_id = p_utt_id
+     AND ue.aktif_mi = true
     JOIN public.eclub_eczane_firma ef
-      ON ef.firma_id = b.firma_id
-     AND ef.baglayan_utt_id = p_utt_id
+      ON ef.id = ue.eczane_firma_id
+     AND ef.firma_id = b.firma_id
      AND ef.aktif_mi = true
     JOIN public.eclub_eczaneler e ON e.eczane_id = ef.eczane_id
     LEFT JOIN public.eclub_eczane_master m ON m.gln = e.gln

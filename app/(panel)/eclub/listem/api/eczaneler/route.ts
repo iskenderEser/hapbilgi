@@ -15,10 +15,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ECLUB_GOREN_ROLLER } from "@/lib/utils/roller";
-import { hataYaniti, veriKontrol, sunucuHatasi, validasyonHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
+import { hataYaniti, sunucuHatasi, validasyonHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import type { SupabaseClient } from "@supabase/supabase-js";
-
-const ECLUB_5UTT_ESIK = 5;
+import { uttEczaneFirmaBaglari, uttEczaneYetkisiVarMi } from "@/lib/eclub/uttEczane";
 
 function glnGecerliMi(gln: string): boolean {
   return /^\d{13}$/.test(gln);
@@ -101,7 +100,7 @@ export async function GET(request: NextRequest) {
       if (!master) return NextResponse.json({ var: false, master_yok: true }, { status: 200 });
 
       // Master'da var ama onay bekliyor (elle eklenmiş, admin onaylamamış)
-      if (master.onay_durumu === "bekliyor")
+      if (master.onay_durumu !== "onayli")
         return NextResponse.json({ var: false, onay_bekliyor: true, eczane_adi: master.eczane_adi }, { status: 200 });
 
       // Master'da onaylı → havuzda dahil mi bak
@@ -122,14 +121,12 @@ export async function GET(request: NextRequest) {
         eczaci = kisiler.eczaci;
         digerKisiler = kisiler.digerKisiler;
 
-        const { data: iliski } = await adminSupabase
-          .from("eclub_eczane_firma")
-          .select("id")
-          .eq("eczane_id", havuz.eczane_id)
-          .eq("firma_id", k.firma_id)
-          .eq("aktif_mi", true)
-          .maybeSingle();
-        listede = !!iliski;
+        listede = await uttEczaneYetkisiVarMi(
+          adminSupabase,
+          user.id,
+          havuz.eczane_id,
+          k.firma_id,
+        );
       }
 
       return NextResponse.json({
@@ -142,23 +139,23 @@ export async function GET(request: NextRequest) {
     }
 
     // ─── LİSTE: UTT'nin aktif ilişkili eczaneleri (ad master'dan) ─────────
-    const { data: iliskiler, error: iliskiError } = await adminSupabase
-      .from("eclub_eczane_firma")
-      .select("eczane_id, created_at, eclub_eczaneler ( eczane_id, gln, eclub_eczane_master ( eczane_adi, il, ilce ) )")
-      .eq("baglayan_utt_id", user.id)
-      .eq("aktif_mi", true)
-      .order("created_at", { ascending: false });
+    const uttBaglari = await uttEczaneFirmaBaglari(adminSupabase, user.id);
+    const eczaneIdler = [...new Set(uttBaglari.map((bag) => bag.eczaneId))];
+    if (eczaneIdler.length === 0) return NextResponse.json({ eczaneler: [] }, { status: 200 });
 
-    if (iliskiError) return hataYaniti("Liste çekilemedi.", "eclub_eczane_firma SELECT — baglayan_utt_id", iliskiError);
+    const { data: eczaneler, error: eczaneError } = await adminSupabase
+      .from("eclub_eczaneler")
+      .select("eczane_id, gln, eclub_eczane_master ( eczane_adi, il, ilce )")
+      .in("eczane_id", eczaneIdler);
+
+    if (eczaneError) return hataYaniti("Liste çekilemedi.", "eclub_eczaneler SELECT — UTT üyelikleri", eczaneError);
 
     type MasterAd = { eczane_adi: string; il: string; ilce: string | null };
     type HavuzKimlik = { eczane_id: string; gln: string; eclub_eczane_master?: MasterAd | MasterAd[] };
 
     const sonuc = [];
-    for (const il of iliskiler ?? []) {
-      const eRaw = (il as { eclub_eczaneler?: HavuzKimlik | HavuzKimlik[] }).eclub_eczaneler;
-      const e = Array.isArray(eRaw) ? eRaw[0] : eRaw;
-      if (!e) continue;
+    const createdAtMap = new Map(uttBaglari.map((bag) => [bag.eczaneId, bag.createdAt]));
+    for (const e of (eczaneler ?? []) as HavuzKimlik[]) {
       const mRaw = e.eclub_eczane_master;
       const m = Array.isArray(mRaw) ? mRaw[0] : mRaw;
       const { eczaci, digerKisiler } = await eczaneKisileri(adminSupabase, e.eczane_id);
@@ -168,7 +165,7 @@ export async function GET(request: NextRequest) {
         eczane_adi: m?.eczane_adi ?? "-",
         il: m?.il ?? null,
         ilce: m?.ilce ?? null,
-        created_at: (il as { created_at: string }).created_at,
+        created_at: createdAtMap.get(e.eczane_id) ?? new Date(0).toISOString(),
         eczaci_var: !!eczaci,
         teknisyen_sayisi: digerKisiler.filter((kisi) => kisi.rol === "eczane_teknisyeni").length,
         toplam_kisi: (eczaci ? 1 : 0) + digerKisiler.length,
@@ -237,51 +234,29 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Master'da var ama onay bekliyor → henüz eklenemez ──
-    if (master.onay_durumu === "bekliyor")
+    if (master.onay_durumu !== "onayli")
       return validasyonHatasi("Bu eczane admin onayı bekliyor, henüz eklenemez.", ["gln"]);
 
-    // ── Master'da onaylı → havuza dahil et + firmaya bağla ──
-    let eczane_id: string;
-    const { data: havuz } = await adminSupabase
-      .from("eclub_eczaneler")
-      .select("eczane_id")
-      .eq("gln", glnTemiz)
-      .maybeSingle();
+    // ── Master'da onaylı → kurumsal bağı ve UTT üyeliğini atomik kur ──
+    const { data: baglamaSonucu, error: baglamaError } = await adminSupabase
+      .rpc("eclub_utt_eczaneye_bagla", {
+        p_utt_id: user.id,
+        p_gln: glnTemiz,
+      })
+      .single();
 
-    if (havuz) {
-      eczane_id = havuz.eczane_id;
-    } else {
-      const { data: yeniHavuz, error: havuzError } = await adminSupabase
-        .from("eclub_eczaneler")
-        .insert({ gln: glnTemiz })
-        .select("eczane_id")
-        .single();
-      if (havuzError || !yeniHavuz) return hataYaniti("Eczane havuza dahil edilemedi.", "eclub_eczaneler INSERT", havuzError);
-      eczane_id = yeniHavuz.eczane_id;
+    if (baglamaError || !baglamaSonucu)
+      return hataYaniti("Eczane listeye eklenemedi.", "eclub_utt_eczaneye_bagla RPC", baglamaError);
+
+    const atomikSonuc = baglamaSonucu as { ok: boolean; sebep: string; eczane_id: string | null };
+    if (!atomikSonuc.ok) {
+      if (atomikSonuc.sebep === "tekrar") return validasyonHatasi("Bu eczane zaten listenizde.", ["gln"]);
+      if (atomikSonuc.sebep === "eczane_onaysiz") return validasyonHatasi("Bu eczane henüz onaylı değil.", ["gln"]);
+      return rolHatasi("Eczaneyi listenize ekleme yetkiniz bulunmuyor.");
     }
 
-    // Firmaya bağla (ilişki)
-    const { data: iliski } = await adminSupabase
-      .from("eclub_eczane_firma")
-      .select("id, aktif_mi")
-      .eq("eczane_id", eczane_id)
-      .eq("firma_id", k.firma_id)
-      .maybeSingle();
-
-    if (iliski?.aktif_mi) return validasyonHatasi("Bu eczane zaten listenizde.", ["gln"]);
-
-    if (iliski && !iliski.aktif_mi) {
-      const { error: reErr } = await adminSupabase
-        .from("eclub_eczane_firma")
-        .update({ aktif_mi: true, baglayan_utt_id: user.id })
-        .eq("id", iliski.id);
-      if (reErr) return hataYaniti("Eczane listeye eklenemedi.", "eclub_eczane_firma UPDATE — yeniden aktif", reErr);
-    } else {
-      const { error: ilErr } = await adminSupabase
-        .from("eclub_eczane_firma")
-        .insert({ eczane_id, firma_id: k.firma_id, baglayan_utt_id: user.id });
-      if (ilErr) return hataYaniti("Eczane listeye eklenemedi.", "eclub_eczane_firma INSERT", ilErr);
-    }
+    const eczane_id = atomikSonuc.eczane_id;
+    if (!eczane_id) return hataYaniti("Eczane kimliği oluşturulamadı.", "eclub_utt_eczaneye_bagla RPC — eczane_id", null);
 
     return NextResponse.json({ mesaj: "Eczane listenize eklendi.", eczane: { eczane_id, gln: master.gln, eczane_adi: master.eczane_adi } }, { status: 201 });
 
@@ -306,34 +281,25 @@ export async function PUT(request: NextRequest) {
     if (!eczane_id) return validasyonHatasi("eczane_id zorunludur.", ["eczane_id"]);
     if (islem !== "listeden_cikar") return validasyonHatasi("Geçersiz işlem.", ["islem"]);
 
-    const { data: iliski, error: iliskiError } = await adminSupabase
-      .from("eclub_eczane_firma")
-      .select("id")
-      .eq("eczane_id", eczane_id)
-      .eq("baglayan_utt_id", user.id)
-      .eq("aktif_mi", true)
-      .maybeSingle();
+    const { data: cikarmaSonucu, error: cikarmaError } = await adminSupabase
+      .rpc("eclub_utt_eczaneden_cikar", {
+        p_utt_id: user.id,
+        p_eczane_id: eczane_id,
+      })
+      .single();
 
-    const iliskiKontrol = veriKontrol(iliski, "eclub_eczane_firma SELECT — ilişki kontrolü", "Bu eczane listenizde bulunamadı.");
-    if (!iliskiKontrol.gecerli) return iliskiKontrol.yanit;
-    if (iliskiError) return hataYaniti("İlişki sorgulanamadı.", "eclub_eczane_firma SELECT", iliskiError, 404);
+    if (cikarmaError || !cikarmaSonucu)
+      return hataYaniti("Eczane listeden çıkarılamadı.", "eclub_utt_eczaneden_cikar RPC", cikarmaError);
 
-    const { error: updateError } = await adminSupabase
-      .from("eclub_eczane_firma")
-      .update({ aktif_mi: false })
-      .eq("id", (iliski as { id: string }).id);
-
-    if (updateError) return hataYaniti("Eczane listeden çıkarılamadı.", "eclub_eczane_firma UPDATE — pasif", updateError);
-
-    const { count: pasifSayisi } = await adminSupabase
-      .from("eclub_eczane_firma")
-      .select("id", { count: "exact", head: true })
-      .eq("eczane_id", eczane_id)
-      .eq("aktif_mi", false);
+    const atomikSonuc = cikarmaSonucu as { ok: boolean; sebep: string; admin_sinyali: boolean };
+    if (!atomikSonuc.ok) {
+      if (atomikSonuc.sebep === "uyelik_yok") return validasyonHatasi("Bu eczane listenizde bulunamadı.", ["eczane_id"]);
+      return rolHatasi("Eczaneyi listenizden çıkarma yetkiniz bulunmuyor.");
+    }
 
     return NextResponse.json({
       mesaj: "Eczane listenizden çıkarıldı.",
-      admin_sinyali: (pasifSayisi ?? 0) >= ECLUB_5UTT_ESIK,
+      admin_sinyali: atomikSonuc.admin_sinyali,
     }, { status: 200 });
 
   } catch (err) {

@@ -12,6 +12,7 @@ const siparisRozeti = readFileSync("app/(panel)/eczanem/eczane/api/rozet/route.t
 const panelLayout = readFileSync("app/(panel)/layout.tsx", "utf8");
 const panelNav = readFileSync("components/panel/panelNav.config.ts", "utf8");
 const dokumLib = readFileSync("lib/eczanem/dokum.ts", "utf8");
+const uttEczaneLib = readFileSync("lib/eclub/uttEczane.ts", "utf8");
 const uttDokumRoute = readFileSync("app/eczanem/utt/api/dokum/route.ts", "utf8");
 const uttDokum = readFileSync("app/(panel)/eczanem/utt/_components/UttEczanemDokum.tsx", "utf8");
 
@@ -20,7 +21,8 @@ test("mutlu: yetkili personel kararı aynı firma kapsamındaki UTT mutabakatın
   assert.match(sql, /'siparis_onaylandi'[\s\S]*'siparis_reddedildi'/);
   assert.match(sql, /NOTIFY pgrst, 'reload schema'/);
   assert.match(siparisRoute, /\.in\("firma_id", eden\.firmaIdler!\)[\s\S]*\.in\("urun_id", izinliUrunIdler\)/);
-  assert.match(dokumLib, /\.eq\("baglayan_utt_id", uttAuthId\)[\s\S]*\.in\("firma_id", firmaIdler\)/);
+  assert.match(uttEczaneLib, /\.eq\("utt_id", uttId\)[\s\S]*\.eq\("aktif_mi", true\)/);
+  assert.match(dokumLib, /uttEczaneFirmaBaglari\(adminSupabase, uttAuthId\)[\s\S]*firmaSet\.has\(bag\.firmaId\)/);
   assert.match(dokumLib, /eczaneUrunDokumu\(adminSupabase, eczaneIdler, null, baslangic, bitis, urunIdler\)/);
   assert.match(uttDokumRoute, /uttDokumu\(adminSupabase, user\.id, erisim\.firmaIdler, baslangic, bitis\)/);
   assert.match(dokumLib, /function paraTopla/);

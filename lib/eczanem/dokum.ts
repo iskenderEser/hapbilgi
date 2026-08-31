@@ -18,6 +18,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { eczaneAdMap } from "@/lib/eczanem/gonderim";
+import { uttEczaneFirmaBaglari } from "@/lib/eclub/uttEczane";
 
 // ── Tipler ──────────────────────────────────────────────────────────────────
 
@@ -75,7 +76,8 @@ interface UrunAdDbSatiri { urun_id: string; urun_adi: string | null; }
 interface EczaneDokumDbSatiri extends UrunAdDbSatiri { kutu: number | string | null; indirim_tl: number | string | null; }
 interface EczaneIdDbSatiri { eczane_id: string; }
 interface KullaniciAdDbSatiri { kullanici_id: string; ad: string | null; soyad: string | null; }
-interface EczaneUttDbSatiri extends EczaneIdDbSatiri { baglayan_utt_id: string; }
+interface UttEczaneDbSatiri { eczane_firma_id: string; utt_id: string; }
+interface EczaneFirmaDbSatiri extends EczaneIdDbSatiri { id: string; }
 interface PmUrunDbSatiri extends UrunAdDbSatiri { firma_id: string; }
 interface UttBilgiDbSatiri extends KullaniciAdDbSatiri { bolge_id: string | null; }
 interface BolgeDbSatiri { bolge_id: string; bolge_adi: string; }
@@ -231,14 +233,11 @@ export async function uttDokumu(
   if (firmaIdler.length === 0) return { eczaneler: [], toplam_kutu: 0, toplam_tl: 0 };
 
   // UTT'nin aktif bağladığı eczaneler (U6 gonderim.ts deseni)
-  const { data: baglar, error } = await adminSupabase
-    .from("eclub_eczane_firma")
-    .select("eczane_id")
-    .eq("baglayan_utt_id", uttAuthId)
-    .in("firma_id", firmaIdler)
-    .eq("aktif_mi", true);
-  if (error) throw new Error("UTT mutabakat kapsamı okunamadı.");
-  const eczaneIdler = [...new Set((baglar ?? []).map((bag: EczaneIdDbSatiri) => bag.eczane_id))];
+  const baglar = await uttEczaneFirmaBaglari(adminSupabase, uttAuthId);
+  const firmaSet = new Set(firmaIdler);
+  const eczaneIdler = [...new Set(
+    baglar.filter((bag) => firmaSet.has(bag.firmaId)).map((bag) => bag.eczaneId)
+  )];
 
   const { data: urunler, error: urunHatasi } = await adminSupabase
     .from("urunler")
@@ -273,18 +272,42 @@ export async function cascadeDokumu(
     uttAd.set(utt.kullanici_id, `${utt.ad ?? ""} ${utt.soyad ?? ""}`.trim());
   }
 
-  const { data: baglar } = await adminSupabase
-    .from("eclub_eczane_firma")
-    .select("eczane_id, baglayan_utt_id")
-    .in("baglayan_utt_id", uttIdler)
+  const { data: uyelikler } = await adminSupabase
+    .from("eclub_utt_eczane")
+    .select("eczane_firma_id, utt_id")
+    .in("utt_id", uttIdler)
     .eq("aktif_mi", true);
 
-  const eczaneUtt = new Map<string, string>(); // eczane_id → utt adı
-  for (const hamBag of baglar ?? []) {
-    const bag = hamBag as EczaneUttDbSatiri;
-    const ad = uttAd.get(bag.baglayan_utt_id);
-    if (ad) eczaneUtt.set(bag.eczane_id, ad);
+  const uyelikSatirlari = (uyelikler ?? []) as UttEczaneDbSatiri[];
+  const eczaneFirmaIdler = [...new Set(uyelikSatirlari.map((uyelik) => uyelik.eczane_firma_id))];
+  const { data: firmaBaglari } = eczaneFirmaIdler.length > 0
+    ? await adminSupabase
+      .from("eclub_eczane_firma")
+      .select("id, eczane_id")
+      .in("id", eczaneFirmaIdler)
+      .eq("aktif_mi", true)
+    : { data: [] as EczaneFirmaDbSatiri[] };
+
+  const eczaneFirmaMap = new Map(
+    ((firmaBaglari ?? []) as EczaneFirmaDbSatiri[]).map((bag) => [bag.id, bag.eczane_id])
+  );
+
+  const eczaneUttAdlari = new Map<string, Set<string>>();
+  for (const uyelik of uyelikSatirlari) {
+    const eczaneId = eczaneFirmaMap.get(uyelik.eczane_firma_id);
+    const ad = uttAd.get(uyelik.utt_id);
+    if (!eczaneId || !ad) continue;
+    const adlar = eczaneUttAdlari.get(eczaneId) ?? new Set<string>();
+    adlar.add(ad);
+    eczaneUttAdlari.set(eczaneId, adlar);
   }
+
+  const eczaneUtt = new Map(
+    [...eczaneUttAdlari.entries()].map(([eczaneId, adlar]) => [
+      eczaneId,
+      [...adlar].sort((a, b) => a.localeCompare(b, "tr")).join(", "),
+    ])
+  );
 
   return eczaneUrunDokumu(adminSupabase, [...eczaneUtt.keys()], eczaneUtt, baslangic, bitis);
 }
@@ -319,23 +342,37 @@ export async function pmUrunDokumu(
   const eczaneIdler = [...new Set(rows.map((r) => r.eczane_id))];
   const firmaId = urunListesi[0].firma_id; // tek takım = tek firma
 
-  const [{ data: baglar }, ezAdMap] = await Promise.all([
+  const [{ data: firmaBaglari }, ezAdMap] = await Promise.all([
     adminSupabase
       .from("eclub_eczane_firma")
-      .select("eczane_id, baglayan_utt_id")
+      .select("id, eczane_id")
       .in("eczane_id", eczaneIdler)
       .eq("firma_id", firmaId)
       .eq("aktif_mi", true),
     eczaneAdMap(adminSupabase, eczaneIdler),
   ]);
 
-  const eczaneUttId = new Map<string, string>();
-  for (const hamBag of baglar ?? []) {
-    const bag = hamBag as EczaneUttDbSatiri;
-    eczaneUttId.set(bag.eczane_id, bag.baglayan_utt_id);
+  const firmaSatirlari = (firmaBaglari ?? []) as EczaneFirmaDbSatiri[];
+  const firmaEczaneMap = new Map(firmaSatirlari.map((bag) => [bag.id, bag.eczane_id]));
+  const firmaBagIdler = [...firmaEczaneMap.keys()];
+  const { data: uyelikler } = firmaBagIdler.length > 0
+    ? await adminSupabase
+      .from("eclub_utt_eczane")
+      .select("eczane_firma_id, utt_id")
+      .in("eczane_firma_id", firmaBagIdler)
+      .eq("aktif_mi", true)
+    : { data: [] as UttEczaneDbSatiri[] };
+
+  const eczaneUttIdler = new Map<string, Set<string>>();
+  for (const uyelik of (uyelikler ?? []) as UttEczaneDbSatiri[]) {
+    const eczaneId = firmaEczaneMap.get(uyelik.eczane_firma_id);
+    if (!eczaneId) continue;
+    const idler = eczaneUttIdler.get(eczaneId) ?? new Set<string>();
+    idler.add(uyelik.utt_id);
+    eczaneUttIdler.set(eczaneId, idler);
   }
 
-  const uttIdler = [...new Set([...eczaneUttId.values()])];
+  const uttIdler = [...new Set([...eczaneUttIdler.values()].flatMap((idler) => [...idler]))];
   const uttBilgi = new Map<string, { ad: string; bolge_id: string | null }>();
   if (uttIdler.length > 0) {
     const { data: uttler } = await adminSupabase
@@ -376,10 +413,17 @@ export async function pmUrunDokumu(
     let urunTl = 0;
 
     for (const r of urunRows) {
-      const uttId = eczaneUttId.get(r.eczane_id);
-      const utt = uttId ? uttBilgi.get(uttId) : undefined;
-      const bolgeAdi = utt?.bolge_id ? (bolgeAd.get(utt.bolge_id) ?? "—") : "—";
-      const uttAdi = utt?.ad ?? "—";
+      const ilgiliUttler = [...(eczaneUttIdler.get(r.eczane_id) ?? [])]
+        .map((uttId) => uttBilgi.get(uttId))
+        .filter((utt): utt is { ad: string; bolge_id: string | null } => Boolean(utt));
+      const uttAdi = ilgiliUttler.length > 0
+        ? [...new Set(ilgiliUttler.map((utt) => utt.ad))].sort((a, b) => a.localeCompare(b, "tr")).join(", ")
+        : "—";
+      const bolgeAdlari = [...new Set(ilgiliUttler
+        .map((utt) => utt.bolge_id ? (bolgeAd.get(utt.bolge_id) ?? "—") : "—"))];
+      const bolgeAdi = bolgeAdlari.length > 0
+        ? bolgeAdlari.sort((a, b) => a.localeCompare(b, "tr")).join(", ")
+        : "—";
       const eczaneAdi = ezAdMap.get(r.eczane_id) ?? "(isimsiz eczane)";
 
       const bolgeDali = agac.get(bolgeAdi) ?? new Map();

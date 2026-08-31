@@ -88,11 +88,13 @@ BEGIN
 
   PERFORM 1
   FROM public.eclub_eczane_firma ef
-  WHERE ef.baglayan_utt_id = p_utt_id
+  JOIN public.eclub_utt_eczane ue ON ue.eczane_firma_id = ef.id
+  WHERE ue.utt_id = p_utt_id
+    AND ue.aktif_mi = true
     AND ef.eczane_id = p_eczane_id
     AND ef.firma_id = v_firma_id
     AND ef.aktif_mi = true
-  FOR UPDATE;
+  FOR UPDATE OF ef, ue;
 
   IF NOT FOUND THEN
     RETURN QUERY SELECT false, 'Bu eczane aktif listenizde değil.', NULL::uuid;
@@ -133,7 +135,7 @@ BEGIN
   RETURNING eczanem_eczane_gonderimleri.gonderim_id INTO v_gonderim_id;
 
   IF v_gonderim_id IS NULL THEN
-    RETURN QUERY SELECT false, 'Bu video bu eczaneye daha önce gönderilmiş.', NULL::uuid;
+    RETURN QUERY SELECT false, 'Bu öğrenme aracı bu eczaneye daha önce gönderilmiş.', NULL::uuid;
     RETURN;
   END IF;
 
