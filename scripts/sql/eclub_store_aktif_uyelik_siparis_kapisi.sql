@@ -1,23 +1,12 @@
--- E-Club Store: global katalog + firma bazlı ürün görünürlüğü.
--- Ayar satırı yoksa ürün firmaya açıktır; yalnız kapalı istisnalar saklanır.
-
-BEGIN;
-
-CREATE TABLE IF NOT EXISTS public.eclub_store_urun_firma_ayarlari (
-  urun_id uuid NOT NULL REFERENCES public.eclub_store_urunler(urun_id) ON DELETE CASCADE,
-  firma_id uuid NOT NULL REFERENCES public.firmalar(firma_id) ON DELETE CASCADE,
-  aktif_mi boolean NOT NULL DEFAULT false,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  PRIMARY KEY (urun_id, firma_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_eclub_store_urun_firma_ayarlari_firma
-  ON public.eclub_store_urun_firma_ayarlari (firma_id, aktif_mi);
-
-ALTER TABLE public.eclub_store_urun_firma_ayarlari ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON TABLE public.eclub_store_urun_firma_ayarlari FROM PUBLIC, anon, authenticated;
-GRANT ALL ON TABLE public.eclub_store_urun_firma_ayarlari TO service_role;
+-- E-Club Store — pasif kişinin yeni sipariş oluşturmasını engeller.
+--
+-- Uygulama API'si aynı kontrolü daha erken yapar; asıl veri bütünlüğü kapısı
+-- bu RPC içindedir. Kişinin aktif eczane bağı ve o eczanenin aktif E-Club
+-- Store firması yoksa geçmiş puanları korunur fakat yeni sipariş oluşturulmaz.
+-- Aktif bağ satırı kilitlendiği için eşzamanlı pasifleştirme ve sipariş işlemi
+-- kesin bir sıraya girer.
+--
+-- KOŞUM: Supabase SQL editöründe bir kez çalıştırılır; CREATE OR REPLACE güvenlidir.
 
 CREATE OR REPLACE FUNCTION public.eclub_store_siparis_olustur(
   p_kisi_id uuid,
@@ -38,9 +27,6 @@ DECLARE
   v_dus bigint;
   r record;
 BEGIN
-  -- API denetimi tek başına yeterli değildir: service_role kullanan başka bir
-  -- sunucu yolu da bu RPC'yi çağırabilir. Aktif kişi→eczane→firma zincirini
-  -- burada kilitleyerek pasifleştirme ile siparişin yarışmasını da sıralarız.
   PERFORM ke.id
   FROM public.eclub_kisi_eczane ke
   JOIN public.eclub_eczane_firma ef
@@ -137,8 +123,7 @@ BEGIN
 END;
 $function$;
 
-COMMIT;
-
-SELECT
-  to_regclass('public.eclub_store_urun_firma_ayarlari') IS NOT NULL AS tablo_var,
-  to_regprocedure('public.eclub_store_siparis_olustur(uuid,uuid,uuid,integer)') IS NOT NULL AS siparis_rpc_var;
+REVOKE ALL ON FUNCTION public.eclub_store_siparis_olustur(uuid,uuid,uuid,integer)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.eclub_store_siparis_olustur(uuid,uuid,uuid,integer)
+  TO service_role;

@@ -20,7 +20,7 @@ test("mutlu: müşteri kararı ve aynı Auth hesabıyla atomik E-Club geçişi b
   assert.match(sql, /v_gecis\.auth_user_id\)/);
   assert.match(proxy, /pathname\.startsWith\("\/eczanem\/api\/eclub-gecisi"\)/);
   assert.match(girisRoute, /from\("eclub_kisiler"\)/);
-  assert.match(girisRoute, /yonlendir: eclubAuthId \? "\/eclub\/panel" : "\/eczanem"/);
+  assert.match(girisRoute, /kimlik\.kimlikTuru === "eclub_kisi"[\s\S]*"\/eclub\/panel"[\s\S]*"\/eczanem"/);
 });
 
 test("red: açık talep yeni kazanç/bağ üretmez, çift kimlik ve sessiz puan kaybı oluşamaz", () => {

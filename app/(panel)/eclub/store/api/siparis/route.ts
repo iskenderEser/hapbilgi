@@ -3,6 +3,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { eclubStoreSiparisOlustur, eclubStoreSiparisIptal, eclubStoreTeslimAldim } from "@/lib/eclub/store/eclubStoreSiparis";
+import { eclubKisiErisimi } from "@/lib/eclub/kisiErisim";
 
 async function kisiCoz(adminSupabase: ReturnType<typeof createAdminClient>, authUserId: string) {
   const { data } = await adminSupabase
@@ -56,9 +57,13 @@ export async function POST(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const adminSupabase = createAdminClient();
-    const kisi = await kisiCoz(adminSupabase, user.id);
+    const erisim = await eclubKisiErisimi(adminSupabase, user.id);
+    const kisi = erisim.kisi;
     if (!kisi) return rolHatasi("Bu işlem yalnız E-Club kişilerine açıktır.");
     if (!ECLUB_TUKETICI_ROLLERI.includes(kisi.rol)) return rolHatasi("Geçersiz kişi rolü.");
+    if (!erisim.eclub_aktif || !erisim.eclub_store_aktif) {
+      return rolHatasi("Aktif E-Club üyeliğiniz bulunmadığı için yeni sipariş oluşturamazsınız.");
+    }
 
     const body = await request.json();
     const { urun_id, adres_id, adet } = body;
