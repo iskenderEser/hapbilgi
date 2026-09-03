@@ -4,7 +4,7 @@
 //
 // Talep merkezli sayfada (/talepler) aşama ayrı bir YER değil, talebin
 // içindeki ADIM. Şerit her talepte SABİT BEŞ adım gösterir:
-//   Talep → Senaryo → Video → Soru Seti → Yayın
+//   Talep → Senaryo → seçilen öğrenme aracı → Soru Seti → Yayın
 //
 // Varyant adım SAYISINI değiştirmez, adımın HALİNİ değiştirir (İskender kararı
 // 28.07 — S-1): o üretim yönteminde hiç üretilmeyecek adımlar "kapali" gelir;
@@ -17,6 +17,8 @@
 
 import { asamaCoz, type ZincirSatiri, type ZincirTalebi } from "@/lib/utils/uretimZinciri";
 import type { DurumKodu } from "@/lib/utils/durum/mesaj";
+import { ogrenmeAraciMetinleri } from "@/lib/ogrenmeAraci/etiketler";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 
 export type AdimAnahtari = "talep" | "senaryo" | "video" | "soru_seti" | "yayin";
 
@@ -37,6 +39,7 @@ export interface Adim {
 /** Şeridin çözülebilmesi için talepten gereken üç alan. */
 export interface SeritTalebi extends ZincirTalebi {
   hazir_soru_seti: boolean;
+  ogrenme_araci_turu: OgrenmeAraciTuru;
 }
 
 const SIRA: AdimAnahtari[] = ["talep", "senaryo", "video", "soru_seti", "yayin"];
@@ -48,6 +51,12 @@ const ETIKET: Record<AdimAnahtari, string> = {
   soru_seti: "Soru Seti",
   yayin: "Yayın",
 };
+
+function adimEtiketi(anahtar: AdimAnahtari, talep: SeritTalebi): string {
+  return anahtar === "video"
+    ? ogrenmeAraciMetinleri(talep.ogrenme_araci_turu).ad
+    : ETIKET[anahtar];
+}
 
 /** asamaCoz'un ZincirAsama'sı → şerit adımı. "Tamamlandı" zincirin sonudur, sırada yayına alma vardır. */
 const ASAMA_ADIMI: Record<string, AdimAnahtari> = {
@@ -99,11 +108,11 @@ export function adimlariCoz(talep: SeritTalebi, z: ZincirSatiri | null): Adim[] 
     // Durum kodu VERİLMEZ — talep onaylanmadı, oluşturuldu; "onaylandi" kodu
     // ekrana "Onayladınız" yazdırırdı ve yanlış olurdu.
     if (anahtar === "talep") {
-      return { anahtar, etiket: ETIKET[anahtar], hal: "tamam" as AdimHal, durum_kodu: null, tarih: tarihler.talep };
+      return { anahtar, etiket: adimEtiketi(anahtar, talep), hal: "tamam" as AdimHal, durum_kodu: null, tarih: tarihler.talep };
     }
 
     if (kapali.has(anahtar)) {
-      return { anahtar, etiket: ETIKET[anahtar], hal: "kapali" as AdimHal, durum_kodu: null, tarih: null };
+      return { anahtar, etiket: adimEtiketi(anahtar, talep), hal: "kapali" as AdimHal, durum_kodu: null, tarih: null };
     }
 
     const hal: AdimHal = sira < aktifSira ? "tamam" : sira === aktifSira ? "aktif" : "ileri";
@@ -112,7 +121,7 @@ export function adimlariCoz(talep: SeritTalebi, z: ZincirSatiri | null): Adim[] 
 
     return {
       anahtar,
-      etiket: ETIKET[anahtar],
+      etiket: adimEtiketi(anahtar, talep),
       hal,
       durum_kodu,
       tarih: hal === "ileri" ? null : tarihler[anahtar],

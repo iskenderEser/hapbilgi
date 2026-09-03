@@ -87,7 +87,7 @@ export function TalepDetayi({
   // onaylanacak bir şey yoktur — düğme hiç çizilmez.
   const aktif = adimlar.find((a) => a.hal === "aktif");
   const aktifDurum = aktif?.durum_kodu
-    ? ureticiDurumMesaji(aktif.durum_kodu, aktif.tarih)
+    ? ureticiDurumMesaji(aktif.durum_kodu, aktif.tarih, talep.ogrenme_araci_turu)
     : null;
   const sorumlu = aktifDurum?.top === "uretici"
     ? "Siz"
@@ -104,7 +104,7 @@ export function TalepDetayi({
 
   // V2/V4'te video henüz yokken sıra üreticidedir: yükleme alanı Video adımının
   // kutusunda açılır. Dört şart birden aranır — hazır video kolu, video yok,
-  // durum "Videonuzu İletiniz", ve talebi açan üretici sensin.
+  // durum "Öğrenme Aracınızı İletiniz", ve talebi açan üretici sensin.
   const videoYuklenebilir =
     talep.hazir_video &&
     !detay?.video?.video_url &&
@@ -139,6 +139,7 @@ export function TalepDetayi({
             <VaryantPill
               hazirVideo={talep.hazir_video}
               hazirSoruSeti={talep.hazir_soru_seti}
+              ogrenmeAraciTuru={talep.ogrenme_araci_turu}
               kendiSatirinda={false}
             />
           </div>
@@ -172,6 +173,7 @@ export function TalepDetayi({
         <UretimSeridi
           adimlar={adimlar}
           rol={rol}
+          ogrenmeAraciTuru={talep.ogrenme_araci_turu}
           formatTarih={formatTarih}
           talepId={talep.talep_id}
           icerikCiz={(anahtar) => (

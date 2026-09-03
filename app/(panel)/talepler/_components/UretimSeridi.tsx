@@ -2,7 +2,7 @@
 //
 // ÜRETİM ŞERİDİ — sayfanın omurgası.
 //
-// Talep → Senaryo → Video → Soru Seti → Yayın. Beş adım her talepte çizilir; o
+// Talep → Senaryo → seçilen öğrenme aracı → Soru Seti → Yayın. Beş adım her talepte çizilir; o
 // üretim yönteminde hiç üretilmeyecek adımlar kırmızı ve işleme kapalı gelir
 // (S-1). Kullanıcı hangi yöntemi seçerse seçsin sürecin tamamını görür.
 //
@@ -20,6 +20,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Pill, DurumPill, NOTR_RENK } from "@/components/pill";
 import type { Adim, AdimAnahtari } from "@/lib/utils/uretimSeridi";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 
 /** Sırası gelmemiş adım — sözlükte karşılığı yok (henüz başlamamış iş). */
 const BEKLENIYOR = "Bekleniyor";
@@ -36,6 +37,7 @@ interface Props {
   icerikCiz: (anahtar: AdimAnahtari) => ReactNode;
   /** Şerit hangi talebe ait — talep değişince açık kutu aktif adıma sıfırlanır. */
   talepId: string;
+  ogrenmeAraciTuru: OgrenmeAraciTuru;
 }
 
 function daireStili(hal: Adim["hal"]): React.CSSProperties {
@@ -58,7 +60,7 @@ function kartStili(hal: Adim["hal"]): React.CSSProperties {
   return { background: "#fafbfd", borderColor: "#e7ecf2" };
 }
 
-export function UretimSeridi({ adimlar, rol, formatTarih, icerikCiz, talepId }: Props) {
+export function UretimSeridi({ adimlar, rol, formatTarih, icerikCiz, talepId, ogrenmeAraciTuru }: Props) {
   const router = useRouter();
 
   // E-4: yalnız AKTİF adımın kutusu açık gelir; tamamlananlar kapalı başlar.
@@ -132,7 +134,7 @@ export function UretimSeridi({ adimlar, rol, formatTarih, icerikCiz, talepId }: 
                 ) : adim.hal === "ileri" ? (
                   <Pill renk={NOTR_RENK}>{BEKLENIYOR}</Pill>
                 ) : adim.durum_kodu ? (
-                  <DurumPill kod={adim.durum_kodu} rol={rol} tarih={adim.tarih} />
+                  <DurumPill kod={adim.durum_kodu} rol={rol} tarih={adim.tarih} girdi={{ ogrenmeAraciTuru }} />
                 ) : null}
 
                 {adim.tarih && adim.hal !== "kapali" && (

@@ -44,25 +44,25 @@ export const VARYANT_ALT_MODAL: AltModalBilgisi = {
     {
       kod: "V1",
       baslik: "V1 (Tam Üretim)",
-      aciklama: "Senaryo, Video ve Soru Seti HapBilgi içerik üreticisi aracılığıyla üretilir.",
+      aciklama: "İçerik akışı, seçilen öğrenme aracı ve Soru Seti HapBilgi içerik üreticisi aracılığıyla üretilir.",
     },
     {
       kod: "V2",
-      baslik: "V2 (Hazır Video)",
-      aciklama: "Video sizin tarafınızdan hazır yüklenir; Soru Seti HapBilgi içerik üreticisi aracılığıyla üretilir. (Tabloda Hazır Video rozetiyle görünür)",
-      rozet: "Hazır Video",
+      baslik: "V2 (Hazır Öğrenme Aracı)",
+      aciklama: "Seçtiğiniz öğrenme aracı sizin tarafınızdan hazır yüklenir; Soru Seti HapBilgi içerik üreticisi aracılığıyla üretilir. Tabloda seçilen araca özgü hazır rozetiyle görünür.",
+      rozet: "Hazır Öğrenme Aracı",
     },
     {
       kod: "V3",
       baslik: "V3 (Hazır Soru Seti)",
-      aciklama: "Senaryo ve Video HapBilgi içerik üreticisi aracılığıyla üretilir; Soru Seti sizin tarafınızdan hazır yüklenir. (Tabloda Hazır Soru rozetiyle görünür)",
+      aciklama: "İçerik akışı ve seçilen öğrenme aracı HapBilgi içerik üreticisi aracılığıyla üretilir; Soru Seti sizin tarafınızdan hazır yüklenir. (Tabloda Hazır Soru rozetiyle görünür)",
       rozet: "Hazır Soru",
     },
     {
       kod: "V4",
       baslik: "V4 (İkisi Hazır)",
-      aciklama: "Video ve Soru Seti sizin tarafınızdan hazır yüklenir; doğrudan yayına hazır hale gelir. (Tabloda Hazır Video + Hazır Soru rozetleriyle görünür)",
-      rozet: "Hazır Video + Hazır Soru",
+      aciklama: "Seçtiğiniz öğrenme aracı ve Soru Seti sizin tarafınızdan hazır yüklenir; doğrudan yayına hazır hale gelir.",
+      rozet: "Hazır Öğrenme Aracı + Hazır Soru",
     },
   ],
 };
@@ -366,32 +366,32 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
             {
               kod: "V1",
               baslik: "V1 (Tam Üretim)",
-              aciklama: "Senaryo, Video ve Soru Seti HapBilgi içerik üreticisi aracılığıyla üretilir.",
+              aciklama: "İçerik akışı, seçilen öğrenme aracı ve Soru Seti HapBilgi içerik üreticisi aracılığıyla üretilir.",
             },
             {
               kod: "V2",
-              baslik: "V2 (Hazır Video)",
-              aciklama: "Video sizin tarafınızdan hazır yüklenir; Soru Seti HapBilgi içerik üreticisi aracılığıyla üretilir. (Tabloda Hazır Video rozetiyle görünür)",
-              rozet: "Hazır Video",
+              baslik: "V2 (Hazır Öğrenme Aracı)",
+              aciklama: "Seçtiğiniz öğrenme aracı sizin tarafınızdan hazır yüklenir; Soru Seti HapBilgi içerik üreticisi aracılığıyla üretilir. Tabloda seçilen araca özgü hazır rozetiyle görünür.",
+              rozet: "Hazır Öğrenme Aracı",
             },
             {
               kod: "V3",
               baslik: "V3 (Hazır Soru Seti)",
-              aciklama: "Senaryo ve Video HapBilgi içerik üreticisi aracılığıyla üretilir; Soru Seti sizin tarafınızdan hazır yüklenir. (Tabloda Hazır Soru rozetiyle görünür)",
+              aciklama: "İçerik akışı ve seçilen öğrenme aracı HapBilgi içerik üreticisi aracılığıyla üretilir; Soru Seti sizin tarafınızdan hazır yüklenir. (Tabloda Hazır Soru rozetiyle görünür)",
               rozet: "Hazır Soru",
             },
             {
               kod: "V4",
               baslik: "V4 (İkisi Hazır)",
-              aciklama: "Video ve Soru Seti sizin tarafınızdan hazır yüklenir; doğrudan yayına hazır hale gelir. (Tabloda Hazır Video + Hazır Soru rozetleriyle görünür)",
-              rozet: "Hazır Video + Hazır Soru",
+              aciklama: "Seçtiğiniz öğrenme aracı ve Soru Seti sizin tarafınızdan hazır yüklenir; doğrudan yayına hazır hale gelir.",
+              rozet: "Hazır Öğrenme Aracı + Hazır Soru",
             },
           ],
         },
       },
       {
         baslik: "Aşama",
-        aciklama: "Talebin üretim hattında şu an hangi adımda olduğunu belirtir: Senaryo, Video veya Soru Seti.",
+        aciklama: "Talebin üretim hattında şu an hangi adımda olduğunu belirtir: Senaryo, seçilen öğrenme aracı veya Soru Seti.",
         ikon: "🏷️",
       },
       {
@@ -422,7 +422,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [
       {
         baslik: "Aşama Filtreleri",
-        aciklama: "Üstteki 'Hepsi', 'Senaryo', 'Video', 'Soru Seti' butonlarıyla listeyi aşamaya göre filtreleyebilirsiniz.",
+        aciklama: "Üstteki 'Hepsi', 'Senaryo', 'Öğrenme Aracı', 'Soru Seti' butonlarıyla listeyi aşamaya göre filtreleyebilirsiniz.",
         ikon: "🏷️",
       },
       {
@@ -444,11 +444,11 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     anahtar: "talepler-uretim-gorunumu",
     baslik: "Üretim Görünümü (Üretim Şeridi)",
     altBaslik: "Seçili talebin adım adım tüm üretim ve onay akışı.",
-    ozet: "Seçtiğiniz talebin üretim yolculuğunu (Talep → Senaryo → Video → Soru Seti → Yayın) tek bir akışta yönetmenizi sağlar.",
+    ozet: "Seçtiğiniz talebin üretim yolculuğunu (Talep → Senaryo → seçilen öğrenme aracı → Soru Seti → Yayın) tek bir akışta yönetmenizi sağlar.",
     maddeler: [
       {
         baslik: "Adım Kutuları",
-        aciklama: "Adımlara tıklayarak metinleri, dosyaları, video önizlemesini veya soruları doğrudan inceleyebilirsiniz.",
+        aciklama: "Adımlara tıklayarak metinleri, öğrenme aracı dosyalarını veya soruları doğrudan inceleyebilirsiniz.",
         ikon: "📌",
       },
       {
@@ -457,8 +457,8 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
         ikon: "🔴",
       },
       {
-        baslik: "Hazır Video Yükleme",
-        aciklama: "V2 veya V4 taleplerinizde videoyu doğrudan video adımının kutusundan yükleyebilirsiniz.",
+        baslik: "Hazır Öğrenme Aracı Yükleme",
+        aciklama: "V2 veya V4 taleplerinizde seçtiğiniz öğrenme aracını doğrudan ilgili adımın kutusundan yükleyebilirsiniz.",
         ikon: "📦",
       },
     ],

@@ -69,7 +69,7 @@ export const PANEL_NAV: NavGrup[] = [
       { etiket: "Tüm Yayınlar",       path: "/tum-yayinlar",                             gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
       { etiket: "Üretim Raporları",   path: "/raporlar/uretim",                          gate: (c) => URETICI_ROLLER.includes(c.rolKucu) || YONETICI_ROLLER.includes(c.rolKucu) || c.rolKucu === "admin" },
       { etiket: "Senaryolar",        path: "/senaryolar",         badgeKey: "senaryo",   gate: (c) => c.rolKucu === IU_ROLU },
-      { etiket: "Videolar",          path: "/videolar",           badgeKey: "video",     gate: (c) => c.rolKucu === IU_ROLU },
+      { etiket: "Öğrenme Araçları", path: "/videolar",           badgeKey: "video",     gate: (c) => c.rolKucu === IU_ROLU },
       { etiket: "Soru Setleri",      path: "/soru-setleri",       badgeKey: "soru_seti", gate: (c) => c.rolKucu === IU_ROLU },
       { etiket: "Onaylanan Talepler", path: "/onaylanan-talepler",                       gate: (c) => c.rolKucu === IU_ROLU },
     ],

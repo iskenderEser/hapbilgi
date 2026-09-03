@@ -82,7 +82,7 @@ export function IptalAkordiyonu({ talepler, formatTarih }: Props) {
                     {talepIdGoster(t.firma_adi, t.talep_no)}
                   </td>
                   <td className="px-3 py-3 text-gray-500">{baslikVer(t)}</td>
-                  <td className="px-3 py-3"><AsamaPill asama={t.asama} /></td>
+                  <td className="px-3 py-3"><AsamaPill asama={t.asama} ogrenmeAraciTuru={t.ogrenme_araci_turu} /></td>
                   <td className="px-3 py-3 text-gray-500 text-xs">
                     {t.iu_ad_soyad ?? <span className="text-gray-300">—</span>}
                   </td>

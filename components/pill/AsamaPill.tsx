@@ -1,6 +1,6 @@
 // components/pill/AsamaPill.tsx
 //
-// Üretim zincirindeki konum: Senaryo → Video → Soru Seti → Yayın.
+// Üretim zincirindeki konum: Senaryo → seçilen öğrenme aracı → Soru Seti → Yayın.
 //
 // Renk NÖTR (İskender kararı 27.07, docs/pill_envanteri.md §E-5): aşama sıralı bir
 // konum bilgisidir, uyarı değil. Önceden renkliydi ve durum pill'iyle çakışıyordu —
@@ -11,6 +11,8 @@
 "use client";
 
 import { Pill, NOTR_RENK } from "./Pill";
+import { ogrenmeAraciMetinleri } from "@/lib/ogrenmeAraci/etiketler";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 
 /**
  * mesaj.ts'teki Asama tipi üç üretim aşamasıdır; liste satırı dördüncü olarak
@@ -20,10 +22,19 @@ import { Pill, NOTR_RENK } from "./Pill";
  */
 export type PillAsama = "Senaryo" | "Video" | "Soru Seti" | "Tamamlandı";
 
-export function AsamaPill({ asama, className }: { asama: PillAsama; className?: string }) {
+export function AsamaPill({
+  asama,
+  ogrenmeAraciTuru,
+  className,
+}: {
+  asama: PillAsama;
+  ogrenmeAraciTuru?: OgrenmeAraciTuru | null;
+  className?: string;
+}) {
+  const etiket = asama === "Video" ? ogrenmeAraciMetinleri(ogrenmeAraciTuru).ad : asama;
   return (
     <Pill renk={NOTR_RENK} className={className}>
-      {asama}
+      {etiket}
     </Pill>
   );
 }

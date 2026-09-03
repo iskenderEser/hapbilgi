@@ -84,9 +84,9 @@ export async function getUretimData(
       })),
       varyantlar: [
         { kod: 'normal', ad: 'Tam Üretim', adet: sayi(o.donem_normal_uretim) },
-        { kod: 'hazir_video', ad: 'Hazır Video', adet: sayi(o.donem_hazir_video) },
+        { kod: 'hazir_video', ad: 'Hazır Öğrenme Aracı', adet: sayi(o.donem_hazir_video) },
         { kod: 'hazir_set', ad: 'Hazır Soru Seti', adet: sayi(o.donem_hazir_soru_seti) },
-        { kod: 'hazir_ikisi', ad: 'Hazır Video + Set', adet: sayi(o.donem_hazir_video_ve_soru_seti) },
+        { kod: 'hazir_ikisi', ad: 'Hazır Öğrenme Aracı + Set', adet: sayi(o.donem_hazir_video_ve_soru_seti) },
       ],
     },
     egitim_turu_etkisi: egitimTurleri,

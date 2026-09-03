@@ -98,7 +98,7 @@ export function IsListesi({ talepler, seciliTalepId, rol, onSec }: Props) {
           {/* Dar ekranlarda tablo yerine bilgi hiyerarşisi korunmuş kartlar. */}
           <div className="flex flex-col gap-2.5 bg-[#f8fafd] p-3 md:hidden">
             {liste.gorunen.map((t) => {
-              const durum = ureticiDurumMesaji(t.durum_kodu, t.created_at);
+              const durum = ureticiDurumMesaji(t.durum_kodu, t.created_at, t.ogrenme_araci_turu);
               const aksiyonBende = durum.top === "uretici";
               const secili = t.talep_id === seciliTalepId;
               return (
@@ -121,8 +121,8 @@ export function IsListesi({ talepler, seciliTalepId, rol, onSec }: Props) {
                     <span aria-hidden="true" className="shrink-0 text-lg text-[#83a1c1]">›</span>
                   </span>
                   <span className="mt-3 flex flex-wrap items-center gap-2">
-                    <AsamaPill asama={t.asama} />
-                    <DurumPill kod={t.durum_kodu} rol={rol} tarih={t.created_at} />
+                    <AsamaPill asama={t.asama} ogrenmeAraciTuru={t.ogrenme_araci_turu} />
+                    <DurumPill kod={t.durum_kodu} rol={rol} tarih={t.created_at} girdi={{ ogrenmeAraciTuru: t.ogrenme_araci_turu }} />
                   </span>
                   {t.teknik_adi !== "-" && (
                     <span className="mt-2 block truncate text-xs text-[#647994]">Teknik: {t.teknik_adi}</span>
@@ -147,7 +147,7 @@ export function IsListesi({ talepler, seciliTalepId, rol, onSec }: Props) {
                 {liste.gorunen.map((t) => {
                   // "Top kimde" sorusunun cevabı sözlükten okunur; burada durum
                   // listesi yazılmaz — sözlük değişirse bu satır kendiliğinden uyar.
-                  const aksiyonBende = ureticiDurumMesaji(t.durum_kodu, t.created_at).top === "uretici";
+                  const aksiyonBende = ureticiDurumMesaji(t.durum_kodu, t.created_at, t.ogrenme_araci_turu).top === "uretici";
                   const secili = t.talep_id === seciliTalepId;
                   return (
                     <tr
@@ -175,8 +175,8 @@ export function IsListesi({ talepler, seciliTalepId, rol, onSec }: Props) {
                           {t.teknik_adi !== "-" ? ` · ${t.teknik_adi}` : ""}
                         </span>
                       </td>
-                      <td className="px-3 py-3"><AsamaPill asama={t.asama} /></td>
-                      <td className="px-3 py-3"><DurumPill kod={t.durum_kodu} rol={rol} tarih={t.created_at} /></td>
+                      <td className="px-3 py-3"><AsamaPill asama={t.asama} ogrenmeAraciTuru={t.ogrenme_araci_turu} /></td>
+                      <td className="px-3 py-3"><DurumPill kod={t.durum_kodu} rol={rol} tarih={t.created_at} girdi={{ ogrenmeAraciTuru: t.ogrenme_araci_turu }} /></td>
                       <td className="px-2 py-3 text-lg text-[#83a1c1]">›</td>
                     </tr>
                   );

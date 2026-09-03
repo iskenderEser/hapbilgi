@@ -75,6 +75,6 @@ export type AsamaSuzgeci = "hepsi" | "Senaryo" | "Video" | "Soru Seti";
 export const ASAMA_SUZGEC_SECENEKLERI: { deger: AsamaSuzgeci; etiket: string }[] = [
   { deger: "hepsi", etiket: "Tümü" },
   { deger: "Senaryo", etiket: "Senaryo" },
-  { deger: "Video", etiket: "Video" },
+  { deger: "Video", etiket: "Öğrenme Aracı" },
   { deger: "Soru Seti", etiket: "Soru Seti" },
 ];

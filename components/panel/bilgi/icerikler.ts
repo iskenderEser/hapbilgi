@@ -24,7 +24,7 @@ export const KULUPLER = [
 ] as const;
 
 export const OGRENME_ADIMLARI = [
-  { id: "uretim", baslik: "Üretim", aciklama: "Hedefe uygun içerik", pencere: "İçerik atölyesi", gorselEtiketi: "Senaryo → Video → Sorular" },
+  { id: "uretim", baslik: "Üretim", aciklama: "Hedefe uygun içerik", pencere: "İçerik atölyesi", gorselEtiketi: "Senaryo → Öğrenme Aracı → Sorular" },
   { id: "izleme", baslik: "İzleme", aciklama: "Kısa eğitim videoları", pencere: "Eğitim yayınları", gorselEtiketi: "İlgili kullanıcıya, ilgili bilgi" },
   { id: "sorular", baslik: "Sorular", aciklama: "Bilginin pekişmesi", pencere: "Soru seti", gorselEtiketi: "İzlemenin ardından sorular" },
   { id: "puan", baslik: "Puan", aciklama: "Katılımın karşılığı", pencere: "Öğrenme puanları", gorselEtiketi: "İzleme + doğru cevap" },

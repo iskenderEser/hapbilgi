@@ -19,6 +19,9 @@
 //
 // İÇERİK ÜRETİCİSİ TARAFI aşağıdaki ikinci tabloda — aynı kodlar, İÜ'nün dili.
 
+import { ogrenmeAraciMetinleri } from "@/lib/ogrenmeAraci/etiketler";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
+
 export type DurumTopu = "uretici" | "icerik_ureticisi" | "sistem" | "kapali";
 
 export interface DurumRenk {
@@ -70,7 +73,7 @@ const URETICI_DURUM: Record<DurumKodu, DurumMesaji> = {
   iu_hazirliyor:    { metin: "Üreticiniz Hazırlıyor",  top: "icerik_ureticisi", renk: BEKLEME },
   iu_duzeltiyor:    { metin: "Üreticiniz Düzenliyor",  top: "icerik_ureticisi", renk: REVIZYON },
   onay_bekleniyor:  { metin: "Onayınız Bekleniyor",    top: "uretici",          renk: AKSIYON },
-  video_bekleniyor: { metin: "Videonuzu İletiniz",     top: "uretici",          renk: AKSIYON },
+  video_bekleniyor: { metin: "Öğrenme Aracınızı İletiniz", top: "uretici",       renk: AKSIYON },
   yayin_bekleniyor: { metin: "Yayına Alınız",          top: "uretici",          renk: AKSIYON },
   onaylandi:        { metin: "Onayladınız",            top: "kapali",           renk: ONAY },
   planlandi:        { metin: "Yayınını Planladınız",   top: "sistem",           renk: PLANLI },
@@ -105,13 +108,13 @@ const TALEP_SAHIBI = "Talep Sahibi";
 
 const IU_ISTENEN: Record<Asama, string> = {
   "Senaryo": "Senaryo Yazmanız Bekleniyor",
-  "Video": "Video Yüklemeniz Bekleniyor",
+  "Video": "Öğrenme Aracı Yüklemeniz Bekleniyor",
   "Soru Seti": "Soru Seti Yazmanız Bekleniyor",
 };
 
 const IU_REVIZYON: Record<Asama, string> = {
   "Senaryo": "Senaryo Revizyonu Bekleniyor",
-  "Video": "Video Revizyonu Bekleniyor",
+  "Video": "Öğrenme Aracı Revizyonu Bekleniyor",
   "Soru Seti": "Soru Seti Revizyonu Bekleniyor",
 };
 
@@ -120,19 +123,24 @@ export interface IuMesajGirdi {
   /** Talebi açan üreticinin unvanı — ROL_ADLARI[rol]. */
   rolAdi?: string | null;
   tarih?: string | null;
+  /** Teknik `video` aşamasında kullanıcıya gösterilecek gerçek araç türü. */
+  ogrenmeAraciTuru?: OgrenmeAraciTuru | null;
 }
 
 function iuMetin(kod: DurumKodu, g: IuMesajGirdi): string {
   const asama = g.asama ?? "Senaryo";
   const rol = g.rolAdi?.trim() || TALEP_SAHIBI;
+  const arac = g.ogrenmeAraciTuru
+    ? ogrenmeAraciMetinleri(g.ogrenmeAraciTuru)
+    : { ad: "Öğrenme Aracı", belirtme: "Öğrenme Aracını" };
   switch (kod) {
     case "iu_iletildi":
-    case "iu_hazirliyor":    return IU_ISTENEN[asama];
-    case "iu_duzeltiyor":    return IU_REVIZYON[asama];
+    case "iu_hazirliyor":    return asama === "Video" ? `${arac.ad} Yüklemeniz Bekleniyor` : IU_ISTENEN[asama];
+    case "iu_duzeltiyor":    return asama === "Video" ? `${arac.ad} Revizyonu Bekleniyor` : IU_REVIZYON[asama];
     case "onay_bekleniyor":  return `${rol} İnceliyor`;
     case "onaylandi":        return `${rol} Onayladı`;
     case "iptal":            return `${rol} İptal Etti`;
-    case "video_bekleniyor": return `${rol} Videoyu Yüklüyor`;
+    case "video_bekleniyor": return `${rol} ${arac.belirtme} Yüklüyor`;
     case "yayin_bekleniyor": return `${rol} Yayına Alacak`;
     case "planlandi":        return "Yayın Planlandı";
     case "yayinda":          return "Yayında";
@@ -172,8 +180,20 @@ export function kisaTarih(tarih: string): string {
  * Üretici rolünün göreceği mesaj. Planlı yayında tarih metne eklenir
  * ("Planlandı · 28 Tem") — üreticinin bilmesi gereken tek ek bilgi odur.
  */
-export function ureticiDurumMesaji(kod: DurumKodu, tarih?: string | null): DurumMesaji {
-  return tarihEkle(URETICI_DURUM[kod], kod, tarih);
+export function ureticiDurumMesaji(
+  kod: DurumKodu,
+  tarih?: string | null,
+  ogrenmeAraciTuru?: OgrenmeAraciTuru | null,
+): DurumMesaji {
+  const temel = kod === "video_bekleniyor"
+    ? {
+        ...URETICI_DURUM[kod],
+        metin: ogrenmeAraciTuru
+          ? `${ogrenmeAraciMetinleri(ogrenmeAraciTuru).iyelikBelirtme} İletiniz`
+          : "Öğrenme Aracınızı İletiniz",
+      }
+    : URETICI_DURUM[kod];
+  return tarihEkle(temel, kod, tarih);
 }
 
 /** İçerik Üreticisi rolünün göreceği mesaj — aşamaya ve talep sahibinin unvanına duyarlı. */
@@ -187,7 +207,7 @@ export function iuDurumMesaji(kod: DurumKodu, g: IuMesajGirdi = {}): DurumMesaji
  * iki rol tarafından da görüldüğü için bu kapıdan geçer.
  */
 export function durumMesaji(kod: DurumKodu, rol: string | null | undefined, g: IuMesajGirdi = {}): DurumMesaji {
-  return rol === "iu" ? iuDurumMesaji(kod, g) : ureticiDurumMesaji(kod, g.tarih);
+  return rol === "iu" ? iuDurumMesaji(kod, g) : ureticiDurumMesaji(kod, g.tarih, g.ogrenmeAraciTuru);
 }
 
 function tarihEkle(temel: DurumMesaji, kod: DurumKodu, tarih?: string | null): DurumMesaji {

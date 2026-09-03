@@ -34,6 +34,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
+import { OGRENME_ARACI_METINLERI } from "@/lib/ogrenmeAraci/etiketler";
 
 interface Props {
   formu: ReturnType<typeof useTalepFormu>;
@@ -46,10 +47,10 @@ const secimKutusu = (secili: boolean, renk?: string) => ({
 });
 
 const OGRENME_ARACI_SECENEKLERI = {
-  video: { etiket: "Video", formatlar: "MP4, MOV, AVI, MKV, WEBM" },
-  podcast: { etiket: "Podcast", formatlar: "MP3, M4A, AAC" },
-  gorsel: { etiket: "Dijital Broşür", formatlar: "JPG, JPEG, PNG" },
-  flip_pdf: { etiket: "Literatür", formatlar: "PDF" },
+  video: { etiket: OGRENME_ARACI_METINLERI.video.ad, formatlar: "MP4, MOV, AVI, MKV, WEBM" },
+  podcast: { etiket: OGRENME_ARACI_METINLERI.podcast.ad, formatlar: "MP3, M4A, AAC" },
+  gorsel: { etiket: OGRENME_ARACI_METINLERI.gorsel.ad, formatlar: "JPG, JPEG, PNG" },
+  flip_pdf: { etiket: OGRENME_ARACI_METINLERI.flip_pdf.ad, formatlar: "PDF" },
 } as const;
 
 export function YeniTalepFormV2({ formu }: Props) {
@@ -107,7 +108,7 @@ export function YeniTalepFormV2({ formu }: Props) {
           </p>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {[
-            { etiket: formu.ogrenmeAraciTuru === "podcast" ? "Hazır podcast" : formu.ogrenmeAraciTuru === "gorsel" ? "Hazır dijital broşür" : formu.ogrenmeAraciTuru === "flip_pdf" ? "Hazır literatür" : "Hazır video", acik: formu.hazirVideo, degistir: formu.toggleHazirVideo },
+            { etiket: OGRENME_ARACI_METINLERI[formu.ogrenmeAraciTuru].hazir, acik: formu.hazirVideo, degistir: formu.toggleHazirVideo },
             { etiket: "Hazır soru seti", acik: formu.hazirSoruSeti, degistir: formu.toggleHazirSoruSeti },
           ].map((a) => (
             <div key={a.etiket} className="flex items-center gap-2">

@@ -22,6 +22,7 @@ import {
   hazirPodcastYukle,
   type OgrenmeAraciYuklemeKontrolu,
 } from "@/lib/ogrenmeAraci/bunnyYuklemeIstemci";
+import { ogrenmeAraciMetinleri } from "@/lib/ogrenmeAraci/etiketler";
 
 const ASAMA: Record<ToastAsama, { etiket: Asama; liste: string }> = {
   senaryo: { etiket: "Senaryo", liste: "/senaryolar" },
@@ -89,11 +90,14 @@ export default function UretimGorevDetayPage() {
   useEffect(() => () => aracYuklemeRef.current?.abort(), []);
 
   const asama = gorev ? ASAMA[gorev.asama] : null;
+  const gorunenAsamaEtiketi = gorev?.asama === "video"
+    ? ogrenmeAraciMetinleri(gorev.talep?.ogrenme_araci_turu).ad
+    : asama?.etiket;
   const isIU = kullanici?.rol === IU_ROLU;
   const isUretici = !!kullanici && URETICI_ROLLER.includes(kullanici.rol);
   const iuTeslimEdebilir = isIU && !!gorev && ["hazirlaniyor", "revizyon_bekliyor"].includes(gorev.durum);
   const ureticiKararVerebilir = isUretici && gorev?.durum === "inceleme_bekliyor" && gorev.talep?.uretici_id === kullanici?.id;
-  const durum = gorev && asama ? durumMesaji(gorevDurumKodu(gorev.durum), kullanici?.rol, { asama: asama.etiket, rolAdi: gorev.talep?.uretici_rol_adi, tarih: gorev.updated_at }) : null;
+  const durum = gorev && asama ? durumMesaji(gorevDurumKodu(gorev.durum), kullanici?.rol, { asama: asama.etiket, rolAdi: gorev.talep?.uretici_rol_adi, tarih: gorev.updated_at, ogrenmeAraciTuru: gorev.talep?.ogrenme_araci_turu }) : null;
   const toastBaglam = useMemo(() => ({ varyant: toastVaryant(gorev?.talep?.hazir_video, gorev?.talep?.hazir_soru_seti), rolAdi: gorev?.talep?.uretici_rol_adi }), [gorev]);
 
   const teslimEt = async (ekAlanlar: Record<string, unknown>): Promise<boolean> => {
@@ -254,13 +258,13 @@ export default function UretimGorevDetayPage() {
   return (
     <>
       <div className="mx-auto flex max-w-3xl flex-col gap-4 px-3 py-4 md:px-6 md:py-6">
-        <button type="button" onClick={() => router.push(asama.liste)} className="w-fit border-0 bg-transparent p-0 text-sm text-gray-500">‹ {asama.etiket} listesi</button>
+        <button type="button" onClick={() => router.push(asama.liste)} className="w-fit border-0 bg-transparent p-0 text-sm text-gray-500">‹ {gorunenAsamaEtiketi} listesi</button>
         <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
           <div className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 px-4 py-4 md:px-5">
-            <div><p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{asama.etiket} görevi</p><h1 className="mt-1 text-lg font-bold text-gray-900">{gorev.talep?.urun_adi ?? "-"}</h1><p className="mt-1 text-xs text-gray-500">{talepIdGoster(gorev.talep?.firma_adi ?? "", gorev.talep?.talep_no ?? 0)}</p></div>
+            <div><p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{gorunenAsamaEtiketi} görevi</p><h1 className="mt-1 text-lg font-bold text-gray-900">{gorev.talep?.urun_adi ?? "-"}</h1><p className="mt-1 text-xs text-gray-500">{talepIdGoster(gorev.talep?.firma_adi ?? "", gorev.talep?.talep_no ?? 0)}</p></div>
             {durum && <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ background: durum.renk.bg, color: durum.renk.text, border: `1px solid ${durum.renk.border}` }}>{durum.metin}</span>}
           </div>
-          <div className="flex flex-wrap gap-2 border-b border-gray-100 px-4 py-3 md:px-5"><TeknikPill teknikAdi={gorev.talep?.teknik_adi ?? "-"} /><HedefRolPilleri hedefRoller={gorev.talep?.hedef_roller ?? []} /><VaryantPill hazirVideo={gorev.talep?.hazir_video ?? false} hazirSoruSeti={gorev.talep?.hazir_soru_seti ?? false} kendiSatirinda={false} />{gorev.atanan_iu && <span className="rounded-full border border-gray-200 px-2.5 py-1 text-[10px] text-gray-500">İçerik Üreticisi: {gorev.atanan_iu.ad_soyad}</span>}</div>
+          <div className="flex flex-wrap gap-2 border-b border-gray-100 px-4 py-3 md:px-5"><TeknikPill teknikAdi={gorev.talep?.teknik_adi ?? "-"} /><HedefRolPilleri hedefRoller={gorev.talep?.hedef_roller ?? []} /><VaryantPill hazirVideo={gorev.talep?.hazir_video ?? false} hazirSoruSeti={gorev.talep?.hazir_soru_seti ?? false} ogrenmeAraciTuru={gorev.talep?.ogrenme_araci_turu} kendiSatirinda={false} />{gorev.atanan_iu && <span className="rounded-full border border-gray-200 px-2.5 py-1 text-[10px] text-gray-500">İçerik Üreticisi: {gorev.atanan_iu.ad_soyad}</span>}</div>
 
           <div className="flex flex-col gap-4 px-4 py-4 md:px-5">
             {aracYuklemeBilgisi && <div className="flex items-center gap-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2"><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-blue-800">{aracYuklemeBilgisi.dosyaRolu}: %{aracYuklemeBilgisi.yuzde}</p><div className="mt-1 h-1.5 overflow-hidden rounded-full bg-blue-100"><div className="h-full bg-[#56aeff]" style={{ width: `${aracYuklemeBilgisi.yuzde}%` }} /></div></div><button type="button" onClick={() => aracYuklemeRef.current?.abort()} className="rounded-md border border-blue-200 bg-white px-2.5 py-1 text-xs text-blue-700">Durdur</button></div>}

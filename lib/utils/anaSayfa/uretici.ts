@@ -30,6 +30,7 @@ import { TALEP_ALANLARI, haritalaTalep } from "@/lib/utils/talepZinciri";
 // Zincir okuma ve aşama kaskadı ortak dosyada (27.07): aynı soruyu Talepler
 // sayfası da soruyor, iki kopya zamanla iki farklı cevap verirdi.
 import { asamaCoz, zincirHaritasi, type ZincirAsama } from "@/lib/utils/uretimZinciri";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 
 type TakipKategori =
   | "inceleme" | "yayin-bekleyen" | "yayinda" | "durdurulan"
@@ -46,6 +47,7 @@ interface TakipSatiri {
   hedef_roller: HedefRoller;
   hazir_video: boolean;
   hazir_soru_seti: boolean;
+  ogrenme_araci_turu: OgrenmeAraciTuru;
   asama: Asama;
   // Metin ve renk taşınmaz — yalnız kod taşınır, karşılığı tek sözlükten okunur
   // (lib/utils/durum/mesaj.ts). Böylece aynı durum her ekranda aynı yazar.
@@ -75,7 +77,7 @@ function kategoriBul(kod: DurumKodu): TakipKategori {
 
 /** Satırın künye alanları — talepten gelir, zincirden değil. */
 type TalepKunye = Pick<TakipSatiri,
-  "talep_id" | "talep_no" | "firma_adi" | "urun_adi" | "teknik_adi" | "hedef_roller" | "hazir_video" | "hazir_soru_seti">;
+  "talep_id" | "talep_no" | "firma_adi" | "urun_adi" | "teknik_adi" | "hedef_roller" | "hazir_video" | "hazir_soru_seti" | "ogrenme_araci_turu">;
 
 export async function getUreticiAnaSayfaVeri(userId: string, adminSupabase: SupabaseClient) {
   // İki sorgu paralel: künye/adlar ∥ zincir. İkisi de uretici_id süzgeçli.
@@ -112,6 +114,7 @@ export async function getUreticiAnaSayfaVeri(userId: string, adminSupabase: Supa
       hedef_roller: talep.hedef_roller,
       hazir_video: talep.hazir_video,
       hazir_soru_seti: talep.hazir_soru_seti,
+      ogrenme_araci_turu: talep.ogrenme_araci_turu,
     };
     const asama = asamaCoz(talep, zincir);
     satirlar.push({ ...kunye, ...asama, kategori: kategoriBul(asama.durum_kodu) });

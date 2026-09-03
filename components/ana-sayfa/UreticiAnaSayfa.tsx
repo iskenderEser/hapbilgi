@@ -14,6 +14,7 @@ import { rolTeknikKullanirMi } from "@/lib/uretici/yetenekler";
 import { type DurumKodu } from "@/lib/utils/durum/mesaj";
 import type { AuthKullanici } from "@/types/auth";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 
 interface TakipSatiri {
   talep_id: string;
@@ -24,6 +25,7 @@ interface TakipSatiri {
   hedef_roller: HedefRoller;
   hazir_video: boolean;
   hazir_soru_seti: boolean;
+  ogrenme_araci_turu: OgrenmeAraciTuru;
   asama: PillAsama;
   durum_kodu: DurumKodu;
   tarih: string;
@@ -157,7 +159,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
   //     birbirine hizalanmıyordu (ÜRETİM YÖNTEMİ hücresi kimi satırda boş, kiminde
   //     iki pill olduğu için fark büyüdü). minmax(0,…) içerik alt sınırını sıfırlar.
   // Tek istisna ÜRETİM YÖNTEMİ (İskender kararı 27.07, seçenek B): iki varyantı
-  // olan talepte "Hazır Video" + "Hazır Soru" eşit payda (~160px) yan yana
+  // olan talepte "Hazır Öğrenme Aracı" + "Hazır Soru" eşit payda yan yana
   // sığmayıp alt alta düşüyor, o satır diğerlerinden yüksek kalıyordu. 1.4 pay
   // ile ikisi tek satırda durur; kalan yedi sütun eşit paylı kalır.
   const gridCols = teknikGoster
@@ -175,7 +177,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
         <div className="text-xs text-gray-400 italic truncate text-center">FirmaAdı_10001</div>
         <div className="text-sm font-semibold text-gray-400 italic truncate text-center">Ürün / Eğitim adı</div>
         {teknikGoster && <div className="text-xs text-gray-400 italic truncate text-center">Teknik adı</div>}
-        <div className="text-center"><Pill renk={ORNEK_RENK}>Hazır Video</Pill></div>
+        <div className="text-center"><Pill renk={ORNEK_RENK}>Hazır Öğrenme Aracı</Pill></div>
         <div className="text-center"><Pill renk={ORNEK_RENK}>UTT</Pill></div>
         <div className="text-center"><Pill renk={ORNEK_RENK}>Senaryo</Pill></div>
         <div className="text-center"><Pill renk={ORNEK_RENK} sarabilir>Onayınız Bekleniyor</Pill></div>
@@ -286,13 +288,13 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
                   {/* Mobilde sütun yok: varyant rozeti adın altında kalır. */}
                   <div className="flex items-center gap-1.5 flex-wrap min-w-0 mb-1.5">
                     <span className="text-sm font-bold text-gray-900">{s.urun_adi}</span>
-                    <VaryantPill hazirVideo={s.hazir_video} hazirSoruSeti={s.hazir_soru_seti} />
+                    <VaryantPill hazirVideo={s.hazir_video} hazirSoruSeti={s.hazir_soru_seti} ogrenmeAraciTuru={s.ogrenme_araci_turu} />
                   </div>
                   {/* Durum tam metindir, kısaltılmaz — mobilde kendi satırından başlar
                       ve sararak sığar (İskender kararı 25.07: "uzayacaksa uzasın"). */}
                   <div className="flex gap-2 items-center flex-wrap">
-                    <DurumPill kod={s.durum_kodu} rol={rol} tarih={s.tarih} />
-                    <AsamaPill asama={s.asama} />
+                    <DurumPill kod={s.durum_kodu} rol={rol} tarih={s.tarih} girdi={{ ogrenmeAraciTuru: s.ogrenme_araci_turu }} />
+                    <AsamaPill asama={s.asama} ogrenmeAraciTuru={s.ogrenme_araci_turu} />
                     <HedefRolPilleri hedefRoller={s.hedef_roller} />
                     {teknikGoster && <span className="text-xs text-gray-500">{s.teknik_adi}</span>}
                   </div>
@@ -332,10 +334,10 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
                     <span className="text-sm font-bold text-gray-900 truncate block text-center">{s.urun_adi}</span>
                   </div>
                   {teknikGoster && <div className="text-xs text-gray-500 truncate text-center">{s.teknik_adi}</div>}
-                  <div className="flex justify-center"><VaryantPill hazirVideo={s.hazir_video} hazirSoruSeti={s.hazir_soru_seti} kendiSatirinda={false} /></div>
+                  <div className="flex justify-center"><VaryantPill hazirVideo={s.hazir_video} hazirSoruSeti={s.hazir_soru_seti} ogrenmeAraciTuru={s.ogrenme_araci_turu} kendiSatirinda={false} /></div>
                   <div className="text-center"><HedefRolPilleri hedefRoller={s.hedef_roller} /></div>
-                  <div className="text-center"><AsamaPill asama={s.asama} /></div>
-                  <div className="text-center"><DurumPill kod={s.durum_kodu} rol={rol} tarih={s.tarih} /></div>
+                  <div className="text-center"><AsamaPill asama={s.asama} ogrenmeAraciTuru={s.ogrenme_araci_turu} /></div>
+                  <div className="text-center"><DurumPill kod={s.durum_kodu} rol={rol} tarih={s.tarih} girdi={{ ogrenmeAraciTuru: s.ogrenme_araci_turu }} /></div>
                   <span className="text-xs text-gray-400 whitespace-nowrap text-center">{formatTarih(s.tarih)}</span>
                   <span className="text-gray-300 text-base">›</span>
                 </div>
