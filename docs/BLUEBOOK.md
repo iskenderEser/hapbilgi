@@ -1,90 +1,108 @@
 # 📘 HapBilgi — BLUEBOOK
-### Bütünsel Teknik Doğrulama, Mimari Tutarlılık ve Canlı Sistem Sağlık Raporu
-*Tarih: 23 Ağustos 2026 | Kapsam: 5 Bölüm, 3 Aşamalı Zorunlu Çalışma Disiplini*
+### İş Modeli, Mimari, İş Kuralları ve Teknik Envanter Anayasası
+*Son güncelleme: 3 Eylül 2026 | Kapsam: HapBilgi'nin işlevsel ve teknik yapısının bütünü*
 
 ---
 
 ## 🏛️ Giriş ve Metodoloji
+**HapBilgi BLUEBOOK**, platformun iş modelini, kullanıcı alanlarını, rol ve yetki yapısını, üretim ve yayın akışlarını, öğrenme ve işlem kurallarını, veri mimarisini, arayüz sözleşmelerini ve dosya–tür–işlev envanterini tek kaynakta tanımlayan ana başvuru belgesidir.
 
-**HapBilgi BLUEBOOK**, üç katmanlı B2B/B2C öğrenme ekosisteminin (T-Club, C-Club, E-Club, Eczanem ve Üretim/Yönetim Omurgası) kaynak kod (`Frontend`, `Backend API`, `Lib Motorları`) ve canlı PostgreSQL veritabanı (`Tablolar`, `View'lar`, `Trigger'lar`, `RPC'ler`) seviyesinde uçtan uca denetlenerek mühürlendiği resmî teknik sağlık sicil belgesidir.
+HapBilgi; firmalar tarafından sağlanan veya yayımlanması sağlanan içerikleri yetkili kullanıcı gruplarına ulaştıran, bu kapsamdaki üretim, yayın, öğrenme, ölçüm ve platform işlemlerini rol temelli olarak yürüten dijital bir platformdur. HapBilgi; firma ile çalışanı, firma ile eczane veya eczane ile Eczanem uygulaması üyesi arasındaki ticari ya da mesleki ilişkinin tarafı değildir.
 
-Tüm denetimler aşağıdaki **3 Aşamalı Zorunlu Çalışma Disiplini** ile yürütülmüş ve canlı Supabase ortamında doğrulanmıştır:
-1. **1. Aşama:** Rol Tanımları, Görev Sınırları ve İş Mantığı Haritası (Tek ve Çok Boyutlu Görevler).
-2. **2. Aşama:** Kaynak Kod Taraması, Sessiz Hata (Silent Failure) Analizi ve Görev İlişki Matrisleri.
-3. **3. Aşama:** Canlı Veritabanı (DDL), Referans Bütünlüğü, Trigger ve Atomik RPC Testleri.
+BLUEBOOK kayıtları aşağıdaki doğrulama kaynakları birlikte değerlendirilerek güncellenir:
+1. **İş Modeli ve İşlevsel Kararlar:** Onaylanmış platform modeli, rol sınırları, kullanıcı akışları ve iş kuralları.
+2. **Kaynak Kod ve Teknik Envanter:** Güncel uygulama kodu, API rotaları, ortak iş mantığı motorları, yapılandırmalar ve dosya–tür–işlev kayıtları.
+3. **Veri Katmanı:** SQL ve migration dosyaları, şema anlık görüntüleri, tablo, view, trigger ve RPC sözleşmeleri. Bir değişiklik, ayrıca doğrulanmadıkça canlı veritabanına uygulanmış kabul edilmez.
+4. **Doğrulama Kayıtları:** Commit geçmişi, otomatik testler, tip ve mimari denetimler, üretim derlemesi ile gerçekleştirildiği açıkça belirtilen canlı veya fiziksel kontroller.
+
+Bluebook'taki güncellik ve doğrulama ifadeleri son incelenen sürüm ve belirtilen kontrol tarihi için geçerlidir. Tarihsel test sonuçları güncel sonuç gibi kullanılmaz; canlı ortamda doğrulanmamış bir durum canlıda tamamlanmış veya üretime hazır olarak kaydedilmez.
 
 ---
 
 # 0. BÖLÜM: GENEL SİSTEM MİMARİSİ, KİMLİK, ROLLER VE GÜVENLİK ANAYASASI
-*Platformun Temel Felsefesi, Müşteri Katmanları, Rol Hiyerarşisi ve Güvenlik İlkeleri*
+*Platformun Temel Felsefesi, Kullanıcı Alanları, Kimlik Düzlemleri, Rol Hiyerarşisi ve Güvenlik İlkeleri*
 
-### 1. Üç Müşteri Katmanı ve Öğrenme Zinciri
-HapBilgi, ilaç ve sağlık sektörüne özgü, video tabanlı ve kural-korumalı tek bir öğrenme ekosistemidir:
-1. **İç Müşteri (Saha Ekibi):** Ürün Tanıtım Temsilcileri (UTT/KD_UTT) ve Bölge Müdürleri (BM). Firma $\rightarrow$ Takım $\rightarrow$ Bölge hiyerarşisinde yaşar; video izler, puan kazanır, ligde yarışır ve HBStore'dan ödül alır.
-2. **Dış Müşteri (Eczane):** Eczacılar ve Eczane Teknisyenleri. Sisteme UTT tarafından GLN ile bağlanır; çok-firmalıdır (aynı anda birden fazla firmanın içeriğini tüketip ayrı bakiye biriktirir).
-3. **Üçüncü Müşteri (Eczanem — B2C Tüketici):** Eczanenin kendi müşterileridir. Telefon kimliğiyle OTC videoları izler, 180 gün FIFO puanı kazanır ve anlaşmalı eczane kasasında barkod ile indirim kullanır.
-* **Öğrenme Zinciri:** `Üretim (Fabrika)` $\rightarrow$ `Tüketim (İzleme/Puan)` $\rightarrow$ `Ölçüm (Rol Raporları & Lig)` $\rightarrow$ `Ödül (Mağaza & Kasa)`.
+### 1. Üç Kimlik Düzlemi, Kullanıcı Alanları ve Öğrenme Zinciri
+HapBilgi, ilaç ve sağlık sektörüne özgü; rol ve iş kurallarıyla korunan üretim, yayın, öğrenme, ölçüm ve platform işlemlerini tek yapıda birleştiren dijital bir platformdur. Kullanıcı alanları ticari müşteri sınıfları değil, uygulamanın teknik kimlik ve yetki düzlemleridir:
+1. **İç Platform Kullanıcıları:** Firma çalışanları, İçerik Üreticisi ve platform yöneticisi teknik olarak `kullanicilar` düzleminde yaşar. Firma kullanıcılarının erişimi firma $\rightarrow$ takım $\rightarrow$ bölge hiyerarşisi ile rol ve yetenek profillerine göre belirlenir.
+2. **E-Club Kullanıcıları:** Eczacı, ikinci eczacı, yardımcı eczacı ve eczane teknisyeni `eclub_kisiler` düzleminde yaşar. Kişinin eczane ve firma bağlantıları ayrı üyelik ilişkileri üzerinden kurulur; yapı çok firmalı kullanımı destekler.
+3. **Eczanem Uygulaması Üyeleri:** Eczanenin müşterisi veya müşteri adayı olabilen üyeler `eczanem_musteriler` düzleminde yaşar. Üyelik, öğrenme ve platform işlemleri eczane bazındaki aktif üyelik ilişkisi üzerinden yürür.
+
+Platform **Video** (`video`), **Podcast** (`podcast`), **Dijital Broşür** (`gorsel`) ve **Literatür** (`flip_pdf`) öğrenme araçlarını destekler. Yayın ile gerçek öğrenme aracı arasındaki ortak kimlik `yayin_id + arac_id + arac_turu` bileşimidir; rol bazlı puan, soru ve işlem kuralları ilgili kullanıcı alanının kendi motorunda uygulanır.
+
+* **Öğrenme Zinciri:** `Talep` $\rightarrow$ `Üretim veya Hazır Araç` $\rightarrow$ `İnceleme` $\rightarrow$ `Yayın` $\rightarrow$ `Rol Temelli Dağıtım ve Tüketim` $\rightarrow$ `Ölçüm` $\rightarrow$ `İlgiliyse Puan ve Platform İşlemi`.
 
 ### 2. Kimlik ve Organizasyon Hiyerarşisi
-* **Hiyerarşik Ağaç:** `firmalar` (Kök) $\rightarrow$ `takimlar` (Takım) $\rightarrow$ `bolgeler` (Saha Bölgesi).
-* **3 Kimlik Düzlemi:** Firmanın kendi çalışanları `kullanicilar`, dış müşteriler `eclub_kisiler`, tüketiciler ise `eczanem_musteriler` tablosunda saklanır.
+* **Firma İçi Organizasyon Omurgası:** `firmalar` (Kök) $\rightarrow$ `takimlar` (Takım) $\rightarrow$ `bolgeler` (Saha Bölgesi) zinciri firma içi kullanıcıların kapsamını belirler; E-Club ve Eczanem kimlikleri bu ağacın doğrudan personel düğümleri değildir.
+* **3 Kimlik Düzlemi:** İç platform kullanıcıları `kullanicilar`, eczane kullanıcıları `eclub_kisiler`, Eczanem uygulaması üyeleri `eczanem_musteriler` tablosunda saklanır. E-Club'ın eczane ve firma ilişkileri `eclub_eczane_master`, `eclub_eczaneler`, `eclub_eczane_firma`, `eclub_utt_eczane` ve `eclub_kisi_eczane`; Eczanem üyeliği ise `eczanem_uyelikler` üzerinden kurulur.
+* **Ortak Giriş:** Üç kimlik düzlemi de `/login` üzerinden e-posta veya cep telefonu ve şifreyle giriş yapabilir. Başarılı girişten sonra kullanıcı, çözümlenen kimlik türü ve rolüne uygun alana yönlendirilir.
 * **Yetkili Kimlik Çözücü (`v_auth_kimlik_admin` & `rolCozucu`):** Uygulama katmanında oturum açan kullanıcının rolü asla istemci metadata'sından değil; `lib/utils/rolCozucu.ts` aracılığıyla `v_auth_kimlik_admin` view'ından (service_role SELECT yetkili) tek kaynaktan çözülür.
 
 ### 3. Rol ve Yetki Anayasası (`lib/utils/roller.ts`)
 * **Temel Rol Grupları:**
-  * `URETICI_ROLLER` (13 Rol): `pm`, `jr_pm`, `kd_pm`, `med_md`, `egt_md`, `egt_yrd_md`, `egt_yon`, `egt_uz`, `ik_drk`, `ik_md`, `ik_yrd_md`, `ik_uz`, `ik_per` (Takım/Firma seviyesinde talep açar, onaylar).
-  * `YONETICI_ROLLER`: `gm`, `gm_yrd`, `drk`, `paz_md`, `sat_md`, `saha_md`, `blm_md`, `grp_pm`, `sm` (Firma seviyesinde konsolide rapor izler).
+  * `URETICI_ROLLER` (13 Rol): `pm`, `jr_pm`, `kd_pm`, `med_md`, `egt_md`, `egt_yrd_md`, `egt_yon`, `egt_uz`, `ik_drk`, `ik_md`, `ik_yrd_md`, `ik_uz`, `ik_per` (Yetenek profillerine göre talep, inceleme ve onay akışlarını yürütür).
+  * `YONETICI_ROLLER` (7 Rol): `gm`, `gm_yrd`, `drk`, `paz_md`, `blm_md`, `grp_pm`, `sm` (Firma seviyesinde konsolide rapor ve gözlem erişimi kullanır).
+  * `ADMIN_ROLLER`: `admin` (Firmalar üstü platform yönetimini yürütür).
   * `YONLENDIRICI_ROLLER`: `tm` (Takım görünümü), `bm` (Bölge öneri ve koçluk yetkisi).
-  * `TUKETICI_ROLLER`: `utt`, `kd_utt` (Bölge seviyesi tüketim, soru, lig, mağaza).
-  * `IU_ROLU`: `iu` (İçerik Üreticisi — talep üzerine senaryo, video ve soru seti üretir).
-  * `ECLUB_TUKETICI_ROLLERI`: `eczaci`, `eczane_teknisyeni` (Dış müşteri tüketimi).
-  * `MUSTERI_ROLU`: `musteri` (Eczanem B2C tüketicisi).
+  * `TUKETICI_ROLLER`: `utt`, `kd_utt` (Bölge seviyesinde öğrenme aracı tüketimi, soru, lig ve ilgili mağaza işlemlerini yürütür).
+  * `IU_ROLU`: `iu` (İçerik Üreticisi — talebe göre senaryo, seçilen öğrenme aracı ve soru seti üretir).
+  * `ECLUB_TUKETICI_ROLLERI`: `eczaci`, `ikinci_eczaci`, `yardimci_eczaci`, `eczane_teknisyeni` (E-Club öğrenme araçlarını tüketen eczane unvanlarıdır).
+  * `MUSTERI_ROLU`: `musteri` teknik kimlik değeridir; kullanıcıya dönük karşılığı Eczanem uygulaması üyesidir.
+* **E-Club Yönetim Grupları:** `ECLUB_GOREN_ROLLER`, E-Club liste yönetimini kullanan UTT/KD_UTT rollerini; `ECLUB_YONETIM_ROLLERI` ve bundan türeyen `ECLUB_LIGI_GOREN_ROLLER` ise UTT/KD_UTT, BM/TM, üretici ve yönetici rollerinin kendi hiyerarşik kapsamlarındaki rapor ve lig erişimini tanımlar.
 * **HBStore Satın Alma Yetki Ayrımı:**
-  * `STORE_ALABILEN_ROLLER`: `[utt, kd_utt, bm]` — Sistemde yalnız bu üç rol puan kazanıp HBStore'dan sipariş verebilir.
-  * `STORE_GORENLER`: `tm` (kendi takımı), Üreticiler ve Yöneticiler (firma geneli) sipariş veremez; yalnızca denetler (`/ekip-magaza-siparisleri`).
-* **Hedef Roller (`talepler.hedef_roller`):** Kişi rolü değil, içerik hedef kitlesidir: `utt`, `bm`, `eczaci`, `eczane_teknisyeni`, `eczanem`. Eczanem talebini yalnız ürün ailesi (`ECZANEM_TALEP_ACAN_ROLLER`) açabilir.
+  * `STORE_ALABILEN_ROLLER`: `[utt, kd_utt, bm]` — Yalnız bu roller kendi harcanabilir puanlarıyla HBStore siparişi oluşturabilir ve kendi siparişlerini görebilir.
+  * `STORE_GORENLERLER`: Sipariş veren roller ile hiyerarşik gözlem yetkisi bulunan TM, üretici, yönetici ve admin rollerini kapsar.
+  * `STORE_GENEL_GOREN_ROLLER`: BM'nin bölgesindeki, TM'nin takımındaki, üretici ve yöneticilerin firmasındaki, adminin ise tüm firmalardaki siparişleri `/store/siparisler` üzerinden görme sınırını tanımlar.
+* **Hedef Roller (`talepler.hedef_roller`):** Kişi rolü değil, içeriğin hedef kitlesidir: `utt`, `bm`, `eczaci`, `eczane_teknisyeni`, `eczanem`. Eczacı, ikinci eczacı ve yardımcı eczacı unvanları `eczaci`; eczane teknisyeni `eczane_teknisyeni` hedef kitlesine eşlenir. Yalnız `eczaci` ve `eczane_teknisyeni` hedefleri birlikte seçilebilir. Eczanem hedefli talebi yalnız `PM_AILESI_ROLLER` ile aynı kaynağı kullanan `ECZANEM_TALEP_ACAN_ROLLER` açabilir.
 
 ### 4. Erişim ve Güvenlik Mimarisi (`proxy.ts` Middleware)
 * **Merkezi Güvenlik Kapısı:** Statik varlıklar hariç tüm istekler kök `proxy.ts` (Next.js Node.js runtime) katmanından geçer.
-* **5 Modül Bekçisi:**
-  1. `Admin API Bekçisi`: `/admin/api/*` rotalarını `ADMIN_ROLLER` ile kilitler.
-  2. `Challenge Club Bekçisi`: `/challenge-club/*` rotalarını firmanın `cc_aktif` bayrağıyla kilitler.
-  3. `HBStore Bekçisi`: `/store/*` rotalarını firmanın `hbstore_aktif` bayrağıyla kilitler.
-  4. `E-Club Store Bekçisi`: `/eclub/store/*` rotalarını firmanın `eclub_store_aktif` bayrağıyla kilitler.
-  5. `E-Club Bekçisi`: `/eclub/*` rotalarını firmanın `eclub_aktif` bayrağıyla kilitler.
-  6. `Eczanem Bekçisi`: `/eczanem/*` rotalarını rol tabanlı (müşteri, eczane, UTT) kilitler.
-* **Çift Katmanlı Savunma:** Proxy katmanına ek olarak tüm API route handler'ları kendi içinde tekil bekçilerle (`adminGirisKontrol`, `adminBekcisi`, `hataIsle`) korunur.
+* **Merkezi Erişim Kapıları:**
+  1. **Admin API:** `/admin/api/*` rotaları `ADMIN_ROLLER` ile korunur.
+  2. **Kullanıcı Yönetimi:** `/kullanicilar/*` sayfa ve API'leri yalnız admin rolüne açıktır.
+  3. **Challenge Club:** `/challenge-club/*` ve `/cc-ligi/*` rotaları oturum, rol ve `cc_aktif` firma bayrağıyla korunur.
+  4. **Yayındaki İçerikler:** Tarihsel rota adını koruyan `/yayindaki-videolar/*`, `YAYINDAKI_VIDEO_GORENLER` rol grubuyla korunur.
+  5. **Üretici Yayın Katalogları:** `/sizin-yayinlariniz` ve `/tum-yayinlar` yalnız `URETICI_ROLLER` kapsamındadır.
+  6. **HBStore:** `/store/*` rotaları rol kapsamı ve `hbstore_aktif` firma bayrağıyla korunur.
+  7. **E-Club Store:** `/eclub/store/*` ve `/eclub/siparisler/*`, iç kullanıcıda firma; E-Club kullanıcısında aktif eczane–firma ilişkileri ve `eclub_store_aktif` üzerinden korunur.
+  8. **E-Club:** `/eclub/*`, kimlik türüne göre firma veya aktif eczane–firma ilişkileri ve `eclub_aktif` üzerinden korunur.
+  9. **Eczanem:** `/eczanem/*`, UTT/KD_UTT, E-Club kullanıcısı ve Eczanem uygulaması üyesi dallarını rol ile ilişki zincirine göre ayırır; ilgili firmaların `eczanem_aktif` bayrağını doğrular.
+* **Firma Modül Bayrakları:** `cc_aktif`, `hbstore_aktif`, `eclub_aktif`, `eclub_store_aktif` ve `eczanem_aktif` yalnız arayüz görünürlüğünü değil, ilgili sayfa ve API erişimini de sınırlar.
+* **Katmanlı Savunma:** Proxy kapısından sonra hassas route handler'ları kimlik, rol, firma, takım, bölge, eczane ve kayıt sahipliği kontrollerini kendi işlem kapsamlarında tekrarlar. `rolCozucu`, `eclubKisiErisimi` ve `eczanemRolErisimi` ortak erişim kaynaklarıdır; atomik RPC'ler ile veritabanı kısıtları yazma bütünlüğünün son katmanını oluşturur.
 
 ### 5. İçerik Üretim Hattı ve Servis Soyutlamaları
-* **4 Üretim Varyantı:** V1 (Tam Üretim), V2 (Hazır Video), V3 (Hazır Soru Seti), V4 (İkisi Hazır).
-* **Bunny CDN TUS Vezne Modeli:** API anahtarı gizli; sunucu imzalı SHA256 token ile tarayıcıdan doğrudan CDN'e yükleme yapılır; platform hiçbir zaman sunucu bant genişliği yükü taşımaz.
-* **Çoklu İÜ Görev Modeli:** `atama_bekliyor` $\rightarrow$ `hazirlaniyor` $\rightarrow$ `inceleme_bekliyor` $\rightarrow$ `revizyon_bekliyor` $\rightarrow$ `tamamlandi` durum makinesiyle yük dengeli otomatik dağıtım yapılır.
+* **Dört Öğrenme Aracı:** Üretim hattı Video, Podcast, Dijital Broşür ve Literatür araçlarını ortak üretim sözleşmesi altında, araca özgü dosya, metadata, ilerleme ve tamamlama kurallarıyla yönetir.
+* **4 Üretim Varyantı:** V1 (Tam Üretim), V2 (Hazır Öğrenme Aracı), V3 (Hazır Soru Seti), V4 (Hazır Öğrenme Aracı ve Hazır Soru Seti). Varyant ve durum pilleri seçilen aracın gerçek adını gösterir; örneğin hazır kaynak bir podcast ise “Hazır Podcast” yazılır.
+* **Tarihsel Teknik Anahtarlar:** Veritabanındaki `video` üretim aşaması ile `hazir_video` alanı geriye dönük uyumluluk için ortak teknik anahtar olarak korunur; kullanıcı arayüzüne doğrudan basılmaz.
+* **Bunny Medya Hattı:** Video Bunny Stream TUS hattıyla; Podcast, Dijital Broşür ve Literatür ise süreli imzalı Bunny Storage hattıyla doğrudan yüklenir. Gizli servis anahtarları istemciye açılmaz; dosya türü, boyut, imza, özet ve araca özgü metadata sunucuda doğrulanır.
+* **Çoklu İÜ Görev Modeli:** Görevler `atama_bekliyor` $\rightarrow$ `hazirlaniyor` $\rightarrow$ `inceleme_bekliyor` $\rightarrow$ `revizyon_bekliyor` $\rightarrow$ `tamamlandi` / `iptal` durum makinesinde ilerler. Atama kaynağı `otomatik`, `manuel`, `devir` veya `gecis` olabilir; otomatik atamada uygun İÜ yük ve yetkinlik kurallarıyla seçilir.
 
 ---
 
 # 1. BÖLÜM: T-CLUB (Saha & Temsilci Kulübü)
-*İç Müşteri Katmanı — Saha Ekibi (UTT, KD_UTT, BM, TM)*
+*İç Kullanıcı Katmanı — Saha Ekibi (UTT, KD_UTT, BM, TM)*
 
 ### 1. Aşama: Rol ve Görev Tanımları
-* **UTT / KD_UTT (Uzman Tıbbi Tanıtım Temsilcisi):**
-  * 6 kategoride eğitim tüketimi (`/videolarim/[urun|medikal|urun-medikal|satis|yonetim|ik]`).
-  * Hafta içi 07:00–20:29 puanlı izleme, temiz tamamlamada soru çözümü.
-  * İleri sarma tespiti ve oransal puan kaybı (`ileri_sarma_kayitlari`).
-  * Ayda 3. tam temiz tekrarda extra puan kazanımı (`tamTekrarSayisi`).
-  * Kişisel rapor (`/raporlar/utt`), lig takibi (`/hb-ligi`) ve HBStore siparişleri (`/store`).
-* **BM (Bölge Müdürü) & TM (Takım Müdürü):**
-  * BM, bölgesindeki UTT'lere hedef video önerisi açar (`oneri_kayitlari`, kota denetimi).
-  * TM, takımındaki BM önerilerini salt-okur izler ve takım raporunu (`/raporlar/tm`) takip eder.
+* **UTT / KD_UTT (Uzman Tıbbi Tanıtım Temsilcisi):** Video, Podcast, Dijital Broşür ve Literatür öğrenme araçlarını altı eğitim kategorisinde tüketir (`/videolarim/[urun|medikal|urun-medikal|satis|yonetim|ik]`). Yayın ile gerçek öğrenme aracı bağı `yayin_id`, `arac_id` ve `arac_turu` kimlikleriyle korunur.
+* **Puanlı Öğrenme:** Hafta içi 07.00–20.29 arasındaki ilk uygun tamamlamada içerik puanı verilir. Doğru cevap ilgili soru puanını kazandırır; yanlış cevap aynı puan kadar kayıp üretir. Video ileri sarma kaybı, atlanan sürenin içerik puanındaki oransal karşılığıdır. Puan dışı zamanda kazanım veya kayıp oluşmaz. İlk izleme hariç, takvim ayı ile geçerli turun kesişimindeki üçüncü temiz tam tekrarda bir kez Extra puan verilir.
+* **Soru Hakkı:** Soru kümesi izleme kimliğine sabitlenir. Tamamlamadan sonra sorular yanıtlanmadan akış terk edilir ve yeni oturum başlatılırsa önceki oturumun soru hakkı kapanır ve yeniden açılamaz.
+* **Rapor, Lig ve Mağaza:** UTT/KD_UTT kişisel raporunu (`/raporlar/utt`) ve HB Ligi'ni (`/hb-ligi`) izler; firma için HBStore açıksa kendi harcanabilir puanıyla sipariş oluşturabilir (`/store`).
+* **BM ve TM:** BM, bölgesindeki aktif UTT/KD_UTT kullanıcılarına UTT hedefli öğrenme içerikleri önerir. Bir alıcı haftada en fazla üç öneri alabilir; BM'nin aylık gönderim kotası bölgesindeki aktif UTT/KD_UTT sayısının on iki katıdır. BM kendi bölgesinin, TM ise kendi takımındaki BM–UTT öneri ve performans sonuçlarının hiyerarşik görünümünü izler; öneri oluşturma yetkisi yalnız BM'dedir.
 
 ### 2. Aşama: Kod Taraması ve Görev İlişki Matrisi
-* **Taranan Bileşenler:** `app/(panel)/videolarim/`, `components/izle/VideoOynatici.tsx`, `app/izle/api/baslat`, `bitir`, `cevap`, `lib/puan/`, `lib/tur/`, `lib/oneri/`, `lib/store/`.
-* **Sessiz Hata Denetimi:** Video oynatıcıda süre başlamadan `baslat` çağrılması engelli; mesai dışı izlemeler puansız pencerede tutulur; HBStore sepetinde stok/bakiye yarışma durumları atomik RPC ile kilitlidir.
-* **Sonuç:** ✅ **%100 SORUNSUZ**
+* **Tüketim ve Puan:** `app/(panel)/videolarim/`, `components/izle/VideoOynatici.tsx`, `app/izle/api/`, `lib/tclub/puan/`, `lib/tclub/tur/`, `lib/izleme/`, `lib/ogrenmeAraci/`.
+* **Öneri, Rapor ve Lig:** `app/(panel)/oneriler/`, `app/(panel)/yayindaki-videolar/`, `app/(panel)/raporlar/utt/`, `app/(panel)/raporlar/bm/`, `app/(panel)/raporlar/tm/`, `lib/tclub/oneri/`, `lib/tclub/hbligi/`.
+* **HBStore:** `app/(panel)/store/` ve `lib/tclub/store/`. Stok, bakiye, sipariş ve harcama yarışları `store_siparis_olustur`, `store_siparis_iptal` ve `store_teslim_aldim` RPC'leriyle atomik olarak yönetilir.
+* **Güvenlik Kapıları:** Gerçek oynatma başlamadan izleme oturumu oluşturulmaz; yayın, rol, firma, takım, geçerli tur, puan zamanı, soru erişimi ve öğrenme aracı kimliği sunucuda yeniden doğrulanır.
 
-### 3. Aşama: Canlı Veritabanı ve DDL Taraması (35 Enstrüman)
-* **Çekirdek Tablolar:** `izleme_kayitlari`, `kazanilan_puanlar`, `ileri_sarma_kayitlari`, `yanlis_cevap_kayitlari`, `oneri_kayip_kayitlari`, `oneri_kayitlari`, `yayin_tekrar_kayitlari`, `store_siparisler`, `store_puan_harcamalari`, `store_adresler`.
-* **Aktif Trigger'lar:** `trg_ozet_v2_kazanim`, `trg_ozet_v2_ileri_sarma`, `trg_ozet_v2_yanlis_cevap`, `trg_ozet_v2_oneri_kayip`.
-* **Sonuç:** Canlı DB'de 35 enstrümanın tamamı ✅ **VAR ve AKTİF**.
+**Doğrulama kaydı — 3 Eylül 2026:** T-Club tüketim, puan, soru, kategori, lig, mağaza ve ortak öğrenme aracı sözleşmelerine yönelik seçili otomatik testlerin **18 / 18'i başarılıdır**.
+
+### 3. Aşama: Depo Şema ve DDL Kaydı
+Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json` içindeki **31 Ağustos 2026 tarihli depo şema anlık görüntüsü** ile kaynak SQL sözleşmelerini ifade eder.
+
+* **Tüketim ve Puan Tabloları:** `izleme_kayitlari`, `kazanilan_puanlar`, `ileri_sarma_kayitlari`, `yanlis_cevap_kayitlari`, `soru_cevaplari`, `oneri_kayip_kayitlari`, `oneri_kayitlari`, `yayin_tekrar_kayitlari`.
+* **HBStore Tabloları:** `store_urunler`, `store_urun_firma_ayarlari`, `store_siparisler`, `store_puan_harcamalari`, `store_adresler`.
+* **Rapor, Lig ve İşlem RPC'leri:** `get_hb_ligi_haftalik_v2`, `get_hb_ligi_aylik_v2`, `get_hb_ligi_donemlik_v2`, `get_hb_ligi_yillik_v2`, `get_harcama_bakiyesi`, `get_oneri_listesi`, `store_siparis_olustur`, `store_siparis_iptal`, `store_teslim_aldim`.
 
 ---
 
@@ -92,123 +110,162 @@ HapBilgi, ilaç ve sağlık sektörüne özgü, video tabanlı ve kural-korumal�
 *Bölge Müdürleri Arası Yarışma ve Öğrenme Katmanı*
 
 ### 1. Aşama: Rol ve Görev Tanımları
-* **BM $\rightarrow$ BM Meydan Okuma (Challenge):**
-  * Aylık 3 gönderme kotası (`AYLIK_MAX_GONDERIM = 3`).
-  * Challenge gönderen BM, `sistem_ayarlari.cc_gonderme_puani` değerini kazanır; ayar yoksa 10 puan kullanılır (`cc_challenge_gonder` RPC).
-  * Karşı taraf izleyip soruları tamamlarsa alıcı video/soru puanı alır; gönderen `sistem_ayarlari.cc_referral_puani` değerini kazanır, ayar yoksa 10 puan kullanılır.
-  * Challenge için süre sonu veya süre aşımı kaybı yoktur; kayıt tamamlanana kadar bekler. Eski `son_tarih` alanı yalnız geriye dönük uyumluluk içindir ve `challenge_kaybi_tara` cron'u kapalıdır.
-  * C-Club Ligi (`/cc-ligi`) ve C-Club puanlarıyla HBStore alışverişi.
+* **BM $\rightarrow$ BM Challenge:** C-Club yalnız aktif ve aynı firmadaki BM kullanıcıları arasında çalışır. BM kendisine challenge gönderemez ve yalnız geçerli turda önce kendisinin tamamladığı Video, Podcast, Dijital Broşür veya Literatür aracını challenge'a dönüştürebilir. Yayın–araç bağı `yayin_id`, `arac_id` ve `arac_turu` ile korunur.
+* **Gönderim Sınırları:** Bir BM ayda en fazla üç challenge gönderir. Aynı gönderenden aynı alıcıya takvim ayında yalnız bir challenge gönderilebilir. Aynı öğrenme aracı aynı alıcıya aynı turda yeniden gönderilemez; aracı geçerli turda tamamlamış veya aynı araç için bekleyen challenge'ı bulunan alıcı seçilemez. İki BM'nin aynı ay birbirine karşılıklı challenge göndermesi serbesttir.
+* **Puan ve Tamamlama:** Challenge oluşturulunca gönderene `sistem_ayarlari.cc_gonderme_puani`, alıcı öğrenme aracını ve sorularını tamamlayınca gönderene bir kez `sistem_ayarlari.cc_referral_puani` yazılır; ayar bulunmazsa her iki değer için de 10 puan kullanılır. Alıcı uygun ilk tamamlamada içerik ve doğru cevap puanlarını kazanır; ileri sarma ve yanlış cevap ilgili kayıp kayıtlarını üretir. İlk izleme hariç, takvim ayı ile geçerli turun kesişimindeki ikinci temiz tam tekrarda bir kez Extra puan verilir.
+* **Süresiz Bekleme:** Challenge için süre sonu veya süre aşımı kaybı bulunmaz; kayıt tamamlanana kadar bekler. Tarihsel `son_tarih` alanı geriye dönük uyumluluk için korunur ve `challenge_kaybi_tara` cron'u kapalıdır.
+* **Soru Hakkı:** Soru kümesi izleme kimliğine sabitlenir. Tamamlamadan sonra sorular yanıtlanmadan akış terk edilir ve yeni oturum başlatılırsa önceki soru hakkı kapanır. Challenge'ın tamamlanma durumu ve referral puanı yalnız geçerli cevap akışıyla sonuçlandırılır.
+* **Lig ve Mağaza:** BM, C-Club Ligi'nde (`/cc-ligi`) yarışır ve C-Club harcanabilir puanını firma için HBStore açıksa mağazada kullanabilir.
 
 ### 2. Aşama: Kod Taraması ve Görev İlişki Matrisi
-* **Taranan Bileşenler:** `app/(panel)/challenge-club/`, `components/challenge-club/CcVideoOynatici.tsx`, `ChallengeGonderPaneli.tsx`, `app/(panel)/challenge-club/api/`, `lib/cc/`.
-* **Sessiz Hata Denetimi:** Bekleyen challenge varken kendi kendine izleme kilitli; referral puanının mükerrer yazımı `23505` ile engelli; soru indeksleri oturuma mühürlü.
-* **Sonuç:** ✅ **%100 SORUNSUZ**
+* **Challenge ve Katalog:** `app/(panel)/challenge-club/`, `components/challenge-club/CcVideoOynatici.tsx`, `lib/cclub/kayit.ts`, `lib/cclub/kotaKontrol.ts`, `lib/cclub/uygunAliciListesi.ts`, `lib/cclub/uygunVideoListesi.ts`.
+* **Tüketim ve Puan:** `app/(panel)/challenge-club/izle/api/`, `lib/cclub/izleme/`, `lib/cclub/puan/`, `lib/cclub/tekrarIzlemeKontrol.ts`.
+* **Güvenlik Kapıları:** Gönderici, alıcı, firma, modül, yayın, tur ve araç kimliği sunucuda doğrulanır. Challenge ile gönderme puanı `cc_challenge_gonder`; tamamlama ve cevaplar `cc_izleme_tamamla` ile `cc_cevaplari_kaydet` üzerinden atomik yürür. Mükerrer gönderim, cevap ve referral kayıtları yapısal olarak engellenir.
 
-### 3. Aşama: Canlı Veritabanı ve DDL Taraması (18 Enstrüman)
-* **Çekirdek Tablolar & View:** `challenge_kayitlari`, `cc_izleme_kayitlari`, `cc_kazanilan_puanlar`, `cc_ileri_sarma_kayitlari`, `cc_yanlis_cevap_kayitlari`, `cc_ligi_ozet`, `v_cc_challenge_listesi`.
-* **Aktif Trigger'lar:** `trg_cc_ozet_kazanim`, `trg_cc_ozet_ileri_sarma`, `trg_cc_ozet_yanlis_cevap`.
-* **Çekirdek RPC'ler:** `cc_challenge_gonder`, `cc_izleme_tamamla`, `cc_cevaplari_kaydet`, `_cc_ligi_aralik`.
-* **Sonuç:** Canlı DB'de 18 enstrümanın tamamı ✅ **VAR ve AKTİF**.
+**Doğrulama kaydı — 3 Eylül 2026:** C-Club challenge, tüketim, puan, soru, lig, yetki ve ortak öğrenme aracı sözleşmelerine yönelik seçili otomatik testlerin **18 / 18'i başarılıdır**.
+
+### 3. Aşama: Depo Şema ve DDL Kaydı
+Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json` içindeki **31 Ağustos 2026 tarihli depo şema anlık görüntüsü** ile kaynak SQL sözleşmelerini ifade eder.
+
+* **Çekirdek Tablolar ve Görünüm:** `challenge_kayitlari`, `cc_izleme_kayitlari`, `cc_kazanilan_puanlar`, `cc_ileri_sarma_kayitlari`, `cc_yanlis_cevap_kayitlari`, `cc_ligi_ozet`, `v_cc_challenge_listesi`.
+* **Çekirdek RPC'ler:** `cc_arac_kimligi_dogrula`, `cc_challenge_gonder`, `cc_izleme_tamamla`, `cc_cevaplari_kaydet`, `cc_challenge_tamamlaninca_bildirim_kapat`, `_cc_ligi_aralik` ve dönemsel `get_cc_ligi_*` ailesi.
 
 ---
 
-# 3. BÖLÜM: E-CLUB (Eczane Kulübü — Dış Müşteri Katmanı)
-*Eczacı ve Eczane Teknisyenleri Çok-Firmalı Tüketim, Takım Ligi ve Ödül Katmanı*
+# 3. BÖLÜM: E-CLUB (Eczane Kulübü)
+*Eczane Kullanıcı Katmanı — Çok Firmalı Öğrenme, Takım, Lig, Rapor ve Ödül Yapısı*
 
 ### 1. Aşama: Rol ve Görev Tanımları
-* **3 Temel Sütunlu E-Club Mimarisi:**
-  1. **E-Club Takımım (`/eclub/eczanelerim`):** UTT, takımına özel bir isim verir (`eclub_takim_adlari`), GLN ile resmi eczaneleri bağlar, eczacı ve teknisyenleri ekleyerek takım kadrosunu inşa eder ve video önerilerini yönetir.
-  2. **E-Club Ligi (`/eclub/ligi` — Büyük Şampiyona):** Firma genelindeki tüm UTT Takımlarının dönemlik yarıştığı lig tablosudur. En iyi 3 takım podyumu (1. Altın, 2. Gümüş, 3. Bronz), genel sıralama tablosu ve UTT'nin kendi takımının ("Benim Takımım") vurgulu sırasını sunar.
-  3. **E-Club Takım Raporlarım (`/eclub/raporlar`):** Takım içindeki eczacı ve teknisyenlerin iç karnesidir; kimin ne kadar izlediğini, ne kadar doğru cevap verdiğini ve takıma ne kadar puan kazandırdığını detaylandırır.
-* **4 Katmanlı Eczane Mimarisi:**
-  * `eclub_eczane_master` (Resmi GLN Havuzu) $\rightarrow$ `eclub_eczaneler` (Firma Eczanesi) $\rightarrow$ `eclub_eczane_firma` (Firma-UTT Bağı) $\rightarrow$ `eclub_kisi_eczane` (Kişi İlişkisi).
-* **Eczacı & Teknisyen Tüketimi:**
-  * Puanlı tüketim, UTT'nin kişiye gönderdiği `eclub_oneri_kayitlari` kaydına bağlıdır. Kişi `/eclub/panel` içinde önerilerini izler ve soruları çözer; süresi geçmiş öneriyi yeniden izleyebilir ancak puan ve soru hakkı kazanmaz.
-  * İleri sarma oransal puan kaybı üretir (firma bakiyesinden düşer); yanlış cevap cezasızdır.
-  * **E-Club Store & Çok Firmalı Puan Birleştirme:** Farklı firmalardan kazanılan puanlar tek bir sepette birleştirilebilir (`get_eclub_store_firma_bakiye`); puanlar en yüksek bakiyeli firmadan kademeli olarak düşülür (`eclub_store_siparis_firma_puan`).
+* **E-Club Kullanıcıları:** `eczaci`, `ikinci_eczaci`, `yardimci_eczaci` ve `eczane_teknisyeni` ayrı unvanlardır. İlk üç unvan yayın hedeflemesinde `eczaci`, teknisyen ise `eczane_teknisyeni` hedef grubuna bağlanır. Eczanede bir aktif ana `eczaci` kaydı bulunabilir; ikinci ve yardımcı eczacı ayrı unvanlarla yaşar.
+* **E-Club Takımım (`/eclub/eczanelerim`):** UTT/KD_UTT, takımına ad verir (`eclub_takim_adlari`), onaylı GLN üzerinden eczaneleri kendi listesine bağlar, eczane kullanıcılarını yönetir ve öğrenme aracı önerilerini oluşturur.
+* **E-Club Ligi (`/eclub/ligi`):** Firma genelindeki UTT takımlarının dönemsel yarışmasını, ilk üç takım podyumunu, genel sıralamayı ve kullanıcının kendi takımını gösterir.
+* **E-Club Takım Raporları (`/eclub/raporlar`):** Eczane ve kişi düzeyinde gönderim, tamamlama, doğru cevap ve puan sonuçlarını gösterir. UTT, BM, TM, üretici ve yönetici rollerinin lig, rapor ve sipariş kapsamı kendi firma–takım–bölge hiyerarşilerine göre çözülür.
+* **Kurumsal Eczane ve Liste Üyeliği:** `eclub_eczane_master` onaylı GLN kaynağıdır; `eclub_eczaneler` platform eczanesini, `eclub_eczane_firma` firma–eczane kurumsal bağını tutar. Bu bağdan `eclub_utt_eczane` ile UTT'nin kişisel liste üyeliği, `eclub_kisi_eczane` ile eczane kullanıcısının eczane ilişkisi ayrılır. Aynı firmanın birden fazla UTT'si aynı kurumsal eczane bağında ayrı üyelikler kurabilir. Bir UTT'nin listeden çıkması diğer UTT üyeliklerini bozmaz; son aktif UTT de çıktığında firma–eczane bağı pasife alınır.
+* **Öneri ve Tüketim:** UTT, kendi firma ve takım kapsamındaki Video, Podcast, Dijital Broşür veya Literatür aracını bir veya birden fazla eczane kullanıcısına önerir. Öneri `yayin_id`, `arac_id` ve `arac_turu` kimlikleriyle saklanır. Önerinin puanlı ve sorulu geçerlilik süresi ayarlanabilir; varsayılan 7 gündür. Aynı UTT'nin aynı kişiye aynı aracı yeniden göndermesi için önceki önerinin bitişinden sonra ayarlanabilir bir süre beklenir; varsayılan 21 gündür. Süresi geçmiş öneri izlenebilir ancak puan ve soru hakkı vermez.
+* **Puan Kuralları:** Aktif öneride uygun tamamlama ve doğru cevaplar puan kazandırır. İleri sarma, atlanan sürenin araç puanındaki oransal karşılığını ilgili firma bakiyesinden düşürür; yanlış cevap kayıp üretmez. Soru kümesi izleme kimliğine sabitlenir ve tamamlamadan sonra terk edilen soru hakkı yeni oturumda yeniden açılmaz.
+* **E-Club Store:** Kişinin aktif firma bağlarından kazandığı puanlar firma bazında izlenir ve uygun ürün için tek siparişte birleştirilebilir. Ürün görünürlüğü global katalog ile firma ayarlarının kesişimidir. Sipariş yalnız aktif E-Club üyeliğiyle açılır; puanlar ürüne izin veren firmalar arasında en yüksek bakiyeden başlayarak kademeli düşülür ve `eclub_store_siparis_firma_puan` ile kaynak firmalara dağıtılır.
 
 ### 2. Aşama: Kod Taraması ve Görev İlişki Matrisi
-* **Taranan Bileşenler:** `app/(panel)/eclub/`, `lib/eclub/`, `lib/eclub/store/eclubStoreSiparis.ts`, `scripts/sql/eclub_store_firma_urun_gorunurlugu.sql`.
-* **Sessiz Hata Denetimi:** Tek eczanede tek yetkili eczacı kuralı; atomik öneri RPC'si (`eclub_oneri_atomik_kaydet`); store görünürlük ayarları (`eclub_store_urun_firma_ayarlari`).
-* **Sonuç:** ✅ **%100 SORUNSUZ**
+* **Eczane, UTT ve Kişi Bağları:** `app/(panel)/eclub/listem/`, `lib/eclub/uttEczane.ts`, `lib/eclub/kisiErisim.ts`, `eclub_utt_eczaneye_bagla`, `eclub_utt_eczaneden_cikar`, `eclub_yeni_kisi_provizyonu`, `eclub_mevcut_kisi_provizyonu`.
+* **Öneri ve Tüketim:** `app/(panel)/eclub/oneriler/`, `app/(panel)/eclub/videolarim/`, `app/(panel)/eclub/panel/`, `lib/eclub/oneriLimit.ts`, `lib/eclub/oneriKapsam.ts`, `lib/eclub/izlemeKurali.ts`, `lib/eclub/aktifYayinYetkisi.ts`.
+* **Lig, Rapor ve Sipariş:** `app/(panel)/eclub/ligi/`, `app/(panel)/eclub/raporlar/`, `app/(panel)/eclub/siparisler/`, `lib/eclub/rapor.ts`, `lib/eclub/yonetimKapsami.ts`.
+* **E-Club Store:** `app/(panel)/eclub/store/`, `lib/eclub/store/`, `scripts/sql/eclub_store_firma_urun_gorunurlugu.sql`, `scripts/sql/eclub_store_aktif_uyelik_siparis_kapisi.sql`.
+* **Güvenlik Kapıları:** UTT liste üyeliği, kişi–eczane bağı, firma modül bayrakları, yayın kapsamı, araç kimliği, öneri süresi ve aktif üyelik sunucuda doğrulanır. Öneri, tamamlama, cevap ve sipariş yazımları korumalı RPC'lerden geçer.
 
-### 3. Aşama: Canlı Veritabanı ve DDL Taraması (18 Enstrüman)
-* **Tablolar & RPC'ler:** `eclub_eczane_master`, `eclub_eczaneler`, `eclub_eczane_firma`, `eclub_kisiler`, `eclub_kisi_eczane`, `eclub_oneri_kayitlari`, `eclub_izleme_kayitlari`, `eclub_kazanilan_puanlar`, `eclub_ileri_sarma_kayitlari`, `eclub_store_*`, `eclub_oneri_atomik_kaydet`, `eclub_store_siparis_olustur`.
-* **Sonuç:** Canlı DB'de 18 enstrümanın tamamı ✅ **VAR ve AKTİF**.
+**Doğrulama kaydı — 3 Eylül 2026:** E-Club unvan, üyelik, çoklu UTT, öneri, tüketim, lig, rapor, Store ve ortak öğrenme aracı sözleşmelerine yönelik seçili otomatik testlerin **38 / 38'i başarılıdır**.
+
+### 3. Aşama: Depo Şema ve DDL Kaydı
+Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json` içindeki **31 Ağustos 2026 tarihli depo şema anlık görüntüsü** ile kaynak SQL sözleşmelerini ifade eder.
+
+* **Eczane ve Üyelik Tabloları:** `eclub_eczane_master`, `eclub_eczaneler`, `eclub_eczane_firma`, `eclub_utt_eczane`, `eclub_kisiler`, `eclub_kisi_eczane`, `eclub_takim_adlari`.
+* **Öneri, Tüketim ve Puan Tabloları:** `eclub_oneri_kayitlari`, `eclub_izleme_kayitlari`, `eclub_kazanilan_puanlar`, `eclub_ileri_sarma_kayitlari`, `eclub_dogru_cevap_kayitlari`, `eclub_yanlis_cevap_kayitlari`, `eclub_oneri_kayip_kayitlari`, `eclub_utt_puanlari`.
+* **E-Club Store Tabloları:** `eclub_store_urunler`, `eclub_store_urun_firma_ayarlari`, `eclub_store_siparisler`, `eclub_store_siparis_firma_puan`, `eclub_store_adresler`.
+* **Çekirdek RPC'ler:** `eclub_utt_eczaneye_bagla`, `eclub_utt_eczaneden_cikar`, `eclub_oneri_atomik_kaydet`, `eclub_izleme_tamamla`, `eclub_cevaplari_kaydet`, `eclub_ileri_sarma_kaydet`, `get_eclub_utt_rapor`, dönemsel `get_eclub_ligi_*` ailesi, `get_eclub_store_firma_bakiye`, `eclub_store_siparis_olustur`, `eclub_store_siparis_iptal`, `eclub_store_teslim_aldim`.
 
 ---
 
-# 4. BÖLÜM: ECZANEM (B2C Tüketici, OTC Dağıtım ve Kasa)
-*Üçüncü Müşteri Katmanı — Tüketici Sağlığı, Video Dağıtımı ve Kasa İndirimi*
+# 4. BÖLÜM: ECZANEM (Üye Öğrenme, Puan ve Eczane İşlem Katmanı)
+*Eczanem Uygulaması Üyeleri İçin Öğrenme İçeriği ve Eczane Bağlantılı Platform İşlemleri*
 
 ### 1. Aşama: Rol ve Görev Tanımları
-* **Kimlik ve Giriş:** Müşteri tek kullanımlık SMS linkiyle değil; telefon/e-posta + şifre ile doğrudan `/eczanem` portalına giriş yapar (`eczanem_musteriler`).
-* **İki Kademeli Video Dağıtımı:**
-  1. **UTT $\rightarrow$ Eczane:** UTT, asgari 10 aktif üye eşiğini geçen bağlı eczanelerine OTC videosu dağıtır (`eczanem_utt_eczaneye_gonder` RPC).
-  2. **Eczane $\rightarrow$ Müşteri:** Eczacı, gelen videoyu kendi aktif üyelerine gönderir (`eczanem_musterilere_video_gonder` RPC); müşteriye Web Push/E-posta iletilir ve portal rafı açılır.
-* **Kayıpsız Model & Dörtlü Kilit:**
-  * İleri sarma kapalıdır; oynatıcı kullanıcıyı son doğrulanmış konuma döndürür. Bu nedenle ileri sarma kaybı oluşmaz. Yanlış cevap kaybı da yoktur.
-  * Puan `musteri_id + eczane_id + firma_id + urun_id` dörtlü kilidiyle ve 180 gün FIFO kuralıyla saklanır (`eczanem_puan_kayitlari`).
-* **Kasa Mutabakatı:** Kasada barkod okutulduğunda indirim hesaplanır (`/api/siparis/hesap`), sipariş açılır; onaylandığında puan düşülür. İptal edilirse puan serbest kalır.
+* **Kimlik ve Giriş:** Eczanem uygulaması üyesi `eczanem_musteriler` kimlik düzleminde yaşar ve `/login` üzerinden e-posta veya cep telefonu ile şifresini kullanarak giriş yapar. SMS bağlantısıyla giriş kullanılmaz; başarılı giriş üyeyi `/eczanem` alanına yönlendirir.
+* **Eczane Bazlı Üyelik:** Aynı kişi birden fazla eczaneye ayrı `eczanem_uyelikler` bağlarıyla üye olabilir. Öğrenme, ilerleme, soru ve yeni puan kazanımı ilgili eczanedeki aktif üyeliğe bağlıdır. Eczane üyeliği pasife alındığında yeni öğrenme ve puan kazanımı durur; mevcut puanlar varsayılan 30 günlük geçiş süresinde görülebilir ve kullanılabilir, süre sonunda kullanım da kapanır.
+* **İki Kademeli Öğrenme İçeriği Dağıtımı:** UTT/KD_UTT, kendi firma ve takım kapsamındaki Eczanem hedefli Video, Podcast, Dijital Broşür veya Literatür aracını yalnız kişisel listesinde bulunan ve aktif üye eşiğini karşılayan eczaneye gönderebilir. Eşik `sistem_ayarlari.eczanem_aktif_uye_esigi` üzerinden belirlenir; varsayılan 10'dur. Yetkili eczane personeli yalnız eczaneye ulaşmış içeriği o eczanenin aktif Eczanem uygulaması üyelerine dağıtabilir. Aynı yayın–eczane ve yayın–üye–eczane birleşimleri mükerrer gönderimi yapısal olarak engeller.
+* **Bildirim ve İçerik Rafı:** Başarılı dağıtım, tarayıcı bildirim izni bulunan üyeye Web Push ile bildirilebilir; SMS veya e-posta bildirim kanalı kullanılmaz. Üye içerikleri yeni, yarım bırakılan, son tamamlanan, en çok beğenilen, favorilenen ve izlenen raflarında görür. Yayın–araç bağı `yayin_id`, `arac_id` ve `arac_turu` kimlikleriyle korunur.
+* **Kayıpsız Öğrenme Modeli:** İleri sarma kapalıdır ve oynatıcı kullanıcıyı son doğrulanmış konuma döndürür; ileri sarma kaybı oluşmaz. Yanlış cevap puan kaybı üretmez, doğru cevaplar ilgili soru puanını kazandırabilir. Soru kümesi izleme kimliğine sabitlenir; tamamlamadan sonra sorular yanıtlanmadan akış terk edilir ve yeni oturum başlatılırsa önceki soru hakkı yeniden açılamaz.
+* **Puan Kaynağı ve Ömrü:** Puan `musteri_id + eczane_id + firma_id + urun_id` bağıyla kaynağından ayrılmadan saklanır. Puan ömrü `sistem_ayarlari.eczanem_puan_omru_gun` üzerinden belirlenir; varsayılan 180 gündür. Kullanım, geçerli puan kayıtlarından FIFO sırasıyla yapılır.
+* **Barkodlu Talep ve Eczane Onayı:** Üye barkod üzerinden bir indirim talebi oluşturur; talep aşamasında puan düşmez ve geçerli tarifenin anlık görüntüsü siparişe yazılır. Yetkili eczane personelinin onayında puan atomik FIFO işlemiyle düşer; ret veya üyenin vazgeçmesi puan düşürmez. HapBilgi puan veya indirimi tek taraflı belirlemez; yetkili kullanıcıların yayın ve tarife kapsamında girdiği parametreleri kaydeder ve hesaplar. HapBilgi, eczane ile Eczanem uygulaması üyesi arasındaki ticari ilişkinin tarafı değildir.
+* **Kimlik Geçişi ve Silme:** Eczanem uygulaması üyesinin E-Club unvanına alınması çift kimlik oluşturmayan kontrollü karar akışıyla ve aynı giriş hesabı korunarak yapılır. Üye, şifresini yeniden doğrulayarak kendi uygulama ve Auth kimliğini `eczanem_musteri_kendini_tam_sil` üzerinden atomik olarak silebilir.
 
 ### 2. Aşama: Kod Taraması ve Görev İlişki Matrisi
-* **Taranan Bileşenler:** `app/eczanem/`, `lib/eczanem/gonderim.ts`, `lib/eczanem/kasa.ts`, `lib/eczanem/kazanim.ts`, `lib/eczanem/silme.ts`.
-* **Sessiz Hata Denetimi:** Aktif üye eşiği doğrulaması; KVKK müşteri tam silme RPC'si (`eczanem_musteri_kendini_tam_sil`); E-Club'a geçiş karar motoru (`eczanem_eclub_gecis_karar_ver`).
-* **Sonuç:** ✅ **%100 SORUNSUZ**
+* **Üye Yüzeyi ve Kimlik:** `app/login/`, `app/eczanem/`, `app/eczanem/api/giris/sifre/route.ts`, `lib/eczanem/oturum.ts`, `lib/eczanem/telefon.ts`, `lib/eczanem/aktifUyelik.ts`, `lib/eczanem/erisim.ts`.
+* **Dağıtım ve Öğrenme:** `app/(panel)/eczanem/utt/`, `app/(panel)/eczanem/eczane/`, `app/eczanem/api/izleme/`, `lib/eczanem/gonderim.ts`, `components/ogrenme-araci/`.
+* **Puan, Tarife ve İşlem:** `app/eczanem/api/puanlar/`, `app/eczanem/api/siparis/`, `lib/eczanem/kasa.ts`, `lib/eczanem/tarife.ts`, `lib/eczanem/dokum.ts`.
+* **Geçiş ve Silme:** `app/eczanem/api/eclub-gecisi/route.ts`, `app/eczanem/api/hesabimi-sil/route.ts`, `lib/eczanem/silme.ts`, `eczanem_eclub_gecis_karar_ver`, `eczanem_musteri_kendini_tam_sil`.
+* **Güvenlik Kapıları:** Üye kimliği, eczane üyeliği, firma modül bayrağı, UTT liste bağı, yayın kapsamı, araç kimliği, aktif üye eşiği, tarife ve sipariş sahipliği sunucuda yeniden doğrulanır. Dağıtım, tamamlama, cevap, üyelik ve sipariş kararları korumalı RPC'lerden geçer.
 
-### 3. Aşama: Canlı Veritabanı ve DDL Taraması (10 Enstrüman)
-* **Tablolar:** `eczanem_musteriler`, `eczanem_uyelikler`, `eczanem_eczane_gonderimleri`, `eczanem_gonderimler`, `eczanem_izleme_kayitlari`, `eczanem_puan_kayitlari`, `eczanem_siparisler`.
-* **Çekirdek RPC'ler:** `eczanem_utt_eczaneye_gonder`, `eczanem_musterilere_video_gonder`, `eczanem_izleme_tamamla`, `eczanem_cevaplari_kaydet`, `eczanem_musteri_kendini_tam_sil`, `eczanem_eclub_gecis_karar_ver`.
-* **Sonuç:** Canlı DB'de 10 enstrümanın tamamı ✅ **VAR ve AKTİF**.
+**Doğrulama kaydı — 3 Eylül 2026:** Eczanem kimlik, çoklu üyelik, dağıtım, tüketim, puan, tarife, sipariş, kontrollü geçiş, hesap silme ve ortak öğrenme aracı sözleşmelerine yönelik seçili otomatik testlerin **41 / 41'i başarılıdır**.
+
+### 3. Aşama: Depo Şema ve DDL Kaydı
+Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json` içindeki **31 Ağustos 2026 tarihli depo şema anlık görüntüsü** ile kaynak SQL sözleşmelerini ifade eder.
+
+* **Kimlik ve Üyelik Tabloları:** `eczanem_musteriler`, `eczanem_uyelikler`, `eczanem_silinen_musteriler`, `eczanem_personel_islemleri`.
+* **Dağıtım ve Tüketim Tabloları:** `eczanem_eczane_gonderimleri`, `eczanem_gonderimler`, `eczanem_izleme_kayitlari`, `eczanem_cevap_kayitlari`, `eczanem_video_begeniler`, `eczanem_video_favoriler`.
+* **Puan ve İşlem Tabloları:** `eczanem_puan_kayitlari`, `eczanem_harcama_kayitlari`, `eczanem_siparisler`, `eczanem_urun_tarifeleri`.
+* **Kontrollü Geçiş Tabloları:** `eczanem_eclub_gecis_talepleri`, `eczanem_eclub_gecis_kayitlari`, `eczanem_eclub_puan_kapanislari`.
+* **Dağıtım ve Tüketim RPC'leri:** `eczanem_utt_eczaneye_gonder`, `eczanem_musterilere_video_gonder`, `eczanem_gonderim_arac_kimligi_dogrula`, `eczanem_izleme_aktif_uyelik_kapisi`, `eczanem_izleme_tamamla`, `eczanem_cevaplari_kaydet`.
+* **Üyelik, İşlem ve Kimlik RPC'leri:** `eczanem_musteri_bagla_atomik`, `eczanem_musteri_durum_degistir`, `eczanem_uyelik_listeden_sil`, `eczanem_siparis_personel_islemi`, `eczanem_eclub_gecis_talebi_olustur`, `eczanem_eclub_gecis_karar_ver`, `eczanem_musteri_kendini_tam_sil`.
 
 ---
 
 # 5. BÖLÜM: ÜRETİM & YÖNETİM OMURGASI
-*İçerik Fabrikası, Çoklu İÜ Görev Modeli, Yayın Yönetimi ve Üst Yönetici Raporları*
+*İlk kayıt: 24 Ağustos 2026 | Güncelleme: 3 Eylül 2026 | Kapsam: İçerik Fabrikası, Dört Öğrenme Aracı, Çoklu İÜ Görev Modeli, Yayın Yönetimi ve Üretim Raporları*
 
-### 1. Aşama: Rol ve Görev Tanımları
-* **13 Üretici Rolün Yetenek Profilleri (`lib/uretici/yetenekler.ts`):**
-  * **Ürün Ailesi (`pm`, `jr_pm`, `kd_pm`):** Takım zorunlu, `urun_egitimi` açar; ürün zorunlu, teknik tercihli; Eczanem OTC talebi açmaya tek yetkili aile (`ECZANEM_TALEP_ACAN_ROLLER`).
-  * **Medikal Ailesi (`med_md`):** Firma seviyesi, `medikal_egitim` ve `urun_medikal_egitim` açar.
-  * **Eğitim Ailesi (`egt_*`):** Firma seviyesi, `satis_teknikleri` (teknik zorunlu) ve `yonetim_egitimi` açar.
-  * **İK Ailesi (`ik_*`):** Firma seviyesi, `ik_egitimi` ve `yonetim_egitimi` açar.
-* **4 Üretim Varyantı:** V1 (Tam Üretim), V2 (Hazır Video), V3 (Hazır Soru Seti), V4 (İkisi Hazır).
-* **Çoklu İÜ Görev Durum Makinesi:** `atama_bekliyor` $\rightarrow$ `hazirlaniyor` $\rightarrow$ `inceleme_bekliyor` $\rightarrow$ `revizyon_bekliyor` $\rightarrow$ `tamamlandi` / `iptal`. Yük dengeli otomatik atama (`uretim_iu_adayi_sec`).
-* **Senaryo Canlı Diff & 2 Revizyon Sınırı:** Silinenler üstü çizili, eklenenler kırmızı diff görünümü (`SenaryoDuzeltmeEditoru`); maksimum 2 revizyon hakkı; zorunlu revizyon notu.
-* **Bunny CDN TUS Vezne Modeli:** API anahtarı gizli; sunucu imzası (`sha256`); doğrudan CDN'e yükleme; 5 dk tavanlı encode takibi; yetim video temizliği (`bunny-yukleme-iptal`).
-* **Yayın Kapısı & Puanlama:** Video ve tüm soruların puan zorunluluğu; Saha için Extra puan (5-10); E-Club ve Eczanem için Extra puan yasağı; Eczanem için Barkod+Karşılık zorunluluğu; Tur-1 açılışı; `planlandi` durumu ve pg_cron aktivasyonu (her sabah 07:00 TR).
+### 1. Aşama: Rol, Talep ve Görev Tanımları
+* **13 Üretici Rolünün Yetenek Profilleri (`lib/uretici/yetenekler.ts`):**
+  * **Ürün Ailesi (`pm`, `jr_pm`, `kd_pm`):** Takım zorunludur; `urun_egitimi` açar, ürün zorunlu ve teknik tercihlidir. Eczanem hedefli ürün talebi açabilen tek üretici ailesidir (`ECZANEM_TALEP_ACAN_ROLLER`).
+  * **Medikal Ailesi (`med_md`):** Firma seviyesindedir; `medikal_egitim` ve `urun_medikal_egitim` açar.
+  * **Eğitim Ailesi (`egt_*`):** Firma seviyesindedir; `satis_teknikleri` ve `yonetim_egitimi` açar. Satış teknikleri talebinde teknik zorunludur.
+  * **İK Ailesi (`ik_*`):** Firma seviyesindedir; `ik_egitimi` ve `yonetim_egitimi` açar; E-Club hedefli talep oluşturamaz.
+* **Talep Sahipliği ve Hedef Sözleşmesi:** Her üretici yalnız kendi açtığı talepleri görür. Talebe bağlanan ürün ve teknik üreticinin firmasına ait olmalıdır. Hedef kitle `utt`, `bm`, `eczaci`, `eczane_teknisyeni` veya `eczanem` değerlerinden biridir; yalnız `eczaci` ile `eczane_teknisyeni` birlikte seçilebilir. Talep türünden türetilen içerik türü ile seçilen öğrenme aracı türü talep oluşturulduğunda sabitlenir.
+* **Öğrenme Araçları:** Üretim omurgası **Video** (`video`), **Podcast** (`podcast`), **Dijital Broşür** (`gorsel`) ve **Literatür** (`flip_pdf`) araçlarını destekler. Her araç ayrı özellik bayrağıyla açılıp kapatılabilir. Tarihsel `video` aşaması ve `hazir_video` alanı ortak üretim anahtarı olarak korunur; kullanıcı arayüzünde seçilen aracın gerçek adı gösterilir.
+* **4 Üretim Varyantı:**
 
-### 2. Aşama: Kod Taraması (7 Bağımsız Operasyonel Tablo)
-1. **Talep Yönetimi & Form Kısıtları:** `app/(panel)/talepler/api/route.ts`, `lib/uretici/yetenekler.ts` $\rightarrow$ ✅ **SORUNSUZ**
-2. **Çoklu İÜ Görev Dağıtımı & Adaylık Havuzu:** `lib/uretim/rpc.ts`, `uretim_talep_ilk_gorevini_ac` $\rightarrow$ ✅ **SORUNSUZ**
-3. **Senaryo Yazımı & Canlı Görsel Diff:** `components/SenaryoDuzeltmeEditoru.tsx`, `uretim_uretici_karar_ver` $\rightarrow$ ✅ **SORUNSUZ**
-4. **Video İşleme & Bunny TUS Vezne:** `lib/video/bunnyYukleme.ts`, `bunny-durum/route.ts`, `bunny-yukleme-iptal` $\rightarrow$ ✅ **SORUNSUZ**
-5. **Soru Seti Taslağı & İçe Aktarma:** `lib/soru/taslak.ts`, `components/SoruIceAktar.tsx`, `uretim_soru_seti_dogrula` $\rightarrow$ ✅ **SORUNSUZ**
-6. **Yayın Yönetimi & Tur Döngüsü:** `app/(panel)/yayin-yonetimi/api/yayinlar/route.ts`, `scripts/sql/yayin_aktivasyon.sql` $\rightarrow$ ✅ **SORUNSUZ**
-7. **Üst Yönetici Konsolide Raporları:** `app/(panel)/raporlar/api/yonetici/`, `get_yonetici_hiyerarsi_v2` $\rightarrow$ ✅ **SORUNSUZ**
+| Varyant | Hazır Gelen | İÜ Görev Zinciri |
+|---|---|---|
+| **V1 — Tam Üretim** | Yok | Senaryo $\rightarrow$ seçilen öğrenme aracı $\rightarrow$ soru seti |
+| **V2 — Hazır Öğrenme Aracı** | Seçilen öğrenme aracı | Soru seti |
+| **V3 — Hazır Soru Seti** | Soru seti | Senaryo $\rightarrow$ seçilen öğrenme aracı |
+| **V4 — İkisi Hazır** | Seçilen öğrenme aracı ve soru seti | İÜ görevi açılmaz; yayın yönetimine geçilir |
 
-### 3. Aşama: Canlı Veritabanı ve DDL Taraması (27 Enstrüman)
-* **9 Çekirdek Tablo:** `talepler`, `senaryolar`, `senaryo_durumu`, `videolar`, `video_durumu`, `video_puanlari`, `soru_setleri`, `soru_seti_durumu`, `soru_seti_puanlari` $\rightarrow$ ✅ **VAR**
-* **4 Görev & İdempotency Tablosu:** `uretim_gorevleri`, `iu_urun_atamalari`, `iu_genel_atamalari`, `uretim_islem_kayitlari` $\rightarrow$ ✅ **VAR**
-* **2 Yayın & Tur Tablosu:** `yayin_yonetimi`, `yayin_tekrar_kayitlari` $\rightarrow$ ✅ **VAR**
-* **View'lar:** `v_yayin_detay`, `v_uretici_icerik_takip` $\rightarrow$ ✅ **VAR** *(Not: `v_uretim_detay` doğrudan talep_id bağıyla refactor edilip bilinçli kaldırılmıştır).*
-* **9 Çekirdek RPC:** `uretim_talep_ilk_gorevini_ac`, `uretim_iu_adayi_sec`, `uretim_gorev_devret`, `uretim_senaryo_teslim_et`, `uretim_video_teslim_et`, `uretim_soru_seti_teslim_et`, `uretim_uretici_karar_ver`, `yayin_planlananlari_aktive`, `get_yonetici_hiyerarsi_v2` $\rightarrow$ ✅ **VAR ve AKTİF**.
+* **Atomik Talep Oluşturma:** Talep ve varyanta uygun ilk görev `talep_atomik_olustur` ile aynı işlem içinde oluşturulur. Aynı istemci işlem anahtarının tekrarı mükerrer talep, görev veya işlem kaydı üretmez; aynı anahtarla değiştirilmiş talep verisi kabul edilmez.
+* **Çoklu İÜ Görev Modeli:** Görev durumları `atama_bekliyor` $\rightarrow$ `hazirlaniyor` $\rightarrow$ `inceleme_bekliyor` $\rightarrow$ `revizyon_bekliyor` $\rightarrow$ `tamamlandi` / `iptal` akışındadır. Atama kaynağı `otomatik`, `manuel`, `devir` veya `gecis` olabilir. Bir talepte sonraki görev açılmadan önce mevcut aktif görev kapatılır; otomatik aday seçimini `uretim_iu_adayi_sec` yürütür.
+* **Revizyon ve Sürüm Güvenliği:** Senaryo fark görünümü `SenaryoDuzeltmeEditoru` ile korunur. Senaryo ve seçilen öğrenme aracı için en fazla iki revizyon istenebilir ve revizyon notu zorunludur. Karar isteği incelenen görev sürümünü taşır; güncelliğini yitirmiş ekrandan gönderilen karar yeni görev veya durum kaydı oluşturmadan reddedilir.
+* **Medya Yükleme ve Kurtarma:** Video, Bunny Stream TUS hattıyla doğrudan yüklenir ve beş dakikalık işleme takibi kullanır. Podcast, Dijital Broşür ve Literatür dosyaları süreli imza üzerinden Bunny Storage hattına aktarılır; uzantı, MIME, boyut, gerçek dosya imzası, SHA-256 özeti ve araca özgü metadata doğrulanır. Kesilen yükleme aynı kayıt üzerinden yalnız eksik parçalarla sürdürülebilir veya dış depolama nesneleriyle geçici veritabanı kayıtları birlikte temizlenerek iptal edilebilir.
+* **Yayın Kapısı ve Puanlama:** Öğrenme aracı onaylanmadan, metadata doğrulaması tamamlanmadan, araç puanı ve bütün soru puanları tanımlanmadan yayın açılamaz. Saha yayınında Extra puan 5–10 arasındadır; E-Club ve Eczanem yayınında Extra puan bulunmaz. Eczanem hedefinde barkod, Karşılık ve satış fiyatı zorunludur. Hemen yayın Tur-1'i açar; ileri tarihli yayın `planlandi` durumunda bekler. Depodaki pg_cron sözleşmesi tarihi gelen yayınları Türkiye saatiyle 07.00'de, güvenlik tekrarı olarak 07.10'da aktive eder.
+
+### 2. Aşama: Operasyonel Kod ve İş Akışı Kaydı
+1. **Rol, Talep ve Hedef Doğrulaması:** `app/(panel)/talepler/api/route.ts`, `lib/uretici/yetenekler.ts`, `lib/utils/roller.ts`, `lib/uretici/talepKaynakSahipligi.ts`.
+2. **Atomik Talep Oluşturma:** `talep_atomik_olustur`, `lib/uretim/parametreKontrol.ts` ve istemci işlem anahtarıyla talep–ilk görev bütünlüğü.
+3. **İÜ Atama ve Görev Yönetimi:** `lib/uretim/gorevSozlesmesi.ts`, `app/(panel)/uretim/api/gorevler/route.ts`, `uretim_talep_ilk_gorevini_ac`, `uretim_iu_adayi_sec`, `uretim_gorev_devret`.
+4. **Dört Araçlı Üretim ve Revizyon:** `lib/ogrenmeAraci/uretimAkisi.ts`, `app/(panel)/uretim/gorevler/[gorev_id]/page.tsx`, araç türüne özgü doğrulama ve karar RPC'leri ile ortak sürüm kapısı.
+5. **Yükleme, Kurtarma ve Temizlik:** `lib/video/bunnyYukleme.ts`, `lib/ogrenmeAraci/bunnyStorage.ts`, `lib/ogrenmeAraci/bunnyYuklemeIstemci.ts`, `app/api/ogrenme-araclari/` ve yarım yükleme temizleme akışı.
+6. **Soru Seti Üretimi:** `lib/soru/taslak.ts`, `components/SoruIceAktar.tsx`, `uretim_soru_seti_dogrula`, soru seti büyüklüğü ve hazır set parametre kilidi.
+7. **Yayın Yönetimi:** `app/(panel)/yayin-yonetimi/`, `yayin_arac_kapisini_dogrula`, yayın öncesi kilitli silme zinciri, Tur-1 ve `scripts/sql/yayin_aktivasyon.sql`.
+8. **Üretim ve Yönetici Raporları:** `app/(panel)/raporlar/api/uretim/route.ts`, `app/(panel)/raporlar/api/yonetici/route.ts`, `lib/rapor/uretim/getUretimData.ts`, `lib/rapor/paylasilan/aracTuruDagilimi.ts`. Üretim raporu kişisel talep listesi değil, kullanıcının yetkili olduğu firmanın üretim portföyüdür; eğitim türü, varyant ve öğrenme aracı dağılımları ile tüketim olaylarını ayrı eksenlerde gösterir.
+
+**Doğrulama kaydı — 3 Eylül 2026:** Bölüm 5 kapsamındaki rol, hedef, talep, varyant, görev, revizyon, sürüm, yükleme, yayın, silme, raporlama ve veri sözleşmelerine yönelik seçili otomatik testlerin **87 / 87'si başarılıdır**.
+
+### 3. Aşama: Depo Şema ve DDL Kaydı
+Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json` içindeki **31 Ağustos 2026 tarihli depo şema anlık görüntüsü** ile kaynak SQL sözleşmelerini ifade eder.
+
+* **Talep ve Görev Omurgası:** `talepler`, `uretim_gorevleri`, `uretim_gorev_atama_gecmisi`, `uretim_islem_kayitlari`, `iu_urun_atamalari`, `iu_genel_atamalari`.
+* **Sürümlü İçerik Kayıtları:** `senaryolar`, `senaryo_durumu`, `soru_setleri`, `soru_seti_durumu`, `soru_seti_puanlari`.
+* **Ortak Öğrenme Aracı Kayıtları:** `ogrenme_araclari`, `ogrenme_araci_durumu`, `ogrenme_araci_puanlari`, `ogrenme_araci_video_yukleme_oturumlari`, `ogrenme_araci_depolama_temizleme_kuyrugu`.
+* **Video Uyumluluk Kayıtları:** `videolar`, `video_durumu`, `video_puanlari`. Ortak öğrenme aracı modeli mevcut video zincirini kaldırmadan ve kimlikleri eşleyerek çalışır.
+* **Yayın ve Tur Kayıtları:** `yayin_yonetimi`, `yayin_tekrar_kayitlari`.
+* **Üretim ve Rapor Görünümleri:** `v_yayin_detay`, `v_uretici_icerik_takip`, `v_rapor_arac_turu_ozet`, `v_rapor_arac_turu_olaylari`. `v_uretim_detay` kaldırılmıştır; üretim ilişkileri doğrudan `talep_id` üzerinden kurulur.
+* **Talep ve Görev RPC Ailesi:** `talep_atomik_olustur`, `uretim_talep_ilk_gorevini_ac`, `uretim_iu_adayi_sec`, `uretim_gorev_devret`, `uretim_senaryo_teslim_et`, `uretim_video_teslim_et`, `uretim_soru_seti_teslim_et`, `uretim_uretici_karar_ver`, `uretim_karar_surum_kapisi`.
+* **Araç Türüne Özgü Üretim RPC'leri:** `uretim_podcast_dogrula`, `uretim_podcast_uretici_karar_ver`, `uretim_podcast_soru_zinciri_ac`, `uretim_gorsel_dogrula`, `uretim_gorsel_uretici_karar_ver`, `uretim_flip_pdf_dogrula`, `uretim_flip_pdf_uretici_karar_ver`.
+* **Yükleme ve Yayın RPC Ailesi:** `ogrenme_araci_yukleme_baslat`, `ogrenme_araci_yukleme_dogrulama_kaydet`, `ogrenme_araci_yarim_yukleme_iptal`, `yayin_arac_kapisini_dogrula`, `yayin_oncesi_silme_baslat`, `yayin_oncesi_silme_hata`, `yayin_oncesi_silme_tamamla`, `yayin_oncesi_silme_yayin_kapisi`, `yayin_planlananlari_aktive`.
+* **Yönetim ve Rapor RPC'leri:** `get_yonetici_hiyerarsi_v2`, `get_yonetici_rapor_ana_ozet_v2`, `get_yonetici_egitim_turu_etkisi_v3`.
 
 ---
 
 # 6. BÖLÜM: BÜTÜNSEL MİMARİ REFACTORİNG, DRY VE TEMİZLİK SİCİLİ
-*Tarih: 24 Ağustos 2026 | Kapsam: 5 Kulüp Modüler Dizin İzolasyonu, DRY Tek-Kaynak Konsolidasyonu ve Ölü Kod Tasfiyesi*
+*İlk kayıt: 24 Ağustos 2026 | Güncelleme: 3 Eylül 2026 | Kapsam: Kulüp Modülleri ve Ortak Platform Katmanları, DRY Tek-Kaynak Konsolidasyonu ve Ölü Kod Tasfiyesi*
 
 ### 1. Amaç ve İcra Kapsamı
 23 Ağustos 2026 denetiminin ardından, sistem genelindeki dağınık kütüphane motorları, geçmiş sürümlerden kalan sürüm takıları (`hbligi_v2`), kod tekrarları (DRY ihlalleri) ve atomik RPC mimarisine geçiş sonrası atıl kalan ölü kodlar kapsamlı bir refactoring operasyonuyla temizlenmiştir.
 
-### 2. Modüler Dizin İzolasyonu ve Simetrisi (`lib/`)
-Tüm kulüplerin iş mantığı motorları tam bir semantik ve mimari simetriye kavuşturulmuştur:
+### 2. Modüler Dizin İzolasyonu ve Sorumluluk Sınırları (`lib/`)
+Kulüp motorları ve ortak platform katmanları, ortak mimari ilkeler içinde kendi işlevsel sorumluluk sınırlarına ayrılmıştır:
 * **T-Club:** `lib/puan/`, `lib/tur/`, `lib/oneri/`, `lib/hbligi_v2/`, `lib/store/` dağınık kök dizinleri toplanarak **`lib/tclub/`** altına taşınmış; `hbligi_v2` takısı standart `hbligi` olarak sadeleştirilmiştir.
 * **C-Club:** `lib/cc/` kısaltması tam modüler standart için **`lib/cclub/`** olarak adlandırılmıştır.
-* **E-Club:** `lib/eclub/` (16 dosya) modüler sınırları korunmuştur.
+* **E-Club:** `lib/eclub/` (17 dosya) modüler sınırları korunmuştur.
 * **Eczanem:** `lib/eczanem/` (11 dosya) B2C ve B2B ayrımıyla korunmuştur.
 * **Üretim & Ortak:** `lib/uretim/`, `lib/uretici/`, `lib/video/`, `lib/rapor/` ve `lib/utils/` bağımsız katmanlar olarak tescillenmiştir.
+* **Ortak Çekirdek Hizmetler:** `lib/ogrenmeAraci/`, `lib/push/`, `lib/auth/`, `lib/admin/`, `lib/kimlik/` ve `lib/izleme/` öğrenme araçları, bildirim, kimlik doğrulama, yönetim, kimlik çözümleme ve izleme sorumluluklarını ayrı modüllerde yürütür.
 
 ### 3. DRY (Don't Repeat Yourself) Tek-Kaynak Konsolidasyonu
 1. **Yayın $\rightarrow$ Ürün Çözümleyici:** Proje genelinde 3 farklı yerde elle çağrılan `get_urun_from_yayin` RPC'si, `@/lib/utils/yayinUrun.ts` (`yayindanUrunId`) altında tekilleştirilmiştir.
@@ -223,230 +280,154 @@ Tüm kulüplerin iş mantığı motorları tam bir semantik ve mimari simetriye 
 * 🗑️ `lib/eczanem/kazanim.ts` (Silindi — `eczanem_izleme_tamamla` & `eczanem_cevaplari_kaydet` RPC'leri ile değiştirildi)
 * 🗑️ `lib/utils/randomSoruSec.ts` (Silindi — Güvensiz eski soru seçici; `lib/soru/secim` ile değiştirildi)
 
-### 5. Nihai Doğrulama ve Sağlık Sertifikasyonu
-* **TypeScript Derleme Denetimi (`npx tsc --noEmit`):** ✅ **0 HATA (Exit code 0)**.
-* **Bütünsel Duman Testleri (`npm run test:smoke`):** ✅ **130 / 130 TEST BAŞARILI (%100 PASS)**.
+### 5. Güncel Doğrulama Kaydı
+*Kontrol tarihi: 3 Eylül 2026*
+
+* **TypeScript Derleme Denetimi (`npm run typecheck:build`):** ✅ **BAŞARILI (Exit code 0)**.
+* **Bütünsel Duman Testleri (`npm run test:smoke`):** ✅ **244 / 244 TEST BAŞARILI (%100 PASS)**.
 * **Mimari Lint Kural Denetimi (`npm run lint:mimari`):** ✅ **MİMARİ KURAL İHLALİ YOK**.
 
 ---
 
-# 7. BÖLÜM: ADMİN MODÜLÜ, SAHNE ARKASI TEMİZLİĞİ VE VERİTABANI ŞEMA MÜHRÜ
-*Tarih: 25 Ağustos 2026 | Kapsam: Admin M2 Kabuğu & 22 API Ucu, Sahne Arkası Orphan Tasfiyesi ve 102 Nesnelik Kanonik DB Şeması*
+# 7. BÖLÜM: ADMİN MODÜLÜ, SAHNE ARKASI TEMİZLİĞİ VE VERİTABANI ŞEMA KAYDI
+*İlk kayıt: 25 Ağustos 2026 | Güncelleme: 3 Eylül 2026 | Kapsam: Admin M2 Kabuğu, 31 API Rotası, Yönetim Kuralları, Sahne Arkası Orphan Tasfiyesi ve Veritabanı Şema Anlık Görüntüsü*
 
 ### 1. Admin Yönetim Mimarisi (`app/admin/`)
 * **M2 Orkestrasyon Kabuğu:** `app/admin/page.tsx` şişkinlikten arındırılmış; iş mantığı `_hooks/` (`useAdminPanel`, `useTekilForm`, `useTopluForm`, `useTakimBolgeForm`, `useUrunTeknik`, `useKullaniciListesi`), görsel parçalar `_components/` altında modülerleştirilmiştir.
-* **Global Yönetim Panelleri:** HBStore (`HbStorePaneli.tsx`), E-Club Store (`EclubStorePaneli.tsx`), E-Club Yönetim (`EclubYonetimPaneli.tsx`) ve Üretim Atama (`UretimAtamaPaneli.tsx`) merkezi admin çatısına entegre edilmiştir.
+* **Global Yönetim Panelleri:** HBStore (`app/admin/_components/global/HbStorePaneli.tsx`), E-Club Store (`app/admin/_components/global/EclubStorePaneli.tsx`) ve Üretim Atama (`app/admin/_components/global/UretimAtamaPaneli.tsx`) merkezi admin çatısına entegre edilmiştir. E-Club Yönetim paneli kendi modül sınırı içindeki `app/admin/eclub/_components/EclubYonetimPaneli.tsx` konumundadır.
 
-### 2. 22 Adet Admin API Ucu Güvenlik ve Hata Tescili
-Tüm admin API rotaları taranmış; açık giriş ucu (`/admin/api/giris`) dışındaki 21 operasyonel uçta **`ADMIN_ROLLER` yetki bekçisi** ve **`hataIsle` (`sunucuHatasi`, `yetkiHatasi`, `validasyonHatasi`)** standartları %100 eksiksiz doğrulanmıştır:
+### 2. Admin API Güvenlik ve Hata Kaydı
+Toplam 31 admin API rotası bulunmaktadır. Açık giriş rotası (`/admin/api/giris`) dışındaki 30 operasyonel rotanın kaynak taramasında kimlik veya rol yetki denetimi ile merkezi hata işleme standartları doğrulanmıştır:
 * **Firma & Organizasyon:** `/admin/api/firmalar` (ve takımlar, bölgeler, kullanıcılar, ürünler, teknikler, export, toplu-yükle alt rotaları).
 * **Sistem & Operasyon:** `/admin/api/sistem-ayarlari`, `/admin/api/mesai-bypass`, `/admin/api/veri-sil`, `/admin/api/uretim/atamalar`, `/admin/api/uretim/gorev-devret`.
-* **Mağaza & E-Club:** `/admin/store/api/*` (5 rota) ve `/admin/eclub-store/api/*` (5 rota).
+* **E-Club Yönetimi:** `/admin/api/eclub/*` altında 4 rota.
+* **Mağaza & E-Club Store:** `/admin/store/api/*` (5 rota) ve `/admin/eclub-store/api/*` (5 rota).
 
-### 3. Sahne Arkası (Backstage) ve Orphan Dosya Tasfiyesi
+### 3. Firma, Kullanıcı ve Organizasyon Yönetim Kuralları
+Firma kaydı aktif veya pasif durumda yönetilir; pasif firmaya bağlı kullanıcıların girişi engellenir ve firmaya açık platform modülleri ayrı ayrı belirlenebilir. Bir firmanın silinmesinden önce verilerinin dışa aktarılması gerekir; takımı bulunan firma doğrudan silinemez.
+
+Takım, bölge veya telefon bilgisi eksik olan kullanıcı pasif durumda tutulur ve admin ekranında görünmeye devam eder. Eksik bilgileri tamamlanan kullanıcı etkinleştirilebilir. Eksik bilgili kullanıcısı bulunan firmanın etkinleştirilmesi engellenir.
+
+Toplu kullanıcı yükleme işlemi insan tarafından okunabilir rol ve organizasyon adlarını kabul eder ve ekleme veya güncelleme işlemi olarak çalışır. Mevcut kullanıcının parolası değiştirilmez; dosyada bulunmayan takım veya bölge bilgisi gereksiz yere ezilmez. Organizasyon yapısı yüklenen dosyadan kurulabilir, takımsız bölge oluşturulmaz; hiyerarşi tekilliği ve toplu işlem paket bütünlüğü korunur.
+
+### 4. Sahne Arkası (Backstage) ve Orphan Dosya Tasfiyesi
 * **Atıl Kodlar & Bileşenler Silindi:** `useStoreAdminPanel.ts`, `useEclubStoreAdminPanel.ts`, `TalepTuruTablari.tsx`, `accordion.tsx`, `separator.tsx`, `SectionTitle.tsx`, `StatCard.tsx`, `StatGrid.tsx`, `agregasyon.ts`, `ligSira.ts`.
 * **Atıl Doküman ve Dökümler Silindi:** `talep-dosyalari.txt` (106 KB), `RAPOR-METRIKLERI.md` (13 KB), 6 eski iş planı ve `public/` altındaki 5 starter SVG.
 
-### 4. Canlı Veritabanı Tasfiyesi ve 102 Nesnelik Kanonik Şema
-* Supabase canlı veritabanından 9 adet Kuşak-1 eski rapor view'ı (`v_rapor_bolge`, `v_rapor_sirket`, `v_rapor_takim`, `v_rapor_utt`, `v_rapor_urun_izlenme`, `v_izleme_ozet`, `v_senaryo_son_durum`, `v_soru_seti_son_durum`, `v_video_son_durum`) ve atıl `egitimler` tablosu tasfiye edildi.
-* `scripts/denetim/sema.json` 112'den **102 kanonik nesneye** senkronize edildi.
-* AST denetimi: 755 `.from`, 626 `.select`, 103 `.rpc` çağrısı canlı DB ile sıfır uyuşmazlıkla mühürlendi.
+### 5. Veritabanı Tasfiye Geçmişi ve Şema Kaydı
+* 25 Ağustos 2026 tarihli tasfiye çalışmasında Supabase canlı veritabanından 9 adet Kuşak-1 eski rapor view'ı (`v_rapor_bolge`, `v_rapor_sirket`, `v_rapor_takim`, `v_rapor_utt`, `v_rapor_urun_izlenme`, `v_izleme_ozet`, `v_senaryo_son_durum`, `v_soru_seti_son_durum`, `v_video_son_durum`) ve atıl `egitimler` tablosu kaldırılmıştır.
+* `scripts/denetim/sema.json`, canlı veritabanı doğrulaması değil, **31 Ağustos 2026 tarihli depo şema anlık görüntüsüdür**. Bu kayıtta **111 tablo** ve **155 RPC** bulunmaktadır.
 
-### 5. Nihai Kalite ve Derleme Sertifikasyonu
-* **TypeScript:** ✅ `npx tsc --noEmit` $\rightarrow$ **0 HATA**.
-* **Duman Testleri:** ✅ `npm run test:smoke` $\rightarrow$ **130 / 130 TEST BAŞARILI (%100 PASS)**.
+### 6. Güncel Doğrulama Kaydı
+*Kontrol tarihi: 3 Eylül 2026*
+
+* **TypeScript:** ✅ `npm run typecheck:build` $\rightarrow$ **BAŞARILI (Exit code 0)**.
+* **Duman Testleri:** ✅ `npm run test:smoke` $\rightarrow$ **244 / 244 TEST BAŞARILI (%100 PASS)**.
 * **Mimari ESLint:** ✅ `npm run lint:mimari` $\rightarrow$ **MİMARİ KURAL İHLALİ YOK**.
-* **Next.js Production Build:** ✅ `npm run build` $\rightarrow$ **190 / 190 ROTA BAŞARIYLA DERLENDİ (25.3s)**.
 
 ---
 
-# 8. BÖLÜM: BÜTÜNSEL ROL-GÖREV MATRİSİ VE MERKEZİ TOAST MESAJ SÖZLEŞMESİ
-*Tarih: 25 Ağustos 2026 | Kapsam: 11 Rol Grubu, 5 Üretim Aşaması, 3 Kulüp ve Tekil Toast Gösterim Motoru*
+# 8. BÖLÜM: ROL, GÖREV, BİLDİRİM VE HAPBI ETKİLEŞİM MİMARİSİ
+*İlk kayıt: 25 Ağustos 2026 | Güncelleme: 3 Eylül 2026 | Kapsam: Platform Rolleri, Görev Devirleri, Ortak Bildirim Sözleşmesi ve Kaynaklı AI Asistanı*
 
-### 1. Toast Mimarisi, Motoru ve Kurumsal Dil Anayasası
-* **Tekil Gösterim Motoru (`components/HataMesaji.tsx`):**
-  * Toast state'i tek bir merkezden (`useHataMesaji`) yönetilir; paralel veya dağınık motor yoktur.
-  * Kapsayıcı `HataMesajiContainer` sabit **sağ-üst** (top:24 / right:24), maxWidth 380px ve zIndex 9999 ile ekranda 12 saniye süreyle görünür.
-* **Kurumsal Dil Formu ("Siz" Disiplini):** Proje genelinde ve mağaza arayüzlerinde "sen" formu kesin olarak yasaklanmış; kurumsal **"siz"** dili tescillenmiştir.
-* **Tedarikçi Gizliliği İlkesi:** İstemciye dönen hiçbir toast veya hata mesajında platform altyapı tedarikçilerinin (Bunny CDN vb.) adı yer almaz; temiz ve kurumsal hata ifadeleri (`"Video yüklenemedi."`) kullanılır.
-* **Merkezi Üretim Devir Felsefesi (`lib/uretim/toastMesaj.ts`):** 
-  * Mesaj iki şeyi söyler: **AZ ÖNCE KAPANAN İŞ + YENİ DOĞAN İŞ VE SAHİBİ** (Örn: `"Senaryoyu onayladınız, içerik üreticinize video talebiniz iletildi"`).
+### 1. Ortak Bildirim Mimarisi ve Dil Sözleşmesi
+* **Ortak Bileşen:** `components/HataMesaji.tsx`, platformdaki `hata`, `basari`, `uyari` ve `bilgi` bildirimlerinin ortak görsel ve davranış sözleşmesidir. `useHataMesaji` kullanan her yüzey kendi mesaj state'ini yönetir; bileşen ortaktır, uygulama genelinde tek bir global toast state'i bulunmaz.
+* **Yerleşim ve Süre:** `HataMesajiContainer` bildirimleri sağ üstte `top:24`, `right:24`, en fazla 380 piksel genişlik ve `zIndex:9999` ile gösterir. Varsayılan görünme süresi 12 saniyedir; kaybolmaması gereken uyarılar kullanıcı kapatana kadar kalıcı olabilir.
+* **Kurumsal Dil:** Kullanıcıya dönük metinlerde kurumsal “siz” dili kullanılır. Teknik rol kodları, altyapı sağlayıcılarının adları ve iç sistem ayrıntıları kullanıcı mesajlarına taşınmaz; hata, yapılan işlem ve kullanıcının atabileceği sonraki adım açık dille anlatılır.
+* **Üretim Devir Bildirimi:** `lib/uretim/toastMesaj.ts`, üretim hattındaki işlem bildirimlerinin ortak sözlüğüdür. Bir aşamayı kapatan mesaj, tamamlanan işi ve sıradaki işin sahibini birlikte bildirir. Sıradaki işlem aynı kullanıcıdaysa ilgili yönetim ekranına yönlendirir; revizyon mesajı revizyon talebinin kime iletildiğini belirtir.
+* **Öğrenme Aracı Adı:** Kullanıcıya gösterilen varyant, aşama, durum ve bildirim metinleri seçilen aracın gerçek adını kullanır: **Video**, **Podcast**, **Dijital Broşür** veya **Literatür**. `video` ve `hazir_video` gibi tarihsel teknik anahtarlar yalnız geriye dönük uyumluluk içindir.
 
----
+### 2. Üretici Rolleri ve Görev Devir Matrisi
 
-### 2. ÜRETİCİ ROLLER (1. KATMAN)
+| Rol grubu | Yetki ve kapsam | Üretim görevi |
+|---|---|---|
+| **Ürün ailesi** (`pm`, `jr_pm`, `kd_pm`) | Takım kapsamında ürün eğitimi oluşturur; ürün zorunlu, teknik tercihlidir. Eczanem hedefli ürün talebi açabilen tek üretici ailesidir. | Dört üretim varyantında talep açar, teslimleri inceler, onay veya revizyon kararı verir ve yayını yönetir. |
+| **Medikal** (`med_md`) | Firma kapsamında medikal eğitim ve ürün medikal eğitimi oluşturur. | Kendi talebine bağlı senaryo, öğrenme aracı ve soru setini inceler. |
+| **Eğitim** (`egt_md`, `egt_yrd_md`, `egt_yon`, `egt_uz`) | Firma kapsamında satış teknikleri ve yönetim eğitimi oluşturur; satış tekniklerinde teknik seçimi zorunludur. | Kendi yetenek profiline uygun talep ve inceleme akışını yürütür. |
+| **İnsan Kaynakları** (`ik_drk`, `ik_md`, `ik_yrd_md`, `ik_uz`, `ik_per`) | Firma kapsamında İK ve yönetim eğitimi oluşturur. | Kendi yetenek profiline uygun talep ve inceleme akışını yürütür. |
+| **İçerik Üreticisi** (`iu`) | Firmalardan bağımsız ortak içerik fabrikasında yalnız kendisine atanmış işleri görür. | Senaryo, seçilen öğrenme aracı ve soru seti görevlerini üretir, teslim eder ve istenen revizyonları tamamlar. |
 
-#### 2.1. Ürün Müdürleri (`pm`, `jr_pm`, `kd_pm`)
-* **Yetki Sınırları:** Takım zorunlu (`takim_id`), `urun_egitimi` açar (Ürün zorunlu, teknik tercihe bağlı); Eczanem OTC talebi açmaya sistemde **tek yetkili** ailedir (`ECZANEM_TALEP_ACAN_ROLLER`). 4 varyantta üretim yönetir.
+| Olay | Kapanan iş | Yeni iş ve sorumlusu |
+|---|---|---|
+| **V1 — Tam Üretim talebi** | Talep oluşturuldu. | Senaryo üretimi İçerik Üreticisindedir. |
+| **V2 — Hazır Öğrenme Aracı talebi** | Hazır araç doğrulandı ve talep oluşturuldu. | Soru seti üretimi İçerik Üreticisindedir. |
+| **V3 — Hazır Soru Seti talebi** | Hazır soru seti doğrulandı ve talep oluşturuldu. | Senaryo üretimi İçerik Üreticisindedir. |
+| **V4 — Hazır Araç ve Hazır Soru Seti talebi** | Hazır bileşenler doğrulandı ve talep oluşturuldu. | Yayın yönetimi talep sahibindedir; İÜ görevi açılmaz. |
+| **Senaryo teslimi** | İÜ senaryo görevini tamamladı. | İnceleme talep sahibindedir. |
+| **Senaryo onayı** | Senaryo incelemesi tamamlandı. | Seçilen öğrenme aracının üretimi İçerik Üreticisindedir. |
+| **Öğrenme aracı teslimi** | İÜ araç üretimini tamamladı. | İnceleme talep sahibindedir. |
+| **Öğrenme aracı onayı** | Araç incelemesi tamamlandı. | Hazır soru seti yoksa soru seti İÜ'dedir; varsa yayın yönetimi talep sahibindedir. |
+| **Soru seti teslimi** | İÜ soru setini tamamladı. | İnceleme talep sahibindedir. |
+| **Soru seti onayı** | Üretim zinciri tamamlandı. | Yayın yönetimi talep sahibindedir. |
+| **Revizyon talebi** | İnceleme kararı kaydedildi. | İlgili aşamanın revizyonu İçerik Üreticisindedir. |
 
-| Aşama / Eylem | Tür | Toast Mesajı | Sıra Kimde |
-|---|:---:|---|---|
-| **V1 Talebi Gönderildi** *(Tam Üretim)* | `basari` | `"Senaryo talebiniz içerik üreticinize iletildi"` | İÜ |
-| **V2 Talebi Gönderildi** *(Hazır Video)* | `basari` | `"Soru seti talebiniz içerik üreticinize iletildi"` | İÜ |
-| **V3 Talebi Gönderildi** *(Hazır Soru Seti)* | `basari` | `"Senaryo talebiniz içerik üreticinize iletildi"` | İÜ |
-| **V4 Talebi Gönderildi** *(İkisi Hazır)* | `basari` | `"Yayın yönetimi sayfasına gidiniz"` | PM |
-| **Form Kısıt Hataları** | `hata` | `"Hedef rol seçimi zorunludur." / "Ürün seçimi zorunludur." / "Eğitim/İçerik adı zorunludur."` | PM |
-| **Video / Dosya Yükleme Hatası** | `hata` | `"Video yüklenemedi."` | PM |
-| **Senaryo Onaylandı** | `basari` | `"Senaryoyu onayladınız, içerik üreticinize video talebiniz iletildi"` | İÜ |
-| **Senaryo Revizyon İstendi** | `basari` | `"Senaryo için revizyon talebiniz içerik üreticisine iletildi"` | İÜ |
-| **Video Onaylandı (V1 / V3)** | `basari` | `"Videoyu onayladınız, soru seti talebiniz içerik üreticisine iletildi" / "...yayın yönetimi sayfasına gidiniz"` | İÜ / PM |
-| **Video Revizyon İstendi** | `basari` | `"Video için revizyon talebiniz içerik üreticisine iletildi"` | İÜ |
-| **Soru Seti Onaylandı** | `basari` | `"Soru setini onayladınız, yayın yönetimi sayfasına gidiniz"` | PM |
-| **Soru Seti Revizyon İstendi** | `basari` | `"Soru seti için revizyon talebiniz içerik üreticisine iletildi"` | İÜ |
-| **Yayına Alındı** | `basari` | `"[urun_adi] yayına alındı."` | Saha / Eczane |
-| **Doğru Cevap Puanı Hatası** | `hata` | `"Doğru cevap puanları kaydedilemedi."` | PM |
+Bildirimler seçilen öğrenme aracının adını ve talebi açan kullanıcının gerçek unvanını kullanır. Form doğrulamaları hedef rol, ürün, teknik, içerik adı, hazır dosya ve soru seti gerekliliklerini ilgili üretici yeteneğine ve varyanta göre bildirir.
 
-#### 2.2. İçerik Üreticisi (`iu`)
-* **Yetki Sınırları:** Firma bağımsız merkezi içerik fabrikası uzmanı (`IU_ROLU`). Taleplere cevaben senaryo yazar, Bunny TUS ile video yükler, soru seti hazırlar.
+### 3. Saha, Yönlendirme, Yönetim ve Admin Rolleri
 
-| Aşama / Eylem | Tür | Toast Mesajı | Sıra Kimde |
-|---|:---:|---|---|
-| **Senaryo Teslim Edildi** | `basari` | `"Senaryoyu " + [rol_adi] + " onayına ilettiniz"` | Üretici (Onay) |
-| **Revize Senaryo Teslim Edildi** | `basari` | `"Revize senaryoyu " + [rol_adi] + " onayına ilettiniz"` | Üretici (Onay) |
-| **Video Teslim Edildi** | `basari` | `"Videoyu " + [rol_adi] + " onayına ilettiniz"` | Üretici (Onay) |
-| **Revize Video Teslim Edildi** | `basari` | `"Revize videoyu " + [rol_adi] + " onayına ilettiniz"` | Üretici (Onay) |
-| **Soru Seti Teslim Edildi** | `basari` | `"Soru setini " + [rol_adi] + " onayına ilettiniz"` | Üretici (Onay) |
-| **Revize Soru Seti Teslim Edildi** | `basari` | `"Revize soru setini " + [rol_adi] + " onayına ilettiniz"` | Üretici (Onay) |
-| **Video Yükleme Hatası** | `hata` | `"Video yüklenemedi."` | İÜ |
-| **Görev Listesi / Detayı Yüklenemedi** | `hata` | `"Görevler yüklenemedi." / "Görev detayı yüklenemedi."` | İÜ |
+| Rol grubu | Temel görev ve kapsam | Başlıca işlem bildirimi |
+|---|---|---|
+| **UTT / KD_UTT** (`utt`, `kd_utt`) | Dört öğrenme aracını T-Club'da tüketir; soru ve puan akışını yürütür, eczane portföyünü yönetir, E-Club önerisi ve Eczanem eczane dağıtımı yapar, yetkisi açıksa HBStore kullanır. | Puan zamanı, tamamlama, cevap, öneri, eczaneye gönderim, üye eşiği, sipariş ve bakiye sonucu. |
+| **Bölge Müdürü** (`bm`) | Bölgesindeki UTT/KD_UTT kullanıcılarını ve raporları izler, T-Club önerisi oluşturur, C-Club'da uygun BM'lere challenge gönderir ve yetkisi açıksa HBStore kullanır. | Öneri, challenge, bekleyen challenge, rapor ve sipariş sonucu. |
+| **Takım Müdürü** (`tm`) | Takımındaki BM ve UTT sonuçlarını, öneri akışını, raporları ve yetkili sipariş görünümünü izler; öneri veya mağaza siparişi oluşturmaz. | Rapor, öneri takibi, lig ve sipariş görünümü yükleme sonucu. |
+| **Yöneticiler** (`gm`, `gm_yrd`, `drk`, `paz_md`, `blm_md`, `grp_pm`, `sm`) | Firma kapsamındaki üretim, T-Club, C-Club, E-Club, Eczanem ve sipariş raporlarını rol yetkisine göre izler; rapor erişimi işlem oluşturma yetkisi doğurmaz. | Firma raporu, üretim portföyü ve kapsamındaki operasyon kayıtlarının yükleme sonucu. |
+| **Admin** (`admin`) | Firma, kullanıcı, organizasyon, modül, sistem ayarı, Store ve üretim atamalarını merkezi yönetim kapsamıyla yürütür. | Doğrulama, oluşturma, güncelleme, dışa aktarma ve yönetim işlemlerinin sonucu. |
 
-#### 2.3. Medikal Grubu (`med_md`)
-* **Yetki Sınırları:** Firma seviyesi; `medikal_egitim` (genel) ve `urun_medikal_egitim` (ürün zorunlu) üretir. Eczanem OTC açamaz.
-* **Toast Sözleşmesi:** PM ile aynı unvanlı devir mesajları; yayınlandığında `"[icerik_adi] yayına alındı."` ve hata durumunda `"Doğru cevap puanları kaydedilemedi."`.
+T-Club ve C-Club'da soru hakkı izleme kimliğine bağlıdır. Öğrenme tamamlandıktan sonra cevaplanmamış soru akışının terk edilmesi önceki soru hakkını kapatır. Video ileri sarma davranışı sabit bir “tüm puanı iptal etme” kuralı değildir; puanlı zamanda atlanan sürenin araç puanındaki oransal karşılığı kayıp olarak uygulanır. Araç türüne özgü ilerleme ve tamamlama kuralları Bölüm 1–3'teki kulüp sözleşmeleriyle birlikte değerlendirilir.
 
-#### 2.4. Eğitim Grubu (`egt_md`, `egt_yrd_md`, `egt_yon`, `egt_uz`)
-* **Yetki Sınırları:** Firma seviyesi; `satis_teknikleri` (**teknik seçimi zorunlu**) ve `yonetim_egitimi` üretir. Ürün/Medikal/Eczanem açamaz.
-* **Form Validasyonu:** `"Teknik seçimi zorunludur."`, `"Bu içerik türünü oluşturma yetkiniz bulunmuyor."`.
+### 4. E-Club ve Eczanem Rolleri
 
-#### 2.5. İnsan Kaynakları Grubu (`ik_drk`, `ik_md`, `ik_yrd_md`, `ik_uz`, `ik_per`)
-* **Yetki Sınırları:** Firma seviyesi; `ik_egitimi` ve `yonetim_egitimi` üretir. Ürün/Medikal/Satış/Eczanem açamaz.
+| Rol grubu | Temel görev ve kapsam | Başlıca işlem bildirimi |
+|---|---|---|
+| **E-Club eczacı unvanları** (`eczaci`, `ikinci_eczaci`, `yardimci_eczaci`) | Eczane ilişkisi kapsamında öğrenme araçlarını tüketir, soru ve puan akışına katılır, E-Club Store'u kullanır; yetkili olduğu eczanede Eczanem üyelik, dağıtım ve işlem kararlarını yürütür. | Eğitim, tamamlama, sipariş, Eczanem uygulaması üyesi bağlama, içerik dağıtma ve işlem kararı sonucu. |
+| **Eczane teknisyeni** (`eczane_teknisyeni`) | Kendi unvanıyla E-Club'a katılır; yetkili eczane ilişkisi kapsamında öğrenme, Store ve Eczanem operasyonlarını yürütür. | Eczacı unvanlarıyla aynı işlem ailesindeki, kendi yetkisine uygun sonuçlar. |
+| **Eczanem uygulaması üyesi** (tarihsel teknik rol: `musteri`) | Bağlı olduğu eczaneden gelen dört öğrenme aracını kullanır, uygun puanları kazanır ve eczaneye işlem talebi iletebilir. Üye, eczanenin müşterisi veya müşteri adayı olabilir; bu sıfatı HapBilgi belirlemez. | İçerik tamamlama, soru, puan, talep oluşturma veya vazgeçme sonucu. |
 
----
+UTT/KD_UTT'nin Eczanem hedefli öğrenme içeriğini eczaneye göndermesi ile yetkili eczane personelinin bu içeriği Eczanem uygulaması üyelerine dağıtması iki ayrı aşamadır. HapBilgi, eczane ile Eczanem uygulaması üyesi arasındaki ticari ilişkinin tarafı değildir; platform yetkili kullanıcıların girdiği bilgileri, dağıtım kararlarını ve işlem durumlarını kaydeder ve uygular.
 
-### 3. İÇ MÜŞTERİ / SAHA ROLLERİ (2. KATMAN)
+HBStore ve E-Club Store işlemlerinde bildirim, siparişin alınması veya iptali ile stok, adres ve harcanabilir bakiye doğrulamalarının sonucunu açıklar. Bildirimde sistemde bulunmayan “mağaza yöneticisi” gibi bir rol oluşturulmaz; sonraki durum işlem akışı veya gerçek yetkili rol üzerinden ifade edilir.
 
-#### 3.1. Tıbbi Tanıtım Temsilcisi (`utt`, `kd_utt`)
-* **Yetki Sınırları:** T-Club video izleme, soru çözme, E-Club saha portföyü, Eczanem OTC dağıtımı, HBStore siparişleri (`STORE_ALABILEN_ROLLER`).
 
-| Eylem / Tetikleyici | Tür | Toast Mesajı | Sıra Kimde |
-|---|:---:|---|---|
-| **Mesai Dışı İzleme (07:00–20:29 Dışı)** | `uyari` | `"Puan kazanma saatleri dışında izlendi."` | UTT *(Puansız)* |
-| **Video İleri Sarıldı** | `uyari` | `"Video ileri sarıldığı için sorular gösterilmeyecek."` | UTT *(Puansız)* |
-| **İzleme Başarıyla Tamamlandı** | `basari` | `"+[N] izleme puanı kazandınız!"` | UTT (Soruya Geçer) |
-| **Sorular Cevaplandı & Puan Kazanıldı** | `basari` | `"+[N] cevaplama puanı kazandınız!"` | UTT |
-| **Eczane Portföye Eklendi / Çıkarıldı** | `basari` | `"Eczane listenize eklendi." / "Eczane listenizden çıkarıldı."` | UTT |
-| **Eczaneye Video Önerildi** | `basari` | `"Öneri gönderildi."` | Eczane |
-| **Eczanem OTC Videosu Dağıtıldı** | `basari` | `"Video eczaneye gönderildi."` | Eczane |
-| **Asgari Üye Eşiği (10 Üye) Sağlanamadı** | `hata` | `"Eczanenin en az 10 aktif üyesi olmalıdır."` | UTT |
-| **HBStore Sipariş Verildi** | `basari` | `"Siparişiniz alındı."` | Mağaza Yöneticisi |
-| **HBStore Puan / Bakiye Yetersiz** | `hata` | `"Puanınız yetersiz."` | UTT |
-| **HBStore Teslimat Adresi Seçilmedi** | `hata` | `"Lütfen bir teslimat adresi seçiniz."` | UTT |
-| **HBStore Sipariş İptal Edildi** | `basari` | `"Sipariş iptal edildi. Puan iade edildi."` | UTT |
+### 5. HapBi — Kaynaklı AI Asistanı
 
-#### 3.2. Bölge Müdürü (`bm`)
-* **Yetki Sınırları:** Bölge UTT'lerine video önerme, Challenge Club (meydan okuma), HBStore siparişleri (`STORE_ALABILEN_ROLLER`), bölge raporları.
+#### 5.1. Cevap Motoru
+`app/api/hapbi/sor/route.ts` oturumu doğrular; `rolCozucu` ve organizasyon hiyerarşisiyle kişinin rol, firma, takım, bölge ve modül kapsamını sunucuda çözer. Anonim devam edilmez ve istemciden rol veya organizasyon yetkisi kabul edilmez.
 
-| Eylem / Tetikleyici | Tür | Toast Mesajı | Sıra Kimde |
-|---|:---:|---|---|
-| **Video Önerisi Gönderildi** | `basari` | `"[N] öneri başarıyla gönderildi."` | UTT |
-| **Öneri Alıcı / Takip Listesi Yüklenemedi** | `hata` | `"Öneri alıcı listesi yüklenemedi." / "Öneri takip listesi yüklenemedi."` | BM |
-| **Challenge Başarıyla Gönderildi** | `basari` | `"[N] challenge gönderildi."` | Karşı BM / UTT |
-| **Bekleyen Challenge Varken Bağımsız İzleme** | `hata` | `"Bu video için bekleyen bir challenge'ınız bulunmaktadır. Lütfen Gelen Challenge'lar sekmesinden izleyiniz."` | BM |
-| **HBStore Sipariş / Bakiye / Adres** | `basari`/`hata` | `"Siparişiniz alındı."` / `"Puanınız yetersiz."` / `"Lütfen bir teslimat adresi seçiniz."` | BM |
+Cevap motorunun iki yolu vardır. Role özel hazır soru, istemcinin `hizli: true` işareti ile rol ve soru metninin `hizliSorgu.ts` içindeki kesin planla uyuşması halinde ilgili salt-okur aracı doğrudan çalıştırır ve sonucu tek model çağrısıyla sunar. Serbest sorular çok araçlı Gemini function-calling döngüsünde işlenir. Her iki yol da aynı kimlik, kapsam, kaynak, sayı, öğrenme aracı ve yönlendirme denetimlerinden geçer. `GEMINI_MODEL` tanımlıysa o model, değilse `gemini-flash-latest` kullanılır; gerçek çalışma modeli ortam yapılandırmasına bağlıdır.
 
-#### 3.3. Takım Müdürü (`tm`)
-* **Yetki Sınırları:** Takım geneli BM önerilerini izleme, takım raporları, BM performans kırılımları ve ekip sipariş denetimi. *(HBStore'dan sipariş veremez; beğeni/favori butonu yoktur)*.
+#### 5.2. Kaynaklar ve Yetki Kapsamı
+* **Sürümlü Platform Bilgisi:** `lib/hapbi/bilgiKaynaklari.ts`, BLUEBOOK'un kullanıcıya açıklanabilir iş kurallarından hazırlanmış sürümlü HapBi kaynağıdır. BLUEBOOK otomatik olarak modele verilmez. Onaylanmış iş modeli veya rol değişikliği bu dosyaya ayrıca işlenmeden HapBi kaynağı güncel sayılmaz.
+* **Araç Sözleşmeleri:** `aracTanimlari.ts`, Gemini'ye sunulan salt-okur araç şemalarının; `araclar.ts` ise doğrulanmış kullanıcı bağlamıyla ilgili motoru yükleyen dağıtıcının kaynağıdır. Platform, eğitim, gelişim, saha, üretim ve E-Club okuyucuları `aracMotorlari/` altında ayrıdır ve mevcut lig, rapor ve puan servislerini adaptör olarak kullanır.
+* **Hızlı Sorular:** `hizliSorgu.ts`, role uygun hazır soru metinleri ile bunların araç ve parametre planlarının tek kaynağıdır. Sorular aksi belirtilmedikçe güncel Türkiye haftasını kullanır; E-Club kişisel durum sorgusu lig veya dönem parametresi taşımaz.
+* **Üretim Raporu:** `uretim_raporu`, `/raporlar/uretim` ekranıyla ortak `lib/rapor/uretim/getUretimData.ts` okuyucusunu kullanır. Kullanıcının yetkili olduğu firmanın yayın portföyünü, kişisel üretim görevlerinden ve anlık canlı stok dağılımından ayırır. Kapsam veya kaynak hatası sıfır sonuç gibi sunulmaz.
+* **Öğrenme Kataloğu:** `egitim.ts`, UTT/KD_UTT için T-Club; BM için C-Club görünürlük, geçerli tur, izleme, challenge ve cevap kayıtlarını kullanır. Etkin araç bayraklarına göre Video, Podcast, Dijital Broşür ve Literatür yayınlarını okur; `arac_turu` bilgisini sonuçta korur.
+* **Öğrenme İçeriği:** `egitim_icerigi` yalnız aynı istekte katalogdan okunmuş ve yeniden görünürlük denetiminden geçmiş yayını açar. Podcastte doğrulanmış transkript, Literatürde doğrulanmış çıkarılmış metin, Dijital Broşürde doğrulanmış eğitim metni ve açıklama kullanılır; bunlar yoksa yayına bağlı senaryo okunur. Metin en fazla 10.000 karakterdir, test cevap anahtarı verilmez ve içerikteki talimatlar uygulanmaz.
+* **Gelişim Rehberi:** `rehberlik.ts`, gerçek rapor ölçümleri ve görünür katalog üzerinden en fazla üç gerekçeli öneri üretir. Gelen challenge ve yarım kalan öğrenme araçları önce değerlendirilir; öğrenme hedefi ile puan hedefi ayrılır. Kategori kaybı belirli bir araçta hata yapıldığı, mesleki yetersizlik veya başarı tahmini olarak yorumlanmaz.
 
-| Eylem / Tetikleyici | Tür | Toast Mesajı | Sıra Kimde |
-|---|:---:|---|---|
-| **Takım Öneri Takip Listesi Yüklenemedi** | `hata` | `"Öneri takip listesi yüklenemedi."` | TM |
-| **Takım Rapor Verileri Yüklenemedi** | `hata` | `"Rapor verileri yüklenemedi."` | TM |
-| **E-Club Lig Verileri Yüklenemedi** | `hata` | `"E-Club Lig Verileri Yüklenemedi."` | TM |
-| **Ekip Mağaza Siparişleri Yüklenemedi** | `hata` | `"Siparişler yüklenemedi."` | TM |
+Kişisel rehberlik UTT/KD_UTT ve BM'ye; ekip rehberliği BM, TM, üretici ve yöneticilere kendi rapor kapsamlarıyla verilir. BM'nin kişisel öğrenme ve lig puanı C-Club'a, bölgesinin saha sonucu T-Club'a aittir. T-Club öneri kaybı ile C-Club challenge kaybı birbirine karıştırılmaz. Geçmiş kaybın iadesi veya telafisi vaat edilmez.
 
-#### 3.4. Üst Yönetici Rolleri (`gm`, `gm_yrd`, `drk`, `paz_md`, `sat_md`, `saha_md`)
-* **Yetki Sınırları:** Firma geneli konsolide izlenme, eğitim türü etkisi, takım-bölge-UTT hiyerarşik başarı dökümlerini denetleme. *(Sipariş veremez; talep açamaz)*.
+Eczacı, ikinci eczacı, yardımcı eczacı ve eczane teknisyeni kendi E-Club öğrenme durumu, tamamlanan veya süresi geçmiş öğrenme araçları ile net ve kullanılabilir puanı için `eclub_kisisel_durum` aracını kullanır. Bu araç lig veya dönem bilgisi taşımaz. HapBi, Eczanem uygulaması üyelerine sunulmaz ve onlar için kişisel canlı veri aracı bulunmaz. İÜ üretim iş listesi, Store sipariş veya bakiye işlemleri ile yazma, onay, iptal ve yayın işlemleri HapBi'nin yetkisinde değildir.
 
-| Eylem / Tetikleyici | Tür | Toast Mesajı | Sıra Kimde |
-|---|:---:|---|---|
-| **Yönetici Rapor Verileri Yüklenemedi** | `hata` | `"Rapor verileri yüklenemedi."` | Üst Yönetici |
-| **E-Club Firma Raporu Yüklenemedi** | `hata` | `"Rapor verileri yüklenemedi."` | Üst Yönetici |
-| **Eczanem OTC Mutabakat Raporu Yüklenemedi** | `hata` | `"Döküm yüklenemedi."` | Üst Yönetici |
-| **Ekip Mağaza Siparişleri Yüklenemedi** | `hata` | `"Siparişler yüklenemedi."` | Üst Yönetici |
+Dönem karşılaştırmasının varsayılan eşit süre yöntemi, ortak Türkiye takviminde iki dönemin başlangıcından eşit sayıda tamamlanmış günü alır ve bugünü dışarıda bırakır. Ay uzunluğu farkında kısa dönem sınırdır; dönemin ilk gününde eşit süre kıyası yapılmaz. Eksik ölçüm, boş sonuç ve gerçek sıfır birbirinden ayrılır; eksik sıra veya puan değeri uydurulmaz.
 
----
+#### 5.3. Sohbet ve Güvenlik
+İstemci ham sohbet geçmişi, rol veya firma parametresi göndermez. Sunucuda imzalanan sohbet token'ı kullanıcı, rol, firma, takım, bölge ve modül kapsamına bağlıdır; son 12 mesajı, en çok 18.000 karakteri ve 30 dakikalık geçerliliği taşır. Tarayıcıda kalıcı saklanmaz; yeni sohbet veya kimlik değişimi bağlamı temizler. Yeni sayısal soruda araç yeniden çağrılır ve eski cevap güncel veri kaynağı sayılmaz.
 
-### 4. DIŞ MÜŞTERİ ROLLERİ (3. KATMAN)
+Model yalnız tanımlı okuma araçlarını çağırabilir; serbest SQL, tablo, URL veya yazma erişimi bulunmaz. Araç parametreleri sunucuda doğrulanır. Cevap kaynakları ve yönlendirmeler yalnız o istekte okunmuş kaynak kimliklerinden seçilir. Bilgi cevabı kaynak gerektirir ve cevapta kullanılan sayıların seçilen kaynakta bulunması denetlenir; bu kontrol tek başına anlamsal doğruluk garantisi değildir.
 
-#### 4.1. Eczacı ve Eczane Teknisyeni (`eczaci`, `teknisyen`)
-* **Yetki Sınırları:** E-Club portal video izleme/puan kazanımı, E-Club Store çok firmalı ödül siparişleri, Eczanem müşteri yönetimi, OTC video dağıtımı ve kasada indirim onay/red mutabakatı.
+Serbest soru yolunda en fazla 5 model çağrısı ve 8 araç seçimi; hızlı yolda tek canlı araç ve tek sunum çağrısı vardır. Sağlayıcı bağlantı, HTTP veya zaman aşımı hatası gereksiz ikinci model çağrısıyla yinelenmez. Süreç içi kullanıcı başına eşzamanlılık ve hız sınırı uygulanır. Eğitim, izleme veya challenge sorgusu 1.000 satır sınırına ulaşırsa eksik veriden öneri üretilmez. Çok örnekli üretim için süreçler arası ortak rate-limit deposu ayrıca gerekir. Günlükler soru, cevap, kişi adı veya anahtar yerine istek kimliği, model, araç adları, hızlı yol, token ve süre bilgilerini tutar.
 
-| Eylem / Tetikleyici | Tür | Toast Mesajı | Sıra Kimde |
-|---|:---:|---|---|
-| **E-Club Panel Verileri Yüklenemedi** | `hata` | `"E-Club Panel Verileri Yüklenemedi."` | Eczacı / Teknisyen |
-| **Sorular Cevaplandı & Puan Kazanıldı** | `basari` | `"+[N] cevaplama puanı kazandınız!"` | Eczacı / Teknisyen |
-| **E-Club Store Sipariş Verildi** | `basari` | `"Siparişiniz alındı."` | Mağaza Yöneticisi |
-| **Yeni Müşteri Kaydedildi** | `basari` | `"Müşteri kaydedildi. Belirlenen giriş bilgileriyle Eczanem'e erişebilir."` | Müşteri |
-| **Kayıtlı Müşteri Eczaneye Bağlandı** | `basari` | `"Kayıtlı müşteri eczanenize bağlandı."` | Eczacı / Teknisyen |
-| **OTC Videosu Müşteriye Gönderildi** | `basari` | `"Video müşteriye gönderildi."` | Müşteri |
-| **Kasa İndirimi Onaylandı** | `basari` | `"Sipariş onaylandı — [N] TL indirim ([işlem_kodu])."` | Kasa / Müşteri |
-| **İndirim Talebi Reddedildi** | `basari` | `"İndirim talebi onaylanmadı."` | Kasa / Müşteri |
-| **Sipariş Kuyruk Verisi Yüklenemedi** | `hata` | `"Siparişler yüklenemedi."` | Eczacı / Teknisyen |
+#### 5.4. Arayüz ve Doğrulama
+HapBi, iç panel yerleşiminde sohbet modalı, maskot, role uygun hızlı sorular, yeni sohbet düğmesi ve okunmuş kaynak bağlantılarıyla gösterilir. Eğitim kaynağının kullanıcıya görünen adı **Eğitim Yayınları**dır. Öneri bağlantısı UTT'yi doğrudan ilgili kategori ve yayına; BM'yi varsa güncel gelen challenge bağlamını koruyarak C-Club izleme ekranına götürür. Kaynak bağlantısı hedef ekranın dönem filtresini otomatik değiştirmez. Canlı ekran turları AI cevabının yerine geçmeyen ayrı bir rehberlik katmanıdır.
 
-#### 4.2. Eczanem Müşterisi (`musteri`)
-* **Yetki Sınırları:** Eczanesinden gelen OTC videolarını izleme, FIFO puan kazanma ve eczane kasasında indirim talep etme *(Kural 7b gereği kazanç vaadi verilemez)*.
-
-| Eylem / Tetikleyici | Tür | Toast Mesajı | Sıra Kimde |
-|---|:---:|---|---|
-| **İzleme Tamamlandı & Puan Kazanıldı** | `basari` | `"+[N] izleme puanı kazandınız!"` | Müşteri |
-| **Sorular Cevaplandı & Puan Kazanıldı** | `basari` | `"+[N] cevap puanı kazandınız!"` | Müşteri |
-| **Kasa İndirim Talebi Oluşturuldu** | `basari` | `"İndirim talebiniz eczanenizin onayına gönderildi."` | Eczacı / Kasa |
-| **İndirim Talebinden Vazgeçildi** | `basari` | `"İndirim talebi iptal edildi; puanınız değişmedi."` | Müşteri |
-| **Puan Bakiyesi Yüklenemedi** | `hata` | `"Puanlarınız yüklenemedi."` | Müşteri |
-| **İndirim Talebi Gönderilemedi** | `hata` | `"İndirim talebi gönderilemedi."` | Müşteri |
-
----
-
-# 8.1. BÖLÜM: HAPBI — KAYNAKLI AI ASİSTANI
-*Tarih: 26 Ağustos 2026 | Faz 2 — kişiye ve role uygun rehberlik, doğrulanmış hızlı sorgu yolu, salt-okur*
-
-### 1. Cevap motoru
-`app/api/hapbi/sor/route.ts` oturumu doğrular; `rolCozucu` ve organizasyon hiyerarşisiyle kapsam çözer. Anonim devam, sabit cevap fallback'i ve her soruya aynı veri paketini gönderme kaldırılmıştır. Cevap motoru iki güvenli yol kullanır: kullanıcı arayüzündeki role özel hazır sorular, yalnız istemcinin `hizli: true` işareti ile rol+soru metni sunucudaki kesin eşlemeyle uyuşursa doğrulanmış tek aracı doğrudan çalıştırır ve Gemini'yi yalnız kaynaklı cevabı sunmak için bir kez çağırır; serbest yazılan sorular mevcut çok araçlı Gemini function calling döngüsünde kalır. Hızlı yolun araç sonucu da aynı kaynak, sayı, eğitim ve yönlendirme denetimlerinden geçer. `GEMINI_MODEL` önceliklidir; yoksa `gemini-flash-latest` kullanılır. Yerel ortamda `gemini-3.5-flash` ile gerçek araç çağrısı doğrulanmıştır; canlı ortamdaki ayarlar ayrıca doğrulanmalıdır.
-
-### 2. Kaynaklar ve kapsam
-* `bilgiKaynaklari.ts`: Bluebook ve kodla karşılaştırılmış, sürümlü kullanıcı rehberi. Ham Bluebook otomatik okunmaz; teknik bilgiler ve doğrulanmamış kurallar modele gönderilmez. Rehber değişiklikleri kod incelemesiyle yapılır.
-* `aracTanimlari.ts`: Gemini'ye sunulan salt-okur araç şemalarının hafif ve veri motorlarından bağımsız tek kaynağıdır.
-* `araclar.ts` ve `aracMotorlari/`: `araclar.ts` yalnız doğrulanmış bağlamı kuran ve istenen alan motorunu dinamik yükleyen hafif dağıtıcıdır. Platform, eğitim, gelişim, saha, üretim ve E-Club okuyucuları ayrı motorlara bölünmüştür; mevcut lig/rapor/puan servisleri yeniden yazılmadan adaptör olarak kullanılır.
-* `hizliSorgu.ts`: Role uygun hazır soru metinlerinin ve bunların doğrulanmış araç/parametre planlarının tek kaynağıdır. Hazır sorular aksi açıkça yazılmadıkça güncel Türkiye haftasını kullanır; eczacı/teknisyen kişisel E-Club sorguları dönem veya lig parametresi taşımaz.
-* `uretim_raporu`: `/raporlar/uretim` API'siyle ortak `lib/rapor/uretim/getUretimData.ts` üzerinden kendi firmasının yayın portföyünü okur. Üreticinin kişisel talep özetiyle karıştırılmaz. Varyantlar dönemde yayına alınanlara aittir; anlık canlı stok dağılımı değildir. Mevcut RPC için aktif yönetici yalnız aynı firmadan çözülür; kapsam/sorgu hatası sıfıra çevrilmez.
-* `egitim.ts`: UTT/KD_UTT ve BM kataloglarını kendi kayıtlarıyla okur; ortak `gecerliTurBaslangiclari` hesabını kullanır. Kategori/tur katılımı hesaplanır. Ayrı `egitim_icerigi` aracı yalnız bu istekte erişilmiş yayının senaryosunu, görünürlüğü yeniden doğrulayarak okur; bu metin video transkripti veya test cevap anahtarı değildir.
-* `rehberlik.ts`: `gelisim_rehberi` için gerçek rapor ölçümleri ve katalog üzerinden gerekçeli önceliklendirme; `donem_karsilastir` için sunucuda fark/yüzde hesabı. Öğrenme ve puan hedefi ayrıdır; kategori kaybı belirli eğitimde hata veya yetkinlik eksikliği diye yorumlanmaz. Rehberlik cevabı, okunmuş gelişim kaynağı gerektirir.
-* Faz 2 kişisel rehberliği UTT/KD_UTT ve BM’ye; ekip rehberliğini BM/TM/üretici/yöneticiye kendi mevcut rapor kapsamıyla verir. Eğitim önerilerinde önce gelen challenge ve yarım kalan eğitim, sonra seçilen hedefe göre kategori verisi veya kayıtlı video puanı dikkate alınır. En çok üç öneri ve sunucuda üretilmiş gerekçeleri gösterilir.
-* Dönem karşılaştırmasında varsayılan eşit süre yöntemi, ortak TR takviminde iki dönemin başından eşit sayıda tamamlanmış gün alır; bugün dahil değildir. Ay uzunluğu farkında kısa dönem sınır olur; ilk gün kıyas yapılmaz. Tam takvim toplamları ayrıca seçilebilir. BM kişisel eşit süre hesabı mevcut `_cc_ligi_aralik` günlük motorunu kişi/firma süzgeciyle kullanır. Eksik ölçüm veya sıfır/negatif yüzde bazı korunur; puan değişimi mesleki başarı teşhisi değildir.
-* Tamamlanmış eğitimler, yanlış cevap kaybı görülen kategorilerde öğrenme amacıyla yeniden çalışma adayı olabilir; yeni puan kazanımı gibi sunulmaz. Kullanıcı açıkça tekrar isterse ayrı `calisma=tekrar` seçeneği yalnız tamamlananları ele alır; kayıp yoksa gerekçe kullanıcının isteğidir, öğrenme eksikliği uydurulmaz. Eğitim araması kalan/tamamlanan/tümü filtresiyle güncel yayınlarda çalışır. Tekrar puanı/extra eşikleri bu öneriden çıkarılmaz.
-* BM'nin kişisel öğrenme/lig puanı C-Club'dır; bölgesinin T-Club saha performansıyla karıştırılmaz. Veri hatası/boş sonuç/sıfır ayrı durumdur. Eksik sıra veya video puanı doldurulmaz.
-* BM/TM canlı doğrulamasında T-Club öneri kaybı ile C-Club challenge kaybı için ayrı rehberlik bulguları eklendi. Geçmiş kayıp telafisi/iadesi vaat edilmez; öneriler sonraki çalışmalarda yeni kayıpları azaltmaya yöneliktir. Eğitimlerin geçerli turdaki tamamlanması raporun hafta/ay filtresiyle aynı dönem sayılmaz; ekip aracındaki boş kişisel eğitim listesi de uygun eğitim olmadığı anlamına gelmez. TM'nin kişisel öğrenme kapsamı reddi, firma C-Club ligini veya kapsamındaki E-Club raporunu görüntüleme yetkisinin olmadığı şeklinde genellenmez; her araç kendi yetkisini denetler.
-* GM canlı doğrulamasında öneri kaybına yönelik adımlar ekran yetkisine göre ayrıldı: Öneri Takibi UTT/KD_UTT/BM/TM'ye açık; üretici/yönetici kendi T-Club raporundan ilgili TM/BM ile takip eder. Rapor toplamını görmek, kişisel öneri/challenge işlem ekranına erişim anlamına gelmez.
-* Eczacı ve eczane teknisyeni kendi E-Club eğitim durumu, tamamlanan/süresi geçmiş eğitimleri, net ve kullanılabilir puanı için `eclub_kisisel_durum` aracını kullanır; bu araç lig veya dönem bilgisi içermez. Eczanem müşterisinde Hapbi kapalıdır ve kişisel canlı veri aracı yoktur. İÜ için üretim iş listesi, sipariş/bakiye sorgusu, E-Club takım ligi, yazma/onay/iptal işlemleri sonraki kapsamdır.
-
-### 3. Sohbet ve güvenlik
-İstemci ham sohbet geçmişi veya rol/firma parametresi göndermez. Sunucuda imzalanmış sohbet token'ı kullanıcı+rol+firma+takım+bölge+modül kapsamına bağlıdır; son 12 mesaj, en çok 18.000 karakter ve 30 dakika geçerlilik taşır. Tarayıcıda kalıcı saklanmaz. Yeni sohbet ve kimlik değişimi bağlamı temizler. Her yeni sayısal soruda araç yeniden çağrılır; eski yanıt güncel veri kaynağı değildir.
-
-Model yalnız tanımlı okuma araçlarını çağırabilir; serbest SQL/URL/tablo erişimi yoktur. Araç parametreleri sunucuda doğrulanır. Cevap kaynakları ve yönlendirmeler yalnız okunmuş kaynak kimliklerinden seçilir. Bilgi cevabı kaynak gerektirir; cevapta bulunan rakamların seçilen kaynakta bulunması kontrol edilir. Bu sayısal kontrol anlamsal doğruluk garantisi değildir; rol ve görev senaryolarıyla değerlendirme gerektirir.
-
-Serbest soru yolunda soru başına en çok 5 model çağrısı ve 8 araç seçimi vardır. Doğrulanmış hızlı soru yolunda önce tek canlı araç çalışır, ardından yalnız `yaniti_sun` şemasıyla tek Gemini çağrısı yapılır; `gemini-3*` modellerinde düşük gecikme için `thinkingLevel: minimal` kullanılır. Sağlayıcı bağlantı/HTTP/zaman aşımı hataları ikinci bir model çağrısıyla yinelenmeden kullanıcıya iletilir; kaynak veya yanıt doğrulamasındaki diğer sorunlarda güvenli tam araç döngüsü kullanılabilir. Her iki yolda da zaman aşımı ve süreç içi kullanıcı başına eşzamanlılık/hız sınırı vardır. Gelişim aracı bir rapor ve kişisel kapsamda katalog, karşılaştırma aracı iki rapor okur. Senaryo 10.000 karakterle sınırlandırılır. Eğitim/kendi izleme/challenge sorgusu 1.000 satıra ulaşırsa eksik veriden öneri üretilmez. Çok örnekli üretimde ortak rate-limit deposu ayrıca gerekir. Günlükler soru, cevap, kişi adı veya anahtar içermez; istek kimliği, model, araç adları, hızlı yol kullanımı, token ve süre kaydedilir. Sağlayıcı hatası AI cevabı gibi gizlenmez.
-
-### 4. Arayüz ve doğrulama
-Mevcut sohbet boyutları/renkleri ve maskot korunmuştur; avatar zemini beyaz, başlık `hapbi`dir. Cevaplarda kaynak/dönem bağlantıları, role uygun hızlı sorular ve yeni sohbet düğmesi bulunur. Sorguların içeriğe ve AI yanıt süresine göre zaman alabileceğini belirten kırmızı bilgi notu sohbet alanının altında gösterilir. Kaynak bağlantısı sayfanın dönem filtresini otomatik değiştirmez; aynı dönem seçilmelidir. Eğitim kaynağının adı **Eğitim Yayınları**dır; öneriler sunucuda doğrulanmış eğitim bağlantılarıyla ayrı gösterilir. UTT kategori menüsü olmayan `/videolarim` köküne bağlanmaz; öneri doğrudan kategori sayfasındaki yayını açar. BM bağlantılarında güncel gelen challenge bağlamı korunur. Eski UTT ekran turları korunur, AI cevaplarının yerine çalıştırılmaz.
-
-`tests/hapbi.smoke.test.ts` kimlik/kapsam, veri doğruluğu, sohbet imzası, Gemini araç döngüsü ve hata yollarını sınar. Gerçek Gemini ve oturum açık UTT ekranında lig, takip sorusu, eğitim, puan raporu ve E-Club raporu akışı kontrol edilmiştir; E-Club yanıtı haftalık rapor ekranıyla karşılaştırılmıştır. BM oturumunda kişisel C-Club, bölgesel T-Club, eğitim önerileri/bağlantıları, takvim karşılaştırması, E-Club aylık raporu ve mesajla rol yükseltme talebinin reddi kontrol edildi. TM oturumunda takım raporu/rehberliği, takvim karşılaştırması, firma C-Club ligi, E-Club raporu, kişisel öğrenme sınırı ve firma dışı erişim talebinin reddi kontrol edildi. GM Murat Aydın oturumunda yönetici firma raporu, güncel tur/dönem ayrımı, rehberlik, takvim kıyası, üretim portföyü, firma C-Club, E-Club ve firma dışı erişim reddi canlı kontrol edildi. Kişisel C-Club kapsamı için erişilemeyen verinin yok sayılmaması ve Öneri Takibi yönlendirmesinin rol yetkisine uyması sağlandı. PM Merve Duran oturumunda şirket üretim portföyü ile kişisel talep kaynağının karışması düzeltildi; üretim/saha, takvim kıyası, kişisel öğrenme sınırı, firma C-Club, E-Club ve firma dışı erişim reddi canlı kontrol edildi. BM gelen challenge bağlantısı ve BM/TM/PM eşit sürenin bağımsız aynı-aralık sayısal doğrulaması açık; diğer yönetici unvanları ve diğer üretici kapsamlarının canlı testleri bekliyor. Bütün roller için canlı uçtan uca doğrulama tamamlanmış sayılmaz. Ayrıntılar: `docs/HAPBI.md`.
-
-Hızlı yol sonrasında aynı role özel hazır sorularla canlı süre ve kaynak doğrulaması yapıldı: UTT Berk kişisel gelişim rehberi 38,3 saniyeden 3,7 saniyeye; BM Selin bölgesel gelişim rehberi 11,6 saniyeden 3,5 saniyeye; PM Merve ekip gelişim rehberi 42,0 saniyeden 3,6 saniyeye; Eczacı Adil kişisel E-Club özeti 11,9 saniyeden 8,6 saniyeye indi. UTT, BM ve PM yanıtları 2026/35. hafta kaynağını ve doğru kişisel/bölge/ekip kapsamını; Eczacı yanıtı dönem/lig kullanmadan kendi E-Club verisini korudu. Son doğrulamada 33 Hapbi testi ve tam 168 smoke testi geçti; bağımsız üretim tip kontrolü başarılı oldu. Araç motorlarının dinamik modüllere ayrılması ve `tsconfig.build.json` ile test dosyalarının üretim tip kontrolünden ayrılması sonrasında `0399488` commit'inin Vercel deployment'ı 1 dakika 42 saniyede **Ready** oldu.
+**Doğrulama kaydı — 3 Eylül 2026:** `tests/hapbi.smoke.test.ts` içindeki kimlik, rol ve organizasyon kapsamı, veri doğruluğu, eğitim görünürlüğü, gelişim rehberi, dönem karşılaştırması, sohbet imzası, hızlı sorgu, Gemini araç döngüsü, kaynak ve hata yollarına ilişkin **34 / 34 test başarılıdır**. Bu kayıt otomatik test sonucudur; bütün roller için canlı uçtan uca doğrulamanın tamamlandığı anlamına gelmez. Önceki canlı kullanıcı denemeleri, süre ölçümleri ve deployment kayıtları tarihsel kanıt olarak `docs/HAPBI.md` içinde tutulur ve güncel durum yerine kullanılamaz.
 
 ---
 
 # 9. BÖLÜM: BÜTÜNSEL DOSYA VE DİZİN ENVANTERİ (CANONICAL FILE MANIFEST)
-*Tarih: 26 Ağustos 2026 | Kapsam: Projedeki Tüm Klasörler, Dosyalar ve 1-2 Cümlelik Fonksiyonel Görev Tanımları*
+*Güncelleme: 3 Eylül 2026 | Kapsam: Projenin çalıştırılabilir kaynakları, yapılandırmaları, testleri, altyapısı, görselleri ve kurumsal belgeleri*
+
+Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktılarını (`.next`, `coverage`, `tsconfig.tsbuildinfo`), işletim sistemi artıklarını ve kullanıcıya özel yerel araç ayarlarını kapsamaz. `.env.local` yalnız dosya adı ve işleviyle kaydedilir; gizli içeriği BLUEBOOK'a alınmaz.
 
 ## 1. KÖK DİZİN (ROOT & CONFIG)
 
@@ -454,40 +435,153 @@ Hızlı yol sonrasında aynı role özel hazır sorularla canlı süre ve kaynak
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `.env.local` | Yapılandırma | .env.local modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `.gitignore` | Yapılandırma | .gitignore modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `AGENTS.md` | Dokümantasyon | Yapay zeka asistanları (AI Agents) için Next.js sürüm kurallarını ve kod yazım standartlarını belirleyen direktif belgesi. |
-| `CLAUDE.md` | Dokümantasyon | CLAUDE.md modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `README.md` | Dokümantasyon | README.md modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `components.json` | JSON / Veri | components.json modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `eslint.config.mjs` | Yapılandırma | Kod kalitesi ve projenin özel mimari kural denetimlerini (katman izolasyonu, import yasakları) denetleyen ESLint ayarı. |
-| `next-env.d.ts` | TypeScript / Lib | next-env.d.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `next.config.ts` | TypeScript / Lib | React Compiler ve üretim derlemesinde bağımsız tip kontrolünün ikinci kez çalışmasını önleyen kontrollü Next.js ayarlarını tanımlar. Doğrudan `next build` çağrısında tip kontrolü korunur. |
-| `package-lock.json` | JSON / Veri | package-lock.json modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `package.json` | JSON / Veri | Projenin bağımlılıklarını, çalıştırma, derleme ve test betiklerini tanımlayan ana paket yapılandırması. |
-| `postcss.config.mjs` | Yapılandırma | Tailwind CSS ve modern CSS dönüştürücü eklentilerini derleme sürecine bağlayan PostCSS ayarı. |
-| `proxy.ts` | TypeScript / Lib | Gelen tüm HTTP isteklerini karşılayan, 6 güvenlik ve modül bekçisini (admin, cc, store, eclub, eczanem) işleten merkezi ara yazılım. |
-| `tsconfig.json` | JSON / Veri | TypeScript derleme kurallarını, modül alias eşlemelerini ve strict tip denetimlerini belirleyen yapılandırma. |
-| `tsconfig.build.json` | JSON / Veri | Üretim kaynaklarını bağımsız ve artımsız denetleyen; test dosyalarını Vercel üretim tip kontrolünden ayıran TypeScript yapılandırması. |
-| `tsconfig.tsbuildinfo` | Yapılandırma | tsconfig.tsbuildinfo modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `.env.local` | Yapılandırma | Yerel çalışma ortamının gizli servis adresleri ve anahtarlarını taşır; içeriği sürüm kontrolüne veya dokümana alınmaz. |
+| `.gitignore` | Yapılandırma | Sürüm kontrolüne alınmayacak bağımlılık, derleme, ortam ve yerel çalışma çıktılarını tanımlar. |
+| `.vercelignore` | Yapılandırma | Vercel dağıtım paketine gönderilmeyecek medya, doküman, denetim ve yerel geliştirme varlıklarını sınırlar. |
+| `AGENTS.md` | Dokümantasyon | Bu depoda çalışan yapay zekâ ajanlarının Next.js dokümantasyonu ve KVKK takip süreci dâhil zorunlu çalışma kurallarını tanımlar. |
+| `CLAUDE.md` | Dokümantasyon | Claude tabanlı geliştirme araçları için projeye özgü çalışma bağlamı ve yönlendirmeleri taşır. |
+| `components.json` | JSON / Yapılandırma | shadcn/ui bileşen üretimi için stil, alias ve dosya konumu tercihlerini tanımlar. |
+| `eslint.config.mjs` | Yapılandırma | Next.js ve TypeScript lint ayarlarıyla HapBilgi’ye özgü mimari bağımlılık kurallarını etkinleştirir. |
+| `next-env.d.ts` | TypeScript / Lib | Next.js tarafından üretilen TypeScript ortam ve tip başvurularını projeye tanıtır; elle düzenlenmez. |
+| `next.config.ts` | TypeScript / Lib | React Compiler ayarını ve üretim derlemesindeki tip kontrolü davranışını yapılandırır. |
+| `package-lock.json` | Bağımlılık Kilidi | NPM bağımlılık ağının kesin sürümlerini ve bütünlük özetlerini kilitler. |
+| `package.json` | JSON / Yapılandırma | Uygulamanın bağımlılıklarını ve geliştirme, test, tip kontrolü, derleme ile denetim komutlarını tanımlar. |
+| `postcss.config.mjs` | Yapılandırma | Tailwind CSS dönüşümünü Next.js derleme hattına bağlayan PostCSS yapılandırmasıdır. |
+| `proxy.ts` | TypeScript / Lib | İstekleri kimlik, rol ve firma modül bayraklarına göre koruyan merkezi Next.js proxy katmanıdır; admin, kulüp, Store ve Eczanem rotalarının erişim kapılarını uygular. |
+| `README.md` | Dokümantasyon | Projenin geliştirme ortamını başlatma ve temel Next.js komutlarını açıklayan başlangıç belgesidir. |
+| `tsconfig.build.json` | JSON / Yapılandırma | Üretim kaynaklarını testlerden ayırarak bağımsız ve artımsız tip kontrolüne tabi tutar. |
+| `tsconfig.json` | JSON / Yapılandırma | Projenin strict TypeScript, modül çözümleme ve yol alias kurallarını tanımlar. |
 
-## 2. APP PROVİDERS & ORTAK ROTALAR
+## 2. APP ORTAK ROTALAR, SAĞLAYICILAR VE SERVİS UÇLARI
 
 ### 📁 app/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `favicon.ico` | Yapılandırma | Tarayıcı sekmesinde gösterilen platform favicon ikonu. |
-| `globals.css` | Stil / CSS | Tailwind direktiflerini, tema renk paletlerini ve global CSS değişkenlerini barındıran stil dosyası. |
-| `layout.tsx` | UI / React | Uygulamanın kök HTML iskeletini, global fontları ve AuthProvider sarmalayıcısını içeren ana layout dosyası. |
-| `page.tsx` | UI / React | Kök URL isteklerini kullanıcının oturum ve rol durumuna göre giriş veya panel ana sayfasına yönlendiren dağıtıcı rota. |
+| `favicon.ico` | Görsel / İkon | Tarayıcı sekmesinde kullanılan HapBilgi site simgesidir. |
+| `globals.css` | Stil / CSS | Tailwind CSS katmanlarını, ortak tema değişkenlerini ve uygulama genelindeki temel stilleri tanımlar. |
+| `layout.tsx` | UI / React | Uygulamanın kök HTML iskeletini, global stilleri ve kimlik sağlayıcısını kuran Next.js yerleşimidir. |
+| `page.tsx` | UI / React | Kök isteği giriş ekranına yönlendiren başlangıç sayfasıdır. |
 
-### 📁 app/providers/
+### 📁 app/api/bunny/webhook/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `AuthProvider.tsx` | UI / React | Kullanıcının Supabase oturumunu, yetkili kimliğini (v_auth_kimlik_admin) ve rolünü tüm arayüze dağıtan React Context sağlayıcısı. |
-| `PushAbonelik.tsx` | UI / React | PushAbonelik.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `route.ts` | API / Route Handler | Medya sağlayıcısından gelen video işleme bildirimini imzayla doğrular; video ve ortak öğrenme aracı durumlarını eşzamanlı günceller. |
+
+### 📁 app/api/hapbi/sor/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | Oturum ve rol kapsamını doğrulayan; kesin eşleşmiş hazır soruları tek araçlı hızlı yola, serbest soruları tam Gemini araç döngüsüne yönlendiren kaynaklı sohbet uç noktası. |
+
+### 📁 app/api/ogrenme-araclari/[arac_id]/destek-yukleme-baslat/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/api/ogrenme-araclari/[arac_id]/destek-yukleme-baslat` uç noktasında POST isteklerini işler; HapBilgi için öğrenme araçları destek yükleme başlatma sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/api/ogrenme-araclari/[arac_id]/destek-yukleme-tamamla/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/api/ogrenme-araclari/[arac_id]/destek-yukleme-tamamla` uç noktasında POST isteklerini işler; HapBilgi için öğrenme araçları destek yükleme tamamlama sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/api/ogrenme-araclari/[arac_id]/durum/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/api/ogrenme-araclari/[arac_id]/durum` uç noktasında GET isteklerini işler; HapBilgi için öğrenme araçları durum sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/api/ogrenme-araclari/[arac_id]/erisim/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/api/ogrenme-araclari/[arac_id]/erisim` uç noktasında GET isteklerini işler; HapBilgi için öğrenme araçları erişim sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/api/ogrenme-araclari/[arac_id]/flip-pdf-dogrula/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/api/ogrenme-araclari/[arac_id]/flip-pdf-dogrula` uç noktasında POST isteklerini işler; HapBilgi için öğrenme araçları flip pdf doğrulama sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/api/ogrenme-araclari/[arac_id]/gorsel-dogrula/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/api/ogrenme-araclari/[arac_id]/gorsel-dogrula` uç noktasında POST isteklerini işler; HapBilgi için öğrenme araçları Dijital Broşür doğrulama sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/api/ogrenme-araclari/[arac_id]/podcast-dogrula/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/api/ogrenme-araclari/[arac_id]/podcast-dogrula` uç noktasında POST isteklerini işler; HapBilgi için öğrenme araçları Podcast doğrulama sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/api/ogrenme-araclari/bayraklar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/api/ogrenme-araclari/bayraklar` uç noktasında GET isteklerini işler; HapBilgi için öğrenme araçları bayraklar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/api/ogrenme-araclari/flip-pdf-ilerleme/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/api/ogrenme-araclari/flip-pdf-ilerleme` uç noktasında POST isteklerini işler; HapBilgi için öğrenme araçları flip pdf ilerleme sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/api/ogrenme-araclari/gorsel-tamamla/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/api/ogrenme-araclari/gorsel-tamamla` uç noktasında POST isteklerini işler; HapBilgi için öğrenme araçları Dijital Broşür tamamlama sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/api/ogrenme-araclari/podcast-ilerleme/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/api/ogrenme-araclari/podcast-ilerleme` uç noktasında POST isteklerini işler; HapBilgi için öğrenme araçları Podcast ilerleme sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/api/ogrenme-araclari/yarim-yuklemeler/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/api/ogrenme-araclari/yarim-yuklemeler` uç noktasında GET, DELETE, POST isteklerini işler; HapBilgi için öğrenme araçları yarım yüklemeler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/api/ogrenme-araclari/yukleme-baslat/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/api/ogrenme-araclari/yukleme-baslat` uç noktasında POST isteklerini işler; HapBilgi için öğrenme araçları yükleme başlatma sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/api/ogrenme-araclari/yukleme-local/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/api/ogrenme-araclari/yukleme-local` uç noktasında PUT isteklerini işler; HapBilgi için öğrenme araçları yükleme yerel sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/api/ogrenme-araclari/yukleme-tamamla/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/api/ogrenme-araclari/yukleme-tamamla` uç noktasında POST isteklerini işler; HapBilgi için öğrenme araçları yükleme tamamlama sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/api/push/abonelik/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/api/push/abonelik` uç noktasında POST, DELETE isteklerini işler; Web Push bildirimleri için Web Push abonelik sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/api/uretim/hazir-video-mutabakat/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/api/uretim/hazir-video-mutabakat` uç noktasında POST isteklerini işler; üretim için üretim hazır video mutabakat sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/bildirimler/api/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/bildirimler/api` uç noktasında GET, PUT isteklerini işler; bildirim için bildirimler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
 ### 📁 app/login/
 
@@ -495,13 +589,51 @@ Hızlı yol sonrasında aynı role özel hazır sorularla canlı süre ve kaynak
 |---|:---:|---|
 | `page.tsx` | UI / React | Kullanıcıların e-posta ve şifre ile sisteme giriş yaptığı, hata durumlarını yöneten kimlik doğrulama arayüzü. |
 
+### 📁 app/login/_components/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `GirisAltBilgileri.tsx` | UI / React | Giriş formunun altında kullanım koşulları, KVKK ve çerez metinlerini modal olarak açar; şirket bağlantısı ile iletişim adresini gösterir. |
+| `yasalMetinler.ts` | TypeScript / Lib | Login sayfasında gösterilen Platform Kullanım Koşulları, KVKK Aydınlatma Metni ve Çerez Aydınlatma Metni içeriklerinin kanonik veri kaynağıdır. |
+
+### 📁 app/providers/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `AuthProvider.tsx` | UI / React | Kullanıcının Supabase oturumunu, yetkili kimliğini (v_auth_kimlik_admin) ve rolünü tüm arayüze dağıtan React Context sağlayıcısı. |
+| `PushAbonelik.tsx` | UI / React | Oturum açan kullanıcı için tarayıcı bildirim desteğini ve izin tercihini yönetir; abonelik kaydını sunucu API'siyle eşleştirir. |
+
 ### 📁 app/sifre-yenile/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `page.tsx` | UI / React | Kullanıcıların güvenli e-posta bağlantısıyla şifrelerini sıfırladığı ve yeni şifre belirlediği arayüz. |
 
+### 📁 app/takimlar/api/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/takimlar/api` uç noktasında GET isteklerini işler; HapBilgi için takimlar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/teknikler/api/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/teknikler/api` uç noktasında GET, POST isteklerini işler; HapBilgi için teknikler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/urunler/api/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/urunler/api` uç noktasında GET, POST isteklerini işler; HapBilgi için ürünler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
 ## 3. APP PANEL MODÜLLERİ (B2B SAHA & YÖNETİM)
+
+### 📁 app/(panel)/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `layout.tsx` | UI / React | HapBilgi alt rotalarının ortak yerleşimini, sağlayıcılarını ve gezinme kabuğunu kuran Next.js layout bileşenidir. |
 
 ### 📁 app/(panel)/ana-sayfa/
 
@@ -509,147 +641,23 @@ Hızlı yol sonrasında aynı role özel hazır sorularla canlı süre ve kaynak
 |---|:---:|---|
 | `page.tsx` | UI / React | Kullanıcının rolüne göre (Üretici, UTT, BM, TM, Yönetici) özelleşmiş karşılama ve operasyonel hızlı eylem paneli. |
 
-### 📁 app/(panel)/talepler/
+### 📁 app/(panel)/ana-sayfa/api/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `_types.ts` | TypeScript / Lib | _types.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `_ureticiRolTypes.ts` | TypeScript / Lib | _ureticiRolTypes.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `page.tsx` | UI / React | Ürün Müdürleri ve üretici rollerin yeni eğitim talebi oluşturduğu ve geçmiş talepleri listelediği talep yönetim arayüzü. |
+| `route.ts` | API / Route Handler | `/ana-sayfa/api` uç noktasında GET isteklerini işler; HapBilgi için ana sayfa sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
-### 📁 app/(panel)/talepler/_hooks/
+### 📁 app/(panel)/cc-ligi/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `useTalepFormu.ts` | TypeScript / Lib | Talep formundaki girdi validasyonlarını, hedef rol kurallarını ve dosya yükleme işlemlerini yöneten React hook'u. |
-| `useTalepMerkezi.ts` | TypeScript / Lib | Üreticinin geçmiş talep listelerini filtreleyen, sayfalayan ve durum geçişlerini koordine eden React hook'u. |
+| `page.tsx` | UI / React | Bölge Müdürlerinin Challenge Club kapsamında topladıkları meydan okuma puanlarıyla yarıştığı yönetici ligi sayfası. |
 
-### 📁 app/(panel)/talepler/_components/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `AdimIcerigi.tsx` | UI / React | AdimIcerigi.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `AksiyonSeridi.tsx` | UI / React | AksiyonSeridi.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `EkDosyaYukleme.tsx` | UI / React | EkDosyaYukleme.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `HazirSoruSetiBlogu.tsx` | UI / React | HazirSoruSetiBlogu.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `HazirVideoYukleme.tsx` | UI / React | HazirVideoYukleme.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `IptalAkordiyonu.tsx` | UI / React | IptalAkordiyonu.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `IsListesi.tsx` | UI / React | IsListesi.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `SoruSetiAyarlari.tsx` | UI / React | SoruSetiAyarlari.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `TalepDetayi.tsx` | UI / React | TalepDetayi.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `TalepOnayModal.tsx` | UI / React | TalepOnayModal.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `UreticiRolGorunum.tsx` | UI / React | UreticiRolGorunum.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `UretimSeridi.tsx` | UI / React | UretimSeridi.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `UrunTeknikSecici.tsx` | UI / React | UrunTeknikSecici.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `VideoYukleme.tsx` | UI / React | VideoYukleme.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `YeniTalepAkordiyonu.tsx` | UI / React | YeniTalepAkordiyonu.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `YeniTalepFormV2.tsx` | UI / React | YeniTalepFormV2.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-
-### 📁 app/(panel)/talepler/api/
+### 📁 app/(panel)/cc-ligi/api/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `route.ts` | TypeScript / Lib | İlgili rotanın HTTP isteklerini (GET, POST, PUT, DELETE) işleyen ve veritabanı işlemlerini yürüten API uç noktası. |
-
-### 📁 app/(panel)/senaryolar/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `page.tsx` | UI / React | İçerik Üreticisinden gelen senaryoların canlı görsel diff editörüyle incelendiği ve onaylandığı senaryo karar sayfası. |
-
-### 📁 app/(panel)/videolar/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `page.tsx` | UI / React | Üretilen videoların ön izleme ile denetlendiği, onaylandığı veya revizyona gönderildiği video karar sayfası. |
-
-### 📁 app/(panel)/soru-setleri/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `page.tsx` | UI / React | Video sonrası soru setlerinin, doğru şıkların ve soru metinlerinin incelenip yayına onaylandığı soru seti karar sayfası. |
-
-### 📁 app/(panel)/yayin-yonetimi/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `_types.ts` | TypeScript / Lib | _types.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `page.tsx` | UI / React | Onaylanan içeriklerin puanlarının belirlendiği, hedef kitleye açıldığı ve yayına alındığı yayın operasyon merkezi. |
-
-### 📁 app/(panel)/yayin-yonetimi/_hooks/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `useYayinYonetimi.ts` | TypeScript / Lib | Yayın havuzundaki aday içerikleri, puan formunu ve yayına alma/durdurma süreçlerini yöneten React hook'u. |
-
-### 📁 app/(panel)/yayin-yonetimi/_components/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `BekleyenSatir.tsx` | UI / React | BekleyenSatir.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `Modallar.tsx` | UI / React | Modallar.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `SoruListesi.tsx` | UI / React | SoruListesi.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `Yardimcilar.tsx` | UI / React | Yardimcilar.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `YayinKumandaPaneli.tsx` | UI / React | YayinKumandaPaneli.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `YayinSatir.tsx` | UI / React | YayinSatir.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-
-### 📁 app/(panel)/yayin-yonetimi/api/puan/sorular/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `route.ts` | TypeScript / Lib | İlgili rotanın HTTP isteklerini (GET, POST, PUT, DELETE) işleyen ve veritabanı işlemlerini yürüten API uç noktası. |
-
-### 📁 app/(panel)/yayin-yonetimi/api/yayinlar/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `route.ts` | TypeScript / Lib | İlgili rotanın HTTP isteklerini (GET, POST, PUT, DELETE) işleyen ve veritabanı işlemlerini yürüten API uç noktası. |
-
-### 📁 app/(panel)/uretim/gorevler/[gorev_id]/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `page.tsx` | UI / React | İçerik Üreticisinin seçili görev için senaryo yazdığı, Bunny TUS ile video yüklediği ve soru seti teslim ettiği üretim atölyesi. |
-
-### 📁 app/(panel)/yayindaki-videolar/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `page.tsx` | UI / React | Üretilen videoların ön izleme ile denetlendiği, onaylandığı veya revizyona gönderildiği video karar sayfası. |
-
-### 📁 app/(panel)/yayindaki-videolar/_components/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `BmOneriPaneli.tsx` | UI / React | BmOneriPaneli.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `KlasorGrid.tsx` | UI / React | KlasorGrid.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `UreticiYayinKatalogu.tsx` | UI / React | UreticiYayinKatalogu.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `YayindakiVideoBolumu.tsx` | UI / React | YayindakiVideoBolumu.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-
-### 📁 app/(panel)/yayindaki-videolar/api/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `route.ts` | TypeScript / Lib | İlgili rotanın HTTP isteklerini (GET, POST, PUT, DELETE) işleyen ve veritabanı işlemlerini yürüten API uç noktası. |
-
-### 📁 app/(panel)/oneriler/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `page.tsx` | UI / React | UTT için gelen önerileri, BM için gönderdiği önerileri, TM için takım takip dökümünü sunan öneri merkezi. |
-
-### 📁 app/(panel)/oneriler/_components/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `BmOneriTakibi.tsx` | UI / React | BmOneriTakibi.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `TmOneriTakibi.tsx` | UI / React | TmOneriTakibi.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-
-### 📁 app/(panel)/oneriler/api/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `route.ts` | TypeScript / Lib | İlgili rotanın HTTP isteklerini (GET, POST, PUT, DELETE) işleyen ve veritabanı işlemlerini yürüten API uç noktası. |
+| `route.ts` | API / Route Handler | `/cc-ligi/api` uç noktasında GET isteklerini işler; C-Club için cc ligi sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
 ### 📁 app/(panel)/challenge-club/
 
@@ -661,7 +669,55 @@ Hızlı yol sonrasında aynı role özel hazır sorularla canlı süre ve kaynak
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `route.ts` | TypeScript / Lib | İlgili rotanın HTTP isteklerini (GET, POST, PUT, DELETE) işleyen ve veritabanı işlemlerini yürüten API uç noktası. |
+| `route.ts` | API / Route Handler | `/challenge-club/api` uç noktasında GET, POST isteklerini işler; C-Club için challenge club sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/challenge-club/api/uygun-aliciler/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/challenge-club/api/uygun-aliciler` uç noktasında GET isteklerini işler; C-Club için challenge club uygun aliciler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/challenge-club/api/uygun-videolar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/challenge-club/api/uygun-videolar` uç noktasında GET isteklerini işler; C-Club için challenge club uygun videolar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/challenge-club/izle/[yayin_id]/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/challenge-club/izle/[yayin_id]` rotasında C-Club kapsamındaki [yayin id] arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/challenge-club/izle/api/baslat/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/challenge-club/izle/api/baslat` uç noktasında POST isteklerini işler; C-Club için izleme başlatma sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/challenge-club/izle/api/bitir/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/challenge-club/izle/api/bitir` uç noktasında PUT isteklerini işler; C-Club için izleme tamamlama sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/challenge-club/izle/api/cevap/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/challenge-club/izle/api/cevap` uç noktasında POST isteklerini işler; C-Club için izleme cevap sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/challenge-club/izle/api/ileri-sarma/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/challenge-club/izle/api/ileri-sarma` uç noktasında POST isteklerini işler; C-Club için izleme ileri sarma sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/challenge-club/izle/api/sorular/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/challenge-club/izle/api/sorular` uç noktasında GET isteklerini işler; C-Club için izleme sorular sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
 ### 📁 app/(panel)/eclub/eczanelerim/
 
@@ -669,30 +725,178 @@ Hızlı yol sonrasında aynı role özel hazır sorularla canlı süre ve kaynak
 |---|:---:|---|
 | `page.tsx` | UI / React | UTT'nin takımına özel isim verdiği, GLN ile eczane bağladığı, eczacı ve teknisyen kadrosunu yönettiği E-Club Takımım sayfası. |
 
+### 📁 app/(panel)/eclub/gonderilen-videolar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/eclub/gonderilen-videolar` rotasında E-Club kapsamındaki gonderilen videolar arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/eclub/ligi/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `eclub-league.module.css` | Stil / CSS | E-Club görünümünün yerleşim, renk, tipografi ve responsive davranışlarını tanımlayan stil dosyasıdır. |
+| `page.tsx` | UI / React | Firma genelindeki tüm UTT takımlarının dönemlik şampiyonluk podyumunu ve puan sıralamasını sunan büyük E-Club Takımlar Ligi sayfası. |
+
+### 📁 app/(panel)/eclub/ligi/api/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eclub/ligi/api` uç noktasında GET isteklerini işler; E-Club için E-Club ligi sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eclub/ligi/api/export/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eclub/ligi/api/export` uç noktasında GET isteklerini işler; E-Club için ligi dışa aktarma sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eclub/ligi/api/takim-adi/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eclub/ligi/api/takim-adi` uç noktasında GET, PUT isteklerini işler; E-Club için ligi takım adi sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eclub/listem/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `_types.ts` | TypeScript / Lib | E-Club alanında kullanılan `Eczane`, `Kisi`, `EclubGecisTalebi`, `GlnKisi` veri tiplerini ve modüller arası sözleşmeleri tanımlar. |
+| `page.tsx` | UI / React | `/eclub/listem` rotasında E-Club kapsamındaki listem arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/eclub/listem/_components/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `EczaneBlogu.tsx` | UI / React | eczane Blogu, E-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+
+### 📁 app/(panel)/eclub/listem/_hooks/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `useEclubListem.ts` | TypeScript / Lib | use E-Club listem hook'u, E-Club ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+
+### 📁 app/(panel)/eclub/listem/api/eczaneler/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eclub/listem/api/eczaneler` uç noktasında GET, POST, PUT isteklerini işler; E-Club için listem eczaneler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eclub/listem/api/kisiler/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eclub/listem/api/kisiler` uç noktasında GET, POST, PUT isteklerini işler; E-Club için listem kişiler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eclub/oneriler/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `_types.ts` | TypeScript / Lib | E-Club alanında kullanılan `EclubHedefRol`, `OneriYayin`, `OneriKisi`, `OneriLimitler` veri tiplerini ve modüller arası sözleşmeleri tanımlar. |
+| `page.tsx` | UI / React | `/eclub/oneriler` rotasında E-Club kapsamındaki öneriler arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/eclub/oneriler/_hooks/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `useEclubOneriler.ts` | TypeScript / Lib | use E-Club öneriler hook'u, E-Club ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+
+### 📁 app/(panel)/eclub/oneriler/api/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eclub/oneriler/api` uç noktasında GET, POST isteklerini işler; E-Club için E-Club öneriler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eclub/oneriler/api/yayinlar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eclub/oneriler/api/yayinlar` uç noktasında GET isteklerini işler; E-Club için öneriler yayınlar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
 ### 📁 app/(panel)/eclub/panel/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `page.tsx` | UI / React | Eczacı ve teknisyenlerin eczanelerine önerilen firma videolarını izleyip E-Club puanı kazandığı dış müşteri portalı. |
-
-### 📁 app/(panel)/eclub/panel/_hooks/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `useEclubPanel.ts` | TypeScript / Lib | useEclubPanel.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `page.tsx` | UI / React | `/eclub/panel` rotasında E-Club kapsamındaki panel arayüzünü sunan Next.js sayfa bileşenidir. |
 
 ### 📁 app/(panel)/eclub/panel/_components/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `EclubFirmaVideoKatalogu.tsx` | UI / React | EclubFirmaVideoKatalogu.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `EclubVideoOynatici.tsx` | UI / React | EclubVideoOynatici.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `EclubFirmaVideoKatalogu.tsx` | UI / React | E-Club firma video Katalogu, E-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `EclubVideoOynatici.tsx` | UI / React | E-Club video Oynatici, ilgili öğrenme aracını gösteren ve E-Club ilerleme/tamamlama akışına bağlayan oynatıcı bileşenidir. |
+
+### 📁 app/(panel)/eclub/panel/_hooks/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `useEclubPanel.ts` | TypeScript / Lib | use E-Club panel hook'u, E-Club ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
 
 ### 📁 app/(panel)/eclub/panel/api/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `route.ts` | TypeScript / Lib | İlgili rotanın HTTP isteklerini (GET, POST, PUT, DELETE) işleyen ve veritabanı işlemlerini yürüten API uç noktası. |
+| `route.ts` | API / Route Handler | `/eclub/panel/api` uç noktasında GET isteklerini işler; E-Club için E-Club panel sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eclub/panel/api/baslat/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eclub/panel/api/baslat` uç noktasında POST isteklerini işler; E-Club için panel başlatma sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eclub/panel/api/bitir/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eclub/panel/api/bitir` uç noktasında PUT isteklerini işler; E-Club için panel tamamlama sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eclub/panel/api/cevapla/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eclub/panel/api/cevapla` uç noktasında POST isteklerini işler; E-Club için panel cevaplama sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eclub/panel/api/ileri-sarma/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eclub/panel/api/ileri-sarma` uç noktasında POST isteklerini işler; E-Club için panel ileri sarma sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eclub/panel/api/sorular/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eclub/panel/api/sorular` uç noktasında GET isteklerini işler; E-Club için panel sorular sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eclub/panel/firma/[firma_id]/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/eclub/panel/firma/[firma_id]` rotasında E-Club kapsamındaki [firma id] arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/eclub/raporlar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `eclub-report.module.css` | Stil / CSS | E-Club görünümünün yerleşim, renk, tipografi ve responsive davranışlarını tanımlayan stil dosyasıdır. |
+| `page.tsx` | UI / React | UTT'ler ve yöneticiler için E-Club takımındaki eczacı ve teknisyenlerin izleme, doğru cevap ve puan katkı karnesini sunan E-Club Takım Raporlarım sayfası. |
+
+### 📁 app/(panel)/eclub/raporlar/api/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eclub/raporlar/api` uç noktasında GET isteklerini işler; E-Club için E-Club raporlar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eclub/siparisler/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/eclub/siparisler` rotasında E-Club kapsamındaki siparişler arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/eclub/siparisler/api/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eclub/siparisler/api` uç noktasında GET isteklerini işler; E-Club için E-Club siparişler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
 ### 📁 app/(panel)/eclub/store/
 
@@ -700,37 +904,65 @@ Hızlı yol sonrasında aynı role özel hazır sorularla canlı süre ve kaynak
 |---|:---:|---|
 | `page.tsx` | UI / React | Eczacı ve teknisyenlerin biriken puanlarıyla ürün siparişi verdiği çok-firmalı E-Club mağazası. |
 
+### 📁 app/(panel)/eclub/store/_hooks/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `useEclubStore.ts` | TypeScript / Lib | use E-Club Store hook'u, E-Club Store ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+
+### 📁 app/(panel)/eclub/store/adreslerim/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/eclub/store/adreslerim` rotasında E-Club Store kapsamındaki adreslerim arayüzünü sunan Next.js sayfa bileşenidir. |
+
 ### 📁 app/(panel)/eclub/store/api/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `route.ts` | TypeScript / Lib | İlgili rotanın HTTP isteklerini (GET, POST, PUT, DELETE) işleyen ve veritabanı işlemlerini yürüten API uç noktası. |
+| `route.ts` | API / Route Handler | `/eclub/store/api` uç noktasında GET isteklerini işler; E-Club Store için E-Club Store sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
-### 📁 app/(panel)/eclub/ligi/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `eclub-league.module.css` | Stil / CSS | İlgili bileşene veya sayfaya özel stil kurallarını içeren CSS modül dosyası. |
-| `page.tsx` | UI / React | Firma genelindeki tüm UTT takımlarının dönemlik şampiyonluk podyumunu ve puan sıralamasını sunan büyük E-Club Takımlar Ligi sayfası. |
-
-### 📁 app/(panel)/eclub/ligi/api/
+### 📁 app/(panel)/eclub/store/api/adres/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `route.ts` | TypeScript / Lib | İlgili rotanın HTTP isteklerini (GET, POST, PUT, DELETE) işleyen ve veritabanı işlemlerini yürüten API uç noktası. |
+| `route.ts` | API / Route Handler | `/eclub/store/api/adres` uç noktasında GET, POST, DELETE isteklerini işler; E-Club Store için Store adres sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
-### 📁 app/(panel)/eclub/raporlar/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `eclub-report.module.css` | Stil / CSS | İlgili bileşene veya sayfaya özel stil kurallarını içeren CSS modül dosyası. |
-| `page.tsx` | UI / React | UTT'ler ve yöneticiler için E-Club takımındaki eczacı ve teknisyenlerin izleme, doğru cevap ve puan katkı karnesini sunan E-Club Takım Raporlarım sayfası. |
-
-### 📁 app/(panel)/eclub/raporlar/api/
+### 📁 app/(panel)/eclub/store/api/siparis/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `route.ts` | TypeScript / Lib | İlgili rotanın HTTP isteklerini (GET, POST, PUT, DELETE) işleyen ve veritabanı işlemlerini yürüten API uç noktası. |
+| `route.ts` | API / Route Handler | `/eclub/store/api/siparis` uç noktasında GET, POST, PATCH isteklerini işler; E-Club Store için Store sipariş sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eclub/store/rapor/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/eclub/store/rapor` rotasında E-Club Store kapsamındaki rapor arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/eclub/store/rapor/api/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eclub/store/rapor/api` uç noktasında HTTP isteklerini işler; E-Club Store için Store rapor sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eclub/store/siparislerim/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/eclub/store/siparislerim` rotasında E-Club Store kapsamındaki siparislerim arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/eclub/videolarim/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/eclub/videolarim` rotasında E-Club kapsamındaki öğrenme yayınları arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/eclub/videolarim/_components/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `VideoGonderimSatiri.tsx` | UI / React | video gönderim Satiri, E-Club listesindeki bir video gönderim kaydını durumu ve izinli eylemleriyle gösterir. |
 
 ### 📁 app/(panel)/eczanem/eczane/
 
@@ -742,22 +974,64 @@ Hızlı yol sonrasında aynı role özel hazır sorularla canlı süre ve kaynak
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `EczanemDokum.tsx` | UI / React | EczanemDokum.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `EczanemEczaneArayuz.tsx` | UI / React | EczanemEczaneArayuz.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `EczanemSiparisKuyrugu.tsx` | UI / React | EczanemSiparisKuyrugu.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `EczanemVideoGonderimSatiri.tsx` | UI / React | EczanemVideoGonderimSatiri.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `EczanemDokum.tsx` | UI / React | Eczanem döküm, Eczanem ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `EczanemEczaneArayuz.tsx` | UI / React | Eczanem eczane Arayuz, Eczanem ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `EczanemSiparisKuyrugu.tsx` | UI / React | Eczanem sipariş Kuyrugu, Eczanem ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `EczanemVideoGonderimSatiri.tsx` | UI / React | Eczanem video gönderim Satiri, Eczanem listesindeki bir eczanem video gönderim kaydını durumu ve izinli eylemleriyle gösterir. |
+
+### 📁 app/(panel)/eczanem/eczane/api/dokum/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/eczane/api/dokum` uç noktasında GET isteklerini işler; Eczanem için eczane döküm sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eczanem/eczane/api/gonderim/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/eczane/api/gonderim` uç noktasında GET, POST isteklerini işler; Eczanem için eczane gönderim sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eczanem/eczane/api/musteri-ekle/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/eczane/api/musteri-ekle` uç noktasında POST isteklerini işler; Eczanem için eczane üye ekle sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eczanem/eczane/api/musteriler/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/eczane/api/musteriler` uç noktasında GET, PUT, DELETE isteklerini işler; Eczanem için eczane üyeler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eczanem/eczane/api/rozet/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/eczane/api/rozet` uç noktasında GET isteklerini işler; Eczanem için eczane rozet sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eczanem/eczane/api/siparisler/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/eczane/api/siparisler` uç noktasında GET, POST isteklerini işler; Eczanem için eczane siparişler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/eczanem/eczane/dagitim/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/eczanem/eczane/dagitim` rotasında Eczanem kapsamındaki dağıtım arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/eczanem/eczane/dokum/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/eczanem/eczane/dokum` rotasında Eczanem kapsamındaki döküm arayüzünü sunan Next.js sayfa bileşenidir. |
 
 ### 📁 app/(panel)/eczanem/eczane/musterilerim/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `page.tsx` | UI / React | Eczaneye bağlı kayıtlı müşterilerin listelendiği, yeni müşteri eklendiği veya SMS daveti gönderildiği müşteri sayfası. |
-
-### 📁 app/(panel)/eczanem/eczane/dagitim/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `page.tsx` | UI / React | Eczacının firmadan gelen OTC videolarını kendi aktif müşterilerine gönderdiği dağıtım sayfası. |
 
 ### 📁 app/(panel)/eczanem/eczane/siparisler/
 
@@ -769,8 +1043,279 @@ Hızlı yol sonrasında aynı role özel hazır sorularla canlı süre ve kaynak
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `_types.ts` | TypeScript / Lib | _types.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `_types.ts` | TypeScript / Lib | Eczanem alanında kullanılan `UttEczanemYayin`, `UttEczanemEczane`, `UttEczanemGonderim`, `UttEczanemVeri` veri tiplerini ve modüller arası sözleşmeleri tanımlar. |
 | `page.tsx` | UI / React | UTT'nin portföyündeki uygun eczanelere OTC tüketici videoları dağıttığı temsilci operasyon sayfası. |
+
+### 📁 app/(panel)/eczanem/utt/_components/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `UttEczanemDokum.tsx` | UI / React | UTT Eczanem döküm, Eczanem ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `UttVideoGonderimSatiri.tsx` | UI / React | UTT video gönderim Satiri, Eczanem listesindeki bir utt video gönderim kaydını durumu ve izinli eylemleriyle gösterir. |
+
+### 📁 app/(panel)/eczanem/utt/mutabakat/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/eczanem/utt/mutabakat` rotasında Eczanem kapsamındaki mutabakat arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/hapbilgi-nedir/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/hapbilgi-nedir` rotasında HapBilgi kapsamındaki hapbilgi nedir arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/hbligi/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/hbligi` rotasında T-Club kapsamındaki hbligi arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/hbligi/api/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/hbligi/api` uç noktasında GET isteklerini işler; T-Club için hbligi sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/iletisim/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/iletisim` rotasında HapBilgi kapsamındaki iletişim arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/kullanicilar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/kullanicilar` rotasında HapBilgi kapsamındaki kullanıcılar arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/kullanicilar/api/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/kullanicilar/api` uç noktasında GET isteklerini işler; HapBilgi için kullanıcılar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/kullanicilar/api/[kullanici_id]/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/kullanicilar/api/[kullanici_id]` uç noktasında GET, PUT, DELETE isteklerini işler; HapBilgi için kullanıcılar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/nasil-calisir/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/nasil-calisir` rotasında HapBilgi kapsamındaki nasil calisir arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/onaylanan-talepler/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/onaylanan-talepler` rotasında HapBilgi kapsamındaki onaylanan talepler arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/oneriler/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | UTT için gelen önerileri, BM için gönderdiği önerileri, TM için takım takip dökümünü sunan öneri merkezi. |
+
+### 📁 app/(panel)/oneriler/_components/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `BmOneriTakibi.tsx` | UI / React | Bm öneri Takibi, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `TmOneriTakibi.tsx` | UI / React | Tm öneri Takibi, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+
+### 📁 app/(panel)/oneriler/api/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/oneriler/api` uç noktasında GET, POST isteklerini işler; HapBilgi için öneriler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/oneriler/api/[oneri_id]/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/oneriler/api/[oneri_id]` uç noktasında PUT isteklerini işler; HapBilgi için öneriler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/oneriler/api/kullanicilar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/oneriler/api/kullanicilar` uç noktasında GET isteklerini işler; HapBilgi için öneriler kullanıcılar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/oneriler/api/yayinlar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/oneriler/api/yayinlar` uç noktasında GET isteklerini işler; HapBilgi için öneriler yayınlar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/profil/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/profil` rotasında HapBilgi kapsamındaki profil arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/profil/api/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/profil/api` uç noktasında GET, PUT isteklerini işler; HapBilgi için profil sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/raporlar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/raporlar` rotasında raporlama kapsamındaki raporlar arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/raporlar/api/bm/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/raporlar/api/bm` uç noktasında GET isteklerini işler; raporlama için raporlar bm sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/raporlar/api/eczanem/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/raporlar/api/eczanem` uç noktasında GET isteklerini işler; Eczanem için raporlar Eczanem sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/raporlar/api/tclub-uretici/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/raporlar/api/tclub-uretici` uç noktasında GET isteklerini işler; raporlama için raporlar tclub üretici sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/raporlar/api/tm/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/raporlar/api/tm` uç noktasında GET isteklerini işler; raporlama için raporlar tm sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/raporlar/api/uretici/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/raporlar/api/uretici` uç noktasında GET isteklerini işler; üretim için raporlar üretici sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/raporlar/api/uretim/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/raporlar/api/uretim` uç noktasında GET isteklerini işler; üretim için raporlar üretim sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/raporlar/api/utt/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/raporlar/api/utt` uç noktasında GET isteklerini işler; raporlama için raporlar UTT sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/raporlar/api/yonetici/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/raporlar/api/yonetici` uç noktasında GET isteklerini işler; raporlama için raporlar yönetici sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/raporlar/api/yonetici/akordeon/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/raporlar/api/yonetici/akordeon` uç noktasında GET isteklerini işler; raporlama için yönetici akordeon sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/raporlar/bm/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `bm-report.module.css` | Stil / CSS | raporlama görünümünün yerleşim, renk, tipografi ve responsive davranışlarını tanımlayan stil dosyasıdır. |
+| `page.tsx` | UI / React | Bölge Müdürünün bölgesine bağlı UTT'lerin eğitim ve öneri tamamlama performansını analiz ettiği bölge raporu. |
+
+### 📁 app/(panel)/raporlar/eczanem/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/raporlar/eczanem` rotasında Eczanem kapsamındaki Eczanem arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/raporlar/tclub-uretici/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/raporlar/tclub-uretici` rotasında raporlama kapsamındaki tclub üretici arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/raporlar/tm/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | Takım Müdürünün takımındaki bölgelerin ve BM'lerin genel başarı oranlarını karşılaştırdığı takım raporu. |
+| `tm-report.module.css` | Stil / CSS | raporlama görünümünün yerleşim, renk, tipografi ve responsive davranışlarını tanımlayan stil dosyasıdır. |
+
+### 📁 app/(panel)/raporlar/uretici/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | Ürün ve Eğitim Müdürlerinin ürettikleri eğitimlerin izlenme oranlarını ve eğitim türü etkisini izlediği üretici raporu. |
+| `uretici-report.module.css` | Stil / CSS | üretim görünümünün yerleşim, renk, tipografi ve responsive davranışlarını tanımlayan stil dosyasıdır. |
+
+### 📁 app/(panel)/raporlar/uretim/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/raporlar/uretim` rotasında üretim kapsamındaki üretim arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/raporlar/utt/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | Tıbbi Tanıtım Temsilcisinin kişisel izlenme, soru başarısı ve puan kazanım grafiklerini sunan bireysel rapor sayfası. |
+| `utt-report.module.css` | Stil / CSS | raporlama görünümünün yerleşim, renk, tipografi ve responsive davranışlarını tanımlayan stil dosyasıdır. |
+
+### 📁 app/(panel)/raporlar/yonetici/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | Üst Yönetimin (GM, Direktörler) firma genelindeki tüm hiyerarşik başarı dökümlerini incelediği konsolide yönetici raporu. |
+| `yonetici-report.module.css` | Stil / CSS | raporlama görünümünün yerleşim, renk, tipografi ve responsive davranışlarını tanımlayan stil dosyasıdır. |
+
+### 📁 app/(panel)/raporlar/yonetici/_components/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `TakimBolgeUttAkordeon.tsx` | UI / React | takım bölge UTT Akordeon, raporlama ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+
+### 📁 app/(panel)/senaryolar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | İçerik Üreticisinden gelen senaryoların canlı görsel diff editörüyle incelendiği ve onaylandığı senaryo karar sayfası. |
+
+### 📁 app/(panel)/senaryolar/[talep_id]/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/senaryolar/[talep_id]` rotasında HapBilgi kapsamındaki [talep id] arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/sizin-yayinlariniz/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/sizin-yayinlariniz` rotasında HapBilgi kapsamındaki sizin yayinlariniz arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/soru-setleri/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/soru-setleri` rotasında HapBilgi kapsamındaki soru setleri arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/soru-setleri/[video_durum_id]/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/soru-setleri/[video_durum_id]` rotasında HapBilgi kapsamındaki [video durum id] arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/sozlesmeler/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/sozlesmeler` rotasında HapBilgi kapsamındaki sozlesmeler arayüzünü sunan Next.js sayfa bileşenidir. |
 
 ### 📁 app/(panel)/store/
 
@@ -790,149 +1335,734 @@ Hızlı yol sonrasında aynı role özel hazır sorularla canlı süre ve kaynak
 |---|:---:|---|
 | `page.tsx` | UI / React | Kullanıcının mağaza teslimat adreslerini eklediği, güncellediği veya sildiği adres yönetim sayfası. |
 
+### 📁 app/(panel)/store/api/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/store/api` uç noktasında GET isteklerini işler; HBStore için Store sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/store/api/adres/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/store/api/adres` uç noktasında GET, POST, PATCH, DELETE isteklerini işler; HBStore için Store adres sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/store/api/siparis/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/store/api/siparis` uç noktasında GET, POST, PATCH isteklerini işler; HBStore için Store sipariş sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/store/siparisler/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `_types.ts` | TypeScript / Lib | HBStore alanında kullanılan `SiparisSatiri`, `HiyerarsiKullanici`, `HiyerarsiBolge`, `HiyerarsiTakim` veri tiplerini ve modüller arası sözleşmeleri tanımlar. |
+| `page.tsx` | UI / React | `/store/siparisler` rotasında HBStore kapsamındaki siparişler arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/store/siparisler/_components/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `SiparisFiltreleri.tsx` | UI / React | sipariş Filtreleri, HBStore ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `SiparisTablosu.tsx` | UI / React | sipariş Tablosu, HBStore verilerini sıralı tablo görünümünde ve ilgili kullanıcı eylemleriyle sunar. |
+
+### 📁 app/(panel)/store/siparisler/_hooks/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `useHiyerarsi.ts` | TypeScript / Lib | use hiyerarşi hook'u, HBStore ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+| `useSiparisListe.ts` | TypeScript / Lib | use sipariş liste hook'u, HBStore ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+
+### 📁 app/(panel)/store/siparisler/api/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/store/siparisler/api` uç noktasında GET isteklerini işler; HBStore için Store siparişler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/store/siparisler/api/hiyerarsi/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/store/siparisler/api/hiyerarsi` uç noktasında GET isteklerini işler; HBStore için siparişler hiyerarşi sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
 ### 📁 app/(panel)/store/siparislerim/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `page.tsx` | UI / React | Kullanıcının geçmiş mağaza siparişlerini, kargo durumlarını takip ettiği ve sipariş iptali yapabildiği geçmiş sayfası. |
 
-### 📁 app/(panel)/store/api/
+### 📁 app/(panel)/talepler/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `route.ts` | TypeScript / Lib | İlgili rotanın HTTP isteklerini (GET, POST, PUT, DELETE) işleyen ve veritabanı işlemlerini yürüten API uç noktası. |
+| `_types.ts` | TypeScript / Lib | HapBilgi alanında kullanılan `Talep`, `Urun`, `Teknik`, `Takim` veri tiplerini ve modüller arası sözleşmeleri tanımlar. |
+| `_ureticiRolTypes.ts` | TypeScript / Lib | HapBilgi alanında kullanılan `TalepSatiri`, `RevizyonNotu`, `SenaryoBlogu`, `VideoBlogu` veri tiplerini ve modüller arası sözleşmeleri tanımlar. |
+| `page.tsx` | UI / React | Ürün Müdürleri ve üretici rollerin yeni eğitim talebi oluşturduğu ve geçmiş talepleri listelediği talep yönetim arayüzü. |
 
-### 📁 app/(panel)/cc-ligi/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `page.tsx` | UI / React | Bölge Müdürlerinin Challenge Club kapsamında topladıkları meydan okuma puanlarıyla yarıştığı yönetici ligi sayfası. |
-
-### 📁 app/(panel)/cc-ligi/api/
+### 📁 app/(panel)/talepler/_components/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `route.ts` | TypeScript / Lib | İlgili rotanın HTTP isteklerini (GET, POST, PUT, DELETE) işleyen ve veritabanı işlemlerini yürüten API uç noktası. |
+| `AdimIcerigi.tsx` | UI / React | Adim Icerigi, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `AksiyonSeridi.tsx` | UI / React | Aksiyon Seridi, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `EkDosyaYukleme.tsx` | UI / React | Ek Dosya yükleme, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `FlipPdfTalepAlanlari.tsx` | UI / React | Flip Pdf talep alanları, HapBilgi işleminde gerekli flip pdf talep alanları girdilerini toplar ve kullanıcı doğrulamalarını görünür kılar. |
+| `GorselTalepAlanlari.tsx` | UI / React | Dijital Broşür talep alanları, HapBilgi işleminde gerekli dijital broşür talep alanları girdilerini toplar ve kullanıcı doğrulamalarını görünür kılar. |
+| `HazirSoruSetiBlogu.tsx` | UI / React | hazır soru Seti Blogu, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `HazirVideoYukleme.tsx` | UI / React | hazır video yükleme, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `IptalAkordiyonu.tsx` | UI / React | Iptal Akordiyonu, HapBilgi kapsamındaki ıptal içeriğini açılır-kapanır bölümde gösterir. |
+| `IsListesi.tsx` | UI / React | Is Listesi, HapBilgi kayıtlarını listeleyip yükleme, seçim veya filtreleme etkileşimlerini yönetir. |
+| `PodcastTalepAlanlari.tsx` | UI / React | Podcast talep alanları, HapBilgi işleminde gerekli podcast talep alanları girdilerini toplar ve kullanıcı doğrulamalarını görünür kılar. |
+| `SoruSetiAyarlari.tsx` | UI / React | soru Seti Ayarlari, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `TalepDetayi.tsx` | UI / React | talep Detayi, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `TalepOnayModal.tsx` | UI / React | talep onay Modal, HapBilgi kapsamındaki talep onay işlemini açılır pencerede yöneten React bileşenidir. |
+| `UreticiRolGorunum.tsx` | UI / React | üretici rol Gorunum, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `UretimSeridi.tsx` | UI / React | üretim Seridi, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `UrunTeknikSecici.tsx` | UI / React | ürün teknik Secici, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `VideoYukleme.tsx` | UI / React | video yükleme, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `YeniTalepAkordiyonu.tsx` | UI / React | Yeni talep Akordiyonu, HapBilgi kapsamındaki yeni talep içeriğini açılır-kapanır bölümde gösterir. |
+| `YeniTalepFormV2.tsx` | UI / React | Yeni talep Form V2, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 
-### 📁 app/(panel)/raporlar/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `page.tsx` | UI / React | İlgili modülün kullanıcı arayüzünü ve sayfa görünümünü oluşturan Next.js sayfa bileşeni. |
-
-### 📁 app/(panel)/raporlar/utt/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `page.tsx` | UI / React | Tıbbi Tanıtım Temsilcisinin kişisel izlenme, soru başarısı ve puan kazanım grafiklerini sunan bireysel rapor sayfası. |
-| `utt-report.module.css` | Stil / CSS | İlgili bileşene veya sayfaya özel stil kurallarını içeren CSS modül dosyası. |
-
-### 📁 app/(panel)/raporlar/bm/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `bm-report.module.css` | Stil / CSS | İlgili bileşene veya sayfaya özel stil kurallarını içeren CSS modül dosyası. |
-| `page.tsx` | UI / React | Bölge Müdürünün bölgesine bağlı UTT'lerin eğitim ve öneri tamamlama performansını analiz ettiği bölge raporu. |
-
-### 📁 app/(panel)/raporlar/tm/
+### 📁 app/(panel)/talepler/_hooks/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `page.tsx` | UI / React | Takım Müdürünün takımındaki bölgelerin ve BM'lerin genel başarı oranlarını karşılaştırdığı takım raporu. |
-| `tm-report.module.css` | Stil / CSS | İlgili bileşene veya sayfaya özel stil kurallarını içeren CSS modül dosyası. |
+| `useTalepFormu.ts` | TypeScript / Lib | Talep formundaki girdi validasyonlarını, hedef rol kurallarını ve dosya yükleme işlemlerini yöneten React hook'u. |
+| `useTalepMerkezi.ts` | TypeScript / Lib | Üreticinin geçmiş talep listelerini filtreleyen, sayfalayan ve durum geçişlerini koordine eden React hook'u. |
 
-### 📁 app/(panel)/raporlar/uretici/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `page.tsx` | UI / React | Ürün ve Eğitim Müdürlerinin ürettikleri eğitimlerin izlenme oranlarını ve eğitim türü etkisini izlediği üretici raporu. |
-| `uretici-report.module.css` | Stil / CSS | İlgili bileşene veya sayfaya özel stil kurallarını içeren CSS modül dosyası. |
-
-### 📁 app/(panel)/raporlar/yonetici/
+### 📁 app/(panel)/talepler/[talep_id]/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `page.tsx` | UI / React | Üst Yönetimin (GM, Direktörler) firma genelindeki tüm hiyerarşik başarı dökümlerini incelediği konsolide yönetici raporu. |
-| `yonetici-report.module.css` | Stil / CSS | İlgili bileşene veya sayfaya özel stil kurallarını içeren CSS modül dosyası. |
+| `page.tsx` | UI / React | `/talepler/[talep_id]` rotasında HapBilgi kapsamındaki [talep id] arayüzünü sunan Next.js sayfa bileşenidir. |
 
-### 📁 app/(panel)/raporlar/eczanem/
+### 📁 app/(panel)/talepler/api/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `page.tsx` | UI / React | Firma genelinde Eczanem OTC video dağıtımı ve kasa indirim mutabakatlarının dökümünü sunan rapor sayfası. |
+| `route.ts` | API / Route Handler | `/talepler/api` uç noktasında POST isteklerini işler; HapBilgi için talepler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
-## 4. APP ADMİN MODÜLÜ (M2 KABUK & 22 API UCU)
+### 📁 app/(panel)/talepler/api/bunny-yukleme-baslat/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/talepler/api/bunny-yukleme-baslat` uç noktasında POST isteklerini işler; HapBilgi için talepler Bunny yükleme başlatma sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/talepler/api/detay/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/talepler/api/detay` uç noktasında GET isteklerini işler; HapBilgi için talepler detay sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/talepler/api/dosyalar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/talepler/api/dosyalar` uç noktasında GET, POST, DELETE isteklerini işler; HapBilgi için talepler dosyalar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/talepler/api/kunye/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/talepler/api/kunye` uç noktasında GET isteklerini işler; HapBilgi için talepler künye sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/talepler/api/uretici-rol/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/talepler/api/uretici-rol` uç noktasında GET isteklerini işler; HapBilgi için talepler üretici rol sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/tum-yayinlar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/tum-yayinlar` rotasında HapBilgi kapsamındaki tum yayınlar arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/uretim/api/gorevler/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/uretim/api/gorevler` uç noktasında GET isteklerini işler; üretim için üretim gorevler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/uretim/api/hazir-video/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/uretim/api/hazir-video` uç noktasında PUT isteklerini işler; üretim için üretim hazır video sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/uretim/api/karar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/uretim/api/karar` uç noktasında POST isteklerini işler; üretim için üretim karar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/uretim/api/talep-baslat/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/uretim/api/talep-baslat` uç noktasında POST isteklerini işler; üretim için üretim talep başlatma sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/uretim/api/teslim/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/uretim/api/teslim` uç noktasında POST isteklerini işler; üretim için üretim teslim sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/uretim/gorevler/[gorev_id]/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/uretim/gorevler/[gorev_id]` rotasında üretim kapsamındaki [gorev id] arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/videolar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/videolar` rotasında HapBilgi kapsamındaki videolar arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/videolar/[senaryo_durum_id]/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/videolar/[senaryo_durum_id]` rotasında HapBilgi kapsamındaki [senaryo durum id] arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/videolar/api/bunny-durum/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/videolar/api/bunny-durum` uç noktasında GET isteklerini işler; HapBilgi için videolar Bunny durum sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/videolar/api/bunny-yukleme-baslat/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/videolar/api/bunny-yukleme-baslat` uç noktasında POST isteklerini işler; HapBilgi için videolar Bunny yükleme başlatma sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/videolar/api/bunny-yukleme-iptal/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/videolar/api/bunny-yukleme-iptal` uç noktasında POST isteklerini işler; HapBilgi için videolar Bunny yükleme iptal sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/videolarim/[kategori]/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/videolarim/[kategori]` rotasında HapBilgi kapsamındaki [kategori] arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/yayin-yonetimi/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `_types.ts` | TypeScript / Lib | HapBilgi alanında kullanılan `Bekleyen`, `Yayin`, `AltSekme`, `BekleyenHedefSayilari` veri tiplerini ve modüller arası sözleşmeleri tanımlar. |
+| `page.tsx` | UI / React | Onaylanan içeriklerin puanlarının belirlendiği, hedef kitleye açıldığı ve yayına alındığı yayın operasyon merkezi. |
+
+### 📁 app/(panel)/yayin-yonetimi/_components/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `BekleyenSatir.tsx` | UI / React | bekleyen Satir, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `Modallar.tsx` | UI / React | Modallar, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `SoruListesi.tsx` | UI / React | soru Listesi, HapBilgi kayıtlarını listeleyip yükleme, seçim veya filtreleme etkileşimlerini yönetir. |
+| `Yardimcilar.tsx` | UI / React | Yardimcilar, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `YayinKumandaPaneli.tsx` | UI / React | yayın Kumanda Paneli, HapBilgi kapsamındaki yayın kumanda verilerini ve işlemlerini tek panelde birleştirir. |
+| `YayinSatir.tsx` | UI / React | yayın Satir, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+
+### 📁 app/(panel)/yayin-yonetimi/_hooks/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `useYayinYonetimi.ts` | TypeScript / Lib | Yayın havuzundaki aday içerikleri, puan formunu ve yayına alma/durdurma süreçlerini yöneten React hook'u. |
+
+### 📁 app/(panel)/yayin-yonetimi/api/bekleyenler/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/yayin-yonetimi/api/bekleyenler` uç noktasında GET isteklerini işler; HapBilgi için yayın yonetimi bekleyenler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/yayin-yonetimi/api/bekleyenler/sil/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/yayin-yonetimi/api/bekleyenler/sil` uç noktasında DELETE isteklerini işler; HapBilgi için bekleyenler silme sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/yayin-yonetimi/api/puan/sorular/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/yayin-yonetimi/api/puan/sorular` uç noktasında POST isteklerini işler; HapBilgi için puan sorular sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/yayin-yonetimi/api/puan/video/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/yayin-yonetimi/api/puan/video` uç noktasında POST isteklerini işler; video altyapısı için puan video sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/yayin-yonetimi/api/tekrar-secenekleri/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/yayin-yonetimi/api/tekrar-secenekleri` uç noktasında GET isteklerini işler; HapBilgi için yayın yonetimi tekrar secenekleri sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/yayin-yonetimi/api/yayinlar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/yayin-yonetimi/api/yayinlar` uç noktasında GET, POST isteklerini işler; HapBilgi için yayın yonetimi yayınlar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/yayin-yonetimi/api/yayinlar/[yayin_id]/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/yayin-yonetimi/api/yayinlar/[yayin_id]` uç noktasında PUT isteklerini işler; HapBilgi için yayın yonetimi yayınlar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/yayindaki-videolar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/yayindaki-videolar` rotasında HapBilgi kapsamındaki yayindaki videolar arayüzünü sunan Next.js sayfa bileşenidir. |
+
+### 📁 app/(panel)/yayindaki-videolar/_components/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `BmOneriPaneli.tsx` | UI / React | Bm öneri Paneli, HapBilgi kapsamındaki bm öneri verilerini ve işlemlerini tek panelde birleştirir. |
+| `KlasorGrid.tsx` | UI / React | Klasor Grid, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `UreticiYayinKatalogu.tsx` | UI / React | üretici yayın Katalogu, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `YayindakiVideoBolumu.tsx` | UI / React | Yayindaki video Bolumu, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+
+### 📁 app/(panel)/yayindaki-videolar/api/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/yayindaki-videolar/api` uç noktasında GET isteklerini işler; HapBilgi için yayindaki videolar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/(panel)/yayindaki-videolar/api/[yayin_id]/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/yayindaki-videolar/api/[yayin_id]` uç noktasında GET isteklerini işler; HapBilgi için yayindaki videolar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+## 4. APP ADMİN MODÜLÜ
 
 ### 📁 app/admin/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `_constants.ts` | TypeScript / Lib | _constants.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `_types.ts` | TypeScript / Lib | _types.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `_constants.ts` | TypeScript / Lib | admin yönetimi kapsamında `ROLLER`, `RENK_GRI`, `RENK_BORDO`, `RENK_CIZGI` işlev ve sabitlerini sağlar; constants iş kurallarını tek modülde toplar. |
+| `_types.ts` | TypeScript / Lib | admin yönetimi alanında kullanılan `Firma`, `Kullanici`, `OnizlemeSatir`, `OnizlemeKurulum` veri tiplerini ve modüller arası sözleşmeleri tanımlar. |
 | `page.tsx` | UI / React | Sistem yöneticilerinin (Admin) firma, kullanıcı, organizasyon ve mağaza operasyonlarını yönettiği M2 modüler orkestrasyon kabuğu. |
-
-### 📁 app/admin/_hooks/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `useAdminPanel.ts` | TypeScript / Lib | useAdminPanel.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `useKullaniciListesi.ts` | TypeScript / Lib | useKullaniciListesi.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `useTakimBolgeForm.ts` | TypeScript / Lib | useTakimBolgeForm.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `useTekilForm.ts` | TypeScript / Lib | useTekilForm.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `useTopluForm.ts` | TypeScript / Lib | useTopluForm.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `useUrunTeknik.ts` | TypeScript / Lib | useUrunTeknik.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
 
 ### 📁 app/admin/_components/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `AdminUstBar.tsx` | UI / React | AdminUstBar.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `FirmaSidebar.tsx` | UI / React | FirmaSidebar.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `FirmaVeriSilModal.tsx` | UI / React | FirmaVeriSilModal.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `KullaniciDuzenleModal.tsx` | UI / React | KullaniciDuzenleModal.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `KullaniciListesi.tsx` | UI / React | KullaniciListesi.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `ModulDurumKarti.tsx` | UI / React | ModulDurumKarti.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `ModulSekmeBari.tsx` | UI / React | ModulSekmeBari.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `SekmeBari.tsx` | UI / React | SekmeBari.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `SistemAyarlari.tsx` | UI / React | SistemAyarlari.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `TakimBolgeFormu.tsx` | UI / React | TakimBolgeFormu.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `TekilGirisFormu.tsx` | UI / React | TekilGirisFormu.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `TopluGirisFormu.tsx` | UI / React | TopluGirisFormu.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `TopluTekilSilModal.tsx` | UI / React | TopluTekilSilModal.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `UrunTeknikYonetimi.tsx` | UI / React | UrunTeknikYonetimi.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `AdminUstBar.tsx` | UI / React | admin Ust Bar, admin yönetimi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `FirmaSidebar.tsx` | UI / React | firma Sidebar, admin yönetimi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `FirmaVeriSilModal.tsx` | UI / React | firma veri silme Modal, admin yönetimi kapsamındaki firma veri silme işlemini açılır pencerede yöneten React bileşenidir. |
+| `KullaniciDuzenleModal.tsx` | UI / React | kullanıcı düzenleme Modal, admin yönetimi kapsamındaki kullanıcı düzenleme işlemini açılır pencerede yöneten React bileşenidir. |
+| `KullaniciListesi.tsx` | UI / React | kullanıcı Listesi, admin yönetimi kayıtlarını listeleyip yükleme, seçim veya filtreleme etkileşimlerini yönetir. |
+| `ModulDurumKarti.tsx` | UI / React | modül durum Karti, admin yönetimi içindeki modül durum bilgisini kart görünümü ve ilgili eylemlerle sunar. |
+| `ModulSekmeBari.tsx` | UI / React | modül Sekme Bari, admin yönetimi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `SekmeBari.tsx` | UI / React | Sekme Bari, admin yönetimi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `SistemAyarlari.tsx` | UI / React | Sistem Ayarlari, admin yönetimi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `TakimBolgeFormu.tsx` | UI / React | takım bölge Formu, admin yönetimi işleminde gerekli takım bölge girdilerini toplar ve kullanıcı doğrulamalarını görünür kılar. |
+| `TekilGirisFormu.tsx` | UI / React | Tekil Giris Formu, admin yönetimi işleminde gerekli tekil giris girdilerini toplar ve kullanıcı doğrulamalarını görünür kılar. |
+| `TopluGirisFormu.tsx` | UI / React | toplu Giris Formu, admin yönetimi işleminde gerekli toplu giris girdilerini toplar ve kullanıcı doğrulamalarını görünür kılar. |
+| `TopluTekilSilModal.tsx` | UI / React | toplu Tekil silme Modal, admin yönetimi kapsamındaki toplu tekil silme işlemini açılır pencerede yöneten React bileşenidir. |
+| `UrunTeknikYonetimi.tsx` | UI / React | ürün teknik Yonetimi, admin yönetimi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 
-### 📁 app/admin/store/
+### 📁 app/admin/_components/global/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `_types.ts` | TypeScript / Lib | _types.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `page.tsx` | UI / React | UTT ve BM'lerin kazandıkları puanlarla ürün seçip sepete eklediği HBStore ana vitrin sayfası. |
+| `EclubStorePaneli.tsx` | UI / React | E-Club Store Paneli, admin yönetimi kapsamındaki e-club store verilerini ve işlemlerini tek panelde birleştirir. |
+| `HbStorePaneli.tsx` | UI / React | Hb Store Paneli, admin yönetimi kapsamındaki hb store verilerini ve işlemlerini tek panelde birleştirir. |
+| `UretimAtamaPaneli.tsx` | UI / React | üretim atama Paneli, admin yönetimi kapsamındaki üretim atama verilerini ve işlemlerini tek panelde birleştirir. |
+
+### 📁 app/admin/_hooks/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `useAdminPanel.ts` | TypeScript / Lib | use admin panel hook'u, admin yönetimi ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+| `useKullaniciListesi.ts` | TypeScript / Lib | use kullanıcı Listesi hook'u, admin yönetimi ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+| `useTakimBolgeForm.ts` | TypeScript / Lib | use takım bölge Form hook'u, admin yönetimi ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+| `useTekilForm.ts` | TypeScript / Lib | use Tekil Form hook'u, admin yönetimi ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+| `useTopluForm.ts` | TypeScript / Lib | use toplu Form hook'u, admin yönetimi ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+| `useUrunTeknik.ts` | TypeScript / Lib | use ürün teknik hook'u, admin yönetimi ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+
+### 📁 app/admin/api/eclub/kayitli/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/eclub/kayitli` uç noktasında GET, PUT isteklerini işler; E-Club için E-Club kayitli sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/api/eclub/onaylar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/eclub/onaylar` uç noktasında GET, PUT isteklerini işler; E-Club için E-Club onaylar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/api/eclub/test-eczaneler/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/eclub/test-eczaneler` uç noktasında GET, POST, DELETE isteklerini işler; E-Club için E-Club test eczaneler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/api/eclub/test-temizlik/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/eclub/test-temizlik` uç noktasında GET, DELETE isteklerini işler; E-Club için E-Club test temizlik sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/api/firmalar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/firmalar` uç noktasında GET, POST isteklerini işler; admin yönetimi için admin firmalar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/api/firmalar/[firma_id]/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/firmalar/[firma_id]` uç noktasında GET, PUT, PATCH, DELETE isteklerini işler; admin yönetimi için admin firmalar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/api/firmalar/[firma_id]/export/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/firmalar/[firma_id]/export` uç noktasında GET isteklerini işler; admin yönetimi için firmalar dışa aktarma sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/api/firmalar/[firma_id]/kullanicilar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/firmalar/[firma_id]/kullanicilar` uç noktasında GET, POST, PUT, DELETE isteklerini işler; admin yönetimi için firmalar kullanıcılar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/api/firmalar/[firma_id]/takimlar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/firmalar/[firma_id]/takimlar` uç noktasında GET, POST isteklerini işler; admin yönetimi için firmalar takimlar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/firmalar/[firma_id]/takimlar/[takim_id]` uç noktasında GET, PUT, DELETE isteklerini işler; admin yönetimi için firmalar takimlar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler` uç noktasında GET, POST isteklerini işler; admin yönetimi için takimlar bolgeler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/[bolge_id]/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/firmalar/[firma_id]/takimlar/[takim_id]/bolgeler/[bolge_id]` uç noktasında GET, PUT, DELETE isteklerini işler; admin yönetimi için takimlar bolgeler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/api/firmalar/[firma_id]/teknikler/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/firmalar/[firma_id]/teknikler` uç noktasında GET, POST, DELETE isteklerini işler; admin yönetimi için firmalar teknikler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/api/firmalar/[firma_id]/toplu-yukle/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/firmalar/[firma_id]/toplu-yukle` uç noktasında POST isteklerini işler; admin yönetimi için firmalar toplu yukle sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/api/firmalar/[firma_id]/urunler/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/firmalar/[firma_id]/urunler` uç noktasında GET, POST, DELETE isteklerini işler; admin yönetimi için firmalar ürünler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/api/giris/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/giris` uç noktasında POST isteklerini işler; admin yönetimi için admin giris sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/api/mesai-bypass/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/mesai-bypass` uç noktasında GET, PUT isteklerini işler; admin yönetimi için admin mesai bypass sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/api/sistem-ayarlari/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/sistem-ayarlari` uç noktasında GET, PUT isteklerini işler; admin yönetimi için admin sistem ayarlari sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/api/uretim/atamalar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/uretim/atamalar` uç noktasında GET, POST isteklerini işler; üretim için üretim atamalar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/api/uretim/gorev-devret/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/uretim/gorev-devret` uç noktasında POST isteklerini işler; üretim için üretim görev devret sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/api/veri-sil/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/api/veri-sil` uç noktasında POST isteklerini işler; admin yönetimi için admin veri silme sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/eclub/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/admin/eclub` rotasında E-Club kapsamındaki E-Club arayüzünü sunan Next.js sayfa bileşenidir. |
 
 ### 📁 app/admin/eclub-store/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `_types.ts` | TypeScript / Lib | _types.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `_types.ts` | TypeScript / Lib | E-Club Store alanında kullanılan `EclubStoreSekme` veri tiplerini ve modüller arası sözleşmeleri tanımlar. |
 | `page.tsx` | UI / React | UTT ve BM'lerin kazandıkları puanlarla ürün seçip sepete eklediği HBStore ana vitrin sayfası. |
 
-## 5. APP ECZANEM B2C TÜKETİCİ PORTALI
+### 📁 app/admin/eclub-store/_components/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `EclubStoreFirmaErisimModal.tsx` | UI / React | E-Club Store firma erişim Modal, E-Club Store kapsamındaki e-club store firma erişim işlemini açılır pencerede yöneten React bileşenidir. |
+| `EclubStoreKategorilerSekmesi.tsx` | UI / React | E-Club Store Kategoriler Sekmesi, E-Club Store yönetimindeki e-club store kategoriler kayıtlarını ve eylemlerini sunar. |
+| `EclubStoreKategoriModal.tsx` | UI / React | E-Club Store kategori Modal, E-Club Store kapsamındaki e-club store kategori işlemini açılır pencerede yöneten React bileşenidir. |
+| `EclubStoreSekmeBari.tsx` | UI / React | E-Club Store Sekme Bari, E-Club Store ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `EclubStoreSiparislerSekmesi.tsx` | UI / React | E-Club Store siparişler Sekmesi, E-Club Store yönetimindeki e-club store siparişler kayıtlarını ve eylemlerini sunar. |
+| `EclubStoreSiparisYonetimModal.tsx` | UI / React | E-Club Store sipariş yönetim Modal, E-Club Store kapsamındaki e-club store sipariş yönetim işlemini açılır pencerede yöneten React bileşenidir. |
+| `EclubStoreUrunlerSekmesi.tsx` | UI / React | E-Club Store ürünler Sekmesi, E-Club Store yönetimindeki e-club store ürünler kayıtlarını ve eylemlerini sunar. |
+| `EclubStoreUrunModal.tsx` | UI / React | E-Club Store ürün Modal, E-Club Store kapsamındaki e-club store ürün işlemini açılır pencerede yöneten React bileşenidir. |
+
+### 📁 app/admin/eclub-store/_hooks/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `useEclubStoreKategori.ts` | TypeScript / Lib | use E-Club Store kategori hook'u, E-Club Store ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+| `useEclubStoreSiparis.ts` | TypeScript / Lib | use E-Club Store sipariş hook'u, E-Club Store ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+| `useEclubStoreUrun.ts` | TypeScript / Lib | use E-Club Store ürün hook'u, E-Club Store ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+
+### 📁 app/admin/eclub-store/api/kategori/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/eclub-store/api/kategori` uç noktasında GET, POST, PUT, DELETE isteklerini işler; E-Club Store için E-Club Store kategori sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/eclub-store/api/siparis/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/eclub-store/api/siparis` uç noktasında GET, PATCH isteklerini işler; E-Club Store için E-Club Store sipariş sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/eclub-store/api/upload/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/eclub-store/api/upload` uç noktasında POST isteklerini işler; E-Club Store için E-Club Store upload sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/eclub-store/api/urun/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/eclub-store/api/urun` uç noktasında GET, POST, PUT, DELETE isteklerini işler; E-Club Store için E-Club Store ürün sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/eclub-store/api/urun-firma/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/eclub-store/api/urun-firma` uç noktasında GET, PATCH isteklerini işler; E-Club Store için E-Club Store ürün firma sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/eclub/_components/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `EclubYonetimPaneli.tsx` | UI / React | E-Club yönetim Paneli, E-Club kapsamındaki e-club yönetim verilerini ve işlemlerini tek panelde birleştirir. |
+
+### 📁 app/admin/eclub/_hooks/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `useEclubKayitli.ts` | TypeScript / Lib | use E-Club Kayitli hook'u, E-Club ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+| `useEclubOnaylar.ts` | TypeScript / Lib | use E-Club onaylar hook'u, E-Club ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+| `useEclubTestEczaneler.ts` | TypeScript / Lib | use E-Club test Eczaneler hook'u, E-Club ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+| `useEclubTestTemizlik.ts` | TypeScript / Lib | use E-Club test Temizlik hook'u, E-Club ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+
+### 📁 app/admin/store/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `_types.ts` | TypeScript / Lib | HBStore alanında kullanılan `UrunGosterim`, `SiparisGosterim`, `Sekme` veri tiplerini ve modüller arası sözleşmeleri tanımlar. |
+| `page.tsx` | UI / React | UTT ve BM'lerin kazandıkları puanlarla ürün seçip sepete eklediği HBStore ana vitrin sayfası. |
+
+### 📁 app/admin/store/_components/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `FirmaErisimModal.tsx` | UI / React | firma erişim Modal, HBStore kapsamındaki firma erişim işlemini açılır pencerede yöneten React bileşenidir. |
+| `KategorilerSekmesi.tsx` | UI / React | Kategoriler Sekmesi, HBStore yönetimindeki kategoriler kayıtlarını ve eylemlerini sunar. |
+| `KategoriModal.tsx` | UI / React | kategori Modal, HBStore kapsamındaki kategori işlemini açılır pencerede yöneten React bileşenidir. |
+| `SekmeBari.tsx` | UI / React | Sekme Bari, HBStore ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `SiparislerSekmesi.tsx` | UI / React | siparişler Sekmesi, HBStore yönetimindeki siparişler kayıtlarını ve eylemlerini sunar. |
+| `SiparisYonetimModal.tsx` | UI / React | sipariş yönetim Modal, HBStore kapsamındaki sipariş yönetim işlemini açılır pencerede yöneten React bileşenidir. |
+| `UrunlerSekmesi.tsx` | UI / React | ürünler Sekmesi, HBStore yönetimindeki ürünler kayıtlarını ve eylemlerini sunar. |
+| `UrunModal.tsx` | UI / React | ürün Modal, HBStore kapsamındaki ürün işlemini açılır pencerede yöneten React bileşenidir. |
+
+### 📁 app/admin/store/_hooks/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `useKategoriYonetimi.ts` | TypeScript / Lib | use kategori Yonetimi hook'u, HBStore ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+| `useSiparisYonetimi.ts` | TypeScript / Lib | use sipariş Yonetimi hook'u, HBStore ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+| `useUrunYonetimi.ts` | TypeScript / Lib | use ürün Yonetimi hook'u, HBStore ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+
+### 📁 app/admin/store/api/kategori/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/store/api/kategori` uç noktasında GET, POST, PATCH, DELETE isteklerini işler; HBStore için Store kategori sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/store/api/siparis/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/store/api/siparis` uç noktasında GET, PATCH isteklerini işler; HBStore için Store sipariş sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/store/api/upload/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/store/api/upload` uç noktasında POST isteklerini işler; HBStore için Store upload sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/store/api/urun/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/store/api/urun` uç noktasında GET, POST, PATCH, DELETE isteklerini işler; HBStore için Store ürün sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/admin/store/api/urun-firma/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/admin/store/api/urun-firma` uç noktasında GET, PATCH isteklerini işler; HBStore için Store ürün firma sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+## 5. APP ECZANEM ÜYE PORTALI
 
 ### 📁 app/eczanem/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `_types.ts` | TypeScript / Lib | _types.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `page.tsx` | UI / React | Son tüketicinin (müşteri) telefon/şifre ile giriş yaparak kendisine gelen OTC videolarını izlediği B2C portal sayfası. |
+| `_types.ts` | TypeScript / Lib | Eczanem alanında kullanılan `EczanemMusteriVideo`, `EczanemVideoRaflari` veri tiplerini ve modüller arası sözleşmeleri tanımlar. |
+| `page.tsx` | UI / React | `/eczanem` rotasında Eczanem kapsamındaki Eczanem arayüzünü sunan Next.js sayfa bileşenidir. |
 
 ### 📁 app/eczanem/_components/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `EclubGecisKarti.tsx` | UI / React | EclubGecisKarti.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `EczanemMusteriNavbar.tsx` | UI / React | EczanemMusteriNavbar.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `EczanemPuanlarim.tsx` | UI / React | EczanemPuanlarim.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `EczanemVideoOynatici.tsx` | UI / React | EczanemVideoOynatici.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `EczanemVideoRafi.tsx` | UI / React | EczanemVideoRafi.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `EclubGecisKarti.tsx` | UI / React | E-Club Gecis Karti, Eczanem içindeki e-club gecis bilgisini kart görünümü ve ilgili eylemlerle sunar. |
+| `EczanemMusteriNavbar.tsx` | UI / React | Eczanem üye Navbar, Eczanem ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `EczanemPuanlarim.tsx` | UI / React | Eczanem Puanlarim, Eczanem ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `EczanemVideoOynatici.tsx` | UI / React | Eczanem video Oynatici, ilgili öğrenme aracını gösteren ve Eczanem ilerleme/tamamlama akışına bağlayan oynatıcı bileşenidir. |
+| `EczanemVideoRafi.tsx` | UI / React | Eczanem video Rafi, Eczanem içeriklerini yatay raf düzeninde listeler ve seçilen kaydı ilgili ayrıntı/oynatıcı akışına taşır. |
+
+### 📁 app/eczanem/api/eclub-gecisi/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/api/eclub-gecisi` uç noktasında GET, POST isteklerini işler; Eczanem için Eczanem E-Club gecisi sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/eczanem/api/etkilesim/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/api/etkilesim` uç noktasında POST isteklerini işler; Eczanem için Eczanem etkileşim sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/eczanem/api/giris/sifre/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/api/giris/sifre` uç noktasında POST isteklerini işler; Eczanem için giris sifre sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/eczanem/api/hesabimi-sil/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/api/hesabimi-sil` uç noktasında POST isteklerini işler; Eczanem için Eczanem hesabimi silme sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/eczanem/api/izleme/baslat/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/api/izleme/baslat` uç noktasında POST isteklerini işler; Eczanem için izleme başlatma sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/eczanem/api/izleme/bitir/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/api/izleme/bitir` uç noktasında PUT isteklerini işler; Eczanem için izleme tamamlama sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/eczanem/api/izleme/cevapla/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/api/izleme/cevapla` uç noktasında POST isteklerini işler; Eczanem için izleme cevaplama sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/eczanem/api/izleme/ilerleme/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/api/izleme/ilerleme` uç noktasında POST isteklerini işler; Eczanem için izleme ilerleme sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/eczanem/api/izleme/sorular/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/api/izleme/sorular` uç noktasında GET isteklerini işler; Eczanem için izleme sorular sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/eczanem/api/puanlar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/api/puanlar` uç noktasında GET isteklerini işler; Eczanem için Eczanem puanlar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/eczanem/api/siparis/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/api/siparis` uç noktasında GET, POST isteklerini işler; Eczanem için Eczanem sipariş sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/eczanem/api/siparis/hesap/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/api/siparis/hesap` uç noktasında POST isteklerini işler; Eczanem için sipariş hesap sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/eczanem/api/siparis/vazgec/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/api/siparis/vazgec` uç noktasında POST isteklerini işler; Eczanem için sipariş vazgec sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/eczanem/api/videolar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/api/videolar` uç noktasında GET isteklerini işler; Eczanem için Eczanem videolar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/eczanem/kapali/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/eczanem/kapali` rotasında Eczanem kapsamındaki kapali arayüzünü sunan Next.js sayfa bileşenidir. |
 
 ### 📁 app/eczanem/puanlarim/
 
@@ -940,174 +2070,319 @@ Hızlı yol sonrasında aynı role özel hazır sorularla canlı süre ve kaynak
 |---|:---:|---|
 | `page.tsx` | UI / React | Müşterinin kazandığı puanları gördüğü ve anlaşmalı eczane kasasında indirim barkodu oluşturduğu kasa cüzdan sayfası. |
 
-## 6. APP İZLE & VİDEO OYNATMA ROTALARI
+### 📁 app/eczanem/utt/api/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/utt/api` uç noktasında GET, POST isteklerini işler; Eczanem için Eczanem UTT sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/eczanem/utt/api/dokum/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/eczanem/utt/api/dokum` uç noktasında GET isteklerini işler; Eczanem için UTT döküm sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+## 6. APP ORTAK ÖĞRENME TAKİP ROTALARI
 
 ### 📁 app/izle/api/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `route.ts` | TypeScript / Lib | İlgili rotanın HTTP isteklerini (GET, POST, PUT, DELETE) işleyen ve veritabanı işlemlerini yürüten API uç noktası. |
+| `route.ts` | API / Route Handler | `/izle/api` uç noktasında GET isteklerini işler; HapBilgi için izleme sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
-### 📁 app/api/hapbi/sor/
+### 📁 app/izle/api/[yayin_id]/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `route.ts` | API Ucu | Oturum ve rol kapsamını doğrulayan; kesin eşleşmiş hazır soruları tek araçlı hızlı yola, serbest soruları tam Gemini araç döngüsüne yönlendiren kaynaklı sohbet uç noktası. |
+| `route.ts` | API / Route Handler | `/izle/api/[yayin_id]` uç noktasında GET isteklerini işler; HapBilgi için izleme sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/izle/api/baslat/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/izle/api/baslat` uç noktasında POST isteklerini işler; HapBilgi için izleme başlatma sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/izle/api/begeni/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/izle/api/begeni` uç noktasında POST isteklerini işler; HapBilgi için izleme beğeni sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/izle/api/bitir/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/izle/api/bitir` uç noktasında PUT isteklerini işler; HapBilgi için izleme tamamlama sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/izle/api/cevap/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/izle/api/cevap` uç noktasında POST isteklerini işler; HapBilgi için izleme cevap sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/izle/api/favori/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/izle/api/favori` uç noktasında POST isteklerini işler; HapBilgi için izleme favori sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/izle/api/ileri-sarma/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/izle/api/ileri-sarma` uç noktasında POST isteklerini işler; HapBilgi için izleme ileri sarma sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+
+### 📁 app/izle/api/sorular/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `route.ts` | API / Route Handler | `/izle/api/sorular` uç noktasında GET isteklerini işler; HapBilgi için izleme sorular sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
 ## 7. LİB ÇEKİRDEK İŞ MANTIĞI VE MOTORLAR
 
-### 📁 lib/tclub/puan/
+### 📁 lib/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `kayit.ts` | TypeScript / Lib | kayit.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `strateji.ts` | TypeScript / Lib | strateji.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `tekrarSayim.ts` | TypeScript / Lib | tekrarSayim.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `tipler.ts` | TypeScript / Lib | tipler.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `utils.ts` | TypeScript / Lib | HapBilgi kapsamında `cn` işlev ve sabitlerini sağlar; utils iş kurallarını tek modülde toplar. |
 
-### 📁 lib/tclub/tur/
+### 📁 lib/admin/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `ayarlar.ts` | TypeScript / Lib | ayarlar.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `kayit.ts` | TypeScript / Lib | kayit.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `hiyerarsiTekillik.ts` | TypeScript / Lib | admin yönetimi kapsamında `hiyerarsiAdiBicimle`, `tekillikIhlaliMi` işlev ve sabitlerini sağlar; hiyerarşi Tekillik iş kurallarını tek modülde toplar. |
+| `kullaniciDogrulama.ts` | TypeScript / Lib | admin yönetimi kapsamında `turkceKatla`, `rolCoz`, `telefonNormalize` işlev ve sabitlerini ve `FirmaYapisi`, `KullaniciGirdisi`, `DogrulanmisKullanici` veri sözleşmelerini sağlar; kullanıcı Dogrulama iş kurallarını tek modülde toplar. |
+| `telefonBicim.ts` | TypeScript / Lib | admin yönetimi kapsamında `telefonRakam`, `telefonBicimle` işlev ve sabitlerini sağlar; telefon Bicim iş kurallarını tek modülde toplar. |
+| `topluPaketButunlugu.ts` | TypeScript / Lib | admin yönetimi kapsamında `topluPaketHatalari` işlev ve sabitlerini ve `TopluPaketSatiri` veri sözleşmelerini sağlar; toplu paket Butunlugu iş kurallarını tek modülde toplar. |
 
-### 📁 lib/tclub/oneri/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `limitKontrol.ts` | TypeScript / Lib | limitKontrol.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `pencereKontrol.ts` | TypeScript / Lib | pencereKontrol.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `tarihKurali.ts` | TypeScript / Lib | tarihKurali.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-
-### 📁 lib/tclub/hbligi/
+### 📁 lib/auth/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `getBmPerformans.ts` | TypeScript / Lib | getBmPerformans.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `getSahaLig.ts` | TypeScript / Lib | getSahaLig.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `getUttLig.ts` | TypeScript / Lib | getUttLig.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `ligRpcCagir.ts` | TypeScript / Lib | ligRpcCagir.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `siralama.ts` | TypeScript / Lib | siralama.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `guvenliCikis.ts` | TypeScript / Lib | kimlik ve oturum kapsamında `supabaseAuthCookieOnEki`, `guvenliCikisYap` işlev ve sabitlerini sağlar; guvenli Cikis iş kurallarını tek modülde toplar. |
+| `mobilKarsilama.ts` | TypeScript / Lib | kimlik ve oturum kapsamında `mobilKarsilamaYonlendiricisiOlustur` işlev ve sabitlerini sağlar; mobil Karsilama iş kurallarını tek modülde toplar. |
 
-### 📁 lib/tclub/store/
+### 📁 lib/bildirimler/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `adres.ts` | TypeScript / Lib | adres.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `bakiye.ts` | TypeScript / Lib | bakiye.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `firmaUrun.ts` | TypeScript / Lib | firmaUrun.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `kargo.ts` | TypeScript / Lib | kargo.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `olay.ts` | TypeScript / Lib | olay.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `sabitler.ts` | TypeScript / Lib | sabitler.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `siparis.ts` | TypeScript / Lib | siparis.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `storage.ts` | TypeScript / Lib | storage.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `tipler.ts` | TypeScript / Lib | tipler.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `rozet.ts` | TypeScript / Lib | bildirim kapsamında `BILDIRIM_ROZETLERI_DEGISTI`, `bildirimRozetleriniYenile` işlev ve sabitlerini sağlar; rozet iş kurallarını tek modülde toplar. |
+
+### 📁 lib/cclub/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `bildirimMesajlari.ts` | TypeScript / Lib | C-Club kapsamında `challengeGeldiMesaji`, `challengeIzlendiMesaji` işlev ve sabitlerini sağlar; bildirim Mesajlari iş kurallarını tek modülde toplar. |
+| `kartDetaylari.ts` | TypeScript / Lib | C-Club kapsamında `ccKartMetrikleri` işlev ve sabitlerini ve `CcKartMetrik` veri sözleşmelerini sağlar; kart Detaylari iş kurallarını tek modülde toplar. |
+| `kayit.ts` | TypeScript / Lib | C-Club kapsamında `challengeOlustur`, `referralPuaniKaydet` işlev ve sabitlerini sağlar; kayıt iş kurallarını tek modülde toplar. |
+| `kotaKontrol.ts` | TypeScript / Lib | C-Club kapsamında `aylikKotaKontrol`, `aliciAylikKontrol`, `karsiliklilikKilidi` işlev ve sabitlerini sağlar; kota Kontrol iş kurallarını tek modülde toplar. |
+| `sabitler.ts` | TypeScript / Lib | C-Club kapsamında `AYLIK_MAX_GONDERIM`, `ccGondermePuani`, `ccReferralPuani`, `ccPuanSabitleri` işlev ve sabitlerini sağlar; sabitler iş kurallarını tek modülde toplar. |
+| `tekrarIzlemeKontrol.ts` | TypeScript / Lib | C-Club kapsamında `tekrarIzlemeKontrol` işlev ve sabitlerini sağlar; tekrar Izleme Kontrol iş kurallarını tek modülde toplar. |
+| `tipler.ts` | TypeScript / Lib | C-Club kapsamında `ChallengeOlusturParams`, `ReferralPuaniParams`, `KotaSonuc` veri sözleşmelerini sağlar; tipler iş kurallarını tek modülde toplar. |
+| `uygunAliciListesi.ts` | TypeScript / Lib | C-Club kapsamında `uygunAliciListesi` işlev ve sabitlerini sağlar; uygun Alici Listesi iş kurallarını tek modülde toplar. |
+| `uygunVideoListesi.ts` | TypeScript / Lib | C-Club kapsamında `uygunVideoListesi` işlev ve sabitlerini sağlar; uygun video Listesi iş kurallarını tek modülde toplar. |
+
+### 📁 lib/cclub/izleme/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `baslat.ts` | TypeScript / Lib | C-Club kapsamında `izlemeBaslat` işlev ve sabitlerini sağlar; başlatma iş kurallarını tek modülde toplar. |
+| `extraKontrol.ts` | TypeScript / Lib | C-Club kapsamında `CC_EXTRA_TEKRAR_ESIGI`, `dahaOnceTamamlandiMi` işlev ve sabitlerini sağlar; extra Kontrol iş kurallarını tek modülde toplar. |
 
 ### 📁 lib/cclub/puan/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `kayip.ts` | TypeScript / Lib | kayip.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `kazanim.ts` | TypeScript / Lib | kazanim.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `kayip.ts` | TypeScript / Lib | C-Club kapsamında `ileriSarmaKaybiKaydet`, `yanlisCevapKaybiKaydet` işlev ve sabitlerini sağlar; kayip iş kurallarını tek modülde toplar. |
+| `kazanim.ts` | TypeScript / Lib | C-Club kapsamında `izlemePuaniKaydet`, `cevapPuaniKaydet`, `extraPuaniKaydet`, `ccGondermePuaniKaydet` işlev ve sabitlerini sağlar; kazanim iş kurallarını tek modülde toplar. |
 
 ### 📁 lib/eclub/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `gonderiAyarlari.ts` | TypeScript / Lib | gonderiAyarlari.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `ileriSarma.ts` | TypeScript / Lib | ileriSarma.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `izlemeKurali.ts` | TypeScript / Lib | izlemeKurali.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `kisiErisim.ts` | TypeScript / Lib | kisiErisim.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `ligPeriyot.ts` | TypeScript / Lib | ligPeriyot.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `oneriKapsam.ts` | TypeScript / Lib | oneriKapsam.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `oneriLimit.ts` | TypeScript / Lib | oneriLimit.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `aktifYayinYetkisi.ts` | TypeScript / Lib | E-Club kapsamında `eclubAktifYayinYetkisi` işlev ve sabitlerini sağlar; aktif yayın Yetkisi iş kurallarını tek modülde toplar. |
+| `gonderiAyarlari.ts` | TypeScript / Lib | E-Club kapsamında `ECLUB_GONDERI_AYARLARI`, `ECLUB_GONDERI_AYAR_ANAHTARLARI`, `eclubGonderiAyariMi`, `eclubGonderiAyariVarsayilani` işlev ve sabitlerini ve `EclubGonderiAyariAnahtari` veri sözleşmelerini sağlar; gonderi Ayarlari iş kurallarını tek modülde toplar. |
+| `ileriSarma.ts` | TypeScript / Lib | E-Club kapsamında `eclubIleriSarmaKonumuDogrula`, `eclubIleriSarmaKaybiHesapla` işlev ve sabitlerini ve `EclubIleriSarmaKonumu` veri sözleşmelerini sağlar; ileri Sarma iş kurallarını tek modülde toplar. |
+| `izlemeKurali.ts` | TypeScript / Lib | E-Club kapsamında `eclubOneriDurumu`, `eclubIzlemeHaklari`, `eclubSoruIndeksleri` işlev ve sabitlerini ve `EclubOneriDurumu` veri sözleşmelerini sağlar; izleme Kurali iş kurallarını tek modülde toplar. |
+| `kisiErisim.ts` | TypeScript / Lib | E-Club kapsamında `eclubKisiModulDurumu`, `eclubKisiErisimi` işlev ve sabitlerini ve `EclubKisiErisimSonucu` veri sözleşmelerini sağlar; kişi erişim iş kurallarını tek modülde toplar. |
+| `ligPeriyot.ts` | TypeScript / Lib | E-Club kapsamında `eclubLigPeriyoduParse` işlev ve sabitlerini sağlar; lig Periyot iş kurallarını tek modülde toplar. |
+| `oneriKapsam.ts` | TypeScript / Lib | E-Club kapsamında `eclubYayinKapsamindaMi` işlev ve sabitlerini ve `EclubUttYayinKapsami`, `EclubYayinKapsami` veri sözleşmelerini sağlar; öneri Kapsam iş kurallarını tek modülde toplar. |
+| `oneriLimit.ts` | TypeScript / Lib | E-Club kapsamında `eclubOneriGecerlilikGun`, `eclubAyniVideoTekrarBeklemeGun`, `oneriBitisHesapla`, `ayniAracTekrarAcikZamani` işlev ve sabitlerini ve `AyniAracTekrarEngeli`, `AyniAracTekrarSonuc` veri sözleşmelerini sağlar; öneri Limit iş kurallarını tek modülde toplar. |
 | `rapor.ts` | TypeScript / Lib | E-Club lig sıralamalarını, eczane bazlı izlenme dökümlerini ve ciro etki metriklerini derleyen rapor motoru. |
-| `testGln.ts` | TypeScript / Lib | testGln.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `testGln.ts` | TypeScript / Lib | E-Club kapsamında `TEST_GLN_PREFIX`, `TEST_GLN_UZUNLUK`, `TEST_GLN_TEK_SEFER_UST_SINIR`, `TEST_TEMIZLIK_ONAYI` işlev ve sabitlerini sağlar; test Gln iş kurallarını tek modülde toplar. |
+| `uttEczane.ts` | TypeScript / Lib | E-Club kapsamında `uttEczaneFirmaBaglari`, `uttEczaneYetkisiVarMi` işlev ve sabitlerini sağlar; UTT eczane iş kurallarını tek modülde toplar. |
 | `yonetimKapsami.ts` | TypeScript / Lib | UTT, BM, TM ve yöneticilerin E-Club hiyerarşik görme yetkilerini belirleyen kapsam motoru. |
 
 ### 📁 lib/eclub/store/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `eclubStoreBakiye.ts` | TypeScript / Lib | eclubStoreBakiye.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `eclubStoreBakiye.ts` | TypeScript / Lib | E-Club Store kapsamında `eclubStoreFirmaBakiye`, `eclubStoreToplamBakiye` işlev ve sabitlerini sağlar; E-Club Store Bakiye iş kurallarını tek modülde toplar. |
 | `eclubStoreSiparis.ts` | TypeScript / Lib | Çok-firmalı E-Club puan birleştirme algoritmasını işleten ve kademeli firma puanı düşümünü yöneten sipariş motoru. |
-| `eclubStoreStorage.ts` | TypeScript / Lib | eclubStoreStorage.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `eclubStoreTipler.ts` | TypeScript / Lib | eclubStoreTipler.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `ekipSiparis.ts` | TypeScript / Lib | ekipSiparis.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `eclubStoreStorage.ts` | TypeScript / Lib | E-Club Store kapsamında `eclubStoreGorselYukle`, `eclubStoreGorselSil` işlev ve sabitlerini sağlar; E-Club Store Storage iş kurallarını tek modülde toplar. |
+| `eclubStoreTipler.ts` | TypeScript / Lib | E-Club Store kapsamında `EclubStoreKategori`, `EclubStoreUrun`, `EclubStoreAdres` veri sözleşmelerini sağlar; E-Club Store Tipler iş kurallarını tek modülde toplar. |
+| `ekipSiparis.ts` | TypeScript / Lib | E-Club Store kapsamında `ECLUB_SIPARIS_DURUMLARI`, `ECLUB_SIPARIS_DURUM_ETIKETLERI`, `ECLUB_SIPARIS_DURUM_RENKLERI` işlev ve sabitlerini ve `EclubSiparisDurum`, `EclubSiparisAdresSnapshot`, `EclubEkipSiparisSatiri` veri sözleşmelerini sağlar; ekip sipariş iş kurallarını tek modülde toplar. |
 
 ### 📁 lib/eczanem/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `aktifUyelik.ts` | TypeScript / Lib | aktifUyelik.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `dokum.ts` | TypeScript / Lib | dokum.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `eclubUyesiKontrol.ts` | TypeScript / Lib | eclubUyesiKontrol.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `eczaci.ts` | TypeScript / Lib | eczaci.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `erisim.ts` | TypeScript / Lib | erisim.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `gonderim.ts` | TypeScript / Lib | UTT'den eczaneye ve eczaneden müşteriye 2 kademeli OTC video dağıtımını ve asgari üye eşiğini denetleyen motor. |
+| `aktifUyelik.ts` | TypeScript / Lib | Eczanem kapsamında `aktifEczaneUyeliginiDogrula`, `aktifGonderimUyeliginiDogrula` işlev ve sabitlerini ve `AktifUyelikSonucu` veri sözleşmelerini sağlar; aktif Uyelik iş kurallarını tek modülde toplar. |
+| `dokum.ts` | TypeScript / Lib | Eczanem kapsamında `UrunToplam`, `EczaneDokum`, `EczaneUrunSatir` veri sözleşmelerini sağlar; döküm iş kurallarını tek modülde toplar. |
+| `eclubUyesiKontrol.ts` | TypeScript / Lib | Eczanem kapsamında `ECLUB_UYESI_MUSTERI_OLAMAZ_MESAJI`, `ECZANEM_MUSTERISI_ECLUB_UYESI_OLAMAZ_MESAJI`, `eclubTelefonVaryantlari`, `eclubUyesiTelefonMu` işlev ve sabitlerini sağlar; E-Club Uyesi Kontrol iş kurallarını tek modülde toplar. |
+| `eczaci.ts` | TypeScript / Lib | Eczanem kapsamında `eczaciAktifEczanesi` işlev ve sabitlerini sağlar; eczaci iş kurallarını tek modülde toplar. |
+| `erisim.ts` | TypeScript / Lib | Eczanem kapsamında `ECZANEM_KAPALI_MESAJI`, `PASIFE_PUAN_KULLANIM_GUN`, `eczaneEczanemFirmaIdleri`, `uttEczanemErisimi` işlev ve sabitlerini ve `EczanemErisimSonucu` veri sözleşmelerini sağlar; erişim iş kurallarını tek modülde toplar. |
+| `gonderim.ts` | TypeScript / Lib | Eczanem kapsamında `AKTIF_UYE_ESIGI_VARSAYILAN`, `aktifUyeEsigi`, `eczaneAdMap` işlev ve sabitlerini ve `UttEczanemYayin`, `UttEczanemEczane`, `UttEczanemVeri` veri sözleşmelerini sağlar; gönderim iş kurallarını tek modülde toplar. |
 | `kasa.ts` | TypeScript / Lib | Eczane kasasında indirim tutarını ve barkod karşılığını hesaplayan, atomik onayda puanı düşen kasa motoru. |
-| `oturum.ts` | TypeScript / Lib | oturum.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `oturum.ts` | TypeScript / Lib | Eczanem kapsamında `musteriKimligi` işlev ve sabitlerini sağlar; oturum iş kurallarını tek modülde toplar. |
 | `silme.ts` | TypeScript / Lib | KVKK uyumlu müşteri tam silme (Right to be Forgotten) ve hesap kapatma işlemlerini atomik yürüten motor. |
-| `tarife.ts` | TypeScript / Lib | tarife.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `telefon.ts` | TypeScript / Lib | telefon.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `tarife.ts` | TypeScript / Lib | Eczanem kapsamında `guncelTarife`, `tarifeVeBarkodYaz` işlev ve sabitlerini ve `TarifeGiris`, `TarifeSonuc`, `GuncelTarife` veri sözleşmelerini sağlar; tarife iş kurallarını tek modülde toplar. |
+| `telefon.ts` | TypeScript / Lib | Eczanem kapsamında `telefonNormalize` işlev ve sabitlerini sağlar; telefon iş kurallarını tek modülde toplar. |
 
-### 📁 lib/uretim/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `gorevSozlesmesi.ts` | TypeScript / Lib | gorevSozlesmesi.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `gorevTipleri.ts` | TypeScript / Lib | gorevTipleri.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `parametreKontrol.ts` | TypeScript / Lib | parametreKontrol.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `rpc.ts` | TypeScript / Lib | Üretim durum makinesini canlı Supabase RPC'lerine bağlayan çekirdek köprü. |
-| `rpcTemel.ts` | TypeScript / Lib | rpcTemel.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `toastMesaj.ts` | TypeScript / Lib | 5 üretim aşamasındaki tüm onay ve devir işlemlerinde unvanlı ve iki parçalı toast mesajlarını üreten merkezi motor. |
-
-### 📁 lib/uretici/
+### 📁 lib/etkilesim/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `yetenekler.ts` | TypeScript / Lib | 13 üretici rolün içerik türü yetkilerini, ürün/teknik zorunluluklarını ve form kısıtlarını denetleyen anayasal kural motoru. |
+| `yayinYetkisi.ts` | TypeScript / Lib | HapBilgi kapsamında `etkilesimYayinYetkisi` işlev ve sabitlerini sağlar; yayın Yetkisi iş kurallarını tek modülde toplar. |
 
-### 📁 lib/video/
+### 📁 lib/firma/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `anaSayfaRaflari.ts` | TypeScript / Lib | anaSayfaRaflari.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `anaSayfaVideolari.ts` | TypeScript / Lib | anaSayfaVideolari.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `bunnyTusIstemci.ts` | TypeScript / Lib | bunnyTusIstemci.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `bunnyYukleme.ts` | TypeScript / Lib | Bunny Stream TUS API vezne modelini işleten; API anahtarı ifşa olmadan doğrudan CDN yükleme token'ı üreten video motoru. |
-| `departman.ts` | TypeScript / Lib | departman.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `enBoyOrani.ts` | TypeScript / Lib | enBoyOrani.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `gorunurluk.ts` | TypeScript / Lib | gorunurluk.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `icerikTuru.ts` | TypeScript / Lib | icerikTuru.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `islemeDurumu.ts` | TypeScript / Lib | islemeDurumu.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `thumbnail.ts` | TypeScript / Lib | thumbnail.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `uttVideoKategorileri.ts` | TypeScript / Lib | uttVideoKategorileri.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `videoPlayer.ts` | TypeScript / Lib | videoPlayer.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `yayindakiVideolar.ts` | TypeScript / Lib | yayindakiVideolar.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `kolonlar.ts` | TypeScript / Lib | HapBilgi kapsamında `FIRMA_KOLONLARI` işlev ve sabitlerini sağlar; kolonlar iş kurallarını tek modülde toplar. |
+
+### 📁 lib/hapbi/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `araclar.ts` | TypeScript / Lib | Doğrulanmış bağlamı kuran ve yalnız çağrılan alan motorunu dinamik yükleyen hafif araç dağıtıcısı. |
+| `aracTanimlari.ts` | TypeScript / Lib | Gemini işlev şemalarını veri motorlarından bağımsız tutan hafif ve kanonik araç tanımı modülü. |
+| `bilgiKaynaklari.ts` | TypeScript / Lib | Bluebook/kod dayanaklı sürümlü kullanıcı rehberi. |
+| `eclubKisi.ts` | TypeScript / Lib | Oturum sahibinin E-Club kişi/eczane/firma erişimini, eğitim durumunu ve puan özetini iletişim verisi taşımadan okuyan kişisel veri servisi. |
+| `egitim.ts` | TypeScript / Lib | Rol, yayın görünürlüğü ve geçerli tur üzerinden eğitim adaylarını okur. |
+| `gemini.ts` | TypeScript / Lib | Sınırlı Gemini araç döngüsü, kaynaklı yanıt ve sayısal tutarlılık denetimi. |
+| `hapbiBilgiTabani.ts` | TypeScript / Lib | Mevcut UTT ekran turlarını taşır; AI bilgi kaynağı veya hazır soru tanımı değildir. |
+| `hapbiKullaniciBaglami.ts` | TypeScript / Lib | Yetkili kimlik, organizasyon ve modül kapsamını doğrular; sayı veya varsayılan rol üretmez. |
+| `hizliSorgu.ts` | TypeScript / Lib | Role özel hazır soru metinlerini kesin araç/parametre planlarına bağlar; varsayılan haftayı ve E-Club dönem dışı kapsamını korur. |
+| `rehberlik.ts` | TypeScript / Lib | HapBi asistanı kapsamında `raporOlcumleri`, `olcumleriKarsilastir`, `gelisimiDegerlendir` işlev ve sabitlerini ve `GelisimHedefi` veri sözleşmelerini sağlar; rehberlik iş kurallarını tek modülde toplar. |
+| `sohbet.ts` | TypeScript / Lib | Kapsama bağlı imzalı sohbet bağlamı ve süreç içi istek sınırı. |
+| `sozlesme.ts` | TypeScript / Lib | Kaynak, yanıt ve hata sözleşmeleri. |
+
+### 📁 lib/hapbi/aracMotorlari/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `eclub.ts` | TypeScript / Lib | Eczacı/teknisyen kişisel E-Club durumu ile iç kullanıcı E-Club raporunu ayrı yetki sınırlarında çalıştırır. |
+| `egitim.ts` | TypeScript / Lib | Yetkili eğitim kataloğu ve yayın senaryosu araçlarını çalıştırır. |
+| `gelisim.ts` | TypeScript / Lib | Gelişim rehberi ve eşit süre/takvim karşılaştırması araçlarını çalıştırır. |
+| `ortak.ts` | TypeScript / Lib | Araç bağlamı, dönem doğrulama ve güvenli satır yardımcılarını paylaşan ortak çekirdek. |
+| `platform.ts` | TypeScript / Lib | Sürümlü HapBilgi platform rehberini salt-okur araç sonucuna dönüştürür. |
+| `saha.ts` | TypeScript / Lib | HB/CC ligleri ile role göre T-Club performans raporu adaptörlerini çalıştırır. |
+| `uretim.ts` | TypeScript / Lib | Yetkili firmanın mevcut üretim raporu okuyucusunu Hapbi araç sözleşmesine bağlar. |
+
+### 📁 lib/izleme/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `baslat.ts` | TypeScript / Lib | öğrenme takibi kapsamında `olayIdGecerliMi`, `baslatOlayIdGecerliMi`, `izlemeTuruBelirle`, `oynatmaBaslatilmaliMi` işlev ve sabitlerini ve `IzlemeTuru` veri sözleşmelerini sağlar; başlatma iş kurallarını tek modülde toplar. |
+| `karar.ts` | TypeScript / Lib | öğrenme takibi kapsamında `soruHakkiBelirle`, `izlemeKazanimKarariBelirle`, `ileriSarmaKaybiHesapla`, `tamamlamaYeterliMi` işlev ve sabitlerini sağlar; karar iş kurallarını tek modülde toplar. |
+| `puanZamani.ts` | TypeScript / Lib | öğrenme takibi kapsamında `izlemePuanZamaniAktifMi` işlev ve sabitlerini sağlar; puan Zamani iş kurallarını tek modülde toplar. |
+| `tipler.ts` | TypeScript / Lib | öğrenme takibi kapsamında `SoruHakkiNedeni`, `SoruHakkiGirdisi`, `IzlemeKazanimGirdisi` veri sözleşmelerini sağlar; tipler iş kurallarını tek modülde toplar. |
+
+### 📁 lib/kimlik/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `provizyon.ts` | TypeScript / Lib | kimlik ve oturum kapsamında `provizyonBaslat`, `provizyonDurumuYaz`, `authTelafisiYap` işlev ve sabitlerini ve `ProvizyonHedefi` veri sözleşmelerini sağlar; provizyon iş kurallarını tek modülde toplar. |
+
+### 📁 lib/ogrenmeAraci/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `bayraklar.ts` | TypeScript / Lib | ortak öğrenme aracı kapsamında `ogrenmeAraciAcikMi`, `yayinAraciKullanimaAcikMi`, `ogrenmeAraciBayraklari` işlev ve sabitlerini sağlar; bayraklar iş kurallarını tek modülde toplar. |
+| `bunnyStorage.ts` | TypeScript / Lib | ortak öğrenme aracı kapsamında `bunnyStorageOrtami`, `bunnyNesneYoluOlustur`, `bunnyPodcastDestekYoluOlustur`, `yuklemeYetkisiOlustur` işlev ve sabitlerini ve `YuklemeYetkisi` veri sözleşmelerini sağlar; Bunny Storage iş kurallarını tek modülde toplar. |
+| `bunnyYuklemeIstemci.ts` | TypeScript / Lib | ortak öğrenme aracı kapsamında `hazirPodcastYukle`, `hazirGorselYukle`, `hazirFlipPdfYukle` işlev ve sabitlerini ve `YuklemeAsamasi`, `OgrenmeAraciYuklemeKontrolu` veri sözleşmelerini sağlar; Bunny yükleme Istemci iş kurallarını tek modülde toplar. |
+| `etiketler.ts` | TypeScript / Lib | ortak öğrenme aracı kapsamında `OGRENME_ARACI_METINLERI`, `ogrenmeAraciMetinleri` işlev ve sabitlerini ve `OgrenmeAraciMetinleri` veri sözleşmelerini sağlar; etiketler iş kurallarını tek modülde toplar. |
+| `izlemeSahibi.ts` | TypeScript / Lib | ortak öğrenme aracı kapsamında `ogrenmeAraciIzlemeSahibiniCoz` işlev ve sabitlerini ve `OgrenmeAraciIzlemeTablosu`, `OgrenmeAraciIzlemeSahibi` veri sözleşmelerini sağlar; izleme Sahibi iş kurallarını tek modülde toplar. |
+| `oynatici.ts` | TypeScript / Lib | ortak öğrenme aracı kapsamında `OgrenmeAraciOynaticisi` veri sözleşmelerini sağlar; oynatici iş kurallarını tek modülde toplar. |
+| `sha256Istemci.ts` | TypeScript / Lib | ortak öğrenme aracı kapsamında `dosyaSha256Parcali` işlev ve sabitlerini sağlar; sha256 Istemci iş kurallarını tek modülde toplar. |
+| `sozlesme.ts` | TypeScript / Lib | ortak öğrenme aracı alanında kullanılan `ARAC_DOSYA_POLITIKASI`, `ogrenmeAraciTuruMu`, `yeniOgrenmeAraciTuruMu`, `dosyaBeyaniDogrula` veri tiplerini ve modüller arası sözleşmeleri tanımlar. |
+| `sunucu.ts` | TypeScript / Lib | ortak öğrenme aracı kapsamında `VIDEO_ARACI`, `PODCAST_ARACI`, `GORSEL_ARACI` işlev ve sabitlerini ve `SureliAracIlerlemesi`, `GorselIlerlemesi`, `FlipPdfIlerlemesi` veri sözleşmelerini sağlar; sunucu iş kurallarını tek modülde toplar. |
+| `tipler.ts` | TypeScript / Lib | ortak öğrenme aracı kapsamında `OGRENME_ARACI_TURLERI`, `YENI_OGRENME_ARACI_TURLERI` işlev ve sabitlerini ve `OgrenmeAraciTuru`, `YeniOgrenmeAraciTuru`, `OgrenmeAraciKaynagi` veri sözleşmelerini sağlar; tipler iş kurallarını tek modülde toplar. |
+| `uretimAkisi.ts` | TypeScript / Lib | ortak öğrenme aracı kapsamında `ogrenmeAraciUretimAkisi` işlev ve sabitlerini ve `OgrenmeAraciUretimVaryanti`, `OgrenmeAraciUretimAkisi` veri sözleşmelerini sağlar; üretim Akisi iş kurallarını tek modülde toplar. |
+| `yetki.ts` | TypeScript / Lib | ortak öğrenme aracı kapsamında `uretimAraciYetkisiniDogrula` işlev ve sabitlerini ve `UretimAraciYetkisi` veri sözleşmelerini sağlar; yetki iş kurallarını tek modülde toplar. |
+
+### 📁 lib/push/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `abonelik.ts` | TypeScript / Lib | Web Push bildirimleri kapsamında `abonelikUpsert`, `abonelikPasifle`, `aktifAbonelikleriGetir` işlev ve sabitlerini sağlar; abonelik iş kurallarını tek modülde toplar. |
+| `gonderici.ts` | TypeScript / Lib | Web Push bildirimleri kapsamında `pushGonder` işlev ve sabitlerini ve `PushHedefi` veri sözleşmelerini sağlar; gonderici iş kurallarını tek modülde toplar. |
+| `icerik.ts` | TypeScript / Lib | Web Push bildirimleri kapsamında `icerikUret` işlev ve sabitlerini sağlar; icerik iş kurallarını tek modülde toplar. |
+| `istemci.ts` | TypeScript / Lib | Web Push bildirimleri kapsamında `pushDestekliMi`, `mevcutIzin`, `aboneOlVeKaydet`, `aboneligiTazele` işlev ve sabitlerini ve `PushIzinDurumu` veri sözleşmelerini sağlar; istemci iş kurallarını tek modülde toplar. |
+| `orkestrasyon.ts` | TypeScript / Lib | Web Push bildirimleri kapsamında `pushYayinla`, `pushYayinlaArkada`, `pushYayinlaEclubKisilereArkada`, `pushYayinlaEczanemMusterilereArkada` işlev ve sabitlerini sağlar; orkestrasyon iş kurallarını tek modülde toplar. |
+| `tipler.ts` | TypeScript / Lib | Web Push bildirimleri kapsamında `TarayiciAboneligi`, `PushAbonelikKaydi`, `PushOlayTuru` veri sözleşmelerini sağlar; tipler iş kurallarını tek modülde toplar. |
+
+### 📁 lib/rapor/bm/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `getBmData.ts` | TypeScript / Lib | raporlama kapsamında `getBmData` işlev ve sabitlerini ve `BmUttPerformans`, `KullaniciOzetSatiri`, `KullaniciUrunDagilimi` veri sözleşmelerini sağlar; get Bm Data iş kurallarını tek modülde toplar. |
+| `toplamlar.ts` | TypeScript / Lib | raporlama kapsamında `bosPuanToplami`, `ozetToplami`, `kategorileriTopla`, `urunleriTopla` işlev ve sabitlerini ve `PuanToplami` veri sözleşmelerini sağlar; toplamlar iş kurallarını tek modülde toplar. |
+
+### 📁 lib/rapor/paylasilan/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `aracTuruDagilimi.ts` | TypeScript / Lib | raporlama kapsamında `aracTuruDagilimi` işlev ve sabitlerini ve `AracTuruRaporSatiri` veri sözleşmelerini sağlar; araç Turu Dagilimi iş kurallarını tek modülde toplar. |
+| `bmPerformansTipleri.ts` | TypeScript / Lib | raporlama kapsamında `BmPerformans`, `BmUttPerformans`, `BmPerformansDetay` veri sözleşmelerini sağlar; bm Performans Tipleri iş kurallarını tek modülde toplar. |
+| `oran.ts` | TypeScript / Lib | raporlama kapsamında `katkiYuzdesi`, `izlenmeOrani`, `tamamlanmaOrani` işlev ve sabitlerini sağlar; oran iş kurallarını tek modülde toplar. |
+
+### 📁 lib/rapor/tm/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `getTmData.ts` | TypeScript / Lib | raporlama kapsamında `getTmData` işlev ve sabitlerini ve `TmEtkilesim` veri sözleşmelerini sağlar; get Tm Data iş kurallarını tek modülde toplar. |
+
+### 📁 lib/rapor/uretici/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `getUreticiData.ts` | TypeScript / Lib | üretim kapsamında `getUreticiData` işlev ve sabitlerini ve `UreticiSahaOzetSatiri`, `UreticiRaporOzet`, `UreticiData` veri sözleşmelerini sağlar; get üretici Data iş kurallarını tek modülde toplar. |
+
+### 📁 lib/rapor/uretim/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `getUretimData.ts` | TypeScript / Lib | üretim kapsamında `uretimRaporunuGorebilir`, `getUretimData` işlev ve sabitlerini sağlar; get üretim Data iş kurallarını tek modülde toplar. |
+
+### 📁 lib/rapor/utt/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `getUttData.ts` | TypeScript / Lib | raporlama kapsamında `getUttData` işlev ve sabitlerini sağlar; get UTT Data iş kurallarını tek modülde toplar. |
+
+### 📁 lib/rapor/yonetici/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `getYoneticiData.ts` | TypeScript / Lib | raporlama kapsamında `getYoneticiData` işlev ve sabitlerini sağlar; get yönetici Data iş kurallarını tek modülde toplar. |
+
+### 📁 lib/rehber/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `sayfaRehberi.ts` | TypeScript / Lib | HapBilgi kapsamında `VARYANT_ALT_MODAL`, `SAYFA_REHBERLERI` işlev ve sabitlerini ve `AltModalKart`, `AltModalBilgisi`, `RehberMadde` veri sözleşmelerini sağlar; sayfa Rehberi iş kurallarını tek modülde toplar. |
 
 ### 📁 lib/soru/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `dosyadanGetir.ts` | TypeScript / Lib | dosyadanGetir.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `dosyadanGetir.ts` | TypeScript / Lib | soru seti kapsamında `DESTEKLENEN_UZANTILAR`, `dosyadanTaslaklar` işlev ve sabitlerini ve `DosyaGetirmeSonucu` veri sözleşmelerini sağlar; dosyadan Getir iş kurallarını tek modülde toplar. |
 | `kontrol.ts` | TypeScript / Lib | Kullanıcının gönderdiği cevap anahtarlarının atanan sorularla uyuşup uyuşmadığını doğrulayan güvenlik kontrolü. |
-| `parse.ts` | TypeScript / Lib | parse.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `parse.ts` | TypeScript / Lib | soru seti kapsamında `parseSoruSeti`, `parseSoruSetiEsnek` işlev ve sabitlerini ve `Soru` veri sözleşmelerini sağlar; parse iş kurallarını tek modülde toplar. |
 | `secim.ts` | TypeScript / Lib | İçerik havuzundan tohumlu Fisher-Yates algoritmasıyla deterministik ve adil soru seçimi yapan çekirdek kütüphane. |
-| `taslak.ts` | TypeScript / Lib | taslak.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-
-### 📁 lib/zaman/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `kontrol.ts` | TypeScript / Lib | Sistem genelindeki tüm periyot (hafta, ay, dönem, yıl) başlangıç ve bitişlerini Türkiye saat dilimine göre hesaplayan zaman motoru. |
-
-### 📁 lib/bildirimler/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `rozet.ts` | TypeScript / Lib | rozet.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `taslak.ts` | TypeScript / Lib | soru seti kapsamında `SECENEK_HARF`, `harfBul`, `bosSoruTaslagi`, `taslaklariDogrula` işlev ve sabitlerini ve `SoruTaslagi` veri sözleşmelerini sağlar; taslak iş kurallarını tek modülde toplar. |
 
 ### 📁 lib/supabase/
 
@@ -1116,127 +2391,210 @@ Hızlı yol sonrasında aynı role özel hazır sorularla canlı süre ve kaynak
 | `client.ts` | TypeScript / Lib | İstemci tarafında (tarayıcı) çalışan Supabase anonim bağlantı istemcisi. |
 | `server.ts` | TypeScript / Lib | Next.js Server Component ve Route Handler'lar için çerez tabanlı güvenli Supabase istemcisi. |
 
+### 📁 lib/tclub/hbligi/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `getBmPerformans.ts` | TypeScript / Lib | T-Club kapsamında `getBmPerformans` işlev ve sabitlerini sağlar; get Bm Performans iş kurallarını tek modülde toplar. |
+| `getSahaLig.ts` | TypeScript / Lib | T-Club kapsamında `getSahaLig` işlev ve sabitlerini ve `SahaGorunumu`, `SahaBirimTuru`, `SahaLigKullanici` veri sözleşmelerini sağlar; get Saha lig iş kurallarını tek modülde toplar. |
+| `getUttLig.ts` | TypeScript / Lib | T-Club kapsamında `getUttLig` işlev ve sabitlerini ve `UttLigSatiri`, `UttLigSonuc` veri sözleşmelerini sağlar; get UTT lig iş kurallarını tek modülde toplar. |
+| `ligRpcCagir.ts` | TypeScript / Lib | T-Club kapsamında `ligRpcCagir` işlev ve sabitlerini ve `Periyot`, `LigPeriyot`, `HbLigiHamSatir` veri sözleşmelerini sağlar; lig Rpc Cagir iş kurallarını tek modülde toplar. |
+| `siralama.ts` | TypeScript / Lib | T-Club kapsamında `esitPuanEsitSira` işlev ve sabitlerini sağlar; siralama iş kurallarını tek modülde toplar. |
+
+### 📁 lib/tclub/oneri/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `limitKontrol.ts` | TypeScript / Lib | T-Club kapsamında `MAKS_ALICI_HAFTA`, `AYLIK_KOTA_KATSAYI`, `haftalikLimitKontrol`, `aylikKotaKontrol` işlev ve sabitlerini ve `HaftalikLimitSonuc`, `AylikKotaSonuc` veri sözleşmelerini sağlar; limit Kontrol iş kurallarını tek modülde toplar. |
+| `pencereKontrol.ts` | TypeScript / Lib | T-Club kapsamında `oneriPenceresiAcik` işlev ve sabitlerini ve `OneriPencereSonuc` veri sözleşmelerini sağlar; pencere Kontrol iş kurallarını tek modülde toplar. |
+| `tarihKurali.ts` | TypeScript / Lib | T-Club kapsamında `ONERI_BASLANGIC_SAAT`, `ONERI_BITIS_SAAT`, `oneriTarihKurali` işlev ve sabitlerini ve `TarihKuraliSonuc` veri sözleşmelerini sağlar; tarih Kurali iş kurallarını tek modülde toplar. |
+
+### 📁 lib/tclub/puan/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `kayit.ts` | TypeScript / Lib | T-Club kapsamında `kazanilanPuanKaydet`, `yanlisCevapKaybiKaydet`, `ileriSarmaKaybiKaydet`, `oneriKaybiKaydet` işlev ve sabitlerini sağlar; kayıt iş kurallarını tek modülde toplar. |
+| `strateji.ts` | TypeScript / Lib | T-Club kapsamında `izlemeKarariBelirle`, `EXTRA_PUAN_TEKRAR_ESIGI`, `extraPuanEsikKarsilandi` işlev ve sabitlerini ve `IzlemeKarari` veri sözleşmelerini sağlar; strateji iş kurallarını tek modülde toplar. |
+| `tekrarSayim.ts` | TypeScript / Lib | T-Club kapsamında `tamTekrarSayisi`, `tamTekrarSayilari` işlev ve sabitlerini sağlar; tekrar Sayim iş kurallarını tek modülde toplar. |
+| `tipler.ts` | TypeScript / Lib | T-Club kapsamında `PuanTuru`, `KazanilanPuanParams`, `YanlisCevapKayipParams` veri sözleşmelerini sağlar; tipler iş kurallarını tek modülde toplar. |
+
+### 📁 lib/tclub/store/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `adres.ts` | TypeScript / Lib | T-Club kapsamında `adresleriListele`, `adresEkle`, `adresGuncelle`, `adresSil` işlev ve sabitlerini sağlar; adres iş kurallarını tek modülde toplar. |
+| `bakiye.ts` | TypeScript / Lib | T-Club kapsamında `harcamaBakiyesi` işlev ve sabitlerini sağlar; bakiye iş kurallarını tek modülde toplar. |
+| `firmaUrun.ts` | TypeScript / Lib | T-Club kapsamında `firmaIcinUrunAktifMi`, `hbstoreFirmaBaglami`, `firmaKapaliUrunIdleri` işlev ve sabitlerini ve `HbstoreFirmaBaglami` veri sözleşmelerini sağlar; firma ürün iş kurallarını tek modülde toplar. |
+| `kargo.ts` | TypeScript / Lib | T-Club kapsamında `KARGO_FIRMALARI`, `KARGO_FIRMA_ADLARI`, `kargoTakipUrl` işlev ve sabitlerini sağlar; kargo iş kurallarını tek modülde toplar. |
+| `olay.ts` | TypeScript / Lib | T-Club kapsamında `HBSTORE_BAKIYE_DEGISTI`, `hbstoreBakiyesiDegistiBildir` işlev ve sabitlerini sağlar; olay iş kurallarını tek modülde toplar. |
+| `sabitler.ts` | TypeScript / Lib | T-Club kapsamında `IPTAL_SURE_SAATI`, `STOK_AZ_ESIK`, `DURUM_ETIKETLERI`, `DURUM_RENKLERI` işlev ve sabitlerini sağlar; sabitler iş kurallarını tek modülde toplar. |
+| `siparis.ts` | TypeScript / Lib | T-Club kapsamında `siparisOlustur`, `siparisIptal`, `teslimAldim` işlev ve sabitlerini sağlar; sipariş iş kurallarını tek modülde toplar. |
+| `storage.ts` | TypeScript / Lib | T-Club kapsamında `gorselYukle`, `gorselSil`, `urlDenYolCikar` işlev ve sabitlerini ve `YuklemeSonuc`, `SilmeSonuc` veri sözleşmelerini sağlar; storage iş kurallarını tek modülde toplar. |
+| `tipler.ts` | TypeScript / Lib | T-Club kapsamında `KayitSonuc`, `SiparisDurum`, `HarcamaTuru` veri sözleşmelerini sağlar; tipler iş kurallarını tek modülde toplar. |
+
+### 📁 lib/tclub/tur/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `ayarlar.ts` | TypeScript / Lib | T-Club kapsamında `tekrarPeriyotSecenekleri` işlev ve sabitlerini sağlar; ayarlar iş kurallarını tek modülde toplar. |
+| `kayit.ts` | TypeScript / Lib | T-Club kapsamında `TurAcilisTuru`, `TurKaydiParams`, `TurKaydiSonuc` veri sözleşmelerini sağlar; kayıt iş kurallarını tek modülde toplar. |
+
+### 📁 lib/types/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `rapor.ts` | TypeScript / Lib | raporlama kapsamında `Bolge`, `Takim`, `UrunIzleme` veri sözleşmelerini sağlar; rapor iş kurallarını tek modülde toplar. |
+
+### 📁 lib/uretici/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `talepKaynakSahipligi.ts` | TypeScript / Lib | üretim kapsamında `teknikFirmayaAitMi`, `urunFirmayaAitMi` işlev ve sabitlerini sağlar; talep kaynak Sahipligi iş kurallarını tek modülde toplar. |
+| `urunKapsami.ts` | TypeScript / Lib | üretim kapsamında `ureticiUrunListeKapsami`, `ureticiUrunYazmaKapsami` işlev ve sabitlerini ve `UreticiUrunProfili`, `UreticiUrunKapsami` veri sözleşmelerini sağlar; ürün Kapsami iş kurallarını tek modülde toplar. |
+| `yetenekler.ts` | TypeScript / Lib | 13 üretici rolün içerik türü yetkilerini, ürün/teknik zorunluluklarını ve form kısıtlarını denetleyen anayasal kural motoru. |
+
+### 📁 lib/uretim/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `gorevSozlesmesi.ts` | TypeScript / Lib | üretim alanında kullanılan `URETIM_GOREV_ASAMALARI`, `UretimGorevAsamasi`, `URETIM_GOREV_DURUMLARI`, `UretimGorevDurumu` veri tiplerini ve modüller arası sözleşmeleri tanımlar. |
+| `gorevTipleri.ts` | TypeScript / Lib | üretim kapsamında `UretimGorevAsamasi`, `UretimGorevDurumu`, `UretimGorevTalebi` veri sözleşmelerini sağlar; görev Tipleri iş kurallarını tek modülde toplar. |
+| `parametreKontrol.ts` | TypeScript / Lib | üretim kapsamında `hazirParametreKontrol` işlev ve sabitlerini sağlar; parametre Kontrol iş kurallarını tek modülde toplar. |
+| `rpc.ts` | TypeScript / Lib | Üretim durum makinesini canlı Supabase RPC'lerine bağlayan çekirdek köprü. |
+| `rpcTemel.ts` | TypeScript / Lib | üretim kapsamında `uuidGecerliMi`, `uretimRpcHttpDurumu` işlev ve sabitlerini sağlar; rpc Temel iş kurallarını tek modülde toplar. |
+| `toastMesaj.ts` | TypeScript / Lib | 5 üretim aşamasındaki tüm onay ve devir işlemlerinde unvanlı ve iki parçalı toast mesajlarını üreten merkezi motor. |
+
 ### 📁 lib/utils/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `adSoyadBicimle.ts` | TypeScript / Lib | adSoyadBicimle.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `adminGirisKontrol.ts` | TypeScript / Lib | adminGirisKontrol.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `beniHatirla.ts` | TypeScript / Lib | beniHatirla.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `bildirimOlustur.ts` | TypeScript / Lib | bildirimOlustur.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `eclubBildirim.ts` | TypeScript / Lib | eclubBildirim.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `firmaAdiBicimle.ts` | TypeScript / Lib | firmaAdiBicimle.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `guvenliDosyaAdi.ts` | TypeScript / Lib | guvenliDosyaAdi.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `adminGirisKontrol.ts` | TypeScript / Lib | HapBilgi kapsamında `adminGirisKontrol` işlev ve sabitlerini sağlar; admin Giris Kontrol iş kurallarını tek modülde toplar. |
+| `adSoyadBicimle.ts` | TypeScript / Lib | HapBilgi kapsamında `adSoyadBicimle`, `adSoyadCanliBicimle` işlev ve sabitlerini sağlar; ad Soyad Bicimle iş kurallarını tek modülde toplar. |
+| `beniHatirla.ts` | TypeScript / Lib | HapBilgi kapsamında `beniHatirlaKaydet`, `oturumDusurulmeliMi`, `beniHatirlaTemizle` işlev ve sabitlerini sağlar; beni Hatirla iş kurallarını tek modülde toplar. |
+| `bildirimOlustur.ts` | TypeScript / Lib | bildirim kapsamında `gonderenBildirimleriOkunduIsaretle`, `bildirimOlustur`, `cokluBildirimOlustur` işlev ve sabitlerini ve `BildirimSonucu` veri sözleşmelerini sağlar; bildirim Olustur iş kurallarını tek modülde toplar. |
+| `eclubBildirim.ts` | TypeScript / Lib | HapBilgi kapsamında `eclubBildirimOlustur`, `eclubCokluBildirimOlustur` işlev ve sabitlerini sağlar; E-Club bildirim iş kurallarını tek modülde toplar. |
+| `firmaAdiBicimle.ts` | TypeScript / Lib | HapBilgi kapsamında `firmaAdiBicimle` işlev ve sabitlerini sağlar; firma Adi Bicimle iş kurallarını tek modülde toplar. |
+| `guvenliDosyaAdi.ts` | TypeScript / Lib | HapBilgi kapsamında `guvenliDosyaAdi` işlev ve sabitlerini sağlar; guvenli Dosya Adi iş kurallarını tek modülde toplar. |
 | `hataIsle.ts` | TypeScript / Lib | Tüm API route handler'larında standart JSON hata formatı (sunucuHatasi, yetkiHatasi, validasyonHatasi) üreten merkezi hata yöneticisi. |
-| `ortam.ts` | TypeScript / Lib | ortam.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `periyotAltKirilim.ts` | TypeScript / Lib | periyotAltKirilim.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `ortam.ts` | TypeScript / Lib | HapBilgi kapsamında `canliOrtamMi` işlev ve sabitlerini sağlar; ortam iş kurallarını tek modülde toplar. |
+| `periyotAltKirilim.ts` | TypeScript / Lib | HapBilgi kapsamında `periyotAltKirilim` işlev ve sabitlerini ve `Dilim` veri sözleşmelerini sağlar; periyot Alt Kirilim iş kurallarını tek modülde toplar. |
 | `raporUtils.ts` | TypeScript / Lib | Raporlama sayfalarında kullanılan puan formatlama, dönem etiketleri ve yüzde hesaplama fonksiyonları. |
 | `rolCozucu.ts` | TypeScript / Lib | Oturum açan kullanıcının gerçek rolünü v_auth_kimlik_admin view'ı üzerinden tek kaynakta çözen yetkili fonksiyon. |
 | `roller.ts` | TypeScript / Lib | Platformdaki tüm rol gruplarını (URETICI_ROLLER, STORE_ALABILEN_ROLLER, YONETICI_ROLLER vb.) tanımlayan tek anayasal kaynak. |
-| `talepId.ts` | TypeScript / Lib | talepId.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `talepZinciri.ts` | TypeScript / Lib | talepZinciri.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `tarihAraligi.ts` | TypeScript / Lib | tarihAraligi.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `uretimSeridi.ts` | TypeScript / Lib | uretimSeridi.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `uretimZinciri.ts` | TypeScript / Lib | uretimZinciri.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `talepId.ts` | TypeScript / Lib | HapBilgi kapsamında `talepIdGoster` işlev ve sabitlerini sağlar; talep Id iş kurallarını tek modülde toplar. |
+| `talepZinciri.ts` | TypeScript / Lib | HapBilgi kapsamında `TALEP_ALANLARI`, `haritalaTalep`, `talepBilgisiSenaryo`, `talepBilgisiVideo` işlev ve sabitlerini ve `TalepBilgisi`, `HamTalepKaydi` veri sözleşmelerini sağlar; talep Zinciri iş kurallarını tek modülde toplar. |
+| `tarihAraligi.ts` | TypeScript / Lib | HapBilgi kapsamında `tarihAraligi` işlev ve sabitlerini sağlar; tarih Araligi iş kurallarını tek modülde toplar. |
+| `uretimSeridi.ts` | TypeScript / Lib | HapBilgi kapsamında `adimlariCoz` işlev ve sabitlerini ve `AdimAnahtari`, `AdimHal`, `Adim` veri sözleşmelerini sağlar; üretim Seridi iş kurallarını tek modülde toplar. |
+| `uretimZinciri.ts` | TypeScript / Lib | HapBilgi kapsamında `zincirHaritasi`, `asamaCoz` işlev ve sabitlerini ve `ZincirAsama`, `ZincirSatiri`, `ZincirDurumu` veri sözleşmelerini sağlar; üretim Zinciri iş kurallarını tek modülde toplar. |
 | `yayinUrun.ts` | TypeScript / Lib | Yayın kaydından ürün ID'sini çözen ve tekilleştiren DRY yardımcı fonksiyonu. |
 
-### 📁 lib/hapbi/
+### 📁 lib/utils/anaSayfa/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `hapbiBilgiTabani.ts` | TypeScript / Lib | Mevcut UTT ekran turlarını taşır; AI bilgi kaynağı veya hazır soru tanımı değildir. |
-| `hapbiKullaniciBaglami.ts` | TypeScript / Lib | Yetkili kimlik, organizasyon ve modül kapsamını doğrular; sayı veya varsayılan rol üretmez. |
-| `aracTanimlari.ts` | TypeScript / Lib | Gemini işlev şemalarını veri motorlarından bağımsız tutan hafif ve kanonik araç tanımı modülü. |
-| `araclar.ts` | TypeScript / Lib | Doğrulanmış bağlamı kuran ve yalnız çağrılan alan motorunu dinamik yükleyen hafif araç dağıtıcısı. |
-| `bilgiKaynaklari.ts` | TypeScript / Lib | Bluebook/kod dayanaklı sürümlü kullanıcı rehberi. |
-| `eclubKisi.ts` | TypeScript / Lib | Oturum sahibinin E-Club kişi/eczane/firma erişimini, eğitim durumunu ve puan özetini iletişim verisi taşımadan okuyan kişisel veri servisi. |
-| `egitim.ts` | TypeScript / Lib | Rol, yayın görünürlüğü ve geçerli tur üzerinden eğitim adaylarını okur. |
-| `gemini.ts` | TypeScript / Lib | Sınırlı Gemini araç döngüsü, kaynaklı yanıt ve sayısal tutarlılık denetimi. |
-| `hizliSorgu.ts` | TypeScript / Lib | Role özel hazır soru metinlerini kesin araç/parametre planlarına bağlar; varsayılan haftayı ve E-Club dönem dışı kapsamını korur. |
-| `rehberlik.ts` | TypeScript / Lib | Faz 2: kapsamlı rapor ölçümlerinden gelişim gözlemleri, gerekçeli eğitim öncelikleri ve dönem fark/yüzde hesabı. |
-| `sohbet.ts` | TypeScript / Lib | Kapsama bağlı imzalı sohbet bağlamı ve süreç içi istek sınırı. |
-| `sozlesme.ts` | TypeScript / Lib | Kaynak, yanıt ve hata sözleşmeleri. |
+| `bm.ts` | TypeScript / Lib | HapBilgi kapsamında `getBmAnaSayfaVeri` işlev ve sabitlerini sağlar; bm iş kurallarını tek modülde toplar. |
+| `iu.ts` | TypeScript / Lib | HapBilgi kapsamında `getIuAnaSayfaVeri` işlev ve sabitlerini ve `IsSatiri`, `IuAnaSayfaVeri` veri sözleşmelerini sağlar; iu iş kurallarını tek modülde toplar. |
+| `iuDurumEsle.ts` | TypeScript / Lib | HapBilgi kapsamında `talepBazindaTekillestir` işlev ve sabitlerini ve `IuKategori` veri sözleşmelerini sağlar; iu durum Esle iş kurallarını tek modülde toplar. |
+| `tm.ts` | TypeScript / Lib | HapBilgi kapsamında `getTmAnaSayfaVeri` işlev ve sabitlerini sağlar; tm iş kurallarını tek modülde toplar. |
+| `uretici.ts` | TypeScript / Lib | HapBilgi kapsamında `getUreticiAnaSayfaVeri` işlev ve sabitlerini sağlar; üretici iş kurallarını tek modülde toplar. |
+| `utt.ts` | TypeScript / Lib | HapBilgi kapsamında `getUttAnaSayfaVeri` işlev ve sabitlerini ve `VYayinSatiri` veri sözleşmelerini sağlar; UTT iş kurallarını tek modülde toplar. |
+| `yonetici.ts` | TypeScript / Lib | HapBilgi kapsamında `getYoneticiAnaSayfaVeri` işlev ve sabitlerini sağlar; yönetici iş kurallarını tek modülde toplar. |
 
-### 📁 lib/hapbi/aracMotorlari/
+### 📁 lib/utils/durum/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `ortak.ts` | TypeScript / Lib | Araç bağlamı, dönem doğrulama ve güvenli satır yardımcılarını paylaşan ortak çekirdek. |
-| `platform.ts` | TypeScript / Lib | Sürümlü HapBilgi platform rehberini salt-okur araç sonucuna dönüştürür. |
-| `egitim.ts` | TypeScript / Lib | Yetkili eğitim kataloğu ve yayın senaryosu araçlarını çalıştırır. |
-| `gelisim.ts` | TypeScript / Lib | Gelişim rehberi ve eşit süre/takvim karşılaştırması araçlarını çalıştırır. |
-| `saha.ts` | TypeScript / Lib | HB/CC ligleri ile role göre T-Club performans raporu adaptörlerini çalıştırır. |
-| `uretim.ts` | TypeScript / Lib | Yetkili firmanın mevcut üretim raporu okuyucusunu Hapbi araç sözleşmesine bağlar. |
-| `eclub.ts` | TypeScript / Lib | Eczacı/teknisyen kişisel E-Club durumu ile iç kullanıcı E-Club raporunu ayrı yetki sınırlarında çalıştırır. |
+| `filtre.ts` | TypeScript / Lib | HapBilgi kapsamında `uretimDurumSirasi`, `ilkUretimDurumu`, `aktifUretimDurumuCoz` işlev ve sabitlerini ve `DurumSayimi` veri sözleşmelerini sağlar; filtre iş kurallarını tek modülde toplar. |
+| `mesaj.ts` | TypeScript / Lib | HapBilgi kapsamında `DurumTopu`, `DurumRenk`, `DurumMesaji` veri sözleşmelerini sağlar; mesaj iş kurallarını tek modülde toplar. |
 
-## 8. COMPONENTS GÖRSEL VE ETKİLEŞİM KATMANI
+### 📁 lib/utils/senaryo/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `diffHesapla.ts` | TypeScript / Lib | HapBilgi kapsamında `senaryoDiffHesapla` işlev ve sabitlerini ve `SenaryoDiffTuru`, `SenaryoDiffParcasi` veri sözleşmelerini sağlar; diff Hesapla iş kurallarını tek modülde toplar. |
+| `duzeltmeModeli.ts` | TypeScript / Lib | HapBilgi kapsamında `modelOlustur`, `yaziEkle`, `geriSil` işlev ve sabitlerini ve `DuzeltmeTur`, `DuzeltmeKarakter`, `DuzeltmeRun` veri sözleşmelerini sağlar; duzeltme Modeli iş kurallarını tek modülde toplar. |
+| `gonderimKarari.ts` | TypeScript / Lib | HapBilgi kapsamında `gonderimKarari` işlev ve sabitlerini ve `SonSatirBilgisi`, `GonderimKarari` veri sözleşmelerini sağlar; gönderim Karari iş kurallarını tek modülde toplar. |
+
+### 📁 lib/video/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `anaSayfaRaflari.ts` | TypeScript / Lib | video altyapısı kapsamında `RAF_LIMIT`, `anaSayfaRaflari` işlev ve sabitlerini ve `RafVideo` veri sözleşmelerini sağlar; ana sayfa Raflari iş kurallarını tek modülde toplar. |
+| `anaSayfaVideolari.ts` | TypeScript / Lib | video altyapısı kapsamında `getAnaSayfaVideolari`, `getSahaAnaSayfaVideolari` işlev ve sabitlerini ve `AnaSayfaVideo`, `SahaAnaSayfaVideo` veri sözleşmelerini sağlar; ana sayfa Videolari iş kurallarını tek modülde toplar. |
+| `bunnyTusIstemci.ts` | TypeScript / Lib | video altyapısı kapsamında `videoYuklemeOturumuGuncelle`, `bunnyTusYukle` işlev ve sabitlerini ve `BunnyVezneIzni` veri sözleşmelerini sağlar; Bunny Tus Istemci iş kurallarını tek modülde toplar. |
+| `bunnyYukleme.ts` | TypeScript / Lib | Bunny Stream TUS API vezne modelini işleten; API anahtarı ifşa olmadan doğrudan CDN yükleme token'ı üreten video motoru. |
+| `departman.ts` | TypeScript / Lib | video altyapısı kapsamında `DEPARTMAN_SIRA`, `DEPARTMAN_ETIKET`, `DEPARTMAN_RENK`, `departmanKey` işlev ve sabitlerini ve `DepartmanKey` veri sözleşmelerini sağlar; departman iş kurallarını tek modülde toplar. |
+| `enBoyOrani.ts` | TypeScript / Lib | video altyapısı kapsamında `VARSAYILAN_ORAN`, `DIKEY_ESIGI`, `enBoyOrani`, `dikeyMi` işlev ve sabitlerini sağlar; en Boy Orani iş kurallarını tek modülde toplar. |
+| `gorunurluk.ts` | TypeScript / Lib | video altyapısı kapsamında `gorunenTurler`, `kapsamGenisMi`, `tuketiciMi`, `videoBolumuVarMi` işlev ve sabitlerini sağlar; gorunurluk iş kurallarını tek modülde toplar. |
+| `icerikTuru.ts` | TypeScript / Lib | video altyapısı kapsamında `TUR_BASLIK`, `TUR_SIRA`, `TUR_RAPOR_ADI`, `isIcerikTuru` işlev ve sabitlerini sağlar; icerik Turu iş kurallarını tek modülde toplar. |
+| `islemeDurumu.ts` | TypeScript / Lib | video altyapısı kapsamında `SORGU_ARALIGI_SANIYE`, `SORGU_ARALIGI_MS`, `TAVAN_SANIYE` işlev ve sabitlerini ve `BunnySorguSonucu`, `IslemeDurumu`, `PollingKarari` veri sözleşmelerini sağlar; işleme Durumu iş kurallarını tek modülde toplar. |
+| `thumbnail.ts` | TypeScript / Lib | video altyapısı kapsamında `thumbnailUrlUret` işlev ve sabitlerini sağlar; thumbnail iş kurallarını tek modülde toplar. |
+| `uttVideoKategorileri.ts` | TypeScript / Lib | video altyapısı kapsamında `UTT_VIDEO_KATEGORILERI`, `uttVideoKategorisiBul` işlev ve sabitlerini sağlar; UTT video Kategorileri iş kurallarını tek modülde toplar. |
+| `videoPlayer.ts` | TypeScript / Lib | video altyapısı kapsamında `detectProvider`, `bunnyEmbedUrl` işlev ve sabitlerini ve `VideoPlayer`, `Provider`, `PlayerJsInstance` veri sözleşmelerini sağlar; video Player iş kurallarını tek modülde toplar. |
+| `yayindakiVideolar.ts` | TypeScript / Lib | video altyapısı kapsamında `getYayindakiVideolar` işlev ve sabitlerini ve `YayindakiVideo` veri sözleşmelerini sağlar; yayindaki videolar iş kurallarını tek modülde toplar. |
+
+### 📁 lib/zaman/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `kontrol.ts` | TypeScript / Lib | Sistem genelindeki tüm periyot (hafta, ay, dönem, yıl) başlangıç ve bitişlerini Türkiye saat dilimine göre hesaplayan zaman motoru. |
+
+## 8. COMPONENTS, HOOKS, TYPES VE YEREL ARAÇLAR
 
 ### 📁 components/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `DosyaGoruntuleListesi.tsx` | UI / React | DosyaGoruntuleListesi.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `DurumAnahtari.tsx` | UI / React | DurumAnahtari.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `HataMesaji.tsx` | UI / React | HataMesaji.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `SenaryoDuzeltmeEditoru.tsx` | UI / React | SenaryoDuzeltmeEditoru.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `SenaryoMetniGoster.tsx` | UI / React | SenaryoMetniGoster.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `SoruIceAktar.tsx` | UI / React | SoruIceAktar.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `SoruSetiFormu.tsx` | UI / React | SoruSetiFormu.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `DosyaGoruntuleListesi.tsx` | UI / React | Dosya Goruntule Listesi, HapBilgi kayıtlarını listeleyip yükleme, seçim veya filtreleme etkileşimlerini yönetir. |
+| `DurumAnahtari.tsx` | UI / React | durum Anahtari, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `HataMesaji.tsx` | UI / React | Hata Mesaji, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `SenaryoDuzeltmeEditoru.tsx` | UI / React | senaryo Duzeltme Editoru, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `SenaryoMetniGoster.tsx` | UI / React | senaryo Metni Goster, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `SoruIceAktar.tsx` | UI / React | soru Ice Aktar, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `SoruSetiFormu.tsx` | UI / React | soru Seti Formu, HapBilgi işleminde gerekli soru seti girdilerini toplar ve kullanıcı doğrulamalarını görünür kılar. |
 
-### 📁 components/izle/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `VideoOynatici.tsx` | UI / React | VideoOynatici.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-
-### 📁 components/video/
+### 📁 components/ana-sayfa/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `UttVideoKarti.tsx` | UI / React | UttVideoKarti.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `VideoCercevesi.tsx` | UI / React | VideoCercevesi.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `VideoOnizleme.tsx` | UI / React | VideoOnizleme.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `useVideoEtkilesimKatmani.ts` | TypeScript / Lib | useVideoEtkilesimKatmani.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `BmAnaSayfa.tsx` | UI / React | Bm Ana sayfa, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `IuAnaSayfa.tsx` | UI / React | Iu Ana sayfa, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `SahaVideoRaflari.tsx` | UI / React | Saha video Raflari, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `TmAnaSayfa.tsx` | UI / React | Tm Ana sayfa, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `UreticiAnaSayfa.tsx` | UI / React | üretici Ana sayfa, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `UttAnaSayfa.tsx` | UI / React | UTT Ana sayfa, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `VideoBolumu.tsx` | UI / React | video Bolumu, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `YoneticiAnaSayfa.tsx` | UI / React | yönetici Ana sayfa, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 
-### 📁 components/hbligi/
+### 📁 components/cc-ligi/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `HbLigiPeriyotSecici.tsx` | UI / React | HbLigiPeriyotSecici.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `CcChallengeListesi.tsx` | UI / React | Cc Challenge Listesi, C-Club kayıtlarını listeleyip yükleme, seçim veya filtreleme etkileşimlerini yönetir. |
+| `CcLigiBanner.tsx` | UI / React | Cc Ligi Banner, C-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `CcLigiPeriyotSecici.tsx` | UI / React | Cc Ligi Periyot Secici, C-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `CcLigiTablosu.tsx` | UI / React | Cc Ligi Tablosu, C-Club verilerini sıralı tablo görünümünde ve ilgili kullanıcı eylemleriyle sunar. |
+| `CcTakimLigAkordeonu.tsx` | UI / React | Cc takım lig Akordeonu, C-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 
 ### 📁 components/challenge-club/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `CcVideoOynatici.tsx` | UI / React | CcVideoOynatici.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `ChallengeGonderPaneli.tsx` | UI / React | ChallengeGonderPaneli.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `CcVideoOynatici.tsx` | UI / React | Cc video Oynatici, ilgili öğrenme aracını gösteren ve C-Club ilerleme/tamamlama akışına bağlayan oynatıcı bileşenidir. |
+| `ChallengeGonderPaneli.tsx` | UI / React | Challenge Gonder Paneli, C-Club kapsamındaki challenge gonder verilerini ve işlemlerini tek panelde birleştirir. |
 
 ### 📁 components/eclub/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `EclubKisiSayfa.tsx` | UI / React | EclubKisiSayfa.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `EclubYonetimHiyerarsisi.tsx` | UI / React | EclubYonetimHiyerarsisi.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `EclubKisiSayfa.tsx` | UI / React | E-Club kişi sayfa, E-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `EclubYonetimHiyerarsisi.tsx` | UI / React | E-Club yönetim Hiyerarsisi, E-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 
-### 📁 components/raporlar/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `BegeniFavoriListesi.tsx` | UI / React | BegeniFavoriListesi.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `BmPerformansGorunumu.tsx` | UI / React | BmPerformansGorunumu.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `DagilimGrafik.tsx` | UI / React | DagilimGrafik.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `EczanemDokumBolumu.tsx` | UI / React | EczanemDokumBolumu.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `UrunKirilimPaneli.tsx` | UI / React | UrunKirilimPaneli.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-
-### 📁 components/panel/
+### 📁 components/grafik/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `BilgiSayfa.tsx` | UI / React | BilgiSayfa.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `MobilDrawer.tsx` | UI / React | MobilDrawer.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `PanelNavbar.tsx` | UI / React | PanelNavbar.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `SolListe.tsx` | UI / React | SolListe.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `panelNav.config.ts` | TypeScript / Lib | panelNav.config.ts modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `EChart.tsx` | UI / React | EChart, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 
 ### 📁 components/hapbi/
 
@@ -1247,231 +2605,505 @@ Hızlı yol sonrasında aynı role özel hazır sorularla canlı süre ve kaynak
 | `HapbiProvider.tsx` | UI / React | Panel genelinde tur/sohbet durumunu yöneten; yalnız hazır soru tıklamalarında sunucuya doğrulanabilir hızlı sorgu işareti gönderen Context sağlayıcısı. |
 | `HapbiSpotlight.tsx` | UI / React | Kullanıcıyı adım adım ilgili sayfa ve butonlara odaklayan etkileşimli ekran karartma/rehberlik bileşeni. |
 
+### 📁 components/hbligi/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `HbLigiPeriyotSecici.tsx` | UI / React | Hb Ligi Periyot Secici, T-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+
+### 📁 components/hbligi/field/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `field.module.css` | Stil / CSS | T-Club görünümünün yerleşim, renk, tipografi ve responsive davranışlarını tanımlayan stil dosyasıdır. |
+| `FieldLeaguePage.tsx` | UI / React | Field League Page, T-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `TakimLigAkordeonu.tsx` | UI / React | takım lig Akordeonu, T-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+
+### 📁 components/hbligi/league/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `CompetitorComparison.tsx` | UI / React | Competitor Comparison, T-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `LeadershipInsight.tsx` | UI / React | Leadership Insight, T-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `LeadershipPath.tsx` | UI / React | Leadership Path, T-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `LeadershipProfile.tsx` | UI / React | Leadership Profile, T-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `LeadershipScore.tsx` | UI / React | Leadership Score, T-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `league.module.css` | Stil / CSS | T-Club görünümünün yerleşim, renk, tipografi ve responsive davranışlarını tanımlayan stil dosyasıdır. |
+| `LeagueHeader.tsx` | UI / React | League Header, T-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `LeaguePage.tsx` | UI / React | League Page, T-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `LeaguePodium.tsx` | UI / React | League Podium, T-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `LeaguePosition.tsx` | UI / React | League Position, T-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `ScoreComposition.tsx` | UI / React | Score Composition, T-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `types.ts` | TypeScript / Lib | types, T-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `util.ts` | TypeScript / Lib | util, T-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+
+### 📁 components/izle/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `VideoOynatici.tsx` | UI / React | video Oynatici, ilgili öğrenme aracını gösteren ve HapBilgi ilerleme/tamamlama akışına bağlayan oynatıcı bileşenidir. |
+
+### 📁 components/liste/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `DahaFazlaGoster.tsx` | UI / React | Daha Fazla Goster, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `index.ts` | TypeScript / Lib | index, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `ListeArama.tsx` | UI / React | liste Arama, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `useListe.ts` | TypeScript / Lib | use liste, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+
+### 📁 components/ogrenme-araci/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `FlipPdfOynatici.tsx` | UI / React | Flip Pdf Oynatici, ilgili öğrenme aracını gösteren ve ortak öğrenme aracı ilerleme/tamamlama akışına bağlayan oynatıcı bileşenidir. |
+| `GorselOynatici.tsx` | UI / React | Dijital Broşür Oynatici, ilgili öğrenme aracını gösteren ve ortak öğrenme aracı ilerleme/tamamlama akışına bağlayan oynatıcı bileşenidir. |
+| `OgrenmeAraciOnizleme.tsx` | UI / React | öğrenme Araci Onizleme, ortak öğrenme aracı ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `PodcastOynatici.tsx` | UI / React | Podcast Oynatici, ilgili öğrenme aracını gösteren ve ortak öğrenme aracı ilerleme/tamamlama akışına bağlayan oynatıcı bileşenidir. |
+| `YarimYuklemeBildirimi.tsx` | UI / React | yarım yükleme Bildirimi, ortak öğrenme aracı ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+
+### 📁 components/panel/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `BilgiSayfa.tsx` | UI / React | bilgi sayfa, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `MobilDrawer.tsx` | UI / React | mobil Drawer, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `panelNav.config.ts` | TypeScript / Lib | panel Nav, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `PanelNavbar.tsx` | UI / React | panel Navbar, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `SolListe.tsx` | UI / React | Sol liste, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+
+### 📁 components/panel/bilgi/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `bilgi.module.css` | Stil / CSS | HapBilgi görünümünün yerleşim, renk, tipografi ve responsive davranışlarını tanımlayan stil dosyasıdır. |
+| `BilgiSayfaCercevesi.tsx` | UI / React | bilgi sayfa Cercevesi, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `icerikler.ts` | TypeScript / Lib | icerikler, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `OgrenmeDongusu.tsx` | UI / React | öğrenme Dongusu, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `OgrenmeZinciri.tsx` | UI / React | öğrenme Zinciri, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+
+### 📁 components/pill/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `AsamaPill.tsx` | UI / React | Asama Pill, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `DurumPill.tsx` | UI / React | durum Pill, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `HedefRolPill.tsx` | UI / React | Hedef rol Pill, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `index.ts` | TypeScript / Lib | index, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `Pill.tsx` | UI / React | Pill, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `TeknikPill.tsx` | UI / React | teknik Pill, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `VaryantPill.tsx` | UI / React | Varyant Pill, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+
+### 📁 components/raporlar/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `BegeniFavoriListesi.tsx` | UI / React | beğeni favori Listesi, raporlama kayıtlarını listeleyip yükleme, seçim veya filtreleme etkileşimlerini yönetir. |
+| `BmPerformansGorunumu.tsx` | UI / React | Bm Performans Gorunumu, raporlama ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `DagilimGrafik.tsx` | UI / React | Dagilim Grafik, raporlama ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `EczanemDokumBolumu.tsx` | UI / React | Eczanem döküm Bolumu, raporlama ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `OgrenmeAraciPerformansi.tsx` | UI / React | öğrenme Araci Performansi, raporlama ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `UrunKirilimPaneli.tsx` | UI / React | ürün Kirilim Paneli, raporlama kapsamındaki ürün kirilim verilerini ve işlemlerini tek panelde birleştirir. |
+
+### 📁 components/rehber/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `SayfaRehberi.tsx` | UI / React | sayfa Rehberi, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+
+### 📁 components/store/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `AdresModal.tsx` | UI / React | Adres Modal, HBStore kapsamındaki adres işlemini açılır pencerede yöneten React bileşenidir. |
+
+### 📁 components/talep/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `TalepKlasorleri.tsx` | UI / React | talep Klasorleri, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+
 ### 📁 components/ui/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `alert-dialog.tsx` | UI / React | alert-dialog.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `avatar.tsx` | UI / React | avatar.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `badge.tsx` | UI / React | badge.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `button.tsx` | UI / React | button.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `card.tsx` | UI / React | card.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `collapsible.tsx` | UI / React | collapsible.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `input.tsx` | UI / React | input.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `label.tsx` | UI / React | label.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `progress.tsx` | UI / React | progress.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `select.tsx` | UI / React | select.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `table.tsx` | UI / React | table.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `tooltip.tsx` | UI / React | tooltip.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `yenile-butonu.tsx` | UI / React | yenile-butonu.tsx modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `alert-dialog.tsx` | UI / React | alert dialog, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `avatar.tsx` | UI / React | avatar, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `badge.tsx` | UI / React | badge, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `button.tsx` | UI / React | button, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `card.tsx` | UI / React | card, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `collapsible.tsx` | UI / React | collapsible, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `input.tsx` | UI / React | input, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `label.tsx` | UI / React | label, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `progress.tsx` | UI / React | progress, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `select.tsx` | UI / React | select, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `table.tsx` | UI / React | table, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `tooltip.tsx` | UI / React | tooltip, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `yenile-butonu.tsx` | UI / React | yenileme butonu, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 
-## 9. SCRİPTS VE TEST KATMANI
+### 📁 components/uretim/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `UretimGorevListesi.tsx` | UI / React | üretim görev Listesi, üretim kayıtlarını listeleyip yükleme, seçim veya filtreleme etkileşimlerini yönetir. |
+
+### 📁 components/video/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `useVideoEtkilesimKatmani.ts` | TypeScript / Lib | use video etkileşim Katmani, video altyapısı ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `UttVideoKarti.tsx` | UI / React | UTT video Karti, video altyapısı içindeki utt video bilgisini kart görünümü ve ilgili eylemlerle sunar. |
+| `VideoCercevesi.tsx` | UI / React | video Cercevesi, video altyapısı ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `VideoOnizleme.tsx` | UI / React | video Onizleme, video altyapısı ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+
+### 📁 hooks/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `useBunnyIslemeDurumu.ts` | TypeScript / Lib | use Bunny Isleme Durumu hook'u, HapBilgi ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+| `useOkunmamisIdler.ts` | TypeScript / Lib | use Okunmamis Idler hook'u, HapBilgi ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+| `useRapor.ts` | TypeScript / Lib | use rapor hook'u, HapBilgi ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+| `useUretimDurumFiltresi.ts` | TypeScript / Lib | use üretim durum Filtresi hook'u, HapBilgi ekranlarının veri yükleme, durum ve kullanıcı eylemlerini ortaklaştırır. |
+
+### 📁 tools/eslint-rules/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `index.mjs` | Script / Node.js | index denetimini veya bakım işlemini komut satırından yürüten Node.js betiğidir. |
+
+### 📁 types/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `auth.ts` | TypeScript / Lib | HapBilgi kapsamında `KimlikTuru`, `AuthKullanici` veri sözleşmelerini sağlar; kimlik doğrulama iş kurallarını tek modülde toplar. |
+
+## 9. SCRİPTS, TEST VE ALTYAPI KATMANI
+
+### 📁 infra/bunny/ogrenme-araci-upload/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `index.ts` | TypeScript / Lib | ortak öğrenme aracı kapsamında index iş akışının dahili yardımcılarını ve kurallarını uygular. |
+| `package-lock.json` | Bağımlılık Kilidi | Bu alt projenin NPM bağımlılık ağını kesin sürüm ve bütünlük özetleriyle kilitler. |
+| `package.json` | JSON / Yapılandırma | Bu alt projenin bağımlılıklarını ve çalıştırma/derleme komutlarını tanımlar. |
+| `README.md` | Dokümantasyon | “Öğrenme Aracı Upload Edge Script” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
+| `tsconfig.json` | JSON / Yapılandırma | Bu alt projenin TypeScript derleme ve modül çözümleme kurallarını tanımlar. |
 
 ### 📁 scripts/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `backfill-video-suresi.mjs` | Yapılandırma | backfill-video-suresi.mjs modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-
-### 📁 scripts/sql/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `cc_challenge_gonderim_guvenligi.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `cc_izleme_cevap_guvenligi.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `cc_ligi_backfill.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `cc_ligi_okuma.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `cc_ligi_ozet.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `cc_yeni_puanlama_modeli.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `cc_yetkilendirme_guvenligi.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `challenge_kaybi_tara.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eclub_ayni_video_tekrar_ayari.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eclub_gonderi_limit_ayarlari.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eclub_ileri_sarma_kurali.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eclub_izleme_suresi_snapshot.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eclub_izleme_tekillik.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eclub_kisi_unvanlari.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eclub_ogrenme_araci_tamamlama.sql` | SQL / DDL | E-Club tamamlamasını video, podcast, görsel ve Flip PDF kanıtlarına göre ortak yayın/arac kimliğiyle doğrular. |
-| `eclub_ogrenme_araci_yayin_kimligi.sql` | SQL / DDL | E-Club önerilerini `yayin_id`, `arac_id` ve `arac_turu` ortak öğrenme aracı kimliğine geçirir. |
-| `cc_ogrenme_araci_tamamlama.sql` | SQL / DDL | C-Club tamamlamasını dört araç türü için ortak kanıt, puan ve soru sözleşmesine geçirir. |
-| `cc_ogrenme_araci_yayin_kimligi.sql` | SQL / DDL | C-Club challenge ve BM izleme kayıtlarına ortak yayın/araç kimliğini ekler. |
-| `eclub_oneri_atomik_kaydet.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eclub_oneri_video_kimligi.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eclub_store_firma_urun_gorunurlugu.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eclub_test_gln_kaynak.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eclub_test_veri_temizle.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eclub_video_begeni_favori.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eczanem_butunluk_paketi.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eczanem_butunluk_paketi_on_kontrol.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eczanem_coklu_eczane_aktif_uyelik.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eczanem_eclub_kontrollu_gecis.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eczanem_ogrenme_araci_tamamlama.sql` | SQL / DDL | Eczanem müşteri tamamlamasını dört araç türü için ortak kanıt ve puan sözleşmesine geçirir. |
-| `eczanem_ogrenme_araci_yayin_kimligi.sql` | SQL / DDL | UTT→eczane ve eczane→müşteri dağıtımlarına ortak yayın/araç kimliğini ekler. |
-| `eczanem_eczane_yonetim_paketi.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eczanem_izleme_cevap_guvenligi.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eczanem_musteri_kendini_atomik_sil.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eczanem_musteri_video_etkilesimleri.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eczanem_utt_gonderim_atomik.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eczanem_utt_gonderim_atomik_on_kontrol.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `eczanem_uyelik_listeden_sil_atomik.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `get_bm_oneri_durumu_v1.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `get_bm_rapor_v2.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `get_bolge_bazli_grup.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `get_eclub_ligi_detay_aylik.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `get_eclub_ligi_detay_donemlik.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `get_eclub_ligi_detay_yillik.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `get_eclub_store_firma_bakiye.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `get_eclub_utt_rapor.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `get_eclub_utt_siparisler.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `get_izle_videolari_firma.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `get_kullanici_kategori_dagilimi.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `get_kullanici_urun_dagilimi.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `get_tm_bm_performans_v1.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `get_tm_oneri_durumu_v1.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `get_tm_rapor_v2.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `get_uretici_rapor_ozet_v3.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `get_urun_from_yayin.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `get_yonetici_egitim_turu_etkisi_v3.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `get_yonetici_rapor_v2.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `hbligi_v1_kaldir.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `hbligi_v2_backfill.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `hbligi_v2_kopya.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `hbligi_v2_okuma.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `hbligi_v2_ozet.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `hbstore_bm_ekip_siparis_kapsami.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `hbstore_firma_urun_gorunurlugu.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `iu_coklu_atama_gorev_modeli.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `iu_coklu_atama_on_kontrol.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `iu_coklu_atama_rpc.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `oneri_kaybi_tara.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `puan_urun_opsiyonel.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `push_tablolar.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `talepler_hedef_rol_temizle.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `talepler_hedef_roller.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `talepler_icerik_turu_urun_medikal.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `test_veri_sayim.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `test_veri_temizle.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `tm_bm_toplam_dogrulama.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `tm_eski_rpc_bagimlilik_taramasi.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `tm_eski_rpc_kaldir.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `uretici_eski_nesne_bagimlilik_taramasi.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `uretici_eski_nesne_kaldir.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `uretici_rapor_v3_dogrulama.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `uretim_atomik_rpc.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `uretim_bildirim_guvenlik.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `uretim_gorevleri_canli_gecis.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `utt_izleme_oturum_modeli.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `utt_izleme_oturum_modeli_on_kontrol.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `utt_izleme_tamamla_rpc.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `v_rapor_begeni_favori_v3.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `v_uretici_icerik_takip.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `v_yayin_detay_firma_id.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `v_yayin_detay_urun_adi_fallback.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `v_yayin_detay_video_suresi.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `v_yayin_kunye.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `yayin_aktivasyon.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `yayin_oncesi_silme.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
-| `yonetim_egitimleri_icerik_turu.sql` | SQL / DDL | Canlı PostgreSQL veritabanında çalışan DDL şeması, trigger veya atomik RPC fonksiyon tanımı. |
+| `backfill-video-suresi.mjs` | Script / Node.js | backfill video suresi denetimini veya bakım işlemini komut satırından yürüten Node.js betiğidir. |
+| `repair-eczanem-test-musteri-auth.mjs` | Script / Node.js | repair Eczanem test üye kimlik doğrulama denetimini veya bakım işlemini komut satırından yürüten Node.js betiğidir. |
+| `test-hapbi-eclub-live.ts` | TypeScript / Lib | HapBilgi kapsamında test HapBi E-Club live iş akışının dahili yardımcılarını ve kurallarını uygular. |
 
 ### 📁 scripts/denetim/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `denetim-sonuc.json` | JSON / Veri | denetim-sonuc.json modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `denetle.cjs` | Yapılandırma | denetle.cjs modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `hedef-roller-dogrula.cjs` | Yapılandırma | hedef-roller-dogrula.cjs modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `kod-tara.cjs` | Yapılandırma | kod-tara.cjs modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `kullanim.json` | JSON / Veri | kullanim.json modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `sema-cek.cjs` | Yapılandırma | sema-cek.cjs modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `sema.json` | JSON / Veri | sema.json modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
+| `denetim-sonuc.json` | JSON / Yapılandırma | denetim sonuc için yapılandırma veya veri kaydıdır. |
+| `denetle.cjs` | Script / Node.js | denetle denetimini veya bakım işlemini komut satırından yürüten Node.js betiğidir. |
+| `hedef-roller-dogrula.cjs` | Script / Node.js | hedef roller doğrulama denetimini veya bakım işlemini komut satırından yürüten Node.js betiğidir. |
+| `kod-tara.cjs` | Script / Node.js | kod tara denetimini veya bakım işlemini komut satırından yürüten Node.js betiğidir. |
+| `kullanim.json` | JSON / Yapılandırma | kullanim için yapılandırma veya veri kaydıdır. |
+| `ogrenme-araclari-bunny-canli-dogrula.mjs` | Script / Node.js | öğrenme araçları Bunny canli doğrulama denetimini veya bakım işlemini komut satırından yürüten Node.js betiğidir. |
+| `ogrenme-araclari-faz2-dogrula.cjs` | Script / Node.js | öğrenme araçları faz2 doğrulama denetimini veya bakım işlemini komut satırından yürüten Node.js betiğidir. |
+| `sema-cek.cjs` | Script / Node.js | sema cek denetimini veya bakım işlemini komut satırından yürüten Node.js betiğidir. |
+| `sema.json` | JSON / Yapılandırma | sema için yapılandırma veya veri kaydıdır. |
+
+### 📁 scripts/denetim/tutarlilik/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `calistir.cjs` | Script / Node.js | calistir denetimini veya bakım işlemini komut satırından yürüten Node.js betiğidir. |
+| `td01-uretim-zinciri.sql` | SQL / Denetim | HapBilgi kapsamında td01 üretim zinciri için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `td02-hedef-rol-gecerlilik.sql` | SQL / Denetim | HapBilgi kapsamında td02 hedef rol gecerlilik için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `td03-rol-izleme-uyumu.sql` | SQL / Denetim | HapBilgi kapsamında td03 rol izleme uyumu için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `td04-tur-tutarliligi.sql` | SQL / Denetim | HapBilgi kapsamında td04 tur tutarliligi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `td05-extra-tekligi.sql` | SQL / Denetim | HapBilgi kapsamında td05 extra tekligi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `td06-puansiz-pencere.sql` | SQL / Denetim | HapBilgi kapsamında td06 puansiz pencere için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `td07-kazanim-kayip-simetrisi.sql` | SQL / Denetim | HapBilgi kapsamında td07 kazanim kayip simetrisi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `td08-eczanem-ledger.sql` | SQL / Denetim | HapBilgi kapsamında td08 Eczanem ledger için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `td09-teklikler.sql` | SQL / Denetim | HapBilgi kapsamında td09 teklikler için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `td10-kimlik-duzlemleri.sql` | SQL / Denetim | HapBilgi kapsamında td10 kimlik duzlemleri için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `td11-rapor-lig-birebirligi.sql` | SQL / Denetim | HapBilgi kapsamında td11 rapor lig birebirligi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `td12-eczanem-grant-deseni.sql` | SQL / Denetim | HapBilgi kapsamında td12 Eczanem grant deseni için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+
+### 📁 scripts/sql/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `admin_hiyerarsi_tekillik.sql` | SQL / DDL | HapBilgi kapsamında admin hiyerarşi tekillik için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `hiyerarsi_adi_anahtari`, `firmalar`, `firma_no_ata` veritabanı nesnelerini ele alır. |
+| `cc_challenge_gonderim_guvenligi.sql` | SQL / DDL | HapBilgi kapsamında cc challenge gönderim guvenligi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `cc_challenge_gonder` veritabanı nesnelerini ele alır. |
+| `cc_izleme_cevap_guvenligi.sql` | SQL / DDL | HapBilgi kapsamında cc izleme cevap guvenligi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `cc_izleme_kayitlari`, `cc_izleme_tamamla`, `cc_cevaplari_kaydet` veritabanı nesnelerini ele alır. |
+| `cc_ligi_backfill.sql` | SQL / DDL | HapBilgi kapsamında cc ligi backfill için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `cc_ligi_okuma.sql` | SQL / DDL | HapBilgi kapsamında cc ligi okuma için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `_cc_ligi_aralik`, `get_cc_ligi_aylik`, `get_cc_ligi_donemlik` veritabanı nesnelerini ele alır. |
+| `cc_ligi_ozet.sql` | SQL / DDL | HapBilgi kapsamında cc ligi ozet için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `cc_ligi_ozet`, `cc_ligi_ozet_guncelle`, `trg_cc_ozet_kazanim` veritabanı nesnelerini ele alır. |
+| `cc_ogrenme_araci_tamamlama.sql` | SQL / DDL | C-Club tamamlamasını dört araç türü için ortak kanıt, puan ve soru sözleşmesine geçirir. |
+| `cc_ogrenme_araci_yayin_kimligi.sql` | SQL / DDL | C-Club challenge ve BM izleme kayıtlarına ortak yayın/araç kimliğini ekler. |
+| `cc_yeni_puanlama_modeli.sql` | SQL / DDL | HapBilgi kapsamında cc yeni puanlama modeli için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `cc_challenge_gonder`, `cc_challenge_tamamlaninca_bildirim_kapat`, `trg_cc_challenge_tamamlaninca_bildirim_kapat` veritabanı nesnelerini ele alır. |
+| `cc_yetkilendirme_guvenligi.sql` | SQL / DDL | HapBilgi kapsamında cc yetkilendirme guvenligi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `cc_izleme_kayitlari`, `cc_kazanilan_puanlar`, `cc_ileri_sarma_kayitlari` veritabanı nesnelerini ele alır. |
+| `challenge_kaybi_tara.sql` | SQL / DDL | HapBilgi kapsamında challenge kaybi tara için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `cc_challenge_tamamlaninca_bildirim_kapat`, `trg_cc_challenge_tamamlaninca_bildirim_kapat`, `challenge_kaybi_tara` veritabanı nesnelerini ele alır. |
+| `eclub_ayni_video_tekrar_ayari.sql` | SQL / DDL | HapBilgi kapsamında E-Club ayni video tekrar ayari için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `eclub_gonderi_limit_ayarlari.sql` | SQL / DDL | HapBilgi kapsamında E-Club gonderi limit ayarlari için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `eclub_ileri_sarma_kurali.sql` | SQL / DDL | HapBilgi kapsamında E-Club ileri sarma kurali için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eclub_ileri_sarma_kayitlari`, `eclub_ileri_sarma_kaydet`, `eclub_izleme_tamamla` veritabanı nesnelerini ele alır. |
+| `eclub_izleme_suresi_snapshot.sql` | SQL / DDL | HapBilgi kapsamında E-Club izleme suresi snapshot için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eclub_izleme_kayitlari`, `eclub_izleme_tamamla` veritabanı nesnelerini ele alır. |
+| `eclub_izleme_tekillik.sql` | SQL / DDL | HapBilgi kapsamında E-Club izleme tekillik için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eclub_izleme_kayitlari`, `eclub_yanlis_cevap_kayitlari`, `eclub_izleme_tamamla` veritabanı nesnelerini ele alır. |
+| `eclub_kisi_unvanlari.sql` | SQL / DDL | HapBilgi kapsamında E-Club kişi unvanlari için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eclub_kisiler` veritabanı nesnelerini ele alır. |
+| `eclub_ogrenme_araci_tamamlama.sql` | SQL / DDL | E-Club tamamlamasını video, podcast, görsel ve Flip PDF kanıtlarına göre ortak yayın/arac kimliğiyle doğrular. |
+| `eclub_ogrenme_araci_yayin_kimligi.sql` | SQL / DDL | E-Club önerilerini `yayin_id`, `arac_id` ve `arac_turu` ortak öğrenme aracı kimliğine geçirir. |
+| `eclub_oneri_atomik_kaydet.sql` | SQL / DDL | HapBilgi kapsamında E-Club öneri atomik kaydet için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eclub_oneri_atomik_kaydet` veritabanı nesnelerini ele alır. |
+| `eclub_oneri_video_kimligi.sql` | SQL / DDL | HapBilgi kapsamında E-Club öneri video kimligi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eclub_oneri_kayitlari` veritabanı nesnelerini ele alır. |
+| `eclub_store_aktif_uyelik_siparis_kapisi.sql` | SQL / DDL | HapBilgi kapsamında E-Club Store aktif uyelik sipariş kapisi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eclub_store_siparis_olustur` veritabanı nesnelerini ele alır. |
+| `eclub_store_firma_urun_gorunurlugu.sql` | SQL / DDL | HapBilgi kapsamında E-Club Store firma ürün gorunurlugu için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eclub_store_urun_firma_ayarlari`, `eclub_store_siparis_olustur` veritabanı nesnelerini ele alır. |
+| `eclub_test_gln_kaynak.sql` | SQL / DDL | HapBilgi kapsamında E-Club test gln kaynak için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eclub_eczane_master` veritabanı nesnelerini ele alır. |
+| `eclub_test_veri_temizle.sql` | SQL / DDL | HapBilgi kapsamında E-Club test veri temizle için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eclub_test_veri_islem` veritabanı nesnelerini ele alır. |
+| `eclub_utt_eczane_uyeligi.sql` | SQL / DDL | HapBilgi kapsamında E-Club UTT eczane uyeligi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eclub_utt_eczane`, `eclub_utt_eczaneye_bagla`, `eclub_utt_eczaneden_cikar` veritabanı nesnelerini ele alır. |
+| `eclub_video_begeni_favori.sql` | SQL / DDL | HapBilgi kapsamında E-Club video beğeni favori için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eclub_video_begeniler`, `eclub_video_favoriler` veritabanı nesnelerini ele alır. |
+| `eczanem_butunluk_paketi_on_kontrol.sql` | SQL / Denetim | HapBilgi kapsamında Eczanem butunluk paketi on kontrol için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `eczanem_butunluk_paketi.sql` | SQL / DDL | HapBilgi kapsamında Eczanem butunluk paketi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `hapbilgi_telefon_normalize`, `hapbilgi_kimlik_telefon_ayir_trg`, `trg_eclub_kisiler_telefon_ayir` veritabanı nesnelerini ele alır. |
+| `eczanem_coklu_eczane_aktif_uyelik.sql` | SQL / DDL | HapBilgi kapsamında Eczanem coklu eczane aktif uyelik için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eczanem_gonderimler`, `eczanem_izleme_aktif_uyelik_kapisi`, `eczanem_izleme_aktif_uyelik_trg` veritabanı nesnelerini ele alır. |
+| `eczanem_eclub_kontrollu_gecis.sql` | SQL / DDL | HapBilgi kapsamında Eczanem E-Club kontrollu gecis için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eczanem_eclub_gecis_talepleri`, `eczanem_eclub_gecis_kayitlari`, `eczanem_eclub_puan_kapanislari` veritabanı nesnelerini ele alır. |
+| `eczanem_eczane_yonetim_paketi.sql` | SQL / DDL | HapBilgi kapsamında Eczanem eczane yönetim paketi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eczanem_personel_islemleri`, `eczanem_uyelikler`, `eczanem_siparisler` veritabanı nesnelerini ele alır. |
+| `eczanem_izleme_cevap_guvenligi.sql` | SQL / DDL | HapBilgi kapsamında Eczanem izleme cevap guvenligi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eczanem_izleme_kayitlari`, `eczanem_izleme_tamamla`, `eczanem_cevaplari_kaydet` veritabanı nesnelerini ele alır. |
+| `eczanem_musteri_auth_kapisi.sql` | SQL / DDL | HapBilgi kapsamında Eczanem üye kimlik doğrulama kapisi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eczanem_yeni_musteri_provizyonu_izli` veritabanı nesnelerini ele alır. |
+| `eczanem_musteri_kendini_atomik_sil.sql` | SQL / DDL | HapBilgi kapsamında Eczanem üye kendini atomik silme için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eczanem_musteri_kendini_tam_sil` veritabanı nesnelerini ele alır. |
+| `eczanem_musteri_video_etkilesimleri.sql` | SQL / DDL | HapBilgi kapsamında Eczanem üye video etkilesimleri için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eczanem_izleme_kayitlari`, `eczanem_video_begeniler`, `eczanem_video_favoriler` veritabanı nesnelerini ele alır. |
+| `eczanem_ogrenme_araci_tamamlama.sql` | SQL / DDL | Eczanem müşteri tamamlamasını dört araç türü için ortak kanıt ve puan sözleşmesine geçirir. |
+| `eczanem_ogrenme_araci_yayin_kimligi.sql` | SQL / DDL | UTT→eczane ve eczane→müşteri dağıtımlarına ortak yayın/araç kimliğini ekler. |
+| `eczanem_utt_gonderim_atomik_on_kontrol.sql` | SQL / Denetim | HapBilgi kapsamında Eczanem UTT gönderim atomik on kontrol için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `eczanem_utt_gonderim_atomik.sql` | SQL / DDL | HapBilgi kapsamında Eczanem UTT gönderim atomik için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eczanem_utt_eczaneye_gonder` veritabanı nesnelerini ele alır. |
+| `eczanem_uyelik_listeden_sil_atomik.sql` | SQL / DDL | HapBilgi kapsamında Eczanem uyelik listeden silme atomik için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eczanem_uyelik_listeden_sil` veritabanı nesnelerini ele alır. |
+| `get_bm_oneri_durumu_v1.sql` | SQL / DDL | HapBilgi kapsamında get bm öneri durumu v1 için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_bm_oneri_durumu_v1` veritabanı nesnelerini ele alır. |
+| `get_bm_rapor_v2.sql` | SQL / DDL | HapBilgi kapsamında get bm rapor v2 için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_bm_rapor_ana_ozet_v2`, `get_bm_utt_performans_v2`, `get_bm_etkilesim_v2` veritabanı nesnelerini ele alır. |
+| `get_bolge_bazli_grup.sql` | SQL / DDL | HapBilgi kapsamında get bölge bazli grup için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_bolge_bazli_grup` veritabanı nesnelerini ele alır. |
+| `get_eclub_ligi_detay_aylik.sql` | SQL / DDL | HapBilgi kapsamında get E-Club ligi detay aylik için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_eclub_ligi_detay_aylik` veritabanı nesnelerini ele alır. |
+| `get_eclub_ligi_detay_donemlik.sql` | SQL / DDL | HapBilgi kapsamında get E-Club ligi detay donemlik için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_eclub_ligi_detay_donemlik` veritabanı nesnelerini ele alır. |
+| `get_eclub_ligi_detay_yillik.sql` | SQL / DDL | HapBilgi kapsamında get E-Club ligi detay yillik için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_eclub_ligi_detay_yillik` veritabanı nesnelerini ele alır. |
+| `get_eclub_store_firma_bakiye.sql` | SQL / DDL | HapBilgi kapsamında get E-Club Store firma bakiye için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_eclub_store_firma_bakiye` veritabanı nesnelerini ele alır. |
+| `get_eclub_utt_rapor.sql` | SQL / DDL | HapBilgi kapsamında get E-Club UTT rapor için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_eclub_utt_rapor` veritabanı nesnelerini ele alır. |
+| `get_eclub_utt_siparisler.sql` | SQL / DDL | HapBilgi kapsamında get E-Club UTT siparişler için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_eclub_utt_siparisler` veritabanı nesnelerini ele alır. |
+| `get_izle_videolari_firma.sql` | SQL / DDL | HapBilgi kapsamında get izleme videolari firma için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_izle_videolari` veritabanı nesnelerini ele alır. |
+| `get_kullanici_kategori_dagilimi.sql` | SQL / DDL | HapBilgi kapsamında get kullanıcı kategori dagilimi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_kullanici_kategori_dagilimi` veritabanı nesnelerini ele alır. |
+| `get_kullanici_urun_dagilimi.sql` | SQL / DDL | HapBilgi kapsamında get kullanıcı ürün dagilimi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_kullanici_urun_dagilimi` veritabanı nesnelerini ele alır. |
+| `get_tm_bm_performans_v1.sql` | SQL / DDL | HapBilgi kapsamında get tm bm performans v1 için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_tm_bm_performans_v1` veritabanı nesnelerini ele alır. |
+| `get_tm_oneri_durumu_v1.sql` | SQL / DDL | HapBilgi kapsamında get tm öneri durumu v1 için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_tm_oneri_durumu_v1` veritabanı nesnelerini ele alır. |
+| `get_tm_rapor_v2.sql` | SQL / DDL | HapBilgi kapsamında get tm rapor v2 için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_tm_etkilesim_v2` veritabanı nesnelerini ele alır. |
+| `get_uretici_rapor_ozet_v3.sql` | SQL / DDL | HapBilgi kapsamında get üretici rapor ozet v3 için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_uretici_rapor_ozet_v3` veritabanı nesnelerini ele alır. |
+| `get_urun_from_yayin.sql` | SQL / DDL | HapBilgi kapsamında get ürün from yayın için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_urun_from_yayin` veritabanı nesnelerini ele alır. |
+| `get_yonetici_egitim_turu_etkisi_v3.sql` | SQL / DDL | HapBilgi kapsamında get yönetici egitim turu etkisi v3 için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_yonetici_egitim_turu_etkisi_v3` veritabanı nesnelerini ele alır. |
+| `get_yonetici_rapor_v2.sql` | SQL / DDL | HapBilgi kapsamında get yönetici rapor v2 için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_yonetici_rapor_ana_ozet_v2`, `get_yonetici_hiyerarsi_v2`, `get_yonetici_icerik_etkisi_v2` veritabanı nesnelerini ele alır. |
+| `hbligi_v1_kaldir.sql` | SQL / DDL | HapBilgi kapsamında hbligi v1 kaldir için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `hbligi_v2_backfill.sql` | SQL / DDL | HapBilgi kapsamında hbligi v2 backfill için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `hbligi_v2_kopya.sql` | SQL / DDL | HapBilgi kapsamında hbligi v2 kopya için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `hb_ligi_v2`, `v_hbligi_sirali_v2`, `get_hb_ligi_aylik_v2` veritabanı nesnelerini ele alır. |
+| `hbligi_v2_okuma.sql` | SQL / DDL | HapBilgi kapsamında hbligi v2 okuma için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `hb_ligi_v2`, `v_hbligi_sirali_v2`, `_hb_ligi_v2_aralik` veritabanı nesnelerini ele alır. |
+| `hbligi_v2_ozet.sql` | SQL / DDL | HapBilgi kapsamında hbligi v2 ozet için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `hb_ligi_ozet_v2`, `hb_ligi_ozet_v2_guncelle` veritabanı nesnelerini ele alır. |
+| `hbstore_bm_ekip_siparis_kapsami.sql` | SQL / DDL | HapBilgi kapsamında hbstore bm ekip sipariş kapsami için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_kapsamli_siparisler` veritabanı nesnelerini ele alır. |
+| `hbstore_firma_urun_gorunurlugu.sql` | SQL / DDL | HapBilgi kapsamında hbstore firma ürün gorunurlugu için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `store_urun_firma_ayarlari`, `store_siparis_olustur` veritabanı nesnelerini ele alır. |
+| `iu_coklu_atama_gorev_modeli.sql` | SQL / DDL | HapBilgi kapsamında iu coklu atama görev modeli için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `iu_urun_atamalari`, `iu_genel_atamalari`, `uretim_gorevleri` veritabanı nesnelerini ele alır. |
+| `iu_coklu_atama_on_kontrol.sql` | SQL / Denetim | HapBilgi kapsamında iu coklu atama on kontrol için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `iu_coklu_atama_rpc.sql` | SQL / DDL | HapBilgi kapsamında iu coklu atama rpc için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `uretim_islem_kayitlari`, `uretim_aktif_iu_dogrula`, `uretim_iu_talep_icin_uygun` veritabanı nesnelerini ele alır. |
+| `ogrenme_araclari_faz2_on_kontrol.sql` | SQL / Denetim | HapBilgi kapsamında öğrenme araçları faz2 on kontrol için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `ogrenme_araclari_faz2_ortak_omurga.sql` | SQL / DDL | HapBilgi kapsamında öğrenme araçları faz2 ortak omurga için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `ogrenme_araclari`, `ogrenme_araci_durumu`, `ogrenme_araci_puanlari` veritabanı nesnelerini ele alır. |
+| `ogrenme_araclari_faz2_yayin_gorunumu.sql` | SQL / DDL | HapBilgi kapsamında öğrenme araçları faz2 yayın gorunumu için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `v_yayin_detay`, `v_yayin_kunye` veritabanı nesnelerini ele alır. |
+| `ogrenme_araclari_faz2_yukleme_dogrulama_idempotent.sql` | SQL / DDL | HapBilgi kapsamında öğrenme araçları faz2 yükleme dogrulama idempotent için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `ogrenme_araci_depolama_temizleme_kuyrugu`, `ogrenme_araci_yukleme_dogrulama_kaydet` veritabanı nesnelerini ele alır. |
+| `ogrenme_araclari_faz3_podcast_talep.sql` | SQL / DDL | HapBilgi kapsamında öğrenme araçları faz3 Podcast talep için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `talepler` veritabanı nesnelerini ele alır. |
+| `ogrenme_araclari_faz3_podcast_uretim.sql` | SQL / DDL | HapBilgi kapsamında öğrenme araçları faz3 Podcast üretim için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `ogrenme_araclari`, `uretim_podcast_soru_zinciri_ac`, `uretim_podcast_dogrula` veritabanı nesnelerini ele alır. |
+| `ogrenme_araclari_faz4_gorsel_uretim.sql` | SQL / DDL | HapBilgi kapsamında öğrenme araçları faz4 Dijital Broşür üretim için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `uretim_gorsel_dogrula`, `uretim_gorsel_uretici_karar_ver` veritabanı nesnelerini ele alır. |
+| `ogrenme_araclari_faz5_flip_pdf_uretim.sql` | SQL / DDL | HapBilgi kapsamında öğrenme araçları faz5 flip pdf üretim için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `uretim_flip_pdf_dogrula`, `uretim_flip_pdf_uretici_karar_ver` veritabanı nesnelerini ele alır. |
+| `ogrenme_araclari_faz6_rapor_arac_turu.sql` | SQL / DDL | HapBilgi kapsamında öğrenme araçları faz6 rapor araç turu için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `v_rapor_arac_turu_ozet` veritabanı nesnelerini ele alır. |
+| `ogrenme_araclari_tamamlama_faz4_uretim_hatti.sql` | SQL / DDL | HapBilgi kapsamında öğrenme araçları tamamlama faz4 üretim hatti için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `uretim_gorevi_arac_esitle`, `uretim_talep_ilk_gorevini_ac`, `uretim_podcast_soru_zinciri_ac` veritabanı nesnelerini ele alır. |
+| `ogrenme_araclari_tamamlama_faz6_hbstore_fonksiyon_teshis.sql` | SQL / Denetim | HapBilgi kapsamında öğrenme araçları tamamlama faz6 hbstore fonksiyon teshis için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `ogrenme_araclari_tamamlama_faz6_hbstore_teshis.sql` | SQL / Denetim | HapBilgi kapsamında öğrenme araçları tamamlama faz6 hbstore teshis için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `ogrenme_araclari_tamamlama_faz6_mutabakat.sql` | SQL / DDL | HapBilgi kapsamında öğrenme araçları tamamlama faz6 mutabakat için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `ogrenme_araclari_tamamlama_faz6_puan_bagi_teshis.sql` | SQL / Denetim | HapBilgi kapsamında öğrenme araçları tamamlama faz6 puan bagi teshis için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `ogrenme_araclari_tamamlama_faz6_puan_butunlugu.sql` | SQL / DDL | HapBilgi kapsamında öğrenme araçları tamamlama faz6 puan butunlugu için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_harcama_bakiyesi`, `ogrenme_puani_izleme_bagini_dogrula`, `trg_ogrenme_puani_bag_utt` veritabanı nesnelerini ele alır. |
+| `ogrenme_araclari_tamamlama_faz6_puan_tekillik_mutabakat.sql` | SQL / DDL | HapBilgi kapsamında öğrenme araçları tamamlama faz6 puan tekillik mutabakat için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `ogrenme_araclari_tamamlama_faz7_raporlama.sql` | SQL / DDL | HapBilgi kapsamında öğrenme araçları tamamlama faz7 raporlama için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eczanem_cevap_kayitlari`, `eczanem_cevaplari_kaydet`, `v_rapor_arac_turu_ozet` veritabanı nesnelerini ele alır. |
+| `oneri_kaybi_tara.sql` | SQL / DDL | HapBilgi kapsamında öneri kaybi tara için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `oneri_kaybi_tara` veritabanı nesnelerini ele alır. |
+| `pm09_eczanem_yayin_durdurma_kapisi.sql` | SQL / DDL | HapBilgi kapsamında pm09 Eczanem yayın durdurma kapisi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `eczanem_utt_eczaneye_gonder`, `eczanem_musterilere_video_gonder` veritabanı nesnelerini ele alır. |
+| `puan_urun_opsiyonel.sql` | SQL / DDL | HapBilgi kapsamında puan ürün opsiyonel için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `kazanilan_puanlar`, `yanlis_cevap_kayitlari`, `ileri_sarma_kayitlari` veritabanı nesnelerini ele alır. |
+| `push_tablolar.sql` | SQL / DDL | HapBilgi kapsamında Web Push tablolar için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `push_abonelikleri`, `push_gonderim_kayitlari` veritabanı nesnelerini ele alır. |
+| `soru_kesinti_faz2_tamamla.sql` | SQL / DDL | HapBilgi kapsamında soru kesinti faz2 tamamlama için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `utt_izleme_tamamla`, `cc_izleme_tamamla`, `eclub_izleme_tamamla` veritabanı nesnelerini ele alır. |
+| `soru_kesinti_faz5_cevap.sql` | SQL / DDL | HapBilgi kapsamında soru kesinti faz5 cevap için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `cc_cevaplari_kaydet`, `eclub_cevaplari_kaydet`, `eczanem_cevaplari_kaydet_cekirdek` veritabanı nesnelerini ele alır. |
+| `soru_kesinti_kurali.sql` | SQL / DDL | HapBilgi kapsamında soru kesinti kurali için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `izleme_kayitlari`, `cc_izleme_kayitlari`, `eclub_izleme_kayitlari` veritabanı nesnelerini ele alır. |
+| `talep_olusturma_idempotent.sql` | SQL / DDL | HapBilgi kapsamında talep olusturma idempotent için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `talepler`, `talep_atomik_olustur` veritabanı nesnelerini ele alır. |
+| `talepler_hedef_rol_temizle.sql` | SQL / DDL | HapBilgi kapsamında talepler hedef rol temizle için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `talepler`, `v_yayin_detay`, `v_yayin_kunye` veritabanı nesnelerini ele alır. |
+| `talepler_hedef_roller.sql` | SQL / DDL | HapBilgi kapsamında talepler hedef roller için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `talepler`, `talepler_hedef_roller_esitle`, `talepler_hedef_roller_esitle_trg` veritabanı nesnelerini ele alır. |
+| `talepler_icerik_turu_urun_medikal.sql` | SQL / DDL | HapBilgi kapsamında talepler icerik turu ürün medikal için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `talepler` veritabanı nesnelerini ele alır. |
+| `test_veri_sayim.sql` | SQL / DDL | HapBilgi kapsamında test veri sayim için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `test_veri_sayim` veritabanı nesnelerini ele alır. |
+| `test_veri_temizle.sql` | SQL / DDL | HapBilgi kapsamında test veri temizle için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `test_veri_temizle` veritabanı nesnelerini ele alır. |
+| `tm_bm_toplam_dogrulama.sql` | SQL / DDL | HapBilgi kapsamında tm bm toplam dogrulama için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `tm_eski_rpc_bagimlilik_taramasi.sql` | SQL / DDL | HapBilgi kapsamında tm eski rpc bagimlilik taramasi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `tm_eski_rpc_kaldir.sql` | SQL / DDL | HapBilgi kapsamında tm eski rpc kaldir için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `uretici_eski_nesne_bagimlilik_taramasi.sql` | SQL / DDL | HapBilgi kapsamında üretici eski nesne bagimlilik taramasi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `uretici_eski_nesne_kaldir.sql` | SQL / DDL | HapBilgi kapsamında üretici eski nesne kaldir için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `uretici_rapor_v3_dogrulama.sql` | SQL / DDL | HapBilgi kapsamında üretici rapor v3 dogrulama için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `uretim_atomik_rpc.sql` | SQL / DDL | HapBilgi kapsamında üretim atomik rpc için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `uretim_soru_seti_dogrula`, `uretim_senaryo_teslim_et`, `uretim_video_teslim_et` veritabanı nesnelerini ele alır. |
+| `uretim_bildirim_guvenlik.sql` | SQL / DDL | HapBilgi kapsamında üretim bildirim güvenlik için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `bildirimler`, `uretim_gorevleri`, `uretim_gorev_atama_gecmisi` veritabanı nesnelerini ele alır. |
+| `uretim_gorevleri_canli_gecis.sql` | SQL / DDL | HapBilgi kapsamında üretim gorevleri canli gecis için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `uretim_gorevleri` veritabanı nesnelerini ele alır. |
+| `uretim_karar_surum_kapisi.sql` | SQL / DDL | HapBilgi kapsamında üretim karar surum kapisi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `uretim_karar_surum_kapisi`, `uretim_uretici_karar_ver`, `uretim_podcast_uretici_karar_ver` veritabanı nesnelerini ele alır. |
+| `utt_izleme_oturum_modeli_on_kontrol.sql` | SQL / Denetim | HapBilgi kapsamında UTT izleme oturum modeli on kontrol için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `utt_izleme_oturum_modeli.sql` | SQL / DDL | HapBilgi kapsamında UTT izleme oturum modeli için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `izleme_kayitlari`, `ileri_sarma_kayitlari`, `videolar` veritabanı nesnelerini ele alır. |
+| `utt_izleme_tamamla_rpc.sql` | SQL / DDL | HapBilgi kapsamında UTT izleme tamamlama rpc için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `utt_izleme_tamamla` veritabanı nesnelerini ele alır. |
+| `v_rapor_begeni_favori_v3.sql` | SQL / DDL | HapBilgi kapsamında v rapor beğeni favori v3 için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `v_rapor_begeni_favori_v3` veritabanı nesnelerini ele alır. |
+| `v_uretici_icerik_takip.sql` | SQL / DDL | HapBilgi kapsamında v üretici icerik takip için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `v_uretici_icerik_takip` veritabanı nesnelerini ele alır. |
+| `v_yayin_detay_firma_id.sql` | SQL / DDL | HapBilgi kapsamında v yayın detay firma id için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `v_yayin_detay` veritabanı nesnelerini ele alır. |
+| `v_yayin_detay_urun_adi_fallback.sql` | SQL / DDL | HapBilgi kapsamında v yayın detay ürün adi fallback için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `v_yayin_detay` veritabanı nesnelerini ele alır. |
+| `v_yayin_detay_video_suresi.sql` | SQL / DDL | HapBilgi kapsamında v yayın detay video suresi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `v_yayin_detay` veritabanı nesnelerini ele alır. |
+| `v_yayin_kunye.sql` | SQL / DDL | HapBilgi kapsamında v yayın künye için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `v_yayin_kunye` veritabanı nesnelerini ele alır. |
+| `yarim_ogrenme_araci_yuklemeleri.sql` | SQL / DDL | HapBilgi kapsamında yarım öğrenme araci yuklemeleri için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `ogrenme_araci_video_yukleme_oturumlari`, `ogrenme_araci_yarim_yukleme_iptal` veritabanı nesnelerini ele alır. |
+| `yayin_aktivasyon.sql` | SQL / DDL | HapBilgi kapsamında yayın aktivasyon için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `yayin_planlananlari_aktive` veritabanı nesnelerini ele alır. |
+| `yayin_oncesi_silme.sql` | SQL / DDL | HapBilgi kapsamında yayın oncesi silme için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `talepler`, `yayin_oncesi_silme_yayin_kapisi`, `trg_yayin_oncesi_silme_yayin_kapisi` veritabanı nesnelerini ele alır. |
+| `yonetim_egitimleri_icerik_turu.sql` | SQL / DDL | HapBilgi kapsamında yönetim egitimleri icerik turu için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `talepler`, `iu_genel_atamalari`, `iu_genel_atamasi_ayarla` veritabanı nesnelerini ele alır. |
+
+### 📁 scripts/sql/utt_izleme_on_kontrol/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `01_gecis_kapsami.sql` | SQL / Denetim | HapBilgi kapsamında 01 gecis kapsami için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `02_kazanim_mukerrerleri.sql` | SQL / Denetim | HapBilgi kapsamında 02 kazanim mukerrerleri için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `03_cevap_mukerrerleri.sql` | SQL / Denetim | HapBilgi kapsamında 03 cevap mukerrerleri için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `04_kayip_mukerrerleri.sql` | SQL / Denetim | HapBilgi kapsamında 04 kayip mukerrerleri için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
+| `05_cevaplanmis_tamamlanmis.sql` | SQL / Denetim | HapBilgi kapsamında 05 cevaplanmis tamamlanmis için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
 
 ### 📁 tests/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `_alias-hooks.mjs` | Yapılandırma | _alias-hooks.mjs modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `_alias.mjs` | Yapılandırma | _alias.mjs modülünün operasyonel işlevlerini ve arayüz gereksinimlerini yerine getiren kaynak dosya. |
-| `bmRaporToplamlari.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `bunnyVideoSuresi.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `ccChallengeGonderimGuvenligi.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `ccChallengeYasamDongusu.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `ccIzlemeCevapGuvenligi.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `ccVeriKaynaklari.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `ccYayinGirisi.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `ccYetkilendirmeGuvenligi.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `diffHesapla.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `duzeltmeModeli.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eclubGonderiAyarlari.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eclubGonderilecekVideolar.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eclubIzlemeKurali.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eclubKisiErisim.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eclubKisiUnvanlari.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eclubLigPeriyot.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eclubNav.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eclubOneriKapsam.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eclubRapor.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eclubSiparis.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eclubTestGln.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eczanemAktifUyelikGonderim.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eczanemButunlukPaketi.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eczanemCokluUyelik.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eczanemEclubKontrolluGecis.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eczanemEclubUyesiEngeli.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eczanemEczaciVideoDagitimi.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eczanemEczaneYonetim.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eczanemIzlemeCevapGuvenligi.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eczanemMusteriTamSilme.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eczanemMusteriYuzeyi.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eczanemSiparisMutabakat.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eczanemUttYonetim.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eczanemUyelikDurumu.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eczanemUyelikListedenSilme.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `eczanemVideoDagitimRozeti.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `egitimTuruSozlesmesi.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `gonderimKarari.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `hbligiKapsam.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `hbstoreFirmaUrun.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `hedefRoller.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `izlemeBaslat.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `izlemeKarari.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `oneri.tarih.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `operasyonelYenileme.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `periyotAltKirilim.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `raporLigKatalogYenileme.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `uretimDurumFiltresi.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `uretimEskiYolTemizligi.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `uretimGorevArayuzu.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `uretimGorevSozlesmesi.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `uretimRpc.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `yayinOncesiSilme.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `yonetimYenileme.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
-| `zaman.sinir.smoke.test.ts` | TypeScript / Lib | İlgili iş mantığını ve sınır durumlarını doğrulayan otomatik duman (smoke) testi. |
+| `_alias-hooks.mjs` | Test / Node.js | Node test çalıştırıcısında `@/` proje kökü alias'ını çözen ESM resolve ve load hook'larını tanımlar. |
+| `_alias.mjs` | Test / Node.js | Smoke testler başlamadan önce TypeScript dönüşümünü ve `@/` alias çözümleyicisini kaydeden ön yükleme betiğidir. |
+| `adminHiyerarsiTekillik.hedef.test.ts` | Test / TypeScript | “hiyerarşi adı yinelenen boşluklardan arındırılır” davranışını otomatik olarak doğrulayan hedef testidir. |
+| `adminTopluPaketButunlugu.hedef.test.ts` | Test / TypeScript | “tek hatalı satır bütün paketi engeller” davranışını otomatik olarak doğrulayan hedef testidir. |
+| `bmRaporToplamlari.smoke.test.ts` | Test / TypeScript | “mutlu: UTT özetleri ile aynı kategori ve ürün satırları bölge toplamına dönüşür” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `bunnyVideoSuresi.smoke.test.ts` | Test / TypeScript | “Bunny video süresi pozitif tam saniye olarak çözülür” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `ccChallengeGonderimGuvenligi.smoke.test.ts` | Test / TypeScript | “mutlu: challenge ile gönderme puanı tek atomik RPC içinde oluşturulur” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `ccChallengeYasamDongusu.smoke.test.ts` | Test / TypeScript | “mutlu: alıcı ve gönderici aynı challenge durumunu kullanır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `ccIzlemeCevapGuvenligi.smoke.test.ts` | Test / TypeScript | “mutlu: C-Club tamamlama, soru, puan ve challenge sonucu atomik sözleşmeye bağlıdır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `ccOgrenmeAraciYayinKimligi.smoke.test.ts` | Test / TypeScript | “C-Club challenge ve izleme kayıtları ortak araç kimliğini taşır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `ccVeriKaynaklari.smoke.test.ts` | Test / TypeScript | “mutlu: CC özet ve backfill yalnız C-Club puan/kayıp tablolarını kullanır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `ccYayinGirisi.smoke.test.ts` | Test / TypeScript | “mutlu: başlangıç videosu BM hedefi, firma ve geçerli yayın tarihleriyle süzülür” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `ccYetkilendirmeGuvenligi.smoke.test.ts` | Test / TypeScript | “mutlu: CC izleme kimliği oturumdan alınır ve firma erişimi doğrulanır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `diffHesapla.smoke.test.ts` | Test / TypeScript | “mutlu: degisen kelime cikar+ekle, kalan ayni olarak ayristirilir” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `duzeltmeModeli.smoke.test.ts` | Test / TypeScript | “mutlu: silinen ustu cizili kalir, yazilan ekle olur, temiz metin dogru” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eclubCokluUttUyelik.smoke.test.ts` | Test / TypeScript | “mutlu: aynı firmanın farklı UTT'leri tek kurumsal eczane bağında ayrı liste üyelikleri kurar” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eclubGonderiAyarlari.smoke.test.ts` | Test / TypeScript | “E-Club gönderi ayarları iki pozitif tam sayı kuralını tek kaynaktan tanımlar” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eclubGonderilecekVideolar.smoke.test.ts` | Test / TypeScript | “mutlu: öğrenme aracı önizlemesi dört araç türünü salt görüntüler” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eclubIzlemeKurali.smoke.test.ts` | Test / TypeScript | “mutlu: aktif öneri puan ve soru hakkı verir; soru kümesi sabittir” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eclubKisiErisim.smoke.test.ts` | Test / TypeScript | “mutlu: en az bir aktif bağlı firma E-Club, Store ve Eczanem erişimini açar” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eclubKisiUnvanlari.smoke.test.ts` | Test / TypeScript | “E-Club eczacı unvanları eczacı hedef kitlesine bağlanır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eclubLigPeriyot.smoke.test.ts` | Test / TypeScript | “mutlu: haftalık ve dönemlik lig seçimlerini doğrular” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eclubNav.smoke.test.ts` | Test / TypeScript | “UTT E-Club altında kararlaştırılan yönetim alanlarını doğru sırada görür” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eclubOgrenmeAraciYayinKimligi.smoke.test.ts` | Test / TypeScript | “E-Club öneri kataloğu legacy video zinciri olmadan ortak araç kimliğini döndürür” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eclubOneriKapsam.smoke.test.ts` | Test / TypeScript | “mutlu: UTT kendi takımının ve firma-geneli E-Club yayınını kullanabilir” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eclubRapor.smoke.test.ts` | Test / TypeScript | “mutlu: içerik satırlarını eczane ve kişi düzeyinde kayıpsız toplar” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eclubSiparis.smoke.test.ts` | Test / TypeScript | “mutlu: sipariş filtrelerini ve sayfalamayı doğrular” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eclubStoreAktifUyelikSiparis.smoke.test.ts` | Test / TypeScript | “E-Club Store sipariş API'si pasif kişinin yeni siparişini reddeder” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eclubTestGln.smoke.test.ts` | Test / TypeScript | “30 test GLN benzersiz, 13 haneli ve 111 önekli üretilir” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eczanemAktifUyelikGonderim.smoke.test.ts` | Test / TypeScript | “mutlu: aynı yayın gönderim ve ilerleme durumunu eczane/gönderim ekseninde ayırır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eczanemButunlukPaketi.smoke.test.ts` | Test / TypeScript | “mutlu: firma kapısı, atomik provizyon, sipariş tekilliği ve tek-sorgu liste birlikte kurulur” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eczanemCokluUyelik.smoke.test.ts` | Test / TypeScript | “mutlu: kayıtlı müşteri kimliği değiştirilmeden ikinci eczaneye bağlanır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eczanemEclubKontrolluGecis.smoke.test.ts` | Test / TypeScript | “mutlu: müşteri kararı ve aynı Auth hesabıyla atomik E-Club geçişi birlikte kurulur” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eczanemEclubUyesiEngeli.smoke.test.ts` | Test / TypeScript | “mutlu: global E-Club kontrolü kanonik ve mevcut telefon biçimlerini kapsar” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eczanemEczaciVideoDagitimi.smoke.test.ts` | Test / TypeScript | “mutlu: eczacı dağıtımı UTT ile aynı satır içi yönetim ve önizleme akışını kullanır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eczanemEczaneIslemKapsami.smoke.test.ts` | Test / TypeScript | “eczacı müşteri ve gönderim listeleri yalnız çözümlenen eczane bağlamını kullanır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eczanemEczaneYonetim.smoke.test.ts` | Test / TypeScript | “mutlu: personel izi, ayrılmış sipariş kuyruğu ve DB toplamları ortak arayüzle kurulur” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eczanemIzlemeCevapGuvenligi.smoke.test.ts` | Test / TypeScript | “mutlu: izleme ve cevap akışı sabit soru kümesiyle atomik RPC'leri kullanır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eczanemMusteriAuthKapisi.smoke.test.ts` | Test / TypeScript | “müşteri provizyonu geçerli Auth hesabı olmadan aktif müşteri oluşturmaz” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eczanemMusteriTamSilme.smoke.test.ts` | Test / TypeScript | “mutlu: müşteri modal ve şifre teyidiyle bütün hesap zincirini siler” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eczanemMusteriYuzeyi.smoke.test.ts` | Test / TypeScript | “mutlu: müşteri ana sayfası belirlenen altı dijital kanal rafını ve ayrı Puanlarım sayfasını sunar” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eczanemOgrenmeAraciYayinKimligi.smoke.test.ts` | Test / TypeScript | “Eczanem iki dağıtım katmanında ortak araç kimliğini taşır ve doğrular” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eczanemSiparisMutabakat.smoke.test.ts` | Test / TypeScript | “mutlu: yetkili personel kararı aynı firma kapsamındaki UTT mutabakatına girer” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eczanemUttYonetim.smoke.test.ts` | Test / TypeScript | “mutlu: UTT yüzeyi panel kabuğunda, shadcn deseninde ve atomik gönderimle çalışır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eczanemUyelikDurumu.smoke.test.ts` | Test / TypeScript | “mutlu: müşteri durumu eczaneye özel üyelik bağında okunur ve yazılır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eczanemUyelikListedenSilme.smoke.test.ts` | Test / TypeScript | “mutlu: eczacı liste silmesini tek atomik RPC ile yapar” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eczanemVideoDagitimRozeti.smoke.test.ts` | Test / TypeScript | “mutlu: gönderilebilir videosu olan eczanenin Video Dağıtımı rozeti güncellenir” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `egitimTuruSozlesmesi.smoke.test.ts` | Test / TypeScript | “eğitim türü sözleşmesi altı kanonik türü ve üretici rol yetkilerini doğru tutar” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `gonderimKarari.smoke.test.ts` | Test / TypeScript | “mutlu: beklemedeki id ya da kendi durumsuz satiri -> guncelle + dogru id” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `hapbi.smoke.test.ts` | Test / TypeScript | “hapbi: kimlik yetkili kaynaktan okunur, hiyerarşi tamamlanır, çelişki reddedilir” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `hapbiBilgiKaynaklari.smoke.test.ts` | Test / TypeScript | “HapBi platform bilgisi güncel BLUEBOOK sürümünü ve dört öğrenme aracını taşır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `hapbiCanliTurMetinleri.smoke.test.ts` | Test / TypeScript | “HapBi canlı turları kullanıcıya kurumsal siz diliyle seslenir” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `hbligiKapsam.smoke.test.ts` | Test / TypeScript | “HBLigi üst rol kapsamları firma ve takım sınırını korur” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `hbstoreFirmaUrun.smoke.test.ts` | Test / TypeScript | “mutlu: global aktif ürün varsayılan veya açık firma ayarında görünür” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `hedefRoller.smoke.test.ts` | Test / TypeScript | “hedef kitle sözleşmesi Eczacı ve Teknisyeni tekil ya da birlikte kabul eder” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `icMusteriTelefonGirisi.smoke.test.ts` | Test / TypeScript | “mutlu: aktif iç müşteri kayıtlı cep telefonuyla aynı Auth hesabına giriş yapar” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `izlemeBaslat.smoke.test.ts` | Test / TypeScript | “ilk gerçek oynatma tek bir sunucu oturumu ister” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `izlemeKarari.smoke.test.ts` | Test / TypeScript | “ilk gerçek temiz tam izleme tam puan ve soru hakkı üretir” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `mobilKarsilama.smoke.test.ts` | Test / TypeScript | “ilk mobil giriş tanıtımı, sonraki giriş başka tarayıcıda da Ana Sayfa'yı açar” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `ogrenmeAraciFaz2Guvenlik.smoke.test.ts` | Test / TypeScript | “tamamlanan öğrenme araçları varsayılan açıktır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `ogrenmeAraciFaz2Migration.smoke.test.ts` | Test / TypeScript | “migration eklemelidir ve eski video tablolarını kaldırmaz” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `ogrenmeAraciFaz2Sozlesme.smoke.test.ts` | Test / TypeScript | “kanonik araç sözleşmesi video ile üç yeni aracı birbirinden ayırır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `ogrenmeAraciFaz3Talep.smoke.test.ts` | Test / TypeScript | “talep formu Video ve Podcast arasında tek öğrenme aracı seçer” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `ogrenmeAraciFaz6Kritik.smoke.test.ts` | Test / TypeScript | “dört tüketici kanalında sahiplik ve bağ kimliği sunucuda doğrulanır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `ogrenmeAraciPillEtiketleri.smoke.test.ts` | Test / TypeScript | “değişken durum: varyant, aşama ve durum metinleri seçilen aracı gösterir” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `ogrenmeAraciRolYayinKimligi.smoke.test.ts` | Test / TypeScript | “UTT yayın sözleşmesi öğrenme aracı kimliği ve türünü oynatıcıya taşır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `ogrenmeAraciTamamlamaFaz3.hedef.test.ts` | Test / TypeScript | “boş ve küçük dosyanın parçalı SHA-256 özeti doğrudur” davranışını otomatik olarak doğrulayan hedef testidir. |
+| `ogrenmeAraciTamamlamaFaz4.hedef.test.ts` | Test / TypeScript | “değişken durum değişken durum üretim akışı doğrudur” davranışını otomatik olarak doğrulayan hedef testidir. |
+| `ogrenmeAraciTamamlamaFaz5.hedef.test.ts` | Test / TypeScript | “UTT ve KD_UTT erişimi aktif kullanıcı, firma, takım, hedef rol ve öneri bağıyla sınırlıdır” davranışını otomatik olarak doğrulayan hedef testidir. |
+| `ogrenmeAraciTamamlamaFaz6.hbstore.canli.cjs` | Test / Node.js | HapBilgi kapsamındaki öğrenme Araci Tamamlama Faz6.hbstore.canli sözleşmesini otomatik olarak doğrular. |
+| `ogrenmeAraciTamamlamaFaz6.hedef.test.ts` | Test / TypeScript | “araç türleri mevcut yayın ve ortak tamamlama puanı omurgasını kullanır” davranışını otomatik olarak doğrulayan hedef testidir. |
+| `ogrenmeAraciTamamlamaFaz7.hedef.test.ts` | Test / TypeScript | “araç bazında dönemsel yayın sayısı dört araç için üretilir” davranışını otomatik olarak doğrulayan hedef testidir. |
+| `ogrenmeAraciTamamlamaFaz8.hedef.test.ts` | Test / TypeScript | “Hapbi yayın kimliği, araç türü, başlık ve tamamlama durumunu taşır” davranışını otomatik olarak doğrulayan hedef testidir. |
+| `oneri.tarih.smoke.test.ts` | Test / TypeScript | “mutlu: yarindan itibaren oneri kabul edilir” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `operasyonelYenileme.smoke.test.ts` | Test / TypeScript | “mutlu: operasyon sayfaları ortak, pasiflenebilir ve durum koruyan yenileme kullanır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `periyotAltKirilim.smoke.test.ts` | Test / TypeScript | “mutlu: bu_gun dilimleri TR 6'sar saatlik ve etiketle uyumlu” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `pm04YarimYukleme.hedef.test.ts` | Test / TypeScript | “PM-03/A video kesintisi aynı oturum ve TUS aktarımıyla sürer; iptal tam temizlikten sonra bildirilir” davranışını otomatik olarak doğrulayan hedef testidir. |
+| `pm05TalepIdempotency.hedef.test.ts` | Test / TypeScript | “PM-05 istemci, yanıt kaybında aynı form için aynı işlem anahtarını korur” davranışını otomatik olarak doğrulayan hedef testidir. |
+| `pm06GuncelSurum.hedef.test.ts` | Test / TypeScript | “PM-06: karar isteği ekranda incelenen görev sürümünü taşır” davranışını otomatik olarak doğrulayan hedef testidir. |
+| `pm09EczanemYayinDurdurmaKapisi.hedef.test.ts` | Test / TypeScript | “iki Eczanem gönderim RPC'si yayın satırını kilitleyip aktifliği doğrular” davranışını otomatik olarak doğrulayan hedef testidir. |
+| `pm10Kapsam.smoke.test.ts` | Test / TypeScript | “PM-10: PM ürün sözlüğünde yalnız kendi firma ve takım kapsamını kullanır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `raporLigKatalogYenileme.smoke.test.ts` | Test / TypeScript | “mutlu: rapor, lig ve katalog yüzeyleri ortak yenileme sözleşmesini kullanır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `talepFormuUyumu.smoke.test.ts` | Test / TypeScript | “mutlu: referans dosyası bütün üretici rollerinde sahiplik ve görev bağıyla korunur” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `talepKaynakSahipligi.smoke.test.ts` | Test / TypeScript | “teknik firma sahipliği: kendi firmasının tekniği kabul, başka firmanınki reddedilir” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `tedarikciGizliligi.smoke.test.ts` | Test / TypeScript | “kullanıcıya ulaşan arayüz ve API metinleri altyapı sağlayıcısının adını göstermez” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `uretimDurumFiltresi.smoke.test.ts` | Test / TypeScript | “mutlu: içerik üreticisi revizyonu ve yeni işi üretici incelemesinden önce görür” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `uretimEskiYolTemizligi.smoke.test.ts` | Test / TypeScript | “mutlu: üretim yazıları yalnız kanonik görev API'lerinde yaşar” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `uretimGorevArayuzu.smoke.test.ts` | Test / TypeScript | “mutlu: görev durumları ortak arayüz durumlarına eksiksiz çevrilir” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `uretimGorevSozlesmesi.smoke.test.ts` | Test / TypeScript | “mutlu: atanan görev hazırlanır, incelemeye gider, revizyondan yeniden teslim edilir” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `uretimRpc.smoke.test.ts` | Test / TypeScript | “üretim RPC yardımcıları bilinen girdileri doğru sınıflandırır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `yayinOncesiSilme.smoke.test.ts` | Test / TypeScript | “mutlu: yayın adayı kilitlenir, Bunny ve varyanta uygun DB silmesi tamamlanır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `yoneticiGozlemYetkisi.hedef.test.ts` | Test / TypeScript | “yönetici kataloğu dört öğrenme aracının kimliğini ve türünü taşır” davranışını otomatik olarak doğrulayan hedef testidir. |
+| `yonetimYenileme.smoke.test.ts` | Test / TypeScript | “mutlu: üretim, yönetim ve sipariş takip yüzeyleri ortak YenileButonu kullanır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `zaman.sinir.smoke.test.ts` | Test / TypeScript | “mutlu: gun ici bir an dogru TR gunune ve periyoda cozulur” davranışını otomatik olarak doğrulayan smoke testidir. |
 
-## 10. PUBLİC VE DOCS VARLIKLARI
-
-### 📁 public/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `hapbi.png` | Görsel / Maskot | 3D Turuncu Hapbi AI asistanının ana (idle) maskot görseli. |
-| `hapbi-wink.png` | Görsel / Maskot | 3D Turuncu Hapbi AI asistanının üzerine gelindiğinde (hover) göz kırpan interaktif maskot görseli. |
-| `icon-192.png` | Yapılandırma | PWA ve mobil cihazlar için 192x192 uygulama ikonu. |
-| `icon-512.png` | Yapılandırma | PWA ve mobil cihazlar için 512x512 yüksek çözünürlüklü uygulama ikonu. |
-| `logo-acik-zemin.png` | Görsel / Logo | Giriş sayfası (/login) için %100 şeffaf zeminli 3D gri baykuş ve bordo tipografili dikey logo. |
-| `logo.png` | Görsel / Logo | Kurumsal dikey 3D gri marka logosu. |
-| `logo-yatay.png` | Görsel / Logo | Panel üst navbarı için optimize edilmiş, solda 3D gri baykuş ve sağda "hapbilgi" metninden oluşan yatay logo. |
-| `logo-head.png` | Görsel / Logo | 3D gri baykuş başı ikon varyantı. |
-| `manifest.json` | JSON / Veri | Web uygulaması manifest ve PWA yapılandırma dosyası. |
-| `sw.js` | Yapılandırma | Çevrimdışı önbellekleme ve servis işçisi (Service Worker) betiği. |
+## 10. PUBLIC VE DOCS VARLIKLARI
 
 ### 📁 docs/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `BLUEBOOK.md` | Dokümantasyon | HapBilgi ekosisteminin tüm rol, mimari, veri akışı ve kalite sözleşmelerini içeren kurumsal ana başvuru kılavuzu. |
+| `BLUEBOOK.md` | Dokümantasyon | HapBilgi’nin iş modelini, rol ve iş kurallarını, mimarisini ve kanonik dosya envanterini tanımlayan ana başvuru belgesidir. |
+| `HAPBI.md` | Dokümantasyon | “hapbi — Faz 2: kişiye ve role uygun rehberlik” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
+| `OGRENIM_ARACI_GENISLETME_PROJESI_PLANI.md` | Dokümantasyon | “Öğrenim Aracı Genişletme Projesi Planı” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
+| `OGRENME_ARACLARI_GENISLETME_PROJE_FAZ_PLANI_CHECKLIST.md` | Dokümantasyon | “Öğrenme Araçları Genişletme Proje Faz Planı — Checklist” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
+| `OGRENME_ARACLARI_GENISLETMESI_TAMLAMA_FAZ_PLANI.md` | Dokümantasyon | “Öğrenme Araçları Genişletmesi – Tamamlama Faz Planı” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
+| `OGRENME_ARACLARI_GENISLETMESI.md` | Dokümantasyon | “Öğrenme Araçları Genişletmesi” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
+| `REDBOOK.MD` | Dokümantasyon | Bilinen teknik borçları, riskleri ve tamamlanması gereken iyileştirmeleri izleyen teknik takip belgesidir. |
+| `ROLLER_VE_KAPSAMLI_ZOR_TESTLER.md` | Dokümantasyon | “Roller ve Kapsamlı Zor Testler” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
 
+### 📁 docs/hukuki/
 
----
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `CEREZ_AYDINLATMA_VE_TERCIH_METNI.md` | Dokümantasyon | “HAPBİLGİ ÇEREZ VE TARAYICI DEPOLAMA AYDINLATMA METNİ” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
+| `KVKK_AYDINLATMA_METNI.md` | Dokümantasyon | “HAPBİLGİ KİŞİSEL VERİLERİN İŞLENMESİNE İLİŞKİN AYDINLATMA METNİ” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
+| `KVKK_YURTDISI_VERI_AKTARIMI_TAKIP.md` | Dokümantasyon | Supabase ile KVKK Standart Sözleşme-2 ve Kurum bildirimi sürecinin durumunu, kanıtlarını ve sonraki adımlarını izler. |
+| `PUAN_VE_ODUL_PROGRAMI_KURALLARI.md` | Dokümantasyon | “HAPBİLGİ PUAN VE ÖDÜL PROGRAMI KURALLARI” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
+| `TICARI_ELEKTRONIK_ILETI_IZNI.md` | Dokümantasyon | “HAPBİLGİ TİCARİ ELEKTRONİK İLETİ İZNİ” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
+
+### 📁 public/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `hapbi-wink.png` | Görsel / Varlık | 3D Turuncu Hapbi AI asistanının üzerine gelindiğinde (hover) göz kırpan interaktif maskot görseli. |
+| `hapbi.png` | Görsel / Varlık | 3D Turuncu Hapbi AI asistanının ana (idle) maskot görseli. |
+| `hapbilgi-dikey-TM-1-logo.png` | Görsel / Varlık | hapbilgi dikey TM 1 logo için uygulamada kullanılan görsel varlıktır. |
+| `hapbilgi-yatay-TM-1-logo.png` | Görsel / Varlık | hapbilgi yatay TM 1 logo için uygulamada kullanılan görsel varlıktır. |
+| `icon-192.png` | Görsel / Varlık | PWA ve mobil cihazlar için 192x192 uygulama ikonu. |
+| `icon-512.png` | Görsel / Varlık | PWA ve mobil cihazlar için 512x512 yüksek çözünürlüklü uygulama ikonu. |
+| `logo-download.png` | Görsel / Varlık | logo download için uygulamada kullanılan görsel varlıktır. |
+| `manifest.json` | JSON / Yapılandırma | Web uygulaması manifest ve PWA yapılandırma dosyası. |
+| `sw.js` | Yapılandırma | Çevrimdışı önbellekleme ve servis işçisi (Service Worker) betiği. |
 
 ## 11. SIFIR `ANY` VE KESİN TİP GÜVENLİĞİ SÖZLEŞMESİ (STRICT TYPE-SAFETY)
 
@@ -1499,10 +3131,10 @@ Video tamamlanıp izleme puanı ve soru indeksleri yazıldıktan sonra kullanıc
 
 ## 🎯 GENEL SONUÇ VE KALİTE SİCİLİ
 
-**25 Ağustos 2026** tarihi itibarıyla:
-1. Platformun **T-Club, C-Club, E-Club, Eczanem, Üretim/Yönetim, Admin ve Rol-Görev/Toast İletişim** katmanları hem veritabanı bütünlüğü hem de kod mimarisi, dizin simetrisi, DRY disiplini ve kurumsal kullanıcı deneyimi açısından %100 kusursuzluğa ulaştırılmıştır.
-2. Kod tabanında hiçbir sahipsiz, ölü, güvensiz eski yöntem veya denetimsiz `any` tipi kalmamış; projenin tamamı **%100 Strict TypeScript Güvenliği** ile mühürlenmiştir.
-3. **HapBilgi ekosistemi (100/100 Kurumsal Mimari, İletişim ve Tip Güvenliği Puanı), canlı kurumsal operasyona ve üretime eksiksiz olarak hazır vaziyette mühürlenmiştir.**
+**3 Eylül 2026** tarihi itibarıyla BLUEBOOK; HapBilgi’nin iş modelini, kullanıcı rollerini, yetki sınırlarını, T-Club, C-Club, E-Club, Eczanem, Store, üretim, yönetim, raporlama, HapBi ve öğrenme araçları süreçlerini güncel uygulama yapısıyla birlikte tanımlar.
 
----
-*HapBilgi Mühendislik ve Kalite Denetim Ekibi tarafından mühürlenmiştir.*
+Platformun iş kuralları; rol ve firma kapsamı, veri bütünlüğü, erişim denetimi, öğrenme takibi ve üretim akışları esas alınarak kod, veritabanı ve kullanıcı arayüzü katmanlarında uygulanır. Video, Podcast, Dijital Broşür ve Flip PDF ortak öğrenme aracı yapısı içinde yönetilir.
+
+Kod kalitesi; TypeScript tip denetimi, mimari kurallar, otomatik testler, SQL denetimleri ve kanonik dosya envanteriyle korunur. BLUEBOOK güncel ve bağlayıcı sistem kaydını, REDBOOK açık teknik borçları, hukuki takip belgeleri ise tamamlanması gereken veri ve mevzuat süreçlerini gösterir.
+
+Bu kayıt, doğrulanmış mevcut durumu ifade eder; mutlak kusursuzluk veya tamamlanmışlık iddiası taşımaz.
