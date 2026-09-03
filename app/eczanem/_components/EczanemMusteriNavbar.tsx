@@ -25,7 +25,7 @@ export default function EczanemMusteriNavbar({ ad, onCikis, onYenile, yenileniyo
     <header className="sticky top-0 z-40 border-b border-[#dfe7ef] bg-white/95 shadow-[0_2px_12px_rgba(30,55,85,0.04)] backdrop-blur">
       <div className="mx-auto flex min-h-16 w-full max-w-[1240px] items-center gap-3 px-4 md:px-6">
         <Link href="/eczanem" aria-label="HapBilgi Eczanem ana sayfası" className="shrink-0">
-          <Image src="/logo-acik-zemin.png" alt="HapBilgi" width={132} height={38} priority className="h-auto w-[108px] md:w-[126px]" />
+          <Image src="/hapbilgi-yatay-TM-1-logo.png" alt="HapBilgi" width={901} height={340} priority className="aspect-[901/340] w-[108px] object-cover md:w-[126px]" />
         </Link>
 
         <nav aria-label="Müşteri menüsü" className="ml-1 flex min-w-0 flex-1 items-center gap-1 sm:ml-4">

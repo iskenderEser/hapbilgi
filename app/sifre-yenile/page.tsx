@@ -82,7 +82,7 @@ export default function SifreYenilePage() {
       style={{ fontFamily: "'Nunito', sans-serif" }}
     >
       <div className="w-full max-w-sm">
-        <img src="/logo.png" alt="hapbilgi" className="object-contain mx-auto mb-8" style={{ height: 144 }} />
+        <img src="/hapbilgi-dikey-TM-1-logo.png" alt="hapbilgi" className="object-contain mx-auto mb-8" style={{ height: 144 }} />
 
         {oturumHazir === null && (
           <p className="text-sm text-gray-500 text-center">Bağlantı doğrulanıyor...</p>

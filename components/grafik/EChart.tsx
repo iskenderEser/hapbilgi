@@ -121,7 +121,7 @@ export default function EChart({ option, height = 320, className, style, onClick
     };
 
     try {
-      const [taban, logo] = await Promise.all([yukle(kaynak), yukle("/logo-acik-zemin.png")]);
+      const [taban, logo] = await Promise.all([yukle(kaynak), yukle("/logo-download.png")]);
       const canvas = document.createElement("canvas");
       canvas.width = taban.naturalWidth;
       canvas.height = taban.naturalHeight;

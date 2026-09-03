@@ -135,8 +135,8 @@ export default function LoginPage() {
     setHata("");
 
     // Kimlik alanı e-posta VEYA cep telefonu kabul eder. Telefon (yalın rakam,
-    // '@' yok) girildiyse Eczanem müşterisidir: Supabase'e telefonla doğrudan
-    // giriş olmadığından sunucu ucu telefon→e-postaya çözüp oturumu açar.
+    // '@' yok) girildiyse sunucu ucu üç kimlik düzleminde telefonu tek bir Auth
+    // hesabına çözüp oturumu açar.
     const kimlik = email.trim();
     const telefonMu = !kimlik.includes("@") && kimlik.replace(/\D/g, "").length >= 10;
 
@@ -151,7 +151,7 @@ export default function LoginPage() {
         if (!res.ok) { setHata(data.hata ?? "Telefon veya şifre hatalı."); setLoading(false); return; }
         beniHatirlaKaydet(beniHatirla);
         // Tam sayfa geçiş: AuthProvider yeni oturumu temiz durumla yüklesin.
-        window.location.href = data.yonlendir ?? "/eczanem";
+        window.location.href = data.yonlendir ?? "/login";
       } catch {
         setHata("Giriş yapılamadı; yeniden deneyin.");
         setLoading(false);
@@ -204,7 +204,7 @@ export default function LoginPage() {
               metin alanının orta çizgisi giriş alanının ekseniyle çakışır (İskender, ekran görseliyle) */}
           <div className="max-w-md w-full md:-translate-y-[75px]">
           {/* Şeffaf kenarlar mevcut 150 × 150 logo alanına sığdırılır; yerleşim korunur. */}
-          <img src="/hapbilgi-dikey-gri-bordo.png" alt="hapbilgi" className="object-cover mx-auto mb-8" style={{ width: 150, height: 150 }} />
+          <img src="/hapbilgi-dikey-TM-1-logo.png" alt="hapbilgi" className="object-cover mx-auto mb-8 scale-110" style={{ width: 150, height: 150 }} />
 
           {/* Positioning-why cümlesi (İskender, 18.07.2026): "Öğrenmenin V Hali" kalktı,
               slogan başlık oldu. "Kazanmak" tanımı: docs/fiziksel_tespitler_ve_cozumler.md F-04 Ek 3. */}

@@ -1,13 +1,7 @@
 "use client";
 
 import { Dialog } from "radix-ui";
-
-const SOZLESME_BASLIKLARI = [
-  "KVKK Aydınlatma Metni",
-  "Açık Rıza Onay Metni",
-  "Gizlilik ve Çerez Politikası",
-  "Mesafeli Satış Sözleşmesi",
-] as const;
+import { YASAL_METINLER } from "./yasalMetinler";
 
 const BAGLANTI_SINIFI =
   "rounded-sm text-center underline-offset-4 hover:text-gray-500 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gray-400";
@@ -19,15 +13,15 @@ export default function GirisAltBilgileri() {
       <div className="bg-white pb-8 md:absolute md:inset-x-0 md:top-10">
         <section
           aria-label="Sözleşmeler ve şirket bilgileri"
-          className="grid grid-cols-2 items-start gap-x-6 text-center text-xs leading-relaxed text-gray-400"
+          className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,0.6fr)] items-start gap-x-6 text-center text-xs leading-relaxed text-gray-400"
         >
           <ul aria-label="Sözleşmeler" className="m-0 flex list-none flex-col gap-2 p-0">
-            {SOZLESME_BASLIKLARI.map((baslik) => (
-              <li key={baslik}>
+            {YASAL_METINLER.map((metin) => (
+              <li key={metin.baslik}>
                 <Dialog.Root>
                   <Dialog.Trigger asChild>
-                    <button type="button" className={BAGLANTI_SINIFI}>
-                      {baslik}
+                    <button type="button" className={`${BAGLANTI_SINIFI} whitespace-nowrap`}>
+                      {metin.baslik}
                     </button>
                   </Dialog.Trigger>
                   <Dialog.Portal>
@@ -38,8 +32,8 @@ export default function GirisAltBilgileri() {
                       style={{ fontFamily: "'Nunito', sans-serif" }}
                     >
                       <div className="flex items-center justify-between gap-4 border-b border-gray-100 px-6 py-4">
-                        <Dialog.Title className="m-0 text-base font-semibold">
-                          {baslik}
+                        <Dialog.Title className="m-0 text-[13px] font-semibold leading-[18px]">
+                          {metin.baslik}
                         </Dialog.Title>
                         <Dialog.Close
                           aria-label="Kapat"
@@ -48,8 +42,27 @@ export default function GirisAltBilgileri() {
                           <span aria-hidden="true">×</span>
                         </Dialog.Close>
                       </div>
-                      {/* Onaylı yasal metinler iletilene kadar içerik bilinçli olarak boştur. */}
-                      <div className="min-h-48 overflow-y-auto" />
+                      <article className="min-h-48 overflow-y-auto px-6 py-5 text-left text-[10px] leading-[16px] text-gray-600">
+                        {metin.bolumler.map((bolum, bolumSirasi) => (
+                          <section
+                            key={bolum.baslik ?? `${metin.baslik}-${bolumSirasi}`}
+                            className={bolumSirasi === 0 ? "" : "mt-6"}
+                          >
+                            {bolum.baslik && (
+                              <h3 className="mb-2 text-[12px] font-bold leading-[17px] text-gray-800">
+                                {bolum.baslik}
+                              </h3>
+                            )}
+                            <div className="space-y-3">
+                              {bolum.paragraflar.map((paragraf) => (
+                                <p key={paragraf} className="m-0">
+                                  {paragraf}
+                                </p>
+                              ))}
+                            </div>
+                          </section>
+                        ))}
+                      </article>
                     </Dialog.Content>
                   </Dialog.Portal>
                 </Dialog.Root>
@@ -58,13 +71,17 @@ export default function GirisAltBilgileri() {
           </ul>
 
           <address aria-label="Şirket iletişim bilgileri" className="flex min-w-0 flex-col items-center gap-2 not-italic">
-            <p className="m-0">Mill Danışmanlık</p>
+            <a
+              href="https://www.mill.tr"
+              target="_blank"
+              rel="noreferrer"
+              className={BAGLANTI_SINIFI}
+            >
+              Mill Danışmanlık
+            </a>
             <p className="m-0">
               <span className="block whitespace-nowrap">Göktürk / İstanbul</span>
             </p>
-            <a href="tel:05324333145" className={BAGLANTI_SINIFI}>
-              0532 433 3145
-            </a>
             <a href="mailto:info@mill.tr" className={BAGLANTI_SINIFI}>
               info@mill.tr
             </a>
