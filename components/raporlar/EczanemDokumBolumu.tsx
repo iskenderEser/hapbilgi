@@ -13,7 +13,7 @@ import { PERIYOTLAR, Periyot } from "@/lib/utils/raporUtils";
 
 const AMBER = "#b45309";
 
-interface UrunSatir { urun_id: string; urun_adi: string; kutu: number; indirim_tl: number; }
+interface UrunSatir { urun_id: string; urun_adi: string; kutu: number; indirim_tl: number; satis_tl: number; indirimli_tl: number; }
 interface EczaneSatir {
   eczane_id: string;
   eczane_adi: string;
@@ -21,11 +21,13 @@ interface EczaneSatir {
   urunler: UrunSatir[];
   toplam_kutu: number;
   toplam_tl: number;
+  toplam_satis_tl: number;
+  toplam_indirimli_tl: number;
 }
-interface PmEczane { eczane_adi: string; kutu: number; indirim_tl: number; }
-interface PmUtt { utt_adi: string; kutu: number; indirim_tl: number; eczaneler: PmEczane[]; }
-interface PmBolge { bolge_adi: string; kutu: number; indirim_tl: number; uttler: PmUtt[]; }
-interface PmUrun { urun_id: string; urun_adi: string; kutu: number; indirim_tl: number; bolgeler: PmBolge[]; }
+interface PmEczane { eczane_adi: string; kutu: number; indirim_tl: number; satis_tl: number; indirimli_tl: number; }
+interface PmUtt { utt_adi: string; kutu: number; indirim_tl: number; satis_tl: number; indirimli_tl: number; eczaneler: PmEczane[]; }
+interface PmBolge { bolge_adi: string; kutu: number; indirim_tl: number; satis_tl: number; indirimli_tl: number; uttler: PmUtt[]; }
+interface PmUrun { urun_id: string; urun_adi: string; kutu: number; indirim_tl: number; satis_tl: number; indirimli_tl: number; bolgeler: PmBolge[]; }
 
 interface Veri {
   aktif: boolean;
@@ -33,11 +35,18 @@ interface Veri {
   eczaneler?: EczaneSatir[];
   toplam_kutu?: number;
   toplam_tl?: number;
+  toplam_satis_tl?: number;
+  toplam_indirimli_tl?: number;
   urunler?: PmUrun[];
 }
 
 function tl(n: number) {
   return `${(n ?? 0).toFixed(2)} TL`;
+}
+
+// Satış · İndirim · İndirimli üçlüsünü tek satırda gösterir.
+function ucluMetin(satis: number, indirim: number, indirimli: number) {
+  return `Satış ${tl(satis)} · İnd ${tl(indirim)} · İndirimli ${tl(indirimli)}`;
 }
 
 export default function EczanemDokumBolumu() {
@@ -92,7 +101,7 @@ export default function EczanemDokumBolumu() {
           <>
             <div className="flex justify-between text-sm font-semibold mb-3 px-1">
               <span className="text-gray-800">Kapsam toplamı</span>
-              <span style={{ color: AMBER }}>{veri.toplam_kutu} kutu · {tl(veri.toplam_tl ?? 0)}</span>
+              <span style={{ color: AMBER }}>{veri.toplam_kutu} kutu · {ucluMetin(veri.toplam_satis_tl ?? 0, veri.toplam_tl ?? 0, veri.toplam_indirimli_tl ?? 0)}</span>
             </div>
             <div className="divide-y divide-gray-100">
               {(veri.eczaneler ?? []).map((e) => {
@@ -108,7 +117,7 @@ export default function EczanemDokumBolumu() {
                         {e.utt_adi && <span className="text-[11px] text-gray-400">UTT: {e.utt_adi}</span>}
                       </span>
                       <span className="text-xs text-gray-500 whitespace-nowrap">
-                        {e.toplam_kutu} kutu · {tl(e.toplam_tl)} {eAcik ? "▾" : "▸"}
+                        {e.toplam_kutu} kutu · {ucluMetin(e.toplam_satis_tl, e.toplam_tl, e.toplam_indirimli_tl)} {eAcik ? "▾" : "▸"}
                       </span>
                     </button>
                     {eAcik && (
@@ -118,7 +127,9 @@ export default function EczanemDokumBolumu() {
                             <tr key={u.urun_id} className="border-t border-gray-50">
                               <td className="py-1.5 pl-3 text-gray-600">{u.urun_adi}</td>
                               <td className="py-1.5 text-right text-gray-600">{u.kutu}</td>
+                              <td className="py-1.5 text-right text-gray-600">{tl(u.satis_tl)}</td>
                               <td className="py-1.5 text-right text-gray-600">{tl(u.indirim_tl)}</td>
+                              <td className="py-1.5 text-right text-gray-600">{tl(u.indirimli_tl)}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -142,7 +153,7 @@ export default function EczanemDokumBolumu() {
                   >
                     <span className="text-sm font-medium text-gray-800 truncate">{u.urun_adi}</span>
                     <span className="text-xs whitespace-nowrap" style={{ color: AMBER }}>
-                      Türkiye: {u.kutu} kutu · {tl(u.indirim_tl)} {uAcik ? "▾" : "▸"}
+                      Türkiye: {u.kutu} kutu · {ucluMetin(u.satis_tl, u.indirim_tl, u.indirimli_tl)} {uAcik ? "▾" : "▸"}
                     </span>
                   </button>
                   {uAcik && (
@@ -151,18 +162,18 @@ export default function EczanemDokumBolumu() {
                         <div key={b.bolge_adi} className="mb-2">
                           <div className="flex justify-between text-sm text-gray-700 font-medium py-1">
                             <span>{b.bolge_adi}</span>
-                            <span className="text-xs text-gray-500">{b.kutu} kutu · {tl(b.indirim_tl)}</span>
+                            <span className="text-xs text-gray-500">{b.kutu} kutu · {ucluMetin(b.satis_tl, b.indirim_tl, b.indirimli_tl)}</span>
                           </div>
                           {b.uttler.map((ut) => (
                             <div key={ut.utt_adi} className="pl-3">
                               <div className="flex justify-between text-xs text-gray-500 py-0.5">
                                 <span>{ut.utt_adi}</span>
-                                <span>{ut.kutu} kutu · {tl(ut.indirim_tl)}</span>
+                                <span>{ut.kutu} kutu · {ucluMetin(ut.satis_tl, ut.indirim_tl, ut.indirimli_tl)}</span>
                               </div>
                               {ut.eczaneler.map((ez) => (
                                 <div key={ez.eczane_adi} className="pl-3 flex justify-between text-[11px] text-gray-400 py-0.5">
                                   <span className="truncate">{ez.eczane_adi}</span>
-                                  <span className="whitespace-nowrap">{ez.kutu} kutu · {tl(ez.indirim_tl)}</span>
+                                  <span className="whitespace-nowrap">{ez.kutu} kutu · {ucluMetin(ez.satis_tl, ez.indirim_tl, ez.indirimli_tl)}</span>
                                 </div>
                               ))}
                             </div>

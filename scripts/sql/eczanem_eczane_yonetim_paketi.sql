@@ -221,6 +221,18 @@ BEGIN
     RAISE EXCEPTION 'Bu eczanede aktif işlem yetkiniz yok.' USING ERRCODE = 'P0001';
   END IF;
 
+  IF p_auth_user_id IS NULL THEN
+    RAISE EXCEPTION 'Müşteri Auth kimliği olmadan aktifleştirilemez.' USING ERRCODE = 'P0001';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1
+    FROM auth.users au
+    WHERE au.id = p_auth_user_id
+  ) THEN
+    RAISE EXCEPTION 'Müşteri Auth hesabı bulunamadı.' USING ERRCODE = 'P0001';
+  END IF;
+
   INSERT INTO public.eczanem_musteriler (
     telefon, ad_soyad, kvkk_onay_tarihi, aktif_mi, auth_user_id
   ) VALUES (
@@ -327,13 +339,15 @@ BEGIN
 END;
 $fonksiyon$;
 
+-- Dönüş imzası satis_tl ile genişledi; CREATE OR REPLACE imzayı değiştiremediği için önce düşürülür.
+DROP FUNCTION IF EXISTS public.eczanem_eczane_dokumu(uuid, timestamptz, timestamptz, uuid[]);
 CREATE OR REPLACE FUNCTION public.eczanem_eczane_dokumu(
   p_eczane_id uuid,
   p_baslangic timestamptz,
   p_bitis timestamptz,
   p_firma_idler uuid[] DEFAULT NULL
 )
-RETURNS TABLE(urun_id uuid, urun_adi text, kutu bigint, indirim_tl numeric)
+RETURNS TABLE(urun_id uuid, urun_adi text, kutu bigint, indirim_tl numeric, satis_tl numeric)
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
@@ -343,7 +357,8 @@ AS $fonksiyon$
     s.urun_id,
     COALESCE(u.urun_adi, '-')::text,
     SUM(s.adet)::bigint,
-    ROUND(SUM(s.indirim_tl)::numeric, 2)
+    ROUND(SUM(s.indirim_tl)::numeric, 2),
+    ROUND(SUM(COALESCE((s.tarife_snapshot->>'satis_fiyati')::numeric, 0) * s.adet), 2)
   FROM public.eczanem_siparisler s
   JOIN public.urunler u ON u.urun_id = s.urun_id
   WHERE s.eczane_id = p_eczane_id

@@ -56,6 +56,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
   const [barkodlar, setBarkodlar] = useState<Record<string, string>>({});
   const [karsilikPuanlar, setKarsilikPuanlar] = useState<Record<string, number>>({});
   const [karsilikTllar, setKarsilikTllar] = useState<Record<string, number>>({});
+  const [satisFiyatlar, setSatisFiyatlar] = useState<Record<string, number>>({});
 
   // Tekrar gönderim periyodu — soru_seti_durum_id → seçilen gün (seçilmediyse tekrar yok).
   // Seçenek listesi sistem_ayarlari'ndan gelir (tek kaynak): api/tekrar-secenekleri.
@@ -187,6 +188,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
       // Eczanem: extra puan yok; barkod + Karşılık (puan ve TL) zorunlu.
       if (!barkodlar[b.soru_seti_durum_id]?.trim()) return false;
       if (!karsilikPuanlar[b.soru_seti_durum_id] || !karsilikTllar[b.soru_seti_durum_id]) return false;
+      if (!satisFiyatlar[b.soru_seti_durum_id]) return false;
     } else if (!eclub && !extraPuanlar[b.soru_seti_durum_id]) {
       return false;
     }
@@ -234,6 +236,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
               barkod: barkodlar[b.soru_seti_durum_id] ?? "",
               karsilik_puan: karsilikPuanlar[b.soru_seti_durum_id] ?? null,
               karsilik_tl: karsilikTllar[b.soru_seti_durum_id] ?? null,
+              satis_fiyati: satisFiyatlar[b.soru_seti_durum_id] ?? null,
             }
           : eclub
             ? {
@@ -310,6 +313,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     barkodlar, setBarkodlar,
     karsilikPuanlar, setKarsilikPuanlar,
     karsilikTllar, setKarsilikTllar,
+    satisFiyatlar, setSatisFiyatlar,
     tekrarPeriyotlari, setTekrarPeriyotlari,
     tekrarSecenekleri,
     tekrarBilgi,

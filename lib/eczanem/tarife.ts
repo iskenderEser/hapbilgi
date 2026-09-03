@@ -23,6 +23,7 @@ export interface TarifeGiris {
   barkod: string;
   puan: number;
   tl: number;
+  satis_fiyati: number;
   olusturan_id: string;
 }
 
@@ -36,6 +37,7 @@ export interface TarifeSonuc {
 export interface GuncelTarife {
   puan: number;
   tl: number;
+  satis_fiyati: number | null;
 }
 
 // Ürünün şu an geçerli tarifesi: gecerlilik_baslangic <= now olan en son satır.
@@ -47,7 +49,7 @@ export async function guncelTarife(
   const simdi = new Date().toISOString();
   const { data } = await adminSupabase
     .from("eczanem_urun_tarifeleri")
-    .select("puan, tl")
+    .select("puan, tl, satis_fiyati")
     .eq("urun_id", urun_id)
     .lte("gecerlilik_baslangic", simdi)
     .order("gecerlilik_baslangic", { ascending: false })
@@ -55,7 +57,7 @@ export async function guncelTarife(
     .maybeSingle();
 
   if (!data) return null;
-  return { puan: data.puan, tl: Number(data.tl) };
+  return { puan: data.puan, tl: Number(data.tl), satis_fiyati: data.satis_fiyati == null ? null : Number(data.satis_fiyati) };
 }
 
 // Barkod + Karşılık'ı ürün seviyesine yazar:
@@ -66,7 +68,7 @@ export async function tarifeVeBarkodYaz(
   adminSupabase: SupabaseClient,
   giris: TarifeGiris
 ): Promise<TarifeSonuc> {
-  const { urun_id, barkod, puan, tl, olusturan_id } = giris;
+  const { urun_id, barkod, puan, tl, satis_fiyati, olusturan_id } = giris;
 
   // 1) Barkod — ürün seviyesinde tek güncel değer.
   const { error: barkodHatasi } = await adminSupabase
@@ -76,9 +78,9 @@ export async function tarifeVeBarkodYaz(
 
   if (barkodHatasi) return { ok: false, hata: "Barkod yazılamadı." };
 
-  // 2) Karşılık — değişmediyse yeni satır açma.
+  // 2) Karşılık — puan, tl veya satış fiyatı değişmediyse yeni satır açma.
   const mevcut = await guncelTarife(adminSupabase, urun_id);
-  if (mevcut && mevcut.puan === puan && mevcut.tl === Number(tl)) {
+  if (mevcut && mevcut.puan === puan && mevcut.tl === Number(tl) && mevcut.satis_fiyati === Number(satis_fiyati)) {
     return { ok: true, yeniTarife: false };
   }
 
@@ -88,6 +90,7 @@ export async function tarifeVeBarkodYaz(
       urun_id,
       puan,
       tl,
+      satis_fiyati,
       gecerlilik_baslangic: new Date().toISOString(),
       olusturan_id,
     });

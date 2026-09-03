@@ -420,100 +420,89 @@ Bu çalışma, HapBilgi'deki her rolün görev tanımı içinde bulunan bütün 
 - [ ] **UTT-02 — Aynı firmada çoklu UTT–E-Club ilişkisi ve öğrenme aracı önerisi:** Aynı firmada çalışan iki UTT/KD_UTT aynı eczaneyi kendi E-Club listelerine eşzamanlı olarak ekleyecek; tek kurumsal eczane–firma bağına karşı iki bağımsız aktif UTT–eczane üyeliği oluşacak ve iki UTT de eczanedeki ortak eczacı, ikinci eczacı, yardımcı eczacı ve teknisyen kayıtlarını görebilecek. İki UTT aynı E-Club kişisine aynı öğrenme aracını ayrı ayrı önerdiğinde iki öneri de kabul edilecek; buna karşılık her UTT'nin kendi önerisini eşzamanlı tekrarı `oneren_id + kisi_id + arac_id` ekseninde engellenecek. UTT'lerden biri eczaneyi listesinden çıkardığında yalnız kendi üyeliği kapanacak; diğer UTT'nin E-Club görünürlüğü ile eczanenin Eczanem bağı ve gönderim süreçleri devam edecek. Öneri geçerlilik ve yeniden gönderim tarihleri sistem ayarlarıyla tutarlı kalacak.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **UTT-03 — Eczanem eczane dağıtımı:** Aynı UTT/KD_UTT, aynı Eczanem yayınını aynı bağlı eczaneye iki eşzamanlı istekle gönderecek; yalnız bir `eczanem_eczane_gonderimleri` kaydı oluşacak, ikinci istek daha önce gönderilmiş olarak reddedilecek ve müşteri düzeyi gönderim yapılmayacak.
+- [x] **UTT-03 — Eczanem eczane dağıtımı:** UTT/KD_UTT, kendi E-Club listesinde bulunan eczaneye geçerli bir Eczanem öğrenme aracı gönderecek; gönderimin doğru `yayin_id`, `arac_id`, `arac_turu`, UTT ve eczane bilgileriyle `eczanem_eczane_gonderimleri` tablosunda oluştuğu ve eczanenin Eczanem listesine yansıdığı doğrulanacak. Bu aşamada müşteri gönderimi oluşmayacak; müşteriye gönderim ancak eczanenin sonraki bağımsız işlemiyle gerçekleşecek.
+
+  **Test sonucu — GEÇTİ:** SQL entegrasyon koşumunda aktif E-Club üyeliği bulunan UTT'nin yayındaki video öğrenme aracını uygun eczaneye göndermesi başarıyla tamamlandı. Eczane gönderimi doğru ortak yayın ve araç kimliğiyle tek kayıt olarak oluştu; UTT işlemi sırasında gerçek müşteri gönderim tablosu `eczanem_gonderimler` üzerinde kayıt oluşmadı. Koşum transaction içinde yapılıp `ROLLBACK` edildi; özgün gönderim kaydı korundu (`1`), yayın–eczane gönderim sayısı değişmedi (`1`) ve müşteri gönderim sayısı `0` kaldı.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **UTT-04 — Rapor, profil ve lig kapsam yenileme:** İki alt koşum yapılacak: (a) izleme sürerken rol UTT/KD_UTT dışına çıkarılacak ve sonraki tüketim, HBStore ve E-Club işlemlerinin eski oturumla sürdürülemediği doğrulanacak; (b) rol korunup takım değiştirilecek, kişisel tarihsel kayıtlar silinmeden profil, rapor ve takım ligi kapsamının yeni takıma göre yeniden hesaplandığı ve eski takımın yetkisiz ayrıntılarının gösterilmediği doğrulanacak.
+- [x] **UTT-04 — Rapor, profil ve lig kapsam yenileme:** UTT/KD_UTT rolü korunarak kullanıcının takımı değiştirilecek; profil ve takım ligi güncel takım kimliğine geçirilecek, kişisel rapor ile tarihsel performans kayıtları korunacak ve kullanıcının lig satırı eski takım kimliğiyle gösterilmeyecek.
+
+  **Test sonucu — GEÇTİ:** SQL entegrasyon koşumunda UTT aynı firmada oluşturulan geçici takıma taşındı; rolü `utt` olarak korundu, profil yeni `takim_id` ve takım adını gösterdi, aylık lig satırı yeni takım kimliğine geçti ve eski takım kimliğiyle ikinci bir satır oluşmadı. Kişisel E-Club raporunun içeriği ve `33` rapor satırı değişmedi; `50` tarihsel öneri ile `35` gönderi puanı kaydı korundu ve lig performans değerleri değişmedi. Koşum transaction içinde yapılıp `ROLLBACK` edildi; özgün `Şimşek` takımı geri geldi, geçici takım sayısı `0` ve eski lig kapsamı doğrulaması `1` oldu.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **UTT-05 — Hapbi:** Başka kullanıcının eğitim, puan ve önerileri sorulacak; yalnız oturum sahibinin verisi kullanılacak.
+### E-Club Personeli — Eczacılar ve Eczane Teknisyenleri
 
-### Eczacı, İkinci Eczacı ve Yardımcı Eczacı
-
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **ECZ-01 — E-Club erişimi:** Başka eczaneye ait öneri ve yayın bağlantısı kullanılacak; içerik açılmayacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **ECZ-02 — Öğrenme araçları:** Aynı araç iki cihazda tamamlanacak; tek izleme, tek cevap ve tek puan oluşacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **ECZ-03 — Üyelik iptali:** Yayın açıkken E-Club üyeliği kapatılacak; sonraki ilerleme, soru ve puan istekleri reddedilecek.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **ECZ-04 — Beğeni ve favori:** Başka kişinin izleme kimliğiyle değişiklik yapılacak; yalnız oturum sahibinin kaydı değişebilecek.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **ECZ-05 — E-Club mağazası:** Aynı bakiye ve son stokla iki sipariş verilecek; tek sipariş ve doğru bakiye kalacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **ECZ-06 — Adres yönetimi:** Sipariş anında adres silinecek; geçmiş sipariş adresi korunacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **ECZ-07 — Müşteri kaydı:** Aynı telefon eşzamanlı Müşteri ve E-Club üyesi yapılmaya çalışılacak; çift kimlik oluşmayacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **ECZ-08 — Müşteri gönderimi:** Aynı yayının aynı müşteriye eşzamanlı gönderimi yapılacak; tek aktif gönderim oluşacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **ECZ-09 — Sipariş ve doküman:** Başka eczanenin müşteri siparişi ve doküman kimliği çağrılacak; erişim reddedilecek.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **ECZ-10 — Rozet:** Sahte tamamlanma ve puan kayıtlarıyla rozet talep edilecek; yalnız kanonik veriler kabul edilecek.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **ECZ-11 — Hapbi:** Lig ve dönem verisi sorulacak; olmayan bağlam uydurulmadan yalnız gerçek E-Club verisi kullanılacak.
-
-### Eczane Teknisyeni
+Eczacı, ikinci eczacı, yardımcı eczacı ve eczane teknisyeni aynı E-Club davranış ve yetki kümesini kullanır. Müşteri kaydı ve yönetimi de yalnız aktif eczane bağı bulunan bu E-Club personeline açıktır; HapBilgi firmalarının iç çalışanları bu yetkiyi kazanamaz. Ortak davranışların iki temel kimlik türünde doğrulanması için koşumlar sırayla eczacı ve eczane teknisyeniyle yapılır.
 
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **TEK-01 — Kimlik ayrımı:** Aynı eczanedeki Eczacının öneri, izleme ve puan kimlikleri kullanılacak; kayıtlar kişilere karışmayacak.
+- [x] **ECL-01 — Öğrenme aracını tamamlama (Eczane teknisyeni koşumu):** Teknisyen kendisine önerilen geçerli bir öğrenme aracını normal akışta tamamlayacak; doğru kişi, yayın ve araç kimliğiyle tek izleme, verilen cevaplar ve kanonik puan kayıtları oluşacak.
+
+  **Test sonucu — GEÇTİ:** SQL entegrasyon koşumunda teknisyen Nevin Sır için UTT Berk tarafından transaction içinde Abilon video önerisi oluşturuldu. Doğru kişi, yayın ve araç kimliğiyle tek izleme tamamlandı; iki soruya doğru cevap verilerek iki doğru cevap kaydı oluştu. Teknisyene `150` öğrenme aracı ve doğru cevap başına `50` olmak üzere toplam `100` cevaplama puanı, toplamda `250` puan yazıldı; öneren UTT'ye ayrı `10` puan kaydedildi. Koşum `ROLLBACK` edildi; öneri, izleme, doğru cevap, teknisyen puanı ve UTT puanı geçici kayıtlarının tamamı `0` kaldı.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **TEK-02 — Öğrenme araçları:** Aynı yayın iki cihazda tamamlanacak; tek izleme, cevap ve puan oluşacak.
+- [x] **ECL-02 — Firma kapsamlı pasiflik, puan ve Store davranışı (Eczacı koşumu):** Test birbirinden bağımsız üç kademede yürütülecek; her kademe tamamlanıp sonucu kaydedilmeden sonraki kademeye geçilmeyecek.
+
+  **Kademe 1 — Pasiflik sonrası lig ve Store:** A firmasından kazanılmış puanı bulunan eczacı Q'nun yalnız A firması kapsamındaki E-Club bağı pasife alınacak. Q'nun geçmiş A firma puanlarının A firmasındaki UTT'nin E-Club ligi/raporunda görünmeye devam edip etmediği ve Q'nun bu puanlarla A firmasının Store ürününden alışveriş yapıp yapamadığı ayrı ayrı doğrulanacak.
+
+  **Kademe 2 — Firmalar arası bakiye birleştirme:** Test ortamında A firması için Q'nun A bakiyesinden yüksek, ancak A ve B firmalarındaki bakiyelerin toplamıyla alınabilecek fiyatı bulunan bir Store ürünü oluşturulacak. Q'nun A firmasının ürününü alırken B firmasından kazandığı puanları A bakiyesiyle birleştirip birleştiremediği doğrulanacak.
+
+  **Kademe 3 — Pasiflik sonrası kullanım süresi:** A firması kapsamındaki bağ pasife alındıktan sonra A puanlarının kullanılabilmesi için tanımlı bir bekleme, geçiş veya son kullanma süresi bulunup bulunmadığı DB ayarları ve Store kuralları üzerinden belirlenecek. Süre varsa başlangıç ve bitiş davranışı ayrı koşullarda doğrulanacak; süre yoksa puan kullanımının hangi anda açıldığı veya kapandığı kaydedilecek.
+
+  **Test sonucu — GEÇTİ / GELİŞTİRMEYLE KAPATILDI:** Mevcut modelde yalnız A firması kapsamındaki kişi pasifliği ayrı temsil edilmediğinden ortak kişi–eczane bağı kapatıldı. Eczacı Fatih Bol, Hepifarma UTT'si Berk Kılıç tarafından pasife alındığında Berk'in E-Club takım ve lig çıktısından düştü; `180` kazanılmış puan kaydı silinmedi ve Store hesabında `114` net bakiye korunurken normal Store erişimi kapandı. İlk koşumda sipariş RPC'sinin aktif E-Club üyeliğini denetlemediği görüldü. Test bakiyesi `1000` puana çıkarılan pasif Fatih doğrudan RPC çağrısıyla `250` puanlık İstanbul Hatırası siparişi oluşturabildi ve stok `10`dan `9`a düştü. Sipariş admin ekranında görünürken, yalnız aktif E-Club kişilerini kapsayan UTT sipariş raporunda Berk tarafından görülemedi.
+
+  **Çözüm ve kademe kararları:** Yeni sipariş için anlık ve süresiz kapatma kuralı seçildi. Sipariş API'sine aktif E-Club ve E-Club Store erişim kontrolü, `eclub_store_siparis_olustur` RPC'sine ise aktif kişi–eczane–firma–Store zinciri kontrolü ve pasifleştirmeyle siparişi sıralayan satır kilidi eklendi. Aynı doğrudan çağrı yeniden çalıştırıldığında `ok=false` ve `Aktif E-Club üyeliğiniz bulunmadığı için yeni sipariş oluşturamazsınız.` sonucu alındı; ikinci sipariş oluşmadı, stok `9` ve bakiye `750` kaldı. Böylece Kademe 1 kapatıldı; Kademe 2'de pasif kişinin firma bakiyelerini birleştirmesine geçilmeden sipariş reddedildi ve Kademe 3 için bekleme/geçiş süresi bulunmadığı, hakkın pasiflik anında kapandığı doğrulandı. API/RPC değişikliği hedef smoke, lint, TypeScript ve `234` smoke testinin tamamından geçti. Tam temizlik doğrulamasında geçici sipariş, adres, puan ve stok değişiklikleri kaldırıldı; Fatih'in aktif üyeliği, `180` kazanılmış puanı, `114` harcanabilir bakiyesi ve ürünün `10` stoku geri doğrulandı.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **TEK-03 — Üyelik değişimi:** Teknisyen rolü yayın sırasında değiştirilip üyelik kapatılacak; eski yetkiyle işlem sürdürülemeyecek.
+- [x] **ECL-03 — Beğeni ve favori (Eczane teknisyeni koşumu):** Teknisyen tamamladığı veya erişebildiği öğrenme aracının beğeni ve favori durumunu değiştirecek; değişiklik yalnız kendi izleme ve etkileşim kaydına yansıyacak.
+
+  **Test sonucu — GEÇTİ:** Aktif eczane teknisyeni Ahmet Dur'un daha önce tamamladığı Normavas yayını seçildi; bu kişi–yayın çifti için başlangıçta beğeni ve favori kaydı bulunmadığı doğrulandı. SQL entegrasyon koşumunda `eclub_video_begeniler` ve `eclub_video_favoriler` tablolarında yalnız Ahmet'in `kisi_id` değeriyle birer tekil kayıt oluşturuldu. İkinci etkileşimde aynı kimliklere bağlı bir beğeni ve bir favori silindi; ayrı son kontrolde kalan beğeni ve favori sayıları `0`/`0` bulundu ve özgün durum geri geldi.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **TEK-04 — Beğeni ve favori:** Eczacının etkileşim kaydı teknisyen oturumundan değiştirilemeyecek.
+- [x] **ECL-04 — E-Club mağazası (Eczacı koşumu):** Eczacı yeterli kişisel bakiye ve mevcut stokla ürün siparişi verecek; tek sipariş oluşacak, stok ile kişisel bakiye doğru azalacak ve başka E-Club personelinin bakiyesi değişmeyecek.
+
+  **Test sonucu — GEÇTİ:** Aktif eczacı Ayşe Sağlık'ın Store bakiyesi `266`, 1000 TL Sinema Bileti ürününün fiyatı `200` puan ve başlangıç stoku `100` olarak doğrulandı; karşılaştırma kişisi Adil Güçlü'nün bakiyesi `165` olarak kaydedildi. Geçici test adresiyle verilen sipariş tek kayıt olarak oluştu, Ayşe'nin harcanabilir bakiyesi `66`ya ve ürün stoku `99`a düştü; Adil'in bakiyesi `165` olarak değişmeden kaldı. Temizlikte siparişin firma puan dağılımı, sipariş ve geçici adres silinip stok geri yüklendi; son kontrolde Ayşe `266`, stok `100`, Adil `165`, test siparişi ve adresi `0`/`0` bulundu.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **TEK-05 — Mağaza:** Eczacı ve teknisyen aynı son stok ürünü eşzamanlı alacak; stok ve kişisel bakiyeler doğru kalacak.
+- [x] **ECL-05 — Müşteri kaydı (Eczacı koşumu):** Eczacı kendi eczanesine yeni bir müşteri kaydedecek; müşteri sistemde yalnız bir kez oluşturulacak, doğru eczaneye aktif olarak bağlanacak ve müşteri kaydını oluşturan eczacının kimliği işlem geçmişine yazılacak.
+
+  **Test sonucu — GEÇTİ:** Aktif ve yetkili eczacı Adil Güçlü'nün Test Eczanesi 003 için müşteri kayıt yetkisi doğrulandı. `05990000005` test telefonuyla oluşturulan müşteri tek kayıt olarak oluştu; müşteri doğru eczaneye aktif bağlandı ve üyeliğin son işlem yapan kişi alanına Adil Güçlü'nün kimliği yazıldı. `musteri_olusturuldu` personel işlem kaydı doğru eczacı, eczane ve müşteri kimliğiyle oluştu. Aynı telefonla ikinci oluşturma girişimi tekillik kuralıyla engellendi ve müşteri sayısı `1` kaldı. Temizlik sonrasında müşteriye ait müşteri, üyelik ve personel işlem kayıtlarının tamamı `0` bulundu.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **TEK-06 — Müşteri yönetimi:** Eczacıyla aynı müşteriyi eşzamanlı ekleme, silme ve gönderim işlemleri yapılacak; mükerrer kimlik oluşmayacak.
+- [x] **ECL-06 — Müşteriye öğrenme aracı gönderimi (Eczane teknisyeni koşumu):** Teknisyen kendi eczanesindeki aktif müşteriye geçerli bir Eczanem öğrenme aracı gönderecek; gönderim doğru `yayin_id`, `arac_id`, `arac_turu`, eczane, müşteri ve gönderen kişi kimliğiyle oluşacak.
+
+  **Test sonucu — GEÇTİ:** Test Eczanesi 003'ün aktif teknisyeni Ahmet Dur, aynı eczanenin aktif müşterisi Kadir Bilir'e Abilon video yayınını gönderdi. Gönderim RPC'si `ok=true`, `gonderilen=1`, `atlanan=0` döndürdü. Oluşan `302f0c29-34d5-4339-b7da-3711303312a7` gönderim kaydında `yayin_id`, `arac_id`, `arac_turu=video`, eczane, müşteri ve gönderen teknisyen kimliklerinin tamamı doğru bulundu. Gönderim kaydı sonraki Eczanem testlerinde kullanılmak üzere korundu.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **TEK-07 — Eczanem işlemleri:** Başka eczanenin müşteri, gönderim, sipariş ve doküman kayıtları çağrılacak; erişim reddedilecek.
+- [x] **ECL-07 — Eczane işlem kapsamı (Eczacı koşumu):** Birden fazla eczaneye bağlı aynı müşterinin, seçili eczanedeki üyelik ve işlem kayıtları eczacı tarafından görülecek; müşterinin diğer eczanelerdeki üyelik, gönderim, sipariş ve işlem ayrıntıları seçili eczanenin listelerine karışmayacak. Müşterinin farklı eczanelerden kazandığı puanların gönderen eczane ve ürün temelinde ayrıştırılması bu testin kapsamı dışındadır; ilgili senaryo müşteri testleri bölümünde ayrıca koşulacaktır.
+
+  **Test sonucu — GEÇTİ:** Kalıcı test müşterisi Ayşe Yılmaz, mevcut Test Eczanesi 001 üyeliği korunarak resmi müşteri bağlama RPC'siyle Test Eczanesi 002'ye de aktif bağlandı. Müşteri görünümünde iki ayrı eczane üyeliği `1 + 1` olarak bulunurken Ayşe Sağlık'ın Test Eczanesi 001 kapsam sorgusu yalnız bir satır döndürdü ve diğer eczane sızıntısı `0` kaldı. Müşterinin iki eczanedeki personel işlem kayıtları da `1 + 1` olarak ayrıldı; Test Eczanesi 001 kapsamına sızan işlem `0` bulundu. Berk Kılıç aynı Abilon yayınını iki eczaneye resmi UTT RPC'siyle gönderdi; ardından Ayşe Sağlık ve Fatih Bol ortak müşteriye kendi eczanelerinden ayrı gönderimler oluşturdu. Toplam iki gönderimin eczane başına dağılımı `1 + 1`, Ayşe'nin kapsamında görünen gönderim `1`, diğer eczaneden sızan gönderim `0` ve bozuk araç kimliği `0` bulundu. Sipariş ve döküm API'lerinin çözümlenen `eczane_id` dışına çıkmadığı ayrıca smoke testiyle doğrulandı. Çoklu üyelik ile iki gönderim, müşteri bölümündeki eczane ve ürün bazlı puan ayrıştırma testi için korundu.
+
+  **Yan bulgu — GİDERİLDİ:** Çoklu üyelik kurulurken toplu oluşturulan 35 kalıcı test müşterisinin `aktif_mi=true` olmasına rağmen `auth_user_id` değerlerinin boş olduğu belirlendi. Müşteri provizyon RPC'sine boş veya `auth.users` içinde bulunmayan Auth kimliğini reddeden kapı eklendi; 35 gerçek Supabase Auth hesabı oluşturulup müşteri kayıtlarıyla eşleştirildi. Yeni Auth kapısı ve mevcut smoke paketi eksiksiz geçti.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **TEK-08 — Hapbi:** Eczacının veya başka teknisyenin verileri sorulacak; yalnız oturum sahibinin gerçek kapsamı kullanılacak.
+- [x] **ECL-08 — Menü rozetleri (Eczane teknisyeni koşumu):** Teknisyenin Eczanem menüsündeki Sipariş Onayı rozeti yalnız kendi eczanesinin bekleyen siparişlerinden; Video Dağıtımı rozeti ise kendi eczanesine ulaşmış ve en az bir aktif müşteriye hâlâ gönderilebilen öğrenme araçlarından hesaplanacak. Tamamen dağıtılmış yayınlar ve başka eczanelerin kayıtları rozet sayılarına girmeyecek.
+
+  **Test sonucu — GEÇTİ:** Teknisyen Ahmet Dur'un Test Eczanesi 003 kapsamındaki canlı kayıtlar üzerinden Sipariş Onayı rozeti `0`, dağıtılabilir öğrenme aracı rozeti `1` olarak hesaplandı. Hedef smoke testleri, menüde doğru rozet anahtarlarının kullanıldığını, gönderilebilir müşterisi bulunan yayının sayıldığını ve tamamen dağıtılmış yayının ham yayın sayısına dayanarak rozet üretmediğini doğruladı; `4/4` test geçti. Önceki “tamamlama, cevap ve puan kayıtlarından başarı rozeti” tanımının sistemde bir karşılığı olmadığı belirlendi ve senaryo gerçek operasyonel menü sayaçlarına göre düzeltildi.
+**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
+
+- [x] **ECL-09 — Hapbi kişisel E-Club kapsamı (Eczacı koşumu):** Eczacı Hapbi'den kişisel eğitim ve puan durumunu isteyecek; yanıt yalnız oturum sahibinin gerçek E-Club verisinden üretilecek ve E-Club kişi kapsamında bulunmayan lig veya dönem bilgisi uydurulmayacak.
+
+  **Test sonucu — GEÇTİ:** Test iki aşamada yürütüldü. “Hapbi ne biliyor?” aşamasında Fatih Bol'un Auth kimliği `eclub_kisi`, rolü `eczaci`, aktif eczanesi Test Eczanesi 002 ve aktif firma kapsamı Hepifarma olarak doğrulandı. Hapbi'nin yalnız oturum sahibine ait öneri, izleme, kazanılan puan, ileri sarma kaybı, doğru/yanlış cevap, Store bakiyesi ve geçerli yayın ayrıntılarını okuduğu; eczacı için lig ve dönem araçlarını kullanamadığı belirlendi. Kanonik SQL sonucu `0` bekleyen, `3` tamamlanan, `5` süresi geçmiş eğitim; `180` kazanılan, `66` ileri sarma kaybı, `114` net ve `114` kullanılabilir puan; `4` doğru, `0` yanlış ve `%100` doğru cevap olarak kaydedildi. “Hapbi ne veriyor?” aşamasında Fatih'in gerçek Auth bağlamıyla iki canlı Gemini yanıtı üretildi. Ayrıntılı sorguya verilen son yanıt bütün sayıları kanonik sonuçla birebir aktardı ve “Eczacı rolü için lig sırası ve dönem sonucu bilgisi sistemimizde yer almamaktadır” diyerek bulunmayan bilgiyi uydurmadı. Yanıt yalnız `eclub_kisisel_durum` aracını ve Kişisel E-Club özeti kaynağını kullandı; başka kişi veya kapsam verisi taşımadı.
 
 ### Müşteri
 
+> **PITSTOP — ÇÖZÜLDÜ (1 Eylül 2026):** Eczanenin müşteriyi pasife alması durumunda eldeki puanların adil yönetimi, kapsamlı bir üyelik sonlandırma protokolü yerine daha yalın bir modelle karşılandı: pasife alınan müşteri o eczanede yeni kazanım yapamaz, ancak mevcut puanını **30 gün** boyunca görüp kullanabilir (kırmızı uyarı etiketiyle), süre dolunca kullanım da kapanır. Model uygulanıp canlıda doğrulandığı için MUS-01 ve sonraki müşteri senaryolarına devam edildi.
+
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **MUS-01 — Gönderim erişimi:** Aynı yayın farklı müşterilere ve aynı müşteriye farklı gönderimlerle açılacak; yalnız doğru gönderim kimliği çalışacak.
+- [x] **MUS-00 — Çoklu eczane puan kaynağı:** Birden fazla eczaneye aktif bağlı müşteri, farklı eczanelerden gönderilen öğrenme araçlarını tamamlayacak; kazandığı puanlar gönderen eczane adı ve ürün adı temelinde ayrı ayrı toplanacak, bir eczanenin gönderiminden doğan puan diğer eczaneye yazılmayacak veya kaynağı belirsiz biçimde birleştirilmeyecek.
+
+  **Test sonucu — GEÇTİ:** Test müşterisi Ayşe Yılmaz'ın Test Eczanesi 001 ve Test Eczanesi 002 üyeliklerinin aktif olduğu doğrulandı. Aynı Abilon video yayını iki eczaneden ayrı `gonderim_id` kayıtlarıyla müşteriye gönderildi ve her gönderim için ayrı izleme kaydı oluşturuldu. Resmî tamamlama RPC'sinin iki koşusu da `yeni_tamamlandi=true`, `puan_kazanildi=true`, `izleme_puani=150` ve `soru_gosterilecek=true` döndürdü. Puan defterinde her eczane için birer izleme kaynağı ve `150` kazanılan/kullanılabilir puan oluştu; izleme–eczane bağlarının ikisi de doğru bulundu. Müşteri Puanlarım API'sinin aktif üyelik, aktif eczane–firma bağı ve puan ömrü kapsamı uygulandığında sonuçlar Test Eczanesi 001 / Abilon `150` ve Test Eczanesi 002 / Abilon `150` olarak iki ayrı eczane–ürün bakiyesinde gösterildi; puanlar diğer eczaneye yazılmadı ve kaynağı belirsiz biçimde birleştirilmedi.
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **MUS-02 — Üyelik iptali:** Öğrenme aracı açıkken üyelik kapatılacak; ilerleme, soru ve puan anında duracak.
+- [x] **MUS-01 — Üyelik iptali:** Öğrenme aracı açıkken üyelik kapatılacak; ilerleme, soru ve puan anında duracak.
+
+  **Test sonucu — GEÇTİ (1 Eylül 2026):** Rol: Müşteri Ayşe Yılmaz (`a378c4ee…`), eczane `5387f7bc…` (üyelik `2363799b…`, 150 kullanılabilir puan). Canlı Supabase'te üç durum tek transaction içinde ölçüldü ve yazma `ROLLBACK` ile geri alındı (veri değişmedi): (1) **aktif** → öğrenme açık, puan kullanımı açık; (2) **pasif ≤30 gün** → öğrenme ve yeni puan kazanımı `false` (anında durur), mevcut puan kullanımı `true`, `kalan_gun=30`; (3) **pasif >30 gün** → öğrenme ve puan kullanımı `false`. Erişim kuralı `lib/eczanem/erisim.ts` ile birebir: öğrenme = aktif üyelik; puan kullanımı = aktif VEYA `son_islem_tarihi ≥ now()−30 gün`. Pasif dönemde müşteri Puanlarım'da o eczane için kırmızı "Bu eczanedeki puanlarınız N gün sonra silinecek." uyarısını görür ve puanını kasada kullanabilir. Kapı mantığı kod düzeyinde `238/238` smoke ile doğrulandı; teknik üçlü (tsc / lint:mimari / denetim) temiz. Rollback sonrası üyelik `aktif_mi=true`, sıfır kalıntı. **Not:** öğrenmenin durması erişim-kapsamı (DB) ve kod (smoke) düzeyinde doğrulandı; açık bir izlemede `ilerleme`/`cevapla` uçlarının HTTP düzeyinde reddi ayrı bir uçtan-uca koşumla teyit edilebilir (izleme satırında doğrudan eczane bağı yoktur, kapsam gönderim üzerinden çözülür).
 **TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
 
-- [ ] **MUS-03 — Öğrenme araçları:** Aynı gönderim iki cihazda tamamlanacak; tek izleme ve tek puan oluşacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **MUS-04 — Soru cevaplama:** Aynı soru farklı cevaplarla tekrar gönderilecek; yalnız ilk geçerli cevap kaydedilecek.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **MUS-05 — Puanlarım:** Gönderim iptali ve puan yazımı çakıştırılacak; puan defteri ile görünen toplam ayrışmayacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **MUS-06 — E-Club geçişi:** Aynı telefonla eşzamanlı E-Club geçiş talebi ve yeni müşteri kaydı yapılacak; çift kimlik oluşmayacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **MUS-07 — Hesap silme:** İzleme ve puan işlemi sürerken hesap silinecek; kişisel veriler atomik temizlenecek ve yetim kayıt kalmayacak.
-**TEST ÖNCESİ ZORUNLU: TESTİN AMACI VE UYGULAMA YÖNTEMİ KISA OLARAK KULLANICIYA AÇIKLANACAK, KULLANICI ONAYI ALINMADAN TEST BAŞLATILMAYACAKTIR.**
-
-- [ ] **MUS-08 — Hapbi:** Doğrudan API ve arayüz yollarından çağrılacak; Müşteri rolünde kesin olarak kapalı kalacak.

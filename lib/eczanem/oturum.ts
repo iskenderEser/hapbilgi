@@ -12,7 +12,7 @@ import { ECZANEM_KAPALI_MESAJI, musteriEczanemErisimi } from "@/lib/eczanem/eris
 export async function musteriKimligi(
   adminSupabase: SupabaseClient,
   authUserId: string
-): Promise<{ ok: boolean; musteriId?: string; firmaIdler?: string[]; eczaneIdler?: string[]; hata?: string }> {
+): Promise<{ ok: boolean; musteriId?: string; firmaIdler?: string[]; eczaneIdler?: string[]; pasifPuanEczaneleri?: Array<{ eczane_id: string; kalan_gun: number }>; pasifFirmaIdler?: string[]; hata?: string }> {
   const erisim = await musteriEczanemErisimi(adminSupabase, authUserId);
   if (!erisim.ok) return { ok: false, hata: erisim.hata ?? "Müşteri erişimi doğrulanamadı." };
   if (!erisim.musteriId) return { ok: false, hata: "Müşteri kaydınız bulunamadı." };
@@ -22,5 +22,7 @@ export async function musteriKimligi(
     musteriId: erisim.musteriId,
     firmaIdler: erisim.firmaIdler,
     eczaneIdler: erisim.eczaneIdler,
+    pasifPuanEczaneleri: erisim.pasifPuanEczaneleri ?? [],
+    pasifFirmaIdler: erisim.pasifFirmaIdler ?? [],
   };
 }

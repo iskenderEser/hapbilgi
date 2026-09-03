@@ -29,6 +29,15 @@ export async function GET(request: NextRequest) {
     const yayinId = request.nextUrl.searchParams.get("yayin_id") ?? undefined;
     if (yayinId && !UUID_DESENI.test(yayinId)) return validasyonHatasi("Geçersiz yayın kimliği.", ["yayin_id"]);
 
+    // "Müşterileri Yönet" açılışı: yalnız seçili videonun üyeleri getirilir.
+    // Videolar (v_yayin_detay) ve özetler sayfa açılışında bir kez yüklendi ve
+    // değişmez; burada yeniden çalıştırılmaz — ağır view tekrar değerlendirilmez.
+    const sadeceUyeler = request.nextUrl.searchParams.get("sadece_uyeler") === "1";
+    if (sadeceUyeler && yayinId) {
+      const uyeler = await eczaneAktifUyeler(adminSupabase, eden.eczaneId!, yayinId);
+      return NextResponse.json({ uyeler }, { status: 200 });
+    }
+
     const [videolar, uyeler] = await Promise.all([
       eczaneGelenVideolar(adminSupabase, eden.eczaneId!),
       eczaneAktifUyeler(adminSupabase, eden.eczaneId!, yayinId),

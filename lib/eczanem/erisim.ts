@@ -7,11 +7,19 @@ import { ECLUB_TUKETICI_ROLLERI, MUSTERI_ROLU, TUKETICI_ROLLER } from "@/lib/uti
 
 export const ECZANEM_KAPALI_MESAJI = "Eczanem bağlı olduğunuz firmalar için kapalıdır.";
 
+// Pasife alınan müşterinin eldeki puanı bu kadar gün daha görülüp kullanılabilir
+// (yeni kazanım kapalıdır). Süre dolunca puan kullanımı da kapanır.
+export const PASIFE_PUAN_KULLANIM_GUN = 30;
+
 export interface EczanemErisimSonucu {
   ok: boolean;
   acik: boolean;
   firmaIdler: string[];
   eczaneIdler: string[];
+  // Pasife alınmış ama puan kullanım süresi (PASIFE_PUAN_KULLANIM_GUN) dolmamış
+  // eczaneler: yeni öğrenme/kazanım vermez, yalnız mevcut puan görüntüleme/kullanma.
+  pasifPuanEczaneleri?: Array<{ eczane_id: string; kalan_gun: number }>;
+  pasifFirmaIdler?: string[];
   hata?: string;
 }
 
@@ -84,7 +92,12 @@ export async function uttEczanemErisimi(
   };
 }
 
-/** Müşterinin yalnız aktif üyeliklerinin bağlı olduğu açık firmaları çözer. */
+/**
+ * Müşterinin açık firmalara bağlı eczanelerini çözer.
+ *  - eczaneIdler: yalnız AKTİF üyelikler (öğrenme/yeni kazanım kapsamı — değişmedi).
+ *  - pasifPuanEczaneleri: pasife alınalı PASIFE_PUAN_KULLANIM_GUN geçmemiş üyelikler
+ *    (yalnız mevcut puanı görme/kullanma; yeni kazanım yok).
+ */
 export async function musteriEczanemErisimi(
   adminSupabase: SupabaseClient,
   authUserId: string,
@@ -99,32 +112,53 @@ export async function musteriEczanemErisimi(
 
   const { data: uyelikler, error: uyelikError } = await adminSupabase
     .from("eczanem_uyelikler")
-    .select("eczane_id")
-    .eq("musteri_id", musteri.musteri_id)
-    .eq("aktif_mi", true);
+    .select("eczane_id, aktif_mi, son_islem_tarihi")
+    .eq("musteri_id", musteri.musteri_id);
   if (uyelikError) return { ...bos(), ok: false, hata: "Müşteri üyelikleri doğrulanamadı." };
-  const eczaneIdler = [...new Set((uyelikler ?? []).map((uyelik) => uyelik.eczane_id))];
-  if (eczaneIdler.length === 0) return { ...bos(), musteriId: musteri.musteri_id };
+
+  const esikMs = Date.now() - PASIFE_PUAN_KULLANIM_GUN * 86_400_000;
+  const aktifEczaneIdler = new Set<string>();
+  const pasifKalanGun = new Map<string, number>();
+  for (const uyelik of uyelikler ?? []) {
+    if (uyelik.aktif_mi) { aktifEczaneIdler.add(uyelik.eczane_id); continue; }
+    const anMs = uyelik.son_islem_tarihi ? new Date(uyelik.son_islem_tarihi).getTime() : 0;
+    if (anMs >= esikMs) {
+      const kalan = Math.max(1, Math.ceil((anMs + PASIFE_PUAN_KULLANIM_GUN * 86_400_000 - Date.now()) / 86_400_000));
+      pasifKalanGun.set(uyelik.eczane_id, kalan);
+    }
+  }
+  for (const eczaneId of aktifEczaneIdler) pasifKalanGun.delete(eczaneId); // aktif önceliklidir
+
+  const tumEczaneIdler = [...new Set([...aktifEczaneIdler, ...pasifKalanGun.keys()])];
+  if (tumEczaneIdler.length === 0) return { ...bos(), musteriId: musteri.musteri_id };
 
   const { data: baglar, error: bagError } = await adminSupabase
     .from("eclub_eczane_firma")
     .select("eczane_id, firma_id")
-    .in("eczane_id", eczaneIdler)
+    .in("eczane_id", tumEczaneIdler)
     .eq("aktif_mi", true);
   if (bagError) return { ...bos(), ok: false, hata: "Müşteri firma erişimi doğrulanamadı." };
 
   const acikFirmalar = await acikFirmaIdleri(adminSupabase, (baglar ?? []).map((bag) => bag.firma_id));
   if (!acikFirmalar.ok) return { ...bos(), ok: false, hata: acikFirmalar.hata };
   const firmaSet = new Set(acikFirmalar.firmaIdler);
-  const acikEczaneler = [...new Set((baglar ?? [])
-    .filter((bag) => firmaSet.has(bag.firma_id))
-    .map((bag) => bag.eczane_id))];
+
+  const aktifBaglar = (baglar ?? []).filter((bag) => firmaSet.has(bag.firma_id) && aktifEczaneIdler.has(bag.eczane_id));
+  const pasifBaglar = (baglar ?? []).filter((bag) => firmaSet.has(bag.firma_id) && pasifKalanGun.has(bag.eczane_id));
+
+  const acikEczaneler = [...new Set(aktifBaglar.map((bag) => bag.eczane_id))];
+  const aktifFirmaIdler = [...new Set(aktifBaglar.map((bag) => bag.firma_id))];
+  const pasifPuanEczaneleri = [...new Set(pasifBaglar.map((bag) => bag.eczane_id))]
+    .map((eczaneId) => ({ eczane_id: eczaneId, kalan_gun: pasifKalanGun.get(eczaneId)! }));
+  const pasifFirmaIdler = [...new Set(pasifBaglar.map((bag) => bag.firma_id))].filter((firmaId) => !aktifFirmaIdler.includes(firmaId));
 
   return {
     ok: true,
     acik: acikFirmalar.firmaIdler.length > 0,
-    firmaIdler: acikFirmalar.firmaIdler,
+    firmaIdler: aktifFirmaIdler,
     eczaneIdler: acikEczaneler,
+    pasifPuanEczaneleri,
+    pasifFirmaIdler,
     musteriId: musteri.musteri_id,
   };
 }

@@ -22,7 +22,8 @@ export async function POST(request: NextRequest) {
     const { eczane_id, barkod } = body;
     if (typeof eczane_id !== "string" || !eczane_id) return validasyonHatasi("eczane_id zorunludur.", ["eczane_id"]);
     if (typeof barkod !== "string" || !barkod.trim()) return validasyonHatasi("barkod zorunludur.", ["barkod"]);
-    if (!kimlik.eczaneIdler!.includes(eczane_id)) return rolHatasi("Bu eczanede aktif üyeliğiniz bulunmuyor.");
+    const puanEczaneleri = new Set([...(kimlik.eczaneIdler ?? []), ...(kimlik.pasifPuanEczaneleri ?? []).map((p) => p.eczane_id)]);
+    if (!puanEczaneleri.has(eczane_id)) return rolHatasi("Bu eczanede puan kullanımınız bulunmuyor.");
 
     const hesap = await barkodHesap(adminSupabase, kimlik.musteriId!, eczane_id, barkod);
     if (!hesap.ok) return isKuraluHatasi(hesap.hata ?? "Hesap yapılamadı.");

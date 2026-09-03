@@ -27,12 +27,16 @@ export interface UrunToplam {
   urun_adi: string;
   kutu: number;
   indirim_tl: number;
+  satis_tl: number;      // toplam satış tutarı (Σ satış fiyatı × kutu)
+  indirimli_tl: number;  // toplam indirimli tutar (satış − indirim)
 }
 
 export interface EczaneDokum {
   satirlar: UrunToplam[];
   toplam_kutu: number;
   toplam_tl: number;
+  toplam_satis_tl: number;
+  toplam_indirimli_tl: number;
 }
 
 export interface EczaneUrunSatir {
@@ -42,22 +46,28 @@ export interface EczaneUrunSatir {
   urunler: UrunToplam[];
   toplam_kutu: number;
   toplam_tl: number;
+  toplam_satis_tl: number;
+  toplam_indirimli_tl: number;
 }
 
 export interface EczaneUrunDokum {
   eczaneler: EczaneUrunSatir[];
   toplam_kutu: number;
   toplam_tl: number;
+  toplam_satis_tl: number;
+  toplam_indirimli_tl: number;
 }
 
-export interface PmEczaneSatir { eczane_adi: string; kutu: number; indirim_tl: number; }
-export interface PmUttSatir { utt_adi: string; kutu: number; indirim_tl: number; eczaneler: PmEczaneSatir[]; }
-export interface PmBolgeSatir { bolge_adi: string; kutu: number; indirim_tl: number; uttler: PmUttSatir[]; }
+export interface PmEczaneSatir { eczane_adi: string; kutu: number; indirim_tl: number; satis_tl: number; indirimli_tl: number; }
+export interface PmUttSatir { utt_adi: string; kutu: number; indirim_tl: number; satis_tl: number; indirimli_tl: number; eczaneler: PmEczaneSatir[]; }
+export interface PmBolgeSatir { bolge_adi: string; kutu: number; indirim_tl: number; satis_tl: number; indirimli_tl: number; uttler: PmUttSatir[]; }
 export interface PmUrunSatir {
   urun_id: string;
   urun_adi: string;
   kutu: number;        // Türkiye geneli
   indirim_tl: number;  // Türkiye geneli
+  satis_tl: number;    // Türkiye geneli
+  indirimli_tl: number;// Türkiye geneli
   bolgeler: PmBolgeSatir[];
 }
 export interface PmUrunDokum { urunler: PmUrunSatir[]; }
@@ -70,10 +80,10 @@ export type CascadeKapsam =
 
 // ── İç yardımcılar ──────────────────────────────────────────────────────────
 
-interface SiparisSatiri { eczane_id: string; urun_id: string; adet: number; indirim_tl: number; }
-interface SiparisDbSatiri { eczane_id: string; urun_id: string; adet: number | string | null; indirim_tl: number | string | null; }
+interface SiparisSatiri { eczane_id: string; urun_id: string; adet: number; indirim_tl: number; satis_tl: number; }
+interface SiparisDbSatiri { eczane_id: string; urun_id: string; adet: number | string | null; indirim_tl: number | string | null; tarife_snapshot: { satis_fiyati?: number | null } | null; }
 interface UrunAdDbSatiri { urun_id: string; urun_adi: string | null; }
-interface EczaneDokumDbSatiri extends UrunAdDbSatiri { kutu: number | string | null; indirim_tl: number | string | null; }
+interface EczaneDokumDbSatiri extends UrunAdDbSatiri { kutu: number | string | null; indirim_tl: number | string | null; satis_tl: number | string | null; }
 interface EczaneIdDbSatiri { eczane_id: string; }
 interface KullaniciAdDbSatiri { kullanici_id: string; ad: string | null; soyad: string | null; }
 interface UttEczaneDbSatiri { eczane_firma_id: string; utt_id: string; }
@@ -101,7 +111,7 @@ async function onayliSiparisler(
 
   let query = adminSupabase
     .from("eczanem_siparisler")
-    .select("eczane_id, urun_id, adet, indirim_tl")
+    .select("eczane_id, urun_id, adet, indirim_tl, tarife_snapshot")
     .eq("durum", "onaylandi")
     .gte("onay_tarihi", baslangic)
     .lte("onay_tarihi", bitis);
@@ -110,12 +120,17 @@ async function onayliSiparisler(
 
   const { data, error } = await query;
   if (error) throw new Error("Eczanem onaylı siparişleri okunamadı.");
-  return (data ?? []).map((s: SiparisDbSatiri) => ({
-    eczane_id: s.eczane_id,
-    urun_id: s.urun_id,
-    adet: Number(s.adet) || 0,
-    indirim_tl: Number(s.indirim_tl) || 0,
-  }));
+  return (data ?? []).map((s: SiparisDbSatiri) => {
+    const adet = Number(s.adet) || 0;
+    const satisFiyati = Number(s.tarife_snapshot?.satis_fiyati) || 0;
+    return {
+      eczane_id: s.eczane_id,
+      urun_id: s.urun_id,
+      adet,
+      indirim_tl: Number(s.indirim_tl) || 0,
+      satis_tl: Math.round(satisFiyati * adet * 100) / 100,
+    };
+  });
 }
 
 async function urunAdMap(
@@ -146,12 +161,17 @@ function urunBazindaTopla(rows: SiparisSatiri[], adMap: Map<string, string>): Ur
       urun_adi: adMap.get(r.urun_id) ?? "-",
       kutu: 0,
       indirim_tl: 0,
+      satis_tl: 0,
+      indirimli_tl: 0,
     };
     mevcut.kutu += r.adet;
     mevcut.indirim_tl = paraTopla([mevcut.indirim_tl, r.indirim_tl]);
+    mevcut.satis_tl = paraTopla([mevcut.satis_tl, r.satis_tl]);
     grup.set(r.urun_id, mevcut);
   }
-  return [...grup.values()].sort((a, b) => b.indirim_tl - a.indirim_tl);
+  const liste = [...grup.values()];
+  for (const u of liste) u.indirimli_tl = Math.max(0, paraTopla([u.satis_tl, -u.indirim_tl]));
+  return liste.sort((a, b) => b.indirim_tl - a.indirim_tl);
 }
 
 // Eczane×ürün gruplaması — UTT ve cascade dökümlerinin ortak gövdesi.
@@ -164,7 +184,7 @@ async function eczaneUrunDokumu(
   urunIdler?: string[],
 ): Promise<EczaneUrunDokum> {
   const rows = await onayliSiparisler(adminSupabase, { eczaneIdler, urunIdler }, baslangic, bitis);
-  if (rows.length === 0) return { eczaneler: [], toplam_kutu: 0, toplam_tl: 0 };
+  if (rows.length === 0) return { eczaneler: [], toplam_kutu: 0, toplam_tl: 0, toplam_satis_tl: 0, toplam_indirimli_tl: 0 };
 
   const satisliEczaneler = [...new Set(rows.map((r) => r.eczane_id))];
   const [adMap, uAdMap] = await Promise.all([
@@ -174,13 +194,17 @@ async function eczaneUrunDokumu(
 
   const eczaneler: EczaneUrunSatir[] = satisliEczaneler.map((ez) => {
     const urunler = urunBazindaTopla(rows.filter((r) => r.eczane_id === ez), uAdMap);
+    const toplam_satis_tl = paraTopla(urunler.map((urun) => urun.satis_tl));
+    const toplam_tl = paraTopla(urunler.map((urun) => urun.indirim_tl));
     return {
       eczane_id: ez,
       eczane_adi: adMap.get(ez) ?? "(isimsiz eczane)",
       utt_adi: uttAdiMap?.get(ez) ?? null,
       urunler,
       toplam_kutu: urunler.reduce((a, u) => a + u.kutu, 0),
-      toplam_tl: paraTopla(urunler.map((urun) => urun.indirim_tl)),
+      toplam_tl,
+      toplam_satis_tl,
+      toplam_indirimli_tl: Math.max(0, paraTopla([toplam_satis_tl, -toplam_tl])),
     };
   }).sort((a, b) => b.toplam_tl - a.toplam_tl);
 
@@ -188,6 +212,8 @@ async function eczaneUrunDokumu(
     eczaneler,
     toplam_kutu: eczaneler.reduce((a, e) => a + e.toplam_kutu, 0),
     toplam_tl: paraTopla(eczaneler.map((eczane) => eczane.toplam_tl)),
+    toplam_satis_tl: paraTopla(eczaneler.map((eczane) => eczane.toplam_satis_tl)),
+    toplam_indirimli_tl: paraTopla(eczaneler.map((eczane) => eczane.toplam_indirimli_tl)),
   };
 }
 
@@ -200,7 +226,7 @@ export async function eczaneDokumu(
   bitis: string,
   firmaIdler?: string[],
 ): Promise<EczaneDokum> {
-  if (firmaIdler && firmaIdler.length === 0) return { satirlar: [], toplam_kutu: 0, toplam_tl: 0 };
+  if (firmaIdler && firmaIdler.length === 0) return { satirlar: [], toplam_kutu: 0, toplam_tl: 0, toplam_satis_tl: 0, toplam_indirimli_tl: 0 };
   const { data, error } = await adminSupabase.rpc("eczanem_eczane_dokumu", {
     p_eczane_id: eczaneId,
     p_baslangic: baslangic,
@@ -208,16 +234,26 @@ export async function eczaneDokumu(
     p_firma_idler: firmaIdler ?? null,
   });
   if (error) throw new Error("Eczane işlem dökümü veritabanında hesaplanamadı.");
-  const satirlar: UrunToplam[] = (data ?? []).map((satir: EczaneDokumDbSatiri) => ({
-    urun_id: satir.urun_id,
-    urun_adi: satir.urun_adi ?? "-",
-    kutu: Number(satir.kutu) || 0,
-    indirim_tl: Number(satir.indirim_tl) || 0,
-  }));
+  const satirlar: UrunToplam[] = (data ?? []).map((satir: EczaneDokumDbSatiri) => {
+    const satis_tl = Number(satir.satis_tl) || 0;
+    const indirim_tl = Number(satir.indirim_tl) || 0;
+    return {
+      urun_id: satir.urun_id,
+      urun_adi: satir.urun_adi ?? "-",
+      kutu: Number(satir.kutu) || 0,
+      indirim_tl,
+      satis_tl,
+      indirimli_tl: Math.max(0, Math.round((satis_tl - indirim_tl) * 100) / 100),
+    };
+  });
+  const toplam_satis_tl = paraTopla(satirlar.map((urun) => urun.satis_tl));
+  const toplam_tl = paraTopla(satirlar.map((urun) => urun.indirim_tl));
   return {
     satirlar,
     toplam_kutu: satirlar.reduce((a, u) => a + u.kutu, 0),
-    toplam_tl: paraTopla(satirlar.map((urun) => urun.indirim_tl)),
+    toplam_tl,
+    toplam_satis_tl,
+    toplam_indirimli_tl: Math.max(0, paraTopla([toplam_satis_tl, -toplam_tl])),
   };
 }
 
@@ -230,7 +266,7 @@ export async function uttDokumu(
   baslangic: string,
   bitis: string
 ): Promise<EczaneUrunDokum> {
-  if (firmaIdler.length === 0) return { eczaneler: [], toplam_kutu: 0, toplam_tl: 0 };
+  if (firmaIdler.length === 0) return { eczaneler: [], toplam_kutu: 0, toplam_tl: 0, toplam_satis_tl: 0, toplam_indirimli_tl: 0 };
 
   // UTT'nin aktif bağladığı eczaneler (U6 gonderim.ts deseni)
   const baglar = await uttEczaneFirmaBaglari(adminSupabase, uttAuthId);
@@ -264,7 +300,7 @@ export async function cascadeDokumu(
     .in("rol", TUKETICI_ROLLER)
     .eq(kapsam.alan, kapsam.deger);
   const uttIdler = (uttler ?? []).map((utt: KullaniciAdDbSatiri) => utt.kullanici_id);
-  if (uttIdler.length === 0) return { eczaneler: [], toplam_kutu: 0, toplam_tl: 0 };
+  if (uttIdler.length === 0) return { eczaneler: [], toplam_kutu: 0, toplam_tl: 0, toplam_satis_tl: 0, toplam_indirimli_tl: 0 };
 
   const uttAd = new Map<string, string>();
   for (const hamUtt of uttler ?? []) {
@@ -408,9 +444,10 @@ export async function pmUrunDokumu(
     if (urunRows.length === 0) continue;
 
     // bolgeAdi → uttAdi → eczaneAdi → {kutu, tl}
-    const agac = new Map<string, Map<string, Map<string, { kutu: number; tl: number }>>>();
+    const agac = new Map<string, Map<string, Map<string, { kutu: number; tl: number; satis: number }>>>();
     let urunKutu = 0;
     let urunTl = 0;
+    let urunSatis = 0;
 
     for (const r of urunRows) {
       const ilgiliUttler = [...(eczaneUttIdler.get(r.eczane_id) ?? [])]
@@ -428,33 +465,43 @@ export async function pmUrunDokumu(
 
       const bolgeDali = agac.get(bolgeAdi) ?? new Map();
       const uttDali = bolgeDali.get(uttAdi) ?? new Map();
-      const hucre = uttDali.get(eczaneAdi) ?? { kutu: 0, tl: 0 };
+      const hucre = uttDali.get(eczaneAdi) ?? { kutu: 0, tl: 0, satis: 0 };
       hucre.kutu += r.adet;
       hucre.tl = paraTopla([hucre.tl, r.indirim_tl]);
+      hucre.satis = paraTopla([hucre.satis, r.satis_tl]);
       uttDali.set(eczaneAdi, hucre);
       bolgeDali.set(uttAdi, uttDali);
       agac.set(bolgeAdi, bolgeDali);
 
       urunKutu += r.adet;
       urunTl = paraTopla([urunTl, r.indirim_tl]);
+      urunSatis = paraTopla([urunSatis, r.satis_tl]);
     }
 
     const bolgeler: PmBolgeSatir[] = [...agac.entries()].map(([bolgeAdi, uttMap]) => {
       const uttler: PmUttSatir[] = [...uttMap.entries()].map(([uttAdi, ezMap]) => {
         const eczaneler: PmEczaneSatir[] = [...ezMap.entries()]
-          .map(([eczaneAdi, h]) => ({ eczane_adi: eczaneAdi, kutu: h.kutu, indirim_tl: h.tl }))
+          .map(([eczaneAdi, h]) => ({ eczane_adi: eczaneAdi, kutu: h.kutu, indirim_tl: h.tl, satis_tl: h.satis, indirimli_tl: Math.max(0, paraTopla([h.satis, -h.tl])) }))
           .sort((a, b) => b.indirim_tl - a.indirim_tl);
+        const utt_satis = paraTopla(eczaneler.map((eczane) => eczane.satis_tl));
+        const utt_indirim = paraTopla(eczaneler.map((eczane) => eczane.indirim_tl));
         return {
           utt_adi: uttAdi,
           kutu: eczaneler.reduce((a, e) => a + e.kutu, 0),
-          indirim_tl: paraTopla(eczaneler.map((eczane) => eczane.indirim_tl)),
+          indirim_tl: utt_indirim,
+          satis_tl: utt_satis,
+          indirimli_tl: Math.max(0, paraTopla([utt_satis, -utt_indirim])),
           eczaneler,
         };
       }).sort((a, b) => b.indirim_tl - a.indirim_tl);
+      const bolge_satis = paraTopla(uttler.map((utt) => utt.satis_tl));
+      const bolge_indirim = paraTopla(uttler.map((utt) => utt.indirim_tl));
       return {
         bolge_adi: bolgeAdi,
         kutu: uttler.reduce((a, u2) => a + u2.kutu, 0),
-        indirim_tl: paraTopla(uttler.map((utt) => utt.indirim_tl)),
+        indirim_tl: bolge_indirim,
+        satis_tl: bolge_satis,
+        indirimli_tl: Math.max(0, paraTopla([bolge_satis, -bolge_indirim])),
         uttler,
       };
     }).sort((a, b) => b.indirim_tl - a.indirim_tl);
@@ -464,6 +511,8 @@ export async function pmUrunDokumu(
       urun_adi: u.urun_adi ?? "-",
       kutu: urunKutu,
       indirim_tl: urunTl,
+      satis_tl: urunSatis,
+      indirimli_tl: Math.max(0, paraTopla([urunSatis, -urunTl])),
       bolgeler,
     });
   }

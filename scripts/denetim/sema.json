@@ -1836,6 +1836,10 @@
           "tip": "numeric",
           "nullable": false
         },
+        "satis_fiyati": {
+          "tip": "numeric",
+          "nullable": true
+        },
         "gecerlilik_baslangic": {
           "tip": "timestamp with time zone",
           "nullable": false

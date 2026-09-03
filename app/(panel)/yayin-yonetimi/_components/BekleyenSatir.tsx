@@ -33,6 +33,8 @@ interface BekleyenSatirProps {
   setKarsilikPuanlar: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   karsilikTllar: Record<string, number>;
   setKarsilikTllar: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  satisFiyatlar: Record<string, number>;
+  setSatisFiyatlar: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   tekrarPeriyotlari: Record<string, number>;
   setTekrarPeriyotlari: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   tekrarSecenekleri: number[];
@@ -51,7 +53,7 @@ interface BekleyenSatirProps {
 export function BekleyenSatir({
   b, islemLoading, acikAkordiyon, setAcikAkordiyon,
   videoPuanlari, setVideoPuanlari, extraPuanlar, setExtraPuanlar,
-  barkodlar, setBarkodlar, karsilikPuanlar, setKarsilikPuanlar, karsilikTllar, setKarsilikTllar,
+  barkodlar, setBarkodlar, karsilikPuanlar, setKarsilikPuanlar, karsilikTllar, setKarsilikTllar, satisFiyatlar, setSatisFiyatlar,
   tekrarPeriyotlari, setTekrarPeriyotlari, tekrarSecenekleri,
   yayinGunleri, setYayinGunleri,
   tumPuanlarAtandiMi,
@@ -100,6 +102,7 @@ export function BekleyenSatir({
   const seciliBarkod = barkodlar[b.soru_seti_durum_id]?.trim();
   const seciliKarsilikPuan = karsilikPuanlar[b.soru_seti_durum_id];
   const seciliKarsilikTl = karsilikTllar[b.soru_seti_durum_id];
+  const seciliSatisFiyati = satisFiyatlar[b.soru_seti_durum_id];
 
   return (
     <article className="mb-3 overflow-hidden rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_8px_22px_rgba(31,55,90,0.045)]">
@@ -296,6 +299,28 @@ export function BekleyenSatir({
                         aria-label="Türk lirası karşılığı"
                         className={`h-9 min-h-9 max-h-9 w-[180px] flex-none box-border rounded-lg border px-2 text-xs transition outline-none ${
                           seciliKarsilikTl
+                            ? "border-[#93c5fd] bg-[#eff6ff] font-extrabold text-[#1e3a8a] shadow-sm"
+                            : "border-gray-200 bg-white font-medium text-gray-900 hover:border-gray-300"
+                        }`}
+                        style={{ fontFamily: "'Nunito', sans-serif" }} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex h-9 items-center gap-1">
+                      <input type="number" min={0} step="0.01" value={satisFiyatlar[b.soru_seti_durum_id] ?? ""}
+                        onChange={(e) => {
+                          const deger = e.target.value;
+                          setSatisFiyatlar(prev => {
+                            const yeni = { ...prev };
+                            if (deger === "") delete yeni[b.soru_seti_durum_id];
+                            else yeni[b.soru_seti_durum_id] = Number(deger);
+                            return yeni;
+                          });
+                        }}
+                        placeholder="Satış fiyatı (TL)"
+                        aria-label="Ürün satış fiyatı"
+                        className={`h-9 min-h-9 max-h-9 w-[180px] flex-none box-border rounded-lg border px-2 text-xs transition outline-none ${
+                          seciliSatisFiyati
                             ? "border-[#93c5fd] bg-[#eff6ff] font-extrabold text-[#1e3a8a] shadow-sm"
                             : "border-gray-200 bg-white font-medium text-gray-900 hover:border-gray-300"
                         }`}

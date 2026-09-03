@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     if (!URETICI_ROLLER.includes(rol)) return rolHatasi("Sadece yetkili roller yayına alabilir.");
 
     const body = await request.json();
-    const { soru_seti_durum_id, ileri_sarma_acik, extra_puan, tekrar_periyot_gun, barkod, karsilik_puan, karsilik_tl } = body;
+    const { soru_seti_durum_id, ileri_sarma_acik, extra_puan, tekrar_periyot_gun, barkod, karsilik_puan, karsilik_tl, satis_fiyati } = body;
 
     if (!soru_seti_durum_id) return validasyonHatasi("soru_seti_durum_id zorunludur.", ["soru_seti_durum_id"]);
     // Extra puan / tekrar periyodu doğrulaması hedef kitleler türetildikten SONRA yapılır:
@@ -99,6 +99,9 @@ export async function POST(request: NextRequest) {
       }
       if (!karsilik_puan || karsilik_puan <= 0 || !karsilik_tl || karsilik_tl <= 0) {
         return validasyonHatasi("Eczanem yayınında Karşılık (puan ve TL) zorunludur.", ["karsilik_puan", "karsilik_tl"]);
+      }
+      if (!satis_fiyati || satis_fiyati <= 0) {
+        return validasyonHatasi("Eczanem yayınında satış fiyatı zorunludur.", ["satis_fiyati"]);
       }
       if (tekrar_periyot_gun !== undefined && tekrar_periyot_gun !== null) {
         return validasyonHatasi("Eczanem yayınında tekrar periyodu bulunmaz.", ["tekrar_periyot_gun"]);
@@ -261,6 +264,7 @@ export async function POST(request: NextRequest) {
         barkod: (barkod as string).trim(),
         puan: karsilik_puan,
         tl: karsilik_tl,
+        satis_fiyati,
         olusturan_id: user.id,
       });
       if (!tarifeSonuc.ok) return isKuraluHatasi(tarifeSonuc.hata ?? "Barkod/Karşılık yazılamadı.");

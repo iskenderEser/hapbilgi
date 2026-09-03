@@ -54,7 +54,7 @@ export default function EczanemDagitimPage() {
   const [onayAcik, setOnayAcik] = useState(false);
   const istekRef = useRef<AbortController | null>(null);
 
-  const dagitimCek = useCallback(async (elle = false, yayinId?: string | null, hedefYuklemesi = false) => {
+  const dagitimCek = useCallback(async (elle = false, yayinId?: string | null, hedefYuklemesi = false, sadeceUyeler = false) => {
     istekRef.current?.abort();
     const controller = new AbortController();
     istekRef.current = controller;
@@ -63,6 +63,7 @@ export default function EczanemDagitimPage() {
     setVeriHatasi(null);
     const params = new URLSearchParams();
     if (yayinId) params.set("yayin_id", yayinId);
+    if (sadeceUyeler) params.set("sadece_uyeler", "1");
 
     try {
       const res = await fetch(`/eczanem/eczane/api/gonderim${params.size ? `?${params}` : ""}`, {
@@ -76,9 +77,11 @@ export default function EczanemDagitimPage() {
         hata(mesaj, "video dağıtımı");
         return;
       }
-      setVeri(data);
+      // Yalnız üye modunda videolar/özetler korunur; sadece seçili videonun üye listesi güncellenir.
+      if (sadeceUyeler) setVeri((onceki) => onceki ? { ...onceki, uyeler: (data.uyeler ?? []) as EczaneDagitimUyesi[] } : onceki);
+      else setVeri(data);
       setSeciliUyeler((onceki) => {
-        const uygun = new Set((data.uyeler as EczaneDagitimUyesi[]).filter((uye) => !uye.gonderildi_mi).map((uye) => uye.musteri_id));
+        const uygun = new Set(((data.uyeler ?? []) as EczaneDagitimUyesi[]).filter((uye) => !uye.gonderildi_mi).map((uye) => uye.musteri_id));
         return new Set([...onceki].filter((id) => uygun.has(id)));
       });
     } catch (err) {
@@ -116,7 +119,7 @@ export default function EczanemDagitimPage() {
       return;
     }
     setSeciliVideoId(video.yayin_id);
-    void dagitimCek(false, video.yayin_id, true);
+    void dagitimCek(false, video.yayin_id, true, true);
   };
 
   const uyeToggle = (uye: EczaneDagitimUyesi) => {

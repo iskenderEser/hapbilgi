@@ -83,6 +83,7 @@ export function EczanemVideoGonderimSatiri({
     ? uyeler.filter((uye) => `${uye.ad_soyad} ${uye.telefon_maskeli}`.toLocaleLowerCase("tr-TR").includes(aramaMetni))
     : uyeler;
   const gorunenUygunler = gorunenUyeler.filter((uye) => !uye.gonderildi_mi);
+  const tumUygunSecili = gorunenUygunler.length > 0 && gorunenUygunler.every((uye) => seciliUyeler.has(uye.musteri_id));
 
   return (
     <Collapsible open={acik} onOpenChange={onAcikDegistir}>
@@ -166,7 +167,9 @@ export function EczanemVideoGonderimSatiri({
                 <Table>
                   <TableHeader className="bg-[#f6f9fc]">
                     <TableRow className="hover:bg-[#f6f9fc]">
-                      <TableHead className="h-9 w-12 px-4 text-[10px] font-extrabold uppercase tracking-[0.07em] text-[#8090a4]">Seç</TableHead>
+                      <TableHead className="h-9 w-12 px-4 text-[10px] font-extrabold uppercase tracking-[0.07em] text-[#8090a4]">
+                        <input type="checkbox" aria-label="Görünen uygun müşterilerin tümünü seç" checked={tumUygunSecili} disabled={gorunenUygunler.length === 0} onChange={() => onGorunenleriSec(gorunenUygunler)} className="size-4 align-middle accent-[#237ac8]" />
+                      </TableHead>
                       <TableHead className="h-9 text-[10px] font-extrabold uppercase tracking-[0.07em] text-[#8090a4]">Müşteri</TableHead>
                       <TableHead className="h-9 text-[10px] font-extrabold uppercase tracking-[0.07em] text-[#8090a4]">Telefon</TableHead>
                       <TableHead className="h-9 px-4 text-right text-[10px] font-extrabold uppercase tracking-[0.07em] text-[#8090a4]">Durum</TableHead>

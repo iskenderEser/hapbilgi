@@ -192,6 +192,7 @@ export default function YayinYonetimiPage() {
                 barkodlar={yy.barkodlar} setBarkodlar={yy.setBarkodlar}
                 karsilikPuanlar={yy.karsilikPuanlar} setKarsilikPuanlar={yy.setKarsilikPuanlar}
                 karsilikTllar={yy.karsilikTllar} setKarsilikTllar={yy.setKarsilikTllar}
+                satisFiyatlar={yy.satisFiyatlar} setSatisFiyatlar={yy.setSatisFiyatlar}
                 tekrarPeriyotlari={yy.tekrarPeriyotlari} setTekrarPeriyotlari={yy.setTekrarPeriyotlari}
                 tekrarSecenekleri={yy.tekrarSecenekleri}
                 yayinGunleri={yy.yayinGunleri} setYayinGunleri={yy.setYayinGunleri}

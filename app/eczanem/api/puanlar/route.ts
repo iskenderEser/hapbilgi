@@ -11,16 +11,18 @@ import { hataYaniti, rolHatasi, sunucuHatasi, yetkiHatasi } from "@/lib/utils/ha
 
 interface PuanKaydi { eczane_id: string; firma_id: string; urun_id: string; puan_turu: string; kalan_puan: number; created_at: string; }
 interface UrunSatiri { urun_id: string; urun_adi: string; barkod: string | null; }
-interface TarifeSatiri { urun_id: string; puan: number; tl: number | string; gecerlilik_baslangic: string; }
+interface TarifeSatiri { urun_id: string; puan: number; tl: number | string; satis_fiyati: number | string | null; gecerlilik_baslangic: string; }
 interface SiparisSatiri {
   siparis_id: string; eczane_id: string; urun_id: string; kullanilan_puan: number;
   indirim_tl: number | string; durum: string; islem_kodu: string | null;
   islem_yapan_kisi_id: string | null; onay_tarihi: string | null;
   karar_tarihi: string | null; created_at: string;
+  tarife_snapshot: { satis_fiyati?: number | null } | null;
 }
 interface UrunOzeti {
   urun_id: string; urun_adi: string; barkod: string | null; kullanilabilir_puan: number;
   izleme_puani: number; cevap_puani: number; indirim_tl: number | null;
+  satis_fiyati: number | null; indirimli_fiyat: number | null;
   en_yakin_son_kullanim: string | null;
   bekleyen_talep: { siparis_id: string; kullanilan_puan: number; indirim_tl: number; created_at: string } | null;
   son_talep_durumu: "onaylanmadi" | "iptal_edildi" | null;
@@ -37,8 +39,11 @@ export async function GET() {
     const adminSupabase = createAdminClient();
     const kimlik = await musteriKimligi(adminSupabase, user.id);
     if (!kimlik.ok) return rolHatasi(kimlik.hata ?? "Müşteri doğrulanamadı.");
-    const eczaneIdler = kimlik.eczaneIdler ?? [];
-    const firmaIdler = kimlik.firmaIdler ?? [];
+    const pasif = kimlik.pasifPuanEczaneleri ?? [];
+    const pasifeKalanGun = new Map(pasif.map((p) => [p.eczane_id, p.kalan_gun]));
+    // Puan görüntüleme/kullanma kapsamı = aktif üyelikler + 30 gün içindeki pasifler.
+    const eczaneIdler = [...new Set([...(kimlik.eczaneIdler ?? []), ...pasif.map((p) => p.eczane_id)])];
+    const firmaIdler = [...new Set([...(kimlik.firmaIdler ?? []), ...(kimlik.pasifFirmaIdler ?? [])])];
     const musteriId = kimlik.musteriId!;
     const omurGun = await puanOmruGun(adminSupabase);
     const altSinir = new Date(Date.now() - omurGun * 24 * 60 * 60 * 1000).toISOString();
@@ -51,7 +56,7 @@ export async function GET() {
         ? adminSupabase.from("eclub_eczane_firma").select("eczane_id, firma_id").in("eczane_id", eczaneIdler).in("firma_id", firmaIdler).eq("aktif_mi", true)
         : Promise.resolve({ data: [], error: null }),
       adminSupabase.from("eczanem_siparisler")
-        .select("siparis_id, eczane_id, urun_id, kullanilan_puan, indirim_tl, durum, islem_kodu, islem_yapan_kisi_id, onay_tarihi, karar_tarihi, created_at")
+        .select("siparis_id, eczane_id, urun_id, kullanilan_puan, indirim_tl, tarife_snapshot, durum, islem_kodu, islem_yapan_kisi_id, onay_tarihi, karar_tarihi, created_at")
         .eq("musteri_id", musteriId).in("eczane_id", eczaneIdler).order("created_at", { ascending: false }),
       eczaneAdMap(adminSupabase, eczaneIdler),
     ]);
@@ -68,7 +73,7 @@ export async function GET() {
     const simdi = new Date().toISOString();
     const [urunSonucu, tarifeSonucu] = await Promise.all([
       adminSupabase.from("urunler").select("urun_id, urun_adi, barkod").in("urun_id", urunIdler),
-      adminSupabase.from("eczanem_urun_tarifeleri").select("urun_id, puan, tl, gecerlilik_baslangic")
+      adminSupabase.from("eczanem_urun_tarifeleri").select("urun_id, puan, tl, satis_fiyati, gecerlilik_baslangic")
         .in("urun_id", urunIdler).lte("gecerlilik_baslangic", simdi).order("gecerlilik_baslangic", { ascending: false }),
     ]);
     if (urunSonucu.error) return hataYaniti("Puan ürünleri alınamadı.", "urunler SELECT — Puanlarım", urunSonucu.error);
@@ -95,7 +100,7 @@ export async function GET() {
       const mevcut = ozetler.get(anahtar) ?? {
         eczane_id: puan.eczane_id, urun_id: puan.urun_id, urun_adi: urun.urun_adi,
         barkod: urun.barkod, kullanilabilir_puan: 0, izleme_puani: 0, cevap_puani: 0,
-        indirim_tl: null, en_yakin_son_kullanim: null, sonKullanimMs: null,
+        indirim_tl: null, satis_fiyati: null, indirimli_fiyat: null, en_yakin_son_kullanim: null, sonKullanimMs: null,
         bekleyen_talep: null, son_talep_durumu: null,
       };
       mevcut.kullanilabilir_puan += kalan;
@@ -121,7 +126,7 @@ export async function GET() {
           eczane_id: siparis.eczane_id, urun_id: siparis.urun_id,
           urun_adi: urun.urun_adi, barkod: urun.barkod,
           kullanilabilir_puan: 0, izleme_puani: 0, cevap_puani: 0,
-          indirim_tl: null, en_yakin_son_kullanim: null, sonKullanimMs: null,
+          indirim_tl: null, satis_fiyati: null, indirimli_fiyat: null, en_yakin_son_kullanim: null, sonKullanimMs: null,
           bekleyen_talep: null, son_talep_durumu: null,
         });
       }
@@ -129,21 +134,28 @@ export async function GET() {
 
     for (const [anahtar, ozet] of ozetler) {
       const tarife = tarifeler.get(ozet.urun_id);
-      if (tarife) ozet.indirim_tl = indirimHesapla(ozet.kullanilabilir_puan, Number(tarife.puan), Number(tarife.tl));
+      if (tarife) {
+        ozet.indirim_tl = indirimHesapla(ozet.kullanilabilir_puan, Number(tarife.puan), Number(tarife.tl));
+        if (tarife.satis_fiyati != null) {
+          ozet.satis_fiyati = Number(tarife.satis_fiyati);
+          ozet.indirimli_fiyat = Math.max(0, Math.round((ozet.satis_fiyati - (ozet.indirim_tl ?? 0)) * 100) / 100);
+        }
+      }
       const bekleyen = bekleyenler.get(anahtar);
       if (bekleyen) ozet.bekleyen_talep = { siparis_id: bekleyen.siparis_id, kullanilan_puan: Number(bekleyen.kullanilan_puan), indirim_tl: Number(bekleyen.indirim_tl), created_at: bekleyen.created_at };
       const sonuclanan = sonuclananlar.get(anahtar);
       if (sonuclanan) ozet.son_talep_durumu = sonuclanan.islem_yapan_kisi_id ? "onaylanmadi" : "iptal_edildi";
     }
 
-    const eczaneGruplari = new Map<string, { eczane_id: string; eczane_adi: string; urunler: UrunOzeti[] }>();
+    const eczaneGruplari = new Map<string, { eczane_id: string; eczane_adi: string; pasife_kalan_gun: number | null; urunler: UrunOzeti[] }>();
     for (const ozet of ozetler.values()) {
       if (ozet.kullanilabilir_puan <= 0 && !ozet.bekleyen_talep) continue;
-      const eczane = eczaneGruplari.get(ozet.eczane_id) ?? { eczane_id: ozet.eczane_id, eczane_adi: eczaneAdlari.get(ozet.eczane_id) ?? "Eczane", urunler: [] };
+      const eczane = eczaneGruplari.get(ozet.eczane_id) ?? { eczane_id: ozet.eczane_id, eczane_adi: eczaneAdlari.get(ozet.eczane_id) ?? "Eczane", pasife_kalan_gun: pasifeKalanGun.get(ozet.eczane_id) ?? null, urunler: [] };
       eczane.urunler.push({
         urun_id: ozet.urun_id, urun_adi: ozet.urun_adi, barkod: ozet.barkod,
         kullanilabilir_puan: ozet.kullanilabilir_puan, izleme_puani: ozet.izleme_puani,
         cevap_puani: ozet.cevap_puani, indirim_tl: ozet.indirim_tl,
+        satis_fiyati: ozet.satis_fiyati, indirimli_fiyat: ozet.indirimli_fiyat,
         en_yakin_son_kullanim: ozet.en_yakin_son_kullanim,
         bekleyen_talep: ozet.bekleyen_talep, son_talep_durumu: ozet.son_talep_durumu,
       });
@@ -157,6 +169,8 @@ export async function GET() {
       urun_id: siparis.urun_id, urun_adi: urunler.get(siparis.urun_id)?.urun_adi ?? "Ürün",
       barkod: urunler.get(siparis.urun_id)?.barkod ?? null,
       kullanilan_puan: Number(siparis.kullanilan_puan), indirim_tl: Number(siparis.indirim_tl),
+      satis_fiyati: siparis.tarife_snapshot?.satis_fiyati ?? null,
+      indirimli_fiyat: siparis.tarife_snapshot?.satis_fiyati != null ? Math.max(0, Math.round((Number(siparis.tarife_snapshot.satis_fiyati) - Number(siparis.indirim_tl)) * 100) / 100) : null,
       islem_kodu: siparis.islem_kodu, onay_tarihi: siparis.onay_tarihi ?? siparis.karar_tarihi ?? siparis.created_at,
     }));
 

@@ -86,8 +86,9 @@ test("red: kart açılışı izleme yazamaz; kapsam dışı talep ve belirsiz du
   assert.match(oynatici, /handleOynat[\s\S]*\/eczanem\/api\/izleme\/baslat[\s\S]*oynat\(\)/);
   assert.match(videolarRoute, /if \(yayinError\) return hataYaniti/);
   assert.match(siparisRoute, /\.in\("eczane_id", kimlik\.eczaneIdler!\)[\s\S]*\.in\("urun_id", izinliUrunIdler\)/);
-  assert.match(siparisRoute, /if \(!kimlik\.eczaneIdler!\.includes\(eczane_id\)\) return rolHatasi/);
-  assert.match(hesapRoute, /if \(!kimlik\.eczaneIdler!\.includes\(eczane_id\)\) return rolHatasi/);
+  assert.match(siparisRoute, /const puanEczaneleri = new Set\(\[\.\.\.\(kimlik\.eczaneIdler \?\? \[\]\), \.\.\.\(kimlik\.pasifPuanEczaneleri \?\? \[\]\)\.map\(\(p\) => p\.eczane_id\)\]\)/);
+  assert.match(siparisRoute, /if \(!puanEczaneleri\.has\(eczane_id\)\) return rolHatasi/);
+  assert.match(hesapRoute, /if \(!puanEczaneleri\.has\(eczane_id\)\) return rolHatasi/);
   assert.match(puanlarRoute, /\.in\("eczane_id", eczaneIdler\)/);
   assert.match(puanlarRoute, /\.in\("firma_id", firmaIdler\)/);
   assert.match(puanlarRoute, /\.gte\("created_at", altSinir\)/);

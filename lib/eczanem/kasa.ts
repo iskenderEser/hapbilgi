@@ -14,7 +14,7 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import { guncelTarife } from "@/lib/eczanem/tarife";
-import { ECZANEM_KAPALI_MESAJI, eczaneEczanemFirmaIdleri } from "@/lib/eczanem/erisim";
+import { ECZANEM_KAPALI_MESAJI, PASIFE_PUAN_KULLANIM_GUN, eczaneEczanemFirmaIdleri } from "@/lib/eczanem/erisim";
 import {
   pushYayinlaEczaneKisilerineArkada,
   pushYayinlaEczanemMusterilereArkada,
@@ -126,6 +126,8 @@ export interface HesapSonuc {
   tarife_puan?: number;
   tarife_tl?: number;
   indirim_tl?: number;
+  satis_fiyati?: number | null;
+  indirimli_fiyat?: number | null;
 }
 
 // Barkod → ürün → bakiye → tarife → indirim (İP-§8.1/2). Müşteri o eczanenin
@@ -139,15 +141,21 @@ export async function barkodHesap(
   const temizBarkod = (barkod ?? "").trim();
   if (!temizBarkod) return { ok: false, hata: "Barkod girin." };
 
-  // Müşteri bu eczanenin aktif üyesi mi?
+  // Müşteri bu eczanenin aktif üyesi mi? Pasife alınmışsa, puan kullanımı
+  // PASIFE_PUAN_KULLANIM_GUN boyunca açık kalır; süre dolunca kapanır.
   const { data: uyelik } = await adminSupabase
     .from("eczanem_uyelikler")
-    .select("uyelik_id")
+    .select("uyelik_id, aktif_mi, son_islem_tarihi")
     .eq("musteri_id", musteriId)
     .eq("eczane_id", eczaneId)
-    .eq("aktif_mi", true)
     .maybeSingle();
   if (!uyelik) return { ok: false, hata: "Bu eczanenin üyesi değilsiniz." };
+  if (!uyelik.aktif_mi) {
+    const anMs = uyelik.son_islem_tarihi ? new Date(uyelik.son_islem_tarihi).getTime() : 0;
+    if (anMs < Date.now() - PASIFE_PUAN_KULLANIM_GUN * 86_400_000) {
+      return { ok: false, hata: "Bu eczanedeki puan kullanım süreniz doldu." };
+    }
+  }
 
   // Barkod → ürün
   const { data: urun } = await adminSupabase
@@ -168,6 +176,8 @@ export async function barkodHesap(
 
   const bakiyePuan = await urunBakiyesi(adminSupabase, musteriId, eczaneId, urun.urun_id);
   const indirimTl = indirimHesapla(bakiyePuan, tarife.puan, tarife.tl);
+  const satisFiyati = tarife.satis_fiyati;
+  const indirimliFiyat = satisFiyati != null ? Math.max(0, Math.round((satisFiyati - indirimTl) * 100) / 100) : null;
 
   return {
     ok: true,
@@ -177,6 +187,8 @@ export async function barkodHesap(
     tarife_puan: tarife.puan,
     tarife_tl: tarife.tl,
     indirim_tl: indirimTl,
+    satis_fiyati: satisFiyati,
+    indirimli_fiyat: indirimliFiyat,
   };
 }
 
@@ -222,7 +234,7 @@ export async function siparisOlustur(
       adet: temizAdet,
       kullanilan_puan: hesap.bakiye_puan!,
       indirim_tl: hesap.indirim_tl!,
-      tarife_snapshot: { puan: hesap.tarife_puan, tl: hesap.tarife_tl },
+      tarife_snapshot: { puan: hesap.tarife_puan, tl: hesap.tarife_tl, satis_fiyati: hesap.satis_fiyati ?? null },
       durum: "bekliyor",
     })
     .select("siparis_id")

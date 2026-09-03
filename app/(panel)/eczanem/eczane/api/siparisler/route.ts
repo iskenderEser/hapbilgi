@@ -26,6 +26,7 @@ interface SiparisSatiri {
   karar_tarihi: string | null;
   islem_yapan_kisi_id: string | null;
   created_at: string;
+  tarife_snapshot: { satis_fiyati?: number | null } | null;
 }
 
 interface UrunSatiri { urun_id: string; urun_adi: string; firma_id: string; }
@@ -79,7 +80,7 @@ export async function GET(request: NextRequest) {
       }, { status: 200 });
     }
 
-    const secim = "siparis_id, musteri_id, musteri_etiket, urun_id, adet, kullanilan_puan, indirim_tl, durum, islem_kodu, onay_tarihi, karar_tarihi, islem_yapan_kisi_id, created_at";
+    const secim = "siparis_id, musteri_id, musteri_etiket, urun_id, adet, kullanilan_puan, indirim_tl, tarife_snapshot, durum, islem_kodu, onay_tarihi, karar_tarihi, islem_yapan_kisi_id, created_at";
     const bekleyenBaslangic = (bekleyenSayfa - 1) * limit;
     const gecmisBaslangic = (gecmisSayfa - 1) * limit;
     const bugun = gunBaslangici(new Date()).toISOString();
@@ -142,6 +143,8 @@ export async function GET(request: NextRequest) {
       adet: siparis.adet,
       kullanilan_puan: siparis.kullanilan_puan,
       indirim_tl: Number(siparis.indirim_tl),
+      satis_fiyati: siparis.tarife_snapshot?.satis_fiyati ?? null,
+      indirimli_fiyat: siparis.tarife_snapshot?.satis_fiyati != null ? Math.max(0, Math.round((Number(siparis.tarife_snapshot.satis_fiyati) - Number(siparis.indirim_tl)) * 100) / 100) : null,
       durum: siparis.durum,
       islem_kodu: siparis.islem_kodu,
       onay_tarihi: siparis.onay_tarihi,
