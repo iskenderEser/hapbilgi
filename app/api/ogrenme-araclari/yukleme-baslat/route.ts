@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       checksumSha256: checksum_sha256.toLowerCase(),
     });
     if (!upload || !yuklemeYetkisi) {
-      return NextResponse.json({ hata: "Bunny öğrenme aracı yükleme servisi yapılandırılmamış." }, { status: 503 });
+      return NextResponse.json({ hata: "Öğrenme aracı yükleme hizmeti yapılandırılmamış." }, { status: 503 });
     }
 
     let satirlar: { arac_id: string; arac_durum_id: string }[] | null = null;

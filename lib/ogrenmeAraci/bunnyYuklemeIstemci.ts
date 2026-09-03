@@ -89,8 +89,8 @@ async function bunnyyeGonder(
           temizle();
           let veri: Partial<YuklemeMakbuzu> = {};
           try { veri = JSON.parse(xhr.responseText) as Partial<YuklemeMakbuzu>; } catch { /* boş */ }
-          if (xhr.status >= 500) return reject(new TekrarEdilebilirYuklemeHatasi("Bunny Storage geçici olarak yanıt vermedi."));
-          if (xhr.status < 200 || xhr.status >= 300) return reject(new Error("Öğrenme aracı dosyası Bunny Storage'a yüklenemedi."));
+          if (xhr.status >= 500) return reject(new TekrarEdilebilirYuklemeHatasi("Dosya yükleme hizmeti geçici olarak yanıt vermedi."));
+          if (xhr.status < 200 || xhr.status >= 300) return reject(new Error("Öğrenme aracı dosyası yüklenemedi."));
           if (veri.tamamlandi !== true || typeof veri.yukleme_makbuzu !== "string") {
             return reject(new Error("Öğrenme aracı yükleme makbuzu alınamadı."));
           }
@@ -98,7 +98,7 @@ async function bunnyyeGonder(
         };
         xhr.onerror = () => {
           temizle();
-          reject(new TekrarEdilebilirYuklemeHatasi("Bunny Storage bağlantısı kurulamadı."));
+          reject(new TekrarEdilebilirYuklemeHatasi("Dosya yükleme hizmetiyle bağlantı kurulamadı."));
         };
         xhr.onabort = () => {
           temizle();

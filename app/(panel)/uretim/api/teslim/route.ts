@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       rpcAdi = "uretim_senaryo_teslim_et";
       parametreler = { p_gorev_id: gorev_id, p_iu_id: user.id, p_senaryo_metni: body.senaryo_metni, p_islem_anahtari: islem_anahtari };
     } else if (asama === "video") {
-      if (typeof body.video_url !== "string" || !embedUrlGuidCikar(body.video_url)) return validasyonHatasi("Video adresi kanonik Bunny embed adresi olmalıdır.", ["video_url"]);
+      if (typeof body.video_url !== "string" || !embedUrlGuidCikar(body.video_url)) return validasyonHatasi("Video adresi geçerli oynatıcı biçiminde olmalıdır.", ["video_url"]);
       rpcAdi = "uretim_video_teslim_et";
       parametreler = { p_gorev_id: gorev_id, p_iu_id: user.id, p_video_url: body.video_url, p_thumbnail_url: typeof body.thumbnail_url === "string" ? body.thumbnail_url : null, p_islem_anahtari: islem_anahtari };
     } else {
@@ -52,4 +52,3 @@ export async function POST(request: NextRequest) {
     return sunucuHatasi(err, "POST /uretim/api/teslim");
   }
 }
-

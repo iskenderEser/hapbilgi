@@ -157,7 +157,7 @@ export async function DELETE(request: NextRequest) {
       if (!kayit) return NextResponse.json({ mesaj: "Yarım yükleme zaten temizlenmiş." });
       if (kayit.kullanici_id !== user.id) return yetkiHatasi();
       if (!await bunnyVideoSil(kayit.video_guid)) {
-        await db.from("ogrenme_araci_video_yukleme_oturumlari").update({ durum: "iptal_hatasi", son_hata: "Bunny video silinemedi", updated_at: new Date().toISOString() }).eq("yukleme_id", body.kimlik);
+        await db.from("ogrenme_araci_video_yukleme_oturumlari").update({ durum: "iptal_hatasi", son_hata: "Video dosyası silinemedi", updated_at: new Date().toISOString() }).eq("yukleme_id", body.kimlik);
         return NextResponse.json({ hata: "Video dosyası temizlenemedi; kayıt güvenli biçimde korunuyor." }, { status: 502 });
       }
       const { error } = await db.from("ogrenme_araci_video_yukleme_oturumlari").delete().eq("yukleme_id", body.kimlik).eq("kullanici_id", user.id);
@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
     if (body.islem === "aktarim_tamamlandi") {
       const durum = await bunnyVideoDurumu(kayit.video_guid);
       if (!durum.ok || durum.bunnyDurum < 1 || durum.hatali) {
-        return NextResponse.json({ hata: "Bunny video aktarımının tamamlandığı doğrulanamadı." }, { status: 422 });
+        return NextResponse.json({ hata: "Video aktarımının tamamlandığı doğrulanamadı." }, { status: 422 });
       }
       const { error } = await db.from("ogrenme_araci_video_yukleme_oturumlari").update({ durum: "dogrulama_bekliyor", son_hata: null, updated_at: new Date().toISOString() }).eq("yukleme_id", kayit.yukleme_id);
       if (error) return NextResponse.json({ hata: "Video aktarım durumu kaydedilemedi." }, { status: 500 });

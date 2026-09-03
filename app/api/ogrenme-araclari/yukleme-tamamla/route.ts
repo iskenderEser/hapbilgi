@@ -132,10 +132,10 @@ export async function POST(request: NextRequest) {
     }
 
     const nesne = await bunnyNesneBilgisi(arac.dosya_yolu);
-    if (!nesne) return NextResponse.json({ hata: "Bunny Storage dosyası bulunamadı." }, { status: 422 });
+    if (!nesne) return NextResponse.json({ hata: "Yüklenen dosya bulunamadı." }, { status: 422 });
     if (nesne.dosyaBoyutu !== beyan.dosya_boyutu) {
       await temizlemeKaydiOlustur(db, arac_id, metadata, arac.dosya_yolu, "dosya_boyutu_eslesmedi");
-      return NextResponse.json({ hata: "Storage dosya boyutu yükleme beyanıyla eşleşmiyor." }, { status: 422 });
+      return NextResponse.json({ hata: "Yüklenen dosyanın boyutu yükleme beyanıyla eşleşmiyor." }, { status: 422 });
     }
     if (!dosyaImzasiDogrula(arac.arac_turu, nesne.ilkBaytlar)) {
       await temizlemeKaydiOlustur(db, arac_id, metadata, arac.dosya_yolu, "dosya_imzasi_eslesmedi");
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
     }
     if (nesne.checksumSha256 && nesne.checksumSha256 !== beyanChecksum) {
       await temizlemeKaydiOlustur(db, arac_id, metadata, arac.dosya_yolu, "checksum_eslesmedi");
-      return NextResponse.json({ hata: "Storage dosya özeti yükleme beyanıyla eşleşmiyor." }, { status: 422 });
+      return NextResponse.json({ hata: "Yüklenen dosyanın özeti yükleme beyanıyla eşleşmiyor." }, { status: 422 });
     }
 
     const dogrulamaMetadata = {

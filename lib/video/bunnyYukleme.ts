@@ -44,10 +44,10 @@ export function bunnyYuklemeIzniniYenile(
 ): BunnyVideoKaydi | BunnyHata {
   const ortam = ortamDegerleri();
   if (!ortam) {
-    return { ok: false, hata: "Bunny yapılandırması eksik.", adim: "env kontrolü", detay: "BUNNY_LIBRARY_ID / BUNNY_API_KEY tanımsız" };
+    return { ok: false, hata: "Video yükleme hizmeti yapılandırılmamış.", adim: "video yükleme yapılandırması" };
   }
   if (!/^[0-9a-fA-F-]{36}$/.test(videoGuid)) {
-    return { ok: false, hata: "Bunny video kimliği geçersiz.", adim: "yükleme izni yenileme" };
+    return { ok: false, hata: "Video yükleme kaydı geçersiz.", adim: "yükleme izni yenileme" };
   }
   const sonKullanma = Math.floor(Date.now() / 1000) + IMZA_OMRU_SANIYE;
   return {
@@ -67,7 +67,7 @@ export function bunnyYuklemeIzniniYenile(
 export async function bunnyYuklemeBaslat(baslik: string): Promise<BunnyVideoKaydi | BunnyHata> {
   const ortam = ortamDegerleri();
   if (!ortam) {
-    return { ok: false, hata: "Bunny yapılandırması eksik.", adim: "env kontrolü", detay: "BUNNY_LIBRARY_ID / BUNNY_API_KEY tanımsız" };
+    return { ok: false, hata: "Video yükleme hizmeti yapılandırılmamış.", adim: "video yükleme yapılandırması" };
   }
 
   let yanit: Response;
@@ -78,17 +78,19 @@ export async function bunnyYuklemeBaslat(baslik: string): Promise<BunnyVideoKayd
       body: JSON.stringify({ title: baslik }),
     });
   } catch (err: unknown) {
-    return { ok: false, hata: "Bunny'ye ulaşılamadı.", adim: "Bunny video kaydı POST", detay: err instanceof Error ? err.message : String(err) };
+    console.error("[Bunny video kaydı POST] bağlantı hatası:", err);
+    return { ok: false, hata: "Video yükleme hizmetine ulaşılamadı.", adim: "video yükleme kaydı oluşturma" };
   }
 
   if (!yanit.ok) {
     const govde = await yanit.text().catch(() => "");
-    return { ok: false, hata: "Bunny video kaydı açılamadı.", adim: "Bunny video kaydı POST", detay: `HTTP ${yanit.status} ${govde.slice(0, 200)}` };
+    console.error(`[Bunny video kaydı POST] HTTP ${yanit.status}:`, govde.slice(0, 200));
+    return { ok: false, hata: "Video yükleme kaydı açılamadı.", adim: "video yükleme kaydı oluşturma", detay: `HTTP ${yanit.status}` };
   }
 
   const video = await yanit.json();
   if (!video?.guid) {
-    return { ok: false, hata: "Bunny beklenen kimliği döndürmedi.", adim: "Bunny video kaydı POST — dönen veri" };
+    return { ok: false, hata: "Video yükleme kaydı tamamlanamadı.", adim: "video yükleme kaydı oluşturma" };
   }
 
   const sonKullanma = Math.floor(Date.now() / 1000) + IMZA_OMRU_SANIYE;
@@ -147,7 +149,7 @@ export function bunnyVideoKullanimaHazirMi(bunnyDurum: number, videoSuresiSaniye
 export async function bunnyVideoDurumu(videoGuid: string): Promise<BunnyVideoDurum | BunnyHata> {
   const ortam = ortamDegerleri();
   if (!ortam) {
-    return { ok: false, hata: "Bunny yapılandırması eksik.", adim: "env kontrolü", detay: "BUNNY_LIBRARY_ID / BUNNY_API_KEY tanımsız" };
+    return { ok: false, hata: "Video işleme hizmeti yapılandırılmamış.", adim: "video işleme yapılandırması" };
   }
   let yanit: Response;
   try {
@@ -155,10 +157,11 @@ export async function bunnyVideoDurumu(videoGuid: string): Promise<BunnyVideoDur
       headers: { AccessKey: ortam.apiKey },
     });
   } catch (err: unknown) {
-    return { ok: false, hata: "Bunny'ye ulaşılamadı.", adim: "Bunny video durum GET", detay: err instanceof Error ? err.message : String(err) };
+    console.error("[Bunny video durum GET] bağlantı hatası:", err);
+    return { ok: false, hata: "Video işleme hizmetine ulaşılamadı.", adim: "video işleme durumu" };
   }
   if (!yanit.ok) {
-    return { ok: false, hata: "Bunny video durumu alınamadı.", adim: "Bunny video durum GET", detay: `HTTP ${yanit.status}` };
+    return { ok: false, hata: "Video işleme durumu alınamadı.", adim: "video işleme durumu", detay: `HTTP ${yanit.status}` };
   }
   const video = await yanit.json();
   const durum = typeof video?.status === "number" ? video.status : -1;

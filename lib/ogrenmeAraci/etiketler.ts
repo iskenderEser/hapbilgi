@@ -2,8 +2,10 @@ import type { OgrenmeAraciTuru } from "./tipler";
 
 export interface OgrenmeAraciMetinleri {
   ad: string;
+  adKucuk: string;
   hazir: string;
   belirtme: string;
+  belirtmeKucuk: string;
   iyelikBelirtme: string;
 }
 
@@ -16,26 +18,34 @@ export interface OgrenmeAraciMetinleri {
 export const OGRENME_ARACI_METINLERI: Record<OgrenmeAraciTuru, OgrenmeAraciMetinleri> = {
   video: {
     ad: "Video",
+    adKucuk: "video",
     hazir: "Hazır Video",
     belirtme: "Videoyu",
+    belirtmeKucuk: "videoyu",
     iyelikBelirtme: "Videonuzu",
   },
   podcast: {
     ad: "Podcast",
+    adKucuk: "podcast",
     hazir: "Hazır Podcast",
     belirtme: "Podcasti",
+    belirtmeKucuk: "podcasti",
     iyelikBelirtme: "Podcastinizi",
   },
   gorsel: {
     ad: "Dijital Broşür",
+    adKucuk: "dijital broşür",
     hazir: "Hazır Dijital Broşür",
     belirtme: "Dijital Broşürü",
+    belirtmeKucuk: "dijital broşürü",
     iyelikBelirtme: "Dijital Broşürünüzü",
   },
   flip_pdf: {
     ad: "Literatür",
+    adKucuk: "literatür",
     hazir: "Hazır Literatür",
     belirtme: "Literatürü",
+    belirtmeKucuk: "literatürü",
     iyelikBelirtme: "Literatürünüzü",
   },
 };

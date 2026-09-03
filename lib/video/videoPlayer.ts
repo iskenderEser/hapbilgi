@@ -344,10 +344,7 @@ export function createVideoPlayer(iframe: HTMLIFrameElement, url: string): Video
     case "bilinmeyen":
     default:
       throw new Error(
-        `Desteklenmeyen video kaynağı: ${url}\n\n` +
-        `Şu anda yalnızca Bunny.net (iframe.mediadelivery.net veya player.mediadelivery.net) destekleniyor. ` +
-        `Diğer provider'lar (Mux, Cloudflare Stream, Vimeo, YouTube, JW Player, Wistia) ileride eklenebilir — ` +
-        `eklemek için lib/video/videoPlayer.ts dosyasındaki talimata bakın.`
+        `Bu video kaynağı desteklenmiyor: ${url}`
       );
   }
 }

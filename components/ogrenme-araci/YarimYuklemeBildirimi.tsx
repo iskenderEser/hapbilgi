@@ -69,7 +69,7 @@ export default function YarimYuklemeBildirimi() {
 
   const tamamlananKaydiKapat = async (kayit: YarimYukleme) => {
     if (kayit.kaynak === "hazir") {
-      if (!kayit.video_guid) throw new Error("Yarım video yüklemesinin Bunny video kimliği bulunamadı.");
+      if (!kayit.video_guid) throw new Error("Yarım video yükleme kaydı eksik.");
       const sonuc = await jsonIstek("/uretim/api/hazir-video", "PUT", {
         talep_id: kayit.talep_id,
         video_url: kayit.embed_url,

@@ -5,12 +5,13 @@
 // Neden: akış cümleleri beş dosyada satır içi string olarak yazılıydı
 // ("Senaryo onaylandı.", "Revizyon talebi gönderildi."). Üç sonucu vardı:
 // (1) aynı olay her sayfada başka dille anlatılıyordu, (2) hiçbir cümle talebin
-// VARYANTINI bilmiyordu, (3) bir cümleyi sunucu (hazir-video ucu) üretiyordu —
+// VARYANTINI ve seçilen öğrenme aracını bilmiyordu, (3) bir cümleyi sunucu
+// (hazir-video ucu) üretiyordu —
 // metin iki katmana bölünmüştü.
 //
 // KURAL — mesaj iki şey söyler: AZ ÖNCE KAPANAN İŞ + YENİ DOĞAN İŞ VE SAHİBİ.
 // Cümlenin ikinci yarısı, hattaki bir sonraki aksiyonun ilanıdır; toast bir
-// "yaptın bitti" bildirimi değil, sıranın kime geçtiğini söyleyen devir fişidir.
+// "yaptınız bitti" bildirimi değil, sıranın kime geçtiğini söyleyen devir fişidir.
 // Bunun üç doğal sonucu vardır ve üçü de aşağıda kodludur:
 //   1. Aşama KAPATMAYAN aksiyonlarda birinci yarı yoktur (talep gönderme,
 //      revizyon isteme) — ortada kapanan iş yok, yalnız doğan iş ilan edilir.
@@ -27,6 +28,9 @@
 // Durum ROZETLERİ ayrı sözlüktedir (lib/utils/durum/mesaj.ts): o, bir işin
 // içinde bulunduğu HALİ anlatır; bu, bir aksiyonun SONUCUNU. İki yüzey, iki
 // sözlük — biri diğerinden türetilemez.
+
+import { ogrenmeAraciMetinleri } from "@/lib/ogrenmeAraci/etiketler";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 
 /** Talebin iki bağımsız anahtarından (hazir_video × hazir_soru_seti) doğan dört varyant. */
 export type ToastVaryant = "normal" | "hazir_video" | "hazir_set" | "hazir_ikisi";
@@ -51,6 +55,8 @@ export type ToastOlay =
 
 export interface ToastBaglam {
   varyant: ToastVaryant;
+  /** DB'deki `video` aşamasının kullanıcıya gösterilecek gerçek öğrenme aracı. */
+  ogrenmeAraciTuru?: OgrenmeAraciTuru | null;
   /** Talebi açanın unvanı — TalepBilgisi.uretici_rol_adi (ROL_ADLARI[rol]). */
   rolAdi?: string | null;
 }
@@ -73,11 +79,22 @@ export function toastVaryant(
 // `talep` ise talep/iptal kalıplarında ("Senaryo için revizyon talebiniz…").
 // Küçük harf türetme fonksiyonla yapılmaz: Türkçe'de "I/İ" tuzağı var, iki biçim
 // de açıkça yazılır.
-const ASAMA_AD: Record<ToastAsama, { belirtme: string; belirtmeKucuk: string; talep: string }> = {
+interface AsamaAdlari {
+  belirtme: string;
+  belirtmeKucuk: string;
+  talep: string;
+}
+
+const ASAMA_AD: Record<Exclude<ToastAsama, "video">, AsamaAdlari> = {
   senaryo:   { belirtme: "Senaryoyu",   belirtmeKucuk: "senaryoyu",   talep: "Senaryo" },
-  video:     { belirtme: "Videoyu",     belirtmeKucuk: "videoyu",     talep: "Video" },
   soru_seti: { belirtme: "Soru setini", belirtmeKucuk: "soru setini", talep: "Soru seti" },
 };
+
+function asamaAdlari(asama: ToastAsama, tur?: OgrenmeAraciTuru | null): AsamaAdlari {
+  if (asama !== "video") return ASAMA_AD[asama];
+  const arac = ogrenmeAraciMetinleri(tur);
+  return { belirtme: arac.belirtme, belirtmeKucuk: arac.belirtmeKucuk, talep: arac.ad };
+}
 
 // Talep gönderimi — yalnız varyanttan çözülür. Aşama kapatmadığı için tek
 // yarılıdır: doğan işi ve sahibini söyler. Hazır videoda video zaten formdan
@@ -99,10 +116,13 @@ const YAYIN_YONLENDIRME = "yayın yönetimi sayfasına gidiniz";
  * varsa İÜ'ye iş açmaz (set otomatik onaylı yazılır) — top üreticide kalır.
  * Soru seti onayı hattın sonudur; sırada yayına alma vardır, o da üreticide.
  */
-function onayDevami(asama: ToastAsama, varyant: ToastVaryant): string {
-  if (asama === "senaryo") return "içerik üreticinize video talebiniz iletildi";
+function onayDevami(asama: ToastAsama, baglam: ToastBaglam): string {
+  if (asama === "senaryo") {
+    const arac = ogrenmeAraciMetinleri(baglam.ogrenmeAraciTuru);
+    return `içerik üreticinize ${arac.adKucuk} talebiniz iletildi`;
+  }
   if (asama === "video") {
-    return varyant === "hazir_set"
+    return baglam.varyant === "hazir_set"
       ? YAYIN_YONLENDIRME
       : "soru seti talebiniz içerik üreticisine iletildi";
   }
@@ -110,8 +130,8 @@ function onayDevami(asama: ToastAsama, varyant: ToastVaryant): string {
 }
 
 /** "Senaryoyu" / "Revize senaryoyu" — revizyon turu cümlenin başında belli olur. */
-function nesneAdi(asama: ToastAsama, revize: boolean): string {
-  const ad = ASAMA_AD[asama];
+function nesneAdi(asama: ToastAsama, revize: boolean, tur?: OgrenmeAraciTuru | null): string {
+  const ad = asamaAdlari(asama, tur);
   return revize ? `Revize ${ad.belirtmeKucuk}` : ad.belirtme;
 }
 
@@ -123,7 +143,7 @@ function nesneAdi(asama: ToastAsama, revize: boolean): string {
  */
 export function uretimToast(olay: ToastOlay, baglam: ToastBaglam): string {
   if (olay.rol === "iu") {
-    const nesne = nesneAdi(olay.asama, olay.revize);
+    const nesne = nesneAdi(olay.asama, olay.revize, baglam.ogrenmeAraciTuru);
     const rol = baglam.rolAdi?.trim();
     // Unvan ek ALMAZ: unvanlar hem ünlüyle ("Ürün Müdürü") hem ünsüzle
     // ("Medikal Müdür") bitiyor; "… onayına ilettiniz" kalıbı hepsinde doğru okunur.
@@ -134,11 +154,11 @@ export function uretimToast(olay: ToastOlay, baglam: ToastBaglam): string {
     case "talep_gonderildi":
       return TALEP_GONDERILDI[baglam.varyant];
     case "onay":
-      return `${nesneAdi(olay.asama, olay.revize)} onayladınız, ${onayDevami(olay.asama, baglam.varyant)}`;
+      return `${nesneAdi(olay.asama, olay.revize, baglam.ogrenmeAraciTuru)} onayladınız, ${onayDevami(olay.asama, baglam)}`;
     case "revizyon":
-      return `${ASAMA_AD[olay.asama].talep} için revizyon talebiniz içerik üreticisine iletildi`;
+      return `${asamaAdlari(olay.asama, baglam.ogrenmeAraciTuru).talep} için revizyon talebiniz içerik üreticisine iletildi`;
     case "iptal":
-      return `${ASAMA_AD[olay.asama].talep} talebinizi iptal ettiniz`;
+      return `${asamaAdlari(olay.asama, baglam.ogrenmeAraciTuru).talep} talebinizi iptal ettiniz`;
     default: {
       // Yeni olay eklenip burada karşılanmazsa tsc bu satırda patlar.
       const kapsanmayan: never = olay;

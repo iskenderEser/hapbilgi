@@ -36,7 +36,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .maybeSingle();
     if (aracError || !arac) return NextResponse.json({ hata: "Öğrenme aracı bulunamadı." }, { status: 404 });
     if (!ogrenmeAraciTuruMu(arac.arac_turu) || arac.arac_turu === "video") {
-      return NextResponse.json({ hata: "Video erişimi mevcut Bunny Stream oynatıcısından sağlanır." }, { status: 422 });
+      return NextResponse.json({ hata: "Video erişimi video oynatıcısı üzerinden sağlanır." }, { status: 422 });
     }
     if (!ogrenmeAraciAcikMi(arac.arac_turu)) return NextResponse.json({ hata: "Bu öğrenme aracı kullanıma kapalı." }, { status: 423 });
     if (!arac.metadata_dogrulandi || !arac.dosya_yolu) return NextResponse.json({ hata: "Öğrenme aracı henüz erişime hazır değil." }, { status: 422 });
@@ -159,7 +159,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     if (!erisimVar) return NextResponse.json({ hata: "Bu öğrenme aracına erişim yetkiniz yok." }, { status: 403 });
     const erisimUrl = bunnyCdnImzaliUrl(arac.dosya_yolu);
-    if (!erisimUrl) return NextResponse.json({ hata: "Bunny CDN erişimi yapılandırılmamış." }, { status: 503 });
+    if (!erisimUrl) return NextResponse.json({ hata: "Öğrenme aracı erişim hizmeti yapılandırılmamış." }, { status: 503 });
     const kapakUrl = arac.kapak_yolu ? bunnyCdnImzaliUrl(arac.kapak_yolu) : null;
     const transkriptUrl = arac.transkript_yolu ? bunnyCdnImzaliUrl(arac.transkript_yolu) : null;
 

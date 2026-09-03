@@ -51,9 +51,9 @@ export async function DELETE(request: NextRequest) {
         p_islem_anahtari: body.islem_anahtari,
       });
       if (durumError) {
-        return uretimRpcHataYaniti("Video Bunny'den silinemedi ve işlem durumu kaydedilemedi.", "yayin_oncesi_silme_hata RPC", durumError);
+        return uretimRpcHataYaniti("Video dosyası silinemedi ve işlem durumu kaydedilemedi.", "yayin_oncesi_silme_hata RPC", durumError);
       }
-      return hataYaniti("Video Bunny'den silinemedi. Yayın adayı korunarak yeniden denemeye alındı.", "Bunny video DELETE", null, 503);
+      return hataYaniti("Video dosyası silinemedi. Yayın adayı korunarak yeniden denemeye alındı.", "video dosyası silme", null, 503);
     }
 
     const { data: sonuc, error: tamamlaError } = await adminSupabase.rpc("yayin_oncesi_silme_tamamla", {

@@ -75,7 +75,7 @@ export function HazirVideoYukleme({ yuzde, onYukle }: Props) {
             fontFamily: "'Nunito', sans-serif",
           }}
         >
-          {yukleniyor ? `Yükleniyor... %${yuzde}` : "Bunny'ye Yükle"}
+          {yukleniyor ? `Yükleniyor... %${yuzde}` : "Videoyu Yükle"}
         </button>
       </div>
     </div>

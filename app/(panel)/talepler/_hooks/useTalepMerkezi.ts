@@ -210,6 +210,7 @@ export function useTalepMerkezi() {
 
         basari(uretimToast(olay, {
           varyant: toastVaryant(talep.hazir_video, talep.hazir_soru_seti),
+          ogrenmeAraciTuru: talep.ogrenme_araci_turu,
           rolAdi: talep.uretici_rol_adi,
         }));
 
@@ -323,7 +324,10 @@ export function useTalepMerkezi() {
         // düşer, V4'te iş üreticide kalır ve yayın yönetimine yönlendirilir).
         basari(uretimToast(
           { rol: "uretici", olay: "talep_gonderildi" },
-          { varyant: toastVaryant(talep.hazir_video, talep.hazir_soru_seti) },
+          {
+            varyant: toastVaryant(talep.hazir_video, talep.hazir_soru_seti),
+            ogrenmeAraciTuru: talep.ogrenme_araci_turu,
+          },
         ));
 
         setDetayTetik((x) => x + 1);

@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     const silindi = await bunnyVideoSil(video_guid);
-    if (!silindi) return hataYaniti("Bunny kaydı silinemedi.", "Bunny video DELETE", null);
+    if (!silindi) return hataYaniti("Yarım video kaydı silinemedi.", "video dosyası silme", null);
 
     console.log(`[bunny-yukleme-iptal] kullanici=${user.id} rol=${rol} guid=${video_guid} yetim kayıt silindi`);
     return NextResponse.json({ mesaj: "Yarım kalan yükleme temizlendi." }, { status: 200 });

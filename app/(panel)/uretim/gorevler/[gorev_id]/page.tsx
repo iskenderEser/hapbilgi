@@ -98,7 +98,11 @@ export default function UretimGorevDetayPage() {
   const iuTeslimEdebilir = isIU && !!gorev && ["hazirlaniyor", "revizyon_bekliyor"].includes(gorev.durum);
   const ureticiKararVerebilir = isUretici && gorev?.durum === "inceleme_bekliyor" && gorev.talep?.uretici_id === kullanici?.id;
   const durum = gorev && asama ? durumMesaji(gorevDurumKodu(gorev.durum), kullanici?.rol, { asama: asama.etiket, rolAdi: gorev.talep?.uretici_rol_adi, tarih: gorev.updated_at, ogrenmeAraciTuru: gorev.talep?.ogrenme_araci_turu }) : null;
-  const toastBaglam = useMemo(() => ({ varyant: toastVaryant(gorev?.talep?.hazir_video, gorev?.talep?.hazir_soru_seti), rolAdi: gorev?.talep?.uretici_rol_adi }), [gorev]);
+  const toastBaglam = useMemo(() => ({
+    varyant: toastVaryant(gorev?.talep?.hazir_video, gorev?.talep?.hazir_soru_seti),
+    ogrenmeAraciTuru: gorev?.talep?.ogrenme_araci_turu,
+    rolAdi: gorev?.talep?.uretici_rol_adi,
+  }), [gorev]);
 
   const teslimEt = async (ekAlanlar: Record<string, unknown>): Promise<boolean> => {
     if (!gorev) return false;

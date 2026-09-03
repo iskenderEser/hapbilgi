@@ -45,7 +45,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       mimeType: body.mime_type.toLowerCase(),
       checksumSha256: body.checksum_sha256.toLowerCase(),
     });
-    if (!upload || !yuklemeYetkisi) return NextResponse.json({ hata: "Bunny öğrenme aracı yükleme servisi yapılandırılmamış." }, { status: 503 });
+    if (!upload || !yuklemeYetkisi) return NextResponse.json({ hata: "Öğrenme aracı yükleme hizmeti yapılandırılmamış." }, { status: 503 });
 
     // İstek Bunny'ye ulaşıp tamamlama isteği geri dönemese bile iptalde nesne
     // yolunun bulunabilmesi için destek yolu aktarım başlamadan kalıcılaştırılır.

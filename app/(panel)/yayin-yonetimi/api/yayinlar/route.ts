@@ -239,9 +239,9 @@ export async function POST(request: NextRequest) {
       if (!durum.ok) {
         return hataYaniti("Video hazır olduğu doğrulanamadı; yayın beklemeye alındı.", durum.adim, durum.detay ? { message: durum.detay } : null, 503);
       }
-      if (durum.hatali) return isKuraluHatasi("Video Bunny tarafından işlenemedi. Yeniden yüklenmeden yayına alınamaz.");
+      if (durum.hatali) return isKuraluHatasi("Video işlenemedi. Yeniden yüklenmeden yayına alınamaz.");
       if (!durum.hazir || durum.videoSuresiSaniye == null || durum.videoSuresiSaniye <= 0) {
-        return isKuraluHatasi("Video Bunny tarafından işleniyor. Hazır olmadan yayına alınamaz.");
+        return isKuraluHatasi("Video işleniyor. Hazır olmadan yayına alınamaz.");
       }
       if (videoKaydi.video_suresi_saniye !== durum.videoSuresiSaniye) {
         const { error: sureError } = await adminSupabase

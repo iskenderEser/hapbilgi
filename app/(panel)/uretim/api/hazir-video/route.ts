@@ -19,9 +19,9 @@ export async function PUT(request: NextRequest) {
     if (!uuidGecerliMi(body.talep_id)) return validasyonHatasi("talep_id geçerli bir UUID olmalıdır.", ["talep_id"]);
     if (!uuidGecerliMi(body.islem_anahtari)) return validasyonHatasi("islem_anahtari geçerli bir UUID olmalıdır.", ["islem_anahtari"]);
     const guid = typeof body.video_url === "string" ? embedUrlGuidCikar(body.video_url) : null;
-    if (!guid) return validasyonHatasi("Video adresi kanonik Bunny embed adresi olmalıdır.", ["video_url"]);
+    if (!guid) return validasyonHatasi("Video adresi geçerli oynatıcı biçiminde olmalıdır.", ["video_url"]);
     if (body.islem_anahtari !== guid) {
-      return validasyonHatasi("İşlem anahtarı Bunny video kimliğiyle aynı olmalıdır.", ["islem_anahtari"]);
+      return validasyonHatasi("İşlem anahtarı video kimliğiyle aynı olmalıdır.", ["islem_anahtari"]);
     }
 
     // TUS aktarımının tamamlanması videonun izlenebilir olduğu anlamına gelmez.
@@ -46,7 +46,7 @@ export async function PUT(request: NextRequest) {
         .is("hazir_video_url", null)
         .select("talep_id")
         .maybeSingle();
-      if (baglamaError) return hataYaniti("Video talebe bağlanamadı.", "talepler UPDATE — Bunny işleme kaydı", baglamaError);
+      if (baglamaError) return hataYaniti("Video talebe bağlanamadı.", "talepler UPDATE — video işleme kaydı", baglamaError);
       if (!baglanan) return isKuraluHatasi("Bu talebe başka bir video eş zamanlı olarak bağlanmış.");
     }
 
@@ -62,11 +62,11 @@ export async function PUT(request: NextRequest) {
         .update({ hazir_video_url: null })
         .eq("talep_id", body.talep_id)
         .eq("hazir_video_url", body.video_url);
-      if (ayirmaError) return hataYaniti("İşlenemeyen video talepten ayrılamadı.", "talepler UPDATE — Bunny hata telafisi", ayirmaError);
+      if (ayirmaError) return hataYaniti("İşlenemeyen video talepten ayrılamadı.", "talepler UPDATE — video hata telafisi", ayirmaError);
       await bunnyVideoSil(guid);
       return NextResponse.json({
-        hata: "Video Bunny tarafından işlenemedi. Talep ve soru seti korundu; videoyu yeniden yükleyebilirsiniz.",
-        adim: "Bunny video işleme",
+        hata: "Video işlenemedi. Talep ve soru seti korundu; videoyu yeniden yükleyebilirsiniz.",
+        adim: "video işleme",
         bunny_durum: bunnyDurumu.bunnyDurum,
       }, { status: 422 });
     }
@@ -92,7 +92,7 @@ export async function PUT(request: NextRequest) {
       .from("videolar")
       .update({ video_suresi_saniye: bunnyDurumu.videoSuresiSaniye })
       .eq("video_id", videoId);
-    if (sureError) return hataYaniti("Doğrulanmış video süresi kaydedilemedi.", "videolar UPDATE — Bunny süresi", sureError);
+    if (sureError) return hataYaniti("Doğrulanmış video süresi kaydedilemedi.", "videolar UPDATE — video süresi", sureError);
 
     const alici = (sonuc as { sonraki?: { atanan_iu_id?: string } | null } | null)?.sonraki?.atanan_iu_id;
     if (alici) pushYayinlaArkada(adminSupabase, "uretim_durum_gecisi", [alici]);

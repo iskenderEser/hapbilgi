@@ -79,7 +79,7 @@ export function VideoYukleme({ bekleyen, onSec, onSil, yuklemeYuzdesi = null }: 
           <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
             <div className="h-full rounded-full transition-all" style={{ width: `${yuklemeYuzdesi}%`, background: "#56aeff" }} />
           </div>
-          <p className="text-xs text-gray-500 m-0 mt-1">Bunny'ye yükleniyor... %{yuklemeYuzdesi}</p>
+          <p className="text-xs text-gray-500 m-0 mt-1">Video yükleniyor... %{yuklemeYuzdesi}</p>
         </div>
       )}
     </div>

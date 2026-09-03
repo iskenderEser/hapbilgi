@@ -34,7 +34,7 @@ export async function PUT(request: NextRequest) {
     return validasyonHatasi("Local yükleme dosya boyutu veya özeti eşleşmiyor.", ["dosya_boyutu", "checksum_sha256"]);
   }
   if (!await bunnyStorageNesneYukle({ dosyaYolu, mimeType, checksumSha256, govde })) {
-    return NextResponse.json({ hata: "Bunny Storage yüklemesi tamamlanamadı." }, { status: 502 });
+    return NextResponse.json({ hata: "Dosya yüklemesi tamamlanamadı." }, { status: 502 });
   }
   const makbuz = yuklemeMakbuzuOlustur({ yuklemeToken, aracId, kullaniciId, dosyaYolu, dosyaBoyutu, mimeType, checksumSha256 });
   if (!makbuz) return NextResponse.json({ hata: "Local yükleme makbuzu üretilemedi." }, { status: 500 });

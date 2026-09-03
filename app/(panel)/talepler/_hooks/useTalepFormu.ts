@@ -814,7 +814,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
           // ikisi de hazırsa İÜ'ye iş düşmez, sıra üreticinin kendisindedir.
           basari(uretimToast(
             { rol: "uretici", olay: "talep_gonderildi" },
-            { varyant: toastVaryant(hazirVideo, hazirSoruSeti) },
+            { varyant: toastVaryant(hazirVideo, hazirSoruSeti), ogrenmeAraciTuru },
           ));
           if (hazirVideo && hazirSoruSeti) bildirimRozetleriniYenile();
         } else {
