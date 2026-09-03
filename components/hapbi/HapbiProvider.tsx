@@ -125,7 +125,7 @@ function HapbiOturumProvider({ children, rol }: { children: React.ReactNode; rol
         {
           id: String(Date.now()),
           rol: "hapbi",
-          metin: `🎉 Harika! "${aktifTur.baslik}" turunu başarıyla tamamladın. Başka bir konuda yardıma ihtiyacın olursa buradayım!`,
+          metin: `🎉 Harika! "${aktifTur.baslik}" turunu başarıyla tamamladınız. Başka bir konuda yardıma ihtiyaç duyarsanız buradayım!`,
           zaman: new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }),
         },
       ]);

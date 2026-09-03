@@ -21,18 +21,18 @@ export const HAPBI_CANLI_TURLAR: Record<string, WalkthroughTur> = {
   store_tur: {
     id: "store_tur",
     baslik: "HBStore'dan Ödül Siparişi Verme",
-    aciklama: "Puanlarınla nasıl hediye sipariş edeceğini adım adım öğren.",
+    aciklama: "Puanlarınızla nasıl hediye siparişi vereceğinizi adım adım öğrenin.",
     adimlar: [
       {
         hedefUrl: "/store",
         hedefSecici: "[data-hapbi='store-vitrin']",
-        mesaj: "Hoş geldin! Burası HBStore vitrini. Mevcut puanınla alabileceğin ürünleri filtreleyebilir veya arayabilirsin. Beğendiğin bir ürünün 'İncele & Sipariş Ver' butonuna tıkla.",
-        butonMetni: "Ürünü İncele 👉",
+        mesaj: "Hoş geldiniz! Burası HBStore vitrini. Mevcut puanınızla alabileceğiniz ürünleri filtreleyebilir veya arayabilirsiniz. Beğendiğiniz bir ürünün 'İncele & Sipariş Ver' butonuna tıklayın.",
+        butonMetni: "Ürünü İnceleyin 👉",
       },
       {
         hedefUrl: "/store",
         hedefSecici: "[data-hapbi='siparislerim-link']",
-        mesaj: "Siparişini verdikten sonra 'Siparişlerim' sayfasından kargo takibi yapabilirsin. İptal uygunluğu siparişin güncel durumuna göre kontrol edilir.",
+        mesaj: "Siparişinizi verdikten sonra 'Siparişlerim' sayfasından kargo takibi yapabilirsiniz. İptal uygunluğu siparişinizin güncel durumuna göre kontrol edilir.",
         butonMetni: "Harika, Anladım! ✨",
       },
     ],
@@ -40,39 +40,39 @@ export const HAPBI_CANLI_TURLAR: Record<string, WalkthroughTur> = {
   lig_tur: {
     id: "lig_tur",
     baslik: "T-Club Ligi ve Puan Sistemi",
-    aciklama: "Lig tablosunda nasıl yükseleceğini ve takım sıranı gör.",
+    aciklama: "Lig tablosunda nasıl yükseleceğinizi ve takım sıralamanızı görün.",
     adimlar: [
       {
         hedefUrl: "/hbligi",
         hedefSecici: "[data-hapbi='lig-tablosu']",
-        mesaj: "Burası T-Club Ligi! İzlediğin her video ve tamamladığın görevlerle haftalık puanın artar ve takımınla birlikte ligde zirveye oynarsın! 🏆",
+        mesaj: "Burası T-Club Ligi! Kullandığınız öğrenme araçları ve tamamladığınız görevlerle haftalık puanınız artar; takımınızla birlikte ligde yükselirsiniz! 🏆",
         butonMetni: "Sıralamamı Gördüm 👏",
       },
     ],
   },
   video_tur: {
     id: "video_tur",
-    baslik: "Yeni Videoları Keşfetme ve İzleme",
-    aciklama: "Hap videoları izleyerek uzmanlaş ve puan topla.",
+    baslik: "Yeni Öğrenme Araçlarını Keşfetme ve Kullanma",
+    aciklama: "Video, Podcast, Dijital Broşür ve Literatür içeriklerini kullanarak uzmanlaşın ve puan kazanın.",
     adimlar: [
       {
         hedefUrl: "/ana-sayfa",
         hedefSecici: "[data-hapbi='yeni-videolar']",
-        mesaj: "Ana sayfanda senin için seçilen güncel hap eğitim videoları yer alır. Bir videoya tıklayıp izlemeye başlayarak hemen puan kazanabilirsin! 🎬",
-        butonMetni: "Videoları İzle 🚀",
+        mesaj: "Ana sayfanızda sizin için seçilen güncel Video, Podcast, Dijital Broşür ve Literatür yayınları yer alır. Bir öğrenme aracını açıp kullanmaya başlayarak puan kazanabilirsiniz! 🎓",
+        butonMetni: "Öğrenme Araçlarını Keşfedin 🚀",
       },
     ],
   },
   oneri_tur: {
     id: "oneri_tur",
-    baslik: "Yeni Video & Konu Önerisi Yapma",
-    aciklama: "Sahada ihtiyaç duyduğun konuları firmaya ilet.",
+    baslik: "Yeni Öğrenme Aracı ve Konu Önerisi",
+    aciklama: "Sahada ihtiyaç duyduğunuz konuları firmaya iletin.",
     adimlar: [
       {
         hedefUrl: "/oneri-takibi",
         hedefSecici: "[data-hapbi='yeni-oneri-btn']",
-        mesaj: "Sahada hekimlerden veya eczacılardan gelen sorular için yeni bir video konusu önermek istersen, buradan önerini oluşturup durumunu takip edebilirsin! 💡",
-        butonMetni: "Öneri Sayfasındayım 👍",
+        mesaj: "Sahada hekimlerden veya eczacılardan gelen sorular için yeni bir öğrenme aracı ya da konu önermek isterseniz, buradan önerinizi oluşturabilir ve önerinizin durumunu takip edebilirsiniz! 💡",
+        butonMetni: "Öneri Sayfasına Geçin 👍",
       },
     ],
   },

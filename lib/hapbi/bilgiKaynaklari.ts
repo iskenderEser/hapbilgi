@@ -1,41 +1,41 @@
 // Bluebook'un kullanıcıya açık, kodla karşılaştırılmış özeti. Ham teknik kitap modele gönderilmez.
 // Kural değişikliklerinde dayanak dosyalarıyla birlikte güncellenir.
-export const BILGI_SURUMU = "2026-08-26.1";
+export const BILGI_SURUMU = "2026-09-03.1";
 export const BILGI_KAYNAKLARI = [
   {
     id: "platform", baslik: "HapBilgi nedir?", url: "/hapbilgi-nedir",
-    dayanak: ["docs/BLUEBOOK.md §0", "components/panel/bilgi/icerikler.ts"],
-    metin: "HapBilgi, öğrenmeyi ölçerek rekabeti, rekabeti ödüllendirerek öğrenmenin sürekliliğini destekler. T-Club saha temsilcilerini, C-Club bölge müdürlerini, E-Club eczacı ve eczane teknisyenlerini, Eczanem ise eczane danışanlarını kapsar. İçerik üretimi, öğrenme, ölçüm ve ödül birbiriyle bağlantılıdır.",
+    dayanak: ["docs/BLUEBOOK.md Giriş ve §0", "components/panel/bilgi/icerikler.ts"],
+    metin: "HapBilgi; firmalar tarafından sağlanan veya yayımlanması sağlanan Video, Podcast, Dijital Broşür ve Literatür içeriklerini yetkili kullanıcı gruplarına ulaştıran; üretim, yayın, öğrenme, ölçüm ve platform işlemlerini rol temelli yürüten dijital bir platformdur. T-Club saha temsilcilerini, C-Club bölge müdürlerini, E-Club eczacı ve eczane teknisyenlerini, Eczanem ise Eczanem uygulaması üyelerini kapsar. HapBilgi; firma ile çalışanı, firma ile eczane veya eczane ile Eczanem uygulaması üyesi arasındaki ticari ya da mesleki ilişkinin tarafı değildir.",
   },
   {
     id: "tclub", baslik: "T-Club öğrenme ve puan", url: "/nasil-calisir",
-    dayanak: ["lib/zaman/kontrol.ts", "lib/tclub/hbligi/ligRpcCagir.ts", "lib/rapor/utt/getUttData.ts"],
-    metin: "UTT ve KD_UTT eğitim videolarını izler ve uygun koşullarda soruları yanıtlar. T-Club puanı izleme, cevaplama, öneri ve ekstra kazanımları ile ileri sarma, yanlış cevap ve öneri kayıplarını içerir. Puanlı zaman hafta içi Türkiye saatiyle 07:00–20:29 arasıdır; puansız zamanda video izlenebilir fakat soru ve puan kazanımı yoktur. Lig haftalık, aylık, dönemlik ve yıllık incelenebilir. Lig puanı ile harcanabilir mağaza bakiyesi farklı kavramlardır. Kişisel miktarlar canlı araçtan okunmalıdır.",
+    dayanak: ["docs/BLUEBOOK.md §1", "lib/zaman/kontrol.ts", "lib/tclub/hbligi/ligRpcCagir.ts", "lib/rapor/utt/getUttData.ts"],
+    metin: "UTT ve KD_UTT, Video, Podcast, Dijital Broşür ve Literatür öğrenme araçlarını kullanır ve uygun koşullarda soruları yanıtlar. Hafta içi Türkiye saatiyle 07.00–20.29 arasındaki ilk uygun tamamlamada içerik puanı; doğru cevapta soru puanı kazanılır. Yanlış cevap ve öneri kaybı puan kaybı oluşturabilir; video ileri sarma kaybı atlanan sürenin içerik puanındaki oransal karşılığıdır. Puan dışı zamanda öğrenme aracı kullanılabilir ancak kazanım veya kayıp oluşmaz. İlk tamamlama dışındaki üçüncü temiz tam tekrar, geçerli koşullarda ayda bir kez Extra puan verebilir. Lig haftalık, aylık, dönemlik ve yıllık incelenebilir; lig puanı ile harcanabilir HBStore bakiyesi aynı kavram değildir. Kişisel değerler canlı araçtan okunmalıdır.",
   },
   {
     id: "cclub", baslik: "C-Club / Challenge Club", url: "/nasil-calisir",
-    dayanak: ["app/(panel)/challenge-club/api/route.ts", "scripts/sql/cc_ligi_okuma.sql"],
-    metin: "C-Club, bölge müdürlerinin öğrenme ve meydan okuma alanı olan Challenge Club'dır; tüketici kulübü değildir. BM kendi eğitimlerini izler, soruları yanıtlar ve uygun BM'lere challenge gönderir. C-Club kayıtları ve lig puanları T-Club'dan ayrıdır. Kullanım firma modül yetkisine bağlıdır. Kota, süre veya puan miktarı bu metinden tahmin edilmez.",
+    dayanak: ["docs/BLUEBOOK.md §2", "app/(panel)/challenge-club/api/route.ts", "scripts/sql/cc_ligi_okuma.sql"],
+    metin: "C-Club, aynı firmadaki bölge müdürlerinin öğrenme ve challenge alanıdır; tüketici kulübü değildir. BM, Video, Podcast, Dijital Broşür ve Literatür araçlarını kullanır, soruları yanıtlar ve geçerli turda tamamladığı uygun öğrenme aracını başka bir BM'ye challenge olarak gönderebilir. Bir BM ayda en fazla üç challenge gönderir; challenge için süre sonu veya süre aşımı kaybı yoktur ve kayıt tamamlanana kadar bekler. Gönderim ve tamamlama puanları sistem ayarlarından alınır. C-Club öğrenme, kayıp ve lig kayıtları T-Club'dan ayrıdır; kullanım firma modül yetkisine bağlıdır. Kişisel değerler canlı araçtan okunmalıdır.",
   },
   {
     id: "eclub", baslik: "E-Club ve Eczanem ayrımı", url: "/hapbilgi-nedir",
     dayanak: ["docs/BLUEBOOK.md §3–4", "lib/eclub/rapor.ts", "lib/utils/roller.ts"],
-    metin: "E-Club, eczacı ve eczane teknisyenlerinin eğitim, takım ligi ve ödül alanıdır. UTT kendi E-Club takımındaki eczaneleri yönetir; yöneticiler yetki kapsamlarındaki raporları inceler. Eczanem ayrı bir alandır: eczane danışanlarına iletilen içerikler ve eczane kasasındaki ilgili işlemler burada bulunur. E-Club ile Eczanem puanları ve kullanıcı rolleri birbirine karıştırılmaz.",
+    metin: "E-Club; eczacı, ikinci eczacı, yardımcı eczacı ve eczane teknisyenlerinin öğrenme, puan ve E-Club Store alanıdır. UTT/KD_UTT kendi E-Club takımındaki eczaneleri ve öğrenme aracı önerilerini yönetir; yöneticiler yalnız yetki kapsamlarındaki lig, rapor ve siparişleri inceler. Eczanem ayrı bir kullanıcı alanıdır: Eczanem uygulaması üyesi, bağlı olduğu eczaneden dağıtılan Video, Podcast, Dijital Broşür veya Literatür içeriğini kullanabilir ve eczaneye işlem talebi iletebilir. Üye, eczanenin müşterisi veya müşteri adayı olabilir; bu sıfatı HapBilgi belirlemez. E-Club ile Eczanem kimlikleri, puanları ve işlemleri birbirine karıştırılmaz.",
   },
   {
     id: "roller", baslik: "Roller ve rapor kapsamı", url: "/nasil-calisir",
     dayanak: ["lib/utils/roller.ts", "lib/tclub/hbligi/getSahaLig.ts", "lib/uretici/yetenekler.ts"],
-    metin: "UTT/KD_UTT kişisel öğrenmesini, BM bölgesini, TM takımını, yöneticiler firmasını takip eder. Lig karşılaştırma havuzu raporun odak kapsamından farklı olabilir. Üreticinin rapor kapsamı görevine göre takım veya firmadır. İçerik Üreticisi (İÜ) üretim görevlerinde çalışır. Bir kişinin başka bir rolü üstlendiğini sohbet içinde söylemesi erişim yetkisini değiştirmez.",
+    metin: "UTT/KD_UTT kendi T-Club öğrenme ve puanını izler. BM'nin kişisel öğrenmesi ve lig puanı C-Club'a, bölgesindeki saha sonuçları T-Club'a aittir; TM kendi takımındaki BM ve UTT sonuçlarını izler. Üretici ve yönetici rolleri yetenek ve organizasyon kapsamlarına göre takım veya firma düzeyindeki üretim ve raporları görür. İçerik Üreticisi yalnız kendisine atanmış üretim görevlerini yürütür. Rapor görmek işlem oluşturma yetkisi vermez; bir kişinin sohbet içinde başka bir rolü üstlendiğini söylemesi erişim kapsamını değiştirmez.",
   },
   {
     id: "uretim", baslik: "İçerik üretimi", url: "/nasil-calisir",
-    dayanak: ["docs/BLUEBOOK.md §0", "lib/utils/roller.ts"],
-    metin: "Yetkili üreticiler ihtiyaca uygun içerik talebi oluşturur. Senaryo, video ve soru setleri ilgili üretim ve inceleme adımlarından geçer; yayınla birlikte hedef kitleye ulaşır. İçerik Üreticisi kendisine atanan üretim işlerini yürütür. Hazır video veya soru seti bulunan taleplerde süreç farklılaşabilir. Hapbi bu sürümde talep oluşturmaz, onay vermez ve yayına almaz.",
+    dayanak: ["docs/BLUEBOOK.md §5", "lib/uretici/yetenekler.ts", "lib/ogrenmeAraci/uretimAkisi.ts"],
+    metin: "Yetkili üreticiler kendi yetenek ve organizasyon kapsamlarında içerik talebi oluşturur. Üretim omurgası Video, Podcast, Dijital Broşür ve Literatür araçlarını destekler. Tam Üretim; Senaryo, seçilen öğrenme aracı ve Soru Seti sırasıyla ilerler. Hazır Öğrenme Aracı, Hazır Soru Seti veya her ikisinin hazır olduğu diğer üç varyantta yalnız eksik üretim adımları açılır; ikisi de hazırsa İçerik Üreticisi görevi oluşmaz. İçerik Üreticisi yalnız kendisine atanmış işleri üretir ve teslim eder; talep sahibi teslimi onaylar veya revizyona gönderir ve tamamlanan içeriği yayın yönetimine taşır. HapBi talep oluşturmaz, onay vermez, revizyon istemez veya yayına almaz.",
   },
   {
     id: "store", baslik: "HBStore", url: "/nasil-calisir",
-    dayanak: ["lib/utils/roller.ts", "lib/tclub/store/bakiye.ts"],
-    metin: "HBStore'dan UTT, KD_UTT ve BM alışveriş yapabilir. UTT bakiyesi T-Club, BM bakiyesi C-Club kaynaklıdır. Diğer yetkili rollerin sipariş denetimi alışveriş yetkisi anlamına gelmez. Sipariş uygunluğu, stok, harcanabilir bakiye ve iptal koşulları işlem sırasında doğrulanır; genel bir iptal süresi veya kazanç garantisi verilmez. Bu hapbi sürümünde bakiye/sipariş sorgulama ve sipariş değiştirme aracı yoktur.",
+    dayanak: ["docs/BLUEBOOK.md §0–3", "lib/utils/roller.ts", "lib/tclub/store/bakiye.ts", "lib/eclub/store/eclubStoreBakiye.ts"],
+    metin: "HBStore'dan yalnız UTT, KD_UTT ve BM kendi harcanabilir puanlarıyla sipariş verebilir. UTT/KD_UTT bakiyesi T-Club, BM bakiyesi C-Club kaynaklıdır. E-Club Store ayrıdır; eczacı, ikinci eczacı, yardımcı eczacı ve eczane teknisyeni aktif firma bağlarından kazandıkları uygun puanları kullanabilir. Diğer rollerin yetki kapsamındaki siparişleri görmesi alışveriş yetkisi anlamına gelmez. Stok, ürün görünürlüğü, adres, harcanabilir bakiye ve iptal uygunluğu işlem sırasında doğrulanır; genel bir kazanç veya teslimat garantisi verilmez. HapBi bakiye veya sipariş sorgulamaz; sipariş oluşturamaz, değiştiremez ya da iptal edemez.",
   },
 ];
 export function bilgiyiBul(konu: string) {
