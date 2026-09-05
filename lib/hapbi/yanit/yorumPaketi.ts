@@ -70,12 +70,16 @@ export function hapbiYorumPaketiniOlustur(
     );
   }
 
+  const dogrulanmisKanitlar = seciliKanitlar.filter(
+    (kanit): kanit is NonNullable<typeof kanit> => kanit !== undefined,
+  );
+
   return {
     soru: girdi.soru.trim(),
     kapsam: kapsamEtiketi(girdi.kapsam),
     donem: hapbiDonemEtiketiniOlustur(girdi.donem),
     bulgular: [girdi.dogrudanYanit.cevap],
-    kanitlar: seciliKanitlar.map((kanit) => ({
+    kanitlar: dogrulanmisKanitlar.map((kanit) => ({
       id: kanit.id,
       ozne: kanit.ozne,
       urun: kanit.urun,

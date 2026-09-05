@@ -77,11 +77,14 @@ function boyutDegeriniYaz(deger: HapbiAnalitikVarlik | string): string {
 
 function satirEtiketi(satir: HapbiAnalitikSatir | null): string | null {
   if (!satir) return null;
+  if (satir.boyutlar.takim && satir.boyutlar.kullanici) {
+    return `${boyutDegeriniYaz(satir.boyutlar.takim)} takımından ${boyutDegeriniYaz(satir.boyutlar.kullanici)}`;
+  }
   const degerler = BOYUT_SIRASI
     .map((boyut) => satir.boyutlar[boyut])
     .filter((deger): deger is HapbiAnalitikVarlik | string => deger !== undefined)
     .map(boyutDegeriniYaz);
-  return degerler.length > 0 ? degerler.join(" → ") : null;
+  return degerler.length > 0 ? degerler.join(" ") : null;
 }
 
 function kapsamIfadesi(kapsam: HapbiAnalitikKapsam): string {
@@ -104,31 +107,60 @@ function liderMetni(
 ): string {
   const olcut = olcutuBul(sonuc);
   const satir = sonuc.satirlar[0] ?? null;
-  const ad = satirEtiketi(satir);
   const deger = olcumuBul(satir, olcut);
-  if (!ad || deger === null || !olcut) return veriYok(kapsam);
+  if (!satir || deger === null || !olcut) return veriYok(kapsam);
+
+  const son = tur === "lider" ? "liderdir" : "en yüksek üründür";
+  const aciklama = tur === "lider" ? "tek lider yoktur" : "tek en yüksek ürün yoktur";
+
+  const takim = satir.boyutlar.takim ? boyutDegeriniYaz(satir.boyutlar.takim) : null;
+  const kisiVeyaUrun = (satir.boyutlar.kullanici ? boyutDegeriniYaz(satir.boyutlar.kullanici) : null)
+    ?? (satir.boyutlar.urun ? boyutDegeriniYaz(satir.boyutlar.urun) : null)
+    ?? satirEtiketi(satir);
+
+  if (!kisiVeyaUrun) return veriYok(kapsam);
+
+  const baslik = takim ? `${takim} takımında` : kapsam;
+
   if (sonuc.satirlar.length > 1) {
     const esitAdlar = sonuc.satirlar
-      .map(satirEtiketi)
+      .map((s) => {
+        const ad = (s.boyutlar.kullanici ? boyutDegeriniYaz(s.boyutlar.kullanici) : null)
+          ?? (s.boyutlar.urun ? boyutDegeriniYaz(s.boyutlar.urun) : null)
+          ?? satirEtiketi(s);
+        return ad;
+      })
       .filter((etiket): etiket is string => etiket !== null);
-    const aciklama = tur === "lider" ? "tek lider yoktur" : "tek en yüksek ürün yoktur";
-    return `${kapsam} ${esitAdlar.join(" ve ")} ${sayiyiYaz(deger)} ${OLCUT_ETIKETLERI[olcut]} ile eşittir; ${aciklama}.`;
+    return `${baslik} ${esitAdlar.join(" ve ")} ${sayiyiYaz(deger)} ${OLCUT_ETIKETLERI[olcut]} ile eşittir; ${aciklama}.`;
   }
-  const son = tur === "lider" ? "liderdir" : "en yüksek üründür";
-  return `${kapsam} ${ad}, ${sayiyiYaz(deger)} ${OLCUT_ETIKETLERI[olcut]} ile ${son}.`;
+
+  return `${baslik} ${kisiVeyaUrun}, ${sayiyiYaz(deger)} ${OLCUT_ETIKETLERI[olcut]} ile ${son}.`;
 }
 
 function ilkIkiVeFarkMetni(sonuc: HapbiTarifYurutmeSonucu, kapsam: string): string {
   const olcut = olcutuBul(sonuc);
   const hesap = sonuc.ilkIkiVeFark;
-  const birinciAd = satirEtiketi(hesap?.birinci ?? null);
-  const ikinciAd = satirEtiketi(hesap?.ikinci ?? null);
-  const birinciDeger = olcumuBul(hesap?.birinci ?? null, olcut);
-  const ikinciDeger = olcumuBul(hesap?.ikinci ?? null, olcut);
-  if (!olcut || !birinciAd || !ikinciAd || birinciDeger === null || ikinciDeger === null || hesap?.fark === null) {
+  const birinciSatir = hesap?.birinci ?? null;
+  const ikinciSatir = hesap?.ikinci ?? null;
+  const birinciDeger = olcumuBul(birinciSatir, olcut);
+  const ikinciDeger = olcumuBul(ikinciSatir, olcut);
+  if (!olcut || !hesap || !birinciSatir || !ikinciSatir || birinciDeger === null || ikinciDeger === null || hesap.fark === null) {
     return veriYok(kapsam);
   }
-  return `${kapsam} ${birinciAd} ${sayiyiYaz(birinciDeger)}, ${ikinciAd} ${sayiyiYaz(ikinciDeger)} ${OLCUT_ETIKETLERI[olcut]} değerindedir; aradaki fark ${sayiyiYaz(hesap.fark)} puandır.`;
+
+  const takim = birinciSatir.boyutlar.takim ? boyutDegeriniYaz(birinciSatir.boyutlar.takim) : null;
+  const baslik = takim ? `${takim} takımında` : kapsam;
+
+  const birinciAd = (birinciSatir.boyutlar.kullanici ? boyutDegeriniYaz(birinciSatir.boyutlar.kullanici) : null)
+    ?? (birinciSatir.boyutlar.urun ? boyutDegeriniYaz(birinciSatir.boyutlar.urun) : null)
+    ?? satirEtiketi(birinciSatir);
+  const ikinciAd = (ikinciSatir.boyutlar.kullanici ? boyutDegeriniYaz(ikinciSatir.boyutlar.kullanici) : null)
+    ?? (ikinciSatir.boyutlar.urun ? boyutDegeriniYaz(ikinciSatir.boyutlar.urun) : null)
+    ?? satirEtiketi(ikinciSatir);
+
+  if (!birinciAd || !ikinciAd) return veriYok(kapsam);
+
+  return `${baslik} ${birinciAd} ${sayiyiYaz(birinciDeger)}, ${ikinciAd} ${sayiyiYaz(ikinciDeger)} ${OLCUT_ETIKETLERI[olcut]} değerindedir; aradaki fark ${sayiyiYaz(hesap.fark)} puandır.`;
 }
 
 function kisiselMetin(sonuc: HapbiTarifYurutmeSonucu, kapsam: string): string {

@@ -39,20 +39,31 @@ function modelYorumunuOku(body: unknown): HapbiModelYorumu | null {
   const parts = (content as { parts?: unknown }).parts;
   if (!Array.isArray(parts)) return null;
   const metin = parts
-    .flatMap((part) => part && typeof part === "object" && typeof part.text === "string" ? [part.text] : [])
+    .flatMap((part) => {
+      if (!part || typeof part !== "object") return [];
+      if ("thought" in part && (part as { thought?: unknown }).thought === true) return [];
+      return typeof (part as { text?: unknown }).text === "string" ? [(part as { text: string }).text] : [];
+    })
     .join("\n")
     .trim();
   if (!metin) return null;
 
+  const temizMetin = metin
+    .replace(/^```(?:json)?\s*/iu, "")
+    .replace(/\s*```$/u, "")
+    .trim();
+
   try {
-    const yorum = JSON.parse(metin) as { cevap?: unknown; kanitIdleri?: unknown };
+    const yorum = JSON.parse(temizMetin) as { cevap?: unknown; kanitIdleri?: unknown };
     if (typeof yorum.cevap !== "string" || !yorum.cevap.trim()
       || !Array.isArray(yorum.kanitIdleri)
       || yorum.kanitIdleri.some((id) => typeof id !== "string")) {
+      console.warn("[hapbi modelYorumunuOku format hatası]", yorum);
       return null;
     }
     return { cevap: yorum.cevap.trim(), kanitIdleri: [...new Set(yorum.kanitIdleri)] };
-  } catch {
+  } catch (parseHata) {
+    console.error("[hapbi modelYorumunuOku JSON parse hatası]", parseHata, "Metin:", metin);
     return null;
   }
 }
@@ -194,7 +205,7 @@ export async function hapbiYorumUret(girdi: HapbiYorumGirdisi): Promise<HapbiYor
           }],
           generationConfig: {
             temperature: 0.1,
-            maxOutputTokens: 1200,
+            maxOutputTokens: 4096,
             responseMimeType: "application/json",
             responseSchema: {
               type: "OBJECT",
@@ -204,6 +215,9 @@ export async function hapbiYorumUret(girdi: HapbiYorumGirdisi): Promise<HapbiYor
               },
               required: ["cevap", "kanitIdleri"],
             },
+            ...(girdi.model.includes("gemini-3") || girdi.model.includes("gemini-2.5")
+              ? { thinkingConfig: { thinkingLevel: "minimal" } }
+              : {}),
           },
         }),
       },
@@ -227,6 +241,7 @@ export async function hapbiYorumUret(girdi: HapbiYorumGirdisi): Promise<HapbiYor
   const body: unknown = await response.json();
   const modelYorumu = modelYorumunuOku(body);
   if (!modelYorumu) {
+    console.error("[hapbiYorumUret eksik model yorumu - body]", JSON.stringify(body, null, 2));
     throw new HapbiHata(
       "MODEL_EKSIK_YANIT",
       502,

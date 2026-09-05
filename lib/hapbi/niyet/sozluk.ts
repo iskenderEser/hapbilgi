@@ -116,7 +116,7 @@ export const HAPBI_BOYUT_SOZLUGU: readonly HapbiSozlukGirdisi<HapbiBoyut>[] = [
   },
   {
     deger: "kullanici",
-    ifadeler: ["kullanıcı", "kullanıcılar", "kişi", "kişiler", "çalışan", "çalışanlar", "utt", "bölge müdürü"],
+    ifadeler: ["kullanıcı", "kullanıcılar", "kişi", "kişiler", "çalışan", "çalışanlar", "utt", "bölge müdürü", "kim", "kimler"],
   },
   { deger: "eczane", ifadeler: ["eczane", "eczaneler", "gln", "eczane bazında"] },
   { deger: "urun", ifadeler: ["ürün", "ürünler", "ürün bazında", "ürüne göre"] },
