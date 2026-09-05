@@ -3,10 +3,10 @@ import test from "node:test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { hapbiAraclariniOlustur, periyoduDogrula } from "@/lib/hapbi/araclar";
 import { getHapbiKullaniciBaglami, hapbiKapsamAnahtari, type HapbiKullaniciBaglami } from "@/lib/hapbi/hapbiKullaniciBaglami";
-import { sohbetiAc, sohbetiPaketle, istekSinirlayiciOlustur } from "@/lib/hapbi/sohbet";
+import { sohbetDurumunuAc, sohbetiAc, sohbetiPaketle, istekSinirlayiciOlustur } from "@/lib/hapbi/sohbet";
 import { hapbiHizliYanitUret, hapbiYanitUret, sonYanitiDogrula } from "@/lib/hapbi/gemini";
 import { egitimleriOku } from "@/lib/hapbi/egitim";
-import type { HapbiAracSonucu } from "@/lib/hapbi/sozlesme";
+import type { HapbiAnalitikTakipBaglami, HapbiAracSonucu } from "@/lib/hapbi/sozlesme";
 import { raporOlcumleri, olcumleriKarsilastir } from "@/lib/hapbi/rehberlik";
 import { hizliSorguPlani } from "@/lib/hapbi/hizliSorgu";
 
@@ -525,14 +525,35 @@ test("hapbi Faz 2: tamamlanan eğitim yalnız kayıplı kategoride yeniden çal�
 test("hapbi: sohbet imzası kullanıcı/rol/kapsam/son kullanma ve tahrif denetimi", () => {
   const anahtar = hapbiKapsamAnahtari(K);
   const gecmis = [{ rol: "user" as const, metin: "Bu hafta?" }, { rol: "model" as const, metin: "Kaynaklı yanıt." }];
-  const token = sohbetiPaketle(gecmis, anahtar, "test-secret", 1000);
+  const bekleyenTakip = { tur: "netlestirme" as const, soru: "İlk iki kişi kim?", eksikAlanlar: ["donem" as const], pathname: "/hbligi" };
+  const token = sohbetiPaketle(gecmis, anahtar, "test-secret", 1000, bekleyenTakip);
   assert.deepEqual(sohbetiAc(token, anahtar, "test-secret", 2000), gecmis);
+  assert.deepEqual(sohbetDurumunuAc(token, anahtar, "test-secret", 2000), { mesajlar: gecmis, bekleyenTakip, analitikBaglam: null });
   for (const k of [{ ...K, rol: "bm" }, { ...K, kullanici_id: "u2" }, { ...K, firma_id: "f2" }]) {
     assert.throws(() => sohbetiAc(token, hapbiKapsamAnahtari(k), "test-secret", 2000));
   }
   assert.throws(() => sohbetiAc(token + "x", anahtar, "test-secret", 2000));
   assert.throws(() => sohbetiAc(token, anahtar, "test-secret", 2000000));
   assert.equal(sohbetiAc(sohbetiPaketle(Array.from({ length: 30 }, (_, i) => ({ rol: i % 2 ? "model" : "user", metin: String(i) })), anahtar, "test-secret", 1000), anahtar, "test-secret", 2000).length, 12);
+});
+
+test("hapbi: imzalı analitik takip bağlamını korur", () => {
+  const anahtar = hapbiKapsamAnahtari(K);
+  const analitikBaglam: HapbiAnalitikTakipBaglami = {
+    surum: 1,
+    pathname: "/hbligi",
+    veri_alani: "tclub",
+    donem: { periyot: "donem", yil: 2026, ceyrek: 3 },
+    olcutler: ["ileri_sarma_kaybi"],
+    boyutlar: ["kullanici"],
+    filtreler: [],
+    islem: "siralama",
+    siralama: { olcut: "ileri_sarma_kaybi", yon: "azalan" },
+    varliklar: [{ boyut: "kullanici", id: "utt-1", ad: "Berk Kılıç" }],
+  };
+  const token = sohbetiPaketle([], anahtar, "test-secret", 1000, null, analitikBaglam);
+  assert.deepEqual(sohbetDurumunuAc(token, anahtar, "test-secret", 2000).analitikBaglam, analitikBaglam);
+  assert.throws(() => sohbetDurumunuAc(token + "x", anahtar, "test-secret", 2000));
 });
 
 test("hapbi: eşzamanlı istek ve dakika sınırı kontrollü serbest bırakılır", () => {
@@ -617,7 +638,7 @@ test("hapbi: sağlayıcı hatası, araçsız cevap ve araç döngüsü hazır ce
   const g = { soru: "Puanım?", pathname: "/", rol: "utt", takvim: P, gecmis: [], apiKey: "test", model: "gemini-3.5-flash", arac: async () => KAYNAK };
   await assert.rejects(() => hapbiYanitUret({ ...g, fetcher: (async () => new Response("secret", { status: 429 })) as typeof fetch }), /AI servisi/);
   await assert.rejects(() => hapbiYanitUret({ ...g, fetcher: (async () => modelCevabi([{ text: "Birincisiniz" }])) as typeof fetch }), /doğrulanamadı/);
-  await assert.rejects(() => hapbiYanitUret({ ...g, fetcher: (async () => modelCevabi(Array.from({ length: 9 }, () => ({ functionCall: { name: "lig_durumu", args: P } })))) as typeof fetch }), /çok geniş/);
+  await assert.rejects(() => hapbiYanitUret({ ...g, fetcher: (async () => modelCevabi(Array.from({ length: 9 }, () => ({ functionCall: { name: "lig_durumu", args: P } })))) as typeof fetch }), /daraltın/);
 });
 
 test("hapbi: kaynakta olmayan rakam yayımlanmaz, model düzeltme turuna girer", async () => {
@@ -634,4 +655,19 @@ test("hapbi: kaynakta olmayan rakam yayımlanmaz, model düzeltme turuna girer",
     }) as typeof fetch,
   });
   assert.equal(tur, 3); assert.equal(r.cevap, finalArgs.cevap);
+});
+
+test("hapbi: aynı araç ve parametre çağrısını yinelerse veri kaynağı yalnız bir kez okunur", async () => {
+  let modelTuru = 0; let aracCagrisi = 0;
+  const r = await hapbiYanitUret({
+    soru: "Puanım?", pathname: "/", rol: "utt", takvim: P, gecmis: [], apiKey: "test", model: "gemini-3.5-flash",
+    arac: async () => { aracCagrisi++; return KAYNAK; },
+    fetcher: (async () => {
+      modelTuru++;
+      if (modelTuru === 1) return modelCevabi([{ functionCall: { name: "lig_durumu", args: { ...P, lig: "hb" } } }]);
+      if (modelTuru === 2) return modelCevabi([{ functionCall: { name: "lig_durumu", args: { lig: "hb", hafta: 35, yil: 2026, periyot: "hafta" } } }]);
+      return modelCevabi([{ functionCall: { name: "yaniti_sun", args: finalArgs } }]);
+    }) as typeof fetch,
+  });
+  assert.equal(r.cevap, finalArgs.cevap); assert.equal(aracCagrisi, 1); assert.deepEqual(r.araclar, ["lig_durumu"]);
 });

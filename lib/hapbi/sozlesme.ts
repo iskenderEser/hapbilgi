@@ -15,6 +15,30 @@ export interface HapbiAracSonucu {
   aciklama?: string;
 }
 export interface HapbiGecmisMesaji { rol: "user" | "model"; metin: string }
+export type HapbiTakipAlani = "donem";
+export interface HapbiAnalitikBaglamVarligi {
+  boyut: string;
+  id: string;
+  ad: string;
+}
+export interface HapbiAnalitikTakipBaglami {
+  surum: 1;
+  pathname: string;
+  veri_alani: string;
+  donem: Record<string, string | number>;
+  olcutler: string[];
+  boyutlar: string[];
+  filtreler: Array<{ boyut: string; kimlikler: string[] }>;
+  islem: string;
+  siralama?: { olcut: string; yon: string };
+  varliklar: HapbiAnalitikBaglamVarligi[];
+}
+export interface HapbiBekleyenTakip {
+  tur: "netlestirme";
+  soru: string;
+  eksikAlanlar: HapbiTakipAlani[];
+  pathname: string;
+}
 export interface HapbiYanit {
   cevap: string;
   kaynaklar: HapbiKaynak[];
