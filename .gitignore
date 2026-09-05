@@ -13,6 +13,7 @@
 
 # testing
 /coverage
+/.hapbi-pilot/
 
 # next.js
 /.next/
