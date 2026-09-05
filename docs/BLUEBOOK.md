@@ -397,7 +397,7 @@ Cevap motorunun iki yolu vardır. Role özel hazır soru, istemcinin `hizli: tru
 
 #### 5.2. Kaynaklar ve Yetki Kapsamı
 * **Sürümlü Platform Bilgisi:** `lib/hapbi/bilgiKaynaklari.ts`, BLUEBOOK'un kullanıcıya açıklanabilir iş kurallarından hazırlanmış sürümlü HapBi kaynağıdır. BLUEBOOK otomatik olarak modele verilmez. Onaylanmış iş modeli veya rol değişikliği bu dosyaya ayrıca işlenmeden HapBi kaynağı güncel sayılmaz.
-* **Araç Sözleşmeleri:** `aracTanimlari.ts`, Gemini'ye sunulan salt-okur araç şemalarının; `araclar.ts` ise doğrulanmış kullanıcı bağlamıyla ilgili motoru yükleyen dağıtıcının kaynağıdır. Platform, eğitim, gelişim, saha, üretim ve E-Club okuyucuları `aracMotorlari/` altında ayrıdır ve mevcut lig, rapor ve puan servislerini adaptör olarak kullanır.
+* **Araç Sözleşmeleri:** `aracTanimlari.ts`, Gemini'ye sunulan salt-okur araç şemalarının; `araclar.ts` ise doğrulanmış kullanıcı bağlamıyla ilgili motoru yükleyen dağıtıcının kaynağıdır. Platform, eğitim, gelişim, saha, üretim, E-Club ve ortak analitik okuyucuları `aracMotorlari/` altında ayrıdır. `analitik_sorgu` aracı modelden organizasyon kapsamı kabul etmez; kapsamı sunucuda çözer ve T-Club, C-Club, E-Club ya da üretim alanını sürümlü kanonik analitik sözleşmeyle okur.
 * **Hızlı Sorular:** `hizliSorgu.ts`, role uygun hazır soru metinleri ile bunların araç ve parametre planlarının tek kaynağıdır. Sorular aksi belirtilmedikçe güncel Türkiye haftasını kullanır; E-Club kişisel durum sorgusu lig veya dönem parametresi taşımaz.
 * **Üretim Raporu:** `uretim_raporu`, `/raporlar/uretim` ekranıyla ortak `lib/rapor/uretim/getUretimData.ts` okuyucusunu kullanır. Kullanıcının yetkili olduğu firmanın yayın portföyünü, kişisel üretim görevlerinden ve anlık canlı stok dağılımından ayırır. Kapsam veya kaynak hatası sıfır sonuç gibi sunulmaz.
 * **Öğrenme Kataloğu:** `egitim.ts`, UTT/KD_UTT için T-Club; BM için C-Club görünürlük, geçerli tur, izleme, challenge ve cevap kayıtlarını kullanır. Etkin araç bayraklarına göre Video, Podcast, Dijital Broşür ve Literatür yayınlarını okur; `arac_turu` bilgisini sonuçta korur.
@@ -410,17 +410,50 @@ Eczacı, ikinci eczacı, yardımcı eczacı ve eczane teknisyeni kendi E-Club ö
 
 Dönem karşılaştırmasının varsayılan eşit süre yöntemi, ortak Türkiye takviminde iki dönemin başlangıcından eşit sayıda tamamlanmış günü alır ve bugünü dışarıda bırakır. Ay uzunluğu farkında kısa dönem sınırdır; dönemin ilk gününde eşit süre kıyası yapılmaz. Eksik ölçüm, boş sonuç ve gerçek sıfır birbirinden ayrılır; eksik sıra veya puan değeri uydurulmaz.
 
-#### 5.3. Sohbet ve Güvenlik
-İstemci ham sohbet geçmişi, rol veya firma parametresi göndermez. Sunucuda imzalanan sohbet token'ı kullanıcı, rol, firma, takım, bölge ve modül kapsamına bağlıdır; son 12 mesajı, en çok 18.000 karakteri ve 30 dakikalık geçerliliği taşır. Tarayıcıda kalıcı saklanmaz; yeni sohbet veya kimlik değişimi bağlamı temizler. Yeni sayısal soruda araç yeniden çağrılır ve eski cevap güncel veri kaynağı sayılmaz.
+#### 5.3. Analitik Kapsam ve Ortak Sorgu Anayasası
+
+HapBi tek bir rolün veya tek bir rapor ekranının asistanı değildir. HapBi erişimi bulunan bütün kullanıcı rollerinin yalnız kendi yetkili kapsamlarındaki platform verilerini doğal dille sorgulamasını sağlayan ortak analiz ve karar destek katmanıdır. Belirli hazır sorularla sınırlandırılamaz; rol, organizasyon kapsamı, dönem, kişi, ürün, kategori, öğrenme aracı, yayın ve performans ölçütlerinin farklı birleşimlerini aynı analitik sözleşmeyle ele alır.
+
+HapBi kullanıcıya yeni bir veri erişim yetkisi kazandırmaz. Kullanıcının platform ekranlarında ve raporlarında erişebildiği kapsam HapBi için de üst sınırdır. Rol ve organizasyon kapsamı sunucuda çözülür; kullanıcının soru içinde bildirdiği rol, firma, takım, bölge, ürün veya kişi bilgisi yetki kaynağı kabul edilmez.
+
+* **UTT / KD_UTT:** Kendi T-Club öğrenme, yayın, ürün, kategori, puan, kayıp, sıralama ve gelişim verilerini sorgular.
+* **BM:** Kendi C-Club verileri ile sorumluluk kapsamındaki UTT/KD_UTT kullanıcılarının T-Club sonuçlarını birbirine karıştırmadan sorgular.
+* **TM:** Kendi takımındaki BM sorumluluk kapsamlarını, UTT/KD_UTT kullanıcılarını, ürünleri ve toplam takım sonuçlarını sorgular.
+* **Ürün Ailesi Rolleri:** Yetkili oldukları takım ile bu takıma bağlı ürünlerin yayın, öğrenme ve performans sonuçlarını sorgular.
+* **Diğer Üretici Rolleri:** Yetenek profillerine göre takım veya firma kapsamındaki ilgili yayın ve performans sonuçlarını sorgular.
+* **Yönetici Rolleri:** Firma içindeki takımları, BM sorumluluk kapsamlarını, UTT/KD_UTT kullanıcılarını, ürünleri ve konsolide firma sonuçlarını sorgular.
+* **E-Club Eczane Rolleri:** Kendi E-Club üyelik, öğrenme, içerik ve puan sonuçlarını sorgular.
+* **E-Club Yönetim Erişimi Bulunan İç Roller:** Kendi organizasyon yetkileriyle sınırlı eczane, kişi, içerik ve sonuçları sorgular.
+* **İçerik Üreticisi ve Admin:** Yalnız Bluebook'ta açıkça tanımlanan üretim, platform yönetim veya gözlem araçlarını kullanır; bu roller kendiliğinden firma içi ticari analiz yetkisi doğurmaz.
+* **Eczanem Uygulaması Üyesi:** HapBi kullanmaz.
+
+Firma içi T-Club performansının analitik toplulaştırma zinciri `UTT/KD_UTT → BM sorumluluk kapsamı → takım → firma` biçimindedir. Bölge performans üreten bir kişi veya bağımsız sonuç kaynağı değil, organizasyon kapsamını tanımlayan ve BM ile UTT/KD_UTT kullanıcılarının ilişkilendirilmesine yardımcı olan bir sınıflandırmadır. Toplam sonuçlar yetki sınırları içinde firma düzeyinden takıma, BM sorumluluk kapsamına, kullanıcıya ve işlemi oluşturan kayda kadar ayrıştırılabilir olmalıdır. BM'nin kişisel C-Club performansı bu zincirdeki T-Club toplamına katılmaz.
+
+Ürün, “ürün eğitimi” kategorisinden farklı ve bağımsız bir analitik boyuttur. Ürün sonuçları gerçek `urun_id` ile yayının ürün ilişkisi üzerinden hesaplanır; kategori toplamı ürün adı veya ürün performansı olarak sunulamaz. Ürün; firma, takım, BM sorumluluk kapsamı, kullanıcı, dönem, kategori, öğrenme aracı ve yayın boyutlarıyla birlikte sorgulanabilir. Analiz hem ürünün takım, kullanıcı, araç ve yayın katkılarına hem de takım veya kullanıcının ürün dağılımına doğru çalışır.
+
+Her analitik soru ortak olarak `kullanıcı rolü + yetkili kapsam + veri alanı + dönem + ölçüt + analiz boyutu + filtre + istenen işlem` bileşenleriyle çözümlenir. İstenen işlem toplam, sıralama, fark, dağılım, katkı, karşılaştırma, eğilim, alt kırılım veya öneri olabilir. Model bütün roller için ortaktır; değişen unsur kullanıcının yetkili kapsamı ve erişebildiği veri alanlarıdır.
+
+Kişi, ürün, takım, eczane, yayın veya üretim varyantı için açıkça baz, kırılım, dağılım, sıralama, liste, katkı veya detay isteyen dönemli sorular ortak `analitik_sorgu` yoluna öncelikli gönderilir. Bu sorular eski tek-ekran rapor yorumlarına daraltılmaz. Dönem belirtilmemişse veri okunmadan hafta, ay, çeyrek veya yıl netleştirilir.
+
+Toplam, puan, kayıp, sıralama, fark, dağılım, katkı ve karşılaştırma gibi doğrulanabilir sonuçlar salt-okur veri katmanı tarafından hesaplanır. Gemini doğal dildeki amacı çözümler, eksik veya belirsiz bilgiyi ister, doğru aracı seçer ve yapılandırılmış sonucu açıklar; kişi, ürün, organizasyon ilişkisi veya sayısal sonuç üretmez. Yorum ve öneriler de doğrulanmış bulgulara dayanır.
+
+Ortak analitik araç, sonuç satırlarındaki kişi/ürün/organizasyon ölçümleri ile genel toplamları ayrı ve kararlı kanıt kimliklerine dönüştürür. Gemini yayımlayacağı analitik cevapta kullandığı kanıt kimliklerini seçmek zorundadır. Yayımlama kapısı seçilen kanıtın aynı istekte okunmuş kaynağa ait olduğunu, cevapta adı geçen bilinen varlık için kanıt seçildiğini, sayının seçilmiş kanıtta bulunduğunu ve kişi–ölçüt–değer ilişkisinin bozulmadığını doğrular. Kaynak içinde bulunan iki doğru sayının yanlış kişilere veya yanlış ölçütlere bağlanması geçerli cevap sayılmaz.
+
+Takipli konuşma yalnız dönem bilgisini değil; son sorgunun veri alanını, yetkili kapsamını, dönemini, ölçütünü, boyutunu, seçilmiş kişi/takım/ürün/yayın kimliklerini, filtresini, sıralamasını ve analitik işlemini korur. Takipli konuşma bütün roller ve analitik boyutlar için geçerlidir. Her yeni sayısal talepte yetki yeniden doğrulanır ve sonuç canlı veriden yeniden hesaplanır.
+
+HapBi yalnız toplam sonuç vermekle yetinmez. Kullanıcı yetkili olduğu sürece toplamı oluşturan alt bileşenleri gösterebilir: firma sonucu takımlara; takım sonucu BM sorumluluk kapsamlarına, ürünlere ve kullanıcılara; kullanıcı sonucu ürün, kategori, öğrenme aracı ve yayınlara; ürün sonucu takım, kullanıcı, öğrenme aracı ve yayınlara ayrıştırılabilir.
+
+#### 5.4. Sohbet ve Güvenlik
+İstemci ham sohbet geçmişi, rol veya firma parametresi göndermez. Sunucuda imzalanan sohbet token'ı kullanıcı, rol, firma, takım, bölge ve modül kapsamına bağlıdır; son 12 mesajı, en çok 18.000 karakteri ve 30 dakikalık geçerliliği taşır. Token ayrıca son doğrulanmış analitik sorgunun veri alanı, dönem, ölçüt, boyut, filtre, işlem, sıralama ve sonuçta gerçekten görülen en çok 30 varlık kimliğini yapılandırılmış takip bağlamı olarak taşıyabilir. Bu bağlam yalnız aynı sayfada kullanılabilir; tarayıcıda kalıcı saklanmaz ve yeni sohbet veya kimlik değişimiyle temizlenir. Yeni sayısal soruda araç yeniden çağrılır; geçmiş cevap ve bağlamdaki eski sayılar güncel veri kaynağı sayılmaz.
 
 Model yalnız tanımlı okuma araçlarını çağırabilir; serbest SQL, tablo, URL veya yazma erişimi bulunmaz. Araç parametreleri sunucuda doğrulanır. Cevap kaynakları ve yönlendirmeler yalnız o istekte okunmuş kaynak kimliklerinden seçilir. Bilgi cevabı kaynak gerektirir ve cevapta kullanılan sayıların seçilen kaynakta bulunması denetlenir; bu kontrol tek başına anlamsal doğruluk garantisi değildir.
 
-Serbest soru yolunda en fazla 5 model çağrısı ve 8 araç seçimi; hızlı yolda tek canlı araç ve tek sunum çağrısı vardır. Sağlayıcı bağlantı, HTTP veya zaman aşımı hatası gereksiz ikinci model çağrısıyla yinelenmez. Süreç içi kullanıcı başına eşzamanlılık ve hız sınırı uygulanır. Eğitim, izleme veya challenge sorgusu 1.000 satır sınırına ulaşırsa eksik veriden öneri üretilmez. Çok örnekli üretim için süreçler arası ortak rate-limit deposu ayrıca gerekir. Günlükler soru, cevap, kişi adı veya anahtar yerine istek kimliği, model, araç adları, hızlı yol, token ve süre bilgilerini tutar.
+Serbest soru motoru normal akışta bir araç seçimi ve bir sunum olmak üzere iki model çağrısıyla tamamlanır. Yayımlama kapısı cevabı reddederse model yalnız bir düzeltme çağrısı daha yapabilir; tek istekte üst sınır üç model ve iki araç çağrısıdır. Hızlı yolda tek canlı araç ve tek sunum çağrısı vardır. Sağlayıcı bağlantı, HTTP veya zaman aşımı hatası gereksiz ikinci model çağrısıyla yinelenmez. Süreç içi kullanıcı başına eşzamanlılık ve hız sınırı uygulanır. Eğitim, izleme veya challenge sorgusu 1.000 satır sınırına ulaşırsa eksik veriden öneri üretilmez. Çok örnekli üretim için süreçler arası ortak rate-limit deposu ayrıca gerekir. Günlükler soru, cevap, kişi adı veya anahtar yerine istek kimliği, model, araç adları, hızlı yol, token ve süre bilgilerini tutar.
 
-#### 5.4. Arayüz ve Doğrulama
+#### 5.5. Arayüz ve Doğrulama
 HapBi, iç panel yerleşiminde sohbet modalı, maskot, role uygun hızlı sorular, yeni sohbet düğmesi ve okunmuş kaynak bağlantılarıyla gösterilir. Eğitim kaynağının kullanıcıya görünen adı **Eğitim Yayınları**dır. Öneri bağlantısı UTT'yi doğrudan ilgili kategori ve yayına; BM'yi varsa güncel gelen challenge bağlamını koruyarak C-Club izleme ekranına götürür. Kaynak bağlantısı hedef ekranın dönem filtresini otomatik değiştirmez. Canlı ekran turları AI cevabının yerine geçmeyen ayrı bir rehberlik katmanıdır.
 
-**Doğrulama kaydı — 3 Eylül 2026:** `tests/hapbi.smoke.test.ts` içindeki kimlik, rol ve organizasyon kapsamı, veri doğruluğu, eğitim görünürlüğü, gelişim rehberi, dönem karşılaştırması, sohbet imzası, hızlı sorgu, Gemini araç döngüsü, kaynak ve hata yollarına ilişkin **34 / 34 test başarılıdır**. Bu kayıt otomatik test sonucudur; bütün roller için canlı uçtan uca doğrulamanın tamamlandığı anlamına gelmez. Önceki canlı kullanıcı denemeleri, süre ölçümleri ve deployment kayıtları tarihsel kanıt olarak `docs/HAPBI.md` içinde tutulur ve güncel durum yerine kullanılamaz.
+**Doğrulama kaydı — 4 Eylül 2026:** HapBi test paketindeki kimlik, rol/kapsam, dönem netleştirmesi, imzalı analitik bağlam, üç mesaj derinliğinde takip, canlı yeniden okuma, kanıt kimliği, kişi–ürün–ölçüt–değer ilişkisi, kaynak ve hata yollarına ilişkin **94 / 94 test başarılıdır**. E2E matris testi bütün iç rol kodlarını dört veri alanında anayasal kapsamlarıyla; T-Club, C-Club, E-Club ve üretimin desteklenen bütün boyutlarını; dış kimlik, kapalı modül ve eksik organizasyon retlerini kapsar. Ayrıca UTT, BM, GM ve PM temsilcileriyle `doğal dil → Gemini araç seçimi → sunucu kapsamı → RPC → kanıtlı cevap` zinciri çalıştırılmıştır. Bu kayıt otomatik ve yerel test sonucudur; gerçek Gemini ve canlı Supabase ile bütün rollerin uçtan uca doğrulandığı anlamına gelmez. Önceki canlı kullanıcı denemeleri, süre ölçümleri ve deployment kayıtları tarihsel kanıt olarak `docs/HAPBI.md` içinde tutulur ve güncel durum yerine kullanılamaz.
 
 ---
 
@@ -2258,20 +2291,38 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `araclar.ts` | TypeScript / Lib | Doğrulanmış bağlamı kuran ve yalnız çağrılan alan motorunu dinamik yükleyen hafif araç dağıtıcısı. |
 | `aracTanimlari.ts` | TypeScript / Lib | Gemini işlev şemalarını veri motorlarından bağımsız tutan hafif ve kanonik araç tanımı modülü. |
 | `bilgiKaynaklari.ts` | TypeScript / Lib | Bluebook/kod dayanaklı sürümlü kullanıcı rehberi. |
+| `dogrudanYanit.ts` | TypeScript / Lib | Kanonik araç sonuçlarından Gemini çağrısı yapmadan doğrulanmış kısa yanıtlar üretir. |
 | `eclubKisi.ts` | TypeScript / Lib | Oturum sahibinin E-Club kişi/eczane/firma erişimini, eğitim durumunu ve puan özetini iletişim verisi taşımadan okuyan kişisel veri servisi. |
 | `egitim.ts` | TypeScript / Lib | Rol, yayın görünürlüğü ve geçerli tur üzerinden eğitim adaylarını okur. |
 | `gemini.ts` | TypeScript / Lib | Sınırlı Gemini araç döngüsü, kaynaklı yanıt ve sayısal tutarlılık denetimi. |
 | `hapbiBilgiTabani.ts` | TypeScript / Lib | Mevcut UTT ekran turlarını taşır; AI bilgi kaynağı veya hazır soru tanımı değildir. |
 | `hapbiKullaniciBaglami.ts` | TypeScript / Lib | Yetkili kimlik, organizasyon ve modül kapsamını doğrular; sayı veya varsayılan rol üretmez. |
 | `hizliSorgu.ts` | TypeScript / Lib | Role özel hazır soru metinlerini kesin araç/parametre planlarına bağlar; varsayılan haftayı ve E-Club dönem dışı kapsamını korur. |
+| `kanitPaketi.ts` | TypeScript / Lib | Doğrulanmış araç çıktılarını Gemini'nin yalnız açıklayabileceği yapılandırılmış olgu ve sınır paketlerine dönüştürür. |
+| `motor.ts` | TypeScript / Lib | Doğrudan yanıt, kanıtlı yorum, takip ve serbest araç yollarını tek HapBi cevap akışında orkestre eder. |
 | `rehberlik.ts` | TypeScript / Lib | HapBi asistanı kapsamında `raporOlcumleri`, `olcumleriKarsilastir`, `gelisimiDegerlendir` işlev ve sabitlerini ve `GelisimHedefi` veri sözleşmelerini sağlar; rehberlik iş kurallarını tek modülde toplar. |
-| `sohbet.ts` | TypeScript / Lib | Kapsama bağlı imzalı sohbet bağlamı ve süreç içi istek sınırı. |
-| `sozlesme.ts` | TypeScript / Lib | Kaynak, yanıt ve hata sözleşmeleri. |
+| `sohbet.ts` | TypeScript / Lib | Mesajlar, bekleyen netleştirme ve doğrulanmış analitik sorgu/varlık bağlamını kullanıcı-kapsamına bağlı imzalı token içinde korur; süreç içi istek sınırını uygular. |
+| `soruPlani.ts` | TypeScript / Lib | Doğal dildeki dönem, analitik niyet ve takip işaretlerini güvenli doğrudan veya ortak analitik araç planına dönüştürür; dönem belirtilmeyen sayısal soruyu netleştirir. |
+| `sozlesme.ts` | TypeScript / Lib | Kaynak, yanıt, hata, bekleyen netleştirme ve yapılandırılmış analitik takip bağlamı sözleşmelerini tanımlar. |
+| `takip.ts` | TypeScript / Lib | Eksik alan isteyen soruların imzalı sohbet bağlamında tamamlanmasını ve konu değişiminde kapatılmasını yönetir. |
+
+### 📁 lib/hapbi/analitik/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `cclubOkuyucu.ts` | TypeScript / Lib | Yetkili kişisel, takım veya firma C-Club kapsamını kişi, ürün, kategori, öğrenme aracı ve yayın boyutlarında toplayarak kanonik analitik sonuca dönüştürür. |
+| `eclubOkuyucu.ts` | TypeScript / Lib | E-Club yönetim kapsamındaki UTT→eczane→kişi ve ürün ilişkilerini, kazanım ve ileri sarma kaybını tek kanonik sonuçta toplar. |
+| `kanit.ts` | TypeScript / Lib | Analitik satır ve toplam olgularına kararlı kanıt kimlikleri ekler; yayımlanan cevapta seçilen kaynak, varlık, ölçüt ve değer ilişkisini doğrular. |
+| `kapsam.ts` | TypeScript / Lib | Doğrulanmış kimlik ve rol bağlamını T-Club, C-Club, E-Club ve üretim alanlarının kişisel, sorumluluk, takım veya firma kapsamına dönüştüren merkezi yetki çözücüsüdür. |
+| `sozlesme.ts` | TypeScript / Lib | Bütün roller için veri alanı, yetkili kapsam, dönem, ölçüt, boyut, filtre, işlem, olgu ve sonuç yapılarını tanımlayan sürümlü kanonik analitik sözleşmedir. Geçersiz veya kendi içinde uyumsuz sorguları veri katmanına ulaşmadan reddeder. |
+| `tclubOkuyucu.ts` | TypeScript / Lib | T-Club puan defterlerini firma→takım→BM sorumluluğu→UTT/KD zinciri ile ürün, kategori, öğrenme aracı ve yayın boyutlarında kanonik olarak toplar. |
+| `uretimOkuyucu.ts` | TypeScript / Lib | Talep, üretim görevi ve yayın olaylarını ürün, araç, varyant, durum ve sorumlu kişi boyutlarında toplayan kanonik üretim analitik okuyucusudur. |
 
 ### 📁 lib/hapbi/aracMotorlari/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
+| `analitik.ts` | TypeScript / Lib | Gemini'nin ortak analitik araç parametrelerini kapalı enumlarla doğrular, rol kapsamını sunucuda çözer ve dört veri alanından uygun kanonik okuyucuyu çalıştırır. Modelden rol, firma, takım veya kapsam seçimi kabul etmez. |
 | `eclub.ts` | TypeScript / Lib | Eczacı/teknisyen kişisel E-Club durumu ile iç kullanıcı E-Club raporunu ayrı yetki sınırlarında çalıştırır. |
 | `egitim.ts` | TypeScript / Lib | Yetkili eğitim kataloğu ve yayın senaryosu araçlarını çalıştırır. |
 | `gelisim.ts` | TypeScript / Lib | Gelişim rehberi ve eşit süre/takvim karşılaştırması araçlarını çalıştırır. |
@@ -2893,6 +2944,10 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `get_urun_from_yayin.sql` | SQL / DDL | HapBilgi kapsamında get ürün from yayın için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_urun_from_yayin` veritabanı nesnelerini ele alır. |
 | `get_yonetici_egitim_turu_etkisi_v3.sql` | SQL / DDL | HapBilgi kapsamında get yönetici egitim turu etkisi v3 için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_yonetici_egitim_turu_etkisi_v3` veritabanı nesnelerini ele alır. |
 | `get_yonetici_rapor_v2.sql` | SQL / DDL | HapBilgi kapsamında get yönetici rapor v2 için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_yonetici_rapor_ana_ozet_v2`, `get_yonetici_hiyerarsi_v2`, `get_yonetici_icerik_etkisi_v2` veritabanı nesnelerini ele alır. |
+| `hapbi_analitik_cclub_v1.sql` | SQL / DDL | C-Club kişisel, takım ve firma kapsamını kişi×yayın ayrıntısında, ürün ve öğrenme aracı bağıyla tek yetki kontrollü analitik kaynaktan sunar. |
+| `hapbi_analitik_eclub_v1.sql` | SQL / DDL | E-Club iç yönetim kapsamını UTT→eczane→kişi ve ürün zincirinde tek sorguda toplar; ileri sarma kaybını kazanımdan ayırarak gerçek net puanı üretir. |
+| `hapbi_analitik_tclub_v1.sql` | SQL / DDL | T-Club kapsamını rol temelinde sunucuda çözüp puan defterlerini kişi×yayın ayrıntısında firma, takım, BM sorumluluğu ve ürün bağlarıyla döndürür. |
+| `hapbi_analitik_uretim_v1.sql` | SQL / DDL | PM ailesi için takım, diğer üretici ve yönetici roller için firma kapsamında talep, üretim görevi ve yayın olaylarını tek analitik kaynaktan sunar. |
 | `hbligi_v1_kaldir.sql` | SQL / DDL | HapBilgi kapsamında hbligi v1 kaldir için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
 | `hbligi_v2_backfill.sql` | SQL / DDL | HapBilgi kapsamında hbligi v2 backfill için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
 | `hbligi_v2_kopya.sql` | SQL / DDL | HapBilgi kapsamında hbligi v2 kopya için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `hb_ligi_v2`, `v_hbligi_sirali_v2`, `get_hb_ligi_aylik_v2` veritabanı nesnelerini ele alır. |
@@ -3021,8 +3076,19 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `egitimTuruSozlesmesi.smoke.test.ts` | Test / TypeScript | “eğitim türü sözleşmesi altı kanonik türü ve üretici rol yetkilerini doğru tutar” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `gonderimKarari.smoke.test.ts` | Test / TypeScript | “mutlu: beklemedeki id ya da kendi durumsuz satiri -> guncelle + dogru id” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `hapbi.smoke.test.ts` | Test / TypeScript | “hapbi: kimlik yetkili kaynaktan okunur, hiyerarşi tamamlanır, çelişki reddedilir” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `hapbiAnalitikArac.smoke.test.ts` | Test / TypeScript | Ortak analitik aracın kapalı veri alanı/boyut/ölçüt sözleşmesini, sunucu taraflı PM takım kapsamını ve modelden kapsam kabul etmemesini doğrular. |
+| `hapbiAnalitikE2E.smoke.test.ts` | Test / TypeScript | Bütün iç ve dış rol ailelerini dört veri alanı ve desteklenen bütün boyutlarla sınar; temsilci roller için doğal dilden RPC ve kanıtlı cevaba uzanan tam yerel zinciri doğrular. |
+| `hapbiAnalitikKanit.smoke.test.ts` | Test / TypeScript | Analitik satır/toplam kanıt kimliklerini; kanıtsız cevap, bilinmeyen kanıt, yanlış kişi–değer ilişkisi ve tek düzeltme turundaki güvenli yayımlama davranışını doğrular. |
+| `hapbiAnalitikKapsam.smoke.test.ts` | Test / TypeScript | Dört analitik veri alanında rolün kişisel, BM sorumluluğu, takım, firma veya E-Club organizasyon kapsamına doğru ve kapalı biçimde çözüldüğünü doğrular. |
+| `hapbiAnalitikOkuyucu.smoke.test.ts` | Test / TypeScript | T-Club kanonik okuyucusunun kişi, ürün ve hiyerarşi kırılımlarını; filtre, dönem, sınır ve çoklu BM durumlarını kayıpsız taşıdığını doğrular. |
+| `hapbiAnalitikSozlesme.smoke.test.ts` | Test / TypeScript | Kanonik analitik sözleşmenin ürün yöneticisi ve firma yöneticisi kapsamlarını, çok boyutlu sorguları ve geçersiz birleşim retlerini doğrular. |
+| `hapbiCclubAnalitikOkuyucu.smoke.test.ts` | Test / TypeScript | C-Club kişisel puanının ürün ve challenge ölçütleriyle kanonik okunmasını ve SQL kapsam ayrımını doğrular. |
+| `hapbiEclubAnalitikOkuyucu.smoke.test.ts` | Test / TypeScript | E-Club kişi ve ürün kırılımını, ileri sarma kaybını, limitten bağımsız genel toplamı ve tek RPC okumasını doğrular. |
 | `hapbiBilgiKaynaklari.smoke.test.ts` | Test / TypeScript | “HapBi platform bilgisi güncel BLUEBOOK sürümünü ve dört öğrenme aracını taşır” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `hapbiCanliTurMetinleri.smoke.test.ts` | Test / TypeScript | “HapBi canlı turları kullanıcıya kurumsal siz diliyle seslenir” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `hapbiMotor.smoke.test.ts` | Test / TypeScript | HapBi soru planı, dönem takibi, doğrudan yanıt, kanıtlı yorum, analitik varlık kimliğinin üç mesaj boyunca korunması ve canlı yeniden okuma yollarını sınar. |
+| `hapbiPilot.smoke.test.ts` | Test / TypeScript | SQL tabanlı ve Gemini tabanlı pilot soru paketlerinin değerlendirme ve ölçüm sözleşmelerini doğrular. |
+| `hapbiUretimAnalitikOkuyucu.smoke.test.ts` | Test / TypeScript | Talep, üretim görevi ve yayın sayılarının ürün, öğrenme aracı ve varyant boyutlarında toplanmasını ve rol kapsamlı SQL kaynağını doğrular. |
 | `hbligiKapsam.smoke.test.ts` | Test / TypeScript | “HBLigi üst rol kapsamları firma ve takım sınırını korur” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `hbstoreFirmaUrun.smoke.test.ts` | Test / TypeScript | “mutlu: global aktif ürün varsayılan veya açık firma ayarında görünür” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `hedefRoller.smoke.test.ts` | Test / TypeScript | “hedef kitle sözleşmesi Eczacı ve Teknisyeni tekil ya da birlikte kabul eder” davranışını otomatik olarak doğrulayan smoke testidir. |
