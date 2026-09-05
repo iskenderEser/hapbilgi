@@ -1,9 +1,12 @@
 import { ARAC_TANIMLARI } from "@/lib/hapbi/aracTanimlari";
-import { alanlariDogrula, HapbiHata, nesne, type HapbiAracSonucu, type HapbiGecmisMesaji, type HapbiKaynak, type HapbiYanit } from "@/lib/hapbi/sozlesme";
+import { hapbiAnalitikYanitiDogrula } from "@/lib/hapbi/analitik/kanit";
+import { hapbiKanitPaketiOlustur, yorumYanitiDogrula } from "@/lib/hapbi/kanitPaketi";
+import type { HapbiYorumNiyeti } from "@/lib/hapbi/soruPlani";
+import { alanlariDogrula, HapbiHata, nesne, type HapbiAnalitikTakipBaglami, type HapbiAracSonucu, type HapbiGecmisMesaji, type HapbiKaynak, type HapbiYanit } from "@/lib/hapbi/sozlesme";
 
 type Part = { text?: string; thought?: boolean; functionCall?: { id?: string; name: string; args: unknown }; [key: string]: unknown };
 type Content = { role: "user" | "model"; parts: Part[] };
-interface MotorGirdisi {
+export interface MotorGirdisi {
   soru: string;
   pathname: string;
   rol: string;
@@ -14,6 +17,12 @@ interface MotorGirdisi {
   model: string;
   signal?: AbortSignal;
   fetcher?: typeof fetch;
+  izinliAraclar?: string[];
+  istemEki?: string;
+  azamiModelCagrisi?: number;
+  azamiAracCagrisi?: number;
+  sistemIstemi?: string;
+  analitikBaglam?: HapbiAnalitikTakipBaglami | null;
 }
 
 interface HizliMotorGirdisi {
@@ -22,6 +31,18 @@ interface HizliMotorGirdisi {
   rol: string;
   aracAdi: string;
   aracSonucu: HapbiAracSonucu;
+  apiKey: string;
+  model: string;
+  signal?: AbortSignal;
+  fetcher?: typeof fetch;
+}
+
+interface KanitliMotorGirdisi {
+  soru: string;
+  pathname: string;
+  rol: string;
+  niyet: HapbiYorumNiyeti;
+  aracSonuclari: HapbiAracSonucu[];
   apiKey: string;
   model: string;
   signal?: AbortSignal;
@@ -39,7 +60,7 @@ BM'nin kişisel öğrenme puanı C-Club, saha ekibinin performansı T-Club'dır.
 Eczacı ve eczane teknisyeninin kişisel E-Club eğitimleri, puanları veya gelişim adımı için eclub_kisisel_durum kullan. Bu rollerde lig ve dönem bilgisi yoktur; isteme, hesaplama veya başka lig aracıyla tamamlama. E-Club kişisel özetini iç kullanıcı eğitim kataloğu, T-Club/C-Club veya ekip E-Club raporuyla karıştırma. Araçtaki bekleyenler kişiye atanmış, süresi devam eden eğitimlerdir; mesleki eksiklik teşhisi değildir. Bekleyen sayısının sıfır olması tüm eğitimlerin tamamlandığını göstermez; suresi_gecmis_egitim değerini ayrıca oku ve tamamlanmadan sona erenleri tamamlanmış gibi anlatma. Aktif eğitim yokken kullanıcı öğrenme önerisi isterse suresi_gecmis listesiyle yeniden inceleme seçenekleri sunabilirsin; bunları puanlı güncel görev diye tanıtma. Tamamlanmadan süresi geçmiş kayıttan bilgi tazelemenin sınırlanmış olduğu, kullanıcının başarısız olduğu veya içeriğe ihtiyaç duyduğu sonucunu çıkarma; yalnız öğrenme amacıyla yeniden incelenebileceğini söyle. E-Club kişi eğitimlerini "Eğitim Yayınları" diye adlandırma; "E-Club eğitimleri" de. Abartılı "harika fırsat" gibi ifadeler kullanma. Somut eğitim önerdiğinde araçtan gelen egitim_id değerlerini yaniti_sun.egitim_idleri içinde seç. Eczacı/teknisyen bağlamı doğrulandığı halde araç veri hatası verirse bunu yetki eksikliği diye anlatma; kişisel E-Club verisinin o anda okunamadığını söyle.
 Üretim Raporları ekranı (/raporlar/uretim), şirketin yayın portföyüdür: yayın hacmi, canlı yayın ve varyantlar için uretim_raporu kullan. performans_raporu içindeki üretici özeti yalnız kişinin kendi talep/yayın kayıtlarıdır; şirketin Üretim Raporları yerine kullanma. Tamamlanan talep ile yayına alınan içerik aynı ölçüm değildir. Dönem yayını ile şu anda canlı yayın/tarihsel toplamı ayır. Varyant adetleri yalnız seçilen dönemde yayına alınanlara aittir; "canlıdaki yayınların dağılımı" deme. Sıfır dönem varyantı "bu ay bu varyantta yeni yayın yok" demektir, "bu varyantta aktif yayın yok" değildir. Canlı stokun varyant dağılımı araçta yoktur. Eğitim türünün dönem izleme/puanı eski yayınlardan da gelebilir; bunları sadece o ay üretilen yayınlara veya satış başarısına bağlama. donem_karsilastir saha performansını karşılaştırır, üretim miktarı farkını hesaplayan araç değildir.
 oneri_kaybi T-Club Öneri Takibi ile, challenge_kaybi C-Club gelen challenge kayıtlarıyla ilgilidir; birbirinin adıyla anlatma. Geçmişte kaybedilmiş puanların geri kazanılacağını, telafi edileceğini, silineceğini veya iade edileceğini söyleme. Yanlış cevap için yeniden çalışma, ileri sarmadan izleme ve süre takibi önerileri sonraki çalışmalarda yeni kayıpları azaltmaya yöneliktir; geçmiş kaybı değiştirmez.
-Dönem belirtilmezse canlı sayı için bu haftayı kullan ve açıkça belirt. Kullanıcı bir önceki dönem diyorsa sohbet ve sunucu takvimini kullan; belirsiz lig/kişi/dönemde kısa bir soru sor. Rapor ekranındaki seçili filtrelerin sana aktarıldığını varsayma.
+Dönem belirtilmeyen sayısal veya analitik soruda hafta, ay, çeyrek ya da yıl seçeneklerinden hangisinin esas alınacağını sor; sessizce bu haftayı seçme. Kullanıcı bir önceki dönem diyorsa imzalı analitik sohbet bağlamı ve sunucu takvimini kullan; belirsiz lig/kişi/dönemde kısa bir soru sor. Rapor ekranındaki seçili filtrelerin sana aktarıldığını varsayma.
 İç kullanıcıya kişisel veya ekip gelişim/başarı/eğitim önceliği önerirken önce gelisim_rehberi kullan; yalnız katalog veya en yüksek puan kişisel ihtiyaç analizi değildir. Eczacı/teknisyen bunun istisnasıdır ve eclub_kisisel_durum kullanır. Kullanıcı açıkça puan hedeflemediyse hedef=ogrenme; açık kategori tercihi yoksa kategori=tumu. UTT/KD_UTT kişisel, BM kendi gelişimi için kişisel=C-Club ve bölgesi için ekip=T-Club; TM/üretici/yönetici ekip kapsamıdır. Belirsiz BM isteğinde kısa bir soru sor. Desteklenmeyen rol/kapsamı uydurma.
 Rehberlik cevabını gözlem → neden → uygulanabilir adım olarak 2–5 cümlede anlat; aşağıdaki eğitim bağlantılarının gerekçelerini tekrar uzatma. Sunucu gerekçelerine sadık kal. Puan/tamamlama satış başarısı veya mesleki yetkinlik değildir. Kategori yanlış cevap kaybını belirli video/teknik hatası diye anlatma. Veri yoksa eksiklik teşhisi koyma; önerinin genel bir başlangıç olduğunu söyle. Ekibin verisini kişinin öğrenme eksiği diye sunma.
 Ekip rehberliğinde kişisel eğitim kataloğu okunmaz; boş öneri listesi ekip için uygun eğitim olmadığı anlamına gelmez. Ekip yanıtını rapordaki bulgulara ve ilgili rapor/Öneri Takibi adımlarına dayandır; BM'nin kendi C-Club eğitimlerini bölgesinin UTT eğitimleri yerine önerme.
@@ -54,12 +75,17 @@ video_puani alanı kayıtlı öğrenme aracı puanıdır, kesin kazanım değild
 Kullanıcıya eğitim kataloğunu Eğitim Yayınları adıyla anlat; "yetkili eğitimler" deme. Somut eğitim önerdiğinde her önerinin egitim_id değerini yaniti_sun.egitim_idleri listesine ekle; böylece ilgili eğitimin bağlantısı gösterilir. Yalnız cevapta önerdiklerini seç. URL'si olmayan kaynak için yonlendirme_kaynak_id seçme.
 Bu sürüm salt okunur: kayıt, onay, sipariş, iptal veya gönderim yapamaz. Yapılmış gibi söyleme. Henüz araçla desteklenmeyen rollerin kişisel verisini bildiğini iddia etme.
 Dönem kıyaslamasında donem_karsilastir kullan; fark/yüzdeyi kendin hesaplama. Adil kıyas için varsayılan esit_sure iki dönemin başından eşit sayıda TAMAMLANMIŞ gün alır, bugünü içermez: cevapta gün sayısını ve bugünün dahil olmadığını açıkça belirt. Bu değerleri tam hafta/ay toplamı diye sunma. Kullanıcı anlık/tam dönem toplamı isterse yontem=takvim; devam eden dönem ile tam önceki dönem farklı uzunluktadır, gerileme/ilerleme teşhisi koyma. Eşit süre olsa da puan farkı satış başarısı veya bilgi düzeyi ölçümü değildir. Henüz tamamlanmış gün yoksa kıyas uydurma. Yüzde null ise eksik/sıfır/negatif baz nedeniyle hesaplanamadığını söyle; yüzde uydurma.
-Son yanıtı mutlaka yaniti_sun ile gönder. Yalnız bu istekteki kaynak id'lerini seç. Kişisel/ekip önerilerinde yanit_turu=rehberlik ve gelisim_rehberi kaynağı; diğer somut bilgi yanıtında yanit_turu=bilgi ve kaynak zorunludur. Eğitim içerik açıklamasında okunan senaryo kaynağını da seç. Selamlaşma, açıklama sorusu, kapsam dışı talep veya erişim/hata bildirimi yanit_turu=aciklama ile kaynaksız olabilir. Rakamları yalnız seçtiğin kaynakta mevcut değerlerle kullan. Numaralı liste yerine kısa paragraflar kullan. Bağlantıları metne yazma; yönlendirme için kaynak id'si seç. Kaynak bağlantısı sayfanın dönem filtresini otomatik değiştirmez. Düz metin kullan; 2–5 cümle genellikle yeterlidir.`;
+Son yanıtı mutlaka yaniti_sun ile gönder. Yalnız bu istekteki kaynak id'lerini seç. analitik_sorgu sonucunda kanitlar varsa cevapta kullandığın her kişi, ürün ve toplam olgusunun kimliğini kanit_idleri alanına ekle. Kişisel/ekip önerilerinde yanit_turu=rehberlik ve gelisim_rehberi kaynağı; diğer somut bilgi yanıtında yanit_turu=bilgi ve kaynak zorunludur. Eğitim içerik açıklamasında okunan senaryo kaynağını da seç. Selamlaşma, açıklama sorusu, kapsam dışı talep veya erişim/hata bildirimi yanit_turu=aciklama ile kaynaksız olabilir. Rakamları yalnız seçtiğin kaynakta mevcut değerlerle kullan. Numaralı liste yerine kısa paragraflar kullan. Bağlantıları metne yazma; yönlendirme için kaynak id'si seç. Kaynak bağlantısı sayfanın dönem filtresini otomatik değiştirmez. Düz metin kullan; 2–5 cümle genellikle yeterlidir.`;
 
 const HAPBI_HIZLI_SISTEM_ISTEMI = `Sen hapbi, HapBilgi'nin Türkçe asistanısın. Sunucu hazır sorunun rolünü, kapsamını ve canlı veri aracını doğruladı. Yalnız verilen araç sonucunu kullan ve yalnız yaniti_sun aracını çağır.
 Kısa, sıcak ve açık Türkçe ile kullanıcıya siz diye hitap et. Düz metin ve 2–5 cümle kullan. Kaynakta olmayan sayı, neden, yetkinlik, başarı veya kazanç sonucu üretme. Puan ve tamamlama mesleki yetkinlik ya da satış başarısı değildir.
 Araç sonucu rehberlik ise yanit_turu=rehberlik, diğer kaynaklı sonuçlarda yanit_turu=bilgi kullan. Kaynak kimliğini kaynak_idleri içinde seç. Cevapta önerdiğin her eğitimin egitim_id değerini egitim_idleri içinde seç; URL yazma.
 Dönem karşılaştırmasında eşit gün sayısını ve bugünün dahil edilmediğini açıkla. Raporun hafta/ay filtresi eğitimlerin tamamlanma dönemi değildir; eğitim durumunu yalnız "bu turda" diye anlat, eğitim önerisinde hafta/ay ifadesi kullanma. E-Club kişisel verisini lig veya dönem gibi anlatma; süresi geçmiş eğitimi puanlı güncel görev olarak sunma. Veri boşsa veya erişilemiyorsa bunu açıkça söyle, sıfır ya da tamamlandı sonucuna çevirme.`;
+
+const HAPBI_KANITLI_SISTEM_ISTEMI = `Sen hapbi, HapBilgi'nin Türkçe yorum asistanısın. Sunucu soru kapsamını çözmüş, canlı veri araçlarını çalıştırmış ve doğrulanmış kanıt paketini hazırlamıştır.
+Araç seçme, hesaplama yapma ve yeni olgu üretme. Yalnız kanıt paketindeki veri, türetilmiş olgu ve cevap sözleşmesini kullan. Cevap sözleşmesindeki her zorunlu noktayı karşıla; yasaklanan çıkarımları yapma.
+Eşit iki toplam aynı kayıtların toplamı olduğunu kanıtlamaz. Puan motivasyon, kişilik, mesleki yetkinlik veya satış başarısı ölçmez. Eksik veri sıfır değildir; kayıtlı sıfır eksik veri değildir.
+Son cevabı yalnız yaniti_sun ile ver. Somut bilgi için ilgili bütün kaynak kimliklerini seç. Cevap 2–5 kısa cümlelik düz Türkçe olsun; URL ve numaralı liste kullanma.`;
 
 const YANITI_SUN_TANIMI = ARAC_TANIMLARI.find(tanim => tanim.name === "yaniti_sun");
 
@@ -73,9 +99,99 @@ function sayilariBul(metin: string): string[] {
   });
 }
 
+function regexKacir(metin: string): string {
+  return metin.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function kararliJson(deger: unknown): string {
+  if (Array.isArray(deger)) return `[${deger.map(kararliJson).join(",")}]`;
+  if (deger && typeof deger === "object") {
+    return `{${Object.entries(deger as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b))
+      .map(([anahtar, icerik]) => `${JSON.stringify(anahtar)}:${kararliJson(icerik)}`).join(",")}}`;
+  }
+  return JSON.stringify(deger);
+}
+
+function donemiAracBicimineCevir(deger: Record<string, unknown>): Record<string, string | number> {
+  if (deger.tur === "ceyrek") return { periyot: "donem", yil: Number(deger.yil), ceyrek: Number(deger.ceyrek) };
+  if (deger.tur === "hafta") return { periyot: "hafta", yil: Number(deger.yil), hafta: Number(deger.hafta) };
+  if (deger.tur === "ay") return { periyot: "ay", yil: Number(deger.yil), ay: Number(deger.ay) };
+  if (deger.tur === "yil") return { periyot: "yil", yil: Number(deger.yil) };
+  if (deger.tur === "ozel" && typeof deger.baslangic === "string" && typeof deger.bitis === "string") {
+    return { periyot: "ozel", baslangic: deger.baslangic, bitis: deger.bitis };
+  }
+  return {};
+}
+
+function analitikBaglamiOlustur(
+  sonuc: HapbiAracSonucu,
+  pathname: string,
+): HapbiAnalitikTakipBaglami | null {
+  if (!sonuc.veri || !["ok", "bos"].includes(sonuc.durum)) return null;
+  const veri = nesne(sonuc.veri);
+  if (veri.surum !== "hapbi-analitik-v1") return null;
+  const sorgu = nesne(veri.sorgu);
+  const donem = donemiAracBicimineCevir(nesne(sorgu.donem));
+  if (!Object.keys(donem).length || typeof sorgu.veri_alani !== "string" || typeof sorgu.islem !== "string") return null;
+  const varliklar = new Map<string, { boyut: string; id: string; ad: string }>();
+  for (const hamSatir of Array.isArray(veri.satirlar) ? veri.satirlar : []) {
+    const satir = nesne(hamSatir);
+    const boyutlar = nesne(satir.boyutlar);
+    for (const [boyut, hamVarlik] of Object.entries(boyutlar)) {
+      if (!hamVarlik || typeof hamVarlik !== "object" || Array.isArray(hamVarlik)) continue;
+      const v = nesne(hamVarlik);
+      if (typeof v.id !== "string" || typeof v.ad !== "string") continue;
+      varliklar.set(`${boyut}:${v.id}`, { boyut, id: v.id, ad: v.ad });
+      if (varliklar.size >= 30) break;
+    }
+    if (varliklar.size >= 30) break;
+  }
+  const filtreler = (Array.isArray(sorgu.filtreler) ? sorgu.filtreler : []).flatMap((ham) => {
+    const f = nesne(ham);
+    return typeof f.boyut === "string" && Array.isArray(f.kimlikler) && f.kimlikler.every((id) => typeof id === "string")
+      ? [{ boyut: f.boyut, kimlikler: f.kimlikler as string[] }]
+      : [];
+  });
+  const siralama = sorgu.siralama && typeof sorgu.siralama === "object" ? nesne(sorgu.siralama) : null;
+  return {
+    surum: 1,
+    pathname,
+    veri_alani: sorgu.veri_alani,
+    donem,
+    olcutler: Array.isArray(sorgu.olcutler) ? sorgu.olcutler.filter((v): v is string => typeof v === "string") : [],
+    boyutlar: Array.isArray(sorgu.boyutlar) ? sorgu.boyutlar.filter((v): v is string => typeof v === "string") : [],
+    filtreler,
+    islem: sorgu.islem,
+    ...(siralama && typeof siralama.olcut === "string" && typeof siralama.yon === "string"
+      ? { siralama: { olcut: siralama.olcut, yon: siralama.yon } }
+      : {}),
+    varliklar: [...varliklar.values()],
+  };
+}
+
+function kisiPuanIliskileriniDogrula(cevap: string, sonuclar: HapbiAracSonucu[], kaynakIdleri: unknown) {
+  if (!Array.isArray(kaynakIdleri)) return;
+  const olgular = sonuclar.filter(sonuc => sonuc.kaynak && kaynakIdleri.includes(sonuc.kaynak.id))
+    .flatMap(sonuc => {
+      const veri = nesne(sonuc.veri ?? {});
+      const kanonik = nesne(veri.kanonik ?? {});
+      return Array.isArray(kanonik.olgular) ? kanonik.olgular : [];
+    })
+    .map(olgu => nesne(olgu))
+    .filter(olgu => olgu.iliski === "net_puan" && typeof olgu.ozne === "string" && typeof olgu.deger === "number");
+  for (const olgu of olgular) {
+    const ad = String(olgu.ozne);
+    const desen = new RegExp(`(?:${regexKacir(ad)}[^.!?\\d]{0,30}(\\d+(?:[.,]\\d+)*)\\s*puan|(\\d+(?:[.,]\\d+)*)\\s*puan(?:la|lık)?\\s+(?:lider\\s+)?${regexKacir(ad)})`, "iu");
+    const eslesme = cevap.match(desen);
+    if (!eslesme) continue;
+    const aktarilan = Number(String(eslesme[1] ?? eslesme[2]).replace(",", "."));
+    if (aktarilan !== olgu.deger) throw new HapbiHata("ANLAMSAL_DOGRULAMA", 502, `${ad} ile puan ilişkisi doğrulanamadı.`);
+  }
+}
+
 export function sonYanitiDogrula(args: unknown, sonuclar: HapbiAracSonucu[], model: string): HapbiYanit {
   const a = nesne(args);
-  alanlariDogrula(a, ["yanit_turu", "cevap", "kaynak_idleri", "yonlendirme_kaynak_id", "egitim_idleri"]);
+  alanlariDogrula(a, ["yanit_turu", "cevap", "kaynak_idleri", "yonlendirme_kaynak_id", "egitim_idleri", "kanit_idleri"]);
   if (!["bilgi", "rehberlik", "aciklama"].includes(String(a.yanit_turu))) throw new HapbiHata("YANIT_TURU", 502, "Yanıt türü doğrulanamadı.");
   if (typeof a.cevap !== "string" || !a.cevap.trim() || a.cevap.length > 5000 || !Array.isArray(a.kaynak_idleri) || a.kaynak_idleri.length > 8) {
     throw new HapbiHata("YANIT_BICIMI", 502, "Yanıt doğrulanamadı. Lütfen tekrar deneyin.");
@@ -90,9 +206,21 @@ export function sonYanitiDogrula(args: unknown, sonuclar: HapbiAracSonucu[], mod
   if (a.yanit_turu === "rehberlik" && !sonuclar.some(s => s.tur === "rehberlik" && s.durum === "ok" && kaynaklar.some(k => k.id === s.kaynak?.id))) {
     throw new HapbiHata("REHBERLIK_KAYNAGI", 502, "Öneri için gelisim_rehberi veya role uygun E-Club rehberlik kaynağı okunmalı ve seçilmelidir.");
   }
-  const kaynakSayilari = new Set(sonuclar.filter(s => s.kaynak && a.kaynak_idleri instanceof Array && a.kaynak_idleri.includes(s.kaynak.id))
-    .flatMap(s => sayilariBul(JSON.stringify({ veri: s.veri, donem: s.kaynak?.donem }, (key, value) => key === "egitim_id" ? undefined : value))));
+  const kaynakIdleri = a.kaynak_idleri.filter((id): id is string => typeof id === "string");
+  const analitikKanitSayilari = a.yanit_turu === "aciklama" ? null
+    : hapbiAnalitikYanitiDogrula(a.cevap, kaynakIdleri, a.kanit_idleri, sonuclar);
+  const seciliSonuclar = sonuclar.filter(s => s.kaynak && kaynakIdleri.includes(s.kaynak.id));
+  const kaynakSayilari = new Set([
+    ...(analitikKanitSayilari?.map(String) ?? []),
+    ...seciliSonuclar.flatMap((s) => {
+      const veri = nesne(s.veri ?? {});
+      return veri.surum === "hapbi-analitik-v1" && analitikKanitSayilari
+        ? sayilariBul(String(s.kaynak?.donem ?? ""))
+        : sayilariBul(JSON.stringify({ veri: s.veri, donem: s.kaynak?.donem }, (key, value) => key === "egitim_id" ? undefined : value));
+    }),
+  ]);
   if (sayilariBul(a.cevap).some(s => !kaynakSayilari.has(s))) throw new HapbiHata("SAYI_DOGRULAMA", 502, "Yanıttaki sayılar seçilen kaynakta bulunamadı.");
+  kisiPuanIliskileriniDogrula(a.cevap, sonuclar, a.kaynak_idleri);
   const yon = a.yonlendirme_kaynak_id;
   const hedef = yon ? kaynaklar.find(k => k.id === yon) : undefined;
   if (yon && !hedef?.url) throw new HapbiHata("YONLENDIRME", 502, "Yönlendirme doğrulanamadı.");
@@ -116,20 +244,34 @@ export function sonYanitiDogrula(args: unknown, sonuclar: HapbiAracSonucu[], mod
     ...(hedef?.url ? { aksiyon: { etiket: hedef.baslik, url: hedef.url } } : {}) };
 }
 
-export async function hapbiYanitUret(g: MotorGirdisi): Promise<HapbiYanit & { araclar: string[]; tokenSayisi: number }> {
+export async function hapbiYanitUret(g: MotorGirdisi): Promise<HapbiYanit & { araclar: string[]; tokenSayisi: number; analitikBaglam: HapbiAnalitikTakipBaglami | null }> {
   if (!g.apiKey || !/^[a-zA-Z0-9._-]+$/.test(g.model)) {
     throw new HapbiHata("MODEL_AYARI", 503, "hapbi'nin AI bağlantısı yapılandırılmamış.");
+  }
+  if (g.izinliAraclar?.includes("analitik_sorgu")) {
+    throw new HapbiHata(
+      "ESKI_ANALITIK_AKIS_KAPALI",
+      502,
+      "Analitik sorular yalnız doğrulanmış HapBi motoru üzerinden cevaplanabilir.",
+    );
   }
   const fetcher = g.fetcher ?? fetch;
   const signal = g.signal ? AbortSignal.any([g.signal, AbortSignal.timeout(45000)]) : AbortSignal.timeout(45000);
   const contents: Content[] = g.gecmis.map(m => ({ role: m.rol, parts: [{ text: m.metin }] }));
   contents.push({ role: "user", parts: [{ text: JSON.stringify({ soru: g.soru, sayfa: g.pathname }) }] });
-  const systemInstruction = { parts: [{ text: HAPBI_SISTEM_ISTEMI + "\nSunucuda doğrulanan bağlam: " + JSON.stringify({ rol: g.rol, takvim: g.takvim }) }] };
+  const izinliAdlar = new Set(["yaniti_sun"]);
+  const tanimlar = ARAC_TANIMLARI.filter(tanim => izinliAdlar.has(tanim.name));
+  const azamiModelCagrisi = 1;
+  const azamiAracCagrisi = 0;
+  const systemInstruction = { parts: [{ text: (g.sistemIstemi ?? HAPBI_SISTEM_ISTEMI)
+    + (g.istemEki ? `\nBu sorgunun yürütme kuralı: ${g.istemEki}` : "")
+    + "\nSunucuda doğrulanan bağlam: " + JSON.stringify({ rol: g.rol, takvim: g.takvim, onceki_analitik_baglam: g.analitikBaglam ?? null }) }] };
   const sonuclar: HapbiAracSonucu[] = [];
   const araclar: string[] = [];
+  const aracOnbellegi = new Map<string, HapbiAracSonucu>();
+  let yeniAnalitikBaglam: HapbiAnalitikTakipBaglami | null = null;
   let tokenSayisi = 0;
-  // En çok 5 model isteği / 8 okuma; tek sorunun döngü ve maliyeti sınırlı.
-  for (let tur = 0; tur < 5; tur++) {
+  for (let tur = 0; tur < azamiModelCagrisi; tur++) {
     let res: Response;
     try {
       res = await fetcher(`https://generativelanguage.googleapis.com/v1beta/models/${g.model}:generateContent`, {
@@ -137,8 +279,8 @@ export async function hapbiYanitUret(g: MotorGirdisi): Promise<HapbiYanit & { ar
         headers: { "Content-Type": "application/json", "x-goog-api-key": g.apiKey },
         body: JSON.stringify({
           systemInstruction, contents,
-          tools: [{ functionDeclarations: ARAC_TANIMLARI }],
-          toolConfig: { functionCallingConfig: { mode: "ANY", ...(tur === 4 ? { allowedFunctionNames: ["yaniti_sun"] } : {}) } },
+          tools: [{ functionDeclarations: tanimlar }],
+          toolConfig: { functionCallingConfig: { mode: "ANY", ...(tur === azamiModelCagrisi - 1 ? { allowedFunctionNames: ["yaniti_sun"] } : { allowedFunctionNames: tanimlar.map(tanim => tanim.name) }) } },
           generationConfig: { temperature: 0.2, maxOutputTokens: 3000 },
         }),
       });
@@ -163,9 +305,9 @@ export async function hapbiYanitUret(g: MotorGirdisi): Promise<HapbiYanit & { ar
     if (final) {
       if (calls.length !== 1) throw new HapbiHata("MODEL_SIRA", 502, "AI yanıt sırası doğrulanamadı.");
       try {
-        return { ...sonYanitiDogrula(final.args, sonuclar, g.model), araclar, tokenSayisi };
+        return { ...sonYanitiDogrula(final.args, sonuclar, g.model), araclar, tokenSayisi, analitikBaglam: yeniAnalitikBaglam ?? g.analitikBaglam ?? null };
       } catch (error) {
-        if (tur === 4) throw error;
+        if (tur === azamiModelCagrisi - 1) throw error;
         contents.push(content, { role: "user", parts: [{ functionResponse: {
           name: final.name, ...(final.id ? { id: final.id } : {}),
           response: { hata: error instanceof HapbiHata ? error.kod : "YANIT_BICIMI", aciklama: "Yanıt yayımlanmadı. Kaynakları ve rakamları doğrula; kaynağa dayalı yanıtı veya veriye erişemediğini açıklayan kısa cevabı yeniden sun." },
@@ -173,15 +315,23 @@ export async function hapbiYanitUret(g: MotorGirdisi): Promise<HapbiYanit & { ar
         continue;
       }
     }
-    if (araclar.length + calls.length > 8) throw new HapbiHata("ARAC_SINIRI", 429, "Sorgu çok geniş. Lütfen tek bir konu veya dönemle tekrar deneyin.");
+    if (calls.some(call => !izinliAdlar.has(call.name) || call.name === "yaniti_sun")) throw new HapbiHata("ARAC_YETKISI", 502, "Sorguyla ilgisiz araç çağrısı reddedildi.");
+    const yeniAnahtarlar = calls.map(call => `${call.name}:${kararliJson(call.args)}`).filter(anahtar => !aracOnbellegi.has(anahtar));
+    if (araclar.length + new Set(yeniAnahtarlar).size > azamiAracCagrisi) throw new HapbiHata("ARAC_SINIRI", 429, "Sorgu çok geniş. Lütfen tek bir konu veya dönemle tekrar deneyin.");
     // thoughtSignature dahil modelin bütün part'ları değiştirilmeden geri iletilir.
     contents.push(content);
     const parts: Part[] = [];
     for (const call of calls) {
       signal.throwIfAborted();
-      const sonuc = await g.arac(call.name, call.args);
-      sonuclar.push(sonuc);
-      araclar.push(call.name);
+      const anahtar = `${call.name}:${kararliJson(call.args)}`;
+      let sonuc = aracOnbellegi.get(anahtar);
+      if (!sonuc) {
+        sonuc = await g.arac(call.name, call.args);
+        aracOnbellegi.set(anahtar, sonuc);
+        sonuclar.push(sonuc);
+        araclar.push(call.name);
+        if (call.name === "analitik_sorgu") yeniAnalitikBaglam = analitikBaglamiOlustur(sonuc, g.pathname);
+      }
       parts.push({ functionResponse: { name: call.name, ...(call.id ? { id: call.id } : {}), response: sonuc } });
     }
     contents.push({ role: "user", parts });
@@ -236,4 +386,44 @@ export async function hapbiHizliYanitUret(g: HizliMotorGirdisi): Promise<HapbiYa
     araclar: [g.aracAdi],
     tokenSayisi: Number(body.usageMetadata?.totalTokenCount ?? 0),
   };
+}
+
+export async function hapbiKanittanYanitUret(g: KanitliMotorGirdisi): Promise<HapbiYanit & { tokenSayisi: number }> {
+  if (!g.apiKey || !/^[a-zA-Z0-9._-]+$/.test(g.model) || !YANITI_SUN_TANIMI) {
+    throw new HapbiHata("MODEL_AYARI", 503, "hapbi'nin AI bağlantısı yapılandırılmamış.");
+  }
+  if (!g.aracSonuclari.length) throw new HapbiHata("KANIT_YOK", 502, "Sorunun doğrulanmış veri kaynağı bulunamadı.");
+  const fetcher = g.fetcher ?? fetch;
+  const signal = g.signal ? AbortSignal.any([g.signal, AbortSignal.timeout(25000)]) : AbortSignal.timeout(25000);
+  const paket = hapbiKanitPaketiOlustur(g.niyet, g.soru, g.rol, g.aracSonuclari);
+  let res: Response;
+  try {
+    res = await fetcher(`https://generativelanguage.googleapis.com/v1beta/models/${g.model}:generateContent`, {
+      method: "POST", signal, cache: "no-store",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": g.apiKey },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: HAPBI_KANITLI_SISTEM_ISTEMI }] },
+        contents: [{ role: "user", parts: [{ text: JSON.stringify({ sayfa: g.pathname, kanit_paketi: paket }) }] }],
+        tools: [{ functionDeclarations: [YANITI_SUN_TANIMI] }],
+        toolConfig: { functionCallingConfig: { mode: "ANY", allowedFunctionNames: ["yaniti_sun"] } },
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 1200,
+          ...(g.model.startsWith("gemini-3") ? { thinkingConfig: { thinkingLevel: "minimal" } } : {}),
+        },
+      }),
+    });
+  } catch {
+    throw new HapbiHata(signal.aborted ? "ZAMAN_ASIMI" : "MODEL_BAGLANTISI", 503, "AI servisine şu anda ulaşılamıyor. Lütfen tekrar deneyin.");
+  }
+  if (!res.ok) throw new HapbiHata(`MODEL_HTTP_${res.status}`, 503, "AI servisi şu anda yanıt veremiyor. Lütfen tekrar deneyin.");
+  const body = await res.json();
+  const aday = body.candidates?.[0];
+  if (aday?.finishReason && aday.finishReason !== "STOP") throw new HapbiHata("MODEL_EKSIK_YANIT", 502, "AI yanıtı tamamlanamadı. Lütfen tekrar deneyin.");
+  const content = aday?.content as Content | undefined;
+  const calls = content?.parts?.flatMap(p => p.functionCall ? [p.functionCall] : []) ?? [];
+  if (calls.length !== 1 || calls[0].name !== "yaniti_sun") throw new HapbiHata("MODEL_ARACSIZ", 502, "AI yanıtı kaynaklarla doğrulanamadı.");
+  const sonuc = sonYanitiDogrula(calls[0].args, g.aracSonuclari, g.model);
+  yorumYanitiDogrula(g.niyet, sonuc.cevap, sonuc.kaynaklar.length);
+  return { ...sonuc, tokenSayisi: Number(body.usageMetadata?.totalTokenCount ?? 0) };
 }

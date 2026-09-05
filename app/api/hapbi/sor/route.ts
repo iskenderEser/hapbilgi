@@ -2,10 +2,9 @@ import { NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { getHapbiKullaniciBaglami, hapbiKapsamAnahtari } from "@/lib/hapbi/hapbiKullaniciBaglami";
 import { hapbiAraclariniOlustur } from "@/lib/hapbi/araclar";
-import { hapbiHizliYanitUret, hapbiYanitUret } from "@/lib/hapbi/gemini";
+import { hapbiMotorunuCalistir } from "@/lib/hapbi/motor";
 import { HapbiHata, nesne, alanlariDogrula } from "@/lib/hapbi/sozlesme";
-import { sohbetiAc, sohbetiPaketle, istekSinirlayiciOlustur } from "@/lib/hapbi/sohbet";
-import { hizliSorguPlani } from "@/lib/hapbi/hizliSorgu";
+import { sohbetDurumunuAc, sohbetiPaketle, istekSinirlayiciOlustur } from "@/lib/hapbi/sohbet";
 
 export const maxDuration = 60;
 const sinirla = istekSinirlayiciOlustur();
@@ -56,34 +55,36 @@ export async function POST(req: Request) {
     const baglam = await getHapbiKullaniciBaglami(db, user.id);
     const kapsam = hapbiKapsamAnahtari(baglam);
     const imzaAnahtari = process.env.HAPBI_SOHBET_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-    const gecmis = sohbetiAc(body.sohbet, kapsam, imzaAnahtari);
+    const sohbetDurumu = sohbetDurumunuAc(body.sohbet, kapsam, imzaAnahtari);
+    const gecmis = sohbetDurumu.mesajlar;
     const araclar = hapbiAraclariniOlustur(db, baglam);
     const soru = body.soru.trim();
     const apiKey = (process.env.GEMINI_API_KEY ?? "").trim();
     const model = (process.env.GEMINI_MODEL || "gemini-flash-latest").trim();
-    const plan = body.hizli === true ? hizliSorguPlani(baglam.rol, soru, araclar.takvim) : null;
-    let hizliKullanildi = false;
-    let sonuc;
-    if (plan) {
-      const aracSonucu = await araclar.calistir(plan.arac, plan.parametre);
-      try {
-        sonuc = await hapbiHizliYanitUret({
-          soru, pathname, rol: baglam.rol, aracAdi: plan.arac, aracSonucu, apiKey, model, signal,
-        });
-        hizliKullanildi = true;
-      } catch (hizliHata) {
-        if (!(hizliHata instanceof HapbiHata) || hizliHata.kod.startsWith("MODEL_HTTP_") || ["MODEL_BAGLANTISI", "ZAMAN_ASIMI"].includes(hizliHata.kod)) throw hizliHata;
-      }
-    }
-    sonuc ??= await hapbiYanitUret({
+    const sonuc = await hapbiMotorunuCalistir({
       soru, pathname, rol: baglam.rol, takvim: araclar.takvim, gecmis,
-      arac: araclar.calistir, apiKey, model, signal,
+      bekleyenTakip: sohbetDurumu.bekleyenTakip,
+      analitikBaglam: sohbetDurumu.analitikBaglam,
+      arac: araclar.calistir, apiKey, model, signal, hizli: body.hizli === true,
     });
     const sohbet = sohbetiPaketle([...gecmis,
       { rol: "user", metin: body.soru.trim() }, { rol: "model", metin: sonuc.cevap },
-    ], kapsam, imzaAnahtari);
-    console.info("[hapbi]", { istekId, durum: "ok", hizli: hizliKullanildi, model: sonuc.model, araclar: sonuc.araclar, tokenSayisi: sonuc.tokenSayisi, sureMs: Date.now() - baslangic });
-    return NextResponse.json({ cevap: sonuc.cevap, kaynaklar: sonuc.kaynaklar, egitimler: sonuc.egitimler, aksiyon: sonuc.aksiyon, model: sonuc.model, sohbet, istekId }, { headers });
+    ], kapsam, imzaAnahtari, Date.now(), sonuc.bekleyenTakip, sonuc.analitikBaglam);
+    console.info("[hapbi]", { istekId, durum: "ok", yol: sonuc.yol, model: sonuc.model, araclar: sonuc.araclar, tokenSayisi: sonuc.tokenSayisi, sureMs: Date.now() - baslangic });
+    return NextResponse.json({
+      cevap: sonuc.cevap,
+      kaynaklar: sonuc.kaynaklar,
+      egitimler: sonuc.egitimler,
+      aksiyon: sonuc.aksiyon,
+      model: sonuc.model,
+      kullanim: {
+        yol: sonuc.yol,
+        araclar: sonuc.araclar,
+        tokenSayisi: sonuc.tokenSayisi,
+      },
+      sohbet,
+      istekId,
+    }, { headers });
   } catch (error) {
     const hata = error instanceof HapbiHata ? error : new HapbiHata("SUNUCU", 503, "hapbi şu anda yanıt veremiyor. Lütfen tekrar deneyin.");
     console.warn("[hapbi]", { istekId, durum: "hata", kod: hata.kod, sureMs: Date.now() - baslangic });
