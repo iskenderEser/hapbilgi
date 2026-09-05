@@ -26,6 +26,9 @@ async function calistiriciyiYukle(ad: string): Promise<HapbiAlanCalistirici | nu
   if (ad === "eclub_kisisel_durum" || ad === "eclub_raporu") {
     return (await import("@/lib/hapbi/aracMotorlari/eclub")).eclubAraciniCalistir;
   }
+  if (ad === "analitik_sorgu") {
+    return (await import("@/lib/hapbi/aracMotorlari/analitik")).analitikAraciniCalistir;
+  }
   return null;
 }
 
@@ -39,7 +42,8 @@ export function hapbiAraclariniOlustur(db: SupabaseClient, kullanici: HapbiKulla
         const calistir = await calistiriciyiYukle(ad);
         if (!calistir) return { durum: "desteklenmiyor", aciklama: "Bu araç mevcut değil." };
         return await calistir(baglam, ad, a);
-      } catch {
+      } catch (hata) {
+        console.error("[hapbi calistir hatasi]", hata);
         return { durum: "hata", aciklama: "Parametre veya veri kaynağı doğrulanamadı. Bu sonuç sıfır puan, birincilik veya tamamlandı anlamına gelmez." };
       }
     },

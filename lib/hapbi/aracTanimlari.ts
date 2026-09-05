@@ -1,4 +1,10 @@
 import { TUR_SIRA } from "@/lib/video/icerikTuru";
+import {
+  HAPBI_ANALITIK_BOYUTLARI,
+  HAPBI_ANALITIK_ISLEMLERI,
+  HAPBI_ANALITIK_OLCUTLERI,
+  HAPBI_VERI_ALANLARI,
+} from "@/lib/hapbi/analitik/sozlesme";
 
 const periyotOzellikleri = {
   periyot: { type: "STRING", enum: ["hafta", "ay", "donem", "yil"] },
@@ -42,10 +48,33 @@ export const ARAC_TANIMLARI = [
     liste: { type: "STRING", enum: ["bekleyen", "tamamlanan", "suresi_gecmis", "tumu"], description: "Varsayılan bekleyen. Puan/özet sorusunda bekleyen; kullanıcı tamamlananları isterse tamamlanan; aktif eğitim yokken yeniden inceleme seçeneği sorarsa suresi_gecmis kullan." },
   }, []),
   tanim("eclub_raporu", "Yetkili iç kullanıcı/ekip kapsamının dönemli E-Club raporu; tüm sistemdeki eczane sayısı veya eczacı/teknisyen kişisel özeti değildir. Eczacı/teknisyen için eclub_kisisel_durum kullan.", periyotOzellikleri, ["periyot", "yil"]),
+  tanim("analitik_sorgu", "T-Club, C-Club, E-Club yönetim ve üretim/yayın verilerinin ortak analitik aracı. Rol ve organizasyon kapsamı sunucuda belirlenir; kapsam parametresi alma. Sayı, sıralama, fark, dağılım, katkı ve alt kırılımları bu araçla hesaplat; kendin hesaplama. Filtre kimliklerini yalnız önceki araç sonucunda verilen gerçek kimliklerden kullan.", {
+    veri_alani: { type: "STRING", enum: HAPBI_VERI_ALANLARI },
+    ...periyotOzellikleri,
+    olcutler: { type: "ARRAY", items: { type: "STRING", enum: HAPBI_ANALITIK_OLCUTLERI } },
+    boyutlar: { type: "ARRAY", items: { type: "STRING", enum: HAPBI_ANALITIK_BOYUTLARI } },
+    filtreler: {
+      type: "ARRAY",
+      description: "İsteğe bağlı kimlik filtreleri. İsim veya tahminî kimlik kullanma.",
+      items: {
+        type: "OBJECT",
+        properties: {
+          boyut: { type: "STRING", enum: HAPBI_ANALITIK_BOYUTLARI.filter((boyut) => boyut !== "zaman") },
+          kimlikler: { type: "ARRAY", items: { type: "STRING" } },
+        },
+        required: ["boyut", "kimlikler"],
+      },
+    },
+    islem: { type: "STRING", enum: HAPBI_ANALITIK_ISLEMLERI },
+    siralama_olcut: { type: "STRING", enum: HAPBI_ANALITIK_OLCUTLERI },
+    siralama_yon: { type: "STRING", enum: ["artan", "azalan"] },
+    limit: { type: "INTEGER", description: "1-100; yalnız sonuç satırlarını sınırlar, genel toplamı değiştirmez." },
+  }, ["veri_alani", "periyot", "yil", "olcutler", "boyutlar", "islem"]),
   tanim("yaniti_sun", "Son cevabı sun. Yalnız bu istekte okunmuş kaynak kimliklerini seç. URL uydurma. Bilgi/veri yanıtı kaynak gerektirir; selam/eksik bilgi sorusu veya desteklenmeyen işlem açıklaması kaynaksız olabilir.", {
     yanit_turu: { type: "STRING", enum: ["bilgi", "rehberlik", "aciklama"], description: "rehberlik: iç kullanıcı için gelisim_rehberi, eczacı/teknisyen için eclub_kisisel_durum kaynağı zorunlu. bilgi: kaynaklı platform/veri cevabı; aciklama: selam, netleştirme veya hata/erişim bildirimi." },
     cevap: { type: "STRING", description: "Kısa Türkçe düz metin; kaynağın desteklemediği sayı veya neden yok." },
     kaynak_idleri: { type: "ARRAY", items: { type: "STRING" } },
+    kanit_idleri: { type: "ARRAY", items: { type: "STRING" }, description: "Analitik sonuçta kanitlar alanı varsa cevapta kullanılan her kişi/ürün/toplam olgusunun gerçek kanıt kimliği. Analitik bilgi yanıtında en az bir kanıt zorunludur." },
     egitim_idleri: { type: "ARRAY", items: { type: "STRING" }, description: "Eğitim önerisinde, cevapta önerilen her eğitimin araçtan gelen egitim_id değeri. Yalnız seçilen kaynaklardaki eğitimler; tüm adayları değil, önerdiklerini seç." },
     yonlendirme_kaynak_id: { type: "STRING", description: "İsteğe bağlı, seçilen kaynaklardan biri." },
   }, ["yanit_turu", "cevap", "kaynak_idleri"]),

@@ -15,12 +15,53 @@ function rolKapsami(k: HapbiAracBaglami["kullanici"]) {
   return { utt, uretici, sahaRol };
 }
 
-function liste(k: HapbiAracBaglami["kullanici"], rows: Record<string, unknown>[]) {
+function sayi(deger: unknown): number | null {
+  return typeof deger === "number" && Number.isFinite(deger) ? deger : null;
+}
+
+function adSoyad(row: Record<string, unknown>): string {
+  return [row.ad, row.soyad].filter(deger => typeof deger === "string" && deger.trim()).join(" ");
+}
+
+function ligPuani(row: Record<string, unknown>): number | null {
+  return sayi(row.toplam_net_puan) ?? sayi(row.toplam_puan) ?? sayi(row.net_puan);
+}
+
+function kanonikLigPaketi(k: HapbiAracBaglami["kullanici"], rows: Record<string, unknown>[], siraTuru: "genel" | "firma" | "takim" | "bolge") {
+  const kisiler = rows.map(row => ({
+    ad_soyad: adSoyad(row),
+    puan: ligPuani(row),
+    sira: sayi(row.sira),
+    firma_sirasi: sayi(row.firma_sirasi),
+    takim_sirasi: sayi(row.takim_sirasi),
+    bolge_sirasi: sayi(row.bolge_sirasi) ?? (siraTuru === "bolge" ? sayi(row.sira) : null),
+    benim: row.kullanici_id === k.kullanici_id || row.benim === true,
+  })).filter(kisi => kisi.ad_soyad);
+  const sirali = kisiler.filter(kisi => kisi.puan !== null)
+    .sort((a, b) => (b.puan ?? 0) - (a.puan ?? 0) || a.ad_soyad.localeCompare(b.ad_soyad, "tr"));
+  const enYuksek = sirali[0]?.puan ?? null;
+  const liderler = enYuksek === null ? [] : sirali.filter(kisi => kisi.puan === enYuksek);
+  const ilkIki = sirali.slice(0, 2);
+  return {
+    olcu: "net_puan",
+    sira_turu: siraTuru,
+    veri_durumu: !kisiler.length ? "bos" : sirali.length === kisiler.length && sirali.every(kisi => kisi.puan === 0) ? "sifir_esitlik" : "var",
+    kisiler: sirali,
+    liderler,
+    ilk_iki: ilkIki,
+    ilk_iki_puan_farki: ilkIki.length === 2 && ilkIki[0].puan !== null && ilkIki[1].puan !== null ? ilkIki[0].puan - ilkIki[1].puan : null,
+    kendi: kisiler.find(kisi => kisi.benim) ?? null,
+    olgular: sirali.map(kisi => ({ ozne: kisi.ad_soyad, iliski: "net_puan", deger: kisi.puan })),
+  };
+}
+
+function liste(k: HapbiAracBaglami["kullanici"], rows: Record<string, unknown>[], siraTuru: "genel" | "firma" | "takim" | "bolge") {
   return {
     toplam_satir: rows.length, listelenen: Math.min(rows.length, 40),
     kendi_kaydim: rows.find(r => r.kullanici_id === k.kullanici_id)
       ? guvenliSatirlar(rows.filter(r => r.kullanici_id === k.kullanici_id), LIG_ALANLARI)[0] : null,
     satirlar: guvenliSatirlar(rows, LIG_ALANLARI),
+    kanonik: kanonikLigPaketi(k, rows, siraTuru),
     not: "Eksik sıra null'dır, birincilik değildir. Liste 40 satırla sınırlıdır; liste üzerinden tüm kapsam toplamı hesaplama.",
   };
 }
@@ -89,7 +130,7 @@ export const sahaAraciniCalistir: HapbiAlanCalistirici = async (baglam, ad, a) =
     const { data, error } = await db.rpc(isimler[p.periyot], args);
     if (error) throw new Error("CC ligi okunamadı.");
     const rows = (data ?? []).filter((r: Record<string, unknown>) => r.firma_id === k.firma_id);
-    return { durum: rows.length ? "ok" : "bos", kaynak: baglam.kaynak("C-Club Ligi · firma kapsamı", "/cc-ligi", p), veri: { aralik, ...liste(k, rows) } };
+    return { durum: rows.length ? "ok" : "bos", kaynak: baglam.kaynak("C-Club Ligi · firma kapsamı", "/cc-ligi", p), veri: { aralik, ...liste(k, rows, "firma") } };
   }
   if (a.lig !== "hb") throw new Error("Desteklenmeyen lig.");
   if (!sahaRol && !ADMIN_ROLLER.includes(k.rol)) return reddet();
@@ -97,12 +138,12 @@ export const sahaAraciniCalistir: HapbiAlanCalistirici = async (baglam, ad, a) =
     if (!k.bolge_id || !k.firma_id) return reddet();
     const sonuc = await getUttLig(db, k.kullanici_id, k.bolge_id, p);
     const rows = sonuc.lig.map(r => ({ ...r, sira: r.sira > 0 ? r.sira : null }));
-    return { durum: rows.length ? "ok" : "bos", kaynak: baglam.kaynak("HB Ligi · bölge kapsamı", "/hbligi", p), veri: { aralik, ...liste(k, rows) } };
+    return { durum: rows.length ? "ok" : "bos", kaynak: baglam.kaynak("HB Ligi · bölge kapsamı", "/hbligi", p), veri: { aralik, ...liste(k, rows, "bolge") } };
   }
   const gorunum: SahaGorunumu = ADMIN_ROLLER.includes(k.rol) ? "admin" : URETICI_ROLLER.includes(k.rol) ? "uretici" : k.rol === "bm" ? "bm" : k.rol === "tm" ? "tm" : "yonetici";
   const sonuc = await getSahaLig(db, { ...k, gorunum, uretici_scope: uretici?.raporScope }, p);
   return {
     durum: sonuc.lig.length ? "ok" : "bos", kaynak: baglam.kaynak(`HB Ligi · ${sonuc.kapsam_adi}`, "/hbligi", p),
-    veri: { aralik, kapsam: sonuc.kapsam_aciklamasi, ...liste(k, sonuc.lig.map(r => ({ ...r }))) },
+    veri: { aralik, kapsam: sonuc.kapsam_aciklamasi, ...liste(k, sonuc.lig.map(r => ({ ...r })), k.rol === "bm" ? "bolge" : k.rol === "tm" ? "takim" : "genel") },
   };
 };

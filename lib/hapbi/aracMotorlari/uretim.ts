@@ -13,6 +13,15 @@ export const uretimAraciniCalistir: HapbiAlanCalistirici = async (baglam, _ad, a
   return {
     durum: "ok", kaynak: baglam.kaynak("Üretim Raporları · firma portföyü", "/raporlar/uretim", p),
     veri: { aralik, kapsam: "kendi firmasının üretim portföyü",
+      kanonik: {
+        donemde_yayina_alinan: rapor.uretim.donemde_yayina_alinan,
+        su_an_yayinda: rapor.uretim.su_an_yayinda,
+        toplam_yayina_alma: rapor.uretim.toplam_yayina_alma,
+        olgular: [
+          { ozne: "firma_portfoyu", iliski: "donemde_yayina_alinan", deger: rapor.uretim.donemde_yayina_alinan },
+          { ozne: "firma_portfoyu", iliski: "su_an_yayinda", deger: rapor.uretim.su_an_yayinda },
+        ],
+      },
       uretim: { toplam_yayina_alma: rapor.uretim.toplam_yayina_alma,
         donemde_yayina_alinan: rapor.uretim.donemde_yayina_alinan, su_an_yayinda: rapor.uretim.su_an_yayinda,
         donemde_yayina_alinan_turleri: rapor.uretim.turler,
