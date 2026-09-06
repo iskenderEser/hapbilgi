@@ -8,7 +8,7 @@ import { hapbiTarifiniSec, type HapbiSecilmisTarif } from "@/lib/hapbi/niyet/tar
 import { ECLUB_TUKETICI_ROLLERI, MUSTERI_ROLU, TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { oncekiLigPeriyodu } from "@/lib/zaman/kontrol";
 
-export type HapbiDogrudanNiyet = "lig_lideri" | "lig_ilk_iki_fark" | "kisisel_lig" | "bm_cift_sapka" | "tm_bolge_siralamasi" | "tm_bolge_kaybi" | "tm_mumessil_kaybi" | "uretim_ozeti" | "egitim_listesi" | "yetki_reddi" | "eclub_yetkisiz" | "desteklenmiyor" | "netlestir" | "begeni_favori_bilgisi";
+export type HapbiDogrudanNiyet = "lig_lideri" | "lig_ilk_iki_fark" | "kisisel_lig" | "bm_cift_sapka" | "tm_bolge_siralamasi" | "tm_bolge_kaybi" | "tm_mumessil_kaybi" | "uretim_ozeti" | "egitim_listesi" | "yetki_reddi" | "eclub_yetkisiz" | "desteklenmiyor" | "netlestir" | "begeni_favori_bilgisi" | "platform_bilgisi";
 
 export interface HapbiDogrudanPlan {
   yol: "dogrudan";
@@ -261,7 +261,8 @@ function platformKonusu(s: string): string {
   if (/rol|yetki/u.test(s)) return "roller";
   if (/üretim|içerik üret/u.test(s)) return "uretim";
   if (/store|mağaza/u.test(s)) return "store";
-  return "genel";
+  if (/\bhapbi\b|\bhapbilgi\b|\bplatform\b/iu.test(s)) return "platform";
+  return "platform";
 }
 
 function hazirKaynakPlani(soru: string, s: string): HapbiSoruPlani | null {
@@ -293,17 +294,17 @@ function hazirKaynakPlani(soru: string, s: string): HapbiSoruPlani | null {
     };
   }
 
-  const platformBilgisi = /\bhapbi\b|\bhapbilgi\b|\bplatform\b|t-?club|c-?club|e-?club|eczane[mn]?|(?:içerik\s+)?üretim\s+süreci|rol(?:ler)?|yetki(?:ler)?/iu.test(s)
-    && /nedir|ne işe yarar|nasıl çalışır|nasıl kullanılır|fark|süreç|özellik|rol|yetki|hakkında|anlat/iu.test(s);
+  const platformBilgisi = (
+    /^(?:hapbi|hapbilgi)$/iu.test(s.trim()) ||
+    (/\bhapbi\b|\bhapbilgi\b|\bplatform\b|t-?club|c-?club|e-?club|eczane[mn]?|store|mağaza|(?:içerik\s+)?üretim\s+süreci|rol(?:ler)?|yetki(?:ler)?/iu.test(s)
+      && /nedir|ne işe yarar|nasıl çalışır|nasıl kullanılır|fark|süreç|özellik|rol|yetki|hakkında|anlat/iu.test(s))
+  );
   if (platformBilgisi) {
     return {
-      yol: "ai",
-      izinliAraclar: [],
-      istemEki: "Yalnız sunucunun hazırladığı platform bilgisi kaynağını açıkla.",
-      hazirKaynak: {
-        tur: "tek",
-        arac: { ad: "platform_bilgisi", parametre: { konu: platformKonusu(s) } },
-      },
+      yol: "dogrudan",
+      niyet: "platform_bilgisi",
+      arac: "platform_bilgisi",
+      parametre: { konu: platformKonusu(s) },
     };
   }
   return null;
@@ -327,7 +328,7 @@ function yorumPlani(
   const kayipMekanizmasi = /öneri kayb/u.test(s) && /challenge kayb/u.test(s);
   const sifir = /(?:puan|sonuç)[^.!?]{0,70}(?:0|sıfır)|(?:0|sıfır)[^.!?]{0,70}(?:puan|sonuç)/u.test(s)
     && /veri|eksik|gerçek/u.test(s);
-  const egitim = /hangi eğitim|eğitim[^.!?]{0,80}(?:öncelik|öner)|öğrenmek için/u.test(s);
+  const egitim = /hangi eğitim|eğitim[^.!?]{0,80}(?:öncelik|öner)|öğrenmek için|gelişim\s+odak/iu.test(s);
   const puanBileseni = /puan bileşen|hangi[^.!?]{0,80}(?:güçlü|geliştir)|(?:güçlü|zayıf)[^.!?]{0,80}bileşen/u.test(s);
   const kayipOnceligi = /kayıp/u.test(s) && /öncelik|uygulanabilir|ne yap/u.test(s);
   const performansYorumu = /performans/u.test(s) && /yorum|güçlü|geliştir|değerlendir|öner/u.test(s);

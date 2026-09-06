@@ -5,7 +5,7 @@ export const BILGI_KAYNAKLARI = [
   {
     id: "platform", baslik: "HapBilgi nedir?", url: "/hapbilgi-nedir",
     dayanak: ["docs/BLUEBOOK.md Giriş ve §0", "components/panel/bilgi/icerikler.ts"],
-    metin: "HapBilgi; firmalar tarafından sağlanan veya yayımlanması sağlanan Video, Podcast, Dijital Broşür ve Literatür içeriklerini yetkili kullanıcı gruplarına ulaştıran; üretim, yayın, öğrenme, ölçüm ve platform işlemlerini rol temelli yürüten dijital bir platformdur. T-Club saha temsilcilerini, C-Club bölge müdürlerini, E-Club eczacı ve eczane teknisyenlerini, Eczanem ise Eczanem uygulaması üyelerini kapsar. HapBilgi; firma ile çalışanı, firma ile eczane veya eczane ile Eczanem uygulaması üyesi arasındaki ticari ya da mesleki ilişkinin tarafı değildir.",
+    metin: "HapBilgi, zengin öğrenme araçlarıyla bilginin özüne ulaşılmasını sağlayan dijital bir platformdur. Böylece öğrenme sürecini anlık verilerle ölçer ve sürekli motive eder. Bu sayede öz bilginin öğrenmeye dönüşmesini hızlandırır.",
   },
   {
     id: "tclub", baslik: "T-Club öğrenme ve puan", url: "/nasil-calisir",

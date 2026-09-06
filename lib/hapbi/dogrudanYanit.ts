@@ -117,8 +117,25 @@ export function hapbiDogrudanYanitUret(
   }
 
   if (!sonuc || !["ok", "bos"].includes(sonuc.durum)) {
-    return taban(sonuc?.durum === "yetkisiz" ? "Bu bilgiye mevcut rol ve kapsamınızla erişilemiyor." : "İstenen veri şu anda doğrulanamadı.", plan, sonuc);
+    return taban(sonuc?.aciklama ?? (sonuc?.durum === "yetkisiz" ? "Bu bilgiye mevcut rol ve kapsamınızla erişilemiyor." : "İstenen veri şu anda doğrulanamadı."), plan, sonuc);
   }
+
+  if (plan.niyet === "platform_bilgisi") {
+    const veri = nesne(sonuc.veri);
+    const bilgiler = Array.isArray(veri.bilgiler) ? (veri.bilgiler as { baslik?: string; metin?: string }[]) : [];
+    if (bilgiler.length === 1 && bilgiler[0].metin) {
+      return taban(bilgiler[0].metin, plan, sonuc);
+    }
+    if (bilgiler.length > 1) {
+      const birlestirilmis = bilgiler.map((b) => b.metin).filter(Boolean).join("\n\n");
+      return taban(birlestirilmis, plan, sonuc);
+    }
+    if (typeof veri.aciklama === "string" && veri.aciklama) {
+      return taban(veri.aciklama, plan, sonuc);
+    }
+    return taban("Platform bilgisi bulunamadı.", plan, sonuc);
+  }
+
   const donem = donemEtiketi(plan.parametre ?? plan.araclar?.[0]?.parametre);
 
   if (plan.niyet === "uretim_ozeti") {

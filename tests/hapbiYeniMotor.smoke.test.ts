@@ -153,29 +153,39 @@ test("yorumlu analitik soru tek veri okuması ve tek model çağrısıyla cevapl
   assert.deepEqual(sonuc.araclar, ["analitik_sorgu"]);
 });
 
-test("platform bilgisi doğru kaynaktan bir kez okunur ve model aracı seçmez", async () => {
+test("platform bilgisi deterministik hatta model çağrılmadan doğrudan kaynaktan sunulur", async () => {
   const araclar: string[] = [];
   let modelCagrisi = 0;
   const sonuc = await hapbiMotorunuCalistir({
     ...ortakGirdi("HapBilgi nedir?"),
     arac: async (ad, args) => {
       araclar.push(ad);
-      assert.deepEqual(args, { konu: "genel" });
+      assert.deepEqual(args, { konu: "platform" });
       return {
         durum: "ok",
         kaynak: { id: "platform-1", baslik: "HapBilgi", url: "/", zaman: "2026-09-05" },
-        veri: { aciklama: "HapBilgi kurumsal öğrenme platformudur." },
+        veri: {
+          bilgiler: [{
+            baslik: "HapBilgi nedir?",
+            metin: "HapBilgi, zengin öğrenme araçlarıyla bilginin özüne ulaşılmasını sağlayan dijital bir platformdur. Böylece öğrenme sürecini anlık verilerle ölçer ve sürekli motive eder. Bu sayede öz bilginin öğrenmeye dönüşmesini hızlandırır.",
+          }],
+        },
       };
     },
     fetcher: (async () => {
       modelCagrisi += 1;
-      return sonYanitCevabi("HapBilgi kurumsal öğrenme platformudur.", ["platform-1"]);
+      throw new Error("Deterministik platform bilgisinde model çağrılmamalıdır.");
     }) as typeof fetch,
   });
 
   assert.deepEqual(araclar, ["platform_bilgisi"]);
-  assert.equal(modelCagrisi, 1);
-  assert.equal(sonuc.tokenSayisi, 40);
+  assert.equal(modelCagrisi, 0);
+  assert.equal(sonuc.tokenSayisi, 0);
+  assert.equal(sonuc.yol, "dogrudan");
+  assert.equal(
+    sonuc.cevap,
+    "HapBilgi, zengin öğrenme araçlarıyla bilginin özüne ulaşılmasını sağlayan dijital bir platformdur. Böylece öğrenme sürecini anlık verilerle ölçer ve sürekli motive eder. Bu sayede öz bilginin öğrenmeye dönüşmesini hızlandırır."
+  );
 });
 
 test("eğitim listesi doğru kaynaktan bir kez okunur", async () => {
