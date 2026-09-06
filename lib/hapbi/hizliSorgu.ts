@@ -1,4 +1,10 @@
-import { ECLUB_TUKETICI_ROLLERI, MUSTERI_ROLU, TUKETICI_ROLLER } from "@/lib/utils/roller";
+import {
+  TUKETICI_ROLLER,
+  URETICI_ROLLER,
+  YONETICI_ROLLER,
+  ADMIN_ROLLER,
+  IU_ROLU,
+} from "@/lib/utils/roller";
 
 export const UTT_HIZLI_SORULAR = [
   "Gelişmek için hangi eğitimlere öncelik vermeliyim?",
@@ -12,35 +18,31 @@ export const BM_HIZLI_SORULAR = [
   "C-Club puanımı geçen haftayla karşılaştır.",
 ] as const;
 
-export const ECLUB_KISI_HIZLI_SORULAR = [
-  "Eğitim durumum ve puanlarım nedir?",
-  "Hangi eğitimleri inceleyebilirim?",
-  "Tamamladığım eğitimler hangileri?",
+export const TM_HIZLI_SORULAR = [
+  "Bu dönem bölge sıralaması nedir?",
+  "Bu ay takımımın puanı ve sırası kaç?",
+  "Ekibimin gelişim odakları nelerdir?",
 ] as const;
 
-export const MUSTERI_HIZLI_SORULAR = [
-  "HapBilgi nedir?",
-  "E-Club ile Eczanem arasındaki fark nedir?",
+export const YONETICI_HIZLI_SORULAR = [
+  "Bu dönem takımların sıralaması nedir?",
+  "Saha performansını geçen dönemle karşılaştır.",
+  "Bu dönem en çok puan getiren ürünler hangileri?",
 ] as const;
 
-export const IU_HIZLI_SORULAR = [
-  "İçerik üretim süreci nasıl çalışır?",
-  "HapBilgi nedir?",
-] as const;
-
-export const EKIP_HIZLI_SORULAR = [
-  "Ekibimde gelişim için neye odaklanmalıyım?",
-  "Saha performansını geçen haftayla karşılaştır.",
-  "HapBilgi nedir?",
+export const URETICI_HIZLI_SORULAR = [
+  "Bu dönem yayına alınan içeriklerin dağılımı nedir?",
+  "Üretimde bekleyen görev ve talepler nedir?",
+  "En çok tüketilen eğitim yayınları hangileri?",
 ] as const;
 
 export function hizliSorular(rol: string): readonly string[] {
   if (TUKETICI_ROLLER.includes(rol)) return UTT_HIZLI_SORULAR;
   if (rol === "bm") return BM_HIZLI_SORULAR;
-  if (ECLUB_TUKETICI_ROLLERI.includes(rol) || rol === "eczaci" || rol === "teknisyen") return [];
-  if (rol === MUSTERI_ROLU) return MUSTERI_HIZLI_SORULAR;
-  if (rol === "iu") return IU_HIZLI_SORULAR;
-  return EKIP_HIZLI_SORULAR;
+  if (rol === "tm") return TM_HIZLI_SORULAR;
+  if (YONETICI_ROLLER.includes(rol) || ADMIN_ROLLER.includes(rol)) return YONETICI_HIZLI_SORULAR;
+  if (URETICI_ROLLER.includes(rol) || rol === IU_ROLU) return URETICI_HIZLI_SORULAR;
+  return [];
 }
 
 export interface HapbiHizliSorguPlani {
@@ -53,8 +55,6 @@ export function hizliSorguPlani(
   soru: string,
   takvim: Record<string, unknown>,
 ): HapbiHizliSorguPlani | null {
-  // Hazır sorular aksi açıkça yazmadıkça canlı haftayı sorar.
-  // aktifPeriyot yalnız takvim parçalarını taşır; araç sözleşmesi dönem türünü de ister.
   const donem = { ...takvim, periyot: "hafta" };
 
   if (TUKETICI_ROLLER.includes(rol)) {
@@ -69,22 +69,23 @@ export function hizliSorguPlani(
     if (soru === BM_HIZLI_SORULAR[2]) return { arac: "donem_karsilastir", parametre: { ...donem, kapsam: "kisisel", yontem: "esit_sure" } };
   }
 
-  if (ECLUB_TUKETICI_ROLLERI.includes(rol) || rol === "eczaci" || rol === "teknisyen") {
-    return null;
+  if (rol === "tm") {
+    if (soru === TM_HIZLI_SORULAR[0]) return { arac: "lig_durumu", parametre: { lig: "hb", periyot: "donem", yil: takvim.yil, ceyrek: takvim.ceyrek } };
+    if (soru === TM_HIZLI_SORULAR[1]) return { arac: "lig_durumu", parametre: { lig: "hb", periyot: "ay", yil: takvim.yil, ay: takvim.ay } };
+    if (soru === TM_HIZLI_SORULAR[2]) return { arac: "gelisim_rehberi", parametre: { ...donem, kapsam: "ekip", hedef: "ogrenme", kategori: "tumu" } };
   }
 
-  if (rol === MUSTERI_ROLU) {
-    if (soru === MUSTERI_HIZLI_SORULAR[0]) return { arac: "platform_bilgisi", parametre: { konu: "genel" } };
-    if (soru === MUSTERI_HIZLI_SORULAR[1]) return { arac: "platform_bilgisi", parametre: { konu: "eclub" } };
+  if (YONETICI_ROLLER.includes(rol) || ADMIN_ROLLER.includes(rol)) {
+    if (soru === YONETICI_HIZLI_SORULAR[0]) return { arac: "lig_durumu", parametre: { lig: "hb", periyot: "donem", yil: takvim.yil, ceyrek: takvim.ceyrek } };
+    if (soru === YONETICI_HIZLI_SORULAR[1]) return { arac: "donem_karsilastir", parametre: { periyot: "donem", yil: takvim.yil, ceyrek: takvim.ceyrek, kapsam: "ekip", yontem: "esit_sure" } };
+    if (soru === YONETICI_HIZLI_SORULAR[2]) return { arac: "performans_raporu", parametre: { periyot: "donem", yil: takvim.yil, ceyrek: takvim.ceyrek } };
   }
 
-  if (rol === "iu") {
-    if (soru === IU_HIZLI_SORULAR[0]) return { arac: "platform_bilgisi", parametre: { konu: "uretim" } };
-    if (soru === IU_HIZLI_SORULAR[1]) return { arac: "platform_bilgisi", parametre: { konu: "genel" } };
+  if (URETICI_ROLLER.includes(rol) || rol === IU_ROLU) {
+    if (soru === URETICI_HIZLI_SORULAR[0]) return { arac: "uretim_raporu", parametre: { periyot: "donem", yil: takvim.yil, ceyrek: takvim.ceyrek } };
+    if (soru === URETICI_HIZLI_SORULAR[1]) return { arac: "platform_bilgisi", parametre: { konu: "uretim" } };
+    if (soru === URETICI_HIZLI_SORULAR[2]) return { arac: "performans_raporu", parametre: { periyot: "donem", yil: takvim.yil, ceyrek: takvim.ceyrek } };
   }
 
-  if (soru === EKIP_HIZLI_SORULAR[0]) return { arac: "gelisim_rehberi", parametre: { ...donem, kapsam: "ekip", hedef: "ogrenme", kategori: "tumu" } };
-  if (soru === EKIP_HIZLI_SORULAR[1]) return { arac: "donem_karsilastir", parametre: { ...donem, kapsam: "ekip", yontem: "esit_sure" } };
-  if (soru === EKIP_HIZLI_SORULAR[2]) return { arac: "platform_bilgisi", parametre: { konu: "genel" } };
   return null;
 }

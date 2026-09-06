@@ -577,9 +577,22 @@ test("hapbi: hazır sorular role göre kesin ve dar bir hızlı plana dönüşü
   assert.deepEqual(hizliSorguPlani("bm", "Bölgemde gelişim için neye odaklanmalıyım?", takvim), {
     arac: "gelisim_rehberi", parametre: { ...takvim, periyot: "hafta", kapsam: "ekip", hedef: "ogrenme", kategori: "tumu" },
   });
-  assert.deepEqual(hizliSorguPlani("eczaci", "Tamamladığım eğitimler hangileri?", P), {
-    arac: "eclub_kisisel_durum", parametre: { liste: "tamamlanan" },
+  assert.deepEqual(hizliSorguPlani("tm", "Bu dönem bölge sıralaması nedir?", takvim), {
+    arac: "lig_durumu", parametre: { lig: "hb", periyot: "donem", yil: takvim.yil, ceyrek: takvim.ceyrek },
   });
+  assert.deepEqual(hizliSorguPlani("tm", "Bu ay takımımın puanı ve sırası kaç?", takvim), {
+    arac: "lig_durumu", parametre: { lig: "hb", periyot: "ay", yil: takvim.yil, ay: takvim.ay },
+  });
+  assert.deepEqual(hizliSorguPlani("tm", "Ekibimin gelişim odakları nelerdir?", takvim), {
+    arac: "gelisim_rehberi", parametre: { ...takvim, periyot: "hafta", kapsam: "ekip", hedef: "ogrenme", kategori: "tumu" },
+  });
+  assert.deepEqual(hizliSorguPlani("gm", "Bu dönem takımların sıralaması nedir?", takvim), {
+    arac: "lig_durumu", parametre: { lig: "hb", periyot: "donem", yil: takvim.yil, ceyrek: takvim.ceyrek },
+  });
+  assert.deepEqual(hizliSorguPlani("pm", "Bu dönem yayına alınan içeriklerin dağılımı nedir?", takvim), {
+    arac: "uretim_raporu", parametre: { periyot: "donem", yil: takvim.yil, ceyrek: takvim.ceyrek },
+  });
+  assert.equal(hizliSorguPlani("eczaci", "Tamamladığım eğitimler hangileri?", P), null);
   assert.equal(hizliSorguPlani("utt", "Benzer ama serbest bir soru", P), null);
   assert.equal(hizliSorguPlani("utt", "Bölgemde gelişim için neye odaklanmalıyım?", P), null);
 });
