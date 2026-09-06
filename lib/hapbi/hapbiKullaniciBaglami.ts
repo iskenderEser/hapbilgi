@@ -26,6 +26,9 @@ export async function getHapbiKullaniciBaglami(db: SupabaseClient, userId: strin
   const { data: kimlik, error } = await db.from("v_auth_kimlik_admin")
     .select("kimlik_turu").eq("auth_id", userId).single();
   if (error || !kimlik) throw new HapbiHata("KIMLIK", 403, "Kullanıcı kimliği doğrulanamadı.");
+  if (kimlik.kimlik_turu === "eclub_kisi" || ECLUB_TUKETICI_ROLLERI.includes(rol) || rol === MUSTERI_ROLU) {
+    throw new HapbiHata("YETKISIZ", 403, "HapBi asistanı kurumsal iç kullanıcılar içindir; E-Club ve Eczanem üyelerine kapalıdır.");
+  }
   const baglam: HapbiKullaniciBaglami = {
     kullanici_id: userId, rol, kimlik_turu: kimlik.kimlik_turu,
     firma_id: null, takim_id: null, bolge_id: null, firma_adi: null, takim_adi: null, bolge_adi: null,
