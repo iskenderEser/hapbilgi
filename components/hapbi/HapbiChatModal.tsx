@@ -7,6 +7,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Atom } from "lucide-react";
 import { useHapbi } from "./HapbiProvider";
 
 function renderHapbiMetin(metin: string, isUser = false): React.ReactNode {
@@ -113,14 +114,12 @@ export default function HapbiChatModal() {
             <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 rounded-full border border-white" />
           </div>
           <div>
-            <div className="flex items-center gap-1.5 font-extrabold text-sm tracking-tight leading-tight">
+            <div className="flex items-center gap-1 font-extrabold text-[16px] tracking-tight leading-tight">
+              <Atom className="w-4 h-4 text-amber-200 flex-shrink-0" aria-hidden="true" />
               <span>hapbi</span>
-              <span className="text-[10px] bg-white/25 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                ✦ AI Rehber
-              </span>
             </div>
             <p className="text-[11px] text-white/85 font-medium leading-none mt-0.5">
-              Platform Asistanı & Canlı Tur
+              Öğrenme analitiği ve öneri
             </p>
           </div>
         </div>
@@ -243,7 +242,7 @@ export default function HapbiChatModal() {
           maxLength={2000}
           aria-label="hapbi'ye sorunuz"
           onChange={(e) => setGirdi(e.target.value)}
-          placeholder="Hapbi'ye bir soru sor veya yer göster..."
+          placeholder="Öğrenmek için sorun..."
           disabled={yukleniyor}
           className="flex-1 bg-gray-50 border border-gray-200 focus:border-orange-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-800 placeholder-gray-400 outline-none transition-all"
         />

@@ -37,11 +37,9 @@ export default function HapbiMaskot() {
         }`}
       >
         <div
-          className="bg-[#111827] text-white text-xs font-bold px-3 py-2 rounded-xl shadow-xl flex items-center gap-1.5 whitespace-nowrap"
-          style={{ border: "1px solid rgba(255,255,255,0.15)" }}
+          className="bg-orange-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-lg shadow-orange-500/30 flex items-center gap-1.5 whitespace-nowrap border border-orange-400/50"
         >
-          <span>Bana bir şey sor!</span>
-          <span className="text-orange-400">✨</span>
+          <span>{"ben hapbi'yim"}</span>
         </div>
       </div>
 
