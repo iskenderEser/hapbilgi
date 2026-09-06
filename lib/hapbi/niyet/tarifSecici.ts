@@ -1,4 +1,5 @@
 import type {
+  HapbiIslem,
   HapbiKanonikSorgu,
   HapbiNetlestirme,
 } from "@/lib/hapbi/niyet/sozlesme";
@@ -34,11 +35,26 @@ export type HapbiTarifSecici = (
 function ayniBoyutlarMi(
   sorguBoyutlari: HapbiKanonikSorgu["boyutlar"],
   tarifBoyutlari: HapbiTarifKosulu["boyutlar"],
+  islem?: HapbiIslem,
 ): boolean {
-  return (
+  if (
     sorguBoyutlari.length === tarifBoyutlari.length
     && sorguBoyutlari.every((boyut) => tarifBoyutlari.includes(boyut))
-  );
+  ) {
+    return true;
+  }
+  if (
+    tarifBoyutlari.includes("kullanici") && tarifBoyutlari.includes("takim")
+    && sorguBoyutlari.length === 1
+    && (
+      tarifBoyutlari.includes(sorguBoyutlari[0])
+      || sorguBoyutlari[0] === "bm_kapsami"
+      || (sorguBoyutlari[0] === "urun" && islem === "fark")
+    )
+  ) {
+    return true;
+  }
+  return false;
 }
 
 function filtreKosullariSaglandiMi(
@@ -64,7 +80,7 @@ function tarifSorguylaEslesiyorMu(
     kosul.veriAlanlari.includes(sorgu.veriAlani)
     && sorgu.olcutler.length > 0
     && sorgu.olcutler.every((olcut) => kosul.olcutler.includes(olcut))
-    && ayniBoyutlarMi(sorgu.boyutlar, kosul.boyutlar)
+    && ayniBoyutlarMi(sorgu.boyutlar, kosul.boyutlar, sorgu.islem)
     && sorgu.islem === kosul.islem
     && sorgu.cevapTuru === kosul.cevapTuru
     && filtreKosullariSaglandiMi(sorgu, kosul)
@@ -117,8 +133,8 @@ function netlestirmeOlustur(
   eksikAlanlar: HapbiNetlestirme["eksikAlanlar"],
 ): HapbiNetlestirme {
   const istenenler = [
-    ...(eksikAlanlar.includes("boyutlar") ? ["analiz boyutunu"] : []),
-    ...(eksikAlanlar.includes("filtreler") ? ["kişi, ürün, takım veya firma bilgisini"] : []),
+    ...(eksikAlanlar.includes("boyutlar") ? ["analiz kırılımını (örneğin kişi, takım veya ürün bazında)"] : []),
+    ...(eksikAlanlar.includes("filtreler") ? ["kişi, ürün veya bölge bilgisini"] : []),
   ];
 
   return {

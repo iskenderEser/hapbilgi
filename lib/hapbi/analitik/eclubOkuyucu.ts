@@ -59,14 +59,26 @@ const EclubOlcutAlani: Partial<Record<HapbiAnalitikOlcut, keyof HapbiEclubAnalit
   yanlis_cevap_sayisi: "yanlis_cevap_sayisi",
 };
 
-function varlik(tur: Exclude<HapbiAnalitikBoyut, "zaman">, id: string, ad: string, ust?: string | null): HapbiAnalitikVarlik {
-  return { tur, id, ad, ...(ust !== undefined ? { ust_varlik_id: ust } : {}) };
+function varlik(
+  tur: Exclude<HapbiAnalitikBoyut, "zaman">,
+  id: string,
+  ad: string,
+  ust?: string | null,
+  bolgeAdi?: string | null,
+): HapbiAnalitikVarlik {
+  return {
+    tur,
+    id,
+    ad,
+    ...(ust !== undefined ? { ust_varlik_id: ust } : {}),
+    ...(bolgeAdi ? { bolge_adi: bolgeAdi } : {}),
+  };
 }
 
 function boyut(s: HapbiEclubAnalitikHamSatir, b: HapbiAnalitikBoyut, zaman: string) {
   if (b === "firma") return varlik("firma", s.firma_id, s.firma_adi);
   if (b === "takim") return varlik("takim", s.takim_id ?? "takimsiz", s.takim_adi ?? "Takımsız", s.firma_id);
-  if (b === "bm_kapsami") return varlik("bm_kapsami", s.bm_id ?? `${s.takim_id}:${s.bolge_id}:${s.bm_eslesme_durumu}`, s.bm_adi ?? (s.bm_eslesme_durumu === "coklu" ? "Birden fazla BM" : "Atanmamış BM kapsamı"), s.takim_id);
+  if (b === "bm_kapsami") return varlik("bm_kapsami", s.bm_id ?? `${s.takim_id}:${s.bolge_id}:${s.bm_eslesme_durumu}`, s.bm_adi ?? (s.bm_eslesme_durumu === "coklu" ? "Birden fazla BM" : "Atanmamış BM kapsamı"), s.takim_id, s.bolge_adi);
   if (b === "kullanici") return varlik("kullanici", s.kisi_id ?? "kisisiz", s.kisi_adi ?? "Kişi kaydı yok", s.eczane_id);
   if (b === "eczane") return varlik("eczane", s.eczane_id, s.eczane_adi, s.utt_id);
   if (b === "urun") return varlik("urun", s.urun_id ?? "urunsuz", s.urun_adi ?? "Ürünsüz içerik", s.takim_id);

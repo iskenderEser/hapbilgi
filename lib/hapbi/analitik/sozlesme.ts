@@ -115,6 +115,7 @@ export interface HapbiAnalitikVarlik {
   id: string;
   ad: string;
   ust_varlik_id?: string | null;
+  bolge_adi?: string | null;
 }
 
 export interface HapbiAnalitikSatir {

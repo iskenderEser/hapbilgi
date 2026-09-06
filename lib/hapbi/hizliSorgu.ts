@@ -37,7 +37,7 @@ export const EKIP_HIZLI_SORULAR = [
 export function hizliSorular(rol: string): readonly string[] {
   if (TUKETICI_ROLLER.includes(rol)) return UTT_HIZLI_SORULAR;
   if (rol === "bm") return BM_HIZLI_SORULAR;
-  if (ECLUB_TUKETICI_ROLLERI.includes(rol)) return ECLUB_KISI_HIZLI_SORULAR;
+  if (ECLUB_TUKETICI_ROLLERI.includes(rol) || rol === "eczaci" || rol === "teknisyen") return [];
   if (rol === MUSTERI_ROLU) return MUSTERI_HIZLI_SORULAR;
   if (rol === "iu") return IU_HIZLI_SORULAR;
   return EKIP_HIZLI_SORULAR;
@@ -69,10 +69,8 @@ export function hizliSorguPlani(
     if (soru === BM_HIZLI_SORULAR[2]) return { arac: "donem_karsilastir", parametre: { ...donem, kapsam: "kisisel", yontem: "esit_sure" } };
   }
 
-  if (ECLUB_TUKETICI_ROLLERI.includes(rol)) {
-    if (soru === ECLUB_KISI_HIZLI_SORULAR[0]) return { arac: "eclub_kisisel_durum", parametre: { liste: "bekleyen" } };
-    if (soru === ECLUB_KISI_HIZLI_SORULAR[1]) return { arac: "eclub_kisisel_durum", parametre: { liste: "suresi_gecmis" } };
-    if (soru === ECLUB_KISI_HIZLI_SORULAR[2]) return { arac: "eclub_kisisel_durum", parametre: { liste: "tamamlanan" } };
+  if (ECLUB_TUKETICI_ROLLERI.includes(rol) || rol === "eczaci" || rol === "teknisyen") {
+    return null;
   }
 
   if (rol === MUSTERI_ROLU) {

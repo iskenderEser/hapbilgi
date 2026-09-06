@@ -19,6 +19,7 @@ export interface HapbiDogrudanYanitGirdisi {
   kapsam: HapbiAnalitikKapsam;
   veriAlani: HapbiVeriAlani;
   donem: HapbiAnalitikDonem;
+  soru?: string;
 }
 
 export interface HapbiDogrudanYanit {
@@ -65,7 +66,7 @@ export function hapbiDogrudanYanitUret(
   }
 
   return {
-    cevap: hapbiDogrudanMetniniOlustur(girdi.sonuc, { kapsam: girdi.kapsam }),
+    cevap: hapbiDogrudanMetniniOlustur(girdi.sonuc, { kapsam: girdi.kapsam, soru: girdi.soru }),
     tarif: girdi.sonuc.tarif,
     kaynaklar: [kaynak],
     kanitlar,

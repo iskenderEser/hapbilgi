@@ -15,6 +15,9 @@ export const HAPBI_VERI_ALANI_SOZLUGU: readonly HapbiSozlukGirdisi<HapbiVeriAlan
   {
     deger: "tclub",
     ifadeler: [
+      "t-club",
+      "t-club ligi",
+      "t club ligi",
       "t club",
       "tclub",
       "hb ligi",
@@ -26,6 +29,8 @@ export const HAPBI_VERI_ALANI_SOZLUGU: readonly HapbiSozlukGirdisi<HapbiVeriAlan
   {
     deger: "cclub",
     ifadeler: [
+      "c-club",
+      "c-club ligi",
       "c club",
       "cclub",
       "challenge club",
@@ -39,6 +44,8 @@ export const HAPBI_VERI_ALANI_SOZLUGU: readonly HapbiSozlukGirdisi<HapbiVeriAlan
   {
     deger: "eclub",
     ifadeler: [
+      "e-club",
+      "e-club ligi",
       "e club",
       "eclub",
       "e club ligi",
@@ -65,7 +72,7 @@ export const HAPBI_VERI_ALANI_SOZLUGU: readonly HapbiSozlukGirdisi<HapbiVeriAlan
 ] as const;
 
 export const HAPBI_OLCUT_SOZLUGU: readonly HapbiSozlukGirdisi<HapbiOlcut>[] = [
-  { deger: "net_puan", ifadeler: ["net puan", "toplam puan", "puan toplamı", "puanım", "puanı"] },
+  { deger: "net_puan", ifadeler: ["net puan", "toplam puan", "puan toplamı", "puanım", "puanı", "puan"] },
   { deger: "kazanilan_puan", ifadeler: ["kazanılan puan", "kazandığı puan", "puan kazanımı", "kazanım"] },
   { deger: "kaybedilen_puan", ifadeler: ["kaybedilen puan", "puan kaybı", "toplam kayıp", "kaybettiği puan"] },
   { deger: "izleme_puani", ifadeler: ["izleme puanı", "tamamlama puanı", "içerik puanı", "araç puanı"] },
@@ -116,7 +123,22 @@ export const HAPBI_BOYUT_SOZLUGU: readonly HapbiSozlukGirdisi<HapbiBoyut>[] = [
   },
   {
     deger: "kullanici",
-    ifadeler: ["kullanıcı", "kullanıcılar", "kişi", "kişiler", "çalışan", "çalışanlar", "utt", "bölge müdürü", "kim", "kimler"],
+    ifadeler: [
+      "kullanıcı",
+      "kullanıcılar",
+      "kişi",
+      "kişiler",
+      "çalışan",
+      "çalışanlar",
+      "mümessil",
+      "mümessiller",
+      "temsilci",
+      "temsilciler",
+      "utt",
+      "bölge müdürü",
+      "kim",
+      "kimler",
+    ],
   },
   { deger: "eczane", ifadeler: ["eczane", "eczaneler", "gln", "eczane bazında"] },
   { deger: "urun", ifadeler: ["ürün", "ürünler", "ürün bazında", "ürüne göre"] },
@@ -134,7 +156,7 @@ export const HAPBI_ISLEM_SOZLUGU: readonly HapbiSozlukGirdisi<HapbiIslem>[] = [
   { deger: "liste", ifadeler: ["kim", "kimler", "hangi", "hangisi", "hangileri", "listele", "göster"] },
   {
     deger: "siralama",
-    ifadeler: ["sıralama", "sırala", "en yüksek", "en düşük", "en fazla", "en az", "lider", "birinci", "sonuncu", "ilk iki"],
+    ifadeler: ["sıralama", "sırala", "en yüksek", "en düşük", "en fazla", "en çok", "en az", "lider", "birinci", "sonuncu", "ilk iki"],
   },
   { deger: "fark", ifadeler: ["fark", "aradaki fark", "puan farkı", "kaç puan önde", "kaç puan geride"] },
   { deger: "dagilim", ifadeler: ["dağılım", "kırılım", "bazında", "göre", "alt dağılım"] },
@@ -152,7 +174,7 @@ export interface HapbiSiralamaSozlukGirdisi {
 }
 
 export const HAPBI_SIRALAMA_SOZLUGU: readonly HapbiSiralamaSozlukGirdisi[] = [
-  { yon: "azalan", ifadeler: ["en yüksek", "en fazla", "lider", "birinci", "en iyi", "önde"] },
+  { yon: "azalan", ifadeler: ["en yüksek", "en fazla", "en çok", "lider", "birinci", "en iyi", "önde"] },
   { yon: "artan", ifadeler: ["en düşük", "en az", "sonuncu", "en geride", "en kötü"] },
   { yon: "azalan", limit: 2, ifadeler: ["ilk iki", "ilk 2", "en yüksek iki", "en iyi iki"] },
 ] as const;

@@ -125,9 +125,14 @@ export async function hapbiMotorunuCalistir(g: HapbiMotorGirdisi): Promise<Hapbi
   const gecerliAnalitikBaglam = g.analitikBaglam?.pathname === g.pathname ? g.analitikBaglam : null;
   const plan = hapbiSoruPlani(soru, g.rol, g.takvim, g.gecmis, gecerliAnalitikBaglam);
   if (plan.yol === "dogrudan") {
-    const aracSonucu = plan.arac ? await g.arac(plan.arac, plan.parametre ?? {}) : undefined;
+    let aracSonucu = plan.arac ? await g.arac(plan.arac, plan.parametre ?? {}) : undefined;
+    let ekSonuclar: HapbiAracSonucu[] | undefined;
+    if (plan.araclar?.length) {
+      ekSonuclar = await Promise.all(plan.araclar.map(arac => g.arac(arac.ad, arac.parametre)));
+      aracSonucu = ekSonuclar[0];
+    }
     const bekleyenTakip = plan.niyet === "netlestir" ? hapbiBekleyenTakipOlustur(soru, g.pathname) : null;
-    return { ...hapbiDogrudanYanitUret(plan, soru, aracSonucu), bekleyenTakip, analitikBaglam: gecerliAnalitikBaglam };
+    return { ...hapbiDogrudanYanitUret(plan, soru, aracSonucu, ekSonuclar), bekleyenTakip, analitikBaglam: gecerliAnalitikBaglam };
   }
 
   if (plan.analitikTarif) {
@@ -153,6 +158,7 @@ export async function hapbiMotorunuCalistir(g: HapbiMotorGirdisi): Promise<Hapbi
       kapsam: analitikSonuc.sorgu.kapsam,
       veriAlani: analitikSonuc.sorgu.veri_alani,
       donem: analitikSonuc.sorgu.donem,
+      soru,
     });
     const kaynaklar = motorKaynaklari(dogrudanYanit.kaynaklar);
 

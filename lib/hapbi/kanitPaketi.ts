@@ -93,6 +93,14 @@ const SOZLESMELER: Record<HapbiYorumNiyeti, { zorunlu: string[]; yasak: string[]
     zorunlu: ["Yayın sayısının tek başına saha başarısındaki artışı göstermediğini belirt.", "Saha ölçümlerinin önceki dönem yayınlarından da gelebileceğini belirt."],
     yasak: ["Üretim hacmi ile saha sonucu arasında kanıtlanmamış nedensellik kurma."],
   },
+  bolge_gelisimi: {
+    zorunlu: ["Bölgenin ana kayıp veya gelişim alanını kanıttaki ölçümlere göre belirt.", "Takım Müdürünün Bölge Müdürüyle koçluk değerlendirmesinde kullanabileceği uygulanabilir bir gelişim adımı sun."],
+    yasak: ["Puan kaybını mesleki yetersizlik veya satış başarısızlığı olarak yorumlama.", "Kanıtta bulunmayan neden veya eğitim üretme."],
+  },
+  mumessil_gelisim_alani: {
+    zorunlu: ["Mümessillerin puan kaybettiği temel mekanizmayı (yanlış cevap, ileri sarma veya öneri) kanıttaki verilere göre belirt.", "Gelişime açık alanları somut çalışma konusu olarak ifade et."],
+    yasak: ["Mümessilleri isteksiz, motivasyonsuz veya başarısız olarak yaftalama.", "Kanıtta olmayan neden üretme."],
+  },
 };
 
 const YORUM_CERCEVESI: Record<HapbiYorumNiyeti, string> = {
@@ -108,6 +116,8 @@ const YORUM_CERCEVESI: Record<HapbiYorumNiyeti, string> = {
   davranissal_cikarim: "Puanlar görünür; motivasyon ölçülmez ve düşük puanın nedeni bu kaynaktan bilinemez.",
   kayip_mekanizmalari: "T-Club öneri kaybı ile C-Club challenge kaybı ayrı kayıt ve mekanizmalardır.",
   uretim_nedenselligi: "Yayın hacmi tek başına saha başarısı artışını kanıtlamaz; saha etkisi eski yayınlardan da gelebilir.",
+  bolge_gelisimi: "Bölgenin ana kayıp kalemini ve kategori açığını belirt; Bölge Müdürü koçluğu için tek uygulanabilir gelişim adımı ver.",
+  mumessil_gelisim_alani: "Mümessil kayıplarının kaynaklandığı mekanizmayı (izleme disiplini, soru başarısı, öneri takibi) ve çalışma alanını belirt.",
 };
 
 export function hapbiKanitPaketiOlustur(
@@ -164,5 +174,8 @@ export function yorumYanitiDogrula(niyet: HapbiYorumNiyeti, cevap: string, kayna
   if (niyet === "sifir_veri_durumu") {
     reddet(/(?:teknik )?veri kaybı (?:yoktur|bulunmamaktadır)|veri(?:ler)? (?:kesinlikle )?eksiksiz/u.test(s), "Sıfır sonuçtan veri zincirinin eksiksiz olduğu çıkarıldı.");
     reddet(!(/(?:tek başına|yalnızca|bu görünüm)/u.test(s) && /(?:eksik|eksiksiz|tamlık|doğrulan)/u.test(s)), "Sıfır sonucun veri tamlığını tek başına kanıtlamadığı belirtilmedi.");
+  }
+  if (niyet === "bolge_gelisimi" || niyet === "mumessil_gelisim_alani") {
+    reddet(/motivasyonsuz|isteksiz|yetersizdir|başarısızdır/u.test(s), "Puan verisinden sübjektif kişisel yaftalama üretildi.");
   }
 }

@@ -27,7 +27,231 @@ function ligPuani(row: Record<string, unknown>): number | null {
   return sayi(row.toplam_net_puan) ?? sayi(row.toplam_puan) ?? sayi(row.net_puan);
 }
 
-function kanonikLigPaketi(k: HapbiAracBaglami["kullanici"], rows: Record<string, unknown>[], siraTuru: "genel" | "firma" | "takim" | "bolge") {
+interface KanonikBolge {
+  bolge_id: string;
+  ad: string;
+  puan: number | null;
+  sira: number | null;
+  toplam_bolge: number;
+}
+
+export interface KanonikTakim {
+  takim_id: string;
+  ad: string;
+  puan: number | null;
+  sira: number | null;
+  toplam_takim: number;
+}
+
+export interface KanonikBolgeUttKayiplari {
+  kullanici_id: string;
+  ad_soyad: string;
+  toplam_kayip: number;
+  ileri_sarma_kaybi: number;
+  yanlis_cevap_kaybi: number;
+  oneri_kaybi: number;
+  net_puan: number;
+}
+
+export interface KanonikBolgeDetay {
+  bolge_id: string;
+  ad: string;
+  sira: number;
+  net_puan: number;
+  kazanilan_toplam: number;
+  izleme_puani: number;
+  cevaplama_puani: number;
+  oneri_puani: number;
+  extra_puani: number;
+  kaybedilen_toplam: number;
+  ileri_sarma_kaybi: number;
+  yanlis_cevap_kaybi: number;
+  oneri_kaybi: number;
+  toplam_utt: number;
+  en_cok_kaybeden_uttler: KanonikBolgeUttKayiplari[];
+}
+
+function bolgeOzetiHesapla(
+  rows: Record<string, unknown>[],
+  odakBolgeId: string | null | undefined,
+): KanonikBolge | null {
+  if (!odakBolgeId) return null;
+  const bolgeler = new Map<string, { id: string; ad: string; puan: number }>();
+  for (const row of rows) {
+    const bId = String(row.bolge_id ?? "");
+    if (!bId || bId === "-") continue;
+    const ad = String(row.bolge ?? row.bolge_adi ?? "Bölge");
+    const puan = ligPuani(row) ?? 0;
+    const mevcut = bolgeler.get(bId) ?? { id: bId, ad, puan: 0 };
+    mevcut.puan += puan;
+    bolgeler.set(bId, mevcut);
+  }
+  if (!bolgeler.size) return null;
+  const sirali = [...bolgeler.values()].sort((a, b) => b.puan - a.puan || a.ad.localeCompare(b.ad, "tr"));
+  let mevcutSira = 1;
+  const rankli = sirali.map((b, i, arr) => {
+    if (i > 0 && b.puan < arr[i - 1].puan) mevcutSira = i + 1;
+    return { ...b, sira: mevcutSira };
+  });
+  const kendi = rankli.find((b) => b.id === odakBolgeId);
+  if (!kendi) return null;
+  return {
+    bolge_id: kendi.id,
+    ad: kendi.ad,
+    puan: kendi.puan,
+    sira: kendi.sira,
+    toplam_bolge: rankli.length,
+  };
+}
+
+function takimOzetiHesapla(
+  rows: Record<string, unknown>[],
+  odakTakimId: string | null | undefined,
+): KanonikTakim | null {
+  if (!odakTakimId) return null;
+  const takimlar = new Map<string, { id: string; ad: string; puan: number }>();
+  for (const row of rows) {
+    const tId = String(row.takim_id ?? "");
+    if (!tId || tId === "-") continue;
+    const ad = String(row.takim ?? row.takim_adi ?? "Takım");
+    const puan = ligPuani(row) ?? 0;
+    const mevcut = takimlar.get(tId) ?? { id: tId, ad, puan: 0 };
+    mevcut.puan += puan;
+    takimlar.set(tId, mevcut);
+  }
+  if (!takimlar.size) return null;
+  const sirali = [...takimlar.values()].sort((a, b) => b.puan - a.puan || a.ad.localeCompare(b.ad, "tr"));
+  let mevcutSira = 1;
+  const rankli = sirali.map((t, i, arr) => {
+    if (i > 0 && t.puan < arr[i - 1].puan) mevcutSira = i + 1;
+    return { ...t, sira: mevcutSira };
+  });
+  const kendi = rankli.find((t) => t.id === odakTakimId);
+  if (!kendi) return null;
+  return {
+    takim_id: kendi.id,
+    ad: kendi.ad,
+    puan: kendi.puan,
+    sira: kendi.sira,
+    toplam_takim: rankli.length,
+  };
+}
+
+function bolgelerSiralamasiHesapla(
+  rows: Record<string, unknown>[],
+  takimId?: string | null,
+): KanonikBolgeDetay[] {
+  const takimRows = takimId
+    ? rows.filter(r => String(r.takim_id ?? "") === takimId)
+    : rows;
+
+  const bolgeHaritasi = new Map<string, {
+    bolge_id: string;
+    ad: string;
+    izleme_puani: number;
+    cevaplama_puani: number;
+    oneri_puani: number;
+    extra_puani: number;
+    ileri_sarma_kaybi: number;
+    yanlis_cevap_kaybi: number;
+    oneri_kaybi: number;
+    toplam_utt: number;
+    uttler: KanonikBolgeUttKayiplari[];
+  }>();
+
+  for (const row of takimRows) {
+    const bId = String(row.bolge_id ?? "");
+    if (!bId || bId === "-") continue;
+    const ad = String(row.bolge ?? row.bolge_adi ?? "Bölge");
+    const mevcut = bolgeHaritasi.get(bId) ?? {
+      bolge_id: bId,
+      ad,
+      izleme_puani: 0,
+      cevaplama_puani: 0,
+      oneri_puani: 0,
+      extra_puani: 0,
+      ileri_sarma_kaybi: 0,
+      yanlis_cevap_kaybi: 0,
+      oneri_kaybi: 0,
+      toplam_utt: 0,
+      uttler: [],
+    };
+
+    const izleme = sayi(row.izleme_puani) ?? 0;
+    const cevap = sayi(row.cevaplama_puani) ?? 0;
+    const oneri = sayi(row.oneri_puani) ?? 0;
+    const extra = sayi(row.extra_puani) ?? sayi(row.extra_puan) ?? 0;
+    const ileriSarma = sayi(row.ileri_sarma_kaybi) ?? 0;
+    const yanlisCevap = sayi(row.yanlis_cevap_kaybi) ?? 0;
+    const oneriKaybi = sayi(row.oneri_kaybi) ?? 0;
+    const net = ligPuani(row) ?? (izleme + cevap + oneri + extra - (ileriSarma + yanlisCevap + oneriKaybi));
+
+    mevcut.izleme_puani += izleme;
+    mevcut.cevaplama_puani += cevap;
+    mevcut.oneri_puani += oneri;
+    mevcut.extra_puani += extra;
+    mevcut.ileri_sarma_kaybi += ileriSarma;
+    mevcut.yanlis_cevap_kaybi += yanlisCevap;
+    mevcut.oneri_kaybi += oneriKaybi;
+    mevcut.toplam_utt += 1;
+
+    const kisiAdi = adSoyad(row);
+    if (kisiAdi) {
+      mevcut.uttler.push({
+        kullanici_id: String(row.kullanici_id ?? ""),
+        ad_soyad: kisiAdi,
+        toplam_kayip: ileriSarma + yanlisCevap + oneriKaybi,
+        ileri_sarma_kaybi: ileriSarma,
+        yanlis_cevap_kaybi: yanlisCevap,
+        oneri_kaybi: oneriKaybi,
+        net_puan: net,
+      });
+    }
+
+    bolgeHaritasi.set(bId, mevcut);
+  }
+
+  if (!bolgeHaritasi.size) return [];
+
+  const sirali = [...bolgeHaritasi.values()].map(b => {
+    const kazanilan_toplam = b.izleme_puani + b.cevaplama_puani + b.oneri_puani + b.extra_puani;
+    const kaybedilen_toplam = b.ileri_sarma_kaybi + b.yanlis_cevap_kaybi + b.oneri_kaybi;
+    const net_puan = kazanilan_toplam - kaybedilen_toplam;
+    const en_cok_kaybeden_uttler = [...b.uttler].sort((x, y) =>
+      y.toplam_kayip - x.toplam_kayip || x.ad_soyad.localeCompare(y.ad_soyad, "tr")
+    );
+    return {
+      bolge_id: b.bolge_id,
+      ad: b.ad,
+      sira: 1,
+      net_puan,
+      kazanilan_toplam,
+      izleme_puani: b.izleme_puani,
+      cevaplama_puani: b.cevaplama_puani,
+      oneri_puani: b.oneri_puani,
+      extra_puani: b.extra_puani,
+      kaybedilen_toplam,
+      ileri_sarma_kaybi: b.ileri_sarma_kaybi,
+      yanlis_cevap_kaybi: b.yanlis_cevap_kaybi,
+      oneri_kaybi: b.oneri_kaybi,
+      toplam_utt: b.toplam_utt,
+      en_cok_kaybeden_uttler,
+    };
+  }).sort((a, b) => b.net_puan - a.net_puan || a.ad.localeCompare(b.ad, "tr"));
+
+  let mevcutSira = 1;
+  return sirali.map((b, i, arr) => {
+    if (i > 0 && b.net_puan < arr[i - 1].net_puan) mevcutSira = i + 1;
+    return { ...b, sira: mevcutSira };
+  });
+}
+
+function kanonikLigPaketi(
+  k: HapbiAracBaglami["kullanici"],
+  rows: Record<string, unknown>[],
+  siraTuru: "genel" | "firma" | "takim" | "bolge",
+  odakBolgeId?: string | null,
+) {
   const kisiler = rows.map(row => ({
     ad_soyad: adSoyad(row),
     puan: ligPuani(row),
@@ -42,6 +266,9 @@ function kanonikLigPaketi(k: HapbiAracBaglami["kullanici"], rows: Record<string,
   const enYuksek = sirali[0]?.puan ?? null;
   const liderler = enYuksek === null ? [] : sirali.filter(kisi => kisi.puan === enYuksek);
   const ilkIki = sirali.slice(0, 2);
+  const bolge = bolgeOzetiHesapla(rows, odakBolgeId ?? k.bolge_id);
+  const takim = takimOzetiHesapla(rows, k.takim_id);
+  const bolgeler = bolgelerSiralamasiHesapla(rows, k.takim_id);
   return {
     olcu: "net_puan",
     sira_turu: siraTuru,
@@ -51,17 +278,25 @@ function kanonikLigPaketi(k: HapbiAracBaglami["kullanici"], rows: Record<string,
     ilk_iki: ilkIki,
     ilk_iki_puan_farki: ilkIki.length === 2 && ilkIki[0].puan !== null && ilkIki[1].puan !== null ? ilkIki[0].puan - ilkIki[1].puan : null,
     kendi: kisiler.find(kisi => kisi.benim) ?? null,
+    ...(bolge ? { bolge } : {}),
+    ...(takim ? { takim } : {}),
+    ...(bolgeler.length ? { bolgeler } : {}),
     olgular: sirali.map(kisi => ({ ozne: kisi.ad_soyad, iliski: "net_puan", deger: kisi.puan })),
   };
 }
 
-function liste(k: HapbiAracBaglami["kullanici"], rows: Record<string, unknown>[], siraTuru: "genel" | "firma" | "takim" | "bolge") {
+function liste(
+  k: HapbiAracBaglami["kullanici"],
+  rows: Record<string, unknown>[],
+  siraTuru: "genel" | "firma" | "takim" | "bolge",
+  odakBolgeId?: string | null,
+) {
   return {
     toplam_satir: rows.length, listelenen: Math.min(rows.length, 40),
     kendi_kaydim: rows.find(r => r.kullanici_id === k.kullanici_id)
       ? guvenliSatirlar(rows.filter(r => r.kullanici_id === k.kullanici_id), LIG_ALANLARI)[0] : null,
     satirlar: guvenliSatirlar(rows, LIG_ALANLARI),
-    kanonik: kanonikLigPaketi(k, rows, siraTuru),
+    kanonik: kanonikLigPaketi(k, rows, siraTuru, odakBolgeId),
     not: "Eksik sıra null'dır, birincilik değildir. Liste 40 satırla sınırlıdır; liste üzerinden tüm kapsam toplamı hesaplama.",
   };
 }
@@ -144,6 +379,6 @@ export const sahaAraciniCalistir: HapbiAlanCalistirici = async (baglam, ad, a) =
   const sonuc = await getSahaLig(db, { ...k, gorunum, uretici_scope: uretici?.raporScope }, p);
   return {
     durum: sonuc.lig.length ? "ok" : "bos", kaynak: baglam.kaynak(`HB Ligi · ${sonuc.kapsam_adi}`, "/hbligi", p),
-    veri: { aralik, kapsam: sonuc.kapsam_aciklamasi, ...liste(k, sonuc.lig.map(r => ({ ...r })), k.rol === "bm" ? "bolge" : k.rol === "tm" ? "takim" : "genel") },
+    veri: { aralik, kapsam: sonuc.kapsam_aciklamasi, ...liste(k, sonuc.lig.map(r => ({ ...r })), k.rol === "bm" ? "bolge" : k.rol === "tm" ? "takim" : "genel", sonuc.odak_birim_id) },
   };
 };

@@ -79,8 +79,20 @@ interface ToplamaGrubu {
   kullaniciYayinlari: Set<string>;
 }
 
-function varlik(tur: Exclude<HapbiAnalitikBoyut, "zaman">, id: string, ad: string, ust?: string | null): HapbiAnalitikVarlik {
-  return { tur, id, ad, ...(ust !== undefined ? { ust_varlik_id: ust } : {}) };
+function varlik(
+  tur: Exclude<HapbiAnalitikBoyut, "zaman">,
+  id: string,
+  ad: string,
+  ust?: string | null,
+  bolgeAdi?: string | null,
+): HapbiAnalitikVarlik {
+  return {
+    tur,
+    id,
+    ad,
+    ...(ust !== undefined ? { ust_varlik_id: ust } : {}),
+    ...(bolgeAdi ? { bolge_adi: bolgeAdi } : {}),
+  };
 }
 
 function boyutDegeri(satir: HapbiTclubAnalitikHamSatir, boyut: HapbiAnalitikBoyut, donemEtiketi: string) {
@@ -88,7 +100,13 @@ function boyutDegeri(satir: HapbiTclubAnalitikHamSatir, boyut: HapbiAnalitikBoyu
   if (boyut === "takim") return varlik("takim", satir.takim_id ?? "takimsiz", satir.takim_adi ?? "Takımsız", satir.firma_id);
   if (boyut === "bm_kapsami") {
     const ek = satir.bm_eslesme_durumu === "coklu" ? "Birden fazla BM" : "Atanmamış BM kapsamı";
-    return varlik("bm_kapsami", satir.bm_id ?? `${satir.takim_id ?? "takimsiz"}:${satir.bolge_id ?? "bolgesiz"}:${satir.bm_eslesme_durumu}`, satir.bm_adi ?? ek, satir.takim_id);
+    return varlik(
+      "bm_kapsami",
+      satir.bm_id ?? `${satir.takim_id ?? "takimsiz"}:${satir.bolge_id ?? "bolgesiz"}:${satir.bm_eslesme_durumu}`,
+      satir.bm_adi ?? ek,
+      satir.takim_id,
+      satir.bolge_adi,
+    );
   }
   if (boyut === "kullanici") return varlik("kullanici", satir.kullanici_id, satir.kullanici_adi, satir.bm_id ?? satir.bolge_id);
   if (boyut === "eczane" || boyut === "icerik") throw new HapbiHata("DESTEKLENMEYEN_BOYUT", 400, `${boyut} T-Club/C-Club kaynağında desteklenmiyor.`);
@@ -124,7 +142,11 @@ function donemEtiketi(sorgu: HapbiAnalitikSorgu): string {
 
 export function hapbiAnalitikDonemiAraligaCevir(sorgu: Pick<HapbiAnalitikSorgu, "donem">) {
   const d = sorgu.donem;
-  if (d.tur === "ozel") return { baslangic: d.baslangic, bitis: d.bitis };
+  if (d.tur === "ozel") {
+    const baslangic = d.baslangic.includes("T") ? d.baslangic : `${d.baslangic}T00:00:00.000+03:00`;
+    const bitis = d.bitis.includes("T") ? d.bitis : `${d.bitis}T23:59:59.999+03:00`;
+    return { baslangic, bitis };
+  }
   return ligPeriyoduAraligi({
     periyot: d.tur === "ceyrek" ? "donem" : d.tur,
     yil: d.yil,
