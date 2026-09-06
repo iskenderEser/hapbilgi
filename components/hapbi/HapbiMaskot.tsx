@@ -6,13 +6,24 @@
 
 import React, { useState } from "react";
 import { useHapbi } from "./HapbiProvider";
+import { useAuth } from "@/app/providers/AuthProvider";
+import { ECLUB_TUKETICI_ROLLERI, MUSTERI_ROLU } from "@/lib/utils/roller";
 
 export default function HapbiMaskot() {
+  const { kullanici } = useAuth();
   const { chatAcik, toggleChat, aktifTur } = useHapbi();
   const [isHovered, setIsHovered] = useState(false);
 
-  // Tur aktifken veya chat açıkken floating maskot gizlenebilir veya küçülebilir
-  if (aktifTur) return null;
+  // E-Club eczane üyeleri, dış müşteriler ve tur aktifken floating maskot gösterilmez
+  if (
+    !kullanici ||
+    ECLUB_TUKETICI_ROLLERI.includes(kullanici.rol) ||
+    kullanici.kimlik_turu === "eclub_kisi" ||
+    kullanici.rol === MUSTERI_ROLU ||
+    aktifTur
+  ) {
+    return null;
+  }
 
   return (
     <div

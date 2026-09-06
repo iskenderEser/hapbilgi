@@ -9,6 +9,63 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useHapbi } from "./HapbiProvider";
 
+function renderHapbiMetin(metin: string, isUser = false): React.ReactNode {
+  // Regex to match:
+  // 1. Bold: \*\*([^*]+)\*\*
+  // 2. Italic: \*([^*]+)\*
+  // 3. Markdown Link: \[([^\]]+)\]\(([^)]+)\)
+  const regex = /(\*\*([^*]+)\*\*|\*([^*]+)\*|\[([^\]]+)\]\(([^)]+)\))/g;
+  let lastIndex = 0;
+  const nodes: React.ReactNode[] = [];
+  let match: RegExpExecArray | null;
+  let keyIndex = 0;
+
+  while ((match = regex.exec(metin)) !== null) {
+    if (match.index > lastIndex) {
+      nodes.push(metin.slice(lastIndex, match.index));
+    }
+    if (match[2] !== undefined) {
+      // Bold
+      nodes.push(
+        <strong key={`b-${keyIndex++}`} className={`font-bold ${isUser ? "text-white" : "text-gray-900"}`}>
+          {renderHapbiMetin(match[2], isUser)}
+        </strong>
+      );
+    } else if (match[3] !== undefined) {
+      // Italic
+      nodes.push(
+        <em key={`i-${keyIndex++}`} className="italic">
+          {renderHapbiMetin(match[3], isUser)}
+        </em>
+      );
+    } else if (match[4] !== undefined && match[5] !== undefined) {
+      // Markdown Link
+      const linkText = match[4];
+      const linkUrl = match[5];
+      nodes.push(
+        <Link
+          key={`l-${keyIndex++}`}
+          href={linkUrl}
+          className={`${
+            isUser
+              ? "text-white underline font-bold hover:opacity-80"
+              : "text-[#185fa5] font-bold underline underline-offset-2 hover:text-[#0c447c]"
+          } transition-colors cursor-pointer`}
+        >
+          {linkText}
+        </Link>
+      );
+    }
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < metin.length) {
+    nodes.push(metin.slice(lastIndex));
+  }
+
+  return nodes.length > 0 ? nodes : metin;
+}
+
 export default function HapbiChatModal() {
   const { chatAcik, setChatAcik, mesajlar, yukleniyor, soruSor, turBaslat, temizle, hizliSorular } = useHapbi();
   const router = useRouter();
@@ -99,7 +156,7 @@ export default function HapbiChatModal() {
                 }`}
               >
                 {m.hata && <span className="block text-[10px] font-bold text-amber-700 mb-1">Yanıt alınamadı</span>}
-                <p className="whitespace-pre-line font-medium">{m.metin}</p>
+                <div className="whitespace-pre-line font-medium leading-relaxed">{renderHapbiMetin(m.metin, isUser)}</div>
                 {!!m.egitimler?.length && (
                   <div className="mt-2 flex flex-col gap-1 border-t border-gray-100 pt-2">
                     <span className="text-[10px] font-semibold text-gray-400">İlgili eğitimler</span>
