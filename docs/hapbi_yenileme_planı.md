@@ -510,7 +510,7 @@ Bütün desteklenen veri soruları tek ortak sorgu yapısıyla ifade edilebilece
 
 ---
 
-## - [ ] Faz 7 — Türkçe soru çözümleyicisinin kurulması
+## - [x] Faz 7 — Türkçe soru çözümleyicisinin kurulması
 
 ### Amaç
 
@@ -541,6 +541,19 @@ Kullanıcının doğal Türkçe sorusunu ortak sorgu yapısına dönüştürmek.
 ### Çıkış koşulu
 
 Aynı anlamdaki farklı Türkçe sorular aynı ortak sorgu yapısına dönüşecek.
+
+### Faz 7 İş Sonuçları
+
+- `lib/hapbi/dil/normalizasyon.ts` dosyasında Türkçe büyük-küçük harf dönüşümü, noktalama ve gereksiz boşluk temizliği ile tanımlı yazım farklılıklarının ortak biçime çevrilmesi sağlandı.
+- `lib/hapbi/dil/sozluk.ts` dosyasında zaman, ölçüt, kırılım, işlem kategorisi ve sıralama yönü ifadeleri tanımlandı.
+- Faz 4 ölçüt kataloğundaki eş anlamlı ifadeler Türkçe ölçüt sözlüğünün kaynağı olarak kullanıldı.
+- Açıkça yazılan ürün, yayın, takım ve bölge adlarının yalnız sunucunun sağladığı izinli varlık listesi içinden çözülebilmesi sağlandı.
+- Birbiriyle çakışan ifadelerde en uzun ve en özel tanımlı ifadenin seçilmesi; aynı parçanın farklı varlıklara bağlanması durumunda belirsizliğin korunması sağlandı.
+- `lib/hapbi/dil/derleyici.ts` dosyasında zaman, ölçüt, sonuç ölçütü, kırılım, işlem, sıralama yönü, sonuç sınırı, varlık süzmesi ve sayısal koşullar çıkarılarak `HapbiSorgu` yapısına dönüştürüldü.
+- Bütünleşik sorgularda seçim ölçütü ile sonuç ölçütü; karşılaştırmalı sorgularda iki tarafın zamanı ve varlık süzmesi ayrı tutuldu.
+- Eksik veya birden fazla anlama gelen bilgiler tahmin edilmeden eksik ya da belirsiz olarak işaretlendi.
+- Derlenen sorguların Faz 6 sözleşmesinden geçmeden kullanılmaması sağlandı.
+- Üç dosyanın kod ve tür denetimleri hatasız tamamlandı.
 
 ---
 
