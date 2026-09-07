@@ -377,23 +377,4 @@ HapBi’nin eski motoru kaldırılmış; HapBilgi’nin diğer işlevleri ile Ha
 - Faz 6’da yalnız dört HapBi veritabanı işlevi bağımlılık oluşturmadan kaldırıldı; ana tablolar ile ortak HapBilgi işlevleri korundu.
 - HapBi maskotu ile maskota tıklanınca açılan sohbet alanı korundu.
 
----
-
-## - [ ] Faz 8 — Silme raporu
-
-### Yapılacak işler
-
-Aşağıdaki sonuçlar madde madde bildirilecek:
-
-1. Korunan maskot ve sohbet dosyaları
-2. Değiştirilen bağlantı dosyaları
-3. Silinen eski HapBi motor dosyaları
-4. Silinen HapBi sınama dosyaları
-5. Silinen HapBi SQL dosyaları
-6. Veritabanından kaldırılan HapBi işlevleri
-7. Korunan HapBilgi verileri ve ortak işlevleri
-8. Yapılan denetimler
-9. Başarılı ve başarısız sonuçlar
-10. Açık kalan herhangi bir HapBi bağlantısı
-
 Bu plan yalnızca mevcut HapBi motorunun silinmesini kapsar. Yeni deterministik sorgu motorunun kurulması bu planın dışındadır.
