@@ -328,7 +328,7 @@ Desteklenen bütün zaman ifadeleri kesin başlangıç ve bitiş değerine dön�
 
 ---
 
-## - [ ] Faz 4 — Ölçüt kataloğunun oluşturulması
+## - [x] Faz 4 — Ölçüt kataloğunun oluşturulması
 
 ### Amaç
 
@@ -378,6 +378,18 @@ HapBi’nin hesaplayabileceği değerleri tek ve denetlenebilir bir katalogda to
 ### Çıkış koşulu
 
 Her ölçütün nereden ve nasıl hesaplandığı kesin olarak tanımlanacak.
+
+### Faz 4 İş Sonuçları
+
+- `lib/hapbi/olcutSozlesmesi.ts` dosyasında 11 başlangıç ölçütü ile ölçüt kaynağı, hesaplama, zaman, kırılım, rol, boş değer, sıfır değer ve sıralama sözleşmeleri tanımlandı.
+- `lib/hapbi/olcutler.ts` dosyasında net puan, kazanılan puan, kaybedilen puan, izleme sayısı, tamamlanan izleme sayısı, beğeni sayısı, favori sayısı, doğru cevap sayısı, yanlış cevap sayısı, ileri sarılan süre ve katkı değeri kataloğa işlendi.
+- Her ölçütün kullanıcı ifadeleri, gerçek T-Club, C-Club ve E-Club kaynakları, hesaplama alanları, hesaplama yöntemi ve olay zamanı belirlendi.
+- Ölçütlerin kullanılabileceği kırılımlar ve roller, Faz 2 rol ve kapsam kurallarıyla ilişkilendirildi.
+- Eksik değerlerin sıfıra çevrilmemesi ile doğrulanmış sıfır değerin anlamı ayrı ayrı tanımlandı.
+- Olay sayısı ile farklı yayın sayısının; ürün toplamı ile tek yayın değerinin karıştırılmaması için yayın ve ürün kimlikleri kaynak ilişkilerinde ayrı tutuldu.
+- C-Club doğru cevap sayısı için doğrulanmış olay kaynağı bulunmadığından C-Club puan kayıtları doğru cevap olayı olarak kullanılmadı.
+- E-Club yanlış cevap kayıtları yanlış cevap sayısına dahil edildi; puan kaybı olarak değerlendirilmedi.
+- İki dosyanın kod ve tür denetimleri hatasız tamamlandı.
 
 ---
 
