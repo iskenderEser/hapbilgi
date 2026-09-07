@@ -28,14 +28,3 @@ test("bildirimler rolün doğru öğrenme oynatıcısına yönlenir", () => {
   assert.match(kaynak, /\/eclub\/panel\?oneri_id=/);
   assert.match(kaynak, /\/eczanem\?gonderim_id=/);
 });
-
-test("Hapbi araç türü, cevap başarısı ve çalışan yayın bağlantısını taşır", () => {
-  const egitim = oku("lib/hapbi/egitim.ts");
-  const eclub = oku("lib/hapbi/eclubKisi.ts");
-  for (const kaynak of [egitim, eclub]) {
-    assert.match(kaynak, /arac_turu/);
-    assert.match(kaynak, /dogru_cevap_yuzdesi/);
-  }
-  assert.match(egitim, /yayin_id=/);
-  assert.match(eclub, /eclub\/panel\?oneri_id=/);
-});

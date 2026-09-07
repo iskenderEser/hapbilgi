@@ -238,7 +238,7 @@ Kod tabanında eski HapBi motorunu çalıştıran soru çözümleme, tarif seçm
 
 ---
 
-## - [ ] Faz 5 — Eski HapBi sınamalarının kaldırılması
+## - [x] Faz 5 — Eski HapBi sınamalarının kaldırılması ✅
 
 ### Amaç
 
@@ -256,6 +256,19 @@ Silinen motoru sınayan ve artık geçerliliği kalmayan sınama dosyalarını k
 ### Faz çıkışı
 
 Eski HapBi motoruna bağlı sınama kalmayacak; HapBilgi’nin ortak sınamaları korunacak.
+
+### Faz 5 İş Sonuçları
+
+- Eski HapBi motorunu doğrudan sınayan 21 sınama dosyası belirlendi ve silindi.
+- `scripts/hapbi-pilot/` altındaki beş eski pilot dosyası silindi.
+- `scripts/test-hapbi-eclub-live.ts` eski canlı sınama dosyası silindi.
+- `tests/ogrenmeAraciFaz6Kritik.smoke.test.ts` içindeki yalnız HapBi’ye ait sınama kaldırıldı; diğer HapBilgi sınamaları korundu.
+- `tests/ogrenmeAraciTamamlamaFaz8.hedef.test.ts` içindeki iki HapBi dosya okuma tanımı ve bunları kullanan dört sınama kaldırıldı; bildirim, Eczanem, beğeni–favori ve öğrenme içeriği sınamaları korundu.
+- `tests/yoneticiGozlemYetkisi.hedef.test.ts` içindeki HapBi dosya okumaları ve HapBi denetimleri kaldırıldı; HB Ligi, üretim raporu, yönetici raporu, E-Club kapsamı ve diğer yönetici yetki sınamaları korundu.
+- `package.json` içindeki `hapbi:pilot:kontrol`, `hapbi:pilot`, `hapbi:pilot:ai` ve `hapbi:pilot:analitik` komutları kaldırıldı.
+- Sınama ve betik dizinlerinde eski HapBi motoruna bağlı dosya veya kod bağlantısı kalmadığı doğrulandı.
+- Kalan `hapbilgi` ifadelerinin platform adına ait olduğu ve HapBi motoruyla ilgili olmadığı doğrulandı.
+- Dört HapBi analitik SQL dosyasına dokunulmadı; bunlar Faz 6 kapsamında ele alınacaktır.
 
 ---
 

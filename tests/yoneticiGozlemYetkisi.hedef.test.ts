@@ -55,11 +55,7 @@ const ekipSiparisApi = oku("app/(panel)/store/siparisler/api/route.ts");
 const atomikUretimSql = oku("scripts/sql/uretim_atomik_rpc.sql");
 const yoneticiRaporSql = oku("scripts/sql/get_yonetici_rapor_v2.sql");
 const yayinAktiflikApi = oku("app/(panel)/yayindaki-videolar/api/[yayin_id]/route.ts");
-const hapbiSorApi = oku("app/api/hapbi/sor/route.ts");
-const hapbiBaglam = oku("lib/hapbi/hapbiKullaniciBaglami.ts");
-const hapbiSaha = oku("lib/hapbi/aracMotorlari/saha.ts");
 const sahaLigi = oku("lib/tclub/hbligi/getSahaLig.ts");
-const hapbiUretim = oku("lib/hapbi/aracMotorlari/uretim.ts");
 const uretimRaporu = oku("lib/rapor/uretim/getUretimData.ts");
 const eclubKapsami = oku("lib/eclub/yonetimKapsami.ts");
 
@@ -233,17 +229,8 @@ test("sipariş kimliğiyle doğrudan ayrıntı okuma yüzeyi açılmaz", () => {
   assert.doesNotMatch(ekipSiparisApi, /searchParams\.get\("siparis_id"\)/);
 });
 
-test("hapbi yönetici araçları firma kapsamını model veya istek gövdesinden değil sunucu kimliğinden alır", () => {
-  assert.match(hapbiSorApi, /getHapbiKullaniciBaglami\(db, user\.id\)/);
-  assert.match(hapbiSorApi, /hapbiAraclariniOlustur\(db, baglam\)/);
-  assert.doesNotMatch(hapbiSorApi, /body\.(?:firma_id|kullanici_id|rol)/);
-  assert.match(hapbiBaglam, /\.eq\("kullanici_id", userId\)\.single\(\)/);
-  assert.match(hapbiBaglam, /baglam\.firma_id = k\.firma_id \?\? null/);
-
-  assert.match(hapbiSaha, /p_yonetici_id: k\.kullanici_id/);
-  assert.match(hapbiSaha, /filter\(\(r: Record<string, unknown>\) => r\.firma_id === k\.firma_id\)/);
+test("yönetici kapsamları sunucu kimliğinden alınır", () => {
   assert.match(sahaLigi, /tumSatirlar\.filter\(\(satir\) => satir\.firma_id === kapsam\.firma_id\)/);
-  assert.match(hapbiUretim, /getUretimData\(db, k, aralik\.baslangic, aralik\.bitis\)/);
   assert.match(uretimRaporu, /p_yonetici_id: yoneticiId/);
   assert.match(yoneticiRaporSql, /WHERE k\.kullanici_id = p_yonetici_id/);
   assert.match(yoneticiRaporSql, /JOIN yonetici_scope ys ON ys\.firma_id = k\.firma_id/);
