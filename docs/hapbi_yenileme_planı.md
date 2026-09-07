@@ -557,7 +557,7 @@ Aynı anlamdaki farklı Türkçe sorular aynı ortak sorgu yapısına dönüşec
 
 ---
 
-## - [ ] Faz 8 — Deterministik sorgu motorunun kurulması
+## - [x] Faz 8 — Deterministik sorgu motorunun kurulması
 
 ### Amaç
 
@@ -587,6 +587,18 @@ Ortak sorgu yapısını güvenli veritabanı işlemine dönüştürmek.
 ### Çıkış koşulu
 
 Geçerli ortak sorgular Gemini kullanılmadan veritabanında çalıştırılabilecek.
+
+### Faz 8 İş Sonuçları
+
+- `lib/hapbi/motor/sorguOlustur.ts` dosyasında ortak sorgunun ölçüt, kırılım, kapsam, zaman, işlem, sıralama ve süzme bileşenleri doğrulanarak güvenli veri kaynağı planına dönüştürüldü.
+- Sorguların kullanıcı cümlesinden veya doğal dil sorusuna özel sabit tariflerden değil, doğrulanmış ortak sorgu yapısından oluşturulması sağlandı.
+- Rol kapsamının, seçilen zaman aralığının ve değişken süzme değerlerinin veri kaynağı planına zorunlu ve ayrı bileşenler olarak eklenmesi sağlandı.
+- `lib/hapbi/motor/veriKaynaklari.ts` dosyasında kullanılabilecek tablo, görünüm, alan, kapsam yolu ve kaynak bağlantıları beyaz listeyle sınırlandırıldı.
+- Kullanıcı metninin doğrudan sorguya yazılması engellendi; değişken değerlerin güvenli sorgu parametreleri olarak taşınması sağlandı.
+- `lib/hapbi/motor/calistir.ts` dosyasında hazırlanan veri kaynağı planının toplama, sayma, gruplama, sıralama, karşılaştırma ve göreli hesaplama işlemlerine göre çalıştırılması sağlandı.
+- Bütün işlem kategorilerinin aynı sorgu, kapsam, zaman ve veri kaynağı bileşenlerini kullanması sağlandı.
+- Çalıştırma sonucunun ortak HapBi sonuç yapısında dönmesi sağlandı.
+- Üç dosyanın kod ve tür denetimleri hatasız tamamlandı.
 
 ---
 
