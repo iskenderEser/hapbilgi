@@ -272,7 +272,7 @@ Eski HapBi motoruna bağlı sınama kalmayacak; HapBilgi’nin ortak sınamalar�
 
 ---
 
-## - [ ] Faz 6 — HapBi’ye özel veritabanı nesnelerinin kaldırılması
+## - [x] Faz 6 — HapBi’ye özel veritabanı nesnelerinin kaldırılması ✅
 
 ### Amaç
 
@@ -318,6 +318,21 @@ Yalnız eski HapBi motoru için oluşturulmuş veritabanı işlevlerini, HapBilg
 ### Faz çıkışı
 
 Eski HapBi’ye özel veritabanı işlevleri kaldırılmış, HapBilgi’nin veri ve veritabanı yapısı korunmuş olacak.
+
+### Faz 6 İş Sonuçları
+
+- `get_hapbi_tclub_analitik_v1`, `get_hapbi_cclub_analitik_v1`, `get_hapbi_eclub_analitik_v1` ve `get_hapbi_uretim_analitik_v1` işlevlerinin veritabanında bulunduğu doğrulandı.
+- Veritabanında adında `hapbi` geçen başka tablo, görünüm, tetikleyici veya erişim ilkesi bulunmadı.
+- Adı `hapbilgi` ile başlayan üç Eczanem işlevinin HapBi’ye ait olmadığı belirlendi ve bu işlevler korundu.
+- Dört HapBi işlevini kullanan başka bir veritabanı nesnesi bulunmadığı doğrulandı.
+- Dört işlev, bağımlılıkları zorla kaldıran bir komut kullanılmadan veritabanından kaldırıldı.
+- Kaldırma işleminden sonra dört işlevin veritabanında bulunmadığı salt okunur sorguyla doğrulandı.
+- `scripts/sql/hapbi_analitik_tclub_v1.sql` silindi.
+- `scripts/sql/hapbi_analitik_cclub_v1.sql` silindi.
+- `scripts/sql/hapbi_analitik_eclub_v1.sql` silindi.
+- `scripts/sql/hapbi_analitik_uretim_v1.sql` silindi.
+- HapBilgi’nin kullanıcı, firma, takım, bölge, ürün, yayın, izleme, puan, soru-cevap, öneri, E-Club, talep ve üretim verilerine dokunulmadı.
+- HapBilgi’nin ortak görünüm, rapor, lig ve veritabanı işlevleri korunmuş oldu.
 
 ---
 
