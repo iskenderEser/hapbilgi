@@ -197,7 +197,7 @@ Alt İş 6 kapsamında kullanıcı tarafından Supabase’de çalıştırılan s
 
 ---
 
-## - [ ] Faz 2 — Rol ve kapsam haritasının kurulması
+## - [x] Faz 2 — Rol ve kapsam haritasının kurulması
 
 ### Amaç
 
@@ -217,7 +217,7 @@ Her kullanıcının hangi kişi, takım, bölge, firma, ürün ve yayın veriler
    - Görebileceği yayınlar
 4. Kullanıcının yazdığı firma, takım, bölge veya kişi kimliği doğrudan güvenilir kabul edilmeyecek.
 5. Kapsam dışı kimlikler sorguya eklenmeden reddedilecek.
-6. İçerik Üreticisi, Admin ve Eczanem üyesi bu haritaya dahil edilmeyecek.
+6. İçerik Üreticisi, Admin, Eczanem üyesi ve E-Club üyesi bu haritaya dahil edilmeyecek; HapBi E-Club üyelerinin ekranlarında gösterilmeyecek.
 7. Rol × görülebilir kırılım tablosu hazırlanacak.
 
 ### Planlanan kod alanı
@@ -228,6 +228,45 @@ Her kullanıcının hangi kişi, takım, bölge, firma, ürün ve yayın veriler
 ### Çıkış koşulu
 
 Her desteklenen rol için görülebilir veri kapsamı sunucu tarafından kesin olarak üretilecek.
+
+### Faz 2 İş Sonuçları
+
+| Veri alanı | Kaynak | Veri ve ilişki | Görebilen roller ve kapsamları |
+|---|---|---|---|
+| Firma çalışanı | `kullanicilar` | Kullanıcı → firma → takım → bölge | **UTT/KD_UTT:** kendisi. **BM:** kendisi ve bölgesindeki UTT/KD_UTT’ler. **TM:** takımındaki BM, UTT ve KD_UTT’ler. **Ürün ailesi:** takım kapsamındaki rapor sonuçları. **Diğer üretici ve yönetici rolleri:** firma kapsamındaki yetkili rapor sonuçları. |
+| Firma | `firmalar` | Organizasyonun kökü | Bütün desteklenen roller yalnız kendi firmalarını görür. Başka firma kimliği kabul edilmez. |
+| Takım | `takimlar` | Takım → firma | **UTT/KD_UTT, BM, TM ve ürün ailesi:** kendi takımı. **Firma düzeyindeki üretici ve yönetici rolleri:** kendi firmalarındaki takımlar. |
+| Bölge | `bolgeler` | Bölge → takım → firma | **UTT/KD_UTT ve BM:** kendi bölgesi. **TM ve ürün ailesi:** kendi takımlarındaki bölgeler. **Firma düzeyindeki üretici ve yönetici rolleri:** kendi firmalarındaki bölgeler. |
+| Ürün | `urunler` | Ürün → takım/firma | **UTT/KD_UTT:** kendisine açık yayınların ürünleri. **BM:** bölgesindeki T-Club ve kişisel C-Club sonuçlarındaki ürünler. **TM:** takımındaki ürünler. **Ürün ailesi:** yetkili takımındaki ürünler. **Diğer üreticiler:** yetenek profiline uygun firma içerikleri. **Yöneticiler:** firma ürünleri. |
+| Talep | `talepler` | Ürün/eğitim → talep | **Üretici rolleri:** kendi açtıkları talepler. **Ürün ailesi:** takım üretim raporu. **Firma düzeyindeki üreticiler ve yöneticiler:** yetkili firma üretim raporu. **UTT/KD_UTT, BM ve TM:** doğrudan talep kaydı göremez. |
+| Öğrenme aracı | `ogrenme_araclari` | Talep → araç | **UTT/KD_UTT:** kendisine açık T-Club araçları. **BM:** kişisel C-Club araçları ve bölgesine önerilebilen T-Club araçları. **TM:** takım raporundaki araç sonuçları. **Ürün ailesi:** takım/ürün araçları. **Diğer üreticiler:** yetenek profiline uygun araçlar. **Yöneticiler:** firma araçları. |
+| Soru seti | `soru_setleri` | Araç/yayın → soru seti | Roller yalnız kendi kapsamlarındaki soru sonuçlarını görür. Ham cevap anahtarı açılmaz. Üretici, kendi talebine bağlı inceleme verisini görebilir. |
+| Soru puanı | `soru_seti_puanlari` | Soru sırası → puan | **UTT/KD_UTT ve BM:** kişisel tüketim puanı. **BM:** ayrıca bölgesindeki UTT/KD_UTT sonuçları. **TM:** takım sonuçları. **Ürün ailesi:** takım/ürün sonuçları. **Diğer üreticiler ve yöneticiler:** yetkili firma raporu. |
+| Yayın | `yayin_yonetimi` | Talep/araç/soru seti → yayın | **UTT/KD_UTT:** hedef rolüne ve organizasyonuna açık yayınlar. **BM:** kişisel C-Club ve bölgesine önerilebilen T-Club yayınları. **TM:** takım yayın sonuçları. **Ürün ailesi:** takım/ürün yayınları. **Diğer üreticiler:** yetenek profiline uygun yayınlar. **Yöneticiler:** firma yayınları. |
+| Yayın künyesi | `v_yayin_kunye` | Yayın → talep, ürün, firma, takım ve araç | Görülebilir `yayin_id`, `urun_id`, `takim_id` ve `firma_id` değerleri kullanıcının rol kapsamından sunucuda üretilecek. Kullanıcının yazdığı kimlikler yetki kanıtı sayılmayacak. |
+| Yayın ayrıntısı | `v_yayin_detay` | Yayın → ürün/eğitim, araç, soru ve puan | Yalnız rol kapsamında doğrulanmış yayınlar okunabilecek. Ürün ailesi takım/ürün; diğer üreticiler yetenek profili; yöneticiler firma; saha rolleri kendi T-Club/C-Club kapsamlarıyla sınırlı olacak. |
+| T-Club izleme | `izleme_kayitlari` | Kullanıcı → yayın → ürün/eğitim | **UTT/KD_UTT:** kendi izlemesi. **BM:** bölgesindeki UTT/KD_UTT izlemeleri. **TM:** takımındaki UTT/KD_UTT izlemeleri. **Ürün ailesi:** takım/ürün sonuçları. **Diğer üreticiler:** ilgili firma yayınlarının rapor sonuçları. **Yöneticiler:** firma sonuçları. |
+| T-Club cevap | `soru_cevaplari` | Cevap → izleme → kullanıcı → yayın | T-Club izleme kapsamıyla aynı sınır uygulanır. Ham cevap anahtarı gösterilmez. |
+| T-Club kazanım | `kazanilan_puanlar` | Kullanıcı → izleme → yayın → ürün | **UTT/KD_UTT:** kişisel puan. **BM:** bölgesindeki UTT/KD_UTT puanları. **TM:** takım puanları. **Ürün ailesi:** takım/ürün puanları. **Diğer üreticiler:** ilgili yayınların firma sonuçları. **Yöneticiler:** firma toplamları. |
+| T-Club ileri sarma | `ileri_sarma_kayitlari` | Kullanıcı → izleme → yayın → ürün kaybı | T-Club kazanım kapsamıyla aynı sınır uygulanır. Yalnız kaydedilmiş süre ve kayıp gösterilir. |
+| T-Club yanlış cevap kaybı | `yanlis_cevap_kayitlari` | Kullanıcı → izleme → yayın → ürün kaybı | T-Club kazanım kapsamıyla aynı sınır uygulanır. Kapsam dışındaki kişi sorguya alınmaz. |
+| T-Club öneri | `oneri_kayitlari` | BM → UTT/KD_UTT → yayın | **UTT/KD_UTT:** yalnız kendisine gelen öneriler. **BM:** bölgesindeki alıcılara yaptığı öneriler. **TM:** takımındaki BM–UTT öneri akışı. **Üretici ve yöneticiler:** yalnız yetkili toplu rapor sonuçları. |
+| T-Club öneri kaybı | `oneri_kayip_kayitlari` | Öneri → alıcı → yayın → ürün | **UTT/KD_UTT:** kendi kaybı. **BM:** bölge kayıpları. **TM:** takım kayıpları. **Ürün ailesi:** takım/ürün sonuçları. **Diğer üretici ve yönetici rolleri:** yetkili firma raporu. |
+| T-Club tekrar | `yayin_tekrar_kayitlari` | Yayın → tur | Yalnız kullanıcının görebildiği yayınların tur bilgisi okunur. Tur kaydı tek başına kullanıcı performansı sayılmaz. |
+| T-Club beğeni/favori | `video_begeniler`, `video_favoriler` | Kullanıcı → yayın → ürün/eğitim | **UTT/KD_UTT:** kendi etkileşimi. **BM:** bölge sonuçları. **TM:** takım sonuçları. **Ürün ailesi:** takım/ürün sonuçları. **Diğer üreticiler ve yöneticiler:** yetkili firma raporu. |
+| C-Club challenge | `challenge_kayitlari` | Gönderen BM → alan BM → yayın | **BM:** kendi gönderdiği veya aldığı challenge kayıtları. **TM:** kişisel C-Club hesabı olmadan takımındaki BM sonuçlarının rapor görünümü. **Üretici rolleri:** yetkili yayın/ürün gözlem kapsamı. **Yöneticiler:** firma raporu. **UTT/KD_UTT:** erişim yok. |
+| C-Club izleme | `cc_izleme_kayitlari` | BM → challenge → yayın | **BM:** kendi izlemesi. **TM:** takımındaki BM sonuçlarının rapor görünümü; kişisel C-Club sonucu yok. **Üretici rolleri:** yetkili yayın/ürün gözlem kapsamı. **Yöneticiler:** firma raporu. |
+| C-Club kazanım/kayıp | C-Club puan ve kayıp tabloları | BM → izleme/challenge → yayın | **BM:** kişisel C-Club sonucu. **TM:** kişisel erişim yok; takımındaki BM’lerin rapor sonuçları. **Üretici rolleri:** yetkili yayın/ürün sonuçları. **Yöneticiler:** firma sonuçları. |
+| C-Club lig özeti | `cc_ligi_ozet` | BM → firma → tarih | **BM:** kendi puanı ve firma sırası. **TM:** takımındaki BM sonuçları; kendisine ait C-Club puanı yok. **Üretici rolleri:** yetkili gözlem kapsamı. **Yöneticiler:** firma sonuçları. |
+| E-Club öneri | `eclub_oneri_kayitlari` | UTT/KD_UTT → E-Club kişisi → yayın | **UTT/KD_UTT:** kendi eczane listesi ve önerileri. **BM:** bölgesindeki UTT/KD_UTT önerileri. **TM:** takım önerileri. **Ürün ailesi:** takım/ürün sonuçları. **Diğer üretici ve yönetici rolleri:** yetkili firma raporu. |
+| E-Club izleme | `eclub_izleme_kayitlari` | E-Club kişisi → öneri → yayın | **UTT/KD_UTT:** kendi eczane portföyü. **BM:** bölgesi. **TM:** takımı. **Ürün ailesi:** takım/ürün. **Diğer üreticiler:** ilgili firma yayınları. **Yöneticiler:** firma sonuçları. |
+| E-Club kazanım/kayıp | E-Club puan ve kayıp tabloları | Kişi → izleme → yayın → ürün/eğitim | E-Club izleme kapsamıyla aynı iç kullanıcı sınırı uygulanır. E-Club üyeleri bu verileri HapBi üzerinden sorgulayamaz. |
+| E-Club UTT katkısı | `eclub_utt_puanlari` | UTT → kişi → öneri → izleme → yayın | **UTT/KD_UTT:** kendi katkısı. **BM:** bölgesindeki katkılar. **TM:** takım katkıları. **Ürün ailesi:** takım/ürün katkıları. **Diğer üretici ve yönetici rolleri:** yetkili firma raporu. |
+| E-Club beğeni/favori | `eclub_video_begeniler`, `eclub_video_favoriler` | E-Club kişisi → yayın | **UTT/KD_UTT:** kendi eczane portföyü. **BM:** bölge. **TM:** takım. **Ürün ailesi:** takım/ürün. **Diğer üretici ve yönetici rolleri:** yetkili firma raporu. |
+| Üretim görevi | `uretim_gorevleri` | Görev → talep → araç/soru seti | **Üretici rolleri:** kendi taleplerine bağlı üretim durumları. **Ürün ailesi:** takım üretim raporu. **Firma düzeyindeki üreticiler:** firma/yetenek profili raporu. **Yöneticiler:** firma üretim portföyü. **UTT/KD_UTT, BM ve TM:** doğrudan üretim görevi erişimi yok. |
+
+- `lib/hapbi/roller.ts` yazıldı.
+- `lib/hapbi/kapsam.ts` yazıldı.
 
 ---
 
