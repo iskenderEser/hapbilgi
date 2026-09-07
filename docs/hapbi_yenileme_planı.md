@@ -393,7 +393,7 @@ Her ölçütün nereden ve nasıl hesaplandığı kesin olarak tanımlanacak.
 
 ---
 
-## - [ ] Faz 5 — Kırılım kataloğunun oluşturulması
+## - [x] Faz 5 — Kırılım kataloğunun oluşturulması
 
 ### Amaç
 
@@ -428,6 +428,17 @@ Sonuçların hangi varlıklar üzerinden gruplanabileceğini belirlemek.
 ### Çıkış koşulu
 
 Her ölçütün hangi varlıklar üzerinden gruplanabileceği kesinleşecek.
+
+### Faz 5 İş Sonuçları
+
+- `lib/hapbi/kirilimSozlesmesi.ts` dosyasında kullanıcı, UTT, ürün, yayın, takım, bölge ve firma kırılımları ile bağlantı ve doğrulama sözleşmeleri tanımlandı.
+- `lib/hapbi/kirilimlar.ts` dosyasında her kırılımın ortak kimliği, görüntülenecek ad alanı, sabit süzme koşulları ve diğer veri kaynaklarına bağlantıları kataloğa işlendi.
+- Her kırılımın kullanılabileceği veri alanları, roller ve Faz 4 ölçütleri belirlendi.
+- Kullanıcı ile UTT aynı kimlik kaynağını kullanan ayrı kırılımlar olarak tanımlandı; UTT kırılımı yalnız UTT ve KD_UTT rolleriyle sınırlandı.
+- Ürün ile yayın ayrı kimlikler ve ayrı kırılımlar olarak korundu; bir ürünün birden fazla yayına bağlanabilmesi `urun_id` ve `yayin_id` üzerinden tanımlandı.
+- Takım, bölge ve firma bağlantıları Bluebook’taki bölge → takım → firma hiyerarşisine göre kuruldu.
+- Yinelenen kırılımlar, kullanıcı ile UTT’nin birlikte kullanılması, rolün erişemediği veri alanları ve ölçütle kullanılamayan kırılımlar için açık reddetme nedenleri tanımlandı.
+- İki dosyanın kod ve tür denetimleri hatasız tamamlandı.
 
 ---
 
