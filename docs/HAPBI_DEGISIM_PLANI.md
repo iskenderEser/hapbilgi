@@ -13,7 +13,7 @@
 
 ---
 
-## - [ ] Faz 1 — HapBi sınırlarının çıkarılması
+## - [x] Faz 1 — HapBi sınırlarının çıkarılması
 
 ### Amaç
 
@@ -48,6 +48,56 @@ Dosya ve veritabanı nesnesi bazında kesin bir:
 - Ortak kullanıldığı için dokunulmayacaklar
 
 listesi hazırlanmış olacak.
+
+### Faz 1 İş Sonuçları
+
+- Faz 1 tamamlandı.
+- Hiçbir dosya veya veritabanı nesnesi değiştirilmedi.
+
+#### Korunacaklar
+
+- `components/hapbi/HapbiMaskot.tsx`
+- `components/hapbi/HapbiChatModal.tsx`
+- `components/hapbi/HapbiSpotlight.tsx`
+- `lib/hapbi/hapbiBilgiTabani.ts`
+- `public/hapbi.png`
+- `public/hapbi-wink.png`
+- `tests/hapbiCanliTurMetinleri.smoke.test.ts`
+
+#### Daha sonra yalnız motor bağlantıları çıkarılarak değiştirilecekler
+
+- `components/hapbi/HapbiProvider.tsx`
+- `app/api/hapbi/sor/route.ts`
+- `lib/hapbi/hizliSorgu.ts`
+- `lib/hapbi/sozlesme.ts`
+- `package.json`
+
+#### Silinecek eski motor
+
+- `lib/hapbi/analitik/` altındaki 11 dosya
+- `lib/hapbi/aracMotorlari/` altındaki 8 dosya
+- `lib/hapbi/kapsam/` altındaki 3 dosya
+- `lib/hapbi/niyet/` altındaki 7 dosya
+- `lib/hapbi/yanit/` altındaki 5 dosya
+- `lib/hapbi/` kökündeki 14 motor dosyası
+- Eski motoru sınayan 21 HapBi sınama dosyası
+- `scripts/hapbi-pilot/` altındaki 5 dosya
+- `scripts/test-hapbi-eclub-live.ts`
+
+#### Veritabanında bulunan HapBi işlevleri
+
+- `get_hapbi_cclub_analitik_v1`
+- `get_hapbi_eclub_analitik_v1`
+- `get_hapbi_tclub_analitik_v1`
+- `get_hapbi_uretim_analitik_v1`
+
+Adı `hapbilgi` ile başlayan üç Eczanem işlevi HapBi’ye ait değildir ve kesinlikle korunacaktır.
+
+#### Ortak kullanıldığı için dokunulmayacaklar
+
+- `lib/tclub/hbligi/getSahaLig.ts`
+- Oturum, rol, zaman, rapor, üretim, E-Club, yayın ve öğrenme aracı dosyaları
+- HapBilgi sayfaları, logoları ve ortak veritabanı nesneleri
 
 ---
 
