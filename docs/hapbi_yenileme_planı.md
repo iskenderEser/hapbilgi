@@ -270,7 +270,7 @@ Her desteklenen rol için görülebilir veri kapsamı sunucu tarafından kesin o
 
 ---
 
-## - [ ] Faz 3 — Zaman modelinin kurulması
+## - [x] Faz 3 — Zaman modelinin kurulması
 
 ### Amaç
 
@@ -312,6 +312,19 @@ Kullanıcının zaman ifadelerini HapBilgi zaman kurallarına göre kesin başla
 ### Çıkış koşulu
 
 Desteklenen bütün zaman ifadeleri kesin başlangıç ve bitiş değerine dönüşecek.
+
+### Faz 3 İş Sonuçları
+
+- `lib/hapbi/zamanSozlesmesi.ts` dosyasında hafta, ay, dönem ve yıl zaman türleri ile “bu” ve “son” yönelimleri tanımlandı.
+- Gün, HapBi deterministik sorgu kapsamının dışında bırakıldı.
+- Hafta, ay, dönem ve yıl sınırlarının Türkiye saatine göre hesaplanması sağlandı.
+- Haftanın pazartesi başlayıp sonraki pazartesiye kadar; ayın takvim ayı sınırlarında; dönemin üç aylık sabit takvim aralıklarında; yılın 1 Ocak’tan sonraki 1 Ocak’a kadar hesaplanması sağlandı.
+- “Son” ifadesi, ilgili türün en son tamamlanmış zaman aralığına bağlandı.
+- `dönem`, `çeyrek`, `kuartır` ve `quarter` ifadeleri aynı zaman türüne bağlandı.
+- `3 ay` ifadesinin dönem eş anlamlısı olarak kullanılmaması sağlandı.
+- Üretilen aralıklar başlangıç dahil, bitiş hariç olacak şekilde tanımlandı.
+- Önceki zaman bilgisinin yalnız kesin devam sorularında kullanılmasına izin verildi; bağımsız soruların zamanı kendiliğinden devralması engellendi.
+- `lib/hapbi/zaman.ts` ve `lib/hapbi/zamanSozlesmesi.ts` dosyalarının kod ve tür denetimleri hatasız tamamlandı.
 
 ---
 
