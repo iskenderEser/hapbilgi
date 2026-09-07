@@ -442,7 +442,7 @@ Her ölçütün hangi varlıklar üzerinden gruplanabileceği kesinleşecek.
 
 ---
 
-## - [ ] Faz 6 — Sorgu işlem kategorilerinin kurulması
+## - [x] Faz 6 — Sorgu işlem kategorilerinin kurulması
 
 ### Amaç
 
@@ -496,6 +496,17 @@ type HapbiSorgu = {
 ### Çıkış koşulu
 
 Bütün desteklenen veri soruları tek ortak sorgu yapısıyla ifade edilebilecek.
+
+### Faz 6 İş Sonuçları
+
+- `lib/hapbi/islemTurleri.ts` dosyasında doğrudan değer, toplam, bütünleşik, karşılaştırma, sıralama, göreli hesaplama, fark, katkı, eğilim ve koşullu seçim kategorileri tanımlandı.
+- Her işlem kategorisinin zorunlu alanları ve kullanılamayacak alanları belirlendi.
+- `lib/hapbi/sozlesme.ts` dosyasında kapsam, veri alanı, zaman, ölçüt, sonuç ölçütü, kırılım, işlem, süzme, sıralama, sonuç sınırı ve karşılaştırma alanlarını taşıyan ortak sorgu sözleşmesi kuruldu.
+- Bütünleşik sorgularda seçim ölçütü ile sonuç ölçütü birbirinden ayrıldı ve aynı ölçütün iki görevde kullanılmaması sağlandı.
+- Karşılaştırma, fark ve eğilim işlemlerinde iki tarafın kapsamı, zamanı ve süzme koşulları ayrı tanımlandı.
+- Sıralama yönü, olumlu tam sayı sonuç sınırı, varlık süzme koşulları ve sayısal değer koşulları tanımlandı.
+- Rolün erişemediği veri alanı, ölçüt–veri alanı uyumsuzluğu, ölçüt–kırılım uyumsuzluğu ve kapsam dışı varlık kimlikleri veritabanına ulaşmadan reddedilecek şekilde doğrulandı.
+- İki dosyanın kod ve tür denetimleri hatasız tamamlandı.
 
 ---
 
