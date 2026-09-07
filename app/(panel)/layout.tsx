@@ -26,7 +26,6 @@ import { BILDIRIM_ROZETLERI_DEGISTI } from "@/lib/bildirimler/rozet";
 import { HapbiProvider } from "@/components/hapbi/HapbiProvider";
 import HapbiMaskot from "@/components/hapbi/HapbiMaskot";
 import HapbiChatModal from "@/components/hapbi/HapbiChatModal";
-import HapbiSpotlight from "@/components/hapbi/HapbiSpotlight";
 import YarimYuklemeBildirimi from "@/components/ogrenme-araci/YarimYuklemeBildirimi";
 
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
@@ -184,10 +183,9 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
           </main>
         </div>
 
-        {/* Canlı 3D Hapbi Maskotu ve İnteraktif Tur Bileşenleri */}
+        {/* Canlı 3D Hapbi maskotu ve sohbet alanı */}
         <HapbiMaskot />
         <HapbiChatModal />
-        <HapbiSpotlight />
         <YarimYuklemeBildirimi />
       </div>
     </HapbiProvider>

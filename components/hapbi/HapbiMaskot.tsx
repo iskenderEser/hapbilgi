@@ -11,16 +11,15 @@ import { ECLUB_TUKETICI_ROLLERI, MUSTERI_ROLU } from "@/lib/utils/roller";
 
 export default function HapbiMaskot() {
   const { kullanici } = useAuth();
-  const { chatAcik, toggleChat, aktifTur } = useHapbi();
+  const { chatAcik, toggleChat } = useHapbi();
   const [isHovered, setIsHovered] = useState(false);
 
-  // E-Club eczane üyeleri, dış müşteriler ve tur aktifken floating maskot gösterilmez
+  // E-Club eczane üyeleri ve dış müşteriler için yüzen maskot gösterilmez.
   if (
     !kullanici ||
     ECLUB_TUKETICI_ROLLERI.includes(kullanici.rol) ||
     kullanici.kimlik_turu === "eclub_kisi" ||
-    kullanici.rol === MUSTERI_ROLU ||
-    aktifTur
+    kullanici.rol === MUSTERI_ROLU
   ) {
     return null;
   }

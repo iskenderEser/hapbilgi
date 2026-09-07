@@ -175,7 +175,7 @@ Maskot ve sohbet alanı çalışır biçimde açılacak; fakat eski HapBi motoru
 
 ---
 
-## - [ ] Faz 4 — Mevcut HapBi kod motorunun kaldırılması
+## - [x] Faz 4 — Mevcut HapBi kod motorunun kaldırılması ✅
 
 ### Amaç
 
@@ -214,6 +214,27 @@ ayrı ayrı bildirilecek ve onay alınacak.
 ### Faz çıkışı
 
 Kod tabanında eski HapBi motorunu çalıştıran soru çözümleme, tarif seçme, veri sorgulama veya cevap üretme yolu kalmayacak.
+
+### Faz 4 İş Sonuçları
+
+- Eski HapBi kod motorunu oluşturan 16 işlev grubu dosya bazında eşleştirildi.
+- `lib/hapbi/` altındaki soru normalleştirme, sözlük, dönem çözümleme, doğal dil derleme, sabit tarifler ve tarif seçme dosyaları silindi.
+- Mevcut soru planı, hızlı soru planı, takip sorusu ve konuşma devralma dosyaları silindi.
+- Mevcut HapBi motoru ile doğrudan cevap üretme ve cevap şablonu dosyaları silindi.
+- Araç tanımları, araç seçme yapısı ve `lib/hapbi/aracMotorlari/` altındaki dosyalar silindi.
+- Analitik sorgu yürütme, istek önbelleği, toplama, tarif yürütme ve HapBi veri okuyucu dosyaları silindi.
+- Kanıt üretme, kanıt doğrulama, kanıt paketi ve Gemini yorum katmanı dosyaları silindi.
+- Eski motorun yardımcı tür, kapsam, rol matrisi, yetki, kullanıcı bağlamı ve bilgi kaynağı dosyaları silindi.
+- Başlangıçta kısmen silinmesi planlanan `lib/hapbi/hizliSorgu.ts`, hazır soruların kaldırılması yönündeki kullanıcı kararı üzerine tamamen silindi.
+- Canlı tur tanımlarını içeren `lib/hapbi/hapbiBilgiTabani.ts`, kullanıcı kararı üzerine bağlantılarıyla birlikte silindi.
+- Canlı tur bileşeni `components/hapbi/HapbiSpotlight.tsx` ve ona ait `tests/hapbiCanliTurMetinleri.smoke.test.ts` dosyası silindi.
+- `components/hapbi/HapbiProvider.tsx`, `components/hapbi/HapbiMaskot.tsx`, `components/hapbi/HapbiChatModal.tsx` ve `app/(panel)/layout.tsx` içindeki canlı tur bağlantıları kaldırıldı.
+- Maskot ve sohbet alanı korundu.
+- Hazır soru alanı ve hazır soru gönderme bilgisi sohbet arayüzünden kaldırıldı.
+- `lib/hapbi/` altında eski motor dosyası kalmadığı doğrulandı.
+- Uygulama kodunda eski HapBi motoruna kalan bağlantı bulunmadığı doğrulandı.
+- HapBilgi’nin ortak rol, zaman, lig, rapor, üretim, yayın ve E-Club dosyaları silinmedi.
+- Veritabanı nesnelerine bu fazda dokunulmadı.
 
 ---
 

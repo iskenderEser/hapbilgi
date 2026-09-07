@@ -68,7 +68,7 @@ function renderHapbiMetin(metin: string, isUser = false): React.ReactNode {
 }
 
 export default function HapbiChatModal() {
-  const { chatAcik, setChatAcik, mesajlar, yukleniyor, soruSor, turBaslat, temizle, hizliSorular } = useHapbi();
+  const { chatAcik, setChatAcik, mesajlar, yukleniyor, soruSor, temizle } = useHapbi();
   const router = useRouter();
   const [girdi, setGirdi] = useState("");
   const mesajlarSonRef = useRef<HTMLDivElement>(null);
@@ -182,15 +182,13 @@ export default function HapbiChatModal() {
                   </div>
                 )}
 
-                {/* Eğer Mesajda Yönlendirici veya Canlı Tur Aksiyonu Varsa */}
+                {/* Eğer mesajda yönlendirici aksiyon varsa */}
                 {m.aksiyon && (
                   <div className="mt-2.5 pt-2 border-t border-gray-100">
                     <button
                       type="button"
                       onClick={() => {
-                        if (m.aksiyon?.turId) {
-                          turBaslat(m.aksiyon.turId);
-                        } else if (m.aksiyon?.url) {
+                        if (m.aksiyon?.url) {
                           router.push(m.aksiyon.url);
                         }
                       }}
@@ -214,21 +212,6 @@ export default function HapbiChatModal() {
         )}
 
         <div ref={mesajlarSonRef} />
-      </div>
-
-      {/* Hızlı Sorular (Chips) */}
-      <div className="px-3 py-2 bg-orange-50/60 border-t border-orange-100 overflow-x-auto flex items-center gap-1.5 scrollbar-none">
-        {hizliSorular.map((soru, i) => (
-          <button
-            key={i}
-            type="button"
-            disabled={yukleniyor}
-            onClick={() => soruSor(soru, true)}
-            className="flex-shrink-0 text-[11px] font-bold text-[#185fa5] bg-white hover:bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-full cursor-pointer transition-all shadow-2xs whitespace-nowrap"
-          >
-            {soru}
-          </button>
-        ))}
       </div>
 
       {/* Soru Giriş Alanı */}

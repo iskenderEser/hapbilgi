@@ -1,15 +1,12 @@
 // components/hapbi/HapbiProvider.tsx
 //
-// Hapbi AI Platform Danışmanı ve İnteraktif Walkthrough Global State Yöneticisi.
+// Hapbi sohbet arayüzü global durum yöneticisi.
 
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { TUKETICI_ROLLER } from "@/lib/utils/roller";
-import { hizliSorular } from "@/lib/hapbi/hizliSorgu";
-import { useRouter, usePathname } from "next/navigation";
-import { HAPBI_CANLI_TURLAR, type WalkthroughTur, type WalkthroughAdim } from "@/lib/hapbi/hapbiBilgiTabani";
+import { usePathname } from "next/navigation";
 
 interface HapbiKaynak {
   id: string;
@@ -37,26 +34,17 @@ export interface HapbiMesaj {
   aksiyon?: {
     etiket: string;
     url?: string;
-    turId?: string;
   };
 }
 
 interface HapbiContextTuru {
-  hizliSorular: readonly string[];
   chatAcik: boolean;
   setChatAcik: (acik: boolean) => void;
   toggleChat: () => void;
   mesajlar: HapbiMesaj[];
   yukleniyor: boolean;
-  soruSor: (soru: string, hizliMi?: boolean) => Promise<void>;
+  soruSor: (soru: string) => Promise<void>;
   temizle: () => void;
-  // Walkthrough Tur Durumları
-  aktifTur: WalkthroughTur | null;
-  mevcutAdimIndex: number;
-  mevcutAdim: WalkthroughAdim | null;
-  turBaslat: (turId: string) => void;
-  turIlerle: () => void;
-  turBitir: () => void;
 }
 
 const HapbiContext = createContext<HapbiContextTuru | null>(null);
@@ -71,20 +59,15 @@ const ILK_KARSILAMA_MESAJI: HapbiMesaj = {
 export function HapbiProvider({ children }: { children: React.ReactNode }) {
   const { kullanici } = useAuth();
   const anahtar = [kullanici?.id, kullanici?.rol, kullanici?.firma_id, kullanici?.kimlik_turu].join(":");
-  return <HapbiOturumProvider key={anahtar} rol={kullanici?.rol ?? ""}>{children}</HapbiOturumProvider>;
+  return <HapbiOturumProvider key={anahtar}>{children}</HapbiOturumProvider>;
 }
 
-function HapbiOturumProvider({ children, rol }: { children: React.ReactNode; rol: string }) {
-  const router = useRouter();
+function HapbiOturumProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const [chatAcik, setChatAcik] = useState(false);
   const [mesajlar, setMesajlar] = useState<HapbiMesaj[]>([ILK_KARSILAMA_MESAJI]);
   const [yukleniyor, setYukleniyor] = useState(false);
-
-  // Walkthrough state
-  const [aktifTur, setAktifTur] = useState<WalkthroughTur | null>(null);
-  const [mevcutAdimIndex, setMevcutAdimIndex] = useState(0);
 
   const toggleChat = useCallback(() => {
     setChatAcik((prev) => !prev);
@@ -102,58 +85,8 @@ function HapbiOturumProvider({ children, rol }: { children: React.ReactNode; rol
     setMesajlar([ILK_KARSILAMA_MESAJI]);
   }, []);
 
-  // Tur Başlatma
-  const turBaslat = useCallback((turId: string) => {
-    const tur = HAPBI_CANLI_TURLAR[turId];
-    if (!tur || tur.adimlar.length === 0) return;
-    // Mevcut turlar T-Club tüketici ekranlarına özeldir.
-    if (!TUKETICI_ROLLER.includes(rol)) return;
-
-    setAktifTur(tur);
-    setMevcutAdimIndex(0);
-    setChatAcik(false); // Tur başladığında sohbet panelini küçültüp spot'a geç
-
-    const ilkAdim = tur.adimlar[0];
-    if (ilkAdim.hedefUrl && pathname !== ilkAdim.hedefUrl) {
-      router.push(ilkAdim.hedefUrl);
-    }
-  }, [pathname, router, rol]);
-
-  // Tur İlerleme
-  const turIlerle = useCallback(() => {
-    if (!aktifTur) return;
-
-    const sonrakiIndex = mevcutAdimIndex + 1;
-    if (sonrakiIndex < aktifTur.adimlar.length) {
-      setMevcutAdimIndex(sonrakiIndex);
-      const sonrakiAdim = aktifTur.adimlar[sonrakiIndex];
-      if (sonrakiAdim.hedefUrl && pathname !== sonrakiAdim.hedefUrl) {
-        router.push(sonrakiAdim.hedefUrl);
-      }
-    } else {
-      // Tur bitti
-      setAktifTur(null);
-      setMevcutAdimIndex(0);
-      setMesajlar((prev) => [
-        ...prev,
-        {
-          id: String(Date.now()),
-          rol: "hapbi",
-          metin: `🎉 Harika! "${aktifTur.baslik}" turunu başarıyla tamamladınız. Başka bir konuda yardıma ihtiyaç duyarsanız buradayım!`,
-          zaman: new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }),
-        },
-      ]);
-    }
-  }, [aktifTur, mevcutAdimIndex, pathname, router]);
-
-  // Tur Bitir / İptal
-  const turBitir = useCallback(() => {
-    setAktifTur(null);
-    setMevcutAdimIndex(0);
-  }, []);
-
   // Sunucuda imzalanmış sohbet bağlamı; hazır cevap veya anahtar kelime motoru yok.
-  const soruSor = useCallback(async (soruMetni: string, hizliMi = false) => {
+  const soruSor = useCallback(async (soruMetni: string) => {
     const soru = soruMetni.trim();
     if (!soru || soru.length > 2000 || istekRef.current) return;
     const controller = new AbortController();
@@ -165,7 +98,7 @@ function HapbiOturumProvider({ children, rol }: { children: React.ReactNode; rol
       const res = await fetch("/api/hapbi/sor", {
         method: "POST", headers: { "Content-Type": "application/json" },
         signal: controller.signal,
-        body: JSON.stringify({ soru, pathname, sohbet: sohbetRef.current, hizli: hizliMi }),
+        body: JSON.stringify({ soru, pathname, sohbet: sohbetRef.current }),
       });
       const data = await res.json();
       if (controller.signal.aborted) return;
@@ -188,12 +121,9 @@ function HapbiOturumProvider({ children, rol }: { children: React.ReactNode; rol
     }
   }, [pathname]);
 
-  const mevcutAdim = aktifTur ? aktifTur.adimlar[mevcutAdimIndex] ?? null : null;
-
   return (
     <HapbiContext.Provider
       value={{
-        hizliSorular: hizliSorular(rol),
         chatAcik,
         setChatAcik,
         toggleChat,
@@ -201,12 +131,6 @@ function HapbiOturumProvider({ children, rol }: { children: React.ReactNode; rol
         yukleniyor,
         soruSor,
         temizle,
-        aktifTur,
-        mevcutAdimIndex,
-        mevcutAdim,
-        turBaslat,
-        turIlerle,
-        turBitir,
       }}
     >
       {children}
