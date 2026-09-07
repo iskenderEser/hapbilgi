@@ -101,7 +101,7 @@ Adı `hapbilgi` ile başlayan üç Eczanem işlevi HapBi’ye ait değildir ve k
 
 ---
 
-## - [ ] Faz 2 — Maskot ve sohbet arayüzünün korunması
+## - [x] Faz 2 — Maskot ve sohbet arayüzünün korunması
 
 ### Amaç
 
@@ -127,6 +127,22 @@ HapBi’nin görünen yüzünü mevcut hâliyle sabitlemek.
 ### Faz çıkışı
 
 Eski motor kaldırıldığında dahi maskotun ve sohbet alanının hangi dosyalarla korunacağı kesinleşmiş olacak.
+
+### Faz 2 İş Sonuçları
+
+- Hiçbir dosya değiştirilmeden maskot ve sohbet arayüzünün mevcut yapısı incelendi.
+- Maskotun `components/hapbi/HapbiMaskot.tsx` dosyasında oluşturulduğu belirlendi.
+- Maskotun 57 × 57 piksel boyutunda, ekranın sağ altında bulunduğu ve tıklanınca sohbet alanını açıp kapattığı doğrulandı.
+- Sohbet alanının `components/hapbi/HapbiChatModal.tsx` dosyasında oluşturulduğu belirlendi.
+- Sohbet alanının 390 × 560 piksel boyutunda ve ekranın sağ altında açıldığı doğrulandı.
+- Mesaj geçmişi, hazır sorular, metin alanı, gönderme düğmesi, yenileme düğmesi ve kapatma düğmesi korunacak arayüz bölümleri olarak belirlendi.
+- Açılma, kapanma ve sohbet durumunun `components/hapbi/HapbiProvider.tsx` tarafından yönetildiği belirlendi.
+- `public/hapbi.png` ve `public/hapbi-wink.png` maskot görselleri koruma listesine alındı.
+- `components/hapbi/HapbiSpotlight.tsx` ve `lib/hapbi/hapbiBilgiTabani.ts` canlı rehberlik arayüzü olduğu için koruma listesine alındı.
+- Eski motora giden bağlantının `components/hapbi/HapbiProvider.tsx` içindeki `/api/hapbi/sor` çağrısı olduğu belirlendi.
+- `app/(panel)/layout.tsx` dosyasının yalnız HapBi bileşenlerini ekrana yerleştirdiği ve ortak dosya olduğu için silinmeyeceği doğrulandı.
+- Arayüz dosyaları eski motorun silme listesinden çıkarıldı.
+- Mevcut, henüz commit edilmemiş arayüz değişikliklerine dokunulmadı.
 
 ---
 
