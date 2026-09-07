@@ -602,7 +602,7 @@ Geçerli ortak sorgular Gemini kullanılmadan veritabanında çalıştırılabil
 
 ---
 
-## - [ ] Faz 9 — Veri doğrulama ve kanıt katmanının kurulması
+## - [x] Faz 9 — Veri doğrulama ve kanıt katmanının kurulması
 
 ### Amaç
 
@@ -628,6 +628,20 @@ Geçerli ortak sorgular Gemini kullanılmadan veritabanında çalıştırılabil
 ### Çıkış koşulu
 
 Her sayısal sonuç, kaynağı ve hesaplama bileşenleriyle doğrulanabilir olacak.
+
+### Faz 9 İş Sonuçları
+
+- `lib/hapbi/motor/dogrula.ts` dosyasında boş sonuç, eksik değer ve gerçek `0` birbirinden ayrıldı.
+- Olay sayısı ile tekil kayıt, ürün, yayın ve kullanıcı sayılarının ayrı doğrulanması sağlandı.
+- Sonuç satırlarında ve kaynak kayıtlarında mükerrer kimlik denetimi kuruldu.
+- Beklenen toplamın doğrulanmış alt satırlarla uyumu denetlendi.
+- Sıralamanın sorgu planındaki ölçüt ve sıralama yönüyle uyumu doğrulandı.
+- Karşılaştırma, fark ve eğilim sonuçlarının iki doğrulanmış değer üzerinden hesaplanması denetlendi.
+- Sonuçta bildirilen veri kaynaklarının sorgu planındaki kaynaklarla uyumu doğrulandı.
+- `lib/hapbi/motor/kanit.ts` dosyasında yalnız doğrulanmış sonuçlardan veri kaynağı, zaman, hesaplama alanı ve sayısal değer içeren kanıt paketi oluşturulması sağlandı.
+- Her doğrulanmış sonuç satırı için kısa kanıt açıklaması üretildi.
+- Boş, eksik veya doğrulanmamış sonuçların kesin bilgi sağlayan kanıta dönüştürülmesi engellendi.
+- İki dosyanın kod ve tür denetimleri hatasız tamamlandı.
 
 ---
 
