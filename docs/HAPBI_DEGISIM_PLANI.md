@@ -13,7 +13,7 @@
 
 ---
 
-## - [x] Faz 1 — HapBi sınırlarının çıkarılması
+## - [x] Faz 1 — HapBi sınırlarının çıkarılması ✅
 
 ### Amaç
 
@@ -101,7 +101,7 @@ Adı `hapbilgi` ile başlayan üç Eczanem işlevi HapBi’ye ait değildir ve k
 
 ---
 
-## - [x] Faz 2 — Maskot ve sohbet arayüzünün korunması
+## - [x] Faz 2 — Maskot ve sohbet arayüzünün korunması ✅
 
 ### Amaç
 
@@ -146,7 +146,7 @@ Eski motor kaldırıldığında dahi maskotun ve sohbet alanının hangi dosyala
 
 ---
 
-## - [ ] Faz 3 — Mevcut motorun arayüzden ayrılması
+## - [x] Faz 3 — Mevcut motorun arayüzden ayrılması ✅
 
 ### Amaç
 
@@ -157,14 +157,21 @@ Korunacak sohbet arayüzünün eski HapBi motoruna olan bağımlılığını kal
 1. Sohbet arayüzünün soru gönderdiği uygulama programlama arayüzü bağlantısı belirlenecek.
 2. Ortak arayüz dosyalarındaki eski motor aktarımları çıkarılacak.
 3. Eski motoru başlatan çağrılar kaldırılacak.
-4. Maskotun açılma ve kapanma davranışına dokunulmayacak.
-5. Sohbet alanının görünümüne dokunulmayacak.
-6. Uygulama programlama arayüzü dosyası, yeni sisteme bağlanabilecek boş bağlantı sınırı olarak korunacaksa yalnız mevcut motor bağlantısı çıkarılacak.
-7. Bu faz kapsamında ortak bir dosyaya müdahale gerekirse dosya ve gerekçesi ayrı ayrı sunulacak.
 
 ### Faz çıkışı
 
 Maskot ve sohbet alanı çalışır biçimde açılacak; fakat eski HapBi motoruna hiçbir çağrı yapmayacak.
+
+### Faz 3 İş Sonuçları
+
+- Sohbet arayüzünün soru gönderdiği bağlantının `components/hapbi/HapbiProvider.tsx` içindeki `/api/hapbi/sor` adresine yapılan `POST` isteği olduğu belirlendi.
+- İsteği karşılayan bağlantı dosyasının `app/api/hapbi/sor/route.ts` olduğu belirlendi.
+- `components/hapbi/HapbiProvider.tsx` içindeki eski motor sözleşmesi aktarımı kaldırıldı.
+- Arayüzün ihtiyaç duyduğu kaynak ve eğitim bağlantısı veri yapıları `components/hapbi/HapbiProvider.tsx` içinde tanımlandı.
+- `app/api/hapbi/sor/route.ts` içindeki eski HapBi motorunu, araçlarını, kullanıcı kapsamını ve sohbet motorunu başlatan çağrılar kaldırıldı.
+- `app/api/hapbi/sor/route.ts` silinmedi; eski motor kapalıyken açık hata cevabı veren bağlantı sınırı olarak korundu.
+- Maskotun ve sohbet alanının görünümü ile açılma ve kapanma davranışı değiştirilmedi.
+- Ortak HapBilgi dosyalarına müdahale edilmedi.
 
 ---
 

@@ -6,11 +6,25 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import { useAuth } from "@/app/providers/AuthProvider";
-import type { HapbiKaynak, HapbiEgitimBaglantisi } from "@/lib/hapbi/sozlesme";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { hizliSorular } from "@/lib/hapbi/hizliSorgu";
 import { useRouter, usePathname } from "next/navigation";
 import { HAPBI_CANLI_TURLAR, type WalkthroughTur, type WalkthroughAdim } from "@/lib/hapbi/hapbiBilgiTabani";
+
+interface HapbiKaynak {
+  id: string;
+  baslik: string;
+  url?: string;
+  zaman: string;
+  donem?: string;
+}
+
+interface HapbiEgitimBaglantisi {
+  id: string;
+  etiket: string;
+  url: string;
+  gerekce?: string;
+}
 
 export interface HapbiMesaj {
   id: string;
