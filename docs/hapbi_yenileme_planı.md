@@ -800,7 +800,7 @@ Yeni motor mevcut HapBi maskotu ve sohbet alanı üzerinden kullanılabilir olac
 
 ---
 
-## - [ ] Faz 13 — Kapsam matrisi, sınamalar ve canlı doğrulama
+## - [x] Faz 13 — Kapsam matrisi, sınamalar ve canlı doğrulama
 
 ### Amaç
 
@@ -833,6 +833,78 @@ Sistemin desteklediği bütün birleşimleri görünür ve doğrulanabilir hale 
 14. Sonuçlar doğrudan veritabanı sorgularıyla karşılaştırılacak.
 15. Cevap süresi ve model maliyeti ölçülerek raporlanacak.
 
+### Faz 13 Kapsam Tablosu
+
+#### Rol × veri alanı
+
+| Rol grubu | T-Club | C-Club | E-Club | Üretim |
+|---|---|---|---|---|
+| `utt`, `kd_utt` | Kişisel kapsam | Rol kapsamı dışında | Kişisel kapsam | Rol kapsamı dışında |
+| `bm` | Bölge kapsamı | Kişisel kapsam | Bölge kapsamı | Rol kapsamı dışında |
+| `tm` | Takım kapsamı | Takım kapsamı | Takım kapsamı | Rol kapsamı dışında |
+| `pm`, `jr_pm`, `kd_pm` | Takım kapsamı | Takım kapsamı | Takım kapsamı | Takım kapsamı |
+| Diğer desteklenen firma rolleri | Firma kapsamı | Firma kapsamı | Firma kapsamı | Firma kapsamı |
+
+#### Ölçüt × veri alanı
+
+| Ölçüt | T-Club | C-Club | E-Club | Üretim |
+|---|---|---|---|---|
+| Net puan | Destekleniyor | Destekleniyor | Destekleniyor | Henüz geliştirilmedi |
+| Kazanılan puan | Destekleniyor | Destekleniyor | Destekleniyor | Henüz geliştirilmedi |
+| Kaybedilen puan | Destekleniyor | Destekleniyor | Destekleniyor | Henüz geliştirilmedi |
+| İzleme sayısı | Destekleniyor | Destekleniyor | Destekleniyor | Henüz geliştirilmedi |
+| Tamamlanan izleme sayısı | Destekleniyor | Destekleniyor | Destekleniyor | Henüz geliştirilmedi |
+| Beğeni sayısı | Destekleniyor | Veri kaynağı yok | Destekleniyor | Henüz geliştirilmedi |
+| Favori sayısı | Destekleniyor | Veri kaynağı yok | Destekleniyor | Henüz geliştirilmedi |
+| Doğru cevap sayısı | Destekleniyor | Veri kaynağı yok | Destekleniyor | Henüz geliştirilmedi |
+| Yanlış cevap sayısı | Destekleniyor | Destekleniyor | Destekleniyor | Henüz geliştirilmedi |
+| İleri sarılan süre | Destekleniyor | Destekleniyor | Destekleniyor | Henüz geliştirilmedi |
+| Katkı değeri | Veri kaynağı yok | Veri kaynağı yok | Destekleniyor | Henüz geliştirilmedi |
+
+#### Kırılım × veri alanı
+
+| Kırılım | T-Club | C-Club | E-Club | Üretim |
+|---|---|---|---|---|
+| Kullanıcı | Destekleniyor | Destekleniyor | Ölçüt ve kırılım uyumsuz | Henüz geliştirilmedi |
+| UTT | Destekleniyor | Ölçüt ve kırılım uyumsuz | Destekleniyor | Ölçüt ve kırılım uyumsuz |
+| Ürün | Destekleniyor | Destekleniyor | Destekleniyor | Henüz geliştirilmedi |
+| Yayın | Destekleniyor | Destekleniyor | Destekleniyor | Henüz geliştirilmedi |
+| Takım | Destekleniyor | Destekleniyor | Destekleniyor | Henüz geliştirilmedi |
+| Bölge | Destekleniyor | Destekleniyor | Destekleniyor | Henüz geliştirilmedi |
+| Firma | Destekleniyor | Destekleniyor | Destekleniyor | Henüz geliştirilmedi |
+
+#### Zaman × işlem türü
+
+Dört veri alanında kodlanan zaman seçenekleri:
+
+| Zaman |
+|---|
+| Bu hafta |
+| Son hafta |
+| Bu ay |
+| Son ay |
+| Bu dönem |
+| Son dönem |
+| Bu yıl |
+| Son yıl |
+
+Kodlanan işlem türleri:
+
+| İşlem türü | Durum |
+|---|---|
+| Doğrudan değer | Destekleniyor |
+| Toplam | Destekleniyor |
+| Bütünleşik | Destekleniyor |
+| Karşılaştırma | Destekleniyor |
+| Sıralama | Destekleniyor |
+| Göreli hesaplama | Destekleniyor |
+| Fark | Destekleniyor |
+| Katkı | Destekleniyor |
+| Eğilim | Destekleniyor |
+| Koşullu seçim | Destekleniyor |
+
+Bir birleşimin kesin durumu; önce rol tablosu, ardından ölçüt tablosu ve son olarak kırılım tablosu birlikte okunarak belirlenir.
+
 ### Son çıkış koşulu
 
 - Desteklenen bütün sayısal sorular doğrulanmış veriden cevaplanacak.
@@ -842,4 +914,32 @@ Sistemin desteklediği bütün birleşimleri görünür ve doğrulanabilir hale 
 - Desteklenen ve desteklenmeyen sorgular açık kapsam tablosunda görülebilecek.
 - HapBi maskotu ve mevcut sohbet alanı korunmuş olacak.
 
-Bu plan henüz uygulamaya alınmadı.
+### Faz 13 İş Sonuçları
+
+Faz 13’teki ilk geniş sınama yaklaşımı kaldırıldı. Tespit edilen kod eksiklikleri giderildikten sonra kullanıcı onayıyla aşağıdaki altı kod düzeyi sınama uygulandı.
+
+#### Giderilen Eksiklikler ve İlgili Kod Dosyaları
+
+| Kod dosyası | Giderilen eksiklik |
+|---|---|
+| `lib/hapbi/motor/veriKaynaklari.ts` | Öneri, yayın tekrarı ve meydan okuma kaynaklarının kimlik, zaman, kapsam, izinli alan ve bağlantı tanımları motora eklendi. Talep, öğrenme aracı, soru seti, yayın yönetimi ve üretim görevi kaynakları kaynak kataloğuna işlendi. |
+| `app/api/hapbi/sor/route.ts` | Açık bir veri alanı bulunmayan soruların kendiliğinden T-Club’a gönderilmesi kaldırıldı. Ölçüt ve rol kapsamına göre uygun alanların belirlenmesi, birden fazla alan mümkünse yalnız veri alanının sorulması ve yetkisiz alanların seçeneklere alınmaması sağlandı. |
+| `lib/hapbi/dil/sozluk.ts` | Mevcut ölçütlerin Türkçe ifade çeşitleri genişletildi. Kullanıcı, UTT ve firma adları çözümlenebilir varlık türlerine eklendi. Sıralama ve doğrudan değer ifadeleri genişletildi; katkı değeri ifadeleri belirginleştirildi. |
+| `lib/hapbi/dil/derleyici.ts` | Katkı değeri ölçütünün katkı işlemiyle karıştırılması engellendi. Başka bir ölçüte katkı sağlayan varlığı arayan sorgularda katkı işleminin korunması sağlandı. |
+| `app/api/hapbi/sor/route.ts` | Yetkili kapsamdaki kullanıcı, UTT ve firma adlarının gerçek kimlikleriyle çözümlenmesi sağlandı. Aynı ada sahip birden fazla kişinin tek kişi gibi birleştirilmesi engellendi. |
+| `app/api/hapbi/sor/route.ts` | Yalnız önceki soruda istenen eksik bilgiyi veren kısa cevapların devam sayılması sağlandı. Yeni ve bağımsız soruların önceki soruyla birleştirilmesi engellendi; art arda verilen eksik bilgilerin sırayla tamamlanması korundu. |
+
+Üretim kırılımları ile üretim sorgularının genişletilmesi gerekli bir HapBi eksikliği olarak kabul edilmedi ve tamamlama kapsamından çıkarıldı. `lib/hapbi/kirilimSozlesmesi.ts`, `lib/hapbi/kirilimlar.ts` ve `lib/hapbi/sozlesme.ts` dosyalarında bu nedenle değişiklik yapılmadı.
+
+#### Yapılan Sınamalar ve Sonuçları
+
+| Sınama | Denetlenen konu | Sonuç |
+|---|---|---|
+| 1 | Öneri, yayın tekrarı ve meydan okuma kaynaklarının tanınması; izinli alan ve bağlantıların kabul edilmesi; tanımsız kaynak, alan ve bağlantıların reddedilmesi | **10/10 geçti** |
+| 2 | Açık T-Club, C-Club ve E-Club seçimi; belirsiz soruda T-Club varsayımının kaldırılması; ölçütle uyumsuz ve yetkisiz alanların seçeneklerden çıkarılması | **8/8 geçti** |
+| 3 | Türkçe ölçüt ifade çeşitleri; kullanıcı, UTT ve firma adı eşleşmesi; aynı adlı kullanıcıların yanlış birleştirilmemesi | **9/9 geçti** |
+| 4 | Yönü belirtilmeyen sıralamanın durdurulması; azalan sıralamanın tanınması; katkı değeri ile katkı işleminin ayrılması | **9/9 geçti** |
+| 5 | Eksik bilgiyi tamamlayan kısa cevabın önceki soruyla birleşmesi; bağımsız sorunun birleşmemesi; art arda netleştirmelerin korunması | **10/10 geçti** |
+| 6 | Sayısal ve netleştirme yollarında Gemini çağrısının `0` kalması; model çağrısının yalnız yorum yolunda bulunması | **10/10 geçti** |
+
+Toplam **56/56 kontrol başarıyla geçti**. Sınamalar çalışma dosyası oluşturmadan gerçekleştirildi.

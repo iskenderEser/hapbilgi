@@ -3,13 +3,23 @@ import type { HapbiKaynakKapsamYolu, HapbiKaynakPlani } from "./sorguOlustur";
 
 export type HapbiKaynakTuru = "tablo" | "gorunum";
 
+type HapbiVeriKaynagiKapsamYolu =
+  | HapbiKaynakKapsamYolu
+  | "dogrudan_oneren"
+  | "challenge_uzerinden_bm"
+  | "dogrudan_yayin"
+  | "dogrudan_firma"
+  | "dogrudan_takim"
+  | "dogrudan_uretici"
+  | "talep_uzerinden_organizasyon";
+
 export type HapbiVeriKaynagiTanimi = Readonly<{
   ad: string;
   tur: HapbiKaynakTuru;
   veriAlanlari: readonly HapbiVeriAlani[];
   anaKimlikAlani: string;
   izinliAlanlar: readonly string[];
-  izinliKapsamYollari: readonly HapbiKaynakKapsamYolu[];
+  izinliKapsamYollari: readonly HapbiVeriKaynagiKapsamYolu[];
 }>;
 
 export type HapbiKaynakBaglantisi = Readonly<{
@@ -143,6 +153,22 @@ export const HAPBI_VERI_KAYNAKLARI = {
     izinliAlanlar: ["favori_id", "kullanici_id", "yayin_id", "created_at"],
     izinliKapsamYollari: ["dogrudan_kullanici"],
   },
+  oneri_kayitlari: {
+    ad: "oneri_kayitlari",
+    tur: "tablo",
+    veriAlanlari: ["tclub"],
+    anaKimlikAlani: "oneri_id",
+    izinliAlanlar: ["oneri_id", "oneren_id", "kullanici_id", "yayin_id", "created_at", "oneri_baslangic", "oneri_bitis", "izlendi_mi"],
+    izinliKapsamYollari: ["dogrudan_kullanici", "dogrudan_oneren"],
+  },
+  yayin_tekrar_kayitlari: {
+    ad: "yayin_tekrar_kayitlari",
+    tur: "tablo",
+    veriAlanlari: ["tclub", "cclub", "eclub"],
+    anaKimlikAlani: "tekrar_id",
+    izinliAlanlar: ["tekrar_id", "yayin_id", "tur_no", "baslangic_tarihi", "created_at"],
+    izinliKapsamYollari: ["dogrudan_yayin"],
+  },
   cc_izleme_kayitlari: {
     ad: "cc_izleme_kayitlari",
     tur: "tablo",
@@ -174,6 +200,54 @@ export const HAPBI_VERI_KAYNAKLARI = {
     anaKimlikAlani: "kayit_id",
     izinliAlanlar: ["kayit_id", "bm_id", "izleme_id", "yayin_id", "soru_index", "kaybedilen_puan", "created_at"],
     izinliKapsamYollari: ["dogrudan_bm", "izleme_uzerinden_bm"],
+  },
+  challenge_kayitlari: {
+    ad: "challenge_kayitlari",
+    tur: "tablo",
+    veriAlanlari: ["cclub"],
+    anaKimlikAlani: "challenge_id",
+    izinliAlanlar: ["challenge_id", "gonderen_id", "alan_id", "yayin_id", "arac_id", "arac_turu", "created_at", "son_tarih", "izlendi_mi"],
+    izinliKapsamYollari: ["dogrudan_bm", "challenge_uzerinden_bm"],
+  },
+  talepler: {
+    ad: "talepler",
+    tur: "tablo",
+    veriAlanlari: ["uretim"],
+    anaKimlikAlani: "talep_id",
+    izinliAlanlar: ["talep_id", "talep_no", "uretici_id", "firma_id", "takim_id", "urun_id", "egitim_turu", "icerik_turu", "ogrenme_araci_turu", "created_at"],
+    izinliKapsamYollari: ["dogrudan_firma", "dogrudan_takim", "dogrudan_uretici"],
+  },
+  ogrenme_araclari: {
+    ad: "ogrenme_araclari",
+    tur: "tablo",
+    veriAlanlari: ["uretim"],
+    anaKimlikAlani: "arac_id",
+    izinliAlanlar: ["arac_id", "talep_id", "arac_turu", "created_at", "updated_at"],
+    izinliKapsamYollari: ["talep_uzerinden_organizasyon"],
+  },
+  soru_setleri: {
+    ad: "soru_setleri",
+    tur: "tablo",
+    veriAlanlari: ["uretim"],
+    anaKimlikAlani: "soru_seti_id",
+    izinliAlanlar: ["soru_seti_id", "talep_id", "arac_durum_id", "video_durum_id", "iu_id", "created_at"],
+    izinliKapsamYollari: ["talep_uzerinden_organizasyon"],
+  },
+  yayin_yonetimi: {
+    ad: "yayin_yonetimi",
+    tur: "tablo",
+    veriAlanlari: ["uretim"],
+    anaKimlikAlani: "yayin_id",
+    izinliAlanlar: ["yayin_id", "soru_seti_durum_id", "arac_durum_id", "durum", "yayin_tarihi", "durdurma_tarihi", "hedef_roller", "extra_puan", "created_at"],
+    izinliKapsamYollari: ["dogrudan_yayin", "talep_uzerinden_organizasyon"],
+  },
+  uretim_gorevleri: {
+    ad: "uretim_gorevleri",
+    tur: "tablo",
+    veriAlanlari: ["uretim"],
+    anaKimlikAlani: "gorev_id",
+    izinliAlanlar: ["gorev_id", "talep_id", "asama", "arac_id", "soru_seti_id", "atanan_iu_id", "durum", "atama_tarihi", "baslama_tarihi", "inceleme_tarihi", "tamamlanma_tarihi", "iptal_tarihi", "created_at", "updated_at"],
+    izinliKapsamYollari: ["talep_uzerinden_organizasyon"],
   },
   eclub_kisiler: {
     ad: "eclub_kisiler",
@@ -279,6 +353,22 @@ export const HAPBI_KAYNAK_BAGLANTILARI = [
   { kaynak: "v_yayin_kunye", kaynakAlani: "takim_id", hedef: "takimlar", hedefAlani: "takim_id", tur: "coktan_bire" },
   { kaynak: "v_yayin_kunye", kaynakAlani: "firma_id", hedef: "firmalar", hedefAlani: "firma_id", tur: "coktan_bire" },
   { kaynak: "soru_cevaplari", kaynakAlani: "izleme_id", hedef: "izleme_kayitlari", hedefAlani: "izleme_id", tur: "coktan_bire" },
+  { kaynak: "oneri_kayitlari", kaynakAlani: "kullanici_id", hedef: "kullanicilar", hedefAlani: "kullanici_id", tur: "coktan_bire" },
+  { kaynak: "oneri_kayitlari", kaynakAlani: "oneren_id", hedef: "kullanicilar", hedefAlani: "kullanici_id", tur: "coktan_bire" },
+  { kaynak: "oneri_kayitlari", kaynakAlani: "yayin_id", hedef: "v_yayin_kunye", hedefAlani: "yayin_id", tur: "coktan_bire" },
+  { kaynak: "yayin_tekrar_kayitlari", kaynakAlani: "yayin_id", hedef: "v_yayin_kunye", hedefAlani: "yayin_id", tur: "coktan_bire" },
+  { kaynak: "challenge_kayitlari", kaynakAlani: "gonderen_id", hedef: "kullanicilar", hedefAlani: "kullanici_id", tur: "coktan_bire" },
+  { kaynak: "challenge_kayitlari", kaynakAlani: "alan_id", hedef: "kullanicilar", hedefAlani: "kullanici_id", tur: "coktan_bire" },
+  { kaynak: "challenge_kayitlari", kaynakAlani: "yayin_id", hedef: "v_yayin_kunye", hedefAlani: "yayin_id", tur: "coktan_bire" },
+  { kaynak: "talepler", kaynakAlani: "uretici_id", hedef: "kullanicilar", hedefAlani: "kullanici_id", tur: "coktan_bire" },
+  { kaynak: "talepler", kaynakAlani: "firma_id", hedef: "firmalar", hedefAlani: "firma_id", tur: "coktan_bire" },
+  { kaynak: "talepler", kaynakAlani: "takim_id", hedef: "takimlar", hedefAlani: "takim_id", tur: "coktan_bire" },
+  { kaynak: "talepler", kaynakAlani: "urun_id", hedef: "urunler", hedefAlani: "urun_id", tur: "coktan_bire" },
+  { kaynak: "ogrenme_araclari", kaynakAlani: "talep_id", hedef: "talepler", hedefAlani: "talep_id", tur: "coktan_bire" },
+  { kaynak: "soru_setleri", kaynakAlani: "talep_id", hedef: "talepler", hedefAlani: "talep_id", tur: "coktan_bire" },
+  { kaynak: "uretim_gorevleri", kaynakAlani: "talep_id", hedef: "talepler", hedefAlani: "talep_id", tur: "coktan_bire" },
+  { kaynak: "uretim_gorevleri", kaynakAlani: "arac_id", hedef: "ogrenme_araclari", hedefAlani: "arac_id", tur: "coktan_bire" },
+  { kaynak: "uretim_gorevleri", kaynakAlani: "soru_seti_id", hedef: "soru_setleri", hedefAlani: "soru_seti_id", tur: "coktan_bire" },
   { kaynak: "eclub_izleme_kayitlari", kaynakAlani: "oneri_id", hedef: "eclub_oneri_kayitlari", hedefAlani: "oneri_id", tur: "coktan_bire" },
   { kaynak: "eclub_kazanilan_puanlar", kaynakAlani: "izleme_id", hedef: "eclub_izleme_kayitlari", hedefAlani: "izleme_id", tur: "coktan_bire" },
   { kaynak: "eclub_dogru_cevap_kayitlari", kaynakAlani: "izleme_id", hedef: "eclub_izleme_kayitlari", hedefAlani: "izleme_id", tur: "coktan_bire" },

@@ -35,7 +35,10 @@ export type HapbiSozlukEslesmesi<T> = Readonly<{
 export type HapbiSiralamaYonu = "artan" | "azalan";
 
 export type HapbiCozulebilirVarlik = Readonly<{
-  kirilim: Extract<HapbiKirilim, "urun" | "yayin" | "takim" | "bolge">;
+  kirilim: Extract<
+    HapbiKirilim,
+    "kullanici" | "utt" | "urun" | "yayin" | "takim" | "bolge" | "firma"
+  >;
   id: string;
   ad: string;
 }>;
@@ -94,17 +97,50 @@ export function hapbiSozlukEslesmeleriniBul<T>(
 }
 
 const EK_OLCUT_IFADELERI: Readonly<Record<HapbiOlcut, readonly string[]>> = {
-  net_puan: ["puanı", "puanım", "puanımı", "puanının", "puanımın"],
-  kazanilan_puan: ["kazandığı puan", "kazandığım puan", "kazandırdığı puan", "kazandıran"],
-  kaybedilen_puan: ["kaybettiği puan", "kaybettiğim puan", "kaybettiren"],
-  izleme_sayisi: ["izlenme sayısı", "kaç izleme", "en çok izlenen", "en az izlenen"],
-  tamamlanan_izleme_sayisi: ["tamamlama sayısı", "kaç kez tamamlandı", "en çok tamamlanan"],
-  begeni_sayisi: ["beğenilme sayısı", "beğenileri", "en fazla beğeni"],
-  favori_sayisi: ["favoriye eklenme sayısı", "favorileri", "en fazla favori"],
-  dogru_cevap_sayisi: ["doğru cevapları", "doğru bilinen", "en çok doğru bilinen"],
-  yanlis_cevap_sayisi: ["yanlış cevapları", "yanlış bilinen", "en çok yanlış bilinen"],
-  ileri_sarilan_sure: ["ileri sarma", "ileri sayma süresi", "atlama süresi"],
-  katki_degeri: ["katkısı", "katkıları", "katkı sağlayan"],
+  net_puan: [
+    "puanı", "puanım", "puanımı", "puanının", "puanımın", "net puanı", "net puanım",
+    "toplam net puan", "puan durumu", "puan değeri",
+  ],
+  kazanilan_puan: [
+    "kazandığı puan", "kazandığım puan", "kazandırdığı puan", "kazandıran", "puan kazancı",
+    "kazanç puanı", "kazanım", "toplam kazanım", "üretilen puan", "ürettiği puan",
+  ],
+  kaybedilen_puan: [
+    "kaybettiği puan", "kaybettiğim puan", "kaybettiren", "puan kaybı", "toplam puan kaybı",
+    "kayıp", "toplam kayıp", "eksilen puan", "düşülen puan",
+  ],
+  izleme_sayisi: [
+    "izlenme sayısı", "kaç izleme", "kaç kez izlendi", "kaç defa izlendi", "seyredilme sayısı",
+    "kaç kez seyredildi", "tüketim sayısı", "kaç kez tüketildi", "en çok izlenen", "en az izlenen",
+  ],
+  tamamlanan_izleme_sayisi: [
+    "tamamlama sayısı", "tamamlanan izleme", "tamamlanmış izleme sayısı", "bitirilen izleme sayısı",
+    "kaç kez tamamlandı", "kaç izleme tamamlandı", "en çok tamamlanan", "en az tamamlanan",
+  ],
+  begeni_sayisi: [
+    "beğenilme sayısı", "beğenileri", "beğeni adedi", "kaç kez beğenildi", "toplam beğeni",
+    "en fazla beğeni", "en az beğeni", "en çok beğenilen", "en az beğenilen",
+  ],
+  favori_sayisi: [
+    "favoriye eklenme sayısı", "favorileri", "favori adedi", "kaç kez favoriye eklendi",
+    "toplam favori", "en fazla favori", "en az favori", "en çok favoriye eklenen",
+  ],
+  dogru_cevap_sayisi: [
+    "doğru cevapları", "doğru cevap adedi", "kaç doğru cevap verildi", "kaç soru doğru cevaplandı",
+    "doğru bilinen", "doğru bilme sayısı", "en çok doğru bilinen", "en çok doğru cevap verilen",
+  ],
+  yanlis_cevap_sayisi: [
+    "yanlış cevapları", "yanlış cevap adedi", "kaç yanlış cevap verildi", "kaç soru yanlış cevaplandı",
+    "yanlış bilinen", "yanlış bilme sayısı", "en çok yanlış bilinen", "en çok yanlış cevap verilen",
+  ],
+  ileri_sarilan_sure: [
+    "ileri sarma", "ileri sarma süresi", "ileri sayma süresi", "ileri sarılan toplam süre",
+    "atlama süresi", "atlanan toplam süre", "kaç saniye atlandı", "kaç saniye ileri sarıldı",
+  ],
+  katki_degeri: [
+    "katkı değeri", "katkı puanı", "utt katkı değeri", "utt katkı puanı", "katkı skoru",
+    "katkısı", "katkıları", "en çok katkı sağlayan",
+  ],
 };
 
 export const HAPBI_OLCUT_SOZLUGU: readonly HapbiSozlukGirdisi<HapbiOlcut>[] =
@@ -114,13 +150,22 @@ export const HAPBI_OLCUT_SOZLUGU: readonly HapbiSozlukGirdisi<HapbiOlcut>[] =
   ].map((ifade) => ({ ifade, deger: olcut })));
 
 const KIRILIM_IFADELERI: Readonly<Record<HapbiKirilim, readonly string[]>> = {
-  kullanici: ["kullanıcı", "kullanıcılar", "kişi", "kişiler", "çalışan", "çalışanlar"],
-  utt: ["UTT", "UTT'ler", "mümessil", "mümessiller", "tanıtım temsilcisi", "tanıtım temsilcileri"],
+  kullanici: [
+    "kullanıcı", "kullanıcılar", "kullanıcının", "kullanıcıların", "kişi", "kişiler", "kişinin",
+    "kişilerin", "çalışan", "çalışanlar", "çalışanın", "çalışanların",
+  ],
+  utt: [
+    "UTT", "UTT'ler", "UTT'lerin", "mümessil", "mümessiller", "mümessilin", "mümessillerin",
+    "tanıtım temsilcisi", "tanıtım temsilcileri", "ürün tanıtım temsilcisi", "ürün tanıtım temsilcileri",
+  ],
   urun: ["ürün", "ürünü", "ürünün", "ürünler", "ürünleri", "ürünlerin"],
   yayin: ["yayın", "yayını", "yayının", "yayınlar", "yayınları", "yayınların", "eğitim yayını", "eğitim yayınları"],
   takim: ["takım", "takımım", "takımımda", "takımın", "takımlar", "takımları"],
   bolge: ["bölge", "bölgem", "bölgemde", "bölgenin", "bölgeler", "bölgeleri"],
-  firma: ["firma", "firmam", "firmamda", "firmanın", "firmalar", "şirket", "şirketim"],
+  firma: [
+    "firma", "firmam", "firmamda", "firmamız", "firmamızda", "firmanın", "firmaların", "firmalar",
+    "şirket", "şirketim", "şirketimde", "şirketimiz", "şirketimizde", "şirketin", "şirketlerin",
+  ],
 };
 
 export const HAPBI_KIRILIM_SOZLUGU: readonly HapbiSozlukGirdisi<HapbiKirilim>[] =
@@ -129,14 +174,17 @@ export const HAPBI_KIRILIM_SOZLUGU: readonly HapbiSozlukGirdisi<HapbiKirilim>[] 
   );
 
 const ISLEM_IFADELERI: Readonly<Record<HapbiIslemTuru, readonly string[]>> = {
-  dogrudan_deger: ["kaç", "nedir", "ne kadar", "söyle", "göster"],
+  dogrudan_deger: ["kaç", "kaç tane", "kaç adet", "nedir", "ne kadar", "değeri kaç", "sayısı kaç", "söyle", "göster", "hangisi", "hangileri"],
   toplam: ["toplam", "toplamı", "toplamını"],
   butunlesik: [],
   karsilastirma: ["karşılaştır", "karşılaştırır mısın", "kıyasla", "kıyaslar mısın", "karşılaştırma"],
-  siralama: ["sırala", "sıralar mısın", "sıralama", "en çok", "en fazla", "en yüksek", "en az", "en düşük"],
+  siralama: [
+    "sırala", "sıralar mısın", "sıralama", "sırasına göre", "puan sırası", "sıraya koy",
+    "yüksekten düşüğe", "düşükten yükseğe", "en çok", "en fazla", "en yüksek", "en az", "en düşük",
+  ],
   goreli_hesaplama: ["oran", "oranı", "pay", "payı", "dağılım", "dağılımı", "yüzde", "yüzdesi"],
   fark: ["fark", "farkı", "aradaki fark", "kaç fazla", "kaç az"],
-  katki: ["katkı", "katkısı", "katkıları"],
+  katki: ["katkı sağladı", "katkı sağlayan", "katkıda bulundu", "katkıda bulunan", "katkı yaptı", "katkı yapan"],
   egilim: ["eğilim", "eğilimi", "artıyor mu", "azalıyor mu", "zaman içinde"],
   kosullu_secim: ["fazla olan", "fazla olanlar", "az olan", "az olanlar", "eşit olan", "eşit olanlar"],
 };

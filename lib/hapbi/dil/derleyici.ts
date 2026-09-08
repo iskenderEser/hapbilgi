@@ -63,10 +63,15 @@ function tekilDegerler<T>(eslesmeler: readonly HapbiSozlukEslesmesi<T>[]): T[] {
 
 function islemTurunuCoz(
   islemler: readonly HapbiIslemTuru[],
-  olcutSayisi: number,
+  olcutler: readonly HapbiOlcut[],
 ): HapbiIslemTuru | null {
   const kume = new Set(islemler);
-  if (olcutSayisi === 2 && kume.has("siralama")) {
+
+  if (olcutler.includes("katki_degeri")) {
+    kume.delete("katki");
+  }
+
+  if (olcutler.length === 2 && kume.has("siralama")) {
     const izinli = new Set<HapbiIslemTuru>(["siralama", "toplam", "dogrudan_deger"]);
     return [...kume].every((islem) => izinli.has(islem)) ? "butunlesik" : null;
   }
@@ -178,7 +183,7 @@ export function hapbiSorusunuDerle(girdi: HapbiDerlemeGirdisi): HapbiDerlemeSonu
   if (olcutler.length === 0) return { basarili: false, neden: "eksik_bilgi", alanlar: ["olcut"] };
   if (olcutler.length > 2) return { basarili: false, neden: "belirsiz_bilgi", alanlar: ["olcut"] };
 
-  const islem = islemTurunuCoz(islemler, olcutler.length);
+  const islem = islemTurunuCoz(islemler, olcutler);
   if (!islem) {
     return {
       basarili: false,
