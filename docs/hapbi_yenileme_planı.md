@@ -693,7 +693,7 @@ Desteklenen sayısal sorular doğrudan ve tek anlamlı cevaplanacak.
 
 ---
 
-## - [ ] Faz 11 — Tek çağrılı yorum katmanının kurulması
+## - [x] Faz 11 — Tek çağrılı yorum katmanının kurulması
 
 ### Amaç
 
@@ -735,6 +735,18 @@ Yalnız değerlendirme ve öneri isteyen sorularda Gemini’den yararlanmak.
 ### Çıkış koşulu
 
 Sayısal sorularda model çağrısı `0`, yorum sorularında en fazla `1` olacak.
+
+### Faz 11 İş Sonuçları
+
+- `lib/hapbi/yanit/yorumPaketi.ts` dosyasında yalnız kullanıcının sorusu, sunucunun belirlediği kapsam, doğrulanmış zaman, doğrulanmış bulgular, seçilmiş kanıtlar ve yorum sınırlarından oluşan kısa veri paketi hazırlandı.
+- SQL erişimi, sorgu veya veri kaynağı seçimi, rol veya kapsam belirleme yetkisi ve büyük ham veri yorum paketinin dışında bırakıldı.
+- `lib/hapbi/yanit/yorum.ts` dosyasında hazırlanmış paketin Gemini’ye araç kullanımı, yeniden deneme veya çağrı döngüsü olmadan yalnızca bir kez gönderilmesi sağlandı.
+- Model çağrısının başarılı ve başarısız sonuçlarında yapılan çağrı sayısı açıkça kaydedildi.
+- `lib/hapbi/yanit/yorumDogrulama.ts` dosyasında model cevabının paket dışında yeni sayı üretmesi engellendi.
+- Kanıtsız neden ile kapsam dışı kişi, takım, bölge veya firma bilgisi üreten model cevaplarının reddedilmesi sağlandı.
+- Puanı satış başarısı, mesleki yeterlilik veya kesin başarı göstergesi olarak yorumlayan cevapların reddedilmesi sağlandı.
+- Doğrulanamayan model cevaplarının kullanıcıya kesin yorum olarak aktarılması engellendi.
+- Üç dosyanın kod ve tür denetimleri hatasız tamamlandı.
 
 ---
 
