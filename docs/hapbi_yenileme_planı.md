@@ -645,7 +645,7 @@ Her sayısal sonuç, kaynağı ve hesaplama bileşenleriyle doğrulanabilir olac
 
 ---
 
-## - [ ] Faz 10 — Deterministik cevap ve belirsizlik yönetimi
+## - [x] Faz 10 — Deterministik cevap ve belirsizlik yönetimi
 
 ### Amaç
 
@@ -677,6 +677,19 @@ Doğrulanmış sonucu kullanıcıya kısa ve doğru biçimde aktarmak.
 ### Çıkış koşulu
 
 Desteklenen sayısal sorular doğrudan ve tek anlamlı cevaplanacak.
+
+### Faz 10 İş Sonuçları
+
+- `lib/hapbi/yanit/sayisal.ts` dosyasında doğrulanmış kanıt paketlerinden tek değer, toplam, sıralama, bütünleşik ve koşullu seçim cevapları oluşturuldu.
+- Karşılaştırma, fark, dağılım, oran, katkı ve eğilim işlemleri için deterministik cevap biçimleri hazırlandı.
+- Sayısal cevaplarda kullanılan kapsam ve zaman bilgilerinin açıkça gösterilmesi zorunlu tutuldu.
+- Sayısal cevaplarda Gemini çağrısı `0` olarak sabitlendi.
+- `lib/hapbi/yanit/belirsizlik.ts` dosyasında eksik bilgi, sonuç bulunamaması, sorgunun desteklenmemesi, verinin okunamaması ve sonucun doğrulanamaması birbirinden ayrıldı.
+- Eksik kırılım için zaman, eksik zaman için kırılım sorulması engellendi; yalnız eksik olan alan için netleştirme sorusu oluşturuldu.
+- Bağımsız soruların önceki sorgu bilgisini devralmaması ve devam cevaplarının yalnız beklenen eksik alanı tamamlaması sağlandı.
+- `lib/hapbi/yanit/kaynaklar.ts` dosyasında doğrulanmış kaynakların kapsam, zaman aralığı ve veri okuma zamanı ile kullanıcıya gösterilmesi sağlandı.
+- Kaynakların beyaz listede bulunması ve ilgili veri alanında kullanılabilmesi doğrulandı.
+- Üç dosyanın kod ve tür denetimleri hatasız tamamlandı.
 
 ---
 
