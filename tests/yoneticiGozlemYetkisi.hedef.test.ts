@@ -260,12 +260,12 @@ test("açık katalog yayını güncel durum, firma ve rol kapsamıyla yeniden do
   assert.match(yayinAktiflikApi, /YAYINDAKI_VIDEO_GORENLER\.includes\(rol\)/);
   assert.match(yayinAktiflikApi, /yayin\.durum !== "yayinda"/);
   assert.match(yayinAktiflikApi, /yayin\.firma_id === kullanici\.firma_id/);
-  assert.match(yayinAktiflikApi, /kapsamGenisMi\(rol\).*yayin\.takim_id === null.*yayin\.takim_id === kullanici\.takim_id/s);
+  assert.match(yayinAktiflikApi, /kapsamGenisMi\(rol\)[\s\S]*yayin\.takim_id === null[\s\S]*yayin\.takim_id === kullanici\.takim_id/);
   assert.match(yayinAktiflikApi, /"Cache-Control": "private, no-store"/);
 });
 
 test("pasiflenen açık yayın oynatıcıyı durdurur ve katalog ekranına döner", () => {
-  assert.match(oynatici, /fetch\(`\/yayindaki-videolar\/api\/\$\{video\.yayin_id\}`[^)]*cache: "no-store"/s);
+  assert.match(oynatici, /fetch\(`\/yayindaki-videolar\/api\/\$\{video\.yayin_id\}`[\s\S]*?cache: "no-store"/);
   assert.match(oynatici, /if \(bagli && !res\.ok\)[\s\S]*playerRef\.current\?\.pause\(\)[\s\S]*onKapatRef\.current\(\)/);
   assert.match(oynatici, /window\.setInterval\(\(\) => void dogrula\(\), 5_000\)/);
   assert.match(sayfa, /aktifYayinDogrula/);

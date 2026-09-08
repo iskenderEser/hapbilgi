@@ -750,7 +750,7 @@ Sayısal sorularda model çağrısı `0`, yorum sorularında en fazla `1` olacak
 
 ---
 
-## - [ ] Faz 12 — Sunucu ve sohbet bağlantısının kurulması
+## - [x] Faz 12 — Sunucu ve sohbet bağlantısının kurulması
 
 ### Amaç
 
@@ -780,6 +780,23 @@ Yeni motoru korunan HapBi sohbet alanına bağlamak.
 ### Çıkış koşulu
 
 Yeni motor mevcut HapBi maskotu ve sohbet alanı üzerinden kullanılabilir olacak.
+
+### Faz 12 İş Sonuçları
+
+- `app/api/hapbi/sor/route.ts` dosyasında geçici “motor kapalı” cevabı kaldırıldı.
+- Sunucu isteğinde oturumun doğrulanması ve kullanıcının rol kapsamının sunucu tarafından çözülmesi sağlandı.
+- Kullanıcı sorusunun Türkçe çözümleme, ortak sorgu planı, izinli veri kaynağı, deterministik çalıştırma, sonuç doğrulama ve kanıt oluşturma katmanlarından sırayla geçirilmesi sağlandı.
+- Sayısal soruların Gemini çağrısı yapılmadan cevaplanması sağlandı.
+- Yorum isteyen sorularda doğrulanmış yorum paketinin Gemini’ye en fazla bir kez gönderilmesi ve model cevabının kullanıcıya aktarılmadan önce doğrulanması sağlandı.
+- Sonuç bulunamaması, desteklenmeyen sorgu, eksik bilgi, veri okuma hatası ve doğrulanamayan sonuç için ayrı cevap yolları uygulandı.
+- İmzalı sohbet durumu kullanılarak bağımsız soru ile önceki eksik alanı tamamlayan devam sorusunun ayrılması sağlandı.
+- Mevcut HapBi sağlayıcısının kullandığı cevap, kaynak ve sohbet alanları sunucu cevabında korundu; maskot ve sohbet görünümünde değişiklik yapılmadı.
+
+### Faz 12 Kodlama Hataları ve Düzeltmeleri
+
+- Dinamik Supabase sorgusundan dönen verinin doğrudan ortak kayıt türüne çevrilmesi tür denetiminde hata oluşturdu. Veri önce `unknown` türüne, ardından ortak kayıt türüne çevrilerek dinamik seçimin tür sınırı açık biçimde tanımlandı.
+- Soru normalizasyonu Türkçe karakterleri sade Latin harflerine dönüştürdüğü hâlde veri alanı ve yorum isteği desenleri başlangıçta Türkçe karakter içeriyordu. Desenler normalizasyon çıktısıyla aynı sade harf biçimine çevrilerek eşleşmeler düzeltildi.
+- `app/api/hapbi/sor/route.ts` dosyasının kod denetimi hatasız tamamlandı. Genel tür denetiminde yalnız daha önce var olan `tests/yoneticiGozlemYetkisi.hedef.test.ts` dosyasındaki iki hedef sürüm hatası test dosyasındaki iki arama kalıbından `s` seçeneğini kaldırıp aynı davranışı `[\s\S]` ifadesiyle sağlanarak giderildi.
 
 ---
 
