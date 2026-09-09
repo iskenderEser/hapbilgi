@@ -214,7 +214,7 @@ export default function HapbiChatModal() {
           maxLength={2000}
           aria-label="bi'ye sorunuz"
           onChange={(e) => setGirdi(e.target.value)}
-          placeholder="Değişimi başlatmak için bi' soru sorun..."
+          placeholder="Örn. Bu ay puanım kaç?"
           disabled={yukleniyor}
           className="flex-1 bg-gray-50 border border-gray-200 focus:border-orange-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-800 placeholder-gray-400 outline-none transition-all"
         />

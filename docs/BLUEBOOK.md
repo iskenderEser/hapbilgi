@@ -403,7 +403,9 @@ HBStore ve E-Club Store işlemlerinde bildirim, siparişin alınması veya iptal
 
 **Yeniden kurma kararı — 9 Eylül 2026:** Gemini, AI yorumlama ve konuşmadan öğrenme ürün kapsamından çıkarılmıştır. İlk teknik temizlikten sonra kalan geniş deterministik motor da yeni başlangıç sözleşmesine göre gereksiz karmaşık bulunduğu için kaldırılmıştır. Karar ve uygulama sırası [BI_TEMIZLIK_PLANI.md](BI_TEMIZLIK_PLANI.md) dosyasındadır.
 
-Yeni başlangıç yalnız iki soru ailesinden oluşur: `NEDİR`, onaylı HapBilgi kavramlarını sabit içerikle açıklar ve varsa ilgili sayfaya yönlendirir; `KAÇ`, açıkça tanımlanmış ölçüt, dönem ve sunucuda çözülen yetki kapsamıyla sayısal sonuç verir. Tanınmayan sorular veri sorgusu başlatmaz.
+Yeni başlangıç yalnız iki soru ailesinden oluşur. `NEDİR`, HapBilgi, bi, T-Club, C-Club, HBStore, E-Club, Eczanem, öğrenme araçları ve net puan kavramlarını sabit içerikle açıklar; varsa ilgili sayfaya yönlendirir. `KAÇ`, ilk sürümde UTT/KD_UTT kullanıcısının kişisel T-Club net puanını `bu/geçen hafta`, `bu/geçen ay` veya `bu/geçen yıl` için verir. Tanınmayan ve eksik sorular veri sorgusu başlatmaz.
+
+Sayısal sonuç, oturumdaki kimlik ve Türkiye takvim sınırlarıyla `get_kullanici_ozet` RPC'sinden okunur. Soru açık bir ölçüt ve dönem üretmeden bu çağrı yapılmaz. Gerçek sıfır gösterilir; okuma hatası, kayıt yokluğu ve eksik sayısal değer sıfır kabul edilmez.
 
 `HapbiProvider.tsx` istemcideki mesajları ve istek iptalini, `HapbiChatModal.tsx` soru-cevap görünümünü, `HapbiMaskot.tsx` turuncu bi düğmesini yönetir. `/api/hapbi/sor` uyumluluk için adresini korur. Mesaj geçmişi yalnız React durumunda tutulur ve sunucu önceki mesajlardan bağlam devralmaz.
 
@@ -2243,6 +2245,9 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | Dosya Adı | Türü | İşlevi |
 |---|:---:|---|
 | `erisim.ts` | TypeScript | bi'nin kullanılabildiği kimlik türünü ve iç rol gruplarını tanımlar. |
+| `normalizasyon.ts` | TypeScript | Soru metnini Türkçe küçük harf, noktalama ve boşluk kurallarıyla ortak biçime getirir. |
+| `nedir.ts` | TypeScript | Onaylı kavram kataloğunu ve kesin NEDİR soru kalıplarını tanımlar. |
+| `kac.ts` | TypeScript | Kişisel T-Club net puanı için kesin KAÇ kalıplarını, Türkiye dönemini ve kanonik veri okumasını tanımlar. |
 
 ### 📁 lib/izleme/
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { biKullanabilirMi } from "@/lib/bi/erisim";
+import { kacSorusunuCoz, kisiselTclubNetPuaniniOku } from "@/lib/bi/kac";
 import { NEDIR_KATALOGU, nedirSorusunuCoz } from "@/lib/bi/nedir";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 
@@ -11,6 +12,7 @@ const EN_FAZLA_GOVDE_BOYUTU = 70_000;
 const EN_FAZLA_SORU_UZUNLUGU = 2_000;
 
 type KimlikKaydi = Readonly<{
+  kimlik_id: string | null;
   kimlik_turu: string | null;
   rol: string | null;
   aktif_mi: boolean | null;
@@ -63,7 +65,7 @@ function destekYaniti(istekId: string, cevap?: string): NextResponse {
   const konuAdlari = NEDIR_KATALOGU.map((konu) => konu.baslik).join(", ");
   return json({
     cevap: cevap ??
-      `Bu soru NEDİR sözleşmesine uymuyor. “HBStore nedir?” diye sorabilirsiniz.\n\nTanımlayabildiğim konular: ${konuAdlari}.`,
+      `Bu soru NEDİR veya KAÇ sözleşmesine uymuyor. “HBStore nedir?” ya da “Bu ay puanım kaç?” diye sorabilirsiniz.\n\nTanımlayabildiğim konular: ${konuAdlari}.`,
     kaynaklar: [],
     kullanim: { yol: "destek" },
     istekId,
@@ -90,7 +92,7 @@ export async function POST(istek: Request): Promise<NextResponse> {
     const db = createAdminClient(AbortSignal.any([istek.signal, AbortSignal.timeout(30_000)]));
     const { data, error } = await db
       .from("v_auth_kimlik_admin")
-      .select("kimlik_turu, rol, aktif_mi")
+      .select("kimlik_id, kimlik_turu, rol, aktif_mi")
       .eq("auth_id", user.id)
       .maybeSingle();
     if (error || !data) {
@@ -119,7 +121,52 @@ export async function POST(istek: Request): Promise<NextResponse> {
       );
     }
 
-    return destekYaniti(istekId);
+    const kac = kacSorusunuCoz(soru);
+    if (kac.durum === "eksik") {
+      return destekYaniti(
+        istekId,
+        "KAÇ sorusunda kişisel T-Club puanını ve dönemi açıkça belirtin. Örnek: “Bu ay puanım kaç?”",
+      );
+    }
+    if (kac.durum === "kac_sorusu_degil") return destekYaniti(istekId);
+    if (!kimlik.kimlik_id || !kimlik.rol) {
+      return json({ error: "bi kullanıcı kapsamı doğrulanamadı.", kod: "KIMLIK", istekId }, 503);
+    }
+
+    const sonuc = await kisiselTclubNetPuaniniOku(
+      db,
+      kimlik.kimlik_id,
+      kimlik.rol,
+      kac.sorgu,
+    );
+    if (!sonuc.basarili) {
+      const cevaplar = {
+        rol_desteklenmiyor:
+          "KAÇ sözleşmesinin ilk sürümü yalnız UTT ve KD_UTT kişisel T-Club net puanını kapsıyor.",
+        veri_okunamadi: "Puan verisi şu anda okunamadı. Sonucu tahmin etmiyorum.",
+        kayit_yok: "Seçilen dönem için doğrulanmış bir puan kaydı bulunamadı.",
+        veri_eksik: "Puan kaydı var ancak sayısal sonuç eksik. Sonucu sıfır kabul etmiyorum.",
+      } as const;
+      return json({
+        cevap: cevaplar[sonuc.neden],
+        kaynaklar: [],
+        kullanim: { yol: sonuc.neden },
+        istekId,
+      });
+    }
+
+    return json({
+      cevap: `${sonuc.donem.etiket[0].toLocaleUpperCase("tr-TR")}${sonuc.donem.etiket.slice(1)} kişisel T-Club net puanınız **${sonuc.puan.toLocaleString("tr-TR")} puan**.`,
+      kaynaklar: [{
+        id: "tclub_kisisel_net_puan",
+        baslik: "T-Club kişisel puan özeti",
+        url: "/raporlar/utt",
+        zaman: sonuc.okumaZamani,
+        donem: sonuc.donem.etiket,
+      }],
+      kullanim: { yol: "kac", olcut: kac.sorgu.olcut },
+      istekId,
+    });
   } catch (hata) {
     return hataYaniti(hata, istekId);
   }

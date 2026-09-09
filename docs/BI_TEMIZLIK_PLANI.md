@@ -1,9 +1,12 @@
 # bi — Küçültme ve Yeniden Kurma Kaydı
 
-Tarih: 9 Eylül 2026  
-Başlangıç sürümü: `b20df69`  
+Tarih: 9 Eylül 2026
+
+Başlangıç sürümü: `b20df69`
+
 İlk temizlik: `2172c41`
-Durum: ESKİ MOTOR KALDIRILDI — YENİ SÖZLEŞME KURULUYOR
+
+Durum: ESKİ MOTOR KALDIRILDI — YENİ ÇEKİRDEK TAMAMLANDI
 
 ## Karar
 
@@ -39,6 +42,14 @@ Bağımlılık denetiminde `lib/hapbi` dışındaki tek çalışma zamanı bağl
 
 Git geçmişi geri dönüş kaynağıdır; silinen kod uygulama içinde yedeklenmez.
 
+## Uygulanan başlangıç sözleşmesi
+
+`NEDİR` yalnız “nedir”, “ne demek” ve “ne işe yarar” biçimlerinden biriyle sorulan tam katalog adını kabul eder. Katalog HapBilgi, bi, T-Club, C-Club, HBStore, E-Club, Eczanem, öğrenme araçları ve net puan kavramlarıyla sınırlıdır. Alt dize veya genel anahtar kelime eşleşmesi yapılmaz.
+
+`KAÇ` ilk sürümde yalnız UTT ve KD_UTT kullanıcısının kişisel T-Club net puanını kapsar. Kabul edilen dönemler `bu/geçen hafta`, `bu/geçen ay` ve `bu/geçen yıl`dır. Sonuç mevcut `get_kullanici_ozet` RPC'sinden, oturumdaki `kimlik_id` ve Türkiye takvim sınırlarıyla okunur. Gerçek sıfır gösterilir; RPC hatası, kayıt yokluğu ve eksik sayısal değer birbirinden ayrılır.
+
+“Puanım kaç?” gibi dönemi eksik sorular açıklama ister. BM, TM, üretici veya yönetici kapsamındaki sayısal sorular; C-Club puanı; harcanabilir bakiye; sıralama; ürün ve kişi kırılımları bu ilk sürümde veri sorgusu çalıştırmaz.
+
 ## Uygulama sırası
 
 1. Eski motorun bağımlılıklarını doğrula ve motoru ayrı commit olarak kaldır.
@@ -57,6 +68,7 @@ Başarı özellik sayısı değildir. Üzerinde anlaşılan az sayıdaki sorunun
 - [x] Eski deterministik motorun uygulama dışı bağımlılıkları denetlendi.
 - [x] Görünür sohbet kabuğu ile erişim sınırı eski motordan ayrıldı.
 - [x] `lib/hapbi` altındaki 21 eski motor dosyası kaldırıldı.
-- [ ] Eski motoru kaldıran bağımsız commit oluşturulacak.
-- [ ] Yeni `NEDİR` sözleşmesi uygulanacak ve doğrulanacak.
-- [ ] Yeni `KAÇ` sözleşmesi uygulanacak ve doğrulanacak.
+- [x] Eski motor bağımsız commit ile kaldırıldı (`f5e6096`).
+- [x] Yeni `NEDİR` sözleşmesi uygulandı ve bağımsız commit ile kaydedildi (`c7749a4`).
+- [x] Yeni `KAÇ` sözleşmesi uygulandı ve odaklı sınamalarla doğrulandı.
+- [x] Oturum, rol, tanım, destek, dönem, gerçek sıfır, eksik veri ve veri hatası yolları sınandı.
