@@ -401,34 +401,13 @@ HBStore ve E-Club Store işlemlerinde bildirim, siparişin alınması veya iptal
 
 ### 5. bi — Platform İçi Yardım Asistanı
 
-**Güncel kapsam — 9 Eylül 2026:** bi, kavram açıklama, ilgili sayfaya yönlendirme ve yetkili verilerden basit sayısal cevaplar için kullanılır. Gemini bağlantısı kaldırılmıştır. AI yorumlama, koçluk, serbest analiz ve konuşmadan öğrenme mevcut ürünün işlevleri değildir. Temizlik kararı ve sonraki sınırlı iyileştirmeler [BI_TEMIZLIK_PLANI.md](BI_TEMIZLIK_PLANI.md) dosyasındadır.
+**Yeniden kurma kararı — 9 Eylül 2026:** Gemini, AI yorumlama ve konuşmadan öğrenme ürün kapsamından çıkarılmıştır. İlk teknik temizlikten sonra kalan geniş deterministik motor da yeni başlangıç sözleşmesine göre gereksiz karmaşık bulunduğu için kaldırılmıştır. Karar ve uygulama sırası [BI_TEMIZLIK_PLANI.md](BI_TEMIZLIK_PLANI.md) dosyasındadır.
 
-#### 5.1. İstek ve cevap akışı
+Yeni başlangıç yalnız iki soru ailesinden oluşur: `NEDİR`, onaylı HapBilgi kavramlarını sabit içerikle açıklar ve varsa ilgili sayfaya yönlendirir; `KAÇ`, açıkça tanımlanmış ölçüt, dönem ve sunucuda çözülen yetki kapsamıyla sayısal sonuç verir. Tanınmayan sorular veri sorgusu başlatmaz.
 
-`app/api/hapbi/sor/route.ts` her istekte Supabase oturumunu doğrular. `lib/hapbi/kapsam.ts` aktif kimlik, rol, firma, takım ve bölgeyi sunucuda çözer. İstemcinin bildirdiği rol veya organizasyon yetki kaynağı değildir.
+`HapbiProvider.tsx` istemcideki mesajları ve istek iptalini, `HapbiChatModal.tsx` soru-cevap görünümünü, `HapbiMaskot.tsx` turuncu bi düğmesini yönetir. `/api/hapbi/sor` uyumluluk için adresini korur. Mesaj geçmişi yalnız React durumunda tutulur ve sunucu önceki mesajlardan bağlam devralmaz.
 
-1. `rehber/rehberCozucu.ts`, `rehber/rehberKatalogu.ts` içindeki sabit açıklama ve sayfa bağlantılarını seçer.
-2. Rehber eşleşmezse `basitSorguCozucu.ts` sınırlı anahtar kelime kurallarıyla sorguyu kurar. `sozlesme.ts` ölçüt, kırılım, zaman ve filtre uyumunu denetler.
-3. `motor/sorguOlustur.ts` ve `motor/veriKaynaklari.ts` izinli kaynak planını oluşturur; `motor/calistir.ts` hesaplar; `motor/dogrula.ts` ve `motor/kanit.ts` sonucu denetler.
-4. `yanit/sayisal.ts` ve `yanit/kaynaklar.ts` sayısal cevabı ve kaynağını sunar. Eksik veri ve okuma hatası sıfır puan olarak sunulmaz.
-
-#### 5.2. Kapsam ve mevcut sınırlar
-
-Asistan yalnız `kullanici` kimlik türündeki desteklenen iç rollere açıktır. Admin, içerik üreticisi, E-Club kişi kimliği ve Eczanem müşteri kimliği asistan kapsamına alınmaz. Rol kuralları `lib/hapbi/roller.ts` dosyasındadır.
-
-Basit çözücü T-Club ve C-Club sorguları kurar. E-Club asistanın veri alanlarından çıkarılmıştır. Üretim rol/kapsam tanımları kodda bulunmakla birlikte basit çözücü üretim sorgusu üretmez. Bir veri alanının veya işlem türünün sözleşmede bulunması sohbet üzerinden desteklendiği anlamına gelmez.
-
-Rehber eşleştirmesinin bazı sayısal soruları yakalaması, belirsiz sorulardaki varsayılan puan/zaman seçimi ve izleme puanı ayrımları henüz iyileştirilmemiştir. Temizlik, bu davranışların düzeltildiği veya tüm soru türlerinin desteklendiği anlamına gelmez.
-
-#### 5.3. Sohbet ve arayüz
-
-İstemci yalnız `soru` gönderir. Mesaj geçmişi React durumunda tutulur; sunucu önceki mesajlardan bağlam devralmaz. HMAC sohbet belirteci, kullanılmayan sayfa adresi, model metaverisi ve eğitim önerisi kartları kaldırılmıştır. Erişim her istekte gerçek oturum ve sunucu kapsamıyla doğrulanır. Eski sekmelerin gönderdiği ek alanlar bağlam veya yetki olarak kullanılmaz.
-
-`HapbiProvider.tsx` mesajları ve istek iptalini; `HapbiChatModal.tsx` soru, cevap, kaynak ve bağlantı görünümünü; `HapbiMaskot.tsx` turuncu bi düğmesini yönetir. Teknik dosya ve API adları uyumluluk için `hapbi` olarak kalmıştır.
-
-#### 5.4. Doğrulama
-
-Yerel kontrol komutu: `node --test tests/biTemizlik.smoke.test.ts`. Gerçek API ve deterministik modüller yerel veri örnekleriyle çalıştırılır; Next yanıtı ve Supabase bağlantısı test karşılıklarıyla sağlanır. Bu kontrol canlı veritabanı, tarayıcı veya üretim doğrulaması değildir. Ayrıntılı sonuç kaydı temizlik planındadır.
+Erişim kuralı `lib/bi/erisim.ts` içindedir. Asistan yalnız `kullanici` kimlik türündeki desteklenen iç rollere açıktır. Admin, İçerik Üreticisi, E-Club kişi kimliği ve Eczanem üye kimliği kapsam dışındadır. Oturum, aktif kimlik ve rol her istekte sunucuda doğrulanır; istemcinin gönderdiği ek alanlar yetki kaynağı değildir.
 
 ---
 
@@ -2259,43 +2238,11 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 |---|:---:|---|
 | `kolonlar.ts` | TypeScript / Lib | HapBilgi kapsamında `FIRMA_KOLONLARI` işlev ve sabitlerini sağlar; kolonlar iş kurallarını tek modülde toplar. |
 
-### 📁 lib/hapbi/
+### 📁 lib/bi/
 
 | Dosya Adı | Türü | İşlevi |
 |---|:---:|---|
-| `basitSorguCozucu.ts` | TypeScript | Sınırlı soru kalıplarını doğrulanan sayısal sorguya dönüştürür. |
-| `kapsam.ts` | TypeScript | Aktif kimlik ve organizasyon üzerinden izinli veri kapsamını oluşturur. |
-| `roller.ts` | TypeScript | Asistan erişimi ve rol kapsam kurallarını tanımlar. |
-| `sozlesme.ts` | TypeScript | Sorgu, filtre ve ölçüt-zaman uyumunu denetler. |
-| `islemTurleri.ts` | TypeScript | Deterministik sorgu işlemlerini ve gerekli alanlarını tanımlar. |
-| `kirilimSozlesmesi.ts`, `kirilimlar.ts` | TypeScript | Kırılım türlerini, ilişkilerini ve kullanılabilir ölçütleri tanımlar. |
-| `olcutSozlesmesi.ts`, `olcutler.ts` | TypeScript | Ölçütleri, kaynakları, hesaplama ve zaman gereksinimlerini tanımlar. |
-| `zamanSozlesmesi.ts`, `zaman.ts` | TypeScript | Desteklenen zaman seçimlerinden Türkiye takvim aralıklarını oluşturur. |
-
-### 📁 lib/hapbi/motor/
-
-| Dosya Adı | Türü | İşlevi |
-|---|:---:|---|
-| `sorguOlustur.ts` | TypeScript | Doğrulanmış sorgudan kaynak ve kapsam planı oluşturur. |
-| `veriKaynaklari.ts` | TypeScript | İzinli tablo, sütun ve ilişki yollarını denetler. |
-| `calistir.ts` | TypeScript | Yetkili verileri okur ve deterministik sonuçları hesaplar. |
-| `dogrula.ts` | TypeScript | Sonuç değerlerini ve kaynakların planla uyumunu denetler. |
-| `kanit.ts` | TypeScript | Doğrulanmış sonuçları kaynak ve zaman bilgileriyle kanıt paketine dönüştürür. |
-
-### 📁 lib/hapbi/rehber/
-
-| Dosya Adı | Türü | İşlevi |
-|---|:---:|---|
-| `rehberCozucu.ts` | TypeScript | Soruyu sabit rehber konularıyla eşleştirir. |
-| `rehberKatalogu.ts` | TypeScript | Platform açıklamalarını ve ekran bağlantılarını tutar. |
-
-### 📁 lib/hapbi/yanit/
-
-| Dosya Adı | Türü | İşlevi |
-|---|:---:|---|
-| `belirsizlik.ts` | TypeScript | Eksik veri, okunamayan veri ve doğrulama hatası cevaplarını oluşturur. |
-| `kaynaklar.ts` | TypeScript | Sayısal cevabın kaynak ve dönem gösterimini oluşturur. |
-| `sayisal.ts` | TypeScript | Doğrulanmış hesaplama sonuçlarını Türkçe metne dönüştürür. |
+| `erisim.ts` | TypeScript | bi'nin kullanılabildiği kimlik türünü ve iç rol gruplarını tanımlar. |
 
 ### 📁 lib/izleme/
 

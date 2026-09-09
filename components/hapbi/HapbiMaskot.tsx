@@ -7,14 +7,14 @@
 import React, { useState } from "react";
 import { useHapbi } from "./HapbiProvider";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { hapbiKullanabilirMi } from "@/lib/hapbi/roller";
+import { biKullanabilirMi } from "@/lib/bi/erisim";
 
 export default function HapbiMaskot() {
   const { kullanici } = useAuth();
   const { chatAcik, toggleChat } = useHapbi();
   const [isHovered, setIsHovered] = useState(false);
 
-  if (!kullanici || !hapbiKullanabilirMi(kullanici.kimlik_turu ?? "", kullanici.rol)) {
+  if (!kullanici || !biKullanabilirMi(kullanici.kimlik_turu, kullanici.rol)) {
     return null;
   }
 

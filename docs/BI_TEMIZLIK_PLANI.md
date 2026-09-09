@@ -1,97 +1,62 @@
-# bi — Kontrollü Temizlik Planı
+# bi — Küçültme ve Yeniden Kurma Kaydı
 
 Tarih: 9 Eylül 2026  
 Başlangıç sürümü: `b20df69`  
-Durum: YEREL KOD TEMİZLİĞİ TAMAMLANDI — deterministik iyileştirmeler sırada
+İlk temizlik: `2172c41`
+Durum: ESKİ MOTOR KALDIRILDI — YENİ SÖZLEŞME KURULUYOR
 
-## Karar ve amaç
+## Karar
 
-Kullanıcının aktardığı ölçüme göre önceki asistan geliştirmesi 120 saati aşmış, HapBilgi'nin diğer işlerinin ilerlemesini de geciktirmiştir. Soruyu anlamlandırma ve AI yorumu ayrımı istenen biçimde kurulamamış; kelime bağımlılığı, fazla kısıt, tutarsız yorumlar ve benzer sorularda gelişmeyen davranış nedeniyle Gemini ilişkisi Antigravity ile kaldırılmıştır. Bu kayıt kullanıcının deneyimidir; koddan çıkarılmış bir süre ölçümü değildir.
+Önceki asistan geliştirmesi kullanıcı ölçümüne göre 120 saati aştı ve HapBilgi'nin diğer işlerini geciktirdi. Gemini ile soru anlamlandırma, deterministik işlem ve AI yorumu arasındaki ayrım istenen güvenilirliğe ulaşmadı. Kelime bağımlılığı, fazla kısıt, tutarsız yorum ve benzer sorularda gelişmeyen davranış nedeniyle Gemini ilişkisi Antigravity ile sonlandırıldı.
 
-bi'nin başlangıç kapsamı: kavramları açıklamak, ilgili ekranı göstermek ve yetkili HapBilgi verilerinden basit sayısal soruları yanıtlamak. AI'yı geri bağlamak bu çalışmanın hedefi değildir. İleride ancak belirli bir ihtiyaca ölçülebilir katkı sağlayan ayrı bir çalışma olarak değerlendirilebilir.
+İlk teknik temizlikte kullanılmayan AI/anlama/yorum modülleri, sohbet belirteci ve arayüz artıkları kaldırıldı. Sonraki inceleme, geride kalan deterministik motorun da yeni başlangıç kapsamından büyük olduğunu ve rehber, ölçüt, kırılım, zaman, plan, kanıt ve yanıt katmanlarında eski karmaşıklığı taşıdığını gösterdi.
 
-## 1. Korunacak çalışan bölüm
+Bu nedenle motoru yerinde daraltma kararı bırakıldı. Uygulama önce eski soru motorundan temizlenecek, ardından yalnız iki açık sözleşmeyle yeniden kurulacak:
 
-- Mevcut bi görünümü, sohbet açma/kapatma, mesaj listesi, temizleme ve istek iptali.
-- `/api/hapbi/sor` adresi; Supabase oturumu, aktif kimlik, rol ve organizasyon kapsamı kontrolleri.
-- Rehber kataloğu, basit sorgu çözücü, ölçüt/kırılım/zaman sözleşmeleri.
-- Veri kaynağı izinleri, sorgu planı, hesaplama, eksik veri kontrolü, kanıt ve kaynaklı sayısal cevap.
-- Ortak HapBilgi rolleri, lig, rapor, üretim ve öğrenme verileri.
+- **NEDİR:** Onaylı HapBilgi kavramını sabit metinle açıklar; varsa ilgili sayfayı gösterir. Kullanıcı verisi okumaz.
+- **KAÇ:** Açıkça tanınan ölçüt, dönem ve sunucunun belirlediği yetki kapsamı ile sayısal sonuç verir. Eksik öğeyi tahmin etmez ve sessiz varsayılan sorgu üretmez.
 
-Teknik `hapbi` dosya ve fonksiyon adları topluca yeniden adlandırılmayacak. Bu turda deterministik motorun ortak kullanılan dalları yeniden yazılmayacak.
+Bu iki sözleşmeye girmeyen sorular veri sorgusu çalıştırmadan desteklenen örnekleri gösterir. AI yorumlama, sıralama, karşılaştırma, neden analizi, öneri, eğilim, serbest sohbet ve konuşmadan öğrenme bu başlangıç kapsamının dışındadır.
 
-## 2. Kaldırılacak kullanım dışı kod
+## Korunan sınırlar
 
-Aktif API ve arayüzden çağrılmadığı, başka modüllerin de kullanmadığı doğrulanan dosyalar:
+- Sağ alttaki `bi` düğmesi, sohbet penceresi, istemci mesajları ve istek iptali.
+- `/api/hapbi/sor` adresi ve yalnız `soru` alanını taşıyan istek biçimi.
+- Her istekte Supabase oturumu, aktif kimlik ve rol doğrulaması.
+- `kullanici` kimlik türündeki desteklenen iç roller için erişim; admin, İçerik Üreticisi, E-Club kişi ve Eczanem üye kimlikleri dışarıda kalır.
+- İstemciden gelen rol veya organizasyon bilgisini yetki kaynağı kabul etmeme.
 
-1. `lib/hapbi/anlamaSozlesmesi.ts`
-2. `lib/hapbi/anlama/dogrula.ts`
-3. `lib/hapbi/anlama/gemini.ts`
-4. `lib/hapbi/anlama/sorguyaCevir.ts`
-5. `lib/hapbi/yanit/yorum.ts`
-6. `lib/hapbi/yanit/yorumDogrulama.ts`
-7. `lib/hapbi/yanit/yorumPaketi.ts`
-8. `lib/hapbi/yanit/performans.ts`
+## Kaldırılan eski motor
 
-Git geçmişi geri dönüş kaynağıdır; silinen kodun yeni bir yedek kopyası uygulamada tutulmayacak.
+Bağımlılık denetiminde `lib/hapbi` dışındaki tek çalışma zamanı bağlantılarının API route'u ile maskot erişim kontrolü olduğu doğrulandı. Erişim kuralı küçük ve bağımsız `lib/bi/erisim.ts` modülüne taşındı; ardından aşağıdaki eski katmanlar tümüyle kaldırıldı:
 
-## 3. API ve arayüz artıklarını sadeleştirme
+- Basit sorgu çözücü ve ortak sorgu sözleşmesi.
+- Kapsam, rol, ölçüt, kırılım, zaman ve işlem katalogları.
+- Kaynak planlama, sorgu çalıştırma, doğrulama ve kanıt motoru.
+- Rehber çözücü ile rehber kataloğu.
+- Sayısal yanıt, kaynak ve belirsizlik üreticileri.
+- Eski motorun davranışını koruyan geçici temizlik sınaması.
 
-- Anlam veya konuşma geçmişi taşımayan HMAC sohbet belirtecini, imzalama yardımcılarını ve `HAPBI_SOHBET_SECRET` bağımlılığını kaldır. Kimlik doğrulama her istekte Supabase oturumuyla devam eder; belirteç erişim yetkisi kaynağı değildir.
-- Kullanılmayan `pathname` aktarımını kaldır. Eski açık sekmelerin ek alan göndermesi normal soruları bozmasın; bu alanlar yetki veya bağlam olarak kullanılmasın.
-- Sürekli `null`/`0` olan model ve model çağrısı alanlarını kaldır; yanıt yolu bilgisini koru.
-- API'nin üretmediği eğitim önerisi kartlarını ve türlerini kaldır.
-- Referansı olmayan `public/hapbi.png` ve `public/hapbi-wink.png` görsellerini kaldır.
-- Kullanıcıya sunulan asistan açıklamasını kavram, ekran ve basit veri kapsamıyla hizala; analitik danışmanlık vaadini çıkar.
+Git geçmişi geri dönüş kaynağıdır; silinen kod uygulama içinde yedeklenmez.
 
-## 4. Belgeleri güncelleme
+## Uygulama sırası
 
-- BLUEBOOK'un asistan bölümü ve asistan dosya envanteri mevcut deterministik yapıyı anlatsın.
-- Önceki iki HapBi planı tarihsel kayıt olarak işaretlensin. Eski Gemini hedefleri ve faz onay kuralları yeni temizlik işinin talimatı olarak okunmasın.
-- Hukuki metinlerdeki eski AI aktarımı ve 30 dakikalık sohbet anlatımı ayrı içerik incelemesi gerektiren kayıt olarak belirtilecek; bu teknik temizlikte hukuki metin veya canlı yapılandırma değiştirilmeyecek.
-- Şema anlık kaydı canlı veritabanının yerine geçmez. Eski RPC'ler hakkında canlı doğrulama yapılmadan silme işlemi uygulanmayacak.
+1. Eski motorun bağımlılıklarını doğrula ve motoru ayrı commit olarak kaldır.
+2. Yeni `NEDİR` sözleşmesini küçük, sabit bir katalog ve kesin kabul kalıplarıyla kur.
+3. Yeni `KAÇ` sözleşmesini açık ölçüt ve dönemlerle kur; yetki kapsamını yalnız sunucuda çöz.
+4. Kabul edilen örnekleri, destek dışı soruları, yetki ve veri hatalarını sınayan odaklı testler ekle.
+5. Tür denetimi ve değişen kodun ESLint kontrolünü çalıştır; canlı veritabanına yazma, deploy veya AI çağrısı yapma.
 
-## 5. Doğrulama ve durma ölçütü
+## Başarı ölçütü
 
-- Temizlik öncesi/sonrası aynı yerel örneklerle rehber, basit puan hesabı ve kaynak gösterimini karşılaştır.
-- Oturumsuz, kapsam dışı, eksik veri ve veri okuma hatası yollarını doğrula.
-- Uygulama tür denetimi ve değişen kodun ESLint kontrolünü çalıştır.
-- Silinen modüllere kod bağlantısı veya asistan içinde Gemini istemcisi kalmadığını tara.
-- Canlı Supabase/Gemini çağrısı, SQL uygulaması, deploy veya otomatik commit yapma.
-
-## 6. Temizlikten sonraki deterministik iyileştirmeler
-
-Bu turda uygulanmayacak; ayrı davranış değişiklikleri olarak sırayla ele alınacak:
-
-1. Rehberin sayısal soruları genel açıklamaya yönlendirmesini düzelt: “C-Club puanım kaç?” ile “C-Club nedir?” ayrımı.
-2. İlgisiz veya desteklenmeyen soruyu varsayılan net puan sorgusuna dönüştürme; kısa yardım yanıtı ver.
-3. Atanmış izleme puanı / kazanılan izleme puanı / izleme sayısı ayrımını düzelt.
-4. Ürün adı, kapsam, sıralama ve sonuç sayısı seçimlerini basit kabul örnekleriyle doğrula.
-5. Dönem ifadesi yokken kullanılan varsayılanı açıklaştır; desteklenmeyen tarihleri sessizce başka döneme çevirmeme davranışını belirle.
-
-Başarı ölçütü özellik sayısı değil, üzerinde anlaşılan az sayıdaki gerçek kullanıcı sorusunun doğru ve tutarlı karşılanmasıdır.
+Başarı özellik sayısı değildir. Üzerinde anlaşılan az sayıdaki sorunun doğru, aynı girdide aynı sonucu veren, açıklanabilir ve yetki sınırlarını aşmayan cevaplar üretmesidir. Yeni bir soru ailesi ancak kendi kabul örnekleri ve veri sözleşmesi belirlendikten sonra eklenir.
 
 ## Uygulama kaydı
 
-- [x] Başlangıç sürümü ve temiz çalışma dizini doğrulandı.
-- [x] Kullanım dışı 8 modül ve arayüz/API artıkları belirlendi.
-- [x] Temizlik öncesi 6 yerel davranış kontrolü geçti.
-- [x] 8 kullanım dışı modül, 2 eski maskot görseli, kullanılmayan API/arayüz alanları kaldırıldı; güncel belgeler düzeltildi.
-- [x] Temizlik sonrası 7 yerel davranış kontrolü, uygulama tür denetimi ve değişen kodun ESLint kontrolü geçti.
-
-
-### Doğrulama sonucu — 9 Eylül 2026
-
-- Önce: `HAPBI_SOHBET_SECRET=yerel-kontrol node --test tests/biTemizlik.smoke.test.ts` — 6/6 geçti. Anahtar yalnız eski API davranışını yerel örnekle çalıştırmak için kullanıldı.
-- Sonra: `node --test tests/biTemizlik.smoke.test.ts` — 7/7 geçti; asistanın ayrı sohbet anahtarına ihtiyacı kalmadı. Önceki 6 davranış korundu; eski sekmenin ek alanlarının erişimi veya hesabı değiştirmediği ayrıca doğrulandı.
-- `npm run typecheck:build` — geçti.
-- Değişen TypeScript/TSX dosyaları ve yeni sınama üzerinde ESLint — geçti.
-- Silinen modüllere, eski görsellere veya Gemini uç noktasına uygulama kodunda bağlantı kalmadı.
-- 100 puanlık yerel örnekte başka kişinin 9000 puanı sonuca girmedi; kaynaklı 100 puan yanıtı temizlik öncesi ve sonrasında korundu.
-- Tarayıcı/canlı ortam kontrolü yapılmadı. Veritabanı, ortam dosyaları ve hukuki metinler değiştirilmedi. Commit veya deploy yapılmadı.
-
-### Ayrı takip gerektiren kayıtlar
-
-- `docs/hukuki/KVKK_AYDINLATMA_METNI.md`: eski AI aktarımı ve 30 dakikalık sohbet belirteci ifadeleri güncel teknik durumla hizalanmalı. Bu tur yalnız farkı kaydeder.
-- Canlı ortamda bulunabilecek eski Gemini/sohbet ayarları ve eski HapBi RPC'leri, canlı durum doğrulanmadan silinmiş kabul edilmez.
-- Bölüm 6'daki deterministik davranış iyileştirmeleri henüz uygulanmadı. Mevcut anlama sınırlamalarının giderildiği iddia edilmez.
+- [x] İlk AI/anlama/yorum temizliği tamamlandı (`2172c41`).
+- [x] Eski deterministik motorun uygulama dışı bağımlılıkları denetlendi.
+- [x] Görünür sohbet kabuğu ile erişim sınırı eski motordan ayrıldı.
+- [x] `lib/hapbi` altındaki 21 eski motor dosyası kaldırıldı.
+- [ ] Eski motoru kaldıran bağımsız commit oluşturulacak.
+- [ ] Yeni `NEDİR` sözleşmesi uygulanacak ve doğrulanacak.
+- [ ] Yeni `KAÇ` sözleşmesi uygulanacak ve doğrulanacak.
