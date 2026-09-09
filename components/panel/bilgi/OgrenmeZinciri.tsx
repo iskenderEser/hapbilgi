@@ -5,10 +5,10 @@ import { Heart } from "lucide-react";
 import { KULUPLER } from "./icerikler";
 import styles from "./bilgi.module.css";
 
-export default function OgrenmeZinciri() {
-  const [secili, setSecili] = useState(0);
+export default function OgrenmeZinciri({ baslangicIndex = 0 }: { baslangicIndex?: number } = {}) {
+  const [secili, setSecili] = useState(baslangicIndex);
   const detayId = useId();
-  const kulup = KULUPLER[secili];
+  const kulup = KULUPLER[secili] ?? KULUPLER[0];
 
   return (
     <>

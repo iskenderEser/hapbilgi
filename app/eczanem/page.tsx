@@ -4,14 +4,14 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ShieldCheck, Sparkles, Trash2, UserRound } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { MUSTERI_ROLU } from "@/lib/utils/roller";
+import { adSoyadBicimle } from "@/lib/utils/adSoyadBicimle";
 import EclubGecisKarti from "./_components/EclubGecisKarti";
 import EczanemMusteriNavbar from "./_components/EczanemMusteriNavbar";
 import EczanemVideoOynatici from "./_components/EczanemVideoOynatici";
@@ -141,14 +141,23 @@ function EczanemPanelIcerik() {
     etkilesimIsliyor,
   };
 
+  const musteriAd = kullanici.ad ? adSoyadBicimle(kullanici.ad) : "";
+
   return (
     <div className="min-h-screen bg-[#f5f8fb] pb-12" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <HataMesajiContainer mesajlar={mesajlar} />
-      <EczanemMusteriNavbar ad={kullanici.adSoyad || kullanici.ad || "Müşteri"} onCikis={cikisYap} onYenile={() => videolariCek(true)} yenileniyor={videoYukleniyor || videoYenileniyor} />
+      <EczanemMusteriNavbar
+        ad={kullanici.adSoyad || kullanici.ad || "Müşteri"}
+        telefon={kullanici.telefon}
+        onCikis={cikisYap}
+        onYenile={() => videolariCek(true)}
+        yenileniyor={videoYukleniyor || videoYenileniyor}
+        onHesapSil={() => setSilmeModalAcik(true)}
+      />
       <main className="mx-auto flex w-full max-w-[1240px] flex-col gap-6 px-4 py-5 md:px-6 md:py-7">
         <section className="relative overflow-hidden rounded-3xl bg-[linear-gradient(125deg,#173b63_0%,#237ac8_56%,#43a5d7_100%)] px-5 py-6 text-white shadow-[0_12px_32px_rgba(35,122,200,0.18)] md:px-8 md:py-8">
           <div className="absolute -right-16 -top-24 size-64 rounded-full border-[32px] border-white/5" /><div className="absolute -bottom-24 right-28 size-52 rounded-full bg-white/5" />
-          <div className="relative max-w-2xl"><p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#cae8ff]"><Sparkles className="size-3.5" /> HapBilgi Eczanem</p><h1 className="mt-2 text-2xl font-black tracking-[-0.025em] md:text-3xl">Hoş geldiniz{kullanici.ad ? `, ${kullanici.ad}` : ""}</h1><p className="mt-2 max-w-xl text-xs font-semibold leading-5 text-white/78 md:text-sm md:leading-6">Eczanenizden gelen öğrenme içeriklerini inceleyin; size özel içerik akışınızı tek sayfada yönetin.</p></div>
+          <div className="relative max-w-2xl"><p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#cae8ff]"><Sparkles className="size-3.5" /> HapBilgi Eczanem</p><h1 className="mt-2 text-2xl font-black tracking-[-0.025em] md:text-3xl">{musteriAd ? `Merhaba ${musteriAd}` : "Merhaba"}</h1><p className="mt-2 max-w-xl text-xs font-semibold leading-5 text-white/78 md:text-sm md:leading-6">Eczanenizden gelen öğrenme içeriklerini inceleyin; size özel içerik akışınızı tek sayfada yönetin.</p></div>
         </section>
         <EclubGecisKarti hata={hata} basari={basari} />
         {videoHatasi && <div className="rounded-2xl border border-[#f0d1d1] bg-[#fff7f7] px-4 py-3 text-xs font-bold text-[#a74646]">{videoHatasi}{videoHazir ? " · Son başarılı içerik akışı gösteriliyor." : ""}</div>}
@@ -166,7 +175,6 @@ function EczanemPanelIcerik() {
             <EczanemVideoRafi baslik="En Çok Tamamlananlar" videolar={raflar.en_cok_izlenenler} bosMesaj="Henüz müşteriler tarafından tamamlanmış bir öğrenme içeriği bulunmuyor." {...rafOrtak} />
           </div>
         )}
-        {!seciliVideo && <Card className="gap-0 border-[#dfe7ef] py-0 shadow-sm"><CardContent className="flex flex-wrap items-center justify-between gap-4 p-4 md:p-5"><div className="flex min-w-0 items-center gap-3"><span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-[#edf5fb] text-[#397fbf]"><UserRound className="size-4.5" /></span><div className="min-w-0"><p className="truncate text-sm font-extrabold text-[#30475f]">{kullanici.adSoyad || kullanici.ad || "Müşteri"}</p><p className="mt-0.5 text-[10px] font-semibold text-[#8796a8]">{kullanici.telefon ? `••• ••• ${kullanici.telefon.slice(-4)}` : "Telefon bilgisi yok"}</p></div></div><Button type="button" variant="ghost" size="sm" onClick={() => setSilmeModalAcik(true)} className="h-8 text-[11px] font-extrabold text-[#b84444] hover:bg-[#fff3f3] hover:text-[#963535]"><ShieldCheck className="size-3.5" /><Trash2 className="size-3.5" /> Hesabımı kalıcı olarak sil</Button></CardContent></Card>}
       </main>
       <AlertDialog open={silmeModalAcik} onOpenChange={(acik) => { if (!acik) silmeModaliniKapat(); }}><AlertDialogContent><form onSubmit={hesabimiSil}><AlertDialogHeader><AlertDialogTitle className="text-[#8f3030]">Hesabınızı silmek istediğinize emin misiniz?</AlertDialogTitle><AlertDialogDescription className="leading-6">Bu işlem geri alınamaz. Hesabınız, puanlarınız, siparişleriniz ve HapBilgi’deki tüm kayıtlarınız kalıcı olarak silinir.</AlertDialogDescription></AlertDialogHeader><label className="mt-5 block text-xs font-extrabold text-[#536981]" htmlFor="hesap-silme-sifre">Mevcut şifreniz</label><Input id="hesap-silme-sifre" type="password" value={silmeSifresi} onChange={(event) => setSilmeSifresi(event.target.value)} autoComplete="current-password" required disabled={siliniyor} className="mt-2 h-10 focus-visible:border-[#b84444] focus-visible:ring-[#b84444]/20" placeholder="Şifrenizi girin" />{silmeHatasi && <div className="mt-3 rounded-xl border border-[#efcaca] bg-[#fff3f3] px-3 py-2 text-xs font-bold text-[#a43f3f]">{silmeHatasi}</div>}<AlertDialogFooter className="mt-6"><AlertDialogCancel type="button" onClick={silmeModaliniKapat} disabled={siliniyor}>Vazgeç</AlertDialogCancel><Button type="submit" disabled={siliniyor || !silmeSifresi} className="bg-[#b84444] font-extrabold hover:bg-[#9f3636]">{siliniyor ? "Siliniyor…" : "Evet, hesabımı sil"}</Button></AlertDialogFooter></form></AlertDialogContent></AlertDialog>
     </div>

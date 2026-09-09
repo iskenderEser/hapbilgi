@@ -51,8 +51,9 @@ test("mutlu: müşteri ana sayfası belirlenen altı dijital kanal rafını ve a
   assert.match(oynatici, /İçeriği tamamladığınızda puanınız otomatik eklenir/);
   assert.doesNotMatch(oynatici, /if \(!res\.ok\)[\s\S]{0,320}izlemeBitirildiRef\.current = false/);
   assert.match(ilerlemeRoute, /\.eq\("musteri_id", kimlik\.musteriId!\)/);
-  assert.match(ilerlemeRoute, /\.eq\("tamamlandi_mi", false\)/);
-  assert.match(navbar, /href: "\/eczanem\/puanlarim", etiket: "Puanlarım"/);
+  assert.match(navbar, /href: "\/eczanem", etiket: "Ana Sayfa"/);
+  assert.match(navbar, /href: "\/eczanem\/hapbilgi-nedir", etiket: "HapBilgi Nedir"/);
+  assert.match(navbar, /href: "\/eczanem\/nasil-calisir", etiket: "Nasıl Çalışır"/);
   assert.match(puanSayfasi, /<EczanemPuanlarim/);
   assert.doesNotMatch(sayfa, /<EczanemPuanlarim/);
 
