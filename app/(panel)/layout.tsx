@@ -184,7 +184,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
           </main>
         </div>
 
-        {/* Canlı 3D Hapbi maskotu ve sohbet alanı */}
+        {/* bi düğmesi ve sohbet alanı */}
         <HapbiMaskot />
         <HapbiChatModal />
         <YarimYuklemeBildirimi />

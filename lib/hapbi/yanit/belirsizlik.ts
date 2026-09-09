@@ -12,7 +12,6 @@ export type HapbiBelirsizlikTuru =
 export type HapbiBelirsizlikYaniti = Readonly<{
   tur: HapbiBelirsizlikTuru;
   metin: string;
-  geminiCagrisi: 0;
 }>;
 
 export type HapbiBelirsizlikGirdisi =
@@ -34,7 +33,7 @@ export type HapbiBelirsizlikGirdisi =
   }>;
 
 function yanit(tur: HapbiBelirsizlikTuru, metin: string): HapbiBelirsizlikYaniti {
-  return { tur, metin, geminiCagrisi: 0 };
+  return { tur, metin };
 }
 
 function planlamaYaniti(sonuc: HapbiSorguPlaniSonucu): HapbiBelirsizlikYaniti | null {

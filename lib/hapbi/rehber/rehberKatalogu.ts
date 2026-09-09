@@ -42,7 +42,7 @@ export const REHBER_KATALOGU: readonly RehberKonu[] = [
       "bi ne işe yarar",
     ],
     cevap:
-      "**bi**, HapBilgi platformunun soru-cevap ve analitik rehberidir.\n\n*Sor . Öğren . Değiştir* yaklaşımıyla; platform kurallarını, sayfaların yerini, güncel lig puanınızı ve gelişim analizlerinizi anlık olarak yanıtlar.",
+      "**bi**, HapBilgi'nin platform içi yardım asistanıdır.\n\nPlatformdaki kavramları açıklar, ilgili sayfayı gösterir ve erişiminiz olan verilerden basit puan sorularını yanıtlar.",
     url: "/nasil-calisir",
     butonMetni: "Nasıl Çalışır?",
   },

@@ -1,5 +1,3 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
-
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -29,13 +27,6 @@ const EN_FAZLA_SORU_UZUNLUGU = 2_000;
 
 type IstekGovdesi = Readonly<{
   soru: string;
-  pathname?: string;
-  sohbet?: string;
-}>;
-
-type SohbetDurumu = Readonly<{
-  surum: 2;
-  authId: string;
 }>;
 
 type Kayit = Record<string, unknown>;
@@ -69,47 +60,7 @@ async function govdeyiOku(istek: Request): Promise<IstekGovdesi> {
   const veri = ham as Record<string, unknown>;
   const soru = metin(veri.soru);
   if (!soru || soru.length > EN_FAZLA_SORU_UZUNLUGU) throw new Error("GECERSIZ_SORU");
-  if (veri.pathname !== undefined && typeof veri.pathname !== "string") throw new Error("GECERSIZ_ISTEK");
-  if (veri.sohbet !== undefined && typeof veri.sohbet !== "string") throw new Error("GECERSIZ_ISTEK");
-
-  return {
-    soru,
-    pathname: typeof veri.pathname === "string" ? veri.pathname : undefined,
-    sohbet: typeof veri.sohbet === "string" ? veri.sohbet : undefined,
-  };
-}
-
-function sohbetAnahtari(): string {
-  return (process.env.HAPBI_SOHBET_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
-}
-
-function sohbetiImzala(durum: SohbetDurumu, anahtar: string): string {
-  const icerik = Buffer.from(JSON.stringify(durum), "utf8").toString("base64url");
-  const imza = createHmac("sha256", anahtar).update(icerik).digest("base64url");
-  return `${icerik}.${imza}`;
-}
-
-function sohbetiAc(token: string | undefined, authId: string, anahtar: string): SohbetDurumu | null {
-  if (!token) return { surum: 2, authId };
-  const [icerik, imza, fazlaParca] = token.split(".");
-  if (!icerik || !imza || fazlaParca || !anahtar) return null;
-
-  const beklenenImza = createHmac("sha256", anahtar).update(icerik).digest();
-  let gelenImza: Buffer;
-  try {
-    gelenImza = Buffer.from(imza, "base64url");
-  } catch {
-    return null;
-  }
-  if (gelenImza.length !== beklenenImza.length || !timingSafeEqual(gelenImza, beklenenImza)) return null;
-
-  try {
-    const durum = JSON.parse(Buffer.from(icerik, "base64url").toString("utf8")) as Partial<SohbetDurumu>;
-    if (durum.surum !== 2 || durum.authId !== authId) return null;
-    return { surum: 2, authId };
-  } catch {
-    return null;
-  }
+  return { soru };
 }
 
 function kapsamEtiketi(kapsam: HapbiKapsami, veriAlani: HapbiVeriAlani): string {
@@ -211,7 +162,7 @@ function kaynakPlanlariGecerliMi(plan: ReturnType<typeof hapbiSorguPlaniOlustur>
 function hataYaniti(hata: unknown, istekId: string): NextResponse {
   const kod = hata instanceof Error ? hata.message : "SUNUCU";
   if (kod === "ISTEK_COK_UZUN") return json({ error: "Sohbet isteği çok uzun.", kod, istekId }, 413);
-  if (kod === "GECERSIZ_JSON" || kod === "GECERSIZ_ISTEK") {
+  if (kod === "GECERSIZ_JSON") {
     return json({ error: "Geçersiz istek.", kod, istekId }, 400);
   }
   if (kod === "GECERSIZ_SORU") {
@@ -238,18 +189,6 @@ export async function POST(istek: Request): Promise<NextResponse> {
     }
 
     const govde = await govdeyiOku(istek);
-    const anahtar = sohbetAnahtari();
-    if (!anahtar) throw new Error("SOHBET_ANAHTARI_EKSIK");
-
-    const sohbet = sohbetiAc(govde.sohbet, user.id, anahtar);
-    if (!sohbet) {
-      return json({
-        error: "Lütfen bi'yi yenileyin.",
-        kod: "SOHBET_YENILE",
-        istekId,
-      }, 409);
-    }
-
     const sinyal = AbortSignal.any([istek.signal, AbortSignal.timeout(30_000)]);
     const db = createAdminClient(sinyal);
     const kapsamSonucu = await hapbiKapsaminiCoz(db, user.id);
@@ -284,9 +223,7 @@ export async function POST(istek: Request): Promise<NextResponse> {
               url: rehberSonucu.konu.url,
             }
           : undefined,
-        sohbet: sohbetiImzala({ surum: 2, authId: user.id }, anahtar),
-        model: null,
-        kullanim: { yol: "rehber", modelCagrisi: 0 },
+        kullanim: { yol: "rehber" },
         istekId,
       });
     }
@@ -306,9 +243,7 @@ export async function POST(istek: Request): Promise<NextResponse> {
         return json({
           cevap,
           kaynaklar: [],
-          sohbet: sohbetiImzala({ surum: 2, authId: user.id }, anahtar),
-          model: null,
-          kullanim: { yol: "plan_hatasi", modelCagrisi: 0 },
+          kullanim: { yol: "plan_hatasi" },
           istekId,
         });
       }
@@ -324,9 +259,7 @@ export async function POST(istek: Request): Promise<NextResponse> {
         return json({
           cevap,
           kaynaklar: [],
-          sohbet: sohbetiImzala({ surum: 2, authId: user.id }, anahtar),
-          model: null,
-          kullanim: { yol: "veri_okunamadi", modelCagrisi: 0 },
+          kullanim: { yol: "veri_okunamadi" },
           istekId,
         });
       }
@@ -338,9 +271,7 @@ export async function POST(istek: Request): Promise<NextResponse> {
         return json({
           cevap,
           kaynaklar: [],
-          sohbet: sohbetiImzala({ surum: 2, authId: user.id }, anahtar),
-          model: null,
-          kullanim: { yol: "dogrulanamadi", modelCagrisi: 0 },
+          kullanim: { yol: "dogrulanamadi" },
           istekId,
         });
       }
@@ -352,9 +283,7 @@ export async function POST(istek: Request): Promise<NextResponse> {
         return json({
           cevap,
           kaynaklar: [],
-          sohbet: sohbetiImzala({ surum: 2, authId: user.id }, anahtar),
-          model: null,
-          kullanim: { yol: "kayit_bulunamadi", modelCagrisi: 0 },
+          kullanim: { yol: "kayit_bulunamadi" },
           istekId,
         });
       }
@@ -375,9 +304,7 @@ export async function POST(istek: Request): Promise<NextResponse> {
         return json({
           cevap,
           kaynaklar: [],
-          sohbet: sohbetiImzala({ surum: 2, authId: user.id }, anahtar),
-          model: null,
-          kullanim: { yol: "metin_olusturulamadi", modelCagrisi: 0 },
+          kullanim: { yol: "metin_olusturulamadi" },
           istekId,
         });
       }
@@ -392,9 +319,7 @@ export async function POST(istek: Request): Promise<NextResponse> {
       return json({
         cevap: sayisalSonuc.yanit.metin,
         kaynaklar: kaynakSonucu.basarili ? kaynakSonucu.kaynaklar : [],
-        sohbet: sohbetiImzala({ surum: 2, authId: user.id }, anahtar),
-        model: null,
-        kullanim: { yol: "deterministik", modelCagrisi: 0 },
+        kullanim: { yol: "deterministik" },
         istekId,
       });
     }
@@ -414,9 +339,7 @@ export async function POST(istek: Request): Promise<NextResponse> {
     return json({
       cevap: yardimCevabi,
       kaynaklar: [],
-      sohbet: sohbetiImzala({ surum: 2, authId: user.id }, anahtar),
-      model: null,
-      kullanim: { yol: "rehberlik_onerisi", modelCagrisi: 0 },
+      kullanim: { yol: "rehberlik_onerisi" },
       istekId,
     });
   } catch (hata) {

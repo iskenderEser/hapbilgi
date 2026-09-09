@@ -6,7 +6,6 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { usePathname } from "next/navigation";
 
 interface HapbiKaynak {
   id: string;
@@ -16,20 +15,12 @@ interface HapbiKaynak {
   donem?: string;
 }
 
-interface HapbiEgitimBaglantisi {
-  id: string;
-  etiket: string;
-  url: string;
-  gerekce?: string;
-}
-
 export interface HapbiMesaj {
   id: string;
   rol: "user" | "hapbi";
   metin: string;
   zaman: string;
   kaynaklar?: HapbiKaynak[];
-  egitimler?: HapbiEgitimBaglantisi[];
   hata?: boolean;
   aksiyon?: {
     etiket: string;
@@ -63,8 +54,6 @@ export function HapbiProvider({ children }: { children: React.ReactNode }) {
 }
 
 function HapbiOturumProvider({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-
   const [chatAcik, setChatAcik] = useState(false);
   const [mesajlar, setMesajlar] = useState<HapbiMesaj[]>([ILK_KARSILAMA_MESAJI]);
   const [yukleniyor, setYukleniyor] = useState(false);
@@ -73,19 +62,17 @@ function HapbiOturumProvider({ children }: { children: React.ReactNode }) {
     setChatAcik((prev) => !prev);
   }, []);
 
-  const sohbetRef = useRef<string | undefined>(undefined);
   const istekRef = useRef<AbortController | null>(null);
   useEffect(() => () => { istekRef.current?.abort(); }, []);
 
   const temizle = useCallback(() => {
     istekRef.current?.abort();
     istekRef.current = null;
-    sohbetRef.current = undefined;
     setYukleniyor(false);
     setMesajlar([ILK_KARSILAMA_MESAJI]);
   }, []);
 
-  // Sunucuda imzalanmış sohbet bağlamı; hazır cevap veya anahtar kelime motoru yok.
+  // Mesaj geçmişi yalnız arayüzde tutulur; her soru sunucuda bağımsız işlenir.
   const soruSor = useCallback(async (soruMetni: string) => {
     const soru = soruMetni.trim();
     if (!soru || soru.length > 2000 || istekRef.current) return;
@@ -98,18 +85,16 @@ function HapbiOturumProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch("/api/hapbi/sor", {
         method: "POST", headers: { "Content-Type": "application/json" },
         signal: controller.signal,
-        body: JSON.stringify({ soru, pathname, sohbet: sohbetRef.current }),
+        body: JSON.stringify({ soru }),
       });
       const data = await res.json();
       if (controller.signal.aborted) return;
       if (!res.ok) {
-        if (data.kod === "SOHBET_YENILE") sohbetRef.current = undefined;
         throw new Error(data.error || "bi şu anda yanıt veremiyor. Lütfen tekrar deneyin.");
       }
-      sohbetRef.current = data.sohbet;
       setMesajlar(prev => [...prev, {
         id: crypto.randomUUID(), rol: "hapbi", metin: data.cevap, zaman: zaman(),
-        aksiyon: data.aksiyon, kaynaklar: data.kaynaklar, egitimler: data.egitimler,
+        aksiyon: data.aksiyon, kaynaklar: data.kaynaklar,
       }]);
     } catch (error) {
       if (!controller.signal.aborted) setMesajlar(prev => [...prev, {
@@ -119,7 +104,7 @@ function HapbiOturumProvider({ children }: { children: React.ReactNode }) {
     } finally {
       if (istekRef.current === controller) { istekRef.current = null; setYukleniyor(false); }
     }
-  }, [pathname]);
+  }, []);
 
   return (
     <HapbiContext.Provider

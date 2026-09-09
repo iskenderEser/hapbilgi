@@ -18,7 +18,6 @@ export type HapbiSayisalYanit = Readonly<{
   kapsamEtiketi: string;
   zamanEtiketleri: readonly string[];
   kaynaklar: readonly string[];
-  geminiCagrisi: 0;
 }>;
 
 export type HapbiSayisalYanitHatasi =
@@ -239,7 +238,6 @@ export function hapbiSayisalYanitiOlustur(
       kapsamEtiketi,
       zamanEtiketleri,
       kaynaklar: [...new Set(kanit.kaynaklar.map((kaynak) => kaynak.tablo))],
-      geminiCagrisi: 0,
     },
   };
 }

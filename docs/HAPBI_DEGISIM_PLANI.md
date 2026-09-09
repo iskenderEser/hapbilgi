@@ -1,5 +1,7 @@
 # HapBi Değişim Planı
 
+> **Tarihsel kayıt — 9 Eylül 2026:** Bu belgedeki eski mimari hedefler, Gemini bağlantıları ve faz bazlı ilerleme kuralları güncel çalışma talimatı değildir. Kullanıcının deterministik bi kararı ve yürürlükteki temizlik kapsamı [BI_TEMIZLIK_PLANI.md](BI_TEMIZLIK_PLANI.md) dosyasındadır. Önceki uygulama kayıtları tarihçe olarak korunmuştur.
+
 ## Değişmez sınırlar
 
 - HapBi maskotu korunacak.

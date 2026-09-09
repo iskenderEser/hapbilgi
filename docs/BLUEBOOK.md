@@ -1,6 +1,6 @@
 # 📘 HapBilgi — BLUEBOOK
 ### İş Modeli, Mimari, İş Kuralları ve Teknik Envanter Anayasası
-*Son güncelleme: 6 Eylül 2026 | Kapsam: HapBilgi'nin işlevsel ve teknik yapısının bütünü*
+*Son genel inceleme: 6 Eylül 2026 | Asistan bölümü ve ilgili envanter güncellemesi: 9 Eylül 2026*
 
 ---
 
@@ -379,8 +379,8 @@ Bildirimler seçilen öğrenme aracının adını ve talebi açan kullanıcını
 | Rol grubu | Temel görev ve kapsam | Başlıca işlem bildirimi |
 |---|---|---|
 | **UTT / KD_UTT** (`utt`, `kd_utt`) | Dört öğrenme aracını T-Club'da tüketir; soru ve puan akışını yürütür, eczane portföyünü yönetir, E-Club önerisi ve Eczanem eczane dağıtımı yapar, yetkisi açıksa HBStore kullanır. | Puan zamanı, tamamlama, cevap, öneri, eczaneye gönderim, üye eşiği, sipariş ve bakiye sonucu. |
-| **Bölge Müdürü** (`bm`) | Bölgesindeki UTT/KD_UTT kullanıcılarını ve raporları izler, T-Club önerisi oluşturur, C-Club'da uygun BM'lere challenge gönderir ve yetkisi açıksa HBStore kullanır. HapBi'de bölge liderliği ve kişisel C-Club ligi "çift şapkalı" karar döngüsüyle yönetilir. | Öneri, challenge, bekleyen challenge, rapor, lig ve sipariş sonucu. |
-| **Takım Müdürü** (`tm`) | Takımındaki BM ve UTT sonuçlarını, öneri akışını, raporları ve yetkili sipariş görünümünü izler; öneri veya mağaza siparişi oluşturmaz. HapBi'de 5 kademeli makro/mikro saha yönetim kokpiti protokolüyle donatılmıştır; kişisel C-Club puanı yalıtılmıştır. | Rapor, öneri takibi, takım ligi, bölge sıralaması, kayıp anatomisi ve koçluk sonucu. |
+| **Bölge Müdürü** (`bm`) | Bölgesindeki UTT/KD_UTT kullanıcılarını ve raporları izler, T-Club önerisi oluşturur, C-Club'da uygun BM'lere challenge gönderir ve yetkisi açıksa HBStore kullanır. | Öneri, challenge, bekleyen challenge, rapor, lig ve sipariş sonucu. |
+| **Takım Müdürü** (`tm`) | Takımındaki BM ve UTT sonuçlarını, öneri akışını, raporları ve yetkili sipariş görünümünü izler; öneri veya mağaza siparişi oluşturmaz. | Rapor, öneri takibi, takım ligi ve bölge sıralaması. |
 | **Yöneticiler** (`gm`, `gm_yrd`, `drk`, `paz_md`, `blm_md`, `grp_pm`, `sm`) | Firma kapsamındaki üretim, T-Club, C-Club, E-Club, Eczanem ve sipariş raporlarını rol yetkisine göre izler; rapor erişimi işlem oluşturma yetkisi doğurmaz. | Firma raporu, üretim portföyü ve kapsamındaki operasyon kayıtlarının yükleme sonucu. |
 | **Admin** (`admin`) | Firma, kullanıcı, organizasyon, modül, sistem ayarı, Store ve üretim atamalarını merkezi yönetim kapsamıyla yürütür. | Doğrulama, oluşturma, güncelleme, dışa aktarma ve yönetim işlemlerinin sonucu. |
 
@@ -399,101 +399,36 @@ UTT/KD_UTT'nin Eczanem hedefli öğrenme içeriğini eczaneye göndermesi ile ye
 HBStore ve E-Club Store işlemlerinde bildirim, siparişin alınması veya iptali ile stok, adres ve harcanabilir bakiye doğrulamalarının sonucunu açıklar. Bildirimde sistemde bulunmayan “mağaza yöneticisi” gibi bir rol oluşturulmaz; sonraki durum işlem akışı veya gerçek yetkili rol üzerinden ifade edilir.
 
 
-### 5. HapBi — Kaynaklı AI Asistanı
+### 5. bi — Platform İçi Yardım Asistanı
 
-#### 5.1. Cevap Motoru Mimarisi
-`app/api/hapbi/sor/route.ts` oturumu doğrular; `rolCozucu` ve organizasyon hiyerarşisiyle kişinin rol, firma, takım, bölge ve modül kapsamını sunucuda çözer. Anonim devam edilmez ve istemciden rol veya organizasyon yetkisi kabul edilmez.
+**Güncel kapsam — 9 Eylül 2026:** bi, kavram açıklama, ilgili sayfaya yönlendirme ve yetkili verilerden basit sayısal cevaplar için kullanılır. Gemini bağlantısı kaldırılmıştır. AI yorumlama, koçluk, serbest analiz ve konuşmadan öğrenme mevcut ürünün işlevleri değildir. Temizlik kararı ve sonraki sınırlı iyileştirmeler [BI_TEMIZLIK_PLANI.md](BI_TEMIZLIK_PLANI.md) dosyasındadır.
 
-HapBi cevap motoru iki ana eksende çalışır:
-1. **Deterministik Sayısal Yol (`model = deterministik`, token = 0):** Doğal dildeki sayısal veya analitik sorular kod tabanlı niyet derleyicisi (`lib/hapbi/niyet/`) tarafından kanonik analitik sorguya ve standart çalıştırma tarifine bağlanır. Yetkili veritabanı RPC'si `istekOnbellegi` üzerinden tek bir kez okunur; sıralama, fark, dağılım ve toplamlar sunucuda hesaplanır ve doğrulanmış kurumsal şablonlarla doğrudan yanıt üretilir (`dogrudanYanit.ts` ve `yanit/dogrudan.ts`). Bu yolda Gemini veya harici dil modeli kesinlikle çağrılmaz (model çağrısı = 0).
-2. **Tek Çağrılı Kanıtlı Yorum Yolu (`model = gemini`, azami model çağrısı = 1):** Koçluk, gelişim tavsiyesi, kök neden analizi veya sıfır veri yorumu isteyen sorularda; sunucuda hesaplanmış doğrulanmış bulgular ve sınırlandırılmış kanıt paketleri (`kanitPaketi.ts` ve `yanit/yorumPaketi.ts`) oluşturulur. Gemini yalnız bir kez çağrılarak (`yanit/yorum.ts` ve `gemini.ts`), modelin kendi başına sayı üretmesi engellenir; model yalnızca sunulan kanıtları yönetimsel bir dille açıklar.
+#### 5.1. İstek ve cevap akışı
 
-Tarihsel serbest çok turlu function-calling döngüsü analitik sorgularda tamamen devre dışı bırakılmıştır. `GEMINI_MODEL` tanımlıysa o model, değilse `gemini-flash-latest` kullanılır; gerçek çalışma modeli ortam yapılandırmasına bağlıdır.
+`app/api/hapbi/sor/route.ts` her istekte Supabase oturumunu doğrular. `lib/hapbi/kapsam.ts` aktif kimlik, rol, firma, takım ve bölgeyi sunucuda çözer. İstemcinin bildirdiği rol veya organizasyon yetki kaynağı değildir.
 
-#### 5.2. Kaynaklar ve Yetki Kapsamı
-* **Sürümlü Platform Bilgisi:** `lib/hapbi/bilgiKaynaklari.ts`, BLUEBOOK'un kullanıcıya açıklanabilir iş kurallarından hazırlanmış sürümlü HapBi kaynağıdır. BLUEBOOK otomatik olarak modele verilmez. Onaylanmış iş modeli veya rol değişikliği bu dosyaya ayrıca işlenmeden HapBi kaynağı güncel sayılmaz.
-* **Araç Sözleşmeleri:** `aracTanimlari.ts`, Gemini'ye sunulan salt-okur araç şemalarının; `araclar.ts` ise doğrulanmış kullanıcı bağlamıyla ilgili motoru yükleyen dağıtıcının kaynağıdır. Platform, eğitim, gelişim, saha, üretim, E-Club ve ortak analitik okuyucuları `aracMotorlari/` altında ayrıdır. `analitik_sorgu` aracı modelden organizasyon kapsamı kabul etmez; kapsamı sunucuda çözer ve T-Club, C-Club, E-Club ya da üretim alanını sürümlü kanonik analitik sözleşmeyle okur.
-* **Doğal Dil Niyet ve Tarif Mimarisi:** `lib/hapbi/niyet/` modülü; doğal dil sorgularını Gemini olmadan Türkçe sözlük (`sozluk.ts`), dönem çözümleyici (`donem.ts`) ve kural tabanlı derleyici (`derleyici.ts`) ile kanonik sorguya (`sozlesme.ts`) ve önceden tanımlı yürütme tarifine (`tarifler.ts`, `tarifSecici.ts`) dönüştürür. HapBi zaman sorgularında yalnız kanonik Gün, Hafta, Ay, Dönem ve Yıl değerlerini kullanır; bunların sınırları Bluebook'un Kanonik Zaman Değerleri sözleşmesine göre Türkiye saatinde hesaplanır.
-* **Merkezi Kapsam Çözücüsü:** `lib/hapbi/kapsam/` modülü; oturum sahibinin kimliğini statik rol matrisi (`rolMatrisi.ts`) üzerinden T-Club, C-Club, E-Club ve üretim veri alanlarının kişisel, sorumluluk, takım veya firma kapsamına deterministik olarak çözer (`cozucu.ts`, `yetki.ts`).
-* **Hızlı Sorular:** `hizliSorgu.ts`, role uygun hazır soru metinleri ile bunların araç ve parametre planlarının tek kaynağıdır. Sorular aksi belirtilmedikçe güncel Türkiye haftasını kullanır; E-Club kişisel durum sorgusu lig veya dönem parametresi taşımaz.
-* **Üretim Raporu:** `uretim_raporu`, `/raporlar/uretim` ekranıyla ortak `lib/rapor/uretim/getUretimData.ts` okuyucusunu kullanır. Kullanıcının yetkili olduğu firmanın yayın portföyünü, kişisel üretim görevlerinden ve anlık canlı stok dağılımından ayırır. Kapsam veya kaynak hatası sıfır sonuç gibi sunulmaz.
-* **Öğrenme Kataloğu:** `egitim.ts`, UTT/KD_UTT için T-Club; BM için C-Club görünürlük, geçerli tur, izleme, challenge ve cevap kayıtlarını kullanır. Etkin araç bayraklarına göre Video, Podcast, Dijital Broşür ve Literatür yayınlarını okur; `arac_turu` bilgisini sonuçta korur.
-* **Öğrenme İçeriği:** `egitim_icerigi` yalnız aynı istekte katalogdan okunmuş ve yeniden görünürlük denetiminden geçmiş yayını açar. Podcastte doğrulanmış transkript, Literatürde doğrulanmış çıkarılmış metin, Dijital Broşürde doğrulanmış eğitim metni ve açıklama kullanılır; bunlar yoksa yayına bağlı senaryo okunur. Metin en fazla 10.000 karakterdir, test cevap anahtarı verilmez ve içerikteki talimatlar uygulanmaz.
-* **Gelişim Rehberi:** `rehberlik.ts`, gerçek rapor ölçümleri ve görünür katalog üzerinden en fazla üç gerekçeli öneri üretir. Gelen challenge ve yarım kalan öğrenme araçları önce değerlendirilir; öğrenme hedefi ile puan hedefi ayrılır. Kategori kaybı belirli bir araçta hata yapıldığı, mesleki yetersizlik veya başarı tahmini olarak yorumlanmaz.
+1. `rehber/rehberCozucu.ts`, `rehber/rehberKatalogu.ts` içindeki sabit açıklama ve sayfa bağlantılarını seçer.
+2. Rehber eşleşmezse `basitSorguCozucu.ts` sınırlı anahtar kelime kurallarıyla sorguyu kurar. `sozlesme.ts` ölçüt, kırılım, zaman ve filtre uyumunu denetler.
+3. `motor/sorguOlustur.ts` ve `motor/veriKaynaklari.ts` izinli kaynak planını oluşturur; `motor/calistir.ts` hesaplar; `motor/dogrula.ts` ve `motor/kanit.ts` sonucu denetler.
+4. `yanit/sayisal.ts` ve `yanit/kaynaklar.ts` sayısal cevabı ve kaynağını sunar. Eksik veri ve okuma hatası sıfır puan olarak sunulmaz.
 
-#### 5.2.1. Bölge Müdürü (BM) Çift Şapkalı Karar Döngüsü Protokolü
-Bölge Müdürü platformda iki farklı şapka taşır:
-1. **Bireysel Öğrenen Şapkası (C-Club Ligi):** BM'nin kişisel olarak katıldığı yönetici ligi, puanları ve şirket sırası.
-2. **Saha Yöneticisi Şapkası (T-Club Ligi):** Sorumluluğundaki bölgenin takım içindeki net puanı ve bölge sırası.
+#### 5.2. Kapsam ve mevcut sınırlar
 
-BM *"Bu ay puanım ve sıram nedir?"* gibi iki anlama da gelebilecek yalın bir soru sorduğunda, sistem rol varsayımı yapmaz. Deterministik olarak iki kaynağı da eşzamanlı okur (`bm_cift_sapka` niyeti) ve tek yanıtta iki sonucu açıkça ayrıştırarak sunar:
-- **1. Şapka:** Bölge net puanı ve takım içindeki bölge sırası (T-Club ligi).
-- **2. Şapka:** Bireysel yönetici net puanı ve şirket içi sırası (C-Club ligi).
-Kullanıcı *"C-Club puanım"* veya *"Bölge puanım"* diyerek niyetini daralttığında ise ilgili tekil lig sonucu doğrudan aktarılır.
+Asistan yalnız `kullanici` kimlik türündeki desteklenen iç rollere açıktır. Admin, içerik üreticisi, E-Club kişi kimliği ve Eczanem müşteri kimliği asistan kapsamına alınmaz. Rol kuralları `lib/hapbi/roller.ts` dosyasındadır.
 
-#### 5.2.2. Takım Müdürü (TM) 5 Kademeli Yönetim Kokpiti Protokolü
-Takım Müdürü doğrudan saha performansı üreten değil; bünyesindeki bölgeleri, bölge müdürlerini ve mümessilleri yönlendiren makro saha yöneticisidir. HapBi, TM rolü için 5 kademeli bütünleşik bir yönetim ve koçluk zinciri uygular:
-1. **1. Aşama — Makro Teşhis (Deterministik):** *"Ağustos ayı bölge sıralaması nedir?"* -> TM'nin takımına bağlı bölgeler net puana göre sıralanır ve hemen ardından proaktif karar alternatifleri *(Kazanılan toplam, İzleme puanı, Doğru cevap puanı, Ekstra puan)* sunulur.
-2. **2. Aşama — Kök Neden Analizi (Deterministik):** *"1. çıkan bölgenin puan kaybetmesine neden olanlar nedir?"* -> Önceki turun lider bölgesi bağlamdan çözülür; toplam kayıp, *İleri Sarma Kaybı*, *Yanlış Cevap Kaybı* ve *Öneri Kaybı* olarak atomik dökülür.
-3. **3. Aşama — Mümessil Dağılımı ve Sayfa Yönlendirmesi (Deterministik):** *"Bölgede en çok puan kaybeden kimdir?"* -> Bölgedeki temsilciler kayıp büyüklüğüne göre sıralanır, kayıp türleri listelenir ve derin link olarak `[Bölge Adı T-Club Ligi Sayfasından](/hbligi)` canlı bağlantısı sunulur.
-4. **4. Aşama — Bölge Gelişim Stratejisi (Tek Çağrılı Gemini AI):** *"Bu bölge gelişimi için ne yapması gerekir?"* -> Kanıt paketindeki kategori ve kayıp verileri üzerinden, TM'nin Bölge Müdürü ile yapacağı koçluk görüşmesine yönelik yönetimsel odak önerisi üretilir.
-5. **5. Aşama — Mümessil Yetkinlik Gelişimi (Tek Çağrılı Gemini AI):** *"Mümessiller hangi alanda kendini geliştirmeli?"* -> Yanlış cevap ve izleme kayıplarının yoğunlaştığı eğitim kategorileri (örneğin Medikal Eğitimler, Satış Teknikleri) kanıtlardan okunarak ekibin tazeleme yapması gereken somut eğitim alanları tavsiye edilir.
-* **Takım Derecesi:** TM *"Takımımın puanı ve sırası kaç?"* diye sorduğunda şirket takımları arasındaki sırası ve net puanı deterministik olarak verilir.
-* **Güvenlik Sınırı:** TM'nin kişisel C-Club ligi bulunmaz; kişisel C-Club puanı sorulduğunda veri aranmaz, `desteklenmiyor` yanıtıyla yetki sınırında tutulur.
+Basit çözücü T-Club ve C-Club sorguları kurar. E-Club asistanın veri alanlarından çıkarılmıştır. Üretim rol/kapsam tanımları kodda bulunmakla birlikte basit çözücü üretim sorgusu üretmez. Bir veri alanının veya işlem türünün sözleşmede bulunması sohbet üzerinden desteklendiği anlamına gelmez.
 
-#### 5.3. Analitik Kapsam ve Ortak Sorgu Anayasası
+Rehber eşleştirmesinin bazı sayısal soruları yakalaması, belirsiz sorulardaki varsayılan puan/zaman seçimi ve izleme puanı ayrımları henüz iyileştirilmemiştir. Temizlik, bu davranışların düzeltildiği veya tüm soru türlerinin desteklendiği anlamına gelmez.
 
-HapBi tek bir rolün veya tek bir rapor ekranının asistanı değildir. HapBi erişimi bulunan bütün kullanıcı rollerinin yalnız kendi yetkili kapsamlarındaki platform verilerini doğal dille sorgulamasını sağlayan ortak analiz ve karar destek katmanıdır. Belirli hazır sorularla sınırlandırılamaz; rol, organizasyon kapsamı, dönem, kişi, ürün, kategori, öğrenme aracı, yayın ve performans ölçütlerinin farklı birleşimlerini aynı analitik sözleşmeyle ele alır.
+#### 5.3. Sohbet ve arayüz
 
-HapBi kullanıcıya yeni bir veri erişim yetkisi kazandırmaz. Kullanıcının platform ekranlarında ve raporlarında erişebildiği kapsam HapBi için de üst sınırdır. Rol ve organizasyon kapsamı sunucuda çözülür; kullanıcının soru içinde bildirdiği rol, firma, takım, bölge, ürün veya kişi bilgisi yetki kaynağı kabul edilmez.
+İstemci yalnız `soru` gönderir. Mesaj geçmişi React durumunda tutulur; sunucu önceki mesajlardan bağlam devralmaz. HMAC sohbet belirteci, kullanılmayan sayfa adresi, model metaverisi ve eğitim önerisi kartları kaldırılmıştır. Erişim her istekte gerçek oturum ve sunucu kapsamıyla doğrulanır. Eski sekmelerin gönderdiği ek alanlar bağlam veya yetki olarak kullanılmaz.
 
-* **UTT / KD_UTT:** Kendi T-Club öğrenme, yayın, ürün, kategori, puan, kayıp, sıralama ve gelişim verilerini sorgular.
-* **BM:** Kendi C-Club verileri ile sorumluluk kapsamındaki UTT/KD_UTT kullanıcılarının T-Club sonuçlarını birbirine karıştırmadan sorgular.
-* **TM:** Kendi takımındaki BM sorumluluk kapsamlarını, UTT/KD_UTT kullanıcılarını, ürünleri ve toplam takım sonuçlarını sorgular.
-* **Ürün Ailesi Rolleri:** Yetkili oldukları takım ile bu takıma bağlı ürünlerin yayın, öğrenme ve performans sonuçlarını sorgular.
-* **Diğer Üretici Rolleri:** Yetenek profillerine göre takım veya firma kapsamındaki ilgili yayın ve performans sonuçlarını sorgular.
-* **Yönetici Rolleri:** Firma içindeki takımları, BM sorumluluk kapsamlarını, UTT/KD_UTT kullanıcılarını, ürünleri ve konsolide firma sonuçlarını sorgular.
-* **E-Club Eczane Rolleri:** Kendi E-Club üyelik, öğrenme, içerik ve puan sonuçlarını sorgular.
-* **E-Club Yönetim Erişimi Bulunan İç Roller:** Kendi organizasyon yetkileriyle sınırlı eczane, kişi, içerik ve sonuçları sorgular.
-* **İçerik Üreticisi ve Admin:** Yalnız Bluebook'ta açıkça tanımlanan üretim, platform yönetim veya gözlem araçlarını kullanır; bu roller kendiliğinden firma içi ticari analiz yetkisi doğurmaz.
-* **Eczanem Uygulaması Üyesi:** HapBi kullanmaz.
+`HapbiProvider.tsx` mesajları ve istek iptalini; `HapbiChatModal.tsx` soru, cevap, kaynak ve bağlantı görünümünü; `HapbiMaskot.tsx` turuncu bi düğmesini yönetir. Teknik dosya ve API adları uyumluluk için `hapbi` olarak kalmıştır.
 
-Firma içi T-Club performansının analitik toplulaştırma zinciri `UTT/KD_UTT → BM sorumluluk kapsamı → takım → firma` biçimindedir. Bölge performans üreten bir kişi veya bağımsız sonuç kaynağı değil, organizasyon kapsamını tanımlayan ve BM ile UTT/KD_UTT kullanıcılarının ilişkilendirilmesine yardımcı olan bir sınıflandırmadır. Toplam sonuçlar yetki sınırları içinde firma düzeyinden takıma, BM sorumluluk kapsamına, kullanıcıya ve işlemi oluşturan kayda kadar ayrıştırılabilir olmalıdır. BM'nin kişisel C-Club performansı bu zincirdeki T-Club toplamına katılmaz.
+#### 5.4. Doğrulama
 
-Ürün, “ürün eğitimi” kategorisinden farklı ve bağımsız bir analitik boyuttur. Ürün sonuçları gerçek `urun_id` ile yayının ürün ilişkisi üzerinden hesaplanır; kategori toplamı ürün adı veya ürün performansı olarak sunulamaz. Ürün; firma, takım, BM sorumluluk kapsamı, kullanıcı, dönem, kategori, öğrenme aracı ve yayın boyutlarıyla birlikte sorgulanabilir. Analiz hem ürünün takım, kullanıcı, araç ve yayın katkılarına hem de takım veya kullanıcının ürün dağılımına doğru çalışır.
-
-Her analitik soru ortak olarak `kullanıcı rolü + yetkili kapsam + veri alanı + dönem + ölçüt + analiz boyutu + filtre + istenen işlem` bileşenleriyle çözümlenir. İstenen işlem toplam, sıralama, fark, dağılım, katkı, karşılaştırma, eğilim, alt kırılım veya öneri olabilir.
-
-Toplam, puan, kayıp, sıralama, fark, dağılım, katkı ve karşılaştırma gibi doğrulanabilir sonuçlar salt-okur veri katmanı ve deterministik analitik yürütücü (`lib/hapbi/analitik/yurutucu.ts`, `toplayici.ts`, `tarifYurutuculeri.ts`) tarafından tek bir veritabanı okumasıyla hesaplanır. Sayısal sorularda Gemini devreye girmez. Yorum ve koçluk sorularında ise model yalnızca hazır kanıt paketi üzerinden konuşur; kişi, ürün, organizasyon ilişkisi veya yeni sayı üretemez.
-
-Ortak analitik araç, sonuç satırlarındaki kişi/ürün/organizasyon ölçümleri ile genel toplamları ayrı ve kararlı kanıt kimliklerine dönüştürür. Kanıtlı yayımlama kapısı seçilen kanıtın aynı istekte okunmuş kaynağa ait olduğunu, cevapta adı geçen bilinen varlık için kanıt seçildiğini, sayının seçilmiş kanıtta bulunduğunu ve kişi–ölçüt–değer ilişkisinin bozulmadığını doğrular.
-
-Takipli konuşma yalnız dönem bilgisini değil; son sorgunun veri alanını, yetkili kapsamını, dönemini, ölçütünü, boyutunu, seçilmiş kişi/takım/ürün/yayın kimliklerini, filtresini, sıralamasını ve analitik işlemini korur. Takipli konuşma bütün roller ve analitik boyutlar için geçerlidir. Her yeni sayısal talepte yetki yeniden doğrulanır ve sonuç canlı veriden yeniden hesaplanır.
-
-#### 5.4. Sohbet ve Güvenlik
-İstemci ham sohbet geçmişi, rol veya firma parametresi göndermez. Sunucuda imzalanan sohbet token'ı kullanıcı, rol, firma, takım, bölge ve modül kapsamına bağlıdır; son 12 mesajı, en çok 18.000 karakteri ve 30 dakikalık geçerliliği taşır. Token ayrıca son doğrulanmış analitik sorgunun veri alanı, dönem, ölçüt, boyut, filtre, işlem, sıralama ve sonuçta gerçekten görülen en çok 30 varlık kimliğini yapılandırılmış takip bağlamı olarak taşıyabilir. Bu bağlam yalnız aynı sayfada kullanılabilir; tarayıcıda kalıcı saklanmaz ve yeni sohbet veya kimlik değişimiyle temizlenir. Yeni sayısal soruda araç yeniden çağrılır; geçmiş cevap ve bağlamdaki eski sayılar güncel veri kaynağı sayılmaz.
-
-Model yalnız tanımlı okuma araçlarını çağırabilir; serbest SQL, tablo, URL veya yazma erişimi bulunmaz. Araç parametreleri sunucuda doğrulanır. Cevap kaynakları ve yönlendirmeler yalnız o istekte okunmuş kaynak kimliklerinden seçilir.
-
-Model çağrısı üst sınırları:
-- **Sayısal ve analitik doğrudan cevap:** 0 model çağrısı (deterministik şablon üretimi).
-- **Kanıtlı yorum ve koçluk:** En fazla 1 model çağrısı.
-- **Hızlı yol:** En fazla 1 model çağrısı.
-- **Netleştirme ve yetki reddi:** 0 model çağrısı.
-
-Süreç içi kullanıcı başına eşzamanlılık ve hız sınırı uygulanır. Eğitim, izleme veya challenge sorgusu 1.000 satır sınırına ulaşırsa eksik veriden öneri üretilmez. Günlükler soru, cevap, kişi adı veya anahtar yerine istek kimliği, model, araç adları, hızlı yol, token ve süre bilgilerini tutar.
-
-#### 5.5. Arayüz, Tipografi ve Doğrulama
-* **Zengin Metin ve Canlı Bağlantı Render Sözleşmesi:** `components/hapbi/HapbiChatModal.tsx` içindeki sohbet akışı, yanıt metinlerini ham dize (*plain string*) olarak render etmez. Özel inline ayrıştırıcı (`renderHapbiMetin`); Markdown bağlantılarını (`[metin](url)`) Next.js istemci yönlendiricisine bağlı canlı ve erişilebilir `<Link>` bileşenlerine dönüştürür. `**kalın**` ve `*italik*` ifadeler kurumsal Nunito tipografisine uygun olarak biçimlendirilir. Böylece koçluk çıktılarında üretilen derin sayfa linkleri (`/hbligi`, `/raporlar/uretim` vb.) kullanıcı tarafından sohbet panelinden ayrılmadan tek tıkla açılabilir.
-* **Kaynak ve Canlı Tur Ayrımı:** Eğitim kaynağının kullanıcıya görünen adı **Eğitim Yayınları**dır. Öneri bağlantısı UTT'yi doğrudan ilgili kategori ve yayına; BM'yi varsa güncel gelen challenge bağlamını koruyarak C-Club izleme ekranına götürür. Kaynak bağlantısı hedef ekranın dönem filtresini otomatik değiştirmez. Canlı ekran turları AI cevabının yerine geçmeyen ayrı bir rehberlik katmanıdır.
-
-**Doğrulama kaydı — 6 Eylül 2026:**
-HapBi mimarisi, 22 ayrı smoke ve hedef test dosyasından oluşan kapsamlı test paketiyle tam güvenceye alınmıştır.
-1. **Deterministik Analitik ve Yürütücü Testleri:** `hapbiAnalitikSozlesme`, `hapbiAnalitikOkuyucu`, `hapbiAnalitikKapsam`, `hapbiAnalitikKanit`, `hapbiAnalitikE2E`, `hapbiNiyetDerleyici`, `hapbiTarifSecici`, `hapbiTekOkumaliYurutucu`, `hapbiDogrudanYanit`, `hapbiTekCagriliYorum` ve `hapbiYeniMotor` testleri üzerinden kanonik sözleşme, tek okumalı yürütme (0 token) ve tek çağrılı yorum kuralları doğrulanmıştır.
-2. **Saha Rolleri Canlı Testleri:**
-   - **BM Çift Şapka:** `hapbiBmCiftSapka.smoke.test.ts` ile bölge HB ligi ve bireysel C-Club ligi çift kaynak ayrımı ve tekil yönlendirmeleri doğrulanmıştır.
-   - **TM Yönetim Kokpiti:** `hapbiTmYonetim.smoke.test.ts` ile 5 kademeli teşhis/koçluk akışı, proaktif ölçüt sunumu, kayıp anatomisi, mümessil listesi, `/hbligi` canlı link üretimi, Gemini bölge/mümessil tavsiyeleri ve C-Club izolasyonu doğrulanmıştır.
-3. **Genel Durum:** 110 test dosyasında toplam **479 / 479 test yeşildir**. Canlı Supabase ve gerçek Gemini üzerinde yapılan rol doğrulama testleri başarıyla tamamlanmıştır.
+Yerel kontrol komutu: `node --test tests/biTemizlik.smoke.test.ts`. Gerçek API ve deterministik modüller yerel veri örnekleriyle çalıştırılır; Next yanıtı ve Supabase bağlantısı test karşılıklarıyla sağlanır. Bu kontrol canlı veritabanı, tarayıcı veya üretim doğrulaması değildir. Ayrıntılı sonuç kaydı temizlik planındadır.
 
 ---
 
@@ -544,9 +479,9 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 ### 📁 app/api/hapbi/sor/
 
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+| Dosya Adı | Türü | İşlevi |
 |---|:---:|---|
-| `route.ts` | API / Route Handler | Oturum ve rol kapsamını doğrulayan; kesin eşleşmiş hazır soruları tek araçlı hızlı yola, serbest soruları tam Gemini araç döngüsüne yönlendiren kaynaklı sohbet uç noktası. |
+| `route.ts` | API / TypeScript | Oturum ve kapsam kontrolünden sonra rehber veya deterministik sayısal yanıt döndürür. |
 
 ### 📁 app/api/ogrenme-araclari/[arac_id]/destek-yukleme-baslat/
 
@@ -2326,84 +2261,41 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 ### 📁 lib/hapbi/
 
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
----|:---:|---|
-| `araclar.ts` | TypeScript / Lib | Doğrulanmış bağlamı kuran ve yalnız çağrılan alan motorunu dinamik yükleyen hafif araç dağıtıcısı. |
-| `aracTanimlari.ts` | TypeScript / Lib | Gemini işlev şemalarını veri motorlarından bağımsız tutan hafif ve kanonik araç tanımı modülü. |
-| `bilgiKaynaklari.ts` | TypeScript / Lib | Bluebook/kod dayanaklı sürümlü kullanıcı rehberi. |
-| `dogrudanYanit.ts` | TypeScript / Lib | Kanonik araç sonuçlarından Gemini çağrısı yapmadan doğrulanmış kısa yanıtlar üretir; BM çift şapka ve TM 5 kademeli yönetim şablonlarını ve `/hbligi` canlı linkini sunar. |
-| `eclubKisi.ts` | TypeScript / Lib | Oturum sahibinin E-Club kişi/eczane/firma erişimini, eğitim durumunu ve puan özetini iletişim verisi taşımadan okuyan kişisel veri servisi. |
-| `egitim.ts` | TypeScript / Lib | Rol, yayın görünürlüğü ve geçerli tur üzerinden eğitim adaylarını okur. |
-| `gemini.ts` | TypeScript / Lib | Tek çağrılı kanıtlı yanıt üretimi, sınırlı Gemini araç döngüsü ve sayısal tutarlılık denetimi. |
-| `hapbiBilgiTabani.ts` | TypeScript / Lib | Mevcut UTT ekran turlarını taşır; AI bilgi kaynağı veya hazır soru tanımı değildir. |
-| `hapbiKullaniciBaglami.ts` | TypeScript / Lib | Yetkili kimlik, organizasyon ve modül kapsamını doğrular; sayı veya varsayılan rol üretmez. |
-| `hizliSorgu.ts` | TypeScript / Lib | Role özel hazır soru metinlerini kesin araç/parametre planlarına bağlar; varsayılan haftayı ve E-Club dönem dışı kapsamını korur. |
-| `kanitPaketi.ts` | TypeScript / Lib | Doğrulanmış araç ve performans çıktılarını Gemini'nin yalnız açıklayabileceği yapılandırılmış olgu, kategori ve koçluk sınır paketlerine dönüştürür. |
-| `motor.ts` | TypeScript / Lib | Deterministik sayısal yol (0 model çağrısı), tek çağrılı kanıtlı yorum ve takip yollarını tek HapBi cevap akışında orkestre eder. |
-| `rehberlik.ts` | TypeScript / Lib | HapBi asistanı kapsamında `raporOlcumleri`, `olcumleriKarsilastir`, `gelisimiDegerlendir` işlev ve sabitlerini ve `GelisimHedefi` veri sözleşmelerini sağlar; rehberlik iş kurallarını tek modülde toplar. |
-| `sohbet.ts` | TypeScript / Lib | Mesajlar, bekleyen netleştirme ve doğrulanmış analitik sorgu/varlık bağlamını kullanıcı-kapsamına bağlı imzalı token içinde korur; süreç içi istek sınırını uygular. |
-| `soruPlani.ts` | TypeScript / Lib | Doğal dildeki dönem, analitik niyet, BM çift şapka (`bm_cift_sapka`), TM yönetim kokpiti (`tm_bolge_siralamasi`, `tm_bolge_kaybi`, `tm_mumessil_kaybi`) ve takip işaretlerini güvenli çalıştırma planına dönüştürür. |
-| `sozlesme.ts` | TypeScript / Lib | Kaynak, yanıt, hata, bekleyen netleştirme ve yapılandırılmış analitik takip bağlamı sözleşmelerini tanımlar. |
-| `takip.ts` | TypeScript / Lib | Eksik alan isteyen soruların imzalı sohbet bağlamında tamamlanmasını ve konu değişiminde kapatılmasını yönetir. |
-
-### 📁 lib/hapbi/analitik/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+| Dosya Adı | Türü | İşlevi |
 |---|:---:|---|
-| `cclubOkuyucu.ts` | TypeScript / Lib | Yetkili kişisel, takım veya firma C-Club kapsamını kişi, ürün, kategori, öğrenme aracı ve yayın boyutlarında toplayarak kanonik analitik sonuca dönüştürür. |
-| `eclubOkuyucu.ts` | TypeScript / Lib | E-Club yönetim kapsamındaki UTT→eczane→kişi ve ürün ilişkilerini, kazanım ve ileri sarma kaybını tek kanonik sonuçta toplar. |
-| `istekOnbellegi.ts` | TypeScript / Lib | Tek bir kullanıcı isteği döngüsünde aynı yetkili kapsam, veri alanı ve döneme ait mükerrer veritabanı RPC çağrılarını önleyen kısa ömürlü istek önbelleğidir. |
-| `kanit.ts` | TypeScript / Lib | Analitik satır ve toplam olgularına kararlı kanıt kimlikleri ekler; yayımlanan cevapta seçilen kaynak, varlık, ölçüt ve değer ilişkisini doğrular. |
-| `kapsam.ts` | TypeScript / Lib | Doğrulanmış kimlik ve rol bağlamını T-Club, C-Club, E-Club ve üretim alanlarının kişisel, sorumluluk, takım veya firma kapsamına dönüştüren merkezi yetki çözücüsüdür. |
-| `sozlesme.ts` | TypeScript / Lib | Bütün roller için veri alanı, yetkili kapsam, dönem, ölçüt, boyut, filtre, işlem, olgu ve sonuç yapılarını tanımlayan sürümlü kanonik analitik sözleşmedir. Geçersiz veya kendi içinde uyumsuz sorguları veri katmanına ulaşmadan reddeder. |
-| `tarifYurutuculeri.ts` | TypeScript / Lib | Standart analitik sorgu tariflerini (sıralama, fark, dağılım, katkı) analitik veri satırları üzerinde çalıştıran ve hesaplayan tarif yürütücüleri koleksiyonudur. |
-| `tclubOkuyucu.ts` | TypeScript / Lib | T-Club puan defterlerini firma→takım→BM sorumluluğu→UTT/KD zinciri ile ürün, kategori, öğrenme aracı ve yayın boyutlarında kanonik olarak toplar. |
-| `toplayici.ts` | TypeScript / Lib | Ham analitik olgularını kişi, ürün, kategori ve organizasyon boyutlarında toplayarak kanıt kimlikleriyle zenginleştiren toplayıcı modüldür. |
-| `uretimOkuyucu.ts` | TypeScript / Lib | Talep, üretim görevi ve yayın olaylarını ürün, araç, varyant, durum ve sorumlu kişi boyutlarında toplayan kanonik üretim analitik okuyucusudur. |
-| `yurutucu.ts` | TypeScript / Lib | Kanonik analitik sorguyu tekil RPC okuması ve uygun tarif yürütücüsüyle nihai analitik sonuca ulaştıran ana orkestratördür. |
+| `basitSorguCozucu.ts` | TypeScript | Sınırlı soru kalıplarını doğrulanan sayısal sorguya dönüştürür. |
+| `kapsam.ts` | TypeScript | Aktif kimlik ve organizasyon üzerinden izinli veri kapsamını oluşturur. |
+| `roller.ts` | TypeScript | Asistan erişimi ve rol kapsam kurallarını tanımlar. |
+| `sozlesme.ts` | TypeScript | Sorgu, filtre ve ölçüt-zaman uyumunu denetler. |
+| `islemTurleri.ts` | TypeScript | Deterministik sorgu işlemlerini ve gerekli alanlarını tanımlar. |
+| `kirilimSozlesmesi.ts`, `kirilimlar.ts` | TypeScript | Kırılım türlerini, ilişkilerini ve kullanılabilir ölçütleri tanımlar. |
+| `olcutSozlesmesi.ts`, `olcutler.ts` | TypeScript | Ölçütleri, kaynakları, hesaplama ve zaman gereksinimlerini tanımlar. |
+| `zamanSozlesmesi.ts`, `zaman.ts` | TypeScript | Desteklenen zaman seçimlerinden Türkiye takvim aralıklarını oluşturur. |
 
-### 📁 lib/hapbi/aracMotorlari/
+### 📁 lib/hapbi/motor/
 
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+| Dosya Adı | Türü | İşlevi |
 |---|:---:|---|
-| `analitik.ts` | TypeScript / Lib | Gemini'nin ortak analitik araç parametrelerini kapalı enumlarla doğrular, rol kapsamını sunucuda çözer ve dört veri alanından uygun kanonik okuyucuyu çalıştırır. Modelden rol, firma, takım veya kapsam seçimi kabul etmez. |
-| `eclub.ts` | TypeScript / Lib | Eczacı/teknisyen kişisel E-Club durumu ile iç kullanıcı E-Club raporunu ayrı yetki sınırlarında çalıştırır. |
-| `egitim.ts` | TypeScript / Lib | Yetkili eğitim kataloğu ve yayın senaryosu araçlarını çalıştırır. |
-| `gelisim.ts` | TypeScript / Lib | Gelişim rehberi ve eşit süre/takvim karşılaştırması araçlarını çalıştırır. |
-| `ortak.ts` | TypeScript / Lib | Araç bağlamı, dönem doğrulama ve güvenli satır yardımcılarını paylaşan ortak çekirdek. |
-| `platform.ts` | TypeScript / Lib | Sürümlü HapBilgi platform rehberini salt-okur araç sonucuna dönüştürür. |
-| `saha.ts` | TypeScript / Lib | HB/CC ligleri ile role göre T-Club performans raporu adaptörlerini çalıştırır. |
-| `uretim.ts` | TypeScript / Lib | Yetkili firmanın mevcut üretim raporu okuyucusunu Hapbi araç sözleşmesine bağlar. |
+| `sorguOlustur.ts` | TypeScript | Doğrulanmış sorgudan kaynak ve kapsam planı oluşturur. |
+| `veriKaynaklari.ts` | TypeScript | İzinli tablo, sütun ve ilişki yollarını denetler. |
+| `calistir.ts` | TypeScript | Yetkili verileri okur ve deterministik sonuçları hesaplar. |
+| `dogrula.ts` | TypeScript | Sonuç değerlerini ve kaynakların planla uyumunu denetler. |
+| `kanit.ts` | TypeScript | Doğrulanmış sonuçları kaynak ve zaman bilgileriyle kanıt paketine dönüştürür. |
 
-### 📁 lib/hapbi/kapsam/
+### 📁 lib/hapbi/rehber/
 
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+| Dosya Adı | Türü | İşlevi |
 |---|:---:|---|
-| `cozucu.ts` | TypeScript / Lib | Oturum sahibinin kimlik ve rol verisini statik matris üzerinden T-Club, C-Club, E-Club ve üretim alanlarının organizasyon kapsamına deterministik olarak çözer. |
-| `rolMatrisi.ts` | TypeScript / Lib | Platformdaki bütün kullanıcı rollerinin dört analitik veri alanındaki yetki düzeylerini ve hiyerarşik sınırlarını tanımlayan merkezi rol matrisidir. |
-| `yetki.ts` | TypeScript / Lib | Kullanıcının sorgulanan veri alanı, organizasyon kapsamı ve filtreler üzerindeki erişim hakkını veritabanına gitmeden denetleyen güvenlik kapısıdır. |
-
-### 📁 lib/hapbi/niyet/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `derleyici.ts` | TypeScript / Lib | Doğal dildeki sayısal ve analitik soruları Gemini kullanmadan deterministik olarak kanonik sorgu nesnesine derleyen doğal dil çözümleyicisidir. |
-| `donem.ts` | TypeScript / Lib | Gün, hafta, ay, dönem ve yıl zaman ifadelerini ortak Türkiye takvimi bağlamında kanonik analitik zaman nesnesine dönüştürür. |
-| `normalizasyon.ts` | TypeScript / Lib | Doğal dil soru metnindeki Türkçe karakter varyasyonlarını, ekleri ve yazım hatalarını analitik derleme için standartlaştırır. |
-| `sozlesme.ts` | TypeScript / Lib | Kanonik analitik sorgu (`HapbiKanonikSorgu`), veri alanı, ölçüt, boyut ve işlem türlerini tanımlayan tip güvenli sözleşmedir. |
-| `sozluk.ts` | TypeScript / Lib | Analitik ölçüt, boyut, işlem ve varlık terimlerinin zengin Türkçe eşanlamlılar ve dil kalıpları sözlüğüdür. |
-| `tarifler.ts` | TypeScript / Lib | Kanonik sorguların bağlanabileceği önceden tanımlanmış standart analitik hesaplama, fark ve dağılım tariflerini içerir. |
-| `tarifSecici.ts` | TypeScript / Lib | Kanonik sorgu bileşenlerine en uygun çalıştırma tarifini kural tabanlı olarak seçen deterministik tarif seçicidir. |
+| `rehberCozucu.ts` | TypeScript | Soruyu sabit rehber konularıyla eşleştirir. |
+| `rehberKatalogu.ts` | TypeScript | Platform açıklamalarını ve ekran bağlantılarını tutar. |
 
 ### 📁 lib/hapbi/yanit/
 
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+| Dosya Adı | Türü | İşlevi |
 |---|:---:|---|
-| `dogrudan.ts` | TypeScript / Lib | Deterministik analitik hesaplama sonuçlarını model çağrısı yapmadan (token=0) doğrulanmış kurumsal şablonlarla doğrudan yanıta dönüştürür. |
-| `kanit.ts` | TypeScript / Lib | Yanıt metnindeki her sayı, kişi ve varlık iddiasını doğrulanmış kanıt kimlikleriyle eşleştiren ve kaynak tutarlılığını denetleyen kanıt yöneticisidir. |
-| `sablonlar.ts` | TypeScript / Lib | Sıralama, liderlik, ilk iki farkı, dağılım, katkı ve dönem karşılaştırması gibi analitik bulguların dil kurallarına uygun Türkçe yanıt şablonlarıdır. |
-| `yorum.ts` | TypeScript / Lib | Yapılandırılmış kanıt paketini tek bir Gemini çağrısıyla analiz ederek yönetimsel tavsiye ve koçluk ön fikri üreten tek çağrılı yorum katmanıdır. |
-| `yorumPaketi.ts` | TypeScript / Lib | Doğrulanmış analitik bulguları ve kanıt sınırlarını Gemini'ye aktarılacak kompakt ve güvenli JSON paketine dönüştüren paketleyicidir. |
+| `belirsizlik.ts` | TypeScript | Eksik veri, okunamayan veri ve doğrulama hatası cevaplarını oluşturur. |
+| `kaynaklar.ts` | TypeScript | Sayısal cevabın kaynak ve dönem gösterimini oluşturur. |
+| `sayisal.ts` | TypeScript | Doğrulanmış hesaplama sonuçlarını Türkçe metne dönüştürür. |
 
 ### 📁 lib/izleme/
 
@@ -2723,12 +2615,11 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 ### 📁 components/hapbi/
 
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+| Dosya Adı | Türü | İşlevi |
 |---|:---:|---|
-| `HapbiChatModal.tsx` | UI / React | Serbest soruları ve role özel hazır soru seçimlerini ayıran; kaynakları, aksiyonları ve sorgu süresi bilgi notunu gösteren AI sohbet modalı. |
-| `HapbiMaskot.tsx` | UI / React | Sağ altta süzülen, online rozetli, hover'da göz kırpan interaktif 3D maskot bileşeni. |
-| `HapbiProvider.tsx` | UI / React | Panel genelinde tur/sohbet durumunu yöneten; yalnız hazır soru tıklamalarında sunucuya doğrulanabilir hızlı sorgu işareti gönderen Context sağlayıcısı. |
-| `HapbiSpotlight.tsx` | UI / React | Kullanıcıyı adım adım ilgili sayfa ve butonlara odaklayan etkileşimli ekran karartma/rehberlik bileşeni. |
+| `HapbiChatModal.tsx` | UI / React | bi soru-cevap, kaynak ve sayfa bağlantılarını gösterir. |
+| `HapbiMaskot.tsx` | UI / React | Yetkili kullanıcılara turuncu bi düğmesini gösterir. |
+| `HapbiProvider.tsx` | UI / React | Mesaj listesini, sohbet açma/kapatma ve istek iptalini yönetir. |
 
 ### 📁 components/hbligi/
 
@@ -2920,7 +2811,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 |---|:---:|---|
 | `backfill-video-suresi.mjs` | Script / Node.js | backfill video suresi denetimini veya bakım işlemini komut satırından yürüten Node.js betiğidir. |
 | `repair-eczanem-test-musteri-auth.mjs` | Script / Node.js | repair Eczanem test üye kimlik doğrulama denetimini veya bakım işlemini komut satırından yürüten Node.js betiğidir. |
-| `test-hapbi-eclub-live.ts` | TypeScript / Lib | HapBilgi kapsamında test HapBi E-Club live iş akışının dahili yardımcılarını ve kurallarını uygular. |
 
 ### 📁 scripts/denetim/
 
@@ -3098,6 +2988,8 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 ### 📁 tests/
 
+9 Eylül 2026 eklemesi: `biTemizlik.smoke.test.ts`, asistan temizliği için yerel API, yetki ve deterministik yanıt kontrollerini içerir.
+
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `_alias-hooks.mjs` | Test / Node.js | Node test çalıştırıcısında `@/` proje kökü alias'ını çözen ESM resolve ve load hook'larını tanımlar. |
@@ -3149,28 +3041,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `eczanemVideoDagitimRozeti.smoke.test.ts` | Test / TypeScript | “mutlu: gönderilebilir videosu olan eczanenin Video Dağıtımı rozeti güncellenir” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `egitimTuruSozlesmesi.smoke.test.ts` | Test / TypeScript | “eğitim türü sözleşmesi altı kanonik türü ve üretici rol yetkilerini doğru tutar” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `gonderimKarari.smoke.test.ts` | Test / TypeScript | “mutlu: beklemedeki id ya da kendi durumsuz satiri -> guncelle + dogru id” davranışını otomatik olarak doğrulayan smoke testidir. |
-| `hapbi.smoke.test.ts` | Test / TypeScript | “hapbi: kimlik yetkili kaynaktan okunur, hiyerarşi tamamlanır, çelişki reddedilir” davranışını otomatik olarak doğrulayan smoke testidir. |
-| `hapbiAnalitikArac.smoke.test.ts` | Test / TypeScript | Ortak analitik aracın kapalı veri alanı/boyut/ölçüt sözleşmesini, sunucu taraflı PM takım kapsamını ve modelden kapsam kabul etmemesini doğrular. |
-| `hapbiAnalitikE2E.smoke.test.ts` | Test / TypeScript | Bütün iç ve dış rol ailelerini dört veri alanı ve desteklenen bütün boyutlarla sınar; temsilci roller için doğal dilden RPC ve kanıtlı cevaba uzanan tam yerel zinciri doğrular. |
-| `hapbiAnalitikKanit.smoke.test.ts` | Test / TypeScript | Analitik satır/toplam kanıt kimliklerini; kanıtsız cevap, bilinmeyen kanıt, yanlış kişi–değer ilişkisi ve tek düzeltme turundaki güvenli yayımlama davranışını doğrular. |
-| `hapbiAnalitikKapsam.smoke.test.ts` | Test / TypeScript | Dört analitik veri alanında rolün kişisel, BM sorumluluğu, takım, firma veya E-Club organizasyon kapsamına doğru ve kapalı biçimde çözüldüğünü doğrular. |
-| `hapbiAnalitikOkuyucu.smoke.test.ts` | Test / TypeScript | T-Club kanonik okuyucusunun kişi, ürün ve hiyerarşi kırılımlarını; filtre, dönem, sınır ve çoklu BM durumlarını kayıpsız taşıdığını doğrular. |
-| `hapbiAnalitikSozlesme.smoke.test.ts` | Test / TypeScript | Kanonik analitik sözleşmenin ürün yöneticisi ve firma yöneticisi kapsamlarını, çok boyutlu sorguları ve geçersiz birleşim retlerini doğrular. |
-| `hapbiBilgiKaynaklari.smoke.test.ts` | Test / TypeScript | “HapBi platform bilgisi güncel BLUEBOOK sürümünü ve dört öğrenme aracını taşır” davranışını otomatik olarak doğrulayan smoke testidir. |
-| `hapbiBmCiftSapka.smoke.test.ts` | Test / TypeScript | BM için kişisel C-Club ve sorumluluk T-Club ligi çift şapka ayrımını, tekil lig sorgularını ve UTT izolasyonunu doğrular. |
-| `hapbiCanliTurMetinleri.smoke.test.ts` | Test / TypeScript | “HapBi canlı turları kullanıcıya kurumsal siz diliyle seslenir” davranışını otomatik olarak doğrulayan smoke testidir. |
-| `hapbiCclubAnalitikOkuyucu.smoke.test.ts` | Test / TypeScript | C-Club kişisel puanının ürün ve challenge ölçütleriyle kanonik okunmasını ve SQL kapsam ayrımını doğrular. |
-| `hapbiDogrudanYanit.smoke.test.ts` | Test / TypeScript | Sayısal ve şablonlu doğrudan yanıtların model çağrısı yapılmadan (token=0) kanonik veriyle üretimini doğrular. |
-| `hapbiEclubAnalitikOkuyucu.smoke.test.ts` | Test / TypeScript | E-Club kişi ve ürün kırılımını, ileri sarma kaybını, limitten bağımsız genel toplamı ve tek RPC okumasını doğrular. |
-| `hapbiMotor.smoke.test.ts` | Test / TypeScript | HapBi soru planı, dönem takibi, doğrudan yanıt, kanıtlı yorum, analitik varlık kimliğinin üç mesaj boyunca korunması ve canlı yeniden okuma yollarını sınar. |
-| `hapbiNiyetDerleyici.smoke.test.ts` | Test / TypeScript | Doğal dil derleyicisinin dönem, ölçüt, boyut, işlem ve açık varlık çözümleme yeteneklerini doğrular. |
-| `hapbiPilot.smoke.test.ts` | Test / TypeScript | SQL tabanlı ve Gemini tabanlı pilot soru paketlerinin değerlendirme ve ölçüm sözleşmelerini doğrular. |
-| `hapbiTarifSecici.smoke.test.ts` | Test / TypeScript | Kanonik sorguların standart analitik çalıştırma ve hesaplama tariflerine kural tabanlı bağlandığını doğrular. |
-| `hapbiTekCagriliYorum.smoke.test.ts` | Test / TypeScript | Gemini yorum katmanının yalnız tek model çağrısıyla çalıştığını ve kanıt dışı sayı üretmediğini doğrular. |
-| `hapbiTekOkumaliYurutucu.smoke.test.ts` | Test / TypeScript | Analitik yürütücünün tek RPC çağrısıyla tüm hesaplama ve kanıt üretimini tamamladığını doğrular. |
-| `hapbiTmYonetim.smoke.test.ts` | Test / TypeScript | TM için takım derecesi, bölge sıralaması, puan kaybı anatomisi, mümessil listesi, `/hbligi` linki, Gemini koçluk yorumu ve C-Club reddini doğrular. |
-| `hapbiUretimAnalitikOkuyucu.smoke.test.ts` | Test / TypeScript | Talep, üretim görevi ve yayın sayılarının ürün, öğrenme aracı ve varyant boyutlarında toplanmasını ve rol kapsamlı SQL kaynağını doğrular. |
-| `hapbiYeniMotor.smoke.test.ts` | Test / TypeScript | Yeni deterministik analitik motoru, tek okumalı yürütme ve tek çağrılı yorum entegrasyonunu uçtan uca doğrular. |
 | `hbligiKapsam.smoke.test.ts` | Test / TypeScript | “HBLigi üst rol kapsamları firma ve takım sınırını korur” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `hbstoreFirmaUrun.smoke.test.ts` | Test / TypeScript | “mutlu: global aktif ürün varsayılan veya açık firma ayarında görünür” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `hedefRoller.smoke.test.ts` | Test / TypeScript | “hedef kitle sözleşmesi Eczacı ve Teknisyeni tekil ya da birlikte kabul eder” davranışını otomatik olarak doğrulayan smoke testidir. |
@@ -3191,7 +3061,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `ogrenmeAraciTamamlamaFaz6.hbstore.canli.cjs` | Test / Node.js | HapBilgi kapsamındaki öğrenme Araci Tamamlama Faz6.hbstore.canli sözleşmesini otomatik olarak doğrular. |
 | `ogrenmeAraciTamamlamaFaz6.hedef.test.ts` | Test / TypeScript | “araç türleri mevcut yayın ve ortak tamamlama puanı omurgasını kullanır” davranışını otomatik olarak doğrulayan hedef testidir. |
 | `ogrenmeAraciTamamlamaFaz7.hedef.test.ts` | Test / TypeScript | “araç bazında dönemsel yayın sayısı dört araç için üretilir” davranışını otomatik olarak doğrulayan hedef testidir. |
-| `ogrenmeAraciTamamlamaFaz8.hedef.test.ts` | Test / TypeScript | “Hapbi yayın kimliği, araç türü, başlık ve tamamlama durumunu taşır” davranışını otomatik olarak doğrulayan hedef testidir. |
+| `ogrenmeAraciTamamlamaFaz8.hedef.test.ts` | Test / TypeScript | Bildirim, Eczanem, ortak etkileşim ve öğrenme içeriği yüzeyi kontrollerini içerir. |
 | `oneri.tarih.smoke.test.ts` | Test / TypeScript | “mutlu: yarindan itibaren oneri kabul edilir” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `operasyonelYenileme.smoke.test.ts` | Test / TypeScript | “mutlu: operasyon sayfaları ortak, pasiflenebilir ve durum koruyan yenileme kullanır” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `periyotAltKirilim.smoke.test.ts` | Test / TypeScript | “mutlu: bu_gun dilimleri TR 6'sar saatlik ve etiketle uyumlu” davranışını otomatik olarak doğrulayan smoke testidir. |
@@ -3218,10 +3088,11 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 ### 📁 docs/
 
+9 Eylül 2026 eklemesi: `BI_TEMIZLIK_PLANI.md`, deterministik bi kararı, uygulanan temizlik ve sonraki iyileştirmelerin kaydıdır.
+
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `BLUEBOOK.md` | Dokümantasyon | HapBilgi’nin iş modelini, rol ve iş kurallarını, mimarisini ve kanonik dosya envanterini tanımlayan ana başvuru belgesidir. |
-| `HAPBI.md` | Dokümantasyon | “hapbi — Faz 2: kişiye ve role uygun rehberlik” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
 | `OGRENIM_ARACI_GENISLETME_PROJESI_PLANI.md` | Dokümantasyon | “Öğrenim Aracı Genişletme Projesi Planı” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
 | `OGRENME_ARACLARI_GENISLETME_PROJE_FAZ_PLANI_CHECKLIST.md` | Dokümantasyon | “Öğrenme Araçları Genişletme Proje Faz Planı — Checklist” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
 | `OGRENME_ARACLARI_GENISLETMESI_TAMLAMA_FAZ_PLANI.md` | Dokümantasyon | “Öğrenme Araçları Genişletmesi – Tamamlama Faz Planı” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
@@ -3243,8 +3114,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `hapbi-wink.png` | Görsel / Varlık | 3D Turuncu Hapbi AI asistanının üzerine gelindiğinde (hover) göz kırpan interaktif maskot görseli. |
-| `hapbi.png` | Görsel / Varlık | 3D Turuncu Hapbi AI asistanının ana (idle) maskot görseli. |
 | `hapbilgi-dikey-TM-1-logo.png` | Görsel / Varlık | hapbilgi dikey TM 1 logo için uygulamada kullanılan görsel varlıktır. |
 | `hapbilgi-yatay-TM-1-logo.png` | Görsel / Varlık | hapbilgi yatay TM 1 logo için uygulamada kullanılan görsel varlıktır. |
 | `icon-192.png` | Görsel / Varlık | PWA ve mobil cihazlar için 192x192 uygulama ikonu. |

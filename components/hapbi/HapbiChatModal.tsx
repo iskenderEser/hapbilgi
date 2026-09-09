@@ -1,13 +1,13 @@
 // components/hapbi/HapbiChatModal.tsx
 //
-// Hapbi AI Platform Danışmanı Sohbet Paneli.
+// bi platform rehberi ve basit veri soruları için sohbet paneli.
 
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Atom, RotateCcw, X } from "lucide-react";
+import { RotateCcw, X } from "lucide-react";
 import { useHapbi } from "./HapbiProvider";
 
 function renderHapbiMetin(metin: string, isUser = false): React.ReactNode {
@@ -156,17 +156,6 @@ export default function HapbiChatModal() {
               >
                 {m.hata && <span className="block text-[10px] font-bold text-amber-700 mb-1">Yanıt alınamadı</span>}
                 <div className="whitespace-pre-line font-medium leading-relaxed">{renderHapbiMetin(m.metin, isUser)}</div>
-                {!!m.egitimler?.length && (
-                  <div className="mt-2 flex flex-col gap-1 border-t border-gray-100 pt-2">
-                    <span className="text-[10px] font-semibold text-gray-400">İlgili eğitimler</span>
-                    {m.egitimler.map(e => (
-                      <div key={e.id}>
-                        <Link href={e.url} className="text-[11px] text-[#185fa5] hover:underline">{e.etiket}</Link>
-                        {e.gerekce && <p className="mt-0.5 text-[10px] leading-relaxed text-gray-500">{e.gerekce}</p>}
-                      </div>
-                    ))}
-                  </div>
-                )}
                 {!!m.kaynaklar?.length && (
                   <div className="mt-2 flex flex-col gap-1 border-t border-gray-100 pt-2">
                     <span className="text-[10px] font-semibold text-gray-400">Başvurulan kaynaklar</span>
