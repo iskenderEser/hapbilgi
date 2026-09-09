@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { biKullanabilirMi } from "@/lib/bi/erisim";
+import { NEDIR_KATALOGU, nedirSorusunuCoz } from "@/lib/bi/nedir";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 
 export const maxDuration = 30;
@@ -58,6 +59,17 @@ function hataYaniti(hata: unknown, istekId: string): NextResponse {
   return json({ error: "bi şu anda yanıt veremiyor. Lütfen tekrar deneyin.", kod: "SUNUCU", istekId }, 503);
 }
 
+function destekYaniti(istekId: string, cevap?: string): NextResponse {
+  const konuAdlari = NEDIR_KATALOGU.map((konu) => konu.baslik).join(", ");
+  return json({
+    cevap: cevap ??
+      `Bu soru NEDİR sözleşmesine uymuyor. “HBStore nedir?” diye sorabilirsiniz.\n\nTanımlayabildiğim konular: ${konuAdlari}.`,
+    kaynaklar: [],
+    kullanim: { yol: "destek" },
+    istekId,
+  });
+}
+
 export async function POST(istek: Request): Promise<NextResponse> {
   const istekId = crypto.randomUUID();
 
@@ -73,7 +85,7 @@ export async function POST(istek: Request): Promise<NextResponse> {
       return json({ error: "bi'yi kullanmak için oturum açın.", kod: "OTURUM", istekId }, 401);
     }
 
-    await soruyuOku(istek);
+    const soru = await soruyuOku(istek);
 
     const db = createAdminClient(AbortSignal.any([istek.signal, AbortSignal.timeout(30_000)]));
     const { data, error } = await db
@@ -90,12 +102,24 @@ export async function POST(istek: Request): Promise<NextResponse> {
       return json({ error: "bi bu kullanıcı rolünde kullanılamaz.", kod: "BI_KAPALI", istekId }, 403);
     }
 
-    return json({
-      cevap: "bi'nin soru alanı yeni NEDİR ve KAÇ sözleşmesi için hazırlanıyor.",
-      kaynaklar: [],
-      kullanim: { yol: "yenileniyor" },
-      istekId,
-    });
+    const nedir = nedirSorusunuCoz(soru);
+    if (nedir.durum === "bulundu") {
+      return json({
+        cevap: nedir.konu.cevap,
+        aksiyon: nedir.konu.aksiyon,
+        kaynaklar: [],
+        kullanim: { yol: "nedir", konu: nedir.konu.id },
+        istekId,
+      });
+    }
+    if (nedir.durum === "tanim_yok") {
+      return destekYaniti(
+        istekId,
+        `“${nedir.aranan}” için onaylı bir tanımım yok. Yalnız listelenen HapBilgi kavramlarını açıklayabilirim.`,
+      );
+    }
+
+    return destekYaniti(istekId);
   } catch (hata) {
     return hataYaniti(hata, istekId);
   }
