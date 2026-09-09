@@ -50,6 +50,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     if (yukleniyor) return;
     if (!kullanici) { router.replace("/login"); return; }
     if (rolKucu === "admin") { router.replace("/admin"); return; }
+    if (kullanici.kimlik_turu === "musteri") { router.replace("/eczanem"); return; }
   }, [kullanici, yukleniyor, rolKucu, router]);
 
   const profilVeOzetiCek = useCallback(async () => {
