@@ -1,4 +1,5 @@
 import type { HapbiOlcut } from "../olcutSozlesmesi";
+import type { HapbiPerformansOzeti } from "./performans";
 import type {
   HapbiKanitDegeri,
   HapbiKanitPaketi,
@@ -33,12 +34,14 @@ export type HapbiYorumPaketi = Readonly<{
   dogrulanmisBulgular: readonly HapbiYorumBulgusu[];
   secilmisKanitlar: readonly string[];
   yorumSinirlari: readonly string[];
+  performans?: HapbiPerformansOzeti;
 }>;
 
 export type HapbiYorumPaketiGirdisi = Readonly<{
   kullaniciSorusu: string;
   kapsamEtiketi: string;
   kanit: HapbiKanitPaketi;
+  performans?: HapbiPerformansOzeti;
 }>;
 
 export type HapbiYorumPaketiHatasi =
@@ -146,7 +149,10 @@ export function hapbiYorumPaketiOlustur(
     };
   }
 
-  if (girdi.kanit.zamanlar.length === 0 || !girdi.kanit.zamanlar.every(zamanGecerliMi)) {
+  const zamanGecerli = girdi.kanit.zamanGereksinimi === "zamansiz"
+    ? girdi.kanit.zamanlar.length === 0
+    : girdi.kanit.zamanlar.length > 0 && girdi.kanit.zamanlar.every(zamanGecerliMi);
+  if (!zamanGecerli) {
     return {
       basarili: false,
       neden: "zaman_eksik",
@@ -182,6 +188,7 @@ export function hapbiYorumPaketiOlustur(
       dogrulanmisBulgular,
       secilmisKanitlar,
       yorumSinirlari: [...HAPBI_YORUM_SINIRLARI],
+      ...(girdi.performans ? { performans: girdi.performans } : {}),
     },
   };
 }

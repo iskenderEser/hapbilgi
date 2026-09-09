@@ -92,7 +92,9 @@ function pakettekiSayiKumesi(paket: HapbiYorumPaketi): Set<string> {
 function yeniSayilariBul(metin: string, paket: HapbiYorumPaketi): string[] {
   const izinliSayilar = pakettekiSayiKumesi(paket);
   const yeniSayilar = new Set<string>();
-  for (const belirtec of sayiBelirtecleriniBul(metin)) {
+  // Satır başındaki Markdown liste numarası bir ölçüm veya hedef değildir.
+  const icerik = metin.replace(/^ {0,3}\d{1,9}[.)][\t ]+/gmu, "");
+  for (const belirtec of sayiBelirtecleriniBul(icerik)) {
     if (!izinliSayilar.has(sayiBelirteciniNormalizeEt(belirtec))) yeniSayilar.add(belirtec);
   }
   return [...yeniSayilar];
@@ -117,7 +119,7 @@ function kanitliNedenCumlesiMi(cumle: string, paket: HapbiYorumPaketi): boolean 
   const normalCumle = karsilastirmaMetni(cumle);
   return paket.secilmisKanitlar.some((kanit) => {
     const normalKanit = karsilastirmaMetni(kanit);
-    return normalKanit.includes(normalCumle) || normalCumle.includes(normalKanit);
+    return normalKanit === normalCumle;
   });
 }
 
@@ -224,7 +226,19 @@ export function hapbiYorumunuDogrula(
     });
   }
 
-  if (sorunlar.length > 0) return { dogrulandi: false, sorunlar };
+  if (sorunlar.length > 0) {
+    if (sorunlar.every((sorun) => sorun.hata === "kanitsiz_neden_uretildi")) {
+      const reddedilenler = new Set(sorunlar.map((sorun) => sorun.bulunanDeger));
+      const kalan = cumlelereAyir(metin).filter((cumle) => !reddedilenler.has(cumle));
+      const temizMetin = kalan.join("\n\n");
+      // Cümle silinir; sözcük silerek kanıtsız bir iddia gizlenmez.
+      // Yalnız başlık kaldıysa öneri yerine kullanılmaz.
+      if (kalan.some((cumle) => /[.!?]$/u.test(cumle))) {
+        return hapbiYorumunuDogrula({ ...modelSonucu, yorum: temizMetin }, paket, baglam);
+      }
+    }
+    return { dogrulandi: false, sorunlar };
+  }
   return {
     dogrulandi: true,
     yorum: {
