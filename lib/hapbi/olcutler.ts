@@ -22,15 +22,6 @@ const TUM_KIRILIMLAR = [
   "firma",
 ] as const satisfies readonly HapbiOlcutKirilimi[];
 
-const KATKI_KIRILIMLARI = [
-  "utt",
-  "urun",
-  "yayin",
-  "takim",
-  "bolge",
-  "firma",
-] as const satisfies readonly HapbiOlcutKirilimi[];
-
 const ORTAK_DISLAMALAR = [
   "Yetkili rol ve organizasyon kapsamının dışındaki kayıtlar",
   "Seçilen zaman aralığının dışındaki kayıtlar",
@@ -57,7 +48,7 @@ function kaynak(
   veriAlani: HapbiVeriAlani,
   tablo: string,
   degerAlani: string,
-  zamanAlani: string,
+  zamanAlani: string | null,
   hesaplama: HapbiOlcutKaynagi["hesaplama"],
   hesaplamadakiRolu: HapbiOlcutKaynagi["hesaplamadakiRolu"],
   iliskiAlanlari: readonly string[],
@@ -83,10 +74,11 @@ function kaynakRolleriniBirleştir(kaynaklar: readonly HapbiOlcutKaynagi[]): Hap
 }
 
 function olcut(
-  tanim: Omit<HapbiOlcutTanimi, "kullanilabilenRoller">,
+  tanim: Omit<HapbiOlcutTanimi, "kullanilabilenRoller" | "zamanGereksinimi">,
 ): HapbiOlcutTanimi {
   return {
     ...tanim,
+    zamanGereksinimi: tanim.olcut === "atanmis_izleme_puani" ? "zamansiz" : "olay_donemi",
     kullanilabilenRoller: kaynakRolleriniBirleştir(tanim.kaynaklar),
   };
 }
@@ -108,15 +100,6 @@ const C_KAZANIM = kaynak(
   "topla",
   "toplanan",
   ["puan_id", "bm_id", "izleme_id", "challenge_id", "yayin_id"],
-);
-const E_KAZANIM = kaynak(
-  "eclub",
-  "eclub_kazanilan_puanlar",
-  "puan",
-  "created_at",
-  "topla",
-  "toplanan",
-  ["kazanilan_puan_id", "kisi_id", "izleme_id", "yayin_id", "urun_id"],
 );
 
 const T_ILERI_SARMA_KAYBI = kaynak(
@@ -164,37 +147,58 @@ const C_YANLIS_CEVAP_KAYBI = kaynak(
   "cikarilan",
   ["kayit_id", "bm_id", "izleme_id", "yayin_id"],
 );
-const E_ILERI_SARMA_KAYBI = kaynak(
-  "eclub",
-  "eclub_ileri_sarma_kayitlari",
-  "kaybedilen_puan",
-  "created_at",
-  "topla",
-  "cikarilan",
-  ["kayit_id", "kisi_id", "izleme_id", "yayin_id", "urun_id"],
-);
-const E_ONERI_KAYBI = kaynak(
-  "eclub",
-  "eclub_oneri_kayip_kayitlari",
-  "kaybedilen_puan",
-  "created_at",
-  "topla",
-  "cikarilan",
-  ["kayit_id", "kisi_id", "oneri_id", "yayin_id", "urun_id"],
-);
 
-const KAZANIM_KAYNAKLARI = [T_KAZANIM, C_KAZANIM, E_KAZANIM] as const;
+const KAZANIM_KAYNAKLARI = [T_KAZANIM, C_KAZANIM] as const;
 const KAYIP_KAYNAKLARI = [
   T_ILERI_SARMA_KAYBI,
   T_YANLIS_CEVAP_KAYBI,
   T_ONERI_KAYBI,
   C_ILERI_SARMA_KAYBI,
   C_YANLIS_CEVAP_KAYBI,
-  E_ILERI_SARMA_KAYBI,
-  E_ONERI_KAYBI,
 ] as const;
 
 export const HAPBI_OLCUT_KATALOGU = {
+  atanmis_izleme_puani: olcut({
+    olcut: "atanmis_izleme_puani",
+    ortakAd: "Atanmış izleme puanı",
+    esAnlamliIfadeler: ["atanmış izleme puanı", "atanmış araç puanı", "sabit izleme puanı"],
+    birim: "puan",
+    uretimBicimi: "dogrudan",
+    hesaplama: "topla",
+    hesaplamaAciklamasi: "Yayına atanmış öğrenme aracı puanı yayın kimliği üzerinden okunur. Ürün, takım veya firma toplamında farklı yayınların atanmış puanları toplanır; kazanım olayı veya tek bir sabit ürün puanı sayılmaz.",
+    kaynaklar: (["tclub", "cclub"] as const).map((alan) => kaynak(
+      alan, "v_yayin_detay", "ogrenme_araci_puani", null,
+      "topla", "toplanan", ["yayin_id"],
+    )),
+    kullanilabilenKirilimlar: ["yayin", "urun", "takim", "firma"],
+    bosDegerAnlami: "Atanmış puan bulunmuyor veya okunamıyor; boş puan sıfır değildir.",
+    sifirDegerAnlami: "Okunan atanmış puan değeri sıfırdır.",
+    siralamaYonu: "azalan",
+    sonucaDahilEdilmeyenKayitlar: [
+      "Yetkili yayın kapsamının dışındaki kayıtlar",
+      "Aynı yayın kimliğinin yinelenen kayıtları",
+      "Atanmış puanı boş veya aynı yayın için tutarsız olan kayıtlar; sonuç eksik işaretlenir",
+    ],
+  }),
+  kazanilan_izleme_puani: olcut({
+    olcut: "kazanilan_izleme_puani",
+    ortakAd: "Kazanılan izleme puanı",
+    esAnlamliIfadeler: ["kazanılan izleme puanı", "izleyerek kazanılan puan", "izlemeden kazanılan puan"],
+    birim: "puan",
+    uretimBicimi: "dogrudan",
+    hesaplama: "topla",
+    hesaplamaAciklamasi: "Seçilen kapsam ve dönemde yalnız puan_turu izleme olan gerçekleşmiş kazanımlar toplanır. Cevaplama, öneri, Extra ve diğer kazanımlar ile kayıplar dahil edilmez.",
+    kaynaklar: KAZANIM_KAYNAKLARI.map((kazanim): HapbiOlcutKaynagi => ({
+      ...kazanim,
+      iliskiAlanlari: [...kazanim.iliskiAlanlari, "puan_turu"],
+      filtreler: [{ alan: "puan_turu", islem: "esittir", deger: "izleme" }],
+    })),
+    kullanilabilenKirilimlar: TUM_KIRILIMLAR,
+    bosDegerAnlami: "Doğrulanmış izleme kazanımı kaydı bulunmuyor veya okunamıyor; sıfır değildir.",
+    sifirDegerAnlami: "Doğrulanmış izleme kazanımı kayıtlarının toplamı sıfırdır.",
+    siralamaYonu: "azalan",
+    sonucaDahilEdilmeyenKayitlar: [...PUAN_DISLAMALARI, "İzleme dışındaki puan türleri"],
+  }),
   net_puan: olcut({
     olcut: "net_puan",
     ortakAd: "Net puan",
@@ -247,11 +251,10 @@ export const HAPBI_OLCUT_KATALOGU = {
     birim: "adet",
     uretimBicimi: "dogrudan",
     hesaplama: "kosullu_kayit_say",
-    hesaplamaAciklamasi: "T-Club’da gerçek oynatma kanıtı bulunan izlemeler; C-Club ve E-Club’da izleme kayıtları kendi ana kimlikleriyle sayılır. Açılmış oturum ile gerçek izleme karıştırılmaz.",
+    hesaplamaAciklamasi: "T-Club’da gerçek oynatma kanıtı bulunan izlemeler; C-Club’da izleme kayıtları kendi ana kimlikleriyle sayılır. Açılmış oturum ile gerçek izleme karıştırılmaz.",
     kaynaklar: [
       kaynak("tclub", "izleme_kayitlari", "izleme_id", "izleme_baslangic", "kosullu_kayit_say", "sayilan", ["izleme_id", "kullanici_id", "yayin_id"], [{ alan: "gercek_oynatma_mi", islem: "esittir", deger: true }]),
       kaynak("cclub", "cc_izleme_kayitlari", "izleme_id", "izleme_baslangic", "kayit_say", "sayilan", ["izleme_id", "bm_id", "challenge_id", "yayin_id"]),
-      kaynak("eclub", "eclub_izleme_kayitlari", "izleme_id", "izleme_baslangic", "kayit_say", "sayilan", ["izleme_id", "kisi_id", "oneri_id", "yayin_id"]),
     ],
     kullanilabilenKirilimlar: TUM_KIRILIMLAR,
     bosDegerAnlami: "Seçilen kapsam ve zamanda doğrulanmış izleme kaydı bulunmadığı veya kaynak okunamadığı anlamına gelir; sıfır değildir.",
@@ -270,7 +273,6 @@ export const HAPBI_OLCUT_KATALOGU = {
     kaynaklar: [
       kaynak("tclub", "izleme_kayitlari", "izleme_id", "izleme_bitis", "kosullu_kayit_say", "sayilan", ["izleme_id", "kullanici_id", "yayin_id"], [{ alan: "tamamlandi_mi", islem: "esittir", deger: true }]),
       kaynak("cclub", "cc_izleme_kayitlari", "izleme_id", "izleme_bitis", "kosullu_kayit_say", "sayilan", ["izleme_id", "bm_id", "challenge_id", "yayin_id"], [{ alan: "tamamlandi_mi", islem: "esittir", deger: true }]),
-      kaynak("eclub", "eclub_izleme_kayitlari", "izleme_id", "izleme_bitis", "kosullu_kayit_say", "sayilan", ["izleme_id", "kisi_id", "oneri_id", "yayin_id"], [{ alan: "tamamlandi_mi", islem: "esittir", deger: true }]),
     ],
     kullanilabilenKirilimlar: TUM_KIRILIMLAR,
     bosDegerAnlami: "Seçilen kapsam ve zamanda doğrulanmış izleme kaydı bulunmadığı veya kaynak okunamadığı anlamına gelir; sıfır değildir.",
@@ -285,10 +287,9 @@ export const HAPBI_OLCUT_KATALOGU = {
     birim: "adet",
     uretimBicimi: "dogrudan",
     hesaplama: "kayit_say",
-    hesaplamaAciklamasi: "T-Club ve E-Club beğeni kayıtları yayın kimliği korunarak ayrı ayrı sayılır; puana eklenmez.",
+    hesaplamaAciklamasi: "T-Club beğeni kayıtları yayın kimliği korunarak sayılır; puana eklenmez.",
     kaynaklar: [
       kaynak("tclub", "video_begeniler", "begeni_id", "created_at", "kayit_say", "sayilan", ["begeni_id", "kullanici_id", "yayin_id"]),
-      kaynak("eclub", "eclub_video_begeniler", "begeni_id", "created_at", "kayit_say", "sayilan", ["begeni_id", "kisi_id", "yayin_id"]),
     ],
     kullanilabilenKirilimlar: TUM_KIRILIMLAR,
     bosDegerAnlami: "Seçilen kapsam ve zamanda beğeni kaydı bulunmadığı veya kaynak okunamadığı anlamına gelir; sıfır değildir.",
@@ -303,10 +304,9 @@ export const HAPBI_OLCUT_KATALOGU = {
     birim: "adet",
     uretimBicimi: "dogrudan",
     hesaplama: "kayit_say",
-    hesaplamaAciklamasi: "T-Club ve E-Club favori kayıtları yayın kimliği korunarak ayrı ayrı sayılır; puana eklenmez.",
+    hesaplamaAciklamasi: "T-Club favori kayıtları yayın kimliği korunarak sayılır; puana eklenmez.",
     kaynaklar: [
       kaynak("tclub", "video_favoriler", "favori_id", "created_at", "kayit_say", "sayilan", ["favori_id", "kullanici_id", "yayin_id"]),
-      kaynak("eclub", "eclub_video_favoriler", "favori_id", "created_at", "kayit_say", "sayilan", ["favori_id", "kisi_id", "yayin_id"]),
     ],
     kullanilabilenKirilimlar: TUM_KIRILIMLAR,
     bosDegerAnlami: "Seçilen kapsam ve zamanda favori kaydı bulunmadığı veya kaynak okunamadığı anlamına gelir; sıfır değildir.",
@@ -321,10 +321,9 @@ export const HAPBI_OLCUT_KATALOGU = {
     birim: "adet",
     uretimBicimi: "dogrudan",
     hesaplama: "kosullu_kayit_say",
-    hesaplamaAciklamasi: "T-Club’da doğru olarak işaretlenen cevap olayları ve E-Club’da ayrı doğru cevap kayıtları sayılır. C-Club puan kaydı cevap olayı yerine kullanılmaz.",
+    hesaplamaAciklamasi: "T-Club’da doğru olarak işaretlenen cevap olayları sayılır. C-Club puan kaydı cevap olayı yerine kullanılmaz.",
     kaynaklar: [
       kaynak("tclub", "soru_cevaplari", "soru_cevap_id", "created_at", "kosullu_kayit_say", "sayilan", ["soru_cevap_id", "kullanici_id", "izleme_id"], [{ alan: "dogru_mu", islem: "esittir", deger: true }]),
-      kaynak("eclub", "eclub_dogru_cevap_kayitlari", "kayit_id", "created_at", "kayit_say", "sayilan", ["kayit_id", "kisi_id", "izleme_id", "yayin_id", "urun_id"]),
     ],
     kullanilabilenKirilimlar: TUM_KIRILIMLAR,
     bosDegerAnlami: "Seçilen kapsam ve zamanda doğrulanmış cevap kaydı bulunmadığı veya kaynak okunamadığı anlamına gelir; sıfır değildir.",
@@ -339,11 +338,10 @@ export const HAPBI_OLCUT_KATALOGU = {
     birim: "adet",
     uretimBicimi: "dogrudan",
     hesaplama: "kosullu_kayit_say",
-    hesaplamaAciklamasi: "T-Club’da yanlış olarak işaretlenen cevap olayları; C-Club ve E-Club’da ayrı yanlış cevap kayıtları sayılır. E-Club yanlış cevabı puan kaybı sayılmaz.",
+    hesaplamaAciklamasi: "T-Club’da yanlış olarak işaretlenen cevap olayları; C-Club’da ayrı yanlış cevap kayıtları sayılır.",
     kaynaklar: [
       kaynak("tclub", "soru_cevaplari", "soru_cevap_id", "created_at", "kosullu_kayit_say", "sayilan", ["soru_cevap_id", "kullanici_id", "izleme_id"], [{ alan: "dogru_mu", islem: "esittir", deger: false }]),
       kaynak("cclub", "cc_yanlis_cevap_kayitlari", "kayit_id", "created_at", "kayit_say", "sayilan", ["kayit_id", "bm_id", "izleme_id", "yayin_id"]),
-      kaynak("eclub", "eclub_yanlis_cevap_kayitlari", "kayit_id", "created_at", "kayit_say", "sayilan", ["kayit_id", "kisi_id", "izleme_id", "yayin_id", "urun_id"]),
     ],
     kullanilabilenKirilimlar: TUM_KIRILIMLAR,
     bosDegerAnlami: "Seçilen kapsam ve zamanda doğrulanmış cevap kaydı bulunmadığı veya kaynak okunamadığı anlamına gelir; sıfır değildir.",
@@ -362,30 +360,12 @@ export const HAPBI_OLCUT_KATALOGU = {
     kaynaklar: [
       kaynak("tclub", "ileri_sarma_kayitlari", "atlanan_sure", "created_at", "topla", "toplanan", ["kayit_id", "kullanici_id", "izleme_id", "yayin_id", "urun_id"]),
       kaynak("cclub", "cc_ileri_sarma_kayitlari", "atlanan_sure", "created_at", "topla", "toplanan", ["kayit_id", "bm_id", "izleme_id", "yayin_id"]),
-      kaynak("eclub", "eclub_ileri_sarma_kayitlari", "atlanan_sure", "created_at", "topla", "toplanan", ["kayit_id", "kisi_id", "izleme_id", "yayin_id", "urun_id"]),
     ],
     kullanilabilenKirilimlar: TUM_KIRILIMLAR,
     bosDegerAnlami: "Seçilen kapsam ve zamanda doğrulanmış ileri sarma kaydı bulunmadığı veya kaynak okunamadığı anlamına gelir; sıfır değildir.",
     sifirDegerAnlami: "Kaynak eksiksiz okunmuş ve ileri sarılan toplam süre sıfır saniyedir.",
     siralamaYonu: "azalan",
     sonucaDahilEdilmeyenKayitlar: [...ORTAK_DISLAMALAR, "Atlanan süre alanı boş olan kayıtlar", "İleri sarma nedeniyle kaçırıldığı varsayılan cevap puanları"],
-  }),
-  katki_degeri: olcut({
-    olcut: "katki_degeri",
-    ortakAd: "Katkı değeri",
-    esAnlamliIfadeler: ["katkı değeri", "katkı puanı", "UTT katkısı", "en çok katkı sağlayan"],
-    birim: "puan",
-    uretimBicimi: "dogrudan",
-    hesaplama: "topla",
-    hesaplamaAciklamasi: "E-Club tüketiminden UTT’ye yazılan doğrulanmış katkı puanları toplanır.",
-    kaynaklar: [
-      kaynak("eclub", "eclub_utt_puanlari", "puan", "created_at", "topla", "toplanan", ["utt_puan_id", "utt_id", "kisi_id", "oneri_id", "izleme_id", "yayin_id", "urun_id"]),
-    ],
-    kullanilabilenKirilimlar: KATKI_KIRILIMLARI,
-    bosDegerAnlami: "Seçilen kapsam ve zamanda doğrulanmış UTT katkı kaydı bulunmadığı veya kaynak okunamadığı anlamına gelir; sıfır değildir.",
-    sifirDegerAnlami: "Kaynak eksiksiz okunmuş ve katkı puanı toplamı sıfırdır.",
-    siralamaYonu: "azalan",
-    sonucaDahilEdilmeyenKayitlar: PUAN_DISLAMALARI,
   }),
 } as const satisfies Readonly<Record<HapbiOlcut, HapbiOlcutTanimi>>;
 

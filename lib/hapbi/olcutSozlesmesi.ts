@@ -1,6 +1,8 @@
 import type { HapbiRol, HapbiVeriAlani } from "./roller";
 
 export const HAPBI_OLCUTLERI = [
+  "atanmis_izleme_puani",
+  "kazanilan_izleme_puani",
   "net_puan",
   "kazanilan_puan",
   "kaybedilen_puan",
@@ -11,7 +13,6 @@ export const HAPBI_OLCUTLERI = [
   "dogru_cevap_sayisi",
   "yanlis_cevap_sayisi",
   "ileri_sarilan_sure",
-  "katki_degeri",
 ] as const;
 
 export type HapbiOlcut = (typeof HAPBI_OLCUTLERI)[number];
@@ -30,6 +31,7 @@ export type HapbiOlcutKirilimi = (typeof HAPBI_OLCUT_KIRILIMLARI)[number];
 
 export type HapbiOlcutBirimi = "puan" | "adet" | "saniye";
 export type HapbiOlcutUretimBicimi = "dogrudan" | "hesaplanmis";
+export type HapbiOlcutZamanGereksinimi = "olay_donemi" | "zamansiz";
 export type HapbiOlcutHesaplamaYontemi =
   | "topla"
   | "kayit_say"
@@ -48,7 +50,7 @@ export type HapbiOlcutKaynagi = Readonly<{
   veriAlani: HapbiVeriAlani;
   tablo: string;
   degerAlani: string;
-  zamanAlani: string;
+  zamanAlani: string | null;
   hesaplama: Exclude<HapbiOlcutHesaplamaYontemi, "kazanim_eksi_kayip">;
   hesaplamadakiRolu: HapbiOlcutKaynakRolu;
   filtreler: readonly HapbiOlcutFiltresi[];
@@ -64,6 +66,7 @@ export type HapbiOlcutTanimi = Readonly<{
   uretimBicimi: HapbiOlcutUretimBicimi;
   hesaplama: HapbiOlcutHesaplamaYontemi;
   hesaplamaAciklamasi: string;
+  zamanGereksinimi: HapbiOlcutZamanGereksinimi;
   kaynaklar: readonly HapbiOlcutKaynagi[];
   kullanilabilenKirilimlar: readonly HapbiOlcutKirilimi[];
   kullanilabilenRoller: readonly HapbiRol[];

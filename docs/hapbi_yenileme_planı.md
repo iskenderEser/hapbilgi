@@ -2,18 +2,20 @@
 
 ## Değişmez sınırlar
 
+> 8 Eylül 2026: Kullanıcı, soru anlamlandırmanın Gemini'ye taşınmasını onayladı. Aşağıdaki sınırlar yeni dönüşümün hedefidir. Faz 1–13 kayıtları önceki uygulamanın tarihçesidir; yeni akışın ilerlemesi belgenin sonundaki dönüşüm bölümünde tutulur.
+
 - HapBi maskotu ve mevcut sohbet alanı korunacak.
 - Sohbet alanı yeniden tasarlanmayacak.
 - İçerik Üreticisi, Admin ve Eczanem üyesi HapBi geliştirme kapsamına alınmayacak.
 - HapBilgi’nin mevcut veri üretme, yetkilendirme ve iş süreçleri değiştirilmeyecek.
-- Gemini veritabanını sorgulamayacak, sorgu planlamayacak ve çalıştırılacak sorguya karar vermeyecek.
+- Gemini kullanıcı sorusunu ve konuşma bağlamını yapılandırılmış bir anlam taslağına dönüştürecek. Veritabanını sorgulamayacak; SQL, gerçek kimlik, erişim yetkisi ve çalıştırılacak sorgu planı sunucu tarafından belirlenecek.
 - Sayısal sonuçlar yalnız deterministik kod ve veritabanı işlemleriyle üretilecek.
-- Sayısal sorularda Gemini çağrısı `0` olacak.
-- Yorum gereken sorularda Gemini en fazla `1` kez çağrılacak.
+- Geçerli soruların anlamlandırılması için en fazla `1` Gemini çağrısı yapılacak; sayısal cevap mevcut deterministik katmanda hazırlanacak.
+- Doğrulanmış sonuç üzerine yorum gereken sorularda en fazla `1` ek Gemini çağrısı yapılacak; istek başına toplam sınır `2` olacak. Oturum, istek veya kapsam reddedilirse model çağrısı yapılmayacak.
 - Sabit soru tarifleri oluşturulmayacak.
 - Temel sorgu yapısı şu olacak:
 
-> **Rol kapsamı + zaman + ölçüt + kırılım + sorgu işlem kategorisi + sıralama/filtre koşulu**
+> **Sunucunun doğruladığı rol kapsamı + ölçüte uygun zaman gereksinimi + ölçüt + kırılım + sorgu işlem kategorisi + sıralama/filtre koşulu**
 
 - Her faz ve her alt iş için başlamadan önce ayrı onay alınacak.
 - Her faz sonunda yapılan işler belgeye yazılacak, tamamlanma işareti konulacak ve commit için ayrıca onay istenecek.
@@ -943,3 +945,108 @@ Faz 13’teki ilk geniş sınama yaklaşımı kaldırıldı. Tespit edilen kod e
 | 6 | Sayısal ve netleştirme yollarında Gemini çağrısının `0` kalması; model çağrısının yalnız yorum yolunda bulunması | **10/10 geçti** |
 
 Toplam **56/56 kontrol başarıyla geçti**. Sınamalar çalışma dosyası oluşturmadan gerçekleştirildi.
+
+---
+
+## Gemini ile anlama dönüşümü — 8 Eylül 2026
+
+### Onaylanan yol
+
+1. Yeni anlama sözleşmesini belirle.
+2. Atanmış içerik puanı ile gerçekleşmiş kazanımı ayır; ölçüte göre zaman gereksinimini ve bulunan kapsam/filtre hatalarını düzelt.
+3. Gemini'yi anlamlandırma için API girişine bağla; model çıktısını çalışma zamanında doğrulayıp sunucuda sorguya dönüştür.
+4. Eski dil ve devam sorusu akışını kaldır; deterministik cevap ve sonuç doğrulama katmanlarını koru.
+5. Kullanıcının BM konuşması, kapsam sınırları, boş veri ve belirsiz sorular üzerinden doğrula.
+
+### Adım 1 — Anlama sözleşmesi
+
+**Kod:** `lib/hapbi/anlamaSozlesmesi.ts`
+
+| Alan | Anlamı ve sınırı |
+|---|---|
+| `mesajIliskisi` | Yeni soru, önceki soruyu tamamlama veya düzeltme. Bağımsız soruya önceki seçimler taşınmaz. |
+| `istenenKapsam` | Kullanıcının istediği kişisel/bölge/takım/firma kapsamı. Modelin yetki vermesi anlamına gelmez. |
+| `olcut`, `sonucOlcutu` | Atanmış izleme puanı ve kazanılan izleme puanı dahil ortak ölçüt kataloğunu kullanır. İki yeni ölçütün kaynak ve hesaplama bağlantısı Adım 2 / İş 1'de kuruldu; zaman ayrımı İş 2'de yapılacak. |
+| `kirilim`, `aracTuru` | Sonucun hangi varlıkta gruplandığını ve araç türünü ayrı taşır. Video sorusu yayın kırılımı ve video türüyle temsil edilir. |
+| `zaman` | `null` anlaşılmamış zamanı, `zamansiz` atanmış özelliği, hafta/ay/dönem/yıl seçimi olay dönemini belirtir. Kesin tarih sınırlarını sunucu hesaplar. |
+| `varliklar` | Kullanıcının sözünü ettiği adlar. Gerçek kimlikler yalnız sunucuda izinli kapsamdan çözülür. |
+| `islem`, `siralama`, `sonucSiniri`, `degerFiltreleri` | İşlem, sıralama ve kullanıcının belirttiği eşikler. Hesaplanmış cevap değeri modelden alınmaz. |
+| `karsilastirma` | Sol ve sağ tarafın zaman ve varlık seçimleri. İki taraf da aynı oturumun yetki kontrolünden geçer. |
+| `yorumIstegi` | Deterministik sonuçtan sonra ek yorum çağrısının gerekip gerekmediği. |
+| `durum`, `netlestirme` | Modelin hazır/netleştirme/desteklenmiyor değerlendirmesi; hazır sonucu da sunucu doğrulaması olmadan çalıştırılmaz. |
+
+### Sunucuya ait kurallar
+
+- Model çıktısı güvenilmeyen bir taslaktır; `HapbiSorgu` yerine doğrudan kullanılamaz.
+- SQL, tablo/alan seçimi, oturum, rol, erişim kimlikleri ve sayısal hesaplama sunucuda kalır.
+- `sunucuBaglami` yalnız oturumda gerçekten kullanılabilir ölçütleri ve kapsam düzeylerini içerir. Bir anlamın türde tanımlanması, motor tarafından desteklendiğini göstermez.
+- Atanmış puanda olay dönemi zorunlu tutulmaz; gerçekleşmiş kazanımda dönem gereklidir. Ürünün farklı yayınlarının puanları tek bir sabit ürün puanı olarak varsayılmaz.
+- İlk soru, takip mesajları, son taslak ve beklenen netleştirme ayrı saklanır. Kullanıcının düzeltmesi özgün soruyu silmez. Bu bağlam sunucuda imza ve oturum sahibi doğrulamasından sonra kullanılır.
+- Çalışma zamanında JSON şeması ve anlam/kapsam doğrulaması Adım 3'te uygulandı. Modelin döndürdüğü nesne yalnız TypeScript tür dönüşümüyle kabul edilmez.
+
+### İlerleme
+
+- [x] Adım 1: Anlama sözleşmesi — türler yazıldı; ESLint ve uygulama tür denetimi hatasız tamamlandı.
+- [x] Adım 2: Ölçüt, zaman ve motor düzeltmeleri.
+- [x] Adım 3: Gemini ve API bağlantısı.
+- [x] Adım 4: Eski dil akışının kaldırılması.
+- [ ] Adım 5: BM senaryoları ve sonuç doğrulaması.
+
+Adım 3 API'ye bağlanmıştır; Adım 4'te eski dil akışı ve geçiş seçeneği kaldırılmıştır.
+
+### Adım 2 / İş 1 — Puan ölçütlerinin ayrılması
+
+- [x] `atanmis_izleme_puani` ve `kazanilan_izleme_puani` ortak ölçüt kataloğuna ve anlama sözleşmesine bağlandı.
+- Atanmış puan, `v_yayin_detay.ogrenme_araci_puani` alanından yetkili yayın kimlikleriyle okunur. Aynı yayının yinelenen satırları bir kez sayılır; tutarsız veya boş puan eksik sonuç üretir. Ürün toplamında farklı yayınlar korunur.
+- Kazanılan izleme puanı T-Club, C-Club ve E-Club kazanım kaynaklarında yalnız `puan_turu = izleme` kayıtlarından toplanır. Cevaplama, öneri ve Extra puanı bu ölçüte katılmaz; mevcut toplam kazanım ölçütü korunur.
+- Kaynak beyaz listesi ve doğrudan yayın kapsam yolu eklendi. Atanmış puan kullanıcı/UTT/bölge performans ölçütü olarak kullanılmaz.
+- Sahte veri kaynağıyla 11 davranış kontrolü geçti: üç kanalda puan ayrımı, mevcut toplam kazanım, yayın tekilliği, tutarsız/boş puan ve kapsam dışı yayın. Canlı veritabanı veya Gemini çağrısı yapılmadı.
+- Bu işte zaman zorunluluğu değiştirilmedi. Atanmış puanın dönem filtresinden çıkarılması İş 2'ye aittir; mevcut geçiş aşamasında kaynak zaman alanı yayın tarihidir.
+- BM alan yönlendirmesi (İş 3) ve mevcut izleme/cevap sayımı filtre düzeltmesi (İş 4) yapılmadı. Commit yapılmadı.
+
+### Adım 2 / İş 2 — Ölçüte göre zaman gereksinimi
+
+- [x] Atanmış izleme puanı `zamansiz`, gerçekleşmiş kazanımlar ve diğer olay ölçütleri `olay_donemi` olarak tanımlandı.
+- Atanmış puan sorusu dönem verilmeden derlenir, doğrulanır ve çalıştırılır; kaynağa tarih filtresi uygulanmaz.
+- Olay ölçütleri geçerli bir dönem olmadan sorgu doğrulamasından geçmez. Atanmış puana dönem eklenmesi de kabul edilmez.
+- Farklı zaman gereksinimi taşıyan iki ölçütün aynı bütünleşik sorguda kullanılmasına izin verilmez.
+- Kanıt, kaynak gösterimi, sayısal cevap ve yorum paketi zamansız sonucu destekler. Kullanıcıya `Zamansız atanmış değer` bilgisi gösterilir; sayısal cevapta yapay bir zaman aralığı yazılmaz.
+- 12 hedefli davranış kontrolü ile zamansız derleme/çalıştırma/kanıt/cevap yolu ve olay ölçütlerinde dönem zorunluluğu doğrulandı. ESLint ve uygulama tür denetimi hatasız tamamlandı.
+- İş 4 yapılmadı. Commit yapılmadı.
+
+### Adım 2 / İş 3 — BM veri alanı yönlendirmesi
+
+- [x] BM rolünde `bölge`, `bölgem` ve bunların yaygın ekli biçimleri T-Club bölge kapsamına yönlendirildi.
+- Tek başına `puanım` ifadesinin C-Club varsayımı kaldırıldı. C-Club kişisel kapsamı yalnız açık `kendi puanım` veya `kişisel puanım` ifadesiyle seçilir.
+- Açık T-Club, C-Club ve E-Club adları mevcut önceliğini korur; kullanıcı alanı adıyla belirttiğinde kapsam sözcüğü bu seçimi değiştirmez.
+- Hedefli davranış kontrolleri, ESLint ve uygulama tür denetimi hatasız tamamlandı.
+- İş 4 yapılmadı. Commit yapılmadı.
+
+### Adım 2 / İş 4 — Sabit filtre alanlarının korunması
+
+- [x] Ölçüt kaynağındaki sabit filtre alanları sorgunun `select` listesine eklendi.
+- Veritabanında filtreyi geçen kayıtların, dönen satırda filtre alanı bulunmadığı için ikinci denetimde yanlışlıkla elenmesi engellendi.
+- Düzeltme gerçek oynatma, tamamlanan izleme, doğru/yanlış cevap ve yalnız izleme türündeki kazanım filtrelerine ortak olarak uygulanır.
+- Hedefli plan kontrolleri, ESLint ve uygulama tür denetimi hatasız tamamlandı.
+- Adım 2'nin dört işi tamamlandı. Commit yapılmadı.
+
+### Adım 3 — Gemini ve API bağlantısı
+
+- [x] Kullanıcı sorusu, doğrulanmış konuşma bağlamı ve sunucunun izin verdiği ölçüt/kapsam seçenekleri tek Gemini çağrısına bağlandı. Modele veritabanı kimlikleri, SQL veya sorgu planı gönderilmez.
+- [x] Gemini için düşük karmaşıklıkta, düz bir yapılandırılmış JSON taşıma şeması kuruldu. Taşıma cevabı iç anlama sözleşmesine çevrildikten sonra alan, tür, enum, fazladan alan ve tutarlılık kontrollerinden geçirilir; geçersiz çıktı sorguya dönüşmez.
+- [x] Zaman sunucuda anlamlandırılır, varlık adları yalnız kullanıcının yetkili listesindeki gerçek kimliklere çözülür ve geçerli taslak mevcut `HapbiSorgu` doğrulamasından geçirilir.
+- [x] Yeni anlamlandırma akışı `sor` API girişine bağlandı. İmzalı sohbet verisi doğrulanır; eksik anlamda modelin seçtiği tek alan için sunucunun sabit netleştirme sorusu kullanılır. Mevcut sorgu motoru, kanıt ve sayısal cevap katmanları korunur.
+- Normal sayısal soruda bir Gemini çağrısı, doğrulanmış sonuç üzerine yorum istendiğinde en fazla bir ek çağrı vardır.
+- Hedefli anlama, doğrulama ve sorgu dönüşümü kontrolleri **15/15 geçti**. ESLint ve uygulama tür denetimi hatasız tamamlandı.
+- Gerçek `gemini-3.5-flash` çağrısında “bu ay bölge puanım kaç?” sorusu `tclub`, `bolge`, `net_puan`, `bu_ay`, `dogrudan_deger` olarak çözüldü ve netleştirme istemeden geçerli iç taslağa dönüştü.
+- Adım 3'ün dört işi tamamlandı. Eski dil kodlarının kaldırılması ve BM uçtan uca senaryoları Adım 4–5 kapsamındadır. Commit yapılmadı.
+
+### Adım 4 — Eski dil akışının kaldırılması
+
+- [x] Kelime sözlüğü, kural tabanlı derleyici ve eski metin normalizasyon dosyaları kaldırıldı.
+- [x] `sor` API'sindeki eski veri alanı seçimi, kısa cevap birleştirme, derleme yolu ve `HAPBI_ESKI_ANLAMA_AKTIF` geçişi kaldırıldı.
+- [x] Eski derleme/netleştirme türleri ile zaman metni ve devam bağlamı çözümlemesi kaldırıldı.
+- İzinli varlık adlarının gerçek kimliklere güvenli eşlenmesi için gereken dar normalizasyon yeni anlama-sorgu dönüşümüne taşındı.
+- Sayısal cevap, kapsam, sorgu motoru, kanıt ve sonuç doğrulama katmanları korundu. Normal sayısal yol bir anlamlandırma çağrısı, yorum yolu en fazla bir ek çağrı kullanır.
+- Eski dil modüllerine kalan kaynak kod bağlantısı bulunmadı. ESLint ve uygulama tür denetimi hatasız tamamlandı.
+- Adım 4 tamamlandı. Adım 5 BM uçtan uca senaryolarıdır.

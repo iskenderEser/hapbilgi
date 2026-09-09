@@ -1,8 +1,4 @@
 import {
-  ADMIN_ROLLER,
-  ECLUB_TUKETICI_ROLLERI,
-  IU_ROLU,
-  MUSTERI_ROLU,
   TUKETICI_ROLLER,
   URETICI_ROLLER,
   YONETICI_ROLLER,
@@ -26,14 +22,7 @@ export const HAPBI_DESTEKLENEN_ROLLER = [
   ...YONETICI_ROLLER,
 ] as HapbiRol[];
 
-export const HAPBI_KAPSAM_DISI_ROLLER = [
-  IU_ROLU,
-  ...ADMIN_ROLLER,
-  ...ECLUB_TUKETICI_ROLLERI,
-  MUSTERI_ROLU,
-] as const;
-
-export type HapbiVeriAlani = "tclub" | "cclub" | "eclub" | "uretim";
+export type HapbiVeriAlani = "tclub" | "cclub" | "uretim";
 export type HapbiKapsamDuzeyi = "yok" | "kisisel" | "bolge" | "takim" | "firma";
 
 export type HapbiRolKurali = Readonly<{
@@ -43,32 +32,32 @@ export type HapbiRolKurali = Readonly<{
 
 const KISISEL_SAHA: HapbiRolKurali = {
   organizasyon: "kisisel",
-  veriAlanlari: { tclub: "kisisel", cclub: "yok", eclub: "kisisel", uretim: "yok" },
+  veriAlanlari: { tclub: "kisisel", cclub: "yok", uretim: "yok" },
 };
 
 const BOLGE_YONETIMI: HapbiRolKurali = {
   organizasyon: "bolge",
-  veriAlanlari: { tclub: "bolge", cclub: "kisisel", eclub: "bolge", uretim: "yok" },
+  veriAlanlari: { tclub: "bolge", cclub: "kisisel", uretim: "yok" },
 };
 
 const TAKIM_YONETIMI: HapbiRolKurali = {
   organizasyon: "takim",
-  veriAlanlari: { tclub: "takim", cclub: "takim", eclub: "takim", uretim: "yok" },
+  veriAlanlari: { tclub: "takim", cclub: "takim", uretim: "yok" },
 };
 
 const URUN_AILESI: HapbiRolKurali = {
   organizasyon: "takim",
-  veriAlanlari: { tclub: "takim", cclub: "takim", eclub: "takim", uretim: "takim" },
+  veriAlanlari: { tclub: "takim", cclub: "takim", uretim: "takim" },
 };
 
 const FIRMA_URETICISI: HapbiRolKurali = {
   organizasyon: "firma",
-  veriAlanlari: { tclub: "firma", cclub: "firma", eclub: "firma", uretim: "firma" },
+  veriAlanlari: { tclub: "firma", cclub: "firma", uretim: "firma" },
 };
 
 const FIRMA_YONETICISI: HapbiRolKurali = {
   organizasyon: "firma",
-  veriAlanlari: { tclub: "firma", cclub: "firma", eclub: "firma", uretim: "firma" },
+  veriAlanlari: { tclub: "firma", cclub: "firma", uretim: "firma" },
 };
 
 export const HAPBI_ROL_KURALLARI: Readonly<Record<HapbiRol, HapbiRolKurali>> = {

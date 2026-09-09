@@ -18,21 +18,18 @@ import type { HapbiIslemTuru } from "../islemTurleri";
 import type { HapbiZamanAraligi } from "../zamanSozlesmesi";
 
 export type HapbiKaynakKapsamYolu =
+  | "dogrudan_yayin"
   | "dogrudan_kullanici"
   | "dogrudan_bm"
-  | "dogrudan_utt"
   | "izleme_uzerinden_kullanici"
-  | "izleme_uzerinden_bm"
-  | "oneri_uzerinden_utt"
-  | "eclub_izleme_uzerinden_utt"
-  | "eclub_kisi_uzerinden_utt";
+  | "izleme_uzerinden_bm";
 
 export type HapbiKaynakPlani = Readonly<{
   veriAlani: HapbiVeriAlani;
   tablo: string;
   secilecekAlanlar: readonly string[];
   degerAlani: string;
-  zamanAlani: string;
+  zamanAlani: string | null;
   hesaplama: Exclude<HapbiOlcutHesaplamaYontemi, "kazanim_eksi_kayip">;
   hesaplamadakiRolu: HapbiOlcutKaynakRolu;
   sabitFiltreler: readonly HapbiOlcutFiltresi[];
@@ -50,7 +47,7 @@ export type HapbiOlcutPlani = Readonly<{
 export type HapbiSorguTarafiPlani = Readonly<{
   ad: "ana" | "sol" | "sag";
   kapsam: HapbiKapsami;
-  zaman: HapbiZamanAraligi;
+  zaman: HapbiZamanAraligi | null;
   filtreler: readonly HapbiFiltre[];
 }>;
 
@@ -82,6 +79,8 @@ export type HapbiSorguPlaniSonucu =
   }>;
 
 const KAYNAK_KAPSAM_YOLLARI: Readonly<Record<string, HapbiKaynakKapsamYolu>> = {
+  "tclub:v_yayin_detay": "dogrudan_yayin",
+  "cclub:v_yayin_detay": "dogrudan_yayin",
   "tclub:kazanilan_puanlar": "dogrudan_kullanici",
   "tclub:ileri_sarma_kayitlari": "dogrudan_kullanici",
   "tclub:yanlis_cevap_kayitlari": "dogrudan_kullanici",
@@ -94,26 +93,14 @@ const KAYNAK_KAPSAM_YOLLARI: Readonly<Record<string, HapbiKaynakKapsamYolu>> = {
   "cclub:cc_ileri_sarma_kayitlari": "dogrudan_bm",
   "cclub:cc_yanlis_cevap_kayitlari": "dogrudan_bm",
   "cclub:cc_izleme_kayitlari": "dogrudan_bm",
-  "eclub:eclub_kazanilan_puanlar": "eclub_izleme_uzerinden_utt",
-  "eclub:eclub_ileri_sarma_kayitlari": "eclub_izleme_uzerinden_utt",
-  "eclub:eclub_oneri_kayip_kayitlari": "oneri_uzerinden_utt",
-  "eclub:eclub_izleme_kayitlari": "oneri_uzerinden_utt",
-  "eclub:eclub_dogru_cevap_kayitlari": "eclub_izleme_uzerinden_utt",
-  "eclub:eclub_yanlis_cevap_kayitlari": "eclub_izleme_uzerinden_utt",
-  "eclub:eclub_utt_puanlari": "dogrudan_utt",
-  "eclub:eclub_video_begeniler": "eclub_kisi_uzerinden_utt",
-  "eclub:eclub_video_favoriler": "eclub_kisi_uzerinden_utt",
 };
 
 const KAPSAM_YOLU_ALANLARI: Readonly<Record<HapbiKaynakKapsamYolu, readonly string[]>> = {
+  dogrudan_yayin: ["yayin_id"],
   dogrudan_kullanici: ["kullanici_id"],
   dogrudan_bm: ["bm_id"],
-  dogrudan_utt: ["utt_id"],
   izleme_uzerinden_kullanici: ["izleme_id"],
   izleme_uzerinden_bm: ["izleme_id"],
-  oneri_uzerinden_utt: ["oneri_id"],
-  eclub_izleme_uzerinden_utt: ["izleme_id"],
-  eclub_kisi_uzerinden_utt: ["kisi_id"],
 };
 
 function benzersizAlanlar(alanlar: readonly string[]): string[] {
@@ -140,7 +127,8 @@ function olcutPlaniOlustur(
       tablo: kaynak.tablo,
       secilecekAlanlar: benzersizAlanlar([
         kaynak.degerAlani,
-        kaynak.zamanAlani,
+        ...(kaynak.zamanAlani ? [kaynak.zamanAlani] : []),
+        ...kaynak.filtreler.map((filtre) => filtre.alan),
         ...kaynak.iliskiAlanlari,
         ...KAPSAM_YOLU_ALANLARI[kapsamYolu],
       ]),

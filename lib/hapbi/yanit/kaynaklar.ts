@@ -23,6 +23,20 @@ export type HapbiKaynakBaglami = Readonly<{
   zamanEtiketleri?: Readonly<Partial<Record<"ana" | "sol" | "sag", string>>>;
 }>;
 
+export function hapbiKaynaklariniBirlestir(kaynaklar: readonly HapbiKaynakGosterimi[]): HapbiKaynakGosterimi[] {
+  const gruplar = new Map<string, HapbiKaynakGosterimi>();
+  for (const kaynak of kaynaklar) {
+    const anahtar = JSON.stringify([kaynak.veriAlani, kaynak.url, kaynak.kapsamEtiketi, kaynak.donem]);
+    const mevcut = gruplar.get(anahtar);
+    const teknikKaynaklar = [...new Map(
+      [...(mevcut?.teknikKaynaklar ?? []), ...kaynak.teknikKaynaklar]
+        .map((teknik) => [JSON.stringify(teknik), teknik]),
+    ).values()];
+    gruplar.set(anahtar, { ...(mevcut ?? kaynak), teknikKaynaklar });
+  }
+  return [...gruplar.values()];
+}
+
 export type HapbiKaynakOlusturmaHatasi =
   | "kapsam_etiketi_eksik"
   | "okuma_zamani_gecersiz"
@@ -54,10 +68,6 @@ const VERI_ALANI_GOSTERIMI: Readonly<Record<
   cclub: {
     baslik: "C-Club doğrulanmış analitik sonucu",
     url: "/cc-ligi",
-  },
-  eclub: {
-    baslik: "E-Club doğrulanmış analitik sonucu",
-    url: "/eclub/raporlar",
   },
   uretim: {
     baslik: "Üretim doğrulanmış analitik sonucu",
@@ -96,7 +106,7 @@ function kaynakKimligi(
   zamanlar: readonly HapbiKanitZamani[],
   kaynaklar: readonly HapbiKanitKaynagi[],
 ): string {
-  const zamanParcasi = zamanlar
+  const zamanParcasi = zamanlar.length === 0 ? "zamansiz" : zamanlar
     .map((zaman) => `${zaman.taraf}-${zaman.baslangic}-${zaman.bitis}`)
     .join("_");
   const kaynakParcasi = [...new Set(kaynaklar.map((kaynak) => kaynak.tablo))]
@@ -139,6 +149,7 @@ function kaynaklariDogrula(
 }
 
 function zamanlariDogrula(kanit: HapbiKanitPaketi): boolean {
+  if (kanit.zamanGereksinimi === "zamansiz") return kanit.zamanlar.length === 0;
   return kanit.zamanlar.length > 0 && kanit.zamanlar.every((zaman) =>
     tarihGecerliMi(zaman.baslangic)
     && tarihGecerliMi(zaman.bitis)
@@ -180,9 +191,9 @@ export function hapbiKaynaklariniOlustur(
   if (kaynakHatasi) return kaynakHatasi;
 
   const gosterim = VERI_ALANI_GOSTERIMI[kanit.veriAlani];
-  const donem = kanit.zamanlar
-    .map((zaman) => zamanEtiketi(zaman, baglam))
-    .join("; ");
+  const donem = kanit.zamanGereksinimi === "zamansiz"
+    ? "Zamansız atanmış değer"
+    : kanit.zamanlar.map((zaman) => zamanEtiketi(zaman, baglam)).join("; ");
 
   return {
     basarili: true,

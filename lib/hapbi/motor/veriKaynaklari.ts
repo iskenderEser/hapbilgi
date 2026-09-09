@@ -30,7 +30,7 @@ export type HapbiKaynakBaglantisi = Readonly<{
   tur: "bire_bir" | "coktan_bire" | "bire_cok";
 }>;
 
-const ORGANIZASYON = ["tclub", "cclub", "eclub", "uretim"] as const;
+const ORGANIZASYON = ["tclub", "cclub", "uretim"] as const;
 
 export const HAPBI_VERI_KAYNAKLARI = {
   kullanicilar: {
@@ -39,7 +39,7 @@ export const HAPBI_VERI_KAYNAKLARI = {
     veriAlanlari: ORGANIZASYON,
     anaKimlikAlani: "kullanici_id",
     izinliAlanlar: ["kullanici_id", "ad", "soyad", "rol", "aktif_mi", "firma_id", "takim_id", "bolge_id"],
-    izinliKapsamYollari: ["dogrudan_kullanici", "dogrudan_bm", "dogrudan_utt"],
+    izinliKapsamYollari: ["dogrudan_kullanici", "dogrudan_bm"],
   },
   firmalar: {
     ad: "firmalar",
@@ -86,8 +86,8 @@ export const HAPBI_VERI_KAYNAKLARI = {
     tur: "gorunum",
     veriAlanlari: ORGANIZASYON,
     anaKimlikAlani: "yayin_id",
-    izinliAlanlar: ["yayin_id", "urun_adi", "teknik_adi", "talep_no", "firma_id", "takim_id", "yayin_tarihi"],
-    izinliKapsamYollari: [],
+    izinliAlanlar: ["yayin_id", "urun_adi", "teknik_adi", "talep_no", "firma_id", "takim_id", "yayin_tarihi", "ogrenme_araci_puani"],
+    izinliKapsamYollari: ["dogrudan_yayin"],
   },
   izleme_kayitlari: {
     ad: "izleme_kayitlari",
@@ -164,7 +164,7 @@ export const HAPBI_VERI_KAYNAKLARI = {
   yayin_tekrar_kayitlari: {
     ad: "yayin_tekrar_kayitlari",
     tur: "tablo",
-    veriAlanlari: ["tclub", "cclub", "eclub"],
+    veriAlanlari: ["tclub", "cclub"],
     anaKimlikAlani: "tekrar_id",
     izinliAlanlar: ["tekrar_id", "yayin_id", "tur_no", "baslangic_tarihi", "created_at"],
     izinliKapsamYollari: ["dogrudan_yayin"],
@@ -249,94 +249,6 @@ export const HAPBI_VERI_KAYNAKLARI = {
     izinliAlanlar: ["gorev_id", "talep_id", "asama", "arac_id", "soru_seti_id", "atanan_iu_id", "durum", "atama_tarihi", "baslama_tarihi", "inceleme_tarihi", "tamamlanma_tarihi", "iptal_tarihi", "created_at", "updated_at"],
     izinliKapsamYollari: ["talep_uzerinden_organizasyon"],
   },
-  eclub_kisiler: {
-    ad: "eclub_kisiler",
-    tur: "tablo",
-    veriAlanlari: ["eclub"],
-    anaKimlikAlani: "kisi_id",
-    izinliAlanlar: ["kisi_id", "ad", "soyad", "rol"],
-    izinliKapsamYollari: ["eclub_kisi_uzerinden_utt"],
-  },
-  eclub_oneri_kayitlari: {
-    ad: "eclub_oneri_kayitlari",
-    tur: "tablo",
-    veriAlanlari: ["eclub"],
-    anaKimlikAlani: "oneri_id",
-    izinliAlanlar: ["oneri_id", "oneren_id", "kisi_id", "yayin_id", "arac_id", "arac_turu", "created_at", "oneri_baslangic", "oneri_bitis", "izlendi_mi"],
-    izinliKapsamYollari: ["oneri_uzerinden_utt", "eclub_kisi_uzerinden_utt"],
-  },
-  eclub_izleme_kayitlari: {
-    ad: "eclub_izleme_kayitlari",
-    tur: "tablo",
-    veriAlanlari: ["eclub"],
-    anaKimlikAlani: "izleme_id",
-    izinliAlanlar: ["izleme_id", "kisi_id", "oneri_id", "yayin_id", "izleme_baslangic", "izleme_bitis", "created_at", "tamamlandi_mi"],
-    izinliKapsamYollari: ["oneri_uzerinden_utt", "eclub_izleme_uzerinden_utt"],
-  },
-  eclub_kazanilan_puanlar: {
-    ad: "eclub_kazanilan_puanlar",
-    tur: "tablo",
-    veriAlanlari: ["eclub"],
-    anaKimlikAlani: "kazanilan_puan_id",
-    izinliAlanlar: ["kazanilan_puan_id", "kisi_id", "izleme_id", "yayin_id", "urun_id", "puan_turu", "puan", "created_at"],
-    izinliKapsamYollari: ["eclub_izleme_uzerinden_utt"],
-  },
-  eclub_dogru_cevap_kayitlari: {
-    ad: "eclub_dogru_cevap_kayitlari",
-    tur: "tablo",
-    veriAlanlari: ["eclub"],
-    anaKimlikAlani: "kayit_id",
-    izinliAlanlar: ["kayit_id", "kisi_id", "izleme_id", "yayin_id", "urun_id", "soru_index", "kazanilan_puan", "created_at"],
-    izinliKapsamYollari: ["eclub_izleme_uzerinden_utt"],
-  },
-  eclub_yanlis_cevap_kayitlari: {
-    ad: "eclub_yanlis_cevap_kayitlari",
-    tur: "tablo",
-    veriAlanlari: ["eclub"],
-    anaKimlikAlani: "kayit_id",
-    izinliAlanlar: ["kayit_id", "kisi_id", "izleme_id", "yayin_id", "urun_id", "soru_index", "kaybedilen_puan", "created_at"],
-    izinliKapsamYollari: ["eclub_izleme_uzerinden_utt"],
-  },
-  eclub_ileri_sarma_kayitlari: {
-    ad: "eclub_ileri_sarma_kayitlari",
-    tur: "tablo",
-    veriAlanlari: ["eclub"],
-    anaKimlikAlani: "kayit_id",
-    izinliAlanlar: ["kayit_id", "kisi_id", "izleme_id", "yayin_id", "urun_id", "atlanan_sure", "kaybedilen_puan", "created_at"],
-    izinliKapsamYollari: ["eclub_izleme_uzerinden_utt"],
-  },
-  eclub_oneri_kayip_kayitlari: {
-    ad: "eclub_oneri_kayip_kayitlari",
-    tur: "tablo",
-    veriAlanlari: ["eclub"],
-    anaKimlikAlani: "kayit_id",
-    izinliAlanlar: ["kayit_id", "kisi_id", "oneri_id", "yayin_id", "urun_id", "kaybedilen_puan", "created_at"],
-    izinliKapsamYollari: ["oneri_uzerinden_utt"],
-  },
-  eclub_utt_puanlari: {
-    ad: "eclub_utt_puanlari",
-    tur: "tablo",
-    veriAlanlari: ["eclub"],
-    anaKimlikAlani: "utt_puan_id",
-    izinliAlanlar: ["utt_puan_id", "utt_id", "kisi_id", "oneri_id", "izleme_id", "yayin_id", "urun_id", "puan", "created_at"],
-    izinliKapsamYollari: ["dogrudan_utt", "oneri_uzerinden_utt"],
-  },
-  eclub_video_begeniler: {
-    ad: "eclub_video_begeniler",
-    tur: "tablo",
-    veriAlanlari: ["eclub"],
-    anaKimlikAlani: "begeni_id",
-    izinliAlanlar: ["begeni_id", "kisi_id", "yayin_id", "created_at"],
-    izinliKapsamYollari: ["eclub_kisi_uzerinden_utt"],
-  },
-  eclub_video_favoriler: {
-    ad: "eclub_video_favoriler",
-    tur: "tablo",
-    veriAlanlari: ["eclub"],
-    anaKimlikAlani: "favori_id",
-    izinliAlanlar: ["favori_id", "kisi_id", "yayin_id", "created_at"],
-    izinliKapsamYollari: ["eclub_kisi_uzerinden_utt"],
-  },
 } as const satisfies Readonly<Record<string, HapbiVeriKaynagiTanimi>>;
 
 export type HapbiVeriKaynagiAdi = keyof typeof HAPBI_VERI_KAYNAKLARI;
@@ -369,12 +281,6 @@ export const HAPBI_KAYNAK_BAGLANTILARI = [
   { kaynak: "uretim_gorevleri", kaynakAlani: "talep_id", hedef: "talepler", hedefAlani: "talep_id", tur: "coktan_bire" },
   { kaynak: "uretim_gorevleri", kaynakAlani: "arac_id", hedef: "ogrenme_araclari", hedefAlani: "arac_id", tur: "coktan_bire" },
   { kaynak: "uretim_gorevleri", kaynakAlani: "soru_seti_id", hedef: "soru_setleri", hedefAlani: "soru_seti_id", tur: "coktan_bire" },
-  { kaynak: "eclub_izleme_kayitlari", kaynakAlani: "oneri_id", hedef: "eclub_oneri_kayitlari", hedefAlani: "oneri_id", tur: "coktan_bire" },
-  { kaynak: "eclub_kazanilan_puanlar", kaynakAlani: "izleme_id", hedef: "eclub_izleme_kayitlari", hedefAlani: "izleme_id", tur: "coktan_bire" },
-  { kaynak: "eclub_dogru_cevap_kayitlari", kaynakAlani: "izleme_id", hedef: "eclub_izleme_kayitlari", hedefAlani: "izleme_id", tur: "coktan_bire" },
-  { kaynak: "eclub_yanlis_cevap_kayitlari", kaynakAlani: "izleme_id", hedef: "eclub_izleme_kayitlari", hedefAlani: "izleme_id", tur: "coktan_bire" },
-  { kaynak: "eclub_ileri_sarma_kayitlari", kaynakAlani: "izleme_id", hedef: "eclub_izleme_kayitlari", hedefAlani: "izleme_id", tur: "coktan_bire" },
-  { kaynak: "eclub_oneri_kayip_kayitlari", kaynakAlani: "oneri_id", hedef: "eclub_oneri_kayitlari", hedefAlani: "oneri_id", tur: "coktan_bire" },
 ] as const satisfies readonly HapbiKaynakBaglantisi[];
 
 export function hapbiVeriKaynaginiBul(ad: string): HapbiVeriKaynagiTanimi | null {
@@ -408,7 +314,7 @@ export function hapbiKaynakPlaniniDogrula(plan: HapbiKaynakPlani): boolean {
   const kullanilanAlanlar = [
     ...plan.secilecekAlanlar,
     plan.degerAlani,
-    plan.zamanAlani,
+    ...(plan.zamanAlani ? [plan.zamanAlani] : []),
     ...plan.sabitFiltreler.map((filtre) => filtre.alan),
   ];
   return kullanilanAlanlar.every((alan) => kaynak.izinliAlanlar.includes(alan));

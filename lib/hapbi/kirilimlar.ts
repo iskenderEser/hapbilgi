@@ -20,7 +20,7 @@ import {
   type HapbiKirilimTanimi,
 } from "./kirilimSozlesmesi";
 
-const TUM_VERI_ALANLARI = ["tclub", "cclub", "eclub", "uretim"] as const;
+const TUM_VERI_ALANLARI = ["tclub", "cclub", "uretim"] as const;
 const TUM_ROLLER = [...HAPBI_DESTEKLENEN_ROLLER] as readonly HapbiRol[];
 
 function kirilimOlcutleri(kirilim: HapbiKirilim): HapbiOlcut[] {
@@ -65,7 +65,7 @@ export const HAPBI_KIRILIM_KATALOGU = {
       { hedefKirilim: "takim", yerelKaynak: "kullanicilar", yerelAlan: "takim_id", hedefKaynak: "takimlar", hedefAlan: "takim_id", tur: "coktan_bire" },
       { hedefKirilim: "bolge", yerelKaynak: "kullanicilar", yerelAlan: "bolge_id", hedefKaynak: "bolgeler", hedefAlan: "bolge_id", tur: "coktan_bire" },
     ],
-    kullanilabildigiVeriAlanlari: ["tclub", "eclub"],
+    kullanilabildigiVeriAlanlari: ["tclub"],
     kullanilabilenRoller: TUM_ROLLER,
     kullanilabilenOlcutler: kirilimOlcutleri("utt"),
   },

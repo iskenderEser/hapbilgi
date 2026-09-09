@@ -91,6 +91,7 @@ function zamanEtiketleriniOlustur(
 }
 
 function ortakGiris(kapsam: string, zamanlar: readonly string[]): string {
+  if (zamanlar.length === 0) return `${kapsam} kapsamında`;
   return `${kapsam} kapsamında, ${zamanlar.join("; ")} zaman aralığında`;
 }
 
@@ -202,7 +203,7 @@ export function hapbiSayisalYanitiOlustur(
   }
 
   const zamanEtiketleri = zamanEtiketleriniOlustur(kanit, baglam);
-  if (zamanEtiketleri.length === 0) {
+  if (kanit.zamanGereksinimi === "olay_donemi" && zamanEtiketleri.length === 0) {
     return {
       basarili: false,
       neden: "zaman_bilgisi_eksik",

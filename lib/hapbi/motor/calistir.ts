@@ -34,14 +34,6 @@ type IzlemeBilgisi = Readonly<{
   aktorId: string | null;
   yayinId: string | null;
   urunId: string | null;
-  oneriId: string | null;
-}>;
-
-type OneriBilgisi = Readonly<{
-  id: string;
-  uttId: string | null;
-  kisiId: string | null;
-  yayinId: string | null;
 }>;
 
 type CalismaBaglami = Readonly<{
@@ -51,12 +43,8 @@ type CalismaBaglami = Readonly<{
   takimAdlari: ReadonlyMap<string, string>;
   bolgeAdlari: ReadonlyMap<string, string>;
   firmaAdlari: ReadonlyMap<string, string>;
-  kisiAdlari: ReadonlyMap<string, string>;
   izlemeler: ReadonlyMap<string, IzlemeBilgisi>;
-  oneriler: ReadonlyMap<string, OneriBilgisi>;
   izinliIzlemeIdleri: ReadonlySet<string>;
-  izinliOneriIdleri: ReadonlySet<string>;
-  izinliKisiIdleri: ReadonlySet<string>;
 }>;
 
 type HamOlcum = Readonly<{
@@ -214,92 +202,33 @@ async function baglamiOlustur(
     yayinlar.set(id, { ...yayin, ad });
   }
 
-  const oneriler = new Map<string, OneriBilgisi>();
   const izlemeler = new Map<string, IzlemeBilgisi>();
-  const izinliOneriIdleri = new Set<string>();
   const izinliIzlemeIdleri = new Set<string>();
-  const izinliKisiIdleri = new Set<string>();
 
-  if (plan.veriAlani === "eclub") {
-    const oneriSonucu = await satirlariOku(
-      supabase,
-      "eclub_oneri_kayitlari",
-      ["oneri_id", "oneren_id", "kisi_id", "yayin_id"],
-      [
-        { alan: "oneren_id", degerler: kullaniciIdleri },
-        { alan: "yayin_id", degerler: yayinIdleri },
-      ],
-    );
-    if (oneriSonucu.error) return { baglam: null, hata: oneriSonucu.error };
-    for (const kayit of oneriSonucu.data) {
-      const id = metin(kayit.oneri_id);
-      if (!id) continue;
-      const bilgi = {
-        id,
-        uttId: metin(kayit.oneren_id),
-        kisiId: metin(kayit.kisi_id),
-        yayinId: metin(kayit.yayin_id),
-      };
-      oneriler.set(id, bilgi);
-      izinliOneriIdleri.add(id);
-      if (bilgi.kisiId) izinliKisiIdleri.add(bilgi.kisiId);
-    }
-    const izlemeSonucu = await satirlariOku(
-      supabase,
-      "eclub_izleme_kayitlari",
-      ["izleme_id", "kisi_id", "oneri_id", "yayin_id"],
-      [{ alan: "oneri_id", degerler: [...izinliOneriIdleri] }],
-    );
-    if (izlemeSonucu.error) return { baglam: null, hata: izlemeSonucu.error };
-    for (const kayit of izlemeSonucu.data) {
-      const id = metin(kayit.izleme_id);
-      const oneriId = metin(kayit.oneri_id);
-      const oneri = oneriId ? oneriler.get(oneriId) : null;
-      if (!id || !oneri) continue;
-      izlemeler.set(id, {
-        id,
-        aktorId: oneri.uttId,
-        yayinId: metin(kayit.yayin_id) ?? oneri.yayinId,
-        urunId: null,
-        oneriId,
-      });
-      izinliIzlemeIdleri.add(id);
-    }
-  } else {
-    const cclub = plan.veriAlani === "cclub";
-    const izlemeSonucu = await satirlariOku(
-      supabase,
-      cclub ? "cc_izleme_kayitlari" : "izleme_kayitlari",
-      cclub
-        ? ["izleme_id", "bm_id", "yayin_id"]
-        : ["izleme_id", "kullanici_id", "yayin_id"],
-      [
-        { alan: cclub ? "bm_id" : "kullanici_id", degerler: kullaniciIdleri },
-        { alan: "yayin_id", degerler: yayinIdleri },
-      ],
-    );
-    if (izlemeSonucu.error) return { baglam: null, hata: izlemeSonucu.error };
-    for (const kayit of izlemeSonucu.data) {
-      const id = metin(kayit.izleme_id);
-      if (!id) continue;
-      izlemeler.set(id, {
-        id,
-        aktorId: metin(cclub ? kayit.bm_id : kayit.kullanici_id),
-        yayinId: metin(kayit.yayin_id),
-        urunId: null,
-        oneriId: null,
-      });
-      izinliIzlemeIdleri.add(id);
-    }
-  }
-
-  const kisiSonucu = await satirlariOku(
+  const cclub = plan.veriAlani === "cclub";
+  const izlemeSonucu = await satirlariOku(
     supabase,
-    "eclub_kisiler",
-    ["kisi_id", "ad", "soyad"],
-    [{ alan: "kisi_id", degerler: [...izinliKisiIdleri] }],
+    cclub ? "cc_izleme_kayitlari" : "izleme_kayitlari",
+    cclub
+      ? ["izleme_id", "bm_id", "yayin_id"]
+      : ["izleme_id", "kullanici_id", "yayin_id"],
+    [
+      { alan: cclub ? "bm_id" : "kullanici_id", degerler: kullaniciIdleri },
+      { alan: "yayin_id", degerler: yayinIdleri },
+    ],
   );
-  if (kisiSonucu.error) return { baglam: null, hata: kisiSonucu.error };
+  if (izlemeSonucu.error) return { baglam: null, hata: izlemeSonucu.error };
+  for (const kayit of izlemeSonucu.data) {
+    const id = metin(kayit.izleme_id);
+    if (!id) continue;
+    izlemeler.set(id, {
+      id,
+      aktorId: metin(cclub ? kayit.bm_id : kayit.kullanici_id),
+      yayinId: metin(kayit.yayin_id),
+      urunId: null,
+    });
+    izinliIzlemeIdleri.add(id);
+  }
 
   return {
     baglam: {
@@ -318,15 +247,8 @@ async function baglamiOlustur(
         const id = metin(kayit.firma_id);
         return id ? [[id, metin(kayit.firma_adi) ?? id] as const] : [];
       })),
-      kisiAdlari: new Map(kisiSonucu.data.flatMap((kayit) => {
-        const id = metin(kayit.kisi_id);
-        return id ? [[id, adSoyad(kayit) || id] as const] : [];
-      })),
       izlemeler,
-      oneriler,
       izinliIzlemeIdleri,
-      izinliOneriIdleri,
-      izinliKisiIdleri,
     },
     hata: null,
   };
@@ -336,11 +258,9 @@ function kapsamKosulu(
   kaynak: HapbiKaynakPlani,
   baglam: CalismaBaglami,
 ): Readonly<{ alan: string; degerler: readonly string[] }> {
+  if (kaynak.kapsamYolu === "dogrudan_yayin") return { alan: "yayin_id", degerler: kaynak.kapsamYayinIdleri };
   if (kaynak.kapsamYolu === "dogrudan_kullanici") return { alan: "kullanici_id", degerler: kaynak.kapsamKullaniciIdleri };
   if (kaynak.kapsamYolu === "dogrudan_bm") return { alan: "bm_id", degerler: kaynak.kapsamKullaniciIdleri };
-  if (kaynak.kapsamYolu === "dogrudan_utt") return { alan: "utt_id", degerler: kaynak.kapsamKullaniciIdleri };
-  if (kaynak.kapsamYolu === "oneri_uzerinden_utt") return { alan: "oneri_id", degerler: [...baglam.izinliOneriIdleri] };
-  if (kaynak.kapsamYolu === "eclub_kisi_uzerinden_utt") return { alan: "kisi_id", degerler: [...baglam.izinliKisiIdleri] };
   return { alan: "izleme_id", degerler: [...baglam.izinliIzlemeIdleri] };
 }
 
@@ -349,28 +269,21 @@ function satirYetkiliMi(kayit: Kayit, kaynak: HapbiKaynakPlani, baglam: CalismaB
   if (yayinId && !kaynak.kapsamYayinIdleri.includes(yayinId)) return false;
   const izlemeId = metin(kayit.izleme_id);
   if (izlemeId && !baglam.izinliIzlemeIdleri.has(izlemeId)) return false;
-  const oneriId = metin(kayit.oneri_id);
-  if (oneriId && !baglam.izinliOneriIdleri.has(oneriId)) return false;
   return true;
 }
 
 function aktorVeYayin(
   kayit: Kayit,
-  kaynak: HapbiKaynakPlani,
   baglam: CalismaBaglami,
-): { aktorId: string | null; kisiId: string | null; yayinId: string | null; urunId: string | null } {
+): { aktorId: string | null; yayinId: string | null; urunId: string | null } {
   const izleme = metin(kayit.izleme_id) ? baglam.izlemeler.get(metin(kayit.izleme_id)!) : null;
-  const oneri = metin(kayit.oneri_id) ? baglam.oneriler.get(metin(kayit.oneri_id)!) : null;
   const aktorId = metin(kayit.kullanici_id)
     ?? metin(kayit.bm_id)
-    ?? metin(kayit.utt_id)
     ?? izleme?.aktorId
-    ?? oneri?.uttId
     ?? null;
-  const yayinId = metin(kayit.yayin_id) ?? izleme?.yayinId ?? oneri?.yayinId ?? null;
+  const yayinId = metin(kayit.yayin_id) ?? izleme?.yayinId ?? null;
   return {
     aktorId,
-    kisiId: metin(kayit.kisi_id) ?? oneri?.kisiId ?? null,
     yayinId,
     urunId: metin(kayit.urun_id) ?? izleme?.urunId ?? (yayinId ? baglam.yayinlar.get(yayinId)?.urunId ?? null : null),
   };
@@ -378,17 +291,16 @@ function aktorVeYayin(
 
 function kirilimDegeri(
   kayit: Kayit,
-  kaynak: HapbiKaynakPlani,
   kirilim: HapbiKirilim,
   baglam: CalismaBaglami,
 ): { anahtar: string; ad: string } | null {
-  const bag = aktorVeYayin(kayit, kaynak, baglam);
+  const bag = aktorVeYayin(kayit, baglam);
   const kullanici = bag.aktorId ? baglam.kullanicilar.get(bag.aktorId) : null;
 
   if (kirilim === "kullanici") {
-    const id = bag.kisiId ?? bag.aktorId;
+    const id = bag.aktorId;
     if (!id) return null;
-    return { anahtar: id, ad: bag.kisiId ? baglam.kisiAdlari.get(id) ?? id : kullanici?.ad ?? id };
+    return { anahtar: id, ad: kullanici?.ad ?? id };
   }
   if (kirilim === "utt") {
     if (!bag.aktorId) return null;
@@ -426,9 +338,13 @@ async function kaynagiOlc(
 ): Promise<{ olcumler: HamOlcum[]; hata: string | null }> {
   let sorgu = supabase
     .from(kaynak.tablo)
-    .select(kaynak.secilecekAlanlar.join(","))
-    .gte(kaynak.zamanAlani, taraf.zaman.baslangic)
-    .lt(kaynak.zamanAlani, taraf.zaman.bitis);
+    .select(kaynak.secilecekAlanlar.join(","));
+
+  if (kaynak.zamanAlani && taraf.zaman) {
+    sorgu = sorgu
+      .gte(kaynak.zamanAlani, taraf.zaman.baslangic)
+      .lt(kaynak.zamanAlani, taraf.zaman.bitis);
+  }
 
   const kapsam = kapsamKosulu(kaynak, baglam);
   if (kapsam.degerler.length === 0) return { olcumler: [], hata: null };
@@ -442,11 +358,24 @@ async function kaynagiOlc(
   if (error) return { olcumler: [], hata: error.message };
 
   const gruplar = new Map<string, { ad: string; deger: number; eksik: boolean; kayitSayisi: number }>();
+  const atanmisYayinPuanlari = new Map<string, number | null>();
   for (const kayit of (data ?? []) as unknown as Kayit[]) {
     if (!satirYetkiliMi(kayit, kaynak, baglam) || !sabitFiltreleriUygula(kayit, kaynak.sabitFiltreler)) continue;
-    const grup = kirilimDegeri(kayit, kaynak, kirilim, baglam);
+    const grup = kirilimDegeri(kayit, kirilim, baglam);
     if (!grup) continue;
     const mevcut = gruplar.get(grup.anahtar) ?? { ad: grup.ad, deger: 0, eksik: false, kayitSayisi: 0 };
+    if (kaynak.kapsamYolu === "dogrudan_yayin") {
+      const yayinId = metin(kayit.yayin_id);
+      if (!yayinId) continue;
+      const puan = sayi(kayit[kaynak.degerAlani]);
+      if (atanmisYayinPuanlari.has(yayinId)) {
+        if (atanmisYayinPuanlari.get(yayinId) !== puan) {
+          gruplar.set(grup.anahtar, { ...mevcut, eksik: true });
+        }
+        continue;
+      }
+      atanmisYayinPuanlari.set(yayinId, puan);
+    }
     const deger = kaynak.hesaplama === "kayit_say" || kaynak.hesaplama === "kosullu_kayit_say"
       ? 1
       : sayi(kayit[kaynak.degerAlani]);

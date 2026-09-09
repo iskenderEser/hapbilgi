@@ -36,7 +36,6 @@ export type HapbiIslemTanimi = Readonly<{
 const ORTAK_ALANLAR = [
   "kapsam",
   "veriAlani",
-  "zaman",
   "olcut",
   "kirilim",
 ] as const satisfies readonly HapbiIslemAlani[];

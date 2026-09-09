@@ -71,9 +71,6 @@ function hedefRolUygunMu(veriAlani: HapbiVeriAlani, hedefRoller: string[] | null
   if (!hedefRoller?.length) return true;
   if (veriAlani === "tclub") return hedefRoller.includes("utt");
   if (veriAlani === "cclub") return hedefRoller.includes("bm");
-  if (veriAlani === "eclub") {
-    return hedefRoller.includes("eczaci") || hedefRoller.includes("eczane_teknisyeni");
-  }
   return veriAlani === "uretim";
 }
 
@@ -211,7 +208,6 @@ export async function hapbiKapsaminiCoz(
   const veriAlanlari: Record<HapbiVeriAlani, HapbiAlanKapsami> = {
     tclub: alanKapsamiOlustur("tclub"),
     cclub: alanKapsamiOlustur("cclub"),
-    eclub: alanKapsamiOlustur("eclub"),
     uretim: alanKapsamiOlustur("uretim"),
   };
 

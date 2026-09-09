@@ -31,7 +31,7 @@ export type HapbiKanitSatiri = Readonly<{
 export type HapbiKanitKaynagi = Readonly<{
   tablo: string;
   degerAlani: string;
-  zamanAlani: string;
+  zamanAlani: string | null;
   hesaplama: HapbiKaynakPlani["hesaplama"];
   hesaplamadakiRolu: HapbiKaynakPlani["hesaplamadakiRolu"];
 }>;
@@ -52,6 +52,7 @@ export type HapbiKanitPaketi = Readonly<{
   secimOlcutu: HapbiOlcut;
   sonucOlcutu: HapbiOlcut;
   veriDurumu: "var";
+  zamanGereksinimi: "olay_donemi" | "zamansiz";
   zamanlar: readonly HapbiKanitZamani[];
   kaynaklar: readonly HapbiKanitKaynagi[];
   satirlar: readonly HapbiKanitSatiri[];
@@ -122,14 +123,14 @@ function kaynaklariOlustur(plan: HapbiSorguPlani): HapbiKanitKaynagi[] {
 }
 
 function zamanlariOlustur(plan: HapbiSorguPlani): HapbiKanitZamani[] {
-  return plan.taraflar.map((taraf) => ({
+  return plan.taraflar.flatMap((taraf) => taraf.zaman ? [{
     taraf: taraf.ad,
     baslangic: taraf.zaman.baslangic,
     bitis: taraf.zaman.bitis,
     baslangicDahil: true,
     bitisHaric: true,
     saatDilimi: "Europe/Istanbul",
-  }));
+  }] : []);
 }
 
 function degeriEkle(
@@ -270,6 +271,7 @@ export function hapbiKanitPaketiOlustur(
       secimOlcutu: dogrulanmis.sonuc.secimOlcutu,
       sonucOlcutu: dogrulanmis.sonuc.sonucOlcutu,
       veriDurumu: "var",
+      zamanGereksinimi: plan.sonucOlcutu.olcut === "atanmis_izleme_puani" ? "zamansiz" : "olay_donemi",
       zamanlar: zamanlariOlustur(plan),
       kaynaklar,
       satirlar,

@@ -9,6 +9,7 @@ import type {
   HapbiKirilim,
 } from "./kirilimSozlesmesi";
 import {
+  HAPBI_OLCUT_KATALOGU,
   hapbiOlcutKaynaginiBul,
 } from "./olcutler";
 import type {
@@ -52,7 +53,7 @@ export type HapbiSiralama = Readonly<{
 
 export type HapbiKarsilastirmaTarafi = Readonly<{
   kapsam: HapbiKapsami;
-  zaman: HapbiZamanAraligi;
+  zaman: HapbiZamanAraligi | null;
   filtreler: readonly HapbiFiltre[];
 }>;
 
@@ -65,7 +66,7 @@ export type HapbiSorgu = Readonly<{
   surum: typeof HAPBI_SORGU_SOZLESMESI_SURUMU;
   kapsam: HapbiKapsami;
   veriAlani: HapbiVeriAlani;
-  zaman: HapbiZamanAraligi;
+  zaman: HapbiZamanAraligi | null;
   olcut: HapbiOlcut;
   sonucOlcutu?: HapbiOlcut;
   kirilim: HapbiKirilim;
@@ -91,6 +92,7 @@ export type HapbiSorguHatasi =
   | "filtre_gecersiz"
   | "filtre_kapsam_disinda"
   | "zaman_gecersiz"
+  | "olcut_zaman_gereksinimi_uyusmuyor"
   | "karsilastirma_tarafi_gecersiz";
 
 export type HapbiSorguDogrulamaSonucu =
@@ -126,7 +128,12 @@ function zamanGecerliMi(zaman: HapbiZamanAraligi): boolean {
 function alanVarMi(sorgu: HapbiSorgu, alan: HapbiIslemAlani): boolean {
   if (alan === "filtreler") return sorgu.filtreler.length > 0;
   if (alan === "sonucSiniri") return sorgu.sonucSiniri !== undefined;
-  return sorgu[alan] !== undefined;
+  return sorgu[alan] !== undefined && sorgu[alan] !== null;
+}
+
+function olcutZamaniGecerliMi(olcut: HapbiOlcut, zaman: HapbiZamanAraligi | null): boolean {
+  const gereksinim = HAPBI_OLCUT_KATALOGU[olcut].zamanGereksinimi;
+  return gereksinim === "zamansiz" ? zaman === null : zaman !== null && zamanGecerliMi(zaman);
 }
 
 function filtreyiDogrula(
@@ -153,10 +160,11 @@ function karsilastirmaTarafiGecerliMi(
   taraf: HapbiKarsilastirmaTarafi,
   anaKapsam: HapbiKapsami,
   veriAlani: HapbiVeriAlani,
+  olcut: HapbiOlcut,
 ): boolean {
   if (taraf.kapsam.authId !== anaKapsam.authId) return false;
   if (taraf.kapsam.veriAlanlari[veriAlani].duzey === "yok") return false;
-  if (!zamanGecerliMi(taraf.zaman)) return false;
+  if (!olcutZamaniGecerliMi(olcut, taraf.zaman)) return false;
   return taraf.filtreler.every((filtre) =>
     filtreyiDogrula(filtre, taraf.kapsam, veriAlani) === "gecerli"
   );
@@ -178,7 +186,9 @@ export function hapbiSorgusunuDogrula(sorgu: HapbiSorgu): HapbiSorguDogrulamaSon
   if (sorgu.kapsam.veriAlanlari[sorgu.veriAlani].duzey === "yok") {
     return { gecerli: false, hata: "veri_alani_kapsam_disinda" };
   }
-  if (!zamanGecerliMi(sorgu.zaman)) return { gecerli: false, hata: "zaman_gecersiz" };
+  if (!olcutZamaniGecerliMi(sorgu.olcut, sorgu.zaman)) {
+    return { gecerli: false, hata: "zaman_gecersiz" };
+  }
 
   if (hapbiOlcutKaynaginiBul(sorgu.olcut, sorgu.veriAlani).length === 0) {
     return { gecerli: false, hata: "olcut_veri_alaninda_kullanilamaz" };
@@ -214,6 +224,10 @@ export function hapbiSorgusunuDogrula(sorgu: HapbiSorgu): HapbiSorguDogrulamaSon
     if (sorgu.islem === "butunlesik" && sorgu.sonucOlcutu === sorgu.olcut) {
       return { gecerli: false, hata: "butunlesik_olcutler_ayni" };
     }
+    if (HAPBI_OLCUT_KATALOGU[sorgu.sonucOlcutu].zamanGereksinimi
+      !== HAPBI_OLCUT_KATALOGU[sorgu.olcut].zamanGereksinimi) {
+      return { gecerli: false, hata: "olcut_zaman_gereksinimi_uyusmuyor" };
+    }
   }
 
   if (sorgu.siralama) {
@@ -237,8 +251,8 @@ export function hapbiSorgusunuDogrula(sorgu: HapbiSorgu): HapbiSorguDogrulamaSon
   }
 
   if (sorgu.karsilastirma
-    && (!karsilastirmaTarafiGecerliMi(sorgu.karsilastirma.sol, sorgu.kapsam, sorgu.veriAlani)
-      || !karsilastirmaTarafiGecerliMi(sorgu.karsilastirma.sag, sorgu.kapsam, sorgu.veriAlani))) {
+    && (!karsilastirmaTarafiGecerliMi(sorgu.karsilastirma.sol, sorgu.kapsam, sorgu.veriAlani, sorgu.olcut)
+      || !karsilastirmaTarafiGecerliMi(sorgu.karsilastirma.sag, sorgu.kapsam, sorgu.veriAlani, sorgu.olcut))) {
     return { gecerli: false, hata: "karsilastirma_tarafi_gecersiz" };
   }
 

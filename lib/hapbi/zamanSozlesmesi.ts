@@ -20,39 +20,3 @@ export type HapbiZamanAraligi = Readonly<{
   bitisHaric: true;
   saatDilimi: "Europe/Istanbul";
 }>;
-
-export type HapbiZamanCozumlemeNedeni =
-  | "zaman_bulunamadi"
-  | "birden_fazla_zaman"
-  | "uc_ay_donem_degildir";
-
-export type HapbiZamanCozumlemeSonucu =
-  | Readonly<{
-    basarili: true;
-    zaman: HapbiZamanAraligi;
-    kaynak: "soru" | "devam_baglami";
-  }>
-  | Readonly<{
-    basarili: false;
-    neden: HapbiZamanCozumlemeNedeni;
-  }>;
-
-export type HapbiZamanCozumlemeSecenekleri = Readonly<{
-  simdi?: Date;
-  oncekiZaman?: HapbiZamanAraligi | null;
-  kesinDevamSorusuMu?: boolean;
-}>;
-
-export const HAPBI_ZAMAN_ES_ANLAMLARI = {
-  hafta: ["hafta"],
-  ay: ["ay"],
-  donem: ["dönem", "çeyrek", "kuartır", "quarter"],
-  yil: ["yıl"],
-} as const satisfies Readonly<Record<HapbiZamanTuru, readonly string[]>>;
-
-export const HAPBI_DONEM_AYLARI = [
-  [1, 2, 3],
-  [4, 5, 6],
-  [7, 8, 9],
-  [10, 11, 12],
-] as const;
