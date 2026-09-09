@@ -43,7 +43,7 @@ const HapbiContext = createContext<HapbiContextTuru | null>(null);
 const ILK_KARSILAMA_MESAJI: HapbiMesaj = {
   id: "karsilama",
   rol: "hapbi",
-  metin: "Merhaba! HapBilgi kavramlarını açıklayabilir ve kişisel T-Club net puanını dönem bazında söyleyebilirim. Örnek: “HBStore nedir?” veya “Bu ay puanım kaç?”",
+  metin: "Merhaba! Değişimi başlatmak için 'bi' soru sormak ister misin?",
   zaman: "Şimdi",
 };
 
