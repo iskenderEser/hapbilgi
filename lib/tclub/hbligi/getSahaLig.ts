@@ -29,6 +29,7 @@ export interface SahaLigKullanici {
   yanlis_cevap_kaybi: number;
   oneri_kaybi: number;
   toplam_puan: number;
+  eksik_puan_alanlari: string[];
 }
 
 export interface SahaLigSonuc {
@@ -56,6 +57,24 @@ function sayi(value: unknown): number {
   return Number.isFinite(sonuc) ? sonuc : 0;
 }
 
+const PUAN_ALANLARI = [
+  "izleme_puani",
+  "cevaplama_puani",
+  "oneri_puani",
+  "extra_puani",
+  "ileri_sarma_kaybi",
+  "yanlis_cevap_kaybi",
+  "oneri_kaybi",
+  "toplam_puan",
+] as const;
+
+function eksikPuanAlanlari(row: Record<string, unknown>): string[] {
+  return PUAN_ALANLARI.filter((alan) => {
+    const deger = row[alan];
+    return deger === null || deger === undefined || deger === "" || !Number.isFinite(Number(deger));
+  });
+}
+
 function satiraCevir(row: Record<string, unknown>): SahaLigKullanici {
   return {
     kullanici_id: String(row.kullanici_id),
@@ -75,6 +94,7 @@ function satiraCevir(row: Record<string, unknown>): SahaLigKullanici {
     yanlis_cevap_kaybi: sayi(row.yanlis_cevap_kaybi),
     oneri_kaybi: sayi(row.oneri_kaybi),
     toplam_puan: sayi(row.toplam_puan),
+    eksik_puan_alanlari: eksikPuanAlanlari(row),
   };
 }
 
