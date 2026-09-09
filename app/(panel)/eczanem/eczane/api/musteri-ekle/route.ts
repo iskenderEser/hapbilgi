@@ -16,6 +16,8 @@ import { eczaciAktifEczanesi } from "@/lib/eczanem/eczaci";
 import { telefonNormalize } from "@/lib/eczanem/telefon";
 import { ECLUB_UYESI_MUSTERI_OLAMAZ_MESAJI, eclubUyesiTelefonMu } from "@/lib/eczanem/eclubUyesiKontrol";
 import { authTelafisiYap, provizyonBaslat, provizyonDurumuYaz } from "@/lib/kimlik/provizyon";
+import { adSoyadBicimle } from "@/lib/utils/adSoyadBicimle";
+
 
 function epostaGecerliMi(eposta: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(eposta);
@@ -127,9 +129,27 @@ export async function POST(request: NextRequest) {
       return validasyonHatasi("Bu telefon sistemde kayıtlı. Kısa yoldan 'Kayıtlı Müşteriyi Bağla' işlemini kullanın.", ["telefon"]);
     }
 
-    const adSoyad = String(body?.ad_soyad ?? "").trim();
-    if (adSoyad.length < 3) return validasyonHatasi("Ad soyad girin.", ["ad_soyad"]);
-    if (adSoyad.length > 200) return validasyonHatasi("Ad soyad 200 karakterden uzun olamaz.", ["ad_soyad"]);
+    let ad = String(body?.ad ?? "").trim();
+    let soyad = String(body?.soyad ?? "").trim();
+    let adSoyad = String(body?.ad_soyad ?? "").trim();
+
+    if (!ad && !soyad && adSoyad) {
+      const parcalar = adSoyad.split(/\s+/);
+      soyad = parcalar.length > 1 ? parcalar.pop()! : "";
+      ad = parcalar.join(" ");
+    }
+    if (!adSoyad && (ad || soyad)) {
+      adSoyad = [ad, soyad].filter(Boolean).join(" ");
+    }
+
+    ad = adSoyadBicimle(ad);
+    soyad = adSoyadBicimle(soyad);
+    adSoyad = [ad, soyad].filter(Boolean).join(" ");
+
+    if (ad.length < 2) return validasyonHatasi("Ad en az 2 karakter olmalıdır.", ["ad"]);
+    if (soyad.length < 2) return validasyonHatasi("Soyad en az 2 karakter olmalıdır.", ["soyad"]);
+    if (ad.length > 100) return validasyonHatasi("Ad 100 karakterden uzun olamaz.", ["ad"]);
+    if (soyad.length > 100) return validasyonHatasi("Soyad 100 karakterden uzun olamaz.", ["soyad"]);
 
     const eposta = String(body?.eposta ?? "").trim().toLowerCase();
     if (!eposta) return validasyonHatasi("E-posta zorunludur.", ["eposta"]);
@@ -151,7 +171,7 @@ export async function POST(request: NextRequest) {
       email: eposta,
       password: sifre,
       email_confirm: true,
-      user_metadata: { kimlik: "eczanem_musteri", ad_soyad: adSoyad },
+      user_metadata: { kimlik: "eczanem_musteri", ad, soyad, ad_soyad: adSoyad },
     });
     if (authInsertHatasi || !authData?.user) {
       await provizyonDurumuYaz(adminSupabase, provizyon.islemId, "basarisiz", { hata: authInsertHatasi?.message ?? "Auth kullanıcısı oluşmadı." });
@@ -171,6 +191,8 @@ export async function POST(request: NextRequest) {
       p_auth_user_id: authUserId,
       p_eczane_id: eden.eczaneId!,
       p_islem_yapan_kisi_id: eden.kisiId!,
+      p_ad: ad,
+      p_soyad: soyad,
     });
     if (musteriHatasi || !yeniMusteriId) {
       const telafi = await authTelafisiYap(

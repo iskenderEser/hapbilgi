@@ -4,7 +4,9 @@ CREATE OR REPLACE FUNCTION public.eczanem_yeni_musteri_provizyonu_izli(
   p_ad_soyad text,
   p_auth_user_id uuid,
   p_eczane_id uuid,
-  p_islem_yapan_kisi_id uuid
+  p_islem_yapan_kisi_id uuid,
+  p_ad text DEFAULT NULL,
+  p_soyad text DEFAULT NULL
 )
 RETURNS uuid
 LANGUAGE plpgsql
@@ -14,6 +16,9 @@ AS $fonksiyon$
 DECLARE
   v_musteri_id uuid;
   v_uyelik_id uuid;
+  v_ad text;
+  v_soyad text;
+  v_ad_soyad text;
 BEGIN
   IF NOT public.eczanem_personel_eczane_yetkili_mi(p_islem_yapan_kisi_id, p_eczane_id) THEN
     RAISE EXCEPTION 'Bu eczanede aktif işlem yetkiniz yok.' USING ERRCODE = 'P0001';
@@ -31,10 +36,14 @@ BEGIN
     RAISE EXCEPTION 'Müşteri Auth hesabı bulunamadı.' USING ERRCODE = 'P0001';
   END IF;
 
+  v_ad := COALESCE(NULLIF(trim(p_ad), ''), split_part(trim(p_ad_soyad), ' ', 1));
+  v_soyad := COALESCE(NULLIF(trim(p_soyad), ''), substr(trim(p_ad_soyad), length(split_part(trim(p_ad_soyad), ' ', 1)) + 2));
+  v_ad_soyad := COALESCE(NULLIF(trim(p_ad_soyad), ''), trim(concat_ws(' ', v_ad, v_soyad)));
+
   INSERT INTO public.eczanem_musteriler (
-    telefon, ad_soyad, kvkk_onay_tarihi, aktif_mi, auth_user_id
+    telefon, ad, soyad, ad_soyad, kvkk_onay_tarihi, aktif_mi, auth_user_id
   ) VALUES (
-    p_telefon, p_ad_soyad, now(), true, p_auth_user_id
+    p_telefon, v_ad, v_soyad, v_ad_soyad, now(), true, p_auth_user_id
   ) RETURNING musteri_id INTO v_musteri_id;
 
   INSERT INTO public.eczanem_uyelikler (
@@ -55,7 +64,8 @@ BEGIN
 END;
 $fonksiyon$;
 
-REVOKE ALL ON FUNCTION public.eczanem_yeni_musteri_provizyonu_izli(text, text, uuid, uuid, uuid)
+REVOKE ALL ON FUNCTION public.eczanem_yeni_musteri_provizyonu_izli(text, text, uuid, uuid, uuid, text, text)
   FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.eczanem_yeni_musteri_provizyonu_izli(text, text, uuid, uuid, uuid)
+GRANT EXECUTE ON FUNCTION public.eczanem_yeni_musteri_provizyonu_izli(text, text, uuid, uuid, uuid, text, text)
   TO service_role;
+

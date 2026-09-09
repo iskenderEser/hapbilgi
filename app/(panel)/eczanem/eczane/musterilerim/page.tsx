@@ -124,7 +124,7 @@ export default function EczanemMusterilerimPage() {
   const musteriKaydet = async (event: React.FormEvent) => {
     event.preventDefault(); setKGonderiliyor(true);
     try {
-      const res = await fetch("/eczanem/eczane/api/musteri-ekle", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ad_soyad: `${kAd} ${kSoyad}`.trim(), telefon: kTel, eposta: kEposta, sifre: kSifre }) });
+      const res = await fetch("/eczanem/eczane/api/musteri-ekle", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ad: kAd.trim(), soyad: kSoyad.trim(), ad_soyad: `${kAd.trim()} ${kSoyad.trim()}`.trim(), telefon: kTel, eposta: kEposta, sifre: kSifre }) });
       const data = await res.json();
       if (!res.ok) { hata(data.hata ?? "Müşteri kaydedilemedi.", "müşteri kaydı"); return; }
       basari("Müşteri kaydedildi. Belirlenen giriş bilgileriyle Eczanem'e erişebilir.");
