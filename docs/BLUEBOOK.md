@@ -17,6 +17,17 @@ BLUEBOOK kayıtları aşağıdaki doğrulama kaynakları birlikte değerlendiril
 
 Bluebook'taki güncellik ve doğrulama ifadeleri son incelenen sürüm ve belirtilen kontrol tarihi için geçerlidir. Tarihsel test sonuçları güncel sonuç gibi kullanılmaz; canlı ortamda doğrulanmamış bir durum canlıda tamamlanmış veya üretime hazır olarak kaydedilmez.
 
+### Kanonik Zaman Değerleri
+HapBilgi'nin bütün modüllerinde ve HapBi sorgularında geçerli zaman değerleri yalnızca aşağıdakilerdir. Bütün başlangıç ve bitişler Türkiye saatine göre değerlendirilir:
+
+* **Gün:** 00:00–23:59.
+* **Hafta:** Pazartesi–Pazar.
+* **Ay:** 01–28/29/30/31.
+* **Dönem:** Ocak–Şubat–Mart, Nisan–Mayıs–Haziran, Temmuz–Ağustos–Eylül veya Ekim–Kasım–Aralık.
+* **Yıl:** 01.01.yyyy–31.12.yyyy.
+
+**Mevcut Kod Uyum Durumu:** Kod tabanındaki bazı dosyalar yukarıdaki sabit takvim aralıklarından farklı olarak çalıştırıldığı ana göre kayan hareketli tarih aralıkları kullanmaktadır. Sabit takvim aralığı kullanan dosyalar ile hareketli tarih aralığı kullanan dosyalar ayrıca belirlenip birbirinden ayrılmadan kodun bu sözleşmeyle bütünüyle uyumlu olduğu kabul edilmez.
+
 ---
 
 # 0. BÖLÜM: GENEL SİSTEM MİMARİSİ, KİMLİK, ROLLER VE GÜVENLİK ANAYASASI
@@ -402,7 +413,7 @@ Tarihsel serbest çok turlu function-calling döngüsü analitik sorgularda tama
 #### 5.2. Kaynaklar ve Yetki Kapsamı
 * **Sürümlü Platform Bilgisi:** `lib/hapbi/bilgiKaynaklari.ts`, BLUEBOOK'un kullanıcıya açıklanabilir iş kurallarından hazırlanmış sürümlü HapBi kaynağıdır. BLUEBOOK otomatik olarak modele verilmez. Onaylanmış iş modeli veya rol değişikliği bu dosyaya ayrıca işlenmeden HapBi kaynağı güncel sayılmaz.
 * **Araç Sözleşmeleri:** `aracTanimlari.ts`, Gemini'ye sunulan salt-okur araç şemalarının; `araclar.ts` ise doğrulanmış kullanıcı bağlamıyla ilgili motoru yükleyen dağıtıcının kaynağıdır. Platform, eğitim, gelişim, saha, üretim, E-Club ve ortak analitik okuyucuları `aracMotorlari/` altında ayrıdır. `analitik_sorgu` aracı modelden organizasyon kapsamı kabul etmez; kapsamı sunucuda çözer ve T-Club, C-Club, E-Club ya da üretim alanını sürümlü kanonik analitik sözleşmeyle okur.
-* **Doğal Dil Niyet ve Tarif Mimarisi:** `lib/hapbi/niyet/` modülü; doğal dil sorgularını Gemini olmadan Türkçe sözlük (`sozluk.ts`), dönem çözümleyici (`donem.ts`) ve kural tabanlı derleyici (`derleyici.ts`) ile kanonik sorguya (`sozlesme.ts`) ve önceden tanımlı yürütme tarifine (`tarifler.ts`, `tarifSecici.ts`) dönüştürür.
+* **Doğal Dil Niyet ve Tarif Mimarisi:** `lib/hapbi/niyet/` modülü; doğal dil sorgularını Gemini olmadan Türkçe sözlük (`sozluk.ts`), dönem çözümleyici (`donem.ts`) ve kural tabanlı derleyici (`derleyici.ts`) ile kanonik sorguya (`sozlesme.ts`) ve önceden tanımlı yürütme tarifine (`tarifler.ts`, `tarifSecici.ts`) dönüştürür. HapBi zaman sorgularında yalnız kanonik Gün, Hafta, Ay, Dönem ve Yıl değerlerini kullanır; bunların sınırları Bluebook'un Kanonik Zaman Değerleri sözleşmesine göre Türkiye saatinde hesaplanır.
 * **Merkezi Kapsam Çözücüsü:** `lib/hapbi/kapsam/` modülü; oturum sahibinin kimliğini statik rol matrisi (`rolMatrisi.ts`) üzerinden T-Club, C-Club, E-Club ve üretim veri alanlarının kişisel, sorumluluk, takım veya firma kapsamına deterministik olarak çözer (`cozucu.ts`, `yetki.ts`).
 * **Hızlı Sorular:** `hizliSorgu.ts`, role uygun hazır soru metinleri ile bunların araç ve parametre planlarının tek kaynağıdır. Sorular aksi belirtilmedikçe güncel Türkiye haftasını kullanır; E-Club kişisel durum sorgusu lig veya dönem parametresi taşımaz.
 * **Üretim Raporu:** `uretim_raporu`, `/raporlar/uretim` ekranıyla ortak `lib/rapor/uretim/getUretimData.ts` okuyucusunu kullanır. Kullanıcının yetkili olduğu firmanın yayın portföyünü, kişisel üretim görevlerinden ve anlık canlı stok dağılımından ayırır. Kapsam veya kaynak hatası sıfır sonuç gibi sunulmaz.
@@ -2377,7 +2388,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `derleyici.ts` | TypeScript / Lib | Doğal dildeki sayısal ve analitik soruları Gemini kullanmadan deterministik olarak kanonik sorgu nesnesine derleyen doğal dil çözümleyicisidir. |
-| `donem.ts` | TypeScript / Lib | Hafta, ay, çeyrek, yıl ve dönemsel zaman ifadelerini ortak takvim bağlamında kanonik analitik dönem nesnesine dönüştürür. |
+| `donem.ts` | TypeScript / Lib | Gün, hafta, ay, dönem ve yıl zaman ifadelerini ortak Türkiye takvimi bağlamında kanonik analitik zaman nesnesine dönüştürür. |
 | `normalizasyon.ts` | TypeScript / Lib | Doğal dil soru metnindeki Türkçe karakter varyasyonlarını, ekleri ve yazım hatalarını analitik derleme için standartlaştırır. |
 | `sozlesme.ts` | TypeScript / Lib | Kanonik analitik sorgu (`HapbiKanonikSorgu`), veri alanı, ölçüt, boyut ve işlem türlerini tanımlayan tip güvenli sözleşmedir. |
 | `sozluk.ts` | TypeScript / Lib | Analitik ölçüt, boyut, işlem ve varlık terimlerinin zengin Türkçe eşanlamlılar ve dil kalıpları sözlüğüdür. |
@@ -2651,7 +2662,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `kontrol.ts` | TypeScript / Lib | Sistem genelindeki tüm periyot (hafta, ay, dönem, yıl) başlangıç ve bitişlerini Türkiye saat dilimine göre hesaplayan zaman motoru. |
+| `kontrol.ts` | TypeScript / Lib | Sistem genelindeki Gün, Hafta, Ay, Dönem ve Yıl başlangıç ve bitişlerini Kanonik Zaman Değerleri sözleşmesine ve Türkiye saat dilimine göre hesaplayan zaman motoru. |
 
 ## 8. COMPONENTS, HOOKS, TYPES VE YEREL ARAÇLAR
 
