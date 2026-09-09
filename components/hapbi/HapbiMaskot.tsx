@@ -7,20 +7,14 @@
 import React, { useState } from "react";
 import { useHapbi } from "./HapbiProvider";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { ECLUB_TUKETICI_ROLLERI, MUSTERI_ROLU } from "@/lib/utils/roller";
+import { hapbiKullanabilirMi } from "@/lib/hapbi/roller";
 
 export default function HapbiMaskot() {
   const { kullanici } = useAuth();
   const { chatAcik, toggleChat } = useHapbi();
   const [isHovered, setIsHovered] = useState(false);
 
-  // E-Club eczane üyeleri ve dış müşteriler için yüzen maskot gösterilmez.
-  if (
-    !kullanici ||
-    ECLUB_TUKETICI_ROLLERI.includes(kullanici.rol) ||
-    kullanici.kimlik_turu === "eclub_kisi" ||
-    kullanici.rol === MUSTERI_ROLU
-  ) {
+  if (!kullanici || !hapbiKullanabilirMi(kullanici.kimlik_turu ?? "", kullanici.rol)) {
     return null;
   }
 
@@ -29,66 +23,71 @@ export default function HapbiMaskot() {
       className="fixed bottom-6 right-6 z-50 flex items-center gap-3 select-none"
       style={{ fontFamily: "'Nunito', sans-serif" }}
     >
-      {/* Konuşma Baloncuğu / Tooltip */}
+      {/* Slogan Baloncuğu / Tooltip */}
       <div
         className={`transition-all duration-300 transform ${
           isHovered && !chatAcik ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2 pointer-events-none"
         }`}
       >
         <div
-          className="bg-orange-500 text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-lg shadow-orange-500/30 flex items-center gap-1.5 whitespace-nowrap border border-orange-400/50"
+          className="bg-gray-900/95 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg shadow-black/10 flex items-center gap-1.5 whitespace-nowrap border border-white/10"
         >
-          <span>{"ben hapbi'yim"}</span>
+          <span className="font-extrabold text-orange-400 tracking-tight">bi</span>
+          <span className="text-gray-600">|</span>
+          <div className="text-gray-200 flex items-center gap-1.5">
+            <span>Sor</span>
+            <span className="w-1 h-1 rounded-full bg-orange-400/80 flex-shrink-0" />
+            <span>Öğren</span>
+            <span className="w-1 h-1 rounded-full bg-orange-400/80 flex-shrink-0" />
+            <span>Değiştir</span>
+          </div>
         </div>
       </div>
 
-      {/* Yüzen 3D Maskot Butonu */}
+      {/* Yüzen bi Butonu */}
       <button
         type="button"
         onClick={toggleChat}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        aria-label="Hapbi AI Asistanı"
-        className="relative group cursor-pointer border-none bg-transparent p-0 transition-transform duration-300 hover:scale-110 active:scale-95 focus:outline-none"
+        aria-label="bi"
+        className="relative group cursor-pointer border-none bg-transparent p-0 transition-transform duration-300 hover:scale-105 active:scale-95 focus:outline-none"
         style={{
-          width: "57px",
-          height: "57px",
-          animation: "hapbi-float 3s ease-in-out infinite",
+          width: "56px",
+          height: "56px",
+          animation: "bi-float 3s ease-in-out infinite",
         }}
       >
         {/* Arkadaki Yumuşak Işıma Efekti (Glow) */}
         <div
-          className="absolute inset-0 rounded-full bg-orange-500/20 blur-md transition-all duration-300 group-hover:bg-orange-500/40 group-hover:blur-lg"
-          style={{ transform: "scale(0.85)" }}
+          className="absolute inset-0 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 blur-md opacity-50 transition-all duration-300 group-hover:opacity-80 group-hover:blur-lg"
+          style={{ transform: "scale(0.9)" }}
         />
 
-        {/* 3D Maskot Görseli (Hover olunca göz kırpan versiyona geçer) */}
-        <img
-          src={isHovered ? "/hapbi-wink.png" : "/hapbi.png"}
-          alt="Hapbi 3D Baykuş Maskot"
-          className="relative w-full h-full object-contain drop-shadow-xl transition-all duration-200"
-          style={{
-            filter: "drop-shadow(0 10px 15px rgba(249, 115, 22, 0.35))",
-          }}
-        />
+        {/* Ana Dairesel bi Butonu */}
+        <div className="relative w-full h-full rounded-full bg-gradient-to-tr from-orange-600 via-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/30 border-2 border-white/90">
+          <span className="text-white font-black text-2xl tracking-tighter select-none font-sans drop-shadow-sm lowercase">
+            bi
+          </span>
+        </div>
 
-        {/* Online / Canlı Durum Rozeti */}
+        {/* Canlı Durum Rozeti */}
         <div
-          className="absolute bottom-1 right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white shadow-md flex items-center justify-center"
-          title="Hapbi Canlı ve Hazır"
+          className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white shadow-sm flex items-center justify-center"
+          title="bi hazır"
         >
-          <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+          <div className="w-1 h-1 bg-white rounded-full animate-ping" />
         </div>
       </button>
 
       {/* CSS Keyframes for Floating Animation */}
       <style jsx global>{`
-        @keyframes hapbi-float {
+        @keyframes bi-float {
           0%, 100% {
-            transform: translateY(0px) rotate(0deg);
+            transform: translateY(0px);
           }
           50% {
-            transform: translateY(-8px) rotate(1.5deg);
+            transform: translateY(-5px);
           }
         }
       `}</style>

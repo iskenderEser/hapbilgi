@@ -52,7 +52,7 @@ const HapbiContext = createContext<HapbiContextTuru | null>(null);
 const ILK_KARSILAMA_MESAJI: HapbiMesaj = {
   id: "karsilama",
   rol: "hapbi",
-  metin: "Merhaba, ben hapbi... hapbilgi'nin işleyişini açıklayabilir, öğreme sonuçlarını gösterebilir ve daha iyisi için öneriler sunabilirim.",
+  metin: "Merhaba! Değişimi başlatmak için 'bi' soru sormak ister misin?",
   zaman: "Şimdi",
 };
 
@@ -104,7 +104,7 @@ function HapbiOturumProvider({ children }: { children: React.ReactNode }) {
       if (controller.signal.aborted) return;
       if (!res.ok) {
         if (data.kod === "SOHBET_YENILE") sohbetRef.current = undefined;
-        throw new Error(data.error || "hapbi şu anda yanıt veremiyor. Lütfen tekrar deneyin.");
+        throw new Error(data.error || "bi şu anda yanıt veremiyor. Lütfen tekrar deneyin.");
       }
       sohbetRef.current = data.sohbet;
       setMesajlar(prev => [...prev, {

@@ -7,7 +7,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Atom } from "lucide-react";
+import { Atom, RotateCcw, X } from "lucide-react";
 import { useHapbi } from "./HapbiProvider";
 
 function renderHapbiMetin(metin: string, isUser = false): React.ReactNode {
@@ -93,7 +93,7 @@ export default function HapbiChatModal() {
   return (
     <div
       role="dialog"
-      aria-label="hapbi sohbeti"
+      aria-label="bi sohbeti"
       className="fixed bottom-6 right-6 z-50 flex flex-col overflow-hidden bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-orange-100 transition-all duration-300 animate-in fade-in zoom-in-95"
       style={{
         width: "390px",
@@ -106,26 +106,26 @@ export default function HapbiChatModal() {
     >
       {/* Üst Başlık (Header) */}
       <div
-        className="flex items-center justify-between px-4 py-3.5 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-white select-none"
+        className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-white select-none"
       >
         <div className="flex items-center gap-3">
-          <div className="relative w-10 h-10 rounded-full bg-white p-1 flex items-center justify-center backdrop-blur-sm">
-            <img src="/hapbi.png" alt="Hapbi" className="w-8 h-8 object-contain" />
+          <div className="relative w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-md flex-shrink-0">
+            <span className="text-orange-600 font-black text-lg tracking-tighter lowercase select-none">
+              bi
+            </span>
             <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 rounded-full border border-white" />
           </div>
-          <div>
-            <div className="flex items-center gap-1 font-extrabold text-[16px] tracking-tight leading-tight">
-              <Atom className="w-4 h-4 text-amber-200 flex-shrink-0" aria-hidden="true" />
-              <span>hapbi</span>
-            </div>
-            <p className="text-[11px] text-white/85 font-medium leading-none mt-0.5">
-              Öğrenme analitiği ve öneri
-            </p>
+          <div className="flex items-center gap-2 text-[13px] text-white font-extrabold tracking-wide leading-none select-none">
+            <span>Sor</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-white/75 flex-shrink-0" />
+            <span>Öğren</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-white/75 flex-shrink-0" />
+            <span>Değiştir</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-        <button type="button" onClick={temizle} title="Yeni sohbet" aria-label="Yeni sohbet" className="text-xs text-white/90 cursor-pointer">↺</button>
+        <button type="button" onClick={temizle} title="Yeni sohbet" aria-label="Yeni sohbet" className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer border-none transition-colors"><RotateCcw className="w-5 h-5" aria-hidden="true" /></button>
         <button
           type="button"
           onClick={() => setChatAcik(false)}
@@ -133,7 +133,7 @@ export default function HapbiChatModal() {
           title="Kapat"
           aria-label="Sohbeti kapat"
         >
-          ✕
+          <X className="w-5 h-5" aria-hidden="true" />
         </button>
         </div>
       </div>
@@ -206,8 +206,8 @@ export default function HapbiChatModal() {
 
         {yukleniyor && (
           <div className="flex items-center gap-2 text-xs text-orange-600 font-bold bg-orange-50 px-3 py-2 rounded-xl self-start border border-orange-100 animate-pulse">
-            <img src="/hapbi-wink.png" alt="Düşünüyor" className="w-5 h-5 object-contain" />
-            <span>hapbi kaynakları inceliyor...</span>
+            <div className="w-3.5 h-3.5 rounded-full border-2 border-orange-500 border-t-transparent animate-spin" />
+            <span>bi kontrol ediyor...</span>
           </div>
         )}
 
@@ -217,15 +217,15 @@ export default function HapbiChatModal() {
       {/* Soru Giriş Alanı */}
       <form
         onSubmit={handleSubmit}
-        className="px-3 pt-3 pb-2 bg-white border-t border-gray-100 flex items-center gap-2"
+        className="px-3 py-2.5 bg-white border-t border-gray-100 flex items-center gap-2"
       >
         <input
           type="text"
           value={girdi}
           maxLength={2000}
-          aria-label="hapbi'ye sorunuz"
+          aria-label="bi'ye sorunuz"
           onChange={(e) => setGirdi(e.target.value)}
-          placeholder="Öğrenmek için sorun..."
+          placeholder="Değişimi başlatmak için bi' soru sorun..."
           disabled={yukleniyor}
           className="flex-1 bg-gray-50 border border-gray-200 focus:border-orange-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-800 placeholder-gray-400 outline-none transition-all"
         />
@@ -237,9 +237,6 @@ export default function HapbiChatModal() {
           Gönder
         </button>
       </form>
-      <p className="px-3 pb-2.5 bg-white text-center text-[10px] leading-snug font-semibold text-red-600">
-        Yaptığınız sorgulamalar, içeriğe ve AI’ın yanıt süresine bağlı olarak zaman alabilir.
-      </p>
     </div>
   );
 }
