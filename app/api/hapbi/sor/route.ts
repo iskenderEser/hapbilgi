@@ -1,3 +1,4 @@
+import { yonlendirmeYaniti } from '@/lib/bi/yonlendirme';
 import { NextResponse } from "next/server";
 
 import { biKullanabilirMi } from "@/lib/bi/erisim";
@@ -97,7 +98,7 @@ export async function POST(istek: Request): Promise<NextResponse> {
       return json({ error: "bi bu kullanıcı rolünde kullanılamaz.", kod: "BI_KAPALI", istekId }, 403);
     }
 
-    const nedir = nedirSorusunuCoz(soru);
+    const nedir = nedirSorusunuCoz(soru, kimlik.rol ?? "");
     if (nedir.durum === "bulundu") {
       return json({
         cevap: nedir.konu.cevap,
@@ -109,13 +110,13 @@ export async function POST(istek: Request): Promise<NextResponse> {
     }
     // Tanım paketinde bulunmayan kavrama ilgisiz rapor önerilmez.
     if (nedir.durum === "tanim_yok") {
-      return json({ cevap: "Puanlarınızı hafta, ay, dönem veya yıl için sorabilirsiniz.", kaynaklar: [], kullanim: { yol: "destek" }, istekId });
+      return json({ ...await yonlendirmeYaniti(db, kimlik.kimlik_id ?? '', kimlik.rol ?? '', 'genel'), istekId });
     }
 
 
     const kac = await geminiIleKacSorusunuCoz(soru, istek.signal, puanBaglaminiOku(baglam, kimlik.rol ?? ""), kimlik.rol ?? "");
     if (kac.durum !== "bulundu") {
-      return json({ cevap: "Puanlarınızı hafta, ay, dönem veya yıl için sorabilirsiniz.", kaynaklar: [], kullanim: { yol: "destek" }, istekId });
+      return json({ ...await yonlendirmeYaniti(db, kimlik.kimlik_id ?? '', kimlik.rol ?? '', kac.yon), istekId });
     }
     if (!kimlik.kimlik_id || !kimlik.rol) {
       return json({ error: "bi kullanıcı kapsamı doğrulanamadı.", kod: "KIMLIK", istekId }, 503);
@@ -144,7 +145,9 @@ export async function POST(istek: Request): Promise<NextResponse> {
         kullanim: { yol: "kac", olcut: kac.sorgu.olcut }, istekId });
     } catch (hata) {
       const kod = hata instanceof Error ? hata.message : "VERI_OKUNAMADI";
-      return json({ cevap: "Puan verisi şu anda okunamadı. Lütfen tekrar deneyin.", kaynaklar: [], kullanim: { yol: kod.toLowerCase() }, istekId });
+      return json({ ...await yonlendirmeYaniti(db, kimlik.kimlik_id, kimlik.rol,
+        kac.yon === 'genel' || !kac.yon ? (kimlik.rol === 'bm' || ['bm', 'bm_toplam'].includes(kac.sorgu.hedef?.tur ?? '') ? 'cclub' : 'tclub') : kac.yon),
+        kullanim: { yol: kod.toLowerCase() }, istekId });
     }
   } catch (hata) {
     return hataYaniti(hata, istekId);

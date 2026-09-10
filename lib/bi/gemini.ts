@@ -1,7 +1,8 @@
+import { YON_KONULARI, YON_TALIMATI, yonKonusunuOku, type YonKonusu } from '@/lib/bi/yonlendirme';
 import { geminiJsonOku } from "@/lib/bi/geminiJson";
 import { puanBasliklari, puanBaglaminiOku, type PuanSorgusu } from "@/lib/bi/puanSozlesmesi";
 
-export type GeminiKacCozumu = (
+export type GeminiKacCozumu = { yon?: YonKonusu } & (
   | { durum: "bulundu"; sorgu: PuanSorgusu }
   | { durum: "eksik" }
   | { durum: "desteklenmiyor" }
@@ -56,9 +57,10 @@ oneri=BM önerisini tamamlama, eclub=eczane kullanıcısının öneriyi tamamlam
 ileri_sarma, yanlis_cevap, oneri_kaybi üç kayıp. toplam_kazanc=beş kazanım, toplam_kayip=üç kayıp.
 Challenge gönderme veya referral puanı UTT'de yok; desteklenmiyor döndür.`;
   try {
-    const sonuc = await geminiJsonOku(soru, TALIMAT + "\n" + rolTalimat + (gecerliBaglam ? "\nSon sorgu: " + JSON.stringify(gecerliBaglam) : "\nSon sorgu yok."), {
+    const sonuc = await geminiJsonOku(soru, TALIMAT + YON_TALIMATI + "\n" + rolTalimat + (gecerliBaglam ? "\nSon sorgu: " + JSON.stringify(gecerliBaglam) : "\nSon sorgu yok."), {
             type: "object",
             properties: {
+              yon: { type: "string", enum: [...YON_KONULARI] },
               ...(tm ? { hedef: { type: "object", properties: {
                 // Veri hedefleri; erişim rol listesi değildir.
                 // eslint-disable-next-line hapbilgi-mimari/rol-tek-kaynak
@@ -71,15 +73,15 @@ Challenge gönderme veya referral puanı UTT'de yok; desteklenmiyor döndür.`;
               geriye: { type: "integer", minimum: 0, maximum: 120 },
               karsilastir: { type: "boolean" },
             },
-            required: ["istek", "olcut", "zaman", "geriye", "karsilastir", ...(tm ? ["hedef"] : [])],
+            required: ["yon", "istek", "olcut", "zaman", "geriye", "karsilastir", ...(tm ? ["hedef"] : [])],
             additionalProperties: false,
           }, signal);
     if (!sonuc || typeof sonuc !== "object") return { durum: "baglanti_hatasi" };
     const veri = sonuc as Record<string, unknown>;
     const sorgu = puanBaglaminiOku(veri, rol);
     if (!sorgu) return { durum: "baglanti_hatasi" };
-    if (veri.istek === "bulundu") return { durum: "bulundu", sorgu };
-    if (veri.istek === "eksik" || veri.istek === "desteklenmiyor" || veri.istek === "kac_sorusu_degil") return { durum: veri.istek };
+    if (veri.istek === "bulundu") return { durum: "bulundu", sorgu, ...(veri.yon === undefined ? {} : { yon: yonKonusunuOku(veri.yon) }) };
+    if (veri.istek === "eksik" || veri.istek === "desteklenmiyor" || veri.istek === "kac_sorusu_degil") return { durum: veri.istek, ...(veri.yon === undefined ? {} : { yon: yonKonusunuOku(veri.yon) }) };
     return { durum: "baglanti_hatasi" };
   } catch {
     return { durum: "baglanti_hatasi" };
