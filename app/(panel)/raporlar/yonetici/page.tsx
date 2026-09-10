@@ -57,6 +57,7 @@ interface UrunDagilimiSatiri {
   video_puani?: number;
   soru_puani?: number;
   oneri_puani?: number;
+  eclub_puani?: number;
   extra_puan?: number;
   ileri_sarma_kaybi?: number;
   yanlis_cevap_kaybi?: number;
@@ -74,6 +75,7 @@ interface EgitimTuruEtkisiSatiri {
   izleme_puani: number;
   cevaplama_puani: number;
   oneri_puani: number;
+  eclub_puani?: number;
   extra_puani: number;
   ileri_sarma_kaybi: number;
   yanlis_cevap_kaybi: number;
@@ -100,6 +102,7 @@ interface RaporData {
     izleme_puani: number;
     cevaplama_puani: number;
     oneri_puani: number;
+    eclub_puani?: number;
     extra_puani: number;
     ileri_sarma_kaybi: number;
     yanlis_cevap_kaybi: number;
@@ -155,6 +158,7 @@ export default function YoneticiRaporPage() {
     { ad: 'Doğru cevap', puan: data.performans.cevaplama_puani },
     { ad: 'Öneri', puan: data.performans.oneri_puani },
     { ad: 'Extra', puan: data.performans.extra_puani },
+    { ad: 'E-Club', puan: (data.performans.eclub_puani ?? 0) },
   ] : [], [data]);
 
   const kayipKalemleri = useMemo(() => data ? [
@@ -182,6 +186,7 @@ export default function YoneticiRaporPage() {
           mevcut.soru_puani += u.soru_puani ?? 0;
           mevcut.oneri_puani += u.oneri_puani ?? 0;
           mevcut.extra_puan += u.extra_puan ?? 0;
+          mevcut.eclub_puani = (mevcut.eclub_puani ?? 0) + (u.eclub_puani ?? 0);
           mevcut.ileri_sarma_kaybi += u.ileri_sarma_kaybi ?? 0;
           mevcut.yanlis_cevap_kaybi += u.yanlis_cevap_kaybi ?? 0;
           mevcut.oneri_kaybi += u.oneri_kaybi ?? 0;
@@ -194,6 +199,7 @@ export default function YoneticiRaporPage() {
             soru_puani: u.soru_puani ?? 0,
             oneri_puani: u.oneri_puani ?? 0,
             extra_puan: u.extra_puan ?? 0,
+            eclub_puani: u.eclub_puani ?? 0,
             ileri_sarma_kaybi: u.ileri_sarma_kaybi ?? 0,
             yanlis_cevap_kaybi: u.yanlis_cevap_kaybi ?? 0,
             oneri_kaybi: u.oneri_kaybi ?? 0,
@@ -215,6 +221,7 @@ export default function YoneticiRaporPage() {
       soru_puani: k.cevaplama_puani,
       oneri_puani: k.oneri_puani,
       extra_puan: k.extra_puani,
+      eclub_puani: k.eclub_puani ?? 0,
       ileri_sarma_kaybi: k.ileri_sarma_kaybi,
       yanlis_cevap_kaybi: k.yanlis_cevap_kaybi,
       oneri_kaybi: k.oneri_kaybi,
@@ -395,6 +402,7 @@ export default function YoneticiRaporPage() {
               { ad: 'Doğru Cevap', puan: data.performans.cevaplama_puani, renk: '#1D9E75' },
               { ad: 'Öneri', puan: data.performans.oneri_puani, renk: '#1D9E75' },
               { ad: 'Extra', puan: data.performans.extra_puani, renk: '#1D9E75' },
+              { ad: 'E-Club', puan: (data.performans.eclub_puani ?? 0), renk: '#1D9E75' },
               { ad: 'İleri sarma', puan: -data.performans.ileri_sarma_kaybi, renk: '#D44B40' },
               { ad: 'Yanlış cevap', puan: -data.performans.yanlis_cevap_kaybi, renk: '#D44B40' },
               { ad: 'Öneri kaybı', puan: -data.performans.oneri_kaybi, renk: '#D44B40' },
@@ -459,6 +467,7 @@ export default function YoneticiRaporPage() {
                       { label: 'Doğru cevap puanı', value: seciliKategori.soru_puani, renk: '#16865f', prefix: '+ ' },
                       { label: 'Öneri puanı', value: seciliKategori.oneri_puani, renk: '#16865f', prefix: '+ ' },
                       { label: 'Extra puan', value: seciliKategori.extra_puan, renk: '#16865f', prefix: '+ ' },
+                      { label: 'E-Club puanı', value: (seciliKategori.eclub_puani ?? 0), renk: '#16865f', prefix: '+ ' },
                       { label: 'İleri sarma kaybı', value: seciliKategori.ileri_sarma_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },
                       { label: 'Yanlış cevap kaybı', value: seciliKategori.yanlis_cevap_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },
                       { label: 'Öneri kaybı', value: seciliKategori.oneri_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },

@@ -51,6 +51,7 @@ export async function GET(request: Request) {
     soru_puani: 0,
     oneri_puani: 0,
     extra_puan: 0,
+    eclub_puani: 0,
     ileri_sarma_kaybi: 0,
     yanlis_cevap_kaybi: 0,
     oneri_kaybi: 0,
@@ -60,6 +61,7 @@ export async function GET(request: Request) {
   const istatistikler = {
     izleme_puani: ozet.video_puani ?? 0,
     extra_puan: ozet.extra_puan ?? 0,
+    eclub_puani: ozet.eclub_puani ?? 0,
     oneri_puani: ozet.oneri_puani ?? 0,
     cevaplama_puani: ozet.soru_puani ?? 0,
     ileri_sarma_kaybi: ozet.ileri_sarma_kaybi ?? 0,

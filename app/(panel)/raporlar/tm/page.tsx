@@ -32,6 +32,7 @@ interface DagilimPuanlari {
   video_puani: number;
   soru_puani: number;
   oneri_puani: number;
+  eclub_puani?: number;
   extra_puan: number;
   ileri_sarma_kaybi: number;
   yanlis_cevap_kaybi: number;
@@ -67,6 +68,7 @@ interface RaporData {
     izleme_puani: number;
     cevaplama_puani: number;
     oneri_puani: number;
+    eclub_puani?: number;
     extra_puan: number;
     ileri_sarma_kaybi: number;
     yanlis_cevap_kaybi: number;
@@ -110,6 +112,7 @@ export default function TmRaporPage() {
     { ad: 'Doğru cevap', puan: data.istatistikler.cevaplama_puani },
     { ad: 'Öneri', puan: data.istatistikler.oneri_puani },
     { ad: 'Extra', puan: data.istatistikler.extra_puan },
+    { ad: 'E-Club', puan: (data.istatistikler.eclub_puani ?? 0) },
   ];
   const kayipKalemleri = [
     { ad: 'İleri sarma', puan: data.istatistikler.ileri_sarma_kaybi },
@@ -220,6 +223,7 @@ export default function TmRaporPage() {
               { ad: 'Doğru Cevap', puan: data.istatistikler.cevaplama_puani, renk: '#1D9E75' },
               { ad: 'Öneri', puan: data.istatistikler.oneri_puani, renk: '#1D9E75' },
               { ad: 'Extra', puan: data.istatistikler.extra_puan, renk: '#1D9E75' },
+              { ad: 'E-Club', puan: (data.istatistikler.eclub_puani ?? 0), renk: '#1D9E75' },
               { ad: 'İleri sarma', puan: -data.istatistikler.ileri_sarma_kaybi, renk: '#D44B40' },
               { ad: 'Yanlış cevap', puan: -data.istatistikler.yanlis_cevap_kaybi, renk: '#D44B40' },
               { ad: 'Öneri kaybı', puan: -data.istatistikler.oneri_kaybi, renk: '#D44B40' },
@@ -253,6 +257,7 @@ export default function TmRaporPage() {
                       { label: 'Doğru cevap puanı', value: seciliKategori.soru_puani, renk: '#16865f', prefix: '+ ' },
                       { label: 'Öneri puanı', value: seciliKategori.oneri_puani, renk: '#16865f', prefix: '+ ' },
                       { label: 'Extra puan', value: seciliKategori.extra_puan, renk: '#16865f', prefix: '+ ' },
+                      { label: 'E-Club puanı', value: (seciliKategori.eclub_puani ?? 0), renk: '#16865f', prefix: '+ ' },
                       { label: 'İleri sarma kaybı', value: seciliKategori.ileri_sarma_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },
                       { label: 'Yanlış cevap kaybı', value: seciliKategori.yanlis_cevap_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },
                       { label: 'Öneri kaybı', value: seciliKategori.oneri_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },

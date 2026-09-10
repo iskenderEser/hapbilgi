@@ -58,6 +58,7 @@ export async function getUretimData(
       cevaplama_puani: sayi(ham.cevaplama_puani),
       oneri_puani: sayi(ham.oneri_puani),
       extra_puani: sayi(ham.extra_puani),
+      eclub_puani: sayi(ham.eclub_puani),
       ileri_sarma_kaybi: sayi(ham.ileri_sarma_kaybi),
       yanlis_cevap_kaybi: sayi(ham.yanlis_cevap_kaybi),
       oneri_kaybi: sayi(ham.oneri_kaybi),

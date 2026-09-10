@@ -9,6 +9,7 @@ const PUAN_ALANLARI = [
   'soru_puani',
   'oneri_puani',
   'extra_puan',
+  'eclub_puani',
   'ileri_sarma_kaybi',
   'yanlis_cevap_kaybi',
   'oneri_kaybi',

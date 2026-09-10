@@ -18,6 +18,7 @@ export interface BmUttPerformans {
   izleme_puani: number;
   cevaplama_puani: number;
   oneri_puani: number;
+  eclub_puani?: number;
   extra_puan: number;
   ileri_sarma_kaybi: number;
   yanlis_cevap_kaybi: number;
@@ -35,6 +36,7 @@ export interface KullaniciOzetSatiri {
   video_puani: number;
   soru_puani: number;
   oneri_puani: number;
+  eclub_puani?: number;
   extra_puan: number;
   ileri_sarma_kaybi: number;
   yanlis_cevap_kaybi: number;

@@ -16,6 +16,7 @@ export interface UrunKirilim {
   video_puani: number;
   soru_puani: number;
   oneri_puani: number;
+  eclub_puani?: number;
   extra_puan: number;
   ileri_sarma_kaybi: number;
   yanlis_cevap_kaybi: number;
@@ -32,6 +33,7 @@ function kirilim(u: UrunKirilim): DagilimKalem[] {
     { ad: "Doğru Cevap", puan: u.soru_puani, renk: YESIL },
     { ad: "Öneri", puan: u.oneri_puani, renk: YESIL },
     { ad: "Extra", puan: u.extra_puan, renk: YESIL },
+    { ad: "E-Club", puan: (u.eclub_puani ?? 0), renk: YESIL },
     { ad: "İleri sarma", puan: -u.ileri_sarma_kaybi, renk: BORDO },
     { ad: "Yanlış cevap", puan: -u.yanlis_cevap_kaybi, renk: BORDO },
     { ad: "Öneri kaybı", puan: -u.oneri_kaybi, renk: BORDO },

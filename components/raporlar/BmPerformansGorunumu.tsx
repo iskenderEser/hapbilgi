@@ -89,6 +89,7 @@ export default function BmPerformansGorunumu({
                               <div className={bmStyles.detailGain}><span>Cevaplama</span><strong>+{formatPuan(bm.cevaplama_puani)}</strong></div>
                               <div className={bmStyles.detailGain}><span>Öneri</span><strong>+{formatPuan(bm.oneri_puani)}</strong></div>
                               <div className={bmStyles.detailGain}><span>Extra</span><strong>+{formatPuan(bm.extra_puan)}</strong></div>
+                              <div className={bmStyles.detailGain}><span>E-Club</span><strong>+{formatPuan((bm.eclub_puani ?? 0))}</strong></div>
                               <div className={bmStyles.detailLoss}><span>İleri sarma</span><strong>−{formatPuan(bm.ileri_sarma_kaybi)}</strong></div>
                               <div className={bmStyles.detailLoss}><span>Yanlış cevap</span><strong>−{formatPuan(bm.yanlis_cevap_kaybi)}</strong></div>
                               <div className={bmStyles.detailLoss}><span>Öneri kaybı</span><strong>−{formatPuan(bm.oneri_kaybi)}</strong></div>
@@ -123,6 +124,7 @@ export default function BmPerformansGorunumu({
                                           <div className={bmStyles.detailGain}><span>Cevaplama</span><strong>+{formatPuan(utt.cevaplama_puani)}</strong></div>
                                           <div className={bmStyles.detailGain}><span>Öneri</span><strong>+{formatPuan(utt.oneri_puani)}</strong></div>
                                           <div className={bmStyles.detailGain}><span>Extra</span><strong>+{formatPuan(utt.extra_puan)}</strong></div>
+                                          <div className={bmStyles.detailGain}><span>E-Club</span><strong>+{formatPuan((utt.eclub_puani ?? 0))}</strong></div>
                                           <div className={bmStyles.detailLoss}><span>İleri sarma</span><strong>−{formatPuan(utt.ileri_sarma_kaybi)}</strong></div>
                                           <div className={bmStyles.detailLoss}><span>Yanlış cevap</span><strong>−{formatPuan(utt.yanlis_cevap_kaybi)}</strong></div>
                                           <div className={bmStyles.detailLoss}><span>Öneri kaybı</span><strong>−{formatPuan(utt.oneri_kaybi)}</strong></div>

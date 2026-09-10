@@ -42,6 +42,7 @@ export async function GET(request: Request) {
     cevaplama_puani: genel.soru_puani,
     oneri_puani: genel.oneri_puani,
     extra_puan: genel.extra_puan,
+    eclub_puani: genel.eclub_puani,
     ileri_sarma_kaybi: genel.ileri_sarma_kaybi,
     yanlis_cevap_kaybi: genel.yanlis_cevap_kaybi,
     oneri_kaybi: genel.oneri_kaybi,
