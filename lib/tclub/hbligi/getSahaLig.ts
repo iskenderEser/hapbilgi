@@ -25,6 +25,7 @@ export interface SahaLigKullanici {
   cevaplama_puani: number;
   oneri_puani: number;
   extra_puani: number;
+  eclub_puani?: number;
   ileri_sarma_kaybi: number;
   yanlis_cevap_kaybi: number;
   oneri_kaybi: number;
@@ -90,6 +91,7 @@ function satiraCevir(row: Record<string, unknown>): SahaLigKullanici {
     cevaplama_puani: sayi(row.cevaplama_puani),
     oneri_puani: sayi(row.oneri_puani),
     extra_puani: sayi(row.extra_puani),
+    eclub_puani: sayi(row.eclub_puani),
     ileri_sarma_kaybi: sayi(row.ileri_sarma_kaybi),
     yanlis_cevap_kaybi: sayi(row.yanlis_cevap_kaybi),
     oneri_kaybi: sayi(row.oneri_kaybi),

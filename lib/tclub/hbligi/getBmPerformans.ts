@@ -83,6 +83,7 @@ export async function getBmPerformans(
     const izlemePuani = topla(hamUttler, "izleme_puani");
     const cevaplamaPuani = topla(hamUttler, "cevaplama_puani");
     const oneriPuani = topla(hamUttler, "oneri_puani");
+    const eclubPuani = topla(hamUttler, "eclub_puani");
     const extraPuan = topla(hamUttler, "extra_puan");
     const ileriSarmaKaybi = topla(hamUttler, "ileri_sarma_kaybi");
     const yanlisCevapKaybi = topla(hamUttler, "yanlis_cevap_kaybi");
@@ -100,14 +101,14 @@ export async function getBmPerformans(
       izleme_puani: izlemePuani,
       cevaplama_puani: cevaplamaPuani,
       oneri_puani: oneriPuani,
+      eclub_puani: eclubPuani,
       extra_puan: extraPuan,
       ileri_sarma_kaybi: ileriSarmaKaybi,
       yanlis_cevap_kaybi: yanlisCevapKaybi,
       oneri_kaybi: oneriKaybi,
-      kazanilan_toplam: izlemePuani + cevaplamaPuani + oneriPuani + extraPuan,
-      kaybedilen_toplam: ileriSarmaKaybi + yanlisCevapKaybi + oneriKaybi,
-      net_puan: izlemePuani + cevaplamaPuani + oneriPuani + extraPuan
-        - ileriSarmaKaybi - yanlisCevapKaybi - oneriKaybi,
+      kazanilan_toplam: topla(hamUttler, "kazanilan_toplam"),
+      kaybedilen_toplam: topla(hamUttler, "kaybedilen_toplam"),
+      net_puan: topla(hamUttler, "net_puan"),
       utt_listesi: uttListesi,
     };
   });

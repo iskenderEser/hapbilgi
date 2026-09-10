@@ -53,7 +53,7 @@ function hesapla(satirlar: SahaLigKullanici[]) {
   let aktif = 0;
 
   for (const s of satirlar) {
-    const k = s.izleme_puani + s.cevaplama_puani + s.oneri_puani + s.extra_puani;
+    const k = s.izleme_puani + s.cevaplama_puani + s.oneri_puani + s.extra_puani + (s.eclub_puani ?? 0);
     const z = s.ileri_sarma_kaybi + s.yanlis_cevap_kaybi + s.oneri_kaybi;
     kazanim += k;
     kayip += z;
@@ -96,7 +96,7 @@ export default function TakimLigAkordeonu({
       const bolgeListesi = [...bolgeMap.entries()].map(([bId, bData]) => {
         const uttSirali = esitPuanEsitSira(
           bData.satirlar.map((u) => {
-            const k = u.izleme_puani + u.cevaplama_puani + u.oneri_puani + u.extra_puani;
+            const k = u.izleme_puani + u.cevaplama_puani + u.oneri_puani + u.extra_puani + (u.eclub_puani ?? 0);
             const z = u.ileri_sarma_kaybi + u.yanlis_cevap_kaybi + u.oneri_kaybi;
             return {
               ...u,

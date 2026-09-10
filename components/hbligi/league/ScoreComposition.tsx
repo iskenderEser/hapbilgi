@@ -14,6 +14,7 @@ const RENK: Record<KirilimKalemi["tip"], string> = {
   izleme: "#16a34a",
   cevaplama: "#7c3aed",
   oneri: "#f59e0b",
+  eclub: "#237ac8",
   negatif: "#dc2626",
 };
 

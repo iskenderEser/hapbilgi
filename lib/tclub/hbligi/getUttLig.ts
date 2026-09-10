@@ -17,6 +17,7 @@ export interface UttLigSatiri {
   izleme_puani: number;
   cevaplama_puani: number;
   oneri_puani: number;
+  eclub_puani?: number;
   extra_puani: number;
   ileri_sarma_kaybi: number;
   yanlis_cevap_kaybi: number;
@@ -61,6 +62,7 @@ export async function getUttLig(
     cevaplama_puani: l.cevaplama_puani,
     oneri_puani: l.oneri_puani,
     extra_puani: l.extra_puani,
+    eclub_puani: l.eclub_puani ?? 0,
     ileri_sarma_kaybi: l.ileri_sarma_kaybi,
     yanlis_cevap_kaybi: l.yanlis_cevap_kaybi,
     oneri_kaybi: l.oneri_kaybi,

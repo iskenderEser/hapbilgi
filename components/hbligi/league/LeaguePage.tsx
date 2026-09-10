@@ -54,7 +54,7 @@ export default function LeaguePage({
   periyotSecici: ReactNode;
 }) {
   const puanGirildi = satirlar.some(
-    (r) => r.izleme_puani + r.cevaplama_puani + r.oneri_puani + r.extra_puani > 0,
+    (r) => r.izleme_puani + r.cevaplama_puani + r.oneri_puani + r.extra_puani + (r.eclub_puani ?? 0) > 0,
   );
 
   if (satirlar.length === 0 || !puanGirildi) {
@@ -82,7 +82,7 @@ export default function LeaguePage({
   const liderFark = ben.rank > 1 ? sirali[0].toplam_puan - ben.toplam_puan : 0;
   const altFark = ben.rank < sirali.length ? ben.toplam_puan - sirali[ben.rank].toplam_puan : null;
 
-  const pozitifToplam = Math.max(1, ben.izleme_puani + ben.cevaplama_puani + ben.oneri_puani + ben.extra_puani);
+  const pozitifToplam = Math.max(1, ben.izleme_puani + ben.cevaplama_puani + ben.oneri_puani + ben.extra_puani + (ben.eclub_puani ?? 0));
   const negatif = -(ben.ileri_sarma_kaybi + ben.yanlis_cevap_kaybi + ben.oneri_kaybi);
   const pozitifYuzde = (v: number) => Math.round((v / pozitifToplam) * 100);
   const negatifYuzde = (v: number) => -Math.round((Math.abs(v) / pozitifToplam) * 100);
@@ -90,6 +90,7 @@ export default function LeaguePage({
     { etiket: "İzleme Puanı", deger: ben.izleme_puani, yuzde: pozitifYuzde(ben.izleme_puani), tip: "izleme" },
     { etiket: "Cevaplama Puanı", deger: ben.cevaplama_puani, yuzde: pozitifYuzde(ben.cevaplama_puani), tip: "cevaplama" },
     { etiket: "Öneri Puanı", deger: ben.oneri_puani, yuzde: pozitifYuzde(ben.oneri_puani), tip: "oneri" },
+    { etiket: "E-Club Puanı", deger: ben.eclub_puani ?? 0, yuzde: pozitifYuzde(ben.eclub_puani ?? 0), tip: "eclub" },
     { etiket: "Negatif Davranışlar", deger: negatif, yuzde: negatifYuzde(negatif), tip: "negatif" },
   ];
   const enBuyuk = kirilim.filter((k) => k.tip !== "negatif").sort((a, b) => b.deger - a.deger)[0];

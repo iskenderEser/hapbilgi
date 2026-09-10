@@ -46,6 +46,7 @@ interface Ozet {
   cevaplama: number;
   oneri: number;
   extra: number;
+  eclub: number;
   ileriSarma: number;
   yanlisCevap: number;
   oneriKaybi: number;
@@ -65,6 +66,7 @@ const PUAN_RENKLERI = {
   cevaplama: "#6d5ce8",
   oneri: "#f59e0b",
   extra: "#2f9ae9",
+  eclub: "#237ac8",
   kayip: "#e44c4c",
 };
 
@@ -73,6 +75,7 @@ function aktifMi(satir: SahaLigKullanici): boolean {
     + satir.cevaplama_puani
     + satir.oneri_puani
     + satir.extra_puani
+    + (satir.eclub_puani ?? 0)
     + satir.ileri_sarma_kaybi
     + satir.yanlis_cevap_kaybi
     + satir.oneri_kaybi > 0;
@@ -85,13 +88,14 @@ function ozetle(satirlar: SahaLigKullanici[]): Ozet {
       cevaplama: sonuc.cevaplama + satir.cevaplama_puani,
       oneri: sonuc.oneri + satir.oneri_puani,
       extra: sonuc.extra + satir.extra_puani,
+      eclub: sonuc.eclub + (satir.eclub_puani ?? 0),
       ileriSarma: sonuc.ileriSarma + satir.ileri_sarma_kaybi,
       yanlisCevap: sonuc.yanlisCevap + satir.yanlis_cevap_kaybi,
       oneriKaybi: sonuc.oneriKaybi + satir.oneri_kaybi,
     }),
-    { izleme: 0, cevaplama: 0, oneri: 0, extra: 0, ileriSarma: 0, yanlisCevap: 0, oneriKaybi: 0 },
+    { izleme: 0, cevaplama: 0, oneri: 0, extra: 0, eclub: 0, ileriSarma: 0, yanlisCevap: 0, oneriKaybi: 0 },
   );
-  const kazanim = toplam.izleme + toplam.cevaplama + toplam.oneri + toplam.extra;
+  const kazanim = toplam.izleme + toplam.cevaplama + toplam.oneri + toplam.extra + toplam.eclub;
   const kayip = toplam.ileriSarma + toplam.yanlisCevap + toplam.oneriKaybi;
   return {
     toplamUtt: satirlar.length,
@@ -201,6 +205,7 @@ export default function FieldLeaguePage({
     { ad: "Cevaplama", deger: ozet.cevaplama, renk: PUAN_RENKLERI.cevaplama },
     { ad: "Öneri", deger: ozet.oneri, renk: PUAN_RENKLERI.oneri },
     { ad: "Extra", deger: ozet.extra, renk: PUAN_RENKLERI.extra },
+    { ad: "E-Club", deger: ozet.eclub, renk: PUAN_RENKLERI.eclub },
     { ad: "Kayıplar", deger: ozet.kayip, renk: PUAN_RENKLERI.kayip },
   ];
   const grafikKalemleri = puanKalemleri.filter((kalem) => kalem.deger > 0);
@@ -219,7 +224,7 @@ export default function FieldLeaguePage({
     }],
   };
 
-  const kazanimAdaylari = puanKalemleri.slice(0, 4);
+  const kazanimAdaylari = puanKalemleri.slice(0, 5);
   const enGuclu = [...kazanimAdaylari].sort((a, b) => b.deger - a.deger)[0];
   const kayipAdaylari = [
     { ad: "İleri sarma", deger: ozet.ileriSarma },
@@ -462,7 +467,7 @@ export default function FieldLeaguePage({
               </div>
               {uttler.map((utt, index) => {
                 const kayip = utt.ileri_sarma_kaybi + utt.yanlis_cevap_kaybi + utt.oneri_kaybi;
-                const kazanim = utt.izleme_puani + utt.cevaplama_puani + utt.oneri_puani + utt.extra_puani;
+                const kazanim = utt.izleme_puani + utt.cevaplama_puani + utt.oneri_puani + utt.extra_puani + (utt.eclub_puani ?? 0);
                 const acik = acikUtt === utt.kullanici_id;
                 const liderFarkiUtt = Math.max(0, (uttler[0]?.toplam_puan ?? utt.toplam_puan) - utt.toplam_puan);
                 const birUstFarki = index === 0 ? 0 : Math.max(0, uttler[index - 1].toplam_puan - utt.toplam_puan);
@@ -490,6 +495,7 @@ export default function FieldLeaguePage({
                         <div className={styles.uttDetailGain}><span>İzleme</span><strong>+{utt.izleme_puani}</strong></div>
                         <div className={styles.uttDetailGain}><span>Cevaplama</span><strong>+{utt.cevaplama_puani}</strong></div>
                         <div className={styles.uttDetailGain}><span>Öneri + extra</span><strong>+{utt.oneri_puani + utt.extra_puani}</strong></div>
+                        <div className={styles.uttDetailGain}><span>E-Club</span><strong>+{utt.eclub_puani ?? 0}</strong></div>
                         <div className={styles.uttDetailLoss}><span>İleri sarma</span><strong>−{utt.ileri_sarma_kaybi}</strong></div>
                         <div className={styles.uttDetailLoss}><span>Yanlış cevap</span><strong>−{utt.yanlis_cevap_kaybi}</strong></div>
                         <div className={styles.uttDetailLoss}><span>Öneri kaybı</span><strong>−{utt.oneri_kaybi}</strong></div>

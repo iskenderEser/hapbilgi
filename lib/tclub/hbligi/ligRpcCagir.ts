@@ -34,6 +34,7 @@ export interface HbLigiHamSatir {
   izleme_puani: number;
   cevaplama_puani: number;
   oneri_puani: number;
+  eclub_puani?: number;
   extra_puani: number;
   ileri_sarma_kaybi: number;
   yanlis_cevap_kaybi: number;
