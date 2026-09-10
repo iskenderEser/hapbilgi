@@ -7,7 +7,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { RotateCcw, X } from "lucide-react";
+import { Minus, RotateCcw, X } from "lucide-react";
 import { useHapbi } from "./HapbiProvider";
 
 function renderHapbiMetin(metin: string, isUser = false): React.ReactNode {
@@ -125,6 +125,15 @@ export default function HapbiChatModal() {
         </div>
 
         <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setChatAcik(false)}
+          title="Sohbeti küçült"
+          aria-label="Sohbeti küçült"
+          className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer border-none transition-colors"
+        >
+          <Minus className="w-5 h-5" aria-hidden="true" />
+        </button>
         <button type="button" onClick={temizle} title="Yeni sohbet" aria-label="Yeni sohbet" className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer border-none transition-colors"><RotateCcw className="w-5 h-5" aria-hidden="true" /></button>
         <button
           type="button"
@@ -156,6 +165,11 @@ export default function HapbiChatModal() {
               >
                 {m.hata && <span className="block text-[10px] font-bold text-amber-700 mb-1">Yanıt alınamadı</span>}
                 <div className="whitespace-pre-line font-medium leading-relaxed">{renderHapbiMetin(m.metin, isUser)}</div>
+                {!!m.yonlendirmeler?.length && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {m.yonlendirmeler.map(link => <Link key={link.url} href={link.url} className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-[#185fa5] hover:underline">{link.etiket}</Link>)}
+                  </div>
+                )}
                 {!!m.kaynaklar?.length && (
                   <div className="mt-2 flex flex-col gap-1 border-t border-gray-100 pt-2">
                     <span className="text-[10px] font-semibold text-gray-400">Başvurulan kaynaklar</span>

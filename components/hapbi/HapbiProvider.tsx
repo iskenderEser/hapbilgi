@@ -22,6 +22,7 @@ export interface HapbiMesaj {
   zaman: string;
   kaynaklar?: HapbiKaynak[];
   hata?: boolean;
+  yonlendirmeler?: { etiket: string; url: string }[];
   aksiyon?: {
     etiket: string;
     url?: string;
@@ -50,10 +51,10 @@ const ILK_KARSILAMA_MESAJI: HapbiMesaj = {
 export function HapbiProvider({ children }: { children: React.ReactNode }) {
   const { kullanici } = useAuth();
   const anahtar = [kullanici?.id, kullanici?.rol, kullanici?.firma_id, kullanici?.kimlik_turu].join(":");
-  return <HapbiOturumProvider key={anahtar}>{children}</HapbiOturumProvider>;
+  return <HapbiOturumProvider key={anahtar} ad={kullanici?.ad}>{children}</HapbiOturumProvider>;
 }
 
-function HapbiOturumProvider({ children }: { children: React.ReactNode }) {
+function HapbiOturumProvider({ children, ad }: { children: React.ReactNode; ad?: string | null }) {
   const [chatAcik, setChatAcik] = useState(false);
   const [mesajlar, setMesajlar] = useState<HapbiMesaj[]>([ILK_KARSILAMA_MESAJI]);
   const [yukleniyor, setYukleniyor] = useState(false);
@@ -97,7 +98,7 @@ function HapbiOturumProvider({ children }: { children: React.ReactNode }) {
       baglamRef.current = data.baglam;
       setMesajlar(prev => [...prev, {
         id: crypto.randomUUID(), rol: "hapbi", metin: data.cevap, zaman: zaman(),
-        aksiyon: data.aksiyon, kaynaklar: data.kaynaklar,
+        aksiyon: data.aksiyon, kaynaklar: data.kaynaklar, yonlendirmeler: data.yonlendirmeler,
       }]);
     } catch (error) {
       if (!controller.signal.aborted) setMesajlar(prev => [...prev, {
@@ -115,7 +116,9 @@ function HapbiOturumProvider({ children }: { children: React.ReactNode }) {
         chatAcik,
         setChatAcik,
         toggleChat,
-        mesajlar,
+        mesajlar: mesajlar.map(mesaj => mesaj.id === "karsilama" && ad?.trim()
+          ? { ...mesaj, metin: `Merhaba ${ad.trim()}, değişimi başlatmak için 'bi' soru sormak ister misin?` }
+          : mesaj),
         yukleniyor,
         soruSor,
         temizle,
