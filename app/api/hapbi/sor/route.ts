@@ -1,4 +1,6 @@
 import { yonlendirmeYaniti } from '@/lib/bi/yonlendirme';
+import { ureticiBiAcikMi } from "@/lib/bi/ureticiSozlesmesi";
+import { ureticiYanitiniHazirla } from "@/lib/bi/ureticiYanit";
 import { NextResponse } from "next/server";
 
 import { biKullanabilirMi } from "@/lib/bi/erisim";
@@ -113,7 +115,10 @@ export async function POST(istek: Request): Promise<NextResponse> {
       return json({ ...await yonlendirmeYaniti(db, kimlik.kimlik_id ?? '', kimlik.rol ?? '', 'genel'), istekId });
     }
 
-
+    if (kimlik.kimlik_id && kimlik.rol && ureticiBiAcikMi(kimlik.rol)) {
+      const sonuc = await ureticiYanitiniHazirla(db, kimlik.kimlik_id, kimlik.rol, soru, baglam, istek.signal);
+      return json({ ...sonuc.veri, istekId }, sonuc.status);
+    }
     const kac = await geminiIleKacSorusunuCoz(soru, istek.signal, puanBaglaminiOku(baglam, kimlik.rol ?? ""), kimlik.rol ?? "");
     if (kac.durum !== "bulundu") {
       return json({ ...await yonlendirmeYaniti(db, kimlik.kimlik_id ?? '', kimlik.rol ?? '', kac.yon), istekId });
