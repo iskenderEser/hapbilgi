@@ -12,6 +12,7 @@
 import { useEffect, useState } from "react";
 import { MapPin, X } from "lucide-react";
 import type { Adres, AdresInput } from "@/lib/tclub/store/tipler";
+import { useAuth } from "@/app/providers/AuthProvider";
 
 interface Props {
   acik: boolean;
@@ -41,6 +42,8 @@ export default function AdresModal({
   hata,
   basari,
 }: Props) {
+  const { kullanici } = useAuth();
+  const profilAdSoyad = kullanici?.adSoyad ?? "";
   const [form, setForm] = useState<AdresInput>(BOS_INPUT);
   const [kaydediliyor, setKaydediliyor] = useState(false);
 
@@ -49,7 +52,7 @@ export default function AdresModal({
     if (mevcutAdres) {
       setForm({
         baslik: mevcutAdres.baslik,
-        alici_adi: mevcutAdres.alici_adi,
+        alici_adi: profilAdSoyad || mevcutAdres.alici_adi,
         telefon: mevcutAdres.telefon,
         il: mevcutAdres.il,
         ilce: mevcutAdres.ilce,
@@ -58,9 +61,12 @@ export default function AdresModal({
         varsayilan_mi: mevcutAdres.varsayilan_mi,
       });
     } else {
-      setForm(BOS_INPUT);
+      setForm({
+        ...BOS_INPUT,
+        alici_adi: profilAdSoyad,
+      });
     }
-  }, [acik, mevcutAdres]);
+  }, [acik, mevcutAdres, profilAdSoyad]);
 
   const handleChange = (alan: keyof AdresInput, deger: string | boolean) => {
     setForm((prev) => ({ ...prev, [alan]: deger }));
@@ -155,12 +161,15 @@ export default function AdresModal({
             <FormAlani label="Alıcı Adı Soyadı">
               <input
                 type="text"
-                value={form.alici_adi}
-                onChange={(e) => handleChange("alici_adi", e.target.value)}
-                disabled={kaydediliyor}
-                className="w-full rounded-xl border border-[#dce5ee] bg-[#f8fafc] px-3.5 py-2 text-xs font-bold text-[#1f334d] placeholder-[#95a6bb] focus:border-[#237ac8] focus:bg-white focus:outline-none"
+                value={form.alici_adi || profilAdSoyad}
+                readOnly
+                disabled
+                className="w-full rounded-xl border border-[#dce5ee] bg-[#edf2f7] px-3.5 py-2 text-xs font-bold text-[#4a5568] cursor-not-allowed focus:outline-none"
                 placeholder="Ad Soyad"
               />
+              <span className="text-[10px] font-semibold text-[#7a8da5]">
+                Ad soyad profilinizden otomatik alınır ve değiştirilemez.
+              </span>
             </FormAlani>
 
             <FormAlani label="İletişim Telefonu">

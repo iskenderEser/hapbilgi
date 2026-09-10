@@ -80,7 +80,6 @@ export async function POST(request: NextRequest) {
     // Zorunlu alan kontrolü
     const zorunlular: (keyof AdresInput)[] = [
       "baslik",
-      "alici_adi",
       "telefon",
       "il",
       "ilce",
@@ -92,9 +91,33 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Kimlik doğrulaması: Alıcı adı profil tablosundan doğrulanır
+    const { data: profilKullanici, error: profilHata } = await adminSupabase
+      .from("kullanicilar")
+      .select("ad, soyad")
+      .eq("kullanici_id", user.id)
+      .single();
+
+    if (profilHata || !profilKullanici) {
+      return hataYaniti("Kullanıcı profil bilgileri doğrulanamadı.", "profilDogrula", profilHata);
+    }
+
+    const dogrulanmisAdSoyad = [profilKullanici.ad, profilKullanici.soyad]
+      .filter((parca): parca is string => typeof parca === "string" && parca.trim().length > 0)
+      .map((parca) => parca.trim())
+      .join(" ");
+
+    if (!dogrulanmisAdSoyad) {
+      return validasyonHatasi("Profilinizde kayıtlı ad soyad bulunamadı. Lütfen önce profilinizi güncelleyin.", ["alici_adi"]);
+    }
+
+    if (body.alici_adi && typeof body.alici_adi === "string" && body.alici_adi.trim() !== dogrulanmisAdSoyad) {
+      return validasyonHatasi("Alıcı adı soyadı profilinizdeki bilgilerle eşleşmiyor.", ["alici_adi"]);
+    }
+
     const input: AdresInput = {
       baslik: body.baslik.trim(),
-      alici_adi: body.alici_adi.trim(),
+      alici_adi: dogrulanmisAdSoyad,
       telefon: body.telefon.trim(),
       il: body.il.trim(),
       ilce: body.ilce.trim(),
@@ -136,6 +159,29 @@ export async function PATCH(request: NextRequest) {
         return hataYaniti(sonuc.error ?? "Varsayılan adres ayarlanamadı.", "varsayilanYap", null);
       }
       return NextResponse.json({ mesaj: "Varsayılan adres güncellendi." }, { status: 200 });
+    }
+
+    // Kimlik doğrulaması: alici_adi güncellenmek isteniyorsa profille doğrulanır
+    if (guncellenecek.alici_adi !== undefined) {
+      const { data: profilKullanici, error: profilHata } = await adminSupabase
+        .from("kullanicilar")
+        .select("ad, soyad")
+        .eq("kullanici_id", user.id)
+        .single();
+
+      if (profilHata || !profilKullanici) {
+        return hataYaniti("Kullanıcı profil bilgileri doğrulanamadı.", "profilDogrula", profilHata);
+      }
+
+      const dogrulanmisAdSoyad = [profilKullanici.ad, profilKullanici.soyad]
+        .filter((p): p is string => typeof p === "string" && p.trim().length > 0)
+        .map((p) => p.trim())
+        .join(" ");
+
+      if (guncellenecek.alici_adi.trim() !== dogrulanmisAdSoyad) {
+        return validasyonHatasi("Alıcı adı soyadı profilinizdeki bilgilerle eşleşmiyor.", ["alici_adi"]);
+      }
+      guncellenecek.alici_adi = dogrulanmisAdSoyad;
     }
 
     // Genel güncelleme

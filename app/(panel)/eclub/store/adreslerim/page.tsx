@@ -14,15 +14,25 @@ import {
 } from "@/components/eclub/EclubKisiSayfa";
 import { useEclubStore } from "../_hooks/useEclubStore";
 
-const BOS_FORM = { baslik: "", ad_soyad: "", telefon: "", il: "", ilce: "", acik_adres: "", varsayilan_mi: false };
+const BOS_FORM = {
+  baslik: "",
+  ad_soyad: "",
+  eczane_adi: "",
+  telefon: "",
+  il: "",
+  ilce: "",
+  acik_adres: "",
+  varsayilan_mi: false,
+};
 const INPUT_CLASS = "w-full rounded-xl border border-[#d8e2ec] bg-white px-3.5 py-2.5 text-sm font-semibold text-[#40556d] outline-none transition placeholder:text-[#a5b1bf] focus:border-[#71afe3] focus:ring-2 focus:ring-[#dbeefe]";
+const LOCKED_INPUT_CLASS = "w-full rounded-xl border border-[#dfe7f1] bg-[#f4f7fa] px-3.5 py-2.5 text-sm font-semibold text-[#637992] outline-none cursor-not-allowed select-none";
 
 export default function EclubAdreslerimPage() {
   const router = useRouter();
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
   const eclubKisi = !!kullanici && kullanici.kimlik_turu === "eclub_kisi";
-  const { adresler, adresEkle, adresSil, loading } = useEclubStore({ hata, basari });
+  const { adresler, kimlik, adresEkle, adresSil, loading } = useEclubStore({ hata, basari });
   const [form, setForm] = useState(BOS_FORM);
   const [ekleAcik, setEkleAcik] = useState(false);
   const [islemLoading, setIslemLoading] = useState(false);
@@ -34,11 +44,48 @@ export default function EclubAdreslerimPage() {
     if (!eclubKisi) { router.replace("/ana-sayfa"); }
   }, [kullanici, authYukleniyor, eclubKisi, router]);
 
+  useEffect(() => {
+    if (kimlik) {
+      setForm((prev) => ({
+        ...prev,
+        ad_soyad: kimlik.ad_soyad || prev.ad_soyad,
+        eczane_adi: kimlik.eczane_adi || prev.eczane_adi,
+        telefon: prev.telefon || kimlik.telefon || "",
+      }));
+    }
+  }, [kimlik]);
+
+  const yeniAdresAc = () => {
+    setForm({
+      ...BOS_FORM,
+      ad_soyad: kimlik?.ad_soyad ?? "",
+      eczane_adi: kimlik?.eczane_adi ?? "",
+      telefon: kimlik?.telefon ?? "",
+    });
+    setEkleAcik(true);
+  };
+
+  const formuKapat = () => {
+    setEkleAcik(false);
+    setForm({
+      ...BOS_FORM,
+      ad_soyad: kimlik?.ad_soyad ?? "",
+      eczane_adi: kimlik?.eczane_adi ?? "",
+      telefon: kimlik?.telefon ?? "",
+    });
+  };
+
   const kaydet = async () => {
     setIslemLoading(true);
     try {
-      const ok = await adresEkle(form);
-      if (ok) { setForm(BOS_FORM); setEkleAcik(false); }
+      const ok = await adresEkle({
+        ...form,
+        ad_soyad: kimlik?.ad_soyad || form.ad_soyad,
+        eczane_adi: kimlik?.eczane_adi || form.eczane_adi,
+      });
+      if (ok) {
+        formuKapat();
+      }
     } finally {
       setIslemLoading(false);
     }
@@ -60,7 +107,7 @@ export default function EclubAdreslerimPage() {
         aksiyon={(
           <div className="flex flex-wrap gap-2">
             <Link href="/eclub/store" className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2ec] bg-white px-4 py-2.5 text-xs font-extrabold text-[#71859d] shadow-sm hover:bg-[#f7f9fc]"><Store size={15} /> Mağazaya Dön</Link>
-            {!ekleAcik && <button type="button" onClick={() => setEkleAcik(true)} className="inline-flex items-center gap-2 rounded-xl bg-[#237ac8] px-4 py-2.5 text-xs font-extrabold text-white shadow-sm hover:bg-[#1d69aa]"><Plus size={15} /> Yeni Adres</button>}
+            {!ekleAcik && <button type="button" onClick={yeniAdresAc} className="inline-flex items-center gap-2 rounded-xl bg-[#237ac8] px-4 py-2.5 text-xs font-extrabold text-white shadow-sm hover:bg-[#1d69aa]"><Plus size={15} /> Yeni Adres</button>}
           </div>
         )}
       />
@@ -69,23 +116,47 @@ export default function EclubAdreslerimPage() {
         <section className="rounded-2xl border border-[#dfe7f1] bg-white p-4 shadow-[0_7px_22px_rgba(31,55,90,0.04)] md:p-5">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div><h2 className="text-sm font-extrabold text-[#203653]">Yeni Teslimat Adresi</h2><p className="mt-0.5 text-[10px] font-semibold text-[#8a99aa]">Sipariş teslimatı için gerekli bilgileri eksiksiz girin.</p></div>
-            <button type="button" onClick={() => { setEkleAcik(false); setForm(BOS_FORM); }} className="flex h-8 w-8 items-center justify-center rounded-xl border border-[#dfe7f1] text-[#8190a3] hover:bg-[#f5f8fb]" aria-label="Formu kapat"><X size={15} /></button>
+            <button type="button" onClick={formuKapat} className="flex h-8 w-8 items-center justify-center rounded-xl border border-[#dfe7f1] text-[#8190a3] hover:bg-[#f5f8fb]" aria-label="Formu kapat"><X size={15} /></button>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
-            <label className="grid gap-1.5 text-[10px] font-extrabold text-[#71859d]">Adres Başlığı<input className={INPUT_CLASS} placeholder="Ev, iş..." value={form.baslik} onChange={(e) => setForm({ ...form, baslik: e.target.value })} /></label>
-            <label className="grid gap-1.5 text-[10px] font-extrabold text-[#71859d]">Ad Soyad<input className={INPUT_CLASS} placeholder="Teslim alacak kişi" value={form.ad_soyad} onChange={(e) => setForm({ ...form, ad_soyad: e.target.value })} /></label>
-            <label className="grid gap-1.5 text-[10px] font-extrabold text-[#71859d]">Telefon<input className={INPUT_CLASS} placeholder="05xx xxx xx xx" value={form.telefon} onChange={(e) => setForm({ ...form, telefon: e.target.value })} /></label>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="grid gap-1.5 text-[10px] font-extrabold text-[#71859d]">İl<input className={INPUT_CLASS} placeholder="İl" value={form.il} onChange={(e) => setForm({ ...form, il: e.target.value })} /></label>
-              <label className="grid gap-1.5 text-[10px] font-extrabold text-[#71859d]">İlçe<input className={INPUT_CLASS} placeholder="İlçe" value={form.ilce} onChange={(e) => setForm({ ...form, ilce: e.target.value })} /></label>
+            <label className="grid gap-1.5 text-[10px] font-extrabold text-[#71859d]">
+              Adres Başlığı
+              <input className={INPUT_CLASS} placeholder="Ev, eczane..." value={form.baslik} onChange={(e) => setForm({ ...form, baslik: e.target.value })} />
+            </label>
+            <label className="grid gap-1.5 text-[10px] font-extrabold text-[#71859d]">
+              Ad Soyad
+              <input className={LOCKED_INPUT_CLASS} readOnly disabled value={kimlik?.ad_soyad || form.ad_soyad} />
+              <span className="text-[9px] font-semibold text-[#8a99aa]">Profil kaydınızdan otomatik doldurulur, değiştirilemez.</span>
+            </label>
+            <label className="grid gap-1.5 text-[10px] font-extrabold text-[#71859d]">
+              Bağlı Eczane
+              <input className={LOCKED_INPUT_CLASS} readOnly disabled value={kimlik?.eczane_adi || form.eczane_adi || "Bağlı eczane bulunamadı"} />
+              <span className="text-[9px] font-semibold text-[#8a99aa]">Sistemdeki eczane kaydınızdan otomatik çözülür, değiştirilemez.</span>
+            </label>
+            <label className="grid gap-1.5 text-[10px] font-extrabold text-[#71859d]">
+              Telefon
+              <input className={INPUT_CLASS} placeholder="05xx xxx xx xx" value={form.telefon} onChange={(e) => setForm({ ...form, telefon: e.target.value })} />
+            </label>
+            <div className="grid grid-cols-2 gap-3 md:col-span-2">
+              <label className="grid gap-1.5 text-[10px] font-extrabold text-[#71859d]">
+                İl
+                <input className={INPUT_CLASS} placeholder="İl" value={form.il} onChange={(e) => setForm({ ...form, il: e.target.value })} />
+              </label>
+              <label className="grid gap-1.5 text-[10px] font-extrabold text-[#71859d]">
+                İlçe
+                <input className={INPUT_CLASS} placeholder="İlçe" value={form.ilce} onChange={(e) => setForm({ ...form, ilce: e.target.value })} />
+              </label>
             </div>
-            <label className="grid gap-1.5 text-[10px] font-extrabold text-[#71859d] md:col-span-2">Açık Adres<textarea className={`${INPUT_CLASS} min-h-20 resize-y`} placeholder="Mahalle, cadde, sokak, bina ve daire bilgileri" value={form.acik_adres} onChange={(e) => setForm({ ...form, acik_adres: e.target.value })} /></label>
+            <label className="grid gap-1.5 text-[10px] font-extrabold text-[#71859d] md:col-span-2">
+              Açık Adres
+              <textarea className={`${INPUT_CLASS} min-h-20 resize-y`} placeholder="Mahalle, cadde, sokak, bina ve daire bilgileri" value={form.acik_adres} onChange={(e) => setForm({ ...form, acik_adres: e.target.value })} />
+            </label>
           </div>
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#edf1f5] pt-4">
             <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-[#60758d]"><input type="checkbox" checked={form.varsayilan_mi} onChange={(e) => setForm({ ...form, varsayilan_mi: e.target.checked })} className="h-4 w-4 accent-[#237ac8]" />Varsayılan teslimat adresi yap</label>
             <div className="flex gap-2">
-              <button type="button" onClick={() => { setEkleAcik(false); setForm(BOS_FORM); }} className="rounded-xl border border-[#d8e2ec] bg-white px-4 py-2 text-xs font-extrabold text-[#71859d] hover:bg-[#f7f9fc]">Vazgeç</button>
-              <button type="button" onClick={() => void kaydet()} disabled={islemLoading} className="inline-flex items-center gap-1.5 rounded-xl bg-[#16865f] px-4 py-2 text-xs font-extrabold text-white shadow-sm hover:bg-[#11724f] disabled:cursor-wait disabled:opacity-60"><Check size={14} /> {islemLoading ? "Kaydediliyor..." : "Adresi Kaydet"}</button>
+              <button type="button" onClick={formuKapat} className="rounded-xl border border-[#d8e2ec] bg-white px-4 py-2 text-xs font-extrabold text-[#71859d] hover:bg-[#f7f9fc]">Vazgeç</button>
+              <button type="button" onClick={() => void kaydet()} disabled={islemLoading || !kimlik?.ad_soyad || !kimlik?.eczane_adi} className="inline-flex items-center gap-1.5 rounded-xl bg-[#16865f] px-4 py-2 text-xs font-extrabold text-white shadow-sm hover:bg-[#11724f] disabled:cursor-not-allowed disabled:opacity-60"><Check size={14} /> {islemLoading ? "Kaydediliyor..." : "Adresi Kaydet"}</button>
             </div>
           </div>
         </section>
@@ -102,6 +173,7 @@ export default function EclubAdreslerimPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2"><h2 className="text-sm font-extrabold text-[#203653]">{adres.baslik || "Teslimat Adresi"}</h2>{adres.varsayilan_mi && <span className="rounded-full bg-[#ebf8f2] px-2 py-0.5 text-[9px] font-extrabold text-[#16865f]">Varsayılan</span>}</div>
                   <p className="mt-2 text-xs font-extrabold text-[#40556d]">{adres.ad_soyad}</p>
+                  {adres.eczane_adi && <p className="mt-0.5 text-[11px] font-bold text-[#237ac8]">{adres.eczane_adi}</p>}
                   <p className="mt-0.5 text-[11px] font-semibold text-[#71859d]">{adres.telefon}</p>
                   <p className="mt-2 text-[11px] font-semibold leading-5 text-[#71859d]">{adres.acik_adres}<br />{adres.ilce} / {adres.il}</p>
                 </div>
