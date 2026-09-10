@@ -401,15 +401,32 @@ HBStore ve E-Club Store işlemlerinde bildirim, siparişin alınması veya iptal
 
 ### 5. bi — Platform İçi Yardım Asistanı
 
-**Yeniden kurma kararı — 9 Eylül 2026:** Gemini, AI yorumlama ve konuşmadan öğrenme ürün kapsamından çıkarılmıştır. İlk teknik temizlikten sonra kalan geniş deterministik motor da yeni başlangıç sözleşmesine göre gereksiz karmaşık bulunduğu için kaldırılmıştır. Karar ve uygulama sırası [BI_TEMIZLIK_PLANI.md](BI_TEMIZLIK_PLANI.md) dosyasındadır.
+**Güncel geliştirme — 9 Eylül 2026:** bi iki soru ailesini kullanır. NEDİR onaylı sabit tanımları verir. KAÇ sorularında Gemini yalnız ölçüt, takvim aralığı, karşılaştırma ve varsa TM hedefini çıkarır; puan hesabını sunucu mevcut veri kaynaklarından yapar. AI yorumlama veya konuşmadan öğrenme bulunmaz.
 
-Yeni başlangıç yalnız iki soru ailesinden oluşur. `NEDİR`, HapBilgi, bi, T-Club, C-Club, HBStore, E-Club, Eczanem, öğrenme araçları ve net puan kavramlarını sabit içerikle açıklar; varsa ilgili sayfaya yönlendirir. `KAÇ`, ilk sürümde UTT/KD_UTT kullanıcısının kişisel T-Club net puanını `bu/geçen hafta`, `bu/geçen ay` veya `bu/geçen yıl` için verir. Tanınmayan ve eksik sorular veri sorgusu başlatmaz.
+UTT/KD_UTT için beş kazanım, üç kayıp ve üç toplam olmak üzere 11 puan türü; BM'nin kişisel C-Club öğrenmesi için beş kazanım, iki kayıp ve üç toplam olmak üzere 10 puan türü desteklenir. UTT toplam kazanımına E-Club öneri tamamlama kazanımı da katılır. “Puan” veya “toplam puan” toplam net puandır.
 
-Sayısal sonuç, oturumdaki kimlik ve Türkiye takvim sınırlarıyla `get_kullanici_ozet` RPC'sinden okunur. Soru açık bir ölçüt ve dönem üretmeden bu çağrı yapılmaz. Gerçek sıfır gösterilir; okuma hatası, kayıt yokluğu ve eksik sayısal değer sıfır kabul edilmez.
+TM'nin NEDİR kataloğu UTT ve BM tanımlarının birleşimidir. KAÇ kapsamı kendi takımındaki UTT → bölge → takım zinciridir: bölge puanı bağlı aktif UTT/KD_UTT puanlarının, takım puanı bu bölgelerin UTT puanlarının toplamıdır. BM'nin kişisel C-Club puanı bu toplama katılmaz; tek BM veya takımdaki BM'lerin kişisel puan toplamı olarak ayrıca sorgulanır. Kişi ve bölge adları sunucuda oturumdaki TM'nin firma ve takım sınırında çözülür. Aynı adla birden fazla kayıt varsa tam ad istenir; eşleşmeyen hedefte puan üretilmez.
 
-`HapbiProvider.tsx` istemcideki mesajları ve istek iptalini, `HapbiChatModal.tsx` soru-cevap görünümünü, `HapbiMaskot.tsx` turuncu bi düğmesini yönetir. `/api/hapbi/sor` uyumluluk için adresini korur. Mesaj geçmişi yalnız React durumunda tutulur ve sunucu önceki mesajlardan bağlam devralmaz.
+Hafta, ay, dönem ve yıl Türkiye takvimiyle hesaplanır. İçinde bulunulan dönem çeyrek başından dünün sonuna; mevcut hafta, ay ve yıl aralıkları başlangıçtan sorgu anına kadardır. Önceki aralıklar tam takvim aralığıdır. Ardışık aynı tür iki aralık karşılaştırılabilir. Başarılı sorgunun ölçüt, zaman ve TM hedefi sohbet bağlamında korunur; istemciden gelen bağlam her istekte doğrulanır ve yetki kaynağı sayılmaz.
 
-Erişim kuralı `lib/bi/erisim.ts` içindedir. Asistan yalnız `kullanici` kimlik türündeki desteklenen iç rollere açıktır. Admin, İçerik Üreticisi, E-Club kişi kimliği ve Eczanem üye kimliği kapsam dışındadır. Oturum, aktif kimlik ve rol her istekte sunucuda doğrulanır; istemcinin gönderdiği ek alanlar yetki kaynağı değildir.
+Gerçek sıfır gösterilir; kaynak hatası, kayıt yokluğu ve eksik sayısal değer sıfır kabul edilmez. TM toplamları mevcut UTT ve BM puan okuyucularını kullanır; üyeler sayfalanarak okunur. Büyük takımlarda kişi başına veri okuması nedeniyle yanıt süresi artabilir.
+
+`HapbiProvider.tsx` mesajları, sorgu bağlamını ve iptali; `HapbiChatModal.tsx` soru-cevap görünümünü yönetir. Erişim `lib/bi/erisim.ts` ve her istekte sunucu kimlik doğrulamasıyla korunur.
+
+**TM doğrulaması:** Yerel hesap, kapsam, hedef çözümleme ve API karşılaştırma testleri başarılıdır. Kredi sorunu giderildikten sonra dört örnek soru ve dört takip sorusu gerçek Gemini bağlantısıyla doğru çözümlenmiştir; bu kontrol ekran doğrulaması değildir.
+
+**İK üretici başlangıcı — 9 Eylül 2026:** Beş İK rolünde kendi İK eğitimi/bilgilendirme ve yönetim eğitimi talepleri ile yayınları sorgulanır. Talep, inceleme, revizyon, planlanan yayın ve dört üretim biçimi için NEDİR tanımları eklenmiştir. Ortak üretici sorgu sözleşmesi sonraki rol ailelerine genişletilebilir; bu aşamada yalnız İK ailesine açıktır.
+
+KAÇ ölçütleri: toplam talep, zaman aralığında açılan talep, üretimdeki talep, onay bekleyen talep, revizyondaki talep, yayına alınmayı bekleyen araç, yayındaki araç, planlanan yayın, durdurulan yayın ve zaman aralığında ilk kez yayımlanan araç. Eğitim türü ve dört öğrenme aracı türüyle filtrelenebilir. Her kayıt oturumdaki üreticinin kimliği ve firmasıyla sınırlandırılır; firma portföyü veya başka üreticinin işleri dahil edilmez.
+
+Mevcut durum sorularında tarih istenmez; durumlar geçmişe dönük tahmin edilmez. Olay sayıları hafta/ay/dönem/yıl aralığıyla ve önceki eş aralıkla karşılaştırılabilir. Açılan talepler `talepler.created_at`, ilk yayınlar `yayin_tekrar_kayitlari` içindeki Tur-1 başlangıcıyla sayılır. Plan oluşturma tarihi ve yeniden açılış, ilk yayın yerine kullanılmaz. Üretim durumu mevcut görev kaydı ve ortak üretim zinciriyle çözülür; bir talep tek sayılır.
+
+**Eğitim üretici genişlemesi — 10 Eylül 2026:** `egt_md`, `egt_yrd_md`, `egt_yon`, `egt_uz` ortak üretici NEDİR/KAÇ ve yönlendirme hattını kullanır. Talep türleri yetenek kaynağından `satis_teknikleri` ve `yonetim_egitimi` olarak alınır. Satış teknikleri tanımı teknik seçiminin zorunlu, ürünün isteğe bağlı olduğunu açıklar. İK tanımı eğitim kataloğuna eklenmez. On sayım, zaman aralıkları, takip ve karşılaştırma aynı okuyucuyu kullanır; yalnız oturumdaki üreticinin talepleri/yayınları sayılır. Ürün veya tek teknik bazında daraltılmış sorgular ilgili rapora yönlendirilir.
+
+**İK doğrulaması:** 29 seçili bi testi, tip kontrolü ve lint başarılıdır. Gerçek Gemini ile 12 soru ve 3 takip doğru çözümlenmiş; bir aktif İK test hesabında 10 sayım salt okunur veritabanı sorgularıyla çalıştırılmıştır. Ekran testi ayrıca yapılır.
+
+**Hazır yanıt paketi ve yönlendirme — 9 Eylül 2026:** Hazır NEDİR/KAÇ yanıtının yetmediği platform sorularında mevcut Gemini çağrısı ayrıca konu seçer; ikinci AI çağrısı yapılmaz. `lib/bi/yonlendirme.ts` bağlantıları rol ve konuya göre sabit listeden seçer. C-Club/E-Club için firma modül durumu doğrulanır. BM kişisel C-Club ve bölgesinin UTT performansı ayrıdır. Üretici kişisel raporu, firma üretim raporu ve saha raporu ayrıdır; talep/yayın işlerine doğrudan ilgili sayfa önerilir. Öneriler sohbet içinde tıklanabilir bağlantılardır, okunmuş veri kaynağı olarak sunulmaz. Platform dışı soruda kullanıcının onayladığı esprili metin aynen gösterilir; ilgisiz rapor eklenmez. Hazır puan yanıtları ve deterministik hesaplar korunur. Bağlantı hatasında konu bilinmediğinden rolün genel raporları önerilir. Gerçek Gemini ile altı saha/İK örneği yönlendirme bakımından doğrulandı.
+
 
 ---
 
@@ -2248,6 +2265,14 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `normalizasyon.ts` | TypeScript | Soru metnini Türkçe küçük harf, noktalama ve boşluk kurallarıyla ortak biçime getirir. |
 | `nedir.ts` | TypeScript | Onaylı kavram kataloğunu ve kesin NEDİR soru kalıplarını tanımlar. |
 | `kac.ts` | TypeScript | Kişisel T-Club net puanı için kesin KAÇ kalıplarını, Türkiye dönemini ve kanonik veri okumasını tanımlar. |
+| `geminiJson.ts` | TypeScript | Puan ve üretici sorgularının ortak yapılandırılmış Gemini bağlantısını yürütür. |
+| `geminiUretici.ts` | TypeScript | Üretici sayı sorularını ölçüt, eğitim, araç ve zaman alanlarına çözümler. |
+| `ureticiSozlesmesi.ts` | TypeScript | Üretici ölçütlerini, İK başlangıç kapsamını ve bağlam doğrulamasını tanımlar. |
+| `ureticiVeri.ts` | TypeScript | Kişisel talep, üretim durumu ve yayın sayılarını yetkili kayıtlardan okur. |
+| `ureticiYanit.ts` | TypeScript | Üretici sayımlarını tarih, filtre ve karşılaştırmayla yanıtlar. |
+| `cevapKatalogu.ts` | TypeScript | Ortak ve farklı onaylı metinlerin tek kaynağı; ortak yönlendirme metni. |
+| `rolCevaplari.ts` | TypeScript | Rol ailelerinin kullanacağı cevap kimlikleri. |
+| `sayfalar.ts` | TypeScript | Tanım ve yönlendirme bağlantıları ile rol erişim seçimi. |
 
 ### 📁 lib/izleme/
 
@@ -3107,3 +3132,15 @@ Platformun iş kuralları; rol ve firma kapsamı, veri bütünlüğü, erişim d
 Kod kalitesi; TypeScript tip denetimi, mimari kurallar, otomatik testler, SQL denetimleri ve kanonik dosya envanteriyle korunur. BLUEBOOK güncel ve bağlayıcı sistem kaydını, REDBOOK açık teknik borçları, hukuki takip belgeleri ise tamamlanması gereken veri ve mevzuat süreçlerini gösterir.
 
 Bu kayıt, doğrulanmış mevcut durumu ifade eder; mutlak kusursuzluk veya tamamlanmışlık iddiası taşımaz.
+
+**10 Eylül 2026 — bi hazır cevap mimarisi:** Metinler `cevapKatalogu.ts`, rol seçimleri `rolCevaplari.ts`, sayfa adresleri ve rol bağlantı seçimleri `sayfalar.ts` içinde toplanmıştır. `nedir.ts` yalnız seçilen kataloğu çözer. Eğitim ailesinin 17 tanımı ve dört ayrı onaylı kısa metni korunur; İK metinleri değişmez. Eski `ureticiNedir.ts` kaldırılmıştır. Konusu belirsiz, uygun bağlantısı olmayan veya katalogda tanımı bulunmayan soruda ortak esprili mesaj gösterilir; genel rapor otomatik önerilmez. KAÇ hesapları değişmemiştir.
+
+**10 Eylül 2026 — medikal rol:** `med_md` ortak üretici KAÇ hattına bağlandı. İzinli türler yetenek kaynağından `medikal_egitim` ve `urun_medikal_egitim` olarak alınır. Sayımlar kendi talep ve yayınlarıyla sınırlıdır. Ürün-medikal eğitim türü seçilebilir; belirli ürün filtresi mevcut rapora yönlendirilir. NEDİR seçiminde eğitimle aynı 17 ortak/sade onaylı yanıt kullanılır; yeni cevap metni kopyalanmaz.
+
+**10 Eylül 2026 — PM ailesi:** `pm`, `jr_pm`, `kd_pm` ortak üretici NEDİR/KAÇ hattına bağlandı. Eğitim ve medikal ile aynı 17 ortak/sade cevap kimliğini kullanır; metin kopyalanmaz. İzinli talep türü yetenek kaynağındaki `urun_egitimi`dir. On sayım yalnız kullanıcının kendi talep/yayınlarını kapsar; takım toplamı değildir. Ürün/teknik bazındaki ayrıntılar ve saha sonuçları ilgili mevcut raporlara yönlendirilir. Böylece 13 üretici rolünün tamamı ortak üretici hattına bağlanmıştır.
+
+**10 Eylül 2026 — yayın adedi / araç türü ayrımı:** Ortak üretici hattında `yayinda` yayın adedidir. `yayinda_arac_turu` yayındaki farklı öğrenme aracı türlerini sayar; `yayin_arac_dagilimi` video/podcast/gorsel/flip_pdf başına yayın adedini verir. “Yayında kaç öğrenme aracım var?” tür sayısıdır; “Yayında kaç yayınım var?” yayın adedidir. 27 videodan oluşan yayındaki portföy sırasıyla 1 tür ve 27 yayındır. Dağılım mevcut kişisel yayın filtreleriyle, sayfalar arasında benzersiz yayın kimlikleri üzerinden hesaplanır; eksik/tanımsız araç türü sıfır kabul edilmez. Üç ölçüt mevcut durum içindir, geçmiş durum fotoğrafı üretmez.
+
+**10 Eylül 2026 — yönetici başlangıcı:** Yedi `YONETICI_ROLLER` unvanı ortak 17 sade üretim/platform tanımı ve üç saha yönetimi tanımını katalogdan seçer. İşlem sayfası bağlantıları üretim raporuna yönlenir. `yoneticiYanit.ts` firma geneli sekiz ölçütü mevcut `get_yonetici_rapor_ana_ozet_v2` kaynağından okur: güncel takım/bölge/UTT/yayındaki yayın sayısı; zaman aralığında tamamlanan izleme ve kazanılan/kaybedilen/net saha puanı. Kimlik/firma oturumdan doğrulanır. Tarihler ortak hafta/ay/çeyrek/yıl sözleşmesidir; geçmiş anlık durum hesaplanmaz. Takip ve önceki eş dönem karşılaştırması vardır. Belirli kişi/takım/bölge/ürün/eğitim/araç filtresi, tür sayısı, dağılım ve kişisel C-Club soruları mevcut ilgili rapor veya lige yönlendirilir; firma toplamı yerine geçirilmez. Bu ilk adım tüm yönetici rapor ayrıntılarını sohbet içinde hesaplama iddiası taşımaz.
+
+**10 Eylül 2026 — yönetici ayrıntıları (GM dahil):** `yoneticiDetay.ts` yedi yönetici rolünün firma içi ayrıntılarını aynı Gemini çağrısından çıkan doğrulanmış sorguyla hesaplar. Takım/bölge/UTT sonuçları sayfalı `get_yonetici_hiyerarsi_v2`, BM kişisel sonuçları mevcut C-Club okuyucusundan gelir. Üretim, üretici/eğitim türü/ürün gruplarında ortak üretici sayım okuyucusunu kullanır; yönetici filtresi firma eşitliğini doğrular ve tarihsel üretici kayıtlarını korur. Ürün filtresi taleplere uygulanır. Yayındaki tür sayısı tüm seçili üreticilerdeki türlerin birleşimidir; tür sayıları birbirine eklenmez. Dağılım dört türde yayın adetlerini verir. Aynı grupta adlarla kıyaslama, büyükten küçüğe sıralama (eşitlik aynı sıra), önceki eş takvim dönemi karşılaştırması desteklenir. Ayrıntı yanında rapor/lig bağlantısı sunulur. Üretim takım/bölge filtresi, saha ürün/eğitim/araç filtresi, çapraz grup kıyası ve geçmiş anlık durum bu sözleşmede yoktur; filtre atılarak toplam verilmez. Kullanıcı isteği doğrultusunda otomatik/ekran testleri çalıştırılmadı; ekran doğrulaması kullanıcıda.

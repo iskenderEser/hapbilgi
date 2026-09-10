@@ -6,6 +6,13 @@
 
 ## § 6.4 — Açık İşler / Çalışma Nüshası
 
+### Kasada Bekleyen Geliştirmeler
+
+- **HBStore: dönemlik kullanım.** Mağaza kullanımını takvim çeyreklerine göre düzenle. Önceden belirtilen kurgu: her dönemin son haftasında açık; dönemin son günü 23:59'da kapanır ve sonraki dönemin son haftasında yeniden açılır.
+- **E-Club Store: aylık kullanım.** Mağaza kullanımını aylık olarak düzenle. Ay içindeki açılış/kapanış günleri henüz belirlenmedi.
+
+*Kayıt tarihi: 9 Eylül 2026 — İskender talebiyle hatırlatma olarak kasaya alındı; uygulama yapılmadı.*
+
 ### Teknik Borç
 
 - **[TB-01] İzleme tablolarında soru-hakkı alan asimetrisi (tek-kaynak yönetimi).**
