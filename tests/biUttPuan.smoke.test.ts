@@ -11,13 +11,20 @@ test('11 puan × 4 zaman: beş kazanç, üç kayıp ve toplamlar aynı kaynaklar
     async rpc(_ad: string, args: Record<string,string>) {
       assert.equal(args.p_kullanici_id, 'oturum-kimligi');
       assert.ok(args.p_baslangic < args.p_bitis);
-      return { data: [{ video_puani: 100, soru_puani: 40, extra_puan: 20, oneri_puani: 10,
-        ileri_sarma_kaybi: 5, yanlis_cevap_kaybi: 3, oneri_kaybi: 2 }], error: null };
+      return { data: [{
+        video_puani: 100,
+        soru_puani: 40,
+        extra_puan: 20,
+        oneri_puani: 10,
+        eclub_puani: 30,
+        ileri_sarma_kaybi: 5,
+        yanlis_cevap_kaybi: 3,
+        oneri_kaybi: 2,
+        toplam_net_puan: 190,
+      }], error: null };
     },
-    from(tablo: string) {
-      assert.equal(tablo, 'eclub_utt_puanlari');
-      const q = { select() { return q; }, eq(alan: string, id: string) { assert.equal(alan, 'utt_id'); assert.equal(id, 'oturum-kimligi'); return q; },
-        gte() { return q; }, lte() { return q; }, order() { return q; }, async range() { return { data: [{ puan: 30 }], error: null }; } }; return q;
+    from(_tablo: string) {
+      assert.fail('eclub_utt_puanlari tablosuna ikinci sorgu yapılmamalı');
     },
   } as unknown as SupabaseClient;
   for (const olcut of Object.keys(PUAN_BASLIKLARI) as Array<keyof typeof PUAN_BASLIKLARI>) {
@@ -36,24 +43,25 @@ test('Önceki aralıklar sınır gününü içermez; takip iki ay önceye ulaş�
   assert.equal(puanBaglaminiOku({ ...temel, geriye: -1 }), undefined);
 });
 
-test('E-Club kazanımı sayfa sınırında kesilmez; kaynak hatası sıfır veya eksik toplam üretmez', async () => {
-  let hata = false;
-  const araliklar: number[] = [];
-  const db = {
-    from() {
-      const q = { select() { return q; }, eq() { return q; }, gte() { return q; }, lte() { return q; }, order() { return q; },
-        async range(offset: number) {
-          araliklar.push(offset);
-          return hata ? { data: null, error: { message: 'hata' } }
-            : { data: Array.from({ length: offset === 0 ? 500 : 1 }, () => ({ puan: 10 })), error: null };
-        } }; return q;
-    },
+test('E-Club RPC üzerinden tek seferde okunur; ikinci sorgu yapılmaz; hata ve eksik değer doğru yönetilir', async () => {
+  const dbHata = {
+    async rpc() { return { data: null, error: { message: 'rpc hatası' } }; },
+    from() { assert.fail('from() çağrılmamalı'); },
   } as unknown as SupabaseClient;
-  const s = { ...temel, olcut: 'eclub' as const };
-  assert.equal((await uttPuaniniOku(db, 'utt', 'utt', s, simdi)).puan, 5010);
-  assert.deepEqual(araliklar, [0, 500]);
-  hata = true;
-  await assert.rejects(uttPuaniniOku(db, 'utt', 'utt', s, simdi), /VERI_OKUNAMADI/);
-  const eksikDb = { async rpc() { return { data: [{ video_puani: null }], error: null }; } } as unknown as SupabaseClient;
-  await assert.rejects(uttPuaniniOku(eksikDb, 'utt', 'utt', temel, simdi), /VERI_EKSIK/);
+  await assert.rejects(uttPuaniniOku(dbHata, 'utt', 'utt', { ...temel, olcut: 'eclub' }, simdi), /VERI_OKUNAMADI/);
+
+  const dbBos = {
+    async rpc() { return { data: [], error: null }; },
+    from() { assert.fail('from() çağrılmamalı'); },
+  } as unknown as SupabaseClient;
+  await assert.rejects(uttPuaniniOku(dbBos, 'utt', 'utt', { ...temel, olcut: 'eclub' }, simdi), /KAYIT_YOK/);
+
+  const dbEksik = {
+    async rpc() { return { data: [{ video_puani: null, eclub_puani: null, toplam_net_puan: null }], error: null }; },
+    from() { assert.fail('from() çağrılmamalı'); },
+  } as unknown as SupabaseClient;
+  await assert.rejects(uttPuaniniOku(dbEksik, 'utt', 'utt', { ...temel, olcut: 'eclub' }, simdi), /VERI_EKSIK/);
+  await assert.rejects(uttPuaniniOku(dbEksik, 'utt', 'utt', { ...temel, olcut: 'toplam_net' }, simdi), /VERI_EKSIK/);
+  await assert.rejects(uttPuaniniOku(dbEksik, 'utt', 'utt', { ...temel, olcut: 'toplam_kazanc' }, simdi), /VERI_EKSIK/);
+  await assert.rejects(uttPuaniniOku(dbEksik, 'utt', 'utt', { ...temel, olcut: 'toplam_kayip' }, simdi), /VERI_EKSIK/);
 });
