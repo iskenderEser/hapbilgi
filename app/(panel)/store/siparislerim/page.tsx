@@ -128,8 +128,13 @@ export default function SiparislerimPage() {
     setIptalIslemi(true);
 
     try {
-      const res = await fetch(`/store/api/siparis/${iptalEdilecek.siparis_id}/iptal`, {
-        method: "POST",
+      const res = await fetch("/store/api/siparis", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          siparis_id: iptalEdilecek.siparis_id,
+          action: "iptal",
+        }),
       });
       const d = await res.json();
 
@@ -157,8 +162,13 @@ export default function SiparislerimPage() {
     setTeslimIslemi(true);
 
     try {
-      const res = await fetch(`/store/api/siparis/${teslimEdilecek.siparis_id}/teslim`, {
-        method: "POST",
+      const res = await fetch("/store/api/siparis", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          siparis_id: teslimEdilecek.siparis_id,
+          action: "teslim_aldim",
+        }),
       });
       const d = await res.json();
 

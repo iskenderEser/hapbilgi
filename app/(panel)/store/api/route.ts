@@ -28,6 +28,7 @@ import {
   hbstoreFirmaBaglami,
 } from "@/lib/tclub/store/firmaUrun";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { hbstoreTakvimDurumu } from "@/lib/tclub/store/takvim";
 
 export async function GET(request: NextRequest) {
   try {
@@ -58,6 +59,12 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const tip = searchParams.get("tip") || "urunler";
+
+    // ─── tip=takvim ────────────────────────────────────────────────────────
+    if (tip === "takvim") {
+      const takvim = hbstoreTakvimDurumu();
+      return NextResponse.json({ takvim }, { status: 200 });
+    }
 
     // ─── tip=urunler ───────────────────────────────────────────────────────
     if (tip === "urunler") {
@@ -93,8 +100,13 @@ export async function GET(request: NextRequest) {
         );
       }
 
+      const takvim = hbstoreTakvimDurumu();
+
       return NextResponse.json(
-        { urunler: urunler.filter((urun) => !kapaliUrunIdleri.has(urun.urun_id)) },
+        {
+          urunler: urunler.filter((urun) => !kapaliUrunIdleri.has(urun.urun_id)),
+          takvim,
+        },
         { status: 200 },
       );
     }
@@ -148,7 +160,8 @@ export async function GET(request: NextRequest) {
     // ─── tip=bakiye ────────────────────────────────────────────────────────
     if (tip === "bakiye") {
       const bakiye = await harcamaBakiyesi(adminSupabase, user.id);
-      return NextResponse.json({ bakiye }, { status: 200 });
+      const takvim = hbstoreTakvimDurumu();
+      return NextResponse.json({ bakiye, takvim }, { status: 200 });
     }
 
     // ─── tip=urun (tek ürün detayı) ────────────────────────────────────────
@@ -195,8 +208,10 @@ export async function GET(request: NextRequest) {
         .eq("kategori_id", urun.kategori_id)
         .single();
 
+      const takvim = hbstoreTakvimDurumu();
+
       return NextResponse.json(
-        { urun: { ...urun, kategori_adi: kategori?.ad ?? null } },
+        { urun: { ...urun, kategori_adi: kategori?.ad ?? null }, takvim },
         { status: 200 }
       );
     }

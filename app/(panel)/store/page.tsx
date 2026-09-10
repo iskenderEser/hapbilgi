@@ -25,6 +25,7 @@ import type { Urun, Kategori } from "@/lib/tclub/store/tipler";
 import { STOK_AZ_ESIK } from "@/lib/tclub/store/sabitler";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
+import { useHbstoreTakvim } from "@/hooks/useHbstoreTakvim";
 
 function StatKarti({
   ikon: Icon,
@@ -64,10 +65,12 @@ function StatKarti({
 function UrunKarti({
   urun,
   bakiye,
+  storeAcik,
   onTikla,
 }: {
   urun: Urun;
   bakiye: number | null;
+  storeAcik: boolean;
   onTikla: () => void;
 }) {
   const stokYok = urun.stok === 0;
@@ -145,7 +148,7 @@ function UrunKarti({
                 : "bg-[#237ac8] text-white shadow-sm hover:bg-[#1d69aa]"
             }`}
           >
-            {stokYok ? "Tükendi" : "İncele & Sipariş Ver"}
+            {stokYok ? "Tükendi" : storeAcik ? "İncele & Sipariş Ver" : "İncele"}
           </button>
         </div>
       </div>
@@ -168,6 +171,7 @@ export default function StorePage() {
   const { mesajlar, hata } = useHataMesaji();
   const rolKucu = kullanici?.rol?.toLowerCase() ?? "";
   const yetkili = Boolean(kullanici && STORE_ALABILEN_ROLLER.includes(rolKucu));
+  const { takvim, acik: storeAcik, yenile: takvimYenile } = useHbstoreTakvim({ aktif: yetkili });
 
   useEffect(() => {
     if (authYukleniyor) return;
@@ -242,7 +246,7 @@ export default function StorePage() {
   const tumunuYenile = async () => {
     setYenileniyor(true);
     try {
-      await Promise.all([baslangicYukle(), urunleriYukle()]);
+      await Promise.all([baslangicYukle(), urunleriYukle(), takvimYenile()]);
     } finally {
       setYenileniyor(false);
     }
@@ -308,13 +312,60 @@ export default function StorePage() {
           </div>
         </header>
 
+        {/* Store Günleri Takvim Durumu Bannerı */}
+        {takvim && (takvim.acik ? (
+          <section aria-label="Store Günleri Durumu" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#a6f4c5] bg-[#ecfdf3] px-4 py-3 shadow-[0_4px_14px_rgba(18,183,106,0.06)]">
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#d1fadf] text-[#027a48]">
+                <Sparkles size={16} />
+              </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <strong className="text-xs font-black text-[#027a48]">Store Günleri Açık</strong>
+                  <span className="rounded-full bg-[#12b76a] px-2 py-0.5 text-[10px] font-extrabold text-white shadow-sm">
+                    Sipariş Verilebilir
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs font-semibold text-[#05603a]">
+                  Dönem: {takvim.aktifPencere?.etiket} · Kapanışa son <strong>{takvim.kalanSureMetni}</strong> kaldı.
+                </p>
+              </div>
+            </div>
+            <div className="text-right text-[11px] font-bold text-[#05603a]">
+              Kapanış: {takvim.kapanisMetni}
+            </div>
+          </section>
+        ) : (
+          <section aria-label="Store Günleri Durumu" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#fed7aa] bg-[#fffaf5] px-4 py-3 shadow-[0_4px_14px_rgba(249,115,22,0.05)]">
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#ffedd5] text-[#c2410c]">
+                <ShoppingBag size={16} />
+              </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <strong className="text-xs font-black text-[#9a3412]">Store Günleri Kapalı</strong>
+                  <span className="rounded-full bg-[#f97316] px-2 py-0.5 text-[10px] font-extrabold text-white shadow-sm">
+                    Sonraki: {takvim.sonrakiDonemEtiketi}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs font-semibold text-[#7c2d12]">
+                  Yeni siparişler yalnızca Store Günleri döneminde alınır. Açılışa <strong>{takvim.kalanSureMetni}</strong> kaldı. Ürünleri inceleyebilirsiniz.
+                </p>
+              </div>
+            </div>
+            <div className="text-right text-[11px] font-bold text-[#9a3412]">
+              Açılış: {takvim.acilisMetni}
+            </div>
+          </section>
+        ))}
+
         {/* 3'lü Stat Kartları */}
         <section aria-label="Mağaza Durum Özeti" className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <StatKarti
             ikon={Coins}
-            etiket="Kullanılabilir Puanım"
+            etiket={storeAcik ? "Kullanılabilir Puanım" : "Biriken Puanım"}
             deger={bakiye !== null ? `${bakiye.toLocaleString("tr-TR")} P` : "—"}
-            detay="Sipariş için harcanabilir bakiye"
+            detay={takvim?.bakiyeDonemEtiketi ?? (storeAcik ? "Sipariş için harcanabilir bakiye" : "Sonraki dönem için biriken puan")}
             renk="#16865f"
             zemin="#edf9f4"
           />
@@ -418,6 +469,7 @@ export default function StorePage() {
                 key={u.urun_id}
                 urun={u}
                 bakiye={bakiye}
+                storeAcik={storeAcik}
                 onTikla={() => router.push(`/store/${u.urun_id}`)}
               />
             ))}

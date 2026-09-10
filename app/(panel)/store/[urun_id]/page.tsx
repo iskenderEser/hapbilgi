@@ -22,6 +22,7 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import { STOK_AZ_ESIK } from "@/lib/tclub/store/sabitler";
 import type { Urun, Adres } from "@/lib/tclub/store/tipler";
 import { hbstoreBakiyesiDegistiBildir } from "@/lib/tclub/store/olay";
+import { useHbstoreTakvim } from "@/hooks/useHbstoreTakvim";
 
 interface UrunDetay extends Urun {
   kategori_adi: string | null;
@@ -39,6 +40,7 @@ export default function UrunDetayPage() {
   const [adresler, setAdresler] = useState<Adres[]>([]);
   const [bakiye, setBakiye] = useState<number>(0);
   const [yukleniyor, setYukleniyor] = useState(true);
+  const { takvim, acik: storeAcik } = useHbstoreTakvim({ aktif: yetkiKontrolEdildi });
 
   // Satın alma state
   const [adet, setAdet] = useState<number>(1);
@@ -115,6 +117,13 @@ export default function UrunDetayPage() {
 
   const handleSatinAl = () => {
     if (!urun) return;
+    if (!storeAcik) {
+      hata(
+        `HBStore şu an siparişe kapalıdır. Siparişler yalnızca Store Günleri (${takvim?.sonrakiDonemEtiketi ?? "Store Günleri"}) döneminde verilebilir.`,
+        "takvim"
+      );
+      return;
+    }
     if (adresler.length === 0) {
       hata("Sipariş vermeden önce teslimat adresi eklemelisin.", "adres");
       return;
@@ -390,13 +399,29 @@ export default function UrunDetayPage() {
                     </div>
                   </div>
 
+                  {/* Store Günleri Kapalı Bilgi Uyarısı */}
+                  {!storeAcik && (
+                    <div className="rounded-xl border border-[#fed7aa] bg-[#fffaf5] p-3.5 text-xs font-semibold text-[#9a3412]">
+                      <p className="flex items-center gap-1.5 font-extrabold text-[#c2410c]">
+                        <span>⏳</span> Store Günleri Kapalı
+                      </p>
+                      <p className="mt-1 leading-relaxed text-[#7c2d12]">
+                        HBStore siparişleri yalnızca Store Günleri döneminde alınmaktadır. Sonraki sipariş dönemi:{" "}
+                        <strong className="font-extrabold text-[#9a3412]">{takvim?.sonrakiDonemEtiketi ?? "Store Günleri"}</strong>
+                        {takvim ? ` (${takvim.kalanSureMetni} kaldı)` : ""}.
+                      </p>
+                    </div>
+                  )}
+
                   {/* Satın Alma Butonu */}
                   <button
                     type="button"
                     onClick={handleSatinAl}
-                    disabled={adresler.length === 0 || !seciliAdresId || toplamPuan > bakiye}
+                    disabled={!storeAcik || adresler.length === 0 || !seciliAdresId || toplamPuan > bakiye}
                     className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 text-xs font-extrabold transition-colors ${
-                      toplamPuan > bakiye
+                      !storeAcik
+                        ? "cursor-not-allowed border border-[#e2e8f0] bg-[#f1f5f9] text-[#94a3b8]"
+                        : toplamPuan > bakiye
                         ? "cursor-not-allowed bg-[#fee4e2] text-[#b42318]"
                         : adresler.length === 0
                         ? "cursor-not-allowed bg-[#e2e8f0] text-[#94a3b8]"
@@ -404,7 +429,9 @@ export default function UrunDetayPage() {
                     }`}
                   >
                     <ShoppingBag size={16} />
-                    {toplamPuan > bakiye
+                    {!storeAcik
+                      ? `Siparişe Kapalı (Açılış: ${takvim?.sonrakiDonemEtiketi ?? "Store Günleri"})`
+                      : toplamPuan > bakiye
                       ? "Yetersiz Bakiye"
                       : adresler.length === 0
                       ? "Teslimat Adresi Gerekli"

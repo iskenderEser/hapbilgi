@@ -32,6 +32,10 @@ import {
   teslimAldim,
 } from "@/lib/tclub/store/siparis";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import {
+  hbstoreSiparisAcikMi,
+  hbstoreTakvimDurumu,
+} from "@/lib/tclub/store/takvim";
 
 
 // ─── GET: Kullanıcının kendi siparişleri ─────────────────────────────────────
@@ -107,6 +111,13 @@ export async function POST(request: NextRequest) {
       return rolHatasi("Sipariş verme yetkiniz yok.");
     }
 
+    // Sipariş dönemi kontrolü (Store Günleri)
+    if (!hbstoreSiparisAcikMi()) {
+      const durum = hbstoreTakvimDurumu();
+      return isKuraluHatasi(
+        `HBStore şu an siparişe kapalıdır. Siparişler yalnızca Store Günleri (${durum.sonrakiDonemEtiketi}) döneminde verilebilir.`
+      );
+    }
 
     const body = await request.json();
     const { urun_id, adres_id, adet } = body;
