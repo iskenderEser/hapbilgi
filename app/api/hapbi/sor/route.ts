@@ -1,3 +1,5 @@
+import { YONETICI_ROLLER } from '@/lib/utils/roller';
+import { yoneticiYanitiniHazirla } from '@/lib/bi/yoneticiYanit';
 import { yonlendirmeYaniti } from '@/lib/bi/yonlendirme';
 import { ureticiBiAcikMi } from "@/lib/bi/ureticiSozlesmesi";
 import { ureticiYanitiniHazirla } from "@/lib/bi/ureticiYanit";
@@ -114,7 +116,9 @@ export async function POST(istek: Request): Promise<NextResponse> {
     if (nedir.durum === "tanim_yok") {
       return json({ ...await yonlendirmeYaniti(db, kimlik.kimlik_id ?? '', kimlik.rol ?? '', 'genel'), istekId });
     }
-
+    if (kimlik.kimlik_id && kimlik.rol && YONETICI_ROLLER.includes(kimlik.rol)) {
+      return json({ ...await yoneticiYanitiniHazirla(db, kimlik.kimlik_id, kimlik.rol, soru, baglam, istek.signal), istekId });
+    }
     if (kimlik.kimlik_id && kimlik.rol && ureticiBiAcikMi(kimlik.rol)) {
       const sonuc = await ureticiYanitiniHazirla(db, kimlik.kimlik_id, kimlik.rol, soru, baglam, istek.signal);
       return json({ ...sonuc.veri, istekId }, sonuc.status);
