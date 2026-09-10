@@ -4,9 +4,15 @@ import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/hataIsle";
 import { eclubStoreFirmaBakiye } from "@/lib/eclub/store/eclubStoreBakiye";
 import { eclubKisiErisimi } from "@/lib/eclub/kisiErisim";
+import { eclubStoreTakvimDurumu } from "@/lib/eclub/store/takvim";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    if (searchParams.get("tip") === "takvim") {
+      return NextResponse.json({ takvim: eclubStoreTakvimDurumu() }, { status: 200 });
+    }
+
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
@@ -61,6 +67,7 @@ export async function GET() {
       urunler: gorunurUrunler,
       firma_bakiye: firmaBakiye,
       toplam_bakiye: toplamBakiye,
+      takvim: eclubStoreTakvimDurumu(),
     }, { status: 200 });
   } catch (err) {
     return sunucuHatasi(err, "GET /eclub/store/api");

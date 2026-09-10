@@ -4,6 +4,10 @@ import { ECLUB_TUKETICI_ROLLERI } from "@/lib/utils/roller";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { eclubStoreSiparisOlustur, eclubStoreSiparisIptal, eclubStoreTeslimAldim } from "@/lib/eclub/store/eclubStoreSiparis";
 import { eclubKisiErisimi } from "@/lib/eclub/kisiErisim";
+import {
+  eclubStoreSiparisAcikMi,
+  eclubStoreTakvimDurumu,
+} from "@/lib/eclub/store/takvim";
 
 async function kisiCoz(adminSupabase: ReturnType<typeof createAdminClient>, authUserId: string) {
   const { data } = await adminSupabase
@@ -63,6 +67,14 @@ export async function POST(request: NextRequest) {
     if (!ECLUB_TUKETICI_ROLLERI.includes(kisi.rol)) return rolHatasi("Geçersiz kişi rolü.");
     if (!erisim.eclub_aktif || !erisim.eclub_store_aktif) {
       return rolHatasi("Aktif E-Club üyeliğiniz bulunmadığı için yeni sipariş oluşturamazsınız.");
+    }
+
+    // Sipariş dönemi kontrolü (E-Club Store Günleri)
+    if (!eclubStoreSiparisAcikMi()) {
+      const durum = eclubStoreTakvimDurumu();
+      return isKuraluHatasi(
+        `E-Club Store şu an siparişe kapalıdır. Siparişler yalnızca E-Club Store Günleri (${durum.sonrakiDonemEtiketi}) döneminde verilebilir.`
+      );
     }
 
     const body = await request.json();

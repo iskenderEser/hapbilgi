@@ -24,6 +24,7 @@ export interface EclubStoreAdres {
   kisi_id: string;
   baslik: string | null;
   ad_soyad: string;
+  eczane_adi?: string | null;
   telefon: string;
   il: string;
   ilce: string;

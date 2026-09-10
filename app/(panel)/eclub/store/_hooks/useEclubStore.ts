@@ -6,6 +6,12 @@ import type {
   EclubStoreUrun, EclubStoreKategori, EclubStoreFirmaBakiye, EclubStoreAdres,
 } from "@/lib/eclub/store/eclubStoreTipler";
 
+export interface EclubStoreKimlik {
+  ad_soyad: string;
+  eczane_adi: string;
+  telefon: string;
+}
+
 interface Args {
   hata: (mesaj: string, adim?: string, detay?: string) => void;
   basari: (mesaj: string) => void;
@@ -17,6 +23,7 @@ export function useEclubStore({ hata, basari }: Args) {
   const [firmaBakiye, setFirmaBakiye] = useState<EclubStoreFirmaBakiye[]>([]);
   const [toplamBakiye, setToplamBakiye] = useState(0);
   const [adresler, setAdresler] = useState<EclubStoreAdres[]>([]);
+  const [kimlik, setKimlik] = useState<EclubStoreKimlik | null>(null);
   const [loading, setLoading] = useState(true);
   const [yenileniyor, setYenileniyor] = useState(false);
 
@@ -45,6 +52,7 @@ export function useEclubStore({ hata, basari }: Args) {
       const d = await res.json();
       if (!res.ok) { hata(d.hata ?? "Adresler yüklenemedi.", d.adim, d.detay); return; }
       setAdresler(d.adresler ?? []);
+      if (d.kimlik) setKimlik(d.kimlik);
     } catch (err) {
       hata("Adresler yüklenirken hata oluştu.", "adresCek", err instanceof Error ? err.message : undefined);
     }
@@ -91,7 +99,7 @@ export function useEclubStore({ hata, basari }: Args) {
   }, [hata, basari, vitrinCek]);
 
   return {
-    kategoriler, urunler, firmaBakiye, toplamBakiye, adresler, loading, yenileniyor,
+    kategoriler, urunler, firmaBakiye, toplamBakiye, adresler, kimlik, loading, yenileniyor,
     vitrinCek, yenile, adresEkle, adresSil, siparisVer,
   };
 }

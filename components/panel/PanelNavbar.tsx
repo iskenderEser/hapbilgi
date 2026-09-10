@@ -8,6 +8,8 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { useState } from "react";
+import { useHbstoreTakvim } from "@/hooks/useHbstoreTakvim";
+import { useEclubStoreTakvim } from "@/hooks/useEclubStoreTakvim";
 
 const BORDO = "#bc2d0d";
 
@@ -31,6 +33,10 @@ interface PanelNavbarProps {
   ozet?: { haftalikPuan: number; takimSirasi: number | null; siparisPuani: number } | null;
   // Sipariş Puanı pill'i yalnız kullanıcının firmasında HBStore aktifse görünür.
   siparisPuaniGoster?: boolean;
+  // Store Günleri geri sayımı — alıcı roller (UTT/KD_UTT/BM) ve firma HBStore açıkken görünür.
+  storeGeriSayimGoster?: boolean;
+  // E-Club Store Günleri geri sayımı — E-Club kişisi ve aktif firma E-Club Store açıkken görünür.
+  eclubStoreGeriSayimGoster?: boolean;
   // Dış müşteri ana sayfası /eclub/panel'dir; iç kullanıcıda varsayılan korunur.
   anaSayfaYolu?: string;
   eclubStorePuani?: number | null;
@@ -45,10 +51,12 @@ const BILGI_PILLERI: { key: string; etiket: string; path: string }[] = [
   { key: "nasil-calisir", etiket: "Nasıl Çalışır", path: "/nasil-calisir" },
 ];
 
-export default function PanelNavbar({ adSoyad, email, ozet, siparisPuaniGoster, anaSayfaYolu = "/ana-sayfa", eclubStorePuani, onCikis, onHamburger }: PanelNavbarProps) {
+export default function PanelNavbar({ adSoyad, email, ozet, siparisPuaniGoster, storeGeriSayimGoster, eclubStoreGeriSayimGoster, anaSayfaYolu = "/ana-sayfa", eclubStorePuani, onCikis, onHamburger }: PanelNavbarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [hover, setHover] = useState<string | null>(null);
+  const { takvim } = useHbstoreTakvim({ aktif: Boolean(storeGeriSayimGoster) });
+  const { takvim: eclubTakvim } = useEclubStoreTakvim({ aktif: Boolean(eclubStoreGeriSayimGoster) });
 
   const isAktif = (path: string) => pathname === path;
 
@@ -132,21 +140,105 @@ export default function PanelNavbar({ adSoyad, email, ozet, siparisPuaniGoster, 
                 {bashHarfler}
               </div>
             </div>
-            <button
-              onClick={onCikis}
-              className="flex items-center gap-1 text-xs font-semibold cursor-pointer bg-transparent border-none"
-              style={{ color: BORDO }}
-            >
-              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              Çıkış
-            </button>
+            <div className="flex items-center gap-2">
+              {storeGeriSayimGoster && takvim && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => router.push("/store")}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-bold transition-all hover:opacity-80 cursor-pointer bg-transparent border-none p-0 select-none"
+                    style={{ color: takvim.acik ? "#027a48" : "#4b5563" }}
+                    title={
+                      takvim.acik
+                        ? `Store Günleri açık · Kapanışa ${takvim.kalanSureMetni} kaldı`
+                        : `Sonraki sipariş dönemi: ${takvim.sonrakiDonemEtiketi} (${takvim.kalanSureMetni} kaldı)`
+                    }
+                  >
+                    <span
+                      className="size-1.5 rounded-full shrink-0"
+                      style={{
+                        backgroundColor: takvim.acik ? "#12b76a" : "#f59e0b",
+                        boxShadow: takvim.acik ? "0 0 6px #12b76a" : "none",
+                      }}
+                    />
+                    <span>{takvim.navMetni}</span>
+                  </button>
+                  <span style={{ color: "#d1d5db", fontSize: 11, userSelect: "none" }}>·</span>
+                </>
+              )}
+              {eclubStoreGeriSayimGoster && eclubTakvim && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => router.push("/eclub/store")}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-bold transition-all hover:opacity-80 cursor-pointer bg-transparent border-none p-0 select-none"
+                    style={{ color: eclubTakvim.acik ? "#027a48" : "#4b5563" }}
+                    title={
+                      eclubTakvim.acik
+                        ? `E-Club Store açık · Kapanışa ${eclubTakvim.kalanSureMetni} kaldı`
+                        : `Sonraki sipariş dönemi: ${eclubTakvim.sonrakiDonemEtiketi} (${eclubTakvim.kalanSureMetni} kaldı)`
+                    }
+                  >
+                    <span
+                      className="size-1.5 rounded-full shrink-0"
+                      style={{
+                        backgroundColor: eclubTakvim.acik ? "#12b76a" : "#f59e0b",
+                        boxShadow: eclubTakvim.acik ? "0 0 6px #12b76a" : "none",
+                      }}
+                    />
+                    <span>{eclubTakvim.durumMetni}</span>
+                  </button>
+                  <span style={{ color: "#d1d5db", fontSize: 11, userSelect: "none" }}>·</span>
+                </>
+              )}
+              <button
+                onClick={onCikis}
+                className="flex items-center gap-1 text-xs font-semibold cursor-pointer bg-transparent border-none"
+                style={{ color: BORDO }}
+              >
+                <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Çıkış
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Mobil: avatar + hamburger (sol drawer'ı açar). */}
         <div className="flex md:hidden items-center gap-2">
+          {storeGeriSayimGoster && takvim && (
+            <button
+              type="button"
+              onClick={() => router.push("/store")}
+              className="inline-flex items-center gap-1 text-[11px] font-bold bg-transparent border-none p-0 mr-1"
+              style={{ color: takvim.acik ? "#027a48" : "#4b5563" }}
+            >
+              <span
+                className="size-1.5 rounded-full shrink-0"
+                style={{
+                  backgroundColor: takvim.acik ? "#12b76a" : "#f59e0b",
+                }}
+              />
+              <span>{takvim.acik ? "Açık" : takvim.kisaKalanSureMetni}</span>
+            </button>
+          )}
+          {eclubStoreGeriSayimGoster && eclubTakvim && (
+            <button
+              type="button"
+              onClick={() => router.push("/eclub/store")}
+              className="inline-flex items-center gap-1 text-[11px] font-bold bg-transparent border-none p-0 mr-1"
+              style={{ color: eclubTakvim.acik ? "#027a48" : "#4b5563" }}
+            >
+              <span
+                className="size-1.5 rounded-full shrink-0"
+                style={{
+                  backgroundColor: eclubTakvim.acik ? "#12b76a" : "#f59e0b",
+                }}
+              />
+              <span>{eclubTakvim.acik ? "Açık" : eclubTakvim.kisaKalanSureMetni}</span>
+            </button>
+          )}
           <div
             onClick={() => router.push("/profil")}
             className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold cursor-pointer"
