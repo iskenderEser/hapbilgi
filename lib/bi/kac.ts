@@ -2,9 +2,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { biMetniniNormalize } from "@/lib/bi/normalizasyon";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
-import { ayBaslangici, ayKaydir, haftaBaslangici, yilBaslangici } from "@/lib/zaman/kontrol";
+import { ayBaslangici, ayKaydir, haftaBaslangici, yilBaslangici, ceyrekBaslangici, gunBaslangici } from "@/lib/zaman/kontrol";
 
-type DonemTuru = "hafta" | "ay" | "yıl";
+type DonemTuru = "hafta" | "ay" | "yıl" | "dönem";
 type DonemYonu = "bu" | "geçen";
 
 export type KacSorgusu = Readonly<{
@@ -32,12 +32,19 @@ export type KacOkumaSonucu =
     }>;
 
 const KAC_KALIPLARI = [
-  /^(bu|geçen) (hafta|ay|yıl) (?:t club )?(?:net )?puanım kaç$/u,
-  /^(?:t club )?(?:net )?puanım (bu|geçen) (hafta|ay|yıl) kaç$/u,
+  /^(bu|geçen) (hafta|ay|yıl|dönem) (?:t club )?(?:net )?puanım kaç(?:tı)?$/u,
+  /^(?:t club )?(?:net )?puanım (bu|geçen) (hafta|ay|yıl|dönem) kaç(?:tı)?$/u,
+  /^(bu|geçen) dönem kaç(?:tı)?$/u,
 ];
 
 export function kacSorusunuCoz(soru: string): KacCozumu {
-  const normal = biMetniniNormalize(soru);
+  const normal = biMetniniNormalize(soru)
+    .replace(/(^| )(haftaki|ayki|yılki|yıldaki|dönemki|dönemdeki|çeyrekteki)(?= |$)/gu, (_, bosluk: string, ifade: string) =>
+      bosluk + ({
+        haftaki: "hafta", ayki: "ay", yılki: "yıl", yıldaki: "yıl",
+        dönemki: "dönem", dönemdeki: "dönem", çeyrekteki: "çeyrek",
+      } as Record<string, string>)[ifade])
+    .replace(/(^| )(?:çeyrek|quarter|donem)(?= |$)/gu, "$1dönem");
   for (const kalip of KAC_KALIPLARI) {
     const eslesme = normal.match(kalip);
     if (eslesme) {
@@ -46,7 +53,7 @@ export function kacSorusunuCoz(soru: string): KacCozumu {
         sorgu: {
           olcut: "kisisel_tclub_net_puani",
           donemYonu: eslesme[1] as DonemYonu,
-          donemTuru: eslesme[2] as DonemTuru,
+          donemTuru: (eslesme[2] ?? "dönem") as DonemTuru,
         },
       };
     }
@@ -59,6 +66,7 @@ export function kacSorusunuCoz(soru: string): KacCozumu {
 function oncekiBaslangic(tur: DonemTuru, mevcutBaslangic: Date): Date {
   if (tur === "hafta") return new Date(mevcutBaslangic.getTime() - 7 * 24 * 60 * 60 * 1000);
   if (tur === "ay") return ayKaydir(mevcutBaslangic, -1);
+  if (tur === "dönem") return ayKaydir(mevcutBaslangic, -3);
   return yilBaslangici(new Date(mevcutBaslangic.getTime() - 24 * 60 * 60 * 1000));
 }
 
@@ -67,12 +75,16 @@ export function kacDoneminiCoz(sorgu: KacSorgusu, simdi: Date = new Date()): Kac
     ? haftaBaslangici(simdi)
     : sorgu.donemTuru === "ay"
       ? ayBaslangici(simdi)
-      : yilBaslangici(simdi);
+      : sorgu.donemTuru === "dönem"
+        ? ceyrekBaslangici(simdi)
+        : yilBaslangici(simdi);
 
   const baslangic = sorgu.donemYonu === "bu"
     ? mevcutBaslangic
     : oncekiBaslangic(sorgu.donemTuru, mevcutBaslangic);
-  const bitis = sorgu.donemYonu === "bu" ? simdi : mevcutBaslangic;
+  const bitis = sorgu.donemTuru === "dönem"
+    ? new Date((sorgu.donemYonu === "bu" ? gunBaslangici(simdi) : mevcutBaslangic).getTime() - 1)
+    : sorgu.donemYonu === "bu" ? simdi : mevcutBaslangic;
   return {
     baslangic: baslangic.toISOString(),
     bitis: bitis.toISOString(),
@@ -92,6 +104,7 @@ export async function kisiselTclubNetPuaniniOku(
   }
 
   const donem = kacDoneminiCoz(sorgu, simdi);
+  if (donem.bitis < donem.baslangic) return { basarili: false, neden: "kayit_yok" };
   const { data, error } = await db.rpc("get_kullanici_ozet", {
     p_kullanici_id: kullaniciId,
     p_baslangic: donem.baslangic,

@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { biKullanabilirMi } from "@/lib/bi/erisim";
-import { kacSorusunuCoz, kisiselTclubNetPuaniniOku } from "@/lib/bi/kac";
-import { NEDIR_KATALOGU, nedirSorusunuCoz } from "@/lib/bi/nedir";
+import { uttPuaniniOku } from "@/lib/bi/uttPuan";
+import { tmKapsaminiCoz, tmKapsamPuaniniOku } from "@/lib/bi/tmPuan";
+import { bmPuaniniOku } from "@/lib/bi/bmPuan";
+import { puanBasliklari, puanBaglaminiOku } from "@/lib/bi/puanSozlesmesi";
+import { geminiIleKacSorusunuCoz } from "@/lib/bi/gemini";
+import { nedirSorusunuCoz } from "@/lib/bi/nedir";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 
 export const maxDuration = 30;
@@ -22,7 +26,7 @@ function json(icerik: unknown, durum = 200): NextResponse {
   return NextResponse.json(icerik, { status: durum, headers: YANIT_BASLIKLARI });
 }
 
-async function soruyuOku(istek: Request): Promise<string> {
+async function soruyuOku(istek: Request): Promise<{ soru: string; baglam?: unknown }> {
   const uzunluk = Number(istek.headers.get("content-length") ?? "0");
   if (Number.isFinite(uzunluk) && uzunluk > EN_FAZLA_GOVDE_BOYUTU) {
     throw new Error("ISTEK_COK_UZUN");
@@ -43,7 +47,7 @@ async function soruyuOku(istek: Request): Promise<string> {
   if (!soru || soru.length > EN_FAZLA_SORU_UZUNLUGU) {
     throw new Error("GECERSIZ_SORU");
   }
-  return soru;
+  return { soru, baglam: (ham as Record<string, unknown>).baglam };
 }
 
 function hataYaniti(hata: unknown, istekId: string): NextResponse {
@@ -61,17 +65,6 @@ function hataYaniti(hata: unknown, istekId: string): NextResponse {
   return json({ error: "bi şu anda yanıt veremiyor. Lütfen tekrar deneyin.", kod: "SUNUCU", istekId }, 503);
 }
 
-function destekYaniti(istekId: string, cevap?: string): NextResponse {
-  const konuAdlari = NEDIR_KATALOGU.map((konu) => konu.baslik).join(", ");
-  return json({
-    cevap: cevap ??
-      `Bu soru NEDİR veya KAÇ sözleşmesine uymuyor. “HBStore nedir?” ya da “Bu ay puanım kaç?” diye sorabilirsiniz.\n\nTanımlayabildiğim konular: ${konuAdlari}.`,
-    kaynaklar: [],
-    kullanim: { yol: "destek" },
-    istekId,
-  });
-}
-
 export async function POST(istek: Request): Promise<NextResponse> {
   const istekId = crypto.randomUUID();
 
@@ -87,7 +80,7 @@ export async function POST(istek: Request): Promise<NextResponse> {
       return json({ error: "bi'yi kullanmak için oturum açın.", kod: "OTURUM", istekId }, 401);
     }
 
-    const soru = await soruyuOku(istek);
+    const { soru, baglam } = await soruyuOku(istek);
 
     const db = createAdminClient(AbortSignal.any([istek.signal, AbortSignal.timeout(30_000)]));
     const { data, error } = await db
@@ -114,59 +107,45 @@ export async function POST(istek: Request): Promise<NextResponse> {
         istekId,
       });
     }
+    // Tanım paketinde bulunmayan kavrama ilgisiz rapor önerilmez.
     if (nedir.durum === "tanim_yok") {
-      return destekYaniti(
-        istekId,
-        `“${nedir.aranan}” için onaylı bir tanımım yok. Yalnız listelenen HapBilgi kavramlarını açıklayabilirim.`,
-      );
+      return json({ cevap: "Puanlarınızı hafta, ay, dönem veya yıl için sorabilirsiniz.", kaynaklar: [], kullanim: { yol: "destek" }, istekId });
     }
 
-    const kac = kacSorusunuCoz(soru);
-    if (kac.durum === "eksik") {
-      return destekYaniti(
-        istekId,
-        "KAÇ sorusunda kişisel T-Club puanını ve dönemi açıkça belirtin. Örnek: “Bu ay puanım kaç?”",
-      );
+
+    const kac = await geminiIleKacSorusunuCoz(soru, istek.signal, puanBaglaminiOku(baglam, kimlik.rol ?? ""), kimlik.rol ?? "");
+    if (kac.durum !== "bulundu") {
+      return json({ cevap: "Puanlarınızı hafta, ay, dönem veya yıl için sorabilirsiniz.", kaynaklar: [], kullanim: { yol: "destek" }, istekId });
     }
-    if (kac.durum === "kac_sorusu_degil") return destekYaniti(istekId);
     if (!kimlik.kimlik_id || !kimlik.rol) {
       return json({ error: "bi kullanıcı kapsamı doğrulanamadı.", kod: "KIMLIK", istekId }, 503);
     }
 
-    const sonuc = await kisiselTclubNetPuaniniOku(
-      db,
-      kimlik.kimlik_id,
-      kimlik.rol,
-      kac.sorgu,
-    );
-    if (!sonuc.basarili) {
-      const cevaplar = {
-        rol_desteklenmiyor:
-          "KAÇ sözleşmesinin ilk sürümü yalnız UTT ve KD_UTT kişisel T-Club net puanını kapsıyor.",
-        veri_okunamadi: "Puan verisi şu anda okunamadı. Sonucu tahmin etmiyorum.",
-        kayit_yok: "Seçilen dönem için doğrulanmış bir puan kaydı bulunamadı.",
-        veri_eksik: "Puan kaydı var ancak sayısal sonuç eksik. Sonucu sıfır kabul etmiyorum.",
-      } as const;
-      return json({
-        cevap: cevaplar[sonuc.neden],
-        kaynaklar: [],
-        kullanim: { yol: sonuc.neden },
-        istekId,
-      });
+    const basliklar = puanBasliklari(kimlik.rol);
+    const puanOku = kimlik.rol.toLowerCase() === "bm" ? bmPuaniniOku : uttPuaniniOku;
+    const simdi = new Date();
+    try {
+      const kapsam = kimlik.rol.toLowerCase() === "tm" ? await tmKapsaminiCoz(db, kimlik.kimlik_id, kac.sorgu) : undefined;
+      const oku = (sorgu: typeof kac.sorgu) => kapsam
+        ? tmKapsamPuaniniOku(db, kapsam, sorgu, simdi)
+        : puanOku(db, kimlik.kimlik_id!, kimlik.rol!, sorgu, simdi);
+      const sonuc = await oku(kac.sorgu);
+      const tarih = (v: string) => new Date(v).toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul" });
+      const satir = (v: typeof sonuc) => `${v.donem.etiket} — ${basliklar[kac.sorgu.olcut]}: **${v.puan.toLocaleString("tr-TR")} puan**.\n${tarih(v.donem.baslangic)} – ${tarih(v.donem.bitis)}`;
+      let cevap = (kapsam ? kapsam.etiket + "\n\n" : "") + satir(sonuc);
+      if (kac.sorgu.karsilastir) {
+        const onceki = await oku({ ...kac.sorgu, geriye: kac.sorgu.geriye + 1 });
+        const fark = sonuc.puan - onceki.puan;
+        cevap += `\n\n${satir(onceki)}\n\nFark: **${fark > 0 ? "+" : ""}${fark.toLocaleString("tr-TR")} puan**.`;
+      }
+      return json({ cevap, baglam: { ...kac.sorgu, karsilastir: false },
+        kaynaklar: [{ id: kapsam ? "tm_puan" : kimlik.rol.toLowerCase() === "bm" ? "bm_puan" : "utt_puan", baslik: basliklar[kac.sorgu.olcut],
+          zaman: simdi.toISOString(), donem: sonuc.donem.etiket }],
+        kullanim: { yol: "kac", olcut: kac.sorgu.olcut }, istekId });
+    } catch (hata) {
+      const kod = hata instanceof Error ? hata.message : "VERI_OKUNAMADI";
+      return json({ cevap: "Puan verisi şu anda okunamadı. Lütfen tekrar deneyin.", kaynaklar: [], kullanim: { yol: kod.toLowerCase() }, istekId });
     }
-
-    return json({
-      cevap: `${sonuc.donem.etiket[0].toLocaleUpperCase("tr-TR")}${sonuc.donem.etiket.slice(1)} kişisel T-Club net puanınız **${sonuc.puan.toLocaleString("tr-TR")} puan**.`,
-      kaynaklar: [{
-        id: "tclub_kisisel_net_puan",
-        baslik: "T-Club kişisel puan özeti",
-        url: "/raporlar/utt",
-        zaman: sonuc.okumaZamani,
-        donem: sonuc.donem.etiket,
-      }],
-      kullanim: { yol: "kac", olcut: kac.sorgu.olcut },
-      istekId,
-    });
   } catch (hata) {
     return hataYaniti(hata, istekId);
   }

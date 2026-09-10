@@ -21,6 +21,12 @@ test("KAÇ yalnız kişisel puan ile açık hafta, ay veya yıl dönemini kabul 
   });
   assert.equal(kacSorusunuCoz("Geçen hafta T-Club net puanım kaç?").durum, "bulundu");
   assert.equal(kacSorusunuCoz("Puanım kaç?").durum, "eksik");
+  for (const [soru, temel] of [
+    ["Bu ayki puanım kaç?", "Bu ay puanım kaç?"],
+    ["Bu haftaki puanım kaç?", "Bu hafta puanım kaç?"],
+    ["Bu dönemdeki puanım kaç?", "Bu dönem puanım kaç?"],
+    ["Geçen yılki puanım kaç?", "Geçen yıl puanım kaç?"],
+  ]) assert.deepEqual(kacSorusunuCoz(soru), kacSorusunuCoz(temel));
   assert.equal(kacSorusunuCoz("En iyi ürün hangisi?").durum, "kac_sorusu_degil");
 });
 
@@ -40,6 +46,33 @@ test("KAÇ dönemleri sunucu saat diliminden bağımsız Türkiye takvimine uyar
     baslangic: "2026-08-30T21:00:00.000Z",
     bitis: "2026-09-06T21:00:00.000Z",
     etiket: "geçen hafta",
+  });
+});
+
+test("Dönem takvim çeyreğidir; mevcut dönemde bugün hesaba katılmaz", () => {
+  const simdi = new Date("2026-09-09T12:00:00+03:00");
+  for (const soru of ["Bu dönem puanım kaç?", "Bu çeyrek puanım kaç?", "Bu quarter puanım kaç?"]) {
+    const cozum = kacSorusunuCoz(soru);
+    assert.equal(cozum.durum, "bulundu");
+    if (cozum.durum !== "bulundu") continue;
+    assert.deepEqual(kacDoneminiCoz(cozum.sorgu, simdi), {
+      baslangic: "2026-06-30T21:00:00.000Z",
+      bitis: "2026-09-08T20:59:59.999Z",
+      etiket: "bu dönem",
+    });
+  }
+  const onceki = kacSorusunuCoz("Geçen dönem kaçtı?");
+  assert.equal(onceki.durum, "bulundu");
+  if (onceki.durum !== "bulundu") return;
+  assert.deepEqual(kacDoneminiCoz(onceki.sorgu, simdi), {
+    baslangic: "2026-03-31T21:00:00.000Z",
+    bitis: "2026-06-30T20:59:59.999Z",
+    etiket: "geçen dönem",
+  });
+  assert.deepEqual(kacDoneminiCoz(onceki.sorgu, new Date("2027-01-01T01:00:00+03:00")), {
+    baslangic: "2026-09-30T21:00:00.000Z",
+    bitis: "2026-12-31T20:59:59.999Z",
+    etiket: "geçen dönem",
   });
 });
 

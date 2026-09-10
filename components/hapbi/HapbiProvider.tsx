@@ -62,6 +62,7 @@ function HapbiOturumProvider({ children }: { children: React.ReactNode }) {
     setChatAcik((prev) => !prev);
   }, []);
 
+  const baglamRef = useRef<unknown>(undefined);
   const istekRef = useRef<AbortController | null>(null);
   useEffect(() => () => { istekRef.current?.abort(); }, []);
 
@@ -70,9 +71,10 @@ function HapbiOturumProvider({ children }: { children: React.ReactNode }) {
     istekRef.current = null;
     setYukleniyor(false);
     setMesajlar([ILK_KARSILAMA_MESAJI]);
+    baglamRef.current = undefined;
   }, []);
 
-  // Mesaj geçmişi yalnız arayüzde tutulur; her soru sunucuda bağımsız işlenir.
+  // Son puan seçimi takip sorularına aktarılır; kimlik ve puan taşınmaz.
   const soruSor = useCallback(async (soruMetni: string) => {
     const soru = soruMetni.trim();
     if (!soru || soru.length > 2000 || istekRef.current) return;
@@ -85,13 +87,14 @@ function HapbiOturumProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch("/api/hapbi/sor", {
         method: "POST", headers: { "Content-Type": "application/json" },
         signal: controller.signal,
-        body: JSON.stringify({ soru }),
+        body: JSON.stringify({ soru, baglam: baglamRef.current }),
       });
       const data = await res.json();
       if (controller.signal.aborted) return;
       if (!res.ok) {
         throw new Error(data.error || "bi şu anda yanıt veremiyor. Lütfen tekrar deneyin.");
       }
+      baglamRef.current = data.baglam;
       setMesajlar(prev => [...prev, {
         id: crypto.randomUUID(), rol: "hapbi", metin: data.cevap, zaman: zaman(),
         aksiyon: data.aksiyon, kaynaklar: data.kaynaklar,
