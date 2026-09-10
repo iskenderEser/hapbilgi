@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { Minus, RotateCcw, X } from "lucide-react";
 import { useHapbi } from "./HapbiProvider";
 
-function renderHapbiMetin(metin: string, isUser = false): React.ReactNode {
+function renderHapbiMetin(metin: string, isUser = false, onLinkClick?: () => void): React.ReactNode {
   // Regex to match:
   // 1. Bold: \*\*([^*]+)\*\*
   // 2. Italic: \*([^*]+)\*
@@ -29,14 +29,14 @@ function renderHapbiMetin(metin: string, isUser = false): React.ReactNode {
       // Bold
       nodes.push(
         <strong key={`b-${keyIndex++}`} className={`font-bold ${isUser ? "text-white" : "text-gray-900"}`}>
-          {renderHapbiMetin(match[2], isUser)}
+          {renderHapbiMetin(match[2], isUser, onLinkClick)}
         </strong>
       );
     } else if (match[3] !== undefined) {
       // Italic
       nodes.push(
         <em key={`i-${keyIndex++}`} className="italic">
-          {renderHapbiMetin(match[3], isUser)}
+          {renderHapbiMetin(match[3], isUser, onLinkClick)}
         </em>
       );
     } else if (match[4] !== undefined && match[5] !== undefined) {
@@ -47,6 +47,7 @@ function renderHapbiMetin(metin: string, isUser = false): React.ReactNode {
         <Link
           key={`l-${keyIndex++}`}
           href={linkUrl}
+          onClick={() => onLinkClick?.()}
           className={`${
             isUser
               ? "text-white underline font-bold hover:opacity-80"
@@ -82,6 +83,13 @@ export default function HapbiChatModal() {
 
   if (!chatAcik) return null;
 
+  const handleLinkTikla = () => {
+    // Mobilde linke tıklanınca hedef sayfanın görünmesi için chat modalı küçültülür/indirilir
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setChatAcik(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!girdi.trim() || yukleniyor) return;
@@ -94,12 +102,8 @@ export default function HapbiChatModal() {
     <div
       role="dialog"
       aria-label="bi sohbeti"
-      className="fixed bottom-6 right-6 z-50 flex flex-col overflow-hidden bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-orange-100 transition-all duration-300 animate-in fade-in zoom-in-95"
+      className="fixed bottom-3 right-3 left-3 sm:left-auto sm:right-6 sm:bottom-6 z-50 flex flex-col overflow-hidden bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-orange-100 transition-all duration-300 animate-in fade-in zoom-in-95 w-auto sm:w-[380px] h-[450px] max-h-[64vh] sm:h-[530px] sm:max-h-[80vh]"
       style={{
-        width: "390px",
-        maxWidth: "92vw",
-        height: "560px",
-        maxHeight: "82vh",
         boxShadow: "0 20px 40px -15px rgba(249, 115, 22, 0.25), 0 0 0 1px rgba(0,0,0,0.06)",
         fontFamily: "'Nunito', sans-serif",
       }}
@@ -164,24 +168,50 @@ export default function HapbiChatModal() {
                 }`}
               >
                 {m.hata && <span className="block text-[10px] font-bold text-amber-700 mb-1">Yanıt alınamadı</span>}
-                <div className="whitespace-pre-line font-medium leading-relaxed">{renderHapbiMetin(m.metin, isUser)}</div>
+                <div className="whitespace-pre-line font-medium leading-relaxed">
+                  {renderHapbiMetin(m.metin, isUser, handleLinkTikla)}
+                </div>
                 {!!m.yonlendirmeler?.length && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {m.yonlendirmeler.map(link => <Link key={link.url} href={link.url} className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-semibold text-[#185fa5] hover:underline">{link.etiket}</Link>)}
+                  <div className="mt-2.5 flex flex-wrap gap-2">
+                    {m.yonlendirmeler.map((link) => (
+                      <Link
+                        key={link.url}
+                        href={link.url}
+                        onClick={handleLinkTikla}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-blue-50/90 hover:bg-blue-100 active:bg-blue-200 border border-blue-200/80 px-3 py-1.5 text-xs font-bold text-[#185fa5] shadow-sm hover:text-[#0c447c] active:scale-95 transition-all cursor-pointer select-none"
+                      >
+                        <span>{link.etiket}</span>
+                        <span className="text-[11px] text-blue-400 font-normal">↗</span>
+                      </Link>
+                    ))}
                   </div>
                 )}
                 {!!m.kaynaklar?.length && (
                   <div className="mt-2 flex flex-col gap-1 border-t border-gray-100 pt-2">
                     <span className="text-[10px] font-semibold text-gray-400">Başvurulan kaynaklar</span>
-                    {m.kaynaklar.map(k => k.url ? (
-                      <Link key={k.id} href={k.url} title={`Okuma zamanı: ${new Date(k.zaman).toLocaleString("tr-TR")}. Sayfada aynı dönemi seçin.`} className="text-[10px] text-[#185fa5] hover:underline">
-                        {k.baslik}{k.donem ? ` · ${k.donem}` : ""}
-                      </Link>
-                    ) : (
-                      <span key={k.id} title={`Okuma zamanı: ${new Date(k.zaman).toLocaleString("tr-TR")}`} className="text-[10px] text-gray-500">
-                        {k.baslik}{k.donem ? ` · ${k.donem}` : ""}
-                      </span>
-                    ))}
+                    {m.kaynaklar.map((k) =>
+                      k.url ? (
+                        <Link
+                          key={k.id}
+                          href={k.url}
+                          onClick={handleLinkTikla}
+                          title={`Okuma zamanı: ${new Date(k.zaman).toLocaleString("tr-TR")}. Sayfada aynı dönemi seçin.`}
+                          className="text-[10px] text-[#185fa5] hover:underline cursor-pointer"
+                        >
+                          {k.baslik}
+                          {k.donem ? ` · ${k.donem}` : ""}
+                        </Link>
+                      ) : (
+                        <span
+                          key={k.id}
+                          title={`Okuma zamanı: ${new Date(k.zaman).toLocaleString("tr-TR")}`}
+                          className="text-[10px] text-gray-500"
+                        >
+                          {k.baslik}
+                          {k.donem ? ` · ${k.donem}` : ""}
+                        </span>
+                      )
+                    )}
                   </div>
                 )}
 
@@ -192,10 +222,11 @@ export default function HapbiChatModal() {
                       type="button"
                       onClick={() => {
                         if (m.aksiyon?.url) {
+                          handleLinkTikla();
                           router.push(m.aksiyon.url);
                         }
                       }}
-                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer border-none transition-all duration-200 hover:scale-[1.02]"
+                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 active:scale-95 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer border-none transition-all duration-200 hover:scale-[1.02]"
                     >
                       <span>{m.aksiyon.etiket}</span>
                     </button>
