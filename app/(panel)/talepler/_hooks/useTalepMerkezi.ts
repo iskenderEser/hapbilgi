@@ -77,9 +77,22 @@ export function useTalepMerkezi() {
     await veriCek();
   }, [veriCek]);
 
+  // Kullanıcının değişmeyen kimliğini (id) takip eder; aynı kullanıcı için
+  // token yenilemesinde (SIGNED_IN) veriCek(true) ve loading=true tetiklenmesini engeller.
+  const yuklenenKullaniciIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (kullanici) void veriCek(true);
-  }, [kullanici, veriCek]);
+    const aktifId = kullanici?.id ?? null;
+    if (!aktifId) {
+      yuklenenKullaniciIdRef.current = null;
+      return;
+    }
+
+    if (yuklenenKullaniciIdRef.current !== aktifId) {
+      yuklenenKullaniciIdRef.current = aktifId;
+      void veriCek(true);
+    }
+  }, [kullanici?.id, veriCek]);
 
   // D-4: yalnız üretimi devam edenler solda; iptaller kendi akordiyonunda (A-11);
   // üretimi bitmiş talepler bu sayfada hiç görünmez — onlar Yayın Listesi'ne ait.

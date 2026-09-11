@@ -11,6 +11,7 @@
 
 "use client";
 
+import { useRef } from "react";
 import { HataMesajiContainer } from "@/components/HataMesaji";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -25,8 +26,16 @@ import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 export function UreticiRolGorunum() {
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const merkez = useTalepMerkezi();
+  const ilkYuklemeTamamlandiRef = useRef(false);
 
-  if (authYukleniyor || !kullanici || merkez.loading) {
+  if (!merkez.loading && !authYukleniyor && kullanici) {
+    ilkYuklemeTamamlandiRef.current = true;
+  }
+
+  // Yalnız gerçek ilk açılış ve auth bekleme durumunda tam sayfa yükleme gösterilir.
+  // İlk açılış yapıldıktan sonraki arka plan veri yenilemeleri sayfayı unmount etmez;
+  // açık olan YeniTalepAkordiyonu ve YeniTalepFormV2 bileşenleri korunur.
+  if (authYukleniyor || !kullanici || (merkez.loading && !ilkYuklemeTamamlandiRef.current)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center gap-2">
