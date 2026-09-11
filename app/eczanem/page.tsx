@@ -4,7 +4,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Sparkles } from "lucide-react";
+import { Layers, Sparkles } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -13,10 +13,18 @@ import { Input } from "@/components/ui/input";
 import { MUSTERI_ROLU } from "@/lib/utils/roller";
 import { adSoyadBicimle } from "@/lib/utils/adSoyadBicimle";
 import EclubGecisKarti from "./_components/EclubGecisKarti";
+import EczanemKapsamBreadcrumb from "./_components/EczanemKapsamBreadcrumb";
 import EczanemMusteriNavbar from "./_components/EczanemMusteriNavbar";
+import EczanemMusteriSidebar from "./_components/EczanemMusteriSidebar";
 import EczanemVideoOynatici from "./_components/EczanemVideoOynatici";
 import EczanemVideoRafi from "./_components/EczanemVideoRafi";
-import type { EczanemMusteriVideo, EczanemVideoRaflari } from "./_types";
+import type {
+  EczanemMusteriVideo,
+  EczanemSidebarAgaci,
+  EczanemSidebarSecim,
+  EczanemVideoRaflari,
+  EczanemVideolarYaniti,
+} from "./_types";
 
 const bosRaflar: EczanemVideoRaflari = {
   yeni_videolarim: [], yarim_biraktiklarim: [], en_son_izlediklerim: [],
@@ -34,6 +42,10 @@ function EczanemPanelIcerik() {
   const { mesajlar, hata, basari } = useHataMesaji();
   const musteri = !!kullanici && kullanici.kimlik_turu === MUSTERI_ROLU;
   const [videolar, setVideolar] = useState<EczanemMusteriVideo[]>([]);
+  const [agac, setAgac] = useState<EczanemSidebarAgaci>([]);
+  const [secim, setSecim] = useState<EczanemSidebarSecim>({ tip: "tum" });
+  const [mobilDrawerAcik, setMobilDrawerAcik] = useState(false);
+  const mobilTetikleyiciRef = useRef<HTMLButtonElement | null>(null);
   const [videoYukleniyor, setVideoYukleniyor] = useState(true);
   const [videoYenileniyor, setVideoYenileniyor] = useState(false);
   const [videoHazir, setVideoHazir] = useState(false);
@@ -53,15 +65,16 @@ function EczanemPanelIcerik() {
     if (elle) setVideoYenileniyor(true);
     try {
       const res = await fetch("/eczanem/api/videolar", { cache: "no-store", signal: controller.signal });
-      const data = await res.json();
+      const data: EczanemVideolarYaniti = await res.json();
       if (!res.ok) {
-        const mesaj = data.hata ?? "Öğrenme içerikleri yüklenemedi.";
-        setVideoHatasi(mesaj); hata(mesaj, data.adim ?? "öğrenme içerikleri"); return;
+        const errData = data as unknown as { hata?: string; adim?: string };
+        const mesaj = errData.hata ?? "Öğrenme içerikleri yüklenemedi.";
+        setVideoHatasi(mesaj); setAgac([]); hata(mesaj, errData.adim ?? "öğrenme içerikleri"); return;
       }
-      setVideolar(data.videolar ?? []); setVideoHazir(true); setVideoHatasi(null);
+      setVideolar(data.videolar ?? []); setAgac(data.agac ?? []); setVideoHazir(true); setVideoHatasi(null);
     } catch (error) {
       if (!(error instanceof DOMException && error.name === "AbortError")) {
-        setVideoHatasi("Öğrenme içerikleri yüklenemedi."); hata("Öğrenme içerikleri yüklenemedi.", "öğrenme içerikleri");
+        setAgac([]); setVideoHatasi("Öğrenme içerikleri yüklenemedi."); hata("Öğrenme içerikleri yüklenemedi.", "öğrenme içerikleri");
       }
     } finally {
       if (videoIstegiRef.current === controller) { setVideoYukleniyor(false); setVideoYenileniyor(false); }
@@ -76,20 +89,51 @@ function EczanemPanelIcerik() {
     return () => videoIstegiRef.current?.abort();
   }, [kullanici, musteri, router, videolariCek, yukleniyor]);
 
+  const filtrelenmisVideolar = useMemo<EczanemMusteriVideo[]>(() => {
+    switch (secim.tip) {
+      case "tum":
+        return videolar;
+      case "eczane":
+        return videolar.filter((v) => v.eczane_id === secim.eczane_id);
+      case "firma":
+        return videolar.filter(
+          (v) => v.eczane_id === secim.eczane_id && v.firma_id === secim.firma_id
+        );
+      case "urun":
+        return videolar.filter(
+          (v) =>
+            v.eczane_id === secim.eczane_id &&
+            v.firma_id === secim.firma_id &&
+            v.urun_id === secim.urun_id
+        );
+      case "arac":
+        return videolar.filter(
+          (v) =>
+            v.eczane_id === secim.eczane_id &&
+            v.firma_id === secim.firma_id &&
+            v.urun_id === secim.urun_id &&
+            v.yayin_id === secim.yayin_id &&
+            v.arac_id === secim.arac_id
+        );
+      default:
+        return videolar;
+    }
+  }, [secim, videolar]);
+
   const raflar = useMemo<EczanemVideoRaflari>(() => {
     if (!videoHazir) return bosRaflar;
-    const puanaGore = (alan: "begeni_sayisi" | "favori_sayisi" | "izlenme_sayisi") => [...videolar]
+    const puanaGore = (alan: "begeni_sayisi" | "favori_sayisi" | "izlenme_sayisi") => [...filtrelenmisVideolar]
       .filter((video) => video[alan] > 0)
       .sort((a, b) => b[alan] - a[alan] || tariheGoreAzalan("gelis_tarihi")(a, b));
     return {
-      yeni_videolarim: videolar.filter((video) => !video.izleme_basladi).sort(tariheGoreAzalan("gelis_tarihi")),
-      yarim_biraktiklarim: videolar.filter((video) => video.izleme_basladi && !video.izlendi).sort(tariheGoreAzalan("izleme_baslangic")),
-      en_son_izlediklerim: videolar.filter((video) => video.izlendi).sort(tariheGoreAzalan("izleme_bitis")),
+      yeni_videolarim: filtrelenmisVideolar.filter((video) => !video.izleme_basladi).sort(tariheGoreAzalan("gelis_tarihi")),
+      yarim_biraktiklarim: filtrelenmisVideolar.filter((video) => video.izleme_basladi && !video.izlendi).sort(tariheGoreAzalan("izleme_baslangic")),
+      en_son_izlediklerim: filtrelenmisVideolar.filter((video) => video.izlendi).sort(tariheGoreAzalan("izleme_bitis")),
       en_cok_begenilenler: puanaGore("begeni_sayisi"),
       en_cok_favorilenenler: puanaGore("favori_sayisi"),
       en_cok_izlenenler: puanaGore("izlenme_sayisi"),
     };
-  }, [videoHazir, videolar]);
+  }, [filtrelenmisVideolar, videoHazir]);
 
   useEffect(() => {
     const gonderimId = searchParams.get("gonderim_id");
@@ -154,27 +198,79 @@ function EczanemPanelIcerik() {
         yenileniyor={videoYukleniyor || videoYenileniyor}
         onHesapSil={() => setSilmeModalAcik(true)}
       />
-      <main className="mx-auto flex w-full max-w-[1240px] flex-col gap-6 px-4 py-5 md:px-6 md:py-7">
-        <section className="relative overflow-hidden rounded-3xl bg-[linear-gradient(125deg,#173b63_0%,#237ac8_56%,#43a5d7_100%)] px-5 py-6 text-white shadow-[0_12px_32px_rgba(35,122,200,0.18)] md:px-8 md:py-8">
-          <div className="absolute -right-16 -top-24 size-64 rounded-full border-[32px] border-white/5" /><div className="absolute -bottom-24 right-28 size-52 rounded-full bg-white/5" />
-          <div className="relative max-w-2xl"><p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#cae8ff]"><Sparkles className="size-3.5" /> HapBilgi Eczanem</p><h1 className="mt-2 text-2xl font-black tracking-[-0.025em] md:text-3xl">{musteriAd ? `Merhaba ${musteriAd}` : "Merhaba"}</h1><p className="mt-2 max-w-xl text-xs font-semibold leading-5 text-white/78 md:text-sm md:leading-6">Eczanenizden gelen öğrenme içeriklerini inceleyin; size özel içerik akışınızı tek sayfada yönetin.</p></div>
-        </section>
-        <EclubGecisKarti hata={hata} basari={basari} />
-        {videoHatasi && <div className="rounded-2xl border border-[#f0d1d1] bg-[#fff7f7] px-4 py-3 text-xs font-bold text-[#a74646]">{videoHatasi}{videoHazir ? " · Son başarılı içerik akışı gösteriliyor." : ""}</div>}
-        {videoYukleniyor && !videoHazir ? (
-          <div className="flex min-h-72 items-center justify-center gap-2 text-xs font-extrabold text-[#8190a3]"><span className="size-4 animate-spin rounded-full border-2 border-[#d7e4ef] border-t-[#3589d8]" /> Öğrenme içerikleri hazırlanıyor…</div>
-        ) : seciliVideo ? (
-          <EczanemVideoOynatici video={seciliVideo} onKapat={() => { setSeciliVideo(null); router.push("/eczanem", { scroll: false }); void videolariCek(); }} onTamamlandi={() => videolariCek()} hata={hata} basari={basari} />
-        ) : (
-          <div className="flex flex-col gap-7">
-            <EczanemVideoRafi baslik="Yeni Öğrenme İçeriklerim" videolar={raflar.yeni_videolarim} bosMesaj="Yeni öğrenme içeriğiniz bulunmuyor." {...rafOrtak} />
-            <EczanemVideoRafi baslik="Yarım Bıraktıklarım" videolar={raflar.yarim_biraktiklarim} bosMesaj="Yarım bıraktığınız öğrenme içeriği bulunmuyor." {...rafOrtak} />
-            <EczanemVideoRafi baslik="En Son Tamamladıklarım" videolar={raflar.en_son_izlediklerim} bosMesaj="Henüz tamamladığınız bir öğrenme içeriği bulunmuyor." {...rafOrtak} />
-            <EczanemVideoRafi baslik="En Çok Beğenilenler" videolar={raflar.en_cok_begenilenler} bosMesaj="Henüz müşteriler tarafından beğenilmiş bir öğrenme yayını bulunmuyor." {...rafOrtak} />
-            <EczanemVideoRafi baslik="En Çok Favorilenenler" videolar={raflar.en_cok_favorilenenler} bosMesaj="Henüz müşteriler tarafından favorilenmiş bir öğrenme yayını bulunmuyor." {...rafOrtak} />
-            <EczanemVideoRafi baslik="En Çok Tamamlananlar" videolar={raflar.en_cok_izlenenler} bosMesaj="Henüz müşteriler tarafından tamamlanmış bir öğrenme içeriği bulunmuyor." {...rafOrtak} />
+      <main className="mx-auto flex w-full max-w-[1440px] items-start gap-6 px-4 py-5 md:px-6 md:py-7">
+        <EczanemMusteriSidebar
+          agac={agac}
+          secim={secim}
+          onSecim={setSecim}
+          mobilAcik={mobilDrawerAcik}
+          onMobilKapat={() => setMobilDrawerAcik(false)}
+          tetikleyiciRef={mobilTetikleyiciRef}
+        />
+        <div className="flex-1 min-w-0 flex flex-col gap-6">
+          {/* Mobilde İçerikler butonu */}
+          <div className="flex items-center md:hidden">
+            <button
+              ref={mobilTetikleyiciRef}
+              id="eczanem-mobil-icerikler-btn"
+              type="button"
+              aria-controls="eczanem-mobil-drawer"
+              aria-expanded={mobilDrawerAcik}
+              onClick={() => setMobilDrawerAcik(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-[#dfe7ef] bg-white px-3.5 py-2 text-xs font-black text-[#2e475d] shadow-sm transition hover:bg-[#f6f9fb] active:bg-[#edf2f7]"
+            >
+              <Layers className="size-4 text-[#bc2d0d]" />
+              <span>İçerikler</span>
+            </button>
           </div>
-        )}
+
+          <section className="relative overflow-hidden rounded-3xl bg-[linear-gradient(125deg,#173b63_0%,#237ac8_56%,#43a5d7_100%)] px-5 py-6 text-white shadow-[0_12px_32px_rgba(35,122,200,0.18)] md:px-8 md:py-8">
+            <div className="absolute -right-16 -top-24 size-64 rounded-full border-[32px] border-white/5" /><div className="absolute -bottom-24 right-28 size-52 rounded-full bg-white/5" />
+            <div className="relative max-w-2xl"><p className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#cae8ff]"><Sparkles className="size-3.5" /> HapBilgi Eczanem</p><h1 className="mt-2 text-2xl font-black tracking-[-0.025em] md:text-3xl">{musteriAd ? `Merhaba ${musteriAd}` : "Merhaba"}</h1><p className="mt-2 max-w-xl text-xs font-semibold leading-5 text-white/78 md:text-sm md:leading-6">Eczanenizden gelen öğrenme içeriklerini inceleyin; size özel içerik akışınızı tek sayfada yönetin.</p></div>
+          </section>
+          <EclubGecisKarti hata={hata} basari={basari} />
+          {videoHatasi && <div className="rounded-2xl border border-[#f0d1d1] bg-[#fff7f7] px-4 py-3 text-xs font-bold text-[#a74646]">{videoHatasi}{videoHazir ? " · Son başarılı içerik akışı gösteriliyor." : ""}</div>}
+          {videoYukleniyor && !videoHazir ? (
+            <div className="flex min-h-72 items-center justify-center gap-2 text-xs font-extrabold text-[#8190a3]"><span className="size-4 animate-spin rounded-full border-2 border-[#d7e4ef] border-t-[#3589d8]" /> Öğrenme içerikleri hazırlanıyor…</div>
+          ) : seciliVideo ? (
+            <EczanemVideoOynatici video={seciliVideo} onKapat={() => { setSeciliVideo(null); router.push("/eczanem", { scroll: false }); void videolariCek(); }} onTamamlandi={() => videolariCek()} hata={hata} basari={basari} />
+          ) : (
+            <div className="flex flex-col gap-6">
+              <EczanemKapsamBreadcrumb
+                agac={agac}
+                secim={secim}
+                onSecim={setSecim}
+              />
+              {filtrelenmisVideolar.length === 0 && secim.tip !== "tum" ? (
+                <div className="flex flex-col items-center justify-center gap-3.5 rounded-2xl border border-dashed border-[#d8e3ed] bg-white p-8 text-center shadow-sm">
+                  <div className="flex size-11 items-center justify-center rounded-2xl bg-[#fef2f2] text-[#bc2d0d]">
+                    <Layers className="size-5" />
+                  </div>
+                  <p className="text-sm font-bold text-[#475569]">
+                    Bu kapsamda öğrenme içeriği bulunmuyor.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setSecim({ tip: "tum" })}
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#bc2d0d] px-4 py-2 text-xs font-black text-white shadow-sm transition hover:bg-[#9f2409] active:bg-[#851e07]"
+                  >
+                    <Layers className="size-3.5" />
+                    <span>Tüm İçerikler</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-7">
+                  <EczanemVideoRafi baslik="Yeni Öğrenme İçeriklerim" videolar={raflar.yeni_videolarim} bosMesaj="Yeni öğrenme içeriğiniz bulunmuyor." {...rafOrtak} />
+                  <EczanemVideoRafi baslik="Yarım Bıraktıklarım" videolar={raflar.yarim_biraktiklarim} bosMesaj="Yarım bıraktığınız öğrenme içeriği bulunmuyor." {...rafOrtak} />
+                  <EczanemVideoRafi baslik="En Son Tamamladıklarım" videolar={raflar.en_son_izlediklerim} bosMesaj="Henüz tamamladığınız bir öğrenme içeriği bulunmuyor." {...rafOrtak} />
+                  <EczanemVideoRafi baslik="HapBilgi’de En Çok Beğenilenler" videolar={raflar.en_cok_begenilenler} bosMesaj="Henüz müşteriler tarafından beğenilmiş bir öğrenme yayını bulunmuyor." {...rafOrtak} />
+                  <EczanemVideoRafi baslik="HapBilgi’de En Çok Favorilenenler" videolar={raflar.en_cok_favorilenenler} bosMesaj="Henüz müşteriler tarafından favorilenmiş bir öğrenme yayını bulunmuyor." {...rafOrtak} />
+                  <EczanemVideoRafi baslik="En Çok Tamamlananlar" videolar={raflar.en_cok_izlenenler} bosMesaj="Henüz müşteriler tarafından tamamlanmış bir öğrenme içeriği bulunmuyor." {...rafOrtak} />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </main>
       <AlertDialog open={silmeModalAcik} onOpenChange={(acik) => { if (!acik) silmeModaliniKapat(); }}><AlertDialogContent><form onSubmit={hesabimiSil}><AlertDialogHeader><AlertDialogTitle className="text-[#8f3030]">Hesabınızı silmek istediğinize emin misiniz?</AlertDialogTitle><AlertDialogDescription className="leading-6">Bu işlem geri alınamaz. Hesabınız, puanlarınız, siparişleriniz ve HapBilgi’deki tüm kayıtlarınız kalıcı olarak silinir.</AlertDialogDescription></AlertDialogHeader><label className="mt-5 block text-xs font-extrabold text-[#536981]" htmlFor="hesap-silme-sifre">Mevcut şifreniz</label><Input id="hesap-silme-sifre" type="password" value={silmeSifresi} onChange={(event) => setSilmeSifresi(event.target.value)} autoComplete="current-password" required disabled={siliniyor} className="mt-2 h-10 focus-visible:border-[#b84444] focus-visible:ring-[#b84444]/20" placeholder="Şifrenizi girin" />{silmeHatasi && <div className="mt-3 rounded-xl border border-[#efcaca] bg-[#fff3f3] px-3 py-2 text-xs font-bold text-[#a43f3f]">{silmeHatasi}</div>}<AlertDialogFooter className="mt-6"><AlertDialogCancel type="button" onClick={silmeModaliniKapat} disabled={siliniyor}>Vazgeç</AlertDialogCancel><Button type="submit" disabled={siliniyor || !silmeSifresi} className="bg-[#b84444] font-extrabold hover:bg-[#9f3636]">{siliniyor ? "Siliniyor…" : "Evet, hesabımı sil"}</Button></AlertDialogFooter></form></AlertDialogContent></AlertDialog>
     </div>
