@@ -1967,18 +1967,32 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `_types.ts` | TypeScript / Lib | Eczanem alanında kullanılan `EczanemMusteriVideo`, `EczanemVideoRaflari` veri tiplerini ve modüller arası sözleşmeleri tanımlar. |
-| `page.tsx` | UI / React | `/eczanem` rotasında Eczanem kapsamındaki Eczanem arayüzünü sunan Next.js sayfa bileşenidir. |
+| `_types.ts` | TypeScript / Lib | Eczanem alanında kullanılan `EczanemMusteriVideo`, `EczanemVideoRaflari`, hiyerarşik `EczanemSidebarAgaci` ve ayırt edilmiş tipli `EczanemSidebarSecim` sözleşmelerini tanımlar. |
+| `page.tsx` | UI / React | `/eczanem` müşteri ana sayfasını sunar; masaüstü sidebar ve mobil drawer gezintisini, useMemo ile kapsam filtrelemesini, breadcrumb akışını, oynatıcı durumunu ve global beğeni/favori sayaçlarını koruyan altı içerik rafını yönetir. |
 
 ### 📁 app/eczanem/_components/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `EclubGecisKarti.tsx` | UI / React | E-Club Gecis Karti, Eczanem içindeki e-club gecis bilgisini kart görünümü ve ilgili eylemlerle sunar. |
-| `EczanemMusteriNavbar.tsx` | UI / React | Eczanem üye Navbar, Eczanem ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `EczanemKapsamBreadcrumb.tsx` | UI / React | Seçili ağaç kapsamını Tüm İçerikler, Eczane, Firma, Ürün (null ise Genel İçerikler) ve Araç adımlarıyla hiyerarşik breadcrumb olarak gösterir ve adımlara tıklanarak kapsam değiştirilmesini sağlar. |
+| `EczanemMusteriNavbar.tsx` | UI / React | Eczanem müşteri üst gezinme çubuğudur; logo, aktif bilgi sayfaları bağlantıları (HapBilgi Nedir, Nasıl Çalışır), yenileme, çıkış ve hesap silme kontrollerini sunar. |
+| `EczanemMusteriSidebar.tsx` | UI / React | Eczanem müşteri içerik ağacı bileşenidir; masaüstünde 280px/64px daraltılabilir sticky sidebar, mobilde ise odak yakalama ve erişilebilir diyalog özellikli kayar çekmece (drawer) olarak eczane/firma/ürün hiyerarşisini sunar. |
 | `EczanemPuanlarim.tsx` | UI / React | Eczanem Puanlarim, Eczanem ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 | `EczanemVideoOynatici.tsx` | UI / React | Eczanem video Oynatici, ilgili öğrenme aracını gösteren ve Eczanem ilerleme/tamamlama akışına bağlayan oynatıcı bileşenidir. |
-| `EczanemVideoRafi.tsx` | UI / React | Eczanem video Rafi, Eczanem içeriklerini yatay raf düzeninde listeler ve seçilen kaydı ilgili ayrıntı/oynatıcı akışına taşır. |
+| `EczanemVideoRafi.tsx` | UI / React | Eczanem öğrenme araçlarını yatay kaydırmalı raf düzeninde listeler; içerik sayacı, kontrollü kaydırma butonları, eşit yükseklikte araç rozetli kartlar (Video, Podcast, Görsel, Flip PDF) ve global beğeni/favori butonlarını barındırır. |
+
+### 📁 app/eczanem/hapbilgi-nedir/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/eczanem/hapbilgi-nedir` rotasında HapBilgi platform tanıtımını ve müşteri bilgilendirmesini sunan statik Next.js sayfa bileşenidir. |
+
+### 📁 app/eczanem/nasil-calisir/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | `/eczanem/nasil-calisir` rotasında Eczanem puan kazanımı, video izleme ve eczane kasasında kullanım adımlarını açıklayan Next.js sayfa bileşenidir. |
 
 ### 📁 app/eczanem/api/eclub-gecisi/
 
@@ -2062,7 +2076,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `route.ts` | API / Route Handler | `/eczanem/api/videolar` uç noktasında GET isteklerini işler; Eczanem için Eczanem videolar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+| `route.ts` | API / Route Handler | `/eczanem/api/videolar` uç noktasında GET isteklerini işler; aktif eczane üyeliklerine ait yayınları künye ve öğrenme aracı bütünlüğüyle doğrular, global etkileşim sayılarıyla zenginleştirir ve tipli hiyerarşik sidebar ağacı (`agac`) ile birlikte döner. |
 
 ### 📁 app/eczanem/kapali/
 
