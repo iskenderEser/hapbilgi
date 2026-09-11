@@ -1,39 +1,42 @@
 "use client";
 
+import { useId, useState } from "react";
+import Link from "next/link";
+import { ArrowRight, CheckCircle2, Coins, Play, RotateCcw, Store } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { MUSTERI_ROLU } from "@/lib/utils/roller";
-import { ArrowRight, CheckCircle2, CircleHelp, Coins, Play, Store } from "lucide-react";
-import Link from "next/link";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import EczanemMusteriNavbar from "../_components/EczanemMusteriNavbar";
+import styles from "@/components/panel/bilgi/bilgi.module.css";
 
 const ADIMLAR = [
   {
     no: "01",
     baslik: "İzle / Dinle / Oku",
     aciklama: "Eczanenizden gelen güvenilir ürün ve sağlık içeriklerini dilediğiniz zaman tamamlayın.",
-    ikon: Play,
-    renk: "text-[#237ac8] bg-[#edf6fd]",
+    pencere: "Eğitim Yayınları",
+    gorselEtiketi: "Video ve sesli hap bilgi içerikleri",
   },
   {
     no: "02",
     baslik: "Soruları Cevapla",
     aciklama: "İçeriğin ardından gelen soruları yanıtlayarak bilginizi pekiştirin ve ürün puanlarınızı kazanın.",
-    ikon: CircleHelp,
-    renk: "text-[#4393d8] bg-[#f0f7fe]",
+    pencere: "Soru Seti",
+    gorselEtiketi: "Puan kazandıran sorular",
   },
   {
     no: "03",
     baslik: "Talep Oluştur",
     aciklama: "Puanlarım sayfasından biriken puanlarınızla 1 kutuluk indirim talebinizi kolayca oluşturun.",
-    ikon: Coins,
-    renk: "text-[#2e7d32] bg-[#f0f9f0]",
+    pencere: "Öğrenme Puanları",
+    gorselEtiketi: "1 kutuluk indirim talebi",
   },
   {
     no: "04",
     baslik: "Eczanenden Al",
     aciklama: "Eczanenize uğrayarak talebinizi onaylatın ve 1 kutuluk ürün indiriminizi hemen kullanın.",
-    ikon: Store,
-    renk: "text-[#1c324c] bg-[#eef4f9]",
+    pencere: "Eczane Teslimi",
+    gorselEtiketi: "Eczanede indirimli teslim",
   },
 ];
 
@@ -41,86 +44,234 @@ export default function EczanemNasilCalisirPage() {
   const { kullanici, yukleniyor, cikisYap } = useAuth();
   const musteri = !!kullanici && kullanici.kimlik_turu === MUSTERI_ROLU;
 
+  const [secili, setSecili] = useState(0);
+  const sahneId = useId();
+
   if (yukleniyor || !kullanici || !musteri) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f5f8fb]">
+      <div className="flex min-h-screen items-center justify-center bg-white">
         <span
-          className="size-7 animate-spin rounded-full border-2 border-[#d8e5f0] border-t-[#237ac8]"
+          className="size-7 animate-spin rounded-full border-2 border-[#e5e5e5] border-t-[#bc2d0d]"
           aria-label="Oturum yükleniyor"
         />
       </div>
     );
   }
 
+  const adim = ADIMLAR[secili];
+  const sonAdim = secili === ADIMLAR.length - 1;
+  const sonrakiAdim = ADIMLAR[(secili + 1) % ADIMLAR.length];
+  const ilerlemeAciklamasi = sonAdim ? "Döngüyü yeniden başlat" : `${sonrakiAdim.baslik} adımını göster`;
+
   return (
-    <div className="min-h-screen bg-[#f5f8fb] pb-12" style={{ fontFamily: "'Nunito', sans-serif" }}>
+    <div className="min-h-screen bg-white" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <EczanemMusteriNavbar
         ad={kullanici.adSoyad || kullanici.ad || "Müşteri"}
         telefon={kullanici.telefon}
         onCikis={cikisYap}
       />
 
-      <main className="mx-auto flex w-full max-w-[1000px] flex-col gap-6 px-4 py-6 md:px-6 md:py-8">
-        {/* Başlık Kartı */}
-        <div className="rounded-3xl border border-[#dce6ef] bg-white p-6 shadow-[0_8px_24px_rgba(31,63,96,0.05)] md:p-8">
-          <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#237ac8]">
-            <CircleHelp className="size-3.5" /> Nasıl Çalışır?
-          </p>
-          <h1 className="mt-3 text-2xl font-black tracking-tight text-[#1c324c] md:text-4xl">
-            4 Adımda <span className="text-[#237ac8]">Öğrenin ve Kazanın</span>
-          </h1>
-          <p className="mt-3 max-w-2xl text-xs font-semibold leading-6 text-[#62778f] md:text-sm">
-            Eczanenizin size özel hazırladığı dijital içerikleri tamamlayın; öğrendikçe puan kazanın, puanlarınızı eczanenizde kullanın.
-          </p>
-        </div>
+      <div className={styles.zemin}>
+        <section className={styles.sayfa} aria-label="Nasıl Çalışır?">
+          <header>
+            <p className={styles.etiket}>Nasıl Çalışır?</p>
+            <h1 className={styles.baslik}>
+              4 Adımda<br />
+              <span>öğrenin ve kazanın</span>
+            </h1>
+            <p className={styles.aciklama}>
+              Eczanenizin size özel hazırladığı dijital içerikleri tamamlayın; öğrendikçe puan kazanın, puanlarınızı eczanenizde kullanın.
+            </p>
+          </header>
 
-        {/* 4 Adımlı Kartlar */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {ADIMLAR.map(({ no, baslik, aciklama, ikon: Icon, renk }, idx) => (
+          {/* Adım Mekanizması (Referans OgrenmeDongusu Çizgisi) */}
+          <div className={styles.mekanizma}>
             <div
-              key={no}
-              className="relative flex flex-col justify-between rounded-3xl border border-[#dce6ef] bg-white p-6 shadow-[0_8px_24px_rgba(31,63,96,0.04)] transition-all hover:border-[#b9d5ee] hover:shadow-md"
+              className={styles.adimSecici}
+              style={{ gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))" }}
+              role="group"
+              aria-label="Nasıl çalışır adımları"
             >
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-black tracking-tighter text-[#c5d8eb]">{no}</span>
-                  <span className={`flex size-10 items-center justify-center rounded-2xl ${renk}`}>
-                    <Icon className="size-5" />
-                  </span>
-                </div>
-                <h2 className="mt-4 text-base font-extrabold text-[#1c324c]">{baslik}</h2>
-                <p className="mt-2 text-xs font-semibold leading-5 text-[#6c8299]">{aciklama}</p>
+              {ADIMLAR.map((oge, index) => (
+                <button
+                  key={oge.no}
+                  type="button"
+                  className={styles.adim}
+                  aria-pressed={secili === index}
+                  aria-controls={sahneId}
+                  onClick={() => setSecili(index)}
+                >
+                  <span className={styles.adimNo}>{oge.no}</span>
+                  <span>{oge.baslik}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className={styles.surecSahnesi} id={sahneId}>
+              <div
+                className={styles.yorunge}
+                style={{ maxWidth: 295 }}
+                role="group"
+                aria-label="Öğrenmeden eczanede indirimli ürün teslimine uzanan döngü"
+              >
+                <svg className={styles.yorungeCizgisi} viewBox="0 0 285 285" aria-hidden="true">
+                  <circle className={styles.yorungeIzi} cx="142.5" cy="142.5" r="113.3" />
+                  <circle
+                    className={styles.yorungeIlerlemesi}
+                    cx="142.5"
+                    cy="142.5"
+                    r="113.3"
+                    pathLength={100}
+                    style={{ strokeDashoffset: 100 * (1 - (secili + 1) / ADIMLAR.length) }}
+                  />
+                  <circle className={styles.yorungeIcIzi} cx="142.5" cy="142.5" r="89" />
+                </svg>
+                <span className={`${styles.yorungeEtiketi} ${styles.bilgiEtiketi}`}>İçerik</span>
+                <span className={`${styles.yorungeEtiketi} ${styles.katilimEtiketi}`}>Puan</span>
+                <span className={`${styles.yorungeEtiketi} ${styles.sureklilikEtiketi}`}>Eczane</span>
+                <TooltipProvider delayDuration={350}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className={styles.merkez}
+                        style={{
+                          inset: "13%",
+                          padding: "4px 8px",
+                        }}
+                        aria-label={`${adim.baslik}: ${ilerlemeAciklamasi}`}
+                        aria-controls={sahneId}
+                        onClick={() => setSecili((onceki) => (onceki + 1) % ADIMLAR.length)}
+                      >
+                        <span
+                          className={styles.merkezSayac}
+                          style={{ marginBottom: "2px", fontSize: "10px", letterSpacing: "1.5px" }}
+                        >
+                          {adim.no} / 04
+                        </span>
+                        <strong
+                          className={styles.merkezBaslik}
+                          style={{
+                            fontSize: "clamp(14px, 3.5cqw, 17px)",
+                            lineHeight: 1.15,
+                            letterSpacing: "-0.5px",
+                            maxWidth: "165px",
+                          }}
+                        >
+                          {adim.baslik}
+                        </strong>
+                        <span
+                          className={styles.merkezEtiketi}
+                          style={{
+                            whiteSpace: "normal",
+                            marginTop: "4px",
+                            fontSize: "clamp(10px, 2.5cqw, 11px)",
+                            lineHeight: 1.35,
+                            maxWidth: "170px",
+                            textAlign: "center",
+                            overflowWrap: "break-word",
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          {adim.aciklama}
+                        </span>
+                        <span
+                          className={styles.merkezOku}
+                          style={{ marginTop: "5px" }}
+                          aria-hidden="true"
+                        >
+                          {sonAdim ? <RotateCcw size={14} /> : <ArrowRight size={14} />}
+                        </span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" sideOffset={10}>
+                      {ilerlemeAciklamasi}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+                  {adim.no} / 04: {adim.baslik}. {adim.aciklama}
+                </span>
               </div>
 
-              {idx < 3 && (
-                <div className="mt-4 hidden items-center gap-1 text-[11px] font-bold text-[#9db5cc] lg:flex">
-                  <span>Sonraki adım</span>
-                  <ArrowRight className="size-3" />
+              <div className={styles.ornek} role="group" aria-label="Seçili adımın temsili görünümü">
+                <div className={styles.ornekUst}>
+                  <span>{adim.pencere}</span>
+                  <span className={styles.pencereNoktalari} aria-hidden="true">
+                    <i />
+                    <i />
+                    <i />
+                  </span>
                 </div>
-              )}
+                <div className={styles.ornekIcerik}>
+                  {adim.no === "01" && (
+                    <div className={styles.video} aria-hidden="true">
+                      <span className={styles.oynat}>
+                        <Play size={15} fill="currentColor" strokeWidth={0} />
+                      </span>
+                    </div>
+                  )}
+                  {adim.no === "02" && (
+                    <div className={styles.cevaplar} aria-hidden="true">
+                      {[0, 1, 2].map((sira) => (
+                        <div className={styles.cevap} key={sira}>
+                          <i />
+                          <b />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {adim.no === "03" && (
+                    <div className={styles.simge} aria-hidden="true">
+                      <Coins size={32} strokeWidth={1.4} />
+                    </div>
+                  )}
+                  {adim.no === "04" && (
+                    <div className={styles.simge} aria-hidden="true">
+                      <Store size={32} strokeWidth={1.4} />
+                    </div>
+                  )}
+                  <span className={styles.ornekEtiketi}>{adim.gorselEtiketi}</span>
+                  <span className={styles.ornekAltEtiketi}>{adim.aciklama}</span>
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
 
-        {/* Puanlarım Hızlı Yönlendirme Kartı */}
-        <div className="flex flex-col items-center justify-between gap-4 rounded-3xl border border-[#cfe2f3] bg-[linear-gradient(135deg,#f2f8fd_0%,#ffffff_100%)] p-6 sm:flex-row md:p-8">
-          <div>
-            <h3 className="flex items-center gap-2 text-base font-extrabold text-[#1c324c]">
-              <CheckCircle2 className="size-5 text-[#237ac8]" />
-              Kazanılan puanlarınızı kontrol etmek ister misiniz?
-            </h3>
-            <p className="mt-1 text-xs font-semibold text-[#667d96]">
-              Puanlarım sayfasından biriken puanlarınızı inceleyebilir ve eczanenize iletmek üzere talep oluşturabilirsiniz.
-            </p>
+            <div className={styles.surecAlt}>
+              <span>İçerikten öğrenmeye, öğrenmeden eczanede indirimli ürün teslimine.</span>
+            </div>
           </div>
-          <Link
-            href="/eczanem/puanlarim"
-            className="inline-flex h-10 shrink-0 items-center justify-center rounded-2xl bg-[#237ac8] px-5 text-xs font-extrabold text-white shadow-sm transition hover:bg-[#1b65a7]"
+
+          {/* Puanlarım Hızlı Yönlendirme Kartı (Ortak Çizgi) */}
+          <div
+            className="mt-8 flex flex-col items-center justify-between gap-4 rounded-2xl border p-6 sm:flex-row md:p-7"
+            style={{
+              borderColor: "var(--bilgi-cizgi, #e5e5e5)",
+              background: "var(--bilgi-yumusak, #f4f5f6)",
+            }}
           >
-            Puanlarıma Git
-          </Link>
-        </div>
-      </main>
+            <div>
+              <h2
+                className="flex items-center gap-2 text-base font-extrabold"
+                style={{ color: "var(--bilgi-metin, #343434)" }}
+              >
+                <CheckCircle2 className="size-5" style={{ color: "var(--bilgi-vurgu, #bc2d0d)" }} />
+                Kazanılan puanlarınızı kontrol etmek ister misiniz?
+              </h2>
+              <p className="mt-1 text-xs font-semibold" style={{ color: "var(--bilgi-ikincil, #717478)" }}>
+                Puanlarım sayfasından biriken puanlarınızı inceleyebilir ve eczanenize iletmek üzere talep oluşturabilirsiniz.
+              </p>
+            </div>
+            <Link
+              href="/eczanem/puanlarim"
+              className="inline-flex h-10 shrink-0 items-center justify-center rounded-full px-6 text-xs font-bold text-white shadow-sm transition-opacity hover:opacity-90"
+              style={{ background: "var(--bilgi-vurgu, #bc2d0d)", fontFamily: "'Nunito', sans-serif" }}
+            >
+              Puanlarıma Git
+            </Link>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
