@@ -1,15 +1,57 @@
+export type EczanemAracTuru = "video" | "podcast" | "gorsel" | "flip_pdf";
+
+export interface EczanemSidebarArac {
+  arac_id: string;
+  arac_turu: EczanemAracTuru;
+}
+
+export interface EczanemSidebarYayin {
+  yayin_id: string;
+  yayin_basligi: string;
+  araclar: EczanemSidebarArac[];
+}
+
+export interface EczanemSidebarUrun {
+  urun_id: string | null;
+  urun_adi: string | null;
+  yayinlar: EczanemSidebarYayin[];
+}
+
+export interface EczanemSidebarFirma {
+  firma_id: string;
+  firma_adi: string;
+  urunler: EczanemSidebarUrun[];
+}
+
+export interface EczanemSidebarEczane {
+  eczane_id: string;
+  eczane_adi: string;
+  firmalar: EczanemSidebarFirma[];
+}
+
+export type EczanemSidebarAgaci = EczanemSidebarEczane[];
+
+export type EczanemSidebarSecim =
+  | { tip: "tum" }
+  | { tip: "eczane"; eczane_id: string }
+  | { tip: "firma"; eczane_id: string; firma_id: string }
+  | { tip: "urun"; eczane_id: string; firma_id: string; urun_id: string | null }
+  | { tip: "arac"; eczane_id: string; firma_id: string; urun_id: string | null; yayin_id: string; arac_id: string };
+
 export interface EczanemMusteriVideo {
   gonderim_id: string;
   yayin_id: string;
   eczane_id: string;
   eczane_adi: string;
   talep_no?: number | null;
+  firma_id: string;
   firma_adi?: string | null;
+  urun_id: string | null;
   urun_adi: string;
   teknik_adi: string | null;
   video_url: string | null;
-  arac_id: string | null;
-  arac_turu: "video" | "podcast" | "gorsel" | "flip_pdf";
+  arac_id: string;
+  arac_turu: EczanemAracTuru;
   thumbnail_url: string | null;
   video_puani: number | null;
   soru_puani: number | null;
@@ -35,4 +77,9 @@ export interface EczanemVideoRaflari {
   en_cok_begenilenler: EczanemMusteriVideo[];
   en_cok_favorilenenler: EczanemMusteriVideo[];
   en_cok_izlenenler: EczanemMusteriVideo[];
+}
+
+export interface EczanemVideolarYaniti {
+  videolar: EczanemMusteriVideo[];
+  agac: EczanemSidebarAgaci;
 }
