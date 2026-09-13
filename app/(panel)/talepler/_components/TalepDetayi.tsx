@@ -102,12 +102,17 @@ export function TalepDetayi({
     : aktif?.anahtar === "soru_seti" ? detay?.soru_seti
     : null;
 
-  // V2/V4'te video henüz yokken sıra üreticidedir: yükleme alanı Video adımının
-  // kutusunda açılır. Dört şart birden aranır — hazır video kolu, video yok,
-  // durum "Öğrenme Aracınızı İletiniz", ve talebi açan üretici sensin.
+  // V2/V4'te öğrenme aracı henüz yokken sıra üreticidedir: yükleme alanı ilgili adımın
+  // kutusunda açılır. Şartlar: hazır araç kolu, araç henüz yok,
+  // durum "video_bekleniyor" ("Öğrenme Aracınızı İletiniz"), ve talebi açan üretici sensin.
+  const aracMevcut =
+    talep.ogrenme_araci_turu === "video"
+      ? Boolean(detay?.video?.video_url)
+      : Boolean(detay?.ogrenme_araci?.arac_id && detay?.ogrenme_araci?.dosya_yolu);
+
   const videoYuklenebilir =
     talep.hazir_video &&
-    !detay?.video?.video_url &&
+    !aracMevcut &&
     !detay?.video_isleniyor &&
     adimlar.find((a) => a.anahtar === "video")?.durum_kodu === "video_bekleniyor" &&
     talep.uretici_id === kullaniciId;

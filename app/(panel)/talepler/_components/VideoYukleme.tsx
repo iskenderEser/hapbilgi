@@ -1,24 +1,81 @@
 // app/talepler/_components/VideoYukleme.tsx
 //
-// "Hazır videom var" seçiliyken görünen tek video dosyası seçim bölümü.
-// Parent koşullu render eder (hazirVideo === true).
+// "Hazır videom/aracım var" seçiliyken görünen tek dosya seçim bölümü.
+// Parent koşullu render eder.
 // Yükleme aşaması parent'ta (A4: talep oluşunca vezneden izin + tarayıcıdan
 // doğrudan Bunny'ye TUS — dosya Supabase'e hiç girmez).
 
 "use client";
 
 import { useRef } from "react";
-import { type BekleyenDosya, VIDEO_FORMATLAR } from "../_types";
+import {
+  type BekleyenDosya,
+  VIDEO_FORMATLAR,
+  PODCAST_FORMATLAR,
+  GORSEL_FORMATLAR,
+  FLIP_PDF_FORMATLAR,
+  dosyaTipiRenk,
+} from "../_types";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 
-interface VideoYuklemeProps {
+export interface VideoYuklemeProps {
   bekleyen: BekleyenDosya | null;
   onSec: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSil: () => void;
   yuklemeYuzdesi?: number | null;
+  ogrenmeAraciTuru?: OgrenmeAraciTuru | null;
 }
 
-export function VideoYukleme({ bekleyen, onSec, onSil, yuklemeYuzdesi = null }: VideoYuklemeProps) {
+export interface AracYuklemeAyari {
+  butonMetni: string;
+  accept: string;
+  aciklama: string;
+  yukleniyorMetni: string;
+}
+
+export function aracYuklemeAyarlari(tur?: OgrenmeAraciTuru | null): AracYuklemeAyari {
+  switch (tur) {
+    case "podcast":
+      return {
+        butonMetni: "Podcast Ekle",
+        accept: PODCAST_FORMATLAR,
+        aciklama: "mp3, m4a, aac formatları desteklenir.",
+        yukleniyorMetni: "Podcast yükleniyor...",
+      };
+    case "gorsel":
+      return {
+        butonMetni: "Görsel / Broşür Ekle",
+        accept: GORSEL_FORMATLAR,
+        aciklama: "jpg, jpeg, png, webp formatları desteklenir.",
+        yukleniyorMetni: "Görsel yükleniyor...",
+      };
+    case "flip_pdf":
+      return {
+        butonMetni: "PDF / Literatür Ekle",
+        accept: FLIP_PDF_FORMATLAR,
+        aciklama: "pdf formatı desteklenir.",
+        yukleniyorMetni: "Literatür PDF yükleniyor...",
+      };
+    case "video":
+    default:
+      return {
+        butonMetni: "Video Ekle",
+        accept: VIDEO_FORMATLAR,
+        aciklama: "mp4, mov, avi, mkv, webm formatları desteklenir.",
+        yukleniyorMetni: "Video yükleniyor...",
+      };
+  }
+}
+
+export function VideoYukleme({
+  bekleyen,
+  onSec,
+  onSil,
+  yuklemeYuzdesi = null,
+  ogrenmeAraciTuru,
+}: VideoYuklemeProps) {
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const ayar = aracYuklemeAyarlari(ogrenmeAraciTuru);
 
   // Dosya seçildikten sonra input'un value'su temizlenir — aynı dosya tekrar seçilebilsin.
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,49 +94,56 @@ export function VideoYukleme({ bekleyen, onSec, onSil, yuklemeYuzdesi = null }: 
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          Video Ekle
+          {ayar.butonMetni}
           <input
             ref={videoInputRef}
             type="file"
-            accept={VIDEO_FORMATLAR}
+            accept={ayar.accept}
             onChange={handleChange}
             className="hidden"
           />
         </label>
-        <span className="text-xs text-gray-400">mp4, mov, avi, mkv, webm formatları desteklenir.</span>
+        <span className="text-xs text-gray-400">{ayar.aciklama}</span>
       </div>
-      {bekleyen && (
-        <div className="flex flex-wrap gap-1.5">
-          <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-full py-1 pl-2 pr-2.5">
-            <div
-              className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
-              style={{ background: "#f0fdf4" }}
-            >
-              <span className="text-green-700 font-bold" style={{ fontSize: 7 }}>VID</span>
+      {bekleyen && (() => {
+        const rozet = dosyaTipiRenk(bekleyen.preview.dosya_adi);
+        return (
+          <div className="flex flex-wrap gap-1.5">
+            <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-full py-1 pl-2 pr-2.5">
+              <div
+                className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
+                style={{ background: rozet.bg }}
+              >
+                <span className="font-bold" style={{ fontSize: 7, color: rozet.renk }}>
+                  {rozet.etiket}
+                </span>
+              </div>
+              <span className="text-xs text-gray-700 max-w-40 truncate">{bekleyen.preview.dosya_adi}</span>
+              <svg
+                onClick={onSil}
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#9ca3af"
+                strokeWidth="2"
+                className="cursor-pointer flex-shrink-0"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </div>
-            <span className="text-xs text-gray-700 max-w-40 truncate">{bekleyen.preview.dosya_adi}</span>
-            <svg
-              onClick={onSil}
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#9ca3af"
-              strokeWidth="2"
-              className="cursor-pointer flex-shrink-0"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
           </div>
-        </div>
-      )}
+        );
+      })()}
       {yuklemeYuzdesi !== null && (
         <div className="mt-2">
           <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
             <div className="h-full rounded-full transition-all" style={{ width: `${yuklemeYuzdesi}%`, background: "#56aeff" }} />
           </div>
-          <p className="text-xs text-gray-500 m-0 mt-1">Video yükleniyor... %{yuklemeYuzdesi}</p>
+          <p className="text-xs text-gray-500 m-0 mt-1">
+            {ayar.yukleniyorMetni} %{yuklemeYuzdesi}
+          </p>
         </div>
       )}
     </div>

@@ -42,7 +42,7 @@ export interface UretimDurumGecmisi {
 export type UretimGorevIcerigi =
   | { asama: "senaryo"; senaryo_metni: string }
   | { asama: "video"; video_url: string | null; thumbnail_url: string | null }
-  | { asama: "podcast"; ses_url: string; kapak_url: string; transkript_url: string; sure_saniye: number }
+  | { asama: "podcast"; ses_url: string; kapak_url: string | null; transkript_url: string; sure_saniye: number }
   | { asama: "gorsel"; gorsel_url: string; genislik: number; yukseklik: number }
   | { asama: "flip_pdf"; pdf_url: string; sayfa_sayisi: number }
   | { asama: "soru_seti"; sorular: Soru[] };

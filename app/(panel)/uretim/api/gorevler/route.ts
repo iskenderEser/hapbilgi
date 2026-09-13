@@ -121,11 +121,11 @@ export async function GET(request: NextRequest) {
         const { data: podcast, error } = await adminSupabase.from("ogrenme_araclari")
           .select("dosya_yolu, kapak_yolu, transkript_yolu, sure_saniye")
           .eq("arac_id", gorev.arac_id).eq("arac_turu", "podcast").maybeSingle();
-        if (error || !podcast?.dosya_yolu || !podcast.kapak_yolu || !podcast.transkript_yolu) return hataYaniti("Podcast detayı alınamadı.", "podcast görev detayı", error);
+        if (error || !podcast?.dosya_yolu || !podcast.transkript_yolu) return hataYaniti("Podcast detayı alınamadı.", "podcast görev detayı", error);
         const sesUrl = bunnyCdnImzaliUrl(podcast.dosya_yolu);
-        const kapakUrl = bunnyCdnImzaliUrl(podcast.kapak_yolu);
+        const kapakUrl = podcast.kapak_yolu ? bunnyCdnImzaliUrl(podcast.kapak_yolu) : null;
         const transkriptUrl = bunnyCdnImzaliUrl(podcast.transkript_yolu);
-        if (!sesUrl || !kapakUrl || !transkriptUrl) return NextResponse.json({ hata: "Podcast CDN erişimi yapılandırılmamış." }, { status: 503 });
+        if (!sesUrl || !transkriptUrl || (podcast.kapak_yolu && !kapakUrl)) return NextResponse.json({ hata: "Podcast CDN erişimi yapılandırılmamış." }, { status: 503 });
         detayIcerigi = {
           asama: "podcast",
           ses_url: sesUrl,

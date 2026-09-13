@@ -23,16 +23,20 @@
 import { useState } from "react";
 import { VideoYukleme } from "@/app/(panel)/talepler/_components/VideoYukleme";
 import type { BekleyenDosya } from "@/app/(panel)/talepler/_types";
+import { ogrenmeAraciMetinleri } from "@/lib/ogrenmeAraci/etiketler";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 
 interface Props {
   /** null değilse yükleme sürüyor demektir. */
   yuzde: number | null;
   onYukle: (dosya: File) => void;
+  ogrenmeAraciTuru?: OgrenmeAraciTuru | null;
 }
 
-export function HazirVideoYukleme({ yuzde, onYukle }: Props) {
+export function HazirVideoYukleme({ yuzde, onYukle, ogrenmeAraciTuru }: Props) {
   const [bekleyen, setBekleyen] = useState<BekleyenDosya | null>(null);
   const yukleniyor = yuzde !== null;
+  const metinler = ogrenmeAraciMetinleri(ogrenmeAraciTuru);
 
   // Ortak bileşenin sözleşmesi dosya + önizleme künyesidir; şekil talep
   // formundaki handleVideoSec ile birebir aynı tutulur.
@@ -53,7 +57,7 @@ export function HazirVideoYukleme({ yuzde, onYukle }: Props) {
   return (
     <div className="flex flex-col gap-2.5">
       <p className="text-sm text-gray-500 m-0">
-        Hazır video talebi — video henüz yüklenmedi.
+        Hazır {metinler.adKucuk} talebi — {metinler.adKucuk} henüz yüklenmedi.
       </p>
 
       <VideoYukleme
@@ -61,6 +65,7 @@ export function HazirVideoYukleme({ yuzde, onYukle }: Props) {
         onSec={handleSec}
         onSil={() => setBekleyen(null)}
         yuklemeYuzdesi={yuzde}
+        ogrenmeAraciTuru={ogrenmeAraciTuru}
       />
 
       <div className="flex justify-end">
@@ -75,7 +80,7 @@ export function HazirVideoYukleme({ yuzde, onYukle }: Props) {
             fontFamily: "'Nunito', sans-serif",
           }}
         >
-          {yukleniyor ? `Yükleniyor... %${yuzde}` : "Videoyu Yükle"}
+          {yukleniyor ? `Yükleniyor... %${yuzde}` : ogrenmeAraciTuru && ogrenmeAraciTuru !== "video" ? `${metinler.belirtme} Yükle` : "Videoyu Yükle"}
         </button>
       </div>
     </div>

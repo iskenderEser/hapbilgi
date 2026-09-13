@@ -100,11 +100,12 @@ export async function GET(request: NextRequest) {
     const talep_id = request.nextUrl.searchParams.get("talep_id");
     if (!talep_id) return validasyonHatasi("talep_id zorunludur.", ["talep_id"]);
 
-    // Sahiplik kapısı: oturum istemcisiyle okunur, RLS süzer.
+    // Sahiplik kapısı: oturum istemcisiyle okunur, RLS süzer. Taslak talepler operasyon detayına giremez.
     const { data: talep, error: talepError } = await supabase
       .from("talepler")
-      .select("talep_id, hazir_video, hazir_video_url")
+      .select("talep_id, hazir_video, hazir_video_url, ogrenme_araci_turu")
       .eq("talep_id", talep_id)
+      .eq("taslak_mi", false)
       .maybeSingle();
     if (talepError) return hataYaniti("Talep sorgulanamadı.", "talepler tablosu SELECT — talep_id", talepError);
     if (!talep) return NextResponse.json({ hata: "Talep bulunamadı." }, { status: 404 });
@@ -208,7 +209,38 @@ export async function GET(request: NextRequest) {
 
     const video_isleniyor = talep.hazir_video === true && Boolean(talep.hazir_video_url) && !video;
 
-    return NextResponse.json({ talep_id, senaryo, video, soru_seti, video_isleniyor }, { status: 200 });
+    // ── Öğrenme Aracı (Podcast / Görsel / Flip PDF) ───────────────────────────
+    let ogrenme_araci: {
+      arac_id: string;
+      arac_turu: string;
+      dosya_yolu: string | null;
+      kapak_yolu: string | null;
+      sure_saniye: number | null;
+      metadata: unknown;
+    } | null = null;
+
+    if (talep.ogrenme_araci_turu && talep.ogrenme_araci_turu !== "video") {
+      const { data: aracKaydi } = await adminSupabase
+        .from("ogrenme_araclari")
+        .select("arac_id, arac_turu, dosya_yolu, kapak_yolu, sure_saniye, metadata")
+        .eq("talep_id", talep_id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (aracKaydi) {
+        ogrenme_araci = {
+          arac_id: aracKaydi.arac_id,
+          arac_turu: aracKaydi.arac_turu,
+          dosya_yolu: aracKaydi.dosya_yolu ?? null,
+          kapak_yolu: aracKaydi.kapak_yolu ?? null,
+          sure_saniye: aracKaydi.sure_saniye ?? null,
+          metadata: aracKaydi.metadata ?? null,
+        };
+      }
+    }
+
+    return NextResponse.json({ talep_id, senaryo, video, soru_seti, video_isleniyor, ogrenme_araci }, { status: 200 });
 
   } catch (err) {
     return sunucuHatasi(err, "GET /talepler/api/detay");

@@ -67,6 +67,14 @@ export interface TalepDetay {
   video: VideoBlogu | null;
   soru_seti: SoruSetiBlogu | null;
   video_isleniyor: boolean;
+  ogrenme_araci?: {
+    arac_id: string;
+    arac_turu: string;
+    dosya_yolu: string | null;
+    kapak_yolu: string | null;
+    sure_saniye: number | null;
+    metadata: unknown;
+  } | null;
 }
 
 /** Sol listedeki aşama süzgeci. "Yayın" yok: o aşamaya gelen talep listede durmuyor (D-4). */

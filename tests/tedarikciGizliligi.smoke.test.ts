@@ -60,5 +60,6 @@ test("yükleme arayüzü sağlayıcıdan bağımsız kullanıcı metinlerini gö
   const yukleme = readFileSync(new URL("../app/(panel)/talepler/_components/HazirVideoYukleme.tsx", import.meta.url), "utf8");
   const ilerleme = readFileSync(new URL("../app/(panel)/talepler/_components/VideoYukleme.tsx", import.meta.url), "utf8");
   assert.match(yukleme, /"Videoyu Yükle"/);
-  assert.match(ilerleme, />Video yükleniyor\.\.\. %\{yuklemeYuzdesi\}</);
+  assert.match(ilerleme, /\{ayar\.yukleniyorMetni\} %\{yuklemeYuzdesi\}/);
+  assert.match(ilerleme, /"Video yükleniyor\.\.\."/);
 });

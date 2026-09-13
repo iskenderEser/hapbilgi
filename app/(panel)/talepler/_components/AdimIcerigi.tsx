@@ -13,8 +13,10 @@ import { DosyaGoruntuleListesi, type DosyaItem } from "@/components/DosyaGoruntu
 import { SenaryoMetniGoster } from "@/components/SenaryoMetniGoster";
 import { Pill, type PillRenk } from "@/components/pill";
 import VideoOnizleme from "@/components/video/VideoOnizleme";
+import OgrenmeAraciOnizleme from "@/components/ogrenme-araci/OgrenmeAraciOnizleme";
 import type { IslemeDurumu } from "@/lib/video/islemeDurumu";
 import type { AdimAnahtari } from "@/lib/utils/uretimSeridi";
+import { ogrenmeAraciMetinleri } from "@/lib/ogrenmeAraci/etiketler";
 import { HazirVideoYukleme } from "./HazirVideoYukleme";
 import type { RevizyonNotu, TalepDetay, TalepSatiri } from "../_ureticiRolTypes";
 
@@ -59,10 +61,11 @@ function RevizyonNotlari({ notlar, formatTarih }: { notlar: RevizyonNotu[]; form
 /** Talebin künye parametreleri — üretici bunları talep açarken seçiyor ama
  *  sonrasında hiçbir ekranda geriye dönük göremiyordu (D-6). */
 function KunyeParametreleri({ talep }: { talep: TalepSatiri }) {
+  const metin = ogrenmeAraciMetinleri(talep.ogrenme_araci_turu);
   const kutular = [
     { etiket: "Soru seti", deger: `${talep.soru_seti_buyuklugu} soru`, bg: "#eff6ff", renk: "#1d4ed8", kenar: "#bfdbfe" },
     { etiket: "Seçenek", deger: `${talep.secenek_sayisi} seçenek`, bg: "#fffbeb", renk: "#b45309", kenar: "#fde68a" },
-    { etiket: "Video başı", deger: `${talep.video_basi_soru_sayisi} soru`, bg: "#f0fdf4", renk: "#15803d", kenar: "#bbf7d0" },
+    { etiket: `${metin.ad} başı`, deger: `${talep.video_basi_soru_sayisi} soru`, bg: "#f0fdf4", renk: "#15803d", kenar: "#bbf7d0" },
   ];
   return (
     <div className="flex items-center gap-2 flex-wrap">
@@ -114,28 +117,55 @@ export function AdimIcerigi({
       );
     }
 
-    // ── Video: oynatıcı + Bunny işlenme rozeti + revizyon notu ─────────────
+    // ── Video / Öğrenme Aracı: oynatıcı + Bunny işlenme rozeti + revizyon notu ─
     case "video": {
       const v = detay?.video;
+      const metin = ogrenmeAraciMetinleri(talep.ogrenme_araci_turu);
       if (videoIsleniyor) {
         return (
           <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-3">
-            <p className="m-0 text-sm font-semibold text-blue-800">Video işleniyor</p>
+            <p className="m-0 text-sm font-semibold text-blue-800">{metin.ad} işleniyor</p>
           </div>
         );
       }
-      // V2/V4: video henüz yokken sıra ÜRETİCİDEDİR — yükleme alanı burada açılır,
+      // V2/V4: öğrenme aracı henüz yokken sıra ÜRETİCİDEDİR — yükleme alanı burada açılır,
       // talep sayfasından çıkmaya gerek kalmaz.
       if (videoYuklenebilir) {
-        return <HazirVideoYukleme yuzde={videoYuzdesi} onYukle={onVideoYukle} />;
+        return <HazirVideoYukleme yuzde={videoYuzdesi} onYukle={onVideoYukle} ogrenmeAraciTuru={talep.ogrenme_araci_turu} />;
       }
+
+      // Video dışı öğrenme araçları (Podcast, Dijital Broşür, Literatür)
+      if (talep.ogrenme_araci_turu !== "video") {
+        if (detay?.ogrenme_araci?.arac_id) {
+          return (
+            <OgrenmeAraciOnizleme
+              yayinId={detay.ogrenme_araci.arac_id}
+              aracId={detay.ogrenme_araci.arac_id}
+              aracTuru={talep.ogrenme_araci_turu}
+              urunAdi={talep.urun_adi ?? metin.ad}
+              hata={onHata}
+              onBitti={() => {}}
+            />
+          );
+        }
+        return (
+          <div className="aspect-video rounded-lg border border-gray-200 bg-gray-50 flex flex-col items-center justify-center gap-2 text-gray-400">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
+              <rect x="3" y="6" width="18" height="12" rx="2" />
+              <path d="M10 9.5 L15 12 L10 14.5 Z" fill="currentColor" stroke="none" />
+            </svg>
+            <span className="text-sm">{metin.ad} içeriğiniz burada gösterilecek</span>
+          </div>
+        );
+      }
+
       if (!v || !v.video_url) return (
         <div className="aspect-video rounded-lg border border-gray-200 bg-gray-50 flex flex-col items-center justify-center gap-2 text-gray-400">
           <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} aria-hidden="true">
             <rect x="3" y="6" width="18" height="12" rx="2" />
             <path d="M10 9.5 L15 12 L10 14.5 Z" fill="currentColor" stroke="none" />
           </svg>
-          <span className="text-sm">Videonuz burada gösterilecek</span>
+          <span className="text-sm">{metin.ad} içeriğiniz burada gösterilecek</span>
         </div>
       );
       return (
@@ -143,21 +173,21 @@ export function AdimIcerigi({
           {bunnyIslemeDurumu === "isleniyor" && (
             <div className="mb-2.5 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
               <p className="text-xs text-blue-800 m-0">
-                Video işleniyor
+                {metin.ad} işleniyor
               </p>
             </div>
           )}
           {bunnyIslemeDurumu === "hatali" && (
             <div className="mb-2.5 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
               <p className="text-xs text-red-700 m-0">
-                Video işlenemedi — dosya bozuk olabilir.
+                {metin.ad} işlenemedi — dosya bozuk olabilir.
               </p>
             </div>
           )}
           <VideoOnizleme
             videoUrl={v.video_url}
             className="rounded-lg border border-gray-200"
-            ariaLabel="Videoyu oynat"
+            ariaLabel={`${metin.ad} oynat`}
           />
           <RevizyonNotlari notlar={v.notlar} formatTarih={formatTarih} />
         </div>

@@ -16,6 +16,7 @@ import { useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { uretimToast, toastVaryant, type ToastAsama, type ToastOlay } from "@/lib/uretim/toastMesaj";
 import { bunnyTusYukle, videoYuklemeOturumuGuncelle } from "@/lib/video/bunnyTusIstemci";
+import { hazirGorselYukle, hazirFlipPdfYukle, hazirPodcastYukle } from "@/lib/ogrenmeAraci/bunnyYuklemeIstemci";
 import { SORGU_ARALIGI_MS, TAVAN_SANIYE } from "@/lib/video/islemeDurumu";
 import { bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
 import type { TalepDetay, TalepSatiri } from "../_ureticiRolTypes";
@@ -253,6 +254,87 @@ export function useTalepMerkezi() {
     async (dosya: File) => {
       const talep = talepler.find((t) => t.talep_id === seciliTalepId);
       if (!talep) return;
+
+      if (talep.ogrenme_araci_turu === "gorsel") {
+        setVideoYuzdesi(0);
+        try {
+          await hazirGorselYukle({
+            talepId: talep.talep_id,
+            gorsel: dosya,
+            kontrol: {
+              onIlerleme: (i) => setVideoYuzdesi(i.yuzde),
+            },
+          });
+          basari(uretimToast(
+            { rol: "uretici", olay: "talep_gonderildi" },
+            {
+              varyant: toastVaryant(talep.hazir_video, talep.hazir_soru_seti),
+              ogrenmeAraciTuru: talep.ogrenme_araci_turu,
+            },
+          ));
+          setDetayTetik((x) => x + 1);
+          await veriCek();
+        } catch (err: unknown) {
+          hata("Dijital broşür yüklenemedi.", "Görsel yükleme", err instanceof Error ? err.message : undefined);
+        } finally {
+          setVideoYuzdesi(null);
+        }
+        return;
+      }
+
+      if (talep.ogrenme_araci_turu === "flip_pdf") {
+        setVideoYuzdesi(0);
+        try {
+          await hazirFlipPdfYukle({
+            talepId: talep.talep_id,
+            pdf: dosya,
+            kontrol: {
+              onIlerleme: (i) => setVideoYuzdesi(i.yuzde),
+            },
+          });
+          basari(uretimToast(
+            { rol: "uretici", olay: "talep_gonderildi" },
+            {
+              varyant: toastVaryant(talep.hazir_video, talep.hazir_soru_seti),
+              ogrenmeAraciTuru: talep.ogrenme_araci_turu,
+            },
+          ));
+          setDetayTetik((x) => x + 1);
+          await veriCek();
+        } catch (err: unknown) {
+          hata("Literatür PDF yüklenemedi.", "PDF yükleme", err instanceof Error ? err.message : undefined);
+        } finally {
+          setVideoYuzdesi(null);
+        }
+        return;
+      }
+
+      if (talep.ogrenme_araci_turu === "podcast") {
+        setVideoYuzdesi(0);
+        try {
+          await hazirPodcastYukle({
+            talepId: talep.talep_id,
+            ses: dosya,
+            kontrol: {
+              onIlerleme: (i) => setVideoYuzdesi(i.yuzde),
+            },
+          });
+          basari(uretimToast(
+            { rol: "uretici", olay: "talep_gonderildi" },
+            {
+              varyant: toastVaryant(talep.hazir_video, talep.hazir_soru_seti),
+              ogrenmeAraciTuru: talep.ogrenme_araci_turu,
+            },
+          ));
+          setDetayTetik((x) => x + 1);
+          await veriCek();
+        } catch (err: unknown) {
+          hata("Podcast yüklenemedi.", "Podcast yükleme", err instanceof Error ? err.message : undefined);
+        } finally {
+          setVideoYuzdesi(null);
+        }
+        return;
+      }
 
       setVideoYuzdesi(0);
       try {

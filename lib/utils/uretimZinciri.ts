@@ -16,6 +16,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { kayitDurumKodu, yayinDurumKodu, type DurumKodu } from "@/lib/utils/durum/mesaj";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 
 /** Zincirdeki konum. Dördüncüsü "Yayın" DEĞİL "Tamamlandı" — durum sütunundaki
  *  metinlerin çoğu "yayın" taşıdığı için yan yana aynı kelime tekrarlanıyordu. */
@@ -50,13 +51,15 @@ export interface ZincirDurumu {
   iu_id: string | null;
 }
 
-/** Zincirin okunacağı talep: kaskad yalnız bu üç alana bakar. */
+/** Zincirin okunacağı talep: kaskad yalnız bu alanlara bakar. */
 export interface ZincirTalebi {
   talep_id: string;
   hazir_video: boolean;
   created_at: string | null;
   yayin_oncesi_silme_durumu?: "isleniyor" | "tamamlandi" | "hata" | null;
   yayin_oncesi_silme_tarihi?: string | null;
+  ogrenme_araci_turu?: OgrenmeAraciTuru | null;
+  hazir_soru_seti?: boolean | null;
 }
 
 // Kolonlar açık yazılır (select("*") DEĞİL): denetim aracı yıldızı atlar, açık
@@ -139,6 +142,38 @@ export function asamaCoz(talep: ZincirTalebi, z: ZincirSatiri): ZincirDurumu {
     oncekiTarih = z.senaryo_durum_tarih ?? oncekiTarih;
   }
 
+  // ── Hazır Öğrenme Aracı kolu: araç yüklemesi talep oluşturulurken tamamlandığından bu aşama geçilmiştir ──
+  if (talep.hazir_video && talep.ogrenme_araci_turu && talep.ogrenme_araci_turu !== "video") {
+    if (talep.hazir_soru_seti) {
+      return {
+        asama: "Tamamlandı",
+        durum_kodu: yayinDurumKodu(z.yayin_durum),
+        tarih: z.yayin_tarihi ?? oncekiTarih,
+        yol: "/yayin-yonetimi",
+        iu_id: z.soru_seti_iu_id,
+      };
+    }
+    if (!z.soru_seti_id) {
+      return { asama: "Soru Seti", durum_kodu: "iu_iletildi", tarih: oncekiTarih, yol: "/soru-setleri", iu_id: null };
+    }
+    if (z.soru_seti_durum !== "onaylandi") {
+      return {
+        asama: "Soru Seti",
+        durum_kodu: kayitDurumKodu(z.soru_seti_durum, !!z.soru_seti_iu_id),
+        tarih: z.soru_seti_durum_tarih ?? oncekiTarih,
+        yol: "/soru-setleri",
+        iu_id: z.soru_seti_iu_id,
+      };
+    }
+    return {
+      asama: "Tamamlandı",
+      durum_kodu: yayinDurumKodu(z.yayin_durum),
+      tarih: z.yayin_tarihi ?? z.soru_seti_durum_tarih ?? oncekiTarih,
+      yol: "/yayin-yonetimi",
+      iu_id: z.soru_seti_iu_id,
+    };
+  }
+
   // ── Video (ortak): video talebe talep_id ile bağlı (hazır + normal). ──
   if (!z.video_id) {
     // Hazır kolda video kaydı yoksa yükleme üreticidedir. Normal kolda kabuk
@@ -164,6 +199,15 @@ export function asamaCoz(talep: ZincirTalebi, z: ZincirSatiri): ZincirDurumu {
   oncekiTarih = z.video_durum_tarih ?? oncekiTarih;
 
   // ── Soru seti (ortak): set video_durum_id ile bağlı. ──
+  if (talep.hazir_soru_seti) {
+    return {
+      asama: "Tamamlandı",
+      durum_kodu: yayinDurumKodu(z.yayin_durum),
+      tarih: z.yayin_tarihi ?? z.video_durum_tarih ?? oncekiTarih,
+      yol: "/yayin-yonetimi",
+      iu_id: z.video_iu_id,
+    };
+  }
   if (!z.soru_seti_id) {
     // Set kabuğu video onayıyla (hazır kolda yükleme anında) doğar; yoksa zincir kopuktur.
     return { asama: "Soru Seti", durum_kodu: "sistem_hatasi", tarih: oncekiTarih, yol: "/soru-setleri", iu_id: null };
@@ -190,7 +234,8 @@ export function asamaCoz(talep: ZincirTalebi, z: ZincirSatiri): ZincirDurumu {
 }
 
 /** Üretimi bitmiş mi? Bitenler Yayın Listesi'ne, bitmeyenler Talepler sayfasına ait. */
-export const uretimBittiMi = (d: ZincirDurumu) => d.asama === "Tamamlandı";
+export const uretimBittiMi = (d: ZincirDurumu) =>
+  d.asama === "Tamamlandı" && d.durum_kodu !== "yayin_bekleniyor";
 
 /** İptal edilmiş mi? Ne devam eder ne yayına girer — kendi tablosunda durur. */
 export const iptalEdildiMi = (d: ZincirDurumu) => d.durum_kodu === "iptal";
