@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/transkript-kuyruk",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/eclub-cek-eposta",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

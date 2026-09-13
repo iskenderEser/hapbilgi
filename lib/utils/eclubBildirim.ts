@@ -6,7 +6,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { pushYayinlaEclubKisilereArkada } from "@/lib/push/orkestrasyon";
 
-type EclubKayitTuru = "oneri";
+type EclubKayitTuru = "oneri" | "cek";
 
 interface EclubBildirimParams {
   adminSupabase: SupabaseClient;

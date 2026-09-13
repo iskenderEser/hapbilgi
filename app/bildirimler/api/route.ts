@@ -5,7 +5,7 @@ import { hataYaniti, sunucuHatasi, yetkiHatasi, validasyonHatasi } from "@/lib/u
 import { uuidGecerliMi } from "@/lib/uretim/rpc";
 import { ECLUB_HEDEF_ROLLER, TUKETICI_ROLLER, hedefRolleriOku } from "@/lib/utils/roller";
 
-const GECERLI_KAYIT_TURLERI = ["talep", "senaryo", "video", "soru_seti", "yayin", "oneri", "challenge"];
+const GECERLI_KAYIT_TURLERI = ["talep", "senaryo", "video", "soru_seti", "yayin", "oneri", "challenge", "cek"];
 
 export async function GET() {
   try {
@@ -58,8 +58,16 @@ export async function GET() {
       satir.soru_setleri?.video_durumu?.videolar?.talepler?.uretici_id === user.id
     ).length;
 
+    const { data: eclubKisi } = await adminSupabase.from("eclub_kisiler").select("kisi_id").eq("auth_user_id", user.id).maybeSingle();
+    const { data: eclubBildirimleri, error: eclubBildirimError } = eclubKisi
+      ? await adminSupabase.from("eclub_bildirimler").select("bildirim_id, kayit_turu, kayit_id, mesaj, goruldu_mu, created_at").eq("alici_kisi_id", eclubKisi.kisi_id).eq("goruldu_mu", false)
+      : { data: [], error: null };
+    if (eclubBildirimError) return hataYaniti("E-Club bildirimleri çekilemedi.", "eclub_bildirimler SELECT", eclubBildirimError);
+    const birlesikBildirimler = [...(bildirimler ?? []), ...(eclubBildirimleri ?? []).map((b) => ({ ...b, talep_id: null, gorev_id: null }))]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
     const sayilar: Record<string, number> = {};
-    for (const b of bildirimler ?? []) {
+    for (const b of birlesikBildirimler) {
       sayilar[b.kayit_turu] = (sayilar[b.kayit_turu] ?? 0) + 1;
     }
     sayilar.yayin = yayinBekleyenSayisi;
@@ -106,9 +114,9 @@ export async function GET() {
     }
 
     return NextResponse.json({
-      bildirimler: bildirimler ?? [],
+      bildirimler: birlesikBildirimler,
       sayilar,
-      toplam: bildirimler?.length ?? 0,
+      toplam: birlesikBildirimler.length,
     }, { status: 200 });
 
   } catch (err) {
@@ -136,6 +144,16 @@ export async function PUT(request: NextRequest) {
     }
     if (gorev_id !== undefined && !uuidGecerliMi(gorev_id)) {
       return validasyonHatasi("gorev_id geçerli bir UUID olmalıdır.", ["gorev_id"]);
+    }
+
+    if (kayit_turu === "cek") {
+      const { data: kisi, error: kisiError } = await adminSupabase.from("eclub_kisiler").select("kisi_id").eq("auth_user_id", user.id).maybeSingle();
+      if (kisiError || !kisi) return hataYaniti("E-Club kişisi bulunamadı.", "eclub_kisiler SELECT — bildirim", kisiError, 404);
+      let eclubQuery = adminSupabase.from("eclub_bildirimler").update({ goruldu_mu: true }).eq("alici_kisi_id", kisi.kisi_id).eq("goruldu_mu", false).eq("kayit_turu", "cek");
+      if (talep_id) eclubQuery = eclubQuery.eq("kayit_id", talep_id);
+      const { error } = await eclubQuery;
+      if (error) return hataYaniti("E-Club bildirimleri güncellenemedi.", "eclub_bildirimler UPDATE", error);
+      return NextResponse.json({ mesaj: "Bildirimler okundu olarak işaretlendi." }, { status: 200 });
     }
 
     let query = adminSupabase
