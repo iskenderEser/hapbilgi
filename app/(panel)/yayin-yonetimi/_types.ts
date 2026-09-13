@@ -5,6 +5,14 @@
 
 import type { HedefRoller, Soru } from "@/app/(panel)/talepler/_types";
 import { ECLUB_ORTAK_YAYIN_GRUBU, YAYIN_HEDEF_GRUP_SIRASI, type YayinHedefGrubu } from "@/lib/utils/roller";
+import {
+  type SatisSartiTipi,
+  type BaremSatiri,
+  VARSAYILAN_BAREM_TABLOSU,
+} from "@/lib/eclub/store/eclubStoreTipler";
+
+export type { SatisSartiTipi, BaremSatiri };
+export { VARSAYILAN_BAREM_TABLOSU };
 
 // ============================================================================
 // Tipler
@@ -35,6 +43,11 @@ export interface Bekleyen {
   onay_tarihi: string;
   yayin_oncesi_silme_durumu: "isleniyor" | "hata" | null;
   yayin_oncesi_silme_tarihi: string | null;
+  satis_sarti_tipi?: SatisSartiTipi;
+  gizli_sart_katlama_orani?: number;
+  barem_tablosu?: BaremSatiri[];
+  karsilik_puan?: number;
+  karsilik_tl?: number;
 }
 
 // Yayin: yayınlanmış (yayında veya durdurulmuş) içerik.

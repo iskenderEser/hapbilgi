@@ -31,6 +31,7 @@ export async function GET() {
 
     const yayinIdler = eclubYayinlari.map((yayin) => yayin.yayin_id);
     const soruSayisiMap = new Map<string, number>();
+    const satisSartiMap = new Map<string, { satis_sarti_tipi: any; gizli_sart_katlama_orani: any; barem_tablosu: any }>();
 
     if (yayinIdler.length > 0) {
       const { data: soruSayilari, error: soruSayisiError } = await adminSupabase
@@ -50,6 +51,19 @@ export async function GET() {
         soruSayisiMap.set(satir.yayin_id, satir.video_basi_soru_sayisi ?? 0);
       }
 
+      const { data: satisSartlari } = await adminSupabase
+        .from("yayin_yonetimi")
+        .select("yayin_id, satis_sarti_tipi, gizli_sart_katlama_orani, barem_tablosu")
+        .in("yayin_id", yayinIdler);
+
+      for (const s of (satisSartlari ?? [])) {
+        satisSartiMap.set(s.yayin_id, {
+          satis_sarti_tipi: s.satis_sarti_tipi,
+          gizli_sart_katlama_orani: s.gizli_sart_katlama_orani,
+          barem_tablosu: s.barem_tablosu,
+        });
+      }
+
       if (eclubYayinlari.some((yayin) => !yayin.arac_id || !yayin.arac_turu)) {
         return hataYaniti(
           "Bazı yayınların öğrenme aracı kimliği çözülemedi.",
@@ -58,12 +72,18 @@ export async function GET() {
       }
     }
 
-    const videolar = eclubYayinlari.map((yayin) => ({
-      ...yayin,
-      arac_id: yayin.arac_id!,
-      arac_turu: yayin.arac_turu!,
-      soru_sayisi: soruSayisiMap.get(yayin.yayin_id) ?? 0,
-    }));
+    const videolar = eclubYayinlari.map((yayin) => {
+      const sarti = satisSartiMap.get(yayin.yayin_id);
+      return {
+        ...yayin,
+        arac_id: yayin.arac_id!,
+        arac_turu: yayin.arac_turu!,
+        soru_sayisi: soruSayisiMap.get(yayin.yayin_id) ?? 0,
+        satis_sarti_tipi: sarti?.satis_sarti_tipi ?? "satis_sartli",
+        gizli_sart_katlama_orani: sarti?.gizli_sart_katlama_orani ?? 20,
+        barem_tablosu: sarti?.barem_tablosu ?? null,
+      };
+    });
 
     return NextResponse.json({ videolar }, { status: 200 });
 

@@ -11,6 +11,7 @@ import { tarifeVeBarkodYaz } from "@/lib/eczanem/tarife";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { bunnyVideoDurumu, embedUrlGuidCikar } from "@/lib/video/bunnyYukleme";
 import { yayinThumbnailUrlCoz, type YayinKapakGirdisi } from "@/lib/ogrenmeAraci/yayinThumbnail";
+import { VARSAYILAN_BAREM_TABLOSU, baremTablosuDogrula } from "@/lib/eclub/store/eclubStoreTipler";
 
 const YAYIN_LISTE_ALANLARI = "yayin_id, arac_id, soru_seti_durum_id, durum, yayin_tarihi, durdurma_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, sorular, hedef_roller, talep_no, firma_adi, egitim_turu, arac_turu, arac_kapak_yolu, arac_dosya_yolu";
 
@@ -56,7 +57,19 @@ export async function POST(request: NextRequest) {
     if (!URETICI_ROLLER.includes(rol)) return rolHatasi("Sadece yetkili roller yayına alabilir.");
 
     const body = await request.json();
-    const { soru_seti_durum_id, ileri_sarma_acik, extra_puan, tekrar_periyot_gun, barkod, karsilik_puan, karsilik_tl, satis_fiyati } = body;
+    const {
+      soru_seti_durum_id,
+      ileri_sarma_acik,
+      extra_puan,
+      tekrar_periyot_gun,
+      barkod,
+      karsilik_puan,
+      karsilik_tl,
+      satis_fiyati,
+      satis_sarti_tipi,
+      gizli_sart_katlama_orani,
+      barem_tablosu,
+    } = body;
 
     if (!soru_seti_durum_id) return validasyonHatasi("soru_seti_durum_id zorunludur.", ["soru_seti_durum_id"]);
     // Extra puan / tekrar periyodu doğrulaması hedef kitleler türetildikten SONRA yapılır:
@@ -103,6 +116,20 @@ export async function POST(request: NextRequest) {
     // Eczanem yayını mı? Hedef rol talepten türer — forma güvenmez (sunucu tarafı).
     const eczanemHedefi = hedefRoller.includes("eczanem");
     const eclubHedefi = yalnizEclubHedefliMi(hedefRoller);
+
+    if (eclubHedefi) {
+      if (satis_sarti_tipi !== "satis_sartli" && satis_sarti_tipi !== "serbest_siparis") {
+        return validasyonHatasi("Satış şartı tipi geçersizdir.", ["satis_sarti_tipi"]);
+      }
+      const baremHatasi = baremTablosuDogrula(barem_tablosu ?? VARSAYILAN_BAREM_TABLOSU);
+      if (baremHatasi) return validasyonHatasi(baremHatasi, ["barem_tablosu"]);
+      if (!Number.isInteger(karsilik_puan) || karsilik_puan <= 0 || !Number.isFinite(karsilik_tl) || karsilik_tl <= 0) {
+        return validasyonHatasi("Puan ve TL karşılığı pozitif olmalıdır.", ["karsilik_puan", "karsilik_tl"]);
+      }
+      if (satis_sarti_tipi === "serbest_siparis" && (!Number.isInteger(gizli_sart_katlama_orani) || gizli_sart_katlama_orani < 0 || gizli_sart_katlama_orani > 200)) {
+        return validasyonHatasi("Katlama oranı 0-200 arasında tam sayı olmalıdır.", ["gizli_sart_katlama_orani"]);
+      }
+    }
 
     let eczanemUrunId: string | null = null;
     if (eczanemHedefi) {
@@ -300,6 +327,11 @@ export async function POST(request: NextRequest) {
         extra_puan: eczanemHedefi || eclubHedefi ? null : extra_puan,
         hedef_roller: hedefRoller,
         tekrar_periyot_gun: eczanemHedefi ? null : (tekrar_periyot_gun ?? null),
+        satis_sarti_tipi: eclubHedefi ? (satis_sarti_tipi ?? "satis_sartli") : null,
+        gizli_sart_katlama_orani: eclubHedefi && satis_sarti_tipi === "serbest_siparis" ? (gizli_sart_katlama_orani ?? 20) : null,
+        barem_tablosu: eclubHedefi ? (barem_tablosu ?? VARSAYILAN_BAREM_TABLOSU) : null,
+        karsilik_puan: eclubHedefi ? (karsilik_puan ?? 1) : null,
+        karsilik_tl: eclubHedefi ? (karsilik_tl ?? 1) : null,
       })
       .select("yayin_id, durum, yayin_tarihi")
       .single();

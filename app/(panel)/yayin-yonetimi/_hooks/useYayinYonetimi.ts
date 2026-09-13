@@ -19,6 +19,7 @@ import { ECLUB_ORTAK_YAYIN_GRUBU, hedefRolleriOku, yalnizEclubHedefliMi, type Ya
 import type { Bekleyen, BekleyenHedefSayilari, Yayin } from "../_types";
 import { gecerliTurBaslangiclari, type HesaplananTur } from "@/lib/tclub/tur/kayit";
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
+import { VARSAYILAN_BAREM_TABLOSU, type SatisSartiTipi, type BaremSatiri } from "@/lib/eclub/store/eclubStoreTipler";
 
 interface UseYayinYonetimiArgs {
   kullaniciVar: boolean;
@@ -57,6 +58,13 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
   const [karsilikPuanlar, setKarsilikPuanlar] = useState<Record<string, number>>({});
   const [karsilikTllar, setKarsilikTllar] = useState<Record<string, number>>({});
   const [satisFiyatlar, setSatisFiyatlar] = useState<Record<string, number>>({});
+
+  // E-Club yayını: Satış Şartı Tipi, Katlama Oranı, Barem Tablosu ve Karşılık
+  const [satisSartiTipleri, setSatisSartiTipleri] = useState<Record<string, SatisSartiTipi>>({});
+  const [katlamaOranlari, setKatlamaOranlari] = useState<Record<string, number>>({});
+  const [baremTablolari, setBaremTablolari] = useState<Record<string, BaremSatiri[]>>({});
+  const [eclubKarsilikPuanlar, setEclubKarsilikPuanlar] = useState<Record<string, number>>({});
+  const [eclubKarsilikTllar, setEclubKarsilikTllar] = useState<Record<string, number>>({});
 
   // Tekrar gönderim periyodu — soru_seti_durum_id → seçilen gün (seçilmediyse tekrar yok).
   // Seçenek listesi sistem_ayarlari'ndan gelir (tek kaynak): api/tekrar-secenekleri.
@@ -241,6 +249,11 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
           : eclub
             ? {
                 tekrar_periyot_gun: tekrarPeriyotlari[b.soru_seti_durum_id] ?? null,
+                satis_sarti_tipi: satisSartiTipleri[b.soru_seti_durum_id] ?? "satis_sartli",
+                gizli_sart_katlama_orani: katlamaOranlari[b.soru_seti_durum_id] ?? 20,
+                barem_tablosu: baremTablolari[b.soru_seti_durum_id] ?? VARSAYILAN_BAREM_TABLOSU,
+                karsilik_puan: eclubKarsilikPuanlar[b.soru_seti_durum_id] ?? 1,
+                karsilik_tl: eclubKarsilikTllar[b.soru_seti_durum_id] ?? 1,
               }
             : {
               extra_puan: extraPuanlar[b.soru_seti_durum_id] ?? null,
@@ -314,6 +327,11 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     karsilikPuanlar, setKarsilikPuanlar,
     karsilikTllar, setKarsilikTllar,
     satisFiyatlar, setSatisFiyatlar,
+    satisSartiTipleri, setSatisSartiTipleri,
+    katlamaOranlari, setKatlamaOranlari,
+    baremTablolari, setBaremTablolari,
+    eclubKarsilikPuanlar, setEclubKarsilikPuanlar,
+    eclubKarsilikTllar, setEclubKarsilikTllar,
     tekrarPeriyotlari, setTekrarPeriyotlari,
     tekrarSecenekleri,
     tekrarBilgi,

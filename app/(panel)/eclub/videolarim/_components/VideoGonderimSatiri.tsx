@@ -93,7 +93,31 @@ export function VideoGonderimSatiri({ video, kisiler, limitler, tekrarEngelleri,
             {thumbnail ? <img src={thumbnail} alt="" className="h-full w-full object-cover" /> : <Film className="size-6" />}
             <span className="pointer-events-none absolute inset-0 bg-[#10233a]/0 transition group-hover:bg-[#10233a]/10" />
           </button>
-          <div className="min-w-0 self-center"><strong className="block truncate text-sm text-[#263e5b]">{video.urun_adi}</strong><span className="mt-1 block truncate text-[11px] font-semibold text-[#71859d]">{video.teknik_adi || "Teknik belirtilmedi"}</span></div>
+          <div className="min-w-0 self-center">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <strong className="block truncate text-sm text-[#263e5b]">{video.urun_adi}</strong>
+              {video.satis_sarti_tipi === "serbest_siparis" ? (
+                <span className="inline-flex items-center gap-1 rounded-md border border-purple-200 bg-purple-50 px-1.5 py-0.5 text-[10px] font-bold text-purple-800">
+                  🎁 Serbest Sipariş (+%{video.gizli_sart_katlama_orani ?? 20})
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                  📦 Satış Şartlı (Sipariş Zorunlu)
+                </span>
+              )}
+            </div>
+            <span className="mt-0.5 block truncate text-[11px] font-semibold text-[#71859d]">{video.teknik_adi || "Teknik belirtilmedi"}</span>
+            {Array.isArray(video.barem_tablosu) && video.barem_tablosu.length > 0 && (
+              <div className="mt-1 flex flex-wrap items-center gap-1 text-[10px] text-slate-500">
+                <span className="font-semibold text-slate-600">Şart:</span>
+                {video.barem_tablosu.map((b, i) => (
+                  <span key={i} className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-medium text-slate-700">
+                    {b.min_puan}-{b.max_puan}p: {b.adet}+{b.mal_fazlasi} MF
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-3 md:col-span-2 md:grid-cols-4 lg:col-span-4 lg:items-center">

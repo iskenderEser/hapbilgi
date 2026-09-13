@@ -3,6 +3,7 @@
 import type { YayindakiVideo } from "@/lib/video/yayindakiVideolar";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 import { ECLUB_KISI_ROL_ETIKETLERI, type EclubKisiRol } from "@/lib/utils/roller";
+import type { SatisSartiTipi, BaremSatiri } from "@/lib/eclub/store/eclubStoreTipler";
 
 export type EclubHedefRol = "eczaci" | "eczane_teknisyeni";
 
@@ -12,6 +13,9 @@ export interface OneriYayin extends Omit<YayindakiVideo, "hedef_roller" | "arac_
   arac_turu: OgrenmeAraciTuru;
   hedef_roller: EclubHedefRol[];
   soru_sayisi?: number | null;
+  satis_sarti_tipi?: SatisSartiTipi | null;
+  gizli_sart_katlama_orani?: number | null;
+  barem_tablosu?: BaremSatiri[] | null;
 }
 
 // Öneri alıcısı adayı (kisiler GET'ten türetilir).

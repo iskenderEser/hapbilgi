@@ -17,6 +17,7 @@ import { talepIdGoster } from "@/lib/utils/talepId";
 import { VideoThumb } from "./Yardimcilar";
 import { SoruListesi } from "./SoruListesi";
 import { yalnizEclubHedefliMi } from "@/lib/utils/roller";
+import { VARSAYILAN_BAREM_TABLOSU, type SatisSartiTipi, type BaremSatiri } from "@/lib/eclub/store/eclubStoreTipler";
 
 interface BekleyenSatirProps {
   b: Bekleyen;
@@ -38,6 +39,17 @@ interface BekleyenSatirProps {
   tekrarPeriyotlari: Record<string, number>;
   setTekrarPeriyotlari: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   tekrarSecenekleri: number[];
+  // E-Club ayarları
+  satisSartiTipleri?: Record<string, SatisSartiTipi>;
+  setSatisSartiTipleri?: React.Dispatch<React.SetStateAction<Record<string, SatisSartiTipi>>>;
+  katlamaOranlari?: Record<string, number>;
+  setKatlamaOranlari?: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  baremTablolari?: Record<string, BaremSatiri[]>;
+  setBaremTablolari?: React.Dispatch<React.SetStateAction<Record<string, BaremSatiri[]>>>;
+  eclubKarsilikPuanlar?: Record<string, number>;
+  setEclubKarsilikPuanlar?: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  eclubKarsilikTllar?: Record<string, number>;
+  setEclubKarsilikTllar?: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   // Opsiyonel yayın günü (İş 2): boş = hemen yayın; doluysa o gün 07:00'de (TR) açılır.
   yayinGunleri: Record<string, string>;
   setYayinGunleri: React.Dispatch<React.SetStateAction<Record<string, string>>>;
@@ -55,6 +67,11 @@ export function BekleyenSatir({
   b, islemLoading, acikAkordiyon, setAcikAkordiyon,
   videoPuanlari, setVideoPuanlari, extraPuanlar, setExtraPuanlar,
   barkodlar, setBarkodlar, karsilikPuanlar, setKarsilikPuanlar, karsilikTllar, setKarsilikTllar, satisFiyatlar, setSatisFiyatlar,
+  satisSartiTipleri, setSatisSartiTipleri,
+  katlamaOranlari, setKatlamaOranlari,
+  baremTablolari, setBaremTablolari,
+  eclubKarsilikPuanlar, setEclubKarsilikPuanlar,
+  eclubKarsilikTllar, setEclubKarsilikTllar,
   tekrarPeriyotlari, setTekrarPeriyotlari, tekrarSecenekleri,
   yayinGunleri, setYayinGunleri,
   tumPuanlarAtandiMi,
@@ -351,27 +368,242 @@ export function BekleyenSatir({
             );
           }
 
-          // E-Club / normal: alan sırası korunur; işlemler alt satırdadır.
+          if (eclub) {
+            const aktifSatisTipi: SatisSartiTipi = satisSartiTipleri?.[b.soru_seti_durum_id] ?? "satis_sartli";
+            const aktifKatlamaOrani: number = katlamaOranlari?.[b.soru_seti_durum_id] ?? 20;
+            const aktifBaremTablosu: BaremSatiri[] = baremTablolari?.[b.soru_seti_durum_id] ?? VARSAYILAN_BAREM_TABLOSU;
+            const aktifKarsilikPuan: number = eclubKarsilikPuanlar?.[b.soru_seti_durum_id] ?? 1;
+            const aktifKarsilikTl: number = eclubKarsilikTllar?.[b.soru_seti_durum_id] ?? 1;
+
+            return (
+              <div className="flex flex-col gap-3">
+                {/* 1. Sıra: Temel Puanlama, Tekrar ve Yayın Günü */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+                  <div className="w-[180px]">{soruBtn}</div>
+                  <div className="w-[180px]">{videoPuaniAlani}</div>
+                  <div className="w-[180px]">
+                    <select
+                      value={seciliTekrar ?? ""}
+                      onChange={(e) => {
+                        const deger = e.target.value;
+                        setTekrarPeriyotlari(prev => {
+                          const yeni = { ...prev };
+                          if (deger === "") delete yeni[b.soru_seti_durum_id];
+                          else yeni[b.soru_seti_durum_id] = Number(deger);
+                          return yeni;
+                        });
+                      }}
+                      aria-label={`${b.urun_adi} tekrar periyodu`}
+                      className={`h-9 w-full rounded-lg border px-2 text-xs transition outline-none ${
+                        tekrarDolu
+                          ? "border-[#cbd5e1] bg-[#f8fafc] font-extrabold text-[#334155] shadow-sm"
+                          : "border-gray-200 bg-white font-medium text-[#9aa7b7] hover:border-gray-300"
+                      }`}
+                      style={{ fontFamily: "'Nunito', sans-serif" }}
+                    >
+                      <option value="">Tekrar yok</option>
+                      {tekrarSecenekleri.map(g => <option key={g} value={g}>{g} gün tekrar</option>)}
+                    </select>
+                  </div>
+                  <div className="w-[180px]">{yayinGunuAlani}</div>
+                </div>
+
+                {/* 2. Sıra: E-Club Satış Şartı & Hediye Çeki Konfigürasyonu */}
+                <div className="rounded-xl border border-indigo-100 bg-[#fbfbfe] p-3 shadow-sm">
+                  <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 border-b border-indigo-50 pb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-xs text-white">🎁</span>
+                      <span className="text-xs font-bold text-slate-800">E-Club Migros Hediye Çeki & Sipariş Şartı Modeli</span>
+                    </div>
+                    {/* Karşılık Oranı (Puan = TL) */}
+                    <div className="flex items-center gap-1 text-xs">
+                      <span className="text-slate-500">Dönüşüm:</span>
+                      <input
+                        type="number"
+                        min={1}
+                        value={aktifKarsilikPuan}
+                        onChange={(e) => {
+                          const val = Number(e.target.value) || 1;
+                          setEclubKarsilikPuanlar?.(prev => ({ ...prev, [b.soru_seti_durum_id]: val }));
+                        }}
+                        className="h-7 w-12 rounded border border-gray-200 bg-white text-center text-xs font-bold text-slate-800 outline-none"
+                      />
+                      <span className="text-slate-400">Puan =</span>
+                      <input
+                        type="number"
+                        min={0.1}
+                        step="0.1"
+                        value={aktifKarsilikTl}
+                        onChange={(e) => {
+                          const val = Number(e.target.value) || 1;
+                          setEclubKarsilikTllar?.(prev => ({ ...prev, [b.soru_seti_durum_id]: val }));
+                        }}
+                        className="h-7 w-12 rounded border border-gray-200 bg-white text-center text-xs font-bold text-slate-800 outline-none"
+                      />
+                      <span className="font-semibold text-slate-600">TL</span>
+                    </div>
+                  </div>
+
+                  {/* Satış Şartı Seçimi */}
+                  <div className="mb-3 flex flex-wrap items-center gap-4">
+                    <label className="flex cursor-pointer items-center gap-2">
+                      <input
+                        type="radio"
+                        name={`satis_sarti_${b.soru_seti_durum_id}`}
+                        value="satis_sartli"
+                        checked={aktifSatisTipi === "satis_sartli"}
+                        onChange={() => setSatisSartiTipleri?.(prev => ({ ...prev, [b.soru_seti_durum_id]: "satis_sartli" }))}
+                        className="h-3.5 w-3.5 text-indigo-600"
+                      />
+                      <span className="text-xs font-bold text-slate-700">Satış Şartlı (Sipariş Zorunlu)</span>
+                    </label>
+
+                    <label className="flex cursor-pointer items-center gap-2">
+                      <input
+                        type="radio"
+                        name={`satis_sarti_${b.soru_seti_durum_id}`}
+                        value="serbest_siparis"
+                        checked={aktifSatisTipi === "serbest_siparis"}
+                        onChange={() => setSatisSartiTipleri?.(prev => ({ ...prev, [b.soru_seti_durum_id]: "serbest_siparis" }))}
+                        className="h-3.5 w-3.5 text-indigo-600"
+                      />
+                      <span className="text-xs font-bold text-slate-700">Serbest Sipariş (Opsiyonel Sipariş + Katlama)</span>
+                    </label>
+
+                    {aktifSatisTipi === "serbest_siparis" && (
+                      <div className="flex items-center gap-1.5 rounded-lg border border-purple-200 bg-purple-50 px-2 py-1">
+                        <span className="text-xs font-medium text-purple-900">Sipariş Verilirse Çek Katlama Oranı:</span>
+                        <div className="flex items-center">
+                          <span className="text-xs font-bold text-purple-700">+%</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={200}
+                            value={aktifKatlamaOrani}
+                            onChange={(e) => {
+                              const val = Number(e.target.value) || 20;
+                              setKatlamaOranlari?.(prev => ({ ...prev, [b.soru_seti_durum_id]: val }));
+                            }}
+                            className="h-6 w-12 rounded border border-purple-300 bg-white text-center text-xs font-bold text-purple-900 outline-none"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Barem Tablosu */}
+                  <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+                    <table className="w-full text-left text-xs">
+                      <thead className="border-b border-gray-200 bg-slate-50 font-semibold text-slate-600">
+                        <tr>
+                          <th className="px-3 py-1.5">Barem Aralığı (Puan)</th>
+                          <th className="px-3 py-1.5">Sipariş Şartı (Adet / Kutu)</th>
+                          <th className="px-3 py-1.5">Mal Fazlası (+MF)</th>
+                          <th className="px-3 py-1.5 text-right">İşlem</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {aktifBaremTablosu.map((barem, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50/50">
+                            <td className="px-3 py-1.5 font-medium text-slate-700">
+                              <div className="flex items-center gap-1">
+                                <input type="number" min={0} value={barem.min_puan} aria-label={`${idx + 1}. barem minimum puanı`}
+                                  onChange={(e) => { const yeni = [...aktifBaremTablosu]; yeni[idx] = { ...yeni[idx], min_puan: Number(e.target.value) }; setBaremTablolari?.(prev => ({ ...prev, [b.soru_seti_durum_id]: yeni })); }}
+                                  className="h-7 w-20 rounded border border-gray-200 px-2 font-mono text-[11px] font-bold outline-none focus:border-indigo-500" />
+                                <span>–</span>
+                                <input type="number" min={0} value={barem.max_puan} aria-label={`${idx + 1}. barem maksimum puanı`}
+                                  onChange={(e) => { const yeni = [...aktifBaremTablosu]; yeni[idx] = { ...yeni[idx], max_puan: Number(e.target.value) }; setBaremTablolari?.(prev => ({ ...prev, [b.soru_seti_durum_id]: yeni })); }}
+                                  className="h-7 w-20 rounded border border-gray-200 px-2 font-mono text-[11px] font-bold outline-none focus:border-indigo-500" />
+                                <span className="text-[11px] text-slate-500">Puan</span>
+                              </div>
+                            </td>
+                            <td className="px-3 py-1.5">
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={barem.adet}
+                                  onChange={(e) => {
+                                    const val = Number(e.target.value) || 0;
+                                    const yeni = [...aktifBaremTablosu];
+                                    yeni[idx] = { ...yeni[idx], adet: val };
+                                    setBaremTablolari?.(prev => ({ ...prev, [b.soru_seti_durum_id]: yeni }));
+                                  }}
+                                  className="h-7 w-20 rounded border border-gray-200 px-2 text-xs font-bold text-slate-800 outline-none focus:border-indigo-500"
+                                />
+                                <span className="text-[11px] text-slate-500">Adet</span>
+                              </div>
+                            </td>
+                            <td className="px-3 py-1.5">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-indigo-600">+</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={barem.mal_fazlasi}
+                                  onChange={(e) => {
+                                    const val = Number(e.target.value) || 0;
+                                    const yeni = [...aktifBaremTablosu];
+                                    yeni[idx] = { ...yeni[idx], mal_fazlasi: val };
+                                    setBaremTablolari?.(prev => ({ ...prev, [b.soru_seti_durum_id]: yeni }));
+                                  }}
+                                  className="h-7 w-20 rounded border border-gray-200 px-2 text-xs font-bold text-slate-800 outline-none focus:border-indigo-500"
+                                />
+                                <span className="text-[11px] text-slate-500">MF</span>
+                              </div>
+                            </td>
+                            <td className="px-3 py-1.5 text-right">
+                              <button type="button" disabled={aktifBaremTablosu.length === 1}
+                                onClick={() => { const yeni = aktifBaremTablosu.filter((_, sira) => sira !== idx); setBaremTablolari?.(prev => ({ ...prev, [b.soru_seti_durum_id]: yeni })); }}
+                                className="rounded px-2 py-1 text-[11px] font-bold text-red-600 disabled:cursor-not-allowed disabled:opacity-30">Sil</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <button type="button" onClick={() => {
+                    const son = aktifBaremTablosu.at(-1);
+                    const min = (son?.max_puan ?? -1) + 1;
+                    const yeni = [...aktifBaremTablosu, { min_puan: min, max_puan: min + 99, adet: 0, mal_fazlasi: 0 }];
+                    setBaremTablolari?.(prev => ({ ...prev, [b.soru_seti_durum_id]: yeni }));
+                  }} className="mt-2 rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-50">
+                    Barem Satırı Ekle
+                  </button>
+
+                  <p className="mt-2 text-[11px] text-slate-500">
+                    💡 <strong>Kural:</strong> İlk baremin altında kalan ve son baremin üzerindeki artık puanlar sonraki iki aylık döneme devreder.
+                  </p>
+                </div>
+
+                {/* 3. Sıra: Butonlar */}
+                <div className="flex items-center justify-between gap-3">
+                  {silButonu}
+                  {yayinlaButonu}
+                </div>
+              </div>
+            );
+          }
+
+          // Normal / Saha yayınları: alan sırası korunur; işlemler alt satırdadır.
           return (
-            <div className={`grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 ${eclub ? "xl:grid-cols-[auto_repeat(2,minmax(0,1fr))_minmax(280px,1.35fr)]" : "xl:grid-cols-[auto_repeat(3,minmax(0,1fr))_minmax(280px,1.35fr)]"}`}>
+            <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 xl:grid-cols-[auto_repeat(3,minmax(0,1fr))_minmax(280px,1.35fr)]">
               {soruBtn}
               {videoPuaniAlani}
-              {!eclub && (
-                <div>
-                  <select value={seciliExtra ?? ""}
-                    onChange={(e) => setExtraPuanlar(prev => ({ ...prev, [b.soru_seti_durum_id]: Number(e.target.value) }))}
-                    aria-label={`${b.urun_adi} extra puanı`}
-                    className={`h-9 w-full rounded-lg border px-2 text-xs transition outline-none ${
-                      extraDolu
-                        ? "border-[#c4b5fd] bg-[#f5f3ff] font-extrabold text-[#5b21b6] shadow-sm"
-                        : "border-gray-200 bg-white font-medium text-[#9aa7b7] hover:border-gray-300"
-                    }`}
-                    style={{ fontFamily: "'Nunito', sans-serif" }}>
-                    <option value="">Extra Puanı Seçin</option>
-                    {EXTRA_PUAN_SECENEKLERI.map(p => <option key={p} value={p}>+{p} extra puan</option>)}
-                  </select>
-                </div>
-              )}
+              <div>
+                <select value={seciliExtra ?? ""}
+                  onChange={(e) => setExtraPuanlar(prev => ({ ...prev, [b.soru_seti_durum_id]: Number(e.target.value) }))}
+                  aria-label={`${b.urun_adi} extra puanı`}
+                  className={`h-9 w-full rounded-lg border px-2 text-xs transition outline-none ${
+                    extraDolu
+                      ? "border-[#c4b5fd] bg-[#f5f3ff] font-extrabold text-[#5b21b6] shadow-sm"
+                      : "border-gray-200 bg-white font-medium text-[#9aa7b7] hover:border-gray-300"
+                  }`}
+                  style={{ fontFamily: "'Nunito', sans-serif" }}>
+                  <option value="">Extra Puanı Seçin</option>
+                  {EXTRA_PUAN_SECENEKLERI.map(p => <option key={p} value={p}>+{p} extra puan</option>)}
+                </select>
+              </div>
               <div>
                 <select value={seciliTekrar ?? ""}
                   onChange={(e) => {
