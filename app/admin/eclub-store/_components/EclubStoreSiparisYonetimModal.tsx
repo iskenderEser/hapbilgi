@@ -18,12 +18,14 @@ const DURUMLAR = [
   { id: "hazirlaniyor", ad: "Hazırlanıyor" },
   { id: "kargoda", ad: "Kargoda" },
   { id: "teslim_edildi", ad: "Teslim Edildi" },
+  { id: "cek_kodlari_gonderildi", ad: "Çek Kodları Gönderildi" },
 ];
 
 export default function EclubStoreSiparisYonetimModal({ siparis, islemLoading, onKapat, onDurumGuncelle, onIptal }: Props) {
   const [durum, setDurum] = useState(siparis.durum);
   const [kargoFirma, setKargoFirma] = useState(siparis.kargo_firmasi ?? "");
   const [kargoTakip, setKargoTakip] = useState(siparis.kargo_takip_no ?? "");
+  const [cekKodu, setCekKodu] = useState(siparis.kargo_takip_no ?? "");
   const [iptalMod, setIptalMod] = useState(false);
   const [iptalSebep, setIptalSebep] = useState("");
 
@@ -33,6 +35,9 @@ export default function EclubStoreSiparisYonetimModal({ siparis, islemLoading, o
     if (durum === "kargoda") {
       if (!kargoFirma.trim() || !kargoTakip.trim()) return;
       await onDurumGuncelle(siparis.siparis_id, durum, { firma: kargoFirma, takip: kargoTakip });
+    } else if (durum === "cek_kodlari_gonderildi") {
+      if (!cekKodu.trim()) return;
+      await onDurumGuncelle(siparis.siparis_id, durum, { firma: "Migros", takip: cekKodu.trim() });
     } else {
       await onDurumGuncelle(siparis.siparis_id, durum);
     }
@@ -92,6 +97,18 @@ export default function EclubStoreSiparisYonetimModal({ siparis, islemLoading, o
                   <label style={label}>Takip No</label>
                   <input style={inputCls} value={kargoTakip} onChange={(e) => setKargoTakip(e.target.value)} />
                 </div>
+              </div>
+            )}
+
+            {durum === "cek_kodlari_gonderildi" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <label style={label}>Migros Çek Kodu</label>
+                <input
+                  style={inputCls}
+                  placeholder="Örn: MGR-89234-X72"
+                  value={cekKodu}
+                  onChange={(e) => setCekKodu(e.target.value)}
+                />
               </div>
             )}
 

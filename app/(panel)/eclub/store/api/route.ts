@@ -62,12 +62,16 @@ export async function GET(request: Request) {
       return [{ ...urun, kullanilabilir_puan: kullanilabilirPuan }];
     });
 
+    const { data: ozetData } = await adminSupabase
+      .rpc("get_eclub_eczane_store_ozet", { p_kisi_id: erisim.kisi.kisi_id });
+
     return NextResponse.json({
       kategoriler: kategoriler ?? [],
       urunler: gorunurUrunler,
       firma_bakiye: firmaBakiye,
       toplam_bakiye: toplamBakiye,
       takvim: eclubStoreTakvimDurumu(),
+      cek_yayinlar: ozetData ?? [],
     }, { status: 200 });
   } catch (err) {
     return sunucuHatasi(err, "GET /eclub/store/api");

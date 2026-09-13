@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type {
-  EclubStoreUrun, EclubStoreKategori, EclubStoreFirmaBakiye, EclubStoreAdres,
+  EclubStoreUrun, EclubStoreKategori, EclubStoreFirmaBakiye, EclubStoreAdres, EclubEczaneStoreOzetItem,
 } from "@/lib/eclub/store/eclubStoreTipler";
 
 export interface EclubStoreKimlik {
@@ -20,6 +20,7 @@ interface Args {
 export function useEclubStore({ hata, basari }: Args) {
   const [kategoriler, setKategoriler] = useState<EclubStoreKategori[]>([]);
   const [urunler, setUrunler] = useState<EclubStoreUrun[]>([]);
+  const [cekYayinlar, setCekYayinlar] = useState<EclubEczaneStoreOzetItem[]>([]);
   const [firmaBakiye, setFirmaBakiye] = useState<EclubStoreFirmaBakiye[]>([]);
   const [toplamBakiye, setToplamBakiye] = useState(0);
   const [adresler, setAdresler] = useState<EclubStoreAdres[]>([]);
@@ -36,6 +37,7 @@ export function useEclubStore({ hata, basari }: Args) {
       if (!res.ok) { hata(d.hata ?? "Mağaza yüklenemedi.", d.adim, d.detay); return; }
       setKategoriler(d.kategoriler ?? []);
       setUrunler(d.urunler ?? []);
+      setCekYayinlar(d.cek_yayinlar ?? []);
       setFirmaBakiye(d.firma_bakiye ?? []);
       setToplamBakiye(d.toplam_bakiye ?? 0);
     } catch (err) {
@@ -98,8 +100,21 @@ export function useEclubStore({ hata, basari }: Args) {
     return true;
   }, [hata, basari, vitrinCek]);
 
+  const cekTalebiOlustur = useCallback(async (yayin_id: string, siparis_verilsin_mi: boolean) => {
+    const res = await fetch("/eclub/store/api/siparis", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ yayin_id, siparis_verilsin_mi }),
+    });
+    const d = await res.json();
+    if (!res.ok) { hata(d.hata ?? "İşlem gerçekleştirilemedi.", d.adim, d.detay); return false; }
+    basari(d.mesaj ?? "Talebiniz alındı.");
+    await vitrinCek(true);
+    return true;
+  }, [hata, basari, vitrinCek]);
+
   return {
-    kategoriler, urunler, firmaBakiye, toplamBakiye, adresler, kimlik, loading, yenileniyor,
-    vitrinCek, yenile, adresEkle, adresSil, siparisVer,
+    kategoriler, urunler, cekYayinlar, firmaBakiye, toplamBakiye, adresler, kimlik, loading, yenileniyor,
+    vitrinCek, yenile, adresEkle, adresSil, siparisVer, cekTalebiOlustur,
   };
 }

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Clock3, Package, ShoppingBag, Store, Truck, XCircle } from "lucide-react";
+import { Check, CheckCircle2, Clock3, Copy, Gift, Package, ShoppingBag, Store, Truck, XCircle } from "lucide-react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import {
@@ -28,11 +28,14 @@ interface SiparisSatir {
 }
 
 const DURUM_ETIKET: Record<string, { ad: string; renk: string; bg: string; ikon: typeof Clock3 }> = {
-  beklemede: { ad: "Beklemede", renk: "#a66215", bg: "#fff6e8", ikon: Clock3 },
+  beklemede: { ad: "Beklemede (UTT)", renk: "#a66215", bg: "#fff6e8", ikon: Clock3 },
+  bm_onayinda: { ad: "BM Onayında", renk: "#1e40af", bg: "#eff6ff", ikon: Clock3 },
+  onaylandi: { ad: "BM Onayladı / Kod Bekliyor", renk: "#065f46", bg: "#ecfdf5", ikon: CheckCircle2 },
   hazirlaniyor: { ad: "Hazırlanıyor", renk: "#237ac8", bg: "#edf6fd", ikon: Package },
   kargoda: { ad: "Kargoda", renk: "#7358c7", bg: "#f2efff", ikon: Truck },
   teslim_edildi: { ad: "Teslim Edildi", renk: "#16865f", bg: "#ebf8f2", ikon: CheckCircle2 },
   iptal: { ad: "İptal", renk: "#bc4b4b", bg: "#fff0f0", ikon: XCircle },
+  cek_kodlari_gonderildi: { ad: "Çek Kodları Gönderildi", renk: "#15803d", bg: "#f0fdf4", ikon: CheckCircle2 },
 };
 
 function urunBilgisi(siparis: SiparisSatir): SiparisUrun {
@@ -48,6 +51,13 @@ export default function EclubSiparislerimPage() {
   const [siparisler, setSiparisler] = useState<SiparisSatir[]>([]);
   const [loading, setLoading] = useState(true);
   const [islemId, setIslemId] = useState<string | null>(null);
+  const [kopyalandiKod, setKopyalandiKod] = useState<string | null>(null);
+
+  const kodKopyala = (kod: string) => {
+    navigator.clipboard.writeText(kod);
+    setKopyalandiKod(kod);
+    setTimeout(() => setKopyalandiKod(null), 2000);
+  };
 
   const siparisCek = useCallback(async () => {
     setLoading(true);
@@ -102,10 +112,28 @@ export default function EclubSiparislerimPage() {
     <EclubKisiSayfa>
       <EclubKisiBaslik
         ikon={ShoppingBag}
-        baslik="Siparişlerim"
-        aciklama="E‑Club Store siparişlerinizi ve teslimat sürecini tek yerden takip edin."
+        baslik="Siparişlerim & Çeklerim"
+        aciklama="E‑Club Store siparişlerinizi, hediye çeki taleplerinizi ve teslim edilen dijital çek kodlarınızı takip edin."
         aksiyon={<Link href="/eclub/store" className="inline-flex items-center gap-2 rounded-xl border border-[#cfe3f4] bg-white px-4 py-2.5 text-xs font-extrabold text-[#237ac8] shadow-sm hover:bg-[#f4f9fd]"><Store size={15} /> Mağazaya Dön</Link>}
       />
+
+      {siparisler.some((s) => s.durum === "cek_kodlari_gonderildi") && (
+        <div className="rounded-2xl border border-emerald-300 bg-emerald-50/90 p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
+              <Gift size={22} />
+            </span>
+            <div>
+              <h2 className="text-sm font-extrabold text-emerald-950">
+                🎉 Tebrikler! Migros Hediye Çekiniz Tanımlandı
+              </h2>
+              <p className="mt-0.5 text-xs font-semibold text-emerald-800">
+                Hak ettiğiniz hediye çeki kodunuz aşağıda yeşil kutuda listelenmiştir. &ldquo;Kopyala&rdquo; butonu ile kodu alarak Migros kasalarında veya Migros Sanal Market&apos;te hemen kullanabilirsiniz.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <EclubKisiStat ikon={ShoppingBag} etiket="Toplam Sipariş" deger={ozet.toplam} detay="Tüm siparişleriniz" />
@@ -140,8 +168,30 @@ export default function EclubSiparislerimPage() {
                     <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                       <div className="rounded-xl bg-[#f5f8fb] px-3 py-2"><small className="block text-[9px] font-bold text-[#8190a3]">Adet</small><strong className="text-xs text-[#40556d]">{siparis.adet}</strong></div>
                       <div className="rounded-xl bg-[#f5f8fb] px-3 py-2"><small className="block text-[9px] font-bold text-[#8190a3]">Toplam</small><strong className="text-xs text-[#7358c7]">{siparis.toplam_puan.toLocaleString("tr-TR")} puan</strong></div>
-                      {siparis.kargo_takip_no && <div className="col-span-2 rounded-xl bg-[#f5f8fb] px-3 py-2 sm:col-span-1"><small className="block text-[9px] font-bold text-[#8190a3]">Kargo Takibi</small><strong className="text-xs text-[#40556d]">{siparis.kargo_firmasi || "Kargo"} · {siparis.kargo_takip_no}</strong></div>}
+                      {siparis.kargo_takip_no && siparis.durum !== "cek_kodlari_gonderildi" && (
+                        <div className="col-span-2 rounded-xl bg-[#f5f8fb] px-3 py-2 sm:col-span-1"><small className="block text-[9px] font-bold text-[#8190a3]">Kargo Takibi</small><strong className="text-xs text-[#40556d]">{siparis.kargo_firmasi || "Kargo"} · {siparis.kargo_takip_no}</strong></div>
+                      )}
                     </div>
+                    {siparis.durum === "cek_kodlari_gonderildi" && siparis.kargo_takip_no && (
+                      <div className="mt-2.5 rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-xs text-emerald-950">
+                        <span className="flex items-center gap-1.5 text-[11px] font-extrabold text-emerald-800">
+                          <Gift size={14} /> Migros Hediye Çeki Kodunuz:
+                        </span>
+                        <div className="mt-1.5 flex items-center justify-between gap-2">
+                          <span className="font-mono text-base font-black tracking-wider text-emerald-950">
+                            {siparis.kargo_takip_no}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => kodKopyala(siparis.kargo_takip_no!)}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-emerald-700"
+                          >
+                            {kopyalandiKod === siparis.kargo_takip_no ? <Check size={13} /> : <Copy size={13} />}
+                            {kopyalandiKod === siparis.kargo_takip_no ? "Kopyalandı!" : "Kopyala"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   {(siparis.durum === "beklemede" || siparis.durum === "kargoda") && (
                     <div className="flex shrink-0 sm:justify-end">
