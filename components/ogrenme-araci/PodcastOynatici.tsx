@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import PodcastKapakGorseli from "@/components/ogrenme-araci/PodcastKapakGorseli";
 
 interface Props {
   aracId: string;
   yayinId: string;
   bagId?: string | null;
+  urunAdi?: string | null;
   ileriSarmaAcik?: boolean;
   saltGoruntuleme?: boolean;
   baslat: () => Promise<{ izlemeId: string; ilerleme?: { sonKonumSaniye?: number } | null }>;
@@ -14,8 +16,8 @@ interface Props {
   hata: (mesaj: string, adim?: string, detay?: string) => void;
 }
 
-export default function PodcastOynatici({ aracId, yayinId, bagId, ileriSarmaAcik = false, saltGoruntuleme = false, baslat, bitir, onTamamlandi, hata }: Props) {
-  const [erisim, setErisim] = useState<{ erisim_url: string; kapak_url: string | null; transkript_url: string | null } | null>(null);
+export default function PodcastOynatici({ aracId, yayinId, bagId, urunAdi, ileriSarmaAcik = false, saltGoruntuleme = false, baslat, bitir, onTamamlandi, hata }: Props) {
+  const [erisim, setErisim] = useState<{ erisim_url: string; kapak_url: string | null; transkript_url: string | null; transkript_metni?: string | null; urun_adi?: string | null } | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const izlemeIdRef = useRef<string | null>(null);
   const sonTikRef = useRef(0);
@@ -102,21 +104,20 @@ export default function PodcastOynatici({ aracId, yayinId, bagId, ileriSarmaAcik
     );
   }
 
+  const cozumlenenUrunAdi =
+    urunAdi && urunAdi.trim().length > 0
+      ? urunAdi.trim()
+      : erisim.urun_adi && erisim.urun_adi.trim().length > 0
+        ? erisim.urun_adi.trim()
+        : "Podcast";
+
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4">
-      {erisim.kapak_url && (
-        <>
-          {/* Bunny imzalı URL'leri Next Image optimizasyon hattına açılmaz. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={erisim.kapak_url}
-            alt="Podcast kapağı"
-            draggable={false}
-            onContextMenu={(event) => event.preventDefault()}
-            className="mx-auto aspect-square w-full max-w-64 rounded-xl object-cover"
-          />
-        </>
-      )}
+      <PodcastKapakGorseli
+        kapakUrl={erisim.kapak_url}
+        urunAdi={cozumlenenUrunAdi}
+        className="mx-auto aspect-square w-full max-w-64 rounded-xl object-cover"
+      />
       <audio
         ref={audioRef}
         controls
@@ -137,12 +138,47 @@ export default function PodcastOynatici({ aracId, yayinId, bagId, ileriSarmaAcik
         onPause={() => { if (!saltGoruntuleme) void ilerlemeKaydet().catch(() => undefined); }}
         onEnded={() => void sonaErdi()}
       />
-      {erisim.transkript_url && (
+      {/* Onaylanmış transkript okunabilir bir metin panelinde gösterilir.
+          Kullanıcının düzenleyip onayladığı son sürüm (transkript_metni) kullanılır.
+          Transkript yoksa panel, bağlantı veya hata mesajı gösterilmez.
+          Metin güvenli düz içerik olarak render edilir; kullanıcı metni asla HTML olarak çalıştırılmaz. */}
+      {erisim.transkript_metni && (
+        <details className="group rounded-xl border border-gray-200 bg-gray-50/70 p-3 text-sm transition">
+          <summary className="flex cursor-pointer select-none items-center justify-between font-semibold text-gray-800 outline-none hover:text-[#287fce]">
+            <span>Podcast Transkripti</span>
+            <span className="text-xs text-[#287fce] group-open:hidden">Göster</span>
+            <span className="text-xs text-gray-500 hidden group-open:inline">Gizle</span>
+          </summary>
+          <div className="mt-3 max-h-64 overflow-y-auto whitespace-pre-wrap rounded-lg border border-gray-100 bg-white p-3 font-sans text-xs leading-relaxed text-gray-700 select-text">
+            {erisim.transkript_metni.split("\n").map((satir, idx) => {
+              if (!satir.trim()) {
+                return <div key={idx} className="h-2.5" />;
+              }
+              const match = satir.match(/^(\*\*[^*]+:\*\*|\*\*[^*]+\*\*:\s*|\*\*[^*]+\*\*)\s*(.*)$/);
+              if (match) {
+                const etiket = match[1].replace(/\*\*/g, "");
+                return (
+                  <div key={idx} className="py-0.5">
+                    <strong className="font-semibold text-gray-900">{etiket}</strong>
+                    <span> {match[2]}</span>
+                  </div>
+                );
+              }
+              return (
+                <div key={idx} className="py-0.5">
+                  {satir}
+                </div>
+              );
+            })}
+          </div>
+        </details>
+      )}
+      {!erisim.transkript_metni && erisim.transkript_url && (
         <a
           href={erisim.transkript_url}
           target="_blank"
           rel="noreferrer"
-          className="text-center text-sm font-semibold text-[#287fce]"
+          className="text-center text-sm font-semibold text-[#287fce] hover:underline"
         >
           Transkripti aç
         </a>
