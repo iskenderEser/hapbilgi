@@ -55,8 +55,12 @@ export function bunnyPodcastDestekYoluOlustur(girdi: {
   aracId: string;
   rol: "kapak" | "transkript";
   uzanti: string;
+  girisimId?: string;
 }): string {
-  return [girdi.firmaId, girdi.talepId, "podcast", girdi.aracId, `${girdi.rol}.${girdi.uzanti}`].join("/");
+  const dosyaAdi = girdi.girisimId
+    ? `${girdi.rol}-${girdi.girisimId}.${girdi.uzanti}`
+    : `${girdi.rol}.${girdi.uzanti}`;
+  return [girdi.firmaId, girdi.talepId, "podcast", girdi.aracId, dosyaAdi].join("/");
 }
 
 function base64Url(buffer: Buffer): string {
@@ -266,4 +270,24 @@ export async function bunnyPdfKuyrukDogrula(dosyaYolu: string): Promise<{ sifrel
   if (!yanit.ok) return null;
   const metin = new TextDecoder("latin1").decode(await yanit.arrayBuffer());
   return { sifreli: /\/Encrypt\b/.test(metin), eofVar: /%%EOF\s*$/.test(metin.trimEnd()) };
+}
+
+/** Storage nesnesini ham baytlar olarak indirir. */
+export async function bunnyStorageNesneIndir(dosyaYolu: string, azamiBayt = 20 * 1024 * 1024): Promise<Uint8Array | null> {
+  const ortam = bunnyStorageOrtami();
+  if (!ortam) return null;
+  const url = `https://${ortam.storageHost}/${encodeURIComponent(ortam.storageZone)}/${segmentleriKodla(dosyaYolu)}`;
+  try {
+    const yanit = await fetch(url, {
+      headers: {
+        AccessKey: ortam.storageAccessKey,
+        ...(azamiBayt ? { Range: `bytes=0-${azamiBayt - 1}` } : {}),
+      },
+      cache: "no-store",
+    });
+    if (!yanit.ok) return null;
+    return new Uint8Array(await yanit.arrayBuffer());
+  } catch {
+    return null;
+  }
 }

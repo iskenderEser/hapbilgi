@@ -29,9 +29,8 @@ test("hazır podcast dosyaları referans dosyalarından ayrı state ve alanlarda
   assert.match(form, /EkDosyaYukleme/);
 });
 
-test("podcast ses, kapak, anlatım türü ve transkript alanlarını zorunlu kılar", () => {
-  assert.match(hook, /"monolog" \| "diyalog"/);
-  assert.match(hook, /Hazır podcast talebi için ses, kapak ve transkript dosyaları zorunludur/);
+test("podcast ses alanını zorunlu, yayın görseli ve transkripti opsiyonel kılar", () => {
+  assert.match(hook, /Hazır podcast talebi için podcast dosyası zorunludur/);
   assert.equal(podcastDestekDosyasiDogrula({ rol: "kapak", dosyaAdi: "kapak.png", mimeType: "image/png", dosyaBoyutu: 100 }).ok, true);
   assert.equal(podcastDestekDosyasiDogrula({ rol: "transkript", dosyaAdi: "metin.txt", mimeType: "text/plain", dosyaBoyutu: 100 }).ok, true);
 });

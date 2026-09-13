@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
@@ -35,7 +36,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const yetki = await uretimAraciYetkisiniDogrula({ db, talepId: arac.talep_id, kullaniciId: user.id, rol });
     if (!yetki.ok) return NextResponse.json({ hata: yetki.hata }, { status: yetki.status });
 
-    const dosyaYolu = bunnyPodcastDestekYoluOlustur({ firmaId: yetki.firmaId, talepId: arac.talep_id, aracId: arac_id, rol: rolDosya, uzanti: karar.uzanti });
+    const yuklemeGirisimiId = rolDosya === "kapak" ? randomUUID() : null;
+    const dosyaYolu = bunnyPodcastDestekYoluOlustur({
+      firmaId: yetki.firmaId,
+      talepId: arac.talep_id,
+      aracId: arac_id,
+      rol: rolDosya,
+      uzanti: karar.uzanti,
+      girisimId: yuklemeGirisimiId ?? undefined,
+    });
     const upload = bunnyUploadBilgisi();
     const yuklemeYetkisi = yuklemeYetkisiOlustur({
       aracId: arac_id,
@@ -49,16 +58,32 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     // İstek Bunny'ye ulaşıp tamamlama isteği geri dönemese bile iptalde nesne
     // yolunun bulunabilmesi için destek yolu aktarım başlamadan kalıcılaştırılır.
-    const metadata = (arac.metadata as Record<string, unknown> | null) ?? {};
-    const bekleyenYollar = (metadata.bekleyen_destek_yollari as Record<string, unknown> | null) ?? {};
-    const { error: yolHatasi } = await db.from("ogrenme_araclari").update({
-      metadata: { ...metadata, bekleyen_destek_yollari: { ...bekleyenYollar, [rolDosya]: dosyaYolu } },
-    }).eq("arac_id", arac_id);
+    let yolHatasi: { code?: string; message?: string } | null = null;
+    if (rolDosya === "kapak" && yuklemeGirisimiId) {
+      const sonuc = await db.rpc("podcast_kapak_yukleme_baslat_atomik", {
+        p_arac_id: arac_id,
+        p_kullanici_id: user.id,
+        p_girisim_id: yuklemeGirisimiId,
+        p_dosya_yolu: dosyaYolu,
+      });
+      yolHatasi = sonuc.error;
+    } else {
+      const metadata = (arac.metadata as Record<string, unknown> | null) ?? {};
+      const bekleyenYollar = (metadata.bekleyen_destek_yollari as Record<string, unknown> | null) ?? {};
+      const sonuc = await db.from("ogrenme_araclari").update({
+        metadata: {
+          ...metadata,
+          bekleyen_destek_yollari: { ...bekleyenYollar, [rolDosya]: dosyaYolu },
+        },
+      }).eq("arac_id", arac_id);
+      yolHatasi = sonuc.error;
+    }
     if (yolHatasi) return NextResponse.json({ hata: "Podcast destek yükleme yolu kaydedilemedi." }, { status: 500 });
 
     return NextResponse.json({
       arac_id,
       dosya_yolu: dosyaYolu,
+      yukleme_girisimi_id: yuklemeGirisimiId,
       yukleme_token: yuklemeYetkisi.token,
       yukleme: {
         endpoint: upload.endpoint,

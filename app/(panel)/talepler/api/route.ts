@@ -64,10 +64,14 @@ export async function POST(request: NextRequest) {
       hazir_video, hazir_soru_seti, hazir_soru_seti_verisi,
       soru_seti_buyuklugu, secenek_sayisi, video_basi_soru_sayisi,
       islem_anahtari,
+      taslak_talep_id,
     } = body;
 
     if (!uuidGecerliMi(islem_anahtari)) {
       return validasyonHatasi("Talep işlem anahtarı geçersiz.", ["islem_anahtari"]);
+    }
+    if (taslak_talep_id !== undefined && !uuidGecerliMi(taslak_talep_id)) {
+      return validasyonHatasi("Taslak talep kimliği geçersiz.", ["taslak_talep_id"]);
     }
 
     if (!ogrenmeAraciTuruMu(ogrenme_araci_turu) || !["video", "podcast", "gorsel", "flip_pdf"].includes(ogrenme_araci_turu)) {
@@ -80,12 +84,9 @@ export async function POST(request: NextRequest) {
       return validasyonHatasi("Üretim varyantı seçimleri geçersiz.", ["hazir_video", "hazir_soru_seti"]);
     }
     const uretimAkisi = ogrenmeAraciUretimAkisi(ogrenme_araci_turu, hazir_video, hazir_soru_seti);
-    const aracTercihleri = ogrenme_araci_turu === "podcast"
-      ? ogrenme_araci_tercihleri as { anlatim_turu?: unknown }
+    const aracTercihleri = (ogrenme_araci_tercihleri && typeof ogrenme_araci_tercihleri === "object" && !Array.isArray(ogrenme_araci_tercihleri))
+      ? (ogrenme_araci_tercihleri as Record<string, unknown>)
       : {};
-    if (ogrenme_araci_turu === "podcast" && !["monolog", "diyalog"].includes(String(aracTercihleri?.anlatim_turu))) {
-      return validasyonHatasi("Podcast anlatım türü monolog veya diyalog olmalıdır.", ["ogrenme_araci_tercihleri.anlatim_turu"]);
-    }
 
     // egitim_turu validasyonu — tip kontrolü
     const egitimTuru = egitim_turu as TalepTuru;
@@ -212,16 +213,67 @@ export async function POST(request: NextRequest) {
       video_basi_soru_sayisi: videoBasisSoruSayisi,
     };
 
-    const { data: atomikSonuc, error: atomikHata } = await adminSupabase.rpc("talep_atomik_olustur", {
-      p_uretici_id: user.id,
-      p_islem_anahtari: islem_anahtari,
-      p_talep: atomikTalepVerisi,
-    });
-    if (atomikHata) {
-      return uretimRpcHataYaniti("Talep oluşturulamadı.", "talep_atomik_olustur RPC", atomikHata);
-    }
+    let atomikKayit: { talep_id?: unknown; mevcut?: unknown; kesinlesmis?: unknown } | null = null;
 
-    const atomikKayit = atomikSonuc as { talep_id?: unknown; mevcut?: unknown } | null;
+    if (taslak_talep_id) {
+      // 1. Taslak kullanıcıya ve firmaya ait mi doğrula (Aşama 4 Kural 5)
+      const { data: taslakTalep } = await adminSupabase
+        .from("talepler")
+        .select("talep_id, uretici_id, firma_id, taslak_mi")
+        .eq("talep_id", taslak_talep_id)
+        .maybeSingle();
+
+      if (!taslakTalep) {
+        return validasyonHatasi("Taslak talep bulunamadı.", ["taslak_talep_id"]);
+      }
+      if (taslakTalep.uretici_id !== user.id || taslakTalep.firma_id !== kullaniciKaydi.firma_id) {
+        return yetkiHatasi();
+      }
+
+      // 2. Podcast yüklemesi tamamlanmış mı doğrula (Aşama 4 Kural 5)
+      const { data: aracKaydi } = await adminSupabase
+        .from("ogrenme_araclari")
+        .select("arac_id, dosya_yolu, metadata")
+        .eq("talep_id", taslak_talep_id)
+        .eq("arac_turu", "podcast")
+        .maybeSingle();
+
+      if (!aracKaydi?.dosya_yolu) {
+        return validasyonHatasi("Podcast yüklemesi tamamlanmadan talep gönderilemez.", ["dosya_yolu"]);
+      }
+
+      // 3. Transkript işlemi devam etmiyor ve kullanıcı kararı verilmiş mi doğrula (Aşama 4 Kural 5)
+      const transkript = (aracKaydi.metadata as Record<string, unknown> | null)?.transkript as Record<string, unknown> | null;
+      const transkriptDurumu = typeof transkript?.durum === "string" ? transkript.durum : "yok";
+
+      if (["ai_bekliyor", "ai_isleniyor", "ai_taslak", "manuel_taslak", "hata"].includes(transkriptDurumu)) {
+        return validasyonHatasi(
+          `Podcast transkript kararı tamamlanmadan talep gönderilemez (mevcut durum: ${transkriptDurumu}).`,
+          ["transkript_durumu"]
+        );
+      }
+
+      const { data: kesinlesmeSonucu, error: kesinlesmeHatasi } = await adminSupabase.rpc("podcast_taslak_atomik_kesinlestir", {
+        p_uretici_id: user.id,
+        p_talep_id: taslak_talep_id,
+        p_islem_anahtari: islem_anahtari,
+        p_talep: atomikTalepVerisi,
+      });
+      if (kesinlesmeHatasi) {
+        return uretimRpcHataYaniti("Taslak kesinleştirilemedi.", "podcast_taslak_atomik_kesinlestir RPC", kesinlesmeHatasi);
+      }
+      atomikKayit = kesinlesmeSonucu as { talep_id?: unknown; mevcut?: unknown; kesinlesmis?: unknown } | null;
+    } else {
+      const { data: atomikSonuc, error: atomikHata } = await adminSupabase.rpc("talep_atomik_olustur", {
+        p_uretici_id: user.id,
+        p_islem_anahtari: islem_anahtari,
+        p_talep: atomikTalepVerisi,
+      });
+      if (atomikHata) {
+        return uretimRpcHataYaniti("Talep oluşturulamadı.", "talep_atomik_olustur RPC", atomikHata);
+      }
+      atomikKayit = atomikSonuc as { talep_id?: unknown; mevcut?: unknown } | null;
+    }
     if (!uuidGecerliMi(atomikKayit?.talep_id)) {
       return hataYaniti("Talep oluşturulamadı.", "talep_atomik_olustur RPC sonucu", { message: "Geçerli talep kimliği dönmedi." });
     }

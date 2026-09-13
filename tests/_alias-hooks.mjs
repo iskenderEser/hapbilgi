@@ -13,18 +13,44 @@ export async function resolve(specifier, context, nextResolve) {
   if (specifier === "server-only") {
     return { url: "data:text/javascript,export%20default%20undefined", shortCircuit: true };
   }
-  if (specifier.startsWith("@/")) {
-    const taban = join(kok, specifier.slice(2));
+  if (specifier === "next/headers") {
+    return { url: "data:text/javascript,export%20const%20cookies=()=>({get:()=>undefined});", shortCircuit: true };
+  }
+  if (specifier.startsWith("@/") || (specifier.startsWith(".") && context.parentURL && !specifier.endsWith(".js") && !specifier.endsWith(".mjs") && !specifier.endsWith(".json"))) {
+    const taban = specifier.startsWith("@/")
+      ? join(kok, specifier.slice(2))
+      : join(dirname(fileURLToPath(context.parentURL)), specifier);
     // Node uzantısız import'u çözemez; tsc/Next gibi .ts/.tsx/index denemesi yap.
-    const adaylar = [taban, `${taban}.ts`, `${taban}.tsx`, join(taban, "index.ts"), join(taban, "index.tsx")];
+    const adaylar = [`${taban}.ts`, `${taban}.tsx`, join(taban, "index.ts"), join(taban, "index.tsx"), taban];
     for (const aday of adaylar) {
       try {
         return await nextResolve(pathToFileURL(aday).href, context);
       } catch (e) {
-        if (e?.code !== "ERR_MODULE_NOT_FOUND") throw e;
+        if (e?.code !== "ERR_MODULE_NOT_FOUND" && e?.code !== "ERR_UNSUPPORTED_DIR_IMPORT") throw e;
       }
     }
     return nextResolve(pathToFileURL(taban).href, context);
   }
   return nextResolve(specifier, context);
+}
+
+export async function load(url, context, nextLoad) {
+  if (url.endsWith(".tsx")) {
+    const { readFile } = await import("node:fs/promises");
+    const ts = (await import("typescript")).default;
+    const raw = await readFile(fileURLToPath(url), "utf8");
+    const transpiled = ts.transpileModule(raw, {
+      compilerOptions: {
+        module: ts.ModuleKind.ESNext,
+        target: ts.ScriptTarget.ESNext,
+        jsx: ts.JsxEmit.ReactJSX,
+      },
+    });
+    return {
+      format: "module",
+      source: transpiled.outputText,
+      shortCircuit: true,
+    };
+  }
+  return nextLoad(url, context);
 }

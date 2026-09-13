@@ -4,6 +4,7 @@ import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
 import { uretimAraciYetkisiniDogrula } from "@/lib/ogrenmeAraci/yetki";
 import { uuidGecerliMi, uretimRpcHataYaniti } from "@/lib/uretim/rpc";
+import type { PodcastTranskriptDurumu, PodcastTranskriptMetadata } from "@/lib/ogrenmeAraci/tipler";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ arac_id: string }> }) {
   try {
@@ -19,13 +20,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (body.gorev_id !== null && body.gorev_id !== undefined && !uuidGecerliMi(body.gorev_id)) return validasyonHatasi("Görev kimliği geçersiz.", ["gorev_id"]);
 
     const db = createAdminClient();
-    const { data: arac } = await db.from("ogrenme_araclari").select("talep_id, arac_turu, metadata").eq("arac_id", arac_id).maybeSingle();
+    const { data: arac } = await db.from("ogrenme_araclari").select("talep_id, arac_turu, kapak_yolu, transkript_yolu, metadata").eq("arac_id", arac_id).maybeSingle();
     if (!arac || arac.arac_turu !== "podcast") return NextResponse.json({ hata: "Podcast bulunamadı." }, { status: 404 });
     const rol = await rolCozucu(db, user.id);
     const yetki = await uretimAraciYetkisiniDogrula({ db, talepId: arac.talep_id, kullaniciId: user.id, rol });
     if (!yetki.ok) return NextResponse.json({ hata: yetki.hata }, { status: yetki.status });
 
     const oncekiMetadata = (arac.metadata as Record<string, unknown> | null) ?? {};
+    const bekleyenDestek = (oncekiMetadata.bekleyen_destek_yollari as Record<string, unknown> | null) ?? {};
+    const kapakIptalEdildi = Boolean(oncekiMetadata.kapak_iptal_edildi);
+    const kapakBekleniyor = Boolean(oncekiMetadata.kapak_bekleniyor);
+    const bekleyenKapakVar = Boolean(bekleyenDestek.kapak);
+    const kapakDogrulandi = Boolean(oncekiMetadata.kapak_dogrulandi);
+
+    if (!kapakIptalEdildi && (kapakBekleniyor || bekleyenKapakVar) && (!arac.kapak_yolu || !kapakDogrulandi)) {
+      return NextResponse.json({ hata: "Bekleyen yayın görseli yüklemesi tamamlanmadan podcast tamamlanamaz." }, { status: 422 });
+    }
+
     const kayitliSure = Number(oncekiMetadata.sure_saniye_beyani);
     const sureSaniye = body.sure_saniye === undefined ? kayitliSure : Number(body.sure_saniye);
     if (!Number.isSafeInteger(sureSaniye) || sureSaniye <= 0) {
@@ -55,11 +66,37 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!islemAnahtari || !uuidGecerliMi(islemAnahtari)) {
       return NextResponse.json({ hata: "Podcast doğrulama durumu bulunamadı." }, { status: 409 });
     }
+    const mevcutTranskript = (oncekiMetadata.transkript as Record<string, unknown> | null) ?? null;
+    let transkriptDurumu: PodcastTranskriptDurumu;
+    if (mevcutTranskript?.durum && typeof mevcutTranskript.durum === "string") {
+      transkriptDurumu = mevcutTranskript.durum as PodcastTranskriptDurumu;
+    } else if (arac.transkript_yolu || transkriptMetniDogrulandi) {
+      transkriptDurumu = "manuel_taslak";
+    } else {
+      transkriptDurumu = "yok";
+    }
+
+    const transkriptMeta: PodcastTranskriptMetadata = {
+      durum: transkriptDurumu,
+      kaynak: (mevcutTranskript?.kaynak as "manuel" | "ai" | null) ?? ((arac.transkript_yolu || transkriptMetniDogrulandi) ? "manuel" : null),
+      taslak_metin: transkriptMetni.length > 0 ? transkriptMetni : ((mevcutTranskript?.taslak_metin as string | null) ?? null),
+      onaylanan_metin: (mevcutTranskript?.onaylanan_metin as string | null) ?? null,
+      onaylayan_kullanici_id: (mevcutTranskript?.onaylayan_kullanici_id as string | null) ?? null,
+      onay_tarihi: (mevcutTranskript?.onay_tarihi as string | null) ?? null,
+      son_duzenleme_tarihi: (mevcutTranskript?.son_duzenleme_tarihi as string | null) ?? null,
+      surum: typeof mevcutTranskript?.surum === "number" ? mevcutTranskript.surum : 1,
+      bagli_ses_checksum: (mevcutTranskript?.bagli_ses_checksum as string | null) ?? null,
+      ai_girisim_id: (mevcutTranskript?.ai_girisim_id as string | null) ?? null,
+      kullanilan_model: (mevcutTranskript?.kullanilan_model as string | null) ?? null,
+      hata_kodu: (mevcutTranskript?.hata_kodu as string | null) ?? null,
+    };
+
     const metadata = {
       ...oncekiMetadata,
       sure_saniye_beyani: sureSaniye,
       transkript_metni: transkriptMetni,
       transkript_metni_dogrulandi: transkriptMetniDogrulandi,
+      transkript: transkriptMeta,
       podcast_dogrulama_islem_anahtari: islemAnahtari,
     };
     // Üretim zinciri açılmadan önce kurtarma için gereken metadata kalıcılaşır.

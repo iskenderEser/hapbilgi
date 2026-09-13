@@ -41,7 +41,9 @@ export async function GET() {
       .from("talepler")
       // Künye alanları ortak listeden; hazır video adresi bu listeye özel
       // (video adımının önizlemesi ve yükleme durumu ondan okunur).
+      // Taslak talepler aktif operasyon listesinde ASLA görünmez.
       .select(`${TALEP_ALANLARI}, hazir_video_url`)
+      .eq("taslak_mi", false)
       .order("created_at", { ascending: false });
 
     if (error) return hataYaniti("Talepler çekilemedi.", "talepler tablosu SELECT", error);
@@ -57,8 +59,14 @@ export async function GET() {
 
     const durumlar = new Map<string, ReturnType<typeof asamaCoz>>();
     for (const t of kunyeler) {
-      const z = zincirler.get(t.talep_id);
-      if (z) durumlar.set(t.talep_id, asamaCoz(t, z));
+      const z = zincirler.get(t.talep_id) ?? {
+        talep_id: t.talep_id,
+        senaryo_id: null, senaryo_iu_id: null, senaryo_durum: null, senaryo_durum_tarih: null,
+        video_id: null, video_iu_id: null, video_durum: null, video_durum_tarih: null,
+        soru_seti_id: null, soru_seti_iu_id: null, soru_seti_durum: null, soru_seti_durum_tarih: null,
+        yayin_durum: null, yayin_tarihi: null,
+      };
+      durumlar.set(t.talep_id, asamaCoz(t, z));
     }
 
     const talepIdler = kunyeler.map((t) => t.talep_id);

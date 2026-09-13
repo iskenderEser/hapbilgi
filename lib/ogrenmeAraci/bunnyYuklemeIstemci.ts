@@ -10,6 +10,7 @@ interface YuklemeBilgisi {
   arac_id: string;
   yukleme: { endpoint: string; headers: Record<string, string> };
   tamamlanan_parcalar?: Array<"ana" | "kapak" | "transkript">;
+  yukleme_girisimi_id?: string | null;
 }
 
 interface YuklemeMakbuzu {
@@ -157,20 +158,29 @@ export async function hazirPodcastYukle(girdi: {
   ses?: File;
   kapak?: File;
   transkript?: File;
+  transkriptMetni?: string;
+  transkriptOnaylandi?: boolean;
+  aiTranskriptIstendi?: boolean;
   tamamlananParcalar?: Array<"ana" | "kapak" | "transkript">;
+  kapakGerekli?: boolean;
   kaynak?: "hazir" | "iu";
   gorevId?: string;
   aracId?: string;
+  taslakModu?: boolean;
   kontrol?: OgrenmeAraciYuklemeKontrolu;
 }): Promise<string> {
   const kontrol = girdi.kontrol ?? {};
   const tamamlananParcalar = new Set(girdi.tamamlananParcalar ?? []);
   const sesGerekli = !tamamlananParcalar.has("ana");
-  const kapakGerekli = !tamamlananParcalar.has("kapak");
-  const transkriptGerekli = !tamamlananParcalar.has("transkript");
+  const kapakGerekli = Boolean(girdi.kapakGerekli && !tamamlananParcalar.has("kapak"));
+  const transkriptGerekli = Boolean(girdi.kaynak === "iu" && !tamamlananParcalar.has("transkript"));
   if (sesGerekli && !girdi.ses) throw new Error("Podcast ses dosyası zorunludur.");
-  if (kapakGerekli && !girdi.kapak) throw new Error("Podcast kapak görseli zorunludur.");
-  if (transkriptGerekli && !girdi.transkript) throw new Error("Podcast transkripti zorunludur.");
+  if (transkriptGerekli && !girdi.transkript) {
+    throw new Error("Podcast transkript dosyası zorunludur.");
+  }
+  if (kapakGerekli && !girdi.kapak) {
+    throw new Error("Yayın görselini seçin veya Görselsiz Devam Et seçeneğini kullanın.");
+  }
 
   if (girdi.ses) {
     const sesKarari = dosyaBeyaniDogrula({
@@ -191,9 +201,10 @@ export async function hazirPodcastYukle(girdi: {
     if (!transkriptKarari.ok) throw new Error(transkriptKarari.hata);
   }
 
-  const transkriptMetni = girdi.transkript?.name.toLowerCase().endsWith(".txt")
-    ? (await girdi.transkript.text()).replace(/\s+/g, " ").trim().slice(0, 100000)
+  const dosyaTranskriptMetni = girdi.transkript?.name.toLowerCase().endsWith(".txt")
+    ? (await girdi.transkript.text()).replace(/\r\n/g, "\n").replace(/[ \t]+/g, " ").trim().slice(0, 100000)
     : undefined;
+  const nihaiTranskriptMetni = girdi.transkriptMetni?.trim() || dosyaTranskriptMetni;
   let sureSaniye: number | undefined;
   let sesChecksum: string | undefined;
   if (girdi.ses) {
@@ -220,6 +231,7 @@ export async function hazirPodcastYukle(girdi: {
       dosya_boyutu: girdi.ses.size,
       checksum_sha256: sesChecksum,
       arac_id: girdi.aracId ?? null,
+      kapak_secildi: Boolean(girdi.kapak),
     }, kontrol.signal) as YuklemeBilgisi;
     aracId = baslangic.arac_id;
     anaYukleme = baslangic.yukleme;
@@ -246,6 +258,7 @@ export async function hazirPodcastYukle(girdi: {
 
   for (const [dosya_rolu, dosya] of [["kapak", girdi.kapak], ["transkript", girdi.transkript]] as const) {
     if (tamamlananParcalar.has(dosya_rolu)) continue;
+    if ((dosya_rolu === "kapak" || dosya_rolu === "transkript") && !dosya) continue;
     if (!dosya) throw new Error(`Podcast ${dosya_rolu} dosyası zorunludur.`);
     const checksum_sha256 = await dosyaSha256Parcali(dosya, {
       signal: kontrol.signal,
@@ -270,14 +283,47 @@ export async function hazirPodcastYukle(girdi: {
       checksum_sha256,
       yukleme_token: destek.yukleme_token,
       yukleme_makbuzu: destekMakbuzu.yukleme_makbuzu,
+      ...(dosya_rolu === "kapak" ? { yukleme_girisimi_id: destek.yukleme_girisimi_id } : {}),
     }, kontrol.signal);
   }
+
+  // Doğrudan yapıştırılan veya düzenlenen metin varsa sunucuya kaydet
+  if (!girdi.transkript && nihaiTranskriptMetni) {
+    await jsonIstek(`/api/ogrenme-araclari/${aracId}/transkript-yonet`, {
+      islem: "metin_kaydet",
+      metin: nihaiTranskriptMetni,
+    }, kontrol.signal);
+  }
+
+  // Kullanıcı açık onay vermişse onayla ve kaydet
+  if (girdi.transkriptOnaylandi && nihaiTranskriptMetni) {
+    await jsonIstek(`/api/ogrenme-araclari/${aracId}/transkript-yonet`, {
+      islem: "onayla",
+      nihai_metin: nihaiTranskriptMetni,
+    }, kontrol.signal);
+  }
+
+  // Kullanıcı AI ile transkript seçmişse, kalıcı talep ve araç oluştuktan sonra AI girişimini başlat
+  if (girdi.aiTranskriptIstendi) {
+    await jsonIstek(`/api/ogrenme-araclari/${aracId}/transkript-ai-baslat`, {}, kontrol.signal);
+  }
+
+  // Taslak modunda:
+  // - Ses, kapak ve varsa transkript Bunny Storage’a yüklenmiştir.
+  // - /yukleme-tamamla ile teknik doğrulama tamamlanmıştır.
+  // - /podcast-dogrula kesinlikle çağrılmaz; üretim, soru seti veya yayın zinciri başlamaz.
+  // - Fonksiyon mevcut arac_id değerini döndürür.
+  if (girdi.taslakModu) {
+    kontrol.onIlerleme?.({ asama: "dogrulama", yuzde: 100, dosyaRolu: "ana", deneme: 1 });
+    return aracId;
+  }
+
   kontrol.onIlerleme?.({ asama: "dogrulama", yuzde: 100, dosyaRolu: "ana", deneme: 1 });
   await jsonIstek(`/api/ogrenme-araclari/${aracId}/podcast-dogrula`, {
     gorev_id: girdi.gorevId ?? null,
     sure_saniye: sureSaniye,
-    transkript_metni: transkriptMetni,
-    transkript_metni_dogrulandi: transkriptMetni !== undefined && transkriptMetni.length > 0,
+    transkript_metni: nihaiTranskriptMetni,
+    transkript_metni_dogrulandi: Boolean(girdi.transkriptOnaylandi && nihaiTranskriptMetni && nihaiTranskriptMetni.length > 0),
     islem_anahtari: crypto.randomUUID(),
   }, kontrol.signal);
   return aracId;

@@ -19,6 +19,9 @@ type YarimYukleme = {
   baslik: string;
   embed_url?: string;
   tamamlanan_parcalar?: Array<"ana" | "kapak" | "transkript">;
+  kapak_yarim?: boolean;
+  transkript_yarim?: boolean;
+  kapak_yukleme_girisimi_id?: string | null;
   podcast_sure_hazir?: boolean;
   podcast_transkript_bilgisi_hazir?: boolean;
   created_at: string;
@@ -141,9 +144,13 @@ export default function YarimYuklemeBildirimi() {
     if (kayit.arac_turu === "podcast") {
       const tamamlanan = new Set(kayit.tamamlanan_parcalar ?? []);
       const sesGerekli = !tamamlanan.has("ana") || kayit.podcast_sure_hazir !== true;
-      const kapakGerekli = !tamamlanan.has("kapak");
-      const transkriptGerekli = !tamamlanan.has("transkript") || kayit.podcast_transkript_bilgisi_hazir !== true;
-      if ((sesGerekli && !dosyalar.ana) || (kapakGerekli && !dosyalar.kapak) || (transkriptGerekli && !dosyalar.transkript)) {
+      const transkriptGerekli = (!tamamlanan.has("transkript") && kayit.transkript_yarim === true)
+        || (tamamlanan.has("transkript") && kayit.podcast_transkript_bilgisi_hazir !== true);
+      const kapakGerekli = !tamamlanan.has("kapak") && kayit.kapak_yarim === true;
+      if (kapakGerekli && !dosyalar.kapak) {
+        throw new Error("Yayın görselini seçin veya Görselsiz Devam Et seçeneğini kullanın.");
+      }
+      if ((sesGerekli && !dosyalar.ana) || (transkriptGerekli && !dosyalar.transkript)) {
         throw new Error("Podcast için yalnız eksik veya doğrulama bilgisi gereken dosyaları seçin.");
       }
       await araclar.hazirPodcastYukle({
@@ -152,6 +159,7 @@ export default function YarimYuklemeBildirimi() {
         kapak: dosyalar.kapak,
         transkript: dosyalar.transkript,
         tamamlananParcalar: kayit.tamamlanan_parcalar,
+        kapakGerekli,
         kaynak: kayit.kaynak,
         gorevId: kayit.gorev_id ?? undefined,
         aracId: kayit.arac_id,
@@ -197,6 +205,42 @@ export default function YarimYuklemeBildirimi() {
     }
   };
 
+  const gorselsizDevamEt = async () => {
+    if (!aktif.arac_id) return;
+    setIslem(true); setYuzde(null);
+    try {
+      await jsonIstek("/api/ogrenme-araclari/yarim-yuklemeler", "POST", {
+        islem: "gorselsiz_devam",
+        arac_id: aktif.arac_id,
+        yukleme_girisimi_id: aktif.kapak_yukleme_girisimi_id ?? null,
+      });
+
+      if (!podcastSesGerekli && !podcastTranskriptGerekli) {
+        const araclar = await import("@/lib/ogrenmeAraci/bunnyYuklemeIstemci");
+        const kontrol = { onIlerleme: ({ yuzde: oran }: { yuzde: number }) => setYuzde(oran) };
+        await araclar.hazirPodcastYukle({
+          talepId: aktif.talep_id,
+          tamamlananParcalar: ["ana", ...(podcastTamamlanan.has("transkript") ? ["transkript" as const] : [])],
+          kaynak: aktif.kaynak,
+          gorevId: aktif.gorev_id ?? undefined,
+          aracId: aktif.arac_id,
+          kontrol,
+        });
+        setYuklemeler((liste) => liste.filter((x) => x.kimlik !== aktif.kimlik));
+        setDosyalar({});
+        basari("Podcast görselsiz olarak başarıyla tamamlandı.");
+      } else {
+        setYuklemeler((liste) => liste.map((x) => x.kimlik === aktif.kimlik ? { ...x, kapak_yarim: false } : x));
+        setDosyalar((d) => { const kopya = { ...d }; delete kopya.kapak; return kopya; });
+        basari("Yayın görseli iptal edildi; ses ve transkript ile devam edebilirsiniz.");
+      }
+    } catch (error) {
+      hata(error instanceof Error ? error.message : "Görselsiz devam edilemedi.");
+    } finally {
+      setIslem(false); setYuzde(null);
+    }
+  };
+
   const dosyaSecici = (rol: "ana" | "kapak" | "transkript", etiket: string, accept: string) => (
     <label className="flex flex-col gap-1 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-3 text-xs font-semibold text-gray-600">
       {etiket}
@@ -206,9 +250,10 @@ export default function YarimYuklemeBildirimi() {
 
   const podcastTamamlanan = new Set(aktif.tamamlanan_parcalar ?? []);
   const podcastSesGerekli = !podcastTamamlanan.has("ana") || aktif.podcast_sure_hazir !== true;
-  const podcastKapakGerekli = !podcastTamamlanan.has("kapak");
-  const podcastTranskriptGerekli = !podcastTamamlanan.has("transkript") || aktif.podcast_transkript_bilgisi_hazir !== true;
-  const podcastDosyaGerekli = podcastSesGerekli || podcastKapakGerekli || podcastTranskriptGerekli;
+  const podcastKapakGerekli = !podcastTamamlanan.has("kapak") && aktif.kapak_yarim === true;
+  const podcastTranskriptGerekli = (!podcastTamamlanan.has("transkript") && aktif.transkript_yarim === true)
+    || (podcastTamamlanan.has("transkript") && aktif.podcast_transkript_bilgisi_hazir !== true);
+  const podcastDosyaGerekli = podcastSesGerekli || podcastTranskriptGerekli || podcastKapakGerekli;
   const dosyaGerekli = aktif.tur === "storage"
     ? aktif.arac_turu !== "podcast" || podcastDosyaGerekli
     : aktif.durum !== "dogrulama_bekliyor";
@@ -225,7 +270,7 @@ export default function YarimYuklemeBildirimi() {
             {aktif.arac_turu === "video" && dosyaSecici("ana", "Video dosyası", "video/*")}
             {aktif.arac_turu === "podcast" && <>
               {podcastSesGerekli && dosyaSecici("ana", "Podcast ses dosyası", "audio/*")}
-              {podcastKapakGerekli && dosyaSecici("kapak", "Podcast kapak görseli", "image/jpeg,image/png,image/webp")}
+              {podcastKapakGerekli && dosyaSecici("kapak", "Yayın Görseli (isteğe bağlı)", "image/jpeg,image/png,image/webp")}
               {podcastTranskriptGerekli && dosyaSecici("transkript", "Podcast transkripti", ".pdf,.txt,.docx")}
             </>}
             {aktif.arac_turu === "gorsel" && dosyaSecici("ana", "Dijital broşür", ".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp")}
@@ -236,6 +281,9 @@ export default function YarimYuklemeBildirimi() {
 
           <div className="mt-5 flex justify-end gap-2">
             <button type="button" disabled={islem} onClick={() => void iptalEt()} className="rounded-lg border border-red-200 bg-white px-4 py-2.5 text-xs font-bold text-[#bc2d0d] disabled:opacity-50">İptal Et</button>
+            {aktif.arac_turu === "podcast" && podcastKapakGerekli && (
+              <button type="button" disabled={islem} onClick={() => void gorselsizDevamEt()} className="rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50">Görselsiz Devam Et</button>
+            )}
             <button type="button" disabled={islem} onClick={() => void devamEt()} className="rounded-lg border-0 bg-[#56aeff] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50">{islem ? "İşleniyor…" : "Devam Et"}</button>
           </div>
         </section>

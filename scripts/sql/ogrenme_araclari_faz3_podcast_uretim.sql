@@ -88,10 +88,23 @@ BEGIN
   IF NOT FOUND OR v_arac.arac_turu <> 'podcast' THEN RAISE EXCEPTION 'Podcast bulunamadı.' USING ERRCODE = 'P0002'; END IF;
   SELECT * INTO v_talep FROM public.talepler WHERE talep_id = v_arac.talep_id FOR UPDATE;
   IF v_talep.ogrenme_araci_turu <> 'podcast' THEN RAISE EXCEPTION 'Talep podcast türünde değil.' USING ERRCODE = '23514'; END IF;
-  IF v_arac.dosya_yolu IS NULL OR v_arac.kapak_yolu IS NULL OR v_arac.transkript_yolu IS NULL
-     OR COALESCE((v_arac.metadata->>'kapak_dogrulandi')::boolean, false) IS NOT TRUE
+  IF v_arac.dosya_yolu IS NULL OR v_arac.transkript_yolu IS NULL
      OR COALESCE((v_arac.metadata->>'transkript_dogrulandi')::boolean, false) IS NOT TRUE THEN
-    RAISE EXCEPTION 'Ses, kapak ve transkript doğrulanmadan podcast tamamlanamaz.' USING ERRCODE = '23514';
+    RAISE EXCEPTION 'Ses ve transkript doğrulanmadan podcast tamamlanamaz.' USING ERRCODE = '23514';
+  END IF;
+
+  -- Bekleyen ve henüz tamamlanmamış görsel yüklemesi varsa podcasti tamamlamayı reddet
+  IF COALESCE((v_arac.metadata->>'kapak_iptal_edildi')::boolean, false) IS NOT TRUE THEN
+    IF (COALESCE((v_arac.metadata->>'kapak_bekleniyor')::boolean, false) IS TRUE
+        OR (v_arac.metadata->'bekleyen_destek_yollari'->>'kapak') IS NOT NULL)
+       AND (v_arac.kapak_yolu IS NULL OR COALESCE((v_arac.metadata->>'kapak_dogrulandi')::boolean, false) IS NOT TRUE) THEN
+      RAISE EXCEPTION 'Bekleyen yayın görseli yüklemesi tamamlanmadan podcast tamamlanamaz.' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+
+  -- Yüklenmiş görselin doğrulanmış olması kuralı
+  IF v_arac.kapak_yolu IS NOT NULL AND COALESCE((v_arac.metadata->>'kapak_dogrulandi')::boolean, false) IS NOT TRUE THEN
+    RAISE EXCEPTION 'Yüklenen yayın görseli doğrulanmadan podcast tamamlanamaz.' USING ERRCODE = '23514';
   END IF;
 
   UPDATE public.ogrenme_araclari

@@ -146,9 +146,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ hata: "Yüklenen dosyanın özeti yükleme beyanıyla eşleşmiyor." }, { status: 422 });
     }
 
+    let guncelTranskript = (metadata.transkript as Record<string, unknown> | undefined);
+    let transkriptOnayli = metadata.transkript_dogrulandi === true;
+    if (arac.arac_turu === "podcast" && guncelTranskript) {
+      if (guncelTranskript.bagli_ses_checksum && guncelTranskript.bagli_ses_checksum !== beyanChecksum) {
+        guncelTranskript = {
+          ...guncelTranskript,
+          durum: "manuel_taslak",
+          onaylanan_metin: null,
+          onaylayan_kullanici_id: null,
+          onay_tarihi: null,
+          bagli_ses_checksum: beyanChecksum,
+          son_duzenleme_tarihi: new Date().toISOString(),
+        };
+        transkriptOnayli = false;
+      }
+    }
+
     const dogrulamaMetadata = {
       ...metadata,
-      ...(arac.arac_turu === "podcast" ? { sure_saniye_beyani: sureSaniye } : {}),
+      ...(arac.arac_turu === "podcast" ? {
+        sure_saniye_beyani: sureSaniye,
+        transkript: guncelTranskript,
+        transkript_dogrulandi: transkriptOnayli,
+        transkript_metni_dogrulandi: transkriptOnayli,
+      } : {}),
       depolama_dogrulamasi: {
         dosya_imzasi: { dogrulandi: true, kaynak: "storage_range" },
         dosya_boyutu: { dogrulandi: true, kaynak: "storage_content_range" },

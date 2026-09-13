@@ -10,6 +10,8 @@ export interface TalepOzet {
   soruAdedi: number;
   secenekSayisi: number;
   videoBasiSoru: number;
+  videoBasiEtiketi?: string;
+  aracAdi?: string;
 }
 
 interface TalepOnayModalProps {
@@ -60,7 +62,10 @@ export function TalepOnayModal({ acik, sonrakiAdim, ozet, onEvet, onHayir }: Tal
           <OzetKarti baslik="4. Sorular ve Seçenekler">
             <p><strong>Toplam soru:</strong> {ozet.soruAdedi}</p>
             <p><strong>Seçenek sayısı:</strong> {ozet.secenekSayisi}</p>
-            <p><strong>Video başına soru:</strong> {ozet.videoBasiSoru}</p>
+            <p>
+              <strong>{ozet.videoBasiEtiketi ?? (ozet.aracAdi ? `${ozet.aracAdi} başına soru:` : "Video başına soru:")}</strong>{" "}
+              {ozet.videoBasiSoru}
+            </p>
           </OzetKarti>
         </div>
 

@@ -92,8 +92,8 @@ export async function POST(request: NextRequest) {
       if (!ayniKayit || (!yarimYukleme && !revizyon)) {
         return NextResponse.json({ hata: "Öğrenme aracı devam veya revizyon yüklemesi geçersiz." }, { status: 409 });
       }
-      if (yarimYukleme) {
-        const oncekiBeyan = ((mevcut?.metadata as { yukleme_beyani?: Record<string, unknown> } | null)?.yukleme_beyani ?? {});
+      const oncekiBeyan = ((mevcut?.metadata as { yukleme_beyani?: Record<string, unknown> } | null)?.yukleme_beyani ?? {});
+      if (yarimYukleme && oncekiBeyan.dosya_boyutu !== undefined) {
         if (
           oncekiBeyan.dosya_boyutu !== dosya_boyutu
           || String(oncekiBeyan.mime_type ?? "").toLowerCase() !== mime_type.toLowerCase()
@@ -168,6 +168,14 @@ export async function POST(request: NextRequest) {
     }
     const kayit = satirlar?.[0];
     if (!kayit) return NextResponse.json({ hata: "Yükleme kaydı oluşturuldu ancak sonuç alınamadı." }, { status: 500 });
+
+    if (arac_turu === "podcast" && typeof body.kapak_secildi === "boolean") {
+      const { data: mData } = await db.from("ogrenme_araclari").select("metadata").eq("arac_id", kayit.arac_id).maybeSingle();
+      const meta = (mData?.metadata as Record<string, unknown> | null) ?? {};
+      await db.from("ogrenme_araclari").update({
+        metadata: { ...meta, kapak_bekleniyor: body.kapak_secildi },
+      }).eq("arac_id", kayit.arac_id);
+    }
 
     return NextResponse.json({
       arac_id: kayit.arac_id,

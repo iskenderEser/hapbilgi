@@ -4,7 +4,7 @@ BEGIN;
 
 CREATE TABLE IF NOT EXISTS public.ogrenme_araci_depolama_temizleme_kuyrugu (
   temizleme_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  arac_id uuid NOT NULL REFERENCES public.ogrenme_araclari(arac_id) ON DELETE CASCADE,
+  arac_id uuid REFERENCES public.ogrenme_araclari(arac_id) ON DELETE SET NULL,
   dosya_yolu text NOT NULL,
   dosya_rolu text,
   sebep text NOT NULL,
@@ -16,6 +16,38 @@ CREATE TABLE IF NOT EXISTS public.ogrenme_araci_depolama_temizleme_kuyrugu (
   updated_at timestamptz NOT NULL DEFAULT now(),
   tamamlanma_tarihi timestamptz
 );
+
+ALTER TABLE public.ogrenme_araci_depolama_temizleme_kuyrugu
+  ALTER COLUMN arac_id DROP NOT NULL;
+
+DO $$
+DECLARE
+  v_con text;
+BEGIN
+  FOR v_con IN
+    SELECT conname
+    FROM pg_constraint
+    WHERE conrelid = 'public.ogrenme_araci_depolama_temizleme_kuyrugu'::regclass
+      AND contype = 'f'
+      AND confrelid = 'public.ogrenme_araclari'::regclass
+      AND confdeltype <> 'n'
+  LOOP
+    EXECUTE 'ALTER TABLE public.ogrenme_araci_depolama_temizleme_kuyrugu DROP CONSTRAINT ' || quote_ident(v_con);
+  END LOOP;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.ogrenme_araci_depolama_temizleme_kuyrugu'::regclass
+      AND contype = 'f'
+      AND confrelid = 'public.ogrenme_araclari'::regclass
+  ) THEN
+    ALTER TABLE public.ogrenme_araci_depolama_temizleme_kuyrugu
+      ADD CONSTRAINT fk_ogrenme_araci_depolama_temizleme_arac
+      FOREIGN KEY (arac_id)
+      REFERENCES public.ogrenme_araclari(arac_id)
+      ON DELETE SET NULL;
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_ogrenme_araci_depolama_temizleme_bekleyen
   ON public.ogrenme_araci_depolama_temizleme_kuyrugu (created_at)

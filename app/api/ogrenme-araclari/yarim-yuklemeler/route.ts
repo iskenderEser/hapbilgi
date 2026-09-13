@@ -5,6 +5,7 @@ import { bunnyVideoDurumu, bunnyVideoSil } from "@/lib/video/bunnyYukleme";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { IU_ROLU, URETICI_ROLLER } from "@/lib/utils/roller";
 import { sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
+import { uuidGecerliMi } from "@/lib/uretim/rpc";
 
 const YARIM_DURUMLAR = ["yukleme_bekliyor", "dogrulama_bekliyor"];
 
@@ -63,7 +64,7 @@ export async function GET() {
     if (gercekAdaylar.length) {
       const { data } = await db
         .from("ogrenme_araclari")
-        .select("arac_id, talep_id, iu_id, arac_turu, kaynak, dosya_yolu, kapak_yolu, transkript_yolu, metadata, created_at, talepler!inner(uretici_id, urun_adi, talep_no)")
+        .select("arac_id, talep_id, iu_id, arac_turu, kaynak, dosya_yolu, kapak_yolu, transkript_yolu, metadata, created_at, taslak_mi, talepler!inner(uretici_id, urun_adi, talep_no, taslak_mi)")
         .in("arac_id", gercekAdaylar);
       araclar = (data ?? []) as Array<Record<string, unknown>>;
     }
@@ -77,6 +78,10 @@ export async function GET() {
     const storage = araclar.flatMap((a) => {
       const talepHam = a.talepler as Record<string, unknown> | Array<Record<string, unknown>> | null;
       const talep = Array.isArray(talepHam) ? talepHam[0] : talepHam;
+      // Taslak talepler (talepler.taslak_mi = true veya ogrenme_araclari.taslak_mi = true)
+      // global "Yarım kalan yükleme" penceresinden çıkarılır. Bu taslakların kurtarılması
+      // mevcut podcast taslak restorasyonuyla yapılır.
+      if (talep?.taslak_mi === true || a.taslak_mi === true) return [];
       const kaynak = String(a.kaynak);
       const sahip = (kaynak === "hazir" && talep?.uretici_id === user.id)
         || (kaynak === "iu" && a.iu_id === user.id);
@@ -94,6 +99,20 @@ export async function GET() {
           if (a.transkript_yolu && metadata.transkript_dogrulandi === true) tamamlananParcalar.push("transkript");
         }
       }
+      const bekleyenDestek = (metadata.bekleyen_destek_yollari as Record<string, unknown> | null) ?? {};
+      const kapakTamamlandi = tamamlananParcalar.includes("kapak");
+      const kapakYarim = a.arac_turu === "podcast" && !kapakTamamlandi && (
+        metadata.kapak_bekleniyor === true
+        || Boolean(bekleyenDestek.kapak)
+        || (Boolean(a.kapak_yolu) && metadata.kapak_dogrulandi !== true)
+      ) && metadata.kapak_iptal_edildi !== true;
+
+      const transkriptTamamlandi = tamamlananParcalar.includes("transkript");
+      const transkriptYarim = a.arac_turu === "podcast" && !transkriptTamamlandi && (
+        Boolean(bekleyenDestek.transkript)
+        || (Boolean(a.transkript_yolu) && metadata.transkript_dogrulandi !== true)
+      );
+
       return [{
         tur: "storage" as const,
         kimlik: String(a.arac_id),
@@ -106,9 +125,16 @@ export async function GET() {
         dosya_adi: String(beyan.dosya_adi ?? "Dosya"),
         baslik: String(talep?.urun_adi ?? `Talep #${talep?.talep_no ?? ""}`),
         tamamlanan_parcalar: tamamlananParcalar,
+        kapak_yarim: kapakYarim,
+        transkript_yarim: transkriptYarim,
+        kapak_yukleme_girisimi_id: typeof (metadata.kapak_yukleme_girisimi as Record<string, unknown> | undefined)?.id === "string"
+          ? String((metadata.kapak_yukleme_girisimi as Record<string, unknown>).id)
+          : null,
         podcast_sure_hazir: Number.isSafeInteger(metadata.sure_saniye_beyani)
           && Number(metadata.sure_saniye_beyani) > 0,
-        podcast_transkript_bilgisi_hazir: Object.hasOwn(metadata, "transkript_metni_dogrulandi"),
+        podcast_transkript_bilgisi_hazir: transkriptTamamlandi
+          ? Object.hasOwn(metadata, "transkript_metni_dogrulandi")
+          : !transkriptYarim,
         created_at: son?.created_at ?? String(a.created_at),
       }];
     });
@@ -201,6 +227,31 @@ export async function POST(request: NextRequest) {
     if (!kimlik) return yetkiHatasi();
     const { db, user } = kimlik;
     const body = await request.json();
+    if (body.islem === "gorselsiz_devam") {
+      if (!uuidGecerliMi(body.arac_id)) {
+        return validasyonHatasi("arac_id zorunludur.", ["arac_id"]);
+      }
+      const girisimId = typeof body.yukleme_girisimi_id === "string" ? body.yukleme_girisimi_id : null;
+      if (girisimId && !uuidGecerliMi(girisimId)) {
+        return validasyonHatasi("Yayın görseli yükleme girişimi geçersiz.", ["yukleme_girisimi_id"]);
+      }
+      const { data: iptalSonucu, error: iptalHatasi } = await db.rpc("podcast_kapak_yukleme_iptal_atomik", {
+        p_arac_id: body.arac_id,
+        p_kullanici_id: user.id,
+        p_girisim_id: girisimId,
+      });
+      if (iptalHatasi) {
+        const durum = iptalHatasi.code === "42501" ? 403 : iptalHatasi.code === "23514" ? 409 : 500;
+        return NextResponse.json({ hata: "Görselsiz devam kararı kaydedilemedi." }, { status: durum });
+      }
+      const sonuc = iptalSonucu as { temizlenecek_yollar?: unknown } | null;
+      const silinecekYollar = Array.isArray(sonuc?.temizlenecek_yollar)
+        ? sonuc.temizlenecek_yollar.filter((yol): yol is string => typeof yol === "string" && yol.length > 0)
+        : [];
+      await Promise.all(silinecekYollar.map((yol) => bunnyStorageNesneSil(yol)));
+      return NextResponse.json({ basari: true, mesaj: "Yayın görseli yüklemesinden vazgeçildi; podcast görselsiz devam edecek." });
+    }
+
     if (typeof body.yukleme_id !== "string" || !["aktarim_tamamlandi", "baglandi"].includes(body.islem)) {
       return validasyonHatasi("Video yükleme işlemi geçersiz.", ["yukleme_id", "islem"]);
     }

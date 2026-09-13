@@ -52,12 +52,14 @@ test("PM-03/C Podcast devamında tamamlanmış ses, kapak ve transkript yeniden 
   assert.match(istemci, /tamamlananParcalar\.has\(dosya_rolu\)\) continue/);
   assert.match(ortakApi, /tamamlanan_parcalar: tamamlananParcalar[\s\S]*podcast_sure_hazir[\s\S]*podcast_transkript_bilgisi_hazir/);
   assert.match(modal, /podcastSesGerekli && dosyaSecici\("ana", "Podcast ses dosyası"/);
-  assert.match(modal, /podcastKapakGerekli && dosyaSecici\("kapak", "Podcast kapak görseli"/);
+  assert.match(modal, /podcastKapakGerekli && dosyaSecici\("kapak", "Yayın Görseli \(isteğe bağlı\)"/);
   assert.match(modal, /podcastTranskriptGerekli && dosyaSecici\("transkript", "Podcast transkripti"/);
   assert.doesNotMatch(modal, /if \(!dosyalar\.kapak \|\| !dosyalar\.transkript\)/);
   assert.match(modal, /tamamlananParcalar: kayit\.tamamlanan_parcalar/);
   assert.match(storageTamamla, /sure_saniye_beyani: sureSaniye/);
-  assert.match(podcastDestekTamamla, /bunnyStorageMetinOku\(body\.dosya_yolu\)[\s\S]*transkript_metni_kaynagi: "storage"/);
+  assert.match(podcastDestekTamamla, /bunnyStorageNesneIndir\(body\.dosya_yolu\)[\s\S]*transkriptDosyasindanMetinCikar\(karar\.uzanti, dosyaBaytlari\)/);
+  assert.match(podcastDestekTamamla, /durum:\s*"manuel_taslak"/);
+  assert.match(podcastDestekTamamla, /onaylanan_metin:\s*null/);
   assert.match(podcastDogrula, /kayitliSure[\s\S]*kayitliTranskriptBilgisi[\s\S]*podcast_dogrulama_islem_anahtari[\s\S]*p_islem_anahtari: islemAnahtari/);
   assert.match(storageBaslat, /delete yenilenenMetadata\.podcast_dogrulama_islem_anahtari/);
 });
@@ -68,4 +70,18 @@ test("PM-03/D Dijital Broşür aynı arac_id ile tamamlanır ve ortak iptal temi
   assert.match(modal, /hazirGorselYukle\(\{[\s\S]*aracId: kayit\.arac_id/);
   assert.match(istemci, /hazirGorselYukle[\s\S]*tamamlanan_parcalar\?\.includes\("ana"\)/);
   assert.match(ortakApi, /arac\.dosya_yolu, arac\.kapak_yolu, arac\.transkript_yolu[\s\S]*bunnyStorageNesneSil/);
+});
+
+test("Aşama 2 Doğrulamaları: Tek transkript alanı, İÜ engeli ve üretici V2/V4 transkript-yonet yetkisi", () => {
+  const talepAlanlari = oku("app/(panel)/talepler/_components/PodcastTalepAlanlari.tsx");
+  // Formda eski DosyaAlani Transkript bulunmaz, yalnızca tek transkript alanı (PodcastTranskriptEditoru) bulunur
+  assert.doesNotMatch(talepAlanlari, /<DosyaAlani etiket="Transkript"/);
+  assert.match(talepAlanlari, /<PodcastTranskriptEditoru/);
+
+  const transkriptYonet = oku("app/api/ogrenme-araclari/[arac_id]/transkript-yonet/route.ts");
+  // İÜ rolü engellenir, yalnızca üretici rolleri kabul edilir
+  assert.match(transkriptYonet, /if \(!URETICI_ROLLER\.includes\(rol\)\) return rolHatasi/);
+  // Kaynak hazir ve V2/V4 talep şartı aranır
+  assert.match(transkriptYonet, /if \(arac\.kaynak !== "hazir"\)/);
+  assert.match(transkriptYonet, /talep\.ogrenme_araci_turu !== "podcast" \|\| talep\.hazir_video !== true/);
 });

@@ -319,18 +319,36 @@ export function YeniTalepFormV2({ formu }: Props) {
 
         {formu.ogrenmeAraciTuru === "podcast" && (
           <PodcastTalepAlanlari
-            anlatimTuru={formu.podcastAnlatimTuru}
-            onAnlatimTuruDegis={formu.setPodcastAnlatimTuru}
             hazir={formu.hazirVideo}
             ses={formu.bekleyenPodcast}
             kapak={formu.bekleyenPodcastKapak}
             transkript={formu.bekleyenPodcastTranskript}
+            sesYuklendi={formu.podcastSesYuklendi}
+            sesDosyaAdi={formu.podcastYuklenenDosyaAdi}
+            kapakYuklendi={formu.podcastKapakYuklendi}
+            kapakDosyaAdi={formu.podcastYuklenenKapakAdi}
+            transkriptMetni={formu.podcastTranskriptMetni}
+            transkriptOnaylandi={formu.podcastTranskriptOnaylandi}
+            aiIstendi={formu.podcastAiTranskriptIstendi}
+            aracId={formu.podcastAracId ?? undefined}
+            islemDurumu={formu.podcastAiAsamasi}
+            yuklemeYuzdesi={formu.podcastAiYuklemeYuzdesi}
+            onAiBaslat={formu.handlePodcastAiTranskriptBaslat}
+            aiYukleniyor={formu.podcastAiYukleniyor}
+            aiHatasi={formu.podcastAiHatasi}
+            onAiIstendiDegisti={formu.handlePodcastAiTranskriptIstendiDegisti}
             onSesSec={formu.handlePodcastSec}
             onKapakSec={formu.handlePodcastKapakSec}
             onTranskriptSec={formu.handlePodcastTranskriptSec}
             onSesSil={formu.handleBekleyenPodcastSil}
             onKapakSil={formu.handleBekleyenPodcastKapakSil}
             onTranskriptSil={formu.handleBekleyenPodcastTranskriptSil}
+            onTranskriptMetinDegisti={formu.handlePodcastTranskriptMetinDegisti}
+            onTranskriptOnayla={formu.handlePodcastTranskriptOnayla}
+            onTranskriptIptal={formu.handlePodcastTranskriptIptal}
+            onSunucuOnayla={formu.handlePodcastTranskriptSunucuOnayla}
+            onSunucuIptal={formu.handlePodcastTranskriptSunucuIptal}
+            onTranskriptDosyaSecildi={formu.handlePodcastTranskriptDosyaSecildi}
           />
         )}
         {formu.ogrenmeAraciTuru === "gorsel" && <GorselTalepAlanlari hazir={formu.hazirVideo} gorsel={formu.bekleyenGorsel} onSec={formu.handleGorselSec} onSil={formu.handleBekleyenGorselSil} />}
@@ -361,6 +379,7 @@ export function YeniTalepFormV2({ formu }: Props) {
               onSec={formu.handleVideoSec}
               onSil={formu.handleBekleyenVideoSil}
               yuklemeYuzdesi={formu.videoYuklemeYuzdesi}
+              ogrenmeAraciTuru={formu.ogrenmeAraciTuru}
             />
           )}
           {formu.hazirSoruSeti && (
@@ -385,26 +404,33 @@ export function YeniTalepFormV2({ formu }: Props) {
               onSil={formu.handleBekleyenDosyaSil}
             />
           </div>
-          <button
-            type="submit"
-            disabled={!formAktif || formu.formLoading || formu.dosyaYukleniyor}
-            className="min-w-[150px] cursor-pointer whitespace-nowrap rounded-xl border-none px-5 py-3 text-xs font-extrabold text-white shadow-[0_8px_18px_rgba(37,131,226,0.2)] transition-transform enabled:hover:-translate-y-0.5 disabled:cursor-not-allowed"
-            style={{
-              background: "#56aeff",
-              opacity: !formAktif || formu.formLoading || formu.dosyaYukleniyor ? 0.6 : 1,
-              fontFamily: "'Nunito', sans-serif",
-            }}
-          >
-            {formu.dosyaYukleniyor
-              ? formu.hazirVideo
+          <div className="flex flex-col items-end gap-1.5">
+            {!formu.gonderButonuEtkin && formu.gonderButonuPasifNedeni && (
+              <span className="max-w-xs rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-right text-xs font-semibold text-amber-800">
+                {formu.gonderButonuPasifNedeni}
+              </span>
+            )}
+            <button
+              type="submit"
+              disabled={!formAktif || formu.formLoading || formu.dosyaYukleniyor || !formu.gonderButonuEtkin}
+              className="min-w-[150px] cursor-pointer whitespace-nowrap rounded-xl border-none px-5 py-3 text-xs font-extrabold text-white shadow-[0_8px_18px_rgba(37,131,226,0.2)] transition-transform enabled:hover:-translate-y-0.5 disabled:cursor-not-allowed"
+              style={{
+                background: "#56aeff",
+                opacity: !formAktif || formu.formLoading || formu.dosyaYukleniyor || !formu.gonderButonuEtkin ? 0.6 : 1,
+                fontFamily: "'Nunito', sans-serif",
+              }}
+            >
+              {formu.dosyaYukleniyor
+                ? formu.hazirVideo
+                  ? "Gönderiliyor..."
+                  : "Dosyalar yükleniyor..."
+                : formu.formLoading
                 ? "Gönderiliyor..."
-                : "Dosyalar yükleniyor..."
-              : formu.formLoading
-              ? "Gönderiliyor..."
-              : formu.hazirVideo || formu.hazirSoruSeti
-              ? "Gönderiniz"
-              : "Talep Oluştur"}
-          </button>
+                : formu.hazirVideo || formu.hazirSoruSeti
+                ? "Gönderiniz"
+                : "Talep Oluştur"}
+            </button>
+          </div>
         </div>
       </form>
 
@@ -424,6 +450,8 @@ export function YeniTalepFormV2({ formu }: Props) {
           soruAdedi: formu.soruSetiBuyuklugu,
           secenekSayisi: formu.secenekSayisi,
           videoBasiSoru: formu.videoBasiSoruSayisi,
+          aracAdi: OGRENME_ARACI_SECENEKLERI[formu.ogrenmeAraciTuru].etiket,
+          videoBasiEtiketi: `${OGRENME_ARACI_SECENEKLERI[formu.ogrenmeAraciTuru].etiket} başına soru:`,
         }}
         onEvet={formu.handleOnayEvet}
         onHayir={formu.handleOnayHayir}

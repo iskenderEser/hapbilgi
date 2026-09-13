@@ -96,6 +96,7 @@ export const PODCAST_KAPAK_FORMATLARI = ".png,.jpg,.jpeg,image/png,image/jpeg";
 export const TRANSKRIPT_FORMATLARI = ".txt,.docx,.pdf,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 export const VIDEO_FORMATLAR = ".mp4,.mov,.avi,.mkv,.webm";
 export const EK_DOSYA_FORMATLAR = ".pdf,.docx,.pptx,.xlsx,.txt,.png,.jpg,.jpeg";
+export const FLIP_PDF_FORMATLAR = ".pdf,application/pdf";
 export const SORU_SETI_BUYUKLUGU_SECENEKLERI = [10, 15, 20, 25];
 
 // Tab altındaki kısa açıklama metinleri.
@@ -175,7 +176,8 @@ export const dosyaTipiRenk = (dosya_adi: string): { etiket: string; bg: string; 
   if (["pptx", "ppt"].includes(ext)) return { etiket: "PPT", bg: "#fff7ed", renk: "#c2410c" };
   if (["xlsx", "xls"].includes(ext)) return { etiket: "XLS", bg: "#f0fdf4", renk: "#15803d" };
   if (ext === "txt") return { etiket: "TXT", bg: "#f9fafb", renk: "#374151" };
-  if (["png", "jpg", "jpeg"].includes(ext)) return { etiket: "IMG", bg: "#fdf4ff", renk: "#7e22ce" };
+  if (["png", "jpg", "jpeg", "webp"].includes(ext)) return { etiket: "IMG", bg: "#fdf4ff", renk: "#7e22ce" };
   if (["mp4", "mov", "webm", "avi", "mkv"].includes(ext)) return { etiket: "VID", bg: "#f0fdf4", renk: "#16a34a" };
+  if (["mp3", "m4a", "aac"].includes(ext)) return { etiket: "POD", bg: "#f5f3ff", renk: "#6d28d9" };
   return { etiket: ext.toUpperCase(), bg: "#f9fafb", renk: "#737373" };
 };

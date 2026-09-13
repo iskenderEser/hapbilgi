@@ -14,6 +14,31 @@ export type OgrenmeAraciDurumu =
   | "reddedildi"
   | "iptal";
 
+export type PodcastTranskriptDurumu =
+  | "yok"
+  | "manuel_taslak"
+  | "ai_bekliyor"
+  | "ai_isleniyor"
+  | "ai_taslak"
+  | "onaylandi"
+  | "iptal"
+  | "hata";
+
+export interface PodcastTranskriptMetadata {
+  durum: PodcastTranskriptDurumu;
+  kaynak?: "dosya" | "manuel" | "ai" | null;
+  taslak_metin?: string | null;
+  onaylanan_metin?: string | null;
+  onaylayan_kullanici_id?: string | null;
+  onay_tarihi?: string | null;
+  son_duzenleme_tarihi?: string | null;
+  surum?: number;
+  bagli_ses_checksum?: string | null;
+  ai_girisim_id?: string | null;
+  kullanilan_model?: string | null;
+  hata_kodu?: string | null;
+}
+
 export interface OgrenmeAraciMetadata {
   mimeType: string | null;
   dosyaBoyutu: number | null;
@@ -22,6 +47,7 @@ export interface OgrenmeAraciMetadata {
   sayfaSayisi: number | null;
   genislik: number | null;
   yukseklik: number | null;
+  transkript?: PodcastTranskriptMetadata;
   ek: Record<string, unknown>;
 }
 
