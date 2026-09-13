@@ -19,6 +19,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { IcerikTuru } from "./icerikTuru";
 import { gorunenTurler, kapsamGenisMi } from "./gorunurluk";
 import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
+import { yayinThumbnailUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
 
 export interface AnaSayfaVideo {
   yayin_id: string;
@@ -66,7 +67,7 @@ export async function getAnaSayfaVideolari(
 
   let query = adminSupabase
     .from("v_yayin_detay")
-    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, icerik_turu, takim_id, talep_no, firma_adi, arac_id, arac_turu")
+    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, arac_kapak_yolu, video_puani, yayin_tarihi, icerik_turu, takim_id, talep_no, firma_adi, arac_id, arac_turu")
     .eq("durum", "yayinda")
     .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))
     .in("icerik_turu", turler)
@@ -114,6 +115,7 @@ export async function getAnaSayfaVideolari(
     teknik_adi?: string | null;
     video_url?: string | null;
     thumbnail_url?: string | null;
+    arac_kapak_yolu?: string | null;
     video_puani?: number | null;
     yayin_tarihi: string;
     icerik_turu?: string | null;
@@ -128,7 +130,7 @@ export async function getAnaSayfaVideolari(
     urun_adi: v.urun_adi ?? "-",
     teknik_adi: v.teknik_adi ?? "-",
     video_url: v.video_url ?? null,
-    thumbnail_url: v.thumbnail_url ?? null,
+    thumbnail_url: yayinThumbnailUrlCoz(v),
     video_puani: v.video_puani ?? null,
     yayin_tarihi: v.yayin_tarihi,
     icerik_turu: (v.icerik_turu as IcerikTuru) ?? null,

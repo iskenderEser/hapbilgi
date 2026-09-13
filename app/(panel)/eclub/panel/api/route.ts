@@ -15,6 +15,7 @@ import { eclubOneriDurumu } from "@/lib/eclub/izlemeKurali";
 import { eclubStoreFirmaBakiye } from "@/lib/eclub/store/eclubStoreBakiye";
 import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
 import { eclubKisiErisimi } from "@/lib/eclub/kisiErisim";
+import { yayinThumbnailUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
 
 export async function GET() {
   try {
@@ -75,7 +76,7 @@ export async function GET() {
     // Yayın detaylarını öneri + tarihsel puan kapsamı için toplu çek.
     interface YayinDetay {
       urun_adi: string | null; teknik_adi: string | null;
-      video_url: string | null; thumbnail_url: string | null; icerik_turu: string | null;
+      video_url: string | null; thumbnail_url: string | null; arac_kapak_yolu?: string | null; icerik_turu: string | null;
       talep_no: number | null; firma_adi: string | null;
       firma_id: string | null; hedef_roller: HedefRoller; durum: string | null;
       video_puani: number | null; soru_puani: number | null; video_basi_soru_sayisi: number | null;
@@ -90,7 +91,7 @@ export async function GET() {
     if (yayinIds.length > 0) {
       const { data: yayinlar, error: yayinError } = await adminSupabase
         .from("v_yayin_detay")
-        .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, icerik_turu, talep_no, firma_id, firma_adi, hedef_roller, durum, video_puani, soru_puani, video_basi_soru_sayisi, arac_id, arac_turu")
+        .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, arac_kapak_yolu, icerik_turu, talep_no, firma_id, firma_adi, hedef_roller, durum, video_puani, soru_puani, video_basi_soru_sayisi, arac_id, arac_turu")
         .in("yayin_id", yayinIds)
         .in("firma_id", kisiErisimi.firmalar.filter((firma) => firma.aktif !== false && firma.eclub_aktif === true).map((firma) => firma.firma_id))
         .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))
@@ -101,7 +102,7 @@ export async function GET() {
         const yy = y as { yayin_id: string } & YayinDetay;
         yayinMap.set(yy.yayin_id, {
           urun_adi: yy.urun_adi, teknik_adi: yy.teknik_adi,
-          video_url: yy.video_url, thumbnail_url: yy.thumbnail_url, icerik_turu: yy.icerik_turu,
+          video_url: yy.video_url, thumbnail_url: yayinThumbnailUrlCoz(yy), icerik_turu: yy.icerik_turu,
           talep_no: yy.talep_no, firma_adi: yy.firma_adi,
           firma_id: yy.firma_id, hedef_roller: hedefRolleriOku(yy), durum: yy.durum,
           video_puani: yy.video_puani, soru_puani: yy.soru_puani,

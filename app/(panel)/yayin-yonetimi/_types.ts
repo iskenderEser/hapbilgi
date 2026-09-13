@@ -15,6 +15,7 @@ export interface Bekleyen {
   soru_seti_durum_id: string;
   soru_seti_id: string;
   video_durum_id: string;
+  arac_id?: string | null;
   arac_durum_id?: string | null;
   arac_turu?: "video" | "podcast" | "gorsel" | "flip_pdf";
   sorular: Soru[];
@@ -39,6 +40,7 @@ export interface Bekleyen {
 // Yayin: yayınlanmış (yayında veya durdurulmuş) içerik.
 export interface Yayin {
   yayin_id: string;
+  arac_id?: string | null;
   soru_seti_durum_id: string;
   durum: string;
   yayin_tarihi: string;
@@ -54,6 +56,16 @@ export interface Yayin {
   soru_puani: number | null;
   sorular: Soru[];
   hedef_roller: HedefRoller;
+  arac_turu?: "video" | "podcast" | "gorsel" | "flip_pdf" | string;
+}
+
+// Ortak önizleme hedefi (4 öğrenme aracı da desteklenir)
+export interface OnizlemeHedefi {
+  arac_turu: "video" | "podcast" | "gorsel" | "flip_pdf" | string;
+  video_url?: string | null;
+  arac_id?: string | null;
+  urun_adi?: string | null;
+  yayin_id?: string | null;
 }
 
 // Alt sekme (durum filtresi) tipi.

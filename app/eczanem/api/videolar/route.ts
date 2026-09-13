@@ -11,6 +11,7 @@ import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi } from "@/lib/utils/ha
 import { musteriKimligi } from "@/lib/eczanem/oturum";
 import { eczaneAdMap } from "@/lib/eczanem/gonderim";
 import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
+import { yayinThumbnailUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
 import type {
   EczanemAracTuru,
   EczanemMusteriVideo,
@@ -25,6 +26,7 @@ interface YayinDetaySatiri {
   teknik_adi: string | null;
   video_url: string | null;
   thumbnail_url: string | null;
+  arac_kapak_yolu?: string | null;
   video_puani: number | null;
   soru_puani: number | null;
   video_basi_soru_sayisi: number | null;
@@ -103,7 +105,7 @@ export async function GET() {
       const [{ data: yayinlar, error: yayinError }, { data: kunyeler, error: kunyeError }] = await Promise.all([
         adminSupabase
           .from("v_yayin_detay")
-          .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, video_basi_soru_sayisi, durum, talep_no, firma_adi, firma_id, arac_id, arac_turu")
+          .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, arac_kapak_yolu, video_puani, soru_puani, video_basi_soru_sayisi, durum, talep_no, firma_adi, firma_id, arac_id, arac_turu")
           .in("yayin_id", yayinIdler)
           .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))
           // Görünürlük kapısı (Faz 1): süresi hazır olmayan video izleyiciye gösterilmez.
@@ -235,7 +237,7 @@ export async function GET() {
         video_url: y.video_url ?? null,
         arac_id: g.arac_id,
         arac_turu: g.arac_turu,
-        thumbnail_url: y.thumbnail_url ?? null,
+        thumbnail_url: yayinThumbnailUrlCoz(y),
         video_puani: y.video_puani ?? null,
         soru_puani: y.soru_puani ?? null,
         soru_sayisi: y.video_basi_soru_sayisi ?? null,

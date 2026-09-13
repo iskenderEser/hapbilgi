@@ -12,6 +12,7 @@ import { AnaSayfaVideo } from "./anaSayfaVideolari";
 import { kapsamGenisMi } from "./gorunurluk";
 import { hedefRolleriOku, type HedefRoller } from "@/lib/utils/roller";
 import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
+import { yayinThumbnailUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
 
 export interface YayindakiVideo extends AnaSayfaVideo {
   hedef_roller: HedefRoller;
@@ -28,6 +29,7 @@ interface YayinSatiri {
   teknik_adi: string | null;
   video_url: string | null;
   thumbnail_url: string | null;
+  arac_kapak_yolu?: string | null;
   video_puani: number | null;
   yayin_tarihi: string;
   icerik_turu: AnaSayfaVideo["icerik_turu"];
@@ -59,7 +61,7 @@ export async function getYayindakiVideolar(
 
   let query = adminSupabase
     .from("v_yayin_detay")
-    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, icerik_turu, hedef_roller, takim_id, uretici_id, arac_id, arac_turu")
+    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, arac_kapak_yolu, video_puani, yayin_tarihi, icerik_turu, hedef_roller, takim_id, uretici_id, arac_id, arac_turu")
     .eq("durum", "yayinda")
     .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))
     .order("yayin_tarihi", { ascending: false });
@@ -131,7 +133,7 @@ export async function getYayindakiVideolar(
       urun_adi: v.urun_adi ?? "-",
       teknik_adi: v.teknik_adi ?? "-",
       video_url: v.video_url ?? null,
-      thumbnail_url: v.thumbnail_url ?? null,
+      thumbnail_url: yayinThumbnailUrlCoz(v),
       video_puani: v.video_puani ?? null,
       yayin_tarihi: v.yayin_tarihi,
       icerik_turu: v.icerik_turu ?? null,

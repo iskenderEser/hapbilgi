@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef } from "react";
-import { Heart, Play, Star, Video } from "lucide-react";
+import { Headphones, Heart, Play, Star, Video } from "lucide-react";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import type { PanelOneri } from "../_hooks/useEclubPanel";
@@ -37,7 +37,7 @@ function VideoKarti({ oneri, onSec, onBegeni, onFavori, etkilesimAktif }: { oner
           {thumbnail
             // eslint-disable-next-line @next/next/no-img-element
             ? <img src={thumbnail} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
-            : <span className="flex h-full items-center justify-center text-[#9babbc]"><Video size={26} /></span>}
+            : <span className="flex h-full items-center justify-center text-[#9babbc]">{oneri.arac_turu === "podcast" ? <Headphones size={26} /> : <Video size={26} />}</span>}
           <div className="absolute inset-0 bg-gradient-to-t from-[#10233a]/45 via-transparent to-transparent" />
           <span className="absolute inset-0 flex items-center justify-center">
             <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-[#10233a]/65 text-white shadow-lg backdrop-blur-sm transition-transform group-hover:scale-105"><Play size={14} fill="currentColor" /></span>

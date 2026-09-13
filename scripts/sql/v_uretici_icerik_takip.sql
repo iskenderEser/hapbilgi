@@ -36,17 +36,17 @@ SELECT
   s.iu_id                  AS senaryo_iu_id,
   sd.durum                 AS senaryo_durum,
   sd.created_at            AS senaryo_durum_tarih,
-  -- Video: talebe doğrudan bağlı (hazır + normal kol aynı yoldan bulunur)
-  v.video_id,
-  v.iu_id                  AS video_iu_id,
-  vd.durum                 AS video_durum,
-  vd.created_at            AS video_durum_tarih,
-  -- Soru seti: son video durumuna bağlı
+  -- Video veya Öğrenme Aracı (podcast, gorsel, flip_pdf)
+  COALESCE(v.video_id, oa.arac_id) AS video_id,
+  COALESCE(v.iu_id, oa.iu_id)      AS video_iu_id,
+  COALESCE(vd.durum, oad.durum)    AS video_durum,
+  COALESCE(vd.created_at, oad.created_at) AS video_durum_tarih,
+  -- Soru seti: video_durum, arac_durum veya doğrudan talebe bağlı
   ss.soru_seti_id,
   ss.iu_id                 AS soru_seti_iu_id,
   ssd.durum                AS soru_seti_durum,
   ssd.created_at           AS soru_seti_durum_tarih,
-  -- Yayın: son soru seti durumuna bağlı
+  -- Yayın: soru seti veya öğrenme aracı durumuna bağlı
   y.durum                  AS yayin_durum,
   y.yayin_tarihi
 FROM talepler t
@@ -67,8 +67,19 @@ LEFT JOIN LATERAL (
   WHERE video_id = v.video_id ORDER BY created_at DESC LIMIT 1
 ) vd ON true
 LEFT JOIN LATERAL (
+  SELECT arac_id, NULL::uuid AS iu_id FROM ogrenme_araclari
+  WHERE talep_id = t.talep_id ORDER BY created_at DESC LIMIT 1
+) oa ON true
+LEFT JOIN LATERAL (
+  SELECT arac_durum_id, durum, created_at FROM ogrenme_araci_durumu
+  WHERE arac_id = oa.arac_id ORDER BY created_at DESC LIMIT 1
+) oad ON true
+LEFT JOIN LATERAL (
   SELECT soru_seti_id, iu_id FROM soru_setleri
-  WHERE video_durum_id = vd.video_durum_id ORDER BY created_at DESC LIMIT 1
+  WHERE (vd.video_durum_id IS NOT NULL AND video_durum_id = vd.video_durum_id)
+     OR (oad.arac_durum_id IS NOT NULL AND arac_durum_id = oad.arac_durum_id)
+     OR talep_id = t.talep_id
+  ORDER BY created_at DESC LIMIT 1
 ) ss ON true
 LEFT JOIN LATERAL (
   SELECT soru_seti_durum_id, durum, created_at FROM soru_seti_durumu
@@ -77,7 +88,8 @@ LEFT JOIN LATERAL (
 LEFT JOIN LATERAL (
   -- Tekil kayıt beklenir; bozuk veride belirsiz satır dönmesin diye sıra sabit.
   SELECT durum, yayin_tarihi FROM yayin_yonetimi
-  WHERE soru_seti_durum_id = ssd.soru_seti_durum_id
+  WHERE (ssd.soru_seti_durum_id IS NOT NULL AND soru_seti_durum_id = ssd.soru_seti_durum_id)
+     OR (oad.arac_durum_id IS NOT NULL AND arac_durum_id = oad.arac_durum_id)
   ORDER BY yayin_tarihi DESC NULLS LAST, yayin_id LIMIT 1
 ) y ON true;
 

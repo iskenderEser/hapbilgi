@@ -47,6 +47,7 @@ export default function OgrenmeAraciOnizleme({
   const ortak = {
     aracId,
     yayinId,
+    urunAdi,
     saltGoruntuleme: true,
     baslat: saltBaslat,
     bitir: saltBitir,

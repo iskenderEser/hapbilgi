@@ -8,6 +8,7 @@ import { EXTRA_PUAN_TEKRAR_ESIGI } from "@/lib/tclub/puan/strateji";
 import { haftaBaslangici } from "@/lib/zaman/kontrol";
 import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
+import { yayinThumbnailUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
 
 export interface VYayinSatiri {
   yayin_id: string;
@@ -16,6 +17,7 @@ export interface VYayinSatiri {
   video_puani?: number | null;
   yayin_tarihi: string;
   thumbnail_url?: string | null;
+  arac_kapak_yolu?: string | null;
   video_url?: string | null;
   icerik_turu?: string | null;
   talep_no?: number | null;
@@ -64,7 +66,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
   ] = await Promise.all([
     adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, urun_adi, teknik_adi, video_puani, yayin_tarihi, thumbnail_url, video_url, icerik_turu, talep_no, firma_adi, arac_id, arac_turu")
+      .select("yayin_id, urun_adi, teknik_adi, video_puani, yayin_tarihi, thumbnail_url, arac_kapak_yolu, video_url, icerik_turu, talep_no, firma_adi, arac_id, arac_turu")
       .eq("durum", "yayinda")
       .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))
       // Görünürlük kapısı (Faz 1): süresi hazır olmayan (encode bitmemiş) video
@@ -202,7 +204,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
     urun_adi: y.urun_adi ?? "-",
     teknik_adi: y.teknik_adi ?? "-",
     video_url: y.video_url ?? null,
-    thumbnail_url: y.thumbnail_url ?? null,
+    thumbnail_url: yayinThumbnailUrlCoz(y),
     video_puani: y.video_puani ?? null,
     yayin_tarihi: y.yayin_tarihi,
     icerik_turu: y.icerik_turu ?? null,

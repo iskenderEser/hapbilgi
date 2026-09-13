@@ -18,10 +18,22 @@ import { eczaneEczanemFirmaIdleri, eczaneYayinErisimiDogrula } from "@/lib/eczan
 import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 import { uttEczaneFirmaBaglari } from "@/lib/eclub/uttEczane";
+import { yayinThumbnailUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
 
 // Ayar okunamazsa güvenli geri düşüş (davet.ts DAVET_GECERLILIK deseni).
 // Canlı seed değeri 10; bu sabit yalnız okuma hatasında devreye girer.
 export const AKTIF_UYE_ESIGI_VARSAYILAN = 10;
+
+export interface UyeEsikDurumu {
+  uyeSayisi: number;
+  esik: number;
+  gonderilebilir: boolean;
+}
+
+export interface EczaneDagitimOzeti {
+  toplamGonderim: number;
+  musteriGonderimSayisi: number;
+}
 
 /** sistem_ayarlari.eczanem_aktif_uye_esigi — eczaneye gönderim için asgari aktif üye. */
 export async function aktifUyeEsigi(adminSupabase: SupabaseClient): Promise<number> {
@@ -45,6 +57,7 @@ interface VYayinAdDetay {
   teknik_adi?: string | null;
   video_url?: string | null;
   thumbnail_url?: string | null;
+  arac_kapak_yolu?: string | null;
   yayin_tarihi?: string | null;
   arac_id?: string | null;
   arac_turu?: OgrenmeAraciTuru;
@@ -70,7 +83,7 @@ async function yayinAdMap(
   if (yayinIdler.length === 0) return map;
   let sorgu = adminSupabase
     .from("v_yayin_detay")
-    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, yayin_tarihi, arac_id, arac_turu")
+    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, yayin_tarihi, arac_id, arac_turu, arac_kapak_yolu")
     .in("yayin_id", yayinIdler)
     .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur));
   if (firmaIdler) {
@@ -85,7 +98,7 @@ async function yayinAdMap(
       urun_adi: y.urun_adi ?? "-",
       teknik_adi: y.teknik_adi ?? "-",
       video_url: y.video_url ?? null,
-      thumbnail_url: y.thumbnail_url ?? null,
+      thumbnail_url: yayinThumbnailUrlCoz(y),
       yayin_tarihi: y.yayin_tarihi ?? null,
       arac_id: y.arac_id,
       arac_turu: y.arac_turu,
@@ -193,7 +206,7 @@ export async function uttEczanemVerisi(
   // 1. Eczanem yayınları (bu UTT'nin takımı, yayında)
   let yayinQuery = adminSupabase
     .from("v_yayin_detay")
-    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, yayin_tarihi, arac_id, arac_turu")
+    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, yayin_tarihi, arac_id, arac_turu, arac_kapak_yolu")
     .eq("durum", "yayinda")
     .eq("firma_id", firmaId)
     .contains("hedef_roller", ["eczanem"])
@@ -210,7 +223,7 @@ export async function uttEczanemVerisi(
     urun_adi: y.urun_adi ?? "-",
     teknik_adi: y.teknik_adi ?? "",
     video_url: y.video_url ?? null,
-    thumbnail_url: y.thumbnail_url ?? null,
+    thumbnail_url: yayinThumbnailUrlCoz(y),
     yayin_tarihi: y.yayin_tarihi ?? null,
     arac_id: y.arac_id!,
     arac_turu: y.arac_turu!,

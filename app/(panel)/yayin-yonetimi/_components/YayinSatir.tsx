@@ -9,7 +9,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Yayin } from "../_types";
+import type { Yayin, OnizlemeHedefi } from "../_types";
 import type { Soru } from "@/app/(panel)/talepler/_types";
 import type { HesaplananTur } from "@/lib/tclub/tur/kayit";
 import { HedefRolPilleri } from "@/components/pill";
@@ -18,6 +18,7 @@ import { ureticiDurumMesaji, yayinDurumKodu } from "@/lib/utils/durum/mesaj";
 import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 import { VideoThumb } from "./Yardimcilar";
 import { SoruListesi } from "./SoruListesi";
+import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
 
 interface YayinSatirProps {
   y: Yayin;
@@ -30,6 +31,7 @@ interface YayinSatirProps {
   setSoruPuani: (soru_seti_durum_id: string, soru_index: number, puan: number) => void;
   hepsineAyniPuanAta: (soru_seti_durum_id: string, sorular: Soru[], puan: number) => void;
   onVideoAc: (url: string) => void;
+  onOnizle?: (hedef: OnizlemeHedefi) => void;
   onDurumDegistir: (yayin_id: string, mevcutDurum: string) => void;
   kartGorunumu?: boolean;
   // Planlanmış yayın aksiyonları (İş 2): tarih_degistir | hemen_yayinla | plan_iptal
@@ -46,7 +48,7 @@ function kalanGun(sonrakiTurTarihi: string): number {
 export function YayinSatir({
   y, islemLoading, acikAkordiyon, setAcikAkordiyon, formatTarih, tekrarBilgi,
   getSoruPuani, setSoruPuani, hepsineAyniPuanAta,
-  onVideoAc, onDurumDegistir, kartGorunumu = false, onPlanIslem,
+  onVideoAc, onOnizle, onDurumDegistir, kartGorunumu = false, onPlanIslem,
 }: YayinSatirProps) {
   const yayinda = y.durum === "yayinda";
   const planlandi = y.durum === "planlandi";
@@ -57,22 +59,47 @@ export function YayinSatir({
   const bugun = new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD (yerel)
 
   if (kartGorunumu) {
-    const thumbnail = y.thumbnail_url ?? thumbnailUrlUret(y.video_url);
+    const tur = y.arac_turu ?? "video";
+    const isVideo = tur === "video";
+    const thumbnail = y.thumbnail_url ?? (isVideo ? thumbnailUrlUret(y.video_url) : null);
     const akordiyonAcik = acikAkordiyon === y.yayin_id;
+
+    const etiket =
+      tur === "podcast" ? "Podcast"
+      : tur === "gorsel" ? "Dijital Broşür"
+      : tur === "flip_pdf" ? "Literatür"
+      : "Video";
+
+    const tiklanabilir = Boolean(onOnizle || y.video_url || y.arac_id);
+
+    const handleOnizle = () => {
+      if (onOnizle) {
+        onOnizle({
+          arac_turu: tur,
+          arac_id: y.arac_id,
+          video_url: y.video_url,
+          urun_adi: y.urun_adi,
+          yayin_id: y.yayin_id,
+        });
+      } else if (y.video_url) {
+        onVideoAc(y.video_url);
+      }
+    };
 
     return (
       <article className="self-start overflow-hidden rounded-xl border border-[#dfe7f1] bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#b9d5f0] hover:shadow-[0_10px_24px_rgba(31,55,90,0.10)]">
         <button
           type="button"
-          onClick={() => y.video_url && onVideoAc(y.video_url)}
-          disabled={!y.video_url}
-          aria-label={y.video_url ? `${y.urun_adi} videosunu önizle` : "Video önizlemesi bulunmuyor"}
+          onClick={handleOnizle}
+          disabled={!tiklanabilir}
+          aria-label={tiklanabilir ? `${y.urun_adi} ${etiket.toLowerCase()} önizle` : "Önizleme bulunmuyor"}
           className="group relative block aspect-video w-full overflow-hidden bg-[#e8eef5] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#56aeff] disabled:cursor-default"
         >
-          {thumbnail
-            ? <img src={thumbnail} alt={y.urun_adi} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
-            : <span className="block h-full w-full bg-gradient-to-br from-[#b5d4f4] to-[#56aeff]" />
-          }
+          {thumbnail ? (
+            <img src={thumbnail} alt={y.urun_adi} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+          ) : (
+            <AracVarsayilanKapak aracTuru={tur} urunAdi={y.urun_adi} className="h-full w-full" />
+          )}
           <span className="absolute inset-0 bg-gradient-to-t from-[#10233a]/55 via-transparent to-[#10233a]/10" />
           <span className="absolute left-2 top-2 rounded-full px-2 py-1 text-[9px] font-extrabold shadow-sm"
             style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}` }}>
@@ -81,10 +108,18 @@ export function YayinSatir({
           <span className="absolute right-2 top-2 flex max-w-[70%] flex-wrap justify-end gap-1">
             <HedefRolPilleri hedefRoller={y.hedef_roller} />
           </span>
-          {y.video_url && (
+          {tiklanabilir && (
             <span className="absolute inset-0 flex items-center justify-center">
               <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-[#10233a]/65 text-white shadow-lg backdrop-blur-sm transition-transform group-hover:scale-105">
-                <svg aria-hidden="true" width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z" /></svg>
+                {tur === "podcast" ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                ) : tur === "gorsel" ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                ) : tur === "flip_pdf" ? (
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                ) : (
+                  <svg aria-hidden="true" width="12" height="14" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z" /></svg>
+                )}
               </span>
             </span>
           )}
@@ -174,7 +209,21 @@ export function YayinSatir({
     <article className="mb-2.5 overflow-hidden rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_6px_18px_rgba(31,55,90,0.035)]">
       <div className="grid grid-cols-1 gap-3 p-3.5 sm:grid-cols-[128px_minmax(0,1fr)] lg:grid-cols-[128px_minmax(0,1fr)_minmax(190px,auto)] lg:items-center lg:p-4">
         <div className="order-2 sm:order-1">
-          <VideoThumb video_url={y.video_url} thumbnail_url={y.thumbnail_url} onAc={onVideoAc} />
+          <VideoThumb
+            video_url={y.video_url}
+            thumbnail_url={y.thumbnail_url}
+            arac_turu={y.arac_turu}
+            urun_adi={y.urun_adi}
+            arac_id={y.arac_id}
+            onOnizle={() => onOnizle ? onOnizle({
+              arac_turu: y.arac_turu ?? "video",
+              arac_id: y.arac_id,
+              video_url: y.video_url,
+              urun_adi: y.urun_adi,
+              yayin_id: y.yayin_id,
+            }) : y.video_url && onVideoAc(y.video_url)}
+            onAc={onVideoAc}
+          />
         </div>
 
         <div className="order-1 min-w-0 sm:order-2">

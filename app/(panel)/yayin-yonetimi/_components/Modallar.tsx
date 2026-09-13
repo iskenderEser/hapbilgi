@@ -9,9 +9,11 @@
 "use client";
 
 import { useEffect } from "react";
-import type { Bekleyen } from "../_types";
+import type { Bekleyen, OnizlemeHedefi } from "../_types";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 import { HedefRolPilleri } from "@/components/pill";
 import VideoOnizleme from "@/components/video/VideoOnizleme";
+import OgrenmeAraciOnizleme from "@/components/ogrenme-araci/OgrenmeAraciOnizleme";
 
 function useEscapeKapat(onKapat: () => void) {
   useEffect(() => {
@@ -23,19 +25,87 @@ function useEscapeKapat(onKapat: () => void) {
   }, [onKapat]);
 }
 
-export function VideoOnizlemeModal({ url, onKapat }: { url: string; onKapat: () => void }) {
+export function OgrenmeAraciOnizlemeModal({
+  hedef,
+  onKapat,
+}: {
+  hedef: OnizlemeHedefi | string;
+  onKapat: () => void;
+}) {
   useEscapeKapat(onKapat);
+
+  const parsed: OnizlemeHedefi =
+    typeof hedef === "string"
+      ? { arac_turu: "video", video_url: hedef }
+      : hedef;
+
+  const tur = parsed.arac_turu ?? "video";
+  const baslik =
+    tur === "podcast" ? "Podcast Önizleme"
+    : tur === "gorsel" ? "Dijital Broşür Önizleme"
+    : tur === "flip_pdf" ? "Literatür (PDF) Önizleme"
+    : "Video Önizleme";
+
+  const genislikSinifi =
+    tur === "flip_pdf" ? "max-w-4xl"
+    : tur === "gorsel" ? "max-w-3xl"
+    : tur === "podcast" ? "max-w-2xl"
+    : "max-w-3xl";
+
   return (
     <div onClick={onKapat} className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div role="dialog" aria-modal="true" aria-labelledby="video-onizleme-baslik" onClick={(e) => e.stopPropagation()} className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-          <span id="video-onizleme-baslik" className="text-sm font-extrabold text-[#243957]">Video Önizleme</span>
-          <button type="button" aria-label="Video önizlemeyi kapat" onClick={onKapat} className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border-none bg-[#f2f5f9] text-lg text-gray-500">✕</button>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="onizleme-modal-baslik"
+        onClick={(e) => e.stopPropagation()}
+        className={`w-full ${genislikSinifi} max-h-[90vh] flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl`}
+      >
+        <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 shrink-0">
+          <div className="min-w-0 pr-2">
+            <span id="onizleme-modal-baslik" className="block text-sm font-extrabold text-[#243957]">{baslik}</span>
+            {parsed.urun_adi && (
+              <span className="block truncate text-xs font-bold text-[#617590]">{parsed.urun_adi}</span>
+            )}
+          </div>
+          <button
+            type="button"
+            aria-label="Önizlemeyi kapat"
+            onClick={onKapat}
+            className="flex h-8 w-8 cursor-pointer shrink-0 items-center justify-center rounded-lg border-none bg-[#f2f5f9] text-lg text-gray-500 hover:bg-[#e4eaf2] transition-colors"
+          >
+            ✕
+          </button>
         </div>
-        <VideoOnizleme videoUrl={url} ariaLabel="Video önizlemeyi oynat" />
+
+        <div className="overflow-y-auto p-3 sm:p-4">
+          {tur === "video" ? (
+            parsed.video_url ? (
+              <VideoOnizleme videoUrl={parsed.video_url} ariaLabel={`${parsed.urun_adi ?? "Video"} önizlemeyi oynat`} />
+            ) : (
+              <div className="rounded-xl bg-gray-50 p-6 text-center text-sm text-gray-500">Video bağlantısı bulunamadı.</div>
+            )
+          ) : parsed.arac_id ? (
+            <OgrenmeAraciOnizleme
+              yayinId={parsed.yayin_id || parsed.arac_id}
+              aracId={parsed.arac_id}
+              aracTuru={tur as OgrenmeAraciTuru}
+              urunAdi={parsed.urun_adi ?? "Öğrenme Aracı"}
+              videoUrl={parsed.video_url}
+              hata={(mesaj) => console.error(mesaj)}
+              onBitti={() => {}}
+            />
+          ) : (
+            <div className="rounded-xl bg-gray-50 p-6 text-center text-sm text-gray-500">Önizleme içeriği henüz hazır değil veya dosya bulunamadı.</div>
+          )}
+        </div>
       </div>
     </div>
   );
+}
+
+export function VideoOnizlemeModal({ url, onKapat }: { url: string; onKapat: () => void }) {
+  return <OgrenmeAraciOnizlemeModal hedef={url} onKapat={onKapat} />;
 }
 
 export function YayinOnayModal({ bekleyen, onIptal, onYayinla }: {

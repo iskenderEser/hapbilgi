@@ -29,6 +29,7 @@ import { gecerliTurBaslangiclari } from "@/lib/tclub/tur/kayit";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { ccKartMetrikleri } from "@/lib/cclub/kartDetaylari";
 import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
+import { yayinThumbnailUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
 
 type ChallengeDurumu = "bekliyor" | "izlendi";
 
@@ -42,6 +43,7 @@ interface ChallengeYayinSatiri {
   teknik_adi?: string | null;
   video_url?: string | null;
   thumbnail_url?: string | null;
+  arac_kapak_yolu?: string | null;
   video_puani?: number | null;
   yayin_tarihi?: string | null;
   talep_no?: number | null;
@@ -105,7 +107,7 @@ export async function GET(request: NextRequest) {
       const [yayinlarRes, izlemelerRes, gelenChallengelerRes] = await Promise.all([
         adminSupabase
           .from("v_yayin_detay")
-          .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, talep_no, firma_adi, icerik_turu, arac_id, arac_turu")
+          .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, arac_kapak_yolu, video_puani, yayin_tarihi, talep_no, firma_adi, icerik_turu, arac_id, arac_turu")
           .eq("durum", "yayinda")
           .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))
           .eq("firma_id", kullanici.firma_id)
@@ -164,6 +166,7 @@ export async function GET(request: NextRequest) {
         const gelenChallenge = gelenChallengeMap[y.yayin_id];
         return {
           ...y,
+          thumbnail_url: yayinThumbnailUrlCoz(y),
           tamamlandi_mi: tamamlananSet.has(y.yayin_id),
           sonraki_tur_tarihi: turMap[y.yayin_id]?.sonraki_tur_tarihi ?? null,
           kilitli: !!gelenChallenge,
@@ -199,7 +202,7 @@ export async function GET(request: NextRequest) {
       if (yayinIdler.length > 0) {
         const { data: yayinlar } = await adminSupabase
           .from("v_yayin_detay")
-          .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, talep_no, firma_adi, icerik_turu, arac_id, arac_turu")
+          .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, arac_kapak_yolu, video_puani, yayin_tarihi, talep_no, firma_adi, icerik_turu, arac_id, arac_turu")
           .in("yayin_id", yayinIdler)
           .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur));
         for (const y of (yayinlar as ChallengeYayinSatiri[] | null) ?? []) yayinMap[y.yayin_id] = y;
@@ -212,7 +215,7 @@ export async function GET(request: NextRequest) {
         urun_adi: yayinMap[c.yayin_id]?.urun_adi ?? "-",
         teknik_adi: yayinMap[c.yayin_id]?.teknik_adi ?? "-",
         video_url: yayinMap[c.yayin_id]?.video_url ?? null,
-        thumbnail_url: yayinMap[c.yayin_id]?.thumbnail_url ?? null,
+        thumbnail_url: yayinThumbnailUrlCoz(yayinMap[c.yayin_id]),
         video_puani: yayinMap[c.yayin_id]?.video_puani ?? null,
         yayin_tarihi: yayinMap[c.yayin_id]?.yayin_tarihi ?? c.created_at,
         talep_no: yayinMap[c.yayin_id]?.talep_no ?? null,
@@ -251,7 +254,7 @@ export async function GET(request: NextRequest) {
       if (yayinIdler.length > 0) {
         const { data: yayinlar } = await adminSupabase
           .from("v_yayin_detay")
-          .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, yayin_tarihi, talep_no, firma_adi, icerik_turu, arac_id, arac_turu")
+          .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, arac_kapak_yolu, video_puani, yayin_tarihi, talep_no, firma_adi, icerik_turu, arac_id, arac_turu")
           .in("yayin_id", yayinIdler)
           .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur));
         for (const y of (yayinlar as ChallengeYayinSatiri[] | null) ?? []) yayinMap[y.yayin_id] = y;
@@ -264,7 +267,7 @@ export async function GET(request: NextRequest) {
         urun_adi: yayinMap[c.yayin_id]?.urun_adi ?? "-",
         teknik_adi: yayinMap[c.yayin_id]?.teknik_adi ?? "-",
         video_url: yayinMap[c.yayin_id]?.video_url ?? null,
-        thumbnail_url: yayinMap[c.yayin_id]?.thumbnail_url ?? null,
+        thumbnail_url: yayinThumbnailUrlCoz(yayinMap[c.yayin_id]),
         video_puani: yayinMap[c.yayin_id]?.video_puani ?? null,
         yayin_tarihi: yayinMap[c.yayin_id]?.yayin_tarihi ?? c.created_at,
         talep_no: yayinMap[c.yayin_id]?.talep_no ?? null,

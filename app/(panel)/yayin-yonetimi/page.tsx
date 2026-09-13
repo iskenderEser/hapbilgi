@@ -9,17 +9,17 @@
 
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, Suspense, type ReactNode } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { URETICI_ROLLER, YAYIN_HEDEF_GRUP_SIRASI, yayinHedefGrubuBelirle, type YayinHedefGrubu } from "@/lib/utils/roller";
-import type { Bekleyen, AltSekme } from "./_types";
+import type { Bekleyen, AltSekme, OnizlemeHedefi } from "./_types";
 import { useYayinYonetimi } from "./_hooks/useYayinYonetimi";
 import { BekleyenSatir } from "./_components/BekleyenSatir";
 import { YayinSatir } from "./_components/YayinSatir";
 import { useListe, ListeArama, DahaFazlaGoster } from "@/components/liste";
-import { VideoOnizlemeModal, YayinOnayModal, YayinSilmeModal } from "./_components/Modallar";
+import { OgrenmeAraciOnizlemeModal, YayinOnayModal, YayinSilmeModal } from "./_components/Modallar";
 import { YayinKumandaPaneli } from "./_components/YayinKumandaPaneli";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 
@@ -49,20 +49,35 @@ function BosListe({ mesaj }: { mesaj: string }) {
   );
 }
 
-export default function YayinYonetimiPage() {
+function YayinYonetimiIcerik() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const durumParam = searchParams.get("durum");
+  const hedefParam = searchParams.get("hedef");
+
+  const baslangicDurum: AltSekme =
+    durumParam === "yayinda" || durumParam === "durdurulan" || durumParam === "bekleyen"
+      ? durumParam
+      : "bekleyen";
+
+  const baslangicHedef: YayinHedefGrubu | null =
+    hedefParam && (YAYIN_HEDEF_GRUP_SIRASI as readonly string[]).includes(hedefParam)
+      ? (hedefParam as YayinHedefGrubu)
+      : null;
+
   const { kullanici, yukleniyor: kimlikYukleniyor } = useAuth();
   const ureticiMi = !!kullanici && URETICI_ROLLER.includes((kullanici.rol ?? "").toLowerCase());
   const kullaniciId = ureticiMi ? kullanici.id : undefined;
   const { mesajlar, hata, basari } = useHataMesaji();
 
-  const [aktifAnaSekme, setAktifAnaSekme] = useState<YayinHedefGrubu>("utt");
-  const [aktifSekme, setAktifSekme] = useState<AltSekme>("bekleyen");
+  const [aktifAnaSekme, setAktifAnaSekme] = useState<YayinHedefGrubu>(baslangicHedef ?? "utt");
+  const [aktifSekme, setAktifSekme] = useState<AltSekme>(baslangicDurum);
   const [ilkHedefHazir, setIlkHedefHazir] = useState(false);
 
-  // Saf UI state (modallar + akordiyon + video önizleme) — sayfada kalır.
+  // Saf UI state (modallar + akordiyon + video/araç önizleme) — sayfada kalır.
   const [acikAkordiyon, setAcikAkordiyon] = useState<string | null>(null);
-  const [acikVideo, setAcikVideo] = useState<string | null>(null);
+  const [onizlemeHedefi, setOnizlemeHedefi] = useState<OnizlemeHedefi | null>(null);
+  const handleVideoAc = (url: string) => setOnizlemeHedefi({ arac_turu: "video", video_url: url });
   const [onayModal, setOnayModal] = useState<Bekleyen | null>(null);
   const [silmeModal, setSilmeModal] = useState<Bekleyen | null>(null);
 
@@ -74,6 +89,15 @@ export default function YayinYonetimiPage() {
     }
     if (!ureticiMi) router.replace("/ana-sayfa");
   }, [kimlikYukleniyor, kullanici, router, ureticiMi]);
+
+  useEffect(() => {
+    if (durumParam === "yayinda" || durumParam === "durdurulan" || durumParam === "bekleyen") {
+      setAktifSekme(durumParam);
+    }
+    if (hedefParam && (YAYIN_HEDEF_GRUP_SIRASI as readonly string[]).includes(hedefParam)) {
+      setAktifAnaSekme(hedefParam as YayinHedefGrubu);
+    }
+  }, [durumParam, hedefParam]);
 
   useEffect(() => {
     if (!kullaniciId) {
@@ -90,7 +114,9 @@ export default function YayinYonetimiPage() {
           const ilkBekleyenHedef = YAYIN_HEDEF_GRUP_SIRASI.find(
             (hedef) => Number(data.sayilar?.[hedef] ?? 0) > 0,
           );
-          setAktifAnaSekme(ilkBekleyenHedef ?? "utt");
+          if (!baslangicHedef && baslangicDurum === "bekleyen") {
+            setAktifAnaSekme(ilkBekleyenHedef ?? "utt");
+          }
         }
       } catch {
         // Asıl veri çağrısı aşağıdaki hook tarafından hata mesajıyla yönetilir.
@@ -100,7 +126,7 @@ export default function YayinYonetimiPage() {
     })();
 
     return () => { aktif = false; };
-  }, [kullaniciId]);
+  }, [kullaniciId, baslangicHedef, baslangicDurum]);
 
   const yy = useYayinYonetimi({
     kullaniciVar: !!kullaniciId && ilkHedefHazir,
@@ -198,7 +224,8 @@ export default function YayinYonetimiPage() {
                 yayinGunleri={yy.yayinGunleri} setYayinGunleri={yy.setYayinGunleri}
                 tumPuanlarAtandiMi={yy.tumPuanlarAtandiMi}
                 getSoruPuani={yy.getSoruPuani} setSoruPuani={yy.setSoruPuani} hepsineAyniPuanAta={yy.hepsineAyniPuanAta}
-                onVideoAc={setAcikVideo}
+                onVideoAc={handleVideoAc}
+                onOnizle={setOnizlemeHedefi}
                 onYayinlaClick={setOnayModal}
                 onYayinSilClick={setSilmeModal}
               />
@@ -230,7 +257,8 @@ export default function YayinYonetimiPage() {
                     formatTarih={formatTarih}
                     tekrarBilgi={yy.tekrarBilgi[y.yayin_id]}
                     getSoruPuani={yy.getSoruPuani} setSoruPuani={yy.setSoruPuani} hepsineAyniPuanAta={yy.hepsineAyniPuanAta}
-                    onVideoAc={setAcikVideo}
+                    onVideoAc={handleVideoAc}
+                    onOnizle={setOnizlemeHedefi}
                     onDurumDegistir={yy.handleDurumDegistir}
                     onPlanIslem={yy.handlePlanIslem}
                   />
@@ -261,7 +289,8 @@ export default function YayinYonetimiPage() {
                 formatTarih={formatTarih}
                 tekrarBilgi={yy.tekrarBilgi[y.yayin_id]}
                 getSoruPuani={yy.getSoruPuani} setSoruPuani={yy.setSoruPuani} hepsineAyniPuanAta={yy.hepsineAyniPuanAta}
-                onVideoAc={setAcikVideo}
+                onVideoAc={handleVideoAc}
+                onOnizle={setOnizlemeHedefi}
                 onDurumDegistir={yy.handleDurumDegistir}
               />
             ))
@@ -278,7 +307,7 @@ export default function YayinYonetimiPage() {
       </div>
       </div>
 
-      {acikVideo && <VideoOnizlemeModal url={acikVideo} onKapat={() => setAcikVideo(null)} />}
+      {onizlemeHedefi && <OgrenmeAraciOnizlemeModal hedef={onizlemeHedefi} onKapat={() => setOnizlemeHedefi(null)} />}
 
       {onayModal && (
         <YayinOnayModal bekleyen={onayModal} onIptal={() => setOnayModal(null)} onYayinla={handleYayinlaOnayla} />
@@ -295,5 +324,22 @@ export default function YayinYonetimiPage() {
 
       <HataMesajiContainer mesajlar={mesajlar} />
     </>
+  );
+}
+
+export default function YayinYonetimiPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
+            <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        </div>
+      }
+    >
+      <YayinYonetimiIcerik />
+    </Suspense>
   );
 }

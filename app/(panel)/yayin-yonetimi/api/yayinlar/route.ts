@@ -10,8 +10,9 @@ import { turKaydiAc } from "@/lib/tclub/tur/kayit";
 import { tarifeVeBarkodYaz } from "@/lib/eczanem/tarife";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { bunnyVideoDurumu, embedUrlGuidCikar } from "@/lib/video/bunnyYukleme";
+import { yayinThumbnailUrlCoz, type YayinKapakGirdisi } from "@/lib/ogrenmeAraci/yayinThumbnail";
 
-const YAYIN_LISTE_ALANLARI = "yayin_id, soru_seti_durum_id, durum, yayin_tarihi, durdurma_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, sorular, hedef_roller, talep_no, firma_adi, egitim_turu";
+const YAYIN_LISTE_ALANLARI = "yayin_id, arac_id, soru_seti_durum_id, durum, yayin_tarihi, durdurma_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, sorular, hedef_roller, talep_no, firma_adi, egitim_turu, arac_turu, arac_kapak_yolu, arac_dosya_yolu";
 
 export async function GET() {
   try {
@@ -31,7 +32,13 @@ export async function GET() {
       .order("yayin_tarihi", { ascending: false });
 
     if (error) return hataYaniti("Yayınlar yüklenemedi.", "v_yayin_detay SELECT — üretici filtresi", error);
-    return NextResponse.json({ yayinlar: yayinlar ?? [] }, { status: 200 });
+
+    const islenmisYayinlar = (yayinlar ?? []).map((y: Record<string, unknown>) => ({
+      ...y,
+      thumbnail_url: yayinThumbnailUrlCoz(y as unknown as YayinKapakGirdisi),
+    }));
+
+    return NextResponse.json({ yayinlar: islenmisYayinlar }, { status: 200 });
   } catch (err) {
     return sunucuHatasi(err, "GET /yayin-yonetimi/api/yayinlar");
   }
@@ -82,6 +89,14 @@ export async function POST(request: NextRequest) {
     if (talepBilgisi.uretici_id !== user.id) return rolHatasi("Yalnız kendi içeriğinizi yayına alabilirsiniz.");
     if (talepBilgisi.yayin_oncesi_silme_durumu) {
       return isKuraluHatasi("Silme işlemi başlatılmış yayın adayı yayına alınamaz.");
+    }
+    const { data: talepTaslakKontrol } = await adminSupabase
+      .from("talepler")
+      .select("taslak_mi")
+      .eq("talep_id", talepBilgisi.talep_id)
+      .maybeSingle();
+    if (talepTaslakKontrol?.taslak_mi) {
+      return isKuraluHatasi("Taslak talep yayına alınamaz.");
     }
     const hedefRoller = talepBilgisi.hedef_roller;
 
@@ -204,8 +219,8 @@ export async function POST(request: NextRequest) {
       if (aracDurumError || aracDurum?.durum !== "onaylandi" || !arac || !arac.metadata_dogrulandi || !arac.dosya_yolu) {
         return isKuraluHatasi("Öğrenme aracı onayı ve dosya doğrulaması tamamlanmadan yayımlanamaz.");
       }
-      if (arac.arac_turu === "podcast" && (!arac.kapak_yolu || !arac.transkript_yolu || Number(arac.sure_saniye) <= 0)) {
-        return isKuraluHatasi("Podcast ses, kapak, transkript ve süre doğrulaması tamamlanmadan yayımlanamaz.");
+      if (arac.arac_turu === "podcast" && Number(arac.sure_saniye) <= 0) {
+        return isKuraluHatasi("Podcast ses ve süre doğrulaması tamamlanmadan yayımlanamaz.");
       }
       if (arac.arac_turu === "gorsel" && (Number(arac.genislik) <= 0 || Number(arac.yukseklik) <= 0)) {
         return isKuraluHatasi("Görsel dosyası ve ölçüleri doğrulanmadan yayımlanamaz.");

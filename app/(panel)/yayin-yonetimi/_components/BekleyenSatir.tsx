@@ -10,7 +10,7 @@
 
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import type { Soru } from "@/app/(panel)/talepler/_types";
-import type { Bekleyen } from "../_types";
+import type { Bekleyen, OnizlemeHedefi } from "../_types";
 import { VIDEO_PUAN_SECENEKLERI, VIDEO_PUAN_SECENEKLERI_ECZANEM, EXTRA_PUAN_SECENEKLERI } from "../_types";
 import { HedefRolPilleri } from "@/components/pill";
 import { talepIdGoster } from "@/lib/utils/talepId";
@@ -46,6 +46,7 @@ interface BekleyenSatirProps {
   setSoruPuani: (soru_seti_durum_id: string, soru_index: number, puan: number) => void;
   hepsineAyniPuanAta: (soru_seti_durum_id: string, sorular: Soru[], puan: number) => void;
   onVideoAc: (url: string) => void;
+  onOnizle?: (hedef: OnizlemeHedefi) => void;
   onYayinlaClick: (b: Bekleyen) => void;
   onYayinSilClick: (b: Bekleyen) => void;
 }
@@ -58,7 +59,7 @@ export function BekleyenSatir({
   yayinGunleri, setYayinGunleri,
   tumPuanlarAtandiMi,
   getSoruPuani, setSoruPuani, hepsineAyniPuanAta,
-  onVideoAc, onYayinlaClick, onYayinSilClick,
+  onVideoAc, onOnizle, onYayinlaClick, onYayinSilClick,
 }: BekleyenSatirProps) {
   const silmeDevamEdiyor = b.yayin_oncesi_silme_durumu === "isleniyor";
   const silmeHatali = b.yayin_oncesi_silme_durumu === "hata";
@@ -109,7 +110,21 @@ export function BekleyenSatir({
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(310px,0.7fr)_minmax(0,1.3fr)]">
       <div className="grid grid-cols-1 gap-3 p-3.5 sm:grid-cols-[128px_minmax(0,1fr)] lg:items-center lg:p-4">
         <div className="order-2 sm:order-1">
-          <VideoThumb video_url={b.video_url} thumbnail_url={b.thumbnail_url} onAc={onVideoAc} />
+          <VideoThumb
+            video_url={b.video_url}
+            thumbnail_url={b.thumbnail_url}
+            arac_turu={b.arac_turu}
+            urun_adi={b.urun_adi}
+            arac_id={b.arac_id}
+            onOnizle={() => onOnizle ? onOnizle({
+              arac_turu: b.arac_turu ?? "video",
+              arac_id: b.arac_id,
+              video_url: b.video_url,
+              urun_adi: b.urun_adi,
+              yayin_id: b.soru_seti_durum_id,
+            }) : b.video_url && onVideoAc(b.video_url)}
+            onAc={onVideoAc}
+          />
         </div>
         <div className="order-1 min-w-0 sm:order-2">
           <span className="block truncate text-base font-extrabold text-[#213754]">{b.urun_adi}</span>

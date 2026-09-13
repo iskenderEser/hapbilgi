@@ -2460,7 +2460,7 @@
         },
         "arac_id": {
           "tip": "uuid",
-          "nullable": false
+          "nullable": true
         },
         "dosya_yolu": {
           "tip": "text",

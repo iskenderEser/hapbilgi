@@ -3,8 +3,9 @@ import { asamaCoz, zincirHaritasi } from '@/lib/utils/uretimZinciri';
 import { gorevDurumKodu, type DurumKodu } from '@/lib/utils/durum/mesaj';
 import { ureticiYetenegi } from '@/lib/uretici/yetenekler';
 import { ureticiBaglaminiOku, ureticiDonemi, type UreticiSorgusu } from '@/lib/bi/ureticiSozlesmesi';
+import type { OgrenmeAraciTuru } from '@/lib/ogrenmeAraci/tipler';
 
-type Talep = { ogrenme_araci_turu: string; talep_id: string; created_at: string; hazir_video: boolean;
+type Talep = { ogrenme_araci_turu: OgrenmeAraciTuru; talep_id: string; created_at: string; hazir_video: boolean; hazir_soru_seti?: boolean | null;
   yayin_oncesi_silme_durumu: 'isleniyor' | 'tamamlandi' | 'hata' | null; yayin_oncesi_silme_tarihi: string | null };
 type SayfaSonucu = PromiseLike<{ data: unknown; error: unknown }>;
 async function sayfalariOku<T>(sorgu: (bas: number, son: number) => SayfaSonucu): Promise<T[]> {
@@ -34,7 +35,7 @@ export async function ureticiSayisiniOku(db: SupabaseClient, id: string, rol: st
   const sayilanYayinlar = new Set<string>();
   // Her sayfa yalnız oturumdaki üreticinin ve firmasının taleplerini içerir.
   for (let bas = 0; ; bas += 50) {
-    let q = db.from('talepler').select('ogrenme_araci_turu,talep_id,created_at,hazir_video,yayin_oncesi_silme_durumu,yayin_oncesi_silme_tarihi')
+    let q = db.from('talepler').select('ogrenme_araci_turu,talep_id,created_at,hazir_video,hazir_soru_seti,yayin_oncesi_silme_durumu,yayin_oncesi_silme_tarihi')
       .eq('uretici_id', id).eq('firma_id', kisi.firma_id)
       .in('egitim_turu', s.egitim === 'tumu' ? ureticiYetenegi(rol)!.acabilecegiTalepTurleri : [s.egitim]);
     if (yoneticiFiltresi?.urunId !== undefined) q = yoneticiFiltresi.urunId === null ? q.is('urun_id', null) : q.eq('urun_id', yoneticiFiltresi.urunId);

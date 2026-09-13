@@ -8,7 +8,7 @@ import { useHataMesaji } from "@/components/HataMesaji";
 import { HedefRolPilleri, VaryantPill, AsamaPill, DurumPill, Pill, type PillAsama, type PillRenk } from "@/components/pill";
 import { useListe, ListeArama, DahaFazlaGoster } from "@/components/liste";
 import type { HedefRoller } from "@/lib/utils/roller";
-import { ROL_ADLARI } from "@/lib/utils/roller";
+import { ROL_ADLARI, yayinHedefGrubuBelirle } from "@/lib/utils/roller";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import { rolTeknikKullanirMi } from "@/lib/uretici/yetenekler";
 import { type DurumKodu } from "@/lib/utils/durum/mesaj";
@@ -78,13 +78,27 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" });
 
-  // Yayın Listesi üretimi biten kayıtları gösterir; hedef ekranı ise yayın durumu
-  // belirler. Yalnız canlı yayınlar salt-izleme kataloğuna, diğerleri mevcut yayın
-  // yönetimi akışına gider. Canlı yayın üreticinin kendi hedef-kitle kataloğunda açılır.
-  const satirYolu = (satir: TakipSatiri) =>
-    satir.durum_kodu === "yayinda"
-      ? "/sizin-yayinlariniz"
-      : satir.yol;
+  // Yayın Listesi üretimi biten kayıtları gösterir. Canlı/planlanan/durdurulan/bekleyen
+  // yayınlar ilgili durum ve hedef grubu parametresiyle Yayın Yönetimi'ne yönlendirilir.
+  const satirYolu = (satir: TakipSatiri) => {
+    const hedefGrup = yayinHedefGrubuBelirle(satir.hedef_roller) ?? "utt";
+    if (satir.durum_kodu === "yayinda" || satir.kategori === "yayinda") {
+      return `/yayin-yonetimi?durum=yayinda&hedef=${hedefGrup}`;
+    }
+    if (satir.durum_kodu === "planlandi" || satir.kategori === "planlanan") {
+      return `/yayin-yonetimi?durum=yayinda&hedef=${hedefGrup}`;
+    }
+    if (satir.durum_kodu === "yayin_durduruldu" || satir.kategori === "durdurulan") {
+      return `/yayin-yonetimi?durum=durdurulan&hedef=${hedefGrup}`;
+    }
+    if (satir.durum_kodu === "yayin_bekleniyor" || satir.kategori === "yayin-bekleyen") {
+      return `/yayin-yonetimi?durum=bekleyen&hedef=${hedefGrup}`;
+    }
+    if (satir.yol === "/yayin-yonetimi") {
+      return `/yayin-yonetimi?durum=yayinda&hedef=${hedefGrup}`;
+    }
+    return satir.yol;
+  };
 
   const bugunTarih = () =>
     new Date().toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
