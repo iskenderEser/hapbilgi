@@ -12,16 +12,33 @@ import { useHapbi } from "./HapbiProvider";
 
 function isMobilCihaz(): boolean {
   if (typeof window === "undefined") return false;
-  // 1. Standart mobil / tablet genişlik eşiği (iPhone 11 portrait 414px, landscape 896px, Safari masaüstü sitesi modu 980px dahil)
-  if (window.innerWidth <= 1024) return true;
-  // 2. CSS medya sorgusu
-  if (window.matchMedia && window.matchMedia("(max-width: 1024px)").matches) return true;
-  // 3. UserAgent (iPhone, iPad, iPod, Android, Mobile)
-  if (/iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent)) return true;
-  // 4. Dokunmatik ekran ve dar/orta ekran
-  if ("ontouchstart" in window || navigator.maxTouchPoints > 0) return true;
-  return false;
+  if (window.innerWidth < 768) return true;
+  return /iPhone|iPod|Android.+Mobile|Mobile.+Android/i.test(navigator.userAgent);
 }
+
+type ChatKonumu = { x: number; y: number };
+type ChatEkrani = "tablet" | "masaustu";
+
+const CHAT_GENISLIGI = 380;
+const CHAT_YUKSEKLIGI = 530;
+const CHAT_KENARI = 12;
+const CHAT_KONUM_ANAHTARI = "hapbilgi:bi-chat-konumu:v1";
+
+const chatSuruklenebilirMi = () => !isMobilCihaz();
+const chatEkraniniBul = (): ChatEkrani => window.innerWidth < 1024 ? "tablet" : "masaustu";
+
+const chatBoyutlariniBul = () => ({
+  genislik: Math.min(CHAT_GENISLIGI, window.innerWidth - CHAT_KENARI * 2),
+  yukseklik: Math.min(CHAT_YUKSEKLIGI, window.innerHeight * 0.8),
+});
+
+const chatKonumunuSinirla = (konum: ChatKonumu): ChatKonumu => {
+  const { genislik, yukseklik } = chatBoyutlariniBul();
+  return {
+    x: Math.min(Math.max(CHAT_KENARI, konum.x), Math.max(CHAT_KENARI, window.innerWidth - genislik - CHAT_KENARI)),
+    y: Math.min(Math.max(CHAT_KENARI, konum.y), Math.max(CHAT_KENARI, window.innerHeight - yukseklik - CHAT_KENARI)),
+  };
+};
 
 function renderHapbiMetin(metin: string, isUser = false, onLinkClick?: (url: string) => void): React.ReactNode {
   // Regex to match:
@@ -117,6 +134,140 @@ export default function HapbiChatModal() {
   const oncekiPathRef = useRef(pathname);
   const [girdi, setGirdi] = useState("");
   const mesajlarSonRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const [suruklenebilir, setSuruklenebilir] = useState(false);
+  const [surukleniyor, setSurukleniyor] = useState(false);
+  const [chatKonumu, setChatKonumu] = useState<ChatKonumu | null>(null);
+  const chatKonumuRef = useRef<ChatKonumu | null>(null);
+  const chatEkraniRef = useRef<ChatEkrani | null>(null);
+  const suruklemeRef = useRef<{
+    pointerId: number;
+    baslangicX: number;
+    baslangicY: number;
+    ilkKonum: ChatKonumu;
+  } | null>(null);
+
+  const chatKonumunuAyarla = (konum: ChatKonumu | null) => {
+    chatKonumuRef.current = konum;
+    setChatKonumu(konum);
+  };
+
+  useEffect(() => {
+    const ekranDurumunuGuncelle = () => {
+      const hareketli = chatSuruklenebilirMi();
+      setSuruklenebilir(hareketli);
+      if (!hareketli) {
+        chatEkraniRef.current = null;
+        chatKonumunuAyarla(null);
+      }
+    };
+    ekranDurumunuGuncelle();
+    window.addEventListener("resize", ekranDurumunuGuncelle);
+    return () => window.removeEventListener("resize", ekranDurumunuGuncelle);
+  }, []);
+
+  useEffect(() => {
+    if (!chatAcik || !suruklenebilir) return;
+
+    const konumuYukle = () => {
+      const ekran = chatEkraniniBul();
+      chatEkraniRef.current = ekran;
+      try {
+        const kayit = window.localStorage.getItem(`${CHAT_KONUM_ANAHTARI}:${ekran}`);
+        if (kayit) {
+          const parsed = JSON.parse(kayit) as Partial<ChatKonumu>;
+          if (typeof parsed.x === "number" && typeof parsed.y === "number") {
+            chatKonumunuAyarla(chatKonumunuSinirla({ x: parsed.x, y: parsed.y }));
+            return;
+          }
+        }
+      } catch {
+        // Geçersiz veya erişilemeyen kayıt varsa maskotun yanındaki varsayılan konum kullanılır.
+      }
+
+      const maskot = document.querySelector<HTMLElement>("[data-hapbi-maskot]");
+      const maskotRect = maskot?.getBoundingClientRect();
+      const { genislik, yukseklik } = chatBoyutlariniBul();
+      if (maskotRect) {
+        const soldaX = maskotRect.left - genislik - 12;
+        const sagdaX = maskotRect.right + 12;
+        chatKonumunuAyarla(chatKonumunuSinirla({
+          x: soldaX >= CHAT_KENARI ? soldaX : sagdaX,
+          y: maskotRect.bottom - yukseklik,
+        }));
+        return;
+      }
+      chatKonumunuAyarla(chatKonumunuSinirla({
+        x: window.innerWidth - genislik - 24,
+        y: window.innerHeight - yukseklik - 24,
+      }));
+    };
+
+    const yenidenBoyutlandir = () => {
+      if (!chatSuruklenebilirMi()) return;
+      const yeniEkran = chatEkraniniBul();
+      if (chatEkraniRef.current !== yeniEkran) {
+        konumuYukle();
+      } else if (chatKonumuRef.current) {
+        chatKonumunuAyarla(chatKonumunuSinirla(chatKonumuRef.current));
+      }
+    };
+
+    konumuYukle();
+    window.addEventListener("resize", yenidenBoyutlandir);
+    return () => window.removeEventListener("resize", yenidenBoyutlandir);
+  }, [chatAcik, suruklenebilir]);
+
+  const chatKonumunuKaydet = (konum: ChatKonumu) => {
+    const ekran = chatEkraniRef.current ?? chatEkraniniBul();
+    try {
+      window.localStorage.setItem(`${CHAT_KONUM_ANAHTARI}:${ekran}`, JSON.stringify(konum));
+    } catch {
+      // Depolama kapalıysa konum yalnız mevcut sayfa boyunca korunur.
+    }
+  };
+
+  const chatSuruklemeyiBaslat = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!suruklenebilir || (event.pointerType === "mouse" && event.button !== 0)) return;
+    if ((event.target as HTMLElement).closest("button, a, input, select, textarea")) return;
+    const rect = modalRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    suruklemeRef.current = {
+      pointerId: event.pointerId,
+      baslangicX: event.clientX,
+      baslangicY: event.clientY,
+      ilkKonum: { x: rect.left, y: rect.top },
+    };
+    setSurukleniyor(true);
+  };
+
+  const chatSurukle = (event: React.PointerEvent<HTMLDivElement>) => {
+    const surukleme = suruklemeRef.current;
+    if (!surukleme || surukleme.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    chatKonumunuAyarla(chatKonumunuSinirla({
+      x: surukleme.ilkKonum.x + event.clientX - surukleme.baslangicX,
+      y: surukleme.ilkKonum.y + event.clientY - surukleme.baslangicY,
+    }));
+  };
+
+  const chatSuruklemeyiBitir = (event: React.PointerEvent<HTMLDivElement>) => {
+    const surukleme = suruklemeRef.current;
+    if (!surukleme || surukleme.pointerId !== event.pointerId) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    suruklemeRef.current = null;
+    setSurukleniyor(false);
+    if (chatKonumuRef.current) chatKonumunuKaydet(chatKonumuRef.current);
+  };
+
+  const chatSuruklemeyiIptalEt = (event: React.PointerEvent<HTMLDivElement>) => {
+    const surukleme = suruklemeRef.current;
+    if (!surukleme || surukleme.pointerId !== event.pointerId) return;
+    suruklemeRef.current = null;
+    setSurukleniyor(false);
+    chatKonumunuAyarla(surukleme.ilkKonum);
+  };
 
   // Otomatik aşağı kaydırma
   useEffect(() => {
@@ -157,45 +308,43 @@ export default function HapbiChatModal() {
 
   return (
     <div
+      ref={modalRef}
       role="dialog"
       aria-label="bi sohbeti"
       className="hapbi-modal-container fixed z-50 flex flex-col overflow-hidden bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-orange-100 transition-all duration-300"
       style={{
         boxShadow: "0 20px 40px -15px rgba(249, 115, 22, 0.25), 0 0 0 1px rgba(0,0,0,0.06)",
         fontFamily: "'Nunito', sans-serif",
+        ...(suruklenebilir
+          ? {
+              width: CHAT_GENISLIGI,
+              height: CHAT_YUKSEKLIGI,
+              maxHeight: "80dvh",
+              ...(chatKonumu ? { left: chatKonumu.x, top: chatKonumu.y } : { right: 24, bottom: 24 }),
+            }
+          : {
+              bottom: 12,
+              left: 12,
+              right: 12,
+              marginLeft: "auto",
+              marginRight: "auto",
+              maxWidth: 360,
+              width: "calc(100% - 24px)",
+              height: 380,
+              maxHeight: "48dvh",
+            }),
       }}
     >
-      {/* iPhone 11 ve tüm mobil cihazlarda belirgin, derli toplu ve sayfayı kapatmayan boyutlar */}
-      <style jsx>{`
-        .hapbi-modal-container {
-          bottom: 12px;
-          left: 12px;
-          right: 12px;
-          margin-left: auto;
-          margin-right: auto;
-          max-width: 360px;
-          width: calc(100% - 24px);
-          height: 380px;
-          max-height: 48vh;
-          max-height: 48dvh;
-        }
-        @media (min-width: 768px) {
-          .hapbi-modal-container {
-            bottom: 24px;
-            right: 24px;
-            left: auto;
-            margin-left: 0;
-            margin-right: 0;
-            max-width: none;
-            width: 380px;
-            height: 530px;
-            max-height: 80vh;
-          }
-        }
-      `}</style>
       {/* Üst Başlık (Header) */}
       <div
-        className="flex items-center justify-between px-3.5 py-2.5 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-white select-none flex-shrink-0"
+        onPointerDown={chatSuruklemeyiBaslat}
+        onPointerMove={chatSurukle}
+        onPointerUp={chatSuruklemeyiBitir}
+        onPointerCancel={chatSuruklemeyiIptalEt}
+        className={`flex items-center justify-between px-3.5 py-2.5 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-white select-none flex-shrink-0 ${
+          suruklenebilir ? (surukleniyor ? "cursor-grabbing" : "cursor-move") : ""
+        }`}
+        style={{ touchAction: suruklenebilir ? "none" : "auto" }}
       >
         <div className="flex items-center gap-2.5">
           <div className="relative w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-md flex-shrink-0">
