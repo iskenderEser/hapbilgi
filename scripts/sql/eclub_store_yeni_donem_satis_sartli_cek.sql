@@ -136,16 +136,18 @@ END $f$;
 
 CREATE OR REPLACE FUNCTION public.eclub_store_onceki_deviri_hazirla(p_eczane_id uuid,p_yayin_id uuid,p_hedef_donem text)
 RETURNS void LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=public AS $f$
-DECLARE v_kaynak text; v_bas timestamptz; v_bit timestamptz; v_min integer; v_max integer; v_kazanc integer; v_gelen integer; v_toplam integer; v_devir integer:=0;
+DECLARE v_kaynak text; v_bas timestamptz; v_bit timestamptz; v_min integer; v_max integer; v_kazanc integer; v_gelen integer; v_toplam integer; v_devir integer:=0; v_cekli boolean;
 BEGIN
   SELECT d.kaynak_donem_kodu INTO v_kaynak FROM (SELECT CASE WHEN substring(p_hedef_donem,7,1)::int=1 THEN (substring(p_hedef_donem,1,4)::int-1)::text||'-P6' ELSE substring(p_hedef_donem,1,4)||'-P'||(substring(p_hedef_donem,7,1)::int-1)::text END kaynak_donem_kodu) d;
   PERFORM pg_advisory_xact_lock(hashtextextended('eclub-devir:'||p_eczane_id||':'||p_yayin_id||':'||v_kaynak,0));
   IF EXISTS(SELECT 1 FROM public.eclub_store_puan_devirleri WHERE eczane_id=p_eczane_id AND yayin_id=p_yayin_id AND kaynak_donem_kodu=v_kaynak AND iptal_edildi=false) OR
      EXISTS(SELECT 1 FROM public.eclub_store_cek_talepleri WHERE eczane_id=p_eczane_id AND yayin_id=p_yayin_id AND donem_kodu=v_kaynak AND durum<>'iptal') THEN RETURN; END IF;
+  SELECT y.cek_karsiligi_var_mi INTO v_cekli FROM public.yayin_yonetimi y WHERE y.yayin_id=p_yayin_id;
+  IF coalesce(v_cekli, true) = false THEN RETURN; END IF;
   SELECT baslangic,bitis_haric INTO v_bas,v_bit FROM public.eclub_store_donem_sinirlari(v_kaynak);
   SELECT min((x->>'min_puan')::int),max((x->>'max_puan')::int) INTO v_min,v_max FROM public.yayin_yonetimi y, jsonb_array_elements(y.barem_tablosu) x WHERE y.yayin_id=p_yayin_id;
   IF v_min IS NULL THEN RETURN; END IF;
-  SELECT coalesce(sum(kp.puan),0)::int INTO v_kazanc FROM public.eclub_kazanilan_puanlar kp JOIN public.eclub_kisi_eczane ke ON ke.kisi_id=kp.kisi_id AND ke.eczane_id=p_eczane_id AND ke.aktif_mi=true WHERE kp.yayin_id=p_yayin_id AND kp.created_at>=v_bas AND kp.created_at<v_bit;
+  SELECT coalesce(sum(kp.puan),0)::int INTO v_kazanc FROM public.eclub_kazanilan_puanlar kp JOIN public.eclub_kisi_eczane ke ON ke.kisi_id=kp.kisi_id AND ke.eczane_id=p_eczane_id AND ke.aktif_mi=true WHERE kp.yayin_id=p_yayin_id AND kp.created_at>=v_bas AND kp.created_at<v_bit AND kp.cek_karsiligi_var_mi = true;
   SELECT coalesce(sum(puan),0)::int INTO v_gelen FROM public.eclub_store_puan_devirleri WHERE eczane_id=p_eczane_id AND yayin_id=p_yayin_id AND hedef_donem_kodu=v_kaynak AND kullanildi_mi=false AND iptal_edildi=false;
   v_toplam:=v_kazanc+v_gelen;
   IF v_toplam>0 AND v_toplam<v_min THEN v_devir:=v_toplam;
@@ -164,9 +166,9 @@ BEGIN
   SELECT ke.eczane_id,coalesce(em.eczane_adi,'Eczane') INTO v_eczane,v_ad FROM public.eclub_kisi_eczane ke JOIN public.eclub_eczaneler e ON e.eczane_id=ke.eczane_id LEFT JOIN public.eclub_eczane_master em ON em.gln=e.gln WHERE ke.kisi_id=p_kisi_id AND ke.aktif_mi=true LIMIT 1;
   IF v_eczane IS NULL THEN RETURN; END IF;
   SELECT * INTO v_d FROM public.eclub_store_aktif_donem();
-  FOR r IN SELECT y.yayin_id FROM public.yayin_yonetimi y JOIN public.v_yayin_kunye k ON k.yayin_id=y.yayin_id JOIN public.eclub_eczane_firma ef ON ef.eczane_id=v_eczane AND ef.firma_id=k.firma_id AND ef.aktif_mi=true WHERE y.barem_tablosu IS NOT NULL AND y.durum='yayinda' LOOP PERFORM public.eclub_store_onceki_deviri_hazirla(v_eczane,r.yayin_id,v_d.donem_kodu); END LOOP;
+  FOR r IN SELECT y.yayin_id FROM public.yayin_yonetimi y JOIN public.v_yayin_kunye k ON k.yayin_id=y.yayin_id JOIN public.eclub_eczane_firma ef ON ef.eczane_id=v_eczane AND ef.firma_id=k.firma_id AND ef.aktif_mi=true WHERE y.barem_tablosu IS NOT NULL AND y.durum='yayinda' AND y.cek_karsiligi_var_mi = true LOOP PERFORM public.eclub_store_onceki_deviri_hazirla(v_eczane,r.yayin_id,v_d.donem_kodu); END LOOP;
   RETURN QUERY WITH personel AS (SELECT DISTINCT kisi_id FROM public.eclub_kisi_eczane WHERE eczane_id=v_eczane AND aktif_mi=true), kazanc AS (
-    SELECT kp.yayin_id,coalesce(sum(kp.puan),0)::int puan FROM public.eclub_kazanilan_puanlar kp JOIN personel p USING(kisi_id) WHERE kp.created_at>=v_d.donem_baslangic AND kp.created_at<v_d.donem_bitis_haric GROUP BY kp.yayin_id
+    SELECT kp.yayin_id,coalesce(sum(kp.puan),0)::int puan FROM public.eclub_kazanilan_puanlar kp JOIN personel p USING(kisi_id) WHERE kp.created_at>=v_d.donem_baslangic AND kp.created_at<v_d.donem_bitis_haric AND kp.cek_karsiligi_var_mi = true GROUP BY kp.yayin_id
   ), gelen AS (SELECT d.yayin_id,sum(d.puan)::int puan FROM public.eclub_store_puan_devirleri d WHERE d.eczane_id=v_eczane AND d.hedef_donem_kodu=v_d.donem_kodu AND d.kullanildi_mi=false AND d.iptal_edildi=false GROUP BY d.yayin_id)
   SELECT y.yayin_id,k.urun_id,coalesce(k.urun_adi,'Ürün')::text,k.firma_id,coalesce(f.firma_adi,'Firma')::text,v_eczane,v_ad,
     (coalesce(z.puan,0)+coalesce(g.puan,0))::int, y.satis_sarti_tipi,y.gizli_sart_katlama_orani,y.barem_tablosu,y.karsilik_puan,y.karsilik_tl,
@@ -176,7 +178,7 @@ BEGIN
     round(least(coalesce(z.puan,0)+coalesce(g.puan,0),(SELECT max((x->>'max_puan')::int) FROM jsonb_array_elements(y.barem_tablosu)x))*y.karsilik_tl/greatest(y.karsilik_puan,1)*(1+coalesce(y.gizli_sart_katlama_orani,0)/100.0),2),
     t.durum,t.cek_kodu,v_d.donem_kodu,v_d.talep_acik_mi
   FROM public.yayin_yonetimi y JOIN public.v_yayin_kunye k ON k.yayin_id=y.yayin_id LEFT JOIN public.firmalar f ON f.firma_id=k.firma_id LEFT JOIN kazanc z ON z.yayin_id=y.yayin_id LEFT JOIN gelen g ON g.yayin_id=y.yayin_id LEFT JOIN public.eclub_store_cek_talepleri t ON t.eczane_id=v_eczane AND t.yayin_id=y.yayin_id AND t.donem_kodu=v_d.donem_kodu AND t.durum<>'iptal'
-  WHERE y.barem_tablosu IS NOT NULL AND y.durum='yayinda' AND public.eclub_store_barem_gecerli(y.barem_tablosu)
+  WHERE y.barem_tablosu IS NOT NULL AND y.durum='yayinda' AND public.eclub_store_barem_gecerli(y.barem_tablosu) AND y.cek_karsiligi_var_mi = true
     AND EXISTS(SELECT 1 FROM public.eclub_eczane_firma ef WHERE ef.eczane_id=v_eczane AND ef.firma_id=k.firma_id AND ef.aktif_mi=true);
 END $f$;
 
@@ -188,6 +190,8 @@ BEGIN
   SELECT ke.eczane_id INTO v_eczane FROM public.eclub_kisi_eczane ke JOIN public.eclub_kisiler k ON k.kisi_id=ke.kisi_id WHERE ke.kisi_id=p_kisi_id AND ke.aktif_mi=true AND lower(k.rol) IN ('eczaci','ikinci_eczaci','yardimci_eczaci','eczane_teknisyeni') LIMIT 1;
   IF v_eczane IS NULL THEN RETURN QUERY SELECT false,NULL::uuid,'Aktif eczane üyeliği bulunamadı.',0::numeric,0; RETURN; END IF;
   SELECT * INTO v_y FROM public.yayin_yonetimi WHERE yayin_yonetimi.yayin_id=p_yayin_id FOR SHARE;
+  IF v_y.yayin_id IS NULL THEN RETURN QUERY SELECT false,NULL::uuid,'Yayın bulunamadı.',0::numeric,0; RETURN; END IF;
+  IF v_y.cek_karsiligi_var_mi = false THEN RETURN QUERY SELECT false,NULL::uuid,'Çeksiz puan yayınları için hediye çeki talebi oluşturulamaz.',0::numeric,0; RETURN; END IF;
   SELECT k.firma_id INTO v_firma FROM public.v_yayin_kunye k WHERE k.yayin_id=p_yayin_id;
   IF v_firma IS NULL OR NOT public.eclub_store_barem_gecerli(v_y.barem_tablosu) THEN RETURN QUERY SELECT false,NULL::uuid,'Yayın veya barem ayarı geçersiz.',0::numeric,0; RETURN; END IF;
   SELECT ue.utt_id INTO v_utt FROM public.eclub_eczane_firma ef JOIN public.eclub_utt_eczane ue ON ue.eczane_firma_id=ef.id AND ue.aktif_mi=true JOIN public.kullanicilar u ON u.kullanici_id=ue.utt_id AND u.aktif_mi=true WHERE ef.eczane_id=v_eczane AND ef.firma_id=v_firma AND ef.aktif_mi=true ORDER BY ue.created_at DESC LIMIT 1;
@@ -196,7 +200,7 @@ BEGIN
   PERFORM pg_advisory_xact_lock(hashtextextended('eclub-talep:'||v_eczane||':'||p_yayin_id||':'||v_d.donem_kodu,0));
   IF EXISTS(SELECT 1 FROM public.eclub_store_cek_talepleri WHERE eczane_id=v_eczane AND yayin_id=p_yayin_id AND donem_kodu=v_d.donem_kodu AND durum<>'iptal') THEN RETURN QUERY SELECT false,NULL::uuid,'Bu dönem için talep zaten oluşturuldu.',0::numeric,0; RETURN; END IF;
   PERFORM public.eclub_store_onceki_deviri_hazirla(v_eczane,p_yayin_id,v_d.donem_kodu);
-  SELECT coalesce(sum(kp.puan),0) INTO v_bas FROM public.eclub_kazanilan_puanlar kp JOIN public.eclub_kisi_eczane ke ON ke.kisi_id=kp.kisi_id AND ke.eczane_id=v_eczane AND ke.aktif_mi=true WHERE kp.yayin_id=p_yayin_id AND kp.created_at>=v_d.donem_baslangic AND kp.created_at<v_d.donem_bitis_haric;
+  SELECT coalesce(sum(kp.puan),0) INTO v_bas FROM public.eclub_kazanilan_puanlar kp JOIN public.eclub_kisi_eczane ke ON ke.kisi_id=kp.kisi_id AND ke.eczane_id=v_eczane AND ke.aktif_mi=true WHERE kp.yayin_id=p_yayin_id AND kp.created_at>=v_d.donem_baslangic AND kp.created_at<v_d.donem_bitis_haric AND kp.cek_karsiligi_var_mi = true;
   PERFORM 1 FROM public.eclub_store_puan_devirleri WHERE eczane_id=v_eczane AND yayin_id=p_yayin_id AND hedef_donem_kodu=v_d.donem_kodu AND kullanildi_mi=false AND iptal_edildi=false FOR UPDATE;
   SELECT coalesce(sum(puan),0)::int INTO v_gelen FROM public.eclub_store_puan_devirleri WHERE eczane_id=v_eczane AND yayin_id=p_yayin_id AND hedef_donem_kodu=v_d.donem_kodu AND kullanildi_mi=false AND iptal_edildi=false;
   v_toplam:=v_bas::int+v_gelen; SELECT min((x->>'min_puan')::int),max((x->>'max_puan')::int) INTO v_min,v_max FROM jsonb_array_elements(v_y.barem_tablosu)x;
