@@ -48,6 +48,7 @@ export interface Bekleyen {
   barem_tablosu?: BaremSatiri[];
   karsilik_puan?: number;
   karsilik_tl?: number;
+  cek_karsiligi_var_mi?: boolean;
 }
 
 // Yayin: yayınlanmış (yayında veya durdurulmuş) içerik.

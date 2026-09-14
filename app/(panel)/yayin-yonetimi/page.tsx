@@ -224,6 +224,7 @@ function YayinYonetimiIcerik() {
                 baremTablolari={yy.baremTablolari} setBaremTablolari={yy.setBaremTablolari}
                 eclubKarsilikPuanlar={yy.eclubKarsilikPuanlar} setEclubKarsilikPuanlar={yy.setEclubKarsilikPuanlar}
                 eclubKarsilikTllar={yy.eclubKarsilikTllar} setEclubKarsilikTllar={yy.setEclubKarsilikTllar}
+                cekKarsiligiVarMi={yy.cekKarsiligiVarMi} setCekKarsiligiVarMi={yy.setCekKarsiligiVarMi}
                 tekrarPeriyotlari={yy.tekrarPeriyotlari} setTekrarPeriyotlari={yy.setTekrarPeriyotlari}
                 tekrarSecenekleri={yy.tekrarSecenekleri}
                 yayinGunleri={yy.yayinGunleri} setYayinGunleri={yy.setYayinGunleri}

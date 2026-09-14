@@ -65,6 +65,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
   const [baremTablolari, setBaremTablolari] = useState<Record<string, BaremSatiri[]>>({});
   const [eclubKarsilikPuanlar, setEclubKarsilikPuanlar] = useState<Record<string, number>>({});
   const [eclubKarsilikTllar, setEclubKarsilikTllar] = useState<Record<string, number>>({});
+  const [cekKarsiligiVarMi, setCekKarsiligiVarMi] = useState<Record<string, boolean>>({});
 
   // Tekrar gönderim periyodu — soru_seti_durum_id → seçilen gün (seçilmediyse tekrar yok).
   // Seçenek listesi sistem_ayarlari'ndan gelir (tek kaynak): api/tekrar-secenekleri.
@@ -247,18 +248,22 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
               satis_fiyati: satisFiyatlar[b.soru_seti_durum_id] ?? null,
             }
           : eclub
-            ? {
-                tekrar_periyot_gun: tekrarPeriyotlari[b.soru_seti_durum_id] ?? null,
-                satis_sarti_tipi: satisSartiTipleri[b.soru_seti_durum_id] ?? "satis_sartli",
-                gizli_sart_katlama_orani: katlamaOranlari[b.soru_seti_durum_id] ?? 20,
-                barem_tablosu: baremTablolari[b.soru_seti_durum_id] ?? VARSAYILAN_BAREM_TABLOSU,
-                karsilik_puan: eclubKarsilikPuanlar[b.soru_seti_durum_id] ?? 1,
-                karsilik_tl: eclubKarsilikTllar[b.soru_seti_durum_id] ?? 1,
-              }
+            ? (() => {
+                const isCekli = cekKarsiligiVarMi[b.soru_seti_durum_id] ?? true;
+                return {
+                  tekrar_periyot_gun: tekrarPeriyotlari[b.soru_seti_durum_id] ?? null,
+                  cek_karsiligi_var_mi: isCekli,
+                  satis_sarti_tipi: isCekli ? (satisSartiTipleri[b.soru_seti_durum_id] ?? "satis_sartli") : null,
+                  gizli_sart_katlama_orani: isCekli && satisSartiTipleri[b.soru_seti_durum_id] === "serbest_siparis" ? (katlamaOranlari[b.soru_seti_durum_id] ?? 20) : null,
+                  barem_tablosu: isCekli ? (baremTablolari[b.soru_seti_durum_id] ?? VARSAYILAN_BAREM_TABLOSU) : null,
+                  karsilik_puan: isCekli ? (eclubKarsilikPuanlar[b.soru_seti_durum_id] ?? 1) : null,
+                  karsilik_tl: isCekli ? (eclubKarsilikTllar[b.soru_seti_durum_id] ?? 1) : null,
+                };
+              })()
             : {
-              extra_puan: extraPuanlar[b.soru_seti_durum_id] ?? null,
-              tekrar_periyot_gun: tekrarPeriyotlari[b.soru_seti_durum_id] ?? null,
-            }),
+                extra_puan: extraPuanlar[b.soru_seti_durum_id] ?? null,
+                tekrar_periyot_gun: tekrarPeriyotlari[b.soru_seti_durum_id] ?? null,
+              }),
       }),
     });
     const d = await res.json();
@@ -332,6 +337,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     baremTablolari, setBaremTablolari,
     eclubKarsilikPuanlar, setEclubKarsilikPuanlar,
     eclubKarsilikTllar, setEclubKarsilikTllar,
+    cekKarsiligiVarMi, setCekKarsiligiVarMi,
     tekrarPeriyotlari, setTekrarPeriyotlari,
     tekrarSecenekleri,
     tekrarBilgi,
