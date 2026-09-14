@@ -63,17 +63,29 @@ export async function GET(request: NextRequest) {
         talep_edilen_cek_tl, siparis_tipi, siparis_verildi_mi, siparis_adet,
         siparis_mal_fazlasi, durum, utt_id, bm_id, cek_kodu, cek_gonderim_tarihi,
         devreden_puan, created_at,
-        yayin_yonetimi ( baslik ),
+        v_yayin_kunye ( urun_id ),
         firmalar ( firma_adi )
       `)
       .in("eczane_id", eczaneIdler.length > 0 ? eczaneIdler : ["00000000-0000-0000-0000-000000000000"])
       .order("created_at", { ascending: false });
 
     if (durum) talepQuery = talepQuery.eq("durum", durum);
-    const { data: cekTalepleri } = await talepQuery;
+    const { data: cekTalepleri, error: cekTalepError } = await talepQuery;
+    if (cekTalepError) return hataYaniti("Çek talepleri alınamadı.", "eclub_store_cek_talepleri SELECT — çeklerim", cekTalepError);
+    const urunIdler = [...new Set((cekTalepleri ?? []).map((t: any) => {
+      const kunye = Array.isArray(t.v_yayin_kunye) ? t.v_yayin_kunye[0] : t.v_yayin_kunye;
+      return kunye?.urun_id as string | undefined;
+    }).filter((urunId): urunId is string => Boolean(urunId)))];
+    const urunAdlari = new Map<string, string>();
+    if (urunIdler.length > 0) {
+      const { data: urunler, error: urunError } = await adminSupabase.from("urunler").select("urun_id, urun_adi").in("urun_id", urunIdler);
+      if (urunError) return hataYaniti("Ürün bilgileri alınamadı.", "urunler SELECT — çeklerim", urunError);
+      for (const urun of urunler ?? []) urunAdlari.set(urun.urun_id, urun.urun_adi);
+    }
 
     const formatliCekler = (cekTalepleri ?? []).map((t: any) => {
-      const baslik = t.yayin_yonetimi?.baslik ?? "Migros Hediye Çeki";
+      const kunye = Array.isArray(t.v_yayin_kunye) ? t.v_yayin_kunye[0] : t.v_yayin_kunye;
+      const baslik = (kunye?.urun_id ? urunAdlari.get(kunye.urun_id) : null) ?? "Migros Hediye Çeki";
       return {
         siparis_id: t.talep_id,
         talep_id: t.talep_id,

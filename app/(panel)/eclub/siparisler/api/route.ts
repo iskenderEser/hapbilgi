@@ -110,7 +110,7 @@ async function cekTalepleriniGetir(
       guncellenme_at,
       eclub_eczaneler ( gln ),
       eclub_kisiler ( ad, soyad, rol ),
-      v_yayin_kunye ( urun_adi, urun_id )
+      v_yayin_kunye ( urun_id )
     `)
     .eq("firma_id", firmaId);
 
@@ -130,6 +130,16 @@ async function cekTalepleriniGetir(
   }
 
   const uttMap = new Map(kapsam.uttler.map((u) => [u.utt_id, u]));
+  const urunIdler = [...new Set((talepler ?? []).map((t: any) => {
+    const kunye = Array.isArray(t.v_yayin_kunye) ? t.v_yayin_kunye[0] : t.v_yayin_kunye;
+    return kunye?.urun_id as string | undefined;
+  }).filter((urunId): urunId is string => Boolean(urunId)))];
+  const urunAdlari = new Map<string, string>();
+  if (urunIdler.length > 0) {
+    const { data: urunler, error: urunError } = await supabase.from("urunler").select("urun_id, urun_adi").in("urun_id", urunIdler);
+    if (urunError) throw new Error(`urunler SELECT: ${urunError.message}`);
+    for (const urun of urunler ?? []) urunAdlari.set(urun.urun_id, urun.urun_adi);
+  }
   const glnler = [...new Set((talepler ?? []).map((t: any) => {
     const eczane = Array.isArray(t.eclub_eczaneler) ? t.eclub_eczaneler[0] : t.eclub_eczaneler;
     return eczane?.gln as string | undefined;
@@ -158,7 +168,7 @@ async function cekTalepleriniGetir(
       kisi_soyad: kisi?.soyad ?? "-",
       kisi_rol: kisi?.rol ?? "eczaci",
       urun_id: kunye?.urun_id ?? t.yayin_id,
-      urun_adi: kunye?.urun_adi ?? "Migros Hediye Çeki",
+      urun_adi: (kunye?.urun_id ? urunAdlari.get(kunye.urun_id) : null) ?? "Migros Hediye Çeki",
       urun_gorsel_url: null,
       adres_snapshot: null,
       adet: t.siparis_adet ?? 1,

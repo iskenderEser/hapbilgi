@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
           eclub_eczaneler ( gln ),
           firmalar ( firma_adi ),
           eclub_kisiler ( ad, soyad, rol, telefon ),
-          v_yayin_kunye ( urun_adi, urun_id )
+          v_yayin_kunye ( urun_id )
         `)
         .order("created_at", { ascending: false });
 
@@ -50,14 +50,24 @@ export async function GET(request: NextRequest) {
         const eczane = Array.isArray(t.eclub_eczaneler) ? t.eclub_eczaneler[0] : t.eclub_eczaneler;
         return eczane?.gln as string | undefined;
       }).filter((gln): gln is string => Boolean(gln)))];
-      const eczaneMasterMap = new Map<string, { eczane_adi: string; telefon: string | null }>();
+      const eczaneMasterMap = new Map<string, { eczane_adi: string }>();
       if (glnler.length > 0) {
         const { data: masterlar, error: masterError } = await adminSupabase
           .from("eclub_eczane_master")
-          .select("gln, eczane_adi, telefon")
+          .select("gln, eczane_adi")
           .in("gln", glnler);
         if (masterError) return hataYaniti("Eczane bilgileri çekilemedi.", "eclub_eczane_master SELECT", masterError);
-        for (const m of masterlar ?? []) eczaneMasterMap.set(m.gln, { eczane_adi: m.eczane_adi, telefon: m.telefon ?? null });
+        for (const m of masterlar ?? []) eczaneMasterMap.set(m.gln, { eczane_adi: m.eczane_adi });
+      }
+      const urunIdler = [...new Set((talepler ?? []).map((t: any) => {
+        const kunye = Array.isArray(t.v_yayin_kunye) ? t.v_yayin_kunye[0] : t.v_yayin_kunye;
+        return kunye?.urun_id as string | undefined;
+      }).filter((urunId): urunId is string => Boolean(urunId)))];
+      const urunAdlari = new Map<string, string>();
+      if (urunIdler.length > 0) {
+        const { data: urunler, error: urunError } = await adminSupabase.from("urunler").select("urun_id, urun_adi").in("urun_id", urunIdler);
+        if (urunError) return hataYaniti("Ürün bilgileri çekilemedi.", "urunler SELECT — çek talepleri", urunError);
+        for (const urun of urunler ?? []) urunAdlari.set(urun.urun_id, urun.urun_adi);
       }
       const eczaneIdler = [...new Set((talepler ?? []).map((t: any) => t.eczane_id as string))];
       const eczanePersoneli = new Map<string, Array<{ ad_soyad: string; rol: string; telefon: string | null }>>();
@@ -122,13 +132,13 @@ export async function GET(request: NextRequest) {
           eczane_id: t.eczane_id,
           eczane_adi: master?.eczane_adi ?? "Eczane",
           gln: eczane?.gln ?? null,
-          eczane_tel: master?.telefon ?? null,
+          eczane_tel: eczaci?.telefon ?? null,
           firma_id: t.firma_id,
           firma_adi: firma?.firma_adi ?? "Firma",
           takim_adi: utt?.takim_adi ?? "—",
           bolge_adi: utt?.bolge_adi ?? bm?.bolge_adi ?? "—",
           yayin_id: t.yayin_id,
-          urun_adi: kunye?.urun_adi ?? "Migros Hediye Çeki",
+          urun_adi: (kunye?.urun_id ? urunAdlari.get(kunye.urun_id) : null) ?? "Migros Hediye Çeki",
           talep_eden_kisi_id: t.talep_eden_kisi_id,
           talep_eden_ad_soyad: kisi ? `${kisi.ad} ${kisi.soyad}` : "—",
           talep_eden_rol: kisi?.rol ?? "eczaci",
