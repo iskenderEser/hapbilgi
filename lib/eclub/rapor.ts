@@ -14,6 +14,8 @@ export interface EclubRaporHamSatir {
   yanlis_cevap: number | string | null;
   izleme_puani: number | string | null;
   cevaplama_puani: number | string | null;
+  cekli_puan?: number | string | null;
+  ceksiz_puan?: number | string | null;
 }
 
 export interface EclubRaporMetrikleri {
@@ -23,6 +25,8 @@ export interface EclubRaporMetrikleri {
   yanlis_cevap: number;
   izleme_puani: number;
   cevaplama_puani: number;
+  cekli_puan: number;
+  ceksiz_puan: number;
   toplam_puan: number;
 }
 
@@ -83,6 +87,8 @@ const sifirMetrik = (): EclubRaporMetrikleri => ({
   yanlis_cevap: 0,
   izleme_puani: 0,
   cevaplama_puani: 0,
+  cekli_puan: 0,
+  ceksiz_puan: 0,
   toplam_puan: 0,
 });
 
@@ -94,6 +100,10 @@ const sayi = (deger: number | string | null | undefined) => {
 const satirMetrigi = (satir: EclubRaporHamSatir): EclubRaporMetrikleri => {
   const izlemePuani = sayi(satir.izleme_puani);
   const cevaplamaPuani = sayi(satir.cevaplama_puani);
+  const hasCekAyrimi = satir.cekli_puan != null || satir.ceksiz_puan != null;
+  const cekliPuani = hasCekAyrimi ? sayi(satir.cekli_puan) : (izlemePuani + cevaplamaPuani);
+  const ceksizPuani = hasCekAyrimi ? sayi(satir.ceksiz_puan) : 0;
+  const toplamPuan = cekliPuani + ceksizPuani;
   return {
     gonderilen_sayisi: sayi(satir.gonderilen_sayisi),
     tamamlanan_izleme: sayi(satir.tamamlanan_izleme),
@@ -101,7 +111,9 @@ const satirMetrigi = (satir: EclubRaporHamSatir): EclubRaporMetrikleri => {
     yanlis_cevap: sayi(satir.yanlis_cevap),
     izleme_puani: izlemePuani,
     cevaplama_puani: cevaplamaPuani,
-    toplam_puan: izlemePuani + cevaplamaPuani,
+    cekli_puan: cekliPuani,
+    ceksiz_puan: ceksizPuani,
+    toplam_puan: toplamPuan,
   };
 };
 
@@ -112,6 +124,8 @@ const metrikEkle = (hedef: EclubRaporMetrikleri, kaynak: EclubRaporMetrikleri) =
   hedef.yanlis_cevap += kaynak.yanlis_cevap;
   hedef.izleme_puani += kaynak.izleme_puani;
   hedef.cevaplama_puani += kaynak.cevaplama_puani;
+  hedef.cekli_puan += kaynak.cekli_puan;
+  hedef.ceksiz_puan += kaynak.ceksiz_puan;
   hedef.toplam_puan += kaynak.toplam_puan;
 };
 
@@ -270,6 +284,8 @@ export function eclubLiginiOlustur(satirlar: EclubRaporHamSatir[]): EclubLigSati
       yanlis_cevap: kisi.yanlis_cevap,
       izleme_puani: kisi.izleme_puani,
       cevaplama_puani: kisi.cevaplama_puani,
+      cekli_puan: kisi.cekli_puan,
+      ceksiz_puan: kisi.ceksiz_puan,
       toplam_puan: kisi.toplam_puan,
       icerikler: [...kisi.icerikler].sort((a, b) => (
         b.toplam_puan - a.toplam_puan || a.icerik_adi.localeCompare(b.icerik_adi, "tr")
@@ -334,6 +350,8 @@ export function eclubTakimlarLiginiOlustur(takimlar: EclubTakimGirdi[], aktifUtt
       yanlis_cevap: rapor.ozet.yanlis_cevap,
       izleme_puani: rapor.ozet.izleme_puani,
       cevaplama_puani: rapor.ozet.cevaplama_puani,
+      cekli_puan: rapor.ozet.cekli_puan,
+      ceksiz_puan: rapor.ozet.ceksiz_puan,
       toplam_puan: rapor.ozet.toplam_puan,
       dogru_cevap_orani: toplamCevap > 0 ? Math.round((rapor.ozet.dogru_cevap / toplamCevap) * 100) : 0,
       benim_takimim: aktifUttId ? takim.utt_id === aktifUttId : false,

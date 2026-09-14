@@ -53,11 +53,11 @@ export async function GET(request: NextRequest) {
     }));
     const siralama: (string | number)[][] = [[
       "Takım", "BM", "Bölge", "UTT", "Sıra", "Ad Soyad", "Rol", "Eczane", "GLN", "Gönderilen", "Tamamlanan",
-      "Doğru", "Yanlış", "İzleme Puanı", "Cevaplama Puanı", "Toplam Puan",
+      "Doğru", "Yanlış", "İzleme Puanı", "Cevaplama Puanı", "Çekli Puan", "Çeksiz Puan", "Toplam Puan",
     ]];
     const detay: (string | number)[][] = [[
       "Takım", "BM", "Bölge", "UTT", "Sıra", "Ad Soyad", "Eczane", "Ürün / İçerik", "Gönderilen", "Tamamlanan",
-      "Doğru", "Yanlış", "İzleme Puanı", "Cevaplama Puanı", "Toplam Puan",
+      "Doğru", "Yanlış", "İzleme Puanı", "Cevaplama Puanı", "Çekli Puan", "Çeksiz Puan", "Toplam Puan",
     ]];
 
     for (const { utt, lig } of ligler) {
@@ -66,14 +66,16 @@ export async function GET(request: NextRequest) {
           utt.takim_adi, utt.bm_adi, utt.bolge_adi, utt.utt_adi,
           kisi.sira || "", `${kisi.ad} ${kisi.soyad}`.trim(), eclubKisiRolEtiketi(kisi.rol), kisi.eczane_adi,
           kisi.gln ?? "", kisi.gonderilen_sayisi, kisi.tamamlanan_izleme, kisi.dogru_cevap,
-          kisi.yanlis_cevap, kisi.izleme_puani, kisi.cevaplama_puani, kisi.toplam_puan,
+          kisi.yanlis_cevap, kisi.izleme_puani, kisi.cevaplama_puani,
+          kisi.cekli_puan, kisi.ceksiz_puan, kisi.toplam_puan,
         ]);
         for (const icerik of kisi.icerikler) {
           detay.push([
             utt.takim_adi, utt.bm_adi, utt.bolge_adi, utt.utt_adi,
             kisi.sira || "", `${kisi.ad} ${kisi.soyad}`.trim(), kisi.eczane_adi, icerik.icerik_adi,
             icerik.gonderilen_sayisi, icerik.tamamlanan_izleme, icerik.dogru_cevap,
-            icerik.yanlis_cevap, icerik.izleme_puani, icerik.cevaplama_puani, icerik.toplam_puan,
+            icerik.yanlis_cevap, icerik.izleme_puani, icerik.cevaplama_puani,
+            icerik.cekli_puan, icerik.ceksiz_puan, icerik.toplam_puan,
           ]);
         }
       }
@@ -85,12 +87,14 @@ export async function GET(request: NextRequest) {
     siralamaSheet["!cols"] = [
       { wch: 22 }, { wch: 24 }, { wch: 20 }, { wch: 24 },
       { wch: 7 }, { wch: 24 }, { wch: 22 }, { wch: 28 }, { wch: 16 },
-      { wch: 12 }, { wch: 12 }, { wch: 9 }, { wch: 9 }, { wch: 14 }, { wch: 17 }, { wch: 13 },
+      { wch: 12 }, { wch: 12 }, { wch: 9 }, { wch: 9 }, { wch: 14 }, { wch: 17 },
+      { wch: 13 }, { wch: 13 }, { wch: 13 },
     ];
     detaySheet["!cols"] = [
       { wch: 22 }, { wch: 24 }, { wch: 20 }, { wch: 24 },
       { wch: 7 }, { wch: 24 }, { wch: 28 }, { wch: 28 }, { wch: 12 },
-      { wch: 12 }, { wch: 9 }, { wch: 9 }, { wch: 14 }, { wch: 17 }, { wch: 13 },
+      { wch: 12 }, { wch: 9 }, { wch: 9 }, { wch: 14 }, { wch: 17 },
+      { wch: 13 }, { wch: 13 }, { wch: 13 },
     ];
     XLSX.utils.book_append_sheet(workbook, siralamaSheet, "Takım Sıralaması");
     XLSX.utils.book_append_sheet(workbook, detaySheet, "İçerik Detayı");

@@ -1,11 +1,16 @@
--- scripts/sql/get_eclub_utt_rapor.sql
+-- scripts/sql/eclub_lig_cekli_ceksiz_puan.sql
 --
--- E-Club Raporlar — UTT'nin kendi eczaneleri için kişi × içerik dökümü.
--- Uygulama adımı: E-Club DB aktivasyonu sırasında SQL editöründe çalıştırılır.
+-- Faz 5 — E-Club Lig Hesaplarının Ayrıştırılması: get_eclub_utt_rapor
+-- Supabase SQL Editor'da İskender tarafından çalıştırılır.
 --
--- GÜNCELLEME (Faz 5 — Çekli / Çeksiz Puan ayrımı):
---   cekli_puan ve ceksiz_puan sütunları eklendi.
---   toplam_puan = cekli_puan + ceksiz_puan kuralı korunur.
+-- Kurallar:
+--   * cekli_puan: cek_karsiligi_var_mi = true olan kazanılmış puanların toplamı
+--   * ceksiz_puan: cek_karsiligi_var_mi = false olan kazanılmış puanların toplamı
+--   * toplam_puan: cekli_puan + ceksiz_puan
+--   * İzleme ve cevaplama puanı ayrımları korunur.
+--   * Aynı puan birden fazla kez toplanmaz.
+
+BEGIN;
 
 DROP FUNCTION IF EXISTS public.get_eclub_utt_rapor(uuid, timestamp with time zone, timestamp with time zone);
 
@@ -200,3 +205,5 @@ $function$;
 
 REVOKE ALL ON FUNCTION public.get_eclub_utt_rapor(uuid, timestamp with time zone, timestamp with time zone) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_eclub_utt_rapor(uuid, timestamp with time zone, timestamp with time zone) TO service_role;
+
+COMMIT;

@@ -253,6 +253,7 @@ export default function EclubLigiPage() {
                     <th>Üye Kadrosu</th>
                     <th>Tamamlanan İzleme</th>
                     <th>Doğru Oranı</th>
+                    <th style={{ textAlign: "right" }}>Çeksiz Puan</th>
                     <th style={{ textAlign: "right" }}>Toplam Takım Puanı</th>
                   </tr>
                 </thead>
@@ -286,6 +287,9 @@ export default function EclubLigiPage() {
                         <td className="text-xs text-[#475569]">{takim.uye_sayisi} üye ({takim.aktif_uye} aktif)</td>
                         <td className="text-xs tabular-nums text-[#334155]">{takim.tamamlanan_izleme} izleme</td>
                         <td className="text-xs font-bold text-[#16a34a]">%{takim.dogru_cevap_orani}</td>
+                        <td className="text-xs tabular-nums text-[#64748b]" style={{ textAlign: "right" }}>
+                          {takim.ceksiz_puan > 0 ? `${takim.ceksiz_puan.toLocaleString("tr-TR")} p` : "0 p"}
+                        </td>
                         <td className={styles.score} style={{ textAlign: "right" }}>
                           {takim.toplam_puan.toLocaleString("tr-TR")} p
                         </td>
