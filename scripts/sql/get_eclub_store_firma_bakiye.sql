@@ -36,6 +36,7 @@ AS $function$
     FROM eclub_kazanilan_puanlar kp
     JOIN v_yayin_kunye ky ON ky.yayin_id = kp.yayin_id
     WHERE kp.kisi_id = p_kisi_id
+      AND kp.cek_karsiligi_var_mi = true
     GROUP BY ky.firma_id
   ),
   kayip AS (
@@ -43,6 +44,7 @@ AS $function$
     FROM eclub_ileri_sarma_kayitlari ks
     JOIN v_yayin_kunye ky ON ky.yayin_id = ks.yayin_id
     WHERE ks.kisi_id = p_kisi_id
+      AND ks.cek_karsiligi_var_mi = true
     GROUP BY ky.firma_id
   ),
   harcama AS (
