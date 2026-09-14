@@ -12,7 +12,7 @@ import { biKullanabilirMi } from "@/lib/bi/erisim";
 type MaskotKonumu = { x: number; y: number };
 type EkranTuru = "mobil" | "tablet" | "masaustu";
 
-const MASKOT_BOYUTU = 56;
+const MASKOT_BOYUTU = 42;
 const EKRAN_KENARI = 12;
 const KONUM_ANAHTARI = "hapbilgi:bi-maskot-konumu:v1";
 
@@ -168,7 +168,7 @@ export default function HapbiMaskot() {
     <div
       ref={maskotRef}
       data-hapbi-maskot
-      className="pointer-events-none fixed z-50 size-14 select-none"
+      className="pointer-events-none fixed z-50 size-[42px] select-none"
       style={{
         fontFamily: "'Nunito', sans-serif",
         ...(konum ? { left: konum.x, top: konum.y } : { right: 24, bottom: 24 }),
@@ -216,8 +216,8 @@ export default function HapbiMaskot() {
         title="bi — sohbeti açmak için tıklayın, taşımak için sürükleyin"
         className={`pointer-events-auto relative group border-none bg-transparent p-0 transition-transform duration-300 hover:scale-105 active:scale-95 focus:outline-none ${surukleniyor ? "cursor-grabbing" : "cursor-grab"}`}
         style={{
-          width: "56px",
-          height: "56px",
+          width: `${MASKOT_BOYUTU}px`,
+          height: `${MASKOT_BOYUTU}px`,
           touchAction: "none",
           animation: "bi-float 3s ease-in-out infinite",
         }}
@@ -230,17 +230,17 @@ export default function HapbiMaskot() {
 
         {/* Ana Dairesel bi Butonu */}
         <div className="relative w-full h-full rounded-full bg-gradient-to-tr from-orange-600 via-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/30 border-2 border-white/90">
-          <span className="text-white font-black text-2xl tracking-tighter select-none font-sans drop-shadow-sm lowercase">
+          <span className="text-lg font-black tracking-tighter text-white select-none font-sans drop-shadow-sm lowercase">
             bi
           </span>
         </div>
 
         {/* Canlı Durum Rozeti */}
         <div
-          className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white shadow-sm flex items-center justify-center"
+          className="absolute bottom-0 right-0 size-[11px] bg-emerald-500 rounded-full border border-white shadow-sm flex items-center justify-center"
           title="bi hazır"
         >
-          <div className="w-1 h-1 bg-white rounded-full animate-ping" />
+          <div className="size-[3px] bg-white rounded-full animate-ping" />
         </div>
       </button>
 
