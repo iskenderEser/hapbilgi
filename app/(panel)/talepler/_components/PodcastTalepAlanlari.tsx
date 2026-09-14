@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import {
   type BekleyenDosya,
   PODCAST_FORMATLAR,
@@ -35,11 +35,11 @@ function DosyaAlani({
 
   return (
     <div>
-      <label className="mb-1 block text-xs font-bold text-[#425672]">
-        {etiket} {zorunlu && !yukluGoster && <span className="text-red-500">*</span>}
+      <label className="mb-1 flex h-5 items-center text-xs font-bold text-[#425672]">
+        {etiket} {zorunlu && !yukluGoster && <span className="ml-1 text-red-500">*</span>}
       </label>
-      <div className="flex flex-wrap items-center gap-2">
-        <label className="cursor-pointer rounded-lg border border-[#56aeff] bg-white px-3 py-1.5 text-xs font-semibold text-[#2483e2] hover:bg-[#f0f7ff]">
+      <div>
+        <label className="cursor-pointer rounded-lg border border-[#56aeff] bg-white px-3 py-1.5 text-xs font-semibold text-[#2483e2] hover:bg-[#f0f7ff] w-full flex items-center justify-center text-center">
           {yukluGoster ? "Dosyayı Değiştir" : "Dosya Seç"}
           <input
             ref={inputRef}
@@ -53,16 +53,15 @@ function DosyaAlani({
           />
         </label>
         {bekleyen && (
-          <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-700">
-            <span className="max-w-52 truncate">{bekleyen.preview.dosya_adi}</span>
-            <button type="button" onClick={onSil} aria-label={`${etiket} dosyasını kaldır`} className="cursor-pointer text-gray-400 hover:text-gray-600">×</button>
+          <span className="mt-1.5 inline-flex w-full items-center justify-between gap-2 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-700">
+            <span className="truncate">{bekleyen.preview.dosya_adi}</span>
+            <button type="button" onClick={onSil} aria-label={`${etiket} dosyasını kaldır`} className="cursor-pointer text-gray-400 hover:text-gray-600 font-bold">×</button>
           </span>
         )}
         {yukluGoster && (
-          <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs text-emerald-800">
-            <span className="font-semibold text-emerald-600">Sunucuda Yüklü:</span>
-            <span className="max-w-52 truncate">{yuklenenDosyaAdi || (etiket === "Podcast" ? "podcast.mp3" : "kapak.jpg")}</span>
-            <button type="button" onClick={onSil} aria-label={`${etiket} dosyasını kaldır`} className="cursor-pointer text-emerald-600 hover:text-emerald-800">×</button>
+          <span className="mt-1.5 inline-flex w-full items-center justify-between gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs text-emerald-800">
+            <span className="truncate"><span className="font-semibold text-emerald-600">Sunucuda Yüklü: </span>{yuklenenDosyaAdi || (etiket === "Podcast" ? "podcast.mp3" : "kapak.jpg")}</span>
+            <button type="button" onClick={onSil} aria-label={`${etiket} dosyasını kaldır`} className="cursor-pointer text-emerald-600 hover:text-emerald-800 font-bold">×</button>
           </span>
         )}
       </div>
@@ -104,6 +103,18 @@ interface PodcastTalepAlanlariProps {
 }
 
 export function PodcastTalepAlanlari(props: PodcastTalepAlanlariProps) {
+  const [transkriptAcik, setTranskriptAcik] = useState<boolean>(
+    Boolean(
+      props.transkript ||
+      props.transkriptMetni ||
+      props.aiIstendi ||
+      (props.islemDurumu && props.islemDurumu !== "bosta")
+    )
+  );
+  const [transkriptSekme, setTranskriptSekme] = useState<"ai" | "dosya" | "metin">(
+    props.aiIstendi || (props.islemDurumu && props.islemDurumu !== "bosta") ? "ai" : "dosya"
+  );
+
   return (
     <section className="rounded-2xl border border-[#dfe8f3] bg-white p-4">
       <h3 className="text-sm font-extrabold text-[#263b58]">Podcast Yapısı</h3>
@@ -112,7 +123,8 @@ export function PodcastTalepAlanlari(props: PodcastTalepAlanlariProps) {
       )}
       {props.hazir && (
         <div className="mt-4 space-y-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 items-start">
+            {/* 1. Podcast */}
             <DosyaAlani
               etiket="Podcast"
               accept={PODCAST_FORMATLAR}
@@ -122,6 +134,8 @@ export function PodcastTalepAlanlari(props: PodcastTalepAlanlariProps) {
               onSec={props.onSesSec}
               onSil={props.onSesSil}
             />
+
+            {/* 2. Yayın Görseli */}
             <DosyaAlani
               etiket="Yayın Görseli"
               accept={PODCAST_KAPAK_FORMATLARI}
@@ -132,6 +146,63 @@ export function PodcastTalepAlanlari(props: PodcastTalepAlanlariProps) {
               onSil={props.onKapakSil}
               zorunlu={false}
             />
+
+            {/* 3. Manuel Transkript */}
+            <div>
+              <label className="mb-1 flex h-5 items-center text-xs font-bold text-[#425672] truncate">
+                Manuel Transkript <span className="ml-1 text-[11px] font-normal text-gray-400">(İsteğe bağlı)</span>
+              </label>
+              <div>
+                {props.transkript ? (
+                  <span className="inline-flex w-full items-center justify-between gap-2 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-700">
+                    <span className="truncate">{props.transkript.preview.dosya_adi}</span>
+                    <button
+                      type="button"
+                      onClick={props.onTranskriptSil}
+                      aria-label="Transkript dosyasını kaldır"
+                      className="cursor-pointer text-gray-400 hover:text-gray-600 font-bold"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTranskriptSekme("dosya");
+                      props.onAiIstendiDegisti?.(false);
+                      setTranskriptAcik(true);
+                    }}
+                    className="cursor-pointer rounded-lg border border-[#56aeff] bg-white px-3 py-1.5 text-xs font-semibold text-[#2483e2] hover:bg-[#f0f7ff] w-full flex items-center justify-center text-center"
+                  >
+                    + Manuel Transkript Ekle
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 4. AI ile Transkript */}
+            <div>
+              <label className="mb-1 flex h-5 items-center text-xs font-bold text-[#425672] truncate">
+                AI ile Transkript <span className="ml-1 text-[11px] font-normal text-gray-400">(Gemini 3.5)</span>
+              </label>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTranskriptSekme("ai");
+                    props.onAiIstendiDegisti?.(true);
+                    setTranskriptAcik(true);
+                    if (props.onAiBaslat) {
+                      void props.onAiBaslat();
+                    }
+                  }}
+                  className="cursor-pointer rounded-lg border border-[#2483e2] bg-[#2483e2] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1a6ec7] w-full flex items-center justify-center text-center"
+                >
+                  ✨ AI ile Transkript Oluştur
+                </button>
+              </div>
+            </div>
           </div>
 
           <PodcastTranskriptEditoru
@@ -148,6 +219,10 @@ export function PodcastTalepAlanlari(props: PodcastTalepAlanlariProps) {
             onAiIstendiDegisti={props.onAiIstendiDegisti}
             onSunucuOnayla={props.onSunucuOnayla}
             onSunucuIptal={props.onSunucuIptal}
+            acik={transkriptAcik}
+            onAcikDegisti={setTranskriptAcik}
+            sekme={transkriptSekme}
+            onSekmeDegisti={setTranskriptSekme}
             onDosyaSec={(dosya, cikarilanMetin) => {
               if (props.onTranskriptDosyaSecildi) {
                 props.onTranskriptDosyaSecildi(dosya, cikarilanMetin);
@@ -167,6 +242,7 @@ export function PodcastTalepAlanlari(props: PodcastTalepAlanlariProps) {
             onIptalEt={() => {
               props.onTranskriptSil();
               props.onTranskriptIptal?.();
+              setTranskriptAcik(false);
             }}
           />
         </div>

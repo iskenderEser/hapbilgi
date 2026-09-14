@@ -317,43 +317,6 @@ export function YeniTalepFormV2({ formu }: Props) {
           </>
         </div>
 
-        {formu.ogrenmeAraciTuru === "podcast" && (
-          <PodcastTalepAlanlari
-            hazir={formu.hazirVideo}
-            ses={formu.bekleyenPodcast}
-            kapak={formu.bekleyenPodcastKapak}
-            transkript={formu.bekleyenPodcastTranskript}
-            sesYuklendi={formu.podcastSesYuklendi}
-            sesDosyaAdi={formu.podcastYuklenenDosyaAdi}
-            kapakYuklendi={formu.podcastKapakYuklendi}
-            kapakDosyaAdi={formu.podcastYuklenenKapakAdi}
-            transkriptMetni={formu.podcastTranskriptMetni}
-            transkriptOnaylandi={formu.podcastTranskriptOnaylandi}
-            aiIstendi={formu.podcastAiTranskriptIstendi}
-            aracId={formu.podcastAracId ?? undefined}
-            islemDurumu={formu.podcastAiAsamasi}
-            yuklemeYuzdesi={formu.podcastAiYuklemeYuzdesi}
-            onAiBaslat={formu.handlePodcastAiTranskriptBaslat}
-            aiYukleniyor={formu.podcastAiYukleniyor}
-            aiHatasi={formu.podcastAiHatasi}
-            onAiIstendiDegisti={formu.handlePodcastAiTranskriptIstendiDegisti}
-            onSesSec={formu.handlePodcastSec}
-            onKapakSec={formu.handlePodcastKapakSec}
-            onTranskriptSec={formu.handlePodcastTranskriptSec}
-            onSesSil={formu.handleBekleyenPodcastSil}
-            onKapakSil={formu.handleBekleyenPodcastKapakSil}
-            onTranskriptSil={formu.handleBekleyenPodcastTranskriptSil}
-            onTranskriptMetinDegisti={formu.handlePodcastTranskriptMetinDegisti}
-            onTranskriptOnayla={formu.handlePodcastTranskriptOnayla}
-            onTranskriptIptal={formu.handlePodcastTranskriptIptal}
-            onSunucuOnayla={formu.handlePodcastTranskriptSunucuOnayla}
-            onSunucuIptal={formu.handlePodcastTranskriptSunucuIptal}
-            onTranskriptDosyaSecildi={formu.handlePodcastTranskriptDosyaSecildi}
-          />
-        )}
-        {formu.ogrenmeAraciTuru === "gorsel" && <GorselTalepAlanlari hazir={formu.hazirVideo} gorsel={formu.bekleyenGorsel} onSec={formu.handleGorselSec} onSil={formu.handleBekleyenGorselSil} />}
-        {formu.ogrenmeAraciTuru === "flip_pdf" && <FlipPdfTalepAlanlari hazir={formu.hazirVideo} pdf={formu.bekleyenFlipPdf} onSec={formu.handleFlipPdfSec} onSil={formu.handleBekleyenFlipPdfSil} />}
-
         {/* Açıklama — dört sütunun altında, tam genişlik */}
         <div className="rounded-2xl border border-[#dfe8f3] bg-white p-4" style={{ opacity: formAktif ? 1 : 0.58, pointerEvents: formAktif ? "auto" : "none" }}>
           <label className="mb-1.5 block text-xs font-extrabold text-[#425672]">Talep Açıklaması</label>
@@ -380,6 +343,56 @@ export function YeniTalepFormV2({ formu }: Props) {
               onSil={formu.handleBekleyenVideoSil}
               yuklemeYuzdesi={formu.videoYuklemeYuzdesi}
               ogrenmeAraciTuru={formu.ogrenmeAraciTuru}
+            />
+          )}
+          {formu.hazirVideo && formu.ogrenmeAraciTuru === "gorsel" && (
+            <VideoYukleme
+              bekleyen={formu.bekleyenGorsel}
+              onSec={formu.handleGorselSec}
+              onSil={formu.handleBekleyenGorselSil}
+              ogrenmeAraciTuru={formu.ogrenmeAraciTuru}
+            />
+          )}
+          {formu.hazirVideo && formu.ogrenmeAraciTuru === "flip_pdf" && (
+            <VideoYukleme
+              bekleyen={formu.bekleyenFlipPdf}
+              onSec={formu.handleFlipPdfSec}
+              onSil={formu.handleBekleyenFlipPdfSil}
+              ogrenmeAraciTuru={formu.ogrenmeAraciTuru}
+            />
+          )}
+          {formu.ogrenmeAraciTuru === "podcast" && (
+            <PodcastTalepAlanlari
+              hazir={formu.hazirVideo}
+              ses={formu.bekleyenPodcast}
+              kapak={formu.bekleyenPodcastKapak}
+              transkript={formu.bekleyenPodcastTranskript}
+              sesYuklendi={formu.podcastSesYuklendi}
+              sesDosyaAdi={formu.podcastYuklenenDosyaAdi}
+              kapakYuklendi={formu.podcastKapakYuklendi}
+              kapakDosyaAdi={formu.podcastYuklenenKapakAdi}
+              transkriptMetni={formu.podcastTranskriptMetni}
+              transkriptOnaylandi={formu.podcastTranskriptOnaylandi}
+              aiIstendi={formu.podcastAiTranskriptIstendi}
+              aracId={formu.podcastAracId ?? undefined}
+              islemDurumu={formu.podcastAiAsamasi}
+              yuklemeYuzdesi={formu.podcastAiYuklemeYuzdesi}
+              onAiBaslat={formu.handlePodcastAiTranskriptBaslat}
+              aiYukleniyor={formu.podcastAiYukleniyor}
+              aiHatasi={formu.podcastAiHatasi}
+              onAiIstendiDegisti={formu.handlePodcastAiTranskriptIstendiDegisti}
+              onSesSec={formu.handlePodcastSec}
+              onKapakSec={formu.handlePodcastKapakSec}
+              onTranskriptSec={formu.handlePodcastTranskriptSec}
+              onSesSil={formu.handleBekleyenPodcastSil}
+              onKapakSil={formu.handleBekleyenPodcastKapakSil}
+              onTranskriptSil={formu.handleBekleyenPodcastTranskriptSil}
+              onTranskriptMetinDegisti={formu.handlePodcastTranskriptMetinDegisti}
+              onTranskriptOnayla={formu.handlePodcastTranskriptOnayla}
+              onTranskriptIptal={formu.handlePodcastTranskriptIptal}
+              onSunucuOnayla={formu.handlePodcastTranskriptSunucuOnayla}
+              onSunucuIptal={formu.handlePodcastTranskriptSunucuIptal}
+              onTranskriptDosyaSecildi={formu.handlePodcastTranskriptDosyaSecildi}
             />
           )}
           {formu.hazirSoruSeti && (

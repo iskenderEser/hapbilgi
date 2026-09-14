@@ -44,10 +44,10 @@ export function aracYuklemeAyarlari(tur?: OgrenmeAraciTuru | null): AracYuklemeA
       };
     case "gorsel":
       return {
-        butonMetni: "Görsel / Broşür Ekle",
+        butonMetni: "Dijital Broşür Ekle",
         accept: GORSEL_FORMATLAR,
-        aciklama: "jpg, jpeg, png, webp formatları desteklenir.",
-        yukleniyorMetni: "Görsel yükleniyor...",
+        aciklama: "jpg, jpeg, png formatları desteklenir.",
+        yukleniyorMetni: "Dijital broşür yükleniyor...",
       };
     case "flip_pdf":
       return {

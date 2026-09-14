@@ -38,6 +38,10 @@ interface PodcastTranskriptEditoruProps {
   onAiIstendiDegisti?: (istendi: boolean) => void;
   onSunucuOnayla?: (metin: string) => Promise<{ ok: boolean; hata?: string }>;
   onSunucuIptal?: () => Promise<{ ok: boolean; hata?: string }>;
+  acik?: boolean;
+  onAcikDegisti?: (acik: boolean) => void;
+  sekme?: "ai" | "dosya" | "metin";
+  onSekmeDegisti?: (sekme: "ai" | "dosya" | "metin") => void;
 }
 
 export function PodcastTranskriptEditoru({
@@ -58,15 +62,26 @@ export function PodcastTranskriptEditoru({
   onAiIstendiDegisti,
   onSunucuOnayla,
   onSunucuIptal,
+  acik: propsAcik,
+  onAcikDegisti,
+  sekme: propsSekme,
+  onSekmeDegisti,
 }: PodcastTranskriptEditoruProps) {
-  const [acik, setAcik] = useState<boolean>(
+  const [yerelAcik, setYerelAcik] = useState<boolean>(
     Boolean(bekleyenDosya || metin || aiIstendi || (islemDurumu && islemDurumu !== "bosta"))
   );
+  const acik = propsAcik !== undefined ? propsAcik : yerelAcik;
+  const setAcik = (val: boolean | ((prev: boolean) => boolean)) => {
+    const nextVal = typeof val === "function" ? val(acik) : val;
+    setYerelAcik(nextVal);
+    onAcikDegisti?.(nextVal);
+  };
+
   const [yukleniyor, setYukleniyor] = useState<boolean>(false);
   const [hata, setHata] = useState<string | null>(null);
   const [basariMesaji, setBasariMesaji] = useState<string | null>(null);
   const [kaydediliyor, setKaydediliyor] = useState<boolean>(false);
-  const [sekme, setSekme] = useState<"ai" | "dosya" | "metin">(
+  const [yerelSekme, setYerelSekme] = useState<"ai" | "dosya" | "metin">(
     aiIstendi || (islemDurumu && islemDurumu !== "bosta") || (metin && metindeIkiKonusmaciVarMi(metin))
       ? "ai"
       : bekleyenDosya
@@ -75,6 +90,11 @@ export function PodcastTranskriptEditoru({
       ? "metin"
       : "ai"
   );
+  const sekme = propsSekme !== undefined ? propsSekme : yerelSekme;
+  const setSekme = (val: "ai" | "dosya" | "metin") => {
+    setYerelSekme(val);
+    onSekmeDegisti?.(val);
+  };
 
   useEffect(() => {
     if (islemDurumu && islemDurumu !== "bosta") {
@@ -365,40 +385,7 @@ export function PodcastTranskriptEditoru({
   };
 
   if (!acik) {
-    return (
-      <div className="rounded-xl border border-dashed border-[#c6d7eb] bg-[#f8fbff] p-3 text-center">
-        <p className="text-xs text-[#5a718e]">
-          Transkript eklemek isteğe bağlıdır. Transkript olmadan da podcastinizi yayınlayabilirsiniz.
-        </p>
-        <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setSekme("ai");
-              onAiIstendiDegisti?.(true);
-              setAcik(true);
-              if (onAiBaslat) {
-                void onAiBaslat();
-              }
-            }}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-[#2483e2] bg-[#2483e2] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#1a6ec7] cursor-pointer"
-          >
-            ✨ AI ile Transkript Oluştur (Gemini 3.5)
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setSekme("dosya");
-              onAiIstendiDegisti?.(false);
-              setAcik(true);
-            }}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-[#c6d7eb] bg-white px-3 py-1.5 text-xs font-semibold text-[#2483e2] hover:bg-[#ebf4fd] cursor-pointer"
-          >
-            + Manuel Transkript Ekle (DOCX, PDF veya Metin)
-          </button>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   const aiHata = islemDurumu === "hata" || Boolean(ustHataMesaji);
