@@ -16,12 +16,12 @@ export async function POST(request: NextRequest) {
     if (error || !user) return yetkiHatasi();
     const db = createAdminClient();
     const rol = await rolCozucu(db, user.id);
-    if (YONETICI_ROLLER.includes(rol)) return rolHatasi("Yönetici rolleri PDF ilerlemesi kaydedemez.");
+    if (YONETICI_ROLLER.includes(rol)) return rolHatasi("Yönetici rolleri Literatür ilerlemesi kaydedemez.");
     const body = await request.json();
     if (!uuidGecerliMi(body.izleme_id) || !uuidGecerliMi(body.yayin_id) || !uuidGecerliMi(body.arac_id)) return validasyonHatasi("İzleme, yayın veya araç kimliği geçersiz.", ["izleme_id", "yayin_id", "arac_id"]);
     const sahip = await ogrenmeAraciIzlemeSahibiniCoz(db, user.id, rol);
     if (!sahip) {
-      return NextResponse.json({ hata: "Flip PDF tüketim yetkisi bulunamadı." }, { status: 403 });
+      return NextResponse.json({ hata: "Literatür tüketim yetkisi bulunamadı." }, { status: 403 });
     }
     const { tablo, sahipKolon, sahipId } = sahip;
     const { data: izleme } = await db
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       || yayin.arac_turu !== "flip_pdf"
       || toplam <= 0
     ) {
-      return NextResponse.json({ hata: "Flip PDF yayın bağlantısı geçersiz." }, { status: 422 });
+      return NextResponse.json({ hata: "Literatür yayın bağlantısı geçersiz." }, { status: 422 });
     }
     const onceki = (izleme.ilerleme_durumu ?? null) as FlipPdfIlerlemesi | null;
     const ham = body.sayfa_sureleri && typeof body.sayfa_sureleri === "object" ? body.sayfa_sureleri as Record<string, unknown> : {};
@@ -103,9 +103,9 @@ export async function POST(request: NextRequest) {
       kanit = await FLIP_PDF_ARACI.tamamla(arac, ilerleme);
     }
     const { error: yazmaHatasi } = await db.from(tablo).update({ ilerleme_durumu: ilerleme, ...(kanit ? { tamamlama_kaniti: kanit } : {}) }).eq("izleme_id", body.izleme_id).eq(sahipKolon, sahipId);
-    if (yazmaHatasi) return NextResponse.json({ hata: "Flip PDF ilerlemesi kaydedilemedi." }, { status: 500 });
+    if (yazmaHatasi) return NextResponse.json({ hata: "Literatür ilerlemesi kaydedilemedi." }, { status: 500 });
     return NextResponse.json({ ilerleme, tamamlanabilir: okunan.length === toplam, zaten_tamamlandi: izleme.tamamlandi_mi });
   } catch (error) {
-    return sunucuHatasi(error, "POST Flip PDF ilerleme");
+    return sunucuHatasi(error, "POST Literatür ilerleme");
   }
 }

@@ -31,7 +31,7 @@ const ARAC_TURU_ETIKET: Record<EczanemAracTuru, string> = {
   video: "Video",
   podcast: "Podcast",
   gorsel: "Görsel",
-  flip_pdf: "Flip PDF",
+  flip_pdf: "Literatür",
 };
 
 const tarihYaz = (deger: string) =>

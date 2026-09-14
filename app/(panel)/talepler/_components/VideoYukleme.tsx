@@ -51,10 +51,10 @@ export function aracYuklemeAyarlari(tur?: OgrenmeAraciTuru | null): AracYuklemeA
       };
     case "flip_pdf":
       return {
-        butonMetni: "PDF / Literatür Ekle",
+        butonMetni: "Literatür Ekle",
         accept: FLIP_PDF_FORMATLAR,
         aciklama: "pdf formatı desteklenir.",
-        yukleniyorMetni: "Literatür PDF yükleniyor...",
+        yukleniyorMetni: "Literatür yükleniyor...",
       };
     case "video":
     default:

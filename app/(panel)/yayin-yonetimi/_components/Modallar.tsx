@@ -43,7 +43,7 @@ export function OgrenmeAraciOnizlemeModal({
   const baslik =
     tur === "podcast" ? "Podcast Önizleme"
     : tur === "gorsel" ? "Dijital Broşür Önizleme"
-    : tur === "flip_pdf" ? "Literatür (PDF) Önizleme"
+    : tur === "flip_pdf" ? "Literatür Önizleme"
     : "Video Önizleme";
 
   const genislikSinifi =

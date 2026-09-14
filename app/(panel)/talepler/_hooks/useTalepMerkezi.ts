@@ -302,7 +302,7 @@ export function useTalepMerkezi() {
           setDetayTetik((x) => x + 1);
           await veriCek();
         } catch (err: unknown) {
-          hata("Literatür PDF yüklenemedi.", "PDF yükleme", err instanceof Error ? err.message : undefined);
+          hata("Literatür yüklenemedi.", "PDF yükleme", err instanceof Error ? err.message : undefined);
         } finally {
           setVideoYuzdesi(null);
         }

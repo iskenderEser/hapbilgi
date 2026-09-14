@@ -1,7 +1,7 @@
 import type { AracTuruRaporSatiri } from "@/lib/rapor/paylasilan/aracTuruDagilimi";
 
 const ADLAR: Record<AracTuruRaporSatiri["arac_turu"], string> = {
-  video: "Video", podcast: "Podcast", gorsel: "Görsel", flip_pdf: "Flip PDF",
+  video: "Video", podcast: "Podcast", gorsel: "Görsel", flip_pdf: "Literatür",
 };
 
 const oran = (deger: number | null) => deger === null ? "—" : `%${deger.toLocaleString("tr-TR")}`;

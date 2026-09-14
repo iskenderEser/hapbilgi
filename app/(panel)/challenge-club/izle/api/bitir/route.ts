@@ -78,7 +78,7 @@ export async function PUT(request: NextRequest) {
     if (!yayinAraciKullanimaAcikMi(aracDetay.arac_turu)) return isKuraluHatasi("Bu öğrenme aracı kullanıma kapalı.");
     if (aracDetay?.arac_turu === "podcast" && !tamamlamaKanitiDogrula("podcast", izleme.tamamlama_kaniti)) return isKuraluHatasi("Podcast tamamlanma kanıtı doğrulanamadı.");
     if (aracDetay?.arac_turu === "gorsel" && !tamamlamaKanitiDogrula("gorsel", izleme.tamamlama_kaniti)) return isKuraluHatasi("Görsel tamamlanma kanıtı doğrulanamadı.");
-    if (aracDetay?.arac_turu === "flip_pdf" && !tamamlamaKanitiDogrula("flip_pdf", izleme.tamamlama_kaniti)) return isKuraluHatasi("Flip PDF tamamlanma kanıtı doğrulanamadı.");
+    if (aracDetay?.arac_turu === "flip_pdf" && !tamamlamaKanitiDogrula("flip_pdf", izleme.tamamlama_kaniti)) return isKuraluHatasi("Literatür tamamlanma kanıtı doğrulanamadı.");
 
     // Sorular yalnız ilk izleme/challenge ve ileri sarılmamış oturumlarda sabitlenir.
     let soruIndeksleri = Array.isArray(izleme.soru_indeksleri)

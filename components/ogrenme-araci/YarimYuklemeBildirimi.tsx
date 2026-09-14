@@ -274,7 +274,7 @@ export default function YarimYuklemeBildirimi() {
               {podcastTranskriptGerekli && dosyaSecici("transkript", "Podcast transkripti", ".pdf,.txt,.docx")}
             </>}
             {aktif.arac_turu === "gorsel" && dosyaSecici("ana", "Dijital broşür", ".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp")}
-            {aktif.arac_turu === "flip_pdf" && dosyaSecici("ana", "Literatür PDF", ".pdf,application/pdf")}
+            {aktif.arac_turu === "flip_pdf" && dosyaSecici("ana", "Literatür", ".pdf,application/pdf")}
           </div>}
 
           {yuzde !== null && <div className="mt-4"><div className="mb-1 text-xs font-semibold text-[#287fce]">Yükleniyor: %{yuzde}</div><div className="h-2 overflow-hidden rounded-full bg-blue-100"><div className="h-full bg-[#56aeff]" style={{ width: `${yuzde}%` }} /></div></div>}

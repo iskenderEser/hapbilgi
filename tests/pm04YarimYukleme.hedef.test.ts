@@ -31,11 +31,11 @@ test("PM-03/A video kesintisi aynı oturum ve TUS aktarımıyla sürer; iptal ta
   assert.match(modal, /basari\(sonuc\.mesaj \?\? "Yarım kalan yükleme başarıyla iptal edildi\."\)/);
 });
 
-test("PM-03/B Literatür PDF kesintisi aynı arac_id ile sürer; Bunny temizlenmeden atomik DB iptali yapılmaz", () => {
+test("PM-03/B Literatür kesintisi aynı arac_id ile sürer; Bunny temizlenmeden atomik DB iptali yapılmaz", () => {
   assert.match(storageBaslat, /const mevcutAracId[\s\S]*const yarimYukleme/);
   assert.match(storageBaslat, /oncekiBeyan\.checksum_sha256[\s\S]*checksum_sha256\.toLowerCase\(\)/);
   assert.match(storageBaslat, /arac_id: mevcutAracId[\s\S]*arac_durum_id: sonDurum\.arac_durum_id/);
-  assert.match(modal, /aktif\.arac_turu === "flip_pdf"[\s\S]*Literatür PDF/);
+  assert.match(modal, /aktif\.arac_turu === "flip_pdf"[\s\S]*Literatür/);
   assert.match(modal, /hazirFlipPdfYukle\(\{[\s\S]*aracId: kayit\.arac_id/);
   const storageIptal = ortakApi.slice(ortakApi.indexOf("const metadata = (arac.metadata"));
   assert.ok(storageIptal.indexOf("bunnyStorageNesneSil") < storageIptal.indexOf('db.rpc("ogrenme_araci_yarim_yukleme_iptal"'));

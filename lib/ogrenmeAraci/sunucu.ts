@@ -121,7 +121,7 @@ class FlipPdfAraci extends TemelArac<FlipPdfIlerlemesi> {
     return toplam > 0 && new Set(ilerleme.okunanSayfalar).size >= toplam;
   }
   async tamamla(arac: OgrenmeAraciKaydi, ilerleme: FlipPdfIlerlemesi) {
-    if (!(await this.tamamlanabilirMi(arac, ilerleme))) throw new Error("Flip PDF henüz tamamlanamaz.");
+    if (!(await this.tamamlanabilirMi(arac, ilerleme))) throw new Error("Literatür henüz tamamlanamaz.");
     return this.kanit({ toplamSayfa: arac.metadata.sayfaSayisi ?? ilerleme.toplamSayfa, okunanSayfalar: ilerleme.okunanSayfalar });
   }
 }

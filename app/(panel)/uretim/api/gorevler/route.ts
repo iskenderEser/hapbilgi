@@ -101,12 +101,12 @@ export async function GET(request: NextRequest) {
         durumGecmisi = gecmis.data ?? [];
       } else if (gorev.asama === "video" && gorev.arac_id && talepMap.get(gorev.talep_id)?.ogrenme_araci_turu === "flip_pdf") {
         const { data: pdf, error } = await adminSupabase.from("ogrenme_araclari").select("dosya_yolu, sayfa_sayisi").eq("arac_id", gorev.arac_id).eq("arac_turu", "flip_pdf").maybeSingle();
-        if (error || !pdf?.dosya_yolu) return hataYaniti("Flip PDF detayı alınamadı.", "Flip PDF görev detayı", error);
+        if (error || !pdf?.dosya_yolu) return hataYaniti("Literatür detayı alınamadı.", "Literatür görev detayı", error);
         const pdfUrl = bunnyCdnImzaliUrl(pdf.dosya_yolu);
-        if (!pdfUrl) return NextResponse.json({ hata: "Flip PDF CDN erişimi yapılandırılmamış." }, { status: 503 });
+        if (!pdfUrl) return NextResponse.json({ hata: "Literatür CDN erişimi yapılandırılmamış." }, { status: 503 });
         detayIcerigi = { asama: "flip_pdf", pdf_url: pdfUrl, sayfa_sayisi: pdf.sayfa_sayisi ?? 0 };
         const gecmis = await adminSupabase.from("ogrenme_araci_durumu").select("durum, notlar, created_at").eq("arac_id", gorev.arac_id).order("created_at");
-        if (gecmis.error) return hataYaniti("Flip PDF geçmişi alınamadı.", "Flip PDF görev geçmişi", gecmis.error);
+        if (gecmis.error) return hataYaniti("Literatür geçmişi alınamadı.", "Literatür görev geçmişi", gecmis.error);
         durumGecmisi = gecmis.data ?? [];
       } else if (gorev.asama === "video" && gorev.arac_id && talepMap.get(gorev.talep_id)?.ogrenme_araci_turu === "gorsel") {
         const { data: gorsel, error } = await adminSupabase.from("ogrenme_araclari").select("dosya_yolu, genislik, yukseklik").eq("arac_id", gorev.arac_id).eq("arac_turu", "gorsel").maybeSingle();

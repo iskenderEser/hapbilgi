@@ -110,7 +110,7 @@ export default function FlipPdfOynatici({
     let yuklemeGorevi: PdfYuklemeGorevi | null = null;
     setYukleniyor(true);
     void fetch(`/api/ogrenme-araclari/${aracId}/erisim${bagId ? `?bag_id=${encodeURIComponent(bagId)}` : ""}`, { cache: "no-store" })
-      .then(async (r) => { const d = await r.json(); if (!r.ok) throw new Error(d.hata ?? "Flip PDF erişimi alınamadı."); return d.erisim_url as string; })
+      .then(async (r) => { const d = await r.json(); if (!r.ok) throw new Error(d.hata ?? "Literatür erişimi alınamadı."); return d.erisim_url as string; })
       .then(async (url) => {
         const pdfjs = await import("pdfjs-dist");
         pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
@@ -127,7 +127,7 @@ export default function FlipPdfOynatici({
           }
         }
       })
-      .catch((e) => hata(e instanceof Error ? e.message : "Flip PDF açılamadı.", "Flip PDF erişimi"))
+      .catch((e) => hata(e instanceof Error ? e.message : "Literatür açılamadı.", "Literatür erişimi"))
       .finally(() => { if (acik) setYukleniyor(false); });
     return () => {
       acik = false;
@@ -165,7 +165,7 @@ export default function FlipPdfOynatici({
       }),
     });
     const d = await r.json();
-    if (!r.ok) throw new Error(d.hata ?? "Flip PDF ilerlemesi kaydedilemedi.");
+    if (!r.ok) throw new Error(d.hata ?? "Literatür ilerlemesi kaydedilemedi.");
     return true;
   };
 
@@ -183,8 +183,8 @@ export default function FlipPdfOynatici({
       await onTamamlandi?.();
     } catch (error) {
       hata(
-        "Flip PDF tamamlanamadı.",
-        "Flip PDF tamamlanması",
+        "Literatür tamamlanamadı.",
+        "Literatür tamamlanması",
         error instanceof Error ? error.message : undefined,
       );
     } finally {
@@ -195,7 +195,7 @@ export default function FlipPdfOynatici({
   if (yukleniyor) {
     return (
       <div className="rounded-xl bg-slate-50 p-8 text-center text-sm text-slate-500">
-        Flip PDF yükleniyor…
+        Literatür yükleniyor…
       </div>
     );
   }

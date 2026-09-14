@@ -259,7 +259,7 @@ export async function POST(request: NextRequest) {
         return isKuraluHatasi("Görsel dosyası ve ölçüleri doğrulanmadan yayımlanamaz.");
       }
       if (arac.arac_turu === "flip_pdf" && Number(arac.sayfa_sayisi) <= 0) {
-        return isKuraluHatasi("Flip PDF dosyası ve sayfa sayısı doğrulanmadan yayımlanamaz.");
+        return isKuraluHatasi("Literatür dosyası ve sayfa sayısı doğrulanmadan yayımlanamaz.");
       }
       if (arac.arac_turu !== "podcast" && arac.arac_turu !== "gorsel" && arac.arac_turu !== "flip_pdf") {
         return isKuraluHatasi("Bu öğrenme aracı türü henüz yayına alınamaz.");

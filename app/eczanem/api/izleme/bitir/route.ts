@@ -53,7 +53,7 @@ export async function PUT(request: NextRequest) {
     if (!yayinAraciKullanimaAcikMi(yayinDetay.arac_turu)) return isKuraluHatasi("Bu öğrenme aracı kullanıma kapalı.");
     if (yayinDetay.arac_turu === "podcast" && !tamamlamaKanitiDogrula("podcast", izleme.tamamlama_kaniti)) return isKuraluHatasi("Podcast tamamlanma kanıtı doğrulanamadı.");
     if (yayinDetay.arac_turu === "gorsel" && !tamamlamaKanitiDogrula("gorsel", izleme.tamamlama_kaniti)) return isKuraluHatasi("Görsel tamamlanma kanıtı doğrulanamadı.");
-    if (yayinDetay.arac_turu === "flip_pdf" && !tamamlamaKanitiDogrula("flip_pdf", izleme.tamamlama_kaniti)) return isKuraluHatasi("Flip PDF tamamlanma kanıtı doğrulanamadı.");
+    if (yayinDetay.arac_turu === "flip_pdf" && !tamamlamaKanitiDogrula("flip_pdf", izleme.tamamlama_kaniti)) return isKuraluHatasi("Literatür tamamlanma kanıtı doğrulanamadı.");
 
     const sorular = Array.isArray(yayinDetay.sorular) ? yayinDetay.sorular : [];
     const soruSayisi = Math.max(0, yayinDetay.video_basi_soru_sayisi ?? VARSAYILAN_SORU_SAYISI);

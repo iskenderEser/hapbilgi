@@ -18,10 +18,10 @@ test("aracYuklemeAyarlari öğrenme aracı türüne göre buton, format ve metin
   assert.equal(gorsel.yukleniyorMetni, "Görsel yükleniyor...");
 
   const flipPdf = aracYuklemeAyarlari("flip_pdf");
-  assert.equal(flipPdf.butonMetni, "PDF / Literatür Ekle");
+  assert.equal(flipPdf.butonMetni, "Literatür Ekle");
   assert.equal(flipPdf.accept, FLIP_PDF_FORMATLAR);
   assert.match(flipPdf.aciklama, /pdf/);
-  assert.equal(flipPdf.yukleniyorMetni, "Literatür PDF yükleniyor...");
+  assert.equal(flipPdf.yukleniyorMetni, "Literatür yükleniyor...");
 
   const video = aracYuklemeAyarlari("video");
   assert.equal(video.butonMetni, "Video Ekle");

@@ -1203,7 +1203,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
       return false;
     }
     if (hazirVideo && ogrenmeAraciTuru === "flip_pdf" && !bekleyenFlipPdf) {
-      hata("Hazır Flip PDF talebi için PDF dosyası zorunludur.", "PDF dosyası kontrolü", undefined);
+      hata("Hazır Literatür talebi için dosya zorunludur.", "PDF dosyası kontrolü", undefined);
       return false;
     }
     if (hazirSoruSeti) {
@@ -1734,8 +1734,8 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
           try {
             await hazirFlipPdfYukle({ talepId: talep_id, pdf: bekleyenFlipPdf.dosya, kontrol });
           } catch (error) {
-            hata("Flip PDF yüklenemedi.", "PDF yükleme", error instanceof Error ? error.message : undefined);
-            basarisizlar.push(`${bekleyenFlipPdf.preview.dosya_adi} (Flip PDF)`);
+            hata("Literatür yüklenemedi.", "PDF yükleme", error instanceof Error ? error.message : undefined);
+            basarisizlar.push(`${bekleyenFlipPdf.preview.dosya_adi} (Literatür)`);
           }
         }
         if (bekleyenDosyalar.length > 0) {
