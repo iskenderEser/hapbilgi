@@ -18,6 +18,7 @@ export interface VYayinSatiri {
   yayin_tarihi: string;
   thumbnail_url?: string | null;
   arac_kapak_yolu?: string | null;
+  arac_dosya_yolu?: string | null;
   video_url?: string | null;
   icerik_turu?: string | null;
   talep_no?: number | null;
@@ -66,7 +67,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
   ] = await Promise.all([
     adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, urun_adi, teknik_adi, video_puani, yayin_tarihi, thumbnail_url, arac_kapak_yolu, video_url, icerik_turu, talep_no, firma_adi, arac_id, arac_turu")
+      .select("yayin_id, urun_adi, teknik_adi, video_puani, yayin_tarihi, thumbnail_url, arac_kapak_yolu, arac_dosya_yolu, arac_metadata, video_url, icerik_turu, talep_no, firma_adi, arac_id, arac_turu")
       .eq("durum", "yayinda")
       .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))
       // Görünürlük kapısı (Faz 1): süresi hazır olmayan (encode bitmemiş) video

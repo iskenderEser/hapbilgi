@@ -100,6 +100,8 @@ interface PodcastTalepAlanlariProps {
   onSunucuIptal?: () => Promise<{ ok: boolean; hata?: string }>;
   onAiIstendiDegisti?: (istendi: boolean) => void;
   onTranskriptDosyaSecildi?: (dosya: File, cikarilanMetin?: string) => void;
+  iuTranskriptIstendi?: boolean | null;
+  onIuTranskriptIstendiDegisti?: (istendi: boolean) => void;
 }
 
 export function PodcastTalepAlanlari(props: PodcastTalepAlanlariProps) {
@@ -119,7 +121,88 @@ export function PodcastTalepAlanlari(props: PodcastTalepAlanlariProps) {
     <section className="rounded-2xl border border-[#dfe8f3] bg-white p-4">
       <h3 className="text-sm font-extrabold text-[#263b58]">Podcast Yapısı</h3>
       {!props.hazir && (
-        <p className="mt-1 text-xs text-[#7a8ca5]">İçerik üreticisi ses ve transkript dosyalarını hazırlayacaktır.</p>
+        <div className="mt-3 space-y-3">
+          <p className="text-xs text-[#7a8ca5]">
+            İçerik üreticisi podcast ses kaydını hazırlayacaktır.
+          </p>
+
+          <div className="rounded-xl border border-[#dfe8f3] bg-[#f8fafc] p-3.5">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold text-[#263b58]">
+                Transkript Tercihi <span className="text-[#e53e3e]">*</span>
+              </label>
+              <p className="text-xs text-[#5a7184]">
+                Üretilecek podcast için transkript hazırlanmasını istiyor musunuz?
+              </p>
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-2.5">
+              <button
+                type="button"
+                onClick={() => props.onIuTranskriptIstendiDegisti?.(true)}
+                className={`flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all ${
+                  props.iuTranskriptIstendi === true
+                    ? "border-2 border-[#287fce] bg-[#ebf5ff] text-[#287fce] shadow-sm"
+                    : "border border-[#dfe8f3] bg-white text-[#4a5568] hover:border-[#b0c7de]"
+                }`}
+              >
+                <span
+                  className={`flex h-4 w-4 items-center justify-center rounded-full border ${
+                    props.iuTranskriptIstendi === true
+                      ? "border-[#287fce] bg-[#287fce]"
+                      : "border-[#a0aec0] bg-white"
+                  }`}
+                >
+                  {props.iuTranskriptIstendi === true && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                  )}
+                </span>
+                Transkript istiyorum
+              </button>
+
+              <button
+                type="button"
+                onClick={() => props.onIuTranskriptIstendiDegisti?.(false)}
+                className={`flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all ${
+                  props.iuTranskriptIstendi === false
+                    ? "border-2 border-[#287fce] bg-[#ebf5ff] text-[#287fce] shadow-sm"
+                    : "border border-[#dfe8f3] bg-white text-[#4a5568] hover:border-[#b0c7de]"
+                }`}
+              >
+                <span
+                  className={`flex h-4 w-4 items-center justify-center rounded-full border ${
+                    props.iuTranskriptIstendi === false
+                      ? "border-[#287fce] bg-[#287fce]"
+                      : "border-[#a0aec0] bg-white"
+                  }`}
+                >
+                  {props.iuTranskriptIstendi === false && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                  )}
+                </span>
+                Transkript istemiyorum
+              </button>
+            </div>
+
+            {props.iuTranskriptIstendi === true && (
+              <div className="mt-3 rounded-lg border border-[#cce5ff] bg-[#f0f7ff] p-2.5 text-xs text-[#004085]">
+                <strong>Bilgi:</strong> Transkript talep edildiğinde, İçerik Üreticisi tarafından podcast sesinden AI ile oluşturulacaktır.
+              </div>
+            )}
+
+            {props.iuTranskriptIstendi === false && (
+              <div className="mt-3 rounded-lg border border-[#e2e8f0] bg-[#edf2f7] p-2.5 text-xs text-[#4a5568]">
+                <strong>Bilgi:</strong> Transkript talep edilmedi; podcast yalnızca ses kaydı olarak yayınlanacaktır.
+              </div>
+            )}
+
+            {props.iuTranskriptIstendi === null && (
+              <p className="mt-2 text-[11px] font-medium text-[#e53e3e]">
+                * Talebi oluşturabilmek için lütfen transkript tercihinizi belirleyin.
+              </p>
+            )}
+          </div>
+        </div>
       )}
       {props.hazir && (
         <div className="mt-4 space-y-4">

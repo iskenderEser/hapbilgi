@@ -41,6 +41,7 @@ Türkiye’de Supabase ile SS-2 imzalayıp Kuruma bildirdiğini sözleşme veya 
 | 3 Eylül 2026 | Konu takip kaydına alındı. Kamuya açık ve doğrulanabilir bir Türkiye–Supabase SS-2 örneği bulunamadı. | Supabase’e yazılı başvuru yapılacak. |
 | 3 Eylül 2026 | Kullanıcı, Supabase ile Türkiye KVKK Standart Sözleşme-2 sürecinde henüz yeni bir gelişme olmadığını bildirdi. | Supabase’e yazılı başvuru yapılacak. |
 | 3 Eylül 2026 | Yeni çalışma oturumunda süreç yeniden kontrol edildi; kullanıcı yeni bir gelişme olmadığını teyit etti. | Supabase’e yazılı başvuru yapılacak. |
+| 15 Eylül 2026 | Kullanıcı, Supabase ile KVKK Standart Sözleşme-2 sürecinde yeni bir gelişme olmadığını bildirdi. | Supabase’e yazılı başvuru yapılacak. |
 
 ## Tamamlanma ölçütü
 

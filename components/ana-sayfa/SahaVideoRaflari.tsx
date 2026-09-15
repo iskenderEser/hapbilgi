@@ -4,28 +4,20 @@ import { useMemo, useRef, useState, type ReactNode } from "react";
 import type { SahaAnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 import { anaSayfaRaflari } from "@/lib/video/anaSayfaRaflari";
 import { TUR_BASLIK } from "@/lib/video/icerikTuru";
-import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 import { talepIdGoster } from "@/lib/utils/talepId";
+import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
 
 interface Props {
   videolar: SahaAnaSayfaVideo[];
   onVideoSec: (video: SahaAnaSayfaVideo) => void;
 }
 
-const GRADYANLAR = [
-  "linear-gradient(135deg, #b5d4f4, #56aeff)",
-  "linear-gradient(135deg, #c0dd97, #639922)",
-  "linear-gradient(135deg, #f5c4b3, #D85A30)",
-  "linear-gradient(135deg, #CECBF6, #534AB7)",
-  "linear-gradient(135deg, #9FE1CB, #1D9E75)",
-];
-
 const tarih = (deger: string) =>
   new Date(deger).toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" });
 
 function SahaVideoKarti({ video, onVideoSec }: { video: SahaAnaSayfaVideo; onVideoSec: Props["onVideoSec"] }) {
-  const kapak = video.thumbnail_url ?? thumbnailUrlUret(video.video_url);
-  const gradyan = GRADYANLAR[Math.abs(video.yayin_id.charCodeAt(0)) % GRADYANLAR.length];
+  const kapak = yayinThumbnailIstemciCoz(video);
 
   return (
     <button
@@ -38,7 +30,7 @@ function SahaVideoKarti({ video, onVideoSec }: { video: SahaAnaSayfaVideo; onVid
         {kapak ? (
           <img src={kapak} alt={video.urun_adi} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
         ) : (
-          <span className="block h-full w-full" style={{ background: gradyan }} />
+          <AracVarsayilanKapak aracTuru={video.arac_turu} urunAdi={video.urun_adi} />
         )}
         {video.icerik_turu && (
           <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/70 px-1.5 py-0.5 text-[9px] font-bold text-white">

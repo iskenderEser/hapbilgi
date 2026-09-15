@@ -9,6 +9,7 @@ import { haftalikLimitKontrol, aylikKotaKontrol, MAKS_ALICI_HAFTA } from "@/lib/
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { tarihAraligi } from "@/lib/utils/tarihAraligi";
 import { PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
+import { yayinThumbnailCevabi, oneriListesiThumbnailZenginlestir } from "@/lib/ogrenmeAraci/yayinThumbnail";
 
 const GET_ROLLERI = [...YONLENDIRICI_ROLLER, ...TUKETICI_ROLLER];
 
@@ -31,6 +32,8 @@ interface BmOneriTakipKaydi {
   urun_adi: string | null;
   teknik_adi: string | null;
   durum: "tamamlanan" | "bekleyen" | "suresi_gecmis";
+  arac_id?: string | null;
+  arac_turu?: string | null;
 }
 
 interface TmBmPerformansKaydi {
@@ -42,6 +45,8 @@ interface TmBmPerformansKaydi {
 
 interface TmOneriTakipKaydi {
   yayin_id: string;
+  arac_id?: string | null;
+  arac_turu?: string | null;
   [anahtar: string]: unknown;
 }
 
@@ -95,7 +100,7 @@ export async function GET(request: NextRequest) {
         const { data: yayinlar, error: yayinError } = yayinIdleri.length > 0
           ? await adminSupabase
               .from("v_yayin_detay")
-              .select("yayin_id, video_url, thumbnail_url")
+              .select("yayin_id, video_url, thumbnail_url, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata")
               .in("yayin_id", yayinIdleri)
           : { data: [], error: null };
 
@@ -103,12 +108,17 @@ export async function GET(request: NextRequest) {
           return hataYaniti("TM öneri video bilgileri çekilemedi.", "v_yayin_detay SELECT — TM öneri takibi", yayinError);
         }
 
-        const yayinHaritasi = new Map((yayinlar ?? []).map((yayin) => [yayin.yayin_id, yayin]));
-        const tmOneriler = tmTakipKayitlari.map((kayit) => ({
-          ...kayit,
-          video_url: yayinHaritasi.get(kayit.yayin_id)?.video_url ?? null,
-          thumbnail_url: yayinHaritasi.get(kayit.yayin_id)?.thumbnail_url ?? null,
-        }));
+        const yayinHaritasi = new Map((yayinlar ?? []).map((yayin) => [yayin.yayin_id, yayinThumbnailCevabi(yayin)]));
+        const tmOneriler = tmTakipKayitlari.map((kayit) => {
+          const yayin = yayinHaritasi.get(kayit.yayin_id);
+          return {
+            ...kayit,
+            video_url: yayin?.video_url ?? null,
+            thumbnail_url: yayin?.thumbnail_url ?? null,
+            arac_id: yayin?.arac_id ?? null,
+            arac_turu: yayin?.arac_turu ?? null,
+          };
+        });
 
         const bmListesi = ((bmSonucu.data ?? []) as TmBmPerformansKaydi[]).map((bm) => ({
           bm_id: bm.bm_id,
@@ -142,7 +152,7 @@ export async function GET(request: NextRequest) {
       const { data: yayinlar, error: yayinError } = yayinIdleri.length > 0
         ? await adminSupabase
             .from("v_yayin_detay")
-            .select("yayin_id, video_url, thumbnail_url, video_puani")
+            .select("yayin_id, video_url, thumbnail_url, video_puani, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata")
             .in("yayin_id", yayinIdleri)
         : { data: [], error: null };
 
@@ -150,7 +160,7 @@ export async function GET(request: NextRequest) {
         return hataYaniti("Öneri video bilgileri çekilemedi.", "v_yayin_detay SELECT — BM öneri takibi", yayinError);
       }
 
-      const yayinHaritasi = new Map((yayinlar ?? []).map((yayin) => [yayin.yayin_id, yayin]));
+      const yayinHaritasi = new Map((yayinlar ?? []).map((yayin) => [yayin.yayin_id, yayinThumbnailCevabi(yayin)]));
       const oneriler = bmTakipKayitlari.map((kayit) => {
         const yayin = yayinHaritasi.get(kayit.yayin_id);
         return {
@@ -166,6 +176,8 @@ export async function GET(request: NextRequest) {
           teknik_adi: kayit.teknik_adi,
           video_url: yayin?.video_url ?? null,
           thumbnail_url: yayin?.thumbnail_url ?? null,
+          arac_id: yayin?.arac_id ?? null,
+          arac_turu: yayin?.arac_turu ?? null,
           kullanici_adi: `${kayit.utt_ad} ${kayit.utt_soyad}`.trim(),
           video_puani: yayin?.video_puani ?? null,
           begeni_sayisi: 0,
@@ -187,7 +199,25 @@ export async function GET(request: NextRequest) {
 
     if (error) return hataYaniti("Öneriler çekilemedi.", "get_oneri_listesi RPC", error);
 
-    return NextResponse.json({ oneriler: oneriler ?? [] }, { status: 200 });
+    const oneriListesi = (oneriler ?? []) as Array<Record<string, unknown> & { yayin_id: string }>;
+    const yayinIdleri = [...new Set(oneriListesi.map((kayit) => kayit.yayin_id).filter(Boolean))];
+    const { data: yayinlar, error: yayinError } = yayinIdleri.length > 0
+      ? await adminSupabase
+          .from("v_yayin_detay")
+          .select("yayin_id, video_url, thumbnail_url, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata")
+          .in("yayin_id", yayinIdleri)
+      : { data: [], error: null };
+
+    if (yayinError) {
+      return hataYaniti("Öneri yayın detayları çekilemedi.", "v_yayin_detay SELECT — UTT öneri listesi", yayinError);
+    }
+
+    const temizOneriler = oneriListesiThumbnailZenginlestir(
+      oneriListesi,
+      (yayinlar ?? []) as Array<{ yayin_id: string } & import("@/lib/ogrenmeAraci/yayinThumbnail").YayinKapakGirdisi>
+    );
+
+    return NextResponse.json({ oneriler: temizOneriler }, { status: 200 });
 
   } catch (err) {
     return sunucuHatasi(err, "GET /oneriler/api");

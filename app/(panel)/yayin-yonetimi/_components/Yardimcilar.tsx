@@ -7,7 +7,7 @@
 
 "use client";
 
-import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
 
 export interface OgrenmeAraciThumbProps {
@@ -30,8 +30,7 @@ export const OgrenmeAraciThumb = ({
   arac_id,
 }: OgrenmeAraciThumbProps) => {
   const tur = arac_turu ?? "video";
-  const isVideo = tur === "video";
-  const thumb = thumbnail_url ?? (isVideo ? thumbnailUrlUret(video_url) : null);
+  const thumb = yayinThumbnailIstemciCoz({ thumbnail_url, video_url, arac_turu: tur });
 
   const etiket =
     tur === "podcast" ? "Podcast"

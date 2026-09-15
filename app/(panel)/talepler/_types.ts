@@ -28,6 +28,8 @@ export interface Talep {
   teknik_adi: string;
   egitim_turu: TalepTuru;
   ogrenme_araci_turu: OgrenmeAraciTuru;
+  ogrenme_araci_tercihleri?: Record<string, unknown>;
+  podcast_transkript_istendi?: boolean;
   hedef_roller: HedefRoller;
   aciklama: string;
   created_at: string;

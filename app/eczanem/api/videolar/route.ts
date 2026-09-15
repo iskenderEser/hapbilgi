@@ -27,6 +27,7 @@ interface YayinDetaySatiri {
   video_url: string | null;
   thumbnail_url: string | null;
   arac_kapak_yolu?: string | null;
+  arac_dosya_yolu?: string | null;
   video_puani: number | null;
   soru_puani: number | null;
   video_basi_soru_sayisi: number | null;
@@ -105,7 +106,7 @@ export async function GET() {
       const [{ data: yayinlar, error: yayinError }, { data: kunyeler, error: kunyeError }] = await Promise.all([
         adminSupabase
           .from("v_yayin_detay")
-          .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, arac_kapak_yolu, video_puani, soru_puani, video_basi_soru_sayisi, durum, talep_no, firma_adi, firma_id, arac_id, arac_turu")
+          .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, arac_kapak_yolu, arac_dosya_yolu, arac_metadata, video_puani, soru_puani, video_basi_soru_sayisi, durum, talep_no, firma_adi, firma_id, arac_id, arac_turu")
           .in("yayin_id", yayinIdler)
           .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))
           // Görünürlük kapısı (Faz 1): süresi hazır olmayan video izleyiciye gösterilmez.

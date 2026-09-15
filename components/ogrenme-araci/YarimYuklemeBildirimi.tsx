@@ -172,7 +172,10 @@ export default function YarimYuklemeBildirimi() {
     } else {
       const ana = dosyalar.ana;
       if (!ana) throw new Error("Devam etmek için aynı dosyayı yeniden seçin.");
-      await araclar.hazirFlipPdfYukle({ talepId: kayit.talep_id, pdf: ana, kaynak: kayit.kaynak, gorevId: kayit.gorev_id ?? undefined, aracId: kayit.arac_id, kontrol });
+      const tamamlanan = new Set(kayit.tamamlanan_parcalar ?? []);
+      const kapakGerekli = !tamamlanan.has("kapak") && kayit.kapak_yarim === true;
+      if (kapakGerekli && !dosyalar.kapak) throw new Error("Yayın görselini seçin veya Görselsiz Devam Et seçeneğini kullanın.");
+      await araclar.hazirFlipPdfYukle({ talepId: kayit.talep_id, pdf: ana, kapak: dosyalar.kapak, tamamlananParcalar: kayit.tamamlanan_parcalar, kapakGerekli, kaynak: kayit.kaynak, gorevId: kayit.gorev_id ?? undefined, aracId: kayit.arac_id, kontrol });
     }
   };
 
@@ -215,6 +218,13 @@ export default function YarimYuklemeBildirimi() {
         yukleme_girisimi_id: aktif.kapak_yukleme_girisimi_id ?? null,
       });
 
+      if (aktif.arac_turu === "flip_pdf") {
+        setYuklemeler((liste) => liste.map((x) => x.kimlik === aktif.kimlik ? { ...x, kapak_yarim: false } : x));
+        setDosyalar((d) => { const kopya = { ...d }; delete kopya.kapak; return kopya; });
+        basari("Yayın görseli iptal edildi; Literatür PDF'i ile devam edebilirsiniz.");
+        return;
+      }
+
       if (!podcastSesGerekli && !podcastTranskriptGerekli) {
         const araclar = await import("@/lib/ogrenmeAraci/bunnyYuklemeIstemci");
         const kontrol = { onIlerleme: ({ yuzde: oran }: { yuzde: number }) => setYuzde(oran) };
@@ -254,6 +264,7 @@ export default function YarimYuklemeBildirimi() {
   const podcastTranskriptGerekli = (!podcastTamamlanan.has("transkript") && aktif.transkript_yarim === true)
     || (podcastTamamlanan.has("transkript") && aktif.podcast_transkript_bilgisi_hazir !== true);
   const podcastDosyaGerekli = podcastSesGerekli || podcastTranskriptGerekli || podcastKapakGerekli;
+  const flipPdfKapakGerekli = aktif.arac_turu === "flip_pdf" && aktif.kapak_yarim === true;
   const dosyaGerekli = aktif.tur === "storage"
     ? aktif.arac_turu !== "podcast" || podcastDosyaGerekli
     : aktif.durum !== "dogrulama_bekliyor";
@@ -274,14 +285,17 @@ export default function YarimYuklemeBildirimi() {
               {podcastTranskriptGerekli && dosyaSecici("transkript", "Podcast transkripti", ".pdf,.txt,.docx")}
             </>}
             {aktif.arac_turu === "gorsel" && dosyaSecici("ana", "Dijital broşür", ".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp")}
-            {aktif.arac_turu === "flip_pdf" && dosyaSecici("ana", "Literatür", ".pdf,application/pdf")}
+            {aktif.arac_turu === "flip_pdf" && <>
+              {dosyaSecici("ana", "Literatür", ".pdf,application/pdf")}
+              {flipPdfKapakGerekli && dosyaSecici("kapak", "Yayın Görseli (isteğe bağlı)", "image/jpeg,image/png,image/webp")}
+            </>}
           </div>}
 
           {yuzde !== null && <div className="mt-4"><div className="mb-1 text-xs font-semibold text-[#287fce]">Yükleniyor: %{yuzde}</div><div className="h-2 overflow-hidden rounded-full bg-blue-100"><div className="h-full bg-[#56aeff]" style={{ width: `${yuzde}%` }} /></div></div>}
 
           <div className="mt-5 flex justify-end gap-2">
             <button type="button" disabled={islem} onClick={() => void iptalEt()} className="rounded-lg border border-red-200 bg-white px-4 py-2.5 text-xs font-bold text-[#bc2d0d] disabled:opacity-50">İptal Et</button>
-            {aktif.arac_turu === "podcast" && podcastKapakGerekli && (
+            {((aktif.arac_turu === "podcast" && podcastKapakGerekli) || flipPdfKapakGerekli) && (
               <button type="button" disabled={islem} onClick={() => void gorselsizDevamEt()} className="rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50">Görselsiz Devam Et</button>
             )}
             <button type="button" disabled={islem} onClick={() => void devamEt()} className="rounded-lg border-0 bg-[#56aeff] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50">{islem ? "İşleniyor…" : "Devam Et"}</button>

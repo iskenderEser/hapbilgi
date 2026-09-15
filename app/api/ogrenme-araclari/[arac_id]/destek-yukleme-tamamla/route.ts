@@ -14,7 +14,7 @@ import {
 import { podcastDestekDosyasiDogrula, podcastDestekDosyasiImzasiDogrula, type PodcastDestekDosyasiRolu } from "@/lib/ogrenmeAraci/sozlesme";
 import { transkriptDosyasindanMetinCikar } from "@/lib/ogrenmeAraci/transkriptMetinCikarici";
 import type { PodcastTranskriptDurumu, PodcastTranskriptMetadata } from "@/lib/ogrenmeAraci/tipler";
-import { uretimAraciYetkisiniDogrula } from "@/lib/ogrenmeAraci/yetki";
+import { iuOgrenmeAraciGorevYetkisiniDogrula, uretimAraciYetkisiniDogrula } from "@/lib/ogrenmeAraci/yetki";
 import { uuidGecerliMi } from "@/lib/uretim/rpc";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ arac_id: string }> }) {
@@ -33,10 +33,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (typeof body.dosya_adi !== "string" || typeof body.mime_type !== "string" || typeof body.dosya_boyutu !== "number"
       || typeof body.dosya_yolu !== "string" || typeof body.checksum_sha256 !== "string"
       || typeof body.yukleme_token !== "string" || typeof body.yukleme_makbuzu !== "string") {
-      return validasyonHatasi("Podcast destek dosyası beyanı eksik.", ["dosya_adi", "mime_type", "dosya_boyutu"]);
+      return validasyonHatasi("Destek dosyası beyanı eksik.", ["dosya_adi", "mime_type", "dosya_boyutu"]);
     }
     const karar = podcastDestekDosyasiDogrula({ rol: rolDosya, dosyaAdi: body.dosya_adi, mimeType: body.mime_type, dosyaBoyutu: body.dosya_boyutu });
-    if (!arac_id || !["kapak", "transkript"].includes(rolDosya) || !karar.ok) return validasyonHatasi("Podcast destek dosyası beyanı geçersiz.", ["dosya_rolu"]);
+    if (!arac_id || !["kapak", "transkript"].includes(rolDosya) || !karar.ok) return validasyonHatasi("Destek dosyası beyanı geçersiz.", ["dosya_rolu"]);
     if (rolDosya === "kapak" && !uuidGecerliMi(body.yukleme_girisimi_id)) {
       return validasyonHatasi("Yayın görseli yükleme girişimi geçersiz.", ["yukleme_girisimi_id"]);
     }
@@ -59,10 +59,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       checksumSha256: body.checksum_sha256.toLowerCase(),
     })) return NextResponse.json({ hata: "Destek dosyası yükleme makbuzu geçersiz." }, { status: 401 });
 
-    const { data: arac } = await db.from("ogrenme_araclari").select("arac_id, talep_id, arac_turu, metadata").eq("arac_id", arac_id).maybeSingle();
-    if (!arac || arac.arac_turu !== "podcast") return NextResponse.json({ hata: "Podcast öğrenme aracı bulunamadı." }, { status: 404 });
+    const { data: arac } = await db.from("ogrenme_araclari").select("arac_id, talep_id, arac_turu, kaynak, metadata").eq("arac_id", arac_id).maybeSingle();
+    const destekRoluGecerli = arac && (arac.arac_turu === "podcast" || (arac.arac_turu === "flip_pdf" && rolDosya === "kapak"));
+    if (!destekRoluGecerli) return NextResponse.json({ hata: "Öğrenme aracı veya destek dosyası rolü geçersiz." }, { status: 404 });
     const yetki = await uretimAraciYetkisiniDogrula({ db, talepId: arac.talep_id, kullaniciId: user.id, rol });
     if (!yetki.ok) return NextResponse.json({ hata: yetki.hata }, { status: yetki.status });
+    if (arac.kaynak === "iu") {
+      if (!uuidGecerliMi(body.gorev_id)) return validasyonHatasi("Geçerli görev kimliği zorunludur.", ["gorev_id"]);
+      const gorevYetkisi = await iuOgrenmeAraciGorevYetkisiniDogrula({
+        db, gorevId: body.gorev_id, talepId: arac.talep_id, kullaniciId: user.id, aracId: arac_id,
+      });
+      if (!gorevYetkisi.ok) return NextResponse.json({ hata: gorevYetkisi.hata }, { status: gorevYetkisi.status });
+    }
 
     const metadataOnceki = (arac.metadata as Record<string, unknown> | null) ?? {};
     const nesne = await bunnyNesneBilgisi(body.dosya_yolu);
@@ -90,7 +98,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           }).eq("arac_id", arac_id);
         }
       }
-      return NextResponse.json({ hata: "Podcast destek dosyasının gerçek türü veya boyutu doğrulanamadı." }, { status: 422 });
+      return NextResponse.json({ hata: "Destek dosyasının gerçek türü veya boyutu doğrulanamadı." }, { status: 422 });
     }
     const beyanChecksum = body.checksum_sha256.toLowerCase();
     if (nesne.checksumSha256 && nesne.checksumSha256 !== beyanChecksum) {
@@ -115,7 +123,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           },
         }).eq("arac_id", arac_id);
       }
-      return NextResponse.json({ hata: "Podcast destek dosyası özeti eşleşmiyor." }, { status: 422 });
+      return NextResponse.json({ hata: "Destek dosyası özeti eşleşmiyor." }, { status: 422 });
     }
 
     let transkriptMetni = "";
@@ -149,9 +157,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const kolon = rolDosya === "kapak" ? "kapak_yolu" : "transkript_yolu";
-    const destekDogrulama = (
-      metadataOnceki.podcast_destek_dogrulamasi as Record<string, unknown> | undefined
-    ) ?? {};
+    const dogrulamaAnahtari = arac.arac_turu === "podcast" ? "podcast_destek_dogrulamasi" : "kapak_destek_dogrulamasi";
+    const destekDogrulama = (metadataOnceki[dogrulamaAnahtari] as Record<string, unknown> | undefined) ?? {};
     const transkriptMetadata: PodcastTranskriptMetadata | undefined = rolDosya === "transkript" ? {
       durum: "manuel_taslak",
       kaynak: "manuel",
@@ -176,7 +183,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         transkript_metni_kaynagi: "storage",
         transkript: transkriptMetadata,
       } : {}),
-      podcast_destek_dogrulamasi: {
+      [dogrulamaAnahtari]: {
         ...destekDogrulama,
         [rolDosya]: {
           dosya_imzasi_dogrulandi: true,
@@ -196,12 +203,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     delete bekleyenYollar[rolDosya];
     metadata.bekleyen_destek_yollari = bekleyenYollar;
     if (rolDosya === "kapak") {
-      const { error } = await db.rpc("podcast_kapak_yukleme_tamamla_atomik", {
+      const { error } = await db.rpc("ogrenme_araci_kapak_yukleme_tamamla_atomik", {
         p_arac_id: arac_id,
         p_kullanici_id: user.id,
         p_girisim_id: body.yukleme_girisimi_id,
         p_dosya_yolu: body.dosya_yolu,
-        p_dogrulama: metadata.podcast_destek_dogrulamasi,
+        p_dogrulama: metadata[dogrulamaAnahtari],
       });
       if (error) {
         const silindi = await bunnyStorageNesneSil(body.dosya_yolu);
@@ -218,7 +225,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
     } else {
       const { error } = await db.from("ogrenme_araclari").update({ [kolon]: body.dosya_yolu, metadata }).eq("arac_id", arac_id);
-      if (error) return NextResponse.json({ hata: "Podcast destek dosyası kaydedilemedi." }, { status: 500 });
+      if (error) return NextResponse.json({ hata: "Destek dosyası kaydedilemedi." }, { status: 500 });
     }
     return NextResponse.json({
       arac_id,
@@ -227,6 +234,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       ...(rolDosya === "transkript" ? { taslak_metin: transkriptMetni, durum: transkriptDurumu } : {}),
     });
   } catch (error) {
-    return sunucuHatasi(error, "POST podcast destek yükleme tamamla");
+    return sunucuHatasi(error, "POST öğrenme aracı destek yükleme tamamla");
   }
 }

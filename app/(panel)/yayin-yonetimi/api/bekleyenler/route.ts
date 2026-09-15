@@ -12,7 +12,6 @@ import {
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TALEP_ALANLARI, haritalaTalep, type HamTalepKaydi } from "@/lib/utils/talepZinciri";
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
-import { bunnyCdnImzaliUrl } from "@/lib/ogrenmeAraci/bunnyStorage";
 import { yayinThumbnailUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
 export async function GET(request: NextRequest) {
   try {
@@ -59,7 +58,7 @@ export async function GET(request: NextRequest) {
           ogrenme_araci_durumu (
             arac_durum_id,
             ogrenme_araci_puanlari ( arac_puan_id, arac_puani ),
-            ogrenme_araclari ( arac_id, arac_turu, kapak_yolu, dosya_yolu, talep_id )
+            ogrenme_araclari ( arac_id, arac_turu, kapak_yolu, dosya_yolu, talep_id, metadata )
           ),
           video_durumu (
             video_durum_id,
@@ -223,14 +222,15 @@ export async function GET(request: NextRequest) {
       const videoPuanlarRaw = videoDurum?.video_puanlari;
       const videoPuan = Array.isArray(videoPuanlarRaw) ? videoPuanlarRaw[0] : videoPuanlarRaw;
       const aracDurumHam = Array.isArray(soruSeti.ogrenme_araci_durumu) ? soruSeti.ogrenme_araci_durumu[0] : soruSeti.ogrenme_araci_durumu;
-      const aracDurum = aracDurumHam as { arac_durum_id?: string; ogrenme_araci_puanlari?: { arac_puan_id: string; arac_puani: number } | Array<{ arac_puan_id: string; arac_puani: number }>; ogrenme_araclari?: { arac_id: string; arac_turu: string; kapak_yolu: string | null; dosya_yolu?: string | null } | Array<{ arac_id: string; arac_turu: string; kapak_yolu: string | null; dosya_yolu?: string | null }> } | undefined;
+      const aracDurum = aracDurumHam as { arac_durum_id?: string; ogrenme_araci_puanlari?: { arac_puan_id: string; arac_puani: number } | Array<{ arac_puan_id: string; arac_puani: number }>; ogrenme_araclari?: { arac_id: string; arac_turu: string; kapak_yolu: string | null; dosya_yolu?: string | null; metadata?: Record<string, unknown> | null } | Array<{ arac_id: string; arac_turu: string; kapak_yolu: string | null; dosya_yolu?: string | null; metadata?: Record<string, unknown> | null }> } | undefined;
       const aracPuanHam = Array.isArray(aracDurum?.ogrenme_araci_puanlari) ? aracDurum.ogrenme_araci_puanlari[0] : aracDurum?.ogrenme_araci_puanlari;
-      const aracHam = Array.isArray(aracDurum?.ogrenme_araclari) ? aracDurum.ogrenme_araclari[0] : aracDurum?.ogrenme_araclari as { arac_id?: string; arac_turu?: string; kapak_yolu?: string | null; dosya_yolu?: string | null } | undefined;
+      const aracHam = Array.isArray(aracDurum?.ogrenme_araclari) ? aracDurum.ogrenme_araclari[0] : aracDurum?.ogrenme_araclari as { arac_id?: string; arac_turu?: string; kapak_yolu?: string | null; dosya_yolu?: string | null; metadata?: Record<string, unknown> | null } | undefined;
 
       const thumbnailUrl = yayinThumbnailUrlCoz({
         arac_turu: aracHam?.arac_turu ?? "video",
         arac_kapak_yolu: aracHam?.kapak_yolu ?? null,
         arac_dosya_yolu: aracHam?.dosya_yolu ?? null,
+        arac_metadata: aracHam?.metadata ?? null,
         thumbnail_url: video?.thumbnail_url ?? null,
       });
 

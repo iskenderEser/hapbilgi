@@ -39,6 +39,11 @@ export interface PodcastTranskriptMetadata {
   hata_kodu?: string | null;
 }
 
+export interface PodcastOgrenmeAraciTercihleri {
+  transkript_istendi?: boolean;
+  [key: string]: unknown;
+}
+
 export interface OgrenmeAraciMetadata {
   mimeType: string | null;
   dosyaBoyutu: number | null;

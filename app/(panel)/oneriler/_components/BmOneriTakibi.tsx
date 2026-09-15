@@ -3,9 +3,10 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
+import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
 import { DahaFazlaGoster, useListe } from "@/components/liste";
 import VideoOnizleme from "@/components/video/VideoOnizleme";
-import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 import { PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
 import reportStyles from "@/app/(panel)/raporlar/utt/utt-report.module.css";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
@@ -30,6 +31,8 @@ export interface OneriKaydi {
   favori_sayisi: number;
   begeni_mi: boolean;
   favori_mi: boolean;
+  arac_id?: string | null;
+  arac_turu?: string | null;
 }
 
 type KayitDurumu = "planlandi" | "bekliyor" | "tamamlandi" | "suresi_gecmis";
@@ -214,19 +217,20 @@ export default function BmOneriTakibi({
             <div className="grid gap-2.5 p-3 md:hidden">
               {liste.gorunen.map((oneri) => {
                 const durum = DURUMLAR[kayitDurumu(oneri)];
-                const kapak = oneri.thumbnail_url ?? thumbnailUrlUret(oneri.video_url);
+                const kapak = yayinThumbnailIstemciCoz(oneri);
+                const videoOynatilabilir = (oneri.arac_turu ?? "video") === "video" && !!oneri.video_url;
                 return (
                   <article key={oneri.oneri_id} className="rounded-xl border border-[#e0e8f1] bg-white p-3">
                     <div className="flex gap-3">
                       <button
                         type="button"
-                        disabled={!oneri.video_url}
-                        onClick={() => oneri.video_url && setAcikVideo(oneri.video_url)}
-                        aria-label={`${oneri.urun_adi || "Öneri"} videosunu aç`}
+                        disabled={!videoOynatilabilir}
+                        onClick={() => videoOynatilabilir && setAcikVideo(oneri.video_url!)}
+                        aria-label={videoOynatilabilir ? `${oneri.urun_adi || "Öneri"} videosunu aç` : `${oneri.urun_adi || "Öneri"} kapağı`}
                         className="group relative h-14 w-24 shrink-0 overflow-hidden rounded-lg bg-[#d9e8f7] disabled:cursor-default"
                       >
-                        {kapak && <img src={kapak} alt="" className="h-full w-full object-cover" />}
-                        {oneri.video_url && <span className="absolute inset-0 flex items-center justify-center bg-[#10233a]/25"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#10233a]/70 text-white transition-transform group-hover:scale-105"><svg aria-hidden="true" width="8" height="10" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z" /></svg></span></span>}
+                        {kapak ? <span className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${kapak})` }} /> : <AracVarsayilanKapak aracTuru={oneri.arac_turu} urunAdi={oneri.urun_adi} kucuk />}
+                        {videoOynatilabilir && <span className="absolute inset-0 flex items-center justify-center bg-[#10233a]/25"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#10233a]/70 text-white transition-transform group-hover:scale-105"><svg aria-hidden="true" width="8" height="10" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z" /></svg></span></span>}
                       </button>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-2"><strong className="truncate text-sm text-[#263e5b]">{oneri.urun_adi}</strong><span className="shrink-0 rounded-full px-2 py-0.5 text-[9px] font-extrabold" style={{ color: durum.renk, backgroundColor: durum.zemin }}>{durum.etiket}</span></div>
@@ -249,10 +253,11 @@ export default function BmOneriTakibi({
                 <tbody>
                   {liste.gorunen.map((oneri) => {
                     const durum = DURUMLAR[kayitDurumu(oneri)];
-                    const kapak = oneri.thumbnail_url ?? thumbnailUrlUret(oneri.video_url);
+                    const kapak = yayinThumbnailIstemciCoz(oneri);
+                    const videoOynatilabilir = (oneri.arac_turu ?? "video") === "video" && !!oneri.video_url;
                     return (
                       <tr key={oneri.oneri_id} className="border-t border-[#edf1f6] hover:bg-[#fbfcfe]">
-                        <td className="px-4 py-3"><div className="flex min-w-[220px] items-center gap-3"><button type="button" disabled={!oneri.video_url} onClick={() => oneri.video_url && setAcikVideo(oneri.video_url)} aria-label={`${oneri.urun_adi || "Öneri"} videosunu aç`} className="group relative h-10 w-16 shrink-0 overflow-hidden rounded-lg bg-[#d9e8f7] disabled:cursor-default">{kapak && <img src={kapak} alt="" className="h-full w-full object-cover" />}{oneri.video_url && <span className="absolute inset-0 flex items-center justify-center bg-[#10233a]/25"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#10233a]/70 text-white transition-transform group-hover:scale-105"><svg aria-hidden="true" width="7" height="9" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z" /></svg></span></span>}</button><span className="min-w-0"><strong className="block truncate text-xs text-[#2d4562]">{oneri.urun_adi}</strong><small className="mt-0.5 block truncate text-[10px] text-[#7a8da5]">{oneri.teknik_adi || "Teknik belirtilmedi"}</small></span></div></td>
+                        <td className="px-4 py-3"><div className="flex min-w-[220px] items-center gap-3"><button type="button" disabled={!videoOynatilabilir} onClick={() => videoOynatilabilir && setAcikVideo(oneri.video_url!)} aria-label={videoOynatilabilir ? `${oneri.urun_adi || "Öneri"} videosunu aç` : `${oneri.urun_adi || "Öneri"} kapağı`} className="group relative h-10 w-16 shrink-0 overflow-hidden rounded-lg bg-[#d9e8f7] disabled:cursor-default">{kapak ? <span className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${kapak})` }} /> : <AracVarsayilanKapak aracTuru={oneri.arac_turu} urunAdi={oneri.urun_adi} kucuk />}{videoOynatilabilir && <span className="absolute inset-0 flex items-center justify-center bg-[#10233a]/25"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#10233a]/70 text-white transition-transform group-hover:scale-105"><svg aria-hidden="true" width="7" height="9" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z" /></svg></span></span>}</button><span className="min-w-0"><strong className="block truncate text-xs text-[#2d4562]">{oneri.urun_adi}</strong><small className="mt-0.5 block truncate text-[10px] text-[#7a8da5]">{oneri.teknik_adi || "Teknik belirtilmedi"}</small></span></div></td>
                         <td className="px-4 py-3 font-extrabold text-[#405873]">{oneri.kullanici_adi}</td>
                         <td className="px-4 py-3 font-semibold text-[#718198]">{tarih(oneri.oneri_baslangic)}</td>
                         <td className="px-4 py-3 font-semibold text-[#718198]">{tarih(oneri.oneri_bitis)}</td>

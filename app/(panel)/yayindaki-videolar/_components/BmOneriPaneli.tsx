@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { YayindakiVideo } from "@/lib/video/yayindakiVideolar";
-import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
+import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
 import { trGunEkle, trGunu } from "@/lib/zaman/kontrol";
 
 interface Alici {
@@ -146,12 +147,12 @@ export default function BmOneriPaneli({ videolar, onVideoSec, onVideoKaldir, onV
           ) : (
             <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
               {videolar.map((video) => {
-                const kapak = video.thumbnail_url ?? thumbnailUrlUret(video.video_url);
+                const kapak = yayinThumbnailIstemciCoz(video);
                 return (
                   <article key={video.yayin_id} className="flex min-w-0 items-center gap-2 rounded-xl border border-[#dfe7f1] bg-[#f8fbff] p-2">
                     <button type="button" onClick={() => onVideoSec(video)} aria-label={`${video.urun_adi} yayınını görüntüle`} className="flex min-w-0 flex-1 items-center gap-2 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff]">
                       <span className="relative h-10 w-16 shrink-0 overflow-hidden rounded-lg bg-[#d9e8f7]">
-                        {kapak && <img src={kapak} alt="" className="h-full w-full object-cover" />}
+                        {kapak ? <img src={kapak} alt="" className="h-full w-full object-cover" /> : <AracVarsayilanKapak aracTuru={video.arac_turu} urunAdi={video.urun_adi} kucuk />}
                         <span className="absolute inset-0 flex items-center justify-center bg-[#10233a]/20"><svg aria-hidden="true" width="7" height="9" viewBox="0 0 10 12" fill="white"><path d="M0 0l10 6-10 6z" /></svg></span>
                       </span>
                       <span className="min-w-0 flex-1">

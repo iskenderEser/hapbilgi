@@ -76,7 +76,7 @@ export async function GET() {
     // Yayın detaylarını öneri + tarihsel puan kapsamı için toplu çek.
     interface YayinDetay {
       urun_adi: string | null; teknik_adi: string | null;
-      video_url: string | null; thumbnail_url: string | null; arac_kapak_yolu?: string | null; icerik_turu: string | null;
+      video_url: string | null; thumbnail_url: string | null; arac_kapak_yolu?: string | null; arac_dosya_yolu?: string | null; icerik_turu: string | null;
       talep_no: number | null; firma_adi: string | null;
       firma_id: string | null; hedef_roller: HedefRoller; durum: string | null;
       video_puani: number | null; soru_puani: number | null; video_basi_soru_sayisi: number | null;
@@ -91,7 +91,7 @@ export async function GET() {
     if (yayinIds.length > 0) {
       const { data: yayinlar, error: yayinError } = await adminSupabase
         .from("v_yayin_detay")
-        .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, arac_kapak_yolu, icerik_turu, talep_no, firma_id, firma_adi, hedef_roller, durum, video_puani, soru_puani, video_basi_soru_sayisi, arac_id, arac_turu")
+        .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, arac_kapak_yolu, arac_dosya_yolu, arac_metadata, icerik_turu, talep_no, firma_id, firma_adi, hedef_roller, durum, video_puani, soru_puani, video_basi_soru_sayisi, arac_id, arac_turu")
         .in("yayin_id", yayinIds)
         .in("firma_id", kisiErisimi.firmalar.filter((firma) => firma.aktif !== false && firma.eclub_aktif === true).map((firma) => firma.firma_id))
         .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))

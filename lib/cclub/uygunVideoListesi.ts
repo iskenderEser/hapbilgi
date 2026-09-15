@@ -13,7 +13,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { UygunVideo } from "@/lib/cclub/tipler";
-import { yayinThumbnailUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
+import { yayinThumbnailCevabi } from "@/lib/ogrenmeAraci/yayinThumbnail";
 
 /**
  * BM'in gönderebileceği CC videolarını döndürür.
@@ -29,7 +29,7 @@ export async function uygunVideoListesi(
   const [yayinlarRes, izlemelerRes] = await Promise.all([
     supabase
       .from("v_yayin_detay")
-      .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, arac_kapak_yolu, arac_turu, video_puani")
+      .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, arac_kapak_yolu, arac_dosya_yolu, arac_metadata, arac_id, arac_turu, video_puani")
       .eq("durum", "yayinda")
       .eq("firma_id", firmaId)
       .contains("hedef_roller", ["bm"])
@@ -54,14 +54,19 @@ export async function uygunVideoListesi(
   // CC yayınlarından sadece BM'in tamamladıkları
   const sonuc: UygunVideo[] = yayinlarRes.data
     .filter((y: { yayin_id: string }) => tamamlananSet.has(y.yayin_id))
-    .map((y) => ({
-      yayin_id: y.yayin_id,
-      urun_adi: y.urun_adi ?? "-",
-      teknik_adi: y.teknik_adi ?? "-",
-      video_url: y.video_url ?? null,
-      thumbnail_url: yayinThumbnailUrlCoz(y),
-      video_puani: y.video_puani ?? null,
-    }));
+    .map((y) => {
+      const { thumbnail_url } = yayinThumbnailCevabi(y);
+      return {
+        yayin_id: y.yayin_id,
+        urun_adi: y.urun_adi ?? "-",
+        teknik_adi: y.teknik_adi ?? "-",
+        video_url: y.video_url ?? null,
+        thumbnail_url,
+        video_puani: y.video_puani ?? null,
+        arac_id: (y as { arac_id?: string | null }).arac_id ?? null,
+        arac_turu: (y as { arac_turu?: string | null }).arac_turu ?? "video",
+      };
+    });
 
   return sonuc;
 }

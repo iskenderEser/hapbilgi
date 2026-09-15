@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useRef } from "react";
-import { Headphones, Heart, Play, Star, Video } from "lucide-react";
-import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { Heart, Play, Star } from "lucide-react";
+import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import type { PanelOneri } from "../_hooks/useEclubPanel";
+import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
 
 interface Props {
   oneriler: PanelOneri[];
@@ -28,7 +29,7 @@ function firmaIyelik(firmaAdi: string): string {
 }
 
 function VideoKarti({ oneri, onSec, onBegeni, onFavori, etkilesimAktif }: { oneri: PanelOneri; onSec: () => void; onBegeni: () => void; onFavori: () => void; etkilesimAktif: boolean }) {
-  const thumbnail = oneri.thumbnail_url ?? thumbnailUrlUret(oneri.video_url);
+  const thumbnail = yayinThumbnailIstemciCoz(oneri);
 
   return (
     <article className="group w-40 shrink-0 snap-start overflow-hidden rounded-xl border border-[#dfe7f1] bg-white transition hover:-translate-y-0.5 hover:border-[#b9d5f0] hover:shadow-[0_10px_24px_rgba(31,55,90,0.10)] sm:w-44 md:w-52">
@@ -37,7 +38,7 @@ function VideoKarti({ oneri, onSec, onBegeni, onFavori, etkilesimAktif }: { oner
           {thumbnail
             // eslint-disable-next-line @next/next/no-img-element
             ? <img src={thumbnail} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
-            : <span className="flex h-full items-center justify-center text-[#9babbc]">{oneri.arac_turu === "podcast" ? <Headphones size={26} /> : <Video size={26} />}</span>}
+            : <AracVarsayilanKapak aracTuru={oneri.arac_turu} urunAdi={oneri.urun_adi} />}
           <div className="absolute inset-0 bg-gradient-to-t from-[#10233a]/45 via-transparent to-transparent" />
           <span className="absolute inset-0 flex items-center justify-center">
             <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-[#10233a]/65 text-white shadow-lg backdrop-blur-sm transition-transform group-hover:scale-105"><Play size={14} fill="currentColor" /></span>

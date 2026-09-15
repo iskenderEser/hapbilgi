@@ -22,8 +22,8 @@ BEGIN
   END IF;
 
   SELECT * INTO v_arac FROM public.ogrenme_araclari WHERE arac_id = p_arac_id FOR UPDATE;
-  IF NOT FOUND OR v_arac.arac_turu <> 'podcast' THEN
-    RAISE EXCEPTION 'Podcast bulunamadı.' USING ERRCODE = 'P0002';
+  IF NOT FOUND OR v_arac.arac_turu NOT IN ('podcast', 'flip_pdf') THEN
+    RAISE EXCEPTION 'Kapak destekleyen öğrenme aracı bulunamadı.' USING ERRCODE = 'P0002';
   END IF;
   SELECT uretici_id INTO v_uretici_id FROM public.talepler WHERE talep_id = v_arac.talep_id;
   IF NOT ((v_arac.kaynak = 'hazir' AND v_uretici_id = p_kullanici_id)
@@ -33,7 +33,7 @@ BEGIN
   SELECT durum INTO v_son_durum FROM public.ogrenme_araci_durumu
   WHERE arac_id = p_arac_id ORDER BY created_at DESC LIMIT 1;
   IF v_son_durum NOT IN ('yukleme_bekliyor', 'dogrulama_bekliyor', 'revizyon_bekliyor', 'revizyon bekleniyor') THEN
-    RAISE EXCEPTION 'Podcast yayın görseli yüklemesine açık değil.' USING ERRCODE = '23514';
+    RAISE EXCEPTION 'Öğrenme aracı yayın görseli yüklemesine açık değil.' USING ERRCODE = '23514';
   END IF;
 
   v_metadata := COALESCE(v_arac.metadata, '{}'::jsonb);
@@ -88,8 +88,8 @@ DECLARE
   v_onceki_kapak text;
 BEGIN
   SELECT * INTO v_arac FROM public.ogrenme_araclari WHERE arac_id = p_arac_id FOR UPDATE;
-  IF NOT FOUND OR v_arac.arac_turu <> 'podcast' THEN
-    RAISE EXCEPTION 'Podcast bulunamadı.' USING ERRCODE = 'P0002';
+  IF NOT FOUND OR v_arac.arac_turu NOT IN ('podcast', 'flip_pdf') THEN
+    RAISE EXCEPTION 'Kapak destekleyen öğrenme aracı bulunamadı.' USING ERRCODE = 'P0002';
   END IF;
   SELECT uretici_id INTO v_uretici_id FROM public.talepler WHERE talep_id = v_arac.talep_id;
   IF NOT ((v_arac.kaynak = 'hazir' AND v_uretici_id = p_kullanici_id)
@@ -99,7 +99,7 @@ BEGIN
   SELECT durum INTO v_son_durum FROM public.ogrenme_araci_durumu
   WHERE arac_id = p_arac_id ORDER BY created_at DESC LIMIT 1;
   IF v_son_durum NOT IN ('yukleme_bekliyor', 'dogrulama_bekliyor', 'revizyon_bekliyor', 'revizyon bekleniyor') THEN
-    RAISE EXCEPTION 'Podcast yayın görseli yüklemesine açık değil.' USING ERRCODE = '23514';
+    RAISE EXCEPTION 'Öğrenme aracı yayın görseli yüklemesine açık değil.' USING ERRCODE = '23514';
   END IF;
 
   v_metadata := COALESCE(v_arac.metadata, '{}'::jsonb);
@@ -126,8 +126,8 @@ BEGIN
   v_metadata := jsonb_set(v_metadata, '{kapak_dogrulandi}', 'true'::jsonb, true);
   v_metadata := jsonb_set(
     v_metadata,
-    '{podcast_destek_dogrulamasi}',
-    COALESCE(v_metadata->'podcast_destek_dogrulamasi', '{}'::jsonb) || COALESCE(p_dogrulama, '{}'::jsonb),
+    CASE WHEN v_arac.arac_turu = 'podcast' THEN '{podcast_destek_dogrulamasi}'::text[] ELSE '{kapak_destek_dogrulamasi}'::text[] END,
+    COALESCE(v_metadata -> (CASE WHEN v_arac.arac_turu = 'podcast' THEN 'podcast_destek_dogrulamasi' ELSE 'kapak_destek_dogrulamasi' END), '{}'::jsonb) || COALESCE(p_dogrulama, '{}'::jsonb),
     true
   );
   v_metadata := jsonb_set(
@@ -166,8 +166,8 @@ DECLARE
   v_yollar jsonb := '[]'::jsonb;
 BEGIN
   SELECT * INTO v_arac FROM public.ogrenme_araclari WHERE arac_id = p_arac_id FOR UPDATE;
-  IF NOT FOUND OR v_arac.arac_turu <> 'podcast' THEN
-    RAISE EXCEPTION 'Podcast bulunamadı.' USING ERRCODE = 'P0002';
+  IF NOT FOUND OR v_arac.arac_turu NOT IN ('podcast', 'flip_pdf') THEN
+    RAISE EXCEPTION 'Kapak destekleyen öğrenme aracı bulunamadı.' USING ERRCODE = 'P0002';
   END IF;
   SELECT uretici_id INTO v_uretici_id FROM public.talepler WHERE talep_id = v_arac.talep_id;
   IF NOT ((v_arac.kaynak = 'hazir' AND v_uretici_id = p_kullanici_id)
@@ -177,7 +177,7 @@ BEGIN
   SELECT durum INTO v_son_durum FROM public.ogrenme_araci_durumu
   WHERE arac_id = p_arac_id ORDER BY created_at DESC LIMIT 1;
   IF v_son_durum NOT IN ('yukleme_bekliyor', 'dogrulama_bekliyor', 'revizyon_bekliyor', 'revizyon bekleniyor') THEN
-    RAISE EXCEPTION 'Yalnız tamamlanmamış podcast yüklemesinde görselsiz devam edilebilir.' USING ERRCODE = '23514';
+    RAISE EXCEPTION 'Yalnız tamamlanmamış yüklemede görselsiz devam edilebilir.' USING ERRCODE = '23514';
   END IF;
 
   v_metadata := COALESCE(v_arac.metadata, '{}'::jsonb);
@@ -235,5 +235,25 @@ REVOKE ALL ON FUNCTION public.podcast_kapak_yukleme_iptal_atomik(uuid,uuid,uuid)
 GRANT EXECUTE ON FUNCTION public.podcast_kapak_yukleme_baslat_atomik(uuid,uuid,uuid,text) TO service_role;
 GRANT EXECUTE ON FUNCTION public.podcast_kapak_yukleme_tamamla_atomik(uuid,uuid,uuid,text,jsonb) TO service_role;
 GRANT EXECUTE ON FUNCTION public.podcast_kapak_yukleme_iptal_atomik(uuid,uuid,uuid) TO service_role;
+
+-- Genel adlar yeni Literatür akışının podcast ile aynı kilit, sahiplik ve
+-- gecikmiş istek korumasını kullanmasını sağlar. Eski adlar geriye dönük
+-- uyumluluk için korunur.
+CREATE OR REPLACE FUNCTION public.ogrenme_araci_kapak_yukleme_baslat_atomik(uuid,uuid,uuid,text)
+RETURNS jsonb LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path TO 'public'
+AS 'SELECT public.podcast_kapak_yukleme_baslat_atomik($1,$2,$3,$4)';
+CREATE OR REPLACE FUNCTION public.ogrenme_araci_kapak_yukleme_tamamla_atomik(uuid,uuid,uuid,text,jsonb)
+RETURNS jsonb LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path TO 'public'
+AS 'SELECT public.podcast_kapak_yukleme_tamamla_atomik($1,$2,$3,$4,$5)';
+CREATE OR REPLACE FUNCTION public.ogrenme_araci_kapak_yukleme_iptal_atomik(uuid,uuid,uuid DEFAULT NULL)
+RETURNS jsonb LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path TO 'public'
+AS 'SELECT public.podcast_kapak_yukleme_iptal_atomik($1,$2,$3)';
+
+REVOKE ALL ON FUNCTION public.ogrenme_araci_kapak_yukleme_baslat_atomik(uuid,uuid,uuid,text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.ogrenme_araci_kapak_yukleme_tamamla_atomik(uuid,uuid,uuid,text,jsonb) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.ogrenme_araci_kapak_yukleme_iptal_atomik(uuid,uuid,uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.ogrenme_araci_kapak_yukleme_baslat_atomik(uuid,uuid,uuid,text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.ogrenme_araci_kapak_yukleme_tamamla_atomik(uuid,uuid,uuid,text,jsonb) TO service_role;
+GRANT EXECUTE ON FUNCTION public.ogrenme_araci_kapak_yukleme_iptal_atomik(uuid,uuid,uuid) TO service_role;
 
 COMMIT;

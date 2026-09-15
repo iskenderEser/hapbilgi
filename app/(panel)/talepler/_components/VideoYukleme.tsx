@@ -24,6 +24,9 @@ export interface VideoYuklemeProps {
   onSil: () => void;
   yuklemeYuzdesi?: number | null;
   ogrenmeAraciTuru?: OgrenmeAraciTuru | null;
+  butonMetni?: string;
+  accept?: string;
+  aciklama?: string;
 }
 
 export interface AracYuklemeAyari {
@@ -73,6 +76,9 @@ export function VideoYukleme({
   onSil,
   yuklemeYuzdesi = null,
   ogrenmeAraciTuru,
+  butonMetni,
+  accept,
+  aciklama,
 }: VideoYuklemeProps) {
   const videoInputRef = useRef<HTMLInputElement>(null);
   const ayar = aracYuklemeAyarlari(ogrenmeAraciTuru);
@@ -94,16 +100,16 @@ export function VideoYukleme({
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          {ayar.butonMetni}
+          {butonMetni ?? ayar.butonMetni}
           <input
             ref={videoInputRef}
             type="file"
-            accept={ayar.accept}
+            accept={accept ?? ayar.accept}
             onChange={handleChange}
             className="hidden"
           />
         </label>
-        <span className="text-xs text-gray-400">{ayar.aciklama}</span>
+        <span className="text-xs text-gray-400">{aciklama ?? ayar.aciklama}</span>
       </div>
       {bekleyen && (() => {
         const rozet = dosyaTipiRenk(bekleyen.preview.dosya_adi);

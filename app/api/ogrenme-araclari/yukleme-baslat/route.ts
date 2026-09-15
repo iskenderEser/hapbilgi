@@ -7,7 +7,8 @@ import { IU_ROLU, URETICI_ROLLER } from "@/lib/utils/roller";
 import { ogrenmeAraciAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
 import { bunnyNesneYoluOlustur, bunnyUploadBilgisi, yuklemeYetkisiOlustur } from "@/lib/ogrenmeAraci/bunnyStorage";
 import { dosyaBeyaniDogrula, yeniOgrenmeAraciTuruMu } from "@/lib/ogrenmeAraci/sozlesme";
-import { uretimAraciYetkisiniDogrula } from "@/lib/ogrenmeAraci/yetki";
+import { iuOgrenmeAraciGorevYetkisiniDogrula, uretimAraciYetkisiniDogrula } from "@/lib/ogrenmeAraci/yetki";
+import { uuidGecerliMi } from "@/lib/uretim/rpc";
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,6 +28,12 @@ export async function POST(request: NextRequest) {
     if (!ogrenmeAraciAcikMi(arac_turu)) {
       return NextResponse.json({ hata: "Bu öğrenme aracı henüz kullanıma açık değil." }, { status: 423 });
     }
+    if ((kaynak === "iu" && rol !== IU_ROLU) || (kaynak === "hazir" && !URETICI_ROLLER.includes(rol))) {
+      return rolHatasi("Öğrenme aracı kaynağı kullanıcı rolüyle eşleşmiyor.");
+    }
+    if (kaynak === "iu" && !uuidGecerliMi(body.gorev_id)) {
+      return validasyonHatasi("İçerik üreticisi yüklemesi için geçerli görev kimliği zorunludur.", ["gorev_id"]);
+    }
     if (typeof dosya_adi !== "string" || typeof mime_type !== "string" || typeof dosya_boyutu !== "number") {
       return validasyonHatasi("Dosya beyanı eksik.", ["dosya_adi", "mime_type", "dosya_boyutu"]);
     }
@@ -44,6 +51,14 @@ export async function POST(request: NextRequest) {
     const yetki = await uretimAraciYetkisiniDogrula({ db, talepId: talep_id, kullaniciId: user.id, rol });
     if (!yetki.ok) return NextResponse.json({ hata: yetki.hata }, { status: yetki.status });
 
+    const mevcutAracId = typeof body.arac_id === "string" && body.arac_id ? body.arac_id : null;
+    if (kaynak === "iu") {
+      const gorevYetkisi = await iuOgrenmeAraciGorevYetkisiniDogrula({
+        db, gorevId: body.gorev_id, talepId: talep_id, kullaniciId: user.id, aracId: mevcutAracId,
+      });
+      if (!gorevYetkisi.ok) return NextResponse.json({ hata: gorevYetkisi.hata }, { status: gorevYetkisi.status });
+    }
+
     const { data: talep, error: talepError } = await db
       .from("talepler")
       .select("ogrenme_araci_turu")
@@ -54,14 +69,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ hata: "Yüklenen araç türü talepteki sabit araç türüyle eşleşmiyor." }, { status: 422 });
     }
 
-    const mevcutAracId = typeof body.arac_id === "string" && body.arac_id ? body.arac_id : null;
     const aracId = mevcutAracId ?? randomUUID();
+    let yuklemeGirisimiId: string = randomUUID();
+    if (mevcutAracId) {
+      const { data: oncekiArac } = await db.from("ogrenme_araclari")
+        .select("metadata").eq("arac_id", mevcutAracId).maybeSingle();
+      const { data: oncekiDurum } = await db.from("ogrenme_araci_durumu")
+        .select("durum").eq("arac_id", mevcutAracId).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      const oncekiBeyan = ((oncekiArac?.metadata as { yukleme_beyani?: Record<string, unknown> } | null)?.yukleme_beyani ?? {});
+      if (["yukleme_bekliyor", "dogrulama_bekliyor"].includes(oncekiDurum?.durum ?? "")
+        && typeof oncekiBeyan.yukleme_girisimi_id === "string") {
+        yuklemeGirisimiId = oncekiBeyan.yukleme_girisimi_id;
+      }
+    }
     const dosyaYolu = bunnyNesneYoluOlustur({
       firmaId: yetki.firmaId,
       talepId: talep_id,
       aracId,
       aracTuru: arac_turu,
       uzanti: dosyaKarari.uzanti,
+      girisimId: ["gorsel", "flip_pdf"].includes(arac_turu) ? yuklemeGirisimiId : undefined,
     });
     const upload = bunnyUploadBilgisi();
     const yuklemeYetkisi = yuklemeYetkisiOlustur({
@@ -93,6 +120,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ hata: "Öğrenme aracı devam veya revizyon yüklemesi geçersiz." }, { status: 409 });
       }
       const oncekiBeyan = ((mevcut?.metadata as { yukleme_beyani?: Record<string, unknown> } | null)?.yukleme_beyani ?? {});
+      if (yarimYukleme && typeof oncekiBeyan.yukleme_girisimi_id === "string") {
+        yuklemeGirisimiId = oncekiBeyan.yukleme_girisimi_id;
+      }
       if (yarimYukleme && oncekiBeyan.dosya_boyutu !== undefined) {
         if (
           oncekiBeyan.dosya_boyutu !== dosya_boyutu
@@ -107,15 +137,20 @@ export async function POST(request: NextRequest) {
         && Boolean(mevcut?.dosya_yolu && mevcutMetadata.depolama_dogrulamasi);
       if (anaTamamlandi) {
         tamamlananParcalar.push("ana");
-        if (mevcut?.arac_turu === "podcast") {
+        if (mevcut?.arac_turu === "podcast" || mevcut?.arac_turu === "flip_pdf") {
           if (mevcut.kapak_yolu && mevcutMetadata.kapak_dogrulandi === true) tamamlananParcalar.push("kapak");
+        }
+        if (mevcut?.arac_turu === "podcast") {
           if (mevcut.transkript_yolu && mevcutMetadata.transkript_dogrulandi === true) tamamlananParcalar.push("transkript");
         }
         satirlar = [{ arac_id: mevcutAracId, arac_durum_id: sonDurum.arac_durum_id }];
       } else {
         const yenilenenMetadata: Record<string, unknown> = {
           ...mevcutMetadata,
-          yukleme_beyani: { dosya_adi, mime_type: mime_type.toLowerCase(), dosya_boyutu, checksum_sha256: checksum_sha256.toLowerCase() },
+          ...(revizyon && ["gorsel", "flip_pdf"].includes(arac_turu) && mevcut?.dosya_yolu !== dosyaYolu
+            ? { onceki_ana_dosya_yolu: mevcut?.dosya_yolu }
+            : {}),
+          yukleme_beyani: { dosya_adi, mime_type: mime_type.toLowerCase(), dosya_boyutu, checksum_sha256: checksum_sha256.toLowerCase(), gorev_id: kaynak === "iu" ? body.gorev_id : null, yukleme_girisimi_id: yuklemeGirisimiId },
         };
         delete yenilenenMetadata.podcast_dogrulama_islem_anahtari;
         const { error: yenilemeHatasi } = await db.from("ogrenme_araclari").update({
@@ -156,6 +191,8 @@ export async function POST(request: NextRequest) {
         mime_type: mime_type.toLowerCase(),
         dosya_boyutu,
         checksum_sha256: checksum_sha256.toLowerCase(),
+        gorev_id: kaynak === "iu" ? body.gorev_id : null,
+        yukleme_girisimi_id: yuklemeGirisimiId,
       },
       p_degistiren_id: user.id,
       });
@@ -169,7 +206,7 @@ export async function POST(request: NextRequest) {
     const kayit = satirlar?.[0];
     if (!kayit) return NextResponse.json({ hata: "Yükleme kaydı oluşturuldu ancak sonuç alınamadı." }, { status: 500 });
 
-    if (arac_turu === "podcast" && typeof body.kapak_secildi === "boolean") {
+    if (["podcast", "flip_pdf"].includes(arac_turu) && typeof body.kapak_secildi === "boolean") {
       const { data: mData } = await db.from("ogrenme_araclari").select("metadata").eq("arac_id", kayit.arac_id).maybeSingle();
       const meta = (mData?.metadata as Record<string, unknown> | null) ?? {};
       await db.from("ogrenme_araclari").update({
@@ -180,6 +217,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       arac_id: kayit.arac_id,
       arac_durum_id: kayit.arac_durum_id,
+      yukleme_girisimi_id: yuklemeGirisimiId,
       tamamlanan_parcalar: tamamlananParcalar,
       yukleme: {
         endpoint: upload.endpoint,

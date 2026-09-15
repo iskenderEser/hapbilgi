@@ -67,7 +67,7 @@ export async function getAnaSayfaVideolari(
 
   let query = adminSupabase
     .from("v_yayin_detay")
-    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, arac_kapak_yolu, video_puani, yayin_tarihi, icerik_turu, takim_id, talep_no, firma_adi, arac_id, arac_turu")
+    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, arac_kapak_yolu, arac_dosya_yolu, arac_metadata, video_puani, yayin_tarihi, icerik_turu, takim_id, talep_no, firma_adi, arac_id, arac_turu")
     .eq("durum", "yayinda")
     .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))
     .in("icerik_turu", turler)
@@ -116,6 +116,7 @@ export async function getAnaSayfaVideolari(
     video_url?: string | null;
     thumbnail_url?: string | null;
     arac_kapak_yolu?: string | null;
+    arac_dosya_yolu?: string | null;
     video_puani?: number | null;
     yayin_tarihi: string;
     icerik_turu?: string | null;

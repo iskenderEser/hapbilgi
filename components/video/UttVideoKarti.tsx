@@ -1,10 +1,11 @@
 "use client";
 
 import { useRef, type MouseEvent, type ReactNode } from "react";
-import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 import { TUR_BASLIK, type IcerikTuru } from "@/lib/video/icerikTuru";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
+import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
 
 export type UttVideoDurumu = "yeni" | "devam" | "tamamlanan";
 
@@ -66,22 +67,13 @@ interface VideoEtkilesimProps extends VideoEtkilesimHandlerlari {
   etkilesimAktif?: boolean;
 }
 
-const GRADYANLAR = [
-  "linear-gradient(135deg, #b5d4f4, #56aeff)",
-  "linear-gradient(135deg, #c0dd97, #639922)",
-  "linear-gradient(135deg, #f5c4b3, #D85A30)",
-  "linear-gradient(135deg, #CECBF6, #534AB7)",
-  "linear-gradient(135deg, #9FE1CB, #1D9E75)",
-];
-
 const GUN_MS = 24 * 60 * 60 * 1000;
 const kalanGun = (tarih: string) => Math.max(0, Math.ceil((new Date(tarih).getTime() - Date.now()) / GUN_MS));
 const formatTarih = (tarih: string) =>
   new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
 
 export function UttVideoKarti({ video, onVideoClick, onBegeni, onFavori, etkilesimAktif = true }: VideoEtkilesimProps) {
-  const thumbnail = video.thumbnail_url || thumbnailUrlUret(video.video_url || "");
-  const gradyan = GRADYANLAR[parseInt(video.yayin_id, 36) % GRADYANLAR.length];
+  const thumbnail = yayinThumbnailIstemciCoz(video);
 
   return (
     <div className="group cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md" onClick={() => onVideoClick(video)}>
@@ -90,9 +82,7 @@ export function UttVideoKarti({ video, onVideoClick, onBegeni, onFavori, etkiles
           // eslint-disable-next-line @next/next/no-img-element
           <img src={thumbnail} alt={video.urun_adi} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center" style={{ background: gradyan }}>
-            <span className="text-base font-bold text-white">{video.urun_adi?.charAt(0) || "V"}</span>
-          </div>
+          <AracVarsayilanKapak aracTuru={video.arac_turu} urunAdi={video.urun_adi} />
         )}
 
         {video.durum === "yeni" && <div className="absolute right-1.5 top-1.5 rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] text-white shadow-sm">Yeni</div>}

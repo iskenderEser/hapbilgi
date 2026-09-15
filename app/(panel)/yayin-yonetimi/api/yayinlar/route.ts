@@ -10,10 +10,11 @@ import { turKaydiAc } from "@/lib/tclub/tur/kayit";
 import { tarifeVeBarkodYaz } from "@/lib/eczanem/tarife";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { bunnyVideoDurumu, embedUrlGuidCikar } from "@/lib/video/bunnyYukleme";
-import { yayinThumbnailUrlCoz, type YayinKapakGirdisi } from "@/lib/ogrenmeAraci/yayinThumbnail";
+import { yayinThumbnailCevabi, type YayinKapakGirdisi } from "@/lib/ogrenmeAraci/yayinThumbnail";
+import { kapakYayinKapisiDogrula } from "@/lib/ogrenmeAraci/sozlesme";
 import { baremTablosuDogrula } from "@/lib/eclub/store/eclubStoreTipler";
 
-const YAYIN_LISTE_ALANLARI = "yayin_id, arac_id, soru_seti_durum_id, durum, yayin_tarihi, durdurma_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, sorular, hedef_roller, talep_no, firma_adi, egitim_turu, arac_turu, arac_kapak_yolu, arac_dosya_yolu";
+const YAYIN_LISTE_ALANLARI = "yayin_id, arac_id, soru_seti_durum_id, durum, yayin_tarihi, durdurma_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, sorular, hedef_roller, talep_no, firma_adi, egitim_turu, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata";
 
 export async function GET() {
   try {
@@ -34,10 +35,9 @@ export async function GET() {
 
     if (error) return hataYaniti("Yayınlar yüklenemedi.", "v_yayin_detay SELECT — üretici filtresi", error);
 
-    const islenmisYayinlar = (yayinlar ?? []).map((y: Record<string, unknown>) => ({
-      ...y,
-      thumbnail_url: yayinThumbnailUrlCoz(y as unknown as YayinKapakGirdisi),
-    }));
+    const islenmisYayinlar = (yayinlar ?? []).map((y: Record<string, unknown>) =>
+      yayinThumbnailCevabi(y as unknown as YayinKapakGirdisi & Record<string, unknown>)
+    );
 
     return NextResponse.json({ yayinlar: islenmisYayinlar }, { status: 200 });
   } catch (err) {
@@ -246,12 +246,14 @@ export async function POST(request: NextRequest) {
     // hiçbir yayın/tarife yan etkisi oluşturulmaz.
     if (soruSeti.arac_durum_id) {
       const { data: aracDurum, error: aracDurumError } = await adminSupabase.from("ogrenme_araci_durumu")
-        .select("durum, ogrenme_araclari!inner(arac_turu, dosya_yolu, kapak_yolu, transkript_yolu, sure_saniye, sayfa_sayisi, genislik, yukseklik, metadata_dogrulandi)")
+        .select("durum, ogrenme_araclari!inner(arac_turu, dosya_yolu, kapak_yolu, transkript_yolu, sure_saniye, sayfa_sayisi, genislik, yukseklik, metadata, metadata_dogrulandi)")
         .eq("arac_durum_id", soruSeti.arac_durum_id).maybeSingle();
       const arac = Array.isArray(aracDurum?.ogrenme_araclari) ? aracDurum.ogrenme_araclari[0] : aracDurum?.ogrenme_araclari;
       if (aracDurumError || aracDurum?.durum !== "onaylandi" || !arac || !arac.metadata_dogrulandi || !arac.dosya_yolu) {
         return isKuraluHatasi("Öğrenme aracı onayı ve dosya doğrulaması tamamlanmadan yayımlanamaz.");
       }
+      const kapakKapisi = kapakYayinKapisiDogrula({ kapakYolu: arac.kapak_yolu, metadata: arac.metadata as Record<string, unknown> | null });
+      if (!kapakKapisi.ok) return isKuraluHatasi(kapakKapisi.hata);
       if (arac.arac_turu === "podcast" && Number(arac.sure_saniye) <= 0) {
         return isKuraluHatasi("Podcast ses ve süre doğrulaması tamamlanmadan yayımlanamaz.");
       }

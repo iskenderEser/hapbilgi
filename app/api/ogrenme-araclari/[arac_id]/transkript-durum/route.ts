@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { rolHatasi, sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
-import { URETICI_ROLLER } from "@/lib/utils/roller";
-import { uretimAraciYetkisiniDogrula } from "@/lib/ogrenmeAraci/yetki";
+import { sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
+import { podcastTranskriptYetkisiDogrula } from "@/lib/ogrenmeAraci/yetki";
 import { uuidGecerliMi } from "@/lib/uretim/rpc";
 
 export async function GET(
@@ -23,28 +22,26 @@ export async function GET(
 
     const db = createAdminClient();
     const rol = await rolCozucu(db, user.id);
-    if (!URETICI_ROLLER.includes(rol)) {
-      return rolHatasi("Bu işlem yalnızca üretici rollerine açıktır.");
+
+    let gorevId: string | null = null;
+    try {
+      const url = new URL(_request.url);
+      gorevId = url.searchParams.get("gorev_id");
+    } catch {
+      // Query parametresi yoksa yok sayılır
     }
 
-    const { data: arac } = await db
-      .from("ogrenme_araclari")
-      .select("arac_id, talep_id, arac_turu, kaynak, metadata, dosya_yolu")
-      .eq("arac_id", arac_id)
-      .maybeSingle();
-
-    if (!arac || arac.arac_turu !== "podcast") {
-      return NextResponse.json({ hata: "Podcast bulunamadı." }, { status: 404 });
-    }
-
-    const yetki = await uretimAraciYetkisiniDogrula({
+    const yetki = await podcastTranskriptYetkisiDogrula({
       db,
-      talepId: arac.talep_id,
+      aracId: arac_id,
       kullaniciId: user.id,
       rol,
+      gorevId,
+      transkriptIstendiZorunluMu: false,
     });
     if (!yetki.ok) return NextResponse.json({ hata: yetki.hata }, { status: yetki.status });
 
+    const arac = yetki.arac;
     const metadata = (arac.metadata as Record<string, unknown> | null) ?? {};
     const transkript = (metadata.transkript as Record<string, unknown> | null) ?? null;
 
@@ -52,6 +49,7 @@ export async function GET(
       ok: true,
       arac_id,
       ses_yuklendi: Boolean(arac.dosya_yolu),
+      transkript_istendi: yetki.transkriptIstendi,
       transkript: {
         durum: (transkript?.durum as string | undefined) ?? "yok",
         kaynak: (transkript?.kaynak as string | undefined) ?? null,

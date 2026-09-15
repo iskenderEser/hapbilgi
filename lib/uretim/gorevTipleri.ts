@@ -30,6 +30,7 @@ export interface UretimGorevTalebi {
   video_basi_soru_sayisi: number;
   ogrenme_araci_turu: "video" | "podcast" | "gorsel" | "flip_pdf";
   ogrenme_araci_tercihleri: Record<string, unknown>;
+  podcast_transkript_istendi?: boolean;
   created_at: string;
 }
 
@@ -42,7 +43,22 @@ export interface UretimDurumGecmisi {
 export type UretimGorevIcerigi =
   | { asama: "senaryo"; senaryo_metni: string }
   | { asama: "video"; video_url: string | null; thumbnail_url: string | null }
-  | { asama: "podcast"; ses_url: string; kapak_url: string | null; transkript_url: string; sure_saniye: number }
+  | {
+      asama: "podcast";
+      ses_url: string;
+      kapak_url: string | null;
+      transkript_url: string | null;
+      sure_saniye: number;
+      podcast_transkript_istendi?: boolean;
+      transkript_durumu?: string;
+      transkript_kaynagi?: string | null;
+      taslak_metin?: string | null;
+      onaylanan_metin?: string | null;
+      surum?: number;
+      ai_girisim_id?: string | null;
+      kullanilan_model?: string | null;
+      hata_kodu?: string | null;
+    }
   | { asama: "gorsel"; gorsel_url: string; genislik: number; yukseklik: number }
   | { asama: "flip_pdf"; pdf_url: string; sayfa_sayisi: number }
   | { asama: "soru_seti"; sorular: Soru[] };

@@ -6,13 +6,16 @@ import { rolHatasi, sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/ut
 import { IU_ROLU, URETICI_ROLLER } from "@/lib/utils/roller";
 import { bunnyNesneBilgisi, yuklemeMakbuzuDogrula } from "@/lib/ogrenmeAraci/bunnyStorage";
 import { dosyaImzasiDogrula, yeniOgrenmeAraciTuruMu } from "@/lib/ogrenmeAraci/sozlesme";
-import { uretimAraciYetkisiniDogrula } from "@/lib/ogrenmeAraci/yetki";
+import { anaYuklemeBaginiDogrula, iuOgrenmeAraciGorevYetkisiniDogrula, uretimAraciYetkisiniDogrula } from "@/lib/ogrenmeAraci/yetki";
+import { uuidGecerliMi } from "@/lib/uretim/rpc";
 
 interface YuklemeBeyani {
   dosya_adi?: string;
   mime_type?: string;
   dosya_boyutu?: number;
   checksum_sha256?: string;
+  gorev_id?: string | null;
+  yukleme_girisimi_id?: string;
 }
 
 async function temizlemeKaydiOlustur(
@@ -69,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     const { data: arac, error: aracError } = await db
       .from("ogrenme_araclari")
-      .select("arac_id, talep_id, arac_turu, dosya_yolu, metadata, metadata_dogrulandi, mime_type, dosya_boyutu, checksum_sha256")
+      .select("arac_id, talep_id, arac_turu, kaynak, dosya_yolu, metadata, metadata_dogrulandi, mime_type, dosya_boyutu, checksum_sha256")
       .eq("arac_id", arac_id)
       .maybeSingle();
     if (aracError || !arac) return NextResponse.json({ hata: "Öğrenme aracı bulunamadı." }, { status: 404 });
@@ -85,6 +88,15 @@ export async function POST(request: NextRequest) {
 
     const yetki = await uretimAraciYetkisiniDogrula({ db, talepId: arac.talep_id, kullaniciId: user.id, rol });
     if (!yetki.ok) return NextResponse.json({ hata: yetki.hata }, { status: yetki.status });
+
+    const beyan = ((arac.metadata as { yukleme_beyani?: YuklemeBeyani } | null)?.yukleme_beyani ?? {});
+    if (arac.kaynak === "iu") {
+      if (!uuidGecerliMi(body.gorev_id)) return validasyonHatasi("Geçerli görev kimliği zorunludur.", ["gorev_id"]);
+      const gorevYetkisi = await iuOgrenmeAraciGorevYetkisiniDogrula({
+        db, gorevId: body.gorev_id, talepId: arac.talep_id, kullaniciId: user.id, aracId: arac_id,
+      });
+      if (!gorevYetkisi.ok) return NextResponse.json({ hata: gorevYetkisi.hata }, { status: gorevYetkisi.status });
+    }
 
     const { data: sonDurum, error: durumError } = await db
       .from("ogrenme_araci_durumu")
@@ -107,7 +119,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ hata: "Bu öğrenme aracının yüklemesi artık tamamlanamaz." }, { status: 409 });
     }
 
-    const beyan = ((arac.metadata as { yukleme_beyani?: YuklemeBeyani } | null)?.yukleme_beyani ?? {});
+    const yuklemeBagi = anaYuklemeBaginiDogrula({
+      kaynak: arac.kaynak,
+      beyanGorevId: beyan.gorev_id,
+      istekGorevId: body.gorev_id,
+      beyanGirisimId: beyan.yukleme_girisimi_id,
+      istekGirisimId: body.yukleme_girisimi_id,
+    });
+    if (!yuklemeBagi.ok) return NextResponse.json({ hata: yuklemeBagi.hata }, { status: yuklemeBagi.status });
+
     const beyanChecksum = beyan.checksum_sha256?.toLowerCase() ?? "";
     if (
       typeof beyan.mime_type !== "string"

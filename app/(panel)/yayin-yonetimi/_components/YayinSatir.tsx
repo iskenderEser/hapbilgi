@@ -15,7 +15,7 @@ import type { HesaplananTur } from "@/lib/tclub/tur/kayit";
 import { HedefRolPilleri } from "@/components/pill";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import { ureticiDurumMesaji, yayinDurumKodu } from "@/lib/utils/durum/mesaj";
-import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 import { VideoThumb } from "./Yardimcilar";
 import { SoruListesi } from "./SoruListesi";
 import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
@@ -60,8 +60,7 @@ export function YayinSatir({
 
   if (kartGorunumu) {
     const tur = y.arac_turu ?? "video";
-    const isVideo = tur === "video";
-    const thumbnail = y.thumbnail_url ?? (isVideo ? thumbnailUrlUret(y.video_url) : null);
+    const thumbnail = yayinThumbnailIstemciCoz(y);
     const akordiyonAcik = acikAkordiyon === y.yayin_id;
 
     const etiket =

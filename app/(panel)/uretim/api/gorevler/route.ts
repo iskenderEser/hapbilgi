@@ -5,6 +5,7 @@ import { ADMIN_ROLLER, IU_ROLU, ROL_ADLARI, URETICI_ROLLER } from "@/lib/utils/r
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { uuidGecerliMi } from "@/lib/uretim/rpc";
 import { bunnyCdnImzaliUrl } from "@/lib/ogrenmeAraci/bunnyStorage";
+import { podcastTranskriptTercihiCoz } from "@/lib/ogrenmeAraci/sozlesme";
 
 export async function GET(request: NextRequest) {
   try {
@@ -119,19 +120,42 @@ export async function GET(request: NextRequest) {
         durumGecmisi = gecmis.data ?? [];
       } else if (gorev.asama === "video" && gorev.arac_id) {
         const { data: podcast, error } = await adminSupabase.from("ogrenme_araclari")
-          .select("dosya_yolu, kapak_yolu, transkript_yolu, sure_saniye")
+          .select("dosya_yolu, kapak_yolu, transkript_yolu, sure_saniye, metadata")
           .eq("arac_id", gorev.arac_id).eq("arac_turu", "podcast").maybeSingle();
-        if (error || !podcast?.dosya_yolu || !podcast.transkript_yolu) return hataYaniti("Podcast detayı alınamadı.", "podcast görev detayı", error);
+        if (error || !podcast?.dosya_yolu) return hataYaniti("Podcast detayı alınamadı.", "podcast görev detayı", error);
         const sesUrl = bunnyCdnImzaliUrl(podcast.dosya_yolu);
         const kapakUrl = podcast.kapak_yolu ? bunnyCdnImzaliUrl(podcast.kapak_yolu) : null;
-        const transkriptUrl = bunnyCdnImzaliUrl(podcast.transkript_yolu);
-        if (!sesUrl || !transkriptUrl || (podcast.kapak_yolu && !kapakUrl)) return NextResponse.json({ hata: "Podcast CDN erişimi yapılandırılmamış." }, { status: 503 });
+        const transkriptUrl = podcast.transkript_yolu ? bunnyCdnImzaliUrl(podcast.transkript_yolu) : null;
+        if (!sesUrl || (podcast.kapak_yolu && !kapakUrl) || (podcast.transkript_yolu && !transkriptUrl)) {
+          return NextResponse.json({ hata: "Podcast CDN erişimi yapılandırılmamış." }, { status: 503 });
+        }
+        const meta = (podcast.metadata as Record<string, unknown> | null) ?? {};
+        const transkriptMeta = (meta.transkript as Record<string, unknown> | null) ?? null;
+        const talep = talepMap.get(gorev.talep_id);
+        const transkriptIstendi = talep?.ogrenme_araci_turu === "podcast"
+          ? podcastTranskriptTercihiCoz(talep.ogrenme_araci_tercihleri as Record<string, unknown> | null)
+          : false;
+        const transkriptOnayli = transkriptMeta?.durum === "onaylandi";
+        const iuKendiGorevi = rol === IU_ROLU && gorev.atanan_iu_id === user.id;
+        const onaylananMetin = transkriptOnayli
+          ? ((transkriptMeta?.onaylanan_metin as string | undefined) ?? (meta.transkript_metni as string | undefined) ?? null)
+          : null;
+
         detayIcerigi = {
           asama: "podcast",
           ses_url: sesUrl,
           kapak_url: kapakUrl,
           transkript_url: transkriptUrl,
           sure_saniye: podcast.sure_saniye ?? 0,
+          podcast_transkript_istendi: transkriptIstendi,
+          transkript_durumu: (transkriptMeta?.durum as string | undefined) ?? (podcast.transkript_yolu ? "onaylandi" : "yok"),
+          transkript_kaynagi: (transkriptMeta?.kaynak as string | undefined) ?? (podcast.transkript_yolu ? "manuel" : null),
+          taslak_metin: iuKendiGorevi ? ((transkriptMeta?.taslak_metin as string | undefined) ?? null) : null,
+          onaylanan_metin: onaylananMetin,
+          surum: typeof transkriptMeta?.surum === "number" ? transkriptMeta.surum : (gorev.surum ?? 1),
+          ai_girisim_id: (transkriptMeta?.ai_girisim_id as string | undefined) ?? null,
+          kullanilan_model: (transkriptMeta?.kullanilan_model as string | undefined) ?? null,
+          hata_kodu: (transkriptMeta?.hata_kodu as string | undefined) ?? null,
         };
         const gecmis = await adminSupabase.from("ogrenme_araci_durumu").select("durum, notlar, created_at").eq("arac_id", gorev.arac_id).order("created_at");
         if (gecmis.error) return hataYaniti("Podcast geçmişi alınamadı.", "podcast görev geçmişi", gecmis.error);
@@ -169,6 +193,9 @@ export async function GET(request: NextRequest) {
             urun_adi: talep.urun_id ? (urunMap.get(talep.urun_id) ?? talep.urun_adi ?? "-") : (talep.urun_adi ?? "-"),
             firma_adi: firmaMap.get(talep.firma_id) ?? "",
             uretici_rol_adi: uretici?.rol ? (ROL_ADLARI[uretici.rol] ?? uretici.rol) : null,
+            podcast_transkript_istendi: talep.ogrenme_araci_turu === "podcast"
+              ? podcastTranskriptTercihiCoz(talep.ogrenme_araci_tercihleri as Record<string, unknown> | null)
+              : undefined,
           } : null,
           atanan_iu: iu ? { ...iu, ad_soyad: `${iu.ad} ${iu.soyad}`.trim() } : null,
           ...(gorevId ? { icerik: detayIcerigi, durum_gecmisi: durumGecmisi } : {}),

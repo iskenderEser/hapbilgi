@@ -1,14 +1,15 @@
 "use client";
 
-import { CheckCircle2, ChevronDown, Film, Search, Send, UsersRound } from "lucide-react";
+import { CheckCircle2, ChevronDown, Search, Send, UsersRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
+import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
 
 export interface EczaneDagitimVideosu {
   yayin_id: string;
@@ -74,7 +75,7 @@ export function EczanemVideoGonderimSatiri({
   onGorunenleriSec,
   onGonder,
 }: Props) {
-  const thumbnail = video.thumbnail_url ?? thumbnailUrlUret(video.video_url);
+  const thumbnail = yayinThumbnailIstemciCoz(video);
   const oran = ozet.aktif_uye_sayisi > 0
     ? Math.round((ozet.gonderilen_uye_sayisi / ozet.aktif_uye_sayisi) * 100)
     : 0;
@@ -98,7 +99,7 @@ export function EczanemVideoGonderimSatiri({
               aria-label={`${video.urun_adi} öğrenme içeriğini önizle`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {thumbnail ? <img src={thumbnail} alt="" className="h-full w-full object-cover" /> : <Film className="size-6" />}
+              {thumbnail ? <img src={thumbnail} alt="" className="h-full w-full object-cover" /> : <AracVarsayilanKapak aracTuru={video.arac_turu} urunAdi={video.urun_adi} kucuk />}
               <span className="pointer-events-none absolute inset-0 bg-[#10233a]/0 transition group-hover:bg-[#10233a]/10" />
             </button>
             <div className="min-w-0">

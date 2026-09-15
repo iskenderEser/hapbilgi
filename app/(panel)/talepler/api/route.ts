@@ -88,6 +88,27 @@ export async function POST(request: NextRequest) {
       ? (ogrenme_araci_tercihleri as Record<string, unknown>)
       : {};
 
+    let temizAracTercihleri: Record<string, unknown> = {};
+    if (ogrenme_araci_turu === "podcast") {
+      if (hazir_video === false) {
+        if (typeof aracTercihleri.transkript_istendi !== "boolean") {
+          return validasyonHatasi(
+            "V1/V3 podcast talepleri için transkript tercihi (transkript_istendi) zorunludur.",
+            ["ogrenme_araci_tercihleri.transkript_istendi"]
+          );
+        }
+        temizAracTercihleri = { transkript_istendi: aracTercihleri.transkript_istendi };
+      } else {
+        if (typeof aracTercihleri.transkript_istendi === "boolean") {
+          temizAracTercihleri = { transkript_istendi: aracTercihleri.transkript_istendi };
+        }
+      }
+    } else {
+      temizAracTercihleri = typeof aracTercihleri === "object" && !Array.isArray(aracTercihleri)
+        ? { ...aracTercihleri }
+        : {};
+    }
+
     // egitim_turu validasyonu — tip kontrolü
     const egitimTuru = egitim_turu as TalepTuru;
     if (!GECERLI_TALEP_TURLERI.includes(egitimTuru)) {
@@ -200,7 +221,7 @@ export async function POST(request: NextRequest) {
       hedef_roller: hedefRoller,
       icerik_turu: icerikTuru,
       ogrenme_araci_turu,
-      ogrenme_araci_tercihleri: aracTercihleri,
+      ogrenme_araci_tercihleri: temizAracTercihleri,
       urun_id: insertUrunId,
       teknik_id: insertTeknikId,
       urun_adi: insertUrunAdi,

@@ -45,14 +45,18 @@ export function bunnyNesneYoluOlustur(girdi: {
   aracId: string;
   aracTuru: YeniOgrenmeAraciTuru;
   uzanti: string;
+  girisimId?: string;
 }): string {
-  return [girdi.firmaId, girdi.talepId, girdi.aracTuru, `${girdi.aracId}.${girdi.uzanti}`].join("/");
+  return girdi.girisimId
+    ? [girdi.firmaId, girdi.talepId, girdi.aracTuru, girdi.aracId, `ana-${girdi.girisimId}.${girdi.uzanti}`].join("/")
+    : [girdi.firmaId, girdi.talepId, girdi.aracTuru, `${girdi.aracId}.${girdi.uzanti}`].join("/");
 }
 
-export function bunnyPodcastDestekYoluOlustur(girdi: {
+export function bunnyAracDestekYoluOlustur(girdi: {
   firmaId: string;
   talepId: string;
   aracId: string;
+  aracTuru: "podcast" | "flip_pdf";
   rol: "kapak" | "transkript";
   uzanti: string;
   girisimId?: string;
@@ -60,7 +64,11 @@ export function bunnyPodcastDestekYoluOlustur(girdi: {
   const dosyaAdi = girdi.girisimId
     ? `${girdi.rol}-${girdi.girisimId}.${girdi.uzanti}`
     : `${girdi.rol}.${girdi.uzanti}`;
-  return [girdi.firmaId, girdi.talepId, "podcast", girdi.aracId, dosyaAdi].join("/");
+  return [girdi.firmaId, girdi.talepId, girdi.aracTuru, girdi.aracId, dosyaAdi].join("/");
+}
+
+export function bunnyPodcastDestekYoluOlustur(girdi: Omit<Parameters<typeof bunnyAracDestekYoluOlustur>[0], "aracTuru">): string {
+  return bunnyAracDestekYoluOlustur({ ...girdi, aracTuru: "podcast" });
 }
 
 function base64Url(buffer: Buffer): string {

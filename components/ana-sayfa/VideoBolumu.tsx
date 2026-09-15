@@ -9,22 +9,15 @@
 "use client";
 
 import { AnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
-import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 import { talepIdGoster } from "@/lib/utils/talepId";
+import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
 
 interface Props {
   videolar: AnaSayfaVideo[];
   onVideoSec: (video: AnaSayfaVideo) => void;
   baslik?: string;
 }
-
-const GRADYANLAR = [
-  "linear-gradient(135deg, #b5d4f4, #56aeff)",
-  "linear-gradient(135deg, #c0dd97, #639922)",
-  "linear-gradient(135deg, #f5c4b3, #D85A30)",
-  "linear-gradient(135deg, #CECBF6, #534AB7)",
-  "linear-gradient(135deg, #9FE1CB, #1D9E75)",
-];
 
 export default function VideoBolumu({ videolar, onVideoSec, baslik = "Videolar" }: Props) {
   if (videolar.length === 0) return null;
@@ -40,7 +33,7 @@ export default function VideoBolumu({ videolar, onVideoSec, baslik = "Videolar" 
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
         {videolar.map(v => {
-          const thumb = v.thumbnail_url ?? thumbnailUrlUret(v.video_url);
+          const thumb = yayinThumbnailIstemciCoz(v);
           return (
             <div
               key={v.yayin_id}
@@ -54,7 +47,7 @@ export default function VideoBolumu({ videolar, onVideoSec, baslik = "Videolar" 
               <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16/9" }}>
                 {thumb
                   ? <img src={thumb} alt="thumbnail" className="w-full h-full object-cover" />
-                  : <div className="w-full h-full" style={{ background: GRADYANLAR[Math.abs(v.yayin_id.charCodeAt(0)) % GRADYANLAR.length] }} />
+                  : <AracVarsayilanKapak aracTuru={v.arac_turu} urunAdi={v.urun_adi} />
                 }
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>

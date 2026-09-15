@@ -4,9 +4,10 @@ import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { rolHatasi, sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
 import { IU_ROLU, URETICI_ROLLER } from "@/lib/utils/roller";
-import { bunnyPodcastDestekYoluOlustur, bunnyUploadBilgisi, yuklemeYetkisiOlustur } from "@/lib/ogrenmeAraci/bunnyStorage";
+import { bunnyAracDestekYoluOlustur, bunnyUploadBilgisi, yuklemeYetkisiOlustur } from "@/lib/ogrenmeAraci/bunnyStorage";
 import { podcastDestekDosyasiDogrula, type PodcastDestekDosyasiRolu } from "@/lib/ogrenmeAraci/sozlesme";
-import { uretimAraciYetkisiniDogrula } from "@/lib/ogrenmeAraci/yetki";
+import { iuOgrenmeAraciGorevYetkisiniDogrula, uretimAraciYetkisiniDogrula } from "@/lib/ogrenmeAraci/yetki";
+import { uuidGecerliMi } from "@/lib/uretim/rpc";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ arac_id: string }> }) {
   try {
@@ -21,9 +22,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { arac_id } = await params;
     const body = await request.json();
     const rolDosya = body.dosya_rolu as PodcastDestekDosyasiRolu;
-    if (!arac_id || !["kapak", "transkript"].includes(rolDosya)) return validasyonHatasi("Podcast destek dosyası rolü geçersiz.", ["dosya_rolu"]);
+    if (!arac_id || !["kapak", "transkript"].includes(rolDosya)) return validasyonHatasi("Destek dosyası rolü geçersiz.", ["dosya_rolu"]);
     if (typeof body.dosya_adi !== "string" || typeof body.mime_type !== "string" || typeof body.dosya_boyutu !== "number") {
-      return validasyonHatasi("Podcast destek dosyası beyanı eksik.", ["dosya_adi", "mime_type", "dosya_boyutu"]);
+      return validasyonHatasi("Destek dosyası beyanı eksik.", ["dosya_adi", "mime_type", "dosya_boyutu"]);
     }
 
     const karar = podcastDestekDosyasiDogrula({ rol: rolDosya, dosyaAdi: body.dosya_adi, mimeType: body.mime_type, dosyaBoyutu: body.dosya_boyutu });
@@ -31,16 +32,25 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return validasyonHatasi(karar.ok ? "SHA-256 dosya özeti zorunludur." : karar.hata, ["dosya_adi", "mime_type", "dosya_boyutu", "checksum_sha256"]);
     }
 
-    const { data: arac } = await db.from("ogrenme_araclari").select("arac_id, talep_id, arac_turu, metadata").eq("arac_id", arac_id).maybeSingle();
-    if (!arac || arac.arac_turu !== "podcast") return NextResponse.json({ hata: "Podcast öğrenme aracı bulunamadı." }, { status: 404 });
+    const { data: arac } = await db.from("ogrenme_araclari").select("arac_id, talep_id, arac_turu, kaynak, metadata").eq("arac_id", arac_id).maybeSingle();
+    const destekRoluGecerli = arac && (arac.arac_turu === "podcast" || (arac.arac_turu === "flip_pdf" && rolDosya === "kapak"));
+    if (!destekRoluGecerli) return NextResponse.json({ hata: "Öğrenme aracı veya destek dosyası rolü geçersiz." }, { status: 404 });
     const yetki = await uretimAraciYetkisiniDogrula({ db, talepId: arac.talep_id, kullaniciId: user.id, rol });
     if (!yetki.ok) return NextResponse.json({ hata: yetki.hata }, { status: yetki.status });
+    if (arac.kaynak === "iu") {
+      if (!uuidGecerliMi(body.gorev_id)) return validasyonHatasi("Geçerli görev kimliği zorunludur.", ["gorev_id"]);
+      const gorevYetkisi = await iuOgrenmeAraciGorevYetkisiniDogrula({
+        db, gorevId: body.gorev_id, talepId: arac.talep_id, kullaniciId: user.id, aracId: arac_id,
+      });
+      if (!gorevYetkisi.ok) return NextResponse.json({ hata: gorevYetkisi.hata }, { status: gorevYetkisi.status });
+    }
 
     const yuklemeGirisimiId = rolDosya === "kapak" ? randomUUID() : null;
-    const dosyaYolu = bunnyPodcastDestekYoluOlustur({
+    const dosyaYolu = bunnyAracDestekYoluOlustur({
       firmaId: yetki.firmaId,
       talepId: arac.talep_id,
       aracId: arac_id,
+      aracTuru: arac.arac_turu as "podcast" | "flip_pdf",
       rol: rolDosya,
       uzanti: karar.uzanti,
       girisimId: yuklemeGirisimiId ?? undefined,
@@ -60,7 +70,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // yolunun bulunabilmesi için destek yolu aktarım başlamadan kalıcılaştırılır.
     let yolHatasi: { code?: string; message?: string } | null = null;
     if (rolDosya === "kapak" && yuklemeGirisimiId) {
-      const sonuc = await db.rpc("podcast_kapak_yukleme_baslat_atomik", {
+      const sonuc = await db.rpc("ogrenme_araci_kapak_yukleme_baslat_atomik", {
         p_arac_id: arac_id,
         p_kullanici_id: user.id,
         p_girisim_id: yuklemeGirisimiId,
@@ -78,7 +88,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }).eq("arac_id", arac_id);
       yolHatasi = sonuc.error;
     }
-    if (yolHatasi) return NextResponse.json({ hata: "Podcast destek yükleme yolu kaydedilemedi." }, { status: 500 });
+    if (yolHatasi) return NextResponse.json({ hata: "Destek yükleme yolu kaydedilemedi." }, { status: 500 });
 
     return NextResponse.json({
       arac_id,
@@ -99,6 +109,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       },
     }, { status: 201 });
   } catch (error) {
-    return sunucuHatasi(error, "POST podcast destek yükleme başlat");
+    return sunucuHatasi(error, "POST öğrenme aracı destek yükleme başlat");
   }
 }

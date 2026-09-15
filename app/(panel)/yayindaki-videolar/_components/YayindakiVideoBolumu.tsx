@@ -9,16 +9,9 @@
 import type { RefObject } from "react";
 import type { YayindakiVideo } from "@/lib/video/yayindakiVideolar";
 import type { AnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
-import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
+import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
 import { ROL_ADLARI } from "@/lib/utils/roller";
-
-const GRADYANLAR = [
-  "linear-gradient(135deg, #b5d4f4, #56aeff)",
-  "linear-gradient(135deg, #c0dd97, #639922)",
-  "linear-gradient(135deg, #f5c4b3, #D85A30)",
-  "linear-gradient(135deg, #CECBF6, #534AB7)",
-  "linear-gradient(135deg, #9FE1CB, #1D9E75)",
-];
 
 // Kart altında üreten etiketi için kısa rol adları; bilinmeyen rol tam adına düşer.
 const ROL_KISA: Record<string, string> = {
@@ -65,7 +58,7 @@ export default function YayindakiVideoBolumu({ videolar, onVideoSec, oneriModu =
       : "grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
     }>
       {videolar.map((v) => {
-        const thumb = v.thumbnail_url ?? thumbnailUrlUret(v.video_url);
+        const thumb = yayinThumbnailIstemciCoz(v);
         const secili = secilenYayinlar.includes(v.yayin_id);
         const hedefEtiketi = hedefRolEtiketiGoster ? hedefKitleEtiketi(v.hedef_roller) : null;
         return (
@@ -82,7 +75,7 @@ export default function YayindakiVideoBolumu({ videolar, onVideoSec, oneriModu =
               <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16/9" }}>
                 {thumb
                   ? <img src={thumb} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
-                  : <div className="w-full h-full" style={{ background: GRADYANLAR[Math.abs(v.yayin_id.charCodeAt(0)) % GRADYANLAR.length] }} />
+                  : <AracVarsayilanKapak aracTuru={v.arac_turu} urunAdi={v.urun_adi} />
                 }
                 <div className="absolute inset-0 bg-gradient-to-t from-[#10233a]/45 via-transparent to-transparent" />
                 {hedefEtiketi && (

@@ -94,14 +94,16 @@ export async function GET() {
         && Boolean(a.dosya_yolu && metadata.depolama_dogrulamasi);
       if (anaTamamlandi) {
         tamamlananParcalar.push("ana");
-        if (a.arac_turu === "podcast") {
+        if (a.arac_turu === "podcast" || a.arac_turu === "flip_pdf") {
           if (a.kapak_yolu && metadata.kapak_dogrulandi === true) tamamlananParcalar.push("kapak");
+        }
+        if (a.arac_turu === "podcast") {
           if (a.transkript_yolu && metadata.transkript_dogrulandi === true) tamamlananParcalar.push("transkript");
         }
       }
       const bekleyenDestek = (metadata.bekleyen_destek_yollari as Record<string, unknown> | null) ?? {};
       const kapakTamamlandi = tamamlananParcalar.includes("kapak");
-      const kapakYarim = a.arac_turu === "podcast" && !kapakTamamlandi && (
+      const kapakYarim = ["podcast", "flip_pdf"].includes(String(a.arac_turu)) && !kapakTamamlandi && (
         metadata.kapak_bekleniyor === true
         || Boolean(bekleyenDestek.kapak)
         || (Boolean(a.kapak_yolu) && metadata.kapak_dogrulandi !== true)
@@ -235,7 +237,7 @@ export async function POST(request: NextRequest) {
       if (girisimId && !uuidGecerliMi(girisimId)) {
         return validasyonHatasi("Yayın görseli yükleme girişimi geçersiz.", ["yukleme_girisimi_id"]);
       }
-      const { data: iptalSonucu, error: iptalHatasi } = await db.rpc("podcast_kapak_yukleme_iptal_atomik", {
+      const { data: iptalSonucu, error: iptalHatasi } = await db.rpc("ogrenme_araci_kapak_yukleme_iptal_atomik", {
         p_arac_id: body.arac_id,
         p_kullanici_id: user.id,
         p_girisim_id: girisimId,
@@ -249,7 +251,7 @@ export async function POST(request: NextRequest) {
         ? sonuc.temizlenecek_yollar.filter((yol): yol is string => typeof yol === "string" && yol.length > 0)
         : [];
       await Promise.all(silinecekYollar.map((yol) => bunnyStorageNesneSil(yol)));
-      return NextResponse.json({ basari: true, mesaj: "Yayın görseli yüklemesinden vazgeçildi; podcast görselsiz devam edecek." });
+      return NextResponse.json({ basari: true, mesaj: "Yayın görseli yüklemesinden vazgeçildi; içerik görselsiz devam edecek." });
     }
 
     if (typeof body.yukleme_id !== "string" || !["aktarim_tamamlandi", "baglandi"].includes(body.islem)) {

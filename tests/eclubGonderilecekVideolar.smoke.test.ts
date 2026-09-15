@@ -9,6 +9,8 @@ const aracOnizleme = readFileSync("components/ogrenme-araci/OgrenmeAraciOnizleme
 
 test("mutlu: öğrenme aracı önizlemesi dört araç türünü salt görüntüler", () => {
   assert.match(satir, /onVideoAc\(video\)/);
+  assert.match(satir, /yayinThumbnailIstemciCoz\(video\)/);
+  assert.match(satir, /<AracVarsayilanKapak aracTuru=\{video\.arac_turu\} urunAdi=\{video\.urun_adi\} kucuk \/>/);
   assert.match(satir, /öğrenme içeriğini önizle/);
   assert.doesNotMatch(satir, /<Play/);
   assert.match(page, /<OgrenmeAraciOnizleme/);

@@ -42,6 +42,7 @@ interface PodcastTranskriptEditoruProps {
   onAcikDegisti?: (acik: boolean) => void;
   sekme?: "ai" | "dosya" | "metin";
   onSekmeDegisti?: (sekme: "ai" | "dosya" | "metin") => void;
+  iuModu?: boolean;
 }
 
 export function PodcastTranskriptEditoru({
@@ -66,6 +67,7 @@ export function PodcastTranskriptEditoru({
   onAcikDegisti,
   sekme: propsSekme,
   onSekmeDegisti,
+  iuModu = false,
 }: PodcastTranskriptEditoruProps) {
   const [yerelAcik, setYerelAcik] = useState<boolean>(
     Boolean(bekleyenDosya || metin || aiIstendi || (islemDurumu && islemDurumu !== "bosta"))
@@ -82,7 +84,9 @@ export function PodcastTranskriptEditoru({
   const [basariMesaji, setBasariMesaji] = useState<string | null>(null);
   const [kaydediliyor, setKaydediliyor] = useState<boolean>(false);
   const [yerelSekme, setYerelSekme] = useState<"ai" | "dosya" | "metin">(
-    aiIstendi || (islemDurumu && islemDurumu !== "bosta") || (metin && metindeIkiKonusmaciVarMi(metin))
+    iuModu
+      ? "ai"
+      : aiIstendi || (islemDurumu && islemDurumu !== "bosta") || (metin && metindeIkiKonusmaciVarMi(metin))
       ? "ai"
       : bekleyenDosya
       ? "dosya"
@@ -90,13 +94,23 @@ export function PodcastTranskriptEditoru({
       ? "metin"
       : "ai"
   );
-  const sekme = propsSekme !== undefined ? propsSekme : yerelSekme;
+  const sekme = iuModu ? "ai" : (propsSekme !== undefined ? propsSekme : yerelSekme);
   const setSekme = (val: "ai" | "dosya" | "metin") => {
+    if (iuModu) {
+      setYerelSekme("ai");
+      onSekmeDegisti?.("ai");
+      return;
+    }
     setYerelSekme(val);
     onSekmeDegisti?.(val);
   };
 
   useEffect(() => {
+    if (iuModu) {
+      setAcik(true);
+      setSekme("ai");
+      return;
+    }
     if (islemDurumu && islemDurumu !== "bosta") {
       setAcik(true);
       setSekme("ai");
@@ -451,16 +465,18 @@ export function PodcastTranskriptEditoru({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            disabled={kaydediliyor}
-            onClick={handleIptalEt}
-            className="text-xs font-medium text-red-600 hover:text-red-700 hover:underline cursor-pointer disabled:opacity-50"
-          >
-            İptal Et / Transkriptsiz Devam Et
-          </button>
-        </div>
+        {!iuModu && (
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={kaydediliyor}
+              onClick={handleIptalEt}
+              className="text-xs font-medium text-red-600 hover:text-red-700 hover:underline cursor-pointer disabled:opacity-50"
+            >
+              İptal Et / Transkriptsiz Devam Et
+            </button>
+          </div>
+        )}
       </div>
 
       {hata && (
@@ -476,50 +492,52 @@ export function PodcastTranskriptEditoru({
       )}
 
       {/* Yükleme / Oluşturma Yöntemi Seçimi */}
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            setSekme("ai");
-            onAiIstendiDegisti?.(true);
-          }}
-          className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${
-            sekme === "ai"
-              ? "bg-[#2483e2] text-white"
-              : "bg-gray-100 text-[#425672] hover:bg-gray-200"
-          }`}
-        >
-          ✨ AI ile Oluştur (Gemini 3.5)
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setSekme("dosya");
-            onAiIstendiDegisti?.(false);
-          }}
-          className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${
-            sekme === "dosya"
-              ? "bg-[#2483e2] text-white"
-              : "bg-gray-100 text-[#425672] hover:bg-gray-200"
-          }`}
-        >
-          DOCX / PDF Yükle
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setSekme("metin");
-            onAiIstendiDegisti?.(false);
-          }}
-          className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${
-            sekme === "metin"
-              ? "bg-[#2483e2] text-white"
-              : "bg-gray-100 text-[#425672] hover:bg-gray-200"
-          }`}
-        >
-          Doğrudan Metin Yapıştır
-        </button>
-      </div>
+      {!iuModu && (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setSekme("ai");
+              onAiIstendiDegisti?.(true);
+            }}
+            className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${
+              sekme === "ai"
+                ? "bg-[#2483e2] text-white"
+                : "bg-gray-100 text-[#425672] hover:bg-gray-200"
+            }`}
+          >
+            ✨ AI ile Oluştur (Gemini 3.5)
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setSekme("dosya");
+              onAiIstendiDegisti?.(false);
+            }}
+            className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${
+              sekme === "dosya"
+                ? "bg-[#2483e2] text-white"
+                : "bg-gray-100 text-[#425672] hover:bg-gray-200"
+            }`}
+          >
+            DOCX / PDF Yükle
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setSekme("metin");
+              onAiIstendiDegisti?.(false);
+            }}
+            className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${
+              sekme === "metin"
+                ? "bg-[#2483e2] text-white"
+                : "bg-gray-100 text-[#425672] hover:bg-gray-200"
+            }`}
+          >
+            Doğrudan Metin Yapıştır
+          </button>
+        </div>
+      )}
 
       {/* AI Modu İçeriği */}
       {sekme === "ai" && (
@@ -593,14 +611,16 @@ export function PodcastTranskriptEditoru({
                 >
                   {aiYukleniyor ? "Başlatılıyor..." : "Tekrar Dene"}
                 </button>
-                <button
-                  type="button"
-                  disabled={kaydediliyor}
-                  onClick={handleIptalEt}
-                  className="text-xs font-medium text-red-600 hover:underline cursor-pointer"
-                >
-                  Transkriptsiz Devam Et
-                </button>
+                {!iuModu && (
+                  <button
+                    type="button"
+                    disabled={kaydediliyor}
+                    onClick={handleIptalEt}
+                    className="text-xs font-medium text-red-600 hover:underline cursor-pointer"
+                  >
+                    Transkriptsiz Devam Et
+                  </button>
+                )}
               </div>
             </div>
           ) : (
@@ -628,7 +648,7 @@ export function PodcastTranskriptEditoru({
       )}
 
       {/* Dosya Yükleme Modu */}
-      {sekme === "dosya" && (
+      {!iuModu && sekme === "dosya" && (
         <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-3">
           <div className="flex flex-wrap items-center gap-3">
             <label className="cursor-pointer rounded-lg border border-[#56aeff] bg-white px-3 py-1.5 text-xs font-semibold text-[#2483e2] hover:bg-[#f0f7ff]">

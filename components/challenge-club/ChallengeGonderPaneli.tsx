@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { ChevronDown, Film } from "lucide-react";
+import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 
 export interface GonderVideo {
   yayin_id: string;
@@ -13,6 +14,8 @@ export interface GonderVideo {
   video_url: string | null;
   thumbnail_url: string | null;
   video_puani: number | null;
+  arac_id?: string | null;
+  arac_turu?: string | null;
 }
 
 interface UygunAlici {
@@ -68,7 +71,7 @@ function ChallengeGonderSatiri({ video, hata, onGonder }: { video: GonderVideo; 
   const [secililer, setSecililer] = useState<string[]>([]);
   const [gonderiliyor, setGonderiliyor] = useState(false);
   const [sonuc, setSonuc] = useState<GonderSonuc | null>(null);
-  const thumbnail = video.thumbnail_url ?? thumbnailUrlUret(video.video_url);
+  const thumbnail = yayinThumbnailIstemciCoz(video);
 
   const alicilariYukle = async () => {
     if (aliciler) return;
@@ -109,7 +112,9 @@ function ChallengeGonderSatiri({ video, hata, onGonder }: { video: GonderVideo; 
             {thumbnail ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={thumbnail} alt="" className="h-full w-full object-cover" />
-            ) : <Film className="size-6" />}
+            ) : (
+              <AracVarsayilanKapak aracTuru={video.arac_turu} urunAdi={video.urun_adi} kucuk />
+            )}
           </div>
           <div className="min-w-0 self-center">
             <strong className="block truncate text-sm text-[#263e5b]">{video.urun_adi}</strong>

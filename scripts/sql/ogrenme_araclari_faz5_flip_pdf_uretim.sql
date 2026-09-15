@@ -17,12 +17,36 @@ BEGIN
   PERFORM pg_advisory_xact_lock(hashtextextended(p_islem_anahtari::text, 1));
   SELECT sonuc INTO v_onceki FROM public.uretim_islem_kayitlari WHERE islem_anahtari = p_islem_anahtari AND islem_turu = 'flip_pdf_dogrula';
   IF FOUND THEN RETURN v_onceki; END IF;
+  IF EXISTS (SELECT 1 FROM public.uretim_islem_kayitlari WHERE islem_anahtari = p_islem_anahtari) THEN
+    RAISE EXCEPTION 'İşlem anahtarı başka bir işlemde kullanılmış.' USING ERRCODE = '23505';
+  END IF;
   SELECT * INTO v_arac FROM public.ogrenme_araclari WHERE arac_id = p_arac_id FOR UPDATE;
   IF NOT FOUND OR v_arac.arac_turu <> 'flip_pdf' THEN RAISE EXCEPTION 'Flip PDF bulunamadı.' USING ERRCODE = 'P0002'; END IF;
   SELECT * INTO v_talep FROM public.talepler WHERE talep_id = v_arac.talep_id FOR UPDATE;
   IF v_talep.ogrenme_araci_turu <> 'flip_pdf' OR v_arac.dosya_yolu IS NULL THEN RAISE EXCEPTION 'Flip PDF talep veya dosya bağlantısı geçersiz.' USING ERRCODE = '23514'; END IF;
+
+  -- Kapak kapısı: kapak seçilmemişse devam et; seçilmiş fakat bekleyen, yarım veya doğrulanmamışsa reddet
+  IF COALESCE((v_arac.metadata->>'kapak_iptal_edildi')::boolean, false) IS NOT TRUE THEN
+    IF (COALESCE((v_arac.metadata->>'kapak_bekleniyor')::boolean, false) IS TRUE
+        OR (v_arac.metadata->'bekleyen_destek_yollari'->>'kapak') IS NOT NULL)
+       AND (v_arac.kapak_yolu IS NULL OR COALESCE((v_arac.metadata->>'kapak_dogrulandi')::boolean, false) IS NOT TRUE) THEN
+      RAISE EXCEPTION 'Bekleyen yayın görseli yüklemesi tamamlanmadan Literatür tamamlanamaz.' USING ERRCODE = '23514';
+    END IF;
+
+    IF v_arac.kapak_yolu IS NOT NULL AND COALESCE((v_arac.metadata->>'kapak_dogrulandi')::boolean, false) IS NOT TRUE THEN
+      RAISE EXCEPTION 'Yüklenen yayın görseli doğrulanmadan Literatür tamamlanamaz.' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+
   UPDATE public.ogrenme_araclari SET sayfa_sayisi = p_sayfa_sayisi, metadata_dogrulandi = true,
-    metadata = metadata || jsonb_build_object('pdf_yapisi_dogrulandi', true, 'sifreli', false, 'kapak_kaynagi', 'ilk_sayfa') WHERE arac_id = p_arac_id;
+    metadata = metadata || jsonb_build_object(
+      'pdf_yapisi_dogrulandi', true,
+      'sifreli', false,
+      'kapak_kaynagi', CASE
+        WHEN v_arac.kapak_yolu IS NOT NULL AND COALESCE((v_arac.metadata->>'kapak_dogrulandi')::boolean, false) IS TRUE THEN 'ozel'
+        ELSE 'ilk_sayfa'
+      END
+    ) WHERE arac_id = p_arac_id;
   IF v_arac.kaynak = 'iu' THEN
     IF p_gorev_id IS NULL THEN RAISE EXCEPTION 'IU Flip PDF görevi zorunludur.' USING ERRCODE = '22023'; END IF;
     SELECT * INTO v_gorev FROM public.uretim_gorevleri WHERE gorev_id = p_gorev_id FOR UPDATE;

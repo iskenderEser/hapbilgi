@@ -142,9 +142,11 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
   const [podcastAiYuklemeYuzdesi, setPodcastAiYuklemeYuzdesi] = useState<number>(0);
   const [podcastAiHatasi, setPodcastAiHatasi] = useState<string | null>(null);
   const [podcastAiYukleniyor, setPodcastAiYukleniyor] = useState<boolean>(false);
+  const [podcastIuTranskriptIstendi, setPodcastIuTranskriptIstendi] = useState<boolean | null>(null);
   const podcastKullaniciDuzenlediRef = useRef<boolean>(false);
   const [bekleyenGorsel, setBekleyenGorsel] = useState<BekleyenDosya | null>(null);
   const [bekleyenFlipPdf, setBekleyenFlipPdf] = useState<BekleyenDosya | null>(null);
+  const [bekleyenFlipPdfKapak, setBekleyenFlipPdfKapak] = useState<BekleyenDosya | null>(null);
   const ogrenmeAraciYuklemeRef = useRef<AbortController | null>(null);
   const [aracYuklemeBilgisi, setAracYuklemeBilgisi] = useState<{
     asama: YuklemeAsamasi;
@@ -543,8 +545,10 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     setBekleyenPodcastKapak(null);
     setBekleyenPodcastTranskript(null);
     setPodcastAiTranskriptIstendi(false);
+    setPodcastIuTranskriptIstendi(null);
     setBekleyenGorsel(null);
     setBekleyenFlipPdf(null);
+    setBekleyenFlipPdfKapak(null);
   }, []);
 
   const handleOgrenmeAraciTuruDegis = useCallback((tur: OgrenmeAraciTuru) => {
@@ -555,8 +559,10 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     setBekleyenPodcastKapak(null);
     setBekleyenPodcastTranskript(null);
     setPodcastAiTranskriptIstendi(false);
+    setPodcastIuTranskriptIstendi(null);
     setBekleyenGorsel(null);
     setBekleyenFlipPdf(null);
+    setBekleyenFlipPdfKapak(null);
   }, []);
 
   const toggleHazirSoruSeti = useCallback(() => {
@@ -689,6 +695,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
   }, [podcastDosyasiSec]);
   const handleGorselSec = useCallback((e: React.ChangeEvent<HTMLInputElement>) => podcastDosyasiSec(setBekleyenGorsel, e), [podcastDosyasiSec]);
   const handleFlipPdfSec = useCallback((e: React.ChangeEvent<HTMLInputElement>) => podcastDosyasiSec(setBekleyenFlipPdf, e), [podcastDosyasiSec]);
+  const handleFlipPdfKapakSec = useCallback((e: React.ChangeEvent<HTMLInputElement>) => podcastDosyasiSec(setBekleyenFlipPdfKapak, e), [podcastDosyasiSec]);
 
   const handlePodcastTranskriptMetinDegisti = useCallback((metin: string) => {
     if (metin.trim().length > 0) {
@@ -1056,6 +1063,17 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     gonderButonuEtkin: boolean;
     gonderButonuPasifNedeni: string | null;
   }>(() => {
+    // 1. V1/V3 İÜ Podcast taleplerinde transkript tercihi zorunludur:
+    if (!hazirVideo && ogrenmeAraciTuru === "podcast") {
+      if (podcastIuTranskriptIstendi === null) {
+        return {
+          gonderButonuEtkin: false,
+          gonderButonuPasifNedeni: "Transkript tercihinizi seçin (istiyorum / istemiyorum)",
+        };
+      }
+      return { gonderButonuEtkin: true, gonderButonuPasifNedeni: null };
+    }
+
     // Yalnız üretici V2/V4 hazır podcast formunu denetle
     if (!hazirVideo || ogrenmeAraciTuru !== "podcast") {
       return { gonderButonuEtkin: true, gonderButonuPasifNedeni: null };
@@ -1133,6 +1151,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
   }, [
     hazirVideo,
     ogrenmeAraciTuru,
+    podcastIuTranskriptIstendi,
     sunucuTranskriptDurumu,
     podcastTranskriptOnaylandi,
     podcastAiTranskriptIstendi,
@@ -1147,6 +1166,14 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
   // Submit pipeline — 5 alt fonksiyon + orchestration
   // ============================================================================
   const validateForm = useCallback((): boolean => {
+    if (!hazirVideo && ogrenmeAraciTuru === "podcast" && podcastIuTranskriptIstendi === null) {
+      hata(
+        gonderButonuPasifNedeni ?? "Lütfen podcast için transkript tercihinizi seçin (Transkript istiyorum / istemiyorum).",
+        "transkript kontrolü",
+        undefined
+      );
+      return false;
+    }
     if (hazirVideo && ogrenmeAraciTuru === "podcast" && !gonderButonuEtkin) {
       hata(
         gonderButonuPasifNedeni ?? "Transkript onaylanmadan podcast talebi gönderilemez.",
@@ -1238,6 +1265,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     serbestAd,
     hazirVideo,
     ogrenmeAraciTuru,
+    podcastIuTranskriptIstendi,
     ogrenmeAraciBayraklari,
     bekleyenVideo,
     bekleyenPodcast,
@@ -1265,7 +1293,9 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
       urun_adi: serbestAdGoster ? serbestAd.trim() : null,
       aciklama,
       ogrenme_araci_turu: ogrenmeAraciTuru,
-      ogrenme_araci_tercihleri: {},
+      ogrenme_araci_tercihleri: (!hazirVideo && ogrenmeAraciTuru === "podcast")
+        ? { transkript_istendi: podcastIuTranskriptIstendi }
+        : {},
       hazir_video: hazirVideo,
       hazir_soru_seti: hazirSoruSeti,
       hazir_soru_seti_verisi:
@@ -1337,6 +1367,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     serbestAd,
     aciklama,
     ogrenmeAraciTuru,
+    podcastIuTranskriptIstendi,
     hazirVideo,
     hazirSoruSeti,
     soruTaslaklari,
@@ -1505,8 +1536,10 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     setBekleyenPodcastKapak(null);
     setBekleyenPodcastTranskript(null);
     setPodcastAiTranskriptIstendi(false);
+    setPodcastIuTranskriptIstendi(null);
     setBekleyenGorsel(null);
     setBekleyenFlipPdf(null);
+    setBekleyenFlipPdfKapak(null);
     setHazirVideo(false);
     setHazirSoruSeti(false);
     setSoruTaslaklari([]);
@@ -1732,7 +1765,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
         }
         if (hazirVideo && ogrenmeAraciTuru === "flip_pdf" && bekleyenFlipPdf) {
           try {
-            await hazirFlipPdfYukle({ talepId: talep_id, pdf: bekleyenFlipPdf.dosya, kontrol });
+            await hazirFlipPdfYukle({ talepId: talep_id, pdf: bekleyenFlipPdf.dosya, kapak: bekleyenFlipPdfKapak?.dosya, kontrol });
           } catch (error) {
             hata("Literatür yüklenemedi.", "PDF yükleme", error instanceof Error ? error.message : undefined);
             basarisizlar.push(`${bekleyenFlipPdf.preview.dosya_adi} (Literatür)`);
@@ -1912,6 +1945,8 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     ogrenmeAraciYuklemeyiIptalEt,
 
     // form: podcast
+    podcastIuTranskriptIstendi,
+    setPodcastIuTranskriptIstendi,
     bekleyenPodcast,
     bekleyenPodcastKapak,
     bekleyenPodcastTranskript,
@@ -1969,8 +2004,11 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
 
     // form: Flip PDF
     bekleyenFlipPdf,
+    bekleyenFlipPdfKapak,
     handleFlipPdfSec,
+    handleFlipPdfKapakSec,
     handleBekleyenFlipPdfSil: () => setBekleyenFlipPdf(null),
+    handleBekleyenFlipPdfKapakSil: () => setBekleyenFlipPdfKapak(null),
 
     // form: hazır soru seti
     hazirSoruSeti,

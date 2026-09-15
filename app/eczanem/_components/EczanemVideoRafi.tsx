@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { talepIdGoster } from "@/lib/utils/talepId";
-import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
+import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
 import type { EczanemAracTuru, EczanemMusteriVideo } from "../_types";
 
 interface Props {
@@ -165,8 +166,7 @@ export default function EczanemVideoRafi({
             className="-mx-1 flex snap-x items-stretch gap-3 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {videolar.map((video) => {
-              const thumbnail =
-                video.thumbnail_url ?? thumbnailUrlUret(video.video_url);
+              const thumbnail = yayinThumbnailIstemciCoz(video);
               const isliyor = etkilesimIsliyor === video.yayin_id;
 
               return (
@@ -198,14 +198,7 @@ export default function EczanemVideoRafi({
 
                     {/* Thumbnail veya Yedek Görünüm */}
                     {!thumbnail ? (
-                      <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 bg-[linear-gradient(135deg,#edf4fa,#dbe7f2)] text-[#5c728a]">
-                        <div className="flex size-10 items-center justify-center rounded-full bg-white/80 shadow-sm">
-                          <AracMerkezIkonu tur={video.arac_turu} />
-                        </div>
-                        <span className="text-[10px] font-bold tracking-wide">
-                          {ARAC_TURU_ETIKET[video.arac_turu]}
-                        </span>
-                      </div>
+                      <AracVarsayilanKapak aracTuru={video.arac_turu} urunAdi={video.urun_adi} />
                     ) : (
                       <>
                         {/* Uzak video sağlayıcılarının değişken thumbnail adresleri next/image allowlist'ine bağlı değildir. */}

@@ -5,6 +5,7 @@ import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { uuidGecerliMi, uretimRpcHataYaniti } from "@/lib/uretim/rpc";
 import { pushYayinlaArkada } from "@/lib/push/orkestrasyon";
+import { podcastRevizyondaTranskriptTalebiDogrula, podcastTranskriptTercihiCoz } from "@/lib/ogrenmeAraci/sozlesme";
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,28 +17,46 @@ export async function POST(request: NextRequest) {
     if (!URETICI_ROLLER.includes(rol)) return rolHatasi("Yalnız talebin üretici rolü karar verebilir.");
 
     const body = await request.json();
-    const { gorev_id, karar, notlar, beklenen_surum, islem_anahtari } = body;
+    const { gorev_id, karar, notlar, beklenen_surum, islem_anahtari, revizyonda_transkript_istendi } = body;
     if (!uuidGecerliMi(gorev_id)) return validasyonHatasi("gorev_id geçerli bir UUID olmalıdır.", ["gorev_id"]);
     if (!uuidGecerliMi(islem_anahtari)) return validasyonHatasi("islem_anahtari geçerli bir UUID olmalıdır.", ["islem_anahtari"]);
     if (!Number.isInteger(beklenen_surum) || beklenen_surum < 1) return validasyonHatasi("beklenen_surum pozitif bir tam sayı olmalıdır.", ["beklenen_surum"]);
     if (!["onaylandi", "revizyon bekleniyor", "Iptal Edildi"].includes(karar)) return validasyonHatasi("Geçersiz üretici kararı.", ["karar"]);
     if (karar === "revizyon bekleniyor" && (typeof notlar !== "string" || !notlar.trim())) return validasyonHatasi("Revizyon notu zorunludur.", ["notlar"]);
+    if (revizyonda_transkript_istendi !== undefined && typeof revizyonda_transkript_istendi !== "boolean") {
+      return validasyonHatasi("Revizyon transkript tercihi boolean olmalıdır.", ["revizyonda_transkript_istendi"]);
+    }
 
     const { data: gorevBilgisi } = await adminSupabase.from("uretim_gorevleri").select("asama, talep_id").eq("gorev_id", gorev_id).maybeSingle();
     const { data: talepBilgisi } = gorevBilgisi
-      ? await adminSupabase.from("talepler").select("ogrenme_araci_turu").eq("talep_id", gorevBilgisi.talep_id).maybeSingle()
+      ? await adminSupabase.from("talepler").select("ogrenme_araci_turu, hazir_video, ogrenme_araci_tercihleri").eq("talep_id", gorevBilgisi.talep_id).maybeSingle()
       : { data: null };
     const aracTuru = talepBilgisi?.ogrenme_araci_turu;
+    const revizyonTranskriptKarari = podcastRevizyondaTranskriptTalebiDogrula({
+      aracTuru,
+      asama: gorevBilgisi?.asama,
+      karar,
+      hazirPodcast: talepBilgisi?.hazir_video === true,
+      mevcutTranskriptIstendi: podcastTranskriptTercihiCoz(talepBilgisi?.ogrenme_araci_tercihleri as Record<string, unknown> | null),
+      revizyondaTranskriptIstendi: revizyonda_transkript_istendi === true,
+    });
+    if (!revizyonTranskriptKarari.ok) return validasyonHatasi(revizyonTranskriptKarari.hata, ["revizyonda_transkript_istendi"]);
     const ortakAracKarari = ["podcast", "gorsel", "flip_pdf"].includes(aracTuru ?? "") && gorevBilgisi?.asama !== "soru_seti";
     const rpcAdi = !ortakAracKarari ? "uretim_uretici_karar_ver" : aracTuru === "gorsel" ? "uretim_gorsel_uretici_karar_ver" : aracTuru === "flip_pdf" ? "uretim_flip_pdf_uretici_karar_ver" : "uretim_podcast_uretici_karar_ver";
-    const { data: sonuc, error } = await adminSupabase.rpc(rpcAdi, {
+    const rpcParametreleri: Record<string, unknown> = {
       p_gorev_id: gorev_id,
       p_uretici_id: user.id,
       p_karar: karar,
       p_notlar: typeof notlar === "string" ? notlar : null,
       p_beklenen_surum: beklenen_surum,
       p_islem_anahtari: islem_anahtari,
-    });
+    };
+    if (aracTuru === "podcast" && gorevBilgisi?.asama === "video") {
+      rpcParametreleri.p_revizyonda_transkript_istendi = revizyonda_transkript_istendi === true;
+    } else if (revizyonda_transkript_istendi === true) {
+      return validasyonHatasi("Transkript yalnız podcast üretim revizyonunda istenebilir.", ["revizyonda_transkript_istendi"]);
+    }
+    const { data: sonuc, error } = await adminSupabase.rpc(rpcAdi, rpcParametreleri);
     if (error?.code === "23514" && error.message?.includes("güncelliğini yitirdi")) {
       return validasyonHatasi("İncelediğiniz teslim güncelliğini yitirdi. Lütfen sayfayı yenileyerek güncel sürümü yeniden inceleyin.", ["beklenen_surum"]);
     }

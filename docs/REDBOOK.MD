@@ -26,3 +26,13 @@
   Puan ve uygunluk mantığına dokunacağı için ayrı, kapsamlı ve riskli bir iştir;
   soru-kesinti kuralı canlıda oturduktan sonra ele alınmalıdır.
   *Kayıt tarihi: 30 Ağustos 2026 — İskender talebiyle.*
+
+- **[TB-02] Dijital Broşür ve Literatür üretici inceleme/revizyon deneyimi.**
+  İÜ yükleme ve teslim güvenliği modernize edildi; üretici inceleme arayüzünün
+  kalan iyileştirmeleri kullanıcı kararıyla sonraya bırakıldı. Literatür
+  incelemesinde isteğe bağlı yayın görseli PDF yanında gösterilmeli; kapak yoksa
+  varsayılan Literatür kapağı kullanılmalı. Dijital Broşür ve Literatürde dosya
+  doğrulama bilgileri açık gösterilmeli, revizyonda mevcut dosyalar korunmalı ve
+  yalnız değiştirilen PDF/kapak/ana görselin yeniden yüklenmesine izin veren akış
+  tamamlanmalıdır. Ham Bunny Storage yolları istemciye açılmamalıdır.
+  *Kayıt tarihi: 15 Eylül 2026 — İskender talebiyle Faz 4 ertelendi.*

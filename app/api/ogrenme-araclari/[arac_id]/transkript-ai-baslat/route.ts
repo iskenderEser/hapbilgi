@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { rolHatasi, sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
-import { URETICI_ROLLER } from "@/lib/utils/roller";
-import { uretimAraciYetkisiniDogrula } from "@/lib/ogrenmeAraci/yetki";
+import { sunucuHatasi, validasyonHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
+import { podcastTranskriptYetkisiDogrula } from "@/lib/ogrenmeAraci/yetki";
 import { uuidGecerliMi } from "@/lib/uretim/rpc";
+import { podcastAiSesHazirMi } from "@/lib/ogrenmeAraci/sozlesme";
 
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ arac_id: string }> }) {
   try {
@@ -17,55 +17,83 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
 
     const db = createAdminClient();
     const rol = await rolCozucu(db, user.id);
-    if (!URETICI_ROLLER.includes(rol)) return rolHatasi("Bu işlem yalnızca üretici rollerine açıktır.");
 
-    const { data: arac } = await db.from("ogrenme_araclari")
-      .select("arac_id, talep_id, arac_turu, kaynak, dosya_yolu, metadata, talepler(talep_id, uretici_id, hazir_video, ogrenme_araci_turu)")
-      .eq("arac_id", arac_id)
-      .maybeSingle();
-
-    if (!arac || arac.arac_turu !== "podcast") return NextResponse.json({ hata: "Podcast bulunamadı." }, { status: 404 });
-    if (arac.kaynak !== "hazir") {
-      return NextResponse.json({ hata: "AI transkripti yalnızca hazır podcast akışında başlatılabilir." }, { status: 422 });
+    let gorevId: string | null = null;
+    try {
+      const url = new URL(_request.url);
+      gorevId = url.searchParams.get("gorev_id");
+      if (!gorevId && _request.headers.get("content-type")?.includes("application/json")) {
+        const body = await _request.clone().json().catch(() => ({}));
+        if (body?.gorev_id && uuidGecerliMi(body.gorev_id)) gorevId = body.gorev_id;
+      }
+    } catch {
+      // Query/body ayrıştırma hatası yok sayılır
     }
 
-    const talepHam = arac.talepler as
-      | { talep_id?: string; uretici_id?: string; hazir_video?: boolean; ogrenme_araci_turu?: string }
-      | Array<{ talep_id?: string; uretici_id?: string; hazir_video?: boolean; ogrenme_araci_turu?: string }>
-      | null;
-    const talep = Array.isArray(talepHam) ? talepHam[0] : talepHam;
+    const yetki = await podcastTranskriptYetkisiDogrula({
+      db,
+      aracId: arac_id,
+      kullaniciId: user.id,
+      rol,
+      gorevId,
+      transkriptIstendiZorunluMu: true,
+    });
 
-    if (!talep || talep.ogrenme_araci_turu !== "podcast" || talep.hazir_video !== true) {
-      return NextResponse.json({ hata: "Bu işlem yalnızca V2 veya V4 hazır podcast taleplerinde geçerlidir." }, { status: 422 });
+    if (!yetki.ok) {
+      return NextResponse.json({ hata: yetki.hata }, { status: yetki.status });
     }
 
-    const yetki = await uretimAraciYetkisiniDogrula({ db, talepId: arac.talep_id, kullaniciId: user.id, rol });
-    if (!yetki.ok) return NextResponse.json({ hata: yetki.hata }, { status: yetki.status });
-
+    const arac = yetki.arac;
     if (!arac.dosya_yolu) {
       return NextResponse.json({ hata: "Ses dosyası yüklenmeden AI transkripti başlatılamaz." }, { status: 422 });
+    }
+
+    const meta = (arac.metadata as Record<string, unknown> | null) ?? {};
+    const sesDogrulandi = podcastAiSesHazirMi({
+      dosyaYolu: arac.dosya_yolu,
+      metadataDogrulandi: arac.metadata_dogrulandi,
+      sureSaniye: arac.sure_saniye ?? Number(meta.sure_saniye_beyani),
+    });
+    if (!sesDogrulandi) {
+      return NextResponse.json({ hata: "Ses dosyası doğrulanmadan AI transkripti başlatılamaz." }, { status: 422 });
     }
 
     // Konuşmacı ayrımlı podcast AI transkript akışında açıkça GEMINI_MODEL (Flash modeli) kullanılır
     const model = process.env.GEMINI_MODEL || "gemini-3.5-flash";
     const girisimId = crypto.randomUUID();
+    let aktifGirisimId = girisimId;
+    let baslatmaDurumu = "ai_bekliyor";
 
-    // 1. İşi veritabanında kalıcı olarak 'ai_bekliyor' durumuyla kaydet (çift tıklama korumalı)
-    const { data: baslatmaSonucu, error: baslatmaHatasi } = await db.rpc("podcast_transkript_ai_baslat_atomik", {
-      p_arac_id: arac_id,
-      p_kullanici_id: user.id,
-      p_girisim_id: girisimId,
-      p_model: model,
-    });
+    if (yetki.kaynak === "hazir") {
+      const { data: baslatmaSonucu, error: baslatmaHatasi } = await db.rpc("podcast_transkript_ai_baslat_atomik", {
+        p_arac_id: arac_id,
+        p_kullanici_id: user.id,
+        p_girisim_id: girisimId,
+        p_model: model,
+      });
 
-    if (baslatmaHatasi) {
-      return NextResponse.json({ hata: "AI transkript girişimi başlatılamadı." }, { status: 500 });
+      if (baslatmaHatasi) {
+        return NextResponse.json({ hata: "AI transkript girişimi başlatılamadı." }, { status: 500 });
+      }
+
+      aktifGirisimId = (baslatmaSonucu?.ai_girisim_id as string) || girisimId;
+      baslatmaDurumu = (baslatmaSonucu?.durum as string) || "ai_bekliyor";
+    } else {
+      const { data: rpcSonuc, error: rpcHata } = await db.rpc("podcast_transkript_ai_baslat_atomik", {
+        p_arac_id: arac_id,
+        p_kullanici_id: user.id,
+        p_girisim_id: girisimId,
+        p_model: model,
+        p_gorev_id: yetki.gorevId,
+      });
+      if (rpcHata || !rpcSonuc) {
+        return NextResponse.json({ hata: "AI transkript girişimi başlatılamadı." }, { status: 500 });
+      }
+      aktifGirisimId = (rpcSonuc.ai_girisim_id as string) || girisimId;
+      baslatmaDurumu = (rpcSonuc.durum as string) || "ai_bekliyor";
     }
 
-    const aktifGirisimId = (baslatmaSonucu?.ai_girisim_id as string) || girisimId;
-
     // 2. Yalnızca development ortamında local worker'ı otomatik başlat (production'da ASLA çalışmaz)
-    // Worker başlatma çağrısı transkript işleminin tamamlanmasını beklemez; API kullanıcıya hemen 202 döner
     if (process.env.NODE_ENV === "development") {
       try {
         const { baslatLocalTranskriptWorker } = await import("@/lib/ogrenmeAraci/localTranskriptWorker");
@@ -75,10 +103,10 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       }
     }
 
-    // 3. Kullanıcıya derhal 202 Accepted yanıtı dön (iş kalıcı kuyrukta bekler, bağımsız worker/mutabakat tarafından yürütülür)
+    // 3. Kullanıcıya derhal 202 Accepted yanıtı dön
     return NextResponse.json({
       ok: true,
-      durum: (baslatmaSonucu?.durum as string) || "ai_bekliyor",
+      durum: baslatmaDurumu,
       ai_girisim_id: aktifGirisimId,
       mesaj: "AI transkript işi kalıcı kuyruğa alındı.",
     }, { status: 202 });

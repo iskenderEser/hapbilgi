@@ -105,18 +105,18 @@ test("Aşama 1 Erişim ve Oynatıcı: transkript yoksa null döner, oynatıcı t
   assert.match(oynatici, /erisim\.transkript_url &&/);
 });
 
-test("Düzeltme 1 — Kapsam Ayrımı: İÜ akışında (kaynak = 'iu') transkript zorunluluğu korunur, hazır akışta (hazir) opsiyoneldir", () => {
-  const sql = oku("scripts/sql/ogrenme_araclari_faz3_podcast_opsiyonel_transkript.sql");
-  // İÜ akışında transkript ve ses doğrulanmadan tamamlanamaz kuralı
-  assert.match(sql, /IF v_arac\.kaynak = 'iu' THEN\s*IF v_arac\.transkript_yolu IS NULL/);
-  assert.match(sql, /İçerik üreticisi podcastinde ses ve transkript doğrulanmadan tamamlanamaz/);
+test("Düzeltme 1 — Kapsam Ayrımı: İÜ zorunluluğu talep tercihine bağlıdır, hazır akışta transkript opsiyoneldir", () => {
+  const sql = oku("scripts/sql/ogrenme_araclari_faz3_podcast_v1_v3_teslim.sql");
+  // İÜ akışında tercih true ise onaylı AI metni, false ise yalnız doğrulanmış ses aranır.
+  assert.match(sql, /IF v_transkript_istendi THEN/);
+  assert.match(sql, /COALESCE\(v_transkript->>'kaynak', ''\) <> 'ai'/);
+  assert.doesNotMatch(sql, /v_arac\.transkript_yolu IS NULL/);
   // Hazır akışta opsiyonel ama eklenmişse doğrulanma şartı
-  assert.match(sql, /Hazır podcast \(kaynak = 'hazir'\): Transkript opsiyoneldir/);
+  assert.match(sql, /Hazır podcast \(V2\/V4\): Transkript opsiyoneldir/);
 
   const istemci = oku("lib/ogrenmeAraci/bunnyYuklemeIstemci.ts");
-  // İstemci yardımcısı iu kaynağında transkript eksikse hata fırlatır
-  assert.match(istemci, /const transkriptGerekli = Boolean\(girdi\.kaynak === "iu" && !tamamlananParcalar\.has\("transkript"\)\);/);
-  assert.match(istemci, /if \(transkriptGerekli && !girdi\.transkript\) \{\s*throw new Error\("Podcast transkript dosyası zorunludur\."\);/);
+  // İÜ transkripti fiziksel dosya değildir; tercih varsa AI akışında üretilir.
+  assert.match(istemci, /const transkriptGerekli = false;/);
 });
 
 test("Düzeltme 2 — İstemciden Durum Kabul Etmeme: podcast-dogrula istemciden transkript_durumu almaz, sahte onay üretmez", () => {
@@ -127,12 +127,9 @@ test("Düzeltme 2 — İstemciden Durum Kabul Etmeme: podcast-dogrula istemciden
   const route = oku("app/api/ogrenme-araclari/[arac_id]/podcast-dogrula/route.ts");
   // body.transkript_durumu kabul edilmez
   assert.doesNotMatch(route, /body\.transkript_durumu/);
-  // Dosya/metin varsa teknik doğrulama doğrudan onaylandi yapılmaz; Aşama 1 güvenli durumu manuel_taslak olur
-  assert.match(route, /transkriptDurumu = "manuel_taslak";/);
-  // Sahte onaylayan kullanıcı veya onay tarihi üretilmez
-  assert.doesNotMatch(route, /new Date\(\)\.toISOString\(\) : \(mevcutTranskript/);
-  assert.match(route, /onaylayan_kullanici_id: \(mevcutTranskript\?\.onaylayan_kullanici_id as string \| null\) \?\? null/);
-  assert.match(route, /onay_tarihi: \(mevcutTranskript\?\.onay_tarihi as string \| null\) \?\? null/);
+  // Teslim rotası istemciden metin veya onay beyanı almaz; kalıcı sunucu kaydını denetler.
+  assert.doesNotMatch(route, /body\.transkript_metni/);
+  assert.match(route, /podcastIuTeslimKapisiDogrula/);
 });
 
 test("Düzeltme 3 — Transkript Erişimini Koruma: Yalnız onaylı transkript döner, taslak ve hassas alanlar sanitize edilir", () => {
@@ -150,4 +147,3 @@ test("Düzeltme 3 — Transkript Erişimini Koruma: Yalnız onaylı transkript d
   assert.match(erisim, /onaylayan_kullanici_id: _onaylayanKullaniciId/);
   assert.match(erisim, /metadata: temizMetadata/);
 });
-

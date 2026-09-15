@@ -18,7 +18,7 @@ import { eczaneEczanemFirmaIdleri, eczaneYayinErisimiDogrula } from "@/lib/eczan
 import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 import { uttEczaneFirmaBaglari } from "@/lib/eclub/uttEczane";
-import { yayinThumbnailUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
+import { yayinThumbnailCevabi } from "@/lib/ogrenmeAraci/yayinThumbnail";
 
 // Ayar okunamazsa güvenli geri düşüş (davet.ts DAVET_GECERLILIK deseni).
 // Canlı seed değeri 10; bu sabit yalnız okuma hatasında devreye girer.
@@ -58,6 +58,7 @@ interface VYayinAdDetay {
   video_url?: string | null;
   thumbnail_url?: string | null;
   arac_kapak_yolu?: string | null;
+  arac_dosya_yolu?: string | null;
   yayin_tarihi?: string | null;
   arac_id?: string | null;
   arac_turu?: OgrenmeAraciTuru;
@@ -83,7 +84,7 @@ async function yayinAdMap(
   if (yayinIdler.length === 0) return map;
   let sorgu = adminSupabase
     .from("v_yayin_detay")
-    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, yayin_tarihi, arac_id, arac_turu, arac_kapak_yolu")
+    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, yayin_tarihi, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata")
     .in("yayin_id", yayinIdler)
     .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur));
   if (firmaIdler) {
@@ -94,11 +95,12 @@ async function yayinAdMap(
   if (error) throw new Error("Eczanem yayın bilgileri okunamadı.");
   for (const y of (data as VYayinAdDetay[] | null) ?? []) {
     if (!y.arac_id || !y.arac_turu) continue;
+    const { thumbnail_url } = yayinThumbnailCevabi(y);
     map.set(y.yayin_id, {
       urun_adi: y.urun_adi ?? "-",
       teknik_adi: y.teknik_adi ?? "-",
       video_url: y.video_url ?? null,
-      thumbnail_url: yayinThumbnailUrlCoz(y),
+      thumbnail_url: thumbnail_url ?? null,
       yayin_tarihi: y.yayin_tarihi ?? null,
       arac_id: y.arac_id,
       arac_turu: y.arac_turu,
@@ -206,7 +208,7 @@ export async function uttEczanemVerisi(
   // 1. Eczanem yayınları (bu UTT'nin takımı, yayında)
   let yayinQuery = adminSupabase
     .from("v_yayin_detay")
-    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, yayin_tarihi, arac_id, arac_turu, arac_kapak_yolu")
+    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, yayin_tarihi, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata")
     .eq("durum", "yayinda")
     .eq("firma_id", firmaId)
     .contains("hedef_roller", ["eczanem"])
@@ -218,16 +220,19 @@ export async function uttEczanemVerisi(
   const { data: yayinRaw, error: yayinError } = await yayinQuery;
   if (yayinError) throw new Error("Eczanem yayınları okunamadı.");
 
-  const yayinlar: UttEczanemYayin[] = ((yayinRaw as VYayinAdDetay[] | null) ?? []).filter((y) => Boolean(y.arac_id && y.arac_turu)).map(y => ({
-    yayin_id: y.yayin_id,
-    urun_adi: y.urun_adi ?? "-",
-    teknik_adi: y.teknik_adi ?? "",
-    video_url: y.video_url ?? null,
-    thumbnail_url: yayinThumbnailUrlCoz(y),
-    yayin_tarihi: y.yayin_tarihi ?? null,
-    arac_id: y.arac_id!,
-    arac_turu: y.arac_turu!,
-  }));
+  const yayinlar: UttEczanemYayin[] = ((yayinRaw as VYayinAdDetay[] | null) ?? []).filter((y) => Boolean(y.arac_id && y.arac_turu)).map(y => {
+    const { thumbnail_url } = yayinThumbnailCevabi(y);
+    return {
+      yayin_id: y.yayin_id,
+      urun_adi: y.urun_adi ?? "-",
+      teknik_adi: y.teknik_adi ?? "",
+      video_url: y.video_url ?? null,
+      thumbnail_url: thumbnail_url ?? null,
+      yayin_tarihi: y.yayin_tarihi ?? null,
+      arac_id: y.arac_id!,
+      arac_turu: y.arac_turu!,
+    };
+  });
 
   // 2. UTT'nin bağladığı aktif eczaneler
   const uttBaglari = await uttEczaneFirmaBaglari(adminSupabase, uttAuthId);

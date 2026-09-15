@@ -28,7 +28,9 @@ test("mutlu: UTT yüzeyi panel kabuğunda, shadcn deseninde ve atomik gönderiml
   assert.match(ortakOnizleme, /bitisGecikmesiMs=\{1500\}/);
   assert.doesNotMatch(page, /UttEczanemDokum/);
   assert.match(videoSatiri, /Collapsible/);
-  assert.match(videoSatiri, /thumbnailUrlUret/);
+  assert.match(videoSatiri, /yayinThumbnailIstemciCoz\(yayin\)/);
+  assert.match(videoSatiri, /<AracVarsayilanKapak aracTuru=\{yayin\.arac_turu\} urunAdi=\{yayin\.urun_adi\} kucuk \/>/);
+  assert.doesNotMatch(videoSatiri, /<Film/);
   assert.match(videoSatiri, /onVideoAc\(yayin\)/);
   assert.match(videoSatiri, /öğrenme içeriğini önizle/);
   assert.doesNotMatch(videoSatiri, /<Play/);

@@ -62,6 +62,8 @@ export interface UygunVideo {
   video_url: string | null;
   thumbnail_url: string | null;
   video_puani: number | null;
+  arac_id?: string | null;
+  arac_turu?: string | null;
 }
 
 /**

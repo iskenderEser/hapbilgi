@@ -7,14 +7,14 @@ import { useRouter } from "next/navigation";
 import {
   Bookmark,
   Clock,
-  Film,
   Heart,
   Inbox,
   Play,
   Sparkles,
 } from "lucide-react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
-import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
+import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
 import { useAuth } from "@/app/providers/AuthProvider";
 import BmOneriTakibi, { type OneriKaydi } from "./_components/BmOneriTakibi";
 import TmOneriTakibi, { type TmBmKaydi, type TmOneriKaydi } from "./_components/TmOneriTakibi";
@@ -366,7 +366,7 @@ export default function OnerilerPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filtrelenmisOneriler.map((o) => {
                 const durumStil = kartDurumu(o);
-                const thumb = o.thumbnail_url ?? thumbnailUrlUret(o.video_url);
+                const thumb = yayinThumbnailIstemciCoz(o);
 
                 return (
                   <div
@@ -384,28 +384,18 @@ export default function OnerilerPage() {
                   >
                     {/* Thumbnail */}
                     <div className="relative aspect-video w-full overflow-hidden bg-[#e8f1fa]">
+                      <AracVarsayilanKapak aracTuru={o.arac_turu} urunAdi={o.urun_adi} />
                       {thumb ? (
                         <img
                           src={thumb}
                           alt={o.urun_adi}
-                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                           onError={(e) => {
                             const img = e.currentTarget as HTMLImageElement;
                             img.style.display = "none";
-                            const fallback = img.parentElement?.querySelector(
-                              ".thumbnail-fallback"
-                            ) as HTMLElement | null;
-                            if (fallback) fallback.style.display = "flex";
                           }}
+                          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                       ) : null}
-
-                      <div
-                        className="thumbnail-fallback absolute inset-0 hidden items-center justify-center bg-gradient-to-br from-[#b5d4f4] to-[#56aeff] text-white"
-                        style={{ display: thumb ? "none" : "flex" }}
-                      >
-                        <Film className="h-8 w-8 opacity-40" />
-                      </div>
 
                       {/* Durum Rozeti (Sol Üst) */}
                       <div className="absolute left-2.5 top-2.5">

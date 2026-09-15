@@ -354,16 +354,29 @@ export function YeniTalepFormV2({ formu }: Props) {
             />
           )}
           {formu.hazirVideo && formu.ogrenmeAraciTuru === "flip_pdf" && (
-            <VideoYukleme
-              bekleyen={formu.bekleyenFlipPdf}
-              onSec={formu.handleFlipPdfSec}
-              onSil={formu.handleBekleyenFlipPdfSil}
-              ogrenmeAraciTuru={formu.ogrenmeAraciTuru}
-            />
+            <div className="flex flex-col gap-2">
+              <VideoYukleme
+                bekleyen={formu.bekleyenFlipPdf}
+                onSec={formu.handleFlipPdfSec}
+                onSil={formu.handleBekleyenFlipPdfSil}
+                ogrenmeAraciTuru={formu.ogrenmeAraciTuru}
+              />
+              <VideoYukleme
+                bekleyen={formu.bekleyenFlipPdfKapak}
+                onSec={formu.handleFlipPdfKapakSec}
+                onSil={formu.handleBekleyenFlipPdfKapakSil}
+                ogrenmeAraciTuru={formu.ogrenmeAraciTuru}
+                butonMetni="Yayın Görseli (isteğe bağlı)"
+                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                aciklama="JPEG, PNG ve WEBP; en fazla 20 MB."
+              />
+            </div>
           )}
           {formu.ogrenmeAraciTuru === "podcast" && (
             <PodcastTalepAlanlari
               hazir={formu.hazirVideo}
+              iuTranskriptIstendi={formu.podcastIuTranskriptIstendi}
+              onIuTranskriptIstendiDegisti={formu.setPodcastIuTranskriptIstendi}
               ses={formu.bekleyenPodcast}
               kapak={formu.bekleyenPodcastKapak}
               transkript={formu.bekleyenPodcastTranskript}

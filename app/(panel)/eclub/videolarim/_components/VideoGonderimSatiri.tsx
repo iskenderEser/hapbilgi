@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronDown, Film } from "lucide-react";
+import { ChevronDown } from "lucide-react";
+import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { thumbnailUrlUret } from "@/lib/video/thumbnail";
+import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 import { eclubKisiHedefRolu } from "@/lib/utils/roller";
 import type { OneriGonderSonuc, OneriKisi, OneriLimitler, OneriYayin } from "../../oneriler/_types";
 
@@ -27,7 +28,7 @@ export function VideoGonderimSatiri({ video, kisiler, limitler, tekrarEngelleri,
   const [listeAcik, setListeAcik] = useState(false);
   const [seciliKisiler, setSeciliKisiler] = useState<string[]>([]);
   const [sonuc, setSonuc] = useState<OneriGonderSonuc | null>(null);
-  const thumbnail = video.thumbnail_url ?? thumbnailUrlUret(video.video_url);
+  const thumbnail = yayinThumbnailIstemciCoz(video);
 
   const uygunKisiler = useMemo(() => kisiler
     .filter((kisi) => {
@@ -89,8 +90,12 @@ export function VideoGonderimSatiri({ video, kisiler, limitler, tekrarEngelleri,
             className="group relative flex h-16 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg border-0 bg-[#d9e8f7] p-0 text-[#237ac8] transition hover:ring-2 hover:ring-[#78b4e7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#237ac8] disabled:cursor-not-allowed disabled:opacity-45"
             aria-label={`${video.urun_adi} öğrenme içeriğini önizle`}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            {thumbnail ? <img src={thumbnail} alt="" className="h-full w-full object-cover" /> : <Film className="size-6" />}
+            {thumbnail ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={thumbnail} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <AracVarsayilanKapak aracTuru={video.arac_turu} urunAdi={video.urun_adi} kucuk />
+            )}
             <span className="pointer-events-none absolute inset-0 bg-[#10233a]/0 transition group-hover:bg-[#10233a]/10" />
           </button>
           <div className="min-w-0 self-center">

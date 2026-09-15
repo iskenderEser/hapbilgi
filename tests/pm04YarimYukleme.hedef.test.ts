@@ -60,7 +60,7 @@ test("PM-03/C Podcast devamında tamamlanmış ses, kapak ve transkript yeniden 
   assert.match(podcastDestekTamamla, /bunnyStorageNesneIndir\(body\.dosya_yolu\)[\s\S]*transkriptDosyasindanMetinCikar\(karar\.uzanti, dosyaBaytlari\)/);
   assert.match(podcastDestekTamamla, /durum:\s*"manuel_taslak"/);
   assert.match(podcastDestekTamamla, /onaylanan_metin:\s*null/);
-  assert.match(podcastDogrula, /kayitliSure[\s\S]*kayitliTranskriptBilgisi[\s\S]*podcast_dogrulama_islem_anahtari[\s\S]*p_islem_anahtari: islemAnahtari/);
+  assert.match(podcastDogrula, /kayitliSure[\s\S]*podcastIuTeslimKapisiDogrula[\s\S]*podcast_dogrulama_islem_anahtari[\s\S]*p_islem_anahtari: islemAnahtari/);
   assert.match(storageBaslat, /delete yenilenenMetadata\.podcast_dogrulama_islem_anahtari/);
 });
 
@@ -72,16 +72,15 @@ test("PM-03/D Dijital Broşür aynı arac_id ile tamamlanır ve ortak iptal temi
   assert.match(ortakApi, /arac\.dosya_yolu, arac\.kapak_yolu, arac\.transkript_yolu[\s\S]*bunnyStorageNesneSil/);
 });
 
-test("Aşama 2 Doğrulamaları: Tek transkript alanı, İÜ engeli ve üretici V2/V4 transkript-yonet yetkisi", () => {
+test("Aşama 2 Doğrulamaları: Tek transkript alanı ve kaynağa göre transkript yetkisi", () => {
   const talepAlanlari = oku("app/(panel)/talepler/_components/PodcastTalepAlanlari.tsx");
   // Formda eski DosyaAlani Transkript bulunmaz, yalnızca tek transkript alanı (PodcastTranskriptEditoru) bulunur
   assert.doesNotMatch(talepAlanlari, /<DosyaAlani etiket="Transkript"/);
   assert.match(talepAlanlari, /<PodcastTranskriptEditoru/);
 
   const transkriptYonet = oku("app/api/ogrenme-araclari/[arac_id]/transkript-yonet/route.ts");
-  // İÜ rolü engellenir, yalnızca üretici rolleri kabul edilir
-  assert.match(transkriptYonet, /if \(!URETICI_ROLLER\.includes\(rol\)\) return rolHatasi/);
-  // Kaynak hazir ve V2/V4 talep şartı aranır
-  assert.match(transkriptYonet, /if \(arac\.kaynak !== "hazir"\)/);
-  assert.match(transkriptYonet, /talep\.ogrenme_araci_turu !== "podcast" \|\| talep\.hazir_video !== true/);
+  assert.match(transkriptYonet, /podcastTranskriptYetkisiDogrula/);
+  assert.match(transkriptYonet, /if \(yetki\.kaynak === "iu"\)/);
+  assert.match(transkriptYonet, /mevcutTranskript\.kaynak !== "ai"/);
+  assert.match(transkriptYonet, /if \(yetki\.kaynak === "hazir"\)/);
 });
