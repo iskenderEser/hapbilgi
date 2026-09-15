@@ -57,9 +57,9 @@ export function VaryantPill({ hazirVideo, hazirSoruSeti, ogrenmeAraciTuru, kendi
   // flexBasis:100% → sarmalı ana satırda kendi satırına düşer. Yerleşim kararı
   // aslında sayfaya aittir; Adım 4'te satır düzeni elden geçirilirken kaldırılacak.
   return (
-    // flexWrap: dar sütunda (eşit paylı tabloda) iki pill yan yana sığmazsa alt
-    // alta geçer; kesilmez, taşmaz.
-    <div style={{ display: "flex", flexWrap: "wrap", gap: "1mm", ...(kendiSatirinda ? { flexBasis: "100%" } : {}) }}>
+    // Mobil/kendi satırındaki kullanım gerektiğinde sarar. Masaüstü tablo hücresi
+    // yeterli genişliği ayırdığı için iki üretim yöntemi tek satırda kalır.
+    <div style={{ display: "flex", flexWrap: kendiSatirinda ? "wrap" : "nowrap", gap: "1mm", ...(kendiSatirinda ? { flexBasis: "100%" } : {}) }}>
       {tipler.map((t) => (
         <Pill key={t} renk={VARYANT[t].renk}>
           {t === "arac" ? ogrenmeAraciMetinleri(ogrenmeAraciTuru).hazir : VARYANT[t].etiket}

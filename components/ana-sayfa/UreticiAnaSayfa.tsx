@@ -172,13 +172,12 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
   //     ayrı birer grid olduğundan bu şişme yalnız o satırı kaydırıyor, satırlar
   //     birbirine hizalanmıyordu (ÜRETİM YÖNTEMİ hücresi kimi satırda boş, kiminde
   //     iki pill olduğu için fark büyüdü). minmax(0,…) içerik alt sınırını sıfırlar.
-  // Tek istisna ÜRETİM YÖNTEMİ (İskender kararı 27.07, seçenek B): iki varyantı
-  // olan talepte "Hazır Öğrenme Aracı" + "Hazır Soru" eşit payda yan yana
-  // sığmayıp alt alta düşüyor, o satır diğerlerinden yüksek kalıyordu. 1.4 pay
-  // ile ikisi tek satırda durur; kalan yedi sütun eşit paylı kalır.
+  // Tek istisna ÜRETİM YÖNTEMİ: "Hazır Dijital Broşür" + "Hazır Soru" gibi
+  // en uzun iki varyantın da tek satırda kalabilmesi için iki pay ayrılır.
+  // Kalan sütunlar eşit paylı kalır.
   const gridCols = teknikGoster
-    ? "repeat(3, minmax(0, 1fr)) minmax(0, 1.4fr) repeat(4, minmax(0, 1fr)) 20px"
-    : "repeat(2, minmax(0, 1fr)) minmax(0, 1.4fr) repeat(4, minmax(0, 1fr)) 20px";
+    ? "repeat(3, minmax(0, 1fr)) minmax(0, 2fr) repeat(4, minmax(0, 1fr)) 20px"
+    : "repeat(2, minmax(0, 1fr)) minmax(0, 2fr) repeat(4, minmax(0, 1fr)) 20px";
 
   // Boş durum: hiç talep yoksa (üretim başlamadan önce) tabloyu tanıtan soluk örnek
   // satır + açıklama gösterilir; filtre yüzünden boşsa normal "içerik yok" mesajı kalır.
