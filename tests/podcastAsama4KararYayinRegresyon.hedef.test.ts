@@ -256,8 +256,9 @@ test("Hedef 20: İlk üç geliştirme regresyonu — Aşama 1, 2 ve 3 sözleşme
     assert.match(tipler, new RegExp(`"${durum}"`));
   }
 
-  const vercelJson = oku("vercel.json");
-  assert.match(vercelJson, /\/api\/cron\/transkript-kuyruk/);
+  const cronSql = oku("scripts/sql/kuyruk_cronlarini_supabase_tasima.sql");
+  assert.match(cronSql, /\/api\/cron\/transkript-kuyruk/);
+  assert.match(cronSql, /hapbilgi_cron_secret/);
 
   const envExample = oku(".env.example");
   assert.match(envExample, /CRON_SECRET=/);
@@ -298,4 +299,3 @@ test("Hedef 21: Oynatıcı XSS güvenliği ve sunucu öncesi onay bildirimi söz
     "hazirPodcastYukle hatasında yerel transkript onay durumu false yapılmalıdır"
   );
 });
-

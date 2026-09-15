@@ -212,12 +212,19 @@ test("Aşama 3 Bağımsız Vercel Cron Worker: /api/cron/transkript-kuyruk, Bear
   assert.match(cronRoute, /maxDuration\s*=\s*60/);
 });
 
-test("Aşama 3 vercel.json ve .env.example Yapılandırması: cron tanımı ve gizli anahtarsız CRON_SECRET dokümantasyonu", () => {
+test("Aşama 3 Supabase Cron ve .env.example yapılandırması: zamanlama, Vault ve gizli anahtarsız CRON_SECRET", () => {
   const vercelJson = JSON.parse(oku("vercel.json"));
-  assert.ok(Array.isArray(vercelJson.crons), "vercel.json içinde crons dizisi bulunmalı");
-  const cronGirdisi = vercelJson.crons.find((c: { path: string }) => c.path === "/api/cron/transkript-kuyruk");
-  assert.ok(cronGirdisi, "/api/cron/transkript-kuyruk cron tanımı bulunmalı");
-  assert.equal(cronGirdisi.schedule, "* * * * *");
+  assert.equal(vercelJson.crons, undefined, "Hobby deployment'ını engelleyen Vercel cron tanımı bulunmamalı");
+
+  const cronSql = oku("scripts/sql/kuyruk_cronlarini_supabase_tasima.sql");
+  assert.match(cronSql, /'hapbilgi_podcast_transkript_kuyrugu'/);
+  assert.match(cronSql, /'\* \* \* \* \*'/);
+  assert.match(cronSql, /\/api\/cron\/transkript-kuyruk/);
+  assert.match(cronSql, /'hapbilgi_eclub_cek_eposta_kuyrugu'/);
+  assert.match(cronSql, /'\*\/5 \* \* \* \*'/);
+  assert.match(cronSql, /\/api\/cron\/eclub-cek-eposta/);
+  assert.match(cronSql, /vault\.decrypted_secrets/);
+  assert.match(cronSql, /'Authorization', 'Bearer '/);
 
   const envExample = oku(".env.example");
   assert.match(envExample, /CRON_SECRET=/);
