@@ -217,6 +217,11 @@ test("V2 Hazır Podcast + İÜ Soru Seti: senaryo kapalı, podcast tamamlanmış
 
   assert.equal(senaryo?.hal, "kapali");
   assert.equal(podcast?.hal, "tamam");
+  assert.equal(podcast?.durum_kodu, "hazir_arac_iletildi");
+  assert.equal(
+    ureticiDurumMesaji(podcast!.durum_kodu!, null, talep.ogrenme_araci_turu).metin,
+    "Podcastinizi İlettiniz",
+  );
   assert.equal(soruSeti?.hal, "aktif");
   assert.equal(soruSeti?.durum_kodu, "iu_iletildi");
   assert.equal(yayin?.hal, "ileri");
