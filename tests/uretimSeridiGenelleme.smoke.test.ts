@@ -393,7 +393,7 @@ test("Video V3 hazir soru setini goruntulenebilir tutar ve video onayindan sonra
     soru_seti_durum_tarih: "2026-09-16T10:00:00.000Z",
   });
   assert.equal(yayin.find((adim) => adim.anahtar === "soru_seti")?.hal, "tamam");
-  assert.equal(yayin.find((adim) => adim.anahtar === "soru_seti")?.durum_kodu, "onaylandi");
+  assert.equal(yayin.find((adim) => adim.anahtar === "soru_seti")?.durum_kodu, "hazir_soru_seti");
   assert.equal(yayin.find((adim) => adim.hal === "aktif")?.anahtar, "yayin");
   assert.equal(yayin.find((adim) => adim.hal === "aktif")?.durum_kodu, "yayin_bekleniyor");
 
@@ -405,6 +405,46 @@ test("Video V3 hazir soru setini goruntulenebilir tutar ve video onayindan sonra
     ),
     "Videoyu onayladınız, yayın yönetimi sayfasına gidiniz",
   );
+});
+
+test("Podcast V3 hazir soru seti mesajini podcast onayindan sonra da korur", () => {
+  const talep: SeritTalebi = {
+    talep_id: "talep-podcast-v3-yasam-dongusu",
+    hazir_video: false,
+    hazir_soru_seti: true,
+    ogrenme_araci_turu: "podcast",
+    created_at: "2026-09-16T08:00:00.000Z",
+  };
+  const zincir = {
+    talep_id: talep.talep_id,
+    senaryo_id: "senaryo-podcast-v3",
+    senaryo_iu_id: "iu-1",
+    senaryo_durum: "onaylandi",
+    senaryo_durum_tarih: "2026-09-16T09:00:00.000Z",
+    video_id: "podcast-v3",
+    video_iu_id: "iu-1",
+    video_durum: "onaylandi",
+    video_durum_tarih: "2026-09-16T10:00:00.000Z",
+    soru_seti_id: "soru-seti-podcast-v3",
+    soru_seti_iu_id: null,
+    soru_seti_durum: "onaylandi",
+    soru_seti_durum_tarih: "2026-09-16T10:00:00.000Z",
+    yayin_durum: null,
+    yayin_tarihi: null,
+  };
+
+  const adimlar = adimlariCoz(talep, zincir);
+  const podcast = adimlar.find((adim) => adim.anahtar === "video");
+  const soruSeti = adimlar.find((adim) => adim.anahtar === "soru_seti");
+  const yayin = adimlar.find((adim) => adim.anahtar === "yayin");
+
+  assert.equal(podcast?.hal, "tamam");
+  assert.equal(podcast?.durum_kodu, "onaylandi");
+  assert.equal(soruSeti?.hal, "tamam");
+  assert.equal(soruSeti?.durum_kodu, "hazir_soru_seti");
+  assert.equal(ureticiDurumMesaji(soruSeti!.durum_kodu!).metin, "Hazır Soru Seti");
+  assert.equal(yayin?.hal, "aktif");
+  assert.equal(yayin?.durum_kodu, "yayin_bekleniyor");
 });
 
 test("Video V3 hazir soru seti talep detayinda kayit olusmadan da okunabilir", () => {

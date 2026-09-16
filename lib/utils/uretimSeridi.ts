@@ -134,7 +134,9 @@ export function adimlariCoz(
         anahtar,
         etiket: adimEtiketi(anahtar, talep),
         hal: tamamlandi ? "tamam" as AdimHal : "hazir" as AdimHal,
-        durum_kodu: tamamlandi ? "onaylandi" : "hazir_soru_seti",
+        // Hazır set üretici tarafından talep açılırken iletilir; araç onayından
+        // sonra sisteme bağlanması yeni bir kullanıcı onayı değildir.
+        durum_kodu: "hazir_soru_seti",
         tarih: tamamlandi ? tarihler.soru_seti : talep.created_at ?? null,
       };
     }
