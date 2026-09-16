@@ -51,19 +51,23 @@ export function AracVarsayilanKapak({
 
   let gradyan = "from-[#1e3a8a] to-[#0f172a]";
   let etiket = "VİDEO";
+  let ariaEtiketi = "video";
   let ikon = <VideoKapakIcon className={kucuk ? "size-5" : "size-9"} />;
 
   if (tur === "podcast") {
     gradyan = "from-[#2a1343] to-[#140824]";
     etiket = "PODCAST";
+    ariaEtiketi = "podcast";
     ikon = <ApplePodcastsIcon className={kucuk ? "size-6" : "size-10"} />;
   } else if (tur === "gorsel") {
     gradyan = "from-[#064e3b] to-[#022c22]";
     etiket = "DİJİTAL BROŞÜR";
+    ariaEtiketi = "dijital broşür";
     ikon = <GorselIcon className={kucuk ? "size-5" : "size-9"} />;
   } else if (tur === "flip_pdf") {
     gradyan = "from-[#78350f] to-[#451a03]";
     etiket = "LİTERATÜR";
+    ariaEtiketi = "literatür";
     ikon = <FlipPdfIcon className={kucuk ? "size-5" : "size-9"} />;
   }
 
@@ -71,7 +75,7 @@ export function AracVarsayilanKapak({
     return (
       <div
         role="img"
-        aria-label={`${gecerliAd} ${etiket.toLowerCase()} kapağı`}
+        aria-label={`${gecerliAd} ${ariaEtiketi} kapağı`}
         className={`flex h-full w-full flex-col items-center justify-center bg-gradient-to-br ${gradyan} p-1.5 text-center text-white select-none ${className}`}
       >
         <div className="shrink-0 drop-shadow">{ikon}</div>
@@ -85,7 +89,7 @@ export function AracVarsayilanKapak({
   return (
     <div
       role="img"
-      aria-label={`${gecerliAd} ${etiket.toLowerCase()} kapağı`}
+      aria-label={`${gecerliAd} ${ariaEtiketi} kapağı`}
       className={`relative flex h-full w-full flex-col items-center justify-center bg-gradient-to-br ${gradyan} p-4 text-center text-white select-none ${className}`}
     >
       <div className="absolute top-2 left-2 rounded-md bg-black/40 px-1.5 py-0.5 text-[8px] font-extrabold tracking-wider text-white/80 backdrop-blur-xs">

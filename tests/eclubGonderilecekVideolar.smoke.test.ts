@@ -4,14 +4,16 @@ import { readFileSync } from "node:fs";
 
 const page = readFileSync("app/(panel)/eclub/videolarim/page.tsx", "utf8");
 const satir = readFileSync("app/(panel)/eclub/videolarim/_components/VideoGonderimSatiri.tsx", "utf8");
+const dagitimOzeti = readFileSync("components/ogrenme-araci/DagitimIcerikOzeti.tsx", "utf8");
 const onizleme = readFileSync("components/video/VideoOnizleme.tsx", "utf8");
 const aracOnizleme = readFileSync("components/ogrenme-araci/OgrenmeAraciOnizleme.tsx", "utf8");
 
 test("mutlu: öğrenme aracı önizlemesi dört araç türünü salt görüntüler", () => {
   assert.match(satir, /onVideoAc\(video\)/);
-  assert.match(satir, /yayinThumbnailIstemciCoz\(video\)/);
-  assert.match(satir, /<AracVarsayilanKapak aracTuru=\{video\.arac_turu\} urunAdi=\{video\.urun_adi\} kucuk \/>/);
-  assert.match(satir, /öğrenme içeriğini önizle/);
+  assert.match(satir, /<DagitimIcerikOzeti/);
+  assert.match(dagitimOzeti, /yayinThumbnailIstemciCoz\(icerik\)/);
+  assert.match(dagitimOzeti, /<AracVarsayilanKapak/);
+  assert.match(dagitimOzeti, /öğrenme içeriğini önizle/);
   assert.doesNotMatch(satir, /<Play/);
   assert.match(page, /<OgrenmeAraciOnizleme/);
   assert.match(aracOnizleme, /<VideoOnizleme/);

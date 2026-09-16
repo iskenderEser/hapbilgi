@@ -2,10 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { ChevronDown, Film } from "lucide-react";
-import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
+import { DagitimIcerikOzeti } from "@/components/ogrenme-araci/DagitimIcerikOzeti";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 
 export interface GonderVideo {
   yayin_id: string;
@@ -71,7 +70,6 @@ function ChallengeGonderSatiri({ video, hata, onGonder }: { video: GonderVideo; 
   const [secililer, setSecililer] = useState<string[]>([]);
   const [gonderiliyor, setGonderiliyor] = useState(false);
   const [sonuc, setSonuc] = useState<GonderSonuc | null>(null);
-  const thumbnail = yayinThumbnailIstemciCoz(video);
 
   const alicilariYukle = async () => {
     if (aliciler) return;
@@ -107,20 +105,7 @@ function ChallengeGonderSatiri({ video, hata, onGonder }: { video: GonderVideo; 
     <article className="border-b border-[#e7edf4] p-3 last:border-b-0 md:p-4">
       <div className="grid gap-3 lg:grid-cols-[minmax(220px,1.4fr)_minmax(120px,0.55fr)_minmax(240px,1fr)] lg:items-center">
         {/* Video */}
-        <div className="flex min-w-0 gap-3">
-          <div className="flex h-16 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#f1f1f1] text-gray-400">
-            {thumbnail ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={thumbnail} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <AracVarsayilanKapak aracTuru={video.arac_turu} urunAdi={video.urun_adi} kucuk />
-            )}
-          </div>
-          <div className="min-w-0 self-center">
-            <strong className="block truncate text-sm text-[#263e5b]">{video.urun_adi}</strong>
-            <span className="mt-1 block truncate text-[11px] font-semibold text-[#71859d]">{video.teknik_adi || "Teknik belirtilmedi"}</span>
-          </div>
-        </div>
+        <DagitimIcerikOzeti icerik={video} />
 
         {/* Bilgi */}
         <div className="min-w-0">

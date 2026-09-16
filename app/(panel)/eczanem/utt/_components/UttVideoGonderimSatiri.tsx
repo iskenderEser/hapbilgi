@@ -1,13 +1,12 @@
 "use client";
 
 import { Building2, CheckCircle2, ChevronDown, RefreshCw, Send, UsersRound } from "lucide-react";
-import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
+import { DagitimIcerikOzeti } from "@/components/ogrenme-araci/DagitimIcerikOzeti";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 import type { UttEczanemEczane, UttEczanemGonderim, UttEczanemYayin } from "../_types";
 
 interface Props {
@@ -31,7 +30,6 @@ const tarihYaz = (deger: string | null, saat = false) => {
 };
 
 export function UttVideoGonderimSatiri({ yayin, eczaneler, esik, gonderimMap, gonderilenHedef, onVideoAc, onGonder }: Props) {
-  const thumbnail = yayinThumbnailIstemciCoz(yayin);
   const hazirEczaneler = eczaneler.filter((eczane) => eczane.esik_uygun);
   const gonderilenEczaneler = eczaneler.filter((eczane) => gonderimMap.has(`${yayin.yayin_id}::${eczane.eczane_id}`));
   const bekleyenHazir = hazirEczaneler.filter((eczane) => !gonderimMap.has(`${yayin.yayin_id}::${eczane.eczane_id}`));
@@ -41,26 +39,13 @@ export function UttVideoGonderimSatiri({ yayin, eczaneler, esik, gonderimMap, go
     <Collapsible>
       <article className="border-b border-[#e7edf4] last:border-b-0">
         <div className="grid gap-3 p-3 md:grid-cols-2 md:p-4 lg:grid-cols-[minmax(230px,1.35fr)_repeat(3,minmax(110px,0.72fr))_minmax(210px,0.9fr)] lg:items-center">
-          <div className="flex min-w-0 items-center gap-3 md:col-span-2 lg:col-span-1">
-            <button
-              type="button"
-              onClick={() => onVideoAc(yayin)}
-              disabled={yayin.arac_turu === "video" && !yayin.video_url}
-              className="group relative flex h-16 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg border-0 bg-gradient-to-br from-[#dcecf9] to-[#edf5fb] p-0 text-[#237ac8] transition hover:ring-2 hover:ring-[#78b4e7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#237ac8] disabled:cursor-not-allowed disabled:opacity-45"
-              aria-label={`${yayin.urun_adi} öğrenme içeriğini önizle`}
-            >
-              {thumbnail ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={thumbnail} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <AracVarsayilanKapak aracTuru={yayin.arac_turu} urunAdi={yayin.urun_adi} kucuk />
-              )}
-              <span className="pointer-events-none absolute inset-0 bg-[#10233a]/0 transition group-hover:bg-[#10233a]/10" />
-            </button>
-            <div className="min-w-0">
-              <strong className="block truncate text-sm text-[#263e5b]">{yayin.urun_adi}</strong>
-              <span className="mt-1 block truncate text-[11px] font-semibold text-[#71859d]">{yayin.teknik_adi || "Eczanem öğrenme içeriği"}</span>
-            </div>
+          <div className="min-w-0 md:col-span-2 lg:col-span-1">
+            <DagitimIcerikOzeti
+              icerik={yayin}
+              onOnizle={() => onVideoAc(yayin)}
+              onizlemeDevreDisi={yayin.arac_turu === "video" && !yayin.video_url}
+              teknikAdiYedegi="Eczanem öğrenme içeriği"
+            />
           </div>
 
           <div className="grid grid-cols-3 gap-x-4 gap-y-3 md:col-span-2 lg:col-span-3 lg:items-center">

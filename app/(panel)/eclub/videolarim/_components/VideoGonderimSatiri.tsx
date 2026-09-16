@@ -2,10 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
+import { DagitimIcerikOzeti } from "@/components/ogrenme-araci/DagitimIcerikOzeti";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 import { eclubKisiHedefRolu } from "@/lib/utils/roller";
 import type { OneriGonderSonuc, OneriKisi, OneriLimitler, OneriYayin } from "../../oneriler/_types";
 
@@ -28,7 +27,6 @@ export function VideoGonderimSatiri({ video, kisiler, limitler, tekrarEngelleri,
   const [listeAcik, setListeAcik] = useState(false);
   const [seciliKisiler, setSeciliKisiler] = useState<string[]>([]);
   const [sonuc, setSonuc] = useState<OneriGonderSonuc | null>(null);
-  const thumbnail = yayinThumbnailIstemciCoz(video);
 
   const uygunKisiler = useMemo(() => kisiler
     .filter((kisi) => {
@@ -83,25 +81,11 @@ export function VideoGonderimSatiri({ video, kisiler, limitler, tekrarEngelleri,
   return (
     <article className="border-b border-[#e7edf4] p-3 last:border-b-0 md:p-4">
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-[minmax(230px,1.35fr)_repeat(4,minmax(105px,0.7fr))_minmax(230px,1fr)] lg:items-center">
-        <div className="flex min-w-0 gap-3 md:col-span-2 lg:col-span-1">
-          <button
-            type="button"
-            onClick={() => onVideoAc(video)}
-            className="group relative flex h-16 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg border-0 bg-[#d9e8f7] p-0 text-[#237ac8] transition hover:ring-2 hover:ring-[#78b4e7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#237ac8] disabled:cursor-not-allowed disabled:opacity-45"
-            aria-label={`${video.urun_adi} öğrenme içeriğini önizle`}
-          >
-            {thumbnail ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={thumbnail} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <AracVarsayilanKapak aracTuru={video.arac_turu} urunAdi={video.urun_adi} kucuk />
-            )}
-            <span className="pointer-events-none absolute inset-0 bg-[#10233a]/0 transition group-hover:bg-[#10233a]/10" />
-          </button>
-          <div className="min-w-0 self-center">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <strong className="block truncate text-sm text-[#263e5b]">{video.urun_adi}</strong>
-              {video.satis_sarti_tipi === "serbest_siparis" ? (
+        <div className="min-w-0 md:col-span-2 lg:col-span-1">
+          <DagitimIcerikOzeti
+            icerik={video}
+            onOnizle={() => onVideoAc(video)}
+            baslikEki={video.satis_sarti_tipi === "serbest_siparis" ? (
                 <span className="inline-flex items-center gap-1 rounded-md border border-purple-200 bg-purple-50 px-1.5 py-0.5 text-[10px] font-bold text-purple-800">
                   🎁 Serbest Sipariş (+%{video.gizli_sart_katlama_orani ?? 20})
                 </span>
@@ -110,9 +94,7 @@ export function VideoGonderimSatiri({ video, kisiler, limitler, tekrarEngelleri,
                   📦 Satış Şartlı (Sipariş Zorunlu)
                 </span>
               )}
-            </div>
-            <span className="mt-0.5 block truncate text-[11px] font-semibold text-[#71859d]">{video.teknik_adi || "Teknik belirtilmedi"}</span>
-            {Array.isArray(video.barem_tablosu) && video.barem_tablosu.length > 0 && (
+            altIcerik={Array.isArray(video.barem_tablosu) && video.barem_tablosu.length > 0 ? (
               <div className="mt-1 flex flex-wrap items-center gap-1 text-[10px] text-slate-500">
                 <span className="font-semibold text-slate-600">Şart:</span>
                 {video.barem_tablosu.map((b, i) => (
@@ -121,8 +103,8 @@ export function VideoGonderimSatiri({ video, kisiler, limitler, tekrarEngelleri,
                   </span>
                 ))}
               </div>
-            )}
-          </div>
+            ) : undefined}
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-3 md:col-span-2 md:grid-cols-4 lg:col-span-4 lg:items-center">
