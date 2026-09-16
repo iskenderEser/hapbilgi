@@ -129,7 +129,7 @@ Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json
 * **Lig ve Mağaza:** BM, C-Club Ligi'nde (`/cc-ligi`) yarışır ve C-Club harcanabilir puanını firma için HBStore açıksa mağazada kullanabilir.
 
 ### 2. Aşama: Kod Taraması ve Görev İlişki Matrisi
-* **Challenge ve Katalog:** `app/(panel)/challenge-club/`, `components/challenge-club/CcVideoOynatici.tsx`, `lib/cclub/kayit.ts`, `lib/cclub/kotaKontrol.ts`, `lib/cclub/uygunAliciListesi.ts`, `lib/cclub/uygunVideoListesi.ts`.
+* **Challenge ve Katalog:** `app/(panel)/challenge-club/`, `components/challenge-club/CcVideoOynatici.tsx`, `lib/cclub/kayit.ts`, `lib/cclub/kotaKontrol.ts`, `lib/cclub/uygunAliciListesi.ts`.
 * **Tüketim ve Puan:** `app/(panel)/challenge-club/izle/api/`, `lib/cclub/izleme/`, `lib/cclub/puan/`, `lib/cclub/tekrarIzlemeKontrol.ts`.
 * **Güvenlik Kapıları:** Gönderici, alıcı, firma, modül, yayın, tur ve araç kimliği sunucuda doğrulanır. Challenge ile gönderme puanı `cc_challenge_gonder`; tamamlama ve cevaplar `cc_izleme_tamamla` ile `cc_cevaplari_kaydet` üzerinden atomik yürür. Mükerrer gönderim, cevap ve referral kayıtları yapısal olarak engellenir.
 
@@ -264,7 +264,7 @@ Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json
 ---
 
 # 6. BÖLÜM: BÜTÜNSEL MİMARİ REFACTORİNG, DRY VE TEMİZLİK SİCİLİ
-*İlk kayıt: 24 Ağustos 2026 | Güncelleme: 3 Eylül 2026 | Kapsam: Kulüp Modülleri ve Ortak Platform Katmanları, DRY Tek-Kaynak Konsolidasyonu ve Ölü Kod Tasfiyesi*
+*İlk kayıt: 24 Ağustos 2026 | Güncelleme: 16 Eylül 2026 | Kapsam: Kulüp Modülleri ve Ortak Platform Katmanları, DRY Tek-Kaynak Konsolidasyonu ve Ölü Kod Tasfiyesi*
 
 ### 1. Amaç ve İcra Kapsamı
 23 Ağustos 2026 denetiminin ardından, sistem genelindeki dağınık kütüphane motorları, geçmiş sürümlerden kalan sürüm takıları (`hbligi_v2`), kod tekrarları (DRY ihlalleri) ve atomik RPC mimarisine geçiş sonrası atıl kalan ölü kodlar kapsamlı bir refactoring operasyonuyla temizlenmiştir.
@@ -292,11 +292,20 @@ Kulüp motorları ve ortak platform katmanları, ortak mimari ilkeler içinde ke
 * 🗑️ `lib/utils/randomSoruSec.ts` (Silindi — Güvensiz eski soru seçici; `lib/soru/secim` ile değiştirildi)
 
 ### 5. Güncel Doğrulama Kaydı
-*Kontrol tarihi: 3 Eylül 2026*
+*Kontrol tarihi: 16 Eylül 2026*
 
 * **TypeScript Derleme Denetimi (`npm run typecheck:build`):** ✅ **BAŞARILI (Exit code 0)**.
-* **Bütünsel Duman Testleri (`npm run test:smoke`):** ✅ **244 / 244 TEST BAŞARILI (%100 PASS)**.
-* **Mimari Lint Kural Denetimi (`npm run lint:mimari`):** ✅ **MİMARİ KURAL İHLALİ YOK**.
+* **Bütünsel Duman Testleri (`npm run test:smoke`):** ✅ **312 / 312 TEST BAŞARILI (%100 PASS)**.
+* **Hedef Davranış Testleri (`npm run test:hedef`):** ✅ **436 / 436 TEST BAŞARILI (%100 PASS)**.
+* **Değiştirilen üretim kodu ve smoke test lint denetimi:** ✅ **BAŞARILI**.
+
+### 6. 16 Eylül 2026 Temizlik Kaydı
+
+* Gerçek kullanım, iç çağrı, dış cron/webhook girişi ve Git geçmişi birlikte incelendi; 7 kullanılmayan API rotası ile bunlara bağlı `lib/cclub/uygunVideoListesi.ts` kaldırıldı.
+* Kullanılmayan `SenaryoDuzeltmeEditoru.tsx`, `EczanemDokumBolumu.tsx`, `lib/ogrenmeAraci/oynatici.ts`, `lib/utils/senaryo/duzeltmeModeli.ts` ve ilgili eski test kaldırıldı.
+* İşlevsiz `vercel.json`, iki kullanılmayan operasyon/denetim betiği ve yalnız sabit kişi/UUID hedefleyen iki tek kullanımlık SQL teşhisi kaldırıldı.
+* Tamamlanmış eski HapBi ve öğrenme aracı geliştirme dönemlerini tekrar eden 6 tarihsel plan belgesi kaldırıldı. Güncel sistem kaydı BLUEBOOK, açık işler REDBOOK, davranış kanıtı kaynak kod ve otomatik testlerdir.
+* SQL denetiminde kalan 181 dosyanın aktif şema sözleşmesi, tekrar çalıştırılabilir değişiklik, test/mutabakat aracı veya gerekli tarihsel geçiş kaydı olduğu doğrulandı.
 
 ---
 
@@ -493,12 +502,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 |---|:---:|---|
 | `route.ts` | API / Route Handler | `/api/ogrenme-araclari/[arac_id]/destek-yukleme-tamamla` uç noktasında POST isteklerini işler; HapBilgi için öğrenme araçları destek yükleme tamamlama sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
-### 📁 app/api/ogrenme-araclari/[arac_id]/durum/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `route.ts` | API / Route Handler | `/api/ogrenme-araclari/[arac_id]/durum` uç noktasında GET isteklerini işler; HapBilgi için öğrenme araçları durum sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
-
 ### 📁 app/api/ogrenme-araclari/[arac_id]/erisim/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
@@ -682,12 +685,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `route.ts` | API / Route Handler | `/challenge-club/api/uygun-aliciler` uç noktasında GET isteklerini işler; C-Club için challenge club uygun aliciler sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
-
-### 📁 app/(panel)/challenge-club/api/uygun-videolar/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `route.ts` | API / Route Handler | `/challenge-club/api/uygun-videolar` uç noktasında GET isteklerini işler; C-Club için challenge club uygun videolar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
 ### 📁 app/(panel)/challenge-club/izle/[yayin_id]/
 
@@ -945,12 +942,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `page.tsx` | UI / React | `/eclub/store/rapor` rotasında E-Club Store kapsamındaki rapor arayüzünü sunan Next.js sayfa bileşenidir. |
-
-### 📁 app/(panel)/eclub/store/rapor/api/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `route.ts` | API / Route Handler | `/eclub/store/rapor/api` uç noktasında HTTP isteklerini işler; E-Club Store için Store rapor sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
 ### 📁 app/(panel)/eclub/store/siparislerim/
 
@@ -1503,12 +1494,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 |---|:---:|---|
 | `route.ts` | API / Route Handler | `/uretim/api/karar` uç noktasında POST isteklerini işler; üretim için üretim karar sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
-### 📁 app/(panel)/uretim/api/talep-baslat/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `route.ts` | API / Route Handler | `/uretim/api/talep-baslat` uç noktasında POST isteklerini işler; üretim için üretim talep başlatma sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
-
 ### 📁 app/(panel)/uretim/api/teslim/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
@@ -1544,12 +1529,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `route.ts` | API / Route Handler | `/videolar/api/bunny-yukleme-baslat` uç noktasında POST isteklerini işler; HapBilgi için videolar Bunny yükleme başlatma sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
-
-### 📁 app/(panel)/videolar/api/bunny-yukleme-iptal/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `route.ts` | API / Route Handler | `/videolar/api/bunny-yukleme-iptal` uç noktasında POST isteklerini işler; HapBilgi için videolar Bunny yükleme iptal sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
 ### 📁 app/(panel)/videolarim/[kategori]/
 
@@ -2060,12 +2039,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 |---|:---:|---|
 | `route.ts` | API / Route Handler | `/eczanem/api/siparis` uç noktasında GET, POST isteklerini işler; Eczanem için Eczanem sipariş sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
-### 📁 app/eczanem/api/siparis/hesap/
-
-| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
-|---|:---:|---|
-| `route.ts` | API / Route Handler | `/eczanem/api/siparis/hesap` uç noktasında POST isteklerini işler; Eczanem için sipariş hesap sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
-
 ### 📁 app/eczanem/api/siparis/vazgec/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
@@ -2200,7 +2173,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `tekrarIzlemeKontrol.ts` | TypeScript / Lib | C-Club kapsamında `tekrarIzlemeKontrol` işlev ve sabitlerini sağlar; tekrar Izleme Kontrol iş kurallarını tek modülde toplar. |
 | `tipler.ts` | TypeScript / Lib | C-Club kapsamında `ChallengeOlusturParams`, `ReferralPuaniParams`, `KotaSonuc` veri sözleşmelerini sağlar; tipler iş kurallarını tek modülde toplar. |
 | `uygunAliciListesi.ts` | TypeScript / Lib | C-Club kapsamında `uygunAliciListesi` işlev ve sabitlerini sağlar; uygun Alici Listesi iş kurallarını tek modülde toplar. |
-| `uygunVideoListesi.ts` | TypeScript / Lib | C-Club kapsamında `uygunVideoListesi` işlev ve sabitlerini sağlar; uygun video Listesi iş kurallarını tek modülde toplar. |
 
 ### 📁 lib/cclub/izleme/
 
@@ -2312,7 +2284,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `bunnyYuklemeIstemci.ts` | TypeScript / Lib | ortak öğrenme aracı kapsamında `hazirPodcastYukle`, `hazirGorselYukle`, `hazirFlipPdfYukle` işlev ve sabitlerini ve `YuklemeAsamasi`, `OgrenmeAraciYuklemeKontrolu` veri sözleşmelerini sağlar; Bunny yükleme Istemci iş kurallarını tek modülde toplar. |
 | `etiketler.ts` | TypeScript / Lib | ortak öğrenme aracı kapsamında `OGRENME_ARACI_METINLERI`, `ogrenmeAraciMetinleri` işlev ve sabitlerini ve `OgrenmeAraciMetinleri` veri sözleşmelerini sağlar; etiketler iş kurallarını tek modülde toplar. |
 | `izlemeSahibi.ts` | TypeScript / Lib | ortak öğrenme aracı kapsamında `ogrenmeAraciIzlemeSahibiniCoz` işlev ve sabitlerini ve `OgrenmeAraciIzlemeTablosu`, `OgrenmeAraciIzlemeSahibi` veri sözleşmelerini sağlar; izleme Sahibi iş kurallarını tek modülde toplar. |
-| `oynatici.ts` | TypeScript / Lib | ortak öğrenme aracı kapsamında `OgrenmeAraciOynaticisi` veri sözleşmelerini sağlar; oynatici iş kurallarını tek modülde toplar. |
 | `sha256Istemci.ts` | TypeScript / Lib | ortak öğrenme aracı kapsamında `dosyaSha256Parcali` işlev ve sabitlerini sağlar; sha256 Istemci iş kurallarını tek modülde toplar. |
 | `sozlesme.ts` | TypeScript / Lib | ortak öğrenme aracı alanında kullanılan `ARAC_DOSYA_POLITIKASI`, `ogrenmeAraciTuruMu`, `yeniOgrenmeAraciTuruMu`, `dosyaBeyaniDogrula` veri tiplerini ve modüller arası sözleşmeleri tanımlar. |
 | `sunucu.ts` | TypeScript / Lib | ortak öğrenme aracı kapsamında `VIDEO_ARACI`, `PODCAST_ARACI`, `GORSEL_ARACI` işlev ve sabitlerini ve `SureliAracIlerlemesi`, `GorselIlerlemesi`, `FlipPdfIlerlemesi` veri sözleşmelerini sağlar; sunucu iş kurallarını tek modülde toplar. |
@@ -2520,7 +2491,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `diffHesapla.ts` | TypeScript / Lib | HapBilgi kapsamında `senaryoDiffHesapla` işlev ve sabitlerini ve `SenaryoDiffTuru`, `SenaryoDiffParcasi` veri sözleşmelerini sağlar; diff Hesapla iş kurallarını tek modülde toplar. |
-| `duzeltmeModeli.ts` | TypeScript / Lib | HapBilgi kapsamında `modelOlustur`, `yaziEkle`, `geriSil` işlev ve sabitlerini ve `DuzeltmeTur`, `DuzeltmeKarakter`, `DuzeltmeRun` veri sözleşmelerini sağlar; duzeltme Modeli iş kurallarını tek modülde toplar. |
 | `gonderimKarari.ts` | TypeScript / Lib | HapBilgi kapsamında `gonderimKarari` işlev ve sabitlerini ve `SonSatirBilgisi`, `GonderimKarari` veri sözleşmelerini sağlar; gönderim Karari iş kurallarını tek modülde toplar. |
 
 ### 📁 lib/video/
@@ -2556,7 +2526,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `DosyaGoruntuleListesi.tsx` | UI / React | Dosya Goruntule Listesi, HapBilgi kayıtlarını listeleyip yükleme, seçim veya filtreleme etkileşimlerini yönetir. |
 | `DurumAnahtari.tsx` | UI / React | durum Anahtari, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 | `HataMesaji.tsx` | UI / React | Hata Mesaji, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
-| `SenaryoDuzeltmeEditoru.tsx` | UI / React | senaryo Duzeltme Editoru, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 | `SenaryoMetniGoster.tsx` | UI / React | senaryo Metni Goster, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 | `SoruIceAktar.tsx` | UI / React | soru Ice Aktar, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 | `SoruSetiFormu.tsx` | UI / React | soru Seti Formu, HapBilgi işleminde gerekli soru seti girdilerini toplar ve kullanıcı doğrulamalarını görünür kılar. |
@@ -2709,7 +2678,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `BegeniFavoriListesi.tsx` | UI / React | beğeni favori Listesi, raporlama kayıtlarını listeleyip yükleme, seçim veya filtreleme etkileşimlerini yönetir. |
 | `BmPerformansGorunumu.tsx` | UI / React | Bm Performans Gorunumu, raporlama ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 | `DagilimGrafik.tsx` | UI / React | Dagilim Grafik, raporlama ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
-| `EczanemDokumBolumu.tsx` | UI / React | Eczanem döküm Bolumu, raporlama ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 | `OgrenmeAraciPerformansi.tsx` | UI / React | öğrenme Araci Performansi, raporlama ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 | `UrunKirilimPaneli.tsx` | UI / React | ürün Kirilim Paneli, raporlama kapsamındaki ürün kirilim verilerini ve işlemlerini tek panelde birleştirir. |
 
@@ -2802,7 +2770,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `backfill-video-suresi.mjs` | Script / Node.js | backfill video suresi denetimini veya bakım işlemini komut satırından yürüten Node.js betiğidir. |
-| `repair-eczanem-test-musteri-auth.mjs` | Script / Node.js | repair Eczanem test üye kimlik doğrulama denetimini veya bakım işlemini komut satırından yürüten Node.js betiğidir. |
 
 ### 📁 scripts/denetim/
 
@@ -2814,7 +2781,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `kod-tara.cjs` | Script / Node.js | kod tara denetimini veya bakım işlemini komut satırından yürüten Node.js betiğidir. |
 | `kullanim.json` | JSON / Yapılandırma | kullanim için yapılandırma veya veri kaydıdır. |
 | `ogrenme-araclari-bunny-canli-dogrula.mjs` | Script / Node.js | öğrenme araçları Bunny canli doğrulama denetimini veya bakım işlemini komut satırından yürüten Node.js betiğidir. |
-| `ogrenme-araclari-faz2-dogrula.cjs` | Script / Node.js | öğrenme araçları faz2 doğrulama denetimini veya bakım işlemini komut satırından yürüten Node.js betiğidir. |
 | `sema-cek.cjs` | Script / Node.js | sema cek denetimini veya bakım işlemini komut satırından yürüten Node.js betiğidir. |
 | `sema.json` | JSON / Yapılandırma | sema için yapılandırma veya veri kaydıdır. |
 
@@ -2900,10 +2866,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `get_urun_from_yayin.sql` | SQL / DDL | HapBilgi kapsamında get ürün from yayın için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_urun_from_yayin` veritabanı nesnelerini ele alır. |
 | `get_yonetici_egitim_turu_etkisi_v3.sql` | SQL / DDL | HapBilgi kapsamında get yönetici egitim turu etkisi v3 için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_yonetici_egitim_turu_etkisi_v3` veritabanı nesnelerini ele alır. |
 | `get_yonetici_rapor_v2.sql` | SQL / DDL | HapBilgi kapsamında get yönetici rapor v2 için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_yonetici_rapor_ana_ozet_v2`, `get_yonetici_hiyerarsi_v2`, `get_yonetici_icerik_etkisi_v2` veritabanı nesnelerini ele alır. |
-| `hapbi_analitik_cclub_v1.sql` | SQL / DDL | C-Club kişisel, takım ve firma kapsamını kişi×yayın ayrıntısında, ürün ve öğrenme aracı bağıyla tek yetki kontrollü analitik kaynaktan sunar. |
-| `hapbi_analitik_eclub_v1.sql` | SQL / DDL | E-Club iç yönetim kapsamını UTT→eczane→kişi ve ürün zincirinde tek sorguda toplar; ileri sarma kaybını kazanımdan ayırarak gerçek net puanı üretir. |
-| `hapbi_analitik_tclub_v1.sql` | SQL / DDL | T-Club kapsamını rol temelinde sunucuda çözüp puan defterlerini kişi×yayın ayrıntısında firma, takım, BM sorumluluğu ve ürün bağlarıyla döndürür. |
-| `hapbi_analitik_uretim_v1.sql` | SQL / DDL | PM ailesi için takım, diğer üretici ve yönetici roller için firma kapsamında talep, üretim görevi ve yayın olaylarını tek analitik kaynaktan sunar. |
 | `hbligi_v1_kaldir.sql` | SQL / DDL | HapBilgi kapsamında hbligi v1 kaldir için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
 | `hbligi_v2_backfill.sql` | SQL / DDL | HapBilgi kapsamında hbligi v2 backfill için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
 | `hbligi_v2_kopya.sql` | SQL / DDL | HapBilgi kapsamında hbligi v2 kopya için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `hb_ligi_v2`, `v_hbligi_sirali_v2`, `get_hb_ligi_aylik_v2` veritabanı nesnelerini ele alır. |
@@ -2926,7 +2888,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `ogrenme_araclari_faz6_rapor_arac_turu.sql` | SQL / DDL | HapBilgi kapsamında öğrenme araçları faz6 rapor araç turu için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `v_rapor_arac_turu_ozet` veritabanı nesnelerini ele alır. |
 | `ogrenme_araclari_tamamlama_faz4_uretim_hatti.sql` | SQL / DDL | HapBilgi kapsamında öğrenme araçları tamamlama faz4 üretim hatti için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `uretim_gorevi_arac_esitle`, `uretim_talep_ilk_gorevini_ac`, `uretim_podcast_soru_zinciri_ac` veritabanı nesnelerini ele alır. |
 | `ogrenme_araclari_tamamlama_faz6_hbstore_fonksiyon_teshis.sql` | SQL / Denetim | HapBilgi kapsamında öğrenme araçları tamamlama faz6 hbstore fonksiyon teshis için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
-| `ogrenme_araclari_tamamlama_faz6_hbstore_teshis.sql` | SQL / Denetim | HapBilgi kapsamında öğrenme araçları tamamlama faz6 hbstore teshis için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
 | `ogrenme_araclari_tamamlama_faz6_mutabakat.sql` | SQL / DDL | HapBilgi kapsamında öğrenme araçları tamamlama faz6 mutabakat için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
 | `ogrenme_araclari_tamamlama_faz6_puan_bagi_teshis.sql` | SQL / Denetim | HapBilgi kapsamında öğrenme araçları tamamlama faz6 puan bagi teshis için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
 | `ogrenme_araclari_tamamlama_faz6_puan_butunlugu.sql` | SQL / DDL | HapBilgi kapsamında öğrenme araçları tamamlama faz6 puan butunlugu için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `get_harcama_bakiyesi`, `ogrenme_puani_izleme_bagini_dogrula`, `trg_ogrenme_puani_bag_utt` veritabanı nesnelerini ele alır. |
@@ -2950,7 +2911,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `tm_eski_rpc_kaldir.sql` | SQL / DDL | HapBilgi kapsamında tm eski rpc kaldir için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
 | `uretici_eski_nesne_bagimlilik_taramasi.sql` | SQL / DDL | HapBilgi kapsamında üretici eski nesne bagimlilik taramasi için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
 | `uretici_eski_nesne_kaldir.sql` | SQL / DDL | HapBilgi kapsamında üretici eski nesne kaldir için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
-| `uretici_rapor_v3_dogrulama.sql` | SQL / DDL | HapBilgi kapsamında üretici rapor v3 dogrulama için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar. |
 | `uretim_atomik_rpc.sql` | SQL / DDL | HapBilgi kapsamında üretim atomik rpc için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `uretim_soru_seti_dogrula`, `uretim_senaryo_teslim_et`, `uretim_video_teslim_et` veritabanı nesnelerini ele alır. |
 | `uretim_bildirim_guvenlik.sql` | SQL / DDL | HapBilgi kapsamında üretim bildirim güvenlik için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `bildirimler`, `uretim_gorevleri`, `uretim_gorev_atama_gecmisi` veritabanı nesnelerini ele alır. |
 | `uretim_gorevleri_canli_gecis.sql` | SQL / DDL | HapBilgi kapsamında üretim gorevleri canli gecis için şema, veri bütünlüğü veya atomik işlem kurallarını tanımlar; başlıca `uretim_gorevleri` veritabanı nesnelerini ele alır. |
@@ -2999,7 +2959,6 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `ccYayinGirisi.smoke.test.ts` | Test / TypeScript | “mutlu: başlangıç videosu BM hedefi, firma ve geçerli yayın tarihleriyle süzülür” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `ccYetkilendirmeGuvenligi.smoke.test.ts` | Test / TypeScript | “mutlu: CC izleme kimliği oturumdan alınır ve firma erişimi doğrulanır” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `diffHesapla.smoke.test.ts` | Test / TypeScript | “mutlu: degisen kelime cikar+ekle, kalan ayni olarak ayristirilir” davranışını otomatik olarak doğrulayan smoke testidir. |
-| `duzeltmeModeli.smoke.test.ts` | Test / TypeScript | “mutlu: silinen ustu cizili kalir, yazilan ekle olur, temiz metin dogru” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `eclubCokluUttUyelik.smoke.test.ts` | Test / TypeScript | “mutlu: aynı firmanın farklı UTT'leri tek kurumsal eczane bağında ayrı liste üyelikleri kurar” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `eclubGonderiAyarlari.smoke.test.ts` | Test / TypeScript | “E-Club gönderi ayarları iki pozitif tam sayı kuralını tek kaynaktan tanımlar” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `eclubGonderilecekVideolar.smoke.test.ts` | Test / TypeScript | “mutlu: öğrenme aracı önizlemesi dört araç türünü salt görüntüler” davranışını otomatik olarak doğrulayan smoke testidir. |
@@ -3086,13 +3045,11 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
+| `BI_TEMIZLIK_PLANI.md` | Dokümantasyon | Deterministik bi çekirdeğinin korunan sınırlarını, kaldırılan eski motoru ve güncel doğrulama kaydını açıklar. |
 | `BLUEBOOK.md` | Dokümantasyon | HapBilgi’nin iş modelini, rol ve iş kurallarını, mimarisini ve kanonik dosya envanterini tanımlayan ana başvuru belgesidir. |
-| `OGRENIM_ARACI_GENISLETME_PROJESI_PLANI.md` | Dokümantasyon | “Öğrenim Aracı Genişletme Projesi Planı” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
-| `OGRENME_ARACLARI_GENISLETME_PROJE_FAZ_PLANI_CHECKLIST.md` | Dokümantasyon | “Öğrenme Araçları Genişletme Proje Faz Planı — Checklist” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
-| `OGRENME_ARACLARI_GENISLETMESI_TAMLAMA_FAZ_PLANI.md` | Dokümantasyon | “Öğrenme Araçları Genişletmesi – Tamamlama Faz Planı” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
-| `OGRENME_ARACLARI_GENISLETMESI.md` | Dokümantasyon | “Öğrenme Araçları Genişletmesi” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
 | `REDBOOK.MD` | Dokümantasyon | Bilinen teknik borçları, riskleri ve tamamlanması gereken iyileştirmeleri izleyen teknik takip belgesidir. |
 | `ROLLER_VE_KAPSAMLI_ZOR_TESTLER.md` | Dokümantasyon | “Roller ve Kapsamlı Zor Testler” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
+| `VERCEL_GIT_ENTEGRASYONU.md` | Dokümantasyon | Vercel–GitHub dağıtım olayının kök nedenini ve Vercel cronlarından Supabase zamanlayıcısına geçirilen güncel yapıyı kaydeder. |
 
 ### 📁 docs/hukuki/
 
@@ -3142,7 +3099,7 @@ Video tamamlanıp izleme puanı ve soru indeksleri yazıldıktan sonra kullanıc
 
 ## 🎯 GENEL SONUÇ VE KALİTE SİCİLİ
 
-**6 Eylül 2026** tarihi itibarıyla BLUEBOOK; HapBilgi’nin iş modelini, kullanıcı rollerini, yetki sınırlarını, T-Club, C-Club, E-Club, Eczanem, Store, üretim, yönetim, raporlama, HapBi ve öğrenme araçları süreçlerini güncel uygulama yapısıyla birlikte tanımlar.
+**16 Eylül 2026** tarihi itibarıyla BLUEBOOK; HapBilgi’nin iş modelini, kullanıcı rollerini, yetki sınırlarını, T-Club, C-Club, E-Club, Eczanem, Store, üretim, yönetim, raporlama, HapBi ve öğrenme araçları süreçlerini güncel uygulama yapısıyla birlikte tanımlar.
 
 Platformun iş kuralları; rol ve firma kapsamı, veri bütünlüğü, erişim denetimi, öğrenme takibi ve üretim akışları esas alınarak kod, veritabanı ve kullanıcı arayüzü katmanlarında uygulanır. Video, Podcast, Dijital Broşür ve Flip PDF ortak öğrenme aracı yapısı içinde yönetilir.
 
