@@ -1230,7 +1230,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
       return false;
     }
     if (hazirVideo && ogrenmeAraciTuru === "flip_pdf" && !bekleyenFlipPdf) {
-      hata("Hazır Literatür talebi için dosya zorunludur.", "PDF dosyası kontrolü", undefined);
+      hata("Hazır Literatür talebi için dosya zorunludur.", "Literatür dosyası kontrolü", undefined);
       return false;
     }
     if (hazirSoruSeti) {

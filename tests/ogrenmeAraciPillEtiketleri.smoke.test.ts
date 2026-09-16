@@ -309,3 +309,23 @@ test("Dijital Broşür V4: doğrulanmış araç ve bağlı hazır setten sonra y
   assert.equal(adimlar.find((adim) => adim.anahtar === "soru_seti")?.hal, "tamam");
   assert.equal(adimlar.find((adim) => adim.anahtar === "yayin")?.hal, "aktif");
 });
+
+test("Literatür V4: doğrulanmış PDF ve bağlı hazır setten sonra yayın açılır", () => {
+  const talep = {
+    talep_id: "talep-v4-literatur-tamam",
+    hazir_video: true,
+    hazir_soru_seti: true,
+    ogrenme_araci_turu: "flip_pdf" as const,
+    created_at: "2026-09-16T10:00:00Z",
+  };
+  const zincir = onayliHazirZincir(talep.talep_id);
+
+  const durum = asamaCoz(talep, zincir);
+  const adimlar = adimlariCoz(talep, zincir);
+  assert.equal(durum.asama, "Tamamlandı");
+  assert.equal(durum.durum_kodu, "yayin_bekleniyor");
+  assert.equal(adimlar.find((adim) => adim.anahtar === "video")?.etiket, "Literatür");
+  assert.equal(adimlar.find((adim) => adim.anahtar === "video")?.hal, "tamam");
+  assert.equal(adimlar.find((adim) => adim.anahtar === "soru_seti")?.hal, "tamam");
+  assert.equal(adimlar.find((adim) => adim.anahtar === "yayin")?.hal, "aktif");
+});
