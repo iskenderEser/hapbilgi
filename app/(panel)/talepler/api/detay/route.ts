@@ -227,6 +227,10 @@ export async function GET(request: NextRequest) {
       kapak_yolu: string | null;
       sure_saniye: number | null;
       metadata: unknown;
+      son_durum: string | null;
+      son_durum_tarihi: string | null;
+      revizyon_sayisi: number;
+      notlar: { notlar: string; created_at: string }[];
     } | null = null;
 
     if (talep.ogrenme_araci_turu && talep.ogrenme_araci_turu !== "video") {
@@ -239,6 +243,15 @@ export async function GET(request: NextRequest) {
         .maybeSingle();
 
       if (aracKaydi) {
+        const { data: aracDurumlari, error: aracDurumError } = await adminSupabase
+          .from("ogrenme_araci_durumu")
+          .select("durum, notlar, created_at")
+          .eq("arac_id", aracKaydi.arac_id)
+          .order("created_at", { ascending: true });
+        if (aracDurumError) {
+          return hataYaniti("Öğrenme aracı geçmişi alınamadı.", "ogrenme_araci_durumu SELECT", aracDurumError);
+        }
+
         ogrenme_araci = {
           arac_id: aracKaydi.arac_id,
           arac_turu: aracKaydi.arac_turu,
@@ -246,6 +259,7 @@ export async function GET(request: NextRequest) {
           kapak_yolu: aracKaydi.kapak_yolu ?? null,
           sure_saniye: aracKaydi.sure_saniye ?? null,
           metadata: aracKaydi.metadata ?? null,
+          ...durumOzeti((aracDurumlari as DurumSatiri[] | null) ?? []),
         };
       }
     }

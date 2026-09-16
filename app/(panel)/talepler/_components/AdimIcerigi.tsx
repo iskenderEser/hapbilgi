@@ -138,14 +138,17 @@ export function AdimIcerigi({
       if (talep.ogrenme_araci_turu !== "video") {
         if (detay?.ogrenme_araci?.arac_id) {
           return (
-            <OgrenmeAraciOnizleme
-              yayinId={detay.ogrenme_araci.arac_id}
-              aracId={detay.ogrenme_araci.arac_id}
-              aracTuru={talep.ogrenme_araci_turu}
-              urunAdi={talep.urun_adi ?? metin.ad}
-              hata={onHata}
-              onBitti={() => {}}
-            />
+            <div>
+              <OgrenmeAraciOnizleme
+                yayinId={detay.ogrenme_araci.arac_id}
+                aracId={detay.ogrenme_araci.arac_id}
+                aracTuru={talep.ogrenme_araci_turu}
+                urunAdi={talep.urun_adi ?? metin.ad}
+                hata={onHata}
+                onBitti={() => {}}
+              />
+              <RevizyonNotlari notlar={detay.ogrenme_araci.notlar} formatTarih={formatTarih} />
+            </div>
           );
         }
         return (

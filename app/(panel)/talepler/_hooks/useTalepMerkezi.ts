@@ -196,6 +196,7 @@ export function useTalepMerkezi() {
       hedef: { asama: ToastAsama; id: string; surum: number; revizyonSayisi: number },
       durum: KararDurumu,
       notlar?: string,
+      revizyondaTranskriptIstendi?: boolean,
     ) => {
       const talep = talepler.find((t) => t.talep_id === seciliTalepId);
       if (!talep) return;
@@ -205,7 +206,14 @@ export function useTalepMerkezi() {
         const res = await fetch("/uretim/api/karar", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ gorev_id: hedef.id, karar: durum, notlar, beklenen_surum: hedef.surum, islem_anahtari: crypto.randomUUID() }),
+          body: JSON.stringify({
+            gorev_id: hedef.id,
+            karar: durum,
+            notlar,
+            beklenen_surum: hedef.surum,
+            islem_anahtari: crypto.randomUUID(),
+            ...(revizyondaTranskriptIstendi ? { revizyonda_transkript_istendi: true } : {}),
+          }),
         });
         const d = await res.json();
         if (!res.ok) {

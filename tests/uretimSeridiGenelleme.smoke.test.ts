@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { adimlariCoz, type SeritTalebi } from "@/lib/utils/uretimSeridi";
-import { ureticiDurumMesaji } from "@/lib/utils/durum/mesaj";
+import { iuDurumMesaji, ureticiDurumMesaji } from "@/lib/utils/durum/mesaj";
 import { hazirVideoIsleniyorMesaji, toastVaryant, uretimToast } from "@/lib/uretim/toastMesaj";
 
 test("uretimSeridi adimlariCoz hazir ogrenme araci adimini kapali yapmaz", () => {
@@ -189,6 +189,68 @@ test("Video V1 seridi senaryo, video, soru seti ve yayin gecislerini ortak cozum
 
   const yayinli = { ...soruSetiOnayli, yayin_durum: "yayinda", yayin_tarihi: "2026-09-16T12:00:00.000Z" };
   assert.equal(aktif(yayinli)?.durum_kodu, "yayinda");
+});
+
+test("Podcast V1 seridi üretici ve içerik üreticisi pill geçişlerini doğru anlatır", () => {
+  const talep: SeritTalebi = {
+    talep_id: "talep-podcast-v1-yasam-dongusu",
+    hazir_video: false,
+    hazir_soru_seti: false,
+    ogrenme_araci_turu: "podcast",
+    created_at: "2026-09-16T08:00:00.000Z",
+  };
+  const zincir = {
+    talep_id: talep.talep_id,
+    senaryo_id: "senaryo-podcast-v1",
+    senaryo_iu_id: "iu-1",
+    senaryo_durum: "onaylandi",
+    senaryo_durum_tarih: "2026-09-16T09:00:00.000Z",
+    video_id: "podcast-v1",
+    video_iu_id: "iu-1",
+    video_durum: null,
+    video_durum_tarih: null,
+    soru_seti_id: null,
+    soru_seti_iu_id: null,
+    soru_seti_durum: null,
+    soru_seti_durum_tarih: null,
+    yayin_durum: null,
+    yayin_tarihi: null,
+  };
+
+  for (const [durum_kodu, ureticiMetni, iuMetni] of [
+    ["iu_iletildi", "Üreticinize İletildi", "Podcast Yüklemeniz Bekleniyor"],
+    ["iu_hazirliyor", "Üreticiniz Hazırlıyor", "Podcast Yüklemeniz Bekleniyor"],
+    ["iu_duzeltiyor", "Üreticiniz Düzenliyor", "Podcast Revizyonu Bekleniyor"],
+    ["onay_bekleniyor", "Onayınız Bekleniyor", "Ürün Müdürü İnceliyor"],
+  ] as const) {
+    const aktif = adimlariCoz(talep, zincir, { asama: "Video", durum_kodu }).find((adim) => adim.hal === "aktif");
+    assert.equal(aktif?.anahtar, "video");
+    assert.equal(aktif?.etiket, "Podcast");
+    assert.equal(aktif?.durum_kodu, durum_kodu);
+    assert.equal(ureticiDurumMesaji(durum_kodu, null, "podcast").metin, ureticiMetni);
+    assert.equal(iuDurumMesaji(durum_kodu, { asama: "Video", rolAdi: "Ürün Müdürü", ogrenmeAraciTuru: "podcast" }).metin, iuMetni);
+  }
+
+  const soruSeti = adimlariCoz(talep, {
+    ...zincir,
+    video_durum: "onaylandi",
+    video_durum_tarih: "2026-09-16T10:00:00.000Z",
+    soru_seti_id: "soru-podcast-v1",
+  }, { asama: "Soru Seti", durum_kodu: "iu_iletildi" });
+  assert.equal(soruSeti.find((adim) => adim.hal === "aktif")?.anahtar, "soru_seti");
+});
+
+test("Podcast V1 Talep Takibi ortak araç geçmişiyle karar verir ve revizyonda transkript isteyebilir", () => {
+  const detayApi = readFileSync("app/(panel)/talepler/api/detay/route.ts", "utf8");
+  const detay = readFileSync("app/(panel)/talepler/_components/TalepDetayi.tsx", "utf8");
+  const aksiyon = readFileSync("app/(panel)/talepler/_components/AksiyonSeridi.tsx", "utf8");
+  const merkez = readFileSync("app/(panel)/talepler/_hooks/useTalepMerkezi.ts", "utf8");
+
+  assert.match(detayApi, /from\("ogrenme_araci_durumu"\)[\s\S]*durumOzeti/);
+  assert.match(detay, /talep\.ogrenme_araci_turu === "video" \? detay\?\.video : detay\?\.ogrenme_araci/);
+  assert.match(detay, /podcastTranskriptRevizyondaIstenebilir/);
+  assert.match(aksiyon, /Bu revizyonda transkript de istiyorum/);
+  assert.match(merkez, /revizyonda_transkript_istendi: true/);
 });
 
 test("Video V2 seridi yukleme, isleme, soru seti ve yayin gecislerini dogru anlatir", () => {

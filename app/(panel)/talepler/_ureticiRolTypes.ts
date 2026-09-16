@@ -78,6 +78,10 @@ export interface TalepDetay {
     kapak_yolu: string | null;
     sure_saniye: number | null;
     metadata: unknown;
+    son_durum: string | null;
+    son_durum_tarihi: string | null;
+    revizyon_sayisi: number;
+    notlar: RevizyonNotu[];
   } | null;
 }
 

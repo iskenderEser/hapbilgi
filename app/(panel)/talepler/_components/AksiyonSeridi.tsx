@@ -28,12 +28,21 @@ interface Props {
   /** Teknik olarak incelenemeyen teslimde onay/revizyon kapanır; iptal açık kalır. */
   incelemeKisitli?: boolean;
   incelemeKisitNedeni?: string;
-  onKarar: (durum: KararDurumu, notlar?: string) => void;
+  podcastTranskriptRevizyondaIstenebilir?: boolean;
+  onKarar: (durum: KararDurumu, notlar?: string, revizyondaTranskriptIstendi?: boolean) => void;
 }
 
-export function AksiyonSeridi({ hedef, yukleniyor, incelemeKisitli = false, incelemeKisitNedeni, onKarar }: Props) {
+export function AksiyonSeridi({
+  hedef,
+  yukleniyor,
+  incelemeKisitli = false,
+  incelemeKisitNedeni,
+  podcastTranskriptRevizyondaIstenebilir = false,
+  onKarar,
+}: Props) {
   const [revizyonAcik, setRevizyonAcik] = useState(false);
   const [not, setNot] = useState("");
+  const [revizyondaTranskriptIstendi, setRevizyondaTranskriptIstendi] = useState(false);
 
   // Karar sırası üreticide değilse hiçbir şey çizilmez (İskender 28.07): boşluğu
   // ilan eden satır kaldırıldı — top'un kimde olduğunu aktif adımın pill'i söylüyor.
@@ -41,7 +50,11 @@ export function AksiyonSeridi({ hedef, yukleniyor, incelemeKisitli = false, ince
 
   const revizyonHakkiVar = hedef.revizyonSayisi < REVIZYON_TAVANI;
 
-  const kapat = () => { setRevizyonAcik(false); setNot(""); };
+  const kapat = () => {
+    setRevizyonAcik(false);
+    setNot("");
+    setRevizyondaTranskriptIstendi(false);
+  };
 
   return (
     <div className="mt-3 pt-3 border-t border-gray-100">
@@ -60,6 +73,20 @@ export function AksiyonSeridi({ hedef, yukleniyor, incelemeKisitli = false, ince
             className="w-full border border-yellow-200 rounded-lg px-3 py-2 text-sm resize-y outline-none focus:border-yellow-400"
             style={{ fontFamily: "'Nunito', sans-serif" }}
           />
+          {podcastTranskriptRevizyondaIstenebilir && (
+            <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              <input
+                type="checkbox"
+                checked={revizyondaTranskriptIstendi}
+                onChange={(e) => setRevizyondaTranskriptIstendi(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                <strong>Bu revizyonda transkript de istiyorum</strong>
+                <span className="mt-0.5 block text-xs text-amber-700">İçerik üreticisi transkripti podcast sesinden AI ile oluşturup onaylayarak yeniden teslim eder.</span>
+              </span>
+            </label>
+          )}
           <div className="flex gap-2 justify-end">
             <button
               type="button"
@@ -71,7 +98,7 @@ export function AksiyonSeridi({ hedef, yukleniyor, incelemeKisitli = false, ince
             </button>
             <button
               type="button"
-              onClick={() => { onKarar("revizyon bekleniyor", not); kapat(); }}
+              onClick={() => { onKarar("revizyon bekleniyor", not, revizyondaTranskriptIstendi); kapat(); }}
               disabled={!not.trim() || yukleniyor || incelemeKisitli}
               className="px-3 py-1.5 rounded-lg border-none bg-amber-500 text-white text-xs font-semibold cursor-pointer"
               style={{ opacity: !not.trim() || yukleniyor || incelemeKisitli ? 0.5 : 1, fontFamily: "'Nunito', sans-serif" }}

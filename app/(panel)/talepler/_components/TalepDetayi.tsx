@@ -17,6 +17,7 @@ import { talepIdGoster } from "@/lib/utils/talepId";
 import { adimlariCoz } from "@/lib/utils/uretimSeridi";
 import { ureticiDurumMesaji } from "@/lib/utils/durum/mesaj";
 import { useBunnyIslemeDurumu } from "@/hooks/useBunnyIslemeDurumu";
+import { podcastTranskriptTercihiCoz } from "@/lib/ogrenmeAraci/sozlesme";
 import { TeknikPill, VaryantPill, HedefRolPilleri } from "@/components/pill";
 import { UretimSeridi } from "./UretimSeridi";
 import { AdimIcerigi } from "./AdimIcerigi";
@@ -40,6 +41,7 @@ interface Props {
     hedef: { asama: ToastAsama; id: string; surum: number; revizyonSayisi: number },
     durum: KararDurumu,
     notlar?: string,
+    revizyondaTranskriptIstendi?: boolean,
   ) => void;
   onVideoYukle: (dosya: File) => void;
 }
@@ -104,7 +106,8 @@ export function TalepDetayi({
     : "Tamamlandı";
   const blok =
     aktif?.anahtar === "senaryo" ? detay?.senaryo
-    : aktif?.anahtar === "video" ? detay?.video
+    : aktif?.anahtar === "video"
+      ? talep.ogrenme_araci_turu === "video" ? detay?.video : detay?.ogrenme_araci
     : aktif?.anahtar === "soru_seti" ? detay?.soru_seti
     : null;
 
@@ -131,6 +134,11 @@ export function TalepDetayi({
     aktif?.anahtar === "video" &&
     talep.ogrenme_araci_turu === "video" &&
     (bunnyIslemeDurumu === "isleniyor" || bunnyIslemeDurumu === "hatali");
+  const podcastTranskriptRevizyondaIstenebilir =
+    aktif?.anahtar === "video" &&
+    talep.ogrenme_araci_turu === "podcast" &&
+    !talep.hazir_video &&
+    !podcastTranskriptTercihiCoz(talep.ogrenme_araci_tercihleri);
 
   return (
     <section aria-labelledby="talep-takip-baslik" className="overflow-hidden rounded-2xl border border-[#dfe7f2] bg-white shadow-[0_10px_28px_rgba(31,55,90,0.045)]">
@@ -215,7 +223,8 @@ export function TalepDetayi({
           incelemeKisitNedeni={bunnyIslemeDurumu === "hatali"
             ? "Video işlenemediği için onay veya revizyon kararı verilemez."
             : "Video işlenirken onay veya revizyon kararı verilemez."}
-          onKarar={(durum, notlar) => kararHedefi && onKarar(kararHedefi, durum, notlar)}
+          podcastTranskriptRevizyondaIstenebilir={podcastTranskriptRevizyondaIstenebilir}
+          onKarar={(durum, notlar, revizyondaTranskriptIstendi) => kararHedefi && onKarar(kararHedefi, durum, notlar, revizyondaTranskriptIstendi)}
         />
 
         {/* Soru seti onaylandığı an talep bu listeden düşüyor (D-4), dolayısıyla
