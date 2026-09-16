@@ -21,6 +21,8 @@ export interface TalepSatiri extends TalepBilgisi {
   iu_ad_soyad: string | null;
   /** Karar ve bildirimlerin kanonik görev kimliği. */
   aktif_gorev_id: string | null;
+  /** İyimser eşzamanlılık kapısında kullanılacak, kullanıcının incelediği görev sürümü. */
+  aktif_gorev_surum: number | null;
   /** Şeridin girdisi (A-3'teki adimlariCoz). View satırı yoksa null. */
   zincir: ZincirSatiri | null;
 }

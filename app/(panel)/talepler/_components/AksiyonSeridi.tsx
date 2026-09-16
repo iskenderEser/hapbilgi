@@ -23,7 +23,7 @@ const REVIZYON_TAVANI = 2;
 
 interface Props {
   /** Karar verilebilecek aktif adım. null ise karar sırası üreticide değil. */
-  hedef: { asama: ToastAsama; id: string; revizyonSayisi: number } | null;
+  hedef: { asama: ToastAsama; id: string; surum: number; revizyonSayisi: number } | null;
   yukleniyor: boolean;
   onKarar: (durum: KararDurumu, notlar?: string) => void;
 }

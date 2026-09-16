@@ -73,7 +73,7 @@ export async function GET() {
     const { data: aktifGorevler, error: gorevError } = talepIdler.length > 0
       ? await adminSupabase
           .from("uretim_gorevleri")
-          .select("gorev_id, talep_id, asama, atanan_iu_id, durum")
+          .select("gorev_id, talep_id, asama, atanan_iu_id, durum, surum")
           .in("talep_id", talepIdler)
           .in("durum", ["atama_bekliyor", "hazirlaniyor", "inceleme_bekliyor", "revizyon_bekliyor"])
       : { data: [], error: null };
@@ -112,6 +112,7 @@ export async function GET() {
         iptal_edildi: durum ? iptalEdildiMi(durum) : false,
         iu_ad_soyad: iuId ? (iuAdlari.get(iuId) ?? null) : null,
         aktif_gorev_id: gorev?.gorev_id ?? null,
+        aktif_gorev_surum: gorev?.surum ?? null,
         // Şeridin girdisi: beş adımın halini bu satırdan türetiriz (A-3).
         zincir: zincirler.get(t.talep_id) ?? null,
       };

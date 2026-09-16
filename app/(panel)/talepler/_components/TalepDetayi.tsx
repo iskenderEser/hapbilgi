@@ -37,7 +37,7 @@ interface Props {
   formatTarih: (tarih: string | null) => string;
   onHata: (mesaj: string, adim?: string, detay?: string) => void;
   onKarar: (
-    hedef: { asama: ToastAsama; id: string; revizyonSayisi: number },
+    hedef: { asama: ToastAsama; id: string; surum: number; revizyonSayisi: number },
     durum: KararDurumu,
     notlar?: string,
   ) => void;
@@ -118,8 +118,8 @@ export function TalepDetayi({
     talep.uretici_id === kullaniciId;
 
   const kararHedefi =
-    aktif && blok && talep.aktif_gorev_id && aktif.durum_kodu === "onay_bekleniyor" && talep.uretici_id === kullaniciId
-      ? { asama: aktif.anahtar as ToastAsama, id: talep.aktif_gorev_id, revizyonSayisi: blok.revizyon_sayisi }
+    aktif && blok && talep.aktif_gorev_id && talep.aktif_gorev_surum && aktif.durum_kodu === "onay_bekleniyor" && talep.uretici_id === kullaniciId
+      ? { asama: aktif.anahtar as ToastAsama, id: talep.aktif_gorev_id, surum: talep.aktif_gorev_surum, revizyonSayisi: blok.revizyon_sayisi }
       : null;
 
   return (
