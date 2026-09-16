@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { adimlariCoz, type SeritTalebi } from "@/lib/utils/uretimSeridi";
 import { ureticiDurumMesaji } from "@/lib/utils/durum/mesaj";
-import { hazirVideoIsleniyorMesaji } from "@/lib/uretim/toastMesaj";
+import { hazirVideoIsleniyorMesaji, toastVaryant, uretimToast } from "@/lib/uretim/toastMesaj";
 
 test("uretimSeridi adimlariCoz hazir ogrenme araci adimini kapali yapmaz", () => {
   const turler = ["podcast", "gorsel", "flip_pdf", "video"] as const;
@@ -267,6 +267,91 @@ test("Video V2 arka plan kalici hatasinda kullaniciyi bilgilendirir ve talep ver
   assert.match(merkez, /setDetayTetik\(\(x\) => x \+ 1\);\s*await veriCek\(\);/);
   assert.match(form, /t\.d2\.hata \?\? "Video işlenemedi\. Talep Takibi ekranından yeniden yükleyebilirsiniz\."/);
   assert.match(form, /await onTalepOlusturuldu\?\.\(\);/);
+});
+
+test("Video V3 hazir soru setini goruntulenebilir tutar ve video onayindan sonra yayina gecer", () => {
+  const talep: SeritTalebi = {
+    talep_id: "talep-video-v3-yasam-dongusu",
+    hazir_video: false,
+    hazir_soru_seti: true,
+    ogrenme_araci_turu: "video",
+    created_at: "2026-09-16T08:00:00.000Z",
+  };
+  const bosZincir = {
+    talep_id: talep.talep_id,
+    senaryo_id: null,
+    senaryo_iu_id: null,
+    senaryo_durum: null,
+    senaryo_durum_tarih: null,
+    video_id: null,
+    video_iu_id: null,
+    video_durum: null,
+    video_durum_tarih: null,
+    soru_seti_id: null,
+    soru_seti_iu_id: null,
+    soru_seti_durum: null,
+    soru_seti_durum_tarih: null,
+    yayin_durum: null,
+    yayin_tarihi: null,
+  };
+
+  const ilk = adimlariCoz(talep, bosZincir, { asama: "Senaryo", durum_kodu: "iu_iletildi" });
+  assert.equal(ilk.find((adim) => adim.hal === "aktif")?.anahtar, "senaryo");
+  assert.deepEqual(
+    ilk.find((adim) => adim.anahtar === "soru_seti"),
+    {
+      anahtar: "soru_seti",
+      etiket: "Soru Seti",
+      hal: "hazir",
+      durum_kodu: "hazir_soru_seti",
+      tarih: talep.created_at,
+    },
+  );
+  assert.equal(ureticiDurumMesaji("hazir_soru_seti").metin, "Hazır Soru Seti");
+
+  const videoAsamasi = {
+    ...bosZincir,
+    senaryo_id: "senaryo-v3",
+    senaryo_iu_id: "iu-1",
+    senaryo_durum: "onaylandi",
+    senaryo_durum_tarih: "2026-09-16T09:00:00.000Z",
+    video_id: "video-v3",
+  };
+  const video = adimlariCoz(talep, videoAsamasi, { asama: "Video", durum_kodu: "iu_hazirliyor" });
+  assert.equal(video.find((adim) => adim.hal === "aktif")?.anahtar, "video");
+  assert.equal(video.find((adim) => adim.anahtar === "soru_seti")?.hal, "hazir");
+
+  const yayin = adimlariCoz(talep, {
+    ...videoAsamasi,
+    video_iu_id: "iu-1",
+    video_durum: "onaylandi",
+    video_durum_tarih: "2026-09-16T10:00:00.000Z",
+    soru_seti_id: "soru-seti-v3",
+    soru_seti_durum: "onaylandi",
+    soru_seti_durum_tarih: "2026-09-16T10:00:00.000Z",
+  });
+  assert.equal(yayin.find((adim) => adim.anahtar === "soru_seti")?.hal, "tamam");
+  assert.equal(yayin.find((adim) => adim.anahtar === "soru_seti")?.durum_kodu, "onaylandi");
+  assert.equal(yayin.find((adim) => adim.hal === "aktif")?.anahtar, "yayin");
+  assert.equal(yayin.find((adim) => adim.hal === "aktif")?.durum_kodu, "yayin_bekleniyor");
+
+  assert.equal(toastVaryant(false, true), "hazir_set");
+  assert.equal(
+    uretimToast(
+      { rol: "uretici", olay: "onay", asama: "video", revize: false },
+      { varyant: "hazir_set", ogrenmeAraciTuru: "video" },
+    ),
+    "Videoyu onayladınız, yayın yönetimi sayfasına gidiniz",
+  );
+});
+
+test("Video V3 hazir soru seti talep detayinda kayit olusmadan da okunabilir", () => {
+  const detayApi = readFileSync("app/(panel)/talepler/api/detay/route.ts", "utf8");
+  const serit = readFileSync("app/(panel)/talepler/_components/UretimSeridi.tsx", "utf8");
+
+  assert.match(detayApi, /hazir_soru_seti, hazir_soru_seti_verisi, created_at/);
+  assert.match(detayApi, /talep\.hazir_soru_seti === true && Array\.isArray\(talep\.hazir_soru_seti_verisi\)/);
+  assert.match(serit, /const acilabilir = adim\.hal !== "kapali" && !adim\.yol/);
 });
 
 function assertAktif(anahtar: string, durum_kodu: string, tarih: string | null) {

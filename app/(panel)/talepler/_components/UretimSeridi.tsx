@@ -46,6 +46,8 @@ function daireStili(hal: Adim["hal"]): React.CSSProperties {
       return { background: "#16a34a", borderColor: "#16a34a" };
     case "aktif":
       return { background: "#2583e2", borderColor: "#2583e2", boxShadow: "0 0 0 4px rgba(37,131,226,0.13)" };
+    case "hazir":
+      return { background: "#ffffff", borderColor: "#16a34a" };
     case "kapali":
       return { background: "#fff7f5", borderColor: "#efb7aa" };
     default:
@@ -56,6 +58,7 @@ function daireStili(hal: Adim["hal"]): React.CSSProperties {
 function kartStili(hal: Adim["hal"]): React.CSSProperties {
   if (hal === "aktif") return { background: "#f8fbff", borderColor: "#8fc5fb", boxShadow: "0 8px 22px rgba(37,131,226,0.08)" };
   if (hal === "tamam") return { background: "#ffffff", borderColor: "#dce9e2" };
+  if (hal === "hazir") return { background: "#f7fff9", borderColor: "#bbf7d0" };
   if (hal === "kapali") return { background: "#fffafa", borderColor: "#f2ded9" };
   return { background: "#fafbfd", borderColor: "#e7ecf2" };
 }
@@ -98,6 +101,8 @@ export function UretimSeridi({ adimlar, rol, formatTarih, icerikCiz, talepId, og
               >
                 {adim.hal === "tamam" ? (
                   <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" className="h-3.5 w-3.5"><path d="m5 12 4 4L19 6" /></svg>
+                ) : adim.hal === "hazir" ? (
+                  <span className="text-[#16a34a]">✓</span>
                 ) : adim.hal === "kapali" ? (
                   <span className="text-[#c85e49]">—</span>
                 ) : (

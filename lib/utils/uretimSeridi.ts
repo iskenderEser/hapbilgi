@@ -22,8 +22,8 @@ import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 
 export type AdimAnahtari = "talep" | "senaryo" | "video" | "soru_seti" | "yayin";
 
-/** tamam: kapandı · aktif: sıra burada · ileri: henüz gelmedi · kapali: bu varyantta hiç üretilmeyecek. */
-export type AdimHal = "tamam" | "aktif" | "ileri" | "kapali";
+/** tamam: kapandı · aktif: sıra burada · ileri: henüz gelmedi · hazır: talepte sağlandı · kapali: bu varyantta hiç üretilmeyecek. */
+export type AdimHal = "tamam" | "aktif" | "ileri" | "hazir" | "kapali";
 
 export interface Adim {
   anahtar: AdimAnahtari;
@@ -87,13 +87,12 @@ const BOS_ZINCIR = (talep_id: string): ZincirSatiri => ({
 
 /**
  * Varyantta hiç üretilmeyecek adımlar.
- * Hazır videoda senaryo yazılmaz (zincir yükleme anında kurulur); hazır soru
- * setinde set İÜ işi olarak doğmaz, video onayıyla otomatik onaylanır.
+ * Hazır videoda senaryo yazılmaz (zincir yükleme anında kurulur). Hazır soru
+ * seti kapalı değildir: talep anında sağlanır ve görüntülenebilir.
  */
 function kapaliAdimlar(talep: SeritTalebi): Set<AdimAnahtari> {
   const kapali = new Set<AdimAnahtari>();
   if (talep.hazir_video) kapali.add("senaryo");
-  if (talep.hazir_soru_seti) kapali.add("soru_seti");
   return kapali;
 }
 
@@ -125,6 +124,19 @@ export function adimlariCoz(
     // Talep adımı, talep açıldığı an tamamlanır ve kendi ortak mesajını taşır.
     if (anahtar === "talep") {
       return { anahtar, etiket: adimEtiketi(anahtar, talep), hal: "tamam" as AdimHal, durum_kodu: "talep_olusturuldu", tarih: tarihler.talep };
+    }
+
+    // V3/V4 soru seti talep anında üretici tarafından sağlanmıştır. Video/arac
+    // onayına kadar "hazır", atomik bağ ve otomatik onaydan sonra "tamam"dır.
+    if (anahtar === "soru_seti" && talep.hazir_soru_seti) {
+      const tamamlandi = Boolean(zincir.soru_seti_id && zincir.soru_seti_durum === "onaylandi");
+      return {
+        anahtar,
+        etiket: adimEtiketi(anahtar, talep),
+        hal: tamamlandi ? "tamam" as AdimHal : "hazir" as AdimHal,
+        durum_kodu: tamamlandi ? "onaylandi" : "hazir_soru_seti",
+        tarih: tamamlandi ? tarihler.soru_seti : talep.created_at ?? null,
+      };
     }
 
     if (kapali.has(anahtar)) {

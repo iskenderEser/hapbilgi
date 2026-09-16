@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     // Sahiplik kapısı: oturum istemcisiyle okunur, RLS süzer. Taslak talepler operasyon detayına giremez.
     const { data: talep, error: talepError } = await supabase
       .from("talepler")
-      .select("talep_id, hazir_video, hazir_video_url, ogrenme_araci_turu")
+      .select("talep_id, hazir_video, hazir_video_url, hazir_soru_seti, hazir_soru_seti_verisi, created_at, ogrenme_araci_turu")
       .eq("talep_id", talep_id)
       .eq("taslak_mi", false)
       .maybeSingle();
@@ -205,7 +205,17 @@ export async function GET(request: NextRequest) {
           iu_id: sonSet.iu_id ?? null,
           ...durumOzeti(setGecmis.get(sonSet.soru_seti_id) ?? []),
         }
-      : null;
+      : talep.hazir_soru_seti === true && Array.isArray(talep.hazir_soru_seti_verisi)
+        ? {
+            id: `hazir-${talep_id}`,
+            sorular: talep.hazir_soru_seti_verisi,
+            iu_id: null,
+            son_durum: null,
+            son_durum_tarihi: talep.created_at ?? null,
+            revizyon_sayisi: 0,
+            notlar: [],
+          }
+        : null;
 
     const video_isleniyor = talep.hazir_video === true && Boolean(talep.hazir_video_url) && !video;
 

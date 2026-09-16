@@ -69,7 +69,7 @@ test("öğrenme aracı türü bulunmayan eski kayıtta toast Video adını kulla
   );
 });
 
-test("V4 Hazır Podcast + Hazır Soru Seti: senaryo ve soru seti kapalı, podcast tamamlanmış ve yayın aktiftir", () => {
+test("V4 Hazır Podcast + Hazır Soru Seti: senaryo kapalı, hazır soru seti görünür ve yayın aktiftir", () => {
   const talep = {
     talep_id: "talep-v4-podcast",
     hazir_video: true,
@@ -110,7 +110,8 @@ test("V4 Hazır Podcast + Hazır Soru Seti: senaryo ve soru seti kapalı, podcas
   assert.equal(senaryo?.hal, "kapali");
   assert.equal(podcast?.hal, "tamam");
   assert.equal(podcast?.etiket, "Podcast");
-  assert.equal(soruSeti?.hal, "kapali");
+  assert.equal(soruSeti?.hal, "hazir");
+  assert.equal(soruSeti?.durum_kodu, "hazir_soru_seti");
   assert.equal(yayin?.hal, "aktif");
   assert.equal(yayin?.durum_kodu, "yayin_bekleniyor");
   assert.equal(yayin?.yol, "/yayin-yonetimi");
@@ -192,4 +193,3 @@ test("V4 Hazır Dijital Broşür ve Hazır Literatür: yayına hazır hale gelir
     assert.equal(zincirDurumu.durum_kodu, "yayin_bekleniyor");
   }
 });
-
