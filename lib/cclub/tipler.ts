@@ -52,21 +52,6 @@ export type TekrarIzlemeSonuc =
 // ─── LİSTE TİPLERİ ────────────────────────────────────────────────────────────
 
 /**
- * uygunVideoListesi'nin döndürdüğü her bir video özeti.
- * BM'nin gönderebileceği (kendi tamamladığı) CC yayınları.
- */
-export interface UygunVideo {
-  yayin_id: string;
-  urun_adi: string;
-  teknik_adi: string;
-  video_url: string | null;
-  thumbnail_url: string | null;
-  video_puani: number | null;
-  arac_id?: string | null;
-  arac_turu?: string | null;
-}
-
-/**
  * uygunAliciListesi'nin döndürdüğü her bir BM özeti.
  * Tüm BM'ler döner, her birinin 'gonderilebilir' bayrağı ve gerekirse sebep alanı vardır.
  * UI listeleyip uygun olmayanları gri/disabled gösterebilir.

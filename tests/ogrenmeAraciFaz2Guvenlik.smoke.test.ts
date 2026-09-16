@@ -6,7 +6,6 @@ const oku = (yol: string) => readFileSync(yol, "utf8");
 const baslat = oku("app/api/ogrenme-araclari/yukleme-baslat/route.ts");
 const tamamla = oku("app/api/ogrenme-araclari/yukleme-tamamla/route.ts");
 const erisim = oku("app/api/ogrenme-araclari/[arac_id]/erisim/route.ts");
-const durum = oku("app/api/ogrenme-araclari/[arac_id]/durum/route.ts");
 const bunny = oku("lib/ogrenmeAraci/bunnyStorage.ts");
 const edge = oku("infra/bunny/ogrenme-araci-upload/index.ts");
 const bayraklar = oku("lib/ogrenmeAraci/bayraklar.ts");
@@ -19,7 +18,7 @@ test("tamamlanan öğrenme araçları varsayılan açıktır", () => {
 });
 
 test("Storage anahtarları istemciye ve NEXT_PUBLIC alanına açılmaz", () => {
-  const tumKaynak = [baslat, tamamla, erisim, durum, bunny, edge].join("\n");
+  const tumKaynak = [baslat, tamamla, erisim, bunny, edge].join("\n");
   assert.doesNotMatch(tumKaynak, /NEXT_PUBLIC_BUNNY_LEARNING/);
   assert.doesNotMatch(baslat, /STORAGE_ACCESS_KEY|AccessKey/);
   assert.doesNotMatch(erisim, /STORAGE_ACCESS_KEY|AccessKey/);
@@ -54,8 +53,7 @@ test("yükleme tamamlama gerçek boyut, imza ve checksum doğrulamasından sonra
   assert.match(tamamla, /\.eq\("metadata_dogrulandi", false\)/);
 });
 
-test("durum ve erişim API'leri sahiplik ve hedef bağını sunucuda sınar", () => {
-  assert.match(durum, /uretimAraciYetkisiniDogrula/);
+test("erişim API'si sahiplik ve hedef bağını sunucuda sınar", () => {
   assert.match(erisim, /uretimAraciYetkisiniDogrula/);
   assert.match(erisim, /hedefRolleriOku\(yayin\)/);
   assert.match(erisim, /eclub_oneri_kayitlari/);

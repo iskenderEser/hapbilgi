@@ -3,7 +3,7 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 
 const kayit = readFileSync("lib/cclub/kayit.ts", "utf8");
-const uygunVideolar = readFileSync("lib/cclub/uygunVideoListesi.ts", "utf8");
+const challengeApi = readFileSync("app/(panel)/challenge-club/api/route.ts", "utf8");
 const uygunAlicilar = readFileSync("lib/cclub/uygunAliciListesi.ts", "utf8");
 const sql = readFileSync("scripts/sql/cc_challenge_gonderim_guvenligi.sql", "utf8");
 
@@ -11,7 +11,8 @@ test("mutlu: challenge ile gönderme puanı tek atomik RPC içinde oluşturulur"
   assert.match(kayit, /rpc\("cc_challenge_gonder"/);
   assert.match(sql, /INSERT INTO public\.challenge_kayitlari[\s\S]*?INSERT INTO public\.cc_kazanilan_puanlar/);
   assert.match(sql, /pg_advisory_xact_lock[\s\S]*?aylık challenge kotanız doldu/);
-  assert.match(uygunVideolar, /eq\("firma_id", firmaId\)[\s\S]*?video_suresi_saniye/);
+  assert.match(challengeApi, /from\("v_yayin_detay"\)[\s\S]*?eq\("firma_id", kullanici\.firma_id\)/);
+  assert.match(challengeApi, /from\("cc_izleme_kayitlari"\)[\s\S]*?eq\("tamamlandi_mi", true\)/);
 });
 
 test("red: öz-gönderim, uygunsuz alıcı/yayın ve mükerrer video gönderimi reddedilir", () => {

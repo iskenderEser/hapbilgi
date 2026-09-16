@@ -17,15 +17,14 @@ const puanSayfasi = readFileSync("app/eczanem/puanlarim/page.tsx", "utf8");
 const puanlar = readFileSync("app/eczanem/_components/EczanemPuanlarim.tsx", "utf8");
 const puanlarRoute = readFileSync("app/eczanem/api/puanlar/route.ts", "utf8");
 const siparisRoute = readFileSync("app/eczanem/api/siparis/route.ts", "utf8");
-const hesapRoute = readFileSync("app/eczanem/api/siparis/hesap/route.ts", "utf8");
 
 test("mutlu: müşteri ana sayfası belirlenen altı dijital kanal rafını ve ayrı Puanlarım sayfasını sunar", () => {
   const basliklar = [
     "Yeni Öğrenme İçeriklerim",
     "Yarım Bıraktıklarım",
     "En Son Tamamladıklarım",
-    "En Çok Beğenilenler",
-    "En Çok Favorilenenler",
+    "HapBilgi’de En Çok Beğenilenler",
+    "HapBilgi’de En Çok Favorilenenler",
     "En Çok Tamamlananlar",
   ];
   for (const baslik of basliklar) assert.match(sayfa, new RegExp(`baslik=\"${baslik}\"`));
@@ -51,9 +50,9 @@ test("mutlu: müşteri ana sayfası belirlenen altı dijital kanal rafını ve a
   assert.match(oynatici, /İçeriği tamamladığınızda puanınız otomatik eklenir/);
   assert.doesNotMatch(oynatici, /if \(!res\.ok\)[\s\S]{0,320}izlemeBitirildiRef\.current = false/);
   assert.match(ilerlemeRoute, /\.eq\("musteri_id", kimlik\.musteriId!\)/);
-  assert.match(navbar, /href: "\/eczanem", etiket: "Ana Sayfa"/);
-  assert.match(navbar, /href: "\/eczanem\/hapbilgi-nedir", etiket: "HapBilgi Nedir"/);
-  assert.match(navbar, /href: "\/eczanem\/nasil-calisir", etiket: "Nasıl Çalışır"/);
+  assert.match(navbar, /etiket: "Ana Sayfa", href: "\/eczanem"/);
+  assert.match(navbar, /etiket: "HapBilgi Nedir", href: "\/eczanem\/hapbilgi-nedir"/);
+  assert.match(navbar, /etiket: "Nasıl Çalışır", href: "\/eczanem\/nasil-calisir"/);
   assert.match(puanSayfasi, /<EczanemPuanlarim/);
   assert.doesNotMatch(sayfa, /<EczanemPuanlarim/);
 
@@ -89,7 +88,6 @@ test("red: kart açılışı izleme yazamaz; kapsam dışı talep ve belirsiz du
   assert.match(siparisRoute, /\.in\("eczane_id", kimlik\.eczaneIdler!\)[\s\S]*\.in\("urun_id", izinliUrunIdler\)/);
   assert.match(siparisRoute, /const puanEczaneleri = new Set\(\[\.\.\.\(kimlik\.eczaneIdler \?\? \[\]\), \.\.\.\(kimlik\.pasifPuanEczaneleri \?\? \[\]\)\.map\(\(p\) => p\.eczane_id\)\]\)/);
   assert.match(siparisRoute, /if \(!puanEczaneleri\.has\(eczane_id\)\) return rolHatasi/);
-  assert.match(hesapRoute, /if \(!puanEczaneleri\.has\(eczane_id\)\) return rolHatasi/);
   assert.match(puanlarRoute, /\.in\("eczane_id", eczaneIdler\)/);
   assert.match(puanlarRoute, /\.in\("firma_id", firmaIdler\)/);
   assert.match(puanlarRoute, /\.gte\("created_at", altSinir\)/);

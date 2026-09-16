@@ -16,7 +16,6 @@ const KULLANICI_YUZEYLERI = [
   "app/(panel)/yayin-yonetimi/api/yayinlar/route.ts",
   "app/(panel)/videolar/api/bunny-yukleme-baslat/route.ts",
   "app/(panel)/videolar/api/bunny-durum/route.ts",
-  "app/(panel)/videolar/api/bunny-yukleme-iptal/route.ts",
   "app/(panel)/talepler/api/bunny-yukleme-baslat/route.ts",
   "app/api/ogrenme-araclari/yarim-yuklemeler/route.ts",
   "app/api/ogrenme-araclari/yukleme-local/route.ts",
