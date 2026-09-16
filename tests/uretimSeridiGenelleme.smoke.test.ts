@@ -318,6 +318,109 @@ test("Dijital Broşür V1 seridi ve teslim yüzeyi yaşam döngüsünü doğru a
   assert.match(dogrulamaRoute, /Dijital Broşür üretim zincirine alındı/);
 });
 
+test("Literatür V1 seridi senaryo, Literatür, soru seti ve yayın geçişlerini doğru anlatır", () => {
+  const talep: SeritTalebi = {
+    talep_id: "talep-literatur-v1-yasam-dongusu",
+    hazir_video: false,
+    hazir_soru_seti: false,
+    ogrenme_araci_turu: "flip_pdf",
+    created_at: "2026-09-16T08:00:00.000Z",
+  };
+  const bosZincir = {
+    talep_id: talep.talep_id,
+    senaryo_id: null, senaryo_iu_id: null, senaryo_durum: null, senaryo_durum_tarih: null,
+    video_id: null, video_iu_id: null, video_durum: null, video_durum_tarih: null,
+    soru_seti_id: null, soru_seti_iu_id: null, soru_seti_durum: null, soru_seti_durum_tarih: null,
+    yayin_durum: null, yayin_tarihi: null,
+  };
+
+  assert.equal(adimlariCoz(talep, bosZincir, { asama: "Senaryo", durum_kodu: "iu_iletildi" })
+    .find((adim) => adim.hal === "aktif")?.anahtar, "senaryo");
+
+  const literaturBekliyor = {
+    ...bosZincir,
+    senaryo_id: "senaryo-literatur-v1",
+    senaryo_iu_id: "iu-1",
+    senaryo_durum: "onaylandi",
+    senaryo_durum_tarih: "2026-09-16T09:00:00.000Z",
+    video_id: "literatur-v1",
+  };
+  const literaturAdimi = adimlariCoz(talep, literaturBekliyor, { asama: "Video", durum_kodu: "onay_bekleniyor" })
+    .find((adim) => adim.hal === "aktif");
+  assert.equal(literaturAdimi?.anahtar, "video");
+  assert.equal(literaturAdimi?.etiket, "Literatür");
+
+  const soruBekliyor = {
+    ...literaturBekliyor,
+    video_iu_id: "iu-1",
+    video_durum: "onaylandi",
+    video_durum_tarih: "2026-09-16T10:00:00.000Z",
+    soru_seti_id: "soru-literatur-v1",
+  };
+  assert.equal(adimlariCoz(talep, soruBekliyor, { asama: "Soru Seti", durum_kodu: "iu_iletildi" })
+    .find((adim) => adim.hal === "aktif")?.anahtar, "soru_seti");
+
+  const yayinBekliyor = {
+    ...soruBekliyor,
+    soru_seti_iu_id: "iu-1",
+    soru_seti_durum: "onaylandi",
+    soru_seti_durum_tarih: "2026-09-16T11:00:00.000Z",
+  };
+  const yayinAdimi = adimlariCoz(talep, yayinBekliyor).find((adim) => adim.hal === "aktif");
+  assert.equal(yayinAdimi?.anahtar, "yayin");
+  assert.equal(yayinAdimi?.durum_kodu, "yayin_bekleniyor");
+
+  const gorevSayfasi = readFileSync("app/(panel)/uretim/gorevler/[gorev_id]/page.tsx", "utf8");
+  const kararSql = readFileSync("scripts/sql/uretim_karar_surum_kapisi.sql", "utf8");
+  assert.match(gorevSayfasi, /Literatür üretici incelemesine gönderildi/);
+  assert.match(kararSql, /Literatür karar yetkisi yok/);
+  assert.match(kararSql, /Doğrulanmış Literatür bulunamadı/);
+});
+
+test("Literatür V2 hazır yükleme, soru seti ve yayın geçişlerini doğru izler", () => {
+  const talep: SeritTalebi = {
+    talep_id: "talep-literatur-v2-yasam-dongusu",
+    hazir_video: true,
+    hazir_soru_seti: false,
+    ogrenme_araci_turu: "flip_pdf",
+    created_at: "2026-09-16T08:00:00.000Z",
+  };
+  const bosZincir = {
+    talep_id: talep.talep_id,
+    senaryo_id: null, senaryo_iu_id: null, senaryo_durum: null, senaryo_durum_tarih: null,
+    video_id: null, video_iu_id: null, video_durum: null, video_durum_tarih: null,
+    soru_seti_id: null, soru_seti_iu_id: null, soru_seti_durum: null, soru_seti_durum_tarih: null,
+    yayin_durum: null, yayin_tarihi: null,
+  };
+
+  const yukleme = adimlariCoz(talep, bosZincir);
+  assert.equal(yukleme.find((adim) => adim.anahtar === "senaryo")?.hal, "kapali");
+  assert.equal(yukleme.find((adim) => adim.hal === "aktif")?.anahtar, "video");
+  assert.equal(yukleme.find((adim) => adim.hal === "aktif")?.etiket, "Literatür");
+  assert.equal(yukleme.find((adim) => adim.hal === "aktif")?.durum_kodu, "video_bekleniyor");
+
+  const literaturOnayli = {
+    ...bosZincir,
+    video_id: "literatur-v2",
+    video_durum: "onaylandi",
+    video_durum_tarih: "2026-09-16T09:00:00.000Z",
+    soru_seti_id: "soru-literatur-v2",
+  };
+  const soruSeti = adimlariCoz(talep, literaturOnayli, { asama: "Soru Seti", durum_kodu: "iu_iletildi" });
+  assert.equal(soruSeti.find((adim) => adim.hal === "aktif")?.anahtar, "soru_seti");
+  assert.equal(soruSeti.find((adim) => adim.anahtar === "video")?.durum_kodu, "hazir_arac_iletildi");
+
+  const soruSetiOnayli = {
+    ...literaturOnayli,
+    soru_seti_iu_id: "iu-1",
+    soru_seti_durum: "onaylandi",
+    soru_seti_durum_tarih: "2026-09-16T10:00:00.000Z",
+  };
+  const yayin = adimlariCoz(talep, soruSetiOnayli).find((adim) => adim.hal === "aktif");
+  assert.equal(yayin?.anahtar, "yayin");
+  assert.equal(yayin?.durum_kodu, "yayin_bekleniyor");
+});
+
 test("Video V2 seridi yukleme, isleme, soru seti ve yayin gecislerini dogru anlatir", () => {
   const talep: SeritTalebi = {
     talep_id: "talep-video-v2-yasam-dongusu",

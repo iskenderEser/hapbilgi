@@ -1771,7 +1771,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
           try {
             await hazirFlipPdfYukle({ talepId: talep_id, pdf: bekleyenFlipPdf.dosya, kapak: bekleyenFlipPdfKapak?.dosya, kontrol });
           } catch (error) {
-            hata("Literatür yüklenemedi.", "PDF yükleme", error instanceof Error ? error.message : undefined);
+            hata("Literatür yüklenemedi.", "Literatür yükleme", error instanceof Error ? error.message : undefined);
             basarisizlar.push(`${bekleyenFlipPdf.preview.dosya_adi} (Literatür)`);
           }
         }

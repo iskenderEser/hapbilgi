@@ -442,12 +442,16 @@ export default function UretimGorevDetayPage() {
       setFlipPdfDosyasi(null);
       await veriCek();
     } catch (err) {
-      hata("Literatür yüklenemedi.", "PDF yükleme", err instanceof Error ? err.message : undefined);
+      hata("Literatür yüklenemedi.", "Literatür yükleme", err instanceof Error ? err.message : undefined);
     } finally { aracYuklemeyiBitir(); setIslem(false); }
   };
 
   const kararVer = async (karar: "onaylandi" | "revizyon bekleniyor" | "Iptal Edildi", notlar?: string) => {
     if (!gorev) return;
+    if (!Number.isInteger(gorev.surum) || gorev.surum < 1) {
+      hata("İşleminizi güncellemek için sayfanızı yenileyin");
+      return;
+    }
     setIslem(true);
     try {
       const res = await fetch("/uretim/api/karar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ gorev_id: gorev.gorev_id, karar, notlar, beklenen_surum: gorev.surum, islem_anahtari: crypto.randomUUID(), revizyonda_transkript_istendi: karar === "revizyon bekleniyor" ? revizyondaTranskriptIstendi : false }) });

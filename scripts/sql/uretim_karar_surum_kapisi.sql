@@ -169,7 +169,7 @@ BEGIN
   WHERE talep_id = v_gorev.talep_id
   FOR UPDATE;
   IF v_talep.uretici_id IS DISTINCT FROM p_uretici_id OR v_talep.ogrenme_araci_turu <> 'flip_pdf' THEN
-    RAISE EXCEPTION 'PDF karar yetkisi yok.' USING ERRCODE = '42501';
+    RAISE EXCEPTION 'Literatür karar yetkisi yok.' USING ERRCODE = '42501';
   END IF;
 
   -- Aynı talepte yalnız bir aktif görev olabilir. Sonraki görevi açmadan önce
@@ -203,7 +203,7 @@ BEGIN
     WHERE arac_id = v_gorev.arac_id
     FOR UPDATE;
     IF NOT FOUND OR v_arac.arac_turu <> 'flip_pdf' OR v_arac.metadata_dogrulandi IS NOT TRUE OR v_arac.sayfa_sayisi <= 0 THEN
-      RAISE EXCEPTION 'Doğrulanmış PDF bulunamadı.' USING ERRCODE = '23514';
+      RAISE EXCEPTION 'Doğrulanmış Literatür bulunamadı.' USING ERRCODE = '23514';
     END IF;
     IF p_karar = 'revizyon bekleniyor' THEN
       SELECT count(*)::integer INTO v_revizyon
@@ -220,7 +220,7 @@ BEGIN
       v_sonraki := public.uretim_podcast_soru_zinciri_ac(v_gorev.talep_id, v_durum_id, p_uretici_id, v_gorev.atanan_iu_id);
     END IF;
   ELSE
-    RAISE EXCEPTION 'Bu RPC yalnız PDF senaryo ve üretim aşamasını işler.' USING ERRCODE = '23514';
+    RAISE EXCEPTION 'Bu işlem yalnız Literatür senaryo ve üretim aşamasını işler.' USING ERRCODE = '23514';
   END IF;
 
   v_sonuc := jsonb_build_object(

@@ -49,7 +49,7 @@ const secimKutusu = (secili: boolean, renk?: string) => ({
 const OGRENME_ARACI_SECENEKLERI = {
   video: { etiket: OGRENME_ARACI_METINLERI.video.ad, formatlar: "MP4, MOV, AVI, MKV, WEBM" },
   podcast: { etiket: OGRENME_ARACI_METINLERI.podcast.ad, formatlar: "MP3, M4A, AAC" },
-  gorsel: { etiket: OGRENME_ARACI_METINLERI.gorsel.ad, formatlar: "JPG, JPEG, PNG" },
+  gorsel: { etiket: OGRENME_ARACI_METINLERI.gorsel.ad, formatlar: "JPG, JPEG, PNG, WEBP" },
   flip_pdf: { etiket: OGRENME_ARACI_METINLERI.flip_pdf.ad, formatlar: "PDF" },
 } as const;
 

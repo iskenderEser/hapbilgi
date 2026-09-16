@@ -144,13 +144,46 @@ export function asamaCoz(talep: ZincirTalebi, z: ZincirSatiri): ZincirDurumu {
     oncekiTarih = z.senaryo_durum_tarih ?? oncekiTarih;
   }
 
-  // ── Hazır Öğrenme Aracı kolu: araç yüklemesi talep oluşturulurken tamamlandığından bu aşama geçilmiştir ──
+  // ── Hazır Öğrenme Aracı kolu ──
+  // Talepte "hazır" seçilmesi, yüklemenin ve sunucu doğrulamasının tamamlandığı
+  // anlamına gelmez. Araç ve son onay kaydı görülmeden sonraki aşama açılamaz.
   if (talep.hazir_video && talep.ogrenme_araci_turu && talep.ogrenme_araci_turu !== "video") {
+    if (!z.video_id) {
+      return {
+        asama: "Video",
+        durum_kodu: "video_bekleniyor",
+        tarih: oncekiTarih,
+        yol: `/talepler/${talep.talep_id}`,
+        iu_id: null,
+      };
+    }
+    if (z.video_durum !== "onaylandi") {
+      return {
+        asama: "Video",
+        durum_kodu: kayitDurumKodu(z.video_durum, !!z.video_iu_id),
+        tarih: z.video_durum_tarih ?? oncekiTarih,
+        yol: `/talepler/${talep.talep_id}`,
+        iu_id: z.video_iu_id,
+      };
+    }
+    oncekiTarih = z.video_durum_tarih ?? oncekiTarih;
+
     if (talep.hazir_soru_seti) {
+      if (!z.soru_seti_id || z.soru_seti_durum !== "onaylandi") {
+        return {
+          asama: "Soru Seti",
+          durum_kodu: z.soru_seti_id
+            ? kayitDurumKodu(z.soru_seti_durum, !!z.soru_seti_iu_id)
+            : "sistem_hatasi",
+          tarih: z.soru_seti_durum_tarih ?? oncekiTarih,
+          yol: `/talepler/${talep.talep_id}`,
+          iu_id: z.soru_seti_iu_id,
+        };
+      }
       return {
         asama: "Tamamlandı",
         durum_kodu: yayinDurumKodu(z.yayin_durum),
-        tarih: z.yayin_tarihi ?? oncekiTarih,
+        tarih: z.yayin_tarihi ?? z.soru_seti_durum_tarih ?? oncekiTarih,
         yol: "/yayin-yonetimi",
         iu_id: z.soru_seti_iu_id,
       };
