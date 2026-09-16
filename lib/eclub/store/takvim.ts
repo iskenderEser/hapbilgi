@@ -1,20 +1,25 @@
 // E-Club puanları iki aylık dönemlerde kazanılır; çek talebi izleyen tek ayın 1–7'sinde alınır.
-export const TR_SAAT_DILIMI = "Europe/Istanbul";
-const TR_OFSET_MS = 3 * 60 * 60 * 1000;
+import {
+  formatDonemAcilis,
+  formatDonemKapanis,
+  formatKalanSure,
+  formatKisaKalanSure,
+  trZamanParcalari,
+  trZamanUtc,
+} from "@/lib/zaman/turkiye";
 
-export interface TrZamanParcalari { yil: number; ay: number; gun: number; saat: number; dakika: number; saniye: number; }
-
-export function trZamanParcalari(tarih: Date = new Date()): TrZamanParcalari {
-  const parcalar = new Intl.DateTimeFormat("en-US", { timeZone: TR_SAAT_DILIMI, year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric", hourCycle: "h23" }).formatToParts(tarih);
-  const al = (tip: string) => Number(parcalar.find((p) => p.type === tip)?.value ?? 0);
-  return { yil: al("year"), ay: al("month"), gun: al("day"), saat: al("hour"), dakika: al("minute"), saniye: al("second") };
-}
+export {
+  formatDonemAcilis,
+  formatDonemKapanis,
+  formatKalanSure,
+  formatKisaKalanSure,
+  TR_SAAT_DILIMI,
+  trZamanParcalari,
+  trZamanUtc,
+} from "@/lib/zaman/turkiye";
+export type { TrZamanParcalari } from "@/lib/zaman/turkiye";
 
 export function ayGunSayisi(yil: number, ay: number): number { return new Date(Date.UTC(yil, ay, 0)).getUTCDate(); }
-
-export function trZamanUtc(yil: number, ay: number, gun: number, saat = 0, dakika = 0, saniye = 0): Date {
-  return new Date(Date.UTC(yil, ay - 1, gun, saat, dakika, saniye) - TR_OFSET_MS);
-}
 
 const AY_ISIMLERI = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
 
@@ -42,27 +47,6 @@ export function eclubAyPenceresi(yil: number, ay: number): EclubDonemPenceresi {
 export function eclubStoreSiparisAcikMi(tarih: Date = new Date()): boolean {
   const { ay, gun } = trZamanParcalari(tarih);
   return ay % 2 === 1 && gun >= 1 && gun <= 7;
-}
-
-export function formatKalanSure(ms: number): string {
-  if (ms <= 0) return "0 dk";
-  const dakika = Math.floor(ms / 60000); const saat = Math.floor(dakika / 60); const gun = Math.floor(saat / 24);
-  if (gun > 0) return saat % 24 ? `${gun} gün ${saat % 24} sa` : `${gun} gün`;
-  if (saat > 0) return dakika % 60 ? `${saat} sa ${dakika % 60} dk` : `${saat} sa`;
-  return `${Math.max(1, dakika)} dk`;
-}
-
-export function formatKisaKalanSure(ms: number): string {
-  if (ms <= 0) return "0 dk";
-  const dakika = Math.floor(ms / 60000); const saat = Math.floor(dakika / 60); const gun = Math.floor(saat / 24);
-  return gun > 0 ? `${gun} gün` : saat > 0 ? `${saat} sa` : `${Math.max(1, dakika)} dk`;
-}
-
-export function formatDonemKapanis(p: EclubDonemPenceresi): string {
-  return `${p.bitisDahil.toLocaleDateString("tr-TR", { day: "numeric", month: "long", timeZone: TR_SAAT_DILIMI })} 23:59’a kadar`;
-}
-export function formatDonemAcilis(p: EclubDonemPenceresi): string {
-  return `${p.baslangic.toLocaleDateString("tr-TR", { day: "numeric", month: "long", timeZone: TR_SAAT_DILIMI })} 00:00`;
 }
 
 export interface EclubTakvimDurumu {

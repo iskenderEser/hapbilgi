@@ -13,59 +13,25 @@
 //   * Türkiye saat dilimi (Europe/Istanbul, kalıcı UTC+3) kullanılır.
 //   * İptal, teslim alma, kargo ve bakiye hesapları takvimden bağımsızdır; yalnız YENİ siparişler kısıtlanır.
 
-export const TR_SAAT_DILIMI = "Europe/Istanbul";
-const TR_OFSET_MS = 3 * 60 * 60 * 1000;
+import {
+  formatDonemAcilis,
+  formatDonemKapanis,
+  formatKalanSure,
+  formatKisaKalanSure,
+  trZamanParcalari,
+  trZamanUtc,
+} from "@/lib/zaman/turkiye";
 
-export interface TrZamanParcalari {
-  yil: number;
-  ay: number; // 1-12
-  gun: number; // 1-31
-  saat: number; // 0-23
-  dakika: number; // 0-59
-  saniye: number; // 0-59
-}
-
-/**
- * Verilen anın Türkiye saatindeki (Europe/Istanbul) duvar saati bileşenlerini döner.
- */
-export function trZamanParcalari(tarih: Date = new Date()): TrZamanParcalari {
-  const parcalar = new Intl.DateTimeFormat("en-US", {
-    timeZone: TR_SAAT_DILIMI,
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-    second: "numeric",
-    hourCycle: "h23",
-  }).formatToParts(tarih);
-
-  const al = (tip: string) => parcalar.find((p) => p.type === tip)?.value ?? "0";
-
-  return {
-    yil: Number(al("year")),
-    ay: Number(al("month")),
-    gun: Number(al("day")),
-    saat: Number(al("hour")),
-    dakika: Number(al("minute")),
-    saniye: Number(al("second")),
-  };
-}
-
-/**
- * Türkiye saatindeki bir duvar saatini (yıl, ay[1-12], gün, saat, dakika, saniye)
- * mutlak UTC anına çevirir. Türkiye kalıcı UTC+3 olduğundan: UTC = TR − 3 saat.
- */
-export function trZamanUtc(
-  yil: number,
-  ay: number,
-  gun: number,
-  saat = 0,
-  dakika = 0,
-  saniye = 0
-): Date {
-  return new Date(Date.UTC(yil, ay - 1, gun, saat, dakika, saniye) - TR_OFSET_MS);
-}
+export {
+  formatDonemAcilis,
+  formatDonemKapanis,
+  formatKalanSure,
+  formatKisaKalanSure,
+  TR_SAAT_DILIMI,
+  trZamanParcalari,
+  trZamanUtc,
+} from "@/lib/zaman/turkiye";
+export type { TrZamanParcalari } from "@/lib/zaman/turkiye";
 
 export interface DonemPenceresi {
   ceyrek: 1 | 2 | 3 | 4;
@@ -143,73 +109,6 @@ export function hbstoreSiparisAcikMi(tarih: Date = new Date()): boolean {
     (ay === 10 && gun >= 1 && gun <= 7) ||
     (ay === 1 && gun >= 1 && gun <= 7)
   );
-}
-
-/**
- * Milisaniyeyi "X gün Y sa", "X sa Y dk" veya "X dk" formatına dönüştürür.
- */
-export function formatKalanSure(ms: number): string {
-  if (ms <= 0) return "0 dk";
-  const saniye = Math.floor(ms / 1000);
-  const dakika = Math.floor(saniye / 60);
-  const saat = Math.floor(dakika / 60);
-  const gun = Math.floor(saat / 24);
-
-  const kalanSaat = saat % 24;
-  const kalanDakika = dakika % 60;
-
-  if (gun > 0) {
-    return kalanSaat > 0 ? `${gun} gün ${kalanSaat} sa` : `${gun} gün`;
-  }
-  if (saat > 0) {
-    return kalanDakika > 0 ? `${saat} sa ${kalanDakika} dk` : `${saat} sa`;
-  }
-  return `${Math.max(1, kalanDakika)} dk`;
-}
-
-/**
- * Navbar ve dar alanlar için kısa etiket ("X gün", "X sa", "X dk").
- */
-export function formatKisaKalanSure(ms: number): string {
-  if (ms <= 0) return "0 dk";
-  const saniye = Math.floor(ms / 1000);
-  const dakika = Math.floor(saniye / 60);
-  const saat = Math.floor(dakika / 60);
-  const gun = Math.floor(saat / 24);
-
-  if (gun > 0) {
-    return `${gun} gün`;
-  }
-  if (saat > 0) {
-    return `${saat} sa`;
-  }
-  return `${Math.max(1, dakika)} dk`;
-}
-
-/**
- * Dönem kapanış tarihini kullanıcı dostu metne çevirir (Europe/Istanbul).
- * "00:00 hariç" teknik ifadesi yerine "30 Eylül 23:59’a kadar" biçimini üretir.
- */
-export function formatDonemKapanis(pencere: DonemPenceresi): string {
-  const tarihMetni = new Date(pencere.bitisDahil).toLocaleDateString("tr-TR", {
-    day: "numeric",
-    month: "long",
-    timeZone: TR_SAAT_DILIMI,
-  });
-  return `${tarihMetni} 23:59’a kadar`;
-}
-
-/**
- * Dönem açılış tarihini kullanıcı dostu metne çevirir (Europe/Istanbul).
- * Örn: "24 Eylül 00:00"
- */
-export function formatDonemAcilis(pencere: DonemPenceresi): string {
-  const tarihMetni = new Date(pencere.baslangic).toLocaleDateString("tr-TR", {
-    day: "numeric",
-    month: "long",
-    timeZone: TR_SAAT_DILIMI,
-  });
-  return `${tarihMetni} 00:00`;
 }
 
 export interface TakvimDurumu {
