@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
-import { sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
+import { hataYaniti, isKuraluHatasi, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { IU_ROLU } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { uuidGecerliMi, uretimRpcHataYaniti } from "@/lib/uretim/rpc";
-import { embedUrlGuidCikar } from "@/lib/video/bunnyYukleme";
+import { bunnyVideoDurumu, embedUrlGuidCikar } from "@/lib/video/bunnyYukleme";
 import { pushYayinlaArkada } from "@/lib/push/orkestrasyon";
 
 export async function POST(request: NextRequest) {
@@ -29,7 +29,18 @@ export async function POST(request: NextRequest) {
       rpcAdi = "uretim_senaryo_teslim_et";
       parametreler = { p_gorev_id: gorev_id, p_iu_id: user.id, p_senaryo_metni: body.senaryo_metni, p_islem_anahtari: islem_anahtari };
     } else if (asama === "video") {
-      if (typeof body.video_url !== "string" || !embedUrlGuidCikar(body.video_url)) return validasyonHatasi("Video adresi geçerli oynatıcı biçiminde olmalıdır.", ["video_url"]);
+      const videoGuid = typeof body.video_url === "string" ? embedUrlGuidCikar(body.video_url) : null;
+      if (!videoGuid) return validasyonHatasi("Video adresi geçerli oynatıcı biçiminde olmalıdır.", ["video_url"]);
+
+      // Teknik işleme bitmeden görev üretici incelemesine devredilmez. Hata
+      // durumunda görev İÜ'de kalır; yeniden yükleme revizyon hakkı tüketmez.
+      const bunnyDurumu = await bunnyVideoDurumu(videoGuid);
+      if (!bunnyDurumu.ok) {
+        return hataYaniti(bunnyDurumu.hata, bunnyDurumu.adim, bunnyDurumu.detay ? { message: bunnyDurumu.detay } : null, 503);
+      }
+      if (bunnyDurumu.hatali) return isKuraluHatasi("Video işlenemedi. Yeni bir video yükleyip yeniden gönderin.");
+      if (!bunnyDurumu.hazir) return isKuraluHatasi("Video işleniyor. Hazır olduğunda yeniden gönderin.");
+
       rpcAdi = "uretim_video_teslim_et";
       parametreler = { p_gorev_id: gorev_id, p_iu_id: user.id, p_video_url: body.video_url, p_thumbnail_url: typeof body.thumbnail_url === "string" ? body.thumbnail_url : null, p_islem_anahtari: islem_anahtari };
     } else {

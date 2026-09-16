@@ -34,6 +34,7 @@ const PILL_TANIMLARI: Record<DurumKodu, PillTanim> = {
   iptal: { kod: "iptal" },
   sistem_hatasi: { kod: "sistem_hatasi", yalnizKayitVarsa: true },
   video_bekleniyor: { kod: "video_bekleniyor", yalnizKayitVarsa: true },
+  video_isleniyor: { kod: "video_isleniyor", yalnizKayitVarsa: true },
   yayin_bekleniyor: { kod: "yayin_bekleniyor", yalnizKayitVarsa: true },
   planlandi: { kod: "planlandi", yalnizKayitVarsa: true },
   yayinda: { kod: "yayinda", yalnizKayitVarsa: true },

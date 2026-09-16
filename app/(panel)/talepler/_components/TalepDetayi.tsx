@@ -84,7 +84,7 @@ export function TalepDetayi({
     talep,
     talep.zincir,
     talep.aktif_gorev_id && talep.asama !== "Tamamlandı"
-      ? { asama: talep.asama, durum_kodu: talep.durum_kodu }
+      ? { asama: talep.asama, durum_kodu: talep.durum_kodu, tarih: talep.aktif_gorev_tarihi }
       : null,
   );
 
@@ -127,6 +127,10 @@ export function TalepDetayi({
     aktif && blok && talep.aktif_gorev_id && talep.aktif_gorev_surum && aktif.durum_kodu === "onay_bekleniyor" && talep.uretici_id === kullaniciId
       ? { asama: aktif.anahtar as ToastAsama, id: talep.aktif_gorev_id, surum: talep.aktif_gorev_surum, revizyonSayisi: blok.revizyon_sayisi }
       : null;
+  const videoKarariKisitli =
+    aktif?.anahtar === "video" &&
+    talep.ogrenme_araci_turu === "video" &&
+    (bunnyIslemeDurumu === "isleniyor" || bunnyIslemeDurumu === "hatali");
 
   return (
     <section aria-labelledby="talep-takip-baslik" className="overflow-hidden rounded-2xl border border-[#dfe7f2] bg-white shadow-[0_10px_28px_rgba(31,55,90,0.045)]">
@@ -207,6 +211,10 @@ export function TalepDetayi({
         <AksiyonSeridi
           hedef={kararHedefi}
           yukleniyor={kararYukleniyor}
+          incelemeKisitli={videoKarariKisitli}
+          incelemeKisitNedeni={bunnyIslemeDurumu === "hatali"
+            ? "Video işlenemediği için onay veya revizyon kararı verilemez."
+            : "Video işlenirken onay veya revizyon kararı verilemez."}
           onKarar={(durum, notlar) => kararHedefi && onKarar(kararHedefi, durum, notlar)}
         />
 

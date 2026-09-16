@@ -44,6 +44,7 @@ export type DurumKodu =
   | "iu_duzeltiyor"      // revizyon istendi, İÜ düzeltiyor
   | "onay_bekleniyor"    // İÜ teslim etti, karar üreticide
   | "video_bekleniyor"   // hazır video talebi, yükleme üreticide
+  | "video_isleniyor"    // hazır video yüklendi, teknik işleme sistemde sürüyor
   | "yayin_bekleniyor"   // soru seti onaylı, yayına alma üreticide
   | "onaylandi"          // bu aşama onaylandı, iş ilerledi
   | "planlandi"          // ileri tarihli yayın, sistem açacak
@@ -76,6 +77,7 @@ const URETICI_DURUM: Record<DurumKodu, DurumMesaji> = {
   iu_duzeltiyor:    { metin: "Üreticiniz Düzenliyor",  top: "icerik_ureticisi", renk: REVIZYON },
   onay_bekleniyor:  { metin: "Onayınız Bekleniyor",    top: "uretici",          renk: AKSIYON },
   video_bekleniyor: { metin: "Öğrenme Aracınızı İletiniz", top: "uretici",       renk: AKSIYON },
+  video_isleniyor:  { metin: "Videonuz İşleniyor",          top: "sistem",        renk: BEKLEME },
   yayin_bekleniyor: { metin: "Yayına Alınız",          top: "uretici",          renk: AKSIYON },
   onaylandi:        { metin: "Onayladınız",            top: "kapali",           renk: ONAY },
   planlandi:        { metin: "Yayınını Planladınız",   top: "sistem",           renk: PLANLI },
@@ -144,6 +146,7 @@ function iuMetin(kod: DurumKodu, g: IuMesajGirdi): string {
     case "onaylandi":        return `${rol} Onayladı`;
     case "iptal":            return `${rol} İptal Etti`;
     case "video_bekleniyor": return `${rol} ${arac.belirtme} Yüklüyor`;
+    case "video_isleniyor": return "Video İşleniyor";
     case "yayin_bekleniyor": return `${rol} Yayına Alacak`;
     case "planlandi":        return "Yayın Planlandı";
     case "yayinda":          return "Yayında";
@@ -163,6 +166,7 @@ const IU_RENK: Record<DurumKodu, { top: DurumTopu; renk: DurumRenk }> = {
   iu_duzeltiyor:    { top: "icerik_ureticisi", renk: REVIZYON },
   onay_bekleniyor:  { top: "uretici",          renk: BEKLEME },
   video_bekleniyor: { top: "uretici",          renk: BEKLEME },
+  video_isleniyor:  { top: "sistem",           renk: BEKLEME },
   yayin_bekleniyor: { top: "uretici",          renk: BEKLEME },
   onaylandi:        { top: "kapali",           renk: ONAY },
   planlandi:        { top: "sistem",           renk: PLANLI },

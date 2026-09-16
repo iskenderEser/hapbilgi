@@ -22,7 +22,7 @@ import {
   type TalepTuru,
 } from "@/lib/uretici/yetenekler";
 import { useHataMesaji } from "@/components/HataMesaji";
-import { uretimToast, toastVaryant } from "@/lib/uretim/toastMesaj";
+import { hazirVideoIsleniyorMesaji, uretimToast, toastVaryant } from "@/lib/uretim/toastMesaj";
 import type {
   Urun,
   Teknik,
@@ -1454,7 +1454,11 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
                 await videoYuklemeOturumuGuncelle(d.yukleme_id, "baglandi").catch(() => undefined);
                 return;
               }
-              if (t.status !== 202 && t.status < 500) return; // kalıcı hata — webhook/mutabakat toplar
+              if (t.status !== 202 && t.status < 500) {
+                hata(t.d2.hata ?? "Video işlenemedi. Talep Takibi ekranından yeniden yükleyebilirsiniz.", t.d2.adim, t.d2.detay);
+                await onTalepOlusturuldu?.();
+                return;
+              }
             } catch { /* geçici hata; sonraki tur */ }
           }
         })();
@@ -1464,7 +1468,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
         setVideoYuklemeYuzdesi(null);
       }
     },
-    [bekleyenVideo, hata]
+    [bekleyenVideo, hata, onTalepOlusturuldu]
   );
 
   // Dönüş: yüklenemeyen dosya adları — kısmi başarısızlık handleSubmit'te dürüstçe raporlanır (F-01/3).
@@ -1776,7 +1780,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
         }
         if (basarisizlar.length === 0 && videoIsleniyor) {
           uyari(
-            "Video yüklendi — hazır olunca otomatik yayına alınacak.",
+            hazirVideoIsleniyorMesaji(hazirSoruSeti),
             undefined,
             true
           );

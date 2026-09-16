@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
-import { sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
+import { sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, hataYaniti, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { uuidGecerliMi, uretimRpcHataYaniti } from "@/lib/uretim/rpc";
 import { pushYayinlaArkada } from "@/lib/push/orkestrasyon";
 import { podcastRevizyondaTranskriptTalebiDogrula, podcastTranskriptTercihiCoz } from "@/lib/ogrenmeAraci/sozlesme";
+import { bunnyVideoDurumu, embedUrlGuidCikar } from "@/lib/video/bunnyYukleme";
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,11 +28,29 @@ export async function POST(request: NextRequest) {
       return validasyonHatasi("Revizyon transkript tercihi boolean olmalıdır.", ["revizyonda_transkript_istendi"]);
     }
 
-    const { data: gorevBilgisi } = await adminSupabase.from("uretim_gorevleri").select("asama, talep_id").eq("gorev_id", gorev_id).maybeSingle();
+    const { data: gorevBilgisi } = await adminSupabase.from("uretim_gorevleri").select("asama, talep_id, video_id").eq("gorev_id", gorev_id).maybeSingle();
     const { data: talepBilgisi } = gorevBilgisi
       ? await adminSupabase.from("talepler").select("ogrenme_araci_turu, hazir_video, ogrenme_araci_tercihleri").eq("talep_id", gorevBilgisi.talep_id).maybeSingle()
       : { data: null };
     const aracTuru = talepBilgisi?.ogrenme_araci_turu;
+
+    // TUS aktarımı bitmiş olsa da video henüz izlenebilir olmayabilir. Üretici
+    // yalnız Bunny Ready + pozitif süre doğrulandıktan sonra onay verebilir.
+    // Revizyon/iptal bu kapıdan geçmez; teknik hata revizyon hakkı tüketmez.
+    if (karar === "onaylandi" && gorevBilgisi?.asama === "video" && aracTuru === "video") {
+      const { data: video, error: videoError } = gorevBilgisi.video_id
+        ? await adminSupabase.from("videolar").select("video_url").eq("video_id", gorevBilgisi.video_id).maybeSingle()
+        : { data: null, error: null };
+      if (videoError) return hataYaniti("Video doğrulanamadı.", "videolar SELECT — üretici kararı", videoError);
+      const guid = embedUrlGuidCikar(video?.video_url);
+      if (!guid) return isKuraluHatasi("Video henüz incelenebilir durumda değil.");
+      const bunnyDurumu = await bunnyVideoDurumu(guid);
+      if (!bunnyDurumu.ok) {
+        return hataYaniti(bunnyDurumu.hata, bunnyDurumu.adim, bunnyDurumu.detay ? { message: bunnyDurumu.detay } : null, 503);
+      }
+      if (bunnyDurumu.hatali) return isKuraluHatasi("Video işlenemediği için onaylanamaz.");
+      if (!bunnyDurumu.hazir) return isKuraluHatasi("Video işleniyor. Hazır olduğunda onaylayabilirsiniz.");
+    }
     const revizyonTranskriptKarari = podcastRevizyondaTranskriptTalebiDogrula({
       aracTuru,
       asama: gorevBilgisi?.asama,

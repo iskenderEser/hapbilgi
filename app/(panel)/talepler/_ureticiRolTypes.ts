@@ -23,6 +23,8 @@ export interface TalepSatiri extends TalepBilgisi {
   aktif_gorev_id: string | null;
   /** İyimser eşzamanlılık kapısında kullanılacak, kullanıcının incelediği görev sürümü. */
   aktif_gorev_surum: number | null;
+  /** Aktif görev pill'inin tarihi; içerik henüz doğmadan da görev zamanını gösterir. */
+  aktif_gorev_tarihi: string | null;
   /** Şeridin girdisi (A-3'teki adimlariCoz). View satırı yoksa null. */
   zincir: ZincirSatiri | null;
 }

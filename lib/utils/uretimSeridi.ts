@@ -49,6 +49,7 @@ export interface SeritTalebi extends ZincirTalebi {
 export interface AktifGorevDurumu {
   asama: "Senaryo" | "Video" | "Soru Seti";
   durum_kodu: DurumKodu;
+  tarih?: string | null;
 }
 
 const SIRA: AdimAnahtari[] = ["talep", "senaryo", "video", "soru_seti", "yayin"];
@@ -118,6 +119,7 @@ export function adimlariCoz(
     soru_seti: zincir.soru_seti_durum_tarih,
     yayin: zincir.yayin_tarihi,
   };
+  if (aktifGorev) tarihler[aktifAdim] = aktifGorev.tarih ?? tarihler[aktifAdim];
 
   return SIRA.map((anahtar, sira) => {
     // Talep adımı, talep açıldığı an tamamlanır ve kendi ortak mesajını taşır.

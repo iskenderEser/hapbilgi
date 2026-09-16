@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { uretimToast, toastVaryant, type ToastAsama, type ToastOlay } from "@/lib/uretim/toastMesaj";
+import { hazirVideoIsleniyorMesaji, uretimToast, toastVaryant, type ToastAsama, type ToastOlay } from "@/lib/uretim/toastMesaj";
 import { bunnyTusYukle, videoYuklemeOturumuGuncelle } from "@/lib/video/bunnyTusIstemci";
 import { hazirGorselYukle, hazirFlipPdfYukle, hazirPodcastYukle } from "@/lib/ogrenmeAraci/bunnyYuklemeIstemci";
 import { SORGU_ARALIGI_MS, TAVAN_SANIYE } from "@/lib/video/islemeDurumu";
@@ -384,6 +384,8 @@ export function useTalepMerkezi() {
           }
           else if (ilk.status !== 202 && ilk.status < 500) {
             hata(ilk.d2.hata ?? "Video doğrulanamadı.", ilk.d2.adim, ilk.d2.detay);
+            setDetayTetik((x) => x + 1);
+            await veriCek();
             return;
           }
         } catch {
@@ -401,12 +403,17 @@ export function useTalepMerkezi() {
                   await videoYuklemeOturumuGuncelle(izin.yukleme_id, "baglandi").catch(() => undefined);
                   return;
                 }
-                if (t.status !== 202 && t.status < 500) return;
+                if (t.status !== 202 && t.status < 500) {
+                  hata(t.d2.hata ?? "Video işlenemedi. Yeniden yükleyebilirsiniz.", t.d2.adim, t.d2.detay);
+                  setDetayTetik((x) => x + 1);
+                  await veriCek();
+                  return;
+                }
               } catch { /* geçici hata; sonraki tur */ }
             }
           })();
           uyari(
-            "Video yüklendi — hazır olunca otomatik yayına alınacak.",
+            hazirVideoIsleniyorMesaji(talep.hazir_soru_seti),
             undefined,
             true
           );

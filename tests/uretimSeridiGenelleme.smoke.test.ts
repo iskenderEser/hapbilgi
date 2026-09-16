@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { adimlariCoz, type SeritTalebi } from "@/lib/utils/uretimSeridi";
+import { ureticiDurumMesaji } from "@/lib/utils/durum/mesaj";
+import { hazirVideoIsleniyorMesaji } from "@/lib/uretim/toastMesaj";
 
 test("uretimSeridi adimlariCoz hazir ogrenme araci adimini kapali yapmaz", () => {
   const turler = ["podcast", "gorsel", "flip_pdf", "video"] as const;
@@ -90,6 +92,7 @@ test("aktif gorevin asamasi seritteki aktif adimi ve onceki tamamlanan adimlari 
   const adimlar = adimlariCoz(talep, null, {
     asama: "Soru Seti",
     durum_kodu: "iu_duzeltiyor",
+    tarih: "2026-09-16T10:00:00.000Z",
   });
 
   assert.deepEqual(
@@ -102,7 +105,179 @@ test("aktif gorevin asamasi seritteki aktif adimi ve onceki tamamlanan adimlari 
       { anahtar: "yayin", hal: "ileri", durum_kodu: null },
     ],
   );
+  assert.equal(adimlar.find((adim) => adim.anahtar === "soru_seti")?.tarih, "2026-09-16T10:00:00.000Z");
 });
+
+test("Video V1 teknik isleme durumunda onay ve revizyonu kapatir, iptali acik tutar", () => {
+  const detay = readFileSync("app/(panel)/talepler/_components/TalepDetayi.tsx", "utf8");
+  const aksiyon = readFileSync("app/(panel)/talepler/_components/AksiyonSeridi.tsx", "utf8");
+  const kararApi = readFileSync("app/(panel)/uretim/api/karar/route.ts", "utf8");
+  const teslimApi = readFileSync("app/(panel)/uretim/api/teslim/route.ts", "utf8");
+
+  assert.match(detay, /bunnyIslemeDurumu === "isleniyor" \|\| bunnyIslemeDurumu === "hatali"/);
+  assert.match(aksiyon, /disabled=\{yukleniyor \|\| incelemeKisitli\}/);
+  assert.match(aksiyon, /onKarar\("Iptal Edildi"\)/);
+  assert.match(kararApi, /karar === "onaylandi" && gorevBilgisi\?\.asama === "video" && aracTuru === "video"/);
+  assert.match(kararApi, /bunnyDurumu\.hatali/);
+  assert.match(kararApi, /!bunnyDurumu\.hazir/);
+  assert.match(teslimApi, /const bunnyDurumu = await bunnyVideoDurumu\(videoGuid\)/);
+  assert.match(teslimApi, /Video işlenemedi\. Yeni bir video yükleyip yeniden gönderin\./);
+  assert.match(teslimApi, /Video işleniyor\. Hazır olduğunda yeniden gönderin\./);
+});
+
+test("Video V1 seridi senaryo, video, soru seti ve yayin gecislerini ortak cozumleyiciyle izler", () => {
+  const talep: SeritTalebi = {
+    talep_id: "talep-video-v1-yasam-dongusu",
+    hazir_video: false,
+    hazir_soru_seti: false,
+    ogrenme_araci_turu: "video",
+    created_at: "2026-09-16T08:00:00.000Z",
+  };
+  const bosZincir = {
+    talep_id: talep.talep_id,
+    senaryo_id: null,
+    senaryo_iu_id: null,
+    senaryo_durum: null,
+    senaryo_durum_tarih: null,
+    video_id: null,
+    video_iu_id: null,
+    video_durum: null,
+    video_durum_tarih: null,
+    soru_seti_id: null,
+    soru_seti_iu_id: null,
+    soru_seti_durum: null,
+    soru_seti_durum_tarih: null,
+    yayin_durum: null,
+    yayin_tarihi: null,
+  };
+
+  const aktif = (zincir: typeof bosZincir, gorev: Parameters<typeof adimlariCoz>[2] = null) =>
+    adimlariCoz(talep, zincir, gorev).find((adim) => adim.hal === "aktif");
+
+  assert.deepEqual(
+    aktif(bosZincir, { asama: "Senaryo", durum_kodu: "iu_iletildi", tarih: talep.created_at }),
+    assertAktif("senaryo", "iu_iletildi", talep.created_at),
+  );
+
+  const senaryoOnayli = {
+    ...bosZincir,
+    senaryo_id: "senaryo-1",
+    senaryo_iu_id: "iu-1",
+    senaryo_durum: "onaylandi",
+    senaryo_durum_tarih: "2026-09-16T09:00:00.000Z",
+    video_id: "video-1",
+  };
+  assert.equal(aktif(senaryoOnayli, { asama: "Video", durum_kodu: "iu_hazirliyor" })?.anahtar, "video");
+
+  const videoOnayli = {
+    ...senaryoOnayli,
+    video_iu_id: "iu-1",
+    video_durum: "onaylandi",
+    video_durum_tarih: "2026-09-16T10:00:00.000Z",
+    soru_seti_id: "soru-seti-1",
+  };
+  assert.equal(aktif(videoOnayli, { asama: "Soru Seti", durum_kodu: "onay_bekleniyor" })?.anahtar, "soru_seti");
+
+  const soruSetiOnayli = {
+    ...videoOnayli,
+    soru_seti_iu_id: "iu-1",
+    soru_seti_durum: "onaylandi",
+    soru_seti_durum_tarih: "2026-09-16T11:00:00.000Z",
+  };
+  assert.equal(aktif(soruSetiOnayli)?.anahtar, "yayin");
+  assert.equal(aktif(soruSetiOnayli)?.durum_kodu, "yayin_bekleniyor");
+
+  const yayinli = { ...soruSetiOnayli, yayin_durum: "yayinda", yayin_tarihi: "2026-09-16T12:00:00.000Z" };
+  assert.equal(aktif(yayinli)?.durum_kodu, "yayinda");
+});
+
+test("Video V2 seridi yukleme, isleme, soru seti ve yayin gecislerini dogru anlatir", () => {
+  const talep: SeritTalebi = {
+    talep_id: "talep-video-v2-yasam-dongusu",
+    hazir_video: true,
+    hazir_soru_seti: false,
+    ogrenme_araci_turu: "video",
+    created_at: "2026-09-16T08:00:00.000Z",
+  };
+  const bosZincir = {
+    talep_id: talep.talep_id,
+    senaryo_id: null,
+    senaryo_iu_id: null,
+    senaryo_durum: null,
+    senaryo_durum_tarih: null,
+    video_id: null,
+    video_iu_id: null,
+    video_durum: null,
+    video_durum_tarih: null,
+    soru_seti_id: null,
+    soru_seti_iu_id: null,
+    soru_seti_durum: null,
+    soru_seti_durum_tarih: null,
+    yayin_durum: null,
+    yayin_tarihi: null,
+  };
+
+  const yuklemeBekliyor = adimlariCoz(talep, bosZincir);
+  assert.equal(yuklemeBekliyor.find((adim) => adim.anahtar === "senaryo")?.hal, "kapali");
+  assert.equal(yuklemeBekliyor.find((adim) => adim.hal === "aktif")?.durum_kodu, "video_bekleniyor");
+
+  const isleniyor = adimlariCoz({ ...talep, hazir_video_url: "https://iframe.mediadelivery.net/embed/lib/guid" }, bosZincir);
+  assert.equal(isleniyor.find((adim) => adim.hal === "aktif")?.durum_kodu, "video_isleniyor");
+  assert.equal(ureticiDurumMesaji("video_isleniyor").metin, "Videonuz İşleniyor");
+
+  const soruSetiZinciri = {
+    ...bosZincir,
+    video_id: "video-v2",
+    video_durum: "onaylandi",
+    video_durum_tarih: "2026-09-16T09:00:00.000Z",
+    soru_seti_id: "soru-v2",
+  };
+  const soruSeti = adimlariCoz(talep, soruSetiZinciri, {
+    asama: "Soru Seti",
+    durum_kodu: "iu_iletildi",
+    tarih: "2026-09-16T09:00:00.000Z",
+  });
+  assert.equal(soruSeti.find((adim) => adim.hal === "aktif")?.anahtar, "soru_seti");
+  assert.equal(soruSeti.find((adim) => adim.hal === "aktif")?.durum_kodu, "iu_iletildi");
+
+  const yayin = adimlariCoz(talep, {
+    ...soruSetiZinciri,
+    soru_seti_iu_id: "iu-1",
+    soru_seti_durum: "onaylandi",
+    soru_seti_durum_tarih: "2026-09-16T10:00:00.000Z",
+  });
+  assert.equal(yayin.find((adim) => adim.hal === "aktif")?.anahtar, "yayin");
+  assert.equal(yayin.find((adim) => adim.hal === "aktif")?.durum_kodu, "yayin_bekleniyor");
+
+  assert.equal(
+    hazirVideoIsleniyorMesaji(false),
+    "Video yüklendi ve işleniyor. Hazır olduğunda soru seti üretimi için içerik üreticinize iletilecek.",
+  );
+  assert.equal(
+    hazirVideoIsleniyorMesaji(true),
+    "Video yüklendi ve işleniyor. Hazır olduğunda yayın yönetimine aktarılacak.",
+  );
+});
+
+test("Video V2 arka plan kalici hatasinda kullaniciyi bilgilendirir ve talep verisini yeniler", () => {
+  const merkez = readFileSync("app/(panel)/talepler/_hooks/useTalepMerkezi.ts", "utf8");
+  const form = readFileSync("app/(panel)/talepler/_hooks/useTalepFormu.ts", "utf8");
+
+  assert.match(merkez, /t\.d2\.hata \?\? "Video işlenemedi\. Yeniden yükleyebilirsiniz\."/);
+  assert.match(merkez, /setDetayTetik\(\(x\) => x \+ 1\);\s*await veriCek\(\);/);
+  assert.match(form, /t\.d2\.hata \?\? "Video işlenemedi\. Talep Takibi ekranından yeniden yükleyebilirsiniz\."/);
+  assert.match(form, /await onTalepOlusturuldu\?\.\(\);/);
+});
+
+function assertAktif(anahtar: string, durum_kodu: string, tarih: string | null) {
+  return {
+    anahtar,
+    etiket: anahtar === "senaryo" ? "Senaryo" : anahtar,
+    hal: "aktif",
+    durum_kodu,
+    tarih,
+  };
+}
 
 test("aktif gorev yokken teslim ve yayin durumu icerik zincirinden cozulur", () => {
   const talep: SeritTalebi = {

@@ -60,6 +60,8 @@ export interface ZincirTalebi {
   yayin_oncesi_silme_tarihi?: string | null;
   ogrenme_araci_turu?: OgrenmeAraciTuru | null;
   hazir_soru_seti?: boolean | null;
+  /** Hazır video Bunny'ye bağlandı fakat videolar kaydı henüz oluşmadıysa işleniyor demektir. */
+  hazir_video_url?: string | null;
 }
 
 // Kolonlar açık yazılır (select("*") DEĞİL): denetim aracı yıldızı atlar, açık
@@ -178,7 +180,11 @@ export function asamaCoz(talep: ZincirTalebi, z: ZincirSatiri): ZincirDurumu {
   if (!z.video_id) {
     // Hazır kolda video kaydı yoksa yükleme üreticidedir. Normal kolda kabuk
     // senaryo onayıyla doğduğundan burada olmaması zincir kopmasıdır.
-    const kod: DurumKodu = talep.hazir_video ? "video_bekleniyor" : "sistem_hatasi";
+    const kod: DurumKodu = talep.hazir_video
+      ? talep.hazir_video_url
+        ? "video_isleniyor"
+        : "video_bekleniyor"
+      : "sistem_hatasi";
     return {
       asama: "Video",
       durum_kodu: kod,

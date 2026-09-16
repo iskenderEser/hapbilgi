@@ -25,10 +25,13 @@ interface Props {
   /** Karar verilebilecek aktif adım. null ise karar sırası üreticide değil. */
   hedef: { asama: ToastAsama; id: string; surum: number; revizyonSayisi: number } | null;
   yukleniyor: boolean;
+  /** Teknik olarak incelenemeyen teslimde onay/revizyon kapanır; iptal açık kalır. */
+  incelemeKisitli?: boolean;
+  incelemeKisitNedeni?: string;
   onKarar: (durum: KararDurumu, notlar?: string) => void;
 }
 
-export function AksiyonSeridi({ hedef, yukleniyor, onKarar }: Props) {
+export function AksiyonSeridi({ hedef, yukleniyor, incelemeKisitli = false, incelemeKisitNedeni, onKarar }: Props) {
   const [revizyonAcik, setRevizyonAcik] = useState(false);
   const [not, setNot] = useState("");
 
@@ -42,6 +45,11 @@ export function AksiyonSeridi({ hedef, yukleniyor, onKarar }: Props) {
 
   return (
     <div className="mt-3 pt-3 border-t border-gray-100">
+      {incelemeKisitli && incelemeKisitNedeni && (
+        <p className="mb-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
+          {incelemeKisitNedeni}
+        </p>
+      )}
       {revizyonAcik ? (
         <div className="flex flex-col gap-2">
           <textarea
@@ -64,9 +72,9 @@ export function AksiyonSeridi({ hedef, yukleniyor, onKarar }: Props) {
             <button
               type="button"
               onClick={() => { onKarar("revizyon bekleniyor", not); kapat(); }}
-              disabled={!not.trim() || yukleniyor}
+              disabled={!not.trim() || yukleniyor || incelemeKisitli}
               className="px-3 py-1.5 rounded-lg border-none bg-amber-500 text-white text-xs font-semibold cursor-pointer"
-              style={{ opacity: !not.trim() || yukleniyor ? 0.5 : 1, fontFamily: "'Nunito', sans-serif" }}
+              style={{ opacity: !not.trim() || yukleniyor || incelemeKisitli ? 0.5 : 1, fontFamily: "'Nunito', sans-serif" }}
             >
               Revizyon Gönder
             </button>
@@ -77,7 +85,7 @@ export function AksiyonSeridi({ hedef, yukleniyor, onKarar }: Props) {
           <button
             type="button"
             onClick={() => onKarar("onaylandi")}
-            disabled={yukleniyor}
+            disabled={yukleniyor || incelemeKisitli}
             className="px-3 py-1.5 rounded-lg border-none bg-green-700 text-white text-xs font-semibold cursor-pointer"
             style={{ fontFamily: "'Nunito', sans-serif" }}
           >
@@ -87,7 +95,7 @@ export function AksiyonSeridi({ hedef, yukleniyor, onKarar }: Props) {
             <button
               type="button"
               onClick={() => setRevizyonAcik(true)}
-              disabled={yukleniyor}
+              disabled={yukleniyor || incelemeKisitli}
               className="px-3 py-1.5 rounded-lg border-none bg-amber-500 text-white text-xs font-semibold cursor-pointer"
               style={{ fontFamily: "'Nunito', sans-serif" }}
             >
