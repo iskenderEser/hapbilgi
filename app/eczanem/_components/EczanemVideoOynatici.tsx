@@ -13,6 +13,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import PodcastOynatici from "@/components/ogrenme-araci/PodcastOynatici";
 import GorselOynatici from "@/components/ogrenme-araci/GorselOynatici";
 import FlipPdfOynatici from "@/components/ogrenme-araci/FlipPdfOynatici";
+import { IzlemeSoruFormu, IzlemeSoruSonuclari } from "@/components/soru/IzlemeSoruPaneli";
+import type { IzlemeCevapSonucu, IzlemeSorusu } from "@/lib/soru/izlemeTipleri";
 
 interface OynaticiVideo {
   gonderim_id: string;
@@ -25,14 +27,7 @@ interface OynaticiVideo {
   arac_id?: string | null;
   arac_turu?: "video" | "podcast" | "gorsel" | "flip_pdf";
 }
-interface Soru {
-  soru_index: number;
-  soru_metni: string;
-  secenekler: { harf: string; metin: string }[];
-}
-interface CevapSonucu {
-  soru_index: number;
-  dogru_mu: boolean;
+interface CevapSonucu extends IzlemeCevapSonucu {
   dogru_secenek: string | null;
 }
 interface Props {
@@ -47,7 +42,7 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
   const [izlemeId, setIzlemeId] = useState<string | null>(null);
   const [izlemeBasladi, setIzlemeBasladi] = useState(false);
   const [izlemeTamamlandi, setIzlemeTamamlandi] = useState(false);
-  const [sorular, setSorular] = useState<Soru[]>([]);
+  const [sorular, setSorular] = useState<IzlemeSorusu[]>([]);
   const [soruGosterilecek, setSoruGosterilecek] = useState(false);
   const [cevaplar, setCevaplar] = useState<Record<number, string>>({});
   const [cevapSonuclari, setCevapSonuclari] = useState<CevapSonucu[]>([]);
@@ -272,8 +267,6 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
     }
   };
 
-  const tumuCevaplandi = sorular.length > 0 && Object.keys(cevaplar).length >= sorular.length;
-
   return (
     <div className="flex flex-col gap-3">
       <Button type="button" variant="ghost" size="sm" onClick={onKapat} className="w-fit px-0 text-xs font-extrabold text-[#61768c] hover:bg-transparent hover:text-[#237ac8]"><ArrowLeft className="size-4" /> İçeriklerime dön</Button>
@@ -306,9 +299,9 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
 
           {tamamlamaHatasi && <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#efcaca] bg-[#fff5f5] p-3 text-[#a74646]"><div className="flex items-start gap-2"><CircleAlert className="mt-0.5 size-4 shrink-0" /><p className="text-xs font-bold leading-5">{tamamlamaHatasi}</p></div><Button type="button" size="sm" variant="outline" onClick={() => void handleBitir()} disabled={islemLoading} className="h-8 border-[#e4b6b6] bg-white text-xs font-extrabold text-[#a74646]">Tamamlamayı yeniden dene</Button></div>}
 
-          {izlemeTamamlandi && soruGosterilecek && sorular.length > 0 && cevapSonuclari.length === 0 && <div className="flex flex-col gap-4"><div><h3 className="text-sm font-extrabold text-[#263e5b]">Soruları cevaplayın</h3><p className="mt-1 text-[11px] font-semibold text-[#8191a4]">Her soru için bir seçenek işaretleyin.</p></div>{sorular.map((soru, index) => <div key={soru.soru_index} className="rounded-2xl border border-[#e0e7ee] bg-[#f8fafc] p-4"><p className="text-sm font-extrabold leading-5 text-[#40556d]">{index + 1}. {soru.soru_metni}</p><div className="mt-3 grid gap-2">{soru.secenekler.map((secenek) => { const secili = cevaplar[soru.soru_index] === secenek.harf; return <button type="button" key={secenek.harf} onClick={() => setCevaplar((mevcut) => ({ ...mevcut, [soru.soru_index]: secenek.harf }))} className={`rounded-xl border px-3 py-2.5 text-left text-xs font-bold transition ${secili ? "border-[#6eaae0] bg-[#edf6fd] text-[#236fac] ring-1 ring-[#6eaae0]" : "border-[#dfe6ed] bg-white text-[#5e7186] hover:border-[#b8cddd] hover:bg-[#fbfdff]"}`}><span className="mr-2 inline-flex size-6 items-center justify-center rounded-lg bg-current/10">{secenek.harf}</span>{secenek.metin}</button>; })}</div></div>)}<div className="flex justify-end"><Button type="button" onClick={() => void handleCevapGonder()} disabled={!tumuCevaplandi || islemLoading} className="bg-[#237ac8] text-xs font-extrabold hover:bg-[#1d69ad]">{islemLoading ? <LoaderCircle className="animate-spin" /> : <BadgeCheck />} Cevapları gönder</Button></div></div>}
+          {izlemeTamamlandi && soruGosterilecek && sorular.length > 0 && cevapSonuclari.length === 0 && <IzlemeSoruFormu sorular={sorular} cevaplar={cevaplar} yukleniyor={islemLoading} onCevap={(soruIndex, cevap) => setCevaplar((mevcut) => ({ ...mevcut, [soruIndex]: cevap }))} onGonder={() => void handleCevapGonder()} baslik="Soruları cevaplayın" gonderMetni="Cevapları gönder" />}
 
-          {cevapSonuclari.length > 0 && <div className="flex flex-col gap-3"><h3 className="text-sm font-extrabold text-[#263e5b]">Sonuçlar</h3>{cevapSonuclari.map((sonuc) => <div key={sonuc.soru_index} className={`rounded-xl border px-3 py-2.5 text-xs font-extrabold ${sonuc.dogru_mu ? "border-[#bde5d5] bg-[#edf9f4] text-[#157254]" : "border-[#efcaca] bg-[#fff5f5] text-[#a74646]"}`}>{sonuc.dogru_mu ? "✓ Doğru" : `✕ Yanlış — Doğru cevap: ${sonuc.dogru_secenek ?? "-"}`}</div>)}<Button type="button" onClick={onKapat} className="self-end bg-[#237ac8] text-xs font-extrabold hover:bg-[#1d69ad]">İçeriklerime dön</Button></div>}
+          {cevapSonuclari.length > 0 && <IzlemeSoruSonuclari sonuclar={cevapSonuclari} sonucMetni={(sonuc) => sonuc.dogru_mu ? "✓ Doğru" : `✕ Yanlış — Doğru cevap: ${sonuc.dogru_secenek ?? "-"}`} altIcerik={<Button type="button" onClick={onKapat} className="self-end bg-[#237ac8] text-xs font-extrabold hover:bg-[#1d69ad]">İçeriklerime dön</Button>} />}
 
           {izlemeTamamlandi && !soruGosterilecek && cevapSonuclari.length === 0 && <div className="rounded-2xl border border-[#bde5d5] bg-[#edf9f4] p-4 text-center"><BadgeCheck className="mx-auto size-7 text-[#16865f]" /><p className="mt-2 text-sm font-extrabold text-[#157254]">Öğrenme içeriği tamamlandı</p><Button type="button" variant="outline" size="sm" onClick={onKapat} className="mt-3 border-[#abd7c6] bg-white text-xs font-extrabold text-[#157254]">İçeriklerime dön</Button></div>}
         </CardContent>

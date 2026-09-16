@@ -20,6 +20,8 @@ import PodcastOynatici from "@/components/ogrenme-araci/PodcastOynatici";
 import GorselOynatici from "@/components/ogrenme-araci/GorselOynatici";
 import FlipPdfOynatici from "@/components/ogrenme-araci/FlipPdfOynatici";
 import { useVideoEtkilesimKatmani } from "@/components/video/useVideoEtkilesimKatmani";
+import { IzlemeSoruFormu, IzlemeSoruSonuclari } from "@/components/soru/IzlemeSoruPaneli";
+import type { IzlemeCevapSonucu, IzlemeSorusu } from "@/lib/soru/izlemeTipleri";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,16 +44,8 @@ interface OynaticiVideo {
   arac_turu?: "video" | "podcast" | "gorsel" | "flip_pdf";
 }
 
-interface Soru {
-  soru_index: number;
-  soru_metni: string;
-  secenekler: { harf: string; metin: string }[];
-}
-
-interface CevapSonucu {
-  soru_index: number;
+interface CevapSonucu extends IzlemeCevapSonucu {
   verilen_cevap: string;
-  dogru_mu: boolean;
   dogru_cevap: string;
 }
 
@@ -105,7 +99,7 @@ interface Props {
 export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false, aktifYayinDogrula = false, oneri_id, onKapat, onVeriYenile, hata, basari, uyari }: Props) {
   const [izlemeId, setIzlemeId] = useState<string | null>(null);
   const [izlemeTamamlandi, setIzlemeTamamlandi] = useState(false);
-  const [sorular, setSorular] = useState<Soru[]>([]);
+  const [sorular, setSorular] = useState<IzlemeSorusu[]>([]);
   const [soruGosterilecek, setSoruGosterilecek] = useState(false);
   const [cevaplar, setCevaplar] = useState<Record<number, string>>({});
   const [cevapSonuclari, setCevapSonuclari] = useState<CevapSonucu[]>([]);
@@ -608,51 +602,22 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
 
             {/* Sorular */}
             {izlemeTamamlandi && soruGosterilecek && sorular.length > 0 && cevapSonuclari.length === 0 && (
-              <div className="flex flex-col gap-4">
-                <div className="text-sm font-semibold text-gray-900">Soruları Cevapla</div>
-                {sorular.map((soru, i) => (
-                  <div key={soru.soru_index} className="px-3 py-3.5 bg-gray-50 rounded-xl border border-gray-200">
-                    <p className="text-sm text-gray-700 font-semibold mb-3">{i + 1}. {soru.soru_metni}</p>
-                    <div className="flex flex-col gap-2">
-                      {soru.secenekler.map((s) => (
-                        <button key={s.harf} onClick={() => setCevaplar(prev => ({ ...prev, [soru.soru_index]: s.harf }))}
-                          className="px-3 py-2.5 rounded-lg text-sm text-left cursor-pointer border transition-colors"
-                          style={{
-                            border: cevaplar[soru.soru_index] === s.harf ? "1.5px solid #56aeff" : "0.5px solid #e5e7eb",
-                            background: cevaplar[soru.soru_index] === s.harf ? "#e6f1fb" : "white",
-                            color: cevaplar[soru.soru_index] === s.harf ? "#56aeff" : "#374151",
-                            fontWeight: cevaplar[soru.soru_index] === s.harf ? 600 : 400,
-                            fontFamily: "'Nunito', sans-serif",
-                          }}>
-                          {s.harf}. {s.metin}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-                <div className="flex justify-end">
-                  <button onClick={handleCevapGonder}
-                    disabled={Object.keys(cevaplar).length < sorular.length || islemLoading}
-                    className="text-white border-none rounded-lg px-6 py-2.5 text-xs font-semibold cursor-pointer"
-                    style={{ background: "#56aeff", opacity: Object.keys(cevaplar).length < sorular.length ? 0.5 : 1, fontFamily: "'Nunito', sans-serif" }}>
-                    {islemLoading ? "..." : "Cevapla"}
-                  </button>
-                </div>
-              </div>
+              <IzlemeSoruFormu
+                sorular={sorular}
+                cevaplar={cevaplar}
+                yukleniyor={islemLoading}
+                onCevap={(soruIndex, cevap) => setCevaplar((mevcut) => ({ ...mevcut, [soruIndex]: cevap }))}
+                onGonder={() => void handleCevapGonder()}
+                gonderMetni="Cevapla"
+              />
             )}
 
             {/* Cevap sonuçları */}
             {cevapSonuclari.length > 0 && (
-              <div className="flex flex-col gap-3">
-                <div className="text-sm font-semibold text-gray-900">Sonuçlar</div>
-                {cevapSonuclari.map((s) => (
-                  <div key={s.soru_index} className="px-3 py-2.5 rounded-lg border"
-                    style={{ background: s.dogru_mu ? "#f0fdf4" : "#fef2f2", border: `0.5px solid ${s.dogru_mu ? "#bbf7d0" : "#fecaca"}` }}>
-                    <span className="text-xs font-semibold" style={{ color: s.dogru_mu ? "#16a34a" : "#bc2d0d" }}>
-                      {s.dogru_mu ? "✓ Doğru" : `✗ Yanlış — Doğru cevap: ${s.dogru_cevap}`}
-                    </span>
-                  </div>
-                ))}
+              <IzlemeSoruSonuclari
+                sonuclar={cevapSonuclari}
+                sonucMetni={(sonuc) => sonuc.dogru_mu ? "✓ Doğru" : `✗ Yanlış — Doğru cevap: ${sonuc.dogru_cevap}`}
+                altIcerik={<>
                 {kazanilanPuan !== null && kazanilanPuan > 0 && (
                   <div className="px-4 py-3.5 bg-blue-50 rounded-xl border border-blue-200 text-center">
                     <span className="text-sm font-bold text-blue-700">+{kazanilanPuan} puan kazandınız!</span>
@@ -667,7 +632,8 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
                     Videolara dön
                   </button>
                 </div>
-              </div>
+                </>}
+              />
             )}
 
             {/* Soru yok ama puan var */}

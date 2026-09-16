@@ -8,12 +8,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, CheckCircle2, HelpCircle, Send } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { createVideoPlayer, type VideoPlayer } from "@/lib/video/videoPlayer";
 import VideoCercevesi from "@/components/video/VideoCercevesi";
 import PodcastOynatici from "@/components/ogrenme-araci/PodcastOynatici";
 import GorselOynatici from "@/components/ogrenme-araci/GorselOynatici";
 import FlipPdfOynatici from "@/components/ogrenme-araci/FlipPdfOynatici";
+import { IzlemeSoruFormu, IzlemeSoruSonuclari } from "@/components/soru/IzlemeSoruPaneli";
+import type { IzlemeCevapSonucu, IzlemeSorusu } from "@/lib/soru/izlemeTipleri";
 
 interface OynaticiOneri {
   oneri_id: string;
@@ -25,15 +27,7 @@ interface OynaticiOneri {
   arac_turu?: "video" | "podcast" | "gorsel" | "flip_pdf";
 }
 
-interface Soru {
-  soru_index: number;
-  soru_metni: string;
-  secenekler: { harf: string; metin: string }[];
-}
-
-interface CevapSonucu {
-  soru_index: number;
-  dogru_mu: boolean;
+interface CevapSonucu extends IzlemeCevapSonucu {
   dogru_cevap: string | null;
 }
 
@@ -49,7 +43,7 @@ interface Props {
 export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata, basari, uyari }: Props) {
   const [izlemeId, setIzlemeId] = useState<string | null>(null);
   const [izlemeTamamlandi, setIzlemeTamamlandi] = useState(false);
-  const [sorular, setSorular] = useState<Soru[]>([]);
+  const [sorular, setSorular] = useState<IzlemeSorusu[]>([]);
   const [soruGosterilecek, setSoruGosterilecek] = useState(false);
   const [cevaplar, setCevaplar] = useState<Record<number, string>>({});
   const [cevapSonuclari, setCevapSonuclari] = useState<CevapSonucu[]>([]);
@@ -420,59 +414,29 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
 
         <div className="px-4 py-4 md:px-5 md:py-5">
           {izlemeTamamlandi && soruGosterilecek && sorular.length > 0 && cevapSonuclari.length === 0 && (
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center gap-2"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#f2efff] text-[#7358c7]"><HelpCircle size={16} /></span><div><div className="text-sm font-extrabold text-[#203653]">Soruları Cevapla</div><div className="text-[10px] font-semibold text-[#8190a3]">Tüm soruları yanıtladıktan sonra cevaplarınızı gönderin.</div></div></div>
-              {sorular.map((soru, i) => (
-                <div key={soru.soru_index} className="rounded-2xl border border-[#e1e9f1] bg-[#f8fafc] px-3.5 py-4">
-                  <p className="mb-3 text-sm font-bold leading-5 text-[#30475f]">{i + 1}. {soru.soru_metni}</p>
-                  <div className="grid gap-2">
-                    {soru.secenekler.map((s) => (
-                      <button
-                        type="button"
-                        key={s.harf}
-                        onClick={() => setCevaplar((prev) => ({ ...prev, [soru.soru_index]: s.harf }))}
-                        className={`rounded-xl border px-3 py-2.5 text-left text-xs font-semibold transition ${cevaplar[soru.soru_index] === s.harf ? "border-[#8abde8] bg-[#eaf5fc] text-[#237ac8] ring-1 ring-[#b9d9ef]" : "border-[#dfe7f1] bg-white text-[#40556d] hover:border-[#b9d7ee]"}`}
-                      >
-                        <strong className="mr-1.5">{s.harf}.</strong> {s.metin}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={handleCevapGonder}
-                  disabled={Object.keys(cevaplar).length < sorular.length || islemLoading}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#237ac8] px-5 py-2.5 text-xs font-extrabold text-white shadow-sm hover:bg-[#1d69aa] disabled:cursor-not-allowed disabled:opacity-45"
-                >
-                  <Send size={13} /> {islemLoading ? "Gönderiliyor..." : "Cevapları Gönder"}
-                </button>
-              </div>
-            </div>
+            <IzlemeSoruFormu
+              sorular={sorular}
+              cevaplar={cevaplar}
+              yukleniyor={islemLoading}
+              onCevap={(soruIndex, cevap) => setCevaplar((mevcut) => ({ ...mevcut, [soruIndex]: cevap }))}
+              onGonder={() => void handleCevapGonder()}
+              aciklama="Tüm soruları yanıtladıktan sonra cevaplarınızı gönderin."
+            />
           )}
 
           {cevapSonuclari.length > 0 && (
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-2 text-sm font-extrabold text-[#203653]"><CheckCircle2 size={17} className="text-[#16865f]" /> Cevap Sonuçları</div>
-              {cevapSonuclari.map((s) => (
-                <div
-                  key={s.soru_index}
-                  className={`rounded-xl border px-3.5 py-3 ${s.dogru_mu ? "border-[#bce8d4] bg-[#effaf5]" : "border-[#fecaca] bg-[#fff7f7]"}`}
-                >
-                  <span className={`text-xs font-bold ${s.dogru_mu ? "text-[#16865f]" : "text-[#b23b31]"}`}>
-                    {s.dogru_mu ? "✓ Doğru" : `✗ Yanlış — Doğru cevap: ${s.dogru_cevap ?? "-"}`}
-                  </span>
-                </div>
-              ))}
-              <button
+            <IzlemeSoruSonuclari
+              sonuclar={cevapSonuclari}
+              baslik="Cevap Sonuçları"
+              sonucMetni={(sonuc) => sonuc.dogru_mu ? "✓ Doğru" : `✗ Yanlış — Doğru cevap: ${sonuc.dogru_cevap ?? "-"}`}
+              altIcerik={<button
                 type="button"
                 onClick={onKapat}
                 className="self-end rounded-xl bg-[#237ac8] px-5 py-2.5 text-xs font-extrabold text-white hover:bg-[#1d69aa]"
               >
                 Panele dön
-              </button>
-            </div>
+              </button>}
+            />
           )}
 
           {izlemeTamamlandi && !soruGosterilecek && cevapSonuclari.length === 0 && (
