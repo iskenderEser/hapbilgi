@@ -202,7 +202,7 @@ test("Aşama 3 HTTP Bağımsızlığı: transkript-ai-baslat rota içinde hiçbi
   assert.match(aiBaslat, /status:\s*202/);
 });
 
-test("Aşama 3 Bağımsız Vercel Cron Worker: /api/cron/transkript-kuyruk, Bearer CRON_SECRET kontrolü, 401 yetkilendirme", () => {
+test("Aşama 3 bağımsız cron worker: /api/cron/transkript-kuyruk, Bearer CRON_SECRET kontrolü, 401 yetkilendirme", () => {
   const cronRoute = oku("app/api/cron/transkript-kuyruk/route.ts");
 
   assert.match(cronRoute, /process\.env\.CRON_SECRET/);
@@ -213,8 +213,7 @@ test("Aşama 3 Bağımsız Vercel Cron Worker: /api/cron/transkript-kuyruk, Bear
 });
 
 test("Aşama 3 Supabase Cron ve .env.example yapılandırması: zamanlama, Vault ve gizli anahtarsız CRON_SECRET", () => {
-  const vercelJson = JSON.parse(oku("vercel.json"));
-  assert.equal(vercelJson.crons, undefined, "Hobby deployment'ını engelleyen Vercel cron tanımı bulunmamalı");
+  assert.equal(fs.existsSync(path.resolve(process.cwd(), "vercel.json")), false, "İşlevsiz Vercel yapılandırması repoda bulunmamalı");
 
   const cronSql = oku("scripts/sql/kuyruk_cronlarini_supabase_tasima.sql");
   assert.match(cronSql, /'hapbilgi_podcast_transkript_kuyrugu'/);
