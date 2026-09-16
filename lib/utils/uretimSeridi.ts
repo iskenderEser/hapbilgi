@@ -149,7 +149,7 @@ export function adimlariCoz(
     const durum_kodu: DurumKodu | null =
       hal === "aktif"
         ? durum.durum_kodu
-        : hal === "tamam" && anahtar === "video" && talep.hazir_video && talep.ogrenme_araci_turu === "podcast"
+        : hal === "tamam" && anahtar === "video" && talep.hazir_video && talep.ogrenme_araci_turu !== "video"
           ? "hazir_arac_iletildi"
           : hal === "tamam"
             ? "onaylandi"

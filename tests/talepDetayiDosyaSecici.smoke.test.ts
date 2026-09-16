@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { aracYuklemeAyarlari } from "../app/(panel)/talepler/_components/VideoYukleme.tsx";
 import { dosyaTipiRenk, PODCAST_FORMATLAR, GORSEL_FORMATLAR, FLIP_PDF_FORMATLAR, VIDEO_FORMATLAR } from "../app/(panel)/talepler/_types.ts";
+import { readFileSync } from "node:fs";
 
 test("aracYuklemeAyarlari öğrenme aracı türüne göre buton, format ve metinleri dinamik döner", () => {
   const podcast = aracYuklemeAyarlari("podcast");
@@ -45,6 +45,13 @@ test("dosyaTipiRenk yeni öğrenme araçlarının uzantılarını (audio, webp) 
 test("HazirVideoYukleme bileşeni VideoYukleme'ye ogrenmeAraciTuru propunu iletir", () => {
   const hazir = readFileSync("app/(panel)/talepler/_components/HazirVideoYukleme.tsx", "utf8");
   assert.match(hazir, /ogrenmeAraciTuru=\{ogrenmeAraciTuru\}/);
+});
+
+test("hazır Dijital Broşür talep alanı ortak WEBP sözleşmesini ve doğru kullanıcı dilini kullanır", () => {
+  const alan = readFileSync("app/(panel)/talepler/_components/GorselTalepAlanlari.tsx", "utf8");
+  assert.match(alan, /accept=\{GORSEL_FORMATLAR\}/);
+  assert.match(alan, /JPG, JPEG, PNG veya WEBP/);
+  assert.match(alan, /Hazır Dijital Broşürü seçin/);
 });
 
 test("AdimIcerigi bileşeni HazirVideoYukleme'ye talep.ogrenme_araci_turu propunu iletir", () => {

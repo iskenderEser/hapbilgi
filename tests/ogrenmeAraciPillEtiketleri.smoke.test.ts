@@ -227,6 +227,30 @@ test("V2 Hazır Podcast + İÜ Soru Seti: senaryo kapalı, podcast tamamlanmış
   assert.equal(yayin?.hal, "ileri");
 });
 
+test("V2 Hazır Dijital Broşür + İÜ Soru Seti: broşür iletildi ve soru seti aktiftir", () => {
+  const talep = {
+    talep_id: "talep-v2-gorsel",
+    hazir_video: true,
+    hazir_soru_seti: false,
+    ogrenme_araci_turu: "gorsel" as const,
+    created_at: "2026-09-16T10:00:00Z",
+  };
+  const adimlar = adimlariCoz(talep, null);
+  const senaryo = adimlar.find((adim) => adim.anahtar === "senaryo");
+  const brosur = adimlar.find((adim) => adim.anahtar === "video");
+  const soruSeti = adimlar.find((adim) => adim.anahtar === "soru_seti");
+  const yayin = adimlar.find((adim) => adim.anahtar === "yayin");
+
+  assert.equal(senaryo?.hal, "kapali");
+  assert.equal(brosur?.hal, "tamam");
+  assert.equal(brosur?.etiket, "Dijital Broşür");
+  assert.equal(brosur?.durum_kodu, "hazir_arac_iletildi");
+  assert.equal(ureticiDurumMesaji(brosur!.durum_kodu!, null, "gorsel").metin, "Dijital Broşürünüzü İlettiniz");
+  assert.equal(soruSeti?.hal, "aktif");
+  assert.equal(soruSeti?.durum_kodu, "iu_iletildi");
+  assert.equal(yayin?.hal, "ileri");
+});
+
 test("V4 Hazır Dijital Broşür ve Hazır Literatür: yayına hazır hale gelir ve durum 'yayin_bekleniyor' olur", () => {
   for (const tur of ["gorsel", "flip_pdf"] as const) {
     const talep = {

@@ -1763,8 +1763,8 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
           try {
             await hazirGorselYukle({ talepId: talep_id, gorsel: bekleyenGorsel.dosya, kontrol });
           } catch (error) {
-            hata("Görsel yüklenemedi.", "görsel yükleme", error instanceof Error ? error.message : undefined);
-            basarisizlar.push(`${bekleyenGorsel.preview.dosya_adi} (görsel)`);
+            hata("Dijital Broşür yüklenemedi.", "Dijital Broşür yükleme", error instanceof Error ? error.message : undefined);
+            basarisizlar.push(`${bekleyenGorsel.preview.dosya_adi} (Dijital Broşür)`);
           }
         }
         if (hazirVideo && ogrenmeAraciTuru === "flip_pdf" && bekleyenFlipPdf) {

@@ -283,7 +283,7 @@ export function useTalepMerkezi() {
           setDetayTetik((x) => x + 1);
           await veriCek();
         } catch (err: unknown) {
-          hata("Dijital broşür yüklenemedi.", "Görsel yükleme", err instanceof Error ? err.message : undefined);
+          hata("Dijital Broşür yüklenemedi.", "Dijital Broşür yükleme", err instanceof Error ? err.message : undefined);
         } finally {
           setVideoYuzdesi(null);
         }
