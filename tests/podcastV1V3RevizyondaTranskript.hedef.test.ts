@@ -51,5 +51,9 @@ test("SQL tercih, transkript temizliği ve revizyon kararını tek transactionda
   assert.match(sql, /'durum', 'yok'/);
   assert.match(sql, /public\.uretim_podcast_uretici_karar_ver\([\s\S]*p_beklenen_surum[\s\S]*\)/);
   assert.match(sql, /p_revizyonda_transkript_istendi boolean/);
+  assert.match(
+    sql,
+    /IF FOUND THEN[\s\S]*RETURN v_onceki \|\| jsonb_build_object\([\s\S]*'revizyonda_transkript_istendi'/,
+  );
   assert.match(sql, /COMMIT;/);
 });

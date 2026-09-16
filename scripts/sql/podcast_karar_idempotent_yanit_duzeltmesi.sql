@@ -1,7 +1,7 @@
--- Faz 4 — Üreticinin V1/V3 podcast revizyonunda sonradan AI transkript istemesi.
+-- Düzeltme — Podcast üretici kararında idempotent yanıt sözleşmesini korur.
 -- Tekrar çalıştırılabilir; uygulama bu dosyayı otomatik çalıştırmaz.
 BEGIN;
-SELECT pg_advisory_xact_lock(hashtextextended('hapbilgi-faz4-podcast-revizyonda-transkript-v1', 1));
+SELECT pg_advisory_xact_lock(hashtextextended('hapbilgi-podcast-karar-idempotent-yanit-v1', 1));
 
 CREATE OR REPLACE FUNCTION public.uretim_podcast_uretici_karar_ver(
   p_gorev_id uuid,
@@ -102,4 +102,4 @@ GRANT EXECUTE ON FUNCTION public.uretim_podcast_uretici_karar_ver(uuid,uuid,text
 COMMIT;
 
 SELECT to_regprocedure('public.uretim_podcast_uretici_karar_ver(uuid,uuid,text,text,uuid,integer,boolean)') IS NOT NULL
-  AS podcast_revizyonda_transkript_kapisi_kuruldu;
+  AS podcast_karar_idempotent_yanit_duzeltildi;

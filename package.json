@@ -17,6 +17,8 @@
     "denetim:hedef-roller": "node scripts/denetim/hedef-roller-dogrula.cjs",
     "denetim:bunny-canli": "node scripts/denetim/ogrenme-araclari-bunny-canli-dogrula.mjs",
     "test:smoke": "node --import ./tests/_alias.mjs --test tests/*.smoke.test.ts",
+    "test:uretim": "node --import ./tests/_alias.mjs --test tests/uretimSenaryoAltyapisi.smoke.test.ts tests/uretimSenaryolariVideo.smoke.test.ts tests/uretimSenaryolariOgrenmeAraclari.smoke.test.ts tests/uretimSeridiGenelleme.smoke.test.ts tests/ogrenmeAraciPillEtiketleri.smoke.test.ts tests/pm04YarimYukleme.hedef.test.ts tests/pm05TalepIdempotency.hedef.test.ts tests/pm06GuncelSurum.hedef.test.ts tests/ogrenmeAraciTamamlamaFaz4.hedef.test.ts",
+    "test:uretim:canli": "node tests/uretimKararKapisi.canli.cjs && node tests/ogrenmeAraciKararKapilari.canli.cjs",
     "test:hedef": "node --import ./tests/_alias.mjs --test tests/*.hedef.test.ts",
     "test:smoke:tz": "TZ=UTC node --import ./tests/_alias.mjs --test tests/*.smoke.test.ts && TZ=Pacific/Kiritimati node --import ./tests/_alias.mjs --test tests/*.smoke.test.ts"
   },
