@@ -512,6 +512,59 @@ test("Podcast V3 hazir soru seti mesajini podcast onayindan sonra da korur", () 
   assert.equal(yayin?.durum_kodu, "yayin_bekleniyor");
 });
 
+test("Dijital Broşür V3 hazır soru setini korur ve broşür onayından sonra yayına geçer", () => {
+  const talep: SeritTalebi = {
+    talep_id: "talep-gorsel-v3-yasam-dongusu",
+    hazir_video: false,
+    hazir_soru_seti: true,
+    ogrenme_araci_turu: "gorsel",
+    created_at: "2026-09-16T08:00:00.000Z",
+  };
+  const zincir = {
+    talep_id: talep.talep_id,
+    senaryo_id: "senaryo-gorsel-v3",
+    senaryo_iu_id: "iu-1",
+    senaryo_durum: "onaylandi",
+    senaryo_durum_tarih: "2026-09-16T09:00:00.000Z",
+    video_id: "gorsel-v3",
+    video_iu_id: "iu-1",
+    video_durum: null,
+    video_durum_tarih: null,
+    soru_seti_id: null,
+    soru_seti_iu_id: null,
+    soru_seti_durum: null,
+    soru_seti_durum_tarih: null,
+    yayin_durum: null,
+    yayin_tarihi: null,
+  };
+
+  const uretim = adimlariCoz(talep, zincir, { asama: "Video", durum_kodu: "onay_bekleniyor" });
+  assert.equal(uretim.find((adim) => adim.hal === "aktif")?.etiket, "Dijital Broşür");
+  assert.equal(uretim.find((adim) => adim.anahtar === "soru_seti")?.durum_kodu, "hazir_soru_seti");
+  assert.equal(
+    uretimToast(
+      { rol: "uretici", olay: "onay", asama: "video", revize: false },
+      { varyant: "hazir_set", ogrenmeAraciTuru: "gorsel" },
+    ),
+    "Dijital Broşürü onayladınız, yayın yönetimi sayfasına gidiniz",
+  );
+
+  const yayin = adimlariCoz(talep, {
+    ...zincir,
+    video_durum: "onaylandi",
+    video_durum_tarih: "2026-09-16T10:00:00.000Z",
+    soru_seti_id: "soru-seti-gorsel-v3",
+    soru_seti_durum: "onaylandi",
+    soru_seti_durum_tarih: "2026-09-16T10:00:00.000Z",
+  });
+  assert.equal(yayin.find((adim) => adim.anahtar === "soru_seti")?.durum_kodu, "hazir_soru_seti");
+  assert.equal(yayin.find((adim) => adim.hal === "aktif")?.anahtar, "yayin");
+  assert.equal(yayin.find((adim) => adim.hal === "aktif")?.durum_kodu, "yayin_bekleniyor");
+
+  const gorevSayfasi = readFileSync("app/(panel)/uretim/gorevler/[gorev_id]/page.tsx", "utf8");
+  assert.match(gorevSayfasi, /alt="Dijital Broşür önizlemesi"/);
+});
+
 test("Video V3 hazir soru seti talep detayinda kayit olusmadan da okunabilir", () => {
   const detayApi = readFileSync("app/(panel)/talepler/api/detay/route.ts", "utf8");
   const serit = readFileSync("app/(panel)/talepler/_components/UretimSeridi.tsx", "utf8");

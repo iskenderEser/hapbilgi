@@ -9,6 +9,7 @@ const ortakSql = oku("scripts/sql/ogrenme_araclari_tamamlama_faz4_uretim_hatti.s
 const kararRoute = oku("app/(panel)/uretim/api/karar/route.ts");
 const yayinRoute = oku("app/(panel)/yayin-yonetimi/api/yayinlar/route.ts");
 const kararSurumSql = oku("scripts/sql/uretim_karar_surum_kapisi.sql");
+const gorselV3TerminolojiSql = oku("scripts/sql/dijital_brosur_v3_karar_terminolojisi.sql");
 const migrationlar = {
   podcast: oku("scripts/sql/ogrenme_araclari_faz3_podcast_uretim.sql"),
   gorsel: oku("scripts/sql/ogrenme_araclari_faz4_gorsel_uretim.sql"),
@@ -59,6 +60,15 @@ test("üç araç aynı revizyon sınırını ve araç türüne özgü karar RPC'
     "uretim_gorsel_uretici_karar_ver",
     "uretim_flip_pdf_uretici_karar_ver",
   ]) assert.match(kararRoute, new RegExp(rpc));
+});
+
+test("Dijital Broşür V3 karar RPC'si doğru kullanıcı terminolojisini korur", () => {
+  assert.match(gorselV3TerminolojiSql, /Dijital Broşür karar yetkisi yok/);
+  assert.match(gorselV3TerminolojiSql, /Doğrulanmış Dijital Broşür bulunamadı/);
+  assert.match(gorselV3TerminolojiSql, /yalnız Dijital Broşür senaryo ve üretim aşamasını işler/);
+  assert.doesNotMatch(gorselV3TerminolojiSql, /Görsel karar yetkisi yok|Doğrulanmış görsel bulunamadı/);
+  assert.match(gorselV3TerminolojiSql, /REVOKE ALL ON FUNCTION/);
+  assert.match(gorselV3TerminolojiSql, /GRANT EXECUTE ON FUNCTION[\s\S]*TO service_role/);
 });
 
 test("sonraki görev açılmadan önce mevcut aktif görev kapanır", () => {
