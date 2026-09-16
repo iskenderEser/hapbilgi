@@ -227,7 +227,7 @@ test("Hedef 5: Normal başarısız/yarım yüklemeler yarım yükleme bildirimi 
 
   // 5a. Normal yarım yükleme mantığı (anaTamamlandi, kapakYarim, transkriptYarim) eksiksiz korunmaktadır
   assert.match(routeKodu, /const anaTamamlandi = son\?\.durum === "dogrulama_bekliyor"/);
-  assert.match(routeKodu, /const kapakYarim = a\.arac_turu === "podcast" && !kapakTamamlandi/);
+  assert.match(routeKodu, /const kapakYarim = \["podcast", "flip_pdf"\]\.includes\(String\(a\.arac_turu\)\) && !kapakTamamlandi/);
   assert.match(routeKodu, /const transkriptYarim = a\.arac_turu === "podcast" && !transkriptTamamlandi/);
 
   // 5b. Video yarım yüklemeleri de korunmaktadır

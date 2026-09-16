@@ -29,7 +29,7 @@ test("Hedef 1: Transkriptsiz V2 tamamlama — hazır ses yüklenir, transkriptsi
 // ----------------------------------------------------------------------------
 test("Hedef 2: Transkriptsiz V4 tamamlama — hazır ses ve soru seti ile transkript olmadan yayın havuzuna geçer", () => {
   const yuklemeIstemci = oku("lib/ogrenmeAraci/bunnyYuklemeIstemci.ts");
-  assert.match(yuklemeIstemci, /const transkriptGerekli = Boolean\(girdi\.kaynak === "iu" && !tamamlananParcalar\.has\("transkript"\)\);/);
+  assert.match(yuklemeIstemci, /const transkriptGerekli = false;/);
 
   const talepHook = oku("app/(panel)/talepler/_hooks/useTalepFormu.ts");
   // Podcast için ses zorunluyken transkript zorunlu değildir
@@ -87,7 +87,7 @@ test("Hedef 5: PDF metin çıkarma ve onay — pdfjs-dist ile çıkarılır, şi
 test("Hedef 6: Kopyala-yapıştır ve onay — metin_kaydet ve onayla işlemleriyle onaylanır", () => {
   const transkriptYonet = oku("app/api/ogrenme-araclari/[arac_id]/transkript-yonet/route.ts");
   assert.match(transkriptYonet, /islem === "metin_kaydet"/);
-  assert.match(transkriptYonet, /durum: "manuel_taslak"/);
+  assert.match(transkriptYonet, /const korunanDurum = oncekiKaynak === "ai" \? "ai_taslak" : "manuel_taslak"/);
   assert.match(transkriptYonet, /islem === "onayla"/);
   assert.match(transkriptYonet, /ASGARI_TRANSKRIPT_KARAKTER/);
 });
@@ -182,7 +182,7 @@ test("Hedef 14: Ses değişince onayın geçersizleşmesi — yeni ses yüklendi
   assert.match(yuklemeBaslatRoute, /metadata_dogrulandi:\s*false/);
 
   const transkriptYonet = oku("app/api/ogrenme-araclari/[arac_id]/transkript-yonet/route.ts");
-  assert.match(transkriptYonet, /bagli_ses_checksum:\s*\(metadataOnceki\.checksum_sha256/);
+  assert.match(transkriptYonet, /bagli_ses_checksum:\s*arac\.checksum_sha256/);
 });
 
 // ----------------------------------------------------------------------------
@@ -190,8 +190,9 @@ test("Hedef 14: Ses değişince onayın geçersizleşmesi — yeni ses yüklendi
 // ----------------------------------------------------------------------------
 test("Hedef 15: Yetkisiz kullanıcı ve firma erişimi — URETICI_ROLLER dışındaki veya farklı firma istekleri engellenir", () => {
   const transkriptYonet = oku("app/api/ogrenme-araclari/[arac_id]/transkript-yonet/route.ts");
-  assert.match(transkriptYonet, /URETICI_ROLLER\.includes\(rol\)/);
-  assert.match(transkriptYonet, /uretimAraciYetkisiniDogrula/);
+  assert.match(transkriptYonet, /podcastTranskriptYetkisiDogrula/);
+  assert.match(transkriptYonet, /transkriptIstendiZorunluMu:\s*true/);
+  assert.match(transkriptYonet, /if \(yetki\.kaynak === "iu"\)/);
 
   const erisimRoute = oku("app/api/ogrenme-araclari/[arac_id]/erisim/route.ts");
   assert.match(erisimRoute, /kullanici\?\.firma_id/);
@@ -270,7 +271,7 @@ test("Hedef 20: İlk üç geliştirme regresyonu — Aşama 1, 2 ve 3 sözleşme
 test("Hedef 21: Oynatıcı XSS güvenliği ve sunucu öncesi onay bildirimi sözleşmesi", () => {
   // 21a. Oynatıcı XSS ve HTML kaçış kontrolü
   const oynatici = oku("components/ogrenme-araci/PodcastOynatici.tsx");
-  assert.match(oynatici, /\{erisim\.transkript_metni\}/);
+  assert.match(oynatici, /erisim\.transkript_metni\.split\("\\n"\)\.map/);
   assert.doesNotMatch(oynatici, /dangerouslySetInnerHTML/);
 
   // 21b. PodcastTranskriptEditoru: aracId yokken sunucu kayıt başarısı gösterilmez

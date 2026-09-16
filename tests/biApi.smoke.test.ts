@@ -69,9 +69,9 @@ function ortam(secenek: { oturum?: boolean; rol?: string; puan?: unknown; rpcHat
     },
     async rpc(ad: string, parametreler: Record<string, unknown>) {
       rpcCagrilari.push({ ad, parametreler });
-      return secenek.rpcHatasi
-        ? { data: null, error: { message: "yerel hata" } }
-        : { data: [{ video_puani: secenek.puan ?? 125, soru_puani: 0, oneri_puani: 0, extra_puan: 0, ileri_sarma_kaybi: 0, yanlis_cevap_kaybi: 0, oneri_kaybi: 0 }], error: null };
+      if (secenek.rpcHatasi) return { data: null, error: { message: "yerel hata" } };
+      if (ad === "get_bm_puan_ozet") return { data: [{ toplam_net: 190 }], error: null };
+      return { data: [{ kullanici_id: parametreler.p_kullanici_id ?? "berk", video_puani: secenek.puan ?? 125, soru_puani: 0, oneri_puani: 0, extra_puan: 0, eclub_puani: 0, ileri_sarma_kaybi: 0, yanlis_cevap_kaybi: 0, oneri_kaybi: 0, toplam_net_puan: secenek.puan ?? 125 }], error: null };
     },
   };
 
@@ -237,9 +237,9 @@ test("API BM rolünü oturumdan Gemini'ye ve kişisel C-Club okuyucusuna taşır
   const o = ortam({ rol: "bm", gemini: { durum: "bulundu", sorgu } });
   const yanit = await (await o.sor("Bu ay puanım kaç?")).json();
   assert.deepEqual(o.geminiRolleri, ["bm"]);
-  assert.equal(o.rpcCagrilari.length, 0);
-  assert.equal(o.ccOkumalari.length, 3);
-  assert.ok(o.ccOkumalari.every(c => c.kimlik === "kullanici-1"));
+  assert.equal(o.rpcCagrilari.length, 1);
+  assert.equal(o.rpcCagrilari[0].ad, "get_bm_puan_ozet");
+  assert.equal(o.rpcCagrilari[0].parametreler.p_bm_id, "kullanici-1");
   assert.match(yanit.cevap, /190 puan/);
   assert.deepEqual(yanit.baglam, sorgu);
   assert.equal(yanit.kaynaklar[0].id, "bm_puan");
@@ -256,7 +256,7 @@ test("API TM bölge hedefini korur, UTT kimliğiyle iki aralığı karşılaşt�
   const cevap = await (await o.sor("Geçen ayla karşılaştır", { ...sorgu, karsilastir: false })).json();
   assert.deepEqual(o.geminiRolleri, ["tm"]);
   assert.equal(o.rpcCagrilari.length, 2);
-  assert.ok(o.rpcCagrilari.every(c => c.parametreler.p_kullanici_id === "berk"));
+  assert.ok(o.rpcCagrilari.every(c => c.parametreler.p_bolge_id === "b1"));
   assert.deepEqual(cevap.baglam.hedef, sorgu.hedef);
   assert.match(cevap.cevap, /Ankara — UTT toplamı/);
   assert.match(cevap.cevap, /Fark:/);

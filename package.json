@@ -17,6 +17,7 @@
     "denetim:hedef-roller": "node scripts/denetim/hedef-roller-dogrula.cjs",
     "denetim:bunny-canli": "node scripts/denetim/ogrenme-araclari-bunny-canli-dogrula.mjs",
     "test:smoke": "node --import ./tests/_alias.mjs --test tests/*.smoke.test.ts",
+    "test:hedef": "node --import ./tests/_alias.mjs --test tests/*.hedef.test.ts",
     "test:smoke:tz": "TZ=UTC node --import ./tests/_alias.mjs --test tests/*.smoke.test.ts && TZ=Pacific/Kiritimati node --import ./tests/_alias.mjs --test tests/*.smoke.test.ts"
   },
   "dependencies": {

@@ -73,7 +73,7 @@ test("Aşama 2 Transkript Yönetim Rotası: metin kaydetme, onaylama ve iptal et
   assert.match(transkriptYonet, /"iptal_et"/);
 
   // metin_kaydet taslak oluşturur, onay düşer
-  assert.match(transkriptYonet, /durum:\s*"manuel_taslak"/);
+  assert.match(transkriptYonet, /const korunanDurum = oncekiKaynak === "ai" \? "ai_taslak" : "manuel_taslak"/);
   // onayla eyleminde açık onay ve tarih atanır
   assert.match(transkriptYonet, /durum:\s*"onaylandi"/);
   assert.match(transkriptYonet, /onaylayan_kullanici_id:\s*user\.id/);
@@ -104,12 +104,11 @@ test("Aşama 2 İstemci UI: PodcastTranskriptEditoru dosya yükleme, metin yapı
 
 test("Aşama 2 Yetki ve Kapsam Kısıtları: İÜ rolü transkript-yonet yapamaz, yalnızca URETICI ve hazır V2/V4 talepleri yapabilir", () => {
   const transkriptYonet = oku("app/api/ogrenme-araclari/[arac_id]/transkript-yonet/route.ts");
-  // İÜ engeli
-  assert.match(transkriptYonet, /if \(!URETICI_ROLLER\.includes\(rol\)\) return rolHatasi\("Bu işlem yalnızca üretici rollerine açıktır\."\);/);
-  // Kaynak = hazir kontrolü
-  assert.match(transkriptYonet, /if \(arac\.kaynak !== "hazir"\)/);
-  // V2/V4 hazır podcast talebi kontrolü
-  assert.match(transkriptYonet, /if \(!talep \|\| talep\.ogrenme_araci_turu !== "podcast" \|\| talep\.hazir_video !== true\)/);
+  // Hazır ve İÜ akışları ortak yetki yardımcısından geçer; İÜ yalnız AI kaynağını yönetebilir.
+  assert.match(transkriptYonet, /podcastTranskriptYetkisiDogrula/);
+  assert.match(transkriptYonet, /transkriptIstendiZorunluMu:\s*true/);
+  assert.match(transkriptYonet, /if \(yetki\.kaynak === "iu"\)/);
+  assert.match(transkriptYonet, /mevcutTranskript\.kaynak !== "ai"/);
 });
 
 test("Aşama 2 UI Bütünlüğü: Formda tek transkript alanı bulunur, eski çift alan kaldırılmıştır", () => {

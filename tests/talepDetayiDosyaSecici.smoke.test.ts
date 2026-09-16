@@ -12,10 +12,10 @@ test("aracYuklemeAyarlari öğrenme aracı türüne göre buton, format ve metin
   assert.equal(podcast.yukleniyorMetni, "Podcast yükleniyor...");
 
   const gorsel = aracYuklemeAyarlari("gorsel");
-  assert.equal(gorsel.butonMetni, "Görsel / Broşür Ekle");
+  assert.equal(gorsel.butonMetni, "Dijital Broşür Ekle");
   assert.equal(gorsel.accept, GORSEL_FORMATLAR);
   assert.match(gorsel.aciklama, /png/);
-  assert.equal(gorsel.yukleniyorMetni, "Görsel yükleniyor...");
+  assert.equal(gorsel.yukleniyorMetni, "Dijital broşür yükleniyor...");
 
   const flipPdf = aracYuklemeAyarlari("flip_pdf");
   assert.equal(flipPdf.butonMetni, "Literatür Ekle");

@@ -7,6 +7,12 @@ const IK = ['ik_egitimi','yonetim_egitimi','talep','revizyon','planlanan_yayin',
 const URETIM_SADE = ['talep_kisa','planlanan_yayin_kisa','hazir_arac_kisa','hazir_set_kisa', ...URETIM_ORTAK];
 export function rolCevapKimlikleri(rol: string): readonly string[] {
  const r = rol.trim().toLowerCase();
- const aile = ureticiYetenegi(r)?.icerikTuru;
- return [...ORTAK_CEVAPLAR, ...(YONETICI_ROLLER.includes(r) ? [...URETIM_SADE, ...SAHA_YONETIMI] : aile === 'ik' ? IK : ['egitim', 'medikal', 'urun'].includes(aile ?? '') ? URETIM_SADE : YONLENDIRICI_ROLLER.includes(r) ? SAHA_YONETIMI : [])];
+ const yetenek = ureticiYetenegi(r);
+ const aile = yetenek?.icerikTuru;
+ const ureticiCevaplari = aile === 'ik'
+   ? IK
+   : ['egitim', 'medikal', 'urun'].includes(aile ?? '')
+     ? [...yetenek!.acabilecegiTalepTurleri, ...URETIM_SADE]
+     : [];
+ return [...new Set([...ORTAK_CEVAPLAR, ...(YONETICI_ROLLER.includes(r) ? [...URETIM_SADE, ...SAHA_YONETIMI] : ureticiCevaplari.length ? ureticiCevaplari : YONLENDIRICI_ROLLER.includes(r) ? SAHA_YONETIMI : [])])];
 }

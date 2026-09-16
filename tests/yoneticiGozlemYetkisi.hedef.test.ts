@@ -108,7 +108,7 @@ test("podcast gözlemci kipinde izleme başlatmaz, ilerleme yazmaz ve bitirmez",
 test("görsel ve PDF gözlemci kipinde oturum açmaz ve tamamlama eylemi göstermez", () => {
   for (const kaynak of [gorsel, pdf]) {
     assert.match(kaynak, /if \(!saltGoruntuleme\) \{/);
-    assert.match(kaynak, /!saltGoruntuleme && <(?:button|div)/);
+    assert.match(kaynak, /!saltGoruntuleme && (?:\(\s*)?<(?:button|div)/);
   }
   assert.match(pdf, /if \(!saltGoruntuleme\) void ilerlemeKaydet/);
 });

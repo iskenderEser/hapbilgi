@@ -69,7 +69,7 @@ test("öğrenme aracı türü bulunmayan eski kayıtta toast Video adını kulla
   );
 });
 
-test("V4 Hazır Podcast + Hazır Soru Seti: senaryo, podcast ve soru seti kapalı gelir, yayın aktiftir", () => {
+test("V4 Hazır Podcast + Hazır Soru Seti: senaryo ve soru seti kapalı, podcast tamamlanmış ve yayın aktiftir", () => {
   const talep = {
     talep_id: "talep-v4-podcast",
     hazir_video: true,
@@ -108,7 +108,7 @@ test("V4 Hazır Podcast + Hazır Soru Seti: senaryo, podcast ve soru seti kapal�
   const yayin = adimlar.find((a) => a.anahtar === "yayin");
 
   assert.equal(senaryo?.hal, "kapali");
-  assert.equal(podcast?.hal, "kapali");
+  assert.equal(podcast?.hal, "tamam");
   assert.equal(podcast?.etiket, "Podcast");
   assert.equal(soruSeti?.hal, "kapali");
   assert.equal(yayin?.hal, "aktif");
@@ -116,7 +116,7 @@ test("V4 Hazır Podcast + Hazır Soru Seti: senaryo, podcast ve soru seti kapal�
   assert.equal(yayin?.yol, "/yayin-yonetimi");
 });
 
-test("V2 Hazır Podcast + İÜ Soru Seti: senaryo ve podcast kapalı gelir, soru seti aktiftir", () => {
+test("V2 Hazır Podcast + İÜ Soru Seti: senaryo kapalı, podcast tamamlanmış ve soru seti aktiftir", () => {
   const talep = {
     talep_id: "talep-v2-podcast",
     hazir_video: true,
@@ -154,7 +154,7 @@ test("V2 Hazır Podcast + İÜ Soru Seti: senaryo ve podcast kapalı gelir, soru
   const yayin = adimlar.find((a) => a.anahtar === "yayin");
 
   assert.equal(senaryo?.hal, "kapali");
-  assert.equal(podcast?.hal, "kapali");
+  assert.equal(podcast?.hal, "tamam");
   assert.equal(soruSeti?.hal, "aktif");
   assert.equal(soruSeti?.durum_kodu, "iu_iletildi");
   assert.equal(yayin?.hal, "ileri");
@@ -192,5 +192,4 @@ test("V4 Hazır Dijital Broşür ve Hazır Literatür: yayına hazır hale gelir
     assert.equal(zincirDurumu.durum_kodu, "yayin_bekleniyor");
   }
 });
-
 

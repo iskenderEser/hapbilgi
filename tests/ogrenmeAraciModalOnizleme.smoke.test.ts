@@ -9,7 +9,7 @@ test("Modallar.tsx OgrenmeAraciOnizlemeModal ile 4 öğrenme aracını da destek
   assert.match(modallar, /VideoOnizleme/);
   assert.match(modallar, /Podcast Önizleme/);
   assert.match(modallar, /Dijital Broşür Önizleme/);
-  assert.match(modallar, /Literatür \(PDF\) Önizleme/);
+  assert.match(modallar, /Literatür Önizleme/);
   assert.match(modallar, /export function VideoOnizlemeModal/);
 });
 

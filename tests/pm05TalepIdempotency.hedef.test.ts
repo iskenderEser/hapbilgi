@@ -11,7 +11,7 @@ const form = oku("app/(panel)/talepler/_hooks/useTalepFormu.ts");
 test("PM-05 istemci, yanıt kaybında aynı form için aynı işlem anahtarını korur", () => {
   assert.match(form, /window\.sessionStorage\.getItem\(depoAnahtari\)/);
   assert.match(form, /onceki\?\.govde_imzasi === govdeImzasi[\s\S]*islemAnahtari = onceki\.islem_anahtari/);
-  assert.match(form, /body: JSON\.stringify\(\{ \.\.\.talepGovdesi, islem_anahtari: islemAnahtari \}\)/);
+  assert.match(form, /body: JSON\.stringify\(\{[\s\S]*\.\.\.talepGovdesi,[\s\S]*islem_anahtari: islemAnahtari,[\s\S]*taslak_talep_id:/);
   assert.match(form, /if \(kayit\?\.islem_anahtari === islemAnahtari\) window\.sessionStorage\.removeItem/);
 });
 

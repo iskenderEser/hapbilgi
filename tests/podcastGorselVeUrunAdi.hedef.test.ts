@@ -185,7 +185,7 @@ test("Davranış 4: Görselsiz devam kararı kayıtlı -> podcast tamamlanır", 
 
     // gorselsiz_devam API handler'ının depolama silme ve metadata iptal kararı aldığını doğrula
     assert.match(yarimYuklemelerRoute, /body\.islem === "gorselsiz_devam"/);
-    assert.match(yarimYuklemelerRoute, /podcast_kapak_yukleme_iptal_atomik/);
+    assert.match(yarimYuklemelerRoute, /ogrenme_araci_kapak_yukleme_iptal_atomik/);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -193,10 +193,10 @@ test("Davranış 4: Görselsiz devam kararı kayıtlı -> podcast tamamlanır", 
 
 test("Yayın görseli başlatma, tamamlama ve iptal işlemleri girişim kimliğiyle atomiktir", () => {
   assert.match(destekBaslatRoute, /randomUUID\(\)/);
-  assert.match(destekBaslatRoute, /podcast_kapak_yukleme_baslat_atomik/);
-  assert.match(destekTamamlaRoute, /podcast_kapak_yukleme_tamamla_atomik/);
+  assert.match(destekBaslatRoute, /ogrenme_araci_kapak_yukleme_baslat_atomik/);
+  assert.match(destekTamamlaRoute, /ogrenme_araci_kapak_yukleme_tamamla_atomik/);
   assert.match(destekTamamlaRoute, /yukleme_girisimi_id/);
-  assert.match(yarimYuklemelerRoute, /podcast_kapak_yukleme_iptal_atomik/);
+  assert.match(yarimYuklemelerRoute, /ogrenme_araci_kapak_yukleme_iptal_atomik/);
   assert.match(kapakGuvenligiSql, /WHERE arac_id = p_arac_id FOR UPDATE/g);
   assert.match(kapakGuvenligiSql, /v_girisim->>'id' IS DISTINCT FROM p_girisim_id::text/);
   assert.match(kapakGuvenligiSql, /v_son_durum NOT IN[\s\S]*'dogrulama_bekliyor'/);
@@ -319,10 +319,10 @@ test("Davranış 5: İstemci kontrolü atlanarak RPC çağrılmış, görsel hâ
 // --------------------------------------------------------------------------
 test("İş 1 & 3: Yayın Yönetimi İmzalı CDN URL ve PM Ürün Adı Öncelik Sıralaması", () => {
   // Bekleyenler ve Yayınlar imzalı URL
-  assert.match(bekleyenlerRoute, /import\s*\{\s*bunnyCdnImzaliUrl\s*\}\s*from\s*["']@\/lib\/(?:depolama\/bunnyCdn|ogrenmeAraci\/bunnyStorage)["']/);
-  assert.match(bekleyenlerRoute, /thumbnailUrl = bunnyCdnImzaliUrl\(aracHam\.kapak_yolu\);/);
+  assert.match(bekleyenlerRoute, /import\s*\{\s*yayinThumbnailUrlCoz\s*\}\s*from\s*["']@\/lib\/ogrenmeAraci\/yayinThumbnail["']/);
+  assert.match(bekleyenlerRoute, /const thumbnailUrl = yayinThumbnailUrlCoz\(\{/);
   assert.match(yayinlarRoute, /YAYIN_LISTE_ALANLARI[\s\S]*arac_kapak_yolu/);
-  assert.match(yayinlarRoute, /kapakUrl = bunnyCdnImzaliUrl\(y\.arac_kapak_yolu\);/);
+  assert.match(yayinlarRoute, /yayinThumbnailCevabi\(y as unknown as YayinKapakGirdisi/);
 
   // PM Ürün Adı öncelik sırası: urunler.urun_adi -> talepler.urun_adi -> "Podcast"
   assert.match(erisimRoute, /talepler\(urun_adi, urunler\(urun_adi\)\)/);

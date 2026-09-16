@@ -80,7 +80,7 @@ test('İK beş unvanında sözleşme aynı; geçmiş durum ve başka eğitim/rol
   for (const v of [{...temel, zaman:'ay'}, {...temel, egitim:'urun_egitimi'}, {...temel, karsilastir:true},
     {...temel, olcut:'talep_acilan'}, {...temel, olcut:'constructor'}])
     assert.equal(ureticiBaglaminiOku(v,'ik_md'),undefined);
-  assert.equal(ureticiBaglaminiOku(temel,'pm'),undefined);
+  assert.deepEqual(ureticiBaglaminiOku(temel,'pm'),temel);
   const donem = ureticiDonemi({...temel,olcut:'talep_acilan',zaman:'donem'},simdi);
   assert.equal(donem.baslangic,'2026-06-30T21:00:00.000Z');
   assert.equal(donem.bitis,'2026-09-08T20:59:59.999Z');
