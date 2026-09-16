@@ -130,13 +130,14 @@ export function adimlariCoz(
     // onayına kadar "hazır", atomik bağ ve otomatik onaydan sonra "tamam"dır.
     if (anahtar === "soru_seti" && talep.hazir_soru_seti) {
       const tamamlandi = Boolean(zincir.soru_seti_id && zincir.soru_seti_durum === "onaylandi");
+      const bagHatasi = aktifAdim === "soru_seti" && durum.durum_kodu === "sistem_hatasi";
       return {
         anahtar,
         etiket: adimEtiketi(anahtar, talep),
-        hal: tamamlandi ? "tamam" as AdimHal : "hazir" as AdimHal,
+        hal: tamamlandi ? "tamam" as AdimHal : bagHatasi ? "aktif" as AdimHal : "hazir" as AdimHal,
         // Hazır set üretici tarafından talep açılırken iletilir; araç onayından
         // sonra sisteme bağlanması yeni bir kullanıcı onayı değildir.
-        durum_kodu: "hazir_soru_seti",
+        durum_kodu: bagHatasi ? "sistem_hatasi" : "hazir_soru_seti",
         tarih: tamamlandi ? tarihler.soru_seti : talep.created_at ?? null,
       };
     }

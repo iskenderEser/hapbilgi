@@ -239,10 +239,21 @@ export function asamaCoz(talep: ZincirTalebi, z: ZincirSatiri): ZincirDurumu {
 
   // ── Soru seti (ortak): set video_durum_id ile bağlı. ──
   if (talep.hazir_soru_seti) {
+    if (!z.soru_seti_id || z.soru_seti_durum !== "onaylandi") {
+      return {
+        asama: "Soru Seti",
+        durum_kodu: z.soru_seti_id
+          ? kayitDurumKodu(z.soru_seti_durum, !!z.soru_seti_iu_id)
+          : "sistem_hatasi",
+        tarih: z.soru_seti_durum_tarih ?? oncekiTarih,
+        yol: `/talepler/${talep.talep_id}`,
+        iu_id: z.soru_seti_iu_id,
+      };
+    }
     return {
       asama: "Tamamlandı",
       durum_kodu: yayinDurumKodu(z.yayin_durum),
-      tarih: z.yayin_tarihi ?? z.video_durum_tarih ?? oncekiTarih,
+      tarih: z.yayin_tarihi ?? z.soru_seti_durum_tarih ?? z.video_durum_tarih ?? oncekiTarih,
       yol: "/yayin-yonetimi",
       iu_id: z.video_iu_id,
     };

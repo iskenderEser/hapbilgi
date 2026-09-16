@@ -668,6 +668,50 @@ test("Dijital Broşür V3 hazır soru setini korur ve broşür onayından sonra 
   assert.match(gorevSayfasi, /alt="Dijital Broşür önizlemesi"/);
 });
 
+test("Literatür V3 yalnız bağlı ve onaylı hazır soru setinden sonra yayına geçer", () => {
+  const talep: SeritTalebi = {
+    talep_id: "talep-literatur-v3-yasam-dongusu",
+    hazir_video: false,
+    hazir_soru_seti: true,
+    ogrenme_araci_turu: "flip_pdf",
+    created_at: "2026-09-16T08:00:00.000Z",
+  };
+  const literaturOnayli = {
+    talep_id: talep.talep_id,
+    senaryo_id: "senaryo-literatur-v3",
+    senaryo_iu_id: "iu-1",
+    senaryo_durum: "onaylandi",
+    senaryo_durum_tarih: "2026-09-16T09:00:00.000Z",
+    video_id: "literatur-v3",
+    video_iu_id: "iu-1",
+    video_durum: "onaylandi",
+    video_durum_tarih: "2026-09-16T10:00:00.000Z",
+    soru_seti_id: null,
+    soru_seti_iu_id: null,
+    soru_seti_durum: null,
+    soru_seti_durum_tarih: null,
+    yayin_durum: null,
+    yayin_tarihi: null,
+  };
+
+  const eksikBag = adimlariCoz(talep, literaturOnayli);
+  const eksikBagAdimi = eksikBag.find((adim) => adim.hal === "aktif");
+  assert.equal(eksikBagAdimi?.anahtar, "soru_seti");
+  assert.equal(eksikBagAdimi?.durum_kodu, "sistem_hatasi");
+
+  const tamam = adimlariCoz(talep, {
+    ...literaturOnayli,
+    soru_seti_id: "soru-literatur-v3",
+    soru_seti_durum: "onaylandi",
+    soru_seti_durum_tarih: "2026-09-16T10:01:00.000Z",
+  });
+  assert.equal(tamam.find((adim) => adim.anahtar === "video")?.etiket, "Literatür");
+  assert.equal(tamam.find((adim) => adim.anahtar === "soru_seti")?.hal, "tamam");
+  assert.equal(tamam.find((adim) => adim.anahtar === "soru_seti")?.durum_kodu, "hazir_soru_seti");
+  assert.equal(tamam.find((adim) => adim.hal === "aktif")?.anahtar, "yayin");
+  assert.equal(tamam.find((adim) => adim.hal === "aktif")?.durum_kodu, "yayin_bekleniyor");
+});
+
 test("Video V3 hazir soru seti talep detayinda kayit olusmadan da okunabilir", () => {
   const detayApi = readFileSync("app/(panel)/talepler/api/detay/route.ts", "utf8");
   const serit = readFileSync("app/(panel)/talepler/_components/UretimSeridi.tsx", "utf8");
