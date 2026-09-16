@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HapBilgi
 
-## Getting Started
+HapBilgi; öğrenme içeriklerinin talep, üretim, yayın, tüketim, ölçüm ve ödül süreçlerini rol temelli olarak yöneten bir Next.js uygulamasıdır.
 
-First, run the development server:
+## Yerel geliştirme
+
+Gerekli ortam değişkenlerini `.env.example` dosyasını temel alarak `.env.local` içinde tanımlayın. Ardından:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Uygulama varsayılan olarak `http://localhost:3000` adresinde çalışır.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Temel kontroller
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run typecheck:build
+npm run lint
+npm run test:smoke
+npm run build
+```
 
-## Learn More
+Veritabanı şema anlık görüntüsü ve kod kullanımı denetimleri için:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run denetim:sema
+npm run denetim
+npm run denetim:tutarlilik
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`denetim:sema` canlı veritabanını yalnız şema anlık görüntüsünü yenilemek amacıyla okur ve geçerli bağlantı bilgileri gerektirir.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Proje kayıtları
 
-## Deploy on Vercel
+- Sistem mimarisi ve iş kuralları: `docs/BLUEBOOK.md`
+- Açık işler ve teknik borçlar: `docs/REDBOOK.MD`
+- Hukuki metinler ve KVKK takip kaydı: `docs/hukuki/`
+- Tekrar çalıştırılabilir veritabanı değişiklikleri: `scripts/sql/`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+SQL dosyalarının repoda bulunması, canlı veritabanına uygulandıkları anlamına gelmez. Canlı veritabanı komutları proje sahibi tarafından çalıştırılır ve sonuç ayrıca doğrulanır.

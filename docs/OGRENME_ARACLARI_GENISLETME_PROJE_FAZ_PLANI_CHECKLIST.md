@@ -3,8 +3,10 @@
 **Proje:** Öğrenme Araçları Genişletmesi
 **Belge tarihi:** 27 Ağustos 2026
 **Kapsam:** Podcast, Görsel ve Flip PDF / Dijital İnteraktif Broşür
-**Takip durumu:** Aktif
+**Takip durumu:** Tarihsel geliştirme kaydı
 **Teknik referans:** `docs/OGRENIM_ARACI_GENISLETME_PROJESI_PLANI.md`
+
+> Bu checklist 27–28 Ağustos 2026 dönemindeki proje yürütmesini kaydeder. Daha sonraki podcast, dijital broşür, literatür, thumbnail ve üretim modernizasyonları ayrı çalışmalarla tamamlanmıştır. İşaretlenmemiş kutular güncel açık iş listesi olarak yorumlanmaz; güncel sistem ve teknik borç durumu sırasıyla `docs/BLUEBOOK.md` ve `docs/REDBOOK.MD` üzerinden izlenir.
 
 ## Belgenin Kullanım Kuralı
 

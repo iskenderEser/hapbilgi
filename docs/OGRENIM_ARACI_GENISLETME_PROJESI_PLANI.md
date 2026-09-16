@@ -5,6 +5,8 @@
 **Kapsam:** Podcast, Flip PDF / Dijital İnteraktif Broşür ve Görsel  
 **Kaynak:** AI Öğrenme Aşamasında incelenen mevcut video üretim ve tüketim zinciri
 
+> **Durum — tarihsel başlangıç planı:** Bu belge geliştirme öncesinde kabul edilen kapsamı ve mimari hedefleri kaydeder. Uygulama bu planın ardından tamamlanan fazlar ve sonraki modernizasyon çalışmalarıyla ilerlemiştir. Güncel sistem davranışı için `docs/BLUEBOOK.md`, açık işler için `docs/REDBOOK.MD`, uygulama gerçeği için kaynak kod ve uygulanmışlığı kullanıcı tarafından doğrulanan SQL sonuçları esas alınır.
+
 ## Bağlayıcı Proje Kararları
 
 1. Mevcut üretim ve tüketim süreçleri yeniden tasarlanmayacaktır; yeni öğrenme araçları mevcut omurgaya eklenecektir.

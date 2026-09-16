@@ -1,5 +1,7 @@
 # Öğrenme Araçları Genişletmesi – Tamamlama Faz Planı
 
+> **Durum — tarihsel yürütme kaydı:** Bu belgedeki fazlar, checkbox’lar ve çalışma/onay kuralları ilgili geliştirme döneminin kaydıdır; güncel çalışma talimatı veya açık iş listesi değildir. Daha sonra tamamlanan podcast, dijital broşür, literatür, thumbnail ve üretim modernizasyonları için kaynak kod, doğrulama sonuçları, `docs/BLUEBOOK.md` ve `docs/REDBOOK.MD` esas alınır. İşaretlenmemiş kutular bugün işin eksik olduğu anlamına gelmez.
+
 Bu plan mevcut geliştirmeyi yeniden tasarlamaz. Yapılmış kodu düzelterek Podcast, Görsel ve Flip PDF zincirlerini proje planındaki seviyeye getirir.
 
 ## Çalışma ve Onay Kuralları

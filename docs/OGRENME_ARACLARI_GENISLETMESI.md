@@ -1,5 +1,7 @@
 # Öğrenme Araçları Genişletmesi
 
+> **Durum — tarihsel analiz kaydı:** Bu belge 27 Ağustos 2026 tarihindeki geliştirme öncesi bulguları ve o aşamada alınan kararları saklar. Maddeler güncel açık iş listesi değildir. Güncel davranış `docs/BLUEBOOK.md`, bekleyen işler `docs/REDBOOK.MD` ve kaynak kod üzerinden değerlendirilir.
+
 ## AI Öğrenme Aşaması
 
 ### 1. Öğrenme — Üretici Rollerinin Talep Oluşturma Süreci
