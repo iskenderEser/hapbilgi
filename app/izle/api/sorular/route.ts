@@ -3,6 +3,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TUKETICI_ROLLER } from "@/lib/utils/roller";
+import { atanmisSorulariCoz } from "@/lib/soru/secim";
 
 export async function GET(request: NextRequest) {
   try {
@@ -56,19 +57,8 @@ export async function GET(request: NextRequest) {
       return hataYaniti("Yayın soru seti alınamadı.", "v_yayin_detay SELECT — sabit sorular", yayinError, 404);
     }
 
-    const secilenSorular = soruIndeksleri.map((soru_index) => {
-      const soru = yayin.sorular?.[soru_index];
-      if (!soru || !Array.isArray(soru.secenekler)) return null;
-      return {
-        soru_index,
-        soru_metni: soru.soru_metni,
-        secenekler: soru.secenekler.map((secenek: { harf: string; metin: string }) => ({
-          harf: secenek.harf,
-          metin: secenek.metin,
-        })),
-      };
-    });
-    if (secilenSorular.some((soru) => soru === null)) {
+    const secilenSorular = atanmisSorulariCoz(yayin.sorular, soruIndeksleri);
+    if (!secilenSorular) {
       return hataYaniti("Atanmış soru indekslerinden biri güncel soru setinde bulunamadı.", "izleme_kayitlari.soru_indeksleri", null);
     }
 

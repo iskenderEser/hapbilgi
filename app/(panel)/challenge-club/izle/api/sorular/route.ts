@@ -9,6 +9,7 @@ import {
   yetkiHatasi,
 } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
+import { atanmisSorulariCoz } from "@/lib/soru/secim";
 
 export async function GET(request: NextRequest) {
   try {
@@ -52,19 +53,8 @@ export async function GET(request: NextRequest) {
       return hataYaniti("Yayın soru seti alınamadı.", "v_yayin_detay SELECT — CC soruları", yayinError, 404);
     }
 
-    const sorular = soruIndeksleri.map((soru_index) => {
-      const soru = yayin.sorular?.[soru_index] as {
-        soru_metni?: string;
-        secenekler?: Array<{ harf: string; metin: string }>;
-      } | undefined;
-      if (!soru || !Array.isArray(soru.secenekler)) return null;
-      return {
-        soru_index,
-        soru_metni: soru.soru_metni ?? "",
-        secenekler: soru.secenekler.map(({ harf, metin }) => ({ harf, metin })),
-      };
-    });
-    if (sorular.some((soru) => soru === null)) {
+    const sorular = atanmisSorulariCoz(yayin.sorular, soruIndeksleri);
+    if (!sorular) {
       return hataYaniti("Atanmış sorulardan biri güncel soru setinde bulunamadı.", "cc_izleme_kayitlari.soru_indeksleri", null);
     }
 

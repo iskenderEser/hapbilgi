@@ -13,7 +13,7 @@ const sql = readFileSync("scripts/sql/cc_izleme_cevap_guvenligi.sql", "utf8");
 test("mutlu: C-Club tamamlama, soru, puan ve challenge sonucu atomik sözleşmeye bağlıdır", () => {
   assert.match(bitir, /rpc\("cc_izleme_tamamla"/);
   assert.match(cevap, /rpc\("cc_cevaplari_kaydet"/);
-  assert.match(sorular, /soru_indeksleri[\s\S]*?secenekler\.map\(\(\{ harf, metin \}\) => \(\{ harf, metin \}\)\)/);
+  assert.match(sorular, /atanmisSorulariCoz\(yayin\.sorular, soruIndeksleri\)/);
   assert.match(sql, /FOR UPDATE[\s\S]*?cevaplandi_mi = true[\s\S]*?izlendi_mi = true/);
   assert.match(sql, /cc_puan_referral_challenge_uq/);
   assert.match(oynatici, /ilkOynatmaZorunlu:\s*true/);

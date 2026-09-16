@@ -6,6 +6,7 @@ import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasy
 import { musteriKimligi } from "@/lib/eczanem/oturum";
 import { olayIdGecerliMi } from "@/lib/izleme/baslat";
 import { aktifGonderimUyeliginiDogrula } from "@/lib/eczanem/aktifUyelik";
+import { atanmisSorulariCoz } from "@/lib/soru/secim";
 
 export async function GET(request: NextRequest) {
   try {
@@ -52,19 +53,8 @@ export async function GET(request: NextRequest) {
       return hataYaniti("Yayın soru seti alınamadı.", "v_yayin_detay SELECT — sabit Eczanem soruları", yayinError, 404);
     }
 
-    const secilenSorular = soruIndeksleri.map((soru_index) => {
-      const soru = yayin.sorular?.[soru_index];
-      if (!soru || !Array.isArray(soru.secenekler)) return null;
-      return {
-        soru_index,
-        soru_metni: soru.soru_metni,
-        secenekler: soru.secenekler.map((secenek: { harf: string; metin: string }) => ({
-          harf: secenek.harf,
-          metin: secenek.metin,
-        })),
-      };
-    });
-    if (secilenSorular.some((soru) => soru === null)) {
+    const secilenSorular = atanmisSorulariCoz(yayin.sorular, soruIndeksleri);
+    if (!secilenSorular) {
       return hataYaniti("Atanmış sorulardan biri güncel soru setinde bulunamadı.", "eczanem_izleme_kayitlari.soru_indeksleri", null);
     }
 

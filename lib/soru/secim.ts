@@ -1,5 +1,7 @@
 // lib/soru/secim.ts
 
+import type { IzlemeSorusu } from "./izlemeTipleri";
+
 /**
  * Soru seçim mantığı.
  *
@@ -74,4 +76,39 @@ export function sabitSoruIndeksleri(
     [indeksler[i], indeksler[j]] = [indeksler[j], indeksler[i]];
   }
   return indeksler.slice(0, Math.min(gosterilecekSoru, toplamSoru));
+}
+
+/**
+ * İzlemeye daha önce atanmış indeksleri güncel yayın soru setinden güvenle çözer.
+ * Doğru cevap alanını istemciye taşımaz; bozuk veya güncel sette bulunmayan bir
+ * kayıt varsa kısmi sonuç yerine null döndürür.
+ */
+export function atanmisSorulariCoz(
+  yayinSorulari: unknown,
+  soruIndeksleri: readonly number[],
+): IzlemeSorusu[] | null {
+  if (!Array.isArray(yayinSorulari) || soruIndeksleri.length === 0) return null;
+
+  const sonuc: IzlemeSorusu[] = [];
+  for (const soruIndex of soruIndeksleri) {
+    if (!Number.isInteger(soruIndex) || soruIndex < 0 || soruIndex >= yayinSorulari.length) return null;
+
+    const hamSoru = yayinSorulari[soruIndex];
+    if (!hamSoru || typeof hamSoru !== "object") return null;
+
+    const soru = hamSoru as { soru_metni?: unknown; secenekler?: unknown };
+    if (typeof soru.soru_metni !== "string" || !Array.isArray(soru.secenekler)) return null;
+
+    const secenekler: IzlemeSorusu["secenekler"] = [];
+    for (const hamSecenek of soru.secenekler) {
+      if (!hamSecenek || typeof hamSecenek !== "object") return null;
+      const secenek = hamSecenek as { harf?: unknown; metin?: unknown };
+      if (typeof secenek.harf !== "string" || typeof secenek.metin !== "string") return null;
+      secenekler.push({ harf: secenek.harf, metin: secenek.metin });
+    }
+
+    sonuc.push({ soru_index: soruIndex, soru_metni: soru.soru_metni, secenekler });
+  }
+
+  return sonuc;
 }
