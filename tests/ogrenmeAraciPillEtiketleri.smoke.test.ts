@@ -117,6 +117,67 @@ test("V4 Hazır Podcast + Hazır Soru Seti: senaryo kapalı, hazır soru seti g�
   assert.equal(yayin?.yol, "/yayin-yonetimi");
 });
 
+test("Video V4: yükleme öncesinde hazır soru seti görünür, video yüklemesi beklenir", () => {
+  const talep = {
+    talep_id: "talep-v4-video-yukleme",
+    hazir_video: true,
+    hazir_soru_seti: true,
+    ogrenme_araci_turu: "video" as const,
+    created_at: "2026-09-16T08:00:00Z",
+  };
+
+  const adimlar = adimlariCoz(talep, null);
+
+  assert.deepEqual(
+    adimlar.map(({ anahtar, hal, durum_kodu }) => ({ anahtar, hal, durum_kodu })),
+    [
+      { anahtar: "talep", hal: "tamam", durum_kodu: "talep_olusturuldu" },
+      { anahtar: "senaryo", hal: "kapali", durum_kodu: null },
+      { anahtar: "video", hal: "aktif", durum_kodu: "video_bekleniyor" },
+      { anahtar: "soru_seti", hal: "hazir", durum_kodu: "hazir_soru_seti" },
+      { anahtar: "yayin", hal: "ileri", durum_kodu: null },
+    ],
+  );
+});
+
+test("Video V4: video ve hazır soru seti bağlanınca yayın yönetimine geçer", () => {
+  const talep = {
+    talep_id: "talep-v4-video-tamamlandi",
+    hazir_video: true,
+    hazir_soru_seti: true,
+    ogrenme_araci_turu: "video" as const,
+    created_at: "2026-09-16T08:00:00Z",
+  };
+  const zincir = {
+    talep_id: talep.talep_id,
+    senaryo_id: null,
+    senaryo_iu_id: null,
+    senaryo_durum: null,
+    senaryo_durum_tarih: null,
+    video_id: "video-v4",
+    video_iu_id: null,
+    video_durum: "onaylandi",
+    video_durum_tarih: "2026-09-16T08:10:00Z",
+    soru_seti_id: "soru-v4",
+    soru_seti_iu_id: null,
+    soru_seti_durum: "onaylandi",
+    soru_seti_durum_tarih: "2026-09-16T08:10:00Z",
+    yayin_durum: null,
+    yayin_tarihi: null,
+  };
+
+  const zincirDurumu = asamaCoz(talep, zincir);
+  assert.equal(zincirDurumu.asama, "Tamamlandı");
+  assert.equal(zincirDurumu.durum_kodu, "yayin_bekleniyor");
+  assert.equal(zincirDurumu.yol, "/yayin-yonetimi");
+
+  const adimlar = adimlariCoz(talep, zincir);
+  assert.equal(adimlar.find((adim) => adim.anahtar === "senaryo")?.hal, "kapali");
+  assert.equal(adimlar.find((adim) => adim.anahtar === "video")?.hal, "tamam");
+  assert.equal(adimlar.find((adim) => adim.anahtar === "soru_seti")?.hal, "tamam");
+  assert.equal(adimlar.find((adim) => adim.anahtar === "yayin")?.hal, "aktif");
+});
+
 test("V2 Hazır Podcast + İÜ Soru Seti: senaryo kapalı, podcast tamamlanmış ve soru seti aktiftir", () => {
   const talep = {
     talep_id: "talep-v2-podcast",

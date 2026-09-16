@@ -431,6 +431,7 @@ export function useTalepMerkezi() {
             ogrenmeAraciTuru: talep.ogrenme_araci_turu,
           },
         ));
+        if (talep.hazir_soru_seti) bildirimRozetleriniYenile();
 
         setDetayTetik((x) => x + 1);
         await veriCek();
