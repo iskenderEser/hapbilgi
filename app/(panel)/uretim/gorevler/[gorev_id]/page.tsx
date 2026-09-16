@@ -424,11 +424,11 @@ export default function UretimGorevDetayPage() {
     const kontrol = aracYuklemeKontroluOlustur();
     try {
       await hazirGorselYukle({ talepId: gorev.talep_id, gorsel: gorselDosyasi, kaynak: "iu", gorevId: gorev.gorev_id, aracId: gorev.arac_id ?? undefined, kontrol });
-      basari("Görsel üretici incelemesine gönderildi.");
+      basari("Dijital Broşür üretici incelemesine gönderildi.");
       setGorselDosyasi(null);
       await veriCek();
     } catch (err) {
-      hata("Görsel yüklenemedi.", "görsel yükleme", err instanceof Error ? err.message : undefined);
+      hata("Dijital Broşür yüklenemedi.", "Dijital Broşür yükleme", err instanceof Error ? err.message : undefined);
     } finally { aracYuklemeyiBitir(); setIslem(false); }
   };
 
@@ -617,7 +617,7 @@ export default function UretimGorevDetayPage() {
                 </div>
               );
             })()}
-            {iuTeslimEdebilir && gorev.asama === "video" && gorev.talep?.ogrenme_araci_turu === "gorsel" && <div className="flex flex-col gap-3 border-t border-gray-100 pt-4"><label className="rounded-lg border border-dashed border-gray-300 p-3 text-sm">Nihai görsel<input type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" className="mt-2 block w-full text-xs" onChange={(e) => setGorselDosyasi(e.target.files?.[0] ?? null)} /></label><button type="button" onClick={() => void gorselYukle()} disabled={islem || !gorselDosyasi} className="self-end rounded-lg border-0 bg-[#56aeff] px-5 py-2.5 text-xs font-semibold text-white disabled:opacity-50">İncelemeye Gönder</button></div>}
+            {iuTeslimEdebilir && gorev.asama === "video" && gorev.talep?.ogrenme_araci_turu === "gorsel" && <div className="flex flex-col gap-3 border-t border-gray-100 pt-4"><label className="rounded-lg border border-dashed border-gray-300 p-3 text-sm">Dijital Broşür<input type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" className="mt-2 block w-full text-xs" onChange={(e) => setGorselDosyasi(e.target.files?.[0] ?? null)} /></label><button type="button" onClick={() => void gorselYukle()} disabled={islem || !gorselDosyasi} className="self-end rounded-lg border-0 bg-[#56aeff] px-5 py-2.5 text-xs font-semibold text-white disabled:opacity-50">İncelemeye Gönder</button></div>}
             {iuTeslimEdebilir && gorev.asama === "video" && gorev.talep?.ogrenme_araci_turu === "flip_pdf" && <div className="flex flex-col gap-3 border-t border-gray-100 pt-4"><label className="rounded-lg border border-dashed border-gray-300 p-3 text-sm">Nihai Literatür<input type="file" accept=".pdf,application/pdf" className="mt-2 block w-full text-xs" onChange={(e) => setFlipPdfDosyasi(e.target.files?.[0] ?? null)} /></label><label className="rounded-lg border border-dashed border-gray-300 p-3 text-sm">Yayın Görseli (isteğe bağlı)<input type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" className="mt-2 block w-full text-xs" onChange={(e) => setFlipPdfKapagi(e.target.files?.[0] ?? null)} /></label><button type="button" onClick={() => void flipPdfYukle()} disabled={islem || !flipPdfDosyasi} className="self-end rounded-lg border-0 bg-[#56aeff] px-5 py-2.5 text-xs font-semibold text-white disabled:opacity-50">İncelemeye Gönder</button></div>}
             {iuTeslimEdebilir && gorev.asama === "soru_seti" && <div className="border-t border-gray-100 pt-4"><SoruIceAktar secenekSayisi={gorev.talep?.secenek_sayisi ?? 4} onDoldur={(yeni, mesaj) => { setTaslaklar(taslaklariBoyutla(yeni, gorev.talep?.soru_seti_buyuklugu ?? 25, gorev.talep?.secenek_sayisi ?? 4)); if (mesaj) uyari(mesaj); }} /><SoruSetiFormu taslaklar={taslaklar} onDegis={setTaslaklar} buyukluk={gorev.talep?.soru_seti_buyuklugu ?? 25} secenekSayisi={gorev.talep?.secenek_sayisi ?? 4} /><div className="mt-3 flex justify-end"><button type="button" onClick={soruSetiGonder} disabled={islem} className="rounded-lg border-0 bg-[#56aeff] px-5 py-2.5 text-xs font-semibold text-white disabled:opacity-50">İncelemeye Gönder</button></div></div>}
 

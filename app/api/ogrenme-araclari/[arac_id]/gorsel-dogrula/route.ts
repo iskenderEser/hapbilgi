@@ -18,7 +18,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (body.gorev_id != null && !uuidGecerliMi(body.gorev_id)) return validasyonHatasi("Görev kimliği geçersiz.", ["gorev_id"]);
     const db = createAdminClient();
     const { data: arac } = await db.from("ogrenme_araclari").select("talep_id, arac_turu, kaynak, dosya_yolu, metadata").eq("arac_id", arac_id).maybeSingle();
-    if (!arac || arac.arac_turu !== "gorsel" || !arac.dosya_yolu) return NextResponse.json({ hata: "Görsel bulunamadı." }, { status: 404 });
+    if (!arac || arac.arac_turu !== "gorsel" || !arac.dosya_yolu) return NextResponse.json({ hata: "Dijital Broşür bulunamadı." }, { status: 404 });
     const rol = await rolCozucu(db, user.id);
     const yetki = await uretimAraciYetkisiniDogrula({ db, talepId: arac.talep_id, kullaniciId: user.id, rol });
     if (!yetki.ok) return NextResponse.json({ hata: yetki.hata }, { status: yetki.status });
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
     const gorselBaytlari = await bunnyStorageNesneIndir(arac.dosya_yolu);
     const olculer = gorselBaytlari ? gorselOlculeriniBaytlardanOku(gorselBaytlari) : null;
-    if (!olculer) return NextResponse.json({ hata: "Görselin gerçek ölçüleri doğrulanamadı." }, { status: 422 });
+    if (!olculer) return NextResponse.json({ hata: "Dijital Broşürün gerçek ölçüleri doğrulanamadı." }, { status: 422 });
     const { data: sonuc, error: rpcError } = await db.rpc("uretim_gorsel_dogrula", {
       p_arac_id: arac_id,
       p_kullanici_id: user.id,
@@ -44,8 +44,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       p_yukseklik: olculer.yukseklik,
       p_islem_anahtari: body.islem_anahtari,
     });
-    if (rpcError) return uretimRpcHataYaniti("Görsel doğrulanamadı.", "uretim_gorsel_dogrula RPC", rpcError);
-    return NextResponse.json({ mesaj: "Görsel üretim zincirine alındı.", sonuc }, { status: 201 });
+    if (rpcError) return uretimRpcHataYaniti("Dijital Broşür doğrulanamadı.", "uretim_gorsel_dogrula RPC", rpcError);
+    return NextResponse.json({ mesaj: "Dijital Broşür üretim zincirine alındı.", sonuc }, { status: 201 });
   } catch (error) {
     return sunucuHatasi(error, "POST görsel doğrula");
   }

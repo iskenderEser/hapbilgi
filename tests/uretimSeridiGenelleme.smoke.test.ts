@@ -253,6 +253,71 @@ test("Podcast V1 Talep Takibi ortak araç geçmişiyle karar verir ve revizyonda
   assert.match(merkez, /revizyonda_transkript_istendi: true/);
 });
 
+test("Dijital Broşür V1 seridi ve teslim yüzeyi yaşam döngüsünü doğru adlandırır", () => {
+  const talep: SeritTalebi = {
+    talep_id: "talep-gorsel-v1-yasam-dongusu",
+    hazir_video: false,
+    hazir_soru_seti: false,
+    ogrenme_araci_turu: "gorsel",
+    created_at: "2026-09-16T08:00:00.000Z",
+  };
+  const bosZincir = {
+    talep_id: talep.talep_id,
+    senaryo_id: null,
+    senaryo_iu_id: null,
+    senaryo_durum: null,
+    senaryo_durum_tarih: null,
+    video_id: null,
+    video_iu_id: null,
+    video_durum: null,
+    video_durum_tarih: null,
+    soru_seti_id: null,
+    soru_seti_iu_id: null,
+    soru_seti_durum: null,
+    soru_seti_durum_tarih: null,
+    yayin_durum: null,
+    yayin_tarihi: null,
+  };
+
+  const senaryo = adimlariCoz(talep, bosZincir, { asama: "Senaryo", durum_kodu: "iu_iletildi" });
+  assert.equal(senaryo.find((adim) => adim.hal === "aktif")?.anahtar, "senaryo");
+
+  const brosur = adimlariCoz(talep, {
+    ...bosZincir,
+    senaryo_id: "senaryo-gorsel-v1",
+    senaryo_iu_id: "iu-1",
+    senaryo_durum: "onaylandi",
+    senaryo_durum_tarih: "2026-09-16T09:00:00.000Z",
+    video_id: "gorsel-v1",
+  }, { asama: "Video", durum_kodu: "onay_bekleniyor" });
+  const aktifBrosur = brosur.find((adim) => adim.hal === "aktif");
+  assert.equal(aktifBrosur?.anahtar, "video");
+  assert.equal(aktifBrosur?.etiket, "Dijital Broşür");
+  assert.equal(ureticiDurumMesaji("onay_bekleniyor", null, "gorsel").metin, "Onayınız Bekleniyor");
+  assert.equal(
+    iuDurumMesaji("onay_bekleniyor", { asama: "Video", rolAdi: "Ürün Müdürü", ogrenmeAraciTuru: "gorsel" }).metin,
+    "Ürün Müdürü İnceliyor",
+  );
+
+  const soruSeti = adimlariCoz(talep, {
+    ...bosZincir,
+    senaryo_id: "senaryo-gorsel-v1",
+    senaryo_durum: "onaylandi",
+    video_id: "gorsel-v1",
+    video_iu_id: "iu-1",
+    video_durum: "onaylandi",
+    video_durum_tarih: "2026-09-16T10:00:00.000Z",
+    soru_seti_id: "soru-gorsel-v1",
+  }, { asama: "Soru Seti", durum_kodu: "iu_iletildi" });
+  assert.equal(soruSeti.find((adim) => adim.hal === "aktif")?.anahtar, "soru_seti");
+
+  const gorevSayfasi = readFileSync("app/(panel)/uretim/gorevler/[gorev_id]/page.tsx", "utf8");
+  const dogrulamaRoute = readFileSync("app/api/ogrenme-araclari/[arac_id]/gorsel-dogrula/route.ts", "utf8");
+  assert.match(gorevSayfasi, />Dijital Broşür<input/);
+  assert.match(gorevSayfasi, /Dijital Broşür üretici incelemesine gönderildi/);
+  assert.match(dogrulamaRoute, /Dijital Broşür üretim zincirine alındı/);
+});
+
 test("Video V2 seridi yukleme, isleme, soru seti ve yayin gecislerini dogru anlatir", () => {
   const talep: SeritTalebi = {
     talep_id: "talep-video-v2-yasam-dongusu",

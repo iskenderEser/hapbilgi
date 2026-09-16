@@ -111,12 +111,12 @@ export async function GET(request: NextRequest) {
         durumGecmisi = gecmis.data ?? [];
       } else if (gorev.asama === "video" && gorev.arac_id && talepMap.get(gorev.talep_id)?.ogrenme_araci_turu === "gorsel") {
         const { data: gorsel, error } = await adminSupabase.from("ogrenme_araclari").select("dosya_yolu, genislik, yukseklik").eq("arac_id", gorev.arac_id).eq("arac_turu", "gorsel").maybeSingle();
-        if (error || !gorsel?.dosya_yolu) return hataYaniti("Görsel detayı alınamadı.", "görsel görev detayı", error);
+        if (error || !gorsel?.dosya_yolu) return hataYaniti("Dijital Broşür detayı alınamadı.", "Dijital Broşür görev detayı", error);
         const gorselUrl = bunnyCdnImzaliUrl(gorsel.dosya_yolu);
-        if (!gorselUrl) return NextResponse.json({ hata: "Görsel CDN erişimi yapılandırılmamış." }, { status: 503 });
+        if (!gorselUrl) return NextResponse.json({ hata: "Dijital Broşür CDN erişimi yapılandırılmamış." }, { status: 503 });
         detayIcerigi = { asama: "gorsel", gorsel_url: gorselUrl, genislik: gorsel.genislik ?? 0, yukseklik: gorsel.yukseklik ?? 0 };
         const gecmis = await adminSupabase.from("ogrenme_araci_durumu").select("durum, notlar, created_at").eq("arac_id", gorev.arac_id).order("created_at");
-        if (gecmis.error) return hataYaniti("Görsel geçmişi alınamadı.", "görsel görev geçmişi", gecmis.error);
+        if (gecmis.error) return hataYaniti("Dijital Broşür geçmişi alınamadı.", "Dijital Broşür görev geçmişi", gecmis.error);
         durumGecmisi = gecmis.data ?? [];
       } else if (gorev.asama === "video" && gorev.arac_id) {
         const { data: podcast, error } = await adminSupabase.from("ogrenme_araclari")
