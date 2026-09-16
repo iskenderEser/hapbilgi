@@ -16,9 +16,8 @@ import { useEffect, useState, useRef } from "react";
 import { createVideoPlayer, type VideoPlayer } from "@/lib/video/videoPlayer";
 import { oynatmaBaslatilmaliMi } from "@/lib/izleme/baslat";
 import VideoCercevesi from "@/components/video/VideoCercevesi";
-import PodcastOynatici from "@/components/ogrenme-araci/PodcastOynatici";
-import GorselOynatici from "@/components/ogrenme-araci/GorselOynatici";
-import FlipPdfOynatici from "@/components/ogrenme-araci/FlipPdfOynatici";
+import TuketimOynaticisi from "@/components/ogrenme-araci/TuketimOynaticisi";
+import { ogrenmeAraciIzlemesiniBaslat } from "@/lib/ogrenmeAraci/izlemeIstemci";
 import { useVideoEtkilesimKatmani } from "@/components/video/useVideoEtkilesimKatmani";
 import { IzlemeSoruFormu, IzlemeSoruSonuclari } from "@/components/soru/IzlemeSoruPaneli";
 import type { IzlemeCevapSonucu, IzlemeSorusu } from "@/lib/soru/izlemeTipleri";
@@ -551,6 +550,22 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
     setIslemLoading(false); await onVeriYenile();
   };
 
+  const handleAracBaslat = async () => {
+    const baslangic = await ogrenmeAraciIzlemesiniBaslat({
+      url: "/izle/api/baslat",
+      govde: { yayin_id: video.yayin_id, oneri_id: oneri_id ?? null, baslat_olay_id: crypto.randomUUID() },
+      aracTuru: video.arac_turu ?? "video",
+    });
+    setIzlemeId(baslangic.izlemeId);
+    izlemeIdRef.current = baslangic.izlemeId;
+    return baslangic;
+  };
+
+  const handleAracBitir = async (id: string) => {
+    izlemeIdRef.current = id;
+    await handleIzlemeBitir();
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <button onClick={onKapat}
@@ -569,11 +584,9 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
         </div>
 
         {/* Video */}
-        {video.arac_turu === "podcast" && video.arac_id && (
-          <div className="border-b border-gray-100 p-4"><PodcastOynatici aracId={video.arac_id} yayinId={video.yayin_id} bagId={oneri_id} urunAdi={video.urun_adi} ileriSarmaAcik={video.ileri_sarma_acik} saltGoruntuleme={!tuketici} hata={hata} baslat={async () => { const r = await fetch("/izle/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id: video.yayin_id, oneri_id: oneri_id ?? null, baslat_olay_id: crypto.randomUUID() }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Podcast dinlemesi başlatılamadı."); setIzlemeId(d.izleme.izleme_id); izlemeIdRef.current = d.izleme.izleme_id; return { izlemeId: d.izleme.izleme_id, ilerleme: d.izleme.ilerleme_durumu }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleIzlemeBitir(); }} onTamamlandi={onVeriYenile} /></div>
+        {video.arac_turu && video.arac_turu !== "video" && video.arac_id && (
+          <TuketimOynaticisi aracId={video.arac_id} yayinId={video.yayin_id} aracTuru={video.arac_turu} bagId={oneri_id} urunAdi={video.urun_adi} ileriSarmaAcik={video.ileri_sarma_acik} saltGoruntuleme={!tuketici} hata={hata} baslat={handleAracBaslat} bitir={handleAracBitir} onTamamlandi={onVeriYenile} className="border-b border-gray-100 p-4" />
         )}
-        {video.arac_turu === "gorsel" && video.arac_id && <div className="border-b border-gray-100 p-4"><GorselOynatici aracId={video.arac_id} yayinId={video.yayin_id} bagId={oneri_id} saltGoruntuleme={!tuketici} hata={hata} baslat={async () => { const r = await fetch("/izle/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id: video.yayin_id, oneri_id: oneri_id ?? null, baslat_olay_id: crypto.randomUUID() }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Görsel incelemesi başlatılamadı."); setIzlemeId(d.izleme.izleme_id); izlemeIdRef.current = d.izleme.izleme_id; return { izlemeId: d.izleme.izleme_id }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleIzlemeBitir(); }} onTamamlandi={onVeriYenile} /></div>}
-        {video.arac_turu === "flip_pdf" && video.arac_id && <div className="border-b border-gray-100 p-4"><FlipPdfOynatici aracId={video.arac_id} yayinId={video.yayin_id} bagId={oneri_id} saltGoruntuleme={!tuketici} hata={hata} baslat={async () => { const r = await fetch("/izle/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ yayin_id: video.yayin_id, oneri_id: oneri_id ?? null, baslat_olay_id: crypto.randomUUID() }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Literatür açılamadı."); setIzlemeId(d.izleme.izleme_id); izlemeIdRef.current = d.izleme.izleme_id; return { izlemeId: d.izleme.izleme_id, ilerleme: d.izleme.ilerleme_durumu }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleIzlemeBitir(); }} onTamamlandi={onVeriYenile} /></div>}
         {!(["podcast", "gorsel", "flip_pdf"].includes(video.arac_turu ?? "video")) && video.video_url && (
           <div className="border-b border-gray-100">
             {/* Kutu artık videonun oranına göre çizilir (26.07 — VideoCercevesi).

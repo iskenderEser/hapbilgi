@@ -10,9 +10,8 @@ import { useVideoEtkilesimKatmani } from "@/components/video/useVideoEtkilesimKa
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import PodcastOynatici from "@/components/ogrenme-araci/PodcastOynatici";
-import GorselOynatici from "@/components/ogrenme-araci/GorselOynatici";
-import FlipPdfOynatici from "@/components/ogrenme-araci/FlipPdfOynatici";
+import TuketimOynaticisi from "@/components/ogrenme-araci/TuketimOynaticisi";
+import { ogrenmeAraciIzlemesiniBaslat } from "@/lib/ogrenmeAraci/izlemeIstemci";
 import { IzlemeSoruFormu, IzlemeSoruSonuclari } from "@/components/soru/IzlemeSoruPaneli";
 import type { IzlemeCevapSonucu, IzlemeSorusu } from "@/lib/soru/izlemeTipleri";
 
@@ -267,6 +266,23 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
     }
   };
 
+  const handleAracBaslat = async () => {
+    const baslangic = await ogrenmeAraciIzlemesiniBaslat({
+      url: "/eczanem/api/izleme/baslat",
+      govde: { gonderim_id: video.gonderim_id },
+      aracTuru: video.arac_turu ?? "video",
+    });
+    izlemeIdRef.current = baslangic.izlemeId;
+    setIzlemeId(baslangic.izlemeId);
+    setIzlemeBasladi(true);
+    return baslangic;
+  };
+
+  const handleAracBitir = async (id: string) => {
+    izlemeIdRef.current = id;
+    await handleBitir();
+  };
+
   return (
     <div className="flex flex-col gap-3">
       <Button type="button" variant="ghost" size="sm" onClick={onKapat} className="w-fit px-0 text-xs font-extrabold text-[#61768c] hover:bg-transparent hover:text-[#237ac8]"><ArrowLeft className="size-4" /> İçeriklerime dön</Button>
@@ -277,12 +293,8 @@ export default function EczanemVideoOynatici({ video, onKapat, onTamamlandi, hat
           <Badge variant="outline" className={izlemeTamamlandi ? "border-[#bde5d5] bg-[#edf9f4] font-extrabold text-[#157254]" : izlemeBasladi ? "border-[#c9dff1] bg-[#edf6fd] font-extrabold text-[#286fae]" : "border-[#e0e7ee] bg-[#f7f9fb] font-extrabold text-[#71849a]"}>{izlemeTamamlandi ? <BadgeCheck /> : <Play />}{izlemeTamamlandi ? "Tamamlandı" : izlemeBasladi ? "İzleniyor" : "Play ile başlayın"}</Badge>
         </CardHeader>
 
-        {video.arac_turu === "podcast" && video.arac_id ? (
-          <div className="border-b border-[#e7edf3] p-4"><PodcastOynatici aracId={video.arac_id} yayinId={video.yayin_id} bagId={video.gonderim_id} urunAdi={video.urun_adi} ileriSarmaAcik={false} hata={hata} baslat={async () => { const r = await fetch("/eczanem/api/izleme/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ gonderim_id: video.gonderim_id }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Podcast dinlemesi başlatılamadı."); izlemeIdRef.current = d.izleme.izleme_id; setIzlemeId(d.izleme.izleme_id); setIzlemeBasladi(true); return { izlemeId: d.izleme.izleme_id, ilerleme: d.izleme.ilerleme_durumu }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleBitir(); }} onTamamlandi={onTamamlandi} /></div>
-        ) : video.arac_turu === "gorsel" && video.arac_id ? (
-          <div className="border-b border-[#e7edf3] p-4"><GorselOynatici aracId={video.arac_id} yayinId={video.yayin_id} bagId={video.gonderim_id} hata={hata} baslat={async () => { const r = await fetch("/eczanem/api/izleme/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ gonderim_id: video.gonderim_id }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Görsel incelemesi başlatılamadı."); izlemeIdRef.current = d.izleme.izleme_id; setIzlemeId(d.izleme.izleme_id); setIzlemeBasladi(true); return { izlemeId: d.izleme.izleme_id }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleBitir(); }} onTamamlandi={onTamamlandi} /></div>
-        ) : video.arac_turu === "flip_pdf" && video.arac_id ? (
-          <div className="border-b border-[#e7edf3] p-4"><FlipPdfOynatici aracId={video.arac_id} yayinId={video.yayin_id} bagId={video.gonderim_id} hata={hata} baslat={async () => { const r = await fetch("/eczanem/api/izleme/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ gonderim_id: video.gonderim_id }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Literatür açılamadı."); izlemeIdRef.current = d.izleme.izleme_id; setIzlemeId(d.izleme.izleme_id); setIzlemeBasladi(true); return { izlemeId: d.izleme.izleme_id, ilerleme: d.izleme.ilerleme_durumu }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleBitir(); }} onTamamlandi={onTamamlandi} /></div>
+        {video.arac_turu && video.arac_turu !== "video" && video.arac_id ? (
+          <TuketimOynaticisi aracId={video.arac_id} yayinId={video.yayin_id} aracTuru={video.arac_turu} bagId={video.gonderim_id} urunAdi={video.urun_adi} ileriSarmaAcik={false} hata={hata} baslat={handleAracBaslat} bitir={handleAracBitir} onTamamlandi={onTamamlandi} className="border-b border-[#e7edf3] p-4" />
         ) : !video.video_url ? (
           <div className="px-5 py-12 text-center"><CircleAlert className="mx-auto size-8 text-[#b84c4c]" /><h3 className="mt-3 text-sm font-extrabold text-[#8f3636]">Öğrenme içeriği kaynağı bulunamadı</h3><p className="mt-1 text-xs font-semibold text-[#9a6969]">Eczanenizle iletişime geçin.</p></div>
         ) : (

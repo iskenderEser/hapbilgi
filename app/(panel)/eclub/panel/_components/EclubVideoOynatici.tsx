@@ -11,9 +11,8 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { createVideoPlayer, type VideoPlayer } from "@/lib/video/videoPlayer";
 import VideoCercevesi from "@/components/video/VideoCercevesi";
-import PodcastOynatici from "@/components/ogrenme-araci/PodcastOynatici";
-import GorselOynatici from "@/components/ogrenme-araci/GorselOynatici";
-import FlipPdfOynatici from "@/components/ogrenme-araci/FlipPdfOynatici";
+import TuketimOynaticisi from "@/components/ogrenme-araci/TuketimOynaticisi";
+import { ogrenmeAraciIzlemesiniBaslat } from "@/lib/ogrenmeAraci/izlemeIstemci";
 import { IzlemeSoruFormu, IzlemeSoruSonuclari } from "@/components/soru/IzlemeSoruPaneli";
 import type { IzlemeCevapSonucu, IzlemeSorusu } from "@/lib/soru/izlemeTipleri";
 
@@ -374,6 +373,22 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
     await onTamamlandi();
   };
 
+  const handleAracBaslat = async () => {
+    const baslangic = await ogrenmeAraciIzlemesiniBaslat({
+      url: "/eclub/panel/api/baslat",
+      govde: { oneri_id: oneri.oneri_id },
+      aracTuru: oneri.arac_turu ?? "video",
+    });
+    izlemeIdRef.current = baslangic.izlemeId;
+    setIzlemeId(baslangic.izlemeId);
+    return baslangic;
+  };
+
+  const handleAracBitir = async (id: string) => {
+    izlemeIdRef.current = id;
+    await handleBitir();
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <button
@@ -390,9 +405,7 @@ export default function EclubVideoOynatici({ oneri, onKapat, onTamamlandi, hata,
           <span className="rounded-full border border-[#bfdbfe] bg-[#eff6ff] px-2.5 py-1 text-[9px] font-extrabold text-[#2563a8]">Öğrenme İçeriği ve Soru Akışı</span>
         </div>
 
-        {oneri.arac_turu === "podcast" && oneri.arac_id && <PodcastOynatici aracId={oneri.arac_id} yayinId={oneri.yayin_id} bagId={oneri.oneri_id} urunAdi={oneri.urun_adi} ileriSarmaAcik hata={hata} baslat={async () => { const r = await fetch("/eclub/panel/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oneri_id: oneri.oneri_id }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Podcast dinlemesi başlatılamadı."); izlemeIdRef.current = d.izleme.izleme_id; setIzlemeId(d.izleme.izleme_id); return { izlemeId: d.izleme.izleme_id, ilerleme: d.izleme.ilerleme_durumu }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleBitir(); }} onTamamlandi={onTamamlandi} />}
-        {oneri.arac_turu === "gorsel" && oneri.arac_id && <GorselOynatici aracId={oneri.arac_id} yayinId={oneri.yayin_id} bagId={oneri.oneri_id} hata={hata} baslat={async () => { const r = await fetch("/eclub/panel/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oneri_id: oneri.oneri_id }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Görsel incelemesi başlatılamadı."); izlemeIdRef.current = d.izleme.izleme_id; setIzlemeId(d.izleme.izleme_id); return { izlemeId: d.izleme.izleme_id }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleBitir(); }} onTamamlandi={onTamamlandi} />}
-        {oneri.arac_turu === "flip_pdf" && oneri.arac_id && <FlipPdfOynatici aracId={oneri.arac_id} yayinId={oneri.yayin_id} bagId={oneri.oneri_id} hata={hata} baslat={async () => { const r = await fetch("/eclub/panel/api/baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ oneri_id: oneri.oneri_id }) }); const d = await r.json(); if (!r.ok || !d.izleme?.izleme_id) throw new Error(d.hata ?? "Literatür açılamadı."); izlemeIdRef.current = d.izleme.izleme_id; setIzlemeId(d.izleme.izleme_id); return { izlemeId: d.izleme.izleme_id, ilerleme: d.izleme.ilerleme_durumu }; }} bitir={async (id) => { izlemeIdRef.current = id; await handleBitir(); }} onTamamlandi={onTamamlandi} />}
+        {oneri.arac_turu && oneri.arac_turu !== "video" && oneri.arac_id && <TuketimOynaticisi aracId={oneri.arac_id} yayinId={oneri.yayin_id} aracTuru={oneri.arac_turu} bagId={oneri.oneri_id} urunAdi={oneri.urun_adi} ileriSarmaAcik hata={hata} baslat={handleAracBaslat} bitir={handleAracBitir} onTamamlandi={onTamamlandi} />}
         {!(["podcast", "gorsel", "flip_pdf"].includes(oneri.arac_turu ?? "video")) && oneri.video_url && (
           <div className="border-b border-[#e7edf4] bg-[#10213d]">
             {/* Kutu videonun oranına göre çizilir (26.07). iframe burada kalır — ref playerjs'e bağlı. */}
