@@ -80,7 +80,13 @@ export function TalepDetayi({
 
   const baslik =
     talep.urun_adi !== "-" ? talep.urun_adi : (TALEP_TURU_KURALLARI[talep.egitim_turu]?.ad ?? talep.egitim_turu);
-  const adimlar = adimlariCoz(talep, talep.zincir);
+  const adimlar = adimlariCoz(
+    talep,
+    talep.zincir,
+    talep.aktif_gorev_id && talep.asama !== "Tamamlandı"
+      ? { asama: talep.asama, durum_kodu: talep.durum_kodu }
+      : null,
+  );
 
   // Karar hedefi: aktif adım gerçekten onay bekliyorsa ve talebi açan sensen.
   // Top içerik üreticisindeyken (Üreticinize İletildi / Hazırlıyor / Düzenliyor)

@@ -42,6 +42,15 @@ export interface SeritTalebi extends ZincirTalebi {
   ogrenme_araci_turu: OgrenmeAraciTuru;
 }
 
+/**
+ * Liste API'sinin `uretim_gorevleri` tablosundan çözdüğü güncel operasyon.
+ * Görev varken o aşamanın pill'i içerik kaydından yeniden tahmin edilmez.
+ */
+export interface AktifGorevDurumu {
+  asama: "Senaryo" | "Video" | "Soru Seti";
+  durum_kodu: DurumKodu;
+}
+
 const SIRA: AdimAnahtari[] = ["talep", "senaryo", "video", "soru_seti", "yayin"];
 
 const ETIKET: Record<AdimAnahtari, string> = {
@@ -87,11 +96,18 @@ function kapaliAdimlar(talep: SeritTalebi): Set<AdimAnahtari> {
   return kapali;
 }
 
-export function adimlariCoz(talep: SeritTalebi, z: ZincirSatiri | null): Adim[] {
+export function adimlariCoz(
+  talep: SeritTalebi,
+  z: ZincirSatiri | null,
+  aktifGorev: AktifGorevDurumu | null = null,
+): Adim[] {
   const zincir = z ?? BOS_ZINCIR(talep.talep_id);
-  const durum = asamaCoz(talep, zincir);
+  const zincirDurumu = asamaCoz(talep, zincir);
   const kapali = kapaliAdimlar(talep);
 
+  // Güncel görev, üretim sürerken tek doğruluk kaynağıdır. Görev yoksa teslim,
+  // onay ve yayın hâlleri içerik zincirinden çözülür.
+  const durum = aktifGorev ?? zincirDurumu;
   const aktifAdim = ASAMA_ADIMI[durum.asama] ?? "senaryo";
   const aktifSira = SIRA.indexOf(aktifAdim);
 
@@ -104,11 +120,9 @@ export function adimlariCoz(talep: SeritTalebi, z: ZincirSatiri | null): Adim[] 
   };
 
   return SIRA.map((anahtar, sira) => {
-    // Talep adımı her zaman kapanmıştır: talep açıldığı an bu adım bitmiştir.
-    // Durum kodu VERİLMEZ — talep onaylanmadı, oluşturuldu; "onaylandi" kodu
-    // ekrana "Onayladınız" yazdırırdı ve yanlış olurdu.
+    // Talep adımı, talep açıldığı an tamamlanır ve kendi ortak mesajını taşır.
     if (anahtar === "talep") {
-      return { anahtar, etiket: adimEtiketi(anahtar, talep), hal: "tamam" as AdimHal, durum_kodu: null, tarih: tarihler.talep };
+      return { anahtar, etiket: adimEtiketi(anahtar, talep), hal: "tamam" as AdimHal, durum_kodu: "talep_olusturuldu", tarih: tarihler.talep };
     }
 
     if (kapali.has(anahtar)) {

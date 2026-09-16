@@ -24,6 +24,8 @@ interface PillTanim {
 }
 
 const PILL_TANIMLARI: Record<DurumKodu, PillTanim> = {
+  // Talep Takip şeridine özgüdür; üretim hattı filtre sıralarında yer almaz.
+  talep_olusturuldu: { kod: "talep_olusturuldu", yalnizKayitVarsa: true },
   iu_iletildi: { kod: "iu_iletildi", yalnizKayitVarsa: true },
   iu_hazirliyor: { kod: "iu_hazirliyor", yalnizKayitVarsa: true },
   iu_duzeltiyor: { kod: "iu_duzeltiyor" },

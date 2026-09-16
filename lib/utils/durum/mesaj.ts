@@ -38,6 +38,7 @@ export interface DurumMesaji {
 
 /** Üretim hattında bir işin bulunabileceği tüm durumlar. Ekrandaki her rozet bunlardan biridir. */
 export type DurumKodu =
+  | "talep_olusturuldu" // talep açıldı; üretim zincirinin başlangıç adımı
   | "iu_iletildi"        // iş İÜ tarafına geçti, henüz kimse üstlenmedi (iu_id NULL)
   | "iu_hazirliyor"      // bir İÜ üzerinde çalışıyor (iu_id dolu, teslim yok)
   | "iu_duzeltiyor"      // revizyon istendi, İÜ düzeltiyor
@@ -69,6 +70,7 @@ const URETICI_DURUM: Record<DurumKodu, DurumMesaji> = {
   // basmamak. Eskiden aşama "Yayın", durum "Yayında" yazıyordu — yan yana iki
   // sütunda aynı kelime tekrarlanıyordu. Aşama artık "Tamamlandı".
   // "İçerik Üreticisi" → "Üreticiniz": üreticinin gözünden İÜ onun üreticisidir.
+  talep_olusturuldu: { metin: "Talep Oluşturuldu",        top: "kapali",           renk: ONAY },
   iu_iletildi:      { metin: "Üreticinize İletildi",   top: "icerik_ureticisi", renk: BEKLEME },
   iu_hazirliyor:    { metin: "Üreticiniz Hazırlıyor",  top: "icerik_ureticisi", renk: BEKLEME },
   iu_duzeltiyor:    { metin: "Üreticiniz Düzenliyor",  top: "icerik_ureticisi", renk: REVIZYON },
@@ -134,6 +136,7 @@ function iuMetin(kod: DurumKodu, g: IuMesajGirdi): string {
     ? ogrenmeAraciMetinleri(g.ogrenmeAraciTuru)
     : { ad: "Öğrenme Aracı", belirtme: "Öğrenme Aracını" };
   switch (kod) {
+    case "talep_olusturuldu": return "Talep Oluşturuldu";
     case "iu_iletildi":
     case "iu_hazirliyor":    return asama === "Video" ? `${arac.ad} Yüklemeniz Bekleniyor` : IU_ISTENEN[asama];
     case "iu_duzeltiyor":    return asama === "Video" ? `${arac.ad} Revizyonu Bekleniyor` : IU_REVIZYON[asama];
@@ -154,6 +157,7 @@ function iuMetin(kod: DurumKodu, g: IuMesajGirdi): string {
 
 // Renk ve "top kimde" bilgisi kodla sabittir; yalnız metin role/aşamaya göre değişir.
 const IU_RENK: Record<DurumKodu, { top: DurumTopu; renk: DurumRenk }> = {
+  talep_olusturuldu: { top: "kapali",           renk: ONAY },
   iu_iletildi:      { top: "icerik_ureticisi", renk: AKSIYON },
   iu_hazirliyor:    { top: "icerik_ureticisi", renk: AKSIYON },
   iu_duzeltiyor:    { top: "icerik_ureticisi", renk: REVIZYON },
