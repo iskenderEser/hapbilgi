@@ -20,8 +20,7 @@ import { gecerliTur } from "@/lib/tclub/tur/kayit";
 import { ayBaslangici } from "@/lib/zaman/kontrol";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { sabitSoruIndeksleri } from "@/lib/soru/secim";
-import { tamamlamaKanitiDogrula } from "@/lib/ogrenmeAraci/sozlesme";
-import { yayinAraciKullanimaAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
+import { ogrenmeAraciTamamlamaKapisi } from "@/lib/ogrenmeAraci/tamamlamaKapisi";
 
 export async function PUT(request: NextRequest) {
   try {
@@ -73,12 +72,14 @@ export async function PUT(request: NextRequest) {
       return rolHatasi("Bu izleme size ait değil.");
     }
     const { data: aracDetay } = await adminSupabase.from("v_yayin_detay").select("arac_id, arac_turu, durum").eq("yayin_id", izleme.yayin_id).maybeSingle();
-    if (!aracDetay || aracDetay.durum !== "yayinda") return isKuraluHatasi("Yayın artık aktif değil.");
+    if (!aracDetay) return isKuraluHatasi("Yayın artık aktif değil.");
     if (izleme.arac_id !== aracDetay.arac_id || izleme.arac_turu !== aracDetay.arac_turu) return isKuraluHatasi("İzleme öğrenme aracı kimliği yayınla uyuşmuyor.");
-    if (!yayinAraciKullanimaAcikMi(aracDetay.arac_turu)) return isKuraluHatasi("Bu öğrenme aracı kullanıma kapalı.");
-    if (aracDetay?.arac_turu === "podcast" && !tamamlamaKanitiDogrula("podcast", izleme.tamamlama_kaniti)) return isKuraluHatasi("Podcast tamamlanma kanıtı doğrulanamadı.");
-    if (aracDetay?.arac_turu === "gorsel" && !tamamlamaKanitiDogrula("gorsel", izleme.tamamlama_kaniti)) return isKuraluHatasi("Görsel tamamlanma kanıtı doğrulanamadı.");
-    if (aracDetay?.arac_turu === "flip_pdf" && !tamamlamaKanitiDogrula("flip_pdf", izleme.tamamlama_kaniti)) return isKuraluHatasi("Literatür tamamlanma kanıtı doğrulanamadı.");
+    const tamamlamaKapisi = ogrenmeAraciTamamlamaKapisi({
+      yayinDurumu: aracDetay.durum,
+      aracTuru: aracDetay.arac_turu,
+      tamamlamaKaniti: izleme.tamamlama_kaniti,
+    });
+    if (!tamamlamaKapisi.ok) return isKuraluHatasi(tamamlamaKapisi.hata);
 
     // Sorular yalnız ilk izleme/challenge ve ileri sarılmamış oturumlarda sabitlenir.
     let soruIndeksleri = Array.isArray(izleme.soru_indeksleri)

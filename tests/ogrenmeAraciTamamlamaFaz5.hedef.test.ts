@@ -64,7 +64,7 @@ test("Podcast ileri sarma, doğrulanmış süre, tamamlama ve soru kapılarını
   assert.match(podcast, /audio\.currentTime > izinliKonumRef\.current \+ 2/);
   assert.match(podcastIlerleme, /sunucuLimiti/);
   assert.match(podcastIlerleme, /PODCAST_ARACI\.tamamlanabilirMi/);
-  for (const route of [eclubBitir, eczanemBitir]) assert.match(route, /tamamlamaKanitiDogrula\("podcast"/);
+  for (const route of [eclubBitir, eczanemBitir]) assert.match(route, /ogrenmeAraciTamamlamaKapisi/);
 });
 
 test("Görsel yalnız aktif sekme süresi ve kullanıcı onayıyla tamamlanır", () => {

@@ -15,8 +15,7 @@ test("dört tüketici kanalında sahiplik ve bağ kimliği sunucuda doğrulanır
 test("tamamlama ve puan kapıları yayın durumu, araç bayrağı ve kanıtı korur", () => {
   for (const yol of ["app/izle/api/bitir/route.ts", "app/(panel)/challenge-club/izle/api/bitir/route.ts", "app/(panel)/eclub/panel/api/bitir/route.ts", "app/eczanem/api/izleme/bitir/route.ts"]) {
     const kaynak = oku(yol);
-    assert.match(kaynak, /yayinAraciKullanimaAcikMi/);
-    assert.match(kaynak, /tamamlamaKanitiDogrula/);
+    assert.match(kaynak, /ogrenmeAraciTamamlamaKapisi/);
     assert.match(kaynak, /tamamla/);
   }
 });

@@ -16,7 +16,7 @@ test("araç türleri mevcut yayın ve ortak tamamlama puanı omurgasını kullan
   assert.match(eclubBitir, /eclub_izleme_tamamla/);
   assert.match(eczanemBitir, /eczanem_izleme_tamamla/);
   for (const kaynak of [uttBitir, bmBitir, eclubBitir, eczanemBitir]) {
-    assert.match(kaynak, /tamamlamaKanitiDogrula/);
+    assert.match(kaynak, /ogrenmeAraciTamamlamaKapisi/);
   }
 });
 

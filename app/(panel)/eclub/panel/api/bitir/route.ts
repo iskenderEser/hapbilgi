@@ -9,8 +9,7 @@ import { hataYaniti, isKuraluHatasi, veriKontrol, sunucuHatasi, yetkiHatasi, rol
 import { olayIdGecerliMi } from "@/lib/izleme/baslat";
 import { eclubIzlemeHaklari, eclubSoruIndeksleri } from "@/lib/eclub/izlemeKurali";
 import { gecerliTur } from "@/lib/tclub/tur/kayit";
-import { tamamlamaKanitiDogrula } from "@/lib/ogrenmeAraci/sozlesme";
-import { yayinAraciKullanimaAcikMi } from "@/lib/ogrenmeAraci/bayraklar";
+import { ogrenmeAraciTamamlamaKapisi } from "@/lib/ogrenmeAraci/tamamlamaKapisi";
 import { eclubAktifYayinYetkisi } from "@/lib/eclub/aktifYayinYetkisi";
 
 const VARSAYILAN_SORU_SAYISI = 2;
@@ -50,11 +49,13 @@ export async function PUT(request: NextRequest) {
     if (!(await eclubAktifYayinYetkisi(adminSupabase, user.id, izleme.yayin_id))) return rolHatasi("Aktif E-Club firma bağlantısı bulunamadı.");
     if (!izleme.oneri_id) return hataYaniti("İzleme öneri kaydına bağlı değil.", "eclub_izleme_kayitlari.oneri_id", null);
     const { data: aracDetay } = await adminSupabase.from("v_yayin_detay").select("arac_turu, durum").eq("yayin_id", izleme.yayin_id).maybeSingle();
-    if (!aracDetay || aracDetay.durum !== "yayinda") return isKuraluHatasi("Yayın artık aktif değil.");
-    if (!yayinAraciKullanimaAcikMi(aracDetay.arac_turu)) return isKuraluHatasi("Bu öğrenme aracı kullanıma kapalı.");
-    if (aracDetay?.arac_turu === "podcast" && !tamamlamaKanitiDogrula("podcast", izleme.tamamlama_kaniti)) return isKuraluHatasi("Podcast tamamlanma kanıtı doğrulanamadı.");
-    if (aracDetay?.arac_turu === "gorsel" && !tamamlamaKanitiDogrula("gorsel", izleme.tamamlama_kaniti)) return isKuraluHatasi("Görsel tamamlanma kanıtı doğrulanamadı.");
-    if (aracDetay?.arac_turu === "flip_pdf" && !tamamlamaKanitiDogrula("flip_pdf", izleme.tamamlama_kaniti)) return isKuraluHatasi("Literatür tamamlanma kanıtı doğrulanamadı.");
+    if (!aracDetay) return isKuraluHatasi("Yayın artık aktif değil.");
+    const tamamlamaKapisi = ogrenmeAraciTamamlamaKapisi({
+      yayinDurumu: aracDetay.durum,
+      aracTuru: aracDetay.arac_turu,
+      tamamlamaKaniti: izleme.tamamlama_kaniti,
+    });
+    if (!tamamlamaKapisi.ok) return isKuraluHatasi(tamamlamaKapisi.hata);
 
     const { data: oneri, error: oneriError } = await adminSupabase
       .from("eclub_oneri_kayitlari")
