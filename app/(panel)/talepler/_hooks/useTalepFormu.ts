@@ -22,7 +22,7 @@ import {
   type TalepTuru,
 } from "@/lib/uretici/yetenekler";
 import { useHataMesaji } from "@/components/HataMesaji";
-import { hazirVideoIsleniyorMesaji, uretimToast, toastVaryant } from "@/lib/uretim/toastMesaj";
+import { uretimToast, toastVaryant } from "@/lib/uretim/toastMesaj";
 import type {
   Urun,
   Teknik,
@@ -1386,10 +1386,10 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
 
   // A4 — hazır video Supabase storage'a hiç girmez: (1) vezneden izin (kimlik +
   // sıra kontrolü, kaydı sistem açar), (2) dosya tarayıcıdan DOĞRUDAN Bunny'ye
-  // TUS ile, (3) kanonik embed adresi talebe bağlanır, Bunny hazır olana kadar
-  // beklenir. Yalnız Ready + pozitif süre doğrulanınca üretim zinciri açılır.
+  // TUS ile, (3) kanonik embed adresi talebe bağlanır. Bunny işleme süreci
+  // kullanıcıyı bekletmeden arka planda tamamlanır.
   const [videoYuklemeYuzdesi, setVideoYuklemeYuzdesi] = useState<number | null>(null);
-  const [videoIslemeBekleniyor, setVideoIslemeBekleniyor] = useState(false);
+  const videoIslemeBekleniyor = false;
 
   const uploadVideo = useCallback(
     async (talep_id: string): Promise<VideoYuklemeSonucu> => {
@@ -1761,11 +1761,9 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
         // Talep bu noktada oluştu — dosya sonucu ne olursa olsun kullanıcıya
         // gerçek durum söylenir; kısmi başarısızlık gizlenmez (F-01/3).
         const basarisizlar: string[] = [];
-        let videoIsleniyor = false;
         if (hazirVideo && ogrenmeAraciTuru === "video" && bekleyenVideo) {
           const sonuc = await uploadVideo(talep_id);
           if (sonuc === "basarisiz") basarisizlar.push(`${bekleyenVideo.preview.dosya_adi} (video)`);
-          if (sonuc === "isleniyor") videoIsleniyor = true;
         }
         if (hazirVideo && ogrenmeAraciTuru === "gorsel" && bekleyenGorsel) {
           try {
@@ -1786,13 +1784,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
         if (bekleyenDosyalar.length > 0) {
           basarisizlar.push(...(await uploadDosyalar(talep_id)));
         }
-        if (basarisizlar.length === 0 && videoIsleniyor) {
-          uyari(
-            hazirVideoIsleniyorMesaji(hazirSoruSeti),
-            undefined,
-            true
-          );
-        } else if (basarisizlar.length === 0) {
+        if (basarisizlar.length === 0) {
           basari(uretimToast(
             { rol: "uretici", olay: "talep_gonderildi" },
             { varyant: toastVaryant(hazirVideo, hazirSoruSeti), ogrenmeAraciTuru },

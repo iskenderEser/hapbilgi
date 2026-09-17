@@ -74,13 +74,6 @@ export function toastVaryant(
   return "normal";
 }
 
-/** Bunny aktarımı bittiğinde zincirin henüz tamamlanmadığını doğru varyantla anlatır. */
-export function hazirVideoIsleniyorMesaji(hazirSoruSeti?: boolean | null): string {
-  return hazirSoruSeti
-    ? "Video yüklendi ve işleniyor. Hazır olduğunda yayın yönetimine aktarılacak."
-    : "Video yüklendi ve işleniyor. Hazır olduğunda soru seti üretimi için içerik üreticinize iletilecek.";
-}
-
 // Aşamanın iki adı. `belirtme` cümle başında ("Senaryoyu onayladınız"),
 // `belirtmeKucuk` "Revize " ekinden sonra ("Revize senaryoyu onayladınız"),
 // `talep` ise talep/iptal kalıplarında ("Senaryo için revizyon talebiniz…").

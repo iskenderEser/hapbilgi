@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { hazirVideoIsleniyorMesaji, uretimToast, toastVaryant, type ToastAsama, type ToastOlay } from "@/lib/uretim/toastMesaj";
+import { uretimToast, toastVaryant, type ToastAsama, type ToastOlay } from "@/lib/uretim/toastMesaj";
 import { bunnyTusYukle, videoYuklemeOturumuGuncelle } from "@/lib/video/bunnyTusIstemci";
 import { hazirGorselYukle, hazirFlipPdfYukle, hazirPodcastYukle } from "@/lib/ogrenmeAraci/bunnyYuklemeIstemci";
 import { SORGU_ARALIGI_MS, TAVAN_SANIYE } from "@/lib/video/islemeDurumu";
@@ -25,7 +25,7 @@ export type KararDurumu = "onaylandi" | "revizyon bekleniyor" | "Iptal Edildi";
 
 export function useTalepMerkezi() {
   const { kullanici } = useAuth();
-  const { mesajlar, hata, basari, uyari } = useHataMesaji();
+  const { mesajlar, hata, basari } = useHataMesaji();
 
   const [talepler, setTalepler] = useState<TalepSatiri[]>([]);
   const [loading, setLoading] = useState(true);
@@ -420,11 +420,13 @@ export function useTalepMerkezi() {
               } catch { /* geçici hata; sonraki tur */ }
             }
           })();
-          uyari(
-            hazirVideoIsleniyorMesaji(talep.hazir_soru_seti),
-            undefined,
-            true
-          );
+          basari(uretimToast(
+            { rol: "uretici", olay: "talep_gonderildi" },
+            {
+              varyant: toastVaryant(talep.hazir_video, talep.hazir_soru_seti),
+              ogrenmeAraciTuru: talep.ogrenme_araci_turu,
+            },
+          ));
           setDetayTetik((x) => x + 1);
           await veriCek();
           return;
@@ -447,7 +449,7 @@ export function useTalepMerkezi() {
         setVideoYuzdesi(null);
       }
     },
-    [talepler, seciliTalepId, hata, basari, uyari, veriCek],
+    [talepler, seciliTalepId, hata, basari, veriCek],
   );
 
   // Biçim /talepler sayfasıyla AYNI (28.07 düzeltmesi): burada saat/dakika yoktu,

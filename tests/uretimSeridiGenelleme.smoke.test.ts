@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { adimlariCoz, type SeritTalebi } from "@/lib/utils/uretimSeridi";
 import { iuDurumMesaji, ureticiDurumMesaji } from "@/lib/utils/durum/mesaj";
-import { hazirVideoIsleniyorMesaji, toastVaryant, uretimToast } from "@/lib/uretim/toastMesaj";
+import { toastVaryant, uretimToast } from "@/lib/uretim/toastMesaj";
 
 test("uretimSeridi adimlariCoz hazir ogrenme araci adimini kapali yapmaz", () => {
   const turler = ["podcast", "gorsel", "flip_pdf", "video"] as const;
@@ -479,14 +479,14 @@ test("Video V2 seridi yukleme, isleme, soru seti ve yayin gecislerini dogru anla
   assert.equal(yayin.find((adim) => adim.hal === "aktif")?.anahtar, "yayin");
   assert.equal(yayin.find((adim) => adim.hal === "aktif")?.durum_kodu, "yayin_bekleniyor");
 
-  assert.equal(
-    hazirVideoIsleniyorMesaji(false),
-    "Video yüklendi ve işleniyor. Hazır olduğunda soru seti üretimi için içerik üreticinize iletilecek.",
-  );
-  assert.equal(
-    hazirVideoIsleniyorMesaji(true),
-    "Video yüklendi ve işleniyor. Hazır olduğunda yayın yönetimine aktarılacak.",
-  );
+  assert.equal(uretimToast(
+    { rol: "uretici", olay: "talep_gonderildi" },
+    { varyant: "hazir_video", ogrenmeAraciTuru: "video" },
+  ), "Soru seti talebiniz içerik üreticinize iletildi");
+  assert.equal(uretimToast(
+    { rol: "uretici", olay: "talep_gonderildi" },
+    { varyant: "hazir_ikisi", ogrenmeAraciTuru: "video" },
+  ), "Yayın yönetimi sayfasına gidiniz");
 });
 
 test("Video V2 arka plan kalici hatasinda kullaniciyi bilgilendirir ve talep verisini yeniler", () => {
@@ -497,6 +497,17 @@ test("Video V2 arka plan kalici hatasinda kullaniciyi bilgilendirir ve talep ver
   assert.match(merkez, /setDetayTetik\(\(x\) => x \+ 1\);\s*await veriCek\(\);/);
   assert.match(form, /t\.d2\.hata \?\? "Video işlenemedi\. Talep Takibi ekranından yeniden yükleyebilirsiniz\."/);
   assert.match(form, /await onTalepOlusturuldu\?\.\(\);/);
+});
+
+test("Hazır video yayın kararı Bunny işleme süresinden bağımsızdır; diğer araç kapıları korunur", () => {
+  const yayinApi = readFileSync("app/(panel)/yayin-yonetimi/api/yayinlar/route.ts", "utf8");
+  const sql = readFileSync("scripts/sql/video_hazir_akisi_asenkron_yayin.sql", "utf8");
+
+  assert.doesNotMatch(yayinApi, /bunnyVideoDurumu|Video işleniyor\. Hazır olmadan yayına alınamaz/);
+  assert.match(yayinApi, /arac\.arac_turu !== "video"/);
+  assert.match(sql, /IF v_arac_turu = 'video' THEN RETURN NEW; END IF;/);
+  assert.match(sql, /v_durum <> 'onaylandi'/);
+  assert.match(sql, /v_metadata_dogrulandi IS NOT TRUE/);
 });
 
 test("Video V3 hazir soru setini goruntulenebilir tutar ve video onayindan sonra yayina gecer", () => {
