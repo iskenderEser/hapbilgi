@@ -241,68 +241,73 @@ export async function POST(request: NextRequest) {
       if (aday.getTime() > Date.now()) planliTarih = aday;
     }
 
-    // Dosya tabanlı öğrenme araçlarında doğrulanmış teslim kaydı yayın kapısıdır.
-    // Ortak omurgaya bağlı videolar ise eski video akışını kullanmaya devam eder.
-    let ortakAracTuru: string | null = null;
+    // Yayın kapısı: TUS aktarımı ya da geçmiş bir onay kaydı yeterli değildir.
+    // Bunny videoyu şu anda Ready olarak doğrulamadan ve pozitif süre vermeden
+    // hiçbir yayın/tarife yan etkisi oluşturulmaz.
     if (soruSeti.arac_durum_id) {
       const { data: aracDurum, error: aracDurumError } = await adminSupabase.from("ogrenme_araci_durumu")
         .select("durum, ogrenme_araclari!inner(arac_turu, dosya_yolu, kapak_yolu, transkript_yolu, sure_saniye, sayfa_sayisi, genislik, yukseklik, metadata, metadata_dogrulandi)")
         .eq("arac_durum_id", soruSeti.arac_durum_id).maybeSingle();
       const arac = Array.isArray(aracDurum?.ogrenme_araclari) ? aracDurum.ogrenme_araclari[0] : aracDurum?.ogrenme_araclari;
-      if (aracDurumError || !arac) {
-        return isKuraluHatasi("Öğrenme aracı kaydı doğrulanamadı.");
-      }
-      ortakAracTuru = arac.arac_turu;
-      if (ortakAracTuru !== "video" && (aracDurum?.durum !== "onaylandi" || !arac.metadata_dogrulandi || !arac.dosya_yolu)) {
+      if (aracDurumError || aracDurum?.durum !== "onaylandi" || !arac || !arac.metadata_dogrulandi || !arac.dosya_yolu) {
         return isKuraluHatasi("Öğrenme aracı onayı ve dosya doğrulaması tamamlanmadan yayımlanamaz.");
       }
-      if (ortakAracTuru !== "video") {
-        const kapakKapisi = kapakYayinKapisiDogrula({ kapakYolu: arac.kapak_yolu, metadata: arac.metadata as Record<string, unknown> | null });
-        if (!kapakKapisi.ok) return isKuraluHatasi(kapakKapisi.hata);
-        if (arac.arac_turu === "podcast" && Number(arac.sure_saniye) <= 0) {
-          return isKuraluHatasi("Podcast ses ve süre doğrulaması tamamlanmadan yayımlanamaz.");
-        }
-        if (arac.arac_turu === "gorsel" && (Number(arac.genislik) <= 0 || Number(arac.yukseklik) <= 0)) {
-          return isKuraluHatasi("Görsel dosyası ve ölçüleri doğrulanmadan yayımlanamaz.");
-        }
-        if (arac.arac_turu === "flip_pdf" && Number(arac.sayfa_sayisi) <= 0) {
-          return isKuraluHatasi("Literatür dosyası ve sayfa sayısı doğrulanmadan yayımlanamaz.");
-        }
-        if (arac.arac_turu !== "podcast" && arac.arac_turu !== "gorsel" && arac.arac_turu !== "flip_pdf") {
-          return isKuraluHatasi("Bu öğrenme aracı türü henüz yayına alınamaz.");
-        }
+      const kapakKapisi = kapakYayinKapisiDogrula({ kapakYolu: arac.kapak_yolu, metadata: arac.metadata as Record<string, unknown> | null });
+      if (!kapakKapisi.ok) return isKuraluHatasi(kapakKapisi.hata);
+      if (arac.arac_turu === "podcast" && Number(arac.sure_saniye) <= 0) {
+        return isKuraluHatasi("Podcast ses ve süre doğrulaması tamamlanmadan yayımlanamaz.");
       }
+      if (arac.arac_turu === "gorsel" && (Number(arac.genislik) <= 0 || Number(arac.yukseklik) <= 0)) {
+        return isKuraluHatasi("Görsel dosyası ve ölçüleri doğrulanmadan yayımlanamaz.");
+      }
+      if (arac.arac_turu === "flip_pdf" && Number(arac.sayfa_sayisi) <= 0) {
+        return isKuraluHatasi("Literatür dosyası ve sayfa sayısı doğrulanmadan yayımlanamaz.");
+      }
+      if (arac.arac_turu !== "podcast" && arac.arac_turu !== "gorsel" && arac.arac_turu !== "flip_pdf") {
+        return isKuraluHatasi("Bu öğrenme aracı türü henüz yayına alınamaz.");
+      }
+    } else {
+    const { data: videoDurumu, error: videoDurumuError } = await adminSupabase
+      .from("video_durumu")
+      .select("video_id")
+      .eq("video_durum_id", soruSeti.video_durum_id)
+      .single();
+    if (videoDurumuError || !videoDurumu?.video_id) {
+      return hataYaniti("Yayına bağlı video bulunamadı.", "video_durumu SELECT — yayın hazır olma kapısı", videoDurumuError, 422);
     }
-    if (!soruSeti.arac_durum_id || ortakAracTuru === "video") {
-      // Video yayınını Bunny'nin anlık işleme durumuna bağlama. Video hazırsa süreyi
-      // tamamla; henüz işleniyorsa yayın işlemini engellemeden görünürlük katmanının
-      // hazır olma süzgecine bırak. Böylece üretici geçici Bunny durumunu beklemez.
-      const { data: videoDurumu } = await adminSupabase
-        .from("video_durumu")
-        .select("video_id")
-        .eq("video_durum_id", soruSeti.video_durum_id)
-        .single();
-      if (videoDurumu?.video_id) {
-        const { data: videoKaydi } = await adminSupabase
-          .from("videolar")
-          .select("video_id, video_url, video_suresi_saniye")
-          .eq("video_id", videoDurumu.video_id)
-          .single();
-        const sureBos = !videoKaydi?.video_suresi_saniye || videoKaydi.video_suresi_saniye <= 0;
-        const guid = videoKaydi?.video_url ? embedUrlGuidCikar(videoKaydi.video_url) : null;
-        if (videoKaydi && sureBos && guid) {
-          const durum = await bunnyVideoDurumu(guid);
-          if (durum.ok && durum.hazir && durum.videoSuresiSaniye != null && durum.videoSuresiSaniye > 0) {
-            await adminSupabase
-              .from("videolar")
-              .update({ video_suresi_saniye: durum.videoSuresiSaniye })
-              .eq("video_id", videoKaydi.video_id);
-          }
-        }
+    const { data: videoKaydi, error: videoKaydiError } = await adminSupabase
+      .from("videolar")
+      .select("video_id, video_url, video_suresi_saniye")
+      .eq("video_id", videoDurumu.video_id)
+      .single();
+    if (videoKaydiError || !videoKaydi) {
+      return hataYaniti("Yayına bağlı video kaydı bulunamadı.", "videolar SELECT — yayın hazır olma kapısı", videoKaydiError, 422);
+    }
+    const guid = embedUrlGuidCikar(videoKaydi.video_url);
+    if (guid) {
+      const durum = await bunnyVideoDurumu(guid);
+      if (!durum.ok) {
+        return hataYaniti("Video hazır olduğu doğrulanamadı; yayın beklemeye alındı.", durum.adim, durum.detay ? { message: durum.detay } : null, 503);
       }
+      if (durum.hatali) return isKuraluHatasi("Video işlenemedi. Yeniden yüklenmeden yayına alınamaz.");
+      if (!durum.hazir || durum.videoSuresiSaniye == null || durum.videoSuresiSaniye <= 0) {
+        return isKuraluHatasi("Video işleniyor. Hazır olmadan yayına alınamaz.");
+      }
+      if (videoKaydi.video_suresi_saniye !== durum.videoSuresiSaniye) {
+        const { error: sureError } = await adminSupabase
+          .from("videolar")
+          .update({ video_suresi_saniye: durum.videoSuresiSaniye })
+          .eq("video_id", videoKaydi.video_id);
+        if (sureError) return hataYaniti("Doğrulanmış video süresi kaydedilemedi; yayın açılmadı.", "videolar UPDATE — yayın hazır olma kapısı", sureError);
+      }
+    } else if (!videoKaydi.video_suresi_saniye || videoKaydi.video_suresi_saniye <= 0) {
+      // Bunny öncesi eski kayıtların mevcut davranışı korunur; yalnız süresiz eski
+      // kayıt güvenli biçimde durdurulur.
+      return isKuraluHatasi("Video süresi doğrulanmadan yayına alınamaz.");
+    }
     }
 
-    // Eczanem: barkod + Karşılık öğrenme aracı doğrulamasından sonra yazılır.
+    // Eczanem: barkod + Karşılık yalnız video kapıyı geçtikten sonra yazılır.
     if (eczanemHedefi && eczanemUrunId) {
       const tarifeSonuc = await tarifeVeBarkodYaz(adminSupabase, {
         urun_id: eczanemUrunId,
