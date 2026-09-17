@@ -22,9 +22,8 @@ export { VARSAYILAN_BAREM_TABLOSU };
 export interface Bekleyen {
   soru_seti_durum_id: string;
   soru_seti_id: string;
-  video_durum_id: string;
   arac_id?: string | null;
-  arac_durum_id?: string | null;
+  arac_durum_id: string;
   arac_turu?: "video" | "podcast" | "gorsel" | "flip_pdf";
   sorular: Soru[];
   video_url: string | null;

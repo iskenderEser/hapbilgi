@@ -25,7 +25,7 @@ export function bosUretimZinciri(talepId: string): ZincirSatiri {
   return {
     talep_id: talepId,
     senaryo_id: null, senaryo_iu_id: null, senaryo_durum: null, senaryo_durum_tarih: null,
-    video_id: null, video_iu_id: null, video_durum: null, video_durum_tarih: null,
+    arac_id: null, arac_iu_id: null, arac_durum: null, arac_durum_tarih: null,
     soru_seti_id: null, soru_seti_iu_id: null, soru_seti_durum: null, soru_seti_durum_tarih: null,
     yayin_durum: null, yayin_tarihi: null,
   };

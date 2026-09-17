@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     let query = adminSupabase
       .from("uretim_gorevleri")
-      .select("gorev_id, talep_id, asama, senaryo_id, video_id, arac_id, soru_seti_id, atanan_iu_id, durum, atama_kaynagi, atama_tarihi, baslama_tarihi, inceleme_tarihi, tamamlanma_tarihi, iptal_tarihi, surum, created_at, updated_at")
+      .select("gorev_id, talep_id, asama, senaryo_id, arac_id, soru_seti_id, atanan_iu_id, durum, atama_kaynagi, atama_tarihi, baslama_tarihi, inceleme_tarihi, tamamlanma_tarihi, iptal_tarihi, surum, created_at, updated_at")
       .order("updated_at", { ascending: false });
 
     if (rol === IU_ROLU) query = query.eq("atanan_iu_id", user.id);
@@ -160,13 +160,13 @@ export async function GET(request: NextRequest) {
         const gecmis = await adminSupabase.from("ogrenme_araci_durumu").select("durum, notlar, created_at").eq("arac_id", gorev.arac_id).order("created_at");
         if (gecmis.error) return hataYaniti("Podcast geçmişi alınamadı.", "podcast görev geçmişi", gecmis.error);
         durumGecmisi = gecmis.data ?? [];
-      } else if (gorev.asama === "video" && gorev.video_id) {
+      } else if (gorev.asama === "video" && gorev.arac_id) {
         const [icerik, gecmis] = await Promise.all([
-          adminSupabase.from("videolar").select("video_url, thumbnail_url").eq("video_id", gorev.video_id).maybeSingle(),
-          adminSupabase.from("video_durumu").select("durum, notlar, created_at").eq("video_id", gorev.video_id).order("created_at"),
+          adminSupabase.from("ogrenme_araclari").select("dosya_yolu, kapak_yolu").eq("arac_id", gorev.arac_id).eq("arac_turu", "video").maybeSingle(),
+          adminSupabase.from("ogrenme_araci_durumu").select("durum, notlar, created_at").eq("arac_id", gorev.arac_id).order("created_at"),
         ]);
         if (icerik.error || gecmis.error) return hataYaniti("Video detayı alınamadı.", "video görev detayı", icerik.error ?? gecmis.error);
-        detayIcerigi = { asama: "video", video_url: icerik.data?.video_url ?? null, thumbnail_url: icerik.data?.thumbnail_url ?? null };
+        detayIcerigi = { asama: "video", video_url: icerik.data?.dosya_yolu ?? null, thumbnail_url: icerik.data?.kapak_yolu ?? null };
         durumGecmisi = gecmis.data ?? [];
       } else if (gorev.asama === "soru_seti" && gorev.soru_seti_id) {
         const [icerik, gecmis] = await Promise.all([

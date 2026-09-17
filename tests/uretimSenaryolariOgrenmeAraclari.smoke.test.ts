@@ -11,16 +11,16 @@ function uretilenArac(zincir: ZincirSatiri): ZincirSatiri {
     ...zincir,
     senaryo_id: "senaryo-1", senaryo_iu_id: "iu-1", senaryo_durum: "onaylandi",
     senaryo_durum_tarih: "2026-09-16T09:00:00.000Z",
-    video_id: "arac-1", video_iu_id: "iu-1", video_durum: "onaylandi",
-    video_durum_tarih: "2026-09-16T10:00:00.000Z",
+    arac_id: "arac-1", arac_iu_id: "iu-1", arac_durum: "onaylandi",
+    arac_durum_tarih: "2026-09-16T10:00:00.000Z",
   };
 }
 
 function hazirArac(zincir: ZincirSatiri): ZincirSatiri {
   return {
     ...zincir,
-    video_id: "arac-1", video_durum: "onaylandi",
-    video_durum_tarih: "2026-09-16T10:00:00.000Z",
+    arac_id: "arac-1", arac_durum: "onaylandi",
+    arac_durum_tarih: "2026-09-16T10:00:00.000Z",
   };
 }
 

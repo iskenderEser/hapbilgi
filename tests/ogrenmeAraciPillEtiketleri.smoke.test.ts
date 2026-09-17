@@ -18,7 +18,7 @@ function bosZincir(talepId: string): ZincirSatiri {
   return {
     talep_id: talepId,
     senaryo_id: null, senaryo_iu_id: null, senaryo_durum: null, senaryo_durum_tarih: null,
-    video_id: null, video_iu_id: null, video_durum: null, video_durum_tarih: null,
+    arac_id: null, arac_iu_id: null, arac_durum: null, arac_durum_tarih: null,
     soru_seti_id: null, soru_seti_iu_id: null, soru_seti_durum: null, soru_seti_durum_tarih: null,
     yayin_durum: null, yayin_tarihi: null,
   };
@@ -27,9 +27,9 @@ function bosZincir(talepId: string): ZincirSatiri {
 function onayliHazirZincir(talepId: string): ZincirSatiri {
   return {
     ...bosZincir(talepId),
-    video_id: "arac-1",
-    video_durum: "onaylandi",
-    video_durum_tarih: "2026-09-16T10:05:00Z",
+    arac_id: "arac-1",
+    arac_durum: "onaylandi",
+    arac_durum_tarih: "2026-09-16T10:05:00Z",
     soru_seti_id: "soru-seti-1",
     soru_seti_durum: "onaylandi",
     soru_seti_durum_tarih: "2026-09-16T10:06:00Z",
@@ -161,10 +161,10 @@ test("Video V4: video ve hazır soru seti bağlanınca yayın yönetimine geçer
     senaryo_iu_id: null,
     senaryo_durum: null,
     senaryo_durum_tarih: null,
-    video_id: "video-v4",
-    video_iu_id: null,
-    video_durum: "onaylandi",
-    video_durum_tarih: "2026-09-16T08:10:00Z",
+    arac_id: "video-v4",
+    arac_iu_id: null,
+    arac_durum: "onaylandi",
+    arac_durum_tarih: "2026-09-16T08:10:00Z",
     soru_seti_id: "soru-v4",
     soru_seti_iu_id: null,
     soru_seti_durum: "onaylandi",
@@ -194,7 +194,7 @@ test("V2 Hazır Podcast + İÜ Soru Seti: senaryo kapalı, podcast tamamlanmış
     created_at: "2026-09-13T10:00:00Z",
   };
 
-  const zincir = { ...bosZincir(talep.talep_id), video_id: "arac-1", video_durum: "onaylandi" };
+  const zincir = { ...bosZincir(talep.talep_id), arac_id: "arac-1", arac_durum: "onaylandi" };
   const zincirDurumu = asamaCoz(talep, zincir);
 
   assert.equal(zincirDurumu.asama, "Soru Seti");
@@ -227,7 +227,7 @@ test("V2 Hazır Dijital Broşür + İÜ Soru Seti: broşür iletildi ve soru set
     ogrenme_araci_turu: "gorsel" as const,
     created_at: "2026-09-16T10:00:00Z",
   };
-  const zincir = { ...bosZincir(talep.talep_id), video_id: "arac-1", video_durum: "onaylandi" };
+  const zincir = { ...bosZincir(talep.talep_id), arac_id: "arac-1", arac_durum: "onaylandi" };
   const adimlar = adimlariCoz(talep, zincir);
   const senaryo = adimlar.find((adim) => adim.anahtar === "senaryo");
   const brosur = adimlar.find((adim) => adim.anahtar === "video");
@@ -269,7 +269,7 @@ test("Dijital Broşür V4: doğrulaması yarım kalan araç yayın aşamasını 
     ogrenme_araci_turu: "gorsel" as const,
     created_at: "2026-09-16T10:00:00Z",
   };
-  const zincir = { ...bosZincir(talep.talep_id), video_id: "arac-yarim", video_durum: "inceleme bekleniyor" };
+  const zincir = { ...bosZincir(talep.talep_id), arac_id: "arac-yarim", arac_durum: "inceleme bekleniyor" };
 
   const durum = asamaCoz(talep, zincir);
   assert.equal(durum.asama, "Video");
@@ -284,7 +284,7 @@ test("Dijital Broşür V4: araç onaylı fakat hazır set bağlı değilse hata 
     ogrenme_araci_turu: "gorsel" as const,
     created_at: "2026-09-16T10:00:00Z",
   };
-  const zincir = { ...bosZincir(talep.talep_id), video_id: "arac-1", video_durum: "onaylandi" };
+  const zincir = { ...bosZincir(talep.talep_id), arac_id: "arac-1", arac_durum: "onaylandi" };
 
   const durum = asamaCoz(talep, zincir);
   assert.equal(durum.asama, "Soru Seti");

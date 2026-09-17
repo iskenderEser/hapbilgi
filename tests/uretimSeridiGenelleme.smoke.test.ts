@@ -139,10 +139,10 @@ test("Video V1 seridi senaryo, video, soru seti ve yayin gecislerini ortak cozum
     senaryo_iu_id: null,
     senaryo_durum: null,
     senaryo_durum_tarih: null,
-    video_id: null,
-    video_iu_id: null,
-    video_durum: null,
-    video_durum_tarih: null,
+    arac_id: null,
+    arac_iu_id: null,
+    arac_durum: null,
+    arac_durum_tarih: null,
     soru_seti_id: null,
     soru_seti_iu_id: null,
     soru_seti_durum: null,
@@ -165,15 +165,15 @@ test("Video V1 seridi senaryo, video, soru seti ve yayin gecislerini ortak cozum
     senaryo_iu_id: "iu-1",
     senaryo_durum: "onaylandi",
     senaryo_durum_tarih: "2026-09-16T09:00:00.000Z",
-    video_id: "video-1",
+    arac_id: "video-1",
   };
   assert.equal(aktif(senaryoOnayli, { asama: "Video", durum_kodu: "iu_hazirliyor" })?.anahtar, "video");
 
   const videoOnayli = {
     ...senaryoOnayli,
-    video_iu_id: "iu-1",
-    video_durum: "onaylandi",
-    video_durum_tarih: "2026-09-16T10:00:00.000Z",
+    arac_iu_id: "iu-1",
+    arac_durum: "onaylandi",
+    arac_durum_tarih: "2026-09-16T10:00:00.000Z",
     soru_seti_id: "soru-seti-1",
   };
   assert.equal(aktif(videoOnayli, { asama: "Soru Seti", durum_kodu: "onay_bekleniyor" })?.anahtar, "soru_seti");
@@ -205,10 +205,10 @@ test("Podcast V1 seridi üretici ve içerik üreticisi pill geçişlerini doğru
     senaryo_iu_id: "iu-1",
     senaryo_durum: "onaylandi",
     senaryo_durum_tarih: "2026-09-16T09:00:00.000Z",
-    video_id: "podcast-v1",
-    video_iu_id: "iu-1",
-    video_durum: null,
-    video_durum_tarih: null,
+    arac_id: "podcast-v1",
+    arac_iu_id: "iu-1",
+    arac_durum: null,
+    arac_durum_tarih: null,
     soru_seti_id: null,
     soru_seti_iu_id: null,
     soru_seti_durum: null,
@@ -233,8 +233,8 @@ test("Podcast V1 seridi üretici ve içerik üreticisi pill geçişlerini doğru
 
   const soruSeti = adimlariCoz(talep, {
     ...zincir,
-    video_durum: "onaylandi",
-    video_durum_tarih: "2026-09-16T10:00:00.000Z",
+    arac_durum: "onaylandi",
+    arac_durum_tarih: "2026-09-16T10:00:00.000Z",
     soru_seti_id: "soru-podcast-v1",
   }, { asama: "Soru Seti", durum_kodu: "iu_iletildi" });
   assert.equal(soruSeti.find((adim) => adim.hal === "aktif")?.anahtar, "soru_seti");
@@ -267,10 +267,10 @@ test("Dijital Broşür V1 seridi ve teslim yüzeyi yaşam döngüsünü doğru a
     senaryo_iu_id: null,
     senaryo_durum: null,
     senaryo_durum_tarih: null,
-    video_id: null,
-    video_iu_id: null,
-    video_durum: null,
-    video_durum_tarih: null,
+    arac_id: null,
+    arac_iu_id: null,
+    arac_durum: null,
+    arac_durum_tarih: null,
     soru_seti_id: null,
     soru_seti_iu_id: null,
     soru_seti_durum: null,
@@ -288,7 +288,7 @@ test("Dijital Broşür V1 seridi ve teslim yüzeyi yaşam döngüsünü doğru a
     senaryo_iu_id: "iu-1",
     senaryo_durum: "onaylandi",
     senaryo_durum_tarih: "2026-09-16T09:00:00.000Z",
-    video_id: "gorsel-v1",
+    arac_id: "gorsel-v1",
   }, { asama: "Video", durum_kodu: "onay_bekleniyor" });
   const aktifBrosur = brosur.find((adim) => adim.hal === "aktif");
   assert.equal(aktifBrosur?.anahtar, "video");
@@ -303,10 +303,10 @@ test("Dijital Broşür V1 seridi ve teslim yüzeyi yaşam döngüsünü doğru a
     ...bosZincir,
     senaryo_id: "senaryo-gorsel-v1",
     senaryo_durum: "onaylandi",
-    video_id: "gorsel-v1",
-    video_iu_id: "iu-1",
-    video_durum: "onaylandi",
-    video_durum_tarih: "2026-09-16T10:00:00.000Z",
+    arac_id: "gorsel-v1",
+    arac_iu_id: "iu-1",
+    arac_durum: "onaylandi",
+    arac_durum_tarih: "2026-09-16T10:00:00.000Z",
     soru_seti_id: "soru-gorsel-v1",
   }, { asama: "Soru Seti", durum_kodu: "iu_iletildi" });
   assert.equal(soruSeti.find((adim) => adim.hal === "aktif")?.anahtar, "soru_seti");
@@ -329,7 +329,7 @@ test("Literatür V1 seridi senaryo, Literatür, soru seti ve yayın geçişlerin
   const bosZincir = {
     talep_id: talep.talep_id,
     senaryo_id: null, senaryo_iu_id: null, senaryo_durum: null, senaryo_durum_tarih: null,
-    video_id: null, video_iu_id: null, video_durum: null, video_durum_tarih: null,
+    arac_id: null, arac_iu_id: null, arac_durum: null, arac_durum_tarih: null,
     soru_seti_id: null, soru_seti_iu_id: null, soru_seti_durum: null, soru_seti_durum_tarih: null,
     yayin_durum: null, yayin_tarihi: null,
   };
@@ -343,7 +343,7 @@ test("Literatür V1 seridi senaryo, Literatür, soru seti ve yayın geçişlerin
     senaryo_iu_id: "iu-1",
     senaryo_durum: "onaylandi",
     senaryo_durum_tarih: "2026-09-16T09:00:00.000Z",
-    video_id: "literatur-v1",
+    arac_id: "literatur-v1",
   };
   const literaturAdimi = adimlariCoz(talep, literaturBekliyor, { asama: "Video", durum_kodu: "onay_bekleniyor" })
     .find((adim) => adim.hal === "aktif");
@@ -352,9 +352,9 @@ test("Literatür V1 seridi senaryo, Literatür, soru seti ve yayın geçişlerin
 
   const soruBekliyor = {
     ...literaturBekliyor,
-    video_iu_id: "iu-1",
-    video_durum: "onaylandi",
-    video_durum_tarih: "2026-09-16T10:00:00.000Z",
+    arac_iu_id: "iu-1",
+    arac_durum: "onaylandi",
+    arac_durum_tarih: "2026-09-16T10:00:00.000Z",
     soru_seti_id: "soru-literatur-v1",
   };
   assert.equal(adimlariCoz(talep, soruBekliyor, { asama: "Soru Seti", durum_kodu: "iu_iletildi" })
@@ -388,7 +388,7 @@ test("Literatür V2 hazır yükleme, soru seti ve yayın geçişlerini doğru iz
   const bosZincir = {
     talep_id: talep.talep_id,
     senaryo_id: null, senaryo_iu_id: null, senaryo_durum: null, senaryo_durum_tarih: null,
-    video_id: null, video_iu_id: null, video_durum: null, video_durum_tarih: null,
+    arac_id: null, arac_iu_id: null, arac_durum: null, arac_durum_tarih: null,
     soru_seti_id: null, soru_seti_iu_id: null, soru_seti_durum: null, soru_seti_durum_tarih: null,
     yayin_durum: null, yayin_tarihi: null,
   };
@@ -401,9 +401,9 @@ test("Literatür V2 hazır yükleme, soru seti ve yayın geçişlerini doğru iz
 
   const literaturOnayli = {
     ...bosZincir,
-    video_id: "literatur-v2",
-    video_durum: "onaylandi",
-    video_durum_tarih: "2026-09-16T09:00:00.000Z",
+    arac_id: "literatur-v2",
+    arac_durum: "onaylandi",
+    arac_durum_tarih: "2026-09-16T09:00:00.000Z",
     soru_seti_id: "soru-literatur-v2",
   };
   const soruSeti = adimlariCoz(talep, literaturOnayli, { asama: "Soru Seti", durum_kodu: "iu_iletildi" });
@@ -435,10 +435,10 @@ test("Video V2 seridi yukleme, isleme, soru seti ve yayin gecislerini dogru anla
     senaryo_iu_id: null,
     senaryo_durum: null,
     senaryo_durum_tarih: null,
-    video_id: null,
-    video_iu_id: null,
-    video_durum: null,
-    video_durum_tarih: null,
+    arac_id: null,
+    arac_iu_id: null,
+    arac_durum: null,
+    arac_durum_tarih: null,
     soru_seti_id: null,
     soru_seti_iu_id: null,
     soru_seti_durum: null,
@@ -457,9 +457,9 @@ test("Video V2 seridi yukleme, isleme, soru seti ve yayin gecislerini dogru anla
 
   const soruSetiZinciri = {
     ...bosZincir,
-    video_id: "video-v2",
-    video_durum: "onaylandi",
-    video_durum_tarih: "2026-09-16T09:00:00.000Z",
+    arac_id: "video-v2",
+    arac_durum: "onaylandi",
+    arac_durum_tarih: "2026-09-16T09:00:00.000Z",
     soru_seti_id: "soru-v2",
   };
   const soruSeti = adimlariCoz(talep, soruSetiZinciri, {
@@ -513,10 +513,10 @@ test("Video V3 hazir soru setini goruntulenebilir tutar ve video onayindan sonra
     senaryo_iu_id: null,
     senaryo_durum: null,
     senaryo_durum_tarih: null,
-    video_id: null,
-    video_iu_id: null,
-    video_durum: null,
-    video_durum_tarih: null,
+    arac_id: null,
+    arac_iu_id: null,
+    arac_durum: null,
+    arac_durum_tarih: null,
     soru_seti_id: null,
     soru_seti_iu_id: null,
     soru_seti_durum: null,
@@ -545,7 +545,7 @@ test("Video V3 hazir soru setini goruntulenebilir tutar ve video onayindan sonra
     senaryo_iu_id: "iu-1",
     senaryo_durum: "onaylandi",
     senaryo_durum_tarih: "2026-09-16T09:00:00.000Z",
-    video_id: "video-v3",
+    arac_id: "video-v3",
   };
   const video = adimlariCoz(talep, videoAsamasi, { asama: "Video", durum_kodu: "iu_hazirliyor" });
   assert.equal(video.find((adim) => adim.hal === "aktif")?.anahtar, "video");
@@ -553,9 +553,9 @@ test("Video V3 hazir soru setini goruntulenebilir tutar ve video onayindan sonra
 
   const yayin = adimlariCoz(talep, {
     ...videoAsamasi,
-    video_iu_id: "iu-1",
-    video_durum: "onaylandi",
-    video_durum_tarih: "2026-09-16T10:00:00.000Z",
+    arac_iu_id: "iu-1",
+    arac_durum: "onaylandi",
+    arac_durum_tarih: "2026-09-16T10:00:00.000Z",
     soru_seti_id: "soru-seti-v3",
     soru_seti_durum: "onaylandi",
     soru_seti_durum_tarih: "2026-09-16T10:00:00.000Z",
@@ -589,10 +589,10 @@ test("Podcast V3 hazir soru seti mesajini podcast onayindan sonra da korur", () 
     senaryo_iu_id: "iu-1",
     senaryo_durum: "onaylandi",
     senaryo_durum_tarih: "2026-09-16T09:00:00.000Z",
-    video_id: "podcast-v3",
-    video_iu_id: "iu-1",
-    video_durum: "onaylandi",
-    video_durum_tarih: "2026-09-16T10:00:00.000Z",
+    arac_id: "podcast-v3",
+    arac_iu_id: "iu-1",
+    arac_durum: "onaylandi",
+    arac_durum_tarih: "2026-09-16T10:00:00.000Z",
     soru_seti_id: "soru-seti-podcast-v3",
     soru_seti_iu_id: null,
     soru_seti_durum: "onaylandi",
@@ -629,10 +629,10 @@ test("Dijital Broşür V3 hazır soru setini korur ve broşür onayından sonra 
     senaryo_iu_id: "iu-1",
     senaryo_durum: "onaylandi",
     senaryo_durum_tarih: "2026-09-16T09:00:00.000Z",
-    video_id: "gorsel-v3",
-    video_iu_id: "iu-1",
-    video_durum: null,
-    video_durum_tarih: null,
+    arac_id: "gorsel-v3",
+    arac_iu_id: "iu-1",
+    arac_durum: null,
+    arac_durum_tarih: null,
     soru_seti_id: null,
     soru_seti_iu_id: null,
     soru_seti_durum: null,
@@ -654,8 +654,8 @@ test("Dijital Broşür V3 hazır soru setini korur ve broşür onayından sonra 
 
   const yayin = adimlariCoz(talep, {
     ...zincir,
-    video_durum: "onaylandi",
-    video_durum_tarih: "2026-09-16T10:00:00.000Z",
+    arac_durum: "onaylandi",
+    arac_durum_tarih: "2026-09-16T10:00:00.000Z",
     soru_seti_id: "soru-seti-gorsel-v3",
     soru_seti_durum: "onaylandi",
     soru_seti_durum_tarih: "2026-09-16T10:00:00.000Z",
@@ -682,10 +682,10 @@ test("Literatür V3 yalnız bağlı ve onaylı hazır soru setinden sonra yayın
     senaryo_iu_id: "iu-1",
     senaryo_durum: "onaylandi",
     senaryo_durum_tarih: "2026-09-16T09:00:00.000Z",
-    video_id: "literatur-v3",
-    video_iu_id: "iu-1",
-    video_durum: "onaylandi",
-    video_durum_tarih: "2026-09-16T10:00:00.000Z",
+    arac_id: "literatur-v3",
+    arac_iu_id: "iu-1",
+    arac_durum: "onaylandi",
+    arac_durum_tarih: "2026-09-16T10:00:00.000Z",
     soru_seti_id: null,
     soru_seti_iu_id: null,
     soru_seti_durum: null,
@@ -745,10 +745,10 @@ test("aktif gorev yokken teslim ve yayin durumu icerik zincirinden cozulur", () 
     senaryo_iu_id: "iu-1",
     senaryo_durum: "inceleme bekleniyor",
     senaryo_durum_tarih: "2026-09-16T09:00:00.000Z",
-    video_id: null,
-    video_iu_id: null,
-    video_durum: null,
-    video_durum_tarih: null,
+    arac_id: null,
+    arac_iu_id: null,
+    arac_durum: null,
+    arac_durum_tarih: null,
     soru_seti_id: null,
     soru_seti_iu_id: null,
     soru_seti_durum: null,

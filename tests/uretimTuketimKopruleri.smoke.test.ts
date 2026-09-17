@@ -45,10 +45,10 @@ function yayinAsamasindakiZincir(arac: OgrenmeAraciTuru, varyant: UretimVaryanti
     senaryo_iu_id: hazirArac ? null : "iu-test",
     senaryo_durum: hazirArac ? null : "onaylandi",
     senaryo_durum_tarih: hazirArac ? null : "2026-09-17T07:00:00.000Z",
-    video_id: `arac-${talep.talep_id}`,
-    video_iu_id: hazirArac ? null : "iu-test",
-    video_durum: "onaylandi",
-    video_durum_tarih: "2026-09-17T07:30:00.000Z",
+    arac_id: `arac-${talep.talep_id}`,
+    arac_iu_id: hazirArac ? null : "iu-test",
+    arac_durum: "onaylandi",
+    arac_durum_tarih: "2026-09-17T07:30:00.000Z",
     soru_seti_id: `soru-${talep.talep_id}`,
     soru_seti_iu_id: talep.hazir_soru_seti ? null : "iu-test",
     soru_seti_durum: "onaylandi",
@@ -119,11 +119,11 @@ test("seçilmiş 16 araç-varyant köprüsü üretimden doğru tüketiciye ve ta
       const yayin = {
         ...yayinFixture(aracTuru, hedef),
         yayin_id: `yayin-${aracTuru}-${varyant}-${hedef}`,
-        arac_id: zincir.video_id!,
+        arac_id: zincir.arac_id!,
         urun_adi: `${aracTuru} ${varyant}`,
       };
       const cevap = yayinThumbnailCevabi(yayin, SIMDI_MS);
-      assert.equal(cevap.arac_id, zincir.video_id, `${aracTuru} ${varyant} araç bağı koptu`);
+      assert.equal(cevap.arac_id, zincir.arac_id, `${aracTuru} ${varyant} araç bağı koptu`);
       assert.equal(cevap.arac_turu, aracTuru);
       assert.equal("arac_dosya_yolu" in cevap, false);
 

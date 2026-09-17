@@ -27,53 +27,55 @@ export async function POST(request: NextRequest) {
     if (rol !== IU_ROLU) return rolHatasi("Sadece IU video yükleme başlatabilir.");
 
     const body = await request.json();
-    const { video_id } = body;
-    if (!video_id) return validasyonHatasi("video_id zorunludur.", ["video_id"]);
+    const { arac_id } = body;
+    if (!arac_id) return validasyonHatasi("arac_id zorunludur.", ["arac_id"]);
 
     // 2) Sıra kontrolü — istemcideki iuGonderebilir kuralının sunucu karşılığı:
     // video_url boşsa (ilk yükleme) ya da son durum "revizyon bekleniyor" ise izin.
     const { data: video, error: videoError } = await adminSupabase
-      .from("videolar")
-      .select("video_id, senaryo_durum_id, video_url")
-      .eq("video_id", video_id)
+      .from("ogrenme_araclari")
+      .select("arac_id, senaryo_durum_id, dosya_yolu, talep_id")
+      .eq("arac_id", arac_id)
+      .eq("arac_turu", "video")
       .single();
 
-    const videoKontrol = veriKontrol(video, "videolar tablosu SELECT — video_id", "Video kaydı bulunamadı.");
+    const videoKontrol = veriKontrol(video, "ogrenme_araclari SELECT — arac_id", "Video kaydı bulunamadı.");
     if (!videoKontrol.gecerli) return videoKontrol.yanit;
-    if (videoError) return hataYaniti("Video sorgulanamadı.", "videolar tablosu SELECT", videoError, 404);
+    if (videoError) return hataYaniti("Video sorgulanamadı.", "ogrenme_araclari SELECT", videoError, 404);
 
     const { data: gorev, error: gorevError } = await adminSupabase
       .from("uretim_gorevleri")
       .select("gorev_id, atanan_iu_id, durum")
-      .eq("video_id", video_id)
+      .eq("arac_id", arac_id)
       .maybeSingle();
     if (gorevError) return hataYaniti("Video görevi sorgulanamadı.", "uretim_gorevleri SELECT — video sahipliği", gorevError);
     if (!gorev || gorev.atanan_iu_id !== user.id) return rolHatasi("Bu video görevi size atanmamış.");
-    if (!['hazirlaniyor', 'revizyon_bekliyor'].includes(gorev.durum)) return validasyonHatasi("Bu videonun yükleme sırası değil.", ["video_id"]);
+    if (!['hazirlaniyor', 'revizyon_bekliyor'].includes(gorev.durum)) return validasyonHatasi("Bu videonun yükleme sırası değil.", ["arac_id"]);
 
-    if (video.video_url) {
+    if (video.dosya_yolu) {
       const { data: sonDurum, error: durumError } = await adminSupabase
-        .from("video_durumu")
+        .from("ogrenme_araci_durumu")
         .select("durum")
-        .eq("video_id", video_id)
+        .eq("arac_id", arac_id)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (durumError) return hataYaniti("Video durumu sorgulanamadı.", "video_durumu SELECT", durumError);
+      if (durumError) return hataYaniti("Video durumu sorgulanamadı.", "ogrenme_araci_durumu SELECT", durumError);
       if (sonDurum?.durum !== "revizyon bekleniyor") {
-        return validasyonHatasi("Bu videonun yükleme sırası değil — yalnız ilk yükleme ya da revizyon bekleyen video yüklenebilir.", ["video_id"]);
+        return validasyonHatasi("Bu videonun yükleme sırası değil — yalnız ilk yükleme ya da revizyon bekleyen video yüklenebilir.", ["arac_id"]);
       }
     }
 
     // 3) Ad üretimi — kütüphane düzeni sisteme aittir: ürün adı + versiyon no.
     // Ürün adı talepten gelir (talep_id doğrudan bağ — Adım 5; v_uretim_detay kalktı).
-    const talepBilgisi = await talepBilgisiVideo(adminSupabase, video_id);
+    const talepBilgisi = await talepBilgisiVideo(adminSupabase, arac_id);
     if (!talepBilgisi) return hataYaniti("Video talebi bulunamadı.", "talep-video bağı", null, 404);
 
     const { count } = await adminSupabase
-      .from("videolar")
-      .select("video_id", { count: "exact", head: true })
-      .eq("senaryo_durum_id", video.senaryo_durum_id);
+      .from("ogrenme_araclari")
+      .select("arac_id", { count: "exact", head: true })
+      .eq("talep_id", video.talep_id)
+      .eq("arac_turu", "video");
 
     const baslik = `${talepBilgisi?.urun_adi ?? "video"}_v${count ?? 1}`;
 
@@ -81,7 +83,7 @@ export async function POST(request: NextRequest) {
       .from("ogrenme_araci_video_yukleme_oturumlari")
       .select("yukleme_id, video_guid, baslik, dosya_adi, mime_type, dosya_boyutu")
       .eq("kullanici_id", user.id)
-      .eq("video_id", video_id)
+      .eq("arac_id", arac_id)
       .maybeSingle();
     if (mevcutSonucu.data) {
       if (typeof body.dosya_adi === "string" && (
@@ -110,7 +112,7 @@ export async function POST(request: NextRequest) {
         kullanici_id: user.id,
         talep_id: talepBilgisi.talep_id,
         gorev_id: gorev.gorev_id,
-        video_id,
+        arac_id,
         kaynak: "iu",
         video_guid: kayit.videoGuid,
         embed_url: kayit.embedUrl,
@@ -127,7 +129,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Tutanak: kim, hangi video satırı, hangi Bunny kimliği, ne zaman.
-    console.log(`[bunny-yukleme-baslat] iu=${user.id} video_id=${video_id} guid=${kayit.videoGuid} baslik="${baslik}"`);
+    console.log(`[bunny-yukleme-baslat] iu=${user.id} arac_id=${arac_id} guid=${kayit.videoGuid} baslik="${baslik}"`);
 
     return NextResponse.json({
       yukleme_id: yuklemeId,

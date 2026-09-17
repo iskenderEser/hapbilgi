@@ -26,7 +26,7 @@ function ortam(hatali = false, adet = 6) {
         assert.equal(esler.uretici_id, 'ik1'); assert.equal(esler.firma_id, 'f1');
         satirlar = [...talepler, yabanci];
       }
-      if (tablo === 'v_uretici_icerik_takip') satirlar = talepler.map(t => ({ talep_id: t.talep_id, video_id: 'v', video_durum: 'onaylandi',
+      if (tablo === 'v_uretici_ogrenme_araci_takip') satirlar = talepler.map(t => ({ talep_id: t.talep_id, arac_id: 'v', arac_durum: 'onaylandi',
         soru_seti_id: 's', soru_seti_durum: 'onaylandi', yayin_durum: null }));
       if (tablo === 'uretim_gorevleri') satirlar = [{ talep_id: 't0', durum: 'inceleme_bekliyor' }, { talep_id: 't1', durum: 'revizyon_bekliyor' }];
       if (tablo === 'v_yayin_kunye') {

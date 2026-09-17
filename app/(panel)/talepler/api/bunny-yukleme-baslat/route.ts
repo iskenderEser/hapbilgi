@@ -50,6 +50,22 @@ export async function POST(request: NextRequest) {
     const kunye = haritalaTalep(talep);
     const baslik = hazirVideoBaslik(kunye.urun_adi !== "-" ? kunye.urun_adi : null, kunye.teknik_adi);
 
+    let { data: arac, error: aracError } = await adminSupabase
+      .from("ogrenme_araclari")
+      .select("arac_id")
+      .eq("talep_id", talep_id)
+      .eq("arac_turu", "video")
+      .eq("kaynak", "hazir")
+      .maybeSingle();
+    if (!arac && !aracError) {
+      const sonuc = await adminSupabase.from("ogrenme_araclari").insert({
+        talep_id, arac_turu: "video", kaynak: "hazir", metadata: {}, metadata_dogrulandi: false,
+      }).select("arac_id").single();
+      arac = sonuc.data;
+      aracError = sonuc.error;
+    }
+    if (aracError || !arac) return hataYaniti("Video kaydı hazırlanamadı.", "ogrenme_araclari UPSERT", aracError);
+
     // Aynı talep için yarım oturum varsa yeni Bunny kaydı açma; süreli izni yenile.
     const mevcutSonucu = await adminSupabase
       .from("ogrenme_araci_video_yukleme_oturumlari")
@@ -81,7 +97,7 @@ export async function POST(request: NextRequest) {
     let yuklemeId: string | null = null;
     if (typeof body.dosya_adi === "string" && typeof body.mime_type === "string" && Number.isSafeInteger(body.dosya_boyutu) && body.dosya_boyutu > 0) {
       const oturumSonucu = await adminSupabase.from("ogrenme_araci_video_yukleme_oturumlari").insert({
-        kullanici_id: user.id, talep_id, gorev_id: null, video_id: null, kaynak: "hazir",
+        kullanici_id: user.id, talep_id, gorev_id: null, arac_id: arac.arac_id, kaynak: "hazir",
         video_guid: kayit.videoGuid, embed_url: kayit.embedUrl, baslik,
         dosya_adi: body.dosya_adi, mime_type: body.mime_type || "video/mp4", dosya_boyutu: body.dosya_boyutu,
       }).select("yukleme_id").single();

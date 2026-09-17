@@ -6,11 +6,10 @@ import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 type YarimYukleme = {
   tur: "storage" | "video";
   kimlik: string;
-  arac_id?: string;
   yukleme_id?: string;
   talep_id: string;
   gorev_id: string | null;
-  video_id?: string | null;
+  arac_id?: string | null;
   video_guid?: string;
   arac_turu: "video" | "podcast" | "gorsel" | "flip_pdf";
   kaynak: "hazir" | "iu";
@@ -122,7 +121,7 @@ export default function YarimYuklemeBildirimi() {
     if (!dosya) throw new Error("Devam etmek için aynı video dosyasını yeniden seçin.");
     const adres = kayit.kaynak === "hazir" ? "/talepler/api/bunny-yukleme-baslat" : "/videolar/api/bunny-yukleme-baslat";
     const izin = await jsonIstek(adres, "POST", {
-      ...(kayit.kaynak === "hazir" ? { talep_id: kayit.talep_id } : { video_id: kayit.video_id }),
+      ...(kayit.kaynak === "hazir" ? { talep_id: kayit.talep_id } : { arac_id: kayit.arac_id }),
       dosya_adi: dosya.name,
       mime_type: dosya.type || "video/mp4",
       dosya_boyutu: dosya.size,
@@ -162,20 +161,20 @@ export default function YarimYuklemeBildirimi() {
         kapakGerekli,
         kaynak: kayit.kaynak,
         gorevId: kayit.gorev_id ?? undefined,
-        aracId: kayit.arac_id,
+        aracId: kayit.arac_id ?? undefined,
         kontrol,
       });
     } else if (kayit.arac_turu === "gorsel") {
       const ana = dosyalar.ana;
       if (!ana) throw new Error("Devam etmek için aynı dosyayı yeniden seçin.");
-      await araclar.hazirGorselYukle({ talepId: kayit.talep_id, gorsel: ana, kaynak: kayit.kaynak, gorevId: kayit.gorev_id ?? undefined, aracId: kayit.arac_id, kontrol });
+      await araclar.hazirGorselYukle({ talepId: kayit.talep_id, gorsel: ana, kaynak: kayit.kaynak, gorevId: kayit.gorev_id ?? undefined, aracId: kayit.arac_id ?? undefined, kontrol });
     } else {
       const ana = dosyalar.ana;
       if (!ana) throw new Error("Devam etmek için aynı dosyayı yeniden seçin.");
       const tamamlanan = new Set(kayit.tamamlanan_parcalar ?? []);
       const kapakGerekli = !tamamlanan.has("kapak") && kayit.kapak_yarim === true;
       if (kapakGerekli && !dosyalar.kapak) throw new Error("Yayın görselini seçin veya Görselsiz Devam Et seçeneğini kullanın.");
-      await araclar.hazirFlipPdfYukle({ talepId: kayit.talep_id, pdf: ana, kapak: dosyalar.kapak, tamamlananParcalar: kayit.tamamlanan_parcalar, kapakGerekli, kaynak: kayit.kaynak, gorevId: kayit.gorev_id ?? undefined, aracId: kayit.arac_id, kontrol });
+      await araclar.hazirFlipPdfYukle({ talepId: kayit.talep_id, pdf: ana, kapak: dosyalar.kapak, tamamlananParcalar: kayit.tamamlanan_parcalar, kapakGerekli, kaynak: kayit.kaynak, gorevId: kayit.gorev_id ?? undefined, aracId: kayit.arac_id ?? undefined, kontrol });
     }
   };
 

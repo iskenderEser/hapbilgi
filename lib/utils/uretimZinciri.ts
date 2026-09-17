@@ -3,7 +3,7 @@
 // ÜRETİM ZİNCİRİNİN TEK OKUMA YERİ (27.07.2026).
 //
 // Bir talebin üretim zinciri (senaryo → video → soru seti → yayın) DB'de
-// v_uretici_icerik_takip view'inde tek sorguda çözülür; bu dosya o satırı okur ve
+// v_uretici_ogrenme_araci_takip view'inde tek sorguda çözülür; bu dosya o satırı okur ve
 // "bu talep hangi aşamada, hangi durumda" sorusunu yanıtlar.
 //
 // Neden ortak dosya: aynı soruyu iki ekran soruyor —
@@ -22,17 +22,17 @@ import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
  *  metinlerin çoğu "yayın" taşıdığı için yan yana aynı kelime tekrarlanıyordu. */
 export type ZincirAsama = "Senaryo" | "Video" | "Soru Seti" | "Tamamlandı";
 
-/** v_uretici_icerik_takip'in bir satırı: bir talebin zincir anlık görüntüsü. */
+/** v_uretici_ogrenme_araci_takip'in bir satırı: bir talebin zincir anlık görüntüsü. */
 export interface ZincirSatiri {
   talep_id: string;
   senaryo_id: string | null;
   senaryo_iu_id: string | null;
   senaryo_durum: string | null;
   senaryo_durum_tarih: string | null;
-  video_id: string | null;
-  video_iu_id: string | null;
-  video_durum: string | null;
-  video_durum_tarih: string | null;
+  arac_id: string | null;
+  arac_iu_id: string | null;
+  arac_durum: string | null;
+  arac_durum_tarih: string | null;
   soru_seti_id: string | null;
   soru_seti_iu_id: string | null;
   soru_seti_durum: string | null;
@@ -60,7 +60,7 @@ export interface ZincirTalebi {
   yayin_oncesi_silme_tarihi?: string | null;
   ogrenme_araci_turu?: OgrenmeAraciTuru | null;
   hazir_soru_seti?: boolean | null;
-  /** Hazır video Bunny'ye bağlandı fakat videolar kaydı henüz oluşmadıysa işleniyor demektir. */
+  /** Hazır video Bunny'ye bağlandı fakat ortak araç doğrulaması bitmediyse işleniyor demektir. */
   hazir_video_url?: string | null;
 }
 
@@ -69,7 +69,7 @@ export interface ZincirTalebi {
 const ZINCIR_ALANLARI = `
   talep_id,
   senaryo_id, senaryo_iu_id, senaryo_durum, senaryo_durum_tarih,
-  video_id, video_iu_id, video_durum, video_durum_tarih,
+  arac_id, arac_iu_id, arac_durum, arac_durum_tarih,
   soru_seti_id, soru_seti_iu_id, soru_seti_durum, soru_seti_durum_tarih,
   yayin_durum, yayin_tarihi
 `;
@@ -88,7 +88,7 @@ export async function zincirHaritasi(
   // Boş küme sorgulanmaz: PostgREST'e boş .in() göndermek gereksiz gidiş-geliştir.
   if ("talepIdler" in suzgec && suzgec.talepIdler.length === 0) return harita;
 
-  let sorgu = adminSupabase.from("v_uretici_icerik_takip").select(ZINCIR_ALANLARI);
+  let sorgu = adminSupabase.from("v_uretici_ogrenme_araci_takip").select(ZINCIR_ALANLARI);
   sorgu = "ureticiId" in suzgec
     ? sorgu.eq("uretici_id", suzgec.ureticiId)
     : sorgu.in("talep_id", suzgec.talepIdler);
@@ -148,7 +148,7 @@ export function asamaCoz(talep: ZincirTalebi, z: ZincirSatiri): ZincirDurumu {
   // Talepte "hazır" seçilmesi, yüklemenin ve sunucu doğrulamasının tamamlandığı
   // anlamına gelmez. Araç ve son onay kaydı görülmeden sonraki aşama açılamaz.
   if (talep.hazir_video && talep.ogrenme_araci_turu && talep.ogrenme_araci_turu !== "video") {
-    if (!z.video_id) {
+    if (!z.arac_id) {
       return {
         asama: "Video",
         durum_kodu: "video_bekleniyor",
@@ -157,16 +157,16 @@ export function asamaCoz(talep: ZincirTalebi, z: ZincirSatiri): ZincirDurumu {
         iu_id: null,
       };
     }
-    if (z.video_durum !== "onaylandi") {
+    if (z.arac_durum !== "onaylandi") {
       return {
         asama: "Video",
-        durum_kodu: kayitDurumKodu(z.video_durum, !!z.video_iu_id),
-        tarih: z.video_durum_tarih ?? oncekiTarih,
+        durum_kodu: kayitDurumKodu(z.arac_durum, !!z.arac_iu_id),
+        tarih: z.arac_durum_tarih ?? oncekiTarih,
         yol: `/talepler/${talep.talep_id}`,
-        iu_id: z.video_iu_id,
+        iu_id: z.arac_iu_id,
       };
     }
-    oncekiTarih = z.video_durum_tarih ?? oncekiTarih;
+    oncekiTarih = z.arac_durum_tarih ?? oncekiTarih;
 
     if (talep.hazir_soru_seti) {
       if (!z.soru_seti_id || z.soru_seti_durum !== "onaylandi") {
@@ -210,7 +210,7 @@ export function asamaCoz(talep: ZincirTalebi, z: ZincirSatiri): ZincirDurumu {
   }
 
   // ── Video (ortak): video talebe talep_id ile bağlı (hazır + normal). ──
-  if (!z.video_id) {
+  if (!z.arac_id) {
     // Hazır kolda video kaydı yoksa yükleme üreticidedir. Normal kolda kabuk
     // senaryo onayıyla doğduğundan burada olmaması zincir kopmasıdır.
     const kod: DurumKodu = talep.hazir_video
@@ -226,18 +226,18 @@ export function asamaCoz(talep: ZincirTalebi, z: ZincirSatiri): ZincirDurumu {
       iu_id: null,
     };
   }
-  if (z.video_durum !== "onaylandi") {
+  if (z.arac_durum !== "onaylandi") {
     return {
       asama: "Video",
-      durum_kodu: kayitDurumKodu(z.video_durum, !!z.video_iu_id),
-      tarih: z.video_durum_tarih ?? oncekiTarih,
+      durum_kodu: kayitDurumKodu(z.arac_durum, !!z.arac_iu_id),
+      tarih: z.arac_durum_tarih ?? oncekiTarih,
       yol: "/videolar",
-      iu_id: z.video_iu_id,
+      iu_id: z.arac_iu_id,
     };
   }
-  oncekiTarih = z.video_durum_tarih ?? oncekiTarih;
+  oncekiTarih = z.arac_durum_tarih ?? oncekiTarih;
 
-  // ── Soru seti (ortak): set video_durum_id ile bağlı. ──
+  // ── Soru seti: bütün araçlarda ortak arac_durum_id ile bağlı. ──
   if (talep.hazir_soru_seti) {
     if (!z.soru_seti_id || z.soru_seti_durum !== "onaylandi") {
       return {
@@ -253,9 +253,9 @@ export function asamaCoz(talep: ZincirTalebi, z: ZincirSatiri): ZincirDurumu {
     return {
       asama: "Tamamlandı",
       durum_kodu: yayinDurumKodu(z.yayin_durum),
-      tarih: z.yayin_tarihi ?? z.soru_seti_durum_tarih ?? z.video_durum_tarih ?? oncekiTarih,
+      tarih: z.yayin_tarihi ?? z.soru_seti_durum_tarih ?? z.arac_durum_tarih ?? oncekiTarih,
       yol: "/yayin-yonetimi",
-      iu_id: z.video_iu_id,
+      iu_id: z.arac_iu_id,
     };
   }
   if (!z.soru_seti_id) {

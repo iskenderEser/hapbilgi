@@ -74,7 +74,7 @@ async function talepIdBul(
       // Geçiş süresinde bu çağrıları da kanonik talebe çözer.
       const [senaryo, video, set] = await Promise.all([
         adminSupabase.from("senaryolar").select("talep_id").eq("senaryo_id", kayit_id).maybeSingle(),
-        adminSupabase.from("videolar").select("talep_id").eq("video_id", kayit_id).maybeSingle(),
+        adminSupabase.from("ogrenme_araclari").select("talep_id").eq("arac_id", kayit_id).eq("arac_turu", "video").maybeSingle(),
         adminSupabase.from("soru_setleri").select("talep_id").eq("soru_seti_id", kayit_id).maybeSingle(),
       ]);
       return senaryo.data?.talep_id ?? video.data?.talep_id ?? set.data?.talep_id ?? null;

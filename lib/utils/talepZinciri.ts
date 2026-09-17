@@ -166,12 +166,13 @@ export async function talepBilgisiSenaryo(
 // videolar → talep (doğrudan talep_id; hazır videoda da çalışır)
 export async function talepBilgisiVideo(
   adminSupabase: SupabaseClient,
-  video_id: string
+  arac_id: string
 ): Promise<TalepBilgisi | null> {
   const { data } = await adminSupabase
-    .from("videolar")
+    .from("ogrenme_araclari")
     .select(`talep_id, talepler ( ${TALEP_ALANLARI} )`)
-    .eq("video_id", video_id)
+    .eq("arac_id", arac_id)
+    .eq("arac_turu", "video")
     .single();
 
   const talep = Array.isArray(data?.talepler) ? data?.talepler[0] : data?.talepler;
@@ -199,8 +200,8 @@ export async function talepBilgisiSoruSeti(
 // EKRAN ANAHTARLARI (25.07 — Aşama 2b)
 //
 // Yukarıdaki üç giriş sunucu işlerinin elindeki kimlikleri kullanır (senaryo_id,
-// video_id, soru_seti_id). Ekranların elinde başka kimlikler var: adres çubuğundaki
-// talep_id / senaryo_durum_id / video_durum_id, listelerde ise talep kümesi.
+// arac_id, soru_seti_id). Ekranların elinde başka kimlikler var: adres çubuğundaki
+// talep_id / senaryo_durum_id / arac_durum_id, listelerde ise talep kümesi.
 // Aşağıdakiler o kimlikleri aynı künyeye çevirir — ekran alan listesi ve ad kuralı
 // bilmez, yalnız kimliğini verir.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -241,16 +242,16 @@ export async function talepBilgisiSenaryoDurum(
 // videolar.talep_id doğrudan bağ olduğu için hazır videoda da çalışır.
 export async function talepBilgisiVideoDurum(
   adminSupabase: SupabaseClient,
-  video_durum_id: string
+  arac_durum_id: string
 ): Promise<TalepBilgisi | null> {
   const { data } = await adminSupabase
-    .from("video_durumu")
-    .select(`videolar ( talepler ( ${TALEP_ALANLARI} ) )`)
-    .eq("video_durum_id", video_durum_id)
+    .from("ogrenme_araci_durumu")
+    .select(`ogrenme_araclari!inner ( talepler ( ${TALEP_ALANLARI} ) )`)
+    .eq("arac_durum_id", arac_durum_id)
     .maybeSingle();
 
-  const videolar = Array.isArray(data?.videolar) ? data.videolar[0] : data?.videolar;
-  const talep = Array.isArray(videolar?.talepler) ? videolar?.talepler[0] : videolar?.talepler;
+  const arac = Array.isArray(data?.ogrenme_araclari) ? data.ogrenme_araclari[0] : data?.ogrenme_araclari;
+  const talep = Array.isArray(arac?.talepler) ? arac?.talepler[0] : arac?.talepler;
   if (!talep) return null;
   return haritalaTalep(talep as unknown as HamTalepKaydi);
 }

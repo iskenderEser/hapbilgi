@@ -36,14 +36,6 @@ interface SenaryoRow {
   created_at: string;
 }
 
-interface VideoRow {
-  video_id: string;
-  video_url?: string | null;
-  thumbnail_url?: string | null;
-  iu_id?: string | null;
-  created_at: string;
-}
-
 interface SoruSetiRow {
   soru_seti_id: string;
   sorular?: unknown;
@@ -146,38 +138,6 @@ export async function GET(request: NextRequest) {
         }
       : null;
 
-    // ── Video ────────────────────────────────────────────────────────────────
-    // Video talebe DOĞRUDAN bağlı (talep_id) — hazır kolda senaryo yok, zincir
-    // yürümek gerekmiyor.
-    const { data: videolar } = await adminSupabase
-      .from("videolar")
-      .select("video_id, video_url, thumbnail_url, iu_id, created_at")
-      .eq("talep_id", talep_id)
-      .order("created_at", { ascending: true });
-
-    const videoListesi = (videolar as VideoRow[] | null) ?? [];
-    const videoIdler = videoListesi.map(v => v.video_id);
-    const { data: videoDurumlari } = videoIdler.length
-      ? await adminSupabase
-          .from("video_durumu")
-          .select("video_id, durum, notlar, created_at")
-          .in("video_id", videoIdler)
-          .order("created_at", { ascending: true })
-      : { data: [] as DurumGecmisRow[] };
-
-    const videoGecmis = gecmisHaritasi(videoDurumlari as DurumGecmisRow[] | null, "video_id");
-    const sonVideo = videoListesi.at(-1);
-
-    const video = sonVideo
-      ? {
-          id: sonVideo.video_id,
-          video_url: sonVideo.video_url ?? null,
-          thumbnail_url: sonVideo.thumbnail_url ?? null,
-          iu_id: sonVideo.iu_id ?? null,
-          ...durumOzeti(videoGecmis.get(sonVideo.video_id) ?? []),
-        }
-      : null;
-
     // ── Soru seti ────────────────────────────────────────────────────────────
     const { data: setler } = await adminSupabase
       .from("soru_setleri")
@@ -217,7 +177,7 @@ export async function GET(request: NextRequest) {
           }
         : null;
 
-    const video_isleniyor = talep.hazir_video === true && Boolean(talep.hazir_video_url) && !video;
+    let video: Record<string, unknown> | null = null;
 
     // ── Öğrenme Aracı (Podcast / Görsel / Flip PDF) ───────────────────────────
     let ogrenme_araci: {
@@ -233,7 +193,7 @@ export async function GET(request: NextRequest) {
       notlar: { notlar: string; created_at: string }[];
     } | null = null;
 
-    if (talep.ogrenme_araci_turu && talep.ogrenme_araci_turu !== "video") {
+    if (talep.ogrenme_araci_turu) {
       const { data: aracKaydi } = await adminSupabase
         .from("ogrenme_araclari")
         .select("arac_id, arac_turu, dosya_yolu, kapak_yolu, sure_saniye, metadata")
@@ -261,8 +221,18 @@ export async function GET(request: NextRequest) {
           metadata: aracKaydi.metadata ?? null,
           ...durumOzeti((aracDurumlari as DurumSatiri[] | null) ?? []),
         };
+        if (aracKaydi.arac_turu === "video") {
+          video = {
+            id: aracKaydi.arac_id,
+            video_url: aracKaydi.dosya_yolu ?? null,
+            thumbnail_url: aracKaydi.kapak_yolu ?? null,
+            ...durumOzeti((aracDurumlari as DurumSatiri[] | null) ?? []),
+          };
+        }
       }
     }
+
+    const video_isleniyor = talep.hazir_video === true && Boolean(talep.hazir_video_url) && !video;
 
     return NextResponse.json({ talep_id, senaryo, video, soru_seti, video_isleniyor, ogrenme_araci }, { status: 200 });
 

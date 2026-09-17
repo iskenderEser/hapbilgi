@@ -80,7 +80,7 @@ const ASAMA_ADIMI: Record<string, AdimAnahtari> = {
 const BOS_ZINCIR = (talep_id: string): ZincirSatiri => ({
   talep_id,
   senaryo_id: null, senaryo_iu_id: null, senaryo_durum: null, senaryo_durum_tarih: null,
-  video_id: null, video_iu_id: null, video_durum: null, video_durum_tarih: null,
+  arac_id: null, arac_iu_id: null, arac_durum: null, arac_durum_tarih: null,
   soru_seti_id: null, soru_seti_iu_id: null, soru_seti_durum: null, soru_seti_durum_tarih: null,
   yayin_durum: null, yayin_tarihi: null,
 });
@@ -114,7 +114,7 @@ export function adimlariCoz(
   const tarihler: Record<AdimAnahtari, string | null> = {
     talep: talep.created_at ?? null,
     senaryo: zincir.senaryo_durum_tarih,
-    video: zincir.video_durum_tarih,
+    video: zincir.arac_durum_tarih,
     soru_seti: zincir.soru_seti_durum_tarih,
     yayin: zincir.yayin_tarihi,
   };

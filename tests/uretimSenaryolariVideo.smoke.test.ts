@@ -14,15 +14,15 @@ function senaryoOnayli(zincir: ZincirSatiri): ZincirSatiri {
     ...zincir,
     senaryo_id: "senaryo-1", senaryo_iu_id: "iu-1", senaryo_durum: "onaylandi",
     senaryo_durum_tarih: "2026-09-16T09:00:00.000Z",
-    video_id: "video-1",
+    arac_id: "video-1",
   };
 }
 
 function videoOnayli(zincir: ZincirSatiri, hazirSet: boolean): ZincirSatiri {
   return {
     ...zincir,
-    video_id: "video-1", video_iu_id: "iu-1", video_durum: "onaylandi",
-    video_durum_tarih: "2026-09-16T10:00:00.000Z",
+    arac_id: "video-1", arac_iu_id: "iu-1", arac_durum: "onaylandi",
+    arac_durum_tarih: "2026-09-16T10:00:00.000Z",
     soru_seti_id: "soru-1",
     soru_seti_durum: hazirSet ? "onaylandi" : null,
     soru_seti_durum_tarih: hazirSet ? "2026-09-16T10:01:00.000Z" : null,
@@ -69,7 +69,7 @@ test("Video V3: hazır soru seti bağlanmadan yayın açılmaz", () => {
   const talep = senaryoTalebi("video", "V3");
   const bos = bosUretimZinciri(talep.talep_id);
   const senaryo = senaryoOnayli(bos);
-  const setsizVideo = { ...senaryo, video_durum: "onaylandi", video_durum_tarih: "2026-09-16T10:00:00.000Z" };
+  const setsizVideo = { ...senaryo, arac_durum: "onaylandi", arac_durum_tarih: "2026-09-16T10:00:00.000Z" };
   const hata = aktifAdim(senaryoAdimlari(talep, setsizVideo));
   assert.equal(hata?.anahtar, "soru_seti");
   assert.equal(hata?.durum_kodu, "sistem_hatasi");

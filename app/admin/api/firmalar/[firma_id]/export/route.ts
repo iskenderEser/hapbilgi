@@ -126,94 +126,18 @@ export async function GET(
     if (taleplerHata) return sorguHatasi("talepler", taleplerHata);
     const talepListesi = talepler ?? [];
 
-    // ======================================================================
-    // PUAN DETAY için teknik/ürün haritası: yayin_id → { urun_adi, teknik_adi }
-    // Zincir: yayin → soru_seti_durumu → soru_setleri → video_durumu →
-    //         videolar → senaryo_durumu → senaryolar → talepler
-    // Test verisi yokken bu zincir boştur; canlıda dolar.
-    // ======================================================================
+    // Yayın künyesi ortak görünümden çözülür; Video dahil bütün araçlar aynı yolu kullanır.
     const yayinTeknikMap = new Map<string, { urun: string; teknik: string }>();
-
-    const { data: yayinlar, error: yayinlarHata } = await adminSupabase
-      .from("yayin_yonetimi")
-      .select("yayin_id, soru_seti_durum_id");
-    if (yayinlarHata) return sorguHatasi("yayınlar", yayinlarHata);
-
-    if ((yayinlar ?? []).length > 0) {
-      const ssDurumIdleri = [...new Set((yayinlar ?? []).map(y => y.soru_seti_durum_id).filter(Boolean))];
-
-      const { data: ssDurumlar, error: ssDurumHata } = await adminSupabase
-        .from("soru_seti_durumu")
-        .select("soru_seti_durum_id, soru_seti_id")
-        .in("soru_seti_durum_id", ssDurumIdleri.length ? ssDurumIdleri : ["___"]);
-      if (ssDurumHata) return sorguHatasi("soru seti durumları", ssDurumHata);
-      const ssDurumMap = new Map((ssDurumlar ?? []).map(x => [x.soru_seti_durum_id, x.soru_seti_id]));
-
-      const soruSetiIdleri = [...new Set((ssDurumlar ?? []).map(x => x.soru_seti_id).filter(Boolean))];
-      const { data: soruSetleri, error: soruSetiHata } = await adminSupabase
-        .from("soru_setleri")
-        .select("soru_seti_id, video_durum_id")
-        .in("soru_seti_id", soruSetiIdleri.length ? soruSetiIdleri : ["___"]);
-      if (soruSetiHata) return sorguHatasi("soru setleri", soruSetiHata);
-      const soruSetiMap = new Map((soruSetleri ?? []).map(x => [x.soru_seti_id, x.video_durum_id]));
-
-      const videoDurumIdleri = [...new Set((soruSetleri ?? []).map(x => x.video_durum_id).filter(Boolean))];
-      const { data: videoDurumlar, error: videoDurumHata } = await adminSupabase
-        .from("video_durumu")
-        .select("video_durum_id, video_id")
-        .in("video_durum_id", videoDurumIdleri.length ? videoDurumIdleri : ["___"]);
-      if (videoDurumHata) return sorguHatasi("video durumları", videoDurumHata);
-      const videoDurumMap = new Map((videoDurumlar ?? []).map(x => [x.video_durum_id, x.video_id]));
-
-      const videoIdleri = [...new Set((videoDurumlar ?? []).map(x => x.video_id).filter(Boolean))];
-      const { data: videolar, error: videolarHata } = await adminSupabase
-        .from("videolar")
-        .select("video_id, senaryo_durum_id")
-        .in("video_id", videoIdleri.length ? videoIdleri : ["___"]);
-      if (videolarHata) return sorguHatasi("videolar", videolarHata);
-      const videoMap = new Map((videolar ?? []).map(x => [x.video_id, x.senaryo_durum_id]));
-
-      const senaryoDurumIdleri = [...new Set((videolar ?? []).map(x => x.senaryo_durum_id).filter(Boolean))];
-      const { data: senaryoDurumlar, error: senaryoDurumHata } = await adminSupabase
-        .from("senaryo_durumu")
-        .select("senaryo_durum_id, senaryo_id")
-        .in("senaryo_durum_id", senaryoDurumIdleri.length ? senaryoDurumIdleri : ["___"]);
-      if (senaryoDurumHata) return sorguHatasi("senaryo durumları", senaryoDurumHata);
-      const senaryoDurumMap = new Map((senaryoDurumlar ?? []).map(x => [x.senaryo_durum_id, x.senaryo_id]));
-
-      const senaryoIdleri = [...new Set((senaryoDurumlar ?? []).map(x => x.senaryo_id).filter(Boolean))];
-      const { data: senaryolar, error: senaryolarHata } = await adminSupabase
-        .from("senaryolar")
-        .select("senaryo_id, talep_id")
-        .in("senaryo_id", senaryoIdleri.length ? senaryoIdleri : ["___"]);
-      if (senaryolarHata) return sorguHatasi("senaryolar", senaryolarHata);
-      const senaryoMap = new Map((senaryolar ?? []).map(x => [x.senaryo_id, x.talep_id]));
-
-      // talep_id → {urun_adi, teknik_adi} (bu firmaya ait taleplerden)
-      const talepBilgiMap = new Map(
-        talepListesi.map(t => [t.talep_id, {
-          urun: t.urun_adi ?? (t.urun_id ? (urunAdMap.get(t.urun_id) ?? "") : ""),
-          teknik: t.teknik_adi ?? "",
-        }])
-      );
-
-      // Zinciri her yayın için çöz
-      for (const y of yayinlar ?? []) {
-        const ssId = ssDurumMap.get(y.soru_seti_durum_id);
-        if (!ssId) continue;
-        const vdId = soruSetiMap.get(ssId);
-        if (!vdId) continue;
-        const vId = videoDurumMap.get(vdId);
-        if (!vId) continue;
-        const sdId = videoMap.get(vId);
-        if (!sdId) continue;
-        const sId = senaryoDurumMap.get(sdId);
-        if (!sId) continue;
-        const tId = senaryoMap.get(sId);
-        if (!tId) continue;
-        const bilgi = talepBilgiMap.get(tId);
-        if (bilgi) yayinTeknikMap.set(y.yayin_id, bilgi);
-      }
+    const { data: yayinDetaylari, error: yayinDetayHata } = await adminSupabase
+      .from("v_yayin_detay")
+      .select("yayin_id, firma_id, urun_adi, teknik_adi")
+      .eq("firma_id", firma_id);
+    if (yayinDetayHata) return sorguHatasi("yayın detayları", yayinDetayHata);
+    for (const yayin of yayinDetaylari ?? []) {
+      yayinTeknikMap.set(yayin.yayin_id, {
+        urun: yayin.urun_adi ?? "",
+        teknik: yayin.teknik_adi ?? "",
+      });
     }
 
     // Yardımcı: bir puan/kayıp satırı için ürün+teknik çöz

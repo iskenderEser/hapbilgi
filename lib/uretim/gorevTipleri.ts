@@ -68,7 +68,6 @@ export interface UretimGorevi {
   talep_id: string;
   asama: UretimGorevAsamasi;
   senaryo_id: string | null;
-  video_id: string | null;
   arac_id: string | null;
   soru_seti_id: string | null;
   atanan_iu_id: string | null;

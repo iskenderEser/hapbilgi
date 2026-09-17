@@ -69,10 +69,11 @@ export async function POST(request: NextRequest) {
       // Tamamlanmış/eski video kayıtlarına dokunulmaz; yalnız bekleyen bağlantı çözülür.
       for (const talep of bekleyenTalepler ?? []) {
         const { data: mevcutVideo, error: mevcutVideoError } = await adminSupabase
-          .from("videolar")
-          .select("video_id")
+          .from("ogrenme_araclari")
+          .select("arac_id")
           .eq("talep_id", talep.talep_id)
           .eq("kaynak", "hazir")
+          .eq("arac_turu", "video")
           .limit(1)
           .maybeSingle();
         if (mevcutVideoError) {
@@ -101,10 +102,11 @@ export async function POST(request: NextRequest) {
       // Eski veya zaten tamamlanmış hazır videolara ikinci bir görev açma. Bu
       // webhook yalnız URL'si talepte bekleyen, henüz video kaydı doğmamış zinciri açar.
       const { data: mevcutVideo, error: mevcutVideoError } = await adminSupabase
-        .from("videolar")
-        .select("video_id")
+        .from("ogrenme_araclari")
+        .select("arac_id")
         .eq("talep_id", talep.talep_id)
         .eq("kaynak", "hazir")
+        .eq("arac_turu", "video")
         .limit(1)
         .maybeSingle();
       if (mevcutVideoError) {
@@ -121,12 +123,12 @@ export async function POST(request: NextRequest) {
       if (rpcError) {
         return NextResponse.json({ hata: "Hazır video zinciri tamamlanamadı.", detay: rpcError.message }, { status: 500 });
       }
-      const videoId = (sonuc as { video_id?: string } | null)?.video_id;
-      if (!videoId) return NextResponse.json({ hata: "Hazır video zinciri video kimliği döndürmedi." }, { status: 500 });
+      const aracId = (sonuc as { arac_id?: string } | null)?.arac_id;
+      if (!aracId) return NextResponse.json({ hata: "Hazır video zinciri öğrenme aracı kimliği döndürmedi." }, { status: 500 });
       const { error: sureError } = await adminSupabase
-        .from("videolar")
-        .update({ video_suresi_saniye: durum.videoSuresiSaniye })
-        .eq("video_id", videoId);
+        .from("ogrenme_araclari")
+        .update({ sure_saniye: durum.videoSuresiSaniye, metadata_dogrulandi: true })
+        .eq("arac_id", aracId);
       if (sureError) return NextResponse.json({ hata: "Hazır videonun süresi yazılamadı.", detay: sureError.message }, { status: 500 });
 
       const alici = (sonuc as { sonraki?: { atanan_iu_id?: string } | null } | null)?.sonraki?.atanan_iu_id;
@@ -137,9 +139,10 @@ export async function POST(request: NextRequest) {
     // Diğer video akışlarında ve daha önce açılmış kayıtta süreyi otoritatif
     // değerle eşitle. Yayın kapısı ayrıca Bunny durumunu her seferinde doğrular.
     const { error } = await adminSupabase
-      .from("videolar")
-      .update({ video_suresi_saniye: durum.videoSuresiSaniye })
-      .ilike("video_url", `%${guid}%`);
+      .from("ogrenme_araclari")
+      .update({ sure_saniye: durum.videoSuresiSaniye, metadata_dogrulandi: true })
+      .eq("arac_turu", "video")
+      .ilike("dosya_yolu", `%${guid}%`);
 
     if (error) {
       return NextResponse.json({ hata: "Süre yazılamadı.", detay: error.message }, { status: 500 });

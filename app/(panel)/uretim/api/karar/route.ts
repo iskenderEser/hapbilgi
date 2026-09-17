@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       return validasyonHatasi("Revizyon transkript tercihi boolean olmalıdır.", ["revizyonda_transkript_istendi"]);
     }
 
-    const { data: gorevBilgisi } = await adminSupabase.from("uretim_gorevleri").select("asama, talep_id, video_id").eq("gorev_id", gorev_id).maybeSingle();
+    const { data: gorevBilgisi } = await adminSupabase.from("uretim_gorevleri").select("asama, talep_id, arac_id").eq("gorev_id", gorev_id).maybeSingle();
     const { data: talepBilgisi } = gorevBilgisi
       ? await adminSupabase.from("talepler").select("ogrenme_araci_turu, hazir_video, ogrenme_araci_tercihleri").eq("talep_id", gorevBilgisi.talep_id).maybeSingle()
       : { data: null };
@@ -38,11 +38,11 @@ export async function POST(request: NextRequest) {
     // yalnız Bunny Ready + pozitif süre doğrulandıktan sonra onay verebilir.
     // Revizyon/iptal bu kapıdan geçmez; teknik hata revizyon hakkı tüketmez.
     if (karar === "onaylandi" && gorevBilgisi?.asama === "video" && aracTuru === "video") {
-      const { data: video, error: videoError } = gorevBilgisi.video_id
-        ? await adminSupabase.from("videolar").select("video_url").eq("video_id", gorevBilgisi.video_id).maybeSingle()
+      const { data: video, error: videoError } = gorevBilgisi.arac_id
+        ? await adminSupabase.from("ogrenme_araclari").select("dosya_yolu, metadata").eq("arac_id", gorevBilgisi.arac_id).eq("arac_turu", "video").maybeSingle()
         : { data: null, error: null };
-      if (videoError) return hataYaniti("Video doğrulanamadı.", "videolar SELECT — üretici kararı", videoError);
-      const guid = embedUrlGuidCikar(video?.video_url);
+      if (videoError) return hataYaniti("Video doğrulanamadı.", "ogrenme_araclari SELECT — üretici kararı", videoError);
+      const guid = embedUrlGuidCikar(video?.dosya_yolu);
       if (!guid) return isKuraluHatasi("Video henüz incelenebilir durumda değil.");
       const bunnyDurumu = await bunnyVideoDurumu(guid);
       if (!bunnyDurumu.ok) {
@@ -50,6 +50,16 @@ export async function POST(request: NextRequest) {
       }
       if (bunnyDurumu.hatali) return isKuraluHatasi("Video işlenemediği için onaylanamaz.");
       if (!bunnyDurumu.hazir) return isKuraluHatasi("Video işleniyor. Hazır olduğunda onaylayabilirsiniz.");
+      const { error: dogrulamaError } = await adminSupabase
+        .from("ogrenme_araclari")
+        .update({
+          sure_saniye: bunnyDurumu.videoSuresiSaniye,
+          metadata_dogrulandi: true,
+          metadata: { ...((video?.metadata as Record<string, unknown> | null) ?? {}), video_dogrulandi: true },
+          updated_at: new Date().toISOString(),
+        })
+        .eq("arac_id", gorevBilgisi.arac_id!);
+      if (dogrulamaError) return hataYaniti("Video doğrulaması kaydedilemedi.", "ogrenme_araclari UPDATE — üretici kararı", dogrulamaError);
     }
     const revizyonTranskriptKarari = podcastRevizyondaTranskriptTalebiDogrula({
       aracTuru,
@@ -60,8 +70,8 @@ export async function POST(request: NextRequest) {
       revizyondaTranskriptIstendi: revizyonda_transkript_istendi === true,
     });
     if (!revizyonTranskriptKarari.ok) return validasyonHatasi(revizyonTranskriptKarari.hata, ["revizyonda_transkript_istendi"]);
-    const ortakAracKarari = ["podcast", "gorsel", "flip_pdf"].includes(aracTuru ?? "") && gorevBilgisi?.asama !== "soru_seti";
-    const rpcAdi = !ortakAracKarari ? "uretim_uretici_karar_ver" : aracTuru === "gorsel" ? "uretim_gorsel_uretici_karar_ver" : aracTuru === "flip_pdf" ? "uretim_flip_pdf_uretici_karar_ver" : "uretim_podcast_uretici_karar_ver";
+    const ortakAracKarari = ["video", "podcast", "gorsel", "flip_pdf"].includes(aracTuru ?? "") && gorevBilgisi?.asama === "video";
+    const rpcAdi = !ortakAracKarari ? "uretim_uretici_karar_ver" : aracTuru === "video" ? "uretim_video_uretici_karar_ver" : aracTuru === "gorsel" ? "uretim_gorsel_uretici_karar_ver" : aracTuru === "flip_pdf" ? "uretim_flip_pdf_uretici_karar_ver" : "uretim_podcast_uretici_karar_ver";
     const rpcParametreleri: Record<string, unknown> = {
       p_gorev_id: gorev_id,
       p_uretici_id: user.id,

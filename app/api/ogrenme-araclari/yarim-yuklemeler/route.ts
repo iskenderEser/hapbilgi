@@ -14,7 +14,7 @@ interface VideoOturumu {
   kullanici_id: string;
   talep_id: string;
   gorev_id: string | null;
-  video_id: string | null;
+  arac_id: string | null;
   kaynak: "hazir" | "iu";
   video_guid: string;
   embed_url: string;
@@ -144,7 +144,7 @@ export async function GET() {
     let video: VideoOturumu[] = [];
     const videoSonucu = await db
       .from("ogrenme_araci_video_yukleme_oturumlari")
-      .select("yukleme_id, kullanici_id, talep_id, gorev_id, video_id, kaynak, video_guid, embed_url, baslik, dosya_adi, mime_type, dosya_boyutu, durum, created_at")
+      .select("yukleme_id, kullanici_id, talep_id, gorev_id, arac_id, kaynak, video_guid, embed_url, baslik, dosya_adi, mime_type, dosya_boyutu, durum, created_at")
       .eq("kullanici_id", user.id)
       .order("created_at", { ascending: false });
     // Geçiş SQL'i henüz kurulmadıysa mevcut yükleme akışını bozma.
@@ -279,9 +279,9 @@ export async function POST(request: NextRequest) {
     if (kayit.kaynak === "hazir") {
       const { data: talep } = await db.from("talepler").select("hazir_video_url, uretici_id").eq("talep_id", kayit.talep_id).maybeSingle();
       bagli = talep?.uretici_id === user.id && talep.hazir_video_url === kayit.embed_url;
-    } else if (kayit.video_id) {
-      const { data: video } = await db.from("videolar").select("video_url").eq("video_id", kayit.video_id).maybeSingle();
-      bagli = video?.video_url === kayit.embed_url;
+    } else if (kayit.arac_id) {
+      const { data: video } = await db.from("ogrenme_araclari").select("dosya_yolu").eq("arac_id", kayit.arac_id).eq("arac_turu", "video").maybeSingle();
+      bagli = video?.dosya_yolu === kayit.embed_url;
     }
     if (!bagli) return NextResponse.json({ hata: "Video henüz üretim kaydına bağlanmadı." }, { status: 409 });
     const { error } = await db.from("ogrenme_araci_video_yukleme_oturumlari").delete().eq("yukleme_id", kayit.yukleme_id).eq("kullanici_id", user.id);

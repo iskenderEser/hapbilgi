@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     const { data: soruSeti, error: soruSetiError } = await adminSupabase
       .from("soru_setleri")
-      .select("soru_seti_id, video_durum_id, arac_durum_id, sorular")
+      .select("soru_seti_id, arac_durum_id, sorular")
       .eq("soru_seti_id", soruSetiDurum.soru_seti_id)
       .single();
 
@@ -183,15 +183,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const puanSorgusu = soruSeti.arac_durum_id
-      ? adminSupabase.from("ogrenme_araci_puanlari").select("arac_puani").eq("arac_durum_id", soruSeti.arac_durum_id).maybeSingle()
-      : adminSupabase.from("video_puanlari").select("video_puani").eq("video_durum_id", soruSeti.video_durum_id).maybeSingle();
-    const { data: videoPuan, error: vpError } = await puanSorgusu;
+    if (!soruSeti.arac_durum_id) return isKuraluHatasi("Soru setinin öğrenme aracı bağlantısı eksik.");
+    const { data: videoPuan, error: vpError } = await adminSupabase.from("ogrenme_araci_puanlari")
+      .select("arac_puani").eq("arac_durum_id", soruSeti.arac_durum_id).maybeSingle();
 
     if (vpError && vpError.code !== "PGRST116") {
       return hataYaniti("Öğrenme aracı puanı sorgulanırken hata oluştu.", "öğrenme aracı puanı SELECT", vpError);
     }
-    const aracPuani = videoPuan && ("arac_puani" in videoPuan ? videoPuan.arac_puani : videoPuan.video_puani);
+    const aracPuani = videoPuan?.arac_puani;
     if (aracPuani === null || aracPuani === undefined) {
       return isKuraluHatasi("Öğrenme aracı puanı tanımlanmadan yayına alınamaz.");
     }
@@ -244,47 +243,21 @@ export async function POST(request: NextRequest) {
     // Yayın kapısı: TUS aktarımı ya da geçmiş bir onay kaydı yeterli değildir.
     // Bunny videoyu şu anda Ready olarak doğrulamadan ve pozitif süre vermeden
     // hiçbir yayın/tarife yan etkisi oluşturulmaz.
-    if (soruSeti.arac_durum_id) {
-      const { data: aracDurum, error: aracDurumError } = await adminSupabase.from("ogrenme_araci_durumu")
-        .select("durum, ogrenme_araclari!inner(arac_turu, dosya_yolu, kapak_yolu, transkript_yolu, sure_saniye, sayfa_sayisi, genislik, yukseklik, metadata, metadata_dogrulandi)")
+    const { data: aracDurum, error: aracDurumError } = await adminSupabase.from("ogrenme_araci_durumu")
+        .select("arac_id, durum, ogrenme_araclari!inner(arac_turu, dosya_yolu, kapak_yolu, transkript_yolu, sure_saniye, sayfa_sayisi, genislik, yukseklik, metadata, metadata_dogrulandi)")
         .eq("arac_durum_id", soruSeti.arac_durum_id).maybeSingle();
-      const arac = Array.isArray(aracDurum?.ogrenme_araclari) ? aracDurum.ogrenme_araclari[0] : aracDurum?.ogrenme_araclari;
-      if (aracDurumError || aracDurum?.durum !== "onaylandi" || !arac || !arac.metadata_dogrulandi || !arac.dosya_yolu) {
-        return isKuraluHatasi("Öğrenme aracı onayı ve dosya doğrulaması tamamlanmadan yayımlanamaz.");
-      }
-      const kapakKapisi = kapakYayinKapisiDogrula({ kapakYolu: arac.kapak_yolu, metadata: arac.metadata as Record<string, unknown> | null });
-      if (!kapakKapisi.ok) return isKuraluHatasi(kapakKapisi.hata);
-      if (arac.arac_turu === "podcast" && Number(arac.sure_saniye) <= 0) {
-        return isKuraluHatasi("Podcast ses ve süre doğrulaması tamamlanmadan yayımlanamaz.");
-      }
-      if (arac.arac_turu === "gorsel" && (Number(arac.genislik) <= 0 || Number(arac.yukseklik) <= 0)) {
-        return isKuraluHatasi("Görsel dosyası ve ölçüleri doğrulanmadan yayımlanamaz.");
-      }
-      if (arac.arac_turu === "flip_pdf" && Number(arac.sayfa_sayisi) <= 0) {
-        return isKuraluHatasi("Literatür dosyası ve sayfa sayısı doğrulanmadan yayımlanamaz.");
-      }
-      if (arac.arac_turu !== "podcast" && arac.arac_turu !== "gorsel" && arac.arac_turu !== "flip_pdf") {
-        return isKuraluHatasi("Bu öğrenme aracı türü henüz yayına alınamaz.");
-      }
-    } else {
-    const { data: videoDurumu, error: videoDurumuError } = await adminSupabase
-      .from("video_durumu")
-      .select("video_id")
-      .eq("video_durum_id", soruSeti.video_durum_id)
-      .single();
-    if (videoDurumuError || !videoDurumu?.video_id) {
-      return hataYaniti("Yayına bağlı video bulunamadı.", "video_durumu SELECT — yayın hazır olma kapısı", videoDurumuError, 422);
+    const arac = Array.isArray(aracDurum?.ogrenme_araclari) ? aracDurum.ogrenme_araclari[0] : aracDurum?.ogrenme_araclari;
+    if (aracDurumError || aracDurum?.durum !== "onaylandi" || !arac || !arac.metadata_dogrulandi || !arac.dosya_yolu) {
+      return isKuraluHatasi("Öğrenme aracı onayı ve dosya doğrulaması tamamlanmadan yayımlanamaz.");
     }
-    const { data: videoKaydi, error: videoKaydiError } = await adminSupabase
-      .from("videolar")
-      .select("video_id, video_url, video_suresi_saniye")
-      .eq("video_id", videoDurumu.video_id)
-      .single();
-    if (videoKaydiError || !videoKaydi) {
-      return hataYaniti("Yayına bağlı video kaydı bulunamadı.", "videolar SELECT — yayın hazır olma kapısı", videoKaydiError, 422);
+    const kapakKapisi = kapakYayinKapisiDogrula({ kapakYolu: arac.kapak_yolu, metadata: arac.metadata as Record<string, unknown> | null });
+    if (!kapakKapisi.ok) return isKuraluHatasi(kapakKapisi.hata);
+    if ((arac.arac_turu === "podcast" || arac.arac_turu === "video") && Number(arac.sure_saniye) <= 0) {
+      return isKuraluHatasi(`${arac.arac_turu === "video" ? "Video" : "Podcast"} dosya ve süre doğrulaması tamamlanmadan yayımlanamaz.`);
     }
-    const guid = embedUrlGuidCikar(videoKaydi.video_url);
-    if (guid) {
+    if (arac.arac_turu === "video") {
+      const guid = embedUrlGuidCikar(arac.dosya_yolu);
+      if (!guid) return isKuraluHatasi("Video adresi doğrulanmadan yayına alınamaz.");
       const durum = await bunnyVideoDurumu(guid);
       if (!durum.ok) {
         return hataYaniti("Video hazır olduğu doğrulanamadı; yayın beklemeye alındı.", durum.adim, durum.detay ? { message: durum.detay } : null, 503);
@@ -293,18 +266,19 @@ export async function POST(request: NextRequest) {
       if (!durum.hazir || durum.videoSuresiSaniye == null || durum.videoSuresiSaniye <= 0) {
         return isKuraluHatasi("Video işleniyor. Hazır olmadan yayına alınamaz.");
       }
-      if (videoKaydi.video_suresi_saniye !== durum.videoSuresiSaniye) {
+      if (Number(arac.sure_saniye) !== durum.videoSuresiSaniye) {
         const { error: sureError } = await adminSupabase
-          .from("videolar")
-          .update({ video_suresi_saniye: durum.videoSuresiSaniye })
-          .eq("video_id", videoKaydi.video_id);
-        if (sureError) return hataYaniti("Doğrulanmış video süresi kaydedilemedi; yayın açılmadı.", "videolar UPDATE — yayın hazır olma kapısı", sureError);
+          .from("ogrenme_araclari")
+          .update({ sure_saniye: durum.videoSuresiSaniye })
+          .eq("arac_id", aracDurum!.arac_id);
+        if (sureError) return hataYaniti("Doğrulanmış video süresi kaydedilemedi; yayın açılmadı.", "ogrenme_araclari UPDATE — yayın hazır olma kapısı", sureError);
       }
-    } else if (!videoKaydi.video_suresi_saniye || videoKaydi.video_suresi_saniye <= 0) {
-      // Bunny öncesi eski kayıtların mevcut davranışı korunur; yalnız süresiz eski
-      // kayıt güvenli biçimde durdurulur.
-      return isKuraluHatasi("Video süresi doğrulanmadan yayına alınamaz.");
     }
+    if (arac.arac_turu === "gorsel" && (Number(arac.genislik) <= 0 || Number(arac.yukseklik) <= 0)) {
+      return isKuraluHatasi("Görsel dosyası ve ölçüleri doğrulanmadan yayımlanamaz.");
+    }
+    if (arac.arac_turu === "flip_pdf" && Number(arac.sayfa_sayisi) <= 0) {
+      return isKuraluHatasi("Literatür dosyası ve sayfa sayısı doğrulanmadan yayımlanamaz.");
     }
 
     // Eczanem: barkod + Karşılık yalnız video kapıyı geçtikten sonra yazılır.

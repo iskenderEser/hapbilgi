@@ -86,13 +86,14 @@ export async function PUT(request: NextRequest) {
     });
     if (error) return uretimRpcHataYaniti("Hazır video zinciri kurulamadı.", "uretim_hazir_video_kaydet RPC", error);
 
-    const videoId = (sonuc as { video_id?: string } | null)?.video_id;
-    if (!videoId) return hataYaniti("Hazır video zinciri video kimliği döndürmedi.", "uretim_hazir_video_kaydet RPC — dönen veri");
+    const aracId = (sonuc as { arac_id?: string } | null)?.arac_id;
+    if (!aracId) return hataYaniti("Hazır video zinciri öğrenme aracı kimliği döndürmedi.", "uretim_hazir_video_kaydet RPC — dönen veri");
     const { error: sureError } = await adminSupabase
-      .from("videolar")
-      .update({ video_suresi_saniye: bunnyDurumu.videoSuresiSaniye })
-      .eq("video_id", videoId);
-    if (sureError) return hataYaniti("Doğrulanmış video süresi kaydedilemedi.", "videolar UPDATE — video süresi", sureError);
+      .from("ogrenme_araclari")
+      .update({ sure_saniye: bunnyDurumu.videoSuresiSaniye, metadata_dogrulandi: true })
+      .eq("arac_id", aracId)
+      .eq("arac_turu", "video");
+    if (sureError) return hataYaniti("Doğrulanmış video süresi kaydedilemedi.", "ogrenme_araclari UPDATE — video süresi", sureError);
 
     const alici = (sonuc as { sonraki?: { atanan_iu_id?: string } | null } | null)?.sonraki?.atanan_iu_id;
     if (alici) pushYayinlaArkada(adminSupabase, "uretim_durum_gecisi", [alici]);

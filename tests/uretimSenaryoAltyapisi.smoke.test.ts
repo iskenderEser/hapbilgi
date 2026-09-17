@@ -32,7 +32,7 @@ test("üretim senaryosu altyapısı dört araç ve dört varyant için 16 izole 
 test("senaryo verileri testler arasında ortak nesne taşımaz", () => {
   const ilk = bosUretimZinciri("talep-1");
   const ikinci = bosUretimZinciri("talep-2");
-  ilk.video_id = "degisti";
+  ilk.arac_id = "degisti";
 
-  assert.equal(ikinci.video_id, null);
+  assert.equal(ikinci.arac_id, null);
 });

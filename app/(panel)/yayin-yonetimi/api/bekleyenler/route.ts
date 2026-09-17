@@ -38,11 +38,7 @@ export async function GET(request: NextRequest) {
 
     const yayindakiIds = new Set(((yayinlar as Array<{ soru_seti_durum_id: string }> | null) ?? []).map(y => y.soru_seti_durum_id));
 
-    // Tek join query ile zinciri çek. Talebe videolar → talepler (talep_id) ile
-    // DOĞRUDAN ulaşılır (Adım 5 modeli); eski senaryo_durumu→senaryolar hopları
-    // kaldırıldı — hazır videoda senaryo_durum_id=null olduğundan o zincir talebi
-    // düşürüp ürün adı/teknik/hedef rolü "-"/varsayılana çeviriyordu.
-    // video_puanlari, video_durumu'na bağlıdır (video_durum_id FK) — bu yüzden video_durumu altında embed edilir.
+    // Yayına hazır dört araç türü aynı ortak zincirden okunur.
     const { data: onaylananlar, error: onayError } = await adminSupabase
       .from("soru_seti_durumu")
       .select(`
@@ -51,7 +47,6 @@ export async function GET(request: NextRequest) {
         created_at,
         soru_setleri (
           soru_seti_id,
-          video_durum_id,
           arac_durum_id,
           sorular,
           talepler ( ${TALEP_ALANLARI} ),
@@ -59,20 +54,6 @@ export async function GET(request: NextRequest) {
             arac_durum_id,
             ogrenme_araci_puanlari ( arac_puan_id, arac_puani ),
             ogrenme_araclari ( arac_id, arac_turu, kapak_yolu, dosya_yolu, talep_id, metadata )
-          ),
-          video_durumu (
-            video_durum_id,
-            video_id,
-            video_puanlari (
-              video_puan_id,
-              video_puani
-            ),
-            videolar (
-              video_id,
-              video_url,
-              thumbnail_url,
-              talepler ( ${TALEP_ALANLARI} )
-            )
           )
         )
       `)
@@ -86,8 +67,7 @@ export async function GET(request: NextRequest) {
       created_at: string;
       soru_setleri?: {
         soru_seti_id: string;
-        video_durum_id: string;
-        arac_durum_id?: string | null;
+        arac_durum_id: string;
         sorular?: unknown;
         talepler?: unknown;
         ogrenme_araci_durumu?: {
@@ -95,35 +75,12 @@ export async function GET(request: NextRequest) {
           ogrenme_araci_puanlari?: { arac_puan_id: string; arac_puani: number } | Array<{ arac_puan_id: string; arac_puani: number }> | null;
           ogrenme_araclari?: { arac_id: string; arac_turu: string; kapak_yolu: string | null; dosya_yolu?: string | null; talep_id: string } | Array<{ arac_id: string; arac_turu: string; kapak_yolu: string | null; dosya_yolu?: string | null; talep_id: string }> | null;
         } | Array<unknown> | null;
-        video_durumu?: {
-          video_durum_id: string;
-          video_id: string;
-          video_puanlari?: { video_puan_id: string; video_puani: number } | Array<{ video_puan_id: string; video_puani: number }> | null;
-          videolar?: {
-            video_id: string;
-            video_url?: string | null;
-            thumbnail_url?: string | null;
-            talepler?: unknown;
-          } | Array<{
-            video_id: string;
-            video_url?: string | null;
-            thumbnail_url?: string | null;
-            talepler?: unknown;
-          }> | null;
-        } | Array<{
-          video_durum_id: string;
-          video_id: string;
-          video_puanlari?: { video_puan_id: string; video_puani: number } | Array<{ video_puan_id: string; video_puani: number }> | null;
-          videolar?: unknown;
-        }> | null;
       } | Array<{
         soru_seti_id: string;
-        video_durum_id: string;
-        arac_durum_id?: string | null;
+        arac_durum_id: string;
         sorular?: unknown;
         talepler?: unknown;
         ogrenme_araci_durumu?: unknown;
-        video_durumu?: unknown;
       }> | null;
     };
 
@@ -132,10 +89,7 @@ export async function GET(request: NextRequest) {
     // Henüz yayına alınmayanları filtrele
     const bekleyenler = onaylananListesi.filter(ss => {
       const soruSeti = Array.isArray(ss.soru_setleri) ? ss.soru_setleri[0] : ss.soru_setleri;
-      const videoDurum = Array.isArray(soruSeti?.video_durumu) ? soruSeti.video_durumu[0] : soruSeti?.video_durumu;
-      const video = Array.isArray(videoDurum?.videolar) ? videoDurum?.videolar[0] : videoDurum?.videolar;
-      const taleplerRaw = Array.isArray(soruSeti?.talepler) ? soruSeti?.talepler[0] : soruSeti?.talepler
-        ?? (Array.isArray(video?.talepler) ? video?.talepler[0] : video?.talepler);
+      const taleplerRaw = Array.isArray(soruSeti?.talepler) ? soruSeti?.talepler[0] : soruSeti?.talepler;
       return !yayindakiIds.has(ss.soru_seti_durum_id)
         && (taleplerRaw as { yayin_oncesi_silme_durumu?: string })?.yayin_oncesi_silme_durumu !== "tamamlandi";
     });
@@ -182,9 +136,8 @@ export async function GET(request: NextRequest) {
     const sonuc: Array<{
       soru_seti_durum_id: string;
       soru_seti_id: string;
-      video_durum_id: string;
       arac_id: string | null;
-      arac_durum_id: string | null;
+      arac_durum_id: string;
       arac_turu: string;
       sorular: unknown[];
       video_url: string | null;
@@ -213,14 +166,9 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
-      const videoDurum = Array.isArray(soruSeti.video_durumu) ? soruSeti.video_durumu[0] : soruSeti.video_durumu;
-      const video = Array.isArray(videoDurum?.videolar) ? videoDurum?.videolar[0] : videoDurum?.videolar;
-      const taleplerRaw = Array.isArray(soruSeti.talepler) ? soruSeti.talepler[0] : soruSeti.talepler
-        ?? (Array.isArray(video?.talepler) ? video?.talepler[0] : video?.talepler);
+      const taleplerRaw = Array.isArray(soruSeti.talepler) ? soruSeti.talepler[0] : soruSeti.talepler;
       const talep = taleplerRaw ? haritalaTalep(taleplerRaw as HamTalepKaydi) : null;
       if (!talep || talep.uretici_id !== user.id) continue;
-      const videoPuanlarRaw = videoDurum?.video_puanlari;
-      const videoPuan = Array.isArray(videoPuanlarRaw) ? videoPuanlarRaw[0] : videoPuanlarRaw;
       const aracDurumHam = Array.isArray(soruSeti.ogrenme_araci_durumu) ? soruSeti.ogrenme_araci_durumu[0] : soruSeti.ogrenme_araci_durumu;
       const aracDurum = aracDurumHam as { arac_durum_id?: string; ogrenme_araci_puanlari?: { arac_puan_id: string; arac_puani: number } | Array<{ arac_puan_id: string; arac_puani: number }>; ogrenme_araclari?: { arac_id: string; arac_turu: string; kapak_yolu: string | null; dosya_yolu?: string | null; metadata?: Record<string, unknown> | null } | Array<{ arac_id: string; arac_turu: string; kapak_yolu: string | null; dosya_yolu?: string | null; metadata?: Record<string, unknown> | null }> } | undefined;
       const aracPuanHam = Array.isArray(aracDurum?.ogrenme_araci_puanlari) ? aracDurum.ogrenme_araci_puanlari[0] : aracDurum?.ogrenme_araci_puanlari;
@@ -231,7 +179,7 @@ export async function GET(request: NextRequest) {
         arac_kapak_yolu: aracHam?.kapak_yolu ?? null,
         arac_dosya_yolu: aracHam?.dosya_yolu ?? null,
         arac_metadata: aracHam?.metadata ?? null,
-        thumbnail_url: video?.thumbnail_url ?? null,
+        thumbnail_url: null,
       });
 
       const egitimTuru = talep?.egitim_turu ?? "urun_egitimi";
@@ -240,15 +188,14 @@ export async function GET(request: NextRequest) {
       sonuc.push({
         soru_seti_durum_id: ss.soru_seti_durum_id,
         soru_seti_id: ss.soru_seti_id,
-        video_durum_id: soruSeti.video_durum_id,
         arac_id: aracHam?.arac_id ?? null,
-        arac_durum_id: soruSeti.arac_durum_id ?? null,
+        arac_durum_id: soruSeti.arac_durum_id,
         arac_turu: aracHam?.arac_turu ?? "video",
         sorular: Array.isArray(soruSeti.sorular) ? soruSeti.sorular : [],
-        video_url: video?.video_url ?? null,
+        video_url: aracHam?.arac_turu === "video" ? aracHam?.dosya_yolu ?? null : null,
         thumbnail_url: thumbnailUrl,
-        video_puan_id: videoPuan?.video_puan_id ?? aracPuanHam?.arac_puan_id ?? null,
-        video_puani: videoPuan?.video_puani ?? aracPuanHam?.arac_puani ?? null,
+        video_puan_id: aracPuanHam?.arac_puan_id ?? null,
+        video_puani: aracPuanHam?.arac_puani ?? null,
         soru_puan_map: soruPuanlarByDurumId[ss.soru_seti_durum_id] ?? {},
         talep_no: talep?.talep_no ?? 0,
         firma_adi: talep?.firma_adi ?? "",

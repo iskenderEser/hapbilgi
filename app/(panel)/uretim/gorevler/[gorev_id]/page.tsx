@@ -237,10 +237,10 @@ export default function UretimGorevDetayPage() {
   };
 
   const videoYukle = async (dosya: File) => {
-    if (!gorev?.video_id) return hata("Göreve bağlı video kaydı bulunamadı.", "video görevi");
+    if (!gorev?.arac_id) return hata("Göreve bağlı video kaydı bulunamadı.", "video görevi");
     setIslem(true); setVideoYuzdesi(0);
     try {
-      const izinRes = await fetch("/videolar/api/bunny-yukleme-baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ video_id: gorev.video_id, dosya_adi: dosya.name, mime_type: dosya.type || "video/mp4", dosya_boyutu: dosya.size }) });
+      const izinRes = await fetch("/videolar/api/bunny-yukleme-baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ arac_id: gorev.arac_id, dosya_adi: dosya.name, mime_type: dosya.type || "video/mp4", dosya_boyutu: dosya.size }) });
       const izin = await izinRes.json();
       if (!izinRes.ok) return hata(izin.hata ?? "Video yüklemesi başlatılamadı.", izin.adim, izin.detay);
       await bunnyTusYukle(dosya, izin, setVideoYuzdesi);

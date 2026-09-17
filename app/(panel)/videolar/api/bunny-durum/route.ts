@@ -26,22 +26,23 @@ export async function GET(request: NextRequest) {
     if (!URETIM_HATTI_GORENLER.includes(rol)) return rolHatasi("Sadece yetkili roller ve IU video durumunu görebilir.");
 
     const { searchParams } = new URL(request.url);
-    const video_id = searchParams.get("video_id");
+    const arac_id = searchParams.get("arac_id");
     const talep_id = searchParams.get("talep_id");
-    if (!video_id && !talep_id) return validasyonHatasi("video_id ya da talep_id zorunludur.", ["video_id", "talep_id"]);
+    if (!arac_id && !talep_id) return validasyonHatasi("arac_id ya da talep_id zorunludur.", ["arac_id", "talep_id"]);
 
     let videoUrl: string | null = null;
-    if (video_id) {
+    if (arac_id) {
       const { data: video, error: videoError } = await adminSupabase
-        .from("videolar")
-        .select("video_id, video_url")
-        .eq("video_id", video_id)
+        .from("ogrenme_araclari")
+        .select("arac_id, dosya_yolu")
+        .eq("arac_id", arac_id)
+        .eq("arac_turu", "video")
         .single();
 
-      const videoKontrol = veriKontrol(video, "videolar tablosu SELECT — video_id", "Video kaydı bulunamadı.");
+      const videoKontrol = veriKontrol(video, "ogrenme_araclari SELECT — arac_id", "Video kaydı bulunamadı.");
       if (!videoKontrol.gecerli) return videoKontrol.yanit;
-      if (videoError) return hataYaniti("Video sorgulanamadı.", "videolar tablosu SELECT", videoError, 404);
-      videoUrl = video.video_url;
+      if (videoError) return hataYaniti("Video sorgulanamadı.", "ogrenme_araclari SELECT", videoError, 404);
+      videoUrl = video.dosya_yolu;
     } else {
       const { data: talep, error: talepError } = await adminSupabase
         .from("talepler")

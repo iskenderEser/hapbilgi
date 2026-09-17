@@ -8,7 +8,6 @@
 
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
@@ -35,12 +34,12 @@ interface SenaryoOnayiSatiri {
 }
 
 interface VideoOnayiSatiri {
-  video_durum_id: string;
-  videolar: { video_url: string | null; senaryo_durum_id: string | null } | null;
+  arac_durum_id: string;
+  ogrenme_araclari: { dosya_yolu: string | null; senaryo_durum_id: string | null } | null;
 }
 
 interface SoruSetiOnayiSatiri {
-  soru_setleri: { video_durum_id: string | null; sorular: SoruKaydi[] | null } | null;
+  soru_setleri: { arac_durum_id: string | null; sorular: SoruKaydi[] | null } | null;
 }
 
 // Klasörleme alanları (firma_adi, departman, urun_adi) künyeden gelir ve
@@ -99,37 +98,17 @@ export default function OnaylananTaleplerPage() {
     if (ilkYukleme) setLoading(true);
     else setYenileniyor(true);
     try {
-      const supabase = createClient();
+    const yanit = await fetch("/onaylanan-talepler/api", { cache: "no-store" });
+    const veri = await yanit.json();
+    if (!yanit.ok) { hata(veri.hata ?? "Onaylı içerikler yüklenemedi.", veri.adim ?? "ortak öğrenme aracı zinciri"); return; }
+    const { senaryoOnaylari, videoOnaylari, setOnaylari } = veri;
 
-    // Onaylı senaryolar (talep + firma bilgisiyle)
-    const { data: senaryoOnaylari, error: sErr } = await supabase
-      .from("senaryo_durumu")
-      .select("senaryo_durum_id, created_at, senaryolar(talep_id, senaryo_metni)")
-      .eq("durum", "onaylandi")
-      .order("created_at", { ascending: false });
-    if (sErr) {
-      hata("Onaylı senaryolar yüklenemedi.", "senaryo_durumu SELECT — onaylandi", sErr.message);
-      return;
-    }
-
-    // Onaylı videolar (hangi senaryo onayına bağlı olduklarıyla)
-    const { data: videoOnaylari } = await supabase
-      .from("video_durumu")
-      .select("video_durum_id, videolar(video_url, senaryo_durum_id)")
-      .eq("durum", "onaylandi");
-
-    // Onaylı soru setleri (hangi video onayına bağlı olduklarıyla)
-    const { data: setOnaylari } = await supabase
-      .from("soru_seti_durumu")
-      .select("soru_setleri(video_durum_id, sorular)")
-      .eq("durum", "onaylandi");
-
-    const videoMap = new Map<string, { video_url: string; video_durum_id: string }>();
+    const videoMap = new Map<string, { video_url: string; arac_durum_id: string }>();
     const videoOnayiSatirlari = (videoOnaylari ?? []) as unknown as VideoOnayiSatiri[];
     videoOnayiSatirlari.forEach((v) => {
-      const video = v.videolar;
-      if (video?.senaryo_durum_id && video.video_url) {
-        videoMap.set(video.senaryo_durum_id, { video_url: video.video_url, video_durum_id: v.video_durum_id });
+      const video = v.ogrenme_araclari;
+      if (video?.senaryo_durum_id && video.dosya_yolu) {
+        videoMap.set(video.senaryo_durum_id, { video_url: video.dosya_yolu, arac_durum_id: v.arac_durum_id });
       }
     });
 
@@ -137,7 +116,7 @@ export default function OnaylananTaleplerPage() {
     const soruSetiOnayiSatirlari = (setOnaylari ?? []) as unknown as SoruSetiOnayiSatiri[];
     soruSetiOnayiSatirlari.forEach((s) => {
       const set = s.soru_setleri;
-      if (set?.video_durum_id && set.sorular?.length) setMap.set(set.video_durum_id, set.sorular);
+      if (set?.arac_durum_id && set.sorular?.length) setMap.set(set.arac_durum_id, set.sorular);
     });
 
     // Talep künyeleri TEK KAPIDAN, toplu (25.07, Aşama 3).
@@ -175,7 +154,7 @@ export default function OnaylananTaleplerPage() {
         onay_tarihi: o.created_at,
         senaryo_metni: senaryo.senaryo_metni,
         video_url: video?.video_url ?? null,
-        sorular: video ? (setMap.get(video.video_durum_id) ?? null) : null,
+        sorular: video ? (setMap.get(video.arac_durum_id) ?? null) : null,
         yayin_oncesi_silindi: talep.yayin_oncesi_silme_durumu === "tamamlandi",
       });
     });

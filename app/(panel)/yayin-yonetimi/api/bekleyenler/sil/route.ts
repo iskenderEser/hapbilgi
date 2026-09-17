@@ -8,7 +8,8 @@ import { bunnyVideoSil, embedUrlGuidCikar } from "@/lib/video/bunnyYukleme";
 
 interface SilmeHazirligi {
   talep_id: string;
-  video_url: string | null;
+  dosya_yolu: string | null;
+  tam_silme: boolean;
 }
 
 export async function DELETE(request: NextRequest) {
@@ -43,7 +44,7 @@ export async function DELETE(request: NextRequest) {
       return hataYaniti("Yayın silme hazırlığı beklenen talep kimliğini döndürmedi.", "yayin_oncesi_silme_baslat RPC — dönen veri");
     }
 
-    const guid = embedUrlGuidCikar(silme.video_url);
+    const guid = silme.tam_silme ? embedUrlGuidCikar(silme.dosya_yolu) : null;
     if (guid && !(await bunnyVideoSil(guid))) {
       const { error: durumError } = await adminSupabase.rpc("yayin_oncesi_silme_hata", {
         p_talep_id: silme.talep_id,

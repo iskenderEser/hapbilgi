@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     // Yayının gerçek video kaydını çözüp güvenilir süreyi sunucu kaynağından al.
     const { data: detay, error: detayError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("video_durum_id, video_url, arac_id, arac_turu, arac_sure_saniye")
+      .select("arac_id, arac_turu, arac_sure_saniye")
       .eq("yayin_id", yayin_id)
       .single();
     if (detayError || !detay) {
@@ -116,32 +116,12 @@ export async function POST(request: NextRequest) {
     let videoSuresiSaniye: number | null = null;
     if (detay.arac_turu === "gorsel" || detay.arac_turu === "flip_pdf") {
       videoSuresiSaniye = 1;
-    } else if (detay.arac_turu === "podcast") {
+    } else if (detay.arac_turu === "podcast" || detay.arac_turu === "video") {
       videoSuresiSaniye = Number(detay.arac_sure_saniye ?? 0);
-    } else {
-      if (!detay.video_durum_id) return hataYaniti("Yayının video bağlantısı çözülemedi.", "v_yayin_detay SELECT — video süresi", null);
-      const { data: videoDurum, error: videoDurumError } = await adminSupabase
-      .from("video_durumu")
-      .select("video_id")
-      .eq("video_durum_id", detay.video_durum_id)
-      .single();
-      if (videoDurumError || !videoDurum) {
-      return hataYaniti("Yayının video kaydı çözülemedi.", "video_durumu SELECT — video süresi", videoDurumError);
-      }
-
-      const { data: videoKaydi, error: videoError } = await adminSupabase
-      .from("videolar")
-      .select("video_id, video_url, video_suresi_saniye")
-      .eq("video_id", videoDurum.video_id)
-      .single();
-      if (videoError || !videoKaydi) {
-      return hataYaniti("Video kaydı bulunamadı.", "videolar SELECT — video süresi", videoError, 404);
-      }
-      videoSuresiSaniye = videoKaydi.video_suresi_saniye as number | null;
     }
 
     // Tek yazıcı ilkesi (Faz 3): süreyi burada yazmıyoruz — yayın‑kapısı + webhook +
-    // backfill süreyi videolar'a garantiliyor, görünürlük kapısı da süresi olmayan
+    // backfill süreyi ortak öğrenme aracına garantiliyor, görünürlük kapısı da süresi olmayan
     // videoyu listeye düşürmüyor. Buraya süresi boş bir video ulaşırsa (beklenmez)
     // yazmak yerine hazırlık kapısıyla reddedilir.
     if (videoSuresiSaniye === null || videoSuresiSaniye <= 0) {

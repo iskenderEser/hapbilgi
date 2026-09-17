@@ -42,9 +42,10 @@ export async function POST(request: NextRequest) {
 
     const talepIdler = adayTalepler.map((t) => t.talep_id);
     const { data: mevcutVideolar, error: videoError } = await adminSupabase
-      .from("videolar")
+      .from("ogrenme_araclari")
       .select("talep_id")
       .eq("kaynak", "hazir")
+      .eq("arac_turu", "video")
       .in("talep_id", talepIdler);
     if (videoError) {
       return NextResponse.json({ hata: "Video kayıtları sorgulanamadı.", detay: videoError.message }, { status: 500 });
@@ -89,13 +90,13 @@ export async function POST(request: NextRequest) {
         p_islem_anahtari: guid,
       });
       if (rpcError) { detaylar.push({ talep_id: talep.talep_id, sonuc: "rpc-hata" }); continue; }
-      const videoId = (sonuc as { video_id?: string } | null)?.video_id;
-      if (!videoId) { detaylar.push({ talep_id: talep.talep_id, sonuc: "video-id-yok" }); continue; }
+      const aracId = (sonuc as { arac_id?: string } | null)?.arac_id;
+      if (!aracId) { detaylar.push({ talep_id: talep.talep_id, sonuc: "arac-id-yok" }); continue; }
 
       const { error: sureError } = await adminSupabase
-        .from("videolar")
-        .update({ video_suresi_saniye: durum.videoSuresiSaniye })
-        .eq("video_id", videoId);
+        .from("ogrenme_araclari")
+        .update({ sure_saniye: durum.videoSuresiSaniye, metadata_dogrulandi: true })
+        .eq("arac_id", aracId);
       if (sureError) { detaylar.push({ talep_id: talep.talep_id, sonuc: "sure-yazilamadi" }); continue; }
 
       const alici = (sonuc as { sonraki?: { atanan_iu_id?: string } | null } | null)?.sonraki?.atanan_iu_id;
