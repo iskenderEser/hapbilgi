@@ -2,9 +2,10 @@
 //
 // Toplu/Tekil Silme — Aşama 3 (docs/toplu_tekil_silme_is_plani.md).
 // Admin'e özel silme aracının API ucu. Tek POST, iki işlem:
-//   { islem: 'sayim', mod, firma_id?, talep_id? } → önizleme (test_veri_sayim RPC)
-//   { islem: 'sil',   mod, firma_id?, talep_id? } → silme    (test_veri_temizle RPC)
-// mod ∈ 'tum' | 'firma' | 'tekil'. firma → firma_id, tekil → talep_id zorunlu.
+//   { islem: 'sayim', mod, firma_id?, gorunen_talep_id? } → önizleme
+//   { islem: 'sil',   mod, firma_id?, gorunen_talep_id? } → silme
+// mod ∈ 'tum' | 'firma' | 'tekil'. Tekil modda kullanıcı ekrandaki
+// "FirmaAdı_talep_no" değerini gönderir; gerçek UUID sunucuda çözülür.
 //
 // Güvenlik iki katman: proxy /admin bekçisi (§2.4) + burada adminGirisKontrol.
 // İş kuralları/kapsam DB fonksiyonundadır; route yalnız yetki + doğrulama + çağrı.
@@ -13,6 +14,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { adminGirisKontrol } from "@/lib/utils/adminGirisKontrol";
 import { hataYaniti, sunucuHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
+import { gorunenTalepNumarasiniCoz } from "@/lib/admin/talepSilKimligi";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -26,8 +28,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null);
     if (!body || typeof body !== "object") return validasyonHatasi("Geçersiz istek gövdesi.", ["body"]);
 
-    const { islem, mod, firma_id, talep_id } = body as {
-      islem?: string; mod?: string; firma_id?: string; talep_id?: string;
+    const { islem, mod, firma_id, gorunen_talep_id } = body as {
+      islem?: string; mod?: string; firma_id?: string; gorunen_talep_id?: string;
     };
 
     if (islem !== "sayim" && islem !== "sil")
@@ -36,17 +38,35 @@ export async function POST(request: NextRequest) {
       return validasyonHatasi("mod 'tum', 'firma' veya 'tekil' olmalıdır.", ["mod"]);
     if (mod === "firma" && (!firma_id || !UUID_RE.test(firma_id)))
       return validasyonHatasi("Firma modunda geçerli firma_id zorunludur.", ["firma_id"]);
-    if (mod === "tekil" && (!talep_id || !UUID_RE.test(talep_id)))
-      return validasyonHatasi("Tekil modunda geçerli talep_id zorunludur.", ["talep_id"]);
+    const talepNo = mod === "tekil" ? gorunenTalepNumarasiniCoz(gorunen_talep_id) : null;
+    if (mod === "tekil" && talepNo == null)
+      return validasyonHatasi("Geçerli görünen talep numarası zorunludur. Örnek: hepifarma_30058.", ["gorunen_talep_id"]);
 
-    // 3) İlgili RPC'yi çağır (service_role)
+    // 3) Görünen numarayı gerçek UUID'ye yalnız sunucuda çöz.
     const adminSupabase = createAdminClient();
+    let talepId: string | null = null;
+    if (mod === "tekil") {
+      const { data: talep, error: talepHatasi } = await adminSupabase
+        .from("talepler")
+        .select("talep_id")
+        .eq("talep_no", talepNo!)
+        .maybeSingle();
+
+      if (talepHatasi)
+        return hataYaniti("Talep sorgulanamadı.", "talepler SELECT — talep_no", talepHatasi);
+      if (!talep)
+        return validasyonHatasi("Bu numarayla eşleşen talep bulunamadı.", ["gorunen_talep_id"]);
+
+      talepId = talep.talep_id;
+    }
+
+    // 4) İlgili RPC'yi çağır (service_role)
     const rpcAdi = islem === "sayim" ? "test_veri_sayim" : "test_veri_temizle";
 
     const { data, error } = await adminSupabase.rpc(rpcAdi, {
       p_mod: mod,
       p_firma_id: mod === "firma" ? firma_id : null,
-      p_talep_id: mod === "tekil" ? talep_id : null,
+      p_talep_id: mod === "tekil" ? talepId : null,
     });
 
     if (error)
@@ -60,7 +80,7 @@ export async function POST(request: NextRequest) {
     const durum = (data as { durum?: string } | null)?.durum;
     const beklenen = islem === "sayim" ? "onizleme" : "silindi";
     if (durum !== beklenen)
-      return validasyonHatasi(`İşlem tamamlanamadı: ${durum ?? "bilinmeyen"}`, ["mod", "firma_id", "talep_id"]);
+      return validasyonHatasi(`İşlem tamamlanamadı: ${durum ?? "bilinmeyen"}`, ["mod", "firma_id", "gorunen_talep_id"]);
 
     return NextResponse.json(data, { status: 200 });
   } catch (err) {
