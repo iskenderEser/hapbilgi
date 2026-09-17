@@ -46,7 +46,7 @@ export function SoruSetiAyarlari({
         </select>
       </div>
       <div className="flex-1">
-        <label className="text-xs text-gray-500 block mb-1">Seçenek sayısı</label>
+        <label className="text-xs text-gray-500 block mb-1">Soru başına seçenek sayısı</label>
         <select
           value={secenek}
           onChange={(e) => onSecenekChange(Number(e.target.value))}

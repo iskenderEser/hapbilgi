@@ -337,8 +337,8 @@ export function YeniTalepFormV2({ formu }: Props) {
                 onBuyuklukChange={formu.setSoruSetiBuyuklugu}
                 onVideoBasiChange={formu.setVideoBasiSoruSayisi}
                 onSecenekChange={formu.setSecenekSayisi}
-                buyuklukEtiketi="Soru sayısı"
-                videoBasiEtiketi={`${OGRENME_ARACI_SECENEKLERI[formu.ogrenmeAraciTuru].etiket} başına soru adedi`}
+                buyuklukEtiketi="Toplam soru sayısı"
+                videoBasiEtiketi={`${OGRENME_ARACI_SECENEKLERI[formu.ogrenmeAraciTuru].etiket} başına soru sayısı`}
               />
             </fieldset>
             </div>
