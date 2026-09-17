@@ -3,8 +3,9 @@ import { createAdminClient, createClient } from "@/lib/supabase/server";
 import { hataYaniti, isKuraluHatasi, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { uuidGecerliMi, uretimRpcHataYaniti } from "@/lib/uretim/rpc";
+import { uuidGecerliMi } from "@/lib/uretim/rpc";
 import { bunnyVideoDurumu, bunnyVideoSil, embedUrlGuidCikar } from "@/lib/video/bunnyYukleme";
+import { hazirVideoTamamla } from "@/lib/video/hazirVideoTamamla";
 import { pushYayinlaArkada } from "@/lib/push/orkestrasyon";
 
 export async function PUT(request: NextRequest) {
@@ -78,22 +79,10 @@ export async function PUT(request: NextRequest) {
       }, { status: 202 });
     }
 
-    const { data: sonuc, error } = await adminSupabase.rpc("uretim_hazir_video_kaydet", {
-      p_talep_id: body.talep_id,
-      p_uretici_id: user.id,
-      p_video_url: body.video_url,
-      p_islem_anahtari: body.islem_anahtari,
-    });
-    if (error) return uretimRpcHataYaniti("Hazır video zinciri kurulamadı.", "uretim_hazir_video_kaydet RPC", error);
-
-    const aracId = (sonuc as { arac_id?: string } | null)?.arac_id;
-    if (!aracId) return hataYaniti("Hazır video zinciri öğrenme aracı kimliği döndürmedi.", "uretim_hazir_video_kaydet RPC — dönen veri");
-    const { error: sureError } = await adminSupabase
-      .from("ogrenme_araclari")
-      .update({ sure_saniye: bunnyDurumu.videoSuresiSaniye, metadata_dogrulandi: true })
-      .eq("arac_id", aracId)
-      .eq("arac_turu", "video");
-    if (sureError) return hataYaniti("Doğrulanmış video süresi kaydedilemedi.", "ogrenme_araclari UPDATE — video süresi", sureError);
+    const sonuc = await hazirVideoTamamla(adminSupabase, {
+      talep_id: body.talep_id, uretici_id: user.id,
+      video_url: body.video_url, guid,
+    }, bunnyDurumu.videoSuresiSaniye);
 
     const alici = (sonuc as { sonraki?: { atanan_iu_id?: string } | null } | null)?.sonraki?.atanan_iu_id;
     if (alici) pushYayinlaArkada(adminSupabase, "uretim_durum_gecisi", [alici]);

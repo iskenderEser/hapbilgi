@@ -105,9 +105,15 @@ export function adimlariCoz(
   const zincirDurumu = asamaCoz(talep, zincir);
   const kapali = kapaliAdimlar(talep);
 
-  // Güncel görev, üretim sürerken tek doğruluk kaynağıdır. Görev yoksa teslim,
-  // onay ve yayın hâlleri içerik zincirinden çözülür.
-  const durum = aktifGorev ?? zincirDurumu;
+  // Hazır araç talebinde Video aşaması üreticiye aittir; bu talebe bağlı eski
+  // veya çelişkili bir İÜ Video görevi hazır yükleme durumunu ezemez.
+  const gecerliAktifGorev = talep.hazir_video && aktifGorev?.asama === "Video"
+    ? null
+    : aktifGorev;
+
+  // Güncel ve varyantla uyumlu görev, üretim sürerken tek doğruluk kaynağıdır.
+  // Görev yoksa teslim, onay ve yayın hâlleri içerik zincirinden çözülür.
+  const durum = gecerliAktifGorev ?? zincirDurumu;
   const aktifAdim = ASAMA_ADIMI[durum.asama] ?? "senaryo";
   const aktifSira = SIRA.indexOf(aktifAdim);
 
@@ -118,7 +124,7 @@ export function adimlariCoz(
     soru_seti: zincir.soru_seti_durum_tarih,
     yayin: zincir.yayin_tarihi,
   };
-  if (aktifGorev) tarihler[aktifAdim] = aktifGorev.tarih ?? tarihler[aktifAdim];
+  if (gecerliAktifGorev) tarihler[aktifAdim] = gecerliAktifGorev.tarih ?? tarihler[aktifAdim];
 
   return SIRA.map((anahtar, sira) => {
     // Talep adımı, talep açıldığı an tamamlanır ve kendi ortak mesajını taşır.

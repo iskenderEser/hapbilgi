@@ -232,7 +232,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const video_isleniyor = talep.hazir_video === true && Boolean(talep.hazir_video_url) && !video;
+    const video_isleniyor = talep.hazir_video === true && Boolean(talep.hazir_video_url) && !video?.video_url;
 
     return NextResponse.json({ talep_id, senaryo, video, soru_seti, video_isleniyor, ogrenme_araci }, { status: 200 });
 

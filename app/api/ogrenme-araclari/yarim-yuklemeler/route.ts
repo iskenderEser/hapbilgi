@@ -76,6 +76,7 @@ export async function GET() {
     }
 
     const storage = araclar.flatMap((a) => {
+      if (a.arac_turu === "video") return [];
       const talepHam = a.talepler as Record<string, unknown> | Array<Record<string, unknown>> | null;
       const talep = Array.isArray(talepHam) ? talepHam[0] : talepHam;
       // Taslak talepler (talepler.taslak_mi = true veya ogrenme_araclari.taslak_mi = true)
@@ -275,13 +276,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ tamamlandi: true, durum: "dogrulama_bekliyor" });
     }
 
+    // URL'nin talebe yazılması yalnız arka plan işlemeyi başlatır. Oturum,
+    // ortak araç gerçekten doğrulanıp süre yazılmadan kapatılamaz.
     let bagli = false;
-    if (kayit.kaynak === "hazir") {
-      const { data: talep } = await db.from("talepler").select("hazir_video_url, uretici_id").eq("talep_id", kayit.talep_id).maybeSingle();
-      bagli = talep?.uretici_id === user.id && talep.hazir_video_url === kayit.embed_url;
-    } else if (kayit.arac_id) {
-      const { data: video } = await db.from("ogrenme_araclari").select("dosya_yolu").eq("arac_id", kayit.arac_id).eq("arac_turu", "video").maybeSingle();
-      bagli = video?.dosya_yolu === kayit.embed_url;
+    if (kayit.arac_id) {
+      const { data: video } = await db.from("ogrenme_araclari")
+        .select("dosya_yolu, metadata_dogrulandi, sure_saniye")
+        .eq("arac_id", kayit.arac_id).eq("talep_id", kayit.talep_id)
+        .eq("arac_turu", "video").maybeSingle();
+      bagli = video?.dosya_yolu === kayit.embed_url
+        && video?.metadata_dogrulandi === true && Number(video?.sure_saniye) > 0;
     }
     if (!bagli) return NextResponse.json({ hata: "Video henüz üretim kaydına bağlanmadı." }, { status: 409 });
     const { error } = await db.from("ogrenme_araci_video_yukleme_oturumlari").delete().eq("yukleme_id", kayit.yukleme_id).eq("kullanici_id", user.id);

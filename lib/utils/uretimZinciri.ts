@@ -227,6 +227,18 @@ export function asamaCoz(talep: ZincirTalebi, z: ZincirSatiri): ZincirDurumu {
     };
   }
   if (z.arac_durum !== "onaylandi") {
+    // Hazır Video üretici tarafından yüklenir; bu akışta İÜ görevi yoktur.
+    // Ortak araç kaydı Bunny işlemesi sırasında durum kaydından önce görünürse
+    // boş durumu "İÜ'ye iletildi" diye yorumlama.
+    if (talep.hazir_video && !z.arac_iu_id && !z.arac_durum) {
+      return {
+        asama: "Video",
+        durum_kodu: talep.hazir_video_url ? "video_isleniyor" : "video_bekleniyor",
+        tarih: oncekiTarih,
+        yol: `/talepler/${talep.talep_id}`,
+        iu_id: null,
+      };
+    }
     return {
       asama: "Video",
       durum_kodu: kayitDurumKodu(z.arac_durum, !!z.arac_iu_id),

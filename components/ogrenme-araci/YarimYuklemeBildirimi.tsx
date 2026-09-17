@@ -34,6 +34,7 @@ async function jsonIstek(url: string, method: string, body: Record<string, unkno
   });
   const veri = await yanit.json().catch(() => ({}));
   if (!yanit.ok) throw new Error(veri.hata ?? "İşlem tamamlanamadı.");
+  if (yanit.status === 202) throw new Error("Video aktarımı tamamlandı; işlenmesi sürüyor. Biraz sonra yeniden kontrol edebilirsiniz.");
   return veri;
 }
 
@@ -273,7 +274,9 @@ export default function YarimYuklemeBildirimi() {
         <section className="w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl">
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#bc2d0d]">Yarım kalan yükleme</p>
           <h2 id="yarim-yukleme-baslik" className="mt-1 text-lg font-bold text-gray-900">{aktif.baslik}</h2>
-          <p className="mt-2 text-sm leading-5 text-gray-600">{aktif.dosya_adi} yüklemesi tamamlanmadan kesildi. Aynı kayıtla devam edebilir veya dosya ve geçici kayıtları güvenli biçimde iptal edebilirsiniz.</p>
+          <p className="mt-2 text-sm leading-5 text-gray-600">{aktif.tur === "video" && aktif.durum === "dogrulama_bekliyor"
+            ? `${aktif.dosya_adi} aktarımı tamamlandı; işleme ve üretim kaydının doğrulanması bekleniyor. Devam Et ile yeniden kontrol edebilirsiniz.`
+            : `${aktif.dosya_adi} yüklemesi tamamlanmadan kesildi. Aynı kayıtla devam edebilir veya dosya ve geçici kayıtları güvenli biçimde iptal edebilirsiniz.`}</p>
           {yuklemeler.length > 1 && <p className="mt-1 text-xs text-gray-400">Bekleyen {yuklemeler.length} işlem var; işlemler sırayla gösterilecektir.</p>}
 
           {dosyaGerekli && <div className="mt-4 flex flex-col gap-2">

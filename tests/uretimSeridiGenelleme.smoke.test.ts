@@ -778,3 +778,41 @@ test("aktif gorev yokken teslim ve yayin durumu icerik zincirinden cozulur", () 
   assert.equal(aktif?.anahtar, "senaryo");
   assert.equal(aktif?.durum_kodu, "onay_bekleniyor");
 });
+
+test("Video V4 ortak arac kabugu ve gecersiz Video gorevi varken isleniyor gosterir", () => {
+  const talep: SeritTalebi = {
+    talep_id: "talep-video-v4-isleniyor",
+    hazir_video: true,
+    hazir_video_url: "https://iframe.mediadelivery.net/embed/lib/guid",
+    hazir_soru_seti: true,
+    ogrenme_araci_turu: "video",
+    created_at: "2026-09-17T12:45:00.000Z",
+  };
+  const zincir = {
+    talep_id: talep.talep_id,
+    senaryo_id: null,
+    senaryo_iu_id: null,
+    senaryo_durum: null,
+    senaryo_durum_tarih: null,
+    arac_id: "hazir-video-kabugu",
+    arac_iu_id: null,
+    arac_durum: null,
+    arac_durum_tarih: null,
+    soru_seti_id: null,
+    soru_seti_iu_id: null,
+    soru_seti_durum: null,
+    soru_seti_durum_tarih: null,
+    yayin_durum: null,
+    yayin_tarihi: null,
+  };
+
+  const adimlar = adimlariCoz(talep, zincir, {
+    asama: "Video",
+    durum_kodu: "iu_iletildi",
+    tarih: "2026-09-17T12:45:00.000Z",
+  });
+  const aktif = adimlar.find((adim) => adim.hal === "aktif");
+  assert.equal(aktif?.anahtar, "video");
+  assert.equal(aktif?.durum_kodu, "video_isleniyor");
+  assert.equal(adimlar.find((adim) => adim.anahtar === "soru_seti")?.durum_kodu, "hazir_soru_seti");
+});

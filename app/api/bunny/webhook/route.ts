@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { bunnyVideoDurumu, bunnyVideoSil } from "@/lib/video/bunnyYukleme";
+import { hazirVideoTamamla } from "@/lib/video/hazirVideoTamamla";
 import { pushYayinlaArkada } from "@/lib/push/orkestrasyon";
 
 export async function POST(request: NextRequest) {
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
       for (const talep of bekleyenTalepler ?? []) {
         const { data: mevcutVideo, error: mevcutVideoError } = await adminSupabase
           .from("ogrenme_araclari")
-          .select("arac_id")
+          .select("arac_id, metadata_dogrulandi")
           .eq("talep_id", talep.talep_id)
           .eq("kaynak", "hazir")
           .eq("arac_turu", "video")
@@ -85,7 +86,7 @@ export async function POST(request: NextRequest) {
         if (mevcutVideoError) {
           return NextResponse.json({ hata: "Hazır video kaydı sorgulanamadı.", detay: mevcutVideoError.message }, { status: 500 });
         }
-        if (mevcutVideo) continue;
+        if (mevcutVideo?.metadata_dogrulandi === true) continue;
         const { error: ayirmaError } = await adminSupabase
           .from("talepler")
           .update({ hazir_video_url: null })
@@ -141,37 +142,12 @@ export async function POST(request: NextRequest) {
 
     let tamamlananTalep = 0;
     for (const talep of bekleyenTalepler ?? []) {
-      // Eski veya zaten tamamlanmış hazır videolara ikinci bir görev açma. Bu
-      // webhook yalnız URL'si talepte bekleyen, henüz video kaydı doğmamış zinciri açar.
-      const { data: mevcutVideo, error: mevcutVideoError } = await adminSupabase
-        .from("ogrenme_araclari")
-        .select("arac_id")
-        .eq("talep_id", talep.talep_id)
-        .eq("kaynak", "hazir")
-        .eq("arac_turu", "video")
-        .limit(1)
-        .maybeSingle();
-      if (mevcutVideoError) {
-        return NextResponse.json({ hata: "Hazır video kaydı sorgulanamadı.", detay: mevcutVideoError.message }, { status: 500 });
-      }
-      if (mevcutVideo) continue;
-
-      const { data: sonuc, error: rpcError } = await adminSupabase.rpc("uretim_hazir_video_kaydet", {
-        p_talep_id: talep.talep_id,
-        p_uretici_id: talep.uretici_id,
-        p_video_url: talep.hazir_video_url,
-        p_islem_anahtari: guid,
-      });
-      if (rpcError) {
-        return NextResponse.json({ hata: "Hazır video zinciri tamamlanamadı.", detay: rpcError.message }, { status: 500 });
-      }
-      const aracId = (sonuc as { arac_id?: string } | null)?.arac_id;
-      if (!aracId) return NextResponse.json({ hata: "Hazır video zinciri öğrenme aracı kimliği döndürmedi." }, { status: 500 });
-      const { error: sureError } = await adminSupabase
-        .from("ogrenme_araclari")
-        .update({ sure_saniye: durum.videoSuresiSaniye, metadata_dogrulandi: true })
-        .eq("arac_id", aracId);
-      if (sureError) return NextResponse.json({ hata: "Hazır videonun süresi yazılamadı.", detay: sureError.message }, { status: 500 });
+      // RPC idempotenttir ve veznenin önceden açtığı doğrulanmamış kabuğu
+      // tamamlar; kabuğun varlığı webhook'u durdurmamalıdır.
+      const sonuc = await hazirVideoTamamla(adminSupabase, {
+        talep_id: talep.talep_id, uretici_id: talep.uretici_id,
+        video_url: talep.hazir_video_url, guid,
+      }, durum.videoSuresiSaniye);
 
       const alici = (sonuc as { sonraki?: { atanan_iu_id?: string } | null } | null)?.sonraki?.atanan_iu_id;
       if (alici) pushYayinlaArkada(adminSupabase, "uretim_durum_gecisi", [alici]);

@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { bunnyVideoDurumu, bunnyVideoSil, embedUrlGuidCikar } from "@/lib/video/bunnyYukleme";
+import { hazirVideoTamamla } from "@/lib/video/hazirVideoTamamla";
 import { pushYayinlaArkada } from "@/lib/push/orkestrasyon";
 
 const MAX_ISLENEN = 50;
@@ -36,15 +37,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ hata: "Talepler sorgulanamadı.", detay: talepError.message }, { status: 500 });
     }
     const adayTalepler = (talepler ?? []) as { talep_id: string; uretici_id: string; hazir_video_url: string }[];
-    const { data: iuOturumlar, error: iuOturumError } = await adminSupabase
+    const { data: videoOturumlar, error: iuOturumError } = await adminSupabase
       .from("ogrenme_araci_video_yukleme_oturumlari")
-      .select("yukleme_id, kullanici_id, gorev_id, arac_id, video_guid, embed_url")
-      .eq("kaynak", "iu")
+      .select("yukleme_id, kullanici_id, talep_id, kaynak, gorev_id, arac_id, video_guid, embed_url")
       .eq("durum", "dogrulama_bekliyor")
       .limit(MAX_ISLENEN);
     if (iuOturumError) {
       return NextResponse.json({ hata: "İÜ video teslim oturumları sorgulanamadı.", detay: iuOturumError.message }, { status: 500 });
     }
+    const iuOturumlar = (videoOturumlar ?? []).filter((o) => o.kaynak === "iu");
+    const acikHazirTalepler = new Set((videoOturumlar ?? []).filter((o) => o.kaynak === "hazir").map((o) => o.talep_id));
     if (adayTalepler.length === 0 && (iuOturumlar?.length ?? 0) === 0) {
       return NextResponse.json({ mesaj: "Bekleyen video yok.", tamamlanan: 0 }, { status: 200 });
     }
@@ -52,15 +54,19 @@ export async function POST(request: NextRequest) {
     const talepIdler = adayTalepler.map((t) => t.talep_id);
     const { data: mevcutVideolar, error: videoError } = await adminSupabase
       .from("ogrenme_araclari")
-      .select("talep_id")
+      .select("talep_id, metadata_dogrulandi")
       .eq("kaynak", "hazir")
       .eq("arac_turu", "video")
       .in("talep_id", talepIdler);
     if (videoError) {
       return NextResponse.json({ hata: "Video kayıtları sorgulanamadı.", detay: videoError.message }, { status: 500 });
     }
-    const kayitliSet = new Set((mevcutVideolar ?? []).map((v: { talep_id: string }) => v.talep_id));
-    const bekleyenler = adayTalepler.filter((t) => !kayitliSet.has(t.talep_id)).slice(0, MAX_ISLENEN);
+    // Vezne yükleme oturumu için doğrulanmamış bir araç kabuğunu önceden açar.
+    // Yalnız doğrulanmış araç tamamlanmış sayılır; kabuk mutabakattan kaçamaz.
+    const kayitliSet = new Set((mevcutVideolar ?? [])
+      .filter((v: { metadata_dogrulandi: boolean | null }) => v.metadata_dogrulandi === true)
+      .map((v: { talep_id: string }) => v.talep_id));
+    const bekleyenler = adayTalepler.filter((t) => !kayitliSet.has(t.talep_id) || acikHazirTalepler.has(t.talep_id)).slice(0, MAX_ISLENEN);
 
     let tamamlanan = 0;
     let bekliyor = 0;
@@ -92,21 +98,10 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const { data: sonuc, error: rpcError } = await adminSupabase.rpc("uretim_hazir_video_kaydet", {
-        p_talep_id: talep.talep_id,
-        p_uretici_id: talep.uretici_id,
-        p_video_url: talep.hazir_video_url,
-        p_islem_anahtari: guid,
-      });
-      if (rpcError) { detaylar.push({ talep_id: talep.talep_id, sonuc: "rpc-hata" }); continue; }
-      const aracId = (sonuc as { arac_id?: string } | null)?.arac_id;
-      if (!aracId) { detaylar.push({ talep_id: talep.talep_id, sonuc: "arac-id-yok" }); continue; }
-
-      const { error: sureError } = await adminSupabase
-        .from("ogrenme_araclari")
-        .update({ sure_saniye: durum.videoSuresiSaniye, metadata_dogrulandi: true })
-        .eq("arac_id", aracId);
-      if (sureError) { detaylar.push({ talep_id: talep.talep_id, sonuc: "sure-yazilamadi" }); continue; }
+      const sonuc = await hazirVideoTamamla(adminSupabase, {
+        talep_id: talep.talep_id, uretici_id: talep.uretici_id,
+        video_url: talep.hazir_video_url, guid,
+      }, durum.videoSuresiSaniye);
 
       const alici = (sonuc as { sonraki?: { atanan_iu_id?: string } | null } | null)?.sonraki?.atanan_iu_id;
       if (alici) pushYayinlaArkada(adminSupabase, "uretim_durum_gecisi", [alici]);
