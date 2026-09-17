@@ -36,8 +36,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ hata: "Talepler sorgulanamadı.", detay: talepError.message }, { status: 500 });
     }
     const adayTalepler = (talepler ?? []) as { talep_id: string; uretici_id: string; hazir_video_url: string }[];
-    if (adayTalepler.length === 0) {
-      return NextResponse.json({ mesaj: "Bekleyen hazır video yok.", tamamlanan: 0 }, { status: 200 });
+    const { data: iuOturumlar, error: iuOturumError } = await adminSupabase
+      .from("ogrenme_araci_video_yukleme_oturumlari")
+      .select("yukleme_id, kullanici_id, gorev_id, arac_id, video_guid, embed_url")
+      .eq("kaynak", "iu")
+      .eq("durum", "dogrulama_bekliyor")
+      .limit(MAX_ISLENEN);
+    if (iuOturumError) {
+      return NextResponse.json({ hata: "İÜ video teslim oturumları sorgulanamadı.", detay: iuOturumError.message }, { status: 500 });
+    }
+    if (adayTalepler.length === 0 && (iuOturumlar?.length ?? 0) === 0) {
+      return NextResponse.json({ mesaj: "Bekleyen video yok.", tamamlanan: 0 }, { status: 200 });
     }
 
     const talepIdler = adayTalepler.map((t) => t.talep_id);
@@ -105,8 +114,45 @@ export async function POST(request: NextRequest) {
       detaylar.push({ talep_id: talep.talep_id, sonuc: "tamamlandi" });
     }
 
+    let tamamlananIu = 0;
+    for (const oturum of iuOturumlar ?? []) {
+      if (!oturum.gorev_id || !oturum.arac_id) continue;
+      const durum = await bunnyVideoDurumu(oturum.video_guid);
+      if (!durum.ok) continue;
+      if (durum.hatali) {
+        await adminSupabase.from("ogrenme_araci_video_yukleme_oturumlari")
+          .update({ durum: "iptal_hatasi", son_hata: "Bunny video işleme hatası", updated_at: new Date().toISOString() })
+          .eq("yukleme_id", oturum.yukleme_id);
+        hatali += 1;
+        continue;
+      }
+      if (!durum.hazir || !durum.videoSuresiSaniye || durum.videoSuresiSaniye <= 0) {
+        bekliyor += 1;
+        continue;
+      }
+      const { data: sonuc, error: teslimError } = await adminSupabase.rpc("uretim_video_teslim_et", {
+        p_gorev_id: oturum.gorev_id,
+        p_iu_id: oturum.kullanici_id,
+        p_video_url: oturum.embed_url,
+        p_thumbnail_url: null,
+        p_islem_anahtari: oturum.video_guid,
+      });
+      if (teslimError) continue;
+      const { error: sureError } = await adminSupabase.from("ogrenme_araclari")
+        .update({ sure_saniye: durum.videoSuresiSaniye, metadata_dogrulandi: true })
+        .eq("arac_id", oturum.arac_id).eq("arac_turu", "video");
+      if (sureError) continue;
+      await adminSupabase.from("ogrenme_araci_video_yukleme_oturumlari").delete().eq("yukleme_id", oturum.yukleme_id);
+      const talepId = (sonuc as { talep_id?: string } | null)?.talep_id;
+      if (talepId) {
+        const { data: talep } = await adminSupabase.from("talepler").select("uretici_id").eq("talep_id", talepId).maybeSingle();
+        if (talep?.uretici_id) pushYayinlaArkada(adminSupabase, "uretim_durum_gecisi", [talep.uretici_id]);
+      }
+      tamamlananIu += 1;
+    }
+
     return NextResponse.json(
-      { mesaj: "Mutabakat tamamlandı.", tamamlanan, bekliyor, hatali, detaylar },
+      { mesaj: "Mutabakat tamamlandı.", tamamlanan, tamamlanan_iu: tamamlananIu, bekliyor, hatali, detaylar },
       { status: 200 },
     );
   } catch (err) {

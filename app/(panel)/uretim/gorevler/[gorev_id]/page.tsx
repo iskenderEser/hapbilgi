@@ -200,8 +200,8 @@ export default function UretimGorevDetayPage() {
     rolAdi: gorev?.talep?.uretici_rol_adi,
   }), [gorev]);
 
-  const teslimEt = async (ekAlanlar: Record<string, unknown>): Promise<boolean> => {
-    if (!gorev) return false;
+  const teslimEt = async (ekAlanlar: Record<string, unknown>): Promise<"tamamlandi" | "isleniyor" | "basarisiz"> => {
+    if (!gorev) return "basarisiz";
     setIslem(true);
     try {
       const res = await fetch("/uretim/api/teslim", {
@@ -212,14 +212,14 @@ export default function UretimGorevDetayPage() {
       const veri = await res.json();
       if (!res.ok) {
         hata(veri.hata ?? "Görev teslim edilemedi.", veri.adim, veri.detay);
-        return false;
+        return "basarisiz";
       }
       basari(uretimToast({ rol: "iu", olay: "teslim", asama: gorev.asama, revize: gorev.durum === "revizyon_bekliyor" }, toastBaglam));
-      await veriCek();
-      return true;
+      if (res.status !== 202) await veriCek();
+      return res.status === 202 ? "isleniyor" : "tamamlandi";
     } catch (err) {
       hata("Görev teslim edilemedi.", "üretim görevi teslimi", err instanceof Error ? err.message : undefined);
-      return false;
+      return "basarisiz";
     } finally {
       setIslem(false);
     }
@@ -256,10 +256,15 @@ export default function UretimGorevDetayPage() {
 
   const videoTeslimEt = async () => {
     if (!yuklenenVideo) return;
-    const teslimBasarili = await teslimEt({ video_url: yuklenenVideo.video_url, thumbnail_url: null });
-    if (teslimBasarili) {
+    const teslimSonucu = await teslimEt({ video_url: yuklenenVideo.video_url, thumbnail_url: null });
+    if (teslimSonucu === "tamamlandi") {
       await videoYuklemeOturumuGuncelle(yuklenenVideo.yukleme_id, "baglandi").catch(() => undefined);
       setYuklenenVideo(null);
+    } else if (teslimSonucu === "isleniyor") {
+      // Oturum kaydı webhook/mutabakatın kalıcı teslim tutanağıdır; burada
+      // kapatılmaz. Kullanıcı encode süresini beklemeden iş listesine dönebilir.
+      setYuklenenVideo(null);
+      router.push("/videolar");
     }
   };
 

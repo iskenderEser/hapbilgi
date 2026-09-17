@@ -65,6 +65,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (durum.hatali) {
+      await adminSupabase
+        .from("ogrenme_araci_video_yukleme_oturumlari")
+        .update({ durum: "iptal_hatasi", son_hata: "Bunny video işleme hatası", updated_at: new Date().toISOString() })
+        .eq("kaynak", "iu")
+        .eq("video_guid", guid)
+        .eq("durum", "dogrulama_bekliyor");
       // İşleme hatası tarayıcı kapandıktan sonra gelmişse de talep kilitli kalmaz.
       // Tamamlanmış/eski video kayıtlarına dokunulmaz; yalnız bekleyen bağlantı çözülür.
       for (const talep of bekleyenTalepler ?? []) {
@@ -95,6 +101,42 @@ export async function POST(request: NextRequest) {
 
     if (durum.videoSuresiSaniye == null || durum.videoSuresiSaniye <= 0) {
       return NextResponse.json({ hata: "Bunny Ready bildirdi ancak doğrulanmış video süresi bulunamadı." }, { status: 503 });
+    }
+
+    // İÜ'nün V1/V3 video teslimi de encode süresini beklemez. Kalıcı yükleme
+    // oturumu, tarayıcı kapansa bile teslimi doğru kullanıcı ve göreve bağlar.
+    const { data: iuOturumlar, error: iuOturumError } = await adminSupabase
+      .from("ogrenme_araci_video_yukleme_oturumlari")
+      .select("yukleme_id, kullanici_id, gorev_id, arac_id, embed_url")
+      .eq("kaynak", "iu")
+      .eq("durum", "dogrulama_bekliyor")
+      .eq("video_guid", guid);
+    if (iuOturumError) {
+      return NextResponse.json({ hata: "İÜ video teslim oturumu sorgulanamadı.", detay: iuOturumError.message }, { status: 500 });
+    }
+    if ((iuOturumlar?.length ?? 0) > 1) {
+      return NextResponse.json({ hata: "Bunny video kimliği birden fazla İÜ teslimine bağlı." }, { status: 409 });
+    }
+    for (const oturum of iuOturumlar ?? []) {
+      if (!oturum.gorev_id || !oturum.arac_id) continue;
+      const { data: sonuc, error: teslimError } = await adminSupabase.rpc("uretim_video_teslim_et", {
+        p_gorev_id: oturum.gorev_id,
+        p_iu_id: oturum.kullanici_id,
+        p_video_url: oturum.embed_url,
+        p_thumbnail_url: null,
+        p_islem_anahtari: guid,
+      });
+      if (teslimError) return NextResponse.json({ hata: "İÜ video teslimi tamamlanamadı.", detay: teslimError.message }, { status: 500 });
+      const { error: iuSureError } = await adminSupabase.from("ogrenme_araclari")
+        .update({ sure_saniye: durum.videoSuresiSaniye, metadata_dogrulandi: true })
+        .eq("arac_id", oturum.arac_id).eq("arac_turu", "video");
+      if (iuSureError) return NextResponse.json({ hata: "İÜ videosunun süresi yazılamadı.", detay: iuSureError.message }, { status: 500 });
+      await adminSupabase.from("ogrenme_araci_video_yukleme_oturumlari").delete().eq("yukleme_id", oturum.yukleme_id);
+      const talepId = (sonuc as { talep_id?: string } | null)?.talep_id;
+      if (talepId) {
+        const { data: talep } = await adminSupabase.from("talepler").select("uretici_id").eq("talep_id", talepId).maybeSingle();
+        if (talep?.uretici_id) pushYayinlaArkada(adminSupabase, "uretim_durum_gecisi", [talep.uretici_id]);
+      }
     }
 
     let tamamlananTalep = 0;

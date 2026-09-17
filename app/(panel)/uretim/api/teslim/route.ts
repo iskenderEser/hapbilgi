@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient, createClient } from "@/lib/supabase/server";
-import { hataYaniti, isKuraluHatasi, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
+import { isKuraluHatasi, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { IU_ROLU } from "@/lib/utils/roller";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { uuidGecerliMi, uretimRpcHataYaniti } from "@/lib/uretim/rpc";
@@ -32,14 +32,16 @@ export async function POST(request: NextRequest) {
       const videoGuid = typeof body.video_url === "string" ? embedUrlGuidCikar(body.video_url) : null;
       if (!videoGuid) return validasyonHatasi("Video adresi geçerli oynatıcı biçiminde olmalıdır.", ["video_url"]);
 
-      // Teknik işleme bitmeden görev üretici incelemesine devredilmez. Hata
-      // durumunda görev İÜ'de kalır; yeniden yükleme revizyon hakkı tüketmez.
+      // TUS aktarımı tamamlandıktan sonra Bunny encode'u kullanıcıyı bekletmez.
+      // Webhook ve mutabakat aynı teslimi GUID anahtarıyla idempotent tamamlar.
       const bunnyDurumu = await bunnyVideoDurumu(videoGuid);
       if (!bunnyDurumu.ok) {
-        return hataYaniti(bunnyDurumu.hata, bunnyDurumu.adim, bunnyDurumu.detay ? { message: bunnyDurumu.detay } : null, 503);
+        return NextResponse.json({ mesaj: "Video teslimi alındı.", isleniyor: true }, { status: 202 });
       }
       if (bunnyDurumu.hatali) return isKuraluHatasi("Video işlenemedi. Yeni bir video yükleyip yeniden gönderin.");
-      if (!bunnyDurumu.hazir) return isKuraluHatasi("Video işleniyor. Hazır olduğunda yeniden gönderin.");
+      if (!bunnyDurumu.hazir) {
+        return NextResponse.json({ mesaj: "Video teslimi alındı.", isleniyor: true }, { status: 202 });
+      }
 
       rpcAdi = "uretim_video_teslim_et";
       parametreler = { p_gorev_id: gorev_id, p_iu_id: user.id, p_video_url: body.video_url, p_thumbnail_url: typeof body.thumbnail_url === "string" ? body.thumbnail_url : null, p_islem_anahtari: islem_anahtari };

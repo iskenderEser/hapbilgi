@@ -108,7 +108,7 @@ test("aktif gorevin asamasi seritteki aktif adimi ve onceki tamamlanan adimlari 
   assert.equal(adimlar.find((adim) => adim.anahtar === "soru_seti")?.tarih, "2026-09-16T10:00:00.000Z");
 });
 
-test("Video V1 teknik isleme durumunda onay ve revizyonu kapatir, iptali acik tutar", () => {
+test("Video V1/V3 teslimi encode beklemez; üretici kararı hazır olana kadar kapalıdır", () => {
   const detay = readFileSync("app/(panel)/talepler/_components/TalepDetayi.tsx", "utf8");
   const aksiyon = readFileSync("app/(panel)/talepler/_components/AksiyonSeridi.tsx", "utf8");
   const kararApi = readFileSync("app/(panel)/uretim/api/karar/route.ts", "utf8");
@@ -120,9 +120,15 @@ test("Video V1 teknik isleme durumunda onay ve revizyonu kapatir, iptali acik tu
   assert.match(kararApi, /karar === "onaylandi" && gorevBilgisi\?\.asama === "video" && aracTuru === "video"/);
   assert.match(kararApi, /bunnyDurumu\.hatali/);
   assert.match(kararApi, /!bunnyDurumu\.hazir/);
+  const webhook = readFileSync("app/api/bunny/webhook/route.ts", "utf8");
+  const mutabakat = readFileSync("app/api/uretim/hazir-video-mutabakat/route.ts", "utf8");
   assert.match(teslimApi, /const bunnyDurumu = await bunnyVideoDurumu\(videoGuid\)/);
   assert.match(teslimApi, /Video işlenemedi\. Yeni bir video yükleyip yeniden gönderin\./);
-  assert.match(teslimApi, /Video işleniyor\. Hazır olduğunda yeniden gönderin\./);
+  assert.match(teslimApi, /isleniyor: true[\s\S]*status: 202/);
+  assert.doesNotMatch(teslimApi, /Hazır olduğunda yeniden gönderin/);
+  assert.match(webhook, /rpc\("uretim_video_teslim_et"/);
+  assert.match(mutabakat, /rpc\("uretim_video_teslim_et"/);
+  assert.match(webhook, /durum: "iptal_hatasi"/);
 });
 
 test("Video V1 seridi senaryo, video, soru seti ve yayin gecislerini ortak cozumleyiciyle izler", () => {
