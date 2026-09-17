@@ -14,8 +14,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { uretimToast, toastVaryant, type ToastAsama, type ToastOlay } from "@/lib/uretim/toastMesaj";
-import { bunnyTusYukle, videoYuklemeOturumuGuncelle } from "@/lib/video/bunnyTusIstemci";
+import { uretimToast, toastVaryant } from "@/lib/uretim/toastMesaj";
+import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
 import { hazirGorselYukle, hazirFlipPdfYukle, hazirPodcastYukle } from "@/lib/ogrenmeAraci/bunnyYuklemeIstemci";
 import { SORGU_ARALIGI_MS, TAVAN_SANIYE } from "@/lib/video/islemeDurumu";
 import { bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
@@ -364,7 +364,6 @@ export function useTalepMerkezi() {
 
         try {
           await bunnyTusYukle(dosya, izin, setVideoYuzdesi);
-          await videoYuklemeOturumuGuncelle(izin.yukleme_id, "aktarim_tamamlandi");
         } catch (err: unknown) {
           hata("Video yüklenemedi.", "TUS yükleme", err instanceof Error ? err.message : undefined);
           return;
@@ -388,7 +387,6 @@ export function useTalepMerkezi() {
           const ilk = await denemePut();
           if (ilk.ok && ilk.status !== 202) {
             tamamlandi = true;
-            await videoYuklemeOturumuGuncelle(izin.yukleme_id, "baglandi");
           }
           else if (ilk.status !== 202 && ilk.status < 500) {
             hata(ilk.d2.hata ?? "Video doğrulanamadı.", ilk.d2.adim, ilk.d2.detay);
@@ -408,7 +406,6 @@ export function useTalepMerkezi() {
               try {
                 const t = await denemePut();
                 if (t.ok && t.status !== 202) {
-                  await videoYuklemeOturumuGuncelle(izin.yukleme_id, "baglandi").catch(() => undefined);
                   return;
                 }
                 if (t.status !== 202 && t.status < 500) {

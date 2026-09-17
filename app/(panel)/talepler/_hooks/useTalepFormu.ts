@@ -15,6 +15,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/providers/AuthProvider";
 import { createClient } from "@/lib/supabase/client";
 import {
   ureticiYetenegi,
@@ -32,10 +33,9 @@ import type {
   HedefRol,
 } from "../_types";
 import { type SoruTaslagi, sorulardanTaslaklar, taslaklariBoyutla, taslaklariDogrula, taslaklardanSorular } from "@/lib/soru/taslak";
-import { useAuth } from "@/app/providers/AuthProvider";
 import { URETICI_ROLLER, ECZANEM_TALEP_ACAN_ROLLER, ECLUB_HEDEF_ROLLER } from "@/lib/utils/roller";
 import { guvenliDosyaAdi } from "@/lib/utils/guvenliDosyaAdi";
-import { bunnyTusYukle, videoYuklemeOturumuGuncelle } from "@/lib/video/bunnyTusIstemci";
+import { bunnyTusYukle } from "@/lib/video/bunnyTusIstemci";
 import { SORGU_ARALIGI_MS, TAVAN_SANIYE } from "@/lib/video/islemeDurumu";
 import { bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
@@ -1417,7 +1417,6 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
         // 2) Doğrudan Bunny'ye — dosya bizim sunucuya uğramaz
         try {
           await bunnyTusYukle(bekleyenVideo.dosya, d, setVideoYuklemeYuzdesi);
-          await videoYuklemeOturumuGuncelle(d.yukleme_id, "aktarim_tamamlandi");
         } catch (err: unknown) {
           hata("Video yüklenemedi.", "TUS yükleme", err instanceof Error ? err.message : undefined);
           return "basarisiz";
@@ -1440,7 +1439,6 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
         try {
           const ilk = await denemePut();
           if (ilk.ok && ilk.status !== 202) {
-            await videoYuklemeOturumuGuncelle(d.yukleme_id, "baglandi");
             return "tamamlandi";
           }
           if (ilk.status !== 202 && ilk.status < 500) {
@@ -1459,7 +1457,6 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
             try {
               const t = await denemePut();
               if (t.ok && t.status !== 202) {
-                await videoYuklemeOturumuGuncelle(d.yukleme_id, "baglandi").catch(() => undefined);
                 return;
               }
               if (t.status !== 202 && t.status < 500) {
@@ -1761,9 +1758,10 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
         // Talep bu noktada oluştu — dosya sonucu ne olursa olsun kullanıcıya
         // gerçek durum söylenir; kısmi başarısızlık gizlenmez (F-01/3).
         const basarisizlar: string[] = [];
+        let videoYuklemeSonucu: VideoYuklemeSonucu | null = null;
         if (hazirVideo && ogrenmeAraciTuru === "video" && bekleyenVideo) {
-          const sonuc = await uploadVideo(talep_id);
-          if (sonuc === "basarisiz") basarisizlar.push(`${bekleyenVideo.preview.dosya_adi} (video)`);
+          videoYuklemeSonucu = await uploadVideo(talep_id);
+          if (videoYuklemeSonucu === "basarisiz") basarisizlar.push(`${bekleyenVideo.preview.dosya_adi} (video)`);
         }
         if (hazirVideo && ogrenmeAraciTuru === "gorsel" && bekleyenGorsel) {
           try {
@@ -1785,11 +1783,18 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
           basarisizlar.push(...(await uploadDosyalar(talep_id)));
         }
         if (basarisizlar.length === 0) {
-          basari(uretimToast(
-            { rol: "uretici", olay: "talep_gonderildi" },
-            { varyant: toastVaryant(hazirVideo, hazirSoruSeti), ogrenmeAraciTuru },
-          ));
-          if (hazirVideo && hazirSoruSeti) bildirimRozetleriniYenile();
+          if (videoYuklemeSonucu === "isleniyor") {
+            basari(uretimToast(
+              { rol: "uretici", olay: "video_isleniyor" },
+              { varyant: toastVaryant(hazirVideo, hazirSoruSeti), ogrenmeAraciTuru },
+            ));
+          } else {
+            basari(uretimToast(
+              { rol: "uretici", olay: "talep_gonderildi" },
+              { varyant: toastVaryant(hazirVideo, hazirSoruSeti), ogrenmeAraciTuru },
+            ));
+            if (hazirVideo && hazirSoruSeti) bildirimRozetleriniYenile();
+          }
         } else {
           uyari(
             `Talep oluşturuldu ancak şu dosyalar yüklenemedi: ${basarisizlar.join(", ")}. ` +

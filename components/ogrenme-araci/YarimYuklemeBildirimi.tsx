@@ -4,19 +4,17 @@ import { useCallback, useEffect, useState } from "react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 
 type YarimYukleme = {
-  tur: "storage" | "video";
+  tur: "storage";
   kimlik: string;
   yukleme_id?: string;
   talep_id: string;
   gorev_id: string | null;
   arac_id?: string | null;
-  video_guid?: string;
-  arac_turu: "video" | "podcast" | "gorsel" | "flip_pdf";
+  arac_turu: "podcast" | "gorsel" | "flip_pdf";
   kaynak: "hazir" | "iu";
   durum: string;
   dosya_adi: string;
   baslik: string;
-  embed_url?: string;
   tamamlanan_parcalar?: Array<"ana" | "kapak" | "transkript">;
   kapak_yarim?: boolean;
   transkript_yarim?: boolean;
@@ -34,7 +32,6 @@ async function jsonIstek(url: string, method: string, body: Record<string, unkno
   });
   const veri = await yanit.json().catch(() => ({}));
   if (!yanit.ok) throw new Error(veri.hata ?? "İşlem tamamlanamadı.");
-  if (yanit.status === 202) throw new Error("Video aktarımı tamamlandı; işlenmesi sürüyor. Biraz sonra yeniden kontrol edebilirsiniz.");
   return veri;
 }
 
@@ -69,74 +66,6 @@ export default function YarimYuklemeBildirimi() {
 
   const aktif = yuklemeler[0];
   if (!aktif) return <HataMesajiContainer mesajlar={mesajlar} />;
-
-  const tamamlananKaydiKapat = async (kayit: YarimYukleme) => {
-    if (kayit.kaynak === "hazir") {
-      if (!kayit.video_guid) throw new Error("Yarım video yükleme kaydı eksik.");
-      const sonuc = await jsonIstek("/uretim/api/hazir-video", "PUT", {
-        talep_id: kayit.talep_id,
-        video_url: kayit.embed_url,
-        islem_anahtari: kayit.video_guid,
-      });
-      if (sonuc?.hata) throw new Error(sonuc.hata);
-    } else {
-      if (!kayit.gorev_id) throw new Error("Yarım video yüklemesinin üretim görevi bulunamadı.");
-      await jsonIstek("/uretim/api/teslim", "POST", {
-        gorev_id: kayit.gorev_id,
-        asama: "video",
-        video_url: kayit.embed_url,
-        thumbnail_url: null,
-        islem_anahtari: crypto.randomUUID(),
-      });
-    }
-    await jsonIstek("/api/ogrenme-araclari/yarim-yuklemeler", "POST", {
-      yukleme_id: kayit.kimlik,
-      islem: "baglandi",
-    });
-  };
-
-  const videoDevam = async (kayit: YarimYukleme) => {
-    if (kayit.durum === "dogrulama_bekliyor") {
-      await tamamlananKaydiKapat(kayit);
-      return;
-    }
-
-    // Tarayıcı, TUS aktarımı bittikten hemen sonra kapanmış olabilir. Bu durumda
-    // oturum hâlâ "yukleniyor" görünse de Bunny'deki video tamamdır; dosyayı
-    // yeniden seçtirmeden önce sunucu otoritesinden mevcut kaydı doğrula.
-    const aktarimYanit = await fetch("/api/ogrenme-araclari/yarim-yuklemeler", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ yukleme_id: kayit.kimlik, islem: "aktarim_tamamlandi" }),
-    });
-    const aktarimSonucu = await aktarimYanit.json().catch(() => ({}));
-    if (aktarimYanit.ok) {
-      await tamamlananKaydiKapat(kayit);
-      return;
-    }
-    if (aktarimYanit.status !== 422) {
-      throw new Error(aktarimSonucu.hata ?? "Video aktarım durumu doğrulanamadı.");
-    }
-
-    const dosya = dosyalar.ana;
-    if (!dosya) throw new Error("Devam etmek için aynı video dosyasını yeniden seçin.");
-    const adres = kayit.kaynak === "hazir" ? "/talepler/api/bunny-yukleme-baslat" : "/videolar/api/bunny-yukleme-baslat";
-    const izin = await jsonIstek(adres, "POST", {
-      ...(kayit.kaynak === "hazir" ? { talep_id: kayit.talep_id } : { arac_id: kayit.arac_id }),
-      dosya_adi: dosya.name,
-      mime_type: dosya.type || "video/mp4",
-      dosya_boyutu: dosya.size,
-    });
-    const { bunnyTusYukle, videoYuklemeOturumuGuncelle } = await import("@/lib/video/bunnyTusIstemci");
-    await bunnyTusYukle(dosya, izin, setYuzde);
-    await videoYuklemeOturumuGuncelle(izin.yukleme_id, "aktarim_tamamlandi");
-    await tamamlananKaydiKapat({
-      ...kayit,
-      kimlik: izin.yukleme_id ?? kayit.kimlik,
-      video_guid: izin.video_guid,
-      embed_url: izin.embed_url,
-    });
-  };
 
   const storageDevam = async (kayit: YarimYukleme) => {
     const araclar = await import("@/lib/ogrenmeAraci/bunnyYuklemeIstemci");
@@ -182,8 +111,7 @@ export default function YarimYuklemeBildirimi() {
   const devamEt = async () => {
     setIslem(true); setYuzde(null);
     try {
-      if (aktif.tur === "video") await videoDevam(aktif);
-      else await storageDevam(aktif);
+      await storageDevam(aktif);
       setYuklemeler((liste) => liste.filter((x) => x.kimlik !== aktif.kimlik));
       setDosyalar({});
       basari("Yarım kalan yükleme başarıyla tamamlandı.");
@@ -265,22 +193,17 @@ export default function YarimYuklemeBildirimi() {
     || (podcastTamamlanan.has("transkript") && aktif.podcast_transkript_bilgisi_hazir !== true);
   const podcastDosyaGerekli = podcastSesGerekli || podcastTranskriptGerekli || podcastKapakGerekli;
   const flipPdfKapakGerekli = aktif.arac_turu === "flip_pdf" && aktif.kapak_yarim === true;
-  const dosyaGerekli = aktif.tur === "storage"
-    ? aktif.arac_turu !== "podcast" || podcastDosyaGerekli
-    : aktif.durum !== "dogrulama_bekliyor";
+  const dosyaGerekli = aktif.arac_turu !== "podcast" || podcastDosyaGerekli;
   return (
     <>
       <div className="fixed inset-0 z-[9500] flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="yarim-yukleme-baslik">
         <section className="w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl">
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#bc2d0d]">Yarım kalan yükleme</p>
           <h2 id="yarim-yukleme-baslik" className="mt-1 text-lg font-bold text-gray-900">{aktif.baslik}</h2>
-          <p className="mt-2 text-sm leading-5 text-gray-600">{aktif.tur === "video" && aktif.durum === "dogrulama_bekliyor"
-            ? `${aktif.dosya_adi} aktarımı tamamlandı; işleme ve üretim kaydının doğrulanması bekleniyor. Devam Et ile yeniden kontrol edebilirsiniz.`
-            : `${aktif.dosya_adi} yüklemesi tamamlanmadan kesildi. Aynı kayıtla devam edebilir veya dosya ve geçici kayıtları güvenli biçimde iptal edebilirsiniz.`}</p>
+          <p className="mt-2 text-sm leading-5 text-gray-600">{`${aktif.dosya_adi} yüklemesi tamamlanmadan kesildi. Aynı kayıtla devam edebilir veya dosya ve geçici kayıtları güvenli biçimde iptal edebilirsiniz.`}</p>
           {yuklemeler.length > 1 && <p className="mt-1 text-xs text-gray-400">Bekleyen {yuklemeler.length} işlem var; işlemler sırayla gösterilecektir.</p>}
 
           {dosyaGerekli && <div className="mt-4 flex flex-col gap-2">
-            {aktif.arac_turu === "video" && dosyaSecici("ana", "Video dosyası", "video/*")}
             {aktif.arac_turu === "podcast" && <>
               {podcastSesGerekli && dosyaSecici("ana", "Podcast ses dosyası", "audio/*")}
               {podcastKapakGerekli && dosyaSecici("kapak", "Yayın Görseli (isteğe bağlı)", "image/jpeg,image/png,image/webp")}

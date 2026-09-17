@@ -31,11 +31,7 @@ export async function GET() {
         .select(`
           soru_seti_durum_id,
           soru_setleri (
-            video_durumu (
-              videolar (
-                talepler ( uretici_id )
-              )
-            )
+            talepler ( uretici_id )
           )
         `)
         .eq("durum", "onaylandi"),
@@ -47,15 +43,13 @@ export async function GET() {
     type OnayliSatir = {
       soru_seti_durum_id: string;
       soru_setleri: {
-        video_durumu: {
-          videolar: { talepler: { uretici_id: string } | null } | null;
-        } | null;
+        talepler: { uretici_id: string } | null;
       } | null;
     };
     const yayindakiIdler = new Set((yayinlar ?? []).map((satir) => satir.soru_seti_durum_id));
     const yayinBekleyenSayisi = ((onaylananlar ?? []) as unknown as OnayliSatir[]).filter((satir) =>
       !yayindakiIdler.has(satir.soru_seti_durum_id) &&
-      satir.soru_setleri?.video_durumu?.videolar?.talepler?.uretici_id === user.id
+      satir.soru_setleri?.talepler?.uretici_id === user.id
     ).length;
 
     const { data: eclubKisi } = await adminSupabase.from("eclub_kisiler").select("kisi_id").eq("auth_user_id", user.id).maybeSingle();

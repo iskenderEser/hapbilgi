@@ -8,7 +8,7 @@ import { SoruIceAktar } from "@/components/SoruIceAktar";
 import { SoruSetiFormu } from "@/components/SoruSetiFormu";
 import VideoOnizleme from "@/components/video/VideoOnizleme";
 import { TeknikPill, VaryantPill, HedefRolPilleri } from "@/components/pill";
-import { bunnyTusYukle, videoYuklemeOturumuGuncelle } from "@/lib/video/bunnyTusIstemci";
+import { bunnyTusYukle, videoYuklemeOturumuGuncelle, videoYuklemeOturumuIptalEt } from "@/lib/video/bunnyTusIstemci";
 import { type SoruTaslagi, sorulardanTaslaklar, taslaklariBoyutla, taslaklariDogrula, taslaklardanSorular } from "@/lib/soru/taslak";
 import { IU_ROLU, URETICI_ROLLER } from "@/lib/utils/roller";
 import { durumMesaji, gorevDurumKodu, type Asama } from "@/lib/utils/durum/mesaj";
@@ -239,15 +239,18 @@ export default function UretimGorevDetayPage() {
   const videoYukle = async (dosya: File) => {
     if (!gorev?.arac_id) return hata("Göreve bağlı video kaydı bulunamadı.", "video görevi");
     setIslem(true); setVideoYuzdesi(0);
+    let yuklemeId: string | null = null;
     try {
       const izinRes = await fetch("/videolar/api/bunny-yukleme-baslat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ arac_id: gorev.arac_id, dosya_adi: dosya.name, mime_type: dosya.type || "video/mp4", dosya_boyutu: dosya.size }) });
       const izin = await izinRes.json();
       if (!izinRes.ok) return hata(izin.hata ?? "Video yüklemesi başlatılamadı.", izin.adim, izin.detay);
+      yuklemeId = typeof izin.yukleme_id === "string" ? izin.yukleme_id : null;
       await bunnyTusYukle(dosya, izin, setVideoYuzdesi);
       await videoYuklemeOturumuGuncelle(izin.yukleme_id, "aktarim_tamamlandi");
       setYuklenenVideo({ video_url: izin.embed_url, dosya_adi: dosya.name, yukleme_id: izin.yukleme_id });
       basari("Video yüklendi. Göndermek için Gönder butonuna basın.");
     } catch (err) {
+      await videoYuklemeOturumuIptalEt(yuklemeId).catch(() => undefined);
       hata("Video yüklenemedi.", "TUS yükleme", err instanceof Error ? err.message : undefined);
     } finally {
       setVideoYuzdesi(null); setIslem(false);

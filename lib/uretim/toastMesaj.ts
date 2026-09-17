@@ -48,6 +48,7 @@ export type ToastAsama = "senaryo" | "video" | "soru_seti";
 
 export type ToastOlay =
   | { rol: "uretici"; olay: "talep_gonderildi" }
+  | { rol: "uretici"; olay: "video_isleniyor" }
   | { rol: "uretici"; olay: "onay"; asama: ToastAsama; revize: boolean }
   | { rol: "uretici"; olay: "revizyon"; asama: ToastAsama }
   | { rol: "uretici"; olay: "iptal"; asama: ToastAsama }
@@ -153,6 +154,8 @@ export function uretimToast(olay: ToastOlay, baglam: ToastBaglam): string {
   switch (olay.olay) {
     case "talep_gonderildi":
       return TALEP_GONDERILDI[baglam.varyant];
+    case "video_isleniyor":
+      return "Video aktarımı tamamlandı, videonuz işleniyor";
     case "onay":
       return `${nesneAdi(olay.asama, olay.revize, baglam.ogrenmeAraciTuru)} onayladınız, ${onayDevami(olay.asama, baglam)}`;
     case "revizyon":
