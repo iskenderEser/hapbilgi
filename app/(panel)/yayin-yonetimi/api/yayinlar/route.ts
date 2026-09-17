@@ -241,9 +241,7 @@ export async function POST(request: NextRequest) {
       if (aday.getTime() > Date.now()) planliTarih = aday;
     }
 
-    // Yayın kapısı: TUS aktarımı ya da geçmiş bir onay kaydı yeterli değildir.
-    // Bunny videoyu şu anda Ready olarak doğrulamadan ve pozitif süre vermeden
-    // hiçbir yayın/tarife yan etkisi oluşturulmaz.
+    // Dosya tabanlı öğrenme araçlarında doğrulanmış teslim kaydı yayın kapısıdır.
     if (soruSeti.arac_durum_id) {
       const { data: aracDurum, error: aracDurumError } = await adminSupabase.from("ogrenme_araci_durumu")
         .select("durum, ogrenme_araclari!inner(arac_turu, dosya_yolu, kapak_yolu, transkript_yolu, sure_saniye, sayfa_sayisi, genislik, yukseklik, metadata, metadata_dogrulandi)")
@@ -267,47 +265,35 @@ export async function POST(request: NextRequest) {
         return isKuraluHatasi("Bu öğrenme aracı türü henüz yayına alınamaz.");
       }
     } else {
-    const { data: videoDurumu, error: videoDurumuError } = await adminSupabase
-      .from("video_durumu")
-      .select("video_id")
-      .eq("video_durum_id", soruSeti.video_durum_id)
-      .single();
-    if (videoDurumuError || !videoDurumu?.video_id) {
-      return hataYaniti("Yayına bağlı video bulunamadı.", "video_durumu SELECT — yayın hazır olma kapısı", videoDurumuError, 422);
-    }
-    const { data: videoKaydi, error: videoKaydiError } = await adminSupabase
-      .from("videolar")
-      .select("video_id, video_url, video_suresi_saniye")
-      .eq("video_id", videoDurumu.video_id)
-      .single();
-    if (videoKaydiError || !videoKaydi) {
-      return hataYaniti("Yayına bağlı video kaydı bulunamadı.", "videolar SELECT — yayın hazır olma kapısı", videoKaydiError, 422);
-    }
-    const guid = embedUrlGuidCikar(videoKaydi.video_url);
-    if (guid) {
-      const durum = await bunnyVideoDurumu(guid);
-      if (!durum.ok) {
-        return hataYaniti("Video hazır olduğu doğrulanamadı; yayın beklemeye alındı.", durum.adim, durum.detay ? { message: durum.detay } : null, 503);
-      }
-      if (durum.hatali) return isKuraluHatasi("Video işlenemedi. Yeniden yüklenmeden yayına alınamaz.");
-      if (!durum.hazir || durum.videoSuresiSaniye == null || durum.videoSuresiSaniye <= 0) {
-        return isKuraluHatasi("Video işleniyor. Hazır olmadan yayına alınamaz.");
-      }
-      if (videoKaydi.video_suresi_saniye !== durum.videoSuresiSaniye) {
-        const { error: sureError } = await adminSupabase
+      // Video yayınını Bunny'nin anlık işleme durumuna bağlama. Video hazırsa süreyi
+      // tamamla; henüz işleniyorsa yayın işlemini engellemeden görünürlük katmanının
+      // hazır olma süzgecine bırak. Böylece üretici geçici Bunny durumunu beklemez.
+      const { data: videoDurumu } = await adminSupabase
+        .from("video_durumu")
+        .select("video_id")
+        .eq("video_durum_id", soruSeti.video_durum_id)
+        .single();
+      if (videoDurumu?.video_id) {
+        const { data: videoKaydi } = await adminSupabase
           .from("videolar")
-          .update({ video_suresi_saniye: durum.videoSuresiSaniye })
-          .eq("video_id", videoKaydi.video_id);
-        if (sureError) return hataYaniti("Doğrulanmış video süresi kaydedilemedi; yayın açılmadı.", "videolar UPDATE — yayın hazır olma kapısı", sureError);
+          .select("video_id, video_url, video_suresi_saniye")
+          .eq("video_id", videoDurumu.video_id)
+          .single();
+        const sureBos = !videoKaydi?.video_suresi_saniye || videoKaydi.video_suresi_saniye <= 0;
+        const guid = videoKaydi?.video_url ? embedUrlGuidCikar(videoKaydi.video_url) : null;
+        if (videoKaydi && sureBos && guid) {
+          const durum = await bunnyVideoDurumu(guid);
+          if (durum.ok && durum.hazir && durum.videoSuresiSaniye != null && durum.videoSuresiSaniye > 0) {
+            await adminSupabase
+              .from("videolar")
+              .update({ video_suresi_saniye: durum.videoSuresiSaniye })
+              .eq("video_id", videoKaydi.video_id);
+          }
+        }
       }
-    } else if (!videoKaydi.video_suresi_saniye || videoKaydi.video_suresi_saniye <= 0) {
-      // Bunny öncesi eski kayıtların mevcut davranışı korunur; yalnız süresiz eski
-      // kayıt güvenli biçimde durdurulur.
-      return isKuraluHatasi("Video süresi doğrulanmadan yayına alınamaz.");
-    }
     }
 
-    // Eczanem: barkod + Karşılık yalnız video kapıyı geçtikten sonra yazılır.
+    // Eczanem: barkod + Karşılık öğrenme aracı doğrulamasından sonra yazılır.
     if (eczanemHedefi && eczanemUrunId) {
       const tarifeSonuc = await tarifeVeBarkodYaz(adminSupabase, {
         urun_id: eczanemUrunId,

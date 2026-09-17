@@ -155,8 +155,9 @@ function HedefKitleKartlari({ videolar, aktifHedef, onSec }: {
   );
 }
 
-function DepartmanKartlari({ videolar, onSec }: {
+function DepartmanKartlari({ videolar, aktifDepartman, onSec }: {
   videolar: YayindakiVideo[];
+  aktifDepartman: DepartmanKey;
   onSec: (departman: DepartmanKey) => void;
 }) {
   const gruplar = new Map<DepartmanKey, YayindakiVideo[]>();
@@ -169,29 +170,29 @@ function DepartmanKartlari({ videolar, onSec }: {
     <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
       {DEPARTMAN_SIRA.map((departman) => {
         const grup = gruplar.get(departman) ?? [];
-        if (grup.length === 0) return null;
         const renk = DEPARTMAN_RENK[departman];
         const ureticiSayisi = new Set(grup.map((video) => `${video.ureten_rol}:${video.ureten_ad_soyad}`)).size;
+        const aktif = aktifDepartman === departman;
         return (
           <button
             type="button"
             key={departman}
             onClick={() => onSec(departman)}
-            className="group flex min-h-36 flex-col justify-between rounded-2xl border bg-white p-4 text-left shadow-[0_6px_18px_rgba(31,55,90,0.035)] transition-all hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(31,55,90,0.09)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff]"
-            style={{ borderColor: `${renk}45` }}
+            aria-pressed={aktif}
+            disabled={grup.length === 0}
+            className="flex min-h-[92px] flex-col justify-between rounded-xl border border-gray-200 border-l-[3px] bg-white p-3 text-left transition-all duration-150 enabled:hover:-translate-y-0.5 enabled:hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff] disabled:cursor-not-allowed disabled:opacity-45 md:p-4"
+            style={{ borderLeftColor: renk, boxShadow: aktif ? `0 0 0 2px ${renk}33` : undefined }}
           >
-            <div className="flex items-start justify-between gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ color: renk, backgroundColor: `${renk}14` }}>
-                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5"><path d="M3 7h6l2 2h10v10H3V7Z" /><path d="M3 7V5h7l2 2" /></svg>
-              </span>
-              <span className="rounded-full px-2.5 py-1 text-[10px] font-extrabold" style={{ color: renk, backgroundColor: `${renk}10` }}>{grup.length} yayın</span>
+            <div className="truncate text-xs font-bold uppercase tracking-wide text-gray-400" title={DEPARTMAN_ETIKET[departman]}>
+              {DEPARTMAN_ETIKET[departman]}
             </div>
-            <div className="mt-5">
-              <span className="block text-sm font-extrabold text-[#243957]">{DEPARTMAN_ETIKET[departman]}</span>
-              <span className="mt-1 flex items-center justify-between gap-2 text-[11px] text-[#7b8ca5]">
-                <span>{ureticiSayisi} üretici</span>
-                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 transition-transform group-hover:translate-x-0.5" style={{ color: renk }}><path d="m9 18 6-6-6-6" /></svg>
-              </span>
+            <div>
+              <div className="text-2xl font-extrabold leading-none text-gray-900 md:text-3xl">
+                {grup.length.toLocaleString("tr-TR")}
+              </div>
+              <div className="mt-1 text-xs text-gray-500">
+                {ureticiSayisi.toLocaleString("tr-TR")} üretici · Yayındaki içerik
+              </div>
             </div>
           </button>
         );
@@ -243,6 +244,10 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
       setVideolar(gelen);
       if (kapsam === "benim") {
         setAktifHedef(TUM_HEDEF_ROLLER.find((hedef) => gelen.some((video) => video.hedef_roller.includes(hedef))) ?? "utt");
+      } else {
+        setAktifDepartman((mevcut) => mevcut && gelen.some((video) => departmanKey(video.ureten_rol) === mevcut)
+          ? mevcut
+          : DEPARTMAN_SIRA.find((departman) => gelen.some((video) => departmanKey(video.ureten_rol) === departman)) ?? null);
       }
     } catch {
       hataRef.current("Yayınlar yüklenemedi.");
@@ -267,15 +272,17 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
     if (aktifVideo) window.scrollTo({ top: 0, behavior: "auto" });
   }, [aktifVideo]);
 
-  const turSayilari = Object.fromEntries(YAYIN_TURLERI.map((tur) => [tur, katalogListesi.gorunen.filter((video) => video.arac_turu === tur).length])) as Record<NonNullable<YayindakiVideo["arac_turu"]>, number>;
+  const departmanVideolari = kapsam === "digerleri" && aktifDepartman
+    ? katalogListesi.gorunen.filter((video) => departmanKey(video.ureten_rol) === aktifDepartman)
+    : katalogListesi.gorunen;
+  const turSayimKaynagi = kapsam === "benim" ? katalogListesi.gorunen : departmanVideolari;
+  const turSayilari = Object.fromEntries(YAYIN_TURLERI.map((tur) => [tur, turSayimKaynagi.filter((video) => video.arac_turu === tur).length])) as Record<NonNullable<YayindakiVideo["arac_turu"]>, number>;
   const aranmisVideolar = kapsam === "benim"
     ? katalogListesi.gorunen.filter((video) => aktifYayinTuru === "tumu" || video.arac_turu === aktifYayinTuru)
     : videolar;
   const seciliVideolar = kapsam === "benim"
     ? aranmisVideolar.filter((video) => video.hedef_roller.includes(aktifHedef))
-    : aktifDepartman
-      ? videolar.filter((video) => departmanKey(video.ureten_rol) === aktifDepartman)
-      : [];
+    : departmanVideolari.filter((video) => aktifYayinTuru === "tumu" || video.arac_turu === aktifYayinTuru);
 
   if (yukleniyor || !kullanici) {
     return <div className="flex min-h-[50vh] items-center justify-center text-sm text-[#7b8ca5]">Yükleniyor…</div>;
@@ -321,7 +328,7 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
             {aciklama && <p className="mt-1 text-sm text-[#6b7f9b]">{aciklama}</p>}
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            {kapsam === "benim" && <ListeArama arama={katalogListesi.arama} ipucu="Ürün adı, talep ID veya diğer alanlarda ara" />}
+            <ListeArama arama={katalogListesi.arama} ipucu="Ürün adı, talep ID veya diğer alanlarda ara" />
             <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} />
           </div>
         </header>
@@ -346,25 +353,26 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
               </div>
             )}
           </>
-        ) : aktifDepartman ? (
-          <>
-            <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#dfe7f1] bg-white p-4">
-              <div>
-                <p className="text-[10px] font-extrabold uppercase tracking-[0.14em]" style={{ color: DEPARTMAN_RENK[aktifDepartman] }}>Üretici birim</p>
-                <h2 className="mt-1 text-base font-extrabold text-[#203653]">{DEPARTMAN_ETIKET[aktifDepartman]}</h2>
-              </div>
-              <button type="button" onClick={() => setAktifDepartman(null)} className="rounded-xl border border-[#d9e4f0] bg-[#f8fbff] px-3 py-2 text-xs font-extrabold text-[#476b96] hover:bg-[#eef5fd]">Tüm birimler</button>
-            </div>
-            <YayinRaflari videolar={seciliVideolar} onVideoSec={setAktifVideo} uretenBilgisiGoster />
-          </>
         ) : (
-          <section>
-            <div className="mb-3">
-              <h2 className="text-base font-extrabold text-[#203653]">Yayındaki Videolar</h2>
-              <p className="mt-0.5 text-xs text-[#7b8da5]">Yayınları görmek için üretici birimi seçin.</p>
-            </div>
-            <DepartmanKartlari videolar={videolar} onSec={setAktifDepartman} />
-          </section>
+          <>
+            <DepartmanKartlari videolar={katalogListesi.gorunen} aktifDepartman={aktifDepartman!} onSec={setAktifDepartman} />
+            {aktifDepartman && (
+              <>
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-base font-extrabold text-[#203653]">{DEPARTMAN_ETIKET[aktifDepartman]} Yayınları</h2>
+                  <span className="text-xs font-bold text-[#7b8da5]">{departmanVideolari.length} yayın</span>
+                </div>
+                <YayinTuruFiltresi secili={aktifYayinTuru} onSec={setAktifYayinTuru} sayilar={turSayilari} />
+                {seciliVideolar.length > 0 ? (
+                  <YayinRaflari videolar={seciliVideolar} onVideoSec={setAktifVideo} uretenBilgisiGoster />
+                ) : (
+                  <div className="rounded-2xl border border-[#dfe7f1] bg-white py-12 text-center text-sm text-[#6b7f9b]">
+                    Bu müdürlükte seçilen yayın türüne ait içerik yok.
+                  </div>
+                )}
+              </>
+            )}
+          </>
         )}
       </div>
       <HataMesajiContainer mesajlar={mesajlar} />
