@@ -9,23 +9,6 @@ import { uuidGecerliMi } from "@/lib/uretim/rpc";
 
 const YARIM_DURUMLAR = ["yukleme_bekliyor", "dogrulama_bekliyor"];
 
-interface VideoOturumu {
-  yukleme_id: string;
-  kullanici_id: string;
-  talep_id: string;
-  gorev_id: string | null;
-  arac_id: string | null;
-  kaynak: "hazir" | "iu";
-  video_guid: string;
-  embed_url: string;
-  baslik: string;
-  dosya_adi: string;
-  mime_type: string;
-  dosya_boyutu: number;
-  durum: "yukleme_bekliyor" | "dogrulama_bekliyor" | "iptal_hatasi";
-  created_at: string;
-}
-
 async function oturum() {
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
@@ -142,25 +125,10 @@ export async function GET() {
       }];
     });
 
-    let video: VideoOturumu[] = [];
-    const videoSonucu = await db
-      .from("ogrenme_araci_video_yukleme_oturumlari")
-      .select("yukleme_id, kullanici_id, talep_id, gorev_id, arac_id, kaynak, video_guid, embed_url, baslik, dosya_adi, mime_type, dosya_boyutu, durum, created_at")
-      .eq("kullanici_id", user.id)
-      .order("created_at", { ascending: false });
-    // Geçiş SQL'i henüz kurulmadıysa mevcut yükleme akışını bozma.
-    if (!videoSonucu.error || !["42P01", "PGRST205"].includes(videoSonucu.error.code ?? "")) video = (videoSonucu.data ?? []) as VideoOturumu[];
-
     return NextResponse.json({
-      yuklemeler: [
-        ...storage,
-        ...video.map((v) => ({
-          tur: "video" as const,
-          kimlik: v.yukleme_id,
-          ...v,
-          arac_turu: "video",
-        })),
-      ].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))),
+      // Video aktarımı kullanıcı tarafından devam ettirilmez. Kesilen video
+      // oturumları burada gösterilmez; yeni deneme yeni GUID ile başlar.
+      yuklemeler: storage.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))),
     });
   } catch (error) {
     return sunucuHatasi(error, "GET yarım öğrenme aracı yüklemeleri");
@@ -267,27 +235,37 @@ export async function POST(request: NextRequest) {
     if (!kayit) return NextResponse.json({ tamamlandi: true, zaten_kapali: true });
 
     if (body.islem === "aktarim_tamamlandi") {
-      const durum = await bunnyVideoDurumu(kayit.video_guid);
-      if (!durum.ok || durum.bunnyDurum < 1 || durum.hatali) {
+      let durum = await bunnyVideoDurumu(kayit.video_guid);
+      // TUS yanıtından hemen sonra video Bunny'de kuyruğa girer veya işlenmeye başlar.
+      // Depolama boyutu (storageSize) transcode bitene kadar 0 döner; bu durum aktarım hatası değildir.
+      for (let deneme = 0; durum.ok && durum.bunnyDurum < 0 && deneme < 4; deneme += 1) {
+        await new Promise((coz) => setTimeout(coz, 500));
+        durum = await bunnyVideoDurumu(kayit.video_guid);
+      }
+      if (!durum.ok || durum.bunnyDurum < 0 || durum.hatali) {
+        if (durum.ok) {
+          console.error("[Bunny TUS doğrulama başarısız]", {
+            talep_id: kayit.talep_id,
+            video_guid: kayit.video_guid,
+            beklenen_byte: kayit.dosya_boyutu,
+            bunny_durum: durum.bunnyDurum,
+            encode_ilerlemesi: durum.encodeIlerlemesi,
+          });
+        }
         return NextResponse.json({ hata: "Video aktarımının tamamlandığı doğrulanamadı." }, { status: 422 });
       }
+      console.info("[Bunny TUS doğrulandı]", {
+        talep_id: kayit.talep_id,
+        video_guid: kayit.video_guid,
+        beklenen_byte: kayit.dosya_boyutu,
+        bunny_durum: durum.bunnyDurum,
+      });
       const { error } = await db.from("ogrenme_araci_video_yukleme_oturumlari").update({ durum: "dogrulama_bekliyor", son_hata: null, updated_at: new Date().toISOString() }).eq("yukleme_id", kayit.yukleme_id);
       if (error) return NextResponse.json({ hata: "Video aktarım durumu kaydedilemedi." }, { status: 500 });
       return NextResponse.json({ tamamlandi: true, durum: "dogrulama_bekliyor" });
     }
 
-    // URL'nin talebe yazılması yalnız arka plan işlemeyi başlatır. Oturum,
-    // ortak araç gerçekten doğrulanıp süre yazılmadan kapatılamaz.
-    let bagli = false;
-    if (kayit.arac_id) {
-      const { data: video } = await db.from("ogrenme_araclari")
-        .select("dosya_yolu, metadata_dogrulandi, sure_saniye")
-        .eq("arac_id", kayit.arac_id).eq("talep_id", kayit.talep_id)
-        .eq("arac_turu", "video").maybeSingle();
-      bagli = video?.dosya_yolu === kayit.embed_url
-        && video?.metadata_dogrulandi === true && Number(video?.sure_saniye) > 0;
-    }
-    if (!bagli) return NextResponse.json({ hata: "Video henüz üretim kaydına bağlanmadı." }, { status: 409 });
+    // Video bağlandığında oturum kaydı temizlenir.
     const { error } = await db.from("ogrenme_araci_video_yukleme_oturumlari").delete().eq("yukleme_id", kayit.yukleme_id).eq("kullanici_id", user.id);
     if (error) return NextResponse.json({ hata: "Tamamlanan yükleme kaydı kapatılamadı." }, { status: 500 });
     return NextResponse.json({ tamamlandi: true });

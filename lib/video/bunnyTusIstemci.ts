@@ -19,25 +19,39 @@ export interface BunnyVezneIzni {
   baslik: string;
 }
 
-function yarimYuklemeBildir(): void {
-  if (typeof window !== "undefined") window.dispatchEvent(new Event("hapbilgi:yarim-yukleme-degisti"));
-}
-
 export async function videoYuklemeOturumuGuncelle(
   yuklemeId: string | null | undefined,
   islem: "aktarim_tamamlandi" | "baglandi",
 ): Promise<void> {
   if (!yuklemeId) return;
-  const yanit = await fetch("/api/ogrenme-araclari/yarim-yuklemeler", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ yukleme_id: yuklemeId, islem }),
-  });
-  const veri = await yanit.json().catch(() => ({}));
-  if (!yanit.ok) throw new Error(veri.hata ?? "Video yükleme oturumu güncellenemedi.");
+  try {
+    await fetch("/api/ogrenme-araclari/yarim-yuklemeler", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ yukleme_id: yuklemeId, islem }),
+    });
+  } catch {
+    // Oturum güncellemesi arka plan tutanağıdır; TUS aktarımını kesintiye uğratamaz.
+  }
 }
 
-/** Dosyayı TUS ile doğrudan Bunny'ye yükler; kesintiden kaldığı yerden devam edebilir. */
+/** Kesilen video aktarımının Bunny kaydını ve geçici oturumunu temizler. */
+export async function videoYuklemeOturumuIptalEt(
+  yuklemeId: string | null | undefined,
+): Promise<void> {
+  if (!yuklemeId) return;
+  try {
+    await fetch("/api/ogrenme-araclari/yarim-yuklemeler", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tur: "video", kimlik: yuklemeId }),
+    });
+  } catch {
+    // Temizlik hatası kullanıcı akışını kesmez.
+  }
+}
+
+/** Dosyayı TUS ile doğrudan Bunny'ye yükler; kesilirse yeni deneme sıfırdan başlar. */
 export function bunnyTusYukle(
   dosya: File,
   izin: BunnyVezneIzni,
@@ -54,20 +68,20 @@ export function bunnyTusYukle(
         LibraryId: String(izin.library_id),
       },
       metadata: { filetype: dosya.type, title: izin.baslik },
-      onError: (error) => { yarimYuklemeBildir(); reddet(error); },
+      onError: reddet,
       onProgress: (yuklenen, toplam) => onYuzde(Math.round((yuklenen / toplam) * 100)),
-      onSuccess: () => tamamla(),
+      onSuccess: () => {
+        console.info("[Bunny TUS tamamlandı]", {
+          video_guid: izin.video_guid,
+          library_id: izin.library_id,
+          upload_url: yukleme.url,
+          dosya_boyutu: dosya.size,
+        });
+        tamamla();
+      },
     });
-    // Aynı dosya ve aynı Bunny video kimliğiyle kesilen TUS aktarımı varsa
-    // tarayıcının tuttuğu offset'ten sürdür; yoksa normal yüklemeyi başlat.
-    void yukleme.findPreviousUploads()
-      .then((oncekiler) => {
-        const ayniVideo = oncekiler.find((onceki) =>
-          onceki.metadata?.title === izin.baslik
-          && onceki.size === dosya.size);
-        if (ayniVideo) yukleme.resumeFromPreviousUpload(ayniVideo);
-        yukleme.start();
-      })
-      .catch(() => yukleme.start());
+    // Video aktarımı kesilirse devam ettirilmez. Kullanıcının sonraki denemesi
+    // yeni Bunny GUID'iyle sıfırdan başlar.
+    yukleme.start();
   });
 }

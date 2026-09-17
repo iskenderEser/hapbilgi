@@ -14,20 +14,19 @@ const storageTamamla = oku("app/api/ogrenme-araclari/yukleme-tamamla/route.ts");
 const podcastDestekTamamla = oku("app/api/ogrenme-araclari/[arac_id]/destek-yukleme-tamamla/route.ts");
 const podcastDogrula = oku("app/api/ogrenme-araclari/[arac_id]/podcast-dogrula/route.ts");
 
-test("PM-03/A video kesintisi aynı oturum ve TUS aktarımıyla sürer; iptal tam temizlikten sonra bildirilir", () => {
+test("PM-03/A video kesintisi devam ettirilmez; yeni deneme yeni GUID ile doğrudan başlar", () => {
   assert.match(sql, /CREATE TABLE IF NOT EXISTS public\.ogrenme_araci_video_yukleme_oturumlari/);
   assert.match(sql, /CREATE UNIQUE INDEX IF NOT EXISTS uq_video_yukleme_aktif_talep/);
-  assert.match(videoBaslat, /\.from\("ogrenme_araci_video_yukleme_oturumlari"\)[\s\S]*\.eq\("talep_id", talep_id\)[\s\S]*bunnyYuklemeIzniniYenile/);
-  assert.match(videoBaslat, /Devam için yarım kalan yüklemedeki aynı video dosyasını seçmelisiniz/);
-  assert.match(tus, /findPreviousUploads\(\)[\s\S]*resumeFromPreviousUpload\(ayniVideo\)/);
+  assert.match(videoBaslat, /eskiOturumlar[\s\S]*bunnyVideoSil\(eski\.video_guid\)[\s\S]*\.delete\(\)[\s\S]*bunnyYuklemeBaslat\(baslik\)/);
+  assert.doesNotMatch(videoBaslat, /bunnyYuklemeIzniniYenile|Devam için yarım kalan yüklemedeki aynı video/);
+  assert.match(tus, /metadata: \{ filetype: dosya\.type, title: izin\.baslik \}/);
+  assert.match(tus, /yukleme\.start\(\)/);
+  assert.doesNotMatch(tus, /fingerprint|findPreviousUploads|resumeFromPreviousUpload/);
+  assert.match(ortakApi, /durum\.bunnyDurum < 0/);
   assert.match(ortakApi, /body\.islem === "aktarim_tamamlandi"[\s\S]*durum: "dogrulama_bekliyor"/);
   assert.match(ortakApi, /await bunnyVideoSil\(kayit\.video_guid\)[\s\S]*\.delete\(\)\.eq\("yukleme_id"/);
-  assert.match(modal, /const videoDevam[\s\S]*bunnyTusYukle/);
-  assert.match(modal, /if \(kayit\.durum === "dogrulama_bekliyor"\) \{[\s\S]*await tamamlananKaydiKapat\(kayit\);[\s\S]*return;[\s\S]*const dosya/);
-  assert.match(modal, /islem: "aktarim_tamamlandi"[\s\S]*if \(aktarimYanit\.ok\) \{[\s\S]*await tamamlananKaydiKapat\(kayit\);[\s\S]*return;[\s\S]*if \(aktarimYanit\.status !== 422\)[\s\S]*const dosya/);
-  assert.match(modal, /islem_anahtari: kayit\.video_guid/);
-  assert.doesNotMatch(modal, /islem_anahtari: kayit\.kimlik/);
-  assert.match(modal, /aktif\.arac_turu === "video"[\s\S]*Video dosyası/);
+  assert.match(ortakApi, /Video aktarımı kullanıcı tarafından devam ettirilmez/);
+  assert.doesNotMatch(modal, /videoDevam|bunnyTusYukle|Video dosyası|arac_turu:\s*"video"/);
   assert.match(modal, /basari\(sonuc\.mesaj \?\? "Yarım kalan yükleme başarıyla iptal edildi\."\)/);
 });
 

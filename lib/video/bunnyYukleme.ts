@@ -37,29 +37,6 @@ export interface BunnyHata {
   detay?: string;
 }
 
-/** Var olan Bunny kaydı için yeni süreli TUS izni üretir; yeni video açmaz. */
-export function bunnyYuklemeIzniniYenile(
-  videoGuid: string,
-  baslik: string,
-): BunnyVideoKaydi | BunnyHata {
-  const ortam = ortamDegerleri();
-  if (!ortam) {
-    return { ok: false, hata: "Video yükleme hizmeti yapılandırılmamış.", adim: "video yükleme yapılandırması" };
-  }
-  if (!/^[0-9a-fA-F-]{36}$/.test(videoGuid)) {
-    return { ok: false, hata: "Video yükleme kaydı geçersiz.", adim: "yükleme izni yenileme" };
-  }
-  const sonKullanma = Math.floor(Date.now() / 1000) + IMZA_OMRU_SANIYE;
-  return {
-    ok: true,
-    videoGuid,
-    libraryId: ortam.libraryId,
-    imza: tusImzasiUret(ortam.libraryId, ortam.apiKey, sonKullanma, videoGuid),
-    sonKullanma,
-    embedUrl: `https://player.mediadelivery.net/embed/${ortam.libraryId}/${videoGuid}`,
-  };
-}
-
 /**
  * Bunny'de video kaydını açar ve tek videoya özel süreli TUS imzası üretir.
  * Başlığı çağıran belirler (ürün/senaryo adından) — kütüphane düzeni sisteme aittir.
@@ -128,6 +105,8 @@ export interface BunnyVideoDurum {
   hatali: boolean; // encode başarısız — kullanıcıya dürüstçe söylenir
   bunnyDurum: number;
   videoSuresiSaniye: number | null;
+  depolamaBoyutu: number;
+  encodeIlerlemesi: number;
 }
 
 /** Bunny Get Video cevabındaki `length` alanını güvenilir tam saniyeye çevirir. */
@@ -166,12 +145,20 @@ export async function bunnyVideoDurumu(videoGuid: string): Promise<BunnyVideoDur
   const video = await yanit.json();
   const durum = typeof video?.status === "number" ? video.status : -1;
   const videoSuresiSaniye = bunnyVideoSuresiCoz(video);
+  const depolamaBoyutu = typeof video?.storageSize === "number" && Number.isFinite(video.storageSize)
+    ? video.storageSize
+    : 0;
+  const encodeIlerlemesi = typeof video?.encodeProgress === "number" && Number.isFinite(video.encodeProgress)
+    ? video.encodeProgress
+    : 0;
   return {
     ok: true,
     hazir: bunnyVideoKullanimaHazirMi(durum, videoSuresiSaniye),
     hatali: durum === 5 || durum === 6,
     bunnyDurum: durum,
     videoSuresiSaniye,
+    depolamaBoyutu,
+    encodeIlerlemesi,
   };
 }
 

@@ -11,7 +11,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { IU_ROLU } from "@/lib/utils/roller";
-import { bunnyVideoSil, bunnyYuklemeBaslat, bunnyYuklemeIzniniYenile, BUNNY_TUS_ENDPOINT } from "@/lib/video/bunnyYukleme";
+import { bunnyVideoSil, bunnyYuklemeBaslat, BUNNY_TUS_ENDPOINT } from "@/lib/video/bunnyYukleme";
 import { talepBilgisiVideo } from "@/lib/utils/talepZinciri";
 
 export async function POST(request: NextRequest) {
@@ -79,27 +79,24 @@ export async function POST(request: NextRequest) {
 
     const baslik = `${talepBilgisi?.urun_adi ?? "video"}_v${count ?? 1}`;
 
-    const mevcutSonucu = await adminSupabase
+    // Kesilen aktarım devam ettirilmez. Eski geçici kayıt temizlenir ve her
+    // kullanıcı denemesi yeni Bunny GUID'iyle sıfırdan başlar.
+    const { data: eskiOturumlar, error: eskiOturumHatasi } = await adminSupabase
       .from("ogrenme_araci_video_yukleme_oturumlari")
-      .select("yukleme_id, video_guid, baslik, dosya_adi, mime_type, dosya_boyutu")
+      .select("yukleme_id, video_guid")
       .eq("kullanici_id", user.id)
-      .eq("arac_id", arac_id)
-      .maybeSingle();
-    if (mevcutSonucu.data) {
-      if (typeof body.dosya_adi === "string" && (
-        mevcutSonucu.data.dosya_adi !== body.dosya_adi
-        || mevcutSonucu.data.mime_type !== (body.mime_type || "video/mp4")
-        || mevcutSonucu.data.dosya_boyutu !== body.dosya_boyutu
-      )) return validasyonHatasi("Devam için yarım kalan yüklemedeki aynı video dosyasını seçmelisiniz.", ["dosya_adi"]);
-      const izin = bunnyYuklemeIzniniYenile(mevcutSonucu.data.video_guid, mevcutSonucu.data.baslik);
-      if (!izin.ok) return hataYaniti(izin.hata, izin.adim, izin.detay ? { message: izin.detay } : null);
-      return NextResponse.json({
-        yukleme_id: mevcutSonucu.data.yukleme_id,
-        video_guid: izin.videoGuid, library_id: izin.libraryId, imza: izin.imza,
-        son_kullanma: izin.sonKullanma, tus_endpoint: BUNNY_TUS_ENDPOINT,
-        embed_url: izin.embedUrl, baslik: mevcutSonucu.data.baslik,
-        devam_ediyor: true,
-      });
+      .eq("arac_id", arac_id);
+    if (eskiOturumHatasi && !["42P01", "PGRST205"].includes(eskiOturumHatasi.code ?? "")) {
+      return hataYaniti("Önceki video aktarımı denetlenemedi.", "video yükleme oturumu SELECT", eskiOturumHatasi);
+    }
+    for (const eski of eskiOturumlar ?? []) {
+      if (!await bunnyVideoSil(eski.video_guid)) {
+        return hataYaniti("Önceki video aktarımı temizlenemedi.", "Bunny yarım video temizliği", null, 502);
+      }
+      const { error: silmeHatasi } = await adminSupabase
+        .from("ogrenme_araci_video_yukleme_oturumlari")
+        .delete().eq("yukleme_id", eski.yukleme_id).eq("kullanici_id", user.id);
+      if (silmeHatasi) return hataYaniti("Önceki video aktarım kaydı temizlenemedi.", "video yükleme oturumu DELETE", silmeHatasi);
     }
 
     // 4) Bunny kaydı + süreli imza
