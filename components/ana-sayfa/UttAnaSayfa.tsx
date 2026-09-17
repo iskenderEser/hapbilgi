@@ -18,6 +18,8 @@ import {
 } from "@/components/video/UttVideoKarti";
 import type { IcerikTuru } from "@/lib/video/icerikTuru";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
+import { YayinTuruFiltresi, type YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
+import { YAYIN_TURLERI } from "@/lib/ogrenmeAraci/turSunumu";
 
 interface Props {
   user: AuthKullanici;
@@ -36,6 +38,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
   const [aktifVideo, setAktifVideo] = useState<Video | null>(null);
   const [aktifOneriId, setAktifOneriId] = useState<string | null>(null);
   const [aktifDurumFiltresi, setAktifDurumFiltresi] = useState<VideoDurumu | null>(null);
+  const [aktifYayinTuru, setAktifYayinTuru] = useState<YayinTuruFiltreDegeri>("tumu");
   const { mesajlar, hata, basari, uyari } = useHataMesaji();
 
   const veriCek = async (sessiz = false) => {
@@ -178,11 +181,13 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
   const istat = uttVeri?.istatistikler ?? { yeni: 0, devam: 0, tamamlanan: 0, hafta_puani: 0, toplam_puan: 0 };
   const ad = adSoyad.split(" ")[0] || "Temsilci";
 
-  const durumListeleri: Record<VideoDurumu, Video[]> = {
-    yeni: uttVeri?.yeni_videolar ?? [],
-    devam: uttVeri?.devam_edenler ?? [],
-    tamamlanan: uttVeri?.tamamlananlar ?? [],
-  };
+  const tumHamVideolar = [...(uttVeri?.yeni_videolar ?? []), ...(uttVeri?.devam_edenler ?? []), ...(uttVeri?.tamamlananlar ?? [])];
+  const turSayilari = Object.fromEntries(YAYIN_TURLERI.map((tur) => [tur, tumHamVideolar.filter((video) => video.arac_turu === tur).length])) as Record<Video["arac_turu"], number>;
+  const tureGoreSuz = <T extends Video>(liste: T[]) => liste.filter((video) => aktifYayinTuru === "tumu" || video.arac_turu === aktifYayinTuru);
+  const yeniVideolar = tureGoreSuz(uttVeri?.yeni_videolar ?? []);
+  const devamEdenler = tureGoreSuz(uttVeri?.devam_edenler ?? []);
+  const tamamlananlar = tureGoreSuz(uttVeri?.tamamlananlar ?? []);
+  const durumListeleri: Record<VideoDurumu, Video[]> = { yeni: yeniVideolar, devam: devamEdenler, tamamlanan: tamamlananlar };
   const aktifDurumVideolari = aktifDurumFiltresi ? durumListeleri[aktifDurumFiltresi] : [];
   const durumBasliklari: Record<VideoDurumu, string> = {
     yeni: "Yeni Öğrenme İçerikleri",
@@ -190,11 +195,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
     tamamlanan: "Tamamlanan Öğrenme İçerikleri",
   };
 
-  const tumVideolar = [
-    ...(uttVeri?.yeni_videolar ?? []),
-    ...(uttVeri?.devam_edenler ?? []),
-    ...(uttVeri?.tamamlananlar ?? []),
-  ];
+  const tumVideolar = [...yeniVideolar, ...devamEdenler, ...tamamlananlar];
 
   // Özel sıralama: En Çok İzlenen, En Çok Beğenilen, sonra TUR_SIRA sırasıyla müdürlükler
   const enCokIzlenen = [...tumVideolar]
@@ -293,6 +294,8 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
         })}
       </div>
 
+      <div className="mb-5"><YayinTuruFiltresi secili={aktifYayinTuru} onSec={setAktifYayinTuru} sayilar={turSayilari} /></div>
+
       {/* Dinamik keşif rafları; sabit eğitim kategorileri Videolarım menüsündedir. */}
 
       {aktifDurumFiltresi ? (
@@ -334,37 +337,37 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
         </section>
       ) : (
         <>
-          {(uttVeri?.devam_edenler ?? []).length > 0 && (
+          {devamEdenler.length > 0 && (
             <KayanRaf
               baslik={<h2 className="text-base font-bold text-gray-900 md:text-lg">Kaldığınız Yerden Devam Edin</h2>}
-              videolar={uttVeri?.devam_edenler ?? []}
+              videolar={devamEdenler}
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}
               onFavori={handleFavori}
             />
           )}
-          {(uttVeri?.yeni_videolar ?? []).length > 0 && (
+          {yeniVideolar.length > 0 && (
             <KayanRaf
               baslik={<h2 className="text-base font-bold text-gray-900 md:text-lg">Yeni Öğrenme İçerikleri</h2>}
-              videolar={uttVeri?.yeni_videolar ?? []}
+              videolar={yeniVideolar}
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}
               onFavori={handleFavori}
             />
           )}
-          {(uttVeri?.son_izlediklerim ?? []).length > 0 && (
+          {tureGoreSuz(uttVeri?.son_izlediklerim ?? []).length > 0 && (
             <KayanRaf
               baslik={<h2 className="text-base font-bold text-gray-900 md:text-lg">En Son İzlediklerim</h2>}
-              videolar={uttVeri?.son_izlediklerim ?? []}
+              videolar={tureGoreSuz(uttVeri?.son_izlediklerim ?? [])}
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}
               onFavori={handleFavori}
             />
           )}
-          {(uttVeri?.ekstra_izlediklerim ?? []).length > 0 && (
+          {tureGoreSuz(uttVeri?.ekstra_izlediklerim ?? []).length > 0 && (
             <KayanRaf
               baslik={<h2 className="text-base font-bold text-gray-900 md:text-lg">Ekstra İzlediklerim</h2>}
-              videolar={uttVeri?.ekstra_izlediklerim ?? []}
+              videolar={tureGoreSuz(uttVeri?.ekstra_izlediklerim ?? [])}
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}
               onFavori={handleFavori}

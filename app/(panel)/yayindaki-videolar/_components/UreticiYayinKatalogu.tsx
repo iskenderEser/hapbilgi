@@ -13,6 +13,10 @@ import { DEPARTMAN_ETIKET, DEPARTMAN_RENK, DEPARTMAN_SIRA, departmanKey, type De
 import type { YayindakiVideo } from "@/lib/video/yayindakiVideolar";
 import YayindakiVideoBolumu from "./YayindakiVideoBolumu";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
+import { ListeArama, useListe } from "@/components/liste";
+import { talepIdGoster } from "@/lib/utils/talepId";
+import { YAYIN_TURU_SUNUMU, YAYIN_TURLERI } from "@/lib/ogrenmeAraci/turSunumu";
+import { YayinTuruFiltresi, type YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
 
 type Kapsam = "benim" | "digerleri";
 
@@ -20,10 +24,21 @@ interface Props {
   kapsam: Kapsam;
 }
 
-function KayanYayinRafi({ baslik, videolar, onVideoSec }: {
+function aranabilirYayinMetni(video: YayindakiVideo): string {
+  return [
+    talepIdGoster(video.firma_adi, video.talep_no),
+    video.urun_adi,
+    video.teknik_adi,
+    video.arac_turu ? YAYIN_TURU_SUNUMU[video.arac_turu].etiket : "",
+    video.ureten_ad_soyad,
+  ].join(" ");
+}
+
+function KayanYayinRafi({ baslik, videolar, onVideoSec, uretenBilgisiGoster }: {
   baslik: string;
   videolar: YayindakiVideo[];
   onVideoSec: (video: YayindakiVideo) => void;
+  uretenBilgisiGoster: boolean;
 }) {
   const raf = useRef<HTMLDivElement>(null);
   if (videolar.length === 0) return null;
@@ -46,7 +61,7 @@ function KayanYayinRafi({ baslik, videolar, onVideoSec }: {
         >
           <svg aria-hidden="true" className="h-7 w-7 text-[#243957]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="m15 19-7-7 7-7" /></svg>
         </button>
-        <YayindakiVideoBolumu videolar={videolar} onVideoSec={(video) => onVideoSec(video as YayindakiVideo)} yatayMi rafRef={raf} />
+        <YayindakiVideoBolumu videolar={videolar} onVideoSec={(video) => onVideoSec(video as YayindakiVideo)} uretenBilgisiGoster={uretenBilgisiGoster} yatayMi rafRef={raf} />
         <button
           type="button"
           aria-label={`${baslik} rafını sağa kaydır`}
@@ -60,9 +75,10 @@ function KayanYayinRafi({ baslik, videolar, onVideoSec }: {
   );
 }
 
-function YayinRaflari({ videolar, onVideoSec }: {
+function YayinRaflari({ videolar, onVideoSec, uretenBilgisiGoster }: {
   videolar: YayindakiVideo[];
   onVideoSec: (video: YayindakiVideo) => void;
+  uretenBilgisiGoster: boolean;
 }) {
   const [tohum] = useState(() => Date.now());
   const tumu = useMemo(() => anaSayfaRaflari(videolar, tohum).tumuRafi, [videolar, tohum]);
@@ -85,11 +101,11 @@ function YayinRaflari({ videolar, onVideoSec }: {
 
   return (
     <div className="flex flex-col gap-6">
-      <KayanYayinRafi baslik="Tümü" videolar={tumu} onVideoSec={onVideoSec} />
-      <KayanYayinRafi baslik="En Son Yayınlananlar" videolar={enSon} onVideoSec={onVideoSec} />
-      <KayanYayinRafi baslik="En Çok İzlenenler" videolar={enCokIzlenen} onVideoSec={onVideoSec} />
-      <KayanYayinRafi baslik="En Çok Beğenilenler" videolar={enCokBegenilen} onVideoSec={onVideoSec} />
-      <KayanYayinRafi baslik="En Çok Favorilenenler" videolar={enCokFavorilenen} onVideoSec={onVideoSec} />
+      <KayanYayinRafi baslik="Tümü" videolar={tumu} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} />
+      <KayanYayinRafi baslik="En Son Yayınlananlar" videolar={enSon} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} />
+      <KayanYayinRafi baslik="En Çok İzlenenler" videolar={enCokIzlenen} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} />
+      <KayanYayinRafi baslik="En Çok Beğenilenler" videolar={enCokBegenilen} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} />
+      <KayanYayinRafi baslik="En Çok Favorilenenler" videolar={enCokFavorilenen} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} />
     </div>
   );
 }
@@ -195,6 +211,19 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
   const [aktifVideo, setAktifVideo] = useState<YayindakiVideo | null>(null);
   const [aktifHedef, setAktifHedef] = useState<HedefRol>("utt");
   const [aktifDepartman, setAktifDepartman] = useState<DepartmanKey | null>(null);
+  const [aktifYayinTuru, setAktifYayinTuru] = useState<YayinTuruFiltreDegeri>("tumu");
+
+  const katalogListesi = useListe({
+    veri: videolar,
+    adim: Infinity,
+    aramaAlanlari: [
+      { anahtar: "tumu", etiket: "Tümü", deger: aranabilirYayinMetni },
+      { anahtar: "talep", etiket: "Talep ID", deger: (video: YayindakiVideo) => talepIdGoster(video.firma_adi, video.talep_no) },
+      { anahtar: "urun", etiket: "Ürün / Eğitim", deger: (video: YayindakiVideo) => video.urun_adi },
+      { anahtar: "teknik", etiket: "Teknik", deger: (video: YayindakiVideo) => video.teknik_adi },
+      { anahtar: "arac", etiket: "Araç türü", deger: (video: YayindakiVideo) => video.arac_turu ? YAYIN_TURU_SUNUMU[video.arac_turu].etiket : "" },
+    ],
+  });
 
   useEffect(() => {
     hataRef.current = hata;
@@ -238,8 +267,12 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
     if (aktifVideo) window.scrollTo({ top: 0, behavior: "auto" });
   }, [aktifVideo]);
 
+  const turSayilari = Object.fromEntries(YAYIN_TURLERI.map((tur) => [tur, katalogListesi.gorunen.filter((video) => video.arac_turu === tur).length])) as Record<NonNullable<YayindakiVideo["arac_turu"]>, number>;
+  const aranmisVideolar = kapsam === "benim"
+    ? katalogListesi.gorunen.filter((video) => aktifYayinTuru === "tumu" || video.arac_turu === aktifYayinTuru)
+    : videolar;
   const seciliVideolar = kapsam === "benim"
-    ? videolar.filter((video) => video.hedef_roller.includes(aktifHedef))
+    ? aranmisVideolar.filter((video) => video.hedef_roller.includes(aktifHedef))
     : aktifDepartman
       ? videolar.filter((video) => departmanKey(video.ureten_rol) === aktifDepartman)
       : [];
@@ -268,26 +301,29 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
   }
 
   const baslik = kapsam === "benim" ? "Sizin Yayınlarınız" : "Tüm Yayınlar";
-  const aciklama = kapsam === "benim"
-    ? "Ürettiğiniz yayınları hedef kitlelerine göre görüntüleyin."
-    : "Diğer üretici birimlerin yayındaki içeriklerini keşfedin.";
+  const aciklama = kapsam === "digerleri"
+    ? "Diğer üretici birimlerin yayındaki içeriklerini keşfedin."
+    : null;
 
   return (
     <div className="min-h-full bg-[#f5f8fc]" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <div className="mx-auto flex max-w-[1480px] flex-col gap-5 px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
-        <header className="flex items-start justify-between gap-3">
+        <header className="flex flex-col items-start justify-between gap-3 sm:flex-row">
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">Yayın kataloğu</p>
+            {kapsam === "digerleri" && <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">Yayın kataloğu</p>}
             <div className="inline-flex items-center">
-              <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">{baslik}</h1>
+              <h1 className={`${kapsam === "digerleri" ? "mt-1 " : ""}text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]`}>{baslik}</h1>
               <SayfaRehberi
                 anahtar={kapsam === "benim" ? "sizin-yayinlariniz-katalog" : "tum-yayinlar-katalog"}
                 className="ml-1.5 -translate-y-2"
               />
             </div>
-            <p className="mt-1 text-sm text-[#6b7f9b]">{aciklama}</p>
+            {aciklama && <p className="mt-1 text-sm text-[#6b7f9b]">{aciklama}</p>}
           </div>
-          <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} />
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {kapsam === "benim" && <ListeArama arama={katalogListesi.arama} ipucu="Ürün adı, talep ID veya diğer alanlarda ara" />}
+            <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} />
+          </div>
         </header>
 
         {loading ? (
@@ -300,11 +336,14 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
           </div>
         ) : kapsam === "benim" ? (
           <>
-            <HedefKitleKartlari videolar={videolar} aktifHedef={aktifHedef} onSec={setAktifHedef} />
+            <HedefKitleKartlari videolar={aranmisVideolar} aktifHedef={aktifHedef} onSec={setAktifHedef} />
+            <YayinTuruFiltresi secili={aktifYayinTuru} onSec={setAktifYayinTuru} sayilar={turSayilari} />
             {seciliVideolar.length > 0 ? (
-              <YayinRaflari videolar={seciliVideolar} onVideoSec={setAktifVideo} />
+              <YayinRaflari videolar={seciliVideolar} onVideoSec={setAktifVideo} uretenBilgisiGoster={false} />
             ) : (
-              <div className="rounded-2xl border border-[#dfe7f1] bg-white py-12 text-center text-sm text-[#6b7f9b]">Bu hedef kitleye ait yayında içerik yok.</div>
+              <div className="rounded-2xl border border-[#dfe7f1] bg-white py-12 text-center text-sm text-[#6b7f9b]">
+                {katalogListesi.arama.aranan ? "Aramanıza uyan yayın bulunamadı." : "Bu hedef kitleye ait yayında içerik yok."}
+              </div>
             )}
           </>
         ) : aktifDepartman ? (
@@ -316,7 +355,7 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
               </div>
               <button type="button" onClick={() => setAktifDepartman(null)} className="rounded-xl border border-[#d9e4f0] bg-[#f8fbff] px-3 py-2 text-xs font-extrabold text-[#476b96] hover:bg-[#eef5fd]">Tüm birimler</button>
             </div>
-            <YayinRaflari videolar={seciliVideolar} onVideoSec={setAktifVideo} />
+            <YayinRaflari videolar={seciliVideolar} onVideoSec={setAktifVideo} uretenBilgisiGoster />
           </>
         ) : (
           <section>

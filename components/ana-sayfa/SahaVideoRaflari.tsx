@@ -7,6 +7,9 @@ import { TUR_BASLIK } from "@/lib/video/icerikTuru";
 import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
+import { YayinTuruPill } from "@/components/ogrenme-araci/YayinTuruPill";
+import { YayinTuruFiltresi, type YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
+import { YAYIN_TURLERI } from "@/lib/ogrenmeAraci/turSunumu";
 
 interface Props {
   videolar: SahaAnaSayfaVideo[];
@@ -28,6 +31,7 @@ function SahaVideoKarti({ video, onVideoSec }: { video: SahaAnaSayfaVideo; onVid
     >
       <span className="relative block aspect-video overflow-hidden bg-gray-100">
         {kapak ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img src={kapak} alt={video.urun_adi} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
         ) : (
           <AracVarsayilanKapak aracTuru={video.arac_turu} urunAdi={video.urun_adi} />
@@ -37,6 +41,7 @@ function SahaVideoKarti({ video, onVideoSec }: { video: SahaAnaSayfaVideo; onVid
             {TUR_BASLIK[video.icerik_turu]}
           </span>
         )}
+        {video.arac_turu && <YayinTuruPill tur={video.arac_turu} className="absolute right-1.5 top-1.5 z-10" />}
         <span className="absolute inset-0 flex items-center justify-center bg-black/5 transition-colors group-hover:bg-black/15">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white shadow-sm transition-transform group-hover:scale-105">
             <svg aria-hidden="true" width="9" height="11" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z" /></svg>
@@ -105,20 +110,24 @@ function SabitBolum({ baslik, videolar, onVideoSec }: { baslik: string; videolar
 
 export default function SahaVideoRaflari({ videolar, onVideoSec }: Props) {
   const [tohum] = useState(() => Date.now());
-  const raflar = useMemo(() => anaSayfaRaflari(videolar, tohum), [videolar, tohum]);
+  const [aktifYayinTuru, setAktifYayinTuru] = useState<YayinTuruFiltreDegeri>("tumu");
+  const turSayilari = Object.fromEntries(YAYIN_TURLERI.map((tur) => [tur, videolar.filter((video) => video.arac_turu === tur).length])) as Record<NonNullable<SahaAnaSayfaVideo["arac_turu"]>, number>;
+  const filtrelenmisVideolar = useMemo(() => videolar.filter((video) => aktifYayinTuru === "tumu" || video.arac_turu === aktifYayinTuru), [videolar, aktifYayinTuru]);
+  const raflar = useMemo(() => anaSayfaRaflari(filtrelenmisVideolar, tohum), [filtrelenmisVideolar, tohum]);
   const enCokIzlenen = useMemo(
-    () => [...videolar].filter((video) => video.izlenme_sayisi > 0).sort((a, b) => b.izlenme_sayisi - a.izlenme_sayisi).slice(0, 5),
-    [videolar],
+    () => [...filtrelenmisVideolar].filter((video) => video.izlenme_sayisi > 0).sort((a, b) => b.izlenme_sayisi - a.izlenme_sayisi).slice(0, 5),
+    [filtrelenmisVideolar],
   );
   const enCokBegenilen = useMemo(
-    () => [...videolar].filter((video) => video.begeni_sayisi > 0).sort((a, b) => b.begeni_sayisi - a.begeni_sayisi).slice(0, 5),
-    [videolar],
+    () => [...filtrelenmisVideolar].filter((video) => video.begeni_sayisi > 0).sort((a, b) => b.begeni_sayisi - a.begeni_sayisi).slice(0, 5),
+    [filtrelenmisVideolar],
   );
 
   if (videolar.length === 0) return null;
 
   return (
     <div>
+      <div className="mb-5"><YayinTuruFiltresi secili={aktifYayinTuru} onSec={setAktifYayinTuru} sayilar={turSayilari} /></div>
       <KayanRaf
         baslik={<><span className="text-base font-bold text-gray-900 md:text-lg">Tümü</span><span aria-hidden="true" className="text-lg text-gray-900">›</span></>}
         videolar={raflar.tumuRafi}

@@ -23,12 +23,12 @@ import { OgrenmeAraciOnizlemeModal, YayinOnayModal, YayinSilmeModal } from "./_c
 import { YayinKumandaPaneli } from "./_components/YayinKumandaPaneli";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 
-function ListeBasligi({ baslik, aciklama, sayi, arama }: { baslik: string; aciklama: string; sayi: number; arama: ReactNode }) {
+function ListeBasligi({ baslik, aciklama, sayi, arama }: { baslik: string; aciklama?: string; sayi: number; arama: ReactNode }) {
   return (
     <div className="mb-3 flex flex-col gap-3 rounded-2xl border border-[#dfe7f1] bg-white px-4 py-3.5 shadow-[0_6px_18px_rgba(31,55,90,0.035)] sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h2 className="text-base font-extrabold text-[#203653]">{baslik}</h2>
-        <p className="mt-0.5 text-xs text-[#7b8da5]">{aciklama}</p>
+        {aciklama && <p className="mt-0.5 text-xs text-[#7b8da5]">{aciklama}</p>}
       </div>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <span className="w-fit rounded-full bg-[#eef5fd] px-2.5 py-1 text-[10px] font-extrabold text-[#4479b7]">{sayi} kayıt</span>
@@ -204,7 +204,7 @@ function YayinYonetimiIcerik() {
         />
 
         {aktifSekme === "bekleyen" && (
-          <ListeBasligi baslik="Yayına Hazır İçerikler" aciklama="Puanları tamamlayın ve yayın zamanını belirleyin." sayi={bekleyenListe.toplam} arama={<ListeArama arama={bekleyenListe.arama} />} />
+          <ListeBasligi baslik="Yayına Hazır İçerikler" sayi={bekleyenListe.toplam} arama={<ListeArama arama={bekleyenListe.arama} />} />
         )}
         {aktifSekme === "bekleyen" && (
           bekleyenListe.toplam === 0

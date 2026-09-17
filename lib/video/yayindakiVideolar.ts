@@ -25,6 +25,8 @@ export interface YayindakiVideo extends AnaSayfaVideo {
 
 interface YayinSatiri {
   yayin_id: string;
+  talep_no: number | null;
+  firma_adi: string | null;
   urun_adi: string | null;
   teknik_adi: string | null;
   video_url: string | null;
@@ -62,7 +64,7 @@ export async function getYayindakiVideolar(
 
   let query = adminSupabase
     .from("v_yayin_detay")
-    .select("yayin_id, urun_adi, teknik_adi, video_url, thumbnail_url, arac_kapak_yolu, arac_dosya_yolu, arac_metadata, video_puani, yayin_tarihi, icerik_turu, hedef_roller, takim_id, uretici_id, arac_id, arac_turu")
+    .select("yayin_id, talep_no, firma_adi, urun_adi, teknik_adi, video_url, thumbnail_url, arac_kapak_yolu, arac_dosya_yolu, arac_metadata, video_puani, yayin_tarihi, icerik_turu, hedef_roller, takim_id, uretici_id, arac_id, arac_turu")
     .eq("durum", "yayinda")
     .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))
     .order("yayin_tarihi", { ascending: false });
@@ -122,7 +124,8 @@ export async function getYayindakiVideolar(
     .from("izleme_kayitlari")
     .select("yayin_id")
     .in("yayin_id", yayinIdler)
-    .eq("tamamlandi_mi", true);
+    .eq("tamamlandi_mi", true)
+    .eq("gercek_oynatma_mi", true);
   const izlenmeSay = new Map<string, number>();
   (izlemeData ?? []).forEach((r: { yayin_id: string }) => izlenmeSay.set(r.yayin_id, (izlenmeSay.get(r.yayin_id) ?? 0) + 1));
 
@@ -131,6 +134,8 @@ export async function getYayindakiVideolar(
     const adSoyad = u ? `${u.ad ?? ""} ${u.soyad ?? ""}`.trim() : "";
     return {
       yayin_id: v.yayin_id,
+      talep_no: v.talep_no,
+      firma_adi: v.firma_adi,
       urun_adi: v.urun_adi ?? "-",
       teknik_adi: v.teknik_adi ?? "-",
       video_url: v.video_url ?? null,

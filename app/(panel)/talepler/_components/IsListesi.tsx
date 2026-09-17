@@ -55,12 +55,10 @@ export function IsListesi({ talepler, seciliTalepId, rol, onSec }: Props) {
       <div className="flex flex-col gap-3 border-b border-[#e8eef5] px-4 py-4 md:px-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.15em] text-[#7390b3]">Aktif operasyon</p>
             <div className="inline-flex items-center">
-              <h2 id="talep-takip-listesi-baslik" className="mt-0.5 text-base font-extrabold text-[#203653]">Talep Takip Listesi</h2>
+              <h2 id="talep-takip-listesi-baslik" className="text-base font-extrabold text-[#203653]">Talep Takip Listesi</h2>
               <SayfaRehberi anahtar="talepler-aktif-operasyon" className="ml-1.5 -translate-y-1.5" />
             </div>
-            <p className="mt-1 text-xs text-[#7b8da5]">Aşama, sorumluluk ve bekleyen kararı birlikte görün.</p>
           </div>
           <span className="rounded-full bg-[#eef5fd] px-3 py-1 text-xs font-extrabold text-[#4479b7]">{liste.toplam} aktif</span>
         </div>

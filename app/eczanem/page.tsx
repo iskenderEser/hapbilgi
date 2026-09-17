@@ -25,6 +25,8 @@ import type {
   EczanemVideoRaflari,
   EczanemVideolarYaniti,
 } from "./_types";
+import { YayinTuruFiltresi, type YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
+import { YAYIN_TURLERI } from "@/lib/ogrenmeAraci/turSunumu";
 
 const bosRaflar: EczanemVideoRaflari = {
   yeni_videolarim: [], yarim_biraktiklarim: [], en_son_izlediklerim: [],
@@ -44,6 +46,7 @@ function EczanemPanelIcerik() {
   const [videolar, setVideolar] = useState<EczanemMusteriVideo[]>([]);
   const [agac, setAgac] = useState<EczanemSidebarAgaci>([]);
   const [secim, setSecim] = useState<EczanemSidebarSecim>({ tip: "tum" });
+  const [aktifYayinTuru, setAktifYayinTuru] = useState<YayinTuruFiltreDegeri>("tumu");
   const [mobilDrawerAcik, setMobilDrawerAcik] = useState(false);
   const mobilTetikleyiciRef = useRef<HTMLButtonElement | null>(null);
   const [videoYukleniyor, setVideoYukleniyor] = useState(true);
@@ -89,7 +92,7 @@ function EczanemPanelIcerik() {
     return () => videoIstegiRef.current?.abort();
   }, [kullanici, musteri, router, videolariCek, yukleniyor]);
 
-  const filtrelenmisVideolar = useMemo<EczanemMusteriVideo[]>(() => {
+  const kapsamVideolari = useMemo<EczanemMusteriVideo[]>(() => {
     switch (secim.tip) {
       case "tum":
         return videolar;
@@ -119,6 +122,8 @@ function EczanemPanelIcerik() {
         return videolar;
     }
   }, [secim, videolar]);
+  const turSayilari = Object.fromEntries(YAYIN_TURLERI.map((tur) => [tur, kapsamVideolari.filter((video) => video.arac_turu === tur).length])) as Record<EczanemMusteriVideo["arac_turu"], number>;
+  const filtrelenmisVideolar = useMemo(() => kapsamVideolari.filter((video) => aktifYayinTuru === "tumu" || video.arac_turu === aktifYayinTuru), [kapsamVideolari, aktifYayinTuru]);
 
   const raflar = useMemo<EczanemVideoRaflari>(() => {
     if (!videoHazir) return bosRaflar;
@@ -241,6 +246,7 @@ function EczanemPanelIcerik() {
                 secim={secim}
                 onSecim={setSecim}
               />
+              <YayinTuruFiltresi secili={aktifYayinTuru} onSec={setAktifYayinTuru} sayilar={turSayilari} />
               {filtrelenmisVideolar.length === 0 && secim.tip !== "tum" ? (
                 <div className="flex flex-col items-center justify-center gap-3.5 rounded-2xl border border-dashed border-[#d8e3ed] bg-white p-8 text-center shadow-sm">
                   <div className="flex size-11 items-center justify-center rounded-2xl bg-[#fef2f2] text-[#bc2d0d]">

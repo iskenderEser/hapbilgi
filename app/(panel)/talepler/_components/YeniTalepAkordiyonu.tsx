@@ -61,9 +61,6 @@ export function YeniTalepAkordiyonu({ onTalepOlusturuldu }: Props) {
           </span>
           <span className="min-w-0">
             <span className="block text-sm font-extrabold text-[#203653]">Yeni İçerik Talebi</span>
-            <span className="mt-0.5 block text-xs leading-4 text-[#7487a2]">
-              Hedef kitlenizi ve üretim ihtiyacınızı tanımlayın.
-            </span>
           </span>
         </span>
         <span className="flex shrink-0 items-center gap-2 text-xs font-bold text-[#3989d7]">

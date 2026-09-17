@@ -15,7 +15,7 @@ export function yonLinkleri(rol: string, konu: YonKonusu, cc = false, eclub = fa
     ? [...(konu === 'eclub' ? [{ etiket: 'E-Club Takım Raporları', url: '/eclub/raporlar' }] : []), { etiket: 'E-Club Ligi', url: '/eclub/ligi' }] : [];
   if (YONETICI_ROLLER.includes(rol) && ['talepler','yayinlar','kendi_uretim','firma_uretim'].includes(konu)) return [{ etiket: 'Üretim Raporları', url: '/raporlar/uretim' }];
   if (uretici && ['talepler','yayinlar','kendi_uretim','firma_uretim'].includes(konu)) {
-    if (konu === 'talepler') return [{ etiket: 'Talepler ve Yeni Talep', url: TANIM_SAYFALARI['talepler'].url }];
+    if (konu === 'talepler') return [{ etiket: 'Talep Takip ve Yeni Talep', url: TANIM_SAYFALARI['talepler'].url }];
     if (konu === 'yayinlar') return [{ etiket: 'Yayın Yönetimi', url: TANIM_SAYFALARI['yayinlar'].url }];
     return [{ etiket: konu === 'firma_uretim' ? 'Üretim Raporları' : 'Üretici Raporu', url: konu === 'firma_uretim' ? '/raporlar/uretim' : '/raporlar/uretici' }];
   }

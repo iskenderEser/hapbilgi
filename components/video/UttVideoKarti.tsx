@@ -6,6 +6,7 @@ import { TUR_BASLIK, type IcerikTuru } from "@/lib/video/icerikTuru";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
+import { YayinTuruPill } from "@/components/ogrenme-araci/YayinTuruPill";
 
 export type UttVideoDurumu = "yeni" | "devam" | "tamamlanan";
 
@@ -85,9 +86,10 @@ export function UttVideoKarti({ video, onVideoClick, onBegeni, onFavori, etkiles
           <AracVarsayilanKapak aracTuru={video.arac_turu} urunAdi={video.urun_adi} />
         )}
 
-        {video.durum === "yeni" && <div className="absolute right-1.5 top-1.5 rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] text-white shadow-sm">Yeni</div>}
-        {video.durum === "devam" && <div className="absolute right-1.5 top-1.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">Yarım Kaldı</div>}
-        {video.durum === "tamamlanan" && <div className="absolute right-1.5 top-1.5 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] text-white">✓ İzlendi</div>}
+        {video.durum === "yeni" && <div className="absolute left-1.5 top-1.5 rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] text-white shadow-sm">Yeni</div>}
+        {video.durum === "devam" && <div className="absolute left-1.5 top-1.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">Yarım Kaldı</div>}
+        {video.durum === "tamamlanan" && <div className="absolute left-1.5 top-1.5 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] text-white">✓ İzlendi</div>}
+        <YayinTuruPill tur={video.arac_turu} className="absolute right-1.5 top-1.5" />
         {video.icerik_turu && <div className="absolute bottom-1.5 left-1.5 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] text-white">{TUR_BASLIK[video.icerik_turu]}</div>}
       </div>
 

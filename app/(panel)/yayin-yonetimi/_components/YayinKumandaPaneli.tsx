@@ -76,18 +76,12 @@ export function YayinKumandaPaneli({
     <section aria-labelledby="yayin-merkezi-baslik" className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#4f7fb7]">
-            İçerik yaşam döngüsü
-          </p>
           <div className="inline-flex items-center">
-            <h1 id="yayin-merkezi-baslik" className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">
+            <h1 id="yayin-merkezi-baslik" className="text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">
               Yayın Yönetimi
             </h1>
             <SayfaRehberi anahtar="yayin-yonetimi" className="ml-1.5 -translate-y-1.5" />
           </div>
-          <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">
-            Hazır içerikleri puanlayın, doğru zamanda yayınlayın ve yayın yaşam döngüsünü tek yerden yönetin.
-          </p>
         </div>
         {aksiyon}
       </div>
@@ -96,7 +90,6 @@ export function YayinKumandaPaneli({
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
             <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#7a8da8]">Yayın kitlesi</p>
-            <p className="mt-0.5 text-xs text-[#8090a7]">Rozetler yayına hazır içerik sayısını gösterir.</p>
           </div>
           <span
             className="hidden rounded-full px-2.5 py-1 text-[10px] font-extrabold sm:inline"

@@ -10,13 +10,13 @@ import {
   Image as ImageIcon,
   Play,
   Star,
-  Video,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
 import type { EczanemAracTuru, EczanemMusteriVideo } from "../_types";
+import { YayinTuruPill } from "@/components/ogrenme-araci/YayinTuruPill";
 
 interface Props {
   baslik: string;
@@ -27,13 +27,6 @@ interface Props {
   onFavori: (video: EczanemMusteriVideo) => void | Promise<void>;
   etkilesimIsliyor?: string | null;
 }
-
-const ARAC_TURU_ETIKET: Record<EczanemAracTuru, string> = {
-  video: "Video",
-  podcast: "Podcast",
-  gorsel: "Görsel",
-  flip_pdf: "Literatür",
-};
 
 const tarihYaz = (deger: string) =>
   new Intl.DateTimeFormat("tr-TR", {
@@ -60,25 +53,10 @@ function AracMerkezIkonu({ tur }: { tur: EczanemAracTuru }) {
   }
 }
 
-function AracRozetIkonu({ tur }: { tur: EczanemAracTuru }) {
-  switch (tur) {
-    case "video":
-      return <Video className="size-2.5" />;
-    case "podcast":
-      return <Headphones className="size-2.5" />;
-    case "gorsel":
-      return <ImageIcon className="size-2.5" />;
-    case "flip_pdf":
-      return <BookOpen className="size-2.5" />;
-    default:
-      return <FileText className="size-2.5" />;
-  }
-}
-
 function IcerikDurumRozeti({ video }: { video: EczanemMusteriVideo }) {
   if (video.izlendi) {
     return (
-      <Badge className="absolute right-2 top-2 border border-white/40 bg-[#166534]/90 text-[9px] font-black text-white shadow-sm backdrop-blur-sm">
+      <Badge className="absolute left-2 top-2 border border-white/40 bg-[#166534]/90 text-[9px] font-black text-white shadow-sm backdrop-blur-sm">
         ✓ Tamamlandı
       </Badge>
     );
@@ -89,14 +67,14 @@ function IcerikDurumRozeti({ video }: { video: EczanemMusteriVideo }) {
         ? ` · ${sureYaz(video.son_konum_saniye)}`
         : "";
     return (
-      <Badge className="absolute right-2 top-2 flex items-center gap-1 border border-[#efd59f] bg-[#fff7e8]/95 text-[9px] font-extrabold text-[#956417] shadow-sm">
+      <Badge className="absolute left-2 top-2 flex items-center gap-1 border border-[#efd59f] bg-[#fff7e8]/95 text-[9px] font-extrabold text-[#956417] shadow-sm">
         <Clock3 className="size-2.5" />
         <span>Devam Et{sureMetni}</span>
       </Badge>
     );
   }
   return (
-    <Badge className="absolute right-2 top-2 border border-[#cbe4f9] bg-[#edf6fd]/95 text-[9px] font-black text-[#1d69ad] shadow-sm">
+    <Badge className="absolute left-2 top-2 border border-[#cbe4f9] bg-[#edf6fd]/95 text-[9px] font-black text-[#1d69ad] shadow-sm">
       Yeni
     </Badge>
   );
@@ -188,10 +166,7 @@ export default function EczanemVideoRafi({
                     className="relative block aspect-video w-full shrink-0 overflow-hidden bg-[#eaf2f8] text-left disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {/* Öğrenme Aracı Türü Rozeti */}
-                    <span className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-full border border-white/30 bg-[#0f2338]/75 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white shadow-sm backdrop-blur-sm">
-                      <AracRozetIkonu tur={video.arac_turu} />
-                      <span>{ARAC_TURU_ETIKET[video.arac_turu]}</span>
-                    </span>
+                    <YayinTuruPill tur={video.arac_turu} className="absolute right-2 top-2 z-10" />
 
                     {/* İçerik Durum Rozeti (Yeni / Devam Et / Tamamlandı) */}
                     <IcerikDurumRozeti video={video} />

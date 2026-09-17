@@ -71,7 +71,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
   // ─── 1. TALEP MERKEZİ (SAYFA BAŞLIĞI STANDARDI) ───────────────────────────
   "talep-merkezi": {
     anahtar: "talep-merkezi",
-    baslik: "Talep Merkezi",
+    baslik: "Talep Takip ve Yeni Talep",
     ozet: "Yeni içerik talepleri oluşturmanızı ve devam eden üretim süreçlerini adım adım takip etmenizi sağlar. Onayınızı bekleyen aşamaları buradan anında yönetebilirsiniz.",
     maddeler: [],
   },

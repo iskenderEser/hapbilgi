@@ -12,6 +12,9 @@ import type { AnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
 import { ROL_ADLARI } from "@/lib/utils/roller";
+import { TUR_BASLIK } from "@/lib/video/icerikTuru";
+import { talepIdGoster } from "@/lib/utils/talepId";
+import { YayinTuruPill } from "@/components/ogrenme-araci/YayinTuruPill";
 
 // Kart altında üreten etiketi için kısa rol adları; bilinmeyen rol tam adına düşer.
 const ROL_KISA: Record<string, string> = {
@@ -33,6 +36,7 @@ interface Props {
   secilenYayinlar?: string[];
   onOneriSec?: (video: YayindakiVideo) => void;
   hedefRolEtiketiGoster?: boolean;
+  uretenBilgisiGoster?: boolean;
   yatayMi?: boolean;
   rafRef?: RefObject<HTMLDivElement | null>;
 }
@@ -46,11 +50,11 @@ function hedefKitleEtiketi(hedefRoller: string[]): string | null {
   return null;
 }
 
-export default function YayindakiVideoBolumu({ videolar, onVideoSec, oneriModu = false, secilenYayinlar = [], onOneriSec, hedefRolEtiketiGoster = false, yatayMi = false, rafRef }: Props) {
+export default function YayindakiVideoBolumu({ videolar, onVideoSec, oneriModu = false, secilenYayinlar = [], onOneriSec, hedefRolEtiketiGoster = false, uretenBilgisiGoster = true, yatayMi = false, rafRef }: Props) {
   if (videolar.length === 0) return null;
 
   const formatTarih = (tarih: string) =>
-    new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" });
+    new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
 
   return (
     <div ref={rafRef} className={yatayMi
@@ -64,7 +68,7 @@ export default function YayindakiVideoBolumu({ videolar, onVideoSec, oneriModu =
         return (
           <article
             key={v.yayin_id}
-            className={`group overflow-hidden rounded-xl border bg-white transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(31,55,90,0.10)] ${yatayMi ? "w-40 shrink-0 snap-start sm:w-44 md:w-52" : ""} ${secili ? "border-[#2f7fc7] ring-2 ring-[#b9d8f3]" : "border-[#dfe7f1] hover:border-[#b9d5f0]"}`}
+            className={`group overflow-hidden rounded-xl border bg-white shadow-sm transition-shadow hover:shadow-md ${yatayMi ? "w-40 shrink-0 snap-start sm:w-44 md:w-52" : ""} ${secili ? "border-[#2f7fc7] ring-2 ring-[#b9d8f3]" : "border-gray-200"}`}
           >
             <button
               type="button"
@@ -72,59 +76,62 @@ export default function YayindakiVideoBolumu({ videolar, onVideoSec, oneriModu =
               aria-label={`${v.urun_adi} yayınını görüntüle`}
               className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#56aeff]"
             >
-              <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16/9" }}>
+              <div className="relative aspect-video overflow-hidden bg-gray-100">
                 {thumb
-                  ? <img src={thumb} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
+                  ? // eslint-disable-next-line @next/next/no-img-element
+                    <img src={thumb} alt={v.urun_adi} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                   : <AracVarsayilanKapak aracTuru={v.arac_turu} urunAdi={v.urun_adi} />
                 }
-                <div className="absolute inset-0 bg-gradient-to-t from-[#10233a]/45 via-transparent to-transparent" />
                 {hedefEtiketi && (
-                  <span className="absolute right-2 top-2 rounded-full border border-white/35 bg-[#10233a]/75 px-2 py-1 text-[9px] font-extrabold text-white shadow-sm backdrop-blur-sm">
+                  <span className="absolute left-1.5 top-1.5 rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
                     {hedefEtiketi}
                   </span>
                 )}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-[#10233a]/65 shadow-lg backdrop-blur-sm transition-transform group-hover:scale-105">
-                    <svg aria-hidden="true" width="10" height="12" viewBox="0 0 10 12" fill="white"><path d="M0 0l10 6-10 6z" /></svg>
-                  </div>
-                </div>
-                <span className="absolute bottom-2 left-2 rounded-full border border-white/25 bg-[#10233a]/70 px-2 py-1 text-[9px] font-extrabold uppercase tracking-[0.1em] text-white backdrop-blur-sm">
-                  Görüntüle
-                </span>
+                {v.arac_turu && <YayinTuruPill tur={v.arac_turu} className="absolute right-1.5 top-1.5" />}
+                {v.icerik_turu && (
+                  <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] text-white">
+                    {TUR_BASLIK[v.icerik_turu]}
+                  </span>
+                )}
               </div>
 
-              <div className="flex flex-col gap-2.5 p-3">
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-extrabold text-[#243957]">{v.urun_adi}</div>
-                  <div className="mt-1 flex items-center justify-between gap-2">
-                    <span className="truncate rounded-md bg-[#eef5fd] px-2 py-0.5 text-[10px] font-bold text-[#4d79aa]">{v.teknik_adi || "Teknik belirtilmedi"}</span>
-                    <span className="shrink-0 text-[10px] text-[#8a9bb0]">{formatTarih(v.yayin_tarihi)}</span>
+              <div className="p-2.5">
+                <h3 className="line-clamp-2 text-xs font-bold text-gray-900">{v.urun_adi}</h3>
+                <div className="mt-1 truncate text-[10px] font-semibold text-[#4d79aa]">
+                  {v.teknik_adi || "Teknik belirtilmedi"}
+                </div>
+
+                <div className="mt-1.5 flex items-center justify-between text-[10px] text-gray-500">
+                  <span>{formatTarih(v.yayin_tarihi)}</span>
+                  <span>{v.izlenme_sayisi} izlenme</span>
+                </div>
+
+                <div className="mt-1.5 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                    <span className="flex items-center gap-0.5" title="Beğeni">
+                      <svg aria-hidden="true" className="h-3.5 w-3.5 text-red-500" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                      {v.begeni_sayisi}
+                    </span>
+                    <span className="flex items-center gap-0.5" title="Favori">
+                      <svg aria-hidden="true" className="h-3.5 w-3.5 text-yellow-500" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
+                      {v.favori_sayisi}
+                    </span>
                   </div>
+                  {v.talep_no != null && (
+                    <span className="truncate font-mono text-[10px] text-[#bc2d0d]">
+                      {talepIdGoster(v.firma_adi, v.talep_no)}
+                    </span>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-3 gap-1 rounded-lg bg-[#f7f9fc] px-2 py-1.5 text-[#70849d]">
-                  <span className="flex items-center justify-center gap-1 text-[10px]" title="Tamamlanan izleme">
-                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3 w-3"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" /><circle cx="12" cy="12" r="2.5" /></svg>
-                    <b className="text-[#314a68]">{v.izlenme_sayisi}</b>
-                  </span>
-                  <span className="flex items-center justify-center gap-1 border-x border-[#e2e9f1] text-[10px]" title="Beğeni">
-                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3 w-3"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" /></svg>
-                    <b className="text-[#314a68]">{v.begeni_sayisi}</b>
-                  </span>
-                  <span className="flex items-center justify-center gap-1 text-[10px]" title="Favori">
-                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-3 w-3"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z" /></svg>
-                    <b className="text-[#314a68]">{v.favori_sayisi}</b>
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1.5 border-t border-[#edf1f6] pt-2">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#f0f4f9] text-[#7c8fa7]">
-                    <svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-                    </svg>
-                  </span>
-                  <span className="truncate text-[11px] font-bold text-[#617691]">{uretenEtiket(v.ureten_rol, v.ureten_ad_soyad)}</span>
-                </div>
+                {uretenBilgisiGoster && (
+                  <div className="mt-2 flex items-center gap-1.5 border-t border-gray-100 pt-2">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500">
+                      <svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                    </span>
+                    <span className="truncate text-[10px] font-semibold text-gray-500">{uretenEtiket(v.ureten_rol, v.ureten_ad_soyad)}</span>
+                  </div>
+                )}
               </div>
             </button>
 
