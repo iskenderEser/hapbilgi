@@ -36,7 +36,7 @@ export function EkDosyaYukleme({ bekleyenler, hazirVideo, disabled = false, onSe
       <label className="text-xs text-gray-500 block mb-1.5">
         Ek Dosyalar <span className="text-gray-400 font-normal">(isteğe bağlı)</span>
       </label>
-      <div className="flex items-center gap-2.5 mb-2">
+      <div className="mb-2 flex flex-col items-start gap-1.5">
         <label
           className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-gray-700 whitespace-nowrap"
           style={{
@@ -60,10 +60,10 @@ export function EkDosyaYukleme({ bekleyenler, hazirVideo, disabled = false, onSe
             className="hidden"
           />
         </label>
-        <span className="text-xs text-gray-400 leading-snug">
+        <span className="text-[10px] font-semibold uppercase leading-snug text-gray-400">
           {hazirVideo
-            ? "PDF, docx, pptx, xlsx, txt ve görsel formatları desteklenir."
-            : "PDF, docx, pptx, xlsx, txt, görsel ve video formatları desteklenir."}
+            ? "PDF · DOCX · PPTX · XLSX · TXT · PNG · JPG · JPEG"
+            : "PDF · DOCX · PPTX · XLSX · TXT · PNG · JPG · JPEG · MP4 · MOV · AVI · MKV · WEBM"}
         </span>
       </div>
       {bekleyenler.length > 0 && (

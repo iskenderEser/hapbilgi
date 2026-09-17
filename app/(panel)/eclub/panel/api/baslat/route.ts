@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { ECLUB_TUKETICI_ROLLERI, eclubKisiHedefRolu, hedefRolleriOku } from "@/lib/utils/roller";
+import { ECLUB_TUKETICI_ROLLERI, yayinTuketiciRoluneAcikMi } from "@/lib/utils/roller";
 import { hataYaniti, veriKontrol, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { eclubIzlemeHaklari } from "@/lib/eclub/izlemeKurali";
 import { olayIdGecerliMi } from "@/lib/izleme/baslat";
@@ -63,8 +63,7 @@ export async function POST(request: NextRequest) {
     const aktifFirmaIdler = new Set(kisiErisimi.firmalar.filter((firma) => firma.aktif !== false && firma.eclub_aktif === true).map((firma) => firma.firma_id));
     if (!yayin.firma_id || !aktifFirmaIdler.has(yayin.firma_id)) return rolHatasi("Yayın aktif E-Club firma bağlantınıza ait değil.");
     if (!yayinAraciKullanimaAcikMi(yayin.arac_turu)) return isKuraluHatasi("Bu öğrenme aracı kullanıma kapalı.");
-    const hedefRol = eclubKisiHedefRolu(kisi.rol);
-    if (!hedefRol || !hedefRolleriOku(yayin).includes(hedefRol)) return rolHatasi("Bu yayın kişi unvanınıza açık değil.");
+    if (!yayinTuketiciRoluneAcikMi(yayin, kisi.rol)) return rolHatasi("Bu yayın kişi unvanınıza açık değil.");
 
     // UTT deseni: süreyi başlangıçta izleme kaydına snapshot'la. Süre yoksa (encode
     // bitmemiş — beklenmez, görünürlük kapısı zaten gizler) izlemeyi BAŞTA reddet;

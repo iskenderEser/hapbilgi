@@ -193,9 +193,9 @@ export async function POST(request: NextRequest) {
       return validasyonHatasi("Hazır soru seti verisi zorunludur.", ["hazir_soru_seti_verisi"]);
     }
 
-    const soruSetiBuyuklugu = soru_seti_buyuklugu ?? 25;
+    const soruSetiBuyuklugu = soru_seti_buyuklugu ?? 10;
     const videoBasisSoruSayisi = video_basi_soru_sayisi ?? 2;
-    const secenekSayisi = secenek_sayisi ?? 4;
+    const secenekSayisi = secenek_sayisi ?? 2;
 
     if (![10, 15, 20, 25].includes(soruSetiBuyuklugu)) return validasyonHatasi("Soru seti büyüklüğü 10, 15, 20 veya 25 olmalıdır.", ["soru_seti_buyuklugu"]);
     if (![2, 3, 4].includes(secenekSayisi)) return validasyonHatasi("Seçenek sayısı 2, 3 veya 4 olmalıdır.", ["secenek_sayisi"]);

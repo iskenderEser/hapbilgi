@@ -19,6 +19,9 @@ import { ogrenmeAraciTuruMu } from "@/lib/ogrenmeAraci/sozlesme";
 import { uretimAraciYetkisiniDogrula } from "@/lib/ogrenmeAraci/yetki";
 import { eclubKisiErisimi } from "@/lib/eclub/kisiErisim";
 import { eczaciAktifEczanesi } from "@/lib/eczanem/eczaci";
+import { podcastTranskriptErisiminiCoz } from "@/lib/ogrenmeAraci/podcastTranskriptErisimi";
+import { ogrenmeAraciErisimUrunAdi } from "@/lib/ogrenmeAraci/erisimBasligi";
+import { talepBilgisiTalep } from "@/lib/utils/talepZinciri";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ arac_id: string }> }) {
   try {
@@ -31,7 +34,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const { data: arac, error: aracError } = await db
       .from("ogrenme_araclari")
-      .select("arac_id, talep_id, arac_turu, dosya_yolu, kapak_yolu, transkript_yolu, mime_type, dosya_boyutu, sure_saniye, sayfa_sayisi, genislik, yukseklik, metadata, metadata_dogrulandi, talepler(urun_adi, urunler(urun_adi))")
+      .select("arac_id, talep_id, arac_turu, dosya_yolu, kapak_yolu, transkript_yolu, mime_type, dosya_boyutu, sure_saniye, sayfa_sayisi, genislik, yukseklik, metadata, metadata_dogrulandi")
       .eq("arac_id", arac_id)
       .maybeSingle();
     if (aracError || !arac) return NextResponse.json({ hata: "Öğrenme aracı bulunamadı." }, { status: 404 });
@@ -162,80 +165,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!erisimUrl) return NextResponse.json({ hata: "Öğrenme aracı erişim hizmeti yapılandırılmamış." }, { status: 503 });
     const kapakUrl = arac.kapak_yolu ? bunnyCdnImzaliUrl(arac.kapak_yolu) : null;
 
-    const talepHam = arac.talepler as
-      | {
-          urun_adi?: string | null;
-          urunler?: { urun_adi?: string | null } | Array<{ urun_adi?: string | null }> | null;
-        }
-      | Array<{
-          urun_adi?: string | null;
-          urunler?: { urun_adi?: string | null } | Array<{ urun_adi?: string | null }> | null;
-        }>
-      | null;
-    const talep = Array.isArray(talepHam) ? talepHam[0] : talepHam;
-    const urunHam = talep?.urunler;
-    const urun = Array.isArray(urunHam) ? urunHam[0] : urunHam;
-    const bagliUrunAdi = typeof urun?.urun_adi === "string" ? urun.urun_adi.trim() : "";
-    const serbestUrunAdi = typeof talep?.urun_adi === "string" ? talep.urun_adi.trim() : "";
-    const urunAdi = bagliUrunAdi || serbestUrunAdi || "Podcast";
+    const talepBilgisi = await talepBilgisiTalep(db, arac.talep_id);
+    const urunAdi = ogrenmeAraciErisimUrunAdi(arac.arac_turu, talepBilgisi);
 
-    const metadata = (arac.metadata as Record<string, unknown> | null) ?? {};
-    const transkriptObj = (metadata.transkript && typeof metadata.transkript === "object")
-      ? (metadata.transkript as Record<string, unknown>)
-      : undefined;
-
-    let transkriptUrl: string | null = null;
-    let transkriptMetni: string | null = null;
-
-    if (transkriptObj) {
-      // Yeni metadata sözleşmesinde yalnız "onaylandi" durumundaki transkript erişilebilir
-      if (transkriptObj.durum === "onaylandi") {
-        transkriptUrl = arac.transkript_yolu ? bunnyCdnImzaliUrl(arac.transkript_yolu) : null;
-        transkriptMetni = typeof transkriptObj.onaylanan_metin === "string" && transkriptObj.onaylanan_metin.trim().length > 0
-          ? transkriptObj.onaylanan_metin.trim()
-          : null;
-      } else {
-        // yok, manuel_taslak, ai_bekliyor, ai_isleniyor, ai_taslak, iptal, hata durumlarında null döner
-        transkriptUrl = null;
-        transkriptMetni = null;
-      }
-    } else {
-      // Yeni durum nesnesi bulunmayan eski kayıtlarda yalnız doğrulanmış eski transkript erişilebilir kalır
-      const eskiDogrulandi = metadata.transkript_dogrulandi === true;
-      if (eskiDogrulandi) {
-        transkriptUrl = arac.transkript_yolu ? bunnyCdnImzaliUrl(arac.transkript_yolu) : null;
-        transkriptMetni = typeof metadata.transkript_metni === "string" && metadata.transkript_metni.trim().length > 0
-          ? metadata.transkript_metni.trim()
-          : null;
-      } else {
-        transkriptUrl = null;
-        transkriptMetni = null;
-      }
-    }
-
-    // Ham metadata içindeki taslak metin, AI girişim kimliği, hata kodu ve onaylayan kullanıcı bilgileri tüketiciye sızdırılmaz
-    const temizMetadata: Record<string, unknown> = { ...metadata };
-    if (transkriptObj) {
-      const {
-        taslak_metin: _taslakMetin,
-        ai_girisim_id: _aiGirisimId,
-        hata_kodu: _hataKodu,
-        onaylayan_kullanici_id: _onaylayanKullaniciId,
-        ...kalanTranskript
-      } = transkriptObj;
-
-      if (transkriptObj.durum !== "onaylandi") {
-        delete (kalanTranskript as Record<string, unknown>).onaylanan_metin;
-        delete temizMetadata.transkript_metni;
-      }
-      temizMetadata.transkript = kalanTranskript;
-    } else if (metadata.transkript_dogrulandi !== true) {
-      delete temizMetadata.transkript_metni;
-    }
-    delete temizMetadata.taslak_metin;
-    delete temizMetadata.ai_girisim_id;
-    delete temizMetadata.hata_kodu;
-    delete temizMetadata.onaylayan_kullanici_id;
+    const {
+      transkriptUrl,
+      transkriptMetni,
+      temizMetadata,
+    } = podcastTranskriptErisiminiCoz({
+      metadata: (arac.metadata as Record<string, unknown> | null) ?? {},
+      transkriptYolu: arac.transkript_yolu,
+      imzaliUrlUret: bunnyCdnImzaliUrl,
+    });
 
     return NextResponse.json({
       arac_id,

@@ -207,6 +207,24 @@ export function eclubKisiHedefRolu(rol: string): "eczaci" | "eczane_teknisyeni" 
   return null;
 }
 
+/** Gerçek tüketici kimliğini yayın hedef kitlesindeki kanonik değere dönüştürür. */
+export function tuketiciHedefRolu(rol: string): HedefRol | null {
+  const kanonikRol = rol.trim().toLowerCase();
+  if (TUKETICI_ROLLER.includes(kanonikRol)) return "utt";
+  if (kanonikRol === "bm") return "bm";
+  if (kanonikRol === MUSTERI_ROLU) return "eczanem";
+  return eclubKisiHedefRolu(kanonikRol);
+}
+
+/** Yayının verilen tüketici kimliğine hedeflendiğini tek sözleşmeyle doğrular. */
+export function yayinTuketiciRoluneAcikMi(
+  yayin: { hedef_roller?: unknown },
+  rol: string,
+): boolean {
+  const hedefRol = tuketiciHedefRolu(rol);
+  return Boolean(hedefRol && hedefRolleriOku(yayin).includes(hedefRol));
+}
+
 /** Yayının yalnız E-Club dış müşterilerine (eczacı/teknisyen) yönelik olduğunu doğrular. */
 export function yalnizEclubHedefliMi(hedefRoller: readonly string[] | null | undefined): boolean {
   return Boolean(

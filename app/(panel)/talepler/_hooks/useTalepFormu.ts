@@ -113,8 +113,8 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
   const [teknikler, setTeknikler] = useState<Teknik[]>([]);
   const [seciliTeknikId, setSeciliTeknikId] = useState("");
   const [takimlar, setTakimlar] = useState<Takim[]>([]);
-  const [soruSetiBuyuklugu, setSoruSetiBuyuklugu] = useState<number>(25);
-  const [secenekSayisi, setSecenekSayisi] = useState<number>(4);
+  const [soruSetiBuyuklugu, setSoruSetiBuyuklugu] = useState<number>(10);
+  const [secenekSayisi, setSecenekSayisi] = useState<number>(2);
   const [videoBasiSoruSayisi, setVideoBasiSoruSayisi] = useState<number>(2);
   const [aciklama, setAciklama] = useState("");
   const [bekleyenDosyalar, setBekleyenDosyalar] = useState<BekleyenDosya[]>([]);
@@ -537,6 +537,14 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
     // Serbest ad yalnız ürün+teknik yoksa anlamlı; değilse temizle (submit'e sızmasın).
     if (!(kural.urun === "yok" && kural.teknik === "yok")) setSerbestAd("");
   }, [yetenek]);
+
+  // Rolün yalnız tek talep türü varsa kullanıcıya anlamsız bir seçim adımı
+  // göstermeden türü otomatik uygula. Birden fazla yetkili türü olan roller
+  // seçimlerini formda kendileri yapar.
+  useEffect(() => {
+    if (yetenek?.acabilecegiTalepTurleri.length !== 1) return;
+    handleEgitimTuruDegis(yetenek.acabilecegiTalepTurleri[0]);
+  }, [handleEgitimTuruDegis, yetenek]);
 
   const toggleHazirVideo = useCallback(() => {
     setHazirVideo((prev) => !prev);
