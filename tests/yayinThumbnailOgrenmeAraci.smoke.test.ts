@@ -7,6 +7,7 @@ process.env.BUNNY_LEARNING_PULL_ZONE = "cdn.test.com";
 process.env.BUNNY_LEARNING_TOKEN_KEY = "test-token-key";
 process.env.BUNNY_LEARNING_UPLOAD_ENDPOINT = "https://upload.bunny.net";
 process.env.BUNNY_LEARNING_UPLOAD_SHARED_SECRET = "test-shared-secret";
+process.env.NEXT_PUBLIC_BUNNY_PULL_ZONE = "video.test.b-cdn.net";
 
 import { yayinThumbnailUrlCoz, yayinlariThumbnailIleZenginlestir, yayinThumbnailCevabi } from "@/lib/ogrenmeAraci/yayinThumbnail";
 import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
@@ -17,6 +18,16 @@ test("yayinThumbnailUrlCoz video için mevcut thumbnail_url'i korur", () => {
     thumbnail_url: "https://bunny.net/thumb.jpg",
   });
   assert.equal(sonuc, "https://bunny.net/thumb.jpg");
+});
+
+test("yayinThumbnailUrlCoz ortak modeldeki video URL'sinden thumbnail üretir", () => {
+  const videoId = "75d8a68b-5ff7-4c54-a84b-fdeed0ed09c8";
+  const sonuc = yayinThumbnailUrlCoz({
+    arac_turu: "video",
+    thumbnail_url: null,
+    arac_dosya_yolu: `https://iframe.mediadelivery.net/embed/12345/${videoId}`,
+  });
+  assert.equal(sonuc, `https://video.test.b-cdn.net/${videoId}/thumbnail.jpg`);
 });
 
 test("yayinThumbnailUrlCoz podcast/flip_pdf için kapak_yolu ancak kapak_dogrulandi ise imzalı cdn url üretir", () => {

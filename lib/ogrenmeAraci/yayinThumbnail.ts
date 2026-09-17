@@ -1,5 +1,6 @@
 import "server-only";
 import { bunnyCdnImzaliUrl } from "@/lib/ogrenmeAraci/bunnyStorage";
+import { thumbnailUrlUret } from "@/lib/video/thumbnail";
 
 export interface YayinKapakGirdisi {
   arac_id?: string | null;
@@ -27,7 +28,7 @@ function kapakDogrulanmisMi(yayin: YayinKapakGirdisi): boolean {
 
 /**
  * Bir yayının küçük resim (thumbnail) URL'sini kesin kurallara göre çözümler:
- * - video: mevcut thumbnail (`thumbnail_url`) korunur.
+ * - video: mevcut thumbnail (`thumbnail_url`) korunur; yoksa ortak araçtaki video URL'sinden üretilir.
  * - podcast ve flip_pdf (Literatür): YALNIZCA doğrulanmış kapak görseli (`kapak_dogrulandi === true`)
  *   varsa Bunny CDN imzalı süreli URL üretilir; aksi halde null döner.
  * - gorsel (Dijital Broşür): öncelikle ana görsel yolu (`arac_dosya_yolu` veya `dosya_yolu`),
@@ -39,9 +40,11 @@ export function yayinThumbnailUrlCoz(yayin: YayinKapakGirdisi | null | undefined
 
   const aracTuru = (yayin.arac_turu ?? "video").toLowerCase();
 
-  // 1. Video: mevcut thumbnail
+  // 1. Video: mevcut thumbnail veya ortak öğrenme aracındaki video URL'sinden üretilen thumbnail
   if (aracTuru === "video") {
-    return yayin.thumbnail_url ?? null;
+    return yayin.thumbnail_url
+      ?? thumbnailUrlUret(yayin.video_url ?? yayin.arac_dosya_yolu ?? yayin.dosya_yolu)
+      ?? null;
   }
 
   // 2. Podcast ve Literatür (flip_pdf): YALNIZCA doğrulanmış kapak görseli
