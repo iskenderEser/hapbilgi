@@ -22,6 +22,11 @@ export function thumbnailUrlUret(videoUrl: string | null | undefined): string | 
   if (!videoUrl) return null;
 
   try {
+    // Ortak öğrenme aracı modeli Bunny video kimliğini tek başına saklayabilir.
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(videoUrl.trim())) {
+      return bunnyThumbnail(videoUrl.trim());
+    }
+
     const provider = detectProvider(videoUrl);
 
     if (provider === "bunny") {

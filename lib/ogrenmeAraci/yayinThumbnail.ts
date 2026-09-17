@@ -26,6 +26,11 @@ function kapakDogrulanmisMi(yayin: YayinKapakGirdisi): boolean {
   return false;
 }
 
+function metinDegeri(meta: Record<string, unknown> | null | undefined, anahtar: string): string | null {
+  const deger = meta?.[anahtar];
+  return typeof deger === "string" && deger.trim() ? deger.trim() : null;
+}
+
 /**
  * Bir yayının küçük resim (thumbnail) URL'sini kesin kurallara göre çözümler:
  * - video: mevcut thumbnail (`thumbnail_url`) korunur; yoksa ortak araçtaki video URL'sinden üretilir.
@@ -42,8 +47,19 @@ export function yayinThumbnailUrlCoz(yayin: YayinKapakGirdisi | null | undefined
 
   // 1. Video: mevcut thumbnail veya ortak öğrenme aracındaki video URL'sinden üretilen thumbnail
   if (aracTuru === "video") {
-    return yayin.thumbnail_url
-      ?? thumbnailUrlUret(yayin.video_url ?? yayin.arac_dosya_yolu ?? yayin.dosya_yolu)
+    const meta = yayin.arac_metadata ?? yayin.metadata;
+    const kayitliKapak = yayin.thumbnail_url
+      ?? yayin.arac_kapak_yolu
+      ?? yayin.kapak_yolu
+      ?? metinDegeri(meta, "legacy_thumbnail_url");
+    if (kayitliKapak) return kayitliKapak;
+
+    return thumbnailUrlUret(
+      metinDegeri(meta, "legacy_video_url")
+      ?? yayin.video_url
+      ?? yayin.arac_dosya_yolu
+      ?? yayin.dosya_yolu
+    )
       ?? null;
   }
 

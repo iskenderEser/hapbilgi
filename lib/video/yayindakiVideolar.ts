@@ -33,6 +33,7 @@ interface YayinSatiri {
   thumbnail_url: string | null;
   arac_kapak_yolu?: string | null;
   arac_dosya_yolu?: string | null;
+  arac_metadata?: Record<string, unknown> | null;
   video_puani: number | null;
   yayin_tarihi: string;
   icerik_turu: AnaSayfaVideo["icerik_turu"];

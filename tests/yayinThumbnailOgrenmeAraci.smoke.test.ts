@@ -30,6 +30,28 @@ test("yayinThumbnailUrlCoz ortak modeldeki video URL'sinden thumbnail üretir", 
   assert.equal(sonuc, `https://video.test.b-cdn.net/${videoId}/thumbnail.jpg`);
 });
 
+test("yayinThumbnailUrlCoz taşınmış videonun metadata içindeki eski thumbnail'ini kullanır", () => {
+  const sonuc = yayinThumbnailUrlCoz({
+    arac_turu: "video",
+    thumbnail_url: null,
+    arac_dosya_yolu: "75d8a68b-5ff7-4c54-a84b-fdeed0ed09c8",
+    arac_metadata: {
+      legacy_thumbnail_url: "https://video-cdn.example/legacy-thumbnail.jpg",
+    },
+  });
+  assert.equal(sonuc, "https://video-cdn.example/legacy-thumbnail.jpg");
+});
+
+test("yayinThumbnailUrlCoz yalnız Bunny video kimliği bulunan ortak kayıttan thumbnail üretir", () => {
+  const videoId = "75d8a68b-5ff7-4c54-a84b-fdeed0ed09c8";
+  const sonuc = yayinThumbnailUrlCoz({
+    arac_turu: "video",
+    thumbnail_url: null,
+    arac_dosya_yolu: videoId,
+  });
+  assert.equal(sonuc, `https://video.test.b-cdn.net/${videoId}/thumbnail.jpg`);
+});
+
 test("yayinThumbnailUrlCoz podcast/flip_pdf için kapak_yolu ancak kapak_dogrulandi ise imzalı cdn url üretir", () => {
   const onayli = yayinThumbnailUrlCoz({
     arac_turu: "podcast",
