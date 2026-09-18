@@ -1,5 +1,5 @@
 // app/(panel)/raporlar/uretim/_hooks/useUretimRaporu.ts
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   getUretimRaporuOnbellek,
   setUretimRaporuOnbellek,
@@ -24,8 +24,12 @@ export function useUretimRaporu(
   const [yenileniyor, setYenileniyor] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [yenileTetik, setYenileTetik] = useState(0);
+  const manuelTetiklendiRef = useRef(false);
 
-  const yenile = useCallback(() => setYenileTetik((deger) => deger + 1), []);
+  const yenile = useCallback(() => {
+    manuelTetiklendiRef.current = true;
+    setYenileTetik((deger) => deger + 1);
+  }, []);
 
   // Periyot değiştiğinde önbellekteki veriyi anında ekrana bas
   useEffect(() => {
@@ -40,13 +44,15 @@ export function useUretimRaporu(
     if (!kullaniciId) return;
 
     const controller = new AbortController();
+    const isManuel = manuelTetiklendiRef.current;
+    manuelTetiklendiRef.current = false;
 
     const fetchRapor = async () => {
       const onbellek = getUretimRaporuOnbellek(periyot);
-      if (!onbellek) {
-        setLoading(true);
-      } else {
+      if (isManuel) {
         setYenileniyor(true);
+      } else if (!onbellek) {
+        setLoading(true);
       }
       setError(null);
 
