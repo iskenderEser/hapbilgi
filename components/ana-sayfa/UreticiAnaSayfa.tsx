@@ -17,6 +17,7 @@ import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 import { prefetchYayinOzet } from "@/app/(panel)/yayin-yonetimi/_hooks/ozetOnbellek";
 import { prefetchYayinKatalog } from "@/app/(panel)/yayindaki-videolar/_components/katalogOnbellek";
+import { prefetchTalepMerkezi } from "@/app/(panel)/talepler/_hooks/talepOnbellek";
 
 interface TakipSatiri {
   talep_id: string;
@@ -77,6 +78,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
     veriCek();
     void prefetchYayinOzet();
     void prefetchYayinKatalog("benim");
+    void prefetchTalepMerkezi();
   }, [user]);
 
   const formatTarih = (tarih: string) =>

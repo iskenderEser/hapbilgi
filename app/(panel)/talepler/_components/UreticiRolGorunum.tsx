@@ -32,10 +32,8 @@ export function UreticiRolGorunum() {
     ilkYuklemeTamamlandiRef.current = true;
   }
 
-  // Yalnız gerçek ilk açılış ve auth bekleme durumunda tam sayfa yükleme gösterilir.
-  // İlk açılış yapıldıktan sonraki arka plan veri yenilemeleri sayfayı unmount etmez;
-  // açık olan YeniTalepAkordiyonu ve YeniTalepFormV2 bileşenleri korunur.
-  if (authYukleniyor || !kullanici || (merkez.loading && !ilkYuklemeTamamlandiRef.current)) {
+  // Yalnız auth bekleme durumunda tam sayfa yükleme gösterilir.
+  if (authYukleniyor || !kullanici) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-pulse flex flex-col items-center gap-2">
@@ -120,7 +118,11 @@ export function UreticiRolGorunum() {
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg font-extrabold"
                     style={{ color: kart.vurgu, backgroundColor: kart.zemin }}
                   >
-                    {kart.deger}
+                    {merkez.loading && merkez.devamEdenler.length === 0 ? (
+                      <span className="inline-block h-5 w-5 animate-pulse rounded bg-current/20" />
+                    ) : (
+                      kart.deger
+                    )}
                   </span>
                   <span className="min-w-0">
                     <span className="block text-sm font-extrabold text-[#243957]">{kart.etiket}</span>

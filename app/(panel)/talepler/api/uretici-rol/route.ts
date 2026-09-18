@@ -37,25 +37,28 @@ export async function GET() {
       return rolHatasi("Bu sayfa yalnız üretici rollerine açıktır.");
     }
 
-    const { data: talepler, error } = await supabase
-      .from("talepler")
-      // Künye alanları ortak listeden; hazır video adresi bu listeye özel
-      // (video adımının önizlemesi ve yükleme durumu ondan okunur).
-      // Taslak talepler aktif operasyon listesinde ASLA görünmez.
-      .select(`${TALEP_ALANLARI}, hazir_video_url`)
-      .eq("taslak_mi", false)
-      .order("created_at", { ascending: false });
+    // Talepler, zincir takibi ve aktif üretim görevleri PARALEL çekilir
+    const [taleplerRes, zincirler, aktifGorevlerRes] = await Promise.all([
+      supabase
+        .from("talepler")
+        .select(`${TALEP_ALANLARI}, hazir_video_url`)
+        .eq("taslak_mi", false)
+        .order("created_at", { ascending: false }),
+      zincirHaritasi(adminSupabase, { ureticiId: user.id }),
+      adminSupabase
+        .from("uretim_gorevleri")
+        .select("gorev_id, talep_id, asama, atanan_iu_id, durum, surum, updated_at, talepler!inner(uretici_id)")
+        .eq("talepler.uretici_id", user.id)
+        .in("durum", ["atama_bekliyor", "hazirlaniyor", "inceleme_bekliyor", "revizyon_bekliyor"]),
+    ]);
 
-    if (error) return hataYaniti("Talepler çekilemedi.", "talepler tablosu SELECT", error);
+    if (taleplerRes.error) return hataYaniti("Talepler çekilemedi.", "talepler tablosu SELECT", taleplerRes.error);
+    if (aktifGorevlerRes.error) return hataYaniti("Üretim görevleri çekilemedi.", "uretim_gorevleri SELECT — üretici listesi", aktifGorevlerRes.error);
 
-    const kunyeler = ((talepler as Array<HamTalepKaydi & { hazir_video_url?: string | null }> | null) ?? []).map(t => ({
+    const kunyeler = ((taleplerRes.data as Array<HamTalepKaydi & { hazir_video_url?: string | null }> | null) ?? []).map(t => ({
       ...haritalaTalep(t),
       hazir_video_url: t.hazir_video_url ?? null,
     }));
-
-    const zincirler = await zincirHaritasi(adminSupabase, {
-      talepIdler: kunyeler.map((t) => t.talep_id),
-    });
 
     const durumlar = new Map<string, ReturnType<typeof asamaCoz>>();
     for (const t of kunyeler) {
@@ -69,23 +72,15 @@ export async function GET() {
       durumlar.set(t.talep_id, asamaCoz(t, z));
     }
 
-    const talepIdler = kunyeler.map((t) => t.talep_id);
-    const { data: aktifGorevler, error: gorevError } = talepIdler.length > 0
-      ? await adminSupabase
-          .from("uretim_gorevleri")
-          .select("gorev_id, talep_id, asama, atanan_iu_id, durum, surum, updated_at")
-          .in("talep_id", talepIdler)
-          .in("durum", ["atama_bekliyor", "hazirlaniyor", "inceleme_bekliyor", "revizyon_bekliyor"])
-      : { data: [], error: null };
-    if (gorevError) return hataYaniti("Üretim görevleri çekilemedi.", "uretim_gorevleri SELECT — üretici listesi", gorevError);
-    const gorevMap = new Map((aktifGorevler ?? []).map((g) => [g.talep_id, g]));
+    const aktifGorevler = aktifGorevlerRes.data ?? [];
+    const gorevMap = new Map(aktifGorevler.map((g) => [g.talep_id, g]));
 
     // İçerik üreticisi adı — iptal tablosunda "iş kimdeydi" görünsün diye. Tek
     // toplu sorgu; talep başına ad çözmek N+1 olurdu.
     const iuIdler = [...new Set(
       [
         ...[...durumlar.values()].map((d) => d.iu_id),
-        ...(aktifGorevler ?? []).map((g) => g.atanan_iu_id),
+        ...aktifGorevler.map((g) => g.atanan_iu_id),
       ].filter((id): id is string => !!id),
     )];
     const iuAdlari = new Map<string, string>();

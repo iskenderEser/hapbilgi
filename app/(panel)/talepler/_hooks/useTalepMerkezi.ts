@@ -20,6 +20,7 @@ import { hazirGorselYukle, hazirFlipPdfYukle, hazirPodcastYukle } from "@/lib/og
 import { SORGU_ARALIGI_MS, TAVAN_SANIYE } from "@/lib/video/islemeDurumu";
 import { bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
 import type { TalepDetay, TalepSatiri } from "../_ureticiRolTypes";
+import { getTalepOnbellek, setTalepOnbellek } from "./talepOnbellek";
 
 export type KararDurumu = "onaylandi" | "revizyon bekleniyor" | "Iptal Edildi";
 
@@ -27,8 +28,9 @@ export function useTalepMerkezi() {
   const { kullanici } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
 
-  const [talepler, setTalepler] = useState<TalepSatiri[]>([]);
-  const [loading, setLoading] = useState(true);
+  const baslangicTalepler = getTalepOnbellek();
+  const [talepler, setTalepler] = useState<TalepSatiri[]>(() => baslangicTalepler ?? []);
+  const [loading, setLoading] = useState(() => !baslangicTalepler);
   const [yenileniyor, setYenileniyor] = useState(false);
   const [seciliTalepId, setSeciliTalepId] = useState<string | null>(null);
 
@@ -57,6 +59,7 @@ export function useTalepMerkezi() {
         hata(data.hata ?? "Talepler yüklenemedi.", data.adim, data.detay);
       } else {
         const gelen: TalepSatiri[] = data.talepler ?? [];
+        setTalepOnbellek(gelen);
         setTalepler(gelen);
         if (enYeniyiSec.current) {
           const yeni = gelen.find((t) => !t.uretim_bitti && !t.iptal_edildi);
