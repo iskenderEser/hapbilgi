@@ -50,32 +50,44 @@ export function useTalepMerkezi() {
   // bilinemez, seçim de o anda yapılmalı.
   const enYeniyiSec = useRef(false);
 
-  const veriCek = useCallback(async (ilkYukleme = false) => {
-    if (ilkYukleme) setLoading(true);
-    else setYenileniyor(true);
-    try {
-      const res = await fetch("/talepler/api/uretici-rol");
-      const data = await res.json();
-      if (!res.ok) {
-        hata(data.hata ?? "Talepler yüklenemedi.", data.adim, data.detay);
-      } else {
-        const gelen: TalepSatiri[] = data.talepler ?? [];
-        setTalepOnbellek(gelen);
-        setTalepler(gelen);
-        setOzetSayilari(hesaplaTalepOzeti(gelen));
-        if (enYeniyiSec.current) {
-          const yeni = gelen.find((t) => !t.uretim_bitti && !t.iptal_edildi);
-          if (yeni) setSeciliTalepId(yeni.talep_id);
-          enYeniyiSec.current = false;
-        }
+  const veriCek = useCallback(
+    async (secenekler?: { ilkYukleme?: boolean; manuel?: boolean } | boolean) => {
+      let ilkYukleme = false;
+      let manuel = false;
+      if (typeof secenekler === "boolean") {
+        ilkYukleme = secenekler;
+      } else if (secenekler) {
+        ilkYukleme = !!secenekler.ilkYukleme;
+        manuel = !!secenekler.manuel;
       }
-    } catch (err) {
-      hata("Talepler yüklenemedi.", "Talep Merkezi", err instanceof Error ? err.message : undefined);
-    } finally {
-      if (ilkYukleme) setLoading(false);
-      else setYenileniyor(false);
-    }
-  }, [hata]);
+
+      if (ilkYukleme) setLoading(true);
+      if (manuel) setYenileniyor(true);
+      try {
+        const res = await fetch("/talepler/api/uretici-rol");
+        const data = await res.json();
+        if (!res.ok) {
+          hata(data.hata ?? "Talepler yüklenemedi.", data.adim, data.detay);
+        } else {
+          const gelen: TalepSatiri[] = data.talepler ?? [];
+          setTalepOnbellek(gelen);
+          setTalepler(gelen);
+          setOzetSayilari(hesaplaTalepOzeti(gelen));
+          if (enYeniyiSec.current) {
+            const yeni = gelen.find((t) => !t.uretim_bitti && !t.iptal_edildi);
+            if (yeni) setSeciliTalepId(yeni.talep_id);
+            enYeniyiSec.current = false;
+          }
+        }
+      } catch (err) {
+        hata("Talepler yüklenemedi.", "Talep Merkezi", err instanceof Error ? err.message : undefined);
+      } finally {
+        if (ilkYukleme) setLoading(false);
+        if (manuel) setYenileniyor(false);
+      }
+    },
+    [hata],
+  );
 
   /** Yeni Talep akordiyonu talep açtığında çağrılır (A-10). */
   const talepOlusturuldu = useCallback(async () => {
@@ -97,7 +109,7 @@ export function useTalepMerkezi() {
     if (yuklenenKullaniciIdRef.current !== aktifId) {
       yuklenenKullaniciIdRef.current = aktifId;
       const onbellekVar = !!getTalepOnbellek();
-      void veriCek(!onbellekVar);
+      void veriCek({ ilkYukleme: !onbellekVar, manuel: false });
     }
   }, [kullanici?.id, veriCek]);
 

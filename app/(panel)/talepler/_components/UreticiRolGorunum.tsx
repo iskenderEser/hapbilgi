@@ -112,7 +112,7 @@ export function UreticiRolGorunum() {
                 Yeni yayınlar açabilir ve yayınlarınızı takip edebilirsiniz.
               </p>
             </div>
-            <YenileButonu yenileniyor={merkez.yenileniyor} onYenile={() => merkez.veriCek()} disabled={merkez.kararYukleniyor || merkez.videoYuzdesi !== null} />
+            <YenileButonu yenileniyor={merkez.yenileniyor} onYenile={() => merkez.veriCek({ manuel: true })} disabled={merkez.kararYukleniyor || merkez.videoYuzdesi !== null} />
           </div>
 
           <div aria-label="Talep operasyon özeti" className="grid grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-3">
