@@ -363,7 +363,7 @@ export default function UretimRaporlariPage() {
                   <strong className="block text-lg font-black text-[#16865f] mt-0.5">+{formatPuan(seciliEgitimDetayi.kazanilan_toplam)}</strong>
                 </div>
                 <div className="rounded-xl border border-[#e5edf5] bg-[#f8fbfe] p-3 text-center">
-                  <span className="text-[10px] font-bold text-[#8190a3] uppercase">Bu Konunun Net Puanı</span>
+                  <span className="text-[10px] font-bold text-[#8190a3] uppercase">Net Puan</span>
                   <strong className="block text-lg font-black text-[#10213d] mt-0.5">{formatPuan(seciliEgitimDetayi.net_puan)} p</strong>
                 </div>
               </div>
