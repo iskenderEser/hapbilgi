@@ -97,7 +97,7 @@ export function UreticiRolGorunum() {
             <div>
               <div className="inline-flex items-center">
                 <h1 id="talep-merkezi-baslik" className="text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">
-                  Talep Takip ve Yeni Talep
+                  Yayın Oluşturma ve Takip
                 </h1>
                 <SayfaRehberi anahtar="talep-merkezi" className="ml-1.5 -translate-y-2" />
               </div>

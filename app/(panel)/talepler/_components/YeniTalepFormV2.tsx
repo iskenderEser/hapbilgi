@@ -487,7 +487,7 @@ export function YeniTalepFormV2({ formu }: Props) {
                 ? "Gönderiliyor..."
                 : formu.hazirVideo || formu.hazirSoruSeti
                 ? "Gönderiniz"
-                : "Talep Oluştur"}
+                : "Yayın Oluştur"}
             </button>
           </div>
         </div>

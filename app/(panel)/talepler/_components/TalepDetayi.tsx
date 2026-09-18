@@ -64,7 +64,7 @@ export function TalepDetayi({
       <div className="overflow-hidden rounded-2xl border border-[#dfe7f2] bg-white shadow-[0_10px_28px_rgba(31,55,90,0.045)]">
         <div className="border-b border-[#e8eef5] px-5 py-4">
           <div className="inline-flex items-center">
-            <h2 className="mt-0.5 text-base font-extrabold text-[#203653]">Talep Takibi</h2>
+            <h2 className="mt-0.5 text-base font-extrabold text-[#203653]">Yayın Takibi</h2>
             <SayfaRehberi anahtar="talepler-uretim-gorunumu" className="ml-1.5 -translate-y-1.5" />
           </div>
         </div>
@@ -72,8 +72,8 @@ export function TalepDetayi({
           <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef6ff] text-[#4b91d8]">
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6"><path d="M4 5h16v14H4zM8 9h8M8 13h5" /><path d="m15 16 2 2 4-4" /></svg>
           </span>
-          <p className="mt-3 text-sm font-extrabold text-[#425672]">Takip etmek istediğiniz talebi seçin</p>
-          <p className="mx-auto mt-1 max-w-xs text-xs leading-5 text-[#8292a8]">Talep takip listesinden bir talep seçtiğinizde tüm üretim adımları burada açılır.</p>
+          <p className="mt-3 text-sm font-extrabold text-[#425672]">Takip etmek istediğiniz yayını seçin</p>
+          <p className="mx-auto mt-1 max-w-xs text-xs leading-5 text-[#8292a8]">Yayın takip listesinden bir kayıt seçtiğinizde tüm üretim adımları burada açılır.</p>
         </div>
       </div>
     );
@@ -143,7 +143,7 @@ export function TalepDetayi({
     <section aria-labelledby="talep-takip-baslik" className="overflow-hidden rounded-2xl border border-[#dfe7f2] bg-white shadow-[0_10px_28px_rgba(31,55,90,0.045)]">
       <div className="border-b border-[#e8eef5] px-4 py-4 md:px-5">
         <div className="inline-flex items-center">
-          <h2 id="talep-takip-baslik" className="mt-0.5 text-base font-extrabold text-[#203653]">Talep Takibi</h2>
+          <h2 id="talep-takip-baslik" className="mt-0.5 text-base font-extrabold text-[#203653]">Yayın Takibi</h2>
           <SayfaRehberi anahtar="talepler-uretim-gorunumu" className="ml-1.5 -translate-y-1.5" />
         </div>
       </div>

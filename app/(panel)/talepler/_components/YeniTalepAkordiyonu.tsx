@@ -60,11 +60,11 @@ export function YeniTalepAkordiyonu({ onTalepOlusturuldu }: Props) {
             </svg>
           </span>
           <span className="min-w-0">
-            <span className="block text-sm font-extrabold text-[#203653]">Yeni İçerik Talebi</span>
+            <span className="block text-sm font-extrabold text-[#203653]">Yeni Yayın Oluştur</span>
           </span>
         </span>
         <span className="flex shrink-0 items-center gap-2 text-xs font-bold text-[#3989d7]">
-          <span className="hidden sm:inline">{acik ? "Formu kapat" : "Talep oluştur"}</span>
+          <span className="hidden sm:inline">{acik ? "Formu kapat" : "Yayın oluştur"}</span>
           <svg
             aria-hidden="true"
             viewBox="0 0 24 24"

@@ -56,7 +56,7 @@ export function IsListesi({ talepler, seciliTalepId, rol, onSec }: Props) {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="inline-flex items-center">
-              <h2 id="talep-takip-listesi-baslik" className="text-base font-extrabold text-[#203653]">Talep Takip Listesi</h2>
+              <h2 id="talep-takip-listesi-baslik" className="text-base font-extrabold text-[#203653]">Yayın Takip Listesi</h2>
               <SayfaRehberi anahtar="talepler-aktif-operasyon" className="ml-1.5 -translate-y-1.5" />
             </div>
           </div>
@@ -85,10 +85,10 @@ export function IsListesi({ talepler, seciliTalepId, rol, onSec }: Props) {
           </span>
           <p className="mt-3 text-sm font-bold text-[#566b87]">
             {talepler.length === 0
-              ? "Devam eden talebiniz yok."
+              ? "Devam eden yayınınız yok."
               : liste.hamToplam === 0
-              ? "Bu aşamada talep yok."
-              : "Aramanıza uyan talep bulunamadı."}
+              ? "Bu aşamada yayın yok."
+              : "Aramanıza uyan yayın bulunamadı."}
           </p>
         </div>
       ) : (
@@ -135,7 +135,7 @@ export function IsListesi({ talepler, seciliTalepId, rol, onSec }: Props) {
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-[#e8eef5] bg-[#f8fafd]">
-                  <th className="px-4 py-2.5 text-left text-[10px] font-extrabold uppercase tracking-wider text-[#8595aa]">Talep</th>
+                  <th className="px-4 py-2.5 text-left text-[10px] font-extrabold uppercase tracking-wider text-[#8595aa]">Yayın</th>
                   <th className="px-3 py-2.5 text-left text-[10px] font-extrabold uppercase tracking-wider text-[#8595aa]">Aşama</th>
                   <th className="px-3 py-2.5 text-left text-[10px] font-extrabold uppercase tracking-wider text-[#8595aa]">Sorumluluk</th>
                   <th className="w-9 px-2 py-2.5"><span className="sr-only">Seç</span></th>
