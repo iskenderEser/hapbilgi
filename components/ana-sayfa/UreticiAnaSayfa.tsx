@@ -241,7 +241,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
       {/* Stat kartlar */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
         {([
-          { label: "Sizden Onay Bekleyen", value: istat.inceleme_bekleyen, sub: "Senaryo, video veya soru seti", renk: "#bc2d0d", git: "/talepler" },
+          { label: "Sizden Onay Bekleyen", value: istat.inceleme_bekleyen, sub: "Senaryo, video veya soru seti", renk: "#bc2d0d", git: "/yayin-takip" },
           { label: "Yayına Alınmayı Bekleyen", value: istat.yayin_bekleyen, sub: "Onaylı, yayına alınmadı", renk: "#f59e0b", filtre: "yayin-bekleyen" },
           { label: "Yayında Olanlar", value: istat.yayinda, sub: "UTT'ler izleyebilir", renk: "#16a34a", filtre: "yayinda" },
           { label: "Toplam Talep", value: istat.toplam, sub: "Tüm içerik kalemleri", renk: "#56aeff", filtre: "tumu" },

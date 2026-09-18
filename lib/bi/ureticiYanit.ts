@@ -35,7 +35,7 @@ export async function ureticiYanitiniHazirla(db: SupabaseClient, id: string, rol
       const fark = sonuc.adet - onceki.adet;
       cevap += `\n\n${satir(onceki)}\n\nFark: **${fark > 0 ? '+' : ''}${fark.toLocaleString('tr-TR')} adet**.`;
     }
-    const url = ['yayinda','yayinda_arac_turu','yayin_arac_dagilimi','planlanan','durdurulan','yayina_alinan','yayin_bekleyen'].includes(s.olcut) ? '/yayin-yonetimi' : '/talepler';
+    const url = ['yayinda','yayinda_arac_turu','yayin_arac_dagilimi','planlanan','durdurulan','yayina_alinan','yayin_bekleyen'].includes(s.olcut) ? '/yayin-yonetimi' : '/yayin-takip';
     return { status: 200, veri: { cevap, baglam: { ...s, karsilastir: false },
       kaynaklar: [{ id: 'uretici_sayim', baslik: URETICI_OLCUTLERI[s.olcut], url, zaman: simdi.toISOString(), donem: sonuc.donem.etiket }],
       kullanim: { yol: 'kac', olcut: s.olcut } } };

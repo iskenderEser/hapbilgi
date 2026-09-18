@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     }
     for (const eski of eskiOturumlar ?? []) {
       if (!await bunnyVideoSil(eski.video_guid)) {
-        return hataYaniti("Önceki video aktarımı temizlenemedi.", "Bunny yarım video temizliği", null, 502);
+        return hataYaniti("Önceki video aktarımı temizlenemedi.", "yarım video temizliği", null, 502);
       }
       const { error: silmeHatasi } = await adminSupabase
         .from("ogrenme_araci_video_yukleme_oturumlari")

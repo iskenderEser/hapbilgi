@@ -30,7 +30,7 @@ const TANIM_SAYFALARI: Readonly<Record<string, Link>> = {
  "cclub_ligi": { etiket: "CC-Ligi", url: "/cc-ligi" },
  "store": { etiket: "HBStore", url: "/store" },
  "eclub_takim": { etiket: "E-Club", url: "/eclub/eczanelerim" },
- "talepler": { etiket: "Taleplerim", url: "/talepler" },
+ "talepler": { etiket: "Taleplerim", url: "/yayin-takip" },
  "yayinlar": { etiket: "Yayın Yönetimi", url: "/yayin-yonetimi" },
 };
 export function tanimSayfasi(sayfa: string | undefined, rol: string): Link | undefined {

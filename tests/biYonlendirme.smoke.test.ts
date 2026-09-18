@@ -16,7 +16,7 @@ test('Yönlendirme rol ve konu ayrımını, kapalı modülleri korur', () => {
     assert.equal(yonLinkleri(rol, 'kendi_uretim')[0].url, '/raporlar/uretici');
     assert.equal(yonLinkleri(rol, 'firma_uretim')[0].url, '/raporlar/uretim');
     assert.equal(yonLinkleri(rol, 'tclub')[0].url, '/raporlar/tclub-uretici');
-    assert.equal(yonLinkleri(rol, 'talepler')[0].url, '/talepler');
+    assert.equal(yonLinkleri(rol, 'talepler')[0].url, '/yayin-takip');
     assert.equal(yonLinkleri(rol, 'yayinlar')[0].url, '/yayin-yonetimi');
   }
 });
