@@ -19,6 +19,9 @@
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PANEL_NAV, type NavContext, type NavGrup, type NavOge } from "./panelNav.config";
+import { prefetchTalepMerkezi } from "@/app/(panel)/talepler/_hooks/talepOnbellek";
+import { prefetchYayinOzet } from "@/app/(panel)/yayin-yonetimi/_hooks/ozetOnbellek";
+import { prefetchYayinKatalog } from "@/app/(panel)/yayindaki-videolar/_components/katalogOnbellek";
 
 type SolListeProps = NavContext & {
   badge: Record<string, number>;
@@ -90,10 +93,19 @@ export default function SolListe(props: SolListeProps) {
     const aktif = oge.tamEslesme ? pathname === path : pathname === path || pathname.startsWith(`${path}/`);
     const isHover = hover === oge.etiket;
     const sayi = rozetSayisi(oge);
+
+    const onHover = () => {
+      setHover(oge.etiket);
+      router.prefetch(path);
+      if (path === "/yayin-takip") void prefetchTalepMerkezi();
+      else if (path === "/yayin-yonetimi") void prefetchYayinOzet();
+      else if (path === "/sizin-yayinlariniz") void prefetchYayinKatalog("benim");
+    };
+
     return (
       <button
         onClick={() => router.push(path)}
-        onMouseEnter={() => setHover(oge.etiket)}
+        onMouseEnter={onHover}
         onMouseLeave={() => setHover(null)}
         className="relative w-full flex items-center justify-between rounded-lg cursor-pointer border-none text-left transition-all duration-200"
         style={{

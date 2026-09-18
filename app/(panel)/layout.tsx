@@ -27,6 +27,10 @@ import { HapbiProvider } from "@/components/hapbi/HapbiProvider";
 import HapbiMaskot from "@/components/hapbi/HapbiMaskot";
 import HapbiChatModal from "@/components/hapbi/HapbiChatModal";
 import YarimYuklemeBildirimi from "@/components/ogrenme-araci/YarimYuklemeBildirimi";
+import { URETICI_ROLLER } from "@/lib/utils/roller";
+import { prefetchTalepMerkezi } from "@/app/(panel)/talepler/_hooks/talepOnbellek";
+import { prefetchYayinOzet } from "@/app/(panel)/yayin-yonetimi/_hooks/ozetOnbellek";
+import { prefetchYayinKatalog } from "@/app/(panel)/yayindaki-videolar/_components/katalogOnbellek";
 
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -52,6 +56,15 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     if (rolKucu === "admin") { router.replace("/admin"); return; }
     if (kullanici.kimlik_turu === "musteri") { router.replace("/eczanem"); return; }
   }, [kullanici, yukleniyor, rolKucu, router]);
+
+  // Üretici rolleri için ana sayfa ve panel içi gezinmede tüm kritik sayfaların önbelleğini ısıt
+  useEffect(() => {
+    if (kullanici && URETICI_ROLLER.includes(rolKucu)) {
+      void prefetchYayinOzet();
+      void prefetchTalepMerkezi();
+      void prefetchYayinKatalog("benim");
+    }
+  }, [kullanici, rolKucu]);
 
   const profilVeOzetiCek = useCallback(async () => {
     try {

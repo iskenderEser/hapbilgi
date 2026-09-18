@@ -20,7 +20,7 @@ import { hazirGorselYukle, hazirFlipPdfYukle, hazirPodcastYukle } from "@/lib/og
 import { SORGU_ARALIGI_MS, TAVAN_SANIYE } from "@/lib/video/islemeDurumu";
 import { bildirimRozetleriniYenile } from "@/lib/bildirimler/rozet";
 import type { TalepDetay, TalepSatiri } from "../_ureticiRolTypes";
-import { getTalepOnbellek, setTalepOnbellek } from "./talepOnbellek";
+import { getTalepOnbellek, setTalepOnbellek, hesaplaTalepOzeti, type TalepOzetSayilari } from "./talepOnbellek";
 
 export type KararDurumu = "onaylandi" | "revizyon bekleniyor" | "Iptal Edildi";
 
@@ -28,9 +28,10 @@ export function useTalepMerkezi() {
   const { kullanici } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
 
-  const baslangicTalepler = getTalepOnbellek();
-  const [talepler, setTalepler] = useState<TalepSatiri[]>(() => baslangicTalepler ?? []);
-  const [loading, setLoading] = useState(() => !baslangicTalepler);
+  const baslangicPaket = getTalepOnbellek();
+  const [talepler, setTalepler] = useState<TalepSatiri[]>(() => baslangicPaket?.talepler ?? []);
+  const [ozetSayilari, setOzetSayilari] = useState<TalepOzetSayilari | null>(() => baslangicPaket?.ozet ?? null);
+  const [loading, setLoading] = useState(() => !baslangicPaket);
   const [yenileniyor, setYenileniyor] = useState(false);
   const [seciliTalepId, setSeciliTalepId] = useState<string | null>(null);
 
@@ -61,6 +62,7 @@ export function useTalepMerkezi() {
         const gelen: TalepSatiri[] = data.talepler ?? [];
         setTalepOnbellek(gelen);
         setTalepler(gelen);
+        setOzetSayilari(hesaplaTalepOzeti(gelen));
         if (enYeniyiSec.current) {
           const yeni = gelen.find((t) => !t.uretim_bitti && !t.iptal_edildi);
           if (yeni) setSeciliTalepId(yeni.talep_id);
@@ -94,7 +96,8 @@ export function useTalepMerkezi() {
 
     if (yuklenenKullaniciIdRef.current !== aktifId) {
       yuklenenKullaniciIdRef.current = aktifId;
-      void veriCek(true);
+      const onbellekVar = !!getTalepOnbellek();
+      void veriCek(!onbellekVar);
     }
   }, [kullanici?.id, veriCek]);
 
@@ -475,6 +478,7 @@ export function useTalepMerkezi() {
     talepler,
     devamEdenler,
     iptalEdilenler,
+    ozetSayilari,
     seciliTalepId,
     seciliTalep,
     setSeciliTalepId,

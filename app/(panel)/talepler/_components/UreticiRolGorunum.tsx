@@ -11,7 +11,7 @@
 
 "use client";
 
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import { HataMesajiContainer } from "@/components/HataMesaji";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -44,42 +44,51 @@ export function UreticiRolGorunum() {
     );
   }
 
-  const operasyonOzeti = merkez.devamEdenler.reduce(
-    (ozet, talep) => {
-      const top = ureticiDurumMesaji(talep.durum_kodu, talep.created_at).top;
-      if (top === "uretici") ozet.aksiyonBekleyen += 1;
-      if (top === "icerik_ureticisi") ozet.uretimde += 1;
-      if (top === "sistem") ozet.planlanan += 1;
-      return ozet;
-    },
-    { aksiyonBekleyen: 0, uretimde: 0, planlanan: 0 },
-  );
+  const operasyonOzeti = useMemo(() => {
+    return merkez.devamEdenler.reduce(
+      (ozet, talep) => {
+        const top = ureticiDurumMesaji(talep.durum_kodu, talep.created_at).top;
+        if (top === "uretici") ozet.aksiyonBekleyen += 1;
+        if (top === "icerik_ureticisi") ozet.uretimde += 1;
+        if (top === "sistem") ozet.planlanan += 1;
+        return ozet;
+      },
+      { aksiyonBekleyen: 0, uretimde: 0, planlanan: 0 },
+    );
+  }, [merkez.devamEdenler]);
+
+  // Canlı liste veya önbellek özeti: kartlar ilk kareden (0.00 sn) stabil çizilir, zıplama olmaz
+  const canliVeriHazir = merkez.talepler.length > 0 || !merkez.loading;
+  const degerDevamEden = canliVeriHazir ? merkez.devamEdenler.length : (merkez.ozetSayilari?.devamEden ?? 0);
+  const degerAksiyonBekleyen = canliVeriHazir ? operasyonOzeti.aksiyonBekleyen : (merkez.ozetSayilari?.aksiyonBekleyen ?? 0);
+  const degerUretimde = canliVeriHazir ? operasyonOzeti.uretimde : (merkez.ozetSayilari?.uretimde ?? 0);
+  const degerPlanlanan = canliVeriHazir ? operasyonOzeti.planlanan : (merkez.ozetSayilari?.planlanan ?? 0);
 
   const ozetKartlari = [
     {
       etiket: "Devam eden",
-      deger: merkez.devamEdenler.length,
+      deger: degerDevamEden,
       aciklama: "Aktif üretim akışı",
       vurgu: "#2563eb",
       zemin: "#eff6ff",
     },
     {
       etiket: "Sizi bekleyen",
-      deger: operasyonOzeti.aksiyonBekleyen,
+      deger: degerAksiyonBekleyen,
       aciklama: "Karar veya içerik gerekli",
       vurgu: "#c2410c",
       zemin: "#fff7ed",
     },
     {
       etiket: "Üreticide",
-      deger: operasyonOzeti.uretimde,
+      deger: degerUretimde,
       aciklama: "İçerik üretimi sürüyor",
       vurgu: "#7c3aed",
       zemin: "#f5f3ff",
     },
     {
       etiket: "Planlanan",
-      deger: operasyonOzeti.planlanan,
+      deger: degerPlanlanan,
       aciklama: "Yayın zamanı bekleyenler",
       vurgu: "#047857",
       zemin: "#ecfdf5",
@@ -118,7 +127,7 @@ export function UreticiRolGorunum() {
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg font-extrabold"
                     style={{ color: kart.vurgu, backgroundColor: kart.zemin }}
                   >
-                    {merkez.loading && merkez.devamEdenler.length === 0 ? (
+                    {merkez.loading && !merkez.ozetSayilari && merkez.talepler.length === 0 ? (
                       <span className="inline-block h-5 w-5 animate-pulse rounded bg-current/20" />
                     ) : (
                       kart.deger
