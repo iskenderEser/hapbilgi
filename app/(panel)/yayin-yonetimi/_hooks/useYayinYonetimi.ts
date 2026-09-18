@@ -251,7 +251,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
             ? (() => {
                 const isCekli = cekKarsiligiVarMi[b.soru_seti_durum_id] ?? true;
                 return {
-                  tekrar_periyot_gun: tekrarPeriyotlari[b.soru_seti_durum_id] ?? null,
+                  tekrar_periyot_gun: (tekrarPeriyotlari[b.soru_seti_durum_id] && tekrarPeriyotlari[b.soru_seti_durum_id] > 0) ? tekrarPeriyotlari[b.soru_seti_durum_id] : null,
                   cek_karsiligi_var_mi: isCekli,
                   satis_sarti_tipi: isCekli ? (satisSartiTipleri[b.soru_seti_durum_id] ?? "satis_sartli") : null,
                   gizli_sart_katlama_orani: isCekli && satisSartiTipleri[b.soru_seti_durum_id] === "serbest_siparis" ? (katlamaOranlari[b.soru_seti_durum_id] ?? 20) : null,
@@ -262,7 +262,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
               })()
             : {
                 extra_puan: extraPuanlar[b.soru_seti_durum_id] ?? null,
-                tekrar_periyot_gun: tekrarPeriyotlari[b.soru_seti_durum_id] ?? null,
+                tekrar_periyot_gun: (tekrarPeriyotlari[b.soru_seti_durum_id] && tekrarPeriyotlari[b.soru_seti_durum_id] > 0) ? tekrarPeriyotlari[b.soru_seti_durum_id] : null,
               }),
       }),
     });
