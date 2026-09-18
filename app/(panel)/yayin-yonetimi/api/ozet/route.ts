@@ -66,6 +66,24 @@ export async function GET() {
     const planli = yayinlar.filter(y => y.durum === "planlandi").length;
     const durdurulan = yayinlar.filter(y => y.durum === "Durduruldu").length;
 
+    // Hedef gruplarına göre durum sayıları
+    const tumGruplar = [...TUM_HEDEF_ROLLER, ECLUB_ORTAK_YAYIN_GRUBU];
+    const hedefOzetleri = Object.fromEntries(
+      tumGruplar.map((hedef) => [
+        hedef,
+        { bekleyen: 0, canli: 0, planli: 0, durdurulan: 0 },
+      ])
+    ) as Record<YayinHedefGrubu, { bekleyen: number; canli: number; planli: number; durdurulan: number }>;
+
+    for (const y of yayinlar) {
+      const grup = yayinHedefGrubuBelirle(y.hedef_roller);
+      if (grup && hedefOzetleri[grup]) {
+        if (y.durum === "yayinda") hedefOzetleri[grup].canli += 1;
+        else if (y.durum === "planlandi") hedefOzetleri[grup].planli += 1;
+        else if (y.durum === "Durduruldu") hedefOzetleri[grup].durdurulan += 1;
+      }
+    }
+
     // Hedef gruplarına göre bekleyen sayıları
     const hedefSayilari = { ...bosHedefSayilari };
     let toplamBekleyen = 0;
@@ -77,14 +95,16 @@ export async function GET() {
       if (!talep || talep.yayin_oncesi_silme_durumu === "tamamlandi") continue;
 
       const grup = yayinHedefGrubuBelirle(talep.hedef_roller);
-      if (grup) {
+      if (grup && hedefOzetleri[grup]) {
         hedefSayilari[grup] += 1;
+        hedefOzetleri[grup].bekleyen += 1;
         toplamBekleyen += 1;
       }
     }
 
     return NextResponse.json({
       sayilar: hedefSayilari,
+      hedefler: hedefOzetleri,
       bekleyen: toplamBekleyen,
       yayinda: canli + planli,
       canli,

@@ -87,6 +87,12 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, onOzetYuklendi, 
     durdurulan: number;
     bekleyen: number;
   } | null>(null);
+  const [hedefOzetleri, setHedefOzetleri] = useState<Record<string, {
+    canli: number;
+    planli: number;
+    durdurulan: number;
+    bekleyen: number;
+  }> | null>(null);
 
   const ozetCek = useCallback(async () => {
     try {
@@ -98,6 +104,9 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, onOzetYuklendi, 
         if (onOzetYuklendi) {
           onOzetYuklendi(d.sayilar);
         }
+      }
+      if (d.hedefler) {
+        setHedefOzetleri(d.hedefler);
       }
       setStatSayilari({
         canli: Number(d.canli ?? 0),
@@ -384,6 +393,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, onOzetYuklendi, 
     tekrarBilgi,
     yayinGunleri, setYayinGunleri,
     statSayilari,
+    hedefOzetleri,
     // veri
     veriCek, ozetCek,
     // puan yardımcıları

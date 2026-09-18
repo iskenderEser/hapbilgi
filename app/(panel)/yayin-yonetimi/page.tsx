@@ -168,6 +168,8 @@ function YayinYonetimiIcerik() {
     );
   }
 
+  const aktifHedefOzet = yy.hedefOzetleri?.[aktifAnaSekme];
+
   return (
     <>
       <div className="min-h-full bg-[#f5f8fc]">
@@ -175,11 +177,11 @@ function YayinYonetimiIcerik() {
         <YayinKumandaPaneli
           aktifHedef={aktifAnaSekme}
           aktifDurum={aktifSekme}
-          bekleyen={yy.statSayilari?.bekleyen ?? yy.bekleyenler.length}
+          bekleyen={aktifHedefOzet ? aktifHedefOzet.bekleyen : yy.bekleyenler.length}
           bekleyenHedefSayilari={yy.bekleyenHedefSayilari}
-          canli={yy.statSayilari?.canli ?? canliSayisi}
-          planli={yy.statSayilari?.planli ?? planliSayisi}
-          durdurulan={yy.statSayilari?.durdurulan ?? durdurulular.length}
+          canli={aktifHedefOzet ? aktifHedefOzet.canli : canliSayisi}
+          planli={aktifHedefOzet ? aktifHedefOzet.planli : planliSayisi}
+          durdurulan={aktifHedefOzet ? aktifHedefOzet.durdurulan : durdurulular.length}
           onHedefDegistir={setAktifAnaSekme}
           onDurumDegistir={setAktifSekme}
           aksiyon={<YenileButonu yenileniyor={yy.yenileniyor} onYenile={() => { void yy.ozetCek(); void yy.veriCek(); }} disabled={!!acikAkordiyon || !!yy.islemLoading} />}
