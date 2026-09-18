@@ -146,7 +146,7 @@ export default function UretimRaporlariPage() {
                 <div className="text-xl sm:text-2xl font-black tabular-nums text-[#16865f]">
                   {data.uretim.su_an_yayinda}
                 </div>
-                <span className="block text-[10px] text-[#8a9bb0] mt-0.5">Canlı yayınlar</span>
+                <span className="block text-[10px] text-[#8a9bb0] mt-0.5">Canlı yayın</span>
               </div>
 
               {/* 2. Stat Kart: [ZAMAN] YAYINA ALINAN */}
@@ -160,7 +160,7 @@ export default function UretimRaporlariPage() {
                 <div className="text-xl sm:text-2xl font-black tabular-nums text-[#237ac8]">
                   {data.uretim.donemde_yayina_alinan}
                 </div>
-                <span className="block text-[10px] text-[#8a9bb0] mt-0.5">Canlı yayın</span>
+                <span className="block text-[10px] text-[#8a9bb0] mt-0.5">Açılan canlı yayın</span>
               </div>
             </div>
           </section>
