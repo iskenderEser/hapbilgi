@@ -9,7 +9,7 @@
 
 "use client";
 
-import { useEffect, useState, Suspense, type ReactNode } from "react";
+import { useEffect, useState, useCallback, Suspense, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -72,7 +72,6 @@ function YayinYonetimiIcerik() {
 
   const [aktifAnaSekme, setAktifAnaSekme] = useState<YayinHedefGrubu>(baslangicHedef ?? "utt");
   const [aktifSekme, setAktifSekme] = useState<AltSekme>(baslangicDurum);
-  const [ilkHedefHazir, setIlkHedefHazir] = useState(false);
 
   // Saf UI state (modallar + akordiyon + video/araç önizleme) — sayfada kalır.
   const [acikAkordiyon, setAcikAkordiyon] = useState<string | null>(null);
@@ -99,38 +98,21 @@ function YayinYonetimiIcerik() {
     }
   }, [durumParam, hedefParam]);
 
-  useEffect(() => {
-    if (!kullaniciId) {
-      setIlkHedefHazir(false);
-      return;
-    }
-
-    let aktif = true;
-    void (async () => {
-      try {
-        const res = await fetch("/yayin-yonetimi/api/bekleyenler?sayi=1");
-        const data = await res.json();
-        if (aktif && res.ok) {
-          const ilkBekleyenHedef = YAYIN_HEDEF_GRUP_SIRASI.find(
-            (hedef) => Number(data.sayilar?.[hedef] ?? 0) > 0,
-          );
-          if (!baslangicHedef && baslangicDurum === "bekleyen") {
-            setAktifAnaSekme(ilkBekleyenHedef ?? "utt");
-          }
-        }
-      } catch {
-        // Asıl veri çağrısı aşağıdaki hook tarafından hata mesajıyla yönetilir.
-      } finally {
-        if (aktif) setIlkHedefHazir(true);
+  const onOzetYuklendi = useCallback((sayilar: Record<string, number>) => {
+    if (!baslangicHedef && baslangicDurum === "bekleyen") {
+      const ilkBekleyenHedef = YAYIN_HEDEF_GRUP_SIRASI.find(
+        (hedef) => Number(sayilar?.[hedef] ?? 0) > 0,
+      );
+      if (ilkBekleyenHedef) {
+        setAktifAnaSekme(ilkBekleyenHedef);
       }
-    })();
-
-    return () => { aktif = false; };
-  }, [kullaniciId, baslangicHedef, baslangicDurum]);
+    }
+  }, [baslangicHedef, baslangicDurum]);
 
   const yy = useYayinYonetimi({
     kullaniciVar: !!kullaniciId,
     aktifAnaSekme,
+    onOzetYuklendi,
     hata,
     basari,
   });
@@ -193,14 +175,14 @@ function YayinYonetimiIcerik() {
         <YayinKumandaPaneli
           aktifHedef={aktifAnaSekme}
           aktifDurum={aktifSekme}
-          bekleyen={yy.bekleyenler.length}
+          bekleyen={yy.statSayilari?.bekleyen ?? yy.bekleyenler.length}
           bekleyenHedefSayilari={yy.bekleyenHedefSayilari}
-          canli={canliSayisi}
-          planli={planliSayisi}
-          durdurulan={durdurulular.length}
+          canli={yy.statSayilari?.canli ?? canliSayisi}
+          planli={yy.statSayilari?.planli ?? planliSayisi}
+          durdurulan={yy.statSayilari?.durdurulan ?? durdurulular.length}
           onHedefDegistir={setAktifAnaSekme}
           onDurumDegistir={setAktifSekme}
-          aksiyon={<YenileButonu yenileniyor={yy.yenileniyor} onYenile={() => yy.veriCek()} disabled={!!acikAkordiyon || !!yy.islemLoading} />}
+          aksiyon={<YenileButonu yenileniyor={yy.yenileniyor} onYenile={() => { void yy.ozetCek(); void yy.veriCek(); }} disabled={!!acikAkordiyon || !!yy.islemLoading} />}
         />
 
         {yy.loading ? (

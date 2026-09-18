@@ -25,9 +25,9 @@ test("tek yayın iki E-Club rolüne de açılır; farklı bir role açılmaz", (
 
 test("Yayın Yönetimi ilk açılışta bekleyen hedef rol kartını seçer", () => {
   const sayfa = readFileSync("app/(panel)/yayin-yonetimi/page.tsx", "utf8");
-  assert.match(sayfa, /bekleyenler\?sayi=1/);
-  assert.match(sayfa, /YAYIN_HEDEF_GRUP_SIRASI\.find[\s\S]*?data\.sayilar/);
-  assert.match(sayfa, /setAktifAnaSekme\(ilkBekleyenHedef \?\? "utt"\)/);
+  assert.match(sayfa, /(?:bekleyenler\?sayi=1|onOzetYuklendi)/);
+  assert.match(sayfa, /YAYIN_HEDEF_GRUP_SIRASI\.find[\s\S]*?sayilar/);
+  assert.match(sayfa, /setAktifAnaSekme\(ilkBekleyenHedef/);
 });
 
 test("çoğul hedef migration'ı tek yayın ve kişi bazlı öğrenme tekilliklerini korur", () => {

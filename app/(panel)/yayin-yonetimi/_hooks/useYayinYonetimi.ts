@@ -24,6 +24,7 @@ import { VARSAYILAN_BAREM_TABLOSU, type SatisSartiTipi, type BaremSatiri } from 
 interface UseYayinYonetimiArgs {
   kullaniciVar: boolean;
   aktifAnaSekme: YayinHedefGrubu;
+  onOzetYuklendi?: (sayilar: Record<string, number>) => void;
   hata: (mesaj: string, adim?: string, detay?: string) => void;
   basari: (mesaj: string) => void;
 }
@@ -33,7 +34,7 @@ type YayinApiSatiri = Omit<Yayin, "hedef_roller" | "turu_adi"> & {
   egitim_turu: string | null;
 };
 
-export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: UseYayinYonetimiArgs) {
+export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, onOzetYuklendi, hata, basari }: UseYayinYonetimiArgs) {
   const [bekleyenler, setBekleyenler] = useState<Bekleyen[]>([]);
   const [bekleyenHedefSayilari, setBekleyenHedefSayilari] = useState<BekleyenHedefSayilari>({
     utt: 0,
@@ -79,8 +80,39 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
   // Yayın tur bilgisi — yayin_id → hesaplanmış tur (sayaç rozeti için; salt-okur).
   const [tekrarBilgi, setTekrarBilgi] = useState<Record<string, HesaplananTur>>({});
 
+  // Stat kartları ve sayaçlar için ultra-hafif özet state'i
+  const [statSayilari, setStatSayilari] = useState<{
+    canli: number;
+    planli: number;
+    durdurulan: number;
+    bekleyen: number;
+  } | null>(null);
+
+  const ozetCek = useCallback(async () => {
+    try {
+      const res = await fetch("/yayin-yonetimi/api/ozet");
+      if (!res.ok) return;
+      const d = await res.json();
+      if (d.sayilar) {
+        setBekleyenHedefSayilari(d.sayilar);
+        if (onOzetYuklendi) {
+          onOzetYuklendi(d.sayilar);
+        }
+      }
+      setStatSayilari({
+        canli: Number(d.canli ?? 0),
+        planli: Number(d.planli ?? 0),
+        durdurulan: Number(d.durdurulan ?? 0),
+        bekleyen: Number(d.bekleyen ?? 0),
+      });
+    } catch {
+      // sessizce geç
+    }
+  }, [onOzetYuklendi]);
+
   useEffect(() => {
     if (!kullaniciVar) return;
+    void ozetCek();
     (async () => {
       const res = await fetch("/yayin-yonetimi/api/tekrar-secenekleri");
       const d = await res.json();
@@ -90,7 +122,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
         setTekrarSecenekleri(d.secenekler ?? []);
       }
     })();
-  }, [kullaniciVar, hata]);
+  }, [kullaniciVar, hata, ozetCek]);
 
   const veriCek = useCallback(async (ilkYukleme = false) => {
     if (ilkYukleme) setLoading(true);
@@ -145,6 +177,9 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
         turu_adi: y.egitim_turu ? (TALEP_TURU_KURALLARI[y.egitim_turu as TalepTuru]?.ad ?? null) : null,
       })));
 
+      // HEMEN LİSTEYİ GÖSTER: Ana liste geldiğinde beklemeden loading kapatılır
+      if (ilkYukleme) setLoading(false);
+
       // Tur bilgisi ve soru puanlarını paralel çek (ana render'ı geciktirmez)
       const [turMap, spSonuc] = await Promise.all([
         gecerliTurBaslangiclari(supabase, yayinlarData!.map(y => y.yayin_id)),
@@ -167,6 +202,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     } else {
       setYayinlar([]);
       setTekrarBilgi({});
+      if (ilkYukleme) setLoading(false);
     }
 
     } catch (err) {
@@ -347,8 +383,9 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     tekrarSecenekleri,
     tekrarBilgi,
     yayinGunleri, setYayinGunleri,
+    statSayilari,
     // veri
-    veriCek,
+    veriCek, ozetCek,
     // puan yardımcıları
     getSoruPuani, setSoruPuani, hepsineAyniPuanAta, tumPuanlarAtandiMi,
     // handler'lar
