@@ -43,26 +43,14 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const { kullanici, yukleniyor, cikisYap } = useAuth();
 
-  // Önbellekten anında başlat (hard refresh gecikmesini ve layout shift'i sıfırlar)
-  const [flags, setFlags] = useState<PanelFlags>(() => {
-    const cache = getPanelCache();
-    return cache?.flags ?? VARSAYILAN_FLAGS;
-  });
+  // Mahremiyet güvenliği: Kimliği doğrulanmamış hiçbir durumda önbellek okunmaz;
+  // güvenli varsayılanlarla başlatılır. Kullanıcı doğrulandığında sessionStorage'dan okunur.
+  const [flags, setFlags] = useState<PanelFlags>(VARSAYILAN_FLAGS);
   const [badge, setBadge] = useState<Record<string, number>>({});
   const [drawerAcik, setDrawerAcik] = useState(false);
-  // Navbar kişisel özeti — yalnız UTT/KD_UTT için profil/api döndürür (BM sonraya).
-  const [ozet, setOzet] = useState<{ haftalikPuan: number; takimSirasi: number | null; siparisPuani: number } | null>(() => {
-    const cache = getPanelCache();
-    return cache?.ozet ?? null;
-  });
-  const [eclubStorePuani, setEclubStorePuani] = useState<number | null>(() => {
-    const cache = getPanelCache();
-    return cache?.eclubStorePuani ?? null;
-  });
-  const [eclubFirmalar, setEclubFirmalar] = useState<Array<{ firma_id: string; firma_adi: string }>>(() => {
-    const cache = getPanelCache();
-    return cache?.eclubFirmalar ?? [];
-  });
+  const [ozet, setOzet] = useState<{ haftalikPuan: number; takimSirasi: number | null; siparisPuani: number } | null>(null);
+  const [eclubStorePuani, setEclubStorePuani] = useState<number | null>(null);
+  const [eclubFirmalar, setEclubFirmalar] = useState<Array<{ firma_id: string; firma_adi: string }>>([]);
 
   const rolKucu = kullanici?.rol?.trim().toLowerCase() ?? "";
   const isEclubKisi = kullanici?.kimlik_turu === "eclub_kisi";
@@ -75,12 +63,15 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     if (kullanici.kimlik_turu === "musteri") { router.replace("/eczanem"); return; }
   }, [kullanici, yukleniyor, rolKucu, router]);
 
-  // Kullanıcı değiştiğinde veya önbellek başka kullanıcıya aitse hemen tazele
+  // Kullanıcı değiştiğinde veya oturum doğrulandığında kullanıcının kendi önbelleğini yükle
   useEffect(() => {
-    if (!kullanici) return;
+    if (!kullanici?.id) return;
     const cache = getPanelCache(kullanici.id);
-    if (!cache) {
-      void profilVeOzetiCek();
+    if (cache) {
+      setFlags(cache.flags);
+      setOzet(cache.ozet);
+      setEclubStorePuani(cache.eclubStorePuani);
+      setEclubFirmalar(cache.eclubFirmalar);
     }
   }, [kullanici?.id]);
 
@@ -123,13 +114,14 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
       const guncelFirmalar = data.eclub_firmalar ?? [];
       setEclubFirmalar(guncelFirmalar);
 
-      setPanelCache({
-        userId: kullanici?.id,
-        flags: guncelFlags,
-        ozet: guncelOzet,
-        eclubStorePuani: guncelStorePuan,
-        eclubFirmalar: guncelFirmalar,
-      });
+      if (kullanici?.id) {
+        setPanelCache(kullanici.id, {
+          flags: guncelFlags,
+          ozet: guncelOzet,
+          eclubStorePuani: guncelStorePuan,
+          eclubFirmalar: guncelFirmalar,
+        });
+      }
     } catch {}
   }, [kullanici?.id]);
 
@@ -194,17 +186,32 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     );
   }
 
+  // Yalnızca oturumu doğrulanmış kullanıcıya ait önbellek (kullanıcı bazlı tam izolasyon)
+  const userCache = getPanelCache(kullanici.id);
+
+  const etkinFlags: PanelFlags = {
+    storeAcik: flags.storeAcik || (userCache?.flags.storeAcik ?? false),
+    ccAcik: flags.ccAcik || (userCache?.flags.ccAcik ?? false),
+    eclubAcik: flags.eclubAcik || (userCache?.flags.eclubAcik ?? false),
+    eclubStoreAcik: flags.eclubStoreAcik || (userCache?.flags.eclubStoreAcik ?? false),
+    eczanemAcik: flags.eczanemAcik || (userCache?.flags.eczanemAcik ?? false),
+  };
+
+  const etkinOzet = ozet ?? userCache?.ozet ?? null;
+  const etkinFirmalar = eclubFirmalar.length > 0 ? eclubFirmalar : (userCache?.eclubFirmalar ?? []);
+  const etkinEclubStorePuani = eclubStorePuani ?? userCache?.eclubStorePuani ?? null;
+
   const ctx: NavContext = {
     rolKucu,
     kimlikTuru: kullanici.kimlik_turu,
-    storeAcik: flags.storeAcik,
-    ccAcik: flags.ccAcik,
-    eclubAcik: flags.eclubAcik,
-    eclubStoreAcik: flags.eclubStoreAcik,
-    eczanemAcik: flags.eczanemAcik,
+    storeAcik: etkinFlags.storeAcik,
+    ccAcik: etkinFlags.ccAcik,
+    eclubAcik: etkinFlags.eclubAcik,
+    eclubStoreAcik: etkinFlags.eclubStoreAcik,
+    eczanemAcik: etkinFlags.eczanemAcik,
   };
   // eclub_kisi (KARAR-4) dar gezinme; diğer herkes tam ağaç.
-  const gruplar = kullanici.kimlik_turu === "eclub_kisi" ? eclubKisiNavOlustur(eclubFirmalar) : PANEL_NAV;
+  const gruplar = kullanici.kimlik_turu === "eclub_kisi" ? eclubKisiNavOlustur(etkinFirmalar) : PANEL_NAV;
   const anaSayfaYolu = isEclubKisi ? "/eclub/panel" : "/ana-sayfa";
 
   return (
@@ -213,12 +220,12 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         <PanelNavbar
           adSoyad={kullanici.adSoyad}
           email={kullanici.email}
-          ozet={isEclubKisi ? null : ozet}
-          siparisPuaniGoster={!isEclubKisi && flags.storeAcik}
-          storeGeriSayimGoster={!isEclubKisi && flags.storeAcik && ["utt", "kd_utt", "bm"].includes(rolKucu)}
-          eclubStoreGeriSayimGoster={Boolean(isEclubKisi && flags.eclubStoreAcik)}
+          ozet={isEclubKisi ? null : etkinOzet}
+          siparisPuaniGoster={!isEclubKisi && etkinFlags.storeAcik}
+          storeGeriSayimGoster={!isEclubKisi && etkinFlags.storeAcik && ["utt", "kd_utt", "bm"].includes(rolKucu)}
+          eclubStoreGeriSayimGoster={Boolean(isEclubKisi && etkinFlags.eclubStoreAcik)}
           anaSayfaYolu={anaSayfaYolu}
-          eclubStorePuani={isEclubKisi && flags.eclubStoreAcik ? eclubStorePuani : null}
+          eclubStorePuani={isEclubKisi && etkinFlags.eclubStoreAcik ? etkinEclubStorePuani : null}
           onCikis={cikisYap}
           onHamburger={() => setDrawerAcik(true)}
         />

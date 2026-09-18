@@ -27,7 +27,19 @@ export async function GET(
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return yetkiHatasi();
 
-    const rol = await rolCozucu(adminSupabase, user.id);
+    const [{ data: kullanici, error: kullaniciError }, rol] = await Promise.all([
+      adminSupabase
+        .from("kullanicilar")
+        .select("kullanici_id, firma_id, aktif_mi")
+        .eq("kullanici_id", user.id)
+        .maybeSingle(),
+      rolCozucu(adminSupabase, user.id),
+    ]);
+
+    if (kullaniciError || !kullanici || !kullanici.aktif_mi) {
+      return yetkiHatasi("Kullanıcı hesabı aktif değil veya bulunamadı.");
+    }
+
     if (!YETKILI_ROLLER.includes(rol)) {
       return rolHatasi("Bu yayın ve soru detayını görüntüleme yetkiniz yok.");
     }
@@ -36,6 +48,7 @@ export async function GET(
       .from("v_yayin_detay")
       .select(`
         yayin_id,
+        firma_id,
         talep_no,
         durum,
         yayin_tarihi,
@@ -62,6 +75,23 @@ export async function GET(
 
     if (yayinError || !yayin) {
       return hataYaniti("Yayın kaydı bulunamadı.", "v_yayin_detay SELECT", yayinError, 404);
+    }
+
+    // Kapsam ve Çoklu Kiracı (Multi-tenant) Güvenlik Doğrulaması
+    const isAdmin = ADMIN_ROLLER.includes(rol);
+    if (!isAdmin) {
+      if (!kullanici.firma_id || yayin.firma_id !== kullanici.firma_id) {
+        return rolHatasi("Bu yayına ve sorularına erişim yetkiniz yok.");
+      }
+      const { data: firma } = await adminSupabase
+        .from("firmalar")
+        .select("aktif")
+        .eq("firma_id", kullanici.firma_id)
+        .maybeSingle();
+
+      if (firma?.aktif !== true) {
+        return rolHatasi("Firma hesabı aktif değil.");
+      }
     }
 
     const kapakli = yayinThumbnailCevabi(yayin as unknown as YayinKapakGirdisi & Record<string, unknown>);
