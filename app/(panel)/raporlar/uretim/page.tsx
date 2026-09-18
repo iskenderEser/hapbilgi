@@ -17,7 +17,6 @@ import {
   Layers,
   Layers3,
   Repeat2,
-  Sparkles,
   Star,
 } from 'lucide-react';
 import { useAuth } from '@/app/providers/AuthProvider';
@@ -86,11 +85,8 @@ export default function UretimRaporlariPage() {
 
         <header className="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-6">
           <div>
-            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">
-              <Sparkles className="h-3.5 w-3.5" /> Fabrika & İçerik Portföy Analizi
-            </div>
             <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d] inline-flex items-center">
-              <span>{data?.kullanici?.firma_adi ? `${data.kullanici.firma_adi} · ` : ''}Yayın Raporları</span>
+              <span>Yayın Raporları</span>
               <SayfaRehberi anahtar="raporlar-uretim" className="ml-1.5 -translate-y-1.5" />
             </h1>
             <p className="mt-0.5 text-xs font-semibold text-[#78889d]">
