@@ -132,7 +132,7 @@ export default function UretimRaporlariPage() {
         ) : (
           <>
         {/* Yayın Hero Grid */}
-        <div className={styles.heroGrid}>
+        <div className={styles.uretimHeroGrid}>
           <section className={`${styles.panel} p-4 sm:p-5 flex flex-col justify-between`}>
             <div>
               <h2 className="text-base font-extrabold text-[#20324c]">Yayın Özeti</h2>
