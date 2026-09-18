@@ -13,7 +13,7 @@ import { yayinThumbnailCevabi, type YayinKapakGirdisi } from "@/lib/ogrenmeAraci
 import { kapakYayinKapisiDogrula } from "@/lib/ogrenmeAraci/sozlesme";
 import { baremTablosuDogrula } from "@/lib/eclub/store/eclubStoreTipler";
 
-const YAYIN_LISTE_ALANLARI = "yayin_id, arac_id, soru_seti_durum_id, durum, yayin_tarihi, durdurma_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, sorular, hedef_roller, talep_no, firma_adi, egitim_turu, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata";
+const YAYIN_LISTE_ALANLARI = "yayin_id, arac_id, soru_seti_durum_id, durum, yayin_tarihi, durdurma_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, soru_puani, sorular, hedef_roller, talep_no, firma_adi, egitim_turu, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata, video_suresi_saniye, arac_metadata_dogrulandi";
 
 export async function GET() {
   try {
@@ -34,9 +34,17 @@ export async function GET() {
 
     if (error) return hataYaniti("Yayınlar yüklenemedi.", "v_yayin_detay SELECT — üretici filtresi", error);
 
-    const islenmisYayinlar = (yayinlar ?? []).map((y: Record<string, unknown>) =>
-      yayinThumbnailCevabi(y as unknown as YayinKapakGirdisi & Record<string, unknown>)
-    );
+    const islenmisYayinlar = (yayinlar ?? []).map((y: Record<string, unknown>) => {
+      const kapakli = yayinThumbnailCevabi(y as unknown as YayinKapakGirdisi & Record<string, unknown>);
+      const aracTuru = (y.arac_turu as string | undefined) ?? "video";
+      const videoSuresi = Number(y.video_suresi_saniye) || 0;
+      const metadataDogrulandi = y.arac_metadata_dogrulandi === true;
+      const videoIsleniyor = aracTuru === "video" && (!metadataDogrulandi && videoSuresi <= 0);
+      return {
+        ...kapakli,
+        video_isleniyor: videoIsleniyor,
+      };
+    });
 
     return NextResponse.json({ yayinlar: islenmisYayinlar }, { status: 200 });
   } catch (err) {

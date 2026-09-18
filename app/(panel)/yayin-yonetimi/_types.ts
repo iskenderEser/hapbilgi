@@ -28,6 +28,7 @@ export interface Bekleyen {
   sorular: Soru[];
   video_url: string | null;
   thumbnail_url: string | null;
+  video_isleniyor?: boolean | null;
   video_puan_id: string | null;
   video_puani: number | null;
   soru_puan_map: Record<number, { soru_seti_puan_id: string; soru_puani: number }>;
@@ -70,6 +71,7 @@ export interface Yayin {
   sorular: Soru[];
   hedef_roller: HedefRoller;
   arac_turu?: "video" | "podcast" | "gorsel" | "flip_pdf" | string;
+  video_isleniyor?: boolean | null;
 }
 
 // Ortak önizleme hedefi (4 öğrenme aracı da desteklenir)

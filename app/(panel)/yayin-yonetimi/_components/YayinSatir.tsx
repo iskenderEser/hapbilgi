@@ -100,10 +100,20 @@ export function YayinSatir({
             <AracVarsayilanKapak aracTuru={tur} urunAdi={y.urun_adi} className="h-full w-full" />
           )}
           <span className="absolute inset-0 bg-gradient-to-t from-[#10233a]/55 via-transparent to-[#10233a]/10" />
-          <span className="absolute left-2 top-2 rounded-full px-2 py-1 text-[9px] font-extrabold shadow-sm"
-            style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}` }}>
-            {durum.metin}
-          </span>
+          {y.video_isleniyor ? (
+            <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[9px] font-extrabold text-amber-800 shadow-sm">
+              <svg className="animate-spin h-2.5 w-2.5 text-amber-700" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              <span>İşleniyor</span>
+            </span>
+          ) : (
+            <span className="absolute left-2 top-2 rounded-full px-2 py-1 text-[9px] font-extrabold shadow-sm"
+              style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}` }}>
+              {durum.metin}
+            </span>
+          )}
           <span className="absolute right-2 top-2 flex max-w-[70%] flex-wrap justify-end gap-1">
             <HedefRolPilleri hedefRoller={y.hedef_roller} />
           </span>
@@ -196,6 +206,13 @@ export function YayinSatir({
           )}
         </div>
 
+        {y.video_isleniyor && (
+          <div className="border-t border-amber-200/80 bg-amber-50/70 px-3 py-2 text-[11px] leading-relaxed text-amber-900 flex items-center gap-1.5">
+            <span className="font-bold text-amber-700 select-none">ℹ️</span>
+            <span>Videonuz işleniyor. Yayın kapak görseliniz ve önizlemeniz, videonuzun büyüklüğüne uygun olarak en kısa sürede hazır olacaktır.</span>
+          </div>
+        )}
+
         {akordiyonAcik && y.sorular?.length > 0 && (
           <SoruListesi sorular={y.sorular} soru_seti_durum_id={y.soru_seti_durum_id}
             getSoruPuani={getSoruPuani} setSoruPuani={setSoruPuani} hepsineAyniPuanAta={hepsineAyniPuanAta} />
@@ -229,12 +246,20 @@ export function YayinSatir({
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="truncate text-base font-extrabold text-[#213754]">{y.urun_adi}</span>
             <HedefRolPilleri hedefRoller={y.hedef_roller} />
-            {/* Metin ve renk tek sözlükten (25.07) — yayın durumu ana sayfada ne
-                yazıyorsa burada da aynısını yazar. Yalnız üretici görür. */}
-            <span className="rounded-full px-2 py-0.5 text-[10px] font-bold leading-tight"
-              style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}` }}>
-              {durum.metin}
-            </span>
+            {y.video_isleniyor ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold leading-tight text-amber-800">
+                <svg className="animate-spin h-2.5 w-2.5 text-amber-700" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <span>İşleniyor</span>
+              </span>
+            ) : (
+              <span className="rounded-full px-2 py-0.5 text-[10px] font-bold leading-tight"
+                style={{ background: durum.renk.bg, color: durum.renk.text, border: `0.5px solid ${durum.renk.border}` }}>
+                {durum.metin}
+              </span>
+            )}
           </div>
           <span className="mt-1 block text-[11px] font-semibold text-[#8494aa]">{talepIdGoster(y.firma_adi, y.talep_no)}</span>
           <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#617590]">
@@ -324,6 +349,12 @@ export function YayinSatir({
           </div>
         </div>
       </div>
+      {y.video_isleniyor && (
+        <div className="border-t border-amber-200/80 bg-amber-50/70 px-4 py-2 text-[11px] leading-relaxed text-amber-900 flex items-center gap-1.5">
+          <span className="font-bold text-amber-700 select-none">ℹ️</span>
+          <span>Videonuz işleniyor. Yayın kapak görseliniz ve önizlemeniz, videonuzun büyüklüğüne uygun olarak en kısa sürede hazır olacaktır.</span>
+        </div>
+      )}
       {acikAkordiyon === y.yayin_id && y.sorular?.length > 0 && (
         <SoruListesi sorular={y.sorular} soru_seti_durum_id={y.soru_seti_durum_id}
           getSoruPuani={getSoruPuani} setSoruPuani={setSoruPuani} hepsineAyniPuanAta={hepsineAyniPuanAta} />
