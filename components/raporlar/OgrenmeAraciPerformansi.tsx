@@ -11,7 +11,7 @@ import YayinDetayModal from "./YayinDetayModal";
 const ADLAR: Record<AracTuruRaporSatiri["arac_turu"], string> = {
   video: "Video",
   podcast: "Podcast",
-  gorsel: "Görsel",
+  gorsel: "Dijital Broşür",
   flip_pdf: "Literatür",
 };
 
@@ -253,7 +253,7 @@ export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTur
               <summary className="cursor-pointer list-none flex items-center justify-between text-[11px] font-extrabold text-[#243c5a]">
                 <div className="flex items-center gap-1.5 truncate mr-2">
                   <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: tema.renk }} />
-                  <span className="truncate">{ADLAR[satir.arac_turu]} Rol & Yayın Detayları</span>
+                  <span className="truncate">{ADLAR[satir.arac_turu]}, Rol ve Yayın Detayları</span>
                 </div>
                 <span className="rounded-md bg-[#edf4fb] px-1.5 py-0.5 text-[10px] font-extrabold text-[#237ac8] shrink-0">
                   {satir.yayinlar.length}
