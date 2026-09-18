@@ -2,8 +2,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 
 const TURLER: OgrenmeAraciTuru[] = ["video", "podcast", "gorsel", "flip_pdf"];
-
-type RolMetrigi = { baslatma: number; tamamlama: number };
+export type RolMetrigi = {
+  baslatma: number;
+  tamamlama: number;
+  kazanilan_puan?: number;
+  kaybedilen_puan?: number;
+  net_puan?: number;
+};
 type OlayToplami = {
   baslatma: number; tamamlama: number; dogru_cevap: number; yanlis_cevap: number;
   kazanilan_puan: number; kaybedilen_puan: number; oneri_gonderildi: number;
@@ -70,8 +75,15 @@ export async function aracTuruDagilimi(
       yayin[tur] += deger; yayinMetrigi.set(olay.yayin_id, yayin);
       if (tur === "baslatma" || tur === "tamamlama") {
         const rol = olay.rol || "bilinmiyor";
-        const metrik = roller[rol] ?? { baslatma: 0, tamamlama: 0 };
+        const metrik = roller[rol] ?? { baslatma: 0, tamamlama: 0, kazanilan_puan: 0, kaybedilen_puan: 0, net_puan: 0 };
         metrik[tur] += deger; roller[rol] = metrik;
+      }
+      if (tur === "kazanilan_puan" || tur === "kaybedilen_puan") {
+        const rol = olay.rol || "bilinmiyor";
+        const metrik = roller[rol] ?? { baslatma: 0, tamamlama: 0, kazanilan_puan: 0, kaybedilen_puan: 0, net_puan: 0 };
+        metrik[tur] = (metrik[tur] ?? 0) + deger;
+        metrik.net_puan = (metrik.kazanilan_puan ?? 0) - (metrik.kaybedilen_puan ?? 0);
+        roller[rol] = metrik;
       }
     }
     const cevapToplami = toplam.dogru_cevap + toplam.yanlis_cevap;
