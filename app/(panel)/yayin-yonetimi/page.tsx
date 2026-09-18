@@ -182,6 +182,7 @@ function YayinYonetimiIcerik() {
           canli={aktifHedefOzet ? aktifHedefOzet.canli : canliSayisi}
           planli={aktifHedefOzet ? aktifHedefOzet.planli : planliSayisi}
           durdurulan={aktifHedefOzet ? aktifHedefOzet.durdurulan : durdurulular.length}
+          yukleniyor={!aktifHedefOzet && yy.loading}
           onHedefDegistir={setAktifAnaSekme}
           onDurumDegistir={setAktifSekme}
           aksiyon={<YenileButonu yenileniyor={yy.yenileniyor} onYenile={() => { void yy.ozetCek(); void yy.veriCek(); }} disabled={!!acikAkordiyon || !!yy.islemLoading} />}

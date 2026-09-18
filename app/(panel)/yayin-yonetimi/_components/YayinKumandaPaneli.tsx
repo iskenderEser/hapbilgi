@@ -16,6 +16,7 @@ interface Props {
   canli: number;
   planli: number;
   durdurulan: number;
+  yukleniyor?: boolean;
   onHedefDegistir: (hedef: YayinHedefGrubu) => void;
   onDurumDegistir: (durum: AltSekme) => void;
   aksiyon?: ReactNode;
@@ -29,6 +30,7 @@ export function YayinKumandaPaneli({
   canli,
   planli,
   durdurulan,
+  yukleniyor = false,
   onHedefDegistir,
   onDurumDegistir,
   aksiyon,
@@ -155,7 +157,11 @@ export function YayinKumandaPaneli({
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-lg font-extrabold"
                   style={{ color: durum.renk, backgroundColor: durum.zemin }}
                 >
-                  {durum.deger}
+                  {yukleniyor ? (
+                    <span className="inline-block h-5 w-5 animate-pulse rounded bg-current/20" />
+                  ) : (
+                    durum.deger
+                  )}
                 </span>
                 <span className="min-w-0">
                   <span className="block text-sm font-extrabold text-[#243957]">{durum.etiket}</span>

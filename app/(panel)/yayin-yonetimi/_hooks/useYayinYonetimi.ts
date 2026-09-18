@@ -21,6 +21,8 @@ import { gecerliTurBaslangiclari, type HesaplananTur } from "@/lib/tclub/tur/kay
 import { TALEP_TURU_KURALLARI, type TalepTuru } from "@/lib/uretici/yetenekler";
 import { VARSAYILAN_BAREM_TABLOSU, type SatisSartiTipi, type BaremSatiri } from "@/lib/eclub/store/eclubStoreTipler";
 
+import { getOzetOnbellek, setOzetOnbellek, type OzetVerisi } from "./ozetOnbellek";
+
 interface UseYayinYonetimiArgs {
   kullaniciVar: boolean;
   aktifAnaSekme: YayinHedefGrubu;
@@ -35,15 +37,19 @@ type YayinApiSatiri = Omit<Yayin, "hedef_roller" | "turu_adi"> & {
 };
 
 export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, onOzetYuklendi, hata, basari }: UseYayinYonetimiArgs) {
+  const baslangicOzet = getOzetOnbellek();
+
   const [bekleyenler, setBekleyenler] = useState<Bekleyen[]>([]);
-  const [bekleyenHedefSayilari, setBekleyenHedefSayilari] = useState<BekleyenHedefSayilari>({
-    utt: 0,
-    bm: 0,
-    eczaci: 0,
-    eczane_teknisyeni: 0,
-    [ECLUB_ORTAK_YAYIN_GRUBU]: 0,
-    eczanem: 0,
-  });
+  const [bekleyenHedefSayilari, setBekleyenHedefSayilari] = useState<BekleyenHedefSayilari>(
+    () => (baslangicOzet?.sayilar as BekleyenHedefSayilari) ?? {
+      utt: 0,
+      bm: 0,
+      eczaci: 0,
+      eczane_teknisyeni: 0,
+      [ECLUB_ORTAK_YAYIN_GRUBU]: 0,
+      eczanem: 0,
+    }
+  );
   const [yayinlar, setYayinlar] = useState<Yayin[]>([]);
   const [loading, setLoading] = useState(true);
   const [yenileniyor, setYenileniyor] = useState(false);
@@ -80,40 +86,48 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, onOzetYuklendi, 
   // Yayın tur bilgisi — yayin_id → hesaplanmış tur (sayaç rozeti için; salt-okur).
   const [tekrarBilgi, setTekrarBilgi] = useState<Record<string, HesaplananTur>>({});
 
-  // Stat kartları ve sayaçlar için ultra-hafif özet state'i
+  // Stat kartları ve sayaçlar için ultra-hafif özet state'i (önbellekten anında beslenir)
   const [statSayilari, setStatSayilari] = useState<{
     canli: number;
     planli: number;
     durdurulan: number;
     bekleyen: number;
-  } | null>(null);
+  } | null>(() => baslangicOzet ? {
+    canli: Number(baslangicOzet.canli ?? 0),
+    planli: Number(baslangicOzet.planli ?? 0),
+    durdurulan: Number(baslangicOzet.durdurulan ?? 0),
+    bekleyen: Number(baslangicOzet.bekleyen ?? 0),
+  } : null);
   const [hedefOzetleri, setHedefOzetleri] = useState<Record<string, {
     canli: number;
     planli: number;
     durdurulan: number;
     bekleyen: number;
-  }> | null>(null);
+  }> | null>(() => baslangicOzet?.hedefler ?? null);
 
   const ozetCek = useCallback(async () => {
     try {
       const res = await fetch("/yayin-yonetimi/api/ozet");
       if (!res.ok) return;
-      const d = await res.json();
-      if (d.sayilar) {
-        setBekleyenHedefSayilari(d.sayilar);
+      const d = (await res.json()) as OzetVerisi;
+      if (d && d.sayilar) {
+        setOzetOnbellek(d);
+        setBekleyenHedefSayilari(d.sayilar as unknown as BekleyenHedefSayilari);
         if (onOzetYuklendi) {
           onOzetYuklendi(d.sayilar);
         }
       }
-      if (d.hedefler) {
+      if (d && d.hedefler) {
         setHedefOzetleri(d.hedefler);
       }
-      setStatSayilari({
-        canli: Number(d.canli ?? 0),
-        planli: Number(d.planli ?? 0),
-        durdurulan: Number(d.durdurulan ?? 0),
-        bekleyen: Number(d.bekleyen ?? 0),
-      });
+      if (d) {
+        setStatSayilari({
+          canli: Number(d.canli ?? 0),
+          planli: Number(d.planli ?? 0),
+          durdurulan: Number(d.durdurulan ?? 0),
+          bekleyen: Number(d.bekleyen ?? 0),
+        });
+      }
     } catch {
       // sessizce geç
     }

@@ -15,6 +15,7 @@ import { type DurumKodu } from "@/lib/utils/durum/mesaj";
 import type { AuthKullanici } from "@/types/auth";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
+import { prefetchYayinOzet } from "@/app/(panel)/yayin-yonetimi/_hooks/ozetOnbellek";
 
 interface TakipSatiri {
   talep_id: string;
@@ -73,6 +74,7 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
       setLoading(false);
     };
     veriCek();
+    void prefetchYayinOzet();
   }, [user]);
 
   const formatTarih = (tarih: string) =>
