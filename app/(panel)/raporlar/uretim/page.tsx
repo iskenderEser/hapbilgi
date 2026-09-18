@@ -45,6 +45,13 @@ const EGITIM_TURU_RENK: Record<string, string> = {
   ik_egitimi: '#d95f59',
 };
 
+const VARYANT_ADLARI: Record<string, string> = {
+  normal: 'İçerik Üreticisiyle Birlikte',
+  hazir_video: 'Öğrenme Aracı Sizden, Soru Seti İçerik Üreticisinden',
+  hazir_set: 'Soru Seti Sizden, Öğrenme Aracı İçerik Üreticisinden',
+  hazir_ikisi: 'Öğrenme Aracı ve Soru Seti Sizden',
+};
+
 export default function UretimRaporlariPage() {
   const { kullanici, yukleniyor } = useAuth();
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
@@ -169,19 +176,38 @@ export default function UretimRaporlariPage() {
           <section className={`${styles.panel} p-4 sm:p-5 flex flex-col justify-between`}>
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <h2 className="text-base font-extrabold text-[#20324c]">Üretim Varyantları</h2>
-                <p className="mt-0.5 text-xs text-[#718198]">İçeriklerin üretim biçimi dağılımı</p>
+                <h2 className="text-base font-extrabold text-[#20324c]">Yayınların Üretim Yöntemi Dağılımı</h2>
+                <p className="mt-0.5 text-xs text-[#718198]">Yayınlarınızın üretim yöntemleri ve dağılımları</p>
               </div>
               <div className={styles.sectionIcon}><Layers className="h-4 w-4" /></div>
             </div>
-            <div className="grid grid-cols-2 gap-2 mt-1">
-              {data.uretim.varyantlar.map((v) => (
-                <div key={v.kod} className="rounded-xl border border-[#e5edf5] bg-[#f8fbfe] p-2.5">
-                  <span className="block text-[10px] font-bold text-[#71859d]">{v.ad}</span>
-                  <strong className="block text-base font-extrabold text-[#10213d] mt-0.5">{v.adet} adet</strong>
+            {(() => {
+              const toplamVaryant = data.uretim.varyantlar.reduce((toplam, v) => toplam + v.adet, 0);
+              return (
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  {data.uretim.varyantlar.map((v) => {
+                    const yuzde = toplamVaryant > 0 ? Math.round((v.adet / toplamVaryant) * 100) : 0;
+                    return (
+                      <div key={v.kod} className="rounded-xl border border-[#e5edf5] bg-[#f8fbfe] p-2.5 flex flex-col justify-between">
+                        <span className="block text-[11px] font-bold text-[#71859d] leading-snug">
+                          {VARYANT_ADLARI[v.kod] ?? v.ad}
+                        </span>
+                        <div className="flex items-baseline justify-between mt-2 pt-1 border-t border-[#edf3f8]">
+                          <strong className="text-sm sm:text-base font-extrabold text-[#10213d]">
+                            {v.adet} Yayın
+                          </strong>
+                          {toplamVaryant > 0 && (
+                            <span className="text-[11px] font-extrabold text-[#237ac8]">
+                              %{yuzde}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
           </section>
         </div>
 
