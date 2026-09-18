@@ -98,9 +98,17 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
     try {
       const supabase = createClient();
 
-    // Bekleyenler: ana sekmeye göre filtreli çek
-    const bRes = await fetch(`/yayin-yonetimi/api/bekleyenler?hedef=${aktifAnaSekme}`);
-    const bData = await bRes.json();
+    // Bekleyenler ve Yayınlar birbirini beklemeden PARALEL çekilir.
+    const [bRes, yayinRes] = await Promise.all([
+      fetch(`/yayin-yonetimi/api/bekleyenler?hedef=${aktifAnaSekme}`),
+      fetch("/yayin-yonetimi/api/yayinlar"),
+    ]);
+
+    const [bData, yayinData] = await Promise.all([
+      bRes.json(),
+      yayinRes.json(),
+    ]);
+
     if (!bRes.ok) {
       hata(bData.hata ?? "Bekleyenler yüklenemedi.", bData.adim, bData.detay);
     } else {
@@ -124,10 +132,6 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
       setSoruPuanlari(yeniSoruPuanlari);
     }
 
-    // Yayınlar sunucuda oturumdaki üreticiye göre süzülür. Hedef rol ayrımı
-    // sayfadaki sekmeler için client-side kalır; sahiplik sınırı client'a bırakılmaz.
-    const yayinRes = await fetch("/yayin-yonetimi/api/yayinlar");
-    const yayinData = await yayinRes.json();
     if (!yayinRes.ok) {
       hata(yayinData.hata ?? "Yayınlar yüklenemedi.", yayinData.adim, yayinData.detay);
       return;
@@ -141,18 +145,19 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, hata, basari }: 
         turu_adi: y.egitim_turu ? (TALEP_TURU_KURALLARI[y.egitim_turu as TalepTuru]?.ad ?? null) : null,
       })));
 
-      // Tur bilgisi — sayaç rozeti (salt-okur toplu hesap; satır açmaz).
-      const turMap = await gecerliTurBaslangiclari(supabase, yayinlarData!.map(y => y.yayin_id));
+      // Tur bilgisi ve soru puanlarını paralel çek (ana render'ı geciktirmez)
+      const [turMap, spSonuc] = await Promise.all([
+        gecerliTurBaslangiclari(supabase, yayinlarData!.map(y => y.yayin_id)),
+        supabase.from("soru_seti_puanlari").select("soru_seti_durum_id, soru_index, soru_puani")
+          .in("soru_seti_durum_id", yayinlarData!.map(y => y.soru_seti_durum_id)),
+      ]);
+
       setTekrarBilgi(turMap);
 
-      const { data: tumSoruPuanlari, error: spError } = await supabase
-        .from("soru_seti_puanlari").select("soru_seti_durum_id, soru_index, soru_puani")
-        .in("soru_seti_durum_id", yayinlarData!.map(y => y.soru_seti_durum_id));
-
-      if (!spError && tumSoruPuanlari) {
+      if (!spSonuc.error && spSonuc.data) {
         setSoruPuanlari(prev => {
           const guncellenen = { ...prev };
-          for (const sp of tumSoruPuanlari) {
+          for (const sp of spSonuc.data) {
             if (!guncellenen[sp.soru_seti_durum_id]) guncellenen[sp.soru_seti_durum_id] = {};
             guncellenen[sp.soru_seti_durum_id][sp.soru_index] = sp.soru_puani;
           }

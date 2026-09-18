@@ -29,37 +29,40 @@ export async function GET(request: NextRequest) {
     const hedefRolFiltresi = searchParams.get("hedef");
     const sayiModu = searchParams.get("sayi") === "1";
 
-    // Zaten yayında olan soru_seti_durum_id'leri çek
-    const { data: yayinlar, error: yayinError } = await adminSupabase
-      .from("yayin_yonetimi")
-      .select("soru_seti_durum_id");
-
-    if (yayinError) return hataYaniti("Yayınlar çekilemedi.", "yayin_yonetimi tablosu SELECT", yayinError);
-
-    const yayindakiIds = new Set(((yayinlar as Array<{ soru_seti_durum_id: string }> | null) ?? []).map(y => y.soru_seti_durum_id));
-
-    // Yayına hazır dört araç türü aynı ortak zincirden okunur.
-    const { data: onaylananlar, error: onayError } = await adminSupabase
-      .from("soru_seti_durumu")
-      .select(`
-        soru_seti_durum_id,
-        soru_seti_id,
-        created_at,
-        soru_setleri (
+    // Zaten yayında olanları ve onaylanan soru setlerini PARALEL çek
+    const [yayinlarRes, onaylananlarRes] = await Promise.all([
+      adminSupabase
+        .from("yayin_yonetimi")
+        .select("soru_seti_durum_id")
+        .eq("uretici_id", user.id),
+      adminSupabase
+        .from("soru_seti_durumu")
+        .select(`
+          soru_seti_durum_id,
           soru_seti_id,
-          arac_durum_id,
-          sorular,
-          talepler ( ${TALEP_ALANLARI} ),
-          ogrenme_araci_durumu (
+          created_at,
+          soru_setleri!inner (
+            soru_seti_id,
             arac_durum_id,
-            ogrenme_araci_puanlari ( arac_puan_id, arac_puani ),
-            ogrenme_araclari ( arac_id, arac_turu, kapak_yolu, dosya_yolu, talep_id, sure_saniye, metadata_dogrulandi, metadata )
+            sorular,
+            talepler!inner ( ${TALEP_ALANLARI} ),
+            ogrenme_araci_durumu (
+              arac_durum_id,
+              ogrenme_araci_puanlari ( arac_puan_id, arac_puani ),
+              ogrenme_araclari ( arac_id, arac_turu, kapak_yolu, dosya_yolu, talep_id, sure_saniye, metadata_dogrulandi, metadata )
+            )
           )
-        )
-      `)
-      .eq("durum", "onaylandi");
+        `)
+        .eq("durum", "onaylandi")
+        .eq("soru_setleri.talepler.uretici_id", user.id),
+    ]);
 
-    if (onayError) return hataYaniti("Onaylanan soru seti durumları çekilemedi.", "soru_seti_durumu join SELECT", onayError);
+    if (yayinlarRes.error) return hataYaniti("Yayınlar çekilemedi.", "yayin_yonetimi tablosu SELECT", yayinlarRes.error);
+    if (onaylananlarRes.error) return hataYaniti("Onaylanan soru seti durumları çekilemedi.", "soru_seti_durumu join SELECT", onaylananlarRes.error);
+
+    const yayinlar = yayinlarRes.data;
+    const onaylananlar = onaylananlarRes.data;
+    const yayindakiIds = new Set(((yayinlar as Array<{ soru_seti_durum_id: string }> | null) ?? []).map(y => y.soru_seti_durum_id));
 
     type SoruSetiDurumJoinRow = {
       soru_seti_durum_id: string;
