@@ -145,7 +145,7 @@ function HedefKitleKartlari({ videolar, aktifHedef, onSec }: {
                 {sayi.toLocaleString("tr-TR")}
               </div>
               <div className="mt-1 hidden text-xs text-gray-500 md:block">
-                Yayındaki içerik
+                Yayın
               </div>
             </div>
           </button>
@@ -191,7 +191,7 @@ function DepartmanKartlari({ videolar, aktifDepartman, onSec }: {
                 {grup.length.toLocaleString("tr-TR")}
               </div>
               <div className="mt-1 text-xs text-gray-500">
-                {ureticiSayisi.toLocaleString("tr-TR")} üretici · Yayındaki içerik
+                Yayın
               </div>
             </div>
           </button>
