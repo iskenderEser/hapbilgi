@@ -159,7 +159,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
   // ─── 11. ÜRETİM RAPORLARI (SAYFA BAŞLIĞI STANDARDI) ───────────────────────
   "raporlar-uretim": {
     anahtar: "raporlar-uretim",
-    baslik: "Üretim Raporları",
+    baslik: "Yayın Raporları",
     ozet: "Şirket genelindeki içerik üretim hacmini, canlı yayınları, üretim varyantı (V1-V4) dağılımını ve eğitim türlerinin sahada oluşturduğu tüketim etkisini analiz etmenizi sağlar.",
     linkKelime: "üretim varyantı (V1-V4)",
     altModal: VARYANT_ALT_MODAL,

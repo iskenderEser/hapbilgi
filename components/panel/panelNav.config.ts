@@ -59,15 +59,15 @@ export interface NavGrup {
 }
 
 export const PANEL_NAV: NavGrup[] = [
-  // ─── 1. ÜRETİM & YAYIN (Üretici ve İçerik Üreticisi) ─────────────────────
+  // ─── 1. YAYINLAR VE RAPORLAR (Üretici ve İçerik Üreticisi) ───────────────
   {
-    baslik: "Üretim & Yayın",
+    baslik: "Yayınlar ve Raporlar",
     oglar: [
       { etiket: "Yayın Oluşturma ve Takip", path: "/yayin-takip", badgeKey: "talep", gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
       { etiket: "Yayın Yönetimi",    path: "/yayin-yonetimi",     badgeKey: "yayin",     gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
       { etiket: "Sizin Yayınlarınız", path: "/sizin-yayinlariniz",                       gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
       { etiket: "Tüm Yayınlar",       path: "/tum-yayinlar",                             gate: (c) => URETICI_ROLLER.includes(c.rolKucu) },
-      { etiket: "Üretim Raporları",   path: "/raporlar/uretim",                          gate: (c) => URETICI_ROLLER.includes(c.rolKucu) || YONETICI_ROLLER.includes(c.rolKucu) || c.rolKucu === "admin" },
+      { etiket: "Yayın Raporları",    path: "/raporlar/uretim",                          gate: (c) => URETICI_ROLLER.includes(c.rolKucu) || YONETICI_ROLLER.includes(c.rolKucu) || c.rolKucu === "admin" },
       { etiket: "Senaryolar",        path: "/senaryolar",         badgeKey: "senaryo",   gate: (c) => c.rolKucu === IU_ROLU },
       { etiket: "Öğrenme Araçları", path: "/videolar",           badgeKey: "video",     gate: (c) => c.rolKucu === IU_ROLU },
       { etiket: "Soru Setleri",      path: "/soru-setleri",       badgeKey: "soru_seti", gate: (c) => c.rolKucu === IU_ROLU },
