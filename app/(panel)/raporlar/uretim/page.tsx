@@ -77,36 +77,6 @@ export default function UretimRaporlariPage() {
     );
   }, [data]);
 
-  if (error && !data) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-sm" style={{ color: KIRMIZI }}>Hata: {error}</div>
-      </div>
-    );
-  }
-
-  if (yukleniyor || (loading && !data)) {
-    return (
-      <div className={styles.page} style={{ fontFamily: "'Nunito', sans-serif" }}>
-        <div className={styles.container}>
-          <Link href="/ana-sayfa" className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-[#7890aa] hover:text-[#237ac8]">
-            <ArrowLeft className="h-3.5 w-3.5" /> Ana Sayfa
-          </Link>
-          <div className="flex flex-col gap-4 animate-pulse">
-            <div className="h-16 rounded-2xl border border-[#dfe7f1] bg-white p-4" />
-            <div className="h-44 rounded-2xl border border-[#dfe7f1] bg-white p-4" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="h-44 rounded-2xl border border-[#dfe7f1] bg-white" />
-              <div className="h-44 rounded-2xl border border-[#dfe7f1] bg-white" />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!kullanici || !data) return null;
-
   return (
     <div className={styles.page} style={{ fontFamily: "'Nunito', sans-serif" }}>
       <div className={styles.container}>
@@ -114,34 +84,51 @@ export default function UretimRaporlariPage() {
           <ArrowLeft className="h-3.5 w-3.5" /> Ana Sayfa
         </Link>
 
-        <header className={styles.header}>
+        <header className="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-6">
           <div>
             <div className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">
               <Sparkles className="h-3.5 w-3.5" /> Fabrika & İçerik Portföy Analizi
             </div>
             <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d] inline-flex items-center">
-              <span>{data.kullanici.firma_adi} · Üretim Raporları</span>
+              <span>{data?.kullanici?.firma_adi ? `${data.kullanici.firma_adi} · ` : ''}Üretim Raporları</span>
               <SayfaRehberi anahtar="raporlar-uretim" className="ml-1.5 -translate-y-1.5" />
             </h1>
             <p className="mt-0.5 text-xs font-semibold text-[#78889d]">
-              {data.kullanici.rol.toUpperCase()} · {data.kullanici.ad} {data.kullanici.soyad}
+              {(data?.kullanici?.rol ?? kullanici?.rol ?? '').toUpperCase()} · {data?.kullanici ? `${data.kullanici.ad} ${data.kullanici.soyad}` : (kullanici?.adSoyad ?? '')}
             </p>
           </div>
-          <div className={styles.periods} aria-label="Rapor dönemi">
-            {PERIYOTLAR.map((secenek) => (
-              <button
-                type="button"
-                key={secenek.key}
-                onClick={() => setPeriyot(secenek.key)}
-                className={`${styles.periodButton} ${periyot === secenek.key ? styles.periodActive : ''}`}
-              >
-                {secenek.label}
-              </button>
-            ))}
-            <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} />
+          <div className="flex items-center gap-2">
+            <div className={styles.periods} aria-label="Rapor dönemi">
+              {PERIYOTLAR.map((secenek) => (
+                <button
+                  type="button"
+                  key={secenek.key}
+                  onClick={() => setPeriyot(secenek.key)}
+                  className={`${styles.periodButton} ${periyot === secenek.key ? styles.periodActive : ''}`}
+                >
+                  {secenek.label}
+                </button>
+              ))}
+            </div>
+            <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} className="min-w-[88px] justify-center" />
           </div>
         </header>
-        <OgrenmeAraciPerformansi dagilim={data.arac_turu_dagilimi} />
+
+        {error && !data ? (
+          <div className="flex min-h-[300px] items-center justify-center rounded-2xl border border-red-200 bg-white p-6">
+            <div className="text-sm font-bold text-red-600">Hata: {error}</div>
+          </div>
+        ) : !data ? (
+          <div className="flex flex-col gap-4 animate-pulse mt-4">
+            <div className="h-44 rounded-2xl border border-[#dfe7f1] bg-white p-4" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="h-44 rounded-2xl border border-[#dfe7f1] bg-white" />
+              <div className="h-44 rounded-2xl border border-[#dfe7f1] bg-white" />
+            </div>
+          </div>
+        ) : (
+          <>
+            <OgrenmeAraciPerformansi dagilim={data.arac_turu_dagilimi} />
 
         {/* Üretim Hero Grid */}
         <div className={styles.heroGrid}>
@@ -371,6 +358,8 @@ export default function UretimRaporlariPage() {
             </div>
           </div>
         </div>
+        </>
+      )}
       </div>
     </div>
   );
