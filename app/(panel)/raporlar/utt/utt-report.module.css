@@ -64,7 +64,7 @@
 
 .uretimHeroGrid {
   display: grid;
-  grid-template-columns: minmax(300px, 0.65fr) minmax(0, 1.35fr);
+  grid-template-columns: minmax(320px, 0.74fr) minmax(0, 1.26fr);
   gap: 14px;
   margin-bottom: 14px;
 }
