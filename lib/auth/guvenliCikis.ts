@@ -1,6 +1,7 @@
 "use client";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { clearPanelCache } from "@/lib/panel/panelCache";
 
 export function supabaseAuthCookieOnEki(supabaseUrl: string): string | null {
   try {
@@ -36,11 +37,15 @@ function yerelSupabaseOturumunuTemizle(): void {
 export async function guvenliCikisYap(supabase: SupabaseClient): Promise<void> {
   try {
     const { error } = await supabase.auth.signOut();
-    if (!error) return;
+    if (!error) {
+      clearPanelCache();
+      return;
+    }
   } catch {
     // Ağ kesintisinde Supabase fetch hatası kullanıcı arayüzüne taşınmaz.
   }
 
   supabase.auth.stopAutoRefresh();
   yerelSupabaseOturumunuTemizle();
+  clearPanelCache();
 }

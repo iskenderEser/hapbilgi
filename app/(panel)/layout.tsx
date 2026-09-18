@@ -32,20 +32,37 @@ import { prefetchTalepMerkezi } from "@/app/(panel)/talepler/_hooks/talepOnbelle
 import { prefetchYayinOzet } from "@/app/(panel)/yayin-yonetimi/_hooks/ozetOnbellek";
 import { prefetchYayinKatalog } from "@/app/(panel)/yayindaki-videolar/_components/katalogOnbellek";
 import { prefetchUretimRaporu } from "@/app/(panel)/raporlar/uretim/_hooks/uretimRaporuOnbellek";
+import {
+  getPanelCache,
+  setPanelCache,
+  VARSAYILAN_FLAGS,
+  type PanelFlags,
+} from "@/lib/panel/panelCache";
 
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { kullanici, yukleniyor, cikisYap } = useAuth();
 
-  const [flags, setFlags] = useState({
-    storeAcik: false, ccAcik: false, eclubAcik: false, eclubStoreAcik: false, eczanemAcik: false,
+  // Önbellekten anında başlat (hard refresh gecikmesini ve layout shift'i sıfırlar)
+  const [flags, setFlags] = useState<PanelFlags>(() => {
+    const cache = getPanelCache();
+    return cache?.flags ?? VARSAYILAN_FLAGS;
   });
   const [badge, setBadge] = useState<Record<string, number>>({});
   const [drawerAcik, setDrawerAcik] = useState(false);
   // Navbar kişisel özeti — yalnız UTT/KD_UTT için profil/api döndürür (BM sonraya).
-  const [ozet, setOzet] = useState<{ haftalikPuan: number; takimSirasi: number | null; siparisPuani: number } | null>(null);
-  const [eclubStorePuani, setEclubStorePuani] = useState<number | null>(null);
-  const [eclubFirmalar, setEclubFirmalar] = useState<Array<{ firma_id: string; firma_adi: string }>>([]);
+  const [ozet, setOzet] = useState<{ haftalikPuan: number; takimSirasi: number | null; siparisPuani: number } | null>(() => {
+    const cache = getPanelCache();
+    return cache?.ozet ?? null;
+  });
+  const [eclubStorePuani, setEclubStorePuani] = useState<number | null>(() => {
+    const cache = getPanelCache();
+    return cache?.eclubStorePuani ?? null;
+  });
+  const [eclubFirmalar, setEclubFirmalar] = useState<Array<{ firma_id: string; firma_adi: string }>>(() => {
+    const cache = getPanelCache();
+    return cache?.eclubFirmalar ?? [];
+  });
 
   const rolKucu = kullanici?.rol?.trim().toLowerCase() ?? "";
   const isEclubKisi = kullanici?.kimlik_turu === "eclub_kisi";
@@ -57,6 +74,15 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     if (rolKucu === "admin") { router.replace("/admin"); return; }
     if (kullanici.kimlik_turu === "musteri") { router.replace("/eczanem"); return; }
   }, [kullanici, yukleniyor, rolKucu, router]);
+
+  // Kullanıcı değiştiğinde veya önbellek başka kullanıcıya aitse hemen tazele
+  useEffect(() => {
+    if (!kullanici) return;
+    const cache = getPanelCache(kullanici.id);
+    if (!cache) {
+      void profilVeOzetiCek();
+    }
+  }, [kullanici?.id]);
 
   // Üretici rolleri için ana sayfa ve panel içi gezinmede tüm kritik sayfaların önbelleğini ısıt
   useEffect(() => {
@@ -73,26 +99,39 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
       const res = await fetch("/profil/api", { cache: "no-store" });
       if (!res.ok) return;
       const data = await res.json();
+      let guncelFlags = VARSAYILAN_FLAGS;
       if (data.profil) {
-        setFlags({
+        guncelFlags = {
           storeAcik: data.profil.hbstore_aktif === true,
           ccAcik: data.profil.cc_aktif === true,
           eclubAcik: data.profil.eclub_aktif === true,
           eclubStoreAcik: data.profil.eclub_store_aktif === true,
           eczanemAcik: data.profil.eczanem_aktif === true,
-        });
+        };
+        setFlags(guncelFlags);
       }
-      if (data.navbar_ozet) {
-        setOzet({
-          haftalikPuan: data.navbar_ozet.haftalik_puan ?? 0,
-          takimSirasi: data.navbar_ozet.takim_sirasi ?? null,
-          siparisPuani: data.navbar_ozet.siparis_puani ?? 0,
-        });
-      } else setOzet(null);
-      setEclubStorePuani(data.eclub_navbar_ozet?.store_puani ?? null);
-      setEclubFirmalar(data.eclub_firmalar ?? []);
+      const guncelOzet = data.navbar_ozet ? {
+        haftalikPuan: data.navbar_ozet.haftalik_puan ?? 0,
+        takimSirasi: data.navbar_ozet.takim_sirasi ?? null,
+        siparisPuani: data.navbar_ozet.siparis_puani ?? 0,
+      } : null;
+      setOzet(guncelOzet);
+
+      const guncelStorePuan = data.eclub_navbar_ozet?.store_puani ?? null;
+      setEclubStorePuani(guncelStorePuan);
+
+      const guncelFirmalar = data.eclub_firmalar ?? [];
+      setEclubFirmalar(guncelFirmalar);
+
+      setPanelCache({
+        userId: kullanici?.id,
+        flags: guncelFlags,
+        ozet: guncelOzet,
+        eclubStorePuani: guncelStorePuan,
+        eclubFirmalar: guncelFirmalar,
+      });
     } catch {}
-  }, []);
+  }, [kullanici?.id]);
 
   // Firma bayrakları + Navbar özeti. Sipariş/iptal sonrası aynı oturumda bakiye
   // yeniden okunur; sekmeye geri dönüldüğünde de eski değer ekranda kalmaz.

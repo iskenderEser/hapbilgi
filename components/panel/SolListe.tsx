@@ -69,18 +69,29 @@ export default function SolListe(props: SolListeProps) {
   });
   const [acikAltOgeler, setAcikAltOgeler] = useState<Set<string>>(new Set());
 
-  // Sayfa değiştiğinde aktif sayfanın grubu kapalıysa aç
+  // Sayfa veya görünür gruplar değiştiğinde aktif sayfanın grubu kapalıysa aç; yeni gruplar kapalı başlasın
   useEffect(() => {
+    const gorunurGruplar = gruplar.filter((g) => g.oglar.some((o) => o.gate(props)));
     const aktifGrup = gruplar.find((g) => grupAktifMi(g));
-    if (aktifGrup && kapaliGruplar.has(aktifGrup.baslik)) {
-      setKapaliGruplar((onceki) => {
-        const yeni = new Set(onceki);
+    setKapaliGruplar((onceki) => {
+      let degisti = false;
+      const yeni = new Set(onceki);
+      if (aktifGrup && yeni.has(aktifGrup.baslik)) {
         yeni.delete(aktifGrup.baslik);
-        return yeni;
+        degisti = true;
+      }
+      gorunurGruplar.forEach((g, index) => {
+        if (index === 0) return;
+        if (grupAktifMi(g)) return;
+        if (!yeni.has(g.baslik)) {
+          yeni.add(g.baslik);
+          degisti = true;
+        }
       });
-    }
+      return degisti ? yeni : onceki;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
+  }, [pathname, props.storeAcik, props.ccAcik, props.eclubAcik, props.eczanemAcik]);
 
   const grupToggle = (baslik: string) =>
     setKapaliGruplar((onceki) => {
