@@ -3,15 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { URETICI_ROLLER, YONETICI_ROLLER, YONLENDIRICI_ROLLER, ADMIN_ROLLER } from "@/lib/utils/roller";
+import { ADMIN_ROLLER, yayinDetayModaliGorebilir } from "@/lib/utils/roller";
 import { yayinThumbnailCevabi, type YayinKapakGirdisi } from "@/lib/ogrenmeAraci/yayinThumbnail";
-
-const YETKILI_ROLLER = [
-  ...URETICI_ROLLER,
-  ...YONETICI_ROLLER,
-  ...YONLENDIRICI_ROLLER,
-  ...ADMIN_ROLLER,
-];
 
 export async function GET(
   _request: NextRequest,
@@ -40,7 +33,7 @@ export async function GET(
       return yetkiHatasi("Kullanıcı hesabı aktif değil veya bulunamadı.");
     }
 
-    if (!YETKILI_ROLLER.includes(rol)) {
+    if (!yayinDetayModaliGorebilir(rol)) {
       return rolHatasi("Bu yayın ve soru detayını görüntüleme yetkiniz yok.");
     }
 

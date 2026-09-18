@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useAuth } from "@/app/providers/AuthProvider";
+import { yayinDetayModaliGorebilir } from "@/lib/utils/roller";
 import type { AracTuruRaporSatiri } from "@/lib/rapor/paylasilan/aracTuruDagilimi";
 import { Video, Headphones, Image as ImageIcon, BookOpen, Users, Sparkles, ExternalLink } from "lucide-react";
 import YayinDetayModal from "./YayinDetayModal";
@@ -85,7 +87,10 @@ const oran = (deger: number | null) => deger === null ? "—" : `%${deger.toLoca
 const sayi = (deger: number) => (deger ?? 0).toLocaleString("tr-TR");
 
 export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTuruRaporSatiri[] }) {
+  const { kullanici } = useAuth();
   const [seciliYayinId, setSeciliYayinId] = useState<string | null>(null);
+
+  const modalYetkili = yayinDetayModaliGorebilir(kullanici?.rol ?? "");
 
   if (!dagilim?.length) return null;
 
@@ -324,15 +329,24 @@ export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTur
                           key={y.yayin_id}
                           className="flex items-center justify-between gap-1 rounded bg-[#f8fafc] px-2 py-1 text-[10px] border border-[#edf2f7] hover:bg-[#edf6fd] transition-colors"
                         >
-                          <button
-                            type="button"
-                            onClick={() => setSeciliYayinId(y.yayin_id)}
-                            className="font-extrabold text-[#237ac8] hover:underline truncate flex items-center gap-1 text-left cursor-pointer focus-visible:outline-none"
-                            title={`${y.talep_no ?? y.yayin_id} — Yayın detayını ve soruları aç`}
-                          >
-                            <span>{y.talep_no ?? y.yayin_id.slice(0, 8)}</span>
-                            <ExternalLink className="h-2.5 w-2.5 shrink-0 text-[#71859d]" />
-                          </button>
+                          {modalYetkili ? (
+                            <button
+                              type="button"
+                              onClick={() => setSeciliYayinId(y.yayin_id)}
+                              className="font-extrabold text-[#237ac8] hover:underline truncate flex items-center gap-1 text-left cursor-pointer focus-visible:outline-none"
+                              title={`${y.talep_no ?? y.yayin_id} — Yayın detayını ve soruları aç`}
+                            >
+                              <span>{y.talep_no ?? y.yayin_id.slice(0, 8)}</span>
+                              <ExternalLink className="h-2.5 w-2.5 shrink-0 text-[#71859d]" />
+                            </button>
+                          ) : (
+                            <span
+                              className="font-bold text-[#20324c] truncate"
+                              title={String(y.talep_no ?? y.yayin_id)}
+                            >
+                              {y.talep_no ?? y.yayin_id.slice(0, 8)}
+                            </span>
+                          )}
                           <span className="tabular-nums text-[#64748b] shrink-0 font-medium">
                             {sayi(y.tamamlama)} tamamlama ·{" "}
                             <strong className="text-[#10213d] font-bold">
@@ -351,7 +365,7 @@ export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTur
       </div>
 
       {/* Yayın & Soru Detay Modalı */}
-      {seciliYayinId && (
+      {modalYetkili && seciliYayinId && (
         <YayinDetayModal
           yayinId={seciliYayinId}
           onKapat={() => setSeciliYayinId(null)}

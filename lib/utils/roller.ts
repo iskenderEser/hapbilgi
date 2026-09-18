@@ -66,6 +66,20 @@ export const YAYINDAKI_VIDEO_GORENLER = [
   ...YONLENDIRICI_ROLLER,  // tm, bm
 ];
 
+// YAYIN_DETAY_MODAL_ROLLER: Raporlardaki yayın detay modalını (medya önizleme + soru karnesi)
+// açabilen roller. Yönetim ve üretim kadrosuna açıktır.
+// Tüketici saha rolleri (UTT, KD_UTT) soruları cevaplayıp puan kazandığı için bu modalı açamaz.
+export const YAYIN_DETAY_MODAL_ROLLER = [
+  ...URETICI_ROLLER,
+  ...YONETICI_ROLLER,
+  ...YONLENDIRICI_ROLLER,
+  ...ADMIN_ROLLER,
+];
+
+export function yayinDetayModaliGorebilir(rol: string): boolean {
+  return YAYIN_DETAY_MODAL_ROLLER.includes(rol.trim().toLowerCase());
+}
+
 // ───────────────────────────────────────────────────────────────────────────
 // Challenge Club / CC Ligi rol kategorileri
 // ───────────────────────────────────────────────────────────────────────────

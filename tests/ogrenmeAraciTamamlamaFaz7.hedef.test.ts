@@ -8,7 +8,7 @@ const ortak = oku("lib/rapor/paylasilan/aracTuruDagilimi.ts");
 const panel = oku("components/raporlar/OgrenmeAraciPerformansi.tsx");
 const apiYollari = ["utt", "bm", "tm", "yonetici", "uretim", "uretici"]
   .map((ad) => oku(`app/(panel)/raporlar/api/${ad}/route.ts`));
-const sayfaYollari = ["utt", "bm", "tm", "yonetici", "uretim", "uretici", "eczanem"]
+const sayfaYollari = ["utt", "bm", "tm", "yonetici", "yayin-raporlari", "uretici", "eczanem"]
   .map((ad) => oku(`app/(panel)/raporlar/${ad}/page.tsx`));
 
 test("araç bazında dönemsel yayın sayısı dört araç için üretilir", () => {
