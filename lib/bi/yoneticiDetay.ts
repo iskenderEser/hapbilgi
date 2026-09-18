@@ -119,6 +119,6 @@ export async function yoneticiDetayYaniti(db:SupabaseClient,id:string,rol:string
  if(!sonuclar.length)cevap+='Bu kapsamda kayıt bulunamadı.';
  if(s.adlar.length===2&&sonuclar.length===2&&s.olcut!=='yayin_arac_dagilimi')cevap+=`\nFark (${sonuclar[0].ad} − ${sonuclar[1].ad}): **${(sonuclar[0].adet-sonuclar[1].adet).toLocaleString('tr-TR')}**`;
  if(s.karsilastir){const onceki=await yoneticiDetayYaniti(db,id,rol,{...s,geriye:s.geriye+1,karsilastir:false},simdi);cevap+='\n\n'+onceki.cevap;}
- const url=s.kaynak==='uretim'?'/raporlar/uretim':s.grup==='bm'?'/cc-ligi':'/raporlar/yonetici';
+ const url=s.kaynak==='uretim'?'/raporlar/yayin-raporlari':s.grup==='bm'?'/cc-ligi':'/raporlar/yonetici';
  return {cevap,baglam:{...s,karsilastir:false},kaynaklar:[{id:'yonetici_detay',baslik:etiket,url,zaman:simdi.toISOString()}],kullanim:{yol:'kac',olcut:s.olcut}};
 }

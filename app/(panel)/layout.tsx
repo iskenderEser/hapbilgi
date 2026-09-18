@@ -31,7 +31,7 @@ import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { prefetchTalepMerkezi } from "@/app/(panel)/talepler/_hooks/talepOnbellek";
 import { prefetchYayinOzet } from "@/app/(panel)/yayin-yonetimi/_hooks/ozetOnbellek";
 import { prefetchYayinKatalog } from "@/app/(panel)/yayindaki-videolar/_components/katalogOnbellek";
-import { prefetchUretimRaporu } from "@/app/(panel)/raporlar/uretim/_hooks/uretimRaporuOnbellek";
+import { prefetchUretimRaporu } from "@/app/(panel)/raporlar/yayin-raporlari/_hooks/uretimRaporuOnbellek";
 import {
   getPanelCache,
   setPanelCache,

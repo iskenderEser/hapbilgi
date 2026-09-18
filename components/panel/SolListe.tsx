@@ -22,7 +22,7 @@ import { PANEL_NAV, type NavContext, type NavGrup, type NavOge } from "./panelNa
 import { prefetchTalepMerkezi } from "@/app/(panel)/talepler/_hooks/talepOnbellek";
 import { prefetchYayinOzet } from "@/app/(panel)/yayin-yonetimi/_hooks/ozetOnbellek";
 import { prefetchYayinKatalog } from "@/app/(panel)/yayindaki-videolar/_components/katalogOnbellek";
-import { prefetchUretimRaporu } from "@/app/(panel)/raporlar/uretim/_hooks/uretimRaporuOnbellek";
+import { prefetchUretimRaporu } from "@/app/(panel)/raporlar/yayin-raporlari/_hooks/uretimRaporuOnbellek";
 
 type SolListeProps = NavContext & {
   badge: Record<string, number>;
@@ -112,7 +112,7 @@ export default function SolListe(props: SolListeProps) {
       if (path === "/yayin-takip") void prefetchTalepMerkezi();
       else if (path === "/yayin-yonetimi") void prefetchYayinOzet();
       else if (path === "/sizin-yayinlariniz") void prefetchYayinKatalog("benim");
-      else if (path === "/raporlar/uretim") void prefetchUretimRaporu("bu_ay");
+      else if (path === "/raporlar/yayin-raporlari") void prefetchUretimRaporu("bu_ay");
     };
 
     return (

@@ -7,6 +7,20 @@ const nextConfig: NextConfig = {
     // Doğrudan next build çağrıları bu bayrak olmadan tip kontrolünü korur.
     ignoreBuildErrors: process.env.HAPBILGI_TYPES_CHECKED === "1",
   },
+  async redirects() {
+    return [
+      {
+        source: "/raporlar/uretim",
+        destination: "/raporlar/yayin-raporlari",
+        permanent: true,
+      },
+      {
+        source: "/raporlar/yayin-rapolari",
+        destination: "/raporlar/yayin-raporlari",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
