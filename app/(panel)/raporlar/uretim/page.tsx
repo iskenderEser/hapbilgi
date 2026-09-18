@@ -9,13 +9,13 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
-  Activity,
   ArrowLeft,
   BookOpenCheck,
   Calendar,
   Heart,
   Layers,
   Layers3,
+  Radio,
   Repeat2,
   Star,
 } from 'lucide-react';
@@ -134,25 +134,11 @@ export default function UretimRaporlariPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-2.5 mt-3 sm:mt-4">
-              {/* 1. Stat Kart (Eski 3): TÜM YAYINLAR */}
-              <div className="rounded-xl border border-[#e2ebf4] bg-[#f8fbfe] p-3">
-                <div className="flex items-center gap-1.5 text-[#6366f1] mb-1">
-                  <Layers3 className="h-4 w-4" />
-                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#71859d]">
-                    TÜM YAYINLAR
-                  </span>
-                </div>
-                <div className="text-xl sm:text-2xl font-black tabular-nums text-[#43546d]">
-                  {data.uretim.toplam_yayina_alma}
-                </div>
-                <span className="block text-[10px] text-[#8a9bb0] mt-0.5">Yılbaşından bugüne yayın toplamı</span>
-              </div>
-
-              {/* 2. Stat Kart (Eski 2): TÜM YAYINLARINIZ */}
-              <div className="rounded-xl border border-[#e2ebf4] bg-[#f8fbfe] p-3">
+            <div className="grid grid-cols-2 gap-3 mt-3 sm:mt-4">
+              {/* 1. Stat Kart: TÜM YAYINLARINIZ */}
+              <div className="rounded-xl border border-[#e2ebf4] bg-[#f8fbfe] p-3.5">
                 <div className="flex items-center gap-1.5 text-[#16865f] mb-1">
-                  <Activity className="h-4 w-4" />
+                  <Radio className="h-4 w-4" />
                   <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#71859d]">
                     TÜM YAYINLARINIZ
                   </span>
@@ -160,11 +146,11 @@ export default function UretimRaporlariPage() {
                 <div className="text-xl sm:text-2xl font-black tabular-nums text-[#16865f]">
                   {data.uretim.su_an_yayinda}
                 </div>
-                <span className="block text-[10px] text-[#8a9bb0] mt-0.5">Canlıdaki aktif yayın havuzu</span>
+                <span className="block text-[10px] text-[#8a9bb0] mt-0.5">Canlı yayınlar</span>
               </div>
 
-              {/* 3. Stat Kart (Eski 1): [ZAMAN] YAYINA ALINAN */}
-              <div className="rounded-xl border border-[#e2ebf4] bg-[#f8fbfe] p-3">
+              {/* 2. Stat Kart: [ZAMAN] YAYINA ALINAN */}
+              <div className="rounded-xl border border-[#e2ebf4] bg-[#f8fbfe] p-3.5">
                 <div className="flex items-center gap-1.5 text-[#237ac8] mb-1">
                   <Calendar className="h-4 w-4" />
                   <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#71859d]">
