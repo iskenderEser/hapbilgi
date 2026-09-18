@@ -90,7 +90,7 @@ export default function UretimRaporlariPage() {
               <SayfaRehberi anahtar="raporlar-uretim" className="ml-1.5 -translate-y-1.5" />
             </h1>
             <p className="mt-0.5 text-xs font-semibold text-[#78889d]">
-              {(data?.kullanici?.rol ?? kullanici?.rol ?? '').toUpperCase()} · {data?.kullanici ? `${data.kullanici.ad} ${data.kullanici.soyad}` : (kullanici?.adSoyad ?? '')}
+              Farklı zamanlardaki yayınlarınıza ait sayısal bilgileri görebilirsiniz.
             </p>
           </div>
           <div className="flex items-center gap-2">
