@@ -14,10 +14,10 @@ import {
   Calendar,
   Heart,
   Layers,
-  Layers3,
   Radio,
   Repeat2,
   Star,
+  X,
 } from 'lucide-react';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useUretimRaporu } from './_hooks/useUretimRaporu';
@@ -55,7 +55,7 @@ const VARYANT_ADLARI: Record<string, string> = {
 export default function UretimRaporlariPage() {
   const { kullanici, yukleniyor } = useAuth();
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
-  const [seciliEgitimTuru, setSeciliEgitimTuru] = useState<string | null>(null);
+  const [seciliEgitimTuru, setSeciliEgitimTuru] = useState<string | null | undefined>(undefined);
 
   const { data, loading, yenileniyor, error, yenile } = useUretimRaporu(
     periyot,
@@ -64,10 +64,10 @@ export default function UretimRaporlariPage() {
 
   const seciliEgitimDetayi = useMemo(() => {
     if (!data?.egitim_turu_etkisi) return null;
+    if (seciliEgitimTuru === null) return null;
+    if (seciliEgitimTuru === undefined) return data.egitim_turu_etkisi[0] ?? null;
     return (
-      data.egitim_turu_etkisi.find((x) => x.egitim_adi === seciliEgitimTuru) ??
-      data.egitim_turu_etkisi[0] ??
-      null
+      data.egitim_turu_etkisi.find((x) => x.egitim_adi === seciliEgitimTuru) ?? null
     );
   }, [data, seciliEgitimTuru]);
 
@@ -273,7 +273,7 @@ export default function UretimRaporlariPage() {
                 <button
                   type="button"
                   key={tur.kod}
-                  onClick={() => setSeciliEgitimTuru(tur.ad)}
+                  onClick={() => setSeciliEgitimTuru(secili ? null : tur.ad)}
                   style={{ minWidth: 0 }}
                   className={`group relative flex flex-col justify-between rounded-2xl p-3 text-left transition-all cursor-pointer border ${
                     secili
@@ -311,69 +311,85 @@ export default function UretimRaporlariPage() {
               );
             })}
           </div>
-        </section>
 
-        {/* Seçili Eğitim Türünün Detayı ve Ürün Dağılımı */}
-        {seciliEgitimDetayi && (
-          <section className={`${styles.panel} ${styles.section}`}>
-            <div className={styles.sectionHeader}>
-              <div>
-                <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">
-                  Seçili Eğitim Türü Karnesi
+          {/* Dinamik Konu Karnesi (Aynı Panel İçinde, İnce Çizgiyle Ayrılmış) */}
+          {seciliEgitimDetayi && (
+            <div className="mt-5 pt-4 border-t border-[#e2edf7]">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{
+                      backgroundColor: EGITIM_TURU_RENK[seciliEgitimDetayi.egitim_turu] ?? '#237ac8',
+                    }}
+                  />
+                  <h3 className="text-sm font-extrabold text-[#10213d]">
+                    {seciliEgitimDetayi.egitim_adi} Karnesi
+                  </h3>
+                  <span className="text-[11px] font-semibold text-[#8190a3]">
+                    · Seçili konunun dönem performansı
+                  </span>
                 </div>
-                <h2 className="text-base font-extrabold text-[#20324c]">{seciliEgitimDetayi.egitim_adi} Detayı</h2>
+                <button
+                  type="button"
+                  onClick={() => setSeciliEgitimTuru(null)}
+                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold text-[#71859d] hover:bg-[#edf2f7] hover:text-[#10213d] transition-colors"
+                  title="Detayı Kapat"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Kapat
+                </button>
               </div>
-              <div className={styles.sectionIcon}><Layers3 className="h-4 w-4" /></div>
-            </div>
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-                gap: '12px',
-                width: '100%',
-                marginBottom: '16px',
-              }}
-            >
-              <div className="rounded-xl border border-[#e5edf5] bg-[#f8fbfe] p-3 text-center">
-                <span className="text-[10px] font-bold text-[#8190a3] uppercase">Yayına Alınan</span>
-                <strong className="block text-lg font-black text-[#10213d] mt-0.5">{seciliEgitimDetayi.donemde_yayina_alinan}</strong>
-              </div>
-              <div className="rounded-xl border border-[#e5edf5] bg-[#f8fbfe] p-3 text-center">
-                <span className="text-[10px] font-bold text-[#8190a3] uppercase">Tamamlanan İzleme</span>
-                <strong className="block text-lg font-black text-[#237ac8] mt-0.5">{seciliEgitimDetayi.tamamlanan_izleme}</strong>
-              </div>
-              <div className="rounded-xl border border-[#e5edf5] bg-[#f8fbfe] p-3 text-center">
-                <span className="text-[10px] font-bold text-[#8190a3] uppercase">Kazanılan Puan</span>
-                <strong className="block text-lg font-black text-[#16865f] mt-0.5">+{formatPuan(seciliEgitimDetayi.kazanilan_toplam)}</strong>
-              </div>
-              <div className="rounded-xl border border-[#e5edf5] bg-[#f8fbfe] p-3 text-center">
-                <span className="text-[10px] font-bold text-[#8190a3] uppercase">Bu Türün Net Puanı</span>
-                <strong className="block text-lg font-black text-[#10213d] mt-0.5">{formatPuan(seciliEgitimDetayi.net_puan)} p</strong>
-              </div>
-            </div>
-
-            {(seciliEgitimDetayi.urun_dagilimi ?? []).length > 0 && (
-              <div>
-                <div className="text-[11px] font-extrabold uppercase tracking-wide text-[#62768d] mb-2">
-                  Ürün Bazlı Puan Dağılımı
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+                  gap: '10px',
+                  width: '100%',
+                  marginBottom: (seciliEgitimDetayi.urun_dagilimi ?? []).length > 0 ? '14px' : '0',
+                }}
+              >
+                <div className="rounded-xl border border-[#e5edf5] bg-[#f8fbfe] p-3 text-center">
+                  <span className="text-[10px] font-bold text-[#8190a3] uppercase">Yayına Alınan</span>
+                  <strong className="block text-lg font-black text-[#10213d] mt-0.5">{seciliEgitimDetayi.donemde_yayina_alinan}</strong>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
-                  {seciliEgitimDetayi.urun_dagilimi.map((u) => (
-                    <div key={u.urun_id ?? u.urun_adi} className="rounded-xl border border-[#e5edf5] bg-white p-3 flex items-center justify-between">
-                      <strong className="text-xs font-extrabold text-[#10213d]">{u.urun_adi}</strong>
-                      <div className="flex items-center gap-2 text-xs font-bold">
-                        <span className="text-[#16865f]">+{formatPuan(u.kazanilan_toplam)}</span>
-                        <span className="text-[#d44b40]">−{formatPuan(u.kaybedilen_toplam)}</span>
-                        <strong className="text-[#237ac8]">{formatPuan(u.net_puan)} p</strong>
+                <div className="rounded-xl border border-[#e5edf5] bg-[#f8fbfe] p-3 text-center">
+                  <span className="text-[10px] font-bold text-[#8190a3] uppercase">Tamamlanan İzleme</span>
+                  <strong className="block text-lg font-black text-[#237ac8] mt-0.5">{seciliEgitimDetayi.tamamlanan_izleme}</strong>
+                </div>
+                <div className="rounded-xl border border-[#e5edf5] bg-[#f8fbfe] p-3 text-center">
+                  <span className="text-[10px] font-bold text-[#8190a3] uppercase">Kazanılan Puan</span>
+                  <strong className="block text-lg font-black text-[#16865f] mt-0.5">+{formatPuan(seciliEgitimDetayi.kazanilan_toplam)}</strong>
+                </div>
+                <div className="rounded-xl border border-[#e5edf5] bg-[#f8fbfe] p-3 text-center">
+                  <span className="text-[10px] font-bold text-[#8190a3] uppercase">Bu Konunun Net Puanı</span>
+                  <strong className="block text-lg font-black text-[#10213d] mt-0.5">{formatPuan(seciliEgitimDetayi.net_puan)} p</strong>
+                </div>
+              </div>
+
+              {(seciliEgitimDetayi.urun_dagilimi ?? []).length > 0 && (
+                <div className="rounded-xl border border-[#e8eff6] bg-[#fbfcfe] p-3">
+                  <div className="text-[11px] font-extrabold uppercase tracking-wide text-[#62768d] mb-2">
+                    Ürün Bazlı Puan Dağılımı
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                    {seciliEgitimDetayi.urun_dagilimi.map((u) => (
+                      <div key={u.urun_id ?? u.urun_adi} className="rounded-lg border border-[#e5edf5] bg-white p-2.5 flex items-center justify-between">
+                        <strong className="text-xs font-extrabold text-[#10213d] truncate mr-2">{u.urun_adi}</strong>
+                        <div className="flex items-center gap-2 text-xs font-bold shrink-0">
+                          <span className="text-[#16865f]">+{formatPuan(u.kazanilan_toplam)}</span>
+                          <span className="text-[#d44b40]">−{formatPuan(u.kaybedilen_toplam)}</span>
+                          <strong className="text-[#237ac8]">{formatPuan(u.net_puan)} p</strong>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </section>
-        )}
+              )}
+            </div>
+          )}
+        </section>
 
         {/* Öğrenme Aracı / Format Performansı Detay Tablosu (En Altta) */}
         <OgrenmeAraciPerformansi dagilim={data.arac_turu_dagilimi} />
