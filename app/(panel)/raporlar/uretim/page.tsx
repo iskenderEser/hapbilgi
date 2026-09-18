@@ -245,16 +245,13 @@ export default function UretimRaporlariPage() {
           </div>
         </div>
 
-        {/* Eğitim Türü Üretim Portföyü (6 Sütun Tek Satır) */}
+        {/* Yayın Konusu ve Saha Etkisi (6 Sütun Tek Satır) */}
         <section className={`${styles.panel} ${styles.section}`}>
           <div className={styles.sectionHeader}>
             <div>
-              <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">
-                İçerik Portföyü
-              </div>
-              <h2 className="text-base font-extrabold text-[#20324c]">Eğitim Türü Üretim ve Saha Etkisi</h2>
+              <h2 className="text-base font-extrabold text-[#20324c]">Yayın Konusu ve Saha Etkisi</h2>
               <p className="mt-0.5 text-[11px] font-medium text-[#8190a3]">
-                Üretilen içeriklerin yayına alınma adetleri ve sahada oluşturduğu tüketim karşılığı
+                Yayına alma sayıları ve sahada oluşturduğu tüketim karşılığı
               </p>
             </div>
             <div className={styles.sectionIcon}><BookOpenCheck className="h-4 w-4" /></div>
