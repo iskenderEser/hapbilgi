@@ -130,7 +130,7 @@ export default function UretimRaporlariPage() {
             <div>
               <h2 className="text-base font-extrabold text-[#20324c]">Yayın Özeti</h2>
               <p className="mt-0.5 text-xs text-[#718198]">
-                Yayınlarınızın genel bilgisini görebilirsiniz.
+                Tüm ve farklı zamanlardaki canlı yayın sayılarınız
               </p>
             </div>
 
