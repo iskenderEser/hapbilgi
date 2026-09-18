@@ -124,12 +124,15 @@ export function YeniTalepFormV2({ formu }: Props) {
       {/* Başlık + hazır içerik anahtarları */}
       <div className="mb-4 flex flex-col gap-3">
         <div>
-          <h2 className="m-0 text-base font-extrabold text-[#203653]">Talebinizi yapılandırın</h2>
+          <h2 className="m-0 text-base font-extrabold text-[#203653]">Yayın tipi ve üretim yöntemi</h2>
           <p className="mt-1 text-xs leading-4 text-[#7b8ca5]">
-            Önce hedef kitleyi seçin; içerik ve üretim seçenekleri buna göre açılır.
+            Yayın tipini seçtikten sonra üretim yöntemini belirleyebilirsiniz.
           </p>
         </div>
         <div className="flex w-full flex-col gap-2 rounded-xl border border-[#e2e9f2] bg-white px-3 py-2.5">
+          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#7a8da8]">
+            Yayın tipi
+          </p>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label="Öğrenme aracı seçimi">
             {(["video", "podcast", "gorsel", "flip_pdf"] as const)
               .filter((tur) => formu.ogrenmeAraciBayraklari[tur])
@@ -188,8 +191,11 @@ export function YeniTalepFormV2({ formu }: Props) {
           <section className="min-w-0 rounded-2xl border border-[#dfe8f3] bg-white p-4 shadow-[0_6px_18px_rgba(31,55,90,0.035)] md:grid md:grid-cols-[220px_minmax(0,1fr)] md:items-center md:gap-5">
             <div className="mb-3 md:mb-0">
               <h3 className="text-sm font-extrabold text-[#263b58]">
-                Hedef Kitle <span className="text-red-500">*</span>
+                Yayın Kitlesi
               </h3>
+              <p className="mt-1 text-xs leading-4 text-[#7b8ca5]">
+                Sadece Eczacı ve Eczane Teknisyenlerini birlikte tercih edebilirsiniz.
+              </p>
             </div>
             <div className="grid grid-cols-1 gap-2 md:grid-cols-3 xl:grid-cols-5">
               {hedefRoller.map((rolKey) => {
@@ -276,6 +282,9 @@ export function YeniTalepFormV2({ formu }: Props) {
               <legend className="sr-only">Ürün ve Teknik</legend>
               <div className="mb-3">
                 <h3 className="text-sm font-extrabold text-[#263b58]">Ürün ve Teknik</h3>
+                <p className="mt-1 text-xs leading-4 text-[#7b8ca5]">
+                  Yayının hangi ürün/konu ve (varsa) teknik için olduğunu tercih edebilirsiniz.
+                </p>
               </div>
               {/* UrunTeknikSecici kendi içinde md+ ekranda ürün ve tekniği YAN YANA
                   diziyor (flex-row). Burada sütun dar olduğu için ikisi alt alta
@@ -329,6 +338,9 @@ export function YeniTalepFormV2({ formu }: Props) {
               <legend className="sr-only">Sorular ve Seçenekler</legend>
               <div className="mb-3">
                 <h3 className="text-sm font-extrabold text-[#263b58]">Sorular ve Seçenekler</h3>
+                <p className="mt-1 text-xs leading-4 text-[#7b8ca5]">
+                  Her yayın için toplam soru adedi, seçenek sayısını ve yayın başına soru sayısını belirleyebilirsiniz.
+                </p>
               </div>
               <SoruSetiAyarlari
                 buyukluk={formu.soruSetiBuyuklugu}

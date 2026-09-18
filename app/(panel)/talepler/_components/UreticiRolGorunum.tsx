@@ -101,6 +101,9 @@ export function UreticiRolGorunum() {
                 </h1>
                 <SayfaRehberi anahtar="talep-merkezi" className="ml-1.5 -translate-y-2" />
               </div>
+              <p className="mt-1 text-xs text-[#7b8ca5]">
+                Yeni yayınlar açabilir ve yayınlarınızı takip edebilirsiniz.
+              </p>
             </div>
             <YenileButonu yenileniyor={merkez.yenileniyor} onYenile={() => merkez.veriCek()} disabled={merkez.kararYukleniyor || merkez.videoYuzdesi !== null} />
           </div>

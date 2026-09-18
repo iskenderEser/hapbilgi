@@ -64,7 +64,7 @@ export function TalepDetayi({
       <div className="overflow-hidden rounded-2xl border border-[#dfe7f2] bg-white shadow-[0_10px_28px_rgba(31,55,90,0.045)]">
         <div className="border-b border-[#e8eef5] px-5 py-4">
           <div className="inline-flex items-center">
-            <h2 className="mt-0.5 text-base font-extrabold text-[#203653]">Yayın Takibi</h2>
+            <h2 className="mt-0.5 text-base font-extrabold text-[#203653]">Yayın Takip Adımları</h2>
             <SayfaRehberi anahtar="talepler-uretim-gorunumu" className="ml-1.5 -translate-y-1.5" />
           </div>
         </div>
@@ -143,7 +143,7 @@ export function TalepDetayi({
     <section aria-labelledby="talep-takip-baslik" className="overflow-hidden rounded-2xl border border-[#dfe7f2] bg-white shadow-[0_10px_28px_rgba(31,55,90,0.045)]">
       <div className="border-b border-[#e8eef5] px-4 py-4 md:px-5">
         <div className="inline-flex items-center">
-          <h2 id="talep-takip-baslik" className="mt-0.5 text-base font-extrabold text-[#203653]">Yayın Takibi</h2>
+          <h2 id="talep-takip-baslik" className="mt-0.5 text-base font-extrabold text-[#203653]">Yayın Takip Adımları</h2>
           <SayfaRehberi anahtar="talepler-uretim-gorunumu" className="ml-1.5 -translate-y-1.5" />
         </div>
       </div>

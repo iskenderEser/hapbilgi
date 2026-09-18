@@ -58,7 +58,6 @@ export function YayinKumandaPaneli({
       etiket: "Yayında",
       deger: canli + planli,
       aciklama: "Hedef kitlenin erişebildiği içerikler",
-      altBilgi: `${canli} canlı · ${planli} planlı`,
       renk: "#167453",
       zemin: "#ecfdf5",
     },
