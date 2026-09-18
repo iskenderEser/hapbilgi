@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { AracTuruRaporSatiri } from "@/lib/rapor/paylasilan/aracTuruDagilimi";
 import { Video, Headphones, Image as ImageIcon, BookOpen, Users, Sparkles, ExternalLink } from "lucide-react";
 import YayinDetayModal from "./YayinDetayModal";
