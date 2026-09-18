@@ -39,22 +39,25 @@ export async function GET(request: Request) {
     return yetkiHatasi('Bu rapora erişim yetkiniz yok');
   }
 
-  // 3. Firma Bilgisi ve Şirket Yönetici Kapsamı
-  const { data: firma } = await adminSupabase
-    .from('firmalar')
-    .select('firma_adi')
-    .eq('firma_id', kullanici.firma_id)
-    .maybeSingle();
-
   try {
-    const rapor = await getUretimData(adminSupabase, { ...kullanici, rol }, baslangic, bitis);
-    const aracTurleri = await aracTuruDagilimi(adminSupabase, { baslangic, bitis, firmaId: kullanici.firma_id });
+    const [rapor, aracTurleri, firmaRes] = await Promise.all([
+      getUretimData(adminSupabase, { ...kullanici, rol }, baslangic, bitis),
+      aracTuruDagilimi(adminSupabase, { baslangic, bitis, firmaId: kullanici.firma_id }),
+      adminSupabase
+        .from('firmalar')
+        .select('firma_adi')
+        .eq('firma_id', kullanici.firma_id)
+        .maybeSingle(),
+    ]);
+
     return NextResponse.json({
       success: true,
       data: {
         kullanici: {
-          ad: kullanici.ad, soyad: kullanici.soyad, rol: kullanici.rol,
-          firma_adi: firma?.firma_adi ?? '—',
+          ad: kullanici.ad,
+          soyad: kullanici.soyad,
+          rol: kullanici.rol,
+          firma_adi: firmaRes.data?.firma_adi ?? '—',
         },
         ...rapor,
         arac_turu_dagilimi: aracTurleri,

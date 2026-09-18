@@ -31,6 +31,7 @@ import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { prefetchTalepMerkezi } from "@/app/(panel)/talepler/_hooks/talepOnbellek";
 import { prefetchYayinOzet } from "@/app/(panel)/yayin-yonetimi/_hooks/ozetOnbellek";
 import { prefetchYayinKatalog } from "@/app/(panel)/yayindaki-videolar/_components/katalogOnbellek";
+import { prefetchUretimRaporu } from "@/app/(panel)/raporlar/uretim/_hooks/uretimRaporuOnbellek";
 
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -63,6 +64,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
       void prefetchYayinOzet();
       void prefetchTalepMerkezi();
       void prefetchYayinKatalog("benim");
+      void prefetchUretimRaporu("bu_ay");
     }
   }, [kullanici, rolKucu]);
 

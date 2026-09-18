@@ -21,12 +21,11 @@ import {
   Star,
 } from 'lucide-react';
 import { useAuth } from '@/app/providers/AuthProvider';
-import { useRapor } from '@/hooks/useRapor';
+import { useUretimRaporu } from './_hooks/useUretimRaporu';
 import { YenileButonu } from '@/components/ui/yenile-butonu';
 import { formatPuan, GRI_METIN, KIRMIZI, PERIYOTLAR, type Periyot } from '@/lib/utils/raporUtils';
 import SayfaRehberi from '@/components/rehber/SayfaRehberi';
 import OgrenmeAraciPerformansi from '@/components/raporlar/OgrenmeAraciPerformansi';
-import type { AracTuruRaporSatiri } from '@/lib/rapor/paylasilan/aracTuruDagilimi';
 import styles from '../utt/utt-report.module.css';
 
 const DEFAULT_PERIYOT: Periyot = 'bu_ay';
@@ -47,59 +46,12 @@ const EGITIM_TURU_RENK: Record<string, string> = {
   ik_egitimi: '#d95f59',
 };
 
-interface DagilimSatiri {
-  kod: string;
-  ad: string;
-  adet: number;
-}
-
-interface UrunDagilimiSatiri {
-  urun_id: string | null;
-  urun_adi: string;
-  kazanilan_toplam: number;
-  kaybedilen_toplam: number;
-  net_puan: number;
-}
-
-interface EgitimTuruEtkisiSatiri {
-  egitim_turu: string;
-  egitim_adi: string;
-  donemde_yayina_alinan: number;
-  tamamlanan_izleme: number;
-  kazanilan_toplam: number;
-  kaybedilen_toplam: number;
-  net_puan: number;
-  begeni_sayisi: number;
-  favori_sayisi: number;
-  extra_izleme_sayisi: number;
-  urun_dagilimi: UrunDagilimiSatiri[];
-}
-
-interface RaporData {
-  arac_turu_dagilimi: AracTuruRaporSatiri[];
-  kullanici: {
-    ad: string;
-    soyad: string;
-    rol: string;
-    firma_adi: string;
-  };
-  uretim: {
-    toplam_yayina_alma: number;
-    donemde_yayina_alinan: number;
-    su_an_yayinda: number;
-    turler: DagilimSatiri[];
-    varyantlar: DagilimSatiri[];
-  };
-  egitim_turu_etkisi: EgitimTuruEtkisiSatiri[];
-}
-
 export default function UretimRaporlariPage() {
   const { kullanici, yukleniyor } = useAuth();
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
   const [seciliEgitimTuru, setSeciliEgitimTuru] = useState<string | null>(null);
 
-  const { data, loading, yenileniyor, error, yenile } = useRapor<RaporData>(
-    '/raporlar/api/uretim',
+  const { data, loading, yenileniyor, error, yenile } = useUretimRaporu(
     periyot,
     kullanici?.id,
   );
@@ -125,18 +77,30 @@ export default function UretimRaporlariPage() {
     );
   }, [data]);
 
-  if (yukleniyor || loading) {
+  if (error && !data) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-sm" style={{ color: GRI_METIN }}>Yükleniyor...</div>
+        <div className="text-sm" style={{ color: KIRMIZI }}>Hata: {error}</div>
       </div>
     );
   }
 
-  if (error) {
+  if (yukleniyor || (loading && !data)) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-sm" style={{ color: KIRMIZI }}>Hata: {error}</div>
+      <div className={styles.page} style={{ fontFamily: "'Nunito', sans-serif" }}>
+        <div className={styles.container}>
+          <Link href="/ana-sayfa" className="mb-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-[#7890aa] hover:text-[#237ac8]">
+            <ArrowLeft className="h-3.5 w-3.5" /> Ana Sayfa
+          </Link>
+          <div className="flex flex-col gap-4 animate-pulse">
+            <div className="h-16 rounded-2xl border border-[#dfe7f1] bg-white p-4" />
+            <div className="h-44 rounded-2xl border border-[#dfe7f1] bg-white p-4" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="h-44 rounded-2xl border border-[#dfe7f1] bg-white" />
+              <div className="h-44 rounded-2xl border border-[#dfe7f1] bg-white" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
