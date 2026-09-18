@@ -28,12 +28,12 @@ import OgrenmeAraciPerformansi from '@/components/raporlar/OgrenmeAraciPerforman
 import styles from '../utt/utt-report.module.css';
 
 const DEFAULT_PERIYOT: Periyot = 'bu_ay';
-const PERIYOT_PUAN_ADI: Record<Periyot, string> = {
-  bu_gun: 'Gün',
-  bu_hafta: 'Hafta',
-  bu_ay: 'Ay',
-  bu_donem: 'Dönem',
-  bu_yil: 'Yıl',
+const PERIYOT_BASLIK: Record<Periyot, string> = {
+  bu_gun: 'Bugün',
+  bu_hafta: 'Bu Hafta',
+  bu_ay: 'Bu Ay',
+  bu_donem: 'Bu Dönem',
+  bu_yil: 'Bu Yıl',
 };
 
 const EGITIM_TURU_RENK: Record<string, string> = {
@@ -124,58 +124,68 @@ export default function UretimRaporlariPage() {
           </div>
         ) : (
           <>
-        {/* Üretim Hero Grid */}
+        {/* Yayın Hero Grid */}
         <div className={styles.heroGrid}>
-          <section className={`${styles.panel} ${styles.scoreHero}`}>
+          <section className={`${styles.panel} p-4 sm:p-5 flex flex-col justify-between`}>
             <div>
-              <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">
-                {PERIYOT_PUAN_ADI[periyot]} üretim hacmi
-              </div>
-              <div className={styles.netScore}>{formatPuan(data.uretim.donemde_yayina_alinan)}</div>
-            </div>
-            <div className="relative z-10 min-w-0">
-              <h2 className="text-base font-extrabold text-[#20324c]">Üretim Portföyü Özeti</h2>
-              <p className="mt-1 text-xs font-medium leading-relaxed text-[#718198]">
-                Dönemde yayına alınan <strong>{data.uretim.donemde_yayina_alinan} içerik</strong> ile şu anda canlıda toplam <strong>{data.uretim.su_an_yayinda} yayın</strong> aktif tüketimdedir.
+              <h2 className="text-base font-extrabold text-[#20324c]">Yayın Durumu Özeti</h2>
+              <p className="mt-0.5 text-xs text-[#718198]">
+                {PERIYOT_BASLIK[periyot]} <strong>{data.uretim.donemde_yayina_alinan} içerik</strong> yayına alındı; şu anda canlıda toplam <strong>{data.uretim.su_an_yayinda} yayın</strong> aktif tüketimdedir.
               </p>
-              <div className={styles.metricGrid}>
-                <div className={styles.metric}>
-                  <Factory className="mb-1 h-4 w-4 text-[#237ac8]" />
-                  <div className="text-[10px] font-bold text-[#8190a3]">Dönem Yayını</div>
-                  <div className="text-base font-extrabold tabular-nums text-[#237ac8]">
-                    {data.uretim.donemde_yayina_alinan}
-                  </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2.5 mt-3 sm:mt-4">
+              <div className="rounded-xl border border-[#e2ebf4] bg-[#f8fbfe] p-3">
+                <div className="flex items-center gap-1.5 text-[#237ac8] mb-1">
+                  <Factory className="h-4 w-4" />
+                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#71859d]">
+                    {PERIYOT_BASLIK[periyot]}
+                  </span>
                 </div>
-                <div className={styles.metric}>
-                  <Activity className="mb-1 h-4 w-4 text-[#16865f]" />
-                  <div className="text-[10px] font-bold text-[#8190a3]">Canlı Yayın</div>
-                  <div className="text-base font-extrabold tabular-nums text-[#16865f]">
-                    {data.uretim.su_an_yayinda}
-                  </div>
+                <div className="text-xl sm:text-2xl font-black tabular-nums text-[#237ac8]">
+                  {data.uretim.donemde_yayina_alinan}
                 </div>
-                <div className={styles.metric}>
-                  <Layers3 className="mb-1 h-4 w-4 text-[#7c5ce7]" />
-                  <div className="text-[10px] font-bold text-[#8190a3]">Tarihsel Toplam</div>
-                  <div className="text-base font-extrabold tabular-nums text-[#43546d]">
-                    {data.uretim.toplam_yayina_alma}
-                  </div>
+                <span className="block text-[10px] text-[#8a9bb0] mt-0.5">Seçilen zaman aralığı</span>
+              </div>
+
+              <div className="rounded-xl border border-[#e2ebf4] bg-[#f8fbfe] p-3">
+                <div className="flex items-center gap-1.5 text-[#16865f] mb-1">
+                  <Activity className="h-4 w-4" />
+                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#71859d]">
+                    Şu An Yayında
+                  </span>
                 </div>
+                <div className="text-xl sm:text-2xl font-black tabular-nums text-[#16865f]">
+                  {data.uretim.su_an_yayinda}
+                </div>
+                <span className="block text-[10px] text-[#8a9bb0] mt-0.5">Aktif canlı yayın havuzu</span>
+              </div>
+
+              <div className="rounded-xl border border-[#e2ebf4] bg-[#f8fbfe] p-3">
+                <div className="flex items-center gap-1.5 text-[#6366f1] mb-1">
+                  <Layers3 className="h-4 w-4" />
+                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#71859d]">
+                    Toplam Kütüphane
+                  </span>
+                </div>
+                <div className="text-xl sm:text-2xl font-black tabular-nums text-[#43546d]">
+                  {data.uretim.toplam_yayina_alma}
+                </div>
+                <span className="block text-[10px] text-[#8a9bb0] mt-0.5">Tüm zamanların toplamı</span>
               </div>
             </div>
           </section>
 
           {/* Varyant Dağılımı Kartı */}
-          <section className={`${styles.panel} ${styles.contribution}`}>
+          <section className={`${styles.panel} p-4 sm:p-5 flex flex-col justify-between`}>
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <div className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#71859d]">
-                  Üretim Yolu
-                </div>
-                <h2 className="text-sm font-extrabold text-[#20324c]">Varyant Dağılımı</h2>
+                <h2 className="text-base font-extrabold text-[#20324c]">Üretim Varyantları</h2>
+                <p className="mt-0.5 text-xs text-[#718198]">İçeriklerin üretim biçimi dağılımı</p>
               </div>
               <div className={styles.sectionIcon}><Layers className="h-4 w-4" /></div>
             </div>
-            <div className="grid grid-cols-2 gap-2 mt-2">
+            <div className="grid grid-cols-2 gap-2 mt-1">
               {data.uretim.varyantlar.map((v) => (
                 <div key={v.kod} className="rounded-xl border border-[#e5edf5] bg-[#f8fbfe] p-2.5">
                   <span className="block text-[10px] font-bold text-[#71859d]">{v.ad}</span>
