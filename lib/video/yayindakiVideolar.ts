@@ -58,77 +58,98 @@ export async function getYayindakiVideolar(
 ): Promise<YayindakiVideo[]> {
   const { data: kullanici, error: kError } = await adminSupabase
     .from("kullanicilar")
-    .select("takim_id, firma_id")
+    .select("takim_id, firma_id, ad, soyad, rol")
     .eq("kullanici_id", userId)
     .single();
   if (kError || !kullanici) throw new Error("Kullanıcı bilgisi alınamadı.");
+
+  const gecerliTurler = Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur);
 
   let query = adminSupabase
     .from("v_yayin_detay")
     .select("yayin_id, talep_no, firma_adi, urun_adi, teknik_adi, video_url, thumbnail_url, arac_kapak_yolu, arac_dosya_yolu, arac_metadata, video_puani, yayin_tarihi, icerik_turu, hedef_roller, takim_id, uretici_id, arac_id, arac_turu")
     .eq("durum", "yayinda")
-    .in("arac_turu", Object.entries(ogrenmeAraciBayraklari()).filter(([, acik]) => acik).map(([tur]) => tur))
+    .in("arac_turu", gecerliTurler)
     .order("yayin_tarihi", { ascending: false });
 
-  // Kapsam: takıma bağlı içerik + firma geneli (takımsız, takim_id NULL) içerik.
-  // Firma geneli medikal/eğitim içeriği takim_id NULL üretiliyor; eski salt-takım
-  // süzgeci bunları eliyordu (Medikal Müdürlük klasörü hiç oluşmuyordu). Firma
-  // sınırı korunur (firma_id eşitliği) → başka firma sızmaz.
-  const firmaGeneli = `and(takim_id.is.null,firma_id.eq.${kullanici.firma_id})`;
-  if (kapsamGenisMi(rol)) {
-    const { data: takimlar } = await adminSupabase
-      .from("takimlar")
-      .select("takim_id")
-      .eq("firma_id", kullanici.firma_id);
-    const takimIdler = (takimlar ?? []).map((t: { takim_id: string }) => t.takim_id);
-    const takimListe = takimIdler.length > 0 ? takimIdler.join(",") : "00000000-0000-0000-0000-000000000000";
-    query = query.or(`takim_id.in.(${takimListe}),${firmaGeneli}`);
-  } else if (kullanici.takim_id) {
-    query = query.or(`takim_id.eq.${kullanici.takim_id},${firmaGeneli}`);
+  if (kapsam === "benim") {
+    // "Sizin Yayınlarınız": doğrudan veritabanı seviyesinde üreticiye göre filtrele
+    query = query.eq("uretici_id", userId);
   } else {
-    // Takımsız dar rol: yalnız firma geneli (takımsız) içerik.
-    query = query.is("takim_id", null).eq("firma_id", kullanici.firma_id);
+    // Kapsam: takıma bağlı içerik + firma geneli (takımsız, takim_id NULL) içerik.
+    const firmaGeneli = `and(takim_id.is.null,firma_id.eq.${kullanici.firma_id})`;
+    if (kapsamGenisMi(rol)) {
+      const { data: takimlar } = await adminSupabase
+        .from("takimlar")
+        .select("takim_id")
+        .eq("firma_id", kullanici.firma_id);
+      const takimIdler = (takimlar ?? []).map((t: { takim_id: string }) => t.takim_id);
+      const takimListe = takimIdler.length > 0 ? takimIdler.join(",") : "00000000-0000-0000-0000-000000000000";
+      query = query.or(`takim_id.in.(${takimListe}),${firmaGeneli}`);
+    } else if (kullanici.takim_id) {
+      query = query.or(`takim_id.eq.${kullanici.takim_id},${firmaGeneli}`);
+    } else {
+      query = query.is("takim_id", null).eq("firma_id", kullanici.firma_id);
+    }
   }
 
   const { data: videolar, error } = await query;
   if (error) throw new Error("Videolar çekilemedi.");
   const tumSatirlar = (videolar ?? []) as YayinSatiri[];
   const satirlar = kapsam === "benim"
-    ? tumSatirlar.filter((video) => video.uretici_id === userId)
+    ? tumSatirlar
     : kapsam === "digerleri"
       ? tumSatirlar.filter((video) => video.uretici_id !== userId)
       : tumSatirlar;
   if (satirlar.length === 0) return [];
 
-  // Üreten kişi/rol — uretici_id seti tek sorguda çözülür (N+1 yok).
-  const ureticiIdler = [...new Set(satirlar.map((v) => v.uretici_id).filter((id): id is string => Boolean(id)))];
-  const { data: ureticiler } = await adminSupabase
-    .from("kullanicilar")
-    .select("kullanici_id, ad, soyad, rol")
-    .in("kullanici_id", ureticiIdler.length > 0 ? ureticiIdler : ["00000000-0000-0000-0000-000000000000"]);
-  const ureticiHarita = new Map<string, UreticiSatiri>();
-  (ureticiler ?? []).forEach((u: UreticiSatiri) => ureticiHarita.set(u.kullanici_id, u));
-
-  // Favori/beğeni sayısı — ilgili yayin_id'ler için toplu çekilip JS'te sayılır.
   const yayinIdler = satirlar.map((v) => v.yayin_id);
-  const sayimHarita = async (tablo: string): Promise<Map<string, number>> => {
-    const { data } = await adminSupabase.from(tablo).select("yayin_id").in("yayin_id", yayinIdler);
-    const harita = new Map<string, number>();
-    (data ?? []).forEach((r: { yayin_id: string }) => harita.set(r.yayin_id, (harita.get(r.yayin_id) ?? 0) + 1));
-    return harita;
-  };
-  const favoriSay = await sayimHarita("video_favoriler");
-  const begeniSay = await sayimHarita("video_begeniler");
+  const ureticiHarita = new Map<string, UreticiSatiri>();
 
-  // İzlenme = tamamlanmış izleme kaydı sayısı (UTT ana sayfasıyla aynı ölçüt).
-  const { data: izlemeData } = await adminSupabase
-    .from("izleme_kayitlari")
-    .select("yayin_id")
-    .in("yayin_id", yayinIdler)
-    .eq("tamamlandi_mi", true)
-    .eq("gercek_oynatma_mi", true);
+  // "benim" modunda üretici zaten giriş yapan kullanıcının kendisidir
+  if (kapsam === "benim") {
+    ureticiHarita.set(userId, {
+      kullanici_id: userId,
+      ad: kullanici.ad,
+      soyad: kullanici.soyad,
+      rol: kullanici.rol,
+    });
+  }
+
+  const ureticiIdler = kapsam === "benim"
+    ? []
+    : [...new Set(satirlar.map((v) => v.uretici_id).filter((id): id is string => Boolean(id)))];
+
+  // Favori, beğeni, izlenme ve (gerekliyse) diğer üreticileri TEK PARALEL PAKETTE çek
+  const [favoriRes, begeniRes, izlemeRes, ureticiRes] = await Promise.all([
+    adminSupabase.from("video_favoriler").select("yayin_id").in("yayin_id", yayinIdler),
+    adminSupabase.from("video_begeniler").select("yayin_id").in("yayin_id", yayinIdler),
+    adminSupabase
+      .from("izleme_kayitlari")
+      .select("yayin_id")
+      .in("yayin_id", yayinIdler)
+      .eq("tamamlandi_mi", true)
+      .eq("gercek_oynatma_mi", true),
+    ureticiIdler.length > 0
+      ? adminSupabase
+          .from("kullanicilar")
+          .select("kullanici_id, ad, soyad, rol")
+          .in("kullanici_id", ureticiIdler)
+      : Promise.resolve({ data: null }),
+  ]);
+
+  if (ureticiRes?.data) {
+    (ureticiRes.data as UreticiSatiri[]).forEach((u) => ureticiHarita.set(u.kullanici_id, u));
+  }
+
+  const favoriSay = new Map<string, number>();
+  (favoriRes.data ?? []).forEach((r: { yayin_id: string }) => favoriSay.set(r.yayin_id, (favoriSay.get(r.yayin_id) ?? 0) + 1));
+
+  const begeniSay = new Map<string, number>();
+  (begeniRes.data ?? []).forEach((r: { yayin_id: string }) => begeniSay.set(r.yayin_id, (begeniSay.get(r.yayin_id) ?? 0) + 1));
+
   const izlenmeSay = new Map<string, number>();
-  (izlemeData ?? []).forEach((r: { yayin_id: string }) => izlenmeSay.set(r.yayin_id, (izlenmeSay.get(r.yayin_id) ?? 0) + 1));
+  (izlemeRes.data ?? []).forEach((r: { yayin_id: string }) => izlenmeSay.set(r.yayin_id, (izlenmeSay.get(r.yayin_id) ?? 0) + 1));
 
   return satirlar.map((v) => {
     const u = v.uretici_id ? ureticiHarita.get(v.uretici_id) : undefined;

@@ -17,6 +17,7 @@ import { ListeArama, useListe } from "@/components/liste";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import { YAYIN_TURU_SUNUMU, YAYIN_TURLERI } from "@/lib/ogrenmeAraci/turSunumu";
 import { YayinTuruFiltresi, type YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
+import { getKatalogOnbellek, setKatalogOnbellek } from "./katalogOnbellek";
 
 type Kapsam = "benim" | "digerleri";
 
@@ -101,11 +102,17 @@ function YayinRaflari({ videolar, onVideoSec, uretenBilgisiGoster }: {
 
   return (
     <div className="flex flex-col gap-6">
-      <KayanYayinRafi baslik="Tümü" videolar={tumu} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} />
-      <KayanYayinRafi baslik="En Son Yayınlananlar" videolar={enSon} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} />
-      <KayanYayinRafi baslik="En Çok İzlenenler" videolar={enCokIzlenen} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} />
-      <KayanYayinRafi baslik="En Çok Beğenilenler" videolar={enCokBegenilen} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} />
-      <KayanYayinRafi baslik="En Çok Favorilenenler" videolar={enCokFavorilenen} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} />
+      <KayanYayinRafi baslik="Tüm Yayınlar" videolar={tumu} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} />
+      <KayanYayinRafi baslik="Son Eklenenler" videolar={enSon} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} />
+      {enCokIzlenen.length > 0 && (
+        <KayanYayinRafi baslik="En Çok İzlenenler" videolar={enCokIzlenen} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} />
+      )}
+      {enCokBegenilen.length > 0 && (
+        <KayanYayinRafi baslik="En Çok Beğenilenler" videolar={enCokBegenilen} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} />
+      )}
+      {enCokFavorilenen.length > 0 && (
+        <KayanYayinRafi baslik="En Çok Favorilenenler" videolar={enCokFavorilenen} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} />
+      )}
     </div>
   );
 }
@@ -206,12 +213,24 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
   const { kullanici, yukleniyor } = useAuth();
   const { mesajlar, hata } = useHataMesaji();
   const hataRef = useRef(hata);
-  const [videolar, setVideolar] = useState<YayindakiVideo[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const baslangicVideolar = getKatalogOnbellek(kapsam);
+  const [videolar, setVideolar] = useState<YayindakiVideo[]>(() => baslangicVideolar ?? []);
+  const [loading, setLoading] = useState(() => !baslangicVideolar);
   const [yenileniyor, setYenileniyor] = useState(false);
   const [aktifVideo, setAktifVideo] = useState<YayindakiVideo | null>(null);
-  const [aktifHedef, setAktifHedef] = useState<HedefRol>("utt");
-  const [aktifDepartman, setAktifDepartman] = useState<DepartmanKey | null>(null);
+  const [aktifHedef, setAktifHedef] = useState<HedefRol>(() => {
+    if (kapsam === "benim" && baslangicVideolar) {
+      return TUM_HEDEF_ROLLER.find((hedef) => baslangicVideolar.some((v) => v.hedef_roller.includes(hedef))) ?? "utt";
+    }
+    return "utt";
+  });
+  const [aktifDepartman, setAktifDepartman] = useState<DepartmanKey | null>(() => {
+    if (kapsam === "digerleri" && baslangicVideolar) {
+      return DEPARTMAN_SIRA.find((dep) => baslangicVideolar.some((v) => departmanKey(v.ureten_rol) === dep)) ?? null;
+    }
+    return null;
+  });
   const [aktifYayinTuru, setAktifYayinTuru] = useState<YayinTuruFiltreDegeri>("tumu");
 
   const katalogListesi = useListe({
@@ -241,6 +260,7 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
         return;
       }
       const gelen = (data.videolar ?? []) as YayindakiVideo[];
+      setKatalogOnbellek(kapsam, gelen);
       setVideolar(gelen);
       if (kapsam === "benim") {
         setAktifHedef(TUM_HEDEF_ROLLER.find((hedef) => gelen.some((video) => video.hedef_roller.includes(hedef))) ?? "utt");
@@ -333,9 +353,24 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
           </div>
         </header>
 
-        {loading ? (
-          <div className="flex items-center justify-center rounded-2xl border border-[#dfe7f1] bg-white p-20">
-            <svg className="h-6 w-6 animate-spin text-gray-500" fill="none" viewBox="0 0 24 24"><circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+        {loading && videolar.length === 0 ? (
+          <div className="flex flex-col gap-5">
+            {kapsam === "benim" ? (
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="min-h-[92px] animate-pulse rounded-xl border border-gray-200 bg-white/70 p-3 md:p-4" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="min-h-[92px] animate-pulse rounded-xl border border-gray-200 bg-white/70 p-3 md:p-4" />
+                ))}
+              </div>
+            )}
+            <div className="flex h-48 animate-pulse items-center justify-center rounded-2xl border border-[#dfe7f1] bg-white">
+              <span className="text-xs font-bold text-[#7b8ca5]">Yayınlar hazırlanıyor...</span>
+            </div>
           </div>
         ) : videolar.length === 0 ? (
           <div className="rounded-2xl border border-[#dfe7f1] bg-white py-16 text-center text-sm text-[#6b7f9b]">
