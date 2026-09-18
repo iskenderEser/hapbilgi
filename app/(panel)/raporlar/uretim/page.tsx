@@ -12,7 +12,7 @@ import {
   Activity,
   ArrowLeft,
   BookOpenCheck,
-  Factory,
+  Calendar,
   Heart,
   Layers,
   Layers3,
@@ -128,16 +128,45 @@ export default function UretimRaporlariPage() {
         <div className={styles.heroGrid}>
           <section className={`${styles.panel} p-4 sm:p-5 flex flex-col justify-between`}>
             <div>
-              <h2 className="text-base font-extrabold text-[#20324c]">Yayın Durumu Özeti</h2>
+              <h2 className="text-base font-extrabold text-[#20324c]">Yayın Özeti</h2>
               <p className="mt-0.5 text-xs text-[#718198]">
-                {PERIYOT_BASLIK[periyot]} <strong>{data.uretim.donemde_yayina_alinan} içerik</strong> yayına alındı; şu anda canlıda toplam <strong>{data.uretim.su_an_yayinda} yayın</strong> aktif tüketimdedir.
+                Yayınlarınızın genel bilgisini görebilirsiniz.
               </p>
             </div>
 
             <div className="grid grid-cols-3 gap-2.5 mt-3 sm:mt-4">
+              {/* 1. Stat Kart (Eski 3): TÜM YAYINLAR */}
+              <div className="rounded-xl border border-[#e2ebf4] bg-[#f8fbfe] p-3">
+                <div className="flex items-center gap-1.5 text-[#6366f1] mb-1">
+                  <Layers3 className="h-4 w-4" />
+                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#71859d]">
+                    TÜM YAYINLAR
+                  </span>
+                </div>
+                <div className="text-xl sm:text-2xl font-black tabular-nums text-[#43546d]">
+                  {data.uretim.toplam_yayina_alma}
+                </div>
+                <span className="block text-[10px] text-[#8a9bb0] mt-0.5">Yılbaşından bugüne yayın toplamı</span>
+              </div>
+
+              {/* 2. Stat Kart (Eski 2): TÜM YAYINLARINIZ */}
+              <div className="rounded-xl border border-[#e2ebf4] bg-[#f8fbfe] p-3">
+                <div className="flex items-center gap-1.5 text-[#16865f] mb-1">
+                  <Activity className="h-4 w-4" />
+                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#71859d]">
+                    TÜM YAYINLARINIZ
+                  </span>
+                </div>
+                <div className="text-xl sm:text-2xl font-black tabular-nums text-[#16865f]">
+                  {data.uretim.su_an_yayinda}
+                </div>
+                <span className="block text-[10px] text-[#8a9bb0] mt-0.5">Canlıdaki aktif yayın havuzu</span>
+              </div>
+
+              {/* 3. Stat Kart (Eski 1): [ZAMAN] YAYINA ALINAN */}
               <div className="rounded-xl border border-[#e2ebf4] bg-[#f8fbfe] p-3">
                 <div className="flex items-center gap-1.5 text-[#237ac8] mb-1">
-                  <Factory className="h-4 w-4" />
+                  <Calendar className="h-4 w-4" />
                   <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#71859d]">
                     {PERIYOT_BASLIK[periyot]}
                   </span>
@@ -145,33 +174,7 @@ export default function UretimRaporlariPage() {
                 <div className="text-xl sm:text-2xl font-black tabular-nums text-[#237ac8]">
                   {data.uretim.donemde_yayina_alinan}
                 </div>
-                <span className="block text-[10px] text-[#8a9bb0] mt-0.5">Seçilen zaman aralığı</span>
-              </div>
-
-              <div className="rounded-xl border border-[#e2ebf4] bg-[#f8fbfe] p-3">
-                <div className="flex items-center gap-1.5 text-[#16865f] mb-1">
-                  <Activity className="h-4 w-4" />
-                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#71859d]">
-                    Şu An Yayında
-                  </span>
-                </div>
-                <div className="text-xl sm:text-2xl font-black tabular-nums text-[#16865f]">
-                  {data.uretim.su_an_yayinda}
-                </div>
-                <span className="block text-[10px] text-[#8a9bb0] mt-0.5">Aktif canlı yayın havuzu</span>
-              </div>
-
-              <div className="rounded-xl border border-[#e2ebf4] bg-[#f8fbfe] p-3">
-                <div className="flex items-center gap-1.5 text-[#6366f1] mb-1">
-                  <Layers3 className="h-4 w-4" />
-                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#71859d]">
-                    Toplam Kütüphane
-                  </span>
-                </div>
-                <div className="text-xl sm:text-2xl font-black tabular-nums text-[#43546d]">
-                  {data.uretim.toplam_yayina_alma}
-                </div>
-                <span className="block text-[10px] text-[#8a9bb0] mt-0.5">Tüm zamanların toplamı</span>
+                <span className="block text-[10px] text-[#8a9bb0] mt-0.5">Yayın sayısı</span>
               </div>
             </div>
           </section>
