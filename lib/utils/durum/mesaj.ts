@@ -45,6 +45,7 @@ export type DurumKodu =
   | "onay_bekleniyor"    // İÜ teslim etti, karar üreticide
   | "video_bekleniyor"   // hazır video talebi, yükleme üreticide
   | "video_isleniyor"    // hazır video yüklendi, teknik işleme sistemde sürüyor
+  | "hazir_video"        // hazır video talep sahibi tarafından yüklendi
   | "hazir_arac_iletildi" // hazır öğrenme aracı talep sahibi tarafından iletildi
   | "hazir_soru_seti"    // soru seti talep sahibi tarafından hazır iletildi
   | "yayin_bekleniyor"   // soru seti onaylı, yayına alma üreticide
@@ -80,6 +81,7 @@ const URETICI_DURUM: Record<DurumKodu, DurumMesaji> = {
   onay_bekleniyor:  { metin: "Onayınız Bekleniyor",    top: "uretici",          renk: AKSIYON },
   video_bekleniyor: { metin: "Öğrenme Aracınızı İletiniz", top: "uretici",       renk: AKSIYON },
   video_isleniyor:  { metin: "Videonuz İşleniyor",          top: "sistem",        renk: BEKLEME },
+  hazir_video:      { metin: "Hazır Video",                 top: "kapali",        renk: ONAY },
   hazir_arac_iletildi: { metin: "Öğrenme Aracınızı İlettiniz", top: "kapali",     renk: ONAY },
   hazir_soru_seti:  { metin: "Hazır Soru Seti",             top: "kapali",        renk: ONAY },
   yayin_bekleniyor: { metin: "Yayına Alınız",          top: "uretici",          renk: AKSIYON },
@@ -151,6 +153,7 @@ function iuMetin(kod: DurumKodu, g: IuMesajGirdi): string {
     case "iptal":            return `${rol} İptal Etti`;
     case "video_bekleniyor": return `${rol} ${arac.belirtme} Yüklüyor`;
     case "video_isleniyor": return "Video İşleniyor";
+    case "hazir_video": return `${rol} Videoyu İletti`;
     case "hazir_arac_iletildi": return `${rol} ${arac.belirtme} İletti`;
     case "hazir_soru_seti": return "Hazır Soru Seti";
     case "yayin_bekleniyor": return `${rol} Yayına Alacak`;
@@ -173,6 +176,7 @@ const IU_RENK: Record<DurumKodu, { top: DurumTopu; renk: DurumRenk }> = {
   onay_bekleniyor:  { top: "uretici",          renk: BEKLEME },
   video_bekleniyor: { top: "uretici",          renk: BEKLEME },
   video_isleniyor:  { top: "sistem",           renk: BEKLEME },
+  hazir_video:      { top: "kapali",           renk: ONAY },
   hazir_arac_iletildi: { top: "kapali",        renk: ONAY },
   hazir_soru_seti:  { top: "kapali",           renk: ONAY },
   yayin_bekleniyor: { top: "uretici",          renk: BEKLEME },
