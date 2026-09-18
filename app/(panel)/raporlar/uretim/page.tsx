@@ -124,8 +124,6 @@ export default function UretimRaporlariPage() {
           </div>
         ) : (
           <>
-            <OgrenmeAraciPerformansi dagilim={data.arac_turu_dagilimi} />
-
         {/* Üretim Hero Grid */}
         <div className={styles.heroGrid}>
           <section className={`${styles.panel} ${styles.scoreHero}`}>
@@ -186,6 +184,40 @@ export default function UretimRaporlariPage() {
               ))}
             </div>
           </section>
+        </div>
+
+        {/* Etkileşim İstatistikleri Şeridi */}
+        <div className="mb-4 grid grid-cols-3 gap-3">
+          <div className="rounded-2xl border border-[#e5edf5] bg-white p-4 flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fdf2f2] text-[#e02424]">
+              <Heart className="h-5 w-5" />
+            </span>
+            <div>
+              <strong className="block text-lg font-black text-[#10213d]">{etkilesim.begeni}</strong>
+              <span className="block text-xs font-bold text-[#8190a3]">Toplam Beğeni</span>
+              <span className="block text-[10px] text-[#9aa7b7]">Tüm araçlar · seçili dönem</span>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-[#e5edf5] bg-white p-4 flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eef6ff] text-[#2f8ed8]">
+              <Star className="h-5 w-5" />
+            </span>
+            <div>
+              <strong className="block text-lg font-black text-[#10213d]">{etkilesim.favori}</strong>
+              <span className="block text-xs font-bold text-[#8190a3]">Toplam Favori</span>
+              <span className="block text-[10px] text-[#9aa7b7]">Tüm araçlar · seçili dönem</span>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-[#e5edf5] bg-white p-4 flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f5f3ff] text-[#7c3aed]">
+              <Repeat2 className="h-5 w-5" />
+            </span>
+            <div>
+              <strong className="block text-lg font-black text-[#10213d]">{etkilesim.extra}</strong>
+              <span className="block text-xs font-bold text-[#8190a3]">Toplam Extra İzleme</span>
+              <span className="block text-[10px] text-[#9aa7b7]">Tüm araçlar · seçili dönem</span>
+            </div>
+          </div>
         </div>
 
         {/* Eğitim Türü Üretim Portföyü (6 Sütun Tek Satır) */}
@@ -321,39 +353,8 @@ export default function UretimRaporlariPage() {
           </section>
         )}
 
-        {/* Etkileşim İstatistikleri Şeridi */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-2xl border border-[#e5edf5] bg-white p-4 flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fdf2f2] text-[#e02424]">
-              <Heart className="h-5 w-5" />
-            </span>
-            <div>
-              <strong className="block text-lg font-black text-[#10213d]">{etkilesim.begeni}</strong>
-              <span className="block text-xs font-bold text-[#8190a3]">Toplam Beğeni</span>
-              <span className="block text-[10px] text-[#9aa7b7]">Tüm araçlar · seçili dönem</span>
-            </div>
-          </div>
-          <div className="rounded-2xl border border-[#e5edf5] bg-white p-4 flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eef6ff] text-[#2f8ed8]">
-              <Star className="h-5 w-5" />
-            </span>
-            <div>
-              <strong className="block text-lg font-black text-[#10213d]">{etkilesim.favori}</strong>
-              <span className="block text-xs font-bold text-[#8190a3]">Toplam Favori</span>
-              <span className="block text-[10px] text-[#9aa7b7]">Tüm araçlar · seçili dönem</span>
-            </div>
-          </div>
-          <div className="rounded-2xl border border-[#e5edf5] bg-white p-4 flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f5f3ff] text-[#7c3aed]">
-              <Repeat2 className="h-5 w-5" />
-            </span>
-            <div>
-              <strong className="block text-lg font-black text-[#10213d]">{etkilesim.extra}</strong>
-              <span className="block text-xs font-bold text-[#8190a3]">Toplam Extra İzleme</span>
-              <span className="block text-[10px] text-[#9aa7b7]">Tüm araçlar · seçili dönem</span>
-            </div>
-          </div>
-        </div>
+        {/* Öğrenme Aracı / Format Performansı Detay Tablosu (En Altta) */}
+        <OgrenmeAraciPerformansi dagilim={data.arac_turu_dagilimi} />
         </>
       )}
       </div>
