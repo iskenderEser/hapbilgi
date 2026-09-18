@@ -1,5 +1,6 @@
+import Link from "next/link";
 import type { AracTuruRaporSatiri } from "@/lib/rapor/paylasilan/aracTuruDagilimi";
-import { Video, Headphones, Image as ImageIcon, BookOpen, Users, Sparkles } from "lucide-react";
+import { Video, Headphones, Image as ImageIcon, BookOpen, Users, Sparkles, ExternalLink } from "lucide-react";
 
 const ADLAR: Record<AracTuruRaporSatiri["arac_turu"], string> = {
   video: "Video",
@@ -57,6 +58,23 @@ const ROL_ADLARI: Record<string, string> = {
   eczanem: "Danışan / Eczanem",
   yonetici: "Yönetici",
   diger: "Diğer Roller",
+};
+
+const ROL_KISA_ADLARI: Record<string, string> = {
+  utt: "UTT",
+  kd_utt: "KD-UTT",
+  temsilci: "UTT",
+  bm: "BM",
+  tm: "TM",
+  eczaci: "Eczacı",
+  ikinci_eczaci: "2. Eczacı",
+  yardimci_eczaci: "Yrd. Eczacı",
+  eczane_teknisyeni: "Teknisyen",
+  teknisyen: "Teknisyen",
+  musteri: "Danışan",
+  eczanem: "Danışan",
+  yonetici: "Yönetici",
+  diger: "Diğer",
 };
 
 const oran = (deger: number | null) => deger === null ? "—" : `%${deger.toLocaleString("tr-TR")}`;
@@ -175,6 +193,7 @@ export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTur
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {rollerListesi.slice(0, 3).map(([rol, m]) => {
+                        const rolKisa = ROL_KISA_ADLARI[rol] ?? rol.toUpperCase();
                         const rolAdi = ROL_ADLARI[rol] ?? rol;
                         return (
                           <span
@@ -182,7 +201,7 @@ export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTur
                             className="inline-flex items-center gap-1 rounded-md bg-[#edf3f9] px-2 py-0.5 text-[10px] font-bold text-[#475e7a]"
                             title={`${rolAdi}: ${sayi(m.tamamlama)} tamamlama`}
                           >
-                            <span className="truncate max-w-[90px]">{rolAdi.split(" ")[0]}</span>
+                            <span>{rolKisa}</span>
                             <strong className="text-[#10213d]">{sayi(m.tamamlama)}</strong>
                           </span>
                         );
@@ -280,24 +299,38 @@ export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTur
 
                 {/* 2. Yayın Listesi */}
                 <div>
-                  <div className="text-[10px] font-extrabold uppercase tracking-wide text-[#71859d] mb-1">
-                    Yayınlar ({satir.yayinlar.length})
+                  <div className="text-[10px] font-extrabold uppercase tracking-wide text-[#71859d] mb-1.5 flex items-center justify-between">
+                    <span>Yayınlar ({satir.yayinlar.length})</span>
                   </div>
+
+                  {/* Sabit 2 Sütunlu Alt Başlık Satırı */}
+                  <div className="flex items-center justify-between px-2 py-1 mb-1 text-[9px] font-extrabold uppercase tracking-wider text-[#8190a3] border-b border-[#edf2f7] bg-[#f8fafc] rounded-t">
+                    <span>Yayın ID</span>
+                    <span>Tamamlama - Puan</span>
+                  </div>
+
                   {satir.yayinlar.length === 0 ? (
-                    <div className="text-[10px] text-[#94a3b8] italic">Dönemde yayın yok.</div>
+                    <div className="text-[10px] text-[#94a3b8] italic px-2 py-1">Dönemde yayın yok.</div>
                   ) : (
-                    <div className="max-h-32 overflow-y-auto space-y-1 pr-1">
+                    <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
                       {satir.yayinlar.map((y) => (
                         <div
                           key={y.yayin_id}
-                          className="flex items-center justify-between gap-1 rounded bg-[#f8fafc] px-2 py-1 text-[10px] border border-[#edf2f7]"
+                          className="flex items-center justify-between gap-1 rounded bg-[#f8fafc] px-2 py-1 text-[10px] border border-[#edf2f7] hover:bg-[#edf6fd] transition-colors"
                         >
-                          <span className="font-bold text-[#20324c] truncate">
-                            {y.talep_no ?? y.yayin_id.slice(0, 8)}
-                          </span>
-                          <span className="tabular-nums text-[#64748b] shrink-0">
-                            {y.tamamlama} tamamlama ·{" "}
-                            <strong className="text-[#10213d]">
+                          <Link
+                            href={`/ana-sayfa?yayin_id=${y.yayin_id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-extrabold text-[#237ac8] hover:underline truncate flex items-center gap-1"
+                            title={`${y.talep_no ?? y.yayin_id} — Yayın detayını aç`}
+                          >
+                            <span>{y.talep_no ?? y.yayin_id.slice(0, 8)}</span>
+                            <ExternalLink className="h-2.5 w-2.5 shrink-0 text-[#71859d]" />
+                          </Link>
+                          <span className="tabular-nums text-[#64748b] shrink-0 font-medium">
+                            {sayi(y.tamamlama)} tamamlama ·{" "}
+                            <strong className="text-[#10213d] font-bold">
                               {sayi(y.kazanilan_puan - y.kaybedilen_puan)} p
                             </strong>
                           </span>
