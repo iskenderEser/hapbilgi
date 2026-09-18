@@ -100,7 +100,7 @@ export function UreticiRolGorunum() {
       <div className="min-h-full bg-[#f5f8fc]">
       <div className="max-w-[1480px] mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7 flex flex-col gap-5">
         <section aria-labelledby="talep-merkezi-baslik" className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1 md:flex-row md:items-end md:justify-between md:gap-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <div className="inline-flex items-center">
                 <h1 id="talep-merkezi-baslik" className="text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">
@@ -112,7 +112,13 @@ export function UreticiRolGorunum() {
                 Yeni yayınlar açabilir ve yayınlarınızı takip edebilirsiniz.
               </p>
             </div>
-            <YenileButonu yenileniyor={merkez.yenileniyor} onYenile={() => merkez.veriCek({ manuel: true })} disabled={merkez.kararYukleniyor || merkez.videoYuzdesi !== null} />
+            <div className="flex items-center justify-end self-start sm:self-auto">
+              <YenileButonu
+                yenileniyor={merkez.yenileniyor}
+                onYenile={() => merkez.veriCek({ manuel: true })}
+                disabled={merkez.kararYukleniyor || merkez.videoYuzdesi !== null}
+              />
+            </div>
           </div>
 
           <div aria-label="Talep operasyon özeti" className="grid grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-3">
