@@ -1,6 +1,9 @@
-import Link from "next/link";
+"use client";
+
+import { useState } from "react";
 import type { AracTuruRaporSatiri } from "@/lib/rapor/paylasilan/aracTuruDagilimi";
 import { Video, Headphones, Image as ImageIcon, BookOpen, Users, Sparkles, ExternalLink } from "lucide-react";
+import YayinDetayModal from "./YayinDetayModal";
 
 const ADLAR: Record<AracTuruRaporSatiri["arac_turu"], string> = {
   video: "Video",
@@ -81,6 +84,8 @@ const oran = (deger: number | null) => deger === null ? "—" : `%${deger.toLoca
 const sayi = (deger: number) => (deger ?? 0).toLocaleString("tr-TR");
 
 export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTuruRaporSatiri[] }) {
+  const [seciliYayinId, setSeciliYayinId] = useState<string | null>(null);
+
   if (!dagilim?.length) return null;
 
   const toplamTumAraclarNetPuan = dagilim.reduce(
@@ -318,16 +323,15 @@ export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTur
                           key={y.yayin_id}
                           className="flex items-center justify-between gap-1 rounded bg-[#f8fafc] px-2 py-1 text-[10px] border border-[#edf2f7] hover:bg-[#edf6fd] transition-colors"
                         >
-                          <Link
-                            href={`/ana-sayfa?yayin_id=${y.yayin_id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-extrabold text-[#237ac8] hover:underline truncate flex items-center gap-1"
-                            title={`${y.talep_no ?? y.yayin_id} — Yayın detayını aç`}
+                          <button
+                            type="button"
+                            onClick={() => setSeciliYayinId(y.yayin_id)}
+                            className="font-extrabold text-[#237ac8] hover:underline truncate flex items-center gap-1 text-left cursor-pointer focus-visible:outline-none"
+                            title={`${y.talep_no ?? y.yayin_id} — Yayın detayını ve soruları aç`}
                           >
                             <span>{y.talep_no ?? y.yayin_id.slice(0, 8)}</span>
                             <ExternalLink className="h-2.5 w-2.5 shrink-0 text-[#71859d]" />
-                          </Link>
+                          </button>
                           <span className="tabular-nums text-[#64748b] shrink-0 font-medium">
                             {sayi(y.tamamlama)} tamamlama ·{" "}
                             <strong className="text-[#10213d] font-bold">
@@ -344,6 +348,14 @@ export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTur
           );
         })}
       </div>
+
+      {/* Yayın & Soru Detay Modalı */}
+      {seciliYayinId && (
+        <YayinDetayModal
+          yayinId={seciliYayinId}
+          onKapat={() => setSeciliYayinId(null)}
+        />
+      )}
     </section>
   );
 }
