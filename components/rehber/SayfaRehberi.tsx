@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import { X, Lightbulb, Compass, ChevronLeft } from "lucide-react";
 import { getSayfaRehberi, type SayfaRehberBilgisi, type AltModalBilgisi, type RehberMadde } from "@/lib/rehber/sayfaRehberi";
 
@@ -120,8 +121,40 @@ export default function SayfaRehberi({
     setAktifAltModal(null);
   };
 
-  // Açıklama veya özet içindeki link kelimeyi tıklanabilir hale getiren yardımcı
+  // Açıklama, özet veya ipucundaki link kelimeleri ve markdown linklerini ([Metin](/yol)) tıklanabilir hale getiren yardımcı
   const metinFormatla = (metin: string, linkKelime?: string, altModal?: AltModalBilgisi): ReactNode => {
+    // 1) Markdown link kontrolü: [Metin](/yol)
+    const markdownRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+    if (markdownRegex.test(metin)) {
+      const parcalar: ReactNode[] = [];
+      let sonIndex = 0;
+      let eslesme: RegExpExecArray | null;
+      markdownRegex.lastIndex = 0;
+
+      while ((eslesme = markdownRegex.exec(metin)) !== null) {
+        if (eslesme.index > sonIndex) {
+          parcalar.push(metin.substring(sonIndex, eslesme.index));
+        }
+        const [, linkMetni, url] = eslesme;
+        parcalar.push(
+          <Link
+            key={eslesme.index}
+            href={url}
+            onClick={() => handleKapat()}
+            className="font-extrabold text-blue-600 hover:text-blue-800 underline underline-offset-2 inline"
+          >
+            {linkMetni}
+          </Link>
+        );
+        sonIndex = eslesme.index + eslesme[0].length;
+      }
+      if (sonIndex < metin.length) {
+        parcalar.push(metin.substring(sonIndex));
+      }
+      return <>{parcalar}</>;
+    }
+
+    // 2) Alt modal link kelime kontrolü
     if (!linkKelime || !altModal || !metin.includes(linkKelime)) {
       return metin;
     }
@@ -324,7 +357,7 @@ export default function SayfaRehberi({
                     <Lightbulb size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
                     <div className="leading-relaxed">
                       <strong className="font-bold text-amber-950">İpucu: </strong>
-                      <span>{rehber.ipucu}</span>
+                      <span>{metinFormatla(rehber.ipucu)}</span>
                     </div>
                   </div>
                 )}

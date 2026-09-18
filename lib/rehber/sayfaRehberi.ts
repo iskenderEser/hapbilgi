@@ -71,8 +71,8 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
   // ─── 1. TALEP MERKEZİ (SAYFA BAŞLIĞI STANDARDI) ───────────────────────────
   "talep-merkezi": {
     anahtar: "talep-merkezi",
-    baslik: "Talep Takip ve Yeni Talep",
-    ozet: "Yeni içerik talepleri oluşturmanızı ve devam eden üretim süreçlerini adım adım takip etmenizi sağlar. Onayınızı bekleyen aşamaları buradan anında yönetebilirsiniz.",
+    baslik: "Yayın Oluşturma ve Takip",
+    ozet: "Yeni yayınlar başlatmanızı ve yayına giden üretim süreçlerini adım adım takip etmenizi sağlar. İçerik onaylarınızı ve yayın öncesi kararlarınızı buradan anında yönetebilirsiniz.",
     maddeler: [],
   },
 
@@ -416,9 +416,9 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
   // ─── 9. TALEPLER: AKTİF OPERASYON (İŞ LİSTESİ) ────────────────────────────
   "talepler-aktif-operasyon": {
     anahtar: "talepler-aktif-operasyon",
-    baslik: "Aktif Operasyon (Talep Takip Listesi)",
-    altBaslik: "Üretimi devam eden taleplerinizin durum ve sorumluluk takibi.",
-    ozet: "Üretimi devam eden tüm taleplerinizi, bulundukları aşamayı ve şu an kimin aksiyonunu beklediğini gösterir.",
+    baslik: "Yayın Takip Listesi",
+    altBaslik: "Devam eden yayınlarınızın durum ve sorumluluk takibi.",
+    ozet: "Hazırlığı veya üretimi devam eden tüm yayınlarınızı, bulundukları aşamayı ve şu an kimin aksiyonunu beklediğini gösterir.",
     maddeler: [
       {
         baslik: "Aşama Filtreleri",
@@ -431,20 +431,20 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
         ikon: "🚥",
       },
       {
-        baslik: "Talep Seçimi",
-        aciklama: "Satıra tıkladığınızda sayfa değişmez; sağ taraftaki 'Üretim Görünümü' alanında o talebin tüm adımları ve aksiyonları açılır.",
+        baslik: "Yayın Seçimi",
+        aciklama: "Satıra tıkladığınızda sayfa değişmez; sağ taraftaki 'Yayın Takibi' alanında o yayının tüm adımları ve işlem detayları açılır.",
         ikon: "👉",
       },
     ],
-    ipucu: "Arama kutusunu kullanarak talep numarası veya ürün adına göre anında arama yapabilirsiniz.",
+    ipucu: "Arama kutusunu kullanarak yayın numarası veya ürün adına göre anında arama yapabilirsiniz.",
   },
 
   // ─── 10. TALEPLER: ÜRETİM GÖRÜNÜMÜ (TALEP DETAYI) ─────────────────────────
   "talepler-uretim-gorunumu": {
     anahtar: "talepler-uretim-gorunumu",
-    baslik: "Üretim Görünümü (Üretim Şeridi)",
-    altBaslik: "Seçili talebin adım adım tüm üretim ve onay akışı.",
-    ozet: "Seçtiğiniz talebin üretim yolculuğunu (Talep → Senaryo → seçilen öğrenme aracı → Soru Seti → Yayın) tek bir akışta yönetmenizi sağlar.",
+    baslik: "Yayın Takip Adımları",
+    altBaslik: "Seçili yayının adım adım tüm üretim, yükleme ve onay akışı.",
+    ozet: "Seçtiğiniz yayının üretim yolculuğunu (Yayın Bilgisi → Senaryo → Öğrenme Aracı → Soru Seti → Yayın) tek bir şerit üzerinden izlemenizi ve yönetmenizi sağlar.",
     maddeler: [
       {
         baslik: "Adım Kutuları",
@@ -453,16 +453,16 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
       },
       {
         baslik: "Onay ve Revizyon",
-        aciklama: "Sıra sizdeyken beliren butonlarla içeriği onaylayabilir veya revizyon notu girerek üreticiye iletebilirsiniz.",
+        aciklama: "Sıra sizdeyken beliren butonlarla içeriği onaylayabilir veya revizyon notu girerek içerik üreticisine iletebilirsiniz.",
         ikon: "🔴",
       },
       {
-        baslik: "Hazır Öğrenme Aracı Yükleme",
-        aciklama: "V2 veya V4 taleplerinizde seçtiğiniz öğrenme aracını doğrudan ilgili adımın kutusundan yükleyebilirsiniz.",
+        baslik: "Hazır İçerik Yükleme",
+        aciklama: "Hazır içerik tercih ettiğiniz yayınlarda dosyalarınızı doğrudan ilgili adımın kutusundan yükleyebilirsiniz.",
         ikon: "📦",
       },
     ],
-    ipucu: "Tüm aşamaları onaylanan talepler otomatik olarak Yayın Yönetimi sayfasına aktarılır.",
+    ipucu: "Tüm aşamaları onaylanan yayınlar otomatik olarak [Yayın Yönetimi](/yayin-yonetimi) sayfasına aktarılır.",
   },
 
   // ─── 11. BM PERFORMANS GÖRÜNÜMÜ ───────────────────────────────────────────
