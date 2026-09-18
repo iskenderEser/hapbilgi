@@ -43,13 +43,18 @@ const ARAC_TEMASI: Record<
 };
 
 const ROL_ADLARI: Record<string, string> = {
-  temsilci: "Saha Temsilcisi (UTT)",
   utt: "Saha Temsilcisi (UTT)",
+  kd_utt: "Kıdemli UTT",
+  temsilci: "Saha Temsilcisi (UTT)",
   bm: "Bölge Müdürü (BM)",
+  tm: "Takım Müdürü (TM)",
   eczaci: "Eczacı",
+  ikinci_eczaci: "İkinci Eczacı",
+  yardimci_eczaci: "Yardımcı Eczacı",
   eczane_teknisyeni: "Eczane Teknisyeni",
   teknisyen: "Eczane Teknisyeni",
-  musteri: "Danışan / Tüketici",
+  musteri: "Danışan / Eczanem",
+  eczanem: "Danışan / Eczanem",
   yonetici: "Yönetici",
   diger: "Diğer Roller",
 };
@@ -59,6 +64,11 @@ const sayi = (deger: number) => (deger ?? 0).toLocaleString("tr-TR");
 
 export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTuruRaporSatiri[] }) {
   if (!dagilim?.length) return null;
+
+  const toplamTumAraclarNetPuan = dagilim.reduce(
+    (acc, item) => acc + (item.net_kazanilan_puan > 0 ? item.net_kazanilan_puan : 0),
+    0
+  );
 
   return (
     <section className="my-4 overflow-hidden rounded-2xl border border-[#dce5ef] bg-white shadow-[0_8px_24px_rgba(31,55,84,0.06)]">
@@ -84,6 +94,10 @@ export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTur
           const tamamlamaOrani =
             satir.baslatma > 0
               ? Math.min(100, Math.round((satir.tamamlama / satir.baslatma) * 100))
+              : null;
+          const netPuanYuzdesi =
+            toplamTumAraclarNetPuan > 0 && satir.net_kazanilan_puan > 0
+              ? Math.round((satir.net_kazanilan_puan / toplamTumAraclarNetPuan) * 100)
               : null;
 
           return (
@@ -131,13 +145,20 @@ export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTur
                   </div>
                 </div>
 
-                {/* Puan Dengesi (Kazanılan / Kaybedilen / Net Puan) */}
+                {/* Puan Dengesi (Kazanılan / Kaybedilen / Net Puan + % Payı) */}
                 <div className="rounded-xl border border-[#e8eff6] bg-white p-2.5 mb-3">
                   <div className="flex items-center justify-between text-[10px] font-bold text-[#71859d] mb-1">
                     <span>Puan Dağılımı</span>
-                    <strong className="text-xs font-black text-[#237ac8]">
-                      {sayi(satir.net_kazanilan_puan)} p Net
-                    </strong>
+                    <div className="flex items-center gap-1.5">
+                      {netPuanYuzdesi !== null && (
+                        <span className="rounded bg-[#edf6fd] px-1.5 py-0.5 text-[9px] font-extrabold text-[#237ac8]" title="Tüm araçların net puanı içindeki payı">
+                          %{netPuanYuzdesi} Pay
+                        </span>
+                      )}
+                      <strong className="text-xs font-black text-[#237ac8]">
+                        {sayi(satir.net_kazanilan_puan)} p Net
+                      </strong>
+                    </div>
                   </div>
                   <div className="flex items-center justify-between text-[10px] font-extrabold pt-1 border-t border-[#f0f4f8]">
                     <span className="text-[#16865f]">+{sayi(satir.kazanilan_puan)}</span>
@@ -150,7 +171,7 @@ export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTur
                   <div className="mb-2">
                     <div className="text-[10px] font-extrabold uppercase tracking-wider text-[#8190a3] mb-1.5 flex items-center gap-1">
                       <Users className="h-3 w-3" />
-                      <span>Rol Tüketim Payı</span>
+                      <span>ROL TÜKETİM SAYILARI</span>
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {rollerListesi.slice(0, 3).map(([rol, m]) => {
