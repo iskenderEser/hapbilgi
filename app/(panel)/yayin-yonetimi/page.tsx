@@ -129,7 +129,7 @@ function YayinYonetimiIcerik() {
   }, [kullaniciId, baslangicHedef, baslangicDurum]);
 
   const yy = useYayinYonetimi({
-    kullaniciVar: !!kullaniciId && ilkHedefHazir,
+    kullaniciVar: !!kullaniciId,
     aktifAnaSekme,
     hata,
     basari,
@@ -174,8 +174,8 @@ function YayinYonetimiIcerik() {
   const yayindaListe = useListe({ veri: yayindakiler, aramaAlanlari: ARAMA_ALANLARI });
   const durdurulanListe = useListe({ veri: durdurulular, aramaAlanlari: ARAMA_ALANLARI });
 
-  // Auth guard layout'ta; burada yalnız veri yükleme spinner'ı.
-  if (kimlikYukleniyor || !ureticiMi || !ilkHedefHazir || yy.loading) {
+  // Auth guard layout'ta; burada yalnız kimlik kontrolü sırasında tam ekran spinner.
+  if (kimlikYukleniyor || !ureticiMi) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <svg className="animate-spin w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24">
@@ -203,6 +203,16 @@ function YayinYonetimiIcerik() {
           aksiyon={<YenileButonu yenileniyor={yy.yenileniyor} onYenile={() => yy.veriCek()} disabled={!!acikAkordiyon || !!yy.islemLoading} />}
         />
 
+        {yy.loading ? (
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-[#dfe7f1] bg-white py-16 text-center shadow-[0_6px_18px_rgba(31,55,90,0.03)]">
+            <svg className="h-7 w-7 animate-spin text-[#2583e2]" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <p className="mt-3 text-xs font-bold text-[#647994]">Yayınlar hazırlanıyor...</p>
+          </div>
+        ) : (
+          <>
         {aktifSekme === "bekleyen" && (
           <ListeBasligi baslik="Yayına Hazır İçerikler" sayi={bekleyenListe.toplam} arama={<ListeArama arama={bekleyenListe.arama} />} />
         )}
@@ -309,6 +319,8 @@ function YayinYonetimiIcerik() {
             toplam={durdurulanListe.toplam}
             onGoster={durdurulanListe.dahaFazlaGoster}
           />
+        )}
+          </>
         )}
       </div>
       </div>
