@@ -160,7 +160,7 @@ export default function UretimRaporlariPage() {
                 <div className="text-xl sm:text-2xl font-black tabular-nums text-[#237ac8]">
                   {data.uretim.donemde_yayina_alinan}
                 </div>
-                <span className="block text-[10px] text-[#8a9bb0] mt-0.5">Yayın sayısı</span>
+                <span className="block text-[10px] text-[#8a9bb0] mt-0.5">Canlı yayın</span>
               </div>
             </div>
           </section>
