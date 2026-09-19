@@ -96,10 +96,10 @@ export default function PanelNavbar({
 
   return (
     <nav
-      className="sticky top-0 z-50 border-b border-gray-200 px-3 py-3 md:px-6 md:py-3.5 min-h-[76px] flex flex-col justify-center"
+      className="sticky top-0 z-50 border-b border-gray-200 px-2.5 py-2.5 sm:px-6 sm:py-3.5 min-h-[64px] sm:min-h-[76px] flex flex-col justify-center"
       style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderBottomColor: "#e5e7eb" }}
     >
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-1.5 sm:gap-4">
         {/* Sol Kolon: Logo & Co-Branding (Ayraç sidebarın 240px sağ kenarı ile tam hizalıdır: 24px padding + 216px = 240px) */}
         <div className="flex items-center flex-shrink-0">
           <div
@@ -109,17 +109,17 @@ export default function PanelNavbar({
             <img
               src="/hapbilgi-yatay-TM-1-logo.png"
               alt="hapbilgi"
-              className="h-10 sm:h-12 md:h-14 lg:h-[62px] w-auto aspect-[901/340] object-cover transition-transform duration-200 group-hover:scale-105 drop-shadow-sm"
+              className="h-8 sm:h-12 md:h-14 lg:h-[62px] w-auto aspect-[901/340] object-cover transition-transform duration-200 group-hover:scale-105 drop-shadow-sm"
             />
           </div>
 
           {ogrenmePlatformuAktif && firmaLogoUrl && (
             <div className="flex items-center flex-shrink-0 select-none">
-              <div className="h-6 sm:h-8 w-[1.5px] bg-slate-200 rounded-full mx-2 sm:mx-0" />
+              <div className="h-5 sm:h-8 w-[1.5px] bg-slate-200 rounded-full mx-1.5 sm:mx-0" />
               
               <div className="flex items-center flex-shrink-0 pl-0.5 sm:pl-4">
                 {/* Sabit Bounding Box (Firma logosu her zaman standart orantıda kalır) */}
-                <div className="w-[84px] sm:w-[125px] h-9 flex items-center justify-center flex-shrink-0">
+                <div className="w-[68px] sm:w-[125px] h-7 sm:h-9 flex items-center justify-center flex-shrink-0">
                   <img
                     src={firmaLogoUrl}
                     alt={firmaAdi ?? "Firma"}
@@ -130,7 +130,7 @@ export default function PanelNavbar({
                 {/* Sabit Metin (Logonun sağında) */}
                 <span
                   style={{ fontFamily: "'Nunito', sans-serif" }}
-                  className="text-[9.5px] sm:text-[11.5px] font-normal text-[#64748b] tracking-[0.1px] whitespace-nowrap ml-1.5 sm:ml-2.5"
+                  className="text-[8px] sm:text-[11.5px] font-normal text-[#64748b] tracking-tight sm:tracking-[0.1px] whitespace-nowrap ml-1 sm:ml-2.5"
                 >
                   resmi öğrenme platformu
                 </span>
@@ -253,8 +253,8 @@ export default function PanelNavbar({
           </div>
         </div>
 
-        {/* Mobil: avatar + hamburger (sol drawer'ı açar). */}
-        <div className="flex md:hidden items-center gap-2">
+        {/* Mobil: avatar + hamburger (sol drawer'ı açar). flex-shrink-0 ile asla kesilmez */}
+        <div className="flex md:hidden items-center gap-1.5 flex-shrink-0">
           {storeGeriSayimGoster && takvim && (
             <button
               type="button"

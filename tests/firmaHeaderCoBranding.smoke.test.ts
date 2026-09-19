@@ -23,15 +23,18 @@ test("PanelNavbar co-branding ve sabit bounding box sözleşmesini uygular", () 
   assert.ok(kaynak.includes("ogrenmePlatformuAktif && firmaLogoUrl"));
 
   // Sabit Bounding Box kontrolü
-  assert.ok(kaynak.includes("w-[84px]"));
+  assert.ok(kaynak.includes("w-[68px]"));
   assert.ok(kaynak.includes("object-contain"));
 
   // İfade: "resmi öğrenme platformu"
   assert.ok(kaynak.includes("resmi öğrenme platformu"));
 
   // Font boyutları
-  assert.ok(kaynak.includes("text-[9.5px]"));
+  assert.ok(kaynak.includes("text-[8px]"));
   assert.ok(kaynak.includes("sm:text-[11.5px]"));
+
+  // Mobil araçların kesilmemesi için flex-shrink-0 koruması
+  assert.ok(kaynak.includes("flex-shrink-0"));
 });
 
 test("layout.tsx eclub_kisi için co-branding'i kapatır ve firma bilgilerini aktarır", () => {
