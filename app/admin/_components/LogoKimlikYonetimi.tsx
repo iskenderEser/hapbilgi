@@ -14,6 +14,7 @@
 import { useState, useEffect, useRef } from "react";
 import type { Firma } from "../_types";
 import { RENK_BORDO, RENK_CIZGI, btnBase } from "../_constants";
+import { logoGorseliniOptimizeEt } from "@/lib/firma/logoOptimizasyonIstemci";
 
 interface LogoKimlikYonetimiProps {
   firma: Firma;
@@ -43,8 +44,13 @@ export default function LogoKimlikYonetimi({ firma, onGuncelle }: LogoKimlikYone
 
     try {
       setDosyaYukleniyor(true);
+      // İstemci tarafında akıllı optimizasyon:
+      // - SVG vektörel olduğu için olduğu gibi bırakılır.
+      // - PNG, WebP ve JPEG dosyaları şeffaflığı korunarak Retina netliğinde (maks 800x240 px) ölçeklenir ve sıkıştırılır.
+      const yuklenecekDosya = await logoGorseliniOptimizeEt(dosya);
+
       const formData = new FormData();
-      formData.append("dosya", dosya);
+      formData.append("dosya", yuklenecekDosya);
 
       const res = await fetch("/admin/api/firmalar/upload", {
         method: "POST",
@@ -318,7 +324,7 @@ export default function LogoKimlikYonetimi({ firma, onGuncelle }: LogoKimlikYone
           </button>
         </div>
         <p style={{ fontSize: "11.5px", color: "#6b7280", marginTop: "6px", margin: 0 }}>
-          💡 Tavsiye: Beyaz/açık header zemininde net görünmesi için şeffaf zeminli (PNG veya SVG) koyu renkli logo kullanınız (Maks. 5 MB).
+          💡 Tavsiye: Beyaz/açık header zemininde net görünmesi için şeffaf zeminli (PNG veya SVG) koyu renkli logo kullanınız (Maks. 5 MB - yüklenirken Retina netliğinde otomatik optimize edilir).
         </p>
       </div>
 
