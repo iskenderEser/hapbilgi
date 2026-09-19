@@ -87,11 +87,6 @@ export default function UretimVaryantlariModal({ acik, onKapat }: Props) {
                   </span>
                 )}
               </div>
-              {k.tanim && (
-                <div className="text-[11px] font-bold text-[#1f6db2] mb-1">
-                  {k.tanim}
-                </div>
-              )}
               <p className="text-xs text-gray-600 leading-relaxed m-0">
                 {k.aciklama}
               </p>
