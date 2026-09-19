@@ -176,7 +176,7 @@ export default function UretimRaporlariPage() {
           <section className={`${styles.panel} p-4 sm:p-5 flex flex-col justify-between`}>
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <h2 className="text-base font-extrabold text-[#20324c]">Yayınların Üretim Yöntemi Dağılımı</h2>
+                <h2 className="text-base font-extrabold text-[#20324c]">Yayınların Üretim Yöntemi ve Dağılımı</h2>
                 <p className="mt-0.5 text-xs text-[#718198]">Yayınlarınızın üretim yöntemleri ve dağılımları</p>
               </div>
               <div className={styles.sectionIcon}><Layers className="h-4 w-4" /></div>
