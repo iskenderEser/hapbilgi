@@ -13,7 +13,7 @@ import { useEclubStoreTakvim } from "@/hooks/useEclubStoreTakvim";
 
 const BORDO = "#bc2d0d";
 
-// UTT Kişisel Özet Kapsülü — tek şık rozet: Takım Sırası | Haftalık Puan | Sipariş Puanı
+// UTT Kişisel Özet Kapsülü — tek şık rozet: Takım: 1 | Haftalık: 454 | Sipariş: 1.386
 function OzetKapsul({
   ozet,
   siparisPuaniGoster,
@@ -23,7 +23,7 @@ function OzetKapsul({
 }) {
   return (
     <div
-      className="inline-flex items-center rounded-full leading-tight select-none py-1.5 px-3.5"
+      className="inline-flex items-center rounded-full leading-tight select-none py-1 px-3"
       style={{
         background: "rgba(0,0,0,0.04)",
         boxShadow: "inset 0 0 0 0.5px rgba(0,0,0,0.08)",
@@ -31,36 +31,36 @@ function OzetKapsul({
       }}
     >
       {/* Takım Sırası */}
-      <div className="flex items-center gap-1.5 whitespace-nowrap">
-        <span style={{ fontSize: 11.5, fontWeight: 600, color: "#6b7280" }}>
-          Takım<span className="hidden xl:inline"> Sırası</span>
+      <div className="flex items-center gap-1 whitespace-nowrap">
+        <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280" }}>
+          Takım<span className="hidden 2xl:inline"> Sırası</span>:
         </span>
-        <span style={{ fontSize: 12.5, fontWeight: 700, color: "#1f2937" }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: "#111827" }}>
           {ozet.takimSirasi ? `${ozet.takimSirasi}` : "-"}
         </span>
       </div>
 
-      <div className="h-3.5 w-[1px] bg-slate-300 mx-2.5" />
+      <div className="h-3 w-[1px] bg-slate-300 mx-2" />
 
       {/* Haftalık Puan */}
-      <div className="flex items-center gap-1.5 whitespace-nowrap">
-        <span style={{ fontSize: 11.5, fontWeight: 600, color: "#6b7280" }}>
-          Haftalık<span className="hidden xl:inline"> Puan</span>
+      <div className="flex items-center gap-1 whitespace-nowrap">
+        <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280" }}>
+          Haftalık<span className="hidden 2xl:inline"> Puan</span>:
         </span>
-        <span style={{ fontSize: 12.5, fontWeight: 700, color: "#1f2937" }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: "#111827" }}>
           {ozet.haftalikPuan.toLocaleString("tr-TR")}
         </span>
       </div>
 
       {siparisPuaniGoster && (
         <>
-          <div className="h-3.5 w-[1px] bg-slate-300 mx-2.5" />
+          <div className="h-3 w-[1px] bg-slate-300 mx-2" />
           {/* Sipariş Puanı */}
-          <div className="flex items-center gap-1.5 whitespace-nowrap">
-            <span style={{ fontSize: 11.5, fontWeight: 600, color: "#6b7280" }}>
-              Sipariş<span className="hidden xl:inline"> Puanı</span>
+          <div className="flex items-center gap-1 whitespace-nowrap">
+            <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280" }}>
+              Sipariş<span className="hidden 2xl:inline"> Puanı</span>:
             </span>
-            <span style={{ fontSize: 12.5, fontWeight: 700, color: "#1f2937" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#111827" }}>
               {ozet.siparisPuani.toLocaleString("tr-TR")}
             </span>
           </div>
@@ -165,22 +165,22 @@ export default function PanelNavbar({
         <div className="flex items-center flex-shrink-0">
           <div
             onClick={() => router.push(anaSayfaYolu)}
-            className="flex items-center md:w-[216px] flex-shrink-0 cursor-pointer group select-none"
+            className="flex items-center md:w-[175px] lg:w-[195px] xl:w-[216px] flex-shrink-0 cursor-pointer group select-none"
           >
             <img
               src="/hapbilgi-yatay-TM-1-logo.png"
               alt="hapbilgi"
-              className="h-10 sm:h-12 md:h-14 lg:h-[62px] w-auto aspect-[901/340] object-cover transition-transform duration-200 group-hover:scale-105 drop-shadow-sm"
+              className="h-10 sm:h-11 md:h-12 lg:h-[48px] xl:h-[54px] w-auto aspect-[901/340] object-cover transition-transform duration-200 group-hover:scale-105 drop-shadow-sm"
             />
           </div>
 
           {ogrenmePlatformuAktif && firmaLogoUrl && (
             <div className="flex items-center flex-shrink-0 select-none">
-              <div className="h-6 sm:h-8 w-[1.5px] bg-slate-200 rounded-full mx-1.5 sm:mx-0" />
+              <div className="h-6 sm:h-7 xl:h-8 w-[1.5px] bg-slate-200 rounded-full mx-1.5 sm:mx-0" />
               
-              <div className="flex items-center flex-shrink-0 pl-0.5 sm:pl-4">
+              <div className="flex items-center flex-shrink-0 pl-0.5 sm:pl-3 xl:pl-4">
                 {/* Sabit Bounding Box (72px) */}
-                <div className="w-[72px] sm:w-[125px] h-8 sm:h-9 flex items-center justify-center flex-shrink-0">
+                <div className="w-[72px] sm:w-[90px] xl:w-[115px] h-8 sm:h-8.5 xl:h-9 flex items-center justify-center flex-shrink-0">
                   <img
                     src={firmaLogoUrl}
                     alt={firmaAdi ?? "Firma"}
@@ -191,7 +191,7 @@ export default function PanelNavbar({
                 {/* Sabit Metin (8.5px) */}
                 <span
                   style={{ fontFamily: "'Nunito', sans-serif" }}
-                  className="text-[8.5px] sm:text-[11.5px] font-normal text-[#64748b] tracking-tight sm:tracking-[0.1px] whitespace-nowrap ml-1 sm:ml-2.5"
+                  className="text-[8.5px] sm:text-[9.5px] xl:text-[11.5px] font-normal text-[#64748b] tracking-tight whitespace-nowrap ml-1 sm:ml-2 xl:ml-2.5"
                 >
                   resmi öğrenme platformu
                 </span>
@@ -201,24 +201,28 @@ export default function PanelNavbar({
         </div>
 
         {/* Orta: Esnek Boşluk */}
-        <div className="flex-1" />
+        <div className="flex-1 min-w-0" />
 
         {/* Sağ Kolon: Bilgi Pill'leri + Puan/Sıra Pill'leri + Kullanıcı Profili */}
-        <div className="hidden md:flex items-center gap-3 lg:gap-4.5 flex-shrink-0">
+        <div className="hidden md:flex items-center gap-2.5 lg:gap-3.5 flex-shrink-0">
           {/* Bilgi Pill'leri (Sağa çekildi) */}
           <div className="flex items-center gap-1.5 sm:gap-2">
-            {BILGI_PILLERI.map((p) => (
-              <button
-                key={p.key}
-                onClick={() => router.push(p.key === "ana-sayfa" ? anaSayfaYolu : p.path)}
-                onMouseEnter={() => setHover(p.key)}
-                onMouseLeave={() => setHover(null)}
-                className={pillClass(isAktif(p.key === "ana-sayfa" ? anaSayfaYolu : p.path))}
-                style={pillStyle(p.key, isAktif(p.key === "ana-sayfa" ? anaSayfaYolu : p.path))}
-              >
-                {p.etiket}
-              </button>
-            ))}
+            {BILGI_PILLERI.map((p) => {
+              const ikincil = p.key !== "ana-sayfa";
+              const gizle = Boolean(ozet && ikincil);
+              return (
+                <button
+                  key={p.key}
+                  onClick={() => router.push(p.key === "ana-sayfa" ? anaSayfaYolu : p.path)}
+                  onMouseEnter={() => setHover(p.key)}
+                  onMouseLeave={() => setHover(null)}
+                  className={`${pillClass(isAktif(p.key === "ana-sayfa" ? anaSayfaYolu : p.path))} ${gizle ? "hidden 2xl:inline-flex" : ""}`}
+                  style={pillStyle(p.key, isAktif(p.key === "ana-sayfa" ? anaSayfaYolu : p.path))}
+                >
+                  {p.etiket}
+                </button>
+              );
+            })}
           </div>
 
           <div className="h-5 w-[1px] bg-gray-200" />
