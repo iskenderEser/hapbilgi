@@ -116,53 +116,52 @@ export default function PanelNavbar({
           {ogrenmePlatformuAktif && firmaLogoUrl && (
             <div className="flex items-center gap-3 pl-1 select-none">
               <div className="h-8 w-[1.5px] bg-slate-200 rounded-full" />
-              <div className="inline-flex flex-col items-center justify-center" style={{ width: "fit-content" }}>
+              <div className="flex items-center gap-2.5">
                 <img
                   src={firmaLogoUrl}
                   alt={firmaAdi ?? "Firma"}
                   style={{ height: 30, maxHeight: 32, width: "auto", maxWidth: 140, display: "block", objectFit: "contain" }}
                 />
                 <span
+                  className="hidden sm:inline-block"
                   style={{
                     fontFamily: "'Nunito', sans-serif",
-                    fontWeight: 300,
-                    fontSize: "6.8px",
-                    letterSpacing: "-0.15px",
+                    fontWeight: 400,
+                    fontSize: "11.5px",
                     color: "#64748b",
-                    width: "100%",
-                    textAlign: "center",
-                    marginTop: "2px",
                     whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    display: "block",
+                    letterSpacing: "0.1px",
                   }}
                 >
-                  resmi öğrenme platformu
+                  resmi öğrenme sponsoru
                 </span>
               </div>
             </div>
           )}
         </div>
 
-        {/* Orta-Sol: Bilgi Pill'leri (Sidebar sınırından hemen sonra başlar) */}
-        <div className="hidden md:flex items-center gap-2 flex-1 min-w-0 pl-1">
-          {BILGI_PILLERI.map((p) => (
-            <button
-              key={p.key}
-              onClick={() => router.push(p.key === "ana-sayfa" ? anaSayfaYolu : p.path)}
-              onMouseEnter={() => setHover(p.key)}
-              onMouseLeave={() => setHover(null)}
-              className={pillClass(isAktif(p.key === "ana-sayfa" ? anaSayfaYolu : p.path))}
-              style={pillStyle(p.key, isAktif(p.key === "ana-sayfa" ? anaSayfaYolu : p.path))}
-            >
-              {p.etiket}
-            </button>
-          ))}
-        </div>
+        {/* Orta: Esnek Boşluk */}
+        <div className="flex-1" />
 
-        {/* Sağ Kolon: Puan/Sıra Pill'leri + Kullanıcı Profili (Dengeli ferah mesafe) */}
-        <div className="hidden md:flex items-center gap-10 lg:gap-14 flex-shrink-0" style={{ marginRight: 48 }}>
+        {/* Sağ Kolon: Bilgi Pill'leri + Puan/Sıra Pill'leri + Kullanıcı Profili */}
+        <div className="hidden md:flex items-center gap-6 lg:gap-8 flex-shrink-0" style={{ marginRight: 48 }}>
+          {/* Bilgi Pill'leri (Sağa çekildi) */}
+          <div className="flex items-center gap-2">
+            {BILGI_PILLERI.map((p) => (
+              <button
+                key={p.key}
+                onClick={() => router.push(p.key === "ana-sayfa" ? anaSayfaYolu : p.path)}
+                onMouseEnter={() => setHover(p.key)}
+                onMouseLeave={() => setHover(null)}
+                className={pillClass(isAktif(p.key === "ana-sayfa" ? anaSayfaYolu : p.path))}
+                style={pillStyle(p.key, isAktif(p.key === "ana-sayfa" ? anaSayfaYolu : p.path))}
+              >
+                {p.etiket}
+              </button>
+            ))}
+          </div>
+
+          <div className="h-6 w-[1px] bg-gray-200" />
           {ozet && (
             <div className="flex items-center gap-2">
               <OzetPill etiket="Takım Sırası" deger={ozet.takimSirasi ? `${ozet.takimSirasi}` : "-"} />

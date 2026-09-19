@@ -15,24 +15,21 @@ test("VARSAYILAN_FLAGS güvenli varsayılanlarla başlar", () => {
   assert.equal(VARSAYILAN_FLAGS.ogrenmePlatformuAktif, false);
 });
 
-test("PanelNavbar 3 kesin tasarım kuralını ve co-branding sözleşmesini uygular", () => {
+test("PanelNavbar co-branding ve sağa çekilmiş navigasyon sözleşmesini uygular", () => {
   const dosyaYolu = path.join(process.cwd(), "components/panel/PanelNavbar.tsx");
   const kaynak = fs.readFileSync(dosyaYolu, "utf-8");
 
   // Co-branding koşulu
   assert.ok(kaynak.includes("ogrenmePlatformuAktif && firmaLogoUrl"));
 
-  // Kural 1: Firma logosu HapBilgi logosundan daha büyük olamaz (Hapbilgi: h-12/14/62, Firma: height 30)
+  // Firma logosu HapBilgi logosundan daha büyük olamaz (Hapbilgi: h-12/14/62, Firma: height 30)
   assert.ok(kaynak.includes("height: 30"));
 
-  // Kural 2: Alt yazı bold değil light (font-weight: 300)
-  assert.ok(kaynak.includes("fontWeight: 300"));
+  // İfade logonun sağında: "resmi öğrenme sponsoru"
+  assert.ok(kaynak.includes("resmi öğrenme sponsoru"));
 
-  // Kural 3: Alt yazı firma logosundan sağa sola taşamaz (kilitli genişlik, ellipsis, nowrap)
-  assert.ok(kaynak.includes("resmi öğrenme platformu"));
-  assert.ok(kaynak.includes('textOverflow: "ellipsis"'));
-  assert.ok(kaynak.includes('whiteSpace: "nowrap"'));
-  assert.ok(kaynak.includes('fontSize: "6.8px"'));
+  // İfade font boyutu 11.5px
+  assert.ok(kaynak.includes('fontSize: "11.5px"'));
 });
 
 test("layout.tsx eclub_kisi için co-branding'i kapatır ve firma bilgilerini aktarır", () => {
