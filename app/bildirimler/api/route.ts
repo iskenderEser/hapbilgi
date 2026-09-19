@@ -127,8 +127,11 @@ export async function PUT(request: NextRequest) {
     if (authError || !user) return yetkiHatasi();
 
     const body = await request.json();
-    const { kayit_turu, talep_id, gorev_id } = body;
+    const { kayit_turu, talep_id, gorev_id, bildirim_id } = body;
 
+    if (bildirim_id !== undefined && !uuidGecerliMi(bildirim_id)) {
+      return validasyonHatasi("bildirim_id geçerli bir UUID olmalıdır.", ["bildirim_id"]);
+    }
     if (kayit_turu !== undefined) {
       if (typeof kayit_turu !== "string") return validasyonHatasi("kayit_turu metin tipinde olmalıdır.", ["kayit_turu"]);
       if (!GECERLI_KAYIT_TURLERI.includes(kayit_turu)) return validasyonHatasi(`Geçersiz kayit_turu. Geçerli değerler: ${GECERLI_KAYIT_TURLERI.join(", ")}`, ["kayit_turu"]);
@@ -156,6 +159,9 @@ export async function PUT(request: NextRequest) {
       .eq("alici_id", user.id)
       .eq("goruldu_mu", false);
 
+    if (bildirim_id) {
+      query = query.eq("bildirim_id", bildirim_id);
+    }
     if (kayit_turu) {
       query = query.eq("kayit_turu", kayit_turu);
     }

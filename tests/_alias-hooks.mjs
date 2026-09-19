@@ -16,6 +16,12 @@ export async function resolve(specifier, context, nextResolve) {
   if (specifier === "next/headers") {
     return { url: "data:text/javascript,export%20const%20cookies=()=>({get:()=>undefined});", shortCircuit: true };
   }
+  if (specifier === "next/server") {
+    return {
+      url: "data:text/javascript,export%20const%20after=(fn)=>fn();export%20class%20NextResponse%7Bstatic%20json(data,init)%7Breturn%7Bstatus:init%3F.status||200,json:async()=>data%7D;%7D%7D",
+      shortCircuit: true,
+    };
+  }
   if (specifier.startsWith("@/") || (specifier.startsWith(".") && context.parentURL && !specifier.endsWith(".js") && !specifier.endsWith(".mjs") && !specifier.endsWith(".json"))) {
     const taban = specifier.startsWith("@/")
       ? join(kok, specifier.slice(2))

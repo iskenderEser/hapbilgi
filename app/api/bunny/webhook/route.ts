@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { bunnyVideoDurumu, bunnyVideoSil } from "@/lib/video/bunnyYukleme";
 import { hazirVideoTamamla } from "@/lib/video/hazirVideoTamamla";
+import { yayinVideoSonucunuBildir } from "@/lib/video/yayinVideoBildirim";
 import { pushYayinlaArkada } from "@/lib/push/orkestrasyon";
 
 export async function POST(request: NextRequest) {
@@ -66,6 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (durum.hatali) {
+      await yayinVideoSonucunuBildir(adminSupabase, guid, durum);
       await adminSupabase
         .from("ogrenme_araci_video_yukleme_oturumlari")
         .update({ durum: "iptal_hatasi", son_hata: "Bunny video işleme hatası", updated_at: new Date().toISOString() })
@@ -153,6 +155,8 @@ export async function POST(request: NextRequest) {
       if (alici) pushYayinlaArkada(adminSupabase, "uretim_durum_gecisi", [alici]);
       tamamlananTalep += 1;
     }
+
+    await yayinVideoSonucunuBildir(adminSupabase, guid, durum);
 
     // Diğer video akışlarında ve daha önce açılmış kayıtta süreyi otoritatif
     // değerle eşitle. Yayın kapısı ayrıca Bunny durumunu her seferinde doğrular.

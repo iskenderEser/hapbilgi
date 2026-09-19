@@ -27,6 +27,7 @@ import { HapbiProvider } from "@/components/hapbi/HapbiProvider";
 import HapbiMaskot from "@/components/hapbi/HapbiMaskot";
 import HapbiChatModal from "@/components/hapbi/HapbiChatModal";
 import YarimYuklemeBildirimi from "@/components/ogrenme-araci/YarimYuklemeBildirimi";
+import YayinSonucBildirimi from "@/components/panel/YayinSonucBildirimi";
 import { URETICI_ROLLER } from "@/lib/utils/roller";
 import { prefetchTalepMerkezi } from "@/app/(panel)/talepler/_hooks/talepOnbellek";
 import { prefetchYayinOzet } from "@/app/(panel)/yayin-yonetimi/_hooks/ozetOnbellek";
@@ -251,6 +252,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
         <HapbiMaskot />
         <HapbiChatModal />
         <YarimYuklemeBildirimi />
+        <YayinSonucBildirimi />
       </div>
     </HapbiProvider>
   );

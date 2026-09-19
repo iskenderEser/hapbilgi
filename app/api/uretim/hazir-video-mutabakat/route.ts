@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { bunnyVideoDurumu, bunnyVideoSil, embedUrlGuidCikar } from "@/lib/video/bunnyYukleme";
 import { hazirVideoTamamla } from "@/lib/video/hazirVideoTamamla";
+import { yayinVideoSonucunuBildir } from "@/lib/video/yayinVideoBildirim";
 import { pushYayinlaArkada } from "@/lib/push/orkestrasyon";
 
 const MAX_ISLENEN = 50;
@@ -84,6 +85,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (durum.hatali) {
+        await yayinVideoSonucunuBildir(adminSupabase, guid, durum);
         await adminSupabase.from("talepler").update({ hazir_video_url: null })
           .eq("talep_id", talep.talep_id).eq("hazir_video_url", talep.hazir_video_url);
         await bunnyVideoSil(guid);
@@ -97,6 +99,8 @@ export async function POST(request: NextRequest) {
         detaylar.push({ talep_id: talep.talep_id, sonuc: "henuz-hazir-degil" });
         continue;
       }
+
+      await yayinVideoSonucunuBildir(adminSupabase, guid, durum);
 
       const sonuc = await hazirVideoTamamla(adminSupabase, {
         talep_id: talep.talep_id, uretici_id: talep.uretici_id,
