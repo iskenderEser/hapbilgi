@@ -7,6 +7,7 @@
 export interface AltModalKart {
   kod: string;
   baslik: string;
+  tanim?: string;
   aciklama: string;
   rozet?: string;
 }
@@ -44,25 +45,29 @@ export const VARYANT_ALT_MODAL: AltModalBilgisi = {
     {
       kod: "V1",
       baslik: "V1 (Tam Üretim)",
-      aciklama: "İçerik Üreticisiyle Birlikte",
+      tanim: "İçerik Üreticisiyle Birlikte",
+      aciklama: "İçerik akışı, seçilen öğrenme aracı ve Soru Seti HapBilgi içerik üreticisi aracılığıyla üretilir.",
       rozet: "İçerik Üreticiyle",
     },
     {
       kod: "V2",
       baslik: "V2 (Hazır Öğrenme Aracı)",
-      aciklama: "Öğrenme Aracı Sizden, Soru Seti İçerik Üreticisinden",
+      tanim: "Öğrenme Aracı Sizden, Soru Seti İçerik Üreticisinden",
+      aciklama: "Seçtiğiniz öğrenme aracı sizin tarafınızdan hazır yüklenir; Soru Seti HapBilgi içerik üreticisi aracılığıyla üretilir. Tabloda seçilen araca özgü hazır rozetiyle görünür.",
       rozet: "Hazır Öğrenme Aracı",
     },
     {
       kod: "V3",
       baslik: "V3 (Hazır Soru Seti)",
-      aciklama: "Soru Seti Sizden, Öğrenme Aracı İçerik Üreticisinden",
+      tanim: "Soru Seti Sizden, Öğrenme Aracı İçerik Üreticisinden",
+      aciklama: "İçerik akışı ve seçilen öğrenme aracı HapBilgi içerik üreticisi aracılığıyla üretilir; Soru Seti sizin tarafınızdan hazır yüklenir. (Tabloda Hazır Soru Seti rozetiyle görünür)",
       rozet: "Hazır Soru Seti",
     },
     {
       kod: "V4",
       baslik: "V4 (İkisi Hazır)",
-      aciklama: "Öğrenme Aracı ve Soru Seti Sizden",
+      tanim: "Öğrenme Aracı ve Soru Seti Sizden",
+      aciklama: "Seçtiğiniz öğrenme aracı ve Soru Seti sizin tarafınızdan hazır yüklenir; doğrudan yayına hazır hale gelir.",
       rozet: "Hazır Öğrenme Aracı + Hazır Soru Seti",
     },
   ],
