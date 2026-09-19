@@ -22,16 +22,18 @@ test("PanelNavbar co-branding ve sabit bounding box sözleşmesini uygular", () 
   // Co-branding koşulu
   assert.ok(kaynak.includes("ogrenmePlatformuAktif && firmaLogoUrl"));
 
-  // Sabit Bounding Box kontrolü
-  assert.ok(kaynak.includes("w-[68px]"));
+  // HapBilgi logo 40px (h-10)
+  assert.ok(kaynak.includes("h-10"));
+
+  // Sabit Bounding Box 72px kontrolü
+  assert.ok(kaynak.includes("w-[72px]"));
   assert.ok(kaynak.includes("object-contain"));
 
   // İfade: "resmi öğrenme platformu"
   assert.ok(kaynak.includes("resmi öğrenme platformu"));
 
-  // Font boyutları
-  assert.ok(kaynak.includes("text-[8px]"));
-  assert.ok(kaynak.includes("sm:text-[11.5px]"));
+  // Metin 8.5px
+  assert.ok(kaynak.includes("text-[8.5px]"));
 
   // Mobil araçların kesilmemesi için flex-shrink-0 koruması
   assert.ok(kaynak.includes("flex-shrink-0"));
