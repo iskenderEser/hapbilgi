@@ -77,7 +77,7 @@ export async function PUT(request: NextRequest) {
     // "Yayın Yönetimi"ne geçer. Kodlama arka planda bittiğinde webhook/mutabakat süreyi günceller.
     const videoSuresi = (bunnyDurumu.hazir && typeof bunnyDurumu.videoSuresiSaniye === "number" && bunnyDurumu.videoSuresiSaniye > 0)
       ? bunnyDurumu.videoSuresiSaniye
-      : 0;
+      : null;
 
     const sonuc = await hazirVideoTamamla(adminSupabase, {
       talep_id: body.talep_id, uretici_id: user.id,

@@ -96,7 +96,11 @@ export function veriKontrol<T>(
  * Beklenmedik sunucu hatalarını yakalar.
  */
 export function sunucuHatasi(err: unknown, adim: string): NextResponse {
-  const mesaj = err instanceof Error ? err.message : "Bilinmeyen hata.";
+  const mesaj = err instanceof Error
+    ? err.message
+    : (typeof err === "object" && err !== null && "message" in err)
+      ? String((err as { message?: unknown }).message)
+      : "Bilinmeyen hata.";
   console.error(`[SUNUCU HATASI] ${adim}:`, err);
   return NextResponse.json(
     { hata: "Sunucu hatası.", adim, detay: mesaj },

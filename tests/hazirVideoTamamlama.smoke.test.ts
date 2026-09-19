@@ -50,9 +50,35 @@ test("geçersiz sürede üretim zinciri açılmaz", async () => {
   assert.deepEqual(olaylar, []);
 });
 
-test("video henüz işlenirken zincir süresiz (0) açılabilir ve oturum kapatılır", async () => {
-  const { db, olaylar } = veritabani();
+test("video henüz işlenirken zincir süresiz (0 veya null) açılabilir ve süre null atanır", async () => {
+  const guncellemeler: Array<Record<string, unknown>> = [];
+  const db = {
+    async rpc() {
+      return { data: { arac_id: "arac" }, error: null };
+    },
+    from(tablo: string) {
+      const sorgu = {
+        update(vals: Record<string, unknown>) {
+          if (tablo === "ogrenme_araclari") guncellemeler.push(vals);
+          return sorgu;
+        },
+        delete() { return sorgu; },
+        eq() { return sorgu; },
+        then(resolve: (value: { error: Error | null }) => unknown) {
+          return Promise.resolve(resolve({ error: null }));
+        },
+      };
+      return sorgu;
+    },
+  } as unknown as SupabaseClient;
+
   await hazirVideoTamamla(db, talep, 0);
-  assert.ok(olaylar.indexOf("zincir") < olaylar.indexOf("sure"));
-  assert.ok(olaylar.indexOf("sure") < olaylar.indexOf("oturum"));
+  assert.equal(guncellemeler.length, 1);
+  assert.equal(guncellemeler[0].sure_saniye, null);
+  assert.equal(guncellemeler[0].metadata_dogrulandi, false);
+
+  await hazirVideoTamamla(db, talep, null);
+  assert.equal(guncellemeler.length, 2);
+  assert.equal(guncellemeler[1].sure_saniye, null);
+  assert.equal(guncellemeler[1].metadata_dogrulandi, false);
 });

@@ -26,7 +26,7 @@ export async function hazirVideoTamamla(
   const sonuc = data as { arac_id?: string; sonraki?: { atanan_iu_id?: string } | null } | null;
   if (!sonuc?.arac_id) throw new Error("Hazır video zinciri öğrenme aracı kimliği döndürmedi.");
   const { error: sureError } = await db.from("ogrenme_araclari")
-    .update({ sure_saniye: dogrulandi ? sureSaniye : 0, metadata_dogrulandi: dogrulandi })
+    .update({ sure_saniye: dogrulandi ? sureSaniye : null, metadata_dogrulandi: dogrulandi })
     .eq("arac_id", sonuc.arac_id).eq("arac_turu", "video");
   if (sureError) throw sureError;
 
