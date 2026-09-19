@@ -205,24 +205,20 @@ export default function PanelNavbar({
 
         {/* Sağ Kolon: Bilgi Pill'leri + Puan/Sıra Pill'leri + Kullanıcı Profili */}
         <div className="hidden md:flex items-center gap-2.5 lg:gap-3.5 flex-shrink-0">
-          {/* Bilgi Pill'leri (Sağa çekildi) */}
+          {/* Bilgi Pill'leri */}
           <div className="flex items-center gap-1.5 sm:gap-2">
-            {BILGI_PILLERI.map((p) => {
-              const ikincil = p.key !== "ana-sayfa";
-              const gizle = Boolean(ozet && ikincil);
-              return (
-                <button
-                  key={p.key}
-                  onClick={() => router.push(p.key === "ana-sayfa" ? anaSayfaYolu : p.path)}
-                  onMouseEnter={() => setHover(p.key)}
-                  onMouseLeave={() => setHover(null)}
-                  className={`${pillClass(isAktif(p.key === "ana-sayfa" ? anaSayfaYolu : p.path))} ${gizle ? "hidden 2xl:inline-flex" : ""}`}
-                  style={pillStyle(p.key, isAktif(p.key === "ana-sayfa" ? anaSayfaYolu : p.path))}
-                >
-                  {p.etiket}
-                </button>
-              );
-            })}
+            {BILGI_PILLERI.map((p) => (
+              <button
+                key={p.key}
+                onClick={() => router.push(p.key === "ana-sayfa" ? anaSayfaYolu : p.path)}
+                onMouseEnter={() => setHover(p.key)}
+                onMouseLeave={() => setHover(null)}
+                className={pillClass(isAktif(p.key === "ana-sayfa" ? anaSayfaYolu : p.path))}
+                style={pillStyle(p.key, isAktif(p.key === "ana-sayfa" ? anaSayfaYolu : p.path))}
+              >
+                {p.etiket}
+              </button>
+            ))}
           </div>
 
           <div className="h-5 w-[1px] bg-gray-200" />
@@ -233,8 +229,8 @@ export default function PanelNavbar({
             <OzetPill etiket="Store Puanı" deger={eclubStorePuani.toLocaleString("tr-TR")} />
           )}
 
-          {/* Kullanıcı Adı + Avatar + Çıkış */}
-          <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+          {/* Kullanıcı Adı + Avatar + Çıkış (0.5 cm / 22px sol boşlukla puanlardan ayrıldı) */}
+          <div className="flex flex-col items-end gap-0.5 flex-shrink-0 ml-5 lg:ml-6">
             <div className="flex items-center gap-2">
               {adSoyad && <span className="text-sm font-bold whitespace-nowrap" style={{ color: "#374151" }}>{adSoyad}</span>}
               <div
