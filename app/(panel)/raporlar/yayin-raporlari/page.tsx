@@ -47,10 +47,10 @@ const EGITIM_TURU_RENK: Record<string, string> = {
 };
 
 const VARYANT_ADLARI: Record<string, string> = {
-  normal: 'İçerik Üreticisiyle Birlikte',
-  hazir_video: 'Öğrenme Aracı Sizden, Soru Seti İçerik Üreticisinden',
-  hazir_set: 'Soru Seti Sizden, Öğrenme Aracı İçerik Üreticisinden',
-  hazir_ikisi: 'Öğrenme Aracı ve Soru Seti Sizden',
+  normal: 'İçerik üreticisiyle birlikte.',
+  hazir_video: 'Öğrenme aracı sizden, soru seti içerik üreticisinden.',
+  hazir_set: 'Soru seti sizden, öğrenme aracı içerik üreticisinden.',
+  hazir_ikisi: 'Öğrenme aracı ve soru seti sizden.',
 };
 
 export default function UretimRaporlariPage() {

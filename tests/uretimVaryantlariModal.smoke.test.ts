@@ -11,25 +11,25 @@ test("VARYANT_ALT_MODAL V1-V4 tanımları ve pilleri sözleşmeye tam uygundur",
   // V1
   assert.equal(v1.kod, "V1");
   assert.equal(v1.baslik, "V1");
-  assert.equal(v1.aciklama, "İçerik Üreticisiyle Birlikte");
+  assert.equal(v1.aciklama, "İçerik üreticisiyle birlikte.");
   assert.equal(v1.rozet, "İçerik Üreticiyle");
 
   // V2
   assert.equal(v2.kod, "V2");
   assert.equal(v2.baslik, "V2");
-  assert.equal(v2.aciklama, "Öğrenme Aracı Sizden, Soru Seti İçerik Üreticisinden");
+  assert.equal(v2.aciklama, "Öğrenme aracı sizden, soru seti içerik üreticisinden.");
   assert.equal(v2.rozet, "Hazır Öğrenme Aracı");
 
   // V3
   assert.equal(v3.kod, "V3");
   assert.equal(v3.baslik, "V3");
-  assert.equal(v3.aciklama, "Soru Seti Sizden, Öğrenme Aracı İçerik Üreticisinden");
+  assert.equal(v3.aciklama, "Soru seti sizden, öğrenme aracı içerik üreticisinden.");
   assert.equal(v3.rozet, "Hazır Soru Seti");
 
   // V4
   assert.equal(v4.kod, "V4");
   assert.equal(v4.baslik, "V4");
-  assert.equal(v4.aciklama, "Öğrenme Aracı ve Soru Seti Sizden");
+  assert.equal(v4.aciklama, "Öğrenme aracı ve soru seti sizden.");
   assert.equal(v4.rozet, "Hazır Öğrenme Aracı + Hazır Soru Seti");
 });
 
