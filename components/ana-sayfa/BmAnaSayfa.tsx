@@ -9,6 +9,7 @@ import { useHataMesaji } from "@/components/HataMesaji";
 import VideoOynatici from "@/components/izle/VideoOynatici";
 import SahaVideoRaflari from "@/components/ana-sayfa/SahaVideoRaflari";
 import { SahaAnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
+import { useHbstoreTakvim } from "@/hooks/useHbstoreTakvim";
 
 import type { AuthKullanici } from "@/types/auth";
 
@@ -33,6 +34,7 @@ export default function BmAnaSayfa({ user, adSoyad }: Props) {
   const [loading, setLoading] = useState(true);
   const [aktifVideo, setAktifVideo] = useState<SahaAnaSayfaVideo | null>(null);
   const { hata } = useHataMesaji();
+  const { takvim } = useHbstoreTakvim();
 
   useEffect(() => {
     const veriCek = async () => {
@@ -85,14 +87,44 @@ export default function BmAnaSayfa({ user, adSoyad }: Props) {
     <div className="max-w-6xl mx-auto px-3 py-4 pb-20 md:px-6 md:py-5 md:pb-5 lg:px-8 lg:py-7">
 
       {/* Karşılama */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-2 mb-6">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-6">
         <div>
           <h1 className="text-lg md:text-xl font-extrabold text-gray-900 m-0">Merhaba {ad}, 👋</h1>
           <p className="text-sm text-gray-500 mt-1">{ROL_ADLARI["bm"]}</p>
         </div>
-        <span className="hidden md:inline text-[10px] text-gray-500 bg-white border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap">
-          {bugunTarih()}
-        </span>
+
+        <div className="flex items-start md:items-end gap-1.5 flex-wrap md:flex-col">
+          {takvim && (
+            <button
+              type="button"
+              onClick={() => router.push("/store")}
+              className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border transition-all hover:opacity-85 shadow-xs cursor-pointer select-none"
+              style={{
+                backgroundColor: takvim.acik ? "#f0fdf4" : "#fffbeb",
+                borderColor: takvim.acik ? "#bbf7d0" : "#fef3c7",
+                color: takvim.acik ? "#166534" : "#92400e",
+              }}
+              title={
+                takvim.acik
+                  ? `Store Günleri açık · Kapanışa ${takvim.kalanSureMetni} kaldı`
+                  : `Sonraki sipariş dönemi: ${takvim.sonrakiDonemEtiketi} (${takvim.kalanSureMetni} kaldı)`
+              }
+            >
+              <span
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{
+                  backgroundColor: takvim.acik ? "#16a34a" : "#f59e0b",
+                  boxShadow: takvim.acik ? "0 0 6px #16a34a" : "none",
+                }}
+              />
+              <span>{takvim.navMetni}</span>
+            </button>
+          )}
+
+          <span className="hidden md:inline text-[10px] text-gray-500 bg-white border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap shadow-xs">
+            {bugunTarih()}
+          </span>
+        </div>
       </div>
 
       {/* Stat kartlar */}

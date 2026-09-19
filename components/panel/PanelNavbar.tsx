@@ -246,31 +246,6 @@ export default function PanelNavbar({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {storeGeriSayimGoster && takvim && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => router.push("/store")}
-                    className="inline-flex items-center gap-1.5 text-[11px] font-bold transition-all hover:opacity-80 cursor-pointer bg-transparent border-none p-0 select-none"
-                    style={{ color: takvim.acik ? "#027a48" : "#4b5563" }}
-                    title={
-                      takvim.acik
-                        ? `Store Günleri açık · Kapanışa ${takvim.kalanSureMetni} kaldı`
-                        : `Sonraki sipariş dönemi: ${takvim.sonrakiDonemEtiketi} (${takvim.kalanSureMetni} kaldı)`
-                    }
-                  >
-                    <span
-                      className="size-1.5 rounded-full shrink-0"
-                      style={{
-                        backgroundColor: takvim.acik ? "#12b76a" : "#f59e0b",
-                        boxShadow: takvim.acik ? "0 0 6px #12b76a" : "none",
-                      }}
-                    />
-                    <span>{takvim.navMetni}</span>
-                  </button>
-                  <span style={{ color: "#d1d5db", fontSize: 11, userSelect: "none" }}>·</span>
-                </>
-              )}
               {eclubStoreGeriSayimGoster && eclubTakvim && (
                 <>
                   <button
