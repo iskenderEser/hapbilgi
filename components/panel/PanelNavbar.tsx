@@ -13,15 +13,76 @@ import { useEclubStoreTakvim } from "@/hooks/useEclubStoreTakvim";
 
 const BORDO = "#bc2d0d";
 
-// Özet pill'i — gri zemin, siyah yazı, etiket üstte / değer altta.
+// UTT Kişisel Özet Kapsülü — tek şık rozet: Takım Sırası | Haftalık Puan | Sipariş Puanı
+function OzetKapsul({
+  ozet,
+  siparisPuaniGoster,
+}: {
+  ozet: { haftalikPuan: number; takimSirasi: number | null; siparisPuani: number };
+  siparisPuaniGoster?: boolean;
+}) {
+  return (
+    <div
+      className="inline-flex items-center rounded-full leading-tight select-none py-1.5 px-3.5"
+      style={{
+        background: "rgba(0,0,0,0.04)",
+        boxShadow: "inset 0 0 0 0.5px rgba(0,0,0,0.08)",
+        fontFamily: "'Nunito', sans-serif",
+      }}
+    >
+      {/* Takım Sırası */}
+      <div className="flex items-center gap-1.5 whitespace-nowrap">
+        <span style={{ fontSize: 11.5, fontWeight: 600, color: "#6b7280" }}>
+          Takım<span className="hidden xl:inline"> Sırası</span>
+        </span>
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: "#1f2937" }}>
+          {ozet.takimSirasi ? `${ozet.takimSirasi}` : "-"}
+        </span>
+      </div>
+
+      <div className="h-3.5 w-[1px] bg-slate-300 mx-2.5" />
+
+      {/* Haftalık Puan */}
+      <div className="flex items-center gap-1.5 whitespace-nowrap">
+        <span style={{ fontSize: 11.5, fontWeight: 600, color: "#6b7280" }}>
+          Haftalık<span className="hidden xl:inline"> Puan</span>
+        </span>
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: "#1f2937" }}>
+          {ozet.haftalikPuan.toLocaleString("tr-TR")}
+        </span>
+      </div>
+
+      {siparisPuaniGoster && (
+        <>
+          <div className="h-3.5 w-[1px] bg-slate-300 mx-2.5" />
+          {/* Sipariş Puanı */}
+          <div className="flex items-center gap-1.5 whitespace-nowrap">
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: "#6b7280" }}>
+              Sipariş<span className="hidden xl:inline"> Puanı</span>
+            </span>
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: "#1f2937" }}>
+              {ozet.siparisPuani.toLocaleString("tr-TR")}
+            </span>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Tekil özet pill'i (E-Club Store puanı vb.)
 function OzetPill({ etiket, deger }: { etiket: string; deger: string }) {
   return (
     <div
-      className="flex flex-col items-center justify-center rounded-full leading-tight"
-      style={{ background: "rgba(0,0,0,0.04)", boxShadow: "inset 0 0 0 0.5px rgba(0,0,0,0.08)", padding: "5px 16px", fontFamily: "'Nunito', sans-serif" }}
+      className="inline-flex items-center gap-1.5 rounded-full leading-tight select-none py-1.5 px-3.5"
+      style={{
+        background: "rgba(0,0,0,0.04)",
+        boxShadow: "inset 0 0 0 0.5px rgba(0,0,0,0.08)",
+        fontFamily: "'Nunito', sans-serif",
+      }}
     >
-      <span style={{ fontSize: 12, fontWeight: 600, color: "#374151" }}>{etiket}</span>
-      <span style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>{deger}</span>
+      <span style={{ fontSize: 11.5, fontWeight: 600, color: "#6b7280" }}>{etiket}</span>
+      <span style={{ fontSize: 12.5, fontWeight: 700, color: "#1f2937" }}>{deger}</span>
     </div>
   );
 }
@@ -78,7 +139,7 @@ export default function PanelNavbar({
   const isAktif = (path: string) => pathname === path;
 
   const pillClass = (aktif: boolean) =>
-    `relative inline-flex items-center justify-center px-3 md:px-4 py-1 rounded-full border-none cursor-pointer text-xs md:text-sm font-medium transition-all duration-200 whitespace-nowrap ${aktif ? "font-semibold" : ""}`;
+    `relative inline-flex items-center justify-center px-2.5 md:px-3 lg:px-3.5 py-1 rounded-full border-none cursor-pointer text-xs md:text-[13px] font-medium transition-all duration-200 whitespace-nowrap ${aktif ? "font-semibold" : ""}`;
 
   const pillStyle = (key: string, aktif: boolean): React.CSSProperties => {
     const isHover = hover === key;
@@ -143,9 +204,9 @@ export default function PanelNavbar({
         <div className="flex-1" />
 
         {/* Sağ Kolon: Bilgi Pill'leri + Puan/Sıra Pill'leri + Kullanıcı Profili */}
-        <div className="hidden md:flex items-center gap-6 lg:gap-8 flex-shrink-0" style={{ marginRight: 48 }}>
+        <div className="hidden md:flex items-center gap-3 lg:gap-4.5 flex-shrink-0">
           {/* Bilgi Pill'leri (Sağa çekildi) */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {BILGI_PILLERI.map((p) => (
               <button
                 key={p.key}
@@ -160,29 +221,21 @@ export default function PanelNavbar({
             ))}
           </div>
 
-          <div className="h-6 w-[1px] bg-gray-200" />
+          <div className="h-5 w-[1px] bg-gray-200" />
           {ozet && (
-            <div className="flex items-center gap-2">
-              <OzetPill etiket="Takım Sırası" deger={ozet.takimSirasi ? `${ozet.takimSirasi}` : "-"} />
-              <OzetPill etiket="Haftalık Puan" deger={ozet.haftalikPuan.toLocaleString("tr-TR")} />
-              {siparisPuaniGoster && (
-                <OzetPill etiket="Sipariş Puanı" deger={ozet.siparisPuani.toLocaleString("tr-TR")} />
-              )}
-            </div>
+            <OzetKapsul ozet={ozet} siparisPuaniGoster={siparisPuaniGoster} />
           )}
           {eclubStorePuani !== null && eclubStorePuani !== undefined && (
-            <div className="flex items-center gap-2">
-              <OzetPill etiket="Store Puanı" deger={eclubStorePuani.toLocaleString("tr-TR")} />
-            </div>
+            <OzetPill etiket="Store Puanı" deger={eclubStorePuani.toLocaleString("tr-TR")} />
           )}
 
           {/* Kullanıcı Adı + Avatar + Çıkış */}
-          <div className="flex flex-col items-end gap-0.5">
-            <div className="flex items-center gap-2.5">
-              {adSoyad && <span className="text-sm font-bold" style={{ color: "#374151" }}>{adSoyad}</span>}
+          <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              {adSoyad && <span className="text-sm font-bold whitespace-nowrap" style={{ color: "#374151" }}>{adSoyad}</span>}
               <div
                 onClick={() => router.push("/profil")}
-                className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold cursor-pointer"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold cursor-pointer shrink-0"
                 style={{ background: "#d4d4d4", color: "#374151", border: "1px solid #c9c9c9" }}
               >
                 {bashHarfler}
