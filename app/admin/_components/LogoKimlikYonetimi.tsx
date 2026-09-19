@@ -189,6 +189,7 @@ export default function LogoKimlikYonetimi({ firma, onGuncelle }: LogoKimlikYone
                 background: "#f3f4f6",
                 color: "#6b7280",
                 border: "1px solid #e5e7eb",
+                whiteSpace: "nowrap",
               }}
             >
               Logo Yok
