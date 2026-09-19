@@ -56,6 +56,7 @@ export function YayinSatir({
   const tekrarli = !!tekrarBilgi?.tekrar_periyot_gun && !!tekrarBilgi?.sonraki_tur_tarihi;
   // Tarih değiştirme alanı (yalnız planlanmış yayında görünür)
   const [yeniGun, setYeniGun] = useState("");
+  const [hataliThumbnail, setHataliThumbnail] = useState<string | null>(null);
   const bugun = new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD (yerel)
 
   if (kartGorunumu) {
@@ -85,6 +86,8 @@ export function YayinSatir({
       }
     };
 
+    const resimGoster = Boolean(thumbnail && hataliThumbnail !== thumbnail);
+
     return (
       <article className="self-start overflow-hidden rounded-xl border border-[#dfe7f1] bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#b9d5f0] hover:shadow-[0_10px_24px_rgba(31,55,90,0.10)]">
         <button
@@ -94,8 +97,13 @@ export function YayinSatir({
           aria-label={tiklanabilir ? `${y.urun_adi} ${etiket.toLowerCase()} önizle` : "Önizleme bulunmuyor"}
           className="group relative block aspect-video w-full overflow-hidden bg-[#e8eef5] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#56aeff] disabled:cursor-default"
         >
-          {thumbnail ? (
-            <img src={thumbnail} alt={y.urun_adi} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+          {resimGoster ? (
+            <img
+              src={thumbnail!}
+              alt=""
+              onError={() => setHataliThumbnail(thumbnail)}
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            />
           ) : (
             <AracVarsayilanKapak aracTuru={tur} urunAdi={y.urun_adi} className="h-full w-full" />
           )}

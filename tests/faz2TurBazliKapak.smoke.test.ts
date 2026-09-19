@@ -73,3 +73,15 @@ test("BM ve TM mobil/masaüstü kartları fallback ve video oynatma kapısını 
     assert.equal((kaynak.match(/const videoOynatilabilir/g) ?? []).length, 2);
   }
 });
+
+test("Yayın yönetimi liste ve kart görünümleri resim hatasında (404) onError ile fallback kapağa geçer", () => {
+  const yardimcilar = oku("app/(panel)/yayin-yonetimi/_components/Yardimcilar.tsx");
+  const yayinSatir = oku("app/(panel)/yayin-yonetimi/_components/YayinSatir.tsx");
+
+  assert.match(yardimcilar, /onError=\{/);
+  assert.match(yardimcilar, /<AracVarsayilanKapak/);
+
+  assert.match(yayinSatir, /onError=\{/);
+  assert.match(yayinSatir, /<AracVarsayilanKapak/);
+});
+

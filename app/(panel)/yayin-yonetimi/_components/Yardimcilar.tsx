@@ -7,6 +7,7 @@
 
 "use client";
 
+import { useState } from "react";
 import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
 
@@ -29,6 +30,7 @@ export const OgrenmeAraciThumb = ({
   urun_adi,
   arac_id,
 }: OgrenmeAraciThumbProps) => {
+  const [hataliUrl, setHataliUrl] = useState<string | null>(null);
   const tur = arac_turu ?? "video";
   const thumb = yayinThumbnailIstemciCoz({ thumbnail_url, video_url, arac_turu: tur });
 
@@ -52,6 +54,8 @@ export const OgrenmeAraciThumb = ({
     }
   };
 
+  const resimGoster = Boolean(thumb && hataliUrl !== thumb);
+
   return (
     <button
       type="button"
@@ -60,8 +64,13 @@ export const OgrenmeAraciThumb = ({
       aria-label={ariaLabel}
       className="group relative flex h-[72px] w-32 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#dbe5f0] bg-[#e8eef5] p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff] disabled:cursor-default"
     >
-      {thumb ? (
-        <img src={thumb} alt={`${urun_adi ?? ""} ${etiket} küçük resmi`} className="w-full h-full object-cover" />
+      {resimGoster ? (
+        <img
+          src={thumb!}
+          alt=""
+          onError={() => setHataliUrl(thumb)}
+          className="w-full h-full object-cover"
+        />
       ) : (
         <AracVarsayilanKapak aracTuru={tur} urunAdi={urun_adi} kucuk className="w-full h-full" />
       )}
