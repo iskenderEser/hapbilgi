@@ -52,6 +52,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   const [ozet, setOzet] = useState<{ haftalikPuan: number; takimSirasi: number | null; siparisPuani: number } | null>(null);
   const [eclubStorePuani, setEclubStorePuani] = useState<number | null>(null);
   const [eclubFirmalar, setEclubFirmalar] = useState<Array<{ firma_id: string; firma_adi: string }>>([]);
+  const [firmaAdi, setFirmaAdi] = useState<string | null>(null);
 
   const rolKucu = kullanici?.rol?.trim().toLowerCase() ?? "";
   const isEclubKisi = kullanici?.kimlik_turu === "eclub_kisi";
@@ -99,8 +100,13 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
           eclubAcik: data.profil.eclub_aktif === true,
           eclubStoreAcik: data.profil.eclub_store_aktif === true,
           eczanemAcik: data.profil.eczanem_aktif === true,
+          firmaLogoUrl: data.profil.logo_url ?? null,
+          ogrenmePlatformuAktif: data.profil.ogrenme_platformu_aktif === true,
         };
         setFlags(guncelFlags);
+        if (data.profil.firma_adi) {
+          setFirmaAdi(data.profil.firma_adi);
+        }
       }
       const guncelOzet = data.navbar_ozet ? {
         haftalikPuan: data.navbar_ozet.haftalik_puan ?? 0,
@@ -196,6 +202,8 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
     eclubAcik: flags.eclubAcik || (userCache?.flags.eclubAcik ?? false),
     eclubStoreAcik: flags.eclubStoreAcik || (userCache?.flags.eclubStoreAcik ?? false),
     eczanemAcik: flags.eczanemAcik || (userCache?.flags.eczanemAcik ?? false),
+    firmaLogoUrl: flags.firmaLogoUrl ?? userCache?.flags.firmaLogoUrl ?? null,
+    ogrenmePlatformuAktif: flags.ogrenmePlatformuAktif || (userCache?.flags.ogrenmePlatformuAktif ?? false),
   };
 
   const etkinOzet = ozet ?? userCache?.ozet ?? null;
@@ -227,6 +235,9 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
           eclubStoreGeriSayimGoster={Boolean(isEclubKisi && etkinFlags.eclubStoreAcik)}
           anaSayfaYolu={anaSayfaYolu}
           eclubStorePuani={isEclubKisi && etkinFlags.eclubStoreAcik ? etkinEclubStorePuani : null}
+          firmaLogoUrl={!isEclubKisi ? etkinFlags.firmaLogoUrl : null}
+          ogrenmePlatformuAktif={!isEclubKisi && Boolean(etkinFlags.ogrenmePlatformuAktif)}
+          firmaAdi={firmaAdi}
           onCikis={cikisYap}
           onHamburger={() => setDrawerAcik(true)}
         />

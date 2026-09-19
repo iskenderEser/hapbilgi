@@ -15,6 +15,8 @@ export interface PanelFlags {
   eclubAcik: boolean;
   eclubStoreAcik: boolean;
   eczanemAcik: boolean;
+  firmaLogoUrl?: string | null;
+  ogrenmePlatformuAktif?: boolean;
 }
 
 export interface PanelNavbarOzet {
@@ -45,6 +47,8 @@ export const VARSAYILAN_FLAGS: PanelFlags = {
   eclubAcik: false,
   eclubStoreAcik: false,
   eczanemAcik: false,
+  firmaLogoUrl: null,
+  ogrenmePlatformuAktif: false,
 };
 
 /** Yalnızca kimliği doğrulanmış belirli bir kullanıcı için önbellek verisini döner. */

@@ -53,15 +53,25 @@ export async function PUT(
     const adminSupabase = createAdminClient();
 
     const body = await request.json();
-    const { firma_adi } = body;
+    const { firma_adi, logo_url, ogrenme_platformu_aktif } = body;
 
     if (typeof firma_adi !== "string" || firma_adi.trim() === "") {
       return validasyonHatasi("Firma adı zorunludur.", ["firma_adi"]);
     }
 
+    const guncelleme: Record<string, unknown> = {
+      firma_adi: firmaAdiBicimle(firma_adi),
+    };
+    if (typeof logo_url === "string" || logo_url === null) {
+      guncelleme.logo_url = logo_url;
+    }
+    if (typeof ogrenme_platformu_aktif === "boolean") {
+      guncelleme.ogrenme_platformu_aktif = ogrenme_platformu_aktif;
+    }
+
     const { data: guncellenen, error } = await adminSupabase
       .from("firmalar")
-      .update({ firma_adi: firmaAdiBicimle(firma_adi) })
+      .update(guncelleme)
       .eq("firma_id", firma_id)
       .select(FIRMA_KOLONLARI)
       .single();
@@ -101,21 +111,23 @@ export async function PATCH(
     const adminSupabase = createAdminClient();
 
     const body = await request.json();
-    const { hbstore_aktif, aktif, cc_aktif, eclub_aktif, eclub_store_aktif, eczanem_aktif } = body;
+    const { hbstore_aktif, aktif, cc_aktif, eclub_aktif, eclub_store_aktif, eczanem_aktif, logo_url, ogrenme_platformu_aktif } = body;
 
     // Güncellenecek alanları topla (yalnızca gönderilenler)
-    const guncelleme: Record<string, boolean> = {};
+    const guncelleme: Record<string, unknown> = {};
     if (typeof hbstore_aktif === "boolean") guncelleme.hbstore_aktif = hbstore_aktif;
     if (typeof aktif === "boolean") guncelleme.aktif = aktif;
     if (typeof cc_aktif === "boolean") guncelleme.cc_aktif = cc_aktif;
     if (typeof eclub_aktif === "boolean") guncelleme.eclub_aktif = eclub_aktif;
     if (typeof eclub_store_aktif === "boolean") guncelleme.eclub_store_aktif = eclub_store_aktif;
     if (typeof eczanem_aktif === "boolean") guncelleme.eczanem_aktif = eczanem_aktif;
+    if (typeof logo_url === "string" || logo_url === null) guncelleme.logo_url = logo_url;
+    if (typeof ogrenme_platformu_aktif === "boolean") guncelleme.ogrenme_platformu_aktif = ogrenme_platformu_aktif;
 
     if (Object.keys(guncelleme).length === 0) {
       return validasyonHatasi(
-        "Güncellenecek alan yok. hbstore_aktif, aktif, cc_aktif, eclub_aktif, eclub_store_aktif veya eczanem_aktif (true/false) gönderin.",
-        ["hbstore_aktif", "aktif", "cc_aktif", "eclub_aktif", "eclub_store_aktif", "eczanem_aktif"]
+        "Güncellenecek alan yok. hbstore_aktif, aktif, cc_aktif, eclub_aktif, eclub_store_aktif, eczanem_aktif, logo_url veya ogrenme_platformu_aktif (true/false) gönderin.",
+        ["hbstore_aktif", "aktif", "cc_aktif", "eclub_aktif", "eclub_store_aktif", "eczanem_aktif", "logo_url", "ogrenme_platformu_aktif"]
       );
     }
 
@@ -161,6 +173,10 @@ export async function PATCH(
       mesaj = guncelleme.eclub_store_aktif ? "E-Club Store açıldı." : "E-Club Store kapatıldı.";
     } else if (tekAlan && "eczanem_aktif" in guncelleme) {
       mesaj = guncelleme.eczanem_aktif ? "Eczanem açıldı." : "Eczanem kapatıldı.";
+    } else if (tekAlan && "ogrenme_platformu_aktif" in guncelleme) {
+      mesaj = guncelleme.ogrenme_platformu_aktif ? "Öğrenme platformu rozeti açıldı." : "Öğrenme platformu rozeti kapatıldı.";
+    } else if (tekAlan && "logo_url" in guncelleme) {
+      mesaj = "Firma logosu güncellendi.";
     }
 
     return NextResponse.json({ mesaj, firma: guncellenen }, { status: 200 });

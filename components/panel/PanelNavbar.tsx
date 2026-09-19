@@ -40,6 +40,9 @@ interface PanelNavbarProps {
   // Dış müşteri ana sayfası /eclub/panel'dir; iç kullanıcıda varsayılan korunur.
   anaSayfaYolu?: string;
   eclubStorePuani?: number | null;
+  firmaLogoUrl?: string | null;
+  ogrenmePlatformuAktif?: boolean;
+  firmaAdi?: string | null;
   onCikis: () => void;
   onHamburger?: () => void; // mobilde sol drawer'ı açar
 }
@@ -51,7 +54,21 @@ const BILGI_PILLERI: { key: string; etiket: string; path: string }[] = [
   { key: "nasil-calisir", etiket: "Nasıl Çalışır", path: "/nasil-calisir" },
 ];
 
-export default function PanelNavbar({ adSoyad, email, ozet, siparisPuaniGoster, storeGeriSayimGoster, eclubStoreGeriSayimGoster, anaSayfaYolu = "/ana-sayfa", eclubStorePuani, onCikis, onHamburger }: PanelNavbarProps) {
+export default function PanelNavbar({
+  adSoyad,
+  email,
+  ozet,
+  siparisPuaniGoster,
+  storeGeriSayimGoster,
+  eclubStoreGeriSayimGoster,
+  anaSayfaYolu = "/ana-sayfa",
+  eclubStorePuani,
+  firmaLogoUrl,
+  ogrenmePlatformuAktif,
+  firmaAdi,
+  onCikis,
+  onHamburger,
+}: PanelNavbarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [hover, setHover] = useState<string | null>(null);
@@ -83,16 +100,49 @@ export default function PanelNavbar({ adSoyad, email, ozet, siparisPuaniGoster, 
       style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderBottomColor: "#e5e7eb" }}
     >
       <div className="flex items-center justify-between gap-4">
-        {/* Sol Kolon: Logo (Hapbi maskot ebatlarıyla tam uyumlu 3D yatay logo) */}
-        <div
-          onClick={() => router.push(anaSayfaYolu)}
-          className="flex items-center md:w-[216px] flex-shrink-0 cursor-pointer group select-none"
-        >
-          <img
-            src="/hapbilgi-yatay-TM-1-logo.png"
-            alt="hapbilgi"
-            className="h-12 md:h-14 lg:h-[62px] w-auto aspect-[901/340] object-cover transition-transform duration-200 group-hover:scale-105 drop-shadow-sm"
-          />
+        {/* Sol Kolon: Logo & Co-Branding */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <div
+            onClick={() => router.push(anaSayfaYolu)}
+            className="flex items-center cursor-pointer group select-none"
+          >
+            <img
+              src="/hapbilgi-yatay-TM-1-logo.png"
+              alt="hapbilgi"
+              className="h-12 md:h-14 lg:h-[62px] w-auto aspect-[901/340] object-cover transition-transform duration-200 group-hover:scale-105 drop-shadow-sm"
+            />
+          </div>
+
+          {ogrenmePlatformuAktif && firmaLogoUrl && (
+            <div className="flex items-center gap-3 pl-1 select-none">
+              <div className="h-8 w-[1.5px] bg-slate-200 rounded-full" />
+              <div className="inline-flex flex-col items-center justify-center" style={{ width: "fit-content" }}>
+                <img
+                  src={firmaLogoUrl}
+                  alt={firmaAdi ?? "Firma"}
+                  style={{ height: 30, maxHeight: 32, width: "auto", maxWidth: 140, display: "block", objectFit: "contain" }}
+                />
+                <span
+                  style={{
+                    fontFamily: "'Nunito', sans-serif",
+                    fontWeight: 300,
+                    fontSize: "6.8px",
+                    letterSpacing: "-0.15px",
+                    color: "#64748b",
+                    width: "100%",
+                    textAlign: "center",
+                    marginTop: "2px",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    display: "block",
+                  }}
+                >
+                  resmi öğrenme platformu
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Orta-Sol: Bilgi Pill'leri (Sidebar sınırından hemen sonra başlar) */}

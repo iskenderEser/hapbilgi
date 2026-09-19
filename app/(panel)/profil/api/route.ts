@@ -94,6 +94,8 @@ export async function GET() {
     let eclub_aktif = false;
     let eclub_store_aktif = false;
     let eczanem_aktif = false;
+    let logo_url: string | null = null;
+    let ogrenme_platformu_aktif = false;
     if (kullanici.firma_id) {
       const { data: firma } = await adminSupabase
         .from("firmalar")
@@ -105,9 +107,11 @@ export async function GET() {
       eclub_aktif = firma?.eclub_aktif ?? false;
       eclub_store_aktif = firma?.eclub_store_aktif ?? false;
       eczanem_aktif = firma?.eczanem_aktif ?? false;
+      logo_url = firma?.logo_url ?? null;
+      ogrenme_platformu_aktif = firma?.ogrenme_platformu_aktif ?? false;
     }
 
-    const profilTemel = { ...kullanici, hbstore_aktif, cc_aktif, eclub_aktif, eclub_store_aktif, eczanem_aktif };
+    const profilTemel = { ...kullanici, hbstore_aktif, cc_aktif, eclub_aktif, eclub_store_aktif, eczanem_aktif, logo_url, ogrenme_platformu_aktif };
 
     if (!TUKETICI_ROLLER.includes(rol)) {
       return NextResponse.json({ profil: profilTemel }, { status: 200 });

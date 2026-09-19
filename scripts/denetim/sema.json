@@ -1,5 +1,5 @@
 {
-  "uretim_tarihi": "2026-09-19T10:39:28.024Z",
+  "uretim_tarihi": "2026-09-19T12:02:42.557Z",
   "tablo_sayisi": 116,
   "rpc_sayisi": 193,
   "tablolar": {
@@ -2193,6 +2193,14 @@
         },
         "son_talep_sira": {
           "tip": "integer",
+          "nullable": false
+        },
+        "logo_url": {
+          "tip": "text",
+          "nullable": true
+        },
+        "ogrenme_platformu_aktif": {
+          "tip": "boolean",
           "nullable": false
         }
       }
