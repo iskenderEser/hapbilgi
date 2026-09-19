@@ -114,24 +114,19 @@ export default function PanelNavbar({
           </div>
 
           {ogrenmePlatformuAktif && firmaLogoUrl && (
-            <div className="flex items-center flex-shrink-0 select-none">
-              <div className="h-8 w-[1.5px] bg-slate-200 rounded-full" />
-              <div className="flex items-center gap-2.5 pl-4">
+            <div className="flex items-center flex-shrink-0 select-none pl-2.5 sm:pl-0">
+              <div className="h-7 md:h-8 w-[1.5px] bg-slate-200 rounded-full" />
+              
+              {/* Mobil (<sm): Dikey (Logo üstte, bold yazı altta) | Masaüstü (>=sm): Yatay (Logo solda, yazı sağda) */}
+              <div className="flex flex-col sm:flex-row sm:items-center items-start gap-0.5 sm:gap-2.5 pl-2 sm:pl-4">
                 <img
                   src={firmaLogoUrl}
                   alt={firmaAdi ?? "Firma"}
-                  style={{ height: 30, maxHeight: 32, width: "auto", maxWidth: 140, display: "block", objectFit: "contain" }}
+                  className="h-6 sm:h-[30px] max-h-8 w-auto max-w-[115px] sm:max-w-[140px] block object-contain"
                 />
                 <span
-                  className="hidden sm:inline-block"
-                  style={{
-                    fontFamily: "'Nunito', sans-serif",
-                    fontWeight: 400,
-                    fontSize: "11.5px",
-                    color: "#64748b",
-                    whiteSpace: "nowrap",
-                    letterSpacing: "0.1px",
-                  }}
+                  style={{ fontFamily: "'Nunito', sans-serif" }}
+                  className="text-[8.5px] sm:text-[11.5px] font-bold sm:font-normal text-[#1e3a8a] sm:text-[#64748b] tracking-[-0.1px] sm:tracking-[0.1px] whitespace-nowrap"
                 >
                   resmi öğrenme sponsoru
                 </span>

@@ -22,14 +22,15 @@ test("PanelNavbar co-branding ve sağa çekilmiş navigasyon sözleşmesini uygu
   // Co-branding koşulu
   assert.ok(kaynak.includes("ogrenmePlatformuAktif && firmaLogoUrl"));
 
-  // Firma logosu HapBilgi logosundan daha büyük olamaz (Hapbilgi: h-12/14/62, Firma: height 30)
-  assert.ok(kaynak.includes("height: 30"));
+  // Firma logosu boyutu (mobil h-6, masaüstü sm:h-[30px])
+  assert.ok(kaynak.includes("sm:h-[30px]"));
 
-  // İfade logonun sağında: "resmi öğrenme sponsoru"
+  // İfade: "resmi öğrenme sponsoru"
   assert.ok(kaynak.includes("resmi öğrenme sponsoru"));
 
-  // İfade font boyutu 11.5px
-  assert.ok(kaynak.includes('fontSize: "11.5px"'));
+  // Mobilde 8.5px bold, masaüstünde 11.5px
+  assert.ok(kaynak.includes("text-[8.5px]"));
+  assert.ok(kaynak.includes("sm:text-[11.5px]"));
 });
 
 test("layout.tsx eclub_kisi için co-branding'i kapatır ve firma bilgilerini aktarır", () => {
