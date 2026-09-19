@@ -275,8 +275,8 @@ export default function EczanemVideoRafi({
                             }
                             className={`ml-1 rounded-full p-1 transition ${
                               video.favori_mi
-                                ? "text-[#d49a1d]"
-                                : "text-[#a6b1bd] hover:text-[#d49a1d]"
+                                ? "text-blue-500"
+                                : "text-[#a6b1bd] hover:text-blue-500"
                             }`}
                           >
                             <Star
