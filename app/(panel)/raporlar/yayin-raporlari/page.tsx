@@ -24,6 +24,7 @@ import { useUretimRaporu } from './_hooks/useUretimRaporu';
 import { YenileButonu } from '@/components/ui/yenile-butonu';
 import { formatPuan, GRI_METIN, KIRMIZI, PERIYOTLAR, type Periyot } from '@/lib/utils/raporUtils';
 import SayfaRehberi from '@/components/rehber/SayfaRehberi';
+import UretimVaryantlariModal from '@/components/rehber/UretimVaryantlariModal';
 import OgrenmeAraciPerformansi from '@/components/raporlar/OgrenmeAraciPerformansi';
 import styles from '../utt/utt-report.module.css';
 
@@ -56,6 +57,7 @@ export default function UretimRaporlariPage() {
   const { kullanici, yukleniyor } = useAuth();
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
   const [seciliEgitimTuru, setSeciliEgitimTuru] = useState<string | null | undefined>(undefined);
+  const [varyantModalAcik, setVaryantModalAcik] = useState(false);
 
   const { data, loading, yenileniyor, error, yenile } = useUretimRaporu(
     periyot,
@@ -176,8 +178,18 @@ export default function UretimRaporlariPage() {
           <section className={`${styles.panel} p-4 sm:p-5 flex flex-col justify-between`}>
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <h2 className="text-base font-extrabold text-[#20324c]">Yayınların Üretim Yöntemi ve Dağılımı</h2>
-                <p className="mt-0.5 text-xs text-[#718198]">Yayınlarınızın üretim yöntemleri ve dağılımları</p>
+                <h2 className="text-base font-extrabold text-[#20324c]">Yayınların Üretim Yöntemleri ve Dağılımları</h2>
+                <p className="mt-0.5 text-xs text-[#718198]">
+                  Yayınlarınızın üretim yöntemleri{" "}
+                  <button
+                    type="button"
+                    onClick={() => setVaryantModalAcik(true)}
+                    className="font-bold text-blue-600 hover:text-blue-800 underline underline-offset-2 cursor-pointer inline"
+                  >
+                    (varyantları)
+                  </button>{" "}
+                  ve dağılımları
+                </p>
               </div>
               <div className={styles.sectionIcon}><Layers className="h-4 w-4" /></div>
             </div>
@@ -396,6 +408,10 @@ export default function UretimRaporlariPage() {
         </>
       )}
       </div>
+      <UretimVaryantlariModal
+        acik={varyantModalAcik}
+        onKapat={() => setVaryantModalAcik(false)}
+      />
     </div>
   );
 }

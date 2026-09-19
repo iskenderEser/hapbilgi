@@ -44,25 +44,26 @@ export const VARYANT_ALT_MODAL: AltModalBilgisi = {
     {
       kod: "V1",
       baslik: "V1 (Tam Üretim)",
-      aciklama: "İçerik akışı, seçilen öğrenme aracı ve Soru Seti HapBilgi içerik üreticisi aracılığıyla üretilir.",
+      aciklama: "İçerik Üreticisiyle Birlikte",
+      rozet: "İçerik Üreticiyle",
     },
     {
       kod: "V2",
       baslik: "V2 (Hazır Öğrenme Aracı)",
-      aciklama: "Seçtiğiniz öğrenme aracı sizin tarafınızdan hazır yüklenir; Soru Seti HapBilgi içerik üreticisi aracılığıyla üretilir. Tabloda seçilen araca özgü hazır rozetiyle görünür.",
+      aciklama: "Öğrenme Aracı Sizden, Soru Seti İçerik Üreticisinden",
       rozet: "Hazır Öğrenme Aracı",
     },
     {
       kod: "V3",
       baslik: "V3 (Hazır Soru Seti)",
-      aciklama: "İçerik akışı ve seçilen öğrenme aracı HapBilgi içerik üreticisi aracılığıyla üretilir; Soru Seti sizin tarafınızdan hazır yüklenir. (Tabloda Hazır Soru rozetiyle görünür)",
-      rozet: "Hazır Soru",
+      aciklama: "Soru Seti Sizden, Öğrenme Aracı İçerik Üreticisinden",
+      rozet: "Hazır Soru Seti",
     },
     {
       kod: "V4",
       baslik: "V4 (İkisi Hazır)",
-      aciklama: "Seçtiğiniz öğrenme aracı ve Soru Seti sizin tarafınızdan hazır yüklenir; doğrudan yayına hazır hale gelir.",
-      rozet: "Hazır Öğrenme Aracı + Hazır Soru",
+      aciklama: "Öğrenme Aracı ve Soru Seti Sizden",
+      rozet: "Hazır Öğrenme Aracı + Hazır Soru Seti",
     },
   ],
 };
@@ -160,8 +161,8 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
   "raporlar-uretim": {
     anahtar: "raporlar-uretim",
     baslik: "Yayın Raporları",
-    ozet: "Şirket genelindeki içerik üretim hacmini, canlı yayınları, üretim varyantı (V1-V4) dağılımını ve eğitim türlerinin sahada oluşturduğu tüketim etkisini analiz etmenizi sağlar.",
-    linkKelime: "üretim varyantı (V1-V4)",
+    ozet: "Şirket genelindeki içerik üretim hacmini, canlı yayınları, üretim varyantları (V1-V4) dağılımını ve eğitim türlerinin sahada oluşturduğu tüketim etkisini analiz etmenizi sağlar.",
+    linkKelime: "üretim varyantları (V1-V4)",
     altModal: VARYANT_ALT_MODAL,
     maddeler: [],
   },
@@ -359,35 +360,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
         aciklama: "Yayının hangi üretim varyantı ile üretildiğini gösterir.",
         linkKelime: "üretim varyantı",
         ikon: "📦",
-        altModal: {
-          baslik: "Üretim Varyantları (V1 - V4)",
-          altBaslik: "İçeriklerin hangi yöntemle üretildiğini ve tablodaki rozet karşılıklarını gösterir.",
-          kartlar: [
-            {
-              kod: "V1",
-              baslik: "V1 (Tam Üretim)",
-              aciklama: "İçerik akışı, seçilen öğrenme aracı ve Soru Seti HapBilgi içerik üreticisi aracılığıyla üretilir.",
-            },
-            {
-              kod: "V2",
-              baslik: "V2 (Hazır Öğrenme Aracı)",
-              aciklama: "Seçtiğiniz öğrenme aracı sizin tarafınızdan hazır yüklenir; Soru Seti HapBilgi içerik üreticisi aracılığıyla üretilir. Tabloda seçilen araca özgü hazır rozetiyle görünür.",
-              rozet: "Hazır Öğrenme Aracı",
-            },
-            {
-              kod: "V3",
-              baslik: "V3 (Hazır Soru Seti)",
-              aciklama: "İçerik akışı ve seçilen öğrenme aracı HapBilgi içerik üreticisi aracılığıyla üretilir; Soru Seti sizin tarafınızdan hazır yüklenir. (Tabloda Hazır Soru rozetiyle görünür)",
-              rozet: "Hazır Soru",
-            },
-            {
-              kod: "V4",
-              baslik: "V4 (İkisi Hazır)",
-              aciklama: "Seçtiğiniz öğrenme aracı ve Soru Seti sizin tarafınızdan hazır yüklenir; doğrudan yayına hazır hale gelir.",
-              rozet: "Hazır Öğrenme Aracı + Hazır Soru",
-            },
-          ],
-        },
+        altModal: VARYANT_ALT_MODAL,
       },
       {
         baslik: "Aşama",
