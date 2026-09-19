@@ -31,6 +31,50 @@ function metinDegeri(meta: Record<string, unknown> | null | undefined, anahtar: 
   return typeof deger === "string" && deger.trim() ? deger.trim() : null;
 }
 
+const GUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/**
+ * Bunny video kimliği (GUID) veya video adresini geçerli oynatıcı embed adresine dönüştürür.
+ * AGENTS.md 4. Kural: DB'de yalnızca 36 karakterlik GUID saklanır, embed adresi çalışma anında
+ * dinamik olarak çözümlenir.
+ */
+export function bunnyEmbedUrlUret(guidVeyaUrl: string | null | undefined): string | null {
+  if (!guidVeyaUrl) return null;
+  const temiz = guidVeyaUrl.trim();
+  if (!temiz) return null;
+
+  if (GUID_REGEX.test(temiz)) {
+    const libId = process.env.BUNNY_LIBRARY_ID || process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID || "707975";
+    return `https://player.mediadelivery.net/embed/${libId}/${temiz}`;
+  }
+
+  if (temiz.includes("/play/")) {
+    return temiz.replace("/play/", "/embed/");
+  }
+
+  return temiz;
+}
+
+/**
+ * Yayın nesnesinden video oynatıcı adresini çözümler:
+ * - arac_turu video değilse null döner.
+ * - DB'deki ham Bunny GUID'lerini dinamik embed adresine dönüştürür.
+ * - Mevcut tam URL veya eski metadata URL'lerini geriye dönük uyumlu olarak korur.
+ */
+export function yayinVideoUrlCoz(yayin: YayinKapakGirdisi | null | undefined): string | null {
+  if (!yayin) return null;
+  const aracTuru = (yayin.arac_turu ?? "video").toLowerCase();
+  if (aracTuru !== "video") return null;
+
+  const meta = yayin.arac_metadata ?? yayin.metadata;
+  const hamUrl = yayin.video_url
+    ?? yayin.arac_dosya_yolu
+    ?? yayin.dosya_yolu
+    ?? metinDegeri(meta, "legacy_video_url");
+
+  return bunnyEmbedUrlUret(hamUrl);
+}
+
 /**
  * Bir yayının küçük resim (thumbnail) URL'sini kesin kurallara göre çözümler:
  * - video: mevcut thumbnail (`thumbnail_url`) korunur; yoksa ortak araçtaki video URL'sinden üretilir.
@@ -120,6 +164,7 @@ export type TemizYayinThumbnailCevabi<T> = Omit<
   | "metadata"
 > & {
   thumbnail_url: string | null;
+  video_url?: string | null;
 };
 
 /**
@@ -143,6 +188,7 @@ export function yayinThumbnailCevabi<T extends YayinKapakGirdisi>(
   return {
     ...(guvenli as TemizYayinThumbnailCevabi<T>),
     thumbnail_url: yayinThumbnailUrlCoz(yayin, simdiMs),
+    video_url: "video_url" in yayin || yayin.arac_turu === "video" ? yayinVideoUrlCoz(yayin) : (guvenli.video_url as string | null | undefined),
   };
 }
 /**

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
-import { createVideoPlayer, detectProvider, type VideoPlayer } from "@/lib/video/videoPlayer";
+import { createVideoPlayer, detectProvider, bunnyEmbedUrl, type VideoPlayer } from "@/lib/video/videoPlayer";
 import VideoCercevesi from "@/components/video/VideoCercevesi";
 import { useVideoEtkilesimKatmani } from "@/components/video/useVideoEtkilesimKatmani";
 
@@ -24,6 +24,7 @@ export default function VideoOnizleme({
   onBitti,
   bitisGecikmesiMs = 0,
 }: Props) {
+  const embedUrl = bunnyEmbedUrl(videoUrl);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const playerRef = useRef<VideoPlayer | null>(null);
   const onBittiRef = useRef(onBitti);
@@ -32,7 +33,7 @@ export default function VideoOnizleme({
   const [bitisAsamasi, setBitisAsamasi] = useState<"yok" | "mesaj" | "kayboluyor">("yok");
   const destekleniyor = detectProvider(videoUrl) !== "bilinmeyen";
   const { katmanAcik, oynaticiHazir, oynat } = useVideoEtkilesimKatmani({
-    anahtar: videoUrl,
+    anahtar: embedUrl,
     playerRef,
     etkin: destekleniyor,
     ilkOynatmaZorunlu: yalnizPlayButonu,
@@ -40,14 +41,14 @@ export default function VideoOnizleme({
 
   useEffect(() => { onBittiRef.current = onBitti; }, [onBitti]);
 
-  useEffect(() => { bittiRef.current = false; }, [videoUrl]);
+  useEffect(() => { bittiRef.current = false; }, [embedUrl]);
 
   useEffect(() => {
     if (!iframeRef.current) return;
 
     let player: VideoPlayer;
     try {
-      player = createVideoPlayer(iframeRef.current, videoUrl);
+      player = createVideoPlayer(iframeRef.current, embedUrl);
     } catch {
       // Desteklenmeyen sağlayıcıda şeffaf katman yerel iframe kontrollerini
       // engellemesin. Bu projedeki kayıtlı videolar Bunny üzerinden gelir.
@@ -82,12 +83,12 @@ export default function VideoOnizleme({
       player.destroy();
       if (playerRef.current === player) playerRef.current = null;
     };
-  }, [bitisGecikmesiMs, videoUrl, oynaticiHazir]);
+  }, [bitisGecikmesiMs, embedUrl, oynaticiHazir]);
 
   return (
     <div className={`relative transition-opacity duration-300 ${bitisAsamasi === "kayboluyor" ? "opacity-0" : "opacity-100"}`}>
       <VideoCercevesi
-        videoUrl={videoUrl}
+        videoUrl={embedUrl}
         className={className}
         etkilesimKatmani={katmanAcik ? {
           ariaLabel,
@@ -96,9 +97,9 @@ export default function VideoOnizleme({
         } : null}
       >
         <iframe
-          key={videoUrl}
+          key={embedUrl}
           ref={iframeRef}
-          src={videoUrl}
+          src={embedUrl}
           frameBorder="0"
           allowFullScreen
           allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"

@@ -19,7 +19,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { IcerikTuru } from "./icerikTuru";
 import { gorunenTurler, kapsamGenisMi } from "./gorunurluk";
 import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
-import { yayinThumbnailUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
+import { yayinThumbnailUrlCoz, yayinVideoUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
 
 export interface AnaSayfaVideo {
   yayin_id: string;
@@ -130,7 +130,7 @@ export async function getAnaSayfaVideolari(
     firma_adi: v.firma_adi ?? null,
     urun_adi: v.urun_adi ?? "-",
     teknik_adi: v.teknik_adi ?? "-",
-    video_url: v.video_url ?? null,
+    video_url: yayinVideoUrlCoz(v),
     thumbnail_url: yayinThumbnailUrlCoz(v),
     video_puani: v.video_puani ?? null,
     yayin_tarihi: v.yayin_tarihi,

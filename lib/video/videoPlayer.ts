@@ -74,18 +74,26 @@ export interface VideoPlayer {
 
 export type Provider = "bunny" | "mux" | "cloudflareStream" | "vimeo" | "youtube" | "jwPlayer" | "wistia" | "bilinmeyen";
 
+const GUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 /**
  * URL'e bakarak hangi provider olduğunu tespit eder.
  * Tanımlanmamış URL'ler "bilinmeyen" döner — fabrika hata fırlatır.
  */
 export function detectProvider(url: string): Provider {
   if (!url) return "bilinmeyen";
+  const temiz = url.trim();
+
+  // Ham Bunny GUID desteği (AGENTS.md 4. Kural)
+  if (GUID_REGEX.test(temiz)) {
+    return "bunny";
+  }
 
   // Bunny.net — üç farklı URL formatı:
   //   - iframe.mediadelivery.net/embed/...  → playerjs API destekler
   //   - player.mediadelivery.net/embed/...  → playerjs API destekler (yeni player)
   //   - player.mediadelivery.net/play/...   → playerjs desteklemez; lib içeride embed'e çevirir
-  if (url.includes("iframe.mediadelivery.net") || url.includes("player.mediadelivery.net")) {
+  if (temiz.includes("iframe.mediadelivery.net") || temiz.includes("player.mediadelivery.net")) {
     return "bunny";
   }
 
@@ -103,8 +111,9 @@ export function detectProvider(url: string): Provider {
 // ─── BUNNY ADAPTER ───────────────────────────────────────────────────────────
 
 /**
- * Bunny URL'lerini playerjs'in anlayabileceği `embed/` formatına çevirir.
+ * Bunny URL'lerini veya ham GUID'leri playerjs'in anlayabileceği `embed/` formatına çevirir.
  *
+ *   GUID    → https://player.mediadelivery.net/embed/{libId}/{GUID}
  *   /play/  → /embed/   (yeni player'ın paylaşım URL'i playerjs ile çalışmaz,
  *                        embed formatına çevrilince çalışır)
  *
@@ -112,10 +121,18 @@ export function detectProvider(url: string): Provider {
  * zaten geçerli; dokunulmaz.
  */
 export function bunnyEmbedUrl(url: string): string {
-  if (url.includes("/play/")) {
-    return url.replace("/play/", "/embed/");
+  if (!url) return url;
+  const temiz = url.trim();
+
+  if (GUID_REGEX.test(temiz)) {
+    const libId = process.env.NEXT_PUBLIC_BUNNY_LIBRARY_ID || process.env.BUNNY_LIBRARY_ID || "707975";
+    return `https://player.mediadelivery.net/embed/${libId}/${temiz}`;
   }
-  return url;
+
+  if (temiz.includes("/play/")) {
+    return temiz.replace("/play/", "/embed/");
+  }
+  return temiz;
 }
 
 export interface PlayerJsInstance {

@@ -8,7 +8,7 @@ import { EXTRA_PUAN_TEKRAR_ESIGI } from "@/lib/tclub/puan/strateji";
 import { haftaBaslangici } from "@/lib/zaman/kontrol";
 import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
-import { yayinThumbnailUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
+import { yayinThumbnailUrlCoz, yayinVideoUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
 
 export interface VYayinSatiri {
   yayin_id: string;
@@ -204,7 +204,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
     sonraki_tur_tarihi: turMap[y.yayin_id]?.sonraki_tur_tarihi ?? null,
     urun_adi: y.urun_adi ?? "-",
     teknik_adi: y.teknik_adi ?? "-",
-    video_url: y.video_url ?? null,
+    video_url: yayinVideoUrlCoz(y),
     thumbnail_url: yayinThumbnailUrlCoz(y),
     video_puani: y.video_puani ?? null,
     yayin_tarihi: y.yayin_tarihi,

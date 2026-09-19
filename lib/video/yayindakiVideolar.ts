@@ -12,7 +12,7 @@ import { AnaSayfaVideo } from "./anaSayfaVideolari";
 import { kapsamGenisMi } from "./gorunurluk";
 import { hedefRolleriOku, type HedefRoller } from "@/lib/utils/roller";
 import { ogrenmeAraciBayraklari } from "@/lib/ogrenmeAraci/bayraklar";
-import { yayinThumbnailUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
+import { yayinThumbnailUrlCoz, yayinVideoUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
 
 export interface YayindakiVideo extends AnaSayfaVideo {
   hedef_roller: HedefRoller;
@@ -160,7 +160,7 @@ export async function getYayindakiVideolar(
       firma_adi: v.firma_adi,
       urun_adi: v.urun_adi ?? "-",
       teknik_adi: v.teknik_adi ?? "-",
-      video_url: v.video_url ?? null,
+      video_url: yayinVideoUrlCoz(v),
       thumbnail_url: yayinThumbnailUrlCoz(v),
       video_puani: v.video_puani ?? null,
       yayin_tarihi: v.yayin_tarihi,

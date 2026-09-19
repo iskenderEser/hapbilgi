@@ -13,7 +13,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { createVideoPlayer, type VideoPlayer } from "@/lib/video/videoPlayer";
+import { createVideoPlayer, bunnyEmbedUrl, type VideoPlayer } from "@/lib/video/videoPlayer";
 import { oynatmaBaslatilmaliMi } from "@/lib/izleme/baslat";
 import VideoCercevesi from "@/components/video/VideoCercevesi";
 import TuketimOynaticisi from "@/components/ogrenme-araci/TuketimOynaticisi";
@@ -96,6 +96,7 @@ interface Props {
 }
 
 export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false, aktifYayinDogrula = false, oneri_id, onKapat, onVeriYenile, hata, basari, uyari }: Props) {
+  const oynatilacakVideoUrl = video.video_url ? bunnyEmbedUrl(video.video_url) : null;
   const [izlemeId, setIzlemeId] = useState<string | null>(null);
   const [izlemeTamamlandi, setIzlemeTamamlandi] = useState(false);
   const [sorular, setSorular] = useState<IzlemeSorusu[]>([]);
@@ -228,11 +229,11 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
   // tetikleyici olabilir. İki yol da `izlemeBitirildiRef` ile korunur,
   // çift `bitir` çağrısı imkansız.
   useEffect(() => {
-    if ((!tuketici && !onizlemeYuzeyi) || !iframeRef.current || !video.video_url) return;
+    if ((!tuketici && !onizlemeYuzeyi) || !iframeRef.current || !oynatilacakVideoUrl) return;
 
     let player: VideoPlayer;
     try {
-      player = createVideoPlayer(iframeRef.current, video.video_url);
+      player = createVideoPlayer(iframeRef.current, oynatilacakVideoUrl);
     } catch (err: unknown) {
       const mesaj = err instanceof Error ? err.message : "Video oynatıcı kurulamadı.";
       hata(mesaj, "createVideoPlayer", err instanceof Error ? err.stack : String(err));
@@ -587,13 +588,13 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
         {video.arac_turu && video.arac_turu !== "video" && video.arac_id && (
           <TuketimOynaticisi aracId={video.arac_id} yayinId={video.yayin_id} aracTuru={video.arac_turu} bagId={oneri_id} urunAdi={video.urun_adi} ileriSarmaAcik={video.ileri_sarma_acik} saltGoruntuleme={!tuketici} hata={hata} baslat={handleAracBaslat} bitir={handleAracBitir} onTamamlandi={onVeriYenile} className="border-b border-gray-100 p-4" />
         )}
-        {!(["podcast", "gorsel", "flip_pdf"].includes(video.arac_turu ?? "video")) && video.video_url && (
+        {!(["podcast", "gorsel", "flip_pdf"].includes(video.arac_turu ?? "video")) && oynatilacakVideoUrl && (
           <div className="border-b border-gray-100">
             {/* Kutu artık videonun oranına göre çizilir (26.07 — VideoCercevesi).
                 iframe burada kalır: ref playerjs'e bağlı, sarmalayıcı yalnız kutuyu kurar.
                 width/height nitelikleri kalktı — ölçüyü CSS veriyor. */}
             <VideoCercevesi
-              videoUrl={video.video_url}
+              videoUrl={oynatilacakVideoUrl}
               etkilesimKatmani={
                 onizlemeEtkilesimi.katmanAcik
                   ? { ariaLabel: `${video.urun_adi} videosunu oynat`, onClick: onizlemeEtkilesimi.oynat }
@@ -602,7 +603,7 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
                     : null
               }
             >
-              <iframe key={video.yayin_id} ref={iframeRef} src={video.video_url}
+              <iframe key={video.yayin_id} ref={iframeRef} src={oynatilacakVideoUrl}
                 frameBorder="0" allowFullScreen
                 allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;" />
             </VideoCercevesi>

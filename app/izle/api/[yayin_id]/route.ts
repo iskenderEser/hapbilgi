@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { hataYaniti, sunucuHatasi, yetkiHatasi, rolHatasi, validasyonHatasi, isKuraluHatasi } from "@/lib/utils/hataIsle";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
 import { TUKETICI_ROLLER, hedefRolleriOku } from "@/lib/utils/roller";
+import { yayinThumbnailUrlCoz, yayinVideoUrlCoz } from "@/lib/ogrenmeAraci/yayinThumbnail";
 
 export async function GET(
   request: NextRequest,
@@ -25,7 +26,7 @@ export async function GET(
     // v_yayin_detay view ile tek sorguda tüm yayın detayları — 9 sorgu → 1 sorgu
     const { data: yayin, error: yayinError } = await adminSupabase
       .from("v_yayin_detay")
-      .select("yayin_id, durum, yayin_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, hedef_roller, arac_id, arac_turu")
+      .select("yayin_id, durum, yayin_tarihi, urun_adi, teknik_adi, video_url, thumbnail_url, video_puani, hedef_roller, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata")
       .eq("yayin_id", yayin_id)
       .single();
 
@@ -52,8 +53,8 @@ export async function GET(
         yayin_id: yayin.yayin_id,
         urun_adi: yayin.urun_adi ?? "-",
         teknik_adi: yayin.teknik_adi ?? "-",
-        video_url: yayin.video_url ?? null,
-        thumbnail_url: yayin.thumbnail_url ?? null,
+        video_url: yayinVideoUrlCoz(yayin),
+        thumbnail_url: yayinThumbnailUrlCoz(yayin),
         video_puani: yayin.video_puani ?? null,
         yayin_tarihi: yayin.yayin_tarihi,
         daha_once_izledi: (izleme ?? []).length > 0,
