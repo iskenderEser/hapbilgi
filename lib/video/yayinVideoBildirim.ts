@@ -101,23 +101,29 @@ export async function yayinVideoSonucunuBildir(
         .update({ durum: "Durduruldu" })
         .eq("yayin_id", y.yayin_id);
 
-      await adminSupabase.from("bildirimler").insert({
-        alici_id: y.uretici_id,
-        kayit_turu: "yayin",
-        kayit_id: y.yayin_id,
-        mesaj: `${urunAdi} adlı ${y.yayin_id} nolu yayınız, yayınlanamamıştır.`,
-        goruldu_mu: false,
-      });
+      await adminSupabase.from("bildirimler").upsert(
+        {
+          alici_id: y.uretici_id,
+          kayit_turu: "yayin",
+          kayit_id: y.yayin_id,
+          mesaj: `${urunAdi} adlı ${y.yayin_id} nolu yayınız, yayınlanamamıştır.`,
+          goruldu_mu: false,
+        },
+        { onConflict: "alici_id,kayit_turu,kayit_id" }
+      );
 
       pushYayinlaArkada(adminSupabase, "video_yayini", [y.uretici_id], { yayinId: y.yayin_id });
     } else if (durum.hazir && (durum.videoSuresiSaniye ?? 0) > 0) {
-      await adminSupabase.from("bildirimler").insert({
-        alici_id: y.uretici_id,
-        kayit_turu: "yayin",
-        kayit_id: y.yayin_id,
-        mesaj: `${urunAdi} adlı ${y.yayin_id} nolu yayınız, başarıyla yayınlanmıştır.`,
-        goruldu_mu: false,
-      });
+      await adminSupabase.from("bildirimler").upsert(
+        {
+          alici_id: y.uretici_id,
+          kayit_turu: "yayin",
+          kayit_id: y.yayin_id,
+          mesaj: `${urunAdi} adlı ${y.yayin_id} nolu yayınız, başarıyla yayınlanmıştır.`,
+          goruldu_mu: false,
+        },
+        { onConflict: "alici_id,kayit_turu,kayit_id" }
+      );
 
       pushYayinlaArkada(adminSupabase, "video_yayini", [y.uretici_id], { yayinId: y.yayin_id });
     }

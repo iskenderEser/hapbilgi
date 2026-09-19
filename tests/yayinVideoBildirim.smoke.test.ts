@@ -85,6 +85,10 @@ function olusturMockDb(ayarlar?: { oncedenBildirildi?: boolean }) {
               }),
             }),
           }),
+          upsert: (kayit: Record<string, unknown>, opts?: { onConflict?: string }) => {
+            bildirimler.push({ ...kayit, _onConflict: opts?.onConflict });
+            return Promise.resolve({ error: null });
+          },
           insert: (kayit: Record<string, unknown>) => {
             bildirimler.push(kayit);
             return Promise.resolve({ error: null });
@@ -152,6 +156,7 @@ test("video kodlaması başarıyla bittiğinde üreticiye başarı bildirimi kay
   assert.equal(bildirimler[0].alici_id, "uretici-456");
   assert.equal(bildirimler[0].kayit_turu, "yayin");
   assert.equal(bildirimler[0].kayit_id, "yayin-123");
+  assert.equal(bildirimler[0]._onConflict, "alici_id,kayit_turu,kayit_id");
   assert.equal(
     bildirimler[0].mesaj,
     "Aspirin Plus adlı yayin-123 nolu yayınız, başarıyla yayınlanmıştır.",
@@ -171,6 +176,7 @@ test("video kodlaması başarısız olduğunda yayın durdurulur ve hata bildiri
   assert.equal(bildirimler[0].alici_id, "uretici-456");
   assert.equal(bildirimler[0].kayit_turu, "yayin");
   assert.equal(bildirimler[0].kayit_id, "yayin-123");
+  assert.equal(bildirimler[0]._onConflict, "alici_id,kayit_turu,kayit_id");
   assert.equal(
     bildirimler[0].mesaj,
     "Aspirin Plus adlı yayin-123 nolu yayınız, yayınlanamamıştır.",
