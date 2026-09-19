@@ -75,6 +75,19 @@ export async function yayinVideoSonucunuBildir(
   if (tumYayinlarMap.size === 0) return;
 
   for (const y of tumYayinlarMap.values()) {
+    // İdempotency / mükerrer kayıt koruması: Bu yayın için daha önce sonuç bildirimi oluşturulmuşsa tekrar ekleme
+    const { data: mevcutBildirim } = await adminSupabase
+      .from("bildirimler")
+      .select("bildirim_id")
+      .eq("alici_id", y.uretici_id)
+      .eq("kayit_turu", "yayin")
+      .eq("kayit_id", y.yayin_id)
+      .ilike("mesaj", "%nolu yayınız%")
+      .limit(1)
+      .maybeSingle();
+
+    if (mevcutBildirim) continue;
+
     const { data: detay } = await adminSupabase
       .from("v_yayin_detay")
       .select("urun_adi")

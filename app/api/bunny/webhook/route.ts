@@ -142,6 +142,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Yayın bildirimini, henüz doğrulanmamış araç durumu ezilmeden önce üret
+    await yayinVideoSonucunuBildir(adminSupabase, guid, durum);
+
     let tamamlananTalep = 0;
     for (const talep of bekleyenTalepler ?? []) {
       // RPC idempotenttir ve veznenin önceden açtığı doğrulanmamış kabuğu
@@ -155,8 +158,6 @@ export async function POST(request: NextRequest) {
       if (alici) pushYayinlaArkada(adminSupabase, "uretim_durum_gecisi", [alici]);
       tamamlananTalep += 1;
     }
-
-    await yayinVideoSonucunuBildir(adminSupabase, guid, durum);
 
     // Diğer video akışlarında ve daha önce açılmış kayıtta süreyi otoritatif
     // değerle eşitle. Yayın kapısı ayrıca Bunny durumunu her seferinde doğrular.
