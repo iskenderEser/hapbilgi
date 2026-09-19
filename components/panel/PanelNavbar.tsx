@@ -100,11 +100,11 @@ export default function PanelNavbar({
       style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", borderBottomColor: "#e5e7eb" }}
     >
       <div className="flex items-center justify-between gap-4">
-        {/* Sol Kolon: Logo & Co-Branding */}
-        <div className="flex items-center gap-3 flex-shrink-0">
+        {/* Sol Kolon: Logo & Co-Branding (Ayraç sidebarın 240px sağ kenarı ile tam hizalıdır: 24px padding + 216px = 240px) */}
+        <div className="flex items-center flex-shrink-0">
           <div
             onClick={() => router.push(anaSayfaYolu)}
-            className="flex items-center cursor-pointer group select-none"
+            className="flex items-center md:w-[216px] flex-shrink-0 cursor-pointer group select-none"
           >
             <img
               src="/hapbilgi-yatay-TM-1-logo.png"
@@ -114,9 +114,9 @@ export default function PanelNavbar({
           </div>
 
           {ogrenmePlatformuAktif && firmaLogoUrl && (
-            <div className="flex items-center gap-3 pl-1 select-none">
+            <div className="flex items-center flex-shrink-0 select-none">
               <div className="h-8 w-[1.5px] bg-slate-200 rounded-full" />
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5 pl-4">
                 <img
                   src={firmaLogoUrl}
                   alt={firmaAdi ?? "Firma"}
