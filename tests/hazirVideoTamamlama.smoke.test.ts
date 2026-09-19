@@ -46,6 +46,13 @@ test("oturum kapatma hatası başarı olarak yutulmaz", async () => {
 });
 test("geçersiz sürede üretim zinciri açılmaz", async () => {
   const { db, olaylar } = veritabani();
-  await assert.rejects(hazirVideoTamamla(db, talep, 0));
+  await assert.rejects(hazirVideoTamamla(db, talep, -1));
   assert.deepEqual(olaylar, []);
+});
+
+test("video henüz işlenirken zincir süresiz (0) açılabilir ve oturum kapatılır", async () => {
+  const { db, olaylar } = veritabani();
+  await hazirVideoTamamla(db, talep, 0);
+  assert.ok(olaylar.indexOf("zincir") < olaylar.indexOf("sure"));
+  assert.ok(olaylar.indexOf("sure") < olaylar.indexOf("oturum"));
 });

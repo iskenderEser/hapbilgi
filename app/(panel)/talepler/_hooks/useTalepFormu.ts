@@ -1422,10 +1422,7 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
           return "basarisiz";
         }
 
-        // 3) Decouple: kullanıcıyı encode boyunca bekletme. Bir kez dener — Bunny
-        // zaten hazırsa anında tamamlanır; değilse "işleniyor" döner ve tamamlamayı
-        // ARKA PLANA devreder (aynı idempotent uç). Tarayıcı kapansa da prod'da
-        // webhook + mutabakat zinciri tamamlar.
+        // 3) Hazır video kaydı: Bunny'de kodlama devam etse bile zincir kurulur.
         const denemePut = async () => {
           const res2 = await fetch("/uretim/api/hazir-video", {
             method: "PUT",
@@ -1437,43 +1434,23 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
         };
 
         try {
-          const ilk = await denemePut();
-          if (ilk.ok && ilk.status !== 202) {
-            return "tamamlandi";
-          }
-          if (ilk.status !== 202 && ilk.status < 500) {
-            hata(ilk.d2.hata ?? "Video doğrulanamadı.", ilk.d2.adim, ilk.d2.detay);
+          const t = await denemePut();
+          if (!t.ok) {
+            hata(t.d2.hata ?? "Video işlenemedi. Talep Takibi ekranından yeniden yükleyebilirsiniz.", t.d2.adim, t.d2.detay);
+            await onTalepOlusturuldu?.();
             return "basarisiz";
           }
-        } catch {
-          // Geçici hata → arka plana devret.
+          return "tamamlandi";
+        } catch (err: unknown) {
+          hata("Video kaydedilemedi.", "hazır video kaydı", err instanceof Error ? err.message : undefined);
+          return "basarisiz";
         }
-
-        // Henüz hazır değil → kullanıcıyı bekletme; tamamlamayı arka planda sürdür.
-        void (async () => {
-          const baslangic = Date.now();
-          while (Date.now() - baslangic < TAVAN_SANIYE * 1000) {
-            await new Promise((coz) => setTimeout(coz, SORGU_ARALIGI_MS));
-            try {
-              const t = await denemePut();
-              if (t.ok && t.status !== 202) {
-                return;
-              }
-              if (t.status !== 202 && t.status < 500) {
-                hata(t.d2.hata ?? "Video işlenemedi. Talep Takibi ekranından yeniden yükleyebilirsiniz.", t.d2.adim, t.d2.detay);
-                await onTalepOlusturuldu?.();
-                return;
-              }
-            } catch { /* geçici hata; sonraki tur */ }
-          }
-        })();
-        return "isleniyor";
       } finally {
         setDosyaYukleniyor(false);
         setVideoYuklemeYuzdesi(null);
       }
     },
-    [bekleyenVideo, hata, onTalepOlusturuldu]
+    [bekleyenVideo, hata]
   );
 
   // Dönüş: yüklenemeyen dosya adları — kısmi başarısızlık handleSubmit'te dürüstçe raporlanır (F-01/3).
@@ -1783,17 +1760,13 @@ export function useTalepFormu(onTalepOlusturuldu?: () => void | Promise<void>) {
           basarisizlar.push(...(await uploadDosyalar(talep_id)));
         }
         if (basarisizlar.length === 0) {
-          if (videoYuklemeSonucu === "isleniyor") {
-            basari(uretimToast(
-              { rol: "uretici", olay: "video_isleniyor" },
-              { varyant: toastVaryant(hazirVideo, hazirSoruSeti), ogrenmeAraciTuru },
-            ));
-          } else {
-            basari(uretimToast(
-              { rol: "uretici", olay: "talep_gonderildi" },
-              { varyant: toastVaryant(hazirVideo, hazirSoruSeti), ogrenmeAraciTuru },
-            ));
-            if (hazirVideo && hazirSoruSeti) bildirimRozetleriniYenile();
+          basari(uretimToast(
+            { rol: "uretici", olay: "talep_gonderildi" },
+            { varyant: toastVaryant(hazirVideo, hazirSoruSeti), ogrenmeAraciTuru },
+          ));
+          if (hazirVideo && hazirSoruSeti) {
+            bildirimRozetleriniYenile();
+            router.push("/yayin-yonetimi");
           }
         } else {
           uyari(

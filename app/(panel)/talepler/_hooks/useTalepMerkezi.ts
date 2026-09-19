@@ -12,6 +12,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { uretimToast, toastVaryant, type ToastAsama, type ToastOlay } from "@/lib/uretim/toastMesaj";
@@ -25,6 +26,7 @@ import { getTalepOnbellek, setTalepOnbellek, hesaplaTalepOzeti, type TalepOzetSa
 export type KararDurumu = "onaylandi" | "revizyon bekleniyor" | "Iptal Edildi";
 
 export function useTalepMerkezi() {
+  const router = useRouter();
   const { kullanici } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
 
@@ -387,9 +389,7 @@ export function useTalepMerkezi() {
           return;
         }
 
-        // Decouple: encode boyunca bekletme. Bir kez dener — hazırsa anında
-        // tamamlanır; değilse tamamlamayı ARKA PLANA devreder (aynı idempotent uç;
-        // prod'da webhook + mutabakat da toplar).
+        // Hazır video kaydedilir: kodlama Bunny'de devam etse bile zincir kurulur.
         const denemePut = async () => {
           const res2 = await fetch("/uretim/api/hazir-video", {
             method: "PUT",
@@ -400,48 +400,16 @@ export function useTalepMerkezi() {
           return { status: res2.status, ok: res2.ok, d2 };
         };
 
-        let tamamlandi = false;
         try {
-          const ilk = await denemePut();
-          if (ilk.ok && ilk.status !== 202) {
-            tamamlandi = true;
-          }
-          else if (ilk.status !== 202 && ilk.status < 500) {
-            hata(ilk.d2.hata ?? "Video doğrulanamadı.", ilk.d2.adim, ilk.d2.detay);
+          const t = await denemePut();
+          if (!t.ok) {
+            hata(t.d2.hata ?? "Video işlenemedi. Yeniden yükleyebilirsiniz.", t.d2.adim, t.d2.detay);
             setDetayTetik((x) => x + 1);
             await veriCek();
             return;
           }
         } catch {
-          // Geçici hata → arka plana devret.
-        }
-
-        if (!tamamlandi) {
-          void (async () => {
-            const baslangic = Date.now();
-            while (Date.now() - baslangic < TAVAN_SANIYE * 1000) {
-              await new Promise((coz) => setTimeout(coz, SORGU_ARALIGI_MS));
-              try {
-                const t = await denemePut();
-                if (t.ok && t.status !== 202) {
-                  return;
-                }
-                if (t.status !== 202 && t.status < 500) {
-                  hata(t.d2.hata ?? "Video işlenemedi. Yeniden yükleyebilirsiniz.", t.d2.adim, t.d2.detay);
-                  setDetayTetik((x) => x + 1);
-                  await veriCek();
-                  return;
-                }
-              } catch { /* geçici hata; sonraki tur */ }
-            }
-          })();
-          basari(uretimToast(
-            { rol: "uretici", olay: "talep_gonderildi" },
-            {
-              varyant: toastVaryant(talep.hazir_video, talep.hazir_soru_seti),
-              ogrenmeAraciTuru: talep.ogrenme_araci_turu,
-            },
-          ));
+          hata("Video bağlantısı kurulamadı.", "Hazır video kaydı");
           setDetayTetik((x) => x + 1);
           await veriCek();
           return;
@@ -456,15 +424,18 @@ export function useTalepMerkezi() {
             ogrenmeAraciTuru: talep.ogrenme_araci_turu,
           },
         ));
-        if (talep.hazir_soru_seti) bildirimRozetleriniYenile();
-
-        setDetayTetik((x) => x + 1);
-        await veriCek();
+        if (talep.hazir_soru_seti) {
+          bildirimRozetleriniYenile();
+          router.push("/yayin-yonetimi");
+        } else {
+          setDetayTetik((x) => x + 1);
+          await veriCek();
+        }
       } finally {
         setVideoYuzdesi(null);
       }
     },
-    [talepler, seciliTalepId, hata, basari, veriCek],
+    [talepler, seciliTalepId, hata, basari, veriCek, router],
   );
 
   // Biçim /talepler sayfasıyla AYNI (28.07 düzeltmesi): burada saat/dakika yoktu,

@@ -1,12 +1,21 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-/** Bunny hazır ve süre doğrulanmışken çağrılır. Tekrar çağrı aynı zinciri tamamlar. */
+/**
+ * Hazır video kaydını ve atomik üretim zincirini tamamlar.
+ * Video Bunny'de henüz işleniyor olsa bile (sureSaniye null/0/tanımsız) zincir açılır
+ * ve metadata_dogrulandi=false olarak işaretlenir. Bunny encode'u bittiğinde
+ * webhook veya mutabakat süreyi günceller ve metadata_dogrulandi=true yapar.
+ */
 export async function hazirVideoTamamla(
   db: SupabaseClient,
   talep: { talep_id: string; uretici_id: string; video_url: string; guid: string },
-  sureSaniye: number,
+  sureSaniye?: number | null,
 ) {
-  if (!Number.isSafeInteger(sureSaniye) || sureSaniye <= 0) throw new Error("Doğrulanmış video süresi bulunamadı.");
+  if (sureSaniye !== undefined && sureSaniye !== null && (!Number.isSafeInteger(sureSaniye) || sureSaniye < 0)) {
+    throw new Error("Geçersiz video süresi.");
+  }
+  const dogrulandi = typeof sureSaniye === "number" && Number.isSafeInteger(sureSaniye) && sureSaniye > 0;
+
   const { data, error } = await db.rpc("uretim_hazir_video_kaydet", {
     p_talep_id: talep.talep_id,
     p_uretici_id: talep.uretici_id,
@@ -17,7 +26,7 @@ export async function hazirVideoTamamla(
   const sonuc = data as { arac_id?: string; sonraki?: { atanan_iu_id?: string } | null } | null;
   if (!sonuc?.arac_id) throw new Error("Hazır video zinciri öğrenme aracı kimliği döndürmedi.");
   const { error: sureError } = await db.from("ogrenme_araclari")
-    .update({ sure_saniye: sureSaniye, metadata_dogrulandi: true })
+    .update({ sure_saniye: dogrulandi ? sureSaniye : 0, metadata_dogrulandi: dogrulandi })
     .eq("arac_id", sonuc.arac_id).eq("arac_turu", "video");
   if (sureError) throw sureError;
 

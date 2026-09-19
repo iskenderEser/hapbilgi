@@ -51,7 +51,7 @@ export async function PUT(request: NextRequest) {
       if (!baglanan) return isKuraluHatasi("Bu talebe başka bir video eş zamanlı olarak bağlanmış.");
     }
 
-    // Tek otorite Bunny'dir: yalnız status=4 ve pozitif süre birlikteyse zincir açılır.
+    // Bunny video durumunu kontrol et.
     const bunnyDurumu = await bunnyVideoDurumu(guid);
     if (!bunnyDurumu.ok) {
       return hataYaniti(bunnyDurumu.hata, bunnyDurumu.adim, bunnyDurumu.detay ? { message: bunnyDurumu.detay } : null, 503);
@@ -71,22 +71,26 @@ export async function PUT(request: NextRequest) {
         bunny_durum: bunnyDurumu.bunnyDurum,
       }, { status: 422 });
     }
-    if (!bunnyDurumu.hazir || bunnyDurumu.videoSuresiSaniye == null || bunnyDurumu.videoSuresiSaniye <= 0) {
-      return NextResponse.json({
-        mesaj: "Video işleniyor",
-        isleniyor: true,
-        bunny_durum: bunnyDurumu.bunnyDurum,
-      }, { status: 202 });
-    }
+
+    // Video yüklendi: Bunny'de kodlama henüz tamamlanmamış olsa bile üretim zincirini
+    // hemen tamamlarız. Böylece üretici "Yayın Takip Adımları"nda beklemez; doğrudan
+    // "Yayın Yönetimi"ne geçer. Kodlama arka planda bittiğinde webhook/mutabakat süreyi günceller.
+    const videoSuresi = (bunnyDurumu.hazir && typeof bunnyDurumu.videoSuresiSaniye === "number" && bunnyDurumu.videoSuresiSaniye > 0)
+      ? bunnyDurumu.videoSuresiSaniye
+      : 0;
 
     const sonuc = await hazirVideoTamamla(adminSupabase, {
       talep_id: body.talep_id, uretici_id: user.id,
       video_url: body.video_url, guid,
-    }, bunnyDurumu.videoSuresiSaniye);
+    }, videoSuresi);
 
     const alici = (sonuc as { sonraki?: { atanan_iu_id?: string } | null } | null)?.sonraki?.atanan_iu_id;
     if (alici) pushYayinlaArkada(adminSupabase, "uretim_durum_gecisi", [alici]);
-    return NextResponse.json({ mesaj: "Hazır video kaydedildi.", sonuc }, { status: 200 });
+    return NextResponse.json({
+      mesaj: "Hazır video kaydedildi.",
+      isleniyor: !bunnyDurumu.hazir,
+      sonuc,
+    }, { status: 200 });
   } catch (err) {
     return sunucuHatasi(err, "PUT /uretim/api/hazir-video");
   }
