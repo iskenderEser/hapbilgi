@@ -70,3 +70,15 @@ test("Admin paneli Ürün ve Teknik ve Logo ve Kimlik sekmelerini ve yönetim bi
   assert.ok(kaynak.includes("handleDurdurToggle"));
   assert.ok(kaynak.includes("handleKaldir"));
 });
+
+test("Firma logo storage 5 MB limit ve SVG formatını destekler", async () => {
+  const dosyaYolu = path.join(process.cwd(), "lib/firma/logoStorage.ts");
+  assert.ok(fs.existsSync(dosyaYolu));
+  const kaynak = fs.readFileSync(dosyaYolu, "utf-8");
+
+  // 5 MB limit
+  assert.ok(kaynak.includes("5 * 1024 * 1024"));
+
+  // SVG desteği
+  assert.ok(kaynak.includes("image/svg+xml"));
+});

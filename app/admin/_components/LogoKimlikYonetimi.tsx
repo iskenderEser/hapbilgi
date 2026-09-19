@@ -46,7 +46,7 @@ export default function LogoKimlikYonetimi({ firma, onGuncelle }: LogoKimlikYone
       const formData = new FormData();
       formData.append("dosya", dosya);
 
-      const res = await fetch("/admin/store/api/upload", {
+      const res = await fetch("/admin/api/firmalar/upload", {
         method: "POST",
         body: formData,
       });
@@ -318,7 +318,7 @@ export default function LogoKimlikYonetimi({ firma, onGuncelle }: LogoKimlikYone
           </button>
         </div>
         <p style={{ fontSize: "11.5px", color: "#6b7280", marginTop: "6px", margin: 0 }}>
-          💡 Tavsiye: Beyaz/açık header zemininde net görünmesi için şeffaf zeminli (PNG veya SVG) koyu renkli logo kullanınız.
+          💡 Tavsiye: Beyaz/açık header zemininde net görünmesi için şeffaf zeminli (PNG veya SVG) koyu renkli logo kullanınız (Maks. 5 MB).
         </p>
       </div>
 
