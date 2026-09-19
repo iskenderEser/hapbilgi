@@ -10,25 +10,25 @@ test("VARYANT_ALT_MODAL V1-V4 tanımları ve pilleri sözleşmeye tam uygundur",
 
   // V1
   assert.equal(v1.kod, "V1");
-  assert.equal(v1.baslik, "V1 (Tam Üretim)");
+  assert.equal(v1.baslik, "V1");
   assert.equal(v1.aciklama, "İçerik akışı, seçilen öğrenme aracı ve soru seti HapBilgi içerik üreticisi aracılığıyla üretilir.");
   assert.equal(v1.rozet, "İçerik Üreticiyle");
 
   // V2
   assert.equal(v2.kod, "V2");
-  assert.equal(v2.baslik, "V2 (Hazır Öğrenme Aracı)");
+  assert.equal(v2.baslik, "V2");
   assert.equal(v2.aciklama, "Seçtiğiniz öğrenme aracı sizin tarafınızdan hazır yüklenir. Soru seti HapBilgi içerik üreticisi aracılığıyla üretilir. Tabloda seçilen araca özgü hazır rozetiyle görünür.");
   assert.equal(v2.rozet, "Hazır Öğrenme Aracı");
 
   // V3
   assert.equal(v3.kod, "V3");
-  assert.equal(v3.baslik, "V3 (Hazır Soru Seti)");
+  assert.equal(v3.baslik, "V3");
   assert.equal(v3.aciklama, "İçerik akışı ve seçilen öğrenme aracı HapBilgi içerik üreticisi aracılığıyla üretilir. Soru seti sizin tarafınızdan hazır yüklenir. Tabloda hazır soru seti rozetiyle görünür.");
   assert.equal(v3.rozet, "Hazır Soru Seti");
 
   // V4
   assert.equal(v4.kod, "V4");
-  assert.equal(v4.baslik, "V4 (İkisi Hazır)");
+  assert.equal(v4.baslik, "V4");
   assert.equal(v4.aciklama, "Seçtiğiniz öğrenme aracı ve soru seti sizin tarafınızdan hazır yüklenir. Doğrudan yayına hazır hale gelir.");
   assert.equal(v4.rozet, "Hazır Öğrenme Aracı + Hazır Soru Seti");
 });
