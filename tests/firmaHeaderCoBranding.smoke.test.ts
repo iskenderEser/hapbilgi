@@ -15,21 +15,22 @@ test("VARSAYILAN_FLAGS güvenli varsayılanlarla başlar", () => {
   assert.equal(VARSAYILAN_FLAGS.ogrenmePlatformuAktif, false);
 });
 
-test("PanelNavbar co-branding ve sağa çekilmiş navigasyon sözleşmesini uygular", () => {
+test("PanelNavbar co-branding ve sabit bounding box sözleşmesini uygular", () => {
   const dosyaYolu = path.join(process.cwd(), "components/panel/PanelNavbar.tsx");
   const kaynak = fs.readFileSync(dosyaYolu, "utf-8");
 
   // Co-branding koşulu
   assert.ok(kaynak.includes("ogrenmePlatformuAktif && firmaLogoUrl"));
 
-  // Firma logosu boyutu (mobil h-6, masaüstü sm:h-[30px])
-  assert.ok(kaynak.includes("sm:h-[30px]"));
+  // Sabit Bounding Box kontrolü
+  assert.ok(kaynak.includes("w-[84px]"));
+  assert.ok(kaynak.includes("object-contain"));
 
-  // İfade: "resmi öğrenme sponsoru"
-  assert.ok(kaynak.includes("resmi öğrenme sponsoru"));
+  // İfade: "resmi öğrenme platformu"
+  assert.ok(kaynak.includes("resmi öğrenme platformu"));
 
-  // Mobilde 8.5px bold, masaüstünde 11.5px
-  assert.ok(kaynak.includes("text-[8.5px]"));
+  // Font boyutları
+  assert.ok(kaynak.includes("text-[9.5px]"));
   assert.ok(kaynak.includes("sm:text-[11.5px]"));
 });
 

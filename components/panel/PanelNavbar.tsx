@@ -109,26 +109,30 @@ export default function PanelNavbar({
             <img
               src="/hapbilgi-yatay-TM-1-logo.png"
               alt="hapbilgi"
-              className="h-12 md:h-14 lg:h-[62px] w-auto aspect-[901/340] object-cover transition-transform duration-200 group-hover:scale-105 drop-shadow-sm"
+              className="h-10 sm:h-12 md:h-14 lg:h-[62px] w-auto aspect-[901/340] object-cover transition-transform duration-200 group-hover:scale-105 drop-shadow-sm"
             />
           </div>
 
           {ogrenmePlatformuAktif && firmaLogoUrl && (
-            <div className="flex items-center flex-shrink-0 select-none pl-2.5 sm:pl-0">
-              <div className="h-7 md:h-8 w-[1.5px] bg-slate-200 rounded-full" />
+            <div className="flex items-center flex-shrink-0 select-none">
+              <div className="h-6 sm:h-8 w-[1.5px] bg-slate-200 rounded-full mx-2 sm:mx-0" />
               
-              {/* Mobil (<sm): Dikey (Logo üstte, bold yazı altta) | Masaüstü (>=sm): Yatay (Logo solda, yazı sağda) */}
-              <div className="flex flex-col sm:flex-row sm:items-center items-start gap-0.5 sm:gap-2.5 pl-2 sm:pl-4">
-                <img
-                  src={firmaLogoUrl}
-                  alt={firmaAdi ?? "Firma"}
-                  className="h-6 sm:h-[30px] max-h-8 w-auto max-w-[115px] sm:max-w-[140px] block object-contain"
-                />
+              <div className="flex items-center flex-shrink-0 pl-0.5 sm:pl-4">
+                {/* Sabit Bounding Box (Firma logosu her zaman standart orantıda kalır) */}
+                <div className="w-[84px] sm:w-[125px] h-9 flex items-center justify-center flex-shrink-0">
+                  <img
+                    src={firmaLogoUrl}
+                    alt={firmaAdi ?? "Firma"}
+                    className="max-h-full max-w-full object-contain block"
+                  />
+                </div>
+                
+                {/* Sabit Metin (Logonun sağında) */}
                 <span
                   style={{ fontFamily: "'Nunito', sans-serif" }}
-                  className="text-[8.5px] sm:text-[11.5px] font-bold sm:font-normal text-[#1e3a8a] sm:text-[#64748b] tracking-[-0.1px] sm:tracking-[0.1px] whitespace-nowrap"
+                  className="text-[9.5px] sm:text-[11.5px] font-normal text-[#64748b] tracking-[0.1px] whitespace-nowrap ml-1.5 sm:ml-2.5"
                 >
-                  resmi öğrenme sponsoru
+                  resmi öğrenme platformu
                 </span>
               </div>
             </div>
