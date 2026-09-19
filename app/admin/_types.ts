@@ -9,6 +9,8 @@ export interface Firma {
   eclub_aktif: boolean;
   eclub_store_aktif: boolean;
   eczanem_aktif: boolean;
+  logo_url?: string | null;
+  ogrenme_platformu_aktif?: boolean;
   son_export_at: string | null;
   created_at: string;
   // T-2: GET /admin/api/firmalar hesaplayıp ekler (eksik tanımı kullaniciEksikMi);

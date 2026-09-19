@@ -272,6 +272,46 @@ export function useAdminPanel() {
     }
   };
 
+  // Firmanın kurumsal logo ve resmi öğrenme platformu ayarlarını güncelle
+  const handleLogoGuncelle = async (
+    f: Firma,
+    logoUrl: string | null,
+    ogrenmePlatformuAktif: boolean
+  ): Promise<boolean> => {
+    try {
+      const res = await fetch(`/admin/api/firmalar/${f.firma_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          logo_url: logoUrl,
+          ogrenme_platformu_aktif: ogrenmePlatformuAktif,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        hata(data.hata ?? "Logo ve kimlik ayarları güncellenemedi.", data.adim, data.detay);
+        return false;
+      }
+      basari(data.mesaj ?? "Logo ve kimlik ayarları güncellendi.");
+      setFirmalar(prev =>
+        prev.map(x =>
+          x.firma_id === f.firma_id
+            ? { ...x, logo_url: logoUrl, ogrenme_platformu_aktif: ogrenmePlatformuAktif }
+            : x
+        )
+      );
+      setSeciliFirma(prev =>
+        prev && prev.firma_id === f.firma_id
+          ? { ...prev, logo_url: logoUrl, ogrenme_platformu_aktif: ogrenmePlatformuAktif }
+          : prev
+      );
+      return true;
+    } catch (err) {
+      hata("Logo ve kimlik ayarları güncellenemedi — bağlantı hatası.", "handleLogoGuncelle", String(err));
+      return false;
+    }
+  };
+
   // Firmanın verilerini Excel olarak dışa aktar.
   // GET /admin/api/firmalar/[firma_id]/export → .xlsx buffer döner; tarayıcıda indirtilir.
   // Başarılı export son_export_at'i günceller (silme koşulu için), o yüzden listeyi tazeleriz.
@@ -370,6 +410,7 @@ export function useAdminPanel() {
     handleEclubStoreToggle,
     handleEczanemToggle,
     handleFirmaToggle,
+    handleLogoGuncelle,
     handleFirmaSil,
     handleExport,
     loading,

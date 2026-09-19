@@ -30,6 +30,7 @@ import TekilGirisFormu from "./_components/TekilGirisFormu";
 import TopluGirisFormu from "./_components/TopluGirisFormu";
 import TakimBolgeFormu from "./_components/TakimBolgeFormu";
 import UrunTeknikYonetimi from "./_components/UrunTeknikYonetimi";
+import LogoKimlikYonetimi from "./_components/LogoKimlikYonetimi";
 import KullaniciListesi from "./_components/KullaniciListesi";
 import SistemAyarlari from "./_components/SistemAyarlari";
 import HbStorePaneli from "./_components/global/HbStorePaneli";
@@ -199,6 +200,13 @@ export default function AdminPanel() {
 
               {seciliSekme === "urunteknik" && (
                 <UrunTeknikYonetimi takimlar={admin.takimlar} {...urunTeknik} />
+              )}
+
+              {seciliSekme === "logokimlik" && (
+                <LogoKimlikYonetimi
+                  firma={f}
+                  onGuncelle={admin.handleLogoGuncelle}
+                />
               )}
 
               {seciliSekme === "tclub" && (

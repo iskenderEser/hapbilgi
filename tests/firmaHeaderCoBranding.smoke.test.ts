@@ -48,3 +48,25 @@ test("layout.tsx eclub_kisi için co-branding'i kapatır ve firma bilgilerini ak
   assert.ok(kaynak.includes("firmaLogoUrl={!isEclubKisi ? etkinFlags.firmaLogoUrl : null}"));
   assert.ok(kaynak.includes("firmaAdi={firmaAdi}"));
 });
+
+test("Admin paneli Ürün ve Teknik ve Logo ve Kimlik sekmelerini ve yönetim bileşenini içerir", async () => {
+  const { MODUL_SEKMELERI } = await import("@/app/admin/_constants");
+  const urunTeknik = MODUL_SEKMELERI.find((s) => s.id === "urunteknik");
+  const logoKimlik = MODUL_SEKMELERI.find((s) => s.id === "logokimlik");
+
+  assert.ok(urunTeknik);
+  assert.equal(urunTeknik.etiket, "Ürün ve Teknik");
+
+  assert.ok(logoKimlik);
+  assert.equal(logoKimlik.etiket, "Logo ve Kimlik");
+  assert.equal(logoKimlik.grup, "firma");
+
+  const bilesenYolu = path.join(process.cwd(), "app/admin/_components/LogoKimlikYonetimi.tsx");
+  assert.ok(fs.existsSync(bilesenYolu));
+  const kaynak = fs.readFileSync(bilesenYolu, "utf-8");
+
+  // 3 Buton aksiyonları
+  assert.ok(kaynak.includes("handleKaydet"));
+  assert.ok(kaynak.includes("handleDurdurToggle"));
+  assert.ok(kaynak.includes("handleKaldir"));
+});

@@ -94,6 +94,7 @@ export type ModulSekmeId =
   | "kullanicilar"
   | "organizasyon"
   | "urunteknik"
+  | "logokimlik"
   | "tclub"
   | "cclub"
   | "eclub"
@@ -114,7 +115,8 @@ export interface ModulSekme {
 export const MODUL_SEKMELERI: ModulSekme[] = [
   { id: "kullanicilar", etiket: "Kullanıcılar", grup: "firma", firmaAdminGorur: true },
   { id: "organizasyon", etiket: "Organizasyon", grup: "firma", firmaAdminGorur: true },
-  { id: "urunteknik", etiket: "Ürün & Teknik", grup: "firma", firmaAdminGorur: true },
+  { id: "urunteknik", etiket: "Ürün ve Teknik", grup: "firma", firmaAdminGorur: true },
+  { id: "logokimlik", etiket: "Logo ve Kimlik", grup: "firma", firmaAdminGorur: true },
   { id: "tclub", etiket: "T-Club", grup: "modul", firmaAdminGorur: true },
   { id: "cclub", etiket: "C-Club", grup: "modul", firmaAdminGorur: true },
   { id: "eclub", etiket: "E-Club", grup: "modul", firmaAdminGorur: true },
