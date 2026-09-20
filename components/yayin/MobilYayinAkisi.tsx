@@ -24,23 +24,23 @@ export interface MobilYayinHesaplama {
   devamDugmesiGoster: boolean;
 }
 
-export interface MobilYayinAkisiDurumu<T> extends MobilYayinHesaplama {
-  gorunenKayitlar: T[];
-  toplamKayit: number;
-}
-
-/**
- * Mobil yayın akışı sayfalama ve sınır matematiğini hesaplayan saf yardımcı fonksiyon.
- * Pozitif tamsayı sınırlarını garanti eder.
- */
 export function hesaplaMobilYayinGorunumu(
   toplamKayit: number,
   gorunenSayisi: number,
   adimSayisi = 5,
 ): MobilYayinHesaplama {
-  const guvenliToplam = typeof toplamKayit === "number" && toplamKayit > 0 ? Math.floor(toplamKayit) : 0;
-  const guvenliGorunen = typeof gorunenSayisi === "number" && gorunenSayisi > 0 ? Math.floor(gorunenSayisi) : 0;
-  const guvenliAdim = typeof adimSayisi === "number" && adimSayisi > 0 ? Math.floor(adimSayisi) : 5;
+  const guvenliToplam =
+    typeof toplamKayit === "number" && Number.isFinite(toplamKayit) && toplamKayit > 0
+      ? Math.floor(toplamKayit)
+      : 0;
+  const guvenliGorunen =
+    typeof gorunenSayisi === "number" && Number.isFinite(gorunenSayisi) && gorunenSayisi > 0
+      ? Math.floor(gorunenSayisi)
+      : 0;
+  const guvenliAdim =
+    typeof adimSayisi === "number" && Number.isFinite(adimSayisi) && adimSayisi > 0
+      ? Math.floor(adimSayisi)
+      : 5;
 
   const efektifGorunen = Math.min(guvenliGorunen, guvenliToplam);
   const kalanSayisi = Math.max(0, guvenliToplam - efektifGorunen);
@@ -53,59 +53,6 @@ export function hesaplaMobilYayinGorunumu(
     acilacakSayi,
     devamDugmesiGoster,
   };
-}
-
-/**
- * Gerçek kullanıcı etkileşimini ve state yaşam döngüsünü deterministik olarak simüle eden kontrolcü sınıfı.
- */
-export class MobilYayinEtkilesimKontrolcusu<T> {
-  private kayitlar: T[];
-  private sifirlamaAnahtari: string | number | undefined;
-  private guvenliBaslangic: number;
-  private guvenliAdim: number;
-  private ekstraSayisi = 0;
-
-  constructor({
-    kayitlar,
-    sifirlamaAnahtari,
-    baslangicSayisi = 2,
-    adimSayisi = 5,
-  }: {
-    kayitlar: T[];
-    sifirlamaAnahtari?: string | number;
-    baslangicSayisi?: number;
-    adimSayisi?: number;
-  }) {
-    this.kayitlar = kayitlar;
-    this.sifirlamaAnahtari = sifirlamaAnahtari;
-    this.guvenliBaslangic = typeof baslangicSayisi === "number" && baslangicSayisi > 0 ? Math.floor(baslangicSayisi) : 2;
-    this.guvenliAdim = typeof adimSayisi === "number" && adimSayisi > 0 ? Math.floor(adimSayisi) : 5;
-  }
-
-  dahaFazlaTikla(): void {
-    this.ekstraSayisi += this.guvenliAdim;
-  }
-
-  veriGuncelle(yeniKayitlar: T[]): void {
-    this.kayitlar = yeniKayitlar;
-  }
-
-  sifirlamaAnahtariGuncelle(yeniAnahtar: string | number | undefined): void {
-    if (this.sifirlamaAnahtari !== yeniAnahtar) {
-      this.sifirlamaAnahtari = yeniAnahtar;
-      this.ekstraSayisi = 0;
-    }
-  }
-
-  durum(): MobilYayinAkisiDurumu<T> {
-    const hamGorunen = this.guvenliBaslangic + this.ekstraSayisi;
-    const hesaplama = hesaplaMobilYayinGorunumu(this.kayitlar.length, hamGorunen, this.guvenliAdim);
-    return {
-      gorunenKayitlar: this.kayitlar.slice(0, hesaplama.gorunenSayisi),
-      toplamKayit: this.kayitlar.length,
-      ...hesaplama,
-    };
-  }
 }
 
 export interface MobilYayinAkisiProps<T> {
@@ -174,9 +121,15 @@ export default function MobilYayinAkisi<T>({
   izgaraClassName = "grid grid-cols-1 gap-4",
   masaustuIcerik,
 }: MobilYayinAkisiProps<T>) {
-  // Sınır güvenliği: Pozitif tamsayılara dönüştür
-  const guvenliBaslangic = typeof baslangicSayisi === "number" && baslangicSayisi > 0 ? Math.floor(baslangicSayisi) : 2;
-  const guvenliAdim = typeof adimSayisi === "number" && adimSayisi > 0 ? Math.floor(adimSayisi) : 5;
+  // Sınır güvenliği: Pozitif tamsayılara dönüştür (NaN ve Infinity varsayılanlara düşer)
+  const guvenliBaslangic =
+    typeof baslangicSayisi === "number" && Number.isFinite(baslangicSayisi) && baslangicSayisi > 0
+      ? Math.floor(baslangicSayisi)
+      : 2;
+  const guvenliAdim =
+    typeof adimSayisi === "number" && Number.isFinite(adimSayisi) && adimSayisi > 0
+      ? Math.floor(adimSayisi)
+      : 5;
 
   const [oncekiSifirlama, setOncekiSifirlama] = useState(sifirlamaAnahtari);
   const [ekstraSayisi, setEkstraSayisi] = useState(0);
@@ -195,8 +148,10 @@ export default function MobilYayinAkisi<T>({
   // Listeyi dilimlerken ham değeri değil, hesaplama.gorunenSayisi güvenli değerini kullan
   const mobildeGorunenler = kayitlar.slice(0, hesaplama.gorunenSayisi);
 
-  // DOM genelinde tekil id garantisi: bolumId dış kapsayıcıda, başlıkta `${bolumId}-baslik` kullanılır
-  const baslikId = bolumId ? `${bolumId}-baslik` : undefined;
+  // DOM genelinde tekil id garantisi: bolumId dış kapsayıcıda kullanılır.
+  // aria-labelledby yalnızca gerçekten bir başlık ve başlık kimliği olduğunda eklenmelidir.
+  const baslikVarMi = Boolean(baslik);
+  const baslikId = bolumId && baslikVarMi ? `${bolumId}-baslik` : undefined;
 
   // Yükleniyor durumu
   if (yukleniyor) {

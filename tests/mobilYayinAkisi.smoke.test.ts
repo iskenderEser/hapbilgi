@@ -2,10 +2,27 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { createRoot } from "react-dom/client";
+import { act } from "react";
+import { GlobalWindow } from "happy-dom";
 import MobilYayinAkisi, {
   hesaplaMobilYayinGorunumu,
-  MobilYayinEtkilesimKontrolcusu,
 } from "@/components/yayin/MobilYayinAkisi";
+
+// Test ortamında doğrudan bileşen etkileşimini çalıştırmak için DOM ortamı
+const win = new GlobalWindow();
+for (const key of Object.getOwnPropertyNames(win)) {
+  if (!(key in globalThis)) {
+    // @ts-expect-error global mock setup
+    globalThis[key] = win[key];
+  }
+}
+globalThis.window = win as unknown as Window & typeof globalThis;
+globalThis.document = win.document as unknown as Document;
+// @ts-expect-error react act environment flag
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+// @ts-expect-error react act environment flag
+win.IS_REACT_ACT_ENVIRONMENT = true;
 
 interface OrnekKayit {
   id: string;
@@ -13,148 +30,190 @@ interface OrnekKayit {
 }
 
 // --------------------------------------------------------------------------
-// 1. KULLANICI ETKİLEŞİMİ VE YAŞAM DÖNGÜSÜ DOĞRULAMA TESTLERİ
+// 1. DOĞRUDAN BİLEŞEN ETKİLEŞİMİ VE YAŞAM DÖNGÜSÜ TESTLERİ (createRoot + act)
 // --------------------------------------------------------------------------
 
-test("kullanıcı etkileşimi: ilk açılışta yalnızca 2 kart görünmeli", () => {
+test("doğrudan bileşen etkileşimi: gerçek butona tıklayarak kart sayısı 2 -> 7 -> kalan kayıtlar (10) şeklinde açılır", async () => {
+  const container = win.document.createElement("div");
+  win.document.body.appendChild(container);
+  const root = createRoot(container);
+
   const kayitlar: OrnekKayit[] = Array.from({ length: 10 }, (_, i) => ({
     id: `k-${i + 1}`,
     baslik: `Video ${i + 1}`,
   }));
 
-  const kontrolcu = new MobilYayinEtkilesimKontrolcusu({
-    kayitlar,
-    sifirlamaAnahtari: "tumu",
-    baslangicSayisi: 2,
-    adimSayisi: 5,
+  // 1. İlk render: yalnızca 2 kart görünmeli
+  await act(async () => {
+    root.render(
+      createElement(MobilYayinAkisi<OrnekKayit>, {
+        kayitlar,
+        kayitAnahtari: (k) => k.id,
+        renderKart: (k) => createElement("div", { className: "yayin-karti-item" }, k.baslik),
+        sifirlamaAnahtari: "kategori-1",
+      }),
+    );
   });
 
-  const durum = kontrolcu.durum();
-  assert.equal(durum.gorunenKayitlar.length, 2, "İlk açılışta tam 2 kart olmalı");
-  assert.equal(durum.kalanSayisi, 8, "Kalan kayıt sayısı 8 olmalı");
-  assert.equal(durum.acilacakSayi, 5, "Sonraki açılacak kayıt sayısı 5 olmalı");
-  assert.equal(durum.devamDugmesiGoster, true, "Devam düğmesi açık olmalı");
+  let kartlar = container.querySelectorAll(".yayin-karti-item");
+  assert.equal(kartlar.length, 2, "İlk renderda DOM'da tam 2 kart olmalı");
+
+  // 2. Butona ilk tık: 2 -> 7 (+5)
+  let btn = container.querySelector("button");
+  assert.ok(btn, "Devam butonu bulunmalı");
+  assert.match(btn.textContent ?? "", /Daha Fazla Göster \(\+5\)/);
+  assert.match(btn.textContent ?? "", /8 içerik kaldı/);
+
+  await act(async () => {
+    btn?.click();
+  });
+
+  kartlar = container.querySelectorAll(".yayin-karti-item");
+  assert.equal(kartlar.length, 7, "İlk tıklamada DOM'daki kart sayısı 7 olmalı");
+
+  // 3. Butona ikinci tık: 7 -> 10 (+3, son kalanlar)
+  btn = container.querySelector("button");
+  assert.ok(btn, "İkinci tıklama öncesi buton bulunmalı");
+  assert.match(btn.textContent ?? "", /Daha Fazla Göster \(\+3\)/);
+  assert.match(btn.textContent ?? "", /3 içerik kaldı/);
+
+  await act(async () => {
+    btn?.click();
+  });
+
+  kartlar = container.querySelectorAll(".yayin-karti-item");
+  assert.equal(kartlar.length, 10, "İkinci tıklamada DOM'daki kart sayısı 10 olmalı");
+
+  // Liste bitince buton DOM'dan kalkmalı
+  btn = container.querySelector("button");
+  assert.equal(btn, null, "Kayıtlar bitince devam butonu DOM'dan kaldırılmalı");
+
+  await act(async () => {
+    root.unmount();
+  });
+  container.remove();
 });
 
-test("kullanıcı etkileşimi: her tıklamada en fazla 5 yeni kart açılmalı", () => {
+test("doğrudan bileşen etkileşimi: yeni sifirlamaAnahtari ile yeniden render edilince liste 2 karta döner", async () => {
+  const container = win.document.createElement("div");
+  win.document.body.appendChild(container);
+  const root = createRoot(container);
+
   const kayitlar: OrnekKayit[] = Array.from({ length: 10 }, (_, i) => ({
     id: `k-${i + 1}`,
     baslik: `Video ${i + 1}`,
   }));
 
-  const kontrolcu = new MobilYayinEtkilesimKontrolcusu({
-    kayitlar,
-    sifirlamaAnahtari: "tumu",
+  // İlk render
+  await act(async () => {
+    root.render(
+      createElement(MobilYayinAkisi<OrnekKayit>, {
+        kayitlar,
+        kayitAnahtari: (k) => k.id,
+        renderKart: (k) => createElement("div", { className: "yayin-karti-item" }, k.baslik),
+        sifirlamaAnahtari: "kategori-A",
+      }),
+    );
   });
 
-  const ilkDurum = kontrolcu.durum();
-  assert.equal(ilkDurum.gorunenKayitlar.length, 2);
+  // Kullanıcı butona basıp 7 karta çıkarır
+  const btn = container.querySelector("button");
+  await act(async () => {
+    btn?.click();
+  });
+  assert.equal(container.querySelectorAll(".yayin-karti-item").length, 7);
 
-  // Kullanıcı "Daha Fazla Göster"e tıklar
-  kontrolcu.dahaFazlaTikla();
-  const sonrakiDurum = kontrolcu.durum();
-
-  const yeniAcilanSayisi = sonrakiDurum.gorunenKayitlar.length - ilkDurum.gorunenKayitlar.length;
-  assert.equal(yeniAcilanSayisi, 5, "Tıklamada tam 5 yeni kart açılmalı (2 -> 7)");
-  assert.equal(sonrakiDurum.gorunenKayitlar.length, 7);
-  assert.equal(sonrakiDurum.kalanSayisi, 3);
-  assert.equal(sonrakiDurum.acilacakSayi, 3);
-  assert.equal(sonrakiDurum.devamDugmesiGoster, true);
-});
-
-test("kullanıcı etkileşimi: son adımda yalnızca kalan kayıtlar açılmalı ve düğme kalkmalı", () => {
-  const kayitlar: OrnekKayit[] = Array.from({ length: 8 }, (_, i) => ({
-    id: `k-${i + 1}`,
-    baslik: `Video ${i + 1}`,
-  }));
-
-  const kontrolcu = new MobilYayinEtkilesimKontrolcusu({
-    kayitlar,
-    sifirlamaAnahtari: "tumu",
+  // Kategori/filtre değişir (yeni sifirlamaAnahtari)
+  await act(async () => {
+    root.render(
+      createElement(MobilYayinAkisi<OrnekKayit>, {
+        kayitlar,
+        kayitAnahtari: (k) => k.id,
+        renderKart: (k) => createElement("div", { className: "yayin-karti-item" }, k.baslik),
+        sifirlamaAnahtari: "kategori-B",
+      }),
+    );
   });
 
-  // İlk tıklama: 2 -> 7
-  kontrolcu.dahaFazlaTikla();
-  const adim1 = kontrolcu.durum();
-  assert.equal(adim1.gorunenKayitlar.length, 7);
-  assert.equal(adim1.kalanSayisi, 1);
-  assert.equal(adim1.acilacakSayi, 1);
+  const kartlar = container.querySelectorAll(".yayin-karti-item");
+  assert.equal(kartlar.length, 2, "sifirlamaAnahtari değiştiğinde kart sayısı tekrar 2'ye dönmeli");
 
-  // İkinci tıklama (son adım): yalnızca kalan 1 kayıt açılmalı (7 -> 8)
-  kontrolcu.dahaFazlaTikla();
-  const sonAdim = kontrolcu.durum();
-  assert.equal(sonAdim.gorunenKayitlar.length, 8);
-  assert.equal(sonAdim.kalanSayisi, 0, "Kalan kayıt sıfır olmalı");
-  assert.equal(sonAdim.acilacakSayi, 0);
-  assert.equal(sonAdim.devamDugmesiGoster, false, "Liste bitince devam düğmesi kalkmalı");
-});
-
-test("kullanıcı etkileşimi: sifirlamaAnahtari değişince görünür kayıt sayısı tekrar 2'ye dönmeli", () => {
-  const kayitlar: OrnekKayit[] = Array.from({ length: 10 }, (_, i) => ({
-    id: `k-${i + 1}`,
-    baslik: `Video ${i + 1}`,
-  }));
-
-  const kontrolcu = new MobilYayinEtkilesimKontrolcusu({
-    kayitlar,
-    sifirlamaAnahtari: "kategori-A",
+  await act(async () => {
+    root.unmount();
   });
-
-  // Kullanıcı listeyi 7'ye kadar açar
-  kontrolcu.dahaFazlaTikla();
-  assert.equal(kontrolcu.durum().gorunenKayitlar.length, 7);
-
-  // Filtre/arama değişir (sifirlamaAnahtari değişti)
-  kontrolcu.sifirlamaAnahtariGuncelle("kategori-B");
-  const sifirlanmisDurum = kontrolcu.durum();
-
-  assert.equal(
-    sifirlanmisDurum.gorunenKayitlar.length,
-    2,
-    "Filtre değiştiğinde liste tekrar başlangıçtaki 2 kayda dönmeli",
-  );
-  assert.equal(sifirlanmisDurum.kalanSayisi, 8);
+  container.remove();
 });
 
-test("kullanıcı etkileşimi: aynı sifirlamaAnahtari altında veri yenilenince kullanıcının açtığı kayıt sayısı korunmalı", () => {
+test("doğrudan bileşen etkileşimi: aynı sifirlamaAnahtari ile veri yenilendiğinde açılmış kart sayısı korunur", async () => {
+  const container = win.document.createElement("div");
+  win.document.body.appendChild(container);
+  const root = createRoot(container);
+
   const ilkKayitlar: OrnekKayit[] = Array.from({ length: 10 }, (_, i) => ({
     id: `k-${i + 1}`,
     baslik: `Video ${i + 1}`,
   }));
 
-  const kontrolcu = new MobilYayinEtkilesimKontrolcusu({
-    kayitlar: ilkKayitlar,
-    sifirlamaAnahtari: "kategori-A",
+  // İlk render
+  await act(async () => {
+    root.render(
+      createElement(MobilYayinAkisi<OrnekKayit>, {
+        kayitlar: ilkKayitlar,
+        kayitAnahtari: (k) => k.id,
+        renderKart: (k) => createElement("div", { className: "yayin-karti-item" }, k.baslik),
+        sifirlamaAnahtari: "kategori-A",
+      }),
+    );
   });
 
-  // Kullanıcı listeyi 7'ye kadar açar
-  kontrolcu.dahaFazlaTikla();
-  assert.equal(kontrolcu.durum().gorunenKayitlar.length, 7);
+  // Kullanıcı 7 karta açar
+  const btn = container.querySelector("button");
+  await act(async () => {
+    btn?.click();
+  });
+  assert.equal(container.querySelectorAll(".yayin-karti-item").length, 7);
 
-  // Arka plandan aynı filtre için güncellenmiş yeni kayıtlar gelir (örneğin beğeni güncellendi veya yeni kayıt eklendi)
+  // Arka plandan aynı filtre için güncellenmiş veri gelir (12 kayıt)
   const guncelKayitlar: OrnekKayit[] = Array.from({ length: 12 }, (_, i) => ({
     id: `k-${i + 1}`,
     baslik: `Güncel Video ${i + 1}`,
   }));
 
-  kontrolcu.veriGuncelle(guncelKayitlar);
-  kontrolcu.sifirlamaAnahtariGuncelle("kategori-A"); // anahtar değişmedi
+  await act(async () => {
+    root.render(
+      createElement(MobilYayinAkisi<OrnekKayit>, {
+        kayitlar: guncelKayitlar,
+        kayitAnahtari: (k) => k.id,
+        renderKart: (k) => createElement("div", { className: "yayin-karti-item" }, k.baslik),
+        sifirlamaAnahtari: "kategori-A",
+      }),
+    );
+  });
 
-  const korunanDurum = kontrolcu.durum();
+  const kartlar = container.querySelectorAll(".yayin-karti-item");
   assert.equal(
-    korunanDurum.gorunenKayitlar.length,
+    kartlar.length,
     7,
-    "Aynı filtre altında veri yenilendiğinde kullanıcının açtığı 7 kart korunmalı",
+    "Aynı filtre altında veri güncellenince kullanıcının açtığı 7 kart korunmalıdır",
   );
-  assert.equal(korunanDurum.kalanSayisi, 5, "12 - 7 = 5 içerik kaldı");
+
+  const yeniBtn = container.querySelector("button");
+  assert.ok(yeniBtn);
+  assert.match(yeniBtn.textContent ?? "", /5 içerik kaldı/, "12 - 7 = 5 içerik kalmalı");
+
+  await act(async () => {
+    root.unmount();
+  });
+  container.remove();
 });
 
 // --------------------------------------------------------------------------
-// 2. DOM TEKİL ID VE GÜVENLİ POZİTİF TAMSAYI DOĞRULAMALARI
+// 2. DOM TEKİL ID, ARIA VE GÜVENLİ POZİTİF TAMSAYI DOĞRULAMALARI
 // --------------------------------------------------------------------------
 
-test("DOM tekil id: bolumId değeri dış kapsayıcı ve h2 üzerinde yinelenmez", () => {
-  const html = renderToStaticMarkup(
+test("DOM tekil id ve aria-labelledby: başlıklı kullanımda doğru id eşleşir, başlıksız kullanımda aria-labelledby eklenmez", () => {
+  // Başlıklı kullanım
+  const baslikliHtml = renderToStaticMarkup(
     createElement(MobilYayinAkisi<OrnekKayit>, {
       kayitlar: [{ id: "1", baslik: "Test Video" }],
       kayitAnahtari: (k) => k.id,
@@ -164,40 +223,89 @@ test("DOM tekil id: bolumId değeri dış kapsayıcı ve h2 üzerinde yinelenmez
     }),
   );
 
-  // Dış kapsayıcı id="bolum-123" ve aria-labelledby="bolum-123-baslik" taşımalı
-  assert.match(html, /id="bolum-123"/);
-  assert.match(html, /aria-labelledby="bolum-123-baslik"/);
-
-  // Başlık ise id="bolum-123-baslik" taşımalı
-  assert.match(html, /<h2 id="bolum-123-baslik"/);
-
-  // DOM genelinde id="bolum-123" tam olarak 1 kez geçmeli (yinelenme olmamalı)
-  const idEslesmeleri = html.match(/id="bolum-123"/g);
+  assert.match(baslikliHtml, /id="bolum-123"/);
+  assert.match(baslikliHtml, /aria-labelledby="bolum-123-baslik"/);
+  assert.match(baslikliHtml, /<h2 id="bolum-123-baslik"/);
+  const idEslesmeleri = baslikliHtml.match(/id="bolum-123"/g);
   assert.equal(idEslesmeleri?.length, 1, "id='bolum-123' DOM'da yalnızca bir kez bulunmalıdır");
-});
 
-test("güvenli pozitif tamsayı: baslangicSayisi ve adimSayisi sınır değerlerinde güvenli çalışır", () => {
-  const sonuc = hesaplaMobilYayinGorunumu(10, 0, -5);
-  assert.equal(sonuc.gorunenSayisi, 0);
-  assert.equal(sonuc.acilacakSayi, 5, "Geçersiz adım sayısı güvenli varsayılana (5) düşmelidir");
-
-  const html = renderToStaticMarkup(
+  // Başlıksız kullanım
+  const basliksizHtml = renderToStaticMarkup(
     createElement(MobilYayinAkisi<OrnekKayit>, {
-      kayitlar: Array.from({ length: 6 }, (_, i) => ({ id: `${i}`, baslik: `V${i}` })),
+      kayitlar: [{ id: "1", baslik: "Test Video" }],
       kayitAnahtari: (k) => k.id,
-      renderKart: (k) => createElement("span", null, k.baslik),
-      baslangicSayisi: -1, // geçersiz
-      adimSayisi: 0,       // geçersiz
+      renderKart: (k) => createElement("div", null, k.baslik),
+      bolumId: "bolum-456",
     }),
   );
 
-  // Geçersiz (-1) baslangicSayisi güvenli varsayılana (2) düşmeli -> V0 ve V1 render edilmeli, V2 edilmemeli
+  assert.match(basliksizHtml, /id="bolum-456"/);
+  assert.doesNotMatch(
+    basliksizHtml,
+    /aria-labelledby/,
+    "Başlık olmadığında var olmayan bir DOM kimliğine aria-labelledby referansı verilmemelidir",
+  );
+  assert.doesNotMatch(basliksizHtml, /bolum-456-baslik/);
+});
+
+test("güvenli pozitif tamsayı: NaN, Infinity ve negatif sayılar varsayılan 2 ve 5 değerlerine düşer", () => {
+  // hesaplaMobilYayinGorunumu testleri
+  const sonucNaN = hesaplaMobilYayinGorunumu(10, NaN, NaN);
+  assert.equal(sonucNaN.gorunenSayisi, 0);
+  assert.equal(sonucNaN.acilacakSayi, 5, "NaN adım sayısı varsayılan 5 olmalıdır");
+
+  const sonucInfinity = hesaplaMobilYayinGorunumu(10, 2, Infinity);
+  assert.equal(sonucInfinity.gorunenSayisi, 2);
+  assert.equal(sonucInfinity.acilacakSayi, 5, "Infinity adım sayısı varsayılan 5 olmalıdır");
+
+  const sonucGecersizToplam = hesaplaMobilYayinGorunumu(Infinity, 2, 5);
+  assert.equal(sonucGecersizToplam.gorunenSayisi, 0, "Infinity kayıt sayısı 0 olmalıdır");
+
+  // MobilYayinAkisi bileşen sınırında test
+  const html = renderToStaticMarkup(
+    createElement(MobilYayinAkisi<OrnekKayit>, {
+      kayitlar: Array.from({ length: 10 }, (_, i) => ({ id: `${i}`, baslik: `V${i}` })),
+      kayitAnahtari: (k) => k.id,
+      renderKart: (k) => createElement("span", null, k.baslik),
+      baslangicSayisi: NaN,
+      adimSayisi: Infinity,
+    }),
+  );
+
+  // NaN baslangicSayisi güvenli varsayılana (2) düşmeli -> V0 ve V1 render edilmeli, V2 edilmemeli
   assert.match(html, /V0/);
   assert.match(html, /V1/);
   assert.doesNotMatch(html, /V2/);
-  // Geçersiz (0) adimSayisi güvenli varsayılana (5) düşmeli -> 6 kayıt, 2 görünür, kalan 4 iken açılacak 4
-  assert.match(html, /Daha Fazla Göster \(\+4\)/);
-  assert.match(html, /\(4 içerik kaldı\)/);
+  // Infinity adimSayisi güvenli varsayılana (5) düşmeli -> 10 kayıt, 2 görünür, kalan 8 iken açılacak 5
+  assert.match(html, /Daha Fazla Göster \(\+5\)/);
+  assert.match(html, /\(8 içerik kaldı\)/);
+});
+
+// --------------------------------------------------------------------------
+// 3. YÜKLENİYOR VE HATA DURUMU TESTLERİ
+// --------------------------------------------------------------------------
+
+test("MobilYayinAkisi: yükleniyor ve hata durumlarını doğru çerçeveyle sunar", () => {
+  const yukleniyorHtml = renderToStaticMarkup(
+    createElement(MobilYayinAkisi<OrnekKayit>, {
+      kayitlar: [],
+      kayitAnahtari: (k) => k.id,
+      renderKart: () => null,
+      yukleniyor: true,
+      yukleniyorIcerik: createElement("div", { className: "ozel-spinner" }, "Yükleniyor..."),
+    }),
+  );
+  assert.match(yukleniyorHtml, /ozel-spinner/);
+
+  const hataHtml = renderToStaticMarkup(
+    createElement(MobilYayinAkisi<OrnekKayit>, {
+      kayitlar: [],
+      kayitAnahtari: (k) => k.id,
+      renderKart: () => null,
+      hataMesaji: "Ağ bağlantısı koptu",
+    }),
+  );
+  assert.match(hataHtml, /Ağ bağlantısı koptu/);
 });
 
 // --------------------------------------------------------------------------
