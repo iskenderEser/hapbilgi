@@ -4,12 +4,13 @@
 //
 // Sorumluluklar:
 //   • Tek sütunlu dikey yerleşim (grid grid-cols-1 gap-4).
-//   • Başlangıçta 2 kayıt gösterilmesi (varsayılan baslangicSayisi = 2).
-//   • Beşer kayıt açılması (varsayılan adimSayisi = 5).
+//   • Başlangıçta 2 kayıt gösterilmesi (güvenli baslangicSayisi, varsayılan: 2).
+//   • Beşer kayıt açılması (güvenli adimSayisi, varsayılan: 5).
 //   • Bölüm başlığı, sayaç ve "Daha Fazla Göster (+X) (Y içerik kaldı)" düğmesi.
-//   • Yalnızca DOM'a açılan kartların basılması (dilimleme / slice; gizli DOM düğümü üretilmez).
+//   • Yalnızca DOM'a açılan kayıtların basılması (hesaplama.gorunenSayisi üzerinden güvenli slice; gizli DOM üretilmez).
 //   • Kararlı sıfırlama anahtarı (sifirlamaAnahtari): Arama/kategori değiştiğinde 2'ye döner;
 //     aynı kapsamda veri yenilenmesi veya beğeni/favori güncellemelerinde açık kayıtlar KORUNUR.
+//   • DOM genelinde tekil id garantisi: bolumId dış kapsayıcıda, başlıkta `${bolumId}-baslik` kullanılır.
 //   • Rol-bağımsızdır: Veri çekme, yetki veya puan mantığı içermez; saf sunum omurgasıdır.
 
 "use client";
@@ -23,18 +24,27 @@ export interface MobilYayinHesaplama {
   devamDugmesiGoster: boolean;
 }
 
+export interface MobilYayinAkisiDurumu<T> extends MobilYayinHesaplama {
+  gorunenKayitlar: T[];
+  toplamKayit: number;
+}
+
 /**
  * Mobil yayın akışı sayfalama ve sınır matematiğini hesaplayan saf yardımcı fonksiyon.
+ * Pozitif tamsayı sınırlarını garanti eder.
  */
 export function hesaplaMobilYayinGorunumu(
   toplamKayit: number,
   gorunenSayisi: number,
   adimSayisi = 5,
 ): MobilYayinHesaplama {
-  const guvenliToplam = Math.max(0, toplamKayit);
-  const efektifGorunen = Math.max(0, Math.min(gorunenSayisi, guvenliToplam));
+  const guvenliToplam = typeof toplamKayit === "number" && toplamKayit > 0 ? Math.floor(toplamKayit) : 0;
+  const guvenliGorunen = typeof gorunenSayisi === "number" && gorunenSayisi > 0 ? Math.floor(gorunenSayisi) : 0;
+  const guvenliAdim = typeof adimSayisi === "number" && adimSayisi > 0 ? Math.floor(adimSayisi) : 5;
+
+  const efektifGorunen = Math.min(guvenliGorunen, guvenliToplam);
   const kalanSayisi = Math.max(0, guvenliToplam - efektifGorunen);
-  const acilacakSayi = Math.max(0, Math.min(adimSayisi, kalanSayisi));
+  const acilacakSayi = Math.min(guvenliAdim, kalanSayisi);
   const devamDugmesiGoster = kalanSayisi > 0;
 
   return {
@@ -45,10 +55,63 @@ export function hesaplaMobilYayinGorunumu(
   };
 }
 
+/**
+ * Gerçek kullanıcı etkileşimini ve state yaşam döngüsünü deterministik olarak simüle eden kontrolcü sınıfı.
+ */
+export class MobilYayinEtkilesimKontrolcusu<T> {
+  private kayitlar: T[];
+  private sifirlamaAnahtari: string | number | undefined;
+  private guvenliBaslangic: number;
+  private guvenliAdim: number;
+  private ekstraSayisi = 0;
+
+  constructor({
+    kayitlar,
+    sifirlamaAnahtari,
+    baslangicSayisi = 2,
+    adimSayisi = 5,
+  }: {
+    kayitlar: T[];
+    sifirlamaAnahtari?: string | number;
+    baslangicSayisi?: number;
+    adimSayisi?: number;
+  }) {
+    this.kayitlar = kayitlar;
+    this.sifirlamaAnahtari = sifirlamaAnahtari;
+    this.guvenliBaslangic = typeof baslangicSayisi === "number" && baslangicSayisi > 0 ? Math.floor(baslangicSayisi) : 2;
+    this.guvenliAdim = typeof adimSayisi === "number" && adimSayisi > 0 ? Math.floor(adimSayisi) : 5;
+  }
+
+  dahaFazlaTikla(): void {
+    this.ekstraSayisi += this.guvenliAdim;
+  }
+
+  veriGuncelle(yeniKayitlar: T[]): void {
+    this.kayitlar = yeniKayitlar;
+  }
+
+  sifirlamaAnahtariGuncelle(yeniAnahtar: string | number | undefined): void {
+    if (this.sifirlamaAnahtari !== yeniAnahtar) {
+      this.sifirlamaAnahtari = yeniAnahtar;
+      this.ekstraSayisi = 0;
+    }
+  }
+
+  durum(): MobilYayinAkisiDurumu<T> {
+    const hamGorunen = this.guvenliBaslangic + this.ekstraSayisi;
+    const hesaplama = hesaplaMobilYayinGorunumu(this.kayitlar.length, hamGorunen, this.guvenliAdim);
+    return {
+      gorunenKayitlar: this.kayitlar.slice(0, hesaplama.gorunenSayisi),
+      toplamKayit: this.kayitlar.length,
+      ...hesaplama,
+    };
+  }
+}
+
 export interface MobilYayinAkisiProps<T> {
   /** Görüntülenecek generic kayıt listesi */
   kayitlar: T[];
-  /** Her kaydın kararlı ve tekil anahtarı (yayin_id, oneri_id vb.) */
+  /** Her kaydın kararlı ve tekil anahtarı (yayin_id, oneri_id, `${baslik}-${gonderim_id}` vb.) */
   kayitAnahtari: (kayit: T, index: number) => string;
   /** Her kayıt için kart render slot'u */
   renderKart: (kayit: T, index: number) => ReactNode;
@@ -111,21 +174,29 @@ export default function MobilYayinAkisi<T>({
   izgaraClassName = "grid grid-cols-1 gap-4",
   masaustuIcerik,
 }: MobilYayinAkisiProps<T>) {
+  // Sınır güvenliği: Pozitif tamsayılara dönüştür
+  const guvenliBaslangic = typeof baslangicSayisi === "number" && baslangicSayisi > 0 ? Math.floor(baslangicSayisi) : 2;
+  const guvenliAdim = typeof adimSayisi === "number" && adimSayisi > 0 ? Math.floor(adimSayisi) : 5;
+
   const [oncekiSifirlama, setOncekiSifirlama] = useState(sifirlamaAnahtari);
   const [ekstraSayisi, setEkstraSayisi] = useState(0);
 
-  // React 19 / Next.js uyumlu: Prop (sifirlamaAnahtari) degistiginde render aninda sifirla.
-  // useEffect icinde setState cagrilmaz; boylece cascading render onlenir.
+  // React 19 / Next.js uyumlu: Prop (sifirlamaAnahtari) değiştiğinde render anında sıfırla.
+  // useEffect içinde senkron setState çağrılmaz; böylece cascading render ve uyarılar önlenir.
   if (sifirlamaAnahtari !== oncekiSifirlama) {
     setOncekiSifirlama(sifirlamaAnahtari);
     setEkstraSayisi(0);
   }
 
-  const gorunenSayisi = baslangicSayisi + ekstraSayisi;
-
+  const hamGorunen = guvenliBaslangic + ekstraSayisi;
   const toplamKayit = kayitlar.length;
-  const hesaplama = hesaplaMobilYayinGorunumu(toplamKayit, gorunenSayisi, adimSayisi);
-  const mobildeGorunenler = kayitlar.slice(0, gorunenSayisi);
+  const hesaplama = hesaplaMobilYayinGorunumu(toplamKayit, hamGorunen, guvenliAdim);
+
+  // Listeyi dilimlerken ham değeri değil, hesaplama.gorunenSayisi güvenli değerini kullan
+  const mobildeGorunenler = kayitlar.slice(0, hesaplama.gorunenSayisi);
+
+  // DOM genelinde tekil id garantisi: bolumId dış kapsayıcıda, başlıkta `${bolumId}-baslik` kullanılır
+  const baslikId = bolumId ? `${bolumId}-baslik` : undefined;
 
   // Yükleniyor durumu
   if (yukleniyor) {
@@ -161,11 +232,13 @@ export default function MobilYayinAkisi<T>({
         {baslik && (
           <div className="truncate">
             {typeof baslik === "string" ? (
-              <h2 id={bolumId} className="text-base font-bold text-gray-900 md:text-lg truncate">
+              <h2 id={baslikId} className="text-base font-bold text-gray-900 md:text-lg truncate">
                 {baslik}
               </h2>
             ) : (
-              baslik
+              <div id={baslikId} className="inline-flex items-center">
+                {baslik}
+              </div>
             )}
           </div>
         )}
@@ -209,7 +282,7 @@ export default function MobilYayinAkisi<T>({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setEkstraSayisi((onceki) => onceki + adimSayisi);
+                setEkstraSayisi((onceki) => onceki + guvenliAdim);
               }}
               className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white py-2.5 text-xs font-extrabold text-gray-700 shadow-xs transition-colors hover:bg-gray-50 hover:text-gray-900 active:scale-[0.99] cursor-pointer"
             >
@@ -225,9 +298,9 @@ export default function MobilYayinAkisi<T>({
   );
 
   return (
-    <div className={`w-full ${className}`} id={bolumId}>
+    <section className={`w-full ${className}`} id={bolumId} aria-labelledby={baslikId}>
       {mobilGövde}
       {masaustuIcerik && <div className="hidden sm:block w-full">{masaustuIcerik}</div>}
-    </div>
+    </section>
   );
 }
