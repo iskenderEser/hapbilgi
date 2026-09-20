@@ -32,36 +32,36 @@ function OzetKapsul({
       {/* Takım Sırası */}
       <div className="flex items-center gap-1 whitespace-nowrap">
         <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280" }}>
-          Takım<span className="hidden 2xl:inline"> Sırası</span>:
+          Takım Sırası:
         </span>
         <span style={{ fontSize: 12, fontWeight: 700, color: "#111827" }}>
           {ozet.takimSirasi ? `${ozet.takimSirasi}` : "-"}
         </span>
       </div>
 
-      <div className="h-3 w-[1px] bg-slate-300 mx-2" />
+      <span style={{ color: "#d1d5db", margin: "0 8px", fontSize: 11, userSelect: "none" }}>|</span>
 
       {/* Haftalık Puan */}
       <div className="flex items-center gap-1 whitespace-nowrap">
         <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280" }}>
-          Haftalık<span className="hidden 2xl:inline"> Puan</span>:
+          Haftalık:
         </span>
         <span style={{ fontSize: 12, fontWeight: 700, color: "#111827" }}>
-          {ozet.haftalikPuan.toLocaleString("tr-TR")}
+          {ozet.haftalikPuan.toLocaleString("tr-TR")} p
         </span>
       </div>
 
       {/* Sipariş Puanı — yalnız HBStore aktifse */}
       {siparisPuaniGoster && (
         <>
-          <div className="h-3 w-[1px] bg-slate-300 mx-2" />
+          <span style={{ color: "#d1d5db", margin: "0 8px", fontSize: 11, userSelect: "none" }}>|</span>
           {/* Sipariş Puanı */}
           <div className="flex items-center gap-1 whitespace-nowrap">
             <span style={{ fontSize: 11, fontWeight: 600, color: "#6b7280" }}>
-              Sipariş<span className="hidden 2xl:inline"> Puanı</span>:
+              Sipariş:
             </span>
             <span style={{ fontSize: 12, fontWeight: 700, color: "#111827" }}>
-              {ozet.siparisPuani.toLocaleString("tr-TR")}
+              {ozet.siparisPuani.toLocaleString("tr-TR")} p
             </span>
           </div>
         </>
