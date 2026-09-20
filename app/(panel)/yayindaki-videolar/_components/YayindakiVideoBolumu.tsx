@@ -46,69 +46,102 @@ function hedefKitleEtiketi(hedefRoller: string[]): string | null {
 }
 
 import { YayinKarti } from "@/components/yayin/YayinKarti";
+import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
 
-export default function YayindakiVideoBolumu({ videolar, onVideoSec, oneriModu = false, secilenYayinlar = [], onOneriSec, hedefRolEtiketiGoster = false, uretenBilgisiGoster = true, yatayMi = false, rafRef }: Props) {
+export default function YayindakiVideoBolumu({
+  videolar,
+  onVideoSec,
+  oneriModu = false,
+  secilenYayinlar = [],
+  onOneriSec,
+  hedefRolEtiketiGoster = false,
+  uretenBilgisiGoster = true,
+  yatayMi = false,
+  rafRef,
+}: Props) {
   if (videolar.length === 0) return null;
 
-  return (
-    <div ref={rafRef} className={yatayMi
-      ? "flex snap-x gap-2.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      : "grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-    }>
-      {videolar.map((v) => {
-        const secili = secilenYayinlar.includes(v.yayin_id);
-        const hedefEtiketi = hedefRolEtiketiGoster ? hedefKitleEtiketi(v.hedef_roller) : null;
-        return (
-          <div
-            key={v.yayin_id}
-            className={yatayMi ? "w-40 shrink-0 snap-start sm:w-44 md:w-52" : ""}
-          >
-            <YayinKarti
-              yayin={v}
-              onClick={() => onVideoSec(v)}
-              etkilesimAktif={false}
-              puanGoster={false}
-              donguGoster={false}
-              solUstRozet={
-                hedefEtiketi ? (
-                  <span className="rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
-                    {hedefEtiketi}
-                  </span>
-                ) : null
-              }
-              altEkIcerik={
-                <>
-                  {uretenBilgisiGoster && (
-                    <div className="mt-2 flex items-center gap-1.5 border-t border-gray-100 pt-2">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500">
-                        <svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                      </span>
-                      <span className="truncate text-[10px] font-semibold text-gray-500">{uretenEtiket(v.ureten_rol, v.ureten_ad_soyad)}</span>
-                    </div>
-                  )}
-                  {oneriModu && (
-                    <div className="mt-2 border-t border-[#edf1f6] pt-2">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onOneriSec?.(v);
-                        }}
-                        aria-pressed={secili}
-                        aria-label={`${v.urun_adi} yayınını ${secili ? "öneriden çıkar" : "öneriye ekle"}`}
-                        className={`w-full rounded-lg px-3 py-2 text-[11px] font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff] ${secili ? "bg-[#ecfdf5] text-[#167453] hover:bg-[#dff8ec]" : "bg-[#eef5fd] text-[#2f7fc7] hover:bg-[#e0effd]"}`}
-                      >
-                        {secili ? "Öneriden Çıkar" : "Öneriye Ekle"}
-                      </button>
-                    </div>
-                  )}
-                </>
-              }
-              className={secili ? "border-[#2f7fc7] ring-2 ring-[#b9d8f3]" : ""}
-            />
-          </div>
-        );
-      })}
+  const renderKartIcerigi = (v: YayindakiVideo) => {
+    const secili = secilenYayinlar.includes(v.yayin_id);
+    const hedefEtiketi = hedefRolEtiketiGoster ? hedefKitleEtiketi(v.hedef_roller) : null;
+
+    return (
+      <YayinKarti
+        yayin={v}
+        onClick={() => onVideoSec(v)}
+        etkilesimAktif={false}
+        puanGoster={false}
+        donguGoster={false}
+        solUstRozet={
+          hedefEtiketi ? (
+            <span className="rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+              {hedefEtiketi}
+            </span>
+          ) : null
+        }
+        altEkIcerik={
+          <>
+            {uretenBilgisiGoster && (
+              <div className="mt-2 flex items-center gap-1.5 border-t border-gray-100 pt-2">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500">
+                  <svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                </span>
+                <span className="truncate text-[10px] font-semibold text-gray-500">{uretenEtiket(v.ureten_rol, v.ureten_ad_soyad)}</span>
+              </div>
+            )}
+            {oneriModu && (
+              <div className="mt-2 border-t border-[#edf1f6] pt-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOneriSec?.(v);
+                  }}
+                  aria-pressed={secili}
+                  aria-label={`${v.urun_adi} yayınını ${secili ? "öneriden çıkar" : "öneriye ekle"}`}
+                  className={`w-full rounded-lg px-3 py-2 text-[11px] font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff] ${secili ? "bg-[#ecfdf5] text-[#167453] hover:bg-[#dff8ec]" : "bg-[#eef5fd] text-[#2f7fc7] hover:bg-[#e0effd]"}`}
+                >
+                  {secili ? "Öneriden Çıkar" : "Öneriye Ekle"}
+                </button>
+              </div>
+            )}
+          </>
+        }
+        className={secili ? "border-[#2f7fc7] ring-2 ring-[#b9d8f3]" : ""}
+      />
+    );
+  };
+
+  const masaustuIcerik = yatayMi ? (
+    <div ref={rafRef} className="flex snap-x gap-2.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {videolar.map((v) => (
+        <div key={v.yayin_id} className="w-40 shrink-0 snap-start sm:w-44 md:w-52">
+          {renderKartIcerigi(v)}
+        </div>
+      ))}
     </div>
+  ) : (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+      {videolar.map((v) => (
+        <div key={v.yayin_id}>
+          {renderKartIcerigi(v)}
+        </div>
+      ))}
+    </div>
+  );
+
+  return (
+    <MobilYayinAkisi<YayindakiVideo>
+      kayitlar={videolar}
+      kayitAnahtari={(v) => v.yayin_id}
+      renderKart={(v) => (
+        <div className="w-full">
+          {renderKartIcerigi(v)}
+        </div>
+      )}
+      sayacGoster={false}
+      sifirlamaAnahtari={oneriModu ? "oneri" : "normal"}
+      masaustuIcerik={masaustuIcerik}
+    />
   );
 }

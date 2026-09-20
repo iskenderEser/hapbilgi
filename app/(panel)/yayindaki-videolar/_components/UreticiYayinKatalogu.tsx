@@ -58,7 +58,7 @@ function KayanYayinRafi({ baslik, videolar, onVideoSec, uretenBilgisiGoster }: {
           type="button"
           aria-label={`${baslik} rafını sola kaydır`}
           onClick={() => kaydir(-1)}
-          className="absolute inset-y-0 left-0 z-10 flex w-14 items-center justify-start bg-gradient-to-r from-[#f5f8fc] via-[#f5f8fc]/80 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
+          className="absolute inset-y-0 left-0 z-10 hidden sm:flex w-14 items-center justify-start bg-gradient-to-r from-[#f5f8fc] via-[#f5f8fc]/80 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
         >
           <svg aria-hidden="true" className="h-7 w-7 text-[#243957]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="m15 19-7-7 7-7" /></svg>
         </button>
@@ -67,7 +67,7 @@ function KayanYayinRafi({ baslik, videolar, onVideoSec, uretenBilgisiGoster }: {
           type="button"
           aria-label={`${baslik} rafını sağa kaydır`}
           onClick={() => kaydir(1)}
-          className="absolute inset-y-0 right-0 z-10 flex w-14 items-center justify-end bg-gradient-to-l from-[#f5f8fc] via-[#f5f8fc]/80 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
+          className="absolute inset-y-0 right-0 z-10 hidden sm:flex w-14 items-center justify-end bg-gradient-to-l from-[#f5f8fc] via-[#f5f8fc]/80 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
         >
           <svg aria-hidden="true" className="h-7 w-7 text-[#243957]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="m9 5 7 7-7 7" /></svg>
         </button>
