@@ -284,6 +284,7 @@ export default function YayindakiVideolarPage() {
                 oneriModu={oneriModu}
                 secilenYayinlar={secilenYayinlar.map((video) => video.yayin_id)}
                 onOneriSec={oneriVideoSec}
+                aramaMetni={liste.arama.aranan}
               />
             </Suspense>
           )}

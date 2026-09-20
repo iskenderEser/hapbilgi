@@ -35,17 +35,17 @@ function aranabilirYayinMetni(video: YayindakiVideo): string {
   ].join(" ");
 }
 
-function KayanYayinRafi({ baslik, videolar, onVideoSec, uretenBilgisiGoster }: {
+function KayanYayinRafi({ baslik, videolar, onVideoSec, uretenBilgisiGoster, sifirlamaAnahtari }: {
   baslik: string;
   videolar: YayindakiVideo[];
   onVideoSec: (video: YayindakiVideo) => void;
   uretenBilgisiGoster: boolean;
+  sifirlamaAnahtari?: string;
 }) {
   const raf = useRef<HTMLDivElement>(null);
-  if (videolar.length === 0) return null;
+  const kaydir = (yon: number) => raf.current?.scrollBy({ left: yon * raf.current.clientWidth * 0.85, behavior: "smooth" });
 
-  const kaydir = (yon: number) =>
-    raf.current?.scrollBy({ left: yon * raf.current.clientWidth * 0.85, behavior: "smooth" });
+  if (videolar.length === 0) return null;
 
   return (
     <section>
@@ -62,7 +62,14 @@ function KayanYayinRafi({ baslik, videolar, onVideoSec, uretenBilgisiGoster }: {
         >
           <svg aria-hidden="true" className="h-7 w-7 text-[#243957]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="m15 19-7-7 7-7" /></svg>
         </button>
-        <YayindakiVideoBolumu videolar={videolar} onVideoSec={(video) => onVideoSec(video as YayindakiVideo)} uretenBilgisiGoster={uretenBilgisiGoster} yatayMi rafRef={raf} />
+        <YayindakiVideoBolumu
+          videolar={videolar}
+          onVideoSec={(video) => onVideoSec(video as YayindakiVideo)}
+          uretenBilgisiGoster={uretenBilgisiGoster}
+          yatayMi
+          rafRef={raf}
+          sifirlamaAnahtari={sifirlamaAnahtari}
+        />
         <button
           type="button"
           aria-label={`${baslik} rafını sağa kaydır`}
@@ -76,10 +83,11 @@ function KayanYayinRafi({ baslik, videolar, onVideoSec, uretenBilgisiGoster }: {
   );
 }
 
-function YayinRaflari({ videolar, onVideoSec, uretenBilgisiGoster }: {
+function YayinRaflari({ videolar, onVideoSec, uretenBilgisiGoster, sifirlamaKapsami = "" }: {
   videolar: YayindakiVideo[];
   onVideoSec: (video: YayindakiVideo) => void;
   uretenBilgisiGoster: boolean;
+  sifirlamaKapsami?: string;
 }) {
   const [tohum] = useState(() => Date.now());
   const tumu = useMemo(() => anaSayfaRaflari(videolar, tohum).tumuRafi, [videolar, tohum]);
@@ -102,16 +110,16 @@ function YayinRaflari({ videolar, onVideoSec, uretenBilgisiGoster }: {
 
   return (
     <div className="flex flex-col gap-6">
-      <KayanYayinRafi baslik="Tüm Yayınlar" videolar={tumu} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} />
-      <KayanYayinRafi baslik="Son Eklenenler" videolar={enSon} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} />
+      <KayanYayinRafi baslik="Tüm Yayınlar" videolar={tumu} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} sifirlamaAnahtari={`${sifirlamaKapsami}-tumu`} />
+      <KayanYayinRafi baslik="Son Eklenenler" videolar={enSon} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} sifirlamaAnahtari={`${sifirlamaKapsami}-enSon`} />
       {enCokIzlenen.length > 0 && (
-        <KayanYayinRafi baslik="En Çok İzlenenler" videolar={enCokIzlenen} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} />
+        <KayanYayinRafi baslik="En Çok İzlenenler" videolar={enCokIzlenen} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} sifirlamaAnahtari={`${sifirlamaKapsami}-enCokIzlenen`} />
       )}
       {enCokBegenilen.length > 0 && (
-        <KayanYayinRafi baslik="En Çok Beğenilenler" videolar={enCokBegenilen} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} />
+        <KayanYayinRafi baslik="En Çok Beğenilenler" videolar={enCokBegenilen} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} sifirlamaAnahtari={`${sifirlamaKapsami}-enCokBegenilen`} />
       )}
       {enCokFavorilenen.length > 0 && (
-        <KayanYayinRafi baslik="En Çok Favorilenenler" videolar={enCokFavorilenen} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} />
+        <KayanYayinRafi baslik="En Çok Favorilenenler" videolar={enCokFavorilenen} onVideoSec={onVideoSec} uretenBilgisiGoster={uretenBilgisiGoster} sifirlamaAnahtari={`${sifirlamaKapsami}-enCokFavorilenen`} />
       )}
     </div>
   );
@@ -178,7 +186,6 @@ function DepartmanKartlari({ videolar, aktifDepartman, onSec }: {
       {DEPARTMAN_SIRA.map((departman) => {
         const grup = gruplar.get(departman) ?? [];
         const renk = DEPARTMAN_RENK[departman];
-        const ureticiSayisi = new Set(grup.map((video) => `${video.ureten_rol}:${video.ureten_ad_soyad}`)).size;
         const aktif = aktifDepartman === departman;
         return (
           <button
@@ -331,6 +338,7 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
   const aciklama = kapsam === "digerleri"
     ? "Diğer üretici birimlerin yayındaki içeriklerini keşfedin."
     : null;
+  const sifirlamaKapsami = `${kapsam}-${kapsam === "benim" ? aktifHedef : (aktifDepartman ?? "tum")}-${aktifYayinTuru}-${katalogListesi.arama.aranan}`;
 
   return (
     <div className="min-h-full bg-[#f5f8fc]" style={{ fontFamily: "'Nunito', sans-serif" }}>
@@ -381,7 +389,7 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
             <HedefKitleKartlari videolar={aranmisVideolar} aktifHedef={aktifHedef} onSec={setAktifHedef} />
             <YayinTuruFiltresi secili={aktifYayinTuru} onSec={setAktifYayinTuru} sayilar={turSayilari} />
             {seciliVideolar.length > 0 ? (
-              <YayinRaflari videolar={seciliVideolar} onVideoSec={setAktifVideo} uretenBilgisiGoster={false} />
+              <YayinRaflari videolar={seciliVideolar} onVideoSec={setAktifVideo} uretenBilgisiGoster={false} sifirlamaKapsami={sifirlamaKapsami} />
             ) : (
               <div className="rounded-2xl border border-[#dfe7f1] bg-white py-12 text-center text-sm text-[#6b7f9b]">
                 {katalogListesi.arama.aranan ? "Aramanıza uyan yayın bulunamadı." : "Bu hedef kitleye ait yayında içerik yok."}
@@ -399,7 +407,7 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
                 </div>
                 <YayinTuruFiltresi secili={aktifYayinTuru} onSec={setAktifYayinTuru} sayilar={turSayilari} />
                 {seciliVideolar.length > 0 ? (
-                  <YayinRaflari videolar={seciliVideolar} onVideoSec={setAktifVideo} uretenBilgisiGoster />
+                  <YayinRaflari videolar={seciliVideolar} onVideoSec={setAktifVideo} uretenBilgisiGoster sifirlamaKapsami={sifirlamaKapsami} />
                 ) : (
                   <div className="rounded-2xl border border-[#dfe7f1] bg-white py-12 text-center text-sm text-[#6b7f9b]">
                     Bu müdürlükte seçilen yayın türüne ait içerik yok.

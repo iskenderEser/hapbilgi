@@ -168,7 +168,7 @@ test("SahaVideoRaflari: mobilde 2 kartla başlar, Daha Fazla Göster ile 7 karta
   container.remove();
 });
 
-test("VideoBolumu: mobilde 2 kartla başlar, masaüstü grid içeriğini korur", async () => {
+test("VideoBolumu: mobilde 2 kartla başlar, masaüstü grid içeriğini korur, kart tıklaması onVideoSec tetikler", async () => {
   const container = win.document.createElement("div");
   win.document.body.appendChild(container);
   const root = createRoot(container);
@@ -200,18 +200,28 @@ test("VideoBolumu: mobilde 2 kartla başlar, masaüstü grid içeriğini korur",
   const kartlar = mobilKapsayici.querySelectorAll(".grid > div");
   assert.equal(kartlar.length, 2, "Mobilde başlangıçta 2 kart olmalı");
 
+  // Karta tıklanması onVideoSec callback'ini doğru yayın kimliğiyle tetiklemeli
+  const ilkKart = mobilKapsayici.querySelector(".grid > div");
+  assert.ok(ilkKart, "Mobil ilk kart bulunmalı");
+  const kartTiklaBtn = ilkKart.querySelector("div[class*='cursor-pointer']");
+  assert.ok(kartTiklaBtn, "Karta tıklama alanı bulunmalı");
+  await act(async () => {
+    (kartTiklaBtn as HTMLElement).click();
+  });
+  assert.equal(secilenId, "yonetici-1", "Karta tıklanması onVideoSec'i doğru yayın kimliği ile tetiklemeli");
+
   await act(async () => {
     root.unmount();
   });
   container.remove();
 });
 
-test("YayindakiVideoBolumu: yatayMi={true} olsa dahi mobilde tek sütun dikey 2 kartla başlar, öneri seçimi kartı açmaz", async () => {
+test("YayindakiVideoBolumu: mobilde 2 kartla başlar, 7 karta açılır, sifirlamaAnahtari ile 2 karta döner ve ring vurgusu uygulanır", async () => {
   const container = win.document.createElement("div");
   win.document.body.appendChild(container);
   const root = createRoot(container);
 
-  const videolar = Array.from({ length: 5 }, (_, i) =>
+  const videolar = Array.from({ length: 8 }, (_, i) =>
     ornekYayindakiVideoUret(`yayin-${i + 1}`, `Yayındaki Video ${i + 1}`),
   );
 
@@ -225,6 +235,7 @@ test("YayindakiVideoBolumu: yatayMi={true} olsa dahi mobilde tek sütun dikey 2 
         yatayMi: true,
         oneriModu: true,
         secilenYayinlar: ["yayin-1"],
+        sifirlamaAnahtari: "kapsam-a",
         onVideoSec: () => {
           oynaticiAcildi = true;
         },
@@ -238,8 +249,49 @@ test("YayindakiVideoBolumu: yatayMi={true} olsa dahi mobilde tek sütun dikey 2 
   // Mobilde yatay raf dayatılmamalı, MobilYayinAkisi (sm:hidden) 2 kartla başlamalı
   const mobilKapsayici = container.querySelector(".sm\\:hidden");
   assert.ok(mobilKapsayici, "Mobilde MobilYayinAkisi konteyneri bulunmalı");
-  const kartlar = mobilKapsayici.querySelectorAll(".grid > div");
-  assert.equal(kartlar.length, 2, "Mobilde yatayMi dayatılmamalı ve başlangıçta 2 kart olmalı");
+  const baslangicKartlari = mobilKapsayici.querySelectorAll(".grid > div");
+  assert.equal(baslangicKartlari.length, 2, "Mobilde yatayMi dayatılmamalı ve başlangıçta 2 kart olmalı");
+
+  // Seçili yayında border/ring görsel vurgusunun gerçekten uygulandığını doğrula
+  const seciliKartVurgusu = mobilKapsayici.querySelector(".ring-2");
+  assert.ok(seciliKartVurgusu, "Seçili yayında ring-2 görsel vurgusu uygulanmalı");
+  assert.match(seciliKartVurgusu.className, /border-\[#2f7fc7\]/, "Seçili yayında mavi border sınıfı bulunmalı");
+
+  // Butonla 7 karta açıldığını doğrula
+  const devamBtn = Array.from(mobilKapsayici.querySelectorAll("button")).find((b) =>
+    b.textContent?.includes("Daha Fazla Göster"),
+  );
+  assert.ok(devamBtn, "Daha Fazla Göster butonu bulunmalı");
+  assert.match(devamBtn.textContent ?? "", /Daha Fazla Göster \(\+5\)/);
+
+  await act(async () => {
+    devamBtn.click();
+  });
+
+  const acilmisKartlar = mobilKapsayici.querySelectorAll(".grid > div");
+  assert.equal(acilmisKartlar.length, 7, "Devam butonuna tıklanınca 7 kart görünmeli");
+
+  // sifirlamaAnahtari değişince tekrar 2 karta döndüğünü doğrula
+  await act(async () => {
+    root.render(
+      createElement(YayindakiVideoBolumu, {
+        videolar,
+        yatayMi: true,
+        oneriModu: true,
+        secilenYayinlar: ["yayin-1"],
+        sifirlamaAnahtari: "kapsam-b",
+        onVideoSec: () => {
+          oynaticiAcildi = true;
+        },
+        onOneriSec: (v) => {
+          onerilenVideoId = v.yayin_id;
+        },
+      }),
+    );
+  });
+
+  const sifirlanmisKartlar = mobilKapsayici.querySelectorAll(".grid > div");
+  assert.equal(sifirlanmisKartlar.length, 2, "sifirlamaAnahtari değişince liste tekrar 2 karta dönmeli");
 
   // Öneri butonuna tıklandığında stopPropagation ile onVideoSec açılmamalı, onOneriSec tetiklenmeli
   const oneriBtn = Array.from(mobilKapsayici.querySelectorAll("button")).find((b) =>

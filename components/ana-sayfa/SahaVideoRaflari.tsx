@@ -185,7 +185,7 @@ export default function SahaVideoRaflari({ videolar, onVideoSec }: Props) {
           baslik={<><span className="text-base font-bold text-gray-900 md:text-lg">Tümü</span><span aria-hidden="true" className="text-lg text-gray-900">›</span></>}
           videolar={raflar.tumuRafi}
           onVideoSec={onVideoSec}
-          sifirlamaAnahtari={aktifTanburBolumu}
+          sifirlamaAnahtari={`${aktifTanburBolumu}-${aktifYayinTuru}`}
         />
       )}
       {(aktifTanburBolumu === "tumu" || aktifTanburBolumu === "en_cok_izlenen") && (
@@ -194,7 +194,7 @@ export default function SahaVideoRaflari({ videolar, onVideoSec }: Props) {
           baslik="🔥 En Çok İzlenenler"
           videolar={enCokIzlenen}
           onVideoSec={onVideoSec}
-          sifirlamaAnahtari={aktifTanburBolumu}
+          sifirlamaAnahtari={`${aktifTanburBolumu}-${aktifYayinTuru}`}
         />
       )}
       {(aktifTanburBolumu === "tumu" || aktifTanburBolumu === "en_cok_begenilen") && (
@@ -203,7 +203,7 @@ export default function SahaVideoRaflari({ videolar, onVideoSec }: Props) {
           baslik="❤️ En Çok Beğenilenler"
           videolar={enCokBegenilen}
           onVideoSec={onVideoSec}
-          sifirlamaAnahtari={aktifTanburBolumu}
+          sifirlamaAnahtari={`${aktifTanburBolumu}-${aktifYayinTuru}`}
         />
       )}
       {raflar.egitimTuruRaflari.map((raf) => {
@@ -215,7 +215,7 @@ export default function SahaVideoRaflari({ videolar, onVideoSec }: Props) {
             baslik={<h2 className="text-base font-bold text-gray-900 md:text-lg">{TUR_BASLIK[raf.tur]}</h2>}
             videolar={raf.videolar}
             onVideoSec={onVideoSec}
-            sifirlamaAnahtari={aktifTanburBolumu}
+            sifirlamaAnahtari={`${aktifTanburBolumu}-${aktifYayinTuru}`}
           />
         );
       })}

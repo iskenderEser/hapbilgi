@@ -34,6 +34,7 @@ interface Props {
   uretenBilgisiGoster?: boolean;
   yatayMi?: boolean;
   rafRef?: RefObject<HTMLDivElement | null>;
+  sifirlamaAnahtari?: string | number;
 }
 
 function hedefKitleEtiketi(hedefRoller: string[]): string | null {
@@ -58,6 +59,7 @@ export default function YayindakiVideoBolumu({
   uretenBilgisiGoster = true,
   yatayMi = false,
   rafRef,
+  sifirlamaAnahtari,
 }: Props) {
   if (videolar.length === 0) return null;
 
@@ -140,7 +142,7 @@ export default function YayindakiVideoBolumu({
         </div>
       )}
       sayacGoster={false}
-      sifirlamaAnahtari={oneriModu ? "oneri" : "normal"}
+      sifirlamaAnahtari={sifirlamaAnahtari ?? (oneriModu ? "oneri" : "normal")}
       masaustuIcerik={masaustuIcerik}
     />
   );
