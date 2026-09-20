@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
-import { createElement, act } from "react";
+import { createElement, Fragment, act } from "react";
 import { createRoot } from "react-dom/client";
 import { GlobalWindow } from "happy-dom";
 import { VideoRafi } from "@/app/(panel)/eclub/panel/_components/EclubFirmaVideoKatalogu";
@@ -31,6 +31,7 @@ const eczanemVideoRafiKodu = readFileSync("app/eczanem/_components/EczanemVideoR
 const eczanemPageKodu = readFileSync("app/eczanem/page.tsx", "utf8");
 const yayinYonetimiKodu = readFileSync("app/(panel)/yayin-yonetimi/page.tsx", "utf8");
 const useListeKodu = readFileSync("components/liste/useListe.ts", "utf8");
+const mobilYayinAkisiKodu = readFileSync("components/yayin/MobilYayinAkisi.tsx", "utf8");
 
 function ornekEclubOneri(id: string, yayinId: string, urunAdi: string, izlendiMi = false): PanelOneri {
   return {
@@ -120,6 +121,8 @@ test("Faz 5 Mimari: YayinYonetimi aktif yayınlar kartGorunumu MobilYayinAkisi'n
     "Sıfırlama anahtarı aktifAnaSekme, aktifSekme, alanAnahtari ve aranan içermeli",
   );
   assert.match(useListeKodu, /filtrelenmis:\s*suzulmus/, "useListe filtrelenmis alanını dışarı vermeli");
+  assert.doesNotMatch(mobilYayinAkisiKodu, /cloneElement/, "MobilYayinAkisi cloneElement kullanmamalı");
+  assert.doesNotMatch(mobilYayinAkisiKodu, /isValidElement/, "MobilYayinAkisi isValidElement kullanmamalı");
   // Bekleyen ve durdurulan sekmelerindeki işlem satırları korunmalı
   assert.match(yayinYonetimiKodu, /<BekleyenSatir/, "BekleyenSatir işlem satırları korunmalı");
 });
@@ -347,16 +350,19 @@ test("Eczanem: EczanemVideoRafi mobilde 2 kartla başlar, 7 karta açılır, gon
   assert.ok(labelledBy, "section aria-labelledby taşımalı");
   assert.equal(labelledBy, `${sectionId}-baslik`, "aria-labelledby section id'sine '-baslik' eklenerek türetilmeli");
 
-  const baslikEl = container.querySelector(`#${labelledBy}`);
-  assert.ok(baslikEl, "aria-labelledby hedefi DOM'da bulunmalı");
-  assert.equal(baslikEl.textContent?.trim(), "Yeni Öğrenme İçeriklerim", "Görünür başlık doğru metni içermeli");
-  assert.equal(baslikEl.tagName.toLowerCase(), "h2", "Görünür başlık h2 etiketi olmalı");
-  assert.match(baslikEl.className, /text-base/, "text-base sınıfı korunmalı");
-  assert.match(baslikEl.className, /font-black/, "font-black sınıfı korunmalı");
-  assert.match(baslikEl.className, /tracking-\[-0\.015em\]/, "tracking-[-0.015em] sınıfı korunmalı");
-  assert.match(baslikEl.className, /text-\[#1e344a\]/, "text-[#1e344a] sınıfı korunmalı");
-  assert.match(baslikEl.className, /md:text-lg/, "md:text-lg sınıfı korunmalı");
-  assert.match(baslikEl.className, /truncate/, "truncate sınıfı korunmalı");
+  const baslikKapsayici = container.querySelector(`#${labelledBy}`);
+  assert.ok(baslikKapsayici, "aria-labelledby hedefi DOM'da bulunmalı");
+  assert.equal(baslikKapsayici.textContent?.trim(), "Yeni Öğrenme İçeriklerim", "Görünür başlık doğru metni içermeli");
+
+  const h2El = baslikKapsayici.querySelector("h2");
+  assert.ok(h2El, "Hedef kapsayıcı içinde semantik h2 bulunmalı");
+  assert.equal(h2El.textContent?.trim(), "Yeni Öğrenme İçeriklerim", "h2 doğru metni içermeli");
+  assert.match(h2El.className, /text-base/, "text-base sınıfı korunmalı");
+  assert.match(h2El.className, /font-black/, "font-black sınıfı korunmalı");
+  assert.match(h2El.className, /tracking-\[-0\.015em\]/, "tracking-[-0.015em] sınıfı korunmalı");
+  assert.match(h2El.className, /text-\[#1e344a\]/, "text-[#1e344a] sınıfı korunmalı");
+  assert.match(h2El.className, /md:text-lg/, "md:text-lg sınıfı korunmalı");
+  assert.match(h2El.className, /truncate/, "truncate sınıfı korunmalı");
 
   const idliElemanlar = Array.from(container.querySelectorAll("[id]"));
   const idListesi = idliElemanlar.map((el) => el.getAttribute("id")!);
@@ -367,6 +373,87 @@ test("Eczanem: EczanemVideoRafi mobilde 2 kartla başlar, 7 karta açılır, gon
     root.unmount();
   });
   container.remove();
+});
+
+test("MobilYayinAkisi a11y regresyon koruması: Fragment başlıkta console hatası vermez, kendi id'si olan başlık aria-labelledby bağlantısını bozmaz", async () => {
+  const container = win.document.createElement("div");
+  win.document.body.appendChild(container);
+  const root = createRoot(container);
+
+  const consoleErrors: string[] = [];
+  const consoleWarns: string[] = [];
+  const orjError = console.error;
+  const orjWarn = console.warn;
+  console.error = (...args: unknown[]) => {
+    consoleErrors.push(args.map(String).join(" "));
+    orjError(...args);
+  };
+  console.warn = (...args: unknown[]) => {
+    consoleWarns.push(args.map(String).join(" "));
+    orjWarn(...args);
+  };
+
+  try {
+    // 1. Fragment başlık testi: console.error ve console.warn oluşmamalı
+    await act(async () => {
+      root.render(
+        createElement(MobilYayinAkisi<{ id: string }>, {
+          bolumId: "bolum-frag",
+          kayitlar: [{ id: "1" }],
+          kayitAnahtari: (k) => k.id,
+          renderKart: () => createElement("div", null, "Kart"),
+          baslik: createElement(
+            Fragment,
+            null,
+            createElement("span", null, "Fragment Başlık"),
+          ),
+        }),
+      );
+    });
+
+    const fragHatalari = consoleErrors.filter((e) =>
+      e.includes("Invalid prop `id` supplied to `React.Fragment`"),
+    );
+    const fragUyarilari = consoleWarns.filter((w) =>
+      w.includes("Invalid prop `id` supplied to `React.Fragment`"),
+    );
+    assert.equal(fragHatalari.length, 0, "Fragment başlık render edildiğinde id uyarısı oluşmamalı");
+    assert.equal(fragUyarilari.length, 0, "Fragment başlık render edildiğinde id uyarısı oluşmamalı");
+
+    // 2. Kendi id'si olan React element başlık testi: section aria-labelledby bağlantısı bozulmamalı
+    await act(async () => {
+      root.render(
+        createElement(MobilYayinAkisi<{ id: string }>, {
+          bolumId: "bolum-ozel-id",
+          kayitlar: [{ id: "1" }],
+          kayitAnahtari: (k) => k.id,
+          renderKart: () => createElement("div", null, "Kart"),
+          baslik: createElement(
+            "h3",
+            { id: "ozel-baslik-kimligi", className: "font-bold" },
+            "Özel ID Başlık",
+          ),
+        }),
+      );
+    });
+
+    const ozelSection = container.querySelector("#bolum-ozel-id");
+    assert.ok(ozelSection, "Section bolumId ile render edilmeli");
+    const ozelLabelledBy = ozelSection.getAttribute("aria-labelledby");
+    assert.equal(ozelLabelledBy, "bolum-ozel-id-baslik", "section aria-labelledby güvenli kapsayıcı kimliğini göstermeli");
+
+    const hedefKapsayici = container.querySelector(`#${ozelLabelledBy}`);
+    assert.ok(hedefKapsayici, "aria-labelledby ile işaret edilen kapsayıcı DOM'da bulunmalı");
+    const icBaslik = hedefKapsayici.querySelector("#ozel-baslik-kimligi");
+    assert.ok(icBaslik, "Kendi id'si olan iç başlık kapsayıcı içinde korunmalı");
+  } finally {
+    console.error = orjError;
+    console.warn = orjWarn;
+    await act(async () => {
+      root.unmount();
+    });
+    container.remove();
+  }
 });
 
 test("Yayın Yönetimi: En az 12 aktif yayında mobilde 2 → 7 → 12 açılır, masaüstünde 10 kayıt korunur, filtre değişince sıfırlanır ve veri yenilenince kart sayısı korunur", async () => {
