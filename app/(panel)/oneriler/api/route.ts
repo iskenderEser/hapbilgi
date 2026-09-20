@@ -97,17 +97,27 @@ export async function GET(request: NextRequest) {
 
         const tmTakipKayitlari = (takipSonucu.data ?? []) as TmOneriTakipKaydi[];
         const yayinIdleri = [...new Set(tmTakipKayitlari.map((kayit) => kayit.yayin_id).filter(Boolean))];
-        const { data: yayinlar, error: yayinError } = yayinIdleri.length > 0
-          ? await adminSupabase
-              .from("v_yayin_detay")
-              .select("yayin_id, video_url, thumbnail_url, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata")
-              .in("yayin_id", yayinIdleri)
-          : { data: [], error: null };
+        const [yayinlarSonucu, yayinYonetimiSonucu] = await Promise.all([
+          yayinIdleri.length > 0
+            ? adminSupabase
+                .from("v_yayin_detay")
+                .select("yayin_id, video_url, thumbnail_url, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata")
+                .in("yayin_id", yayinIdleri)
+            : Promise.resolve({ data: [], error: null }),
+          yayinIdleri.length > 0
+            ? adminSupabase
+                .from("yayin_yonetimi")
+                .select("yayin_id, extra_puan")
+                .in("yayin_id", yayinIdleri)
+            : Promise.resolve({ data: [], error: null }),
+        ]);
 
-        if (yayinError) {
-          return hataYaniti("TM öneri video bilgileri çekilemedi.", "v_yayin_detay SELECT — TM öneri takibi", yayinError);
+        if (yayinlarSonucu.error) {
+          return hataYaniti("TM öneri video bilgileri çekilemedi.", "v_yayin_detay SELECT — TM öneri takibi", yayinlarSonucu.error);
         }
 
+        const yayinlar = yayinlarSonucu.data;
+        const extraPuanHaritasi = new Map((yayinYonetimiSonucu.data ?? []).map((y) => [y.yayin_id, y.extra_puan ?? 0]));
         const yayinHaritasi = new Map((yayinlar ?? []).map((yayin) => [yayin.yayin_id, yayinThumbnailCevabi(yayin)]));
         const tmOneriler = tmTakipKayitlari.map((kayit) => {
           const yayin = yayinHaritasi.get(kayit.yayin_id);
@@ -117,6 +127,7 @@ export async function GET(request: NextRequest) {
             thumbnail_url: yayin?.thumbnail_url ?? null,
             arac_id: yayin?.arac_id ?? null,
             arac_turu: yayin?.arac_turu ?? null,
+            extra_puan: extraPuanHaritasi.get(kayit.yayin_id) ?? 0,
           };
         });
 
@@ -149,17 +160,27 @@ export async function GET(request: NextRequest) {
 
       const bmTakipKayitlari = (takipKayitlari ?? []) as BmOneriTakipKaydi[];
       const yayinIdleri = [...new Set(bmTakipKayitlari.map((kayit) => kayit.yayin_id).filter(Boolean))];
-      const { data: yayinlar, error: yayinError } = yayinIdleri.length > 0
-        ? await adminSupabase
-            .from("v_yayin_detay")
-            .select("yayin_id, video_url, thumbnail_url, video_puani, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata")
-            .in("yayin_id", yayinIdleri)
-        : { data: [], error: null };
+      const [yayinlarSonucu, yayinYonetimiSonucu] = await Promise.all([
+        yayinIdleri.length > 0
+          ? adminSupabase
+              .from("v_yayin_detay")
+              .select("yayin_id, video_url, thumbnail_url, video_puani, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata")
+              .in("yayin_id", yayinIdleri)
+          : Promise.resolve({ data: [], error: null }),
+        yayinIdleri.length > 0
+          ? adminSupabase
+              .from("yayin_yonetimi")
+              .select("yayin_id, extra_puan")
+              .in("yayin_id", yayinIdleri)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
 
-      if (yayinError) {
-        return hataYaniti("Öneri video bilgileri çekilemedi.", "v_yayin_detay SELECT — BM öneri takibi", yayinError);
+      if (yayinlarSonucu.error) {
+        return hataYaniti("Öneri video bilgileri çekilemedi.", "v_yayin_detay SELECT — BM öneri takibi", yayinlarSonucu.error);
       }
 
+      const yayinlar = yayinlarSonucu.data;
+      const extraPuanHaritasi = new Map((yayinYonetimiSonucu.data ?? []).map((y) => [y.yayin_id, y.extra_puan ?? 0]));
       const yayinHaritasi = new Map((yayinlar ?? []).map((yayin) => [yayin.yayin_id, yayinThumbnailCevabi(yayin)]));
       const oneriler = bmTakipKayitlari.map((kayit) => {
         const yayin = yayinHaritasi.get(kayit.yayin_id);
@@ -180,6 +201,7 @@ export async function GET(request: NextRequest) {
           arac_turu: yayin?.arac_turu ?? null,
           kullanici_adi: `${kayit.utt_ad} ${kayit.utt_soyad}`.trim(),
           video_puani: yayin?.video_puani ?? null,
+          extra_puan: extraPuanHaritasi.get(kayit.yayin_id) ?? 0,
           begeni_sayisi: 0,
           favori_sayisi: 0,
           begeni_mi: false,
@@ -201,7 +223,7 @@ export async function GET(request: NextRequest) {
 
     const oneriListesi = (oneriler ?? []) as Array<Record<string, unknown> & { yayin_id: string }>;
     const yayinIdleri = [...new Set(oneriListesi.map((kayit) => kayit.yayin_id).filter(Boolean))];
-    const [yayinlarSonucu, izlemelerSonucu] = await Promise.all([
+    const [yayinlarSonucu, izlemelerSonucu, yayinYonetimiSonucu] = await Promise.all([
       yayinIdleri.length > 0
         ? adminSupabase
             .from("v_yayin_detay")
@@ -216,6 +238,12 @@ export async function GET(request: NextRequest) {
             .eq("tamamlandi_mi", true)
             .eq("gercek_oynatma_mi", true)
         : Promise.resolve({ data: [], error: null }),
+      yayinIdleri.length > 0
+        ? adminSupabase
+            .from("yayin_yonetimi")
+            .select("yayin_id, extra_puan")
+            .in("yayin_id", yayinIdleri)
+        : Promise.resolve({ data: [], error: null }),
     ]);
 
     if (yayinlarSonucu.error) {
@@ -223,6 +251,7 @@ export async function GET(request: NextRequest) {
     }
 
     const yayinlar = yayinlarSonucu.data;
+    const extraPuanHaritasi = new Map((yayinYonetimiSonucu.data ?? []).map((y) => [y.yayin_id, y.extra_puan ?? 0]));
     const izlemeSayilari = new Map<string, number>();
     for (const izleme of (izlemelerSonucu.data ?? [])) {
       izlemeSayilari.set(izleme.yayin_id, (izlemeSayilari.get(izleme.yayin_id) ?? 0) + 1);
@@ -254,6 +283,7 @@ export async function GET(request: NextRequest) {
         yayin_tarihi: ek?.yayin_tarihi ?? (o.created_at as string | null) ?? null,
         icerik_turu: ek?.icerik_turu ?? null,
         izlenme_sayisi: izlemeSayilari.get(o.yayin_id) ?? 0,
+        extra_puan: extraPuanHaritasi.get(o.yayin_id) ?? 0,
       };
     });
 

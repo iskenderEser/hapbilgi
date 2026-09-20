@@ -1,7 +1,7 @@
 "use client";
 
 import React, { type MouseEvent, type ReactNode } from "react";
-import { Heart, Star } from "lucide-react";
+import { Heart, Star, RotateCcw } from "lucide-react";
 import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 import { TUR_BASLIK, type IcerikTuru } from "@/lib/video/icerikTuru";
 import { talepIdGoster } from "@/lib/utils/talepId";
@@ -127,27 +127,38 @@ export function YayinKarti({
           />
         )}
 
-        {/* Sol Üst: Durum Rozeti */}
-        {durumGoster && (
-          <div className="absolute left-1.5 top-1.5">
-            {solUstRozet ?? (
-              <>
-                {yayin.durum === "yeni" && (
-                  <div className="rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] text-white shadow-sm">
-                    Yeni
-                  </div>
-                )}
-                {yayin.durum === "devam" && (
-                  <div className="rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
-                    Yarım Kaldı
-                  </div>
-                )}
-                {yayin.durum === "tamamlanan" && (
-                  <div className="rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] text-white">
-                    ✓ İzlendi
-                  </div>
-                )}
-              </>
+        {/* Sol Üst: Durum Rozeti & Döngü Sayacı */}
+        {(durumGoster || (donguGoster && yayin.durum === "tamamlanan" && yayin.sonraki_tur_tarihi)) && (
+          <div className="absolute left-1.5 top-1.5 flex items-center gap-1">
+            {durumGoster && (
+              solUstRozet ?? (
+                <>
+                  {yayin.durum === "yeni" && (
+                    <div className="rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] text-white shadow-sm">
+                      Yeni
+                    </div>
+                  )}
+                  {yayin.durum === "devam" && (
+                    <div className="rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                      Yarım Kaldı
+                    </div>
+                  )}
+                  {yayin.durum === "tamamlanan" && (
+                    <div className="rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] text-white">
+                      ✓ İzlendi
+                    </div>
+                  )}
+                </>
+              )
+            )}
+            {donguGoster && yayin.durum === "tamamlanan" && yayin.sonraki_tur_tarihi && (
+              <span
+                className="flex items-center gap-1 rounded-full border border-white/40 bg-[#1e3a8a]/90 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-sm backdrop-blur-sm"
+                title={`${kalanGun(yayin.sonraki_tur_tarihi)} gün sonra yeniden puanlı`}
+              >
+                <RotateCcw className="h-2.5 w-2.5" />
+                <span>{kalanGun(yayin.sonraki_tur_tarihi)} gün</span>
+              </span>
             )}
           </div>
         )}
@@ -233,62 +244,65 @@ export function YayinKarti({
           )}
         </div>
 
-        {/* 2. Satır: Yayın Tarihi & İzlenme Sayısı */}
-        {(tarihGoster || izlenmeGoster) && (
-          <div className="mt-1.5 flex items-center justify-between text-[10px] text-gray-500">
+        {/* 2. Satır: Yayın Tarihi & Talep Kimliği */}
+        {(tarihGoster || talepNoGoster) && (
+          <div className="mt-1.5 flex items-center justify-between gap-1 text-[10px] text-gray-500">
             {tarihGoster ? (
-              <span>{formatTarihUzun(yayin.yayin_tarihi)}</span>
+              <span className="truncate">{formatTarihUzun(yayin.yayin_tarihi)}</span>
             ) : (
               <span />
             )}
-            {izlenmeGoster ? (
-              <span>{yayin.izlenme_sayisi ?? 0} izlenme</span>
+            {talepNoGoster && yayin.talep_no != null ? (
+              <span className="shrink-0 font-mono text-[10px] text-[#bc2d0d]">
+                {talepIdGoster(yayin.firma_adi, yayin.talep_no)}
+              </span>
             ) : (
               <span />
             )}
           </div>
         )}
 
-        {/* 3. Satır: Puan / Ek Rozet & Talep Kimliği */}
-        {(puanGoster || talepNoGoster || puanYaniRozet) && (
+        {/* 3. Satır: Puan / Ek Rozet & İzlenme Sayısı */}
+        {(puanGoster || izlenmeGoster || puanYaniRozet) && (
           <div className="mt-1.5 flex items-center justify-between gap-1">
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1">
               {puanGoster && yayin.video_puani != null && (
-                <span className="text-[10px] font-bold text-yellow-600">
-                  ★ {yayin.video_puani}
+                <span
+                  className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-extrabold text-white shadow-xs"
+                  style={{
+                    background: "linear-gradient(to right, #1e3a8a 0%, #2563eb 55%, #3b82f6 100%)",
+                  }}
+                >
+                  {yayin.video_puani} Puan
                 </span>
               )}
               {puanGoster && !!yayin.extra_puan && yayin.extra_puan > 0 && (
-                <span className="text-[10px] text-green-600">
-                  +{yayin.extra_puan} extra
+                <span
+                  className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-extrabold text-white shadow-xs"
+                  style={{
+                    background: "linear-gradient(to right, #267d39 0%, #2e9143 55%, #3db856 100%)",
+                  }}
+                >
+                  +{yayin.extra_puan} Extra
                 </span>
               )}
               {puanYaniRozet}
             </div>
 
-            {talepNoGoster && yayin.talep_no != null && (
-              <span className="font-mono text-[10px] text-[#bc2d0d]">
-                {talepIdGoster(yayin.firma_adi, yayin.talep_no)}
+            {izlenmeGoster && (
+              <span className="shrink-0 text-[10px] text-gray-500">
+                {yayin.izlenme_sayisi ?? 0} izlenme
               </span>
             )}
           </div>
         )}
 
-        {/* 4. Satır: Döngü Rozetleri */}
-        {donguGoster && (
-          <>
-            {yayin.daha_once_izledi && yayin.sonraki_tur_tarihi && (
-              <span className="mt-1.5 inline-block w-fit rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] text-blue-700">
-                {kalanGun(yayin.sonraki_tur_tarihi)} gün sonra yeniden puanlı
-              </span>
-            )}
-            {yayin.durum === "devam" && (
-              <div className="mt-2 flex items-center justify-between rounded-lg bg-amber-50 px-2 py-1.5 text-[10px] font-bold text-amber-700">
-                <span>Baştan İzle</span>
-                <span aria-hidden="true">→</span>
-              </div>
-            )}
-          </>
+        {/* 4. Satır: Devam Eden Yayın İçin Baştan İzle Butonu */}
+        {donguGoster && yayin.durum === "devam" && (
+          <div className="mt-2 flex items-center justify-between rounded-lg bg-amber-50 px-2 py-1.5 text-[10px] font-bold text-amber-700">
+            <span>Baştan İzle</span>
+            <span aria-hidden="true">→</span>
+          </div>
         )}
 
         {/* En Alt Ek İçerik (Örn: Öneren bilgisi) */}
