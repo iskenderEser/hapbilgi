@@ -15,7 +15,7 @@
 
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { cloneElement, isValidElement, useState, type ReactNode } from "react";
 
 export interface MobilYayinHesaplama {
   gorunenSayisi: number;
@@ -190,6 +190,10 @@ export default function MobilYayinAkisi<T>({
               <h2 id={baslikId} className="text-base font-bold text-gray-900 md:text-lg truncate">
                 {baslik}
               </h2>
+            ) : isValidElement<{ id?: string }>(baslik) ? (
+              cloneElement(baslik, {
+                id: baslik.props.id ?? baslikId,
+              })
             ) : (
               <div id={baslikId} className="inline-flex items-center">
                 {baslik}

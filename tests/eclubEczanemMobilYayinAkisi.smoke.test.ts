@@ -104,6 +104,8 @@ test("Faz 5 Mimari: EczanemVideoRafi MobilYayinAkisi kullanır, bolumId iletir, 
   assert.match(eczanemVideoRafiKodu, /import MobilYayinAkisi from "@\/components\/yayin\/MobilYayinAkisi"/, "MobilYayinAkisi import edilmiş olmalı");
   assert.match(eczanemVideoRafiKodu, /kayitAnahtari=\{\(video\) => `\$\{baslik\}-\$\{video\.gonderim_id\}`\}/, "kayitAnahtari gonderim_id'yi korumalı");
   assert.match(eczanemVideoRafiKodu, /bolumId=\{bolumId\}/, "bolumId MobilYayinAkisi'ne iletilmeli");
+  assert.match(eczanemVideoRafiKodu, /baslik=\{\s*<h2/, "baslik prop'u düz string yerine özel h2 React elementi olarak verilmeli");
+  assert.doesNotMatch(eczanemVideoRafiKodu, /<h2[^>]*\bid=/, "Başlıkta manuel id bulunmamalı; kimliği MobilYayinAkisi üretmeli");
   assert.match(eczanemVideoRafiKodu, /masaustuIcerik=\{masaustuIcerik\}/, "Masaüstü rafı masaustuIcerik slotunda korunmalı");
   assert.match(eczanemPageKodu, /sifirlamaAnahtari: sifirlamaKapsami/, "eczanem/page.tsx sifirlamaAnahtari iletmeli");
   assert.doesNotMatch(eczanemVideoRafiKodu, /TanburSecici/, "Eczanem bileşenine tanbur eklenmemeli");
@@ -348,6 +350,13 @@ test("Eczanem: EczanemVideoRafi mobilde 2 kartla başlar, 7 karta açılır, gon
   const baslikEl = container.querySelector(`#${labelledBy}`);
   assert.ok(baslikEl, "aria-labelledby hedefi DOM'da bulunmalı");
   assert.equal(baslikEl.textContent?.trim(), "Yeni Öğrenme İçeriklerim", "Görünür başlık doğru metni içermeli");
+  assert.equal(baslikEl.tagName.toLowerCase(), "h2", "Görünür başlık h2 etiketi olmalı");
+  assert.match(baslikEl.className, /text-base/, "text-base sınıfı korunmalı");
+  assert.match(baslikEl.className, /font-black/, "font-black sınıfı korunmalı");
+  assert.match(baslikEl.className, /tracking-\[-0\.015em\]/, "tracking-[-0.015em] sınıfı korunmalı");
+  assert.match(baslikEl.className, /text-\[#1e344a\]/, "text-[#1e344a] sınıfı korunmalı");
+  assert.match(baslikEl.className, /md:text-lg/, "md:text-lg sınıfı korunmalı");
+  assert.match(baslikEl.className, /truncate/, "truncate sınıfı korunmalı");
 
   const idliElemanlar = Array.from(container.querySelectorAll("[id]"));
   const idListesi = idliElemanlar.map((el) => el.getAttribute("id")!);

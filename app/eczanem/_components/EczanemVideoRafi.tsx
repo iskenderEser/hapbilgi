@@ -222,7 +222,11 @@ export default function EczanemVideoRafi({
           {renderKartIcerigi(video, true)}
         </div>
       )}
-      baslik={baslik}
+      baslik={
+        <h2 className="truncate text-base font-black tracking-[-0.015em] text-[#1e344a] md:text-lg">
+          {baslik}
+        </h2>
+      }
       sayacGoster={true}
       sifirlamaAnahtari={sifirlamaAnahtari}
       bosDurum={
