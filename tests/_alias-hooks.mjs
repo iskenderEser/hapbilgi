@@ -22,6 +22,18 @@ export async function resolve(specifier, context, nextResolve) {
       shortCircuit: true,
     };
   }
+  if (specifier === "next/navigation") {
+    return {
+      url: "data:text/javascript,export%20const%20useRouter=()=>({push:()=>{},replace:()=>{},back:()=>{},prefetch:()=>{}});export%20const%20useSearchParams=()=>new%20URLSearchParams();export%20const%20usePathname=()=>'';",
+      shortCircuit: true,
+    };
+  }
+  if (specifier === "next/link") {
+    return {
+      url: "data:text/javascript,export%20default%20function%20Link({children,...props}){return%20children;}",
+      shortCircuit: true,
+    };
+  }
   if (specifier.startsWith("@/") || (specifier.startsWith(".") && context.parentURL && !specifier.endsWith(".js") && !specifier.endsWith(".mjs") && !specifier.endsWith(".json"))) {
     const taban = specifier.startsWith("@/")
       ? join(kok, specifier.slice(2))

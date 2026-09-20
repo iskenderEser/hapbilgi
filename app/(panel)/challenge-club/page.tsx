@@ -16,6 +16,7 @@ import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import ChallengeGonderPaneli, { type GonderSonuc } from "@/components/challenge-club/ChallengeGonderPaneli";
 import { UttVideoKarti, type UttVideo } from "@/components/video/UttVideoKarti";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
+import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
 
 const CC_RENK = "#237ac8";
 const GRI_METIN = "#737373";
@@ -426,6 +427,7 @@ export default function ChallengeClubPage() {
             onKilitliGecis={() => setAktifTab("bekleyen")}
             onBegeni={handleBegeni}
             onFavori={handleFavori}
+            sifirlamaAnahtari={aktifTab}
           />
         )}
 
@@ -444,6 +446,7 @@ export default function ChallengeClubPage() {
             onIzle={handleChallengeIzle}
             onBegeni={handleBegeni}
             onFavori={handleFavori}
+            sifirlamaAnahtari={aktifTab}
           />
         )}
 
@@ -453,6 +456,7 @@ export default function ChallengeClubPage() {
             onIzle={handleVideoIzle}
             onBegeni={handleBegeni}
             onFavori={handleFavori}
+            sifirlamaAnahtari={aktifTab}
           />
         )}
       </div>
@@ -506,18 +510,18 @@ function BosDurum({ ikon: Icon, metin }: { ikon: LucideIcon; metin: string }) {
   );
 }
 
-function CcRaf({ children }: { children: ReactNode }) {
+export function CcRaf({ children }: { children: ReactNode }) {
   const raf = useRef<HTMLDivElement>(null);
   const kaydir = (yon: number) => raf.current?.scrollBy({ left: yon * raf.current.clientWidth * 0.85, behavior: "smooth" });
   return (
     <div className="group relative">
-      <button type="button" aria-label="Sola kaydır" onClick={() => kaydir(-1)} className="absolute inset-y-0 left-0 z-10 flex w-16 cursor-pointer items-center justify-start bg-gradient-to-r from-[#f9fafb] via-[#f9fafb]/70 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
+      <button type="button" aria-label="Sola kaydır" onClick={() => kaydir(-1)} className="absolute inset-y-0 left-0 z-10 hidden md:flex w-16 cursor-pointer items-center justify-start bg-gradient-to-r from-[#f9fafb] via-[#f9fafb]/70 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
         <svg className="h-7 w-7 text-gray-800 drop-shadow-sm" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
       </button>
       <div ref={raf} className="flex snap-x gap-2.5 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {children}
       </div>
-      <button type="button" aria-label="Sağa kaydır" onClick={() => kaydir(1)} className="absolute inset-y-0 right-0 z-10 flex w-16 cursor-pointer items-center justify-end bg-gradient-to-l from-[#f9fafb] via-[#f9fafb]/70 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
+      <button type="button" aria-label="Sağa kaydır" onClick={() => kaydir(1)} className="absolute inset-y-0 right-0 z-10 hidden md:flex w-16 cursor-pointer items-center justify-end bg-gradient-to-l from-[#f9fafb] via-[#f9fafb]/70 to-transparent opacity-0 transition-opacity group-hover:opacity-100">
         <svg className="h-7 w-7 text-gray-800 drop-shadow-sm" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
       </button>
     </div>
@@ -527,12 +531,12 @@ function CcRaf({ children }: { children: ReactNode }) {
 type EtkilesimHandler = (e: MouseEvent, yayin_id: string) => void;
 
 // UTT kartını CC rafında UTT ile aynı ölçüde saran kapsayıcı.
-function KartSarici({ children }: { children: ReactNode }) {
+export function KartSarici({ children }: { children: ReactNode }) {
   return <div className="flex w-40 flex-shrink-0 snap-start flex-col gap-1 sm:w-44 md:w-52">{children}</div>;
 }
 
 // Kart altı challenge meta şeridi (gönderen/alıcı + durum).
-function KartMeta({ children, renk }: { children: ReactNode; renk?: string }) {
+export function KartMeta({ children, renk }: { children: ReactNode; renk?: string }) {
   return (
     <span
       className="truncate rounded-lg px-2 py-1 text-center text-[10px] font-semibold"
@@ -583,130 +587,199 @@ function TabButton({
   );
 }
 
-function VideoListesi({
+export function VideoListesi({
   videolar,
   onIzle,
   onKilitliGecis,
   onBegeni,
   onFavori,
+  sifirlamaAnahtari,
 }: {
   videolar: Video[];
   onIzle: (yayin_id: string) => void;
   onKilitliGecis: () => void;
   onBegeni: EtkilesimHandler;
   onFavori: EtkilesimHandler;
+  sifirlamaAnahtari?: string | number;
 }) {
   if (videolar.length === 0) {
     return <BosDurum ikon={Video} metin="Henüz yayında olan CC videosu yok." />;
   }
 
-  return (
+  const renderKartIcerigi = (v: Video) => (
+    <div className="flex flex-col gap-1">
+      <div className={v.kilitli ? "opacity-85" : ""}>
+        <UttVideoKarti
+          video={videoyuUttKarta(v)}
+          onVideoClick={(vid) => {
+            if (v.kilitli) {
+              onKilitliGecis();
+            } else {
+              onIzle(vid.yayin_id);
+            }
+          }}
+          onBegeni={onBegeni}
+          onFavori={onFavori}
+        />
+      </div>
+      {v.kilitli ? (
+        <KartMeta renk={CC_RENK}>
+          🔒 Bu video için gelen challenge var. &quot;Gelenler&quot;den izleyin.
+        </KartMeta>
+      ) : null}
+    </div>
+  );
+
+  const masaustuIcerik = (
     <CcRaf>
       {videolar.map((v) => (
         <KartSarici key={v.yayin_id}>
-          <div className={v.kilitli ? "opacity-85" : ""}>
-            <UttVideoKarti
-              video={videoyuUttKarta(v)}
-              onVideoClick={(vid) => {
-                if (v.kilitli) {
-                  onKilitliGecis();
-                } else {
-                  onIzle(vid.yayin_id);
-                }
-              }}
-              onBegeni={onBegeni}
-              onFavori={onFavori}
-            />
-          </div>
-          {v.kilitli ? (
-            <KartMeta renk={CC_RENK}>
-              🔒 Bu video için gelen challenge var. &quot;Gelenler&quot;den izleyin.
-            </KartMeta>
-          ) : null}
+          {renderKartIcerigi(v)}
         </KartSarici>
       ))}
     </CcRaf>
   );
+
+  return (
+    <MobilYayinAkisi<Video>
+      kayitlar={videolar}
+      kayitAnahtari={(v) => v.yayin_id}
+      renderKart={(v) => (
+        <div className="w-full">
+          {renderKartIcerigi(v)}
+        </div>
+      )}
+      sayacGoster={false}
+      sifirlamaAnahtari={sifirlamaAnahtari}
+      masaustuIcerik={masaustuIcerik}
+    />
+  );
 }
 
-function GonderilenListesi({
+export function GonderilenListesi({
   gonderdiklerim,
   onIzle,
   onBegeni,
   onFavori,
+  sifirlamaAnahtari,
 }: {
   gonderdiklerim: Challenge[];
   onIzle: (yayin_id: string) => void;
   onBegeni: EtkilesimHandler;
   onFavori: EtkilesimHandler;
+  sifirlamaAnahtari?: string | number;
 }) {
   if (gonderdiklerim.length === 0) {
     return <BosDurum ikon={Send} metin="Bu ay challenge göndermediniz." />;
   }
 
-  return (
+  const renderKartIcerigi = (c: Challenge) => {
+    const durumMetni = c.durum === "izlendi" ? "İzlendi" : "Bekliyor";
+    return (
+      <div className="flex flex-col gap-1">
+        <UttVideoKarti
+          video={challengeyiUttKarta(c)}
+          onVideoClick={() => onIzle(c.yayin_id)}
+          onBegeni={onBegeni}
+          onFavori={onFavori}
+        />
+        <KartMeta>
+          Alıcı: {c.alan?.ad} {c.alan?.soyad} · {durumMetni}
+        </KartMeta>
+      </div>
+    );
+  };
+
+  const masaustuIcerik = (
     <CcRaf>
-      {gonderdiklerim.map((c) => {
-        const durumMetni = c.durum === "izlendi" ? "İzlendi" : "Bekliyor";
-        return (
-          <KartSarici key={c.challenge_id}>
-            <UttVideoKarti
-              video={challengeyiUttKarta(c)}
-              onVideoClick={() => onIzle(c.yayin_id)}
-              onBegeni={onBegeni}
-              onFavori={onFavori}
-            />
-            <KartMeta>
-              Alıcı: {c.alan?.ad} {c.alan?.soyad} · {durumMetni}
-            </KartMeta>
-          </KartSarici>
-        );
-      })}
+      {gonderdiklerim.map((c) => (
+        <KartSarici key={c.challenge_id}>
+          {renderKartIcerigi(c)}
+        </KartSarici>
+      ))}
     </CcRaf>
+  );
+
+  return (
+    <MobilYayinAkisi<Challenge>
+      kayitlar={gonderdiklerim}
+      kayitAnahtari={(c) => c.challenge_id}
+      renderKart={(c) => (
+        <div className="w-full">
+          {renderKartIcerigi(c)}
+        </div>
+      )}
+      sayacGoster={false}
+      sifirlamaAnahtari={sifirlamaAnahtari}
+      masaustuIcerik={masaustuIcerik}
+    />
   );
 }
 
-function BekleyenListesi({
+export function BekleyenListesi({
   bekleyenler,
   onIzle,
   onBegeni,
   onFavori,
+  sifirlamaAnahtari,
 }: {
   bekleyenler: Challenge[];
   onIzle: (yayin_id: string, challenge_id?: string) => void;
   onBegeni: EtkilesimHandler;
   onFavori: EtkilesimHandler;
+  sifirlamaAnahtari?: string | number;
 }) {
   if (bekleyenler.length === 0) {
     return <BosDurum ikon={Inbox} metin="Bekleyen challenge yok." />;
   }
 
-  return (
+  const renderKartIcerigi = (c: Challenge) => {
+    const bekliyor = c.durum === "bekliyor";
+    const durumMetni = c.durum === "izlendi" ? "İzlendi" : "Bekliyor";
+    return (
+      <div className="flex flex-col gap-1">
+        <UttVideoKarti
+          video={challengeyiUttKarta(c)}
+          onVideoClick={() => {
+            if (bekliyor) {
+              onIzle(c.yayin_id, c.challenge_id);
+            } else {
+              // İzlendi durumundaki challenge kartına tıklandığında genel video izleme/tekrar olarak aç
+              onIzle(c.yayin_id);
+            }
+          }}
+          onBegeni={onBegeni}
+          onFavori={onFavori}
+        />
+        <KartMeta renk={CC_RENK}>
+          {c.gonderen?.ad} {c.gonderen?.soyad} · {durumMetni}
+        </KartMeta>
+      </div>
+    );
+  };
+
+  const masaustuIcerik = (
     <CcRaf>
-      {bekleyenler.map((c) => {
-        const bekliyor = c.durum === "bekliyor";
-        const durumMetni = c.durum === "izlendi" ? "İzlendi" : "Bekliyor";
-        return (
-          <KartSarici key={c.challenge_id}>
-            <UttVideoKarti
-              video={challengeyiUttKarta(c)}
-              onVideoClick={() => {
-                if (bekliyor) {
-                  onIzle(c.yayin_id, c.challenge_id);
-                } else {
-                  // İzlendi durumundaki challenge kartına tıklandığında genel video izleme/tekrar olarak aç
-                  onIzle(c.yayin_id);
-                }
-              }}
-              onBegeni={onBegeni}
-              onFavori={onFavori}
-            />
-            <KartMeta renk={CC_RENK}>
-              {c.gonderen?.ad} {c.gonderen?.soyad} · {durumMetni}
-            </KartMeta>
-          </KartSarici>
-        );
-      })}
+      {bekleyenler.map((c) => (
+        <KartSarici key={c.challenge_id}>
+          {renderKartIcerigi(c)}
+        </KartSarici>
+      ))}
     </CcRaf>
+  );
+
+  return (
+    <MobilYayinAkisi<Challenge>
+      kayitlar={bekleyenler}
+      kayitAnahtari={(c) => c.challenge_id}
+      renderKart={(c) => (
+        <div className="w-full">
+          {renderKartIcerigi(c)}
+        </div>
+      )}
+      sayacGoster={false}
+      sifirlamaAnahtari={sifirlamaAnahtari}
+      masaustuIcerik={masaustuIcerik}
+    />
   );
 }
