@@ -210,9 +210,6 @@ export default function MobilYayinAkisi<T>({
   // Mobil Akış Gövdesi
   const mobilGövde = (
     <div className={`flex flex-col gap-3 ${masaustuIcerik ? "sm:hidden" : ""} w-full`}>
-      {baslikJSX}
-      {aciklama && <div className="text-xs text-gray-500 mb-1">{aciklama}</div>}
-
       {toplamKayit === 0 ? (
         bosDurum ?? (
           <div className="rounded-xl border border-dashed border-gray-200 bg-white p-8 text-center text-xs text-gray-400">
@@ -254,6 +251,8 @@ export default function MobilYayinAkisi<T>({
 
   return (
     <section className={`w-full ${className}`} id={bolumId} aria-labelledby={baslikId}>
+      {baslikJSX}
+      {aciklama && <div className="text-xs text-gray-500 mb-1">{aciklama}</div>}
       {mobilGövde}
       {masaustuIcerik && <div className="hidden sm:block w-full">{masaustuIcerik}</div>}
     </section>

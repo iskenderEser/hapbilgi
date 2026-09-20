@@ -24,6 +24,7 @@ import { useHbstoreTakvim } from "@/hooks/useHbstoreTakvim";
 import { useListe, IcerikFiltreBari, type AramaAlani } from "@/components/liste";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 import HayaletTanburSecici, { type TanburBolum } from "@/components/navigasyon/HayaletTanburSecici";
+import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
 
 interface Props {
   user: AuthKullanici;
@@ -100,25 +101,40 @@ function KategoriYayinlariGoster({
         aramaGenislik="w-48 sm:w-60"
       />
 
-      {liste.gorunen.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-400">
-          {liste.arama.aranan || aktifTur !== "tumu"
-            ? "Filtre kriterlerinize uygun öğrenme içeriği bulunamadı."
-            : "Bu kategoride yayınlanmış öğrenme içeriği bulunmuyor."}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {liste.gorunen.map((video) => (
-            <VideoKart
-              key={video.yayin_id}
-              video={video}
-              onVideoClick={onVideoClick}
-              onBegeni={onBegeni}
-              onFavori={onFavori}
-            />
-          ))}
-        </div>
-      )}
+      <MobilYayinAkisi<Video>
+        kayitlar={liste.gorunen}
+        kayitAnahtari={(v) => v.yayin_id}
+        renderKart={(video) => (
+          <VideoKart
+            video={video}
+            onVideoClick={onVideoClick}
+            onBegeni={onBegeni}
+            onFavori={onFavori}
+          />
+        )}
+        sifirlamaAnahtari={`${kategoriBaslik ?? ""}-${aktifTur}-${liste.arama.aranan}`}
+        sayacGoster={false}
+        bosDurum={
+          <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-400">
+            {liste.arama.aranan || aktifTur !== "tumu"
+              ? "Filtre kriterlerinize uygun öğrenme içeriği bulunamadı."
+              : "Bu kategoride yayınlanmış öğrenme içeriği bulunmuyor."}
+          </div>
+        }
+        masaustuIcerik={
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {liste.gorunen.map((video) => (
+              <VideoKart
+                key={video.yayin_id}
+                video={video}
+                onVideoClick={onVideoClick}
+                onBegeni={onBegeni}
+                onFavori={onFavori}
+              />
+            ))}
+          </div>
+        }
+      />
       <HataMesajiContainer mesajlar={mesajlar} />
     </div>
   );
@@ -443,30 +459,41 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
       {/* Dinamik keşif rafları; sabit eğitim kategorileri Videolarım menüsündedir. */}
 
       {aktifDurumFiltresi ? (
-        <section>
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <div>
-              <h2 className="m-0 text-base font-extrabold text-gray-900 md:text-lg">{durumBasliklari[aktifDurumFiltresi]}</h2>
-              <p className="mt-1 text-xs text-gray-500">
-                {aktifDurumFiltresi === "devam"
-                  ? "Yarım kalan öğrenme içerikleri yeniden açıldığında baştan başlar."
-                  : `${aktifDurumVideolari.length} içerik`}
-              </p>
-            </div>
+        <MobilYayinAkisi<Video>
+          kayitlar={aktifDurumVideolari}
+          kayitAnahtari={(v) => v.yayin_id}
+          renderKart={(video) => (
+            <VideoKart
+              video={video}
+              onVideoClick={handleVideoClick}
+              onBegeni={handleBegeni}
+              onFavori={handleFavori}
+            />
+          )}
+          baslik={<h2 className="m-0 text-base font-extrabold text-gray-900 md:text-lg">{durumBasliklari[aktifDurumFiltresi]}</h2>}
+          aciklama={
+            aktifDurumFiltresi === "devam"
+              ? "Yarım kalan öğrenme içerikleri yeniden açıldığında baştan başlar."
+              : `${aktifDurumVideolari.length} içerik`
+          }
+          aksiyonlar={
             <button
               type="button"
               onClick={() => setAktifDurumFiltresi(null)}
-              className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-600 hover:border-gray-300 hover:text-gray-900"
+              className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-600 hover:border-gray-300 hover:text-gray-900 cursor-pointer"
             >
               Tümünü Göster
             </button>
-          </div>
-          {aktifDurumVideolari.length === 0 ? (
+          }
+          sifirlamaAnahtari={aktifDurumFiltresi}
+          sayacGoster={false}
+          bosDurum={
             <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-400">
               Bu durumda öğrenme içeriği bulunmuyor.
             </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          }
+          masaustuIcerik={
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {aktifDurumVideolari.map((video) => (
                 <VideoKart
                   key={video.yayin_id}
@@ -477,8 +504,8 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
                 />
               ))}
             </div>
-          )}
-        </section>
+          }
+        />
       ) : (
         <>
 
@@ -490,7 +517,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}
               onFavori={handleFavori}
-              varsayilanAcik={true}
+              sifirlamaAnahtari={`${aktifTanburBolumu}-${aktifYayinTuru}`}
             />
           )}
           {yeniVideolar.length > 0 && (aktifTanburBolumu === "tumu" || aktifTanburBolumu === "yeni_videolar") && (
@@ -501,7 +528,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}
               onFavori={handleFavori}
-              varsayilanAcik={aktifTanburBolumu === "yeni_videolar" || devamEdenler.length === 0}
+              sifirlamaAnahtari={`${aktifTanburBolumu}-${aktifYayinTuru}`}
             />
           )}
           {tureGoreSuz(uttVeri?.son_izlediklerim ?? []).length > 0 && (aktifTanburBolumu === "tumu" || aktifTanburBolumu === "son_izlediklerim") && (
@@ -512,7 +539,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}
               onFavori={handleFavori}
-              varsayilanAcik={aktifTanburBolumu === "son_izlediklerim"}
+              sifirlamaAnahtari={`${aktifTanburBolumu}-${aktifYayinTuru}`}
             />
           )}
           {tureGoreSuz(uttVeri?.ekstra_izlediklerim ?? []).length > 0 && (aktifTanburBolumu === "tumu" || aktifTanburBolumu === "ekstra_izlediklerim") && (
@@ -523,7 +550,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}
               onFavori={handleFavori}
-              varsayilanAcik={aktifTanburBolumu === "ekstra_izlediklerim"}
+              sifirlamaAnahtari={`${aktifTanburBolumu}-${aktifYayinTuru}`}
               kartAlti={(video) => (
                 <span className="rounded-lg px-2 py-1 text-center text-[10px]" style={video.bu_ay_extra_kazanildi ? { background: "#f0fdf4", color: "#15803d", border: "0.5px solid #bbf7d0" } : { background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe" }}>
                   Bu turda: {video.bu_turda_izleme} izleme · {video.bu_ay_extra_kazanildi ? "Bu ay extra kazanıldı ✓" : `Extra'ya ${video.extra_kalan} tam tekrar kaldı`}
@@ -540,7 +567,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
               onBegeni={handleBegeni}
               onFavori={handleFavori}
               etkilesimAktif={false}
-              varsayilanAcik={aktifTanburBolumu === "en_cok_begenilen"}
+              sifirlamaAnahtari={`${aktifTanburBolumu}-${aktifYayinTuru}`}
             />
           )}
           {enCokFavorilenen.length > 0 && (aktifTanburBolumu === "tumu" || aktifTanburBolumu === "en_cok_favorilenen") && (
@@ -552,7 +579,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
               onBegeni={handleBegeni}
               onFavori={handleFavori}
               etkilesimAktif={false}
-              varsayilanAcik={aktifTanburBolumu === "en_cok_favorilenen"}
+              sifirlamaAnahtari={`${aktifTanburBolumu}-${aktifYayinTuru}`}
             />
           )}
           {enCokIzlenen.length > 0 && (aktifTanburBolumu === "tumu" || aktifTanburBolumu === "en_cok_izlenen") && (
@@ -563,7 +590,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}
               onFavori={handleFavori}
-              varsayilanAcik={aktifTanburBolumu === "en_cok_izlenen"}
+              sifirlamaAnahtari={`${aktifTanburBolumu}-${aktifYayinTuru}`}
             />
           )}
         </>
