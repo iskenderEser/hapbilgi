@@ -27,6 +27,9 @@ export const AKTIF_URETIM_GOREV_DURUMLARI = [
 export const URETIM_ATAMA_KAYNAKLARI = ["otomatik", "manuel", "devir", "gecis"] as const;
 export type UretimAtamaKaynagi = (typeof URETIM_ATAMA_KAYNAKLARI)[number];
 
+/** Bir aşama için üreticinin isteyebileceği maksimum revizyon turu sayısı. */
+export const URETIM_REVIZYON_TAVANI = 3;
+
 const GECISLER: Record<UretimGorevDurumu, readonly UretimGorevDurumu[]> = {
   atama_bekliyor: ["hazirlaniyor", "iptal"],
   hazirlaniyor: ["inceleme_bekliyor", "iptal"],

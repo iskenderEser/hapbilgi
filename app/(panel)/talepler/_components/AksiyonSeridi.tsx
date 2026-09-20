@@ -9,17 +9,15 @@
 // Üç kural mevcut sistemden aynen taşınır (S-4) ve GİRDİDE uygulanır — sunucunun
 // reddetmesini beklemek yerine düğme hiç çizilmez:
 //   1. Revizyon notu zorunlu (boşken gönderilemez)
-//   2. Revizyon tavanı 2 (dolduysa düğme yok)
+//   2. Revizyon tavanı 3 (dolduysa düğme yok)
 //   3. Karar yalnız talebi açan üreticide (Ç-7)
 
 "use client";
 
 import { useState } from "react";
 import type { ToastAsama } from "@/lib/uretim/toastMesaj";
+import { URETIM_REVIZYON_TAVANI } from "@/lib/uretim/gorevSozlesmesi";
 import type { KararDurumu } from "../_hooks/useTalepMerkezi";
-
-/** Revizyon hakkı tavanı — sunucudaki kuralın ekran karşılığı. */
-const REVIZYON_TAVANI = 2;
 
 interface Props {
   /** Karar verilebilecek aktif adım. null ise karar sırası üreticide değil. */
@@ -48,7 +46,7 @@ export function AksiyonSeridi({
   // ilan eden satır kaldırıldı — top'un kimde olduğunu aktif adımın pill'i söylüyor.
   if (!hedef) return null;
 
-  const revizyonHakkiVar = hedef.revizyonSayisi < REVIZYON_TAVANI;
+  const revizyonHakkiVar = hedef.revizyonSayisi < URETIM_REVIZYON_TAVANI;
 
   const kapat = () => {
     setRevizyonAcik(false);

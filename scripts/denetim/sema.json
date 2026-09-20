@@ -1,5 +1,5 @@
 {
-  "uretim_tarihi": "2026-09-19T12:02:42.557Z",
+  "uretim_tarihi": "2026-09-20T07:20:47.187Z",
   "tablo_sayisi": 116,
   "rpc_sayisi": 193,
   "tablolar": {
@@ -5799,11 +5799,11 @@
     },
     "podcast_transkript_ai_baslat_atomik": [
       {
-        "argumanlar": "p_arac_id uuid, p_kullanici_id uuid, p_girisim_id uuid, p_model text",
+        "argumanlar": "p_arac_id uuid, p_kullanici_id uuid, p_girisim_id uuid, p_model text, p_gorev_id uuid",
         "donus": "jsonb"
       },
       {
-        "argumanlar": "p_arac_id uuid, p_kullanici_id uuid, p_girisim_id uuid, p_model text, p_gorev_id uuid",
+        "argumanlar": "p_arac_id uuid, p_kullanici_id uuid, p_girisim_id uuid, p_model text",
         "donus": "jsonb"
       }
     ],
@@ -5925,11 +5925,11 @@
     },
     "uretim_gorsel_uretici_karar_ver": [
       {
-        "argumanlar": "p_gorev_id uuid, p_uretici_id uuid, p_karar text, p_notlar text, p_islem_anahtari uuid, p_beklenen_surum integer",
+        "argumanlar": "p_gorev_id uuid, p_uretici_id uuid, p_karar text, p_notlar text, p_islem_anahtari uuid",
         "donus": "jsonb"
       },
       {
-        "argumanlar": "p_gorev_id uuid, p_uretici_id uuid, p_karar text, p_notlar text, p_islem_anahtari uuid",
+        "argumanlar": "p_gorev_id uuid, p_uretici_id uuid, p_karar text, p_notlar text, p_islem_anahtari uuid, p_beklenen_surum integer",
         "donus": "jsonb"
       }
     ],
@@ -5993,11 +5993,11 @@
     },
     "uretim_uretici_karar_ver": [
       {
-        "argumanlar": "p_gorev_id uuid, p_uretici_id uuid, p_karar text, p_notlar text, p_islem_anahtari uuid, p_beklenen_surum integer",
+        "argumanlar": "p_gorev_id uuid, p_uretici_id uuid, p_karar text, p_notlar text, p_islem_anahtari uuid",
         "donus": "jsonb"
       },
       {
-        "argumanlar": "p_gorev_id uuid, p_uretici_id uuid, p_karar text, p_notlar text, p_islem_anahtari uuid",
+        "argumanlar": "p_gorev_id uuid, p_uretici_id uuid, p_karar text, p_notlar text, p_islem_anahtari uuid, p_beklenen_surum integer",
         "donus": "jsonb"
       }
     ],
