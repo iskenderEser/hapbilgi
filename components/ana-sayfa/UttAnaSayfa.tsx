@@ -307,21 +307,18 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
     .sort((a, b) => b.favori_sayisi - a.favori_sayisi)
     .slice(0, 5);
 
-  const tanburBolumleri = useMemo(() => {
-    const bolumler: TanburBolum[] = [
-      { id: "tumu", etiket: "Tüm Bölümler" },
-    ];
-    if (devamEdenler.length > 0) bolumler.push({ id: "devam_edenler", etiket: "Kaldığınız Yerden Devam Edin", sayi: devamEdenler.length });
-    if (yeniVideolar.length > 0) bolumler.push({ id: "yeni_videolar", etiket: "Yeni Öğrenme İçerikleri", sayi: yeniVideolar.length });
-    const sonIzlenenler = tureGoreSuz(uttVeri?.son_izlediklerim ?? []);
-    if (sonIzlenenler.length > 0) bolumler.push({ id: "son_izlediklerim", etiket: "En Son İzlediklerim", sayi: sonIzlenenler.length });
-    const ekstraIzlenenler = tureGoreSuz(uttVeri?.ekstra_izlediklerim ?? []);
-    if (ekstraIzlenenler.length > 0) bolumler.push({ id: "ekstra_izlediklerim", etiket: "Ekstra İzlediklerim", sayi: ekstraIzlenenler.length });
-    if (enCokBegenilen.length > 0) bolumler.push({ id: "en_cok_begenilen", etiket: "En Çok Beğenilenler", sayi: enCokBegenilen.length });
-    if (enCokFavorilenen.length > 0) bolumler.push({ id: "en_cok_favorilenen", etiket: "En Çok Favorilenenler", sayi: enCokFavorilenen.length });
-    if (enCokIzlenen.length > 0) bolumler.push({ id: "en_cok_izlenen", etiket: "En Çok İzlenenler", sayi: enCokIzlenen.length });
-    return bolumler;
-  }, [devamEdenler, yeniVideolar, uttVeri, enCokBegenilen, enCokFavorilenen, enCokIzlenen, aktifYayinTuru]);
+  const tanburBolumleri: TanburBolum[] = [
+    { id: "tumu", etiket: "Tüm Bölümler" },
+  ];
+  if (devamEdenler.length > 0) tanburBolumleri.push({ id: "devam_edenler", etiket: "Kaldığınız Yerden Devam Edin", sayi: devamEdenler.length });
+  if (yeniVideolar.length > 0) tanburBolumleri.push({ id: "yeni_videolar", etiket: "Yeni Öğrenme İçerikleri", sayi: yeniVideolar.length });
+  const sonIzlenenler = tureGoreSuz(uttVeri?.son_izlediklerim ?? []);
+  if (sonIzlenenler.length > 0) tanburBolumleri.push({ id: "son_izlediklerim", etiket: "En Son İzlediklerim", sayi: sonIzlenenler.length });
+  const ekstraIzlenenler = tureGoreSuz(uttVeri?.ekstra_izlediklerim ?? []);
+  if (ekstraIzlenenler.length > 0) tanburBolumleri.push({ id: "ekstra_izlediklerim", etiket: "Ekstra İzlediklerim", sayi: ekstraIzlenenler.length });
+  if (enCokBegenilen.length > 0) tanburBolumleri.push({ id: "en_cok_begenilen", etiket: "En Çok Beğenilenler", sayi: enCokBegenilen.length });
+  if (enCokFavorilenen.length > 0) tanburBolumleri.push({ id: "en_cok_favorilenen", etiket: "En Çok Favorilenenler", sayi: enCokFavorilenen.length });
+  if (enCokIzlenen.length > 0) tanburBolumleri.push({ id: "en_cok_izlenen", etiket: "En Çok İzlenenler", sayi: enCokIzlenen.length });
 
   if (kategori) {
     const kategoriVideolari = tumVideolar

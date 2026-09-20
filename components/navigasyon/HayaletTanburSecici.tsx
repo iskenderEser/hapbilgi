@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type TouchEvent, type WheelEvent } from "react";
+import { useRef, useState, type TouchEvent, type WheelEvent } from "react";
 
 export interface TanburBolum {
   id: string;
@@ -16,20 +16,16 @@ interface Props {
 
 export default function HayaletTanburSecici({ bolumler, seciliId, onSec }: Props) {
   const [acik, setAcik] = useState(false);
-  const bulunanIndex = bolumler.findIndex((b) => b.id === seciliId);
-  const [odakIndex, setOdakIndex] = useState(bulunanIndex >= 0 ? bulunanIndex : 0);
+  const varsayilanIndex = Math.max(0, bolumler.findIndex((b) => b.id === seciliId));
+  const [kaydirilmisIndex, setKaydirilmisIndex] = useState<number | null>(null);
+  const odakIndex = kaydirilmisIndex ?? varsayilanIndex;
 
   const dokunmaBaslangicY = useRef<number | null>(null);
   const sonSuruklemeZamani = useRef<number>(0);
 
-  useEffect(() => {
-    const idx = bolumler.findIndex((b) => b.id === seciliId);
-    if (idx >= 0) setOdakIndex(idx);
-  }, [seciliId, bolumler]);
-
   const secimeGit = (yeniIndex: number) => {
     const hedef = Math.max(0, Math.min(bolumler.length - 1, yeniIndex));
-    setOdakIndex(hedef);
+    setKaydirilmisIndex(hedef);
   };
 
   const onayla = (index = odakIndex) => {
@@ -37,6 +33,7 @@ export default function HayaletTanburSecici({ bolumler, seciliId, onSec }: Props
     if (secilen) {
       onSec(secilen.id);
     }
+    setKaydirilmisIndex(null);
     setAcik(false);
   };
 
@@ -84,8 +81,7 @@ export default function HayaletTanburSecici({ bolumler, seciliId, onSec }: Props
         <button
           type="button"
           onClick={() => {
-            const idx = bolumler.findIndex((b) => b.id === seciliId);
-            if (idx >= 0) setOdakIndex(idx);
+            setKaydirilmisIndex(null);
             setAcik(true);
           }}
           aria-label="Bölüm gezintisi tanburunu aç"
@@ -179,7 +175,6 @@ export default function HayaletTanburSecici({ bolumler, seciliId, onSec }: Props
                     <div
                       key={bolum.id}
                       onClick={() => {
-                        setOdakIndex(i);
                         onayla(i);
                       }}
                       className={`flex h-11 w-full cursor-pointer items-center justify-center px-4 text-center transition-all duration-150 ${stil}`}
