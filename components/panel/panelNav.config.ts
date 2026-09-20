@@ -79,7 +79,31 @@ export const PANEL_NAV: NavGrup[] = [
   {
     baslik: "T-Club",
     oglar: [
-      { etiket: "Öneri Takibi",       path: "/oneriler",           badgeKey: "oneri", gate: (c) => c.rolKucu === "tm" || c.rolKucu === "bm" || TUKETICI_ROLLER.includes(c.rolKucu) },
+      {
+        etiket: "Önerilen Yayınlar",
+        badgeKey: "oneri",
+        gate: (c) => TUKETICI_ROLLER.includes(c.rolKucu),
+        altOglar: [
+          {
+            etiket: "Bekleyen Öneriler",
+            path: "/oneriler",
+            tamEslesme: true,
+            badgeKey: "oneri",
+            gate: (c) => TUKETICI_ROLLER.includes(c.rolKucu),
+          },
+          {
+            etiket: "Tamamlanan Öneriler",
+            path: "/oneriler/tamamlanan",
+            gate: (c) => TUKETICI_ROLLER.includes(c.rolKucu),
+          },
+        ],
+      },
+      {
+        etiket: "Öneri Takibi",
+        path: "/oneriler",
+        badgeKey: "oneri",
+        gate: (c) => c.rolKucu === "tm" || c.rolKucu === "bm",
+      },
       {
         etiket: "Eğitim Yayınları",
         gate: (c: NavContext) => TUKETICI_ROLLER.includes(c.rolKucu),

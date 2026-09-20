@@ -167,10 +167,10 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
     maddeler: [],
   },
 
-  // ─── 12. ÖNERİ TAKİBİ (UTT / SAHA) ─────────────────────────────────────────
+  // ─── 12. ÖNERİLEN YAYINLAR (UTT / SAHA) ───────────────────────────────────
   "oneriler": {
     anahtar: "oneriler",
-    baslik: "Öneri Takibi",
+    baslik: "Önerilen Yayınlar",
     ozet: "Bölge Müdürünüzden gelen gelişim önerilerini listeler; video, podcast, dijital broşür ve literatür gibi öğrenme araçlarını görebilirsiniz.",
     maddeler: [
       {

@@ -11,3 +11,4 @@
 export { useListe, type AramaAlani } from "./useListe";
 export { ListeArama } from "./ListeArama";
 export { DahaFazlaGoster } from "./DahaFazlaGoster";
+export { IcerikFiltreBari, type IcerikFiltreBariProps } from "./IcerikFiltreBari";
