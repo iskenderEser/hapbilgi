@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type TouchEvent, type WheelEvent } from "react";
+import { useEffect, useRef, useState, type TouchEvent, type WheelEvent } from "react";
 
 export interface TanburBolum {
   id: string;
@@ -14,7 +14,6 @@ interface Props {
   onSec: (id: string) => void;
 }
 
-
 export default function HayaletTanburSecici({ bolumler, seciliId, onSec }: Props) {
   const [acik, setAcik] = useState(false);
   const varsayilanIndex = Math.max(0, bolumler.findIndex((b) => b.id === seciliId));
@@ -24,6 +23,19 @@ export default function HayaletTanburSecici({ bolumler, seciliId, onSec }: Props
   const dokunmaBaslangicY = useRef<number | null>(null);
   const sonSuruklemeZamani = useRef<number>(0);
   const suruklendiRef = useRef(false);
+
+  // Tanbur açıkken arka plan sayfasının kaymasını (scroll) tamamen kilitle
+  useEffect(() => {
+    if (!acik) return;
+    const eskiOverflow = document.body.style.overflow;
+    const eskiTouchAction = document.body.style.touchAction;
+    document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
+    return () => {
+      document.body.style.overflow = eskiOverflow;
+      document.body.style.touchAction = eskiTouchAction;
+    };
+  }, [acik]);
 
   const secimeGit = (yeniIndex: number) => {
     const hedef = Math.max(0, Math.min(bolumler.length - 1, yeniIndex));
@@ -111,11 +123,19 @@ export default function HayaletTanburSecici({ bolumler, seciliId, onSec }: Props
         </button>
       </aside>
 
-      {/* 2. ARKA PLAN DERİNLİK ALANI (Holografik Derinlik İçin Hafif Buğu) */}
+      {/* 2. DIŞ ALANA DOKUNUNCA KAPATMA (Tam ekranı karartmaz/bulandırmaz, sadece dış dokunmayı yakalar) */}
       {acik && (
         <div
           onClick={() => setAcik(false)}
-          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[4px] sm:hidden transition-opacity duration-200"
+          className="fixed inset-0 z-40 bg-transparent sm:hidden touch-none"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* 3. SADECE TANBUR BÖLGESİ (Sol ekran tamamen net ve aydınlık kalır, yalnızca sağ kenarda yumuşak buğu) */}
+      {acik && (
+        <div
+          className="pointer-events-none fixed inset-y-0 right-0 z-40 w-64 max-w-[75vw] bg-gradient-to-l from-black/20 via-black/10 to-transparent backdrop-blur-[3px] transition-opacity duration-200 sm:hidden"
           aria-hidden="true"
         />
       )}
@@ -126,7 +146,7 @@ export default function HayaletTanburSecici({ bolumler, seciliId, onSec }: Props
           role="dialog"
           aria-modal="true"
           aria-label="Bölüm Tanburu"
-          className="fixed right-7 top-1/2 z-50 flex h-[240px] w-60 max-w-[70vw] -translate-y-1/2 items-center justify-center select-none sm:hidden"
+          className="fixed right-7 top-1/2 z-50 flex h-[240px] w-60 max-w-[70vw] -translate-y-1/2 items-center justify-center select-none touch-none overscroll-contain sm:hidden"
           style={{
             perspective: "800px",
           }}
@@ -164,17 +184,18 @@ export default function HayaletTanburSecici({ bolumler, seciliId, onSec }: Props
               let stil = "text-slate-400 opacity-0 pointer-events-none";
               let yaziGolgesi = "";
               if (mutlakUzaklik === 0) {
-                // Ortadaki aktif sekme: Simsiyah, ekstra kalın, en net
+                // Ortadaki aktif sekme: Simsiyah, ekstra kalın, her fonda (açık/koyu) parlayan çok katmanlı beyaz ışık aurası
                 stil = "text-black font-black text-[15px] opacity-100 cursor-pointer";
-                yaziGolgesi = "0 1px 10px rgba(255,255,255,0.95), 0 0 3px rgba(255,255,255,0.9)";
+                yaziGolgesi =
+                  "0 0 2px #ffffff, 0 0 5px #ffffff, 0 0 12px rgba(255,255,255,0.95), 0 0 22px rgba(255,255,255,0.85)";
               } else if (mutlakUzaklik === 1) {
-                // Bir üst / alt sekmeler: Yarı saydam
-                stil = "text-slate-900/60 font-bold text-[12px] opacity-45 cursor-pointer";
-                yaziGolgesi = "0 1px 6px rgba(255,255,255,0.8)";
+                // Bir üst / alt sekmeler: Yarı saydam, yumuşak ışık aurası
+                stil = "text-slate-950 font-bold text-[12px] opacity-55 cursor-pointer";
+                yaziGolgesi = "0 0 3px #ffffff, 0 0 8px rgba(255,255,255,0.85)";
               } else if (mutlakUzaklik === 2) {
                 // İki üst / alt sekmeler: Hayalet gibi soluk
-                stil = "text-slate-700/30 font-medium text-[11px] opacity-20 cursor-pointer";
-                yaziGolgesi = "0 1px 4px rgba(255,255,255,0.6)";
+                stil = "text-slate-800 font-medium text-[11px] opacity-25 cursor-pointer";
+                yaziGolgesi = "0 0 2px rgba(255,255,255,0.7)";
               }
 
               return (
@@ -197,8 +218,8 @@ export default function HayaletTanburSecici({ bolumler, seciliId, onSec }: Props
                     <span
                       className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold transition-colors ${
                         mutlakUzaklik === 0
-                          ? "bg-black text-white shadow-xs"
-                          : "bg-black/10 text-slate-700"
+                          ? "bg-black text-white shadow-[0_0_8px_rgba(255,255,255,0.9)] border border-white/50"
+                          : "bg-black/20 text-black border border-white/30"
                       }`}
                     >
                       {bolum.sayi}
