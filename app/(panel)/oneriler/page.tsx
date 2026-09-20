@@ -6,7 +6,6 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { useRouter } from "next/navigation";
 import {
   BookOpen,
-  Clock,
   FileText,
   Headphones,
   Heart,
@@ -141,6 +140,16 @@ export default function OnerilerPage() {
     return date.toLocaleDateString("tr-TR", { day: "2-digit", month: "short" });
   };
 
+  const formatTarihNoktali = (tarihStr?: string | null) => {
+    if (!tarihStr) return "-";
+    const d = new Date(tarihStr);
+    if (isNaN(d.getTime())) return "-";
+    const gun = String(d.getDate()).padStart(2, "0");
+    const ay = String(d.getMonth() + 1).padStart(2, "0");
+    const yil = d.getFullYear();
+    return `${gun}.${ay}.${yil}`;
+  };
+
   const isTamamlandi = (o: OneriKaydi) => o.izlendi_mi;
   const isSuresiGecti = (o: OneriKaydi) => !o.izlendi_mi && new Date(o.oneri_bitis).getTime() < Date.now();
   const isHenuzBaslamadi = (o: OneriKaydi) => !o.izlendi_mi && new Date(o.oneri_baslangic).getTime() > Date.now();
@@ -159,55 +168,24 @@ export default function OnerilerPage() {
   }, [aktifFiltre, oneriler]);
 
   const kartDurumu = (o: OneriKaydi): {
-    metinRenk: string;
-    zeminRenk: string;
     etiket: string;
     soluk: boolean;
+    sinif: string;
   } => {
     if (o.izlendi_mi) {
-      return { metinRenk: "#166534", zeminRenk: "#dcfce7", etiket: "İzlendi ✓", soluk: false };
+      return { etiket: "✓ İzlendi", soluk: false, sinif: "font-bold text-gray-700" };
     }
     if (isSuresiGecti(o)) {
-      return { metinRenk: "#991b1b", zeminRenk: "#fee2e2", etiket: "Süresi Geçti", soluk: true };
+      return { etiket: "Süresi Geçti", soluk: true, sinif: "font-extrabold text-red-600" };
     }
     if (isHenuzBaslamadi(o)) {
       return {
-        metinRenk: "#854d0e",
-        zeminRenk: "#fef9c3",
         etiket: `${formatTarihKisa(o.oneri_baslangic)}'da Açılacak`,
         soluk: true,
+        sinif: "font-extrabold text-amber-600",
       };
     }
-    return { metinRenk: "#1e40af", zeminRenk: "#dbeafe", etiket: "İzlenecek", soluk: false };
-  };
-
-  const kalanSureHesapla = (o: OneriKaydi) => {
-    if (o.izlendi_mi || isSuresiGecti(o) || isHenuzBaslamadi(o)) {
-      return {
-        metin: formatTarihKisa(o.oneri_bitis),
-        sinif: "bg-black/60 text-white font-bold",
-      };
-    }
-    const simdi = Date.now();
-    const bitis = new Date(o.oneri_bitis).getTime();
-    const kalanGun = Math.ceil((bitis - simdi) / (1000 * 60 * 60 * 24));
-
-    if (kalanGun <= 1) {
-      return {
-        metin: "Bugün son",
-        sinif: "bg-[#bc2d0d] text-white font-extrabold shadow-sm",
-      };
-    }
-    if (kalanGun <= 3) {
-      return {
-        metin: `Son ${kalanGun} gün`,
-        sinif: "bg-[#d97706] text-white font-extrabold shadow-sm",
-      };
-    }
-    return {
-      metin: formatTarihKisa(o.oneri_bitis),
-      sinif: "bg-black/60 text-white font-bold",
-    };
+    return { etiket: "İzlenecek", soluk: false, sinif: "font-extrabold text-blue-600" };
   };
 
   const hoverIkonu = (aracTuru?: string | null) => {
@@ -413,7 +391,9 @@ export default function OnerilerPage() {
               {filtrelenmisOneriler.map((o) => {
                 const durumStil = kartDurumu(o);
                 const thumb = yayinThumbnailIstemciCoz(o);
-                const kalanSure = kalanSureHesapla(o);
+
+                const hamOneren = o.oneren_adi || o.kullanici_adi || "";
+                const onerenMetni = hamOneren.startsWith("BM") ? hamOneren : `BM ${hamOneren}`.trim();
 
                 return (
                   <YayinKarti
@@ -427,20 +407,8 @@ export default function OnerilerPage() {
                     onBegeni={(e) => handleBegeni(e, o.yayin_id)}
                     onFavori={(e) => handleFavori(e, o.yayin_id)}
                     solUstRozet={
-                      <span
-                        className="rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm"
-                        style={{
-                          color: durumStil.metinRenk,
-                          backgroundColor: durumStil.zeminRenk,
-                        }}
-                      >
+                      <span className={durumStil.sinif}>
                         {durumStil.etiket}
-                      </span>
-                    }
-                    sagUstEkRozet={
-                      <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] backdrop-blur-sm ${kalanSure.sinif}`}>
-                        <Clock className="h-3 w-3" />
-                        {kalanSure.metin}
                       </span>
                     }
                     puanYaniRozet={
@@ -457,11 +425,47 @@ export default function OnerilerPage() {
                       ) : null
                     }
                     altEkIcerik={
-                      <div className="mt-2 flex items-center gap-1 border-t border-gray-100 pt-1.5 text-[10px] text-gray-500">
-                        <span className="font-semibold text-gray-400">Öneren:</span>
-                        <span className="truncate font-bold text-[#35527a]">
-                          {o.oneren_adi || o.kullanici_adi}
-                        </span>
+                      <div className="mt-2 border-t border-gray-100 pt-2">
+                        <div
+                          className="grid grid-cols-3 gap-1 rounded-lg px-2 py-1.5 select-none"
+                          style={{
+                            background: "rgba(0,0,0,0.03)",
+                            boxShadow: "inset 0 0 0 0.5px rgba(0,0,0,0.08)",
+                          }}
+                        >
+                          {/* 1. Öneren */}
+                          <div className="flex flex-col min-w-0 pr-1">
+                            <span className="text-[8px] font-semibold text-gray-400 uppercase tracking-wider">
+                              Öneren
+                            </span>
+                            <span
+                              className="truncate text-[10px] font-bold text-[#1e3a8a]"
+                              title={onerenMetni}
+                            >
+                              {onerenMetni}
+                            </span>
+                          </div>
+
+                          {/* 2. Başlangıç */}
+                          <div className="flex flex-col text-center border-x border-gray-200/60 px-1 min-w-0">
+                            <span className="text-[8px] font-semibold text-gray-400 uppercase tracking-wider">
+                              Başlangıç
+                            </span>
+                            <span className="text-[10px] font-bold text-gray-700 whitespace-nowrap">
+                              {formatTarihNoktali(o.oneri_baslangic)}
+                            </span>
+                          </div>
+
+                          {/* 3. Bitiş */}
+                          <div className="flex flex-col text-right min-w-0 pl-1">
+                            <span className="text-[8px] font-semibold text-gray-400 uppercase tracking-wider">
+                              Bitiş
+                            </span>
+                            <span className="text-[10px] font-bold text-gray-700 whitespace-nowrap">
+                              {formatTarihNoktali(o.oneri_bitis)}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     }
                     hoverOverlay={

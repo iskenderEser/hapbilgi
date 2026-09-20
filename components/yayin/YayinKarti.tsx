@@ -68,6 +68,33 @@ const GUN_MS = 24 * 60 * 60 * 1000;
 const kalanGun = (tarih: string) =>
   Math.max(0, Math.ceil((new Date(tarih).getTime() - Date.now()) / GUN_MS));
 
+const ICERIK_TURU_KISA: Record<string, string> = {
+  urun: "Ürün",
+  urun_medikal: "ÜrünMed",
+  medikal: "Medikal",
+  egitim: "Satış",
+  yonetim: "Yönetim",
+  ik: "İK",
+  "Ürün Eğitimi": "Ürün",
+  "Ürün Eğitimleri": "Ürün",
+  "Ürün Medikal Eğitimi": "ÜrünMed",
+  "Ürün Medikal Eğitimleri": "ÜrünMed",
+  "Medikal Eğitimi": "Medikal",
+  "Medikal Eğitimler": "Medikal",
+  "Satış Eğitimi": "Satış",
+  "Satış Eğitimleri": "Satış",
+  "Yönetim Eğitimi": "Yönetim",
+  "Yönetim Eğitimleri": "Yönetim",
+  "İK Eğitimi": "İK",
+  "İK Eğitimleri": "İK",
+};
+
+const formatIcerikTuruKisa = (tur?: string | null) => {
+  if (!tur) return "";
+  if (ICERIK_TURU_KISA[tur]) return ICERIK_TURU_KISA[tur];
+  return tur.replace(/ Eğitimleri| Eğitimi| Eğitim/gi, "").trim();
+};
+
 const formatTarihUzun = (tarihStr?: string | null) => {
   if (!tarihStr) return "";
   const d = new Date(tarihStr);
@@ -104,6 +131,56 @@ export function YayinKarti({
 }: YayinKartiProps) {
   const thumbnail = yayinThumbnailIstemciCoz(yayin);
 
+  // Birleşik Kapsül Segmentleri (UTT Navbar Tarzı)
+  const kapsulSegmentleri: ReactNode[] = [];
+
+  if (durumGoster) {
+    if (solUstRozet) {
+      kapsulSegmentleri.push(
+        <React.Fragment key="durum">{solUstRozet}</React.Fragment>
+      );
+    } else if (yayin.durum === "yeni") {
+      kapsulSegmentleri.push(
+        <span key="durum" className="font-extrabold text-blue-600">
+          Yeni
+        </span>
+      );
+    } else if (yayin.durum === "devam") {
+      kapsulSegmentleri.push(
+        <span key="durum" className="font-extrabold text-amber-600">
+          Yarım Kaldı
+        </span>
+      );
+    } else if (yayin.durum === "tamamlanan") {
+      kapsulSegmentleri.push(
+        <span key="durum" className="font-bold text-gray-700">
+          ✓ İzlendi
+        </span>
+      );
+    }
+  }
+
+  if (donguGoster && yayin.durum === "tamamlanan" && yayin.sonraki_tur_tarihi) {
+    kapsulSegmentleri.push(
+      <span
+        key="dongu"
+        className="flex items-center gap-0.5 font-bold text-[#1e3a8a]"
+        title={`${kalanGun(yayin.sonraki_tur_tarihi)} gün sonra yeniden puanlı`}
+      >
+        <RotateCcw className="h-2.5 w-2.5" />
+        <span>{kalanGun(yayin.sonraki_tur_tarihi)} gün</span>
+      </span>
+    );
+  }
+
+  if (icerikTuruGoster && yayin.icerik_turu) {
+    kapsulSegmentleri.push(
+      <span key="icerik" className="font-medium text-gray-600">
+        {formatIcerikTuruKisa(yayin.icerik_turu)}
+      </span>
+    );
+  }
+
   return (
     <div
       className={`group cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${className}`}
@@ -127,56 +204,13 @@ export function YayinKarti({
           />
         )}
 
-        {/* Sol Üst: Durum Rozeti & Döngü Sayacı */}
-        {(durumGoster || (donguGoster && yayin.durum === "tamamlanan" && yayin.sonraki_tur_tarihi)) && (
-          <div className="absolute left-1.5 top-1.5 flex items-center gap-1">
-            {durumGoster && (
-              solUstRozet ?? (
-                <>
-                  {yayin.durum === "yeni" && (
-                    <div className="rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] text-white shadow-sm">
-                      Yeni
-                    </div>
-                  )}
-                  {yayin.durum === "devam" && (
-                    <div className="rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
-                      Yarım Kaldı
-                    </div>
-                  )}
-                  {yayin.durum === "tamamlanan" && (
-                    <div className="rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] text-white">
-                      ✓ İzlendi
-                    </div>
-                  )}
-                </>
-              )
-            )}
-            {donguGoster && yayin.durum === "tamamlanan" && yayin.sonraki_tur_tarihi && (
-              <span
-                className="flex items-center gap-1 rounded-full border border-white/40 bg-[#1e3a8a]/90 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-sm backdrop-blur-sm"
-                title={`${kalanGun(yayin.sonraki_tur_tarihi)} gün sonra yeniden puanlı`}
-              >
-                <RotateCcw className="h-2.5 w-2.5" />
-                <span>{kalanGun(yayin.sonraki_tur_tarihi)} gün</span>
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Sağ Üst: Yayın Türü & Ek Rozet (Bitiş tarihi vs.) */}
-        <div className="absolute right-1.5 top-1.5 flex items-center gap-1">
+        {/* Sağ Üst: Yayın Türü (Öğrenme Aracı) & Varsa Harici Ek Rozet */}
+        <div className="absolute right-1.5 top-1.5 flex items-center gap-1 pointer-events-none">
           {yayinTuruGoster && (
             <YayinTuruPill tur={(yayin.arac_turu as OgrenmeAraciTuru) ?? "video"} />
           )}
           {sagUstEkRozet}
         </div>
-
-        {/* Sol Alt: İçerik Türü Rozeti */}
-        {icerikTuruGoster && yayin.icerik_turu && (
-          <div className="absolute bottom-1.5 left-1.5 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] text-white">
-            {TUR_BASLIK[yayin.icerik_turu as IcerikTuru] ?? yayin.icerik_turu}
-          </div>
-        )}
 
         {/* Hover Overlay */}
         {hoverOverlay}
@@ -184,6 +218,28 @@ export function YayinKarti({
 
       {/* ─── Kart Gövdesi (p-2.5 Standart) ─── */}
       <div className="p-2.5">
+        {/* Birleşik Kapsül (Durum · Döngü · İçerik Türü) */}
+        {kapsulSegmentleri.length > 0 && (
+          <div className="mb-2">
+            <div
+              className="inline-flex items-center rounded-full leading-tight select-none py-0.5 px-2.5 text-[9px]"
+              style={{
+                background: "rgba(0,0,0,0.04)",
+                boxShadow: "inset 0 0 0 0.5px rgba(0,0,0,0.08)",
+              }}
+            >
+              {kapsulSegmentleri.map((seg, idx) => (
+                <React.Fragment key={idx}>
+                  {idx > 0 && (
+                    <span className="mx-1.5 text-gray-300 select-none">|</span>
+                  )}
+                  {seg}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 1. Satır: Başlık & Etkileşim Butonları */}
         <div className="flex items-start justify-between gap-1.5">
           <h3
