@@ -127,8 +127,15 @@ function KategoriYayinlariGoster({
 export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBaslik, temelYol = "/ana-sayfa" }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [uttVeri, setUttVeri] = useState<UttVeri | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [uttVeri, setUttVeri] = useState<UttVeri | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const onbellek = sessionStorage.getItem(`utt_anasayfa_veri_${user.id}`);
+      if (onbellek) return JSON.parse(onbellek);
+    } catch {}
+    return null;
+  });
+  const [loading, setLoading] = useState(() => !uttVeri);
   const [aktifVideo, setAktifVideo] = useState<Video | null>(null);
   const [aktifOneriId, setAktifOneriId] = useState<string | null>(null);
   const [aktifDurumFiltresi, setAktifDurumFiltresi] = useState<VideoDurumu | null>(null);
@@ -138,19 +145,22 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
   const { takvim } = useHbstoreTakvim();
 
   const veriCek = async (sessiz = false) => {
-    if (!sessiz) setLoading(true);
+    if (!sessiz && !uttVeri) setLoading(true);
     try {
       const res = await fetch("/ana-sayfa/api");
       const data = await res.json();
       if (!res.ok) { 
         hata(data.hata ?? "Veriler yüklenemedi.", data.adim, data.detay); 
       } else { 
-        setUttVeri(data); 
+        setUttVeri(data);
+        try {
+          sessionStorage.setItem(`utt_anasayfa_veri_${user.id}`, JSON.stringify(data));
+        } catch {}
       }
     } catch {
       hata("Veriler yüklenirken bir hata oluştu.");
     } finally {
-      if (!sessiz) setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -471,21 +481,6 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
         </section>
       ) : (
         <>
-          {aktifTanburBolumu !== "tumu" && (
-            <div className="mb-4 flex items-center justify-between rounded-2xl border border-blue-200/80 bg-blue-50/90 px-4 py-2.5 text-xs font-bold text-blue-900 shadow-xs sm:hidden">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
-                <span className="text-xs font-black">Odak: {tanburBolumleri.find((b) => b.id === aktifTanburBolumu)?.etiket}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setAktifTanburBolumu("tumu")}
-                className="rounded-lg bg-white px-2.5 py-1 text-[11px] font-extrabold text-blue-600 shadow-xs hover:bg-blue-100 active:scale-95"
-              >
-                Tümünü Göster
-              </button>
-            </div>
-          )}
 
           {devamEdenler.length > 0 && (aktifTanburBolumu === "tumu" || aktifTanburBolumu === "devam_edenler") && (
             <KayanRaf

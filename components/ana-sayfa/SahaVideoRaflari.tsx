@@ -39,14 +39,12 @@ function KayanRaf({
   baslik,
   videolar,
   onVideoSec,
-  varsayilanAcik = false,
 }: {
   baslik: ReactNode;
   videolar: SahaAnaSayfaVideo[];
   onVideoSec: Props["onVideoSec"];
   varsayilanAcik?: boolean;
 }) {
-  const [acik, setAcik] = useState(varsayilanAcik);
   const [gorunenSayisi, setGorunenSayisi] = useState(2);
   const raf = useRef<HTMLDivElement>(null);
   const kaydir = (yon: number) => raf.current?.scrollBy({ left: yon * raf.current.clientWidth * 0.85, behavior: "smooth" });
@@ -58,59 +56,40 @@ function KayanRaf({
   const acilacakSayi = Math.min(5, kalanSayisi);
 
   return (
-    <section className="mb-6 rounded-2xl border border-gray-200/80 bg-white/70 p-3.5 shadow-xs sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none">
-      <div
-        onClick={() => setAcik((onceki) => !onceki)}
-        className="flex cursor-pointer items-center justify-between gap-2 select-none sm:cursor-default sm:mb-2.5"
-      >
+    <section className="mb-6">
+      <div className="mb-2.5 flex items-center justify-between gap-2 select-none">
         <div className="flex items-center gap-2">
           {baslik}
-          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-bold text-gray-500 sm:hidden">
+          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-bold text-gray-500">
             {videolar.length}
           </span>
-        </div>
-        <div className="flex items-center gap-1 sm:hidden">
-          <span className="text-xs font-semibold text-gray-400">
-            {acik ? "Gizle" : "Göster"}
-          </span>
-          <svg
-            className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${acik ? "rotate-180" : ""}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2.5}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
         </div>
       </div>
 
       {/* MOBİL GÖRÜNÜM (< 640px) */}
-      {acik && (
-        <div className="mt-3 flex flex-col gap-3 sm:hidden">
-          <div className="grid grid-cols-1 gap-4">
-            {mobildeGorunenler.map((video) => (
-              <div key={video.yayin_id} className="w-full">
-                <SahaVideoKarti video={video} onVideoSec={onVideoSec} />
-              </div>
-            ))}
-          </div>
-
-          {kalanSayisi > 0 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setGorunenSayisi((onceki) => onceki + 5);
-              }}
-              className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white py-2.5 text-xs font-extrabold text-gray-700 shadow-xs transition-colors hover:bg-gray-50 hover:text-gray-900 active:scale-[0.99]"
-            >
-              <span>Daha Fazla Göster (+{acilacakSayi})</span>
-              <span className="text-[10px] font-medium text-gray-400">({kalanSayisi} içerik kaldı)</span>
-            </button>
-          )}
+      <div className="flex flex-col gap-3 sm:hidden">
+        <div className="grid grid-cols-1 gap-4">
+          {mobildeGorunenler.map((video) => (
+            <div key={video.yayin_id} className="w-full">
+              <SahaVideoKarti video={video} onVideoSec={onVideoSec} />
+            </div>
+          ))}
         </div>
-      )}
+
+        {kalanSayisi > 0 && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setGorunenSayisi((onceki) => onceki + 5);
+            }}
+            className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white py-2.5 text-xs font-extrabold text-gray-700 shadow-xs transition-colors hover:bg-gray-50 hover:text-gray-900 active:scale-[0.99]"
+          >
+            <span>Daha Fazla Göster (+{acilacakSayi})</span>
+            <span className="text-[10px] font-medium text-gray-400">({kalanSayisi} içerik kaldı)</span>
+          </button>
+        )}
+      </div>
 
       {/* MASAÜSTÜ & TABLET (sm: >= 640px) */}
       <div className="group relative hidden sm:block">

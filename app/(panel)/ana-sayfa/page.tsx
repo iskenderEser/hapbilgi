@@ -2,16 +2,41 @@
 // Navbar + guard app/(panel)/layout.tsx'e çekildi; sayfa yalnız içerik döner.
 "use client";
 
+import dynamic from "next/dynamic";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
-import UreticiAnaSayfa from "@/components/ana-sayfa/UreticiAnaSayfa";
-import IuAnaSayfa from "@/components/ana-sayfa/IuAnaSayfa";
-import UttAnaSayfa from "@/components/ana-sayfa/UttAnaSayfa";
-import BmAnaSayfa from "@/components/ana-sayfa/BmAnaSayfa";
-import TmAnaSayfa from "@/components/ana-sayfa/TmAnaSayfa";
-import YoneticiAnaSayfa from "@/components/ana-sayfa/YoneticiAnaSayfa";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { URETICI_ROLLER, YONETICI_ROLLER } from "@/lib/utils/roller";
 import type { AuthKullanici } from "@/types/auth";
+
+function AnaSayfaYukleniyor() {
+  return (
+    <div className="flex items-center justify-center p-20">
+      <svg className="h-6 w-6 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+        <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+      </svg>
+    </div>
+  );
+}
+
+const UreticiAnaSayfa = dynamic(() => import("@/components/ana-sayfa/UreticiAnaSayfa"), {
+  loading: () => <AnaSayfaYukleniyor />,
+});
+const IuAnaSayfa = dynamic(() => import("@/components/ana-sayfa/IuAnaSayfa"), {
+  loading: () => <AnaSayfaYukleniyor />,
+});
+const UttAnaSayfa = dynamic(() => import("@/components/ana-sayfa/UttAnaSayfa"), {
+  loading: () => <AnaSayfaYukleniyor />,
+});
+const BmAnaSayfa = dynamic(() => import("@/components/ana-sayfa/BmAnaSayfa"), {
+  loading: () => <AnaSayfaYukleniyor />,
+});
+const TmAnaSayfa = dynamic(() => import("@/components/ana-sayfa/TmAnaSayfa"), {
+  loading: () => <AnaSayfaYukleniyor />,
+});
+const YoneticiAnaSayfa = dynamic(() => import("@/components/ana-sayfa/YoneticiAnaSayfa"), {
+  loading: () => <AnaSayfaYukleniyor />,
+});
 
 const ROLE_MAP: Record<string, (k: AuthKullanici) => React.ReactNode> = {
   iu:     (k) => <IuAnaSayfa user={k} adSoyad={k.adSoyad} />,

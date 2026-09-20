@@ -27,29 +27,44 @@ export interface VYayinSatiri {
   arac_turu?: OgrenmeAraciTuru;
 }
 
+// Kullanıcı organizasyon önbelleği (5 dakika TTL): bolge/takim/firma sıralı sorgularını tekilleştirir
+const userOrgCache = new Map<string, { bolge_id: string | null; takim_id: string | null; firma_id: string | null; sonGuncelleme: number }>();
+const ORG_CACHE_TTL = 5 * 60 * 1000;
+
 export async function getUttAnaSayfaVeri(userId: string, adminSupabase: SupabaseClient) {
-  const { data: kullanici, error: kullaniciError } = await adminSupabase
-    .from("kullanicilar")
-    .select("bolge_id")
-    .eq("kullanici_id", userId)
-    .single();
+  let org = userOrgCache.get(userId);
+  if (!org || Date.now() - org.sonGuncelleme > ORG_CACHE_TTL) {
+    const { data: kullanici, error: kullaniciError } = await adminSupabase
+      .from("kullanicilar")
+      .select("bolge_id")
+      .eq("kullanici_id", userId)
+      .single();
 
-  if (kullaniciError || !kullanici) throw new Error("Kullanıcı bilgisi alınamadı.");
+    if (kullaniciError || !kullanici) throw new Error("Kullanıcı bilgisi alınamadı.");
 
-  const { data: bolge } = await adminSupabase
-    .from("bolgeler")
-    .select("takim_id")
-    .eq("bolge_id", kullanici.bolge_id)
-    .single();
+    const { data: bolge } = await adminSupabase
+      .from("bolgeler")
+      .select("takim_id")
+      .eq("bolge_id", kullanici.bolge_id)
+      .single();
 
-  // Firma-geneli (takımsız) içeriği kapsamak için UTT'nin firmasını da çöz.
-  // UTT bölge seviyesindedir (kullanicilar.firma_id boş olabilir); firma
-  // takım üzerinden okunur. Açık sorgu (nested embed değil) — mevcut desen.
-  const { data: takim } = await adminSupabase
-    .from("takimlar")
-    .select("firma_id")
-    .eq("takim_id", bolge?.takim_id)
-    .single();
+    const { data: takim } = await adminSupabase
+      .from("takimlar")
+      .select("firma_id")
+      .eq("takim_id", bolge?.takim_id)
+      .single();
+
+    org = {
+      bolge_id: kullanici.bolge_id ?? null,
+      takim_id: bolge?.takim_id ?? null,
+      firma_id: takim?.firma_id ?? null,
+      sonGuncelleme: Date.now(),
+    };
+    userOrgCache.set(userId, org);
+  }
+
+  const takimId = org.takim_id;
+  const firmaId = org.firma_id;
 
   // Hafta başlangıcı (Pazartesi 00:00) — get_kullanici_ozet periyodu için kullanılır
   const haftaBaslangic = haftaBaslangici(new Date());
@@ -78,7 +93,7 @@ export async function getUttAnaSayfaVeri(userId: string, adminSupabase: Supabase
       // taleplerini takim_id = NULL ile açar; tam-eşleşme bu içeriği eliyordu
       // (V1'in tek-takım varsayımı, üretici rol genişleyince dar kaldı).
       // 24.07 Yayındaki Videolar düzeltmesinin tüketim tarafına taşınması.
-      .or(`takim_id.eq.${bolge?.takim_id},and(takim_id.is.null,firma_id.eq.${takim?.firma_id})`)
+      .or(`takim_id.eq.${takimId},and(takim_id.is.null,firma_id.eq.${firmaId})`)
       // Pozitif hedef süzgeci: UTT ana sayfası yalnız 'utt' hedefli yayınları
       // listeler. Süzgeçsiz hâli bm/eczaci/eczanem hedefli yayınları da
       // sızdırırdı (v_yayin_detay tüm hedef kitleleri içerir).
