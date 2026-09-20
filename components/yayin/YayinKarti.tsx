@@ -321,7 +321,7 @@ export function YayinKarti({
         {/* 3. Satır: Puan / Ek Rozet & İzlenme Sayısı */}
         {(puanGoster || izlenmeGoster || puanYaniRozet) && (
           <div className="mt-1.5 flex items-center justify-between gap-1">
-            <div className="flex flex-wrap items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1">
               {puanGoster && yayin.video_puani != null && (
                 <span
                   className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-extrabold text-white shadow-xs"
@@ -329,7 +329,9 @@ export function YayinKarti({
                     background: "linear-gradient(to right, #1e3a8a 0%, #2563eb 55%, #3b82f6 100%)",
                   }}
                 >
-                  {yayin.video_puani} Puan
+                  {yayin.video_puani}{" "}
+                  <span className="sm:hidden">P</span>
+                  <span className="hidden sm:inline">Puan</span>
                 </span>
               )}
               {puanGoster && !!yayin.extra_puan && yayin.extra_puan > 0 && (

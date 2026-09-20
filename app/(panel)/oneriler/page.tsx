@@ -420,7 +420,9 @@ export default function OnerilerPage() {
                           }}
                           title="Kazanılan öneri puanı: +10 Puan"
                         >
-                          +10 Puan
+                          +10{" "}
+                          <span className="sm:hidden">P</span>
+                          <span className="hidden sm:inline">Puan</span>
                         </span>
                       ) : null
                     }
