@@ -182,21 +182,21 @@ test("UttKayanVideoRafi: mobilde 2 kartla başlar, Daha Fazla Göster ile 7 kart
 
   // Kart ve beğeni tıklama doğrulamaları
   const ilkKart = mobilKapsayici.querySelector(".grid > div");
-  const kartTiklaBtn = ilkKart?.querySelector("div[class*='cursor-pointer']");
-  if (kartTiklaBtn) {
-    await act(async () => {
-      (kartTiklaBtn as HTMLElement).click();
-    });
-    assert.equal(tiklananId, "v-1", "Karta tıklanması ilgili videoyu açmalı");
-  }
+  assert.ok(ilkKart, "Mobil ilk kart DOM'da bulunmalı");
 
-  const begeniBtn = ilkKart?.querySelector("button");
-  if (begeniBtn) {
-    await act(async () => {
-      begeniBtn.click();
-    });
-    assert.equal(begenilenId, "v-1", "Beğeniye tıklanması onBegeni callback'ini tetiklemeli");
-  }
+  const kartTiklaBtn = ilkKart.querySelector("div[class*='cursor-pointer']");
+  assert.ok(kartTiklaBtn, "Karta tıklama alanı bulunmalı");
+  await act(async () => {
+    (kartTiklaBtn as HTMLElement).click();
+  });
+  assert.equal(tiklananId, "v-1", "Karta tıklanması ilgili videoyu açmalı");
+
+  const begeniBtn = ilkKart.querySelector("button[aria-label='Beğen']");
+  assert.ok(begeniBtn, "Beğeni butonu bulunmalı");
+  await act(async () => {
+    (begeniBtn as HTMLButtonElement).click();
+  });
+  assert.equal(begenilenId, "v-1", "Beğeniye tıklanması onBegeni callback'ini tetiklemeli");
 
   await act(async () => {
     root.unmount();

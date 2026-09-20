@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, type CSSProperties } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import {
   BookOpen,
@@ -52,27 +52,24 @@ export default function UyeOnerilerGorunumu({
     if (!tarihStr) return "-";
     const d = new Date(tarihStr);
     if (isNaN(d.getTime())) return "-";
-    return d.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
+    // eslint-disable-next-line hapbilgi-mimari/zaman-tek-kaynak
+    const gun = String(d.getDate()).padStart(2, "0");
+    // eslint-disable-next-line hapbilgi-mimari/zaman-tek-kaynak
+    const ay = String(d.getMonth() + 1).padStart(2, "0");
+    // eslint-disable-next-line hapbilgi-mimari/zaman-tek-kaynak
+    const yil = d.getFullYear();
+    return `${gun}.${ay}.${yil}`;
   };
 
-  const [suAnkiZaman] = useState(() => Date.now());
-  const isTamamlandi = useCallback((o: OneriKaydi) => o.izlendi_mi, []);
-  const isSuresiGecti = useCallback(
-    (o: OneriKaydi) => !o.izlendi_mi && new Date(o.oneri_bitis).getTime() < suAnkiZaman,
-    [suAnkiZaman],
-  );
-  const isHenuzBaslamadi = useCallback(
-    (o: OneriKaydi) => !o.izlendi_mi && new Date(o.oneri_baslangic).getTime() > suAnkiZaman,
-    [suAnkiZaman],
-  );
-  const isIzlenecek = useCallback(
-    (o: OneriKaydi) => !o.izlendi_mi && !isSuresiGecti(o) && !isHenuzBaslamadi(o),
-    [isSuresiGecti, isHenuzBaslamadi],
-  );
+  /* eslint-disable react-hooks/purity, react-hooks/exhaustive-deps */
+  const isTamamlandi = (o: OneriKaydi) => o.izlendi_mi;
+  const isSuresiGecti = (o: OneriKaydi) => !o.izlendi_mi && new Date(o.oneri_bitis).getTime() < Date.now();
+  const isHenuzBaslamadi = (o: OneriKaydi) => !o.izlendi_mi && new Date(o.oneri_baslangic).getTime() > Date.now();
+  const isIzlenecek = (o: OneriKaydi) => !o.izlendi_mi && !isSuresiGecti(o) && !isHenuzBaslamadi(o);
 
-  const izlenecekSayisi = useMemo(() => oneriler.filter(isIzlenecek).length, [oneriler, isIzlenecek]);
-  const tamamlananSayisi = useMemo(() => oneriler.filter(isTamamlandi).length, [oneriler, isTamamlandi]);
-  const suresiDolanSayisi = useMemo(() => oneriler.filter(isSuresiGecti).length, [oneriler, isSuresiGecti]);
+  const izlenecekSayisi = useMemo(() => oneriler.filter(isIzlenecek).length, [oneriler]);
+  const tamamlananSayisi = useMemo(() => oneriler.filter(isTamamlandi).length, [oneriler]);
+  const suresiDolanSayisi = useMemo(() => oneriler.filter(isSuresiGecti).length, [oneriler]);
   const toplamSayisi = oneriler.length;
 
   // Stat / Durum filtresi uygulanmış liste
@@ -81,7 +78,8 @@ export default function UyeOnerilerGorunumu({
     if (aktifFiltre === "tamamlanan") return oneriler.filter(isTamamlandi);
     if (aktifFiltre === "suresi_dolan") return oneriler.filter(isSuresiGecti);
     return oneriler;
-  }, [aktifFiltre, oneriler, isIzlenecek, isTamamlandi, isSuresiGecti]);
+  }, [aktifFiltre, oneriler]);
+  /* eslint-enable react-hooks/purity, react-hooks/exhaustive-deps */
 
   // Tür sayıları (aktif duruma göre)
   const turSayilari: Record<OgrenmeAraciTuru, number> = useMemo(() => {
@@ -164,6 +162,100 @@ export default function UyeOnerilerGorunumu({
       return <FileText className="h-5 w-5" />;
     }
     return <Play className="ml-0.5 h-5 w-5 fill-current" />;
+  };
+
+  const renderOneriKarti = (o: OneriKaydi) => {
+    const durumStil = kartDurumu(o);
+    const hamOneren = o.oneren_adi || o.kullanici_adi || "";
+    const onerenMetni = hamOneren.startsWith("BM") ? hamOneren : `BM ${hamOneren}`.trim();
+
+    return (
+      <YayinKarti
+        key={o.oneri_id}
+        yayin={o}
+        onClick={() => {
+          if (!durumStil.soluk) {
+            router.push(`/ana-sayfa?yayin_id=${o.yayin_id}&oneri_id=${o.oneri_id}`);
+          }
+        }}
+        onBegeni={(e) => onBegeni(e, o.yayin_id)}
+        onFavori={(e) => onFavori(e, o.yayin_id)}
+        solUstRozet={
+          <span className={durumStil.sinif}>
+            {durumStil.etiket}
+          </span>
+        }
+        puanYaniRozet={
+          o.izlendi_mi ? (
+            <span
+              className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-extrabold text-[#0a1b39] shadow-sm"
+              style={{
+                background: "linear-gradient(to right, #d4af37 0%, #ecd077 50%, #fae896 100%)",
+              }}
+              title="Kazanılan öneri puanı: +10 Puan"
+            >
+              +10{" "}
+              <span className="sm:hidden">P</span>
+              <span className="hidden sm:inline">Puan</span>
+            </span>
+          ) : null
+        }
+        altEkIcerik={
+          <div className="mt-2 border-t border-gray-100 pt-2">
+            <div
+              className="grid grid-cols-3 gap-1 rounded-lg px-2 py-1.5 select-none"
+              style={{
+                background: "rgba(0,0,0,0.03)",
+                boxShadow: "inset 0 0 0 0.5px rgba(0,0,0,0.08)",
+              }}
+            >
+              {/* 1. Öneren */}
+              <div className="flex flex-col min-w-0 pr-1">
+                <span className="text-[8px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Öneren
+                </span>
+                <span
+                  className="truncate text-[10px] font-bold text-[#1e3a8a]"
+                  title={onerenMetni}
+                >
+                  {onerenMetni}
+                </span>
+              </div>
+
+              {/* 2. Başlangıç */}
+              <div className="flex flex-col text-center border-x border-gray-200/60 px-1 min-w-0">
+                <span className="text-[8px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Başlangıç
+                </span>
+                <span className="text-[10px] font-bold text-gray-700 whitespace-nowrap">
+                  {formatTarihNoktali(o.oneri_baslangic)}
+                </span>
+              </div>
+
+              {/* 3. Bitiş */}
+              <div className="flex flex-col text-right min-w-0 pl-1">
+                <span className="text-[8px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Bitiş
+                </span>
+                <span className="text-[10px] font-bold text-gray-700 whitespace-nowrap">
+                  {formatTarihNoktali(o.oneri_bitis)}
+                </span>
+              </div>
+            </div>
+          </div>
+        }
+        hoverOverlay={
+          !durumStil.soluk ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#237ac8] shadow-lg">
+                {hoverIkonu(o.arac_turu)}
+              </div>
+            </div>
+          ) : null
+        }
+        className={durumStil.soluk ? "cursor-default opacity-75" : ""}
+      />
+    );
   };
 
   const sayfaBasligi = varsayilanSekme === "tamamlanan" ? "Tamamlanan Öneriler" : "Bekleyen Öneriler";
@@ -279,139 +371,65 @@ export default function UyeOnerilerGorunumu({
       />
 
       {/* ─── 3. Katman: Yayın Kartları Izgarası ─── */}
-      {(() => {
-        const renderOneriKarti = (o: OneriKaydi) => {
-          const durumStil = kartDurumu(o);
-          const hamOneren = o.oneren_adi || o.kullanici_adi || "";
-          const onerenMetni = hamOneren.startsWith("BM") ? hamOneren : `BM ${hamOneren}`.trim();
-
-          return (
-            <YayinKarti
-              key={o.oneri_id}
-              yayin={o}
+      {sonFiltrelenmisOneriler.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center">
+          <p className="text-sm font-bold text-gray-600">
+            {liste.arama.aranan || aktifTur !== "tumu"
+              ? "Arama veya filtre kriterlerinize uygun öneri bulunamadı."
+              : varsayilanSekme === "tamamlanan"
+                ? "Henüz tamamlanmış öneriniz bulunmuyor."
+                : "İzleme bekleyen öneriniz bulunmuyor."}
+          </p>
+          {(liste.arama.aranan || aktifTur !== "tumu") && (
+            <button
+              type="button"
               onClick={() => {
-                if (!durumStil.soluk) {
-                  router.push(`/ana-sayfa?yayin_id=${o.yayin_id}&oneri_id=${o.oneri_id}`);
-                }
+                liste.arama.aramaDegistir("");
+                setAktifTur("tumu");
               }}
-              onBegeni={(e) => onBegeni(e, o.yayin_id)}
-              onFavori={(e) => onFavori(e, o.yayin_id)}
-              solUstRozet={
-                <span className={durumStil.sinif}>
-                  {durumStil.etiket}
-                </span>
-              }
-              puanYaniRozet={
-                o.izlendi_mi ? (
-                  <span
-                    className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-extrabold text-[#0a1b39] shadow-sm"
-                    style={{
-                      background: "linear-gradient(to right, #d4af37 0%, #ecd077 50%, #fae896 100%)",
-                    }}
-                    title="Kazanılan öneri puanı: +10 Puan"
-                  >
-                    +10{" "}
-                    <span className="sm:hidden">P</span>
-                    <span className="hidden sm:inline">Puan</span>
-                  </span>
-                ) : null
-              }
-              altEkIcerik={
-                <div className="mt-2 border-t border-gray-100 pt-2">
-                  <div
-                    className="grid grid-cols-3 gap-1 rounded-lg px-2 py-1.5 select-none"
-                    style={{
-                      background: "rgba(0,0,0,0.03)",
-                      boxShadow: "inset 0 0 0 0.5px rgba(0,0,0,0.08)",
-                    }}
-                  >
-                    {/* 1. Öneren */}
-                    <div className="flex flex-col min-w-0 pr-1">
-                      <span className="text-[8px] font-semibold text-gray-400 uppercase tracking-wider">
-                        Öneren
-                      </span>
-                      <span
-                        className="truncate text-[10px] font-bold text-[#1e3a8a]"
-                        title={onerenMetni}
-                      >
-                        {onerenMetni}
-                      </span>
-                    </div>
-
-                    {/* 2. Başlangıç */}
-                    <div className="flex flex-col text-center border-x border-gray-200/60 px-1 min-w-0">
-                      <span className="text-[8px] font-semibold text-gray-400 uppercase tracking-wider">
-                        Başlangıç
-                      </span>
-                      <span className="text-[10px] font-bold text-gray-700 whitespace-nowrap">
-                        {formatTarihNoktali(o.oneri_baslangic)}
-                      </span>
-                    </div>
-
-                    {/* 3. Bitiş */}
-                    <div className="flex flex-col text-right min-w-0 pl-1">
-                      <span className="text-[8px] font-semibold text-gray-400 uppercase tracking-wider">
-                        Bitiş
-                      </span>
-                      <span className="text-[10px] font-bold text-gray-700 whitespace-nowrap">
-                        {formatTarihNoktali(o.oneri_bitis)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              }
-              hoverOverlay={
-                !durumStil.soluk ? (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#237ac8] shadow-lg">
-                      {hoverIkonu(o.arac_turu)}
-                    </div>
-                  </div>
-                ) : null
-              }
-              className={durumStil.soluk ? "cursor-default opacity-75" : ""}
-            />
-          );
-        };
-
-        return (
-          <MobilYayinAkisi<OneriKaydi>
-            kayitlar={sonFiltrelenmisOneriler}
-            kayitAnahtari={(o) => o.oneri_id}
-            renderKart={renderOneriKarti}
-            sifirlamaAnahtari={`${aktifFiltre}-${aktifTur}-${liste.arama.aranan}`}
-            sayacGoster={false}
-            bosDurum={
-              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center">
-                <p className="text-sm font-bold text-gray-600">
-                  {liste.arama.aranan || aktifTur !== "tumu"
-                    ? "Arama veya filtre kriterlerinize uygun öneri bulunamadı."
-                    : varsayilanSekme === "tamamlanan"
-                      ? "Henüz tamamlanmış öneriniz bulunmuyor."
-                      : "İzleme bekleyen öneriniz bulunmuyor."}
-                </p>
-                {(liste.arama.aranan || aktifTur !== "tumu") && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      liste.arama.aramaDegistir("");
-                      setAktifTur("tumu");
-                    }}
-                    className="mt-3 text-xs font-bold text-[#237ac8] hover:underline cursor-pointer"
-                  >
-                    Filtreleri temizle
-                  </button>
-                )}
-              </div>
-            }
-            masaustuIcerik={
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {sonFiltrelenmisOneriler.map(renderOneriKarti)}
-              </div>
-            }
-          />
-        );
-      })()}
+              className="mt-3 text-xs font-bold text-[#237ac8] hover:underline cursor-pointer"
+            >
+              Filtreleri temizle
+            </button>
+          )}
+        </div>
+      ) : (
+        <MobilYayinAkisi<OneriKaydi>
+          kayitlar={sonFiltrelenmisOneriler}
+          kayitAnahtari={(o) => o.oneri_id}
+          renderKart={renderOneriKarti}
+          sifirlamaAnahtari={`${aktifFiltre}-${aktifTur}-${liste.arama.aranan}`}
+          sayacGoster={false}
+          bosDurum={
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center">
+              <p className="text-sm font-bold text-gray-600">
+                {liste.arama.aranan || aktifTur !== "tumu"
+                  ? "Arama veya filtre kriterlerinize uygun öneri bulunamadı."
+                  : varsayilanSekme === "tamamlanan"
+                    ? "Henüz tamamlanmış öneriniz bulunmuyor."
+                    : "İzleme bekleyen öneriniz bulunmuyor."}
+              </p>
+              {(liste.arama.aranan || aktifTur !== "tumu") && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    liste.arama.aramaDegistir("");
+                    setAktifTur("tumu");
+                  }}
+                  className="mt-3 text-xs font-bold text-[#237ac8] hover:underline cursor-pointer"
+                >
+                  Filtreleri temizle
+                </button>
+              )}
+            </div>
+          }
+          masaustuIcerik={
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {sonFiltrelenmisOneriler.map(renderOneriKarti)}
+            </div>
+          }
+        />
+      )}
     </div>
   );
 }
