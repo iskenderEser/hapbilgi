@@ -224,7 +224,7 @@ export default function UretimRaporlariPage() {
         </div>
 
         {/* Etkileşim İstatistikleri Şeridi */}
-        <div className="mb-4 grid grid-cols-3 gap-3">
+        <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="rounded-2xl border border-[#e5edf5] bg-white p-4 flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fdf2f2] text-[#e02424]">
               <Heart className="h-5 w-5" />
@@ -269,14 +269,7 @@ export default function UretimRaporlariPage() {
             <div className={styles.sectionIcon}><BookOpenCheck className="h-4 w-4" /></div>
           </div>
 
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
-              gap: '10px',
-              width: '100%',
-            }}
-          >
+          <div className="grid grid-cols-2 gap-2.5 sm:flex sm:overflow-x-auto sm:snap-x sm:pb-2.5 lg:grid lg:grid-cols-6 lg:overflow-visible w-full">
             {data.uretim.turler.map((tur, index) => {
               const etki = data.egitim_turu_etkisi.find((x) => x.egitim_turu === tur.kod);
               const secili = seciliEgitimDetayi?.egitim_turu === tur.kod;
@@ -286,12 +279,11 @@ export default function UretimRaporlariPage() {
                   type="button"
                   key={tur.kod}
                   onClick={() => setSeciliEgitimTuru(secili ? null : tur.ad)}
-                  style={{ minWidth: 0 }}
                   className={`group relative flex flex-col justify-between rounded-2xl p-3 text-left transition-all cursor-pointer border ${
                     secili
                       ? 'bg-[#edf6fd] border-[#237ac8] shadow-[0_4px_16px_rgba(35,122,200,0.12)] ring-2 ring-[#237ac8]/25'
                       : 'bg-[#f8fafc] border-transparent hover:bg-[#f1f5f9] hover:border-[#e2ebf4]'
-                  }`}
+                  } w-full min-w-0 sm:w-[190px] sm:min-w-[190px] sm:shrink-0 sm:snap-start lg:w-auto lg:min-w-0 lg:shrink`}
                 >
                   <div className="w-full min-w-0">
                     <div className="flex items-center justify-between mb-2">
@@ -327,25 +319,25 @@ export default function UretimRaporlariPage() {
           {/* Dinamik Konu Karnesi (Aynı Panel İçinde, İnce Çizgiyle Ayrılmış) */}
           {seciliEgitimDetayi && (
             <div className="mt-5 pt-4 border-t border-[#e2edf7]">
-              <div className="mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <span
-                    className="h-2.5 w-2.5 rounded-full"
+                    className="h-2.5 w-2.5 rounded-full shrink-0"
                     style={{
                       backgroundColor: EGITIM_TURU_RENK[seciliEgitimDetayi.egitim_turu] ?? '#237ac8',
                     }}
                   />
-                  <h3 className="text-sm font-extrabold text-[#10213d]">
+                  <h3 className="text-sm font-extrabold text-[#10213d] truncate">
                     {seciliEgitimDetayi.egitim_adi} Karnesi
                   </h3>
-                  <span className="text-[11px] font-semibold text-[#8190a3]">
+                  <span className="hidden sm:inline text-[11px] font-semibold text-[#8190a3]">
                     · Seçili konunun dönem performansı
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setSeciliEgitimTuru(null)}
-                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold text-[#71859d] hover:bg-[#edf2f7] hover:text-[#10213d] transition-colors"
+                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold text-[#71859d] hover:bg-[#edf2f7] hover:text-[#10213d] transition-colors shrink-0 cursor-pointer"
                   title="Detayı Kapat"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -354,13 +346,9 @@ export default function UretimRaporlariPage() {
               </div>
 
               <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-                  gap: '10px',
-                  width: '100%',
-                  marginBottom: (seciliEgitimDetayi.urun_dagilimi ?? []).length > 0 ? '14px' : '0',
-                }}
+                className={`grid grid-cols-2 sm:grid-cols-4 gap-2.5 w-full ${
+                  (seciliEgitimDetayi.urun_dagilimi ?? []).length > 0 ? 'mb-3.5' : 'mb-0'
+                }`}
               >
                 <div className="rounded-xl border border-[#e5edf5] bg-[#f8fbfe] p-3 text-center">
                   <span className="text-[10px] font-bold text-[#8190a3] uppercase">Yayına Alınan</span>
