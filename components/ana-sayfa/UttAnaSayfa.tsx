@@ -23,6 +23,7 @@ import { YAYIN_TURLERI } from "@/lib/ogrenmeAraci/turSunumu";
 import { useHbstoreTakvim } from "@/hooks/useHbstoreTakvim";
 import { useListe, IcerikFiltreBari, type AramaAlani } from "@/components/liste";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
+import HayaletTanburSecici, { type TanburBolum } from "@/components/navigasyon/HayaletTanburSecici";
 
 interface Props {
   user: AuthKullanici;
@@ -132,6 +133,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
   const [aktifOneriId, setAktifOneriId] = useState<string | null>(null);
   const [aktifDurumFiltresi, setAktifDurumFiltresi] = useState<VideoDurumu | null>(null);
   const [aktifYayinTuru, setAktifYayinTuru] = useState<YayinTuruFiltreDegeri>("tumu");
+  const [aktifTanburBolumu, setAktifTanburBolumu] = useState<string>("tumu");
   const { mesajlar, hata, basari, uyari } = useHataMesaji();
   const { takvim } = useHbstoreTakvim();
 
@@ -305,6 +307,22 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
     .sort((a, b) => b.favori_sayisi - a.favori_sayisi)
     .slice(0, 5);
 
+  const tanburBolumleri = useMemo(() => {
+    const bolumler: TanburBolum[] = [
+      { id: "tumu", etiket: "Tüm Bölümler" },
+    ];
+    if (devamEdenler.length > 0) bolumler.push({ id: "devam_edenler", etiket: "Kaldığınız Yerden Devam Edin", sayi: devamEdenler.length });
+    if (yeniVideolar.length > 0) bolumler.push({ id: "yeni_videolar", etiket: "Yeni Öğrenme İçerikleri", sayi: yeniVideolar.length });
+    const sonIzlenenler = tureGoreSuz(uttVeri?.son_izlediklerim ?? []);
+    if (sonIzlenenler.length > 0) bolumler.push({ id: "son_izlediklerim", etiket: "En Son İzlediklerim", sayi: sonIzlenenler.length });
+    const ekstraIzlenenler = tureGoreSuz(uttVeri?.ekstra_izlediklerim ?? []);
+    if (ekstraIzlenenler.length > 0) bolumler.push({ id: "ekstra_izlediklerim", etiket: "Ekstra İzlediklerim", sayi: ekstraIzlenenler.length });
+    if (enCokBegenilen.length > 0) bolumler.push({ id: "en_cok_begenilen", etiket: "En Çok Beğenilenler", sayi: enCokBegenilen.length });
+    if (enCokFavorilenen.length > 0) bolumler.push({ id: "en_cok_favorilenen", etiket: "En Çok Favorilenenler", sayi: enCokFavorilenen.length });
+    if (enCokIzlenen.length > 0) bolumler.push({ id: "en_cok_izlenen", etiket: "En Çok İzlenenler", sayi: enCokIzlenen.length });
+    return bolumler;
+  }, [devamEdenler, yeniVideolar, uttVeri, enCokBegenilen, enCokFavorilenen, enCokIzlenen, aktifYayinTuru]);
+
   if (kategori) {
     const kategoriVideolari = tumVideolar
       .filter((video) => video.icerik_turu === kategori)
@@ -456,8 +474,25 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
         </section>
       ) : (
         <>
-          {devamEdenler.length > 0 && (
+          {aktifTanburBolumu !== "tumu" && (
+            <div className="mb-4 flex items-center justify-between rounded-2xl border border-blue-200/80 bg-blue-50/90 px-4 py-2.5 text-xs font-bold text-blue-900 shadow-xs sm:hidden">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+                <span className="text-xs font-black">Odak: {tanburBolumleri.find((b) => b.id === aktifTanburBolumu)?.etiket}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAktifTanburBolumu("tumu")}
+                className="rounded-lg bg-white px-2.5 py-1 text-[11px] font-extrabold text-blue-600 shadow-xs hover:bg-blue-100 active:scale-95"
+              >
+                Tümünü Göster
+              </button>
+            </div>
+          )}
+
+          {devamEdenler.length > 0 && (aktifTanburBolumu === "tumu" || aktifTanburBolumu === "devam_edenler") && (
             <KayanRaf
+              key={`devam_${aktifTanburBolumu}`}
               baslik={<h2 className="text-base font-bold text-gray-900 md:text-lg">Kaldığınız Yerden Devam Edin</h2>}
               videolar={devamEdenler}
               onVideoClick={handleVideoClick}
@@ -466,32 +501,37 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
               varsayilanAcik={true}
             />
           )}
-          {yeniVideolar.length > 0 && (
+          {yeniVideolar.length > 0 && (aktifTanburBolumu === "tumu" || aktifTanburBolumu === "yeni_videolar") && (
             <KayanRaf
+              key={`yeni_${aktifTanburBolumu}`}
               baslik={<h2 className="text-base font-bold text-gray-900 md:text-lg">Yeni Öğrenme İçerikleri</h2>}
               videolar={yeniVideolar}
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}
               onFavori={handleFavori}
-              varsayilanAcik={devamEdenler.length === 0}
+              varsayilanAcik={aktifTanburBolumu === "yeni_videolar" || devamEdenler.length === 0}
             />
           )}
-          {tureGoreSuz(uttVeri?.son_izlediklerim ?? []).length > 0 && (
+          {tureGoreSuz(uttVeri?.son_izlediklerim ?? []).length > 0 && (aktifTanburBolumu === "tumu" || aktifTanburBolumu === "son_izlediklerim") && (
             <KayanRaf
+              key={`son_${aktifTanburBolumu}`}
               baslik={<h2 className="text-base font-bold text-gray-900 md:text-lg">En Son İzlediklerim</h2>}
               videolar={tureGoreSuz(uttVeri?.son_izlediklerim ?? [])}
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}
               onFavori={handleFavori}
+              varsayilanAcik={aktifTanburBolumu === "son_izlediklerim"}
             />
           )}
-          {tureGoreSuz(uttVeri?.ekstra_izlediklerim ?? []).length > 0 && (
+          {tureGoreSuz(uttVeri?.ekstra_izlediklerim ?? []).length > 0 && (aktifTanburBolumu === "tumu" || aktifTanburBolumu === "ekstra_izlediklerim") && (
             <KayanRaf
+              key={`ekstra_${aktifTanburBolumu}`}
               baslik={<h2 className="text-base font-bold text-gray-900 md:text-lg">Ekstra İzlediklerim</h2>}
               videolar={tureGoreSuz(uttVeri?.ekstra_izlediklerim ?? [])}
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}
               onFavori={handleFavori}
+              varsayilanAcik={aktifTanburBolumu === "ekstra_izlediklerim"}
               kartAlti={(video) => (
                 <span className="rounded-lg px-2 py-1 text-center text-[10px]" style={video.bu_ay_extra_kazanildi ? { background: "#f0fdf4", color: "#15803d", border: "0.5px solid #bbf7d0" } : { background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe" }}>
                   Bu turda: {video.bu_turda_izleme} izleme · {video.bu_ay_extra_kazanildi ? "Bu ay extra kazanıldı ✓" : `Extra'ya ${video.extra_kalan} tam tekrar kaldı`}
@@ -499,36 +539,51 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
               )}
             />
           )}
-          {enCokBegenilen.length > 0 && (
+          {enCokBegenilen.length > 0 && (aktifTanburBolumu === "tumu" || aktifTanburBolumu === "en_cok_begenilen") && (
             <KayanRaf
+              key={`begenilen_${aktifTanburBolumu}`}
               baslik={<h2 className="text-base font-bold text-gray-900 md:text-lg">En Çok Beğenilenler</h2>}
               videolar={enCokBegenilen}
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}
               onFavori={handleFavori}
               etkilesimAktif={false}
+              varsayilanAcik={aktifTanburBolumu === "en_cok_begenilen"}
             />
           )}
-          {enCokFavorilenen.length > 0 && (
+          {enCokFavorilenen.length > 0 && (aktifTanburBolumu === "tumu" || aktifTanburBolumu === "en_cok_favorilenen") && (
             <KayanRaf
+              key={`favori_${aktifTanburBolumu}`}
               baslik={<h2 className="text-base font-bold text-gray-900 md:text-lg">En Çok Favorilenenler</h2>}
               videolar={enCokFavorilenen}
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}
               onFavori={handleFavori}
               etkilesimAktif={false}
+              varsayilanAcik={aktifTanburBolumu === "en_cok_favorilenen"}
             />
           )}
-          {enCokIzlenen.length > 0 && (
-          <KayanRaf
+          {enCokIzlenen.length > 0 && (aktifTanburBolumu === "tumu" || aktifTanburBolumu === "en_cok_izlenen") && (
+            <KayanRaf
+              key={`izlenen_${aktifTanburBolumu}`}
               baslik={<h2 className="text-base font-bold text-gray-900 md:text-lg">En Çok İzlenenler</h2>}
               videolar={enCokIzlenen}
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}
               onFavori={handleFavori}
+              varsayilanAcik={aktifTanburBolumu === "en_cok_izlenen"}
             />
           )}
         </>
+      )}
+
+      {/* Mobilde Hayalet Tanbur Bölüm Seçici */}
+      {!aktifDurumFiltresi && (
+        <HayaletTanburSecici
+          bolumler={tanburBolumleri}
+          seciliId={aktifTanburBolumu}
+          onSec={setAktifTanburBolumu}
+        />
       )}
 
       <HataMesajiContainer mesajlar={mesajlar} />

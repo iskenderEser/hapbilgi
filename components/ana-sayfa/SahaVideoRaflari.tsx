@@ -8,6 +8,7 @@ import { YayinTuruFiltresi, type YayinTuruFiltreDegeri } from "@/components/ogre
 import { YAYIN_TURLERI } from "@/lib/ogrenmeAraci/turSunumu";
 
 import { YayinKarti } from "@/components/yayin/YayinKarti";
+import HayaletTanburSecici, { type TanburBolum } from "@/components/navigasyon/HayaletTanburSecici";
 
 interface Props {
   videolar: SahaAnaSayfaVideo[];
@@ -217,6 +218,7 @@ function SabitBolum({
 export default function SahaVideoRaflari({ videolar, onVideoSec }: Props) {
   const [tohum] = useState(() => Date.now());
   const [aktifYayinTuru, setAktifYayinTuru] = useState<YayinTuruFiltreDegeri>("tumu");
+  const [aktifTanburBolumu, setAktifTanburBolumu] = useState<string>("tumu");
   const turSayilari = Object.fromEntries(YAYIN_TURLERI.map((tur) => [tur, videolar.filter((video) => video.arac_turu === tur).length])) as Record<NonNullable<SahaAnaSayfaVideo["arac_turu"]>, number>;
   const filtrelenmisVideolar = useMemo(() => videolar.filter((video) => aktifYayinTuru === "tumu" || video.arac_turu === aktifYayinTuru), [videolar, aktifYayinTuru]);
   const raflar = useMemo(() => anaSayfaRaflari(filtrelenmisVideolar, tohum), [filtrelenmisVideolar, tohum]);
@@ -229,22 +231,87 @@ export default function SahaVideoRaflari({ videolar, onVideoSec }: Props) {
     [filtrelenmisVideolar],
   );
 
+  const tanburBolumleri = useMemo(() => {
+    const liste: TanburBolum[] = [
+      { id: "tumu", etiket: "Tüm Bölümler" },
+    ];
+    if (raflar.tumuRafi.length > 0) liste.push({ id: "tumu_rafi", etiket: "Tümü", sayi: raflar.tumuRafi.length });
+    if (enCokIzlenen.length > 0) liste.push({ id: "en_cok_izlenen", etiket: "En Çok İzlenenler", sayi: enCokIzlenen.length });
+    if (enCokBegenilen.length > 0) liste.push({ id: "en_cok_begenilen", etiket: "En Çok Beğenilenler", sayi: enCokBegenilen.length });
+    raflar.egitimTuruRaflari.forEach((raf) => {
+      liste.push({ id: `tur_${raf.tur}`, etiket: TUR_BASLIK[raf.tur], sayi: raf.videolar.length });
+    });
+    return liste;
+  }, [raflar, enCokIzlenen, enCokBegenilen]);
+
   if (videolar.length === 0) return null;
 
   return (
     <div>
       <div className="mb-5"><YayinTuruFiltresi secili={aktifYayinTuru} onSec={setAktifYayinTuru} sayilar={turSayilari} /></div>
-      <KayanRaf
-        baslik={<><span className="text-base font-bold text-gray-900 md:text-lg">Tümü</span><span aria-hidden="true" className="text-lg text-gray-900">›</span></>}
-        videolar={raflar.tumuRafi}
-        onVideoSec={onVideoSec}
-        varsayilanAcik={true}
+
+      {aktifTanburBolumu !== "tumu" && (
+        <div className="mb-4 flex items-center justify-between rounded-2xl border border-blue-200/80 bg-blue-50/90 px-4 py-2.5 text-xs font-bold text-blue-900 shadow-xs sm:hidden">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+            <span className="text-xs font-black">Odak: {tanburBolumleri.find((b) => b.id === aktifTanburBolumu)?.etiket}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setAktifTanburBolumu("tumu")}
+            className="rounded-lg bg-white px-2.5 py-1 text-[11px] font-extrabold text-blue-600 shadow-xs hover:bg-blue-100 active:scale-95"
+          >
+            Tümünü Göster
+          </button>
+        </div>
+      )}
+
+      {(aktifTanburBolumu === "tumu" || aktifTanburBolumu === "tumu_rafi") && (
+        <KayanRaf
+          key={`tumu_${aktifTanburBolumu}`}
+          baslik={<><span className="text-base font-bold text-gray-900 md:text-lg">Tümü</span><span aria-hidden="true" className="text-lg text-gray-900">›</span></>}
+          videolar={raflar.tumuRafi}
+          onVideoSec={onVideoSec}
+          varsayilanAcik={true}
+        />
+      )}
+      {(aktifTanburBolumu === "tumu" || aktifTanburBolumu === "en_cok_izlenen") && (
+        <SabitBolum
+          key={`izlenen_${aktifTanburBolumu}`}
+          baslik="🔥 En Çok İzlenenler"
+          videolar={enCokIzlenen}
+          onVideoSec={onVideoSec}
+          varsayilanAcik={aktifTanburBolumu === "en_cok_izlenen"}
+        />
+      )}
+      {(aktifTanburBolumu === "tumu" || aktifTanburBolumu === "en_cok_begenilen") && (
+        <SabitBolum
+          key={`begenilen_${aktifTanburBolumu}`}
+          baslik="❤️ En Çok Beğenilenler"
+          videolar={enCokBegenilen}
+          onVideoSec={onVideoSec}
+          varsayilanAcik={aktifTanburBolumu === "en_cok_begenilen"}
+        />
+      )}
+      {raflar.egitimTuruRaflari.map((raf) => {
+        const id = `tur_${raf.tur}`;
+        if (aktifTanburBolumu !== "tumu" && aktifTanburBolumu !== id) return null;
+        return (
+          <KayanRaf
+            key={`${raf.tur}_${aktifTanburBolumu}`}
+            baslik={<h2 className="text-base font-bold text-gray-900 md:text-lg">{TUR_BASLIK[raf.tur]}</h2>}
+            videolar={raf.videolar}
+            onVideoSec={onVideoSec}
+            varsayilanAcik={aktifTanburBolumu === id}
+          />
+        );
+      })}
+
+      <HayaletTanburSecici
+        bolumler={tanburBolumleri}
+        seciliId={aktifTanburBolumu}
+        onSec={setAktifTanburBolumu}
       />
-      <SabitBolum baslik="🔥 En Çok İzlenenler" videolar={enCokIzlenen} onVideoSec={onVideoSec} />
-      <SabitBolum baslik="❤️ En Çok Beğenilenler" videolar={enCokBegenilen} onVideoSec={onVideoSec} />
-      {raflar.egitimTuruRaflari.map((raf) => (
-        <KayanRaf key={raf.tur} baslik={<h2 className="text-base font-bold text-gray-900 md:text-lg">{TUR_BASLIK[raf.tur]}</h2>} videolar={raf.videolar} onVideoSec={onVideoSec} />
-      ))}
     </div>
   );
 }
