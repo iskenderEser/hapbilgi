@@ -201,15 +201,31 @@ export async function GET(request: NextRequest) {
 
     const oneriListesi = (oneriler ?? []) as Array<Record<string, unknown> & { yayin_id: string }>;
     const yayinIdleri = [...new Set(oneriListesi.map((kayit) => kayit.yayin_id).filter(Boolean))];
-    const { data: yayinlar, error: yayinError } = yayinIdleri.length > 0
-      ? await adminSupabase
-          .from("v_yayin_detay")
-          .select("yayin_id, video_url, thumbnail_url, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata, talep_no, firma_adi, yayin_tarihi, icerik_turu")
-          .in("yayin_id", yayinIdleri)
-      : { data: [], error: null };
+    const [yayinlarSonucu, izlemelerSonucu] = await Promise.all([
+      yayinIdleri.length > 0
+        ? adminSupabase
+            .from("v_yayin_detay")
+            .select("yayin_id, video_url, thumbnail_url, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata, talep_no, firma_adi, yayin_tarihi, icerik_turu")
+            .in("yayin_id", yayinIdleri)
+        : Promise.resolve({ data: [], error: null }),
+      yayinIdleri.length > 0
+        ? adminSupabase
+            .from("izleme_kayitlari")
+            .select("yayin_id")
+            .in("yayin_id", yayinIdleri)
+            .eq("tamamlandi_mi", true)
+            .eq("gercek_oynatma_mi", true)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
 
-    if (yayinError) {
-      return hataYaniti("Öneri yayın detayları çekilemedi.", "v_yayin_detay SELECT — UTT öneri listesi", yayinError);
+    if (yayinlarSonucu.error) {
+      return hataYaniti("Öneri yayın detayları çekilemedi.", "v_yayin_detay SELECT — UTT öneri listesi", yayinlarSonucu.error);
+    }
+
+    const yayinlar = yayinlarSonucu.data;
+    const izlemeSayilari = new Map<string, number>();
+    for (const izleme of (izlemelerSonucu.data ?? [])) {
+      izlemeSayilari.set(izleme.yayin_id, (izlemeSayilari.get(izleme.yayin_id) ?? 0) + 1);
     }
 
     const temizOneriler = oneriListesiThumbnailZenginlestir(
@@ -237,6 +253,7 @@ export async function GET(request: NextRequest) {
         firma_adi: ek?.firma_adi ?? null,
         yayin_tarihi: ek?.yayin_tarihi ?? (o.created_at as string | null) ?? null,
         icerik_turu: ek?.icerik_turu ?? null,
+        izlenme_sayisi: izlemeSayilari.get(o.yayin_id) ?? 0,
       };
     });
 

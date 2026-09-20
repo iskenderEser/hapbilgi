@@ -446,7 +446,7 @@ export default function OnerilerPage() {
                     puanYaniRozet={
                       o.izlendi_mi ? (
                         <span
-                          className="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-extrabold text-[#0a1b39] shadow-[0_2px_8px_rgba(212,175,55,0.45),0_1px_3px_rgba(0,0,0,0.1)]"
+                          className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-extrabold leading-none text-[#0a1b39] shadow-sm"
                           style={{
                             background: "linear-gradient(to right, #d4af37 0%, #ecd077 50%, #fae896 100%)",
                           }}
