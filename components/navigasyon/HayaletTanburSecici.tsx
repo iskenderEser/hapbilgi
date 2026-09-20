@@ -14,7 +14,6 @@ interface Props {
   onSec: (id: string) => void;
 }
 
-const OGE_YUKSEKLIK = 40; // piksel
 
 export default function HayaletTanburSecici({ bolumler, seciliId, onSec }: Props) {
   const [acik, setAcik] = useState(false);
@@ -112,84 +111,102 @@ export default function HayaletTanburSecici({ bolumler, seciliId, onSec }: Props
         </button>
       </aside>
 
-      {/* 2. ARKA PLAN DOKUNMA ALANI (Backdrop tap to close) */}
+      {/* 2. ARKA PLAN DERİNLİK ALANI (Holografik Derinlik İçin Hafif Buğu) */}
       {acik && (
         <div
           onClick={() => setAcik(false)}
-          className="fixed inset-0 z-40 bg-black/15 backdrop-blur-[1px] sm:hidden"
+          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[4px] sm:hidden transition-opacity duration-200"
           aria-hidden="true"
         />
       )}
 
-      {/* 3. SAĞDA YÜZEN HAYALET TANBUR (Floating Ghost Drum next to arrow) */}
+      {/* 3. HAVADA ASILI 3D HAYALET TANBUR (Sıfır Kutu, Gerçek 3D Silindir) */}
       {acik && (
         <div
           role="dialog"
           aria-modal="true"
           aria-label="Bölüm Tanburu"
-          className="fixed right-9 top-1/2 z-50 flex h-[200px] w-52 max-w-[65vw] -translate-y-1/2 flex-col items-center justify-center overflow-hidden rounded-2xl border border-white/50 bg-white/85 shadow-2xl backdrop-blur-xl select-none animate-fade-in sm:hidden"
+          className="fixed right-7 top-1/2 z-50 flex h-[240px] w-60 max-w-[70vw] -translate-y-1/2 items-center justify-center select-none sm:hidden"
+          style={{
+            perspective: "800px",
+          }}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onWheel={handleWheel}
         >
-          {/* Odaklama Şeridi (Ortadaki Seçim Alanı) */}
-          <div className="pointer-events-none absolute inset-x-2 top-1/2 -translate-y-1/2 h-10 rounded-xl border border-black/10 bg-black/[0.05] shadow-xs" />
+          {/* Ortadaki Aktif Alana İnce Kılavuz Çizgiler (Kutu Yok, Sadece Odak Kılavuzu) */}
+          <div className="pointer-events-none absolute inset-x-2 top-1/2 -translate-y-[22px] h-[1px] bg-gradient-to-r from-transparent via-black/25 to-transparent" />
+          <div className="pointer-events-none absolute inset-x-2 top-1/2 translate-y-[22px] h-[1px] bg-gradient-to-r from-transparent via-black/25 to-transparent" />
 
-          {/* Dikey Silindir / Tanbur Çarkı */}
+          {/* 3D Silindirik Çark */}
           <div
-            className="relative flex h-[200px] w-full flex-col items-center overflow-hidden [mask-image:linear-gradient(to_bottom,transparent_0%,black_18%,black_82%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,transparent_0%,black_18%,black_82%,transparent_100%)]"
+            className="relative flex h-[240px] w-full items-center justify-center"
+            style={{
+              transformStyle: "preserve-3d",
+            }}
           >
-            <div
-              className="flex w-full flex-col items-center transition-transform duration-200 ease-out"
-              style={{
-                // 200px yükseklikte ortadaki slot y=80px (80px - index * 40px)
-                transform: `translateY(${80 - odakIndex * OGE_YUKSEKLIK}px)`,
-              }}
-            >
-              {bolumler.map((bolum, i) => {
-                const uzaklik = i - odakIndex;
-                const mutlakUzaklik = Math.abs(uzaklik);
+            {bolumler.map((bolum, i) => {
+              const uzaklik = i - odakIndex;
+              const mutlakUzaklik = Math.abs(uzaklik);
 
-                // Uzaklığa göre soluklaşma / hayalet efekti
-                let stil = "text-slate-400 opacity-0 scale-75 pointer-events-none";
-                if (mutlakUzaklik === 0) {
-                  // Ortadaki aktif sekme: Siyah ve bold
-                  stil = "text-black font-black text-sm scale-105 opacity-100";
-                } else if (mutlakUzaklik === 1) {
-                  // Bir üst / alt sekmeler
-                  stil = "text-slate-700/60 font-semibold text-xs scale-95 opacity-55";
-                } else if (mutlakUzaklik === 2) {
-                  // İki üst / alt sekmeler (daha soluk)
-                  stil = "text-slate-500/35 font-medium text-[11px] scale-90 opacity-25";
-                }
+              // 3D Silindir Konumlandırması:
+              // translateY: Dikey kaydırma
+              // rotateX: Tambur yüzeyinde kavislenme (üsttekiler geriye, alttakiler geriye bükülür)
+              // translateZ: Merkezden uzaklaştıkça derinliğe doğru gömülme
+              // scale: Silindir perspektifi
+              const y = uzaklik * 36;
+              const rotX = uzaklik * 24;
+              const z = -mutlakUzaklik * 22;
+              const olcek = Math.max(0.7, 1 - mutlakUzaklik * 0.08);
 
-                return (
-                  <button
-                    key={bolum.id}
-                    type="button"
-                    onClick={() => {
-                      if (suruklendiRef.current) return;
-                      onayla(i);
-                    }}
-                    className={`flex h-10 w-full cursor-pointer items-center justify-center px-3 text-center transition-all duration-150 ${stil}`}
-                  >
-                    <span className="truncate">{bolum.etiket}</span>
-                    {bolum.sayi !== undefined && (
-                      <span
-                        className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
-                          mutlakUzaklik === 0
-                            ? "bg-black/10 text-black"
-                            : "bg-black/5 text-gray-500"
-                        }`}
-                      >
-                        {bolum.sayi}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+              // Görünürlük ve Tipografi
+              let stil = "text-slate-400 opacity-0 pointer-events-none";
+              let yaziGolgesi = "";
+              if (mutlakUzaklik === 0) {
+                // Ortadaki aktif sekme: Simsiyah, ekstra kalın, en net
+                stil = "text-black font-black text-[15px] opacity-100 cursor-pointer";
+                yaziGolgesi = "0 1px 10px rgba(255,255,255,0.95), 0 0 3px rgba(255,255,255,0.9)";
+              } else if (mutlakUzaklik === 1) {
+                // Bir üst / alt sekmeler: Yarı saydam
+                stil = "text-slate-900/60 font-bold text-[12px] opacity-45 cursor-pointer";
+                yaziGolgesi = "0 1px 6px rgba(255,255,255,0.8)";
+              } else if (mutlakUzaklik === 2) {
+                // İki üst / alt sekmeler: Hayalet gibi soluk
+                stil = "text-slate-700/30 font-medium text-[11px] opacity-20 cursor-pointer";
+                yaziGolgesi = "0 1px 4px rgba(255,255,255,0.6)";
+              }
+
+              return (
+                <button
+                  key={bolum.id}
+                  type="button"
+                  onClick={() => {
+                    if (suruklendiRef.current) return;
+                    onayla(i);
+                  }}
+                  style={{
+                    transform: `translateY(${y}px) rotateX(${rotX}deg) translateZ(${z}px) scale(${olcek})`,
+                    textShadow: yaziGolgesi,
+                    transition: "transform 220ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease",
+                  }}
+                  className={`absolute flex h-10 w-full items-center justify-center px-2 text-center bg-transparent border-0 shadow-none outline-none ${stil}`}
+                >
+                  <span className="truncate tracking-tight">{bolum.etiket}</span>
+                  {bolum.sayi !== undefined && (
+                    <span
+                      className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold transition-colors ${
+                        mutlakUzaklik === 0
+                          ? "bg-black text-white shadow-xs"
+                          : "bg-black/10 text-slate-700"
+                      }`}
+                    >
+                      {bolum.sayi}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
