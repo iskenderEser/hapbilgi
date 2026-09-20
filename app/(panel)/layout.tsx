@@ -231,7 +231,6 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
           email={kullanici.email}
           ozet={isEclubKisi ? null : etkinOzet}
           siparisPuaniGoster={!isEclubKisi && etkinFlags.storeAcik}
-          storeGeriSayimGoster={!isEclubKisi && etkinFlags.storeAcik && ["utt", "kd_utt", "bm"].includes(rolKucu)}
           eclubStoreGeriSayimGoster={Boolean(isEclubKisi && etkinFlags.eclubStoreAcik)}
           anaSayfaYolu={anaSayfaYolu}
           eclubStorePuani={isEclubKisi && etkinFlags.eclubStoreAcik ? etkinEclubStorePuani : null}

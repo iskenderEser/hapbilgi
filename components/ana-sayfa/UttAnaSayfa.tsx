@@ -251,35 +251,41 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
           <p className="text-sm text-gray-500 mt-1">{ROL_ADLARI[rol.toLowerCase()] ?? rol.toUpperCase()}</p>
         </div>
 
-        <div className="flex items-start md:items-end gap-1.5 flex-wrap md:flex-col">
-          {takvim && (
-            <button
-              type="button"
-              onClick={() => router.push("/store")}
-              className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border transition-all hover:opacity-85 shadow-xs cursor-pointer select-none"
-              style={{
-                backgroundColor: takvim.acik ? "#f0fdf4" : "#fffbeb",
-                borderColor: takvim.acik ? "#bbf7d0" : "#fef3c7",
-                color: takvim.acik ? "#166534" : "#92400e",
-              }}
-              title={
-                takvim.acik
-                  ? `Store Günleri açık · Kapanışa ${takvim.kalanSureMetni} kaldı`
-                  : `Sonraki sipariş dönemi: ${takvim.sonrakiDonemEtiketi} (${takvim.kalanSureMetni} kaldı)`
-              }
-            >
-              <span
-                className="w-2 h-2 rounded-full shrink-0"
+        <div className="flex items-start md:items-stretch gap-1.5 flex-wrap md:flex-col">
+          {takvim && (() => {
+            const kalanGun = Math.floor(takvim.kalanMs / (24 * 60 * 60 * 1000));
+            const onGunKala = !takvim.acik && kalanGun <= 10;
+            return (
+              <button
+                type="button"
+                onClick={() => router.push("/store")}
+                className="inline-flex items-center justify-center gap-1.5 text-[10px] font-bold px-3 py-1 rounded-full border transition-all hover:opacity-85 shadow-xs cursor-pointer select-none whitespace-nowrap text-center"
                 style={{
-                  backgroundColor: takvim.acik ? "#16a34a" : "#f59e0b",
-                  boxShadow: takvim.acik ? "0 0 6px #16a34a" : "none",
+                  backgroundColor: takvim.acik ? "#f0fdf4" : onGunKala ? "#1e3a8a" : "#fffbeb",
+                  borderColor: takvim.acik ? "#bbf7d0" : onGunKala ? "#1e3a8a" : "#fef3c7",
+                  color: takvim.acik ? "#166534" : onGunKala ? "#ffffff" : "#92400e",
                 }}
-              />
-              <span>{takvim.navMetni}</span>
-            </button>
-          )}
+                title={
+                  takvim.acik
+                    ? `Store Günleri açık · Kapanışa ${takvim.kalanSureMetni} kaldı`
+                    : `Sonraki sipariş dönemi: ${takvim.sonrakiDonemEtiketi} (${takvim.kalanSureMetni} kaldı)`
+                }
+              >
+                {!onGunKala && (
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{
+                      backgroundColor: takvim.acik ? "#16a34a" : "#f59e0b",
+                      boxShadow: takvim.acik ? "0 0 6px #16a34a" : "none",
+                    }}
+                  />
+                )}
+                <span>{takvim.navMetni}</span>
+              </button>
+            );
+          })()}
 
-          <span className="hidden md:inline text-[10px] text-gray-500 bg-white border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap shadow-xs">
+          <span className="hidden md:inline-flex items-center justify-center text-[10px] text-gray-500 bg-white border border-gray-200 rounded-full px-3 py-1 whitespace-nowrap shadow-xs text-center">
             {bugunTarih()}
           </span>
         </div>

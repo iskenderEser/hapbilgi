@@ -8,7 +8,6 @@
 
 import { useRouter, usePathname } from "next/navigation";
 import { useState } from "react";
-import { useHbstoreTakvim } from "@/hooks/useHbstoreTakvim";
 import { useEclubStoreTakvim } from "@/hooks/useEclubStoreTakvim";
 
 const BORDO = "#bc2d0d";
@@ -52,6 +51,7 @@ function OzetKapsul({
         </span>
       </div>
 
+      {/* Sipariş Puanı — yalnız HBStore aktifse */}
       {siparisPuaniGoster && (
         <>
           <div className="h-3 w-[1px] bg-slate-300 mx-2" />
@@ -94,8 +94,6 @@ interface PanelNavbarProps {
   ozet?: { haftalikPuan: number; takimSirasi: number | null; siparisPuani: number } | null;
   // Sipariş Puanı pill'i yalnız kullanıcının firmasında HBStore aktifse görünür.
   siparisPuaniGoster?: boolean;
-  // Store Günleri geri sayımı — alıcı roller (UTT/KD_UTT/BM) ve firma HBStore açıkken görünür.
-  storeGeriSayimGoster?: boolean;
   // E-Club Store Günleri geri sayımı — E-Club kişisi ve aktif firma E-Club Store açıkken görünür.
   eclubStoreGeriSayimGoster?: boolean;
   // Dış müşteri ana sayfası /eclub/panel'dir; iç kullanıcıda varsayılan korunur.
@@ -120,7 +118,6 @@ export default function PanelNavbar({
   email,
   ozet,
   siparisPuaniGoster,
-  storeGeriSayimGoster,
   eclubStoreGeriSayimGoster,
   anaSayfaYolu = "/ana-sayfa",
   eclubStorePuani,
@@ -133,7 +130,6 @@ export default function PanelNavbar({
   const router = useRouter();
   const pathname = usePathname();
   const [hover, setHover] = useState<string | null>(null);
-  const { takvim } = useHbstoreTakvim({ aktif: Boolean(storeGeriSayimGoster) });
   const { takvim: eclubTakvim } = useEclubStoreTakvim({ aktif: Boolean(eclubStoreGeriSayimGoster) });
 
   const isAktif = (path: string) => pathname === path;
@@ -283,22 +279,6 @@ export default function PanelNavbar({
 
         {/* Mobil: avatar + hamburger (sol drawer'ı açar). flex-shrink-0 ile asla kesilmez */}
         <div className="flex md:hidden items-center gap-1.5 flex-shrink-0">
-          {storeGeriSayimGoster && takvim && (
-            <button
-              type="button"
-              onClick={() => router.push("/store")}
-              className="inline-flex items-center gap-1 text-[11px] font-bold bg-transparent border-none p-0 mr-1"
-              style={{ color: takvim.acik ? "#027a48" : "#4b5563" }}
-            >
-              <span
-                className="size-1.5 rounded-full shrink-0"
-                style={{
-                  backgroundColor: takvim.acik ? "#12b76a" : "#f59e0b",
-                }}
-              />
-              <span>{takvim.acik ? "Açık" : takvim.kisaKalanSureMetni}</span>
-            </button>
-          )}
           {eclubStoreGeriSayimGoster && eclubTakvim && (
             <button
               type="button"
