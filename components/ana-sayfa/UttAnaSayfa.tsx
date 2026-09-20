@@ -463,6 +463,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}
               onFavori={handleFavori}
+              varsayilanAcik={true}
             />
           )}
           {yeniVideolar.length > 0 && (
@@ -472,6 +473,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
               onVideoClick={handleVideoClick}
               onBegeni={handleBegeni}
               onFavori={handleFavori}
+              varsayilanAcik={devamEdenler.length === 0}
             />
           )}
           {tureGoreSuz(uttVeri?.son_izlediklerim ?? []).length > 0 && (
