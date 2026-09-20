@@ -1,8 +1,9 @@
-# FAZ 0 — Mobil Dikey Yayın Akışı Kapsam ve Kullanım Noktaları Envanteri (Revize)
+# FAZ 0 — Mobil Dikey Yayın Akışı Kapsam ve Kullanım Noktaları Envanteri (Revize 2)
 
 ## 1. Başlangıç Durumu ve Çalışma Ağacı
 - **Başlangıç Commit:** `a874ae957108c71fe0c06171a548a70b943e49e1`
 - **İlk Envanter Commiti:** `89a7c523caf71a2f11fd65fe4f863f766ccfc4fd`
+- **İlk Düzeltme Commiti:** `1b37ec03299534a6084b5711b6bfd96a7982646f`
 - **Çalışma Ağacı:** Temiz (`working tree clean`).
 - **Doğrulama Sonuçları:**
   - `npm run typecheck:build`: Başarılı (Next.js route types eksiksiz üretildi, 0 TypeScript hatası).
@@ -29,7 +30,7 @@ Aşağıdaki tablo, HapBilgi platformunda yayın/video kartı gösteren tüm kul
 | **9** | BM | `/challenge-club` | `ChallengeClubPage` (`CcRaf` + `KartSarici`) | `UttVideoKarti` -> `YayinKarti` | **Yatay kayan raf** (`overflow-x-auto`) *(Dikey kuralına aykırı)* | Yatay kayan raf (`overflow-x-auto` + butonlar) | Sekmeler (İzlenecek, Gelenler, Gönderilenler) | `/challenge-club/api` | `yayin_id` / `challenge_id` | Challenge video izleme, Beğeni, Favori, Kilit durumu gösterimi, Gönderen/Alıcı meta şeridi | Sayfalama yok (yatay kaydırılır) | Özel ikonlu boş durum ("Henüz yayında olan CC videosu yok") | `app/(panel)/challenge-club/page.tsx` (L509-L525, L604-L710) |
 | **10** | E-Club Kişisi (Eczacı, Eczane Teknisyeni) | `/eclub/panel` ve `/eclub/panel/firma/[firma_id]` | `EclubFirmaVideoKatalogu` (`VideoRafi`) | `VideoKarti` -> `YayinKarti` | **Yatay kayan raf** (`overflow-x-auto`) *(Dikey kuralına aykırı)* | Yatay kayan raf (`overflow-x-auto` + butonlar) | Firma seçici, Bölümleme (Tüm İçerikler, En Çok Beğenilenler, En Çok Favorilenenler) | `/eclub/panel/api` | `oneri_id` | E-Club video oynatıcıda izleme, Beğeni, Favori, Kalan gün / Tamamlandı rozeti | Sayfalama yok (yatay kaydırılır) | Boş raf kesikli çizgi kutusu | `app/(panel)/eclub/panel/_components/EclubFirmaVideoKatalogu.tsx` (L79-L89), `app/(panel)/eclub/panel/firma/[firma_id]/page.tsx` (L1) |
 | **11** | Eczanem Müşterisi | `/eczanem` | `EczanemVideoRafi` | `YayinKarti` | **Yatay kayan raf** (`overflow-x-auto`) *(Dikey kuralına aykırı)* | Yatay kayan raf (`overflow-x-auto` + butonlar) | Ağaç kapsamı (`tum`, `eczane`, `firma`, `urun`, `arac`), Yayın türü filtresi, 6 Ayrı Raf | `/eczanem/api/videolar` | `${baslik}-${video.gonderim_id}` *(gonderim_id korunmalıdır)* | Eczanem video oynatıcıda izleme, Beğeni/Favori toggle (`/eczanem/api/etkilesim`), Devam Et / Yeni rozeti | Sayfalama yok (yatay kaydırılır) | Kesikli kenarlı boş durum kutusu | `app/eczanem/_components/EczanemVideoRafi.tsx` (L137-L165), `app/eczanem/page.tsx` (L70, L95-L141, L268-L276) |
-| **12** | Üretici ve Yönetici Roller | `/yayin-yonetimi` (Aktif Yayınlar Sekmesi) | `YayinYonetimiPage` | `YayinSatir` (`kartGorunumu={true}`) | Dikey tek sütun (`grid-cols-1 items-start gap-3`) | Çok sütunlu ızgara (`sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5`) | Hedef kitle filtresi (utt/kd_utt/bm/tm/eczaci/vb.), Durum filtresi (sekme), Metin arama | `/yayin-yonetimi/api` | `yayin_id` | Yayını durdurma (`onDurumDegistir`), Planlama tarihi/tekrar düzenleme (`onPlanIslem`), Önizleme/video açma (`onVideoAc`, `onOnizle`) | `useListe` ve `DahaFazlaGoster` ile kademeli | Boş liste mesajı ("Bu hedef kitle için aktif yayın yok") | `app/(panel)/yayin-yonetimi/page.tsx` (L245-L278), `app/(panel)/yayin-yonetimi/_components/YayinSatir.tsx` |
+| **12** | Üretici Roller (URETICI_ROLLER) | `/yayin-yonetimi` (Aktif Yayınlar Sekmesi) | `YayinYonetimiPage` | `YayinSatir` (`kartGorunumu={true}`) | Dikey tek sütun (`grid-cols-1 items-start gap-3`) | Çok sütunlu ızgara (`sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5`) | `YAYIN_HEDEF_GRUP_SIRASI` (`utt`, `bm`, `eczaci`, `eczane_teknisyeni`, `eczaci_ve_eczane_teknisyeni`, `eczanem`), Metin arama | `GET /yayin-yonetimi/api/yayinlar` | `yayin_id` | Yayını durdurma (`onDurumDegistir`), Planlama tarihi/tekrar düzenleme (`onPlanIslem`), Önizleme/video açma (`onVideoAc`, `onOnizle`) | `useListe` ve `DahaFazlaGoster` ile kademeli | Boş liste mesajı ("Bu hedef kitle için aktif yayın yok") | `app/(panel)/yayin-yonetimi/page.tsx` (L69, L89, L245-L278), `app/(panel)/yayin-yonetimi/_hooks/useYayinYonetimi.ts` (L159), `components/panel/panelNav.config.ts` |
 
 ---
 
@@ -40,12 +41,15 @@ Aşağıdaki tablo, HapBilgi platformunda yayın/video kartı gösteren tüm kul
 2. **Mobilde Halen Yatay Kayan Yüzeyler:**
    - Üretici Yayın Katalogları (`/sizin-yayinlariniz`, `/tum-yayinlar`), Challenge Club (`/challenge-club`), E-Club Kişi Paneli (`/eclub/panel`, `/eclub/panel/firma/[firma_id]`) ve Eczanem Müşteri Rafı (`/eczanem`) mobilde halen `overflow-x-auto` yatay kaydırma kullanmaktadır.
 3. **UTT Durum Listesi:**
-   - `UttAnaSayfa.tsx` içindeki `aktifDurumVideolari` listesi, sanılanın aksine 2 sütunlu değil; kodda zaten `grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3...` olarak dikey tek sütundur. Bu görünüm URL parametresi (`/ana-sayfa?durum=...`) değil, sayfa içi `aktifDurumFiltresi` React state'i ile açılmaktadır.
+   - `UttAnaSayfa.tsx` içindeki `aktifDurumVideolari` listesi, kodda zaten `grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3...` olarak dikey tek sütundur. Bu görünüm URL parametresi (`/ana-sayfa?durum=...`) değil, sayfa içi `aktifDurumFiltresi` React state'i ile açılmaktadır.
 4. **Eczanem Anahtar ve Veri Kaynağı:**
    - `EczanemVideoRafi.tsx` bileşeni kart anahtarı olarak `video.yayin_id` değil, `${baslik}-${video.gonderim_id}` kullanmaktadır. Eczanem müşterisi aynı yayını farklı gönderimlerle alabileceği için gönderim kimliği (`gonderim_id`) merkezileştirmede korunacaktır.
    - Veri kaynağı `/eczanem/api` değil, doğrudan `/eczanem/api/videolar` uç noktasıdır.
-5. **Yayın Yönetimi Aktif Yayınlar Bölümü:**
-   - `/yayin-yonetimi` sayfasının "Aktif Yayınlar" sekmesi (`aktifSekme === "yayinda"`), `YayinSatir` bileşenine `kartGorunumu={true}` prop'u geçerek gerçek yayın kartları grid'i oluşturmaktadır. Bu liste mobil dikey akış kapsamına alınmıştır; üzerindeki durdurma, planlama ve önizleme aksiyonları korunacaktır.
+5. **Yayın Yönetimi Aktif Yayınlar Bölümü ve Rol Kapsamı:**
+   - `/yayin-yonetimi` sayfasına yalnızca `URETICI_ROLLER` erişebilir (`panelNav.config.ts` menü kapısı ve `yayin-yonetimi/page.tsx` L69/L89 `ureticiMi` kontrolü); yöneticiler ve diğer roller `/ana-sayfa`ya yönlendirilir.
+   - Aktif yayınlar sekmesindeki ana hedef kitle sekmeleri `YAYIN_HEDEF_GRUP_SIRASI` dizisinden gelir: `utt`, `bm`, `eczaci`, `eczane_teknisyeni`, `eczaci_ve_eczane_teknisyeni` (`ECLUB_ORTAK_YAYIN_GRUBU`), `eczanem`.
+   - Aktif yayınların gerçek veri kaynağı `GET /yayin-yonetimi/api/yayinlar` uç noktasıdır (`useYayinYonetimi.ts` L159).
+   - "Aktif Yayınlar" sekmesi (`aktifSekme === "yayinda"`), `YayinSatir` bileşenine `kartGorunumu={true}` prop'u geçerek gerçek yayın kartları grid'i oluşturmaktadır. Bu liste mobil dikey akış kapsamına alınmıştır; üzerindeki durdurma, planlama ve önizleme aksiyonları korunacaktır.
 
 ---
 
