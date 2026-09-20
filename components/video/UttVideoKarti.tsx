@@ -1,12 +1,9 @@
 "use client";
 
 import { useRef, type MouseEvent, type ReactNode } from "react";
-import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
-import { TUR_BASLIK, type IcerikTuru } from "@/lib/video/icerikTuru";
-import { talepIdGoster } from "@/lib/utils/talepId";
+import type { IcerikTuru } from "@/lib/video/icerikTuru";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
-import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
-import { YayinTuruPill } from "@/components/ogrenme-araci/YayinTuruPill";
+import { YayinKarti } from "@/components/yayin/YayinKarti";
 
 export type UttVideoDurumu = "yeni" | "devam" | "tamamlanan";
 
@@ -68,57 +65,16 @@ interface VideoEtkilesimProps extends VideoEtkilesimHandlerlari {
   etkilesimAktif?: boolean;
 }
 
-const GUN_MS = 24 * 60 * 60 * 1000;
-const kalanGun = (tarih: string) => Math.max(0, Math.ceil((new Date(tarih).getTime() - Date.now()) / GUN_MS));
-const formatTarih = (tarih: string) =>
-  new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
 
 export function UttVideoKarti({ video, onVideoClick, onBegeni, onFavori, etkilesimAktif = true }: VideoEtkilesimProps) {
-  const thumbnail = yayinThumbnailIstemciCoz(video);
-
   return (
-    <div className="group cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md" onClick={() => onVideoClick(video)}>
-      <div className="relative aspect-video overflow-hidden bg-gray-100">
-        {thumbnail ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={thumbnail} alt={video.urun_adi} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
-        ) : (
-          <AracVarsayilanKapak aracTuru={video.arac_turu} urunAdi={video.urun_adi} />
-        )}
-
-        {video.durum === "yeni" && <div className="absolute left-1.5 top-1.5 rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] text-white shadow-sm">Yeni</div>}
-        {video.durum === "devam" && <div className="absolute left-1.5 top-1.5 rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">Yarım Kaldı</div>}
-        {video.durum === "tamamlanan" && <div className="absolute left-1.5 top-1.5 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] text-white">✓ İzlendi</div>}
-        <YayinTuruPill tur={video.arac_turu} className="absolute right-1.5 top-1.5" />
-        {video.icerik_turu && <div className="absolute bottom-1.5 left-1.5 rounded-full bg-black/70 px-1.5 py-0.5 text-[10px] text-white">{TUR_BASLIK[video.icerik_turu]}</div>}
-      </div>
-
-      <div className="p-2.5">
-        <div className="flex items-start justify-between gap-1.5">
-          <h3 className="line-clamp-2 flex-1 text-xs font-bold text-gray-900">{video.urun_adi}</h3>
-          <div className="flex flex-shrink-0 items-center gap-0.5">
-            <button type="button" disabled={!etkilesimAktif} onClick={(event) => onBegeni(event, video.yayin_id)} aria-label="Beğen" className={`rounded-full p-0.5 transition-colors ${!etkilesimAktif ? "cursor-default text-red-500" : video.begeni_mi ? "text-red-500" : "text-gray-400 hover:text-gray-600"}`}>
-              <svg className="h-3.5 w-3.5" fill={!etkilesimAktif || video.begeni_mi ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
-            </button>
-            <span className="text-[10px] text-gray-500">{video.begeni_sayisi}</span>
-            <button type="button" disabled={!etkilesimAktif} onClick={(event) => onFavori(event, video.yayin_id)} aria-label="Favoriye ekle" className={`rounded-full p-0.5 transition-colors ${!etkilesimAktif ? "cursor-default text-blue-500" : video.favori_mi ? "text-blue-500" : "text-gray-400 hover:text-blue-500"}`}>
-              <svg className="h-3.5 w-3.5" fill={!etkilesimAktif || video.favori_mi ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
-            </button>
-            <span className="text-[10px] text-gray-500">{video.favori_sayisi}</span>
-          </div>
-        </div>
-
-        <div className="mt-1.5 flex items-center justify-between text-[10px] text-gray-500"><span>{formatTarih(video.yayin_tarihi)}</span><span>{video.izlenme_sayisi} izlenme</span></div>
-        <div className="mt-1.5 flex items-center justify-between gap-1">
-          <div className="flex items-center gap-1">
-            {video.video_puani !== null && <><span className="text-[10px] font-bold text-yellow-600">★ {video.video_puani}</span>{video.extra_puan > 0 && <span className="text-[10px] text-green-600">+{video.extra_puan} extra</span>}</>}
-          </div>
-          {video.talep_no != null && <span className="font-mono text-[10px] text-[#bc2d0d]">{talepIdGoster(video.firma_adi, video.talep_no)}</span>}
-        </div>
-        {video.daha_once_izledi && video.sonraki_tur_tarihi && <span className="mt-1.5 inline-block w-fit rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] text-blue-700">{kalanGun(video.sonraki_tur_tarihi)} gün sonra yeniden puanlı</span>}
-        {video.durum === "devam" && <div className="mt-2 flex items-center justify-between rounded-lg bg-amber-50 px-2 py-1.5 text-[10px] font-bold text-amber-700"><span>Baştan İzle</span><span aria-hidden="true">→</span></div>}
-      </div>
-    </div>
+    <YayinKarti
+      yayin={video}
+      onClick={() => onVideoClick(video)}
+      onBegeni={onBegeni}
+      onFavori={onFavori}
+      etkilesimAktif={etkilesimAktif}
+    />
   );
 }
 

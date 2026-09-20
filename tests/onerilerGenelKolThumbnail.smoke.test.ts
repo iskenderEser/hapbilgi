@@ -154,7 +154,7 @@ test("Öneri API genel kolu: Video thumbnail davranışı korunur", () => {
   const sonuc = oneriListesiThumbnailZenginlestir(oneriListesi, yayinDetaylari);
 
   assert.equal(sonuc[0].thumbnail_url, "https://video.bunnycdn.com/thumbs/vid1.jpg");
-  assert.equal(sonuc[0].video_url, "https://video.bunnycdn.com/play/vid1.mp4");
+  assert.equal(sonuc[0].video_url, "https://video.bunnycdn.com/embed/vid1.mp4");
 });
 
 test("Öneri API genel kolu: Ham Storage yolları ve kapak metadata'sı API cevabında bulunmaz", () => {

@@ -1,11 +1,10 @@
 "use client";
 
 import { useMemo, useRef } from "react";
-import { Heart, Play, Star } from "lucide-react";
-import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
-import { talepIdGoster } from "@/lib/utils/talepId";
+import { Play } from "lucide-react";
 import type { PanelOneri } from "../_hooks/useEclubPanel";
-import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
+
+import { YayinKarti } from "@/components/yayin/YayinKarti";
 
 interface Props {
   oneriler: PanelOneri[];
@@ -29,45 +28,38 @@ function firmaIyelik(firmaAdi: string): string {
 }
 
 function VideoKarti({ oneri, onSec, onBegeni, onFavori, etkilesimAktif }: { oneri: PanelOneri; onSec: () => void; onBegeni: () => void; onFavori: () => void; etkilesimAktif: boolean }) {
-  const thumbnail = yayinThumbnailIstemciCoz(oneri);
+  const durumMetni = oneri.izlendi_mi
+    ? "Tamamlandı"
+    : oneri.oneri_durumu === "suresi_gecmis"
+      ? "Süresi Geçti"
+      : `${oneri.kalan_gun} gün`;
 
   return (
-    <article className="group w-40 shrink-0 snap-start overflow-hidden rounded-xl border border-[#dfe7f1] bg-white transition hover:-translate-y-0.5 hover:border-[#b9d5f0] hover:shadow-[0_10px_24px_rgba(31,55,90,0.10)] sm:w-44 md:w-52">
-      <button type="button" onClick={onSec} className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#56aeff]">
-        <div className="relative aspect-video overflow-hidden bg-[#edf3f8]">
-          {thumbnail
-            // eslint-disable-next-line @next/next/no-img-element
-            ? <img src={thumbnail} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]" />
-            : <AracVarsayilanKapak aracTuru={oneri.arac_turu} urunAdi={oneri.urun_adi} />}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#10233a]/45 via-transparent to-transparent" />
+    <div className="w-40 shrink-0 snap-start sm:w-44 md:w-52">
+      <YayinKarti
+        yayin={{
+          ...oneri,
+          yayin_tarihi: oneri.created_at || oneri.oneri_baslangic,
+        }}
+        onClick={onSec}
+        onBegeni={onBegeni}
+        onFavori={onFavori}
+        etkilesimAktif={etkilesimAktif}
+        donguGoster={false}
+        solUstRozet={
+          <span className="rounded-full border border-white/30 bg-[#10233a]/70 px-2 py-0.5 text-[9px] font-extrabold text-white backdrop-blur-sm">
+            {durumMetni}
+          </span>
+        }
+        hoverOverlay={
           <span className="absolute inset-0 flex items-center justify-center">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-[#10233a]/65 text-white shadow-lg backdrop-blur-sm transition-transform group-hover:scale-105"><Play size={14} fill="currentColor" /></span>
+            <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/45 bg-[#10233a]/65 text-white shadow-lg backdrop-blur-sm transition-transform group-hover:scale-105">
+              <Play size={14} fill="currentColor" />
+            </span>
           </span>
-          <span className="absolute right-2 top-2 rounded-full border border-white/30 bg-[#10233a]/70 px-2 py-1 text-[9px] font-extrabold text-white backdrop-blur-sm">
-            {oneri.izlendi_mi ? "Tamamlandı" : oneri.oneri_durumu === "suresi_gecmis" ? "Süresi Geçti" : `${oneri.kalan_gun} gün`}
-          </span>
-        </div>
-        <div className="px-3 pt-3">
-          <div className="truncate text-sm font-extrabold text-[#243957]">{oneri.urun_adi}</div>
-          <div className="mt-1 truncate text-[10px] font-bold text-[#7b8ca5]">{oneri.teknik_adi || "Ürün eğitimi"}</div>
-          {oneri.talep_no != null && <div className="mt-1 truncate font-mono text-[9px] text-[#bc2d0d]">{talepIdGoster(oneri.firma_adi, oneri.talep_no)}</div>}
-        </div>
-      </button>
-      <div className="m-3 mt-2 grid grid-cols-3 gap-1 rounded-lg bg-[#f7f9fc] px-2 py-1.5 text-[10px] text-[#70849d]">
-        <span className="text-center"><b className="text-[#314a68]">+{oneri.video_puani}</b> puan</span>
-        {etkilesimAktif ? (
-          <>
-            <button type="button" onClick={onBegeni} aria-label={oneri.begeni_mi ? "Beğeniyi kaldır" : "Beğen"} className={`flex items-center justify-center gap-1 border-x border-[#e2e9f1] ${oneri.begeni_mi ? "text-red-500" : "hover:text-red-500"}`}><Heart size={11} fill={oneri.begeni_mi ? "currentColor" : "none"} /><b>{oneri.begeni_sayisi}</b></button>
-            <button type="button" onClick={onFavori} aria-label={oneri.favori_mi ? "Favoriden kaldır" : "Favoriye ekle"} className={`flex items-center justify-center gap-1 ${oneri.favori_mi ? "text-blue-500" : "hover:text-blue-500"}`}><Star size={11} fill={oneri.favori_mi ? "currentColor" : "none"} /><b>{oneri.favori_sayisi}</b></button>
-          </>
-        ) : (
-          <>
-            <span className="flex items-center justify-center gap-1 border-x border-[#e2e9f1] text-red-500"><Heart size={11} fill="currentColor" /><b>{oneri.begeni_sayisi}</b></span>
-            <span className="flex items-center justify-center gap-1 text-blue-500"><Star size={11} fill="currentColor" /><b>{oneri.favori_sayisi}</b></span>
-          </>
-        )}
-      </div>
-    </article>
+        }
+      />
+    </div>
   );
 }
 

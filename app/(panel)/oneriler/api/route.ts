@@ -204,7 +204,7 @@ export async function GET(request: NextRequest) {
     const { data: yayinlar, error: yayinError } = yayinIdleri.length > 0
       ? await adminSupabase
           .from("v_yayin_detay")
-          .select("yayin_id, video_url, thumbnail_url, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata")
+          .select("yayin_id, video_url, thumbnail_url, arac_id, arac_turu, arac_kapak_yolu, arac_dosya_yolu, arac_metadata, talep_no, firma_adi, yayin_tarihi, icerik_turu")
           .in("yayin_id", yayinIdleri)
       : { data: [], error: null };
 
@@ -217,7 +217,30 @@ export async function GET(request: NextRequest) {
       (yayinlar ?? []) as Array<{ yayin_id: string } & import("@/lib/ogrenmeAraci/yayinThumbnail").YayinKapakGirdisi>
     );
 
-    return NextResponse.json({ oneriler: temizOneriler }, { status: 200 });
+    const yayinEkHaritasi = new Map(
+      (yayinlar ?? []).map((y) => [
+        y.yayin_id,
+        {
+          talep_no: y.talep_no ?? null,
+          firma_adi: y.firma_adi ?? null,
+          yayin_tarihi: y.yayin_tarihi ?? null,
+          icerik_turu: y.icerik_turu ?? null,
+        },
+      ])
+    );
+
+    const tamOneriler = (temizOneriler as unknown as Array<Record<string, unknown> & { yayin_id: string }>).map((o) => {
+      const ek = yayinEkHaritasi.get(o.yayin_id);
+      return {
+        ...o,
+        talep_no: ek?.talep_no ?? null,
+        firma_adi: ek?.firma_adi ?? null,
+        yayin_tarihi: ek?.yayin_tarihi ?? (o.created_at as string | null) ?? null,
+        icerik_turu: ek?.icerik_turu ?? null,
+      };
+    });
+
+    return NextResponse.json({ oneriler: tamOneriler }, { status: 200 });
 
   } catch (err) {
     return sunucuHatasi(err, "GET /oneriler/api");

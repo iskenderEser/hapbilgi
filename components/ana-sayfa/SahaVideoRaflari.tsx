@@ -4,69 +4,33 @@ import { useMemo, useRef, useState, type ReactNode } from "react";
 import type { SahaAnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 import { anaSayfaRaflari } from "@/lib/video/anaSayfaRaflari";
 import { TUR_BASLIK } from "@/lib/video/icerikTuru";
-import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
-import { talepIdGoster } from "@/lib/utils/talepId";
-import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
-import { YayinTuruPill } from "@/components/ogrenme-araci/YayinTuruPill";
 import { YayinTuruFiltresi, type YayinTuruFiltreDegeri } from "@/components/ogrenme-araci/YayinTuruFiltresi";
 import { YAYIN_TURLERI } from "@/lib/ogrenmeAraci/turSunumu";
+
+import { YayinKarti } from "@/components/yayin/YayinKarti";
 
 interface Props {
   videolar: SahaAnaSayfaVideo[];
   onVideoSec: (video: SahaAnaSayfaVideo) => void;
 }
 
-const tarih = (deger: string) =>
-  new Date(deger).toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" });
-
 function SahaVideoKarti({ video, onVideoSec }: { video: SahaAnaSayfaVideo; onVideoSec: Props["onVideoSec"] }) {
-  const kapak = yayinThumbnailIstemciCoz(video);
-
   return (
-    <button
-      type="button"
+    <YayinKarti
+      yayin={video}
       onClick={() => onVideoSec(video)}
-      className="group h-full w-full overflow-hidden rounded-xl border border-gray-200 bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
-      aria-label={`${video.urun_adi} videosunu aç`}
-    >
-      <span className="relative block aspect-video overflow-hidden bg-gray-100">
-        {kapak ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={kapak} alt={video.urun_adi} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
-        ) : (
-          <AracVarsayilanKapak aracTuru={video.arac_turu} urunAdi={video.urun_adi} />
-        )}
-        {video.icerik_turu && (
-          <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/70 px-1.5 py-0.5 text-[9px] font-bold text-white">
-            {TUR_BASLIK[video.icerik_turu]}
-          </span>
-        )}
-        {video.arac_turu && <YayinTuruPill tur={video.arac_turu} className="absolute right-1.5 top-1.5 z-10" />}
+      etkilesimAktif={false}
+      durumGoster={false}
+      puanGoster={false}
+      donguGoster={false}
+      hoverOverlay={
         <span className="absolute inset-0 flex items-center justify-center bg-black/5 transition-colors group-hover:bg-black/15">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white shadow-sm transition-transform group-hover:scale-105">
             <svg aria-hidden="true" width="9" height="11" viewBox="0 0 10 12" fill="currentColor"><path d="M0 0l10 6-10 6z" /></svg>
           </span>
         </span>
-      </span>
-
-      <span className="block p-2.5">
-        <strong className="block truncate text-xs font-extrabold text-gray-900">{video.urun_adi}</strong>
-        <span className="mt-0.5 block truncate text-[10px] font-semibold text-gray-500">{video.teknik_adi || "Teknik belirtilmedi"}</span>
-        <span className="mt-2 flex items-center justify-between gap-2 text-[10px] text-gray-500">
-          <span>{tarih(video.yayin_tarihi)}</span>
-          <span className="whitespace-nowrap">{video.izlenme_sayisi} izlenme</span>
-        </span>
-        <span className="mt-1.5 flex items-center justify-between gap-2">
-          <span className="flex items-center gap-2 text-[10px] font-bold text-gray-500">
-            <span aria-label={`${video.begeni_sayisi} beğeni`}>♡ {video.begeni_sayisi}</span>
-            <span aria-label={`${video.favori_sayisi} favori`}>☆ {video.favori_sayisi}</span>
-          </span>
-          {video.talep_no != null && (
-            <span className="truncate font-mono text-[9px] text-[#bc2d0d]">{talepIdGoster(video.firma_adi, video.talep_no)}</span>
-          )}
-        </span>
-      </span>
-    </button>
+      }
+    />
   );
 }
 

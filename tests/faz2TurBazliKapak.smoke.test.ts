@@ -56,10 +56,19 @@ test("Faz 2 dağıtım ve öneri yüzeyleri ortak çözümleyici ile tür bazlı
     "app/(panel)/eclub/panel/_components/EclubFirmaVideoKatalogu.tsx",
   ];
 
+  const ortakYayinKarti = oku("components/yayin/YayinKarti.tsx");
+  assert.match(ortakYayinKarti, /yayinThumbnailIstemciCoz\(/);
+  assert.match(ortakYayinKarti, /<AracVarsayilanKapak/);
+
   for (const dosya of dosyalar) {
     const kaynak = oku(dosya);
-    assert.match(kaynak, /yayinThumbnailIstemciCoz\(/, `${dosya} ortak çözümleyiciyi kullanmalı`);
-    assert.match(kaynak, /<AracVarsayilanKapak/, `${dosya} tür bazlı varsayılan kapak kullanmalı`);
+    const yayinKartiKullaniyor = /<YayinKarti|YayinKarti\(/.test(kaynak);
+    if (yayinKartiKullaniyor) {
+      assert.ok(true);
+    } else {
+      assert.match(kaynak, /yayinThumbnailIstemciCoz\(/, `${dosya} ortak çözümleyiciyi kullanmalı`);
+      assert.match(kaynak, /<AracVarsayilanKapak/, `${dosya} tür bazlı varsayılan kapak kullanmalı`);
+    }
   }
 });
 

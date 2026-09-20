@@ -171,8 +171,21 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
   "oneriler": {
     anahtar: "oneriler",
     baslik: "Öneri Takibi",
-    ozet: "Bölge Müdürünüzden gelen gelişim önerilerini listeler; süresi dolmadan videoları tamamlayarak öneri puanı kazanmanızı sağlar.",
-    maddeler: [],
+    ozet: "Bölge Müdürünüzden gelen gelişim önerilerini listeler; video, podcast, dijital broşür ve literatür gibi öğrenme araçlarını görebilirsiniz.",
+    maddeler: [
+      {
+        baslik: "Çoklu Öğrenme Araçları",
+        aciklama: "Bölge Müdürünüz gelişim hedeflerinize göre video, podcast, dijital broşür veya literatür önerebilir. Her içeriğin türü kart üzerindeki rozetle belirtilir.",
+      },
+      {
+        baslik: "Süre ve Puan Kazanımı",
+        aciklama: "Önerilen öğrenme araçlarını son geçerlilik tarihine kadar tamamlayarak daha çok puan kazanırsınız.",
+      },
+      {
+        baslik: "Durum Takibi",
+        aciklama: "İzleme bekleyen, tamamlanan ve süresi dolan önerilerinizi kartlar üzerinden anlık olarak filtreleyebilirsiniz.",
+      },
+    ],
   },
 
   // ─── 13. EĞİTİM YAYINLARI (KATEGORİ VİDEOLARI) ────────────────────────────

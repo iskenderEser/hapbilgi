@@ -6,17 +6,12 @@ import {
   Clock3,
   FileText,
   Headphones,
-  Heart,
   Image as ImageIcon,
   Play,
-  Star,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { talepIdGoster } from "@/lib/utils/talepId";
-import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
-import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
 import type { EczanemAracTuru, EczanemMusteriVideo } from "../_types";
-import { YayinTuruPill } from "@/components/ogrenme-araci/YayinTuruPill";
+import { YayinKarti } from "@/components/yayin/YayinKarti";
 
 interface Props {
   baslik: string;
@@ -144,207 +139,73 @@ export default function EczanemVideoRafi({
             className="-mx-1 flex snap-x items-stretch gap-3 overflow-x-auto px-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {videolar.map((video) => {
-              const thumbnail = yayinThumbnailIstemciCoz(video);
               const isliyor = etkilesimIsliyor === video.yayin_id;
 
               return (
-                <article
+                <YayinKarti
                   key={`${baslik}-${video.gonderim_id}`}
-                  className="group/kart flex w-[210px] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-[#dfe7ef] bg-white shadow-[0_4px_16px_rgba(31,63,96,0.06)] transition hover:-translate-y-0.5 hover:border-[#b9d4ea] hover:shadow-[0_10px_24px_rgba(31,73,112,0.11)] sm:w-[230px] md:w-[250px]"
-                >
-                  {/* Görsel Alanı */}
-                  <button
-                    type="button"
-                    onClick={() => onVideoSec(video)}
-                    disabled={
-                      !video.video_url &&
-                      !["podcast", "gorsel", "flip_pdf"].includes(
-                        video.arac_turu
-                      )
-                    }
-                    aria-label={`${video.urun_adi} içeriğini sayfaya yerleştir`}
-                    className="relative block aspect-video w-full shrink-0 overflow-hidden bg-[#eaf2f8] text-left disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {/* Öğrenme Aracı Türü Rozeti */}
-                    <YayinTuruPill tur={video.arac_turu} className="absolute right-2 top-2 z-10" />
-
-                    {/* İçerik Durum Rozeti (Yeni / Devam Et / Tamamlandı) */}
-                    <IcerikDurumRozeti video={video} />
-
-                    {/* Thumbnail veya Yedek Görünüm */}
-                    {!thumbnail ? (
-                      <AracVarsayilanKapak aracTuru={video.arac_turu} urunAdi={video.urun_adi} />
-                    ) : (
-                      <>
-                        {/* Uzak video sağlayıcılarının değişken thumbnail adresleri next/image allowlist'ine bağlı değildir. */}
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={thumbnail}
-                          alt=""
-                          loading="lazy"
-                          className="absolute inset-0 h-full w-full object-contain transition duration-300 group-hover/kart:scale-[1.035]"
-                          onError={(event) => {
-                            event.currentTarget.style.display = "none";
-                          }}
-                        />
-                        <span className="absolute inset-0 bg-[linear-gradient(180deg,transparent_40%,rgba(15,35,56,0.65)_100%)]" />
-                        <span className="absolute bottom-2.5 left-2.5 flex size-8 items-center justify-center rounded-full bg-white/95 text-[#bc2d0d] shadow-md transition-transform group-hover/kart:scale-110">
-                          <AracMerkezIkonu tur={video.arac_turu} />
-                        </span>
-                      </>
-                    )}
-                  </button>
-
-                  {/* Kart Gövdesi: Belirtilen Bilgi Sırası */}
-                  <div className="flex flex-1 flex-col justify-between p-3">
-                    {/* Üst Bilgiler ve Beğeni/Favori */}
-                    <div>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          {/* 1. Ürün adı */}
-                          <h3
-                            className="truncate text-sm font-black text-[#1e344a]"
-                            title={video.urun_adi}
-                          >
-                            {video.urun_adi}
-                          </h3>
-
-                          {/* 2. Teknik / eğitim adı (varsa) */}
-                          {video.teknik_adi &&
-                            video.teknik_adi.trim() !== "-" && (
-                              <p
-                                className="mt-0.5 truncate text-[10px] font-semibold text-[#64748b]"
-                                title={video.teknik_adi}
-                              >
-                                {video.teknik_adi}
-                              </p>
-                            )}
-
-                          {/* 3. Firma adı (varsa) */}
-                          {video.firma_adi &&
-                            video.firma_adi.trim() !== "" && (
-                              <p
-                                className="mt-0.5 truncate text-[11px] font-bold text-[#475569]"
-                                title={video.firma_adi}
-                              >
-                                {video.firma_adi}
-                              </p>
-                            )}
-
-                          {/* 4. Eczane adı */}
-                          <p
-                            className="mt-0.5 truncate text-[10px] font-semibold text-[#8fa0b2]"
-                            title={video.eczane_adi}
-                          >
-                            {video.eczane_adi}
-                          </p>
+                  yayin={{
+                    yayin_id: video.yayin_id,
+                    urun_adi: video.urun_adi,
+                    teknik_adi: video.teknik_adi,
+                    video_url: video.video_url,
+                    thumbnail_url: video.thumbnail_url,
+                    arac_id: video.arac_id,
+                    arac_turu: video.arac_turu,
+                    yayin_tarihi: video.gelis_tarihi,
+                    talep_no: video.talep_no,
+                    firma_adi: video.firma_adi,
+                    begeni_sayisi: video.begeni_sayisi,
+                    favori_sayisi: video.favori_sayisi,
+                    begeni_mi: video.begeni_mi,
+                    favori_mi: video.favori_mi,
+                  }}
+                  onClick={() => onVideoSec(video)}
+                  ariaLabel={`${video.urun_adi} içeriğini sayfaya yerleştir`}
+                  onBegeni={() => void onBegeni(video)}
+                  onFavori={() => void onFavori(video)}
+                  etkilesimAktif={!isliyor}
+                  puanGoster={false}
+                  donguGoster={false}
+                  solUstRozet={<IcerikDurumRozeti video={video} />}
+                  hoverOverlay={
+                    <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_40%,rgba(15,35,56,0.65)_100%)]">
+                      <span className="absolute bottom-2.5 left-2.5 flex size-8 items-center justify-center rounded-full bg-white/95 text-[#bc2d0d] shadow-md transition-transform group-hover:scale-110">
+                        <AracMerkezIkonu tur={video.arac_turu} />
+                      </span>
+                    </span>
+                  }
+                  altEkIcerik={
+                    <div className="mt-2 space-y-1.5">
+                      {video.eczane_adi && (
+                        <p className="truncate text-[10px] font-semibold text-[#8fa0b2]" title={video.eczane_adi}>
+                          {video.eczane_adi}
+                        </p>
+                      )}
+                      <div className="grid grid-cols-3 divide-x divide-[#e3e9ef] rounded-lg border border-[#e5ebf1] bg-[#f8fafc] px-1 py-1 text-center">
+                        <div className="px-0.5">
+                          <span className="block text-[7px] font-extrabold uppercase tracking-wide text-[#8a99aa]">Tamamlama</span>
+                          <strong className="mt-0.5 block text-[10px] font-black tabular-nums text-[#286fae]">
+                            {Number(video.video_puani ?? 0).toLocaleString("tr-TR")} p
+                          </strong>
                         </div>
-
-                        {/* Beğeni ve Favori Düğmeleri */}
-                        <div className="flex shrink-0 items-center gap-0.5">
-                          <button
-                            type="button"
-                            disabled={isliyor}
-                            onClick={() => void onBegeni(video)}
-                            aria-label={
-                              video.begeni_mi ? "Beğeniyi kaldır" : "Beğen"
-                            }
-                            className={`rounded-full p-1 transition ${
-                              video.begeni_mi
-                                ? "text-[#df3d62]"
-                                : "text-[#a6b1bd] hover:text-[#df3d62]"
-                            }`}
-                          >
-                            <Heart
-                              className={`size-3.5 ${
-                                video.begeni_mi ? "fill-current" : ""
-                              }`}
-                            />
-                          </button>
-                          <span className="text-[9px] font-bold text-[#7f8fa1]">
-                            {video.begeni_sayisi}
-                          </span>
-                          <button
-                            type="button"
-                            disabled={isliyor}
-                            onClick={() => void onFavori(video)}
-                            aria-label={
-                              video.favori_mi
-                                ? "Favoriden çıkar"
-                                : "Favoriye ekle"
-                            }
-                            className={`ml-1 rounded-full p-1 transition ${
-                              video.favori_mi
-                                ? "text-blue-500"
-                                : "text-[#a6b1bd] hover:text-blue-500"
-                            }`}
-                          >
-                            <Star
-                              className={`size-3.5 ${
-                                video.favori_mi ? "fill-current" : ""
-                              }`}
-                            />
-                          </button>
-                          <span className="text-[9px] font-bold text-[#7f8fa1]">
-                            {video.favori_sayisi}
-                          </span>
+                        <div className="px-0.5">
+                          <span className="block text-[7px] font-extrabold uppercase tracking-wide text-[#8a99aa]">Soru</span>
+                          <strong className="mt-0.5 block text-[10px] font-black tabular-nums text-[#654db0]">
+                            {Number(video.soru_sayisi ?? 0).toLocaleString("tr-TR")} ad
+                          </strong>
+                        </div>
+                        <div className="px-0.5">
+                          <span className="block text-[7px] font-extrabold uppercase tracking-wide text-[#8a99aa]">Her Doğru</span>
+                          <strong className="mt-0.5 block text-[10px] font-black tabular-nums text-[#16865f]">
+                            {Number(video.soru_puani ?? 0).toLocaleString("tr-TR")} p
+                          </strong>
                         </div>
                       </div>
                     </div>
-
-                    {/* Alt Bilgiler: Puanlar ve Tarih / Talep No */}
-                    <div className="mt-3">
-                      {/* 5. Puan ve soru bilgileri */}
-                      <div className="grid grid-cols-3 divide-x divide-[#e3e9ef] rounded-xl border border-[#e5ebf1] bg-[#f8fafc] px-1 py-1.5 text-center">
-                        <div className="px-1">
-                          <span className="block text-[7px] font-extrabold uppercase tracking-wide text-[#8a99aa]">
-                            Tamamlama
-                          </span>
-                          <strong className="mt-0.5 block text-[11px] font-black tabular-nums text-[#286fae]">
-                            {Number(video.video_puani ?? 0).toLocaleString(
-                              "tr-TR"
-                            )}{" "}
-                            puan
-                          </strong>
-                        </div>
-                        <div className="px-1">
-                          <span className="block text-[7px] font-extrabold uppercase tracking-wide text-[#8a99aa]">
-                            Soru
-                          </span>
-                          <strong className="mt-0.5 block text-[11px] font-black tabular-nums text-[#654db0]">
-                            {Number(video.soru_sayisi ?? 0).toLocaleString(
-                              "tr-TR"
-                            )}{" "}
-                            adet
-                          </strong>
-                        </div>
-                        <div className="px-1">
-                          <span className="block text-[7px] font-extrabold uppercase tracking-wide text-[#8a99aa]">
-                            Her Doğru
-                          </span>
-                          <strong className="mt-0.5 block text-[11px] font-black tabular-nums text-[#16865f]">
-                            {Number(video.soru_puani ?? 0).toLocaleString(
-                              "tr-TR"
-                            )}{" "}
-                            puan
-                          </strong>
-                        </div>
-                      </div>
-
-                      {/* 6. Gönderim tarihi ve varsa talep numarası */}
-                      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-[#edf1f5] pt-2 text-[9px]">
-                        <span className="font-semibold text-[#94a3b8]">
-                          {tarihYaz(video.gelis_tarihi)}
-                        </span>
-                        {video.talep_no != null && (
-                          <span className="truncate font-mono font-bold text-[#bc2d0d]">
-                            {talepIdGoster(video.firma_adi, video.talep_no)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </article>
+                  }
+                  className="w-[210px] shrink-0 snap-start sm:w-[230px] md:w-[250px]"
+                />
               );
             })}
           </div>

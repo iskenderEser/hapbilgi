@@ -5,16 +5,23 @@ import { TUKETICI_ROLLER } from "@/lib/utils/roller";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Bookmark,
+  BookOpen,
   Clock,
+  FileText,
+  Headphones,
   Heart,
   Inbox,
   Play,
-  Sparkles,
+  Star,
 } from "lucide-react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
+import { YayinTuruPill } from "@/components/ogrenme-araci/YayinTuruPill";
+import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
+import { TUR_BASLIK, type IcerikTuru } from "@/lib/video/icerikTuru";
+import { talepIdGoster } from "@/lib/utils/talepId";
+import { YayinKarti } from "@/components/yayin/YayinKarti";
 import { useAuth } from "@/app/providers/AuthProvider";
 import BmOneriTakibi, { type OneriKaydi } from "./_components/BmOneriTakibi";
 import TmOneriTakibi, { type TmBmKaydi, type TmOneriKaydi } from "./_components/TmOneriTakibi";
@@ -174,6 +181,48 @@ export default function OnerilerPage() {
     return { metinRenk: "#1e40af", zeminRenk: "#dbeafe", etiket: "İzlenecek", soluk: false };
   };
 
+  const kalanSureHesapla = (o: OneriKaydi) => {
+    if (o.izlendi_mi || isSuresiGecti(o) || isHenuzBaslamadi(o)) {
+      return {
+        metin: formatTarihKisa(o.oneri_bitis),
+        sinif: "bg-black/60 text-white font-bold",
+      };
+    }
+    const simdi = Date.now();
+    const bitis = new Date(o.oneri_bitis).getTime();
+    const kalanGun = Math.ceil((bitis - simdi) / (1000 * 60 * 60 * 24));
+
+    if (kalanGun <= 1) {
+      return {
+        metin: "Bugün son",
+        sinif: "bg-[#bc2d0d] text-white font-extrabold shadow-sm",
+      };
+    }
+    if (kalanGun <= 3) {
+      return {
+        metin: `Son ${kalanGun} gün`,
+        sinif: "bg-[#d97706] text-white font-extrabold shadow-sm",
+      };
+    }
+    return {
+      metin: formatTarihKisa(o.oneri_bitis),
+      sinif: "bg-black/60 text-white font-bold",
+    };
+  };
+
+  const hoverIkonu = (aracTuru?: string | null) => {
+    if (aracTuru === "podcast") {
+      return <Headphones className="h-5 w-5" />;
+    }
+    if (aracTuru === "flip_pdf") {
+      return <BookOpen className="h-5 w-5" />;
+    }
+    if (aracTuru === "gorsel") {
+      return <FileText className="h-5 w-5" />;
+    }
+    return <Play className="ml-0.5 h-5 w-5 fill-current" />;
+  };
+
   if (authYukleniyor || !kullanici || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
@@ -232,9 +281,6 @@ export default function OnerilerPage() {
           {/* Header */}
           <header className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#3589d8]">
-                <Sparkles className="h-3.5 w-3.5" /> T-Club Gelişim & Öneri Takibi
-              </div>
               <div className="inline-flex items-center">
                 <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.025em] text-[#172b4d] md:text-[28px]">
                   Öneri Takibi
@@ -242,7 +288,7 @@ export default function OnerilerPage() {
                 <SayfaRehberi anahtar="oneriler" className="ml-1.5 -translate-y-1.5" />
               </div>
               <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">
-                Bölge Müdürünüz tarafından gelişiminize yönelik önerilen videoları süresi dolmadan tamamlayın ve öneri puanı kazanın.
+                Bölge Müdürünüz tarafından gelişiminize yönelik önerilen öğrenme içeriklerini süresi dolmadan tamamlayabilir ve öneri puanı kazanabilirsiniz.
               </p>
             </div>
             <YenileButonu
@@ -262,8 +308,8 @@ export default function OnerilerPage() {
                 label: "İzleme Bekleyen",
                 deger: izlenecekSayisi,
                 sub: "Süresi aktif öneriler",
-                renk: "#c2410c",
-                zemin: "#fff7ed",
+                renk: "#237ac8",
+                zemin: "#edf6fd",
               },
               {
                 id: "tamamlanan" as const,
@@ -285,9 +331,9 @@ export default function OnerilerPage() {
                 id: "tumu" as const,
                 label: "Toplam Öneri",
                 deger: toplamSayisi,
-                sub: "Tüm önerilen videolar",
-                renk: "#237ac8",
-                zemin: "#edf6fd",
+                sub: "Tüm önerilen içerikler",
+                renk: "#64748b",
+                zemin: "#f8fafc",
               },
             ].map((kart) => {
               const secili = aktifFiltre === kart.id;
@@ -327,7 +373,7 @@ export default function OnerilerPage() {
                 {aktifFiltre === "tumu" && "Tüm Gelen Öneriler"}
               </span>
               <span className="rounded-full bg-[#f0f4f9] px-2.5 py-0.5 text-xs font-bold text-[#566b87]">
-                {filtrelenmisOneriler.length} video
+                {filtrelenmisOneriler.length} içerik
               </span>
             </div>
 
@@ -350,7 +396,7 @@ export default function OnerilerPage() {
               <p className="mt-1 text-xs text-gray-400">
                 {aktifFiltre !== "tumu"
                   ? "Filtreyi temizleyerek tüm önerileri görebilirsiniz."
-                  : "Bölge Müdürünüz yeni bir video önerdiğinde burada listelenecektir."}
+                  : "Bölge Müdürünüz yeni bir içerik önerdiğinde burada listelenecektir."}
               </p>
               {aktifFiltre !== "tumu" && (
                 <button
@@ -367,122 +413,68 @@ export default function OnerilerPage() {
               {filtrelenmisOneriler.map((o) => {
                 const durumStil = kartDurumu(o);
                 const thumb = yayinThumbnailIstemciCoz(o);
+                const kalanSure = kalanSureHesapla(o);
 
                 return (
-                  <div
+                  <YayinKarti
                     key={o.oneri_id}
-                    className="group relative flex flex-col overflow-hidden rounded-2xl border border-[#dfe7f1] bg-white shadow-[0_4px_16px_rgba(31,55,90,0.04)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(31,55,90,0.09)]"
-                    style={{
-                      opacity: durumStil.soluk ? 0.75 : 1,
-                      cursor: durumStil.soluk ? "default" : "pointer",
-                    }}
+                    yayin={o}
                     onClick={() => {
                       if (!durumStil.soluk) {
                         router.push(`/ana-sayfa?yayin_id=${o.yayin_id}&oneri_id=${o.oneri_id}`);
                       }
                     }}
-                  >
-                    {/* Thumbnail */}
-                    <div className="relative aspect-video w-full overflow-hidden bg-[#e8f1fa]">
-                      <AracVarsayilanKapak aracTuru={o.arac_turu} urunAdi={o.urun_adi} />
-                      {thumb ? (
-                        <img
-                          src={thumb}
-                          alt={o.urun_adi}
-                          onError={(e) => {
-                            const img = e.currentTarget as HTMLImageElement;
-                            img.style.display = "none";
-                          }}
-                          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                      ) : null}
-
-                      {/* Durum Rozeti (Sol Üst) */}
-                      <div className="absolute left-2.5 top-2.5">
+                    onBegeni={(e) => handleBegeni(e, o.yayin_id)}
+                    onFavori={(e) => handleFavori(e, o.yayin_id)}
+                    solUstRozet={
+                      <span
+                        className="rounded-full px-1.5 py-0.5 text-[10px] font-bold shadow-sm"
+                        style={{
+                          color: durumStil.metinRenk,
+                          backgroundColor: durumStil.zeminRenk,
+                        }}
+                      >
+                        {durumStil.etiket}
+                      </span>
+                    }
+                    sagUstEkRozet={
+                      <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] backdrop-blur-sm ${kalanSure.sinif}`}>
+                        <Clock className="h-3 w-3" />
+                        {kalanSure.metin}
+                      </span>
+                    }
+                    puanYaniRozet={
+                      o.izlendi_mi ? (
                         <span
-                          className="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold shadow-sm"
+                          className="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-extrabold text-[#0a1b39] shadow-[0_2px_8px_rgba(212,175,55,0.45),0_1px_3px_rgba(0,0,0,0.1)]"
                           style={{
-                            color: durumStil.metinRenk,
-                            backgroundColor: durumStil.zeminRenk,
+                            background: "linear-gradient(to right, #d4af37 0%, #ecd077 50%, #fae896 100%)",
                           }}
+                          title="Kazanılan öneri puanı: +10 Puan"
                         >
-                          {durumStil.etiket}
+                          +10 Puan
+                        </span>
+                      ) : null
+                    }
+                    altEkIcerik={
+                      <div className="mt-2 flex items-center gap-1 border-t border-gray-100 pt-1.5 text-[10px] text-gray-500">
+                        <span className="font-semibold text-gray-400">Öneren:</span>
+                        <span className="truncate font-bold text-[#35527a]">
+                          {o.oneren_adi || o.kullanici_adi}
                         </span>
                       </div>
-
-                      {/* Bitiş Tarihi Rozeti (Sağ Üst) */}
-                      <div className="absolute right-2.5 top-2.5">
-                        <span className="flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
-                          <Clock className="h-3 w-3" />
-                          {formatTarihKisa(o.oneri_bitis)}
-                        </span>
-                      </div>
-
-                      {/* Play Butonu Overlay */}
-                      {!durumStil.soluk && (
+                    }
+                    hoverOverlay={
+                      !durumStil.soluk ? (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#237ac8] shadow-lg">
-                            <Play className="ml-0.5 h-5 w-5 fill-current" />
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#237ac8] shadow-lg">
+                            {hoverIkonu(o.arac_turu)}
                           </div>
                         </div>
-                      )}
-                    </div>
-
-                    {/* İçerik Bilgileri */}
-                    <div className="flex flex-1 flex-col justify-between p-3.5">
-                      <div>
-                        <div className="flex items-center justify-between gap-1">
-                          <h3 className="truncate text-sm font-extrabold text-[#172b4d]" title={o.urun_adi}>
-                            {o.urun_adi}
-                          </h3>
-                        </div>
-                        {o.teknik_adi && o.teknik_adi !== "-" && (
-                          <p className="mt-0.5 truncate text-[11px] font-medium text-[#71859d]" title={o.teknik_adi}>
-                            {o.teknik_adi}
-                          </p>
-                        )}
-                        <div className="mt-2 flex items-center gap-1.5 text-xs text-[#566b87]">
-                          <span className="font-semibold text-[#8a9bb0]">Öneren:</span>
-                          <span className="truncate font-bold text-[#35527a]">{o.kullanici_adi}</span>
-                        </div>
-                      </div>
-
-                      {/* Alt Puan ve Etkileşim Çubuğu */}
-                      <div className="mt-3.5 flex items-center justify-between border-t border-[#f0f4f9] pt-2.5">
-                        {o.video_puani != null ? (
-                          <span className="inline-flex items-center gap-1 rounded-lg bg-[#f0f6ff] px-2 py-0.5 text-xs font-extrabold text-[#237ac8]">
-                            ⭐ {o.video_puani} Puan
-                          </span>
-                        ) : (
-                          <span />
-                        )}
-
-                        <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={(e) => handleBegeni(e, o.yayin_id)}
-                            className="flex cursor-pointer items-center gap-1 text-xs font-bold transition-colors"
-                            style={{ color: o.begeni_mi ? "#bc2d0d" : "#8a9bb0" }}
-                            title={o.begeni_mi ? "Beğeniyi kaldır" : "Beğen"}
-                          >
-                            <Heart className={`h-3.5 w-3.5 ${o.begeni_mi ? "fill-current" : ""}`} />
-                            <span>{o.begeni_sayisi}</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={(e) => handleFavori(e, o.yayin_id)}
-                            className="flex cursor-pointer items-center gap-1 text-xs font-bold transition-colors"
-                            style={{ color: o.favori_mi ? "#237ac8" : "#8a9bb0" }}
-                            title={o.favori_mi ? "Favorilerden kaldır" : "Favoriye ekle"}
-                          >
-                            <Bookmark className={`h-3.5 w-3.5 ${o.favori_mi ? "fill-current" : ""}`} />
-                            <span>{o.favori_sayisi}</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                      ) : null
+                    }
+                    className={durumStil.soluk ? "cursor-default opacity-75" : ""}
+                  />
                 );
               })}
             </div>

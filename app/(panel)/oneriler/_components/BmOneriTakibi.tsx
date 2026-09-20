@@ -26,7 +26,13 @@ export interface OneriKaydi {
   video_url: string | null;
   thumbnail_url: string | null;
   kullanici_adi: string;
+  oneren_adi?: string | null;
+  talep_no?: number | null;
+  firma_adi?: string | null;
+  yayin_tarihi?: string | null;
+  icerik_turu?: string | null;
   video_puani?: number | null;
+  izlenme_sayisi?: number;
   begeni_sayisi: number;
   favori_sayisi: number;
   begeni_mi: boolean;
