@@ -183,11 +183,25 @@ function EczanemPanelIcerik() {
 
   if (yukleniyor || !kullanici || !musteri) return <div className="flex min-h-screen items-center justify-center bg-[#f5f8fb]"><span className="size-7 animate-spin rounded-full border-2 border-[#d8e5f0] border-t-[#237ac8]" aria-label="Oturum yükleniyor" /></div>;
 
+  const secimAnahtari =
+    secim.tip === "tum"
+      ? "tum"
+      : secim.tip === "eczane"
+        ? `eczane-${secim.eczane_id}`
+        : secim.tip === "firma"
+          ? `firma-${secim.eczane_id}-${secim.firma_id}`
+          : secim.tip === "urun"
+            ? `urun-${secim.eczane_id}-${secim.firma_id}-${secim.urun_id ?? ""}`
+            : `arac-${secim.eczane_id}-${secim.firma_id}-${secim.urun_id ?? ""}-${secim.yayin_id}-${secim.arac_id}`;
+
+  const sifirlamaKapsami = `${secimAnahtari}-${aktifYayinTuru}`;
+
   const rafOrtak = {
     onVideoSec: setSeciliVideo,
     onBegeni: (video: EczanemMusteriVideo) => etkilesimDegistir(video, "begeni"),
     onFavori: (video: EczanemMusteriVideo) => etkilesimDegistir(video, "favori"),
     etkilesimIsliyor,
+    sifirlamaAnahtari: sifirlamaKapsami,
   };
 
   const musteriAd = kullanici.ad ? adSoyadBicimle(kullanici.ad) : "";

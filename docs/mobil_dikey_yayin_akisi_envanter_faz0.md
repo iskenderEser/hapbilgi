@@ -86,13 +86,35 @@ Sistemde yayın bilgisi taşıdığı halde **yayın kataloğu olmayan**, operas
 ## 5. Kapsam Sınırları ve Mimari Taahhütler
 
 1. **Tanbur İzolasyonu:**
-   - UTT dışındaki sayfalara tanbur **kesinlikle eklenmeyecektir**.
-   - UTT’deki mevcut tanbur **asla değiştirilmeyecektir**.
-   - Ortak yayın bileşeni içerisine tanbur, tanbur state'i veya tanbur bağımlılığı **kesinlikle konulmayacaktır**.
-   - BM/TM ana sayfasında mevcut bulunan tanbur bağlantısı envantere işlenmiş olup korunacaktır.
+   - UTT dışındaki sayfalara tanbur **kesinlikle eklenmemiştir**.
+   - UTT’deki mevcut tanbur **asla değiştirilmemiştir**.
+   - Ortak yayın bileşeni içerisine tanbur, tanbur state'i veya tanbur bağımlılığı **kesinlikle konulmamıştır**.
+   - BM/TM ana sayfasında mevcut bulunan tanbur bağlantısı korunmuştur.
 2. **İş Kuralları Bütünlüğü:**
-   - Rol yetkileri, veri erişim sınırları, puan kazanımları, soru setleri, öneri mekanizmaları, challenge akışı, eczanem gönderim kimlikleri ve oynatma izinleri korunacaktır.
+   - Rol yetkileri, veri erişim sınırları, puan kazanımları, soru setleri, öneri mekanizmaları, challenge akışı, eczanem gönderim kimlikleri ve oynatma izinleri korunmuştur.
 3. **Masaüstü/Tablet Bütünlüğü:**
-   - Mevcut `sm:` ve üzeri (tablet/masaüstü) ızgara ve kayan raf düzenleri aynen muhafaza edilecektir.
+   - Mevcut `sm:` ve üzeri (tablet/masaüstü) ızgara ve kayan raf düzenleri aynen muhafaza edilmiştir.
 4. **Kod Değişmezliği Taahhüdü:**
    - Faz 0 kapsamında hiçbir uygulama kodu veya davranışı değiştirilmemiştir.
+
+---
+
+## 6. Geçiş Sonrası Nihai Durum (Faz 1 - Faz 5 Tamamlanma Matrisi)
+
+Tüm 12 yayın yüzeyi merkezi `MobilYayinAkisi` bileşenine (2+5 kuralı, dikey tek sütun, sıfırlama anahtarları, benzersiz kimlikler) bağlanmış, tablet/masaüstü sunumları korunmuştur.
+
+| # | Yüzey / Rota | Rol | Bileşen | Kart | Geçiş Durumu | Mobil Akış (2+5) | Masaüstü / Tablet Düzen | Özel Kimlik / Sıfırlama |
+|---|---|---|---|---|---|---|---|---|
+| **1** | `/ana-sayfa` | UTT, KD_UTT | `UttKayanVideoRafi` | `UttVideoKarti` -> `YayinKarti` | ✅ Tamamlandı (Faz 2) | Tek sütun `MobilYayinAkisi` | Yatay raf (`overflow-x-auto`) | `yayin_id` |
+| **2** | `/videolarim/[kategori]` | UTT, KD_UTT | `KategoriYayinlariGoster` | `UttVideoKarti` -> `YayinKarti` | ✅ Tamamlandı (Faz 2) | Tek sütun `MobilYayinAkisi` | Çok sütunlu ızgara | `yayin_id` |
+| **3** | `/ana-sayfa` (aktif durum) | UTT, KD_UTT | `aktifDurumVideolari` | `UttVideoKarti` -> `YayinKarti` | ✅ Tamamlandı (Faz 2) | Tek sütun `MobilYayinAkisi` | Çok sütunlu ızgara | `yayin_id` / durum filtresi |
+| **4** | `/oneriler` | UTT, KD_UTT | `UyeOnerilerGorunumu` | `YayinKarti` | ✅ Tamamlandı (Faz 2) | Tek sütun `MobilYayinAkisi` | Çok sütunlu ızgara | `oneri_id` |
+| **5** | `/ana-sayfa` | BM, TM | `SahaVideoRaflari` | `SahaVideoKarti` -> `YayinKarti` | ✅ Tamamlandı (Faz 3) | Tek sütun `MobilYayinAkisi` | `KayanRaf` + `SabitBolum` | `yayin_id` / `${aktifTanburBolumu}-${aktifYayinTuru}` |
+| **6** | `/ana-sayfa` | Yönetici | `VideoBolumu` | `YayinKarti` | ✅ Tamamlandı (Faz 3) | Tek sütun `MobilYayinAkisi` | 3 sütunlu ızgara | `yayin_id` |
+| **7** | `/yayindaki-videolar` | BM, TM, Yönetici | `KlasorGrid` / `YayindakiVideoBolumu` | `YayinKarti` | ✅ Tamamlandı (Faz 3) | Tek sütun `MobilYayinAkisi` | Çok sütunlu ızgara / yatay raf | `yayin_id` / departman-arama anahtarı |
+| **8** | `/sizin-yayinlariniz`, `/tum-yayinlar` | Üretici Roller | `UreticiYayinKatalogu` | `YayinKarti` | ✅ Tamamlandı (Faz 4) | Tek sütun `MobilYayinAkisi` | Yatay kayan raf | `yayin_id` / hedef-kitle-filtre anahtarı |
+| **9** | `/challenge-club` | BM | `ChallengeClubPage` (`CcRaf`) | `UttVideoKarti` -> `YayinKarti` | ✅ Tamamlandı (Faz 4) | Tek sütun `MobilYayinAkisi` | Yatay `CcRaf` + `KartSarici` | `challenge_id` / `aktifTab` |
+| **10** | `/eclub/panel`, `/eclub/panel/firma/[firma_id]` | E-Club Kişisi | `EclubFirmaVideoKatalogu` (`VideoRafi`) | `EclubVideoKarti` -> `YayinKarti` | ✅ Tamamlandı (Faz 5) | Tek sütun `MobilYayinAkisi` | Yatay kayan raf | `oneri_id` / firma anahtarı |
+| **11** | `/eczanem` | Eczanem Müşterisi | `EczanemVideoRafi` | `YayinKarti` | ✅ Tamamlandı (Faz 5) | Tek sütun `MobilYayinAkisi` | Yatay kayan raf | `${baslik}-${video.gonderim_id}` / kapsam anahtarı |
+| **12** | `/yayin-yonetimi` (Aktif Yayınlar) | Üretici Roller | `YayinYonetimiPage` | `YayinSatir` (`kartGorunumu`) | ✅ Tamamlandı (Faz 5) | Tek sütun `MobilYayinAkisi` | Çok sütunlu ızgara + sayfalama | `yayin_id` / hedef-arama anahtarı |
+

@@ -22,6 +22,7 @@ import { useListe, ListeArama, DahaFazlaGoster } from "@/components/liste";
 import { OgrenmeAraciOnizlemeModal, YayinOnayModal, YayinSilmeModal } from "./_components/Modallar";
 import { YayinKumandaPaneli } from "./_components/YayinKumandaPaneli";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
+import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
 
 function ListeBasligi({ baslik, aciklama, sayi, arama }: { baslik: string; aciklama?: string; sayi: number; arama: ReactNode }) {
   return (
@@ -91,6 +92,7 @@ function YayinYonetimiIcerik() {
 
   useEffect(() => {
     if (durumParam === "yayinda" || durumParam === "durdurulan" || durumParam === "bekleyen") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAktifSekme(durumParam);
     }
     if (hedefParam && (YAYIN_HEDEF_GRUP_SIRASI as readonly string[]).includes(hedefParam)) {
@@ -249,32 +251,65 @@ function YayinYonetimiIcerik() {
           yayindaListe.toplam === 0
             ? <BosListe mesaj={yayindakiler.length === 0 ? "Bu hedef kitle için aktif yayın yok." : "Aramanıza uyan kayıt bulunamadı."} />
             : (
-              <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                {yayindaListe.gorunen.map(y => (
-                  <YayinSatir key={y.yayin_id} y={y}
-                    kartGorunumu
-                    islemLoading={yy.islemLoading}
-                    acikAkordiyon={acikAkordiyon} setAcikAkordiyon={setAcikAkordiyon}
-                    formatTarih={formatTarih}
-                    tekrarBilgi={yy.tekrarBilgi[y.yayin_id]}
-                    getSoruPuani={yy.getSoruPuani} setSoruPuani={yy.setSoruPuani} hepsineAyniPuanAta={yy.hepsineAyniPuanAta}
-                    onVideoAc={handleVideoAc}
-                    onOnizle={setOnizlemeHedefi}
-                    onDurumDegistir={yy.handleDurumDegistir}
-                    onPlanIslem={yy.handlePlanIslem}
-                  />
-                ))}
-              </div>
+              <MobilYayinAkisi
+                kayitlar={yayindaListe.gorunen}
+                kayitAnahtari={(y) => y.yayin_id}
+                renderKart={(y) => (
+                  <div className="w-full">
+                    <YayinSatir
+                      key={y.yayin_id}
+                      y={y}
+                      kartGorunumu
+                      islemLoading={yy.islemLoading}
+                      acikAkordiyon={acikAkordiyon}
+                      setAcikAkordiyon={setAcikAkordiyon}
+                      formatTarih={formatTarih}
+                      tekrarBilgi={yy.tekrarBilgi[y.yayin_id]}
+                      getSoruPuani={yy.getSoruPuani}
+                      setSoruPuani={yy.setSoruPuani}
+                      hepsineAyniPuanAta={yy.hepsineAyniPuanAta}
+                      onVideoAc={handleVideoAc}
+                      onOnizle={setOnizlemeHedefi}
+                      onDurumDegistir={yy.handleDurumDegistir}
+                      onPlanIslem={yy.handlePlanIslem}
+                    />
+                  </div>
+                )}
+                sayacGoster={false}
+                sifirlamaAnahtari={`${aktifAnaSekme}-${yayindaListe.arama.aranan}`}
+                masaustuIcerik={
+                  <>
+                    <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                      {yayindaListe.gorunen.map((y) => (
+                        <YayinSatir
+                          key={y.yayin_id}
+                          y={y}
+                          kartGorunumu
+                          islemLoading={yy.islemLoading}
+                          acikAkordiyon={acikAkordiyon}
+                          setAcikAkordiyon={setAcikAkordiyon}
+                          formatTarih={formatTarih}
+                          tekrarBilgi={yy.tekrarBilgi[y.yayin_id]}
+                          getSoruPuani={yy.getSoruPuani}
+                          setSoruPuani={yy.setSoruPuani}
+                          hepsineAyniPuanAta={yy.hepsineAyniPuanAta}
+                          onVideoAc={handleVideoAc}
+                          onOnizle={setOnizlemeHedefi}
+                          onDurumDegistir={yy.handleDurumDegistir}
+                          onPlanIslem={yy.handlePlanIslem}
+                        />
+                      ))}
+                    </div>
+                    <DahaFazlaGoster
+                      dahaVar={yayindaListe.dahaVar}
+                      gorunenSayi={yayindaListe.gorunen.length}
+                      toplam={yayindaListe.toplam}
+                      onGoster={yayindaListe.dahaFazlaGoster}
+                    />
+                  </>
+                }
+              />
             )
-        )}
-
-        {aktifSekme === "yayinda" && (
-          <DahaFazlaGoster
-            dahaVar={yayindaListe.dahaVar}
-            gorunenSayi={yayindaListe.gorunen.length}
-            toplam={yayindaListe.toplam}
-            onGoster={yayindaListe.dahaFazlaGoster}
-          />
         )}
 
         {aktifSekme === "durdurulan" && (
