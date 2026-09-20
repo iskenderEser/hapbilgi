@@ -14,6 +14,8 @@ interface Props {
   onSec: (id: string) => void;
 }
 
+const OGE_YUKSEKLIK = 40; // piksel
+
 export default function HayaletTanburSecici({ bolumler, seciliId, onSec }: Props) {
   const [acik, setAcik] = useState(false);
   const varsayilanIndex = Math.max(0, bolumler.findIndex((b) => b.id === seciliId));
@@ -22,6 +24,7 @@ export default function HayaletTanburSecici({ bolumler, seciliId, onSec }: Props
 
   const dokunmaBaslangicY = useRef<number | null>(null);
   const sonSuruklemeZamani = useRef<number>(0);
+  const suruklendiRef = useRef(false);
 
   const secimeGit = (yeniIndex: number) => {
     const hedef = Math.max(0, Math.min(bolumler.length - 1, yeniIndex));
@@ -40,20 +43,26 @@ export default function HayaletTanburSecici({ bolumler, seciliId, onSec }: Props
   // Dokunmatik kaydırma (Touch Swipe / Drag)
   const handleTouchStart = (e: TouchEvent) => {
     dokunmaBaslangicY.current = e.touches[0].clientY;
+    suruklendiRef.current = false;
   };
 
   const handleTouchMove = (e: TouchEvent) => {
     if (dokunmaBaslangicY.current === null) return;
-    const simdi = Date.now();
-    if (simdi - sonSuruklemeZamani.current < 90) return; // yumuşak hız sınırlaması
-
     const deltaY = e.touches[0].clientY - dokunmaBaslangicY.current;
-    if (Math.abs(deltaY) > 28) {
+
+    if (Math.abs(deltaY) > 6) {
+      suruklendiRef.current = true;
+    }
+
+    const simdi = Date.now();
+    if (simdi - sonSuruklemeZamani.current < 70) return;
+
+    if (Math.abs(deltaY) > 22) {
       if (deltaY < 0) {
-        // Yukarı kaydırma -> sonraki öğe
+        // Yukarı kaydırma -> sonraki bölüm
         secimeGit(odakIndex + 1);
       } else {
-        // Aşağı kaydırma -> önceki öğe
+        // Aşağı kaydırma -> önceki bölüm
         secimeGit(odakIndex - 1);
       }
       dokunmaBaslangicY.current = e.touches[0].clientY;
@@ -63,6 +72,9 @@ export default function HayaletTanburSecici({ bolumler, seciliId, onSec }: Props
 
   const handleTouchEnd = () => {
     dokunmaBaslangicY.current = null;
+    setTimeout(() => {
+      suruklendiRef.current = false;
+    }, 120);
   };
 
   const handleWheel = (e: WheelEvent) => {
@@ -76,146 +88,107 @@ export default function HayaletTanburSecici({ bolumler, seciliId, onSec }: Props
 
   return (
     <>
-      {/* 1. SAĞ KENARDA YÜZEN AYRAÇ (Floating Edge Handle) */}
+      {/* 1. SAĞ KENARDA YÜZEN OK AYRACI (Trigger Arrowhead - no text) */}
       <aside aria-label="Bölüm gezintisi">
         <button
           type="button"
-          onClick={() => {
-            setKaydirilmisIndex(null);
-            setAcik(true);
-          }}
-          aria-label="Bölüm gezintisi tanburunu aç"
-          className="fixed right-0 top-1/2 z-40 flex -translate-y-1/2 cursor-pointer items-center rounded-l-2xl border-y border-l border-white/30 bg-[#162740]/90 py-3.5 pl-2 pr-1.5 text-white shadow-2xl backdrop-blur-md transition-all hover:bg-[#101e32] active:scale-95 sm:hidden"
+          onClick={() => setAcik((prev) => !prev)}
+          aria-label={acik ? "Bölüm tanburunu kapat" : "Bölüm tanburunu aç"}
+          className={`fixed right-0 top-1/2 z-50 flex -translate-y-1/2 cursor-pointer items-center justify-center rounded-l-xl border-y border-l border-white/25 bg-slate-900/85 px-1.5 py-3 text-white shadow-xl backdrop-blur-md transition-all active:scale-90 hover:bg-slate-900 sm:hidden ${
+            acik ? "translate-x-0 bg-slate-800" : ""
+          }`}
         >
-          <div className="flex flex-col items-center gap-1.5">
-            <span className="rotate-180 text-[10px] font-black uppercase tracking-wider text-blue-400 [writing-mode:vertical-lr]">
-              Bölümler
-            </span>
-            <svg
-              className="h-3.5 w-3.5 text-white animate-pulse"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={3}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </div>
+          <svg
+            className={`h-4 w-4 text-white/90 transition-transform duration-200 ${
+              acik ? "rotate-180" : ""
+            }`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
         </button>
       </aside>
 
-      {/* 2. HAYALET TANBUR MODALI (Glassmorphism Drum) */}
+      {/* 2. ARKA PLAN DOKUNMA ALANI (Backdrop tap to close) */}
+      {acik && (
+        <div
+          onClick={() => setAcik(false)}
+          className="fixed inset-0 z-40 bg-black/15 backdrop-blur-[1px] sm:hidden"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* 3. SAĞDA YÜZEN HAYALET TANBUR (Floating Ghost Drum next to arrow) */}
       {acik && (
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Bölüm Seçici"
-          className="fixed inset-0 z-50 flex flex-col justify-end bg-black/55 backdrop-blur-sm sm:hidden animate-fade-in"
+          aria-label="Bölüm Tanburu"
+          className="fixed right-9 top-1/2 z-50 flex h-[200px] w-52 max-w-[65vw] -translate-y-1/2 flex-col items-center justify-center overflow-hidden rounded-2xl border border-white/50 bg-white/85 shadow-2xl backdrop-blur-xl select-none animate-fade-in sm:hidden"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onWheel={handleWheel}
         >
-          {/* Dış alana tıklayınca kapat */}
+          {/* Odaklama Şeridi (Ortadaki Seçim Alanı) */}
+          <div className="pointer-events-none absolute inset-x-2 top-1/2 -translate-y-1/2 h-10 rounded-xl border border-black/10 bg-black/[0.05] shadow-xs" />
+
+          {/* Dikey Silindir / Tanbur Çarkı */}
           <div
-            className="flex-1 cursor-pointer"
-            onClick={() => setAcik(false)}
-            aria-label="Kapat"
-          />
-
-          {/* Tanbur Gövdesi */}
-          <div className="relative rounded-t-3xl border-t border-white/30 bg-white/95 p-5 shadow-2xl backdrop-blur-xl">
-            {/* Tutamaç Çubuğu */}
-            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-300" />
-
-            <div className="mb-2 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-600">
-                  Dikey Tanbur Gezintisi
-                </span>
-                <p className="text-xs font-bold text-gray-800">Geçmek istediğiniz bölümü çevirin</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setAcik(false)}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-500 hover:bg-gray-200"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Tanbur Çark Alanı */}
+            className="relative flex h-[200px] w-full flex-col items-center overflow-hidden [mask-image:linear-gradient(to_bottom,transparent_0%,black_18%,black_82%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,transparent_0%,black_18%,black_82%,transparent_100%)]"
+          >
             <div
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-              onWheel={handleWheel}
-              className="relative my-3 flex h-48 select-none flex-col items-center justify-center overflow-hidden [mask-image:linear-gradient(to_bottom,transparent_0%,black_20%,black_80%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,transparent_0%,black_20%,black_80%,transparent_100%)]"
+              className="flex w-full flex-col items-center transition-transform duration-200 ease-out"
+              style={{
+                // 200px yükseklikte ortadaki slot y=80px (80px - index * 40px)
+                transform: `translateY(${80 - odakIndex * OGE_YUKSEKLIK}px)`,
+              }}
             >
-              {/* Odaklama Çizgisi (Seçim Kutusu) */}
-              <div className="pointer-events-none absolute inset-x-2 h-11 rounded-xl border border-blue-400/40 bg-blue-50/60 shadow-xs" />
+              {bolumler.map((bolum, i) => {
+                const uzaklik = i - odakIndex;
+                const mutlakUzaklik = Math.abs(uzaklik);
 
-              {/* Dönen Çark Başlıkları */}
-              <div
-                className="flex w-full flex-col items-center transition-transform duration-200 ease-out"
-                style={{
-                  transform: `translateY(${(-odakIndex * 44) + 72}px)`,
-                }}
-              >
-                {bolumler.map((bolum, i) => {
-                  const uzaklik = i - odakIndex;
-                  const mutlakUzaklik = Math.abs(uzaklik);
+                // Uzaklığa göre soluklaşma / hayalet efekti
+                let stil = "text-slate-400 opacity-0 scale-75 pointer-events-none";
+                if (mutlakUzaklik === 0) {
+                  // Ortadaki aktif sekme: Siyah ve bold
+                  stil = "text-black font-black text-sm scale-105 opacity-100";
+                } else if (mutlakUzaklik === 1) {
+                  // Bir üst / alt sekmeler
+                  stil = "text-slate-700/60 font-semibold text-xs scale-95 opacity-55";
+                } else if (mutlakUzaklik === 2) {
+                  // İki üst / alt sekmeler (daha soluk)
+                  stil = "text-slate-500/35 font-medium text-[11px] scale-90 opacity-25";
+                }
 
-                  let stil = "text-gray-300 opacity-0 scale-75";
-                  if (mutlakUzaklik === 0) {
-                    stil = "text-blue-600 font-black text-sm scale-105 opacity-100";
-                  } else if (mutlakUzaklik === 1) {
-                    stil = "text-gray-700 font-semibold text-xs scale-90 opacity-45";
-                  } else if (mutlakUzaklik === 2) {
-                    stil = "text-gray-400 font-normal text-[11px] scale-80 opacity-20";
-                  }
-
-                  return (
-                    <div
-                      key={bolum.id}
-                      onClick={() => {
-                        onayla(i);
-                      }}
-                      className={`flex h-11 w-full cursor-pointer items-center justify-center px-4 text-center transition-all duration-150 ${stil}`}
-                    >
-                      <span className="truncate">{bolum.etiket}</span>
-                      {bolum.sayi !== undefined && (
-                        <span className="ml-1.5 rounded-full bg-blue-100/70 px-1.5 py-0.5 text-[9px] font-bold text-blue-700">
-                          {bolum.sayi}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Aksiyon Butonları */}
-            <div className="mt-3 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => secimeGit(odakIndex - 1)}
-                disabled={odakIndex === 0}
-                className="flex-1 rounded-xl border border-gray-200 bg-gray-50 py-2.5 text-xs font-bold text-gray-700 transition-colors active:bg-gray-100 disabled:opacity-30"
-              >
-                ▲ Önceki
-              </button>
-              <button
-                type="button"
-                onClick={() => onayla()}
-                className="flex-2 rounded-xl bg-blue-600 py-2.5 text-xs font-black text-white shadow-md transition-colors hover:bg-blue-700 active:scale-[0.99]"
-              >
-                Seç ve Git
-              </button>
-              <button
-                type="button"
-                onClick={() => secimeGit(odakIndex + 1)}
-                disabled={odakIndex === bolumler.length - 1}
-                className="flex-1 rounded-xl border border-gray-200 bg-gray-50 py-2.5 text-xs font-bold text-gray-700 transition-colors active:bg-gray-100 disabled:opacity-30"
-              >
-                Sonraki ▼
-              </button>
+                return (
+                  <button
+                    key={bolum.id}
+                    type="button"
+                    onClick={() => {
+                      if (suruklendiRef.current) return;
+                      onayla(i);
+                    }}
+                    className={`flex h-10 w-full cursor-pointer items-center justify-center px-3 text-center transition-all duration-150 ${stil}`}
+                  >
+                    <span className="truncate">{bolum.etiket}</span>
+                    {bolum.sayi !== undefined && (
+                      <span
+                        className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
+                          mutlakUzaklik === 0
+                            ? "bg-black/10 text-black"
+                            : "bg-black/5 text-gray-500"
+                        }`}
+                      >
+                        {bolum.sayi}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
