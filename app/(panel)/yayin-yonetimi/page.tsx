@@ -252,7 +252,7 @@ function YayinYonetimiIcerik() {
             ? <BosListe mesaj={yayindakiler.length === 0 ? "Bu hedef kitle için aktif yayın yok." : "Aramanıza uyan kayıt bulunamadı."} />
             : (
               <MobilYayinAkisi
-                kayitlar={yayindaListe.gorunen}
+                kayitlar={yayindaListe.filtrelenmis}
                 kayitAnahtari={(y) => y.yayin_id}
                 renderKart={(y) => (
                   <div className="w-full">
@@ -276,7 +276,7 @@ function YayinYonetimiIcerik() {
                   </div>
                 )}
                 sayacGoster={false}
-                sifirlamaAnahtari={`${aktifAnaSekme}-${yayindaListe.arama.aranan}`}
+                sifirlamaAnahtari={`${aktifAnaSekme}-${aktifSekme}-${yayindaListe.arama.alanAnahtari}-${yayindaListe.arama.aranan}`}
                 masaustuIcerik={
                   <>
                     <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">

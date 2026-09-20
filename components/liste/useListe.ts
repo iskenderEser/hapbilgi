@@ -68,6 +68,8 @@ export function useListe<T>({ veri, aramaAlanlari = [], adim = 10 }: UseListeGir
   return {
     /** Ekrana çizilecek satırlar. */
     gorunen,
+    /** Arama ve filtreleme sonucu tam liste (salt okunur; mobil akış vb. tüketiciler için). */
+    filtrelenmis: suzulmus as readonly T[],
     /** Arama sonrası toplam eşleşme (kaç kayıt bulundu bilgisi için). */
     toplam: suzulmus.length,
     /** Süzgeçsiz toplam. */

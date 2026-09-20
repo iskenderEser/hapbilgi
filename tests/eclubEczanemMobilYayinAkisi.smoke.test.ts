@@ -8,6 +8,8 @@ import { VideoRafi } from "@/app/(panel)/eclub/panel/_components/EclubFirmaVideo
 import type { PanelOneri } from "@/app/(panel)/eclub/panel/_hooks/useEclubPanel";
 import EczanemVideoRafi from "@/app/eczanem/_components/EczanemVideoRafi";
 import type { EczanemMusteriVideo } from "@/app/eczanem/_types";
+import { useListe } from "@/components/liste/useListe";
+import MobilYayinAkisi from "@/components/yayin/MobilYayinAkisi";
 
 // Test ortamı için DOM hazırlığı
 const win = new GlobalWindow();
@@ -28,6 +30,7 @@ const eclubKatalogKodu = readFileSync("app/(panel)/eclub/panel/_components/Eclub
 const eczanemVideoRafiKodu = readFileSync("app/eczanem/_components/EczanemVideoRafi.tsx", "utf8");
 const eczanemPageKodu = readFileSync("app/eczanem/page.tsx", "utf8");
 const yayinYonetimiKodu = readFileSync("app/(panel)/yayin-yonetimi/page.tsx", "utf8");
+const useListeKodu = readFileSync("components/liste/useListe.ts", "utf8");
 
 function ornekEclubOneri(id: string, yayinId: string, urunAdi: string, izlendiMi = false): PanelOneri {
   return {
@@ -97,17 +100,24 @@ test("Faz 5 Mimari: E-Club VideoRafi MobilYayinAkisi kullanır, oneri_id anahtar
   assert.doesNotMatch(eclubKatalogKodu, /TanburSecici/, "E-Club kataloguna tanbur eklenmemeli");
 });
 
-test("Faz 5 Mimari: EczanemVideoRafi MobilYayinAkisi kullanır, gonderim_id anahtarını korur ve tanbur içermez", () => {
+test("Faz 5 Mimari: EczanemVideoRafi MobilYayinAkisi kullanır, bolumId iletir, gonderim_id anahtarını korur ve tanbur içermez", () => {
   assert.match(eczanemVideoRafiKodu, /import MobilYayinAkisi from "@\/components\/yayin\/MobilYayinAkisi"/, "MobilYayinAkisi import edilmiş olmalı");
   assert.match(eczanemVideoRafiKodu, /kayitAnahtari=\{\(video\) => `\$\{baslik\}-\$\{video\.gonderim_id\}`\}/, "kayitAnahtari gonderim_id'yi korumalı");
+  assert.match(eczanemVideoRafiKodu, /bolumId=\{bolumId\}/, "bolumId MobilYayinAkisi'ne iletilmeli");
   assert.match(eczanemVideoRafiKodu, /masaustuIcerik=\{masaustuIcerik\}/, "Masaüstü rafı masaustuIcerik slotunda korunmalı");
   assert.match(eczanemPageKodu, /sifirlamaAnahtari: sifirlamaKapsami/, "eczanem/page.tsx sifirlamaAnahtari iletmeli");
   assert.doesNotMatch(eczanemVideoRafiKodu, /TanburSecici/, "Eczanem bileşenine tanbur eklenmemeli");
 });
 
-test("Faz 5 Mimari: YayinYonetimi aktif yayınlar kartGorunumu MobilYayinAkisi'ne bağlıdır, işlem satırları korunur", () => {
+test("Faz 5 Mimari: YayinYonetimi aktif yayınlar kartGorunumu MobilYayinAkisi'ne filtrelenmis ile bağlıdır, tam sıfırlama anahtarı taşır", () => {
   assert.match(yayinYonetimiKodu, /import MobilYayinAkisi from "@\/components\/yayin\/MobilYayinAkisi"/, "YayinYonetimi MobilYayinAkisi import etmeli");
-  assert.match(yayinYonetimiKodu, /<MobilYayinAkisi[\s\S]*?kayitlar=\{yayindaListe\.gorunen\}[\s\S]*?kartGorunumu/, "Aktif yayınlar MobilYayinAkisi'ne bağlanmalı");
+  assert.match(yayinYonetimiKodu, /kayitlar=\{yayindaListe\.filtrelenmis\}/, "Aktif yayınlar MobilYayinAkisi'ne filtrelenmis tam listesiyle bağlanmalı");
+  assert.match(
+    yayinYonetimiKodu,
+    /sifirlamaAnahtari=\{`\$\{aktifAnaSekme\}-\$\{aktifSekme\}-\$\{yayindaListe\.arama\.alanAnahtari\}-\$\{yayindaListe\.arama\.aranan\}`\}/,
+    "Sıfırlama anahtarı aktifAnaSekme, aktifSekme, alanAnahtari ve aranan içermeli",
+  );
+  assert.match(useListeKodu, /filtrelenmis:\s*suzulmus/, "useListe filtrelenmis alanını dışarı vermeli");
   // Bekleyen ve durdurulan sekmelerindeki işlem satırları korunmalı
   assert.match(yayinYonetimiKodu, /<BekleyenSatir/, "BekleyenSatir işlem satırları korunmalı");
 });
@@ -325,6 +335,235 @@ test("Eczanem: EczanemVideoRafi mobilde 2 kartla başlar, 7 karta açılır, gon
 
   const sifirlanmisKartlar = mobilKapsayici.querySelectorAll(".grid-cols-1 > div");
   assert.equal(sifirlanmisKartlar.length, 2, "Kapsam filtresi değişince liste tekrar 2 karta dönmeli");
+
+  // 8. Eczanem section/aria-labelledby/id tekilliğini DOM üzerinden doğrula
+  const section = container.querySelector("section");
+  assert.ok(section, "EczanemVideoRafi bir section render etmeli");
+  const sectionId = section.getAttribute("id");
+  const labelledBy = section.getAttribute("aria-labelledby");
+  assert.ok(sectionId, "section id (bolumId) taşımalı");
+  assert.ok(labelledBy, "section aria-labelledby taşımalı");
+  assert.equal(labelledBy, `${sectionId}-baslik`, "aria-labelledby section id'sine '-baslik' eklenerek türetilmeli");
+
+  const baslikEl = container.querySelector(`#${labelledBy}`);
+  assert.ok(baslikEl, "aria-labelledby hedefi DOM'da bulunmalı");
+  assert.equal(baslikEl.textContent?.trim(), "Yeni Öğrenme İçeriklerim", "Görünür başlık doğru metni içermeli");
+
+  const idliElemanlar = Array.from(container.querySelectorAll("[id]"));
+  const idListesi = idliElemanlar.map((el) => el.getAttribute("id")!);
+  const tekilIdler = new Set(idListesi);
+  assert.equal(idListesi.length, tekilIdler.size, `DOM'da yinelenen ID bulunmamalı: ${idListesi.join(", ")}`);
+
+  await act(async () => {
+    root.unmount();
+  });
+  container.remove();
+});
+
+test("Yayın Yönetimi: En az 12 aktif yayında mobilde 2 → 7 → 12 açılır, masaüstünde 10 kayıt korunur, filtre değişince sıfırlanır ve veri yenilenince kart sayısı korunur", async () => {
+  const container = win.document.createElement("div");
+  win.document.body.appendChild(container);
+  const root = createRoot(container);
+
+  interface TestYayin {
+    yayin_id: string;
+    urun_adi: string;
+    firma_adi: string;
+  }
+
+  // En az 12 aktif yayın (14 kayıt)
+  const yayinlar: TestYayin[] = Array.from({ length: 14 }, (_, i) => ({
+    yayin_id: `yayin-${i + 1}`,
+    urun_adi: `Ürün ${String(i + 1).padStart(2, "0")}`,
+    firma_adi: i % 2 === 0 ? "Firma Alfa" : "Firma Beta",
+  }));
+
+  function YayinYonetimiTestBileseni({
+    videolar,
+    aktifAnaSekme = "hedef_eczane",
+    aktifSekme = "yayinda",
+  }: {
+    videolar: TestYayin[];
+    aktifAnaSekme?: string;
+    aktifSekme?: string;
+  }) {
+    const yayindaListe = useListe<TestYayin>({
+      veri: videolar,
+      aramaAlanlari: [
+        { anahtar: "urun_adi", etiket: "Ürün Adı", deger: (y) => y.urun_adi },
+        { anahtar: "firma_adi", etiket: "Firma Adı", deger: (y) => y.firma_adi },
+      ],
+      adim: 10,
+    });
+
+    return createElement(
+      "div",
+      null,
+      createElement(
+        "div",
+        { className: "arama-kontrolleri" },
+        createElement("button", {
+          "data-testid": "btn-alan-firma",
+          onClick: () => yayindaListe.arama.alanDegistir("firma_adi"),
+        }),
+        createElement("button", {
+          "data-testid": "btn-alan-urun",
+          onClick: () => yayindaListe.arama.alanDegistir("urun_adi"),
+        }),
+        createElement("input", {
+          "data-testid": "input-arama",
+          value: yayindaListe.arama.aranan,
+          onChange: (e: { target: { value: string } }) => yayindaListe.arama.aramaDegistir(e.target.value),
+        }),
+      ),
+      createElement(MobilYayinAkisi<TestYayin>, {
+        kayitlar: yayindaListe.filtrelenmis,
+        kayitAnahtari: (y) => y.yayin_id,
+        renderKart: (y) =>
+          createElement(
+            "div",
+            { className: "w-full", "data-testid": `kart-${y.yayin_id}` },
+            y.urun_adi,
+          ),
+        sayacGoster: false,
+        sifirlamaAnahtari: `${aktifAnaSekme}-${aktifSekme}-${yayindaListe.arama.alanAnahtari}-${yayindaListe.arama.aranan}`,
+        masaustuIcerik: createElement(
+          "div",
+          { "data-testid": "masaustu-icerik" },
+          createElement(
+            "div",
+            { className: "grid grid-cols-5" },
+            yayindaListe.gorunen.map((y) =>
+              createElement("div", { key: y.yayin_id, className: "masaustu-kart" }, y.urun_adi),
+            ),
+          ),
+          yayindaListe.dahaVar
+            ? createElement(
+                "button",
+                {
+                  "data-testid": "masaustu-daha-fazla",
+                  onClick: yayindaListe.dahaFazlaGoster,
+                },
+                "Daha Fazla Göster",
+              )
+            : null,
+        ),
+      }),
+    );
+  }
+
+  await act(async () => {
+    root.render(createElement(YayinYonetimiTestBileseni, { videolar: yayinlar }));
+  });
+
+  const mobilKapsayici = container.querySelector(".sm\\:hidden");
+  assert.ok(mobilKapsayici, "Mobilde MobilYayinAkisi bulunmalı");
+
+  // 1. Masaüstü görünümü yayindaListe.gorunen ile ilk 10 kaydı göstermeli
+  const masaustuKapsayici = container.querySelector("[data-testid='masaustu-icerik']");
+  assert.ok(masaustuKapsayici, "Masaüstü içerik bulunmalı");
+  const masaustuKartlarIlk = masaustuKapsayici.querySelectorAll(".masaustu-kart");
+  assert.equal(masaustuKartlarIlk.length, 10, "Masaüstünde başlangıçta tam 10 kayıt görünmeli");
+  const masaustuDahaFazlaBtn = masaustuKapsayici.querySelector("[data-testid='masaustu-daha-fazla']");
+  assert.ok(masaustuDahaFazlaBtn, "Masaüstünde Daha Fazla Göster düğmesi bulunmalı");
+
+  // 2. Mobilde akış 2 kayıtla başlamalı
+  const mobilKartlarIlk = mobilKapsayici.querySelectorAll(".grid-cols-1 > div");
+  assert.equal(mobilKartlarIlk.length, 2, "Mobil başlangıçta tam 2 kart göstermeli");
+
+  // 3. Mobilde 2 → 7 açılmalı
+  let mobilDahaFazlaBtn = Array.from(mobilKapsayici.querySelectorAll("button")).find((b) =>
+    b.textContent?.includes("Daha Fazla Göster"),
+  );
+  assert.ok(mobilDahaFazlaBtn, "Mobilde ilk 'Daha Fazla Göster' butonu olmalı");
+  await act(async () => {
+    mobilDahaFazlaBtn!.click();
+  });
+  const mobilKartlarYedi = mobilKapsayici.querySelectorAll(".grid-cols-1 > div");
+  assert.equal(mobilKartlarYedi.length, 7, "Mobilde ilk tıklamada 7 karta açılmalı");
+
+  // 4. Mobilde 7 → 12 açılmalı
+  mobilDahaFazlaBtn = Array.from(mobilKapsayici.querySelectorAll("button")).find((b) =>
+    b.textContent?.includes("Daha Fazla Göster"),
+  );
+  assert.ok(mobilDahaFazlaBtn, "Mobilde ikinci 'Daha Fazla Göster' butonu olmalı");
+  await act(async () => {
+    mobilDahaFazlaBtn!.click();
+  });
+  const mobilKartlarOnIki = mobilKapsayici.querySelectorAll(".grid-cols-1 > div");
+  assert.equal(mobilKartlarOnIki.length, 12, "Mobilde ikinci tıklamada 12 karta açılmalı");
+
+  // 5. Mobilde 12 → 14 (tüm liste) açılmalı ve hiçbir kayıt erişilemez kalmamalı
+  mobilDahaFazlaBtn = Array.from(mobilKapsayici.querySelectorAll("button")).find((b) =>
+    b.textContent?.includes("Daha Fazla Göster"),
+  );
+  assert.ok(mobilDahaFazlaBtn, "Mobilde üçüncü 'Daha Fazla Göster' butonu olmalı");
+  await act(async () => {
+    mobilDahaFazlaBtn!.click();
+  });
+  const mobilKartlarSon = mobilKapsayici.querySelectorAll(".grid-cols-1 > div");
+  assert.equal(mobilKartlarSon.length, 14, "Mobilde 14 kaydın tümü açılabilmeli");
+  const kalanBtn = Array.from(mobilKapsayici.querySelectorAll("button")).find((b) =>
+    b.textContent?.includes("Daha Fazla Göster"),
+  );
+  assert.equal(kalanBtn, undefined, "Tüm kayıtlar açıldığında Daha Fazla Göster butonu kapanmalı");
+
+  // 6. Masaüstü Daha Fazla Göster tıklanınca 14'e tamamlanmalı
+  await act(async () => {
+    (masaustuDahaFazlaBtn as HTMLButtonElement).click();
+  });
+  const masaustuKartlarSon = masaustuKapsayici.querySelectorAll(".masaustu-kart");
+  assert.equal(masaustuKartlarSon.length, 14, "Masaüstünde Daha Fazla Göster ile tüm kayıtlar açılmalı");
+
+  // 7. Aynı sıfırlama anahtarında veri yenilenirse açık kart sayısı KORUNMALI
+  const yenilenmisYayinlar = yayinlar.map((y) => ({ ...y, urun_adi: `${y.urun_adi} (Güncel)` }));
+  await act(async () => {
+    root.render(createElement(YayinYonetimiTestBileseni, { videolar: yenilenmisYayinlar }));
+  });
+  const yenilemeSonrasiKartlar = mobilKapsayici.querySelectorAll(".grid-cols-1 > div");
+  assert.equal(
+    yenilemeSonrasiKartlar.length,
+    14,
+    "Aynı sıfırlama anahtarında veri yenilenince açık kart sayısı korunmalı",
+  );
+
+  // 8. Arama alanı veya anahtarı değişince mobil akış kesin olarak 2 karta dönmeli
+  const alanFirmaBtn = container.querySelector("[data-testid='btn-alan-firma']");
+  assert.ok(alanFirmaBtn, "Arama alanı değiştirme butonu bulunmalı");
+  await act(async () => {
+    (alanFirmaBtn as HTMLButtonElement).click();
+  });
+  const aramaAlaniDegisimiSonrasiKartlar = mobilKapsayici.querySelectorAll(".grid-cols-1 > div");
+  assert.equal(
+    aramaAlaniDegisimiSonrasiKartlar.length,
+    2,
+    "Arama alanı (alanAnahtari) değiştiğinde mobil liste kesin olarak 2 karta dönmeli",
+  );
+
+  // 9. Hedef kapsam (aktifAnaSekme) değiştiğinde mobil akış kesin olarak 2 karta dönmeli
+  const yenidenDevamBtn = Array.from(mobilKapsayici.querySelectorAll("button")).find((b) =>
+    b.textContent?.includes("Daha Fazla Göster"),
+  );
+  assert.ok(yenidenDevamBtn);
+  await act(async () => {
+    yenidenDevamBtn!.click();
+  });
+  assert.equal(mobilKapsayici.querySelectorAll(".grid-cols-1 > div").length, 7);
+
+  await act(async () => {
+    root.render(
+      createElement(YayinYonetimiTestBileseni, {
+        videolar: yenilenmisYayinlar,
+        aktifAnaSekme: "hedef_hekim",
+      }),
+    );
+  });
+  const sekmeDegisimiSonrasiKartlar = mobilKapsayici.querySelectorAll(".grid-cols-1 > div");
+  assert.equal(
+    sekmeDegisimiSonrasiKartlar.length,
+    2,
+    "Hedef kapsam (aktifAnaSekme) değiştiğinde mobil liste kesin olarak 2 karta dönmeli",
+  );
 
   await act(async () => {
     root.unmount();

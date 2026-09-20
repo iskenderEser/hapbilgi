@@ -57,7 +57,7 @@ export function hesaplaMobilYayinGorunumu(
 
 export interface MobilYayinAkisiProps<T> {
   /** Görüntülenecek generic kayıt listesi */
-  kayitlar: T[];
+  kayitlar: readonly T[];
   /** Her kaydın kararlı ve tekil anahtarı (yayin_id, oneri_id, `${baslik}-${gonderim_id}` vb.) */
   kayitAnahtari: (kayit: T, index: number) => string;
   /** Her kayıt için kart render slot'u */

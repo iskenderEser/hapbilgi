@@ -88,7 +88,7 @@ export default function EczanemVideoRafi({
       behavior: "smooth",
     });
 
-  const baslikId = `raf-${baslik.replaceAll(" ", "-").replaceAll("’", "").toLocaleLowerCase("tr-TR")}`;
+  const bolumId = `raf-${baslik.replaceAll(" ", "-").replaceAll("’", "").toLocaleLowerCase("tr-TR")}`;
 
   const renderKartIcerigi = (video: EczanemMusteriVideo, mobilMi: boolean) => {
     const isliyor = etkilesimIsliyor === video.yayin_id;
@@ -214,6 +214,7 @@ export default function EczanemVideoRafi({
 
   return (
     <MobilYayinAkisi<EczanemMusteriVideo>
+      bolumId={bolumId}
       kayitlar={videolar}
       kayitAnahtari={(video) => `${baslik}-${video.gonderim_id}`}
       renderKart={(video) => (
@@ -221,14 +222,7 @@ export default function EczanemVideoRafi({
           {renderKartIcerigi(video, true)}
         </div>
       )}
-      baslik={
-        <h2
-          id={baslikId}
-          className="truncate text-base font-black tracking-[-0.015em] text-[#1e344a] md:text-lg"
-        >
-          {baslik}
-        </h2>
-      }
+      baslik={baslik}
       sayacGoster={true}
       sifirlamaAnahtari={sifirlamaAnahtari}
       bosDurum={
