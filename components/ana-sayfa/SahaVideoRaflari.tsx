@@ -65,7 +65,7 @@ function SabitBolum({ baslik, videolar, onVideoSec }: { baslik: string; videolar
   return (
     <section className="mb-6">
       <h2 className="mb-2.5 text-base font-bold text-gray-900 md:text-lg">{baslik}</h2>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {videolar.map((video) => <SahaVideoKarti key={video.yayin_id} video={video} onVideoSec={onVideoSec} />)}
       </div>
     </section>

@@ -53,7 +53,7 @@ export default function YayindakiVideoBolumu({ videolar, onVideoSec, oneriModu =
   return (
     <div ref={rafRef} className={yatayMi
       ? "flex snap-x gap-2.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      : "grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5"
+      : "grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
     }>
       {videolar.map((v) => {
         const secili = secilenYayinlar.includes(v.yayin_id);
