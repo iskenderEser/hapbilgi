@@ -3,11 +3,11 @@
 
 import { ROL_ADLARI } from "@/lib/utils/roller";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { useHataMesaji } from "@/components/HataMesaji";
 import VideoOynatici from "@/components/izle/VideoOynatici";
 import VideoBolumu from "@/components/ana-sayfa/VideoBolumu";
+import HayaletTanburSecici, { type TanburBolum } from "@/components/navigasyon/HayaletTanburSecici";
 import { AnaSayfaVideo } from "@/lib/video/anaSayfaVideolari";
 import { haftaBaslangici } from "@/lib/zaman/kontrol";
 
@@ -41,11 +41,28 @@ interface Props {
 }
 
 export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
-  const router = useRouter();
   const [veri, setVeri] = useState<YoneticiVeri | null>(null);
   const [loading, setLoading] = useState(true);
   const [aktifVideo, setAktifVideo] = useState<AnaSayfaVideo | null>(null);
+  const [aktifTanburBolumu, setAktifTanburBolumu] = useState<string>("tumu");
   const { hata } = useHataMesaji();
+
+  const videolar = veri?.videolar ?? [];
+  const haftaninEnleri = veri?.haftanin_enleri ?? [];
+
+  const tanburBolumleri = useMemo<TanburBolum[]>(() => {
+    const bolumler: TanburBolum[] = [
+      { id: "tumu", etiket: "Tüm Bölümler" },
+      { id: "haftanin_enleri", etiket: "Haftanın En’leri", sayi: haftaninEnleri.length },
+    ];
+    if (videolar.length > 0) {
+      bolumler.push({ id: "yayinlar", etiket: "Yayınlar", sayi: videolar.length });
+    }
+    return bolumler;
+  }, [haftaninEnleri.length, videolar.length]);
+
+  const seciliTanburBolumu =
+    videolar.length === 0 && aktifTanburBolumu === "yayinlar" ? "tumu" : aktifTanburBolumu;
 
   useEffect(() => {
     const veriCek = async () => {
@@ -106,7 +123,6 @@ export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
     en_cok_izleyen_utt: null,
   };
   const ad = adSoyad.split(" ")[0] || "Yönetici";
-  const haftaninEnleri = veri?.haftanin_enleri ?? [];
 
   return (
     <div className="max-w-6xl mx-auto px-3 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
@@ -122,8 +138,27 @@ export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
         </span>
       </div>
 
-     {/* Stat kartlar — 6 stat (3+3 grid) */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-5">
+      {/* Mobilde Odak Bilgi Alanı */}
+      {seciliTanburBolumu !== "tumu" && (
+        <div className="mb-4 flex items-center justify-between rounded-2xl border border-blue-200/80 bg-blue-50/90 px-4 py-2.5 text-xs font-bold text-blue-900 shadow-xs sm:hidden">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+            <span className="text-xs font-black">
+              Odak: {tanburBolumleri.find((b) => b.id === seciliTanburBolumu)?.etiket}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setAktifTanburBolumu("tumu")}
+            className="rounded-lg bg-white px-2.5 py-1 text-[11px] font-extrabold text-blue-600 shadow-xs hover:bg-blue-100 active:scale-95 cursor-pointer"
+          >
+            Tümünü Göster
+          </button>
+        </div>
+      )}
+
+      {/* Stat kartlar — 6 stat (3+3 grid) */}
+      <div className={`grid grid-cols-2 md:grid-cols-3 gap-2 mb-5 ${seciliTanburBolumu !== "tumu" ? "hidden sm:grid" : ""}`}>
         {[
           { label: "Yayında Toplam Video", value: istat.yayinda_toplam_video, sub: "Tüm üretici roller", renk: "#16a34a", tip: "sayisal" },
           { label: "Toplam İzleme", value: istat.toplam_izleme_sayisi, sub: "Kendi + öneri + extra", renk: "#56aeff", tip: "sayisal" },
@@ -153,9 +188,9 @@ export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
       </div>
 
       {/* Haftanın En'leri (full genişlik) */}
-      <div>
+      <div className={seciliTanburBolumu !== "tumu" && seciliTanburBolumu !== "haftanin_enleri" ? "hidden sm:block" : ""}>
         <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-bold text-gray-900">Haftanın En'leri</span>
+          <span className="text-sm font-bold text-gray-900">Haftanın En&apos;leri</span>
           <span className="text-xs text-gray-400">{haftaTarihi()}</span>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
@@ -197,9 +232,17 @@ export default function YoneticiAnaSayfa({ user, rol, adSoyad }: Props) {
       </div>
 
       {/* Videolar */}
-      <div className="mt-5">
-        <VideoBolumu videolar={veri?.videolar ?? []} onVideoSec={setAktifVideo} />
+      <div className={`mt-5 ${seciliTanburBolumu !== "tumu" && seciliTanburBolumu !== "yayinlar" ? "hidden sm:block" : ""}`}>
+        <VideoBolumu videolar={videolar} onVideoSec={setAktifVideo} />
       </div>
+
+      {tanburBolumleri.length > 1 && (
+        <HayaletTanburSecici
+          bolumler={tanburBolumleri}
+          seciliId={seciliTanburBolumu}
+          onSec={setAktifTanburBolumu}
+        />
+      )}
     </div>
   );
 }
