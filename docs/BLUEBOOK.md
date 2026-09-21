@@ -1,6 +1,6 @@
 # 📘 HapBilgi — BLUEBOOK
 ### İş Modeli, Mimari, İş Kuralları ve Teknik Envanter Anayasası
-*Son genel inceleme: 6 Eylül 2026 | Asistan bölümü ve ilgili envanter güncellemesi: 9 Eylül 2026*
+*Son genel inceleme: 6 Eylül 2026 | Asistan bölümü ve ilgili envanter güncellemesi: 9 Eylül 2026 | Ortak yayın arayüzü, mobil akış ve tanbur güncellemesi: 21 Eylül 2026*
 
 ---
 
@@ -99,10 +99,13 @@ Platform **Video** (`video`), **Podcast** (`podcast`), **Dijital Broşür** (`go
 * **Soru Hakkı:** Soru kümesi izleme kimliğine sabitlenir. Tamamlamadan sonra sorular yanıtlanmadan akış terk edilir ve yeni oturum başlatılırsa önceki oturumun soru hakkı kapanır ve yeniden açılamaz.
 * **Rapor, Lig ve Mağaza:** UTT/KD_UTT kişisel raporunu (`/raporlar/utt`) ve HB Ligi'ni (`/hb-ligi`) izler; firma için HBStore açıksa kendi harcanabilir puanıyla sipariş oluşturabilir (`/store`).
 * **BM ve TM:** BM, bölgesindeki aktif UTT/KD_UTT kullanıcılarına UTT hedefli öğrenme içerikleri önerir. Bir alıcı haftada en fazla üç öneri alabilir; BM'nin aylık gönderim kotası bölgesindeki aktif UTT/KD_UTT sayısının on iki katıdır. BM kendi bölgesinin, TM ise kendi takımındaki BM–UTT öneri ve performans sonuçlarının hiyerarşik görünümünü izler; öneri oluşturma yetkisi yalnız BM'dedir.
+* **Mobil Yayın Akışı ve Tanbur Navigasyonu:** UTT/KD_UTT ana sayfası ve kategori yayın listeleri, mobilde tek sütun, başlangıçta 2 kayıt açan ve “Daha Fazla Göster” ile her tıklamada 5'er kayıt ekleyen kanonik `MobilYayinAkisi` motorunu kullanır. Kategori veya filtre değişimi akışı 2 kayda sıfırlar; tablet ve masaüstünde yatay raf veya grid düzeni korunur. Sağ kenarda yüzen `HayaletTanburSecici` dikey 3D silindir navigasyonu UTT, KD_UTT, BM ve TM ana sayfalarında mobil bölüm geçişini sağlar.
+* **Önerilen Yayınlar ve Filtreleme:** `/oneriler` yüzeyi Aktif ve Tamamlanan öneriler olarak iki alt sekmeye ayrılmıştır. Ortak `IcerikFiltreBari` üzerinden arama veya filtre değiştiğinde mobil akış güvenli biçimde sıfırlanır. Öneri kartı künyesi ve puan rozetleri HOYK (`YayinKarti`) ile standartlaştırılmıştır; mevcut öneri yetkileri ve güvenlik kuralları değişmez.
+* **HOYK Puan Görünürlüğü ve Önbellek Mimarisi:** Ortak `YayinKarti` üzerinde Video puanı ve Extra izleme puanı tüm rollerde şeffaf olarak gösterilir; puanların görünmesi puan kazanma yetkisi doğurmaz, yetki ve kazanım kuralları API düzeyinde korunur. UTT ana sayfası için kullanıcı bazlı `sessionStorage` (`hb_utt_dashboard_${kullaniciId}`), organizasyon zinciri için 5 dakikalık sunucu içi önbellek (`ORG_CACHE_TTL_MS = 5 * 60 * 1000`) entegre edilmiştir. Store günleri ana sayfa pill'inde gösterilir, navbar sayaç tekrarı bulunmaz.
 
 ### 2. Aşama: Kod Taraması ve Görev İlişki Matrisi
-* **Tüketim ve Puan:** `app/(panel)/videolarim/`, `components/izle/VideoOynatici.tsx`, `app/izle/api/`, `lib/tclub/puan/`, `lib/tclub/tur/`, `lib/izleme/`, `lib/ogrenmeAraci/`.
-* **Öneri, Rapor ve Lig:** `app/(panel)/oneriler/`, `app/(panel)/yayindaki-videolar/`, `app/(panel)/raporlar/utt/`, `app/(panel)/raporlar/bm/`, `app/(panel)/raporlar/tm/`, `lib/tclub/oneri/`, `lib/tclub/hbligi/`.
+* **Tüketim ve Puan:** `app/(panel)/videolarim/`, `components/izle/VideoOynatici.tsx`, `app/izle/api/`, `lib/tclub/puan/`, `lib/tclub/tur/`, `lib/izleme/`, `lib/ogrenmeAraci/`, `components/yayin/YayinKarti.tsx`, `components/yayin/MobilYayinAkisi.tsx`, `components/navigasyon/HayaletTanburSecici.tsx`.
+* **Öneri, Rapor ve Lig:** `app/(panel)/oneriler/`, `app/(panel)/oneriler/tamamlanan/`, `components/liste/IcerikFiltreBari.tsx`, `app/(panel)/yayindaki-videolar/`, `app/(panel)/raporlar/utt/`, `app/(panel)/raporlar/bm/`, `app/(panel)/raporlar/tm/`, `lib/tclub/oneri/`, `lib/tclub/hbligi/`.
 * **HBStore:** `app/(panel)/store/` ve `lib/tclub/store/`. Stok, bakiye, sipariş ve harcama yarışları `store_siparis_olustur`, `store_siparis_iptal` ve `store_teslim_aldim` RPC'leriyle atomik olarak yönetilir.
 * **Güvenlik Kapıları:** Gerçek oynatma başlamadan izleme oturumu oluşturulmaz; yayın, rol, firma, takım, geçerli tur, puan zamanı, soru erişimi ve öğrenme aracı kimliği sunucuda yeniden doğrulanır.
 
@@ -127,9 +130,10 @@ Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json
 * **Süresiz Bekleme:** Challenge için süre sonu veya süre aşımı kaybı bulunmaz; kayıt tamamlanana kadar bekler. Tarihsel `son_tarih` alanı geriye dönük uyumluluk için korunur ve `challenge_kaybi_tara` cron'u kapalıdır.
 * **Soru Hakkı:** Soru kümesi izleme kimliğine sabitlenir. Tamamlamadan sonra sorular yanıtlanmadan akış terk edilir ve yeni oturum başlatılırsa önceki soru hakkı kapanır. Challenge'ın tamamlanma durumu ve referral puanı yalnız geçerli cevap akışıyla sonuçlandırılır.
 * **Lig ve Mağaza:** BM, C-Club Ligi'nde (`/cc-ligi`) yarışır ve C-Club harcanabilir puanını firma için HBStore açıksa mağazada kullanabilir.
+* **Mobil Yayın Akışı ve HOYK Standardı:** Challenge Club ana sayfasındaki (`/challenge-club`) gelen ve giden meydan okuma listeleri mobilde kanonik `MobilYayinAkisi` (2+5 dikey liste) motorunu kullanır; tablet ve masaüstünde `masaustuIcerik` ile mevcut grid ve sekme düzeni korunur. Kartlarda `YayinKarti` (HOYK) standart kapsül ve tipografi hiyerarşisi kullanılır; BM ana sayfasında (`BmAnaSayfa.tsx`) `HayaletTanburSecici` navigasyonu aktiftir.
 
 ### 2. Aşama: Kod Taraması ve Görev İlişki Matrisi
-* **Challenge ve Katalog:** `app/(panel)/challenge-club/`, `components/challenge-club/CcVideoOynatici.tsx`, `lib/cclub/kayit.ts`, `lib/cclub/kotaKontrol.ts`, `lib/cclub/uygunAliciListesi.ts`.
+* **Challenge ve Katalog:** `app/(panel)/challenge-club/`, `components/challenge-club/CcVideoOynatici.tsx`, `components/yayin/YayinKarti.tsx`, `components/yayin/MobilYayinAkisi.tsx`, `components/navigasyon/HayaletTanburSecici.tsx`, `lib/cclub/kayit.ts`, `lib/cclub/kotaKontrol.ts`, `lib/cclub/uygunAliciListesi.ts`.
 * **Tüketim ve Puan:** `app/(panel)/challenge-club/izle/api/`, `lib/cclub/izleme/`, `lib/cclub/puan/`, `lib/cclub/tekrarIzlemeKontrol.ts`.
 * **Güvenlik Kapıları:** Gönderici, alıcı, firma, modül, yayın, tur ve araç kimliği sunucuda doğrulanır. Challenge ile gönderme puanı `cc_challenge_gonder`; tamamlama ve cevaplar `cc_izleme_tamamla` ile `cc_cevaplari_kaydet` üzerinden atomik yürür. Mükerrer gönderim, cevap ve referral kayıtları yapısal olarak engellenir.
 
@@ -155,10 +159,11 @@ Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json
 * **Öneri ve Tüketim:** UTT, kendi firma ve takım kapsamındaki Video, Podcast, Dijital Broşür veya Literatür aracını bir veya birden fazla eczane kullanıcısına önerir. Öneri `yayin_id`, `arac_id` ve `arac_turu` kimlikleriyle saklanır. Önerinin puanlı ve sorulu geçerlilik süresi ayarlanabilir; varsayılan 7 gündür. Aynı UTT'nin aynı kişiye aynı aracı yeniden göndermesi için önceki önerinin bitişinden sonra ayarlanabilir bir süre beklenir; varsayılan 21 gündür. Süresi geçmiş öneri izlenebilir ancak puan ve soru hakkı vermez.
 * **Puan Kuralları:** Aktif öneride uygun tamamlama ve doğru cevaplar puan kazandırır. İleri sarma, atlanan sürenin araç puanındaki oransal karşılığını ilgili firma bakiyesinden düşürür; yanlış cevap kayıp üretmez. Soru kümesi izleme kimliğine sabitlenir ve tamamlamadan sonra terk edilen soru hakkı yeni oturumda yeniden açılmaz.
 * **E-Club Store:** Kişinin aktif firma bağlarından kazandığı puanlar firma bazında izlenir ve uygun ürün için tek siparişte birleştirilebilir. Ürün görünürlüğü global katalog ile firma ayarlarının kesişimidir. Sipariş yalnız aktif E-Club üyeliğiyle açılır; puanlar ürüne izin veren firmalar arasında en yüksek bakiyeden başlayarak kademeli düşülür ve `eclub_store_siparis_firma_puan` ile kaynak firmalara dağıtılır.
+* **Mobil Yayın Akışı ve HOYK Standardı:** E-Club firma video kataloğu (`EclubFirmaVideoKatalogu.tsx`), mobilde `MobilYayinAkisi` (2+5 dikey akış) motoruna bağlanmıştır; tablet ve masaüstünde grid görünümü korunur. Kart gösteriminde `YayinKarti` (HOYK) standart kapsül hiyerarşisi ve video puanı rozeti kullanılır.
 
 ### 2. Aşama: Kod Taraması ve Görev İlişki Matrisi
 * **Eczane, UTT ve Kişi Bağları:** `app/(panel)/eclub/listem/`, `lib/eclub/uttEczane.ts`, `lib/eclub/kisiErisim.ts`, `eclub_utt_eczaneye_bagla`, `eclub_utt_eczaneden_cikar`, `eclub_yeni_kisi_provizyonu`, `eclub_mevcut_kisi_provizyonu`.
-* **Öneri ve Tüketim:** `app/(panel)/eclub/oneriler/`, `app/(panel)/eclub/videolarim/`, `app/(panel)/eclub/panel/`, `lib/eclub/oneriLimit.ts`, `lib/eclub/oneriKapsam.ts`, `lib/eclub/izlemeKurali.ts`, `lib/eclub/aktifYayinYetkisi.ts`.
+* **Öneri ve Tüketim:** `app/(panel)/eclub/oneriler/`, `app/(panel)/eclub/videolarim/`, `app/(panel)/eclub/panel/`, `components/yayin/YayinKarti.tsx`, `components/yayin/MobilYayinAkisi.tsx`, `lib/eclub/oneriLimit.ts`, `lib/eclub/oneriKapsam.ts`, `lib/eclub/izlemeKurali.ts`, `lib/eclub/aktifYayinYetkisi.ts`.
 * **Lig, Rapor ve Sipariş:** `app/(panel)/eclub/ligi/`, `app/(panel)/eclub/raporlar/`, `app/(panel)/eclub/siparisler/`, `lib/eclub/rapor.ts`, `lib/eclub/yonetimKapsami.ts`.
 * **E-Club Store:** `app/(panel)/eclub/store/`, `lib/eclub/store/`, `scripts/sql/eclub_store_firma_urun_gorunurlugu.sql`, `scripts/sql/eclub_store_aktif_uyelik_siparis_kapisi.sql`.
 * **Güvenlik Kapıları:** UTT liste üyeliği, kişi–eczane bağı, firma modül bayrakları, yayın kapsamı, araç kimliği, öneri süresi ve aktif üyelik sunucuda doğrulanır. Öneri, tamamlama, cevap ve sipariş yazımları korumalı RPC'lerden geçer.
@@ -187,10 +192,11 @@ Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json
 * **Puan Kaynağı ve Ömrü:** Puan `musteri_id + eczane_id + firma_id + urun_id` bağıyla kaynağından ayrılmadan saklanır. Puan ömrü `sistem_ayarlari.eczanem_puan_omru_gun` üzerinden belirlenir; varsayılan 180 gündür. Kullanım, geçerli puan kayıtlarından FIFO sırasıyla yapılır.
 * **Barkodlu Talep ve Eczane Onayı:** Üye barkod üzerinden bir indirim talebi oluşturur; talep aşamasında puan düşmez ve geçerli tarifenin anlık görüntüsü siparişe yazılır. Yetkili eczane personelinin onayında puan atomik FIFO işlemiyle düşer; ret veya üyenin vazgeçmesi puan düşürmez. HapBilgi puan veya indirimi tek taraflı belirlemez; yetkili kullanıcıların yayın ve tarife kapsamında girdiği parametreleri kaydeder ve hesaplar. HapBilgi, eczane ile Eczanem uygulaması üyesi arasındaki ticari ilişkinin tarafı değildir.
 * **Kimlik Geçişi ve Silme:** Eczanem uygulaması üyesinin E-Club unvanına alınması çift kimlik oluşturmayan kontrollü karar akışıyla ve aynı giriş hesabı korunarak yapılır. Üye, şifresini yeniden doğrulayarak kendi uygulama ve Auth kimliğini `eczanem_musteri_kendini_tam_sil` üzerinden atomik olarak silebilir.
+* **Mobil Yayın Akışı ve a11y Standardı:** Eczanem video rafları (`EczanemVideoRafi.tsx`), mobilde `MobilYayinAkisi` (2+5 dikey liste) motorunu kullanır; tablette yatay raf düzeni korunur. Özel raf başlığı tasarımı bozulmadan, otomatik ve güvenli kapsayıcı ID'leri üzerinden `aria-labelledby` bağlantısı sağlanmıştır. Kartlarda `YayinKarti` (HOYK) yapısı kullanılır.
 
 ### 2. Aşama: Kod Taraması ve Görev İlişki Matrisi
 * **Üye Yüzeyi ve Kimlik:** `app/login/`, `app/eczanem/`, `app/eczanem/api/giris/sifre/route.ts`, `lib/eczanem/oturum.ts`, `lib/eczanem/telefon.ts`, `lib/eczanem/aktifUyelik.ts`, `lib/eczanem/erisim.ts`.
-* **Dağıtım ve Öğrenme:** `app/(panel)/eczanem/utt/`, `app/(panel)/eczanem/eczane/`, `app/eczanem/api/izleme/`, `lib/eczanem/gonderim.ts`, `components/ogrenme-araci/`.
+* **Dağıtım ve Öğrenme:** `app/(panel)/eczanem/utt/`, `app/(panel)/eczanem/eczane/`, `app/eczanem/api/izleme/`, `components/yayin/YayinKarti.tsx`, `components/yayin/MobilYayinAkisi.tsx`, `lib/eczanem/gonderim.ts`, `components/ogrenme-araci/`.
 * **Puan, Tarife ve İşlem:** `app/eczanem/api/puanlar/`, `app/eczanem/api/siparis/`, `lib/eczanem/kasa.ts`, `lib/eczanem/tarife.ts`, `lib/eczanem/dokum.ts`.
 * **Geçiş ve Silme:** `app/eczanem/api/eclub-gecisi/route.ts`, `app/eczanem/api/hesabimi-sil/route.ts`, `lib/eczanem/silme.ts`, `eczanem_eclub_gecis_karar_ver`, `eczanem_musteri_kendini_tam_sil`.
 * **Güvenlik Kapıları:** Üye kimliği, eczane üyeliği, firma modül bayrağı, UTT liste bağı, yayın kapsamı, araç kimliği, aktif üye eşiği, tarife ve sipariş sahipliği sunucuda yeniden doğrulanır. Dağıtım, tamamlama, cevap, üyelik ve sipariş kararları korumalı RPC'lerden geçer.
@@ -234,6 +240,7 @@ Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json
 * **Revizyon ve Sürüm Güvenliği:** Senaryo fark görünümü `SenaryoDuzeltmeEditoru` ile korunur. Senaryo ve seçilen öğrenme aracı için en fazla üç revizyon istenebilir ve revizyon notu zorunludur. Karar isteği incelenen görev sürümünü taşır; güncelliğini yitirmiş ekrandan gönderilen karar yeni görev veya durum kaydı oluşturmadan reddedilir.
 * **Medya Yükleme ve Kurtarma:** Video, Bunny Stream TUS hattıyla doğrudan yüklenir ve beş dakikalık işleme takibi kullanır. Podcast, Dijital Broşür ve Literatür dosyaları süreli imza üzerinden Bunny Storage hattına aktarılır; uzantı, MIME, boyut, gerçek dosya imzası, SHA-256 özeti ve araca özgü metadata doğrulanır. Kesilen yükleme aynı kayıt üzerinden yalnız eksik parçalarla sürdürülebilir veya dış depolama nesneleriyle geçici veritabanı kayıtları birlikte temizlenerek iptal edilebilir.
 * **Yayın Kapısı ve Puanlama:** Öğrenme aracı onaylanmadan, metadata doğrulaması tamamlanmadan, araç puanı ve bütün soru puanları tanımlanmadan yayın açılamaz. Saha yayınında Extra puan 5–10 arasındadır; E-Club ve Eczanem yayınında Extra puan bulunmaz. Eczanem hedefinde barkod, Karşılık ve satış fiyatı zorunludur. Hemen yayın Tur-1'i açar; ileri tarihli yayın `planlandi` durumunda bekler. Depodaki pg_cron sözleşmesi tarihi gelen yayınları Türkiye saatiyle 07.00'de, güvenlik tekrarı olarak 07.10'da aktive eder.
+* **Mobil Yayın Akışı, Tanbur ve HOYK Entegrasyonu:** Yayındaki Videolar (`YayindakiVideoBolumu.tsx`), Üretici Yayın Katalogları (`UreticiYayinKatalogu.tsx`) ve Yayın Yönetimi aktif yayınlar listesi (`yayin-yonetimi/page.tsx`), mobilde `MobilYayinAkisi` (2+5 dikey akış) motoruna bağlanmıştır; masaüstünde tam liste ve filtreleme erişimi korunur. Yayın kartı sunumunda `YayinKarti` (HOYK) kanonik bileşeni kullanılır. Video ve Extra puan bilgileri tüm rollerde kartta şeffaf gösterilir; ancak üretici veya yöneticiye puan kazanma yetkisi vermez. Üretici (`UreticiAnaSayfa.tsx`) ve Yönetici (`YoneticiAnaSayfa.tsx`) ana sayfaları mobilde `HayaletTanburSecici` navigasyonuna bağlanmıştır; üreticide Tanbur koşulsuz render edilir (yalnız "Tüm Yayınlar" kalsa dahi gösterilir). Yayın raporlarında (`yayin-raporlari/page.tsx`) mobilde 2 kolon, tablette yatay raf ve masaüstünde grid düzeni uygulanmıştır.
 
 ### 2. Aşama: Operasyonel Kod ve İş Akışı Kaydı
 1. **Rol, Talep ve Hedef Doğrulaması:** `app/(panel)/talepler/api/route.ts`, `lib/uretici/yetenekler.ts`, `lib/utils/roller.ts`, `lib/uretici/talepKaynakSahipligi.ts`.
@@ -242,7 +249,7 @@ Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json
 4. **Dört Araçlı Üretim ve Revizyon:** `lib/ogrenmeAraci/uretimAkisi.ts`, `app/(panel)/uretim/gorevler/[gorev_id]/page.tsx`, araç türüne özgü doğrulama ve karar RPC'leri ile ortak sürüm kapısı.
 5. **Yükleme, Kurtarma ve Temizlik:** `lib/video/bunnyYukleme.ts`, `lib/ogrenmeAraci/bunnyStorage.ts`, `lib/ogrenmeAraci/bunnyYuklemeIstemci.ts`, `app/api/ogrenme-araclari/` ve yarım yükleme temizleme akışı.
 6. **Soru Seti Üretimi:** `lib/soru/taslak.ts`, `components/SoruIceAktar.tsx`, `uretim_soru_seti_dogrula`, soru seti büyüklüğü ve hazır set parametre kilidi.
-7. **Yayın Yönetimi:** `app/(panel)/yayin-yonetimi/`, `yayin_arac_kapisini_dogrula`, yayın öncesi kilitli silme zinciri, Tur-1 ve `scripts/sql/yayin_aktivasyon.sql`.
+7. **Yayın Yönetimi ve Ortak Arayüz:** `app/(panel)/yayin-yonetimi/`, `components/yayin/YayinKarti.tsx`, `components/yayin/MobilYayinAkisi.tsx`, `components/navigasyon/HayaletTanburSecici.tsx`, `yayin_arac_kapisini_dogrula`, yayın öncesi kilitli silme zinciri, Tur-1 ve `scripts/sql/yayin_aktivasyon.sql`.
 8. **Üretim ve Yönetici Raporları:** `app/(panel)/raporlar/api/uretim/route.ts`, `app/(panel)/raporlar/api/yonetici/route.ts`, `lib/rapor/uretim/getUretimData.ts`, `lib/rapor/paylasilan/aracTuruDagilimi.ts`. Üretim raporu kişisel talep listesi değil, kullanıcının yetkili olduğu firmanın üretim portföyüdür; eğitim türü, varyant ve öğrenme aracı dağılımları ile tüketim olaylarını ayrı eksenlerde gösterir.
 
 **Doğrulama kaydı — 3 Eylül 2026:** Bölüm 5 kapsamındaki rol, hedef, talep, varyant, görev, revizyon, sürüm, yükleme, yayın, silme, raporlama ve veri sözleşmelerine yönelik seçili otomatik testlerin **87 / 87'si başarılıdır**.
@@ -264,7 +271,7 @@ Bu kayıt canlı veritabanı doğrulaması değildir. `scripts/denetim/sema.json
 ---
 
 # 6. BÖLÜM: BÜTÜNSEL MİMARİ REFACTORİNG, DRY VE TEMİZLİK SİCİLİ
-*İlk kayıt: 24 Ağustos 2026 | Güncelleme: 16 Eylül 2026 | Kapsam: Kulüp Modülleri ve Ortak Platform Katmanları, DRY Tek-Kaynak Konsolidasyonu ve Ölü Kod Tasfiyesi*
+*İlk kayıt: 24 Ağustos 2026 | Güncelleme: 21 Eylül 2026 | Kapsam: Kulüp Modülleri ve Ortak Platform Katmanları, DRY Tek-Kaynak Konsolidasyonu ve Ölü Kod Tasfiyesi*
 
 ### 1. Amaç ve İcra Kapsamı
 23 Ağustos 2026 denetiminin ardından, sistem genelindeki dağınık kütüphane motorları, geçmiş sürümlerden kalan sürüm takıları (`hbligi_v2`), kod tekrarları (DRY ihlalleri) ve atomik RPC mimarisine geçiş sonrası atıl kalan ölü kodlar kapsamlı bir refactoring operasyonuyla temizlenmiştir.
@@ -292,12 +299,12 @@ Kulüp motorları ve ortak platform katmanları, ortak mimari ilkeler içinde ke
 * 🗑️ `lib/utils/randomSoruSec.ts` (Silindi — Güvensiz eski soru seçici; `lib/soru/secim` ile değiştirildi)
 
 ### 5. Güncel Doğrulama Kaydı
-*Kontrol tarihi: 16 Eylül 2026*
+*Kontrol tarihi: 21 Eylül 2026*
 
 * **TypeScript Derleme Denetimi (`npm run typecheck:build`):** ✅ **BAŞARILI (Exit code 0)**.
-* **Bütünsel Duman Testleri (`npm run test:smoke`):** ✅ **312 / 312 TEST BAŞARILI (%100 PASS)**.
-* **Hedef Davranış Testleri (`npm run test:hedef`):** ✅ **436 / 436 TEST BAŞARILI (%100 PASS)**.
-* **Değiştirilen üretim kodu ve smoke test lint denetimi:** ✅ **BAŞARILI**.
+* **Bütünsel Duman Testleri (`npm run test:smoke`):** ✅ **497 / 497 TEST BAŞARILI (%100 PASS)**.
+* **Mimari ESLint ve Tip Güvenliği Denetimi:** ✅ **BAŞARILI**.
+*(Not: 16 Eylül 2026 tarihli 436/436 hedef davranış testi sonucu tarihsel olarak korunmaktadır; bu denetimde çalıştırılmayan testler için güncel başarı iddiasında bulunulmamıştır.)*
 
 ### 6. 16 Eylül 2026 Temizlik Kaydı
 
@@ -306,6 +313,16 @@ Kulüp motorları ve ortak platform katmanları, ortak mimari ilkeler içinde ke
 * İşlevsiz `vercel.json`, iki kullanılmayan operasyon/denetim betiği ve yalnız sabit kişi/UUID hedefleyen iki tek kullanımlık SQL teşhisi kaldırıldı.
 * Tamamlanmış eski HapBi ve öğrenme aracı geliştirme dönemlerini tekrar eden 6 tarihsel plan belgesi kaldırıldı. Güncel sistem kaydı BLUEBOOK, açık işler REDBOOK, davranış kanıtı kaynak kod ve otomatik testlerdir.
 * SQL denetiminde kalan 181 dosyanın aktif şema sözleşmesi, tekrar çalıştırılabilir değişiklik, test/mutabakat aracı veya gerekli tarihsel geçiş kaydı olduğu doğrulandı.
+
+### 7. 20–21 Eylül 2026 Ortak Yayın Arayüzü ve Mobil Akış Kaydı
+
+1. **`YayinKarti` ile HOYK Tekilleştirmesi:** Farklı yayın modüllerindeki dağınık kart sunumları tek kanonik `components/yayin/YayinKarti.tsx` bileşeni altında birleştirilmiştir. Kart üzerinde thumbnail, öğrenme aracı türü pill'i (`YayinTuruPill`), durum ve içerik türü kapsülü, beğeni, favori ve izlenme sayaçları, Video puanı ve Extra izleme puanı rozetleri standartlaştırılmıştır. Mobilde 16px başlık / 12px rozet, masaüstünde 12px başlık / 9px rozet ile duyarlı tipografi ayrımı uygulanmıştır. Rol veya ekran gereksinimleri için slotlar (`rolSlotu`, `kartAltiSlotu`) sağlanmıştır. Puan bilgilerinin bütün rollerde görünür olması şeffaflık amaçlıdır; kullanıcılara puan kazanma yetkisi doğurmaz ve yetkiler API düzeyinde korunur.
+2. **`MobilYayinAkisi` ile 2 + 5 Mobil Liste Sözleşmesi:** `components/yayin/MobilYayinAkisi.tsx`, bütün yayın yüzeylerinin tek kanonik mobil liste motoru olarak kodlanmıştır. Mobilde tek sütun dikey liste sunar; başlangıçta 2 kayıt açılır ve “Daha Fazla Göster” butonuyla her seferinde en fazla 5 kayıt eklenir. `Number.isFinite` ve pozitif tam sayı dilimleme sınırları uygulanmıştır. Kategori, sekme, kapsam veya arama alanı değiştiğinde (`sifirlamaAnahtari`) akış güvenli biçimde 2 kayda sıfırlanır; aynı kapsamda veri yenilendiğinde kullanıcının açtığı kayıt sayısı korunur. Tablet ve masaüstü grid veya yatay raf düzenleri `masaustuIcerik` prop'u üzerinden eksiksiz korunur.
+3. **`HayaletTanburSecici` Ortak Bileşeni ve Rol Kapsamı:** `components/navigasyon/HayaletTanburSecici.tsx`, mobil ana sayfalarda sağ kenarda yüzen dikey 3D kutusuz silindir navigasyon tekerleği olarak sisteme eklenmiştir. Dokunma ve fare tekerleğini destekler, açıkken arka plan kaydırmasını kilitler ve lokal buğu efektiyle odak sağlar. Seçilen bölümü sayfanın mevcut state'ine bağlar; yayın erişim yetkisi üretmez. UTT, KD_UTT, BM, TM ile 13 üretici ve 7 yönetici rolünün tamamında aktiftir (`iu` ve `admin` hariç). Üretici ana sayfasında Tanbur veri durumundan bağımsız olarak koşulsuz render edilir (yalnız "Tüm Yayınlar" seçeneği kalsa bile görünür).
+4. **Arama/Kategori/Kapsam Sıfırlama Sözleşmesi:** `components/liste/IcerikFiltreBari.tsx` bileşeni ve `useOneriler` kancası entegrasyonuyla; arama metni, arama alanı veya aktif/tamamlanan sekmesi değiştiğinde mobil yayın akışının otomatik olarak ilk 2 kayda dönmesi kilitlenmiştir.
+5. **Erişilebilirlik (a11y) Düzeltmeleri:** Özel raf veya bölüm başlığı tasarımları bozulmadan, koşullu ve güvenli kapsayıcı ID'leri (`aria-labelledby`) üzerinden ekran okuyucu ve erişilebilirlik bağlantıları güvenceye alınmıştır.
+6. **Kullanıcı Bazlı UTT Panel Önbelleği ve Organizasyon Önbelleği:** Rol ana sayfaları dinamik yüklemeye (`React.lazy`) alınmıştır. UTT ana sayfası göstergeleri `sessionStorage` üzerinde kullanıcı ID'sine izole edilerek önbelleğe alınmış (`hb_utt_dashboard_${kullaniciId}`); UTT organizasyon zinciri için 5 dakikalık sunucu içi (`in-memory`) önbellek (`ORG_CACHE_TTL_MS = 5 * 60 * 1000`) kurulmuştur. Eski bağımsız mobil akordeon ve sayaç tekrarları tasfiye edilmiştir. Önbellekler yetki kaynağı değildir, sunucu güvenlik denetimleri korunur.
+7. **Rol Yetkilerinin ve Puan Motorlarının Bütünlüğü:** Yapılan çalışmalar yalnızca arayüz sunumunu ve mobil kullanıcı deneyimini ortaklaştırmıştır. Canlı veritabanı şeması, migration, API rotaları, rol yetkileri, kulüp iş kuralları ve puan motorları değiştirilmemiştir.
 
 ---
 
@@ -394,6 +411,8 @@ Bildirimler seçilen öğrenme aracının adını ve talebi açan kullanıcını
 | **Admin** (`admin`) | Firma, kullanıcı, organizasyon, modül, sistem ayarı, Store ve üretim atamalarını merkezi yönetim kapsamıyla yürütür. | Doğrulama, oluşturma, güncelleme, dışa aktarma ve yönetim işlemlerinin sonucu. |
 
 T-Club ve C-Club'da soru hakkı izleme kimliğine bağlıdır. Öğrenme tamamlandıktan sonra cevaplanmamış soru akışının terk edilmesi önceki soru hakkını kapatır. Video ileri sarma davranışı sabit bir “tüm puanı iptal etme” kuralı değildir; puanlı zamanda atlanan sürenin araç puanındaki oransal karşılığı kayıp olarak uygulanır. Araç türüne özgü ilerleme ve tamamlama kuralları Bölüm 1–3'teki kulüp sözleşmeleriyle birlikte değerlendirilir.
+
+Ortak `YayinKarti` (HOYK) üzerinde Video puanı ve Extra izleme puanı rozetleri tüm rollerde (üretici ve yönetici dahil) görünür kılındığından kart üzerinde bilgi şeffaflığı sağlanmıştır; ancak puanların görünmesi puan kazanma yetkisi doğurmaz ve yetki sınırları API düzeyinde korunur. `HayaletTanburSecici` mobil navigasyonu UTT, KD_UTT, BM, TM, 13 üretici ve 7 yönetici rolünde aktiftir; `iu` ve `admin` ana sayfaları bu kapsamın dışındadır. Üretici ana sayfasında Tanbur veri durumundan bağımsız olarak koşulsuz render edilir (yalnız "Tüm Yayınlar" seçeneği kalsa dahi gösterilir).
 
 ### 4. E-Club ve Eczanem Rolleri
 
@@ -648,7 +667,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `page.tsx` | UI / React | Kullanıcının rolüne göre (Üretici, UTT, BM, TM, Yönetici) özelleşmiş karşılama ve operasyonel hızlı eylem paneli. |
+| `page.tsx` | UI / React | Kullanıcının rolüne göre (Üretici, UTT, BM, TM, Yönetici) rol ana sayfalarını dinamik yükleyen (`React.lazy`) ve operasyonel hızlı eylemleri sunan karşılama kabuğudur. |
 
 ### 📁 app/(panel)/ana-sayfa/api/
 
@@ -672,7 +691,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `page.tsx` | UI / React | Bölge Müdürleri arasındaki meydan okuma yarışmasının, gelen ve giden davetlerin yönetildiği ana C-Club sayfası. |
+| `page.tsx` | UI / React | Bölge Müdürleri arasındaki meydan okuma yarışmasının, gelen ve giden davetlerin `MobilYayinAkisi` (2+5 dikey liste) ve `YayinKarti` ile yönetildiği ana C-Club sayfası. |
 
 ### 📁 app/(panel)/challenge-club/api/
 
@@ -825,7 +844,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `EclubFirmaVideoKatalogu.tsx` | UI / React | E-Club firma video Katalogu, E-Club ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `EclubFirmaVideoKatalogu.tsx` | UI / React | E-Club firma video kataloğunu mobilde `MobilYayinAkisi` (2+5 dikey liste), masaüstünde grid düzeni ve `YayinKarti` (HOYK) rozetleriyle sunan bileşendir. |
 | `EclubVideoOynatici.tsx` | UI / React | E-Club video Oynatici, ilgili öğrenme aracını gösteren ve E-Club ilerleme/tamamlama akışına bağlayan oynatıcı bileşenidir. |
 
 ### 📁 app/(panel)/eclub/panel/_hooks/
@@ -1114,14 +1133,27 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `page.tsx` | UI / React | UTT için gelen önerileri, BM için gönderdiği önerileri, TM için takım takip dökümünü sunan öneri merkezi. |
+| `page.tsx` | UI / React | UTT için gelen aktif önerileri, BM için gönderdiği önerileri, TM için takım takip dökümünü alt sekmeler ve `IcerikFiltreBari` ile sunan öneri merkezi. |
 
 ### 📁 app/(panel)/oneriler/_components/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `BmOneriTakibi.tsx` | UI / React | Bm öneri Takibi, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
-| `TmOneriTakibi.tsx` | UI / React | Tm öneri Takibi, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `BmOneriTakibi.tsx` | UI / React | BM öneri Takibi, Bölge Müdürünün gönderdiği önerileri ve durumlarını sunan React bileşenidir. |
+| `TmOneriTakibi.tsx` | UI / React | TM öneri Takibi, Takım Müdürünün takımındaki öneri akışını izlediği React bileşenidir. |
+| `UyeOnerilerGorunumu.tsx` | UI / React | UTT için aktif ve tamamlanan önerileri alt sekmeler, `IcerikFiltreBari`, `YayinKarti` ve `MobilYayinAkisi` ile listeleyen görünüm bileşenidir. |
+
+### 📁 app/(panel)/oneriler/_hooks/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `useOneriler.ts` | TypeScript / Lib | Öneriler ekranının aktif/tamamlanan sekme durumunu, arama alanı ve metin filtreleri ile mobil akış sıfırlama durumunu yöneten kancadır. |
+
+### 📁 app/(panel)/oneriler/tamamlanan/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | UTT için tamamlanan öneriler alt sekmesini `UyeOnerilerGorunumu` üzerinden sunan sayfa bileşenidir. |
 
 ### 📁 app/(panel)/oneriler/api/
 
@@ -1277,6 +1309,12 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `TakimBolgeUttAkordeon.tsx` | UI / React | takım bölge UTT Akordeon, raporlama ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+
+### 📁 app/(panel)/raporlar/yayin-raporlari/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `page.tsx` | UI / React | Yayın konusu ve saha etkisi raporlarını mobilde iki kolon, tablette yatay kaydırılabilir raf ve masaüstünde grid düzeniyle sunan raporlama sayfasıdır. |
 
 ### 📁 app/(panel)/senaryolar/
 
@@ -1541,7 +1579,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `_types.ts` | TypeScript / Lib | HapBilgi alanında kullanılan `Bekleyen`, `Yayin`, `AltSekme`, `BekleyenHedefSayilari` veri tiplerini ve modüller arası sözleşmeleri tanımlar. |
-| `page.tsx` | UI / React | Onaylanan içeriklerin puanlarının belirlendiği, hedef kitleye açıldığı ve yayına alındığı yayın operasyon merkezi. |
+| `page.tsx` | UI / React | Onaylanan içeriklerin puanlarının belirlendiği, hedef kitleye açıldığı, yayına alındığı ve aktif yayınların mobilde `MobilYayinAkisi` (2+5 dikey liste) ile sunulduğu yayın operasyon merkezi. |
 
 ### 📁 app/(panel)/yayin-yonetimi/_components/
 
@@ -1614,8 +1652,8 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 |---|:---:|---|
 | `BmOneriPaneli.tsx` | UI / React | Bm öneri Paneli, HapBilgi kapsamındaki bm öneri verilerini ve işlemlerini tek panelde birleştirir. |
 | `KlasorGrid.tsx` | UI / React | Klasor Grid, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
-| `UreticiYayinKatalogu.tsx` | UI / React | üretici yayın Katalogu, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
-| `YayindakiVideoBolumu.tsx` | UI / React | Yayindaki video Bolumu, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `UreticiYayinKatalogu.tsx` | UI / React | Üretici için Sizin Yayınlarınız ve Tüm Yayınlar kataloglarını masaüstünde grid, mobilde `MobilYayinAkisi` (2+5 dikey liste) ve `YayinKarti` ile sunan bileşendir. |
+| `YayindakiVideoBolumu.tsx` | UI / React | Yayındaki içerikleri klasörleme, arama, filtreleme, masaüstünde grid ve mobilde `MobilYayinAkisi` (2+5 dikey liste) ile sunan bileşendir. |
 
 ### 📁 app/(panel)/yayindaki-videolar/api/
 
@@ -1959,7 +1997,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `EczanemMusteriSidebar.tsx` | UI / React | Eczanem müşteri içerik ağacı bileşenidir; masaüstünde 280px/64px daraltılabilir sticky sidebar, mobilde ise odak yakalama ve erişilebilir diyalog özellikli kayar çekmece (drawer) olarak eczane/firma/ürün hiyerarşisini sunar. |
 | `EczanemPuanlarim.tsx` | UI / React | Eczanem Puanlarim, Eczanem ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 | `EczanemVideoOynatici.tsx` | UI / React | Eczanem video Oynatici, ilgili öğrenme aracını gösteren ve Eczanem ilerleme/tamamlama akışına bağlayan oynatıcı bileşenidir. |
-| `EczanemVideoRafi.tsx` | UI / React | Eczanem öğrenme araçlarını yatay kaydırmalı raf düzeninde listeler; içerik sayacı, kontrollü kaydırma butonları, eşit yükseklikte araç rozetli kartlar (Video, Podcast, Görsel, Flip PDF) ve global beğeni/favori butonlarını barındırır. |
+| `EczanemVideoRafi.tsx` | UI / React | Eczanem öğrenme araçlarını masaüstünde yatay kaydırmalı raf, mobilde `MobilYayinAkisi` (2+5 dikey liste) ile sunar; güvenli kapsayıcı a11y bağlantısı ve `YayinKarti` (HOYK) standart rozetlerini barındırır. |
 
 ### 📁 app/eczanem/hapbilgi-nedir/
 
@@ -2476,7 +2514,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `iuDurumEsle.ts` | TypeScript / Lib | HapBilgi kapsamında `talepBazindaTekillestir` işlev ve sabitlerini ve `IuKategori` veri sözleşmelerini sağlar; iu durum Esle iş kurallarını tek modülde toplar. |
 | `tm.ts` | TypeScript / Lib | HapBilgi kapsamında `getTmAnaSayfaVeri` işlev ve sabitlerini sağlar; tm iş kurallarını tek modülde toplar. |
 | `uretici.ts` | TypeScript / Lib | HapBilgi kapsamında `getUreticiAnaSayfaVeri` işlev ve sabitlerini sağlar; üretici iş kurallarını tek modülde toplar. |
-| `utt.ts` | TypeScript / Lib | HapBilgi kapsamında `getUttAnaSayfaVeri` işlev ve sabitlerini ve `VYayinSatiri` veri sözleşmelerini sağlar; UTT iş kurallarını tek modülde toplar. |
+| `utt.ts` | TypeScript / Lib | HapBilgi kapsamında `getUttAnaSayfaVeri` ve `getUttOrganizasyonBilgisi` işlevlerini sağlar; 5 dakikalık sunucu içi organizasyon önbelleği (`ORG_CACHE_TTL_MS`) ve UTT iş kurallarını tek modülde toplar. |
 | `yonetici.ts` | TypeScript / Lib | HapBilgi kapsamında `getYoneticiAnaSayfaVeri` işlev ve sabitlerini sağlar; yönetici iş kurallarını tek modülde toplar. |
 
 ### 📁 lib/utils/durum/
@@ -2498,7 +2536,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `anaSayfaRaflari.ts` | TypeScript / Lib | video altyapısı kapsamında `RAF_LIMIT`, `anaSayfaRaflari` işlev ve sabitlerini ve `RafVideo` veri sözleşmelerini sağlar; ana sayfa Raflari iş kurallarını tek modülde toplar. |
-| `anaSayfaVideolari.ts` | TypeScript / Lib | video altyapısı kapsamında `getAnaSayfaVideolari`, `getSahaAnaSayfaVideolari` işlev ve sabitlerini ve `AnaSayfaVideo`, `SahaAnaSayfaVideo` veri sözleşmelerini sağlar; ana sayfa Videolari iş kurallarını tek modülde toplar. |
+| `anaSayfaVideolari.ts` | TypeScript / Lib | Video altyapısı kapsamında `getAnaSayfaVideolari` ve `getSahaAnaSayfaVideolari` işlevlerini sağlar; ana sayfa video sorgularını ve kart puan zenginleştirmelerini yönetir. |
 | `bunnyTusIstemci.ts` | TypeScript / Lib | video altyapısı kapsamında `videoYuklemeOturumuGuncelle`, `bunnyTusYukle` işlev ve sabitlerini ve `BunnyVezneIzni` veri sözleşmelerini sağlar; Bunny Tus Istemci iş kurallarını tek modülde toplar. |
 | `bunnyYukleme.ts` | TypeScript / Lib | Bunny Stream TUS API vezne modelini işleten; API anahtarı ifşa olmadan doğrudan CDN yükleme token'ı üreten video motoru. |
 | `departman.ts` | TypeScript / Lib | video altyapısı kapsamında `DEPARTMAN_SIRA`, `DEPARTMAN_ETIKET`, `DEPARTMAN_RENK`, `departmanKey` işlev ve sabitlerini ve `DepartmanKey` veri sözleşmelerini sağlar; departman iş kurallarını tek modülde toplar. |
@@ -2509,7 +2547,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `thumbnail.ts` | TypeScript / Lib | video altyapısı kapsamında `thumbnailUrlUret` işlev ve sabitlerini sağlar; thumbnail iş kurallarını tek modülde toplar. |
 | `uttVideoKategorileri.ts` | TypeScript / Lib | video altyapısı kapsamında `UTT_VIDEO_KATEGORILERI`, `uttVideoKategorisiBul` işlev ve sabitlerini sağlar; UTT video Kategorileri iş kurallarını tek modülde toplar. |
 | `videoPlayer.ts` | TypeScript / Lib | video altyapısı kapsamında `detectProvider`, `bunnyEmbedUrl` işlev ve sabitlerini ve `VideoPlayer`, `Provider`, `PlayerJsInstance` veri sözleşmelerini sağlar; video Player iş kurallarını tek modülde toplar. |
-| `yayindakiVideolar.ts` | TypeScript / Lib | video altyapısı kapsamında `getYayindakiVideolar` işlev ve sabitlerini ve `YayindakiVideo` veri sözleşmelerini sağlar; yayindaki videolar iş kurallarını tek modülde toplar. |
+| `yayindakiVideolar.ts` | TypeScript / Lib | Video altyapısı kapsamında `getYayindakiVideolar` işlevini sağlar; yayındaki videoların klasör, hedef rol, kategori ve HOYK kart verilerini yönetir. |
 
 ### 📁 lib/zaman/
 
@@ -2534,14 +2572,14 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `BmAnaSayfa.tsx` | UI / React | Bm Ana sayfa, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
-| `IuAnaSayfa.tsx` | UI / React | Iu Ana sayfa, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
-| `SahaVideoRaflari.tsx` | UI / React | Saha video Raflari, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
-| `TmAnaSayfa.tsx` | UI / React | Tm Ana sayfa, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
-| `UreticiAnaSayfa.tsx` | UI / React | üretici Ana sayfa, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
-| `UttAnaSayfa.tsx` | UI / React | UTT Ana sayfa, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
-| `VideoBolumu.tsx` | UI / React | video Bolumu, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
-| `YoneticiAnaSayfa.tsx` | UI / React | yönetici Ana sayfa, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `BmAnaSayfa.tsx` | UI / React | Bölge Müdürü operasyonel karşılama, göstergeler, `HayaletTanburSecici` ve `MobilYayinAkisi` destekli video bölümlerini sunan bileşendir. |
+| `IuAnaSayfa.tsx` | UI / React | İÜ operasyonel karşılama, bekleyen işler ve teslim listesini sunan React bileşenidir. |
+| `SahaVideoRaflari.tsx` | UI / React | Saha video raflarını masaüstünde yatay raf, mobilde `MobilYayinAkisi` (2+5 dikey liste) ve `YayinKarti` ile sunan bileşendir. |
+| `TmAnaSayfa.tsx` | UI / React | Takım Müdürü operasyonel karşılama, göstergeler, `HayaletTanburSecici` ve `MobilYayinAkisi` destekli video bölümlerini sunan bileşendir. |
+| `UreticiAnaSayfa.tsx` | UI / React | 13 üretici rolü için üretim özeti, bekleyen işler, koşulsuz `HayaletTanburSecici` ve `MobilYayinAkisi` destekli yayın listesini sunan bileşendir. |
+| `UttAnaSayfa.tsx` | UI / React | UTT operasyonel karşılama, sayaçlar, Store pill'i, `sessionStorage` önbelleği, `HayaletTanburSecici` ve `MobilYayinAkisi` ile 2+5 dikey yayın akışını sunan bileşendir. |
+| `VideoBolumu.tsx` | UI / React | BM ve TM ana sayfalarında video bölümlerini masaüstünde yatay raf, mobilde `MobilYayinAkisi` (2+5 dikey liste) ile sunan bileşendir. |
+| `YoneticiAnaSayfa.tsx` | UI / React | 7 yönetici rolü için firma göstergeleri, `HayaletTanburSecici` ve `MobilYayinAkisi` destekli yayın listesini sunan ana sayfa bileşenidir. |
 
 ### 📁 components/cc-ligi/
 
@@ -2624,9 +2662,16 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `DahaFazlaGoster.tsx` | UI / React | Daha Fazla Goster, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
-| `index.ts` | TypeScript / Lib | index, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `IcerikFiltreBari.tsx` | UI / React | Arama alanı seçimi, metin araması ve durum filtrelerini tek satırda birleştiren ve akışı sıfırlayan ortak filtreleme çubuğudur. |
+| `index.ts` | TypeScript / Lib | Liste bileşenlerini ve kancalarını dışa aktaran modül giriş noktasıdır. |
 | `ListeArama.tsx` | UI / React | liste Arama, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
-| `useListe.ts` | TypeScript / Lib | use liste, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `useListe.ts` | TypeScript / Lib | Liste arama, filtreleme, sayfalama ve mobil akış sıfırlama durumlarını yöneten ortak kancadır. |
+
+### 📁 components/navigasyon/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `HayaletTanburSecici.tsx` | UI / React | Yalnızca mobilde sağ kenardan açılan; 3D silindir tipi dikey bölüm navigasyonu sağlayan, arka plan kaydırmasını kilitleyen ve seçilen bölümü sayfa state'ine bağlayan bileşendir. |
 
 ### 📁 components/ogrenme-araci/
 
@@ -2638,6 +2683,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `PodcastKapakGorseli.tsx` | UI / React | Podcast kapak görseli veya yüklenmediğinde varsayılan Apple Podcasts simgeli ve ürün adlı kapağı görüntüleyen ortak bileşendir. |
 | `PodcastOynatici.tsx` | UI / React | Podcast Oynatici, ilgili öğrenme aracını gösteren ve ortak öğrenme aracı ilerleme/tamamlama akışına bağlayan oynatıcı bileşenidir. |
 | `YarimYuklemeBildirimi.tsx` | UI / React | yarım yükleme Bildirimi, ortak öğrenme aracı ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `YayinTuruPill.tsx` | UI / React | Dört öğrenme aracı türü için standart ve kart boyutu varyantlarıyla tür rozeti render eden ortak bileşendir. |
 
 ### 📁 components/panel/
 
@@ -2645,8 +2691,8 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 |---|:---:|---|
 | `BilgiSayfa.tsx` | UI / React | bilgi sayfa, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 | `MobilDrawer.tsx` | UI / React | mobil Drawer, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
-| `panelNav.config.ts` | TypeScript / Lib | panel Nav, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
-| `PanelNavbar.tsx` | UI / React | panel Navbar, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+| `panelNav.config.ts` | TypeScript / Lib | Panel gezinme çubuğunun menü öğelerini, rol bazlı görünürlük haritasını ve bildirim sayaç yapılandırmasını tanımlar. |
+| `PanelNavbar.tsx` | UI / React | Kullanıcı profil, rol, lig sırası, haftalık puan ve sipariş puanı göstergelerini sunan; mobil navbar sayaç tekrarı arındırılmış ve net ayraçlı özet kapsüle sahip üst gezinme çubuğudur. |
 | `SolListe.tsx` | UI / React | Sol liste, HapBilgi ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 
 ### 📁 components/panel/bilgi/
@@ -2728,9 +2774,16 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `useVideoEtkilesimKatmani.ts` | TypeScript / Lib | use video etkileşim Katmani, video altyapısı ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
-| `UttVideoKarti.tsx` | UI / React | UTT video Karti, video altyapısı içindeki utt video bilgisini kart görünümü ve ilgili eylemlerle sunar. |
+| `UttVideoKarti.tsx` | UI / React | UTT video kartı arayüzünü `YayinKarti` (HOYK) kanonik bileşeni üzerinden geriye dönük uyumlulukla sunan sarmalayıcı bileşendir. |
 | `VideoCercevesi.tsx` | UI / React | video Cercevesi, video altyapısı ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
 | `VideoOnizleme.tsx` | UI / React | video Onizleme, video altyapısı ekranındaki ilgili bilgileri ve kullanıcı eylemlerini sunan React bileşenidir. |
+
+### 📁 components/yayin/
+
+| Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
+|---|:---:|---|
+| `MobilYayinAkisi.tsx` | UI / React | Tüm yayın yüzeylerinde mobilde 2+5 dikey liste akışını yöneten; filtre ve arama alanı değişiminde 2 kayda sıfırlanan, masaüstünde grid/raf düzenini koruyan kanonik liste motorudur. |
+| `YayinKarti.tsx` | UI / React | HapBilgi Ortak Yayın Kartı (HOYK); thumbnail, tür pill'i, metrikler, duyarlı mobil/masaüstü tipografi, rol/kartaltı slotları, Video puanı ve Extra izleme puanı rozetlerini birleştiren kanonik kart bileşenidir. |
 
 ### 📁 hooks/
 
@@ -2941,7 +2994,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 ### 📁 tests/
 
-9 Eylül 2026 eklemesi: `biTemizlik.smoke.test.ts`, asistan temizliği için yerel API, yetki ve deterministik yanıt kontrollerini içerir.
+9 Eylül 2026 eklemesi: `biTemizlik.smoke.test.ts`, asistan temizliği için yerel API, yetki ve deterministik yanıt kontrollerini içerir. 21 Eylül 2026 eklemesi: Mobil yayın akışı, Hayalet Tanbur, HOYK kart tipografisi ve ilgili rol entegrasyonlarına yönelik doğrudan bileşen etkileşimli smoke testleri eklendi; bu testler DOM ortamı olarak `happy-dom` kullanmaktadır.
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
@@ -2960,6 +3013,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `ccYetkilendirmeGuvenligi.smoke.test.ts` | Test / TypeScript | “mutlu: CC izleme kimliği oturumdan alınır ve firma erişimi doğrulanır” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `diffHesapla.smoke.test.ts` | Test / TypeScript | “mutlu: degisen kelime cikar+ekle, kalan ayni olarak ayristirilir” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `eclubCokluUttUyelik.smoke.test.ts` | Test / TypeScript | “mutlu: aynı firmanın farklı UTT'leri tek kurumsal eczane bağında ayrı liste üyelikleri kurar” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `eclubEczanemMobilYayinAkisi.smoke.test.ts` | Test / TypeScript | E-Club ve Eczanem yayın yüzeylerinin `MobilYayinAkisi` entegrasyonu, 2+5 akışı ve a11y bağlantılarını doğrulayan smoke testidir. |
 | `eclubGonderiAyarlari.smoke.test.ts` | Test / TypeScript | “E-Club gönderi ayarları iki pozitif tam sayı kuralını tek kaynaktan tanımlar” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `eclubGonderilecekVideolar.smoke.test.ts` | Test / TypeScript | “mutlu: öğrenme aracı önizlemesi dört araç türünü salt görüntüler” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `eclubIzlemeKurali.smoke.test.ts` | Test / TypeScript | “mutlu: aktif öneri puan ve soru hakkı verir; soru kümesi sabittir” davranışını otomatik olarak doğrulayan smoke testidir. |
@@ -3000,6 +3054,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `izlemeBaslat.smoke.test.ts` | Test / TypeScript | “ilk gerçek oynatma tek bir sunucu oturumu ister” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `izlemeKarari.smoke.test.ts` | Test / TypeScript | “ilk gerçek temiz tam izleme tam puan ve soru hakkı üretir” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `mobilKarsilama.smoke.test.ts` | Test / TypeScript | “ilk mobil giriş tanıtımı, sonraki giriş başka tarayıcıda da Ana Sayfa'yı açar” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `mobilYayinAkisi.smoke.test.ts` | Test / TypeScript | `MobilYayinAkisi` bileşeninin 2+5 kart basamaklı açılışını, görünüm hesaplama mantığını ve erişilebilirlik bağlantılarını doğrudan DOM etkileşimiyle doğrular. |
 | `ogrenmeAraciFaz2Guvenlik.smoke.test.ts` | Test / TypeScript | “tamamlanan öğrenme araçları varsayılan açıktır” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `ogrenmeAraciFaz2Migration.smoke.test.ts` | Test / TypeScript | “migration eklemelidir ve eski video tablolarını kaldırmaz” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `ogrenmeAraciFaz2Sozlesme.smoke.test.ts` | Test / TypeScript | “kanonik araç sözleşmesi video ile üç yeni aracı birbirinden ayırır” davranışını otomatik olarak doğrulayan smoke testidir. |
@@ -3015,6 +3070,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `ogrenmeAraciTamamlamaFaz7.hedef.test.ts` | Test / TypeScript | “araç bazında dönemsel yayın sayısı dört araç için üretilir” davranışını otomatik olarak doğrulayan hedef testidir. |
 | `ogrenmeAraciTamamlamaFaz8.hedef.test.ts` | Test / TypeScript | Bildirim, Eczanem, ortak etkileşim ve öğrenme içeriği yüzeyi kontrollerini içerir. |
 | `oneri.tarih.smoke.test.ts` | Test / TypeScript | “mutlu: yarindan itibaren oneri kabul edilir” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `onerilenYayinlarNav.smoke.test.ts` | Test / TypeScript | Önerilen Yayınlar menü yapısını, bekleyen/tamamlanan alt sekmelerini, rozet bağlarını ve yetkisiz erişim engelini doğrular. |
 | `operasyonelYenileme.smoke.test.ts` | Test / TypeScript | “mutlu: operasyon sayfaları ortak, pasiflenebilir ve durum koruyan yenileme kullanır” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `periyotAltKirilim.smoke.test.ts` | Test / TypeScript | “mutlu: bu_gun dilimleri TR 6'sar saatlik ve etiketle uyumlu” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `pm04YarimYukleme.hedef.test.ts` | Test / TypeScript | “PM-03/A video kesintisi aynı oturum ve TUS aktarımıyla sürer; iptal tam temizlikten sonra bildirilir” davranışını otomatik olarak doğrulayan hedef testidir. |
@@ -3024,14 +3080,19 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | `pm10Kapsam.smoke.test.ts` | Test / TypeScript | “PM-10: PM ürün sözlüğünde yalnız kendi firma ve takım kapsamını kullanır” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `podcastGorselVeUrunAdi.hedef.test.ts` | Test / TypeScript | Podcast yayın görseli imzalı CDN adresi, yarım yükleme kurtarma/iptal akışı ve PM ürün adı öncelik çözümlemesi davranışlarını otomatik olarak doğrulayan hedef testidir. |
 | `raporLigKatalogYenileme.smoke.test.ts` | Test / TypeScript | “mutlu: rapor, lig ve katalog yüzeyleri ortak yenileme sözleşmesini kullanır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `sahaYoneticiMobilYayinAkisi.smoke.test.ts` | Test / TypeScript | Saha ana sayfaları (`SahaVideoRaflari`, `VideoBolumu`) ve yönetici yayındaki videolar yüzeylerinin `MobilYayinAkisi` entegrasyonu ile 2+5 akışını doğrular. |
 | `talepFormuUyumu.smoke.test.ts` | Test / TypeScript | “mutlu: referans dosyası bütün üretici rollerinde sahiplik ve görev bağıyla korunur” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `talepKaynakSahipligi.smoke.test.ts` | Test / TypeScript | “teknik firma sahipliği: kendi firmasının tekniği kabul, başka firmanınki reddedilir” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `tanburTumRoller.smoke.test.ts` | Test / TypeScript | Hayalet Tanbur'un 13 üretici, 7 yönetici, UTT, KD_UTT, BM ve TM rollerinde aktif olduğunu, `iu` ve `admin` rollerinden dışlandığını doğrular. |
 | `tedarikciGizliligi.smoke.test.ts` | Test / TypeScript | “kullanıcıya ulaşan arayüz ve API metinleri altyapı sağlayıcısının adını göstermez” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `uretimDurumFiltresi.smoke.test.ts` | Test / TypeScript | “mutlu: içerik üreticisi revizyonu ve yeni işi üretici incelemesinden önce görür” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `uretimEskiYolTemizligi.smoke.test.ts` | Test / TypeScript | “mutlu: üretim yazıları yalnız kanonik görev API'lerinde yaşar” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `uretimGorevArayuzu.smoke.test.ts` | Test / TypeScript | “mutlu: görev durumları ortak arayüz durumlarına eksiksiz çevrilir” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `uretimGorevSozlesmesi.smoke.test.ts` | Test / TypeScript | “mutlu: atanan görev hazırlanır, incelemeye gider, revizyondan yeniden teslim edilir” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `uretimRpc.smoke.test.ts` | Test / TypeScript | “üretim RPC yardımcıları bilinen girdileri doğru sınıflandırır” davranışını otomatik olarak doğrulayan smoke testidir. |
+| `ureticiChallengeMobilYayinAkisi.smoke.test.ts` | Test / TypeScript | Üretici yayın katalogları (`UreticiYayinKatalogu`) ve Challenge Club listelerinin `MobilYayinAkisi` entegrasyonu ile 2+5 basamaklı açılışını doğrular. |
+| `uttMobilYayinAkisi.smoke.test.ts` | Test / TypeScript | UTT ana sayfası ve öneriler yüzeylerinin `UttKayanVideoRafi` üzerinden `MobilYayinAkisi` ve 2+5 kart basamaklandırmasını doğrular. |
+| `yayinKartiTipografi.smoke.test.ts` | Test / TypeScript | `YayinKarti` bileşeninin mobil (16px / leading-[22px]) ve masaüstü (12px / sm:text-xs) ürün adı tipografisini, rozet ve alt şerit düzenini doğrular. |
 | `yayinOncesiSilme.smoke.test.ts` | Test / TypeScript | “mutlu: yayın adayı kilitlenir, Bunny ve varyanta uygun DB silmesi tamamlanır” davranışını otomatik olarak doğrulayan smoke testidir. |
 | `yoneticiGozlemYetkisi.hedef.test.ts` | Test / TypeScript | “yönetici kataloğu dört öğrenme aracının kimliğini ve türünü taşır” davranışını otomatik olarak doğrulayan hedef testidir. |
 | `yonetimYenileme.smoke.test.ts` | Test / TypeScript | “mutlu: üretim, yönetim ve sipariş takip yüzeyleri ortak YenileButonu kullanır” davranışını otomatik olarak doğrulayan smoke testidir. |
@@ -3041,12 +3102,13 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 
 ### 📁 docs/
 
-9 Eylül 2026 eklemesi: `BI_TEMIZLIK_PLANI.md`, deterministik bi kararı, uygulanan temizlik ve sonraki iyileştirmelerin kaydıdır.
+9 Eylül 2026 eklemesi: `BI_TEMIZLIK_PLANI.md`, deterministik bi kararı, uygulanan temizlik ve sonraki iyileştirmelerin kaydıdır. 21 Eylül 2026 eklemesi: `mobil_dikey_yayin_akisi_envanter_faz0.md`, merkezi mobil dikey yayın akışı mimarisine geçiş envanteri ve yüzey haritasıdır.
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `BI_TEMIZLIK_PLANI.md` | Dokümantasyon | Deterministik bi çekirdeğinin korunan sınırlarını, kaldırılan eski motoru ve güncel doğrulama kaydını açıklar. |
 | `BLUEBOOK.md` | Dokümantasyon | HapBilgi’nin iş modelini, rol ve iş kurallarını, mimarisini ve kanonik dosya envanterini tanımlayan ana başvuru belgesidir. |
+| `mobil_dikey_yayin_akisi_envanter_faz0.md` | Dokümantasyon | Mobil dikey yayın akışı mimarisine geçişte tüm rol, rota ve liste yüzeylerinin teknik envanterini ve kart işaretleme kurallarını belgeler. |
 | `REDBOOK.MD` | Dokümantasyon | Bilinen teknik borçları, riskleri ve tamamlanması gereken iyileştirmeleri izleyen teknik takip belgesidir. |
 | `ROLLER_VE_KAPSAMLI_ZOR_TESTLER.md` | Dokümantasyon | “Roller ve Kapsamlı Zor Testler” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |
 | `VERCEL_GIT_ENTEGRASYONU.md` | Dokümantasyon | Vercel–GitHub dağıtım olayının kök nedenini ve Vercel cronlarından Supabase zamanlayıcısına geçirilen güncel yapıyı kaydeder. |
@@ -3099,7 +3161,7 @@ Video tamamlanıp izleme puanı ve soru indeksleri yazıldıktan sonra kullanıc
 
 ## 🎯 GENEL SONUÇ VE KALİTE SİCİLİ
 
-**16 Eylül 2026** tarihi itibarıyla BLUEBOOK; HapBilgi’nin iş modelini, kullanıcı rollerini, yetki sınırlarını, T-Club, C-Club, E-Club, Eczanem, Store, üretim, yönetim, raporlama, HapBi ve öğrenme araçları süreçlerini güncel uygulama yapısıyla birlikte tanımlar.
+**21 Eylül 2026** tarihi itibarıyla BLUEBOOK; HapBilgi’nin iş modelini, kullanıcı rollerini, yetki sınırlarını, T-Club, C-Club, E-Club, Eczanem, Store, üretim, yönetim, raporlama, HapBi ve öğrenme araçları süreçlerini güncel uygulama yapısıyla birlikte tanımlar.
 
 Platformun iş kuralları; rol ve firma kapsamı, veri bütünlüğü, erişim denetimi, öğrenme takibi ve üretim akışları esas alınarak kod, veritabanı ve kullanıcı arayüzü katmanlarında uygulanır. Video, Podcast, Dijital Broşür ve Flip PDF ortak öğrenme aracı yapısı içinde yönetilir.
 
@@ -3128,3 +3190,10 @@ Bu kayıt, doğrulanmış mevcut durumu ifade eder; mutlak kusursuzluk veya tama
 4. *Yayın Görseli Yükleme Yarış Koruması:* Her görsel yükleme denemesi benzersiz girişim kimliği ve nesne yoluyla açılır. Başlatma, tamamlama ve “Görselsiz Devam Et” kararları araç satırını kilitleyen atomik RPC'ler üzerinden yürür; iptal edilmiş veya eski girişimden geciken tamamlama isteği kapağı geri getiremez. Temizlenemeyen nesne yolları kalıcı depolama temizleme kuyruğuna yazılır.
 
 **17 Eylül 2026 — Hazır video asenkron tamamlama düzeltmesi:** Ortak modele geçişte yükleme öncesi açılan doğrulanmamış video kabuğu, tamamlanmış video sayılmaz. Webhook ve mutabakat hazır video zincirini idempotent olarak tamamlar; `lib/video/hazirVideoTamamla.ts` zincir ve doğrulanmış süre yazımından sonra yalnız aynı üretici/talep/GUID yükleme oturumunu kapatır. Talep detayındaki işlenme durumu boş kabuğun varlığından değil video adresinden çözülür. Kurtarma ekranı doğrulama bekleyen aktarımı kesilmiş dosya olarak tanımlamaz; 202 yanıtında tamamlandı mesajı vermez ve oturumu kapatmaz. Tip kontrolü ve bu düzeltmeye yönelik 34 yerel test başarılıdır. Canlı 30064 numaralı talebin Bunny'de hazır olan videosu doğrulanmış; talep yeniden yükleme olmadan yayın yönetimi aşamasına geçirilmiştir. Bu işlem yayına alma işlemi değildir.
+
+**21 Eylül 2026 — Ortak yayın kartı, merkezi mobil akış ve Tanbur:**
+1. *Merkezi Mobil Yayın Akışı (`MobilYayinAkisi`):* Platform genelindeki tüm yatay taşmalı mobil raflar tasfiye edilmiş; UTT, Saha (BM/TM), Yönetici, Üretici, C-Club, E-Club ve Eczanem yayın yüzeyleri tek tip dikey mobil akışa (`grid-cols-1`) geçirilmiştir. Başlangıçta 2 kart, “Daha Fazla Göster” etkileşimiyle 5'er kart (`2 + 5`) artış kuralı `hesaplaMobilYayinGorunumu` saf hesaplama fonksiyonuyla kilitlenmiştir. Bileşene iletilen kapsayıcı `id`'si güvenli ve benzersiz ID'ye dönüştürülerek butonun `aria-labelledby` erişilebilirlik bağlantısı güvenceye alınmıştır.
+2. *Ortak Yayın Kartı (`YayinKarti`):* Video, podcast, görsel ve flip PDF araçları tek bileşen omurgasında toplanmıştır. Mobil görünümde ürün adı okunurluğu `text-base leading-[22px] font-semibold` ile yükseltilmiş, masaüstünde `sm:text-xs` korunmuştur. `video_puani > 0` olan tüm içeriklerde rol ayrımı yapılmaksızın `+{video_puani} Puan` rozeti açık şeffaflıkla render edilir; bu görsel şeffaflık izleyiciye puan hakkı kazandırmaz.
+3. *Hayalet Tanbur (`HayaletTanburSecici`):* 13 üretici rolü, 7 yönetici rolü, UTT, KD_UTT, BM ve TM ana sayfalarında mobil dikey gezinmeyi hızlandıran kayan tanbur devreye alınmıştır (`iu` ve `admin` kapsam dışıdır). Üretici ana sayfasında bölüm sayısına bakılmaksızın koşulsuz render edilir; diğer yüzeylerde `bolumler.length > 1` koşuluna bağlıdır.
+4. *İstemci Performansı ve Önbellek:* Organizasyon şeması 5 dakikalık bellek önbelleğine (`ORG_CACHE_TTL_MS = 5 * 60 * 1000`) bağlanmış; departman filtre geçişlerinde `sessionStorage` senkronizasyonu kurularak mükerrer ağ istekleri önlenmiştir.
+5. *Önerilen Yayınlar Sekme Düzeni:* `/oneriler` (Bekleyen) ve `/oneriler/tamamlanan` (Tamamlanan) alt sekmeleri ayrılmış; `useListe` ve `IcerikFiltreBari` standardı getirilmiştir.
