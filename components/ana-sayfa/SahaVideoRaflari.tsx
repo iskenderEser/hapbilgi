@@ -22,7 +22,6 @@ function SahaVideoKarti({ video, onVideoSec }: { video: SahaAnaSayfaVideo; onVid
       onClick={() => onVideoSec(video)}
       etkilesimAktif={false}
       durumGoster={false}
-      puanGoster={false}
       donguGoster={false}
       hoverOverlay={
         <span className="absolute inset-0 flex items-center justify-center bg-black/5 transition-colors group-hover:bg-black/15">

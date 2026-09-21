@@ -72,7 +72,6 @@ export default function YayindakiVideoBolumu({
         yayin={v}
         onClick={() => onVideoSec(v)}
         etkilesimAktif={false}
-        puanGoster={false}
         donguGoster={false}
         solUstRozet={
           hedefEtiketi ? (

@@ -30,6 +30,7 @@ export interface AnaSayfaVideo {
   video_url: string | null;
   thumbnail_url: string | null;
   video_puani: number | null;
+  extra_puan?: number | null;
   yayin_tarihi: string;
   icerik_turu: IcerikTuru | null;
   ileri_sarma_acik: boolean; // yalnız-izleme modunda kullanılmaz; oynatıcı tipiyle uyum için
@@ -124,7 +125,24 @@ export async function getAnaSayfaVideolari(
     arac_turu?: "video" | "podcast" | "gorsel" | "flip_pdf";
   };
 
-  return ((videolar as VYayinDetayRow[] | null) ?? []).map(v => ({
+  const yayinListesi = (videolar as VYayinDetayRow[] | null) ?? [];
+  const yayinIdler = yayinListesi.map((v) => v.yayin_id);
+  const extraPuanMap = new Map<string, number>();
+
+  if (yayinIdler.length > 0) {
+    const { data: extraPuanlar } = await adminSupabase
+      .from("yayin_yonetimi")
+      .select("yayin_id, extra_puan")
+      .in("yayin_id", yayinIdler);
+
+    for (const item of extraPuanlar ?? []) {
+      if (item.extra_puan != null) {
+        extraPuanMap.set(item.yayin_id, item.extra_puan);
+      }
+    }
+  }
+
+  return yayinListesi.map(v => ({
     yayin_id: v.yayin_id,
     talep_no: v.talep_no ?? null,
     firma_adi: v.firma_adi ?? null,
@@ -133,6 +151,7 @@ export async function getAnaSayfaVideolari(
     video_url: yayinVideoUrlCoz(v),
     thumbnail_url: yayinThumbnailUrlCoz(v),
     video_puani: v.video_puani ?? null,
+    extra_puan: extraPuanMap.get(v.yayin_id) ?? null,
     yayin_tarihi: v.yayin_tarihi,
     icerik_turu: (v.icerik_turu as IcerikTuru) ?? null,
     arac_id: v.arac_id ?? null,

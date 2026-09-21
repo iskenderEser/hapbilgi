@@ -66,14 +66,21 @@ export default function VideoBolumu({ videolar, onVideoSec, baslik = "Videolar" 
                 <div className="text-[10px] text-gray-400 font-mono">{talepIdGoster(v.firma_adi, v.talep_no)}</div>
               )}
               <div className="flex items-center justify-between">
-                {v.video_puani !== null ? (
-                  <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-0.5 text-xs text-gray-500">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#56aeff" strokeWidth="2">
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                    </svg>
-                    Video <span className="font-semibold text-gray-900 ml-0.5">{v.video_puani}</span>
-                  </div>
-                ) : <div />}
+                <div className="flex items-center gap-1">
+                  {v.video_puani !== null && (
+                    <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-lg px-2 py-0.5 text-xs text-gray-500">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#56aeff" strokeWidth="2">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
+                      Video <span className="font-semibold text-gray-900 ml-0.5">{v.video_puani}</span>
+                    </div>
+                  )}
+                  {!!v.extra_puan && v.extra_puan > 0 && (
+                    <div className="flex items-center gap-1 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                      +{v.extra_puan} Extra
+                    </div>
+                  )}
+                </div>
                 <div className="text-xs text-gray-400 flex-shrink-0">{formatTarih(v.yayin_tarihi)}</div>
               </div>
             </div>

@@ -120,8 +120,8 @@ export async function getYayindakiVideolar(
     ? []
     : [...new Set(satirlar.map((v) => v.uretici_id).filter((id): id is string => Boolean(id)))];
 
-  // Favori, beğeni, izlenme ve (gerekliyse) diğer üreticileri TEK PARALEL PAKETTE çek
-  const [favoriRes, begeniRes, izlemeRes, ureticiRes] = await Promise.all([
+  // Favori, beğeni, izlenme, ekstra puan ve (gerekliyse) diğer üreticileri TEK PARALEL PAKETTE çek
+  const [favoriRes, begeniRes, izlemeRes, yayinYonetimiRes, ureticiRes] = await Promise.all([
     adminSupabase.from("video_favoriler").select("yayin_id").in("yayin_id", yayinIdler),
     adminSupabase.from("video_begeniler").select("yayin_id").in("yayin_id", yayinIdler),
     adminSupabase
@@ -130,6 +130,10 @@ export async function getYayindakiVideolar(
       .in("yayin_id", yayinIdler)
       .eq("tamamlandi_mi", true)
       .eq("gercek_oynatma_mi", true),
+    adminSupabase
+      .from("yayin_yonetimi")
+      .select("yayin_id, extra_puan")
+      .in("yayin_id", yayinIdler),
     ureticiIdler.length > 0
       ? adminSupabase
           .from("kullanicilar")
@@ -141,6 +145,13 @@ export async function getYayindakiVideolar(
   if (ureticiRes?.data) {
     (ureticiRes.data as UreticiSatiri[]).forEach((u) => ureticiHarita.set(u.kullanici_id, u));
   }
+
+  const extraPuanMap = new Map<string, number>();
+  (yayinYonetimiRes?.data ?? []).forEach((r: { yayin_id: string; extra_puan?: number | null }) => {
+    if (r.extra_puan != null) {
+      extraPuanMap.set(r.yayin_id, r.extra_puan);
+    }
+  });
 
   const favoriSay = new Map<string, number>();
   (favoriRes.data ?? []).forEach((r: { yayin_id: string }) => favoriSay.set(r.yayin_id, (favoriSay.get(r.yayin_id) ?? 0) + 1));
@@ -163,6 +174,7 @@ export async function getYayindakiVideolar(
       video_url: yayinVideoUrlCoz(v),
       thumbnail_url: yayinThumbnailUrlCoz(v),
       video_puani: v.video_puani ?? null,
+      extra_puan: extraPuanMap.get(v.yayin_id) ?? null,
       yayin_tarihi: v.yayin_tarihi,
       icerik_turu: v.icerik_turu ?? null,
       hedef_roller: hedefRolleriOku(v),

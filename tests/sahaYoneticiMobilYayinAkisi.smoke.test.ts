@@ -40,7 +40,7 @@ function ornekSahaVideoUret(id: string, urunAdi: string): SahaAnaSayfaVideo {
     thumbnail_url: "https://example.com/thumb.jpg",
     video_puani: 10,
     yayin_tarihi: "2026-09-20",
-    extra_puan: 0,
+    extra_puan: 5,
     ileri_sarma_acik: false,
     izlenme_sayisi: 50,
     begeni_sayisi: 10,
@@ -61,7 +61,11 @@ function ornekYayindakiVideoUret(id: string, urunAdi: string): YayindakiVideo {
     teknik_adi: `Teknik ${urunAdi}`,
     video_url: "https://example.com/video.mp4",
     thumbnail_url: "https://example.com/thumb.jpg",
+    video_puani: 15,
+    extra_puan: 5,
     yayin_tarihi: "2026-09-20",
+    icerik_turu: "video",
+    ileri_sarma_acik: false,
     izlenme_sayisi: 25,
     begeni_sayisi: 8,
     favori_sayisi: 2,
@@ -424,6 +428,66 @@ test("Yayindaki Videolar: aramaAlani değişince 7 karttan 2'ye sıfırlanır, a
     7,
     "Aynı sıfırlama anahtarında veri yenilendiğinde açık 7 kart korunmalı",
   );
+
+  await act(async () => {
+    root.unmount();
+  });
+  container.remove();
+});
+
+test("HOYK Puan Görünürlüğü: Saha, Yayın ve Yönetici bileşenlerinde video_puani ve extra_puan gösterilir", async () => {
+  // Statik kod denetimi: puanGoster={false} engeli kaldırılmış olmalı
+  assert.doesNotMatch(sahaVideoRaflariKodu, /puanGoster=\{false\}/);
+  assert.doesNotMatch(yayindakiVideoBolumuKodu, /puanGoster=\{false\}/);
+
+  const container = win.document.createElement("div");
+  win.document.body.appendChild(container);
+  const root = createRoot(container);
+
+  // 1. SahaVideoRaflari render denetimi
+  const sahaVideolari = [ornekSahaVideoUret("saha-puan-1", "Saha Puan Video")];
+  await act(async () => {
+    root.render(
+      createElement(SahaVideoRaflari, {
+        videolar: sahaVideolari,
+        onVideoSec: () => {},
+      }),
+    );
+  });
+  assert.match(container.textContent ?? "", /10\s*(P|Puan)/, "SahaVideoRaflari video puanını göstermeli");
+  assert.match(container.textContent ?? "", /\+5 Extra/, "SahaVideoRaflari ekstra puanını göstermeli");
+
+  // 2. YayindakiVideoBolumu render denetimi
+  const yayindakiVideolar = [ornekYayindakiVideoUret("yayin-puan-1", "Yayındaki Puan Video")];
+  await act(async () => {
+    root.render(
+      createElement(YayindakiVideoBolumu, {
+        videolar: yayindakiVideolar,
+        onVideoSec: () => {},
+      }),
+    );
+  });
+  assert.match(container.textContent ?? "", /15\s*(P|Puan)/, "YayindakiVideoBolumu video puanını göstermeli");
+  assert.match(container.textContent ?? "", /\+5 Extra/, "YayindakiVideoBolumu ekstra puanını göstermeli");
+
+  // 3. VideoBolumu render denetimi
+  const yoneticiVideolari = [
+    {
+      ...ornekSahaVideoUret("yonetici-puan-1", "Yönetici Puan Video"),
+      video_puani: 20,
+      extra_puan: 10,
+    },
+  ];
+  await act(async () => {
+    root.render(
+      createElement(VideoBolumu, {
+        videolar: yoneticiVideolari,
+        onVideoSec: () => {},
+      }),
+    );
+  });
+  assert.match(container.textContent ?? "", /20/, "VideoBolumu video puanını göstermeli");
+  assert.match(container.textContent ?? "", /\+10 Extra/, "VideoBolumu ekstra puanını göstermeli");
 
   await act(async () => {
     root.unmount();
