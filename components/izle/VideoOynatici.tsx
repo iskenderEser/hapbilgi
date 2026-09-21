@@ -537,13 +537,15 @@ export default function VideoOynatici({ video, tuketici, onizlemeYuzeyi = false,
     const res = await fetch("/izle/api/cevap", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ izleme_id: izlemeId, cevaplar: cevapListesi }) });
     const d = await res.json();
     if (!res.ok) { hata(d.hata ?? "Cevaplar gönderilemedi.", d.adim, d.detay); setIslemLoading(false); return; }
-    setCevapSonuclari(d.sonuclar); setKazanilanPuan(d.kazanilan_puan);
     // Birleşik toast: izleme (bitir'de saklanan) + doğru cevaplama tek mesajda.
     // Cevap 0 ise cevap kalemi düşer (puanMesaji 0'ı gizler) → yalnız izleme kalır.
     const kalemler: PuanKalemi[] = [
       ...izlemeKalemleriRef.current,
       { tur: "cevap", puan: d.kazanilan_puan ?? 0 },
     ];
+    const toplamKazanilanPuan = kalemler.reduce((toplam, kalem) => toplam + kalem.puan, 0);
+    setCevapSonuclari(d.sonuclar);
+    setKazanilanPuan(toplamKazanilanPuan);
     const mesaj = puanMesaji(kalemler);
     if (mesaj) basari(mesaj);
     izlemeKalemleriRef.current = [];
