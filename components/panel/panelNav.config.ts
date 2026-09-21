@@ -114,7 +114,7 @@ export const PANEL_NAV: NavGrup[] = [
         })),
       },
       { etiket: "Yayındaki Videolar", path: "/yayindaki-videolar", gate: (c) => YAYINDAKI_VIDEO_GORENLER.includes(c.rolKucu) && !URETICI_ROLLER.includes(c.rolKucu) },
-      { etiket: "T-Club Ligi",        path: "/hbligi",             gate: () => true },
+      { etiket: "T-Club Ligi",        path: "/t-club-ligi",       gate: () => true },
       {
         etiket: "T-Club Raporları",
         path: (c) => {

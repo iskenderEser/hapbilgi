@@ -9,15 +9,47 @@ import type { SiraliSatir } from "./types";
 import styles from "./league.module.css";
 
 interface Props {
-  rank: number;
-  toplam: number;
-  haftaDegisim: number; // geçen haftaya göre sıra değişimi (STUB)
+  konumlar: Array<{
+    etiket: string;
+    sira: number | null;
+    toplam: number;
+    degisim: number | null;
+  }>;
   top3: SiraliSatir[];
   liderFark: number | null; // lidere puan farkı
   altFark: number | null; // bir alt sıraya puan farkı
 }
 
-export default function LeaguePosition({ rank, toplam, haftaDegisim, top3, liderFark, altFark }: Props) {
+function KonumKarti({
+  etiket,
+  sira,
+  toplam,
+  degisim,
+}: Props["konumlar"][number]) {
+  return (
+    <div className={`${styles.softTile} flex flex-col justify-center px-3 py-2`}>
+      <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-[#8090a5]">{etiket}</div>
+      <div className="mt-0.5 flex items-baseline gap-1">
+        <span className="text-2xl font-extrabold tabular-nums text-[#3599ee]">{sira ?? "—"}</span>
+        <span className="text-xs font-semibold text-[#8090a5]">/ {toplam}</span>
+      </div>
+      <div className="mt-1 text-[9px] font-medium text-[#8090a5]">Geçen haftaya göre</div>
+      {degisim === null || degisim === 0 ? (
+        <div className="text-xs text-muted-foreground">—</div>
+      ) : (
+        <div
+          className="inline-flex items-center gap-0.5 text-xs font-semibold"
+          style={{ color: degisim > 0 ? "#16a34a" : "#dc2626" }}
+        >
+          {degisim > 0 ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+          {Math.abs(degisim)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function LeaguePosition({ konumlar, top3, liderFark, altFark }: Props) {
   return (
     <section className={`${styles.panel} flex h-full min-h-0 flex-col p-4`}>
         <div className="mb-2 flex items-center justify-between">
@@ -25,25 +57,8 @@ export default function LeaguePosition({ rank, toplam, haftaDegisim, top3, lider
           <div className="rounded-full bg-[#fff6df] p-2 text-[#e49a0c]"><Trophy className="h-4 w-4" /></div>
         </div>
         <div className={styles.positionLayout}>
-          {/* Mevcut sıra */}
-          <div className={`${styles.softTile} flex flex-col justify-center px-4 py-3`}>
-            <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#8090a5]">Bölge sıran</div>
-            <div className="mt-1 flex items-baseline gap-1">
-              <span className="text-4xl font-extrabold tabular-nums text-[#3599ee]">{rank}</span>
-              <span className="text-base font-semibold text-[#8090a5]">/ {toplam}</span>
-            </div>
-            <div className="mt-2 text-[11px] font-medium text-[#8090a5]">Geçen döneme göre</div>
-            {haftaDegisim === 0 ? (
-              <div className="text-sm text-muted-foreground">—</div>
-            ) : (
-              <div
-                className="inline-flex items-center gap-0.5 text-sm font-semibold"
-                style={{ color: haftaDegisim > 0 ? "#16a34a" : "#dc2626" }}
-              >
-                {haftaDegisim > 0 ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                {Math.abs(haftaDegisim)}
-              </div>
-            )}
+          <div className={styles.rankStats}>
+            {konumlar.map((konum) => <KonumKarti key={konum.etiket} {...konum} />)}
           </div>
 
           {/* Podyum */}

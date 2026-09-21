@@ -15,7 +15,7 @@ import LeadershipScore from "./LeadershipScore";
 import CompetitorComparison from "./CompetitorComparison";
 import LeadershipPath from "./LeadershipPath";
 import LeadershipInsight from "./LeadershipInsight";
-import type { LigSatiri, SiraliSatir, KirilimKalemi, ProfilKalemi, LiderlikHedefi } from "./types";
+import type { HaftalikKonum, LigSatiri, SiraliSatir, KirilimKalemi, ProfilKalemi, LiderlikHedefi } from "./types";
 import styles from "./league.module.css";
 
 // ─── STUB (motor — Faz 2) ────────────────────────────────────────────────
@@ -37,19 +37,14 @@ const STUB_HEDEFLER: LiderlikHedefi[] = [
 const STUB_INSIGHT_KAPANIS =
   "Liderlik sadece yüksek puanla değil, sürdürülebilir ve doğru davranışlarla mümkündür. Küçük iyileştirmeler büyük farklar yaratır.";
 
-function stubDegisim(rank: number): number {
-  if (rank === 1) return 2;
-  if (rank === 2) return 1;
-  if (rank === 3) return -1;
-  return 0;
-}
-
 export default function LeaguePage({
   satirlar,
+  haftalikKonum,
   userId,
   periyotSecici,
 }: {
   satirlar: LigSatiri[];
+  haftalikKonum: HaftalikKonum;
   userId: string;
   periyotSecici: ReactNode;
 }) {
@@ -72,15 +67,27 @@ export default function LeaguePage({
     .map((r, i) => ({
       ...r,
       rank: i + 1,
-      degisim: stubDegisim(i + 1),
+      degisim: null,
       liderlikSkoru: Math.round((r.toplam_puan / maxToplam) * 72), // STUB
     }));
 
-  const top3 = sirali.slice(0, 3);
+  const haftalikSirali: SiraliSatir[] = haftalikKonum.bolge_ligi.map((satir) => ({
+    ...satir,
+    rank: satir.sira,
+    liderlikSkoru: 0,
+  }));
+  const top3 = haftalikSirali.slice(0, 3);
   const ben = sirali.find((r) => r.benim || r.kullanici_id === userId) ?? sirali[0];
+  const haftalikBen = haftalikSirali.find((r) => r.benim || r.kullanici_id === userId);
 
-  const liderFark = ben.rank > 1 ? sirali[0].toplam_puan - ben.toplam_puan : 0;
-  const altFark = ben.rank < sirali.length ? ben.toplam_puan - sirali[ben.rank].toplam_puan : null;
+  const haftalikLider = haftalikSirali[0];
+  const birAltPuan = haftalikBen
+    ? haftalikSirali.find((satir) => satir.toplam_puan < haftalikBen.toplam_puan)?.toplam_puan
+    : undefined;
+  const liderFark = haftalikBen && haftalikLider
+    ? Math.max(0, haftalikLider.toplam_puan - haftalikBen.toplam_puan)
+    : null;
+  const altFark = haftalikBen && birAltPuan !== undefined ? haftalikBen.toplam_puan - birAltPuan : null;
 
   const pozitifToplam = Math.max(1, ben.izleme_puani + ben.cevaplama_puani + ben.oneri_puani + ben.extra_puani + (ben.eclub_puani ?? 0));
   const negatif = -(ben.ileri_sarma_kaybi + ben.yanlis_cevap_kaybi + ben.oneri_kaybi);
@@ -108,9 +115,11 @@ export default function LeaguePage({
         <div className={styles.topGrid}>
           <div className="min-h-0 overflow-hidden">
             <LeaguePosition
-              rank={ben.rank}
-              toplam={sirali.length}
-              haftaDegisim={ben.degisim}
+              konumlar={[
+                { etiket: "Bölge sıran", ...haftalikKonum.bolge },
+                { etiket: "Takım sıran", ...haftalikKonum.takim },
+                { etiket: "Şirket sıran", ...haftalikKonum.sirket },
+              ]}
               top3={top3}
               liderFark={liderFark}
               altFark={altFark}

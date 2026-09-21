@@ -20,6 +20,7 @@ interface UttSatiri {
   izleme_puani: number;
   cevaplama_puani: number;
   oneri_puani: number;
+  eclub_puani?: number;
   extra_puani: number;
   ileri_sarma_kaybi: number;
   yanlis_cevap_kaybi: number;
@@ -28,7 +29,24 @@ interface UttSatiri {
   benim?: boolean;
 }
 
-type HBLigiVeri = { tip: "utt"; lig: UttSatiri[] } | SahaLigSonuc;
+interface UttHaftalikKonumSatiri extends UttSatiri {
+  degisim: number | null;
+}
+
+interface UttHaftalikKonumOzeti {
+  sira: number | null;
+  toplam: number;
+  degisim: number | null;
+}
+
+interface UttHaftalikKonum {
+  bolge: UttHaftalikKonumOzeti;
+  takim: UttHaftalikKonumOzeti;
+  sirket: UttHaftalikKonumOzeti;
+  bolge_ligi: UttHaftalikKonumSatiri[];
+}
+
+type HBLigiVeri = { tip: "utt"; lig: UttSatiri[]; haftalik_konum: UttHaftalikKonum } | SahaLigSonuc;
 
 export default function HBLigiPage() {
   const router = useRouter();
@@ -68,7 +86,7 @@ export default function HBLigiPage() {
       if (periyot === "donem") params.set("ceyrek", String(ceyrek));
       if (periyot === "hafta") params.set("hafta", String(hafta));
 
-      const response = await fetch(`/hbligi/api?${params.toString()}`);
+      const response = await fetch(`/t-club-ligi/api?${params.toString()}`);
       const payload = await response.json();
       if (!response.ok) {
         throw new Error(payload?.hata ?? payload?.message ?? payload?.error ?? "HBLigi verisi alınamadı.");
@@ -136,7 +154,7 @@ export default function HBLigiPage() {
     return (
       <div className="h-full min-h-0 overflow-y-auto bg-[linear-gradient(135deg,#f8fbff_0%,#f6f8fb_48%,#fbfcfe_100%)]" style={{ fontFamily: "'Nunito', sans-serif" }}>
         <div className="mx-auto min-h-full max-w-[1440px] px-3 py-3 md:h-full md:min-h-0 md:px-5 md:py-3">
-          <LeaguePage satirlar={veri.lig} userId={kullanici.id} periyotSecici={periyotSecici} />
+          <LeaguePage satirlar={veri.lig} haftalikKonum={veri.haftalik_konum} userId={kullanici.id} periyotSecici={periyotSecici} />
         </div>
       </div>
     );

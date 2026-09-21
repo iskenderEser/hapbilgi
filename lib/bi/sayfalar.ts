@@ -25,7 +25,7 @@ export function yonLinkleri(rol: string, konu: YonKonusu, cc = false, eclub = fa
 const TANIM_SAYFALARI: Readonly<Record<string, Link>> = {
  "hapbilgi": { etiket: "HapBilgi Nedir?", url: "/hapbilgi-nedir" },
  "bi": { etiket: "Nasıl Çalışır?", url: "/nasil-calisir" },
- "tclub_ligi": { etiket: "T-Club Ligi", url: "/hbligi" },
+ "tclub_ligi": { etiket: "T-Club Ligi", url: "/t-club-ligi" },
  "challenge": { etiket: "C-Club", url: "/challenge-club" },
  "cclub_ligi": { etiket: "CC-Ligi", url: "/cc-ligi" },
  "store": { etiket: "HBStore", url: "/store" },

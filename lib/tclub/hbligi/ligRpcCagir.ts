@@ -27,6 +27,8 @@ export interface HbLigiHamSatir {
   ad: string;
   soyad?: string;
   rol: string;
+  firma_id?: string;
+  firma_adi?: string;
   bolge_id?: string;
   bolge_adi?: string;
   takim_id?: string;

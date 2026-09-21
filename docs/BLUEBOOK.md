@@ -1081,17 +1081,17 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 |---|:---:|---|
 | `page.tsx` | UI / React | `/hapbilgi-nedir` rotasında HapBilgi kapsamındaki hapbilgi nedir arayüzünü sunan Next.js sayfa bileşenidir. |
 
-### 📁 app/(panel)/hbligi/
+### 📁 app/(panel)/t-club-ligi/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `page.tsx` | UI / React | `/hbligi` rotasında T-Club kapsamındaki hbligi arayüzünü sunan Next.js sayfa bileşenidir. |
+| `page.tsx` | UI / React | `/t-club-ligi` rotasında T-Club kapsamındaki lig arayüzünü sunan Next.js sayfa bileşenidir. |
 
-### 📁 app/(panel)/hbligi/api/
+### 📁 app/(panel)/t-club-ligi/api/
 
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
-| `route.ts` | API / Route Handler | `/hbligi/api` uç noktasında GET isteklerini işler; T-Club için hbligi sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
+| `route.ts` | API / Route Handler | `/t-club-ligi/api` uç noktasında GET isteklerini işler; T-Club ligi sürecini gerekli kimlik, yetki ve girdi doğrulamalarıyla yürütür. |
 
 ### 📁 app/(panel)/iletisim/
 

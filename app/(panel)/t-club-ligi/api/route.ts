@@ -1,4 +1,4 @@
-// app/hbligi/api/route.ts
+// app/(panel)/t-club-ligi/api/route.ts
 //
 // HBLigi endpoint'i — role göre dispatch eder, iş mantığı lib/hbligi/'de.
 // Periyot: ?periyot=ay|donem|yil|hafta & yil=X & ay=Y & ceyrek=Z & hafta=W
@@ -133,6 +133,6 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (err) {
-    return sunucuHatasi(err, "GET /hbligi/api");
+    return sunucuHatasi(err, "GET /t-club-ligi/api");
   }
 }

@@ -9,8 +9,8 @@ import type { SiraliSatir } from "./types";
 import { harfler } from "./util";
 import styles from "./league.module.css";
 
-function Degisim({ d }: { d: number }) {
-  if (d === 0) return <span className="text-xs text-muted-foreground">—</span>;
+function Degisim({ d }: { d: number | null }) {
+  if (d === null || d === 0) return <span className="text-xs text-muted-foreground">—</span>;
   const yukari = d > 0;
   return (
     <span
@@ -51,6 +51,14 @@ function RankCard({ r }: { r: SiraliSatir }) {
 }
 
 export default function LeaguePodium({ top3 }: { top3: SiraliSatir[] }) {
+  if (top3.length === 0) {
+    return (
+      <div className={`${styles.podium} place-items-center text-center text-xs font-semibold text-[#8090a5]`}>
+        <span className="col-span-3">Bu hafta sıralama henüz oluşmadı.</span>
+      </div>
+    );
+  }
+
   // Kürsü düzeni: 2 - 1 - 3
   const duzen = [top3[1], top3[0], top3[2]].filter(Boolean) as SiraliSatir[];
   return (

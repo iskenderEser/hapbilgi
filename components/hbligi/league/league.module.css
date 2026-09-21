@@ -71,11 +71,17 @@
 
 .positionLayout {
   display: grid;
-  grid-template-columns: minmax(105px, 0.55fr) minmax(290px, 1.75fr) minmax(155px, 0.75fr);
+  grid-template-columns: minmax(118px, 0.72fr) minmax(290px, 1.75fr) minmax(155px, 0.75fr);
   min-height: 0;
   flex: 1;
   align-items: stretch;
   gap: 18px;
+}
+
+.rankStats {
+  display: grid;
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .podium {
@@ -200,6 +206,11 @@
 @container dashboard (max-width: 759px) {
   .positionLayout {
     grid-template-columns: 1fr;
+  }
+
+  .rankStats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: none;
   }
 
   .profileGroups {

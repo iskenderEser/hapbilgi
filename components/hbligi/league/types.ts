@@ -18,10 +18,29 @@ export interface LigSatiri {
   benim?: boolean;
 }
 
+export interface HaftalikKonumSatiri extends LigSatiri {
+  sira: number;
+  /** Önceki haftaya göre sıra değişimi; karşılaştırılabilir hafta yoksa null. */
+  degisim: number | null;
+}
+
+export interface HaftalikKonumOzeti {
+  sira: number | null;
+  toplam: number;
+  degisim: number | null;
+}
+
+export interface HaftalikKonum {
+  bolge: HaftalikKonumOzeti;
+  takim: HaftalikKonumOzeti;
+  sirket: HaftalikKonumOzeti;
+  bolge_ligi: HaftalikKonumSatiri[];
+}
+
 export interface SiraliSatir extends LigSatiri {
   rank: number;
-  /** Bir önceki döneme göre sıra değişimi. STUB (yeni veri — Faz 2). */
-  degisim: number;
+  /** Bir önceki haftaya göre sıra değişimi. */
+  degisim: number | null;
   /** Liderlik skoru 0-100. STUB (motor — Faz 2). */
   liderlikSkoru: number;
 }

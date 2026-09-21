@@ -15,7 +15,7 @@ const raporlar = [
 const canliYuzeyler = [
   ...raporlar,
   oku("app/(panel)/eclub/raporlar/page.tsx"),
-  oku("app/(panel)/hbligi/page.tsx"),
+  oku("app/(panel)/t-club-ligi/page.tsx"),
   oku("app/(panel)/cc-ligi/page.tsx"),
   oku("app/(panel)/eclub/ligi/page.tsx"),
   oku("app/(panel)/yayindaki-videolar/page.tsx"),

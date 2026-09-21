@@ -4,8 +4,8 @@ import { yonLinkleri, yonlendirmeYaniti, KAPSAM_DISI_MESAJ } from '../lib/bi/yon
 import { geminiIleKacSorusunuCoz } from '../lib/bi/gemini.ts';
 
 test('Yönlendirme rol ve konu ayrımını, kapalı modülleri korur', () => {
-  assert.deepEqual(yonLinkleri('utt', 'tclub_ligi').map(x => x.url), ['/hbligi']);
-  assert.deepEqual(yonLinkleri('bm', 'tclub').map(x => x.url), ['/raporlar/bm', '/hbligi']);
+  assert.deepEqual(yonLinkleri('utt', 'tclub_ligi').map(x => x.url), ['/t-club-ligi']);
+  assert.deepEqual(yonLinkleri('bm', 'tclub').map(x => x.url), ['/raporlar/bm', '/t-club-ligi']);
   assert.deepEqual(yonLinkleri('bm', 'cclub', true).map(x => x.url), ['/challenge-club', '/cc-ligi']);
   assert.deepEqual(yonLinkleri('tm', 'cclub', true).map(x => x.url), ['/cc-ligi']);
   assert.deepEqual(yonLinkleri('utt', 'cclub', true), []);

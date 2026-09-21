@@ -279,7 +279,7 @@ test("API İK kişisel taleplerini adet olarak yanıtlar; NEDİR bağlantıya gi
 test('API hazır paket dışında lig bağlantısını ve kapsam dışı metni ayrı sunar', async () => {
   const lig = ortam({ gemini: { durum: 'kac_sorusu_degil', yon: 'tclub_ligi' } });
   const l = await (await lig.sor('t club ligine nasıl ulaşabilirim?')).json();
-  assert.deepEqual(l.yonlendirmeler, [{ etiket: 'T-Club Ligi', url: '/hbligi' }]);
+  assert.deepEqual(l.yonlendirmeler, [{ etiket: 'T-Club Ligi', url: '/t-club-ligi' }]);
   assert.deepEqual(l.kaynaklar, []);
   assert.equal(lig.rpcCagrilari.length, 0);
   const dis = ortam({ gemini: { durum: 'kac_sorusu_degil', yon: 'platform_disi' } });
