@@ -552,7 +552,7 @@ export default function UttAnaSayfa({ user, rol, adSoyad, kategori, kategoriBasl
               onFavori={handleFavori}
               sifirlamaAnahtari={`${aktifTanburBolumu}-${aktifYayinTuru}`}
               kartAlti={(video) => (
-                <span className="rounded-lg px-2 py-1 text-center text-[10px]" style={video.bu_ay_extra_kazanildi ? { background: "#f0fdf4", color: "#15803d", border: "0.5px solid #bbf7d0" } : { background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe" }}>
+                <span className="rounded-lg px-2 py-1 text-center text-xs sm:text-[10px]" style={video.bu_ay_extra_kazanildi ? { background: "#f0fdf4", color: "#15803d", border: "0.5px solid #bbf7d0" } : { background: "#eff6ff", color: "#1d4ed8", border: "0.5px solid #bfdbfe" }}>
                   Bu turda: {video.bu_turda_izleme} izleme · {video.bu_ay_extra_kazanildi ? "Bu ay extra kazanıldı ✓" : `Extra'ya ${video.extra_kalan} tam tekrar kaldı`}
                 </span>
               )}

@@ -60,7 +60,7 @@ export function EclubVideoKarti({
       etkilesimAktif={etkilesimAktif}
       donguGoster={false}
       solUstRozet={
-        <span className="rounded-full border border-white/30 bg-[#10233a]/70 px-2 py-0.5 text-[9px] font-extrabold text-white backdrop-blur-sm">
+        <span className="rounded-full border border-white/30 bg-[#10233a]/70 px-2 py-0.5 text-[11px] font-extrabold text-white backdrop-blur-sm sm:text-[9px]">
           {durumMetni}
         </span>
       }

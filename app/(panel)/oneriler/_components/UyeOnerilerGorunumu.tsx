@@ -188,7 +188,7 @@ export default function UyeOnerilerGorunumu({
         puanYaniRozet={
           o.izlendi_mi ? (
             <span
-              className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-extrabold text-[#0a1b39] shadow-sm"
+              className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-extrabold text-[#0a1b39] shadow-sm sm:px-1.5 sm:text-[9px]"
               style={{
                 background: "linear-gradient(to right, #d4af37 0%, #ecd077 50%, #fae896 100%)",
               }}
@@ -211,11 +211,11 @@ export default function UyeOnerilerGorunumu({
             >
               {/* 1. Öneren */}
               <div className="flex flex-col min-w-0 pr-1">
-                <span className="text-[8px] font-semibold text-gray-400 uppercase tracking-wider">
+                <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider sm:text-[8px]">
                   Öneren
                 </span>
                 <span
-                  className="truncate text-[10px] font-bold text-[#1e3a8a]"
+                  className="truncate text-xs font-bold text-[#1e3a8a] sm:text-[10px]"
                   title={onerenMetni}
                 >
                   {onerenMetni}
@@ -224,20 +224,20 @@ export default function UyeOnerilerGorunumu({
 
               {/* 2. Başlangıç */}
               <div className="flex flex-col text-center border-x border-gray-200/60 px-1 min-w-0">
-                <span className="text-[8px] font-semibold text-gray-400 uppercase tracking-wider">
+                <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider sm:text-[8px]">
                   Başlangıç
                 </span>
-                <span className="text-[10px] font-bold text-gray-700 whitespace-nowrap">
+                <span className="text-xs font-bold text-gray-700 whitespace-nowrap sm:text-[10px]">
                   {formatTarihNoktali(o.oneri_baslangic)}
                 </span>
               </div>
 
               {/* 3. Bitiş */}
               <div className="flex flex-col text-right min-w-0 pl-1">
-                <span className="text-[8px] font-semibold text-gray-400 uppercase tracking-wider">
+                <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider sm:text-[8px]">
                   Bitiş
                 </span>
-                <span className="text-[10px] font-bold text-gray-700 whitespace-nowrap">
+                <span className="text-xs font-bold text-gray-700 whitespace-nowrap sm:text-[10px]">
                   {formatTarihNoktali(o.oneri_bitis)}
                 </span>
               </div>

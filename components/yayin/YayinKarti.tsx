@@ -3,7 +3,7 @@
 import React, { type MouseEvent, type ReactNode } from "react";
 import { Heart, Star, RotateCcw } from "lucide-react";
 import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
-import { TUR_BASLIK, type IcerikTuru } from "@/lib/video/icerikTuru";
+import { type IcerikTuru } from "@/lib/video/icerikTuru";
 import { talepIdGoster } from "@/lib/utils/talepId";
 import type { OgrenmeAraciTuru } from "@/lib/ogrenmeAraci/tipler";
 import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
@@ -207,7 +207,10 @@ export function YayinKarti({
         {/* Sağ Üst: Yayın Türü (Öğrenme Aracı) & Varsa Harici Ek Rozet */}
         <div className="absolute right-1.5 top-1.5 flex items-center gap-1 pointer-events-none">
           {yayinTuruGoster && (
-            <YayinTuruPill tur={(yayin.arac_turu as OgrenmeAraciTuru) ?? "video"} />
+            <YayinTuruPill
+              tur={(yayin.arac_turu as OgrenmeAraciTuru) ?? "video"}
+              boyut="kart"
+            />
           )}
           {sagUstEkRozet}
         </div>
@@ -222,7 +225,7 @@ export function YayinKarti({
         {kapsulSegmentleri.length > 0 && (
           <div className="mb-2">
             <div
-              className="inline-flex items-center rounded-full leading-tight select-none py-0.5 px-2.5 text-[9px]"
+              className="inline-flex items-center rounded-full leading-tight select-none py-0.5 px-3 sm:px-2.5 text-[11px] sm:text-[9px]"
               style={{
                 background: "rgba(0,0,0,0.04)",
                 boxShadow: "inset 0 0 0 0.5px rgba(0,0,0,0.08)",
@@ -243,14 +246,14 @@ export function YayinKarti({
         {/* 1. Satır: Başlık & Etkileşim Butonları */}
         <div className="flex items-start justify-between gap-1.5">
           <h3
-            className="line-clamp-2 flex-1 text-xs font-bold text-gray-900"
+            className="line-clamp-2 flex-1 text-base font-bold leading-[22px] text-gray-900 sm:text-xs sm:leading-normal"
             title={yayin.urun_adi}
           >
             {yayin.urun_adi}
           </h3>
 
           {etkilesimGoster && (
-            <div className="flex flex-shrink-0 items-center gap-1 text-[10px] text-gray-500">
+            <div className="flex flex-shrink-0 items-center gap-1 text-xs text-gray-500 sm:text-[10px]">
               <button
                 type="button"
                 disabled={!etkilesimAktif}
@@ -268,7 +271,7 @@ export function YayinKarti({
                 }`}
               >
                 <Heart
-                  className={`h-3.5 w-3.5 ${yayin.begeni_mi ? "fill-current text-red-500" : ""}`}
+                  className={`h-4 w-4 sm:h-3.5 sm:w-3.5 ${yayin.begeni_mi ? "fill-current text-red-500" : ""}`}
                 />
                 <span>{yayin.begeni_sayisi ?? 0}</span>
               </button>
@@ -290,7 +293,7 @@ export function YayinKarti({
                 }`}
               >
                 <Star
-                  className={`h-3.5 w-3.5 ${
+                  className={`h-4 w-4 sm:h-3.5 sm:w-3.5 ${
                     yayin.favori_mi ? "fill-[#2563eb] text-[#2563eb]" : ""
                   }`}
                 />
@@ -302,14 +305,14 @@ export function YayinKarti({
 
         {/* 2. Satır: Yayın Tarihi & Talep Kimliği */}
         {(tarihGoster || talepNoGoster) && (
-          <div className="mt-1.5 flex items-center justify-between gap-1 text-[10px] text-gray-500">
+          <div className="mt-1.5 flex items-center justify-between gap-1 text-xs text-gray-500 sm:text-[10px]">
             {tarihGoster ? (
               <span className="truncate">{formatTarihUzun(yayin.yayin_tarihi)}</span>
             ) : (
               <span />
             )}
             {talepNoGoster && yayin.talep_no != null ? (
-              <span className="shrink-0 font-mono text-[10px] text-[#bc2d0d]">
+              <span className="shrink-0 font-mono text-xs text-[#bc2d0d] sm:text-[10px]">
                 {talepIdGoster(yayin.firma_adi, yayin.talep_no)}
               </span>
             ) : (
@@ -324,7 +327,7 @@ export function YayinKarti({
             <div className="flex shrink-0 items-center gap-1">
               {puanGoster && yayin.video_puani != null && (
                 <span
-                  className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-extrabold text-white shadow-xs"
+                  className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-extrabold text-white shadow-xs sm:px-1.5 sm:text-[9px]"
                   style={{
                     background: "linear-gradient(to right, #1e3a8a 0%, #2563eb 55%, #3b82f6 100%)",
                   }}
@@ -336,7 +339,7 @@ export function YayinKarti({
               )}
               {puanGoster && !!yayin.extra_puan && yayin.extra_puan > 0 && (
                 <span
-                  className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-extrabold text-white shadow-xs"
+                  className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-extrabold text-white shadow-xs sm:px-1.5 sm:text-[9px]"
                   style={{
                     background: "linear-gradient(to right, #267d39 0%, #2e9143 55%, #3db856 100%)",
                   }}
@@ -348,7 +351,7 @@ export function YayinKarti({
             </div>
 
             {izlenmeGoster && (
-              <span className="shrink-0 text-[10px] text-gray-500">
+              <span className="shrink-0 text-xs text-gray-500 sm:text-[10px]">
                 {yayin.izlenme_sayisi ?? 0} izlenme
               </span>
             )}
@@ -357,7 +360,7 @@ export function YayinKarti({
 
         {/* 4. Satır: Devam Eden Yayın İçin Baştan İzle Butonu */}
         {donguGoster && yayin.durum === "devam" && (
-          <div className="mt-2 flex items-center justify-between rounded-lg bg-amber-50 px-2 py-1.5 text-[10px] font-bold text-amber-700">
+          <div className="mt-2 flex items-center justify-between rounded-lg bg-amber-50 px-2 py-1.5 text-xs font-bold text-amber-700 sm:text-[10px]">
             <span>Baştan İzle</span>
             <span aria-hidden="true">→</span>
           </div>

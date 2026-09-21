@@ -539,7 +539,7 @@ export function KartSarici({ children }: { children: ReactNode }) {
 export function KartMeta({ children, renk }: { children: ReactNode; renk?: string }) {
   return (
     <span
-      className="truncate rounded-lg px-2 py-1 text-center text-[10px] font-semibold"
+      className="truncate rounded-lg px-2 py-1 text-center text-xs font-semibold sm:text-[10px]"
       style={{ background: "#f7f9fc", color: renk ?? "#70849d", border: "0.5px solid #e5e7eb" }}
     >
       {children}

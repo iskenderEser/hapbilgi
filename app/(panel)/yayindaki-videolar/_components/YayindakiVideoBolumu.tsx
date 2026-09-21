@@ -76,7 +76,7 @@ export default function YayindakiVideoBolumu({
         donguGoster={false}
         solUstRozet={
           hedefEtiketi ? (
-            <span className="rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+            <span className="rounded-full bg-blue-500 px-2 py-0.5 text-[11px] font-bold text-white shadow-sm sm:px-1.5 sm:text-[10px]">
               {hedefEtiketi}
             </span>
           ) : null
@@ -86,9 +86,9 @@ export default function YayindakiVideoBolumu({
             {uretenBilgisiGoster && (
               <div className="mt-2 flex items-center gap-1.5 border-t border-gray-100 pt-2">
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500">
-                  <svg aria-hidden="true" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                  <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="sm:h-2.5 sm:w-2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
                 </span>
-                <span className="truncate text-[10px] font-semibold text-gray-500">{uretenEtiket(v.ureten_rol, v.ureten_ad_soyad)}</span>
+                <span className="truncate text-xs font-semibold text-gray-500 sm:text-[10px]">{uretenEtiket(v.ureten_rol, v.ureten_ad_soyad)}</span>
               </div>
             )}
             {oneriModu && (
@@ -101,7 +101,7 @@ export default function YayindakiVideoBolumu({
                   }}
                   aria-pressed={secili}
                   aria-label={`${v.urun_adi} yayınını ${secili ? "öneriden çıkar" : "öneriye ekle"}`}
-                  className={`w-full rounded-lg px-3 py-2 text-[11px] font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff] ${secili ? "bg-[#ecfdf5] text-[#167453] hover:bg-[#dff8ec]" : "bg-[#eef5fd] text-[#2f7fc7] hover:bg-[#e0effd]"}`}
+                  className={`w-full rounded-lg px-3 py-2.5 text-sm font-extrabold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#56aeff] sm:py-2 sm:text-[11px] ${secili ? "bg-[#ecfdf5] text-[#167453] hover:bg-[#dff8ec]" : "bg-[#eef5fd] text-[#2f7fc7] hover:bg-[#e0effd]"}`}
                 >
                   {secili ? "Öneriden Çıkar" : "Öneriye Ekle"}
                 </button>

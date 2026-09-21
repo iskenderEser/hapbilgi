@@ -47,7 +47,7 @@ export function AracMerkezIkonu({ tur }: { tur: EczanemAracTuru }) {
 export function IcerikDurumRozeti({ video }: { video: EczanemMusteriVideo }) {
   if (video.izlendi) {
     return (
-      <Badge className="absolute left-2 top-2 border border-white/40 bg-[#166534]/90 text-[9px] font-black text-white shadow-sm backdrop-blur-sm">
+      <Badge className="absolute left-2 top-2 border border-white/40 bg-[#166534]/90 text-[11px] font-black text-white shadow-sm backdrop-blur-sm sm:text-[9px]">
         ✓ Tamamlandı
       </Badge>
     );
@@ -58,14 +58,14 @@ export function IcerikDurumRozeti({ video }: { video: EczanemMusteriVideo }) {
         ? ` · ${sureYaz(video.son_konum_saniye)}`
         : "";
     return (
-      <Badge className="absolute left-2 top-2 flex items-center gap-1 border border-[#efd59f] bg-[#fff7e8]/95 text-[9px] font-extrabold text-[#956417] shadow-sm">
-        <Clock3 className="size-2.5" />
+      <Badge className="absolute left-2 top-2 flex items-center gap-1 border border-[#efd59f] bg-[#fff7e8]/95 text-[11px] font-extrabold text-[#956417] shadow-sm sm:text-[9px]">
+        <Clock3 className="size-3 sm:size-2.5" />
         <span>Devam Et{sureMetni}</span>
       </Badge>
     );
   }
   return (
-    <Badge className="absolute left-2 top-2 border border-[#cbe4f9] bg-[#edf6fd]/95 text-[9px] font-black text-[#1d69ad] shadow-sm">
+    <Badge className="absolute left-2 top-2 border border-[#cbe4f9] bg-[#edf6fd]/95 text-[11px] font-black text-[#1d69ad] shadow-sm sm:text-[9px]">
       Yeni
     </Badge>
   );
@@ -130,26 +130,26 @@ export default function EczanemVideoRafi({
         altEkIcerik={
           <div className="mt-2 space-y-1.5">
             {video.eczane_adi && (
-              <p className="truncate text-[10px] font-semibold text-[#8fa0b2]" title={video.eczane_adi}>
+              <p className="truncate text-xs font-semibold text-[#8fa0b2] sm:text-[10px]" title={video.eczane_adi}>
                 {video.eczane_adi}
               </p>
             )}
             <div className="grid grid-cols-3 divide-x divide-[#e3e9ef] rounded-lg border border-[#e5ebf1] bg-[#f8fafc] px-1 py-1 text-center">
               <div className="px-0.5">
-                <span className="block text-[7px] font-extrabold uppercase tracking-wide text-[#8a99aa]">Tamamlama</span>
-                <strong className="mt-0.5 block text-[10px] font-black tabular-nums text-[#286fae]">
+                <span className="block text-[11px] font-extrabold uppercase tracking-wide text-[#8a99aa] sm:text-[7px]">Tamamlama</span>
+                <strong className="mt-0.5 block text-xs font-black tabular-nums text-[#286fae] sm:text-[10px]">
                   {Number(video.video_puani ?? 0).toLocaleString("tr-TR")} p
                 </strong>
               </div>
               <div className="px-0.5">
-                <span className="block text-[7px] font-extrabold uppercase tracking-wide text-[#8a99aa]">Soru</span>
-                <strong className="mt-0.5 block text-[10px] font-black tabular-nums text-[#654db0]">
+                <span className="block text-[11px] font-extrabold uppercase tracking-wide text-[#8a99aa] sm:text-[7px]">Soru</span>
+                <strong className="mt-0.5 block text-xs font-black tabular-nums text-[#654db0] sm:text-[10px]">
                   {Number(video.soru_sayisi ?? 0).toLocaleString("tr-TR")} ad
                 </strong>
               </div>
               <div className="px-0.5">
-                <span className="block text-[7px] font-extrabold uppercase tracking-wide text-[#8a99aa]">Her Doğru</span>
-                <strong className="mt-0.5 block text-[10px] font-black tabular-nums text-[#16865f]">
+                <span className="block text-[11px] font-extrabold uppercase tracking-wide text-[#8a99aa] sm:text-[7px]">Her Doğru</span>
+                <strong className="mt-0.5 block text-xs font-black tabular-nums text-[#16865f] sm:text-[10px]">
                   {Number(video.soru_puani ?? 0).toLocaleString("tr-TR")} p
                 </strong>
               </div>
