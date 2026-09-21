@@ -24,6 +24,7 @@ test("Kapsam 1: Bütün üretici rolleri UreticiAnaSayfa üzerinden ortak Tanbur
     /import HayaletTanburSecici,\s*\{\s*type TanburBolum\s*\}\s*from "@\/components\/navigasyon\/HayaletTanburSecici"/,
   );
   assert.match(ureticiAnaSayfaKodu, /<HayaletTanburSecici[\s\S]*bolumler=\{tanburBolumleri\}/);
+  assert.doesNotMatch(ureticiAnaSayfaKodu, /tanburBolumleri\.length > 1/);
 
   // Tanımlı 13 üretici rolü
   const beklenenUreticiRoller = [

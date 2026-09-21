@@ -418,13 +418,11 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
 
       </div>
 
-      {tanburBolumleri.length > 1 && (
-        <HayaletTanburSecici
-          bolumler={tanburBolumleri}
-          seciliId={aktifFiltre}
-          onSec={setAktifFiltre}
-        />
-      )}
+      <HayaletTanburSecici
+        bolumler={tanburBolumleri}
+        seciliId={aktifFiltre}
+        onSec={setAktifFiltre}
+      />
     </div>
   );
 }
