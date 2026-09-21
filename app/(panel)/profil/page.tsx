@@ -32,6 +32,7 @@ interface PuanDagilimi {
   cevaplama_puani: number;
   oneri_puani: number;
   extra_puani: number;
+  eclub_puani: number;
 }
 
 interface Siralama {
@@ -328,12 +329,13 @@ export default function ProfilPage() {
           {puanDagilimi && (
             <div className="border-t border-gray-100 pt-6 mb-6">
               <div className="text-xs text-gray-400 font-light mb-2">Puan Dağılımı</div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                 {[
                   { baslik: "∑ İzleme", deger: puanDagilimi.izleme_puani },
                   { baslik: "∑ Cevaplama", deger: puanDagilimi.cevaplama_puani },
                   { baslik: "∑ Öneri", deger: puanDagilimi.oneri_puani },
                   { baslik: "∑ Extra", deger: puanDagilimi.extra_puani },
+                  { baslik: "∑ E-Club", deger: puanDagilimi.eclub_puani },
                 ].map(({ baslik, deger }) => (
                   <div key={baslik} className="bg-gray-50 rounded-xl p-3 md:p-5">
                     <div className="text-xs text-gray-500 mb-2">{baslik}</div>

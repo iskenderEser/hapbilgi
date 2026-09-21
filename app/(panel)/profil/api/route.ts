@@ -151,6 +151,12 @@ export async function GET() {
       .eq("kullanici_id", user.id)
       .gte("created_at", yilBasi);
 
+    const { data: puanOzeti } = await adminSupabase.rpc("get_kullanici_ozet", {
+      p_kullanici_id: user.id,
+      p_baslangic: yilBasi,
+      p_bitis: new Date().toISOString(),
+    });
+
     let izleme_puani = 0;
     let cevaplama_puani = 0;
     let oneri_puani = 0;
@@ -196,6 +202,7 @@ export async function GET() {
         cevaplama_puani,
         oneri_puani,
         extra_puani,
+        eclub_puani: puanOzeti?.[0]?.eclub_puani ?? 0,
       },
       siralama: {
         firma_sirasi: siralama?.firma_sirasi ?? null,
