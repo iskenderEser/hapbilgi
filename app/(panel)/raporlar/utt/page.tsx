@@ -220,8 +220,8 @@ export default function UttRaporPage() {
               <div className={styles.sectionIcon}><Gauge className="h-4 w-4" /></div>
             </div>
             {[
-              { label: 'Bölge katkısı', yuzde: data.katki.bolge_katki_yuzdesi, mevcut: data.katki.bolge_mevcut_puan, toplam: data.katki.bolge_toplam_puan },
-              { label: 'Takım katkısı', yuzde: data.katki.takim_katki_yuzdesi, mevcut: data.katki.bolge_mevcut_puan, toplam: data.katki.takim_toplam_puan },
+              { label: 'Seçili dönemde bölge katkısı', yuzde: data.katki.bolge_katki_yuzdesi, mevcut: data.katki.bolge_mevcut_puan, toplam: data.katki.bolge_toplam_puan },
+              { label: 'Seçili dönemde takım katkısı', yuzde: data.katki.takim_katki_yuzdesi, mevcut: data.katki.bolge_mevcut_puan, toplam: data.katki.takim_toplam_puan },
             ].map(k => (
               <div key={k.label} className={styles.contributionItem}>
                 <div className="mb-1.5 flex items-end justify-between">

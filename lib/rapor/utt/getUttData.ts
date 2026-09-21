@@ -1,6 +1,5 @@
 // lib/rapor/utt/getUttData.ts
-import { SupabaseClient } from '@/lib/types/rapor';
-import { TUKETICI_ROLLER } from '@/lib/utils/roller';
+import type { SupabaseClient } from '@/lib/types/rapor';
 
 interface Kullanici {
   kullanici_id: string;
@@ -11,6 +10,14 @@ interface Kullanici {
   takim_id: string;
 }
 
+export interface NetPuanOzeti {
+  toplam_net_puan?: number | null;
+}
+
+export function netPuanToplami(satirlar: NetPuanOzeti[]): number {
+  return satirlar.reduce((toplam, satir) => toplam + (satir.toplam_net_puan ?? 0), 0);
+}
+
 export async function getUttData(
   adminSupabase: SupabaseClient,
   kullanici: Kullanici,
@@ -19,9 +26,8 @@ export async function getUttData(
 ) {
   const [
     ozetRes,
-    ligRes,
-    bolgeLigRes,
-    takimLigRes,
+    bolgeOzetRes,
+    takimOzetRes,
     bolgeRes,
     takimRes,
     urunDagilimiRes,
@@ -40,28 +46,21 @@ export async function getUttData(
       p_bitis: bitis,
     }),
 
-    // 2. Kişisel toplam puan — katkı yüzdesi (bölge/takım payı) için. Sıra artık
-    //    raporda gösterilmiyor (navbar'a taşındı), yalnız toplam_puan gerekli.
-    adminSupabase
-      .from('v_hbligi_sirali_v2')
-      .select('toplam_puan')
-      .eq('kullanici_id', kullanici.kullanici_id)
-      .maybeSingle(),
+    // 2. Bölge katkısı — kişisel özetle aynı tarih aralığı ve aynı net puan
+    // formülü. Tüm-zaman lig görünümü dönem raporunda kullanılmaz.
+    adminSupabase.rpc('get_kullanici_ozet', {
+      p_bolge_id: kullanici.bolge_id,
+      p_baslangic: baslangic,
+      p_bitis: bitis,
+    }),
 
-    // 3. Bölge sıralaması — periyot bağımsız, limit yok
-    adminSupabase
-      .from('v_hbligi_sirali_v2')
-      .select('kullanici_id, ad, soyad, toplam_puan, bolge_sirasi')
-      .eq('bolge_id', kullanici.bolge_id)
-      .in('rol', TUKETICI_ROLLER)
-      .order('toplam_puan', { ascending: false }),
-
-    // 4. Takım puan toplamı — periyot bağımsız
-    adminSupabase
-      .from('v_hbligi_sirali_v2')
-      .select('toplam_puan')
-      .eq('takim_id', kullanici.takim_id)
-      .in('rol', TUKETICI_ROLLER),
+    // 3. Takım katkısı — kişisel özetle aynı tarih aralığı ve aynı net puan
+    // formülü.
+    adminSupabase.rpc('get_kullanici_ozet', {
+      p_takim_id: kullanici.takim_id,
+      p_baslangic: baslangic,
+      p_bitis: bitis,
+    }),
 
     // 5. Bölge adı
     adminSupabase
@@ -127,14 +126,18 @@ export async function getUttData(
       .eq('kullanici_id', kullanici.kullanici_id),
   ]);
 
+  const kritikHata = ozetRes.error ?? bolgeOzetRes.error ?? takimOzetRes.error;
+  if (kritikHata) {
+    throw new Error(`UTT dönemsel katkı verisi alınamadı: ${kritikHata.message}`);
+  }
+
   // get_kullanici_ozet TABLE döner — array'in ilk satırını al
   const ozet = (ozetRes.data && ozetRes.data.length > 0) ? ozetRes.data[0] : null;
 
   return {
     ozet,
-    lig: ligRes.data ?? null,
-    bolgeLig: bolgeLigRes.data ?? [],
-    takimLig: takimLigRes.data ?? [],
+    bolgeOzet: bolgeOzetRes.data ?? [],
+    takimOzet: takimOzetRes.data ?? [],
     bolge: bolgeRes.data ?? null,
     takim: takimRes.data ?? null,
     urunDagilimi: urunDagilimiRes.data ?? [],

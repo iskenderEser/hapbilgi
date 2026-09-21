@@ -1,10 +1,10 @@
 // app/raporlar/api/utt/route.ts
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { hataYaniti, yetkiHatasi } from '@/lib/utils/hataIsle';
+import { hataYaniti, sunucuHatasi, yetkiHatasi } from '@/lib/utils/hataIsle';
 import { tarihAraligi } from '@/lib/utils/tarihAraligi';
 import { TUKETICI_ROLLER } from '@/lib/utils/roller';
-import { getUttData } from '@/lib/rapor/utt/getUttData';
+import { getUttData, netPuanToplami } from '@/lib/rapor/utt/getUttData';
 import { katkiYuzdesi } from '@/lib/rapor/paylasilan/oran';
 import { aracTuruDagilimi } from '@/lib/rapor/paylasilan/aracTuruDagilimi';
 
@@ -36,7 +36,12 @@ export async function GET(request: Request) {
   }
 
   // Veri
-  const d = await getUttData(adminSupabase, kullanici, baslangic, bitis);
+  let d;
+  try {
+    d = await getUttData(adminSupabase, kullanici, baslangic, bitis);
+  } catch (err) {
+    return sunucuHatasi(err, 'GET /raporlar/api/utt — dönemsel katkı verisi');
+  }
   const aracTurleri = await aracTuruDagilimi(adminSupabase, {
     baslangic,
     bitis,
@@ -71,9 +76,9 @@ export async function GET(request: Request) {
   };
 
   // ─── Katkı (bölge/takım payı) ────────────────────────────────────────────
-  const kisiselPuan = d.lig?.toplam_puan ?? 0;
-  const toplamBolgePuan = d.bolgeLig.reduce((acc, u) => acc + (u.toplam_puan ?? 0), 0);
-  const toplamTakimPuan = d.takimLig.reduce((acc, u) => acc + (u.toplam_puan ?? 0), 0);
+  const kisiselPuan = ozet.toplam_net_puan ?? 0;
+  const toplamBolgePuan = netPuanToplami(d.bolgeOzet);
+  const toplamTakimPuan = netPuanToplami(d.takimOzet);
 
   const bolgePuanMax = katkiYuzdesi(kisiselPuan, toplamBolgePuan);
   const takimPuanMax = katkiYuzdesi(kisiselPuan, toplamTakimPuan);
