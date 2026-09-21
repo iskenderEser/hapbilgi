@@ -28,6 +28,8 @@ win.IS_REACT_ACT_ENVIRONMENT = true;
 const sahaVideoRaflariKodu = readFileSync("components/ana-sayfa/SahaVideoRaflari.tsx", "utf8");
 const videoBolumuKodu = readFileSync("components/ana-sayfa/VideoBolumu.tsx", "utf8");
 const yayindakiVideoBolumuKodu = readFileSync("app/(panel)/yayindaki-videolar/_components/YayindakiVideoBolumu.tsx", "utf8");
+const klasorGridKodu = readFileSync("app/(panel)/yayindaki-videolar/_components/KlasorGrid.tsx", "utf8");
+const yayindakiVideolarPageKodu = readFileSync("app/(panel)/yayindaki-videolar/page.tsx", "utf8");
 
 function ornekSahaVideoUret(id: string, urunAdi: string): SahaAnaSayfaVideo {
   return {
@@ -99,6 +101,15 @@ test("Faz 3 mimari: VideoBolumu MobilYayinAkisi ve YayinKarti kullanır, sahte 0
 test("Faz 3 mimari: YayindakiVideoBolumu MobilYayinAkisi kullanır ve masaüstü yatay/grid desteğini korur", () => {
   assert.match(yayindakiVideoBolumuKodu, /import MobilYayinAkisi from "@\/components\/yayin\/MobilYayinAkisi"/);
   assert.match(yayindakiVideoBolumuKodu, /<MobilYayinAkisi<YayindakiVideo>/);
+});
+
+test("Faz 3 mimari: KlasorGrid ve yayindaki-videolar page.tsx arama alanı değişimlerini sifirlamaAnahtari'na bağlar", () => {
+  // page.tsx arama alanını KlasorGrid'e iletir
+  assert.match(yayindakiVideolarPageKodu, /aramaAlani=\{liste\.arama\.alanAnahtari\}/);
+
+  // KlasorGrid aramaAlani prop'unu sifirlamaAnahtari'na ekler
+  assert.match(klasorGridKodu, /aramaAlani\?: string/);
+  assert.match(klasorGridKodu, /sifirlamaAnahtari=.*aramaAlani.*aramaMetni/);
 });
 
 // --------------------------------------------------------------------------
@@ -305,6 +316,114 @@ test("YayindakiVideoBolumu: mobilde 2 kartla başlar, 7 karta açılır, sifirla
 
   assert.equal(onerilenVideoId, "yayin-1", "onOneriSec callback'i tıklanan yayını iletmeli");
   assert.equal(oynaticiAcildi, false, "Öneri seçildiğinde oynatıcı açılmamalı (stopPropagation korunmalı)");
+
+  await act(async () => {
+    root.unmount();
+  });
+  container.remove();
+});
+
+test("Yayindaki Videolar: aramaAlani değişince 7 karttan 2'ye sıfırlanır, aynı anahtarda veri yenilenince 7 kart korunur", async () => {
+  const container = win.document.createElement("div");
+  win.document.body.appendChild(container);
+  const root = createRoot(container);
+
+  const testVideolari = Array.from({ length: 8 }, (_, i) =>
+    ornekYayindakiVideoUret(`yayin-grid-${i + 1}`, `Yayındaki Video ${i + 1}`),
+  );
+
+  function KlasorAramaSimulasyonu({
+    videolar,
+    aramaAlani,
+    aramaMetni,
+  }: {
+    videolar: YayindakiVideo[];
+    aramaAlani: string;
+    aramaMetni: string;
+  }) {
+    // KlasorGrid içindeki YayindakiVideoBolumu kullanımını simüle eder
+    const sifirlamaAnahtari = `klasor-1-${aramaAlani}-${aramaMetni}`;
+    return createElement(YayindakiVideoBolumu, {
+      videolar,
+      yatayMi: false,
+      sifirlamaAnahtari,
+    });
+  }
+
+  // 1. Başlangıçta 8 kayıt (2 kart gösterilmeli)
+  await act(async () => {
+    root.render(
+      createElement(KlasorAramaSimulasyonu, {
+        videolar: testVideolari,
+        aramaAlani: "tumu",
+        aramaMetni: "Video",
+      }),
+    );
+  });
+
+  const mobilKapsayici = container.querySelector(".sm\\:hidden");
+  assert.ok(mobilKapsayici, "Mobilde MobilYayinAkisi konteyneri bulunmalı");
+  const baslangicKartlari = mobilKapsayici.querySelectorAll(".grid > div");
+  assert.equal(baslangicKartlari.length, 2, "Başlangıçta tam 2 kart olmalı");
+
+  // 2. Devam butonuna bas -> 7 kart olmalı
+  const devamBtn = Array.from(mobilKapsayici.querySelectorAll("button")).find((b) =>
+    b.textContent?.includes("Daha Fazla Göster"),
+  );
+  assert.ok(devamBtn, "Daha Fazla Göster butonu bulunmalı");
+  await act(async () => {
+    devamBtn.click();
+  });
+
+  const acilmisKartlar = mobilKapsayici.querySelectorAll(".grid > div");
+  assert.equal(acilmisKartlar.length, 7, "Devam butonu sonrası 7 kart olmalı");
+
+  // 3. Yalnızca aramaAlani değiştiğinde (aramaMetni aynı), DOM 2 karta sıfırlanmalı
+  await act(async () => {
+    root.render(
+      createElement(KlasorAramaSimulasyonu, {
+        videolar: testVideolari,
+        aramaAlani: "urun",
+        aramaMetni: "Video",
+      }),
+    );
+  });
+
+  const sifirlanmisKartlar = mobilKapsayici.querySelectorAll(".grid > div");
+  assert.equal(
+    sifirlanmisKartlar.length,
+    2,
+    "Yalnızca aramaAlani değiştiğinde mobil görünüm kesin olarak 2 karta dönmeli",
+  );
+
+  // 4. Tekrar 7 karta aç
+  const yeniDevamBtn = Array.from(mobilKapsayici.querySelectorAll("button")).find((b) =>
+    b.textContent?.includes("Daha Fazla Göster"),
+  );
+  assert.ok(yeniDevamBtn);
+  await act(async () => {
+    yeniDevamBtn.click();
+  });
+  assert.equal(mobilKapsayici.querySelectorAll(".grid > div").length, 7);
+
+  // 5. Aynı sıfırlama anahtarında veri yenilendiğinde 7 kart KORUNMALI
+  const yenilenmisVideolar = testVideolari.map((v) => ({ ...v, urun_adi: `${v.urun_adi} Yenilenen` }));
+  await act(async () => {
+    root.render(
+      createElement(KlasorAramaSimulasyonu, {
+        videolar: yenilenmisVideolar,
+        aramaAlani: "urun",
+        aramaMetni: "Video",
+      }),
+    );
+  });
+
+  const korunanKartlar = mobilKapsayici.querySelectorAll(".grid > div");
+  assert.equal(
+    korunanKartlar.length,
+    7,
+    "Aynı sıfırlama anahtarında veri yenilendiğinde açık 7 kart korunmalı",
+  );
 
   await act(async () => {
     root.unmount();

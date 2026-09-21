@@ -398,7 +398,7 @@ export default function UyeOnerilerGorunumu({
           kayitlar={sonFiltrelenmisOneriler}
           kayitAnahtari={(o) => o.oneri_id}
           renderKart={renderOneriKarti}
-          sifirlamaAnahtari={`${aktifFiltre}-${aktifTur}-${liste.arama.aranan}`}
+          sifirlamaAnahtari={`${aktifFiltre}-${aktifTur}-${liste.arama.alanAnahtari}-${liste.arama.aranan}`}
           sayacGoster={false}
           bosDurum={
             <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center">

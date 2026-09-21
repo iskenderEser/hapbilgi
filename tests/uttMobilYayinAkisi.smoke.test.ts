@@ -66,8 +66,8 @@ test("Faz 2 mimari: UttKayanVideoRafi MobilYayinAkisi kullanır ve bağımsız 2
 test("Faz 2 mimari: UttAnaSayfa Kategori ve Aktif Durum listelerini MobilYayinAkisi'ne bağlar, Tanbur korunur", () => {
   assert.match(uttAnaSayfaKodu, /import MobilYayinAkisi from "@\/components\/yayin\/MobilYayinAkisi"/);
 
-  // KategoriYayinlariGoster içinde MobilYayinAkisi kullanımı
-  assert.match(uttAnaSayfaKodu, /<MobilYayinAkisi<Video>[\s\S]*sifirlamaAnahtari=.*kategoriBaslik/);
+  // KategoriYayinlariGoster içinde MobilYayinAkisi kullanımı ve alanAnahtari içeren sifirlamaAnahtari
+  assert.match(uttAnaSayfaKodu, /<MobilYayinAkisi<Video>[\s\S]*sifirlamaAnahtari=.*kategoriBaslik.*alanAnahtari/);
 
   // aktifDurumVideolari içinde MobilYayinAkisi kullanımı
   assert.match(uttAnaSayfaKodu, /<MobilYayinAkisi<Video>[\s\S]*sifirlamaAnahtari=\{aktifDurumFiltresi\}/);
@@ -79,10 +79,11 @@ test("Faz 2 mimari: UttAnaSayfa Kategori ve Aktif Durum listelerini MobilYayinAk
   assert.match(uttAnaSayfaKodu, /<HayaletTanburSecici[\s\S]*bolumler=\{tanburBolumleri\}/);
 });
 
-test("Faz 2 mimari: UyeOnerilerGorunumu MobilYayinAkisi kullanır ve oneri_id anahtarını korur", () => {
+test("Faz 2 mimari: UyeOnerilerGorunumu MobilYayinAkisi kullanır, oneri_id anahtarını korur ve alanAnahtari ile sıfırlar", () => {
   assert.match(uyeOnerilerKodu, /import MobilYayinAkisi from "@\/components\/yayin\/MobilYayinAkisi"/);
   assert.match(uyeOnerilerKodu, /<MobilYayinAkisi<OneriKaydi>/);
   assert.match(uyeOnerilerKodu, /kayitAnahtari=\{\(o\)\s*=>\s*o\.oneri_id\}/);
+  assert.match(uyeOnerilerKodu, /sifirlamaAnahtari=.*alanAnahtari.*aranan/);
 
   // Öneri künye bilgileri korunmalı
   assert.match(uyeOnerilerKodu, /Öneren/);
@@ -227,4 +228,122 @@ test("UttKayanVideoRafi: kartAlti (ekstra izleme bilgisi) hem mobil hem masaüst
 
   assert.match(html, /ozel-ekstra-rozet/);
   assert.match(html, /Turda: 2/);
+});
+
+test("UTT Mobil Akış: arama.alanAnahtari değişince 7 karttan 2'ye sıfırlanır, aynı anahtarda veri yenilenince 7 kart korunur", async () => {
+  const container = win.document.createElement("div");
+  win.document.body.appendChild(container);
+  const root = createRoot(container);
+
+  const testVideolari = Array.from({ length: 8 }, (_, i) =>
+    ornekVideoUret(`v-test-${i + 1}`, `Test Video ${i + 1}`),
+  );
+
+  function UttAramaSimulasyonBileseni({
+    videolar,
+    alanAnahtari,
+    aranan,
+  }: {
+    videolar: UttVideo[];
+    alanAnahtari: string;
+    aranan: string;
+  }) {
+    return createElement(
+      "div",
+      null,
+      createElement(
+        "div",
+        { className: "sm:hidden" },
+        // MobilYayinAkisi doğrudan çağrısı simülasyonu
+        createElement(UttKayanVideoRafi<UttVideo>, {
+          baslik: "Arama Sonuçları",
+          videolar,
+          onVideoClick: () => {},
+          onBegeni: () => {},
+          onFavori: () => {},
+          sifirlamaAnahtari: `Kardiyoloji-tumu-${alanAnahtari}-${aranan}`,
+        }),
+      ),
+    );
+  }
+
+  // 1. Başlangıçta 8 kayıt ile render et (başlangıç: 2 kart)
+  await act(async () => {
+    root.render(
+      createElement(UttAramaSimulasyonBileseni, {
+        videolar: testVideolari,
+        alanAnahtari: "tumu",
+        aranan: "Video",
+      }),
+    );
+  });
+
+  const mobilKapsayici = container.querySelector(".sm\\:hidden");
+  assert.ok(mobilKapsayici, "Mobil konteyner bulunmalı");
+  const baslangicKartlari = mobilKapsayici.querySelectorAll(".grid > div");
+  assert.equal(baslangicKartlari.length, 2, "Başlangıçta tam 2 kart olmalı");
+
+  // 2. Devam butonuna tıkla (2 → 7 kart)
+  const devamBtn = Array.from(mobilKapsayici.querySelectorAll("button")).find((b) =>
+    b.textContent?.includes("Daha Fazla Göster"),
+  );
+  assert.ok(devamBtn, "Daha Fazla Göster butonu bulunmalı");
+  await act(async () => {
+    devamBtn.click();
+  });
+
+  const acilmisKartlar = mobilKapsayici.querySelectorAll(".grid > div");
+  assert.equal(acilmisKartlar.length, 7, "Tıklamadan sonra tam 7 kart olmalı");
+
+  // 3. Yalnızca alanAnahtari değiştiğinde (aranan aynı kalsın), DOM 2 karta sıfırlanmalı
+  await act(async () => {
+    root.render(
+      createElement(UttAramaSimulasyonBileseni, {
+        videolar: testVideolari,
+        alanAnahtari: "urun",
+        aranan: "Video",
+      }),
+    );
+  });
+
+  const sifirlanmisKartlar = mobilKapsayici.querySelectorAll(".grid > div");
+  assert.equal(
+    sifirlanmisKartlar.length,
+    2,
+    "Yalnızca alanAnahtari değiştiğinde mobil görünüm kesin olarak 2 karta dönmeli",
+  );
+
+  // 4. Tekrar 7 karta aç
+  const yeniDevamBtn = Array.from(mobilKapsayici.querySelectorAll("button")).find((b) =>
+    b.textContent?.includes("Daha Fazla Göster"),
+  );
+  assert.ok(yeniDevamBtn);
+  await act(async () => {
+    yeniDevamBtn.click();
+  });
+  assert.equal(mobilKapsayici.querySelectorAll(".grid > div").length, 7);
+
+  // 5. Aynı sıfırlama anahtarında veri güncellendiğinde 7 kart KORUNMALI
+  const guncellenmisVideolar = testVideolari.map((v) => ({ ...v, urun_adi: `${v.urun_adi} Güncel` }));
+  await act(async () => {
+    root.render(
+      createElement(UttAramaSimulasyonBileseni, {
+        videolar: guncellenmisVideolar,
+        alanAnahtari: "urun",
+        aranan: "Video",
+      }),
+    );
+  });
+
+  const korunanKartlar = mobilKapsayici.querySelectorAll(".grid > div");
+  assert.equal(
+    korunanKartlar.length,
+    7,
+    "Aynı sıfırlama anahtarında veri güncellendiğinde açık 7 kart korunmalı",
+  );
+
+  await act(async () => {
+    root.unmount();
+  });
+  container.remove();
 });

@@ -338,7 +338,7 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
   const aciklama = kapsam === "digerleri"
     ? "Diğer üretici birimlerin yayındaki içeriklerini keşfedin."
     : null;
-  const sifirlamaKapsami = `${kapsam}-${kapsam === "benim" ? aktifHedef : (aktifDepartman ?? "tum")}-${aktifYayinTuru}-${katalogListesi.arama.aranan}`;
+  const sifirlamaKapsami = `${kapsam}-${kapsam === "benim" ? aktifHedef : (aktifDepartman ?? "tum")}-${aktifYayinTuru}-${katalogListesi.arama.alanAnahtari}-${katalogListesi.arama.aranan}`;
 
   return (
     <div className="min-h-full bg-[#f5f8fc]" style={{ fontFamily: "'Nunito', sans-serif" }}>

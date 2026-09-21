@@ -21,9 +21,10 @@ interface Props {
   secilenYayinlar?: string[];
   onOneriSec?: (video: YayindakiVideo) => void;
   aramaMetni?: string;
+  aramaAlani?: string;
 }
 
-export default function KlasorGrid({ videolar, onVideoSec, oneriModu = false, secilenYayinlar = [], onOneriSec, aramaMetni = "" }: Props) {
+export default function KlasorGrid({ videolar, onVideoSec, oneriModu = false, secilenYayinlar = [], onOneriSec, aramaMetni = "", aramaAlani = "" }: Props) {
   const searchParams = useSearchParams();
   const urlDepartmani = DEPARTMAN_SIRA.find((key) => key === searchParams.get("departman")) ?? null;
   // undefined: kullanıcı henüz seçim yapmadı, URL'deki geçerli departman kullanılır.
@@ -95,7 +96,7 @@ export default function KlasorGrid({ videolar, onVideoSec, oneriModu = false, se
                 oneriModu={oneriModu}
                 secilenYayinlar={secilenYayinlar}
                 onOneriSec={onOneriSec}
-                sifirlamaAnahtari={`${secili}-${b.baslik}-${oneriModu ? "oneri" : "normal"}-${aramaMetni}`}
+                sifirlamaAnahtari={`${secili}-${b.baslik}-${oneriModu ? "oneri" : "normal"}-${aramaAlani}-${aramaMetni}`}
               />
             </section>
           )

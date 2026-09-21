@@ -77,8 +77,9 @@ test("Faz 4 Mimari - Kapsam A: UreticiYayinKatalogu seçim kartlarını korur, t
   // Tanbur eklenmemeli
   assert.doesNotMatch(ureticiKatalogKodu, /TanburSecici/, "Üretici kataloğuna tanbur eklenmemeli");
 
-  // sifirlamaKapsami kapsam, hedef kitle, departman, yayın türü ve arama metnini içermeli
+  // sifirlamaKapsami kapsam, hedef kitle, departman, yayın türü, alanAnahtari ve arama metnini içermeli
   assert.match(ureticiKatalogKodu, /const sifirlamaKapsami = `\$\{kapsam\}-\$\{kapsam === "benim"/, "sifirlamaKapsami gerçek filtreleri içermeli");
+  assert.match(ureticiKatalogKodu, /katalogListesi\.arama\.alanAnahtari/, "sifirlamaKapsami alanAnahtari içermeli");
   assert.match(ureticiKatalogKodu, /sifirlamaKapsami=\{sifirlamaKapsami\}/, "YayinRaflari'na sifirlamaKapsami iletilmeli");
 });
 
@@ -437,6 +438,115 @@ test("Kapsam B - Challenge Club: GonderilenListesi alıcı ve durum şeridini do
     (kartTikla as HTMLElement).click();
   });
   assert.equal(tiklananYayinId, "yayin-3", "Gönderilen challenge yayını onIzle'yi tetiklemeli");
+
+  await act(async () => {
+    root.unmount();
+  });
+  container.remove();
+});
+
+test("Kapsam A - Üretici: arama.alanAnahtari değişince 7 karttan 2'ye sıfırlanır, aynı anahtarda veri yenilenince 7 kart korunur", async () => {
+  const container = win.document.createElement("div");
+  win.document.body.appendChild(container);
+  const root = createRoot(container);
+
+  const testVideolari = Array.from({ length: 8 }, (_, i) =>
+    ornekYayindakiVideoUret(`uretici-arama-${i + 1}`, `Üretici Yayın ${i + 1}`),
+  );
+
+  function UreticiKatalogSimulasyonu({
+    videolar,
+    alanAnahtari,
+    aranan,
+  }: {
+    videolar: YayindakiVideo[];
+    alanAnahtari: string;
+    aranan: string;
+  }) {
+    const sifirlamaKapsami = `benim-utt-tumu-${alanAnahtari}-${aranan}`;
+    return createElement(YayindakiVideoBolumu, {
+      videolar,
+      yatayMi: true,
+      uretenBilgisiGoster: true,
+      sifirlamaAnahtari: sifirlamaKapsami,
+      onVideoSec: () => {},
+    });
+  }
+
+  // 1. Başlangıçta 8 kayıt (2 kart gösterilmeli)
+  await act(async () => {
+    root.render(
+      createElement(UreticiKatalogSimulasyonu, {
+        videolar: testVideolari,
+        alanAnahtari: "tumu",
+        aranan: "Yayın",
+      }),
+    );
+  });
+
+  const mobilKapsayici = container.querySelector(".sm\\:hidden");
+  assert.ok(mobilKapsayici, "Mobilde MobilYayinAkisi bulunmalı");
+  const baslangicKartlari = mobilKapsayici.querySelectorAll(".grid > div");
+  assert.equal(baslangicKartlari.length, 2, "Başlangıçta tam 2 kart olmalı");
+
+  // 2. Devam butonuna tıkla -> 7 kart olmalı
+  const devamBtn = Array.from(mobilKapsayici.querySelectorAll("button")).find((b) =>
+    b.textContent?.includes("Daha Fazla Göster"),
+  );
+  assert.ok(devamBtn, "Daha Fazla Göster butonu bulunmalı");
+  await act(async () => {
+    devamBtn.click();
+  });
+
+  const acilmisKartlar = mobilKapsayici.querySelectorAll(".grid > div");
+  assert.equal(acilmisKartlar.length, 7, "Devam butonu sonrası 7 kart olmalı");
+
+  // 3. Yalnızca alanAnahtari değiştiğinde (aranan aynı kalsın), DOM 2 karta sıfırlanmalı
+  await act(async () => {
+    root.render(
+      createElement(UreticiKatalogSimulasyonu, {
+        videolar: testVideolari,
+        alanAnahtari: "urun",
+        aranan: "Yayın",
+      }),
+    );
+  });
+
+  const sifirlanmisKartlar = mobilKapsayici.querySelectorAll(".grid > div");
+  assert.equal(
+    sifirlanmisKartlar.length,
+    2,
+    "Yalnızca alanAnahtari değiştiğinde mobil görünüm kesin olarak 2 karta dönmeli",
+  );
+
+  // 4. Tekrar 7 karta aç
+  const yeniDevamBtn = Array.from(mobilKapsayici.querySelectorAll("button")).find((b) =>
+    b.textContent?.includes("Daha Fazla Göster"),
+  );
+  assert.ok(yeniDevamBtn);
+  await act(async () => {
+    yeniDevamBtn.click();
+  });
+  assert.equal(mobilKapsayici.querySelectorAll(".grid > div").length, 7);
+
+  // 5. Aynı sıfırlama anahtarında veri yenilendiğinde 7 kart KORUNMALI
+  const yenilenmisVideolar = testVideolari.map((v) => ({ ...v, urun_adi: `${v.urun_adi} Güncellenen` }));
+  await act(async () => {
+    root.render(
+      createElement(UreticiKatalogSimulasyonu, {
+        videolar: yenilenmisVideolar,
+        alanAnahtari: "urun",
+        aranan: "Yayın",
+      }),
+    );
+  });
+
+  const korunanKartlar = mobilKapsayici.querySelectorAll(".grid > div");
+  assert.equal(
+    korunanKartlar.length,
+    7,
+    "Aynı sıfırlama anahtarında veri yenilendiğinde açık 7 kart korunmalı",
+  );
 
   await act(async () => {
     root.unmount();
