@@ -8,13 +8,13 @@
 import type { ReactNode } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import LeagueHeader from "./LeagueHeader";
+import MonthlyLeaders from "./MonthlyLeaders";
 import LeaguePosition from "./LeaguePosition";
 import ScoreComposition from "./ScoreComposition";
 import LeadershipProfile from "./LeadershipProfile";
 import LeadershipScore from "./LeadershipScore";
 import CompetitorComparison from "./CompetitorComparison";
 import LeadershipPath from "./LeadershipPath";
-import LeadershipInsight from "./LeadershipInsight";
 import type { HaftalikKonum, LigSatiri, SiraliSatir, KirilimKalemi, ProfilKalemi, LiderlikHedefi, AylikKursu } from "./types";
 import styles from "./league.module.css";
 
@@ -33,9 +33,6 @@ const STUB_HEDEFLER: LiderlikHedefi[] = [
   { baslik: "Yanlış cevap oranını %10'un altına düşür", etki: 8, oncelik: "Odaklan" },
   { baslik: "İleri sarma davranışını azalt", etki: 5, oncelik: "İyileştir" },
 ];
-
-const STUB_INSIGHT_KAPANIS =
-  "Liderlik sadece yüksek puanla değil, sürdürülebilir ve doğru davranışlarla mümkündür. Küçük iyileştirmeler büyük farklar yaratır.";
 
 export default function LeaguePage({
   satirlar,
@@ -73,39 +70,13 @@ export default function LeaguePage({
       liderlikSkoru: Math.round((r.toplam_puan / maxToplam) * 72), // STUB
     }));
 
-  const haftalikSirali: SiraliSatir[] = haftalikKonum.bolge_ligi.map((satir) => ({
-    ...satir,
-    rank: satir.sira,
-    liderlikSkoru: 0,
-  }));
-  const bolgeTop3: SiraliSatir[] = (aylikKursu?.bolge_top3 ?? haftalikKonum.bolge_ligi.slice(0, 3)).map((satir) => ({
-    ...satir,
-    rank: satir.sira,
-    liderlikSkoru: 0,
-  }));
-  const takimTop3: SiraliSatir[] = (aylikKursu?.takim_top3 ?? (haftalikKonum.takim_ligi ?? []).slice(0, 3)).map((satir) => ({
-    ...satir,
-    rank: satir.sira,
-    liderlikSkoru: 0,
-  }));
   const sirketTop3: SiraliSatir[] = (aylikKursu?.sirket_top3 ?? (haftalikKonum.sirket_ligi ?? []).slice(0, 3)).map((satir) => ({
     ...satir,
     rank: satir.sira,
     liderlikSkoru: 0,
   }));
 
-  const top3 = bolgeTop3;
   const ben = sirali.find((r) => r.benim || r.kullanici_id === userId) ?? sirali[0];
-  const haftalikBen = haftalikSirali.find((r) => r.benim || r.kullanici_id === userId);
-
-  const haftalikLider = haftalikSirali[0];
-  const birAltPuan = haftalikBen
-    ? haftalikSirali.find((satir) => satir.toplam_puan < haftalikBen.toplam_puan)?.toplam_puan
-    : undefined;
-  const liderFark = haftalikBen && haftalikLider
-    ? Math.max(0, haftalikLider.toplam_puan - haftalikBen.toplam_puan)
-    : null;
-  const altFark = haftalikBen && birAltPuan !== undefined ? haftalikBen.toplam_puan - birAltPuan : null;
 
   const pozitifToplam = Math.max(1, ben.izleme_puani + ben.cevaplama_puani + ben.oneri_puani + ben.extra_puani + (ben.eclub_puani ?? 0));
   const negatif = -(ben.ileri_sarma_kaybi + ben.yanlis_cevap_kaybi + ben.oneri_kaybi);
@@ -129,36 +100,11 @@ export default function LeaguePage({
           <LeagueHeader periyotSecici={periyotSecici} />
         </div>
 
-        {/* Neredeyim + Neden */}
-        <div className={styles.topGrid}>
-          <div className="min-h-0 overflow-hidden">
-            <LeaguePosition
-              konumlar={[
-                { id: "bolge", etiket: "Bölge sıran", ...haftalikKonum.bolge },
-                { id: "takim", etiket: "Takım sıran", ...haftalikKonum.takim },
-                { id: "sirket", etiket: "Şirket sıran", ...haftalikKonum.sirket },
-              ]}
-              kursuler={{
-                bolge: bolgeTop3,
-                takim: takimTop3,
-                sirket: sirketTop3,
-              }}
-              top3={bolgeTop3}
-              aylikAyAdi={aylikKursu?.ay_adi}
-              liderFark={liderFark}
-              altFark={altFark}
-            />
-          </div>
-          <div className="min-h-0 overflow-hidden">
-            <ScoreComposition netPuan={ben.toplam_puan} kirilim={kirilim} insight={scoreInsight} />
-          </div>
-        </div>
+        {/* 1. Alan: Ayın öğrenme liderleri */}
+        <MonthlyLeaders top3={sirketTop3} ayAdi={aylikKursu?.ay_adi} />
 
-        {/* Kıyas + Liderlik skoru */}
-        <div className={styles.profileGrid}>
-          <div className="min-h-0 overflow-hidden">
-            <CompetitorComparison satirlar={sirali} benimId={userId} />
-          </div>
+        {/* 2. Alan: Liderlik skoru + sıralamalar + net puan bileşimi */}
+        <div className={styles.metricsGrid}>
           <div className="min-h-0 overflow-hidden">
             <LeadershipScore
               skor={ben.liderlikSkoru}
@@ -166,6 +112,23 @@ export default function LeaguePage({
               trend={8}
             />
           </div>
+          <div className="min-h-0 overflow-hidden">
+            <LeaguePosition
+              konumlar={[
+                { id: "bolge", etiket: "Bölge Sıralaman", ...haftalikKonum.bolge },
+                { id: "takim", etiket: "Takım Sıralaman", ...haftalikKonum.takim },
+                { id: "sirket", etiket: "Firma Sıralaman", ...haftalikKonum.sirket },
+              ]}
+            />
+          </div>
+          <div className="min-h-0 overflow-hidden">
+            <ScoreComposition netPuan={ben.toplam_puan} kirilim={kirilim} insight={scoreInsight} />
+          </div>
+        </div>
+
+        {/* 3. Alan: Bölge ligi */}
+        <div className="min-h-0 overflow-hidden">
+          <CompetitorComparison satirlar={sirali} benimId={userId} />
         </div>
 
         {/* Liderlik DNA'sı + Ne yapmalıyım */}
@@ -176,10 +139,6 @@ export default function LeaguePage({
           <div className="min-h-0 overflow-hidden">
             <LeadershipPath hedefler={STUB_HEDEFLER} />
           </div>
-        </div>
-
-        <div className={`${styles.insight} shrink-0`}>
-          <LeadershipInsight mesaj={STUB_INSIGHT_KAPANIS} />
         </div>
         </div>
       </div>

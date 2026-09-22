@@ -1,5 +1,5 @@
 // components/hbligi/league/CompetitorComparison.tsx
-// "Rakiplerine Göre Konumun" — bölgedeki TÜM UTT'ler. Sıra, Kullanıcı, Net Puan,
+// "Bölge Ligi" — bölgedeki TÜM UTT'ler. Sıra, Kullanıcı, Net Puan,
 // Liderlik Skoru, Sana Göre Fark (ıraksak bar). Net/sıra GERÇEK; liderlik skoru STUB.
 
 "use client";
@@ -51,7 +51,7 @@ export default function CompetitorComparison({
   return (
     <section className={`${styles.panel} flex h-full min-h-0 flex-col p-4`}>
         <div className="mb-2 flex shrink-0 items-end justify-between">
-          <h2 className={styles.sectionHeading}>Rakiplerine Göre Konumun</h2>
+          <h2 className={styles.sectionHeading}>Bölge Ligi</h2>
           <button className="flex items-center gap-1 text-[10px] font-extrabold text-[#3589d8]">Tüm lig <ArrowUpRight className="h-3 w-3" /></button>
         </div>
         <div className={`${styles.scrollArea} [&_[data-slot=table-container]]:overflow-visible`}>

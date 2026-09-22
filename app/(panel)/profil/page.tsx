@@ -7,6 +7,7 @@ import { useEffect, useState, useRef } from "react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { logoGorseliniOptimizeEt } from "@/lib/firma/logoOptimizasyonIstemci";
+import { profilFotoGirisDogrula, profilFotoCiktiDogrula } from "@/lib/profil/fotoDogrula";
 
 interface Profil {
   kullanici_id: string;
@@ -79,18 +80,30 @@ export default function ProfilPage() {
     const dosya = e.target.files?.[0];
     if (!dosya) return;
     if (!kullanici) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(dosya.type)) {
-      hata("Sadece JPG, PNG veya WebP formatı kabul edilir.", "dosya formatı kontrolü", undefined);
+
+    // 1. Optimizasyon öncesi giriş dosyası boyut ve format doğrulaması (maks 10 MB, JPG/PNG/WebP)
+    const girisKontrol = profilFotoGirisDogrula(dosya);
+    if (!girisKontrol.gecerli) {
+      hata(girisKontrol.hata!, "dosya kontrolü", undefined);
+      if (e.target) e.target.value = "";
       return;
     }
+
     setFotografLoading(true);
     try {
-      // Büyük dosyaları yüklemeden önce istemci tarafında optimize et (400x400 px, yüksek kalite, hafif boyut)
+      // 2. Büyük dosyaları yüklemeden önce istemci tarafında optimize et (400x400 px, yüksek kalite, hafif boyut)
       const optimizeDosya = await logoGorseliniOptimizeEt(dosya, {
         maxWidth: 400,
         maxHeight: 400,
         kalite: 0.88,
       });
+
+      // 3. Optimizasyon sonrası çıktı boyutu doğrulaması (maks 500 KB) ve başarısızlık kontrolü
+      const ciktiKontrol = profilFotoCiktiDogrula(dosya, optimizeDosya);
+      if (!ciktiKontrol.gecerli) {
+        hata(ciktiKontrol.hata!, "optimizasyon doğrulama", undefined);
+        return;
+      }
 
       const supabase = createClient();
       const uzanti = optimizeDosya.type === "image/jpeg" ? "jpg" : optimizeDosya.type === "image/webp" ? "webp" : "png";
