@@ -6,6 +6,7 @@ import { TUKETICI_ROLLER, eclubKisiRolEtiketi } from "@/lib/utils/roller";
 import { useEffect, useState, useRef } from "react";
 import { HataMesajiContainer, useHataMesaji } from "@/components/HataMesaji";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { logoGorseliniOptimizeEt } from "@/lib/firma/logoOptimizasyonIstemci";
 
 interface Profil {
   kullanici_id: string;
@@ -78,24 +79,49 @@ export default function ProfilPage() {
     const dosya = e.target.files?.[0];
     if (!dosya) return;
     if (!kullanici) return;
-    if (dosya.size > 2 * 1024 * 1024) { hata("Fotoğraf 2 MB'dan büyük olamaz.", "dosya boyutu kontrolü", undefined); return; }
-    if (!["image/jpeg", "image/png"].includes(dosya.type)) { hata("Sadece JPG veya PNG formatı kabul edilir.", "dosya formatı kontrolü", undefined); return; }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(dosya.type)) {
+      hata("Sadece JPG, PNG veya WebP formatı kabul edilir.", "dosya formatı kontrolü", undefined);
+      return;
+    }
     setFotografLoading(true);
-    const supabase = createClient();
-    const dosyaAdi = `${kullanici.id}-${Date.now()}.${dosya.type === "image/jpeg" ? "jpg" : "png"}`;
-    const { error: uploadError } = await supabase.storage.from("profil-fotograflari").upload(dosyaAdi, dosya, { upsert: true });
-    if (uploadError) { hata("Fotoğraf yüklenemedi.", "storage upload", uploadError.message); setFotografLoading(false); return; }
-    const { data: urlData } = supabase.storage.from("profil-fotograflari").getPublicUrl(dosyaAdi);
-    const fotograf_url = urlData.publicUrl;
-    const res = await fetch("/profil/api", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fotograf_url }),
-    });
-    const data = await res.json();
-    if (!res.ok) { hata(data.hata ?? "Fotoğraf kaydedilemedi.", data.adim, data.detay); }
-    else { basari("Fotoğraf güncellendi."); setProfil(prev => prev ? { ...prev, fotograf_url } : prev); }
-    setFotografLoading(false);
+    try {
+      // Büyük dosyaları yüklemeden önce istemci tarafında optimize et (400x400 px, yüksek kalite, hafif boyut)
+      const optimizeDosya = await logoGorseliniOptimizeEt(dosya, {
+        maxWidth: 400,
+        maxHeight: 400,
+        kalite: 0.88,
+      });
+
+      const supabase = createClient();
+      const uzanti = optimizeDosya.type === "image/jpeg" ? "jpg" : optimizeDosya.type === "image/webp" ? "webp" : "png";
+      const dosyaAdi = `${kullanici.id}-${Date.now()}.${uzanti}`;
+      const { error: uploadError } = await supabase.storage.from("profil-fotograflari").upload(dosyaAdi, optimizeDosya, { upsert: true });
+      if (uploadError) {
+        hata("Fotoğraf yüklenemedi.", "storage upload", uploadError.message);
+        return;
+      }
+      const { data: urlData } = supabase.storage.from("profil-fotograflari").getPublicUrl(dosyaAdi);
+      const fotograf_url = urlData.publicUrl;
+      const res = await fetch("/profil/api", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fotograf_url }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        hata(data.hata ?? "Fotoğraf kaydedilemedi.", data.adim, data.detay);
+      } else {
+        basari("Fotoğraf güncellendi.");
+        setProfil(prev => prev ? { ...prev, fotograf_url } : prev);
+      }
+    } catch (err: unknown) {
+      hata("Fotoğraf optimize edilirken veya yüklenirken bir sorun oluştu.", "fotoğraf yükleme", err instanceof Error ? err.message : undefined);
+    } finally {
+      setFotografLoading(false);
+      if (e.target) {
+        e.target.value = "";
+      }
+    }
   };
 
   const handleFotografSil = async () => {
@@ -183,7 +209,7 @@ export default function ProfilPage() {
                   <line x1="12" y1="3" x2="12" y2="15"/>
                 </svg>
               </div>
-              <input ref={dosyaInputRef} type="file" accept=".jpg,.jpeg,.png" onChange={handleFotografSec} className="hidden" />
+              <input ref={dosyaInputRef} type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onChange={handleFotografSec} className="hidden" />
             </>
           )}
         </div>

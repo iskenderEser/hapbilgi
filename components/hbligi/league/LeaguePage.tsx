@@ -15,7 +15,7 @@ import LeadershipScore from "./LeadershipScore";
 import CompetitorComparison from "./CompetitorComparison";
 import LeadershipPath from "./LeadershipPath";
 import LeadershipInsight from "./LeadershipInsight";
-import type { HaftalikKonum, LigSatiri, SiraliSatir, KirilimKalemi, ProfilKalemi, LiderlikHedefi } from "./types";
+import type { HaftalikKonum, LigSatiri, SiraliSatir, KirilimKalemi, ProfilKalemi, LiderlikHedefi, AylikKursu } from "./types";
 import styles from "./league.module.css";
 
 // ─── STUB (motor — Faz 2) ────────────────────────────────────────────────
@@ -40,11 +40,13 @@ const STUB_INSIGHT_KAPANIS =
 export default function LeaguePage({
   satirlar,
   haftalikKonum,
+  aylikKursu,
   userId,
   periyotSecici,
 }: {
   satirlar: LigSatiri[];
   haftalikKonum: HaftalikKonum;
+  aylikKursu?: AylikKursu;
   userId: string;
   periyotSecici: ReactNode;
 }) {
@@ -76,7 +78,23 @@ export default function LeaguePage({
     rank: satir.sira,
     liderlikSkoru: 0,
   }));
-  const top3 = haftalikSirali.slice(0, 3);
+  const bolgeTop3: SiraliSatir[] = (aylikKursu?.bolge_top3 ?? haftalikKonum.bolge_ligi.slice(0, 3)).map((satir) => ({
+    ...satir,
+    rank: satir.sira,
+    liderlikSkoru: 0,
+  }));
+  const takimTop3: SiraliSatir[] = (aylikKursu?.takim_top3 ?? (haftalikKonum.takim_ligi ?? []).slice(0, 3)).map((satir) => ({
+    ...satir,
+    rank: satir.sira,
+    liderlikSkoru: 0,
+  }));
+  const sirketTop3: SiraliSatir[] = (aylikKursu?.sirket_top3 ?? (haftalikKonum.sirket_ligi ?? []).slice(0, 3)).map((satir) => ({
+    ...satir,
+    rank: satir.sira,
+    liderlikSkoru: 0,
+  }));
+
+  const top3 = bolgeTop3;
   const ben = sirali.find((r) => r.benim || r.kullanici_id === userId) ?? sirali[0];
   const haftalikBen = haftalikSirali.find((r) => r.benim || r.kullanici_id === userId);
 
@@ -116,11 +134,17 @@ export default function LeaguePage({
           <div className="min-h-0 overflow-hidden">
             <LeaguePosition
               konumlar={[
-                { etiket: "Bölge sıran", ...haftalikKonum.bolge },
-                { etiket: "Takım sıran", ...haftalikKonum.takim },
-                { etiket: "Şirket sıran", ...haftalikKonum.sirket },
+                { id: "bolge", etiket: "Bölge sıran", ...haftalikKonum.bolge },
+                { id: "takim", etiket: "Takım sıran", ...haftalikKonum.takim },
+                { id: "sirket", etiket: "Şirket sıran", ...haftalikKonum.sirket },
               ]}
-              top3={top3}
+              kursuler={{
+                bolge: bolgeTop3,
+                takim: takimTop3,
+                sirket: sirketTop3,
+              }}
+              top3={bolgeTop3}
+              aylikAyAdi={aylikKursu?.ay_adi}
               liderFark={liderFark}
               altFark={altFark}
             />

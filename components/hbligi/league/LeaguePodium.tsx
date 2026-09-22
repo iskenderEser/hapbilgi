@@ -1,73 +1,167 @@
 // components/hbligi/league/LeaguePodium.tsx
-// İlk 3 — kürsü düzeninde ([2][1][3]) sade kartlar. Card + Avatar + Badge + taç + değişim.
+// İlk 3 — Harici kürsü görseli (public/kursu_0926.png) üzerine dinamik avatar, isim ve puan yerleşimi.
 
 "use client";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import Image from "next/image";
 import { Crown, ChevronUp, ChevronDown } from "lucide-react";
 import type { SiraliSatir } from "./types";
 import { harfler } from "./util";
-import styles from "./league.module.css";
 
-function Degisim({ d }: { d: number | null }) {
-  if (d === null || d === 0) return <span className="text-xs text-muted-foreground">—</span>;
+function DegisimBadge({ d }: { d: number | null }) {
+  if (d === null || d === 0) {
+    return <span className="text-[9px] font-extrabold text-slate-400">—</span>;
+  }
   const yukari = d > 0;
   return (
     <span
-      className="inline-flex items-center gap-0.5 text-xs font-semibold"
-      style={{ color: yukari ? "#16a34a" : "#dc2626" }}
+      className={`inline-flex items-center text-[9px] font-black ${
+        yukari ? "text-emerald-600" : "text-rose-600"
+      }`}
     >
-      {yukari ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+      {yukari ? (
+        <ChevronUp className="h-2.5 w-2.5 stroke-[3]" />
+      ) : (
+        <ChevronDown className="h-2.5 w-2.5 stroke-[3]" />
+      )}
       {Math.abs(d)}
     </span>
   );
 }
 
-function RankCard({ r }: { r: SiraliSatir }) {
-  const lider = r.rank === 1;
-  const baseStyle = r.rank === 1
-    ? { height: 82, background: "linear-gradient(180deg, #fff7e7 0%, #ffeed0 100%)", color: "#a85b00" }
-    : r.rank === 2
-      ? { height: 66, background: "linear-gradient(180deg, #eaf4ff 0%, #dcecff 100%)", color: "#1769b0" }
-      : { height: 52, background: "linear-gradient(180deg, #f2f4f8 0%, #e8ebf1 100%)", color: "#68768a" };
-  return (
-    <div className={styles.podiumPerson}>
-        <div className="mb-1 h-4">{lider && <Crown className="h-4 w-4 text-[#f2a51a]" fill="currentColor" />}</div>
-        <Avatar className={lider ? "h-9 w-9 ring-2 ring-[#f5b844]/35" : "h-8 w-8"}>
-          <AvatarFallback className="bg-white text-[11px] font-extrabold text-[#334762] shadow-sm">
-            {harfler(r.ad)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="mt-1 w-full truncate text-[11px] font-bold text-[#243650]">{r.ad}</div>
-        <div className={`${styles.podiumBase} mt-1`} style={baseStyle}>
-          <span className="mb-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-white/80 text-[10px] font-extrabold shadow-sm">
-            {r.rank}
-          </span>
-          <span className="text-base font-extrabold tabular-nums">{r.toplam_puan}</span>
-          <Degisim d={r.degisim} />
-        </div>
-    </div>
-  );
-}
-
 export default function LeaguePodium({ top3 }: { top3: SiraliSatir[] }) {
-  if (top3.length === 0) {
-    return (
-      <div className={`${styles.podium} place-items-center text-center text-xs font-semibold text-[#8090a5]`}>
-        <span className="col-span-3">Bu hafta sıralama henüz oluşmadı.</span>
-      </div>
-    );
-  }
+  const lider = top3?.find((r) => r.rank === 1) ?? top3?.[0];
+  const ikinci = top3?.find((r) => r.rank === 2) ?? top3?.[1];
+  const ucuncu = top3?.find((r) => r.rank === 3) ?? top3?.[2];
 
-  // Kürsü düzeni: 2 - 1 - 3
-  const duzen = [top3[1], top3[0], top3[2]].filter(Boolean) as SiraliSatir[];
   return (
-    <div className={styles.podium}>
-      {duzen.map((r) => (
-        <div key={r.kullanici_id} className="min-w-0">
-          <RankCard r={r} />
-        </div>
-      ))}
+    <div className="relative w-full max-w-[375px] aspect-[3/2] mx-auto select-none">
+      {/* 3D Kürsü Arka Plan Görseli — Güncel: 375x250px */}
+      <Image
+        src="/kursu_1_0926.png"
+        alt="T-Club Ligi Kürsüsü"
+        fill
+        sizes="(max-width: 768px) 100vw, 375px"
+        priority
+        className="object-contain pointer-events-none"
+      />
+
+      {/* 2. SIRA (SOL - GÜMÜŞ) */}
+      {ikinci && (
+        <>
+          {/* Avatar Çemberi: Profil Resmi veya Baş Harf */}
+          <div
+            className="absolute aspect-square rounded-full flex items-center justify-center overflow-hidden z-10"
+            style={{ left: "11.2%", top: "23.2%", width: "13.4%" }}
+          >
+            {ikinci.fotograf_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={ikinci.fotograf_url}
+                alt={ikinci.ad}
+                className="w-full h-full object-cover rounded-full"
+              />
+            ) : (
+              <span className="text-[12px] font-black text-slate-700">
+                {harfler(ikinci.ad)}
+              </span>
+            )}
+          </div>
+          {/* Plaka (İsim ve Puan) */}
+          <div
+            className="absolute flex flex-col items-center justify-center text-center px-1 z-10"
+            style={{ left: "4.8%", top: "51.5%", width: "26.0%", height: "15.0%" }}
+          >
+            <div className="w-full truncate text-[10px] font-black text-slate-800 leading-tight">
+              {ikinci.ad}
+            </div>
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className="text-[11px] font-black tabular-nums text-slate-900 leading-none">
+                {ikinci.toplam_puan.toLocaleString("tr-TR")} p
+              </span>
+              <DegisimBadge d={ikinci.degisim} />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 1. SIRA (ORTA - ALTIN) */}
+      {lider && (
+        <>
+          {/* Avatar Çemberi: Profil Resmi veya Baş Harf */}
+          <div
+            className="absolute aspect-square rounded-full flex items-center justify-center overflow-hidden z-10"
+            style={{ left: "41.4%", top: "11.2%", width: "17.2%" }}
+          >
+            {lider.fotograf_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={lider.fotograf_url}
+                alt={lider.ad}
+                className="w-full h-full object-cover rounded-full"
+              />
+            ) : (
+              <span className="text-[14px] font-black text-[#5e4100]">
+                {harfler(lider.ad)}
+              </span>
+            )}
+          </div>
+          {/* Plaka (İsim ve Puan) */}
+          <div
+            className="absolute flex flex-col items-center justify-center text-center px-1 z-10"
+            style={{ left: "36.0%", top: "44.5%", width: "28.0%", height: "16.5%" }}
+          >
+            <div className="w-full truncate text-[11px] font-black text-[#5e4100] leading-tight">
+              {lider.ad}
+            </div>
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className="text-[12px] font-black tabular-nums text-[#3d2a00] leading-none">
+                {lider.toplam_puan.toLocaleString("tr-TR")} p
+              </span>
+              <DegisimBadge d={lider.degisim} />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 3. SIRA (SAĞ - BRONZ) */}
+      {ucuncu && (
+        <>
+          {/* Avatar Çemberi: Profil Resmi veya Baş Harf */}
+          <div
+            className="absolute aspect-square rounded-full flex items-center justify-center overflow-hidden z-10"
+            style={{ left: "75.4%", top: "23.2%", width: "13.4%" }}
+          >
+            {ucuncu.fotograf_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={ucuncu.fotograf_url}
+                alt={ucuncu.ad}
+                className="w-full h-full object-cover rounded-full"
+              />
+            ) : (
+              <span className="text-[12px] font-black text-[#5a2e12]">
+                {harfler(ucuncu.ad)}
+              </span>
+            )}
+          </div>
+          {/* Plaka (İsim ve Puan) */}
+          <div
+            className="absolute flex flex-col items-center justify-center text-center px-1 z-10"
+            style={{ left: "69.2%", top: "51.5%", width: "26.0%", height: "15.0%" }}
+          >
+            <div className="w-full truncate text-[10px] font-black text-[#5a2e12] leading-tight">
+              {ucuncu.ad}
+            </div>
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className="text-[11px] font-black tabular-nums text-[#3d1e0a] leading-none">
+                {ucuncu.toplam_puan.toLocaleString("tr-TR")} p
+              </span>
+              <DegisimBadge d={ucuncu.degisim} />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

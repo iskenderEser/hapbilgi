@@ -6,6 +6,7 @@ export interface LigSatiri {
   ad: string;
   bolge: string;
   takim?: string;
+  fotograf_url?: string | null;
   izleme_puani: number;
   cevaplama_puani: number;
   oneri_puani: number;
@@ -35,6 +36,17 @@ export interface HaftalikKonum {
   takim: HaftalikKonumOzeti;
   sirket: HaftalikKonumOzeti;
   bolge_ligi: HaftalikKonumSatiri[];
+  takim_ligi?: HaftalikKonumSatiri[];
+  sirket_ligi?: HaftalikKonumSatiri[];
+}
+
+export interface AylikKursu {
+  ay: number;
+  yil: number;
+  ay_adi: string;
+  bolge_top3: HaftalikKonumSatiri[];
+  takim_top3: HaftalikKonumSatiri[];
+  sirket_top3: HaftalikKonumSatiri[];
 }
 
 export interface SiraliSatir extends LigSatiri {
