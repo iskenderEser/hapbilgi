@@ -18,7 +18,7 @@ const ONCELIK_STIL: Record<LiderlikHedefi["oncelik"], string> = {
 export default function LeadershipPath({ hedefler }: { hedefler: LiderlikHedefi[] }) {
   return (
     <section className={`${styles.panel} flex h-full min-h-0 flex-col p-4`}>
-        <div className="mb-2"><div className={styles.eyebrow}>Şimdi ne yapmalısın?</div><h2 className={styles.sectionHeading}>Liderliğe Giden Yolun</h2></div>
+        <div className="mb-2"><h2 className={styles.sectionHeading}>Liderliğe Giden Yolun</h2></div>
         <div className={`${styles.scrollArea} flex flex-1 flex-col gap-1.5`}>
           {hedefler.map((h, i) => {
             const Icon = IKON[i % IKON.length];

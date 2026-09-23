@@ -10,7 +10,7 @@ export default function MonthlyLeaders({
   top3: SiraliSatir[];
   ayAdi?: string;
 }) {
-  const baslik = ayAdi ? `${ayAdi} Ayı Öğrenme Liderleri` : "Ayın Öğrenme Liderleri";
+  const baslik = ayAdi ? `${ayAdi} Ayının Öğrenme Liderleri` : "Ayın Öğrenme Liderleri";
   const baslikKelimeleri = baslik.split(" ");
 
   return (

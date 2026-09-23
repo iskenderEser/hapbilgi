@@ -88,10 +88,7 @@ export default function LeaguePosition({ konumlar }: Props) {
   return (
     <section className={`${styles.panel} flex h-full min-h-0 flex-col p-4`}>
       <div className="mb-3 flex shrink-0 items-center justify-between">
-        <div>
-          <div className={styles.eyebrow}>Bu Hafta</div>
-          <h2 className={styles.sectionHeading}>Sıralaman</h2>
-        </div>
+        <h2 className={styles.sectionHeading}>Haftalık Sıralamalar</h2>
         <div className="rounded-full bg-[#edf6ff] p-2 text-[#3599ee]">
           <MapPin className="h-4 w-4" />
         </div>

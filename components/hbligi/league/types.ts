@@ -53,8 +53,6 @@ export interface SiraliSatir extends LigSatiri {
   rank: number;
   /** Bir önceki haftaya göre sıra değişimi. */
   degisim: number | null;
-  /** Liderlik skoru 0-100. STUB (motor — Faz 2). */
-  liderlikSkoru: number;
 }
 
 // Net Puanın Bileşimi (donut) kalemi. Toplam GERÇEK; yorum/yüzde türetilir.

@@ -1,5 +1,5 @@
 // components/hbligi/league/LeaguePodium.tsx
-// İlk 3 — Harici kürsü görseli (public/kursu_0926.png) üzerine dinamik avatar, isim ve puan yerleşimi.
+// İlk 3 — Harici banner görseli üzerine dinamik avatar, isim ve puan yerleşimi.
 
 "use client";
 
@@ -34,15 +34,14 @@ export default function LeaguePodium({ top3 }: { top3: SiraliSatir[] }) {
   const { lider, ikinci, ucuncu } = kursuYerlesimi(top3);
 
   return (
-    <div className="relative w-full max-w-[390px] aspect-[3/2] mx-auto select-none">
-      {/* 3D Kürsü Arka Plan Görseli — Responsive: max 390x260px */}
+    <div className="relative h-full w-full select-none overflow-hidden">
       <Image
-        src="/kursu_2_0926.png"
+        src="/kursu_5_0926-banner.png"
         alt="T-Club Ligi Kürsüsü"
         fill
-        sizes="(max-width: 447px) calc(100vw - 58px), 390px"
+        sizes="(max-width: 768px) 100vw, calc(100vw - 280px)"
         priority
-        className="object-contain pointer-events-none"
+        className="pointer-events-none object-cover object-center"
       />
 
       {/* 2. SIRA (SOL - GÜMÜŞ) */}
@@ -51,7 +50,7 @@ export default function LeaguePodium({ top3 }: { top3: SiraliSatir[] }) {
           {/* Avatar Çemberi: Profil Resmi veya Baş Harf (Merkezlenmiş) */}
           <div
             className="absolute aspect-square rounded-full flex items-center justify-center overflow-hidden z-10"
-            style={{ left: "10.9%", top: "22.1%", width: "13.4%" }}
+            style={{ left: "18.3%", top: "17.5%", width: "10.0%" }}
           >
             {ikinci.fotograf_url ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -61,22 +60,22 @@ export default function LeaguePodium({ top3 }: { top3: SiraliSatir[] }) {
                 className="w-full h-full object-cover rounded-full"
               />
             ) : (
-              <span className="text-[12px] font-black text-slate-700">
+              <span className="text-[clamp(11px,1.3vw,18px)] font-black text-[#172033]">
                 {harfler(ikinci.ad)}
               </span>
             )}
           </div>
           {/* Çerçeve İçi (İsim ve Puan) */}
           <div
-            className="absolute flex flex-col items-center justify-center text-center px-0.5 z-10"
-            style={{ left: "4.5%", top: "45.0%", width: "26.0%", height: "14.5%" }}
+            className="absolute z-10 flex flex-col items-center justify-evenly px-0.5 text-center"
+            style={{ left: "14.8%", top: "64.0%", width: "17.2%", height: "20.5%" }}
           >
-            <div className="w-full truncate text-[12px] font-medium text-slate-800 leading-tight">
-              {ikinci.ad}
+            <div className="w-full truncate text-[clamp(10px,1.15vw,16px)] font-bold uppercase leading-tight text-[#555e6b]">
+              {ikinci.ad.toLocaleUpperCase("tr-TR")}
             </div>
             <div className="flex items-center gap-1 mt-0.5">
-              <span className="text-[10px] font-medium tabular-nums text-slate-900 leading-none">
-                {ikinci.toplam_puan.toLocaleString("tr-TR")} Puan
+              <span className="text-[clamp(9px,0.95vw,14px)] font-bold tabular-nums text-[#555e6b] leading-none">
+                {ikinci.toplam_puan.toLocaleString("tr-TR")} PUAN
               </span>
               <DegisimBadge d={ikinci.degisim} />
             </div>
@@ -90,7 +89,7 @@ export default function LeaguePodium({ top3 }: { top3: SiraliSatir[] }) {
           {/* Avatar Çemberi: Profil Resmi veya Baş Harf (Merkezlenmiş) */}
           <div
             className="absolute aspect-square rounded-full flex items-center justify-center overflow-hidden z-10"
-            style={{ left: "41.3%", top: "11.0%", width: "17.0%" }}
+            style={{ left: "43.75%", top: "7.5%", width: "12.5%" }}
           >
             {lider.fotograf_url ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -100,21 +99,21 @@ export default function LeaguePodium({ top3 }: { top3: SiraliSatir[] }) {
                 className="w-full h-full object-cover rounded-full"
               />
             ) : (
-              <span className="text-[14px] font-black text-[#5e4100]">
+              <span className="text-[clamp(12px,1.5vw,21px)] font-black text-[#172033]">
                 {harfler(lider.ad)}
               </span>
             )}
           </div>
           {/* Çerçeve İçi (İsim ve Puan) */}
           <div
-            className="absolute flex flex-col items-center justify-center text-center px-1 z-10"
-            style={{ left: "34.0%", top: "38.5%", width: "32.0%", height: "16.5%" }}
+            className="absolute z-10 flex flex-col items-center justify-evenly px-1 text-center"
+            style={{ left: "39.5%", top: "64.0%", width: "21.0%", height: "20.5%" }}
           >
-            <div className="w-full truncate text-[14px] font-bold text-[#3d2a00] leading-tight">
+            <div className="w-full truncate text-[clamp(11px,1.3vw,18px)] font-bold uppercase leading-tight text-[#7a4300] [text-shadow:0_1px_2px_rgba(80,48,0,0.25)]">
               {lider.ad}
             </div>
             <div className="flex items-center gap-1 mt-0.5">
-              <span className="text-[12px] font-bold tabular-nums text-[#1f1500] leading-none">
+              <span className="text-[clamp(10px,1.05vw,15px)] font-semibold tabular-nums text-[#7a4300] leading-none">
                 {lider.toplam_puan.toLocaleString("tr-TR")} Puan
               </span>
               <DegisimBadge d={lider.degisim} />
@@ -129,7 +128,7 @@ export default function LeaguePodium({ top3 }: { top3: SiraliSatir[] }) {
           {/* Avatar Çemberi: Profil Resmi veya Baş Harf (Merkezlenmiş) */}
           <div
             className="absolute aspect-square rounded-full flex items-center justify-center overflow-hidden z-10"
-            style={{ left: "75.8%", top: "23.6%", width: "13.4%" }}
+            style={{ left: "71.0%", top: "17.8%", width: "10.5%" }}
           >
             {ucuncu.fotograf_url ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -139,22 +138,22 @@ export default function LeaguePodium({ top3 }: { top3: SiraliSatir[] }) {
                 className="w-full h-full object-cover rounded-full"
               />
             ) : (
-              <span className="text-[12px] font-black text-[#5a2e12]">
+              <span className="text-[clamp(11px,1.3vw,18px)] font-black text-[#172033]">
                 {harfler(ucuncu.ad)}
               </span>
             )}
           </div>
           {/* Çerçeve İçi (İsim ve Puan) */}
           <div
-            className="absolute flex flex-col items-center justify-center text-center px-0.5 z-10"
-            style={{ left: "69.5%", top: "45.0%", width: "26.0%", height: "14.5%" }}
+            className="absolute z-10 flex flex-col items-center justify-evenly px-0.5 text-center"
+            style={{ left: "67.9%", top: "64.0%", width: "17.2%", height: "20.5%" }}
           >
-            <div className="w-full truncate text-[10px] font-medium text-[#3d1e0a] leading-tight">
-              {ucuncu.ad}
+            <div className="w-full truncate text-[clamp(10px,1.15vw,16px)] font-bold uppercase leading-tight text-[#a65324]">
+              {ucuncu.ad.toLocaleUpperCase("tr-TR")}
             </div>
             <div className="flex items-center gap-1 mt-0.5">
-              <span className="text-[10px] font-medium tabular-nums text-[#261306] leading-none">
-                {ucuncu.toplam_puan.toLocaleString("tr-TR")} Puan
+              <span className="text-[clamp(9px,0.95vw,14px)] font-bold tabular-nums text-[#a65324] leading-none">
+                {ucuncu.toplam_puan.toLocaleString("tr-TR")} PUAN
               </span>
               <DegisimBadge d={ucuncu.degisim} />
             </div>
