@@ -103,9 +103,9 @@ test("UTT Ligdeki Konumun kartı haftalık gerçek sıra ve değişimi kullanır
     sonuc.haftalik_konum.bolge_ligi.map(({ kullanici_id, sira, degisim }) => [kullanici_id, sira, degisim]),
     [["u1", 1, 1], ["u2", 1, 0], ["u3", 2, 1]],
   );
-  assert.deepEqual(sonuc.haftalik_konum.bolge, { sira: 1, toplam: 3, degisim: 1 });
-  assert.deepEqual(sonuc.haftalik_konum.takim, { sira: 2, toplam: 4, degisim: 1 });
-  assert.deepEqual(sonuc.haftalik_konum.sirket, { sira: 3, toplam: 5, degisim: 1 });
+  assert.deepEqual(sonuc.haftalik_konum.bolge, { sira: 1, toplam: 4, degisim: 1 });
+  assert.deepEqual(sonuc.haftalik_konum.takim, { sira: 2, toplam: 5, degisim: 1 });
+  assert.deepEqual(sonuc.haftalik_konum.sirket, { sira: 3, toplam: 6, degisim: 1 });
   assert.ok(!sonuc.haftalik_konum.bolge_ligi.some((satir) => satir.kullanici_id === "u7"));
 
   const puansiz = mevcut.map((kayit) => ({ ...kayit, izleme_puani: 0, toplam_puan: 0 }));
@@ -115,7 +115,7 @@ test("UTT Ligdeki Konumun kartı haftalık gerçek sıra ve değişimi kullanır
   const puansizSonuc = await getUttLig(puansizSupabase, "u1", "b1", PERIYOT, simdi);
 
   assert.deepEqual(puansizSonuc.haftalik_konum.bolge_ligi, []);
-  assert.deepEqual(puansizSonuc.haftalik_konum.bolge, { sira: null, toplam: 0, degisim: null });
-  assert.deepEqual(puansizSonuc.haftalik_konum.takim, { sira: null, toplam: 0, degisim: null });
-  assert.deepEqual(puansizSonuc.haftalik_konum.sirket, { sira: null, toplam: 0, degisim: null });
+  assert.deepEqual(puansizSonuc.haftalik_konum.bolge, { sira: null, toplam: 4, degisim: null });
+  assert.deepEqual(puansizSonuc.haftalik_konum.takim, { sira: null, toplam: 5, degisim: null });
+  assert.deepEqual(puansizSonuc.haftalik_konum.sirket, { sira: null, toplam: 6, degisim: null });
 });

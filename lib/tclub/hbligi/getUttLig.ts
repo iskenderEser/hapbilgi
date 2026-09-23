@@ -124,12 +124,13 @@ function konumOzeti(
   mevcutLig: UttLigSatiri[],
   oncekiLig: UttLigSatiri[],
   kullanici_id: string,
+  toplamUtt: number,
 ): UttHaftalikKonumOzeti {
   const mevcut = mevcutLig.find((satir) => satir.kullanici_id === kullanici_id);
   const onceki = oncekiLig.find((satir) => satir.kullanici_id === kullanici_id);
   return {
     sira: mevcut?.sira ?? null,
-    toplam: mevcutLig.length,
+    toplam: toplamUtt,
     degisim: mevcut && onceki ? onceki.sira - mevcut.sira : null,
   };
 }
@@ -193,6 +194,9 @@ export async function getUttLig(
   const firmaId = kullaniciSatiri?.firma_id;
   const takimKapsami = (satir: Awaited<ReturnType<typeof ligRpcCagir>>[number]) => Boolean(takimId) && satir.takim_id === takimId;
   const sirketKapsami = (satir: Awaited<ReturnType<typeof ligRpcCagir>>[number]) => Boolean(firmaId) && satir.firma_id === firmaId;
+  const bolgeToplamUtt = buHaftaUttleri.filter(bolgeKapsami).length;
+  const takimToplamUtt = buHaftaUttleri.filter(takimKapsami).length;
+  const sirketToplamUtt = buHaftaUttleri.filter(sirketKapsami).length;
 
   const lig = ligOlustur(tumUttler, kullanici_id, bolgeKapsami, false, fotoMap);
   const bolgeLigi = ligOlustur(buHaftaUttleri, kullanici_id, bolgeKapsami, true, fotoMap);
@@ -230,9 +234,9 @@ export async function getUttLig(
   });
 
   const haftalik_konum: UttHaftalikKonum = {
-    bolge: konumOzeti(bolgeLigi, oncekiBolgeLigi, kullanici_id),
-    takim: konumOzeti(takimLigi, oncekiTakimLigi, kullanici_id),
-    sirket: konumOzeti(sirketLigi, oncekiSirketLigi, kullanici_id),
+    bolge: konumOzeti(bolgeLigi, oncekiBolgeLigi, kullanici_id, bolgeToplamUtt),
+    takim: konumOzeti(takimLigi, oncekiTakimLigi, kullanici_id, takimToplamUtt),
+    sirket: konumOzeti(sirketLigi, oncekiSirketLigi, kullanici_id, sirketToplamUtt),
     bolge_ligi,
     takim_ligi,
     sirket_ligi,
