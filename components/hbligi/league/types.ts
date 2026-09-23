@@ -16,6 +16,9 @@ export interface LigSatiri {
   yanlis_cevap_kaybi: number;
   oneri_kaybi: number;
   toplam_puan: number;
+  toplam_kazanc?: number;
+  toplam_kayip?: number;
+  detay_gorulebilir?: boolean;
   benim?: boolean;
 }
 

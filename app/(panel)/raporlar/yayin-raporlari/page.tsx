@@ -102,8 +102,8 @@ export default function UretimRaporlariPage() {
               Farklı zamanlardaki yayınlarınıza ait sayısal bilgileri görebilirsiniz.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className={styles.periods} aria-label="Rapor dönemi">
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <div className={`${styles.periods} min-w-0 flex-1 sm:flex-none`} aria-label="Rapor dönemi">
               {PERIYOTLAR.map((secenek) => (
                 <button
                   type="button"

@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Activity, ArrowLeft, BarChart3, BookOpenCheck, CircleMinus, CirclePlus, Gauge, Layers3, Sparkles } from 'lucide-react';
+import { Activity, ArrowLeft, BarChart3, BookOpenCheck, CircleMinus, CirclePlus, Gauge, Layers3 } from 'lucide-react';
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useRapor } from '@/hooks/useRapor';
 import { YenileButonu } from '@/components/ui/yenile-butonu';
@@ -154,30 +154,29 @@ export default function UttRaporPage() {
 
         <header className={styles.header}>
           <div>
-            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">
-              <Sparkles className="h-3.5 w-3.5" /> Kişisel performans analizi
-            </div>
             <div className="inline-flex items-center">
               <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">
-                {data.kullanici.ad} {data.kullanici.soyad}
+                T-Club Raporları
               </h1>
               <SayfaRehberi anahtar="raporlar-utt" className="ml-1.5 -translate-y-1" />
             </div>
             <p className="mt-0.5 text-xs font-semibold text-[#78889d]">
-              {data.kullanici.rol.toUpperCase()} · {data.kullanici.bolge_adi} · {data.kullanici.takim_adi}
+              Kişisel öğrenme performansınızı görebilirsiniz.
             </p>
           </div>
-          <div className={styles.periods} aria-label="Rapor dönemi">
-            {PERIYOTLAR.map(p => (
-              <button
-                key={p.key}
-                onClick={() => setPeriyot(p.key)}
-                className={`${styles.periodButton} ${periyot === p.key ? styles.periodActive : ''}`}
-              >
-                {p.label}
-              </button>
-            ))}
-            <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} />
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <div className={`${styles.periods} min-w-0 flex-1 sm:flex-none`} aria-label="Rapor dönemi">
+              {PERIYOTLAR.map(p => (
+                <button
+                  key={p.key}
+                  onClick={() => setPeriyot(p.key)}
+                  className={`${styles.periodButton} ${periyot === p.key ? styles.periodActive : ''}`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} className="min-w-[88px] justify-center" />
           </div>
         </header>
         <OgrenmeAraciPerformansi dagilim={data.arac_turu_dagilimi} />

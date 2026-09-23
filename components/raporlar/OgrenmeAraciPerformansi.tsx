@@ -104,12 +104,6 @@ export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTur
       {/* Header */}
       <div className="border-b border-[#e6edf4] px-4 py-3 sm:px-5 sm:py-3.5">
         <h2 className="text-base font-extrabold text-[#18304f]">Öğrenme Aracı Performansı</h2>
-        <p className="mt-0.5 text-xs font-semibold text-[#74859a]">
-          Format bazlı yayın sayıları, sahadaki toplam tüketim ve rollerin motivasyon / puan dökümü.
-          <span className="hidden sm:inline text-[#94a3b8] font-normal ml-1">
-            (Kayıtlı araç puanı ile dönemde gerçekten kazanılan puan ayrı gösterilir.)
-          </span>
-        </p>
       </div>
 
       {/* 4 Format Kartı */}

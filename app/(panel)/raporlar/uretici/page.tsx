@@ -169,18 +169,20 @@ export default function UreticiRaporPage() {
             </p>
           </div>
 
-          <div className={styles.periods} aria-label="Rapor dönemi">
-            {PERIYOTLAR.map(secenek => (
-              <button
-                type="button"
-                key={secenek.key}
-                onClick={() => setPeriyot(secenek.key)}
-                className={`${styles.periodButton} ${periyot === secenek.key ? styles.periodActive : ''}`}
-              >
-                {secenek.label}
-              </button>
-            ))}
-            <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} />
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <div className={`${styles.periods} min-w-0 flex-1 sm:flex-none`} aria-label="Rapor dönemi">
+              {PERIYOTLAR.map(secenek => (
+                <button
+                  type="button"
+                  key={secenek.key}
+                  onClick={() => setPeriyot(secenek.key)}
+                  className={`${styles.periodButton} ${periyot === secenek.key ? styles.periodActive : ''}`}
+                >
+                  {secenek.label}
+                </button>
+              ))}
+            </div>
+            <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} className="min-w-[88px] justify-center" />
           </div>
         </header>
         <OgrenmeAraciPerformansi dagilim={data.arac_turu_dagilimi} />

@@ -26,6 +26,9 @@ export interface UttLigSatiri {
   yanlis_cevap_kaybi: number;
   oneri_kaybi: number;
   toplam_puan: number;
+  toplam_kazanc?: number;
+  toplam_kayip?: number;
+  detay_gorulebilir?: boolean;
   benim: boolean;
 }
 
@@ -65,6 +68,11 @@ export interface UttAylikKursu {
 export interface UttLigSonuc {
   tip: "utt";
   lig: UttLigSatiri[];
+  ligler: {
+    bolge: UttLigSatiri[];
+    takim: UttLigSatiri[];
+    firma: UttLigSatiri[];
+  };
   haftalik_konum: UttHaftalikKonum;
   aylik_kursu: UttAylikKursu;
 }
@@ -118,6 +126,36 @@ function ligOlustur(
     ...kimligeGore.get(sirali.kullanici_id)!,
     sira: sirali.sira,
   }));
+}
+
+function uttAyrintisiniSinirla<T extends UttLigSatiri>(satir: T, kullaniciId: string): T {
+  const toplam_kazanc = satir.izleme_puani + satir.cevaplama_puani + satir.oneri_puani
+    + satir.extra_puani + (satir.eclub_puani ?? 0);
+  const toplam_kayip = satir.ileri_sarma_kaybi + satir.yanlis_cevap_kaybi + satir.oneri_kaybi;
+  const kendiSatiri = satir.kullanici_id === kullaniciId;
+
+  if (kendiSatiri) {
+    return { ...satir, toplam_kazanc, toplam_kayip, detay_gorulebilir: true };
+  }
+
+  return {
+    ...satir,
+    toplam_kazanc,
+    toplam_kayip,
+    detay_gorulebilir: false,
+    izleme_puani: 0,
+    cevaplama_puani: 0,
+    oneri_puani: 0,
+    extra_puani: 0,
+    eclub_puani: 0,
+    ileri_sarma_kaybi: 0,
+    yanlis_cevap_kaybi: 0,
+    oneri_kaybi: 0,
+  };
+}
+
+function uttListesiniSinirla<T extends UttLigSatiri>(satirlar: T[], kullaniciId: string): T[] {
+  return satirlar.map((satir) => uttAyrintisiniSinirla(satir, kullaniciId));
 }
 
 function konumOzeti(
@@ -199,6 +237,8 @@ export async function getUttLig(
   const sirketToplamUtt = buHaftaUttleri.filter(sirketKapsami).length;
 
   const lig = ligOlustur(tumUttler, kullanici_id, bolgeKapsami, false, fotoMap);
+  const seciliDonemTakimLigi = ligOlustur(tumUttler, kullanici_id, takimKapsami, false, fotoMap);
+  const seciliDonemFirmaLigi = ligOlustur(tumUttler, kullanici_id, sirketKapsami, false, fotoMap);
   const bolgeLigi = ligOlustur(buHaftaUttleri, kullanici_id, bolgeKapsami, true, fotoMap);
   const oncekiBolgeLigi = ligOlustur(oncekiHaftaUttleri, kullanici_id, bolgeKapsami, true, fotoMap);
   const takimLigi = ligOlustur(buHaftaUttleri, kullanici_id, takimKapsami, true, fotoMap);
@@ -237,9 +277,9 @@ export async function getUttLig(
     bolge: konumOzeti(bolgeLigi, oncekiBolgeLigi, kullanici_id, bolgeToplamUtt),
     takim: konumOzeti(takimLigi, oncekiTakimLigi, kullanici_id, takimToplamUtt),
     sirket: konumOzeti(sirketLigi, oncekiSirketLigi, kullanici_id, sirketToplamUtt),
-    bolge_ligi,
-    takim_ligi,
-    sirket_ligi,
+    bolge_ligi: uttListesiniSinirla(bolge_ligi, kullanici_id),
+    takim_ligi: uttListesiniSinirla(takim_ligi, kullanici_id),
+    sirket_ligi: uttListesiniSinirla(sirket_ligi, kullanici_id),
   };
 
   // Bir önceki tamamlanan ayın kürsü ligleri ve sıralama değişimleri
@@ -281,10 +321,22 @@ export async function getUttLig(
     ay: oncekiAy.ay,
     yil: oncekiAy.yil,
     ay_adi: AY_ADLARI[oncekiAy.ay - 1] ?? `${oncekiAy.ay}. Ay`,
-    bolge_top3: aylik_bolge_top3,
-    takim_top3: aylik_takim_top3,
-    sirket_top3: aylik_sirket_top3,
+    bolge_top3: uttListesiniSinirla(aylik_bolge_top3, kullanici_id),
+    takim_top3: uttListesiniSinirla(aylik_takim_top3, kullanici_id),
+    sirket_top3: uttListesiniSinirla(aylik_sirket_top3, kullanici_id),
   };
 
-  return { tip: "utt", lig, haftalik_konum, aylik_kursu };
+  const sinirliBolgeLigi = uttListesiniSinirla(lig, kullanici_id);
+
+  return {
+    tip: "utt",
+    lig: sinirliBolgeLigi,
+    ligler: {
+      bolge: sinirliBolgeLigi,
+      takim: uttListesiniSinirla(seciliDonemTakimLigi, kullanici_id),
+      firma: uttListesiniSinirla(seciliDonemFirmaLigi, kullanici_id),
+    },
+    haftalik_konum,
+    aylik_kursu,
+  };
 }

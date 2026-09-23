@@ -107,6 +107,12 @@ test("UTT Ligdeki Konumun kartı haftalık gerçek sıra ve değişimi kullanır
   assert.deepEqual(sonuc.haftalik_konum.takim, { sira: 2, toplam: 5, degisim: 1 });
   assert.deepEqual(sonuc.haftalik_konum.sirket, { sira: 3, toplam: 6, degisim: 1 });
   assert.ok(!sonuc.haftalik_konum.bolge_ligi.some((satir) => satir.kullanici_id === "u7"));
+  assert.equal(sonuc.ligler.bolge.find((satir) => satir.kullanici_id === "u1")?.detay_gorulebilir, true);
+  const digerUtt = sonuc.ligler.bolge.find((satir) => satir.kullanici_id === "u2");
+  assert.equal(digerUtt?.detay_gorulebilir, false);
+  assert.equal(digerUtt?.toplam_kazanc, 100);
+  assert.equal(digerUtt?.toplam_kayip, 0);
+  assert.equal(digerUtt?.izleme_puani, 0);
 
   const puansiz = mevcut.map((kayit) => ({ ...kayit, izleme_puani: 0, toplam_puan: 0 }));
   const puansizSupabase = {

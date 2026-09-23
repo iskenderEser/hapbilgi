@@ -27,6 +27,9 @@ interface UttSatiri {
   yanlis_cevap_kaybi: number;
   oneri_kaybi: number;
   toplam_puan: number;
+  toplam_kazanc?: number;
+  toplam_kayip?: number;
+  detay_gorulebilir?: boolean;
   benim?: boolean;
 }
 
@@ -58,7 +61,13 @@ interface UttAylikKursu {
   sirket_top3: UttHaftalikKonumSatiri[];
 }
 
-type HBLigiVeri = { tip: "utt"; lig: UttSatiri[]; haftalik_konum: UttHaftalikKonum; aylik_kursu?: UttAylikKursu } | SahaLigSonuc;
+type HBLigiVeri = {
+  tip: "utt";
+  lig: UttSatiri[];
+  ligler?: { bolge: UttSatiri[]; takim: UttSatiri[]; firma: UttSatiri[] };
+  haftalik_konum: UttHaftalikKonum;
+  aylik_kursu?: UttAylikKursu;
+} | SahaLigSonuc;
 
 export default function HBLigiPage() {
   const router = useRouter();
@@ -101,13 +110,13 @@ export default function HBLigiPage() {
       const response = await fetch(`/t-club-ligi/api?${params.toString()}`);
       const payload = await response.json();
       if (!response.ok) {
-        throw new Error(payload?.hata ?? payload?.message ?? payload?.error ?? "HBLigi verisi alınamadı.");
+        throw new Error(payload?.hata ?? payload?.message ?? payload?.error ?? "T-Club Ligi verisi alınamadı.");
       }
       setVeri(payload as HBLigiVeri);
     } catch (error) {
       if (ilkYukleme) {
         setVeri(null);
-        setHata(error instanceof Error ? error.message : "HBLigi verisi alınamadı.");
+        setHata(error instanceof Error ? error.message : "T-Club Ligi verisi alınamadı.");
       }
     } finally {
       if (ilkYukleme) setLoading(false);
@@ -152,7 +161,7 @@ export default function HBLigiPage() {
     return (
       <div className="flex h-full min-h-0 items-center justify-center bg-[#f6f8fb] p-6">
         <div className="max-w-md rounded-2xl border border-red-100 bg-white p-6 text-center shadow-sm">
-          <div className="text-sm font-extrabold text-[#a43737]">HBLigi yüklenemedi</div>
+          <div className="text-sm font-extrabold text-[#a43737]">T-Club Ligi yüklenemedi</div>
           <p className="mt-1 text-xs font-semibold text-[#7d8ba0]">{hata ?? "Beklenmeyen bir hata oluştu."}</p>
           <button type="button" onClick={() => void veriCek(true)} className="mt-4 rounded-xl bg-[#2f9ae9] px-4 py-2 text-xs font-extrabold text-white">
             Yeniden dene
@@ -167,9 +176,9 @@ export default function HBLigiPage() {
       <div className="h-full min-h-0 overflow-y-auto bg-[linear-gradient(135deg,#f8fbff_0%,#f6f8fb_48%,#fbfcfe_100%)]" style={{ fontFamily: "'Nunito', sans-serif" }}>
         <div className="mx-auto min-h-full max-w-[1440px] px-3 py-3 md:h-full md:min-h-0 md:px-5 md:py-3">
           <LeaguePage
-            satirlar={veri.lig}
+            ligler={veri.ligler ?? { bolge: veri.lig, takim: veri.lig, firma: veri.lig }}
             haftalikKonum={veri.haftalik_konum}
-            aylikKursu={"aylik_kursu" in veri ? veri.aylik_kursu : undefined}
+            aylikKursu={veri.aylik_kursu}
             userId={kullanici.id}
             periyotSecici={periyotSecici}
           />

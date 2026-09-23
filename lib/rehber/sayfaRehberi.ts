@@ -97,7 +97,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
   "tclub-ligi-saha": {
     anahtar: "tclub-ligi-saha",
     baslik: "T-Club Ligi — Saha Perspektifi",
-    ozet: "Sizin video izleme, soru yanıtlama ve öneri aktivitelerinden elde ettiğiniz lig puanlarını ve dönemsel sıralamalarınızı gösterir.",
+    ozet: "Seçtiğiniz dönemdeki öğrenme aracı tamamlamaları, cevaplar, öneriler ve E-Club hareketlerinden oluşan net puanınızı ve sıralamanızı gösterir.",
     maddeler: [],
   },
 
@@ -113,8 +113,26 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
   "raporlar-utt": {
     anahtar: "raporlar-utt",
     baslik: "T-Club Raporları",
-    ozet: "Video izleme, soru yanıtlama ve öneri başarılarınızdan kazandığınız puanları, davranış kayıplarınızı ve ürün bazlı performansınızı analiz etmenizi sağlar.",
-    maddeler: [],
+    ozet: "Seçtiğiniz dönemde T-Club kapsamındaki kişisel öğrenme ve puan performansınızı gösterir.",
+    maddeler: [
+      {
+        baslik: "Puan Özeti",
+        aciklama: "Öğrenme araçlarından, doğru cevaplardan, önerilerden, Extra puandan ve E-Club katkısından elde ettiğiniz kazanımları; ileri sarma, yanlış cevap ve öneri kayıplarıyla birlikte gösterir.",
+      },
+      {
+        baslik: "Performans Dağılımı",
+        aciklama: "Sonuçlarınızı öğrenme aracı, eğitim kategorisi ve ürün bazında incelemenizi sağlar.",
+      },
+      {
+        baslik: "Etkileşimler",
+        aciklama: "Beğendiğiniz ve favorilerinize eklediğiniz yayınları gösterir.",
+      },
+      {
+        baslik: "Dönem Seçimi",
+        aciklama: "Gün, hafta, ay, dönem veya yıl seçenekleriyle rapor aralığını değiştirebilirsiniz.",
+      },
+    ],
+    ipucu: "Net puanınız, toplam kazanımlarınızdan puan kayıplarınız çıkarılarak hesaplanır.",
   },
 
   // ─── 6. C-CLUB LİGİ (SAYFA BAŞLIĞI STANDARDI) ─────────────────────────────
