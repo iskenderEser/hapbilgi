@@ -74,7 +74,7 @@ export default function MobilDrawer(props: MobilDrawerProps) {
     });
     return kapali;
   });
-  const [acikAltOgeler, setAcikAltOgeler] = useState<Set<string>>(new Set());
+  const [altOgeDurumlari, setAltOgeDurumlari] = useState<Map<string, boolean>>(new Map());
 
   const grupToggle = (baslik: string) =>
     setKapaliGruplar((onceki) => {
@@ -125,17 +125,18 @@ export default function MobilDrawer(props: MobilDrawerProps) {
       const p = cozPath(alt);
       return alt.tamEslesme ? pathname === p : pathname.startsWith(p);
     });
-    const altAcik = acikAltOgeler.has(oge.etiket) || altAktif;
+    const altAcik = altOgeDurumlari.get(oge.etiket) ?? altAktif;
     const sayi = rozetSayisi(oge);
     return (
       <div className="flex flex-col gap-0.5">
         <button
           type="button"
-          onClick={() => setAcikAltOgeler((onceki) => {
-            const yeni = new Set(onceki);
-            if (altAcik) yeni.delete(oge.etiket); else yeni.add(oge.etiket);
+          onClick={() => setAltOgeDurumlari((onceki) => {
+            const yeni = new Map(onceki);
+            yeni.set(oge.etiket, !altAcik);
             return yeni;
           })}
+          aria-expanded={altAcik}
           className="flex w-full cursor-pointer items-center justify-between border-none bg-transparent text-left"
           style={{ padding: girintili ? "10px 12px 4px 20px" : "10px 12px 4px", fontSize: "14px", fontWeight: 700, color: "#374151", fontFamily: "'Nunito', sans-serif" }}
         >
