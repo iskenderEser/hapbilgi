@@ -26,6 +26,7 @@ export interface LigSatiri {
   cc_referral_puani: number;
   ileri_sarma_kaybi: number;
   yanlis_cevap_kaybi: number;
+  challenge_kaybi?: number;
   toplam_net_puan: number;
   genel_sira: number;
   firma_sirasi: number;
@@ -57,7 +58,9 @@ export default function CcLigiTablosu({ satirlar, yukleniyor }: Props) {
     s.cc_referral_puani;
 
   const toplamKayip = (s: LigSatiri) =>
-    s.ileri_sarma_kaybi + s.yanlis_cevap_kaybi;
+    Number(s.ileri_sarma_kaybi ?? 0) +
+    Number(s.yanlis_cevap_kaybi ?? 0) +
+    Number(s.challenge_kaybi ?? 0);
 
   if (yukleniyor) {
     return (
@@ -128,7 +131,7 @@ export default function CcLigiTablosu({ satirlar, yukleniyor }: Props) {
                   fontFamily: "'Nunito', sans-serif",
                 }}
               >
-                <div className="font-semibold">{s.genel_sira}</div>
+                <div className="font-semibold">{s.firma_sirasi}</div>
                 <div className="font-medium truncate">
                   {s.ad} {s.soyad}
                 </div>
@@ -184,6 +187,7 @@ export default function CcLigiTablosu({ satirlar, yukleniyor }: Props) {
                     </div>
                     <DetaySatiri etiket="İleri Sarma" deger={s.ileri_sarma_kaybi} />
                     <DetaySatiri etiket="Yanlış Cevap" deger={s.yanlis_cevap_kaybi} />
+                    <DetaySatiri etiket="Challenge Kaybı" deger={s.challenge_kaybi ?? 0} />
                   </div>
                 </div>
               )}
@@ -206,6 +210,7 @@ export default function CcLigiTablosu({ satirlar, yukleniyor }: Props) {
               <th className="text-right px-2 py-2.5 text-xs font-semibold border-b" style={{ borderColor: "#e5e7eb", color: YESIL, background: YESIL_ARKA }}>Referral</th>
               <th className="text-right px-2 py-2.5 text-xs font-semibold border-b" style={{ borderColor: "#e5e7eb", color: BORDO, background: KIRMIZI_ARKA }}>İleri Sarma</th>
               <th className="text-right px-2 py-2.5 text-xs font-semibold border-b" style={{ borderColor: "#e5e7eb", color: BORDO, background: KIRMIZI_ARKA }}>Yanlış Cevap</th>
+              <th className="text-right px-2 py-2.5 text-xs font-semibold border-b" style={{ borderColor: "#e5e7eb", color: BORDO, background: KIRMIZI_ARKA }}>Challenge Kaybı</th>
               <th className="text-right px-3 py-2.5 text-xs font-bold border-b" style={{ borderColor: "#e5e7eb" }}>Net</th>
             </tr>
           </thead>
@@ -218,7 +223,7 @@ export default function CcLigiTablosu({ satirlar, yukleniyor }: Props) {
                   color: KOYU_METIN,
                 }}
               >
-                <td className="px-3 py-2.5 font-semibold">{s.genel_sira}</td>
+                <td className="px-3 py-2.5 font-semibold">{s.firma_sirasi}</td>
                 <td className="px-3 py-2.5 font-medium">{s.ad} {s.soyad}</td>
                 <td className="px-2 py-2.5 text-right" style={{ color: YESIL }}>{s.izleme_puani}</td>
                 <td className="px-2 py-2.5 text-right" style={{ color: YESIL }}>{s.cevaplama_puani}</td>
@@ -227,6 +232,7 @@ export default function CcLigiTablosu({ satirlar, yukleniyor }: Props) {
                 <td className="px-2 py-2.5 text-right" style={{ color: YESIL }}>{s.cc_referral_puani}</td>
                 <td className="px-2 py-2.5 text-right" style={{ color: BORDO }}>{s.ileri_sarma_kaybi}</td>
                 <td className="px-2 py-2.5 text-right" style={{ color: BORDO }}>{s.yanlis_cevap_kaybi}</td>
+                <td className="px-2 py-2.5 text-right" style={{ color: BORDO }}>{s.challenge_kaybi ?? 0}</td>
                 <td className="px-3 py-2.5 text-right font-bold">{s.toplam_net_puan}</td>
               </tr>
             ))}

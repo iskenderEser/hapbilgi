@@ -23,6 +23,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowDownRight, ArrowUpRight, Gauge } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import HataMesaji, { useHataMesaji } from "@/components/HataMesaji";
 import { CCLIGI_GORENLERLER, YONETICI_ROLLER, ADMIN_ROLLER } from "@/lib/utils/roller";
@@ -140,10 +141,6 @@ export default function CcLigiPage() {
     );
   }
 
-  // Banner için: içinde bulunulan çeyrek (kullanıcı seçimi banner'ı etkilemez)
-  // Yıl ise kullanıcının seçtiği yıl ile gider — geçmiş yıllarda da geçmiş lideri gösterir
-  const bannerCeyrek = buPeriyot.ceyrek;
-
   // Challenge listesi: her zaman içinde bulunulan ay
   const cListYil = buPeriyot.yil;
   const cListAy = buPeriyot.ay;
@@ -152,6 +149,22 @@ export default function CcLigiPage() {
     setYenilemeAnahtari((deger) => deger + 1);
     await ligiYukle();
   };
+
+  const firmaKazanilanPuani = ligSatirlari.reduce((toplam, satir) => toplam
+    + Number(satir.izleme_puani ?? 0)
+    + Number(satir.cevaplama_puani ?? 0)
+    + Number(satir.extra_puani ?? 0)
+    + Number(satir.cc_gonderme_puani ?? 0)
+    + Number(satir.cc_referral_puani ?? 0), 0);
+  const firmaKaybedilenPuani = ligSatirlari.reduce((toplam, satir) => toplam
+    + Number(satir.ileri_sarma_kaybi ?? 0)
+    + Number(satir.yanlis_cevap_kaybi ?? 0)
+    + Number(satir.challenge_kaybi ?? 0), 0);
+  const firmaNetPuani = ligSatirlari.reduce(
+    (toplam, satir) => toplam + Number(satir.toplam_net_puan ?? 0),
+    0,
+  );
+  const puanYaz = (puan: number) => puan.toLocaleString("tr-TR");
 
   return (
     <div
@@ -208,13 +221,30 @@ export default function CcLigiPage() {
         </div>
 
         {/* Banner */}
-        <CcLigiBanner key={`banner-${yenilemeAnahtari}`} yil={yil} ceyrek={bannerCeyrek} hata={hata} />
+        <CcLigiBanner />
 
         {/* Periyot seçici */}
-        <CcLigiPeriyotSecici
-          periyot={periyot}
-          onPeriyotChange={setPeriyot}
-        />
+        <div className="mb-3">
+          <CcLigiPeriyotSecici
+            periyot={periyot}
+            onPeriyotChange={setPeriyot}
+          />
+        </div>
+
+        <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <article className="flex min-h-[104px] items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50/70 p-4 text-blue-700">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/80 shadow-sm"><Gauge className="h-4 w-4" /></span>
+            <div className="min-w-0"><div className="text-[9px] font-black uppercase tracking-[0.12em] opacity-70">Firma C-Club Net Puanı</div><div className="mt-0.5 text-2xl font-black tabular-nums text-[#10213d]">{ligYukleniyor ? "—" : puanYaz(firmaNetPuani)}</div><div className="mt-1 text-[10px] font-bold leading-4 text-[#718198]">Kazanılan ve kaybedilen C-Club puanlarının farkı</div></div>
+          </article>
+          <article className="flex min-h-[104px] items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-emerald-700">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/80 shadow-sm"><ArrowUpRight className="h-4 w-4" /></span>
+            <div className="min-w-0"><div className="text-[9px] font-black uppercase tracking-[0.12em] opacity-70">Firma C-Club Kazanılan Puanı</div><div className="mt-0.5 text-2xl font-black tabular-nums text-[#10213d]">{ligYukleniyor ? "—" : `+${puanYaz(firmaKazanilanPuani)}`}</div><div className="mt-1 text-[10px] font-bold leading-4 text-[#718198]">İzleme, cevaplama, extra, gönderme ve referral puanlarının toplamı</div></div>
+          </article>
+          <article className="flex min-h-[104px] items-center gap-3 rounded-2xl border border-rose-100 bg-rose-50/70 p-4 text-rose-700">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/80 shadow-sm"><ArrowDownRight className="h-4 w-4" /></span>
+            <div className="min-w-0"><div className="text-[9px] font-black uppercase tracking-[0.12em] opacity-70">Firma C-Club Kaybedilen Puanı</div><div className="mt-0.5 text-2xl font-black tabular-nums text-[#10213d]">{ligYukleniyor ? "—" : firmaKaybedilenPuani ? `−${puanYaz(firmaKaybedilenPuani)}` : "0"}</div><div className="mt-1 text-[10px] font-bold leading-4 text-[#718198]">İleri sarma, yanlış cevaplama ve challenge kaybı puanlarının toplamı</div></div>
+          </article>
+        </div>
 
         {/* Lig tablosu veya Takımlar Akordiyonu */}
         {user && (YONETICI_ROLLER.includes((user.rol ?? "").toLowerCase()) || ADMIN_ROLLER.includes((user.rol ?? "").toLowerCase())) ? (
