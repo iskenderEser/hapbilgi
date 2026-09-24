@@ -7,6 +7,7 @@ import { aktifPeriyot } from "@/lib/zaman/kontrol";
 import HbLigiPeriyotSecici, { type Periyot } from "@/components/hbligi/HbLigiPeriyotSecici";
 import LeaguePage from "@/components/hbligi/league/LeaguePage";
 import FieldLeaguePage from "@/components/hbligi/field/FieldLeaguePage";
+import ProducerLeaguePage, { type UreticiLigBakisi } from "@/components/hbligi/producer/ProducerLeaguePage";
 import type { SahaLigSonuc } from "@/lib/tclub/hbligi/getSahaLig";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 
@@ -79,10 +80,8 @@ export default function HBLigiPage() {
 
   const buPeriyot = aktifPeriyot();
   const [periyot, setPeriyot] = useState<Periyot>("donem");
-  const [yil, setYil] = useState<number>(buPeriyot.yil);
-  const [ay, setAy] = useState<number>(buPeriyot.ay);
-  const [ceyrek, setCeyrek] = useState<number>(buPeriyot.ceyrek);
-  const [hafta, setHafta] = useState<number>(buPeriyot.hafta);
+  const { yil, ay, ceyrek, hafta } = buPeriyot;
+  const [ureticiBakisi, setUreticiBakisi] = useState<UreticiLigBakisi>("genel");
 
   useEffect(() => {
     if (!authYukleniyor && kullanici?.rol.toLowerCase() === "iu") {
@@ -106,6 +105,7 @@ export default function HBLigiPage() {
       if (periyot === "ay") params.set("ay", String(ay));
       if (periyot === "donem") params.set("ceyrek", String(ceyrek));
       if (periyot === "hafta") params.set("hafta", String(hafta));
+      params.set("bakis", ureticiBakisi);
 
       const response = await fetch(`/t-club-ligi/api?${params.toString()}`);
       const payload = await response.json();
@@ -122,7 +122,7 @@ export default function HBLigiPage() {
       if (ilkYukleme) setLoading(false);
       else setYenileniyor(false);
     }
-  }, [kullanici, periyot, yil, ay, ceyrek, hafta]);
+  }, [kullanici, periyot, yil, ay, ceyrek, hafta, ureticiBakisi]);
 
   useEffect(() => {
     void veriCek(true);
@@ -132,15 +132,7 @@ export default function HBLigiPage() {
     <div className="flex flex-wrap items-center gap-2 [&_.hb-ligi-periyot-secici]:mb-0">
       <HbLigiPeriyotSecici
         periyot={periyot}
-        yil={yil}
-        ay={ay}
-        ceyrek={ceyrek}
-        hafta={hafta}
         onPeriyotChange={setPeriyot}
-        onYilChange={setYil}
-        onAyChange={setAy}
-        onCeyrekChange={setCeyrek}
-        onHaftaChange={setHafta}
       />
       <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek()} />
     </div>
@@ -180,6 +172,21 @@ export default function HBLigiPage() {
             haftalikKonum={veri.haftalik_konum}
             aylikKursu={veri.aylik_kursu}
             userId={kullanici.id}
+            periyotSecici={periyotSecici}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (veri.gorunum === "uretici") {
+    return (
+      <div className="h-full min-h-0 overflow-y-auto bg-[linear-gradient(135deg,#f8fbff_0%,#f6f8fb_48%,#fbfcfe_100%)]" style={{ fontFamily: "'Nunito', sans-serif" }}>
+        <div className="mx-auto min-h-full max-w-[1440px] px-3 py-3 md:px-5 md:py-3">
+          <ProducerLeaguePage
+            veri={veri}
+            bakis={ureticiBakisi}
+            onBakisDegistir={setUreticiBakisi}
             periyotSecici={periyotSecici}
           />
         </div>

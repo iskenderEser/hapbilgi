@@ -28,13 +28,12 @@ export function formatPuan(puan: number): string {
   return puan.toLocaleString('tr-TR');
 }
 
-// Periyot listesi — tüm rapor sayfalarında ortak
+export type Periyot = 'bu_gun' | 'bu_hafta' | 'bu_ay' | 'bu_donem' | 'bu_yil';
+
+// Kullanıcıya sunulan periyot listesi — günlük rapor iş ihtiyacına göre kaldırıldı.
 export const PERIYOTLAR = [
-  { key: 'bu_gun', label: 'Günlük' },
   { key: 'bu_hafta', label: 'Haftalık' },
   { key: 'bu_ay', label: 'Aylık' },
   { key: 'bu_donem', label: 'Dönemlik' },
   { key: 'bu_yil', label: 'Yıllık' },
-] as const;
-
-export type Periyot = typeof PERIYOTLAR[number]['key'];
+] as const satisfies readonly { key: Periyot; label: string }[];

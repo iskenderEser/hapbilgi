@@ -6,7 +6,8 @@ import { Activity, ArrowLeft, BarChart3, BookOpenCheck, ChevronDown, CircleMinus
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useRapor } from '@/hooks/useRapor';
 import { YenileButonu } from '@/components/ui/yenile-butonu';
-import { KIRMIZI, GRI_METIN, KOYU_METIN, formatPuan, PERIYOTLAR, type Periyot } from '@/lib/utils/raporUtils';
+import RaporPeriyotSecici from '@/components/raporlar/RaporPeriyotSecici';
+import { KIRMIZI, GRI_METIN, KOYU_METIN, formatPuan, type Periyot } from '@/lib/utils/raporUtils';
 import { TUR_RAPOR_ADI, TUR_SIRA, isIcerikTuru } from '@/lib/video/icerikTuru';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
 import DagilimGrafik from '@/components/raporlar/DagilimGrafik';
@@ -177,18 +178,7 @@ export default function BmRaporPage() {
             </p>
           </div>
           <div className="flex w-full items-center gap-2 sm:w-auto">
-            <div className={`${styles.periods} min-w-0 flex-1 sm:flex-none`} aria-label="Rapor dönemi">
-              {PERIYOTLAR.map(secenek => (
-                <button
-                  type="button"
-                  key={secenek.key}
-                  onClick={() => setPeriyot(secenek.key)}
-                  className={`${styles.periodButton} ${periyot === secenek.key ? styles.periodActive : ''}`}
-                >
-                  {secenek.label}
-                </button>
-              ))}
-            </div>
+            <RaporPeriyotSecici deger={periyot} onDegistir={setPeriyot} />
             <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} className="min-w-[88px] justify-center" />
           </div>
         </header>

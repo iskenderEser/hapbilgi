@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
-import { PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
+import type { Periyot } from "@/lib/utils/raporUtils";
+import RaporPeriyotSecici from "@/components/raporlar/RaporPeriyotSecici";
 
 interface UrunSatir { urun_id: string; urun_adi: string; kutu: number; indirim_tl: number; }
 interface EczaneSatir {
@@ -78,21 +79,7 @@ export default function UttEczanemDokum({ hata }: Props) {
             </CardDescription>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <div className="flex flex-wrap gap-1" aria-label="Mutabakat dönemi">
-              {PERIYOTLAR.map((secenek) => (
-                <Button
-                  type="button"
-                  key={secenek.key}
-                  variant="outline"
-                  size="sm"
-                  aria-pressed={periyot === secenek.key}
-                  onClick={() => setPeriyot(secenek.key)}
-                  className={`h-7 rounded-full px-2.5 text-[10px] font-bold ${periyot === secenek.key ? "border-[#237ac8] bg-[#237ac8] text-white hover:bg-[#1d69ad] hover:text-white" : "border-[#dce5ed] bg-white text-[#6f8298] hover:bg-[#f5f8fb]"}`}
-                >
-                  {secenek.label}
-                </Button>
-              ))}
-            </div>
+            <RaporPeriyotSecici deger={periyot} onDegistir={setPeriyot} />
             <YenileButonu yenileniyor={yenileniyor} onYenile={() => cek()} disabled={yukleniyor} />
           </div>
         </div>

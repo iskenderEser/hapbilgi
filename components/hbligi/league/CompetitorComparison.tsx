@@ -16,6 +16,15 @@ import { ChevronDown, ChevronUp, LockKeyhole } from "lucide-react";
 import type { SiraliSatir } from "./types";
 import styles from "./league.module.css";
 
+export interface OrganizasyonTabloFiltresi {
+  takimlar: Array<{ id: string; ad: string }>;
+  bolgeler: Array<{ id: string; ad: string }>;
+  takimId: string;
+  bolgeId: string;
+  onTakimDegistir: (id: string) => void;
+  onBolgeDegistir: (id: string) => void;
+}
+
 function SiraRozeti({ sira }: { sira: number }) {
   return <span className="text-sm font-semibold tabular-nums text-[#52647c]">{sira}</span>;
 }
@@ -35,10 +44,12 @@ export default function CompetitorComparison({
   satirlar,
   benimId,
   baslik,
+  organizasyonFiltresi,
 }: {
   satirlar: SiraliSatir[];
   benimId: string;
   baslik: string;
+  organizasyonFiltresi?: OrganizasyonTabloFiltresi;
 }) {
   const [acikKullanici, setAcikKullanici] = useState<string | null>(null);
 
@@ -51,11 +62,39 @@ export default function CompetitorComparison({
       </div>
 
       <div className={`${styles.scrollArea} [&_[data-slot=table-container]]:overflow-visible`}>
-        <Table className="min-w-[640px] text-xs [&_td]:h-[54px] [&_td]:py-1.5 [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
+        <Table className={`${organizasyonFiltresi ? "min-w-[860px]" : "min-w-[640px]"} text-xs [&_td]:h-[54px] [&_td]:py-1.5 [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap`}>
           <TableHeader className="sticky top-0 z-10 bg-white">
             <TableRow>
               <TableHead className="h-9 w-14 text-[10px] font-bold uppercase tracking-wide text-[#94a0b1]">Sıra</TableHead>
-              <TableHead className="h-9 min-w-[220px] text-[10px] font-bold uppercase tracking-wide text-[#94a0b1]">Katılımcı</TableHead>
+              <TableHead className="h-9 min-w-[220px] text-[10px] font-bold uppercase tracking-wide text-[#94a0b1]">UTT</TableHead>
+              {organizasyonFiltresi && (
+                <>
+                  <TableHead className="h-9 min-w-[130px] align-middle text-left text-[10px] font-bold uppercase tracking-wide text-[#94a0b1]">
+                    <label className="sr-only" htmlFor="lig-takim-filtresi">Takım filtresi</label>
+                    <select
+                      id="lig-takim-filtresi"
+                      value={organizasyonFiltresi.takimId}
+                      onChange={(event) => organizasyonFiltresi.onTakimDegistir(event.target.value)}
+                      className={`w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-[10px] font-bold uppercase tracking-wide outline-none ${organizasyonFiltresi.takimId ? "text-[#2f80ed]" : "text-[#94a0b1]"}`}
+                    >
+                      <option value="">Takım ▾</option>
+                      {organizasyonFiltresi.takimlar.map((takim) => <option key={takim.id} value={takim.id}>{takim.ad}</option>)}
+                    </select>
+                  </TableHead>
+                  <TableHead className="h-9 min-w-[130px] align-middle text-left text-[10px] font-bold uppercase tracking-wide text-[#94a0b1]">
+                    <label className="sr-only" htmlFor="lig-bolge-filtresi">Bölge filtresi</label>
+                    <select
+                      id="lig-bolge-filtresi"
+                      value={organizasyonFiltresi.bolgeId}
+                      onChange={(event) => organizasyonFiltresi.onBolgeDegistir(event.target.value)}
+                      className={`w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-[10px] font-bold uppercase tracking-wide outline-none ${organizasyonFiltresi.bolgeId ? "text-[#2f80ed]" : "text-[#94a0b1]"}`}
+                    >
+                      <option value="">Bölge ▾</option>
+                      {organizasyonFiltresi.bolgeler.map((bolge) => <option key={bolge.id} value={bolge.id}>{bolge.ad}</option>)}
+                    </select>
+                  </TableHead>
+                </>
+              )}
               <TableHead className="h-9 text-center text-[10px] font-bold uppercase tracking-wide text-[#52647c]">Kazanılan</TableHead>
               <TableHead className="h-9 text-center text-[10px] font-bold uppercase tracking-wide text-[#52647c]">Kaybedilen</TableHead>
               <TableHead className="h-9 text-center text-[10px] font-bold uppercase tracking-wide text-[#52647c]">Net Puan</TableHead>
@@ -85,9 +124,19 @@ export default function CompetitorComparison({
                           <span className="truncate">{satir.ad}</span>
                           {benim && <Badge variant="secondary" className="text-[10px]">Sen</Badge>}
                         </span>
-                        <span className="block text-[9px] font-medium text-[#8a98aa]">{satir.bolge}</span>
+                        <span className="block text-[9px] font-medium text-[#8a98aa]">
+                          {satir.bolge}
+                          {satir.genel_sira ? ` · Genel lig #${satir.genel_sira}` : ""}
+                          {satir.etkilesilen_yayin_sayisi ? ` · ${satir.etkilesilen_yayin_sayisi} yayın` : ""}
+                        </span>
                       </div>
                     </TableCell>
+                    {organizasyonFiltresi && (
+                      <>
+                        <TableCell className="font-semibold text-[#52647c]">{satir.takim}</TableCell>
+                        <TableCell className="font-semibold text-[#52647c]">{satir.bolge}</TableCell>
+                      </>
+                    )}
                     <TableCell className="text-center font-bold tabular-nums text-emerald-700">
                       +{toplamKazanc.toLocaleString("tr-TR")}
                     </TableCell>
@@ -125,7 +174,7 @@ export default function CompetitorComparison({
 
                   {acik && detayGorulebilir && (
                     <TableRow id={ayrintiId} className="border-[#dfe8f2] bg-[#f8fbff] hover:bg-[#f8fbff]">
-                      <TableCell colSpan={6} className="h-auto whitespace-normal px-4 py-3">
+                      <TableCell colSpan={organizasyonFiltresi ? 8 : 6} className="h-auto whitespace-normal px-4 py-3">
                         <div className="grid gap-3 md:grid-cols-2">
                           <div>
                             <div className="mb-2 flex items-center justify-between">

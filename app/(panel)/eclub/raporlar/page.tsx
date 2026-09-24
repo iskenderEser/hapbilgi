@@ -18,10 +18,11 @@ import DagilimGrafik from "@/components/raporlar/DagilimGrafik";
 import EclubYonetimHiyerarsisi from "@/components/eclub/EclubYonetimHiyerarsisi";
 import { useRapor } from "@/hooks/useRapor";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
+import RaporPeriyotSecici from "@/components/raporlar/RaporPeriyotSecici";
 import type { EclubRaporEczane, EclubRaporIcerik, EclubRaporOzet } from "@/lib/eclub/rapor";
 import type { EclubKapsamUtt, EclubYonetimKapsami } from "@/lib/eclub/yonetimKapsami";
 import { eclubKisiRolEtiketi } from "@/lib/utils/roller";
-import { formatPuan, GRI_METIN, KIRMIZI, PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
+import { formatPuan, GRI_METIN, KIRMIZI, type Periyot } from "@/lib/utils/raporUtils";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import OgrenmeAraciPerformansi from "@/components/raporlar/OgrenmeAraciPerformansi";
 import type { AracTuruRaporSatiri } from "@/lib/rapor/paylasilan/aracTuruDagilimi";
@@ -136,17 +137,8 @@ export default function EclubRaporlarPage() {
               {data.kullanici.ad} {data.kullanici.soyad} · {data.kullanici.rol.toUpperCase()}
             </p>
           </div>
-          <div className={styles.periods} aria-label="Rapor dönemi">
-            {PERIYOTLAR.map((secenek) => (
-              <button
-                type="button"
-                key={secenek.key}
-                onClick={() => setPeriyot(secenek.key)}
-                className={`${styles.periodButton} ${periyot === secenek.key ? styles.periodActive : ""}`}
-              >
-                {secenek.label}
-              </button>
-            ))}
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <RaporPeriyotSecici deger={periyot} onDegistir={setPeriyot} />
             <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} />
           </div>
         </header>

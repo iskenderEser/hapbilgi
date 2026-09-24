@@ -6,6 +6,8 @@ export interface LigSatiri {
   ad: string;
   bolge: string;
   takim?: string;
+  takim_id?: string | null;
+  bolge_id?: string | null;
   fotograf_url?: string | null;
   izleme_puani: number;
   cevaplama_puani: number;
@@ -20,6 +22,9 @@ export interface LigSatiri {
   toplam_kayip?: number;
   detay_gorulebilir?: boolean;
   benim?: boolean;
+  genel_sira?: number;
+  etkilesim_sayisi?: number;
+  etkilesilen_yayin_sayisi?: number;
 }
 
 export interface HaftalikKonumSatiri extends LigSatiri {

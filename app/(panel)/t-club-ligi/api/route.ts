@@ -9,9 +9,9 @@ import { hataYaniti, sunucuHatasi, yetkiHatasi, validasyonHatasi } from "@/lib/u
 import { getUttLig } from "@/lib/tclub/hbligi/getUttLig";
 import { getSahaLig, type SahaGorunumu } from "@/lib/tclub/hbligi/getSahaLig";
 import { getBmPerformans } from "@/lib/tclub/hbligi/getBmPerformans";
+import { getUreticiEtkiLigi } from "@/lib/tclub/hbligi/getUreticiEtkiLigi";
 import type { LigPeriyot } from "@/lib/tclub/hbligi/ligRpcCagir";
 import { rolCozucu } from "@/lib/utils/rolCozucu";
-import { ureticiYetenegi, type RaporScope } from "@/lib/uretici/yetenekler";
 import {
   ADMIN_ROLLER,
   IU_ROLU,
@@ -88,13 +88,9 @@ export async function GET(request: NextRequest) {
       }
 
       let gorunum: SahaGorunumu | null = null;
-      let ureticiScope: RaporScope | null = null;
       if (rol === "bm") gorunum = "bm";
       else if (rol === "tm") gorunum = "tm";
-      else if (URETICI_ROLLER.includes(rol)) {
-        gorunum = "uretici";
-        ureticiScope = ureticiYetenegi(rol)?.raporScope ?? null;
-      }
+      else if (URETICI_ROLLER.includes(rol)) gorunum = "uretici";
       else if (YONETICI_ROLLER.includes(rol)) gorunum = "yonetici";
       else if (ADMIN_ROLLER.includes(rol)) gorunum = "admin";
       else if (rol === IU_ROLU) gorunum = "admin";
@@ -106,13 +102,16 @@ export async function GET(request: NextRequest) {
         firma_id: kullanici.firma_id,
         takim_id: kullanici.takim_id,
         bolge_id: kullanici.bolge_id,
-        uretici_scope: ureticiScope,
       }, periyot);
 
-      if (gorunum !== "bm") {
-        const takimKapsamli = gorunum === "tm"
-          || (gorunum === "uretici" && ureticiScope === "takim");
-        sonuc.bm_performans = await getBmPerformans(
+      const bakis = searchParams.get("bakis") === "yayinlarim" ? "yayinlarim" : "genel";
+      const gosterilecekSonuc = gorunum === "uretici" && bakis === "yayinlarim"
+        ? await getUreticiEtkiLigi(adminSupabase, sonuc, kullanici.kullanici_id, periyot)
+        : { ...sonuc, bakis: "genel" as const };
+
+      if (gorunum !== "bm" && gorunum !== "uretici") {
+        const takimKapsamli = gorunum === "tm";
+        gosterilecekSonuc.bm_performans = await getBmPerformans(
           adminSupabase,
           {
             firma_id: gorunum === "admin" ? null : kullanici.firma_id,
@@ -122,7 +121,7 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      return NextResponse.json(sonuc, { status: 200 });
+      return NextResponse.json(gosterilecekSonuc, { status: 200 });
 
     } catch (err) {
       return hataYaniti(

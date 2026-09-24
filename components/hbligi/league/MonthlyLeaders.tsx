@@ -6,11 +6,13 @@ import styles from "./league.module.css";
 export default function MonthlyLeaders({
   top3,
   ayAdi,
+  baslik: ozelBaslik,
 }: {
   top3: SiraliSatir[];
   ayAdi?: string;
+  baslik?: string;
 }) {
-  const baslik = ayAdi ? `${ayAdi} Ayının Öğrenme Liderleri` : "Ayın Öğrenme Liderleri";
+  const baslik = ozelBaslik ?? (ayAdi ? `${ayAdi} Ayının Öğrenme Liderleri` : "Ayın Öğrenme Liderleri");
   const baslikKelimeleri = baslik.split(" ");
 
   return (

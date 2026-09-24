@@ -16,8 +16,9 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
-import { ECZANEM_RAPOR_GOREN_ROLLER, ECZANEM_TALEP_ACAN_ROLLER, YONETICI_ROLLER, ROL_ADLARI } from "@/lib/utils/roller";
-import { GRI_METIN, KIRMIZI, PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
+import RaporPeriyotSecici from "@/components/raporlar/RaporPeriyotSecici";
+import { ECZANEM_RAPOR_GOREN_ROLLER, ECZANEM_TALEP_ACAN_ROLLER, YONETICI_ROLLER } from "@/lib/utils/roller";
+import { GRI_METIN, KIRMIZI, type Periyot } from "@/lib/utils/raporUtils";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import OgrenmeAraciPerformansi from "@/components/raporlar/OgrenmeAraciPerformansi";
 import type { AracTuruRaporSatiri } from "@/lib/rapor/paylasilan/aracTuruDagilimi";
@@ -275,18 +276,7 @@ export default function EczanemRaporPage() {
           </div>
 
           <div className="flex w-full items-center gap-2 sm:w-auto">
-            <div className={`${styles.periods} min-w-0 flex-1 sm:flex-none`} aria-label="Rapor dönemi">
-              {PERIYOTLAR.map((secenek) => (
-                <button
-                  type="button"
-                  key={secenek.key}
-                  onClick={() => setPeriyot(secenek.key)}
-                  className={`${styles.periodButton} ${periyot === secenek.key ? styles.periodActive : ""}`}
-                >
-                  {secenek.label}
-                </button>
-              ))}
-            </div>
+            <RaporPeriyotSecici deger={periyot} onDegistir={setPeriyot} />
             <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek(true)} className="min-w-[88px] justify-center" />
           </div>
         </header>

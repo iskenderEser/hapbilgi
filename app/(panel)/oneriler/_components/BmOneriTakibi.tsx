@@ -7,8 +7,8 @@ import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKa
 import { DahaFazlaGoster, useListe } from "@/components/liste";
 import VideoOnizleme from "@/components/video/VideoOnizleme";
 import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
-import { PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
-import reportStyles from "@/app/(panel)/raporlar/utt/utt-report.module.css";
+import type { Periyot } from "@/lib/utils/raporUtils";
+import RaporPeriyotSecici from "@/components/raporlar/RaporPeriyotSecici";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 
@@ -148,19 +148,7 @@ export default function BmOneriTakibi({
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
           <div className="flex items-center gap-2">
-            <div className={reportStyles.periods} aria-label="Öneri takip dönemi">
-              {PERIYOTLAR.map((secenek) => (
-                <button
-                  type="button"
-                  key={secenek.key}
-                  onClick={() => onPeriyotDegistir(secenek.key)}
-                  aria-pressed={periyot === secenek.key}
-                  className={`${reportStyles.periodButton} ${periyot === secenek.key ? reportStyles.periodActive : ""}`}
-                >
-                  {secenek.label}
-                </button>
-              ))}
-            </div>
+            <RaporPeriyotSecici deger={periyot} onDegistir={onPeriyotDegistir} />
             {onYenile && <YenileButonu yenileniyor={yenileniyor} onYenile={onYenile} />}
           </div>
           <button type="button" onClick={() => router.push("/yayindaki-videolar")} className="w-fit rounded-xl bg-[#2f7fc7] px-4 py-2.5 text-xs font-extrabold text-white shadow-sm hover:bg-[#256daf]">

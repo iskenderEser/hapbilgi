@@ -10,6 +10,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { periyotAltKirilim } from "../lib/utils/periyotAltKirilim.ts";
+import { PERIYOTLAR } from "../lib/utils/raporUtils.ts";
+
+test("rapor arayüzü günlük seçeneği sunmaz", () => {
+  assert.deepEqual(PERIYOTLAR.map((periyot) => periyot.key), ["bu_hafta", "bu_ay", "bu_donem", "bu_yil"]);
+});
 
 const trSaat = (iso: string) =>
   new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Istanbul", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(iso));

@@ -48,10 +48,7 @@ export default function CcLigiPage() {
   // Periyot state
   const buPeriyot = aktifPeriyot();
   const [periyot, setPeriyot] = useState<Periyot>("ay");
-  const [yil, setYil] = useState<number>(buPeriyot.yil);
-  const [ay, setAy] = useState<number>(buPeriyot.ay); // 1-12
-  const [ceyrek, setCeyrek] = useState<number>(buPeriyot.ceyrek);
-  const [hafta, setHafta] = useState<number>(buPeriyot.hafta);
+  const { yil, ay, ceyrek, hafta } = buPeriyot;
 
   // Lig tablosu state
   const [ligSatirlari, setLigSatirlari] = useState<LigSatiri[]>([]);
@@ -216,15 +213,7 @@ export default function CcLigiPage() {
         {/* Periyot seçici */}
         <CcLigiPeriyotSecici
           periyot={periyot}
-          yil={yil}
-          ay={ay}
-          ceyrek={ceyrek}
-          hafta={hafta}
           onPeriyotChange={setPeriyot}
-          onYilChange={setYil}
-          onAyChange={setAy}
-          onCeyrekChange={setCeyrek}
-          onHaftaChange={setHafta}
         />
 
         {/* Lig tablosu veya Takımlar Akordiyonu */}

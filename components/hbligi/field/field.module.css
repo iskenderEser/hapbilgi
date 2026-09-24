@@ -133,6 +133,7 @@
 
 .topGrid { grid-template-columns: minmax(0, 1.5fr) minmax(310px, .82fr); }
 .bottomGrid { grid-template-columns: minmax(0, 1.58fr) minmax(300px, .74fr); }
+.equalBottomGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 .panel { padding: 15px; }
 
@@ -219,6 +220,9 @@
 .unitScore strong { color: #268fdf; font-size: 15px; font-weight: 900; }
 
 .composition { display: grid; grid-template-columns: 132px minmax(0, 1fr); align-items: center; gap: 8px; }
+.composition.compositionVertical { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 10px; }
+.compositionVertical .donut { width: 170px; max-width: 100%; }
+.compositionVertical .legend { width: 100%; }
 .donut { position: relative; }
 .donutCenter { position: absolute; inset: 0; display: grid; align-content: center; justify-items: center; pointer-events: none; }
 .donutCenter small { color: #8795a8; font-size: 8px; font-weight: 800; text-transform: uppercase; }

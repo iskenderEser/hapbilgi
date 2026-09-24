@@ -35,10 +35,7 @@ export default function EclubLigiPage() {
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const bugun = aktifPeriyot();
   const [periyot, setPeriyot] = useState<Periyot>("ay");
-  const [yil, setYil] = useState(bugun.yil);
-  const [ay, setAy] = useState(bugun.ay);
-  const [ceyrek, setCeyrek] = useState(bugun.ceyrek);
-  const [hafta, setHafta] = useState(bugun.hafta);
+  const { yil, ay, ceyrek, hafta } = bugun;
   const [data, setData] = useState<LigData | null>(null);
   const [loading, setLoading] = useState(true);
   const [yenileniyor, setYenileniyor] = useState(false);
@@ -140,15 +137,7 @@ export default function EclubLigiPage() {
   const periyotSecici = (
     <HbLigiPeriyotSecici
       periyot={periyot}
-      yil={yil}
-      ay={ay}
-      ceyrek={ceyrek}
-      hafta={hafta}
       onPeriyotChange={setPeriyot}
-      onYilChange={setYil}
-      onAyChange={setAy}
-      onCeyrekChange={setCeyrek}
-      onHaftaChange={setHafta}
     />
   );
 

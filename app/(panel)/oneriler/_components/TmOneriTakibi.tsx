@@ -3,10 +3,10 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2, ChevronDown, Clock3, Send, TriangleAlert, X } from "lucide-react";
 import { AracVarsayilanKapak } from "@/components/ogrenme-araci/AracVarsayilanKapak";
-import { PERIYOTLAR, type Periyot } from "@/lib/utils/raporUtils";
+import type { Periyot } from "@/lib/utils/raporUtils";
+import RaporPeriyotSecici from "@/components/raporlar/RaporPeriyotSecici";
 import { yayinThumbnailIstemciCoz } from "@/lib/ogrenmeAraci/thumbnailIstemci";
 import VideoOnizleme from "@/components/video/VideoOnizleme";
-import reportStyles from "@/app/(panel)/raporlar/utt/utt-report.module.css";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
 
@@ -166,19 +166,7 @@ export default function TmOneriTakibi({
           <p className="mt-1 max-w-3xl text-sm leading-5 text-[#6b7f9b]">Takımınızdaki BM’lerin UTT ve KD_UTT’lere gönderdiği önerileri izleyin.</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className={reportStyles.periods} aria-label="Öneri takip dönemi">
-            {PERIYOTLAR.map((secenek) => (
-              <button
-                type="button"
-                key={secenek.key}
-                onClick={() => onPeriyotDegistir(secenek.key)}
-                aria-pressed={periyot === secenek.key}
-                className={`${reportStyles.periodButton} ${periyot === secenek.key ? reportStyles.periodActive : ""}`}
-              >
-                {secenek.label}
-              </button>
-            ))}
-          </div>
+          <RaporPeriyotSecici deger={periyot} onDegistir={onPeriyotDegistir} />
           {onYenile && <YenileButonu yenileniyor={yenileniyor} onYenile={onYenile} />}
         </div>
       </header>

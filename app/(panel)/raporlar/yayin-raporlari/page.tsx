@@ -22,7 +22,8 @@ import {
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useUretimRaporu } from './_hooks/useUretimRaporu';
 import { YenileButonu } from '@/components/ui/yenile-butonu';
-import { formatPuan, GRI_METIN, KIRMIZI, PERIYOTLAR, type Periyot } from '@/lib/utils/raporUtils';
+import RaporPeriyotSecici from '@/components/raporlar/RaporPeriyotSecici';
+import { formatPuan, type Periyot } from '@/lib/utils/raporUtils';
 import SayfaRehberi from '@/components/rehber/SayfaRehberi';
 import UretimVaryantlariModal from '@/components/rehber/UretimVaryantlariModal';
 import OgrenmeAraciPerformansi from '@/components/raporlar/OgrenmeAraciPerformansi';
@@ -62,12 +63,12 @@ const VARYANT_ROZETLERI: Record<string, { etiket: string; arkaPlan: string; renk
 };
 
 export default function UretimRaporlariPage() {
-  const { kullanici, yukleniyor } = useAuth();
+  const { kullanici } = useAuth();
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
   const [seciliEgitimTuru, setSeciliEgitimTuru] = useState<string | null | undefined>(undefined);
   const [varyantModalAcik, setVaryantModalAcik] = useState(false);
 
-  const { data, loading, yenileniyor, error, yenile } = useUretimRaporu(
+  const { data, yenileniyor, error, yenile } = useUretimRaporu(
     periyot,
     kullanici?.id,
   );
@@ -121,18 +122,7 @@ export default function UretimRaporlariPage() {
             </p>
           </div>
           <div className="flex w-full items-center gap-2 sm:w-auto">
-            <div className={`${styles.periods} min-w-0 flex-1 sm:flex-none`} aria-label="Rapor dönemi">
-              {PERIYOTLAR.map((secenek) => (
-                <button
-                  type="button"
-                  key={secenek.key}
-                  onClick={() => setPeriyot(secenek.key)}
-                  className={`${styles.periodButton} ${periyot === secenek.key ? styles.periodActive : ''}`}
-                >
-                  {secenek.label}
-                </button>
-              ))}
-            </div>
+            <RaporPeriyotSecici deger={periyot} onDegistir={setPeriyot} />
             <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} className="min-w-[88px] justify-center" />
           </div>
         </header>

@@ -17,7 +17,8 @@ import {
 import { useAuth } from '@/app/providers/AuthProvider';
 import { useRapor } from '@/hooks/useRapor';
 import { YenileButonu } from '@/components/ui/yenile-butonu';
-import { formatPuan, GRI_METIN, KIRMIZI, PERIYOTLAR, type Periyot } from '@/lib/utils/raporUtils';
+import RaporPeriyotSecici from '@/components/raporlar/RaporPeriyotSecici';
+import { formatPuan, GRI_METIN, KIRMIZI, type Periyot } from '@/lib/utils/raporUtils';
 import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
 import SayfaRehberi from '@/components/rehber/SayfaRehberi';
 import OgrenmeAraciPerformansi from '@/components/raporlar/OgrenmeAraciPerformansi';
@@ -170,18 +171,7 @@ export default function UreticiRaporPage() {
           </div>
 
           <div className="flex w-full items-center gap-2 sm:w-auto">
-            <div className={`${styles.periods} min-w-0 flex-1 sm:flex-none`} aria-label="Rapor dönemi">
-              {PERIYOTLAR.map(secenek => (
-                <button
-                  type="button"
-                  key={secenek.key}
-                  onClick={() => setPeriyot(secenek.key)}
-                  className={`${styles.periodButton} ${periyot === secenek.key ? styles.periodActive : ''}`}
-                >
-                  {secenek.label}
-                </button>
-              ))}
-            </div>
+            <RaporPeriyotSecici deger={periyot} onDegistir={setPeriyot} />
             <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} className="min-w-[88px] justify-center" />
           </div>
         </header>
