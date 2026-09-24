@@ -23,6 +23,7 @@ import { prefetchTalepMerkezi } from "@/app/(panel)/talepler/_hooks/talepOnbelle
 import { prefetchYayinOzet } from "@/app/(panel)/yayin-yonetimi/_hooks/ozetOnbellek";
 import { prefetchYayinKatalog } from "@/app/(panel)/yayindaki-videolar/_components/katalogOnbellek";
 import { prefetchUretimRaporu } from "@/app/(panel)/raporlar/yayin-raporlari/_hooks/uretimRaporuOnbellek";
+import { useAuth } from "@/app/providers/AuthProvider";
 
 type SolListeProps = NavContext & {
   badge: Record<string, number>;
@@ -32,6 +33,7 @@ type SolListeProps = NavContext & {
 
 export default function SolListe(props: SolListeProps) {
   const gruplar = props.gruplar ?? PANEL_NAV;
+  const { kullanici } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -112,7 +114,7 @@ export default function SolListe(props: SolListeProps) {
       if (path === "/yayin-takip") void prefetchTalepMerkezi();
       else if (path === "/yayin-yonetimi") void prefetchYayinOzet();
       else if (path === "/sizin-yayinlariniz") void prefetchYayinKatalog("benim");
-      else if (path === "/raporlar/yayin-raporlari") void prefetchUretimRaporu("bu_ay");
+      else if (path === "/raporlar/yayin-raporlari" && kullanici?.id) void prefetchUretimRaporu("bu_ay", kullanici.id);
     };
 
     return (

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { yayinDetayModaliGorebilir } from "@/lib/utils/roller";
 import type { AracTuruRaporSatiri } from "@/lib/rapor/paylasilan/aracTuruDagilimi";
-import { Video, Headphones, Image as ImageIcon, BookOpen, Users, Sparkles, ExternalLink } from "lucide-react";
+import { Video, Headphones, Image as ImageIcon, BookOpen, Users, Sparkles, ExternalLink, Info } from "lucide-react";
 import YayinDetayModal from "./YayinDetayModal";
 
 const ADLAR: Record<AracTuruRaporSatiri["arac_turu"], string> = {
@@ -86,7 +86,13 @@ const ROL_KISA_ADLARI: Record<string, string> = {
 const oran = (deger: number | null) => deger === null ? "—" : `%${deger.toLocaleString("tr-TR")}`;
 const sayi = (deger: number) => (deger ?? 0).toLocaleString("tr-TR");
 
-export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTuruRaporSatiri[] }) {
+export default function OgrenmeAraciPerformansi({
+  dagilim,
+  periyotBasligi = "Seçili Dönem",
+}: {
+  dagilim?: AracTuruRaporSatiri[];
+  periyotBasligi?: string;
+}) {
   const { kullanici } = useAuth();
   const [seciliYayinId, setSeciliYayinId] = useState<string | null>(null);
 
@@ -143,14 +149,14 @@ export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTur
                     </strong>
                   </div>
                   <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold ${tema.badgeRenk}`}>
-                    {sayi(satir.yayin_sayisi)} Yayın
+                    {sayi(satir.yayin_sayisi)} Yeni Yayın · {periyotBasligi}
                   </span>
                 </div>
 
                 {/* Ana Rakam: Toplam Tüketim */}
                 <div className="rounded-xl border border-[#e8eff6] bg-white p-3 mb-3">
                   <div className="text-[10px] font-extrabold uppercase tracking-wide text-[#788ca2]">
-                    Toplam Tüketim (Tüm Roller)
+                    {periyotBasligi} Kümülatif Tüketim
                   </div>
                   <div className="mt-0.5 flex items-baseline justify-between">
                     <strong className="text-2xl font-black tabular-nums text-[#10213d]">
@@ -164,14 +170,14 @@ export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTur
                   </div>
                   <div className="mt-1 flex items-center justify-between text-[10px] font-medium text-[#8da0b3]">
                     <span>{sayi(satir.baslatma)} Başlatma</span>
-                    <span>Kayıtlı: {sayi(satir.kayitli_arac_puani)} p</span>
+                    <span>Yeni yayın puanı: {sayi(satir.kayitli_arac_puani)} p</span>
                   </div>
                 </div>
 
                 {/* Puan Dengesi (Kazanılan / Kaybedilen / Net Puan + % Payı) */}
                 <div className="rounded-xl border border-[#e8eff6] bg-white p-2.5 mb-3">
                   <div className="flex items-center justify-between text-[10px] font-bold text-[#71859d] mb-1">
-                    <span>Puan Dağılımı</span>
+                    <span>{periyotBasligi} Oluşan Puan</span>
                     <div className="flex items-center gap-1.5">
                       {netPuanYuzdesi !== null && (
                         <span className="rounded bg-[#edf6fd] px-1.5 py-0.5 text-[9px] font-extrabold text-[#237ac8]" title="Tüm araçların net puanı içindeki payı">
@@ -247,7 +253,7 @@ export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTur
               <summary className="cursor-pointer list-none flex items-center justify-between text-[11px] font-extrabold text-[#243c5a]">
                 <div className="flex items-center gap-1.5 truncate mr-2">
                   <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: tema.renk }} />
-                  <span className="truncate">{ADLAR[satir.arac_turu]}, Rol ve Yayın Detayları</span>
+                  <span className="truncate">{ADLAR[satir.arac_turu]}, {periyotBasligi} Etkileşim Detayları</span>
                 </div>
                 <span className="rounded-md bg-[#edf4fb] px-1.5 py-0.5 text-[10px] font-extrabold text-[#237ac8] shrink-0">
                   {satir.yayinlar.length}
@@ -305,7 +311,7 @@ export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTur
                 {/* 2. Yayın Listesi */}
                 <div>
                   <div className="text-[10px] font-extrabold uppercase tracking-wide text-[#71859d] mb-1.5 flex items-center justify-between">
-                    <span>Yayınlar ({satir.yayinlar.length})</span>
+                    <span>{periyotBasligi} Etkileşim Alan Yayınlar ({satir.yayinlar.length})</span>
                   </div>
 
                   {/* Sabit 2 Sütunlu Alt Başlık Satırı */}
@@ -315,7 +321,7 @@ export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTur
                   </div>
 
                   {satir.yayinlar.length === 0 ? (
-                    <div className="text-[10px] text-[#94a3b8] italic px-2 py-1">Dönemde yayın yok.</div>
+                    <div className="text-[10px] text-[#94a3b8] italic px-2 py-1">Bu dönemde etkileşim alan yayın yok.</div>
                   ) : (
                     <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
                       {satir.yayinlar.map((y) => (
@@ -356,6 +362,16 @@ export default function OgrenmeAraciPerformansi({ dagilim }: { dagilim?: AracTur
             </details>
           );
         })}
+      </div>
+
+      <div className="border-t border-[#dbe9f6] bg-[#eef6fd] px-4 py-3 sm:px-5">
+        <div className="flex items-start gap-2 text-[11px] font-semibold leading-relaxed text-[#496985]">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#237ac8]" />
+          <p>
+            <strong className="font-extrabold text-[#285b86]">Kümülatif Tüketim</strong>{" "}
+            seçili dönemde öğrenme araçları için tamamlanan izleme, dinleme veya okuma hareketlerinin toplam sayısını ifade eder.
+          </p>
+        </div>
       </div>
 
       {/* Yayın & Soru Detay Modalı */}

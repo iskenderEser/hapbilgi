@@ -26,6 +26,7 @@ import { formatPuan, GRI_METIN, KIRMIZI, PERIYOTLAR, type Periyot } from '@/lib/
 import SayfaRehberi from '@/components/rehber/SayfaRehberi';
 import UretimVaryantlariModal from '@/components/rehber/UretimVaryantlariModal';
 import OgrenmeAraciPerformansi from '@/components/raporlar/OgrenmeAraciPerformansi';
+import { ureticiYetenegi } from '@/lib/uretici/yetenekler';
 import styles from '../utt/utt-report.module.css';
 
 const DEFAULT_PERIYOT: Periyot = 'bu_ay';
@@ -53,6 +54,13 @@ const VARYANT_ADLARI: Record<string, string> = {
   hazir_ikisi: 'Öğrenme aracı ve soru seti sizden.',
 };
 
+const VARYANT_ROZETLERI: Record<string, { etiket: string; arkaPlan: string; renk: string }> = {
+  normal: { etiket: 'V1', arkaPlan: '#e8f3fc', renk: '#237ac8' },
+  hazir_video: { etiket: 'V2', arkaPlan: '#f0edff', renk: '#6f6bdc' },
+  hazir_set: { etiket: 'V3', arkaPlan: '#e8f7f1', renk: '#16865f' },
+  hazir_ikisi: { etiket: 'V4', arkaPlan: '#fff2df', renk: '#c87412' },
+};
+
 export default function UretimRaporlariPage() {
   const { kullanici, yukleniyor } = useAuth();
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
@@ -63,6 +71,9 @@ export default function UretimRaporlariPage() {
     periyot,
     kullanici?.id,
   );
+
+  const ureticiYeteneği = kullanici?.rol ? ureticiYetenegi(kullanici.rol) : null;
+  const ureticiRaporu = ureticiYeteneği !== null;
 
   const seciliEgitimDetayi = useMemo(() => {
     if (!data?.egitim_turu_etkisi) return null;
@@ -85,6 +96,13 @@ export default function UretimRaporlariPage() {
     );
   }, [data]);
 
+  const ureticiEgitimDetaylari = useMemo(() => {
+    if (!data?.egitim_turu_etkisi || !ureticiYeteneği) return [];
+    return ureticiYeteneği.acabilecegiTalepTurleri
+      .map((tur) => data.egitim_turu_etkisi.find((detay) => detay.egitim_turu === tur))
+      .filter((detay): detay is NonNullable<typeof detay> => detay != null);
+  }, [data, ureticiYeteneği]);
+
   return (
     <div className={styles.page} style={{ fontFamily: "'Nunito', sans-serif" }}>
       <div className={styles.container}>
@@ -99,7 +117,7 @@ export default function UretimRaporlariPage() {
               <SayfaRehberi anahtar="raporlar-uretim" className="ml-1.5 -translate-y-1.5" />
             </h1>
             <p className="mt-0.5 text-xs font-semibold text-[#78889d]">
-              Farklı zamanlardaki yayınlarınıza ait sayısal bilgileri görebilirsiniz.
+              Yayınlarınızın üretim, saha etkisi ve öğrenme aracı performansını seçili dönemde görebilirsiniz.
             </p>
           </div>
           <div className="flex w-full items-center gap-2 sm:w-auto">
@@ -144,12 +162,12 @@ export default function UretimRaporlariPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-3 mt-3 sm:mt-4">
-              {/* 1. Stat Kart: TÜM YAYINLARINIZ */}
+              {/* 1. Stat Kart: ŞU ANDA YAYINDA */}
               <div className="rounded-xl border border-[#e2ebf4] bg-[#f8fbfe] p-3.5">
                 <div className="flex items-center gap-1.5 text-[#16865f] mb-1">
                   <Radio className="h-4 w-4" />
                   <span className="text-[10px] font-extrabold uppercase tracking-wide text-[#71859d]">
-                    TÜM YAYINLARINIZ
+                    ŞU ANDA YAYINDA
                   </span>
                 </div>
                 <div className="text-xl sm:text-2xl font-black tabular-nums text-[#16865f]">
@@ -178,7 +196,7 @@ export default function UretimRaporlariPage() {
           <section className={`${styles.panel} p-4 sm:p-5 flex flex-col justify-between`}>
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <h2 className="text-base font-extrabold text-[#20324c]">Yayınların Üretim Yöntemleri ve Dağılımları</h2>
+                <h2 className="text-base font-extrabold text-[#20324c]">Yayın Üretim Yöntemleri (Varyantlar) ve Dağılımları</h2>
                 <p className="mt-0.5 text-xs text-[#718198]">
                   Yayınlarınızın üretim yöntemleri{" "}
                   <button
@@ -188,7 +206,7 @@ export default function UretimRaporlariPage() {
                   >
                     (varyantları)
                   </button>{" "}
-                  ve dağılımları
+                  ve dağılımlarına genel bakış
                 </p>
               </div>
               <div className={styles.sectionIcon}><Layers className="h-4 w-4" /></div>
@@ -199,17 +217,37 @@ export default function UretimRaporlariPage() {
                 <div className="grid grid-cols-2 gap-2 mt-1">
                   {data.uretim.varyantlar.map((v) => {
                     const yuzde = toplamVaryant > 0 ? Math.round((v.adet / toplamVaryant) * 100) : 0;
+                    const rozet = VARYANT_ROZETLERI[v.kod];
                     return (
                       <div key={v.kod} className="rounded-xl border border-[#e5edf5] bg-[#f8fbfe] p-2.5 flex flex-col justify-between">
-                        <span className="block text-[11px] font-bold text-[#71859d] leading-snug">
-                          {VARYANT_ADLARI[v.kod] ?? v.ad}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {rozet && (
+                            <span
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-black"
+                              style={{ backgroundColor: rozet.arkaPlan, color: rozet.renk }}
+                            >
+                              {rozet.etiket}
+                            </span>
+                          )}
+                          <span
+                            className="block text-[11px] font-bold leading-snug"
+                            style={{ color: rozet?.renk ?? '#71859d' }}
+                          >
+                            {VARYANT_ADLARI[v.kod] ?? v.ad}
+                          </span>
+                        </div>
                         <div className="flex items-baseline justify-between mt-2 pt-1 border-t border-[#edf3f8]">
-                          <strong className="text-sm sm:text-base font-extrabold text-[#10213d]">
+                          <strong
+                            className="text-sm sm:text-base font-extrabold"
+                            style={{ color: rozet?.renk ?? '#10213d' }}
+                          >
                             {v.adet} Yayın
                           </strong>
                           {toplamVaryant > 0 && (
-                            <span className="text-[11px] font-extrabold text-[#237ac8]">
+                            <span
+                              className="text-[11px] font-extrabold"
+                              style={{ color: rozet?.renk ?? '#237ac8' }}
+                            >
                               %{yuzde}
                             </span>
                           )}
@@ -259,122 +297,135 @@ export default function UretimRaporlariPage() {
 
         {/* Yayın Konusu ve Saha Etkisi (6 Sütun Tek Satır) */}
         <section className={`${styles.panel} ${styles.section}`}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <h2 className="text-base font-extrabold text-[#20324c]">Yayın Konusu ve Saha Etkisi</h2>
-              <p className="mt-0.5 text-[11px] font-medium text-[#8190a3]">
-                Yayına alma sayıları ve sahada oluşturduğu tüketim karşılığı
-              </p>
-            </div>
-            <div className={styles.sectionIcon}><BookOpenCheck className="h-4 w-4" /></div>
-          </div>
+          {!ureticiRaporu && (
+            <>
+              <div className={styles.sectionHeader}>
+                <div>
+                  <h2 className="text-base font-extrabold text-[#20324c]">Yayın Konusu ve Saha Etkisi</h2>
+                  <p className="mt-0.5 text-[11px] font-medium text-[#8190a3]">
+                    Yayına alma sayıları ve sahada oluşturduğu tüketim karşılığı
+                  </p>
+                </div>
+                <div className={styles.sectionIcon}><BookOpenCheck className="h-4 w-4" /></div>
+              </div>
 
-          <div className="grid grid-cols-2 gap-2.5 sm:flex sm:overflow-x-auto sm:snap-x sm:pb-2.5 lg:grid lg:grid-cols-6 lg:overflow-visible w-full">
-            {data.uretim.turler.map((tur, index) => {
-              const etki = data.egitim_turu_etkisi.find((x) => x.egitim_turu === tur.kod);
-              const secili = seciliEgitimDetayi?.egitim_turu === tur.kod;
+              <div className="grid grid-cols-2 gap-2.5 sm:flex sm:overflow-x-auto sm:snap-x sm:pb-2.5 lg:grid lg:grid-cols-6 lg:overflow-visible w-full">
+                {data.uretim.turler.map((tur) => {
+                  const etki = data.egitim_turu_etkisi.find((x) => x.egitim_turu === tur.kod);
+                  const secili = seciliEgitimDetayi?.egitim_turu === tur.kod;
 
-              return (
-                <button
-                  type="button"
-                  key={tur.kod}
-                  onClick={() => setSeciliEgitimTuru(secili ? null : tur.ad)}
-                  className={`group relative flex flex-col justify-between rounded-2xl p-3 text-left transition-all cursor-pointer border ${
-                    secili
-                      ? 'bg-[#edf6fd] border-[#237ac8] shadow-[0_4px_16px_rgba(35,122,200,0.12)] ring-2 ring-[#237ac8]/25'
-                      : 'bg-[#f8fafc] border-transparent hover:bg-[#f1f5f9] hover:border-[#e2ebf4]'
-                  } w-full min-w-0 sm:w-[190px] sm:min-w-[190px] sm:shrink-0 sm:snap-start lg:w-auto lg:min-w-0 lg:shrink`}
-                >
-                  <div className="w-full min-w-0">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`text-[10px] font-black ${secili ? 'text-[#237ac8]' : 'text-[#94a3b8]'}`}>
-                        #{index + 1}
-                      </span>
-                      <span
-                        className="rounded-md px-2 py-0.5 text-[10px] font-extrabold"
-                        style={{
-                          backgroundColor: `${EGITIM_TURU_RENK[tur.kod] ?? '#2f8ed8'}18`,
-                          color: EGITIM_TURU_RENK[tur.kod] ?? '#2f8ed8',
-                        }}
-                      >
-                        {tur.adet} Yayın
-                      </span>
-                    </div>
-                    <strong className={`block text-xs font-extrabold leading-snug truncate ${secili ? 'text-[#10213d]' : 'text-[#334155]'}`}>
-                      {tur.ad}
-                    </strong>
-                  </div>
+                  return (
+                    <button
+                      type="button"
+                      key={tur.kod}
+                      onClick={() => setSeciliEgitimTuru(secili ? null : tur.ad)}
+                      className={`group relative flex flex-col justify-between rounded-2xl p-3 text-left transition-all cursor-pointer border ${
+                        secili
+                          ? 'bg-[#edf6fd] border-[#237ac8] shadow-[0_4px_16px_rgba(35,122,200,0.12)] ring-2 ring-[#237ac8]/25'
+                          : 'bg-[#f8fafc] border-transparent hover:bg-[#f1f5f9] hover:border-[#e2ebf4]'
+                      } w-full min-w-0 sm:w-[190px] sm:min-w-[190px] sm:shrink-0 sm:snap-start lg:w-auto lg:min-w-0 lg:shrink`}
+                    >
+                      <div className="w-full min-w-0">
+                        <div className="flex items-center justify-end mb-2">
+                          <span
+                            className="rounded-md px-2 py-0.5 text-[10px] font-extrabold"
+                            style={{
+                              backgroundColor: `${EGITIM_TURU_RENK[tur.kod] ?? '#2f8ed8'}18`,
+                              color: EGITIM_TURU_RENK[tur.kod] ?? '#2f8ed8',
+                            }}
+                          >
+                            {tur.adet} Yayın
+                          </span>
+                        </div>
+                        <strong className={`block text-xs font-extrabold leading-snug truncate ${secili ? 'text-[#10213d]' : 'text-[#334155]'}`}>
+                          {tur.ad} Yayınları
+                        </strong>
+                      </div>
 
-                  <div className={`mt-3 pt-2 border-t flex items-center justify-between text-[10px] font-bold ${
-                    secili ? 'border-[#d0e3f5] text-[#237ac8]' : 'border-[#e2e8f0] text-[#64748b]'
-                  }`}>
-                    <span>{etki?.tamamlanan_izleme ?? 0} İzleme</span>
-                    <span className="font-extrabold text-[#16865f]">+{formatPuan(etki?.net_puan ?? 0)} p</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                      <div className={`mt-3 pt-2 border-t flex items-center justify-between text-[10px] font-bold ${
+                        secili ? 'border-[#d0e3f5] text-[#237ac8]' : 'border-[#e2e8f0] text-[#64748b]'
+                      }`}>
+                        <span>{etki?.tamamlanan_izleme ?? 0} İzleme</span>
+                        <span className="font-extrabold text-[#16865f]">+{formatPuan(etki?.net_puan ?? 0)} p</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
 
-          {/* Dinamik Konu Karnesi (Aynı Panel İçinde, İnce Çizgiyle Ayrılmış) */}
-          {seciliEgitimDetayi && (
-            <div className="mt-5 pt-4 border-t border-[#e2edf7]">
+          {/* Yönetici seçimi veya üretici rolün doğrudan yetkili olduğu konular */}
+          {(ureticiRaporu
+            ? ureticiEgitimDetaylari
+            : seciliEgitimDetayi
+              ? [seciliEgitimDetayi]
+              : []
+          ).map((egitimDetayi, indeks) => (
+            <div
+              key={egitimDetayi.egitim_turu}
+              className={ureticiRaporu && indeks === 0 ? '' : 'mt-5 pt-4 border-t border-[#e2edf7]'}
+            >
               <div className="mb-3 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <span
                     className="h-2.5 w-2.5 rounded-full shrink-0"
                     style={{
-                      backgroundColor: EGITIM_TURU_RENK[seciliEgitimDetayi.egitim_turu] ?? '#237ac8',
+                      backgroundColor: EGITIM_TURU_RENK[egitimDetayi.egitim_turu] ?? '#237ac8',
                     }}
                   />
                   <h3 className="text-sm font-extrabold text-[#10213d] truncate">
-                    {seciliEgitimDetayi.egitim_adi} Karnesi
+                    {egitimDetayi.egitim_adi} Yayın Performansı
                   </h3>
-                  <span className="hidden sm:inline text-[11px] font-semibold text-[#8190a3]">
-                    · Seçili konunun dönem performansı
-                  </span>
+                  {!ureticiRaporu && (
+                    <span className="hidden sm:inline text-[11px] font-semibold text-[#8190a3]">
+                      · Seçili konunun dönem performansı
+                    </span>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSeciliEgitimTuru(null)}
-                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold text-[#71859d] hover:bg-[#edf2f7] hover:text-[#10213d] transition-colors shrink-0 cursor-pointer"
-                  title="Detayı Kapat"
-                >
-                  <X className="h-3.5 w-3.5" />
-                  Kapat
-                </button>
+                {!ureticiRaporu && (
+                  <button
+                    type="button"
+                    onClick={() => setSeciliEgitimTuru(null)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#71859d] hover:bg-[#edf2f7] hover:text-[#10213d] transition-colors shrink-0 cursor-pointer"
+                    aria-label="Detayı kapat"
+                    title="Detayı Kapat"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
               </div>
 
               <div
                 className={`grid grid-cols-2 sm:grid-cols-4 gap-2.5 w-full ${
-                  (seciliEgitimDetayi.urun_dagilimi ?? []).length > 0 ? 'mb-3.5' : 'mb-0'
+                  (egitimDetayi.urun_dagilimi ?? []).some((u) => u.urun_id != null) ? 'mb-3.5' : 'mb-0'
                 }`}
               >
                 <div className="rounded-xl border border-[#e5edf5] bg-[#f8fbfe] p-3 text-center">
                   <span className="text-[10px] font-bold text-[#8190a3] uppercase">Yayına Alınan</span>
-                  <strong className="block text-lg font-black text-[#10213d] mt-0.5">{seciliEgitimDetayi.donemde_yayina_alinan}</strong>
+                  <strong className="block text-lg font-black text-[#10213d] mt-0.5">{egitimDetayi.donemde_yayina_alinan}</strong>
                 </div>
                 <div className="rounded-xl border border-[#e5edf5] bg-[#f8fbfe] p-3 text-center">
                   <span className="text-[10px] font-bold text-[#8190a3] uppercase">Tamamlanan İzleme</span>
-                  <strong className="block text-lg font-black text-[#237ac8] mt-0.5">{seciliEgitimDetayi.tamamlanan_izleme}</strong>
+                  <strong className="block text-lg font-black text-[#237ac8] mt-0.5">{egitimDetayi.tamamlanan_izleme}</strong>
                 </div>
                 <div className="rounded-xl border border-[#e5edf5] bg-[#f8fbfe] p-3 text-center">
                   <span className="text-[10px] font-bold text-[#8190a3] uppercase">Kazanılan Puan</span>
-                  <strong className="block text-lg font-black text-[#16865f] mt-0.5">+{formatPuan(seciliEgitimDetayi.kazanilan_toplam)}</strong>
+                  <strong className="block text-lg font-black text-[#16865f] mt-0.5">+{formatPuan(egitimDetayi.kazanilan_toplam)}</strong>
                 </div>
                 <div className="rounded-xl border border-[#e5edf5] bg-[#f8fbfe] p-3 text-center">
                   <span className="text-[10px] font-bold text-[#8190a3] uppercase">Net Puan</span>
-                  <strong className="block text-lg font-black text-[#10213d] mt-0.5">{formatPuan(seciliEgitimDetayi.net_puan)} p</strong>
+                  <strong className="block text-lg font-black text-[#10213d] mt-0.5">{formatPuan(egitimDetayi.net_puan)} p</strong>
                 </div>
               </div>
 
-              {(seciliEgitimDetayi.urun_dagilimi ?? []).length > 0 && (
+              {(egitimDetayi.urun_dagilimi ?? []).some((u) => u.urun_id != null) && (
                 <div className="rounded-xl border border-[#e8eff6] bg-[#fbfcfe] p-3">
                   <div className="text-[11px] font-extrabold uppercase tracking-wide text-[#62768d] mb-2">
                     Ürün Bazlı Puan Dağılımı
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                    {seciliEgitimDetayi.urun_dagilimi.map((u) => (
+                    {egitimDetayi.urun_dagilimi.filter((u) => u.urun_id != null).map((u) => (
                       <div key={u.urun_id ?? u.urun_adi} className="rounded-lg border border-[#e5edf5] bg-white p-2.5 flex items-center justify-between">
                         <strong className="text-xs font-extrabold text-[#10213d] truncate mr-2">{u.urun_adi}</strong>
                         <div className="flex items-center gap-2 text-xs font-bold shrink-0">
@@ -388,11 +439,14 @@ export default function UretimRaporlariPage() {
                 </div>
               )}
             </div>
-          )}
+          ))}
         </section>
 
         {/* Öğrenme Aracı / Format Performansı Detay Tablosu (En Altta) */}
-        <OgrenmeAraciPerformansi dagilim={data.arac_turu_dagilimi} />
+        <OgrenmeAraciPerformansi
+          dagilim={data.arac_turu_dagilimi}
+          periyotBasligi={PERIYOT_BASLIK[periyot]}
+        />
         </>
       )}
       </div>

@@ -54,17 +54,20 @@ export interface RaporData {
 
 const bellekHaritasi = new Map<string, RaporData>();
 const CACHE_PREFIX = "hb_uretim_raporu_";
+const onbellekAnahtari = (periyot: string, kullaniciId: string) => `${kullaniciId}_${periyot}`;
 
-export function getUretimRaporuOnbellek(periyot: string): RaporData | null {
-  if (bellekHaritasi.has(periyot)) {
-    return bellekHaritasi.get(periyot)!;
+export function getUretimRaporuOnbellek(periyot: string, kullaniciId?: string): RaporData | null {
+  if (!kullaniciId) return null;
+  const anahtar = onbellekAnahtari(periyot, kullaniciId);
+  if (bellekHaritasi.has(anahtar)) {
+    return bellekHaritasi.get(anahtar)!;
   }
   if (typeof window !== "undefined") {
     try {
-      const s = sessionStorage.getItem(`${CACHE_PREFIX}${periyot}`);
+      const s = sessionStorage.getItem(`${CACHE_PREFIX}${anahtar}`);
       if (s) {
         const parsed = JSON.parse(s) as RaporData;
-        bellekHaritasi.set(periyot, parsed);
+        bellekHaritasi.set(anahtar, parsed);
         return parsed;
       }
     } catch {
@@ -74,24 +77,25 @@ export function getUretimRaporuOnbellek(periyot: string): RaporData | null {
   return null;
 }
 
-export function setUretimRaporuOnbellek(periyot: string, veri: RaporData) {
-  bellekHaritasi.set(periyot, veri);
+export function setUretimRaporuOnbellek(periyot: string, kullaniciId: string, veri: RaporData) {
+  const anahtar = onbellekAnahtari(periyot, kullaniciId);
+  bellekHaritasi.set(anahtar, veri);
   if (typeof window !== "undefined") {
     try {
-      sessionStorage.setItem(`${CACHE_PREFIX}${periyot}`, JSON.stringify(veri));
+      sessionStorage.setItem(`${CACHE_PREFIX}${anahtar}`, JSON.stringify(veri));
     } catch {
       // sessizce geç
     }
   }
 }
 
-export async function prefetchUretimRaporu(periyot: string = "bu_ay"): Promise<RaporData | null> {
+export async function prefetchUretimRaporu(periyot: string, kullaniciId: string): Promise<RaporData | null> {
   try {
     const res = await fetch(`/raporlar/api/uretim?periyot=${periyot}`);
     if (!res.ok) return null;
     const json = await res.json();
     if (json.success && json.data) {
-      setUretimRaporuOnbellek(periyot, json.data as RaporData);
+      setUretimRaporuOnbellek(periyot, kullaniciId, json.data as RaporData);
       return json.data as RaporData;
     }
   } catch {

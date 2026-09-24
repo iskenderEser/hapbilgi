@@ -83,7 +83,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
       void prefetchYayinOzet();
       void prefetchTalepMerkezi();
       void prefetchYayinKatalog("benim");
-      void prefetchUretimRaporu("bu_ay");
+      void prefetchUretimRaporu("bu_ay", kullanici.id);
     }
   }, [kullanici, rolKucu]);
 

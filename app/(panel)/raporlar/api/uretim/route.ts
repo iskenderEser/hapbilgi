@@ -8,7 +8,11 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { hataYaniti, yetkiHatasi } from '@/lib/utils/hataIsle';
 import { tarihAraligi } from '@/lib/utils/tarihAraligi';
-import { getUretimData, uretimRaporunuGorebilir } from '@/lib/rapor/uretim/getUretimData';
+import {
+  getUretimData,
+  uretimRaporKapsaminiCoz,
+  uretimRaporunuGorebilir,
+} from '@/lib/rapor/uretim/getUretimData';
 import { aracTuruDagilimi } from '@/lib/rapor/paylasilan/aracTuruDagilimi';
 
 export async function GET(request: Request) {
@@ -40,13 +44,23 @@ export async function GET(request: Request) {
   }
 
   try {
+    const kapsam = await uretimRaporKapsaminiCoz(
+      adminSupabase,
+      { ...kullanici, rol },
+    );
+
     const [rapor, aracTurleri, firmaRes] = await Promise.all([
-      getUretimData(adminSupabase, { ...kullanici, rol }, baslangic, bitis),
-      aracTuruDagilimi(adminSupabase, { baslangic, bitis, firmaId: kullanici.firma_id }),
+      getUretimData(adminSupabase, kapsam, baslangic, bitis),
+      aracTuruDagilimi(adminSupabase, {
+        baslangic,
+        bitis,
+        firmaId: kapsam.tur === 'firma' ? kapsam.firmaId : null,
+        ureticiId: kapsam.ureticiId,
+      }),
       adminSupabase
         .from('firmalar')
         .select('firma_adi')
-        .eq('firma_id', kullanici.firma_id)
+        .eq('firma_id', kapsam.firmaId)
         .maybeSingle(),
     ]);
 

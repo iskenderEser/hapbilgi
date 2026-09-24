@@ -179,10 +179,28 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
   "raporlar-uretim": {
     anahtar: "raporlar-uretim",
     baslik: "Yayın Raporları",
-    ozet: "Şirket genelindeki içerik üretim hacmini, canlı yayınları, üretim varyantları (V1-V4) dağılımını ve eğitim türlerinin sahada oluşturduğu tüketim etkisini analiz etmenizi sağlar.",
+    ozet: "Yayınlarınızın seçili dönemdeki üretim ve performans sonuçlarını, üretim varyantları (V1-V4) dahil olmak üzere dört bölümde incelemenizi sağlar.",
     linkKelime: "üretim varyantları (V1-V4)",
     altModal: VARYANT_ALT_MODAL,
-    maddeler: [],
+    maddeler: [
+      {
+        baslik: "Yayın Özeti",
+        aciklama: "Güncel canlı yayın sayısını ve seçili dönemde yayına alınan yeni yayınları gösterir.",
+      },
+      {
+        baslik: "Yayın Üretim Yöntemleri",
+        aciklama: "Seçili dönemdeki yayınların V1-V4 üretim yöntemlerine göre sayı ve yüzde dağılımını gösterir.",
+      },
+      {
+        baslik: "Yayın Konusu ve Saha Etkisi",
+        aciklama: "Yayın konularına göre yayına alınan içerikleri, tamamlanan izlemeleri, kazanılan ve net puanları; varsa ürün bazlı puan dağılımını gösterir.",
+      },
+      {
+        baslik: "Öğrenme Aracı Performansı",
+        aciklama: "Video, podcast, dijital broşür ve literatür için yeni yayın sayısını; seçili dönemdeki kümülatif tüketim, rol dağılımı ve puan sonuçlarını gösterir.",
+      },
+    ],
+    ipucu: "Üretici roller kendi yayınlarını, yönetici roller firma genelindeki yayınları görür.",
   },
 
   // ─── 12. ÖNERİLEN YAYINLAR (UTT / SAHA) ───────────────────────────────────

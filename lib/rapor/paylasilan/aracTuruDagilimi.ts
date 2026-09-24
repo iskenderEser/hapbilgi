@@ -50,23 +50,35 @@ export async function aracTuruDagilimi(
     .select("yayin_id,talep_id,talep_no,arac_turu,olay_turu,rol,adet,puan")
     .gte("olay_tarihi", girdi.baslangic).lt("olay_tarihi", girdi.bitis);
   if (girdi.ureticiId) {
-    yayinSorgu = yayinSorgu.eq("uretici_id", girdi.ureticiId); olaySorgu = olaySorgu.eq("uretici_id", girdi.ureticiId);
+    yayinSorgu = yayinSorgu.eq("uretici_id", girdi.ureticiId);
+    olaySorgu = olaySorgu.eq("uretici_id", girdi.ureticiId);
   } else if (girdi.takimId) {
-    yayinSorgu = yayinSorgu.eq("takim_id", girdi.takimId); olaySorgu = olaySorgu.eq("takim_id", girdi.takimId);
+    yayinSorgu = yayinSorgu.eq("takim_id", girdi.takimId);
+    olaySorgu = olaySorgu.eq("takim_id", girdi.takimId);
   } else if (girdi.firmaId) {
-    yayinSorgu = yayinSorgu.eq("firma_id", girdi.firmaId); olaySorgu = olaySorgu.eq("firma_id", girdi.firmaId);
+    yayinSorgu = yayinSorgu.eq("firma_id", girdi.firmaId);
+    olaySorgu = olaySorgu.eq("firma_id", girdi.firmaId);
   }
   if (girdi.aktorId) olaySorgu = olaySorgu.eq("aktor_id", girdi.aktorId);
+
   const [yayinYaniti, olayYaniti] = await Promise.all([yayinSorgu, olaySorgu]);
   if (yayinYaniti.error || olayYaniti.error) throw new Error("Öğrenme aracı türü rapor kaynağı okunamadı.");
 
+  const yayinlarVerisi = yayinYaniti.data ?? [];
+  const olaylarVerisi = olayYaniti.data ?? [];
+
   return TURLER.map((arac_turu) => {
-    const yayinlar = (yayinYaniti.data ?? []).filter((x) => x.arac_turu === arac_turu);
-    const olaylar = (olayYaniti.data ?? []).filter((x) => x.arac_turu === arac_turu);
+    const yayinlar = yayinlarVerisi.filter((x) => x.arac_turu === arac_turu);
+    const olaylar = olaylarVerisi.filter((x) => x.arac_turu === arac_turu);
     const toplam: OlayToplami = { ...BOS };
     const roller: Record<string, RolMetrigi> = {};
     const yayinMetrigi = new Map<string, OlayToplami>();
+    const etkilesimYayinlari = new Map<string, { talep_id: string | null; talep_no: string | null }>();
     for (const olay of olaylar) {
+      etkilesimYayinlari.set(olay.yayin_id, {
+        talep_id: olay.talep_id ?? null,
+        talep_no: olay.talep_no ?? null,
+      });
       const tur = olay.olay_turu as keyof OlayToplami;
       if (!(tur in toplam)) continue;
       const deger = tur === "kazanilan_puan" || tur === "kaybedilen_puan" ? Number(olay.puan ?? 0) : Number(olay.adet ?? 0);
@@ -94,10 +106,10 @@ export async function aracTuruDagilimi(
       net_kazanilan_puan: toplam.kazanilan_puan - toplam.kaybedilen_puan,
       dogru_cevap_yuzdesi: cevapToplami === 0 ? null : Math.round((1000 * toplam.dogru_cevap) / cevapToplami) / 10,
       roller,
-      yayinlar: yayinlar.map((y) => {
-        const m = yayinMetrigi.get(y.yayin_id) ?? BOS;
-        return { yayin_id: y.yayin_id, talep_id: y.talep_id ?? null, talep_no: y.talep_no ?? null,
-          kayitli_arac_puani: Number(y.arac_puani ?? 0), kazanilan_puan: m.kazanilan_puan,
+      yayinlar: [...etkilesimYayinlari.entries()].map(([yayin_id, yayin]) => {
+        const m = yayinMetrigi.get(yayin_id) ?? BOS;
+        return { yayin_id, talep_id: yayin.talep_id, talep_no: yayin.talep_no,
+          kayitli_arac_puani: 0, kazanilan_puan: m.kazanilan_puan,
           kaybedilen_puan: m.kaybedilen_puan, baslatma: m.baslatma, tamamlama: m.tamamlama };
       }),
     };

@@ -12,31 +12,63 @@ const sayi = (deger: unknown) => Number(deger ?? 0);
 export const uretimRaporunuGorebilir = (rol: string) =>
   URETICI_ROLLER.includes(rol) || YONETICI_ROLLER.includes(rol) || ADMIN_ROLLER.includes(rol);
 
-// Yalnız sunucuda doğrulanmış kullanıcı bağlamıyla çağrılır. Bu, mevcut Üretim
-// Raporları ekranının firma portföyü kapsamıdır; kişisel talep raporu değildir.
-export async function getUretimData(
+export type UretimRaporKapsami = {
+  tur: 'uretici' | 'firma';
+  firmaId: string;
+  raporKimligi: string;
+  ureticiId: string | null;
+};
+
+export async function uretimRaporKapsaminiCoz(
   db: SupabaseClient,
   kullanici: { kullanici_id: string; firma_id: string | null; rol: string },
-  baslangic: string,
-  bitis: string,
-) {
+): Promise<UretimRaporKapsami> {
   if (!uretimRaporunuGorebilir(kullanici.rol) || !kullanici.firma_id) {
     throw new Error('Üretim raporu kapsamı doğrulanamadı.');
   }
-  // Mevcut RPC yalnız yönetici kimliğinden firma çözer. Temsilci sadece bu
-  // firmanın aktif yöneticilerinden seçilir; istemci/model kimlik seçemez.
-  let yoneticiId = kullanici.kullanici_id;
-  if (!YONETICI_ROLLER.includes(kullanici.rol)) {
+
+  const ureticiMi = URETICI_ROLLER.includes(kullanici.rol);
+  let raporKimligi = kullanici.kullanici_id;
+
+  // Firma bağlantılı olmayan sistem yöneticisi için mevcut firma temsilcisi
+  // davranışı korunur. Üretici roller hiçbir zaman yöneticiye vekâlet etmez.
+  if (!ureticiMi && !YONETICI_ROLLER.includes(kullanici.rol)) {
     const { data, error } = await db.from('kullanicilar').select('kullanici_id')
       .eq('firma_id', kullanici.firma_id).eq('aktif_mi', true)
       .in('rol', YONETICI_ROLLER).limit(1).maybeSingle();
     if (error || !data?.kullanici_id) throw new Error('Üretim raporu firma kapsamı okunamadı.');
-    yoneticiId = data.kullanici_id;
+    raporKimligi = data.kullanici_id;
   }
-  const args = { p_yonetici_id: yoneticiId, p_baslangic: baslangic, p_bitis: bitis };
+
+  return {
+    tur: ureticiMi ? 'uretici' : 'firma',
+    firmaId: kullanici.firma_id,
+    raporKimligi,
+    ureticiId: ureticiMi ? kullanici.kullanici_id : null,
+  };
+}
+
+// Kapsam API girişinde bir kez çözülür ve bütün rapor kartlarına aynen aktarılır.
+export async function getUretimData(
+  db: SupabaseClient,
+  kapsam: UretimRaporKapsami,
+  baslangic: string,
+  bitis: string,
+) {
+  const ureticiMi = kapsam.tur === 'uretici';
+  const raporKimligi = kapsam.raporKimligi;
+
+  const egitimArgs = { p_yonetici_id: raporKimligi, p_baslangic: baslangic, p_bitis: bitis };
+  const ozetIstegi = ureticiMi
+    ? db.rpc('get_uretici_yayin_ana_ozet_v1', {
+        p_uretici_id: raporKimligi,
+        p_baslangic: baslangic,
+        p_bitis: bitis,
+      })
+    : db.rpc('get_yonetici_rapor_ana_ozet_v2', egitimArgs);
   const [ozetRes, egitimTuruRes] = await Promise.all([
-    db.rpc('get_yonetici_rapor_ana_ozet_v2', args),
-    db.rpc('get_yonetici_egitim_turu_etkisi_v3', args),
+    ozetIstegi,
+    db.rpc('get_yonetici_egitim_turu_etkisi_v3', egitimArgs),
   ]);
   if (ozetRes.error || egitimTuruRes.error || !ozetRes.data?.length) {
     throw new Error('Üretim raporu okunamadı.');

@@ -18,7 +18,7 @@ export function useUretimRaporu(
   periyot: string,
   kullaniciId: string | undefined
 ): UseUretimRaporuSonuc {
-  const baslangicVeri = getUretimRaporuOnbellek(periyot);
+  const baslangicVeri = getUretimRaporuOnbellek(periyot, kullaniciId);
   const [data, setData] = useState<RaporData | null>(() => baslangicVeri);
   const [loading, setLoading] = useState(() => !baslangicVeri);
   const [yenileniyor, setYenileniyor] = useState(false);
@@ -33,12 +33,12 @@ export function useUretimRaporu(
 
   // Periyot değiştiğinde önbellekteki veriyi anında ekrana bas
   useEffect(() => {
-    const onbellek = getUretimRaporuOnbellek(periyot);
+    const onbellek = getUretimRaporuOnbellek(periyot, kullaniciId);
     if (onbellek) {
       setData(onbellek);
       setLoading(false);
     }
-  }, [periyot]);
+  }, [periyot, kullaniciId]);
 
   useEffect(() => {
     if (!kullaniciId) return;
@@ -48,7 +48,7 @@ export function useUretimRaporu(
     manuelTetiklendiRef.current = false;
 
     const fetchRapor = async () => {
-      const onbellek = getUretimRaporuOnbellek(periyot);
+      const onbellek = getUretimRaporuOnbellek(periyot, kullaniciId);
       if (isManuel) {
         setYenileniyor(true);
       } else if (!onbellek) {
@@ -63,7 +63,7 @@ export function useUretimRaporu(
         const json = await res.json();
         if (json.success && json.data) {
           const rapor = json.data as RaporData;
-          setUretimRaporuOnbellek(periyot, rapor);
+          setUretimRaporuOnbellek(periyot, kullaniciId, rapor);
           setData(rapor);
           setError(null);
         } else if (!onbellek) {
