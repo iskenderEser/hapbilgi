@@ -19,8 +19,8 @@ export interface TalepOnbellekPaketi {
   ozet: TalepOzetSayilari;
 }
 
-let bellekPaket: TalepOnbellekPaketi | null = null;
-const CACHE_KEY = "hb_talep_merkezi_cache";
+const bellekPaketleri = new Map<string, TalepOnbellekPaketi>();
+const CACHE_PREFIX = "hb_talep_merkezi_cache_";
 
 export function hesaplaTalepOzeti(talepler: TalepSatiri[]): TalepOzetSayilari {
   const devamEdenler = talepler.filter((t) => !t.uretim_bitti && !t.iptal_edildi);
@@ -41,14 +41,17 @@ export function hesaplaTalepOzeti(talepler: TalepSatiri[]): TalepOzetSayilari {
   };
 }
 
-export function getTalepOnbellek(): TalepOnbellekPaketi | null {
+export function getTalepOnbellek(kullaniciId?: string): TalepOnbellekPaketi | null {
+  if (!kullaniciId) return null;
+  const bellekPaket = bellekPaketleri.get(kullaniciId);
   if (bellekPaket) return bellekPaket;
   if (typeof window !== "undefined") {
     try {
-      const s = sessionStorage.getItem(CACHE_KEY);
+      const s = sessionStorage.getItem(`${CACHE_PREFIX}${kullaniciId}`);
       if (s) {
-        bellekPaket = JSON.parse(s) as TalepOnbellekPaketi;
-        return bellekPaket;
+        const paket = JSON.parse(s) as TalepOnbellekPaketi;
+        bellekPaketleri.set(kullaniciId, paket);
+        return paket;
       }
     } catch {
       // sessizce geç
@@ -57,27 +60,27 @@ export function getTalepOnbellek(): TalepOnbellekPaketi | null {
   return null;
 }
 
-export function setTalepOnbellek(talepler: TalepSatiri[]) {
+export function setTalepOnbellek(kullaniciId: string, talepler: TalepSatiri[]) {
   const ozet = hesaplaTalepOzeti(talepler);
   const paket: TalepOnbellekPaketi = { talepler, ozet };
-  bellekPaket = paket;
+  bellekPaketleri.set(kullaniciId, paket);
   if (typeof window !== "undefined") {
     try {
-      sessionStorage.setItem(CACHE_KEY, JSON.stringify(paket));
+      sessionStorage.setItem(`${CACHE_PREFIX}${kullaniciId}`, JSON.stringify(paket));
     } catch {
       // sessizce geç
     }
   }
 }
 
-export async function prefetchTalepMerkezi(): Promise<TalepOnbellekPaketi | null> {
+export async function prefetchTalepMerkezi(kullaniciId: string): Promise<TalepOnbellekPaketi | null> {
   try {
     const res = await fetch("/talepler/api/uretici-rol");
     if (!res.ok) return null;
     const data = await res.json();
     const talepler = (data.talepler ?? []) as TalepSatiri[];
-    setTalepOnbellek(talepler);
-    return bellekPaket;
+    setTalepOnbellek(kullaniciId, talepler);
+    return getTalepOnbellek(kullaniciId);
   } catch {
     // sessizce geç
   }

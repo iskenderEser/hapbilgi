@@ -30,7 +30,7 @@ export function useTalepMerkezi() {
   const { kullanici } = useAuth();
   const { mesajlar, hata, basari } = useHataMesaji();
 
-  const baslangicPaket = getTalepOnbellek();
+  const baslangicPaket = getTalepOnbellek(kullanici?.id);
   const [talepler, setTalepler] = useState<TalepSatiri[]>(() => baslangicPaket?.talepler ?? []);
   const [ozetSayilari, setOzetSayilari] = useState<TalepOzetSayilari | null>(() => baslangicPaket?.ozet ?? null);
   const [loading, setLoading] = useState(() => !baslangicPaket);
@@ -72,7 +72,7 @@ export function useTalepMerkezi() {
           hata(data.hata ?? "Talepler yüklenemedi.", data.adim, data.detay);
         } else {
           const gelen: TalepSatiri[] = data.talepler ?? [];
-          setTalepOnbellek(gelen);
+          if (kullanici?.id) setTalepOnbellek(kullanici.id, gelen);
           setTalepler(gelen);
           setOzetSayilari(hesaplaTalepOzeti(gelen));
           if (enYeniyiSec.current) {
@@ -88,7 +88,7 @@ export function useTalepMerkezi() {
         if (manuel) setYenileniyor(false);
       }
     },
-    [hata],
+    [hata, kullanici?.id],
   );
 
   /** Yeni Talep akordiyonu talep açtığında çağrılır (A-10). */
@@ -110,7 +110,19 @@ export function useTalepMerkezi() {
 
     if (yuklenenKullaniciIdRef.current !== aktifId) {
       yuklenenKullaniciIdRef.current = aktifId;
-      const onbellekVar = !!getTalepOnbellek();
+      const onbellek = getTalepOnbellek(aktifId);
+      if (onbellek) {
+        setTalepler(onbellek.talepler);
+        setOzetSayilari(onbellek.ozet);
+        setLoading(false);
+      } else {
+        setTalepler([]);
+        setOzetSayilari(null);
+        setSeciliTalepId(null);
+        setDetay(null);
+        setLoading(true);
+      }
+      const onbellekVar = !!onbellek;
       void veriCek({ ilkYukleme: !onbellekVar, manuel: false });
     }
   }, [kullanici?.id, veriCek]);

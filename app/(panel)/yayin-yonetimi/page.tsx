@@ -112,7 +112,7 @@ function YayinYonetimiIcerik() {
   }, [baslangicHedef, baslangicDurum]);
 
   const yy = useYayinYonetimi({
-    kullaniciVar: !!kullaniciId,
+    kullaniciId,
     aktifAnaSekme,
     onOzetYuklendi,
     hata,

@@ -24,7 +24,7 @@ import { VARSAYILAN_BAREM_TABLOSU, type SatisSartiTipi, type BaremSatiri } from 
 import { getOzetOnbellek, setOzetOnbellek, type OzetVerisi } from "./ozetOnbellek";
 
 interface UseYayinYonetimiArgs {
-  kullaniciVar: boolean;
+  kullaniciId?: string;
   aktifAnaSekme: YayinHedefGrubu;
   onOzetYuklendi?: (sayilar: Record<string, number>) => void;
   hata: (mesaj: string, adim?: string, detay?: string) => void;
@@ -36,8 +36,8 @@ type YayinApiSatiri = Omit<Yayin, "hedef_roller" | "turu_adi"> & {
   egitim_turu: string | null;
 };
 
-export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, onOzetYuklendi, hata, basari }: UseYayinYonetimiArgs) {
-  const baslangicOzet = getOzetOnbellek();
+export function useYayinYonetimi({ kullaniciId, aktifAnaSekme, onOzetYuklendi, hata, basari }: UseYayinYonetimiArgs) {
+  const baslangicOzet = getOzetOnbellek(kullaniciId);
 
   const [bekleyenler, setBekleyenler] = useState<Bekleyen[]>([]);
   const [bekleyenHedefSayilari, setBekleyenHedefSayilari] = useState<BekleyenHedefSayilari>(
@@ -111,7 +111,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, onOzetYuklendi, 
       if (!res.ok) return;
       const d = (await res.json()) as OzetVerisi;
       if (d && d.sayilar) {
-        setOzetOnbellek(d);
+        if (kullaniciId) setOzetOnbellek(kullaniciId, d);
         setBekleyenHedefSayilari(d.sayilar as unknown as BekleyenHedefSayilari);
         if (onOzetYuklendi) {
           onOzetYuklendi(d.sayilar);
@@ -131,10 +131,32 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, onOzetYuklendi, 
     } catch {
       // sessizce geç
     }
-  }, [onOzetYuklendi]);
+  }, [kullaniciId, onOzetYuklendi]);
 
   useEffect(() => {
-    if (!kullaniciVar) return;
+    if (!kullaniciId) return;
+    const onbellek = getOzetOnbellek(kullaniciId);
+    if (onbellek) {
+      setBekleyenHedefSayilari(onbellek.sayilar as unknown as BekleyenHedefSayilari);
+      setHedefOzetleri(onbellek.hedefler);
+      setStatSayilari({
+        canli: Number(onbellek.canli ?? 0),
+        planli: Number(onbellek.planli ?? 0),
+        durdurulan: Number(onbellek.durdurulan ?? 0),
+        bekleyen: Number(onbellek.bekleyen ?? 0),
+      });
+    } else {
+      setBekleyenHedefSayilari({
+        utt: 0,
+        bm: 0,
+        eczaci: 0,
+        eczane_teknisyeni: 0,
+        [ECLUB_ORTAK_YAYIN_GRUBU]: 0,
+        eczanem: 0,
+      });
+      setHedefOzetleri(null);
+      setStatSayilari(null);
+    }
     void ozetCek();
     (async () => {
       const res = await fetch("/yayin-yonetimi/api/tekrar-secenekleri");
@@ -145,7 +167,7 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, onOzetYuklendi, 
         setTekrarSecenekleri(d.secenekler ?? []);
       }
     })();
-  }, [kullaniciVar, hata, ozetCek]);
+  }, [kullaniciId, hata, ozetCek]);
 
   const veriCek = useCallback(async (ilkYukleme = false) => {
     if (ilkYukleme) setLoading(true);
@@ -236,7 +258,12 @@ export function useYayinYonetimi({ kullaniciVar, aktifAnaSekme, onOzetYuklendi, 
     }
   }, [aktifAnaSekme, hata]);
 
-  useEffect(() => { if (kullaniciVar) void veriCek(true); }, [kullaniciVar, veriCek]);
+  useEffect(() => {
+    if (!kullaniciId) return;
+    setBekleyenler([]);
+    setYayinlar([]);
+    void veriCek(true);
+  }, [kullaniciId, veriCek]);
 
   // ─── Puan yardımcıları ──────────────────────────────────────────────────
 

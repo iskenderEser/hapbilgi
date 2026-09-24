@@ -221,7 +221,7 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
   const { mesajlar, hata } = useHataMesaji();
   const hataRef = useRef(hata);
 
-  const baslangicVideolar = getKatalogOnbellek(kapsam);
+  const baslangicVideolar = getKatalogOnbellek(kapsam, kullanici?.id);
   const [videolar, setVideolar] = useState<YayindakiVideo[]>(() => baslangicVideolar ?? []);
   const [loading, setLoading] = useState(() => !baslangicVideolar);
   const [yenileniyor, setYenileniyor] = useState(false);
@@ -267,7 +267,7 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
         return;
       }
       const gelen = (data.videolar ?? []) as YayindakiVideo[];
-      setKatalogOnbellek(kapsam, gelen);
+      if (kullanici?.id) setKatalogOnbellek(kapsam, kullanici.id, gelen);
       setVideolar(gelen);
       if (kapsam === "benim") {
         setAktifHedef(TUM_HEDEF_ROLLER.find((hedef) => gelen.some((video) => video.hedef_roller.includes(hedef))) ?? "utt");
@@ -282,7 +282,7 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
       if (ilkYukleme) setLoading(false);
       else setYenileniyor(false);
     }
-  }, [kapsam]);
+  }, [kapsam, kullanici?.id]);
 
   useEffect(() => {
     if (yukleniyor) return;
@@ -292,7 +292,17 @@ export default function UreticiYayinKatalogu({ kapsam }: Props) {
       return;
     }
 
-    void veriCek(true);
+    const onbellek = getKatalogOnbellek(kapsam, kullanici.id);
+    if (onbellek) {
+      setVideolar(onbellek);
+      setLoading(false);
+    } else {
+      setVideolar([]);
+      setAktifVideo(null);
+      setAktifYayinTuru("tumu");
+      setLoading(true);
+    }
+    void veriCek(!onbellek);
   }, [kullanici, yukleniyor, router, veriCek]);
 
   useEffect(() => {

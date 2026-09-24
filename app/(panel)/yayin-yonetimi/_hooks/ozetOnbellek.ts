@@ -14,17 +14,20 @@ export interface OzetVerisi {
   durdurulan: number;
 }
 
-let bellekOzet: OzetVerisi | null = null;
-const CACHE_KEY = "hb_yy_ozet_cache";
+const bellekOzetleri = new Map<string, OzetVerisi>();
+const CACHE_PREFIX = "hb_yy_ozet_cache_";
 
-export function getOzetOnbellek(): OzetVerisi | null {
+export function getOzetOnbellek(kullaniciId?: string): OzetVerisi | null {
+  if (!kullaniciId) return null;
+  const bellekOzet = bellekOzetleri.get(kullaniciId);
   if (bellekOzet) return bellekOzet;
   if (typeof window !== "undefined") {
     try {
-      const s = sessionStorage.getItem(CACHE_KEY);
+      const s = sessionStorage.getItem(`${CACHE_PREFIX}${kullaniciId}`);
       if (s) {
-        bellekOzet = JSON.parse(s);
-        return bellekOzet;
+        const ozet = JSON.parse(s) as OzetVerisi;
+        bellekOzetleri.set(kullaniciId, ozet);
+        return ozet;
       }
     } catch {
       // sessizce geç
@@ -33,11 +36,11 @@ export function getOzetOnbellek(): OzetVerisi | null {
   return null;
 }
 
-export function setOzetOnbellek(veri: OzetVerisi) {
-  bellekOzet = veri;
+export function setOzetOnbellek(kullaniciId: string, veri: OzetVerisi) {
+  bellekOzetleri.set(kullaniciId, veri);
   if (typeof window !== "undefined") {
     try {
-      sessionStorage.setItem(CACHE_KEY, JSON.stringify(veri));
+      sessionStorage.setItem(`${CACHE_PREFIX}${kullaniciId}`, JSON.stringify(veri));
     } catch {
       // sessizce geç
     }
@@ -49,13 +52,13 @@ export function setOzetOnbellek(veri: OzetVerisi) {
  * veriyi hazırlar, böylece sayfaya girildiğinde sayılar 0'dan değil
  * ilk kareden gerçek değeriyle çizilir.
  */
-export async function prefetchYayinOzet(): Promise<OzetVerisi | null> {
+export async function prefetchYayinOzet(kullaniciId: string): Promise<OzetVerisi | null> {
   try {
     const res = await fetch("/yayin-yonetimi/api/ozet");
     if (!res.ok) return null;
     const d = (await res.json()) as OzetVerisi;
     if (d && d.sayilar) {
-      setOzetOnbellek(d);
+      setOzetOnbellek(kullaniciId, d);
       return d;
     }
   } catch {

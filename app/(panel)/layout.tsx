@@ -80,9 +80,9 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   // Üretici rolleri için ana sayfa ve panel içi gezinmede tüm kritik sayfaların önbelleğini ısıt
   useEffect(() => {
     if (kullanici && URETICI_ROLLER.includes(rolKucu)) {
-      void prefetchYayinOzet();
-      void prefetchTalepMerkezi();
-      void prefetchYayinKatalog("benim");
+      void prefetchYayinOzet(kullanici.id);
+      void prefetchTalepMerkezi(kullanici.id);
+      void prefetchYayinKatalog("benim", kullanici.id);
       void prefetchUretimRaporu("bu_ay", kullanici.id);
     }
   }, [kullanici, rolKucu]);

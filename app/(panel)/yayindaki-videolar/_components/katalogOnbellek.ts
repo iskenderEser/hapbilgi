@@ -8,15 +8,18 @@ import type { YayindakiVideo } from "@/lib/video/yayindakiVideolar";
 
 const bellekKatalog: Record<string, YayindakiVideo[]> = {};
 const CACHE_PREFIX = "hb_katalog_cache_";
+const onbellekAnahtari = (kapsam: string, kullaniciId: string) => `${kullaniciId}_${kapsam}`;
 
-export function getKatalogOnbellek(kapsam: string): YayindakiVideo[] | null {
-  if (bellekKatalog[kapsam]) return bellekKatalog[kapsam];
+export function getKatalogOnbellek(kapsam: string, kullaniciId?: string): YayindakiVideo[] | null {
+  if (!kullaniciId) return null;
+  const anahtar = onbellekAnahtari(kapsam, kullaniciId);
+  if (bellekKatalog[anahtar]) return bellekKatalog[anahtar];
   if (typeof window !== "undefined") {
     try {
-      const s = sessionStorage.getItem(`${CACHE_PREFIX}${kapsam}`);
+      const s = sessionStorage.getItem(`${CACHE_PREFIX}${anahtar}`);
       if (s) {
         const parsed = JSON.parse(s) as YayindakiVideo[];
-        bellekKatalog[kapsam] = parsed;
+        bellekKatalog[anahtar] = parsed;
         return parsed;
       }
     } catch {
@@ -26,24 +29,25 @@ export function getKatalogOnbellek(kapsam: string): YayindakiVideo[] | null {
   return null;
 }
 
-export function setKatalogOnbellek(kapsam: string, videolar: YayindakiVideo[]) {
-  bellekKatalog[kapsam] = videolar;
+export function setKatalogOnbellek(kapsam: string, kullaniciId: string, videolar: YayindakiVideo[]) {
+  const anahtar = onbellekAnahtari(kapsam, kullaniciId);
+  bellekKatalog[anahtar] = videolar;
   if (typeof window !== "undefined") {
     try {
-      sessionStorage.setItem(`${CACHE_PREFIX}${kapsam}`, JSON.stringify(videolar));
+      sessionStorage.setItem(`${CACHE_PREFIX}${anahtar}`, JSON.stringify(videolar));
     } catch {
       // sessizce geç
     }
   }
 }
 
-export async function prefetchYayinKatalog(kapsam: "benim" | "digerleri" = "benim"): Promise<YayindakiVideo[] | null> {
+export async function prefetchYayinKatalog(kapsam: "benim" | "digerleri", kullaniciId: string): Promise<YayindakiVideo[] | null> {
   try {
     const res = await fetch(`/yayindaki-videolar/api?kapsam=${kapsam}`);
     if (!res.ok) return null;
     const data = await res.json();
     const videolar = (data.videolar ?? []) as YayindakiVideo[];
-    setKatalogOnbellek(kapsam, videolar);
+    setKatalogOnbellek(kapsam, kullaniciId, videolar);
     return videolar;
   } catch {
     // sessizce geç

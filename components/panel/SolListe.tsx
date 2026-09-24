@@ -111,9 +111,9 @@ export default function SolListe(props: SolListeProps) {
     const onHover = () => {
       setHover(oge.etiket);
       router.prefetch(path);
-      if (path === "/yayin-takip") void prefetchTalepMerkezi();
-      else if (path === "/yayin-yonetimi") void prefetchYayinOzet();
-      else if (path === "/sizin-yayinlariniz") void prefetchYayinKatalog("benim");
+      if (path === "/yayin-takip" && kullanici?.id) void prefetchTalepMerkezi(kullanici.id);
+      else if (path === "/yayin-yonetimi" && kullanici?.id) void prefetchYayinOzet(kullanici.id);
+      else if (path === "/sizin-yayinlariniz" && kullanici?.id) void prefetchYayinKatalog("benim", kullanici.id);
       else if (path === "/raporlar/yayin-raporlari" && kullanici?.id) void prefetchUretimRaporu("bu_ay", kullanici.id);
     };
 

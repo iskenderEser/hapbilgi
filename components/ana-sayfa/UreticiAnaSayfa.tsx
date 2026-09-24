@@ -77,9 +77,9 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
       setLoading(false);
     };
     veriCek();
-    void prefetchYayinOzet();
-    void prefetchYayinKatalog("benim");
-    void prefetchTalepMerkezi();
+    void prefetchYayinOzet(user.id);
+    void prefetchYayinKatalog("benim", user.id);
+    void prefetchTalepMerkezi(user.id);
   }, [user]);
 
   const formatTarih = (tarih: string) =>
