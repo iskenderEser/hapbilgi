@@ -1,153 +1,171 @@
-// app/(panel)/raporlar/tclub-uretici/page.tsx
-//
-// Üretici Rolleri (PM, Medikal, Eğitim, İK) T-Club Saha Raporu Sayfası.
-// TM T-Club Raporu ile birebir aynı görsel aile, desen ve hiyerarşiyi (BM → UTT) kullanır;
-// ancak üreticinin sorumlu olduğu ürün/eğitim portföyünün sahada ürettiği puanları yansıtır.
+"use client";
 
-'use client';
-
-import { useState } from 'react';
-import Link from 'next/link';
+import { useState } from "react";
+import Link from "next/link";
 import {
-  Activity,
   ArrowLeft,
-  BarChart3,
-  BookOpenCheck,
-  CircleMinus,
-  CirclePlus,
+  ChartNoAxesCombined,
+  ExternalLink,
+  FileChartColumnIncreasing,
   Gauge,
   Layers3,
-  Sparkles,
-} from 'lucide-react';
-import { useAuth } from '@/app/providers/AuthProvider';
-import { useRapor } from '@/hooks/useRapor';
-import { YenileButonu } from '@/components/ui/yenile-butonu';
-import RaporPeriyotSecici from '@/components/raporlar/RaporPeriyotSecici';
-import { formatPuan, GRI_METIN, KIRMIZI, KOYU_METIN, type Periyot } from '@/lib/utils/raporUtils';
-import { TUR_RAPOR_ADI, TUR_SIRA, isIcerikTuru } from '@/lib/video/icerikTuru';
-import BegeniFavoriListesi from '@/components/raporlar/BegeniFavoriListesi';
-import DagilimGrafik from '@/components/raporlar/DagilimGrafik';
-import UrunKirilimPaneli from '@/components/raporlar/UrunKirilimPaneli';
-import BmPerformansGorunumu from '@/components/raporlar/BmPerformansGorunumu';
-import SayfaRehberi from '@/components/rehber/SayfaRehberi';
-import type { BmPerformansDetay } from '@/lib/rapor/paylasilan/bmPerformansTipleri';
-import styles from '../utt/utt-report.module.css';
+  MapPinned,
+  Newspaper,
+} from "lucide-react";
+import { useAuth } from "@/app/providers/AuthProvider";
+import { useRapor } from "@/hooks/useRapor";
+import { YenileButonu } from "@/components/ui/yenile-butonu";
+import RaporPeriyotSecici from "@/components/raporlar/RaporPeriyotSecici";
+import DagilimGrafik from "@/components/raporlar/DagilimGrafik";
+import YayinDetayModal from "@/components/raporlar/YayinDetayModal";
+import SayfaRehberi from "@/components/rehber/SayfaRehberi";
+import { formatPuan, GRI_METIN, KIRMIZI, type Periyot } from "@/lib/utils/raporUtils";
+import { TUR_RAPOR_ADI, isIcerikTuru } from "@/lib/video/icerikTuru";
+import styles from "../utt/utt-report.module.css";
 
-const DEFAULT_PERIYOT: Periyot = 'bu_ay';
-const PERIYOT_PUAN_ADI: Record<Periyot, string> = {
-  bu_gun: 'Gün',
-  bu_hafta: 'Hafta',
-  bu_ay: 'Ay',
-  bu_donem: 'Dönem',
-  bu_yil: 'Yıl',
-};
+const DEFAULT_PERIYOT: Periyot = "bu_ay";
 
-interface DagilimPuanlari {
-  izlenme_sayisi: number;
-  video_puani: number;
-  soru_puani: number;
+type PuanOzeti = {
+  izleme_puani: number;
+  cevaplama_puani: number;
   oneri_puani: number;
-  extra_puan: number;
+  extra_puani: number;
+  eclub_puani: number;
   ileri_sarma_kaybi: number;
   yanlis_cevap_kaybi: number;
   oneri_kaybi: number;
-  toplam_net_puan: number;
-  teknik_dagilimi: Array<{ teknik_adi: string; izlenme_sayisi: number }>;
-}
+  kazanilan_puan: number;
+  kaybedilen_puan: number;
+  net_puan: number;
+};
 
-interface KategoriDagilimi extends DagilimPuanlari {
+type SahaSatiri = {
+  id: string;
+  ad: string;
+  utt_sayisi: number;
+  kazanilan_puan: number;
+  kaybedilen_puan: number;
+  net_puan: number;
+};
+
+type UttSatiri = {
+  kullanici_id: string;
+  ad: string;
+  takim: string;
+  bolge: string;
+  izleme_puani: number;
+  cevaplama_puani: number;
+  oneri_puani: number;
+  extra_puani: number;
+  eclub_puani?: number;
+  ileri_sarma_kaybi: number;
+  yanlis_cevap_kaybi: number;
+  oneri_kaybi: number;
+  toplam_puan: number;
+};
+
+type YayinSatiri = {
+  yayin_id: string;
+  yayin_adi: string;
+  urun_adi: string | null;
   icerik_turu: string;
+  arac_turu: string;
+  tamamlanma: number;
+  aktif_utt: number;
+  kazanilan_puan: number;
+  kaybedilen_puan: number;
+  net_puan: number;
+};
+
+type IcerikSatiri = {
+  anahtar: string;
+  ad: string;
+  tamamlanma: number;
+  kazanilan_puan: number;
+  kaybedilen_puan: number;
+  net_puan: number;
+};
+
+type RaporData = {
+  kullanici: { ad: string; soyad: string; rol: string; firma_adi: string };
+  ozet: PuanOzeti;
+  bilesenler: PuanOzeti;
+  saha: { takimlar: SahaSatiri[]; bolgeler: SahaSatiri[]; uttler: UttSatiri[] };
+  yayin_katkisi: PuanOzeti & { firma_net_puani: number; katki_yuzdesi: number; yayin_sayisi: number; tamamlanma: number };
+  yayinlar: YayinSatiri[];
+  icerik: { araclar: IcerikSatiri[]; kategoriler: IcerikSatiri[]; urunler: IcerikSatiri[] };
+  tutarlilik: { yayinlarimin_lig_neti: number; yayin_detay_neti: number; eslesiyor: boolean };
+};
+
+function KartBasligi({ baslik, aciklama, icon: Icon }: { baslik: string; aciklama: string; icon: typeof Gauge }) {
+  return (
+    <div className={styles.sectionHeader}>
+      <div>
+        <h2 className="text-base font-extrabold text-[#20324c]">{baslik}</h2>
+        <p className="mt-0.5 text-[11px] font-medium text-[#8190a3]">{aciklama}</p>
+      </div>
+      <div className={styles.sectionIcon}><Icon className="h-4 w-4" /></div>
+    </div>
+  );
 }
 
-interface UrunDagilimi extends DagilimPuanlari {
-  urun_id: string;
-  urun_adi: string;
+function Stat({ baslik, deger, ton = "blue" }: { baslik: string; deger: string; ton?: "blue" | "green" | "red" }) {
+  const renk = ton === "green" ? "text-[#16865f]" : ton === "red" ? "text-[#d44b40]" : "text-[#237ac8]";
+  return (
+    <div className="rounded-2xl border border-[#e7edf4] bg-[#f8fafc] p-4">
+      <div className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-[#7c8da2]">{baslik}</div>
+      <div className={`mt-1 text-2xl font-black tabular-nums ${renk}`}>{deger}</div>
+    </div>
+  );
 }
 
-interface RaporData {
-  kullanici: {
-    ad: string;
-    soyad: string;
-    rol: string;
-    takim_adi: string;
-    firma_adi: string;
-  };
-  katki: {
-    sirket_katki_yuzdesi: number;
-    takim_mevcut_puan: number;
-    sirket_toplam_puan: number;
-  };
-  istatistikler: {
-    izleme_puani: number;
-    cevaplama_puani: number;
-    oneri_puani: number;
-    extra_puan: number;
-    ileri_sarma_kaybi: number;
-    yanlis_cevap_kaybi: number;
-    oneri_kaybi: number;
-    toplam_net_puan: number;
-  };
-  bm_performans: BmPerformansDetay[];
-  kategori_dagilimi: KategoriDagilimi[];
-  urun_dagilimi: UrunDagilimi[];
-  begeni_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; begeni_sayisi: number }>;
-  favori_listesi: Array<{ yayin_id: string; urun_adi: string; teknik_adi: string; favori_sayisi: number }>;
-}
-
-const kategoriAdi = (tur: string) => (isIcerikTuru(tur) ? TUR_RAPOR_ADI[tur] : tur);
-
-const kategoriSirasi = (tur: string) => {
-  const sira = isIcerikTuru(tur) ? TUR_SIRA.indexOf(tur) : -1;
-  return sira === -1 ? TUR_SIRA.length : sira;
+const ARAC_ADLARI: Record<string, string> = {
+  video: "Video",
+  podcast: "Podcast",
+  gorsel: "Dijital Broşür",
+  flip_pdf: "Literatür",
 };
 
 export default function TclubUreticiRaporPage() {
   const { kullanici, yukleniyor } = useAuth();
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
-  const [acikKategori, setAcikKategori] = useState<string | null>(null);
-
+  const [sahaSekmesi, setSahaSekmesi] = useState<"takimlar" | "bolgeler" | "uttler">("takimlar");
+  const [icerikSekmesi, setIcerikSekmesi] = useState<"araclar" | "kategoriler" | "urunler">("araclar");
+  const [seciliYayinId, setSeciliYayinId] = useState<string | null>(null);
   const { data, loading, yenileniyor, error, yenile } = useRapor<RaporData>(
-    '/raporlar/api/tclub-uretici',
+    "/raporlar/api/tclub-uretici",
     periyot,
     kullanici?.id,
   );
 
   if (yukleniyor || loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-sm" style={{ color: GRI_METIN }}>Yükleniyor...</div>
-      </div>
-    );
+    return <div className="flex min-h-screen items-center justify-center"><div className="text-sm" style={{ color: GRI_METIN }}>Yükleniyor...</div></div>;
   }
-
   if (error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-sm" style={{ color: KIRMIZI }}>Hata: {error}</div>
-      </div>
-    );
+    return <div className="flex min-h-screen items-center justify-center"><div className="text-sm" style={{ color: KIRMIZI }}>Hata: {error}</div></div>;
   }
-
   if (!kullanici || !data) return null;
 
-  const pozitifKalemler = [
-    { ad: 'Video', puan: data.istatistikler.izleme_puani },
-    { ad: 'Doğru cevap', puan: data.istatistikler.cevaplama_puani },
-    { ad: 'Öneri', puan: data.istatistikler.oneri_puani },
-    { ad: 'Extra', puan: data.istatistikler.extra_puan },
+  const b = data.bilesenler;
+  const puanBilesenleri = [
+    { ad: "Öğrenme Tamamlama", puan: b.izleme_puani, renk: "#1D9E75" },
+    { ad: "Doğru Cevaplama", puan: b.cevaplama_puani, renk: "#1D9E75" },
+    { ad: "Öneri Tamamlama", puan: b.oneri_puani, renk: "#1D9E75" },
+    { ad: "Extra", puan: b.extra_puani, renk: "#1D9E75" },
+    { ad: "E-Club", puan: b.eclub_puani, renk: "#1D9E75" },
+    { ad: "İleri Sarma", puan: -b.ileri_sarma_kaybi, renk: "#D44B40" },
+    { ad: "Yanlış Cevaplama", puan: -b.yanlis_cevap_kaybi, renk: "#D44B40" },
+    { ad: "Öneri Kaçırma", puan: -b.oneri_kaybi, renk: "#D44B40" },
   ];
-
-  const kayipKalemleri = [
-    { ad: 'İleri sarma', puan: data.istatistikler.ileri_sarma_kaybi },
-    { ad: 'Yanlış cevap', puan: data.istatistikler.yanlis_cevap_kaybi },
-    { ad: 'Öneri kaybı', puan: data.istatistikler.oneri_kaybi },
-  ];
-
-  const pozitifToplam = pozitifKalemler.reduce((toplam, k) => toplam + k.puan, 0);
-  const toplamKayip = kayipKalemleri.reduce((toplam, k) => toplam + k.puan, 0);
-  const enGuclu = [...pozitifKalemler].sort((a, b) => b.puan - a.puan)[0];
-  const enBuyukKayip = [...kayipKalemleri].sort((a, b) => b.puan - a.puan)[0];
-  const oneCikanUrun = [...(data.urun_dagilimi ?? [])].sort((a, b) => b.toplam_net_puan - a.toplam_net_puan)[0];
+  const sahaSatirlari = data.saha[sahaSekmesi];
+  const icerikSatirlari = data.icerik[icerikSekmesi].map((satir) => ({
+    ...satir,
+    ad: icerikSekmesi === "araclar"
+      ? (ARAC_ADLARI[satir.anahtar] ?? satir.ad)
+      : icerikSekmesi === "kategoriler" && isIcerikTuru(satir.anahtar)
+        ? TUR_RAPOR_ADI[satir.anahtar]
+        : satir.ad,
+  }));
 
   return (
     <div className={styles.page} style={{ fontFamily: "'Nunito', sans-serif" }}>
@@ -158,15 +176,12 @@ export default function TclubUreticiRaporPage() {
 
         <header className={styles.header}>
           <div>
-            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">
-              <Sparkles className="h-3.5 w-3.5" /> Saha Performans Analizi
+            <div className="inline-flex items-center">
+              <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">T-Club Raporları</h1>
+              <SayfaRehberi anahtar="raporlar-uretici" className="ml-1.5 -translate-y-1" />
             </div>
-            <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d] inline-flex items-center">
-              <span>T-Club Raporları</span>
-              <SayfaRehberi anahtar="raporlar-uretici" className="ml-1.5 -translate-y-1.5" />
-            </h1>
             <p className="mt-0.5 text-xs font-semibold text-[#78889d]">
-              {data.kullanici.rol.toUpperCase()} · {data.kullanici.ad} {data.kullanici.soyad} · {data.kullanici.takim_adi}
+              Firma T-Club puanlarının saha, yayın ve içerik ayrıntılarını görebilirsiniz.
             </p>
           </div>
           <div className="flex w-full items-center gap-2 sm:w-auto">
@@ -175,200 +190,87 @@ export default function TclubUreticiRaporPage() {
           </div>
         </header>
 
-        {/* Hero Grid: Net Saha Puanı + Şirket Katkısı */}
-        <div className={styles.heroGrid}>
-          <section className={`${styles.panel} ${styles.scoreHero}`}>
-            <div>
-              <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">
-                {PERIYOT_PUAN_ADI[periyot]} net saha puanı
-              </div>
-              <div className={styles.netScore}>{formatPuan(data.istatistikler.toplam_net_puan)}</div>
-            </div>
-            <div className="relative z-10 min-w-0">
-              <h2 className="text-base font-extrabold text-[#20324c]">Saha puanını nasıl üretti?</h2>
-              <p className="mt-1 text-xs font-medium leading-relaxed text-[#718198]">
-                En güçlü kaynak <strong className="text-[#16865f]">{enGuclu.ad} (+{formatPuan(enGuclu.puan)})</strong>.
-                {enBuyukKayip.puan > 0 && (
-                  <> En yüksek kayıp <strong className="text-[#d44b40]">{enBuyukKayip.ad} (−{formatPuan(enBuyukKayip.puan)})</strong>.</>
-                )}
-              </p>
-              <div className={styles.metricGrid}>
-                <div className={styles.metric}>
-                  <CirclePlus className="mb-1 h-4 w-4 text-[#1d9e75]" />
-                  <div className="text-[10px] font-bold text-[#8190a3]">Pozitif üretim</div>
-                  <div className="text-base font-extrabold tabular-nums text-[#16865f]">
-                    +{formatPuan(pozitifToplam)}
-                  </div>
-                </div>
-                <div className={styles.metric}>
-                  <CircleMinus className="mb-1 h-4 w-4 text-[#e25546]" />
-                  <div className="text-[10px] font-bold text-[#8190a3]">Puan kaybı</div>
-                  <div className="text-base font-extrabold tabular-nums text-[#d44b40]">
-                    −{formatPuan(toplamKayip)}
-                  </div>
-                </div>
-                <div className={styles.metric}>
-                  <Layers3 className="mb-1 h-4 w-4 text-[#7c5ce7]" />
-                  <div className="text-[10px] font-bold text-[#8190a3]">Öne çıkan ürün</div>
-                  <div className="truncate text-sm font-extrabold text-[#43546d]">
-                    {oneCikanUrun?.urun_adi ?? '—'}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className={`${styles.panel} ${styles.contribution}`}>
-            <div className="mb-3 flex items-center justify-between">
-              <div>
-                <div className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#71859d]">
-                  Sahanın etki alanı
-                </div>
-                <h2 className="text-sm font-extrabold text-[#20324c]">Katkı Payı</h2>
-              </div>
-              <div className={styles.sectionIcon}><Gauge className="h-4 w-4" /></div>
-            </div>
-            <div className={styles.contributionItem}>
-              <div className="mb-1.5 flex items-end justify-between">
-                <span className="text-xs font-bold text-[#556981]">Şirket katkısı</span>
-                <span className="text-xl font-black tabular-nums text-[#237ac8]">
-                  %{data.katki.sirket_katki_yuzdesi}
-                </span>
-              </div>
-              <div className={styles.progressTrack}>
-                <div
-                  className={styles.progressFill}
-                  style={{ width: `${Math.max(0, Math.min(data.katki.sirket_katki_yuzdesi, 100))}%` }}
-                />
-              </div>
-              <div className="mt-1.5 flex justify-between text-[10px] font-semibold text-[#8a98aa]">
-                <span>Portföy: {formatPuan(data.katki.takim_mevcut_puan)}</span>
-                <span>Şirket: {formatPuan(data.katki.sirket_toplam_puan)}</span>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        {/* Puan Akışı */}
         <section className={`${styles.panel} ${styles.section}`}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">
-                Kazançlar ve kayıplar
-              </div>
-              <h2 className="text-base font-extrabold text-[#20324c]">Puan Akışı</h2>
-              <p className="mt-0.5 text-[11px] font-medium text-[#8190a3]">
-                Net saha puanını oluşturan bütün davranış kalemleri
-              </p>
-            </div>
-            <div className={styles.sectionIcon}><Activity className="h-4 w-4" /></div>
-          </div>
-          <DagilimGrafik
-            veri={[
-              { ad: 'Video', puan: data.istatistikler.izleme_puani, renk: '#1D9E75' },
-              { ad: 'Doğru Cevap', puan: data.istatistikler.cevaplama_puani, renk: '#1D9E75' },
-              { ad: 'Öneri', puan: data.istatistikler.oneri_puani, renk: '#1D9E75' },
-              { ad: 'Extra', puan: data.istatistikler.extra_puan, renk: '#1D9E75' },
-              { ad: 'İleri sarma', puan: -data.istatistikler.ileri_sarma_kaybi, renk: '#D44B40' },
-              { ad: 'Yanlış cevap', puan: -data.istatistikler.yanlis_cevap_kaybi, renk: '#D44B40' },
-              { ad: 'Öneri kaybı', puan: -data.istatistikler.oneri_kaybi, renk: '#D44B40' },
-            ]}
-            modlar={['bar', 'line', 'tablo']}
-            apsisAdi="Puan türü"
-            ordinatAdi="Puan"
-            indirAdi="uretici-tclub-toplam-puan"
-            height={270}
-            modern
-          />
-          <div className={styles.insight}>
-            <BarChart3 className="mt-0.5 h-4 w-4 shrink-0 text-[#237ac8]" />
-            <span>
-              Saha bu dönemde portföyünüzden <strong>{formatPuan(pozitifToplam)}</strong> pozitif puan üretti; davranış kayıpları net sonucu <strong>{formatPuan(toplamKayip)} puan</strong> azalttı.
-            </span>
+          <KartBasligi baslik="Firma T-Club Puan Özeti" aciklama="Seçili dönemde firmanın kazandığı, kaybettiği ve net T-Club puanı" icon={Gauge} />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Stat baslik="Net Puan" deger={formatPuan(data.ozet.net_puan)} />
+            <Stat baslik="Kazanılan Puan" deger={`+${formatPuan(data.ozet.kazanilan_puan)}`} ton="green" />
+            <Stat baslik="Kaybedilen Puan" deger={data.ozet.kaybedilen_puan ? `−${formatPuan(data.ozet.kaybedilen_puan)}` : "0"} ton="red" />
           </div>
         </section>
 
-        {/* Hiyerarşik Saha Ekip Performansı (BM → UTT) */}
-        <BmPerformansGorunumu
-          bmPerformans={data.bm_performans ?? []}
-          aciklama="Bölgelerin ve bağlı UTT kadrolarının portföyünüz üzerindeki aktivite ve net puan dökümü"
-        />
+        <section className={`${styles.panel} ${styles.section}`}>
+          <KartBasligi baslik="Net Puan Bileşenleri" aciklama="Firma net puanını oluşturan bütün kazanım ve kayıp kalemleri" icon={ChartNoAxesCombined} />
+          <DagilimGrafik veri={puanBilesenleri} modlar={["bar", "line", "tablo"]} apsisAdi="Puan türü" ordinatAdi="Puan" indirAdi="firma-tclub-puan-bilesenleri" height={280} modern />
+        </section>
 
-        {/* Analiz Izgarası: Eğitim Kategorileri & Ürün Performansı */}
-        <div className={styles.analysisGrid}>
-          {(data.kategori_dagilimi ?? []).length > 0 && (() => {
-            const sirali = [...data.kategori_dagilimi].sort((a, b) => kategoriSirasi(a.icerik_turu) - kategoriSirasi(b.icerik_turu));
-            const kategoriler = sirali.map((k) => ({ ad: kategoriAdi(k.icerik_turu), puan: k.toplam_net_puan }));
-            const seciliKategori = sirali.find((k) => kategoriAdi(k.icerik_turu) === acikKategori) ?? null;
+        <section className={`${styles.panel} ${styles.section}`}>
+          <KartBasligi baslik="Saha Puan Dağılımı" aciklama="Firma puanının takım, bölge ve UTT bazındaki dağılımı" icon={MapPinned} />
+          <div className="mb-3 inline-flex rounded-xl border border-[#dfe8f2] bg-[#f7f9fc] p-1">
+            {(["takimlar", "bolgeler", "uttler"] as const).map((sekme) => (
+              <button key={sekme} type="button" onClick={() => setSahaSekmesi(sekme)} className={`rounded-lg px-3 py-1.5 text-xs font-extrabold ${sahaSekmesi === sekme ? "bg-[#237ac8] text-white" : "text-[#60728f]"}`}>
+                {sekme === "takimlar" ? "Takımlar" : sekme === "bolgeler" ? "Bölgeler" : "UTT’ler"}
+              </button>
+            ))}
+          </div>
+          <div className="overflow-x-auto rounded-xl border border-[#e8edf3]">
+            <table className="w-full min-w-[620px] text-xs">
+              <thead className="bg-[#f6f8fb] text-[#7c8da2]"><tr><th className="px-3 py-2 text-left">{sahaSekmesi === "uttler" ? "UTT" : "Birim"}</th><th className="px-3 py-2 text-right">Kazanılan</th><th className="px-3 py-2 text-right">Kaybedilen</th><th className="px-3 py-2 text-right">Net</th></tr></thead>
+              <tbody>
+                {sahaSatirlari.map((satir) => {
+                  const utt = sahaSekmesi === "uttler" ? satir as UttSatiri : null;
+                  const grup = sahaSekmesi !== "uttler" ? satir as SahaSatiri : null;
+                  const kazanilan = utt ? utt.izleme_puani + utt.cevaplama_puani + utt.oneri_puani + utt.extra_puani + (utt.eclub_puani ?? 0) : grup!.kazanilan_puan;
+                  const kaybedilen = utt ? utt.ileri_sarma_kaybi + utt.yanlis_cevap_kaybi + utt.oneri_kaybi : grup!.kaybedilen_puan;
+                  const net = utt ? utt.toplam_puan : grup!.net_puan;
+                  return <tr key={utt?.kullanici_id ?? grup!.id} className="border-t border-[#edf1f5]"><td className="px-3 py-2.5 font-bold text-[#344a65]">{utt?.ad ?? grup!.ad}</td><td className="px-3 py-2.5 text-right font-bold text-[#16865f]">+{formatPuan(kazanilan)}</td><td className="px-3 py-2.5 text-right font-bold text-[#d44b40]">{kaybedilen ? `−${formatPuan(kaybedilen)}` : "0"}</td><td className="px-3 py-2.5 text-right font-black text-[#237ac8]">{formatPuan(net)}</td></tr>;
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
 
-            return (
-              <section className={`${styles.panel} ${styles.section} mb-0`}>
-                <div className={styles.sectionHeader}>
-                  <div>
-                    <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">
-                      Portföy nerede güçlü?
-                    </div>
-                    <h2 className="text-base font-extrabold text-[#20324c]">Eğitim Kategorileri</h2>
-                  </div>
-                  <div className={styles.sectionIcon}><BookOpenCheck className="h-4 w-4" /></div>
-                </div>
-                <DagilimGrafik
-                  veri={kategoriler}
-                  secili={acikKategori}
-                  onSecim={setAcikKategori}
-                  indirAdi="uretici-tclub-egitim-kategori-dagilimi"
-                  height={250}
-                  modern
-                />
-                {seciliKategori && (
-                  <div className={styles.detailBox}>
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="text-xs font-extrabold text-[#20324c]">
-                        {kategoriAdi(seciliKategori.icerik_turu)} · {seciliKategori.izlenme_sayisi} izlenme
-                      </span>
-                      <span className="text-sm font-extrabold text-[#237ac8]">
-                        {formatPuan(seciliKategori.toplam_net_puan)}
-                      </span>
-                    </div>
-                    {[
-                      { label: 'Video puanı', value: seciliKategori.video_puani, renk: KOYU_METIN },
-                      { label: 'Doğru cevap puanı', value: seciliKategori.soru_puani, renk: '#16865f', prefix: '+ ' },
-                      { label: 'Öneri puanı', value: seciliKategori.oneri_puani, renk: '#16865f', prefix: '+ ' },
-                      { label: 'Extra puan', value: seciliKategori.extra_puan, renk: '#16865f', prefix: '+ ' },
-                      { label: 'İleri sarma kaybı', value: seciliKategori.ileri_sarma_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },
-                      { label: 'Yanlış cevap kaybı', value: seciliKategori.yanlis_cevap_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },
-                      { label: 'Öneri kaybı', value: seciliKategori.oneri_kaybi, renk: KIRMIZI, prefix: '− ', kayip: true },
-                    ].map((satir) => (
-                      <div key={satir.label} className="flex justify-between border-b border-[#e9eef4] py-1.5 text-[11px]">
-                        <span className={satir.kayip ? 'text-[#d44b40]' : 'text-[#718198]'}>{satir.label}</span>
-                        <span style={{ color: satir.renk, fontWeight: 700 }}>
-                          {satir.prefix || ''}{formatPuan(Math.abs(satir.value ?? 0))}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-            );
-          })()}
+        <section className={`${styles.panel} ${styles.section}`}>
+          <KartBasligi baslik="Yayınlarımın Firma Puanına Katkısı" aciklama="Yayınlarınızdan oluşan puanın firma toplamındaki karşılığı" icon={FileChartColumnIncreasing} />
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <Stat baslik="Net Katkı" deger={formatPuan(data.yayin_katkisi.net_puan)} />
+            <Stat baslik="Firma Payı" deger={`%${data.yayin_katkisi.katki_yuzdesi}`} />
+            <Stat baslik="Etkileşim Alan Yayın" deger={String(data.yayin_katkisi.yayin_sayisi)} />
+            <Stat baslik="Tamamlama" deger={formatPuan(data.yayin_katkisi.tamamlanma)} />
+          </div>
+          <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#edf1f5]"><div className="h-full rounded-full bg-gradient-to-r from-[#56aeff] to-[#237ac8]" style={{ width: `${Math.max(0, Math.min(data.yayin_katkisi.katki_yuzdesi, 100))}%` }} /></div>
+        </section>
 
-          {(data.urun_dagilimi ?? []).length > 0 && (
-            <section className={`${styles.panel} ${styles.section} mb-0`}>
-              <div className={styles.sectionHeader}>
-                <div>
-                  <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">
-                    Hangi ürün katkı sağladı?
-                  </div>
-                  <h2 className="text-base font-extrabold text-[#20324c]">Ürün Performansı</h2>
-                </div>
-                <div className={styles.sectionIcon}><Layers3 className="h-4 w-4" /></div>
-              </div>
-              <UrunKirilimPaneli urunler={data.urun_dagilimi} modern />
-            </section>
-          )}
-        </div>
+        <section className={`${styles.panel} ${styles.section}`}>
+          <KartBasligi baslik="Yayın Performansı" aciklama="Her yayının tamamlama, kazanım, kayıp ve net puan sonuçları" icon={Newspaper} />
+          <div className="overflow-x-auto rounded-xl border border-[#e8edf3]">
+            <table className="w-full min-w-[760px] text-xs">
+              <thead className="bg-[#f6f8fb] text-[#7c8da2]"><tr><th className="px-3 py-2 text-left">Yayın</th><th className="px-3 py-2 text-right">Tamamlama</th><th className="px-3 py-2 text-right">Aktif UTT</th><th className="px-3 py-2 text-right">Kazanılan</th><th className="px-3 py-2 text-right">Kaybedilen</th><th className="px-3 py-2 text-right">Net</th></tr></thead>
+              <tbody>
+                {data.yayinlar.map((yayin) => <tr key={yayin.yayin_id} className="border-t border-[#edf1f5]"><td className="px-3 py-2.5"><button type="button" onClick={() => setSeciliYayinId(yayin.yayin_id)} className="flex items-center gap-1 text-left font-extrabold text-[#237ac8] hover:underline focus-visible:outline-none" title="Yayın detayını ve soruları aç"><span>{yayin.yayin_adi}</span><ExternalLink className="h-3 w-3 shrink-0 text-[#71859d]" /></button><span className="text-[10px] text-[#8795a8]">{ARAC_ADLARI[yayin.arac_turu] ?? yayin.arac_turu}{yayin.urun_adi ? ` · ${yayin.urun_adi}` : ""}</span></td><td className="px-3 py-2.5 text-right">{formatPuan(yayin.tamamlanma)}</td><td className="px-3 py-2.5 text-right">{formatPuan(yayin.aktif_utt)}</td><td className="px-3 py-2.5 text-right font-bold text-[#16865f]">+{formatPuan(yayin.kazanilan_puan)}</td><td className="px-3 py-2.5 text-right font-bold text-[#d44b40]">{yayin.kaybedilen_puan ? `−${formatPuan(yayin.kaybedilen_puan)}` : "0"}</td><td className="px-3 py-2.5 text-right font-black text-[#237ac8]">{formatPuan(yayin.net_puan)}</td></tr>)}
+                {data.yayinlar.length === 0 && <tr><td colSpan={6} className="px-3 py-8 text-center text-[#8795a8]">Seçili dönemde yayınlarınıza ait puan hareketi oluşmadı.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </section>
 
-        <BegeniFavoriListesi begeniListesi={data.begeni_listesi ?? []} favoriListesi={data.favori_listesi ?? []} modern />
+        <section className={`${styles.panel} ${styles.section}`}>
+          <KartBasligi baslik="İçerik Puan Dağılımı" aciklama="Yayın puanlarının öğrenme aracı, eğitim konusu ve ürün bazındaki dağılımı" icon={Layers3} />
+          <div className="mb-3 inline-flex rounded-xl border border-[#dfe8f2] bg-[#f7f9fc] p-1">
+            {(["araclar", "kategoriler", "urunler"] as const).map((sekme) => <button key={sekme} type="button" onClick={() => setIcerikSekmesi(sekme)} className={`rounded-lg px-3 py-1.5 text-xs font-extrabold ${icerikSekmesi === sekme ? "bg-[#237ac8] text-white" : "text-[#60728f]"}`}>{sekme === "araclar" ? "Öğrenme Araçları" : sekme === "kategoriler" ? "Eğitim Konuları" : "Ürünler"}</button>)}
+          </div>
+          <DagilimGrafik veri={icerikSatirlari.map((satir) => ({ ad: satir.ad, puan: satir.net_puan }))} modlar={["bar", "line", "tablo"]} apsisAdi="İçerik" ordinatAdi="Net puan" indirAdi={`tclub-${icerikSekmesi}`} height={270} modern />
+        </section>
+
+        {!data.tutarlilik.eslesiyor && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-800">
+            Yayın ayrıntısı toplamı ile Yayınlarımın Ligi net puanı eşleşmiyor. Veri bütünlüğü incelemesi gerekiyor.
+          </div>
+        )}
+
+        {seciliYayinId && (
+          <YayinDetayModal yayinId={seciliYayinId} onKapat={() => setSeciliYayinId(null)} />
+        )}
       </div>
     </div>
   );
