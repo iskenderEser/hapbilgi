@@ -5,7 +5,9 @@ import { eclubYonetimKapsaminiGetir } from "@/lib/eclub/yonetimKapsami";
 import { ECLUB_YONETIM_ROLLERI } from "@/lib/utils/roller";
 import { hataYaniti, rolHatasi, sunucuHatasi, yetkiHatasi } from "@/lib/utils/hataIsle";
 import { tarihAraligi } from "@/lib/utils/tarihAraligi";
-import { aracTuruDagilimi } from "@/lib/rapor/paylasilan/aracTuruDagilimi";
+
+const RAPOR_ONBELLEK_SURESI = 300_000;
+const raporOnbellegi = new Map<string, { zaman: number; veri: Record<string, unknown> }>();
 
 export async function GET(request: Request) {
   try {
@@ -30,21 +32,22 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const { baslangic, bitis } = tarihAraligi(searchParams.get("periyot") ?? "bu_ay");
+    const periyot = searchParams.get("periyot") ?? "bu_ay";
+    const onbellekAnahtari = `${user.id}:${periyot}`;
+    const onbellekKaydi = raporOnbellegi.get(onbellekAnahtari);
+    if (searchParams.get("yenile") !== "1" && onbellekKaydi && Date.now() - onbellekKaydi.zaman < RAPOR_ONBELLEK_SURESI) {
+      return NextResponse.json({ success: true, data: onbellekKaydi.veri });
+    }
+    const { baslangic, bitis } = tarihAraligi(periyot);
     const kapsam = await eclubYonetimKapsaminiGetir(adminSupabase, kullanici);
-    const [sonuclar, aracTurleri] = await Promise.all([Promise.all(kapsam.uttler.map(async (utt) => ({
+    const sonuclar = await Promise.all(kapsam.uttler.map(async (utt) => ({
       utt,
       sonuc: await adminSupabase.rpc("get_eclub_utt_rapor", {
         p_utt_id: utt.utt_id,
         p_baslangic: baslangic,
         p_bitis: bitis,
       }),
-    }))), aracTuruDagilimi(adminSupabase, {
-      baslangic,
-      bitis,
-      takimId: kullanici.takim_id,
-      firmaId: kullanici.firma_id,
-    })]);
+    })));
     const hatali = sonuclar.find(({ sonuc }) => sonuc.error);
     if (hatali?.sonuc.error) {
       return hataYaniti(
@@ -60,9 +63,7 @@ export async function GET(request: Request) {
     });
     const tumSatirlar = uttRaporlari.flatMap((rapor) => rapor.satirlar);
 
-    return NextResponse.json({
-      success: true,
-      data: {
+    const yanit = {
         kullanici: {
           ad: kullanici.ad,
           soyad: kullanici.soyad,
@@ -70,11 +71,15 @@ export async function GET(request: Request) {
         },
         aralik: { baslangic, bitis },
         kapsam,
-        arac_turu_dagilimi: aracTurleri,
         utt_raporlari: uttRaporlari.map(({ utt, rapor }) => ({ utt, rapor })),
         ...eclubRaporunuTopla(tumSatirlar),
-      },
-    });
+    };
+    for (const [anahtar, kayit] of raporOnbellegi) {
+      if (Date.now() - kayit.zaman >= RAPOR_ONBELLEK_SURESI) raporOnbellegi.delete(anahtar);
+    }
+    if (raporOnbellegi.size >= 100) raporOnbellegi.delete(raporOnbellegi.keys().next().value!);
+    raporOnbellegi.set(onbellekAnahtari, { zaman: Date.now(), veri: yanit });
+    return NextResponse.json({ success: true, data: yanit });
   } catch (error) {
     return sunucuHatasi(error, "GET /eclub/raporlar/api");
   }

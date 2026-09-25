@@ -24,23 +24,20 @@ import type { EclubKapsamUtt, EclubYonetimKapsami } from "@/lib/eclub/yonetimKap
 import { eclubKisiRolEtiketi } from "@/lib/utils/roller";
 import { formatPuan, GRI_METIN, KIRMIZI, type Periyot } from "@/lib/utils/raporUtils";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
-import OgrenmeAraciPerformansi from "@/components/raporlar/OgrenmeAraciPerformansi";
-import type { AracTuruRaporSatiri } from "@/lib/rapor/paylasilan/aracTuruDagilimi";
 import styles from "@/app/(panel)/raporlar/utt/utt-report.module.css";
 import bmStyles from "@/app/(panel)/raporlar/bm/bm-report.module.css";
 import reportStyles from "./eclub-report.module.css";
 
 const DEFAULT_PERIYOT: Periyot = "bu_ay";
-const PERIYOT_ADI: Record<Periyot, string> = {
-  bu_gun: "Gün",
-  bu_hafta: "Hafta",
-  bu_ay: "Ay",
-  bu_donem: "Dönem",
-  bu_yil: "Yıl",
+const PERIYOT_ETIKETI: Record<Periyot, string> = {
+  bu_gun: "Günlük",
+  bu_hafta: "Haftalık",
+  bu_ay: "Aylık",
+  bu_donem: "Dönemlik",
+  bu_yil: "Yıllık",
 };
 
 interface RaporData {
-  arac_turu_dagilimi: AracTuruRaporSatiri[];
   kullanici: { ad: string; soyad: string; rol: string };
   aralik: { baslangic: string; bitis: string };
   ozet: EclubRaporOzet;
@@ -96,15 +93,37 @@ export default function EclubRaporlarPage() {
     "/eclub/raporlar/api",
     periyot,
     kullanici?.id,
+    { onbellekSuresi: 300_000, yenileParametresi: true, oturumOnbellegi: true },
   );
 
-  if (yukleniyor || loading) {
+  if (yukleniyor) {
     return <div className="flex min-h-screen items-center justify-center text-sm" style={{ color: GRI_METIN }}>Yükleniyor...</div>;
   }
-  if (error) {
-    return <div className="flex min-h-screen items-center justify-center text-sm" style={{ color: KIRMIZI }}>Hata: {error}</div>;
+  if (!kullanici) return null;
+  if (!data) {
+    return (
+      <div className={styles.page} style={{ fontFamily: "'Nunito', sans-serif" }}>
+        <div className={styles.container}>
+          <header className={styles.header}>
+            <div>
+              <h1 className="inline-flex flex-wrap items-center text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">
+                <span>E-Club Takımları Raporları</span>
+                <SayfaRehberi anahtar="eclub-takim-raporlar" className="ml-1.5 -translate-y-1.5" />
+              </h1>
+              <p className="mt-0.5 text-xs font-semibold text-[#78889d]">Eclub&apos;da var olan takımların detaylı performansını inceleyebilirsiniz.</p>
+            </div>
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <RaporPeriyotSecici deger={periyot} onDegistir={setPeriyot} />
+              <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} disabled={loading} />
+            </div>
+          </header>
+          <div role={error ? "alert" : "status"} className="rounded-2xl border border-[#dfe8f2] bg-white p-10 text-center text-sm" style={{ color: error ? KIRMIZI : GRI_METIN }}>
+            {error ? `Hata: ${error}` : "Rapor verileri yükleniyor..."}
+          </div>
+        </div>
+      </div>
+    );
   }
-  if (!kullanici || !data) return null;
 
   const seciliIcerikSatiri = data.icerikler.find((icerik) => icerik.icerik_anahtari === seciliIcerik) ?? null;
   const uttRaporHaritasi = new Map(data.utt_raporlari.map((satir) => [satir.utt.utt_id, satir.rapor]));
@@ -126,35 +145,30 @@ export default function EclubRaporlarPage() {
 
         <header className={styles.header}>
           <div>
-            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">
-              <Sparkles className="h-3.5 w-3.5" /> {data.kapsam.gorunum === "utt" ? "E-Club Takım Performans Karnesi" : "Dış müşteri öğrenme görünümü"}
-            </div>
+            {data.kapsam.gorunum === "utt" && (
+              <div className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">
+                <Sparkles className="h-3.5 w-3.5" /> E-Club Takım Performans Karnesi
+              </div>
+            )}
             <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d] inline-flex items-center flex-wrap">
-              <span>E-Club Takım Raporlarım</span>
+              <span>E-Club Takımları Raporları</span>
               <SayfaRehberi anahtar="eclub-takim-raporlar" className="ml-1.5 -translate-y-1.5" />
             </h1>
-            <p className="mt-0.5 text-xs font-semibold text-[#78889d]">
-              {data.kullanici.ad} {data.kullanici.soyad} · {data.kullanici.rol.toUpperCase()}
-            </p>
+            <p className="mt-0.5 text-xs font-semibold text-[#78889d]">Eclub&apos;da var olan takımların detaylı performansını inceleyebilirsiniz.</p>
           </div>
           <div className="flex w-full items-center gap-2 sm:w-auto">
             <RaporPeriyotSecici deger={periyot} onDegistir={setPeriyot} />
             <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} />
           </div>
         </header>
-        <OgrenmeAraciPerformansi dagilim={data.arac_turu_dagilimi} />
-
         <div className={styles.heroGrid}>
           <section className={`${styles.panel} ${styles.scoreHero}`}>
             <div>
-              <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">{PERIYOT_ADI[periyot]} tamamlanan izleme</div>
+              <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">{PERIYOT_ETIKETI[periyot]} Tamamlanan Yayın</div>
               <div className={styles.netScore}>{formatPuan(data.ozet.tamamlanan_izleme)}</div>
             </div>
             <div className="relative z-10 min-w-0">
-              <h2 className="text-base font-extrabold text-[#20324c]">Eczanelerinizde öğrenme akışı</h2>
-              <p className="mt-1 text-xs font-medium leading-relaxed text-[#718198]">
-                {data.kapsam.gorunum === "utt" ? "Ekibinizde" : "Yetkili hiyerarşinizde"} {data.ozet.aktif_eczane} eczanede {data.ozet.aktif_kisi} aktif eczacı/teknisyen bulunuyor; {data.ozet.izleyen_kisi} kişi bu periyotta en az bir videoyu tamamladı.
-              </p>
+              <h2 className="text-base font-extrabold text-[#20324c]">Eczanelerinize İletilen Yayınların Performansı</h2>
               <div className={styles.metricGrid}>
                 <div className={styles.metric}>
                   <Send className="mb-1 h-4 w-4 text-[#7c5ce7]" />
@@ -206,7 +220,7 @@ export default function EclubRaporlarPage() {
               uttOzetleri={uttOzetleri}
               seciliUttId={seciliUtt}
               onUttSecimi={uttSec}
-              baslik="E‑Club Rapor Hiyerarşisi"
+              baslik="E-Club Bölge Performansı"
               aciklama="BM ve UTT satırlarını açarak eczane, izleme ve cevaplama sonuçlarını görün."
               renderUttDetayi={(utt) => {
                 const rapor = uttRaporHaritasi.get(utt.utt_id);
@@ -301,8 +315,7 @@ export default function EclubRaporlarPage() {
           <section className={`${styles.panel} ${styles.section}`}>
             <div className={styles.sectionHeader}>
               <div>
-                <div className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#71859d]">Hangi içerikler tamamlandı?</div>
-                <h2 className="text-base font-extrabold text-[#20324c]">Ürün ve İçerik Dağılımı</h2>
+                <h2 className="text-base font-extrabold text-[#20324c]">Yayın Ürün Dağılımı</h2>
               </div>
               <div className={styles.sectionIcon}><CircleHelp className="h-4 w-4" /></div>
             </div>
@@ -310,9 +323,9 @@ export default function EclubRaporlarPage() {
               veri={data.icerikler.map((icerik) => ({ ad: icerik.icerik_adi, puan: icerik.tamamlanan_izleme }))}
               secili={seciliIcerikSatiri?.icerik_adi ?? null}
               onSecim={(ad) => setSeciliIcerik(data.icerikler.find((icerik) => icerik.icerik_adi === ad)?.icerik_anahtari ?? null)}
-              modlar={["bar", "line", "tablo"]}
+              modlar={["bar", "line", "pie", "tablo"]}
               apsisAdi="Ürün / içerik"
-              ordinatAdi="Tamamlanan izleme"
+              ordinatAdi="Tamamlanan Yayın"
               indirAdi="eclub-icerik-dagilimi"
               height={260}
               modern

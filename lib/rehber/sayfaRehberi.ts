@@ -146,8 +146,8 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
   // ─── 7. E-CLUB TAKIM RAPORLARIM (SAYFA BAŞLIĞI STANDARDI) ─────────────────
   "eclub-takim-raporlar": {
     anahtar: "eclub-takim-raporlar",
-    baslik: "E-Club Takım Raporlarım",
-    ozet: "Eczanelere gönderilen videoların izlenme, doğru cevap ve puan dönüşümünü eczane, eczacı ve teknisyen bazında takip etmenizi sağlar. Dönem oranlarını, ekip hiyerarşisini ve hangi içeriklerin tamamlandığını grafiklerle analiz edebilirsiniz.",
+    baslik: "E-Club Takımları Raporları",
+    ozet: "Eczanelere gönderilen yayınların izlenme, doğru cevap ve puan dönüşümünü eczane, eczacı ve teknisyen bazında takip etmenizi sağlar. Dönem oranlarını, ekip hiyerarşisini ve hangi içeriklerin tamamlandığını grafiklerle analiz edebilirsiniz.",
     maddeler: [],
   },
 
@@ -171,7 +171,7 @@ export const SAYFA_REHBERLERI: Record<string, SayfaRehberBilgisi> = {
   "raporlar-eczanem": {
     anahtar: "raporlar-eczanem",
     baslik: "Eczanem Raporları",
-    ozet: "Tüketicilerin izlediği ürün videoları karşılığında eczanelerde kullandığı indirimleri; ürün, takım, bölge ve eczane bazında kutu satışı ve TL karşılığıyla analiz etmenizi sağlar.",
+    ozet: "Tüketicilerin tamamladığı yayınlar karşılığında eczanelerde kullandığı indirimleri; ürün, takım, bölge ve eczane bazında kutu satışı ve TL karşılığıyla analiz etmenizi sağlar.",
     maddeler: [],
   },
 
