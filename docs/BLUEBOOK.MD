@@ -3107,7 +3107,7 @@ Bu envanter; bağımlılıkları (`node_modules`), derleme ve önbellek çıktı
 | Dosya Adı | Türü | İşlevi ve Fonksiyonel Görevi (1-2 Cümle) |
 |---|:---:|---|
 | `BI_TEMIZLIK_PLANI.md` | Dokümantasyon | Deterministik bi çekirdeğinin korunan sınırlarını, kaldırılan eski motoru ve güncel doğrulama kaydını açıklar. |
-| `BLUEBOOK.md` | Dokümantasyon | HapBilgi’nin iş modelini, rol ve iş kurallarını, mimarisini ve kanonik dosya envanterini tanımlayan ana başvuru belgesidir. |
+| `BLUEBOOK.MD` | Dokümantasyon | HapBilgi’nin iş modelini, rol ve iş kurallarını, mimarisini ve kanonik dosya envanterini tanımlayan ana başvuru belgesidir. |
 | `mobil_dikey_yayin_akisi_envanter_faz0.md` | Dokümantasyon | Mobil dikey yayın akışı mimarisine geçişte tüm rol, rota ve liste yüzeylerinin teknik envanterini ve kart işaretleme kurallarını belgeler. |
 | `REDBOOK.MD` | Dokümantasyon | Bilinen teknik borçları, riskleri ve tamamlanması gereken iyileştirmeleri izleyen teknik takip belgesidir. |
 | `ROLLER_VE_KAPSAMLI_ZOR_TESTLER.md` | Dokümantasyon | “Roller ve Kapsamlı Zor Testler” kapsamındaki kararları, planı veya doğrulama kayıtlarını tutan proje belgesidir. |

@@ -26,7 +26,7 @@ test("ekran: İÜ/Üretici görev detay sayfası revizyon tavanını sözleşmed
 });
 
 test("dokümantasyon: BLUEBOOK revizyon kuralını 'en fazla üç revizyon' olarak belgeler", () => {
-  const bluebook = oku("docs/BLUEBOOK.md");
+  const bluebook = oku("docs/BLUEBOOK.MD");
   assert.match(bluebook, /Senaryo ve seçilen öğrenme aracı için en fazla üç revizyon istenebilir/);
   assert.doesNotMatch(bluebook, /Senaryo ve seçilen öğrenme aracı için en fazla iki revizyon istenebilir/);
 });

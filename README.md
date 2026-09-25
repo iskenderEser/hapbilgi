@@ -34,7 +34,7 @@ npm run denetim:tutarlilik
 
 ## Proje kayıtları
 
-- Sistem mimarisi ve iş kuralları: `docs/BLUEBOOK.md`
+- Sistem mimarisi ve iş kuralları: `docs/BLUEBOOK.MD`
 - Açık işler ve teknik borçlar: `docs/REDBOOK.MD`
 - Hukuki metinler ve KVKK takip kaydı: `docs/hukuki/`
 - Tekrar çalıştırılabilir veritabanı değişiklikleri: `scripts/sql/`
