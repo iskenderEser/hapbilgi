@@ -65,22 +65,43 @@ export default function UreticiAnaSayfa({ user, rol, adSoyad }: Props) {
     const veriCek = async () => {
       setLoading(true);
       const supabase = createClient();
-      const { data: kullanici } = await supabase.from("kullanicilar").select("takim_id").eq("kullanici_id", user.id).single();
-      if (kullanici?.takim_id) {
-        const { data: takim } = await supabase.from("takimlar").select("takim_adi").eq("takim_id", kullanici.takim_id).single();
-        setTakimAdi(takim?.takim_adi ?? "");
+      const takimAdiCek = async () => {
+        const { data: kullanici } = await supabase
+          .from("kullanicilar")
+          .select("takim_id")
+          .eq("kullanici_id", user.id)
+          .single();
+
+        if (!kullanici?.takim_id) return "";
+
+        const { data: takim } = await supabase
+          .from("takimlar")
+          .select("takim_adi")
+          .eq("takim_id", kullanici.takim_id)
+          .single();
+
+        return takim?.takim_adi ?? "";
+      };
+
+      try {
+        // Takım adı ve ana ekran verisi birbirinden bağımsızdır; aynı anda yüklenir.
+        const [res, bulunanTakimAdi] = await Promise.all([
+          fetch("/ana-sayfa/api"),
+          takimAdiCek(),
+        ]);
+        const data = await res.json();
+        setTakimAdi(bulunanTakimAdi);
+        if (!res.ok) { hata(data.hata ?? "Veriler yüklenemedi.", data.adim, data.detay); }
+        else { setPmVeri(data); }
+      } finally {
+        setLoading(false);
       }
-      const res = await fetch("/ana-sayfa/api");
-      const data = await res.json();
-      if (!res.ok) { hata(data.hata ?? "Veriler yüklenemedi.", data.adim, data.detay); }
-      else { setPmVeri(data); }
-      setLoading(false);
     };
     veriCek();
     void prefetchYayinOzet(user.id);
     void prefetchYayinKatalog("benim", user.id);
     void prefetchTalepMerkezi(user.id);
-  }, [user]);
+  }, [user.id]);
 
   const formatTarih = (tarih: string) =>
     new Date(tarih).toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" });

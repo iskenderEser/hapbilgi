@@ -22,20 +22,20 @@ export async function GET() {
 
     const rol = await rolCozucu(adminSupabase, user.id);
 
-    let veri: Record<string, unknown>;
+    let veriSozu: Promise<Record<string, unknown>>;
 
     if (rol === "bm") {
-      veri = await getBmAnaSayfaVeri(user.id, adminSupabase);
+      veriSozu = getBmAnaSayfaVeri(user.id, adminSupabase);
     } else if (rol === "tm") {
-      veri = await getTmAnaSayfaVeri(user.id, adminSupabase);
+      veriSozu = getTmAnaSayfaVeri(user.id, adminSupabase);
     } else if (TUKETICI_ROLLER.includes(rol)) {
-      veri = await getUttAnaSayfaVeri(user.id, adminSupabase);
+      veriSozu = getUttAnaSayfaVeri(user.id, adminSupabase);
     } else if (rol === IU_ROLU) {
-      veri = (await getIuAnaSayfaVeri(user.id, adminSupabase)) as unknown as Record<string, unknown>;
+      veriSozu = getIuAnaSayfaVeri(user.id, adminSupabase) as unknown as Promise<Record<string, unknown>>;
     } else if (URETICI_ROLLER.includes(rol)) {
-      veri = await getUreticiAnaSayfaVeri(user.id, adminSupabase);
+      veriSozu = getUreticiAnaSayfaVeri(user.id, adminSupabase);
     } else if (YONETICI_ROLLER.includes(rol)) {
-      veri = await getYoneticiAnaSayfaVeri(user.id, adminSupabase);
+      veriSozu = getYoneticiAnaSayfaVeri(user.id, adminSupabase);
     } else {
       return rolHatasi("Bu role ait ana sayfa verisi tanımlanmamış.");
     }
@@ -43,12 +43,15 @@ export async function GET() {
     // Yalnız-izleme rolleri için ana sayfa video listesini ekle.
     // UTT/KD_UTT kendi video verisini (getUttAnaSayfaVeri) kullanmaya devam eder.
     // getAnaSayfaVideolari, video görmeyen roller (İK, IU) için boş dizi döndürür → bölüm çıkmaz.
-    if (!TUKETICI_ROLLER.includes(rol)) {
-      const videolar = rol === "bm" || rol === "tm"
-        ? await getSahaAnaSayfaVideolari(user.id, rol, adminSupabase)
-        : await getAnaSayfaVideolari(user.id, rol, adminSupabase);
-      veri = { ...veri, videolar };
-    }
+    const videoSozu = !TUKETICI_ROLLER.includes(rol)
+      ? rol === "bm" || rol === "tm"
+        ? getSahaAnaSayfaVideolari(user.id, rol, adminSupabase)
+        : getAnaSayfaVideolari(user.id, rol, adminSupabase)
+      : Promise.resolve(null);
+
+    // Ana ekran verisi ve video listesi bağımsız sorgulardır; ardışık bekletilmez.
+    const [anaVeri, videolar] = await Promise.all([veriSozu, videoSozu]);
+    const veri = videolar === null ? anaVeri : { ...anaVeri, videolar };
 
     return NextResponse.json(veri, { status: 200 });
   } catch (err) {

@@ -223,7 +223,7 @@ export default function LogoKimlikYonetimi({ firma, onGuncelle }: LogoKimlikYone
         >
           {/* HapBilgi Logo */}
           <img
-            src="/hapbilgi-yatay-TM-1-logo.png"
+            src="/hapbilgi-yatay-TM-1-logo-optimized.png"
             alt="HapBilgi"
             style={{ height: "42px", width: "auto", display: "block" }}
           />

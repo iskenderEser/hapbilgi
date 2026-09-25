@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { RefreshCw, Trash2 } from "lucide-react";
 
@@ -116,9 +117,13 @@ export default function EczanemMusteriNavbar({
             aria-label="HapBilgi Eczanem ana sayfası"
             className="flex items-center md:w-[216px] flex-shrink-0 cursor-pointer group select-none"
           >
-            <img
-              src="/hapbilgi-yatay-TM-1-logo.png"
+            <Image
+              src="/hapbilgi-yatay-TM-1-logo-optimized.png"
               alt="hapbilgi"
+              width={427}
+              height={240}
+              preload
+              unoptimized
               className="h-12 md:h-14 lg:h-[62px] w-auto aspect-[901/340] object-cover transition-transform duration-200 group-hover:scale-105 drop-shadow-sm"
             />
           </Link>

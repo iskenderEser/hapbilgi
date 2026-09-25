@@ -7,7 +7,8 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useEclubStoreTakvim } from "@/hooks/useEclubStoreTakvim";
 
 const BORDO = "#bc2d0d";
@@ -132,6 +133,12 @@ export default function PanelNavbar({
   const [hover, setHover] = useState<string | null>(null);
   const { takvim: eclubTakvim } = useEclubStoreTakvim({ aktif: Boolean(eclubStoreGeriSayimGoster) });
 
+  // Ana Sayfa navbarın sürekli görünen ana hedefidir. Butonla yapılan router.push
+  // geçişi Link'in otomatik ön yüklemesini kullanmadığı için rotayı önceden hazırla.
+  useEffect(() => {
+    router.prefetch(anaSayfaYolu);
+  }, [anaSayfaYolu, router]);
+
   const isAktif = (path: string) => pathname === path;
 
   const pillClass = (aktif: boolean) =>
@@ -163,9 +170,13 @@ export default function PanelNavbar({
             onClick={() => router.push(anaSayfaYolu)}
             className="flex items-center md:w-[175px] lg:w-[195px] xl:w-[216px] flex-shrink-0 cursor-pointer group select-none"
           >
-            <img
-              src="/hapbilgi-yatay-TM-1-logo.png"
+            <Image
+              src="/hapbilgi-yatay-TM-1-logo-optimized.png"
               alt="hapbilgi"
+              width={427}
+              height={240}
+              preload
+              unoptimized
               className="h-10 sm:h-11 md:h-12 lg:h-[48px] xl:h-[54px] w-auto aspect-[901/340] object-cover transition-transform duration-200 group-hover:scale-105 drop-shadow-sm"
             />
           </div>

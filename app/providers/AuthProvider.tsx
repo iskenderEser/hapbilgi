@@ -10,12 +10,13 @@
 
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { AuthKullanici, KimlikTuru } from "@/types/auth";
 import { oturumDusurulmeliMi, beniHatirlaTemizle } from "@/lib/utils/beniHatirla";
 import { guvenliCikisYap } from "@/lib/auth/guvenliCikis";
+import { clearAuthKullaniciCache, getAuthKullaniciCache, setAuthKullaniciCache } from "@/lib/panel/panelCache";
 
 interface AuthContextTipi {
   kullanici: AuthKullanici | null;
@@ -38,6 +39,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // İkinci çağrı geldiğinde yeni getUser yapmaz, mevcut Promise'i bekler.
   const yuklemePromiseRef = useRef<Promise<void> | null>(null);
 
+  // SSR çıktısıyla ilk istemci çıktısını aynı tut; son doğrulanmış sekme kimliğini
+  // tarayıcının ilk boyamasından hemen önce devreye al.
+  useLayoutEffect(() => {
+    const kayitliKullanici = getAuthKullaniciCache();
+    if (!kayitliKullanici) return;
+    setKullanici(kayitliKullanici);
+    setYukleniyor(false);
+  }, []);
+
   useEffect(() => {
     const supabase = createClient();
 
@@ -53,6 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const { data: { user } } = await supabase.auth.getUser();
 
           if (!user) {
+            clearAuthKullaniciCache();
             setKullanici(null);
             setYukleniyor(false);
             return;
@@ -68,6 +79,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return;
           }
 
+          const kayitliKullanici = getAuthKullaniciCache();
+          if (kayitliKullanici && kayitliKullanici.id !== user.id) {
+            clearAuthKullaniciCache();
+            setKullanici(null);
+            setYukleniyor(true);
+          }
+
           // Birleşik kimlik view'ı: kullanicilar + eclub_kisiler'i auth_id üzerinden
           // birleştirir. Tek sorgu; kimlik_turu ile kim olduğu ayrılır.
           const { data, error } = await supabase
@@ -77,12 +95,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .single();
 
           if (error || !data) {
+            clearAuthKullaniciCache();
             setKullanici(null);
             setYukleniyor(false);
             return;
           }
 
-          setKullanici({
+          const dogrulanmisKullanici: AuthKullanici = {
             id: user.id,
             email: user.email ?? "",
             rol: data.rol,
@@ -95,7 +114,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             firma_id: data.firma_id ?? null,
             kimlik_turu: data.kimlik_turu as KimlikTuru,
             telefon: data.telefon ?? null,
-          });
+          };
+          setAuthKullaniciCache(dogrulanmisKullanici);
+          setKullanici(dogrulanmisKullanici);
 
           setYukleniyor(false);
         } catch (err: unknown) {
@@ -103,6 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // single-flight zaten bunu engelliyor ama yine de güvenlik için.
           if (err instanceof Error && err.name === "AbortError") return;
           console.error("[AuthProvider] kullaniciyiYukle hatası:", err);
+          clearAuthKullaniciCache();
           setKullanici(null);
           setYukleniyor(false);
         }
@@ -120,6 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") {
+        clearAuthKullaniciCache();
         setKullanici(null);
         // Tüm kimlikler (müşteri dahil) /login üzerinden giriş yapar.
         router.push("/login");
