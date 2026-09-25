@@ -9,10 +9,43 @@ interface UseRaporSonuc<T> {
   yenile: () => void;
 }
 
+interface UseRaporAyarlari {
+  onbellekSuresi?: number;
+  yenileParametresi?: boolean;
+  oturumOnbellegi?: boolean;
+}
+
+const raporOnbellegi = new Map<string, { data: unknown; zaman: number }>();
+const RAPOR_OTURUM_PREFIX = 'hb_rapor_cache_';
+
+function oturumKaydiniOku<T>(anahtar: string): { data: T; zaman: number } | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const ham = sessionStorage.getItem(`${RAPOR_OTURUM_PREFIX}${anahtar}`);
+    if (!ham) return null;
+    const kayit = JSON.parse(ham) as { data?: T; zaman?: number };
+    return kayit.data !== undefined && typeof kayit.zaman === 'number'
+      ? { data: kayit.data, zaman: kayit.zaman }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function oturumKaydiniYaz(anahtar: string, data: unknown): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(`${RAPOR_OTURUM_PREFIX}${anahtar}`, JSON.stringify({ data, zaman: Date.now() }));
+  } catch {
+    // Tarayıcı depolama kotası doluysa bellek önbelleği kullanılmaya devam eder.
+  }
+}
+
 export function useRapor<T>(
   endpoint: string,
   periyot: string,
-  kullaniciId: string | undefined
+  kullaniciId: string | undefined,
+  ayarlar: UseRaporAyarlari = {},
 ): UseRaporSonuc<T> {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,6 +54,10 @@ export function useRapor<T>(
   const [yenileTetik, setYenileTetik] = useState(0);
   const veriVar = useRef(false);
   const sonSorgu = useRef<string | null>(null);
+  const sonYenileTetik = useRef(0);
+  const onbellekSuresi = ayarlar.onbellekSuresi ?? 0;
+  const yenileParametresi = ayarlar.yenileParametresi ?? false;
+  const oturumOnbellegi = ayarlar.oturumOnbellegi ?? false;
 
   const yenile = useCallback(() => setYenileTetik((deger) => deger + 1), []);
 
@@ -31,6 +68,19 @@ export function useRapor<T>(
 
     const fetchRapor = async () => {
       const sorguAnahtari = `${endpoint}|${periyot}|${kullaniciId}`;
+      const manuelYenileme = yenileTetik !== sonYenileTetik.current;
+      sonYenileTetik.current = yenileTetik;
+      const onbellekKaydi = raporOnbellegi.get(sorguAnahtari)
+        ?? (oturumOnbellegi ? oturumKaydiniOku<T>(sorguAnahtari) : null);
+      if (!manuelYenileme && onbellekSuresi > 0 && onbellekKaydi && Date.now() - onbellekKaydi.zaman < onbellekSuresi) {
+        setData(onbellekKaydi.data as T);
+        veriVar.current = true;
+        sonSorgu.current = sorguAnahtari;
+        setLoading(false);
+        setYenileniyor(false);
+        setError(null);
+        return;
+      }
       const ilkYukleme = !veriVar.current || sonSorgu.current !== sorguAnahtari;
       sonSorgu.current = sorguAnahtari;
       if (ilkYukleme) {
@@ -41,11 +91,15 @@ export function useRapor<T>(
         setYenileniyor(true);
       }
       try {
-        const url = `${endpoint}?periyot=${periyot}`;
+        const url = `${endpoint}?periyot=${periyot}${manuelYenileme && yenileParametresi ? '&yenile=1' : ''}`;
         const res = await fetch(url, { signal: controller.signal });
         const json = await res.json();
         if (json.success) {
           setData(json.data);
+          if (onbellekSuresi > 0) {
+            raporOnbellegi.set(sorguAnahtari, { data: json.data, zaman: Date.now() });
+            if (oturumOnbellegi) oturumKaydiniYaz(sorguAnahtari, json.data);
+          }
           veriVar.current = true;
           setError(null);
         } else if (ilkYukleme) {
@@ -65,7 +119,7 @@ export function useRapor<T>(
     fetchRapor();
 
     return () => controller.abort();
-  }, [kullaniciId, endpoint, periyot, yenileTetik]);
+  }, [kullaniciId, endpoint, onbellekSuresi, oturumOnbellegi, periyot, yenileParametresi, yenileTetik]);
 
   return { data, loading, yenileniyor, error, yenile };
 }

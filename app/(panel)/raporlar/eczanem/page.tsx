@@ -1,18 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
   Building2,
-  ChevronDown,
-  ChevronRight,
-  MapPin,
   Package,
   Pill,
   Sparkles,
   Store,
-  User,
 } from "lucide-react";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { YenileButonu } from "@/components/ui/yenile-butonu";
@@ -20,8 +16,9 @@ import RaporPeriyotSecici from "@/components/raporlar/RaporPeriyotSecici";
 import { ECZANEM_RAPOR_GOREN_ROLLER, ECZANEM_TALEP_ACAN_ROLLER, YONETICI_ROLLER } from "@/lib/utils/roller";
 import { GRI_METIN, KIRMIZI, type Periyot } from "@/lib/utils/raporUtils";
 import SayfaRehberi from "@/components/rehber/SayfaRehberi";
-import OgrenmeAraciPerformansi from "@/components/raporlar/OgrenmeAraciPerformansi";
-import type { AracTuruRaporSatiri } from "@/lib/rapor/paylasilan/aracTuruDagilimi";
+import IndirimliSatisTablosu from "./_components/IndirimliSatisTablosu";
+import type { IndirimliSatisSatiri } from "@/lib/eczanem/dokum";
+import { useRapor } from "@/hooks/useRapor";
 import styles from "../utt/utt-report.module.css";
 
 const DEFAULT_PERIYOT: Periyot = "bu_ay";
@@ -34,6 +31,14 @@ const PERIYOT_KAPSAM_ADI: Record<Periyot, string> = {
   bu_yil: "Bu yıl",
 };
 
+const PERIYOT_SATIS_ADI: Record<Periyot, string> = {
+  bu_gun: "Günlük",
+  bu_hafta: "Haftalık",
+  bu_ay: "Aylık",
+  bu_donem: "Dönemlik",
+  bu_yil: "Yıllık",
+};
+
 interface KullaniciBilgisi {
   ad: string;
   soyad: string;
@@ -43,35 +48,7 @@ interface KullaniciBilgisi {
   firma_adi: string | null;
 }
 
-interface EczaneSatiri {
-  eczane_adi: string;
-  kutu: number;
-  indirim_tl: number;
-}
-
-interface UttSatiri {
-  utt_adi: string;
-  kutu: number;
-  indirim_tl: number;
-  eczaneler: EczaneSatiri[];
-}
-
-interface BolgeSatiri {
-  bolge_adi: string;
-  kutu: number;
-  indirim_tl: number;
-  uttler: UttSatiri[];
-}
-
 interface PmUrunSatiri {
-  urun_id: string;
-  urun_adi: string;
-  kutu: number;
-  indirim_tl: number;
-  bolgeler: BolgeSatiri[];
-}
-
-interface CascadeUrunSatiri {
   urun_id: string;
   urun_adi: string;
   kutu: number;
@@ -80,20 +57,17 @@ interface CascadeUrunSatiri {
 
 interface CascadeEczaneSatiri {
   eczane_id: string;
-  eczane_adi: string;
-  utt_adi: string | null;
   toplam_kutu: number;
   toplam_tl: number;
-  urunler: CascadeUrunSatiri[];
 }
 
 interface RaporApiData {
-  arac_turu_dagilimi?: AracTuruRaporSatiri[];
   aktif: boolean;
   tip?: "cascade" | "pm";
   kullanici?: KullaniciBilgisi;
   urunler?: PmUrunSatiri[];
   eczaneler?: CascadeEczaneSatiri[];
+  satislar?: IndirimliSatisSatiri[];
   toplam_kutu?: number;
   toplam_tl?: number;
 }
@@ -101,59 +75,14 @@ interface RaporApiData {
 export default function EczanemRaporPage() {
   const { kullanici, yukleniyor: authYukleniyor } = useAuth();
   const [periyot, setPeriyot] = useState<Periyot>(DEFAULT_PERIYOT);
-  const [data, setData] = useState<RaporApiData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [yenileniyor, setYenileniyor] = useState(false);
-  const [hata, setHata] = useState<string | null>(null);
-
-  // Akordiyon state
-  const [acikOgeler, setAcikOgeler] = useState<Set<string>>(new Set());
-
   const rolKucu = (kullanici?.rol ?? "").toLowerCase();
-
-  const veriCek = async (sessiz = false) => {
-    if (sessiz) setYenileniyor(true);
-    else setLoading(true);
-    setHata(null);
-
-    try {
-      const res = await fetch(`/raporlar/api/eczanem?periyot=${periyot}`);
-      const d = await res.json();
-
-      if (!res.ok || !d.success) {
-        setHata(d.hata ?? "Eczanem rapor verisi çekilemedi.");
-        return;
-      }
-
-      setData(d.data ?? null);
-
-      // İlk yüklemede PM ise tüm ürünleri açık getir
-      if (!sessiz && d.data?.tip === "pm" && d.data.urunler) {
-        setAcikOgeler(new Set(d.data.urunler.map((u: PmUrunSatiri) => u.urun_id)));
-      }
-    } catch {
-      setHata("Bağlantı hatası oluştu.");
-    } finally {
-      setLoading(false);
-      setYenileniyor(false);
-    }
-  };
-
-  useEffect(() => {
-    if (kullanici && ECZANEM_RAPOR_GOREN_ROLLER.includes(rolKucu)) {
-      veriCek();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [periyot, kullanici]);
-
-  const toggleOge = (key: string) => {
-    setAcikOgeler((onceki) => {
-      const yeni = new Set(onceki);
-      if (yeni.has(key)) yeni.delete(key);
-      else yeni.add(key);
-      return yeni;
-    });
-  };
+  const raporKullaniciId = ECZANEM_RAPOR_GOREN_ROLLER.includes(rolKucu) ? kullanici?.id : undefined;
+  const { data, loading, yenileniyor, error: hata, yenile } = useRapor<RaporApiData>(
+    "/raporlar/api/eczanem",
+    periyot,
+    raporKullaniciId,
+    { onbellekSuresi: 300_000, yenileParametresi: true, oturumOnbellegi: true },
+  );
 
   if (authYukleniyor || loading) {
     return (
@@ -188,7 +117,7 @@ export default function EczanemRaporPage() {
   const rolMetni = (k.rol || rolKucu).toUpperCase();
 
   // Rol-spesifik başlık, eyebrow ve kimlik satırı (BM, TM, PM, Yönetici uyumlu)
-  let eyebrowMetni = "Eczanem dağıtım & erişim analizi";
+  let eyebrowMetni: string | null = "Eczanem dağıtım & erişim analizi";
   let baslikMetni = "Eczanem Raporları";
   let kimlikMetni = `${k.ad} ${k.soyad} · ${rolMetni}`;
 
@@ -205,9 +134,9 @@ export default function EczanemRaporPage() {
     baslikMetni = k.firma_adi ? `${k.firma_adi}` : "Eczanem Firma Raporu";
     kimlikMetni = `${rolMetni} · ${k.ad} ${k.soyad}`;
   } else if (ECZANEM_TALEP_ACAN_ROLLER.includes(rolKodu)) {
-    eyebrowMetni = "Ürün Eczanem dağıtım ve erişim etkisi";
+    eyebrowMetni = null;
     baslikMetni = "Eczanem Raporları";
-    kimlikMetni = `${k.ad} ${k.soyad} · ${rolMetni}${k.takim_adi ? ` · ${k.takim_adi}` : ""}${k.firma_adi ? ` · ${k.firma_adi}` : ""}`;
+    kimlikMetni = "Tüketicilerin gerçek ürün bilgisi karşılığında kazandıkları değerleri görebilirsiniz";
   }
 
   // Toplamlar
@@ -227,15 +156,15 @@ export default function EczanemRaporPage() {
 
   const metrikKartlari = [
     {
-      etiket: "Toplam Dağıtılan Kutu",
+      etiket: "İndirimli Satılan",
       deger: `${toplamKutu.toLocaleString("tr-TR")} Kutu`,
-      not: `${donemAdi} dağıtılan`,
+      not: `${PERIYOT_SATIS_ADI[periyot]} satış adedi`,
       icon: Pill,
       vurgu: "#16865f",
       zemin: "#ebf8f2",
     },
     {
-      etiket: "Toplam İndirim Tutarı",
+      etiket: "Toplam İndirim",
       deger: `₺${toplamIndirim.toLocaleString("tr-TR")}`,
       not: `${donemAdi} uygulanan`,
       icon: Building2,
@@ -243,9 +172,11 @@ export default function EczanemRaporPage() {
       zemin: "#fff7ed",
     },
     {
-      etiket: data.tip === "pm" ? "Aktif Ürün Sayısı" : "Kayıtlı Eczane Sayısı",
+      etiket: data.tip === "pm" ? "İndirimli Ürün Sayısı" : "Kayıtlı Eczane Sayısı",
       deger: toplamBirimSayisi,
-      not: data.tip === "pm" ? "Eczanem hedefli ürünler" : "Kapsamdaki eczaneler",
+      not: data.tip === "pm"
+        ? (data.urunler ?? []).map((urun) => urun.urun_adi).join(", ") || "İndirim uygulanan ürün yok"
+        : "Kapsamdaki eczaneler",
       icon: data.tip === "pm" ? Package : Store,
       vurgu: "#237ac8",
       zemin: "#edf6fd",
@@ -260,10 +191,12 @@ export default function EczanemRaporPage() {
         </Link>
 
         <header className={styles.header}>
-          <div>
-            <div className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">
-              <Sparkles className="h-3.5 w-3.5" /> {eyebrowMetni}
-            </div>
+          <div className="min-w-0 flex-1">
+            {eyebrowMetni && (
+              <div className="mb-1 flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#3589d8]">
+                <Sparkles className="h-3.5 w-3.5" /> {eyebrowMetni}
+              </div>
+            )}
             <div className="inline-flex items-center">
               <h1 className="text-2xl font-extrabold tracking-[-0.03em] text-[#10213d]">
                 {baslikMetni}
@@ -275,13 +208,11 @@ export default function EczanemRaporPage() {
             </p>
           </div>
 
-          <div className="flex w-full items-center gap-2 sm:w-auto">
+          <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
             <RaporPeriyotSecici deger={periyot} onDegistir={setPeriyot} />
-            <YenileButonu yenileniyor={yenileniyor} onYenile={() => veriCek(true)} className="min-w-[88px] justify-center" />
+            <YenileButonu yenileniyor={yenileniyor} onYenile={yenile} className="min-w-[88px] justify-center" />
           </div>
         </header>
-        <OgrenmeAraciPerformansi dagilim={data.arac_turu_dagilimi} />
-
         {/* Metrik Özet Kartları */}
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-5">
           {metrikKartlari.map((kart) => {
@@ -313,255 +244,14 @@ export default function EczanemRaporPage() {
           })}
         </section>
 
-        {/* Ana İçerik Paneli */}
+        {/* İndirimli satış işlem listesi */}
         <section className={`${styles.panel} p-5 md:p-6 mb-8`}>
-          <div className="flex items-center justify-between mb-4 border-b border-[#edf2f7] pb-3">
-            <div>
-              <h2 className="text-base font-extrabold text-[#111827]">
-                {data.tip === "pm" ? "Ürün Bazlı Dağıtım Dökümü" : "Eczane Mutabakat & Dağıtım Listesi"}
-              </h2>
-              <p className="text-xs text-[#6b7280] mt-0.5">
-                {data.tip === "pm"
-                  ? "Ürünlerin bölge, temsilci ve eczane bazlı dağıtılan kutu ve indirim toplamları"
-                  : "Kapsamınızdaki eczanelerin ürün bazlı dağıtım ve indirim detayları"}
-              </p>
-            </div>
-            <span className="text-xs font-bold text-[#237ac8] bg-[#edf6fd] px-3 py-1 rounded-full">
-              {donemAdi}
-            </span>
+          <div className="mb-4 border-b border-[#edf2f7] pb-3">
+            <h2 className="text-base font-extrabold text-[#111827]">
+              {data.tip === "pm" ? "Ürün-Eczane İndirim Listesi" : "Eczane İndirim Listesi"}
+            </h2>
           </div>
-
-          {/* PM GÖRÜNÜMÜ */}
-          {data.tip === "pm" ? (
-            (data.urunler ?? []).length === 0 ? (
-              <div className="py-12 text-center text-xs font-semibold text-[#6b7280]">
-                Bu dönemde Eczanem dağıtım kaydı bulunamadı.
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {(data.urunler ?? []).map((urun) => {
-                  const urunAcik = acikOgeler.has(urun.urun_id);
-
-                  return (
-                    <div
-                      key={urun.urun_id}
-                      className="overflow-hidden rounded-xl border border-[#e2e9f2] bg-[#ffffff] transition-all"
-                    >
-                      {/* Ürün Satırı */}
-                      <button
-                        type="button"
-                        onClick={() => toggleOge(urun.urun_id)}
-                        className="flex w-full items-center justify-between bg-[#f8fbff] px-4 py-3.5 text-left transition-colors hover:bg-[#f0f6fc] cursor-pointer border-none"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          {urunAcik ? (
-                            <ChevronDown className="h-4 w-4 text-[#237ac8]" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4 text-[#9ca3af]" />
-                          )}
-                          <span className="font-extrabold text-[#111827] text-sm">{urun.urun_adi}</span>
-                        </div>
-                        <div className="flex items-center gap-3 text-xs">
-                          <span className="font-bold text-[#16865f] bg-[#ebf8f2] px-2.5 py-1 rounded-md">
-                            {urun.kutu} Kutu
-                          </span>
-                          <span className="font-bold text-[#b45309] bg-[#fff7ed] px-2.5 py-1 rounded-md">
-                            ₺{urun.indirim_tl.toLocaleString("tr-TR")} İndirim
-                          </span>
-                        </div>
-                      </button>
-
-                      {/* Bölgeler */}
-                      {urunAcik && (
-                        <div className="border-t border-[#edf2f7] p-3.5 flex flex-col gap-2.5 bg-[#ffffff]">
-                          {urun.bolgeler.map((bolge) => {
-                            const bolgeKey = `${urun.urun_id}_${bolge.bolge_adi}`;
-                            const bolgeAcik = acikOgeler.has(bolgeKey);
-
-                            return (
-                              <div
-                                key={bolgeKey}
-                                className="rounded-lg border border-[#e5e7eb] bg-[#f9fafb] overflow-hidden"
-                              >
-                                <button
-                                  type="button"
-                                  onClick={() => toggleOge(bolgeKey)}
-                                  className="flex w-full items-center justify-between px-3.5 py-2.5 text-left hover:bg-[#f3f4f6] cursor-pointer border-none"
-                                >
-                                  <div className="flex items-center gap-2 text-xs font-bold text-[#374151]">
-                                    <MapPin className="h-3.5 w-3.5 text-[#237ac8]" />
-                                    <span>{bolge.bolge_adi} Bölgesi</span>
-                                  </div>
-                                  <div className="flex items-center gap-3 text-xs">
-                                    <span className="font-semibold text-[#4b5563]">{bolge.kutu} Kutu</span>
-                                    <span className="font-semibold text-[#6b7280]">
-                                      ₺{bolge.indirim_tl.toLocaleString("tr-TR")}
-                                    </span>
-                                    {bolgeAcik ? (
-                                      <ChevronDown className="h-3.5 w-3.5 text-[#6b7280]" />
-                                    ) : (
-                                      <ChevronRight className="h-3.5 w-3.5 text-[#9ca3af]" />
-                                    )}
-                                  </div>
-                                </button>
-
-                                {/* UTT'ler */}
-                                {bolgeAcik && (
-                                  <div className="border-t border-[#e5e7eb] bg-white p-3 flex flex-col gap-2.5">
-                                    {bolge.uttler.map((utt) => {
-                                      const uttKey = `${bolgeKey}_${utt.utt_adi}`;
-                                      const uttAcik = acikOgeler.has(uttKey);
-
-                                      return (
-                                        <div
-                                          key={uttKey}
-                                          className="rounded-md border border-[#edf2f7] bg-[#ffffff] overflow-hidden"
-                                        >
-                                          <button
-                                            type="button"
-                                            onClick={() => toggleOge(uttKey)}
-                                            className="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-[#f8fafc] cursor-pointer text-xs border-none"
-                                          >
-                                            <div className="flex items-center gap-2 font-bold text-[#1f2937]">
-                                              <User className="h-3.5 w-3.5 text-[#6366f1]" />
-                                              <span>{utt.utt_adi}</span>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                              <span className="font-semibold text-[#16865f]">
-                                                {utt.kutu} Kutu
-                                              </span>
-                                              <span className="text-[#6b7280]">₺{utt.indirim_tl}</span>
-                                              {uttAcik ? (
-                                                <ChevronDown className="h-3 w-3 text-[#6b7280]" />
-                                              ) : (
-                                                <ChevronRight className="h-3 w-3 text-[#9ca3af]" />
-                                              )}
-                                            </div>
-                                          </button>
-
-                                          {/* Eczaneler Tablosu */}
-                                          {uttAcik && (
-                                            <div className="border-t border-[#edf2f7] bg-[#fafafa] p-2.5 overflow-x-auto">
-                                              <table className="w-full text-left text-xs">
-                                                <thead>
-                                                  <tr className="border-b border-[#e5e7eb] text-[10px] uppercase font-bold text-[#6b7280]">
-                                                    <th className="pb-2 pl-2">Eczane Adı</th>
-                                                    <th className="pb-2 text-right">Dağıtılan Kutu</th>
-                                                    <th className="pb-2 pr-2 text-right">İndirim Tutarı</th>
-                                                  </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-[#f3f4f6]">
-                                                  {utt.eczaneler.map((ecz, idx) => (
-                                                    <tr key={idx} className="hover:bg-white transition-colors">
-                                                      <td className="py-2 pl-2 font-medium text-[#374151]">
-                                                        {ecz.eczane_adi}
-                                                      </td>
-                                                      <td className="py-2 text-right font-bold text-[#16865f]">
-                                                        {ecz.kutu}
-                                                      </td>
-                                                      <td className="py-2 pr-2 text-right font-semibold text-[#b45309]">
-                                                        ₺{ecz.indirim_tl}
-                                                      </td>
-                                                    </tr>
-                                                  ))}
-                                                </tbody>
-                                              </table>
-                                            </div>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )
-          ) : (
-            /* CASCADE GÖRÜNÜMÜ (BM / TM / YÖNETİCİ) */
-            (data.eczaneler ?? []).length === 0 ? (
-              <div className="py-12 text-center text-xs font-semibold text-[#6b7280]">
-                Bu dönemde onaylanmış Eczanem işlemi bulunamadı.
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {(data.eczaneler ?? []).map((ecz) => {
-                  const eczAcik = acikOgeler.has(ecz.eczane_id);
-
-                  return (
-                    <div
-                      key={ecz.eczane_id}
-                      className="overflow-hidden rounded-xl border border-[#e2e9f2] bg-[#ffffff] transition-all"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => toggleOge(ecz.eczane_id)}
-                        className="flex w-full items-center justify-between bg-[#f8fbff] px-4 py-3.5 text-left transition-colors hover:bg-[#f0f6fc] cursor-pointer border-none"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          {eczAcik ? (
-                            <ChevronDown className="h-4 w-4 text-[#237ac8] shrink-0" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4 text-[#9ca3af] shrink-0" />
-                          )}
-                          <div className="min-w-0">
-                            <span className="font-extrabold text-[#111827] text-sm block truncate">
-                              {ecz.eczane_adi}
-                            </span>
-                            {ecz.utt_adi && (
-                              <span className="text-[11px] text-[#6b7280] font-medium flex items-center gap-1 mt-0.5">
-                                <User className="h-3 w-3 text-[#6366f1]" /> {ecz.utt_adi}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 text-xs shrink-0">
-                          <span className="font-bold text-[#16865f] bg-[#ebf8f2] px-2.5 py-1 rounded-md">
-                            {ecz.toplam_kutu} Kutu
-                          </span>
-                          <span className="font-bold text-[#b45309] bg-[#fff7ed] px-2.5 py-1 rounded-md">
-                            ₺{(ecz.toplam_tl ?? 0).toLocaleString("tr-TR")}
-                          </span>
-                        </div>
-                      </button>
-
-                      {eczAcik && (
-                        <div className="border-t border-[#edf2f7] p-3 bg-white overflow-x-auto">
-                          <table className="w-full text-left text-xs">
-                            <thead>
-                              <tr className="border-b border-[#e5e7eb] text-[10px] uppercase font-bold text-[#6b7280]">
-                                <th className="pb-2 pl-2">Ürün Adı</th>
-                                <th className="pb-2 text-right">Dağıtılan Kutu</th>
-                                <th className="pb-2 pr-2 text-right">İndirim Tutarı</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[#f3f4f6]">
-                              {ecz.urunler.map((u) => (
-                                <tr key={u.urun_id} className="hover:bg-[#f9fafb] transition-colors">
-                                  <td className="py-2 pl-2 font-medium text-[#374151]">{u.urun_adi}</td>
-                                  <td className="py-2 text-right font-bold text-[#16865f]">{u.kutu}</td>
-                                  <td className="py-2 pr-2 text-right font-semibold text-[#b45309]">
-                                    ₺{(u.indirim_tl ?? 0).toLocaleString("tr-TR")}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )
-          )}
+          <IndirimliSatisTablosu satislar={data.satislar ?? []} />
         </section>
       </div>
     </div>

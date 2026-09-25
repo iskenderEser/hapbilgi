@@ -11,7 +11,18 @@ import { hataYaniti, yetkiHatasi } from "@/lib/utils/hataIsle";
 import { tarihAraligi } from "@/lib/utils/tarihAraligi";
 import { YONETICI_ROLLER, ECZANEM_TALEP_ACAN_ROLLER } from "@/lib/utils/roller";
 import { cascadeDokumu, pmUrunDokumu, CascadeKapsam } from "@/lib/eczanem/dokum";
-import { aracTuruDagilimi } from "@/lib/rapor/paylasilan/aracTuruDagilimi";
+
+const RAPOR_ONBELLEK_SURESI = 300_000;
+const raporOnbellegi = new Map<string, { zaman: number; veri: Record<string, unknown> }>();
+
+function raporYaniti(anahtar: string, veri: Record<string, unknown>) {
+  for (const [eskiAnahtar, kayit] of raporOnbellegi) {
+    if (Date.now() - kayit.zaman >= RAPOR_ONBELLEK_SURESI) raporOnbellegi.delete(eskiAnahtar);
+  }
+  if (raporOnbellegi.size >= 100) raporOnbellegi.delete(raporOnbellegi.keys().next().value!);
+  raporOnbellegi.set(anahtar, { zaman: Date.now(), veri });
+  return NextResponse.json({ success: true, data: veri });
+}
 
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -22,6 +33,12 @@ export async function GET(request: Request) {
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return yetkiHatasi("Oturum açılmamış");
+
+  const onbellekAnahtari = `${user.id}:${periyot}`;
+  const onbellekKaydi = raporOnbellegi.get(onbellekAnahtari);
+  if (searchParams.get("yenile") !== "1" && onbellekKaydi && Date.now() - onbellekKaydi.zaman < RAPOR_ONBELLEK_SURESI) {
+    return NextResponse.json({ success: true, data: onbellekKaydi.veri });
+  }
 
   const { data: kullanici, error: kullaniciError } = await adminSupabase
     .from("kullanicilar")
@@ -60,24 +77,17 @@ export async function GET(request: Request) {
       .eq("firma_id", kullanici.firma_id)
       .single();
     if (firma && firma.eczanem_aktif !== true) {
-      return NextResponse.json({ success: true, data: { aktif: false, kullanici: kullaniciBilgisi } });
+      return raporYaniti(onbellekAnahtari, { aktif: false, kullanici: kullaniciBilgisi });
     }
   }
-
-  const aracTurleri = await aracTuruDagilimi(adminSupabase, {
-    baslangic,
-    bitis,
-    takimId: kullanici.takim_id,
-    firmaId: kullanici.firma_id,
-  });
 
   // PM ailesi — ürün ekseni (İP-§9.2: hiyerarşi değil ürün)
   if (ECZANEM_TALEP_ACAN_ROLLER.includes(rol)) {
     if (!kullanici.takim_id) {
-      return NextResponse.json({ success: true, data: { aktif: true, tip: "pm", kullanici: kullaniciBilgisi, urunler: [], arac_turu_dagilimi: aracTurleri } });
+      return raporYaniti(onbellekAnahtari, { aktif: true, tip: "pm", kullanici: kullaniciBilgisi, urunler: [], satislar: [] });
     }
     const dokum = await pmUrunDokumu(adminSupabase, kullanici.takim_id, baslangic, bitis);
-    return NextResponse.json({ success: true, data: { aktif: true, tip: "pm", kullanici: kullaniciBilgisi, arac_turu_dagilimi: aracTurleri, ...dokum } });
+    return raporYaniti(onbellekAnahtari, { aktif: true, tip: "pm", kullanici: kullaniciBilgisi, ...dokum });
   }
 
   // Cascade — kapsam daralması (İP-§9.2)
@@ -89,5 +99,5 @@ export async function GET(request: Request) {
   if (!kapsam) return yetkiHatasi("Bu rapora erişim yetkiniz yok");
 
   const dokum = await cascadeDokumu(adminSupabase, kapsam, baslangic, bitis);
-  return NextResponse.json({ success: true, data: { aktif: true, tip: "cascade", kullanici: kullaniciBilgisi, arac_turu_dagilimi: aracTurleri, ...dokum } });
+  return raporYaniti(onbellekAnahtari, { aktif: true, tip: "cascade", kullanici: kullaniciBilgisi, ...dokum });
 }
