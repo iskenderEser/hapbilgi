@@ -81,10 +81,10 @@ function DonemLideriKarti({ donem }: { donem: number }) {
 
 export default function CcLigiBanner() {
   return (
-    <div className="mb-4 space-y-4">
+    <div className="mx-auto mb-4 w-[66.40625%] max-w-[688px] space-y-4">
       <div
         aria-label="Yılın Öğrenme Lideri banner alanı"
-        className="relative mx-auto aspect-square w-[279px] max-w-full overflow-hidden rounded-2xl border border-[#dfe7f0] bg-white shadow-sm xl:w-[312px]"
+        className="relative mx-auto aspect-square w-[168px] max-w-full overflow-hidden rounded-2xl border border-[#dfe7f0] bg-white shadow-sm sm:w-[calc(28%-10px)]"
         style={{
           background: [
             "linear-gradient(90deg, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0) 27%, rgba(0,0,0,0) 73%, rgba(0,0,0,0.62) 100%)",
@@ -100,24 +100,12 @@ export default function CcLigiBanner() {
           height={240}
           priority
           unoptimized
-          className="absolute left-1/2 top-1/2 h-60 w-60 -translate-x-1/2 -translate-y-1/2 object-contain xl:h-[269px] xl:w-[269px]"
+          className="absolute left-1/2 top-1/2 h-[86.3%] w-[86.3%] -translate-x-1/2 -translate-y-1/2 object-contain"
         />
-        <div className="pointer-events-none absolute left-1/2 top-1/2 h-60 w-60 -translate-x-1/2 -translate-y-1/2 xl:h-[269px] xl:w-[269px]">
-          <div className="absolute left-[22.75%] top-[7%] h-[49.5%] w-[54.5%] overflow-hidden rounded-full">
-            <Image
-                src="/iskendereser-seffaf.png"
-              alt="İskender Eser"
-              fill
-              priority
-              sizes="150px"
-                className="scale-[1.18] object-contain object-top"
-            />
-          </div>
-        </div>
         <svg
           viewBox="0 0 240 240"
           aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-1/2 h-60 w-60 -translate-x-1/2 -translate-y-1/2 overflow-visible xl:h-[269px] xl:w-[269px]"
+          className="pointer-events-none absolute left-1/2 top-1/2 h-[86.3%] w-[86.3%] -translate-x-1/2 -translate-y-1/2 overflow-visible"
         >
           <defs>
             <path id="yil-lideri-ust-yol" d="M 24 166 Q 120 145 216 166" />
@@ -154,7 +142,7 @@ export default function CcLigiBanner() {
             letterSpacing="1.05"
             filter="url(#oyma-etkisi)"
           >
-            <textPath href="#yil-lideri-alt-yol" startOffset="50%" textAnchor="middle">İSKENDER ESER</textPath>
+            <textPath href="#yil-lideri-alt-yol" startOffset="50%" textAnchor="middle">AD SOYAD</textPath>
           </text>
         </svg>
       </div>
