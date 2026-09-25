@@ -106,7 +106,7 @@ export async function GET(request: Request) {
     const yayinlar = await getUreticiYayinDetaylari(adminSupabase, {
       ureticiId: kullanici.kullanici_id,
       firmaId: kullanici.firma_id,
-      yetkiliUttIdleri: firmaLigi.lig.map((satir) => satir.kullanici_id),
+      yetkiliUttler: firmaLigi.lig.map((satir) => ({ kullanici_id: satir.kullanici_id, ad: satir.ad })),
       baslangic,
       bitis,
     });

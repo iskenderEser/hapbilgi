@@ -46,7 +46,7 @@ export default function DagilimGrafik({
   indirAdi,
   modern = false,
 }: Props) {
-  const [mod, setMod] = useState<Mod>(modlar.includes("pie") ? "pie" : modlar[0]);
+  const [mod, setMod] = useState<Mod>(modlar[0]);
   const paletli = veri.some((k) => k.renk); // per-item semantik renk (kazanım/kayıp)
 
   // Mobilde x-ekseni etiketlerini eğ — 7 uzun kalem dar ekranda üst üste binmesin.
@@ -72,16 +72,30 @@ export default function DagilimGrafik({
       animationEasingUpdate: "cubicInOut" as const,
     };
     if (mod === "pie") {
+      const pastaVerisi = veri.map((kalem) => ({
+        name: kalem.ad,
+        value: Math.abs(kalem.puan),
+        gercekPuan: kalem.puan,
+      }));
       return {
         ...ortak,
-        tooltip: { trigger: "item", formatter: "{b}: {c} ({d}%)" },
+        tooltip: {
+          trigger: "item",
+          formatter: (parametre: { name?: string; percent?: number; data?: { gercekPuan?: number } }) =>
+            `${parametre.name ?? ""}: ${parametre.data?.gercekPuan ?? 0} (${parametre.percent ?? 0}%)`,
+        },
         series: [{
           id: "dagilim", type: "pie", radius: ["46%", "72%"],
           itemStyle: { borderRadius: 6, borderColor: "#fff", borderWidth: 2 },
-          label: { color: "#374151", formatter: "{b}\n{c}", fontSize: 12 },
+          label: {
+            color: "#374151",
+            formatter: (parametre: { name?: string; data?: { gercekPuan?: number } }) =>
+              `${parametre.name ?? ""}\n${parametre.data?.gercekPuan ?? 0}`,
+            fontSize: 12,
+          },
           emphasis: { focus: "self" },
           universalTransition: true,
-          encode: { itemName: "ad", value: "puan" },
+          data: pastaVerisi,
         }],
       };
     }
@@ -144,7 +158,7 @@ export default function DagilimGrafik({
     { key: "line", etiket: "Çizgi" },
     { key: "tablo", etiket: "Tablo" },
   ];
-  const gorunurModlar = modTanimlari.filter((m) => modlar.includes(m.key));
+  const gorunurModlar = modlar.map((anahtar) => modTanimlari.find((modTanimi) => modTanimi.key === anahtar)!);
 
   return (
     <div>

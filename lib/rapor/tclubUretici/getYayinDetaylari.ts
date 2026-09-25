@@ -22,6 +22,7 @@ export type UreticiYayinPerformansi = {
   arac_turu: string;
   tamamlanma: number;
   aktif_utt: number;
+  tamamlayan_uttler: Array<{ kullanici_id: string; ad: string }>;
   izleme_puani: number;
   cevaplama_puani: number;
   oneri_puani: number;
@@ -65,6 +66,7 @@ const bosYayin = (kunye: YayinKunye): UreticiYayinPerformansi => ({
   arac_turu: kunye.arac_turu ?? "video",
   tamamlanma: 0,
   aktif_utt: 0,
+  tamamlayan_uttler: [],
   izleme_puani: 0,
   cevaplama_puani: 0,
   oneri_puani: 0,
@@ -83,7 +85,7 @@ export async function getUreticiYayinDetaylari(
   girdi: {
     ureticiId: string;
     firmaId: string;
-    yetkiliUttIdleri: string[];
+    yetkiliUttler: Array<{ kullanici_id: string; ad: string }>;
     baslangic: string;
     bitis: string;
   },
@@ -122,7 +124,8 @@ export async function getUreticiYayinDetaylari(
     ))).then((x) => x.flat()),
   ]);
 
-  const yetkiliUttler = new Set(girdi.yetkiliUttIdleri);
+  const yetkiliUttler = new Set(girdi.yetkiliUttler.map((utt) => utt.kullanici_id));
+  const uttAdlari = new Map(girdi.yetkiliUttler.map((utt) => [utt.kullanici_id, utt.ad]));
   const sonuc = new Map(tekilKunyeler.map((kunye) => [kunye.yayin_id, bosYayin(kunye)]));
   const aktifUttler = new Map<string, Set<string>>();
 
@@ -159,7 +162,11 @@ export async function getUreticiYayinDetaylari(
   }
 
   for (const yayin of sonuc.values()) {
-    yayin.aktif_utt = aktifUttler.get(yayin.yayin_id)?.size ?? 0;
+    const tamamlayanIdler = [...(aktifUttler.get(yayin.yayin_id) ?? new Set<string>())];
+    yayin.aktif_utt = tamamlayanIdler.length;
+    yayin.tamamlayan_uttler = tamamlayanIdler
+      .map((kullanici_id) => ({ kullanici_id, ad: uttAdlari.get(kullanici_id) ?? "Bilinmeyen UTT" }))
+      .sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
     yayin.kazanilan_puan = yayin.izleme_puani + yayin.cevaplama_puani + yayin.oneri_puani + yayin.extra_puani + yayin.eclub_puani;
     yayin.kaybedilen_puan = yayin.ileri_sarma_kaybi + yayin.yanlis_cevap_kaybi + yayin.oneri_kaybi;
     yayin.net_puan = yayin.kazanilan_puan - yayin.kaybedilen_puan;
